@@ -80,3 +80,7 @@
 
 `test/e2e/run.mjs` 起的 `scripts/serve.sh` 只端出 `dist/`（esbuild 的产物），**不构建**；deploy workflow 也只发 committed 的 dist。所以改了 src 不 build 就跑 E2E = 跑的是上一次 build 的 bundle（v0.12.1 的那轮 E2E 就是这么白跑的，当时 dist 还是 v0.12.0 的）。现在 `npm run e2e` / `npm run e2e:changed` 都先 `npm run build`（3–4 s）；直接 `node test/e2e/run.mjs …` 的话自己先 build。bump 之后同理：build 完的 dist 必须和源一起 commit，不然 dev 站还是旧的。
 
+## 补：并行红的自动单跑一遍（2026-10-14，edited by Claude Fable 5.1）
+
+8 条并行时 follow / routing / mixer-fx 这类「放着 = 表上有数」「翻谱提前量」的用例一再红、单跑绿（抢同一台机子，时间假设迟到）。`run.mjs` 现在把并行红的文件在最后**单跑一遍**：单跑绿 = 算过、但在总结里明说「并行红、单跑绿（负载 flake）」（不静默洗白）；单跑也红 = 真红。`--no-retry` 关掉（查 flake 本身时用）。真修法仍是把那些用例的固定等待改成「等到为止」（mixer-fx / routing / playhead / sung-preview 已改）。
+

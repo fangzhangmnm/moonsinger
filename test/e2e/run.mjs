@@ -84,7 +84,8 @@ if (flag("smoke")) for (const s of SMOKES) tasks.unshift({ name: s, file: path.j
 // ── 服务 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // 8710 已经有人在听 = 借用（假定是这个目录的 npm run serve）。在 worktree 里跑要么 --port=8713 自己起一口（不借别人的构建），要么 --base 指过去。
 const PORT = Number(opt("port")) || 8710, ownPort = opt("port") !== null;
-const listening = (port) => new Promise((ok) => { const s = net.createConnection({ port, host: "127.0.0.1" }); s.once("connect", () => { s.destroy(); ok(true); }); s.once("error", () => ok(false)); });
+// 2026-10-14：WSL（mirrored 网络）上连一个关着的端口有时不拒绝、一直等，没有超时 = 运行器在这儿卡死、一行都不印；1.5 s 没接上就当没人听
+const listening = (port) => new Promise((ok) => { const s = net.createConnection({ port, host: "127.0.0.1" }); const t = setTimeout(() => { s.destroy(); ok(false); }, 1500); s.once("connect", () => { clearTimeout(t); s.destroy(); ok(true); }); s.once("error", () => { clearTimeout(t); ok(false); }); });
 let server = null;
 if (tasks.some((t) => t.needsServer) && !base) {
   if (await listening(PORT)) { if (ownPort) { console.error(`--port=${PORT} 已经有人在听；换一个端口，或用 --base 指过去`); process.exit(2); } base = `http://127.0.0.1:${PORT}/`; }
@@ -104,22 +105,34 @@ console.log(`E2E：${tasks.length} 个任务 · ${JOBS} 条并行${base ? ` · $
 const results = [];
 const t0 = performance.now();
 let next = 0;
+const runOne = (t) => new Promise((done) => {
+  const start = performance.now();
+  const child = spawn(process.execPath, [t.file], { cwd: ROOT, env: { ...process.env, ...(t.needsServer ? { MS_E2E_BASE: base } : {}) } });
+  let buf = ""; child.stdout.on("data", (d) => (buf += d)); child.stderr.on("data", (d) => (buf += d));
+  const fin = (code) => { const m = /(\d+) passed, (\d+) failed/.exec(buf); done({ ok: code === 0, secs: (performance.now() - start) / 1000, out: buf, counts: m ? `${m[1]}/${Number(m[1]) + Number(m[2])}` : "" }); };
+  child.on("close", fin); child.on("error", (e) => { buf += String(e); fin(1); });
+});
+const mark = (ok) => (ok ? "\x1b[32m✓\x1b[0m" : "\x1b[31m✗\x1b[0m");
 async function worker() {
   while (next < tasks.length) {
-    const t = tasks[next++], start = performance.now();
-    const out = await new Promise((done) => {
-      const child = spawn(process.execPath, [t.file], { cwd: ROOT, env: { ...process.env, ...(t.needsServer ? { MS_E2E_BASE: base } : {}) } });
-      let buf = ""; child.stdout.on("data", (d) => (buf += d)); child.stderr.on("data", (d) => (buf += d));
-      child.on("close", (code) => done({ code, buf }));
-      child.on("error", (e) => done({ code: 1, buf: String(e) }));
-    });
-    const secs = (performance.now() - start) / 1000;
-    const ok = out.code === 0, m = /(\d+) passed, (\d+) failed/.exec(out.buf);
-    results.push({ name: t.name, ok, secs, out: out.buf, counts: m ? `${m[1]}/${Number(m[1]) + Number(m[2])}` : "" });
-    console.log(`  ${ok ? "\x1b[32m✓\x1b[0m" : "\x1b[31m✗\x1b[0m"} ${t.name.padEnd(18)} ${fmt(secs).padStart(6)}${results.at(-1).counts ? "  " + results.at(-1).counts : ""}`);
+    const t = tasks[next++], r = await runOne(t);
+    results.push({ name: t.name, ...r });
+    console.log(`  ${mark(r.ok)} ${t.name.padEnd(18)} ${fmt(r.secs).padStart(6)}${r.counts ? "  " + r.counts : ""}`);
   }
 }
 await Promise.all(Array.from({ length: Math.min(JOBS, tasks.length) }, worker));
+// 并行红的单跑一遍（2026-10-14）：8 个浏览器抢一台机子时，「放着 = 表上有数」「翻谱提前量」这类等时间的会迟到——follow / routing / mixer-fx 一再并行红、单跑绿。
+//   单跑也红才算真红；单跑绿 = 并行负载 flake，**明说**（不静默洗白）。--no-retry 关掉（查 flake 本身时用）。
+const flaky = [];
+if (!flag("no-retry") && results.some((r) => !r.ok) && JOBS > 1) {
+  console.log("\n  并行红的单跑一遍：");
+  for (const r of results.filter((x) => !x.ok)) {
+    const again = await runOne(tasks.find((t) => t.name === r.name));
+    console.log(`  ${mark(again.ok)} ${r.name.padEnd(18)} ${fmt(again.secs).padStart(6)}${again.counts ? "  " + again.counts : ""}  ${again.ok ? "单跑绿 = 并行负载 flake" : "单跑也红"}`);
+    if (again.ok) { flaky.push(r.name); Object.assign(r, again, { flaky: true }); }
+    else r.out = again.out;
+  }
+}
 stopServer();
 const wall = (performance.now() - t0) / 1000, serial = results.reduce((s, r) => s + r.secs, 0);
 for (const r of results) if (r.name && !SMOKES.includes(r.name)) times[r.name] = Math.round(r.secs * 10) / 10;
@@ -133,5 +146,6 @@ for (const r of failed) {
 }
 const slow = [...results].sort((a, b) => b.secs - a.secs).slice(0, 3).map((r) => `${r.name} ${fmt(r.secs)}`).join(" · ");
 console.log(`\n  ${results.length - failed.length} passed, ${failed.length} failed · wall ${fmt(wall)}（串行要 ${fmt(serial)}）· 最慢：${slow}`);
+if (flaky.length) console.log(`  并行红、单跑绿（负载 flake，已算过）：${flaky.join(" ")}`);
 if (smokeHint) console.log("  改的里面有壳的文件 → 另跑 npm run smoke");
 process.exit(failed.length ? 1 : 0);
