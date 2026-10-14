@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.6-2026-10-14";
+var APP_VERSION = "v0.12.7-2026-10-14";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -9051,7 +9051,7 @@ function engrave(song, o10) {
 // src/render/svg.ts
 var esc = (s10) => s10.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 var n = (v) => (Math.round(v * 100) / 100).toString();
-function elOf(p2, fs, lfs, rx2) {
+function primSvg(p2, fs, lfs, rx2) {
   const c10 = p2.cls ? ` class="${p2.cls}"` : "";
   switch (p2.t) {
     case "line":
@@ -9100,7 +9100,7 @@ function toSvgParts(l10) {
         break;
       }
     }
-    buckets[k2].push(elOf(p2, fs, lfs, rx2));
+    buckets[k2].push(primSvg(p2, fs, lfs, rx2));
   }
   return { open, groups: buckets.map((b3, k2) => `<g data-sys="${k2 - 1}">${b3.join("")}</g>`), close: "</svg>" };
 }
@@ -43995,4 +43995,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f985405a649a.mjs.map
+//# sourceMappingURL=moonsinger-787f7c640e6b.mjs.map

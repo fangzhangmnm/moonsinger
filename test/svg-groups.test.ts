@@ -4,7 +4,7 @@ import { initState, writeDegree, tr, type EditorState } from "../src/score/song.
 import { engrave, LYRIC_EM } from "../src/render/engrave.ts";
 import { toSvg, toSvgParts, primSvg } from "../src/render/svg.ts";
 
-const song = (n: number) => { let st = initState(); st = { ...st, song: { ...st.song, title: "月亮" } }; for (let i = 0; i < n; i++) st = writeDegree(st, (i % 7) + 1); return st; };
+const song = (n: number) => { let st = initState(); st = { ...st, song: { ...st.song, title: "月亮" } }; for (let i = 0; i < n; i++) st = writeDegree(st, (i % 7) + 1, "near"); return st; };
 const lay = (st: EditorState, width = 420) => engrave(st.song, { width, sp: 10, at: st.at, caret: 3, sel: null, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * LYRIC_EM * 10, titlePlaceholder: true, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
 
 describe("SVG 按行谱分组（W-17）", () => {
