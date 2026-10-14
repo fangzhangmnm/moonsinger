@@ -127,6 +127,10 @@ var DEFAULT_OPT = {
   // 音量: pull each syllable's loudness this far toward the song's median (0 = speech's own loud/soft pattern)
   levelMaxDb: 6,
   // take 5 allowed 12 and boosted the consonants too: user「一堆麦克风的电噪声……有时候还有电锯声」
+  levelContinuous: false,
+  // 2026-10-14 (Claude Fable 5.1, F-16「そ」爆音): false = 每个字的增益从它元音起点起 30 ms 内从 0 爬到目标（辅音不动）——
+  //   相邻两个字一轻一重时，边界上先跳回 0 再爬，前后可达 ~10 dB 落在清辅音进元音那一下（user 听感：只有把 level 关到 0 才不破）；
+  //   true = 增益连续：从前一个字的目标值起、经过这个字的辅音、到元音起点后 30 ms 线性过渡到这个字的目标值（休止之后从 0 起）；辅音也跟着过渡。实验行，耳朵定
   tailIntoNext: 0.04,
   // s at most of the vowel's tail copied 1:1 into the next consonant
   portamentoMs: 40,
@@ -659,10 +663,15 @@ async function singCore({
       const g = Math.max(0.01, 1 - (tt - fm[0]) / (fm[1] - fm[0]));
       for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= g * g;
     }
-    if (s.kind === "vowel" && s.k >= 0) {
+    if (OPT.levelContinuous && (s.kind === "vowel" || s.kind === "cons") && s.k >= 0) {
+      const m = moras[s.k], pm = s.k > 0 ? moras[s.k - 1] : null, g0 = pm && !(pm.rest && !pm.stolen) ? pm.gainDb : 0;
+      const w2 = Math.min(1, Math.max(0, (tt - m.preStart) / Math.max(0.03, m.noteStart + 0.03 - m.preStart))), gg = 10 ** ((g0 + w2 * (m.gainDb - g0)) / 10);
+      for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= gg;
+    } else if (s.kind === "vowel" && s.k >= 0) {
       const m = moras[s.k], w2 = Math.min(1, Math.max(0, (tt - m.noteStart) / 0.03)), gg = 10 ** (w2 * m.gainDb / 10);
       for (let q2 = 0; q2 < bins; q2++) sp[jj * bins + q2] *= gg;
-    } else if (s.kind === "cons" && sung && srcVoiced && noisiness(a) <= 0.5 && noisiness(b) <= 0.5 && !moras[s.k]?.whisper) f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
+    }
+    if (s.kind === "cons" && sung && srcVoiced && noisiness(a) <= 0.5 && noisiness(b) <= 0.5 && !moras[s.k]?.whisper) f0[jj] = 440 * 2 ** ((smooth[j] - 6900) / 1200);
   }
   const y = W.synth({ f0, sp, ap, fft: an2.fft, fs: SR2, framePeriod: FP });
   const worldMs = performance.now() - t0;
@@ -8168,4 +8177,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-f04524257af3.mjs.map
+//# sourceMappingURL=singer-worker-c79b9ef6990f.mjs.map

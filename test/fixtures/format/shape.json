@@ -152,6 +152,11 @@
             }
           },
           "defaults": {
+            "breath": "number",
+            "cleanMax": "number",
+            "level": "number",
+            "levelContinuous": "number",
+            "levelMaxDb": "number",
             "velocity": "number"
           },
           "dynamicsDb": {

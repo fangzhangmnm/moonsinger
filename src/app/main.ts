@@ -28,7 +28,7 @@ import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, type
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
-import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS } from "../format/performance.ts";
+import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS } from "../format/performance.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
@@ -37,7 +37,7 @@ import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import {percOf} from "../gm/percussion.ts";
-import { moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { activeSingCore, withSingCore, type SingCoreKey, moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
@@ -2125,14 +2125,16 @@ $("stage").append(instEl);
 let instPicked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel: string; library?: SoundEntry } | null = null;
 type Chosen = { name: string; bank: number; program: number; note?: number; sfx?: SfxInfo; subset: Uint8Array; sha256: string; origin: GmCandidate["origin"]; credit: { attribution: string[]; license: { name: string; url?: string; text?: string } } };
 const UNKNOWN_TITLE = "这一版出不了声（别的软件原来的乐器）";   // 认得出的候选：说明由插件自报（description）
-/** 唱法实验的四个旋钮（F-16 团子 C 段第 10 小节「そ」爆音查案；探针 ai-docs/20261013-dango-c10-pop-probe.md §5）：乐器页「实验」几行，切着听同一句。
- *  默认值 = 唱法核心 DEFAULT_OPT（src/singer/sing-core.mjs）；选回默认 = 从覆盖表里删掉。定了哪个对 → 再决定改默认还是变成歌手属性（不在这里决定）。 */
-const SING_EXPERIMENTS: { key: string; label: string; def: number; values: number[]; why: string }[] = [
-  { key: "cleanMax", label: "借元音门槛", def: 0.4, values: [0.3, 0.4, 0.5], why: "一个字自己的元音比这个数还杂（气声）= 不唱它自己的，从同一句里别的干净的同元音借一份来唱。团子 C 段第 10 小节的「そ」自己是 0.34：门槛 0.3 = 它改成借；0.5 = 更多字照自己念的唱" },
-  { key: "breath", label: "气息", def: 0, values: [0, 0.5, 1], why: "0 = 每个元音的每一帧都压成这个元音最干净那几帧的实声；1 = 照 piper 念出来的气息。清辅音进元音那一下（s → o）从杂变实太猛会像爆音，这个旋钮管它" },
-  { key: "levelMaxDb", label: "齐平上限", def: 6, values: [6, 12], why: "把每个字的响度往整句的中位数拉时最多拉几 dB。「そ」念出来比邻字低约 20 dB，6 只拉回一小半" },
-  { key: "level", label: "齐平多少", def: 0.8, values: [0, 0.8], why: "0 = 照念的时候自己的轻重；0.8 = 往中位数拉八成" },
+/** 小月相唱法核心的旋钮 = 乐器页「高级」（存进候选 defaults，by value、走 undo、换人跟人走；默认 = TSUKUYOMI_DEFAULTS）。
+ *  2026-10-15 user 拍板：齐平默认关（「应该leverage就是齐平，我觉得不开没什么影响吧，默认不开」），旋钮进高级设置持久化；「连续」也放着试。物理意义 = ai-docs/20261013-dango-c10-pop-probe.md §6。 */
+const SING_CORE_ROWS: { key: SingCoreKey; label: string; values: number[]; names?: Record<number, string>; why: string }[] = [
+  { key: "level", label: "齐平", values: [0, 0.4, 0.8], names: { 0: "关" }, why: "每个字的响度往整句的中位数拉几成：关 = 照念的时候自己的轻重（团子 C 段第 10 小节「そ」的破音就是齐平在字的边界上跳出来的台阶，关了就没了）；0.8 = 拉八成（原来的默认）" },
+  { key: "levelContinuous", label: "齐平过渡", values: [0, 1], names: { 0: "每字重起", 1: "连续" }, why: "齐平开着时增益怎么从一个字换到下一个字：每字重起 = 在每个字的元音起点从 0 起、30 ms 内爬到这个字的目标，辅音不加；连续 = 从前一个字的增益起，经过辅音到元音起点后 30 ms 平滑过渡到这个字的" },
+  { key: "levelMaxDb", label: "齐平上限", values: [6, 12], names: { 6: "6 dB", 12: "12 dB" }, why: "齐平最多把一个字拉几 dB" },
+  { key: "cleanMax", label: "借元音门槛", values: [0.3, 0.4, 0.5], why: "一个字自己最干净那三分之一帧的杂度超过这个数 = 当它是气声念的，拿同一句里别的干净的同元音来唱（「そ」是 0.34）" },
+  { key: "breath", label: "气息", values: [0, 0.5, 1], names: { 0: "实声", 1: "照念的" }, why: "合成前把每帧每个频段的杂度压到这个元音最干净那几帧的程度：0 = 全压成实声，1 = 照 piper 念出来的留着" },
 ];
+let instAdvOpen = false;   // 乐器页「高级」折叠开着没（重画保持）
 function openInstPage(): void {
   ui.close();
   if (finder.isOpen) closeFinder(false);
@@ -2276,8 +2278,8 @@ function drawInst(): void {
     })(activeGm(doc.extras, role)) : "") +
     ((performerOf(eng)?.lyrics ?? "none") !== "none" ? row("哼的字", HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), "没写歌词的音唱什么（整首歌一个）") : "") +
     // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
-    // 唱法实验（F-16，2026-10-14）：只在这次打开里有效（不进歌、不进撤销）；不是默认值时进唱法的 opt = 进块的内容键 = 切了用到的句子重唱。AI 不听，哪个对归耳朵
-    (performerOf(eng)?.sound === "chunks" ? SING_EXPERIMENTS.map((x) => row(`${x.label}（实验）`, x.values.map((v) => chip(`exp:${x.key}:${v}`, v === x.def ? `${v} 默认` : String(v), (perfApi.singExperiment()[x.key] ?? x.def) === v, v === x.def ? "唱法核心的默认值" : "切了用到的句子会重唱；只在这次打开里有效")).join(""), x.why)).join("") : "") +
+    // 高级 = 唱法核心的旋钮（存进候选，by value、走 undo；2026-10-15 user「齐平和其他的也都放在高级设置里面可以持久化」）
+    (performerOf(eng)?.sound === "chunks" ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>高级：唱法核心的旋钮</summary>` + ((cur) => SING_CORE_ROWS.map((x) => row(x.label, x.values.map((v) => chip(`core:${x.key}:${v}`, `${x.names?.[v] ?? v}${v === TSUKUYOMI_DEFAULTS[x.key] ? "（默认）" : ""}`, cur[x.key] === v, "改了用到的句子会重唱；存进歌里、能撤销")).join(""), x.why)).join(""))(activeSingCore(doc.extras, role)) + `</details>` : "") +
     (performerOf(eng)?.sound === "chunks" ? ((sc) => row("分段唱", (([["phrase", "每句", "在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句"], ["sheet", "每张纸", "一张纸一段"], ["whole", "一整首", "一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）"]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),
       sc === "whole" ? "一口气唱完：句和句之间唱法最连贯，但长歌在 iPad 上可能内存不够" : "分段唱：一段唱完就放掉，重复的段 / 没改的句子直接拿上次的；段和段之间切在休止 / 纸界，整首最后统一音量"))(activeSingChunk(doc.extras, role)) : "") +
     (!performerOf(eng) ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
@@ -2304,6 +2306,7 @@ function drawInst(): void {
   inp.addEventListener("change", () => setRole(inp.value));
   inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); setRole(inp.value); drawInst(); } });
   instEl.querySelector<HTMLSelectElement>("#sfSel")?.addEventListener("change", (e) => { const picked = instPicked; if (!picked) return; picked.sel = (e.target as HTMLSelectElement).value; const p = picked.presets.find((x) => `${x.bank}:${x.program}` === picked.sel); const n = instEl.querySelector<HTMLInputElement>("#sfName"); if (n && p) n.value = p.name; });
+  instEl.querySelector<HTMLDetailsElement>("details.ip-adv")?.addEventListener("toggle", (e) => { instAdvOpen = (e.target as HTMLDetailsElement).open; });
   instEl.querySelector<HTMLSelectElement>(".ip-part")?.addEventListener("change", (e) => { commitRoleName(); instPicked = null; update(setFocus(st, st.at.paper, (e.target as HTMLSelectElement).value)); sound.allOff(); void prepareBank(); pad.render(); drawInst(); });
 }
 instEl.addEventListener("click", (e) => {
@@ -2326,7 +2329,7 @@ instEl.addEventListener("click", (e) => {
   else if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4)))); updateExtras(withGapSec(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」音和音之间 ${Math.round(next * 1000)} ms` }, "gap"); }
   else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d)); updateExtras(withCalibration(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
   else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
-  else if (v.startsWith("exp:")) { const [, key, val] = v.split(":"), x = SING_EXPERIMENTS.find((e) => e.key === key), n = Number(val); if (x) { perfApi.setSingExperiment(key, n === x.def ? null : n); drawInst(); info(`${x.label}：${val}${n === x.def ? "（默认）" : ""}——用到的句子会重唱；只在这次打开里有效`); } }
+  else if (v.startsWith("core:")) { const [, key, val] = v.split(":"), x = SING_CORE_ROWS.find((e) => e.key === key), n = Number(val); if (x) updateExtras(withSingCore(doc.extras, role, x.key, n, st.song.hum), { kind: "lounge", label: `「${rn}」${x.label}：${x.names?.[n] ?? n}` }); }
   else if (v.startsWith("chunk:")) { const c = v.slice(6) as "phrase" | "sheet" | "whole"; updateExtras(withSingChunk(doc.extras, role, c, st.song.hum), { kind: "lounge", label: `「${rn}」分段唱：${c === "phrase" ? "每句" : c === "sheet" ? "每张纸" : "一整首"}` }); }
   else return;
   drawInst();

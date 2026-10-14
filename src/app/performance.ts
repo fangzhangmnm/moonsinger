@@ -66,14 +66,7 @@ export function createPerformance(host: PerfHost) {
   void info;
 
   /** 整首唱时给核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）；leadIn 明说（块按它摆）。 */
-  /** 唱法实验（F-16 爆音查案，2026-10-14）：唱法核心 DEFAULT_OPT 里几个旋钮的临时覆盖，只在这次打开里有效（不进歌、不进撤销）；不是默认值的键才进来 = 进块的内容键 = 切了用到的句子重唱。
-   *  user「月读爆音：我一开始说的就是语音合成的问题，不是混音的问题」「为了让你放心，验证了，效果全关，vocals开【独】的时候也能听到破音」；AI 不听（家规），哪个对归耳朵。界面在 main.ts 乐器页。 */
-  let singExperiment: Record<string, number> = {};
-  function setSingExperiment(key: string, value: number | null): void {
-    const next = { ...singExperiment }; if (value === null) delete next[key]; else next[key] = value;
-    singExperiment = next; schedulePlaybackRefresh(); schedulePrewarm();   // 块的键变了：放着的重算、没放的先把附近几句按新旋钮唱好
-  }
-  const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN, ...singExperiment });
+  const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });   // 歌级；小月相自己的旋钮在候选里（performers/tsukuyomi.ts info → ChunkPlan.opt）
   /** 播放 / 试听的范围跟着视图走：本段 = 只有光标所在的纸；全部 = 整首（导出面板另选）。user 2026-10-08「为什么在本段视图下播放还是播放全部了？」 */
   const playSong = (): Song => (host.viewScope() === "segment" ? songOnlyPaper(st().song, st().at.paper) : st().song);
   /** 光标所在声部压平后的一串 + 速度表（找人视图「听开头」、测试钩子用）。 */
@@ -198,7 +191,7 @@ export function createPerformance(host: PerfHost) {
   async function singOne(key: string, c: ChunkPlan, who: string): Promise<void> {
     const t = performance.now();
     try {
-      const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]); }, { opt: humOpt(), models: modelBases(), raw: true, tag: key, diskBytes: BUDGET.speechDisk });
+      const r = await singer.sing(c.score, (stage) => { progress(`${who}：${stage}…`); const pc = /(\d+)%$/.exec(stage); if (pc) renderBar.frac(Number(pc[1]) / 100); else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]); }, { opt: c.opt, models: modelBases(), raw: true, tag: key, diskBytes: BUDGET.speechDisk });
       if (engine.hasChunk(key) || !chunkPlans.has(key)) { renderBar.next(); return; }   // 期间换了歌 / 顺序：照样留着（键对就不浪费），但别再算进度
       engine.chunk(key, r.sr, r.samples);
       if (r.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r.ms.boot)}`);   // 冷启动各段（刀 5）：诊断页看（测试里的假唱没有 ms）
@@ -579,7 +572,6 @@ export function createPerformance(host: PerfHost) {
   return {
     humOpt, resetLatencyLog, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, prepare, renderMixForTest, playRange, tickOfCaret, barHeadTick, startPlayback, playPause, resumePlay, pausePlay, replay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, trimLanesForNewSong, onSongSwitch, jumpPlaybackToPaper, previewTrack,
     budget: BUDGET, TURN_LEADS,
-    singExperiment: (): Readonly<Record<string, number>> => singExperiment, setSingExperiment,
     issues: (): readonly Issue[] => issues, issueOf: (part: string): Issue | null => issues.find((i) => i.part === part) ?? null, issuesText, refreshIssues,
     get loopOn() { return loopOn; }, get playTl() { return playTl; }, get preparing() { return preparing; }, get paused() { return paused; }, get startMark() { return startMark; }, get exporting() { return exporting; },
     get mixBypass() { return mixBypass; }, set mixBypass(v: boolean) { mixBypass = v; },

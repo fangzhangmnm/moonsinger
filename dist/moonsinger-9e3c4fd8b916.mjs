@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.8-2026-10-14";
+var APP_VERSION = "v0.12.9-2026-10-15";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6812,7 +6812,7 @@ var MARCATO_DB = 7;
 var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
 var SOUNDFONT_CALIBRATION_DB = -6;
 var DEFAULT_CALIBRATION_DB = -6;
-var TSUKUYOMI_DEFAULTS = {};
+var TSUKUYOMI_DEFAULTS = { level: 0, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 0 };
 var REPO = "https://github.com/fangzhangmnm/moonsinger";
 var TSUKUYOMI_CREDIT = {
   attribution: [CREDIT.credit, ...CREDIT.attribution],
@@ -21026,7 +21026,7 @@ var Singer = class {
   }
   worker(l10) {
     if (l10.w) return l10.w;
-    const w2 = new Worker(new URL(`./${"singer-worker-f04524257af3.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"singer-worker-c79b9ef6990f.mjs"}`, import.meta.url), { type: "module" });
     l10.w = w2;
     w2.onmessage = (ev2) => {
       const m2 = ev2.data, p2 = this.pending.get(m2.id);
@@ -22542,6 +22542,7 @@ function readMusicXml(xml, hints) {
 var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
 
 // src/format/migrate/index.ts
+var TSUKUYOMI_DEFAULTS_V1 = {};
 var DYNAMICS_DB_V1 = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 };
 var HUMS = /* @__PURE__ */ new Set(["la", "n", "u", "o", "a"]);
 function loungeV1toV2(json) {
@@ -22554,7 +22555,7 @@ function loungeV1toV2(json) {
     delete c10.credit;
     delete c10.spec;
     const common2 = { calibrationDb: Number(c02.calibrationDb ?? 0), chain: c02.chain ?? [], dynamicsDb: { ...DYNAMICS_DB_V1 }, articulation: { ...ARTICULATION } };
-    if (gm.variant === "tsukuyomi") return { ...c10, ...common2, instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC), ...Object.keys(engines).length ? { engines } : {} };
+    if (gm.variant === "tsukuyomi") return { ...c10, ...common2, instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, defaults: { ...TSUKUYOMI_DEFAULTS_V1 }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC), ...Object.keys(engines).length ? { engines } : {} };
     if (gm.variant === "tsukuyomi-vowels") return { ...c10, ...common2, instrument: { engine: "vowel-sampler", table: "builtin", hum }, defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC), ...Object.keys(engines).length ? { engines } : {} };
     if (src?.kind === "sf2") {
       const embedded = typeof src.embedded === "string" ? src.embedded : null;
@@ -23089,6 +23090,20 @@ function withSfxFixed(extras, role, on2, hum) {
 function activeSingChunk(extras, role) {
   const i10 = activeInstrument(extras, role);
   return i10?.engine === "tsukuyomi" && (i10.chunk === "sheet" || i10.chunk === "whole") ? i10.chunk : "phrase";
+}
+var SING_CORE_KEYS = ["level", "levelContinuous", "levelMaxDb", "cleanMax", "breath"];
+function activeSingCore(extras, role) {
+  const c10 = activeCandidate(extras, role), d3 = c10?.defaults ?? {}, out = { ...TSUKUYOMI_DEFAULTS };
+  if (instrumentOf(c10)?.engine === "tsukuyomi") {
+    for (const k2 of SING_CORE_KEYS) if (typeof d3[k2] === "number") out[k2] = d3[k2];
+  }
+  return out;
+}
+function withSingCore(extras, role, key, value, hum) {
+  const r10 = roleOf(extras, role, hum), c10 = cands(r10).find((x2) => x2.id === r10.active);
+  if (!c10 || instrumentOf(c10)?.engine !== "tsukuyomi") return extras;
+  c10.defaults = { ...c10.defaults ?? {}, [key]: value };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
 function withSingChunk(extras, role, v, hum) {
   const r10 = roleOf(extras, role, hum), i10 = instrumentOf(cands(r10).find((x2) => x2.id === r10.active));
@@ -25675,7 +25690,8 @@ var tsukuyomi = registerPerformer({
   dynamics: "gain",
   grooveCategory: "voice",
   removable: false,
-  info: ({ extras, role }) => ({ gm: null, chunk: activeSingChunk(extras, role) }),
+  info: ({ extras, role }) => ({ gm: null, chunk: activeSingChunk(extras, role), singOpt: activeSingCore(extras, role) }),
+  // 旋钮按值在候选里（乐器页「高级」）→ 进块的内容键
   prepare: async () => {
   },
   audition: ({ kana, dyn }) => ({ inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: dyn.dB })
@@ -25774,9 +25790,10 @@ function buildTimeline(inp) {
         const entryOf = /* @__PURE__ */ new Map();
         for (const [i10, e10] of te3) entryOf.set(tokens[i10].id, e10);
         const first = noteAt(a10), last = tl2.filter((x2) => x2.index >= a10 && x2.index < b3 && x2.tok.kind === "note").reduce((m2, x2) => Math.max(m2, x2.t1), first);
-        const key = JSON.stringify(["tsukuyomi-chunk", score, inp.singOpt]), t02 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
+        const opt = { ...inp.singOpt, ...info2.singOpt ?? {} };
+        const key = JSON.stringify(["tsukuyomi-chunk", score, opt]), t02 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
         clips.clips.push({ key, t0: t02, dur, gain: SUNG_GAIN, end: last });
-        chunks2.push({ part: part.id, key, score, lang, t0: t02, dur, end: last, entryOf });
+        chunks2.push({ part: part.id, key, score, lang, opt, t0: t02, dur, end: last, entryOf });
         from = Math.min(from, t02);
         to2 = Math.max(to2, t02 + dur);
       }
@@ -26425,16 +26442,7 @@ function createPerformance(host) {
   const { creditsOf: creditsOf2, creditsBlock: creditsBlock2 } = host.credits;
   const escHtml = (x2) => x2.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10] ?? c10);
   const st3 = () => host.state(), extras = () => host.extras(), pv2 = (id2) => host.pv(id2), curRole2 = () => host.curRole(), docName2 = () => host.docName();
-  let singExperiment = {};
-  function setSingExperiment(key, value) {
-    const next2 = { ...singExperiment };
-    if (value === null) delete next2[key];
-    else next2[key] = value;
-    singExperiment = next2;
-    schedulePlaybackRefresh2();
-    schedulePrewarm2();
-  }
-  const humOpt2 = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN, ...singExperiment });
+  const humOpt2 = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
   const playSong2 = () => host.viewScope() === "segment" ? songOnlyPaper(st3().song, st3().at.paper) : st3().song;
   const curFlat2 = () => {
     const s10 = playSong2(), order = songPlayOrder(s10);
@@ -26592,7 +26600,7 @@ function createPerformance(host) {
         const pc = /(\d+)%$/.exec(stage);
         if (pc) renderBar2.frac(Number(pc[1]) / 100);
         else if (stage in STAGE_FRAC) renderBar2.frac(STAGE_FRAC[stage]);
-      }, { opt: humOpt2(), models: modelBases2(), raw: true, tag: key, diskBytes: BUDGET2.speechDisk });
+      }, { opt: c10.opt, models: modelBases2(), raw: true, tag: key, diskBytes: BUDGET2.speechDisk });
       if (engine2.hasChunk(key) || !chunkPlans.has(key)) {
         renderBar2.next();
         return;
@@ -27164,8 +27172,6 @@ function createPerformance(host) {
     previewTrack: previewTrack2,
     budget: BUDGET2,
     TURN_LEADS: TURN_LEADS2,
-    singExperiment: () => singExperiment,
-    setSingExperiment,
     issues: () => issues,
     issueOf: (part) => issues.find((i10) => i10.part === part) ?? null,
     issuesText,
@@ -40793,7 +40799,7 @@ window.__moonsinger = {
     return toLabScore(tokens, st2.song.hum, songLangOf(tokens, st2.song.hum), map);
   },
   state: () => st2,
-  cssHash: "02a076135255",
+  cssHash: "2b57ccea5c44",
   extras: () => doc.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -42236,12 +42242,14 @@ instEl.hidden = true;
 $2("stage").append(instEl);
 var instPicked = null;
 var UNKNOWN_TITLE = "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09";
-var SING_EXPERIMENTS = [
-  { key: "cleanMax", label: "\u501F\u5143\u97F3\u95E8\u69DB", def: 0.4, values: [0.3, 0.4, 0.5], why: "\u4E00\u4E2A\u5B57\u81EA\u5DF1\u7684\u5143\u97F3\u6BD4\u8FD9\u4E2A\u6570\u8FD8\u6742\uFF08\u6C14\u58F0\uFF09= \u4E0D\u5531\u5B83\u81EA\u5DF1\u7684\uFF0C\u4ECE\u540C\u4E00\u53E5\u91CC\u522B\u7684\u5E72\u51C0\u7684\u540C\u5143\u97F3\u501F\u4E00\u4EFD\u6765\u5531\u3002\u56E2\u5B50 C \u6BB5\u7B2C 10 \u5C0F\u8282\u7684\u300C\u305D\u300D\u81EA\u5DF1\u662F 0.34\uFF1A\u95E8\u69DB 0.3 = \u5B83\u6539\u6210\u501F\uFF1B0.5 = \u66F4\u591A\u5B57\u7167\u81EA\u5DF1\u5FF5\u7684\u5531" },
-  { key: "breath", label: "\u6C14\u606F", def: 0, values: [0, 0.5, 1], why: "0 = \u6BCF\u4E2A\u5143\u97F3\u7684\u6BCF\u4E00\u5E27\u90FD\u538B\u6210\u8FD9\u4E2A\u5143\u97F3\u6700\u5E72\u51C0\u90A3\u51E0\u5E27\u7684\u5B9E\u58F0\uFF1B1 = \u7167 piper \u5FF5\u51FA\u6765\u7684\u6C14\u606F\u3002\u6E05\u8F85\u97F3\u8FDB\u5143\u97F3\u90A3\u4E00\u4E0B\uFF08s \u2192 o\uFF09\u4ECE\u6742\u53D8\u5B9E\u592A\u731B\u4F1A\u50CF\u7206\u97F3\uFF0C\u8FD9\u4E2A\u65CB\u94AE\u7BA1\u5B83" },
-  { key: "levelMaxDb", label: "\u9F50\u5E73\u4E0A\u9650", def: 6, values: [6, 12], why: "\u628A\u6BCF\u4E2A\u5B57\u7684\u54CD\u5EA6\u5F80\u6574\u53E5\u7684\u4E2D\u4F4D\u6570\u62C9\u65F6\u6700\u591A\u62C9\u51E0 dB\u3002\u300C\u305D\u300D\u5FF5\u51FA\u6765\u6BD4\u90BB\u5B57\u4F4E\u7EA6 20 dB\uFF0C6 \u53EA\u62C9\u56DE\u4E00\u5C0F\u534A" },
-  { key: "level", label: "\u9F50\u5E73\u591A\u5C11", def: 0.8, values: [0, 0.8], why: "0 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF1B0.8 = \u5F80\u4E2D\u4F4D\u6570\u62C9\u516B\u6210" }
+var SING_CORE_ROWS = [
+  { key: "level", label: "\u9F50\u5E73", values: [0, 0.4, 0.8], names: { 0: "\u5173" }, why: "\u6BCF\u4E2A\u5B57\u7684\u54CD\u5EA6\u5F80\u6574\u53E5\u7684\u4E2D\u4F4D\u6570\u62C9\u51E0\u6210\uFF1A\u5173 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF08\u56E2\u5B50 C \u6BB5\u7B2C 10 \u5C0F\u8282\u300C\u305D\u300D\u7684\u7834\u97F3\u5C31\u662F\u9F50\u5E73\u5728\u5B57\u7684\u8FB9\u754C\u4E0A\u8DF3\u51FA\u6765\u7684\u53F0\u9636\uFF0C\u5173\u4E86\u5C31\u6CA1\u4E86\uFF09\uFF1B0.8 = \u62C9\u516B\u6210\uFF08\u539F\u6765\u7684\u9ED8\u8BA4\uFF09" },
+  { key: "levelContinuous", label: "\u9F50\u5E73\u8FC7\u6E21", values: [0, 1], names: { 0: "\u6BCF\u5B57\u91CD\u8D77", 1: "\u8FDE\u7EED" }, why: "\u9F50\u5E73\u5F00\u7740\u65F6\u589E\u76CA\u600E\u4E48\u4ECE\u4E00\u4E2A\u5B57\u6362\u5230\u4E0B\u4E00\u4E2A\u5B57\uFF1A\u6BCF\u5B57\u91CD\u8D77 = \u5728\u6BCF\u4E2A\u5B57\u7684\u5143\u97F3\u8D77\u70B9\u4ECE 0 \u8D77\u300130 ms \u5185\u722C\u5230\u8FD9\u4E2A\u5B57\u7684\u76EE\u6807\uFF0C\u8F85\u97F3\u4E0D\u52A0\uFF1B\u8FDE\u7EED = \u4ECE\u524D\u4E00\u4E2A\u5B57\u7684\u589E\u76CA\u8D77\uFF0C\u7ECF\u8FC7\u8F85\u97F3\u5230\u5143\u97F3\u8D77\u70B9\u540E 30 ms \u5E73\u6ED1\u8FC7\u6E21\u5230\u8FD9\u4E2A\u5B57\u7684" },
+  { key: "levelMaxDb", label: "\u9F50\u5E73\u4E0A\u9650", values: [6, 12], names: { 6: "6 dB", 12: "12 dB" }, why: "\u9F50\u5E73\u6700\u591A\u628A\u4E00\u4E2A\u5B57\u62C9\u51E0 dB" },
+  { key: "cleanMax", label: "\u501F\u5143\u97F3\u95E8\u69DB", values: [0.3, 0.4, 0.5], why: "\u4E00\u4E2A\u5B57\u81EA\u5DF1\u6700\u5E72\u51C0\u90A3\u4E09\u5206\u4E4B\u4E00\u5E27\u7684\u6742\u5EA6\u8D85\u8FC7\u8FD9\u4E2A\u6570 = \u5F53\u5B83\u662F\u6C14\u58F0\u5FF5\u7684\uFF0C\u62FF\u540C\u4E00\u53E5\u91CC\u522B\u7684\u5E72\u51C0\u7684\u540C\u5143\u97F3\u6765\u5531\uFF08\u300C\u305D\u300D\u662F 0.34\uFF09" },
+  { key: "breath", label: "\u6C14\u606F", values: [0, 0.5, 1], names: { 0: "\u5B9E\u58F0", 1: "\u7167\u5FF5\u7684" }, why: "\u5408\u6210\u524D\u628A\u6BCF\u5E27\u6BCF\u4E2A\u9891\u6BB5\u7684\u6742\u5EA6\u538B\u5230\u8FD9\u4E2A\u5143\u97F3\u6700\u5E72\u51C0\u90A3\u51E0\u5E27\u7684\u7A0B\u5EA6\uFF1A0 = \u5168\u538B\u6210\u5B9E\u58F0\uFF0C1 = \u7167 piper \u5FF5\u51FA\u6765\u7684\u7559\u7740" }
 ];
+var instAdvOpen = false;
 function openInstPage() {
   ui2.close();
   if (finder.isOpen) closeFinder(false);
@@ -42430,8 +42438,8 @@ function drawInst() {
     const text2 = octaveDisclosure(nt2, oc2, (c10) => CLEF_LABEL[c10] ?? c10);
     return text2 ? row2("\u516B\u5EA6", "", esc8(text2)) : "";
   })(activeGm(doc.extras, role)) : "") + ((performerOf(eng)?.lyrics ?? "none") !== "none" ? row2("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
-  // 唱法实验（F-16，2026-10-14）：只在这次打开里有效（不进歌、不进撤销）；不是默认值时进唱法的 opt = 进块的内容键 = 切了用到的句子重唱。AI 不听，哪个对归耳朵
-  (performerOf(eng)?.sound === "chunks" ? SING_EXPERIMENTS.map((x2) => row2(`${x2.label}\uFF08\u5B9E\u9A8C\uFF09`, x2.values.map((v) => chip(`exp:${x2.key}:${v}`, v === x2.def ? `${v} \u9ED8\u8BA4` : String(v), (perfApi.singExperiment()[x2.key] ?? x2.def) === v, v === x2.def ? "\u5531\u6CD5\u6838\u5FC3\u7684\u9ED8\u8BA4\u503C" : "\u5207\u4E86\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548")).join(""), x2.why)).join("") : "") + (performerOf(eng)?.sound === "chunks" ? ((sc2) => row2(
+  // 高级 = 唱法核心的旋钮（存进候选，by value、走 undo；2026-10-15 user「齐平和其他的也都放在高级设置里面可以持久化」）
+  (performerOf(eng)?.sound === "chunks" ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE</summary>` + ((cur) => SING_CORE_ROWS.map((x2) => row2(x2.label, x2.values.map((v) => chip(`core:${x2.key}:${v}`, `${x2.names?.[v] ?? v}${v === TSUKUYOMI_DEFAULTS[x2.key] ? "\uFF08\u9ED8\u8BA4\uFF09" : ""}`, cur[x2.key] === v, "\u6539\u4E86\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u5B58\u8FDB\u6B4C\u91CC\u3001\u80FD\u64A4\u9500")).join(""), x2.why)).join(""))(activeSingCore(doc.extras, role)) + `</details>` : "") + (performerOf(eng)?.sound === "chunks" ? ((sc2) => row2(
     "\u5206\u6BB5\u5531",
     [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
     sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF"
@@ -42462,6 +42470,9 @@ function drawInst() {
     const p2 = picked.presets.find((x2) => `${x2.bank}:${x2.program}` === picked.sel);
     const n10 = instEl.querySelector("#sfName");
     if (n10 && p2) n10.value = p2.name;
+  });
+  instEl.querySelector("details.ip-adv")?.addEventListener("toggle", (e10) => {
+    instAdvOpen = e10.target.open;
   });
   instEl.querySelector(".ip-part")?.addEventListener("change", (e10) => {
     commitRoleName();
@@ -42533,13 +42544,9 @@ instEl.addEventListener("click", (e10) => {
     const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d3));
     updateExtras(withCalibration(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u54CD\u5EA6\u6821\u51C6 ${next2} dB` }, "cal");
   } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
-  else if (v.startsWith("exp:")) {
-    const [, key, val] = v.split(":"), x2 = SING_EXPERIMENTS.find((e11) => e11.key === key), n10 = Number(val);
-    if (x2) {
-      perfApi.setSingExperiment(key, n10 === x2.def ? null : n10);
-      drawInst();
-      info(`${x2.label}\uFF1A${val}${n10 === x2.def ? "\uFF08\u9ED8\u8BA4\uFF09" : ""}\u2014\u2014\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548`);
-    }
+  else if (v.startsWith("core:")) {
+    const [, key, val] = v.split(":"), x2 = SING_CORE_ROWS.find((e11) => e11.key === key), n10 = Number(val);
+    if (x2) updateExtras(withSingCore(doc.extras, role, x2.key, n10, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D${x2.label}\uFF1A${x2.names?.[n10] ?? n10}` });
   } else if (v.startsWith("chunk:")) {
     const c10 = v.slice(6);
     updateExtras(withSingChunk(doc.extras, role, c10, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u5206\u6BB5\u5531\uFF1A${c10 === "phrase" ? "\u6BCF\u53E5" : c10 === "sheet" ? "\u6BCF\u5F20\u7EB8" : "\u4E00\u6574\u9996"}` });
@@ -43992,4 +43999,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-18ca5488260f.mjs.map
+//# sourceMappingURL=moonsinger-9e3c4fd8b916.mjs.map

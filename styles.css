@@ -747,6 +747,10 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .ip-card { min-width: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px 14px; }
 .ip-card h3 { margin: 0 0 10px; font-size: 15px; font-weight: 600; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
 .ip-card h3 small { font-size: 12px; font-weight: 400; color: var(--muted); }
+/* 乐器页「高级」：唱法核心的旋钮折叠起来（2026-10-15） */
+.ip-adv { grid-column: 1 / -1; margin-top: 6px; }
+.ip-adv > summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 4px 0; }
+.ip-adv[open] > summary { color: var(--ink); }
 .ip-how { grid-column: 1 / -1; }
 .ip-cands { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 8px; }
 .ip-sub { font-size: 12px; color: var(--muted); margin: 12px 0 6px; }

@@ -45,6 +45,8 @@ export interface PerformerInfo {
   /** 着力点（v0.10.27；鼓 / 音效）：敲这个键时采样开头到「砸下去那一下」几秒——录音房提前这么多开始放，砸在写的那一拍上（反向镲 1.4 s）。
    *  有音高的乐器不给（不挪）。src/gm/percussion.ts；设计账 ai-docs/20261010-shared-staff-percussion-design.md §3。 */
   hitSec?: (key: number) => number;
+  /** 这位自己的唱法参数（小月相：候选 defaults 里的旋钮，乐器页「高级」；2026-10-15）：盖在 TimelineInput.singOpt 上，一起进块的内容键。 */
+  singOpt?: Record<string, unknown>;
 }
 export interface TimelineInput {
   song: Song;
@@ -58,7 +60,7 @@ export interface TimelineInput {
   singOpt: Record<string, unknown>;
 }
 /** 月读要唱的一块（主线程拿去让 worker 唱、按 key 喂给录音房）。 */
-export interface ChunkPlan { part: string; key: string; score: LabScore; lang: SingLang; t0: number; dur: number; /** 唱的最后一个音结束的秒（不含收尾余音）。 */ end: number; /** token id → 这句里唱成第几条（按键试听「只唱这个字」用） */ entryOf: Map<number, number> }
+export interface ChunkPlan { part: string; key: string; score: LabScore; lang: SingLang; /** 给唱法核心的 opt（歌级的 + 这位自己的）；块的键里也有它。 */ opt: Record<string, unknown>; t0: number; dur: number; /** 唱的最后一个音结束的秒（不含收尾余音）。 */ end: number; /** token id → 这句里唱成第几条（按键试听「只唱这个字」用） */ entryOf: Map<number, number> }
 export interface PaperSpan { paper: PaperSeg; tick0: number; t0: number; t1: number }
 export interface Timeline {
   tracks: TrackSpec[];
@@ -152,9 +154,10 @@ export function buildTimeline(inp: TimelineInput): Timeline {
         if (!score.SCORE.length) continue;
         const entryOf = new Map<number, number>(); for (const [i, e] of te) entryOf.set(tokens[i].id, e);
         const first = noteAt(a), last = tl.filter((x) => x.index >= a && x.index < b && x.tok.kind === "note").reduce((m, x) => Math.max(m, x.t1), first);
-        const key = JSON.stringify(["tsukuyomi-chunk", score, inp.singOpt]), t0 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
+        const opt = { ...inp.singOpt, ...(info.singOpt ?? {}) };   // 歌级的哼的参数 + 这位自己的旋钮（候选里按值存的）
+        const key = JSON.stringify(["tsukuyomi-chunk", score, opt]), t0 = first - LEAD_IN, dur = last - first + LEAD_IN + SUNG_TAIL;
         clips.clips.push({ key, t0, dur, gain: SUNG_GAIN, end: last });
-        chunks.push({ part: part.id, key, score, lang, t0, dur, end: last, entryOf });
+        chunks.push({ part: part.id, key, score, lang, opt, t0, dur, end: last, entryOf });
         from = Math.min(from, t0); to = Math.max(to, t0 + dur);
       }
       tracks.push(clips);

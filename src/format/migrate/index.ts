@@ -3,7 +3,9 @@
 // 加一步 = 在 MIGRATIONS[kind] 末尾 push 一个函数（下标 n-1 = 从第 n 版升到第 n+1 版）；守卫测试查 MIGRATIONS[kind].length === FORMAT[kind] - 1。
 // 写文件永远只写当前版（project.ts）；这里只管读。
 import { FORMAT, type FormatFile } from "../contract.ts";
-import { ARTICULATION, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "../performance.ts";
+/** lounge 1→2 迁移时（2026-10-07）小月相候选的 defaults 是空的：迁移是纯函数，不跟 TSUKUYOMI_DEFAULTS 变（2026-10-15 它有了值）。 */
+const TSUKUYOMI_DEFAULTS_V1: Record<string, number> = {};
+import { ARTICULATION, SOUNDFONT_DEFAULTS, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "../performance.ts";
 /** 迁移是冻结的纯函数：用当年那张力度表（v0.9.23 起 app 的默认表多了 ppp / fff，不能让旧文件迁出来的东西跟着变）。 */
 const DYNAMICS_DB_V1 = { pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12 } as const;
 
@@ -20,7 +22,7 @@ function loungeV1toV2(json: Json): Json {
     const hum = HUMS.has(String(c.hum)) ? String(c.hum) : "n";
     delete c.hum; delete c.source; delete c.engines; delete c.credit; delete c.spec;
     const common = { calibrationDb: Number(c0.calibrationDb ?? 0), chain: (c0.chain as unknown[] | undefined) ?? [], dynamicsDb: { ...DYNAMICS_DB_V1 }, articulation: { ...ARTICULATION } };
-    if (gm.variant === "tsukuyomi") return { ...c, ...common, instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC), ...(Object.keys(engines).length ? { engines } : {}) };
+    if (gm.variant === "tsukuyomi") return { ...c, ...common, instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, defaults: { ...TSUKUYOMI_DEFAULTS_V1 }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC), ...(Object.keys(engines).length ? { engines } : {}) };
     if (gm.variant === "tsukuyomi-vowels") return { ...c, ...common, instrument: { engine: "vowel-sampler", table: "builtin", hum }, defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC), ...(Object.keys(engines).length ? { engines } : {}) };
     if (src?.kind === "sf2") {
       const embedded = typeof src.embedded === "string" ? src.embedded : null;

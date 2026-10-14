@@ -46,7 +46,11 @@ export const SOUNDFONT_CALIBRATION_DB = -6;
  *  就会音色变成另外一个人」）：几个声部相加超过母线天花板时限幅器（src/audio/mix.ts，起压 3 ms）压的是整条混音——月读最响，压的主要是她的峰，
  *  3 ms 只够她一两个声门周期，等于掰弯她的波形；先让 6 dB = 叠在一起也很少顶到天花板。只管新建的：旧歌里存的 0 照旧（不偷偷改，人能调）。 */
 export const DEFAULT_CALIBRATION_DB = -6;
-export const TSUKUYOMI_DEFAULTS: Record<string, number> = {};   // 月读的旋钮（气息 / 张力 / 实声…）的物理定义表 = 契约 §7.3，还没定；定了之后新建时抄进来
+/** 小月相唱法核心的旋钮（by value 存在候选的 defaults 里，乐器页「高级」里改；没写 = 这张表；新建时抄进去）。2026-10-15 user 拍板：「应该leverage就是齐平，我觉得不开没什么影响吧，
+ *  默认不开，然后月相可以设置，齐平和其他的也都放在高级设置里面可以持久化」「嗯你试一下连续也行」。物理意义见 ai-docs/20261013-dango-c10-pop-probe.md §6：
+ *  level = 每个字的响度往整句中位数拉几成（0 = 关 = 照念的轻重；唱法核心自己的默认 0.8 只给 Lab 命令行）；levelMaxDb = 最多拉几 dB；levelContinuous = 1 时增益从前一个字连续过渡到这个字（不每字跳回 0）；
+ *  cleanMax = 一个字自己的元音杂到这个数以上就借同句干净的同元音来唱；breath = 合成前把杂度压到最干净那几帧的程度（0 = 全压成实声，1 = 照 piper 念的留着）。 */
+export const TSUKUYOMI_DEFAULTS: Record<string, number> = { level: 0, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 0 };
 
 const REPO = "https://github.com/fangzhangmnm/moonsinger";
 /** 月读的署名块 + 条款（包内 LICENSE 要求显示；出处 = 模型仓 voices/tsukuyomi-chan-zhen.json，经 packs.gen.ts 内嵌）。 */

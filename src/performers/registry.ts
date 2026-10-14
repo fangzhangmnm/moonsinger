@@ -75,7 +75,7 @@ export interface PerformerPlugin {
   /** 能不能从休息室删掉（第一公民的两位不删；带自己字节的乐器能删）。 */
   readonly removable: boolean;
   /** 出声参数里这位自己的那部分（gm / 分段唱 / 着力点）；通用部分（力度表 / 校准 / 修八度 / 链 / 拍子轻重）胶水填。 */
-  info(ctx: InfoCtx): Pick<PerformerInfo, "gm" | "chunk" | "hitSec">;
+  info(ctx: InfoCtx): Pick<PerformerInfo, "gm" | "chunk" | "hitSec" | "singOpt">;
   /** 出声前准备：库进录音房 / 元音表。抛错 = 这位出不了声（胶水报出来、这个声部不出声、其余照放）。 */
   prepare(ctx: PrepareCtx): Promise<void>;
   /** notes 模式：音符表 → 这位的轨（chunks 模式没有这一步，时间线自己出块）。 */

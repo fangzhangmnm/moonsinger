@@ -478,6 +478,20 @@ export function activeSingChunk(extras: Extras, role: string): "phrase" | "sheet
   const i = activeInstrument(extras, role);
   return i?.engine === "tsukuyomi" && (i.chunk === "sheet" || i.chunk === "whole") ? i.chunk : "phrase";
 }
+/** 小月相唱法核心的旋钮（存在候选 defaults 里，by value；没写 = TSUKUYOMI_DEFAULTS；2026-10-15 user「齐平和其他的也都放在高级设置里面可以持久化」）。 */
+export const SING_CORE_KEYS = ["level", "levelContinuous", "levelMaxDb", "cleanMax", "breath"] as const;
+export type SingCoreKey = (typeof SING_CORE_KEYS)[number];
+export function activeSingCore(extras: Extras, role: string): Record<SingCoreKey, number> {
+  const c = activeCandidate(extras, role), d = (c?.defaults ?? {}) as Record<string, unknown>, out = { ...TSUKUYOMI_DEFAULTS } as Record<SingCoreKey, number>;
+  if (instrumentOf(c)?.engine === "tsukuyomi") for (const k of SING_CORE_KEYS) if (typeof d[k] === "number") out[k] = d[k] as number;
+  return out;
+}
+export function withSingCore(extras: Extras, role: string, key: SingCoreKey, value: number, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active);
+  if (!c || instrumentOf(c)?.engine !== "tsukuyomi") return extras;
+  c.defaults = { ...((c.defaults ?? {}) as Record<string, number>), [key]: value };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
 export function withSingChunk(extras: Extras, role: string, v: "phrase" | "sheet" | "whole", hum: Hum): Extras {
   const r = roleOf(extras, role, hum), i = instrumentOf(cands(r).find((x) => x.id === r.active));
   if (i?.engine !== "tsukuyomi") return extras;
