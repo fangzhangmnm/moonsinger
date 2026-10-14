@@ -1,6 +1,7 @@
 // 谁认哪些记号（perform.ts 的 ignoredArts）和真出声的路一致——表说「不认」的，出声的那条路确实不看它；说「认」的，确实改了出声。
 // created 2026-10-08 by Claude Opus 5.5；user 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」——表一旦和出声对不上，披露就成了谎话。
 // 2026-10-08 连断（Opus 5.5）：加连线；连线 / 保持只改「留不留缝」，底色不留缝（gapSec = 0）的人那里也算不认。
+import { performerOf } from "../src/performers/index.ts";
 import { lightNotes } from "../src/engine/timeline.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, select, tr, toggleArtSel, toggleSlurSel, type EditorState, type NoteTok } from "../src/score/song.ts";
@@ -37,15 +38,15 @@ const heard = (eng: string, gap: number) => (st: EditorState) => {
 
 describe("谁认哪些记号（不认 = 画灰 + 明说）", () => {
   it("表：月读不认保持 / 连线（唱法核心还没接）；元音版 / 乐器底色不留缝时连线 / 保持也算不认；没人上场 = 不逐个画灰", () => {
-    deq(ignoredArts("tsukuyomi"), ["tenuto", "slur", "arpeggio"]); deq(ignoredArts("tsukuyomi", 0.04), ["tenuto", "slur", "arpeggio"]);   // 琶音：单声的唱不了和弦（v0.9.45）
-    deq(ignoredArts("vowel-sampler"), ["tenuto", "slur", "whisper", "inhale", "arpeggio"]); deq(ignoredArts("vowel-sampler", 0.04), ["whisper", "inhale", "arpeggio"]);   // 气声 / 出声的换气只有月读做得到（2026-10-10）
-    deq(ignoredArts("soundfont"), ["tenuto", "slur", "whisper", "inhale"]); deq(ignoredArts("soundfont", 0.02), ["whisper", "inhale"]);
-    deq(ignoredArts("unknown"), []); deq(ignoredArts(null), []);
+    deq(ignoredArts(performerOf("tsukuyomi")), ["tenuto", "slur", "arpeggio"]); deq(ignoredArts(performerOf("tsukuyomi"), 0.04), ["tenuto", "slur", "arpeggio"]);   // 琶音：单声的唱不了和弦（v0.9.45）
+    deq(ignoredArts(performerOf("vowel-sampler")), ["tenuto", "slur", "whisper", "inhale", "arpeggio"]); deq(ignoredArts(performerOf("vowel-sampler"), 0.04), ["whisper", "inhale", "arpeggio"]);   // 气声 / 出声的换气只有月读做得到（2026-10-10）
+    deq(ignoredArts(performerOf("soundfont")), ["tenuto", "slur", "whisper", "inhale"]); deq(ignoredArts(performerOf("soundfont"), 0.02), ["whisper", "inhale"]);
+    deq(ignoredArts(performerOf("unknown")), []); deq(ignoredArts(null), []);
   });
   for (const eng of ["tsukuyomi", "vowel-sampler", "soundfont"] as const) {
     for (const gap of [0, 0.04]) {
       it(`${eng}（底色 ${gap * 1000} ms）：表说不认的 = 出声不变，表说认的 = 出声变了`, () => {
-        const h = heard(eng, gap), plain = h(two()), ign = ignoredArts(eng, gap);
+        const h = heard(eng, gap), plain = h(two()), ign = ignoredArts(performerOf(eng), gap);
         for (const m of ALL_MARKS) {
           const changed = m === "arpeggio" ? h(two(m, true)) !== h(two(undefined, true)) : h(two(m)) !== (m === "inhale" ? h(two("breath")) : plain);   // 出声的换气：和只有呼吸比；琶音：和弦对和弦比
           if (ign.includes(m)) assert(!changed, `${eng} 表上不认 ${m}，可出声变了（表该改成认）`);
@@ -91,7 +92,7 @@ describe("力度 = MIDI velocity（SoundFont；2026-10-08 user「应该send的�
 
 describe("音内的起伏：按下去就自然衰减的乐器（canSwell = false）", () => {
   it("< / <> 不认（画灰、明说）、出声不变；> 照做", () => {
-    deq(ignoredArts("soundfont", 0.02, false), ["swellGrow", "whisper", "inhale"]);   // 气声 / 出声的换气乐器本来就不认（2026-10-10）
+    deq(ignoredArts(performerOf("soundfont"), 0.02, false), ["swellGrow", "whisper", "inhale"]);   // 气声 / 出声的换气乐器本来就不认（2026-10-10）
     const piano = { ...sfSpec(0.02), canSwell: false }, h = (st: EditorState) => JSON.stringify(gainSegments(tr(st), undefined, piano));
     eq(h(two("swellGrow")), h(two()), "< 做不到 = 出声不变");
     assert(h(two("swellFade")) !== h(two()), "> 照做");

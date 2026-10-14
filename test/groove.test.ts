@@ -36,9 +36,9 @@ describe("拍子轻重：数据", () => {
     eq(classicalWeights(3, 32), null);
   });
   it("演奏者的类别：月读 / 元音版 = voice；钢琴（0）= piano；贝斯（33）= bass；鼓件（bank 128）= percussion；没人上场 = 不跟", () => {
-    eq(grooveCategory("tsukuyomi"), "voice"); eq(grooveCategory("vowel-sampler"), "voice");
-    eq(grooveCategory("soundfont", { bank: 0, program: 0 }), "piano"); eq(grooveCategory("soundfont", { bank: 0, program: 33 }), "bass");
-    eq(grooveCategory("soundfont", { bank: 128, program: 0 }), "percussion"); eq(grooveCategory("unknown"), null);
+    eq(grooveCategory("voice"), "voice"); eq(grooveCategory("voice", { bank: 0, program: 0 }), "voice");
+    eq(grooveCategory("gm", { bank: 0, program: 0 }), "piano"); eq(grooveCategory("gm", { bank: 0, program: 33 }), "bass");
+    eq(grooveCategory("gm", { bank: 128, program: 0 }), "percussion"); eq(grooveCategory(null), null); eq(grooveCategory("gm"), null);
     eq(followOf(grooveStyle("pop")!, "bass"), 1); eq(followOf(grooveStyle("pop")!, null), 0);
   });
 });

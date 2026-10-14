@@ -142,11 +142,11 @@ export function grooveWeights(tokens: readonly Token[], bounds: readonly number[
   return out;
 }
 
-/** 演奏者属于哪一类（预设的 follow 键）：月读 / 元音版 = voice；SoundFont = GM 家族（bank 128 = 鼓件 percussion；其余按 GM 音色号每 8 个一族）。 */
+/** 演奏者属于哪一类（预设的 follow 键）：插件自报 voice = 人声一档；gm = GM 家族（bank 128 = 鼓件 percussion；其余按 GM 音色号每 8 个一族）；没人上场 = null（不跟）。 */
 const GM_FAMILIES = ["piano", "chromatic-percussion", "organ", "guitar", "bass", "strings", "ensemble", "brass", "reed", "pipe", "synth-lead", "synth-pad", "synth-effects", "ethnic", "percussive", "sound-effects"] as const;
-export function grooveCategory(engine: string | null | undefined, gm?: { bank: number; program: number } | null): string | null {
-  if (engine === "tsukuyomi" || engine === "vowel-sampler") return "voice";
-  if (engine === "soundfont" && gm) return gm.bank === 128 ? "percussion" : GM_FAMILIES[Math.max(0, Math.min(127, gm.program)) >> 3];
+export function grooveCategory(cat: "voice" | "gm" | null | undefined, gm?: { bank: number; program: number } | null): string | null {
+  if (cat === "voice") return "voice";
+  if (cat === "gm" && gm) return gm.bank === 128 ? "percussion" : GM_FAMILIES[Math.max(0, Math.min(127, gm.program)) >> 3];
   return null;
 }
 /** 类别里预设没写的 = 0（不跟）。 */

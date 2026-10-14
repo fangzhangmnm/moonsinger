@@ -20,13 +20,14 @@ export const kanaBeats = (s: string): number => [...s].filter((c) => !isSmallKan
 
 /** engine = 台上这位的引擎（tsukuyomi / vowel-sampler / soundfont；没人 / 认不出 = 不逐个画灰，整条本来就不出声）；langAt = 下标 i 的字所在的句按哪种语言唱（一种语言也行：直接给字符串）。
  *  返回 下标 → 为什么。 */
-export function lyricIssues(tokens: Token[], engine: string | null | undefined, langAt: LyricLang | ((i: number) => LyricLang)): Map<number, LyricIssue> {
+/** lyrics = 台上这位唱不唱字（插件能力，ADR-0004：words 唱字 / hum 只哼 / none 不唱）；null = 没人上场 = 不画灰（照旧能写，多半等着请人）。 */
+export function lyricIssues(tokens: Token[], lyrics: "words" | "hum" | "none" | null | undefined, langAt: LyricLang | ((i: number) => LyricLang)): Map<number, LyricIssue> {
   const out = new Map<number, LyricIssue>();
-  if (engine !== "tsukuyomi" && engine !== "vowel-sampler" && engine !== "soundfont") return out;
+  if (!lyrics) return out;
   tokens.forEach((t, i) => {
     if (t.kind !== "note" || t.tie || !t.lyric || t.lyric === MELISMA_MARK) return;
     const lang = typeof langAt === "string" ? langAt : langAt(i);
-    if (engine !== "tsukuyomi") { out.set(i, { why: "notSung", lang }); return; }
+    if (lyrics !== "words") { out.set(i, { why: "notSung", lang }); return; }
     for (const part of t.lyric.split(ELISION).filter(Boolean)) {
       if (lang === "ja") {
         if (isSmallKana(part)) continue;   // 小字 / 促音自己占一个音：唱的那一路并进前一个音节

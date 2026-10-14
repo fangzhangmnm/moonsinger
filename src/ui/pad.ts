@@ -35,7 +35,6 @@ import { openDrum, type DrumHandle } from "./drum.ts";
 import { wheelSteps } from "./wheel.ts";
 
 /** 月读的音域 A3–E5（MIDI）：键底部画细条提示，音域外不拦、不变灰。宿主不给提示音域时（hintRange 没接）用它。 */
-export const HER_RANGE = { lo: 57, hi: 76, who: "小月相" } as const;
 /** 提示音域：谁在弹（宿主说）+ 她 / 它的音域（MIDI，含两端）。null = 不画提示。 */
 export type HintRange = { lo: number; hi: number; who: string; title?: string } | null;   // title = 键上的提示字（没有 = 「谁的音域里」）
 /** 设备形态（同 WXHW src/input/dock.ts）：短边 ≥ 600 且宽 ≥ 700 = 平板。 */
@@ -466,7 +465,7 @@ export class Pad {
       this.render();
     };
   }
-  private hint(): HintRange { return this.host.hintRange ? this.host.hintRange() : HER_RANGE; }
+  private hint(): HintRange { return this.host.hintRange ? this.host.hintRange() : null; }   // 宿主没给 = 不画（键盘不认识任何演奏者，ADR-0004）
   /** 音域窗口最低那个键的 MIDI（存进歌的 desk）；默认那一档 = null。 */
   rangeLow(): number | null {
     if (this.rowShift === 0) return null;

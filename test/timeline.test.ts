@@ -1,5 +1,6 @@
 // 时间线（src/engine/timeline.ts）：谱 → 秒。created 2026-10-09 by Claude Fable 5.1
 // 守的是：月读的句不在纸界切（只看休止）；块的键里没有位置（移位再复原照样命中）；SoundFont 的音符秒数；光标 ↔ 秒；没人上场 = unplayable。
+import { performerOf } from "../src/performers/index.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, addPaper, addPart, TPQ, DEFAULT_BPM, type EditorState, type Token, type Song, type PaperSeg, type PartDef } from "../src/score/song.ts";
 import { emptyExtras, activePerfSpec } from "../src/format/project.ts";
@@ -11,7 +12,7 @@ const r = (dur = TPQ): Token => ({ kind: "rest", id: nid++, dur });
 const head = (t: Token[]) => t.slice(0, 3);   // 调号 / 拍号 / 速度
 const Q = 60 / DEFAULT_BPM;   // 一个四分音符几秒
 const spec = activePerfSpec(emptyExtras(), "r");
-const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, spec, velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
+const info = (engine: PerformerInfo["engine"]): PerformerInfo => ({ engine, plugin: performerOf(engine), spec, velocity: 0.8, transpose: 0, gm: engine === "soundfont" ? { sha: "S", presetIndex: 3 } : null, chunk: "phrase", follow: () => 0 });
 const two = (a: Token[], b: Token[]): { song: Song; parts: PartDef[] } => {
   let st: EditorState = initState(); st = addPaper(st);
   const [p1, p2] = st.song.papers, pid = st.song.parts[0].id;

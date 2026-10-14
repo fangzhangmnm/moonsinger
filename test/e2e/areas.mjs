@@ -53,6 +53,10 @@ export const AREA_OF_PATH = [
   [/^src\/ui\/(lyric-editor|title-editor)\.ts$/, ["pad", "score"]],
   // 录音房 / 引擎 / 音源 / 月读
   [/^src\/ui\/(studio|plugins|scopes|spectrum|param-row|part-colors|metronome|render-progress)\.ts$/, ["studio", "play"]],
+  // 演奏者插件（ADR-0004）：能什么 / 怎么出声 / 谱上怎么画 / 怎么试听 → 放 + 录音房 + 键盘（提示音域 / 叠音灰）
+  [/^src\/performers\//, ["play", "studio", "pad"]],
+  // 唱歌 / 播放胶水（刀 1 从 main.ts 抽出）
+  [/^src\/app\/performance\.ts$/, ["play", "studio"]],
   [/^src\/(engine|gm|singer)\//, ["studio", "play"]],
   [/^src\/app\/(names)\.ts$/, ["studio"]],
   // 文件 / 云 / 歌库 / 格式

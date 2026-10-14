@@ -1,5 +1,6 @@
 // 鼓谱（v0.10.27）：台上是鼓 / 音效 = 不分音高的「一下」——一线谱 / 五线鼓谱、符头按音乐仓鼠 v13 的表、着力点提前放。created 2026-10-10 by Claude Opus 5.5
 // user「这个做好之后鼓谱做一下。团子只剩下鼓和音效了」「单乐器一线谱同意」；设计账 ai-docs/20261010-shared-staff-percussion-design.md §2–3。
+import { performerOf } from "../src/performers/index.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { percOf, percKindOf } from "../src/gm/percussion.ts";
 import { engrave, type PartView } from "../src/render/engrave.ts";
@@ -92,7 +93,7 @@ describe("鼓谱：着力点", () => {
     const pid = st.song.parts[0].id, pp = st.song.papers[0];
     const songX: Song = { ...st.song, papers: [{ ...pp, tracks: { [pid]: [...pp.tracks[pid].slice(0, headLen(pp.tracks[pid])), key(60), key(60)] } }, ...st.song.papers.slice(1)] };
     const spec = activePerfSpec(emptyExtras(), "r"), Q = 60 / DEFAULT_BPM;
-    const info = (hit?: (k: number) => number): PerformerInfo => ({ engine: "soundfont", spec, velocity: 0.8, transpose: 0, gm: { sha: "S", presetIndex: 3, note: 60 }, chunk: "phrase", follow: () => 0, ...(hit ? { hitSec: hit } : {}) });
+    const info = (hit?: (k: number) => number): PerformerInfo => ({ engine: "soundfont", plugin: performerOf("soundfont"), spec, velocity: 0.8, transpose: 0, gm: { sha: "S", presetIndex: 3, note: 60 }, chunk: "phrase", follow: () => 0, ...(hit ? { hitSec: hit } : {}) });
     const b = (i: PerformerInfo) => buildTimeline({ song: songX, order: songX.papers.map((p) => p.id), parts: songX.parts as PartDef[], info: () => i, hum: "n", singOpt: { leadIn: LEAD_IN } });
     const plain = b(info()), rev = b(info(() => REV.hitSec!));
     const n0 = plain.tracks[0].kind === "sf" ? plain.tracks[0].notes : [], n1 = rev.tracks[0].kind === "sf" ? rev.tracks[0].notes : [];

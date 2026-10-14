@@ -14,7 +14,7 @@ const ph = (): Token => ({ kind: "phrase", id: nid++ });
 const plan = (toks: Token[], mode: SingChunkMode = "phrase", bounds: number[] = []) => sungPlan(toks, undefined, bounds, mode, "n");
 const langsOf = (toks: Token[], mode: SingChunkMode = "phrase", bounds: number[] = []) => plan(toks, mode, bounds).at.map((l, i) => (toks[i].kind === "note" ? l : "·")).join(" ");
 const segs = (toks: Token[], mode: SingChunkMode = "phrase", bounds: number[] = []) => { const p = plan(toks, mode, bounds); return p.ranges.map(([a, b], k) => `${p.langs[k]}:${toks.slice(a, b).flatMap((t) => (t.kind === "note" ? [(t as { lyric: string | null }).lyric ?? "_"] : [])).join("")}`).join(" "); };
-const grays = (toks: Token[], mode: SingChunkMode = "phrase") => { const at = plan(toks, mode).at, m = lyricIssues(toks, "tsukuyomi", (i) => at[i]); return [...m.entries()].map(([i, x]) => `${(toks[i] as { lyric: string }).lyric}:${x.why}`).join(" "); };
+const grays = (toks: Token[], mode: SingChunkMode = "phrase") => { const at = plan(toks, mode).at, m = lyricIssues(toks, "words", (i) => at[i]); return [...m.entries()].map(([i, x]) => `${(toks[i] as { lyric: string }).lyric}:${x.why}`).join(" "); };
 
 describe("唱的语言 = 小月相唱的那一段", () => {
   const song = [...head(), n("か"), n("星"), r(), n("月"), n("亮"), r(), n("la"), n("la")];

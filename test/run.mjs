@@ -38,6 +38,7 @@ import "./credits.test.ts";
 import "./credit-translations.test.ts";
 import "./articulation.test.ts";
 import "./honors.test.ts";
+import "./performers.test.ts";
 import "./slur.test.ts";
 import "./wedge.test.ts";
 import "./attack.test.ts";

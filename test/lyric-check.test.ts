@@ -1,4 +1,5 @@
 // 唱不出来的歌词（画灰 + 明说）。created 2026-10-08 by Claude Opus 5.5；user「不能成功发音识别的歌词也标灰，我觉得这个可以变成这个项目的纪律了哈哈」
+import { performerOf } from "../src/performers/index.ts";
 import { describe, it, eq } from "./runner.mjs";
 import { lyricIssues, kanaBeats } from "../src/score/lyric-check.ts";
 import { TPQ, type Token } from "../src/score/song.ts";
@@ -6,7 +7,7 @@ import { ELISION, MELISMA_MARK } from "../src/score/lyrics.ts";
 
 let id = 1;
 const n = (lyric: string | null): Token => ({ kind: "note", id: id++, pitch: { step: "C", alter: 0, octave: 4 }, dur: TPQ, lyric });
-const why = (toks: Token[], eng: string, lang: "ja" | "zh" | "en") => { const m = lyricIssues(toks, eng, lang); return toks.map((_, i) => m.get(i)?.why ?? "-").join(" "); };
+const why = (toks: Token[], eng: string, lang: "ja" | "zh" | "en") => { const m = lyricIssues(toks, performerOf(eng)?.lyrics ?? null, lang); return toks.map((_, i) => m.get(i)?.why ?? "-").join(" "); };
 
 describe("月读（日语）", () => {
   it("假名一拍 = 好；小字 / 促音 / ん = 好；汉字 / 字母 / 两拍 = 灰", () => {

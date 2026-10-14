@@ -20,7 +20,7 @@ import { lyricIssues, lyricWhyText, prettyReading, type LyricIssue } from "../sc
 import { ScoreView } from "../ui/score-view.ts";
 import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
-import { Pad, HER_RANGE, type HintRange } from "../ui/pad.ts";
+import { Pad, type HintRange } from "../ui/pad.ts";
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
@@ -36,7 +36,7 @@ import { showNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
-import { percKindOf, percOf } from "../gm/percussion.ts";
+import {percOf} from "../gm/percussion.ts";
 import { moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
@@ -45,6 +45,7 @@ import { navWhy } from "../score/repeats.ts";
 import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSoundMemory, soundMemoryBytes, siteStorageEstimate, isSoundPersisted } from "../gm/sound-cache.ts";
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
 import { StudioClient } from "../engine/studio-client.ts";
+import { performerOf, TSUKUYOMI_RANGE } from "../performers/index.ts";   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
 import type { AuditionInst, TrackSpec } from "../engine/studio.ts";
 import { buildTimeline, lightNotes, songLangOf, sungPlan, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
@@ -103,7 +104,7 @@ doc.saved.lounge = loungeKey();
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => st.song.parts.find((p) => p.id === st.at.part) ?? st.song.parts[0];
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
-const ignoredFor = (role: string): Mark[] => { const sp = activePerfSpec(doc.extras, role); return ignoredArts(activeInstrument(doc.extras, role)?.engine, sp.gapSec, sp.canSwell); };
+const ignoredFor = (role: string): Mark[] => { const sp = activePerfSpec(doc.extras, role); return ignoredArts(performerOf(activeInstrument(doc.extras, role)?.engine), sp.gapSec, sp.canSwell); };
 const ignoredHere = (): Mark[] => ignoredFor(curPart().role);
 const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: "连线", swellGrow: "音内渐强 / 鼓起", swellFade: "音内渐弱", inhale: "出声的换气" };
 /** 刚写上了一个台上那位不认的记号 → 明说（照样写进谱、画灰，出声不受影响）。连线 / 保持在「本来就不留缝」的人那里也是这样（连断，2026-10-08）。 */
@@ -113,7 +114,7 @@ function discloseArt(prev: EditorState, a: Mark): void {
   const n = (s: EditorState) => tr(s).filter(has).length;
   if (n(st) <= n(prev)) return;
   const role = curPart().role, who = activeCandidateName(doc.extras, role) || "台上这位";
-  const why = whyIgnored(activeInstrument(doc.extras, role)?.engine, a);
+  const why = whyIgnored(performerOf(activeInstrument(doc.extras, role)?.engine), a);
   info(why === "decay" ? `${who}的音按下去就自然衰减，${MARK_NAME[a]}做不到：写在谱上了（画灰），出声不变；音内渐弱照做`
     : why === "sung" ? `${who}本来就连着唱：${MARK_NAME[a]}写在谱上了（画灰），出声不变；要断句用呼吸`
     : why === "gap" ? `${who}本来就不留缝（乐器页「音和音之间」= 0）：${MARK_NAME[a]}写在谱上了（画灰），出声不变`
@@ -332,13 +333,9 @@ function auditionTarget(): { inst: AuditionInst; key: (midi: number) => number; 
     return { inst: { kind: "vowel", kana }, key: (m) => m, vel: 1, gainDb: 0, pan: 0 };
   }
   const part = st.song.parts.find((p) => p.id === st.at.part), ch = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
-  if (engineNow() === "soundfont") {
-    const g = activeGm(doc.extras, curRole()); if (!g) return null;
-    if (!engine.hasBank(g.subsetSha256)) { void prepareBank(); return null; }   // 没载好的这一下丢掉、顺手去载（试听要即时，迟到的音更烦）
-    // 力度 = 光标处生效的力度（有力度表的走 MIDI 力度；旧候选走音量）；和渲染同一个 sfKey（写谱时听到的 = 播放时那个音）
-    return { inst: { kind: "sf", sha: g.subsetSha256, preset: engine.presetIndex(g.subsetSha256, g.bank, g.program) }, key: (m) => sfKey(m, g, activeTranspose(doc.extras, curRole())), vel: dyn.vel ?? activeVelocity(doc.extras, curRole()), gainDb: ch.gainDb + (dyn.vel === null ? dyn.dB : 0), pan: ch.pan };
-  }
-  return { inst: { kind: "vowel", kana }, key: (m) => m, vel: 1, gainDb: ch.gainDb + dyn.dB, pan: ch.pan };
+  // 谁出声、怎么出 = 台上那位的插件（SoundFont 走库 + sfKey、人声走元音表；ADR-0004）；通道的增益 / 声像是轨的事，胶水加
+  const t = performerOf(engineNow())?.audition?.({ extras: doc.extras, role: curRole(), kana, dyn, engine, ensureBank: () => { void prepareBank(); } });
+  return t ? { ...t, gainDb: ch.gainDb + t.gainDb, pan: ch.pan } : null;
 }
 /** 月读的按键试听（弹 / 写音 / 拖音高的预听）= 元音表（v0.10.43；user「月读的即兴keyboard还是卡…我发现它还是每次按键的时候算一下」「月读预览应该是每种哼法只有一个cache」
  *  「而不是一个音高一个长度cache一下」「预览时这样，不过播放的时候还是完全版的」）：完全版也走 auditionTarget 的元音那条路——表是月读自己离线预渲的
@@ -500,7 +497,7 @@ const CHORD_MS = 50;
 const CHORD_WIN = 80;   // 能叠音的声部：前一个音 80 ms 内再按一个键（前一个还按着）= 叠在一起（user「同时按同意」）
 let lastWrite = { index: -1, at: -Infinity };
 /** 光标所在声部的乐器能叠音吗（SoundFont = 能；月读 / 元音 / 没人 = 单声，护栏：pad 的叠键灰掉、同时按也只写第一个）。 */
-const canStack = (): boolean => engineNow() === "soundfont";
+const canStack = (): boolean => performerOf(engineNow())?.poly ?? false;
 const monoHeld = new Set<string>();
 let monoAt = -Infinity;
 function monoAccept(id: string): boolean {
@@ -826,26 +823,16 @@ function lowestMidiOf(partId: string): number | null {
 function songBpm(): number { const p = st.song.papers[0], t = p ? p.tracks[st.song.parts.find((x) => p.tracks[x.id])?.id ?? ""] : undefined; return t ? tempoAt(t, headLen(t)) : 90; }
 /** 上场那位的出声参数（时间线不碰 Extras；src/engine/timeline.ts）。SoundFont 的预设下标要库先进录音房（prepareBanks）。 */
 function performerInfo(part: PartDef): PerformerInfo {
-  const role = part.role, eng = (activeInstrument(doc.extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], g = activeGm(doc.extras, role), cat = grooveCategory(eng, g);
-  return { engine: eng, spec: activePerfSpec(doc.extras, role), velocity: activeVelocity(doc.extras, role), transpose: activeTranspose(doc.extras, role),
-    gm: g ? { sha: g.subsetSha256, presetIndex: engine.presetIndex(g.subsetSha256, g.bank, g.program), note: g.note, sfx: g.sfx } : null,
-    chunk: activeSingChunk(doc.extras, role), follow: (s) => followOf(s, cat), chain: activeChain(doc.extras, role), ...hitOf(eng === "soundfont" ? g : null) };
+  const role = part.role, eng = (activeInstrument(doc.extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], plugin = performerOf(eng), cat = grooveCategory(plugin?.grooveCategory ?? null, activeGm(doc.extras, role));
+  const own = plugin ? plugin.info({ extras: doc.extras, role, presetIndex: (sha, bank, program) => engine.presetIndex(sha, bank, program) }) : { gm: null, chunk: "phrase" as const };   // 这位自己的那部分（gm / 分段唱 / 着力点）归插件
+  return { engine: eng, plugin, spec: activePerfSpec(doc.extras, role), velocity: activeVelocity(doc.extras, role), transpose: activeTranspose(doc.extras, role), follow: (s) => followOf(s, cat), chain: activeChain(doc.extras, role), ...own };
 }
-/** 着力点（v0.10.27）：台上是鼓 / 固定敲一件的音效 = 按仓鼠实测的 hitSec 提前放；有音高的乐器不挪。 */
-function hitOf(g: GmCandidate | null): { hitSec?: (key: number) => number } {
-  const pk = g ? percKindOf(g) : null;
-  if (!pk) return {};
-  if (pk.kind === "kit") return { hitSec: (key) => percOf(128, 0, key)?.hitSec ?? 0 };
-  const h = pk.info.hitSec ?? 0; return h ? { hitSec: () => h } : {};
-}
-/** 这些声部要用的 SoundFont 子集进录音房（弱引用去找整包 → 切子集；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
+/** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 async function prepareBanks(parts: readonly PartDef[]): Promise<string[]> {
   const errs: string[] = [];
   for (const part of parts) {
-    if (activeInstrument(doc.extras, part.role)?.engine !== "soundfont") continue;
-    const g = activeGm(doc.extras, part.role); if (!g) continue;   // 时间线会报「台上的不是 SoundFont 乐器」
-    if (engine.hasBank(g.subsetSha256)) continue;
-    try { await engine.bank(g.subsetSha256, await resolveGmBytes(g)); } catch (e) { errs.push(`「${roleName(doc.extras, part.role)}」：${(e as Error).message}`); }
+    const plugin = performerOf(activeInstrument(doc.extras, part.role)?.engine); if (!plugin) continue;   // 没人上场：时间线会报
+    try { await plugin.prepare({ extras: doc.extras, role: part.role, engine, resolveGmBytes, ensureVowels }); } catch (e) { errs.push(`「${roleName(doc.extras, part.role)}」：${(e as Error).message}`); }
   }
   return errs;
 }
@@ -985,8 +972,7 @@ engine.on("load", (info) => { watch.load = info; resourceTick(); });
 /** 准备一次播放 / 导出：库进录音房 → 时间线 → 月读的块。没法出声的声部报出来、其余照放（user「不是显示自动上，而是就是不出声，报错，人类手动换」）。 */
 async function prepare(scope: RenderScope, o: { chunks?: boolean; raw?: boolean } = {}): Promise<Timeline | null> {
   const parts = audibleParts(), song = songIn(scope);
-  const errs = await prepareBanks(parts);
-  if (parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "vowel-sampler")) await ensureVowels();
+  const errs = await prepareBanks(parts);   // 各位的准备（库 / 元音表）都在插件里
   const tl = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st.song.hum, singOpt: humOpt() });
   for (const u of tl.unplayable) errs.push(`「${roleName(doc.extras, st.song.parts.find((p) => p.id === u.part)?.role ?? "")}」：${u.why}`);
   if (errs.length) showError(`${errs.join("；")}。${tl.tracks.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
@@ -1282,7 +1268,7 @@ function schedulePrewarm(): void {
   clearTimeout(prewarmTimer);
   prewarmTimer = window.setTimeout(() => {
     if (engine.playing || preparing || exporting) return;
-    const parts = audibleParts(); if (!parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "tsukuyomi")) return;
+    const parts = audibleParts(); if (!parts.some((p) => performerOf(activeInstrument(doc.extras, p.role)?.engine)?.sound === "chunks")) return;   // 只有慢引擎（按句出块）要预唱
     const song = songIn("view");
     const tl = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st.song.hum, singOpt: humOpt() });
     if (!tl.chunks.length) return;
@@ -1636,9 +1622,9 @@ let audition: { bank: number; program: number; note?: number; sfx?: SfxInfo; sha
 /** pad 键底部的提示音域 = 现在谁在弹：找人视图里 = 试听的那位；写谱时 = 光标所在声部上场的那位（月读 / 元音版 = 她的；乐器 = 目录里角色那件乐器的音域；不知道 = 不画）。 */
 function padHint(): HintRange {
   if (finderShown) return auditionHint;
-  const eng = activeInstrument(doc.extras, curRole())?.engine;
-  if (eng === "tsukuyomi" || eng === "vowel-sampler") return HER_RANGE;
-  if (eng !== "soundfont") return null;
+  const plug = performerOf(activeInstrument(doc.extras, curRole())?.engine);
+  if (!plug) return null;
+  if (plug.hintRange) return plug.hintRange;   // 人声：固定音域（插件自报）；乐器 = 下面按目录查（音效 / 采样键只对 GS 成立，各自有守卫；概念音域和引擎无关）
   if (!catalogNow) { void loadCatalog(new URL(import.meta.url)).then((c) => { catalogNow = c; pad.render(); }).catch(() => { /* 目录载不了：不画提示 */ }); return null; }
   // GS 的音效预设（仓鼠 v8，TinySoundFont 实测；只对 GS 成立，别的 .sf2 不套）：固定原速 = 哪个键都一样、不提示（同鼓件）；
   //   关了固定 = 提示原速键；再开音高对齐 = 提示「原速时听到的那个音」（谱上写它 = 原来的样子）
@@ -1661,7 +1647,7 @@ async function setAudition(p: FinderPick | null): Promise<void> {
   //   GS 的音效预设试听 = 固定原速（仓鼠 v8；哪个键都一样，同鼓件，不提示）；其余 = 概念的常用音域
   const cat = p?.kind === "gs" ? (catalogNow ??= await loadCatalog(new URL(import.meta.url))) : null;
   const sk = cat && p?.kind === "gs" && p.provider.note === undefined ? sampleKeyOf(cat, p.provider.bank, p.provider.program) : null;
-  auditionHint = !p || sk ? null : p.kind === "voice" ? HER_RANGE : ((r) => (r ? { ...r, who: p.concept.names.zh } : null))(rangeOf(p.concept));
+  auditionHint = !p || sk ? null : p.kind === "voice" ? TSUKUYOMI_RANGE : ((r) => (r ? { ...r, who: p.concept.names.zh } : null))(rangeOf(p.concept));
   if (auditionHint) pad.follow(auditionHint.lo, auditionHint.hi); else pad.render();
   if (!p || p.kind === "voice") { audition = null; sound.allOff(); return; }
   try {
@@ -1684,14 +1670,14 @@ function gsKeyArgs(cat: Catalog, bank: number, program: number, drumNote?: numbe
 /** 「记号怎么演」：这位演奏者 by value 带着的解读表，原样摊开（user 2026-10-08「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）。现在只读；改数以后做。 */
 function marksTableHtml(role: string, eng: string): string {
   const sp = activePerfSpec(doc.extras, role), ms = (x: number) => `${Math.round(x * 1000)} ms`, pct = (x: number) => `${Math.round(x * 100)}%`, db = (x: number) => `${x > 0 ? "+" : ""}${x} dB`;
-  const ign = ignoredArts(eng, sp.gapSec), gray = (m: string) => (ign.includes(m as Mark) ? ` class="ign"` : "");
+  const ign = ignoredArts(performerOf(eng), sp.gapSec), sung = performerOf(eng)?.sound === "chunks", gray = (m: string) => (ign.includes(m as Mark) ? ` class="ign"` : "");
   const singTxt = (k: string) => { const m = sp.sing[k]; return m ? `${m.at === "next" ? "下一个字" : "这个字"}前「${m.mark}」${m.mark === "^" ? "（顿一下，不换气）" : m.mark === "v" ? "（换气）" : "（大口换气）"}` : "不变成唱法记号"; };
   const vel = !!sp.dynamicsVel;
   // 这一类怎么变响 / 变轻（2026-10-08 深夜 Opus 5.5；user「月读吃音内减弱吗，普通减弱可以有一样的效果吗还是只影响输入的…月读又是弦又是管所以应该是实时调制的」
   //   「我觉得其实可以不同的类别乐器卡可以说一下」）：按这位实际走的那条路说（perform.ts：有力度表 = MIDI 力度，否则 = 音量曲线乘在出来的声音上）
   const how = vel
     ? `按下那一下的轻重（MIDI 力度）：渐强渐弱 = 每个新音一个台阶，按住的音中间不变；一个音里面要变，用音内起伏${sp.canSwell ? "" : "（这件乐器按下去就自然衰减：音内只能变弱）"}`
-    : `一条连续的音量曲线（乘在${eng === "tsukuyomi" ? "唱" : "弹"}出来的声音上）：渐强渐弱在一个长音中间也一直在变，和音内起伏是同一种变法；只变响度、不变音色${eng === "tsukuyomi" ? "（真人渐弱会变虚、变暗，这个还没有）" : ""}`;
+    : `一条连续的音量曲线（乘在${sung ? "唱" : "弹"}出来的声音上）：渐强渐弱在一个长音中间也一直在变，和音内起伏是同一种变法；只变响度、不变音色${sung ? "（真人渐弱会变虚、变暗，这个还没有）" : ""}`;
   const rows: [string, string, string][] = [
     ["力度怎么变", "", how],
     ["力度记号", "", vel ? `力度表：${(Object.entries(sp.dynamicsVel!) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ")}` : `音量：${(Object.entries(sp.dynamicsDb) as [string, number][]).map(([d, x]) => `${d} ${db(x)}`).join(" · ")}`],
@@ -1699,19 +1685,19 @@ function marksTableHtml(role: string, eng: string): string {
     ["幽灵音", "ghost", vel ? `力度 ${sp.ghostVel}` : `整个音 ${db(sp.ghostDb)}`],
     ["弱化", "unstress", vel ? `力度 ${sp.unstressVel}` : `整个音 ${db(sp.unstressDb)}`],
     ["次重音", "stress", vel ? `力度 +${sp.stressVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.stressDb)}`],
-    ["重音", "accent", vel ? `力度 +${sp.accentVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.accentDb)}${eng === "tsukuyomi" ? `；${singTxt("accent")}` : ""}`],
-    ["强音", "marcato", vel ? `力度 +${sp.marcatoVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.marcatoDb)}${eng === "tsukuyomi" ? `；${singTxt("marcato")}` : ""}`],
-    ["突强 sfz", "sfz", vel ? `力度 +${sp.sfzVel}` : `音头 ${db(sp.sfzDb)}，${ms(sp.sfzSec)} 里落回来${eng === "tsukuyomi" ? `；${singTxt("sfz")}` : ""}`],
-    ["强后即弱 fp", "fp", `音头按 f，${ms(sp.fpSec)} 里落到 p，之后都是 p${eng === "tsukuyomi" ? `；${singTxt("fp")}` : ""}`],
+    ["重音", "accent", vel ? `力度 +${sp.accentVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.accentDb)}${sung ? `；${singTxt("accent")}` : ""}`],
+    ["强音", "marcato", vel ? `力度 +${sp.marcatoVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.marcatoDb)}${sung ? `；${singTxt("marcato")}` : ""}`],
+    ["突强 sfz", "sfz", vel ? `力度 +${sp.sfzVel}` : `音头 ${db(sp.sfzDb)}，${ms(sp.sfzSec)} 里落回来${sung ? `；${singTxt("sfz")}` : ""}`],
+    ["强后即弱 fp", "fp", `音头按 f，${ms(sp.fpSec)} 里落到 p，之后都是 p${sung ? `；${singTxt("fp")}` : ""}`],
     ["音内渐强 / 鼓起", "swellGrow", sp.canSwell ? `写的力度是最高点：< 从 −${sp.swellDb} dB 长到写的力度；<> 两头 −${sp.swellDb} dB、中间回到写的力度（强后即弱之后的 < 长回音头的 f）` : "做不到：这件乐器按下去就自然衰减"],
     ["音内渐弱", "swellFade", `一路往下到 −${sp.swellDb} dB`],
-    ["跳音", "staccato", eng === "tsukuyomi" ? singTxt("staccato") : `唱 / 弹 ${pct(sp.staccatoGate)} 的长度`],
+    ["跳音", "staccato", sung ? singTxt("staccato") : `唱 / 弹 ${pct(sp.staccatoGate)} 的长度`],
     ["保持", "tenuto", "这个音不留缝"],
     ["连线", "slur", "连到下一个音、不留缝"],
-    ["呼吸", "breath", eng === "tsukuyomi" ? singTxt("breath") : `前一个音收短 ${ms(sp.breathSec)}（最多 ${pct(sp.breathShare)}）`],
-    ["出声的换气（轻吸 / 深吸）", "inhale", eng === "tsukuyomi" ? "换气的空当里一声吸气（按下一个字的元音塑形，比它轻约 28 dB；深吸 = 空当长一点、响 4 dB）" : "做不到：这位只断开，不出吸气声"],
-    ["气声（× 符头）", "whisper", eng === "tsukuyomi" ? "这个字不唱音高：用念的时候的气声（谱包络照旧、声带不振），再轻 6 dB" : "做不到：这位只按音高出声"],
-    ["音和音之间", "", eng === "tsukuyomi" ? "连着唱" : `${ms(sp.gapSec)}（最多 ${pct(sp.gapShare)}）`],
+    ["呼吸", "breath", sung ? singTxt("breath") : `前一个音收短 ${ms(sp.breathSec)}（最多 ${pct(sp.breathShare)}）`],
+    ["出声的换气（轻吸 / 深吸）", "inhale", sung ? "换气的空当里一声吸气（按下一个字的元音塑形，比它轻约 28 dB；深吸 = 空当长一点、响 4 dB）" : "做不到：这位只断开，不出吸气声"],
+    ["气声（× 符头）", "whisper", sung ? "这个字不唱音高：用念的时候的气声（谱包络照旧、声带不振），再轻 6 dB" : "做不到：这位只按音高出声"],
+    ["音和音之间", "", sung ? "连着唱" : `${ms(sp.gapSec)}（最多 ${pct(sp.gapShare)}）`],
   ];
   return `<details class="ip-marks"><summary>记号怎么演（这位自己的配置，跟着演奏者存进歌）</summary><table>${rows.map(([k, m, v]) => `<tr${gray(m)}><th>${k}</th><td>${esc(v)}${m && ign.includes(m as Mark) ? `<span class="ign-tag">不认</span>` : ""}</td></tr>`).join("")}</table></details>`;
 }
@@ -1939,7 +1925,7 @@ function lyricMutes(): Map<string, Map<number, LyricIssue>> {
     for (const paper of st.song.papers) {
       const toks = paper.tracks[p.id]; if (!toks) continue;
       const own = toks.some((t) => !byId.has(t.id)) ? sungPlan(toks, undefined, [], mode, st.song.hum).at : null;
-      for (const [i, x] of lyricIssues(toks, eng, (i) => byId.get(toks[i].id) ?? own![i])) m.set(toks[i].id, x);
+      for (const [i, x] of lyricIssues(toks, performerOf(eng)?.lyrics ?? null, (i) => byId.get(toks[i].id) ?? own![i])) m.set(toks[i].id, x);
     }
     out.set(p.id, m);
   }
@@ -1967,7 +1953,7 @@ function readPlanOf(tokId: number, part: PartDef): ChunkPlan | null {
 }
 function lyricReadingAt(i: number): LyricReading | null {
   const t = tr(st)[i], part = st.song.parts.find((x) => x.id === st.at.part);
-  if (!t || t.kind !== "note" || !part || engineNow() !== "tsukuyomi") return null;
+  if (!t || t.kind !== "note" || !part || performerOf(engineNow())?.lyrics !== "words") return null;   // 只有唱字的那位才有「念成什么」
   const plan = readPlanOf(t.id, part); if (!plan) return null;
   const s = plan.score, key = `${s.LANG}|${s.TEXT}|${s.SCORE.map((e) => e.kana).join(" ")}`, r = readings.get(key);
   if (!r) {
@@ -1999,11 +1985,11 @@ function partViews(): PartView[] {
   const labels = partLabels(st.song, doc.extras), mutes = lyricMutes(), looks = partLooks();
   return st.song.parts.map((p, k) => {
     const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : ""].filter(Boolean);
-    const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown";
+    const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
-    const noLyrics = eng === "soundfont" || eng === "vowel-sampler" ? `${labels[k]}${eng === "vowel-sampler" ? "（元音版）只哼" : "不唱歌词"}：空着的歌词位不开框；已经写了的字点开能改、能删` : "";
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: eng === "unknown", first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: eng !== "soundfont", ...(eng === "soundfont" && activeGm(doc.extras, p.role)?.note !== undefined ? { xHead: true } : {}), ...((g) => { const pk = g ? percKindOf(g) : null; return pk ? { perc: pk } : {}; })(eng === "soundfont" ? activeGm(doc.extras, p.role) : null), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
+    const ly = plug?.lyrics, noLyrics = ly === "hum" || ly === "none" ? `${labels[k]}${ly === "hum" ? "（元音版）只哼" : "不唱歌词"}：空着的歌词位不开框；已经写了的字点开能改、能删` : "";
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: !plug?.poly, ...(plug?.notation?.({ extras: doc.extras, role: p.role }) ?? {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -2414,7 +2400,7 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
       hints.push(`摇摆：一拍里前一个八分占 ${Math.round(r * 100)}%（直 = 50%，三连音感 ≈ 67%；幅度只放大 / 缩小比直的多出来的那一截，夹在 ${Math.round(lo * 100)}–${Math.round(hi * 100)}%）。这张纸上所有歌手一起摇（小月相也是，不分跟多少）；写成连音的音、6/8 这类拍号不摇`); }
     const paper = st.song.papers.find((p) => p.id === st.at.paper);
     const who = st.song.parts.filter((p) => paper?.tracks[p.id]).map((p) => {
-      const f = followOf(style, grooveCategory(activeInstrument(doc.extras, p.role)?.engine ?? null, activeGm(doc.extras, p.role)));
+      const f = followOf(style, grooveCategory(performerOf(activeInstrument(doc.extras, p.role)?.engine)?.grooveCategory ?? null, activeGm(doc.extras, p.role)));
       return `${roleName(doc.extras, p.role)} ${f > 0 ? `跟 ${Math.round(f * 100)}%` : "不跟"}`;
     });
     if (who.length) hints.push(`这张纸上：${who.join(" · ")}（按乐器类别，预设给的）`);
@@ -2558,7 +2544,7 @@ $("stage").append(instEl);
 // 找人：从货架（家族音源库）或自己的 .sf2 文件挑一把琴 → 只把那一件切出来（契约 §10.2）
 let instPicked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel: string; library?: SoundEntry } | null = null;
 type Chosen = { name: string; bank: number; program: number; note?: number; sfx?: SfxInfo; subset: Uint8Array; sha256: string; origin: GmCandidate["origin"]; credit: { attribution: string[]; license: { name: string; url?: string; text?: string } } };
-const ENGINE_TITLE: Record<Engine, string> = { tsukuyomi: "小月相本人（つくよみちゃん；第一次要加载约 65 MB）", "vowel-sampler": "小月相的元音采样：按下即响、任何设备都能跑", soundfont: "SoundFont 乐器（TinySoundFont 出声）", unknown: "这一版出不了声（别的软件原来的乐器）" };
+const UNKNOWN_TITLE = "这一版出不了声（别的软件原来的乐器）";   // 认得出的候选：说明由插件自报（description）
 function openInstPage(): void {
   closeOffer?.(); finderBackToInst = false;
   if (finder.isOpen) closeFinder();
@@ -2657,7 +2643,7 @@ function drawInst(): void {
   if (!instShown) return;
   const eng = engineNow(), h = st.song.hum, role = curRole(), rn = roleName(doc.extras, role), rs = roleSound(doc.extras, role), aid = activeId(doc.extras, role);
   const gms = new Map(gmCandidates(doc.extras, role).map((g) => [g.id, g])), active = gms.get(aid), who = activeCandidateName(doc.extras, role) ?? "（没人上场）";
-  const chipTitle = (c: { id: string; engine: Engine }) => { const g = gms.get(c.id); if (!g) return ENGINE_TITLE[c.engine]; return g.bytes ? `SoundFont ${g.bank}:${g.program}，声音嵌在歌里（${sizeText(g.bytes.length)}）` : g.path ? "声音没随这首歌带来" : `弱引用：声音不在歌里，用时从「${g.origin.name}」找`; };
+  const chipTitle = (c: { id: string; engine: Engine }) => { const g = gms.get(c.id); if (!g) return performerOf(c.engine)?.description ?? UNKNOWN_TITLE; return g.bytes ? `SoundFont ${g.bank}:${g.program}，声音嵌在歌里（${sizeText(g.bytes.length)}）` : g.path ? "声音没随这首歌带来" : `弱引用：声音不在歌里，用时从「${g.origin.name}」找`; };
   const status = !active ? "" : active.bytes ? `<div class="cand-status">声音嵌在歌里（${sizeText(active.bytes.length)}）${active.origin.library ? `，来自家族音源库的 ${esc(active.origin.name)}` : `，来自 ${esc(active.origin.name)}`}</div>`
     : active.path ? `<div class="cand-status">声音没随这首歌带来，所以没人上场——换一个「谁来演」</div>`
     : ((found) => `<div class="cand-status">弱引用：歌里不带声音，用时从「${esc(active.origin.name)}」找（${found ? "本次已找到" : "家族音源库 / 设备缓存 / 你的文件"}）${found ? "" : `<button class="btn" data-v="find:${esc(active.id)}">找文件…</button>`}</div>`)(sessionSubsets.has(active.subsetSha256));
@@ -2667,16 +2653,16 @@ function drawInst(): void {
   const row = (k: string, v: string, note = "") => `<span class="ip-k">${k}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note ? `<div class="ip-note">${note}</div>` : ""}</div>`;
   // 这位怎么演：响度（契约「看得见、能调的默认，不偷偷自动」）/ 音效的固定原速与音高对齐 / 修八度（兜底）/ 月读没写歌词的音
   const how =
-    (eng !== "unknown" ? row("响度", `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="这位演奏者小声 1 dB">−1 dB</button><button class="btn" data-v="cal:1" title="大声 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="回到默认 ${fmtDb(DEFAULT_CALIBRATION_DB)}">默认</button>` : ""}`,
+    (performerOf(eng) ? row("响度", `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="这位演奏者小声 1 dB">−1 dB</button><button class="btn" data-v="cal:1" title="大声 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="回到默认 ${fmtDb(DEFAULT_CALIBRATION_DB)}">默认</button>` : ""}`,
       `这位演奏者自己的音量：默认都是 ${fmtDb(DEFAULT_CALIBRATION_DB)}（小月相也是），几个声部叠在一起才不顶到天花板、不把声音压变样；混音台的推子另算`) : "") +
     // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
     //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
-    ((eng === "soundfont" || eng === "vowel-sampler") ? ((gap, d) => row("音和音之间", `<b class="ip-val">${Math.round(gap * 1000)} ms</b>` +
+    (performerOf(eng)?.sound === "notes" ? ((gap, d) => row("音和音之间", `<b class="ip-val">${Math.round(gap * 1000)} ms</b>` +
       `<button class="btn" data-v="gap:-0.01" title="缝小 10 ms（更连）">−10</button><button class="btn" data-v="gap:0.01" title="缝大 10 ms（更断）">+10</button>` +
       (d && Math.abs(gap - d.gapSec) > 1e-9 ? `<button class="btn" data-v="gap:def" title="回到默认 ${Math.round(d.gapSec * 1000)} ms">默认</button>` : ""),
       `不写记号的音和下一个音之间留的缝：0 = 连着。${d ? `${esc(d.label)}：默认 ${Math.round(d.gapSec * 1000)} ms（音乐目录给的，按音色逐个）。` : ""}连线（连奏）、保持的音不留缝；呼吸 = 这里断开；跳音另算`))(activePerfSpec(doc.extras, role).gapSec, gapDefaultOf(role)) : "") +
     // 力度（2026-10-08，user「应该send的就是velocity！」「力度就是velocity」）：没写力度记号的音按这个；有力度表的演奏者 mp / mf 查表、重音 / 强音往上加
-    (eng === "soundfont" ? ((v, sp) => { const midi = Math.round(v * 127), def = sp.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127), g = activeGm(doc.extras, role);
+    (performerOf(eng)?.dynamics === "velocity" ? ((v, sp) => { const midi = Math.round(v * 127), def = sp.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127), g = activeGm(doc.extras, role);
       const L = g && g.origin.library === GS_LIBRARY_ID && catalogNow ? velLayersOf(catalogNow, g.bank, g.program, g.note) : null, k = L ? L.ranges.findIndex(([lo, hi]) => midi >= lo && midi <= hi) : -1;
       return row("力度", `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="轻一点（MIDI 力度 −8）">−8</button><button class="btn" data-v="vel:8" title="重一点（+8）">+8</button>` +
         (midi !== def ? `<button class="btn" data-v="vel:def" title="回到 ${def}">默认</button>` : ""),
@@ -2684,7 +2670,7 @@ function drawInst(): void {
         (L ? (L.count > 1 ? `GS 里这个音色有 ${L.count} 个力度层${k >= 0 ? `，现在在第 ${k + 1} 层（${L.ranges[k][0]}–${L.ranges[k][1]}）` : ""}：跨层 = 换一份录音，音色会变，不只是响度。` : "GS 里这个音色只有一个力度层：力度只改响度。") : ""));
     })(activeVelocity(doc.extras, role), activePerfSpec(doc.extras, role)) : "") +
     // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-    (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("力度记号", "", `力度记号 = 音量（相对 mf，dB）；一档 6 dB ≈ 振幅翻倍 / 减半。力度记号没有标准的 dB，是相对的：每位演奏者自己带一张表，这是这位的：${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") +
+    (performerOf(eng)?.dynamics === "gain" ? row("力度记号", "", `力度记号 = 音量（相对 mf，dB）；一档 6 dB ≈ 振幅翻倍 / 减半。力度记号没有标准的 dB，是相对的：每位演奏者自己带一张表，这是这位的：${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") +
     // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
     //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
     (active?.sfx ? ((fixed, al) => row("音效", chip("sfx:fixed", "固定原速", fixed, "每个音都敲原速键：写谱按键、播放都是原来的样子；谱上写的音高照留，只是不拿来出声") +
@@ -2694,17 +2680,17 @@ function drawInst(): void {
     (active && active.note === undefined ? row("修八度", `<b class="ip-val">${tr > 0 ? "+" : tr < 0 ? "−" : ""}${Math.abs(tr)} 半音</b><button class="btn" data-v="tr:-12" title="低一个八度">−12</button><button class="btn" data-v="tr:-1" title="低半音">−1</button><button class="btn" data-v="tr:1" title="高半音">+1</button><button class="btn" data-v="tr:12" title="高一个八度">+12</button>${tr ? `<button class="btn" data-v="tr:0" title="回到 0">归零</button>` : ""}`,
       "大部分情况不用动：某些音色本身就差八度（比如 GS 的 Guitar Harmonics 高两个八度）时兜底，调好后写什么音就响什么音") : "") +
     // 八度（v0.9.32；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：谱上写的 = 实际音高 = 发给音源的；这件乐器的记谱习惯（仓鼠 v12 notation）+ GS 这个音色的实测（octaveCheck）
-    (eng === "soundfont" ? ((g) => {
+    (activeGm(doc.extras, role) ? ((g) => {
       const cpt = catalogNow ? conceptOfIds(catalogNow, (doc.extras.lounge[role] as { concept?: { ids?: { wikidata?: string | null; local?: string | null } } } | undefined)?.concept?.ids) : undefined;
       const oc = g && catalogNow && g.origin.library === GS_LIBRARY_ID ? octaveCheckOf(catalogNow, g.bank, g.program, g.note) : null, nt = cpt?.notation;
       const text = octaveDisclosure(nt, oc, (c) => CLEF_LABEL[c as ClefName] ?? c);
       return text ? row("八度", "", esc(text)) : "";
     })(activeGm(doc.extras, role)) : "") +
-    (eng === "tsukuyomi" || eng === "vowel-sampler" ? row("哼的字", HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), "没写歌词的音唱什么（整首歌一个）") : "") +
+    ((performerOf(eng)?.lyrics ?? "none") !== "none" ? row("哼的字", HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), "没写歌词的音唱什么（整首歌一个）") : "") +
     // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
-    (eng === "tsukuyomi" ? ((sc) => row("分段唱", (([["phrase", "每句", "在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句"], ["sheet", "每张纸", "一张纸一段"], ["whole", "一整首", "一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）"]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),
+    (performerOf(eng)?.sound === "chunks" ? ((sc) => row("分段唱", (([["phrase", "每句", "在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句"], ["sheet", "每张纸", "一张纸一段"], ["whole", "一整首", "一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）"]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),
       sc === "whole" ? "一口气唱完：句和句之间唱法最连贯，但长歌在 iPad 上可能内存不够" : "分段唱：一段唱完就放掉，重复的段 / 没改的句子直接拿上次的；段和段之间切在休止 / 纸界，整首最后统一音量"))(activeSingChunk(doc.extras, role)) : "") +
-    (eng === "unknown" ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
+    (!performerOf(eng) ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
   instEl.innerHTML =
     `<div class="ip-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="ip-title">乐器</span>` +
     (parts.length > 1 ? `<select class="ip-part" title="换一个声部">${parts.map((x) => `<option value="${esc(x.p.id)}"${x.p.id === st.at.part ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc(parts[0]?.label ?? rn)}</span>`) +
@@ -2715,8 +2701,8 @@ function drawInst(): void {
       ROLE_GROUPS.map((g) => `<optgroup label="${g.group}">${g.items.map((r) => `<option value="${esc(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc(r.name)} — ${r.zh}</option>`).join("")}</optgroup>`).join("") +
       `</select><label class="role-name">谱上写<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" /></label><div class="role-sound">MusicXML：<code>${esc(rs)}</code></div></section>` +
     `<section class="ip-card"><h3>谁来演<small>演奏者和他手里的琴；名字不上谱</small></h3><div class="ip-cands">` +
-      candidates(doc.extras, role).map((c) => chip(`cand:${c.id}`, c.engine === "unknown" ? `${esc(c.name)}（没人能演）` : esc(c.name), aid === c.id, chipTitle(c)) +
-        (aid !== c.id && (c.engine === "soundfont" || c.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc(c.id)}" title="从休息室删掉（它嵌在歌里的声音一起丢）">×</button>` : "")).join("") + `</div>` + status +
+      candidates(doc.extras, role).map((c) => chip(`cand:${c.id}`, !performerOf(c.engine) ? `${esc(c.name)}（没人能演）` : esc(c.name), aid === c.id, chipTitle(c)) +
+        (aid !== c.id && (performerOf(c.engine)?.removable ?? true) ? `<button class="btn cand-del" data-v="del:${esc(c.id)}" title="从休息室删掉（它嵌在歌里的声音一起丢）">×</button>` : "")).join("") + `</div>` + status +
       `<div class="ip-sub">换人</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="全屏的乐器目录：按曲风 / 年代 / 族 / 发声方式浏览，右边的键盘试听，上场">打开乐器目录…</button>` +
       Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(`${e.description ?? e.name}（${sizeText(e.bytes)}；家族音源库，第一次点才下载、之后留在设备上；${e.license.name}）`)}">从 ${esc(e.name)} 选…</button>`).join("") +
       `<button class="btn" data-v="sf2:pick" title="自己的 .sf2 文件：选中的那一件切出来留在这台设备上（几 MB），歌里只记来源；整个文件不留">从 .sf2 文件选…</button></div>` + pickerHtml() +
@@ -2787,7 +2773,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   pad.setRangeLow(d.pad.low);
   engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; chunkPlans = new Map(); singer.cancelPending(); singer.cancelInflight(); trimLanesForNewSong(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
   view.render(); pad.render(); renderTitle(); updateChrome();   // 挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
-  if (st.song.parts.some((p) => activeInstrument(doc.extras, p.role)?.engine === "tsukuyomi")) void singer.warm(modelBases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
+  if (st.song.parts.some((p) => performerOf(activeInstrument(doc.extras, p.role)?.engine)?.sound === "chunks")) void singer.warm(modelBases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
   if (startDyns) info(`每张纸开头补了 ${startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）`);   // v0.10.39（user「每张纸（曲段）开头，对」）
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }

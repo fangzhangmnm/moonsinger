@@ -14,7 +14,8 @@ import { playSegments } from "../score/repeats.ts";
 import { sfKey, type SfxInfo } from "../gm/sf-key.ts";
 import type { SingMark } from "../format/performance.ts";
 import type { FxV2 } from "../format/contract.ts";
-import type { TrackSpec, NoteEv, GainSeg } from "./studio.ts";
+import type { TrackSpec, GainSeg } from "./studio.ts";
+import type { PerformerPlugin } from "../performers/registry.ts";   // 只拿类型（ADR-0004：时间线问插件能什么，不看引擎名）
 
 /** 月读核心 OPT.leadIn（sing-core.mjs）：第一个元音前留的秒数；块的第 0 个采样 = 第一个音的时刻 − 它。 */
 export const LEAD_IN = 0.5;
@@ -28,7 +29,10 @@ export const PRE_ROLL = 0.1;
 export type Engine = "tsukuyomi" | "vowel-sampler" | "soundfont" | "unknown";
 /** 一个声部上场那位的出声参数（主线程从休息室查好递进来；时间线不碰 Extras）。 */
 export interface PerformerInfo {
+  /** 引擎名（= 插件英文名；诊断 / 记号解读表 perform.ts 用）。 */
   engine: Engine;
+  /** 上场那位的插件；null = 还没有人上场（认不出的引擎也算；ADR-0004）。出声方式 / 叠音 / 唱不唱字都问它。 */
+  plugin: PerformerPlugin | null;
   spec: PerfSpec & { gapSec: number; sing: Record<string, SingMark | null> };
   velocity: number;
   transpose: number;
@@ -136,10 +140,10 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const { tokens, starts } = flat(part.id), bounds = starts.map((s) => s.index), tl = timeline(tokens, map);
     if (tl.length) total = Math.max(total, tl[tl.length - 1].t1);
     const info = inp.info(part);
-    if (info.engine === "unknown") { unplayable.push({ part: part.id, why: "还没有人上场" }); continue; }
+    if (!info.plugin) { unplayable.push({ part: part.id, why: "还没有人上场" }); continue; }
     const groove = grooveWeights(tokens, bounds, gmap, info.follow);
     const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove);
-    if (info.engine === "tsukuyomi") {
+    if (info.plugin.sound === "chunks") {   // 慢引擎：按句出块（谁唱由 worker 按插件定；现在只有小月相）
       const plan = sungPlan(tokens, map, bounds, info.chunk, hum);   // 段 + 每段的语言（画灰也走它）
       const noteAt = (a: number) => tl.find((x) => x.index >= a && x.tok.kind === "note")?.t0 ?? 0;
       const clips: TrackSpec & { kind: "clips" } = { id: part.id, kind: "clips", clips: [], gain, ...(info.chain?.length ? { chain: info.chain } : {}) };
@@ -157,16 +161,13 @@ export function buildTimeline(inp: TimelineInput): Timeline {
       continue;
     }
     const vels = noteVelocities(tokens, map, info.spec, info.velocity, bounds, groove);
-    const notes = lightNotes(tokens, map, info.engine === "soundfont", lightMarks(info.spec), (i) => vels.get(i) ?? info.velocity);
-    if (info.engine === "vowel-sampler") {
-      tracks.push({ id: part.id, kind: "vowel", kana: HUM_KANA[hum ?? "n"], notes: notes.map((n): NoteEv => ({ t0: n.t0, t1: n.t1, key: n.midi, vel: n.vel ?? info.velocity, preset: 0 })), gain, ...(info.chain?.length ? { chain: info.chain } : {}) });
-      continue;
-    }
-    const g = info.gm;
-    if (!g) { unplayable.push({ part: part.id, why: "台上的不是 SoundFont 乐器" }); continue; }
-    const sfNotes = notes.map((n): NoteEv => { const key = sfKey(n.midi, g, info.transpose), h = info.hitSec?.(key) ?? 0; return { t0: n.t0 - h, t1: n.t1, key, vel: n.vel ?? info.velocity, preset: g.presetIndex }; });
-    if (info.hitSec) { sfNotes.sort((x, y) => x.t0 - y.t0); for (const n of sfNotes) from = Math.min(from, n.t0); }   // 提前了的音：录音房按 t0 顺序走；比第一个音还早 = 时间线从那儿起（同月读的辅音提前）
-    tracks.push({ id: part.id, kind: "sf", sha: g.sha, notes: sfNotes, gain, ...(info.chain?.length ? { chain: info.chain } : {}) });
+    const notes = lightNotes(tokens, map, info.plugin.poly, lightMarks(info.spec), (i) => vels.get(i) ?? info.velocity);
+    // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）
+    const built = info.plugin.track?.({ id: part.id, notes, gain, ...(info.chain?.length ? { chain: info.chain } : {}), hum, info });
+    if (!built) { unplayable.push({ part: part.id, why: `「${info.plugin.label}」不会按音符表出声` }); continue; }
+    if ("unplayable" in built) { unplayable.push({ part: part.id, why: built.unplayable }); continue; }
+    if (built.from !== undefined) from = Math.min(from, built.from);   // 着力点提前了的音：比第一个音还早 = 时间线从那儿起（同月读的辅音提前）
+    tracks.push(built.track);
   }
   to = Math.max(to, total);
   // 纸的秒区间（所有声部压平后的纸序列一样：缺这个声部的纸补了休止）

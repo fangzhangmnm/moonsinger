@@ -176,26 +176,23 @@ const noteVel = (v: number, art: readonly string[], spec: PerfSpec, gw = 0) => {
  *  呼吸：月读 = 唱法核心换气（lab-score），元音版 / SoundFont = noteEnd 收短（lightMarks）；
  *  保持 / 连线：元音版 / SoundFont = 这个音不留底色的缝（gapSec > 0 才有区别），月读还不认（连断第 3 步）。test/honors.test.ts 守着。
  *  不在表里的引擎（没人上场 / 认不出的）= null：整个声部本来就不出声，不再逐个记号画灰。 */
-const HONORS: Record<string, readonly string[]> = {
-  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale"],   // 气声 / 出声的换气 = 唱法核心（lab-score 带进唱谱）；乐器 / 元音版做不到                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
-  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
-  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio"],   // 琶音只有能叠音的认（v0.9.45）
-};
+/** 谁认哪些记号 = 演奏者插件自报（ADR-0004，2026-10-14 起表住在 src/performers/*.ts 的 honors；connected = 本来就连着唱，连线 / 保持对它没意义）。 */
+export interface HonorsOf { readonly honors: readonly string[]; readonly connected: boolean }
 /** 连线 / 保持只改「留不留缝」：这位底色本来就不留缝（gapSec = 0）= 写了也不变 → 一样画灰、明说。 */
 const GAP_ONLY = ["tenuto", "slur"];
 export const ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale", "arpeggio"] as const;   // inhale = 呼吸出声（NoteTok.inhale，只跟着 breath）   // swellGrow = 音内 < / <>，swellFade = 音内 >
 export type Mark = (typeof ALL_MARKS)[number];
 /** 这位不认的记号（写在谱上照画、画灰，出声不受影响）：引擎没实现的 + 底色不留缝时的连线 / 保持。 */
-export function ignoredArts(engine: string | null | undefined, gapSec = 0, canSwell = true): Mark[] {
-  const h = engine ? HONORS[engine] : undefined;
+export function ignoredArts(p: HonorsOf | null | undefined, gapSec = 0, canSwell = true): Mark[] {
+  const h = p?.honors;
   return h ? ALL_MARKS.filter((a) => !h.includes(a) || (GAP_ONLY.includes(a) && !(gapSec > 0)) || (a === "swellGrow" && !canSwell)) : [];
 }
 /** 为什么不认（明说用）：引擎没实现 = "engine"；底色不留缝 = "gap"；月读的连线 / 保持 = "sung"——她本来就连着唱，连线 / 保持对她不改变什么，
  *  断句用呼吸（连线和呼吸是同一件事的两头：音和下一个音之间连还是断；2026-10-08 user「连线vs呼吸这两个干的是不是一件事…月读是最需要断句的」）。 */
-export function whyIgnored(engine: string | null | undefined, m: Mark): "engine" | "gap" | "sung" | "decay" {
-  if (m === "swellGrow" && engine && HONORS[engine]?.includes(m)) return "decay";   // 按下去就自然衰减的乐器：音内变强做不到
-  if (engine === "tsukuyomi" && GAP_ONLY.includes(m)) return "sung";
-  return engine && HONORS[engine]?.includes(m) ? "gap" : "engine";
+export function whyIgnored(p: HonorsOf | null | undefined, m: Mark): "engine" | "gap" | "sung" | "decay" {
+  if (m === "swellGrow" && p?.honors.includes(m)) return "decay";   // 按下去就自然衰减的乐器：音内变强做不到
+  if (p?.connected && GAP_ONLY.includes(m)) return "sung";
+  return p?.honors.includes(m) ? "gap" : "engine";
 }
 /** 元音版 / SoundFont 这一路（lightNotes）怎么落修的记号：跳音截到 staccatoGate、呼吸收短一口气（两种引擎一样；月读不走这条，走唱谱 + 音量曲线）。
  *  main.ts 的出声和 test/honors.test.ts 都从这里取，不各写一份。 */
