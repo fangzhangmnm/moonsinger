@@ -46,7 +46,8 @@ import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSound
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf, TSUKUYOMI_RANGE } from "../performers/index.ts";
-import { createPerformance, type Issue } from "./performance.ts";   // 唱歌 / 播放 / 导出的胶水（刀 1 之二）   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
+import { createPerformance, type Issue } from "./performance.ts";   // 唱歌 / 播放 / 导出的胶水（刀 1 之二）
+import { createOverlayRegistry } from "./overlay.ts";   // 盖层登记（刀 3 之一）：面板 / 小菜单 / 轨的小卡同一时刻只开一张   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
 import type { AuditionInst, TrackSpec } from "../engine/studio.ts";
 import { buildTimeline, lightNotes, songLangOf, sungPlan, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
@@ -721,8 +722,8 @@ function applyState(next: EditorState): void {
   schedulePrewarm();            // 没在放：停下 700 ms 后先把光标附近唱好
   refreshIssues();              // 写了第一个音的声部要是没人上场 = 进清单（§2.2½）；删光了 = 出清单
 }
-function undoNow(): void { const r = undo(history, st, doc.extras); if (!r) { info("没有可撤销的"); return; } closeOffer?.(); view.lyrics.commitAndClose(); restore(r, "撤销"); }
-function redoNow(): void { const r = redo(history, st, doc.extras); if (!r) { info("没有可重做的"); return; } closeOffer?.(); view.lyrics.commitAndClose(); restore(r, "重做"); }
+function undoNow(): void { const r = undo(history, st, doc.extras); if (!r) { info("没有可撤销的"); return; } ui.close(); view.lyrics.commitAndClose(); restore(r, "撤销"); }
+function redoNow(): void { const r = redo(history, st, doc.extras); if (!r) { info("没有可重做的"); return; } ui.close(); view.lyrics.commitAndClose(); restore(r, "重做"); }
 let lastUndoText = "";   // 测试钩子看的：最近一次撤销 / 重做的 toast
 /** 撤销 / 重做落地：换 extras（封面变了 coverRev 走字；选角变了合成器重备）→ 视图跟着 locus 走（那条声部要看得见；纸随快照的 at）→ 换谱 → toast 说明撤了什么
  *  （user 2026-10-08 的顾虑「多按几次会不会静默变你没有监视的页面、曲段」：不会静默——视图跟过去 + 每一下都说一句）。 */
@@ -829,7 +830,7 @@ function applyWorkspace(): void {
 /** 换模式：收起编辑框；进「音 / 符」= 键盘弹出来；进「听」= 谱锁住、键盘收起（录音室开着的话留着）。 */
 function setMode(m: Mode): void {
   if (m === ws.mode) return;
-  closeOffer?.(); view.lyrics.commitAndClose(); view.marks.commitAndClose();
+  ui.close(); view.lyrics.commitAndClose(); view.marks.commitAndClose();
   if (m !== "listen") lastEditMode = m;
   ws.mode = m; if (hasKeys(m)) ws.collapsed = false;
   applyWorkspace();
@@ -838,7 +839,7 @@ function setMode(m: Mode): void {
 const setListen = (on: boolean) => setMode(on ? "listen" : lastEditMode);
 /** 听模式的长按 / 右键小菜单（轻点不跳播，防误触）。 */
 function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: string; index: number | null; caret: number; tick?: number }): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
@@ -847,9 +848,9 @@ function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: 
   const w = box.offsetWidth, h = box.offsetHeight, m = 8; let y = at.y + 10; if (y + h > innerHeight - m) y = at.y - h - 10;
   box.style.left = `${Math.max(m, Math.min(at.x + 6, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, y)}px`;
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  closeOffer = close;
+  ui.open({ k: "menu", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
@@ -860,7 +861,7 @@ function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: 
 }
 /** 顶栏 ⋯：循环（开关）/ 从头放 / 接缝（开了循环才有）。 */
 function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
@@ -875,9 +876,9 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
   box.style.left = `${Math.max(m, Math.min(b.left, innerWidth - w - m))}px`;
   box.style.top = `${b.bottom + 4 + h <= innerHeight - m ? b.bottom + 4 : Math.max(m, b.top - h - 4)}px`;   // 底座边上那个：下面放不下 = 往上开
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !btn.contains(e.target as Node)) close(); };
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  closeOffer = close;
+  ui.open({ k: "menu", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
@@ -949,7 +950,7 @@ let mp3Scope: "all" | "segment" = "all";   // 范围只在这次打开里记着�
  *  许可那一行只在用户自己选过许可时才出现（user「只有用户自己关心协议的时候才提出这些」）。 */
 /** §2.2½ 出口 ②：不出声的声部清单（非模态小面板，每行一个该按的钮）。入口 = |▶ 角上的数字。不替人换、不自愈（10-07 纪律）。 */
 function openIssuesSheet(): void {
-  closeOffer?.();
+  ui.close();
   const list = perfApi.issues(); if (!list.length) { info("现在的声部都能出声"); return; }
   const box = document.createElement("div"); box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">不出声的声部</div>` +
@@ -957,8 +958,8 @@ function openIssuesSheet(): void {
     `<div class="offer-msg">放和导出的 mp3 里都没有这${list.length > 1 ? `${list.length} 条轨` : "条轨"}的声音，其余照放。换谁由你定，不替补。</div>` +
     `<div class="offer-btns"><button class="btn" data-v="close">知道了</button></div></div>`;
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; };
-  closeOffer = close;
+  const close = () => { box.remove(); ui.closed(close); };
+  ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
@@ -972,7 +973,7 @@ function goToPartInst(partId: string): void {
   openInstPage();
 }
 function openMp3Panel(): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "offer";
   const paper = st.song.papers.find((p) => p.id === st.at.paper), k = st.song.papers.indexOf(paper!);
@@ -988,8 +989,8 @@ function openMp3Panel(): void {
   };
   draw();
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
+  ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
@@ -998,7 +999,7 @@ function openMp3Panel(): void {
     else if (v === "go") { close(); void exportSong({ quality: mp3Quality, scope: mp3Scope }); }
   });
 }
-let closeOffer: (() => void) | null = null;
+const ui = createOverlayRegistry();   // 盖层登记（F-17 第 1 期，2026-10-14）：原来那个「现在开着的面板怎么关」的闭包协议收成一个对象；开新的 = 旧的先关，自己收了只在还是现在这层时清
 
 // ── 模型来源（ADR-0006 ③ re-pointable endpoints：界面上能改、出厂预填；user 2026-10-07「i might worry about hardcode my gh link so if
 //    i closed my gh account all app are not able to run in private server which violates the anti abandonware rule」）：
@@ -1039,7 +1040,7 @@ async function packStatusText(): Promise<string> {
 }
 /** 设置面板（应用内，不用系统弹窗）：模型来源、从本机文件导入模型包、月读的署名与使用条款（包内 LICENSE [1][2] 要求显示）。 */
 function openSettings(): void {
-  if (closeOffer) closeOffer();
+  ui.close();
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">设置</div>` +
@@ -1081,8 +1082,8 @@ function openSettings(): void {
       cached.filter((c) => !known.has(c.sha256)).map((c) => { const u = uses.get(c.sha256); return `<div class="set-row"><span>${u ? `「${esc(u.names.join("、"))}」的声音（这首歌${u.packed ? "也打包着" : "引用着；删了要从「" + esc(u.origin.name) + "」找"}）` : `别的歌 / 别的版本 / 别的 app 留的（${c.sha256.slice(0, 8)}…）`} · ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">删掉</button></div>`; }).join("") || "（没有）";
   };
   void refreshSounds();
-  const close = () => { clearInterval(resTimer); modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; box.remove(); closeOffer = null; scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { clearInterval(resTimer); modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT; soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT; box.remove(); ui.closed(close); scoreEl.focus(); };
+  ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
@@ -1119,8 +1120,8 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
     (canShare ? `<button class="btn primary" data-v="share">分享</button>` : "") +
     `<button class="btn${canShare ? "" : " primary"}" data-v="download">下载</button><button class="btn" data-v="close">关</button></div></div>`;
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
+  ui.open({ k: "sheet", close });
   box.addEventListener("click", async (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
@@ -1391,7 +1392,7 @@ const studio = new Studio($("stage"), {
 });
 /** 录音室 = 底座里（键盘那个位子；和键盘互斥），谱留着能看（2026-10-10 user「录音室的键盘位化，和键盘互相排斥」；之前是全屏页）。 */
 /** 混音台 = 「听」的键盘（v0.10.2；user「能不能混音台就是听的键盘，不用单独一个键，就是不同功能有不同键盘」）：打开 = 切到听（底座 = 混音台）；收起 = 收起底座（底下那粒 tab 叫回来）。 */
-function openStudio(): void { closeOffer?.(); finderBackToInst = false; closeFinder(); closeInstPage(); ws.collapsed = false; if (ws.mode !== "listen") setMode("listen"); else applyWorkspace(); }   // 峰值表：页开着才要
+function openStudio(): void { ui.close(); finderBackToInst = false; closeFinder(); closeInstPage(); ws.collapsed = false; if (ws.mode !== "listen") setMode("listen"); else applyWorkspace(); }   // 峰值表：页开着才要
 function closeStudio(): void { if (!studio.isOpen) return; ws.collapsed = true; applyWorkspace(); scoreEl.focus(); }
 engine.on("meter", (peak, _active, tracks, ms, gr, cl) => { if (studio.isOpen) studio.meter(peak, tracks, ms, gr, cl); });
 engine.on("stereo", (tracks) => { if (studio.isOpen) studio.stereo(tracks); });   // 李萨如图（v0.10.16）   // 每张卡片顶上的峰值细线（v0.10.10）
@@ -1403,7 +1404,7 @@ function openFinder(): void {
   finderBackToInst = instShown; if (instShown) { instShown = false; instEl.hidden = true; }
   finderShown = true; finderPlayOnly = gallery?.isOpen() ?? false;
   document.body.classList.toggle("finder-over-gallery", finderPlayOnly);   // 舞台整层盖到歌库上面（styles.css）
-  closeOffer?.(); scoreEl.hidden = true; ws.tryout = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render(); void finder.show({ playOnly: finderPlayOnly }); updateChrome(); }   // 「弹」亮着 = pad 只弹不写
+  ui.close(); scoreEl.hidden = true; ws.tryout = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render(); void finder.show({ playOnly: finderPlayOnly }); updateChrome(); }   // 「弹」亮着 = pad 只弹不写
 function closeFinder(): void { if (!finder.isOpen) return; finderShown = false; if (finderPlayOnly) { finderPlayOnly = false; document.body.classList.remove("finder-over-gallery"); } finder.hide(); audition = null; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = instShown || finderBackToInst; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (finderBackToInst) openInstPage(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 function setActive(id: string): void { const next = withActive(doc.extras, curRole(), id, st.song.hum); updateExtras(next, { kind: "lounge", label: `「${roleName(next, curRole())}」换人：${activeCandidateName(next, curRole()) ?? id}` }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
@@ -1411,7 +1412,7 @@ const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtl
 /** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。
  *  不提醒、不帮用户写任何东西（user「只是举例子，然后这个你也不应该强迫或者提醒用户写这个，因为谱子也不绑定乐器的」「…一键插入按钮 不要」）。 */
 function openCreditsSheet(): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">作者栏</div>` +
@@ -1426,8 +1427,8 @@ function openCreditsSheet(): void {
     `<div class="offer-btns"><button class="btn primary" data-v="ok">好</button></div></div>`;
   document.body.append(box);
   const ta = box.querySelector<HTMLTextAreaElement>("#crIn")!, rt = box.querySelector<HTMLInputElement>("#rtIn")!;
-  const close = () => { update(setRights(setCredits(st, ta.value), rt.value)); box.remove(); closeOffer = null; scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { update(setRights(setCredits(st, ta.value), rt.value)); box.remove(); ui.closed(close); scoreEl.focus(); };
+  ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const t = e.target as HTMLElement, r = t.closest<HTMLElement>("[data-r]")?.dataset.r;
     if (r !== undefined) { const k = Number(r); rt.value = k < 0 ? "" : RIGHTS_PRESETS[k].text(new Date().getFullYear()); rt.focus(); return; }
@@ -1438,7 +1439,7 @@ function openCreditsSheet(): void {
 }
 /** 纸的设置（纸右上角的小钮点开）：A4 / A5 / A6，整首歌一个；以后插图片也从这里进（user「加图片的入口以后也可以放那里」）。改了立刻生效。 */
 function openPaperSheet(): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "offer";
   const draw = () => {
@@ -1473,8 +1474,8 @@ function openPaperSheet(): void {
   };
   draw();
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
+  ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
@@ -1617,7 +1618,7 @@ function addNewPart(paper = st.at.paper, giveFrom?: string): void {
 }
 /** 纸的菜单（纸顶「⋯」）：改曲段名、挪、在后面加一张、这张纸上加 / 不加某个声部、删这张纸。 */
 function openPaperMenu(id: string): void {
-  closeOffer?.();
+  ui.close();
   const paper = st.song.papers.find((p) => p.id === id); if (!paper) return;
   const k = st.song.papers.indexOf(paper), labels = partLabels(st.song, doc.extras);
   const absent = st.song.parts.flatMap((p, i) => (paper.tracks[p.id] ? [] : [{ id: p.id, name: labels[i] }]));
@@ -1631,8 +1632,8 @@ function openPaperMenu(id: string): void {
     `<div class="offer-msg">纸 = 曲段：每张纸是一个新的开始，各声部在这里重新对齐；一张纸上要哪些声部随它。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
+  ui.open({ k: "menu", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
@@ -1657,7 +1658,7 @@ function openPaperMenu(id: string): void {
 const chip = (v: string, label: string, on: boolean, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v="${esc(v)}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
 /** 轨的小卡：挨着歌手牌开（at = 歌手牌在屏幕上的框；没有 = 屏幕中间）。 */
 function openTrackCard(at?: { left: number; top: number; right: number; bottom: number }): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "track-card"; box.setAttribute("role", "dialog");
   let page: "main" | "give" | "add" = "main";   // give = 这一行交给…（换绑）；add = 这张纸上加歌手
@@ -1704,9 +1705,9 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   }
   box.style.left = `${Math.max(m, Math.min(x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };   // 非模态：点外面就收，那一下照常落到谱上
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; trackRedraw = null; };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); trackRedraw = null; };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  closeOffer = close; trackRedraw = draw;
+  ui.open({ k: "card", close }); trackRedraw = draw;
   box.addEventListener("change", (e) => {   // 合租：挂到谁上 / 自己一行
     const t = e.target as HTMLSelectElement; if (t.dataset.hostsel === undefined) return;
     const next = setPartHost(st, curPart().id, t.value || null);
@@ -1752,7 +1753,7 @@ function dynTable(sp: { dynamicsDb: Record<Dyn, number>; dynamicsVel: Record<Dyn
     (vel && layers && layers.count > 1 ? `<tr><th>GS 力度层</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
 }
 function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: number } | null): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
@@ -1772,9 +1773,9 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
   if (y + h > innerHeight - m) y = at.y - h - 10;
   box.style.left = `${Math.max(m, Math.min(x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  closeOffer = close;
+  ui.open({ k: "menu", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
@@ -1809,7 +1810,7 @@ const JUMPS: Exclude<NavWhat, "ending">[] = ["segno", "coda", "fine", "toCoda", 
 const ENDINGS: number[][] = [[1], [2], [3], [1, 2], [2, 3]];
 /** 小菜单的壳（同风格 / 力度记号的小菜单）：at = 屏幕坐标；pick(v) 返回 true = 点了不收。 */
 function ctxMenu(cls: string, html: string, at: { x: number; y: number }, pick: (v: string) => boolean | void): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = `track-card ctx-menu ${cls}`; box.setAttribute("role", "menu"); box.innerHTML = html;
   document.body.append(box);
@@ -1817,9 +1818,9 @@ function ctxMenu(cls: string, html: string, at: { x: number; y: number }, pick: 
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
   box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  closeOffer = close;
+  ui.open({ k: "menu", close });
   box.addEventListener("click", (e) => { const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return; if (!pick(v)) close(); scoreEl.focus({ preventScroll: true }); });
 }
 /** 写了反复 / 跳转之后：光标所在这一行不是这张纸最上面那位 = 明说（谱上画灰；纪律「做不到的一律画灰 + 明说」）。 */
@@ -1960,7 +1961,7 @@ function openNavMenu(i: number, at: { x: number; y: number }): void {
 }
 function openGrooveMenu(i: number, at: { x: number; y: number }): void {
   const toks = tr(st), t = toks[i]; if (!t || t.kind !== "groove") return;
-  closeOffer?.();
+  ui.close();
   let end = toks.length; for (let j = i + 1; j < toks.length; j++) if (toks[j].kind === "groove") { end = j; break; }
   view.setSpan({ from: i + 1, to: end });   // 它管的音染色（到下一个风格记号 / 这张纸结尾）
   const style = grooveStyle(t.style), amount = t.amount ?? 1;
@@ -1999,9 +2000,9 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
   box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; view.setSpan(null); };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); view.setSpan(null); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  closeOffer = close;
+  ui.open({ k: "menu", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
@@ -2019,7 +2020,7 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
   if (tr(st)[i]?.kind === "groove") { openGrooveMenu(i, at); return; }
   if (tr(st)[i]?.kind === "nav") { openNavMenu(i, at); return; }
   const t = tr(st)[i]; if (!t || (t.kind !== "dyn" && t.kind !== "hairpin")) return;
-  closeOffer?.();
+  ui.close();
   // 它管哪几个音（染强调色，菜单收起就清；user「如何不混淆的搞清楚<到底是哪里开始的？」）：渐强渐弱 = 到终点为止；渐到 = 从上一个力度记号后面到这儿；
   //   别的力度记号 = 从这儿管到下一个力度记号 / 渐强渐弱
   const toks = tr(st), src = t.kind === "dyn" ? rampSource(toks, i) : "none";
@@ -2043,9 +2044,9 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
   box.style.left = `${Math.max(m, Math.min(at.x - w / 2, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; view.setSpan(null); };   // 收起 = 不再染
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); view.setSpan(null); };   // 收起 = 不再染
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  closeOffer = close;
+  ui.open({ k: "menu", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
@@ -2066,7 +2067,7 @@ function selBarAnchor(): { x: number; y: number } {
 }
 function openSelMenu(at: { x: number; y: number }): void {
   if (!st.sel) return;
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu sel-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title = "", cls = "") => `<button class="btn ctx-item ${cls}" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
@@ -2094,9 +2095,9 @@ function openSelMenu(at: { x: number; y: number }): void {
   };
   place();
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  closeOffer = close;
+  ui.open({ k: "menu", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v || !st.sel) return;
     const cmd = (c: Command) => update(apply(st, c, performance.now()));
@@ -2132,7 +2133,7 @@ const SING_EXPERIMENTS: { key: string; label: string; def: number; values: numbe
   { key: "level", label: "齐平多少", def: 0.8, values: [0, 0.8], why: "0 = 照念的时候自己的轻重；0.8 = 往中位数拉八成" },
 ];
 function openInstPage(): void {
-  closeOffer?.(); finderBackToInst = false;
+  ui.close(); finderBackToInst = false;
   if (finder.isOpen) closeFinder();
   instShown = true; instPicked = null; scoreEl.hidden = true; instEl.hidden = false;
   ws.tryout = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render();
@@ -2344,7 +2345,7 @@ function applyDesk(d: Desk): void {
 function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; handle: docFile.FileHandle | null; mtime?: number | null; identifier?: string | null; view?: unknown; references?: Record<string, Uint8Array> }): void {
   perfApi.mixBypass = false; busMuted.clear();   // 效果全关 / 混音轨静音是这次听的，换歌复位
   if (impro) toggleImpro();
-  closeOffer?.(); closeInstPage();
+  ui.close(); closeInstPage();
   doc.stem = o.stem; doc.named = o.named; doc.handle = o.handle; doc.mtime = o.handle ? (o.mtime ?? null) : null; doc.extras = o.extras;
   doc.identifier = o.identifier ?? null; setActiveIdentifier(doc.identifier); coverTouched = false;
   history = emptyHistory();   // 换歌 / 云端覆盖重载 = 另一首的历史
@@ -2372,14 +2373,14 @@ function markSaved(): void { doc.stem = docName(); doc.named = true; doc.saved =
 function confirmDiscard(what: string): Promise<boolean> {
   if (!dirty()) return Promise.resolve(true);
   return new Promise((resolve) => {
-    closeOffer?.();
+    ui.close();
     const box = document.createElement("div");
     box.className = "offer";
     box.innerHTML = `<div class="offer-card"><div class="offer-title">「${esc(docName())}」改过还没存</div><div class="offer-msg">${what}会丢掉这些改动。</div>` +
       `<div class="offer-btns"><button class="btn" data-v="save">先存</button><button class="btn" data-v="go">丢掉，继续</button><button class="btn primary" data-v="no">算了</button></div></div>`;
     document.body.append(box);
-    const close = (ok: boolean) => { box.remove(); closeOffer = null; resolve(ok); };
-    closeOffer = () => close(false);
+    const dismiss = () => close(false), close = (ok: boolean) => { box.remove(); ui.closed(dismiss); resolve(ok); };
+    ui.open({ k: "sheet", close: dismiss });
     box.addEventListener("click", (e) => {
       const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
       if (e.target === box || v === "no") close(false);
@@ -2525,7 +2526,7 @@ document.addEventListener("click", (e) => {
 }, true);
 /** 导出 hub（照 WeebPaint「导出与另存」hub：导出 = 寄明信片，和「存 = 回家」分开住）：歌声 mp3 / .mxl 副本；乐谱 PDF 以后也进这里。 */
 function openExportHub(): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">导出</div>` +
@@ -2537,8 +2538,8 @@ function openExportHub(): void {
     `<div class="offer-msg">导出 = 寄一份出去，这里的歌还是原来那个家，「存」才是存回去。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
+  ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
@@ -2550,7 +2551,7 @@ function openExportHub(): void {
 /** 乐谱 PDF 的面板（2026-10-09 Opus 5.5；user「自己写pdf，然后字体可以选普通的和那个拼音可爱的…歌词用字体」）：选字体 → 生成 → 分享 / 下载（同 mp3）。
  *  字体点了才下（黑体约 6 MB / 拼音约 12 MB，第一次），用完就放掉。萌神拼音 = 汉字头上标普通话拼音（日文歌的汉字也会被标上）。 */
 function openPdfPanel(): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "offer";
   // 印哪些（2026-10-09，user「只印一段或一个声部 这个也到时候需要做，和wxhw差不多，在只显示一个声部的时候你可以选」；照 WXHW 导出面板的「范围」段选，用不上的不露）：
@@ -2570,8 +2571,8 @@ function openPdfPanel(): void {
       `<div class="offer-btns"><button class="btn" data-v="close">算了</button><button class="btn primary" data-v="go">生成 PDF</button></div></div>`;
   };
   draw(); document.body.append(box);
-  const close = () => { box.remove(); if (closeOffer === close) closeOffer = null; scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
+  ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
@@ -2658,7 +2659,7 @@ function clickFileName(): void {
 }
 $("fileBtn").addEventListener("click", () => clickFileName());
 function openMainMenu(): void {
-  if (closeOffer) { closeOffer(); return; }   // 再点一下三条杠 = 收起
+  if (ui.overlay) { ui.close(); return; }   // 再点一下三条杠 = 收起
   const box = document.createElement("div");
   box.className = "track-card ctx-menu main-menu"; box.setAttribute("role", "menu");
   const inStore = doc.identifier != null;
@@ -2680,9 +2681,9 @@ function openMainMenu(): void {
   const r = $("setBtn").getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, m = 8;
   box.style.left = `${Math.max(m, Math.min(r.right - w, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(r.bottom + 6, innerHeight - h - m))}px`;
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !$("setBtn").contains(e.target as Node)) close(); };
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); if (closeOffer === close) closeOffer = null; };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  closeOffer = close;
+  ui.open({ k: "menu", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
@@ -2693,7 +2694,7 @@ function openMainMenu(): void {
 }
 /** 封面图（歌库卡片上的图；缩成 256² 存进歌里）。 */
 function openCoverSheet(): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "offer";
   const thumb = doc.extras.thumbnail;
@@ -2705,8 +2706,8 @@ function openCoverSheet(): void {
     `<div class="offer-msg">歌库卡片上的图；歌名和日期照样印在上面。缩成 256² 存进歌里。</div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; if (coverUrl) URL.revokeObjectURL(coverUrl); scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { box.remove(); ui.closed(close); if (coverUrl) URL.revokeObjectURL(coverUrl); scoreEl.focus(); };
+  ui.open({ k: "sheet", close });
   box.querySelector<HTMLInputElement>("#coverIn")!.addEventListener("change", (e) => { const f = (e.target as HTMLInputElement).files?.[0]; close(); if (f) void setCover(f); });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
@@ -2716,7 +2717,7 @@ function openCoverSheet(): void {
 }
 /** 声音与署名：乐器的声音打包 / 解包（Blender 式）+ 这首歌用了谁的声音（演出署名，折叠）。 */
 function openSoundsSheet(): void {
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "offer";
   const sounds = soundsSection();
@@ -2724,8 +2725,8 @@ function openSoundsSheet(): void {
     (sounds || `<div class="offer-msg">这首歌没用乐器的声音文件（小月相 / 元音版的声音随 app 走，不进歌）。</div>`) + performersBlock(soundingRoles()) +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
-  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
-  closeOffer = close;
+  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
+  ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
@@ -2736,7 +2737,7 @@ function openSoundsSheet(): void {
  *  有家的不进这里（菜单不露）：浏览器改不了磁盘上的名字，在文件管理器里改。 */
 function renameFile(): void {
   if (doc.handle) return;
-  closeOffer?.();
+  ui.close();
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card"><div class="offer-title">改文件名</div>` +
@@ -2745,9 +2746,9 @@ function renameFile(): void {
     `<div class="offer-btns"><button class="btn" data-v="cancel">算了</button><button class="btn primary" data-v="ok">改</button></div></div>`;
   document.body.append(box);
   const inp = box.querySelector<HTMLInputElement>("#fnIn")!;
-  const close = () => { box.remove(); closeOffer = null; scoreEl.focus(); };
+  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
   const ok = () => { const v = fileSafe(inp.value); if (v && v !== docName()) { doc.stem = v; doc.named = true; renderTitle(); info(`文件名改成 ${v}.mxl`); } close(); };
-  closeOffer = close;
+  ui.open({ k: "sheet", close });
   inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); ok(); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
@@ -2758,14 +2759,14 @@ function renameFile(): void {
 /** 问一句（应用内面板，不用系统弹窗）：点了 okLabel = true；点背板 / 算了 / Esc = false。 */
 function askSheet(title: string, msg: string, okLabel: string): Promise<boolean> {
   return new Promise((resolve) => {
-    closeOffer?.();
+    ui.close();
     const box = document.createElement("div");
     box.className = "offer";
     box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc(title)}</div><div class="offer-msg">${esc(msg)}</div>` +
       `<div class="offer-btns"><button class="btn" data-v="ok">${esc(okLabel)}</button><button class="btn primary" data-v="no">算了</button></div></div>`;
     document.body.append(box);
-    const close = (ok: boolean) => { box.remove(); closeOffer = null; scoreEl.focus(); resolve(ok); };
-    closeOffer = () => close(false);
+    const dismiss = () => close(false), close = (ok: boolean) => { box.remove(); ui.closed(dismiss); scoreEl.focus(); resolve(ok); };
+    ui.open({ k: "sheet", close: dismiss });
     box.addEventListener("click", (e) => {
       const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
       if (e.target === box || v === "no") close(false); else if (v === "ok") close(true);
@@ -2952,7 +2953,7 @@ function ensureGallery(): GalleryHost {
     openSettings: () => openSettings(),
     openInstruments: () => openFinder(),   // 歌库开着 = 只弹着玩的目录，盖在歌库上面
     openCloudMenu: () => { void openCloudMenu(); },
-    onOpened: () => { closeOffer?.(); finderBackToInst = false; closeFinder(); if (ws.mode === "listen") { ws.mode = lastEditMode; applyWorkspace(); } closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },   // 进歌库 = 放下手里的歌：混音台（听）也收
+    onOpened: () => { ui.close(); finderBackToInst = false; closeFinder(); if (ws.mode === "listen") { ws.mode = lastEditMode; applyWorkspace(); } closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },   // 进歌库 = 放下手里的歌：混音台（听）也收
     onClosed: () => { void afterGalleryClosed(); showPad(padWas); updateChrome(); scoreEl.focus(); },
   });
   return gallery;
@@ -3139,7 +3140,7 @@ document.addEventListener("visibilitychange", () => { if (document.visibilitySta
 // ── 键盘：映射是一张表（src/input/keys.ts）；这里只算「键盘现在归谁」，再照路由的结果做 ─────────────
 /** 谁在最上面归谁：导出面板 > 记号框 > 歌词框 > 谱面（弹 / 改 / 写）。 */
 function whereNow(): Where {
-  if (closeOffer || isSheetOpen() || isGateOpen()) return "sheet";
+  if (ui.overlay || isSheetOpen() || isGateOpen()) return "sheet";
   if (view.marks.open) return "mark";
   if (view.lyrics.open) return "lyric";
   return impro ? "impro" : st.sel ? "edit" : "write";
@@ -3189,7 +3190,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "impro": toggleImpro(); return true;
     case "lyric": return view.lyrics.act(a.a);
     case "mark": view.marks.act(a.a); return true;
-    case "sheet": closeOffer?.(); closeSheet(); return true;
+    case "sheet": ui.close(); closeSheet(); return true;
     case "file": if (a.a === "open") void fileOpen(); else if (a.a === "save") void fileSave(); else openExportHub(); return true;
     case "clip": void selVerb(a.a); return true;
     case "undo": undoNow(); return true;
@@ -3221,7 +3222,7 @@ window.addEventListener("keydown", (e) => {
     return;
   }
   if ((e.target as HTMLElement | null)?.closest?.("wp-reference-window")) return;   // 参考窗拿着焦点：键盘归它（Ctrl / ⌘+V 进窗；Esc 它自己交回谱）
-  if (studio.isOpen && e.key === "Escape" && !st.sel && !view.lyrics.open && !view.marks.open && !closeOffer) { e.preventDefault(); setMode(lastEditMode); return; }   // 混音台 = 听：Esc = 回到写   // 谱上没别的可退 = Esc 收起录音室
+  if (studio.isOpen && e.key === "Escape" && !st.sel && !view.lyrics.open && !view.marks.open && !ui.overlay) { e.preventDefault(); setMode(lastEditMode); return; }   // 混音台 = 听：Esc = 回到写   // 谱上没别的可退 = Esc 收起录音室
   if (studio.isOpen && (e.target as HTMLElement | null)?.closest?.(".studio")) { if (e.key === "Escape") { e.preventDefault(); setMode(lastEditMode); } else if (e.key === " " && !typingIn(e.target)) { e.preventDefault(); playPause(e.timeStamp); } return; }   // 混音台在底座里：焦点在它里面才归它，谱照样能写；Esc 回谱、空格播放——焦点在推子 / 下拉 / 按钮上也是（v0.10.10 修：原来焦点在任何 input（推子也是）上都放过 = user「混音台的空格没有捕捉」），只有打字的框（混音轨的名字）不抢
   if (listenOn()) {   // 听模式：只认 空格（放 / 暂停）、Esc（回到写）和 Ctrl / ⌘+S（存）；别的键不写谱
     if (e.key === " ") { e.preventDefault(); playPause(e.timeStamp); }

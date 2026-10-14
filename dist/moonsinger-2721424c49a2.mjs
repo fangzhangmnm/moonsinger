@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.4-2026-10-14";
+var APP_VERSION = "v0.12.5-2026-10-14";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -8444,9 +8444,9 @@ function engrave(song, o10) {
         const t10 = tokens[u2.index], y2 = navY(u2.system), cls = (o10.hot?.has(t10.id) ? "nav-mark hot" : inSel(u2.index) ? "nav-mark sel" : "nav-mark") + navMute(u2.index);
         const fs = P2(TEMPO_EM * 1.05), x3 = P2(u2.x + 0.4);
         if (t10.what === "ending") {
-          const ui2 = units.indexOf(u2);
+          const ui3 = units.indexOf(u2);
           let end = null, closed = false, fallback = null, sawNote = false;
-          for (let k2 = ui2 + 1; k2 < units.length; k2++) {
+          for (let k2 = ui3 + 1; k2 < units.length; k2++) {
             const v = units[k2];
             if (v.kind === "chunk") sawNote = true;
             if (v.kind === "bar" && (v.repeat === "end" || v.repeat === "both")) {
@@ -16682,7 +16682,7 @@ function localStorageKv() {
   return { get: (k2) => ls2.getItem(k2), set: (k2, v) => ls2.setItem(k2, v), remove: (k2) => ls2.removeItem(k2), keys: () => Object.keys(ls2) };
 }
 function createStore(config) {
-  const { provider, ui: ui2, appId, databaseId = "defaultStore", kv: rawKv = localStorageKv(), validateAdopt, autoCacheOpenedFile = true } = config;
+  const { provider, ui: ui3, appId, databaseId = "defaultStore", kv: rawKv = localStorageKv(), validateAdopt, autoCacheOpenedFile = true } = config;
   const roGuard = (op2) => {
     if (config.readOnlyFiles)
       throw new ReadOnlyFilesError(op2);
@@ -16702,11 +16702,11 @@ function createStore(config) {
     throw new Error("createStore: appId \u5FC5\u586B\u2014\u2014\u540C origin \u5144\u5F1F PWA \u9694\u79BB\u7684\u7EA2\u7EBF\uFF08\u6BCF\u4E2A app \u5EFA\u81EA\u5DF1\u7684 IDB \u5E93\uFF09");
   if (config.persistence !== "app-managed" && config.persistence !== "none")
     throw new Error('createStore: persistence \u5FC5\u586B\uFF08"app-managed" | "none"\uFF09\u2014\u2014persist() \u63A5\u7EBF\u5FC5\u987B\u663E\u5F0F\u8868\u6001\uFF082026-08-27 \u62CD\u677F\uFF0C\u89C1 persistence.ts\uFF09');
-  setStoreErrorReporter((err2, level) => ui2.reportError(err2, level));
+  setStoreErrorReporter((err2, level) => ui3.reportError(err2, level));
   if (config.persistence === "app-managed") {
     void queryStoragePersistence().then((st3) => {
       if (st3.supported && !st3.persisted)
-        ui2.reportError(new Error("navigator.storage: origin not persisted yet \u2014 wire requestStoragePersistence() at a user gesture (best-effort layer, never load-bearing)"), "log");
+        ui3.reportError(new Error("navigator.storage: origin not persisted yet \u2014 wire requestStoragePersistence() at a user gesture (best-effort layer, never load-bearing)"), "log");
     });
   }
   const ns2 = storeNamespace(appId, databaseId);
@@ -16835,7 +16835,7 @@ function createStore(config) {
       try {
         r10 = await cloud.deleteEmptyFolder(p2);
       } catch (e10) {
-        ui2.reportError(e10, "warning");
+        ui3.reportError(e10, "warning");
         continue;
       }
       if (r10.status === "list-failed")
@@ -16861,7 +16861,7 @@ function createStore(config) {
       try {
         await local.clearDirIndexCache?.();
       } catch (e10) {
-        ui2.reportError(e10, "log");
+        ui3.reportError(e10, "log");
       }
       for (const f2 of [...folderWatchers.keys()])
         void pushLocalFrame(f2);
@@ -16878,7 +16878,7 @@ function createStore(config) {
         try {
           h2(err2, phase);
         } catch (e10) {
-          ui2.reportError(e10);
+          ui3.reportError(e10);
         }
       }
     }
@@ -16896,7 +16896,7 @@ function createStore(config) {
         return null;
       return p2;
     } catch (e10) {
-      ui2.reportError(e10, "log");
+      ui3.reportError(e10, "log");
       return null;
     }
   }
@@ -16905,11 +16905,11 @@ function createStore(config) {
       return;
     const files = live.files.filter((c10) => !isHidden(c10.name)).map((c10) => ({ name: c10.name, eTag: c10.eTag, size: c10.size, lastModified: toMs(c10.lastModifiedDateTime), id: c10.ref }));
     const folders = live.folders.filter((f2) => !isHidden(f2));
-    void local.putDirIndexCache(folder, JSON.stringify({ v: SNAP_V, folder, savedAt: Date.now(), files, folders })).catch((e10) => ui2.reportError(e10, "log"));
+    void local.putDirIndexCache(folder, JSON.stringify({ v: SNAP_V, folder, savedAt: Date.now(), files, folders })).catch((e10) => ui3.reportError(e10, "log"));
   }
   function emitFolder(folder, snap) {
     if (snap.folder !== folder) {
-      ui2.reportError(new Error(`watchFolder \u8DEF\u5F84\u9519\u4E71\uFF1A\u8BA2\u9605\u300C${folder}\u300D\u6536\u5230\u300C${snap.folder}\u300D\uFF0C\u5DF2\u4E22\u5F03`));
+      ui3.reportError(new Error(`watchFolder \u8DEF\u5F84\u9519\u4E71\uFF1A\u8BA2\u9605\u300C${folder}\u300D\u6536\u5230\u300C${snap.folder}\u300D\uFF0C\u5DF2\u4E22\u5F03`));
       return;
     }
     const set = folderWatchers.get(folder);
@@ -16919,7 +16919,7 @@ function createStore(config) {
       try {
         cb2(snap);
       } catch (e10) {
-        ui2.reportError(e10);
+        ui3.reportError(e10);
       }
     }
   }
@@ -16933,7 +16933,7 @@ function createStore(config) {
     try {
       emitFolder(folder, await localFrameSnap(folder));
     } catch (e10) {
-      ui2.reportError(e10);
+      ui3.reportError(e10);
       emitFolderError(folder, e10, "local");
     }
   }
@@ -16943,15 +16943,15 @@ function createStore(config) {
     void ensureScaffold();
     const ctx2 = ctxNow();
     const live = ctx2.online && ctx2.signedIn ? await cloud.listFolder(folder).catch((e10) => {
-      ui2.reportError(e10, "log");
+      ui3.reportError(e10, "log");
       return null;
     }) : null;
-    await reconcileMod.reconcileFolder(folder, { cloudPrefetched: live }).catch((e10) => ui2.reportError(e10));
+    await reconcileMod.reconcileFolder(folder, { cloudPrefetched: live }).catch((e10) => ui3.reportError(e10));
     try {
       const stale = live ? null : await readDirIndexCache(folder);
       emitFolder(folder, await listing.listFolder(folder, ctx2, stale ? { cloudPrefetched: live, staleCloud: stale } : { cloudPrefetched: live }));
     } catch (e10) {
-      ui2.reportError(e10);
+      ui3.reportError(e10);
       emitFolderError(folder, e10, "remote");
     }
     if (live?.complete)
@@ -16972,11 +16972,11 @@ function createStore(config) {
     if (opts?.onError)
       watcherOnError.set(cb2, opts.onError);
     const fail = (e10, phase) => {
-      ui2.reportError(e10);
+      ui3.reportError(e10);
       try {
         opts?.onError?.(e10, phase);
       } catch (e22) {
-        ui2.reportError(e22);
+        ui3.reportError(e22);
       }
     };
     void (async () => {
@@ -17035,14 +17035,14 @@ function createStore(config) {
     // 返明文；加密但锁定 → null（safePull 退验封套）
     looksEncrypted: (b3) => enc3.looksEncryptedContainer(b3)
   });
-  const busyT = (label, fn) => ui2.busy(resolveStoreText(ui2.text, label), fn, label);
-  const busyK = (key, params, fn) => ui2.busy(resolveStoreText(ui2.text, key, params), fn, key);
+  const busyT = (label, fn) => ui3.busy(resolveStoreText(ui3.text, label), fn, label);
+  const busyK = (key, params, fn) => ui3.busy(resolveStoreText(ui3.text, key, params), fn, key);
   const pushMod = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: busyT });
   const uploadReplayPolicy = config.offlineUploadReplay ?? "manual";
   if (uploadReplayPolicy !== "manual") {
-    if (!ui2.onReplayStatus)
+    if (!ui3.onReplayStatus)
       throw new Error("createStore: offlineUploadReplay\u2260'manual' \u9700 ui.onReplayStatus\uFF08ADR-0018 \u5F3A\u5236 UI \u63D0\u793A\uFF09");
-    if (uploadReplayPolicy === "ask" && !ui2.confirmReplay)
+    if (uploadReplayPolicy === "ask" && !ui3.confirmReplay)
       throw new Error("createStore: offlineUploadReplay='ask' \u9700 ui.confirmReplay\uFF08\u56DE\u7EBF\u8BE2\u95EE\u7528\u6237\uFF09");
   }
   const pushBg = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: (_l, fn) => fn() });
@@ -17061,8 +17061,8 @@ function createStore(config) {
     serialize: sub.serialize,
     pushLocal: pushLocalBytes,
     policy: uploadReplayPolicy,
-    confirm: ui2.confirmReplay,
-    onStatus: ui2.onReplayStatus
+    confirm: ui3.confirmReplay,
+    onStatus: ui3.onReplayStatus
   });
   const fresh = createFreshness({ cloud, head, safeResolve, busy: busyT });
   const del = createDelete({ cloud, local, head, kv, busy: busyT });
@@ -17129,13 +17129,13 @@ function createStore(config) {
       try {
         cb2(from, to2);
       } catch (e10) {
-        ui2.reportError(e10, "warning");
+        ui3.reportError(e10, "warning");
       }
     }
     return { ok: true, where: r10.where, oldKept: r10.oldKept, oldUnknown: r10.oldUnknown, oldCloudOrphan: r10.oldCloudOrphan, cloudDeferred: r10.cloudDeferred, oldName: from };
   });
   const onConflictFor = (occasion) => async ({ name }) => {
-    return ui2.resolveConflict({ name, local: await local.get(name), cloud: null, occasion });
+    return ui3.resolveConflict({ name, local: await local.get(name), cloud: null, occasion });
   };
   const onConflict = onConflictFor("push");
   async function encTailBytes(name, n10, tryCloud) {
@@ -17342,7 +17342,7 @@ function createStore(config) {
           if (r10.status === "resolved" && (r10.resolution === "takeCloud" || r10.resolution === "keepMine"))
             resolution = r10.resolution;
         } catch (e10) {
-          ui2.reportError(e10);
+          ui3.reportError(e10);
           reason = "error";
         }
         if (head.isDirtyThisTab(name) && head.seenBase(name) == null)
@@ -17352,23 +17352,23 @@ function createStore(config) {
       async open() {
         await migrationReady;
         if (await local.exists(name)) {
-          const esc9 = isOnline() ? ui2.offlineEscape?.() : void 0;
+          const esc9 = isOnline() ? ui3.offlineEscape?.() : void 0;
           try {
             await fresh.open(name, {
               isOnline,
               probe: esc9?.probe,
               onNewer: onConflictFor("open"),
               localDirty: () => sub.edits.localDirty()
-            }).catch((e10) => ui2.reportError(e10));
+            }).catch((e10) => ui3.reportError(e10));
           } finally {
             esc9?.settle();
           }
           return readLocal();
         }
         if (autoCacheOpenedFile) {
-          const esc9 = isOnline() ? ui2.offlineEscape?.() : void 0;
+          const esc9 = isOnline() ? ui3.offlineEscape?.() : void 0;
           const pulling = identity.acquire(name, { localName: name }).catch((e10) => {
-            ui2.reportError(e10);
+            ui3.reportError(e10);
             return null;
           });
           try {
@@ -17379,7 +17379,7 @@ function createStore(config) {
           return readLocal();
         }
         const pulled = await cloud.pull(name).catch((e10) => {
-          ui2.reportError(e10);
+          ui3.reportError(e10);
           return null;
         });
         return pulled ? await seal.unsealForRead(name, pulled.blob) : null;
@@ -17480,11 +17480,11 @@ function createStore(config) {
               await runOnce();
               return;
             } catch (e22) {
-              ui2.reportError(e22);
+              ui3.reportError(e22);
               return;
             }
           }
-          ui2.reportError(e10);
+          ui3.reportError(e10);
         }
       },
       async openStream() {
@@ -17504,7 +17504,7 @@ function createStore(config) {
           };
         }
         const sess = await sessions.open(name).catch((e10) => {
-          ui2.reportError(e10, "log");
+          ui3.reportError(e10, "log");
           return null;
         });
         if (!sess)
@@ -17601,7 +17601,7 @@ function createStore(config) {
     try {
       await collectionsCloud.ensureFolder(`.${appId}`);
     } catch (e10) {
-      ui2.reportError(e10);
+      ui3.reportError(e10);
       return;
     }
     for (const name of _scaffoldNames) {
@@ -17612,7 +17612,7 @@ function createStore(config) {
           await collectionsCloud.push(name, emptyCollectionBytes(), { baseEtag: null });
         _scaffoldEnsured.add(name);
       } catch (e10) {
-        ui2.reportError(e10);
+        ui3.reportError(e10);
       }
     }
   }
@@ -17691,7 +17691,7 @@ function createStore(config) {
                 const r10 = await pushLocalBytes(name);
                 return r10.status === "pushed" || r10.status === "healed" ? "pushed" : "failed";
               } catch (e10) {
-                ui2.reportError(e10, "warning");
+                ui3.reportError(e10, "warning");
                 return "failed";
               }
             });
@@ -27191,6 +27191,34 @@ function createPerformance(host) {
     },
     set turnLead(v) {
       turnLead = v;
+    }
+  };
+}
+
+// src/app/overlay.ts
+function createOverlayRegistry() {
+  let cur = null;
+  return {
+    get overlay() {
+      return cur;
+    },
+    open(next2) {
+      const prev = cur;
+      cur = null;
+      prev?.close();
+      cur = next2;
+    },
+    // 先登记为空再关旧的：旧的 close 里的 closed(自己) 不会碰到新的
+    close() {
+      const prev = cur;
+      cur = null;
+      prev?.close();
+    },
+    closed(close) {
+      if (cur?.close === close) cur = null;
+    },
+    is(k2) {
+      return cur?.k === k2;
     }
   };
 }
@@ -40091,7 +40119,7 @@ function undoNow() {
     info("\u6CA1\u6709\u53EF\u64A4\u9500\u7684");
     return;
   }
-  closeOffer?.();
+  ui2.close();
   view.lyrics.commitAndClose();
   restore(r10, "\u64A4\u9500");
 }
@@ -40101,7 +40129,7 @@ function redoNow() {
     info("\u6CA1\u6709\u53EF\u91CD\u505A\u7684");
     return;
   }
-  closeOffer?.();
+  ui2.close();
   view.lyrics.commitAndClose();
   restore(r10, "\u91CD\u505A");
 }
@@ -40263,7 +40291,7 @@ function applyWorkspace() {
 }
 function setMode(m2) {
   if (m2 === ws.mode) return;
-  closeOffer?.();
+  ui2.close();
   view.lyrics.commitAndClose();
   view.marks.commitAndClose();
   if (m2 !== "listen") lastEditMode = m2;
@@ -40273,7 +40301,7 @@ function setMode(m2) {
 }
 var setListen = (on2) => setMode(on2 ? "listen" : lastEditMode);
 function openListenMenu(at2, a10) {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
@@ -40291,12 +40319,12 @@ function openListenMenu(at2, a10) {
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  closeOffer = close;
+  ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
@@ -40307,7 +40335,7 @@ function openListenMenu(at2, a10) {
   });
 }
 function openTransportMenu(btn = $2("playBtn")) {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
@@ -40323,12 +40351,12 @@ function openTransportMenu(btn = $2("playBtn")) {
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  closeOffer = close;
+  ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
@@ -40438,7 +40466,7 @@ async function resolveGmBytes(g3) {
 }
 var mp3Scope = "all";
 function openIssuesSheet() {
-  closeOffer?.();
+  ui2.close();
   const list = perfApi.issues();
   if (!list.length) {
     info("\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0");
@@ -40450,9 +40478,9 @@ function openIssuesSheet() {
   document.body.append(box);
   const close = () => {
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") {
@@ -40471,7 +40499,7 @@ function goToPartInst(partId) {
   openInstPage();
 }
 function openMp3Panel() {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
   const paper = st2.song.papers.find((p2) => p2.id === st2.at.paper), k2 = st2.song.papers.indexOf(paper);
@@ -40485,10 +40513,10 @@ function openMp3Panel() {
   document.body.append(box);
   const close = () => {
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") {
@@ -40507,7 +40535,7 @@ function openMp3Panel() {
     }
   });
 }
-var closeOffer = null;
+var ui2 = createOverlayRegistry();
 var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
 var soundsSource = SOUNDS_SOURCE_DEFAULT;
 var soundsBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-sounds", location.href).href, soundsSource.trim().replace(/\/+$/, "") || SOUNDS_SOURCE_DEFAULT])];
@@ -40555,7 +40583,7 @@ async function packStatusText() {
   return st3.map((s10) => `${s10.ready ? "\u2713" : "\xB7"} ${s10.slug}\uFF08${(s10.bytesTotal / 1e6).toFixed(1)} MB\uFF09`).join("\n");
 }
 function openSettings() {
-  if (closeOffer) closeOffer();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(modelSource)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(soundsSource)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc8(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? `
@@ -40613,10 +40641,10 @@ ${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C
     modelSource = srcIn.value.trim() || MODEL_SOURCE_DEFAULT;
     soundsSource = sndIn.value.trim() || SOUNDS_SOURCE_DEFAULT;
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") close();
@@ -40684,10 +40712,10 @@ function offerFile(file, title, msg, onDone) {
   document.body.append(box);
   const close = () => {
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.addEventListener("click", async (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") {
@@ -41149,7 +41177,7 @@ var studio = new Studio2($2("stage"), {
   }
 });
 function openStudio() {
-  closeOffer?.();
+  ui2.close();
   finderBackToInst = false;
   closeFinder();
   closeInstPage();
@@ -41184,7 +41212,7 @@ function openFinder() {
   finderShown = true;
   finderPlayOnly = gallery?.isOpen() ?? false;
   document.body.classList.toggle("finder-over-gallery", finderPlayOnly);
-  closeOffer?.();
+  ui2.close();
   scoreEl.hidden = true;
   ws.tryout = true;
   showPad(true);
@@ -41227,7 +41255,7 @@ function setActive(id2) {
 }
 var sha256Hex3 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
 function openCreditsSheet() {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">\u4F5C\u8005\u680F</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09">${esc8(st2.song.credits ?? "")}</textarea><div class="offer-msg">\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002</div><details class="rights-sec"${st2.song.rights ? " open" : ""}><summary class="part-sec">\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09</summary><div class="set-row"><button class="btn cand" data-r="-1" title="\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09">\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc8(p2.note)}">${esc8(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199" value="${esc8(st2.song.rights ?? "")}" /><div class="offer-msg">\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002</div></details><div class="offer-btns"><button class="btn primary" data-v="ok">\u597D</button></div></div>`;
@@ -41236,10 +41264,10 @@ function openCreditsSheet() {
   const close = () => {
     update(setRights(setCredits(st2, ta2.value), rt2.value));
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     const t10 = e10.target, r10 = t10.closest("[data-r]")?.dataset.r;
     if (r10 !== void 0) {
@@ -41254,7 +41282,7 @@ function openCreditsSheet() {
   ta2.focus();
 }
 function openPaperSheet() {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
   const draw = () => {
@@ -41266,10 +41294,10 @@ function openPaperSheet() {
   document.body.append(box);
   const close = () => {
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") {
@@ -41444,7 +41472,7 @@ function addNewPart(paper = st2.at.paper, giveFrom) {
   openInstPage();
 }
 function openPaperMenu(id2) {
-  closeOffer?.();
+  ui2.close();
   const paper = st2.song.papers.find((p2) => p2.id === id2);
   if (!paper) return;
   const k2 = st2.song.papers.indexOf(paper), labels = partLabels(st2.song, doc.extras);
@@ -41455,10 +41483,10 @@ function openPaperMenu(id2) {
   document.body.append(box);
   const close = () => {
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") {
@@ -41514,7 +41542,7 @@ function openPaperMenu(id2) {
 }
 var chip = (v, label, on2, title = "") => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${esc8(v)}"${title ? ` title="${esc8(title)}"` : ""}>${label}</button>`;
 function openTrackCard(at2) {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "track-card";
   box.setAttribute("role", "dialog");
@@ -41563,13 +41591,13 @@ function openTrackCard(at2) {
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
     trackRedraw = null;
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  closeOffer = close;
+  ui2.open({ k: "card", close });
   trackRedraw = draw;
   box.addEventListener("change", (e10) => {
     const t10 = e10.target;
@@ -41665,7 +41693,7 @@ function dynTable(sp2, layers) {
   })}</tr>` : "") + `</table>`;
 }
 function openScoreMenu(at2, _row) {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
@@ -41684,12 +41712,12 @@ function openScoreMenu(at2, _row) {
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  closeOffer = close;
+  ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
@@ -41741,7 +41769,7 @@ function insertGrooveHere() {
 var JUMPS = ["segno", "coda", "fine", "toCoda", "dc", "dcFine", "dcCoda", "ds", "dsFine", "dsCoda"];
 var ENDINGS = [[1], [2], [3], [1, 2], [2, 3]];
 function ctxMenu(cls, html, at2, pick) {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = `track-card ctx-menu ${cls}`;
   box.setAttribute("role", "menu");
@@ -41758,12 +41786,12 @@ function ctxMenu(cls, html, at2, pick) {
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  closeOffer = close;
+  ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
@@ -41954,7 +41982,7 @@ function openNavMenu(i10, at2) {
 function openGrooveMenu(i10, at2) {
   const toks = tr(st2), t10 = toks[i10];
   if (!t10 || t10.kind !== "groove") return;
-  closeOffer?.();
+  ui2.close();
   let end = toks.length;
   for (let j2 = i10 + 1; j2 < toks.length; j2++) if (toks[j2].kind === "groove") {
     end = j2;
@@ -42014,13 +42042,13 @@ function openGrooveMenu(i10, at2) {
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
     view.setSpan(null);
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  closeOffer = close;
+  ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
@@ -42055,7 +42083,7 @@ function openMarkMenu(i10, at2) {
   }
   const t10 = tr(st2)[i10];
   if (!t10 || t10.kind !== "dyn" && t10.kind !== "hairpin") return;
-  closeOffer?.();
+  ui2.close();
   const toks = tr(st2), src = t10.kind === "dyn" ? rampSource(toks, i10) : "none";
   const nextMark = (k2) => {
     for (let j2 = k2 + 1; j2 < toks.length; j2++) if (toks[j2].kind === "dyn" || toks[j2].kind === "hairpin") return j2;
@@ -42082,13 +42110,13 @@ function openMarkMenu(i10, at2) {
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
     view.setSpan(null);
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  closeOffer = close;
+  ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
@@ -42108,7 +42136,7 @@ function selBarAnchor() {
 }
 function openSelMenu(at2) {
   if (!st2.sel) return;
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu sel-menu";
   box.setAttribute("role", "menu");
@@ -42138,12 +42166,12 @@ function openSelMenu(at2) {
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  closeOffer = close;
+  ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v || !st2.sel) return;
@@ -42208,7 +42236,7 @@ var SING_EXPERIMENTS = [
   { key: "level", label: "\u9F50\u5E73\u591A\u5C11", def: 0.8, values: [0, 0.8], why: "0 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF1B0.8 = \u5F80\u4E2D\u4F4D\u6570\u62C9\u516B\u6210" }
 ];
 function openInstPage() {
-  closeOffer?.();
+  ui2.close();
   finderBackToInst = false;
   if (finder.isOpen) closeFinder();
   instShown = true;
@@ -42542,7 +42570,7 @@ function loadDoc(song, o10) {
   perfApi.mixBypass = false;
   busMuted.clear();
   if (impro) toggleImpro();
-  closeOffer?.();
+  ui2.close();
   closeInstPage();
   doc.stem = o10.stem;
   doc.named = o10.named;
@@ -42586,17 +42614,17 @@ function markSaved() {
 function confirmDiscard(what) {
   if (!dirty()) return Promise.resolve(true);
   return new Promise((resolve) => {
-    closeOffer?.();
+    ui2.close();
     const box = document.createElement("div");
     box.className = "offer";
     box.innerHTML = `<div class="offer-card"><div class="offer-title">\u300C${esc8(docName())}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58</div><div class="offer-msg">${what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002</div><div class="offer-btns"><button class="btn" data-v="save">\u5148\u5B58</button><button class="btn" data-v="go">\u4E22\u6389\uFF0C\u7EE7\u7EED</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
     document.body.append(box);
-    const close = (ok2) => {
+    const dismiss = () => close(false), close = (ok2) => {
       box.remove();
-      closeOffer = null;
+      ui2.closed(dismiss);
       resolve(ok2);
     };
-    closeOffer = () => close(false);
+    ui2.open({ k: "sheet", close: dismiss });
     box.addEventListener("click", (e10) => {
       const v = e10.target.closest("[data-v]")?.dataset.v;
       if (e10.target === box || v === "no") close(false);
@@ -42768,17 +42796,17 @@ document.addEventListener("click", (e10) => {
   void navigator.clipboard?.writeText(text2).then(() => info("\u7F72\u540D\u590D\u5236\u597D\u4E86"), () => showError("\u590D\u5236\u4E0D\u4E86\uFF08\u6D4F\u89C8\u5668\u4E0D\u8BA9\uFF09\uFF1A\u957F\u6309\u4E0A\u9762\u7684\u5B57\u81EA\u5DF1\u9009"));
 }, true);
 function openExportHub() {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5BFC\u51FA</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="\u5C0F\u6708\u76F8\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D"><svg class="ico"><use href="#export"/></svg>\u6B4C\u58F0\uFF08mp3\uFF09\u2026</button><button class="btn" data-v="pdf" title="\u5370\u51FA\u6765\u7684\u8C31\uFF08\u6309\u8FD9\u9996\u6B4C\u7684\u7EB8\u5F20\u5206\u9875\uFF1B\u6B4C\u8BCD\u7528\u5D4C\u8FDB\u53BB\u7684\u5B57\u4F53\uFF0C\u80FD\u9009\u4E2D\u590D\u5236\uFF09"><svg class="ico"><use href="#export"/></svg>\u4E50\u8C31\uFF08PDF\uFF09\u2026</button><button class="btn" data-v="mxl" title="\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026</button>` + (soundUses(doc.extras).some((u2) => !u2.packed) ? `<button class="btn" data-v="mxlPacked" title="\u526F\u672C\u91CC\u628A\u4E50\u5668\u7684\u58F0\u97F3\u4E5F\u88C5\u8FDB\u53BB\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u7167\u65E7\u53EA\u8BB0\u6765\u6E90"><svg class="ico"><use href="#save-as"/></svg>\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026</button>` : "") + `</div><div class="offer-msg">\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002</div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") {
@@ -42794,7 +42822,7 @@ function openExportHub() {
   });
 }
 function openPdfPanel() {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
   const curPaper = st2.song.papers.find((p2) => p2.id === st2.at.paper) ?? st2.song.papers[0];
@@ -42809,10 +42837,10 @@ function openPdfPanel() {
   document.body.append(box);
   const close = () => {
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") {
@@ -42903,8 +42931,8 @@ function clickFileName() {
 }
 $2("fileBtn").addEventListener("click", () => clickFileName());
 function openMainMenu() {
-  if (closeOffer) {
-    closeOffer();
+  if (ui2.overlay) {
+    ui2.close();
     return;
   }
   const box = document.createElement("div");
@@ -42924,12 +42952,12 @@ function openMainMenu() {
   const close = () => {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
-    if (closeOffer === close) closeOffer = null;
+    ui2.closed(close);
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  closeOffer = close;
+  ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
@@ -42946,7 +42974,7 @@ function openMainMenu() {
   });
 }
 function openCoverSheet() {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
   const thumb = doc.extras.thumbnail;
@@ -42955,11 +42983,11 @@ function openCoverSheet() {
   document.body.append(box);
   const close = () => {
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     if (coverUrl) URL.revokeObjectURL(coverUrl);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.querySelector("#coverIn").addEventListener("change", (e10) => {
     const f2 = e10.target.files?.[0];
     close();
@@ -42981,7 +43009,7 @@ function openCoverSheet() {
   });
 }
 function openSoundsSheet() {
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
   const sounds = soundsSection();
@@ -42989,10 +43017,10 @@ function openSoundsSheet() {
   document.body.append(box);
   const close = () => {
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") {
@@ -43007,7 +43035,7 @@ function openSoundsSheet() {
 }
 function renameFile() {
   if (doc.handle) return;
-  closeOffer?.();
+  ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card"><div class="offer-title">\u6539\u6587\u4EF6\u540D</div><label class="set-field">\u6587\u4EF6\u540D<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc8(docName())}" /></label><div class="offer-msg">\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u8FD9\u4E2A\u540D\u5B57\u3002</div><div class="offer-btns"><button class="btn" data-v="cancel">\u7B97\u4E86</button><button class="btn primary" data-v="ok">\u6539</button></div></div>`;
@@ -43015,7 +43043,7 @@ function renameFile() {
   const inp = box.querySelector("#fnIn");
   const close = () => {
     box.remove();
-    closeOffer = null;
+    ui2.closed(close);
     scoreEl.focus();
   };
   const ok2 = () => {
@@ -43028,7 +43056,7 @@ function renameFile() {
     }
     close();
   };
-  closeOffer = close;
+  ui2.open({ k: "sheet", close });
   inp.addEventListener("keydown", (e10) => {
     if (e10.isComposing) return;
     if (e10.key === "Enter") {
@@ -43051,18 +43079,18 @@ function renameFile() {
 }
 function askSheet(title, msg, okLabel) {
   return new Promise((resolve) => {
-    closeOffer?.();
+    ui2.close();
     const box = document.createElement("div");
     box.className = "offer";
     box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc8(title)}</div><div class="offer-msg">${esc8(msg)}</div><div class="offer-btns"><button class="btn" data-v="ok">${esc8(okLabel)}</button><button class="btn primary" data-v="no">\u7B97\u4E86</button></div></div>`;
     document.body.append(box);
-    const close = (ok2) => {
+    const dismiss = () => close(false), close = (ok2) => {
       box.remove();
-      closeOffer = null;
+      ui2.closed(dismiss);
       scoreEl.focus();
       resolve(ok2);
     };
-    closeOffer = () => close(false);
+    ui2.open({ k: "sheet", close: dismiss });
     box.addEventListener("click", (e10) => {
       const v = e10.target.closest("[data-v]")?.dataset.v;
       if (e10.target === box || v === "no") close(false);
@@ -43375,7 +43403,7 @@ function ensureGallery() {
       void openCloudMenu();
     },
     onOpened: () => {
-      closeOffer?.();
+      ui2.close();
       finderBackToInst = false;
       closeFinder();
       if (ws.mode === "listen") {
@@ -43695,7 +43723,7 @@ document.addEventListener("visibilitychange", () => {
   else retrySilent();
 });
 function whereNow() {
-  if (closeOffer || isSheetOpen() || isGateOpen()) return "sheet";
+  if (ui2.overlay || isSheetOpen() || isGateOpen()) return "sheet";
   if (view.marks.open) return "mark";
   if (view.lyrics.open) return "lyric";
   return impro ? "impro" : st2.sel ? "edit" : "write";
@@ -43787,7 +43815,7 @@ function run(a10, repeat, code) {
       view.marks.act(a10.a);
       return true;
     case "sheet":
-      closeOffer?.();
+      ui2.close();
       closeSheet();
       return true;
     case "file":
@@ -43857,7 +43885,7 @@ window.addEventListener("keydown", (e10) => {
     return;
   }
   if (e10.target?.closest?.("wp-reference-window")) return;
-  if (studio.isOpen && e10.key === "Escape" && !st2.sel && !view.lyrics.open && !view.marks.open && !closeOffer) {
+  if (studio.isOpen && e10.key === "Escape" && !st2.sel && !view.lyrics.open && !view.marks.open && !ui2.overlay) {
     e10.preventDefault();
     setMode(lastEditMode);
     return;
@@ -43959,4 +43987,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ae06f82c17ee.mjs.map
+//# sourceMappingURL=moonsinger-2721424c49a2.mjs.map

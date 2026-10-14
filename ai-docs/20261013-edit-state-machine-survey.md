@@ -142,3 +142,10 @@ export function dockOf(mode: Mode, o: Overlay, collapsed: boolean): Dock;   // �
 2. **「一次一层盖层」的边界**：我把参考窗 / 轨的小卡 / 歌词框 / 混音台划在盖层**外**（§2 I2）。混音台 = 底座的一种（照 workspace.ts）。要不要把「轨的小卡」也算盖层（现在点外面收，和小菜单一样）？
 3. **顺序**：和 F-13（唱歌胶水从 main.ts 抽出）谁先。两刀都切 main.ts，先切哪刀另一刀的 diff 就小；盖层登记碰的是 UI 入口，唱歌胶水碰的是播放 / 预唱，重叠不多，可以各做各的。
 4. **叠音判定那台小机器**（`chordWaits / monoHeld`）这一轮不碰——它是时间判定（头 / 尾 / 比例），和锁不是一类。要不要也放进第 2 期顺手给个纯函数 + 单元？
+
+## 6. 进度（2026-10-14，edited by Claude Fable 5.1）
+
+- §5 Q3（顺序）已不成问题：F-13 先切完了（v0.12.1 / 0.12.2，`20261014-performer-registry-and-glue-extraction.md`）。
+- **第 1 期前一半 done = v0.12.5**：`src/app/overlay.ts` 盖层登记，`closeOffer` 协议 44 / 89 处归零，`test/overlay.test.ts`；E2E modes / pad-toggle / finder-keys / save-keys / top-sels / transport / loop / lift / store / singer-delete / issues 绿。§5 Q2 先按「轨的小卡也算盖层（kind card）」做（它本来就在 closeOffer 协议里）。
+- 第 1 期后一半（整页的旗 instShown / finderShown / finderPlayOnly / finderBackToInst 收进登记、`padLocked / keyOwner / dockOf` 从盖层推）和第 2 期（锁的纯函数）待做；第 3 期（手势联合）照 §5 Q1 等 user。
+

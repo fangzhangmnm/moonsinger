@@ -28,6 +28,7 @@ import "./studio.test.ts";
 import "./resource-watch.test.ts";
 import "./whisper-inhale.test.ts";
 import "./workspace.test.ts";
+import "./overlay.test.ts";
 import "./timeline.test.ts";
 import "./scheduler.test.ts";
 import "./speech-cache.test.ts";
