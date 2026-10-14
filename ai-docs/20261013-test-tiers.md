@@ -88,3 +88,5 @@
 
 `npm run build 2>&1 | tail -1 && git commit …` 这种链，管道的退出码是 tail 的（0），build 红了也照样 commit——v0.12.7 第一笔就这么带着一个类型错 + bump 前的 dist 推了上去。要么 `set -o pipefail`，要么把输出写进文件再看 `$?`。
 
+> 2026-10-15 补（Claude Fable 5.1）：**已知 flake**（并行红、单跑绿 = 负载；`follow` 单跑也会随机红，一次红在不同的 check 上——放着翻谱那条测的是时序，v0.12.16 单跑 9/9、v0.12.17 两次单跑一红一绿；不是这一轮改出来的，刀 2 之前就记过「follow 单跑也随机红」）：follow / routing / seg-jump / sing-chunks。红了先单跑；follow 的时序判据值得专门修一次（候选：把「等一拍」改成等事件）。
+
