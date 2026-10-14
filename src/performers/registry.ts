@@ -11,6 +11,7 @@
 //     解析四种情况（对版本 / 待升级 / 同名顶上要人确认 / 认不出）在 ADR-0004 §2.2；带 guid 的壳和版本比对等格式那一刀套上去再做，现在歌里还只有引擎名。
 //     怎么露出来（一张清单 / 常驻角标 / 开歌一条 toast / 导出面板一行；patch-minor-major 落在迁移步骤上；旧 app 开新歌逐轨灰）= ADR-0004 §2.2½（user 2026-10-14「一套机制、四个出口 同意」），还没落地。
 import type { Extras, GmCandidate } from "../format/project.ts";
+import type { Catalog } from "../gm/catalog.ts";
 import type { Hum } from "../format/contract.ts";
 import type { FxV2 } from "../format/contract.ts";
 import type { PerformerInfo } from "../engine/timeline.ts";
@@ -47,6 +48,21 @@ export interface AuditionCtx extends RoleCtx {
 export type AuditionTarget = { inst: AuditionInst; key: (midi: number) => number; vel: number; gainDb: number };
 /** 谱上怎么画这位（只是画法，数据不动）：xHead = 固定敲一个键 → × 符头；perc = 鼓 / 音效 → 鼓谱。 */
 export type Notation = { xHead?: true; perc?: PercKind };
+/** 乐器页「怎么演」里这位自报的一行（ADR-0004 §2.5「槽旁的参数行由插件自报，不是 main.ts 写死」；2026-10-15 刀 5 之一）：
+ *  control / note = HTML 片段（宿主的 row() 排版；按钮带 data-v，按到了回 onInspector）；place = 放哪：主块（默认）/ 「高级」折叠 / 末尾。 */
+export interface InspectorRow { label: string; control: string; note?: string; place?: "adv" | "tail" }
+export interface InspectorCtx extends RoleCtx {
+  hum: Hum;
+  /** 音乐目录（载好了才有；没载 = 行里少几句说明，宿主载好会重画）。 */
+  catalog: Catalog | null;
+  esc(s: string): string;
+  /** 一个选项钮（亮 = 现在是它）。 */
+  chip(v: string, label: string, on: boolean, title?: string): string;
+  /** 力度换算表（每个力度记号 → 这位的 MIDI 力度或 dB；有 GS 力度层再加一行）。 */
+  dynTable(layers: { count: number; ranges: [number, number][] } | null): string;
+}
+/** 行里的按钮按到了：改成什么（休息室新值 + undo 的话 + 连续拖并成一步的 gesture + 要不要把正在响的停掉）。 */
+export interface InspectorChange { extras: Extras; label: string; gesture?: string; silence?: boolean }
 
 export interface PerformerPlugin {
   readonly guid: string;
@@ -84,6 +100,10 @@ export interface PerformerPlugin {
   notation?(ctx: RoleCtx): Notation;
   /** 按键试听用谁出声（没有 = 这位不能试听）。 */
   audition?(ctx: AuditionCtx): AuditionTarget | null;
+  /** 乐器页「怎么演」里这位自己的参数行（通用的——响度 / 音和音之间 / 力度记号 dB 表 / 哼的字——宿主按能力字段摆）。 */
+  inspector?(ctx: InspectorCtx): InspectorRow[];
+  /** 自己那几行的按钮按到了（data-v）：改成什么；不认识 = null。 */
+  onInspector?(v: string, ctx: InspectorCtx): InspectorChange | null;
 }
 
 const byName = new Map<string, PerformerPlugin>();

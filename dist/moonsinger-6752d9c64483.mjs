@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.16-2026-10-15";
+var APP_VERSION = "v0.12.17-2026-10-15";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -26462,6 +26462,13 @@ function performerOf(engine2) {
 
 // src/performers/tsukuyomi.ts
 var TSUKUYOMI_RANGE = { lo: 57, hi: 76, who: "\u5C0F\u6708\u76F8" };
+var SING_CORE_ROWS = [
+  { key: "level", label: "\u9F50\u5E73", values: [0, 0.4, 0.8], names: { 0: "\u5173" }, why: "\u6BCF\u4E2A\u5B57\u7684\u54CD\u5EA6\u5F80\u6574\u53E5\u7684\u4E2D\u4F4D\u6570\u62C9\u51E0\u6210\uFF1A\u5173 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF08\u56E2\u5B50 C \u6BB5\u7B2C 10 \u5C0F\u8282\u300C\u305D\u300D\u7684\u7834\u97F3\u5C31\u662F\u9F50\u5E73\u5728\u5B57\u7684\u8FB9\u754C\u4E0A\u8DF3\u51FA\u6765\u7684\u53F0\u9636\uFF0C\u5173\u4E86\u5C31\u6CA1\u4E86\uFF09\uFF1B0.8 = \u62C9\u516B\u6210\uFF08\u539F\u6765\u7684\u9ED8\u8BA4\uFF09" },
+  { key: "levelContinuous", label: "\u9F50\u5E73\u8FC7\u6E21", values: [0, 1], names: { 0: "\u6BCF\u5B57\u91CD\u8D77", 1: "\u8FDE\u7EED" }, why: "\u9F50\u5E73\u5F00\u7740\u65F6\u589E\u76CA\u600E\u4E48\u4ECE\u4E00\u4E2A\u5B57\u6362\u5230\u4E0B\u4E00\u4E2A\u5B57\uFF1A\u6BCF\u5B57\u91CD\u8D77 = \u5728\u6BCF\u4E2A\u5B57\u7684\u5143\u97F3\u8D77\u70B9\u4ECE 0 \u8D77\u300130 ms \u5185\u722C\u5230\u8FD9\u4E2A\u5B57\u7684\u76EE\u6807\uFF0C\u8F85\u97F3\u4E0D\u52A0\uFF1B\u8FDE\u7EED = \u4ECE\u524D\u4E00\u4E2A\u5B57\u7684\u589E\u76CA\u8D77\uFF0C\u7ECF\u8FC7\u8F85\u97F3\u5230\u5143\u97F3\u8D77\u70B9\u540E 30 ms \u5E73\u6ED1\u8FC7\u6E21\u5230\u8FD9\u4E2A\u5B57\u7684" },
+  { key: "levelMaxDb", label: "\u9F50\u5E73\u4E0A\u9650", values: [6, 12], names: { 6: "6 dB", 12: "12 dB" }, why: "\u9F50\u5E73\u6700\u591A\u628A\u4E00\u4E2A\u5B57\u62C9\u51E0 dB" },
+  { key: "cleanMax", label: "\u501F\u5143\u97F3\u95E8\u69DB", values: [0.3, 0.4, 0.5], why: "\u4E00\u4E2A\u5B57\u81EA\u5DF1\u6700\u5E72\u51C0\u90A3\u4E09\u5206\u4E4B\u4E00\u5E27\u7684\u6742\u5EA6\u8D85\u8FC7\u8FD9\u4E2A\u6570 = \u5F53\u5B83\u662F\u6C14\u58F0\u5FF5\u7684\uFF0C\u62FF\u540C\u4E00\u53E5\u91CC\u522B\u7684\u5E72\u51C0\u7684\u540C\u5143\u97F3\u6765\u5531\uFF08\u300C\u305D\u300D\u662F 0.34\uFF09" },
+  { key: "breath", label: "\u6C14\u606F", values: [0, 0.5, 1], names: { 0: "\u5B9E\u58F0", 1: "\u7167\u5FF5\u7684" }, why: "\u5408\u6210\u524D\u628A\u6BCF\u5E27\u6BCF\u4E2A\u9891\u6BB5\u7684\u6742\u5EA6\u538B\u5230\u8FD9\u4E2A\u5143\u97F3\u6700\u5E72\u51C0\u90A3\u51E0\u5E27\u7684\u7A0B\u5EA6\uFF1A0 = \u5168\u538B\u6210\u5B9E\u58F0\uFF0C1 = \u7167 piper \u5FF5\u51FA\u6765\u7684\u7559\u7740" }
+];
 var tsukuyomi = registerPerformer({
   guid: "6f2c9a1e-3b7d-4e58-9c0a-2d5b8f1e7a41",
   kind: "performer",
@@ -26483,7 +26490,33 @@ var tsukuyomi = registerPerformer({
   // 旋钮按值在候选里（乐器页「高级」）→ 进块的内容键
   prepare: async () => {
   },
-  audition: ({ kana, dyn }) => ({ inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: dyn.dB })
+  audition: ({ kana, dyn }) => ({ inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: dyn.dB }),
+  /** 乐器页里她自己的行（2026-10-15 刀 5 之一，原 main.ts drawInst 里的那两段原样搬来）：「高级」折叠里的唱法核心旋钮 + 末尾的分段唱。 */
+  inspector: ({ extras, role, chip: chip2 }) => {
+    const cur = activeSingCore(extras, role), sc2 = activeSingChunk(extras, role);
+    return [
+      ...SING_CORE_ROWS.map((x2) => ({ label: x2.label, control: x2.values.map((v) => chip2(`core:${x2.key}:${v}`, `${x2.names?.[v] ?? v}${v === TSUKUYOMI_DEFAULTS[x2.key] ? "\uFF08\u9ED8\u8BA4\uFF09" : ""}`, cur[x2.key] === v, "\u6539\u4E86\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u5B58\u8FDB\u6B4C\u91CC\u3001\u80FD\u64A4\u9500")).join(""), note: x2.why, place: "adv" })),
+      // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
+      {
+        label: "\u5206\u6BB5\u5531",
+        control: [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip2(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
+        note: sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF",
+        place: "tail"
+      }
+    ];
+  },
+  onInspector: (v, { extras, role, hum }) => {
+    const rn2 = roleName(extras, role);
+    if (v.startsWith("core:")) {
+      const [, key, val] = v.split(":"), x2 = SING_CORE_ROWS.find((e10) => e10.key === key), n10 = Number(val);
+      return x2 ? { extras: withSingCore(extras, role, x2.key, n10, hum), label: `\u300C${rn2}\u300D${x2.label}\uFF1A${x2.names?.[n10] ?? n10}` } : null;
+    }
+    if (v.startsWith("chunk:")) {
+      const c10 = v.slice(6);
+      return { extras: withSingChunk(extras, role, c10, hum), label: `\u300C${rn2}\u300D\u5206\u6BB5\u5531\uFF1A${c10 === "phrase" ? "\u6BCF\u53E5" : c10 === "sheet" ? "\u6BCF\u5F20\u7EB8" : "\u4E00\u6574\u9996"}` };
+    }
+    return null;
+  }
 });
 
 // src/gm/sf-key.ts
@@ -26705,6 +26738,214 @@ var vowelSampler = registerPerformer({
   audition: ({ kana, dyn }) => ({ inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: dyn.dB })
 });
 
+// src/gm/instruments.gen.ts
+var INSTRUMENT_FILES = {
+  "concepts": {
+    "file": "vendor/instruments/instruments-v13.json",
+    "bytes": 293765,
+    "sha256": "b45932d2fd0d9bdecba9de7a07a9caf96417f70b38f6fe9eba57d5c3e5409704"
+  },
+  "gmMap": {
+    "file": "vendor/instruments/gm-map-v13.json",
+    "bytes": 434032,
+    "sha256": "ce92541c112cfcfbda91e4086d7d0db36d441b0440f8171906d1d78c0a5fe6e5"
+  },
+  "icons": {
+    "file": "vendor/instruments/instrument-icons-20261010-v13.svg",
+    "bytes": 139014,
+    "sha256": "11f81794734a517e1b3bb301b862471352c5edc0f2e4df926685352ab7e17a52"
+  },
+  "iconCredits": {
+    "file": "vendor/instruments/icon-credits-v13.json",
+    "bytes": 20670,
+    "sha256": "4f21e792c26514e9fd13ca00ef19e3030834a5a59c6a8583772367302aa9b0a1"
+  },
+  "licenses": {
+    "file": "vendor/instruments/LICENSES-chosen-v13.md",
+    "bytes": 145790,
+    "sha256": "4eed98cf9658e415ba57397aebb654b5c5ba7ef4b188b5573d4111ed0cc67b91"
+  }
+};
+var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
+
+// src/gm/catalog.ts
+var gmKey = (g3) => `${g3.bank}:${g3.program}${g3.note !== void 0 ? `:${g3.note}` : ""}`;
+function loadCatalogFromJson(concepts, gmMap) {
+  const rows = gmMap.rows, gmSelf = /* @__PURE__ */ new Map();
+  for (const r10 of rows) if (r10.relation === "self" && (r10.primary !== false || !gmSelf.has(gmKey(r10)))) gmSelf.set(gmKey(r10), r10);
+  const list = concepts.concepts;
+  return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c10) => [c10.id, c10])), gmSelf, rows, defs: { ...gmMap.defs ?? {}, ...concepts.defs } };
+}
+var cached = null;
+var sha256Hex3 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+async function fetchChecked(base3, k2) {
+  const e10 = INSTRUMENT_FILES[k2], r10 = await fetch(new URL(`../${e10.file}`, base3));
+  if (!r10.ok) throw new Error(`${e10.file}: HTTP ${r10.status}`);
+  const b3 = new Uint8Array(await r10.arrayBuffer());
+  if (b3.length !== e10.bytes || await sha256Hex3(b3) !== e10.sha256) throw new Error(`${e10.file} \u548C app \u5185\u5D4C\u7684\u4E0D\u4E00\u6837\uFF08\u88AB\u6539\u8FC7\uFF1F\uFF09`);
+  return b3;
+}
+function loadCatalog(base3) {
+  return cached ??= (async () => {
+    const [c10, g3] = await Promise.all([fetchChecked(base3, "concepts"), fetchChecked(base3, "gmMap")]);
+    const dec = new TextDecoder();
+    return loadCatalogFromJson(JSON.parse(dec.decode(c10)), JSON.parse(dec.decode(g3)));
+  })().catch((e10) => {
+    cached = null;
+    throw e10;
+  });
+}
+async function loadIconSprite(base3) {
+  return new TextDecoder().decode(await fetchChecked(base3, "icons"));
+}
+function providersOf(cat2, c10) {
+  const self2 = (c10.ids.gm ?? []).map((g3) => {
+    const r10 = cat2.gmSelf.get(gmKey(g3));
+    return { kind: "self", bank: g3.bank, program: g3.program, ...g3.note !== void 0 ? { note: g3.note } : {}, gmName: r10?.gmName ?? (g3.note !== void 0 ? `\u9F13\u4EF6 ${g3.note}` : `GM ${g3.program + 1}`), sound: r10?.musicxmlSound ?? c10.ids.musicxml };
+  });
+  if (self2.length) return self2;
+  return (c10.substitutes ?? []).map((s10) => ({ kind: "substitute", bank: s10.bank, program: s10.program, ...s10.note !== void 0 ? { note: s10.note } : {}, gmName: s10.gmName, sound: c10.ids.musicxml, basis: s10.basis, reason: s10.reason }));
+}
+function rangeOf(c10) {
+  const r10 = c10?.range;
+  if (r10 && Number.isFinite(r10.low) && Number.isFinite(r10.high) && r10.low <= r10.high) return { lo: r10.low, hi: r10.high, title: `${c10.names.zh}\u7684\u5E38\u7528\u97F3\u57DF${r10.basis ? `\uFF08\u4F9D\u636E\uFF1A${r10.basis}\uFF09` : ""}` };
+  return null;
+}
+function sampleKeyOf(cat2, bank, program) {
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === void 0 && r10.sampleKey);
+  const k2 = row2?.sampleKey;
+  if (!k2 || !Number.isFinite(k2.recommended)) return null;
+  const covers = (r10) => {
+    const m2 = /^(\d+)\s*[–-]\s*(\d+)$/.exec(r10 ?? "");
+    return !m2 || k2.recommended >= +m2[1] && k2.recommended <= +m2[2];
+  };
+  const ls2 = (k2.layers ?? []).filter((l10) => covers(l10.keyRange) && l10.peakAtRecommended?.pitched && l10.centsPerKey);
+  const main = ls2.find((l10) => Math.round(l10.originalSpeedKey ?? NaN) === k2.recommended) ?? ls2[0];
+  return {
+    key: k2.recommended,
+    title: `\u539F\u901F\u952E\uFF1A\u6309\u8FD9\u4E2A\u952E\uFF0C\u91C7\u6837\u4E0D\u62C9\u4F38\u4E0D\u538B\u7F29${k2.recommendedBasis ? `\uFF08${k2.recommendedBasis}\uFF09` : ""}`,
+    ...main ? { midi: Math.round(main.peakAtRecommended.midi * 100) / 100, centsPerKey: main.centsPerKey } : {}
+  };
+}
+function jointOf(cat2, bank, program, note2) {
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.joint) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.joint);
+  const j2 = row2?.joint;
+  if (!j2 || j2.id === null || j2.gapMs === null) return null;
+  const zh2 = cat2.defs.joints?.find((x2) => x2.id === j2.id)?.zh ?? j2.id;
+  return { gapSec: j2.gapMs / 1e3, zh: zh2, basis: j2.basis ?? "" };
+}
+function sustainOf(cat2, bank, program, note2) {
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.sustain) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.sustain);
+  return row2?.sustain?.id ?? null;
+}
+function velLayersOf(cat2, bank, program, note2) {
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.velLayers) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.velLayers);
+  return row2?.velLayers && row2.velLayers.count > 0 ? { count: row2.velLayers.count, ranges: row2.velLayers.ranges ?? [], key: row2.velLayers.key } : null;
+}
+function octaveCheckOf(cat2, bank, program, note2) {
+  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.octaveCheck) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.octaveCheck);
+  return row2?.octaveCheck ?? null;
+}
+function conceptOfIds(cat2, ids) {
+  if (!ids) return void 0;
+  return (ids.wikidata ? cat2.byId.get(ids.wikidata) : void 0) ?? (ids.local ? cat2.byId.get(ids.local) ?? cat2.byId.get(`x:${ids.local}`) : void 0);
+}
+function octaveDisclosure(nt2, oc2, clefLabel) {
+  if (!oc2 && !(nt2 && nt2.octave)) return null;
+  const parts = ["\u8C31\u4E0A\u5199\u7684\u5C31\u662F\u5B9E\u9645\u97F3\u9AD8\uFF08MoonSinger \u4E0D\u6309\u4E50\u5668\u79FB\u8C03\uFF09\uFF0C\u53D1\u7ED9\u97F3\u6E90\u7684\u4E5F\u662F\u8FD9\u4E2A\u97F3\u3002"];
+  if (nt2 && nt2.octave) parts.push(`\u8FD9\u4EF6\u4E50\u5668\u7684\u8C31\u4E60\u60EF\u5199${nt2.octave > 0 ? "\u4F4E" : "\u9AD8"} ${Math.abs(nt2.octave) / 12} \u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645${nt2.octave > 0 ? "\u9AD8" : "\u4F4E"}\uFF09\uFF1B\u60F3\u8981\u8C31\u9762\u597D\u8BFB\uFF0C\u7528\u8C31\u53F7\uFF08\u8FD9\u4EF6\u4E50\u5668\u6309\u5B9E\u9645\u97F3\u9AD8\u65F6\u5E38\u7528\u300C${clefLabel(nt2.concertClef)}\u300D\uFF0C\u8C31\u53F7\u300C\u81EA\u52A8\u300D\u4E5F\u4F1A\u6311\uFF09\u6216 8va \u7EBF\uFF0C\u51FA\u58F0\u4E0D\u53D8\u3002`);
+  if (oc2) parts.push(oc2.perceived === null ? `GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u5224\u4E0D\u51C6\u2014\u2014\u6BCF\u4E2A\u952E\u6700\u5F3A\u7684\u90A3\u4E2A\u5206\u97F3\u6BD4\u952E\u540D\u9AD8 ${Math.round(oc2.measured)} \u534A\u97F3\uFF0C\u542C\u8D77\u6765\u591A\u534A\u8DDF\u7740\u5B83\u3002` : oc2.perceived === 0 && Math.abs(oc2.measured) < 0.5 ? "GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u6309\u54EA\u4E2A\u952E\uFF0C\u8033\u6735\u542C\u5230\u7684\u5C31\u662F\u90A3\u4E2A\u97F3\u3002" : oc2.perceived === 0 ? `GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u6700\u5F3A\u7684\u5206\u97F3\u6BD4\u952E\u540D\u9AD8 ${Math.round(oc2.measured)} \u534A\u97F3\uFF08${oc2.measuredOctave} \u4E2A\u516B\u5EA6\uFF09\uFF0C\u4F46\u8033\u6735\u542C\u5230\u7684\u97F3\u540D\u8FD8\u662F\u952E\u540D\uFF08\u949F\u7684\u6253\u51FB\u97F3\uFF09\u2014\u2014\u542C\u7740\u89C9\u5F97\u9AD8\u4E86\u662F\u8FD9\u4E2A\u539F\u56E0\u3002` : `GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u8033\u6735\u542C\u5230\u7684\u6BD4\u952E\u540D${oc2.perceived > 0 ? "\u9AD8" : "\u4F4E"} ${Math.abs(oc2.perceived)} \u534A\u97F3\u3002`);
+  return parts.join("");
+}
+var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
+var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
+var roleSoundOf = (cat2, c10) => c10.ids.musicxml ?? providersOf(cat2, c10)[0]?.sound ?? null;
+var SORT_LABEL = { style: "\u6309\u66F2\u98CE", family: "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09", year: "\u6309\u5E74\u4EE3", hs: "\u6309\u53D1\u58F0\u65B9\u5F0F" };
+var HS_CLASS = { "1": "\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09", "2": "\u819C\u9E23\uFF08\u6572\u76AE\uFF09", "3": "\u5F26\u9E23\uFF08\u5F26\uFF09", "4": "\u6C14\u9E23\uFF08\u6C14\uFF09", "5": "\u7535\u9E23\uFF08\u7535\uFF09" };
+function groupConcepts(cat2, mode, query = "") {
+  const q2 = query.trim().toLowerCase();
+  const hit = (c10) => !q2 || [c10.names.zh, c10.names.en, c10.names.ja ?? ""].some((n10) => n10.toLowerCase().includes(q2));
+  const list = cat2.concepts.filter(hit);
+  const byGm = (a10, b3) => ((a10.ids.gm ?? [])[0]?.program ?? 999) - ((b3.ids.gm ?? [])[0]?.program ?? 999) || a10.names.zh.localeCompare(b3.names.zh, "zh");
+  const groups = /* @__PURE__ */ new Map();
+  const put2 = (id2, label, c10) => {
+    let g3 = groups.get(id2);
+    if (!g3) {
+      g3 = { id: id2, label, concepts: [] };
+      groups.set(id2, g3);
+    }
+    g3.concepts.push(c10);
+  };
+  const asItems = (gs) => gs.map((g3) => ({ id: g3.id, label: g3.label, items: g3.concepts.map((concept) => ({ concept })) }));
+  if (mode === "family") {
+    const order = new Map(cat2.defs.families.map((f2, i10) => [f2.id, i10]));
+    for (const c10 of list) {
+      const f2 = (c10.family ?? [])[0] ?? "other";
+      put2(f2, cat2.defs.families.find((x2) => x2.id === f2)?.zh ?? (c10.kind === "voice" ? "\u4EBA\u58F0" : c10.kind === "sound" ? "\u97F3\u6548" : "\u5176\u4ED6"), c10);
+    }
+    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort(byGm) })));
+  }
+  if (mode === "year") {
+    const eras = cat2.defs.eras;
+    for (const c10 of list) {
+      const e10 = eras.find((x2) => x2.id === c10.era);
+      put2(e10?.id ?? "unknown", e10 ? `${e10.zh}${e10.from !== null ? `\uFF08${fmtYear(e10.from)} \u8D77\uFF09` : ""}` : "\u5E74\u4EE3\u4E0D\u8BE6", c10);
+    }
+    const order = new Map(eras.map((e10, i10) => [e10.id, i10]));
+    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.year ?? 1e9) - (b3.year ?? 1e9)) })));
+  }
+  if (mode === "hs") {
+    for (const c10 of list) {
+      const k2 = c10.ids.hs?.[0] ?? "?";
+      put2(k2, HS_CLASS[k2] ?? "\u5206\u7C7B\u4E0D\u8BE6", c10);
+    }
+    return asItems([...groups.values()].sort((a10, b3) => a10.id.localeCompare(b3.id)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.ids.hs ?? "~").localeCompare(b3.ids.hs ?? "~")) })));
+  }
+  return styleGroups(cat2, q2, hit);
+}
+function styleGroups(cat2, q2, hit) {
+  const groups = /* @__PURE__ */ new Map();
+  const put2 = (tag2, e10) => {
+    let g3 = groups.get(tag2);
+    if (!g3) {
+      g3 = { id: tag2, label: tag2 === "none" ? "\u6CA1\u8D34\u98CE\u683C" : styleLabel(cat2, tag2), items: [] };
+      groups.set(tag2, g3);
+    }
+    g3.items.push(e10);
+  };
+  const self2 = [...cat2.gmSelf.values()];
+  const styled = new Set(self2.filter((r10) => r10.styles?.length).map((r10) => r10.concept));
+  for (const r10 of self2) {
+    const c10 = cat2.byId.get(r10.concept);
+    if (!c10 || !styled.has(c10.id)) continue;
+    if (!hit(c10) && !(q2 && r10.gmName.toLowerCase().includes(q2))) continue;
+    if (!r10.styles?.length) {
+      put2("none", { concept: c10, preset: r10 });
+      continue;
+    }
+    for (const s10 of r10.styles) put2(s10.tag, { concept: c10, preset: r10, weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
+  }
+  for (const c10 of cat2.concepts) {
+    if (styled.has(c10.id) || !hit(c10)) continue;
+    const tags = /* @__PURE__ */ new Map();
+    for (const s10 of c10.styles ?? []) {
+      const was = tags.get(s10.tag);
+      if (!was || (s10.weight ?? 0) > was.weight) tags.set(s10.tag, { weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
+    }
+    if (!tags.size) put2("none", { concept: c10 });
+    for (const [t10, w2] of tags) put2(t10, { concept: c10, ...w2 });
+  }
+  const yearOf = (e10) => e10.preset?.year ?? e10.concept.year ?? 1e9, gmOf = (e10) => e10.preset?.gmNumber ?? 999;
+  return [...groups.values()].sort((a10, b3) => a10.id === "none" ? 1 : b3.id === "none" ? -1 : a10.label.localeCompare(b3.label, "zh")).map((g3) => ({ ...g3, items: g3.items.sort((a10, b3) => (b3.weight ?? 0) - (a10.weight ?? 0) || yearOf(a10) - yearOf(b3) || gmOf(a10) - gmOf(b3) || a10.concept.names.zh.localeCompare(b3.concept.names.zh, "zh")) }));
+}
+var weightLabel = (cat2, w2) => cat2.defs.weights?.find((x2) => x2.id === w2)?.zh ?? "";
+function styleLabel(cat2, tag2) {
+  const s10 = cat2.defs.styles?.find((x2) => (x2.id ?? x2.tag) === tag2);
+  return s10?.zh ?? s10?.en ?? tag2;
+}
+var fmtYear = (y2) => y2 < 0 ? `\u516C\u5143\u524D ${-y2}` : String(y2);
+var eraLabel = (cat2, c10) => cat2.defs.eras.find((e10) => e10.id === c10.era)?.zh ?? "";
+
 // src/performers/soundfont.ts
 function hitOf(g3) {
   const pk = g3 ? percKindOf(g3) : null;
@@ -26771,6 +27012,59 @@ var soundfont = registerPerformer({
       return null;
     }
     return { inst: { kind: "sf", sha: g3.subsetSha256, preset: engine2.presetIndex(g3.subsetSha256, g3.bank, g3.program) }, key: (m2) => sfKey(m2, g3, activeTranspose(extras, role)), vel: dyn.vel ?? activeVelocity(extras, role), gainDb: dyn.vel === null ? dyn.dB : 0 };
+  },
+  /** 乐器页「怎么演」里这位自己的行（原 main.ts drawInst 里按引擎能力 gate 的那几段，原样搬来；2026-10-15 刀 5 之一）。 */
+  inspector: ({ extras, role, catalog, esc: esc9, chip: chip2, dynTable: dynTable2 }) => {
+    const active = activeGm(extras, role), sp2 = activePerfSpec(extras, role), tr3 = activeTranspose(extras, role), rows = [];
+    {
+      const midi = Math.round(activeVelocity(extras, role) * 127), def = sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127);
+      const L2 = active && active.origin.library === GS_LIBRARY_ID && catalog ? velLayersOf(catalog, active.bank, active.program, active.note) : null, k2 = L2 ? L2.ranges.findIndex(([lo2, hi]) => midi >= lo2 && midi <= hi) : -1;
+      rows.push({
+        label: "\u529B\u5EA6",
+        control: `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09">\u22128</button><button class="btn" data-v="vel:8" title="\u91CD\u4E00\u70B9\uFF08+8\uFF09">+8</button>` + (midi !== def ? `<button class="btn" data-v="vel:def" title="\u56DE\u5230 ${def}">\u9ED8\u8BA4</button>` : ""),
+        note: `\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002` + (sp2.dynamicsVel ? `\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +${sp2.accentVel}\u3001\u5F3A\u97F3 +${sp2.marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A${dynTable2(L2)}` : `\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A${dynTable2(null)}`) + (L2 ? L2.count > 1 ? `GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 ${L2.count} \u4E2A\u529B\u5EA6\u5C42${k2 >= 0 ? `\uFF0C\u73B0\u5728\u5728\u7B2C ${k2 + 1} \u5C42\uFF08${L2.ranges[k2][0]}\u2013${L2.ranges[k2][1]}\uFF09` : ""}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002` : "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002" : "")
+      });
+    }
+    if (active?.sfx) {
+      const fixed = active.note !== void 0, al2 = !!active.sfx.align;
+      rows.push({
+        label: "\u97F3\u6548",
+        control: chip2("sfx:fixed", "\u56FA\u5B9A\u539F\u901F", fixed, "\u6BCF\u4E2A\u97F3\u90FD\u6572\u539F\u901F\u952E\uFF1A\u5199\u8C31\u6309\u952E\u3001\u64AD\u653E\u90FD\u662F\u539F\u6765\u7684\u6837\u5B50\uFF1B\u8C31\u4E0A\u5199\u7684\u97F3\u9AD8\u7167\u7559\uFF0C\u53EA\u662F\u4E0D\u62FF\u6765\u51FA\u58F0") + (fixed ? "" : canAlign(active.sfx) ? chip2("sfx:align", "\u97F3\u9AD8\u5BF9\u9F50", al2, "\u6309\u539F\u901F\u65F6\u6700\u5F3A\u7684\u90A3\u4E2A\u9891\u7387\u5927\u81F4\u5BF9\u9F50\uFF0C\u8C31\u4E0A\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF1B\u4E0D\u4E00\u5B9A\u662F\u8033\u6735\u542C\u5230\u7684\u4E3B\u97F3") : ""),
+        note: fixed ? "\u8C31\u4E0A\u5199\u4E0D\u540C\u7684\u97F3\u4E5F\u90FD\u54CD\u539F\u6765\u7684\u6837\u5B50\uFF08\u97F3\u9AD8\u7559\u5728\u8C31\u4E0A\uFF0C\u5173\u6389\u5C31\u6309\u5B83\u53D8\u8C03\uFF09" : al2 ? "\u5199\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF08\u5927\u81F4\uFF09" : `\u6309\u5199\u7684\u97F3\u53D8\u8C03\u53D8\u901F\uFF1A\u8D8A\u9AD8\u8D8A\u5C16\u8D8A\u5FEB\uFF0C\u8D8A\u4F4E\u8D8A\u6C89\u8D8A\u6162${canAlign(active.sfx) ? "" : "\uFF1B\u8FD9\u4E2A\u97F3\u6548\u539F\u901F\u65F6\u542C\u4E0D\u51FA\u97F3\u9AD8\uFF0C\u6CA1\u6CD5\u5BF9\u9F50"}`
+      });
+    }
+    if (active && active.note === void 0) rows.push({
+      label: "\u4FEE\u516B\u5EA6",
+      control: `<b class="ip-val">${tr3 > 0 ? "+" : tr3 < 0 ? "\u2212" : ""}${Math.abs(tr3)} \u534A\u97F3</b><button class="btn" data-v="tr:-12" title="\u4F4E\u4E00\u4E2A\u516B\u5EA6">\u221212</button><button class="btn" data-v="tr:-1" title="\u4F4E\u534A\u97F3">\u22121</button><button class="btn" data-v="tr:1" title="\u9AD8\u534A\u97F3">+1</button><button class="btn" data-v="tr:12" title="\u9AD8\u4E00\u4E2A\u516B\u5EA6">+12</button>${tr3 ? `<button class="btn" data-v="tr:0" title="\u56DE\u5230 0">\u5F52\u96F6</button>` : ""}`,
+      note: "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3"
+    });
+    if (active) {
+      const cpt = catalog ? conceptOfIds(catalog, extras.lounge[role]?.concept?.ids) : void 0;
+      const oc2 = catalog && active.origin.library === GS_LIBRARY_ID ? octaveCheckOf(catalog, active.bank, active.program, active.note) : null;
+      const text2 = octaveDisclosure(cpt?.notation, oc2, (c10) => CLEF_LABEL[c10] ?? c10);
+      if (text2) rows.push({ label: "\u516B\u5EA6", control: "", note: esc9(text2) });
+    }
+    return rows;
+  },
+  onInspector: (v, { extras, role, hum }) => {
+    const g3 = activeGm(extras, role), rn2 = roleName(extras, role);
+    if (v === "sfx:fixed") {
+      const on2 = g3?.note === void 0;
+      return { extras: withSfxFixed(extras, role, on2, hum), label: `\u300C${rn2}\u300D${on2 ? "\u56FA\u5B9A\u539F\u901F" : "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09"}`, silence: true };
+    }
+    if (v === "sfx:align") {
+      const on2 = !g3?.sfx?.align;
+      return { extras: withSfxAlign(extras, role, on2, hum), label: `\u300C${rn2}\u300D\u97F3\u9AD8\u5BF9\u9F50${on2 ? "\u5F00" : "\u5173"}`, silence: true };
+    }
+    if (v.startsWith("tr:")) {
+      const d3 = Number(v.slice(3)), next2 = d3 === 0 ? 0 : activeTranspose(extras, role) + d3;
+      return { extras: withTranspose(extras, role, next2, hum), label: `\u300C${rn2}\u300D\u4FEE\u516B\u5EA6 / \u79FB\u8C03 ${next2} \u534A\u97F3`, gesture: "transpose", silence: true };
+    }
+    if (v.startsWith("vel:")) {
+      const sp2 = activePerfSpec(extras, role), def = (sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127)) / 127, next2 = v === "vel:def" ? def : activeVelocity(extras, role) + Number(v.slice(4)) / 127;
+      return { extras: withVelocity(extras, role, next2, hum), label: `\u300C${rn2}\u300D\u529B\u5EA6 ${Math.max(1, Math.min(127, Math.round(next2 * 127)))}`, gesture: "vel" };
+    }
+    return null;
   }
 });
 
@@ -28057,214 +28351,6 @@ function loadVowelTable() {
   });
   return loading;
 }
-
-// src/gm/instruments.gen.ts
-var INSTRUMENT_FILES = {
-  "concepts": {
-    "file": "vendor/instruments/instruments-v13.json",
-    "bytes": 293765,
-    "sha256": "b45932d2fd0d9bdecba9de7a07a9caf96417f70b38f6fe9eba57d5c3e5409704"
-  },
-  "gmMap": {
-    "file": "vendor/instruments/gm-map-v13.json",
-    "bytes": 434032,
-    "sha256": "ce92541c112cfcfbda91e4086d7d0db36d441b0440f8171906d1d78c0a5fe6e5"
-  },
-  "icons": {
-    "file": "vendor/instruments/instrument-icons-20261010-v13.svg",
-    "bytes": 139014,
-    "sha256": "11f81794734a517e1b3bb301b862471352c5edc0f2e4df926685352ab7e17a52"
-  },
-  "iconCredits": {
-    "file": "vendor/instruments/icon-credits-v13.json",
-    "bytes": 20670,
-    "sha256": "4f21e792c26514e9fd13ca00ef19e3030834a5a59c6a8583772367302aa9b0a1"
-  },
-  "licenses": {
-    "file": "vendor/instruments/LICENSES-chosen-v13.md",
-    "bytes": 145790,
-    "sha256": "4eed98cf9658e415ba57397aebb654b5c5ba7ef4b188b5573d4111ed0cc67b91"
-  }
-};
-var ICON_CREDITS = [{ "id": "commons--Zither", "set": "commons", "author": "Mani Vieregg", "license": "CC0", "url": "https://upload.wikimedia.org/wikipedia/commons/5/51/Zither.svg?utm_source=commons.wikimedia.org&amp;utm_campaign=imageinfo&amp;utm_content=original" }, { "id": "fontawesome--drum-steelpan--tile", "set": "fontawesome", "author": "Fonticons, Inc.\uFF08Font Awesome Free\uFF09", "license": "CC-BY-4.0", "url": "https://raw.githubusercontent.com/FortAwesome/Font-Awesome/7.3.1/svgs/solid/drum-steelpan.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "game-icons--accordion", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/accordion.svg" }, { "id": "game-icons--bagpipes", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bagpipes.svg" }, { "id": "game-icons--banjo", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/banjo.svg" }, { "id": "game-icons--bassoon", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/bassoon.svg" }, { "id": "game-icons--beer-bottle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/beer-bottle.svg" }, { "id": "game-icons--bird-twitter", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/bird-twitter.svg" }, { "id": "game-icons--bow-string", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/bow-string.svg" }, { "id": "game-icons--cannon", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cannon.svg" }, { "id": "game-icons--cat", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/cat.svg" }, { "id": "game-icons--city-car", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/city-car.svg" }, { "id": "game-icons--clarinet", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/clarinet.svg" }, { "id": "game-icons--cricket", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/cricket.svg" }, { "id": "game-icons--djembe", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/djembe.svg" }, { "id": "game-icons--drum", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/drum.svg" }, { "id": "game-icons--drum-kit", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/drum-kit.svg" }, { "id": "game-icons--firework-rocket", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/firework-rocket.svg" }, { "id": "game-icons--flame", "set": "game-icons", "author": "carl-olsen", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/carl-olsen/flame.svg" }, { "id": "game-icons--flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/flute.svg" }, { "id": "game-icons--french-horn", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/french-horn.svg" }, { "id": "game-icons--frog", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/frog.svg" }, { "id": "game-icons--gong", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/gong.svg" }, { "id": "game-icons--grand-piano", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/grand-piano.svg" }, { "id": "game-icons--guitar", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/guitar.svg" }, { "id": "game-icons--guitar-bass-head", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/guitar-bass-head.svg" }, { "id": "game-icons--gunshot", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/gunshot.svg" }, { "id": "game-icons--harp", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/harp.svg" }, { "id": "game-icons--heavy-rain", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/heavy-rain.svg" }, { "id": "game-icons--helicopter", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/helicopter.svg" }, { "id": "game-icons--lightning-storm", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lightning-storm.svg" }, { "id": "game-icons--lungs", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/lungs.svg" }, { "id": "game-icons--lyre", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/lyre.svg" }, { "id": "game-icons--maracas", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/maracas.svg" }, { "id": "game-icons--musical-keyboard", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/musical-keyboard.svg" }, { "id": "game-icons--ocarina", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/ocarina.svg" }, { "id": "game-icons--pan-flute", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/pan-flute.svg" }, { "id": "game-icons--pipe-organ", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/pipe-organ.svg" }, { "id": "game-icons--ringing-bell", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/ringing-bell.svg" }, { "id": "game-icons--rotary-phone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/rotary-phone.svg" }, { "id": "game-icons--saxophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/saxophone.svg" }, { "id": "game-icons--sing", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/sing.svg" }, { "id": "game-icons--sitting-dog", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/sitting-dog.svg" }, { "id": "game-icons--splashy-stream", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/splashy-stream.svg" }, { "id": "game-icons--steam-locomotive", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/steam-locomotive.svg" }, { "id": "game-icons--tambourine", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/tambourine.svg" }, { "id": "game-icons--trombone", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/trombone.svg" }, { "id": "game-icons--trumpet", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/trumpet.svg" }, { "id": "game-icons--tuba", "set": "game-icons", "author": "caro-asercion", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/caro-asercion/tuba.svg" }, { "id": "game-icons--viola", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/viola.svg" }, { "id": "game-icons--violin", "set": "game-icons", "author": "zajkonur", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/zajkonur/violin.svg" }, { "id": "game-icons--wave-crest", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/wave-crest.svg" }, { "id": "game-icons--whistle", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/whistle.svg" }, { "id": "game-icons--windy-stripes", "set": "game-icons", "author": "lorc", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/lorc/windy-stripes.svg" }, { "id": "game-icons--xylophone", "set": "game-icons", "author": "delapouite", "license": "CC-BY-3.0", "url": "https://raw.githubusercontent.com/game-icons/icons/82d948812bfe3f269ef8f731dcdb07b08160edc4/delapouite/xylophone.svg" }, { "id": "iconmind--orchestra--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/education/orchestra/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "iconmind--speech-synth--tile", "set": "iconmind", "author": "IconMind", "license": "MIT", "url": "https://raw.githubusercontent.com/Iconmind/iconmind/v0.8.1/packages/icons/icons/ai/speech-synth/outline-regular.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--hand-clap--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/hand-clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--instrument-triangle--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/instrument-triangle.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "mdi--square-wave--tile", "set": "mdi", "author": "Pictogrammers\uFF08Material Design Icons \u793E\u533A\uFF09", "license": "Apache-2.0", "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign/2424e748e0cc63ab7b9c095a099b9fe239b737c0/svg/square-wave.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "openmoji-black--1F390--tile", "set": "openmoji-black", "author": "Jonas Dunkel\uFF08OpenMoji\uFF09", "license": "CC-BY-SA-4.0", "url": "https://raw.githubusercontent.com/hfg-gmuend/openmoji/17.0.0/black/svg/1F390.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--clap--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/clap.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--cymbal--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/cymbal.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--harmonica--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/harmonica.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--hi-hat--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/hi-hat.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--idiophone--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/idiophone.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--shamisen--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/shamisen.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--sitar--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/16/instrument/sitar.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }, { "id": "qlementine-icons--woodwind--tile", "set": "qlementine-icons", "author": "Olivier Cl\xE9ro", "license": "MIT", "url": "https://raw.githubusercontent.com/oclero/qlementine-icons/v1.16.1/sources/resources/icons/24/instrument/woodwind.svg", "modified": "2026-10-08 \u53CD\u8272\u6210\u9ED1\u5E95\u767D\u56FE\uFF08\u97F3\u4E50\u53F2\u4ED3 scripts/icons_tile.py\uFF09" }];
-
-// src/gm/catalog.ts
-var gmKey = (g3) => `${g3.bank}:${g3.program}${g3.note !== void 0 ? `:${g3.note}` : ""}`;
-function loadCatalogFromJson(concepts, gmMap) {
-  const rows = gmMap.rows, gmSelf = /* @__PURE__ */ new Map();
-  for (const r10 of rows) if (r10.relation === "self" && (r10.primary !== false || !gmSelf.has(gmKey(r10)))) gmSelf.set(gmKey(r10), r10);
-  const list = concepts.concepts;
-  return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c10) => [c10.id, c10])), gmSelf, rows, defs: { ...gmMap.defs ?? {}, ...concepts.defs } };
-}
-var cached = null;
-var sha256Hex3 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
-async function fetchChecked(base3, k2) {
-  const e10 = INSTRUMENT_FILES[k2], r10 = await fetch(new URL(`../${e10.file}`, base3));
-  if (!r10.ok) throw new Error(`${e10.file}: HTTP ${r10.status}`);
-  const b3 = new Uint8Array(await r10.arrayBuffer());
-  if (b3.length !== e10.bytes || await sha256Hex3(b3) !== e10.sha256) throw new Error(`${e10.file} \u548C app \u5185\u5D4C\u7684\u4E0D\u4E00\u6837\uFF08\u88AB\u6539\u8FC7\uFF1F\uFF09`);
-  return b3;
-}
-function loadCatalog(base3) {
-  return cached ??= (async () => {
-    const [c10, g3] = await Promise.all([fetchChecked(base3, "concepts"), fetchChecked(base3, "gmMap")]);
-    const dec = new TextDecoder();
-    return loadCatalogFromJson(JSON.parse(dec.decode(c10)), JSON.parse(dec.decode(g3)));
-  })().catch((e10) => {
-    cached = null;
-    throw e10;
-  });
-}
-async function loadIconSprite(base3) {
-  return new TextDecoder().decode(await fetchChecked(base3, "icons"));
-}
-function providersOf(cat2, c10) {
-  const self2 = (c10.ids.gm ?? []).map((g3) => {
-    const r10 = cat2.gmSelf.get(gmKey(g3));
-    return { kind: "self", bank: g3.bank, program: g3.program, ...g3.note !== void 0 ? { note: g3.note } : {}, gmName: r10?.gmName ?? (g3.note !== void 0 ? `\u9F13\u4EF6 ${g3.note}` : `GM ${g3.program + 1}`), sound: r10?.musicxmlSound ?? c10.ids.musicxml };
-  });
-  if (self2.length) return self2;
-  return (c10.substitutes ?? []).map((s10) => ({ kind: "substitute", bank: s10.bank, program: s10.program, ...s10.note !== void 0 ? { note: s10.note } : {}, gmName: s10.gmName, sound: c10.ids.musicxml, basis: s10.basis, reason: s10.reason }));
-}
-function rangeOf(c10) {
-  const r10 = c10?.range;
-  if (r10 && Number.isFinite(r10.low) && Number.isFinite(r10.high) && r10.low <= r10.high) return { lo: r10.low, hi: r10.high, title: `${c10.names.zh}\u7684\u5E38\u7528\u97F3\u57DF${r10.basis ? `\uFF08\u4F9D\u636E\uFF1A${r10.basis}\uFF09` : ""}` };
-  return null;
-}
-function sampleKeyOf(cat2, bank, program) {
-  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === void 0 && r10.sampleKey);
-  const k2 = row2?.sampleKey;
-  if (!k2 || !Number.isFinite(k2.recommended)) return null;
-  const covers = (r10) => {
-    const m2 = /^(\d+)\s*[–-]\s*(\d+)$/.exec(r10 ?? "");
-    return !m2 || k2.recommended >= +m2[1] && k2.recommended <= +m2[2];
-  };
-  const ls2 = (k2.layers ?? []).filter((l10) => covers(l10.keyRange) && l10.peakAtRecommended?.pitched && l10.centsPerKey);
-  const main = ls2.find((l10) => Math.round(l10.originalSpeedKey ?? NaN) === k2.recommended) ?? ls2[0];
-  return {
-    key: k2.recommended,
-    title: `\u539F\u901F\u952E\uFF1A\u6309\u8FD9\u4E2A\u952E\uFF0C\u91C7\u6837\u4E0D\u62C9\u4F38\u4E0D\u538B\u7F29${k2.recommendedBasis ? `\uFF08${k2.recommendedBasis}\uFF09` : ""}`,
-    ...main ? { midi: Math.round(main.peakAtRecommended.midi * 100) / 100, centsPerKey: main.centsPerKey } : {}
-  };
-}
-function jointOf(cat2, bank, program, note2) {
-  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.joint) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.joint);
-  const j2 = row2?.joint;
-  if (!j2 || j2.id === null || j2.gapMs === null) return null;
-  const zh2 = cat2.defs.joints?.find((x2) => x2.id === j2.id)?.zh ?? j2.id;
-  return { gapSec: j2.gapMs / 1e3, zh: zh2, basis: j2.basis ?? "" };
-}
-function sustainOf(cat2, bank, program, note2) {
-  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.sustain) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.sustain);
-  return row2?.sustain?.id ?? null;
-}
-function velLayersOf(cat2, bank, program, note2) {
-  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.velLayers) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.velLayers);
-  return row2?.velLayers && row2.velLayers.count > 0 ? { count: row2.velLayers.count, ranges: row2.velLayers.ranges ?? [], key: row2.velLayers.key } : null;
-}
-function octaveCheckOf(cat2, bank, program, note2) {
-  const row2 = cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.note === note2 && r10.octaveCheck) ?? cat2.rows.find((r10) => r10.bank === bank && r10.program === program && r10.octaveCheck);
-  return row2?.octaveCheck ?? null;
-}
-function conceptOfIds(cat2, ids) {
-  if (!ids) return void 0;
-  return (ids.wikidata ? cat2.byId.get(ids.wikidata) : void 0) ?? (ids.local ? cat2.byId.get(ids.local) ?? cat2.byId.get(`x:${ids.local}`) : void 0);
-}
-function octaveDisclosure(nt2, oc2, clefLabel) {
-  if (!oc2 && !(nt2 && nt2.octave)) return null;
-  const parts = ["\u8C31\u4E0A\u5199\u7684\u5C31\u662F\u5B9E\u9645\u97F3\u9AD8\uFF08MoonSinger \u4E0D\u6309\u4E50\u5668\u79FB\u8C03\uFF09\uFF0C\u53D1\u7ED9\u97F3\u6E90\u7684\u4E5F\u662F\u8FD9\u4E2A\u97F3\u3002"];
-  if (nt2 && nt2.octave) parts.push(`\u8FD9\u4EF6\u4E50\u5668\u7684\u8C31\u4E60\u60EF\u5199${nt2.octave > 0 ? "\u4F4E" : "\u9AD8"} ${Math.abs(nt2.octave) / 12} \u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645${nt2.octave > 0 ? "\u9AD8" : "\u4F4E"}\uFF09\uFF1B\u60F3\u8981\u8C31\u9762\u597D\u8BFB\uFF0C\u7528\u8C31\u53F7\uFF08\u8FD9\u4EF6\u4E50\u5668\u6309\u5B9E\u9645\u97F3\u9AD8\u65F6\u5E38\u7528\u300C${clefLabel(nt2.concertClef)}\u300D\uFF0C\u8C31\u53F7\u300C\u81EA\u52A8\u300D\u4E5F\u4F1A\u6311\uFF09\u6216 8va \u7EBF\uFF0C\u51FA\u58F0\u4E0D\u53D8\u3002`);
-  if (oc2) parts.push(oc2.perceived === null ? `GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u5224\u4E0D\u51C6\u2014\u2014\u6BCF\u4E2A\u952E\u6700\u5F3A\u7684\u90A3\u4E2A\u5206\u97F3\u6BD4\u952E\u540D\u9AD8 ${Math.round(oc2.measured)} \u534A\u97F3\uFF0C\u542C\u8D77\u6765\u591A\u534A\u8DDF\u7740\u5B83\u3002` : oc2.perceived === 0 && Math.abs(oc2.measured) < 0.5 ? "GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u6309\u54EA\u4E2A\u952E\uFF0C\u8033\u6735\u542C\u5230\u7684\u5C31\u662F\u90A3\u4E2A\u97F3\u3002" : oc2.perceived === 0 ? `GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u6700\u5F3A\u7684\u5206\u97F3\u6BD4\u952E\u540D\u9AD8 ${Math.round(oc2.measured)} \u534A\u97F3\uFF08${oc2.measuredOctave} \u4E2A\u516B\u5EA6\uFF09\uFF0C\u4F46\u8033\u6735\u542C\u5230\u7684\u97F3\u540D\u8FD8\u662F\u952E\u540D\uFF08\u949F\u7684\u6253\u51FB\u97F3\uFF09\u2014\u2014\u542C\u7740\u89C9\u5F97\u9AD8\u4E86\u662F\u8FD9\u4E2A\u539F\u56E0\u3002` : `GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u8033\u6735\u542C\u5230\u7684\u6BD4\u952E\u540D${oc2.perceived > 0 ? "\u9AD8" : "\u4F4E"} ${Math.abs(oc2.perceived)} \u534A\u97F3\u3002`);
-  return parts.join("");
-}
-var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
-var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
-var roleSoundOf = (cat2, c10) => c10.ids.musicxml ?? providersOf(cat2, c10)[0]?.sound ?? null;
-var SORT_LABEL = { style: "\u6309\u66F2\u98CE", family: "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09", year: "\u6309\u5E74\u4EE3", hs: "\u6309\u53D1\u58F0\u65B9\u5F0F" };
-var HS_CLASS = { "1": "\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09", "2": "\u819C\u9E23\uFF08\u6572\u76AE\uFF09", "3": "\u5F26\u9E23\uFF08\u5F26\uFF09", "4": "\u6C14\u9E23\uFF08\u6C14\uFF09", "5": "\u7535\u9E23\uFF08\u7535\uFF09" };
-function groupConcepts(cat2, mode, query = "") {
-  const q2 = query.trim().toLowerCase();
-  const hit = (c10) => !q2 || [c10.names.zh, c10.names.en, c10.names.ja ?? ""].some((n10) => n10.toLowerCase().includes(q2));
-  const list = cat2.concepts.filter(hit);
-  const byGm = (a10, b3) => ((a10.ids.gm ?? [])[0]?.program ?? 999) - ((b3.ids.gm ?? [])[0]?.program ?? 999) || a10.names.zh.localeCompare(b3.names.zh, "zh");
-  const groups = /* @__PURE__ */ new Map();
-  const put2 = (id2, label, c10) => {
-    let g3 = groups.get(id2);
-    if (!g3) {
-      g3 = { id: id2, label, concepts: [] };
-      groups.set(id2, g3);
-    }
-    g3.concepts.push(c10);
-  };
-  const asItems = (gs) => gs.map((g3) => ({ id: g3.id, label: g3.label, items: g3.concepts.map((concept) => ({ concept })) }));
-  if (mode === "family") {
-    const order = new Map(cat2.defs.families.map((f2, i10) => [f2.id, i10]));
-    for (const c10 of list) {
-      const f2 = (c10.family ?? [])[0] ?? "other";
-      put2(f2, cat2.defs.families.find((x2) => x2.id === f2)?.zh ?? (c10.kind === "voice" ? "\u4EBA\u58F0" : c10.kind === "sound" ? "\u97F3\u6548" : "\u5176\u4ED6"), c10);
-    }
-    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort(byGm) })));
-  }
-  if (mode === "year") {
-    const eras = cat2.defs.eras;
-    for (const c10 of list) {
-      const e10 = eras.find((x2) => x2.id === c10.era);
-      put2(e10?.id ?? "unknown", e10 ? `${e10.zh}${e10.from !== null ? `\uFF08${fmtYear(e10.from)} \u8D77\uFF09` : ""}` : "\u5E74\u4EE3\u4E0D\u8BE6", c10);
-    }
-    const order = new Map(eras.map((e10, i10) => [e10.id, i10]));
-    return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.year ?? 1e9) - (b3.year ?? 1e9)) })));
-  }
-  if (mode === "hs") {
-    for (const c10 of list) {
-      const k2 = c10.ids.hs?.[0] ?? "?";
-      put2(k2, HS_CLASS[k2] ?? "\u5206\u7C7B\u4E0D\u8BE6", c10);
-    }
-    return asItems([...groups.values()].sort((a10, b3) => a10.id.localeCompare(b3.id)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.ids.hs ?? "~").localeCompare(b3.ids.hs ?? "~")) })));
-  }
-  return styleGroups(cat2, q2, hit);
-}
-function styleGroups(cat2, q2, hit) {
-  const groups = /* @__PURE__ */ new Map();
-  const put2 = (tag2, e10) => {
-    let g3 = groups.get(tag2);
-    if (!g3) {
-      g3 = { id: tag2, label: tag2 === "none" ? "\u6CA1\u8D34\u98CE\u683C" : styleLabel(cat2, tag2), items: [] };
-      groups.set(tag2, g3);
-    }
-    g3.items.push(e10);
-  };
-  const self2 = [...cat2.gmSelf.values()];
-  const styled = new Set(self2.filter((r10) => r10.styles?.length).map((r10) => r10.concept));
-  for (const r10 of self2) {
-    const c10 = cat2.byId.get(r10.concept);
-    if (!c10 || !styled.has(c10.id)) continue;
-    if (!hit(c10) && !(q2 && r10.gmName.toLowerCase().includes(q2))) continue;
-    if (!r10.styles?.length) {
-      put2("none", { concept: c10, preset: r10 });
-      continue;
-    }
-    for (const s10 of r10.styles) put2(s10.tag, { concept: c10, preset: r10, weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
-  }
-  for (const c10 of cat2.concepts) {
-    if (styled.has(c10.id) || !hit(c10)) continue;
-    const tags = /* @__PURE__ */ new Map();
-    for (const s10 of c10.styles ?? []) {
-      const was = tags.get(s10.tag);
-      if (!was || (s10.weight ?? 0) > was.weight) tags.set(s10.tag, { weight: s10.weight ?? 0, ...s10.as ? { as: s10.as } : {} });
-    }
-    if (!tags.size) put2("none", { concept: c10 });
-    for (const [t10, w2] of tags) put2(t10, { concept: c10, ...w2 });
-  }
-  const yearOf = (e10) => e10.preset?.year ?? e10.concept.year ?? 1e9, gmOf = (e10) => e10.preset?.gmNumber ?? 999;
-  return [...groups.values()].sort((a10, b3) => a10.id === "none" ? 1 : b3.id === "none" ? -1 : a10.label.localeCompare(b3.label, "zh")).map((g3) => ({ ...g3, items: g3.items.sort((a10, b3) => (b3.weight ?? 0) - (a10.weight ?? 0) || yearOf(a10) - yearOf(b3) || gmOf(a10) - gmOf(b3) || a10.concept.names.zh.localeCompare(b3.concept.names.zh, "zh")) }));
-}
-var weightLabel = (cat2, w2) => cat2.defs.weights?.find((x2) => x2.id === w2)?.zh ?? "";
-function styleLabel(cat2, tag2) {
-  const s10 = cat2.defs.styles?.find((x2) => (x2.id ?? x2.tag) === tag2);
-  return s10?.zh ?? s10?.en ?? tag2;
-}
-var fmtYear = (y2) => y2 < 0 ? `\u516C\u5143\u524D ${-y2}` : String(y2);
-var eraLabel = (cat2, c10) => cat2.defs.eras.find((e10) => e10.id === c10.era)?.zh ?? "";
 
 // src/ui/finder.ts
 var HINT = "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u9009\u8FD9\u4E2A\u300D\uFF08\u56DE\u5230\u4E50\u5668\u9875\uFF09\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002";
@@ -42551,13 +42637,6 @@ instEl.hidden = true;
 $2("stage").append(instEl);
 var instPicked = null;
 var UNKNOWN_TITLE = "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09";
-var SING_CORE_ROWS = [
-  { key: "level", label: "\u9F50\u5E73", values: [0, 0.4, 0.8], names: { 0: "\u5173" }, why: "\u6BCF\u4E2A\u5B57\u7684\u54CD\u5EA6\u5F80\u6574\u53E5\u7684\u4E2D\u4F4D\u6570\u62C9\u51E0\u6210\uFF1A\u5173 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF08\u56E2\u5B50 C \u6BB5\u7B2C 10 \u5C0F\u8282\u300C\u305D\u300D\u7684\u7834\u97F3\u5C31\u662F\u9F50\u5E73\u5728\u5B57\u7684\u8FB9\u754C\u4E0A\u8DF3\u51FA\u6765\u7684\u53F0\u9636\uFF0C\u5173\u4E86\u5C31\u6CA1\u4E86\uFF09\uFF1B0.8 = \u62C9\u516B\u6210\uFF08\u539F\u6765\u7684\u9ED8\u8BA4\uFF09" },
-  { key: "levelContinuous", label: "\u9F50\u5E73\u8FC7\u6E21", values: [0, 1], names: { 0: "\u6BCF\u5B57\u91CD\u8D77", 1: "\u8FDE\u7EED" }, why: "\u9F50\u5E73\u5F00\u7740\u65F6\u589E\u76CA\u600E\u4E48\u4ECE\u4E00\u4E2A\u5B57\u6362\u5230\u4E0B\u4E00\u4E2A\u5B57\uFF1A\u6BCF\u5B57\u91CD\u8D77 = \u5728\u6BCF\u4E2A\u5B57\u7684\u5143\u97F3\u8D77\u70B9\u4ECE 0 \u8D77\u300130 ms \u5185\u722C\u5230\u8FD9\u4E2A\u5B57\u7684\u76EE\u6807\uFF0C\u8F85\u97F3\u4E0D\u52A0\uFF1B\u8FDE\u7EED = \u4ECE\u524D\u4E00\u4E2A\u5B57\u7684\u589E\u76CA\u8D77\uFF0C\u7ECF\u8FC7\u8F85\u97F3\u5230\u5143\u97F3\u8D77\u70B9\u540E 30 ms \u5E73\u6ED1\u8FC7\u6E21\u5230\u8FD9\u4E2A\u5B57\u7684" },
-  { key: "levelMaxDb", label: "\u9F50\u5E73\u4E0A\u9650", values: [6, 12], names: { 6: "6 dB", 12: "12 dB" }, why: "\u9F50\u5E73\u6700\u591A\u628A\u4E00\u4E2A\u5B57\u62C9\u51E0 dB" },
-  { key: "cleanMax", label: "\u501F\u5143\u97F3\u95E8\u69DB", values: [0.3, 0.4, 0.5], why: "\u4E00\u4E2A\u5B57\u81EA\u5DF1\u6700\u5E72\u51C0\u90A3\u4E09\u5206\u4E4B\u4E00\u5E27\u7684\u6742\u5EA6\u8D85\u8FC7\u8FD9\u4E2A\u6570 = \u5F53\u5B83\u662F\u6C14\u58F0\u5FF5\u7684\uFF0C\u62FF\u540C\u4E00\u53E5\u91CC\u522B\u7684\u5E72\u51C0\u7684\u540C\u5143\u97F3\u6765\u5531\uFF08\u300C\u305D\u300D\u662F 0.34\uFF09" },
-  { key: "breath", label: "\u6C14\u606F", values: [0, 0.5, 1], names: { 0: "\u5B9E\u58F0", 1: "\u7167\u5FF5\u7684" }, why: "\u5408\u6210\u524D\u628A\u6BCF\u5E27\u6BCF\u4E2A\u9891\u6BB5\u7684\u6742\u5EA6\u538B\u5230\u8FD9\u4E2A\u5143\u97F3\u6700\u5E72\u51C0\u90A3\u51E0\u5E27\u7684\u7A0B\u5EA6\uFF1A0 = \u5168\u538B\u6210\u5B9E\u58F0\uFF0C1 = \u7167 piper \u5FF5\u51FA\u6765\u7684\u7559\u7740" }
-];
 var instAdvOpen = false;
 function openInstPage() {
   ui2.close();
@@ -42695,6 +42774,9 @@ function pickerHtml() {
   const cur = picked.presets.find((p2) => `${p2.bank}:${p2.program}` === picked.sel);
   return `<div class="ip-picker"><div class="ip-sub">${esc8(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b3) => `<optgroup label="${label(b3)}">${picked.presets.filter((p2) => p2.bank === b3).map((p2) => `<option value="${p2.bank}:${p2.program}"${`${p2.bank}:${p2.program}` === picked.sel ? " selected" : ""}>${String(p2.program).padStart(3, "0")} ${esc8(p2.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc8(cur?.name ?? "")}" /></label><div class="ip-btns"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u9009\u5B83</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div></div>`;
 }
+function inspectorCtx(role) {
+  return { extras: doc.extras, role, hum: st2.song.hum, catalog: catalogNow, esc: esc8, chip, dynTable: (L2) => dynTable(activePerfSpec(doc.extras, role), L2) };
+}
 function drawInst() {
   if (!instShown()) return;
   const eng = engineNow(), h2 = st2.song.hum, role = curRole(), rn2 = roleName(doc.extras, role), rs2 = roleSound(doc.extras, role), aid = activeId(doc.extras, role);
@@ -42709,50 +42791,21 @@ function drawInst() {
   const parts = st2.song.parts.map((p2, k2) => ({ p: p2, label: labels[k2] })).filter((x2) => onPaper.has(x2.p.id));
   const cal = activeCalibrationDb(doc.extras, role), tr3 = activeTranspose(doc.extras, role);
   const row2 = (k2, v, note2 = "") => `<span class="ip-k">${k2}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note2 ? `<div class="ip-note">${note2}</div>` : ""}</div>`;
-  const how = (performerOf(eng) ? row2(
+  const plug = performerOf(eng), ictx = inspectorCtx(role);
+  const own = plug?.inspector?.(ictx) ?? [], ownMain = own.filter((x2) => !x2.place), ownAdv = own.filter((x2) => x2.place === "adv"), ownTail = own.filter((x2) => x2.place === "tail");
+  const rowOf = (x2) => row2(x2.label, x2.control, x2.note ?? "");
+  const how = (plug ? row2(
     "\u54CD\u5EA6",
     `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="\u56DE\u5230\u9ED8\u8BA4 ${fmtDb(DEFAULT_CALIBRATION_DB)}">\u9ED8\u8BA4</button>` : ""}`,
     `\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F ${fmtDb(DEFAULT_CALIBRATION_DB)}\uFF08\u5C0F\u6708\u76F8\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u53E6\u7B97`
   ) : "") + // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
   //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
-  (performerOf(eng)?.sound === "notes" ? ((gap, d3) => row2(
+  (plug?.sound === "notes" ? ((gap, d3) => row2(
     "\u97F3\u548C\u97F3\u4E4B\u95F4",
     `<b class="ip-val">${Math.round(gap * 1e3)} ms</b><button class="btn" data-v="gap:-0.01" title="\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09">\u221210</button><button class="btn" data-v="gap:0.01" title="\u7F1D\u5927 10 ms\uFF08\u66F4\u65AD\uFF09">+10</button>` + (d3 && Math.abs(gap - d3.gapSec) > 1e-9 ? `<button class="btn" data-v="gap:def" title="\u56DE\u5230\u9ED8\u8BA4 ${Math.round(d3.gapSec * 1e3)} ms">\u9ED8\u8BA4</button>` : ""),
     `\u4E0D\u5199\u8BB0\u53F7\u7684\u97F3\u548C\u4E0B\u4E00\u4E2A\u97F3\u4E4B\u95F4\u7559\u7684\u7F1D\uFF1A0 = \u8FDE\u7740\u3002${d3 ? `${esc8(d3.label)}\uFF1A\u9ED8\u8BA4 ${Math.round(d3.gapSec * 1e3)} ms\uFF08\u97F3\u4E50\u76EE\u5F55\u7ED9\u7684\uFF0C\u6309\u97F3\u8272\u9010\u4E2A\uFF09\u3002` : ""}\u8FDE\u7EBF\uFF08\u8FDE\u594F\uFF09\u3001\u4FDD\u6301\u7684\u97F3\u4E0D\u7559\u7F1D\uFF1B\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u8DF3\u97F3\u53E6\u7B97`
-  ))(activePerfSpec(doc.extras, role).gapSec, gapDefaultOf(role)) : "") + // 力度（2026-10-08，user「应该send的就是velocity！」「力度就是velocity」）：没写力度记号的音按这个；有力度表的演奏者 mp / mf 查表、重音 / 强音往上加
-  (performerOf(eng)?.dynamics === "velocity" ? ((v, sp2) => {
-    const midi = Math.round(v * 127), def = sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127), g3 = activeGm(doc.extras, role);
-    const L2 = g3 && g3.origin.library === GS_LIBRARY_ID && catalogNow ? velLayersOf(catalogNow, g3.bank, g3.program, g3.note) : null, k2 = L2 ? L2.ranges.findIndex(([lo2, hi]) => midi >= lo2 && midi <= hi) : -1;
-    return row2(
-      "\u529B\u5EA6",
-      `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09">\u22128</button><button class="btn" data-v="vel:8" title="\u91CD\u4E00\u70B9\uFF08+8\uFF09">+8</button>` + (midi !== def ? `<button class="btn" data-v="vel:def" title="\u56DE\u5230 ${def}">\u9ED8\u8BA4</button>` : ""),
-      `\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002` + (sp2.dynamicsVel ? `\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +${sp2.accentVel}\u3001\u5F3A\u97F3 +${sp2.marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A${dynTable(sp2, L2)}` : `\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A${dynTable(sp2, null)}`) + (L2 ? L2.count > 1 ? `GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 ${L2.count} \u4E2A\u529B\u5EA6\u5C42${k2 >= 0 ? `\uFF0C\u73B0\u5728\u5728\u7B2C ${k2 + 1} \u5C42\uFF08${L2.ranges[k2][0]}\u2013${L2.ranges[k2][1]}\uFF09` : ""}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002` : "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002" : "")
-    );
-  })(activeVelocity(doc.extras, role), activePerfSpec(doc.extras, role)) : "") + // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-  (performerOf(eng)?.dynamics === "gain" ? row2("\u529B\u5EA6\u8BB0\u53F7", "", `\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
-  //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
-  (active?.sfx ? ((fixed, al2) => row2(
-    "\u97F3\u6548",
-    chip("sfx:fixed", "\u56FA\u5B9A\u539F\u901F", fixed, "\u6BCF\u4E2A\u97F3\u90FD\u6572\u539F\u901F\u952E\uFF1A\u5199\u8C31\u6309\u952E\u3001\u64AD\u653E\u90FD\u662F\u539F\u6765\u7684\u6837\u5B50\uFF1B\u8C31\u4E0A\u5199\u7684\u97F3\u9AD8\u7167\u7559\uFF0C\u53EA\u662F\u4E0D\u62FF\u6765\u51FA\u58F0") + (fixed ? "" : canAlign(active.sfx) ? chip("sfx:align", "\u97F3\u9AD8\u5BF9\u9F50", al2, "\u6309\u539F\u901F\u65F6\u6700\u5F3A\u7684\u90A3\u4E2A\u9891\u7387\u5927\u81F4\u5BF9\u9F50\uFF0C\u8C31\u4E0A\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF1B\u4E0D\u4E00\u5B9A\u662F\u8033\u6735\u542C\u5230\u7684\u4E3B\u97F3") : ""),
-    fixed ? "\u8C31\u4E0A\u5199\u4E0D\u540C\u7684\u97F3\u4E5F\u90FD\u54CD\u539F\u6765\u7684\u6837\u5B50\uFF08\u97F3\u9AD8\u7559\u5728\u8C31\u4E0A\uFF0C\u5173\u6389\u5C31\u6309\u5B83\u53D8\u8C03\uFF09" : al2 ? "\u5199\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF08\u5927\u81F4\uFF09" : `\u6309\u5199\u7684\u97F3\u53D8\u8C03\u53D8\u901F\uFF1A\u8D8A\u9AD8\u8D8A\u5C16\u8D8A\u5FEB\uFF0C\u8D8A\u4F4E\u8D8A\u6C89\u8D8A\u6162${canAlign(active.sfx) ? "" : "\uFF1B\u8FD9\u4E2A\u97F3\u6548\u539F\u901F\u65F6\u542C\u4E0D\u51FA\u97F3\u9AD8\uFF0C\u6CA1\u6CD5\u5BF9\u9F50"}`
-  ))(active.note !== void 0, !!active.sfx.align) : "") + // 修八度 / 移调（user「修八度和移调的音色级别的选项…大部分情况不应该动，是worst case兜底」）：只给 SoundFont 的（鼓件 / 固定原速按哪个键都一样，不给）；默认 0、不自动套用
-  (active && active.note === void 0 ? row2(
-    "\u4FEE\u516B\u5EA6",
-    `<b class="ip-val">${tr3 > 0 ? "+" : tr3 < 0 ? "\u2212" : ""}${Math.abs(tr3)} \u534A\u97F3</b><button class="btn" data-v="tr:-12" title="\u4F4E\u4E00\u4E2A\u516B\u5EA6">\u221212</button><button class="btn" data-v="tr:-1" title="\u4F4E\u534A\u97F3">\u22121</button><button class="btn" data-v="tr:1" title="\u9AD8\u534A\u97F3">+1</button><button class="btn" data-v="tr:12" title="\u9AD8\u4E00\u4E2A\u516B\u5EA6">+12</button>${tr3 ? `<button class="btn" data-v="tr:0" title="\u56DE\u5230 0">\u5F52\u96F6</button>` : ""}`,
-    "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3"
-  ) : "") + // 八度（v0.9.32；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：谱上写的 = 实际音高 = 发给音源的；这件乐器的记谱习惯（仓鼠 v12 notation）+ GS 这个音色的实测（octaveCheck）
-  (activeGm(doc.extras, role) ? ((g3) => {
-    const cpt = catalogNow ? conceptOfIds(catalogNow, doc.extras.lounge[role]?.concept?.ids) : void 0;
-    const oc2 = g3 && catalogNow && g3.origin.library === GS_LIBRARY_ID ? octaveCheckOf(catalogNow, g3.bank, g3.program, g3.note) : null, nt2 = cpt?.notation;
-    const text2 = octaveDisclosure(nt2, oc2, (c10) => CLEF_LABEL[c10] ?? c10);
-    return text2 ? row2("\u516B\u5EA6", "", esc8(text2)) : "";
-  })(activeGm(doc.extras, role)) : "") + ((performerOf(eng)?.lyrics ?? "none") !== "none" ? row2("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
-  // 高级 = 唱法核心的旋钮（存进候选，by value、走 undo；2026-10-15 user「齐平和其他的也都放在高级设置里面可以持久化」）
-  (performerOf(eng)?.sound === "chunks" ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE</summary>` + ((cur) => SING_CORE_ROWS.map((x2) => row2(x2.label, x2.values.map((v) => chip(`core:${x2.key}:${v}`, `${x2.names?.[v] ?? v}${v === TSUKUYOMI_DEFAULTS[x2.key] ? "\uFF08\u9ED8\u8BA4\uFF09" : ""}`, cur[x2.key] === v, "\u6539\u4E86\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u5B58\u8FDB\u6B4C\u91CC\u3001\u80FD\u64A4\u9500")).join(""), x2.why)).join(""))(activeSingCore(doc.extras, role)) + `</details>` : "") + (performerOf(eng)?.sound === "chunks" ? ((sc2) => row2(
-    "\u5206\u6BB5\u5531",
-    [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
-    sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF"
-  ))(activeSingChunk(doc.extras, role)) : "") + (!performerOf(eng) ? row2("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
+  ))(activePerfSpec(doc.extras, role).gapSec, gapDefaultOf(role)) : "") + ownMain.map(rowOf).join("") + // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
+  (plug?.dynamics === "gain" ? row2("\u529B\u5EA6\u8BB0\u53F7", "", `\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") + ((plug?.lyrics ?? "none") !== "none" ? row2("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
   instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc8(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc8(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc8(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc8(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc8(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc8(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc8(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc8(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, !performerOf(c10.engine) ? `${esc8(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc8(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (performerOf(c10.engine)?.removable ?? true) ? `<button class="btn cand-del" data-v="del:${esc8(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc8(e10.id)}" title="${esc8(`${e10.description ?? e10.name}\uFF08${sizeText2(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc8(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc8(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
   const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
   sel.addEventListener("change", () => {
@@ -42831,35 +42884,19 @@ instEl.addEventListener("click", (e10) => {
     void addPicked();
     return;
   } else if (v === "sf2:cancel") instPicked = null;
-  else if (v === "sfx:fixed") {
-    const on2 = activeGm(doc.extras, role)?.note === void 0;
-    updateExtras(withSfxFixed(doc.extras, role, on2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D${on2 ? "\u56FA\u5B9A\u539F\u901F" : "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09"}` });
-    sound.allOff();
-  } else if (v === "sfx:align") {
-    const on2 = !activeGm(doc.extras, role)?.sfx?.align;
-    updateExtras(withSfxAlign(doc.extras, role, on2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u97F3\u9AD8\u5BF9\u9F50${on2 ? "\u5F00" : "\u5173"}` });
-    sound.allOff();
-  } else if (v.startsWith("tr:")) {
-    const d3 = Number(v.slice(3)), next2 = d3 === 0 ? 0 : activeTranspose(doc.extras, role) + d3;
-    updateExtras(withTranspose(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u4FEE\u516B\u5EA6 / \u79FB\u8C03 ${next2} \u534A\u97F3` }, "transpose");
-    sound.allOff();
-  } else if (v.startsWith("vel:")) {
-    const sp2 = activePerfSpec(doc.extras, role), def = (sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127)) / 127, next2 = v === "vel:def" ? def : activeVelocity(doc.extras, role) + Number(v.slice(4)) / 127;
-    updateExtras(withVelocity(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u529B\u5EA6 ${Math.max(1, Math.min(127, Math.round(next2 * 127)))}` }, "vel");
-  } else if (v.startsWith("gap:")) {
+  else if (v.startsWith("gap:")) {
     const def = gapDefaultOf(role)?.gapSec ?? 0, next2 = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4))));
     updateExtras(withGapSec(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 ${Math.round(next2 * 1e3)} ms` }, "gap");
   } else if (v.startsWith("cal:")) {
     const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d3));
     updateExtras(withCalibration(doc.extras, role, next2, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u54CD\u5EA6\u6821\u51C6 ${next2} dB` }, "cal");
   } else if (v.startsWith("hum:")) update(setHum(st2, v.slice(4)));
-  else if (v.startsWith("core:")) {
-    const [, key, val] = v.split(":"), x2 = SING_CORE_ROWS.find((e11) => e11.key === key), n10 = Number(val);
-    if (x2) updateExtras(withSingCore(doc.extras, role, x2.key, n10, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D${x2.label}\uFF1A${x2.names?.[n10] ?? n10}` });
-  } else if (v.startsWith("chunk:")) {
-    const c10 = v.slice(6);
-    updateExtras(withSingChunk(doc.extras, role, c10, st2.song.hum), { kind: "lounge", label: `\u300C${rn2}\u300D\u5206\u6BB5\u5531\uFF1A${c10 === "phrase" ? "\u6BCF\u53E5" : c10 === "sheet" ? "\u6BCF\u5F20\u7EB8" : "\u4E00\u6574\u9996"}` });
-  } else return;
+  else {
+    const ch2 = performerOf(engineNow())?.onInspector?.(v, inspectorCtx(role));
+    if (!ch2) return;
+    updateExtras(ch2.extras, { kind: "lounge", label: ch2.label }, ch2.gesture);
+    if (ch2.silence) sound.allOff();
+  }
   drawInst();
 });
 var deskNow = () => ({
@@ -44304,4 +44341,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-740568bc9edb.mjs.map
+//# sourceMappingURL=moonsinger-6752d9c64483.mjs.map

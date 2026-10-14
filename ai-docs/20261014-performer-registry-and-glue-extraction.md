@@ -102,4 +102,5 @@ main.ts 里：`const perfApi = createPerformance({…})` + 只解构 main 还用
 
 > 2026-10-15 补（Claude Fable 5.1）：**刀 2 = 键盘模块落地 v0.12.11–v0.12.13**——`src/keyboard/`（pad / pad-layout / keys / latch / chords / drum / wheel / param-row）是纯前端（不 import src/score，守卫在 `test/pad-keys.test.ts`）；音乐知识 = `src/app/pad-music.ts`（PadMusic 注入）；翻译层 = `src/app/pad-keys.ts`（按键 id → 命令 / 插记号 / 菜单，纯函数）+ `src/app/pad-host.ts`（`createPadHost(padEl, glue)`：音键 → 写 / 叠音观望 / 出声、锁 × 光标 × 选区、谁按着的簿记）。main.ts 3223 → 3135 行。细节 = `20261014-editing-mental-model.md` §9。
 > 2026-10-15 补（Claude Fable 5.1）：**刀 4 = 音源 / 模型来源接缝落地 v0.12.16**——`src/sources/sounds.ts`（来源 + fetchSound + 弱引用解析 resolveGmBytes + session 子集）、`src/sources/models.ts`（模型来源 + bases）、`src/sources/sha256.ts`；main.ts 3135 → 3089 行。刀 1 之二留下的「音源解析 = 下一刀」到此收。
+> 2026-10-15 补（Claude Fable 5.1）：**刀 5 之一落地 v0.12.17**——插件自报参数行（`inspector / onInspector`，§4 第 3 条的前半）；SoundFont / 小月相各自的行和按钮搬进 adapter，main.ts 3089 → 3060。**之二（三段合一张 inspector 卡）等 user 在场**。
 

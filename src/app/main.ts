@@ -21,6 +21,7 @@ import { ScoreView } from "../ui/score-view.ts";
 import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
 import { type HintRange } from "../keyboard/pad.ts";
+import type { InspectorCtx } from "../performers/registry.ts";
 import { createPadHost } from "./pad-host.ts";   // pad 的宿主 = 翻译层（音键 → 写 / 叠音观望 / 出声；按键 id → 命令 / 插记号 / 菜单；谁按着的簿记）
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
@@ -41,7 +42,7 @@ import { createSoundSources } from "../sources/sounds.ts";   // 音源来源 + �
 import { createModelSources, MODEL_SOURCE_DEFAULT } from "../sources/models.ts";
 import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
-import { activeSingCore, withSingCore, type SingCoreKey, moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, withVelocity, activePerfSpec, activeTranspose, withTranspose, withSfxFixed, withSfxAlign, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
+import { moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, activePerfSpec, activeTranspose, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
@@ -61,7 +62,7 @@ import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
 import { Finder, type FinderPick } from "../ui/finder.ts";
 import { Studio, MASTER as STUDIO_MASTER } from "../ui/studio.ts";
 import { resolveChain } from "../ui/plugins.ts";
-import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, velLayersOf, sustainOf, octaveCheckOf, conceptOfIds, octaveDisclosure, GS_LIBRARY_ID, type Catalog } from "../gm/catalog.ts";
+import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, sustainOf, GS_LIBRARY_ID, type Catalog } from "../gm/catalog.ts";
 import { ICON_CREDITS } from "../gm/instruments.gen.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
@@ -1941,13 +1942,6 @@ type Chosen = { name: string; bank: number; program: number; note?: number; sfx?
 const UNKNOWN_TITLE = "这一版出不了声（别的软件原来的乐器）";   // 认得出的候选：说明由插件自报（description）
 /** 小月相唱法核心的旋钮 = 乐器页「高级」（存进候选 defaults，by value、走 undo、换人跟人走；默认 = TSUKUYOMI_DEFAULTS）。
  *  2026-10-15 user 拍板：齐平默认关（「应该leverage就是齐平，我觉得不开没什么影响吧，默认不开」），旋钮进高级设置持久化；「连续」也放着试。物理意义 = ai-docs/20261013-dango-c10-pop-probe.md §6。 */
-const SING_CORE_ROWS: { key: SingCoreKey; label: string; values: number[]; names?: Record<number, string>; why: string }[] = [
-  { key: "level", label: "齐平", values: [0, 0.4, 0.8], names: { 0: "关" }, why: "每个字的响度往整句的中位数拉几成：关 = 照念的时候自己的轻重（团子 C 段第 10 小节「そ」的破音就是齐平在字的边界上跳出来的台阶，关了就没了）；0.8 = 拉八成（原来的默认）" },
-  { key: "levelContinuous", label: "齐平过渡", values: [0, 1], names: { 0: "每字重起", 1: "连续" }, why: "齐平开着时增益怎么从一个字换到下一个字：每字重起 = 在每个字的元音起点从 0 起、30 ms 内爬到这个字的目标，辅音不加；连续 = 从前一个字的增益起，经过辅音到元音起点后 30 ms 平滑过渡到这个字的" },
-  { key: "levelMaxDb", label: "齐平上限", values: [6, 12], names: { 6: "6 dB", 12: "12 dB" }, why: "齐平最多把一个字拉几 dB" },
-  { key: "cleanMax", label: "借元音门槛", values: [0.3, 0.4, 0.5], why: "一个字自己最干净那三分之一帧的杂度超过这个数 = 当它是气声念的，拿同一句里别的干净的同元音来唱（「そ」是 0.34）" },
-  { key: "breath", label: "气息", values: [0, 0.5, 1], names: { 0: "实声", 1: "照念的" }, why: "合成前把每帧每个频段的杂度压到这个元音最干净那几帧的程度：0 = 全压成实声，1 = 照 piper 念出来的留着" },
-];
 let instAdvOpen = false;   // 乐器页「高级」折叠开着没（重画保持）
 function openInstPage(): void {
   ui.close();
@@ -2043,6 +2037,10 @@ function pickerHtml(): string {
     `<div class="ip-btns"><button class="btn primary" data-v="sf2:add">加进来、选它</button><button class="btn" data-v="sf2:cancel">算了</button></div></div>`;
 }
 /** 乐器页的内容（每次改完整页重画；输入框里正在打的字不受影响——只有提交时才改 extras）。 */
+/** 插件自报参数行要的上下文（ADR-0004 §2.5）：休息室 / 角色 / 哼的字 / 音乐目录（没载 = null）/ 排版小工具。 */
+function inspectorCtx(role: string): InspectorCtx {
+  return { extras: doc.extras, role, hum: st.song.hum, catalog: catalogNow, esc, chip, dynTable: (L) => dynTable(activePerfSpec(doc.extras, role), L) };
+}
 function drawInst(): void {
   if (!instShown()) return;
   const eng = engineNow(), h = st.song.hum, role = curRole(), rn = roleName(doc.extras, role), rs = roleSound(doc.extras, role), aid = activeId(doc.extras, role);
@@ -2055,48 +2053,27 @@ function drawInst(): void {
   const parts = st.song.parts.map((p, k) => ({ p, label: labels[k] })).filter((x) => onPaper.has(x.p.id));
   const cal = activeCalibrationDb(doc.extras, role), tr = activeTranspose(doc.extras, role);
   const row = (k: string, v: string, note = "") => `<span class="ip-k">${k}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note ? `<div class="ip-note">${note}</div>` : ""}</div>`;
-  // 这位怎么演：响度（契约「看得见、能调的默认，不偷偷自动」）/ 音效的固定原速与音高对齐 / 修八度（兜底）/ 月读没写歌词的音
+  // 这位怎么演：通用的行（响度 / 音和音之间 / 力度记号 dB 表 / 哼的字）按能力字段摆；这位自己的行（力度 / 音效 / 修八度 / 八度 / 唱法旋钮 / 分段唱…）由插件自报
+  //   （ADR-0004 §2.5「槽旁的参数行由插件自报，不是 main.ts 写死」；2026-10-15 刀 5 之一）。
+  const plug = performerOf(eng), ictx = inspectorCtx(role);
+  const own = plug?.inspector?.(ictx) ?? [], ownMain = own.filter((x) => !x.place), ownAdv = own.filter((x) => x.place === "adv"), ownTail = own.filter((x) => x.place === "tail");
+  const rowOf = (x: { label: string; control: string; note?: string }) => row(x.label, x.control, x.note ?? "");
   const how =
-    (performerOf(eng) ? row("响度", `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="这位演奏者小声 1 dB">−1 dB</button><button class="btn" data-v="cal:1" title="大声 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="回到默认 ${fmtDb(DEFAULT_CALIBRATION_DB)}">默认</button>` : ""}`,
+    (plug ? row("响度", `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="这位演奏者小声 1 dB">−1 dB</button><button class="btn" data-v="cal:1" title="大声 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="回到默认 ${fmtDb(DEFAULT_CALIBRATION_DB)}">默认</button>` : ""}`,
       `这位演奏者自己的音量：默认都是 ${fmtDb(DEFAULT_CALIBRATION_DB)}（小月相也是），几个声部叠在一起才不顶到天花板、不把声音压变样；混音台的推子另算`) : "") +
     // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
     //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
-    (performerOf(eng)?.sound === "notes" ? ((gap, d) => row("音和音之间", `<b class="ip-val">${Math.round(gap * 1000)} ms</b>` +
+    (plug?.sound === "notes" ? ((gap, d) => row("音和音之间", `<b class="ip-val">${Math.round(gap * 1000)} ms</b>` +
       `<button class="btn" data-v="gap:-0.01" title="缝小 10 ms（更连）">−10</button><button class="btn" data-v="gap:0.01" title="缝大 10 ms（更断）">+10</button>` +
       (d && Math.abs(gap - d.gapSec) > 1e-9 ? `<button class="btn" data-v="gap:def" title="回到默认 ${Math.round(d.gapSec * 1000)} ms">默认</button>` : ""),
       `不写记号的音和下一个音之间留的缝：0 = 连着。${d ? `${esc(d.label)}：默认 ${Math.round(d.gapSec * 1000)} ms（音乐目录给的，按音色逐个）。` : ""}连线（连奏）、保持的音不留缝；呼吸 = 这里断开；跳音另算`))(activePerfSpec(doc.extras, role).gapSec, gapDefaultOf(role)) : "") +
-    // 力度（2026-10-08，user「应该send的就是velocity！」「力度就是velocity」）：没写力度记号的音按这个；有力度表的演奏者 mp / mf 查表、重音 / 强音往上加
-    (performerOf(eng)?.dynamics === "velocity" ? ((v, sp) => { const midi = Math.round(v * 127), def = sp.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127), g = activeGm(doc.extras, role);
-      const L = g && g.origin.library === GS_LIBRARY_ID && catalogNow ? velLayersOf(catalogNow, g.bank, g.program, g.note) : null, k = L ? L.ranges.findIndex(([lo, hi]) => midi >= lo && midi <= hi) : -1;
-      return row("力度", `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="轻一点（MIDI 力度 −8）">−8</button><button class="btn" data-v="vel:8" title="重一点（+8）">+8</button>` +
-        (midi !== def ? `<button class="btn" data-v="vel:def" title="回到 ${def}">默认</button>` : ""),
-        `没写力度记号的音按这个力度（MIDI 1–127）。` + (sp.dynamicsVel ? `力度记号按这位的力度表（重音 +${sp.accentVel}、强音 +${sp.marcatoVel}；别的记号见下面「记号怎么演」）：${dynTable(sp, L)}` : `这位是之前上场的：力度记号还是只改音量：${dynTable(sp, null)}`) +
-        (L ? (L.count > 1 ? `GS 里这个音色有 ${L.count} 个力度层${k >= 0 ? `，现在在第 ${k + 1} 层（${L.ranges[k][0]}–${L.ranges[k][1]}）` : ""}：跨层 = 换一份录音，音色会变，不只是响度。` : "GS 里这个音色只有一个力度层：力度只改响度。") : ""));
-    })(activeVelocity(doc.extras, role), activePerfSpec(doc.extras, role)) : "") +
+    ownMain.map(rowOf).join("") +
     // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-    (performerOf(eng)?.dynamics === "gain" ? row("力度记号", "", `力度记号 = 音量（相对 mf，dB）；一档 6 dB ≈ 振幅翻倍 / 减半。力度记号没有标准的 dB，是相对的：每位演奏者自己带一张表，这是这位的：${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") +
-    // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
-    //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
-    (active?.sfx ? ((fixed, al) => row("音效", chip("sfx:fixed", "固定原速", fixed, "每个音都敲原速键：写谱按键、播放都是原来的样子；谱上写的音高照留，只是不拿来出声") +
-      (fixed ? "" : canAlign(active.sfx) ? chip("sfx:align", "音高对齐", al, "按原速时最强的那个频率大致对齐，谱上的音 ≈ 听到的音；不一定是耳朵听到的主音") : ""),
-      fixed ? "谱上写不同的音也都响原来的样子（音高留在谱上，关掉就按它变调）" : al ? "写的音 ≈ 听到的音（大致）" : `按写的音变调变速：越高越尖越快，越低越沉越慢${canAlign(active.sfx) ? "" : "；这个音效原速时听不出音高，没法对齐"}`))(active.note !== undefined, !!active.sfx.align) : "") +
-    // 修八度 / 移调（user「修八度和移调的音色级别的选项…大部分情况不应该动，是worst case兜底」）：只给 SoundFont 的（鼓件 / 固定原速按哪个键都一样，不给）；默认 0、不自动套用
-    (active && active.note === undefined ? row("修八度", `<b class="ip-val">${tr > 0 ? "+" : tr < 0 ? "−" : ""}${Math.abs(tr)} 半音</b><button class="btn" data-v="tr:-12" title="低一个八度">−12</button><button class="btn" data-v="tr:-1" title="低半音">−1</button><button class="btn" data-v="tr:1" title="高半音">+1</button><button class="btn" data-v="tr:12" title="高一个八度">+12</button>${tr ? `<button class="btn" data-v="tr:0" title="回到 0">归零</button>` : ""}`,
-      "大部分情况不用动：某些音色本身就差八度（比如 GS 的 Guitar Harmonics 高两个八度）时兜底，调好后写什么音就响什么音") : "") +
-    // 八度（v0.9.32；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：谱上写的 = 实际音高 = 发给音源的；这件乐器的记谱习惯（仓鼠 v12 notation）+ GS 这个音色的实测（octaveCheck）
-    (activeGm(doc.extras, role) ? ((g) => {
-      const cpt = catalogNow ? conceptOfIds(catalogNow, (doc.extras.lounge[role] as { concept?: { ids?: { wikidata?: string | null; local?: string | null } } } | undefined)?.concept?.ids) : undefined;
-      const oc = g && catalogNow && g.origin.library === GS_LIBRARY_ID ? octaveCheckOf(catalogNow, g.bank, g.program, g.note) : null, nt = cpt?.notation;
-      const text = octaveDisclosure(nt, oc, (c) => CLEF_LABEL[c as ClefName] ?? c);
-      return text ? row("八度", "", esc(text)) : "";
-    })(activeGm(doc.extras, role)) : "") +
-    ((performerOf(eng)?.lyrics ?? "none") !== "none" ? row("哼的字", HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), "没写歌词的音唱什么（整首歌一个）") : "") +
-    // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
-    // 高级 = 唱法核心的旋钮（存进候选，by value、走 undo；2026-10-15 user「齐平和其他的也都放在高级设置里面可以持久化」）
-    (performerOf(eng)?.sound === "chunks" ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>高级：唱法核心的旋钮</summary>` + ((cur) => SING_CORE_ROWS.map((x) => row(x.label, x.values.map((v) => chip(`core:${x.key}:${v}`, `${x.names?.[v] ?? v}${v === TSUKUYOMI_DEFAULTS[x.key] ? "（默认）" : ""}`, cur[x.key] === v, "改了用到的句子会重唱；存进歌里、能撤销")).join(""), x.why)).join(""))(activeSingCore(doc.extras, role)) + `</details>` : "") +
-    (performerOf(eng)?.sound === "chunks" ? ((sc) => row("分段唱", (([["phrase", "每句", "在休止处切（休止 ≥ 0.25 秒）：内存最省，改一句只重唱那一句"], ["sheet", "每张纸", "一张纸一段"], ["whole", "一整首", "一口气唱完（以前的唱法；长歌在 iPad 上可能内存不够）"]] as const)).map(([v, l, t]) => chip(`chunk:${v}`, l, sc === v, t)).join(""),
-      sc === "whole" ? "一口气唱完：句和句之间唱法最连贯，但长歌在 iPad 上可能内存不够" : "分段唱：一段唱完就放掉，重复的段 / 没改的句子直接拿上次的；段和段之间切在休止 / 纸界，整首最后统一音量"))(activeSingChunk(doc.extras, role)) : "") +
-    (!performerOf(eng) ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
+    (plug?.dynamics === "gain" ? row("力度记号", "", `力度记号 = 音量（相对 mf，dB）；一档 6 dB ≈ 振幅翻倍 / 减半。力度记号没有标准的 dB，是相对的：每位演奏者自己带一张表，这是这位的：${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") +
+    ((plug?.lyrics ?? "none") !== "none" ? row("哼的字", HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), "没写歌词的音唱什么（整首歌一个）") : "") +
+    (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>高级：唱法核心的旋钮</summary>${ownAdv.map(rowOf).join("")}</details>` : "") +
+    ownTail.map(rowOf).join("") +
+    (!plug ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
   instEl.innerHTML =
     `<div class="ip-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="ip-title">乐器</span>` +
     (parts.length > 1 ? `<select class="ip-part" title="换一个声部">${parts.map((x) => `<option value="${esc(x.p.id)}"${x.p.id === st.at.part ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc(parts[0]?.label ?? rn)}</span>`) +
@@ -2136,16 +2113,10 @@ instEl.addEventListener("click", (e) => {
   else if (v.startsWith("sound:")) { void pickOfficial(v.slice(6)); return; }
   else if (v === "sf2:add") { void addPicked(); return; }
   else if (v === "sf2:cancel") instPicked = null;
-  else if (v === "sfx:fixed") { const on = activeGm(doc.extras, role)?.note === undefined; updateExtras(withSfxFixed(doc.extras, role, on, st.song.hum), { kind: "lounge", label: `「${rn}」${on ? "固定原速" : "不固定原速（按写的音变调）"}` }); sound.allOff(); }
-  else if (v === "sfx:align") { const on = !activeGm(doc.extras, role)?.sfx?.align; updateExtras(withSfxAlign(doc.extras, role, on, st.song.hum), { kind: "lounge", label: `「${rn}」音高对齐${on ? "开" : "关"}` }); sound.allOff(); }
-  else if (v.startsWith("tr:")) { const d = Number(v.slice(3)), next = d === 0 ? 0 : activeTranspose(doc.extras, role) + d; updateExtras(withTranspose(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」修八度 / 移调 ${next} 半音` }, "transpose"); sound.allOff(); }
-  else if (v.startsWith("vel:")) { const sp = activePerfSpec(doc.extras, role), def = (sp.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127)) / 127, next = v === "vel:def" ? def : activeVelocity(doc.extras, role) + Number(v.slice(4)) / 127; updateExtras(withVelocity(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」力度 ${Math.max(1, Math.min(127, Math.round(next * 127)))}` }, "vel"); }
   else if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(doc.extras, role).gapSec + Number(v.slice(4)))); updateExtras(withGapSec(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」音和音之间 ${Math.round(next * 1000)} ms` }, "gap"); }
   else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(doc.extras, role) + d)); updateExtras(withCalibration(doc.extras, role, next, st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
   else if (v.startsWith("hum:")) update(setHum(st, v.slice(4) as Hum));
-  else if (v.startsWith("core:")) { const [, key, val] = v.split(":"), x = SING_CORE_ROWS.find((e) => e.key === key), n = Number(val); if (x) updateExtras(withSingCore(doc.extras, role, x.key, n, st.song.hum), { kind: "lounge", label: `「${rn}」${x.label}：${x.names?.[n] ?? n}` }); }
-  else if (v.startsWith("chunk:")) { const c = v.slice(6) as "phrase" | "sheet" | "whole"; updateExtras(withSingChunk(doc.extras, role, c, st.song.hum), { kind: "lounge", label: `「${rn}」分段唱：${c === "phrase" ? "每句" : c === "sheet" ? "每张纸" : "一整首"}` }); }
-  else return;
+  else { const ch = performerOf(engineNow())?.onInspector?.(v, inspectorCtx(role)); if (!ch) return; updateExtras(ch.extras, { kind: "lounge", label: ch.label }, ch.gesture); if (ch.silence) sound.allOff(); }   // 这位自己的行（力度 / 音效 / 修八度 / 唱法旋钮 / 分段唱…）：插件自己管（ADR-0004 §2.5）
   drawInst();
 });
 /** 视图态（desk，src/score/desk.ts）：存时聚一下（bytesNow）、开歌时散回去（loadDoc）。变量本身仍住这里（viewScope / pageFlow / partView）。 */
