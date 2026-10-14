@@ -75,3 +75,8 @@
 推 prod / bump minor / 碰了壳 → npm run test:full （≈ 2.5 min）
 加了 E2E → 登记进 test/e2e/areas.mjs（不登记 npm test 红）
 ```
+
+## 补：E2E 跑的是 `dist/`，不是 `src/`（2026-10-14 踩坑，edited by Claude Fable 5.1）
+
+`test/e2e/run.mjs` 起的 `scripts/serve.sh` 只端出 `dist/`（esbuild 的产物），**不构建**；deploy workflow 也只发 committed 的 dist。所以改了 src 不 build 就跑 E2E = 跑的是上一次 build 的 bundle（v0.12.1 的那轮 E2E 就是这么白跑的，当时 dist 还是 v0.12.0 的）。现在 `npm run e2e` / `npm run e2e:changed` 都先 `npm run build`（3–4 s）；直接 `node test/e2e/run.mjs …` 的话自己先 build。bump 之后同理：build 完的 dist 必须和源一起 commit，不然 dev 站还是旧的。
+

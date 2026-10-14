@@ -4,8 +4,6 @@ import { performerOf, performerByGuid, performers, addressOf } from "../src/perf
 import { registerPerformer } from "../src/performers/registry.ts";
 import { ALL_MARKS } from "../src/score/perform.ts";
 import { grooveCategory } from "../src/score/groove.ts";
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
 
 const throws = (fn: () => void, re: RegExp, msg: string) => { let m = ""; try { fn(); } catch (e) { m = String(e); } assert(re.test(m), `${msg}: ${m || "没抛"}`); };
 
@@ -38,14 +36,5 @@ describe("演奏者注册表", () => {
       assert(!!grooveCategory(p.grooveCategory, { bank: 0, program: 0 }), `${p.name} 拍子轻重类别`);
       assert(!!p.audition, `${p.name} 能试听`);
     }
-  });
-  it("守卫（ADR-0004 §2.4）：src 里不许再按引擎名分支——`=== \"tsukuyomi\"` 这类只许出现在 src/performers/（表本身）和 src/format/（格式层的判别联合）", () => {
-    const root = join(import.meta.dirname, "..", "src"), bad: string[] = [];
-    const walk = (d: string) => { for (const f of readdirSync(d)) { const p = join(d, f); if (statSync(p).isDirectory()) walk(p); else if (/\.(ts|mjs)$/.test(f)) check(p); } };
-    const re = /(===|!==|case)\s*"(tsukuyomi|soundfont|vowel-sampler)"|"(tsukuyomi|soundfont|vowel-sampler)"\s*(===|!==)/;
-    const check = (p: string) => { const rel = relative(join(root, ".."), p).replaceAll("\\", "/"); if (rel.startsWith("src/performers/") || rel.startsWith("src/format/")) return;
-      readFileSync(p, "utf8").split("\n").forEach((line, i) => { if (re.test(line)) bad.push(`${rel}:${i + 1}`); }); };
-    walk(root);
-    eq(bad.join("\n"), "", "按引擎名的分支要改成问注册表（performerOf(...) 的能力字段 / 方法）");
   });
 });

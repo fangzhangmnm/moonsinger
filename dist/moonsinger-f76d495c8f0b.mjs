@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.0-2026-10-14";
+var APP_VERSION = "v0.12.2-2026-10-14";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -4975,8 +4975,8 @@ function parseArrangement(text2, papers) {
     while (i10 < src.length && /[\s、,，→]/.test(src[i10])) i10++;
   };
   const findPaper = (name) => {
-    const byName = papers.find((p2) => p2.name.trim() === name);
-    if (byName) return byName.id;
+    const byName2 = papers.find((p2) => p2.name.trim() === name);
+    if (byName2) return byName2.id;
     if (/^\d+$/.test(name)) {
       const k2 = Number(name);
       if (k2 >= 1 && k2 <= papers.length) return papers[k2 - 1].id;
@@ -6095,9 +6095,9 @@ function grooveWeights(tokens, bounds, map, follow) {
   return out;
 }
 var GM_FAMILIES = ["piano", "chromatic-percussion", "organ", "guitar", "bass", "strings", "ensemble", "brass", "reed", "pipe", "synth-lead", "synth-pad", "synth-effects", "ethnic", "percussive", "sound-effects"];
-function grooveCategory(engine2, gm) {
-  if (engine2 === "tsukuyomi" || engine2 === "vowel-sampler") return "voice";
-  if (engine2 === "soundfont" && gm) return gm.bank === 128 ? "percussion" : GM_FAMILIES[Math.max(0, Math.min(127, gm.program)) >> 3];
+function grooveCategory(cat2, gm) {
+  if (cat2 === "voice") return "voice";
+  if (cat2 === "gm" && gm) return gm.bank === 128 ? "percussion" : GM_FAMILIES[Math.max(0, Math.min(127, gm.program)) >> 3];
   return null;
 }
 var followOf = (s10, category) => category ? s10.follow[category] ?? 0 : 0;
@@ -6699,13 +6699,13 @@ var HAN = /\p{Script=Han}/u;
 var KANA = /[぀-ヿ]/;
 var LATIN = /[A-Za-z]/;
 var kanaBeats = (s10) => [...s10].filter((c10) => !isSmallKana(c10)).length;
-function lyricIssues(tokens, engine2, langAt) {
+function lyricIssues(tokens, lyrics, langAt) {
   const out = /* @__PURE__ */ new Map();
-  if (engine2 !== "tsukuyomi" && engine2 !== "vowel-sampler" && engine2 !== "soundfont") return out;
+  if (!lyrics) return out;
   tokens.forEach((t10, i10) => {
     if (t10.kind !== "note" || t10.tie || !t10.lyric || t10.lyric === MELISMA_MARK) return;
     const lang = typeof langAt === "string" ? langAt : langAt(i10);
-    if (engine2 !== "tsukuyomi") {
+    if (lyrics !== "words") {
       out.set(i10, { why: "notSung", lang });
       return;
     }
@@ -7011,23 +7011,16 @@ var noteVel = (v, art, spec, gw = 0) => {
   else if (gw < 0) v += -gw * (spec.unstressVel ?? M.unstressVel);
   return Math.max(1, Math.min(127, Math.round(v))) / 127;
 };
-var HONORS = {
-  tsukuyomi: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale"],
-  // 气声 / 出声的换气 = 唱法核心（lab-score 带进唱谱）；乐器 / 元音版做不到                            // 连线 / 保持：她本来就连着唱（whyIgnored = "sung"）；唱法核心的「断」是连断第 3 步
-  "vowel-sampler": ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
-  soundfont: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio"]
-  // 琶音只有能叠音的认（v0.9.45）
-};
 var GAP_ONLY = ["tenuto", "slur"];
 var ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale", "arpeggio"];
-function ignoredArts(engine2, gapSec = 0, canSwell = true) {
-  const h2 = engine2 ? HONORS[engine2] : void 0;
+function ignoredArts(p2, gapSec = 0, canSwell = true) {
+  const h2 = p2?.honors;
   return h2 ? ALL_MARKS.filter((a10) => !h2.includes(a10) || GAP_ONLY.includes(a10) && !(gapSec > 0) || a10 === "swellGrow" && !canSwell) : [];
 }
-function whyIgnored(engine2, m2) {
-  if (m2 === "swellGrow" && engine2 && HONORS[engine2]?.includes(m2)) return "decay";
-  if (engine2 === "tsukuyomi" && GAP_ONLY.includes(m2)) return "sung";
-  return engine2 && HONORS[engine2]?.includes(m2) ? "gap" : "engine";
+function whyIgnored(p2, m2) {
+  if (m2 === "swellGrow" && p2?.honors.includes(m2)) return "decay";
+  if (p2?.connected && GAP_ONLY.includes(m2)) return "sung";
+  return p2?.honors.includes(m2) ? "gap" : "engine";
 }
 function lightMarks(spec) {
   return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, arpeggioSec: spec.arpeggioSec ?? M.arpeggioSec, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
@@ -11724,7 +11717,6 @@ function wheelSteps(e10, acc) {
 }
 
 // src/ui/pad.ts
-var HER_RANGE = { lo: 57, hi: 76, who: "\u5C0F\u6708\u76F8" };
 var padForm = () => Math.min(innerWidth, innerHeight) >= 600 && innerWidth >= 700 ? "tablet" : "phone";
 var SLUR_CELL = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 var SYM_PAGES = {
@@ -12172,8 +12164,9 @@ var Pad = class {
     };
   }
   hint() {
-    return this.host.hintRange ? this.host.hintRange() : HER_RANGE;
+    return this.host.hintRange ? this.host.hintRange() : null;
   }
+  // 宿主没给 = 不画（键盘不认识任何演奏者，ADR-0004）
   /** 音域窗口最低那个键的 MIDI（存进歌的 desk）；默认那一档 = null。 */
   rangeLow() {
     if (this.rowShift === 0) return null;
@@ -20068,7 +20061,7 @@ function thumbLoadPixelated(e10) {
   return edge > 0 && edge < PIXELATED_THUMB_MAX_EDGE;
 }
 function mountGalleryScreen(el2, d3) {
-  const { createApp, defineComponent, reactive, ref, computed, watch: watch2, onMounted, onUnmounted, nextTick } = d3.vue;
+  const { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick } = d3.vue;
   const icon = d3.ui.iconHtml;
   const phHtml = (name, info2) => d3.ui.tilePlaceholderHtml?.(name, info2) ?? "";
   const ovHtml = (name, info2) => {
@@ -20190,11 +20183,11 @@ function mountGalleryScreen(el2, d3) {
           });
         }
       });
-      watch2(() => _lockState.unlocked, () => {
+      watch(() => _lockState.unlocked, () => {
         if (locked.value || props.encName)
           void tryDecrypt();
       });
-      watch2(() => [props.thumbToken, props.cloudNewer, _thumbRev.get(thumbKey(props.alt)) ?? 0], () => {
+      watch(() => [props.thumbToken, props.cloudNewer, _thumbRev.get(thumbKey(props.alt)) ?? 0], () => {
         if (props.encName) {
           void tryDecrypt();
           return;
@@ -20261,7 +20254,7 @@ function mountGalleryScreen(el2, d3) {
             obs.observe(root.value);
         });
       });
-      watch2(() => props.token, () => {
+      watch(() => props.token, () => {
         if (!obs)
           fetchThumb();
       });
@@ -23371,10 +23364,10 @@ var RIGHTS_PRESETS = [
   { label: "CC BY 4.0", note: "\u6CE8\u660E\u51FA\u5904\u968F\u4FBF\u7528", text: () => "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" },
   { label: "CC0", note: "\u653E\u5F03\u6743\u5229\uFF0C\u8C01\u90FD\u80FD\u968F\u4FBF\u7528\uFF08\u53D1\u51FA\u53BB\u6536\u4E0D\u56DE\uFF09", text: () => "CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/" }
 ];
-function licenseHints(rights, performers) {
+function licenseHints(rights, performers2) {
   const reusable = !!rights && (/CC0|public ?domain|公有领域|publicdomain\/zero/i.test(rights) || /CC[ -]?BY/i.test(rights) && !/\bND\b|-nd\//i.test(rights));
-  const tsukuyomi = performers.some((l10) => l10.license.name.includes("\u3064\u304F\u3088\u307F\u3061\u3083\u3093"));
-  return reusable && tsukuyomi ? ["\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16 / \u5F53\u7D20\u6750\u518D\u7528\uFF0C\u53EF\u91CC\u9762\u6709\u5C0F\u6708\u76F8\u7684\u58F0\u97F3\uFF0C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u4E0D\u8BB8\u8FD9\u6837\u516C\u5F00\uFF08\u8BBE\u7F6E\u91CC\u6709\u539F\u6587\u548C\u8BD1\u6587\uFF09\uFF0C\u6240\u4EE5\u5BFC\u51FA\u65F6\u8BB8\u53EF\u90A3\u4E00\u9879\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\uFF1B\u4F60\u5728\u8FD9\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\u3002"] : [];
+  const tsukuyomi2 = performers2.some((l10) => l10.license.name.includes("\u3064\u304F\u3088\u307F\u3061\u3083\u3093"));
+  return reusable && tsukuyomi2 ? ["\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16 / \u5F53\u7D20\u6750\u518D\u7528\uFF0C\u53EF\u91CC\u9762\u6709\u5C0F\u6708\u76F8\u7684\u58F0\u97F3\uFF0C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u4E0D\u8BB8\u8FD9\u6837\u516C\u5F00\uFF08\u8BBE\u7F6E\u91CC\u6709\u539F\u6587\u548C\u8BD1\u6587\uFF09\uFF0C\u6240\u4EE5\u5BFC\u51FA\u65F6\u8BB8\u53EF\u90A3\u4E00\u9879\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\uFF1B\u4F60\u5728\u8FD9\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\u3002"] : [];
 }
 function creditsText(lines) {
   return lines.map((l10) => {
@@ -25642,6 +25635,44 @@ var StudioClient = class {
   }
 };
 
+// src/performers/registry.ts
+var byName = /* @__PURE__ */ new Map();
+var byGuid = /* @__PURE__ */ new Map();
+function registerPerformer(p2) {
+  if (byName.has(p2.name) || byGuid.has(p2.guid)) throw new Error(`performer plugin registered twice: ${p2.name} / ${p2.guid}`);
+  byName.set(p2.name, p2);
+  byGuid.set(p2.guid, p2);
+  return p2;
+}
+function performerOf(engine2) {
+  return engine2 && byName.get(engine2) || null;
+}
+
+// src/performers/tsukuyomi.ts
+var TSUKUYOMI_RANGE = { lo: 57, hi: 76, who: "\u5C0F\u6708\u76F8" };
+var tsukuyomi = registerPerformer({
+  guid: "6f2c9a1e-3b7d-4e58-9c0a-2d5b8f1e7a41",
+  kind: "performer",
+  name: "tsukuyomi",
+  version: 1,
+  label: "\u5C0F\u6708\u76F8",
+  description: "\u5C0F\u6708\u76F8\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09",
+  sound: "chunks",
+  poly: false,
+  lyrics: "words",
+  hintRange: TSUKUYOMI_RANGE,
+  // 跳音 / 重音 / 强音 / 呼吸 / 气声 / 出声的换气 = 唱法核心（lab-score 带进唱谱）；力度类 = 音量曲线；连线 / 保持不认（本来就连着唱，连断第 3 步）；琶音 = 单声唱不了和弦
+  honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale"],
+  connected: true,
+  dynamics: "gain",
+  grooveCategory: "voice",
+  removable: false,
+  info: ({ extras, role }) => ({ gm: null, chunk: activeSingChunk(extras, role) }),
+  prepare: async () => {
+  },
+  audition: ({ kana, dyn }) => ({ inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: dyn.dB })
+});
+
 // src/gm/sf-key.ts
 function sfKey(written, inst, transpose = 0) {
   if (inst.note !== void 0) return inst.note;
@@ -25719,13 +25750,13 @@ function buildTimeline(inp) {
     const { tokens, starts } = flat(part.id), bounds = starts.map((s10) => s10.index), tl2 = timeline(tokens, map);
     if (tl2.length) total = Math.max(total, tl2[tl2.length - 1].t1);
     const info2 = inp.info(part);
-    if (info2.engine === "unknown") {
+    if (!info2.plugin) {
       unplayable.push({ part: part.id, why: "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A" });
       continue;
     }
     const groove = grooveWeights(tokens, bounds, gmap, info2.follow);
     const gain = gainSegments(tokens, map, info2.spec, bounds, groove);
-    if (info2.engine === "tsukuyomi") {
+    if (info2.plugin.sound === "chunks") {
       const plan = sungPlan(tokens, map, bounds, info2.chunk, hum);
       const noteAt = (a10) => tl2.find((x2) => x2.index >= a10 && x2.tok.kind === "note")?.t0 ?? 0;
       const clips = { id: part.id, kind: "clips", clips: [], gain, ...info2.chain?.length ? { chain: info2.chain } : {} };
@@ -25745,25 +25776,18 @@ function buildTimeline(inp) {
       continue;
     }
     const vels = noteVelocities(tokens, map, info2.spec, info2.velocity, bounds, groove);
-    const notes = lightNotes(tokens, map, info2.engine === "soundfont", lightMarks(info2.spec), (i10) => vels.get(i10) ?? info2.velocity);
-    if (info2.engine === "vowel-sampler") {
-      tracks.push({ id: part.id, kind: "vowel", kana: HUM_KANA[hum ?? "n"], notes: notes.map((n10) => ({ t0: n10.t0, t1: n10.t1, key: n10.midi, vel: n10.vel ?? info2.velocity, preset: 0 })), gain, ...info2.chain?.length ? { chain: info2.chain } : {} });
+    const notes = lightNotes(tokens, map, info2.plugin.poly, lightMarks(info2.spec), (i10) => vels.get(i10) ?? info2.velocity);
+    const built = info2.plugin.track?.({ id: part.id, notes, gain, ...info2.chain?.length ? { chain: info2.chain } : {}, hum, info: info2 });
+    if (!built) {
+      unplayable.push({ part: part.id, why: `\u300C${info2.plugin.label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0` });
       continue;
     }
-    const g3 = info2.gm;
-    if (!g3) {
-      unplayable.push({ part: part.id, why: "\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668" });
+    if ("unplayable" in built) {
+      unplayable.push({ part: part.id, why: built.unplayable });
       continue;
     }
-    const sfNotes = notes.map((n10) => {
-      const key = sfKey(n10.midi, g3, info2.transpose), h2 = info2.hitSec?.(key) ?? 0;
-      return { t0: n10.t0 - h2, t1: n10.t1, key, vel: n10.vel ?? info2.velocity, preset: g3.presetIndex };
-    });
-    if (info2.hitSec) {
-      sfNotes.sort((x2, y2) => x2.t0 - y2.t0);
-      for (const n10 of sfNotes) from = Math.min(from, n10.t0);
-    }
-    tracks.push({ id: part.id, kind: "sf", sha: g3.sha, notes: sfNotes, gain, ...info2.chain?.length ? { chain: info2.chain } : {} });
+    if (built.from !== void 0) from = Math.min(from, built.from);
+    tracks.push(built.track);
   }
   to2 = Math.max(to2, total);
   const ref = inp.parts[0] ?? song.parts[0];
@@ -25839,6 +25863,103 @@ function buildTimeline(inp) {
   return { tracks, range: { from, to: to2 }, total, chunks: chunks2, papers, unplayable, secondsOfToken, locate, secondsAt };
 }
 
+// src/performers/vowel-sampler.ts
+var vowelSampler = registerPerformer({
+  guid: "b9d4e7a2-51c6-4f0b-8e3d-7a9c2f6b1d58",
+  kind: "performer",
+  name: "vowel-sampler",
+  version: 1,
+  label: "\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09",
+  description: "\u5C0F\u6708\u76F8\u7684\u5143\u97F3\u91C7\u6837\uFF1A\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1",
+  sound: "notes",
+  poly: false,
+  lyrics: "hum",
+  hintRange: TSUKUYOMI_RANGE,
+  // 和乐器同一条 lightMarks（跳音截短 / 呼吸收短 / 保持·连线 = 不留缝）；气声 / 出声的换气只有完整版做得到；琶音 = 单声
+  honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost"],
+  connected: false,
+  dynamics: "gain",
+  grooveCategory: "voice",
+  removable: false,
+  info: () => ({ gm: null, chunk: "phrase" }),
+  prepare: async (ctx2) => {
+    await ctx2.ensureVowels();
+  },
+  track: ({ id: id2, notes, gain, chain, hum, info: info2 }) => ({
+    track: { id: id2, kind: "vowel", kana: HUM_KANA[hum ?? "n"], notes: notes.map((n10) => ({ t0: n10.t0, t1: n10.t1, key: n10.midi, vel: n10.vel ?? info2.velocity, preset: 0 })), gain, ...chain?.length ? { chain } : {} }
+  }),
+  audition: ({ kana, dyn }) => ({ inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: dyn.dB })
+});
+
+// src/performers/soundfont.ts
+function hitOf(g3) {
+  const pk = g3 ? percKindOf(g3) : null;
+  if (!pk) return {};
+  if (pk.kind === "kit") return { hitSec: (key) => percOf(128, 0, key)?.hitSec ?? 0 };
+  const h2 = pk.info.hitSec ?? 0;
+  return h2 ? { hitSec: () => h2 } : {};
+}
+var soundfont = registerPerformer({
+  guid: "3e8a5c47-9f21-4b6d-a0e2-c7d14f8b9a63",
+  kind: "performer",
+  name: "soundfont",
+  version: 1,
+  label: "SoundFont \u4E50\u5668",
+  description: "SoundFont \u4E50\u5668\uFF08TinySoundFont \u51FA\u58F0\uFF09",
+  sound: "notes",
+  poly: true,
+  lyrics: "none",
+  hintRange: null,
+  // lightMarks 那一路；琶音只有能叠音的认（v0.9.45）；气声 / 出声的换气乐器本来就不认
+  honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio"],
+  connected: false,
+  dynamics: "velocity",
+  grooveCategory: "gm",
+  removable: true,
+  info: ({ extras, role, presetIndex }) => {
+    const g3 = activeGm(extras, role);
+    return { gm: g3 ? { sha: g3.subsetSha256, presetIndex: presetIndex(g3.subsetSha256, g3.bank, g3.program), note: g3.note, sfx: g3.sfx } : null, chunk: "phrase", ...hitOf(g3) };
+  },
+  /** 这位的子集进录音房（弱引用去找整包 → 切子集；找不到 = 抛，胶水报出来、这个声部不出声）。 */
+  prepare: async (ctx2) => {
+    const g3 = activeGm(ctx2.extras, ctx2.role);
+    if (!g3) return;
+    if (ctx2.engine.hasBank(g3.subsetSha256)) return;
+    await ctx2.engine.bank(g3.subsetSha256, await ctx2.resolveGmBytes(g3));
+  },
+  track: ({ id: id2, notes, gain, chain, info: info2 }) => {
+    const g3 = info2.gm;
+    if (!g3) return { unplayable: "\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668" };
+    const sfNotes = notes.map((n10) => {
+      const key = sfKey(n10.midi, g3, info2.transpose), h2 = info2.hitSec?.(key) ?? 0;
+      return { t0: n10.t0 - h2, t1: n10.t1, key, vel: n10.vel ?? info2.velocity, preset: g3.presetIndex };
+    });
+    let from;
+    if (info2.hitSec) {
+      sfNotes.sort((x2, y2) => x2.t0 - y2.t0);
+      for (const n10 of sfNotes) from = from === void 0 ? n10.t0 : Math.min(from, n10.t0);
+    }
+    return { track: { id: id2, kind: "sf", sha: g3.sha, notes: sfNotes, gain, ...chain?.length ? { chain } : {} }, ...from !== void 0 ? { from } : {} };
+  },
+  /** × 符头 = 固定敲一个键（鼓件 / 音效固定原速）；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27）。只是画法，数据不动。 */
+  notation: ({ extras, role }) => {
+    const g3 = activeGm(extras, role);
+    if (!g3) return {};
+    const pk = percKindOf(g3);
+    return { ...g3.note !== void 0 ? { xHead: true } : {}, ...pk ? { perc: pk } : {} };
+  },
+  /** 走库：没载好的这一下丢掉、顺手去载；力度 = 光标处生效的（有力度表走 MIDI 力度，旧候选走音量）；和渲染同一个 sfKey（写谱时听到的 = 播放时那个音）。 */
+  audition: ({ extras, role, dyn, engine: engine2, ensureBank }) => {
+    const g3 = activeGm(extras, role);
+    if (!g3) return null;
+    if (!engine2.hasBank(g3.subsetSha256)) {
+      ensureBank();
+      return null;
+    }
+    return { inst: { kind: "sf", sha: g3.subsetSha256, preset: engine2.presetIndex(g3.subsetSha256, g3.bank, g3.program) }, key: (m2) => sfKey(m2, g3, activeTranspose(extras, role)), vel: dyn.vel ?? activeVelocity(extras, role), gainDb: dyn.vel === null ? dyn.dB : 0 };
+  }
+});
+
 // src/engine/scheduler.ts
 var mutedAt = (c10, quiet) => c10.end !== void 0 && c10.end <= quiet;
 function chunkOrder(chunks2, pos, loop, has, quiet = -Infinity) {
@@ -25866,6 +25987,1164 @@ function readyToStart(chunks2, pos, n10, has, quiet = -Infinity) {
 function prerollCount(msPerSongSec) {
   if (msPerSongSec === null) return 2;
   return msPerSongSec < 400 ? 2 : msPerSongSec < 900 ? 3 : 4;
+}
+
+// src/ui/plugins.ts
+var PLUGIN_KINDS = ["eq", "comp", "reverb", "delay", "chorus", "gain"];
+var DEFAULT_EQ_ID = "eq";
+var pluginName = (kind) => FX_KINDS[kind]?.name ?? kind;
+var HOST_PARAMS = {
+  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: "\u81EA\u52A8\u4F4E\u5207" }],
+  delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: "\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09" }]
+};
+function fullParams(kind) {
+  return [...HOST_PARAMS[kind] ?? [], ...FX_KINDS[kind]?.params ?? []];
+}
+function defaults(kind) {
+  const p2 = {};
+  for (const d3 of fullParams(kind)) p2[d3.id] = d3.default;
+  return p2;
+}
+var paramsOf = (fx) => {
+  const p2 = { ...defaults(fx.kind), ...fx.params };
+  if ((fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.params.dry === void 0) p2.dry = Math.round((1 - p2.mix) * 100) / 100;
+  return p2;
+};
+var fullyWet = (fx) => (fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.on !== false && paramsOf(fx).dry === 0;
+var near = (a10, b3, e10 = 1e-3) => Math.abs(a10 - b3) <= e10;
+var r1 = (x2) => Math.round(x2 * 10) / 10;
+var knob01 = (...xs) => Math.round(Math.max(0, Math.min(1, xs.reduce((a10, b3) => a10 + b3, 0) / xs.length)) * 20) / 20;
+var nearestBeat = (b3) => b3 ? [0.5, 0.75, 1].reduce((a10, c10) => Math.abs(c10 - b3) < Math.abs(a10 - b3) ? c10 : a10) : 0.75;
+var pct = (v) => `${Math.round(v * 100)}%`;
+var clamp01 = (x2) => Math.max(0, Math.min(1, x2));
+var COMB_AVG_S = 1378 / 44100;
+var SR_REF = 48e3;
+var rt60OfRoom = (room) => 3 * COMB_AVG_S / -Math.log10(0.7 + 0.28 * clamp01(room));
+var roomOfRt60 = (t10) => clamp01((10 ** (-3 * COMB_AVG_S / Math.max(0.01, t10)) - 0.7) / 0.28);
+var dampKHz = (damp) => {
+  const a10 = 0.4 * clamp01(damp);
+  return a10 <= 1e-6 ? Infinity : -SR_REF * Math.log(a10) / (2 * Math.PI) / 1e3;
+};
+var dampOfKHz = (k2) => clamp01(Math.exp(-2 * Math.PI * k2 * 1e3 / SR_REF) / 0.4);
+var linDb = (x2) => x2 <= 1e-3 ? -60 : 20 * Math.log10(x2);
+var dbLin = (d3) => d3 <= -60 ? 0 : 10 ** (d3 / 20);
+var dbt = (d3) => d3 <= -60 ? "\u5173" : `${d3 > 0 ? "+" : ""}${d3.toFixed(1)} dB`;
+var PARAM_HINT = {
+  "eq.hpAuto": "\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\uFF08\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF09\uFF0C\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\u2014\u2014\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891",
+  "eq.hpHz": "\u4F4E\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0B\u7684\u90FD\u5207\u6389\u3002\u4EBA\u58F0\u5E38\u5728 80\u2013120 Hz\uFF0C\u94C3\u8FD9\u7C7B\u9AD8\u7684\u4E50\u5668\u53EF\u4EE5\u66F4\u9AD8\uFF1B\u6700\u5DE6 = \u5173",
+  "eq.lpHz": "\u9AD8\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u90FD\u5207\u6389\uFF0C\u53BB\u523A\u8033\u3001\u5636\u5636\u58F0\uFF1B\u6700\u5DE6 = \u5173",
+  "eq.lowDb": "\u4F4E\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0B\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u51CF = \u53BB\u95F7\u3001\u7ED9\u522B\u7684\u8F68\u8BA9\u51FA\u4F4E\u9891\uFF1B\u52A0 = \u52A0\u539A",
+  "eq.lowHz": "\u4F4E\u67B6\u7684\u8F6C\u6298\u9891\u7387\uFF1A\u4ECE\u8FD9\u91CC\u5F80\u4E0B\u7B97\u300C\u4F4E\u300D",
+  "eq.midDb": "\u4E2D\u5CF0\uFF1A\u5728\u4E00\u4E2A\u9891\u6BB5\u4E0A\u63A8 / \u6316\u591A\u5C11\u3002\u4E24\u6837\u4E1C\u897F\u7CCA\u5728\u4E00\u8D77\u65F6\uFF0C\u5728\u5176\u4E2D\u4E00\u4E2A\u4E0A\u6316\u4E00\u5200\u7ED9\u53E6\u4E00\u4E2A\u8BA9\u4F4D",
+  "eq.midHz": "\u4E2D\u5CF0\u7684\u4E2D\u5FC3\u9891\u7387\uFF1A\u63A8 / \u6316\u7684\u662F\u54EA\u4E00\u6BB5",
+  "eq.midQ": "\u4E2D\u5CF0\u7684\u5BBD\u7A84\uFF1AQ \u8D8A\u5927\u8D8A\u7A84\uFF081 \u2248 \u4E00\u4E2A\u591A\u516B\u5EA6\u5BBD\uFF0C4 \u2248 \u5C0F\u534A\u4E2A\u516B\u5EA6\uFF09",
+  "eq.highDb": "\u9AD8\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0A\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u52A0 = \u4EAE\u3001\u51CF = \u6697",
+  "eq.highHz": "\u9AD8\u67B6\u7684\u8F6C\u6298\u9891\u7387\uFF1A\u4ECE\u8FD9\u91CC\u5F80\u4E0A\u7B97\u300C\u9AD8\u300D",
+  "comp.thresholdDb": "\u9608\u503C\uFF1A\u58F0\u97F3\u8D85\u8FC7\u8FD9\u4E2A\u7535\u5E73\u624D\u5F00\u59CB\u538B\uFF1B\u8D8A\u4F4E\uFF0C\u538B\u5230\u7684\u8D8A\u591A",
+  "comp.ratio": "\u6BD4\u4F8B\uFF1A\u8D85\u8FC7\u9608\u503C\u7684\u90E8\u5206\u538B\u6210\u51E0\u5206\u4E4B\u4E00\uFF084:1 = \u8D85\u51FA 4 dB \u7684\u53EA\u5269 1 dB\uFF09",
+  "comp.attackMs": "\u8D77\u538B\uFF1A\u8D85\u8FC7\u9608\u503C\u4E4B\u540E\u591A\u5FEB\u538B\u4E0B\u53BB\u3002\u77ED = \u8FDE\u5B57\u5934\u4E00\u8D77\u538B\u5E73\uFF1B\u957F = \u8BA9\u5B57\u5934\u5148\u51B2\u51FA\u6765\u3001\u66F4\u6709\u52B2",
+  "comp.releaseMs": "\u653E\u5F00\uFF1A\u58F0\u97F3\u843D\u56DE\u9608\u503C\u4EE5\u4E0B\u4E4B\u540E\u591A\u5FEB\u677E\u5F00\u3002\u592A\u77ED\u4F1A\u4E00\u62BD\u4E00\u62BD\u7684\uFF0C\u592A\u957F\u4E0B\u4E00\u4E2A\u5B57\u4E5F\u88AB\u538B\u7740",
+  "comp.kneeDb": "\u62D0\u70B9\uFF1A\u9608\u503C\u9644\u8FD1\u8FD9\u4E48\u5BBD\u7684\u4E00\u6BB5\u91CC\u6162\u6162\u5F00\u59CB\u538B\uFF08\u8F6F\uFF09\uFF1B0 = \u4E00\u5230\u9608\u503C\u5C31\u538B\uFF08\u786C\uFF09",
+  "comp.makeupDb": "\u8865\u507F\uFF1A\u538B\u5B8C\u6574\u4F53\u52A0\u56DE\u6765\u591A\u5C11\uFF08\u538B\u7F29\u4F1A\u8BA9\u6574\u4F53\u53D8\u8F7B\uFF09",
+  "reverb.room": "\u6DF7\u54CD\u65F6\u95F4\uFF08RT60\uFF09\uFF1A\u58F0\u97F3\u505C\u4E86\u4E4B\u540E\uFF0C\u5C3E\u5DF4\u8870\u51CF 60 dB \u8981\u591A\u4E45\u3002\u5C0F\u623F\u95F4\u4E0D\u5230 1 \u79D2\uFF0C\u5927\u5385 2\u20133 \u79D2\uFF0C\u6559\u5802\u66F4\u957F",
+  "reverb.damp": "\u9AD8\u9891\u4ECE\u8FD9\u91CC\u5F00\u59CB\u8870\u51CF\uFF1A\u771F\u5B9E\u7684\u623F\u95F4\u91CC\u9AD8\u9891\u88AB\u5438\u6536\u5F97\u5FEB\uFF0C\u5C3E\u5DF4\u8D8A\u5F80\u540E\u8D8A\u6697\uFF1B\u6570\u8D8A\u4F4E\u8D8A\u6697",
+  "reverb.mix": "\u6E7F\uFF1A\u6DF7\u54CD\u7684\u58F0\u97F3\u6709\u591A\u54CD",
+  "reverb.dry": "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173",
+  "reverb.preDelayMs": "\u9884\u5EF6\u8FDF\uFF1A\u539F\u58F0\u4E4B\u540E\u8FC7\u591A\u4E45\u6DF7\u54CD\u624D\u8FDB\u6765\u3002\u62C9\u5F00\u4E00\u70B9\uFF0C\u4EBA\u58F0\u66F4\u6E05\u695A\u3001\u4E0D\u88AB\u7CCA\u4F4F",
+  "reverb.width": "\u5BBD\u5EA6\uFF1A\u6DF7\u54CD\u5728\u5DE6\u53F3\u94FA\u591A\u5F00",
+  "delay.syncBeats": "\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\uFF0C\u6309\u6B4C\u7684\u901F\u5EA6\u7B97\u65F6\u95F4\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2",
+  "delay.timeMs": "\u65F6\u95F4\uFF1A\u6BCF\u6B21\u56DE\u58F0\u9694\u591A\u4E45",
+  "delay.feedback": "\u6BCF\u6B21\u56DE\u58F0\uFF1A\u6BCF\u91CD\u590D\u4E00\u6B21\u8F7B\u591A\u5C11 dB\uFF1B\u8D8A\u63A5\u8FD1 0\uFF0C\u56DE\u58F0\u8D8A\u4E45",
+  "delay.mix": "\u6E7F\uFF1A\u56DE\u58F0\u6709\u591A\u54CD",
+  "delay.dry": "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173",
+  "delay.dampHz": "\u53CD\u9988\u9AD8\u5207\uFF1A\u6BCF\u6B21\u56DE\u58F0\u90FD\u628A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u524A\u6389\u4E00\u70B9\uFF0C\u8D8A\u5F80\u540E\u8D8A\u6697\uFF08\u50CF\u771F\u7684\u56DE\u58F0\uFF09",
+  "chorus.voices": "\u51E0\u6761\uFF1A\u540C\u65F6\u6709\u51E0\u4E2A\u7A0D\u5FAE\u9519\u5F00\u7684\u526F\u672C",
+  "chorus.delayMs": "\u5EF6\u8FDF\uFF1A\u526F\u672C\u6BD4\u539F\u58F0\u665A\u591A\u5C11",
+  "chorus.depthMs": "\u6296\u52A8\u6DF1\u5EA6\uFF1A\u526F\u672C\u7684\u5EF6\u8FDF\u6765\u56DE\u6643\u591A\u5927\u2014\u2014\u6643 = \u97F3\u9AD8\u8F7B\u5FAE\u8D77\u4F0F\uFF0C\u50CF\u597D\u51E0\u4E2A\u4EBA\u5531\u4E0D\u9F50",
+  "chorus.rateHz": "\u6296\u52A8\u5FEB\u6162\uFF1A\u6BCF\u79D2\u6643\u51E0\u6B21",
+  "chorus.spread": "\u5DE6\u53F3\u94FA\u5F00\uFF1A\u526F\u672C\u6446\u5F97\u591A\u5F00",
+  "chorus.mix": "\u6E7F\uFF1A\u526F\u672C\u6709\u591A\u54CD",
+  "chorus.dry": "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173",
+  "gain.dB": "\u589E\u76CA\uFF1A\u5355\u7EAF\u8C03\u5927\u8C03\u5C0F\uFF08\u524D\u9762\u7684\u63D2\u4EF6\u628A\u97F3\u91CF\u6539\u4E86\uFF0C\u7528\u5B83\u8865\u56DE\u6765\uFF09"
+};
+function paramView(kind, d3) {
+  return { hint: PARAM_HINT[`${kind}.${d3.id}`] ?? d3.label, ...paramView0(kind, d3) };
+}
+function paramView0(kind, d3) {
+  const key = `${kind}.${d3.id}`;
+  if (key === "reverb.room") return { label: "\u6DF7\u54CD\u65F6\u95F4\uFF08RT60\uFF09", min: 0.6, max: 10, step: 0.1, toV: roomOfRt60, toS: rt60OfRoom, fmt: (v) => `${rt60OfRoom(v).toFixed(1)} s` };
+  if (key === "reverb.damp") return { label: "\u9AD8\u9891\u4ECE\u8FD9\u91CC\u5F00\u59CB\u8870\u51CF", min: 7, max: 20, step: 0.1, toV: (k2) => k2 >= 20 ? 0 : dampOfKHz(k2), toS: (v) => Math.min(20, dampKHz(v)), fmt: (v) => dampKHz(v) >= 20 ? "\u4E0D\u8870\u51CF\uFF0820 kHz \u4EE5\u4E0A\uFF09" : `${dampKHz(v).toFixed(1)} kHz` };
+  if (d3.id === "mix" || d3.id === "dry") return { label: d3.id === "mix" ? "\u6E7F\uFF08\u6548\u679C\uFF09" : "\u539F\u58F0", min: -60, max: 0, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => dbt(linDb(v)) };
+  if (key === "delay.feedback") return { label: "\u6BCF\u6B21\u56DE\u58F0", min: -40, max: -0.5, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => `${linDb(v).toFixed(1)} dB / \u6B21` };
+  if (key === "reverb.width") return { label: "\u5BBD\u5EA6\uFF080 = \u5355\u58F0\u9053\uFF0C100% = \u5DE6\u53F3\u94FA\u6EE1\uFF09", min: 0, max: 1, step: 0.01, toV: (x2) => x2, toS: (x2) => x2, fmt: pct };
+  if (key === "chorus.spread") return { label: "\u5DE6\u53F3\u94FA\u5F00\uFF080 = \u90FD\u5728\u4E2D\u95F4\uFF0C100% = \u94FA\u5230\u4E24\u8FB9\uFF09", min: 0, max: 1, step: 0.01, toV: (x2) => x2, toS: (x2) => x2, fmt: pct };
+  if (d3.unit === "Hz") {
+    const lo2 = Math.max(20, d3.min || 20), hi = d3.max, offable = d3.min === 0, L2 = Math.log(lo2), H2 = Math.log(hi);
+    return {
+      label: d3.label,
+      min: offable ? -0.02 : 0,
+      max: 1,
+      step: 2e-3,
+      toV: (x2) => offable && x2 < 0 ? 0 : Math.round(Math.exp(L2 + Math.max(0, x2) * (H2 - L2))),
+      toS: (v) => offable && v <= 0 ? -0.02 : (Math.log(Math.max(lo2, v)) - L2) / (H2 - L2),
+      fmt: (v) => v <= 0 ? "\u5173" : v >= 1e3 ? `${(v / 1e3).toFixed(v >= 1e4 ? 1 : 2)} kHz` : `${Math.round(v)} Hz`
+    };
+  }
+  const step = d3.unit === "dB" ? 0.5 : d3.unit === "ms" ? d3.max > 500 ? 5 : 0.5 : d3.unit === "0..1" ? 0.01 : d3.unit === "ratio" ? d3.max <= 4 ? 1 : 0.1 : 1;
+  const fmt = (v) => d3.unit === "dB" ? dbt(v) : d3.unit === "ms" ? `${v} ms` : d3.unit === "0..1" ? pct(v) : d3.unit === "ratio" ? d3.id === "ratio" ? `${v}:1` : d3.id === "voices" ? `${v} \u6761` : d3.id === "midQ" ? `Q ${v}` : String(v) : String(v);
+  return { label: d3.label, min: d3.min, max: d3.max, step, toV: (x2) => x2, toS: (x2) => x2, fmt };
+}
+var TILT_DB = 6;
+var TILT_LO = 300;
+var TILT_HI = 3e3;
+var EQ_SIMPLE = {
+  controls: [
+    { id: "autoLow", label: "\u81EA\u52A8\u4F4E\u5207", hint: "\u5207\u6389\u8FD9\u4E2A\u58F0\u90E8\u7528\u4E0D\u7740\u7684\u4F4E\u9891\uFF1A\u4F4E\u5207\u653E\u5728\u5B83\u6700\u4F4E\u7684\u97F3\u5F80\u4E0B\u4E00\u70B9", kind: "toggle" },
+    { id: "tilt", label: "\u539A \u2194 \u4EAE", hint: "\u5F80\u5DE6 = \u539A\uFF08\u4F4E\u7684\u591A\u4E00\u70B9\u3001\u9AD8\u7684\u5C11\u4E00\u70B9\uFF09\uFF0C\u5F80\u53F3 = \u4EAE\uFF1B\u4E2D\u95F4 = \u4E0D\u52A8", kind: "knob", min: -1, max: 1, step: 0.05, fmt: (v) => near(v, 0, 0.01) ? "\u5E73" : v < 0 ? `\u539A ${Math.round(-v * TILT_DB * 10) / 10} dB` : `\u4EAE ${Math.round(v * TILT_DB * 10) / 10} dB` }
+  ],
+  read(p2) {
+    if (p2.midDb !== 0 || p2.lpHz !== 0 || !p2.hpAuto && p2.hpHz !== 0) return null;
+    const flat = p2.lowDb === 0 && p2.highDb === 0, tilt = near(p2.lowHz, TILT_LO) && near(p2.highHz, TILT_HI) && near(p2.lowDb, -p2.highDb);
+    if (!flat && !tilt) return null;
+    return { autoLow: p2.hpAuto ? 1 : 0, tilt: flat ? 0 : p2.highDb / TILT_DB };
+  },
+  write(v, p2) {
+    const t10 = Math.max(-1, Math.min(1, v.tilt ?? 0));
+    return { ...p2, hpAuto: v.autoLow ? 1 : 0, hpHz: 0, lpHz: 0, midDb: 0, lowHz: TILT_LO, highHz: TILT_HI, lowDb: r1(-t10 * TILT_DB), highDb: r1(t10 * TILT_DB) };
+  },
+  /** 低切开着（自动或手调）= 自动低切；高架减低架的一半 = 倾斜；中峰 / 高切丢掉。 */
+  project(p2) {
+    return { autoLow: p2.hpAuto || p2.hpHz > 0 ? 1 : 0, tilt: Math.round(Math.max(-1, Math.min(1, (p2.highDb - p2.lowDb) / (2 * TILT_DB))) * 20) / 20 };
+  }
+};
+var compOf = (a10, keyed = false) => {
+  const thr = -6 - 30 * a10, ratio = 1.5 + 4.5 * a10;
+  return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: keyed ? 0 : r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) };
+};
+var compSimple = (keyed) => ({
+  controls: [{ id: "amount", label: keyed ? "\u8BA9\u591A\u5C11" : "\u538B\u591A\u5C11", hint: keyed ? "\u88AB\u90A3\u6761\u8F68\u538B\uFF1A\u5B83\u4E00\u54CD\uFF0C\u8FD9\u6761\u5C31\u8BA9\u51FA\u6765\uFF1B\u5F80\u53F3 = \u8BA9\u5F97\u8D8A\u591A\uFF08\u4E0D\u8865\u507F\uFF1A\u5B83\u4E0D\u54CD\u7684\u65F6\u5019\u8FD9\u6761\u7167\u63A8\u5B50\u7684\u97F3\u91CF\uFF09" : "\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73\uFF1A\u5F80\u53F3 = \u538B\u5F97\u8D8A\u72E0\uFF08\u54CD\u7684\u5B57\u538B\u4E0B\u6765\u3001\u8F7B\u7684\u76F8\u5BF9\u663E\u51FA\u6765\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a10) => {
+    const c10 = compOf(a10, keyed);
+    return `${c10.thresholdDb} dB \u8D77\u538B \xB7 ${c10.ratio}:1`;
+  } }],
+  read(p2) {
+    const a10 = (-p2.thresholdDb - 6) / 30;
+    if (a10 < -1e-3 || a10 > 1 + 1e-3) return null;
+    const c10 = compOf(a10, keyed);
+    return near(p2.ratio, c10.ratio, 0.06) && p2.attackMs === c10.attackMs && p2.releaseMs === c10.releaseMs && p2.kneeDb === c10.kneeDb && near(p2.makeupDb, c10.makeupDb, 0.06) ? { amount: Math.round(a10 * 20) / 20 } : null;
+  },
+  write(v, p2) {
+    return { ...p2, ...compOf(Math.max(0, Math.min(1, v.amount ?? 0)), keyed) };
+  },
+  project(p2) {
+    return { amount: knob01((-p2.thresholdDb - 6) / 30, (p2.ratio - 1.5) / 4.5) };
+  }
+});
+var COMP_SIMPLE = compSimple(false);
+var COMP_SIMPLE_KEYED = compSimple(true);
+var revOf = (d3) => ({ mix: r1((0.08 + 0.4 * d3) * 100) / 100, dry: 1, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
+var REV_SIMPLE = {
+  controls: [{ id: "far", label: "\u8FDC\u8FD1", hint: "\u5F80\u53F3 = \u8D8A\u8FDC\u3001\u8D8A\u5927\u7684\u623F\u95F4\uFF08\u94C3\u53EF\u4EE5\u8FDC\u4E00\u70B9\uFF0C\u8D34\u8033\u7684\u4EBA\u58F0\u8FD1\u4E00\u70B9\uFF09\uFF1B\u539F\u58F0\u4E0D\u52A8\uFF0C\u53EA\u5F80\u4E0A\u52A0\u6DF7\u54CD", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d3) => {
+    const c10 = revOf(d3);
+    return `\u6E7F ${dbt(linDb(c10.mix))} \xB7 ${rt60OfRoom(c10.room).toFixed(1)} s`;
+  } }],
+  read(p2) {
+    const d3 = (p2.mix - 0.08) / 0.4, c10 = revOf(d3);
+    return d3 >= -1e-3 && d3 <= 1 + 1e-3 && p2.dry === 1 && near(p2.room, c10.room, 6e-3) && p2.damp === 0.5 && p2.preDelayMs === 10 && p2.width === 1 ? { far: Math.round(d3 * 20) / 20 } : null;
+  },
+  write(v, p2) {
+    return { ...p2, ...revOf(Math.max(0, Math.min(1, v.far ?? 0))) };
+  },
+  project(p2) {
+    return { far: knob01((p2.mix - 0.08) / 0.4, (p2.room - 0.3) / 0.65) };
+  }
+};
+var dlyOf = (e10) => ({ mix: r1((0.1 + 0.4 * e10) * 100) / 100, dry: 1, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3 });
+var DLY_SIMPLE = {
+  controls: [
+    { id: "echo", label: "\u56DE\u58F0\u591A\u5C11", hint: "\u5F80\u53F3 = \u56DE\u58F0\u8D8A\u54CD\u3001\u8D8A\u4E45\uFF1B\u539F\u58F0\u4E0D\u52A8", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e10) => {
+      const c10 = dlyOf(e10);
+      return `\u6E7F ${dbt(linDb(c10.mix))} \xB7 \u6BCF\u6B21 ${linDb(c10.feedback).toFixed(1)} dB`;
+    } },
+    { id: "beats", label: "\u51E0\u62CD\u4E00\u6B21", hint: "\u56DE\u58F0\u548C\u62CD\u5B50\u5BF9\u9F50\uFF08\u8DDF\u7740\u6B4C\u7684\u901F\u5EA6\uFF09", kind: "choice", choices: [{ v: 0.5, label: "\u516B\u5206" }, { v: 0.75, label: "\u9644\u70B9\u516B\u5206" }, { v: 1, label: "\u56DB\u5206" }] }
+  ],
+  read(p2) {
+    const e10 = (p2.mix - 0.1) / 0.4, c10 = dlyOf(e10);
+    return e10 >= -1e-3 && e10 <= 1 + 1e-3 && p2.dry === 1 && near(p2.feedback, c10.feedback, 6e-3) && p2.dampHz === 6e3 && [0.5, 0.75, 1].includes(p2.syncBeats) ? { echo: Math.round(e10 * 20) / 20, beats: p2.syncBeats } : null;
+  },
+  write(v, p2) {
+    return { ...p2, ...dlyOf(Math.max(0, Math.min(1, v.echo ?? 0))), syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
+  },
+  project(p2) {
+    return { echo: knob01((p2.mix - 0.1) / 0.4, (p2.feedback - 0.15) / 0.5), beats: nearestBeat(p2.syncBeats) };
+  }
+};
+var choOf = (w2) => ({ mix: r1((0.2 + 0.4 * w2) * 100) / 100, dry: 1, depthMs: r1(1 + 4 * w2), spread: r1((0.4 + 0.6 * w2) * 100) / 100, voices: 3, delayMs: 18, rateHz: 0.6 });
+var CHO_SIMPLE = {
+  controls: [{ id: "wide", label: "\u5BBD", hint: "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF1B\u539F\u58F0\u4E0D\u52A8", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (w2) => {
+    const c10 = choOf(w2);
+    return `\u6E7F ${dbt(linDb(c10.mix))} \xB7 \u6296\u52A8 ${c10.depthMs} ms`;
+  } }],
+  read(p2) {
+    const w2 = (p2.mix - 0.2) / 0.4, c10 = choOf(w2);
+    return w2 >= -1e-3 && w2 <= 1 + 1e-3 && p2.dry === 1 && near(p2.depthMs, c10.depthMs, 0.06) && near(p2.spread, c10.spread, 6e-3) && p2.voices === 3 && p2.delayMs === 18 && p2.rateHz === 0.6 ? { wide: Math.round(w2 * 20) / 20 } : null;
+  },
+  write(v, p2) {
+    return { ...p2, ...choOf(Math.max(0, Math.min(1, v.wide ?? 0))) };
+  },
+  project(p2) {
+    return { wide: knob01((p2.mix - 0.2) / 0.4, (p2.depthMs - 1) / 4, (p2.spread - 0.4) / 0.6) };
+  }
+};
+var GAIN_SIMPLE = {
+  controls: [{ id: "dB", label: "\u589E\u76CA", hint: "\u63D2\u4EF6\u94FE\u4E2D\u95F4\u5355\u7EAF\u8C03\u5927\u8C03\u5C0F\uFF08\u524D\u9762\u7684\u63D2\u4EF6\u628A\u97F3\u91CF\u6539\u4E86\uFF0C\u7528\u5B83\u8865\u56DE\u6765\uFF09", kind: "knob", min: -24, max: 12, step: 0.5, fmt: (v) => `${v > 0 ? "+" : ""}${v.toFixed(1)} dB` }],
+  read(p2) {
+    return { dB: p2.dB };
+  },
+  write(v, p2) {
+    return { ...p2, dB: v.dB ?? 0 };
+  },
+  project(p2) {
+    return { dB: p2.dB };
+  }
+};
+var SIMPLE = { eq: EQ_SIMPLE, comp: COMP_SIMPLE, reverb: REV_SIMPLE, delay: DLY_SIMPLE, chorus: CHO_SIMPLE, gain: GAIN_SIMPLE };
+var wet1 = (p2) => p2.mix === 1 && p2.dry === 0;
+var SIMPLE_BUS = {
+  reverb: {
+    controls: [{ id: "size", label: "\u6DF7\u54CD\u65F6\u95F4", hint: "\u5C3E\u5DF4\u8870\u51CF 60 dB \u8981\u591A\u4E45\uFF08RT60\uFF09\uFF1A\u5F80\u53F3 = \u8D8A\u5927\u7684\u623F\u95F4\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d3) => `${rt60OfRoom(0.3 + 0.65 * d3).toFixed(1)} s` }],
+    read(p2) {
+      const d3 = (p2.room - 0.3) / 0.65;
+      return wet1(p2) && d3 >= -1e-3 && d3 <= 1 + 1e-3 && p2.damp === 0.5 && p2.preDelayMs === 10 && p2.width === 1 ? { size: Math.round(d3 * 20) / 20 } : null;
+    },
+    write(v, p2) {
+      const d3 = Math.max(0, Math.min(1, v.size ?? 0));
+      return { ...p2, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1, dry: 0 };
+    },
+    project(p2) {
+      return { size: knob01((p2.room - 0.3) / 0.65) };
+    }
+  },
+  delay: {
+    controls: [{ id: "echo", label: "\u56DE\u58F0\u591A\u957F", hint: "\u5F80\u53F3 = \u56DE\u58F0\u91CD\u590D\u5F97\u8D8A\u4E45\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e10) => `\u6BCF\u6B21 ${linDb(0.15 + 0.5 * e10).toFixed(1)} dB` }, DLY_SIMPLE.controls[1]],
+    read(p2) {
+      const e10 = (p2.feedback - 0.15) / 0.5;
+      return wet1(p2) && e10 >= -1e-3 && e10 <= 1 + 1e-3 && p2.dampHz === 6e3 && [0.5, 0.75, 1].includes(p2.syncBeats) ? { echo: Math.round(e10 * 20) / 20, beats: p2.syncBeats } : null;
+    },
+    write(v, p2) {
+      const e10 = Math.max(0, Math.min(1, v.echo ?? 0));
+      return { ...p2, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3, mix: 1, dry: 0, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
+    },
+    project(p2) {
+      return { echo: knob01((p2.feedback - 0.15) / 0.5), beats: nearestBeat(p2.syncBeats) };
+    }
+  },
+  chorus: {
+    controls: [{ ...CHO_SIMPLE.controls[0], hint: "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", fmt: (w2) => `\u6296\u52A8 ${choOf(w2).depthMs} ms` }],
+    read(p2) {
+      const w2 = (p2.depthMs - 1) / 4;
+      return wet1(p2) && w2 >= -1e-3 && w2 <= 1 + 1e-3 && near(p2.spread, r1((0.4 + 0.6 * w2) * 100) / 100, 6e-3) && p2.voices === 3 && p2.delayMs === 18 && p2.rateHz === 0.6 ? { wide: Math.round(w2 * 20) / 20 } : null;
+    },
+    write(v, p2) {
+      const w2 = Math.max(0, Math.min(1, v.wide ?? 0));
+      return { ...p2, ...choOf(w2), mix: 1, dry: 0 };
+    },
+    project(p2) {
+      return { wide: knob01((p2.depthMs - 1) / 4, (p2.spread - 0.4) / 0.6) };
+    }
+  }
+};
+var simpleView = (kind, onBus = false, keyed = false) => (kind === "comp" && keyed ? COMP_SIMPLE_KEYED : void 0) ?? (onBus ? SIMPLE_BUS[kind] : void 0) ?? SIMPLE[kind];
+var viewOfFx = (fx, onBus = false) => simpleView(fx.kind, onBus, !!fx.key);
+function projectToSimple(kind, onBus, p2, keyed = false) {
+  const v = simpleView(kind, onBus, keyed);
+  return v ? v.write(v.project(p2), p2) : p2;
+}
+function freshParams(kind, onBus = false) {
+  const p2 = defaults(kind), s10 = SIMPLE[kind];
+  if (onBus && kind === "reverb") return SIMPLE_BUS.reverb.write({ size: 0.5 }, p2);
+  if (onBus && kind === "delay") return SIMPLE_BUS.delay.write({ echo: 0.3, beats: 0.75 }, p2);
+  if (onBus && kind === "chorus") return SIMPLE_BUS.chorus.write({ wide: 0.4 }, p2);
+  if (kind === "eq") return s10.write({ autoLow: 0, tilt: 0 }, p2);
+  if (kind === "comp") return s10.write({ amount: 0.3 }, p2);
+  if (kind === "reverb") return s10.write({ far: 0.4 }, p2);
+  if (kind === "delay") return s10.write({ echo: 0.3, beats: 0.75 }, p2);
+  if (kind === "chorus") return s10.write({ wide: 0.4 }, p2);
+  return p2;
+}
+function fxSummary(fx, onBus = false) {
+  const view2 = viewOfFx(fx, onBus), p2 = paramsOf(fx), s10 = view2?.read(p2), name = pluginName(fx.kind);
+  if (fx.on === false) return `${name}\uFF08\u5173\uFF09`;
+  if (!s10) return `${name}\uFF08\u5168\u91CF\uFF09`;
+  if (fx.kind === "eq") return `${name}${s10.autoLow ? " \u4F4E\u5207" : ""}${near(s10.tilt, 0, 0.01) ? s10.autoLow ? "" : "\uFF08\u5E73\uFF09" : s10.tilt < 0 ? " \u539A" : " \u4EAE"}`;
+  const c10 = view2.controls[0];
+  return `${name} ${c10.fmt ? c10.fmt(s10[c10.id]) : s10[c10.id]}`;
+}
+function autoLowCutHz(lowestMidi) {
+  if (lowestMidi === null) return 0;
+  const hz = 440 * 2 ** ((lowestMidi - 69 - 4) / 12);
+  return Math.round(Math.max(20, Math.min(300, hz)));
+}
+function resolveChain(chain, ctx2) {
+  return chain.map((fx) => {
+    if (fx.kind === "eq" && fx.params.hpAuto) {
+      const { hpAuto: _a2, ...rest } = fx.params;
+      return { ...fx, params: { ...rest, hpHz: autoLowCutHz(ctx2.lowestMidi) } };
+    }
+    if (fx.kind === "delay" && fx.params.syncBeats) {
+      const { syncBeats: _b2, ...rest } = fx.params;
+      return { ...fx, params: { ...rest, timeMs: Math.min(2e3, Math.round(6e4 / ctx2.bpm * fx.params.syncBeats)) } };
+    }
+    return fx;
+  });
+}
+
+// src/app/names.ts
+function defaultStem(now2 = /* @__PURE__ */ new Date()) {
+  const z2 = (n10) => String(n10).padStart(2, "0");
+  let r10;
+  try {
+    r10 = crypto.getRandomValues(new Uint16Array(1))[0];
+  } catch {
+    r10 = Math.floor(Math.random() * 65536);
+  }
+  return `${now2.getFullYear()}${z2(now2.getMonth() + 1)}${z2(now2.getDate())}-${r10.toString(16).padStart(4, "0")}`;
+}
+var fileSafe = (s10) => s10.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim();
+function stampedCopy(stem, now2 = /* @__PURE__ */ new Date()) {
+  const z2 = (n10) => String(n10).padStart(2, "0");
+  return `${stem}-${now2.getFullYear()}${z2(now2.getMonth() + 1)}${z2(now2.getDate())}-${z2(now2.getHours())}${z2(now2.getMinutes())}`;
+}
+
+// src/ui/render-progress.ts
+var RenderProgress = class {
+  el;
+  fill;
+  cur;
+  total = 0;
+  done = 0;
+  constructor(parent) {
+    this.el = document.createElement("div");
+    this.el.className = "render-bar";
+    this.el.hidden = true;
+    this.el.setAttribute("role", "progressbar");
+    this.fill = document.createElement("div");
+    this.fill.className = "rb-fill";
+    this.cur = document.createElement("div");
+    this.cur.className = "rb-cur";
+    this.el.append(this.fill, this.cur);
+    parent.append(this.el);
+  }
+  /** 开始：一共几格。 */
+  start(units) {
+    this.total = Math.max(1, units);
+    this.done = 0;
+    this.el.hidden = false;
+    this.draw(null);
+  }
+  /** 当前这一格知道百分比了（0–1；下载）。null = 不知道（条纹）。 */
+  frac(f2) {
+    if (!this.el.hidden) this.draw(f2);
+  }
+  /** 这一格做完。 */
+  next() {
+    this.done = Math.min(this.total, this.done + 1);
+    this.draw(null);
+  }
+  /** 收起。 */
+  end() {
+    this.el.hidden = true;
+  }
+  get running() {
+    return !this.el.hidden;
+  }
+  draw(f2) {
+    const w2 = 100 / this.total, left = this.done * w2;
+    this.fill.style.width = `${left + (f2 !== null ? f2 * w2 : 0)}%`;
+    this.cur.style.left = `${left}%`;
+    this.cur.style.width = `${this.done < this.total ? w2 : 0}%`;
+    this.cur.classList.toggle("known", f2 !== null);
+    this.el.setAttribute("aria-valuenow", String(Math.round(left + (f2 ?? 0) * w2)));
+  }
+};
+
+// src/score/history.ts
+var LIMIT = 200;
+var COALESCE_MS = 1500;
+var emptyHistory = () => ({ past: [], future: [], lastKey: null, lastAt: 0 });
+var snapOf = (st3, extras, locus) => ({ song: st3.song, extras, at: st3.at, caret: st3.caret, sel: st3.sel, locus });
+var applySnap = (st3, s10) => ({ ...st3, song: s10.song, at: s10.at, caret: s10.caret, sel: s10.sel, log: [] });
+function record2(h2, prev, prevExtras, gesture, now2, locus) {
+  if (gesture && gesture === h2.lastKey && now2 - h2.lastAt < COALESCE_MS && h2.past.length) {
+    const last = h2.past[h2.past.length - 1];
+    return { ...h2, past: [...h2.past.slice(0, -1), { ...last, locus }], future: [], lastAt: now2 };
+  }
+  const snap = snapOf(prev, prevExtras, locus);
+  const past = h2.past.length >= LIMIT ? [...h2.past.slice(1), snap] : [...h2.past, snap];
+  return { past, future: [], lastKey: gesture, lastAt: now2 };
+}
+function undo(h2, cur, curExtras) {
+  if (!h2.past.length) return null;
+  const snap = h2.past[h2.past.length - 1];
+  return { h: { past: h2.past.slice(0, -1), future: [...h2.future, snapOf(cur, curExtras, snap.locus)], lastKey: null, lastAt: 0 }, st: applySnap(cur, snap), extras: snap.extras, locus: snap.locus };
+}
+function redo(h2, cur, curExtras) {
+  if (!h2.future.length) return null;
+  const snap = h2.future[h2.future.length - 1];
+  return { h: { past: [...h2.past, snapOf(cur, curExtras, snap.locus)], future: h2.future.slice(0, -1), lastKey: null, lastAt: 0 }, st: applySnap(cur, snap), extras: snap.extras, locus: snap.locus };
+}
+var body = (song, at2) => trackOf(song, at2.paper, at2.part).filter((t10) => t10.kind !== "key" && t10.kind !== "time" && t10.kind !== "tempo");
+function describeSongChange(prev, next2) {
+  const a10 = prev.song, b3 = next2.song;
+  if (a10.papers.length !== b3.papers.length) return { kind: "paper", label: b3.papers.length > a10.papers.length ? "\u52A0\u4E86\u4E00\u5F20\u7EB8" : "\u5220\u4E86\u4E00\u5F20\u7EB8" };
+  if (a10.parts.length !== b3.parts.length) return { kind: "score", label: b3.parts.length > a10.parts.length ? "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8" : "\u5220\u4E86\u4E00\u4E2A\u58F0\u90E8" };
+  if (a10.parts.some((p2, k2) => p2.id !== b3.parts[k2]?.id)) return { kind: "score", label: "\u632A\u4E86\u58F0\u90E8\u987A\u5E8F" };
+  const d3 = body(b3, prev.at).length - body(a10, prev.at).length;
+  if (d3 > 0) return { kind: "score", label: `\u5199\u4E86 ${d3} \u4E2A` };
+  if (d3 < 0) return { kind: "score", label: `\u5220\u4E86 ${-d3} \u4E2A` };
+  if ((a10.title ?? "") !== (b3.title ?? "")) return { kind: "score", label: "\u6539\u6B4C\u540D" };
+  if ((a10.credits ?? "") !== (b3.credits ?? "")) return { kind: "score", label: "\u6539\u4F5C\u8005\u680F" };
+  const pa = a10.papers.find((p2) => p2.id === prev.at.paper), pb = b3.papers.find((p2) => p2.id === prev.at.paper);
+  if (pa && pb && !!pa.hidden !== !!pb.hidden) return { kind: "paper", label: pb.hidden ? "\u9690\u85CF\u4E86\u8FD9\u5F20\u7EB8" : "\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8" };
+  if (pa && pb && pa.name !== pb.name) return { kind: "paper", label: "\u6539\u66F2\u6BB5\u540D" };
+  return { kind: "score", label: "\u6539" };
+}
+
+// src/app/performance.ts
+function createPerformance(host) {
+  const { engine: engine2, singer: singer2, view: view2 } = host;
+  const { progress: progress2, info: info2, showError: showError2, renderBar: renderBar2, playBtns: playBtns2, playIcon: playIcon2, offerFile: offerFile2 } = host.ui;
+  const { resolveGmBytes: resolveGmBytes2, ensureVowels: ensureVowels2, soundMemoryBytes: soundMemoryBytes2, modelBases: modelBases2 } = host.sounds;
+  const { creditsOf: creditsOf2, creditsBlock: creditsBlock2 } = host.credits;
+  const st3 = () => host.state(), extras = () => host.extras(), pv2 = (id2) => host.pv(id2), curRole2 = () => host.curRole(), docName2 = () => host.docName();
+  const humOpt2 = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
+  const playSong2 = () => host.viewScope() === "segment" ? songOnlyPaper(st3().song, st3().at.paper) : st3().song;
+  const curFlat2 = () => {
+    const s10 = playSong2(), order = songPlayOrder(s10);
+    return { tokens: flattenPart(s10, st3().at.part, { order }).tokens, map: timeMapOf(s10, order) };
+  };
+  const songIn2 = (s10) => s10 === "all" ? st3().song : s10 === "segment" ? songOnlyPaper(st3().song, st3().at.paper) : playSong2();
+  const GM_SR = 44100;
+  const audibleParts2 = () => {
+    const solo = st3().song.parts.some((p2) => pv2(p2.id).solo);
+    return st3().song.parts.filter((p2) => solo ? pv2(p2.id).solo : !pv2(p2.id).muted);
+  };
+  function micOf2(part) {
+    const m2 = studioTrack(extras(), part.mic);
+    return { gainDb: m2?.gainDb ?? 0, pan: m2?.pan ?? 0 };
+  }
+  const channelOf2 = (part) => {
+    const { gainDb, pan } = micOf2(part);
+    return { gainDb: gainDb + activeCalibrationDb(extras(), part.role), pan };
+  };
+  let mixBypass = false;
+  function pushChannels2(raw = mixBypass) {
+    const bpm = songBpm2(), ctx2 = (lowestMidi) => ({ lowestMidi, bpm }), fx = (x2) => raw ? [] : x2;
+    for (const p2 of st3().song.parts) {
+      const t10 = studioTrack(extras(), p2.mic);
+      engine2.channel(p2.id, { ...channelOf2(p2), mute: pv2(p2.id).muted, solo: pv2(p2.id).solo, chain: fx(resolveChain(t10?.chain ?? [], ctx2(lowestMidiOf2(p2.id)))), sends: fx(t10?.sends ?? []), to: t10?.to ?? "master" });
+    }
+    engine2.buses(studioTracks(extras()).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: b3.bypass ? [] : fx(resolveChain(b3.chain, ctx2(null))), to: b3.to, sends: fx(b3.sends), ...host.busMuted().has(b3.id) ? { mute: true } : {} })));
+    const m2 = activeMaster(extras());
+    engine2.master({ ...m2, chain: fx(resolveChain(m2.chain, ctx2(null))) });
+  }
+  function lowestMidiOf2(partId) {
+    let lo2 = null;
+    for (const pp of st3().song.papers) for (const t10 of pp.tracks[partId] ?? []) if (t10.kind === "note" && t10.pitch) for (const q2 of [t10.pitch, ...t10.chord ?? []]) {
+      const m2 = midiOf(q2);
+      if (lo2 === null || m2 < lo2) lo2 = m2;
+    }
+    return lo2;
+  }
+  function songBpm2() {
+    const p2 = st3().song.papers[0], t10 = p2 ? p2.tracks[st3().song.parts.find((x2) => p2.tracks[x2.id])?.id ?? ""] : void 0;
+    return t10 ? tempoAt(t10, headLen(t10)) : 90;
+  }
+  function performerInfo2(part) {
+    const role = part.role, eng = activeInstrument(extras(), role)?.engine ?? "unknown", plugin = performerOf(eng), cat2 = grooveCategory(plugin?.grooveCategory ?? null, activeGm(extras(), role));
+    const own = plugin ? plugin.info({ extras: extras(), role, presetIndex: (sha, bank, program) => engine2.presetIndex(sha, bank, program) }) : { gm: null, chunk: "phrase" };
+    return { engine: eng, plugin, spec: activePerfSpec(extras(), role), velocity: activeVelocity(extras(), role), transpose: activeTranspose(extras(), role), follow: (s10) => followOf(s10, cat2), chain: activeChain(extras(), role), ...own };
+  }
+  async function prepareBanks(parts) {
+    const errs = [];
+    for (const part of parts) {
+      const plugin = performerOf(activeInstrument(extras(), part.role)?.engine);
+      if (!plugin) continue;
+      try {
+        await plugin.prepare({ extras: extras(), role: part.role, engine: engine2, resolveGmBytes: resolveGmBytes2, ensureVowels: ensureVowels2 });
+      } catch (e10) {
+        errs.push(`\u300C${roleName(extras(), part.role)}\u300D\uFF1A${e10.message}`);
+      }
+    }
+    return errs;
+  }
+  let chunkKeysWanted = [];
+  let chunkPlans = /* @__PURE__ */ new Map();
+  const chunkFailed = /* @__PURE__ */ new Map();
+  let pumping = false, pumpQuiet = false, singSpeed = null;
+  const inflightKeys = /* @__PURE__ */ new Set();
+  const pendingChunks = () => chunkKeysWanted.filter((k2) => !engine2.hasChunk(k2)).length;
+  let playMute;
+  function setChunkOrder(tl2, pos, loop, o10 = {}) {
+    chunkPlans = new Map(tl2.chunks.map((c10) => [c10.key, c10]));
+    let keys = chunkOrder(tl2.chunks, pos, loop, (k2) => engine2.hasChunk(k2), o10.mute ?? playMute);
+    if (o10.limit !== void 0) keys = keys.slice(0, o10.limit);
+    chunkKeysWanted = keys;
+    pumpQuiet = !!o10.quiet;
+    for (const k2 of inflightKeys) if (!keys.includes(k2) && !chunkPlans.has(k2)) singer2.cancelInflight(k2);
+    void pump();
+  }
+  const STAGE_FRAC = { "\u5FF5\uFF081/2\uFF09": 0.05, "\u5FF5\uFF082/2\uFF09": 0.25, "\u5206\u6790\uFF081/3 \u97F3\u9AD8\uFF09": 0.45, "\u5206\u6790\uFF082/3 \u8C31\u5305\u7EDC\uFF09": 0.6, "\u5206\u6790\uFF083/3 \u6C14\u58F0\uFF09": 0.7, "\u5206\u6790\uFF08\u7F13\u5B58\uFF09": 0.75, "\u5408\u6210": 0.85 };
+  async function pump() {
+    if (pumping) return;
+    pumping = true;
+    let shown = 0;
+    const running = /* @__PURE__ */ new Set();
+    try {
+      for (; ; ) {
+        while (running.size < singer2.parallelism) {
+          const key = chunkKeysWanted.find((k2) => !engine2.hasChunk(k2) && !inflightKeys.has(k2));
+          if (!key) break;
+          const c10 = chunkPlans.get(key);
+          if (!c10) {
+            chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
+            continue;
+          }
+          const who = roleName(extras(), st3().song.parts.find((p3) => p3.id === c10.part)?.role ?? ""), left = pendingChunks();
+          if (left > shown) {
+            renderBar2.start(left);
+            shown = left;
+          }
+          const failed = chunkFailed.get(key);
+          if (failed !== void 0) {
+            if (pumpQuiet) {
+              chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
+              continue;
+            }
+            showError2(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${failed}`);
+            engine2.chunk(key, 22050, new Float32Array(0));
+            renderBar2.next();
+            continue;
+          }
+          progress2(`${who}\uFF1A${pumpQuiet ? "\u5148\u5531\u7740" : "\u8FD8\u6709"} ${left} \u53E5\u2026`);
+          inflightKeys.add(key);
+          const p2 = singOne(key, c10, who).finally(() => {
+            inflightKeys.delete(key);
+            running.delete(p2);
+          });
+          running.add(p2);
+        }
+        if (!running.size) break;
+        await Promise.race(running);
+      }
+    } finally {
+      pumping = false;
+      renderBar2.end();
+      if (!engine2.playing) progress2("");
+    }
+  }
+  async function singOne(key, c10, who) {
+    const t10 = performance.now();
+    try {
+      const r10 = await singer2.sing(c10.score, (stage) => {
+        progress2(`${who}\uFF1A${stage}\u2026`);
+        const pc = /(\d+)%$/.exec(stage);
+        if (pc) renderBar2.frac(Number(pc[1]) / 100);
+        else if (stage in STAGE_FRAC) renderBar2.frac(STAGE_FRAC[stage]);
+      }, { opt: humOpt2(), models: modelBases2(), raw: true, tag: key, diskBytes: BUDGET2.speechDisk });
+      if (engine2.hasChunk(key) || !chunkPlans.has(key)) {
+        renderBar2.next();
+        return;
+      }
+      engine2.chunk(key, r10.sr, r10.samples);
+      if (r10.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r10.ms.boot)}`);
+      const secs = Math.max(0.5, c10.dur - LEAD_IN);
+      singSpeed = singSpeed === null ? (performance.now() - t10) / secs : singSpeed * 0.7 + (performance.now() - t10) / secs * 0.3;
+    } catch (e10) {
+      const msg = e10.message ?? String(e10);
+      if (msg === "cancelled") return;
+      if (!chunkPlans.has(key)) return;
+      chunkFailed.set(key, msg);
+      if (!pumpQuiet) {
+        showError2(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${msg}`);
+        engine2.chunk(key, 22050, new Float32Array(0));
+      } else chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
+    }
+    renderBar2.next();
+  }
+  async function waitChunksReady(tl2, pos, stop, mute) {
+    while (!stop() && !readyToStart(tl2.chunks, pos, prerollCount(singSpeed), (k2) => engine2.hasChunk(k2), mute)) {
+      if (!pumping && pendingChunks() === 0) break;
+      await new Promise((r10) => setTimeout(r10, 80));
+    }
+  }
+  async function awaitAllChunks(tl2) {
+    const want = [...new Set(tl2.chunks.map((c10) => c10.key))];
+    setChunkOrder(tl2, tl2.range.from, null);
+    for (; ; ) {
+      const missing = want.filter((k2) => !engine2.hasChunk(k2));
+      if (!missing.length) return;
+      if (!missing.some((k2) => chunkKeysWanted.includes(k2) || inflightKeys.has(k2))) setChunkOrder(tl2, tl2.range.from, null);
+      else if (!pumping) void pump();
+      await new Promise((r10) => setTimeout(r10, 80));
+    }
+  }
+  const MAX_CHUNKS = 64, chunkKeys = [];
+  function pruneChunks(tl2) {
+    const keep2 = new Set(tl2.chunks.map((c10) => c10.key));
+    for (const k2 of keep2) {
+      const i10 = chunkKeys.indexOf(k2);
+      if (i10 >= 0) chunkKeys.splice(i10, 1);
+      chunkKeys.push(k2);
+    }
+    const drop = [];
+    while (chunkKeys.length > MAX_CHUNKS) {
+      const i10 = chunkKeys.findIndex((k2) => !keep2.has(k2));
+      if (i10 < 0) break;
+      drop.push(chunkKeys.splice(i10, 1)[0]);
+    }
+    if (drop.length) engine2.forget(drop);
+  }
+  const DEVICE = { ios: /iPad|iPhone|iPod/.test(navigator.platform) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1, cores: navigator.hardwareConcurrency ?? 2, deviceMemoryGB: navigator.deviceMemory ?? null };
+  const BUDGET2 = budgetFor(DEVICE);
+  if (new URLSearchParams(location.search).has("nodisk")) BUDGET2.speechDisk = 0;
+  singer2.setLanes(BUDGET2.lanes);
+  diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB \u2192 lanes ${BUDGET2.lanes}, budget ${Math.round(BUDGET2.total / 1e6)} MB (chunks ${Math.round(BUDGET2.chunkBytes / 1e6)})`);
+  const watch = { load: null, hot: 0, lanesCut: false, said: /* @__PURE__ */ new Map() };
+  const resourceSnapshot2 = () => ({ lanes: singer2.memory(), chunkBytes: watch.load?.chunkBytes ?? 0, chunks: watch.load?.chunks ?? 0, soundMem: soundMemoryBytes2(), audioBusy: watch.load?.busy ?? null });
+  function resourceSay(kind, text2) {
+    const t10 = performance.now();
+    if ((watch.said.get(kind) ?? -1e9) > t10 - 3e4) return;
+    watch.said.set(kind, t10);
+    reportError(text2, "warning");
+  }
+  function shrinkChunks(snap, toBytes) {
+    if (!snap.chunks) return;
+    const avg = Math.max(1, snap.chunkBytes / snap.chunks), n10 = Math.ceil((snap.chunkBytes - toBytes) / avg), wanted = new Set(chunkKeysWanted), drop = [];
+    for (const k2 of chunkKeys) {
+      if (drop.length >= n10) break;
+      if (!wanted.has(k2) && engine2.hasChunk(k2)) drop.push(k2);
+    }
+    for (const k2 of drop) chunkKeys.splice(chunkKeys.indexOf(k2), 1);
+    if (drop.length) {
+      engine2.forget(drop);
+      diagNote("resource", `pruned ${drop.length} chunks (${Math.round(snap.chunkBytes / 1e6)} MB \u2192 target ${Math.round(toBytes / 1e6)} MB)`);
+    }
+  }
+  function resourceTick() {
+    const snap = resourceSnapshot2();
+    for (const a10 of advise(snap, BUDGET2)) {
+      if (a10.kind === "pruneChunks") shrinkChunks(snap, a10.toBytes);
+      else if (a10.kind === "fewerLanes") {
+        if (singer2.parallelism > a10.lanes) {
+          singer2.setLanes(a10.lanes);
+          watch.lanesCut = true;
+          diagNote("resource", `lanes \u2192 ${a10.lanes}`);
+          resourceSay("lanes", "\u5185\u5B58 / \u8D1F\u8F7D\u5403\u7D27\uFF1A\u5C0F\u6708\u76F8\u6539\u6210\u4E00\u6761\u9053\u5531\uFF08\u6162\u4E00\u70B9\uFF0C\u58F0\u97F3\u4E0D\u53D8\uFF09");
+        }
+      } else if (a10.kind === "audioHot") {
+        if (++watch.hot >= 3) resourceSay("audio", `\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 ${Math.round(a10.busy * 100)}%\uFF1A\u53EF\u80FD\u7206\u97F3\u3002\u6548\u679C\u94FE / \u58F0\u90E8\u662F\u4F60\u7684\u6DF7\u97F3\uFF0C\u4E0D\u66FF\u4F60\u52A8\uFF1B\u53EF\u4EE5\u5148\u628A\u6CA1\u5728\u542C\u7684\u58F0\u90E8\u9759\u97F3`);
+      }
+    }
+    if (snap.audioBusy !== null && snap.audioBusy <= AUDIO_HOT) watch.hot = 0;
+    if (watch.lanesCut && totalBytes(snap) < BUDGET2.total * 0.6 && (snap.audioBusy ?? 0) < AUDIO_HOT * 0.7) {
+      singer2.setLanes(BUDGET2.lanes);
+      watch.lanesCut = false;
+      diagNote("resource", `lanes \u2192 ${BUDGET2.lanes} (recovered)`);
+    }
+  }
+  singer2.onMem = () => resourceTick();
+  function trimLanesForNewSong() {
+    const mems = singer2.laneMems();
+    for (const i10 of trimOnSongSwitch(mems)) if (!singer2.laneBusy(i10)) {
+      diagNote("resource", `song switch: restart lane ${i10} (wasm ${Math.round((mems[i10]?.wasm ?? 0) / 1e6)} MB, base ${Math.round((mems[i10]?.base ?? 0) / 1e6)} MB)`);
+      singer2.restartLane(i10);
+    }
+  }
+  engine2.on("load", (info3) => {
+    watch.load = info3;
+    resourceTick();
+  });
+  async function prepare(scope, o10 = {}) {
+    const parts = audibleParts2(), song = songIn2(scope);
+    const errs = await prepareBanks(parts);
+    const tl2 = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo2, hum: st3().song.hum, singOpt: humOpt2() });
+    for (const u2 of tl2.unplayable) errs.push(`\u300C${roleName(extras(), st3().song.parts.find((p2) => p2.id === u2.part)?.role ?? "")}\u300D\uFF1A${u2.why}`);
+    if (errs.length) showError2(`${errs.join("\uFF1B")}\u3002${tl2.tracks.length ? "\u8FD9\u4E9B\u58F0\u90E8\u6CA1\u6709\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\u3002" : "\u6CA1\u6709\u51FA\u58F0\u3002"}\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
+    if (!tl2.tracks.length) return null;
+    pruneChunks(tl2);
+    if (o10.chunks !== false) await awaitAllChunks(tl2);
+    pushChannels2(o10.raw);
+    return tl2;
+  }
+  async function renderMixForTest2() {
+    const tl2 = await prepare("view");
+    if (!tl2) return null;
+    const r10 = playRange(tl2), m2 = await engine2.renderOffline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: false }, { sr: GM_SR });
+    return { samples: m2.left, right: m2.right, sr: m2.sr, start: m2.start };
+  }
+  let loopOn = false;
+  let playTl = null;
+  let preparing = false, cancelPrepare = false;
+  const SEAM_LEAD = 4;
+  function playRange(tl2) {
+    const from = tl2.range.from, to2 = tl2.range.to;
+    let loopFrom = from;
+    const song = playSong2(), a10 = parseArrangement(song.arrangement, song.papers);
+    if (host.viewScope() === "all" && a10.loop && tl2.papers[a10.order.length]) loopFrom = tl2.papers[a10.order.length].t0;
+    return { from, to: to2, loopFrom };
+  }
+  let startMark = null;
+  let paused = null;
+  const clampTo = (r10, s10) => Math.min(Math.max(s10, r10.from), r10.to);
+  function startMute(tl2, r10) {
+    if (!startMark) return void 0;
+    const s10 = tl2.secondsAt(startMark.paperId, startMark.tick, 0);
+    return s10 === null ? void 0 : clampTo(r10, s10);
+  }
+  function startSeconds(tl2, r10) {
+    if (!startMark) return r10.from;
+    const s10 = tl2.secondsAt(startMark.paperId, startMark.tick, 0);
+    return s10 === null ? r10.from : clampTo(r10, s10 - PRE_ROLL);
+  }
+  function resumeSeconds(tl2, r10) {
+    if (!paused) return startSeconds(tl2, r10);
+    const s10 = paused.at ? tl2.secondsAt(paused.at.paperId, paused.at.tick, paused.sec) : null;
+    return clampTo(r10, s10 ?? paused.sec);
+  }
+  function barHeadTick(paperId, part, tick) {
+    const paper = st3().song.papers.find((p2) => p2.id === paperId);
+    if (!paper) return 0;
+    const toks = paper.tracks[part] ?? Object.values(paper.tracks)[0] ?? [];
+    let len = DEFAULT_TIME.beats * WHOLE / DEFAULT_TIME.beatType, inBar = 0, t10 = 0, head = 0;
+    for (const k2 of toks) {
+      if (k2.kind === "bar") {
+        if (t10 <= tick) head = t10;
+        inBar = 0;
+        continue;
+      }
+      if (k2.kind === "time") {
+        if (inBar > 0 && t10 <= tick) head = t10;
+        inBar = 0;
+        len = k2.beats * WHOLE / k2.beatType;
+        continue;
+      }
+      if (!isTimed(k2)) continue;
+      while (inBar >= len && inBar > 0) {
+        const b3 = t10 - (inBar - len);
+        if (b3 <= tick) head = b3;
+        inBar -= len;
+      }
+      if (t10 > tick) break;
+      inBar += k2.dur;
+      t10 += k2.dur;
+    }
+    if (t10 <= tick) {
+      while (inBar >= len && inBar > 0) {
+        const b3 = t10 - (inBar - len);
+        if (b3 <= tick) head = b3;
+        inBar -= len;
+      }
+      const b0 = t10 - inBar;
+      if (tick >= b0) head = b0 + Math.floor((tick - b0) / len + 1e-9) * len;
+    }
+    return head;
+  }
+  const tickOfCaret2 = (paperId, part, caret) => {
+    const toks = st3().song.papers.find((p2) => p2.id === paperId)?.tracks[part] ?? [];
+    let t10 = 0;
+    for (let i10 = 0; i10 < Math.min(caret, toks.length); i10++) if (isTimed(toks[i10])) t10 += toks[i10].dur;
+    return t10;
+  };
+  async function startPlayback(how) {
+    if (preparing) {
+      cancelPrepare = true;
+      return;
+    }
+    singer2.unlock();
+    holdAudio();
+    preparing = true;
+    cancelPrepare = false;
+    for (const b3 of playBtns2()) b3.classList.add("is-on");
+    try {
+      const tl2 = await prepare("view", { chunks: false });
+      if (!tl2) {
+        progress2("");
+        return;
+      }
+      const r10 = playRange(tl2);
+      playTl = tl2;
+      const loop = loopOn || how === "seam";
+      engine2.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop, loopFrom: r10.loopFrom });
+      const at2 = how === "seam" ? Math.max(r10.from, r10.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl2, r10) : how === "head" ? r10.from : startSeconds(tl2, r10);
+      playMute = how === "start" ? startMute(tl2, r10) : void 0;
+      setChunkOrder(tl2, at2, loop ? { from: r10.loopFrom, to: r10.to } : null);
+      await waitChunksReady(tl2, at2, () => cancelPrepare, playMute);
+      if (cancelPrepare) {
+        progress2("");
+        return;
+      }
+      const loopNow = loopOn || how === "seam";
+      const atNow = how === "start" ? startSeconds(tl2, r10) : at2;
+      playMute = how === "start" ? startMute(tl2, r10) : void 0;
+      if (loopNow !== loop) engine2.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopNow, loopFrom: r10.loopFrom });
+      if (loopNow !== loop || atNow !== at2) setChunkOrder(tl2, atNow, loopNow ? { from: r10.loopFrom, to: r10.to } : null);
+      await engine2.play(atNow, playMute);
+      paused = null;
+      playIcon2(true);
+      progress2(loopOn ? `\u5FAA\u73AF ${(r10.to - r10.loopFrom).toFixed(1)} \u79D2` : `${(r10.to - atNow).toFixed(1)} \u79D2`);
+    } catch (e10) {
+      showError2(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`);
+      progress2("");
+      playIcon2(false);
+    } finally {
+      releaseAudio();
+      preparing = false;
+      if (!engine2.playing) for (const b3 of playBtns2()) b3.classList.remove("is-on");
+    }
+  }
+  const DOUBLE_TAP_MS = 350;
+  let lastPlayTap = 0;
+  function playPause2(at2 = performance.now()) {
+    const now2 = at2;
+    if (now2 - lastPlayTap < DOUBLE_TAP_MS) {
+      lastPlayTap = 0;
+      playFromHead2();
+      return;
+    }
+    lastPlayTap = now2;
+    if (engine2.playing) {
+      pausePlay();
+      return;
+    }
+    void startPlayback("start");
+  }
+  function resumePlay2() {
+    if (!engine2.playing && paused) void startPlayback("resume");
+  }
+  function pausePlay() {
+    const sec = engine2.audibleSec() ?? engine2.position, at2 = playTl?.locate(sec) ?? null;
+    stopPlay2();
+    paused = { sec, at: at2 };
+    view2.setPlayhead(at2);
+  }
+  function replay() {
+    paused = null;
+    if (engine2.playing && playTl) {
+      const r10 = playRange(playTl);
+      playMute = startMute(playTl, r10);
+      engine2.seek(startSeconds(playTl, r10), playMute);
+      return;
+    }
+    view2.setPlayhead(null);
+    if (preparing) return;
+    void startPlayback("start");
+  }
+  function playFromHere2(paperId, part, tick) {
+    startMark = { paperId, tick: barHeadTick(paperId, part, tick) };
+    view2.setStartMark(startMark);
+    replay();
+  }
+  function playFromHead2() {
+    startMark = null;
+    view2.setStartMark(null);
+    replay();
+  }
+  function playSeam2() {
+    if (engine2.playing && playTl) {
+      const r10 = playRange(playTl);
+      engine2.seek(Math.max(r10.from, r10.to - SEAM_LEAD));
+    } else void startPlayback("seam");
+  }
+  function stopPlay2() {
+    engine2.stop();
+    playIcon2(false);
+    view2.setPlayhead(null);
+    phKey = "";
+    cancelPrepare = true;
+    paused = null;
+    playMute = void 0;
+    chunkKeysWanted = [];
+    singer2.cancelPending();
+    singer2.cancelInflight();
+    schedulePrewarm2();
+  }
+  engine2.on("ended", () => {
+    playIcon2(false);
+    view2.setPlayhead(null);
+    phKey = "";
+    paused = null;
+  });
+  engine2.on("crash", (msg) => {
+    diagNote("engine", `render crash: ${msg}`);
+    playIcon2(false);
+    view2.setPlayhead(null);
+    phKey = "";
+    paused = null;
+    showError2(`\u64AD\u653E\u51FA\u9519\u4E86\uFF0C\u5DF2\u7ECF\u505C\u4E0B\uFF08\u9519\u8BEF\u8BB0\u8FDB\u4E86\u8BCA\u65AD\u65E5\u5FD7\uFF09\uFF1A${msg.split("\n")[0]}`);
+  });
+  function setLoop2(on2) {
+    loopOn = on2;
+    for (const b3 of playBtns2()) b3.classList.toggle("looping", on2);
+    if (engine2.playing && playTl) {
+      const r10 = playRange(playTl);
+      engine2.setTimeline({ tracks: playTl.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom });
+      setChunkOrder(playTl, engine2.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
+    }
+  }
+  let lastReorder = 0;
+  let phRaf = 0, phKey = "", latLogged = null, latAt = 0, srcLogged = null;
+  const TURN_LEADS2 = [0, 0.3, 0.6, 1, 1.5];
+  let turnLead = 0.6;
+  let phAheadKey = "";
+  function resetLatencyLog2() {
+    latLogged = null;
+    latAt = 0;
+  }
+  function playheadFrame() {
+    phRaf = 0;
+    if (!engine2.playing || !playTl) return;
+    const sec = engine2.audibleSec() ?? engine2.position, loc = playTl.locate(sec), k2 = loc ? `${loc.paperId}:${loc.tick}` : "";
+    const r10 = playRange(playTl);
+    let aSec = sec + turnLead;
+    if (aSec >= r10.to) aSec = loopOn ? r10.loopFrom + (aSec - r10.to) : r10.to - 1e-3;
+    const ahead = turnLead > 0 ? playTl.locate(aSec) : null, ak2 = ahead ? `${ahead.paperId}:${ahead.tick}` : "";
+    if (k2 !== phKey || ak2 !== phAheadKey) {
+      phKey = k2;
+      phAheadKey = ak2;
+      view2.setPlayhead(loc, ahead);
+    }
+    const now2 = performance.now();
+    if (now2 - latAt > 2e3) {
+      latAt = now2;
+      const lat = engine2.latencyMs();
+      if (lat !== null && (latLogged === null || Math.abs(lat - latLogged) > 25 || engine2.clockSrc !== srcLogged)) {
+        latLogged = lat;
+        srcLogged = engine2.clockSrc;
+        diagNote("audio", `output latency ${Math.round(lat)} ms (ctx ${singer2.unlock().state}, clock ${engine2.clockSrc})`);
+      }
+    }
+    phRaf = requestAnimationFrame(playheadFrame);
+  }
+  engine2.on("pos", (sec, playing, waiting) => {
+    if (!playing) return;
+    if (playTl && !phRaf) phRaf = requestAnimationFrame(playheadFrame);
+    if (waiting) progress2("\u7B49\u5C0F\u6708\u76F8\u5531\u597D\u8FD9\u4E00\u53E5\u2026");
+    if (playMute !== void 0 && sec > playMute + 1) playMute = void 0;
+    if (playTl && performance.now() - lastReorder > 1e3) {
+      lastReorder = performance.now();
+      const r10 = playRange(playTl);
+      setChunkOrder(playTl, sec, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
+    }
+  });
+  engine2.on("missing", () => {
+    if (playTl) {
+      const r10 = playRange(playTl);
+      setChunkOrder(playTl, engine2.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
+    }
+  });
+  let refreshTimer = 0;
+  function schedulePlaybackRefresh2() {
+    if (!engine2.playing) return;
+    clearTimeout(refreshTimer);
+    refreshTimer = window.setTimeout(() => {
+      void (async () => {
+        if (!engine2.playing) return;
+        const at2 = engine2.position, loc = playTl?.locate(at2) ?? null;
+        const tl2 = await prepare("view", { chunks: false });
+        if (!tl2) {
+          stopPlay2();
+          return;
+        }
+        const r10 = playRange(tl2);
+        playTl = tl2;
+        const sec = loc ? tl2.secondsAt(loc.paperId, loc.tick, at2) : null, shift = sec !== null && Math.abs(sec - at2) > 5e-3 ? sec - at2 : 0;
+        engine2.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom, ...shift ? { shift } : {} });
+        setChunkOrder(tl2, engine2.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
+      })();
+    }, 300);
+  }
+  const PREWARM_PHRASES = 3;
+  let prewarmTimer = 0;
+  function schedulePrewarm2() {
+    clearTimeout(prewarmTimer);
+    prewarmTimer = window.setTimeout(() => {
+      if (engine2.playing || preparing || exporting) return;
+      const parts = audibleParts2();
+      if (!parts.some((p2) => performerOf(activeInstrument(extras(), p2.role)?.engine)?.sound === "chunks")) return;
+      const song = songIn2("view");
+      const tl2 = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo2, hum: st3().song.hum, singOpt: humOpt2() });
+      if (!tl2.chunks.length) return;
+      pruneChunks(tl2);
+      const r10 = playRange(tl2);
+      setChunkOrder(tl2, paused ? resumeSeconds(tl2, r10) : startSeconds(tl2, r10), null, { quiet: true, limit: PREWARM_PHRASES, mute: paused ? void 0 : startMute(tl2, r10) });
+    }, 700);
+  }
+  let bankPreparing = null;
+  function prepareBank2() {
+    const g3 = activeGm(extras(), curRole2());
+    if (!g3 || engine2.hasBank(g3.subsetSha256)) return Promise.resolve();
+    if (bankPreparing) return bankPreparing;
+    bankPreparing = (async () => {
+      await engine2.bank(g3.subsetSha256, await resolveGmBytes2(g3));
+    })().catch((e10) => {
+      showError2(`\u300C${g3.name}\u300D\u54CD\u4E0D\u4E86\uFF1A${e10.message}`);
+    }).finally(() => {
+      bankPreparing = null;
+    });
+    return bankPreparing;
+  }
+  let exporting = false;
+  function exportRights2(roles) {
+    const r10 = st3().song.rights;
+    if (!r10) return { rights: void 0, fellBack: false };
+    return licenseHints(r10, performerCredits(extras(), roles)).length ? { rights: void 0, fellBack: true } : { rights: r10, fellBack: false };
+  }
+  async function exportSong2(o10 = { quality: "standard", scope: "all" }) {
+    if (exporting || preparing) return;
+    exporting = true;
+    try {
+      if (engine2.playing) stopPlay2();
+      const tl2 = await prepare(o10.scope, { raw: false });
+      if (!tl2) {
+        progress2("");
+        return;
+      }
+      progress2("\u6DF7\u97F3\u2026");
+      renderBar2.start(1);
+      const m2 = await engine2.renderOffline({ tracks: tl2.tracks, range: tl2.range, loop: false }, { sr: GM_SR, progress: (f2) => renderBar2.frac(f2) }).finally(() => {
+        renderBar2.end();
+        if (mixBypass) pushChannels2();
+      });
+      const roles = st3().song.parts.filter((p2) => tl2.tracks.some((t10) => t10.id === p2.id)).map((p2) => p2.role);
+      progress2("\u7F16 mp3\u2026");
+      const Q2 = MP3_QUALITY[o10.quality];
+      let left = m2.left, right = m2.right;
+      if (!Q2.stereo) {
+        left = new Float32Array(m2.left.length);
+        for (let i10 = 0; i10 < left.length; i10++) left[i10] = (m2.left[i10] + m2.right[i10]) / 2;
+        right = null;
+      }
+      const secs = left.length / m2.sr, bytes = await encodeMp3(left, right, m2.sr, Q2.kbps);
+      const { rights, fellBack } = exportRights2(roles), { lines } = creditsOf2(roles, rights);
+      const tag2 = id3v2({ title: st3().song.title || docName2(), artist: (st3().song.credits ?? "").split("\n").map((s10) => s10.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || void 0, software: `MoonSinger ${APP_VERSION}` });
+      const file = new File([tag2, bytes], `${stampedCopy(`${docName2()}${o10.scope === "segment" ? `-${fileSafe(st3().song.papers.find((p2) => p2.id === st3().at.paper)?.name || "\u8FD9\u4E00\u5F20")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
+      progress2("");
+      offerFile2(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${secs.toFixed(1)} \u79D2 \xB7 mp3 ${Q2.label} ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` + (fellBack ? `<div class="offer-msg">\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002</div>` : "") + creditsBlock2(lines, "\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E"));
+    } catch (e10) {
+      progress2("");
+      showError2(`\u5BFC\u51FA\u5931\u8D25\uFF1A${e10.message}`);
+    } finally {
+      exporting = false;
+    }
+  }
+  function jumpPlaybackToPaper2(id2) {
+    if (!engine2.playing && !preparing) return;
+    const span = host.viewScope() === "all" && engine2.playing ? playTl?.papers.find((x2) => x2.paper.id === id2) : void 0;
+    if (span && playTl) {
+      const r10 = playRange(playTl);
+      playMute = span.t0;
+      engine2.seek(clampTo(r10, span.t0 - PRE_ROLL), playMute);
+      return;
+    }
+    stopPlay2();
+    const go = () => {
+      if (preparing) setTimeout(go, 30);
+      else void startPlayback("head");
+    };
+    go();
+  }
+  async function previewTrack2(track, to2, label) {
+    engine2.channel("audition", { gainDb: 0, pan: 0, mute: false, solo: false });
+    playTl = null;
+    engine2.setTimeline({ tracks: [track], range: { from: 0, to: to2 }, loop: false });
+    try {
+      await engine2.play(0);
+      playIcon2(true);
+      progress2(`${label} \xB7 \u5F00\u5934 ${to2.toFixed(1)} \u79D2`);
+    } catch (e10) {
+      showError2(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`);
+    }
+  }
+  function onSongSwitch2() {
+    engine2.forget(chunkKeys.splice(0));
+    chunkFailed.clear();
+    chunkKeysWanted = [];
+    chunkPlans = /* @__PURE__ */ new Map();
+    singer2.cancelPending();
+    singer2.cancelInflight();
+    trimLanesForNewSong();
+  }
+  return {
+    humOpt: humOpt2,
+    resetLatencyLog: resetLatencyLog2,
+    playSong: playSong2,
+    curFlat: curFlat2,
+    songIn: songIn2,
+    audibleParts: audibleParts2,
+    micOf: micOf2,
+    channelOf: channelOf2,
+    pushChannels: pushChannels2,
+    lowestMidiOf: lowestMidiOf2,
+    songBpm: songBpm2,
+    performerInfo: performerInfo2,
+    prepare,
+    renderMixForTest: renderMixForTest2,
+    playRange,
+    tickOfCaret: tickOfCaret2,
+    barHeadTick,
+    startPlayback,
+    playPause: playPause2,
+    resumePlay: resumePlay2,
+    pausePlay,
+    replay,
+    playFromHere: playFromHere2,
+    playFromHead: playFromHead2,
+    playSeam: playSeam2,
+    stopPlay: stopPlay2,
+    setLoop: setLoop2,
+    schedulePlaybackRefresh: schedulePlaybackRefresh2,
+    schedulePrewarm: schedulePrewarm2,
+    prepareBank: prepareBank2,
+    exportRights: exportRights2,
+    exportSong: exportSong2,
+    resourceSnapshot: resourceSnapshot2,
+    trimLanesForNewSong,
+    onSongSwitch: onSongSwitch2,
+    jumpPlaybackToPaper: jumpPlaybackToPaper2,
+    previewTrack: previewTrack2,
+    budget: BUDGET2,
+    TURN_LEADS: TURN_LEADS2,
+    get loopOn() {
+      return loopOn;
+    },
+    get playTl() {
+      return playTl;
+    },
+    get preparing() {
+      return preparing;
+    },
+    get paused() {
+      return paused;
+    },
+    get startMark() {
+      return startMark;
+    },
+    get exporting() {
+      return exporting;
+    },
+    get mixBypass() {
+      return mixBypass;
+    },
+    set mixBypass(v) {
+      mixBypass = v;
+    },
+    get turnLead() {
+      return turnLead;
+    },
+    set turnLead(v) {
+      turnLead = v;
+    }
+  };
 }
 
 // src/engine/vowel-table.ts
@@ -26383,315 +27662,6 @@ function areaPath(b3, lo2 = -80, hi = 4) {
   let d3 = `M0,100`;
   for (let k2 = 0; k2 < b3.length; k2++) d3 += `L${(100 * (k2 + 0.5) / b3.length).toFixed(2)},${y2(b3[k2]).toFixed(2)}`;
   return d3 + "L100,100Z";
-}
-
-// src/ui/plugins.ts
-var PLUGIN_KINDS = ["eq", "comp", "reverb", "delay", "chorus", "gain"];
-var DEFAULT_EQ_ID = "eq";
-var pluginName = (kind) => FX_KINDS[kind]?.name ?? kind;
-var HOST_PARAMS = {
-  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: "\u81EA\u52A8\u4F4E\u5207" }],
-  delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: "\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09" }]
-};
-function fullParams(kind) {
-  return [...HOST_PARAMS[kind] ?? [], ...FX_KINDS[kind]?.params ?? []];
-}
-function defaults(kind) {
-  const p2 = {};
-  for (const d3 of fullParams(kind)) p2[d3.id] = d3.default;
-  return p2;
-}
-var paramsOf = (fx) => {
-  const p2 = { ...defaults(fx.kind), ...fx.params };
-  if ((fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.params.dry === void 0) p2.dry = Math.round((1 - p2.mix) * 100) / 100;
-  return p2;
-};
-var fullyWet = (fx) => (fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.on !== false && paramsOf(fx).dry === 0;
-var near = (a10, b3, e10 = 1e-3) => Math.abs(a10 - b3) <= e10;
-var r1 = (x2) => Math.round(x2 * 10) / 10;
-var knob01 = (...xs) => Math.round(Math.max(0, Math.min(1, xs.reduce((a10, b3) => a10 + b3, 0) / xs.length)) * 20) / 20;
-var nearestBeat = (b3) => b3 ? [0.5, 0.75, 1].reduce((a10, c10) => Math.abs(c10 - b3) < Math.abs(a10 - b3) ? c10 : a10) : 0.75;
-var pct = (v) => `${Math.round(v * 100)}%`;
-var clamp01 = (x2) => Math.max(0, Math.min(1, x2));
-var COMB_AVG_S = 1378 / 44100;
-var SR_REF = 48e3;
-var rt60OfRoom = (room) => 3 * COMB_AVG_S / -Math.log10(0.7 + 0.28 * clamp01(room));
-var roomOfRt60 = (t10) => clamp01((10 ** (-3 * COMB_AVG_S / Math.max(0.01, t10)) - 0.7) / 0.28);
-var dampKHz = (damp) => {
-  const a10 = 0.4 * clamp01(damp);
-  return a10 <= 1e-6 ? Infinity : -SR_REF * Math.log(a10) / (2 * Math.PI) / 1e3;
-};
-var dampOfKHz = (k2) => clamp01(Math.exp(-2 * Math.PI * k2 * 1e3 / SR_REF) / 0.4);
-var linDb = (x2) => x2 <= 1e-3 ? -60 : 20 * Math.log10(x2);
-var dbLin = (d3) => d3 <= -60 ? 0 : 10 ** (d3 / 20);
-var dbt = (d3) => d3 <= -60 ? "\u5173" : `${d3 > 0 ? "+" : ""}${d3.toFixed(1)} dB`;
-var PARAM_HINT = {
-  "eq.hpAuto": "\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\uFF08\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF09\uFF0C\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\u2014\u2014\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891",
-  "eq.hpHz": "\u4F4E\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0B\u7684\u90FD\u5207\u6389\u3002\u4EBA\u58F0\u5E38\u5728 80\u2013120 Hz\uFF0C\u94C3\u8FD9\u7C7B\u9AD8\u7684\u4E50\u5668\u53EF\u4EE5\u66F4\u9AD8\uFF1B\u6700\u5DE6 = \u5173",
-  "eq.lpHz": "\u9AD8\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u90FD\u5207\u6389\uFF0C\u53BB\u523A\u8033\u3001\u5636\u5636\u58F0\uFF1B\u6700\u5DE6 = \u5173",
-  "eq.lowDb": "\u4F4E\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0B\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u51CF = \u53BB\u95F7\u3001\u7ED9\u522B\u7684\u8F68\u8BA9\u51FA\u4F4E\u9891\uFF1B\u52A0 = \u52A0\u539A",
-  "eq.lowHz": "\u4F4E\u67B6\u7684\u8F6C\u6298\u9891\u7387\uFF1A\u4ECE\u8FD9\u91CC\u5F80\u4E0B\u7B97\u300C\u4F4E\u300D",
-  "eq.midDb": "\u4E2D\u5CF0\uFF1A\u5728\u4E00\u4E2A\u9891\u6BB5\u4E0A\u63A8 / \u6316\u591A\u5C11\u3002\u4E24\u6837\u4E1C\u897F\u7CCA\u5728\u4E00\u8D77\u65F6\uFF0C\u5728\u5176\u4E2D\u4E00\u4E2A\u4E0A\u6316\u4E00\u5200\u7ED9\u53E6\u4E00\u4E2A\u8BA9\u4F4D",
-  "eq.midHz": "\u4E2D\u5CF0\u7684\u4E2D\u5FC3\u9891\u7387\uFF1A\u63A8 / \u6316\u7684\u662F\u54EA\u4E00\u6BB5",
-  "eq.midQ": "\u4E2D\u5CF0\u7684\u5BBD\u7A84\uFF1AQ \u8D8A\u5927\u8D8A\u7A84\uFF081 \u2248 \u4E00\u4E2A\u591A\u516B\u5EA6\u5BBD\uFF0C4 \u2248 \u5C0F\u534A\u4E2A\u516B\u5EA6\uFF09",
-  "eq.highDb": "\u9AD8\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0A\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u52A0 = \u4EAE\u3001\u51CF = \u6697",
-  "eq.highHz": "\u9AD8\u67B6\u7684\u8F6C\u6298\u9891\u7387\uFF1A\u4ECE\u8FD9\u91CC\u5F80\u4E0A\u7B97\u300C\u9AD8\u300D",
-  "comp.thresholdDb": "\u9608\u503C\uFF1A\u58F0\u97F3\u8D85\u8FC7\u8FD9\u4E2A\u7535\u5E73\u624D\u5F00\u59CB\u538B\uFF1B\u8D8A\u4F4E\uFF0C\u538B\u5230\u7684\u8D8A\u591A",
-  "comp.ratio": "\u6BD4\u4F8B\uFF1A\u8D85\u8FC7\u9608\u503C\u7684\u90E8\u5206\u538B\u6210\u51E0\u5206\u4E4B\u4E00\uFF084:1 = \u8D85\u51FA 4 dB \u7684\u53EA\u5269 1 dB\uFF09",
-  "comp.attackMs": "\u8D77\u538B\uFF1A\u8D85\u8FC7\u9608\u503C\u4E4B\u540E\u591A\u5FEB\u538B\u4E0B\u53BB\u3002\u77ED = \u8FDE\u5B57\u5934\u4E00\u8D77\u538B\u5E73\uFF1B\u957F = \u8BA9\u5B57\u5934\u5148\u51B2\u51FA\u6765\u3001\u66F4\u6709\u52B2",
-  "comp.releaseMs": "\u653E\u5F00\uFF1A\u58F0\u97F3\u843D\u56DE\u9608\u503C\u4EE5\u4E0B\u4E4B\u540E\u591A\u5FEB\u677E\u5F00\u3002\u592A\u77ED\u4F1A\u4E00\u62BD\u4E00\u62BD\u7684\uFF0C\u592A\u957F\u4E0B\u4E00\u4E2A\u5B57\u4E5F\u88AB\u538B\u7740",
-  "comp.kneeDb": "\u62D0\u70B9\uFF1A\u9608\u503C\u9644\u8FD1\u8FD9\u4E48\u5BBD\u7684\u4E00\u6BB5\u91CC\u6162\u6162\u5F00\u59CB\u538B\uFF08\u8F6F\uFF09\uFF1B0 = \u4E00\u5230\u9608\u503C\u5C31\u538B\uFF08\u786C\uFF09",
-  "comp.makeupDb": "\u8865\u507F\uFF1A\u538B\u5B8C\u6574\u4F53\u52A0\u56DE\u6765\u591A\u5C11\uFF08\u538B\u7F29\u4F1A\u8BA9\u6574\u4F53\u53D8\u8F7B\uFF09",
-  "reverb.room": "\u6DF7\u54CD\u65F6\u95F4\uFF08RT60\uFF09\uFF1A\u58F0\u97F3\u505C\u4E86\u4E4B\u540E\uFF0C\u5C3E\u5DF4\u8870\u51CF 60 dB \u8981\u591A\u4E45\u3002\u5C0F\u623F\u95F4\u4E0D\u5230 1 \u79D2\uFF0C\u5927\u5385 2\u20133 \u79D2\uFF0C\u6559\u5802\u66F4\u957F",
-  "reverb.damp": "\u9AD8\u9891\u4ECE\u8FD9\u91CC\u5F00\u59CB\u8870\u51CF\uFF1A\u771F\u5B9E\u7684\u623F\u95F4\u91CC\u9AD8\u9891\u88AB\u5438\u6536\u5F97\u5FEB\uFF0C\u5C3E\u5DF4\u8D8A\u5F80\u540E\u8D8A\u6697\uFF1B\u6570\u8D8A\u4F4E\u8D8A\u6697",
-  "reverb.mix": "\u6E7F\uFF1A\u6DF7\u54CD\u7684\u58F0\u97F3\u6709\u591A\u54CD",
-  "reverb.dry": "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173",
-  "reverb.preDelayMs": "\u9884\u5EF6\u8FDF\uFF1A\u539F\u58F0\u4E4B\u540E\u8FC7\u591A\u4E45\u6DF7\u54CD\u624D\u8FDB\u6765\u3002\u62C9\u5F00\u4E00\u70B9\uFF0C\u4EBA\u58F0\u66F4\u6E05\u695A\u3001\u4E0D\u88AB\u7CCA\u4F4F",
-  "reverb.width": "\u5BBD\u5EA6\uFF1A\u6DF7\u54CD\u5728\u5DE6\u53F3\u94FA\u591A\u5F00",
-  "delay.syncBeats": "\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\uFF0C\u6309\u6B4C\u7684\u901F\u5EA6\u7B97\u65F6\u95F4\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2",
-  "delay.timeMs": "\u65F6\u95F4\uFF1A\u6BCF\u6B21\u56DE\u58F0\u9694\u591A\u4E45",
-  "delay.feedback": "\u6BCF\u6B21\u56DE\u58F0\uFF1A\u6BCF\u91CD\u590D\u4E00\u6B21\u8F7B\u591A\u5C11 dB\uFF1B\u8D8A\u63A5\u8FD1 0\uFF0C\u56DE\u58F0\u8D8A\u4E45",
-  "delay.mix": "\u6E7F\uFF1A\u56DE\u58F0\u6709\u591A\u54CD",
-  "delay.dry": "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173",
-  "delay.dampHz": "\u53CD\u9988\u9AD8\u5207\uFF1A\u6BCF\u6B21\u56DE\u58F0\u90FD\u628A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u524A\u6389\u4E00\u70B9\uFF0C\u8D8A\u5F80\u540E\u8D8A\u6697\uFF08\u50CF\u771F\u7684\u56DE\u58F0\uFF09",
-  "chorus.voices": "\u51E0\u6761\uFF1A\u540C\u65F6\u6709\u51E0\u4E2A\u7A0D\u5FAE\u9519\u5F00\u7684\u526F\u672C",
-  "chorus.delayMs": "\u5EF6\u8FDF\uFF1A\u526F\u672C\u6BD4\u539F\u58F0\u665A\u591A\u5C11",
-  "chorus.depthMs": "\u6296\u52A8\u6DF1\u5EA6\uFF1A\u526F\u672C\u7684\u5EF6\u8FDF\u6765\u56DE\u6643\u591A\u5927\u2014\u2014\u6643 = \u97F3\u9AD8\u8F7B\u5FAE\u8D77\u4F0F\uFF0C\u50CF\u597D\u51E0\u4E2A\u4EBA\u5531\u4E0D\u9F50",
-  "chorus.rateHz": "\u6296\u52A8\u5FEB\u6162\uFF1A\u6BCF\u79D2\u6643\u51E0\u6B21",
-  "chorus.spread": "\u5DE6\u53F3\u94FA\u5F00\uFF1A\u526F\u672C\u6446\u5F97\u591A\u5F00",
-  "chorus.mix": "\u6E7F\uFF1A\u526F\u672C\u6709\u591A\u54CD",
-  "chorus.dry": "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173",
-  "gain.dB": "\u589E\u76CA\uFF1A\u5355\u7EAF\u8C03\u5927\u8C03\u5C0F\uFF08\u524D\u9762\u7684\u63D2\u4EF6\u628A\u97F3\u91CF\u6539\u4E86\uFF0C\u7528\u5B83\u8865\u56DE\u6765\uFF09"
-};
-function paramView(kind, d3) {
-  return { hint: PARAM_HINT[`${kind}.${d3.id}`] ?? d3.label, ...paramView0(kind, d3) };
-}
-function paramView0(kind, d3) {
-  const key = `${kind}.${d3.id}`;
-  if (key === "reverb.room") return { label: "\u6DF7\u54CD\u65F6\u95F4\uFF08RT60\uFF09", min: 0.6, max: 10, step: 0.1, toV: roomOfRt60, toS: rt60OfRoom, fmt: (v) => `${rt60OfRoom(v).toFixed(1)} s` };
-  if (key === "reverb.damp") return { label: "\u9AD8\u9891\u4ECE\u8FD9\u91CC\u5F00\u59CB\u8870\u51CF", min: 7, max: 20, step: 0.1, toV: (k2) => k2 >= 20 ? 0 : dampOfKHz(k2), toS: (v) => Math.min(20, dampKHz(v)), fmt: (v) => dampKHz(v) >= 20 ? "\u4E0D\u8870\u51CF\uFF0820 kHz \u4EE5\u4E0A\uFF09" : `${dampKHz(v).toFixed(1)} kHz` };
-  if (d3.id === "mix" || d3.id === "dry") return { label: d3.id === "mix" ? "\u6E7F\uFF08\u6548\u679C\uFF09" : "\u539F\u58F0", min: -60, max: 0, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => dbt(linDb(v)) };
-  if (key === "delay.feedback") return { label: "\u6BCF\u6B21\u56DE\u58F0", min: -40, max: -0.5, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => `${linDb(v).toFixed(1)} dB / \u6B21` };
-  if (key === "reverb.width") return { label: "\u5BBD\u5EA6\uFF080 = \u5355\u58F0\u9053\uFF0C100% = \u5DE6\u53F3\u94FA\u6EE1\uFF09", min: 0, max: 1, step: 0.01, toV: (x2) => x2, toS: (x2) => x2, fmt: pct };
-  if (key === "chorus.spread") return { label: "\u5DE6\u53F3\u94FA\u5F00\uFF080 = \u90FD\u5728\u4E2D\u95F4\uFF0C100% = \u94FA\u5230\u4E24\u8FB9\uFF09", min: 0, max: 1, step: 0.01, toV: (x2) => x2, toS: (x2) => x2, fmt: pct };
-  if (d3.unit === "Hz") {
-    const lo2 = Math.max(20, d3.min || 20), hi = d3.max, offable = d3.min === 0, L2 = Math.log(lo2), H2 = Math.log(hi);
-    return {
-      label: d3.label,
-      min: offable ? -0.02 : 0,
-      max: 1,
-      step: 2e-3,
-      toV: (x2) => offable && x2 < 0 ? 0 : Math.round(Math.exp(L2 + Math.max(0, x2) * (H2 - L2))),
-      toS: (v) => offable && v <= 0 ? -0.02 : (Math.log(Math.max(lo2, v)) - L2) / (H2 - L2),
-      fmt: (v) => v <= 0 ? "\u5173" : v >= 1e3 ? `${(v / 1e3).toFixed(v >= 1e4 ? 1 : 2)} kHz` : `${Math.round(v)} Hz`
-    };
-  }
-  const step = d3.unit === "dB" ? 0.5 : d3.unit === "ms" ? d3.max > 500 ? 5 : 0.5 : d3.unit === "0..1" ? 0.01 : d3.unit === "ratio" ? d3.max <= 4 ? 1 : 0.1 : 1;
-  const fmt = (v) => d3.unit === "dB" ? dbt(v) : d3.unit === "ms" ? `${v} ms` : d3.unit === "0..1" ? pct(v) : d3.unit === "ratio" ? d3.id === "ratio" ? `${v}:1` : d3.id === "voices" ? `${v} \u6761` : d3.id === "midQ" ? `Q ${v}` : String(v) : String(v);
-  return { label: d3.label, min: d3.min, max: d3.max, step, toV: (x2) => x2, toS: (x2) => x2, fmt };
-}
-var TILT_DB = 6;
-var TILT_LO = 300;
-var TILT_HI = 3e3;
-var EQ_SIMPLE = {
-  controls: [
-    { id: "autoLow", label: "\u81EA\u52A8\u4F4E\u5207", hint: "\u5207\u6389\u8FD9\u4E2A\u58F0\u90E8\u7528\u4E0D\u7740\u7684\u4F4E\u9891\uFF1A\u4F4E\u5207\u653E\u5728\u5B83\u6700\u4F4E\u7684\u97F3\u5F80\u4E0B\u4E00\u70B9", kind: "toggle" },
-    { id: "tilt", label: "\u539A \u2194 \u4EAE", hint: "\u5F80\u5DE6 = \u539A\uFF08\u4F4E\u7684\u591A\u4E00\u70B9\u3001\u9AD8\u7684\u5C11\u4E00\u70B9\uFF09\uFF0C\u5F80\u53F3 = \u4EAE\uFF1B\u4E2D\u95F4 = \u4E0D\u52A8", kind: "knob", min: -1, max: 1, step: 0.05, fmt: (v) => near(v, 0, 0.01) ? "\u5E73" : v < 0 ? `\u539A ${Math.round(-v * TILT_DB * 10) / 10} dB` : `\u4EAE ${Math.round(v * TILT_DB * 10) / 10} dB` }
-  ],
-  read(p2) {
-    if (p2.midDb !== 0 || p2.lpHz !== 0 || !p2.hpAuto && p2.hpHz !== 0) return null;
-    const flat = p2.lowDb === 0 && p2.highDb === 0, tilt = near(p2.lowHz, TILT_LO) && near(p2.highHz, TILT_HI) && near(p2.lowDb, -p2.highDb);
-    if (!flat && !tilt) return null;
-    return { autoLow: p2.hpAuto ? 1 : 0, tilt: flat ? 0 : p2.highDb / TILT_DB };
-  },
-  write(v, p2) {
-    const t10 = Math.max(-1, Math.min(1, v.tilt ?? 0));
-    return { ...p2, hpAuto: v.autoLow ? 1 : 0, hpHz: 0, lpHz: 0, midDb: 0, lowHz: TILT_LO, highHz: TILT_HI, lowDb: r1(-t10 * TILT_DB), highDb: r1(t10 * TILT_DB) };
-  },
-  /** 低切开着（自动或手调）= 自动低切；高架减低架的一半 = 倾斜；中峰 / 高切丢掉。 */
-  project(p2) {
-    return { autoLow: p2.hpAuto || p2.hpHz > 0 ? 1 : 0, tilt: Math.round(Math.max(-1, Math.min(1, (p2.highDb - p2.lowDb) / (2 * TILT_DB))) * 20) / 20 };
-  }
-};
-var compOf = (a10, keyed = false) => {
-  const thr = -6 - 30 * a10, ratio = 1.5 + 4.5 * a10;
-  return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: keyed ? 0 : r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) };
-};
-var compSimple = (keyed) => ({
-  controls: [{ id: "amount", label: keyed ? "\u8BA9\u591A\u5C11" : "\u538B\u591A\u5C11", hint: keyed ? "\u88AB\u90A3\u6761\u8F68\u538B\uFF1A\u5B83\u4E00\u54CD\uFF0C\u8FD9\u6761\u5C31\u8BA9\u51FA\u6765\uFF1B\u5F80\u53F3 = \u8BA9\u5F97\u8D8A\u591A\uFF08\u4E0D\u8865\u507F\uFF1A\u5B83\u4E0D\u54CD\u7684\u65F6\u5019\u8FD9\u6761\u7167\u63A8\u5B50\u7684\u97F3\u91CF\uFF09" : "\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73\uFF1A\u5F80\u53F3 = \u538B\u5F97\u8D8A\u72E0\uFF08\u54CD\u7684\u5B57\u538B\u4E0B\u6765\u3001\u8F7B\u7684\u76F8\u5BF9\u663E\u51FA\u6765\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a10) => {
-    const c10 = compOf(a10, keyed);
-    return `${c10.thresholdDb} dB \u8D77\u538B \xB7 ${c10.ratio}:1`;
-  } }],
-  read(p2) {
-    const a10 = (-p2.thresholdDb - 6) / 30;
-    if (a10 < -1e-3 || a10 > 1 + 1e-3) return null;
-    const c10 = compOf(a10, keyed);
-    return near(p2.ratio, c10.ratio, 0.06) && p2.attackMs === c10.attackMs && p2.releaseMs === c10.releaseMs && p2.kneeDb === c10.kneeDb && near(p2.makeupDb, c10.makeupDb, 0.06) ? { amount: Math.round(a10 * 20) / 20 } : null;
-  },
-  write(v, p2) {
-    return { ...p2, ...compOf(Math.max(0, Math.min(1, v.amount ?? 0)), keyed) };
-  },
-  project(p2) {
-    return { amount: knob01((-p2.thresholdDb - 6) / 30, (p2.ratio - 1.5) / 4.5) };
-  }
-});
-var COMP_SIMPLE = compSimple(false);
-var COMP_SIMPLE_KEYED = compSimple(true);
-var revOf = (d3) => ({ mix: r1((0.08 + 0.4 * d3) * 100) / 100, dry: 1, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
-var REV_SIMPLE = {
-  controls: [{ id: "far", label: "\u8FDC\u8FD1", hint: "\u5F80\u53F3 = \u8D8A\u8FDC\u3001\u8D8A\u5927\u7684\u623F\u95F4\uFF08\u94C3\u53EF\u4EE5\u8FDC\u4E00\u70B9\uFF0C\u8D34\u8033\u7684\u4EBA\u58F0\u8FD1\u4E00\u70B9\uFF09\uFF1B\u539F\u58F0\u4E0D\u52A8\uFF0C\u53EA\u5F80\u4E0A\u52A0\u6DF7\u54CD", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d3) => {
-    const c10 = revOf(d3);
-    return `\u6E7F ${dbt(linDb(c10.mix))} \xB7 ${rt60OfRoom(c10.room).toFixed(1)} s`;
-  } }],
-  read(p2) {
-    const d3 = (p2.mix - 0.08) / 0.4, c10 = revOf(d3);
-    return d3 >= -1e-3 && d3 <= 1 + 1e-3 && p2.dry === 1 && near(p2.room, c10.room, 6e-3) && p2.damp === 0.5 && p2.preDelayMs === 10 && p2.width === 1 ? { far: Math.round(d3 * 20) / 20 } : null;
-  },
-  write(v, p2) {
-    return { ...p2, ...revOf(Math.max(0, Math.min(1, v.far ?? 0))) };
-  },
-  project(p2) {
-    return { far: knob01((p2.mix - 0.08) / 0.4, (p2.room - 0.3) / 0.65) };
-  }
-};
-var dlyOf = (e10) => ({ mix: r1((0.1 + 0.4 * e10) * 100) / 100, dry: 1, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3 });
-var DLY_SIMPLE = {
-  controls: [
-    { id: "echo", label: "\u56DE\u58F0\u591A\u5C11", hint: "\u5F80\u53F3 = \u56DE\u58F0\u8D8A\u54CD\u3001\u8D8A\u4E45\uFF1B\u539F\u58F0\u4E0D\u52A8", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e10) => {
-      const c10 = dlyOf(e10);
-      return `\u6E7F ${dbt(linDb(c10.mix))} \xB7 \u6BCF\u6B21 ${linDb(c10.feedback).toFixed(1)} dB`;
-    } },
-    { id: "beats", label: "\u51E0\u62CD\u4E00\u6B21", hint: "\u56DE\u58F0\u548C\u62CD\u5B50\u5BF9\u9F50\uFF08\u8DDF\u7740\u6B4C\u7684\u901F\u5EA6\uFF09", kind: "choice", choices: [{ v: 0.5, label: "\u516B\u5206" }, { v: 0.75, label: "\u9644\u70B9\u516B\u5206" }, { v: 1, label: "\u56DB\u5206" }] }
-  ],
-  read(p2) {
-    const e10 = (p2.mix - 0.1) / 0.4, c10 = dlyOf(e10);
-    return e10 >= -1e-3 && e10 <= 1 + 1e-3 && p2.dry === 1 && near(p2.feedback, c10.feedback, 6e-3) && p2.dampHz === 6e3 && [0.5, 0.75, 1].includes(p2.syncBeats) ? { echo: Math.round(e10 * 20) / 20, beats: p2.syncBeats } : null;
-  },
-  write(v, p2) {
-    return { ...p2, ...dlyOf(Math.max(0, Math.min(1, v.echo ?? 0))), syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
-  },
-  project(p2) {
-    return { echo: knob01((p2.mix - 0.1) / 0.4, (p2.feedback - 0.15) / 0.5), beats: nearestBeat(p2.syncBeats) };
-  }
-};
-var choOf = (w2) => ({ mix: r1((0.2 + 0.4 * w2) * 100) / 100, dry: 1, depthMs: r1(1 + 4 * w2), spread: r1((0.4 + 0.6 * w2) * 100) / 100, voices: 3, delayMs: 18, rateHz: 0.6 });
-var CHO_SIMPLE = {
-  controls: [{ id: "wide", label: "\u5BBD", hint: "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF1B\u539F\u58F0\u4E0D\u52A8", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (w2) => {
-    const c10 = choOf(w2);
-    return `\u6E7F ${dbt(linDb(c10.mix))} \xB7 \u6296\u52A8 ${c10.depthMs} ms`;
-  } }],
-  read(p2) {
-    const w2 = (p2.mix - 0.2) / 0.4, c10 = choOf(w2);
-    return w2 >= -1e-3 && w2 <= 1 + 1e-3 && p2.dry === 1 && near(p2.depthMs, c10.depthMs, 0.06) && near(p2.spread, c10.spread, 6e-3) && p2.voices === 3 && p2.delayMs === 18 && p2.rateHz === 0.6 ? { wide: Math.round(w2 * 20) / 20 } : null;
-  },
-  write(v, p2) {
-    return { ...p2, ...choOf(Math.max(0, Math.min(1, v.wide ?? 0))) };
-  },
-  project(p2) {
-    return { wide: knob01((p2.mix - 0.2) / 0.4, (p2.depthMs - 1) / 4, (p2.spread - 0.4) / 0.6) };
-  }
-};
-var GAIN_SIMPLE = {
-  controls: [{ id: "dB", label: "\u589E\u76CA", hint: "\u63D2\u4EF6\u94FE\u4E2D\u95F4\u5355\u7EAF\u8C03\u5927\u8C03\u5C0F\uFF08\u524D\u9762\u7684\u63D2\u4EF6\u628A\u97F3\u91CF\u6539\u4E86\uFF0C\u7528\u5B83\u8865\u56DE\u6765\uFF09", kind: "knob", min: -24, max: 12, step: 0.5, fmt: (v) => `${v > 0 ? "+" : ""}${v.toFixed(1)} dB` }],
-  read(p2) {
-    return { dB: p2.dB };
-  },
-  write(v, p2) {
-    return { ...p2, dB: v.dB ?? 0 };
-  },
-  project(p2) {
-    return { dB: p2.dB };
-  }
-};
-var SIMPLE = { eq: EQ_SIMPLE, comp: COMP_SIMPLE, reverb: REV_SIMPLE, delay: DLY_SIMPLE, chorus: CHO_SIMPLE, gain: GAIN_SIMPLE };
-var wet1 = (p2) => p2.mix === 1 && p2.dry === 0;
-var SIMPLE_BUS = {
-  reverb: {
-    controls: [{ id: "size", label: "\u6DF7\u54CD\u65F6\u95F4", hint: "\u5C3E\u5DF4\u8870\u51CF 60 dB \u8981\u591A\u4E45\uFF08RT60\uFF09\uFF1A\u5F80\u53F3 = \u8D8A\u5927\u7684\u623F\u95F4\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d3) => `${rt60OfRoom(0.3 + 0.65 * d3).toFixed(1)} s` }],
-    read(p2) {
-      const d3 = (p2.room - 0.3) / 0.65;
-      return wet1(p2) && d3 >= -1e-3 && d3 <= 1 + 1e-3 && p2.damp === 0.5 && p2.preDelayMs === 10 && p2.width === 1 ? { size: Math.round(d3 * 20) / 20 } : null;
-    },
-    write(v, p2) {
-      const d3 = Math.max(0, Math.min(1, v.size ?? 0));
-      return { ...p2, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1, dry: 0 };
-    },
-    project(p2) {
-      return { size: knob01((p2.room - 0.3) / 0.65) };
-    }
-  },
-  delay: {
-    controls: [{ id: "echo", label: "\u56DE\u58F0\u591A\u957F", hint: "\u5F80\u53F3 = \u56DE\u58F0\u91CD\u590D\u5F97\u8D8A\u4E45\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e10) => `\u6BCF\u6B21 ${linDb(0.15 + 0.5 * e10).toFixed(1)} dB` }, DLY_SIMPLE.controls[1]],
-    read(p2) {
-      const e10 = (p2.feedback - 0.15) / 0.5;
-      return wet1(p2) && e10 >= -1e-3 && e10 <= 1 + 1e-3 && p2.dampHz === 6e3 && [0.5, 0.75, 1].includes(p2.syncBeats) ? { echo: Math.round(e10 * 20) / 20, beats: p2.syncBeats } : null;
-    },
-    write(v, p2) {
-      const e10 = Math.max(0, Math.min(1, v.echo ?? 0));
-      return { ...p2, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3, mix: 1, dry: 0, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
-    },
-    project(p2) {
-      return { echo: knob01((p2.feedback - 0.15) / 0.5), beats: nearestBeat(p2.syncBeats) };
-    }
-  },
-  chorus: {
-    controls: [{ ...CHO_SIMPLE.controls[0], hint: "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", fmt: (w2) => `\u6296\u52A8 ${choOf(w2).depthMs} ms` }],
-    read(p2) {
-      const w2 = (p2.depthMs - 1) / 4;
-      return wet1(p2) && w2 >= -1e-3 && w2 <= 1 + 1e-3 && near(p2.spread, r1((0.4 + 0.6 * w2) * 100) / 100, 6e-3) && p2.voices === 3 && p2.delayMs === 18 && p2.rateHz === 0.6 ? { wide: Math.round(w2 * 20) / 20 } : null;
-    },
-    write(v, p2) {
-      const w2 = Math.max(0, Math.min(1, v.wide ?? 0));
-      return { ...p2, ...choOf(w2), mix: 1, dry: 0 };
-    },
-    project(p2) {
-      return { wide: knob01((p2.depthMs - 1) / 4, (p2.spread - 0.4) / 0.6) };
-    }
-  }
-};
-var simpleView = (kind, onBus = false, keyed = false) => (kind === "comp" && keyed ? COMP_SIMPLE_KEYED : void 0) ?? (onBus ? SIMPLE_BUS[kind] : void 0) ?? SIMPLE[kind];
-var viewOfFx = (fx, onBus = false) => simpleView(fx.kind, onBus, !!fx.key);
-function projectToSimple(kind, onBus, p2, keyed = false) {
-  const v = simpleView(kind, onBus, keyed);
-  return v ? v.write(v.project(p2), p2) : p2;
-}
-function freshParams(kind, onBus = false) {
-  const p2 = defaults(kind), s10 = SIMPLE[kind];
-  if (onBus && kind === "reverb") return SIMPLE_BUS.reverb.write({ size: 0.5 }, p2);
-  if (onBus && kind === "delay") return SIMPLE_BUS.delay.write({ echo: 0.3, beats: 0.75 }, p2);
-  if (onBus && kind === "chorus") return SIMPLE_BUS.chorus.write({ wide: 0.4 }, p2);
-  if (kind === "eq") return s10.write({ autoLow: 0, tilt: 0 }, p2);
-  if (kind === "comp") return s10.write({ amount: 0.3 }, p2);
-  if (kind === "reverb") return s10.write({ far: 0.4 }, p2);
-  if (kind === "delay") return s10.write({ echo: 0.3, beats: 0.75 }, p2);
-  if (kind === "chorus") return s10.write({ wide: 0.4 }, p2);
-  return p2;
-}
-function fxSummary(fx, onBus = false) {
-  const view2 = viewOfFx(fx, onBus), p2 = paramsOf(fx), s10 = view2?.read(p2), name = pluginName(fx.kind);
-  if (fx.on === false) return `${name}\uFF08\u5173\uFF09`;
-  if (!s10) return `${name}\uFF08\u5168\u91CF\uFF09`;
-  if (fx.kind === "eq") return `${name}${s10.autoLow ? " \u4F4E\u5207" : ""}${near(s10.tilt, 0, 0.01) ? s10.autoLow ? "" : "\uFF08\u5E73\uFF09" : s10.tilt < 0 ? " \u539A" : " \u4EAE"}`;
-  const c10 = view2.controls[0];
-  return `${name} ${c10.fmt ? c10.fmt(s10[c10.id]) : s10[c10.id]}`;
-}
-function autoLowCutHz(lowestMidi) {
-  if (lowestMidi === null) return 0;
-  const hz = 440 * 2 ** ((lowestMidi - 69 - 4) / 12);
-  return Math.round(Math.max(20, Math.min(300, hz)));
-}
-function resolveChain(chain, ctx2) {
-  return chain.map((fx) => {
-    if (fx.kind === "eq" && fx.params.hpAuto) {
-      const { hpAuto: _a2, ...rest } = fx.params;
-      return { ...fx, params: { ...rest, hpHz: autoLowCutHz(ctx2.lowestMidi) } };
-    }
-    if (fx.kind === "delay" && fx.params.syncBeats) {
-      const { syncBeats: _b2, ...rest } = fx.params;
-      return { ...fx, params: { ...rest, timeMs: Math.min(2e3, Math.round(6e4 / ctx2.bpm * fx.params.syncBeats)) } };
-    }
-    return fx;
-  });
 }
 
 // src/ui/param-row.ts
@@ -27803,23 +28773,6 @@ function consumeLaunchFiles(cb2) {
 
 // src/app/main.ts
 init_fflate_esm();
-
-// src/app/names.ts
-function defaultStem(now2 = /* @__PURE__ */ new Date()) {
-  const z2 = (n10) => String(n10).padStart(2, "0");
-  let r10;
-  try {
-    r10 = crypto.getRandomValues(new Uint16Array(1))[0];
-  } catch {
-    r10 = Math.floor(Math.random() * 65536);
-  }
-  return `${now2.getFullYear()}${z2(now2.getMonth() + 1)}${z2(now2.getDate())}-${r10.toString(16).padStart(4, "0")}`;
-}
-var fileSafe = (s10) => s10.replace(/[\\/:*?"<>|\u0000-\u001f]/g, "").trim();
-function stampedCopy(stem, now2 = /* @__PURE__ */ new Date()) {
-  const z2 = (n10) => String(n10).padStart(2, "0");
-  return `${stem}-${now2.getFullYear()}${z2(now2.getMonth() + 1)}${z2(now2.getDate())}-${z2(now2.getHours())}${z2(now2.getMinutes())}`;
-}
 
 // src/config.ts
 var APP_ID = "moonsinger";
@@ -36951,58 +37904,6 @@ function createReferenceHost(d3) {
   };
 }
 
-// src/ui/render-progress.ts
-var RenderProgress = class {
-  el;
-  fill;
-  cur;
-  total = 0;
-  done = 0;
-  constructor(parent) {
-    this.el = document.createElement("div");
-    this.el.className = "render-bar";
-    this.el.hidden = true;
-    this.el.setAttribute("role", "progressbar");
-    this.fill = document.createElement("div");
-    this.fill.className = "rb-fill";
-    this.cur = document.createElement("div");
-    this.cur.className = "rb-cur";
-    this.el.append(this.fill, this.cur);
-    parent.append(this.el);
-  }
-  /** 开始：一共几格。 */
-  start(units) {
-    this.total = Math.max(1, units);
-    this.done = 0;
-    this.el.hidden = false;
-    this.draw(null);
-  }
-  /** 当前这一格知道百分比了（0–1；下载）。null = 不知道（条纹）。 */
-  frac(f2) {
-    if (!this.el.hidden) this.draw(f2);
-  }
-  /** 这一格做完。 */
-  next() {
-    this.done = Math.min(this.total, this.done + 1);
-    this.draw(null);
-  }
-  /** 收起。 */
-  end() {
-    this.el.hidden = true;
-  }
-  get running() {
-    return !this.el.hidden;
-  }
-  draw(f2) {
-    const w2 = 100 / this.total, left = this.done * w2;
-    this.fill.style.width = `${left + (f2 !== null ? f2 * w2 : 0)}%`;
-    this.cur.style.left = `${left}%`;
-    this.cur.style.width = `${this.done < this.total ? w2 : 0}%`;
-    this.cur.classList.toggle("known", f2 !== null);
-    this.el.setAttribute("aria-valuenow", String(Math.round(left + (f2 ?? 0) * w2)));
-  }
-};
-
 // src/export/pdf.ts
 init_fflate_esm();
 var enc2 = new TextEncoder();
@@ -38138,48 +39039,6 @@ function fromJianpu(text2, fifths) {
 }
 var fifthsAtSel = (st3) => keyAt(tr(st3), st3.sel ? st3.sel.from : Math.max(0, st3.caret - 1));
 
-// src/score/history.ts
-var LIMIT = 200;
-var COALESCE_MS = 1500;
-var emptyHistory = () => ({ past: [], future: [], lastKey: null, lastAt: 0 });
-var snapOf = (st3, extras, locus) => ({ song: st3.song, extras, at: st3.at, caret: st3.caret, sel: st3.sel, locus });
-var applySnap = (st3, s10) => ({ ...st3, song: s10.song, at: s10.at, caret: s10.caret, sel: s10.sel, log: [] });
-function record2(h2, prev, prevExtras, gesture, now2, locus) {
-  if (gesture && gesture === h2.lastKey && now2 - h2.lastAt < COALESCE_MS && h2.past.length) {
-    const last = h2.past[h2.past.length - 1];
-    return { ...h2, past: [...h2.past.slice(0, -1), { ...last, locus }], future: [], lastAt: now2 };
-  }
-  const snap = snapOf(prev, prevExtras, locus);
-  const past = h2.past.length >= LIMIT ? [...h2.past.slice(1), snap] : [...h2.past, snap];
-  return { past, future: [], lastKey: gesture, lastAt: now2 };
-}
-function undo(h2, cur, curExtras) {
-  if (!h2.past.length) return null;
-  const snap = h2.past[h2.past.length - 1];
-  return { h: { past: h2.past.slice(0, -1), future: [...h2.future, snapOf(cur, curExtras, snap.locus)], lastKey: null, lastAt: 0 }, st: applySnap(cur, snap), extras: snap.extras, locus: snap.locus };
-}
-function redo(h2, cur, curExtras) {
-  if (!h2.future.length) return null;
-  const snap = h2.future[h2.future.length - 1];
-  return { h: { past: [...h2.past, snapOf(cur, curExtras, snap.locus)], future: h2.future.slice(0, -1), lastKey: null, lastAt: 0 }, st: applySnap(cur, snap), extras: snap.extras, locus: snap.locus };
-}
-var body = (song, at2) => trackOf(song, at2.paper, at2.part).filter((t10) => t10.kind !== "key" && t10.kind !== "time" && t10.kind !== "tempo");
-function describeSongChange(prev, next2) {
-  const a10 = prev.song, b3 = next2.song;
-  if (a10.papers.length !== b3.papers.length) return { kind: "paper", label: b3.papers.length > a10.papers.length ? "\u52A0\u4E86\u4E00\u5F20\u7EB8" : "\u5220\u4E86\u4E00\u5F20\u7EB8" };
-  if (a10.parts.length !== b3.parts.length) return { kind: "score", label: b3.parts.length > a10.parts.length ? "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8" : "\u5220\u4E86\u4E00\u4E2A\u58F0\u90E8" };
-  if (a10.parts.some((p2, k2) => p2.id !== b3.parts[k2]?.id)) return { kind: "score", label: "\u632A\u4E86\u58F0\u90E8\u987A\u5E8F" };
-  const d3 = body(b3, prev.at).length - body(a10, prev.at).length;
-  if (d3 > 0) return { kind: "score", label: `\u5199\u4E86 ${d3} \u4E2A` };
-  if (d3 < 0) return { kind: "score", label: `\u5220\u4E86 ${-d3} \u4E2A` };
-  if ((a10.title ?? "") !== (b3.title ?? "")) return { kind: "score", label: "\u6539\u6B4C\u540D" };
-  if ((a10.credits ?? "") !== (b3.credits ?? "")) return { kind: "score", label: "\u6539\u4F5C\u8005\u680F" };
-  const pa = a10.papers.find((p2) => p2.id === prev.at.paper), pb = b3.papers.find((p2) => p2.id === prev.at.paper);
-  if (pa && pb && !!pa.hidden !== !!pb.hidden) return { kind: "paper", label: pb.hidden ? "\u9690\u85CF\u4E86\u8FD9\u5F20\u7EB8" : "\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8" };
-  if (pa && pb && pa.name !== pb.name) return { kind: "paper", label: "\u6539\u66F2\u6BB5\u540D" };
-  return { kind: "score", label: "\u6539" };
-}
-
 // src/score/desk.ts
 var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
@@ -38304,7 +39163,7 @@ doc.saved.lounge = loungeKey();
 var curPart = () => st2.song.parts.find((p2) => p2.id === st2.at.part) ?? st2.song.parts[0];
 var ignoredFor = (role) => {
   const sp2 = activePerfSpec(doc.extras, role);
-  return ignoredArts(activeInstrument(doc.extras, role)?.engine, sp2.gapSec, sp2.canSwell);
+  return ignoredArts(performerOf(activeInstrument(doc.extras, role)?.engine), sp2.gapSec, sp2.canSwell);
 };
 var ignoredHere = () => ignoredFor(curPart().role);
 var MARK_NAME = { ...ART_NAME, slur: "\u8FDE\u7EBF", swellGrow: "\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77", swellFade: "\u97F3\u5185\u6E10\u5F31", inhale: "\u51FA\u58F0\u7684\u6362\u6C14" };
@@ -38314,7 +39173,7 @@ function discloseArt(prev, a10) {
   const n10 = (s10) => tr(s10).filter(has).length;
   if (n10(st2) <= n10(prev)) return;
   const role = curPart().role, who = activeCandidateName(doc.extras, role) || "\u53F0\u4E0A\u8FD9\u4F4D";
-  const why = whyIgnored(activeInstrument(doc.extras, role)?.engine, a10);
+  const why = whyIgnored(performerOf(activeInstrument(doc.extras, role)?.engine), a10);
   info(why === "decay" ? `${who}\u7684\u97F3\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF0C${MARK_NAME[a10]}\u505A\u4E0D\u5230\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u97F3\u5185\u6E10\u5F31\u7167\u505A` : why === "sung" ? `${who}\u672C\u6765\u5C31\u8FDE\u7740\u5531\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u8981\u65AD\u53E5\u7528\u547C\u5438` : why === "gap" ? `${who}\u672C\u6765\u5C31\u4E0D\u7559\u7F1D\uFF08\u4E50\u5668\u9875\u300C\u97F3\u548C\u97F3\u4E4B\u95F4\u300D= 0\uFF09\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8` : `${who}\u4E0D\u8BA4${MARK_NAME[a10]}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD`);
 }
 function discloseDynOverride(prev) {
@@ -38611,16 +39470,10 @@ function auditionTarget() {
     return { inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: 0, pan: 0 };
   }
   const part = st2.song.parts.find((p2) => p2.id === st2.at.part), ch2 = part ? channelOf(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
-  if (engineNow() === "soundfont") {
-    const g3 = activeGm(doc.extras, curRole());
-    if (!g3) return null;
-    if (!engine.hasBank(g3.subsetSha256)) {
-      void prepareBank();
-      return null;
-    }
-    return { inst: { kind: "sf", sha: g3.subsetSha256, preset: engine.presetIndex(g3.subsetSha256, g3.bank, g3.program) }, key: (m2) => sfKey(m2, g3, activeTranspose(doc.extras, curRole())), vel: dyn.vel ?? activeVelocity(doc.extras, curRole()), gainDb: ch2.gainDb + (dyn.vel === null ? dyn.dB : 0), pan: ch2.pan };
-  }
-  return { inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: ch2.gainDb + dyn.dB, pan: ch2.pan };
+  const t10 = performerOf(engineNow())?.audition?.({ extras: doc.extras, role: curRole(), kana, dyn, engine, ensureBank: () => {
+    void prepareBank();
+  } });
+  return t10 ? { ...t10, gainDb: ch2.gainDb + t10.gainDb, pan: ch2.pan } : null;
 }
 var sound = {
   down: (p2, id2 = "main") => {
@@ -38861,7 +39714,7 @@ var padNotes = /* @__PURE__ */ new Map();
 var CHORD_MS = 50;
 var CHORD_WIN = 80;
 var lastWrite = { index: -1, at: -Infinity };
-var canStack = () => engineNow() === "soundfont";
+var canStack = () => performerOf(engineNow())?.poly ?? false;
 var monoHeld = /* @__PURE__ */ new Set();
 var monoAt = -Infinity;
 function monoAccept(id2) {
@@ -39276,37 +40129,24 @@ var playIcon = (playing) => {
   }
   if (!playing) progress("");
 };
-var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
-var playSong = () => viewScope === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : st2.song;
-var curFlat = () => {
-  const s10 = playSong(), order = songPlayOrder(s10);
-  return { tokens: flattenPart(s10, st2.at.part, { order }).tokens, map: timeMapOf(s10, order) };
-};
-var songIn = (s10) => s10 === "all" ? st2.song : s10 === "segment" ? songOnlyPaper(st2.song, st2.at.paper) : playSong();
-var GM_SR = 44100;
-var audibleParts = () => {
-  const solo = st2.song.parts.some((p2) => pv(p2.id).solo);
-  return st2.song.parts.filter((p2) => solo ? pv(p2.id).solo : !pv(p2.id).muted);
-};
-function micOf(part) {
-  const m2 = studioTrack(doc.extras, part.mic);
-  return { gainDb: m2?.gainDb ?? 0, pan: m2?.pan ?? 0 };
-}
-var channelOf = (part) => {
-  const { gainDb, pan } = micOf(part);
-  return { gainDb: gainDb + activeCalibrationDb(doc.extras, part.role), pan };
-};
-var mixBypass = false;
-function pushChannels(raw = mixBypass) {
-  const bpm = songBpm(), ctx2 = (lowestMidi) => ({ lowestMidi, bpm }), fx = (x2) => raw ? [] : x2;
-  for (const p2 of st2.song.parts) {
-    const t10 = studioTrack(doc.extras, p2.mic);
-    engine.channel(p2.id, { ...channelOf(p2), mute: pv(p2.id).muted, solo: pv(p2.id).solo, chain: fx(resolveChain(t10?.chain ?? [], ctx2(lowestMidiOf(p2.id)))), sends: fx(t10?.sends ?? []), to: t10?.to ?? "master" });
-  }
-  engine.buses(studioTracks(doc.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, gainDb: b3.gainDb, pan: b3.pan, chain: b3.bypass ? [] : fx(resolveChain(b3.chain, ctx2(null))), to: b3.to, sends: fx(b3.sends), ...busMuted.has(b3.id) ? { mute: true } : {} })));
-  const m2 = activeMaster(doc.extras);
-  engine.master({ ...m2, chain: fx(resolveChain(m2.chain, ctx2(null))) });
-}
+var perfApi = createPerformance({
+  state: () => st2,
+  extras: () => doc.extras,
+  viewScope: () => viewScope,
+  pv: (id2) => pv(id2),
+  busMuted: () => busMuted,
+  curRole: () => curRole(),
+  docName: () => docName(),
+  engine,
+  singer,
+  view,
+  ui: { progress, info, showError, renderBar, playBtns, playIcon, offerFile: (f2, t10, m2) => offerFile(f2, t10, m2) },
+  sounds: { resolveGmBytes: (g3) => resolveGmBytes(g3), ensureVowels, soundMemoryBytes, modelBases: () => modelBases() },
+  credits: { creditsOf: (roles, rights) => creditsOf(roles, rights), creditsBlock: (lines, title) => creditsBlock(lines, title) }
+});
+var { humOpt, resetLatencyLog, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
+var BUDGET = perfApi.budget;
+var TURN_LEADS = perfApi.TURN_LEADS;
 function typingIn(t10) {
   const el2 = t10;
   if (!el2) return false;
@@ -39321,464 +40161,6 @@ function routeName(track) {
   const k2 = st2.song.parts.findIndex((x2) => x2.id === track);
   return k2 >= 0 ? partLabels(st2.song, doc.extras)[k2] : studioTrack(doc.extras, track)?.name ?? track;
 }
-function lowestMidiOf(partId) {
-  let lo2 = null;
-  for (const pp of st2.song.papers) for (const t10 of pp.tracks[partId] ?? []) if (t10.kind === "note" && t10.pitch) for (const q2 of [t10.pitch, ...t10.chord ?? []]) {
-    const m2 = midiOf(q2);
-    if (lo2 === null || m2 < lo2) lo2 = m2;
-  }
-  return lo2;
-}
-function songBpm() {
-  const p2 = st2.song.papers[0], t10 = p2 ? p2.tracks[st2.song.parts.find((x2) => p2.tracks[x2.id])?.id ?? ""] : void 0;
-  return t10 ? tempoAt(t10, headLen(t10)) : 90;
-}
-function performerInfo(part) {
-  const role = part.role, eng = activeInstrument(doc.extras, role)?.engine ?? "unknown", g3 = activeGm(doc.extras, role), cat2 = grooveCategory(eng, g3);
-  return {
-    engine: eng,
-    spec: activePerfSpec(doc.extras, role),
-    velocity: activeVelocity(doc.extras, role),
-    transpose: activeTranspose(doc.extras, role),
-    gm: g3 ? { sha: g3.subsetSha256, presetIndex: engine.presetIndex(g3.subsetSha256, g3.bank, g3.program), note: g3.note, sfx: g3.sfx } : null,
-    chunk: activeSingChunk(doc.extras, role),
-    follow: (s10) => followOf(s10, cat2),
-    chain: activeChain(doc.extras, role),
-    ...hitOf(eng === "soundfont" ? g3 : null)
-  };
-}
-function hitOf(g3) {
-  const pk = g3 ? percKindOf(g3) : null;
-  if (!pk) return {};
-  if (pk.kind === "kit") return { hitSec: (key) => percOf(128, 0, key)?.hitSec ?? 0 };
-  const h2 = pk.info.hitSec ?? 0;
-  return h2 ? { hitSec: () => h2 } : {};
-}
-async function prepareBanks(parts) {
-  const errs = [];
-  for (const part of parts) {
-    if (activeInstrument(doc.extras, part.role)?.engine !== "soundfont") continue;
-    const g3 = activeGm(doc.extras, part.role);
-    if (!g3) continue;
-    if (engine.hasBank(g3.subsetSha256)) continue;
-    try {
-      await engine.bank(g3.subsetSha256, await resolveGmBytes(g3));
-    } catch (e10) {
-      errs.push(`\u300C${roleName(doc.extras, part.role)}\u300D\uFF1A${e10.message}`);
-    }
-  }
-  return errs;
-}
-var chunkKeysWanted = [];
-var chunkPlans = /* @__PURE__ */ new Map();
-var chunkFailed = /* @__PURE__ */ new Map();
-var pumping = false;
-var pumpQuiet = false;
-var singSpeed = null;
-var inflightKeys = /* @__PURE__ */ new Set();
-var pendingChunks = () => chunkKeysWanted.filter((k2) => !engine.hasChunk(k2)).length;
-var playMute;
-function setChunkOrder(tl2, pos, loop, o10 = {}) {
-  chunkPlans = new Map(tl2.chunks.map((c10) => [c10.key, c10]));
-  let keys = chunkOrder(tl2.chunks, pos, loop, (k2) => engine.hasChunk(k2), o10.mute ?? playMute);
-  if (o10.limit !== void 0) keys = keys.slice(0, o10.limit);
-  chunkKeysWanted = keys;
-  pumpQuiet = !!o10.quiet;
-  for (const k2 of inflightKeys) if (!keys.includes(k2) && !chunkPlans.has(k2)) singer.cancelInflight(k2);
-  void pump();
-}
-var STAGE_FRAC = { "\u5FF5\uFF081/2\uFF09": 0.05, "\u5FF5\uFF082/2\uFF09": 0.25, "\u5206\u6790\uFF081/3 \u97F3\u9AD8\uFF09": 0.45, "\u5206\u6790\uFF082/3 \u8C31\u5305\u7EDC\uFF09": 0.6, "\u5206\u6790\uFF083/3 \u6C14\u58F0\uFF09": 0.7, "\u5206\u6790\uFF08\u7F13\u5B58\uFF09": 0.75, "\u5408\u6210": 0.85 };
-async function pump() {
-  if (pumping) return;
-  pumping = true;
-  let shown = 0;
-  const running = /* @__PURE__ */ new Set();
-  try {
-    for (; ; ) {
-      while (running.size < singer.parallelism) {
-        const key = chunkKeysWanted.find((k2) => !engine.hasChunk(k2) && !inflightKeys.has(k2));
-        if (!key) break;
-        const c10 = chunkPlans.get(key);
-        if (!c10) {
-          chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
-          continue;
-        }
-        const who = roleName(doc.extras, st2.song.parts.find((p3) => p3.id === c10.part)?.role ?? ""), left = pendingChunks();
-        if (left > shown) {
-          renderBar.start(left);
-          shown = left;
-        }
-        const failed = chunkFailed.get(key);
-        if (failed !== void 0) {
-          if (pumpQuiet) {
-            chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
-            continue;
-          }
-          showError(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${failed}`);
-          engine.chunk(key, 22050, new Float32Array(0));
-          renderBar.next();
-          continue;
-        }
-        progress(`${who}\uFF1A${pumpQuiet ? "\u5148\u5531\u7740" : "\u8FD8\u6709"} ${left} \u53E5\u2026`);
-        inflightKeys.add(key);
-        const p2 = singOne(key, c10, who).finally(() => {
-          inflightKeys.delete(key);
-          running.delete(p2);
-        });
-        running.add(p2);
-      }
-      if (!running.size) break;
-      await Promise.race(running);
-    }
-  } finally {
-    pumping = false;
-    renderBar.end();
-    if (!engine.playing) progress("");
-  }
-}
-async function singOne(key, c10, who) {
-  const t10 = performance.now();
-  try {
-    const r10 = await singer.sing(c10.score, (stage) => {
-      progress(`${who}\uFF1A${stage}\u2026`);
-      const pc = /(\d+)%$/.exec(stage);
-      if (pc) renderBar.frac(Number(pc[1]) / 100);
-      else if (stage in STAGE_FRAC) renderBar.frac(STAGE_FRAC[stage]);
-    }, { opt: humOpt(), models: modelBases(), raw: true, tag: key, diskBytes: BUDGET.speechDisk });
-    if (engine.hasChunk(key) || !chunkPlans.has(key)) {
-      renderBar.next();
-      return;
-    }
-    engine.chunk(key, r10.sr, r10.samples);
-    if (r10.ms?.boot) diagNote("singer", `engine boot ms: ${JSON.stringify(r10.ms.boot)}`);
-    const secs = Math.max(0.5, c10.dur - LEAD_IN);
-    singSpeed = singSpeed === null ? (performance.now() - t10) / secs : singSpeed * 0.7 + (performance.now() - t10) / secs * 0.3;
-  } catch (e10) {
-    const msg = e10.message ?? String(e10);
-    if (msg === "cancelled") return;
-    if (!chunkPlans.has(key)) return;
-    chunkFailed.set(key, msg);
-    if (!pumpQuiet) {
-      showError(`\u300C${who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A${msg}`);
-      engine.chunk(key, 22050, new Float32Array(0));
-    } else chunkKeysWanted = chunkKeysWanted.filter((k2) => k2 !== key);
-  }
-  renderBar.next();
-}
-async function waitChunksReady(tl2, pos, stop, mute) {
-  while (!stop() && !readyToStart(tl2.chunks, pos, prerollCount(singSpeed), (k2) => engine.hasChunk(k2), mute)) {
-    if (!pumping && pendingChunks() === 0) break;
-    await new Promise((r10) => setTimeout(r10, 80));
-  }
-}
-async function awaitAllChunks(tl2) {
-  const want = [...new Set(tl2.chunks.map((c10) => c10.key))];
-  setChunkOrder(tl2, tl2.range.from, null);
-  for (; ; ) {
-    const missing = want.filter((k2) => !engine.hasChunk(k2));
-    if (!missing.length) return;
-    if (!missing.some((k2) => chunkKeysWanted.includes(k2) || inflightKeys.has(k2))) setChunkOrder(tl2, tl2.range.from, null);
-    else if (!pumping) void pump();
-    await new Promise((r10) => setTimeout(r10, 80));
-  }
-}
-var MAX_CHUNKS = 64;
-var chunkKeys = [];
-function pruneChunks(tl2) {
-  const keep2 = new Set(tl2.chunks.map((c10) => c10.key));
-  for (const k2 of keep2) {
-    const i10 = chunkKeys.indexOf(k2);
-    if (i10 >= 0) chunkKeys.splice(i10, 1);
-    chunkKeys.push(k2);
-  }
-  const drop = [];
-  while (chunkKeys.length > MAX_CHUNKS) {
-    const i10 = chunkKeys.findIndex((k2) => !keep2.has(k2));
-    if (i10 < 0) break;
-    drop.push(chunkKeys.splice(i10, 1)[0]);
-  }
-  if (drop.length) engine.forget(drop);
-}
-var DEVICE = { ios: /iPad|iPhone|iPod/.test(navigator.platform) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1, cores: navigator.hardwareConcurrency ?? 2, deviceMemoryGB: navigator.deviceMemory ?? null };
-var BUDGET = budgetFor(DEVICE);
-if (new URLSearchParams(location.search).has("nodisk")) BUDGET.speechDisk = 0;
-singer.setLanes(BUDGET.lanes);
-diagNote("resource", `device ios=${DEVICE.ios} cores=${DEVICE.cores} mem=${DEVICE.deviceMemoryGB ?? "?"}GB \u2192 lanes ${BUDGET.lanes}, budget ${Math.round(BUDGET.total / 1e6)} MB (chunks ${Math.round(BUDGET.chunkBytes / 1e6)})`);
-var watch = { load: null, hot: 0, lanesCut: false, said: /* @__PURE__ */ new Map() };
-var resourceSnapshot = () => ({ lanes: singer.memory(), chunkBytes: watch.load?.chunkBytes ?? 0, chunks: watch.load?.chunks ?? 0, soundMem: soundMemoryBytes(), audioBusy: watch.load?.busy ?? null });
-function resourceSay(kind, text2) {
-  const t10 = performance.now();
-  if ((watch.said.get(kind) ?? -1e9) > t10 - 3e4) return;
-  watch.said.set(kind, t10);
-  reportError(text2, "warning");
-}
-function shrinkChunks(snap, toBytes) {
-  if (!snap.chunks) return;
-  const avg = Math.max(1, snap.chunkBytes / snap.chunks), n10 = Math.ceil((snap.chunkBytes - toBytes) / avg), wanted = new Set(chunkKeysWanted), drop = [];
-  for (const k2 of chunkKeys) {
-    if (drop.length >= n10) break;
-    if (!wanted.has(k2) && engine.hasChunk(k2)) drop.push(k2);
-  }
-  for (const k2 of drop) chunkKeys.splice(chunkKeys.indexOf(k2), 1);
-  if (drop.length) {
-    engine.forget(drop);
-    diagNote("resource", `pruned ${drop.length} chunks (${Math.round(snap.chunkBytes / 1e6)} MB \u2192 target ${Math.round(toBytes / 1e6)} MB)`);
-  }
-}
-function resourceTick() {
-  const snap = resourceSnapshot();
-  for (const a10 of advise(snap, BUDGET)) {
-    if (a10.kind === "pruneChunks") shrinkChunks(snap, a10.toBytes);
-    else if (a10.kind === "fewerLanes") {
-      if (singer.parallelism > a10.lanes) {
-        singer.setLanes(a10.lanes);
-        watch.lanesCut = true;
-        diagNote("resource", `lanes \u2192 ${a10.lanes}`);
-        resourceSay("lanes", "\u5185\u5B58 / \u8D1F\u8F7D\u5403\u7D27\uFF1A\u5C0F\u6708\u76F8\u6539\u6210\u4E00\u6761\u9053\u5531\uFF08\u6162\u4E00\u70B9\uFF0C\u58F0\u97F3\u4E0D\u53D8\uFF09");
-      }
-    } else if (a10.kind === "audioHot") {
-      if (++watch.hot >= 3) resourceSay("audio", `\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 ${Math.round(a10.busy * 100)}%\uFF1A\u53EF\u80FD\u7206\u97F3\u3002\u6548\u679C\u94FE / \u58F0\u90E8\u662F\u4F60\u7684\u6DF7\u97F3\uFF0C\u4E0D\u66FF\u4F60\u52A8\uFF1B\u53EF\u4EE5\u5148\u628A\u6CA1\u5728\u542C\u7684\u58F0\u90E8\u9759\u97F3`);
-    }
-  }
-  if (snap.audioBusy !== null && snap.audioBusy <= AUDIO_HOT) watch.hot = 0;
-  if (watch.lanesCut && totalBytes(snap) < BUDGET.total * 0.6 && (snap.audioBusy ?? 0) < AUDIO_HOT * 0.7) {
-    singer.setLanes(BUDGET.lanes);
-    watch.lanesCut = false;
-    diagNote("resource", `lanes \u2192 ${BUDGET.lanes} (recovered)`);
-  }
-}
-singer.onMem = () => resourceTick();
-function trimLanesForNewSong() {
-  const mems = singer.laneMems();
-  for (const i10 of trimOnSongSwitch(mems)) if (!singer.laneBusy(i10)) {
-    diagNote("resource", `song switch: restart lane ${i10} (wasm ${Math.round((mems[i10]?.wasm ?? 0) / 1e6)} MB, base ${Math.round((mems[i10]?.base ?? 0) / 1e6)} MB)`);
-    singer.restartLane(i10);
-  }
-}
-engine.on("load", (info2) => {
-  watch.load = info2;
-  resourceTick();
-});
-async function prepare(scope, o10 = {}) {
-  const parts = audibleParts(), song = songIn(scope);
-  const errs = await prepareBanks(parts);
-  if (parts.some((p2) => activeInstrument(doc.extras, p2.role)?.engine === "vowel-sampler")) await ensureVowels();
-  const tl2 = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st2.song.hum, singOpt: humOpt() });
-  for (const u2 of tl2.unplayable) errs.push(`\u300C${roleName(doc.extras, st2.song.parts.find((p2) => p2.id === u2.part)?.role ?? "")}\u300D\uFF1A${u2.why}`);
-  if (errs.length) showError(`${errs.join("\uFF1B")}\u3002${tl2.tracks.length ? "\u8FD9\u4E9B\u58F0\u90E8\u6CA1\u6709\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\u3002" : "\u6CA1\u6709\u51FA\u58F0\u3002"}\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
-  if (!tl2.tracks.length) return null;
-  pruneChunks(tl2);
-  if (o10.chunks !== false) await awaitAllChunks(tl2);
-  pushChannels(o10.raw);
-  return tl2;
-}
-async function renderMixForTest() {
-  const tl2 = await prepare("view");
-  if (!tl2) return null;
-  const r10 = playRange(tl2), m2 = await engine.renderOffline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: false }, { sr: GM_SR });
-  return { samples: m2.left, right: m2.right, sr: m2.sr, start: m2.start };
-}
-var loopOn = false;
-var playTl = null;
-var preparing = false;
-var cancelPrepare = false;
-var SEAM_LEAD = 4;
-function playRange(tl2) {
-  const from = tl2.range.from, to2 = tl2.range.to;
-  let loopFrom = from;
-  const song = playSong(), a10 = parseArrangement(song.arrangement, song.papers);
-  if (viewScope === "all" && a10.loop && tl2.papers[a10.order.length]) loopFrom = tl2.papers[a10.order.length].t0;
-  return { from, to: to2, loopFrom };
-}
-var startMark = null;
-var paused = null;
-var clampTo = (r10, s10) => Math.min(Math.max(s10, r10.from), r10.to);
-function startMute(tl2, r10) {
-  if (!startMark) return void 0;
-  const s10 = tl2.secondsAt(startMark.paperId, startMark.tick, 0);
-  return s10 === null ? void 0 : clampTo(r10, s10);
-}
-function startSeconds(tl2, r10) {
-  if (!startMark) return r10.from;
-  const s10 = tl2.secondsAt(startMark.paperId, startMark.tick, 0);
-  return s10 === null ? r10.from : clampTo(r10, s10 - PRE_ROLL);
-}
-function resumeSeconds(tl2, r10) {
-  if (!paused) return startSeconds(tl2, r10);
-  const s10 = paused.at ? tl2.secondsAt(paused.at.paperId, paused.at.tick, paused.sec) : null;
-  return clampTo(r10, s10 ?? paused.sec);
-}
-function barHeadTick(paperId, part, tick) {
-  const paper = st2.song.papers.find((p2) => p2.id === paperId);
-  if (!paper) return 0;
-  const toks = paper.tracks[part] ?? Object.values(paper.tracks)[0] ?? [];
-  let len = DEFAULT_TIME.beats * WHOLE / DEFAULT_TIME.beatType, inBar = 0, t10 = 0, head = 0;
-  for (const k2 of toks) {
-    if (k2.kind === "bar") {
-      if (t10 <= tick) head = t10;
-      inBar = 0;
-      continue;
-    }
-    if (k2.kind === "time") {
-      if (inBar > 0 && t10 <= tick) head = t10;
-      inBar = 0;
-      len = k2.beats * WHOLE / k2.beatType;
-      continue;
-    }
-    if (!isTimed(k2)) continue;
-    while (inBar >= len && inBar > 0) {
-      const b3 = t10 - (inBar - len);
-      if (b3 <= tick) head = b3;
-      inBar -= len;
-    }
-    if (t10 > tick) break;
-    inBar += k2.dur;
-    t10 += k2.dur;
-  }
-  if (t10 <= tick) {
-    while (inBar >= len && inBar > 0) {
-      const b3 = t10 - (inBar - len);
-      if (b3 <= tick) head = b3;
-      inBar -= len;
-    }
-    const b0 = t10 - inBar;
-    if (tick >= b0) head = b0 + Math.floor((tick - b0) / len + 1e-9) * len;
-  }
-  return head;
-}
-var tickOfCaret = (paperId, part, caret) => {
-  const toks = st2.song.papers.find((p2) => p2.id === paperId)?.tracks[part] ?? [];
-  let t10 = 0;
-  for (let i10 = 0; i10 < Math.min(caret, toks.length); i10++) if (isTimed(toks[i10])) t10 += toks[i10].dur;
-  return t10;
-};
-async function startPlayback(how) {
-  if (preparing) {
-    cancelPrepare = true;
-    return;
-  }
-  singer.unlock();
-  holdAudio();
-  preparing = true;
-  cancelPrepare = false;
-  for (const b3 of playBtns()) b3.classList.add("is-on");
-  try {
-    const tl2 = await prepare("view", { chunks: false });
-    if (!tl2) {
-      progress("");
-      return;
-    }
-    const r10 = playRange(tl2);
-    playTl = tl2;
-    const loop = loopOn || how === "seam";
-    engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop, loopFrom: r10.loopFrom });
-    const at2 = how === "seam" ? Math.max(r10.from, r10.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl2, r10) : how === "head" ? r10.from : startSeconds(tl2, r10);
-    playMute = how === "start" ? startMute(tl2, r10) : void 0;
-    setChunkOrder(tl2, at2, loop ? { from: r10.loopFrom, to: r10.to } : null);
-    await waitChunksReady(tl2, at2, () => cancelPrepare, playMute);
-    if (cancelPrepare) {
-      progress("");
-      return;
-    }
-    const loopNow = loopOn || how === "seam";
-    const atNow = how === "start" ? startSeconds(tl2, r10) : at2;
-    playMute = how === "start" ? startMute(tl2, r10) : void 0;
-    if (loopNow !== loop) engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopNow, loopFrom: r10.loopFrom });
-    if (loopNow !== loop || atNow !== at2) setChunkOrder(tl2, atNow, loopNow ? { from: r10.loopFrom, to: r10.to } : null);
-    await engine.play(atNow, playMute);
-    paused = null;
-    playIcon(true);
-    progress(loopOn ? `\u5FAA\u73AF ${(r10.to - r10.loopFrom).toFixed(1)} \u79D2` : `${(r10.to - atNow).toFixed(1)} \u79D2`);
-  } catch (e10) {
-    showError(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`);
-    progress("");
-    playIcon(false);
-  } finally {
-    releaseAudio();
-    preparing = false;
-    if (!engine.playing) for (const b3 of playBtns()) b3.classList.remove("is-on");
-  }
-}
-var DOUBLE_TAP_MS = 350;
-var lastPlayTap = 0;
-function playPause(at2 = performance.now()) {
-  const now2 = at2;
-  if (now2 - lastPlayTap < DOUBLE_TAP_MS) {
-    lastPlayTap = 0;
-    playFromHead();
-    return;
-  }
-  lastPlayTap = now2;
-  if (engine.playing) {
-    pausePlay();
-    return;
-  }
-  void startPlayback("start");
-}
-function resumePlay() {
-  if (!engine.playing && paused) void startPlayback("resume");
-}
-function pausePlay() {
-  const sec = engine.audibleSec() ?? engine.position, at2 = playTl?.locate(sec) ?? null;
-  stopPlay();
-  paused = { sec, at: at2 };
-  view.setPlayhead(at2);
-}
-function replay() {
-  paused = null;
-  if (engine.playing && playTl) {
-    const r10 = playRange(playTl);
-    playMute = startMute(playTl, r10);
-    engine.seek(startSeconds(playTl, r10), playMute);
-    return;
-  }
-  view.setPlayhead(null);
-  if (preparing) return;
-  void startPlayback("start");
-}
-function playFromHere(paperId, part, tick) {
-  startMark = { paperId, tick: barHeadTick(paperId, part, tick) };
-  view.setStartMark(startMark);
-  replay();
-}
-function playFromHead() {
-  startMark = null;
-  view.setStartMark(null);
-  replay();
-}
-function playSeam() {
-  if (engine.playing && playTl) {
-    const r10 = playRange(playTl);
-    engine.seek(Math.max(r10.from, r10.to - SEAM_LEAD));
-  } else void startPlayback("seam");
-}
-function stopPlay() {
-  engine.stop();
-  playIcon(false);
-  view.setPlayhead(null);
-  phKey = "";
-  cancelPrepare = true;
-  paused = null;
-  playMute = void 0;
-  chunkKeysWanted = [];
-  singer.cancelPending();
-  singer.cancelInflight();
-  schedulePrewarm();
-}
-engine.on("ended", () => {
-  playIcon(false);
-  view.setPlayhead(null);
-  phKey = "";
-  paused = null;
-});
-engine.on("crash", (msg) => {
-  diagNote("engine", `render crash: ${msg}`);
-  playIcon(false);
-  view.setPlayhead(null);
-  phKey = "";
-  paused = null;
-  showError(`\u64AD\u653E\u51FA\u9519\u4E86\uFF0C\u5DF2\u7ECF\u505C\u4E0B\uFF08\u9519\u8BEF\u8BB0\u8FDB\u4E86\u8BCA\u65AD\u65E5\u5FD7\uFF09\uFF1A${msg.split("\n")[0]}`);
-});
 var ws = { mode: "notes", collapsed: false, tryout: false };
 var lastEditMode = "notes";
 var listenOn = () => ws.mode === "listen";
@@ -39825,7 +40207,7 @@ function openListenMenu(at2, a10) {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc8(title)}">${label}</button>`;
-  box.innerHTML = item("here", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E") + (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E") : "") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09");
+  box.innerHTML = item("here", "\u4ECE\u8FD9\u513F\u653E", "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E") + (perfApi.paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E") : "") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09");
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at2.y + 10;
@@ -39859,7 +40241,7 @@ function openTransportMenu(btn = $2("playBtn")) {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc8(title)}">${label}</button>`;
-  box.innerHTML = (paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + (engine.playing || paused ? item("reveal", "\u8DF3\u5230\u6B63\u5728\u653E\u7684\u5730\u65B9", "\u8C31\u6EDA\u5230\u6B63\u5728\u653E\uFF08\u505C\u7740 = \u505C\u4E0B\uFF09\u7684\u90A3\u4E00\u884C\uFF1B\u521A\u624D\u81EA\u5DF1\u6EDA\u8FC7\u4E5F\u7167\u6837\u8FC7\u53BB\u3001\u63A5\u7740\u8DDF") : "") + `<div class="ctx-row" title="\u7FFB\u8C31\u63D0\u524D\u591A\u5C11\uFF1A\u5FEB\u5230\u884C\u5C3E\uFF08\u6216\u7F16\u6392\u8DF3\u56DE\u53BB\u4E4B\u524D\uFF09\u8FD9\u4E48\u4E45\u5C31\u5148\u7FFB\u8FC7\u53BB\uFF0C\u6700\u540E\u4E00\u5C0F\u622A\u9760\u8BB0\u2014\u2014\u50CF\u94A2\u7434\u5BB6\u7FFB\u8C31\u30020 = \u6362\u4E86\u884C\u624D\u7FFB"><span class="ctx-lab">\u63D0\u524D\u7FFB</span>${TURN_LEADS.map((v) => `<button class="btn ctx-seg${v === turnLead ? " is-on" : ""}" data-v="lead:${v}">${v ? `${v} s` : "\u4E0D"}</button>`).join("")}</div>` + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09") + (loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
+  box.innerHTML = (perfApi.paused && !engine.playing ? item("resume", "\u63A5\u7740\u653E", "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09") : "") + (engine.playing || perfApi.paused ? item("reveal", "\u8DF3\u5230\u6B63\u5728\u653E\u7684\u5730\u65B9", "\u8C31\u6EDA\u5230\u6B63\u5728\u653E\uFF08\u505C\u7740 = \u505C\u4E0B\uFF09\u7684\u90A3\u4E00\u884C\uFF1B\u521A\u624D\u81EA\u5DF1\u6EDA\u8FC7\u4E5F\u7167\u6837\u8FC7\u53BB\u3001\u63A5\u7740\u8DDF") : "") + `<div class="ctx-row" title="\u7FFB\u8C31\u63D0\u524D\u591A\u5C11\uFF1A\u5FEB\u5230\u884C\u5C3E\uFF08\u6216\u7F16\u6392\u8DF3\u56DE\u53BB\u4E4B\u524D\uFF09\u8FD9\u4E48\u4E45\u5C31\u5148\u7FFB\u8FC7\u53BB\uFF0C\u6700\u540E\u4E00\u5C0F\u622A\u9760\u8BB0\u2014\u2014\u50CF\u94A2\u7434\u5BB6\u7FFB\u8C31\u30020 = \u6362\u4E86\u884C\u624D\u7FFB"><span class="ctx-lab">\u63D0\u524D\u7FFB</span>${TURN_LEADS.map((v) => `<button class="btn ctx-seg${v === perfApi.turnLead ? " is-on" : ""}" data-v="lead:${v}">${v ? `${v} s` : "\u4E0D"}</button>`).join("")}</div>` + item("follow", `${view.autoFollow ? "\u2713 " : ""}\u81EA\u52A8\u7FFB`, "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09") + item("loop", `${perfApi.loopOn ? "\u2713 " : ""}\u5FAA\u73AF`, "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF") + item("head", "\u4ECE\u5934\u653E", "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09") + (perfApi.loopOn ? item("seam", "\u542C\u63A5\u7F1D", "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C") : "");
   document.body.append(box);
   const b3 = btn.getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   box.style.left = `${Math.max(m2, Math.min(b3.left, innerWidth - w2 - m2))}px`;
@@ -39882,114 +40264,17 @@ function openTransportMenu(btn = $2("playBtn")) {
     close();
     if (v === "resume") resumePlay();
     else if (v.startsWith("lead:")) {
-      turnLead = Number(v.slice(5));
-      info(turnLead ? `\u7FFB\u8C31\u63D0\u524D ${turnLead} \u79D2` : "\u7FFB\u8C31\u4E0D\u63D0\u524D\uFF08\u6362\u4E86\u884C\u624D\u7FFB\uFF09");
+      perfApi.turnLead = Number(v.slice(5));
+      info(perfApi.turnLead ? `\u7FFB\u8C31\u63D0\u524D ${perfApi.turnLead} \u79D2` : "\u7FFB\u8C31\u4E0D\u63D0\u524D\uFF08\u6362\u4E86\u884C\u624D\u7FFB\uFF09");
     } else if (v === "reveal") {
       if (!view.revealPlayhead()) info("\u73B0\u5728\u6CA1\u6709\u5728\u653E\u7684\u5730\u65B9");
     } else if (v === "follow") {
       view.autoFollow = !view.autoFollow;
       info(view.autoFollow ? "\u81EA\u52A8\u7FFB\uFF1A\u5F00" : "\u81EA\u52A8\u7FFB\uFF1A\u5173");
-    } else if (v === "loop") setLoop(!loopOn);
+    } else if (v === "loop") setLoop(!perfApi.loopOn);
     else if (v === "head") playFromHead();
     else if (v === "seam") playSeam();
   });
-}
-function setLoop(on2) {
-  loopOn = on2;
-  for (const b3 of playBtns()) b3.classList.toggle("looping", on2);
-  if (engine.playing && playTl) {
-    const r10 = playRange(playTl);
-    engine.setTimeline({ tracks: playTl.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom });
-    setChunkOrder(playTl, engine.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
-  }
-}
-var lastReorder = 0;
-var phRaf = 0;
-var phKey = "";
-var latLogged = null;
-var latAt = 0;
-var srcLogged = null;
-var TURN_LEADS = [0, 0.3, 0.6, 1, 1.5];
-var turnLead = 0.6;
-var phAheadKey = "";
-function playheadFrame() {
-  phRaf = 0;
-  if (!engine.playing || !playTl) return;
-  const sec = engine.audibleSec() ?? engine.position, loc = playTl.locate(sec), k2 = loc ? `${loc.paperId}:${loc.tick}` : "";
-  const r10 = playRange(playTl);
-  let aSec = sec + turnLead;
-  if (aSec >= r10.to) aSec = loopOn ? r10.loopFrom + (aSec - r10.to) : r10.to - 1e-3;
-  const ahead = turnLead > 0 ? playTl.locate(aSec) : null, ak2 = ahead ? `${ahead.paperId}:${ahead.tick}` : "";
-  if (k2 !== phKey || ak2 !== phAheadKey) {
-    phKey = k2;
-    phAheadKey = ak2;
-    view.setPlayhead(loc, ahead);
-  }
-  const now2 = performance.now();
-  if (now2 - latAt > 2e3) {
-    latAt = now2;
-    const lat = engine.latencyMs();
-    if (lat !== null && (latLogged === null || Math.abs(lat - latLogged) > 25 || engine.clockSrc !== srcLogged)) {
-      latLogged = lat;
-      srcLogged = engine.clockSrc;
-      diagNote("audio", `output latency ${Math.round(lat)} ms (ctx ${singer.unlock().state}, clock ${engine.clockSrc})`);
-    }
-  }
-  phRaf = requestAnimationFrame(playheadFrame);
-}
-engine.on("pos", (sec, playing, waiting) => {
-  if (!playing) return;
-  if (playTl && !phRaf) phRaf = requestAnimationFrame(playheadFrame);
-  if (waiting) progress("\u7B49\u5C0F\u6708\u76F8\u5531\u597D\u8FD9\u4E00\u53E5\u2026");
-  if (playMute !== void 0 && sec > playMute + 1) playMute = void 0;
-  if (playTl && performance.now() - lastReorder > 1e3) {
-    lastReorder = performance.now();
-    const r10 = playRange(playTl);
-    setChunkOrder(playTl, sec, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
-  }
-});
-engine.on("missing", () => {
-  if (playTl) {
-    const r10 = playRange(playTl);
-    setChunkOrder(playTl, engine.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
-  }
-});
-var refreshTimer = 0;
-function schedulePlaybackRefresh() {
-  if (!engine.playing) return;
-  clearTimeout(refreshTimer);
-  refreshTimer = window.setTimeout(() => {
-    void (async () => {
-      if (!engine.playing) return;
-      const at2 = engine.position, loc = playTl?.locate(at2) ?? null;
-      const tl2 = await prepare("view", { chunks: false });
-      if (!tl2) {
-        stopPlay();
-        return;
-      }
-      const r10 = playRange(tl2);
-      playTl = tl2;
-      const sec = loc ? tl2.secondsAt(loc.paperId, loc.tick, at2) : null, shift = sec !== null && Math.abs(sec - at2) > 5e-3 ? sec - at2 : 0;
-      engine.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom, ...shift ? { shift } : {} });
-      setChunkOrder(tl2, engine.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
-    })();
-  }, 300);
-}
-var PREWARM_PHRASES = 3;
-var prewarmTimer = 0;
-function schedulePrewarm() {
-  clearTimeout(prewarmTimer);
-  prewarmTimer = window.setTimeout(() => {
-    if (engine.playing || preparing || exporting) return;
-    const parts = audibleParts();
-    if (!parts.some((p2) => activeInstrument(doc.extras, p2.role)?.engine === "tsukuyomi")) return;
-    const song = songIn("view");
-    const tl2 = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st2.song.hum, singOpt: humOpt() });
-    if (!tl2.chunks.length) return;
-    pruneChunks(tl2);
-    const r10 = playRange(tl2);
-    setChunkOrder(tl2, paused ? resumeSeconds(tl2, r10) : startSeconds(tl2, r10), null, { quiet: true, limit: PREWARM_PHRASES, mute: paused ? void 0 : startMute(tl2, r10) });
-  }, 700);
 }
 function wirePlayBtn(btn) {
   let timer = 0, held = false;
@@ -40076,21 +40361,6 @@ async function resolveGmBytes(g3) {
   sessionSubsets.set(g3.subsetSha256, subset);
   return subset;
 }
-var bankPreparing = null;
-function prepareBank() {
-  const g3 = activeGm(doc.extras, curRole());
-  if (!g3 || engine.hasBank(g3.subsetSha256)) return Promise.resolve();
-  if (bankPreparing) return bankPreparing;
-  bankPreparing = (async () => {
-    await engine.bank(g3.subsetSha256, await resolveGmBytes(g3));
-  })().catch((e10) => {
-    showError(`\u300C${g3.name}\u300D\u54CD\u4E0D\u4E86\uFF1A${e10.message}`);
-  }).finally(() => {
-    bankPreparing = null;
-  });
-  return bankPreparing;
-}
-var exporting = false;
 var mp3Scope = "all";
 function openMp3Panel() {
   closeOffer?.();
@@ -40127,49 +40397,6 @@ function openMp3Panel() {
       void exportSong({ quality: mp3Quality, scope: mp3Scope });
     }
   });
-}
-function exportRights(roles) {
-  const r10 = st2.song.rights;
-  if (!r10) return { rights: void 0, fellBack: false };
-  return licenseHints(r10, performerCredits(doc.extras, roles)).length ? { rights: void 0, fellBack: true } : { rights: r10, fellBack: false };
-}
-async function exportSong(o10 = { quality: "standard", scope: "all" }) {
-  if (exporting || preparing) return;
-  exporting = true;
-  try {
-    if (engine.playing) stopPlay();
-    const tl2 = await prepare(o10.scope, { raw: false });
-    if (!tl2) {
-      progress("");
-      return;
-    }
-    progress("\u6DF7\u97F3\u2026");
-    renderBar.start(1);
-    const m2 = await engine.renderOffline({ tracks: tl2.tracks, range: tl2.range, loop: false }, { sr: GM_SR, progress: (f2) => renderBar.frac(f2) }).finally(() => {
-      renderBar.end();
-      if (mixBypass) pushChannels();
-    });
-    const roles = st2.song.parts.filter((p2) => tl2.tracks.some((t10) => t10.id === p2.id)).map((p2) => p2.role);
-    progress("\u7F16 mp3\u2026");
-    const Q2 = MP3_QUALITY[o10.quality];
-    let left = m2.left, right = m2.right;
-    if (!Q2.stereo) {
-      left = new Float32Array(m2.left.length);
-      for (let i10 = 0; i10 < left.length; i10++) left[i10] = (m2.left[i10] + m2.right[i10]) / 2;
-      right = null;
-    }
-    const secs = left.length / m2.sr, bytes = await encodeMp3(left, right, m2.sr, Q2.kbps);
-    const { rights, fellBack } = exportRights(roles), { lines } = creditsOf(roles, rights);
-    const tag2 = id3v2({ title: st2.song.title || docName(), artist: (st2.song.credits ?? "").split("\n").map((s10) => s10.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || void 0, software: `MoonSinger ${APP_VERSION}` });
-    const file = new File([tag2, bytes], `${stampedCopy(`${docName()}${o10.scope === "segment" ? `-${fileSafe(st2.song.papers.find((p2) => p2.id === st2.at.paper)?.name || "\u8FD9\u4E00\u5F20")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
-    progress("");
-    offerFile(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${secs.toFixed(1)} \u79D2 \xB7 mp3 ${Q2.label} ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` + (fellBack ? `<div class="offer-msg">\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002</div>` : "") + creditsBlock(lines, "\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E"));
-  } catch (e10) {
-    progress("");
-    showError(`\u5BFC\u51FA\u5931\u8D25\uFF1A${e10.message}`);
-  } finally {
-    exporting = false;
-  }
 }
 var closeOffer = null;
 var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
@@ -40386,10 +40613,10 @@ window.__moonsinger = {
   engine,
   exportSong,
   renderMix: () => renderMixForTest(),
-  transport: () => ({ startMark, paused, listen: listenOn(), loop: loopOn, turnLead }),
+  transport: () => ({ startMark: perfApi.startMark, paused: perfApi.paused, listen: listenOn(), loop: perfApi.loopOn, turnLead: perfApi.turnLead }),
   // 走带的状态（E2E 用）
   navPaper: (d3) => navPaper(d3),
-  paperSpans: () => playTl?.papers.map((x2) => ({ id: x2.paper.id, t0: x2.t0 })) ?? null,
+  paperSpans: () => perfApi.playTl?.papers.map((x2) => ({ id: x2.paper.id, t0: x2.t0 })) ?? null,
   // 换段 / 现在放的时间线里每段从几秒起（E2E 用）
   workspace: () => ({ ...ws, dock: dockOf(ws) }),
   setMode: (m2) => setMode(m2),
@@ -40530,9 +40757,9 @@ var fmtDb = (dB) => `${dB > 0 ? "+" : dB < 0 ? "\u2212" : ""}${Math.abs(dB)} dB`
 var audition = null;
 function padHint() {
   if (finderShown) return auditionHint;
-  const eng = activeInstrument(doc.extras, curRole())?.engine;
-  if (eng === "tsukuyomi" || eng === "vowel-sampler") return HER_RANGE;
-  if (eng !== "soundfont") return null;
+  const plug = performerOf(activeInstrument(doc.extras, curRole())?.engine);
+  if (!plug) return null;
+  if (plug.hintRange) return plug.hintRange;
   if (!catalogNow) {
     void loadCatalog(new URL(import.meta.url)).then((c10) => {
       catalogNow = c10;
@@ -40561,7 +40788,7 @@ var GS = SOUNDS["generaluser-gs-2.0.3"];
 async function setAudition(p2) {
   const cat2 = p2?.kind === "gs" ? catalogNow ??= await loadCatalog(new URL(import.meta.url)) : null;
   const sk2 = cat2 && p2?.kind === "gs" && p2.provider.note === void 0 ? sampleKeyOf(cat2, p2.provider.bank, p2.provider.program) : null;
-  auditionHint = !p2 || sk2 ? null : p2.kind === "voice" ? HER_RANGE : ((r10) => r10 ? { ...r10, who: p2.concept.names.zh } : null)(rangeOf(p2.concept));
+  auditionHint = !p2 || sk2 ? null : p2.kind === "voice" ? TSUKUYOMI_RANGE : ((r10) => r10 ? { ...r10, who: p2.concept.names.zh } : null)(rangeOf(p2.concept));
   if (auditionHint) pad3.follow(auditionHint.lo, auditionHint.hi);
   else pad3.render();
   if (!p2 || p2.kind === "voice") {
@@ -40592,13 +40819,13 @@ function gsKeyArgs(cat2, bank, program, drumNote) {
 }
 function marksTableHtml(role, eng) {
   const sp2 = activePerfSpec(doc.extras, role), ms = (x2) => `${Math.round(x2 * 1e3)} ms`, pct2 = (x2) => `${Math.round(x2 * 100)}%`, db = (x2) => `${x2 > 0 ? "+" : ""}${x2} dB`;
-  const ign = ignoredArts(eng, sp2.gapSec), gray = (m2) => ign.includes(m2) ? ` class="ign"` : "";
+  const ign = ignoredArts(performerOf(eng), sp2.gapSec), sung = performerOf(eng)?.sound === "chunks", gray = (m2) => ign.includes(m2) ? ` class="ign"` : "";
   const singTxt = (k2) => {
     const m2 = sp2.sing[k2];
     return m2 ? `${m2.at === "next" ? "\u4E0B\u4E00\u4E2A\u5B57" : "\u8FD9\u4E2A\u5B57"}\u524D\u300C${m2.mark}\u300D${m2.mark === "^" ? "\uFF08\u987F\u4E00\u4E0B\uFF0C\u4E0D\u6362\u6C14\uFF09" : m2.mark === "v" ? "\uFF08\u6362\u6C14\uFF09" : "\uFF08\u5927\u53E3\u6362\u6C14\uFF09"}` : "\u4E0D\u53D8\u6210\u5531\u6CD5\u8BB0\u53F7";
   };
   const vel = !!sp2.dynamicsVel;
-  const how = vel ? `\u6309\u4E0B\u90A3\u4E00\u4E0B\u7684\u8F7B\u91CD\uFF08MIDI \u529B\u5EA6\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31 = \u6BCF\u4E2A\u65B0\u97F3\u4E00\u4E2A\u53F0\u9636\uFF0C\u6309\u4F4F\u7684\u97F3\u4E2D\u95F4\u4E0D\u53D8\uFF1B\u4E00\u4E2A\u97F3\u91CC\u9762\u8981\u53D8\uFF0C\u7528\u97F3\u5185\u8D77\u4F0F${sp2.canSwell ? "" : "\uFF08\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF1A\u97F3\u5185\u53EA\u80FD\u53D8\u5F31\uFF09"}` : `\u4E00\u6761\u8FDE\u7EED\u7684\u97F3\u91CF\u66F2\u7EBF\uFF08\u4E58\u5728${eng === "tsukuyomi" ? "\u5531" : "\u5F39"}\u51FA\u6765\u7684\u58F0\u97F3\u4E0A\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31\u5728\u4E00\u4E2A\u957F\u97F3\u4E2D\u95F4\u4E5F\u4E00\u76F4\u5728\u53D8\uFF0C\u548C\u97F3\u5185\u8D77\u4F0F\u662F\u540C\u4E00\u79CD\u53D8\u6CD5\uFF1B\u53EA\u53D8\u54CD\u5EA6\u3001\u4E0D\u53D8\u97F3\u8272${eng === "tsukuyomi" ? "\uFF08\u771F\u4EBA\u6E10\u5F31\u4F1A\u53D8\u865A\u3001\u53D8\u6697\uFF0C\u8FD9\u4E2A\u8FD8\u6CA1\u6709\uFF09" : ""}`;
+  const how = vel ? `\u6309\u4E0B\u90A3\u4E00\u4E0B\u7684\u8F7B\u91CD\uFF08MIDI \u529B\u5EA6\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31 = \u6BCF\u4E2A\u65B0\u97F3\u4E00\u4E2A\u53F0\u9636\uFF0C\u6309\u4F4F\u7684\u97F3\u4E2D\u95F4\u4E0D\u53D8\uFF1B\u4E00\u4E2A\u97F3\u91CC\u9762\u8981\u53D8\uFF0C\u7528\u97F3\u5185\u8D77\u4F0F${sp2.canSwell ? "" : "\uFF08\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF1A\u97F3\u5185\u53EA\u80FD\u53D8\u5F31\uFF09"}` : `\u4E00\u6761\u8FDE\u7EED\u7684\u97F3\u91CF\u66F2\u7EBF\uFF08\u4E58\u5728${sung ? "\u5531" : "\u5F39"}\u51FA\u6765\u7684\u58F0\u97F3\u4E0A\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31\u5728\u4E00\u4E2A\u957F\u97F3\u4E2D\u95F4\u4E5F\u4E00\u76F4\u5728\u53D8\uFF0C\u548C\u97F3\u5185\u8D77\u4F0F\u662F\u540C\u4E00\u79CD\u53D8\u6CD5\uFF1B\u53EA\u53D8\u54CD\u5EA6\u3001\u4E0D\u53D8\u97F3\u8272${sung ? "\uFF08\u771F\u4EBA\u6E10\u5F31\u4F1A\u53D8\u865A\u3001\u53D8\u6697\uFF0C\u8FD9\u4E2A\u8FD8\u6CA1\u6709\uFF09" : ""}`;
   const rows = [
     ["\u529B\u5EA6\u600E\u4E48\u53D8", "", how],
     ["\u529B\u5EA6\u8BB0\u53F7", "", vel ? `\u529B\u5EA6\u8868\uFF1A${Object.entries(sp2.dynamicsVel).map(([d3, x2]) => `${d3} ${x2}`).join(" \xB7 ")}` : `\u97F3\u91CF\uFF1A${Object.entries(sp2.dynamicsDb).map(([d3, x2]) => `${d3} ${db(x2)}`).join(" \xB7 ")}`],
@@ -40606,19 +40833,19 @@ function marksTableHtml(role, eng) {
     ["\u5E7D\u7075\u97F3", "ghost", vel ? `\u529B\u5EA6 ${sp2.ghostVel}` : `\u6574\u4E2A\u97F3 ${db(sp2.ghostDb)}`],
     ["\u5F31\u5316", "unstress", vel ? `\u529B\u5EA6 ${sp2.unstressVel}` : `\u6574\u4E2A\u97F3 ${db(sp2.unstressDb)}`],
     ["\u6B21\u91CD\u97F3", "stress", vel ? `\u529B\u5EA6 +${sp2.stressVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.stressDb)}`],
-    ["\u91CD\u97F3", "accent", vel ? `\u529B\u5EA6 +${sp2.accentVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.accentDb)}${eng === "tsukuyomi" ? `\uFF1B${singTxt("accent")}` : ""}`],
-    ["\u5F3A\u97F3", "marcato", vel ? `\u529B\u5EA6 +${sp2.marcatoVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.marcatoDb)}${eng === "tsukuyomi" ? `\uFF1B${singTxt("marcato")}` : ""}`],
-    ["\u7A81\u5F3A sfz", "sfz", vel ? `\u529B\u5EA6 +${sp2.sfzVel}` : `\u97F3\u5934 ${db(sp2.sfzDb)}\uFF0C${ms(sp2.sfzSec)} \u91CC\u843D\u56DE\u6765${eng === "tsukuyomi" ? `\uFF1B${singTxt("sfz")}` : ""}`],
-    ["\u5F3A\u540E\u5373\u5F31 fp", "fp", `\u97F3\u5934\u6309 f\uFF0C${ms(sp2.fpSec)} \u91CC\u843D\u5230 p\uFF0C\u4E4B\u540E\u90FD\u662F p${eng === "tsukuyomi" ? `\uFF1B${singTxt("fp")}` : ""}`],
+    ["\u91CD\u97F3", "accent", vel ? `\u529B\u5EA6 +${sp2.accentVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.accentDb)}${sung ? `\uFF1B${singTxt("accent")}` : ""}`],
+    ["\u5F3A\u97F3", "marcato", vel ? `\u529B\u5EA6 +${sp2.marcatoVel}` : `\u97F3\u5934 ${ms(sp2.accentSec)} ${db(sp2.marcatoDb)}${sung ? `\uFF1B${singTxt("marcato")}` : ""}`],
+    ["\u7A81\u5F3A sfz", "sfz", vel ? `\u529B\u5EA6 +${sp2.sfzVel}` : `\u97F3\u5934 ${db(sp2.sfzDb)}\uFF0C${ms(sp2.sfzSec)} \u91CC\u843D\u56DE\u6765${sung ? `\uFF1B${singTxt("sfz")}` : ""}`],
+    ["\u5F3A\u540E\u5373\u5F31 fp", "fp", `\u97F3\u5934\u6309 f\uFF0C${ms(sp2.fpSec)} \u91CC\u843D\u5230 p\uFF0C\u4E4B\u540E\u90FD\u662F p${sung ? `\uFF1B${singTxt("fp")}` : ""}`],
     ["\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77", "swellGrow", sp2.canSwell ? `\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF1A< \u4ECE \u2212${sp2.swellDb} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\uFF1B<> \u4E24\u5934 \u2212${sp2.swellDb} dB\u3001\u4E2D\u95F4\u56DE\u5230\u5199\u7684\u529B\u5EA6\uFF08\u5F3A\u540E\u5373\u5F31\u4E4B\u540E\u7684 < \u957F\u56DE\u97F3\u5934\u7684 f\uFF09` : "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF"],
     ["\u97F3\u5185\u6E10\u5F31", "swellFade", `\u4E00\u8DEF\u5F80\u4E0B\u5230 \u2212${sp2.swellDb} dB`],
-    ["\u8DF3\u97F3", "staccato", eng === "tsukuyomi" ? singTxt("staccato") : `\u5531 / \u5F39 ${pct2(sp2.staccatoGate)} \u7684\u957F\u5EA6`],
+    ["\u8DF3\u97F3", "staccato", sung ? singTxt("staccato") : `\u5531 / \u5F39 ${pct2(sp2.staccatoGate)} \u7684\u957F\u5EA6`],
     ["\u4FDD\u6301", "tenuto", "\u8FD9\u4E2A\u97F3\u4E0D\u7559\u7F1D"],
     ["\u8FDE\u7EBF", "slur", "\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\u3001\u4E0D\u7559\u7F1D"],
-    ["\u547C\u5438", "breath", eng === "tsukuyomi" ? singTxt("breath") : `\u524D\u4E00\u4E2A\u97F3\u6536\u77ED ${ms(sp2.breathSec)}\uFF08\u6700\u591A ${pct2(sp2.breathShare)}\uFF09`],
-    ["\u51FA\u58F0\u7684\u6362\u6C14\uFF08\u8F7B\u5438 / \u6DF1\u5438\uFF09", "inhale", eng === "tsukuyomi" ? "\u6362\u6C14\u7684\u7A7A\u5F53\u91CC\u4E00\u58F0\u5438\u6C14\uFF08\u6309\u4E0B\u4E00\u4E2A\u5B57\u7684\u5143\u97F3\u5851\u5F62\uFF0C\u6BD4\u5B83\u8F7B\u7EA6 28 dB\uFF1B\u6DF1\u5438 = \u7A7A\u5F53\u957F\u4E00\u70B9\u3001\u54CD 4 dB\uFF09" : "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4F4D\u53EA\u65AD\u5F00\uFF0C\u4E0D\u51FA\u5438\u6C14\u58F0"],
-    ["\u6C14\u58F0\uFF08\xD7 \u7B26\u5934\uFF09", "whisper", eng === "tsukuyomi" ? "\u8FD9\u4E2A\u5B57\u4E0D\u5531\u97F3\u9AD8\uFF1A\u7528\u5FF5\u7684\u65F6\u5019\u7684\u6C14\u58F0\uFF08\u8C31\u5305\u7EDC\u7167\u65E7\u3001\u58F0\u5E26\u4E0D\u632F\uFF09\uFF0C\u518D\u8F7B 6 dB" : "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4F4D\u53EA\u6309\u97F3\u9AD8\u51FA\u58F0"],
-    ["\u97F3\u548C\u97F3\u4E4B\u95F4", "", eng === "tsukuyomi" ? "\u8FDE\u7740\u5531" : `${ms(sp2.gapSec)}\uFF08\u6700\u591A ${pct2(sp2.gapShare)}\uFF09`]
+    ["\u547C\u5438", "breath", sung ? singTxt("breath") : `\u524D\u4E00\u4E2A\u97F3\u6536\u77ED ${ms(sp2.breathSec)}\uFF08\u6700\u591A ${pct2(sp2.breathShare)}\uFF09`],
+    ["\u51FA\u58F0\u7684\u6362\u6C14\uFF08\u8F7B\u5438 / \u6DF1\u5438\uFF09", "inhale", sung ? "\u6362\u6C14\u7684\u7A7A\u5F53\u91CC\u4E00\u58F0\u5438\u6C14\uFF08\u6309\u4E0B\u4E00\u4E2A\u5B57\u7684\u5143\u97F3\u5851\u5F62\uFF0C\u6BD4\u5B83\u8F7B\u7EA6 28 dB\uFF1B\u6DF1\u5438 = \u7A7A\u5F53\u957F\u4E00\u70B9\u3001\u54CD 4 dB\uFF09" : "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4F4D\u53EA\u65AD\u5F00\uFF0C\u4E0D\u51FA\u5438\u6C14\u58F0"],
+    ["\u6C14\u58F0\uFF08\xD7 \u7B26\u5934\uFF09", "whisper", sung ? "\u8FD9\u4E2A\u5B57\u4E0D\u5531\u97F3\u9AD8\uFF1A\u7528\u5FF5\u7684\u65F6\u5019\u7684\u6C14\u58F0\uFF08\u8C31\u5305\u7EDC\u7167\u65E7\u3001\u58F0\u5E26\u4E0D\u632F\uFF09\uFF0C\u518D\u8F7B 6 dB" : "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4F4D\u53EA\u6309\u97F3\u9AD8\u51FA\u58F0"],
+    ["\u97F3\u548C\u97F3\u4E4B\u95F4", "", sung ? "\u8FDE\u7740\u5531" : `${ms(sp2.gapSec)}\uFF08\u6700\u591A ${pct2(sp2.gapShare)}\uFF09`]
   ];
   return `<details class="ip-marks"><summary>\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09</summary><table>${rows.map(([k2, m2, v]) => `<tr${gray(m2)}><th>${k2}</th><td>${esc8(v)}${m2 && ign.includes(m2) ? `<span class="ign-tag">\u4E0D\u8BA4</span>` : ""}</td></tr>`).join("")}</table></details>`;
 }
@@ -40657,16 +40884,7 @@ async function playHeadWith(p2) {
     label = a10.label;
   }
   const to2 = Math.min(8, Math.max(...notes.map((n10) => n10.t1)));
-  engine.channel("audition", { gainDb: 0, pan: 0, mute: false, solo: false });
-  playTl = null;
-  engine.setTimeline({ tracks: [track], range: { from: 0, to: to2 }, loop: false });
-  try {
-    await engine.play(0);
-    playIcon(true);
-    progress(`${label} \xB7 \u5F00\u5934 ${to2.toFixed(1)} \u79D2`);
-  } catch (e10) {
-    showError(`\u653E\u4E0D\u4E86\uFF1A${e10.message}`);
-  }
+  await previewTrack(track, to2, label);
 }
 async function castPick(p2) {
   if (finderPlayOnly) return;
@@ -40733,9 +40951,9 @@ var studio = new Studio2($2("stage"), {
   close: () => closeStudio(),
   master: () => activeMaster(doc.extras),
   setMasterGain: (dB) => updateExtras(withMaster(doc.extras, { gainDb: dB }), { kind: "studio", label: `\u603B\u8F68\u589E\u76CA ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
-  bypass: () => mixBypass,
+  bypass: () => perfApi.mixBypass,
   setBypass: (on2) => {
-    mixBypass = on2;
+    perfApi.mixBypass = on2;
     pushChannels();
     diagNote("studio", `bypass ${on2 ? "on" : "off"}`);
   },
@@ -41006,7 +41224,7 @@ function lyricMutes() {
       const toks = paper.tracks[p2.id];
       if (!toks) continue;
       const own = toks.some((t10) => !byId.has(t10.id)) ? sungPlan(toks, void 0, [], mode, st2.song.hum).at : null;
-      for (const [i10, x2] of lyricIssues(toks, eng, (i11) => byId.get(toks[i11].id) ?? own[i11])) m2.set(toks[i10].id, x2);
+      for (const [i10, x2] of lyricIssues(toks, performerOf(eng)?.lyrics ?? null, (i11) => byId.get(toks[i11].id) ?? own[i11])) m2.set(toks[i10].id, x2);
     }
     out.set(p2.id, m2);
   }
@@ -41036,7 +41254,7 @@ function readPlanOf(tokId, part) {
 }
 function lyricReadingAt(i10) {
   const t10 = tr(st2)[i10], part = st2.song.parts.find((x2) => x2.id === st2.at.part);
-  if (!t10 || t10.kind !== "note" || !part || engineNow() !== "tsukuyomi") return null;
+  if (!t10 || t10.kind !== "note" || !part || performerOf(engineNow())?.lyrics !== "words") return null;
   const plan = readPlanOf(t10.id, part);
   if (!plan) return null;
   const s10 = plan.score, key = `${s10.LANG}|${s10.TEXT}|${s10.SCORE.map((e10) => e10.kana).join(" ")}`, r10 = readings.get(key);
@@ -41078,13 +41296,10 @@ function partViews() {
   const labels = partLabels(st2.song, doc.extras), mutes = lyricMutes(), looks = partLooks();
   return st2.song.parts.map((p2, k2) => {
     const v = pv(p2.id), badges = [v.muted ? "\u9759\u97F3" : "", v.solo ? "\u72EC\u594F" : "", v.only ? "\u53EA\u770B\u5B83" : ""].filter(Boolean);
-    const eng = activeInstrument(doc.extras, p2.role)?.engine ?? "unknown";
+    const eng = activeInstrument(doc.extras, p2.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm2 = mutes.get(p2.id);
-    const noLyrics = eng === "soundfont" || eng === "vowel-sampler" ? `${labels[k2]}${eng === "vowel-sampler" ? "\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC" : "\u4E0D\u5531\u6B4C\u8BCD"}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220` : "";
-    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: eng === "unknown", first: k2 === 0, ...p2.clef ? { clef: p2.clef } : {}, ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: eng !== "soundfont", ...eng === "soundfont" && activeGm(doc.extras, p2.role)?.note !== void 0 ? { xHead: true } : {}, ...((g3) => {
-      const pk = g3 ? percKindOf(g3) : null;
-      return pk ? { perc: pk } : {};
-    })(eng === "soundfont" ? activeGm(doc.extras, p2.role) : null), ignores: ignoredFor(p2.role) };
+    const ly2 = plug?.lyrics, noLyrics = ly2 === "hum" || ly2 === "none" ? `${labels[k2]}${ly2 === "hum" ? "\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC" : "\u4E0D\u5531\u6B4C\u8BCD"}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220` : "";
+    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, ...p2.clef ? { clef: p2.clef } : {}, ...p2.staves === 2 ? { staves: 2 } : {}, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...plug?.notation?.({ extras: doc.extras, role: p2.role }) ?? {}, ignores: ignoredFor(p2.role) };
   });
 }
 function afterViewChange() {
@@ -41109,22 +41324,6 @@ function navPaperTo(id2) {
   const part = to2.tracks[st2.at.part] ? st2.at.part : st2.song.parts.find((p2) => to2.tracks[p2.id])?.id ?? st2.at.part;
   update(setFocus(st2, to2.id, part));
   jumpPlaybackToPaper(id2);
-}
-function jumpPlaybackToPaper(id2) {
-  if (!engine.playing && !preparing) return;
-  const span = viewScope === "all" && engine.playing ? playTl?.papers.find((x2) => x2.paper.id === id2) : void 0;
-  if (span && playTl) {
-    const r10 = playRange(playTl);
-    playMute = span.t0;
-    engine.seek(clampTo(r10, span.t0 - PRE_ROLL), playMute);
-    return;
-  }
-  stopPlay();
-  const go = () => {
-    if (preparing) setTimeout(go, 30);
-    else void startPlayback("head");
-  };
-  go();
 }
 function addNewPart(paper = st2.at.paper, giveFrom) {
   const role = newRoleId(doc.extras, st2.song), mic = newMicId(doc.extras, st2.song);
@@ -41682,7 +41881,7 @@ function openGrooveMenu(i10, at2) {
     }
     const paper = st2.song.papers.find((p2) => p2.id === st2.at.paper);
     const who = st2.song.parts.filter((p2) => paper?.tracks[p2.id]).map((p2) => {
-      const f2 = followOf(style, grooveCategory(activeInstrument(doc.extras, p2.role)?.engine ?? null, activeGm(doc.extras, p2.role)));
+      const f2 = followOf(style, grooveCategory(performerOf(activeInstrument(doc.extras, p2.role)?.engine)?.grooveCategory ?? null, activeGm(doc.extras, p2.role)));
       return `${roleName(doc.extras, p2.role)} ${f2 > 0 ? `\u8DDF ${Math.round(f2 * 100)}%` : "\u4E0D\u8DDF"}`;
     });
     if (who.length) hints.push(`\u8FD9\u5F20\u7EB8\u4E0A\uFF1A${who.join(" \xB7 ")}\uFF08\u6309\u4E50\u5668\u7C7B\u522B\uFF0C\u9884\u8BBE\u7ED9\u7684\uFF09`);
@@ -41892,7 +42091,7 @@ instEl.className = "inst-page";
 instEl.hidden = true;
 $2("stage").append(instEl);
 var instPicked = null;
-var ENGINE_TITLE = { tsukuyomi: "\u5C0F\u6708\u76F8\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09", "vowel-sampler": "\u5C0F\u6708\u76F8\u7684\u5143\u97F3\u91C7\u6837\uFF1A\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1", soundfont: "SoundFont \u4E50\u5668\uFF08TinySoundFont \u51FA\u58F0\uFF09", unknown: "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09" };
+var UNKNOWN_TITLE = "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09";
 function openInstPage() {
   closeOffer?.();
   finderBackToInst = false;
@@ -42036,7 +42235,7 @@ function drawInst() {
   const gms = new Map(gmCandidates(doc.extras, role).map((g3) => [g3.id, g3])), active = gms.get(aid), who = activeCandidateName(doc.extras, role) ?? "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09";
   const chipTitle = (c10) => {
     const g3 = gms.get(c10.id);
-    if (!g3) return ENGINE_TITLE[c10.engine];
+    if (!g3) return performerOf(c10.engine)?.description ?? UNKNOWN_TITLE;
     return g3.bytes ? `SoundFont ${g3.bank}:${g3.program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText2(g3.bytes.length)}\uFF09` : g3.path ? "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765" : `\u5F31\u5F15\u7528\uFF1A\u58F0\u97F3\u4E0D\u5728\u6B4C\u91CC\uFF0C\u7528\u65F6\u4ECE\u300C${g3.origin.name}\u300D\u627E`;
   };
   const status = !active ? "" : active.bytes ? `<div class="cand-status">\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08${sizeText2(active.bytes.length)}\uFF09${active.origin.library ? `\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 ${esc8(active.origin.name)}` : `\uFF0C\u6765\u81EA ${esc8(active.origin.name)}`}</div>` : active.path ? `<div class="cand-status">\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D</div>` : ((found) => `<div class="cand-status">\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C${esc8(active.origin.name)}\u300D\u627E\uFF08${found ? "\u672C\u6B21\u5DF2\u627E\u5230" : "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6"}\uFF09${found ? "" : `<button class="btn" data-v="find:${esc8(active.id)}">\u627E\u6587\u4EF6\u2026</button>`}</div>`)(sessionSubsets.has(active.subsetSha256));
@@ -42044,18 +42243,18 @@ function drawInst() {
   const parts = st2.song.parts.map((p2, k2) => ({ p: p2, label: labels[k2] })).filter((x2) => onPaper.has(x2.p.id));
   const cal = activeCalibrationDb(doc.extras, role), tr3 = activeTranspose(doc.extras, role);
   const row2 = (k2, v, note2 = "") => `<span class="ip-k">${k2}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note2 ? `<div class="ip-note">${note2}</div>` : ""}</div>`;
-  const how = (eng !== "unknown" ? row2(
+  const how = (performerOf(eng) ? row2(
     "\u54CD\u5EA6",
     `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB">\u22121 dB</button><button class="btn" data-v="cal:1" title="\u5927\u58F0 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="\u56DE\u5230\u9ED8\u8BA4 ${fmtDb(DEFAULT_CALIBRATION_DB)}">\u9ED8\u8BA4</button>` : ""}`,
     `\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F ${fmtDb(DEFAULT_CALIBRATION_DB)}\uFF08\u5C0F\u6708\u76F8\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u53E6\u7B97`
   ) : "") + // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
   //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
-  (eng === "soundfont" || eng === "vowel-sampler" ? ((gap, d3) => row2(
+  (performerOf(eng)?.sound === "notes" ? ((gap, d3) => row2(
     "\u97F3\u548C\u97F3\u4E4B\u95F4",
     `<b class="ip-val">${Math.round(gap * 1e3)} ms</b><button class="btn" data-v="gap:-0.01" title="\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09">\u221210</button><button class="btn" data-v="gap:0.01" title="\u7F1D\u5927 10 ms\uFF08\u66F4\u65AD\uFF09">+10</button>` + (d3 && Math.abs(gap - d3.gapSec) > 1e-9 ? `<button class="btn" data-v="gap:def" title="\u56DE\u5230\u9ED8\u8BA4 ${Math.round(d3.gapSec * 1e3)} ms">\u9ED8\u8BA4</button>` : ""),
     `\u4E0D\u5199\u8BB0\u53F7\u7684\u97F3\u548C\u4E0B\u4E00\u4E2A\u97F3\u4E4B\u95F4\u7559\u7684\u7F1D\uFF1A0 = \u8FDE\u7740\u3002${d3 ? `${esc8(d3.label)}\uFF1A\u9ED8\u8BA4 ${Math.round(d3.gapSec * 1e3)} ms\uFF08\u97F3\u4E50\u76EE\u5F55\u7ED9\u7684\uFF0C\u6309\u97F3\u8272\u9010\u4E2A\uFF09\u3002` : ""}\u8FDE\u7EBF\uFF08\u8FDE\u594F\uFF09\u3001\u4FDD\u6301\u7684\u97F3\u4E0D\u7559\u7F1D\uFF1B\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u8DF3\u97F3\u53E6\u7B97`
   ))(activePerfSpec(doc.extras, role).gapSec, gapDefaultOf(role)) : "") + // 力度（2026-10-08，user「应该send的就是velocity！」「力度就是velocity」）：没写力度记号的音按这个；有力度表的演奏者 mp / mf 查表、重音 / 强音往上加
-  (eng === "soundfont" ? ((v, sp2) => {
+  (performerOf(eng)?.dynamics === "velocity" ? ((v, sp2) => {
     const midi = Math.round(v * 127), def = sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127), g3 = activeGm(doc.extras, role);
     const L2 = g3 && g3.origin.library === GS_LIBRARY_ID && catalogNow ? velLayersOf(catalogNow, g3.bank, g3.program, g3.note) : null, k2 = L2 ? L2.ranges.findIndex(([lo2, hi]) => midi >= lo2 && midi <= hi) : -1;
     return row2(
@@ -42064,7 +42263,7 @@ function drawInst() {
       `\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002` + (sp2.dynamicsVel ? `\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +${sp2.accentVel}\u3001\u5F3A\u97F3 +${sp2.marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A${dynTable(sp2, L2)}` : `\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A${dynTable(sp2, null)}`) + (L2 ? L2.count > 1 ? `GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 ${L2.count} \u4E2A\u529B\u5EA6\u5C42${k2 >= 0 ? `\uFF0C\u73B0\u5728\u5728\u7B2C ${k2 + 1} \u5C42\uFF08${L2.ranges[k2][0]}\u2013${L2.ranges[k2][1]}\uFF09` : ""}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002` : "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002" : "")
     );
   })(activeVelocity(doc.extras, role), activePerfSpec(doc.extras, role)) : "") + // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-  (eng === "tsukuyomi" || eng === "vowel-sampler" ? row2("\u529B\u5EA6\u8BB0\u53F7", "", `\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
+  (performerOf(eng)?.dynamics === "gain" ? row2("\u529B\u5EA6\u8BB0\u53F7", "", `\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A${dynTable(activePerfSpec(doc.extras, role), null)}`) : "") + // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
   //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐
   (active?.sfx ? ((fixed, al2) => row2(
     "\u97F3\u6548",
@@ -42076,18 +42275,18 @@ function drawInst() {
     `<b class="ip-val">${tr3 > 0 ? "+" : tr3 < 0 ? "\u2212" : ""}${Math.abs(tr3)} \u534A\u97F3</b><button class="btn" data-v="tr:-12" title="\u4F4E\u4E00\u4E2A\u516B\u5EA6">\u221212</button><button class="btn" data-v="tr:-1" title="\u4F4E\u534A\u97F3">\u22121</button><button class="btn" data-v="tr:1" title="\u9AD8\u534A\u97F3">+1</button><button class="btn" data-v="tr:12" title="\u9AD8\u4E00\u4E2A\u516B\u5EA6">+12</button>${tr3 ? `<button class="btn" data-v="tr:0" title="\u56DE\u5230 0">\u5F52\u96F6</button>` : ""}`,
     "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3"
   ) : "") + // 八度（v0.9.32；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：谱上写的 = 实际音高 = 发给音源的；这件乐器的记谱习惯（仓鼠 v12 notation）+ GS 这个音色的实测（octaveCheck）
-  (eng === "soundfont" ? ((g3) => {
+  (activeGm(doc.extras, role) ? ((g3) => {
     const cpt = catalogNow ? conceptOfIds(catalogNow, doc.extras.lounge[role]?.concept?.ids) : void 0;
     const oc2 = g3 && catalogNow && g3.origin.library === GS_LIBRARY_ID ? octaveCheckOf(catalogNow, g3.bank, g3.program, g3.note) : null, nt2 = cpt?.notation;
     const text2 = octaveDisclosure(nt2, oc2, (c10) => CLEF_LABEL[c10] ?? c10);
     return text2 ? row2("\u516B\u5EA6", "", esc8(text2)) : "";
-  })(activeGm(doc.extras, role)) : "") + (eng === "tsukuyomi" || eng === "vowel-sampler" ? row2("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
-  (eng === "tsukuyomi" ? ((sc2) => row2(
+  })(activeGm(doc.extras, role)) : "") + ((performerOf(eng)?.lyrics ?? "none") !== "none" ? row2("\u54FC\u7684\u5B57", HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09") : "") + // 分段唱（这位演奏者的属性；user「开关是歌手的属性，可以有不同的粒度」）：长歌一口气唱完会撑爆 iPad 的内存；分段 = 一段唱完就放掉，重复的段 / 没改的句子直接复用
+  (performerOf(eng)?.sound === "chunks" ? ((sc2) => row2(
     "\u5206\u6BB5\u5531",
     [["phrase", "\u6BCF\u53E5", "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5"], ["sheet", "\u6BCF\u5F20\u7EB8", "\u4E00\u5F20\u7EB8\u4E00\u6BB5"], ["whole", "\u4E00\u6574\u9996", "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09"]].map(([v, l10, t10]) => chip(`chunk:${v}`, l10, sc2 === v, t10)).join(""),
     sc2 === "whole" ? "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F" : "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF"
-  ))(activeSingChunk(doc.extras, role)) : "") + (eng === "unknown" ? row2("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
-  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc8(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc8(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc8(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc8(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc8(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc8(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc8(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc8(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, c10.engine === "unknown" ? `${esc8(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc8(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (c10.engine === "soundfont" || c10.engine === "unknown") ? `<button class="btn cand-del" data-v="del:${esc8(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc8(e10.id)}" title="${esc8(`${e10.description ?? e10.name}\uFF08${sizeText2(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc8(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc8(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
+  ))(activeSingChunk(doc.extras, role)) : "") + (!performerOf(eng) ? row2("", "", "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D") : "");
+  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="\u56DE\u5230\u8C31\uFF08Esc\uFF09">\u2190 \u8C31</button><span class="ip-title">\u4E50\u5668</span>` + (parts.length > 1 ? `<select class="ip-part" title="\u6362\u4E00\u4E2A\u58F0\u90E8">${parts.map((x2) => `<option value="${esc8(x2.p.id)}"${x2.p.id === st2.at.part ? " selected" : ""}>${esc8(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc8(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173"><svg class="ico"><use href="#grid"/></svg><span>\u952E\u76D8</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48<small>\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${esc8(rn2)}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc8(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc8(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u8C31\u4E0A\u5199<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc8(rn2)}" /></label><div class="role-sound">MusicXML\uFF1A<code>${esc8(rs2)}</code></div></section><section class="ip-card"><h3>\u8C01\u6765\u6F14<small>\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31</small></h3><div class="ip-cands">` + candidates(doc.extras, role).map((c10) => chip(`cand:${c10.id}`, !performerOf(c10.engine) ? `${esc8(c10.name)}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09` : esc8(c10.name), aid === c10.id, chipTitle(c10)) + (aid !== c10.id && (performerOf(c10.engine)?.removable ?? true) ? `<button class="btn cand-del" data-v="del:${esc8(c10.id)}" title="\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09">\xD7</button>` : "")).join("") + `</div>` + status + `<div class="ip-sub">\u6362\u4EBA</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A">\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026</button>` + Object.values(SOUNDS).map((e10) => `<button class="btn" data-v="sound:${esc8(e10.id)}" title="${esc8(`${e10.description ?? e10.name}\uFF08${sizeText2(e10.bytes)}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B${e10.license.name}\uFF09`)}">\u4ECE ${esc8(e10.name)} \u9009\u2026</button>`).join("") + `<button class="btn" data-v="sf2:pick" title="\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559">\u4ECE .sf2 \u6587\u4EF6\u9009\u2026</button></div>` + pickerHtml() + `<div class="ip-note">\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002</div></section><section class="ip-card ip-how"><h3>${esc8(who)} \u600E\u4E48\u6F14<small>\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
   const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
   sel.addEventListener("change", () => {
     const [snd, ...nm2] = sel.value.split("|");
@@ -42217,7 +42416,7 @@ function applyDesk(d3) {
   }
 }
 function loadDoc(song, o10) {
-  mixBypass = false;
+  perfApi.mixBypass = false;
   busMuted.clear();
   if (impro) toggleImpro();
   closeOffer?.();
@@ -42243,20 +42442,14 @@ function loadDoc(song, o10) {
   applyWorkspace();
   void refHost.apply(o10.references ?? {}, d3.ref);
   pad3.setRangeLow(d3.pad.low);
-  engine.forget(chunkKeys.splice(0));
-  chunkFailed.clear();
-  chunkKeysWanted = [];
-  chunkPlans = /* @__PURE__ */ new Map();
-  singer.cancelPending();
-  singer.cancelInflight();
-  trimLanesForNewSong();
+  onSongSwitch();
   sound.allOff();
   void prepareBank();
   view.render();
   pad3.render();
   renderTitle();
   updateChrome();
-  if (st2.song.parts.some((p2) => activeInstrument(doc.extras, p2.role)?.engine === "tsukuyomi")) void singer.warm(modelBases(), BUDGET.speechDisk);
+  if (st2.song.parts.some((p2) => performerOf(activeInstrument(doc.extras, p2.role)?.engine)?.sound === "chunks")) void singer.warm(modelBases(), BUDGET.speechDisk);
   if (startDyns) info(`\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 ${startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09`);
   schedulePrewarm();
 }
@@ -43614,8 +43807,7 @@ document.addEventListener("visibilitychange", () => {
   }
   if (document.visibilityState !== "visible") return;
   const c10 = singer.unlock();
-  latLogged = null;
-  latAt = 0;
+  resetLatencyLog();
   const ts2 = typeof c10.getOutputTimestamp === "function" ? c10.getOutputTimestamp() : null;
   diagNote("audio", `visible again: ctx ${c10.state}, playing ${engine.playing}, currentTime ${c10.currentTime.toFixed(3)}, ts ${ts2 ? `${ts2.contextTime?.toFixed(3)} @ ${ts2.performanceTime?.toFixed(0)}` : "none"}, now ${performance.now().toFixed(0)}`);
 });
@@ -43643,4 +43835,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c5255a4460c2.mjs.map
+//# sourceMappingURL=moonsinger-f76d495c8f0b.mjs.map

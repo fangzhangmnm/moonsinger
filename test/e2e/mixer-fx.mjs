@@ -100,7 +100,7 @@ check(!!(await p.$(`.strip[data-id="${partId}"] [data-v="fxaddkind"][data-kind="
 // 压缩页的表（v0.10.16）：插上压缩、放着 = 「压了」读数（这台压缩此刻压了几 dB）+ 条；撤销 = 拿掉
 await p.click(`.strip[data-id="${partId}"] [data-v="fxaddkind"][data-kind="comp"]`); await p.waitForTimeout(150);
 await p.click("#playBtn");
-{ let gv = "0 dB"; for (let i = 0; i < 30 && gv === "0 dB"; i++) { await p.waitForTimeout(150); gv = (await p.textContent(`.strip[data-id="${partId}"] .gr-val`)) ?? ""; }
+{ let gv = "0 dB"; for (let i = 0; i < 80 && gv === "0 dB"; i++) { await p.waitForTimeout(150); /* 并行跑 8 个浏览器时库载进录音房会慢：等到 12 s（单跑 < 1 s） */ gv = (await p.textContent(`.strip[data-id="${partId}"] .gr-val`)) ?? ""; }
   const w = await p.$eval(`.strip[data-id="${partId}"] .gr-bar > i`, (e) => parseFloat(e.style.width) || 0);
   check(/^-\d+\.\d dB$/.test(gv) && w > 0, "压缩页：放着 = 「压了」读数 + 条", `${gv} / 条 ${w}%`);
   const cv = await p.$eval(`.strip[data-id="${partId}"] .strip-comp`, (e) => ({ cin: (e.querySelector(".cin")?.getAttribute("d") ?? "").length, cout: (e.querySelector(".cout")?.getAttribute("d") ?? "").length, cgr: (e.querySelector(".cgr")?.getAttribute("d") ?? "").length, thr: !!e.querySelector(".cthr") }));

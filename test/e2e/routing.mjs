@@ -128,7 +128,9 @@ await p.click(`${strip(ids[1].id)} [data-v="fxpastenew"]`); await p.waitForTimeo
 // 差设备（v0.10.17；user「以及注意一下差设备上的性能影响」）：滚出去看不见的卡片不算 FFT、不画；滚回来才画
 await p.setViewportSize({ width: 1100, height: 420 }); await tab("eq"); await p.waitForTimeout(200);
 await p.$eval(".studio-strips", (e) => { e.scrollTop = 0; }); await p.evaluate(() => { const s = document.querySelector(".studio"); if (s) s.scrollTop = 0; });
-await p.click("#playBtn"); await p.waitForTimeout(1500);
+await p.click("#playBtn");
+for (let i = 0; i < 60; i++) { if ((await p.$eval(".studio-strips .strip[data-id]", (el) => el.querySelector(".strip-spec .spec")?.getAttribute("d") ?? "")).length > 0) break; await p.waitForTimeout(200); }   // 等第一张卡真画出频谱（并行负载下起放慢；单跑 1.5 s 内）
+await p.waitForTimeout(300);
 { const last = await p.$$eval(".studio-strips .strip[data-id]", (es) => { const vh = innerHeight; const el = es.at(-1); const r = el.getBoundingClientRect(); return { id: el.dataset.id, off: r.top > vh || r.bottom < 0, d: el.querySelector(".strip-spec .spec")?.getAttribute("d") ?? "" }; });
   const first = await p.$eval(".studio-strips .strip[data-id]", (el) => el.querySelector(".strip-spec .spec")?.getAttribute("d") ?? "");
   check(first.length > 0 && (!last.off || last.d === ""), "看得见的卡片画频谱、滚出去的不画", `first ${first.length} / last off=${last.off} d=${last.d.length}`);

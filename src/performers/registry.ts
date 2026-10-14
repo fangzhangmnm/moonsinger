@@ -9,7 +9,7 @@
 //   · 认不出的（engine 不在表里）= null：时间线报「还没有人上场」、不出声、不替补（10-07 纪律）。
 //   · 版本比歌里记的新 = 画灰 + 提示「升级到 @N？」，user 点了才跑插件自带的迁移；**不静默换**（user 2026-10-14「插件升级了是变灰提示你按升级，而不是静默换」）。
 //     解析四种情况（对版本 / 待升级 / 同名顶上要人确认 / 认不出）在 ADR-0004 §2.2；带 guid 的壳和版本比对等格式那一刀套上去再做，现在歌里还只有引擎名。
-//     怎么露出来（一张清单 / 角标 / 导出面板一行 / patch-minor-major）= ADR-0004 §2.2 补议，待 user 拍。
+//     怎么露出来（一张清单 / 常驻角标 / 开歌一条 toast / 导出面板一行；patch-minor-major 落在迁移步骤上；旧 app 开新歌逐轨灰）= ADR-0004 §2.2½（user 2026-10-14「一套机制、四个出口 同意」），还没落地。
 import type { Extras, GmCandidate } from "../format/project.ts";
 import type { Hum } from "../format/contract.ts";
 import type { FxV2 } from "../format/contract.ts";
