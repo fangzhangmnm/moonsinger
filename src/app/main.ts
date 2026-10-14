@@ -47,7 +47,7 @@ import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSound
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf, TSUKUYOMI_RANGE } from "../performers/index.ts";
 import { createPerformance, type Issue } from "./performance.ts";   // 唱歌 / 播放 / 导出的胶水（刀 1 之二）
-import { createOverlayRegistry } from "./overlay.ts";   // 盖层登记（刀 3 之一）：面板 / 小菜单 / 轨的小卡同一时刻只开一张   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
+import { createOverlayRegistry, padLocked } from "./overlay.ts";   // 盖层登记（刀 3 之一）：面板 / 小菜单 / 轨的小卡同一时刻只开一张；page（刀 3 之二）：谱 / 乐器页 / 目录   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
 import type { AuditionInst, TrackSpec } from "../engine/studio.ts";
 import { buildTimeline, lightNotes, songLangOf, sungPlan, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
@@ -260,11 +260,11 @@ function renderTopSels(): void {
 }
 function updateChrome(): void {
   if (!chromeReady) return;
-  const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);   // 乐器页开着：选区条也收（不然盖住乐器页顶条的「← 谱」）
+  const over = finder.isOpen || instShown() || (gallery?.isOpen() ?? false);   // 乐器页开着：选区条也收（不然盖住乐器页顶条的「← 谱」）
   dockTab.hidden = over;   // 底座边上的小条 / 挂签：乐器页 / 目录 / 歌库盖着谱时收起
   // 小条上的「键盘」= 一直在的开关（v0.10.21；user「小工具条也有键盘展开的功能」）：开着亮、点 = 收起；收着点 = 开（「听」= 混音台）。「词」没有键盘 = 不露
   const dockOpen = ws.mode === "listen" ? studio.isOpen : !padEl.hidden;
-  padTab.hidden = ((gallery?.isOpen() ?? false) && !finderShown) || (!hasKeys(ws.mode) && ws.mode !== "listen");
+  padTab.hidden = ((gallery?.isOpen() ?? false) && !finderShown()) || (!hasKeys(ws.mode) && ws.mode !== "listen");
   padTab.classList.toggle("is-on", dockOpen);
   { const lab = ws.mode === "listen" ? "混音台" : "键盘", sp = padTab.querySelector("span"); if (sp && sp.textContent !== lab) sp.textContent = lab; padTab.title = `${ws.mode === "listen" ? "混音台" : "键盘（pad）"}：${dockOpen ? "点 = 收起" : "点 = 打开"}`; }
   renderTopSels();   // 「词 / 听」没有键盘：不露「键盘」tab
@@ -510,11 +510,12 @@ function monoAccept(id: string): boolean {
 // pad 一创建就要提示音域（padHint）：它读的状态必须在 pad 之前声明（esbuild 打包后晚声明的 = undefined，开机就崩；2026-10-08 踩过）
 let auditionHint: HintRange = null;   // 找人视图里 pad 提示的音域 = 试听台上那位的
 let catalogNow: Catalog | null = null;   // 目录（找人视图 / 乐器声部的音域要它；第一次用到时载，260 KB）
-let instShown = false;   // 乐器页开着（openInstPage / closeInstPage 维护）：pad 只弹不写，弹的是台上那位
-let finderBackToInst = false;   // 乐器目录是从乐器页开的：关掉（含上场）回乐器页
-let trackRedraw: (() => void) | null = null;   // 轨的小卡开着 = 它的重画（撤销 / 别处改了跟着变）
-let finderShown = false;   // 找人视图开着（openFinder / closeFinder 维护；不在这里读 finder——它比 pad 晚建）
-let finderPlayOnly = false;   // 从歌库进的乐器目录 = 只弹着玩（盖在歌库上面、不出「上场」；user 2026-10-08「库里面不开歌能进乐器目录玩吗」→「做只弹着玩模式」）
+const ui = createOverlayRegistry();   // 盖层登记（F-17 第 1 期，2026-10-14）：原来那个「现在开着的面板怎么关」的闭包协议收成一个对象；开新的 = 旧的先关，自己收了只在还是现在这层时清
+// 整页在哪（谱 / 乐器页 / 乐器目录）= ui.page（刀 3 之二，2026-10-14）：原来五个各自维护的旗（乐器页开着 / 目录开着 / 只弹着玩 / 关了回乐器页 / 小卡的重画）从这儿推；
+//   这里读 ui.page 不读 finder 对象——pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
+const instShown = (): boolean => ui.page.k === "inst";
+const finderShown = (): boolean => ui.page.k === "finder";
+const finderPlayOnly = (): boolean => ui.page.k === "finder" && ui.page.playOnly;
 // ── 叠音的「头 / 尾」判据（2026-10-08 by Claude Opus 5.5；只给能叠音的声部）──
 //   user「之前的判定是ab落的时候相近。现在的判定是b落的时候不在a的尾巴上」「如果ab，b按下去之后a马上松，那么就不应该是和弦」
 //   「尾巴时间规则也需要考虑相对比例，比如如果我快速跳音轻按ab多次的时候」「和弦输入的时候应该支持有长间隔的连按…慢慢按，xor toggle，手指数量不够的时候也能好」
@@ -578,7 +579,7 @@ function insertMarkHere(kind: MarkVal["kind"]): void {
 }
 const pad = new Pad(padEl, {
   state: () => st,
-  isImpro: () => impro || finderShown || instShown,   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
+  isImpro: () => impro || finderShown() || instShown(),   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown() 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
   onImpro: () => toggleImpro(),
   onKbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
   accept: (id) => (canStack() ? (monoHeld.add(id), true) : monoAccept(id)),   // 能叠音的声部：同时多按都收（80 ms 内 = 叠在一起）；单声乐器照旧只写第一个
@@ -671,7 +672,7 @@ function toggleImpro(): void { if (finder.isOpen) return; impro = !impro; if (im
 /** 「弹」时正按着的音 → 谱上光标处（叠亮着 = 那个音上）画鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「鬼音符的时候千万不能动排版！」）：
  *  只是盖在谱上的一层（ScoreView.showGhost），不改谱、不重排。 */
 const ghostHeld = new Map<string, Pitch>();
-const ghostOn = (): boolean => impro && !finder.isOpen && !instShown;
+const ghostOn = (): boolean => impro && !finder.isOpen && !instShown();
 function ghostSync(): void { view.showGhost(ghostOn() ? [...ghostHeld.values()] : []); }
 
 // ── 撤销 / 重做（src/score/history.ts）：song 每变一次记一份改之前的快照（引用，不拷贝）；gesture = 连续动作（拖 / 连打歌词）并成一步；换歌清栈 ──
@@ -700,7 +701,7 @@ function updateExtras(next: Extras, locus: Locus, gesture?: string): void {
   pushChannels(); schedulePlaybackRefresh(); schedulePrewarm();   // 推子 / 校准立刻进录音房（边放边调）；换人 = 时间线重算
   refreshIssues();   // 换人 = 清单重算（换对了角标自己消）
   if (locus.kind === "lounge") pad.render();   // 演奏者变了 = pad 的提示跟着（音域 / 原速键；固定原速 = 不提示）
-  drawInst(); trackRedraw?.(); updateChrome();   // 歌手名在挂签的下拉里
+  drawInst(); ui.redraw(); updateChrome();   // 歌手名在挂签的下拉里
 }
 /** 歌和 extras 一起改、算一步（加声部 / 删声部：谱和休息室同时动）。 */
 function updateBoth(next: EditorState, nextExtras: Extras, locus: Locus): void {
@@ -737,7 +738,7 @@ function restore(r: Restored, verb: string): void {
   revealPart(r.st.at.part);
   applyState(r.st);
   if (studio.isOpen) studio.render();
-  drawInst(); trackRedraw?.();
+  drawInst(); ui.redraw();
   renderUndo();
   lastUndoText = `${verb} · ${locusText(r.st, r.locus)}`;
   showNotice({ id: "undo", level: "info", text: lastUndoText, autoHideMs: 2500 });
@@ -999,7 +1000,6 @@ function openMp3Panel(): void {
     else if (v === "go") { close(); void exportSong({ quality: mp3Quality, scope: mp3Scope }); }
   });
 }
-const ui = createOverlayRegistry();   // 盖层登记（F-17 第 1 期，2026-10-14）：原来那个「现在开着的面板怎么关」的闭包协议收成一个对象；开新的 = 旧的先关，自己收了只在还是现在这层时清
 
 // ── 模型来源（ADR-0006 ③ re-pointable endpoints：界面上能改、出厂预填；user 2026-10-07「i might worry about hardcode my gh link so if
 //    i closed my gh account all app are not able to run in private server which violates the anti abandonware rule」）：
@@ -1214,7 +1214,7 @@ function noCast(what: string): void {
 let audition: { bank: number; program: number; note?: number; sfx?: SfxInfo; sha256: string; subset: Uint8Array; label: string } | null = null;
 /** pad 键底部的提示音域 = 现在谁在弹：找人视图里 = 试听的那位；写谱时 = 光标所在声部上场的那位（月读 / 元音版 = 她的；乐器 = 目录里角色那件乐器的音域；不知道 = 不画）。 */
 function padHint(): HintRange {
-  if (finderShown) return auditionHint;
+  if (finderShown()) return auditionHint;
   const plug = performerOf(activeInstrument(doc.extras, curRole())?.engine);
   if (!plug) return null;
   if (plug.hintRange) return plug.hintRange;   // 人声：固定音域（插件自报）；乐器 = 下面按目录查（音效 / 采样键只对 GS 成立，各自有守卫；概念音域和引擎无关）
@@ -1299,7 +1299,7 @@ function gapDefaultOf(role: string): { gapSec: number; label: string } | null {
   const g = activeGm(doc.extras, role);
   if (!g) return { gapSec: 0, label: "人声（连着唱）" };
   if (g.origin.library !== GS_LIBRARY_ID) return { gapSec: 0, label: "自己的 .sf2（目录里没有这个音色的连断数据）" };
-  if (!catalogNow) { void loadCatalog(new URL(import.meta.url)).then((c) => { catalogNow = c; if (instShown) drawInst(); }).catch(() => undefined); return null; }
+  if (!catalogNow) { void loadCatalog(new URL(import.meta.url)).then((c) => { catalogNow = c; if (instShown()) drawInst(); }).catch(() => undefined); return null; }
   const j = jointOf(catalogNow, g.bank, g.program, g.note);
   return j ? { gapSec: j.gapSec, label: j.zh } : { gapSec: 0, label: "一下就完 / 音效（不留缝）" };
 }
@@ -1324,7 +1324,7 @@ async function playHeadWith(p: FinderPick): Promise<void> {
  *  声音默认弱引用（2026-10-08 by Claude Opus 5.5；user「我后悔自动embed音源了，改成弱引用吧，app可以自己找吗」）：歌里只记来源 + 子集 sha256，
  *  GS 整包在设备缓存 / 家族音源库里找得到；要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。 */
 async function castPick(p: FinderPick): Promise<void> {
-  if (finderPlayOnly) return;   // 只弹着玩：没有要写进去的歌
+  if (finderPlayOnly()) return;   // 只弹着玩：没有要写进去的歌
   const cat = await loadCatalog(new URL(import.meta.url)), c = p.concept;
   const sound = p.kind === "gs" ? (p.provider.sound ?? roleSoundOf(cat, c)) : roleSoundOf(cat, c);
   updateExtras(withRoleConcept(doc.extras, curRole(), { name: roleNameOf(c), sound, concept: { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) } } }, st.song.hum), { kind: "lounge", label: `「${roleNameOf(c)}」改成这个乐器` }, "cast");
@@ -1392,7 +1392,7 @@ const studio = new Studio($("stage"), {
 });
 /** 录音室 = 底座里（键盘那个位子；和键盘互斥），谱留着能看（2026-10-10 user「录音室的键盘位化，和键盘互相排斥」；之前是全屏页）。 */
 /** 混音台 = 「听」的键盘（v0.10.2；user「能不能混音台就是听的键盘，不用单独一个键，就是不同功能有不同键盘」）：打开 = 切到听（底座 = 混音台）；收起 = 收起底座（底下那粒 tab 叫回来）。 */
-function openStudio(): void { ui.close(); finderBackToInst = false; closeFinder(); closeInstPage(); ws.collapsed = false; if (ws.mode !== "listen") setMode("listen"); else applyWorkspace(); }   // 峰值表：页开着才要
+function openStudio(): void { ui.close(); closeFinder(false); closeInstPage(); ws.collapsed = false; if (ws.mode !== "listen") setMode("listen"); else applyWorkspace(); }   // 峰值表：页开着才要
 function closeStudio(): void { if (!studio.isOpen) return; ws.collapsed = true; applyWorkspace(); scoreEl.focus(); }
 engine.on("meter", (peak, _active, tracks, ms, gr, cl) => { if (studio.isOpen) studio.meter(peak, tracks, ms, gr, cl); });
 engine.on("stereo", (tracks) => { if (studio.isOpen) studio.stereo(tracks); });   // 李萨如图（v0.10.16）   // 每张卡片顶上的峰值细线（v0.10.10）
@@ -1401,11 +1401,12 @@ engine.on("spectrum", (sr, tracks) => studio.spectrum(sr, tracks));   // EQ 页�
 /** 背景的统计只在看得见的那一页开（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）：EQ 页 = 频谱，基础页 = 李萨如图。 */
 function syncSpectrum(): void { const on = studio.isOpen && document.visibilityState === "visible"; engine.spectrum(on && studio.currentTab === "eq"); engine.stereo(on && studio.currentTab === "basic"); }
 function openFinder(): void {
-  finderBackToInst = instShown; if (instShown) { instShown = false; instEl.hidden = true; }
-  finderShown = true; finderPlayOnly = gallery?.isOpen() ?? false;
-  document.body.classList.toggle("finder-over-gallery", finderPlayOnly);   // 舞台整层盖到歌库上面（styles.css）
-  ui.close(); scoreEl.hidden = true; ws.tryout = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render(); void finder.show({ playOnly: finderPlayOnly }); updateChrome(); }   // 「弹」亮着 = pad 只弹不写
-function closeFinder(): void { if (!finder.isOpen) return; finderShown = false; if (finderPlayOnly) { finderPlayOnly = false; document.body.classList.remove("finder-over-gallery"); } finder.hide(); audition = null; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = instShown || finderBackToInst; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (finderBackToInst) openInstPage(); }
+  const back = instShown(); if (back) instEl.hidden = true;   // 从乐器页开的：关了回乐器页
+  ui.setPage({ k: "finder", playOnly: gallery?.isOpen() ?? false, backToInst: back });
+  document.body.classList.toggle("finder-over-gallery", finderPlayOnly());   // 舞台整层盖到歌库上面（styles.css）
+  ui.close(); scoreEl.hidden = true; ws.tryout = padLocked(ui.page); showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render(); void finder.show({ playOnly: finderPlayOnly() }); updateChrome(); }   // 「弹」亮着 = pad 只弹不写
+/** back = 关了回乐器页（默认 = 它是从乐器页开的）；开混音台 / 开乐器页 / 进歌库时传 false = 不回。 */
+function closeFinder(back: boolean = ui.page.k === "finder" && ui.page.backToInst): void { if (!finder.isOpen) return; const wasPlayOnly = finderPlayOnly(); ui.setPage({ k: "score" }); if (wasPlayOnly) document.body.classList.remove("finder-over-gallery"); finder.hide(); audition = null; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = back; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (back) openInstPage(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 function setActive(id: string): void { const next = withActive(doc.extras, curRole(), id, st.song.hum); updateExtras(next, { kind: "lounge", label: `「${roleName(next, curRole())}」换人：${activeCandidateName(next, curRole()) ?? id}` }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");
@@ -1705,9 +1706,9 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   }
   box.style.left = `${Math.max(m, Math.min(x, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(y, innerHeight - h - m))}px`;
   const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node)) close(); };   // 非模态：点外面就收，那一下照常落到谱上
-  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); trackRedraw = null; };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
-  ui.open({ k: "card", close }); trackRedraw = draw;
+  ui.open({ k: "card", close, redraw: draw });
   box.addEventListener("change", (e) => {   // 合租：挂到谁上 / 自己一行
     const t = e.target as HTMLSelectElement; if (t.dataset.hostsel === undefined) return;
     const next = setPartHost(st, curPart().id, t.value || null);
@@ -2133,17 +2134,17 @@ const SING_EXPERIMENTS: { key: string; label: string; def: number; values: numbe
   { key: "level", label: "齐平多少", def: 0.8, values: [0, 0.8], why: "0 = 照念的时候自己的轻重；0.8 = 往中位数拉八成" },
 ];
 function openInstPage(): void {
-  ui.close(); finderBackToInst = false;
-  if (finder.isOpen) closeFinder();
-  instShown = true; instPicked = null; scoreEl.hidden = true; instEl.hidden = false;
-  ws.tryout = true; showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render();
+  ui.close();
+  if (finder.isOpen) closeFinder(false);
+  ui.setPage({ k: "inst" }); instPicked = null; scoreEl.hidden = true; instEl.hidden = false;
+  ws.tryout = padLocked(ui.page); showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render();
   drawInst(); updateChrome();
   instEl.querySelector<HTMLElement>(".ip-body")?.scrollTo({ top: 0 });
 }
 function closeInstPage(): void {
-  if (!instShown) return;
+  if (!instShown()) return;
   commitRoleName();
-  instShown = false; instPicked = null; instEl.hidden = true; ws.tryout = finder.isOpen; applyWorkspace();
+  ui.setPage({ k: "score" }); instPicked = null; instEl.hidden = true; ws.tryout = false; applyWorkspace();   // 乐器页和目录互斥：关乐器页时目录一定没开
   padEl.classList.remove("is-locked"); pad.clearHeld(); pad.render(); scoreEl.hidden = false; view.render(); renderTitle(); updateChrome(); scoreEl.focus();
 }
 const setRole = (name: string, sound?: string) => {
@@ -2227,7 +2228,7 @@ function pickerHtml(): string {
 }
 /** 乐器页的内容（每次改完整页重画；输入框里正在打的字不受影响——只有提交时才改 extras）。 */
 function drawInst(): void {
-  if (!instShown) return;
+  if (!instShown()) return;
   const eng = engineNow(), h = st.song.hum, role = curRole(), rn = roleName(doc.extras, role), rs = roleSound(doc.extras, role), aid = activeId(doc.extras, role);
   const gms = new Map(gmCandidates(doc.extras, role).map((g) => [g.id, g])), active = gms.get(aid), who = activeCandidateName(doc.extras, role) ?? "（没人上场）";
   const chipTitle = (c: { id: string; engine: Engine }) => { const g = gms.get(c.id); if (!g) return performerOf(c.engine)?.description ?? UNKNOWN_TITLE; return g.bytes ? `SoundFont ${g.bank}:${g.program}，声音嵌在歌里（${sizeText(g.bytes.length)}）` : g.path ? "声音没随这首歌带来" : `弱引用：声音不在歌里，用时从「${g.origin.name}」找`; };
@@ -2953,7 +2954,7 @@ function ensureGallery(): GalleryHost {
     openSettings: () => openSettings(),
     openInstruments: () => openFinder(),   // 歌库开着 = 只弹着玩的目录，盖在歌库上面
     openCloudMenu: () => { void openCloudMenu(); },
-    onOpened: () => { ui.close(); finderBackToInst = false; closeFinder(); if (ws.mode === "listen") { ws.mode = lastEditMode; applyWorkspace(); } closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },   // 进歌库 = 放下手里的歌：混音台（听）也收
+    onOpened: () => { ui.close(); closeFinder(false); if (ws.mode === "listen") { ws.mode = lastEditMode; applyWorkspace(); } closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },   // 进歌库 = 放下手里的歌：混音台（听）也收
     onClosed: () => { void afterGalleryClosed(); showPad(padWas); updateChrome(); scoreEl.focus(); },
   });
   return gallery;
@@ -3208,13 +3209,13 @@ function finderKey(e: KeyboardEvent): void {
 }
 window.addEventListener("keydown", (e) => {
   keyTs = e.timeStamp;
-  if (finderShown && gallery?.isOpen()) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } else finderKey(e); return; }   // 歌库上面的乐器目录（只弹着玩）：Esc 回歌库；音键 = 弹
+  if (finderShown() && gallery?.isOpen()) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } else finderKey(e); return; }   // 歌库上面的乐器目录（只弹着玩）：Esc 回歌库；音键 = 弹
   if (gallery?.isOpen()) return;   // 歌库开着：键盘归它。没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建
   // 存 / 导出 / 打开（Ctrl / ⌘+S、+Shift+S、+O）挂在最外层：不管哪一页开着、焦点在谁身上（录音室 / 乐器页 / 乐器目录 / 参考窗）都是这首歌的事，
   //   不能落到浏览器的「保存网页」（2026-10-10 user「很多地方save没有拦截」）。各页只决定别的键。
   if ((e.ctrlKey || e.metaKey) && !e.altKey && /^[so]$/i.test(e.key)) { const a = route(e, whereNow(), "write"); if (a && a.k === "file") { e.preventDefault(); run(a, e.repeat, e.code); return; } }
   if (finder.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } else finderKey(e); return; }   // 找人视图开着：Esc + 音键只弹不写（pad 的触屏键照常）
-  if (instShown) {   // 乐器页：只认 Esc（回谱）和撤销 / 重做；输入框里的照常打字
+  if (instShown()) {   // 乐器页：只认 Esc（回谱）和撤销 / 重做；输入框里的照常打字
     const inField = (e.target as HTMLElement | null)?.closest("input, select, textarea");
     if (e.key === "Escape") { e.preventDefault(); closeInstPage(); }
     else if (!inField && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redoNow(); else undoNow(); }

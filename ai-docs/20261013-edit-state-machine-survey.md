@@ -148,4 +148,5 @@ export function dockOf(mode: Mode, o: Overlay, collapsed: boolean): Dock;   // �
 - §5 Q3（顺序）已不成问题：F-13 先切完了（v0.12.1 / 0.12.2，`20261014-performer-registry-and-glue-extraction.md`）。
 - **第 1 期前一半 done = v0.12.5**：`src/app/overlay.ts` 盖层登记，`closeOffer` 协议 44 / 89 处归零，`test/overlay.test.ts`；E2E modes / pad-toggle / finder-keys / save-keys / top-sels / transport / loop / lift / store / singer-delete / issues 绿。§5 Q2 先按「轨的小卡也算盖层（kind card）」做（它本来就在 closeOffer 协议里）。
 - 第 1 期后一半（整页的旗 instShown / finderShown / finderPlayOnly / finderBackToInst 收进登记、`padLocked / keyOwner / dockOf` 从盖层推）和第 2 期（锁的纯函数）待做；第 3 期（手势联合）照 §5 Q1 等 user。
+- **第 1 期后一半 done = v0.12.8**：`overlay.ts` 的 `page`（score / inst / finder{playOnly, backToInst}）+ `padLocked(page)`；五个整页旗归零（派生读 17 处），`closeFinder(back)` 参数化，`ws.tryout` 从 page 推，小卡重画挂在盖层对象上。**第 1 期完。** 没做的：`keyOwner(o)`——键盘路由 `whereNow()` 仍自己拼条件（它现在只多了 `ui.overlay`），等第 2 期一起看；`dockOf` 没多吃参数（`ws.tryout` 由 page 赋值已经够）。
 

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.7-2026-10-14";
+var APP_VERSION = "v0.12.8-2026-10-14";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -27204,11 +27204,21 @@ function createPerformance(host) {
 }
 
 // src/app/overlay.ts
+var padLocked = (p2) => p2.k !== "score";
 function createOverlayRegistry() {
-  let cur = null;
+  let cur = null, page = { k: "score" };
   return {
     get overlay() {
       return cur;
+    },
+    redraw() {
+      cur?.redraw?.();
+    },
+    get page() {
+      return page;
+    },
+    setPage(p2) {
+      page = p2;
     },
     open(next2) {
       const prev = cur;
@@ -39394,10 +39404,10 @@ function renderTopSels() {
 }
 function updateChrome() {
   if (!chromeReady) return;
-  const over = finder.isOpen || instShown || (gallery?.isOpen() ?? false);
+  const over = finder.isOpen || instShown() || (gallery?.isOpen() ?? false);
   dockTab.hidden = over;
   const dockOpen = ws.mode === "listen" ? studio.isOpen : !padEl.hidden;
-  padTab.hidden = (gallery?.isOpen() ?? false) && !finderShown || !hasKeys(ws.mode) && ws.mode !== "listen";
+  padTab.hidden = (gallery?.isOpen() ?? false) && !finderShown() || !hasKeys(ws.mode) && ws.mode !== "listen";
   padTab.classList.toggle("is-on", dockOpen);
   {
     const lab = ws.mode === "listen" ? "\u6DF7\u97F3\u53F0" : "\u952E\u76D8", sp2 = padTab.querySelector("span");
@@ -39810,11 +39820,10 @@ function monoAccept(id2) {
 }
 var auditionHint = null;
 var catalogNow = null;
-var instShown = false;
-var finderBackToInst = false;
-var trackRedraw = null;
-var finderShown = false;
-var finderPlayOnly = false;
+var ui2 = createOverlayRegistry();
+var instShown = () => ui2.page.k === "inst";
+var finderShown = () => ui2.page.k === "finder";
+var finderPlayOnly = () => ui2.page.k === "finder" && ui2.page.playOnly;
 var chordRoots = /* @__PURE__ */ new Map();
 var chordWaits = [];
 var tokIndex = (tokId) => tr(st2).findIndex((t10) => t10.id === tokId);
@@ -39877,8 +39886,8 @@ function insertMarkHere(kind) {
 }
 var pad3 = new Pad(padEl, {
   state: () => st2,
-  isImpro: () => impro || finderShown || instShown,
-  // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
+  isImpro: () => impro || finderShown() || instShown(),
+  // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown() 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
   onImpro: () => toggleImpro(),
   onKbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),
   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
@@ -40055,7 +40064,7 @@ function toggleImpro() {
   ghostSync();
 }
 var ghostHeld = /* @__PURE__ */ new Map();
-var ghostOn = () => impro && !finder.isOpen && !instShown;
+var ghostOn = () => impro && !finder.isOpen && !instShown();
 function ghostSync() {
   view.showGhost(ghostOn() ? [...ghostHeld.values()] : []);
 }
@@ -40094,7 +40103,7 @@ function updateExtras(next2, locus, gesture) {
   refreshIssues();
   if (locus.kind === "lounge") pad3.render();
   drawInst();
-  trackRedraw?.();
+  ui2.redraw();
   updateChrome();
 }
 function updateBoth(next2, nextExtras, locus) {
@@ -40161,7 +40170,7 @@ function restore(r10, verb) {
   applyState(r10.st);
   if (studio.isOpen) studio.render();
   drawInst();
-  trackRedraw?.();
+  ui2.redraw();
   renderUndo();
   lastUndoText = `${verb} \xB7 ${locusText(r10.st, r10.locus)}`;
   showNotice({ id: "undo", level: "info", text: lastUndoText, autoHideMs: 2500 });
@@ -40543,7 +40552,6 @@ function openMp3Panel() {
     }
   });
 }
-var ui2 = createOverlayRegistry();
 var MODEL_SOURCE_DEFAULT = "https://fangzhangmnm.github.io/pwa-models";
 var soundsSource = SOUNDS_SOURCE_DEFAULT;
 var soundsBases = () => [.../* @__PURE__ */ new Set([new URL("pwa-sounds", location.href).href, soundsSource.trim().replace(/\/+$/, "") || SOUNDS_SOURCE_DEFAULT])];
@@ -40901,7 +40909,7 @@ function renderSaveButton() {
 var fmtDb = (dB) => `${dB > 0 ? "+" : dB < 0 ? "\u2212" : ""}${Math.abs(dB)} dB`;
 var audition = null;
 function padHint() {
-  if (finderShown) return auditionHint;
+  if (finderShown()) return auditionHint;
   const plug = performerOf(activeInstrument(doc.extras, curRole())?.engine);
   if (!plug) return null;
   if (plug.hintRange) return plug.hintRange;
@@ -41001,7 +41009,7 @@ function gapDefaultOf(role) {
   if (!catalogNow) {
     void loadCatalog(new URL(import.meta.url)).then((c10) => {
       catalogNow = c10;
-      if (instShown) drawInst();
+      if (instShown()) drawInst();
     }).catch(() => void 0);
     return null;
   }
@@ -41032,7 +41040,7 @@ async function playHeadWith(p2) {
   await previewTrack(track, to2, label);
 }
 async function castPick(p2) {
-  if (finderPlayOnly) return;
+  if (finderPlayOnly()) return;
   const cat2 = await loadCatalog(new URL(import.meta.url)), c10 = p2.concept;
   const sound2 = p2.kind === "gs" ? p2.provider.sound ?? roleSoundOf(cat2, c10) : roleSoundOf(cat2, c10);
   updateExtras(withRoleConcept(doc.extras, curRole(), { name: roleNameOf(c10), sound: sound2, concept: { ids: { wikidata: c10.ids.wikidata, local: c10.ids.local, musicxml: c10.ids.musicxml, gm: c10.ids.gm.map((g3) => ({ program: g3.program, bank: g3.bank })), hs: c10.ids.hs }, name: { zh: c10.names.zh, en: c10.names.en, ...c10.names.ja ? { ja: c10.names.ja } : {} } } }, st2.song.hum), { kind: "lounge", label: `\u300C${roleNameOf(c10)}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668` }, "cast");
@@ -41186,8 +41194,7 @@ var studio = new Studio2($2("stage"), {
 });
 function openStudio() {
   ui2.close();
-  finderBackToInst = false;
-  closeFinder();
+  closeFinder(false);
   closeInstPage();
   ws.collapsed = false;
   if (ws.mode !== "listen") setMode("listen");
@@ -41212,37 +41219,31 @@ function syncSpectrum() {
   engine.stereo(on2 && studio.currentTab === "basic");
 }
 function openFinder() {
-  finderBackToInst = instShown;
-  if (instShown) {
-    instShown = false;
-    instEl.hidden = true;
-  }
-  finderShown = true;
-  finderPlayOnly = gallery?.isOpen() ?? false;
-  document.body.classList.toggle("finder-over-gallery", finderPlayOnly);
+  const back = instShown();
+  if (back) instEl.hidden = true;
+  ui2.setPage({ k: "finder", playOnly: gallery?.isOpen() ?? false, backToInst: back });
+  document.body.classList.toggle("finder-over-gallery", finderPlayOnly());
   ui2.close();
   scoreEl.hidden = true;
-  ws.tryout = true;
+  ws.tryout = padLocked(ui2.page);
   showPad(true);
   padEl.classList.add("is-locked");
   pad3.clearHeld();
   pad3.render();
-  void finder.show({ playOnly: finderPlayOnly });
+  void finder.show({ playOnly: finderPlayOnly() });
   updateChrome();
 }
-function closeFinder() {
+function closeFinder(back = ui2.page.k === "finder" && ui2.page.backToInst) {
   if (!finder.isOpen) return;
-  finderShown = false;
-  if (finderPlayOnly) {
-    finderPlayOnly = false;
-    document.body.classList.remove("finder-over-gallery");
-  }
+  const wasPlayOnly = finderPlayOnly();
+  ui2.setPage({ k: "score" });
+  if (wasPlayOnly) document.body.classList.remove("finder-over-gallery");
   finder.hide();
   audition = null;
   auditionHint = null;
   sound.allOff();
   padEl.classList.remove("is-locked");
-  ws.tryout = instShown || finderBackToInst;
+  ws.tryout = back;
   applyWorkspace();
   pad3.render();
   scoreEl.hidden = false;
@@ -41251,7 +41252,7 @@ function closeFinder() {
   renderTitle();
   updateChrome();
   scoreEl.focus();
-  if (finderBackToInst) openInstPage();
+  if (back) openInstPage();
 }
 function setActive(id2) {
   const next2 = withActive(doc.extras, curRole(), id2, st2.song.hum);
@@ -41600,13 +41601,11 @@ function openTrackCard(at2) {
     document.removeEventListener("pointerdown", outside, true);
     box.remove();
     ui2.closed(close);
-    trackRedraw = null;
   };
   setTimeout(() => {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
-  ui2.open({ k: "card", close });
-  trackRedraw = draw;
+  ui2.open({ k: "card", close, redraw: draw });
   box.addEventListener("change", (e10) => {
     const t10 = e10.target;
     if (t10.dataset.hostsel === void 0) return;
@@ -42245,13 +42244,12 @@ var SING_EXPERIMENTS = [
 ];
 function openInstPage() {
   ui2.close();
-  finderBackToInst = false;
-  if (finder.isOpen) closeFinder();
-  instShown = true;
+  if (finder.isOpen) closeFinder(false);
+  ui2.setPage({ k: "inst" });
   instPicked = null;
   scoreEl.hidden = true;
   instEl.hidden = false;
-  ws.tryout = true;
+  ws.tryout = padLocked(ui2.page);
   showPad(true);
   padEl.classList.add("is-locked");
   pad3.clearHeld();
@@ -42261,12 +42259,12 @@ function openInstPage() {
   instEl.querySelector(".ip-body")?.scrollTo({ top: 0 });
 }
 function closeInstPage() {
-  if (!instShown) return;
+  if (!instShown()) return;
   commitRoleName();
-  instShown = false;
+  ui2.setPage({ k: "score" });
   instPicked = null;
   instEl.hidden = true;
-  ws.tryout = finder.isOpen;
+  ws.tryout = false;
   applyWorkspace();
   padEl.classList.remove("is-locked");
   pad3.clearHeld();
@@ -42381,7 +42379,7 @@ function pickerHtml() {
   return `<div class="ip-picker"><div class="ip-sub">${esc8(picked.name)}\uFF08${picked.presets.length} \u4EF6\uFF09</div><select id="sfSel" class="role-sel">` + banks.map((b3) => `<optgroup label="${label(b3)}">${picked.presets.filter((p2) => p2.bank === b3).map((p2) => `<option value="${p2.bank}:${p2.program}"${`${p2.bank}:${p2.program}` === picked.sel ? " selected" : ""}>${String(p2.program).padStart(3, "0")} ${esc8(p2.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">\u53EB<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc8(cur?.name ?? "")}" /></label><div class="ip-btns"><button class="btn primary" data-v="sf2:add">\u52A0\u8FDB\u6765\u3001\u9009\u5B83</button><button class="btn" data-v="sf2:cancel">\u7B97\u4E86</button></div></div>`;
 }
 function drawInst() {
-  if (!instShown) return;
+  if (!instShown()) return;
   const eng = engineNow(), h2 = st2.song.hum, role = curRole(), rn2 = roleName(doc.extras, role), rs2 = roleSound(doc.extras, role), aid = activeId(doc.extras, role);
   const gms = new Map(gmCandidates(doc.extras, role).map((g3) => [g3.id, g3])), active = gms.get(aid), who = activeCandidateName(doc.extras, role) ?? "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09";
   const chipTitle = (c10) => {
@@ -43412,8 +43410,7 @@ function ensureGallery() {
     },
     onOpened: () => {
       ui2.close();
-      finderBackToInst = false;
-      closeFinder();
+      closeFinder(false);
       if (ws.mode === "listen") {
         ws.mode = lastEditMode;
         applyWorkspace();
@@ -43854,7 +43851,7 @@ function finderKey(e10) {
 }
 window.addEventListener("keydown", (e10) => {
   keyTs = e10.timeStamp;
-  if (finderShown && gallery?.isOpen()) {
+  if (finderShown() && gallery?.isOpen()) {
     if (e10.key === "Escape") {
       e10.preventDefault();
       closeFinder();
@@ -43877,7 +43874,7 @@ window.addEventListener("keydown", (e10) => {
     } else finderKey(e10);
     return;
   }
-  if (instShown) {
+  if (instShown()) {
     const inField = e10.target?.closest("input, select, textarea");
     if (e10.key === "Escape") {
       e10.preventDefault();
@@ -43995,4 +43992,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-787f7c640e6b.mjs.map
+//# sourceMappingURL=moonsinger-18ca5488260f.mjs.map
