@@ -9,10 +9,10 @@
 
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { singleSel, currentIndex, ensureStartDyns, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, soundingPitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setTuplet, setInputKey, setInputScale, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { singleSel, currentIndex, ensureStartDyns, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
-import { type Pitch, midiOf, alterBy, keySpell, KEY_LABEL } from "../score/pitch.ts";
+import { type Pitch, midiOf, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../keyboard/keys.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
@@ -20,10 +20,8 @@ import { lyricIssues, lyricWhyText, prettyReading, type LyricIssue } from "../sc
 import { ScoreView } from "../ui/score-view.ts";
 import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
-import { Pad, type HintRange } from "../keyboard/pad.ts";
-import { createPadMusic } from "./pad-music.ts";   // pad 的音乐知识（键盘模块刀 2：键盘自己不懂音乐）
-import { padKeyAction, markOfKey } from "./pad-keys.ts";   // pad 的按键 id → 命令 / 插记号 / 菜单（翻译层）
-import { chordHead, chordBothAfterMs, chordVerdict, monoClash } from "../keyboard/chords.ts";   // 两键同按 = 叠音的头 / 尾判据（纯函数）
+import { type HintRange } from "../keyboard/pad.ts";
+import { createPadHost } from "./pad-host.ts";   // pad 的宿主 = 翻译层（音键 → 写 / 叠音观望 / 出声；按键 id → 命令 / 插记号 / 菜单；谁按着的簿记）
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
@@ -486,22 +484,8 @@ let reflow = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该�
 let pageFlow = false;
 /** 排法「横卷」（v0.9.35；user 2026-10-10「那个无限往右的总谱模式也做一下」）：每张纸一行、无限往右，谱面板横着滚，打字 / 放的时候横着跟，歌手名钉在屏幕左边。和 pageFlow 互斥（横卷说了算）。跟着歌走（desk view.scroll）。 */
 let scrollFlow = false;
-/** pad 上每根按着的手指：刚写的是第几个音（弹 = -1）、它原本的音高——上下滑过门槛时在它上面升 / 降。 */
-const padNotes = new Map<string, { index: number; base: Pitch }>();
-/** 单音乐器（现在的主唱月读）写音：同时多按只写第一个（user「monophonic乐器输入的时候如果你多按只会输第一个。但是做好模糊护栏免得快速输入的时候第二个音被吃掉」）。
- *  模糊护栏：只有「上一个写进去的音还按着，而且才过了不到 CHORD_MS」才算同时按、不写不响不亮；
- *  快速连按（前一根手指还没抬，但已经隔开了）照写，抬过手的更不管。手指和电脑键盘共用一份；弹（只唱不写）不管，几个音一起响。 */
-//   判据（50 ms 的同时按 / 80 ms 的头、尾巴按比例）= src/keyboard/chords.ts（纯函数，刀 2）；这里只管谁按着、定时器、写进谱。
-let lastWrite = { index: -1, at: -Infinity };
 /** 光标所在声部的乐器能叠音吗（SoundFont = 能；月读 / 元音 / 没人 = 单声，护栏：pad 的叠键灰掉、同时按也只写第一个）。 */
 const canStack = (): boolean => performerOf(engineNow())?.poly ?? false;
-const monoHeld = new Set<string>();
-let monoAt = -Infinity;
-function monoAccept(id: string): boolean {
-  const now = performance.now();
-  if (monoClash(monoHeld.size, monoAt, now)) return false;
-  monoHeld.add(id); monoAt = now; return true;
-}
 // pad 一创建就要提示音域（padHint）：它读的状态必须在 pad 之前声明（esbuild 打包后晚声明的 = undefined，开机就崩；2026-10-08 踩过）
 let auditionHint: HintRange = null;   // 找人视图里 pad 提示的音域 = 试听台上那位的
 let catalogNow: Catalog | null = null;   // 目录（找人视图 / 乐器声部的音域要它；第一次用到时载，260 KB）
@@ -511,55 +495,6 @@ const ui = createOverlayRegistry();   // 盖层登记（F-17 第 1 期，2026-10
 const instShown = (): boolean => ui.page.k === "inst";
 const finderShown = (): boolean => ui.page.k === "finder";
 const finderPlayOnly = (): boolean => ui.page.k === "finder" && ui.page.playOnly;
-// ── 叠音的「头 / 尾」判据（2026-10-08 by Claude Opus 5.5；只给能叠音的声部）──
-//   user「之前的判定是ab落的时候相近。现在的判定是b落的时候不在a的尾巴上」「如果ab，b按下去之后a马上松，那么就不应该是和弦」
-//   「尾巴时间规则也需要考虑相对比例，比如如果我快速跳音轻按ab多次的时候」「和弦输入的时候应该支持有长间隔的连按…慢慢按，xor toggle，手指数量不够的时候也能好」
-//   A（根音：写进谱、还按着的那个）按着时按下 B：B 马上响，进不进谱**观望**到分得出来（不先写再撤——撤销栈干净、替换模式不丢时值）：
-//   · 头：B 在 A 落下 CHORD_WIN 内 = 同时按 → 马上叠；
-//   · B 先松（A 还按着）= B 套在 A 里 → 叠（按住根音、一个一个点上去，XOR，手指不够也行）；
-//   · A 先松：A 和 B 一起按着的时间比 A 单独按着的时间长 → 叠；短 = A 的尾巴压在 B 的头上（快速连按 / 跳音 / 连奏）→ 两个音（这时才把 B 写进去）；
-//   · 两个都还按着、一起按着已经比 A 单独的长 → 叠（不用等松手）。比例不是固定毫秒：轻快的跳音和慢慢的连奏都按「尾巴」算。
-interface ChordRoot { tokId: number; t: number; keyId?: string }
-interface ChordWait { keyId: string; pitch: Pitch; t: number; root: ChordRoot & { keyId: string }; timer: number; done: boolean }
-const chordRoots = new Map<string, { tokId: number; t: number }>();   // 按着的键 → 它写进谱的那个音（根音候选）
-let chordWaits: ChordWait[] = [];
-const tokIndex = (tokId: number): number => tr(st).findIndex((t) => t.id === tokId);
-/** 现在的根音 = 最近写进谱、键还按着、音还在的那个。 */
-function chordRoot(): (ChordRoot & { keyId: string }) | null {
-  let best: (ChordRoot & { keyId: string }) | null = null;
-  for (const [keyId, r] of chordRoots) if (monoHeld.has(keyId) && tokIndex(r.tokId) >= 0 && (!best || r.t > best.t)) best = { ...r, keyId };
-  return best;
-}
-/** 叠到根音上（XOR；按谱上的调号拼写）。根音没了 = false。 */
-function chordMerge(root: ChordRoot, pitch: Pitch): boolean {
-  const ri = tokIndex(root.tokId), t = tr(st)[ri];
-  if (ri < 0 || t?.kind !== "note" || !t.pitch) return false;
-  update(toggleChordPitch(st, ri, keySpell(pitch, keyAt(tr(st), ri))));
-  return true;
-}
-/** 定一个观望中的：why = 谁先发生的（B 松 / 根音松 / 两个都按着够久了 / 又按了下一个键）。叠不成 = 现在把 B 当一个音补写进去。 */
-function decideChord(w: ChordWait, why: "keyUp" | "rootUp" | "both" | "force"): void {
-  if (w.done) return;
-  const now = performance.now(), keyHeld = monoHeld.has(w.keyId), v = chordVerdict(w.root, w, now, why, monoHeld.has(w.root.keyId), keyHeld);   // 头 / 尾判据：src/keyboard/chords.ts
-  if (v === null) return;   // 到时候了可有人松了：等松手那一下来定
-  w.done = true; clearTimeout(w.timer); chordWaits = chordWaits.filter((x) => x !== w);
-  if (v === "chord" && chordMerge(w.root, w.pitch)) return;
-  const i = writeAndLocate((s) => writePitch(s, w.pitch, true));   // 两个音：现在补写（音高按下时就带好了 ♯ / ♭）
-  if (i < 0) { if (st.sel) info("选区写满了：写不出选区。要往后写，先点别处退出选区"); return; }
-  const t = tr(st)[i];
-  if (keyHeld && t) chordRoots.set(w.keyId, { tokId: t.id, t: w.t });   // B 还按着：它成了下一个的根音
-  lastWrite = { index: i, at: w.t };
-  afterWrite();
-}
-/** 把还在观望的都定下来（又按了一个键 = 按当前的；页面失焦 / 隐藏 = 键都算松了，写成单个的音）。 */
-function settleChords(why: "force" | "lost"): void {
-  for (const w of [...chordWaits]) { if (why === "lost") { monoHeld.delete(w.root.keyId); } decideChord(w, "force"); }
-}
-/** 一个键松开：它是谁的 B / 谁的根音，就按这个定；它不再是根音。 */
-function chordKeyUp(id: string): void {
-  for (const w of [...chordWaits]) { if (w.keyId === id) decideChord(w, "keyUp"); else if (w.root.keyId === id) decideChord(w, "rootUp"); }
-  chordRoots.delete(id);
-}
 /** 在光标（有选中 = 选区开头）插一个调号 / 拍号 / 速度，开记号框就地改：默认值 = 那里正生效的那个（没改就收起 = 撤掉这次插入）。pad 符号层和空白处小菜单共用。 */
 function insertMarkHere(kind: MarkVal["kind"]): void {
   const at = st.sel ? st.sel.from : st.caret;
@@ -568,118 +503,28 @@ function insertMarkHere(kind: MarkVal["kind"]): void {
   update(r.st);
   view.marks.openAt(r.index, r.fresh);
 }
-const padMusic = createPadMusic(() => st);   // pad 的音乐知识（src/app/pad-music.ts）：第 k 级是什么音、「1=」的档；键盘只认 k（刀 2，2026-10-15）
-/** 「弹」= 音键只响不写：顶栏开关，或找人视图 / 乐器页开着（试听台上那位）。读 finderShown() 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）。 */
-const padImpro = (): boolean => impro || finderShown() || instShown();
-/** 写之前问一声：能叠音的声部同时多按都收（80 ms 内 = 叠在一起）；单声乐器几乎同时按下的第二根手指 = false（不写、不响、不亮）。 */
-const padAccept = (id: string): boolean => (canStack() ? (monoHeld.add(id), true) : monoAccept(id));
-/** pad 音键写一个音（找人视图开着一律不接：试听台不碰谱——user「试听的时候写入的东西不会不小心输入到乐谱吧…是不是应该disable」）：
- *  改这个音（只选了一个 / 叠亮着）/ 叠音观望（能叠音的声部）/ 普通写。 */
-function padWrite(p: Pitch, id: string): void {
-  if (finder.isOpen) return;
-  const now = performance.now();
-  { const one = singleSel(st); if (one >= 0) {   // 改这个音（只选了一个 / 叠亮着）：XOR（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）；单声乐器 = 换音高
-    update(writePitch(st, p, false, !canStack())); padNotes.set(id, { index: one, base: p }); previewEdited(); return;
-  } }
-  if (canStack()) {
-    settleChords("force");   // 又按下一个键：还在观望的先定（根音还按着 = 叠）
-    const root = chordRoot();
-    if (root) {
-      const sp = soundingPitch(st, p).pitch;
-      padNotes.set(id, { index: -1, base: p });   // 先响（padSound 按 base 出声），进不进谱、叠不叠，等分出来再定
-      if (chordHead(root, { t: now })) { chordMerge(root, sp); return; }   // 头：和根音几乎同时落下 = 马上叠
-      const w: ChordWait = { keyId: id, pitch: sp, t: now, root, timer: 0, done: false };
-      w.timer = window.setTimeout(() => decideChord(w, "both"), chordBothAfterMs(root, w));   // 重叠一超过根音单独按着的时长 = 叠（不用等松手）
-      chordWaits.push(w);
-      return;
-    }
-  }
-  const i = writeAndLocate((s) => writePitch(s, p, false, !canStack()));
-  if (i < 0) { padNotes.set(id, { index: -1, base: p }); return; }
-  const t = tr(st)[i];
-  padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
-  if (canStack() && t) chordRoots.set(id, { tokId: t.id, t: now });
-  lastWrite = { index: i, at: now };
-  afterWrite();
-}
-/** pad 音键出声：写进谱的那个音（和弦整个响）；弹 = 带上挂着的 ♯ / ♭、谱上画鬼音符。 */
-function padSound(p: Pitch, id: string): void {
-  const n = padNotes.get(id);
-  if (n && n.index >= 0) soundTok(st, n.index, id);
-  else { const r = soundingPitch(st, p); update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); sound.down(r.pitch, id); if (ghostOn()) { ghostHeld.set(id, r.pitch); ghostSync(); } }
-}
-/** pad 发来的按键 id → 翻译（src/app/pad-keys.ts）→ 做：命令走 runPadCommand（锁 / 披露），插记号开记号框，开小菜单。找人视图开着一律不接。 */
-function padKey(id: string, mods: { ramp: boolean }): void {
-  if (finder.isOpen) return;
-  const a = padKeyAction(id, mods);
-  if (!a) { diagNote("pad", `unknown pad key ${id}`); return; }   // test/pad-keys.test.ts 守着每个格子都接了；真到这儿 = 键盘加了格子没登记
-  if (a.kind === "cmd") runPadCommand(a.cmd);
-  else if (a.kind === "mark") insertMarkHere(a.mark);
-  else if (a.menu === "groove") insertGrooveHere();
-  else if (a.menu === "repeat") openRepeatMenu();
-  else { const r = padEl.getBoundingClientRect(), at = { x: r.left + r.width / 2, y: r.top - 4 }; if (a.menu === "clef") openInsertClefMenu(at); else openInsertOttavaMenu(at); }
-}
-/** pad 的编辑命令：锁（/2 的凑满一份）× 命令 → apply；做不成的说一句；写了的披露（不认的记号 / 被盖掉的力度）。 */
-function runPadCommand(c: Command): void {
-  if (c.k === "caret") setHalf(latchCancel(half));   // 挪光标 = 取消「凑满一份」（锁住的不动）
-  const nx = apply(st, withHalf(c), performance.now());
-  if (c.k === "art" && nx === st) { info(c.a === "arpeggio" ? "琶音只挂在和弦上：光标前那个音（或选中的）是单音" : `${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
-  if (c.k === "slur" && nx === st) { info("连线从一个音连到下一个音（光标前面是休止或者还没有音）"); return; }
-  if (c.k === "inhale" && nx === st) { info("出声的换气挂在一个音后面（光标前面是休止或者还没有音）"); return; }
-  if (c.k === "swell" && nx === st) { info("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）"); return; }
-  if (c.k === "wedge" && nx === st) { info(`${c.w === "cresc" ? "渐强" : "渐弱"}从一个音到下一个音（光标前面是休止或者还没有音）`); return; }
-  const prev = st; update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
-  if (c.k === "backspace" || c.k === "delete") {   // 删音顺手湮灭了不再管任何音的力度记号 / 渐强渐弱：说一声（不静默；撤销能回来）
-    const marks = (s: EditorState) => tr(s).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length, gone = marks(prev) - marks(st) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length : 0);
-    if (gone > 0) info(`顺手去掉了 ${gone} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）`);
-  }
-  if (c.k === "art") discloseArt(prev, c.a === "swellDown" ? "swellFade" : c.a === "swellUp" || c.a === "swellBoth" ? "swellGrow" : c.a);   // 音内起伏在演奏法里（v0.9.44），「做不到」的说法照旧按 swellGrow / swellFade
-  if (c.k === "slur") discloseArt(prev, "slur");
-  if (c.k === "inhale") discloseArt(prev, "inhale");
-  if (c.k === "swell") discloseArt(prev, c.w === ">" ? "swellFade" : "swellGrow");
-  if (c.k === "dyn" || (c.k === "art" && c.a === "fp")) discloseDynOverride(prev);
-}
-const pad = new Pad(padEl, {
-  view: () => ({ unit: st.input.unit, tuplet: st.input.tuplet, acc: st.input.acc, accMode: st.input.accMode, one: singleSel(st) >= 0, hasSel: !!st.sel }),
-  music: padMusic,
-  isImpro: padImpro,
-  onImpro: () => toggleImpro(),
-  onKbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
-  // 音键按下：第 k 级是什么音问 padMusic；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
-  onNoteDown: (k, id) => {
-    const p = padMusic.pitchAt(k);
-    if (!padImpro()) { if (!padAccept(id)) return false; padWrite(p, id); }
-    padSound(p, id);
-    return true;
+// pad 的宿主 = 翻译层（src/app/pad-host.ts，刀 2 之三）：音键 → 写 / 改 / 叠音观望 / 出声，按键 id → 命令（锁 × 光标 × 选区）/ 插记号 / 菜单，手指与电脑键盘共用的「谁按着」簿记。
+//   这里只给它一组访问器；pad 一创建就画，所以它读的状态（padHint、ui.page、autoBars…）都已在上面声明。
+const padHost = createPadHost(padEl, {
+  state: () => st, update: (n) => update(n), writeAndLocate, afterWrite, previewEdited, info: (m) => info(m), canStack,   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
+  sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok,
+  impro: () => impro, finderOpen: () => finder.isOpen, finderShown, instShown,
+  toggleImpro: () => toggleImpro(),
+  kbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
+  ghost: { on: () => ghostOn(), set: (id, p) => { ghostHeld.set(id, p); }, delete: (id) => ghostHeld.delete(id), sync: () => ghostSync() },
+  half: {
+    caretMoved: () => setHalf(latchCancel(half)),   // 挪光标 = 取消「凑满一份」（锁住的不动）
+    knobTurned: () => { if (half.mode === "once") { half = latchCancel(half); halfShifted = false; pad.showHalf(half.mode); } },   // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）
+    key: (down) => halfKey(down), wrap: (c) => withHalf(c),
   },
-  onNoteUp: (id) => { chordKeyUp(id); padNotes.delete(id); monoHeld.delete(id); sound.up(id); if (ghostHeld.delete(id)) ghostSync(); },   // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
-  onStack: (down) => stackKey(down),
-  canStack: () => canStack(),
-  onAlter: (id, alt) => {
-    if (finder.isOpen) return;   // 临时离调：只管这一个音（滑回中间 = 还原）；重新唱一下让人听见
-    const n = padNotes.get(id); if (!n) return;
-    const np = alt ? alterBy(n.base, alt) : n.base;
-    if (n.index >= 0) update(setNote(st, n.index, { pitch: np }));
-    sound.down(np, id);
-  },
-  onKey: (id, mods) => padKey(id, mods),
-  onUnit: (u) => { if (half.mode === "once") { half = latchCancel(half); halfShifted = false; pad.showHalf(half.mode); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）
-  onTuplet: (n) => update(setTuplet(st, n)),
-  onPick: (knob, i) => update(knob === "key" ? setInputKey(st, padMusic.fifthsAt(i)) : setInputScale(st, padMusic.scaleIdAt(i))),
-  autoBars: () => autoBars,
-  staves: () => curPart().staves ?? 1,
-  // 符号格的状态：这个格子写的记号台上这位不认 = 画灰（照样能写）；力度 = 光标处正生效的那个亮着（状态机）
-  keyState: (id) => {
-    const mk = markOfKey(id), off = !!mk && ignoredHere().includes(mk);
-    const on = id.startsWith("dyn:") && id.slice(4) === dynMarkAt(tr(st), st.sel ? st.sel.from : st.caret);
-    return off || on ? { off, on } : undefined;
-  },
-  hintRange: () => padHint(),
-  onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); },
-  onHide: () => showPad(false),
-  onHalf: (down) => { if (finder.isOpen) return; halfKey(down); },
-  onAccShift: (phase, acc) => accKey(phase, acc),   // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
+  accKey, stackKey, discloseArt, discloseDynOverride, ignoredHere,
+  hintRange: () => padHint(), staves: () => curPart().staves ?? 1,
+  autoBars: { get: () => autoBars, set: (on) => { autoBars = on; view.render(); } },
+  insertMarkHere, insertGrooveHere: () => insertGrooveHere(), openRepeatMenu: () => openRepeatMenu(),
+  openInsertClefMenu: (at) => openInsertClefMenu(at), openInsertOttavaMenu: (at) => openInsertOttavaMenu(at),
+  showPad: (on) => showPad(on),
 });
+const pad = padHost.pad;
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
 /** 弹（只响不写）：开关在 pad 第一排「收起」左边（user 2026-10-08「弹这个锁还是放键盘上吧放在第一row，收起键盘的左边」）；快捷键 ` 照旧。找人视图里一直是弹、拨不动。 */
@@ -3184,7 +3029,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       if (a.cmd.k === "backspace" && ws.mode === "symbols") { update(apply(st, { k: "symBackspace" }, performance.now())); return true; }   // 符：退格删记号（user「我早就想用退格删强度曲线了」）
       if (a.cmd.k === "backspace" && ws.mode === "lyrics") { lyricBackspace(); return true; }
       if (a.cmd.k === "degree") {
-        if (!repeat && monoAccept(`key${code}`)) { const c = { ...a.cmd, mono: !canStack() }, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); afterWrite(); }   // 先写再取 st（写完才有这个音）
+        if (!repeat && padHost.monoAccept(`key${code}`)) { const c = { ...a.cmd, mono: !canStack() }, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(st, i, code); afterWrite(); }   // 先写再取 st（写完才有这个音）
         return true;
       }
       update(apply(st, withHalf(a.cmd), performance.now()));
@@ -3258,10 +3103,10 @@ window.addEventListener("keydown", (e) => {
   const a = route(e, whereNow(), st.sel ? "edit" : "write");
   if (a && run(a, e.repeat, e.code)) e.preventDefault();
 });
-window.addEventListener("keyup", (e) => { monoHeld.delete(`key${e.code}`); if (ghostHeld.delete(`key${e.code}`)) ghostSync(); if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
+window.addEventListener("keyup", (e) => { padHost.release(`key${e.code}`); if (ghostHeld.delete(`key${e.code}`)) ghostSync(); if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
 // 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）
-window.addEventListener("blur", () => { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } });
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { settleChords("lost"); chordRoots.clear(); sound.allOff(); pad.clearHeld(); monoHeld.clear(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } } });
+window.addEventListener("blur", () => { padHost.reset(); sound.allOff(); pad.clearHeld(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { padHost.reset(); sound.allOff(); pad.clearHeld(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } } });
 // 切后台回来：声音被系统收起来了（iPad = interrupted）就叫醒；记一笔延迟（回来后系统可能换了缓冲大小——播放头按扬声器的时钟走，会自己跟上）
 document.addEventListener("visibilitychange", () => {
   if (studio.isOpen) { engine.meter(document.visibilityState === "visible"); syncSpectrum(); }   // 看不见就不统计（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）

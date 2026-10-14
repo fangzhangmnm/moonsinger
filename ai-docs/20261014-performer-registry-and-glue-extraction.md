@@ -99,3 +99,6 @@ main.ts 里：`const perfApi = createPerformance({…})` + 只解构 main 还用
 - `npm run e2e` 起的 serve 只端出 `dist/`，不构建；deploy 也只发 committed dist → 改了 src 必须 build，bump 后 dist 随源 commit（已改成 `npm run e2e` 先 build；`20261013-test-tiers.md` 末段）。
 - 并行 8 个浏览器时 follow / seg-jump / routing（频谱那两条）会红，单跑绿；mixer-fx / routing 的等待已改成轮询（12 s 上限）。
 - `host` 里的 `modelBases` / `offerFile` / `creditsOf` 在 main 里声明得比 `createPerformance(...)` 晚：一律用 lambda 包着传（TDZ），别改成直接传值。
+
+> 2026-10-15 补（Claude Fable 5.1）：**刀 2 = 键盘模块落地 v0.12.11–v0.12.13**——`src/keyboard/`（pad / pad-layout / keys / latch / chords / drum / wheel / param-row）是纯前端（不 import src/score，守卫在 `test/pad-keys.test.ts`）；音乐知识 = `src/app/pad-music.ts`（PadMusic 注入）；翻译层 = `src/app/pad-keys.ts`（按键 id → 命令 / 插记号 / 菜单，纯函数）+ `src/app/pad-host.ts`（`createPadHost(padEl, glue)`：音键 → 写 / 叠音观望 / 出声、锁 × 光标 × 选区、谁按着的簿记）。main.ts 3223 → 3135 行。细节 = `20261014-editing-mental-model.md` §9。
+

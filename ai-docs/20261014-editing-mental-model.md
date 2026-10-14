@@ -89,6 +89,6 @@
 
 - §6 的「键盘前端库」= `src/keyboard/`（项目内部模块，§8.4）：`pad.ts`（交互状态机：旋钮 / 里程表窗 / 滚轮 / 滑 / 符号格 / 渐到的锁）、`latch.ts`（锁）、`chords.ts`（两键同按的头 / 尾判据 + 单音护栏，纯函数）、`drum.ts` / `wheel.ts` / `param-row.ts`（W-5 原语）、`keys.ts`（电脑键盘键位表）、`pad-layout.ts`（符号格三页 + 按键 id 全集）。pad.ts 不 import `src/score/*`（`test/pad-keys.test.ts` 守）。
 - §6 的「音乐知识深模块」= `src/app/pad-music.ts`（`PadMusic`：cell(k) / altered / anchor / keyChoices / keyDrum / marksHere；宿主侧多 pitchAt / fifthsAt / scaleIdAt）。以后的和弦键盘 = 另一个 PadMusic。
-- §6 的「KeyEvent → Command 翻译层」分两半：按键 id → 命令 / 插记号 / 菜单 = `src/app/pad-keys.ts`（纯函数）；锁 × 光标 × 选区 × 叠音观望 = main.ts 的 `padWrite / runPadCommand`（刀 2 之三再搬 `src/app/pad-host.ts`）。
+- §6 的「KeyEvent → Command 翻译层」分两半：按键 id → 命令 / 插记号 / 菜单 = `src/app/pad-keys.ts`（纯函数）；锁 × 光标 × 选区 × 叠音观望 = `src/app/pad-host.ts`（v0.12.13 从 main.ts 抽出：`createPadHost(padEl, glue)`，glue = main.ts 给的一组访问器；也是手指 / 电脑键盘共用的「谁按着」簿记所在，电脑键盘那条路拿它的 `monoAccept / release / reset`）。
 - 和 §6 画的形状差在哪：没做成一个 `KeyEvent { key, phase, latches }`，而是三条口——音键 `onNoteDown(k, id) → boolean` / `onNoteUp(id)`、按键 `onKey(id, { ramp })`、旋钮 `onUnit / onTuplet / onPick(knob, i)`。原因：音键和写字键的宿主处理完全不同（叠音观望 vs apply），硬并成一种事件只是多一层 switch。锁的状态只带了渐到（ramp）；/2 和升降的锁住在宿主（main.ts `half` / song.ts `tapAcc`），pad 只画它们。
 - 没动：电脑键盘那条路（`keys.ts route` → main.ts `run`）仍是自己的翻译；和 pad 合流 = 以后（两边都翻成 Command，合流点在 `apply`）。

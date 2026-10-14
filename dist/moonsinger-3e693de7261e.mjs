@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.12-2026-10-15";
+var APP_VERSION = "v0.12.13-2026-10-15";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -12452,6 +12452,19 @@ var Pad = class {
   }
 };
 
+// src/keyboard/chords.ts
+var CHORD_WIN = 80;
+var CHORD_MS = 50;
+var chordHead = (root, b3, win = CHORD_WIN) => b3.t - root.t < win;
+var chordBothAfterMs = (root, b3) => b3.t - root.t + 5;
+function chordVerdict(root, b3, now2, why, rootHeld, keyHeld) {
+  if (why === "rootUp") return now2 - b3.t > b3.t - root.t ? "chord" : "two";
+  if (why === "keyUp") return rootHeld ? "chord" : "two";
+  if (why === "both") return rootHeld && keyHeld ? "chord" : null;
+  return rootHeld ? "chord" : "two";
+}
+var monoClash = (heldCount, lastAt, now2, ms = CHORD_MS) => heldCount > 0 && now2 - lastAt < ms;
+
 // src/score/scales.ts
 var d = (s10) => s10.split(" ").map((t10) => ({ deg: Number(t10.replace(/[#b]/g, "")), alt: t10.startsWith("#") ? 1 : t10.startsWith("b") ? -1 : 0 }));
 var mk = (id2, name, group2, degs, homeDeg) => {
@@ -12588,167 +12601,6 @@ function markOfKey(id2) {
   if (id2.startsWith("swell:")) return "swellGrow";
   if (id2.startsWith("inhale:")) return "inhale";
   return null;
-}
-
-// src/keyboard/chords.ts
-var CHORD_WIN = 80;
-var CHORD_MS = 50;
-var chordHead = (root, b3, win = CHORD_WIN) => b3.t - root.t < win;
-var chordBothAfterMs = (root, b3) => b3.t - root.t + 5;
-function chordVerdict(root, b3, now2, why, rootHeld, keyHeld) {
-  if (why === "rootUp") return now2 - b3.t > b3.t - root.t ? "chord" : "two";
-  if (why === "keyUp") return rootHeld ? "chord" : "two";
-  if (why === "both") return rootHeld && keyHeld ? "chord" : null;
-  return rootHeld ? "chord" : "two";
-}
-var monoClash = (heldCount, lastAt, now2, ms = CHORD_MS) => heldCount > 0 && now2 - lastAt < ms;
-
-// src/score/lab-score.ts
-var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
-function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range2, tokenEntry) {
-  const inRange = (i10) => !range2 || i10 >= range2[0] && i10 < range2[1];
-  const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2.find((x2) => inRange(x2.index))?.bpm ?? 90;
-  const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
-  const dwOf = new Map(tl2.filter((x2) => x2.dw0 !== void 0).map((x2) => [x2.index, x2.dw1 - x2.dw0]));
-  const out = [];
-  const pick = (a10, b3) => !a10 ? b3 : a10 === "^" ? b3 : a10;
-  let nextMark = null, thisMark = null, nextInhale = false;
-  const push = (e10) => {
-    const m2 = thisMark && nextMark ? pick(thisMark, nextMark) : thisMark ?? nextMark;
-    if (m2) e10.before = m2;
-    if (nextInhale && m2 && m2 !== "^") e10.inhale = true;
-    nextMark = thisMark = null;
-    nextInhale = false;
-    out.push(e10);
-  };
-  const takeInhale = (t10) => {
-    if (t10.kind !== "note" || !t10.inhale || !artOf(t10).includes("breath")) return;
-    nextMark = t10.inhale === "big" ? "O" : pick(nextMark, "v");
-    nextInhale = true;
-  };
-  if (range2) {
-    for (let j2 = range2[0] - 1; j2 >= 0; j2--) {
-      const u2 = tokens[j2];
-      if (u2.kind !== "note") continue;
-      takeInhale(u2);
-      break;
-    }
-    if (!nextInhale) nextMark = null;
-  }
-  const nextTimed = (i10) => {
-    for (let j2 = i10 + 1; j2 < tokens.length; j2++) {
-      const u2 = tokens[j2];
-      if (isTimed(u2)) return u2;
-    }
-    return null;
-  };
-  tokens.forEach((t10, i10) => {
-    if (!isTimed(t10) || !inRange(i10)) return;
-    const arts = t10.kind === "note" ? artOf(t10) : [], held = (u2) => u2?.kind === "note" && (u2.tie || u2.lyric === MELISMA_MARK);
-    thisMark = null;
-    if (t10.kind === "note" && !held(t10)) for (const a10 of arts) {
-      const s10 = sing[a10];
-      if (s10 && s10.at === "this") thisMark = pick(thisMark, s10.mark);
-    }
-    one(t10, i10);
-    thisMark = null;
-    if (t10.kind === "note" && !held(nextTimed(i10))) {
-      for (const a10 of arts) {
-        const s10 = sing[a10];
-        if (s10 && s10.at === "next") nextMark = pick(nextMark, s10.mark);
-      }
-      takeInhale(t10);
-    }
-  });
-  function one(t10, i10) {
-    const n02 = out.length;
-    one0(t10, i10);
-    if (tokenEntry && t10.kind === "note" && out.length) tokenEntry.set(i10, out.length > n02 ? n02 : out.length - 1);
-  }
-  function one0(t10, i10) {
-    const len = (t10.dur + (dwOf.get(i10) ?? 0)) / eighth * (base3 / bpmOf.get(i10));
-    if (t10.kind === "rest") {
-      const last2 = out[out.length - 1];
-      if (last2) last2.rest = (last2.rest ?? 0) + len;
-      return;
-    }
-    if (t10.kind !== "note") return;
-    const midi = midiOf(effectivePitch(tokens, i10));
-    const last = out[out.length - 1];
-    if ((t10.lyric === MELISMA_MARK || t10.tie) && last && !last.rest) {
-      last.notes.push([midi, len]);
-      return;
-    }
-    const lyric = t10.lyric && t10.lyric !== MELISMA_MARK ? t10.lyric : null;
-    const wh = artOf(t10).includes("whisper") ? { whisper: true } : {};
-    if (!lyric) {
-      push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true, ...wh });
-      return;
-    }
-    if (isSmallKana(lyric)) {
-      if (!last) return;
-      if (isSokuon(lyric)) {
-        last.kana += lyric;
-        last.rest = (last.rest ?? 0) + len;
-        nextMark = nextMark === "v" || nextMark === "O" ? nextMark : "^";
-        return;
-      }
-      if (!last.rest) {
-        last.kana += lyric;
-        last.notes.push([midi, len]);
-        return;
-      }
-    }
-    const parts = lyric.split(ELISION).filter(Boolean).reduce((a10, k2) => a10.length && isSmallKana(k2) ? [...a10.slice(0, -1), a10[a10.length - 1] + k2] : [...a10, k2], []);
-    parts.forEach((kana, k2) => push({ kana, notes: [[midi, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {}, ...wh }));
-  }
-  const TEXT2 = lang === "en" ? out.map((e10) => e10.kana + (e10.hyph ? "" : " ")).join("").trim() : out.map((e10, k2) => e10.kana + (e10.rest ? "\u3001" : k2 === out.length - 1 ? "\u3002" : "")).join("");
-  return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base3, LANG: lang };
-}
-var PHRASE_REST_SEC = 0.25;
-function singChunks(tokens, tempoMap, bounds, mode) {
-  if (mode === "whole") return tokens.some((t10) => t10.kind === "note") ? [[0, tokens.length]] : [];
-  const cuts = new Set(bounds.filter((b3) => b3 > 0 && b3 < tokens.length));
-  if (mode === "phrase") {
-    let rest = 0;
-    for (const x2 of timeline(tokens, tempoMap)) {
-      if (x2.tok.kind === "rest") {
-        rest += x2.t1 - x2.t0;
-        continue;
-      }
-      if (rest >= PHRASE_REST_SEC) cuts.add(x2.index);
-      rest = 0;
-    }
-  }
-  const starts = [0, ...[...cuts].sort((a10, b3) => a10 - b3)];
-  return starts.map((a10, k2) => [a10, starts[k2 + 1] ?? tokens.length]).filter(([a10, b3]) => tokens.slice(a10, b3).some((t10) => t10.kind === "note"));
-}
-
-// src/singer/audio.ts
-var ctx = null;
-function audioCtx() {
-  if (!ctx) ctx = new AudioContext();
-  if (ctx.state === "suspended" || ctx.state === "interrupted") void ctx.resume();
-  return ctx;
-}
-var keep = null;
-function holdAudio() {
-  if (keep) return;
-  const c10 = audioCtx(), s10 = c10.createConstantSource();
-  s10.offset.value = 0;
-  s10.connect(c10.destination);
-  s10.start();
-  keep = s10;
-}
-function releaseAudio() {
-  const s10 = keep;
-  keep = null;
-  if (!s10) return;
-  try {
-    s10.stop();
-  } catch {
-  }
-  s10.disconnect();
 }
 
 // node_modules/@internal/workbench-elements/dist/host-floors.js
@@ -21049,6 +20901,402 @@ function initBlackBox(version) {
     } catch {
     }
   });
+}
+
+// src/app/pad-host.ts
+function createPadHost(padEl2, g3) {
+  const st3 = () => g3.state();
+  const padNotes = /* @__PURE__ */ new Map();
+  const monoHeld = /* @__PURE__ */ new Set();
+  let monoAt = -Infinity;
+  function monoAccept(id2) {
+    const now2 = performance.now();
+    if (monoClash(monoHeld.size, monoAt, now2)) return false;
+    monoHeld.add(id2);
+    monoAt = now2;
+    return true;
+  }
+  const chordRoots = /* @__PURE__ */ new Map();
+  let chordWaits = [];
+  const tokIndex = (tokId) => tr(st3()).findIndex((t10) => t10.id === tokId);
+  function chordRoot() {
+    let best = null;
+    for (const [keyId, r10] of chordRoots) if (monoHeld.has(keyId) && tokIndex(r10.tokId) >= 0 && (!best || r10.t > best.t)) best = { ...r10, keyId };
+    return best;
+  }
+  function chordMerge(root, pitch) {
+    const s10 = st3(), ri2 = tokIndex(root.tokId), t10 = tr(s10)[ri2];
+    if (ri2 < 0 || t10?.kind !== "note" || !t10.pitch) return false;
+    g3.update(toggleChordPitch(s10, ri2, keySpell(pitch, keyAt(tr(s10), ri2))));
+    return true;
+  }
+  function decideChord(w2, why) {
+    if (w2.done) return;
+    const now2 = performance.now(), keyHeld = monoHeld.has(w2.keyId), v = chordVerdict(w2.root, w2, now2, why, monoHeld.has(w2.root.keyId), keyHeld);
+    if (v === null) return;
+    w2.done = true;
+    clearTimeout(w2.timer);
+    chordWaits = chordWaits.filter((x2) => x2 !== w2);
+    if (v === "chord" && chordMerge(w2.root, w2.pitch)) return;
+    const i10 = g3.writeAndLocate((s10) => writePitch(s10, w2.pitch, true));
+    if (i10 < 0) {
+      if (st3().sel) g3.info("\u9009\u533A\u5199\u6EE1\u4E86\uFF1A\u5199\u4E0D\u51FA\u9009\u533A\u3002\u8981\u5F80\u540E\u5199\uFF0C\u5148\u70B9\u522B\u5904\u9000\u51FA\u9009\u533A");
+      return;
+    }
+    const t10 = tr(st3())[i10];
+    if (keyHeld && t10) chordRoots.set(w2.keyId, { tokId: t10.id, t: w2.t });
+    g3.afterWrite();
+  }
+  function settleChords(why) {
+    for (const w2 of [...chordWaits]) {
+      if (why === "lost") {
+        monoHeld.delete(w2.root.keyId);
+      }
+      decideChord(w2, "force");
+    }
+  }
+  function chordKeyUp(id2) {
+    for (const w2 of [...chordWaits]) {
+      if (w2.keyId === id2) decideChord(w2, "keyUp");
+      else if (w2.root.keyId === id2) decideChord(w2, "rootUp");
+    }
+    chordRoots.delete(id2);
+  }
+  const music = createPadMusic(st3);
+  const padImpro = () => g3.impro() || g3.finderShown() || g3.instShown();
+  const padAccept = (id2) => g3.canStack() ? (monoHeld.add(id2), true) : monoAccept(id2);
+  function padWrite(p2, id2) {
+    if (g3.finderOpen()) return;
+    const now2 = performance.now(), s10 = st3();
+    {
+      const one = singleSel(s10);
+      if (one >= 0) {
+        g3.update(writePitch(s10, p2, false, !g3.canStack()));
+        padNotes.set(id2, { index: one, base: p2 });
+        g3.previewEdited();
+        return;
+      }
+    }
+    if (g3.canStack()) {
+      settleChords("force");
+      const root = chordRoot();
+      if (root) {
+        const sp2 = soundingPitch(st3(), p2).pitch;
+        padNotes.set(id2, { index: -1, base: p2 });
+        if (chordHead(root, { t: now2 })) {
+          chordMerge(root, sp2);
+          return;
+        }
+        const w2 = { keyId: id2, pitch: sp2, t: now2, root, timer: 0, done: false };
+        w2.timer = window.setTimeout(() => decideChord(w2, "both"), chordBothAfterMs(root, w2));
+        chordWaits.push(w2);
+        return;
+      }
+    }
+    const i10 = g3.writeAndLocate((x2) => writePitch(x2, p2, false, !g3.canStack()));
+    if (i10 < 0) {
+      padNotes.set(id2, { index: -1, base: p2 });
+      return;
+    }
+    const t10 = tr(st3())[i10];
+    padNotes.set(id2, { index: i10, base: t10?.kind === "note" && t10.pitch ? t10.pitch : p2 });
+    if (g3.canStack() && t10) chordRoots.set(id2, { tokId: t10.id, t: now2 });
+    g3.afterWrite();
+  }
+  function padSound(p2, id2) {
+    const n10 = padNotes.get(id2);
+    if (n10 && n10.index >= 0) g3.soundTok(st3(), n10.index, id2);
+    else {
+      const r10 = soundingPitch(st3(), p2);
+      g3.update(r10.st);
+      padNotes.set(id2, { index: -1, base: r10.pitch });
+      g3.sound.down(r10.pitch, id2);
+      if (g3.ghost.on()) {
+        g3.ghost.set(id2, r10.pitch);
+        g3.ghost.sync();
+      }
+    }
+  }
+  function padKey(id2, mods) {
+    if (g3.finderOpen()) return;
+    const a10 = padKeyAction(id2, mods);
+    if (!a10) {
+      diagNote("pad", `unknown pad key ${id2}`);
+      return;
+    }
+    if (a10.kind === "cmd") runPadCommand(a10.cmd);
+    else if (a10.kind === "mark") g3.insertMarkHere(a10.mark);
+    else if (a10.menu === "groove") g3.insertGrooveHere();
+    else if (a10.menu === "repeat") g3.openRepeatMenu();
+    else {
+      const r10 = padEl2.getBoundingClientRect(), at2 = { x: r10.left + r10.width / 2, y: r10.top - 4 };
+      if (a10.menu === "clef") g3.openInsertClefMenu(at2);
+      else g3.openInsertOttavaMenu(at2);
+    }
+  }
+  function runPadCommand(c10) {
+    if (c10.k === "caret") g3.half.caretMoved();
+    const prev = st3(), nx2 = apply(prev, g3.half.wrap(c10), performance.now());
+    if (c10.k === "art" && nx2 === prev) {
+      g3.info(c10.a === "arpeggio" ? "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u662F\u5355\u97F3" : `${ART_NAME[c10.a]}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
+      return;
+    }
+    if (c10.k === "slur" && nx2 === prev) {
+      g3.info("\u8FDE\u7EBF\u4ECE\u4E00\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
+      return;
+    }
+    if (c10.k === "inhale" && nx2 === prev) {
+      g3.info("\u51FA\u58F0\u7684\u6362\u6C14\u6302\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
+      return;
+    }
+    if (c10.k === "swell" && nx2 === prev) {
+      g3.info("\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
+      return;
+    }
+    if (c10.k === "wedge" && nx2 === prev) {
+      g3.info(`${c10.w === "cresc" ? "\u6E10\u5F3A" : "\u6E10\u5F31"}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
+      return;
+    }
+    g3.update(nx2);
+    if (c10.k === "rest" || c10.k === "extend") g3.afterWrite();
+    if (c10.k === "backspace" || c10.k === "delete") {
+      const marks = (s10) => tr(s10).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length, gone = marks(prev) - marks(st3()) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length : 0);
+      if (gone > 0) g3.info(`\u987A\u624B\u53BB\u6389\u4E86 ${gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09`);
+    }
+    if (c10.k === "art") g3.discloseArt(prev, c10.a === "swellDown" ? "swellFade" : c10.a === "swellUp" || c10.a === "swellBoth" ? "swellGrow" : c10.a);
+    if (c10.k === "slur") g3.discloseArt(prev, "slur");
+    if (c10.k === "inhale") g3.discloseArt(prev, "inhale");
+    if (c10.k === "swell") g3.discloseArt(prev, c10.w === ">" ? "swellFade" : "swellGrow");
+    if (c10.k === "dyn" || c10.k === "art" && c10.a === "fp") g3.discloseDynOverride(prev);
+  }
+  const pad4 = new Pad(padEl2, {
+    view: () => {
+      const s10 = st3();
+      return { unit: s10.input.unit, tuplet: s10.input.tuplet, acc: s10.input.acc, accMode: s10.input.accMode, one: singleSel(s10) >= 0, hasSel: !!s10.sel };
+    },
+    music,
+    isImpro: padImpro,
+    onImpro: () => g3.toggleImpro(),
+    onKbSwitch: () => g3.kbSwitch(),
+    // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
+    // 音键按下：第 k 级是什么音问 music；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
+    onNoteDown: (k2, id2) => {
+      const p2 = music.pitchAt(k2);
+      if (!padImpro()) {
+        if (!padAccept(id2)) return false;
+        padWrite(p2, id2);
+      }
+      padSound(p2, id2);
+      return true;
+    },
+    onNoteUp: (id2) => {
+      chordKeyUp(id2);
+      padNotes.delete(id2);
+      monoHeld.delete(id2);
+      g3.sound.up(id2);
+      if (g3.ghost.delete(id2)) g3.ghost.sync();
+    },
+    // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
+    onStack: (down) => g3.stackKey(down),
+    canStack: () => g3.canStack(),
+    onAlter: (id2, alt) => {
+      if (g3.finderOpen()) return;
+      const n10 = padNotes.get(id2);
+      if (!n10) return;
+      const np2 = alt ? alterBy(n10.base, alt) : n10.base;
+      if (n10.index >= 0) g3.update(setNote(st3(), n10.index, { pitch: np2 }));
+      g3.sound.down(np2, id2);
+    },
+    onKey: (id2, mods) => padKey(id2, mods),
+    onUnit: (u2) => {
+      g3.half.knobTurned();
+      g3.update(setUnit(st3(), u2));
+    },
+    // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）
+    onTuplet: (n10) => g3.update(setTuplet(st3(), n10)),
+    onPick: (knob, i10) => g3.update(knob === "key" ? setInputKey(st3(), music.fifthsAt(i10)) : setInputScale(st3(), music.scaleIdAt(i10))),
+    autoBars: () => g3.autoBars.get(),
+    staves: () => g3.staves(),
+    // 符号格的状态：这个格子写的记号台上这位不认 = 画灰（照样能写）；力度 = 光标处正生效的那个亮着（状态机）
+    keyState: (id2) => {
+      const s10 = st3(), mk2 = markOfKey(id2), off = !!mk2 && g3.ignoredHere().includes(mk2);
+      const on2 = id2.startsWith("dyn:") && id2.slice(4) === dynMarkAt(tr(s10), s10.sel ? s10.sel.from : s10.caret);
+      return off || on2 ? { off, on: on2 } : void 0;
+    },
+    hintRange: () => g3.hintRange(),
+    onAutoBars: (on2) => {
+      g3.autoBars.set(on2);
+      pad4.render();
+    },
+    onHide: () => g3.showPad(false),
+    onHalf: (down) => {
+      if (g3.finderOpen()) return;
+      g3.half.key(down);
+    },
+    onAccShift: (phase, acc) => g3.accKey(phase, acc)
+    // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
+  });
+  return {
+    pad: pad4,
+    music,
+    monoAccept,
+    release: (id2) => {
+      monoHeld.delete(id2);
+    },
+    reset: () => {
+      settleChords("lost");
+      chordRoots.clear();
+      monoHeld.clear();
+    }
+  };
+}
+
+// src/score/lab-score.ts
+var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
+function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range2, tokenEntry) {
+  const inRange = (i10) => !range2 || i10 >= range2[0] && i10 < range2[1];
+  const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2.find((x2) => inRange(x2.index))?.bpm ?? 90;
+  const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
+  const dwOf = new Map(tl2.filter((x2) => x2.dw0 !== void 0).map((x2) => [x2.index, x2.dw1 - x2.dw0]));
+  const out = [];
+  const pick = (a10, b3) => !a10 ? b3 : a10 === "^" ? b3 : a10;
+  let nextMark = null, thisMark = null, nextInhale = false;
+  const push = (e10) => {
+    const m2 = thisMark && nextMark ? pick(thisMark, nextMark) : thisMark ?? nextMark;
+    if (m2) e10.before = m2;
+    if (nextInhale && m2 && m2 !== "^") e10.inhale = true;
+    nextMark = thisMark = null;
+    nextInhale = false;
+    out.push(e10);
+  };
+  const takeInhale = (t10) => {
+    if (t10.kind !== "note" || !t10.inhale || !artOf(t10).includes("breath")) return;
+    nextMark = t10.inhale === "big" ? "O" : pick(nextMark, "v");
+    nextInhale = true;
+  };
+  if (range2) {
+    for (let j2 = range2[0] - 1; j2 >= 0; j2--) {
+      const u2 = tokens[j2];
+      if (u2.kind !== "note") continue;
+      takeInhale(u2);
+      break;
+    }
+    if (!nextInhale) nextMark = null;
+  }
+  const nextTimed = (i10) => {
+    for (let j2 = i10 + 1; j2 < tokens.length; j2++) {
+      const u2 = tokens[j2];
+      if (isTimed(u2)) return u2;
+    }
+    return null;
+  };
+  tokens.forEach((t10, i10) => {
+    if (!isTimed(t10) || !inRange(i10)) return;
+    const arts = t10.kind === "note" ? artOf(t10) : [], held = (u2) => u2?.kind === "note" && (u2.tie || u2.lyric === MELISMA_MARK);
+    thisMark = null;
+    if (t10.kind === "note" && !held(t10)) for (const a10 of arts) {
+      const s10 = sing[a10];
+      if (s10 && s10.at === "this") thisMark = pick(thisMark, s10.mark);
+    }
+    one(t10, i10);
+    thisMark = null;
+    if (t10.kind === "note" && !held(nextTimed(i10))) {
+      for (const a10 of arts) {
+        const s10 = sing[a10];
+        if (s10 && s10.at === "next") nextMark = pick(nextMark, s10.mark);
+      }
+      takeInhale(t10);
+    }
+  });
+  function one(t10, i10) {
+    const n02 = out.length;
+    one0(t10, i10);
+    if (tokenEntry && t10.kind === "note" && out.length) tokenEntry.set(i10, out.length > n02 ? n02 : out.length - 1);
+  }
+  function one0(t10, i10) {
+    const len = (t10.dur + (dwOf.get(i10) ?? 0)) / eighth * (base3 / bpmOf.get(i10));
+    if (t10.kind === "rest") {
+      const last2 = out[out.length - 1];
+      if (last2) last2.rest = (last2.rest ?? 0) + len;
+      return;
+    }
+    if (t10.kind !== "note") return;
+    const midi = midiOf(effectivePitch(tokens, i10));
+    const last = out[out.length - 1];
+    if ((t10.lyric === MELISMA_MARK || t10.tie) && last && !last.rest) {
+      last.notes.push([midi, len]);
+      return;
+    }
+    const lyric = t10.lyric && t10.lyric !== MELISMA_MARK ? t10.lyric : null;
+    const wh = artOf(t10).includes("whisper") ? { whisper: true } : {};
+    if (!lyric) {
+      push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true, ...wh });
+      return;
+    }
+    if (isSmallKana(lyric)) {
+      if (!last) return;
+      if (isSokuon(lyric)) {
+        last.kana += lyric;
+        last.rest = (last.rest ?? 0) + len;
+        nextMark = nextMark === "v" || nextMark === "O" ? nextMark : "^";
+        return;
+      }
+      if (!last.rest) {
+        last.kana += lyric;
+        last.notes.push([midi, len]);
+        return;
+      }
+    }
+    const parts = lyric.split(ELISION).filter(Boolean).reduce((a10, k2) => a10.length && isSmallKana(k2) ? [...a10.slice(0, -1), a10[a10.length - 1] + k2] : [...a10, k2], []);
+    parts.forEach((kana, k2) => push({ kana, notes: [[midi, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {}, ...wh }));
+  }
+  const TEXT2 = lang === "en" ? out.map((e10) => e10.kana + (e10.hyph ? "" : " ")).join("").trim() : out.map((e10, k2) => e10.kana + (e10.rest ? "\u3001" : k2 === out.length - 1 ? "\u3002" : "")).join("");
+  return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base3, LANG: lang };
+}
+var PHRASE_REST_SEC = 0.25;
+function singChunks(tokens, tempoMap, bounds, mode) {
+  if (mode === "whole") return tokens.some((t10) => t10.kind === "note") ? [[0, tokens.length]] : [];
+  const cuts = new Set(bounds.filter((b3) => b3 > 0 && b3 < tokens.length));
+  if (mode === "phrase") {
+    let rest = 0;
+    for (const x2 of timeline(tokens, tempoMap)) {
+      if (x2.tok.kind === "rest") {
+        rest += x2.t1 - x2.t0;
+        continue;
+      }
+      if (rest >= PHRASE_REST_SEC) cuts.add(x2.index);
+      rest = 0;
+    }
+  }
+  const starts = [0, ...[...cuts].sort((a10, b3) => a10 - b3)];
+  return starts.map((a10, k2) => [a10, starts[k2 + 1] ?? tokens.length]).filter(([a10, b3]) => tokens.slice(a10, b3).some((t10) => t10.kind === "note"));
+}
+
+// src/singer/audio.ts
+var ctx = null;
+function audioCtx() {
+  if (!ctx) ctx = new AudioContext();
+  if (ctx.state === "suspended" || ctx.state === "interrupted") void ctx.resume();
+  return ctx;
+}
+var keep = null;
+function holdAudio() {
+  if (keep) return;
+  const c10 = audioCtx(), s10 = c10.createConstantSource();
+  s10.offset.value = 0;
+  s10.connect(c10.destination);
+  s10.start();
+  keep = s10;
+}
+function releaseAudio() {
+  const s10 = keep;
+  keep = null;
+  if (!s10) return;
+  try {
+    s10.stop();
+  } catch {
+  }
+  s10.disconnect();
 }
 
 // src/singer/client.ts
@@ -39869,71 +40117,13 @@ function afterWrite() {
 var reflow = false;
 var pageFlow = false;
 var scrollFlow = false;
-var padNotes = /* @__PURE__ */ new Map();
-var lastWrite = { index: -1, at: -Infinity };
 var canStack = () => performerOf(engineNow())?.poly ?? false;
-var monoHeld = /* @__PURE__ */ new Set();
-var monoAt = -Infinity;
-function monoAccept(id2) {
-  const now2 = performance.now();
-  if (monoClash(monoHeld.size, monoAt, now2)) return false;
-  monoHeld.add(id2);
-  monoAt = now2;
-  return true;
-}
 var auditionHint = null;
 var catalogNow = null;
 var ui2 = createOverlayRegistry();
 var instShown = () => ui2.page.k === "inst";
 var finderShown = () => ui2.page.k === "finder";
 var finderPlayOnly = () => ui2.page.k === "finder" && ui2.page.playOnly;
-var chordRoots = /* @__PURE__ */ new Map();
-var chordWaits = [];
-var tokIndex = (tokId) => tr(st2).findIndex((t10) => t10.id === tokId);
-function chordRoot() {
-  let best = null;
-  for (const [keyId, r10] of chordRoots) if (monoHeld.has(keyId) && tokIndex(r10.tokId) >= 0 && (!best || r10.t > best.t)) best = { ...r10, keyId };
-  return best;
-}
-function chordMerge(root, pitch) {
-  const ri2 = tokIndex(root.tokId), t10 = tr(st2)[ri2];
-  if (ri2 < 0 || t10?.kind !== "note" || !t10.pitch) return false;
-  update(toggleChordPitch(st2, ri2, keySpell(pitch, keyAt(tr(st2), ri2))));
-  return true;
-}
-function decideChord(w2, why) {
-  if (w2.done) return;
-  const now2 = performance.now(), keyHeld = monoHeld.has(w2.keyId), v = chordVerdict(w2.root, w2, now2, why, monoHeld.has(w2.root.keyId), keyHeld);
-  if (v === null) return;
-  w2.done = true;
-  clearTimeout(w2.timer);
-  chordWaits = chordWaits.filter((x2) => x2 !== w2);
-  if (v === "chord" && chordMerge(w2.root, w2.pitch)) return;
-  const i10 = writeAndLocate((s10) => writePitch(s10, w2.pitch, true));
-  if (i10 < 0) {
-    if (st2.sel) info("\u9009\u533A\u5199\u6EE1\u4E86\uFF1A\u5199\u4E0D\u51FA\u9009\u533A\u3002\u8981\u5F80\u540E\u5199\uFF0C\u5148\u70B9\u522B\u5904\u9000\u51FA\u9009\u533A");
-    return;
-  }
-  const t10 = tr(st2)[i10];
-  if (keyHeld && t10) chordRoots.set(w2.keyId, { tokId: t10.id, t: w2.t });
-  lastWrite = { index: i10, at: w2.t };
-  afterWrite();
-}
-function settleChords(why) {
-  for (const w2 of [...chordWaits]) {
-    if (why === "lost") {
-      monoHeld.delete(w2.root.keyId);
-    }
-    decideChord(w2, "force");
-  }
-}
-function chordKeyUp(id2) {
-  for (const w2 of [...chordWaits]) {
-    if (w2.keyId === id2) decideChord(w2, "keyUp");
-    else if (w2.root.keyId === id2) decideChord(w2, "rootUp");
-  }
-  chordRoots.delete(id2);
-}
 function insertMarkHere(kind) {
   const at2 = st2.sel ? st2.sel.from : st2.caret;
   const v = kind === "key" ? { kind, fifths: keyAt(tr(st2), at2) } : kind === "time" ? { kind, ...timeAt(tr(st2), at2) } : { kind, bpm: tempoAt(tr(st2), at2) };
@@ -39941,184 +40131,60 @@ function insertMarkHere(kind) {
   update(r10.st);
   view.marks.openAt(r10.index, r10.fresh);
 }
-var padMusic = createPadMusic(() => st2);
-var padImpro = () => impro || finderShown() || instShown();
-var padAccept = (id2) => canStack() ? (monoHeld.add(id2), true) : monoAccept(id2);
-function padWrite(p2, id2) {
-  if (finder.isOpen) return;
-  const now2 = performance.now();
-  {
-    const one = singleSel(st2);
-    if (one >= 0) {
-      update(writePitch(st2, p2, false, !canStack()));
-      padNotes.set(id2, { index: one, base: p2 });
-      previewEdited();
-      return;
-    }
-  }
-  if (canStack()) {
-    settleChords("force");
-    const root = chordRoot();
-    if (root) {
-      const sp2 = soundingPitch(st2, p2).pitch;
-      padNotes.set(id2, { index: -1, base: p2 });
-      if (chordHead(root, { t: now2 })) {
-        chordMerge(root, sp2);
-        return;
-      }
-      const w2 = { keyId: id2, pitch: sp2, t: now2, root, timer: 0, done: false };
-      w2.timer = window.setTimeout(() => decideChord(w2, "both"), chordBothAfterMs(root, w2));
-      chordWaits.push(w2);
-      return;
-    }
-  }
-  const i10 = writeAndLocate((s10) => writePitch(s10, p2, false, !canStack()));
-  if (i10 < 0) {
-    padNotes.set(id2, { index: -1, base: p2 });
-    return;
-  }
-  const t10 = tr(st2)[i10];
-  padNotes.set(id2, { index: i10, base: t10?.kind === "note" && t10.pitch ? t10.pitch : p2 });
-  if (canStack() && t10) chordRoots.set(id2, { tokId: t10.id, t: now2 });
-  lastWrite = { index: i10, at: now2 };
-  afterWrite();
-}
-function padSound(p2, id2) {
-  const n10 = padNotes.get(id2);
-  if (n10 && n10.index >= 0) soundTok(st2, n10.index, id2);
-  else {
-    const r10 = soundingPitch(st2, p2);
-    update(r10.st);
-    padNotes.set(id2, { index: -1, base: r10.pitch });
-    sound.down(r10.pitch, id2);
-    if (ghostOn()) {
-      ghostHeld.set(id2, r10.pitch);
-      ghostSync();
-    }
-  }
-}
-function padKey(id2, mods) {
-  if (finder.isOpen) return;
-  const a10 = padKeyAction(id2, mods);
-  if (!a10) {
-    diagNote("pad", `unknown pad key ${id2}`);
-    return;
-  }
-  if (a10.kind === "cmd") runPadCommand(a10.cmd);
-  else if (a10.kind === "mark") insertMarkHere(a10.mark);
-  else if (a10.menu === "groove") insertGrooveHere();
-  else if (a10.menu === "repeat") openRepeatMenu();
-  else {
-    const r10 = padEl.getBoundingClientRect(), at2 = { x: r10.left + r10.width / 2, y: r10.top - 4 };
-    if (a10.menu === "clef") openInsertClefMenu(at2);
-    else openInsertOttavaMenu(at2);
-  }
-}
-function runPadCommand(c10) {
-  if (c10.k === "caret") setHalf(latchCancel(half));
-  const nx2 = apply(st2, withHalf(c10), performance.now());
-  if (c10.k === "art" && nx2 === st2) {
-    info(c10.a === "arpeggio" ? "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u662F\u5355\u97F3" : `${ART_NAME[c10.a]}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
-    return;
-  }
-  if (c10.k === "slur" && nx2 === st2) {
-    info("\u8FDE\u7EBF\u4ECE\u4E00\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
-    return;
-  }
-  if (c10.k === "inhale" && nx2 === st2) {
-    info("\u51FA\u58F0\u7684\u6362\u6C14\u6302\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
-    return;
-  }
-  if (c10.k === "swell" && nx2 === st2) {
-    info("\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09");
-    return;
-  }
-  if (c10.k === "wedge" && nx2 === st2) {
-    info(`${c10.w === "cresc" ? "\u6E10\u5F3A" : "\u6E10\u5F31"}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
-    return;
-  }
-  const prev = st2;
-  update(nx2);
-  if (c10.k === "rest" || c10.k === "extend") afterWrite();
-  if (c10.k === "backspace" || c10.k === "delete") {
-    const marks = (s10) => tr(s10).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length, gone = marks(prev) - marks(st2) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t10) => t10.kind === "dyn" || t10.kind === "hairpin").length : 0);
-    if (gone > 0) info(`\u987A\u624B\u53BB\u6389\u4E86 ${gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09`);
-  }
-  if (c10.k === "art") discloseArt(prev, c10.a === "swellDown" ? "swellFade" : c10.a === "swellUp" || c10.a === "swellBoth" ? "swellGrow" : c10.a);
-  if (c10.k === "slur") discloseArt(prev, "slur");
-  if (c10.k === "inhale") discloseArt(prev, "inhale");
-  if (c10.k === "swell") discloseArt(prev, c10.w === ">" ? "swellFade" : "swellGrow");
-  if (c10.k === "dyn" || c10.k === "art" && c10.a === "fp") discloseDynOverride(prev);
-}
-var pad3 = new Pad(padEl, {
-  view: () => ({ unit: st2.input.unit, tuplet: st2.input.tuplet, acc: st2.input.acc, accMode: st2.input.accMode, one: singleSel(st2) >= 0, hasSel: !!st2.sel }),
-  music: padMusic,
-  isImpro: padImpro,
-  onImpro: () => toggleImpro(),
-  onKbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),
+var padHost = createPadHost(padEl, {
+  state: () => st2,
+  update: (n10) => update(n10),
+  writeAndLocate,
+  afterWrite,
+  previewEdited,
+  info: (m2) => info(m2),
+  canStack,
+  // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
+  sound: { down: (p2, id2) => sound.down(p2, id2), up: (id2) => sound.up(id2) },
+  soundTok,
+  impro: () => impro,
+  finderOpen: () => finder.isOpen,
+  finderShown,
+  instShown,
+  toggleImpro: () => toggleImpro(),
+  kbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),
   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
-  // 音键按下：第 k 级是什么音问 padMusic；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
-  onNoteDown: (k2, id2) => {
-    const p2 = padMusic.pitchAt(k2);
-    if (!padImpro()) {
-      if (!padAccept(id2)) return false;
-      padWrite(p2, id2);
-    }
-    padSound(p2, id2);
-    return true;
+  ghost: { on: () => ghostOn(), set: (id2, p2) => {
+    ghostHeld.set(id2, p2);
+  }, delete: (id2) => ghostHeld.delete(id2), sync: () => ghostSync() },
+  half: {
+    caretMoved: () => setHalf(latchCancel(half)),
+    // 挪光标 = 取消「凑满一份」（锁住的不动）
+    knobTurned: () => {
+      if (half.mode === "once") {
+        half = latchCancel(half);
+        halfShifted = false;
+        pad3.showHalf(half.mode);
+      }
+    },
+    // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）
+    key: (down) => halfKey(down),
+    wrap: (c10) => withHalf(c10)
   },
-  onNoteUp: (id2) => {
-    chordKeyUp(id2);
-    padNotes.delete(id2);
-    monoHeld.delete(id2);
-    sound.up(id2);
-    if (ghostHeld.delete(id2)) ghostSync();
-  },
-  // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
-  onStack: (down) => stackKey(down),
-  canStack: () => canStack(),
-  onAlter: (id2, alt) => {
-    if (finder.isOpen) return;
-    const n10 = padNotes.get(id2);
-    if (!n10) return;
-    const np2 = alt ? alterBy(n10.base, alt) : n10.base;
-    if (n10.index >= 0) update(setNote(st2, n10.index, { pitch: np2 }));
-    sound.down(np2, id2);
-  },
-  onKey: (id2, mods) => padKey(id2, mods),
-  onUnit: (u2) => {
-    if (half.mode === "once") {
-      half = latchCancel(half);
-      halfShifted = false;
-      pad3.showHalf(half.mode);
-    }
-    update(setUnit(st2, u2));
-  },
-  // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）
-  onTuplet: (n10) => update(setTuplet(st2, n10)),
-  onPick: (knob, i10) => update(knob === "key" ? setInputKey(st2, padMusic.fifthsAt(i10)) : setInputScale(st2, padMusic.scaleIdAt(i10))),
-  autoBars: () => autoBars,
-  staves: () => curPart().staves ?? 1,
-  // 符号格的状态：这个格子写的记号台上这位不认 = 画灰（照样能写）；力度 = 光标处正生效的那个亮着（状态机）
-  keyState: (id2) => {
-    const mk2 = markOfKey(id2), off = !!mk2 && ignoredHere().includes(mk2);
-    const on2 = id2.startsWith("dyn:") && id2.slice(4) === dynMarkAt(tr(st2), st2.sel ? st2.sel.from : st2.caret);
-    return off || on2 ? { off, on: on2 } : void 0;
-  },
+  accKey,
+  stackKey,
+  discloseArt,
+  discloseDynOverride,
+  ignoredHere,
   hintRange: () => padHint(),
-  onAutoBars: (on2) => {
+  staves: () => curPart().staves ?? 1,
+  autoBars: { get: () => autoBars, set: (on2) => {
     autoBars = on2;
     view.render();
-    pad3.render();
-  },
-  onHide: () => showPad(false),
-  onHalf: (down) => {
-    if (finder.isOpen) return;
-    halfKey(down);
-  },
-  onAccShift: (phase, acc) => accKey(phase, acc)
-  // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
+  } },
+  insertMarkHere,
+  insertGrooveHere: () => insertGrooveHere(),
+  openRepeatMenu: () => openRepeatMenu(),
+  openInsertClefMenu: (at2) => openInsertClefMenu(at2),
+  openInsertOttavaMenu: (at2) => openInsertOttavaMenu(at2),
+  showPad: (on2) => showPad(on2)
 });
+var pad3 = padHost.pad;
 function toggleImpro() {
   if (finder.isOpen) return;
   impro = !impro;
@@ -43828,7 +43894,7 @@ function run(a10, repeat, code) {
         return true;
       }
       if (a10.cmd.k === "degree") {
-        if (!repeat && monoAccept(`key${code}`)) {
+        if (!repeat && padHost.monoAccept(`key${code}`)) {
           const c10 = { ...a10.cmd, mono: !canStack() }, i10 = writeAndLocate((s10) => apply(s10, c10, performance.now()));
           keyTok(st2, i10, code);
           afterWrite();
@@ -43991,7 +44057,7 @@ window.addEventListener("keydown", (e10) => {
   if (a10 && run(a10, e10.repeat, e10.code)) e10.preventDefault();
 });
 window.addEventListener("keyup", (e10) => {
-  monoHeld.delete(`key${e10.code}`);
+  padHost.release(`key${e10.code}`);
   if (ghostHeld.delete(`key${e10.code}`)) ghostSync();
   if (isSoundKey(e10)) {
     sound.up(`key${e10.code}`);
@@ -43999,11 +44065,9 @@ window.addEventListener("keyup", (e10) => {
   }
 });
 window.addEventListener("blur", () => {
-  settleChords("lost");
-  chordRoots.clear();
+  padHost.reset();
   sound.allOff();
   pad3.clearHeld();
-  monoHeld.clear();
   if (ghostHeld.size) {
     ghostHeld.clear();
     ghostSync();
@@ -44011,11 +44075,9 @@ window.addEventListener("blur", () => {
 });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
-    settleChords("lost");
-    chordRoots.clear();
+    padHost.reset();
     sound.allOff();
     pad3.clearHeld();
-    monoHeld.clear();
     if (ghostHeld.size) {
       ghostHeld.clear();
       ghostSync();
@@ -44057,4 +44119,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1c42e8a91f07.mjs.map
+//# sourceMappingURL=moonsinger-3e693de7261e.mjs.map
