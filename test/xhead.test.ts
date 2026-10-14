@@ -11,7 +11,7 @@ function song(): Song {
   for (const [step, dur] of [["G", TPQ * 4], ["E", TPQ * 2], ["C", TPQ]] as const) toks.push({ kind: "note", pitch: { step, alter: 0, octave: 5 }, dur, lyric: null, id: id++ } as Token);
   return songOf(toks, { title: "" });
 }
-const heads = (xHead: boolean) => engrave(song(), { width: 4000, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Ringtone", first: true, ...(xHead ? { xHead } : {}) }], caret: 6, sel: null, measureLyric: () => 10 })
+const heads = (xHead: boolean) => engrave(song(), { width: 4000, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Ringtone", first: true, ...(xHead ? { xHead } : {}) }], measureLyric: () => 10 })
   .prims.filter((x) => x.t === "glyph" && x.cls?.split(" ").includes("note"));
 
 describe("× 符头（演奏者固定敲一个键）", () => {

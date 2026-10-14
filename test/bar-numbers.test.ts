@@ -10,7 +10,7 @@ const stOf = (toks: Token[], off = false): EditorState => {
   const st = initState();
   return { ...st, song: { ...st.song, ...(off ? { barNumbers: "off" as const } : {}), papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: [...tr(st).slice(0, 3), ...toks] } })) } };
 };
-const lay = (st: EditorState) => engrave(st.song, { width: 360, sp: 10, at: st.at, caret: 0, sel: null, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 10, autoBars: true } as never);
+const lay = (st: EditorState) => engrave(st.song, { width: 360, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 10, autoBars: true } as never);
 const nums = (st: EditorState) => lay(st).prims.filter((p) => p.t === "text" && p.cls === "bar-no").map((p) => (p as { s: string }).s);
 const firstMeasureOfRows = (st: EditorState) => { const L = lay(st); return [...new Set(L.systems.map((s) => s.sys))].length; };
 

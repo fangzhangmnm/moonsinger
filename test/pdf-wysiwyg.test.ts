@@ -30,7 +30,7 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
     it(`${font}：预览多的只有控件开关（光标、占位提示、曲段控件、刚写过），版面一模一样`, () => {
       const base = printOpts(st.song, sp, parts(st), measure, true, LYRIC_RAISE[font]);
       const print = engrave(st.song, base);
-      for (const ctl of [{ titlePlaceholder: true }, { caret: 20, justWrote: true }, { at: { paper: st.song.papers[2]!.id, part: st.song.parts[0]!.id } }, { paperLabel: "A5" }, { sel: { from: 5, to: 9 } }]) {
+      for (const ctl of [{ titlePlaceholder: true }, { at: { paper: st.song.papers[2]!.id, part: st.song.parts[0]!.id } }, { paperLabel: "A5" }]) {   // 光标 / 选区 / 刚写过已不进排版（W-17 第 1 刀）
         const prev = engrave(st.song, { ...base, ...ctl } as never);
         eq(geo(prev), geo(print), `开关 ${JSON.stringify(ctl)} 不改版面`);
       }
@@ -40,7 +40,7 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
   it("只印这一张纸 = 分页预览的「本段」：控件开关同样不改版面（2026-10-09，user「只印一段或一个声部…和wxhw差不多」）", () => {
     for (const paper of st.song.papers) {
       const base = printOpts(st.song, sp, parts(st), measure, true, 0, paper.id), print = engrave(st.song, base);
-      eq(geo(engrave(st.song, { ...base, titlePlaceholder: true, caret: 20, justWrote: true, paperLabel: "A5" } as never)), geo(print), `纸 ${paper.name || paper.id}`);
+      eq(geo(engrave(st.song, { ...base, titlePlaceholder: true, paperLabel: "A5" } as never)), geo(print), `纸 ${paper.name || paper.id}`);
       assert(print.systems.every((r) => r.paper === paper.id), "只有这一张纸的谱行");
     }
   });

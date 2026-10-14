@@ -13,7 +13,7 @@ function song(seq: (number | "|")[]): Song {
   for (const s of seq) toks.push((s === "|" ? { kind: "bar", id: id++ } : { kind: "note", pitch: p, dur: s === 2 ? Hf : Q * s, lyric: null, id: id++ }) as Token);
   return songOf(toks, { title: "" });
 }
-const L = (seq: (number | "|")[], autoBars = true) => engrave(song(seq), { width: 4000, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Vocals", first: true }], caret: 3 + seq.length, sel: null, measureLyric: () => 10, autoBars });
+const L = (seq: (number | "|")[], autoBars = true) => engrave(song(seq), { width: 4000, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Vocals", first: true }], measureLyric: () => 10, autoBars });
 const bars = (l: ReturnType<typeof L>) => l.prims.filter((x) => x.t === "line" && x.cls?.startsWith("bar")).map((x) => (x.cls!.includes("auto") ? "a" : "m")).join("");
 const ties = (l: ReturnType<typeof L>) => l.prims.filter((x) => x.t === "path" && x.cls === "tie").length;
 
@@ -40,7 +40,7 @@ describe("自动小节线", () => {
   });
   it("挤一挤：只超出一点的小节压进这一行，超出很多才折行", () => {
     const seq: (number | "|")[] = [1, 1, "|", 1, 1, 1, 1, 1, 1, 1, 1];
-    const at = (width: number) => engrave(song(seq), { width, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Vocals", first: true }], caret: 3 + seq.length, sel: null, measureLyric: () => 10 });
+    const at = (width: number) => engrave(song(seq), { width, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Vocals", first: true }], measureLyric: () => 10 });
     const wide = at(4000), lastBar = Math.max(...wide.prims.filter((x) => x.t === "line" && x.cls?.startsWith("bar")).map((x) => (x as { x1: number }).x1));
     eq(wide.systems.length, 1);
     eq(at(lastBar * 0.97).systems.length, 1, "只差 3%：压进这一行");

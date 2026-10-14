@@ -19,7 +19,7 @@ function song(tracks: Token[][]): EditorState {
   return { ...st, song: { ...st.song, papers: [{ ...pp, tracks: Object.fromEntries(ids.map((id, k) => [id, [...pp.tracks[id].slice(0, headLen(pp.tracks[id])), ...tracks[k]]])) }] } };
 }
 const views = (st: EditorState, perc: (PartView["perc"] | undefined)[]): PartView[] => st.song.parts.map((p, k) => ({ id: p.id, name: `V${k}`, empty: false, first: k === 0, hidden: false, badges: [], mono: false, ...(perc[k] ? { perc: perc[k] } : {}) }));
-const lay = (st: EditorState, perc: (PartView["perc"] | undefined)[]) => engrave(st.song, { width: 900, sp: 10, at: st.at, caret: 0, sel: null, parts: views(st, perc), measureLyric: (s: string) => s.length * 10, autoBars: true });
+const lay = (st: EditorState, perc: (PartView["perc"] | undefined)[]) => engrave(st.song, { width: 900, sp: 10, at: st.at, parts: views(st, perc), measureLyric: (s: string) => s.length * 10, autoBars: true });
 const staffLines = (L: ReturnType<typeof lay>, row: number) => L.prims.filter((p) => p.t === "line" && p.cls === "staff" && Math.abs(p.y1 - L.systems[row].staffTop) < 4.5 * L.sp && p.y1 >= L.systems[row].staffTop - 1).length;
 const heads = (L: ReturnType<typeof lay>) => L.prims.filter((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.split(" ").includes("note")) as { ch: string; x: number; y: number }[];
 

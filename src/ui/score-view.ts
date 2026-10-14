@@ -20,7 +20,7 @@
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL, pageGeoOf } from "../score/paper.ts";
-import { type EditorState, type NoteTok, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
+import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type ClefHit, type SystemBox } from "../render/engrave.ts";
@@ -253,11 +253,17 @@ export class ScoreView {
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
-    this.layout = engrave(st.song, { width, sp, at: st.at, caret: st.caret, ...(st.lead ? { lead: st.lead } : {}), sel: st.sel, parts: this.host.parts(), measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.rules.edit ? {} : { foldAll: true }), ...(this.caretEnd ? { caretEnd: true } : {}),
-      ...(page && this.host.lyricRaise?.() ? { lyricRaise: this.host.lyricRaise() } : {}),
-      autoBars: this.host.autoBars?.() ?? true, paperLabel: paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind], justWrote: st.log.length > 0,
-      ...(page ? { page } : { margins }), ...((this.host.scope?.() ?? "segment") === "segment" ? { onlyPaper: st.at.paper } : {}), ...(this.hot ? { hot: this.hot } : {}), ...(this.span ? { span: this.span } : {}),
-      ...(this.hscroll ? { scroll: true } : {}) });
+    const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars = this.host.autoBars?.() ?? true, paperLabel = paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind];
+    const lyricRaise = page && this.host.lyricRaise?.() ? this.host.lyricRaise() : 0;
+    const tailOpen = !st.sel && st.caret >= tr(st).length;   // 写字头在尾巴后面（含补齐的小节里）：最后一行五线画到右边
+    // 排版缓存（W-17 第 1 刀）：谱没变（引用）、排版的选项没变 = 不重排。光标 / 选区 / 写字头的蓝 / 强调色不在这个键里——它们在下面的 ink 层和 class 上做；字体还在装 = 装好再排一次
+    const geoKey = JSON.stringify([width, sp, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, this.hscroll, autoBars, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
+      (_k, v: unknown) => (v instanceof Set ? [...v] : v));
+    if (!this.layout || this.geoSong !== st.song || this.geoKey !== geoKey) {
+      this.layout = engrave(st.song, { width, sp, at: st.at, parts: partsNow, measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
+        ...(lyricRaise ? { lyricRaise } : {}), autoBars, paperLabel, ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(this.hscroll ? { scroll: true } : {}) });
+      this.geoSong = st.song; this.geoKey = geoKey;
+    }
     this.ink.style.left = `${this.layout.pageX.left}px`;
     if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout.width + this.layout.pageX.left + this.layout.pageX.right)}px`;   // 横卷：纸按内容撑宽，谱面板横着滚
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;   // ¾ 屏（一整屏有时让人以为白屏了；user 2026-10-08「留的滚动空白不应该是一整页…3/4左右？」）
@@ -266,14 +272,20 @@ export class ScoreView {
     const parts = toSvgParts(this.layout);
     const old = this.sheet.querySelector("svg");
     const prev = this.svgParts;
+    let swapped = false;
     if (!old || !prev || prev.open !== parts.open || prev.groups.length !== parts.groups.length || old.children.length !== parts.groups.length) {
       const svg = parts.open + parts.groups.join("") + parts.close;
       if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
+      swapped = true;
     } else {
       const kids = old.children;
-      for (let k = 0; k < parts.groups.length; k++) if (parts.groups[k] !== prev.groups[k]) kids[k].outerHTML = parts.groups[k];
+      for (let k = 0; k < parts.groups.length; k++) if (parts.groups[k] !== prev.groups[k]) { kids[k].outerHTML = parts.groups[k]; swapped = true; }
     }
     this.svgParts = parts;
+    if (swapped) this.tokEls = null;
+    this.decorate();   // 写字头的蓝 / 选中 / 强调色（class）
+    this.drawCaret();  // 光标（ink 层）
+    this.drawSel();    // 选区带（ink 层）
     if (!this.boxEl.isConnected) this.ink.appendChild(this.boxEl);
     this.placeHandles();
     if (this.playP) this.setPlayhead(this.playP);   // 暂停着 / 放着的时候重画：播放线和高亮跟着新的排版
@@ -307,14 +319,15 @@ export class ScoreView {
     if (!this.ghostP.length || !L) { clear(); return; }
     const st = this.host.get(), one = singleSel(st), sp = L.sp;
     /** 这一行谱号的位移：看这一行上随便一个音（命中框里 y 带位移、d 不带）。 */
-    const shiftOn = (row: number) => { const n = L.notes.find((h) => h.system === row); return n ? Math.round(L.dOf(row, n.y)) - n.d : L.head?.system === row ? L.head.shift : 0; };
+    const hd = this.head();
+    const shiftOn = (row: number) => { const n = L.notes.find((h) => h.system === row); return n ? Math.round(L.dOf(row, n.y)) - n.d : hd?.system === row ? hd.shift : 0; };
     let row: number, x: number, shift: number;
     if (one >= 0) {
       const n = L.notes.find((h) => h.index === one && this.onTrack(h)), r = n ? null : L.rests.find((h) => h.index === one && this.onTrack(h));
       if (n) { row = n.system; x = n.x; shift = Math.round(L.dOf(row, n.y)) - n.d; }
       else if (r) { row = r.system; x = r.x; shift = shiftOn(row); }
       else { clear(); return; }
-    } else if (L.head) { row = L.head.system; x = L.head.x + 0.35 * sp; shift = L.head.shift; }
+    } else if (hd) { row = hd.system; x = hd.x + 0.35 * sp; shift = hd.shift; }
     else { clear(); return; }
     const NS = "http://www.w3.org/2000/svg", g = (this.ghostEl ??= document.createElementNS(NS, "svg"));
     g.setAttribute("class", "ghost-preview"); g.setAttribute("width", String(L.width)); g.setAttribute("height", String(L.height));
@@ -534,6 +547,13 @@ export class ScoreView {
   private caretEnd: string | null = null;
   /** 上一次画的 SVG（开标签 + 每行谱一组），逐组比、只换变了的（W-17）。 */
   private svgParts: { open: string; groups: string[]; close: string } | null = null;
+  /** 排版缓存（W-17 第 1 刀，2026-10-15）：谱（引用）+ 排版用到的选项没变 = 不重排（engrave 是整首算的那 20 多毫秒）；
+   *  光标 / 选区带在 ink 层画，写字头的蓝 / 选中 / 强调色按 data-tok 在 SVG 元素上开关 class（decorate）。 */
+  private geoSong: Song | null = null; private geoKey = "";
+  private tokEls: Map<number, Element[]> | null = null;   // data-tok → 元素（换过组才重建）
+  private decorated: { el: Element; cls: string }[] = [];   // 上一次加过 class 的（先撤再加）
+  private caretEl: SVGSVGElement | null = null;
+  private selEls: HTMLDivElement[] = [];
 
   /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
    *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
@@ -545,6 +565,76 @@ export class ScoreView {
   private onTrack(h: { system: number }): boolean {
     const L = this.layout!, st = this.host.get(), row = L.systems[h.system];
     return !!row && row.paper === st.at.paper && row.part === st.at.part;
+  }
+  /** 光标画在哪（W-17 第 1 刀：不进排版，从落点 slots 里查）：这条 track 上这个 caret 的落点；补齐的小节里 = lead 那个；点在行末放的（caretEnd）= end 那个。
+   *  大谱表：两张谱表各一个落点，光标跟着前一个音在哪张。有选区 / 还没排好 = null。shift = 那里的谱号 / 八度线位移（鬼音符用）。 */
+  head(): { system: number; x: number; shift: number } | null {
+    const L = this.layout, st = this.host.get(); if (!L || st.sel) return null;
+    const mine = (s: Slot) => { const r = L.systems[s.system]; return !!r && r.paper === st.at.paper && r.part === st.at.part; };
+    const want = st.lead ? L.slots.filter((s) => mine(s) && s.lead === st.lead)
+      : this.caretEnd === caretKey(st) ? L.slots.filter((s) => mine(s) && !!s.end && s.caret === st.caret)
+      : L.slots.filter((s) => mine(s) && !s.end && s.lead === undefined && s.caret === st.caret);
+    if (!want.length) return null;
+    let pick = want[0];
+    if (want.length > 1) {
+      const toks = tr(st); let prev = -1; for (let i = st.caret - 1; i >= 0; i--) if (isTimed(toks[i])) { prev = i; break; }
+      const h = prev >= 0 ? this.hits.find((n) => n.index === prev && this.onTrack(n)) : undefined;
+      if (h) pick = want.find((s) => s.system === h.system) ?? pick;
+    }
+    return { system: pick.system, x: pick.x, shift: pick.shift };
+  }
+  /** 写字头的蓝（cur）/ 选中（sel）/ 拖着的（hot）/ 点开的记号管的那几个音（in-span）：按 data-tok 在 SVG 元素上开关 class，不重排、不换 SVG。
+   *  哪些元素吃哪个 class 照原来排版时的规矩：cur 不给歌词；hot 只给歌词 / 力度 / 风格 / 反复 / 渐强渐弱的字和线；in-span 只给符头。 */
+  private decorate(): void {
+    const svg = this.sheet.querySelector("svg"); if (!svg) return;
+    if (!this.tokEls) {
+      const m = new Map<number, Element[]>();
+      for (const el of svg.querySelectorAll("[data-tok]")) { const id = Number(el.getAttribute("data-tok")); const a = m.get(id); if (a) a.push(el); else m.set(id, [el]); }
+      this.tokEls = m;
+    }
+    for (const d of this.decorated) d.el.classList.remove(d.cls);
+    this.decorated = [];
+    const st = this.host.get(), toks = tr(st);
+    const add = (id: number, cls: string, ok?: (el: Element) => boolean) => { for (const el of this.tokEls!.get(id) ?? []) if (!ok || ok(el)) { el.classList.add(cls); this.decorated.push({ el, cls }); } };
+    const HOT = ["lyric", "dyn", "groove-mark", "nav-mark", "nav-sign", "dyn-word", "hairpin"];
+    if (st.sel) { for (let i = st.sel.from; i < st.sel.to; i++) { const t = toks[i]; if (t) add(t.id, "sel"); } }
+    else if (st.log.length > 0) { for (let i = st.caret - 1; i >= 0; i--) if (isTimed(toks[i])) { add(toks[i].id, "cur", (el) => !el.classList.contains("lyric")); break; } }   // 刚写过：光标前那个音 = 写字头
+    if (this.hot) for (const id of this.hot) add(id, "hot", (el) => HOT.some((c) => el.classList.contains(c)));
+    if (this.span) for (let i = this.span.from; i < this.span.to; i++) { const t = toks[i]; if (t) add(t.id, "in-span", (el) => el.classList.contains("note")); }
+  }
+  /** 光标：ink 层里一个 svg 的一根线（同原来排版画的：落点 x + 0.1sp，从第 42 级到第 26 级）；听模式 CSS 藏起来。 */
+  private drawCaret(): void {
+    const L = this.layout, h = this.head();
+    if (!L || !h) { this.caretEl?.remove(); this.caretEl = null; return; }
+    const NS = "http://www.w3.org/2000/svg", g = (this.caretEl ??= document.createElementNS(NS, "svg"));
+    g.setAttribute("class", "ink-caret"); g.setAttribute("width", String(L.width)); g.setAttribute("height", String(L.height));
+    const x = h.x + 0.1 * L.sp;
+    g.innerHTML = `<line class="caret" x1="${x}" y1="${L.yOf(h.system, 42)}" x2="${x}" y2="${L.yOf(h.system, 26)}" stroke-width="${0.16 * L.sp}"/>`;
+    if (!g.isConnected) this.ink.appendChild(g);
+  }
+  /** 选区 = 淡蓝带子（user 2026-10-08「选区画成一条淡蓝的带子盖住那几个音」）：每行一条，从选中的第一个东西到最后一个（音 / 休止 / 记号），
+   *  高 = 第五线上面两格到歌词行下面一点（同原来排版画的 selbox）；ink 层的 div，乘底（mix-blend-mode）压在谱上不盖墨。 */
+  private drawSel(): void {
+    for (const e of this.selEls) e.remove(); this.selEls = [];
+    const L = this.layout, st = this.host.get(); if (!L || !st.sel) return;
+    const { from, to } = st.sel, sp = L.sp;
+    const rowsOf = (r: SystemBox): number[] => { const idx: number[] = []; L.systems.forEach((q, i) => { if (q.paper === r.paper && q.part === r.part && q.sys === r.sys) idx.push(i); }); return idx; };
+    const acc = new Map<number, { a: number; b: number; rows: number[] }>();
+    const take = (h: { index: number; system: number; x: number; w: number }) => {
+      if (h.index < from || h.index >= to || !this.onTrack(h)) return;
+      const r = L.systems[h.system]; if (!r) return;
+      const a = h.x - 0.35 * sp, b = h.x + h.w + 0.35 * sp, e = acc.get(r.sys);
+      if (!e) acc.set(r.sys, { a, b, rows: rowsOf(r) }); else { e.a = Math.min(e.a, a); e.b = Math.max(e.b, b); }
+    };
+    for (const h of this.hits) take(h);
+    for (const h of L.dyns) take(h);
+    for (const h of L.marks) take(h);
+    for (const { a, b, rows } of acc.values()) {
+      const top = L.yOf(rows[0], 44), bottom = L.lyricY(rows[rows.length - 1]) + 0.8 * sp;
+      const d = document.createElement("div"); d.className = "selbox";
+      Object.assign(d.style, { left: `${a}px`, top: `${top}px`, width: `${b - a}px`, height: `${bottom - top}px` });
+      this.ink.insertBefore(d, this.ink.firstChild); this.selEls.push(d);
+    }
   }
   /** 选区两端的棒棒糖把手：第一个 / 最后一个选中的音的下面（歌词行再往下一点）。 */
   private placeHandles(): void {
@@ -560,7 +650,7 @@ export class ScoreView {
   /** 光标（选中 = 它的第一个音；开着歌词 / 记号框 = 那一行）在哪一行。 */
   private caretSystem(): number {
     const L = this.layout, st = this.host.get(); if (!L) return -1;
-    let sys = L.head?.system ?? -1;
+    let sys = this.head()?.system ?? -1;
     if (sys < 0 && st.sel) sys = this.hits.find((n) => this.onTrack(n) && n.index >= st.sel!.from && n.index < st.sel!.to)?.system ?? -1;
     if (this.lyrics.open) sys = this.lyrics.system;
     if (this.marks.open) sys = this.marks.system;
@@ -585,7 +675,7 @@ export class ScoreView {
     else if (bt + below > top + h) this.el.scrollTop = Math.min(bt + below - h, a - above);
     // 横卷：光标（选中 = 它的第一个音）横着也保持在视野里——左边留一成、右边留两成，出了就把它放到左边三成处（往右写的时候前面能看见几小节）
     if (this.hscroll) {
-      const hx = L.head?.x ?? (st.sel ? this.hits.find((n) => this.onTrack(n) && n.index === st.sel!.from)?.x : undefined); if (hx === undefined) return;
+      const hx = this.head()?.x ?? (st.sel ? this.hits.find((n) => this.onTrack(n) && n.index === st.sel!.from)?.x : undefined); if (hx === undefined) return;
       const sx = this.sheet.offsetLeft + (L.pageX.left + hx) * z, vl = this.el.scrollLeft, vw = this.el.clientWidth;
       if (sx < vl + vw * 0.1 || sx > vl + vw * 0.8) this.el.scrollLeft = Math.max(0, sx - vw * 0.3);
     }

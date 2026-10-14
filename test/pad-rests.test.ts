@@ -15,7 +15,7 @@ function two(a: number, b: number): EditorState {
   return setFocus(st, paper.id, "P2");
 }
 const parts = (st: EditorState) => st.song.parts.map((p, k) => ({ id: p.id, name: `V${k}`, empty: false, first: k === 0, hidden: false, badges: [], mono: false }));
-const lay = (st: EditorState, width = 4000) => engrave(st.song, { width, sp: 10, at: st.at, caret: st.caret, ...(st.lead ? { lead: st.lead } : {}), sel: st.sel, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true });
+const lay = (st: EditorState, width = 4000) => engrave(st.song, { width, sp: 10, at: st.at, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true });
 const padRests = (st: EditorState) => lay(st).prims.filter((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.includes("pad-rest")).length;
 const E = TPQ / 2;
 const show = (st: EditorState) => tr(st).slice(headLen(tr(st))).map((t) => t.kind === "note" ? `${t.pitch!.step}/${t.dur / E}` : t.kind === "rest" ? `r/${t.dur / E}` : t.kind).join(" ");
@@ -57,8 +57,10 @@ describe("点空小节写到那里（lead）", () => {
     eq(select(st, headLen(tr(st)), headLen(tr(st)) + 1).lead, undefined);
     eq(setFocus(st, st.at.paper, st.song.parts[0].id).lead, undefined);
   });
-  it("排版：有 lead 时光标画在那个小节开头（淡色休止切成两段）", () => {
-    const st = setCaretLead(two(12, 1), 7 * TPQ), L = lay(st), slot = lay(two(12, 1)).slots.find((s) => s.lead === 7 * TPQ)!;
-    assert(!!L.head && Math.abs(L.head.x - slot.x) < 15, `光标 x ${L.head?.x} ≈ 第 3 小节开头 ${slot.x}`);
+  it("排版：lead 的落点就是那个小节的开头（光标画在落点上 = score-view 的事，排版不认光标；W-17 第 1 刀）", () => {
+    const st = setCaretLead(two(12, 1), 7 * TPQ), L = lay(st), s3 = L.slots.find((s) => s.lead === 7 * TPQ)!, s2 = L.slots.find((s) => s.lead === 3 * TPQ)!;
+    assert(!!s3 && !!s2 && s3.x > s2.x + 15, `第 3 小节开头的落点 ${s3?.x} 在第 2 小节开头 ${s2?.x} 右边`);
+    eq(typeof s3.shift, "number");
+    eq(JSON.stringify(L.slots), JSON.stringify(lay(two(12, 1)).slots), "有没有 lead，落点一样（lead 不进排版）");
   });
 });

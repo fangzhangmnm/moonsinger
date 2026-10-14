@@ -6,7 +6,7 @@ const n = (v: number) => (Math.round(v * 100) / 100).toString();
 
 /** 一个图元的 SVG 元素字符串（测试也用它对分组）。 */
 export function primSvg(p: Layout["prims"][number], fs: string, lfs: string, rx: string): string {
-  const c = p.cls ? ` class="${p.cls}"` : "";
+  const c = (p.cls ? ` class="${p.cls}"` : "") + (p.tok !== undefined ? ` data-tok="${p.tok}"` : "");   // data-tok：score-view 按它开关写字头 / 选区 / 强调色的 class（W-17 第 1 刀）
   switch (p.t) {
     case "line": return `<line${c} x1="${n(p.x1)}" y1="${n(p.y1)}" x2="${n(p.x2)}" y2="${n(p.y2)}" stroke-width="${n(p.w)}"/>`;
     case "glyph": return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${p.size ? n(p.size) : fs}">${p.ch}</text>`;

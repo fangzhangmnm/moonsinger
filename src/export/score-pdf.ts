@@ -71,7 +71,7 @@ export interface ScorePdfArgs { song: Song; parts: PartView[]; font: TtfFont; fo
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
 export function printOpts(song: Song, sp: number, parts: PartView[], measureLyric: (s: string) => number, autoBars: boolean, lyricRaise: number, onlyPaper?: string): EngraveOpts {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER);
-  return { width: lineSp(paper) * sp, sp, at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, caret: -1, sel: null, parts, measureLyric, titlePlaceholder: false, autoBars, justWrote: false, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}) };
+  return { width: lineSp(paper) * sp, sp, at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measureLyric, titlePlaceholder: false, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}) };
 }
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */
 export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; stats: PdfStats } {

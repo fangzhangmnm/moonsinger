@@ -7,7 +7,7 @@ import { TPQ, type Token, songOf } from "../src/score/song.ts";
 const SP = 10, CH = 9;   // 假字宽：歌词字号下每个字 9 px（sp = 10）→ 声部名 = 9 × 0.85 / 10 ≈ 0.77 sp 一个字
 const song = () => songOf([{ kind: "key", fifths: 0, id: 1 }, { kind: "time", beats: 4, beatType: 4, id: 2 }, { kind: "tempo", bpm: 90, id: 3 },
   { kind: "note", pitch: { step: "C", alter: 0, octave: 5 }, dur: TPQ, lyric: null, id: 4 }] as Token[], { title: "" });
-const L = (name: string, staves?: 2) => engrave(song(), { width: 2000, sp: SP, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name, first: true, ...(staves ? { staves } : {}) }], caret: 4, sel: null, measureLyric: (s) => [...s].length * CH });
+const L = (name: string, staves?: 2) => engrave(song(), { width: 2000, sp: SP, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name, first: true, ...(staves ? { staves } : {}) }], measureLyric: (s) => [...s].length * CH });
 const names = (l: ReturnType<typeof L>) => l.prims.filter((x) => x.t === "text" && x.cls?.startsWith("part-name")).map((x) => (x as { s: string }).s);
 const clefX = (l: ReturnType<typeof L>) => Math.min(...l.prims.filter((x) => x.t === "glyph" && x.ch === "\u{E050}").map((x) => (x as { x: number }).x));
 const wSp = (s: string) => ([...s].length * CH * (LYRIC_EM * 0.85)) / LYRIC_EM / SP;

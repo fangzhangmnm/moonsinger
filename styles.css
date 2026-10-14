@@ -126,6 +126,11 @@ button, input, select { font: inherit; color: inherit; }
 .staff-svg .cur { fill: var(--accent); stroke: var(--accent); }
 .staff-svg path.tie.cur { fill: none; }
 .staff-svg line.caret { stroke: var(--accent); }
+/* 光标 / 选区带不进排版（W-17 第 1 刀，2026-10-15）：score-view 在 ink 层画；写字头的蓝 / 选中 / 强调色按 data-tok 开关 class */
+.ink-caret { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.ink-caret line.caret { stroke: var(--accent); }
+body.listen-mode .ink-caret { display: none; }
+.selbox { position: absolute; background: var(--accent-soft); opacity: .8; mix-blend-mode: multiply; pointer-events: none; }
 .staff-svg line.playhead { stroke: var(--accent); stroke-width: 2px; opacity: 0.55; pointer-events: none; }   /* 播放头（实时试听的「谱上跟着亮」；src/ui/score-view.ts setPlayhead） */
 .staff-svg rect.warn { fill: #d9a23a; }
 .staff-svg text.lyric { font-family: system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif; }

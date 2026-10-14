@@ -59,12 +59,12 @@ describe("渐到：编辑 / 画", () => {
     st = editMarkAt(st, k, { ramp: false }); eq((tr(st)[k] as { ramp?: true }).ramp, undefined);
   });
   it("画：渐到 = 虚线发夹（hairpin ramp）；一样高 = 不画", () => {
-    const lay = (toks: Token[]) => { const st = initState(), song = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { [st.at.part]: toks } })) }; return engrave(song, { width: 600, sp: 10, at: st.at, caret: 0, sel: null, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 10 } as never).prims; };
+    const lay = (toks: Token[]) => { const st = initState(), song = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { [st.at.part]: toks } })) }; return engrave(song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 10 } as never).prims; };
     eq(lay(line([dyn("p"), "n", "n", dyn("f", true), "n"])).filter((p) => p.t === "path" && (p as { cls?: string }).cls === "hairpin ramp").length, 1);
     eq(lay(line([dyn("f"), "n", "n", dyn("f", true), "n"])).filter((p) => p.t === "path" && /ramp/.test((p as { cls?: string }).cls ?? "")).length, 0);
   });
   it("渐到的虚线：上下两条边的每一小段都在同一个 x 上（v0.10.26，user「蝌蚪的尾巴在打架」）", () => {
-    const lay = (toks: Token[]) => { const st = initState(), song = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { [st.at.part]: toks } })) }; return engrave(song, { width: 600, sp: 10, at: st.at, caret: 0, sel: null, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 10 } as never).prims; };
+    const lay = (toks: Token[]) => { const st = initState(), song = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { [st.at.part]: toks } })) }; return engrave(song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 10 } as never).prims; };
     const pin = lay(line([dyn("p"), "n", "n", "n", "n", dyn("f", true), "n"])).find((p) => p.t === "path" && (p as { cls?: string }).cls === "hairpin ramp") as { d: string };
     const xs = [...pin.d.matchAll(/M([\d.-]+),/g)].map((m) => +m[1]);
     eq(xs.length >= 8 && xs.length % 2 === 0, true);   // 不止一段，而且成对

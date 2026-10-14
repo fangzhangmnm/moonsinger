@@ -11,7 +11,7 @@ function song(quarters: number): Song {
   for (let i = 0; i < quarters; i++) toks.push({ kind: "note", pitch: p, dur: TPQ, lyric: null, id: id++ } as Token);
   return songOf(toks, { title: "" });
 }
-const lay = (quarters: number, caretAtEnd: boolean) => engrave(song(quarters), { width: 700, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Vocals", first: true }], caret: caretAtEnd ? 3 + quarters : 3, sel: null, measureLyric: () => 10 });
+const lay = (quarters: number, caretAtEnd: boolean) => engrave(song(quarters), { width: 700, sp: 10, tailOpen: caretAtEnd, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Vocals", first: true }], measureLyric: () => 10 });
 type Line = { t: "line"; x1: number; y1: number; x2: number; y2: number; w: number; cls?: string };
 const staffRows = (l: ReturnType<typeof lay>) => {
   const st = l.prims.filter((x): x is Line => x.t === "line" && x.cls === "staff");

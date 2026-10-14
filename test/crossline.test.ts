@@ -11,7 +11,7 @@ function song(items: Token[], beats = 4): EditorState {
   const st = initState(), head = tr(st).slice(0, 3).map((t) => (t.kind === "time" ? { ...t, beats } : t)) as Token[];
   return { ...st, song: withTrack(st.song, st.at.paper, st.at.part, [...head, ...items]) };
 }
-const lay = (st: EditorState, width = 420) => engrave(st.song, { width, sp: 10, at: st.at, caret: 0, sel: null, parts: [{ id: "P1", name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 10 } as never);
+const lay = (st: EditorState, width = 420) => engrave(st.song, { width, sp: 10, at: st.at, parts: [{ id: "P1", name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 10 } as never);
 
 describe("三连音组跨行", () => {
   it("一个长小节（12/4，36 个三连八分）折好几行：每组一个数字（12 组 = 12 个「3」），组不错位", () => {

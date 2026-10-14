@@ -20,7 +20,7 @@ function withNotes(st: EditorState, part: string, ps: [string, number][]): Edito
 }
 const ids = (st: EditorState) => st.song.parts.map((p) => `${p.id}${p.host ? `<${p.host}` : ""}`).join(",");
 const parts = (st: EditorState) => st.song.parts.map((p, k) => ({ id: p.id, name: `V${k}`, empty: false, first: k === 0, hidden: false, badges: [], mono: false }));
-const lay = (st: EditorState) => engrave(st.song, { width: 900, sp: 10, at: st.at, caret: st.caret, sel: st.sel, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true });
+const lay = (st: EditorState) => engrave(st.song, { width: 900, sp: 10, at: st.at, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true });
 
 describe("合租：数据", () => {
   it("挂上 = 排到主人那一家最后；挂自己 / 挂房客 / 主人去当房客 = 不动", () => {
@@ -116,13 +116,13 @@ describe("合租：排版（看个大概）", () => {
   });
   it("展开着的一家左边有一条括号（编辑器里才画、点它的区域在 Layout.families）；叠起来 / 导出 = 没有（v0.10.29）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);
-    const ed = (x: EditorState) => engrave(x.song, { width: 900, sp: 10, at: x.at, caret: x.caret, sel: x.sel, parts: parts(x), measureLyric: (s: string) => s.length * 10, autoBars: true, titlePlaceholder: true });
+    const ed = (x: EditorState) => engrave(x.song, { width: 900, sp: 10, at: x.at, parts: parts(x), measureLyric: (s: string) => s.length * 10, autoBars: true, titlePlaceholder: true });
     const open = ed(setFocus(st, st.song.papers[0].id, c));
     eq(open.families.length, 1); eq(open.families[0].host, a);
     assert(open.prims.some((p) => p.t === "path" && p.cls === "family-bracket"), "画了括号");
     eq(ed(setFocus(st, st.song.papers[0].id, "P2")).families.length, 0, "叠起来 = 没有括号");
     eq(lay(setFocus(st, st.song.papers[0].id, c)).families.length, 0, "导出（没有编辑器提示）= 不画");
-    eq(engrave(st.song, { width: 900, sp: 10, at: { ...st.at, part: c }, caret: 0, sel: null, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true, titlePlaceholder: true, foldAll: true }).families.length, 0, "听模式（foldAll）= 都叠起来");
+    eq(engrave(st.song, { width: 900, sp: 10, at: { ...st.at, part: c }, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true, titlePlaceholder: true, foldAll: true }).families.length, 0, "听模式（foldAll）= 都叠起来");
   });
   it("主人不在这张纸上：同一家的两位房客照样叠成一行（v0.10.31，user「piano1不在的时候piano2和3没有成功合并」）", () => {
     let st = trio(); const [a, b2, c] = st.song.parts.map((p) => p.id); st = setPartHost(st, b2, a); st = setPartHost(st, c, a);
