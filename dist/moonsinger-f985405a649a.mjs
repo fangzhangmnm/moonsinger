@@ -9051,61 +9051,59 @@ function engrave(song, o10) {
 // src/render/svg.ts
 var esc = (s10) => s10.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 var n = (v) => (Math.round(v * 100) / 100).toString();
-function toSvg(l10, inlineStyle = false) {
-  const out = [];
-  const L2 = l10.pageX?.left ?? 0, R2 = l10.pageX?.right ?? 0, W3 = l10.width + L2 + R2;
-  out.push(`<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W3)}" height="${n(l10.height)}" viewBox="${n(-L2)} 0 ${n(W3)} ${n(l10.height)}">`);
-  if (inlineStyle) out.push(`<style>${STANDALONE_CSS}</style>`);
-  const fs = n(4 * l10.sp), lfs = n(LYRIC_EM * l10.sp);
-  for (const p2 of l10.prims) {
-    const c10 = p2.cls ? ` class="${p2.cls}"` : "";
-    switch (p2.t) {
-      case "line":
-        out.push(`<line${c10} x1="${n(p2.x1)}" y1="${n(p2.y1)}" x2="${n(p2.x2)}" y2="${n(p2.y2)}" stroke-width="${n(p2.w)}"/>`);
-        break;
-      case "glyph":
-        out.push(`<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-family="Bravura" font-size="${p2.size ? n(p2.size) : fs}">${p2.ch}</text>`);
-        break;
-      case "text":
-        out.push(`<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-size="${p2.size ? n(p2.size) : lfs}" text-anchor="${p2.anchor ?? "middle"}">${esc(p2.s)}</text>`);
-        break;
-      case "path":
-        out.push(`<path${c10} d="${p2.d}"/>`);
-        break;
-      case "rect":
-        out.push(`<rect${c10} x="${n(p2.x)}" y="${n(p2.y)}" width="${n(p2.w)}" height="${n(p2.h)}" rx="${n(l10.sp * 0.6)}"/>`);
-        break;
-      case "icon":
-        out.push(`<use${c10} href="#${p2.id}" x="${n(p2.x)}" y="${n(p2.y)}" width="${n(p2.size)}" height="${n(p2.size)}">${p2.title ? `<title>${esc(p2.title)}</title>` : ""}</use>`);
-        break;
+function elOf(p2, fs, lfs, rx2) {
+  const c10 = p2.cls ? ` class="${p2.cls}"` : "";
+  switch (p2.t) {
+    case "line":
+      return `<line${c10} x1="${n(p2.x1)}" y1="${n(p2.y1)}" x2="${n(p2.x2)}" y2="${n(p2.y2)}" stroke-width="${n(p2.w)}"/>`;
+    case "glyph":
+      return `<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-family="Bravura" font-size="${p2.size ? n(p2.size) : fs}">${p2.ch}</text>`;
+    case "text":
+      return `<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-size="${p2.size ? n(p2.size) : lfs}" text-anchor="${p2.anchor ?? "middle"}">${esc(p2.s)}</text>`;
+    case "path":
+      return `<path${c10} d="${p2.d}"/>`;
+    case "rect":
+      return `<rect${c10} x="${n(p2.x)}" y="${n(p2.y)}" width="${n(p2.w)}" height="${n(p2.h)}" rx="${rx2}"/>`;
+    case "icon":
+      return `<use${c10} href="#${p2.id}" x="${n(p2.x)}" y="${n(p2.y)}" width="${n(p2.size)}" height="${n(p2.size)}">${p2.title ? `<title>${esc(p2.title)}</title>` : ""}</use>`;
+  }
+}
+function yOfPrim(p2) {
+  switch (p2.t) {
+    case "line":
+      return (p2.y1 + p2.y2) / 2;
+    case "glyph":
+    case "text":
+      return p2.y;
+    case "rect":
+      return p2.y + p2.h / 2;
+    case "icon":
+      return p2.y + p2.size / 2;
+    case "path": {
+      const m2 = /^\s*M\s*-?[\d.]+[\s,]+(-?[\d.]+)/.exec(p2.d);
+      return m2 ? Number(m2[1]) : null;
     }
   }
-  out.push("</svg>");
-  return out.join("");
 }
-var STANDALONE_CSS = `
-.staff-svg{background:#fff}
-.staff-svg line{stroke:#2a2a2a;stroke-linecap:butt}
-.staff-svg text{fill:#2a2a2a}
-.staff-svg path{fill:#2a2a2a}
-.staff-svg line.staff{stroke:#666}
-.staff-svg path.tie{fill:none;stroke:#2a2a2a;stroke-width:1.4}
-.staff-svg .ghost{fill:#a9b4c2;stroke:#a9b4c2}
-.staff-svg path.tie.ghost{fill:none}
-.staff-svg .cur{fill:#2b6cb0;stroke:#2b6cb0}
-.staff-svg path.tie.cur{fill:none}
-.staff-svg line.caret{stroke:#2b6cb0}
-.staff-svg rect.warn{fill:#d9a23a}
-.staff-svg text.lyric{font-family:system-ui,"Hiragino Sans","Noto Sans CJK JP",sans-serif}
-.staff-svg line.melisma{stroke:#2a2a2a}
-.staff-svg .sel{fill:#1d5fa8;stroke:#1d5fa8}
-.staff-svg rect.selbox{fill:#e3edf9;opacity:.8}
-.staff-svg path.tuplet-bracket{fill:none;stroke:#2a2a2a;stroke-width:1}
-.staff-svg text.tempo-word{font-weight:600;font-family:system-ui,sans-serif}
-.staff-svg text.tempo-num,.staff-svg text.key-label{font-family:system-ui,sans-serif}
-.staff-svg path.hairpin{fill:none;stroke:#2a2a2a;stroke-width:1.1}
-.staff-svg text.dyn-word{font-style:italic;font-family:"Times New Roman",Georgia,serif}
-`;
+function toSvgParts(l10) {
+  const L2 = l10.pageX?.left ?? 0, R2 = l10.pageX?.right ?? 0, W3 = l10.width + L2 + R2;
+  const open = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W3)}" height="${n(l10.height)}" viewBox="${n(-L2)} 0 ${n(W3)} ${n(l10.height)}">`;
+  const fs = n(4 * l10.sp), lfs = n(LYRIC_EM * l10.sp), rx2 = n(l10.sp * 0.6);
+  const boxes = l10.systems.map((s10) => [s10.top, s10.bottom]);
+  const buckets = Array.from({ length: boxes.length + 1 }, () => []);
+  for (const p2 of l10.prims) {
+    const y2 = yOfPrim(p2);
+    let k2 = 0;
+    if (y2 !== null) {
+      for (let i10 = 0; i10 < boxes.length; i10++) if (y2 >= boxes[i10][0] && y2 < boxes[i10][1]) {
+        k2 = i10 + 1;
+        break;
+      }
+    }
+    buckets[k2].push(elOf(p2, fs, lfs, rx2));
+  }
+  return { open, groups: buckets.map((b3, k2) => `<g data-sys="${k2 - 1}">${b3.join("")}</g>`), close: "</svg>" };
+}
 
 // src/ui/lyric-editor.ts
 var PUNCT = /[。．，、,.!！?？;；:：]+$/;
@@ -10228,10 +10226,18 @@ var ScoreView = class {
     this.ink.style.left = `${this.layout.pageX.left}px`;
     if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout.width + this.layout.pageX.left + this.layout.pageX.right)}px`;
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;
-    const svg = toSvg(this.layout);
+    const parts = toSvgParts(this.layout);
     const old = this.sheet.querySelector("svg");
-    if (old) old.outerHTML = svg;
-    else this.sheet.insertAdjacentHTML("afterbegin", svg);
+    const prev = this.svgParts;
+    if (!old || !prev || prev.open !== parts.open || prev.groups.length !== parts.groups.length || old.children.length !== parts.groups.length) {
+      const svg = parts.open + parts.groups.join("") + parts.close;
+      if (old) old.outerHTML = svg;
+      else this.sheet.insertAdjacentHTML("afterbegin", svg);
+    } else {
+      const kids2 = old.children;
+      for (let k2 = 0; k2 < parts.groups.length; k2++) if (parts.groups[k2] !== prev.groups[k2]) kids2[k2].outerHTML = parts.groups[k2];
+    }
+    this.svgParts = parts;
     if (!this.boxEl.isConnected) this.ink.appendChild(this.boxEl);
     this.placeHandles();
     if (this.playP) this.setPlayhead(this.playP);
@@ -10624,6 +10630,8 @@ var ScoreView = class {
   // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
   /** 光标画在上一行末尾（点在上一行行末放的）：记着是哪个光标位置（纸|声部|下标），光标一挪就失效；不进文件、不进 undo（2026-10-10 user「然后我希望光标能同时支持一行的末尾和下一行的开头两个位置取决于点在哪里」）。 */
   caretEnd = null;
+  /** 上一次画的 SVG（开标签 + 每行谱一组），逐组比、只换变了的（W-17）。 */
+  svgParts = null;
   /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
    *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
   get hits() {
@@ -43987,4 +43995,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8adcdd1dd029.mjs.map
+//# sourceMappingURL=moonsinger-f985405a649a.mjs.map

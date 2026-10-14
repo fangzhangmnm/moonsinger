@@ -24,7 +24,7 @@ import { type EditorState, type NoteTok, setCaret, setCaretLead, setFocus, selec
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type ClefHit, type SystemBox } from "../render/engrave.ts";
-import { toSvg } from "../render/svg.ts";
+import { toSvg, toSvgParts } from "../render/svg.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
 import { TitleEditor } from "./title-editor.ts";
@@ -261,9 +261,19 @@ export class ScoreView {
     this.ink.style.left = `${this.layout.pageX.left}px`;
     if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout.width + this.layout.pageX.left + this.layout.pageX.right)}px`;   // 横卷：纸按内容撑宽，谱面板横着滚
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;   // ¾ 屏（一整屏有时让人以为白屏了；user 2026-10-08「留的滚动空白不应该是一整页…3/4左右？」）
-    const svg = toSvg(this.layout);
+    // 智能重画第一刀（W-17，2026-10-14）：SVG 按行谱分成几十个 <g>，和上一次逐组比字符串、只换变了的组（挪一格光标 = 两组）；
+    //   框变了（宽高 / viewBox）或组数变了 = 整张换（和以前一样）。排版本身照旧整首算（engrave），省的是建 5000 个节点那七成。
+    const parts = toSvgParts(this.layout);
     const old = this.sheet.querySelector("svg");
-    if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
+    const prev = this.svgParts;
+    if (!old || !prev || prev.open !== parts.open || prev.groups.length !== parts.groups.length || old.children.length !== parts.groups.length) {
+      const svg = parts.open + parts.groups.join("") + parts.close;
+      if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
+    } else {
+      const kids = old.children;
+      for (let k = 0; k < parts.groups.length; k++) if (parts.groups[k] !== prev.groups[k]) kids[k].outerHTML = parts.groups[k];
+    }
+    this.svgParts = parts;
     if (!this.boxEl.isConnected) this.ink.appendChild(this.boxEl);
     this.placeHandles();
     if (this.playP) this.setPlayhead(this.playP);   // 暂停着 / 放着的时候重画：播放线和高亮跟着新的排版
@@ -522,6 +532,8 @@ export class ScoreView {
   private heldBase: string | null = null; // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
   /** 光标画在上一行末尾（点在上一行行末放的）：记着是哪个光标位置（纸|声部|下标），光标一挪就失效；不进文件、不进 undo（2026-10-10 user「然后我希望光标能同时支持一行的末尾和下一行的开头两个位置取决于点在哪里」）。 */
   private caretEnd: string | null = null;
+  /** 上一次画的 SVG（开标签 + 每行谱一组），逐组比、只换变了的（W-17）。 */
+  private svgParts: { open: string; groups: string[]; close: string } | null = null;
 
   /** 能点、能选的东西 = 音 + 休止（user 2026-10-08「为什么休止符没法选择，休止符就这么没有人权吗，我感觉编辑的心智模型里面休止符也应该和普通音符没区别」）。
    *  休止没有音高：d = NaN（笔 / 鼠标按住拖只改时值、不出声）。 */
