@@ -16,7 +16,7 @@ import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
-import { roleName, activeGm, activeInstrument, activeCalibrationDb, activeVelocity, activePerfSpec, activeTranspose, activeMaster, studioTrack, studioTracks, activeChain, type Extras, type GmCandidate } from "../format/project.ts";
+import { roleName, activeGm, activeInstrument, activeCalibrationDb, activeVelocity, activePerfSpec, activeTranspose, activeMaster, studioTrack, studioTracks, activeChain, type Extras, type GmCandidate, partLabels, activeId } from "../format/project.ts";
 import { performerCredits, licenseHints, creditsText, type CreditLine } from "../format/credits.ts";
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf } from "../performers/index.ts";
@@ -41,13 +41,18 @@ export interface PerfHost {
   engine: StudioClient;
   singer: Singer;
   view: Pick<ScoreView, "setPlayhead" | "setStartMark">;
-  ui: { progress(s: string): void; info(s: string): void; showError(s: string): void; renderBar: RenderProgress; playBtns(): HTMLElement[]; playIcon(playing: boolean): void; offerFile(file: File, title: string, msg: string): void };
+  ui: { progress(s: string): void; info(s: string): void; showError(s: string): void; renderBar: RenderProgress; playBtns(): HTMLElement[]; playIcon(playing: boolean): void; offerFile(file: File, title: string, msg: string): void; onIssues(list: readonly Issue[]): void };
   sounds: { resolveGmBytes(g: GmCandidate): Promise<Uint8Array>; ensureVowels(): Promise<void>; soundMemoryBytes(): number; modelBases(): string[] };
   credits: { creditsOf(roles: readonly string[], rights: string | undefined): { lines: CreditLine[] }; creditsBlock(lines: CreditLine[], title: string): string };
 }
 
 /** 渲染哪一段：view = 跟视图（本段 / 全部，播放用）；all = 整首；segment = 光标所在的这一张纸（导出面板里选）。 */
 export type RenderScope = "view" | "all" | "segment";
+
+/** 「这位有事」（ADR-0004 §2.2½ 一套机制、四个出口；user 2026-10-14「一套机制、四个出口 同意」）：现在歌里有音的声部里出不了声的那几位。
+ *  kind：unknown = 认不出 / 还没有人上场；sound = 找不到声音（弱引用解析失败）；unplayable = 别的出声失败；upgrade / substitute = 留给格式那一刀（版本比对，§2.2）。 */
+export type IssueKind = "unknown" | "sound" | "unplayable" | "upgrade" | "substitute";
+export interface Issue { part: string; role: string; label: string; kind: IssueKind; why: string }
 
 export type Performance = ReturnType<typeof createPerformance>;
 
@@ -56,6 +61,7 @@ export function createPerformance(host: PerfHost) {
   const { progress, info, showError, renderBar, playBtns, playIcon, offerFile } = host.ui;
   const { resolveGmBytes, ensureVowels, soundMemoryBytes, modelBases } = host.sounds;
   const { creditsOf, creditsBlock } = host.credits;
+  const escHtml = (x: string): string => x.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c);
   const st = () => host.state(), extras = () => host.extras(), pv = (id: string) => host.pv(id), curRole = () => host.curRole(), docName = () => host.docName();
   void info;
 
@@ -103,13 +109,36 @@ export function createPerformance(host: PerfHost) {
     return { engine: eng, plugin, spec: activePerfSpec(extras(), role), velocity: activeVelocity(extras(), role), transpose: activeTranspose(extras(), role), follow: (s) => followOf(s, cat), chain: activeChain(extras(), role), ...own };
   }
   /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
-  async function prepareBanks(parts: readonly PartDef[]): Promise<string[]> {
-    const errs: string[] = [];
+  async function prepareBanks(parts: readonly PartDef[]): Promise<{ part: string; cand: string; why: string }[]> {
+    const errs: { part: string; cand: string; why: string }[] = [];
     for (const part of parts) {
       const plugin = performerOf(activeInstrument(extras(), part.role)?.engine); if (!plugin) continue;   // 没人上场：时间线会报
-      try { await plugin.prepare({ extras: extras(), role: part.role, engine, resolveGmBytes, ensureVowels }); } catch (e) { errs.push(`「${roleName(extras(), part.role)}」：${(e as Error).message}`); }
+      try { await plugin.prepare({ extras: extras(), role: part.role, engine, resolveGmBytes, ensureVowels }); } catch (e) { errs.push({ part: part.id, cand: activeId(extras(), part.role), why: (e as Error).message }); }
     }
     return errs;
+  }
+  // ── 一套机制、四个出口（ADR-0004 §2.2½）：一张 issues 清单；出口 = 谱上角标 / |▶ 角标 + 清单面板 / 清单变了才一条 toast / 导出面板一行（后三个在 main.ts）──
+  let issues: Issue[] = [], issuesKey = "";
+  const prepErrs = new Map<string, { cand: string; kind: IssueKind; why: string }>();   // 上一次准备（播放 / 导出）里出不了声的：按声部记，带着当时上场的候选 id——换了人就不算
+  const hasNotes = (partId: string): boolean => st().song.papers.some((pp) => (pp.tracks[partId] ?? []).some((t) => t.kind === "note"));
+  function computeIssues(): Issue[] {
+    const labels = partLabels(st().song, extras());
+    return st().song.parts.flatMap((p, k): Issue[] => {
+      if (!hasNotes(p.id)) return [];   // 没写音的声部不出声也不丢什么
+      const plugin = performerOf(activeInstrument(extras(), p.role)?.engine);
+      if (!plugin) return [{ part: p.id, role: p.role, label: labels[k], kind: "unknown", why: "还没有人上场（别的软件原来的乐器，这一版认不出）" }];
+      const e = prepErrs.get(p.id);
+      return e && e.cand === activeId(extras(), p.role) ? [{ part: p.id, role: p.role, label: labels[k], kind: e.kind, why: e.why }] : [];
+    });
+  }
+  const issuesText = (list: readonly Issue[]): string => list.map((i) => `「${i.label}」：${i.why}`).join("；");
+  /** 重算清单；**变了**才说一句（user 10-14「一直弹窗很烦」）+ 通知宿主重画角标。开歌 / 换人 / 写了第一个音 / 准备过一次都会来。 */
+  function refreshIssues(): void {
+    const next = computeIssues(), key = JSON.stringify(next.map((i) => [i.part, i.kind, i.why]));
+    if (key === issuesKey) return;
+    const had = issues.length; issuesKey = key; issues = next; host.ui.onIssues(next);
+    if (next.length) showError(`${issuesText(next)}。这${next.length > 1 ? `${next.length} 条轨` : "条轨"}放和导出都不出声，其余照放；点 |▶ 角上的数字看清单，点谱前面的声部名换一个「谁来演」。`);
+    else if (had) info("现在的声部都能出声了");
   }
   /** 月读的块 = 调度器（src/engine/scheduler.ts）+ 一次一块的泵（刀 2，边算边放；user「第一句好了就开播 嗯」「实时播放的时候…预提前算然后用cache invalid」）：
    *  顺序 = 播放头所在的那块先、往后按距离、循环绕回；seek / 改谱 = 换顺序（正在算的那块算完照样进缓存）。唱不了的一句 = 报错 + 空着（不替补）；
@@ -249,9 +278,12 @@ export function createPerformance(host: PerfHost) {
     const parts = audibleParts(), song = songIn(scope);
     const errs = await prepareBanks(parts);   // 各位的准备（库 / 元音表）都在插件里
     const tl = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st().song.hum, singOpt: humOpt() });
-    for (const u of tl.unplayable) errs.push(`「${roleName(extras(), st().song.parts.find((p) => p.id === u.part)?.role ?? "")}」：${u.why}`);
-    if (errs.length) showError(`${errs.join("；")}。${tl.tracks.length ? "这些声部没有出声，其余照放。" : "没有出声。"}点谱前面的声部名换一个「谁来演」。`);
-    if (!tl.tracks.length) return null;
+    // 出不了声的进清单（§2.2½）：这次准备过的声部先清掉旧账，再按结果记；toast 只在清单变了时说（refreshIssues），不再每按一次播放弹一次
+    for (const p of parts) prepErrs.delete(p.id);
+    for (const e of errs) prepErrs.set(e.part, { cand: e.cand, kind: "sound", why: e.why });
+    for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); }
+    refreshIssues();
+    if (!tl.tracks.length) { showError(`没有出声：${issuesText(issues) || "没有会出声的声部"}。点谱前面的声部名换一个「谁来演」。`); return null; }   // 一个都放不了 = 这一下必须说
     pruneChunks(tl);
     if (o.chunks !== false) await awaitAllChunks(tl);
     pushChannels(o.raw);
@@ -510,6 +542,7 @@ export function createPerformance(host: PerfHost) {
       progress("");
       offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${Q.label} ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` +
         (fellBack ? `<div class="offer-msg">许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。</div>` : "") +
+      (issues.length ? `<div class="offer-msg issue-warn">这几条轨没出声，mp3 里没有它们：${escHtml(issuesText(issues))}</div>` : "") +
         creditsBlock(lines, "署名 · 已写进 mp3 的标签"));
     } catch (e) {
       progress(""); showError(`导出失败：${(e as Error).message}`);
@@ -539,6 +572,7 @@ export function createPerformance(host: PerfHost) {
   return {
     humOpt, resetLatencyLog, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, prepare, renderMixForTest, playRange, tickOfCaret, barHeadTick, startPlayback, playPause, resumePlay, pausePlay, replay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, trimLanesForNewSong, onSongSwitch, jumpPlaybackToPaper, previewTrack,
     budget: BUDGET, TURN_LEADS,
+    issues: (): readonly Issue[] => issues, issueOf: (part: string): Issue | null => issues.find((i) => i.part === part) ?? null, issuesText, refreshIssues,
     get loopOn() { return loopOn; }, get playTl() { return playTl; }, get preparing() { return preparing; }, get paused() { return paused; }, get startMark() { return startMark; }, get exporting() { return exporting; },
     get mixBypass() { return mixBypass; }, set mixBypass(v: boolean) { mixBypass = v; },
     get turnLead() { return turnLead; }, set turnLead(v: number) { turnLead = v; },

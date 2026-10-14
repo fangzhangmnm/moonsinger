@@ -46,7 +46,7 @@ import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSound
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf, TSUKUYOMI_RANGE } from "../performers/index.ts";
-import { createPerformance } from "./performance.ts";   // 唱歌 / 播放 / 导出的胶水（刀 1 之二）   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
+import { createPerformance, type Issue } from "./performance.ts";   // 唱歌 / 播放 / 导出的胶水（刀 1 之二）   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
 import type { AuditionInst, TrackSpec } from "../engine/studio.ts";
 import { buildTimeline, lightNotes, songLangOf, sungPlan, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
@@ -697,6 +697,7 @@ function updateExtras(next: Extras, locus: Locus, gesture?: string): void {
   history = record(history, st, doc.extras, gesture ?? null, performance.now(), locus);
   doc.extras = next; renderTitle(); changed(); renderUndo();
   pushChannels(); schedulePlaybackRefresh(); schedulePrewarm();   // 推子 / 校准立刻进录音房（边放边调）；换人 = 时间线重算
+  refreshIssues();   // 换人 = 清单重算（换对了角标自己消）
   if (locus.kind === "lounge") pad.render();   // 演奏者变了 = pad 的提示跟着（音域 / 原速键；固定原速 = 不提示）
   drawInst(); trackRedraw?.(); updateChrome();   // 歌手名在挂签的下拉里
 }
@@ -718,6 +719,7 @@ function applyState(next: EditorState): void {
   updateChrome();
   schedulePlaybackRefresh();   // 放着的时候改谱：时间线重算（正在响的不动）
   schedulePrewarm();            // 没在放：停下 700 ms 后先把光标附近唱好
+  refreshIssues();              // 写了第一个音的声部要是没人上场 = 进清单（§2.2½）；删光了 = 出清单
 }
 function undoNow(): void { const r = undo(history, st, doc.extras); if (!r) { info("没有可撤销的"); return; } closeOffer?.(); view.lyrics.commitAndClose(); restore(r, "撤销"); }
 function redoNow(): void { const r = redo(history, st, doc.extras); if (!r) { info("没有可重做的"); return; } closeOffer?.(); view.lyrics.commitAndClose(); restore(r, "重做"); }
@@ -778,16 +780,25 @@ function showError(text: string): void { reportError(text, "error"); }   // 唯�
 //   月读按句出块（内容键缓存；这一刀仍在开播前把块唱齐，边算边放归刀 2）；从光标放、选一段、循环、边放边调混音、范围尾 / 循环点不切尾音。
 //   旧路（整首离线渲染成一条 → AudioBufferSource；循环段渲染两遍；src/audio/mix.ts）已删（user「旧引擎不用留念念旧，只是placeholder，可以大刀阔斧改」）。
 const playBtns = (): HTMLElement[] => [$("playBtn"), $("dockPlay")].filter((x): x is HTMLElement => !!x);
-const playIcon = (playing: boolean) => { for (const b of playBtns()) { b.innerHTML = `<svg class="ico"><use href="#${playing ? "stop" : "play-from-start"}"/></svg>`; b.classList.toggle("is-on", playing); } if (!playing) progress(""); };   // 一个主键：|▶ 从起点放 / ■ 停（user「先只有一个键」）
+const playIcon = (playing: boolean) => { for (const b of playBtns()) { b.innerHTML = `<svg class="ico"><use href="#${playing ? "stop" : "play-from-start"}"/></svg>`; b.classList.toggle("is-on", playing); } drawIssueBadges(); if (!playing) progress(""); };   // 一个主键：|▶ 从起点放 / ■ 停（user「先只有一个键」）
+// ── 四个出口（ADR-0004 §2.2½；user 2026-10-14「一套机制、四个出口 同意」）：清单住胶水（performance.ts issues），这里画 ① 谱上「不出声」角标 ② |▶ 角上的数字（点它 = 开清单）③ toast 由胶水在清单变了时说 ④ 导出面板一行 ──
+let issueParts = new Set<string>(), issueCount = 0;   // 胶水报的最新清单（画角标用；渲染时不去问胶水，免得初始化顺序）
+function onIssuesChanged(list: readonly Issue[]): void { issueParts = new Set(list.map((i) => i.part)); issueCount = list.length; drawIssueBadges(); view.render(); }
+function drawIssueBadges(): void {
+  for (const b of playBtns()) {
+    b.querySelector(".issues-badge")?.remove();
+    if (issueCount) { const t = document.createElement("span"); t.className = "issues-badge"; t.textContent = String(issueCount); t.title = `${issueCount} 条轨不出声：点开看清单`; b.append(t); }
+  }
+}
 // ── 唱歌 / 播放 / 导出的胶水 = src/app/performance.ts（刀 1 之二，2026-10-14）：这里只给访问器，拿回一组函数 + 走带态的 getter ──────────
 const perfApi = createPerformance({
   state: () => st, extras: () => doc.extras, viewScope: () => viewScope, pv: (id) => pv(id), busMuted: () => busMuted, curRole: () => curRole(), docName: () => docName(),
   engine, singer, view,
-  ui: { progress, info, showError, renderBar, playBtns, playIcon, offerFile: (f, t, m) => offerFile(f, t, m) },
+  ui: { progress, info, showError, renderBar, playBtns, playIcon, offerFile: (f, t, m) => offerFile(f, t, m), onIssues: (list) => onIssuesChanged(list) },
   sounds: { resolveGmBytes: (g) => resolveGmBytes(g), ensureVowels, soundMemoryBytes, modelBases: () => modelBases() },
   credits: { creditsOf: (roles, rights) => creditsOf(roles, rights), creditsBlock: (lines, title) => creditsBlock(lines, title) },
 });
-const { humOpt, resetLatencyLog, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
+const { humOpt, resetLatencyLog, refreshIssues, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
 const BUDGET = perfApi.budget, TURN_LEADS = perfApi.TURN_LEADS;
 /** 焦点在能打字的框里（文字输入 / 多行）：空格归它。推子（range）、下拉、按钮不算。 */
 function typingIn(t: EventTarget | null): boolean { const el = t as HTMLElement | null; if (!el) return false; if (el.tagName === "TEXTAREA" || el.isContentEditable) return true; return el.tagName === "INPUT" && !["range", "checkbox", "radio", "button"].includes((el as HTMLInputElement).type); }
@@ -883,9 +894,9 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
 function wirePlayBtn(btn: HTMLElement): void {
   let timer = 0, held = false;
   const cancel = () => clearTimeout(timer);
-  btn.addEventListener("pointerdown", (e) => { if (e.button !== 0) return; held = false; cancel(); timer = window.setTimeout(() => { held = true; openTransportMenu(btn); }, 500); });
+  btn.addEventListener("pointerdown", (e) => { if (e.button !== 0 || (e.target as HTMLElement).closest(".issues-badge")) return; held = false; cancel(); timer = window.setTimeout(() => { held = true; openTransportMenu(btn); }, 500); });
   btn.addEventListener("pointerup", cancel); btn.addEventListener("pointerleave", cancel); btn.addEventListener("pointercancel", cancel);
-  btn.addEventListener("click", (e) => { if (held) { held = false; return; } playPause(e.timeStamp); });
+  btn.addEventListener("click", (e) => { if ((e.target as HTMLElement).closest(".issues-badge")) { openIssuesSheet(); return; } if (held) { held = false; return; } playPause(e.timeStamp); });   // 角上的数字 = 开不出声的清单，不是放
   btn.addEventListener("contextmenu", (e) => { e.preventDefault(); cancel(); openTransportMenu(btn); });
 }
 wirePlayBtn($("playBtn")); wirePlayBtn($("dockPlay"));
@@ -936,6 +947,30 @@ async function resolveGmBytes(g: GmCandidate): Promise<Uint8Array> {
 let mp3Scope: "all" | "segment" = "all";   // 范围只在这次打开里记着；音质跟歌走（desk，见 viewScope 旁边）
 /** 导出歌声前的面板（user 2026-10-08「mp3导出可能本来就该有一个对话框？比如quality之类的？」→「好，同意」）：音质 / 范围，都预设好，点「导出」就走。
  *  许可那一行只在用户自己选过许可时才出现（user「只有用户自己关心协议的时候才提出这些」）。 */
+/** §2.2½ 出口 ②：不出声的声部清单（非模态小面板，每行一个该按的钮）。入口 = |▶ 角上的数字。不替人换、不自愈（10-07 纪律）。 */
+function openIssuesSheet(): void {
+  closeOffer?.();
+  const list = perfApi.issues(); if (!list.length) { info("现在的声部都能出声"); return; }
+  const box = document.createElement("div"); box.className = "offer";
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">不出声的声部</div>` +
+    list.map((i) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc(i.label)}</b><small>${esc(i.why)}</small></div><button class="btn primary" data-v="inst:${esc(i.part)}">换人 / 找声音…</button></div>`).join("") +
+    `<div class="offer-msg">放和导出的 mp3 里都没有这${list.length > 1 ? `${list.length} 条轨` : "条轨"}的声音，其余照放。换谁由你定，不替补。</div>` +
+    `<div class="offer-btns"><button class="btn" data-v="close">知道了</button></div></div>`;
+  document.body.append(box);
+  const close = () => { box.remove(); closeOffer = null; };
+  closeOffer = close;
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (v?.startsWith("inst:")) { close(); goToPartInst(v.slice(5)); }
+  });
+}
+/** 光标挪到这位歌手（优先这张纸，没有就第一张有它的纸）再开乐器页。 */
+function goToPartInst(partId: string): void {
+  const paper = st.song.papers.find((pp) => pp.id === st.at.paper && pp.tracks[partId]) ?? st.song.papers.find((pp) => pp.tracks[partId]);
+  if (paper && (paper.id !== st.at.paper || st.at.part !== partId)) update(setFocus(st, paper.id, partId));
+  openInstPage();
+}
 function openMp3Panel(): void {
   closeOffer?.();
   const box = document.createElement("div");
@@ -948,7 +983,8 @@ function openMp3Panel(): void {
       `<div class="part-sec">音质</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>` +
       (st.song.papers.length > 1 ? `<div class="part-sec">范围</div><div class="set-row">${chip("s:all", "整首", "隐藏的纸不放", mp3Scope === "all")}${chip("s:segment", "这一张纸", paper?.name || `第 ${k + 1} 张`, mp3Scope === "segment")}</div>` : "") +
       (er ? `<div class="offer-msg">许可：${er.fellBack ? `这份按「未声明」写——你选的许可允许别人改编，和小月相的条款可能冲突（作者栏里的选择没动）` : esc(er.rights!)}。和署名一起写进 mp3 的标签。</div>` : "") +
-      `<div class="offer-btns"><button class="btn primary" data-v="go">导出</button><button class="btn" data-v="close">算了</button></div></div>`;
+      ((is) => (is.length ? `<div class="offer-msg issue-warn">${is.length} 条轨不出声，mp3 里不会有它们：${esc(perfApi.issuesText(is))}。换人在谱前面的声部名里。</div>` : ""))(perfApi.issues()) +   // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
+      `<div class="offer-btns"><button class="btn primary" data-v="go">${perfApi.issues().length ? "照样导出" : "导出"}</button><button class="btn" data-v="close">算了</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -1537,7 +1573,7 @@ function partLooks(): { colors: number[]; abbrs: string[] } {
 function partViews(): PartView[] {
   const labels = partLabels(st.song, doc.extras), mutes = lyricMutes(), looks = partLooks();
   return st.song.parts.map((p, k) => {
-    const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : ""].filter(Boolean);
+    const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : "", issueParts.has(p.id) ? "不出声" : ""].filter(Boolean);   // 不出声 = 清单里有它（§2.2½ 出口 ①）
     const eng = activeInstrument(doc.extras, p.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
@@ -2313,7 +2349,7 @@ function loadDoc(song: Song, o: { stem: string; named: boolean; extras: Extras; 
   applyWorkspace();
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);
-  onSongSwitch(); sound.allOff(); void prepareBank();   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
+  onSongSwitch(); sound.allOff(); void prepareBank(); refreshIssues();   // 开歌那一刻清单重算：有事 = 一条 toast + 角标（§2.2½ 出口 ③）   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
   view.render(); pad.render(); renderTitle(); updateChrome();   // 挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
   if (st.song.parts.some((p) => performerOf(activeInstrument(doc.extras, p.role)?.engine)?.sound === "chunks")) void singer.warm(modelBases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
   if (startDyns) info(`每张纸开头补了 ${startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）`);   // v0.10.39（user「每张纸（曲段）开头，对」）
