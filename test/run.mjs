@@ -29,6 +29,7 @@ import "./resource-watch.test.ts";
 import "./whisper-inhale.test.ts";
 import "./workspace.test.ts";
 import "./overlay.test.ts";
+import "./latch.test.ts";
 import "./svg-groups.test.ts";
 import "./sing-core-defaults.test.ts";
 import "./timeline.test.ts";

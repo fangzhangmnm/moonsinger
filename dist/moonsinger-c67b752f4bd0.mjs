@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.9-2026-10-15";
+var APP_VERSION = "v0.12.10-2026-10-15";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2781,6 +2781,26 @@ function detectPaper(widthMm, heightMm, marginMm, staffMm = STAFF_MM, density = 
   return kind ? { ...paperOf(kind), marginMm, ...extra } : { kind: "other", widthMm, heightMm, marginMm, ...extra };
 }
 var paperSizeText = (p2) => `${Math.round(p2.widthMm)} \xD7 ${Math.round(p2.heightMm)} mm`;
+
+// src/keyboard/latch.ts
+var DOUBLE_TAP_MS = 350;
+var LATCH_OFF = { mode: "off", at: 0, held: false, wrote: false, left: 0 };
+function latchDown(l10, now2, uses = 1) {
+  const mode = l10.mode === "off" ? "once" : l10.mode === "once" && now2 - l10.at < DOUBLE_TAP_MS ? "lock" : "off";
+  return { mode, at: now2, held: true, wrote: false, left: mode === "once" ? uses : 0 };
+}
+function latchUp(l10) {
+  if (!l10.held) return l10;
+  return l10.wrote && l10.mode !== "lock" ? { ...LATCH_OFF, at: l10.at } : { ...l10, held: false };
+}
+var latchTap = (l10, now2, uses = 1) => latchUp(latchDown(l10, now2, uses));
+function latchWrite(l10) {
+  if (l10.held) return l10.wrote ? l10 : { ...l10, wrote: true };
+  if (l10.mode === "once") return l10.left <= 1 ? { ...LATCH_OFF, at: l10.at } : { ...l10, left: l10.left - 1 };
+  return l10;
+}
+var latchCancel = (l10) => l10.mode === "once" ? { ...LATCH_OFF, at: l10.at, held: l10.held } : l10;
+var latchOn = (l10) => l10.mode !== "off";
 
 // src/score/pitch.ts
 var STEPS = ["C", "D", "E", "F", "G", "A", "B"];
@@ -3267,7 +3287,8 @@ function soundingPitch(st3, p2) {
   return { pitch: applyAcc(p2, st3.input), st: { ...st3, input: consumeAcc(st3.input) } };
 }
 function consumeAcc(input) {
-  return input.accMode === "once" ? { ...input, acc: 0, accMode: "off" } : input;
+  const l10 = latchWrite({ ...LATCH_OFF, mode: input.accMode, at: input.accAt, left: 1 });
+  return l10.mode === input.accMode ? input : { ...input, acc: l10.mode === "off" ? 0 : input.acc, accMode: l10.mode };
 }
 function applyAcc(p2, input) {
   return input.acc ? alterBy(p2, input.acc) : p2;
@@ -3984,10 +4005,8 @@ function setTuplet(st3, n10) {
 }
 function tapAcc(st3, acc, now2) {
   if (st3.sel) return mapSelPitch(st3, (p2) => alterBy(p2, acc));
-  const i10 = st3.input;
-  if (i10.acc !== acc || i10.accMode === "off") return { ...st3, input: { ...i10, acc, accMode: "once", accAt: now2 } };
-  if (i10.accMode === "once" && now2 - i10.accAt < 350) return { ...st3, input: { ...i10, accMode: "lock", accAt: now2 } };
-  return { ...st3, input: { ...i10, acc: 0, accMode: "off", accAt: now2 } };
+  const i10 = st3.input, l10 = latchDown({ ...LATCH_OFF, mode: i10.acc === acc ? i10.accMode : "off", at: i10.accAt }, now2);
+  return { ...st3, input: { ...i10, acc: l10.mode === "off" ? 0 : acc, accMode: l10.mode, accAt: now2 } };
 }
 function setAccState(st3, acc, mode) {
   const i10 = st3.input;
@@ -11817,8 +11836,8 @@ var Pad = class {
   symBuilt = null;
   /** 「渐到」先点它、再点一个力度 = 这个力度从上一个力度记号渐变过来（2026-10-08 深夜，user「渐到 做」）。Shift 逻辑（2026-10-09，user「然后软键盘到时候加一个toggle渐进到的标签，这样可以快速键盘输入」）：
    *  点一下 = 下一个力度是渐到；连点两下 = 锁住（之后写的力度都是渐到，「力度」标签上挂着「渐到」）；再点 = 关。 */
-  ramp = "off";
-  rampAt = 0;
+  ramp = LATCH_OFF;
+  // 渐到 = Shift 式修饰键（同 /2、升降）：规则在 src/keyboard/latch.ts
   mode = "normal";
   gridFor = "";
   toolsFor = "";
@@ -11958,13 +11977,13 @@ var Pad = class {
       };
       for (const t10 of ["pointerup", "pointercancel", "lostpointercapture"]) ak2.addEventListener(t10, (e10) => akUp(e10));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.ramp}|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.ramp.mode}|${this.host.staves()}|${(this.host.ignoredArts?.() ?? []).join(",")}|${this.host.dynHere?.() ?? ""}` : `${f2}|${st3.input.inputScale}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) {
       if (this.symbols !== "off") this.buildSymbols();
       else this.buildGrid(f2, base3, rows);
       this.gridFor = gridSig;
     }
-    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}|${this.symbols !== "off" ? `${this.symPage}|${this.ramp}` : ""}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st3)) : ""}`;
+    const toolSig = this.mode === "normal" ? `normal|${selKey !== null}|${this.symbols !== "off" ? `${this.symPage}|${this.ramp.mode}` : ""}` : `${this.mode}|${selKey}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.marksHere(st3)) : ""}`;
     if (toolSig !== this.toolsFor) {
       this.buildHead(selKey, rows);
       this.toolsFor = toolSig;
@@ -11998,7 +12017,7 @@ var Pad = class {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     const tabs = this.symbols !== "off" && this.mode === "normal";
-    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp !== "off" ? `<small class="ramp-tag${this.ramp === "lock" ? " lock" : ""}">\u6E10\u5230</small>` : ""}</button>`).join("") + `<button class="btn kb-switch" data-kbswitch="1" title="\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09">\u97F3</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn kb-switch" data-kbswitch="1" title="\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8">\u7B26</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(selKey, rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">\u6E10\u5230</small>` : ""}</button>`).join("") + `<button class="btn kb-switch" data-kbswitch="1" title="\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09">\u97F3</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-key" data-knob="key" title="1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn kb-switch" data-kbswitch="1" title="\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8">\u7B26</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E \`\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199">\u5F39</button><button class="btn hide-pad" data-hide="1" title="\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09">\u6536\u8D77</button><button class="btn knob k-more" data-knob="more" title="\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b3) => {
       b3.addEventListener("pointerdown", (e10) => {
         e10.preventDefault();
@@ -12106,7 +12125,7 @@ var Pad = class {
       cell("wedge:cresc", CRESC_CELL, "\u6E10\u5F3A", "\u6E10\u5F3A <\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F3A\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       cell("wedge:dim", DIM_CELL, "\u6E10\u5F31", "\u6E10\u5F31 >\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F31\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389"),
       ...["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => cell(`dyn:${d3}${d3 === dynNow ? ":on" : ""}`, `<span class="smufl">${DYN_CELL[d3]}</span>`, "\u529B\u5EA6", `\u529B\u5EA6 ${d3}\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389\uFF08user 2026-10-08\u300Cmp mf \u5728\u54EA\u91CC\u52A0\u554A\u300D\uFF09`)),
-      cell("dyn:ramp", RAMP_CELL, "\u6E10\u5230", "\u6E10\u5230\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u529B\u5EA6\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u8FC7\u6765\uFF08\u8C31\u4E0A\u753B\u865A\u7EBF\u53D1\u5939\uFF1B\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u5B9E\u7EBF\uFF09\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u4E4B\u540E\u5199\u7684\u529B\u5EA6\u90FD\u662F\u6E10\u5230\uFF1B\u518D\u70B9 = \u5173\u3002\u4E0D\u5F00 = \u5230\u90A3\u513F\u7A81\u53D8", this.ramp === "off" ? "" : this.ramp),
+      cell("dyn:ramp", RAMP_CELL, "\u6E10\u5230", "\u6E10\u5230\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u529B\u5EA6\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u8FC7\u6765\uFF08\u8C31\u4E0A\u753B\u865A\u7EBF\u53D1\u5939\uFF1B\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u5B9E\u7EBF\uFF09\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u4E4B\u540E\u5199\u7684\u529B\u5EA6\u90FD\u662F\u6E10\u5230\uFF1B\u518D\u70B9 = \u5173\u3002\u4E0D\u5F00 = \u5230\u90A3\u513F\u7A81\u53D8", this.ramp.mode === "off" ? "" : this.ramp.mode),
       ...["<", ">", "<>"].map((w2) => cell(`swell:${w2}`, SWELL_CELL[w2], w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31" : "\u97F3\u5185\u9F13\u8D77", `${w2 === "<" ? "\u97F3\u5185\u6E10\u5F3A" : w2 === ">" ? "\u97F3\u5185\u6E10\u5F31\uFF08\u952F\u9F7F\uFF09" : "\u97F3\u5185\u9F13\u8D77\uFF08messa di voce\uFF09"}\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u81EA\u5DF1\u91CC\u9762\u7684\u8D77\u4F0F\uFF1B\u548C\u6BB5\u843D\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u4E24\u5C42\uFF0C\u53EF\u4EE5\u53E0\uFF1B\u518D\u70B9 = \u53BB\u6389`)),
       cell("slur", SLUR_CELL, "\u8FDE\u7EBF", "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09\u3002\u540C\u4E00\u4E2A\u97F3\u4E0A\u53C8\u6709\u547C\u5438 = \u547C\u5438\u7B97\u6570\uFF1A\u90A3\u91CC\u7167\u6837\u65AD\u5F00\u6362\u6C14\uFF0C\u8FDE\u7EBF\u7167\u753B"),
       cell("art:breath", `<span class="smufl">\uE4CE</span>`, "\u547C\u5438", "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u5C0F\u6708\u76F8\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09"),
@@ -12147,9 +12166,7 @@ var Pad = class {
     const act = (b3) => {
       const id2 = b3.dataset.sym;
       if (id2 === "dyn:ramp") {
-        const t10 = performance.now();
-        this.ramp = this.ramp === "off" ? "once" : this.ramp === "once" && t10 - this.rampAt < 350 ? "lock" : "off";
-        this.rampAt = t10;
+        this.ramp = latchTap(this.ramp, performance.now());
         this.render();
         return;
       }
@@ -12164,8 +12181,8 @@ var Pad = class {
       else if (id2 === "slur") this.host.onCommand({ k: "slur" });
       else if (id2.startsWith("swell:")) this.host.onCommand({ k: "swell", w: id2.slice(6) });
       else if (id2.startsWith("dyn:")) {
-        this.host.onCommand({ k: "dyn", v: id2.slice(4), ...this.ramp !== "off" ? { ramp: true } : {} });
-        if (this.ramp === "once") this.ramp = "off";
+        this.host.onCommand({ k: "dyn", v: id2.slice(4), ...this.ramp.mode !== "off" ? { ramp: true } : {} });
+        this.ramp = latchWrite(this.ramp);
       } else if (id2 === "wedge:cresc" || id2 === "wedge:dim") this.host.onCommand({ k: "wedge", w: id2 === "wedge:cresc" ? "cresc" : "dim" });
       else this.host.onCommand({ k: "phrase" });
       this.render();
@@ -26860,11 +26877,11 @@ function createPerformance(host) {
       if (!engine2.playing) for (const b3 of playBtns2()) b3.classList.remove("is-on");
     }
   }
-  const DOUBLE_TAP_MS = 350;
+  const DOUBLE_TAP_MS2 = 350;
   let lastPlayTap = 0;
   function playPause2(at2 = performance.now()) {
     const now2 = at2;
-    if (now2 - lastPlayTap < DOUBLE_TAP_MS) {
+    if (now2 - lastPlayTap < DOUBLE_TAP_MS2) {
       lastPlayTap = 0;
       playFromHead2();
       return;
@@ -39716,35 +39733,22 @@ var pdfFont = "sans";
 var mp3Quality = "standard";
 var impro = false;
 var autoBars = true;
-var half = "off";
+var half = LATCH_OFF;
 var halfShifted = false;
-var halfAt = 0;
-var halfHeld = false;
-var halfWrote = false;
-var halfLeft = 0;
-function setHalf(m2) {
-  if (half === "off" && m2 !== "off") {
+function setHalf(next2) {
+  const was = latchOn(half), on2 = latchOn(next2);
+  if (!was && on2) {
     halfShifted = st2.input.unit > 0;
     if (halfShifted) update(setUnit(st2, st2.input.unit - 1));
-  } else if (half !== "off" && m2 === "off" && halfShifted) {
+  } else if (was && !on2 && halfShifted) {
     halfShifted = false;
     update(setUnit(st2, st2.input.unit + 1));
   }
-  half = m2;
-  pad3.showHalf(m2);
-  halfLeft = m2 === "once" ? 2 : 0;
+  half = next2;
+  pad3.showHalf(next2.mode);
 }
 function halfKey(down) {
-  if (down) {
-    const t10 = performance.now();
-    halfHeld = true;
-    halfWrote = false;
-    setHalf(half === "off" ? "once" : half === "once" && t10 - halfAt < 350 ? "lock" : "off");
-    halfAt = t10;
-  } else {
-    halfHeld = false;
-    if (halfWrote && half !== "lock") setHalf("off");
-  }
+  setHalf(down ? latchDown(half, performance.now(), 2) : latchUp(half));
 }
 function stackKey(down) {
   if (!down) return;
@@ -39770,42 +39774,34 @@ function stackKey(down) {
   }
   update(select(st2, i10, i10 + 1));
 }
-var accPrior = null;
-var accWrote = false;
-var accSlid = false;
+var accG = null;
 function accKey(phase, acc) {
   if (phase === "down") {
     if (st2.sel) {
       update(tapAcc(st2, acc, performance.now()));
-      accPrior = null;
+      accG = null;
       return;
     }
-    accPrior = { acc: st2.input.acc, accMode: st2.input.accMode, accAt: st2.input.accAt };
-    accWrote = false;
-    accSlid = false;
+    accG = { prior: { acc: st2.input.acc, accMode: st2.input.accMode, accAt: st2.input.accAt }, latch: { ...LATCH_OFF, held: true }, slid: false };
     update(setAccState(st2, acc, "lock"));
   } else if (phase === "slide") {
-    if (!accPrior) return;
-    accSlid = true;
+    if (!accG) return;
+    accG.slid = true;
     update(setAccState(st2, acc, "lock"));
   } else {
-    const prior = accPrior;
-    accPrior = null;
-    if (!prior) return;
-    const back = { ...st2, input: { ...st2.input, ...prior } };
-    if (accWrote) update(setAccState(back, 0, "off"));
-    else if (accSlid) update(prior.accMode === "off" ? back : setAccState(back, acc, prior.accMode));
+    const g3 = accG;
+    accG = null;
+    if (!g3) return;
+    const back = { ...st2, input: { ...st2.input, ...g3.prior } };
+    if (g3.latch.wrote) update(setAccState(back, 0, "off"));
+    else if (g3.slid) update(g3.prior.accMode === "off" ? back : setAccState(back, acc, g3.prior.accMode));
     else update(tapAcc(back, acc, performance.now()));
   }
 }
-var withHalf = (c10) => c10.k === "extend" && half !== "off" ? { k: "extend", half: true } : c10;
+var withHalf = (c10) => c10.k === "extend" && latchOn(half) ? { k: "extend", half: true } : c10;
 function afterWrite() {
-  if (accPrior) accWrote = true;
-  if (halfHeld) {
-    halfWrote = true;
-    return;
-  }
-  if (half === "once" && --halfLeft <= 0) setHalf("off");
+  if (accG) accG.latch = latchWrite(accG.latch);
+  setHalf(latchWrite(half));
 }
 var reflow = false;
 var pageFlow = false;
@@ -39951,7 +39947,7 @@ var pad3 = new Pad(padEl, {
   },
   onCommand: (c10) => {
     if (finder.isOpen) return;
-    if (c10.k === "caret" && half === "once") setHalf("off");
+    if (c10.k === "caret") setHalf(latchCancel(half));
     const nx2 = apply(st2, withHalf(c10), performance.now());
     if (c10.k === "art" && nx2 === st2) {
       info(c10.a === "arpeggio" ? "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u662F\u5355\u97F3" : `${ART_NAME[c10.a]}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09`);
@@ -39987,15 +39983,14 @@ var pad3 = new Pad(padEl, {
     if (c10.k === "dyn" || c10.k === "art" && c10.a === "fp") discloseDynOverride(prev);
   },
   onUnit: (u2) => {
-    if (half === "once") {
-      half = "off";
+    if (half.mode === "once") {
+      half = latchCancel(half);
       halfShifted = false;
-      halfLeft = 0;
-      pad3.showHalf("off");
+      pad3.showHalf(half.mode);
     }
     update(setUnit(st2, u2));
   },
-  // 拨了旋钮 = 照拨的，取消「凑满一份」
+  // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n10) => update(setTuplet(st2, n10)),
   onInputKey: (f2) => update(setInputKey(st2, f2)),
   onInputScale: (id2) => update(setInputScale(st2, id2)),
@@ -43999,4 +43994,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-9e3c4fd8b916.mjs.map
+//# sourceMappingURL=moonsinger-c67b752f4bd0.mjs.map

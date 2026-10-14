@@ -47,7 +47,8 @@ import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSound
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf, TSUKUYOMI_RANGE } from "../performers/index.ts";
 import { createPerformance, type Issue } from "./performance.ts";   // 唱歌 / 播放 / 导出的胶水（刀 1 之二）
-import { createOverlayRegistry, padLocked } from "./overlay.ts";   // 盖层登记（刀 3 之一）：面板 / 小菜单 / 轨的小卡同一时刻只开一张；page（刀 3 之二）：谱 / 乐器页 / 目录   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
+import { createOverlayRegistry, padLocked } from "./overlay.ts";
+import { LATCH_OFF, latchDown, latchUp, latchWrite, latchCancel, latchOn, type Latch } from "../keyboard/latch.ts";   // 三把锁一条规则（编辑状态机第 2 期）   // 盖层登记（刀 3 之一）：面板 / 小菜单 / 轨的小卡同一时刻只开一张；page（刀 3 之二）：谱 / 乐器页 / 目录   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
 import type { AuditionInst, TrackSpec } from "../engine/studio.ts";
 import { buildTimeline, lightNotes, songLangOf, sungPlan, LEAD_IN, PRE_ROLL, HUM_KANA, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
@@ -429,24 +430,15 @@ let autoBars = true;
  *  点一下 = 凑满一份原来的时值再回去（= 两个减半的音 / 休止 / 拉长；user 点头 AI 的答：只管一个会留半拍窟窿，节奏是成对凑整拍的）；
  *  中途挪了光标或拨了长短旋钮 = 取消；350 ms 内连点两下 = 锁住（再点一下解开）；按住写 = 按住期间写的都减半、松手回去。
  *  减半 = 临时把长短基线往短挪一档（旋钮上看得见）；已经最短（三十二分）就不挪；回去 = 挪回一档（中间拨过旋钮 = 照拨过的再挪回一档）。 */
-let half: "off" | "once" | "lock" = "off", halfShifted = false, halfAt = 0, halfHeld = false, halfWrote = false, halfLeft = 0;
-function setHalf(m: "off" | "once" | "lock"): void {
-  if (half === "off" && m !== "off") { halfShifted = st.input.unit > 0; if (halfShifted) update(setUnit(st, st.input.unit - 1)); }
-  else if (half !== "off" && m === "off" && halfShifted) { halfShifted = false; update(setUnit(st, st.input.unit + 1)); }
-  half = m; pad.showHalf(m);
-  halfLeft = m === "once" ? 2 : 0;   // 两个减半的 = 一份原来的
+//   锁的规则 = src/keyboard/latch.ts（和升降、渐到同一份，2026-10-15）；这里只剩它的副作用：开 = 长短基线往短挪一档，关 = 挪回来。
+let half: Latch = LATCH_OFF, halfShifted = false;
+function setHalf(next: Latch): void {
+  const was = latchOn(half), on = latchOn(next);
+  if (!was && on) { halfShifted = st.input.unit > 0; if (halfShifted) update(setUnit(st, st.input.unit - 1)); }
+  else if (was && !on && halfShifted) { halfShifted = false; update(setUnit(st, st.input.unit + 1)); }
+  half = next; pad.showHalf(next.mode);
 }
-function halfKey(down: boolean): void {
-  if (down) {
-    const t = performance.now();
-    halfHeld = true; halfWrote = false;
-    setHalf(half === "off" ? "once" : half === "once" && t - halfAt < 350 ? "lock" : "off");
-    halfAt = t;
-  } else {
-    halfHeld = false;
-    if (halfWrote && half !== "lock") setHalf("off");   // 按住写过 = 松手回去（同 iOS 按住 Shift 打字）
-  }
-}
+function halfKey(down: boolean): void { setHalf(down ? latchDown(half, performance.now(), 2) : latchUp(half)); }   // uses = 2：两个减半的 = 一份原来的
 /** 叠键（pad）= 锁定式（v0.10.5；user「叠音模式也应该只有capslock没有shift，每次都会弄错，所以不要shift模式」+ 键盘 × 选区那套「叠这个字就用来选中上个」→「同意」）：
  *  按一下 = 选中光标前那个音（= 改这个音：音键 XOR、— / ⌫ 长短一步、← → 换邻居）；再按一下 = 回到它后面的光标。没有单次档、没有按住期间。
  *  亮不亮跟着「是不是正在改一个音」（点一个音选中它也亮），pad 自己看 singleSel。 */
@@ -462,28 +454,29 @@ function stackKey(down: boolean): void {
 }
 /** 升降键（pad）：和 Shift 一个逻辑（点一下 = 下一个、350 ms 内连点两下 = 锁、再点 = 关；按住写 = 按住期间、松手回去），
  *  按着上下滑 = 换一种（𝄪 / ♯ / ♭ / 𝄫；user「按是当作shift，滑动是toggle which shift」）。有选中 = 选中的音直接升降（同电脑键盘的 [ ]）。 */
-let accPrior: Pick<InputState, "acc" | "accMode" | "accAt"> | null = null, accWrote = false, accSlid = false;
+//   锁的状态（once / lock / 350 ms）住在谱的输入态里（song.ts tapAcc / consumeAcc 调 latch.ts 的同一份规则）；这里只管「按住」那一段：按着的时候临时锁住、松手按 latchUp 的规则回去。
+let accG: { prior: Pick<InputState, "acc" | "accMode" | "accAt">; latch: Latch; slid: boolean } | null = null;
 function accKey(phase: "down" | "slide" | "up", acc: Exclude<Acc, 0>): void {
   if (phase === "down") {
-    if (st.sel) { update(tapAcc(st, acc, performance.now())); accPrior = null; return; }
-    accPrior = { acc: st.input.acc, accMode: st.input.accMode, accAt: st.input.accAt }; accWrote = false; accSlid = false;
+    if (st.sel) { update(tapAcc(st, acc, performance.now())); accG = null; return; }
+    accG = { prior: { acc: st.input.acc, accMode: st.input.accMode, accAt: st.input.accAt }, latch: { ...LATCH_OFF, held: true }, slid: false };
     update(setAccState(st, acc, "lock"));   // 按着的时候一直生效（写几个都算）
   } else if (phase === "slide") {
-    if (!accPrior) return;
-    accSlid = true; update(setAccState(st, acc, "lock"));
+    if (!accG) return;
+    accG.slid = true; update(setAccState(st, acc, "lock"));
   } else {
-    const prior = accPrior; accPrior = null;
-    if (!prior) return;
-    const back = { ...st, input: { ...st.input, ...prior } };
-    if (accWrote) update(setAccState(back, 0, "off"));                                  // 按住写过 = 松手回去
-    else if (accSlid) update(prior.accMode === "off" ? back : setAccState(back, acc, prior.accMode));   // 只是滑着换了一种
-    else update(tapAcc(back, acc, performance.now()));                                   // 点了一下 = Shift
+    const g = accG; accG = null;
+    if (!g) return;
+    const back = { ...st, input: { ...st.input, ...g.prior } };
+    if (g.latch.wrote) update(setAccState(back, 0, "off"));                                  // 按住写过 = 松手回去（latchUp 的规则）
+    else if (g.slid) update(g.prior.accMode === "off" ? back : setAccState(back, acc, g.prior.accMode));   // 只是滑着换了一种
+    else update(tapAcc(back, acc, performance.now()));                                   // 点了一下 = Shift（tapAcc 里 latchDown）
   }
 }
 /** 写了一个音 / 休止 / 拉长：「只管下一个」的 /2 用掉了（按住的时候不算，松手再回去）；升降键按着的时候记一笔。 */
 /** 「/2」开着时的拉长 = 加半份（附点；user 2026-10-08「除2的时候拉长可以出附点吗」——原来拉长不看 /2、照加一整份，却又算进「凑满一份」的两下里）。 */
-const withHalf = (c: Command): Command => (c.k === "extend" && half !== "off" ? { k: "extend", half: true } : c);
-function afterWrite(): void { if (accPrior) accWrote = true; if (halfHeld) { halfWrote = true; return; } if (half === "once" && --halfLeft <= 0) setHalf("off"); }
+const withHalf = (c: Command): Command => (c.k === "extend" && latchOn(half) ? { k: "extend", half: true } : c);
+function afterWrite(): void { if (accG) accG.latch = latchWrite(accG.latch); setHalf(latchWrite(half)); }
 /** 屏幕放不下纸的时候折不折行（默认不折行 = 整张纸按比例缩小；这次打开里有效，不进文件——怎么看，不是谱的内容）。 */
 let reflow = false;   // 「弹」（顶栏开关；2026-10-07 user「弹应该放在顶栏」）：音符只唱不写
 /** 排法（这次打开里有效；user 2026-10-08「显示法还加一个分页？可以预览打印，要求和之后生成的pdf wysiwyg」）：false = 连续（一张长纸）；true = 分页（按纸高分页、画页框，和以后导出的 PDF 所见即所得）。横卷 = 下面 scrollFlow。 */
@@ -622,7 +615,7 @@ const pad = new Pad(padEl, {
   },
   onCommand: (c) => {
     if (finder.isOpen) return;
-    if (c.k === "caret" && half === "once") setHalf("off");   // 挪光标 = 取消「凑满一份」
+    if (c.k === "caret") setHalf(latchCancel(half));   // 挪光标 = 取消「凑满一份」（锁住的不动）
     const nx = apply(st, withHalf(c), performance.now());
     if (c.k === "art" && nx === st) { info(c.a === "arpeggio" ? "琶音只挂在和弦上：光标前那个音（或选中的）是单音" : `${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
     if (c.k === "slur" && nx === st) { info("连线从一个音连到下一个音（光标前面是休止或者还没有音）"); return; }
@@ -640,7 +633,7 @@ const pad = new Pad(padEl, {
     if (c.k === "swell") discloseArt(prev, c.w === ">" ? "swellFade" : "swellGrow");
     if (c.k === "dyn" || (c.k === "art" && c.a === "fp")) discloseDynOverride(prev);
   },
-  onUnit: (u) => { if (half === "once") { half = "off"; halfShifted = false; halfLeft = 0; pad.showHalf("off"); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」
+  onUnit: (u) => { if (half.mode === "once") { half = latchCancel(half); halfShifted = false; pad.showHalf(half.mode); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）   // 拨了旋钮 = 照拨的，取消「凑满一份」
   onTuplet: (n) => update(setTuplet(st, n)),
   onInputKey: (f) => update(setInputKey(st, f)),
   onInputScale: (id) => update(setInputScale(st, id)),

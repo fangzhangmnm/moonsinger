@@ -16,6 +16,7 @@
 //   · 速度 = 第一个声部的状态机（其余声部的速度记号只是跟着抄、不出声不画）。
 
 import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
+import { latchDown, latchWrite, LATCH_OFF } from "../keyboard/latch.ts";   // 升降 Shift 的那条规则和 /2、渐到同一份（编辑状态机第 2 期，2026-10-15）
 import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell, keyAlter } from "./pitch.ts";
 import { expandPaper } from "./repeats.ts";   // 谱内反复（循环 import：repeats.ts 只在函数里用 song.ts 的东西，加载顺序无所谓）
 
@@ -383,7 +384,7 @@ export function soundingPitch(st: EditorState, p: Pitch): { pitch: Pitch; st: Ed
   return { pitch: applyAcc(p, st.input), st: { ...st, input: consumeAcc(st.input) } };
 }
 /** 用掉一次 Shift：一次性的用完就关，锁定的留着。 */
-function consumeAcc(input: InputState): InputState { return input.accMode === "once" ? { ...input, acc: 0, accMode: "off" } : input; }
+function consumeAcc(input: InputState): InputState { const l = latchWrite({ ...LATCH_OFF, mode: input.accMode, at: input.accAt, left: 1 }); return l.mode === input.accMode ? input : { ...input, acc: l.mode === "off" ? 0 : input.acc, accMode: l.mode }; }
 function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alterBy(p, input.acc) : p; }
 
 /** 写的时候：光标后（跳过小节线、记号）第一个是空音高的音符，就填它而不是插（詞先）。 */
@@ -979,10 +980,8 @@ export function setTuplet(st: EditorState, n: InputState["tuplet"]): EditorState
 /** ♯ / ♭ Shift：关 → 一次；一次且 350 ms 内再点 → 锁；其余 → 关。有选中 = 选中的音直接升降半音。 */
 export function tapAcc(st: EditorState, acc: Exclude<Acc, 0>, now: number): EditorState {
   if (st.sel) return mapSelPitch(st, (p) => alterBy(p, acc));
-  const i = st.input;
-  if (i.acc !== acc || i.accMode === "off") return { ...st, input: { ...i, acc, accMode: "once", accAt: now } };
-  if (i.accMode === "once" && now - i.accAt < 350) return { ...st, input: { ...i, accMode: "lock", accAt: now } };
-  return { ...st, input: { ...i, acc: 0, accMode: "off", accAt: now } };
+  const i = st.input, l = latchDown({ ...LATCH_OFF, mode: i.acc === acc ? i.accMode : "off", at: i.accAt }, now);   // 换了一种升降 = 从头算（off → once）
+  return { ...st, input: { ...i, acc: l.mode === "off" ? 0 : acc, accMode: l.mode, accAt: now } };
 }
 /** 直接设升降 Shift 的状态（pad 升降键按住 / 滑着换的时候用；accAt 不动，连点判定照旧）。 */
 export function setAccState(st: EditorState, acc: Acc, mode: InputState["accMode"]): EditorState {
