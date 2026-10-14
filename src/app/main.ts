@@ -21,6 +21,9 @@ import { ScoreView } from "../ui/score-view.ts";
 import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
 import { Pad, type HintRange } from "../keyboard/pad.ts";
+import { createPadMusic } from "./pad-music.ts";   // pad 的音乐知识（键盘模块刀 2：键盘自己不懂音乐）
+import { padKeyAction, markOfKey } from "./pad-keys.ts";   // pad 的按键 id → 命令 / 插记号 / 菜单（翻译层）
+import { chordHead, chordBothAfterMs, chordVerdict, monoClash } from "../keyboard/chords.ts";   // 两键同按 = 叠音的头 / 尾判据（纯函数）
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
@@ -371,7 +374,7 @@ function previewEdited(): void {
   clearTimeout(upTimer); soundTok(st, i, "score"); upTimer = window.setTimeout(() => sound.up("score"), 350);
 }
 /** 电脑键盘按下一个音：响 + pad 上那个音高的键亮着（和手指按 pad 一样，松开键才灭）。 */
-const keyTok = (s: EditorState, i: number, code: string) => { const t = tr(s)[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(t.pitch, `key${code}`); };
+const keyTok = (s: EditorState, i: number, code: string) => { const t = tr(s)[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(midiOf(t.pitch), `key${code}`); };
 /** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
 function writeAndLocate(write: (s: EditorState) => EditorState): number {
   const n = write(st); if (n === st) return -1;   // 没写成（没有能填的）
@@ -488,8 +491,7 @@ const padNotes = new Map<string, { index: number; base: Pitch }>();
 /** 单音乐器（现在的主唱月读）写音：同时多按只写第一个（user「monophonic乐器输入的时候如果你多按只会输第一个。但是做好模糊护栏免得快速输入的时候第二个音被吃掉」）。
  *  模糊护栏：只有「上一个写进去的音还按着，而且才过了不到 CHORD_MS」才算同时按、不写不响不亮；
  *  快速连按（前一根手指还没抬，但已经隔开了）照写，抬过手的更不管。手指和电脑键盘共用一份；弹（只唱不写）不管，几个音一起响。 */
-const CHORD_MS = 50;
-const CHORD_WIN = 80;   // 能叠音的声部：前一个音 80 ms 内再按一个键（前一个还按着）= 叠在一起（user「同时按同意」）
+//   判据（50 ms 的同时按 / 80 ms 的头、尾巴按比例）= src/keyboard/chords.ts（纯函数，刀 2）；这里只管谁按着、定时器、写进谱。
 let lastWrite = { index: -1, at: -Infinity };
 /** 光标所在声部的乐器能叠音吗（SoundFont = 能；月读 / 元音 / 没人 = 单声，护栏：pad 的叠键灰掉、同时按也只写第一个）。 */
 const canStack = (): boolean => performerOf(engineNow())?.poly ?? false;
@@ -497,7 +499,7 @@ const monoHeld = new Set<string>();
 let monoAt = -Infinity;
 function monoAccept(id: string): boolean {
   const now = performance.now();
-  if (monoHeld.size && now - monoAt < CHORD_MS) return false;
+  if (monoClash(monoHeld.size, monoAt, now)) return false;
   monoHeld.add(id); monoAt = now; return true;
 }
 // pad 一创建就要提示音域（padHint）：它读的状态必须在 pad 之前声明（esbuild 打包后晚声明的 = undefined，开机就崩；2026-10-08 踩过）
@@ -538,14 +540,10 @@ function chordMerge(root: ChordRoot, pitch: Pitch): boolean {
 /** 定一个观望中的：why = 谁先发生的（B 松 / 根音松 / 两个都按着够久了 / 又按了下一个键）。叠不成 = 现在把 B 当一个音补写进去。 */
 function decideChord(w: ChordWait, why: "keyUp" | "rootUp" | "both" | "force"): void {
   if (w.done) return;
-  const now = performance.now(), rootHeld = monoHeld.has(w.root.keyId), keyHeld = monoHeld.has(w.keyId);
-  let chord: boolean;
-  if (why === "rootUp") chord = now - w.t > w.t - w.root.t;   // 一起按着的 > 根音单独按着的 = 叠；短 = 尾巴
-  else if (why === "keyUp") chord = rootHeld;                  // B 先松、根音还按着 = 套在里面
-  else if (why === "both") { if (!(rootHeld && keyHeld)) return; chord = true; }
-  else chord = rootHeld;
+  const now = performance.now(), keyHeld = monoHeld.has(w.keyId), v = chordVerdict(w.root, w, now, why, monoHeld.has(w.root.keyId), keyHeld);   // 头 / 尾判据：src/keyboard/chords.ts
+  if (v === null) return;   // 到时候了可有人松了：等松手那一下来定
   w.done = true; clearTimeout(w.timer); chordWaits = chordWaits.filter((x) => x !== w);
-  if (chord && chordMerge(w.root, w.pitch)) return;
+  if (v === "chord" && chordMerge(w.root, w.pitch)) return;
   const i = writeAndLocate((s) => writePitch(s, w.pitch, true));   // 两个音：现在补写（音高按下时就带好了 ♯ / ♭）
   if (i < 0) { if (st.sel) info("选区写满了：写不出选区。要往后写，先点别处退出选区"); return; }
   const t = tr(st)[i];
@@ -570,40 +568,91 @@ function insertMarkHere(kind: MarkVal["kind"]): void {
   update(r.st);
   view.marks.openAt(r.index, r.fresh);
 }
+const padMusic = createPadMusic(() => st);   // pad 的音乐知识（src/app/pad-music.ts）：第 k 级是什么音、「1=」的档；键盘只认 k（刀 2，2026-10-15）
+/** 「弹」= 音键只响不写：顶栏开关，或找人视图 / 乐器页开着（试听台上那位）。读 finderShown() 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）。 */
+const padImpro = (): boolean => impro || finderShown() || instShown();
+/** 写之前问一声：能叠音的声部同时多按都收（80 ms 内 = 叠在一起）；单声乐器几乎同时按下的第二根手指 = false（不写、不响、不亮）。 */
+const padAccept = (id: string): boolean => (canStack() ? (monoHeld.add(id), true) : monoAccept(id));
+/** pad 音键写一个音（找人视图开着一律不接：试听台不碰谱——user「试听的时候写入的东西不会不小心输入到乐谱吧…是不是应该disable」）：
+ *  改这个音（只选了一个 / 叠亮着）/ 叠音观望（能叠音的声部）/ 普通写。 */
+function padWrite(p: Pitch, id: string): void {
+  if (finder.isOpen) return;
+  const now = performance.now();
+  { const one = singleSel(st); if (one >= 0) {   // 改这个音（只选了一个 / 叠亮着）：XOR（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）；单声乐器 = 换音高
+    update(writePitch(st, p, false, !canStack())); padNotes.set(id, { index: one, base: p }); previewEdited(); return;
+  } }
+  if (canStack()) {
+    settleChords("force");   // 又按下一个键：还在观望的先定（根音还按着 = 叠）
+    const root = chordRoot();
+    if (root) {
+      const sp = soundingPitch(st, p).pitch;
+      padNotes.set(id, { index: -1, base: p });   // 先响（padSound 按 base 出声），进不进谱、叠不叠，等分出来再定
+      if (chordHead(root, { t: now })) { chordMerge(root, sp); return; }   // 头：和根音几乎同时落下 = 马上叠
+      const w: ChordWait = { keyId: id, pitch: sp, t: now, root, timer: 0, done: false };
+      w.timer = window.setTimeout(() => decideChord(w, "both"), chordBothAfterMs(root, w));   // 重叠一超过根音单独按着的时长 = 叠（不用等松手）
+      chordWaits.push(w);
+      return;
+    }
+  }
+  const i = writeAndLocate((s) => writePitch(s, p, false, !canStack()));
+  if (i < 0) { padNotes.set(id, { index: -1, base: p }); return; }
+  const t = tr(st)[i];
+  padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
+  if (canStack() && t) chordRoots.set(id, { tokId: t.id, t: now });
+  lastWrite = { index: i, at: now };
+  afterWrite();
+}
+/** pad 音键出声：写进谱的那个音（和弦整个响）；弹 = 带上挂着的 ♯ / ♭、谱上画鬼音符。 */
+function padSound(p: Pitch, id: string): void {
+  const n = padNotes.get(id);
+  if (n && n.index >= 0) soundTok(st, n.index, id);
+  else { const r = soundingPitch(st, p); update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); sound.down(r.pitch, id); if (ghostOn()) { ghostHeld.set(id, r.pitch); ghostSync(); } }
+}
+/** pad 发来的按键 id → 翻译（src/app/pad-keys.ts）→ 做：命令走 runPadCommand（锁 / 披露），插记号开记号框，开小菜单。找人视图开着一律不接。 */
+function padKey(id: string, mods: { ramp: boolean }): void {
+  if (finder.isOpen) return;
+  const a = padKeyAction(id, mods);
+  if (!a) { diagNote("pad", `unknown pad key ${id}`); return; }   // test/pad-keys.test.ts 守着每个格子都接了；真到这儿 = 键盘加了格子没登记
+  if (a.kind === "cmd") runPadCommand(a.cmd);
+  else if (a.kind === "mark") insertMarkHere(a.mark);
+  else if (a.menu === "groove") insertGrooveHere();
+  else if (a.menu === "repeat") openRepeatMenu();
+  else { const r = padEl.getBoundingClientRect(), at = { x: r.left + r.width / 2, y: r.top - 4 }; if (a.menu === "clef") openInsertClefMenu(at); else openInsertOttavaMenu(at); }
+}
+/** pad 的编辑命令：锁（/2 的凑满一份）× 命令 → apply；做不成的说一句；写了的披露（不认的记号 / 被盖掉的力度）。 */
+function runPadCommand(c: Command): void {
+  if (c.k === "caret") setHalf(latchCancel(half));   // 挪光标 = 取消「凑满一份」（锁住的不动）
+  const nx = apply(st, withHalf(c), performance.now());
+  if (c.k === "art" && nx === st) { info(c.a === "arpeggio" ? "琶音只挂在和弦上：光标前那个音（或选中的）是单音" : `${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
+  if (c.k === "slur" && nx === st) { info("连线从一个音连到下一个音（光标前面是休止或者还没有音）"); return; }
+  if (c.k === "inhale" && nx === st) { info("出声的换气挂在一个音后面（光标前面是休止或者还没有音）"); return; }
+  if (c.k === "swell" && nx === st) { info("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）"); return; }
+  if (c.k === "wedge" && nx === st) { info(`${c.w === "cresc" ? "渐强" : "渐弱"}从一个音到下一个音（光标前面是休止或者还没有音）`); return; }
+  const prev = st; update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
+  if (c.k === "backspace" || c.k === "delete") {   // 删音顺手湮灭了不再管任何音的力度记号 / 渐强渐弱：说一声（不静默；撤销能回来）
+    const marks = (s: EditorState) => tr(s).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length, gone = marks(prev) - marks(st) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length : 0);
+    if (gone > 0) info(`顺手去掉了 ${gone} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）`);
+  }
+  if (c.k === "art") discloseArt(prev, c.a === "swellDown" ? "swellFade" : c.a === "swellUp" || c.a === "swellBoth" ? "swellGrow" : c.a);   // 音内起伏在演奏法里（v0.9.44），「做不到」的说法照旧按 swellGrow / swellFade
+  if (c.k === "slur") discloseArt(prev, "slur");
+  if (c.k === "inhale") discloseArt(prev, "inhale");
+  if (c.k === "swell") discloseArt(prev, c.w === ">" ? "swellFade" : "swellGrow");
+  if (c.k === "dyn" || (c.k === "art" && c.a === "fp")) discloseDynOverride(prev);
+}
 const pad = new Pad(padEl, {
-  state: () => st,
-  isImpro: () => impro || finderShown() || instShown(),   // 找人视图开着：pad 只弹不写（弹的是试听台上那位）。读 finderShown() 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建（同 padHint 的坑）
+  view: () => ({ unit: st.input.unit, tuplet: st.input.tuplet, acc: st.input.acc, accMode: st.input.accMode, one: singleSel(st) >= 0, hasSel: !!st.sel }),
+  music: padMusic,
+  isImpro: padImpro,
   onImpro: () => toggleImpro(),
   onKbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
-  accept: (id) => (canStack() ? (monoHeld.add(id), true) : monoAccept(id)),   // 能叠音的声部：同时多按都收（80 ms 内 = 叠在一起）；单声乐器照旧只写第一个
-  // 找人视图开着（试听台）：只许音键出声，任何会碰谱的回调一律不接（user「试听的时候写入的东西不会不小心输入到乐谱吧…包括其他的键，是不是应该disable」）
-  onPitch: (p, id) => {
-    if (finder.isOpen) return;
-    const now = performance.now();
-    { const one = singleSel(st); if (one >= 0) {   // 改这个音（只选了一个 / 叠亮着）：XOR（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）；单声乐器 = 换音高
-      update(writePitch(st, p, false, !canStack())); padNotes.set(id, { index: one, base: p }); previewEdited(); return;
-    } }
-    if (canStack()) {
-      settleChords("force");   // 又按下一个键：还在观望的先定（根音还按着 = 叠）
-      const root = chordRoot();
-      if (root) {
-        const sp = soundingPitch(st, p).pitch;
-        padNotes.set(id, { index: -1, base: p });   // 先响（onSoundDown 按 base 出声），进不进谱、叠不叠，等分出来再定
-        if (now - root.t < CHORD_WIN) { chordMerge(root, sp); return; }   // 头：和根音几乎同时落下 = 马上叠
-        const w: ChordWait = { keyId: id, pitch: sp, t: now, root, timer: 0, done: false };
-        w.timer = window.setTimeout(() => decideChord(w, "both"), now - root.t + 5);   // 重叠一超过根音单独按着的时长 = 叠（不用等松手）
-        chordWaits.push(w);
-        return;
-      }
-    }
-    const i = writeAndLocate((s) => writePitch(s, p, false, !canStack()));
-    if (i < 0) { padNotes.set(id, { index: -1, base: p }); return; }
-    const t = tr(st)[i];
-    padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
-    if (canStack() && t) chordRoots.set(id, { tokId: t.id, t: now });
-    lastWrite = { index: i, at: now };
-    afterWrite();
+  // 音键按下：第 k 级是什么音问 padMusic；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
+  onNoteDown: (k, id) => {
+    const p = padMusic.pitchAt(k);
+    if (!padImpro()) { if (!padAccept(id)) return false; padWrite(p, id); }
+    padSound(p, id);
+    return true;
   },
+  onNoteUp: (id) => { chordKeyUp(id); padNotes.delete(id); monoHeld.delete(id); sound.up(id); if (ghostHeld.delete(id)) ghostSync(); },   // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
   onStack: (down) => stackKey(down),
   canStack: () => canStack(),
   onAlter: (id, alt) => {
@@ -613,50 +662,23 @@ const pad = new Pad(padEl, {
     if (n.index >= 0) update(setNote(st, n.index, { pitch: np }));
     sound.down(np, id);
   },
-  onCommand: (c) => {
-    if (finder.isOpen) return;
-    if (c.k === "caret") setHalf(latchCancel(half));   // 挪光标 = 取消「凑满一份」（锁住的不动）
-    const nx = apply(st, withHalf(c), performance.now());
-    if (c.k === "art" && nx === st) { info(c.a === "arpeggio" ? "琶音只挂在和弦上：光标前那个音（或选中的）是单音" : `${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
-    if (c.k === "slur" && nx === st) { info("连线从一个音连到下一个音（光标前面是休止或者还没有音）"); return; }
-    if (c.k === "inhale" && nx === st) { info("出声的换气挂在一个音后面（光标前面是休止或者还没有音）"); return; }
-    if (c.k === "swell" && nx === st) { info("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）"); return; }
-    if (c.k === "wedge" && nx === st) { info(`${c.w === "cresc" ? "渐强" : "渐弱"}从一个音到下一个音（光标前面是休止或者还没有音）`); return; }
-    const prev = st; update(nx); if (c.k === "rest" || c.k === "extend") afterWrite();
-    if (c.k === "backspace" || c.k === "delete") {   // 删音顺手湮灭了不再管任何音的力度记号 / 渐强渐弱：说一声（不静默；撤销能回来）
-      const marks = (s: EditorState) => tr(s).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length, gone = marks(prev) - marks(st) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length : 0);
-      if (gone > 0) info(`顺手去掉了 ${gone} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）`);
-    }
-    if (c.k === "art") discloseArt(prev, c.a === "swellDown" ? "swellFade" : c.a === "swellUp" || c.a === "swellBoth" ? "swellGrow" : c.a);   // 音内起伏在演奏法里（v0.9.44），「做不到」的说法照旧按 swellGrow / swellFade
-    if (c.k === "slur") discloseArt(prev, "slur");
-    if (c.k === "inhale") discloseArt(prev, "inhale");
-    if (c.k === "swell") discloseArt(prev, c.w === ">" ? "swellFade" : "swellGrow");
-    if (c.k === "dyn" || (c.k === "art" && c.a === "fp")) discloseDynOverride(prev);
-  },
-  onUnit: (u) => { if (half.mode === "once") { half = latchCancel(half); halfShifted = false; pad.showHalf(half.mode); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）   // 拨了旋钮 = 照拨的，取消「凑满一份」
+  onKey: (id, mods) => padKey(id, mods),
+  onUnit: (u) => { if (half.mode === "once") { half = latchCancel(half); halfShifted = false; pad.showHalf(half.mode); } update(setUnit(st, u)); },   // 拨了旋钮 = 照拨的，取消「凑满一份」（不挪回一档：旋钮说了算）
   onTuplet: (n) => update(setTuplet(st, n)),
-  onInputKey: (f) => update(setInputKey(st, f)),
-  onInputScale: (id) => update(setInputScale(st, id)),
+  onPick: (knob, i) => update(knob === "key" ? setInputKey(st, padMusic.fifthsAt(i)) : setInputScale(st, padMusic.scaleIdAt(i))),
   autoBars: () => autoBars,
   staves: () => curPart().staves ?? 1,
-  ignoredArts: () => ignoredHere(),
-  dynHere: () => dynMarkAt(tr(st), st.sel ? st.sel.from : st.caret),   // 符号层亮着「现在生效的力度」（状态机）
+  // 符号格的状态：这个格子写的记号台上这位不认 = 画灰（照样能写）；力度 = 光标处正生效的那个亮着（状态机）
+  keyState: (id) => {
+    const mk = markOfKey(id), off = !!mk && ignoredHere().includes(mk);
+    const on = id.startsWith("dyn:") && id.slice(4) === dynMarkAt(tr(st), st.sel ? st.sel.from : st.caret);
+    return off || on ? { off, on } : undefined;
+  },
   hintRange: () => padHint(),
   onAutoBars: (on) => { autoBars = on; view.render(); pad.render(); },
   onHide: () => showPad(false),
   onHalf: (down) => { if (finder.isOpen) return; halfKey(down); },
   onAccShift: (phase, acc) => accKey(phase, acc),   // 找人视图里也要能用：升降只改弹出来的音高，不碰谱
-  onInsertMark: (kind) => { if (!finder.isOpen) insertMarkHere(kind); },
-  onGroove: () => { if (!finder.isOpen) insertGrooveHere(); },
-  onRepeat: () => { if (!finder.isOpen) openRepeatMenu(); },
-  onClefKey: () => { if (!finder.isOpen) { const r = padEl.getBoundingClientRect(); openInsertClefMenu({ x: r.left + r.width / 2, y: r.top - 4 }); } },
-  onOttavaKey: () => { if (!finder.isOpen) { const r = padEl.getBoundingClientRect(); openInsertOttavaMenu({ x: r.left + r.width / 2, y: r.top - 4 }); } },
-  onSoundDown: (p, id) => {
-    const n = padNotes.get(id);
-    if (n && n.index >= 0) soundTok(st, n.index, id);
-    else { const r = soundingPitch(st, p); update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); sound.down(r.pitch, id); if (ghostOn()) { ghostHeld.set(id, r.pitch); ghostSync(); } }   // 弹：带上挂着的 ♯ / ♭；谱上画鬼音符
-  },
-  onSoundUp: (id) => { chordKeyUp(id); padNotes.delete(id); monoHeld.delete(id); sound.up(id); if (ghostHeld.delete(id)) ghostSync(); },   // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
 });
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */

@@ -85,3 +85,10 @@
 4. 键盘库：「这个是项目内部库，是要抽库，我记得是有家族库和模块两种方式，这个更像是模块」→ **项目内部模块**（`src/keyboard/` 这一级），不出 `@internal/*` 家族库。
    - 2026-10-15 追加（user）：「但是其实也有点晕，因为我一开始想的是谱子显示的还是五线谱，然后只是小月相换成你，然后五线谱上面显示waveform，这个可能和是音符打架，所以应该还是不是音符吧」「喵喵歌的话是另外一种模式就是采样器驱动的音符」→ **录音不是音符**：谱照旧是五线谱（写的是该唱什么），录下来的片是演奏者的数据，锚在音上只是借谱的时间尺；波形画在那位那一行的底层（和播放时的小节底色同一层，不进排版）。**两种模式**：① take 模式 = 一段段录进来锚在音上（块那条路，像小月相）；② 采样器模式 = 录一声当采样、音符触发按音高变调（音符表那条路，像 SoundFont / 元音版）——喵喵歌。
 
+## 9. 落地（2026-10-15，Claude Fable 5.1；刀 2 = v0.12.11 / v0.12.12）
+
+- §6 的「键盘前端库」= `src/keyboard/`（项目内部模块，§8.4）：`pad.ts`（交互状态机：旋钮 / 里程表窗 / 滚轮 / 滑 / 符号格 / 渐到的锁）、`latch.ts`（锁）、`chords.ts`（两键同按的头 / 尾判据 + 单音护栏，纯函数）、`drum.ts` / `wheel.ts` / `param-row.ts`（W-5 原语）、`keys.ts`（电脑键盘键位表）、`pad-layout.ts`（符号格三页 + 按键 id 全集）。pad.ts 不 import `src/score/*`（`test/pad-keys.test.ts` 守）。
+- §6 的「音乐知识深模块」= `src/app/pad-music.ts`（`PadMusic`：cell(k) / altered / anchor / keyChoices / keyDrum / marksHere；宿主侧多 pitchAt / fifthsAt / scaleIdAt）。以后的和弦键盘 = 另一个 PadMusic。
+- §6 的「KeyEvent → Command 翻译层」分两半：按键 id → 命令 / 插记号 / 菜单 = `src/app/pad-keys.ts`（纯函数）；锁 × 光标 × 选区 × 叠音观望 = main.ts 的 `padWrite / runPadCommand`（刀 2 之三再搬 `src/app/pad-host.ts`）。
+- 和 §6 画的形状差在哪：没做成一个 `KeyEvent { key, phase, latches }`，而是三条口——音键 `onNoteDown(k, id) → boolean` / `onNoteUp(id)`、按键 `onKey(id, { ramp })`、旋钮 `onUnit / onTuplet / onPick(knob, i)`。原因：音键和写字键的宿主处理完全不同（叠音观望 vs apply），硬并成一种事件只是多一层 switch。锁的状态只带了渐到（ramp）；/2 和升降的锁住在宿主（main.ts `half` / song.ts `tapAcc`），pad 只画它们。
+- 没动：电脑键盘那条路（`keys.ts route` → main.ts `run`）仍是自己的翻译；和 pad 合流 = 以后（两边都翻成 Command，合流点在 `apply`）。
