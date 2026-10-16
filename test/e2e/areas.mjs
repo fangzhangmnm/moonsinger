@@ -41,7 +41,7 @@ export const AREA_OF_PATH = [
   [/^(ai-docs|weekly|journals?|docs)\/|^(CLAUDE|README)\.md$|^src\/version\.ts$|^api\//, []],
   // 中枢：谁都可能动 → 整套（main.ts 是现在的 god file，拆出去之后这条会变短；F-13 / F-17）
   [/^src\/app\/main\.ts$|^styles\.css$|^index\.html$|^package\.json$|^scripts\/build\.sh$|^vendor\//, "all"],
-  [/^src\/app\/(report-error|diag-ui|resource-watch)\.ts$|^src\/ui\/icon\.ts$/, "all"],
+  [/^src\/app\/(report-error|diag-ui|resource-watch|document)\.ts$|^src\/ui\/icon\.ts$/, "all"],   // document.ts = 改状态的唯一入口（2026-10-16）：谁都经它
   // 壳：离线壳 / 图标接线 → 冒烟（shell-smoke）+ 单元 icon-wiring
   [/^service-worker\.js$|^manifest\.webmanifest$|^src\/app\/pwa-shell\.ts$|^icon.*\.(svg|png)$|^apple-touch-icon.*\.png$/, "smoke"],
   // 谱面 / 排版 / 乐谱数据

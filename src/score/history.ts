@@ -13,7 +13,7 @@ import { trackOf } from "./song.ts";
 import type { Extras } from "../format/project.ts";
 
 /** 这一步改在哪一块：score = 谱（纸 / 声部看快照的 at）；lounge = 休息室（选角 / 候选 / 角色名）；studio = 录音室（麦克风）；cover = 封面；paper = 纸（加 / 删 / 隐藏）。 */
-export type LocusKind = "score" | "lounge" | "studio" | "cover" | "paper";
+export type LocusKind = "score" | "lounge" | "studio" | "cover" | "paper" | "final";   // final = 定稿 / 改稿（2026-10-16；不进撤销栈，只给锁放行用）
 export interface Locus { kind: LocusKind; label: string }
 export interface Snap { song: Song; extras: Extras; at: Focus; caret: number; sel: { from: number; to: number } | null; locus: Locus }
 export interface History { past: Snap[]; future: Snap[]; lastKey: string | null; lastAt: number }

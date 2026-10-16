@@ -40,6 +40,7 @@ import "./scheduler.test.ts";
 import "./speech-cache.test.ts";
 import "./final.test.ts";
 import "./core-render.test.ts";
+import "./document.test.ts";
 import "./master.test.ts";
 import "./fx.test.ts";
 import "./pack.test.ts";
