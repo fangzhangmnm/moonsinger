@@ -62,7 +62,7 @@ import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
 import { Finder, type FinderPick } from "../ui/finder.ts";
 import { Studio, MASTER as STUDIO_MASTER } from "../ui/studio.ts";
 import { resolveChain } from "../ui/plugins.ts";
-import { onlyMetaChanged, FINAL_MP3_ENTRY } from "../format/final.ts";
+import { FINAL_MP3_ENTRY } from "../format/final.ts";
 import { coreInfo } from "../core/version.ts";
 import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, sustainOf, GS_LIBRARY_ID, type Catalog } from "../gm/catalog.ts";
 import { ICON_CREDITS } from "../gm/instruments.gen.ts";
@@ -543,14 +543,15 @@ function ghostSync(): void { view.showGhost(ghostOn() ? [...ghostHeld.values()] 
 
 // ── 撤销 / 重做（src/score/history.ts）：song 每变一次记一份改之前的快照（引用，不拷贝）；gesture = 连续动作（拖 / 连打歌词）并成一步；换歌清栈 ──
 let history: History = emptyHistory();
-// ── 定稿（W-38；src/format/final.ts 头注释 = 四层护栏）：这里是第 ② 层 = 状态入口。定稿着只许改歌名 / 作者栏 / 许可 / 纸的大小 / 封面；别的一律拒绝 + 说一句（不崩、不静默）。
+// ── 定稿（W-38；src/format/final.ts 头注释 = 四层护栏）：这里是第 ② 层 = 状态入口。定稿着**整首锁住**（谱 / 歌名 / 作者栏 / 许可 / 封面 / 歌手 / 混音；user 10-16「都冻同意，封面当然进」）：
+//   歌和休息室的任何改动一律拒绝 + 说一句（不崩、不静默）；光标 / 选区 / 视图态照常。
 const finalOn = (): boolean => isFinal(doc.extras);
 let lockSaidAt = 0;
 /** 定稿着被拒的那一下：说一句（同一句 3 s 内不重复）。 */
 function lockedSay(what: string): void { const t = performance.now(); if (t - lockSaidAt < 3000) return; lockSaidAt = t; showError(`这首歌定稿了，${what}改不了：先在三条杠里「改稿」（定稿的 mp3 会作废），再改。`); }
 function update(next: EditorState, gesture?: string): void {
   if (next === st) return;
-  if (finalOn() && next.song !== st.song && !onlyMetaChanged(st.song, next.song)) { lockedSay("谱"); view.render(); pad.render(); return; }   // 第 ② 层护栏：定稿着不改谱（光标 / 选区 / 歌名 / 作者栏照常）
+  if (finalOn() && next.song !== st.song) { lockedSay("谱 / 歌名 / 作者栏"); view.render(); pad.render(); return; }   // 第 ② 层护栏：定稿着歌的一切不动（光标 / 选区照常）
   const asked = next;   // 撤销提示按你做的那一下说（自动补的开头力度不算「写了几个」）
   if (next.song !== st.song) next = withStartDyns(next);   // 每张纸开头强制写明力度（v0.10.39）：同一步、能一起撤销
   if (next.song !== st.song || next.caret !== st.caret || next.sel !== st.sel) view.noteUserEdit();   // 你在谱上动了：播放几秒内不拽视图（v0.10.12）
@@ -568,7 +569,7 @@ function withStartDyns(s: EditorState): EditorState {
  *  调用方照旧自己重画（歌手牌 / 录音室 / 谱）；这里只管记一步 + 换 extras + 标脏。 */
 function updateExtras(next: Extras, locus: Locus, gesture?: string): void {
   if (next === doc.extras) return;
-  if (finalOn() && locus.kind !== "cover") { lockedSay(locus.kind === "studio" ? "混音" : "歌手 / 乐器"); drawInst(); ui.redraw(); if (studio.isOpen) studio.show(); return; }   // 第 ② 层护栏：定稿着休息室 / 录音房不动（封面可以）
+  if (finalOn()) { lockedSay(locus.kind === "studio" ? "混音" : locus.kind === "cover" ? "封面" : "歌手 / 乐器"); drawInst(); ui.redraw(); if (studio.isOpen) studio.show(); return; }   // 第 ② 层护栏：定稿着休息室 / 录音房 / 封面都不动
   history = record(history, st, doc.extras, gesture ?? null, performance.now(), locus);
   doc.extras = next; renderTitle(); changed(); renderUndo();
   pushChannels(); schedulePlaybackRefresh(); schedulePrewarm();   // 推子 / 校准立刻进录音房（边放边调）；换人 = 时间线重算
@@ -2516,7 +2517,7 @@ function openFinalPanel(): void {
     const parts = audibleParts(), labels = partLabels(st.song, doc.extras), names = st.song.parts.map((p, k) => (parts.includes(p) ? labels[k] : null)).filter((x): x is string => !!x);
     const is = perfApi.issues().filter((i) => parts.some((p) => p.id === i.part));
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">定稿${doc.extras.finalRev ? `（第 ${doc.extras.finalRev + 1} 版）` : ""}</div>` +
-      `<div class="offer-msg">写好了：整首渲染成 mp3 存进歌里；之后<b>只能听</b>——谱、歌手、混音都锁住，能改的只有歌名、作者栏、许可、封面、文件名。随时「改稿」解锁（那份 mp3 作废）。歌库的封面上能直接听。</div>` +
+      `<div class="offer-msg">写好了：整首渲染成 mp3（带歌名 / 作者栏 / 许可的标签和封面图）存进歌里；之后<b>只能听</b>——谱、歌名、作者栏、许可、封面、歌手、混音全锁住，能改的只有文件名。随时「改稿」解锁（那份 mp3 作废）。歌库的封面上能直接听。</div>` +
       `<div class="part-sec">音质</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>` +
       `<div class="offer-msg">进 mp3 的：${names.length ? esc(names.join("、")) : "（没有出声的声部）"}${st.song.parts.length !== parts.length ? "（静音 / 独奏按现在的；要都进来先取消静音）" : ""}。</div>` +
       (is.length ? `<div class="offer-msg issue-warn">${is.length} 条轨不出声，mp3 里不会有它们：${esc(perfApi.issuesText(is))}。换人在谱前面的声部名里。</div>` : "") +
@@ -2542,9 +2543,11 @@ async function finalizeNow(quality: Mp3Quality = mp3Quality): Promise<FinalRecor
     await homeIfEdited();
     const r = await perfApi.renderMp3({ quality, scope: "all" });
     const is = perfApi.issues();   // 定稿那一刻的清单（mp3 里没有它们）
+    // 存的就是发行的那一份：ID3（歌名 / 作者 / 许可 / 署名 / 软件）+ 封面图（APIC）+ 音频帧，之后原字节导出（user「都冻同意，封面当然进」）
+    const tagged = new Uint8Array(perfApi.mp3Tag(r.roles).tag.length + r.bytes.length); tagged.set(perfApi.mp3Tag(r.roles).tag, 0); tagged.set(r.bytes, tagged.length - r.bytes.length);
     const rec: FinalRecord = { at: new Date().toISOString(), rev: doc.extras.finalRev + 1, app: APP_VERSION, core: coreInfo(), fingerprint: contentFingerprintOf(saveArgs()),
-      mp3: { path: FINAL_MP3_ENTRY, bytes: r.bytes.length, sha256: await sha256Hex(r.bytes), secs: r.secs, sr: r.sr, kbps: r.kbps, stereo: r.stereo }, parts: r.parts, ...(is.length ? { issues: is.map((i) => ({ part: i.part, why: i.why })) } : {}) };
-    doc.extras = withFinal(doc.extras, rec, r.bytes);   // 直接写（不进 undo：定稿不是一步编辑，撤销 = 改稿）；loungeKey 带着 final.at → 标脏 → 歌库自动存 / 本机「•」
+      mp3: { path: FINAL_MP3_ENTRY, bytes: tagged.length, sha256: await sha256Hex(tagged), secs: r.secs, sr: r.sr, kbps: r.kbps, stereo: r.stereo }, parts: r.parts, ...(is.length ? { issues: is.map((i) => ({ part: i.part, why: i.why })) } : {}) };
+    doc.extras = withFinal(doc.extras, rec, tagged);   // 直接写（不进 undo：定稿不是一步编辑，撤销 = 改稿）；loungeKey 带着 final.at → 标脏 → 歌库自动存 / 本机「•」
     if (ws.mode !== "listen") { lastEditMode = ws.mode; ws.mode = "listen"; }
     applyWorkspace(); renderTitle(); changed(); updateChrome(); drawInst(); ui.redraw();
     info(`定稿了（第 ${rec.rev} 版）：mp3 ${mp3SizeText(r.bytes.length)}、${r.secs.toFixed(1)} 秒，存进了歌里；${doc.identifier ? "歌库封面上能直接听。" : "按「存」写进文件。"}只能听了——要改，三条杠里「改稿」。`);
@@ -2556,7 +2559,7 @@ async function finalizeNow(quality: Mp3Quality = mp3Quality): Promise<FinalRecor
 /** 改稿：问一句 → 记录和 mp3 一起丢掉 → 回到写。 */
 async function unfinalizeNow(ask = true): Promise<boolean> {
   const f = doc.extras.final; if (!f) return false;
-  if (ask && !(await askSheet("改稿", `解锁后谱、歌手、混音又能改；第 ${f.rev} 版定稿的 mp3 作废（下次存就从歌里去掉；歌库封面上也听不了，要再定稿一次）。`, "改稿"))) return false;
+  if (ask && !(await askSheet("改稿", `解锁后谱、歌名、作者栏、封面、歌手、混音又能改；第 ${f.rev} 版定稿的 mp3 作废（下次存就从歌里去掉；歌库封面上也听不了，要再定稿一次）。`, "改稿"))) return false;
   doc.extras = withoutFinal(doc.extras);   // 直接写（不进 undo）
   applyWorkspace(); renderTitle(); changed(); updateChrome(); drawInst(); ui.redraw();
   setMode(lastEditMode === "listen" ? "notes" : lastEditMode);
@@ -2689,7 +2692,7 @@ const es = createEditorSession({
     onChange: () => { /* 内容变化走 changed()（update() + 1 s 心跳）→ es.markDirty() */ },
     encode: async () => { await refHost.settled(); encodedSnap = { song: st.song, lounge: loungeKey(), refs: refHost.rev() }; return { bytes: new Blob([bytesNow() as unknown as BlobPart], { type: "application/vnd.recordare.musicxml" }) }; },
     // 第 ④ 层护栏（store 接缝）：定稿着、出声内容的指纹却变了 = 不落盘、不推，脏留着（顶栏「•」照亮 = 诚实），说一句。前面三层都没拦住才会走到这儿。
-    canPersist: () => { const f = doc.extras.final; if (!f) return null; try { return contentFingerprintOf(saveArgs()) === f.fingerprint ? null : "这首歌定稿了，出声的内容却变了：没有存、也不会推上云。先「改稿」（定稿的 mp3 作废）再存，或者撤销刚才的改动。"; } catch (e) { return `存不了：${(e as Error).message}`; } },
+    canPersist: () => { const f = doc.extras.final; if (!f) return null; try { return contentFingerprintOf(saveArgs()) === f.fingerprint ? null : "这首歌定稿了，内容却变了：没有存、也不会推上云。先「改稿」（定稿的 mp3 作废）再存，或者撤销刚才的改动。"; } catch (e) { return `存不了：${(e as Error).message}`; } },
     onRefused: (why) => { showError(why); diagNote("doc", `persist refused: ${why}`); },
     onSaved: (name) => { if (encodedSnap) { doc.saved = encodedSnap; encodedSnap = null; } if (coverTouched) { coverTouched = false; gallery?.invalidateThumb(name); } renderTitle(); },
   },

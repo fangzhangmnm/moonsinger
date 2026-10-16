@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.18-2026-10-16";
+var APP_VERSION = "v0.12.19-2026-10-16";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -21783,6 +21783,7 @@ function id3v2(f2) {
   if (f2.copyrightUrl && /^https?:\/\/[\x21-\x7e]+$/.test(f2.copyrightUrl)) frames.push(frame("WCOP", ascii(f2.copyrightUrl)));
   if (f2.comment) frames.push(frame("COMM", cat(Uint8Array.of(1), ascii("chi"), enc(""), Uint8Array.of(0, 0), enc(f2.comment))));
   if (f2.software) frames.push(textFrame("TSSE", f2.software));
+  if (f2.picture && f2.picture.bytes.length) frames.push(frame("APIC", cat(Uint8Array.of(0), ascii(f2.picture.mime), Uint8Array.of(0), Uint8Array.of(3), Uint8Array.of(0), f2.picture.bytes)));
   if (!frames.length) return new Uint8Array(0);
   const body2 = cat(...frames), n10 = body2.length, h2 = new Uint8Array(10);
   h2.set(ascii("ID3"), 0);
@@ -23532,11 +23533,9 @@ var sha256TextSync = (s10) => sha256HexSync(new TextEncoder().encode(s10));
 
 // src/format/final.ts
 var FINAL_MP3_ENTRY = ".moonsinger/final.mp3";
-var HEAD_TAGS = [/<work>[\s\S]*?<\/work>\s*/g, /<movement-title>[\s\S]*?<\/movement-title>\s*/g, /<identification>[\s\S]*?<\/identification>\s*/g, /<credit\b[\s\S]*?<\/credit>\s*/g, /<defaults>[\s\S]*?<\/defaults>\s*/g];
+var ENCODING = /<encoding>[\s\S]*?<\/encoding>\s*/g;
 function strippedXml(xml) {
-  let s10 = xml;
-  for (const re2 of HEAD_TAGS) s10 = s10.replace(re2, "");
-  return s10;
+  return xml.replace(ENCODING, "");
 }
 function scoreExtNoView(text2) {
   const o10 = JSON.parse(text2);
@@ -23547,7 +23546,8 @@ function contentFingerprint(p2) {
   const papers = Object.keys(p2.papers).sort().map((id2) => [id2, strippedXml(p2.papers[id2])]);
   const lounge = Object.keys(p2.lounge).sort().map((id2) => [id2, JSON.stringify(JSON.parse(p2.lounge[id2]))]);
   const studio2 = JSON.stringify(JSON.parse(p2.studio));
-  return sha256TextSync(JSON.stringify({ v: 1, papers, scoreExt: scoreExtNoView(p2.scoreExt), lounge, studio: studio2, sounds: [...p2.sounds].sort() }));
+  const thumbnail = p2.thumbnail ? sha256HexSync(p2.thumbnail) : null;
+  return sha256TextSync(JSON.stringify({ v: 2, papers, scoreExt: scoreExtNoView(p2.scoreExt), lounge, studio: studio2, sounds: [...p2.sounds].sort(), thumbnail }));
 }
 function parseFinalRecord(v) {
   if (!v || typeof v !== "object") return null;
@@ -23563,9 +23563,6 @@ function parseFinalRecord(v) {
     parts: Array.isArray(r10.parts) ? r10.parts.map(String) : [],
     ...Array.isArray(r10.issues) ? { issues: r10.issues.map((i10) => ({ part: String(i10.part), why: String(i10.why) })) } : {}
   };
-}
-function onlyMetaChanged(a10, b3) {
-  return a10.parts === b3.parts && a10.papers === b3.papers && a10.hum === b3.hum && a10.arrangement === b3.arrangement && a10.lyricFit === b3.lyricFit && a10.barNumbers === b3.barNumbers;
 }
 
 // src/format/migrate/index.ts
@@ -23659,7 +23656,7 @@ var roleOf = (extras, role, hum) => structuredClone(extras.lounge[role] ?? defau
 var nextKey2 = (ids, prefix) => `${prefix}${Math.max(0, ...ids.map((x2) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x2)?.[1] ?? 0))) + 1}`;
 function saveMxl(a10) {
   const { out, fingerprint } = buildEntries(a10);
-  if (a10.extras.final && a10.extras.final.fingerprint !== fingerprint) throw new Error("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u51FA\u58F0\u7684\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u5B9A\u7A3F\u7740\u4E0D\u80FD\u8FD9\u6837\u5B58\u3002\u5148\u300C\u6539\u7A3F\u300D\u518D\u6539\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002");
+  if (a10.extras.final && a10.extras.final.fingerprint !== fingerprint) throw new Error("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u5B9A\u7A3F\u7740\u4E0D\u80FD\u8FD9\u6837\u5B58\u3002\u5148\u300C\u6539\u7A3F\u300D\u518D\u6539\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002");
   const entries2 = {};
   for (const [path, bytes] of Object.entries(out)) entries2[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY || path === FINAL_MP3_ENTRY ? 0 : path.startsWith(SOUNDS2) ? 1 : path.startsWith(REFERENCES_DIR) && !path.endsWith(".json") ? 0 : 6 }];
   return zipSync(entries2);
@@ -23771,7 +23768,8 @@ function buildEntries(a10) {
     scoreExt: jsonText(scoreExt),
     lounge: Object.fromEntries(Object.entries(lounge).map(([id2, r10]) => [id2, jsonText(r10)])),
     studio: jsonText(studio2),
-    sounds: sounds.map(([p2]) => p2)
+    sounds: sounds.map(([p2]) => p2),
+    thumbnail: a10.extras.thumbnail
   };
   const fingerprint = contentFingerprint(fpParts);
   const { final: _f2, finalRev: _r, core: _c, ...manifestRest } = a10.extras.manifest ?? {};
@@ -24281,7 +24279,7 @@ function openBytes(name, bytes) {
       const f2 = String(p2.file ?? paperFile(String(p2.id)));
       if (files[f2]) papersRaw[String(p2.id)] = strFromU8(files[f2]);
     }
-    const fp = rec && files[`${DIR}score.json`] && files[`${DIR}studio.json`] ? contentFingerprint({ papers: papersRaw, scoreExt: strFromU8(files[`${DIR}score.json`]), lounge: rawLounge, studio: strFromU8(files[`${DIR}studio.json`]), sounds: Object.keys(extras.sounds) }) : null;
+    const fp = rec && files[`${DIR}score.json`] && files[`${DIR}studio.json`] ? contentFingerprint({ papers: papersRaw, scoreExt: strFromU8(files[`${DIR}score.json`]), lounge: rawLounge, studio: strFromU8(files[`${DIR}studio.json`]), sounds: Object.keys(extras.sounds), thumbnail: files[THUMBNAIL_ENTRY] ?? null }) : null;
     if (!rec) finalNotices.push("\u8FD9\u9996\u6B4C\u7684\u5B9A\u7A3F\u8BB0\u5F55\u8BFB\u4E0D\u61C2\uFF08\u522B\u7684\u7248\u672C\u5199\u7684\uFF1F\uFF09\uFF1A\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002");
     else if (!mp3 || mp3.length !== rec.mp3.bytes) finalNotices.push(`\u5B9A\u7A3F\u7684 mp3 \u4E0D\u5728\u6B4C\u91CC\u6216\u5927\u5C0F\u4E0D\u5BF9\uFF08\u8BB0\u5F55 ${rec.mp3.bytes} \u5B57\u8282\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002`);
     else if (fp !== rec.fingerprint) finalNotices.push(`\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u540E\u88AB\u6539\u8FC7\uFF08\u53EF\u80FD\u662F\u65E7\u7248 app \u6216\u522B\u7684\u8F6F\u4EF6\u6539\u7684\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u90A3\u4EFD mp3 \u4E0D\u7B97\u6570\u4E86\u3002\u8981\u7684\u8BDD\u6539\u5B8C\u518D\u5B9A\u7A3F\u4E00\u6B21\u3002`);
@@ -28142,8 +28140,8 @@ function createPerformance(host) {
     return { bytes, secs: r10.secs, sr: r10.sr, kbps: Q2.kbps, stereo: Q2.stereo, roles, parts: r10.timeline.tracks.map((t10) => t10.id) };
   }
   function mp3Tag(roles) {
-    const { rights, fellBack } = exportRights2(roles), { lines } = creditsOf2(roles, rights);
-    return { tag: id3v2({ title: st3().song.title || docName2(), artist: (st3().song.credits ?? "").split("\n").map((s10) => s10.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || void 0, software: `MoonSinger ${APP_VERSION}` }), lines, fellBack };
+    const { rights, fellBack } = exportRights2(roles), { lines } = creditsOf2(roles, rights), cover = extras().thumbnail;
+    return { tag: id3v2({ title: st3().song.title || docName2(), artist: (st3().song.credits ?? "").split("\n").map((s10) => s10.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || void 0, software: `MoonSinger ${APP_VERSION}`, ...cover ? { picture: { mime: "image/png", bytes: cover } } : {} }), lines, fellBack };
   }
   const mp3SizeText2 = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
   async function exportSong2(o10 = { quality: "standard", scope: "all" }) {
@@ -28153,7 +28151,7 @@ function createPerformance(host) {
       const fin = host.final?.();
       const r10 = fin && o10.scope === "all" ? { bytes: fin.mp3, secs: fin.secs, kbps: fin.kbps, stereo: fin.stereo, roles: fin.roles, fromFinal: true } : { ...await renderMp3(o10), fromFinal: false };
       const { tag: tag2, lines, fellBack } = mp3Tag(r10.roles);
-      const file = new File([tag2, r10.bytes], `${stampedCopy(`${docName2()}${o10.scope === "segment" ? `-${fileSafe(st3().song.papers.find((p2) => p2.id === st3().at.paper)?.name || "\u8FD9\u4E00\u5F20")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
+      const file = new File([...r10.fromFinal ? [] : [tag2], r10.bytes], `${stampedCopy(`${docName2()}${o10.scope === "segment" ? `-${fileSafe(st3().song.papers.find((p2) => p2.id === st3().at.paper)?.name || "\u8FD9\u4E00\u5F20")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
       const Q2 = r10.stereo ? "\u7ACB\u4F53\u58F0" : "\u5355\u58F0\u9053";
       offerFile2(file, "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86", `${r10.secs.toFixed(1)} \u79D2 \xB7 mp3 ${Q2} ${r10.kbps}k ${mp3SizeText2(file.size)}${r10.fromFinal ? "\uFF08\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD\uFF0C\u6CA1\u6709\u91CD\u6E32\uFF09" : ""}` + (fellBack ? `<div class="offer-msg">\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002</div>` : "") + (!r10.fromFinal && issues.length ? `<div class="offer-msg issue-warn">\u8FD9\u51E0\u6761\u8F68\u6CA1\u51FA\u58F0\uFF0Cmp3 \u91CC\u6CA1\u6709\u5B83\u4EEC\uFF1A${escHtml(issuesText(issues))}</div>` : "") + creditsBlock2(lines, "\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E"));
     } catch (e10) {
@@ -29714,7 +29712,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "6df30a372e525e13" : "dev";
+var CORE_HASH = true ? "eaa53b31becc30a6" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -41024,8 +41022,8 @@ function lockedSay(what) {
 }
 function update(next2, gesture) {
   if (next2 === st2) return;
-  if (finalOn() && next2.song !== st2.song && !onlyMetaChanged(st2.song, next2.song)) {
-    lockedSay("\u8C31");
+  if (finalOn() && next2.song !== st2.song) {
+    lockedSay("\u8C31 / \u6B4C\u540D / \u4F5C\u8005\u680F");
     view.render();
     pad3.render();
     return;
@@ -41051,8 +41049,8 @@ function withStartDyns(s10) {
 }
 function updateExtras(next2, locus, gesture) {
   if (next2 === doc.extras) return;
-  if (finalOn() && locus.kind !== "cover") {
-    lockedSay(locus.kind === "studio" ? "\u6DF7\u97F3" : "\u6B4C\u624B / \u4E50\u5668");
+  if (finalOn()) {
+    lockedSay(locus.kind === "studio" ? "\u6DF7\u97F3" : locus.kind === "cover" ? "\u5C01\u9762" : "\u6B4C\u624B / \u4E50\u5668");
     drawInst();
     ui2.redraw();
     if (studio.isOpen) studio.show();
@@ -43888,7 +43886,7 @@ function openFinalPanel() {
     const chip2 = (v, label, note2, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc8(label)}<small>${esc8(note2)}</small></button>`;
     const parts = audibleParts2(), labels = partLabels(st2.song, doc.extras), names = st2.song.parts.map((p2, k2) => parts.includes(p2) ? labels[k2] : null).filter((x2) => !!x2);
     const is2 = perfApi.issues().filter((i10) => parts.some((p2) => p2.id === i10.part));
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5B9A\u7A3F${doc.extras.finalRev ? `\uFF08\u7B2C ${doc.extras.finalRev + 1} \u7248\uFF09` : ""}</div><div class="offer-msg">\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E4B\u540E<b>\u53EA\u80FD\u542C</b>\u2014\u2014\u8C31\u3001\u6B4C\u624B\u3001\u6DF7\u97F3\u90FD\u9501\u4F4F\uFF0C\u80FD\u6539\u7684\u53EA\u6709\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u8BB8\u53EF\u3001\u5C01\u9762\u3001\u6587\u4EF6\u540D\u3002\u968F\u65F6\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF08\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF09\u3002\u6B4C\u5E93\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002</div><div class="part-sec">\u97F3\u8D28</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div><div class="offer-msg">\u8FDB mp3 \u7684\uFF1A${names.length ? esc8(names.join("\u3001")) : "\uFF08\u6CA1\u6709\u51FA\u58F0\u7684\u58F0\u90E8\uFF09"}${st2.song.parts.length !== parts.length ? "\uFF08\u9759\u97F3 / \u72EC\u594F\u6309\u73B0\u5728\u7684\uFF1B\u8981\u90FD\u8FDB\u6765\u5148\u53D6\u6D88\u9759\u97F3\uFF09" : ""}\u3002</div>` + (is2.length ? `<div class="offer-msg issue-warn">${is2.length} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A${esc8(perfApi.issuesText(is2))}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002</div>` : "") + `<div class="offer-btns"><button class="btn primary" data-v="go"${names.length ? "" : " disabled"}>${is2.length ? "\u7167\u6837\u5B9A\u7A3F" : "\u5B9A\u7A3F"}</button><button class="btn" data-v="close">\u7B97\u4E86</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u5B9A\u7A3F${doc.extras.finalRev ? `\uFF08\u7B2C ${doc.extras.finalRev + 1} \u7248\uFF09` : ""}</div><div class="offer-msg">\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3\uFF08\u5E26\u6B4C\u540D / \u4F5C\u8005\u680F / \u8BB8\u53EF\u7684\u6807\u7B7E\u548C\u5C01\u9762\u56FE\uFF09\u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E4B\u540E<b>\u53EA\u80FD\u542C</b>\u2014\u2014\u8C31\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u8BB8\u53EF\u3001\u5C01\u9762\u3001\u6B4C\u624B\u3001\u6DF7\u97F3\u5168\u9501\u4F4F\uFF0C\u80FD\u6539\u7684\u53EA\u6709\u6587\u4EF6\u540D\u3002\u968F\u65F6\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF08\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF09\u3002\u6B4C\u5E93\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002</div><div class="part-sec">\u97F3\u8D28</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div><div class="offer-msg">\u8FDB mp3 \u7684\uFF1A${names.length ? esc8(names.join("\u3001")) : "\uFF08\u6CA1\u6709\u51FA\u58F0\u7684\u58F0\u90E8\uFF09"}${st2.song.parts.length !== parts.length ? "\uFF08\u9759\u97F3 / \u72EC\u594F\u6309\u73B0\u5728\u7684\uFF1B\u8981\u90FD\u8FDB\u6765\u5148\u53D6\u6D88\u9759\u97F3\uFF09" : ""}\u3002</div>` + (is2.length ? `<div class="offer-msg issue-warn">${is2.length} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A${esc8(perfApi.issuesText(is2))}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002</div>` : "") + `<div class="offer-btns"><button class="btn primary" data-v="go"${names.length ? "" : " disabled"}>${is2.length ? "\u7167\u6837\u5B9A\u7A3F" : "\u5B9A\u7A3F"}</button><button class="btn" data-v="close">\u7B97\u4E86</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -43921,17 +43919,20 @@ async function finalizeNow(quality = mp3Quality) {
     await homeIfEdited();
     const r10 = await perfApi.renderMp3({ quality, scope: "all" });
     const is2 = perfApi.issues();
+    const tagged = new Uint8Array(perfApi.mp3Tag(r10.roles).tag.length + r10.bytes.length);
+    tagged.set(perfApi.mp3Tag(r10.roles).tag, 0);
+    tagged.set(r10.bytes, tagged.length - r10.bytes.length);
     const rec = {
       at: (/* @__PURE__ */ new Date()).toISOString(),
       rev: doc.extras.finalRev + 1,
       app: APP_VERSION,
       core: coreInfo(),
       fingerprint: contentFingerprintOf(saveArgs()),
-      mp3: { path: FINAL_MP3_ENTRY, bytes: r10.bytes.length, sha256: await sha256Hex2(r10.bytes), secs: r10.secs, sr: r10.sr, kbps: r10.kbps, stereo: r10.stereo },
+      mp3: { path: FINAL_MP3_ENTRY, bytes: tagged.length, sha256: await sha256Hex2(tagged), secs: r10.secs, sr: r10.sr, kbps: r10.kbps, stereo: r10.stereo },
       parts: r10.parts,
       ...is2.length ? { issues: is2.map((i10) => ({ part: i10.part, why: i10.why })) } : {}
     };
-    doc.extras = withFinal(doc.extras, rec, r10.bytes);
+    doc.extras = withFinal(doc.extras, rec, tagged);
     if (ws.mode !== "listen") {
       lastEditMode = ws.mode;
       ws.mode = "listen";
@@ -43955,7 +43956,7 @@ async function finalizeNow(quality = mp3Quality) {
 async function unfinalizeNow(ask = true) {
   const f2 = doc.extras.final;
   if (!f2) return false;
-  if (ask && !await askSheet("\u6539\u7A3F", `\u89E3\u9501\u540E\u8C31\u3001\u6B4C\u624B\u3001\u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u7B2C ${f2.rev} \u7248\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u4ECE\u6B4C\u91CC\u53BB\u6389\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u4E5F\u542C\u4E0D\u4E86\uFF0C\u8981\u518D\u5B9A\u7A3F\u4E00\u6B21\uFF09\u3002`, "\u6539\u7A3F")) return false;
+  if (ask && !await askSheet("\u6539\u7A3F", `\u89E3\u9501\u540E\u8C31\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u5C01\u9762\u3001\u6B4C\u624B\u3001\u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u7B2C ${f2.rev} \u7248\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u4ECE\u6B4C\u91CC\u53BB\u6389\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u4E5F\u542C\u4E0D\u4E86\uFF0C\u8981\u518D\u5B9A\u7A3F\u4E00\u6B21\uFF09\u3002`, "\u6539\u7A3F")) return false;
   doc.extras = withoutFinal(doc.extras);
   applyWorkspace();
   renderTitle();
@@ -44166,7 +44167,7 @@ var es2 = createEditorSession({
       const f2 = doc.extras.final;
       if (!f2) return null;
       try {
-        return contentFingerprintOf(saveArgs()) === f2.fingerprint ? null : "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u51FA\u58F0\u7684\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u6CA1\u6709\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\u3002\u5148\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF09\u518D\u5B58\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002";
+        return contentFingerprintOf(saveArgs()) === f2.fingerprint ? null : "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u6CA1\u6709\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\u3002\u5148\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF09\u518D\u5B58\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002";
       } catch (e10) {
         return `\u5B58\u4E0D\u4E86\uFF1A${e10.message}`;
       }
@@ -44991,4 +44992,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-598f1701d942.mjs.map
+//# sourceMappingURL=moonsinger-3afb05adec52.mjs.map

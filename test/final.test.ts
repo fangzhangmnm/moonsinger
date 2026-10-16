@@ -1,7 +1,7 @@
 // 定稿 / 改稿的格式层（src/format/final.ts + project.ts）：指纹、记录进出、锁、作废。created 2026-10-16 by Claude Fable 5.1（W-38）
 import { describe, it, eq, assert } from "./runner.mjs";
 import { sha256HexSync, sha256TextSync } from "../src/format/sha256-sync.ts";
-import { contentFingerprint, strippedXml, onlyMetaChanged, parseFinalRecord, FINAL_MP3_ENTRY, type FinalRecord } from "../src/format/final.ts";
+import { contentFingerprint, strippedXml, parseFinalRecord, FINAL_MP3_ENTRY, type FinalRecord } from "../src/format/final.ts";
 import { saveMxl, openBytes, contentFingerprintOf, withFinal, withoutFinal, isFinal, withThumbnail, withCalibration, withRoleName, emptyExtras } from "../src/format/project.ts";
 import { unzipSync, strFromU8, zipSync } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong, sampleExtras, sampleView } from "./fixtures/format/sample-song.ts";
@@ -23,9 +23,9 @@ describe("同步 sha256", () => {
 });
 
 describe("出声内容的指纹", () => {
-  it("MusicXML 头上的歌名 / 曲段名 / 作者栏 / 许可 / 编码日期 / 纸剥掉，别的留着", () => {
-    const xml = `<?xml?><score-partwise><work><work-title>歌</work-title></work>\n<movement-title>A</movement-title>\n<identification><rights>CC0</rights><encoding><software>x</software><encoding-date>2026</encoding-date></encoding></identification>\n<defaults><scaling/></defaults>\n<credit page="1"><credit-words>me</credit-words></credit>\n<part-list/><part id="P1"/></score-partwise>`;
-    eq(strippedXml(xml), `<?xml?><score-partwise><part-list/><part id="P1"/></score-partwise>`);
+  it("MusicXML 只剥掉 <encoding>（软件版本 + 日期）；歌名 / 曲段名 / 作者栏 / 许可 / 纸都留着（全冻）", () => {
+    const xml = `<?xml?><score-partwise><work><work-title>歌</work-title></work>\n<identification><rights>CC0</rights><encoding><software>x</software><encoding-date>2026</encoding-date></encoding></identification>\n<credit page="1"><credit-words>me</credit-words></credit>\n<part-list/></score-partwise>`;
+    eq(strippedXml(xml), `<?xml?><score-partwise><work><work-title>歌</work-title></work>\n<identification><rights>CC0</rights></identification>\n<credit page="1"><credit-words>me</credit-words></credit>\n<part-list/></score-partwise>`);
   });
   it("存两次（日期不同）指纹一样；存了再开再存还是一样（往返稳定）", () => {
     const a = ARGS(), fp1 = contentFingerprintOf(a), fp2 = contentFingerprintOf({ ...a, date: "2027-01-01T00:00:00.000Z", app: "other" });
@@ -33,11 +33,13 @@ describe("出声内容的指纹", () => {
     const o = openBytes("s.mxl", saveMxl(a));
     eq(contentFingerprintOf({ song: o.song, hum: o.hum, extras: o.extras, app: "x", date: "x", view: o.view }), fp1, "开了再存");
   });
-  it("歌名 / 作者栏 / 许可 / 封面 / 视图态变了指纹不变；音 / 休息室 / 录音房变了就变", () => {
+  it("全冻：只有视图态不进指纹；歌名 / 作者栏 / 许可 / 封面 / 音 / 休息室 / 录音房变了都变（user 10-16「都冻同意，封面当然进」）", () => {
     const a = ARGS(), fp = contentFingerprintOf(a);
-    eq(contentFingerprintOf({ ...a, song: { ...a.song, title: "改了", credits: "改了", rights: "MIT" } }), fp, "元信息");
-    eq(contentFingerprintOf({ ...a, extras: withThumbnail(a.extras, new Uint8Array([1, 2, 3])) }), fp, "封面");
     eq(contentFingerprintOf({ ...a, view: { scope: "all" } }), fp, "视图态");
+    assert(contentFingerprintOf({ ...a, song: { ...a.song, title: "改了" } }) !== fp, "歌名");
+    assert(contentFingerprintOf({ ...a, song: { ...a.song, credits: "改了" } }) !== fp, "作者栏");
+    assert(contentFingerprintOf({ ...a, song: { ...a.song, rights: "MIT" } }) !== fp, "许可");
+    assert(contentFingerprintOf({ ...a, extras: withThumbnail(a.extras, new Uint8Array([1, 2, 3])) }) !== fp, "封面");
     const toks = a.song.papers[0].tracks.P1, i = toks.findIndex((t) => t.kind === "note");
     const song2 = { ...a.song, papers: a.song.papers.map((p, k) => (k ? p : { ...p, tracks: { ...p.tracks, P1: toks.map((t, j) => (j === i ? { ...t, pitch: { step: "B", alter: 0, octave: 5 } } : t)) } })) };
     assert(contentFingerprintOf({ ...a, song: song2 as typeof a.song }) !== fp, "改了一个音");
@@ -45,8 +47,8 @@ describe("出声内容的指纹", () => {
     assert(contentFingerprintOf({ ...a, extras: withRoleName(a.extras, "r1", "别人", a.hum) }) !== fp, "改了角色名（锁着）");
   });
   it("contentFingerprint 对原料的键顺序 / 排序不敏感", () => {
-    const base = { papers: { p2: "<b/>", p1: "<a/>" }, scoreExt: `{"version":2,"view":{"scope":"all"},"papers":[]}`, lounge: { r2: "{}", r1: "{\"a\":1}" }, studio: "{\"tracks\":[]}", sounds: ["b", "a"] };
-    const same = { papers: { p1: "<a/>", p2: "<b/>" }, scoreExt: `{"version":2,"papers":[]}`, lounge: { r1: "{\"a\":1}", r2: "{}" }, studio: "{\"tracks\":[]}", sounds: ["a", "b"] };
+    const base = { papers: { p2: "<b/>", p1: "<a/>" }, scoreExt: `{"version":2,"view":{"scope":"all"},"papers":[]}`, lounge: { r2: "{}", r1: "{\"a\":1}" }, studio: "{\"tracks\":[]}", sounds: ["b", "a"], thumbnail: null };
+    const same = { papers: { p1: "<a/>", p2: "<b/>" }, scoreExt: `{"version":2,"papers":[]}`, lounge: { r1: "{\"a\":1}", r2: "{}" }, studio: "{\"tracks\":[]}", sounds: ["a", "b"], thumbnail: null };
     eq(contentFingerprint(base), contentFingerprint(same));
   });
 });
@@ -61,7 +63,8 @@ describe("定稿记录进出 .mxl", () => {
     eq(files[FINAL_MP3_ENTRY].length, MP3.length);
     assert(names.indexOf(FINAL_MP3_ENTRY) < names.indexOf(".moonsinger/manifest.json"), "mp3 在总目录前面");
     eq(names[names.length - 1], ".moonsinger/manifest.json", "总目录最后（样本没封面；有封面时封面在它后面）——尾读一次命中");
-    { const withCover = Object.keys(unzipSync(saveMxl({ ...a, extras: withThumbnail(ex, new Uint8Array([1, 2, 3])) }))); eq(withCover.slice(-2).join(","), ".moonsinger/manifest.json,Thumbnails/thumbnail.png", "有封面：总目录倒数第二、封面最后"); }
+    { const exC = withThumbnail(withoutFinal(a.extras), new Uint8Array([1, 2, 3])), fpC = contentFingerprintOf({ ...a, extras: exC });   // 封面进指纹（全冻）：带封面的定稿要按带封面算
+      const withCover = Object.keys(unzipSync(saveMxl({ ...a, extras: withFinal(exC, record(fpC, MP3), MP3) }))); eq(withCover.slice(-2).join(","), ".moonsinger/manifest.json,Thumbnails/thumbnail.png", "有封面：总目录倒数第二、封面最后"); }
     const o = openBytes("s.mxl", bytes);
     eq(o.notices.length, 0, o.notices.join(" | "));
     assert(isFinal(o.extras) && o.extras.final!.rev === 3 && o.extras.finalMp3!.length === MP3.length, "开回来是定稿的");
@@ -76,13 +79,15 @@ describe("定稿记录进出 .mxl", () => {
     eq(m.final, undefined, "final 没了"); eq(m.finalRev, 2, "次数留着"); eq(files[FINAL_MP3_ENTRY], undefined, "entry 没了");
     eq(isFinal(ex), false);
   });
-  it("格式层的锁：定稿着改了出声的内容 = saveMxl 抛；只改歌名 / 作者栏 / 封面 = 照存", () => {
+  it("格式层的锁：定稿着改了任何内容（音 / 歌名 / 作者栏 / 封面 / 混音）= saveMxl 抛；原样 / 只换视图态 = 照存", () => {
     const a = ARGS(), fp = contentFingerprintOf(a), ex = withFinal(withoutFinal(a.extras), record(fp, MP3), MP3);
-    saveMxl({ ...a, extras: ex, song: { ...a.song, title: "新名字", credits: "新作者" } });
-    saveMxl({ ...a, extras: withThumbnail(ex, new Uint8Array([9, 9])) });
-    let threw = "";
-    try { saveMxl({ ...a, extras: withCalibration(ex, "r1", 1, a.hum) }); } catch (e) { threw = (e as Error).message; }
-    assert(/定稿/.test(threw), `改了响度校准要抛：${threw}`);
+    saveMxl({ ...a, extras: ex }); saveMxl({ ...a, extras: ex, view: { scope: "all" }, date: "2030-01-01T00:00:00.000Z" });
+    const throws = (args: Parameters<typeof saveMxl>[0], what: string) => { let threw = ""; try { saveMxl(args); } catch (e) { threw = (e as Error).message; } assert(/定稿/.test(threw), `${what}要抛：${threw}`); };
+    throws({ ...a, extras: ex, song: { ...a.song, title: "新名字" } }, "改歌名");
+    throws({ ...a, extras: ex, song: { ...a.song, credits: "新作者" } }, "改作者栏");
+    throws({ ...a, extras: withThumbnail(ex, new Uint8Array([9, 9])) }, "换封面");
+    throws({ ...a, extras: withCalibration(ex, "r1", 1, a.hum) }, "改响度校准");
+    throws({ ...a, extras: withRoleName(ex, "r1", "别人", a.hum) }, "改角色名");
   });
   it("定稿后被别的东西改过（指纹对不上）/ mp3 丢了 / 记录读不懂 = 定稿作废 + 说一声，entry 不带着走", () => {
     const a = ARGS(), fp = contentFingerprintOf(a), good = saveMxl({ ...a, extras: withFinal(withoutFinal(a.extras), record(fp, MP3), MP3) });
@@ -103,17 +108,5 @@ describe("定稿记录进出 .mxl", () => {
     const m = JSON.parse(strFromU8(files[".moonsinger/manifest.json"]));
     eq(m.final, undefined); eq(m.finalRev, undefined); eq(files[FINAL_MP3_ENTRY], undefined);
     const ex = emptyExtras(); eq(ex.final, null); eq(ex.finalRev, 0);
-  });
-});
-
-describe("定稿后哪些改动算元信息", () => {
-  it("只换 title / credits / rights / paper = true；换了谱 / 声部 / 哼 / 编排 = false", () => {
-    const s = sampleSong();
-    assert(onlyMetaChanged(s, { ...s, title: "x", credits: "y", rights: "z", paper: undefined }));
-    assert(!onlyMetaChanged(s, { ...s, papers: [...s.papers] }));
-    assert(!onlyMetaChanged(s, { ...s, parts: [...s.parts] }));
-    assert(!onlyMetaChanged(s, { ...s, hum: "a" }));
-    assert(!onlyMetaChanged(s, { ...s, arrangement: "2 1" }));
-    assert(!onlyMetaChanged(s, { ...s, lyricFit: undefined }));
   });
 });

@@ -8,6 +8,8 @@ export interface Id3Fields {
   copyrightUrl?: string;   // WCOP（许可的链接，只放 ASCII 网址）
   comment?: string;     // COMM（整段署名）
   software?: string;    // TSSE
+  /** APIC 封面图（类型 3 = 正面封面）；mp3 播放器 / 文件管理器显示的那张。2026-10-16 加（定稿的 mp3 连封面一起发行，user「封面当然进」）。 */
+  picture?: { mime: string; bytes: Uint8Array };
 }
 
 const enc = (s: string): Uint8Array => {   // UTF-16LE + BOM
@@ -32,6 +34,7 @@ export function id3v2(f: Id3Fields): Uint8Array {
   if (f.copyrightUrl && /^https?:\/\/[\x21-\x7e]+$/.test(f.copyrightUrl)) frames.push(frame("WCOP", ascii(f.copyrightUrl)));
   if (f.comment) frames.push(frame("COMM", cat(Uint8Array.of(1), ascii("chi"), enc(""), Uint8Array.of(0, 0), enc(f.comment))));   // 编码 + 语言 + 空的短描述（UTF-16 结尾两个 0）+ 正文
   if (f.software) frames.push(textFrame("TSSE", f.software));
+  if (f.picture && f.picture.bytes.length) frames.push(frame("APIC", cat(Uint8Array.of(0), ascii(f.picture.mime), Uint8Array.of(0), Uint8Array.of(3), Uint8Array.of(0), f.picture.bytes)));   // 编码 0（ISO-8859-1）+ MIME + 0 + 图片类型 3（正面封面）+ 空描述 + 0 + 图片字节
   if (!frames.length) return new Uint8Array(0);
   const body = cat(...frames), n = body.length, h = new Uint8Array(10);
   h.set(ascii("ID3"), 0); h[3] = 3; h[4] = 0; h[5] = 0;

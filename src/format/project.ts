@@ -55,7 +55,7 @@ export const emptyExtras = (): Extras => ({ lounge: {}, sounds: {}, unknown: {},
 export const THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 /** 换封面（null = 去掉）。 */
 export const withThumbnail = (extras: Extras, png: Uint8Array | null): Extras => ({ ...extras, thumbnail: png });
-/** 定稿：记录 + mp3 字节一起进 extras（finalRev 跟着记录的 rev）。记录里的 fingerprint 由调用方先用 contentFingerprintOf 算好。 */
+/** 定稿：记录 + mp3 字节（带 ID3 标签和封面图的整份）一起进 extras（finalRev 跟着记录的 rev）。记录里的 fingerprint 由调用方先用 contentFingerprintOf 算好。 */
 export const withFinal = (extras: Extras, rec: FinalRecord, mp3: Uint8Array): Extras => ({ ...extras, final: rec, finalMp3: mp3, finalRev: Math.max(extras.finalRev, rec.rev) });
 /** 改稿：记录和 mp3 一起丢掉（下次存就没有那个 entry 了 = user「解锁之后mp3自动cache invalid」）；finalRev 留着。 */
 export const withoutFinal = (extras: Extras): Extras => (extras.final || extras.finalMp3 ? { ...extras, final: null, finalMp3: null } : extras);
@@ -85,7 +85,7 @@ export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; d
 /** 歌 → .mxl 的字节。定稿着的歌：出声内容的指纹必须和记录里的一样，不一样 = 抛（格式层的护栏，user 2026-10-16「定稿的时候得从多个窄接口上护栏住写入」）。 */
 export function saveMxl(a: SaveArgs): Uint8Array {
   const { out, fingerprint } = buildEntries(a);
-  if (a.extras.final && a.extras.final.fingerprint !== fingerprint) throw new Error("这首歌定稿了，出声的内容却变了：定稿着不能这样存。先「改稿」再改，或者撤销刚才的改动。");
+  if (a.extras.final && a.extras.final.fingerprint !== fingerprint) throw new Error("这首歌定稿了，内容却变了：定稿着不能这样存。先「改稿」再改，或者撤销刚才的改动。");
   const entries: Record<string, [Uint8Array, { level: 0 | 1 | 6 }]> = {};
   for (const [path, bytes] of Object.entries(out)) entries[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY || path === FINAL_MP3_ENTRY ? 0 : path.startsWith(SOUNDS) ? 1 : path.startsWith(REFERENCES_DIR) && !path.endsWith(".json") ? 0 : 6 }];   // 参考图本来就压过了：不再压   // mimetype 必须第一个、不压缩（插入顺序 = zip 里的顺序）；封面不压缩（尾读按 entry 名抓原始字节）；定稿 mp3 不压缩（本来就压过、歌库按 entry 名抓）；采样大、压不动，level 1 省时间
   return zipSync(entries);
@@ -167,7 +167,7 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   const jsonText = (o: unknown) => JSON.stringify(o, null, 2) + "\n";
   // 出声内容的指纹（src/format/final.ts）：和写出去的字符串同一份（纸的 MusicXML / score.json / 休息室 / 录音房 / 嵌的音源路径）
   const fpParts: FingerprintParts = { papers: Object.fromEntries(papers.map((p) => [p.id, strFromU8(files[p.file])])), scoreExt: jsonText(scoreExt),
-    lounge: Object.fromEntries(Object.entries(lounge).map(([id, r]) => [id, jsonText(r)])), studio: jsonText(studio), sounds: sounds.map(([p]) => p) };
+    lounge: Object.fromEntries(Object.entries(lounge).map(([id, r]) => [id, jsonText(r)])), studio: jsonText(studio), sounds: sounds.map(([p]) => p), thumbnail: a.extras.thumbnail };
   const fingerprint = contentFingerprint(fpParts);
   const { final: _f, finalRev: _r, core: _c, ...manifestRest } = (a.extras.manifest ?? {}) as Json;   // 定稿 / 核心那几个键按现在的 extras 写，不从读进来的总目录里带（改稿后 final 不能留着）
   const manifest: Json = { ...manifestRest, format: "moonsinger", version: FORMAT.manifest, app: a.app, saved: a.date,
@@ -614,7 +614,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     const papersRaw: Record<string, string> = {};
     for (const p of paperList) { const f = String(p.file ?? paperFile(String(p.id))); if (files[f]) papersRaw[String(p.id)] = strFromU8(files[f]); }
     const fp = rec && files[`${DIR}score.json`] && files[`${DIR}studio.json`]
-      ? contentFingerprint({ papers: papersRaw, scoreExt: strFromU8(files[`${DIR}score.json`]), lounge: rawLounge, studio: strFromU8(files[`${DIR}studio.json`]), sounds: Object.keys(extras.sounds) })
+      ? contentFingerprint({ papers: papersRaw, scoreExt: strFromU8(files[`${DIR}score.json`]), lounge: rawLounge, studio: strFromU8(files[`${DIR}studio.json`]), sounds: Object.keys(extras.sounds), thumbnail: files[THUMBNAIL_ENTRY] ?? null })
       : null;
     if (!rec) finalNotices.push("这首歌的定稿记录读不懂（别的版本写的？）：按没定稿打开。");
     else if (!mp3 || mp3.length !== rec.mp3.bytes) finalNotices.push(`定稿的 mp3 不在歌里或大小不对（记录 ${rec.mp3.bytes} 字节）：定稿作废，按没定稿打开。`);

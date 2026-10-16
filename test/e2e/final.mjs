@@ -23,6 +23,7 @@ for (const k of ["Digit1", "Digit3", "Digit5"]) { await p.keyboard.press(k); awa
 await p.waitForFunction(() => !!window.__moonsinger.identifier()); await saved();
 const id = await p.evaluate(() => window.__moonsinger.identifier());
 check(/\.mxl$/.test(id ?? "") && (await notes()) === "CEG", "歌库里新建 + 写了三个音", `${id} ${await notes()}`);
+await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ ...st, song: { ...st.song, title: "定稿前的名字" } }); }); await saved();
 check((await p.evaluate(() => window.__moonsinger.final())) === null, "还没定稿");
 // ☰ → 定稿… 面板 → 定稿
 await p.click("#setBtn"); await p.waitForTimeout(150);
@@ -56,12 +57,13 @@ check((await p.evaluate(() => JSON.stringify(window.__moonsinger.extras().studio
 await p.evaluate(() => window.__moonsinger.setChunk("whole")); await p.waitForTimeout(100);
 check((await p.evaluate(() => JSON.stringify(window.__moonsinger.extras().lounge))).indexOf('"whole"') < 0, "改歌手属性（分段唱）被拒");
 check((await p.evaluate(() => window.__moonsinger.final())) !== null, "拒了几次之后还是定稿着");
-// ③ 能改的：歌名（走 update，只改元信息）→ 存得进去；指纹不变
+// ③ 全冻（user 10-16「都冻同意，封面当然进」）：歌名也改不了；存的 mp3 带着 ID3 标签
 await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ ...st, song: { ...st.song, title: "定稿的歌" } }); });
 await p.waitForTimeout(100);
-check((await p.evaluate(() => window.__moonsinger.state().song.title)) === "定稿的歌" && (await p.evaluate(() => window.__moonsinger.final())) !== null, "歌名能改、定稿还在");
+check((await p.evaluate(() => window.__moonsinger.state().song.title)) !== "定稿的歌" && (await p.evaluate(() => window.__moonsinger.final())) !== null, "歌名被拒（全冻）、定稿还在");
+check((await p.evaluate(() => { const b = window.__moonsinger.finalMp3(); return b && String.fromCharCode(b[0], b[1], b[2]); })) === "ID3", "存的 mp3 带着 ID3 标签（发行的那一份）");
 await saved();
-check(!/•/.test(await title()), "改了歌名照样自动存（没被第 ④ 层拦）", await title());
+check(!/•/.test(await title()), "定稿后照样自动存（没被第 ④ 层拦）", await title());
 // ④ 存出去的字节：有 final.mp3 entry、manifest.final、指纹对得上（开回来还是定稿的）
 const saved1 = await p.evaluate(async (id) => { const m = window.__moonsinger, bl = await m.store().zip(id, { mode: "existing" }).open(); const bytes = new Uint8Array(await bl.arrayBuffer()); const o = m.open("x.mxl", bytes); return { list: m.zipList(bytes), manifest: JSON.parse(m.zipText(bytes, ".moonsinger/manifest.json")), final: o.extras.final, mp3: o.extras.finalMp3?.length ?? 0, notices: o.notices }; }, id);
 check(saved1.list.includes(".moonsinger/final.mp3") && saved1.list.indexOf(".moonsinger/final.mp3") < saved1.list.indexOf(".moonsinger/manifest.json"), "存出去的 zip 里有 final.mp3（排在总目录前面）", saved1.list.join(","));

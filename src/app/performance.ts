@@ -517,14 +517,14 @@ export function createPerformance(host: PerfHost) {
     progress("");
     return { bytes, secs: r.secs, sr: r.sr, kbps: Q.kbps, stereo: Q.stereo, roles, parts: r.timeline.tracks.map((t) => t.id) };
   }
-  /** 这份 mp3 该带的 ID3 标签（歌名 / 作者 / 许可 / 署名 / 软件；定稿的那份存的是裸 mp3，分享时现贴——歌名 / 作者栏改了标签跟着新）。 */
+  /** 这份 mp3 该带的 ID3 标签（歌名 / 作者 / 许可 / 署名 / 软件 + 封面图 APIC）。定稿时贴好一起存（存的 = 发行的那一份，连标签带图，user 10-16「都冻同意，封面当然进」）；没定稿的导出现贴。 */
   function mp3Tag(roles: readonly string[]): { tag: Uint8Array; lines: CreditLine[]; fellBack: boolean } {
-    // mp3 标签（user 2026-10-08「mp3能自动生成license吗」）：歌名 / 作者（作者栏第一行，用户自己写的）/ 这首歌的许可（用户选的；未声明或冲突 = 不写）/ 整段署名。
-    const { rights, fellBack } = exportRights(roles), { lines } = creditsOf(roles, rights);
-    return { tag: id3v2({ title: st().song.title || docName(), artist: (st().song.credits ?? "").split("\n").map((s) => s.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || undefined, software: `MoonSinger ${APP_VERSION}` }), lines, fellBack };
+    // mp3 标签（user 2026-10-08「mp3能自动生成license吗」）：歌名 / 作者（作者栏第一行，用户自己写的）/ 这首歌的许可（用户选的；未声明或冲突 = 不写）/ 整段署名 / 封面图（歌库卡片那张 PNG）。
+    const { rights, fellBack } = exportRights(roles), { lines } = creditsOf(roles, rights), cover = extras().thumbnail;
+    return { tag: id3v2({ title: st().song.title || docName(), artist: (st().song.credits ?? "").split("\n").map((s) => s.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || undefined, software: `MoonSinger ${APP_VERSION}`, ...(cover ? { picture: { mime: "image/png", bytes: cover } } : {}) }), lines, fellBack };
   }
   const mp3SizeText = (n: number) => (n < 1e6 ? `${Math.round(n / 1e3)} KB` : `${(n / 1e6).toFixed(1)} MB`);
-  /** 导出歌声（mp3）：定稿着 = 直接给定稿的那一份（不重渲），否则现渲。 */
+  /** 导出歌声（mp3）：定稿着 = 直接给定稿的那一份（原字节，标签和封面都是定稿那一刻的，不重渲不重贴），否则现渲 + 现贴标签。 */
   async function exportSong(o: { quality: Mp3Quality; scope: "all" | "segment" } = { quality: "standard", scope: "all" }): Promise<void> {
     if (exporting || preparing) return;
     exporting = true;
@@ -534,7 +534,7 @@ export function createPerformance(host: PerfHost) {
       const { tag, lines, fellBack } = mp3Tag(r.roles);
       // 文件名 = 名[-曲段]-YYYYMMDD-HHMM（v0.9.47；user「看一下wxhw还是weebpaint，导出的时候文件名应该还有导出的时间，也许还有防撞」= WeebPaint naming.ts「下载版本 = 名-YYYYMMDD-HHMM」；
       //   同一分钟再导 = 浏览器 / 系统自己补 (1)——WeebPaint 的规矩：撞名后缀只在能查占用的去处（云端）做，本地下载 / 分享查不了，交给系统）
-      const file = new File([tag as unknown as BlobPart, r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || "这一张")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
+      const file = new File([...(r.fromFinal ? [] : [tag as unknown as BlobPart]), r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || "这一张")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
       const Q = r.stereo ? "立体声" : "单声道";
       offerFile(file, "歌声导出好了", `${r.secs.toFixed(1)} 秒 · mp3 ${Q} ${r.kbps}k ${mp3SizeText(file.size)}${r.fromFinal ? "（定稿的那一份，没有重渲）" : ""}` +
         (fellBack ? `<div class="offer-msg">许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。</div>` : "") +

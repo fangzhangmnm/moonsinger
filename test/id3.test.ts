@@ -38,6 +38,15 @@ describe("mp3 标签（id3.ts）", () => {
     const long = "署名".repeat(500), t = id3v2({ comment: long });
     eq(parse(t).size, t.length - 10); eq(utf16(parse(t).frames.COMM.slice(8)), long);
   });
+  it("APIC 封面图：编码 0 + MIME + 0 + 类型 3 + 空描述 + 0 + 原字节（2026-10-16，定稿的 mp3 连封面一起发行）", () => {
+    const png = new Uint8Array([137, 80, 78, 71, 1, 2, 3]);
+    const { frames } = parse(id3v2({ title: "歌", picture: { mime: "image/png", bytes: png } }));
+    const f = frames.APIC; assert(!!f, "有 APIC");
+    const mime = "image/png";
+    eq(f[0], 0); eq(String.fromCharCode(...f.slice(1, 1 + mime.length)), mime); eq(f[1 + mime.length], 0); eq(f[2 + mime.length], 3); eq(f[3 + mime.length], 0);
+    eq(Array.from(f.slice(4 + mime.length)).join(","), Array.from(png).join(","), "图片字节原样");
+    eq(parse(id3v2({ title: "歌", picture: { mime: "image/png", bytes: new Uint8Array(0) } })).frames.APIC, undefined, "空图不写");
+  });
   it("firstUrl：许可文字里第一个网址", () => {
     eq(firstUrl("CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/"), "https://creativecommons.org/publicdomain/zero/1.0/");
     eq(firstUrl("© 2026 保留所有权利"), undefined);
