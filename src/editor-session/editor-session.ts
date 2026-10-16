@@ -26,6 +26,11 @@ export interface EditorAdapter {
   // 可选：某身份的字节**成功落盘**后 fire（本地写成即算；push 与否不影响）。app 域用来作废派生缓存
   //   （如画作缩略图）。本模块仍 content-blind——只报「name 的字节变了」，不知道变了什么。
   onSaved?(name: string): void;
+  // 可选（MoonSinger 2026-10-16 加，Claude Fable 5.1；W-38 定稿的第 ④ 层护栏 = store 接缝：user「定稿的时候得从多个窄接口上护栏住写入，甚至store级别」）：
+  //   落盘前问一句「现在能写吗」。返回 null = 能；返回一句话 = 这一轮不 encode、不 save，**脏留着**（绝不假清），下一轮再问；同一代编辑只 onRefused 一次。
+  //   本模块仍 content-blind：为什么不能写归 app 域（MoonSinger：定稿着、出声内容的指纹却变了）。
+  canPersist?(): string | null;
+  onRefused?(why: string): void;
 }
 
 /** editor-session 消费的 store 最小面（结构类型；真 sync-store 天然满足，测试可 mock）。 */
@@ -99,7 +104,8 @@ export function createEditorSession(config: EditorSessionConfig): EditorSession 
   let _editEpoch = 0;                              // 编辑代数：onChange 单调递增。persist 用「freeze 时的代数」判定
                                                    //   清脏是否合法——encode/save 的 await 窗口里进来的编辑绝不被
                                                    //   乐观清脏吞掉（QA 2026-08-21：busy 期键盘 undo 曾被静默宣布已落盘）。
-  let _pushPending = false;                        // 推-pending：自上次成功推后编辑过（驱动退出推；≠内存脏，flushLocal 清内存脏但留 push-pending）
+  let _pushPending = false;
+  let _refusedEpoch = -1;                          // canPersist 拒过的那一代编辑（同一代只说一次）                        // 推-pending：自上次成功推后编辑过（驱动退出推；≠内存脏，flushLocal 清内存脏但留 push-pending）
   let _saving = false;                             // 落盘中（防重入/竞态）
   let _timer: ReturnType<typeof setInterval> | null = null;
   let _idleTimer: ReturnType<typeof setTimeout> | null = null;
@@ -132,6 +138,7 @@ export function createEditorSession(config: EditorSessionConfig): EditorSession 
   async function persist(tryPush: boolean, force = false): Promise<void> {
     const need = force || (tryPush ? (_dirty || _pushPending) : _dirty);
     if (!_name || !need || _saving) return;
+    { const why = editor.canPersist?.(); if (why) { if (_refusedEpoch !== _editEpoch) { _refusedEpoch = _editEpoch; editor.onRefused?.(why); } return; } }   // 第 ④ 层护栏：app 说不能写 = 这一轮什么都不动、脏留着
     _saving = true;
     let takeCloudReload = false;   // save 途中用户选了「云端覆盖本地」→ 收尾必须整体重载（见 finally 之后）
     // ★ 失败回滚用（v417）：下面会**先**乐观清脏、**再** await save()。save() 抛异常时若不还原，

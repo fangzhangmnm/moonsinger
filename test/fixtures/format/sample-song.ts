@@ -4,7 +4,7 @@
 // 2026-10-13（Claude Fable 5.1；家族周账 F-18）：样本要把**每个可选字段都用上**，形状指纹 shapeOf 对数组取**所有元素的并集**（原来只照第一项）——
 //   不然 parts[].host / 轨的 bypass / 效果 / 发送 / 嵌的音源这些只在第二项、或样本没写的键，快照看不见，加了删了都不红。sampleExtras() 同理把休息室 / 录音房的可选项都摆上。
 import { TPQ, type Song, type Token, firstTrack } from "../../../src/score/song.ts";
-import { emptyExtras, withActive, withSf2Candidate, withTrack, withMaster, newBusId, withTranspose, withSingChunk, withGapSec, withRoleConcept, withCalibration, type Extras } from "../../../src/format/project.ts";
+import { emptyExtras, withActive, withSf2Candidate, withTrack, withMaster, newBusId, withTranspose, withSingChunk, withGapSec, withRoleConcept, withCalibration, withFinal, contentFingerprintOf, FINAL_MP3_ENTRY, type Extras } from "../../../src/format/project.ts";
 import type { FxV2 } from "../../../src/format/contract.ts";
 // 仓里不装 @types/node（同 test/format-guard.test.ts）：node:fs / node:crypto 走动态 import。
 const nodeFs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
@@ -83,6 +83,12 @@ export function sampleExtras(song: Song): Extras {
   ex = withTrack(ex, "m1", { bypass: true, chain: [comp], sends: [{ to: bus, gainDb: -12 }], to: bus });
   ex = withTrack(ex, "m2", { gainDb: -1.5, pan: -0.5 });
   ex = withMaster(ex, { gainDb: -1, limiter: false, chain: [gain] });
+  // 定稿（2026-10-16，W-38）：记录 + 一段假 mp3 字节（形状快照要盖到 manifest.final；指纹按这份样本现算，和 saveMxl 同一条管线）
+  const mp3 = new Uint8Array([0xff, 0xfb, 0x90, 0x64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+  const fingerprint = contentFingerprintOf({ song, hum, extras: ex, app: "sample", date: "2026-10-16T00:00:00.000Z" });
+  ex = withFinal(ex, { at: "2026-10-16T00:00:00.000Z", rev: 1, app: "sample", core: { version: "0.1.0", hash: "0000000000000000" }, fingerprint,
+    mp3: { path: FINAL_MP3_ENTRY, bytes: mp3.length, sha256: nodeCrypto.createHash("sha256").update(mp3).digest("hex"), secs: 4.2, sr: 44100, kbps: 128, stereo: true },
+    parts: ["P1", "P2"], issues: [{ part: "P2", why: "样本" }] }, mp3);
   return ex;
 }
 /** 比较用：键排序；小节线 / 记号的 id 是编辑器自己的（文件里不存），归零。 */

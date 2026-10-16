@@ -43,6 +43,8 @@
 | `src/ui/studio.ts` / plugins / scopes / spectrum / param-row / part-colors / metronome / render-progress；`src/engine/**` `src/gm/**` `src/singer/**` | @studio @play | 录音房、引擎、月读 |
 | `src/app-store.ts` / identifiers / encryption / `src/app/doc-file.ts` / `src/ui/sheets.ts` / song-cover / `src/editor-session/**` | @store | 文件、云、歌库 |
 | `src/format/**` | @store @export @score | 开 / 存 / 导出都过它；**守卫在单元里**（format-guard） |
+| `src/core/**`（无头渲染核心，2026-10-16） | @play @studio @export @store | 播放的准备 / 导出 / 定稿都过它；node 整首渲在单元里（core-render） |
+| `src/gallery-host.ts`、`src/editor-session/**` | @store | 歌库屏（封面 ▶ 放定稿的 mp3）、落盘前的门（canPersist） |
 | `src/export/**` | @export | PDF |
 | `src/app/reference-host.ts` / ref-transcode | @ref | |
 | `src/app/workspace.ts` | @modes @pad @score | 模式表 |

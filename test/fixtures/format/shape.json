@@ -19,6 +19,35 @@
         "score.json": "number",
         "studio.json": "number"
       },
+      "final": {
+        "app": "string",
+        "at": "string",
+        "core": {
+          "hash": "string",
+          "version": "string"
+        },
+        "fingerprint": "string",
+        "issues": [
+          {
+            "part": "string",
+            "why": "string"
+          }
+        ],
+        "mp3": {
+          "bytes": "number",
+          "kbps": "number",
+          "path": "string",
+          "secs": "number",
+          "sha256": "string",
+          "sr": "number",
+          "stereo": "boolean"
+        },
+        "parts": [
+          "string"
+        ],
+        "rev": "number"
+      },
+      "finalRev": "number",
       "format": "string",
       "saved": "string",
       "sounds": [

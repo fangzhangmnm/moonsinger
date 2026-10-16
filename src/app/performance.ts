@@ -5,10 +5,9 @@
 //   原文一字不改地搬过来（注释里的 user 原话与日期是搬家前的），只把 st / doc.extras / viewScope / busMuted 换成 host 的访问器；行为与 v0.12.1 相同。
 //   形状 = createPerformance(host) → 一组函数 + 几个 getter / setter（走带态是这次打开里有效的东西，不进歌）。
 import { APP_VERSION } from "../version.ts";
-import { headLen, DEFAULT_TIME, WHOLE, isTimed, type EditorState, type Song, type PartDef, timeline, tempoAt, songOnlyPaper, flattenPart } from "../score/song.ts";
+import { DEFAULT_TIME, WHOLE, isTimed, type EditorState, type Song, type PartDef, timeline, songOnlyPaper, flattenPart } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
-import { grooveCategory, followOf, timeMapOf } from "../score/groove.ts";
-import { midiOf } from "../score/pitch.ts";
+import { timeMapOf } from "../score/groove.ts";
 import { ScoreView } from "../ui/score-view.ts";
 import { Singer } from "../singer/client.ts";
 import { budgetFor, advise, trimOnSongSwitch, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
@@ -16,14 +15,14 @@ import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
-import { roleName, activeGm, activeInstrument, activeCalibrationDb, activeVelocity, activePerfSpec, activeTranspose, activeMaster, studioTrack, studioTracks, activeChain, type Extras, type GmCandidate, partLabels, activeId } from "../format/project.ts";
+import { roleName, activeGm, activeInstrument, type Extras, type GmCandidate, partLabels, activeId } from "../format/project.ts";
 import { performerCredits, licenseHints, creditsText, type CreditLine } from "../format/credits.ts";
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf } from "../performers/index.ts";
 import type { TrackSpec } from "../engine/studio.ts";
-import { buildTimeline, LEAD_IN, PRE_ROLL, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
+import { LEAD_IN, PRE_ROLL, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
+import { humOpt, audibleParts as audiblePartsOf, performerInfoOf, prepareParts, micOf as micOfCore, channelOf as channelOfCore, lowestMidiOf as lowestMidiCore, songBpm as songBpmOf, pushMix, timelineOf, renderSong, toMono, RENDER_SR, type RenderDeps, type RenderPlan } from "../core/render.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
-import { resolveChain } from "../ui/plugins.ts";
 import { fileSafe, stampedCopy } from "./names.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
 import { reportError, diagNote } from "./report-error.ts";
@@ -44,6 +43,8 @@ export interface PerfHost {
   ui: { progress(s: string): void; info(s: string): void; showError(s: string): void; renderBar: RenderProgress; playBtns(): HTMLElement[]; playIcon(playing: boolean): void; offerFile(file: File, title: string, msg: string): void; onIssues(list: readonly Issue[]): void };
   sounds: { resolveGmBytes(g: GmCandidate): Promise<Uint8Array>; ensureVowels(): Promise<void>; soundMemoryBytes(): number; modelBases(): string[] };
   credits: { creditsOf(roles: readonly string[], rights: string | undefined): { lines: CreditLine[] }; creditsBlock(lines: CreditLine[], title: string): string };
+  /** 定稿着的歌：定稿那份 mp3（裸的，没有 ID3）+ 它的参数 + 当时出了声的声部的角色（署名）；没定稿 = null。导出 mp3 时直接给这一份、不重渲。 */
+  final?(): { mp3: Uint8Array; secs: number; kbps: number; stereo: boolean; roles: string[] } | null;
 }
 
 /** 渲染哪一段：view = 跟视图（本段 / 全部，播放用）；all = 整首；segment = 光标所在的这一张纸（导出面板里选）。 */
@@ -65,58 +66,37 @@ export function createPerformance(host: PerfHost) {
   const st = () => host.state(), extras = () => host.extras(), pv = (id: string) => host.pv(id), curRole = () => host.curRole(), docName = () => host.docName();
   void info;
 
-  /** 整首唱时给核心的哼的参数：ん 闭嘴（N_m）、哼的字辅音至少 70 ms（核心默认关，Lab 命令行不受影响）；leadIn 明说（块按它摆）。 */
-  const humOpt = (): Record<string, unknown> => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });   // 歌级；小月相自己的旋钮在候选里（performers/tsukuyomi.ts info → ChunkPlan.opt）
+  // 哼的参数 humOpt / 出声的声部 / 出声参数 / 准备 / 通道换算 / 时间线 / 整首渲染 = 无头渲染核心 src/core/render.ts（2026-10-16 抽出；node 的 scripts/render-song.mjs 也调它）
   /** 播放 / 试听的范围跟着视图走：本段 = 只有光标所在的纸；全部 = 整首（导出面板另选）。user 2026-10-08「为什么在本段视图下播放还是播放全部了？」 */
   const playSong = (): Song => (host.viewScope() === "segment" ? songOnlyPaper(st().song, st().at.paper) : st().song);
   /** 光标所在声部压平后的一串 + 速度表（找人视图「听开头」、测试钩子用）。 */
   const curFlat = () => { const s = playSong(), order = songPlayOrder(s); return { tokens: flattenPart(s, st().at.part, { order }).tokens, map: timeMapOf(s, order) }; };
   /** 渲染哪一段：view = 跟视图（本段 / 全部，播放用）；all = 整首；segment = 光标所在的这一张纸（导出面板里选）。 */
   const songIn = (s: RenderScope): Song => (s === "all" ? st().song : s === "segment" ? songOnlyPaper(st().song, st().at.paper) : playSong());
-  const GM_SR = 44100;   // 导出的采样率
+  const GM_SR = RENDER_SR;   // 导出的采样率
   /** 出声的声部：有独奏的只出独奏的，否则出没静音的（user「不同的声部视图和出声应该分别可以solo和hide」）。 */
-  const audibleParts = (): PartDef[] => { const solo = st().song.parts.some((p) => pv(p.id).solo); return st().song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted)); };
+  const audibleParts = (): PartDef[] => audiblePartsOf(st().song, pv);
   /** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；没有 = 0 / 0。 */
-  function micOf(part: PartDef): { gainDb: number; pan: number } {
-    const m = studioTrack(extras(), part.mic);
-    return { gainDb: m?.gainDb ?? 0, pan: m?.pan ?? 0 };
-  }
-  /** 这条通道 = 麦克风增益 + 上场那位的响度校准（三层不连乘：音符力度 = 意图；校准 = 看得见能调的默认；推子 = dB）。 */
-  const channelOf = (part: PartDef): { gainDb: number; pan: number } => { const { gainDb, pan } = micOf(part); return { gainDb: gainDb + activeCalibrationDb(extras(), part.role), pan }; };
-  /** 通道参数推进录音房（播放时才乘 → 边放边调立刻听见；静音 / 独奏在 audibleParts 里筛，不在通道上）。 */
+  const micOf = (part: PartDef): { gainDb: number; pan: number } => micOfCore(extras(), part);
+  /** 这条通道 = 麦克风增益 + 上场那位的响度校准。 */
+  const channelOf = (part: PartDef): { gainDb: number; pan: number } => channelOfCore(extras(), part);
+  /** 这次打开里的渲染计划（核心认的形状）：歌 / 休息室 / 哼 / 出声的声部 / 效果全关 / 静音的混音轨。 */
+  const planOf = (song: Song, parts: readonly PartDef[], raw = mixBypass): RenderPlan => ({ song, extras: extras(), hum: st().song.hum, parts, mixBypass: raw, busMuted: host.busMuted() });
+  /** 核心要的注入：录音房 = 这个 app 的 StudioClient；音源 / 元音表 = 宿主的来源；块 = 这里的泵（awaitAllChunks）。 */
+  const deps: RenderDeps = { engine, sounds: { resolveGmBytes, ensureVowels }, sing: (tl) => awaitAllChunks(tl) };
   /** 效果全关（A/B，这次打开里有效、换歌复位；v0.10.18，user「混音台加一个暂时禁用所有魔法的toggle，不过fade和pan要不要留？（就是给你回到musescore/谱子本身用的，以及听差别）」）：
    *  所有插件格（歌手 / 混音轨 / 总轨）+ 所有发送不响；推子、声像、出到、总轨限幅留着（A/B 两边音量摆得一样，听的才是效果的差别）。导出照常带效果。 */
   let mixBypass = false;
-  function pushChannels(raw = mixBypass): void {
-    // 插件里「主线程换算」的参数（自动低切 = 这位最低的音、延迟跟速度）在这里换成录音房认的数（src/ui/plugins.ts resolveChain；v0.10.8）
-    const bpm = songBpm(), ctx = (lowestMidi: number | null) => ({ lowestMidi, bpm }), fx = <T,>(x: T[]): T[] => (raw ? [] : x);
-    for (const p of st().song.parts) { const t = studioTrack(extras(), p.mic); engine.channel(p.id, { ...channelOf(p), mute: pv(p.id).muted, solo: pv(p.id).solo, chain: fx(resolveChain(t?.chain ?? [], ctx(lowestMidiOf(p.id)))), sends: fx(t?.sends ?? []), to: t?.to ?? "master" }); }
-    engine.buses(studioTracks(extras()).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, gainDb: b.gainDb, pan: b.pan, chain: b.bypass ? [] : fx(resolveChain(b.chain, ctx(null))), to: b.to, sends: fx(b.sends), ...(host.busMuted().has(b.id) ? { mute: true } : {}) })));   // 混音轨旁通 = 插件全跳过，推子 / 发送照旧   // 总线也能出到 / 发给别的总线（v0.10.9）
-    const m = activeMaster(extras()); engine.master({ ...m, chain: fx(resolveChain(m.chain, ctx(null))) });
-  }
+  /** 通道参数推进录音房（换算在核心 mixParamsOf：自动低切 / 延迟跟速度；播放时才乘 → 边放边调立刻听见）。 */
+  function pushChannels(raw = mixBypass): void { pushMix(engine, planOf(st().song, st().song.parts, raw), pv); }
   /** 这位歌手全曲最低的音（自动低切用；没有音 = null）。 */
-  function lowestMidiOf(partId: string): number | null {
-    let lo: number | null = null;
-    for (const pp of st().song.papers) for (const t of pp.tracks[partId] ?? []) if (t.kind === "note" && t.pitch) for (const q of [t.pitch, ...(t.chord ?? [])]) { const m = midiOf(q); if (lo === null || m < lo) lo = m; }
-    return lo;
-  }
+  const lowestMidiOf = (partId: string): number | null => lowestMidiCore(st().song, partId);
   /** 歌开头的速度（延迟「跟速度」用）。 */
-  function songBpm(): number { const p = st().song.papers[0], t = p ? p.tracks[st().song.parts.find((x) => p.tracks[x.id])?.id ?? ""] : undefined; return t ? tempoAt(t, headLen(t)) : 90; }
-  /** 上场那位的出声参数（时间线不碰 Extras；src/engine/timeline.ts）。SoundFont 的预设下标要库先进录音房（prepareBanks）。 */
-  function performerInfo(part: PartDef): PerformerInfo {
-    const role = part.role, eng = (activeInstrument(extras(), role)?.engine ?? "unknown") as PerformerInfo["engine"], plugin = performerOf(eng), cat = grooveCategory(plugin?.grooveCategory ?? null, activeGm(extras(), role));
-    const own = plugin ? plugin.info({ extras: extras(), role, presetIndex: (sha, bank, program) => engine.presetIndex(sha, bank, program) }) : { gm: null, chunk: "phrase" as const };   // 这位自己的那部分（gm / 分段唱 / 着力点）归插件
-    return { engine: eng, plugin, spec: activePerfSpec(extras(), role), velocity: activeVelocity(extras(), role), transpose: activeTranspose(extras(), role), follow: (s) => followOf(s, cat), chain: activeChain(extras(), role), ...own };
-  }
-  /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
-  async function prepareBanks(parts: readonly PartDef[]): Promise<{ part: string; cand: string; why: string }[]> {
-    const errs: { part: string; cand: string; why: string }[] = [];
-    for (const part of parts) {
-      const plugin = performerOf(activeInstrument(extras(), part.role)?.engine); if (!plugin) continue;   // 没人上场：时间线会报
-      try { await plugin.prepare({ extras: extras(), role: part.role, engine, resolveGmBytes, ensureVowels }); } catch (e) { errs.push({ part: part.id, cand: activeId(extras(), part.role), why: (e as Error).message }); }
-    }
-    return errs;
-  }
+  const songBpm = (): number => songBpmOf(st().song);
+  /** 上场那位的出声参数（核心 performerInfoOf；SoundFont 的预设下标要库先进录音房）。 */
+  const performerInfo = (part: PartDef): PerformerInfo => performerInfoOf(extras(), part, (sha, bank, program) => engine.presetIndex(sha, bank, program));
+  /** 这些声部上场那位各自的出声准备（核心 prepareParts → 插件）。返回报错清单。 */
+  const prepareBanks = (parts: readonly PartDef[]) => prepareParts(parts, extras(), deps);
   // ── 一套机制、四个出口（ADR-0004 §2.2½）：一张 issues 清单；出口 = 谱上角标 / |▶ 角标 + 清单面板 / 清单变了才一条 toast / 导出面板一行（后三个在 main.ts）──
   let issues: Issue[] = [], issuesKey = "";
   const prepErrs = new Map<string, { cand: string; kind: IssueKind; why: string }>();   // 上一次准备（播放 / 导出）里出不了声的：按声部记，带着当时上场的候选 id——换了人就不算
@@ -277,7 +257,7 @@ export function createPerformance(host: PerfHost) {
   async function prepare(scope: RenderScope, o: { chunks?: boolean; raw?: boolean } = {}): Promise<Timeline | null> {
     const parts = audibleParts(), song = songIn(scope);
     const errs = await prepareBanks(parts);   // 各位的准备（库 / 元音表）都在插件里
-    const tl = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st().song.hum, singOpt: humOpt() });
+    const tl = timelineOf(planOf(song, parts), (sha, bank, program) => engine.presetIndex(sha, bank, program));
     // 出不了声的进清单（§2.2½）：这次准备过的声部先清掉旧账，再按结果记；toast 只在清单变了时说（refreshIssues），不再每按一次播放弹一次
     for (const p of parts) prepErrs.delete(p.id);
     for (const e of errs) prepErrs.set(e.part, { cand: e.cand, kind: "sound", why: e.why });
@@ -494,7 +474,7 @@ export function createPerformance(host: PerfHost) {
       if (engine.playing || preparing || exporting) return;
       const parts = audibleParts(); if (!parts.some((p) => performerOf(activeInstrument(extras(), p.role)?.engine)?.sound === "chunks")) return;   // 只有慢引擎（按句出块）要预唱
       const song = songIn("view");
-      const tl = buildTimeline({ song, order: songPlayOrder(song), parts, info: performerInfo, hum: st().song.hum, singOpt: humOpt() });
+      const tl = timelineOf(planOf(song, parts), (sha, bank, program) => engine.presetIndex(sha, bank, program));
       if (!tl.chunks.length) return;
       pruneChunks(tl);
       // 从下一次开播会从的地方唱起：暂停着 = 暂停处，否则 = 起点（v0.9.18 起开播不再看光标；原来按光标附近唱，起点在别处时开头那句排不上）
@@ -519,30 +499,46 @@ export function createPerformance(host: PerfHost) {
     const r = st().song.rights; if (!r) return { rights: undefined, fellBack: false };
     return licenseHints(r, performerCredits(extras(), roles)).length ? { rights: undefined, fellBack: true } : { rights: r, fellBack: false };
   }
+  /** 整首 / 这一张纸渲染成 mp3 字节（**没有 ID3 标签**；导出 / 定稿共用；走无头渲染核心 renderSong：准备 → 时间线 → 块 → 混）。
+   *  出不了声的声部照旧进清单（§2.2½）、其余照混；一个都放不了 = 抛。 */
+  async function renderMp3(o: { quality: Mp3Quality; scope: "all" | "segment" }): Promise<{ bytes: Uint8Array; secs: number; sr: number; kbps: number; stereo: boolean; roles: string[]; parts: string[] }> {
+    if (engine.playing) stopPlay();
+    const parts = audibleParts(), song = songIn(o.scope);
+    progress("准备…");
+    const r = await renderSong(planOf(song, parts, false), { ...deps, sing: async (tl) => { pruneChunks(tl); await awaitAllChunks(tl); } },
+      { sr: GM_SR, pv, progress: (m, f) => { if (f === undefined) { progress(m); return; } if (f === 0) { progress(m); renderBar.start(1); } renderBar.frac(f); },
+        onPrepared: (errs, tl) => { for (const p of parts) prepErrs.delete(p.id); for (const e of errs) prepErrs.set(e.part, { cand: e.cand, kind: "sound", why: e.why }); for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); } refreshIssues(); } })
+      .finally(() => { renderBar.end(); if (mixBypass) pushChannels(); });   // 效果全关（A/B）不影响导出；导完按开关重推
+    const roles = st().song.parts.filter((p) => r.timeline.tracks.some((t) => t.id === p.id)).map((p) => p.role);   // 真出了声的声部（署名推演）
+    progress("编 mp3…");
+    const Q = MP3_QUALITY[o.quality];
+    const left = Q.stereo ? r.left : toMono(r.left, r.right), right = Q.stereo ? r.right : null;   // 小文件：左右平均成单声道
+    const bytes = await encodeMp3(left, right, r.sr, Q.kbps);
+    progress("");
+    return { bytes, secs: r.secs, sr: r.sr, kbps: Q.kbps, stereo: Q.stereo, roles, parts: r.timeline.tracks.map((t) => t.id) };
+  }
+  /** 这份 mp3 该带的 ID3 标签（歌名 / 作者 / 许可 / 署名 / 软件；定稿的那份存的是裸 mp3，分享时现贴——歌名 / 作者栏改了标签跟着新）。 */
+  function mp3Tag(roles: readonly string[]): { tag: Uint8Array; lines: CreditLine[]; fellBack: boolean } {
+    // mp3 标签（user 2026-10-08「mp3能自动生成license吗」）：歌名 / 作者（作者栏第一行，用户自己写的）/ 这首歌的许可（用户选的；未声明或冲突 = 不写）/ 整段署名。
+    const { rights, fellBack } = exportRights(roles), { lines } = creditsOf(roles, rights);
+    return { tag: id3v2({ title: st().song.title || docName(), artist: (st().song.credits ?? "").split("\n").map((s) => s.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || undefined, software: `MoonSinger ${APP_VERSION}` }), lines, fellBack };
+  }
+  const mp3SizeText = (n: number) => (n < 1e6 ? `${Math.round(n / 1e3)} KB` : `${(n / 1e6).toFixed(1)} MB`);
+  /** 导出歌声（mp3）：定稿着 = 直接给定稿的那一份（不重渲），否则现渲。 */
   async function exportSong(o: { quality: Mp3Quality; scope: "all" | "segment" } = { quality: "standard", scope: "all" }): Promise<void> {
     if (exporting || preparing) return;
     exporting = true;
     try {
-      if (engine.playing) stopPlay();
-      const tl = await prepare(o.scope, { raw: false }); if (!tl) { progress(""); return; }   // 导出 = 面板里选的范围（默认整首；播放才跟视图范围）；效果全关（A/B）不影响导出
-      progress("混音…"); renderBar.start(1);
-      const m = await engine.renderOffline({ tracks: tl.tracks, range: tl.range, loop: false }, { sr: GM_SR, progress: (f) => renderBar.frac(f) }).finally(() => { renderBar.end(); if (mixBypass) pushChannels(); });   // 和播放同一个类、同一份数学
-      const roles = st().song.parts.filter((p) => tl.tracks.some((t) => t.id === p.id)).map((p) => p.role);   // 真出了声的声部（署名推演）
-      progress("编 mp3…");
-      const Q = MP3_QUALITY[o.quality];
-      let left = m.left, right: Float32Array | null = m.right;
-      if (!Q.stereo) { left = new Float32Array(m.left.length); for (let i = 0; i < left.length; i++) left[i] = (m.left[i] + m.right[i]) / 2; right = null; }   // 小文件：左右平均成单声道
-      const secs = left.length / m.sr, bytes = await encodeMp3(left, right, m.sr, Q.kbps);
-      // mp3 标签（user 2026-10-08「mp3能自动生成license吗」）：歌名 / 作者（作者栏第一行，用户自己写的）/ 这首歌的许可（用户选的；未声明或冲突 = 不写）/ 整段署名。
-      const { rights, fellBack } = exportRights(roles), { lines } = creditsOf(roles, rights);
-      const tag = id3v2({ title: st().song.title || docName(), artist: (st().song.credits ?? "").split("\n").map((s) => s.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || undefined, software: `MoonSinger ${APP_VERSION}` });
+      const fin = host.final?.();
+      const r = fin && o.scope === "all" ? { bytes: fin.mp3, secs: fin.secs, kbps: fin.kbps, stereo: fin.stereo, roles: fin.roles, fromFinal: true } : { ...(await renderMp3(o)), fromFinal: false };
+      const { tag, lines, fellBack } = mp3Tag(r.roles);
       // 文件名 = 名[-曲段]-YYYYMMDD-HHMM（v0.9.47；user「看一下wxhw还是weebpaint，导出的时候文件名应该还有导出的时间，也许还有防撞」= WeebPaint naming.ts「下载版本 = 名-YYYYMMDD-HHMM」；
       //   同一分钟再导 = 浏览器 / 系统自己补 (1)——WeebPaint 的规矩：撞名后缀只在能查占用的去处（云端）做，本地下载 / 分享查不了，交给系统）
-      const file = new File([tag as unknown as BlobPart, bytes], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || "这一张")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
-      progress("");
-      offerFile(file, "歌声导出好了", `${secs.toFixed(1)} 秒 · mp3 ${Q.label} ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` +
+      const file = new File([tag as unknown as BlobPart, r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || "这一张")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
+      const Q = r.stereo ? "立体声" : "单声道";
+      offerFile(file, "歌声导出好了", `${r.secs.toFixed(1)} 秒 · mp3 ${Q} ${r.kbps}k ${mp3SizeText(file.size)}${r.fromFinal ? "（定稿的那一份，没有重渲）" : ""}` +
         (fellBack ? `<div class="offer-msg">许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。</div>` : "") +
-      (issues.length ? `<div class="offer-msg issue-warn">这几条轨没出声，mp3 里没有它们：${escHtml(issuesText(issues))}</div>` : "") +
+        (!r.fromFinal && issues.length ? `<div class="offer-msg issue-warn">这几条轨没出声，mp3 里没有它们：${escHtml(issuesText(issues))}</div>` : "") +
         creditsBlock(lines, "署名 · 已写进 mp3 的标签"));
     } catch (e) {
       progress(""); showError(`导出失败：${(e as Error).message}`);
@@ -570,7 +566,7 @@ export function createPerformance(host: PerfHost) {
   function onSongSwitch(): void { engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; chunkPlans = new Map(); singer.cancelPending(); singer.cancelInflight(); trimLanesForNewSong(); }
 
   return {
-    humOpt, resetLatencyLog, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, prepare, renderMixForTest, playRange, tickOfCaret, barHeadTick, startPlayback, playPause, resumePlay, pausePlay, replay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, trimLanesForNewSong, onSongSwitch, jumpPlaybackToPaper, previewTrack,
+    humOpt, resetLatencyLog, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, prepare, renderMixForTest, playRange, tickOfCaret, barHeadTick, startPlayback, playPause, resumePlay, pausePlay, replay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, renderMp3, mp3Tag, resourceSnapshot, trimLanesForNewSong, onSongSwitch, jumpPlaybackToPaper, previewTrack,
     budget: BUDGET, TURN_LEADS,
     issues: (): readonly Issue[] => issues, issueOf: (part: string): Issue | null => issues.find((i) => i.part === part) ?? null, issuesText, refreshIssues,
     get loopOn() { return loopOn; }, get playTl() { return playTl; }, get preparing() { return preparing; }, get paused() { return paused; }, get startMark() { return startMark; }, get exporting() { return exporting; },

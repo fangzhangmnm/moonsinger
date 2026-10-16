@@ -38,6 +38,8 @@ import "./sing-core-defaults.test.ts";
 import "./timeline.test.ts";
 import "./scheduler.test.ts";
 import "./speech-cache.test.ts";
+import "./final.test.ts";
+import "./core-render.test.ts";
 import "./master.test.ts";
 import "./fx.test.ts";
 import "./pack.test.ts";

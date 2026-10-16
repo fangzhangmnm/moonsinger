@@ -30,6 +30,14 @@ export interface ManifestV2 {
   derived: string[];                   // 派生件（zip 根下的路径；自家读时无视、存档时重新生成）：["score.musicxml"]
   /** 2026-10-07 加（可选）：歌里嵌的音源字节（契约 §10.2 样本类 by value）。path 相对 zip 根（`.moonsinger/sounds/<sha256>.sf2`）。 */
   sounds?: { path: string; sha256: string; bytes: number }[];
+  /** 2026-10-16 加（可选，不升版本；Claude Fable 5.1，W-38）：渲染核心的版本 + 哈希，**每次保存都记**（user 2026-10-13「核心的版本号和hash反而是每次保存的时候都要记的。ui壳无所谓」）。
+   *  version 人定（src/core/version.ts CORE_VERSION）；hash = 构建时按核心源码（src/core src/engine src/singer src/performers src/score src/gm src/format + vendor/world vendor/tsf + assets/preview）算的 sha256 前 16 位（scripts/core-hash.mjs）。 */
+  core?: { version: string; hash: string };
+  /** 2026-10-16 加（可选）：定稿过几次（改稿不减）。 */
+  finalRev?: number;
+  /** 2026-10-16 加（可选）：定稿记录（src/format/final.ts FinalRecord）——有它 = 这首歌定稿着：`.moonsinger/final.mp3` 是定稿那一刻渲染的 mp3（不压缩；歌库按 entry 名抓来直接听），
+   *  fingerprint = 出声内容的指纹（contentFingerprint）；读的时候对不上 / mp3 不在 = 定稿作废（说一声）。改稿 = 这个键和 entry 一起消失。老版本 app 读到 = 不认的键原样写回、entry 原样写回。 */
+  final?: unknown;
 }
 
 /** `.moonsinger/score.json` 第 2 版：纸的顺序表 + 声部并集（存法 B，§6¾）。按声部 id / 音符 id / 小节序号挂注，不复制谱的内容。 */

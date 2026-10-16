@@ -69,7 +69,9 @@ STUDIO=$(hashed ./src/engine/studio-processor.ts studio-worklet); echo "[build] 
 #   Pages 给 styles.css 的缓存头是 max-age=600，dev 的 network-first 走浏览器 HTTP 缓存）。index.html 写 styles.css?v=<哈希> → 新地址绕过 HTTP 缓存；
 #   哈希 --define 进主 bundle → 样式一改主 bundle 的哈希也变 → service worker 换新缓存名、重新预缓存 styles.css。SW 本身不用改（取缓存时 ignoreSearch）。
 CSS_HASH=$(cat styles.css vendor/internal-css/*.css | sha256sum | cut -c1-12)   # 自家样式 + vendored 的包样式一起算（包样式升级也要换地址）
-MAIN=$(hashed "$ENTRY" moonsinger "--define:__SINGER_WORKER__=\"$SINGER\"" "--define:__MP3_WORKER__=\"$MP3\"" "--define:__STUDIO_WORKLET__=\"$STUDIO\"" "--define:__CSS_HASH__=\"$CSS_HASH\""); echo "[build] ✓ dist/$MAIN"
+# 渲染核心的代码哈希（src/core/version.ts CORE_HASH；每首歌保存时记进 manifest.core、定稿时记进 final.core——user 2026-10-13「核心的版本号和hash反而是每次保存的时候都要记的」）
+CORE_HASH=$(node scripts/core-hash.mjs); echo "[build] 核心哈希 $CORE_HASH"
+MAIN=$(hashed "$ENTRY" moonsinger "--define:__SINGER_WORKER__=\"$SINGER\"" "--define:__MP3_WORKER__=\"$MP3\"" "--define:__STUDIO_WORKLET__=\"$STUDIO\"" "--define:__CSS_HASH__=\"$CSS_HASH\"" "--define:__CORE_HASH__=\"$CORE_HASH\""); echo "[build] ✓ dist/$MAIN"
 sed -i -E "s|src=\"\./dist/moonsinger(-[a-z0-9]+)?\.mjs\"|src=\"./dist/$MAIN\"|" index.html
 grep -q "$MAIN" index.html || { echo "[build] ✗ index.html 没改到主 bundle 的新文件名" >&2; exit 1; }
 sed -i -E "s|href=\"\./styles\.css(\?v=[a-z0-9]+)?\"|href=\"./styles.css?v=$CSS_HASH\"|" index.html

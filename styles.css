@@ -956,3 +956,25 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 .strip.bus.bypassed .fx-chip, .strip.bus.bypassed .fx-inline { opacity: .45; text-decoration: line-through; }
 /* 合租（v0.10.24）：歌手牌里「挂在谁上」的下拉 */
 .track-card .tc-sel { height: 30px; max-width: 100%; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; padding: 0 6px; }
+
+/* ═══ 定稿 / 改稿（W-38，2026-10-16 Claude Fable 5.1；user「写好了之后加锁，会渲染mp3，之后只能听…gallery可以试听mp3不用开app」）═══
+   第 ① 层护栏（界面）：顶栏文件名旁一枚「定稿 N」；只有「听」能亮；乐器页的卡、混音台的条都灰着不接；别的层在 src/format/final.ts 头注释。 */
+.final-badge { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 9px; font-size: 11px; font-weight: 600; letter-spacing: .04em; line-height: 16px; vertical-align: 1px; color: #fff; background: var(--accent); white-space: nowrap; }
+body.doc-final .mode-seg [data-mode]:not([data-mode="listen"]) { opacity: .4; }
+body.doc-final .inst-page .ip-card { pointer-events: none; opacity: .72; }
+body.doc-final .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
+body.doc-final .studio .studio-strips, body.doc-final .studio .fx-panel, body.doc-final .studio .mix-menu { pointer-events: none; opacity: .72; }
+body.doc-final .studio .finder-bar::after { content: "定稿了：混音锁着（三条杠里「改稿」解锁）"; margin-left: 8px; font-size: 12px; color: var(--muted); }
+body.doc-final .inst-page .finder-bar::after { content: "定稿了：锁着（三条杠里「改稿」解锁）"; margin-left: 8px; font-size: 12px; color: var(--muted); }
+/* 歌库封面上的 ▶（宿主的覆盖槽本身不吃指针事件，只给这颗钮放行；定稿了的才露出来，正在放的描边） */
+.ms-cover-play { display: none; position: absolute; right: 8px; bottom: 23px; width: 34px; height: 34px; border-radius: 50%; border: 0; padding: 0; pointer-events: auto; cursor: pointer; align-items: center; justify-content: center; color: #fff; background: color-mix(in srgb, var(--accent) 88%, transparent); box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.ms-cover-play.is-final { display: flex; }
+.ms-cover-play.is-playing { box-shadow: 0 0 0 3px #fff, 0 2px 8px rgba(0, 0, 0, .25); }
+.ms-cover-play .ico { width: 18px; height: 18px; }
+.ms-cover-play:hover { filter: brightness(1.08); }
+/* 歌库底边的迷你播放条 */
+.ms-player { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-top: 1px solid var(--line); background: var(--panel); font-size: 13px; }
+.ms-player[hidden] { display: none; }
+.ms-player .ms-player-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.ms-player .ms-player-time { color: var(--muted); font-variant-numeric: tabular-nums; }
+.ms-player .ms-player-loop.is-on { color: var(--accent); border-color: var(--accent); }

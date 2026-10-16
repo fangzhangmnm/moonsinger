@@ -16,6 +16,8 @@ import { resolveSongClefs, displayStates, withAutoOttava } from "../score/clef.t
 import { songPlayOrder } from "../score/arrange.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
 import { FORMAT, type Dynamic, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
+import { FINAL_MP3_ENTRY, contentFingerprint, parseFinalRecord, type FinalRecord, type FingerprintParts } from "./final.ts";
+export { FINAL_MP3_ENTRY, type FinalRecord };
 import { migrate } from "./migrate/index.ts";
 import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
@@ -42,11 +44,22 @@ export interface Extras {
   /** 封面 = `Thumbnails/thumbnail.png` 这个 entry 本身（家族既定做法 WXHW ADR-0012 = ORA 同款路径；PNG ≤ 256²、≤ 70 KB；
    *  **永远最后一个 entry、不压缩**——书架靠 store getPeek 尾读一次命中，不是最后就会被别的东西挤出尾窗）。null = 没有封面（书架画自动封面）。 */
   thumbnail: Uint8Array | null;
+  /** 定稿（src/format/final.ts；W-38）：总目录 `manifest.final` 那条记录 + `.moonsinger/final.mp3` 的字节。null = 没定稿 / 改稿了。
+   *  定稿着 = 出声的内容锁住：saveMxl 算出来的指纹必须等于记录里的，不等就抛（格式层那道护栏）。 */
+  final: FinalRecord | null;
+  finalMp3: Uint8Array | null;
+  /** 这首歌定稿过几次（`manifest.finalRev`；改稿不减，下次定稿 = +1）。 */
+  finalRev: number;
 }
-export const emptyExtras = (): Extras => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], thumbnail: null });
+export const emptyExtras = (): Extras => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], thumbnail: null, final: null, finalMp3: null, finalRev: 0 });
 export const THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 /** 换封面（null = 去掉）。 */
 export const withThumbnail = (extras: Extras, png: Uint8Array | null): Extras => ({ ...extras, thumbnail: png });
+/** 定稿：记录 + mp3 字节一起进 extras（finalRev 跟着记录的 rev）。记录里的 fingerprint 由调用方先用 contentFingerprintOf 算好。 */
+export const withFinal = (extras: Extras, rec: FinalRecord, mp3: Uint8Array): Extras => ({ ...extras, final: rec, finalMp3: mp3, finalRev: Math.max(extras.finalRev, rec.rev) });
+/** 改稿：记录和 mp3 一起丢掉（下次存就没有那个 entry 了 = user「解锁之后mp3自动cache invalid」）；finalRev 留着。 */
+export const withoutFinal = (extras: Extras): Extras => (extras.final || extras.finalMp3 ? { ...extras, final: null, finalMp3: null } : extras);
+export const isFinal = (extras: Extras): boolean => extras.final != null;
 
 /** 新歌默认的两个候选：月读完整 / 月读元音版（轻量）。
  *  显示名 2026-10-13 起叫「小月相」/「小月相（元音）」（W-28，家规「共享叫法」）；旧歌里按值存着的「月读」原样留着——打开时迁移还是显示时换，等 user 定。 */
@@ -66,9 +79,21 @@ const isVoice = (i: InstrumentV2 | null): i is Extract<InstrumentV2, { hum: Hum 
 const roleOf = (extras: Extras, role: string, hum: Hum): Json => structuredClone(extras.lounge[role] ?? defaultRole(hum, role));
 const nextKey = (ids: string[], prefix: string) => `${prefix}${Math.max(0, ...ids.map((x) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x)?.[1] ?? 0))) + 1}`;
 
-export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; date: string; view?: Record<string, unknown> | null; references?: Record<string, Uint8Array> }   // references = 参考窗目录（路径都在 REFERENCES_DIR 下）   // 歌名 = song.title（可不填）；hum = 编辑器里的哼的字（写进月读候选的乐器配置）
-/** 歌 → .mxl 的字节。 */
+export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; date: string; view?: Record<string, unknown> | null; references?: Record<string, Uint8Array>;
+  /** 渲染核心的版本 + 哈希（src/core/version.ts；每次保存都记——user 2026-10-13「核心的版本号和hash反而是每次保存的时候都要记的。ui壳无所谓」）。不给 = 不写（测试 / 旧调用方）。 */
+  core?: { version: string; hash: string } }   // references = 参考窗目录（路径都在 REFERENCES_DIR 下）   // 歌名 = song.title（可不填）；hum = 编辑器里的哼的字（写进月读候选的乐器配置）
+/** 歌 → .mxl 的字节。定稿着的歌：出声内容的指纹必须和记录里的一样，不一样 = 抛（格式层的护栏，user 2026-10-16「定稿的时候得从多个窄接口上护栏住写入」）。 */
 export function saveMxl(a: SaveArgs): Uint8Array {
+  const { out, fingerprint } = buildEntries(a);
+  if (a.extras.final && a.extras.final.fingerprint !== fingerprint) throw new Error("这首歌定稿了，出声的内容却变了：定稿着不能这样存。先「改稿」再改，或者撤销刚才的改动。");
+  const entries: Record<string, [Uint8Array, { level: 0 | 1 | 6 }]> = {};
+  for (const [path, bytes] of Object.entries(out)) entries[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY || path === FINAL_MP3_ENTRY ? 0 : path.startsWith(SOUNDS) ? 1 : path.startsWith(REFERENCES_DIR) && !path.endsWith(".json") ? 0 : 6 }];   // 参考图本来就压过了：不再压   // mimetype 必须第一个、不压缩（插入顺序 = zip 里的顺序）；封面不压缩（尾读按 entry 名抓原始字节）；定稿 mp3 不压缩（本来就压过、歌库按 entry 名抓）；采样大、压不动，level 1 省时间
+  return zipSync(entries);
+}
+/** 出声内容的指纹（定稿那一刻算一次记进记录；之后每次存对一次）。和 saveMxl 同一条管线、同一份字符串。 */
+export function contentFingerprintOf(a: SaveArgs): string { return buildEntries(a).fingerprint; }
+/** 歌 → zip 里的每个 entry（顺序 = zip 里的顺序）+ 出声内容的指纹。 */
+function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerprint: string } {
   const song = a.song;
   const lounge: Record<string, Json> = { ...a.extras.lounge };
   for (const part of song.parts) {
@@ -138,19 +163,27 @@ export function saveMxl(a: SaveArgs): Uint8Array {
   // 嵌的音源：只写还有候选引用着的（换了音源 = 旧块从歌里丢掉；§10.2）
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => (x < y ? -1 : 1));
-  const manifest: Json = { ...(a.extras.manifest ?? {}), format: "moonsinger", version: FORMAT.manifest, app: a.app, saved: a.date,
+  const json = (o: unknown) => strToU8(JSON.stringify(o, null, 2) + "\n");
+  const jsonText = (o: unknown) => JSON.stringify(o, null, 2) + "\n";
+  // 出声内容的指纹（src/format/final.ts）：和写出去的字符串同一份（纸的 MusicXML / score.json / 休息室 / 录音房 / 嵌的音源路径）
+  const fpParts: FingerprintParts = { papers: Object.fromEntries(papers.map((p) => [p.id, strFromU8(files[p.file])])), scoreExt: jsonText(scoreExt),
+    lounge: Object.fromEntries(Object.entries(lounge).map(([id, r]) => [id, jsonText(r)])), studio: jsonText(studio), sounds: sounds.map(([p]) => p) };
+  const fingerprint = contentFingerprint(fpParts);
+  const { final: _f, finalRev: _r, core: _c, ...manifestRest } = (a.extras.manifest ?? {}) as Json;   // 定稿 / 核心那几个键按现在的 extras 写，不从读进来的总目录里带（改稿后 final 不能留着）
+  const manifest: Json = { ...manifestRest, format: "moonsinger", version: FORMAT.manifest, app: a.app, saved: a.date,
     files: { "score.json": FORMAT.score, "studio.json": FORMAT.studio, ...Object.fromEntries(Object.entries(lounge).map(([id, r]) => [`lounge/${id}.json`, Number(r.version ?? 1)])),
       ...Object.fromEntries(papers.map((p) => [`papers/${p.id}.musicxml`, 0])) },   // 0 = 标准件（MusicXML），不是我们的版本号
     derived: ["score.musicxml"],
-    sounds: sounds.map(([path, b]) => ({ path, sha256: path.slice(SOUNDS.length).replace(/\.sf2$/, ""), bytes: b.length })) };
-  const json = (o: unknown) => strToU8(JSON.stringify(o, null, 2) + "\n");
+    sounds: sounds.map(([path, b]) => ({ path, sha256: path.slice(SOUNDS.length).replace(/\.sf2$/, ""), bytes: b.length })),
+    ...(a.core ? { core: { version: a.core.version, hash: a.core.hash } } : {}),   // 渲染核心的版本 + 哈希（每次存都记）
+    ...(a.extras.finalRev > 0 ? { finalRev: a.extras.finalRev } : {}),
+    ...(a.extras.final && a.extras.finalMp3 ? { final: a.extras.final } : {}) };
   const rootfiles = [`<rootfile full-path="score.musicxml" media-type="application/vnd.recordare.musicxml+xml"/>`,
     ...a.extras.rootfiles.map((r) => `<rootfile full-path="${r.path}" media-type="${r.mediaType}"/>`)].join("\n    ");
   const out: Record<string, Uint8Array> = {};
   out["mimetype"] = strToU8(MIMETYPE);
   out["META-INF/container.xml"] = strToU8(`<?xml version="1.0" encoding="UTF-8"?>\n<container>\n  <rootfiles>\n    ${rootfiles}\n  </rootfiles>\n</container>\n`);
   out["score.musicxml"] = strToU8(flat.xml);
-  out[`${DIR}manifest.json`] = json(manifest);
   out[`${DIR}score.json`] = json(scoreExt);
   for (const [path, bytes] of Object.entries(files)) out[path] = bytes;
   for (const [id, r] of Object.entries(lounge)) out[`${DIR}lounge/${id}.json`] = json(r);
@@ -160,11 +193,12 @@ export function saveMxl(a: SaveArgs): Uint8Array {
     if (!path.startsWith(REFERENCES_DIR)) throw new Error(`参考窗的文件不在 ${REFERENCES_DIR} 下：${path}`);
     out[path] = bytes;
   }
-  for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY) out[path] = bytes;
+  if (a.extras.final && a.extras.finalMp3) out[FINAL_MP3_ENTRY] = a.extras.finalMp3;   // 定稿 mp3：大，排在大件后面
+  for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY && path !== FINAL_MP3_ENTRY) out[path] = bytes;
+  // 总目录和封面排在最后：歌库尾读一次（store getPeek 128 KB 尾窗）既拿到封面也拿得到总目录（里面有定稿记录 = 卡片上能直接听）
+  out[`${DIR}manifest.json`] = json(manifest);
   if (a.extras.thumbnail) out[THUMBNAIL_ENTRY] = a.extras.thumbnail;   // 封面最后一个（尾读）
-  const entries: Record<string, [Uint8Array, { level: 0 | 1 | 6 }]> = {};
-  for (const [path, bytes] of Object.entries(out)) entries[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY ? 0 : path.startsWith(SOUNDS) ? 1 : path.startsWith(REFERENCES_DIR) && !path.endsWith(".json") ? 0 : 6 }];   // 参考图本来就压过了：不再压   // mimetype 必须第一个、不压缩（插入顺序 = zip 里的顺序）；封面不压缩（尾读按 entry 名抓原始字节）；采样大、压不动，level 1 省时间
-  return zipSync(entries);
+  return { out, fingerprint };
 }
 
 /** stem = 打开的文件叫什么（去掉扩展名；文件名和歌名分开：歌名在 song.title，可不填）。 */
@@ -553,10 +587,12 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   const parse = (p: string): Json => { try { return JSON.parse(strFromU8(files[p])) as Json; } catch { throw new Error(`${p} 读不懂（文件坏了？）`); } };
   const manifest = parse(`${DIR}manifest.json`); known.add(`${DIR}manifest.json`);
   const references: Record<string, Uint8Array> = {};   // 参考窗：整个目录原样拿出来（库去解）
+  const finalNotices: string[] = [];   // 定稿记录读的时候要说的话（finish 的 notices 前面）
   for (const [p, b] of Object.entries(files)) if (p.startsWith(REFERENCES_DIR) && !p.endsWith("/")) { references[p] = b; known.add(p); }
   const newer = (what: string, v: unknown, mine: number) => { if (Number(v) > mine) throw new Error(`这首歌是更新版本的 MoonSinger 存的（${what} 第 ${v} 版，这一版只认到第 ${mine} 版），打开再存会丢东西，所以没有打开。请先更新 app。`); };
   newer("总目录", manifest.version, FORMAT.manifest);
   extras.manifest = migrate("manifest", manifest);
+  const rawLounge: Record<string, string> = {};   // 指纹用：文件里的原文（读进来的和写出去的同一份字符串）
   let scoreExt: Json | null = null;
   if (files[`${DIR}score.json`]) {
     const s0 = parse(`${DIR}score.json`); known.add(`${DIR}score.json`); newer("谱的扩展", s0.version, FORMAT.score);
@@ -564,10 +600,27 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   }
   for (const p of Object.keys(files)) {
     const m = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p);
-    if (m) { const r = parse(p); newer(`休息室「${r.name ?? m[1]}」`, r.version, FORMAT.lounge); extras.lounge[m[1]] = migrate("lounge", r); known.add(p); }
+    if (m) { const r = parse(p); newer(`休息室「${r.name ?? m[1]}」`, r.version, FORMAT.lounge); extras.lounge[m[1]] = migrate("lounge", r); known.add(p); rawLounge[m[1]] = strFromU8(files[p]); }
   }
   if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer("录音房", s.version, FORMAT.studio); extras.studio = migrate("studio", s); }
   for (const p of Object.keys(files)) if (p.startsWith(SOUNDS) && !p.endsWith("/")) { extras.sounds[p] = files[p]; known.add(p); }   // 嵌的音源字节（整份留着；存档只写还引用着的）
+  // 定稿（src/format/final.ts）：总目录里的记录 + mp3 entry。记录不像样 / entry 不在 / 大小不对 / 指纹对不上（定稿后被旧版 app 或别的软件改过）= 定稿作废、说一声、mp3 不带着走
+  extras.finalRev = Math.max(0, Math.floor(Number(manifest.finalRev ?? 0))) || 0;
+  if (files[FINAL_MP3_ENTRY]) known.add(FINAL_MP3_ENTRY);
+  if (manifest.final !== undefined) {
+    const rec = parseFinalRecord(manifest.final), mp3 = rec ? files[rec.mp3.path] : undefined;
+    if (rec && rec.mp3.path !== FINAL_MP3_ENTRY) known.add(rec.mp3.path);
+    const paperList = ((scoreExt?.papers as Json[] | undefined) ?? []);
+    const papersRaw: Record<string, string> = {};
+    for (const p of paperList) { const f = String(p.file ?? paperFile(String(p.id))); if (files[f]) papersRaw[String(p.id)] = strFromU8(files[f]); }
+    const fp = rec && files[`${DIR}score.json`] && files[`${DIR}studio.json`]
+      ? contentFingerprint({ papers: papersRaw, scoreExt: strFromU8(files[`${DIR}score.json`]), lounge: rawLounge, studio: strFromU8(files[`${DIR}studio.json`]), sounds: Object.keys(extras.sounds) })
+      : null;
+    if (!rec) finalNotices.push("这首歌的定稿记录读不懂（别的版本写的？）：按没定稿打开。");
+    else if (!mp3 || mp3.length !== rec.mp3.bytes) finalNotices.push(`定稿的 mp3 不在歌里或大小不对（记录 ${rec.mp3.bytes} 字节）：定稿作废，按没定稿打开。`);
+    else if (fp !== rec.fingerprint) finalNotices.push(`这首歌定稿后被改过（可能是旧版 app 或别的软件改的）：定稿作废，那份 mp3 不算数了。要的话改完再定稿一次。`);
+    else { extras.final = rec; extras.finalMp3 = mp3; }
+  }
   // 纸：按 score.json 的顺序表逐张读；第 1 版存的（迁移后 papers = [p1]，文件指向 papers/p1.musicxml）包里没那份 = 读 score.musicxml（文件级迁移在这里做，migrate() 只管 JSON）
   const list = ((scoreExt?.papers as Json[] | undefined) ?? [{ id: "p1", file: paperFile("p1"), manualBars: {}, unwritten: [] }]);
   const reads: ReadScore[] = [];
@@ -588,7 +641,8 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
   const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null);
-  return { ...finish(reads, song, pruneSounds(extras), ours, name), references };
+  const o = finish(reads, song, pruneSounds(extras), ours, name);
+  return { ...o, notices: [...finalNotices, ...o.notices], references };
 }
 
 /** 读进来的几张纸 → 歌。parts = score.json 的声部并集（没有 = 按纸里出现的声部 P1…）。

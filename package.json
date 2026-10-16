@@ -12,6 +12,7 @@
     "serve": "bash scripts/serve.sh",
     "smoke": "node test/shell-smoke.mjs && node test/file-smoke.mjs",
     "e2e": "npm run build && node test/e2e/run.mjs",
+    "render": "node scripts/render-song.mjs",
     "e2e:changed": "npm run build && node test/e2e/run.mjs --changed",
     "test:full": "npm run check && node test/e2e/run.mjs --smoke"
   },

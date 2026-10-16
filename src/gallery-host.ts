@@ -6,7 +6,8 @@
 import { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } from "../vendor/vue/vue.esm-browser.prod.js";
 import { createGallery, humanSize, type CreateGalleryDeps, type GalleryDocHost, type VueRuntime, type GItem, type TileInfo, type VerbStore, type DataFaceStore, type Gallery, type GalleryView, type AsideKind, type AsideScope } from "@internal/gallery";
 import { requireStore, auth, hasStore, isSignedIn } from "./app-store.ts";
-import { THUMBNAIL_ENTRY } from "./format/project.ts";
+import { THUMBNAIL_ENTRY, FINAL_MP3_ENTRY } from "./format/project.ts";
+import { parseFinalRecord, type FinalRecord } from "./format/final.ts";
 import { identifiers } from "./identifiers.ts";
 import { openConfirmSheet, openInputSheet, openChoiceSheet, withBusy } from "./ui/sheets.ts";
 import { iconHtml } from "./ui/icon.ts";
@@ -39,6 +40,10 @@ const KV_FOLDER = "gallery-folder";
 const KV_SCENE = "last-scene";
 /** 封面尾读（ADR-0012）：Thumbnails/thumbnail.png 是歌 zip 的最后一个 entry（存的时候 STORE 不压）；尾窗 128 KB（central directory + 封面 ≤ 70 KB 一次命中）。 */
 const THUMB_PEEK_BYTES = 128 * 1024;
+/** 定稿（W-38；user 2026-10-13「gallery可以试听mp3不用开app」）：总目录 `.moonsinger/manifest.json` 排在封面前面 = 同一个尾窗里，按 entry 名抓来看有没有 `final`；
+ *  有 = 卡片右下角一个 ▶，点了按 entry 名抓 `.moonsinger/final.mp3`（不压缩；本地 = Blob.slice，云端 = byte-range，不整份下载）放给你听。
+ *  只在内存里记「这首（这一版字节）定稿了没」，不另开持久缓存（家规：派生缓存逐案批）。 */
+const MANIFEST_ENTRY = ".moonsinger/manifest.json";
 const THUMB_DB = "moonsinger-thumbs";
 // 包内 zh 默认是 WeebPaint 口吻；会露面的几条换成歌库口吻（其余沿用）。key 必须是包的 GalleryTextKey（类型守着）。
 const TEXT: Partial<Record<Parameters<NonNullable<NonNullable<CreateGalleryDeps["text"]>["t"]>>[0], string>> = {
@@ -101,7 +106,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       tileOverlayHtml: (id: string, item?: TileInfo) => coverHtml(identifiers.parse(id)?.stem ?? id, {
         sizeText: item?.size != null ? humanSize(item.size) : undefined,
         editedText: item?.lastModified ? `改于 ${new Date(item.lastModified).toLocaleString()}` : undefined,
-      }),
+      }) + (item && !item.aside ? playButtonHtml(id, item) : ""),
     },
     policy: {
       isImage: () => false,
@@ -116,6 +121,113 @@ export function initGalleryHost(d: GalleryHostDeps) {
     text: { lang: "zh", t: (key) => TEXT[key] },
   };
   let gallery: Gallery | null = null;
+  // ── 封面上能听（定稿的歌；W-38）：▶ 在覆盖槽里（包给的槽不吃指针事件，宿主 CSS 只给这颗钮放行），capture 阶段拦住卡片自己的「点 = 打开」──
+  type FinalPeek = { token: string; rec: FinalRecord | null };
+  const finals = new Map<string, FinalPeek>();   // 身份 → 这一版字节（lastModified:size）定稿了没；只在内存
+  const tokenOf = (item: TileInfo) => `${item.lastModified ?? 0}:${item.size ?? 0}`;
+  function playButtonHtml(id: string, item: TileInfo): string {
+    const k = finals.get(id), state = k && k.token === tokenOf(item) ? (k.rec ? "is-final" : "is-none") : "";
+    return `<button type="button" class="ms-cover-play ${state}" data-ms-play="${esc(id)}" data-ms-token="${esc(tokenOf(item))}" title="${k?.rec ? `听定稿的 mp3（第 ${k.rec.rev} 版，${(k.rec.mp3.secs).toFixed(0)} 秒）` : "这首还没定稿"}" aria-label="听">${iconHtml("play")}</button>`;
+  }
+  const esc = (x: string) => x.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+  /** 这首的总目录里有没有定稿记录（尾读一次；云端不可达 = 抛 → 这次不记，下次再问）。 */
+  async function peekFinal(id: string): Promise<FinalRecord | null> {
+    const b = await zipFile(id).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: MANIFEST_ENTRY, source: "local" });
+    if (!b) return null;
+    try { return parseFinalRecord((JSON.parse(await b.text()) as { final?: unknown }).final); } catch { return null; }
+  }
+  let resolving = false;
+  const pendingIds = new Set<string>();
+  /** 扫一遍卡片：没问过（或字节变了）的问一问，问完把 class 打到钮上（Vue 重画时 tileOverlayHtml 再按 finals 现算）。一次一个，歌库看不见就停。 */
+  function scanFinals(): void {
+    for (const b of mountEl.querySelectorAll<HTMLElement>("[data-ms-play]")) {
+      const id = b.dataset.msPlay!, tok = b.dataset.msToken ?? "", k = finals.get(id);
+      if (k && k.token === tok) { b.classList.toggle("is-final", !!k.rec); b.classList.toggle("is-none", !k.rec); if (k.rec) b.title = `听定稿的 mp3（第 ${k.rec.rev} 版，${k.rec.mp3.secs.toFixed(0)} 秒）`; }
+      else pendingIds.add(id);
+    }
+    void drainFinals();
+  }
+  async function drainFinals(): Promise<void> {
+    if (resolving) return;
+    resolving = true;
+    try {
+      for (;;) {
+        const id = pendingIds.values().next().value; if (!id) break;
+        pendingIds.delete(id);
+        if (fullEl.hidden) break;
+        const btn = mountEl.querySelector<HTMLElement>(`[data-ms-play="${CSS.escape(id)}"]`); if (!btn) continue;
+        const tok = btn.dataset.msToken ?? "";
+        try { finals.set(id, { token: tok, rec: await peekFinal(id) }); }
+        catch (e) { diagNote("gallery", `peek final ${id}: ${(e as Error).message}`); continue; }   // 够不着（离线的云端歌）：不记，下次再问
+        const k = finals.get(id)!;
+        for (const b of mountEl.querySelectorAll<HTMLElement>(`[data-ms-play="${CSS.escape(id)}"]`)) { b.classList.toggle("is-final", !!k.rec); b.classList.toggle("is-none", !k.rec); if (k.rec) b.title = `听定稿的 mp3（第 ${k.rec.rev} 版，${k.rec.mp3.secs.toFixed(0)} 秒）`; }
+      }
+    } finally { resolving = false; }
+  }
+  let scanTimer = 0;
+  new MutationObserver(() => { if (fullEl.hidden) return; clearTimeout(scanTimer); scanTimer = window.setTimeout(scanFinals, 120); }).observe(mountEl, { childList: true, subtree: true });
+  // ── 迷你播放条（歌库底边）：▶ / ⏸、歌名、时间、循环、✕；Media Session 让锁屏 / 耳机键也能控（后台能不能放 iPad 上没验）──
+  const playerEl = document.createElement("div");
+  playerEl.className = "ms-player"; playerEl.hidden = true;
+  playerEl.innerHTML = `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="放 / 暂停">${iconHtml("pause")}</button>` +
+    `<span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span>` +
+    `<button type="button" class="btn ms-player-loop" data-p="loop" title="单曲循环">循环</button>` +
+    `<button type="button" class="btn" data-p="close" title="停">${iconHtml("x")}</button>`;
+  fullEl.append(playerEl);
+  const audio = new Audio(); audio.preload = "auto";
+  let playingId: string | null = null, objectUrl: string | null = null;
+  const fmtTime = (s: number) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00");
+  const drawPlayer = () => {
+    playerEl.querySelector<HTMLElement>(".ms-player-time")!.textContent = `${fmtTime(audio.currentTime)} / ${fmtTime(audio.duration)}`;
+    playerEl.querySelector<HTMLElement>(".ms-player-toggle")!.innerHTML = iconHtml(audio.paused ? "play" : "pause");
+    playerEl.querySelector<HTMLElement>(".ms-player-loop")!.classList.toggle("is-on", audio.loop);
+    for (const b of mountEl.querySelectorAll<HTMLElement>("[data-ms-play]")) b.classList.toggle("is-playing", b.dataset.msPlay === playingId && !audio.paused);
+  };
+  audio.addEventListener("timeupdate", drawPlayer); audio.addEventListener("play", drawPlayer); audio.addEventListener("pause", drawPlayer); audio.addEventListener("loadedmetadata", drawPlayer);
+  audio.addEventListener("error", () => { status("这份 mp3 放不了（文件坏了？）", true); stopPlayer(); });
+  function stopPlayer(): void {
+    audio.pause(); audio.removeAttribute("src"); audio.load();
+    if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+    playingId = null; playerEl.hidden = true; drawPlayer();
+    try { if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none"; } catch { /* 没有也行 */ }
+  }
+  /** 点了封面上的 ▶：定稿的 = 抓 mp3 放；没定稿 = 说一声。 */
+  async function playTile(id: string): Promise<void> {
+    if (playingId === id) { if (audio.paused) void audio.play(); else audio.pause(); return; }
+    const k = finals.get(id);
+    if (k && !k.rec) { status("这首还没定稿：打开它，三条杠里「定稿…」——定稿后封面上就能直接听。"); return; }
+    const stem = identifiers.parse(id)?.stem ?? id;
+    try {
+      const b = await withBusy(`取「${stem}」的 mp3…`, async () => {
+        const rec = k?.rec ?? (await peekFinal(id));
+        if (!rec) { finals.set(id, { token: finals.get(id)?.token ?? "", rec: null }); return null; }
+        const blob = await zipFile(id).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: rec.mp3.path, source: "local" });
+        if (!blob || blob.size !== rec.mp3.bytes) throw new Error(`mp3 没取到（${blob ? `${blob.size} ≠ ${rec.mp3.bytes}` : "空"}）`);
+        return { rec, blob };
+      });
+      if (!b) { status("这首还没定稿：打开它，三条杠里「定稿…」——定稿后封面上就能直接听。"); scanFinals(); return; }
+      stopPlayer();
+      objectUrl = URL.createObjectURL(new Blob([b.blob], { type: "audio/mpeg" }));
+      audio.src = objectUrl; playingId = id;
+      playerEl.querySelector<HTMLElement>(".ms-player-title")!.textContent = `${stem} · 定稿 ${b.rec.rev}`;
+      playerEl.hidden = false;
+      try {
+        if ("mediaSession" in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({ title: stem, album: "MoonSinger" });
+          navigator.mediaSession.setActionHandler("play", () => { void audio.play(); }); navigator.mediaSession.setActionHandler("pause", () => audio.pause()); navigator.mediaSession.setActionHandler("stop", () => stopPlayer());
+        }
+      } catch { /* 没有 Media Session 也行 */ }
+      await audio.play();
+      diagNote("gallery", `play final ${id} (${b.blob.size} B)`);
+    } catch (e) { reportError(e, "warning"); status(`放不了：${(e as Error).message ?? String(e)}`, true); stopPlayer(); }
+  }
+  // capture 阶段先于卡片的 @click（包用 Vue 挂在卡片上）：按到 ▶ = 只放，不打开那首
+  mountEl.addEventListener("click", (e) => { const b = (e.target as HTMLElement).closest<HTMLElement>("[data-ms-play]"); if (!b) return; e.stopPropagation(); e.preventDefault(); void playTile(b.dataset.msPlay!); }, true);
+  mountEl.addEventListener("pointerdown", (e) => { if ((e.target as HTMLElement).closest("[data-ms-play]")) e.stopPropagation(); }, true);   // 包的「手指按住不重绘」门也别被 ▶ 触发
+  playerEl.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-p]")?.dataset.p; if (!v) return;
+    if (v === "toggle") { if (audio.paused) void audio.play(); else audio.pause(); } else if (v === "loop") { audio.loop = !audio.loop; drawPlayer(); } else if (v === "close") stopPlayer();
+  });
   /** 新建文件夹（2026-10-10 user「gallery怎么没接新建文件夹的功能，这个应该只是接线吧，不过小心一点」）：照 WeebPaint gallery-shell 的接法——
    *  名字先查合法（OneDrive 不收的字符）→ 锁屏 → store 的唯一占用检查（files.occupied：同名文件 / 夹占着就说）→ store.files.newFolder（库内单飞；离线也能建，回线补建）→ 刷新歌库。
    *  只建在现在这个夹里；app 不碰云端、不自己拼请求。 */
@@ -194,6 +306,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
     d.onOpened?.();
   }
   function close(): void {
+    stopPlayer();   // 离开歌库 = 停（编辑器里有自己的走带）
     fullEl.hidden = true;
     delete document.body.dataset.mode;
     deviceKvSet(KV_SCENE, null);
@@ -210,7 +323,10 @@ export function initGalleryHost(d: GalleryHostDeps) {
     emptyAside: (kind: AsideKind, scope: AsideScope) => { const h = ensureMounted().handle; if (kind === "trash") h.emptyTrash(scope); else h.emptyBackup(scope); },
     currentFolder: () => gallery?.handle.getFolder() ?? (deviceKvGet(KV_FOLDER) ?? ""),
     /** 封面变了（存了新封面）：丢掉这首歌的缩略图缓存，下次露面重取。 */
-    invalidateThumb: (id: string) => { void gallery?.thumbs?.invalidate(id); },
+    invalidateThumb: (id: string) => { void gallery?.thumbs?.invalidate(id); finals.delete(id); },
+    /** 封面上在放的那首（E2E 用）。 */
+    playing: () => (playingId && !audio.paused ? playingId : null),
+    finalOf: (id: string) => finals.get(id)?.rec ?? null,
   };
 }
 export type GalleryHost = ReturnType<typeof initGalleryHost>;

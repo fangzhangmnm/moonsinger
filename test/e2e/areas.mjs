@@ -20,13 +20,13 @@ export const AREAS = {
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "landscape-widgets", "modes", "dyn-levels", "sing-experiments"],
   // 歌库 / 云 / 文件 / 念缓存
-  store: ["store", "sync", "speech-store", "save-keys"],
+  store: ["store", "sync", "speech-store", "save-keys", "final"],
   // 导出
-  export: ["pdf", "pdf-wysiwyg", "issues"],
+  export: ["pdf", "pdf-wysiwyg", "issues", "final"],
   // 参考窗
   ref: ["reference"],
   // 模式与底座（workspace.ts 那张表）
-  modes: ["modes", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys"],
+  modes: ["modes", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys", "final"],
 };
 
 /** 不是测试的 E2E 目录成员（运行器和分区守卫都跳过）。 */
@@ -59,6 +59,9 @@ export const AREA_OF_PATH = [
   [/^src\/performers\//, ["play", "studio", "pad"]],
   // 唱歌 / 播放胶水（刀 1 从 main.ts 抽出）；音源 / 模型来源接缝（刀 4）：找声音 / 下载 / 弱引用解析 → 放 + 乐器页
   [/^src\/app\/performance\.ts$|^src\/sources\//, ["play", "studio"]],
+  // 无头渲染核心（2026-10-16）：播放的准备 / 导出 / 定稿都过它；歌库的封面试听在 gallery-host
+  [/^src\/core\//, ["play", "studio", "export", "store"]],
+  [/^src\/gallery-host\.ts$|^src\/editor-session\//, ["store"]],
   [/^src\/(engine|gm|singer)\//, ["studio", "play"]],
   [/^src\/app\/(names)\.ts$/, ["studio"]],
   // 文件 / 云 / 歌库 / 格式
