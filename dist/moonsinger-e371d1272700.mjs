@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.20-2026-10-16";
+var APP_VERSION = "v0.12.21-2026-10-16";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -3996,8 +3996,8 @@ function toggleSelDot(st2) {
     for (let k2 = 0; k2 <= 6; k2++) if (d3 === WHOLE / 2 ** k2) return true;
     return false;
   };
-  const timed = tr(st2).slice(st2.sel.from, st2.sel.to).filter(isTimed), dotted = (d3) => d3 % 3 === 0 && plain2(d3 * 2 / 3);
-  const allDotted = timed.length > 0 && timed.every((t10) => dotted(t10.dur));
+  const timed2 = tr(st2).slice(st2.sel.from, st2.sel.to).filter(isTimed), dotted = (d3) => d3 % 3 === 0 && plain2(d3 * 2 / 3);
+  const allDotted = timed2.length > 0 && timed2.every((t10) => dotted(t10.dur));
   return mapSelDur(st2, (d3) => allDotted ? d3 * 2 / 3 : plain2(d3) ? d3 * 1.5 : d3);
 }
 function setTuplet(st2, n10) {
@@ -13962,6 +13962,7 @@ function createSafeResolve(cfg) {
 // node_modules/@internal/store/dist/push.js
 var passBusy = (_l, fn) => fn();
 var isConflict = (e10) => !!e10 && (e10.name === "CloudConflictError" || e10.status === 412);
+var pushRetryDefaults = { maxAttempts: 4, backoffMs: 200, exponential: false };
 function retriable(e10) {
   const x2 = e10;
   const s10 = x2?.status;
@@ -13970,8 +13971,8 @@ function retriable(e10) {
   return (s10 == null || s10 === 429 || s10 >= 500 && s10 <= 599) && x2?.name !== "CloudConflictError" && x2?.name !== "CloudNameCollisionError";
 }
 function createPush(cfg) {
-  const { cloud, head, seal, safeResolve, serialize, editVersion, busy = passBusy, maxAttempts = 4, backoffMs = 200, sleep = (ms) => new Promise((r10) => setTimeout(r10, ms)) } = cfg;
-  async function doPush(name, { encode: encode2, getEditVersion = editVersion, onConflict, adopt, surfaceCollision = false }) {
+  const { cloud, head, seal, safeResolve, serialize, editVersion, busy = passBusy, maxAttempts = pushRetryDefaults.maxAttempts, backoffMs = pushRetryDefaults.backoffMs, exponential = pushRetryDefaults.exponential, sleep = (ms) => new Promise((r10) => setTimeout(r10, ms)) } = cfg;
+  async function doPush(name, { encode: encode2, getEditVersion = editVersion, onConflict, adopt, surfaceCollision = false, onProgress }) {
     const ifMatch = head.ifMatchFor(name);
     const v0 = getEditVersion();
     const e02 = head.editCount?.(name) ?? 0;
@@ -13983,7 +13984,7 @@ function createPush(cfg) {
       while (attempt < maxAttempts) {
         attempt++;
         try {
-          const { item } = await cloud.push(name, bytes, { baseEtag: ifMatch, encrypted: isEnc });
+          const { item } = await cloud.push(name, bytes, { baseEtag: ifMatch, encrypted: isEnc, onProgress });
           if (!(item && item.eTag))
             return { status: "deferred", dirtyAfter: true };
           const dirtyAfter = editedSince();
@@ -14006,7 +14007,7 @@ function createPush(cfg) {
           }
           if (retriable(e10) && attempt < maxAttempts) {
             lastErr = e10;
-            await sleep(backoffMs * attempt);
+            await sleep(exponential ? Math.min(backoffMs * 2 ** (attempt - 1), 15e3) : backoffMs * attempt);
             continue;
           }
           throw e10;
@@ -14024,12 +14025,32 @@ function createPush(cfg) {
 // node_modules/@internal/store/dist/freshness.js
 var passBusy2 = (_l, fn) => fn();
 function createFreshness(cfg) {
-  const { cloud, head, safeResolve, busy: _busy = passBusy2 } = cfg;
+  const { cloud, head, safeResolve, busy: _busy = passBusy2, hints, lineageFromDurable = true } = cfg;
+  const adoptDurableBase = (name, localDirty) => {
+    if (!lineageFromDurable)
+      return;
+    if (head.isDirtyAnywhere(name) || (localDirty ? localDirty() : false))
+      return;
+    const d3 = head.seenBase(name);
+    if (d3 != null)
+      head.markSeen(name, d3);
+  };
+  const hintedInSync = (name) => {
+    const h2 = hints?.peek(name);
+    const base3 = head.seenBase(name);
+    return !!h2 && base3 != null && h2.etag === base3;
+  };
   const pullFailText = (reason) => reason === "invalid-cloud-bytes" ? "\u4E91\u7AEF\u5185\u5BB9\u6CA1\u901A\u8FC7\u6821\u9A8C\uFF0C\u53EF\u80FD\u662F\u516C\u5171 Wi-Fi \u767B\u5F55\u9875\u52AB\u6301\u6216\u6587\u4EF6\u635F\u574F" : reason === "cloud-vanished" ? "\u4E91\u7AEF\u6587\u4EF6\u521A\u521A\u88AB\u79FB\u52A8\u6216\u5220\u9664" : reason === "backup-failed" ? "\u672C\u5730\u7559\u5E95\u5931\u8D25\uFF0C\u4E3A\u4FDD\u6570\u636E\u6CA1\u6709\u8986\u76D6" : reason;
   async function open(name, opts = {}) {
     const { isOnline = () => true, probe, onNewer, adopt, localDirty, busy = passBusy2 } = opts;
-    if (!isOnline())
+    if (!isOnline()) {
+      adoptDurableBase(name, localDirty);
       return { source: "local", reason: "offline" };
+    }
+    if (hintedInSync(name)) {
+      head.markSeen(name, head.seenBase(name));
+      return { source: "local", reason: "in-sync" };
+    }
     return busy("cloud.checking", async () => {
       let meta;
       if (probe) {
@@ -14037,16 +14058,21 @@ function createFreshness(cfg) {
           cloud.fetchMeta(name).then((m2) => ({ k: "meta", m: m2 }), (e10) => ({ k: "err", e: e10 })),
           Promise.resolve(probe).then(() => ({ k: "skip" }))
         ]);
-        if (raced.k === "skip")
+        if (raced.k === "skip") {
+          adoptDurableBase(name, localDirty);
           return { source: "local", reason: "skipped" };
-        if (raced.k === "err")
+        }
+        if (raced.k === "err") {
+          adoptDurableBase(name, localDirty);
           return { source: "local", reason: "cloud-error" };
+        }
         meta = raced.m;
       } else {
         try {
           meta = await cloud.fetchMeta(name);
         } catch (e10) {
           reportStoreError(e10, "log");
+          adoptDurableBase(name, localDirty);
           return { source: "local", reason: "cloud-error" };
         }
       }
@@ -14075,11 +14101,15 @@ function createFreshness(cfg) {
     });
   }
   async function refresh(name, opts = {}) {
-    const { isOnline = () => true, adopt, localDirty, onReplaceStart, probe, busy = passBusy2 } = opts;
+    const { isOnline = () => true, adopt, localDirty, onReplaceStart, probe, busy = passBusy2, trustHints = true } = opts;
     if (!isOnline())
       return { status: "offline" };
     if (head.isDirtyAnywhere(name) || localDirty && localDirty())
       return { status: "dirty-skip" };
+    if (trustHints && hintedInSync(name)) {
+      head.markSeen(name, head.seenBase(name));
+      return { status: "in-sync" };
+    }
     return busy("cloud.checking", async () => {
       let meta;
       try {
@@ -14115,6 +14145,31 @@ function createFreshness(cfg) {
     });
   }
   return { open, refresh };
+}
+
+// node_modules/@internal/store/dist/fresh-hints.js
+function createFreshHints(opts = {}) {
+  const ttl = opts.ttlMs ?? 3e4;
+  const now2 = opts.now ?? (() => Date.now());
+  const map = /* @__PURE__ */ new Map();
+  return {
+    note(name, meta) {
+      map.set(name, { meta, at: now2() });
+    },
+    peek(name) {
+      const h2 = map.get(name);
+      if (!h2)
+        return null;
+      if (now2() - h2.at > ttl) {
+        map.delete(name);
+        return null;
+      }
+      return h2.meta;
+    },
+    forget(name) {
+      map.delete(name);
+    }
+  };
 }
 
 // node_modules/@internal/store/dist/move-aside.js
@@ -14462,7 +14517,7 @@ function createCloudSync(cfg) {
     const wrote = bytes && (bytes.byteLength ?? bytes.size ?? bytes.length) || 0;
     let item = null;
     try {
-      item = await provider.upload(path, bytes, { contentType, eTag: baseEtag, conflictBehavior: baseEtag ? "replace" : "fail" });
+      item = await provider.upload(path, bytes, { contentType, eTag: baseEtag, conflictBehavior: baseEtag ? "replace" : "fail", onProgress: opts.onProgress });
     } catch (e10) {
       const status = e10?.status;
       if (status === 412)
@@ -14487,6 +14542,30 @@ function createCloudSync(cfg) {
     if (item && item.eTag) {
       setETag(name, item.eTag);
       setDirty(name, false);
+    }
+    return { item };
+  }
+  async function pushStream(name, source, opts = {}) {
+    if (!provider.uploadStream)
+      throw new Error("cloud-sync.pushStream: provider has no uploadStream");
+    const path = fileName2(name);
+    let item = null;
+    try {
+      item = await provider.uploadStream(path, source, { contentType, conflictBehavior: "fail", onProgress: opts.onProgress });
+    } catch (e10) {
+      if (e10?.status === 409)
+        throw new CloudNameCollisionError(name);
+      throw e10;
+    }
+    if (!item || !item.eTag) {
+      const fresh = await provider.getItemByPath(path).catch((e10) => {
+        reportStoreError(e10, "log");
+        return null;
+      });
+      if (fresh && fresh.eTag && fresh.size === source.size)
+        item = fresh;
+      else
+        throw new Error(`cloud-sync.pushStream: upload of "${name}" was not confirmed by the cloud`);
     }
     return { item };
   }
@@ -14706,6 +14785,7 @@ function createCloudSync(cfg) {
   }
   return {
     push,
+    pushStream,
     pull,
     fetchMeta,
     pullTail,
@@ -16724,6 +16804,7 @@ async function requestStoragePersistence(sm2 = globalStorage()) {
 var STORE_TEXT_EN = {
   "sync.pushing": "Syncing\u2026",
   "file.renaming": "Renaming\u2026",
+  "file.uploading": "Uploading\u2026",
   "file.pulling": "Pulling\u2026",
   "cloud.checking": "Checking cloud\u2026",
   "file.deleting": "Deleting\u2026",
@@ -17043,8 +17124,12 @@ function createStore(config) {
       ui3.reportError(e10);
       emitFolderError(folder, e10, "remote");
     }
-    if (live?.complete)
+    if (live?.complete) {
       writeDirIndexCache(folder, live);
+      for (const f2 of live.files)
+        if (f2.eTag)
+          freshHints.note(f2.name, { etag: f2.eTag, lastModified: f2.lastModifiedDateTime, size: f2.size, item: f2 });
+    }
   }
   function notifyFolderOf(name) {
     void pushLocalFrame(name.includes("/") ? name.slice(0, name.lastIndexOf("/")) : "");
@@ -17126,7 +17211,7 @@ function createStore(config) {
   });
   const busyT = (label, fn) => ui3.busy(resolveStoreText(ui3.text, label), fn, label);
   const busyK = (key, params, fn) => ui3.busy(resolveStoreText(ui3.text, key, params), fn, key);
-  const pushMod = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: busyT });
+  const pushMod = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: busyT, ...config.pushRetry });
   const uploadReplayPolicy = config.offlineUploadReplay ?? "manual";
   if (uploadReplayPolicy !== "manual") {
     if (!ui3.onReplayStatus)
@@ -17134,7 +17219,7 @@ function createStore(config) {
     if (uploadReplayPolicy === "ask" && !ui3.confirmReplay)
       throw new Error("createStore: offlineUploadReplay='ask' \u9700 ui.confirmReplay\uFF08\u56DE\u7EBF\u8BE2\u95EE\u7528\u6237\uFF09");
   }
-  const pushBg = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: (_l, fn) => fn() });
+  const pushBg = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: (_l, fn) => fn(), ...config.pushRetry });
   async function pushLocalBytes(name) {
     const blob = await local.get(name);
     if (!blob)
@@ -17153,7 +17238,8 @@ function createStore(config) {
     confirm: ui3.confirmReplay,
     onStatus: ui3.onReplayStatus
   });
-  const fresh = createFreshness({ cloud, head, safeResolve, busy: busyT });
+  const freshHints = createFreshHints();
+  const fresh = createFreshness({ cloud, head, safeResolve, busy: busyT, hints: freshHints, lineageFromDurable: config.openLineageFromDurable ?? true });
   const del = createDelete({ cloud, local, head, kv, busy: busyT });
   const identity = createIdentity({
     cloud,
@@ -17424,7 +17510,7 @@ function createStore(config) {
           return { pushed: false, reason: "not-attempted" };
         let pushed = false, reason, resolution;
         try {
-          const r10 = await pushMod.push(name, { encode: () => plain2, onConflict, surfaceCollision: mode !== "new" });
+          const r10 = await pushMod.push(name, { encode: () => plain2, onConflict, surfaceCollision: mode !== "new", onProgress: opts?.onProgress });
           pushed = r10.status === "pushed" || r10.status === "healed" || r10.status === "resolved";
           if (!pushed)
             reason = r10.status;
@@ -17434,6 +17520,7 @@ function createStore(config) {
           ui3.reportError(e10);
           reason = "error";
         }
+        notifyFolderOf(name);
         if (head.isDirtyThisTab(name) && head.seenBase(name) == null)
           uploadReplay.enqueue(name);
         return { pushed, reason, resolution };
@@ -17499,6 +17586,42 @@ function createStore(config) {
         return fresh.refresh(name, { isOnline, ...opts });
       },
       // 事件驱动干净快进（clean→FF、dirty→no-op）；默认注入 store 的 isOnline（离线早退，不空跑 fetchMeta）
+      // 0.18.0 主动叫面（JSDoc 见 RawFile.resolve）。面 = 同一个 ui.resolveConflict；派发 = 同一个 safeResolve / pushMod，没有第二套逻辑。
+      async resolve(opts) {
+        await migrationReady;
+        roGuard("resolve");
+        if (!await local.exists(name))
+          return { status: "no-local" };
+        if (!head.isDirtyAnywhere(name))
+          return { status: "clean" };
+        if (!isOnline())
+          return { status: "offline" };
+        const choice = await onConflictFor("push")({ name });
+        if (choice === "cancel")
+          return { status: "cancelled" };
+        if (choice === "takeCloud") {
+          const r11 = await safeResolve.resolveConflict(name, "takeCloud", { adopt: opts?.adopt });
+          notifyFolderOf(name);
+          return r11.status === "resolved" ? { status: "took-cloud", backupName: r11.backupName } : { status: "unresolved", reason: r11.reason };
+        }
+        const blob = await local.get(name);
+        if (!blob)
+          return { status: "no-local" };
+        const atRest = await toU8(blob instanceof Blob ? blob : new Blob([blob]));
+        let r10;
+        try {
+          r10 = await pushMod.push(name, { encode: () => atRest, onConflict, surfaceCollision: true });
+        } catch (e10) {
+          ui3.reportError(e10);
+          notifyFolderOf(name);
+          return { status: "not-pushed", reason: "error" };
+        }
+        notifyFolderOf(name);
+        if (r10.status === "resolved" && r10.resolution === "takeCloud")
+          return { status: "took-cloud", backupName: r10.backupName };
+        const pushed = r10.status === "pushed" || r10.status === "healed" || r10.status === "resolved";
+        return pushed ? { status: "pushed" } : { status: "not-pushed", reason: r10.status };
+      },
       tryMove(to2) {
         roGuard("tryMove");
         return tryMoveSF(name, to2);
@@ -17807,6 +17930,23 @@ function createStore(config) {
        *  **不含** trash/backup/collections 分区、app 自己别的 IDB 库、纯云端未缓存的作品。
        *  ⚠ **只返两个标量、永不返名字** —— 它不是、也不能变成全库列举（列举唯一面 = watchFolder）。 */
       usage: () => local.usage(),
+      /** 0.17.0：流式新建一个纯云端文件（KudsRocket「边加密边上传、不留本地副本」）。宿主按 source.read 逐块给字节（本地 File、边加密的管线……），
+       *  库逐块上传（Graph 上传会话；最后一块落地才成文件，中途断了云端没有半成品），**整份永不进内存、不落本地、不写谱系**。
+       *  只准新建：身份已占（本地或云端）→ CloudNameCollisionError，一个字节不传。要网：离线 / 没登录 → 抛（没有本地字节可排队）。
+       *  成功后文件是 cloud-only（本夹 watcher 重画）；之后 open() 走 acquire 照常。进度经 onProgress。busy 键 "file.uploading"（宿主可按键路由到后台提示）。 */
+      uploadStream: async (identifier, source, opts = {}) => {
+        roGuard("uploadStream");
+        await migrationReady;
+        assertValidFileName(identifier, appId);
+        if (!isOnline())
+          throw new Error(`uploadStream "${identifier}": cloud unreachable (offline or signed out)`);
+        const where = await nameOccupied(identifier);
+        if (where)
+          throw new CloudNameCollisionError(identifier, where);
+        await busyK("file.uploading", void 0, () => cloud.pushStream(identifier, source, { onProgress: opts.onProgress }));
+        notifyFolderOf(identifier);
+        return { status: "uploaded", size: source.size };
+      },
       /** 确保文件夹存在。**离线也能建**（本地登记 + 回线 drainOfflineQueue 补建）。 */
       ensureFolder: (path) => {
         roGuard("ensureFolder");
@@ -17907,6 +18047,19 @@ function createStore(config) {
 }
 
 // node_modules/@internal/store/dist/providers/graph.js
+var DEFAULT_GRAPH_TIMEOUTS = { meta: 3e4, chunk: 12e4, range: 6e4, blob: 15 * 6e4 };
+var graphTimeouts = null;
+var graphChunkResume = false;
+var graphVerifyCommit = false;
+var graphSleep = (ms) => new Promise((r10) => setTimeout(r10, ms));
+var timed = (kind) => {
+  if (!graphTimeouts)
+    return void 0;
+  const ms = graphTimeouts[kind];
+  return typeof AbortSignal !== "undefined" && typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(ms) : void 0;
+};
+var CHUNK_RETRY_MAX = 5;
+var chunkBackoffMs = (attempt) => Math.min(1e3 * 2 ** (attempt - 1), 16e3);
 var GRAPH_BASE = "https://graph.microsoft.com/v1.0";
 var SIMPLE_UPLOAD_LIMIT = 4 * 1024 * 1024;
 function encodeSeg(name) {
@@ -17919,7 +18072,12 @@ function _rangeHeader(offset, length) {
   return offset == null ? `bytes=-${length}` : `bytes=${offset}-${offset + length - 1}`;
 }
 async function downloadRangeFromUrl(downloadUrl, offset, length) {
-  const r10 = await fetch(downloadUrl, { headers: { Range: _rangeHeader(offset, length) } });
+  let r10;
+  try {
+    r10 = await fetch(downloadUrl, { headers: { Range: _rangeHeader(offset, length) }, signal: timed("range") });
+  } catch (e10) {
+    throw new CloudNetworkError(`range download: network fetch failed (${String(e10)})`, e10);
+  }
   if (!r10.ok && r10.status !== 206) {
     const err2 = new Error(`range download failed ${r10.status}`);
     err2.status = r10.status;
@@ -17927,7 +18085,12 @@ async function downloadRangeFromUrl(downloadUrl, offset, length) {
   }
   return await r10.arrayBuffer();
 }
-function createGraph(tokenSource) {
+function createGraph(tokenSource, opts = {}) {
+  graphTimeouts = opts.timeouts ? { ...DEFAULT_GRAPH_TIMEOUTS, ...opts.timeouts } : null;
+  graphChunkResume = !!opts.chunkResume;
+  graphVerifyCommit = !!opts.verifyChunkedCommit;
+  if (opts.sleep)
+    graphSleep = opts.sleep;
   const getToken2 = () => {
     if (!tokenSource)
       throw new Error("graph token source missing (page: createOneDriveProvider; SW: createGraph(createBridgeTokenSource(dbName)))");
@@ -17936,7 +18099,7 @@ function createGraph(tokenSource) {
   async function graphFetch(method, pathOrUrl, { headers = {}, body: body2 = null } = {}) {
     const token = await getToken2();
     const url = pathOrUrl.startsWith("http") ? pathOrUrl : `${GRAPH_BASE}${pathOrUrl}`;
-    const init = { method, headers: { Authorization: `Bearer ${token}`, ...headers } };
+    const init = { method, headers: { Authorization: `Bearer ${token}`, ...headers }, signal: timed("meta") };
     if (body2 != null) {
       if (typeof body2 === "string" || body2 instanceof ArrayBuffer || ArrayBuffer.isView(body2) || body2 instanceof Blob) {
         init.body = body2;
@@ -17997,7 +18160,12 @@ function createGraph(tokenSource) {
   async function downloadItemBlob(itemId) {
     const dl = await getDownloadUrl(itemId);
     if (dl) {
-      const r11 = await fetch(dl);
+      let r11;
+      try {
+        r11 = await fetch(dl, { signal: timed("blob") });
+      } catch (e10) {
+        throw new CloudNetworkError(`downloadUrl: network fetch failed (${String(e10)})`, e10);
+      }
       if (!r11.ok)
         throw new Error(`downloadUrl failed ${r11.status}`);
       return await r11.blob();
@@ -18029,16 +18197,26 @@ function createGraph(tokenSource) {
     const j2 = await r10.json();
     return j2["@microsoft.graph.downloadUrl"] || null;
   }
-  async function uploadFileToApproot(path, blob, contentType = "application/octet-stream", { conflictBehavior = "replace", eTag = null } = {}) {
+  async function uploadFileToApproot(path, blob, contentType = "application/octet-stream", { conflictBehavior = "replace", eTag = null, onProgress } = {}) {
     if (conflictBehavior === "replace" && !eTag)
       throw new Error(`[graph] blind overwrite forbidden: conflictBehavior:"replace" requires If-Match eTag (${path})`);
     const headers = { "Content-Type": contentType };
     if (eTag)
       headers["If-Match"] = eTag;
     if (blob.size <= SIMPLE_UPLOAD_LIMIT) {
+      onProgress?.(0, blob.size);
       const r10 = await graphFetch("PUT", `/me/drive/special/approot:/${encodeApprootPath(path)}:/content?@microsoft.graph.conflictBehavior=${conflictBehavior}`, { headers, body: blob });
+      onProgress?.(blob.size, blob.size);
       return r10.json();
     }
+    return uploadChunked(path, { size: blob.size, read: async (o10, n10) => new Uint8Array(await blob.slice(o10, o10 + n10).arrayBuffer()) }, conflictBehavior, eTag, onProgress);
+  }
+  async function uploadStreamToApproot(path, source, _contentType = "application/octet-stream", { conflictBehavior = "fail", eTag = null, onProgress } = {}) {
+    if (conflictBehavior === "replace" && !eTag)
+      throw new Error(`[graph] blind overwrite forbidden: conflictBehavior:"replace" requires If-Match eTag (${path})`);
+    return uploadChunked(path, source, conflictBehavior, eTag, onProgress);
+  }
+  async function uploadChunked(path, source, conflictBehavior, eTag, onProgress) {
     const sessR = await graphFetch("POST", `/me/drive/special/approot:/${encodeApprootPath(path)}:/createUploadSession`, {
       body: {
         item: {
@@ -18050,31 +18228,81 @@ function createGraph(tokenSource) {
     });
     const { uploadUrl } = await sessR.json();
     const CHUNK = 5 * 1024 * 1024;
+    const total = source.size;
     let offset = 0;
     let last = null;
-    while (offset < blob.size) {
-      const end = Math.min(offset + CHUNK, blob.size) - 1;
-      const chunk = blob.slice(offset, end + 1);
+    let failures = 0;
+    const resumeFrom = async (why) => {
+      failures++;
+      if (failures > CHUNK_RETRY_MAX)
+        throw new CloudNetworkError(`Graph chunked upload ${path}: gave up after ${CHUNK_RETRY_MAX} retries at ${offset}/${total} (${why})`);
+      await graphSleep(chunkBackoffMs(failures));
+      let st2;
+      try {
+        st2 = await fetch(uploadUrl, { signal: timed("meta") });
+      } catch (e10) {
+        throw new CloudNetworkError(`Graph upload session status: network fetch failed (${String(e10)})`, e10);
+      }
+      if (!st2.ok)
+        throw new CloudNetworkError(`Graph upload session ${path}: gone (${st2.status}) after ${why}`);
+      const j2 = await st2.json().catch(() => null);
+      const next2 = j2?.nextExpectedRanges?.[0]?.split("-")[0];
+      const at2 = next2 != null ? Number(next2) : NaN;
+      if (!Number.isFinite(at2) || at2 < 0 || at2 > total)
+        throw new CloudNetworkError(`Graph upload session ${path}: no usable nextExpectedRanges after ${why}`);
+      return at2;
+    };
+    const cancelSession = async () => {
+      try {
+        await fetch(uploadUrl, { method: "DELETE", signal: timed("meta") });
+      } catch (_2) {
+      }
+    };
+    onProgress?.(0, total);
+    while (offset < total) {
+      const end = Math.min(offset + CHUNK, total) - 1;
+      if (graphVerifyCommit && end === total - 1 && eTag) {
+        const cur = await getItemByPath(path);
+        if (cur && cur.eTag && cur.eTag !== eTag) {
+          await cancelSession();
+          const err2 = new Error(`chunked upload ${path}: item changed during upload (If-Match ${eTag} \u2260 ${cur.eTag})`);
+          err2.status = 412;
+          throw err2;
+        }
+      }
+      const chunk = await source.read(offset, end - offset + 1);
+      if (chunk.length !== end - offset + 1)
+        throw new Error(`[graph] chunk source short read at ${offset}: wanted ${end - offset + 1}, got ${chunk.length}`);
       let r10;
       try {
         r10 = await fetch(uploadUrl, {
           method: "PUT",
           headers: {
-            "Content-Length": String(chunk.size),
-            "Content-Range": `bytes ${offset}-${end}/${blob.size}`
+            "Content-Length": String(chunk.length),
+            "Content-Range": `bytes ${offset}-${end}/${total}`
           },
-          body: chunk
+          body: chunk,
+          signal: timed("chunk")
         });
       } catch (e10) {
-        throw new CloudNetworkError(`Graph chunked upload PUT (${offset}-${end}/${blob.size}): network fetch failed (${String(e10)})`, e10);
+        if (!graphChunkResume)
+          throw new CloudNetworkError(`Graph chunked upload PUT (${offset}-${end}/${total}): network fetch failed (${String(e10)})`, e10);
+        offset = await resumeFrom(`network: ${String(e10)}`);
+        continue;
       }
       if (!r10.ok && r10.status !== 202) {
+        if (graphChunkResume && (r10.status === 429 || r10.status === 416 || r10.status >= 500 && r10.status <= 599)) {
+          offset = await resumeFrom(`http ${r10.status}`);
+          continue;
+        }
         const err2 = new Error(`chunked upload failed ${r10.status}`);
         err2.status = r10.status;
         throw err2;
       }
+      failures = 0;
       last = await r10.json().then((j2) => j2).catch(() => null);
       offset = end + 1;
+      onProgress?.(offset, total);
     }
     return last;
   }
@@ -18174,7 +18402,7 @@ function createGraph(tokenSource) {
     for (let attempt = 1; attempt <= 170; attempt++) {
       let mr;
       try {
-        mr = await fetch(monitor);
+        mr = await fetch(monitor, { signal: timed("meta") });
       } catch (e10) {
         throw new CloudNetworkError(`Graph copy monitor: network fetch failed (${String(e10)})`, e10);
       }
@@ -18207,6 +18435,7 @@ function createGraph(tokenSource) {
     downloadItemRange,
     getDownloadUrl,
     uploadFileToApproot,
+    uploadStreamToApproot,
     deleteItem,
     clearFolderCaches,
     getApprootId,
@@ -18664,10 +18893,13 @@ function graphToCloudProvider(graph) {
     // graph.js 是 Blob 原生（按 .size 选简单/分块路径、用 .slice 切块）；lib 把字节归一成 Uint8Array。
     // 必须在这道接缝转回 Blob——Uint8Array.size===undefined → undefined<=4MB 为 false → 永远走分块、
     // while(0<undefined) 一个 chunk 都不传 → 上传 0 字节占位还回 etag（postmortem 2026-06-05 根因）。
-    upload: (path, blob, { contentType = "application/octet-stream", eTag = null, conflictBehavior = "replace" } = {}) => {
+    upload: (path, blob, { contentType = "application/octet-stream", eTag = null, conflictBehavior = "replace", onProgress } = {}) => {
       const body2 = blob instanceof Blob ? blob : new Blob([blob], { type: contentType });
-      return graph.uploadFileToApproot(path, body2, contentType, { conflictBehavior, eTag }).then(toItem);
+      return graph.uploadFileToApproot(path, body2, contentType, { conflictBehavior, eTag, onProgress }).then(toItem);
     },
+    ...graph.uploadStreamToApproot ? {
+      uploadStream: (path, source, { contentType = "application/octet-stream", eTag = null, conflictBehavior = "fail", onProgress } = {}) => graph.uploadStreamToApproot(path, source, contentType, { conflictBehavior, eTag, onProgress }).then(toItem)
+    } : {},
     // 文件硬删。⚠ 2026-08-25 修：旧版 `(id) => graph.deleteItem(id)` 把 eTag 吞了——purge 的 If-Match
     //   （v435 立的硬删守卫）从没到过 Graph，mock 比真机严（mock 校验 If-Match、真机根本没收到）。透传。
     delete: (ref, eTag) => graph.deleteItem(ref, eTag),
@@ -18685,7 +18917,7 @@ function graphToCloudProvider(graph) {
 function createOneDriveProvider(config = {}) {
   configureOneDriveAuth(config);
   const hid = config.homeAccountId;
-  const g3 = createGraph(hid ? () => getTokenFor(hid) : getToken);
+  const g3 = createGraph(hid ? () => getTokenFor(hid) : getToken, config.transport ?? {});
   const provider = Object.assign(graphToCloudProvider(g3), {
     onAuthChanged: (cb2) => onAuthChanged((st2) => cb2({ signedIn: st2.signedIn, reason: st2.reason }))
   });
@@ -20116,7 +20348,8 @@ function storeUIFor(d3) {
         message: t("cf.body.push", { name: n10 }),
         note: t("cf.note.keptSafe"),
         showSpinner: false,
-        actions: [{ label: t("cf.act.localWins"), value: "keepMine", primary: true }, { label: t("cf.act.cloudWins"), value: "takeCloud" }, { label: t("common.cancel"), value: "cancel" }]
+        // 0.7.1：主按钮 = 云端覆盖本地（user 2026-10-16「默认云端才是 authority」「一切对齐」；此前主按钮是本地覆盖云端，挂机醒来顺手一点就把云端的新改动盖进备份箱）
+        actions: [{ label: t("cf.act.cloudWins"), value: "takeCloud", primary: true }, { label: t("cf.act.localWins"), value: "keepMine" }, { label: t("common.cancel"), value: "cancel" }]
       });
       return choice ?? "cancel";
     },
@@ -44633,6 +44866,7 @@ async function refreshOpenDoc() {
   let froze = false;
   try {
     const r10 = await requireStore().zip(id2, { mode: "existing" }).pullIfClean({
+      trustHints: false,
       localDirty: () => dirty() || es2.isPushPending(),
       onReplaceStart: () => {
         froze = true;
@@ -45043,4 +45277,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8afb10db3cac.mjs.map
+//# sourceMappingURL=moonsinger-e371d1272700.mjs.map
