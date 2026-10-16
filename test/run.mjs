@@ -110,6 +110,7 @@ import "./start-dyns.test.ts";
 import "./icon-wiring.test.ts";
 import "./e2e-areas.test.ts";
 import "./sw-redirect.test.ts";
+import "./song-player.test.ts";
 import { run } from "./runner.mjs";
 
 await run();

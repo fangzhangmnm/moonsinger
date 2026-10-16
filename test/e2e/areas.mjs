@@ -61,7 +61,7 @@ export const AREA_OF_PATH = [
   [/^src\/app\/performance\.ts$|^src\/sources\//, ["play", "studio"]],
   // 无头渲染核心（2026-10-16）：播放的准备 / 导出 / 定稿都过它；歌库的封面试听在 gallery-host
   [/^src\/core\//, ["play", "studio", "export", "store"]],
-  [/^src\/gallery-host\.ts$|^src\/editor-session\//, ["store"]],
+  [/^src\/gallery-host\.ts$|^src\/app\/song-player\.ts$|^src\/editor-session\//, ["store"]],
   [/^src\/(engine|gm|singer)\//, ["studio", "play"]],
   [/^src\/app\/(names)\.ts$/, ["studio"]],
   // 文件 / 云 / 歌库 / 格式

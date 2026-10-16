@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.22-2026-10-16";
+var APP_VERSION = "v0.12.23-2026-10-16";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -36390,6 +36390,252 @@ function coverHtml(stem, extra = {}) {
   return `<span class="${cls}"${extra.editedText ? ` title="${esc7(extra.editedText)}"` : ""}><span class="ms-cover-title"${p2.vertical ? "" : ' lang="en"'}>${title}</span>${artist}${bar2}</span>`;
 }
 
+// src/app/song-player.ts
+var SEEK_STEP_SECS = 10;
+function createSongPlayer(deps = {}) {
+  const audio = deps.audio ?? new Audio();
+  audio.preload = "auto";
+  const ms = deps.mediaSession !== void 0 ? deps.mediaSession : typeof navigator !== "undefined" && "mediaSession" in navigator ? navigator.mediaSession : null;
+  const makeMetadata = deps.makeMetadata ?? ((init) => new MediaMetadata(init));
+  let track = null;
+  let url = null;
+  let loop = false;
+  let blessed = false;
+  let announced = false;
+  let artwork = null;
+  let lastTime = 0;
+  let silentUrl = null;
+  const listeners = /* @__PURE__ */ new Set();
+  const emit = () => {
+    for (const f2 of listeners) {
+      try {
+        f2();
+      } catch {
+      }
+    }
+  };
+  const setAction = (a10, f2) => {
+    try {
+      ms?.setActionHandler(a10, f2);
+    } catch {
+    }
+  };
+  const setPlaybackState = (s10) => {
+    try {
+      if (ms) ms.playbackState = s10;
+    } catch {
+    }
+  };
+  function setMetadata() {
+    if (!ms || !track) return;
+    try {
+      ms.metadata = makeMetadata({ title: track.title, artist: track.artist ?? "", album: track.album ?? "", artwork: artwork ?? deps.fallbackArtwork ?? [] });
+    } catch {
+    }
+  }
+  function pushPosition() {
+    if (!ms || !track) return;
+    const d3 = audio.duration;
+    if (!Number.isFinite(d3) || d3 <= 0) return;
+    try {
+      ms.setPositionState?.({ duration: d3, position: Math.min(Math.max(0, audio.currentTime), d3), playbackRate: audio.playbackRate || 1 });
+    } catch {
+    }
+  }
+  function seek(to2) {
+    if (!track) return;
+    const d3 = audio.duration;
+    audio.currentTime = Math.max(0, Number.isFinite(d3) ? Math.min(to2, d3) : to2);
+  }
+  function announce() {
+    if (!ms || !track) return;
+    setMetadata();
+    setAction("play", () => resume());
+    setAction("pause", () => audio.pause());
+    setAction("stop", () => stop());
+    setAction("seekto", (e10) => {
+      if (e10.seekTime != null) seek(e10.seekTime);
+    });
+    setAction("seekbackward", (e10) => seek(audio.currentTime - (e10.seekOffset || SEEK_STEP_SECS)));
+    setAction("seekforward", (e10) => seek(audio.currentTime + (e10.seekOffset || SEEK_STEP_SECS)));
+    setAction("previoustrack", null);
+    setAction("nexttrack", null);
+    announced = true;
+  }
+  function unannounce() {
+    if (!ms) return;
+    for (const a10 of ["play", "pause", "stop", "seekto", "seekbackward", "seekforward"]) setAction(a10, null);
+    try {
+      ms.metadata = null;
+    } catch {
+    }
+    setPlaybackState("none");
+  }
+  function unload() {
+    track = null;
+    announced = false;
+    artwork = null;
+    lastTime = 0;
+    audio.pause();
+    audio.removeAttribute("src");
+    audio.load();
+    if (url) {
+      URL.revokeObjectURL(url);
+      url = null;
+    }
+  }
+  audio.addEventListener("playing", () => {
+    if (!track) return;
+    if (!announced) announce();
+    setPlaybackState("playing");
+    pushPosition();
+    emit();
+  });
+  audio.addEventListener("pause", () => {
+    if (!track) return;
+    setPlaybackState("paused");
+    pushPosition();
+    emit();
+  });
+  audio.addEventListener("loadedmetadata", () => {
+    if (track) {
+      pushPosition();
+      emit();
+    }
+  });
+  audio.addEventListener("seeked", () => {
+    if (track) {
+      lastTime = audio.currentTime;
+      pushPosition();
+      emit();
+    }
+  });
+  audio.addEventListener("timeupdate", () => {
+    if (!track) return;
+    const t10 = audio.currentTime;
+    if (t10 + 1 < lastTime) pushPosition();
+    lastTime = t10;
+    emit();
+  });
+  audio.addEventListener("ended", () => {
+    if (track) emit();
+  });
+  audio.addEventListener("error", () => {
+    if (!track) return;
+    stop();
+    deps.onError?.("\u8FD9\u4EFD mp3 \u653E\u4E0D\u4E86\uFF08\u6587\u4EF6\u574F\u4E86\uFF1F\uFF09");
+  });
+  function arm() {
+    if (blessed) return;
+    if (track) stop();
+    silentUrl ??= URL.createObjectURL(silentWav());
+    audio.loop = false;
+    audio.src = silentUrl;
+    void audio.play()?.then(() => {
+      blessed = true;
+    }, () => {
+    });
+  }
+  async function play(t10) {
+    unload();
+    track = t10;
+    url = URL.createObjectURL(t10.blob);
+    audio.src = url;
+    audio.loop = loop;
+    if (t10.cover) void artworkOf(t10.cover).then((a10) => {
+      if (track !== t10 || !a10) return;
+      artwork = a10;
+      if (announced) setMetadata();
+    }, () => {
+    });
+    emit();
+    try {
+      await audio.play();
+      blessed = true;
+      return "playing";
+    } catch (e10) {
+      if (track !== t10) return "replaced";
+      if (e10?.name === "NotAllowedError") {
+        emit();
+        return "blocked";
+      }
+      stop();
+      throw e10;
+    }
+  }
+  function resume() {
+    if (!track) return;
+    void audio.play().then(() => {
+      blessed = true;
+    }, () => emit());
+  }
+  function toggle() {
+    if (!track) return;
+    if (audio.paused) resume();
+    else audio.pause();
+  }
+  function stop() {
+    const had = track != null;
+    unload();
+    unannounce();
+    if (had) emit();
+  }
+  function setLoop2(on2) {
+    loop = on2;
+    if (track) audio.loop = on2;
+    emit();
+  }
+  const state = () => ({ key: track?.key ?? null, paused: !track || audio.paused, time: track ? audio.currentTime : 0, duration: track ? audio.duration : NaN, loop });
+  return {
+    arm,
+    play,
+    toggle,
+    stop,
+    setLoop: setLoop2,
+    state,
+    /** 在放的那首（暂停 / 没装 = null）。 */
+    playing: () => track && !audio.paused ? track.key : null,
+    onChange(fn) {
+      listeners.add(fn);
+      return () => listeners.delete(fn);
+    }
+  };
+}
+function silentWav(ms = 50, sampleRate = 8e3) {
+  const n10 = Math.round(sampleRate * ms / 1e3), buf = new ArrayBuffer(44 + n10 * 2), v = new DataView(buf);
+  const tag2 = (o10, s10) => {
+    for (let i10 = 0; i10 < s10.length; i10++) v.setUint8(o10 + i10, s10.charCodeAt(i10));
+  };
+  tag2(0, "RIFF");
+  v.setUint32(4, 36 + n10 * 2, true);
+  tag2(8, "WAVE");
+  tag2(12, "fmt ");
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, sampleRate, true);
+  v.setUint32(28, sampleRate * 2, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  tag2(36, "data");
+  v.setUint32(40, n10 * 2, true);
+  return new Blob([buf], { type: "audio/wav" });
+}
+async function artworkOf(cover) {
+  const u82 = new Uint8Array(await cover.arrayBuffer());
+  if (!u82.length) return null;
+  let s10 = "";
+  for (let i10 = 0; i10 < u82.length; i10 += 32768) s10 += String.fromCharCode(...u82.subarray(i10, i10 + 32768));
+  const type = cover.type || "image/png";
+  const img = { src: `data:${type};base64,${btoa(s10)}`, type };
+  const isPng2 = u82.length >= 24 && u82[0] === 137 && u82[1] === 80 && u82[2] === 78 && u82[3] === 71;
+  if (isPng2) {
+    const dv = new DataView(u82.buffer, u82.byteOffset);
+    img.sizes = `${dv.getUint32(16)}x${dv.getUint32(20)}`;
+  }
+  return [img];
+}
+
 // src/gallery-host.ts
 var KV_FOLDER = "gallery-folder";
 var KV_SCENE = "last-scene";
@@ -36471,9 +36717,10 @@ function initGalleryHost(d3) {
         editedText: item?.lastModified ? `\u6539\u4E8E ${new Date(item.lastModified).toLocaleString()}` : void 0
       }),
       // 定稿了的歌：右下角 ▶（事实没到 = 不画；没定稿 = 不画）
-      tileAction: (id2, _info, facts) => {
+      // （卡片只在事实变了时重画，不跟着播放走：在放什么看底边的播放条，这里不写「正在放」）
+      tileAction: (_id, _info, facts) => {
         const f2 = factsOf(facts);
-        return f2 ? { icon: "play", title: `\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C ${f2.final.rev} \u7248\uFF0C${f2.final.secs.toFixed(0)} \u79D2\uFF09${playingId === id2 && !audio.paused ? " \xB7 \u6B63\u5728\u653E" : ""}`, state: "ready" } : null;
+        return f2 ? { icon: "play", title: `\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C ${f2.final.rev} \u7248\uFF0C${f2.final.secs.toFixed(0)} \u79D2\uFF09`, state: "ready" } : null;
       }
     },
     policy: {
@@ -36507,51 +36754,35 @@ function initGalleryHost(d3) {
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player";
   playerEl.hidden = true;
-  playerEl.innerHTML = `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="\u653E / \u6682\u505C">${iconHtml2("pause")}</button><span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span><button type="button" class="btn ms-player-loop" data-p="loop" title="\u5355\u66F2\u5FAA\u73AF">\u5FAA\u73AF</button><button type="button" class="btn" data-p="close" title="\u505C">${iconHtml2("x")}</button>`;
+  playerEl.innerHTML = `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="\u653E / \u6682\u505C">${iconHtml2("pause")}</button><span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span><button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">\u5FAA\u73AF</button><button type="button" class="btn" data-p="close" title="\u505C">${iconHtml2("x")}</button>`;
   fullEl.append(playerEl);
-  const audio = new Audio();
-  audio.preload = "auto";
-  let playingId = null, objectUrl = null;
+  const appIcon = (file, sizes) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
+  const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
+  let barTitle = "";
   const fmtTime2 = (s10) => Number.isFinite(s10) ? `${Math.floor(s10 / 60)}:${String(Math.floor(s10 % 60)).padStart(2, "0")}` : "0:00";
-  const drawPlayer = () => {
-    playerEl.querySelector(".ms-player-time").textContent = `${fmtTime2(audio.currentTime)} / ${fmtTime2(audio.duration)}`;
-    playerEl.querySelector(".ms-player-toggle").innerHTML = iconHtml2(audio.paused ? "play" : "pause");
-    playerEl.querySelector(".ms-player-loop").classList.toggle("is-on", audio.loop);
-  };
-  audio.addEventListener("timeupdate", drawPlayer);
-  audio.addEventListener("play", drawPlayer);
-  audio.addEventListener("pause", drawPlayer);
-  audio.addEventListener("loadedmetadata", drawPlayer);
-  audio.addEventListener("error", () => {
-    status("\u8FD9\u4EFD mp3 \u653E\u4E0D\u4E86\uFF08\u6587\u4EF6\u574F\u4E86\uFF1F\uFF09", true);
-    stopPlayer();
-  });
-  function stopPlayer() {
-    audio.pause();
-    audio.removeAttribute("src");
-    audio.load();
-    if (objectUrl) {
-      URL.revokeObjectURL(objectUrl);
-      objectUrl = null;
-    }
-    playingId = null;
-    playerEl.hidden = true;
-    drawPlayer();
-    try {
-      if ("mediaSession" in navigator) navigator.mediaSession.playbackState = "none";
-    } catch {
-    }
+  function drawPlayer() {
+    const s10 = player.state();
+    playerEl.hidden = s10.key == null;
+    if (s10.key == null) return;
+    playerEl.querySelector(".ms-player-title").textContent = barTitle;
+    playerEl.querySelector(".ms-player-time").textContent = `${fmtTime2(s10.time)} / ${fmtTime2(s10.duration)}`;
+    playerEl.querySelector(".ms-player-toggle").innerHTML = iconHtml2(s10.paused ? "play" : "pause");
+    const loopBtn = playerEl.querySelector(".ms-player-loop");
+    loopBtn.classList.toggle("is-on", s10.loop);
+    loopBtn.setAttribute("aria-pressed", String(s10.loop));
+    loopBtn.title = s10.loop ? "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5F00\u7740\uFF08\u653E\u5B8C\u4ECE\u5934\u518D\u653E\uFF0C\u9501\u5C4F\u4E5F\u4E00\u6837\uFF09" : "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5173\u7740\uFF08\u653E\u5B8C\u5C31\u505C\uFF09";
   }
+  player.onChange(drawPlayer);
   async function playTile(id2, facts) {
-    if (playingId === id2) {
-      if (audio.paused) void audio.play();
-      else audio.pause();
+    if (player.state().key === id2) {
+      player.toggle();
       return;
     }
     if (!facts) {
       status("\u8FD9\u9996\u8FD8\u6CA1\u5B9A\u7A3F\uFF1A\u6253\u5F00\u5B83\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u5B9A\u7A3F\u2026\u300D\u2014\u2014\u5B9A\u7A3F\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002");
       return;
     }
+    player.arm();
     const stem = identifiers.parse(id2)?.stem ?? id2;
     try {
       const b3 = await withBusy(`\u53D6\u300C${stem}\u300D\u7684 mp3\u2026`, async () => {
@@ -36568,41 +36799,23 @@ function initGalleryHost(d3) {
         status("\u8FD9\u9996\u8FD8\u6CA1\u5B9A\u7A3F\uFF1A\u6253\u5F00\u5B83\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u5B9A\u7A3F\u2026\u300D\u2014\u2014\u5B9A\u7A3F\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002");
         return;
       }
-      stopPlayer();
-      objectUrl = URL.createObjectURL(new Blob([b3.blob], { type: "audio/mpeg" }));
-      audio.src = objectUrl;
-      playingId = id2;
-      playerEl.querySelector(".ms-player-title").textContent = `${stem} \xB7 \u5B9A\u7A3F ${b3.rec.rev}`;
-      playerEl.hidden = false;
-      try {
-        if ("mediaSession" in navigator) {
-          navigator.mediaSession.metadata = new MediaMetadata({ title: stem, album: "MoonSinger" });
-          navigator.mediaSession.setActionHandler("play", () => {
-            void audio.play();
-          });
-          navigator.mediaSession.setActionHandler("pause", () => audio.pause());
-          navigator.mediaSession.setActionHandler("stop", () => stopPlayer());
-        }
-      } catch {
-      }
-      await audio.play();
-      diagNote("gallery", `play final ${id2} (${b3.blob.size} B)`);
+      const cover = (await gallery2?.thumbs?.read(id2).catch(() => null))?.blob ?? null;
+      barTitle = `${stem} \xB7 \u5B9A\u7A3F ${b3.rec.rev}`;
+      const r10 = await player.play({ key: id2, blob: new Blob([b3.blob], { type: "audio/mpeg" }), title: stem, artist: "MoonSinger", album: `\u5B9A\u7A3F \u7B2C ${b3.rec.rev} \u7248`, cover });
+      if (r10 === "blocked") status("\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6");
+      diagNote("gallery", `play final ${id2} (${b3.blob.size} B) \u2192 ${r10}`);
     } catch (e10) {
       reportError(e10, "warning");
       status(`\u653E\u4E0D\u4E86\uFF1A${e10.message ?? String(e10)}`, true);
-      stopPlayer();
+      player.stop();
     }
   }
   playerEl.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-p]")?.dataset.p;
     if (!v) return;
-    if (v === "toggle") {
-      if (audio.paused) void audio.play();
-      else audio.pause();
-    } else if (v === "loop") {
-      audio.loop = !audio.loop;
-      drawPlayer();
-    } else if (v === "close") stopPlayer();
+    if (v === "toggle") player.toggle();
+    else if (v === "loop") player.setLoop(!player.state().loop);
+    else if (v === "close") player.stop();
   });
   const warn = (msg) => reportError(msg, "warning");
   async function newFolder() {
@@ -36726,7 +36939,7 @@ function initGalleryHost(d3) {
     d3.onOpened?.();
   }
   function close() {
-    stopPlayer();
+    player.stop();
     fullEl.hidden = true;
     delete document.body.dataset.mode;
     deviceKvSet2(KV_SCENE, null);
@@ -36755,8 +36968,9 @@ function initGalleryHost(d3) {
       void gallery2?.facts?.invalidate(id2);
     },
     // 封面 / 定稿变了：缩略图和事实都重取
-    /** 封面上在放的那首（E2E 用）。 */
-    playing: () => playingId && !audio.paused ? playingId : null
+    /** 封面上在放的那首 / 播放器状态（E2E 用）。 */
+    playing: () => player.playing(),
+    playerState: () => player.state()
   };
 }
 
@@ -45371,4 +45585,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b69a93515e02.mjs.map
+//# sourceMappingURL=moonsinger-1750ddb1a1a5.mjs.map
