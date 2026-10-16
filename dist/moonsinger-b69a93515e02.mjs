@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.21-2026-10-16";
+var APP_VERSION = "v0.12.22-2026-10-16";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -20293,6 +20293,76 @@ function makeThumbAdaptive(src, opts) {
   return last;
 }
 
+// node_modules/@internal/gallery/dist/core/facts/facts-cache.js
+var factsKeyFor = (galleryId, identifier) => galleryId === "default" ? identifier : `${galleryId}:${identifier}`;
+function createFactsCache(deps) {
+  const now2 = deps.now ?? (() => Date.now());
+  const stats = { hits: 0, misses: 0, errors: 0 };
+  const listeners = /* @__PURE__ */ new Set();
+  async function read(identifier) {
+    try {
+      const v = await deps.store.get(deps.keyOf(identifier));
+      return v && typeof v.token === "string" && "value" in v ? v : null;
+    } catch {
+      return null;
+    }
+  }
+  async function write(identifier, token, value) {
+    try {
+      await deps.store.set(deps.keyOf(identifier), { token, value, at: now2() });
+    } catch (e10) {
+      deps.report?.(new Error("[facts-cache] write failed: " + String(e10)));
+    }
+  }
+  return {
+    read,
+    write,
+    async invalidate(identifier) {
+      const key = deps.keyOf(identifier);
+      try {
+        await deps.store.delete(key);
+      } catch {
+      }
+      for (const fn of listeners) {
+        try {
+          fn(key);
+        } catch {
+        }
+      }
+    },
+    onInvalidated(fn) {
+      listeners.add(fn);
+      return () => {
+        listeners.delete(fn);
+      };
+    },
+    async getOrFetch(identifier, token, source) {
+      const c10 = await read(identifier);
+      if (c10 && c10.token === token) {
+        stats.hits++;
+        return { value: c10.value, fromCache: true };
+      }
+      stats.misses++;
+      try {
+        const value = await deps.fetch(identifier, source);
+        void write(identifier, token, value ?? null);
+        return { value: value ?? null, fromCache: false };
+      } catch (e10) {
+        stats.errors++;
+        if (c10)
+          return { value: c10.value, fromCache: true };
+        throw e10;
+      }
+    },
+    async clear() {
+      const n10 = await deps.store.clear();
+      stats.hits = stats.misses = stats.errors = 0;
+      return n10;
+    },
+    stats
+  };
+}
+
 // node_modules/@internal/gallery/dist/ui/store-ui.js
 var STORE_TEXT_KEYS = {
   "sync.pushing": "st.syncPushing",
@@ -20386,11 +20456,19 @@ function mountGalleryScreen(el2, d3) {
   const { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick } = d3.vue;
   const icon = d3.ui.iconHtml;
   const phHtml = (name, info2) => d3.ui.tilePlaceholderHtml?.(name, info2) ?? "";
-  const ovHtml = (name, info2) => {
+  const ovHtml = (name, info2, facts = null) => {
     try {
-      return d3.ui.tileOverlayHtml?.(name, info2) ?? "";
+      return d3.ui.tileOverlayHtml?.(name, info2, facts) ?? "";
     } catch {
       return "";
+    }
+  };
+  const actionOf = (name, info2, facts) => {
+    try {
+      const a10 = d3.ui.tileAction?.(name, info2, facts) ?? null;
+      return a10 && a10.state !== "none" ? a10 : null;
+    } catch {
+      return null;
     }
   };
   const fileInfo = (it2) => ({ identifier: it2.identifier, stem: it2.stem, kind: it2.kind, syncState: it2.syncState, size: it2.size, lastModified: it2.lastModified });
@@ -20423,6 +20501,40 @@ function mountGalleryScreen(el2, d3) {
     _thumbRev.set(key, (_thumbRev.get(key) ?? 0) + 1);
   });
   const thumbKey = (identifier) => identifier;
+  const factsKinds = new Set(d3.factsKinds ?? []);
+  const _facts = reactive(/* @__PURE__ */ new Map());
+  const _factsInflight = /* @__PURE__ */ new Set();
+  let _factsRunning = 0;
+  const _factsWaiting = [];
+  const FACTS_PAR = 3;
+  d3.facts?.onInvalidated((key) => {
+    _facts.delete(key);
+  });
+  function wantFacts(identifier, kind, token, source) {
+    if (!d3.facts || kind == null || !factsKinds.has(kind))
+      return;
+    const have = _facts.get(identifier);
+    if (have && have.token === token)
+      return;
+    if (_factsInflight.has(identifier))
+      return;
+    _factsInflight.add(identifier);
+    const go = () => {
+      _factsRunning++;
+      d3.facts.getOrFetch(identifier, token, source).then(({ value }) => {
+        _facts.set(identifier, { token, value });
+      }).catch((err2) => d3.reportError(new Error("[gallery] facts: " + String(err2)), "log")).finally(() => {
+        _factsInflight.delete(identifier);
+        _factsRunning--;
+        _factsWaiting.shift()?.();
+      });
+    };
+    if (_factsRunning < FACTS_PAR)
+      go();
+    else
+      _factsWaiting.push(go);
+  }
+  const factsOf2 = (identifier) => _facts.get(identifier)?.value ?? null;
   const ThumbCell = defineComponent({
     name: "ThumbCell",
     props: { encName: { type: String, default: null }, fetchable: { type: Boolean, default: false }, isCloud: { type: Boolean, default: false }, cloudNewer: { type: Boolean, default: false }, thumbToken: { type: String, default: "" }, fallback: { type: String, default: "?" }, fallbackHtml: { type: String, default: "" }, alt: { type: String, default: "" } },
@@ -20814,8 +20926,18 @@ function mountGalleryScreen(el2, d3) {
       const folderTiles = computed(() => data.folderNames.map((fn) => ({ name: fn, path: pathJoin(folder.value, fn) })));
       const fileTiles = computed(() => data.files.map((it2) => {
         const tile = tileFor(it2, { signedIn: d3.host.signedIn(), activeIdentifier: d3.host.activeIdentifier(), encrypted: !!encByName[it2.identifier] });
-        return { item: it2, t: tile, sub: subtitleOf(it2), marker: markerOf(it2), ov: ovHtml(it2.identifier, fileInfo(it2)), thumb: hasThumb(it2.kind), info: fileInfo(it2) };
+        const info2 = fileInfo(it2), facts = factsOf2(it2.identifier);
+        return { item: it2, t: tile, sub: subtitleOf(it2), marker: markerOf(it2), ov: ovHtml(it2.identifier, info2, facts), thumb: hasThumb(it2.kind), info: info2, facts, act: actionOf(it2.identifier, info2, facts) };
       }));
+      const askFacts = () => {
+        if (!d3.facts)
+          return;
+        for (const r10 of fileTiles.value)
+          if (!r10.t.encrypted && (r10.t.hasCloud || r10.t.hasLocal))
+            wantFacts(r10.t.identifier, r10.item.kind, String(r10.t.time || r10.t.size || 0), r10.t.cloudNewer ? "cloud" : "local");
+      };
+      watch(() => fileTiles.value, askFacts);
+      askFacts();
       const asideTiles = computed(() => aside.value.map((it2) => ({ item: it2, t: asideTileFor(it2), fetch: ASIDE[it2.box].thumb === "by-name" && hasThumb(it2.kind), atWord: t(ASIDE[it2.box].text.at), ov: it2.kind != null ? ovHtml(it2.identifier, asideInfo(it2)) : "", info: asideInfo(it2) })));
       const imageTiles = computed(() => data.images.map((im2) => ({ raw: im2, identifier: im2.identifier, label: im2.label, size: im2.size || 0, time: im2.lastModified || 0, token: imageThumbToken(im2) })));
       const otherTiles = computed(() => data.others.map((o10) => ({ identifier: o10.identifier, label: o10.label, size: o10.size || 0, time: o10.lastModified || 0 })));
@@ -20823,6 +20945,13 @@ function mountGalleryScreen(el2, d3) {
       const isEmpty = computed(() => view2.value !== "files" ? asideTiles.value.length === 0 : folderTiles.value.length === 0 && fileTiles.value.length === 0 && imageTiles.value.length === 0 && otherTiles.value.length === 0);
       const emptyText = computed(() => view2.value !== "files" ? t(ASIDE[view2.value].text.none) : folder.value ? t("gal.empty.folder", { f: folder.value }) : t("gal.empty.none"));
       const badgeIcon = (k2) => ICON[k2] || "";
+      const badgeIcon2 = (k2) => {
+        try {
+          return icon(k2);
+        } catch {
+          return "";
+        }
+      };
       const fmtMeta = (x2) => `${humanTime(x2.time)} \xB7 ${humanSize(x2.size)}`;
       let menuHandle = null;
       const closeMenu = () => {
@@ -20875,6 +21004,13 @@ function mountGalleryScreen(el2, d3) {
       async function onUnlock(name) {
         if (await verbs.unlock(name))
           await reload();
+      }
+      function tileAction(item) {
+        try {
+          void Promise.resolve(d3.doc.tileAction?.(item, factsOf2(item.identifier))).catch((e10) => d3.reportError(e10));
+        } catch (e10) {
+          d3.reportError(e10);
+        }
       }
       async function openTile(item) {
         closeMenu();
@@ -20978,6 +21114,7 @@ function mountGalleryScreen(el2, d3) {
         otherTiles,
         asideTiles,
         crumbs,
+        badgeIcon2,
         badgeIcon,
         fmtMeta,
         humanTime,
@@ -20990,6 +21127,7 @@ function mountGalleryScreen(el2, d3) {
         hydrateFolder,
         enterFolder,
         openTile,
+        tileAction,
         openImageTile,
         deleteImage,
         rename,
@@ -21073,6 +21211,7 @@ var GALLERY_TEMPLATE = `
           <div v-for="row in fileTiles" :key="row.t.identifier" class="gallery-tile" :class="{ active: row.t.isActive, encrypted: row.t.encrypted }" @click="openTile(row.item)">
             <ThumbCell :enc-name="row.t.encrypted && row.thumb ? row.t.identifier : null" :fetchable="!row.t.encrypted && (row.t.hasCloud || row.t.hasLocal) && row.thumb" :is-cloud="!row.t.hasLocal && row.t.hasCloud" :cloud-newer="row.t.cloudNewer" :thumb-token="String(row.t.time || row.t.size || 0)" :fallback="row.t.stem.slice(0,1) || '?'" :fallback-html="phHtml(row.t.identifier, row.info)" :alt="row.t.identifier" @unlock="onUnlock" />
             <span v-if="row.ov" class="gallery-tile-overlay" v-html="row.ov"></span>
+            <span v-if="row.act" class="gallery-tile-action-slot"><button type="button" class="gallery-tile-action" :class="row.act.state || 'ready'" :title="row.act.title" :aria-label="row.act.title" @click.stop="tileAction(row.item)" @pointerdown.stop v-html="badgeIcon2(row.act.icon)"></button></span>
             <span v-if="row.t.encrypted" class="gallery-tile-lockmark" :title="L.encrypted" v-html="ICON.lock"></span>
             <div class="gallery-tile-name-row">
               <span v-if="row.t.isActive" class="gallery-tile-active-tag">{{ L.activeTag }}</span>
@@ -21171,8 +21310,14 @@ function createGallery(el2, deps) {
     const store = tp2.store ?? (typeof indexedDB !== "undefined" && tp2.dbName ? idbThumbStore({ dbName: tp2.dbName, storeName: "gallery-thumbs" }) : memoryThumbStore());
     thumbs = createThumbCache({ store, fetch: tp2.fetch, keyOf: (identifier) => thumbKeyFor(tp2.galleryId?.() ?? "default", identifier), report: (e10) => deps.reportError(e10, "log") });
   }
-  const handle = mountGalleryScreen(el2, { ...deps, store: deps.store, data, thumbs: thumbs ?? void 0, thumbKinds: deps.policy.thumbs?.kinds ?? [] });
-  return { handle, data, thumbs };
+  let facts = null;
+  if (deps.policy.facts) {
+    const fp = deps.policy.facts;
+    const store = fp.store ?? (typeof indexedDB !== "undefined" && fp.dbName ? idbThumbStore({ dbName: fp.dbName, storeName: "gallery-facts" }) : memoryThumbStore());
+    facts = createFactsCache({ store, fetch: fp.fetch, keyOf: (identifier) => factsKeyFor(fp.galleryId?.() ?? "default", identifier), report: (e10) => deps.reportError(e10, "log") });
+  }
+  const handle = mountGalleryScreen(el2, { ...deps, store: deps.store, data, thumbs: thumbs ?? void 0, thumbKinds: deps.policy.thumbs?.kinds ?? [], facts: facts ?? void 0, factsKinds: deps.policy.facts?.kinds ?? [] });
+  return { handle, data, thumbs, facts };
 }
 
 // src/device-kv.ts
@@ -36250,6 +36395,11 @@ var KV_FOLDER = "gallery-folder";
 var KV_SCENE = "last-scene";
 var THUMB_PEEK_BYTES = 128 * 1024;
 var MANIFEST_ENTRY = ".moonsinger/manifest.json";
+var FACTS_DB = "moonsinger-facts";
+var factsOf = (v) => {
+  const f2 = v?.final;
+  return f2 && typeof f2.rev === "number" ? { final: { rev: f2.rev, secs: Number(f2.secs ?? 0) } } : null;
+};
 var THUMB_DB = "moonsinger-thumbs";
 var TEXT = {
   "gal.empty.none": "\u8FD8\u6CA1\u6709\u6B4C\u3002\u70B9\u300C\u65B0\u5EFA\u300D\u5199\u4E00\u9996\uFF0C\u6216\u628A .mxl \u62D6\u8FDB\u6765\u3002",
@@ -36292,7 +36442,9 @@ function initGalleryHost(d3) {
       await d3.flushLocal();
     },
     dropCheckpoint: () => {
-    }
+    },
+    tileAction: (item, facts) => playTile(item.identifier, factsOf(facts))
+    // 封面上的 ▶（0.8.0 包画、包接点击、不开卡）
   };
   const zipFile = (id2) => requireStore().zip(id2, { mode: "existing" });
   const status = (msg, isError) => reportError(msg, isError ? "error" : "info");
@@ -36317,12 +36469,22 @@ function initGalleryHost(d3) {
       tileOverlayHtml: (id2, item) => coverHtml(identifiers.parse(id2)?.stem ?? id2, {
         sizeText: item?.size != null ? humanSize(item.size) : void 0,
         editedText: item?.lastModified ? `\u6539\u4E8E ${new Date(item.lastModified).toLocaleString()}` : void 0
-      }) + (item && !item.aside ? playButtonHtml(id2, item) : "")
+      }),
+      // 定稿了的歌：右下角 ▶（事实没到 = 不画；没定稿 = 不画）
+      tileAction: (id2, _info, facts) => {
+        const f2 = factsOf(facts);
+        return f2 ? { icon: "play", title: `\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C ${f2.final.rev} \u7248\uFF0C${f2.final.secs.toFixed(0)} \u79D2\uFF09${playingId === id2 && !audio.paused ? " \xB7 \u6B63\u5728\u653E" : ""}`, state: "ready" } : null;
+      }
     },
     policy: {
       isImage: () => false,
       // 缩略图：fetch = store getPeek 按身份尾读（source 必填：cloud 绝不落回本地）。null = 到达了但没有（进缓存、显示底色）；抛 = 够不着（不缓存）。
-      thumbs: { kinds: ["song"], dbName: THUMB_DB, fetch: (id2, source) => zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: THUMBNAIL_ENTRY, source }) }
+      thumbs: { kinds: ["song"], dbName: THUMB_DB, fetch: (id2, source) => zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: THUMBNAIL_ENTRY, source }) },
+      // 事实（0.8.0）：尾读总目录看有没有定稿记录；null = 确定没定稿（进缓存）；抛 = 够不着（不缓存，下次再问）
+      facts: { kinds: ["song"], dbName: FACTS_DB, fetch: async (id2, source) => {
+        const rec = await peekFinal(id2, source);
+        return rec ? { final: { rev: rec.rev, secs: rec.mp3.secs } } : null;
+      } }
     },
     tile: { aspect: 1 },
     // 唱片封面 = 方图（user 2026-10-08「我们这个应该是唱片封面，是矩形的」）
@@ -36333,15 +36495,8 @@ function initGalleryHost(d3) {
     text: { lang: "zh", t: (key) => TEXT[key] }
   };
   let gallery2 = null;
-  const finals = /* @__PURE__ */ new Map();
-  const tokenOf = (item) => `${item.lastModified ?? 0}:${item.size ?? 0}`;
-  function playButtonHtml(id2, item) {
-    const k2 = finals.get(id2), state = k2 && k2.token === tokenOf(item) ? k2.rec ? "is-final" : "is-none" : "";
-    return `<button type="button" class="ms-cover-play ${state}" data-ms-play="${esc9(id2)}" data-ms-token="${esc9(tokenOf(item))}" title="${k2?.rec ? `\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C ${k2.rec.rev} \u7248\uFF0C${k2.rec.mp3.secs.toFixed(0)} \u79D2\uFF09` : "\u8FD9\u9996\u8FD8\u6CA1\u5B9A\u7A3F"}" aria-label="\u542C">${iconHtml2("play")}</button>`;
-  }
-  const esc9 = (x2) => x2.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
-  async function peekFinal(id2) {
-    const b3 = await zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: MANIFEST_ENTRY, source: "local" });
+  async function peekFinal(id2, source = "local") {
+    const b3 = await zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: MANIFEST_ENTRY, source });
     if (!b3) return null;
     try {
       return parseFinalRecord(JSON.parse(await b3.text()).final);
@@ -36349,54 +36504,6 @@ function initGalleryHost(d3) {
       return null;
     }
   }
-  let resolving = false;
-  const pendingIds = /* @__PURE__ */ new Set();
-  function scanFinals() {
-    for (const b3 of mountEl.querySelectorAll("[data-ms-play]")) {
-      const id2 = b3.dataset.msPlay, tok = b3.dataset.msToken ?? "", k2 = finals.get(id2);
-      if (k2 && k2.token === tok) {
-        b3.classList.toggle("is-final", !!k2.rec);
-        b3.classList.toggle("is-none", !k2.rec);
-        if (k2.rec) b3.title = `\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C ${k2.rec.rev} \u7248\uFF0C${k2.rec.mp3.secs.toFixed(0)} \u79D2\uFF09`;
-      } else pendingIds.add(id2);
-    }
-    void drainFinals();
-  }
-  async function drainFinals() {
-    if (resolving) return;
-    resolving = true;
-    try {
-      for (; ; ) {
-        const id2 = pendingIds.values().next().value;
-        if (!id2) break;
-        pendingIds.delete(id2);
-        if (fullEl.hidden) break;
-        const btn = mountEl.querySelector(`[data-ms-play="${CSS.escape(id2)}"]`);
-        if (!btn) continue;
-        const tok = btn.dataset.msToken ?? "";
-        try {
-          finals.set(id2, { token: tok, rec: await peekFinal(id2) });
-        } catch (e10) {
-          diagNote("gallery", `peek final ${id2}: ${e10.message}`);
-          continue;
-        }
-        const k2 = finals.get(id2);
-        for (const b3 of mountEl.querySelectorAll(`[data-ms-play="${CSS.escape(id2)}"]`)) {
-          b3.classList.toggle("is-final", !!k2.rec);
-          b3.classList.toggle("is-none", !k2.rec);
-          if (k2.rec) b3.title = `\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C ${k2.rec.rev} \u7248\uFF0C${k2.rec.mp3.secs.toFixed(0)} \u79D2\uFF09`;
-        }
-      }
-    } finally {
-      resolving = false;
-    }
-  }
-  let scanTimer = 0;
-  new MutationObserver(() => {
-    if (fullEl.hidden) return;
-    clearTimeout(scanTimer);
-    scanTimer = window.setTimeout(scanFinals, 120);
-  }).observe(mountEl, { childList: true, subtree: true });
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player";
   playerEl.hidden = true;
@@ -36410,7 +36517,6 @@ function initGalleryHost(d3) {
     playerEl.querySelector(".ms-player-time").textContent = `${fmtTime2(audio.currentTime)} / ${fmtTime2(audio.duration)}`;
     playerEl.querySelector(".ms-player-toggle").innerHTML = iconHtml2(audio.paused ? "play" : "pause");
     playerEl.querySelector(".ms-player-loop").classList.toggle("is-on", audio.loop);
-    for (const b3 of mountEl.querySelectorAll("[data-ms-play]")) b3.classList.toggle("is-playing", b3.dataset.msPlay === playingId && !audio.paused);
   };
   audio.addEventListener("timeupdate", drawPlayer);
   audio.addEventListener("play", drawPlayer);
@@ -36436,23 +36542,22 @@ function initGalleryHost(d3) {
     } catch {
     }
   }
-  async function playTile(id2) {
+  async function playTile(id2, facts) {
     if (playingId === id2) {
       if (audio.paused) void audio.play();
       else audio.pause();
       return;
     }
-    const k2 = finals.get(id2);
-    if (k2 && !k2.rec) {
+    if (!facts) {
       status("\u8FD9\u9996\u8FD8\u6CA1\u5B9A\u7A3F\uFF1A\u6253\u5F00\u5B83\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u5B9A\u7A3F\u2026\u300D\u2014\u2014\u5B9A\u7A3F\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002");
       return;
     }
     const stem = identifiers.parse(id2)?.stem ?? id2;
     try {
       const b3 = await withBusy(`\u53D6\u300C${stem}\u300D\u7684 mp3\u2026`, async () => {
-        const rec = k2?.rec ?? await peekFinal(id2);
+        const rec = await peekFinal(id2);
         if (!rec) {
-          finals.set(id2, { token: finals.get(id2)?.token ?? "", rec: null });
+          void gallery2?.facts?.invalidate(id2);
           return null;
         }
         const blob = await zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: rec.mp3.path, source: "local" });
@@ -36461,7 +36566,6 @@ function initGalleryHost(d3) {
       });
       if (!b3) {
         status("\u8FD9\u9996\u8FD8\u6CA1\u5B9A\u7A3F\uFF1A\u6253\u5F00\u5B83\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u5B9A\u7A3F\u2026\u300D\u2014\u2014\u5B9A\u7A3F\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002");
-        scanFinals();
         return;
       }
       stopPlayer();
@@ -36489,16 +36593,6 @@ function initGalleryHost(d3) {
       stopPlayer();
     }
   }
-  mountEl.addEventListener("click", (e10) => {
-    const b3 = e10.target.closest("[data-ms-play]");
-    if (!b3) return;
-    e10.stopPropagation();
-    e10.preventDefault();
-    void playTile(b3.dataset.msPlay);
-  }, true);
-  mountEl.addEventListener("pointerdown", (e10) => {
-    if (e10.target.closest("[data-ms-play]")) e10.stopPropagation();
-  }, true);
   playerEl.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-p]")?.dataset.p;
     if (!v) return;
@@ -36658,11 +36752,11 @@ function initGalleryHost(d3) {
     /** 封面变了（存了新封面）：丢掉这首歌的缩略图缓存，下次露面重取。 */
     invalidateThumb: (id2) => {
       void gallery2?.thumbs?.invalidate(id2);
-      finals.delete(id2);
+      void gallery2?.facts?.invalidate(id2);
     },
+    // 封面 / 定稿变了：缩略图和事实都重取
     /** 封面上在放的那首（E2E 用）。 */
-    playing: () => playingId && !audio.paused ? playingId : null,
-    finalOf: (id2) => finals.get(id2)?.rec ?? null
+    playing: () => playingId && !audio.paused ? playingId : null
   };
 }
 
@@ -42023,7 +42117,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "7fee18605b71",
+  cssHash: "98bcd64e254d",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -45277,4 +45371,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e371d1272700.mjs.map
+//# sourceMappingURL=moonsinger-b69a93515e02.mjs.map

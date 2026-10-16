@@ -75,9 +75,10 @@ check(!(await p.$('.offer [data-v="q:standard"]')) && /定稿的那一份/.test(
 await p.click('.offer [data-v="close"]'); await p.waitForTimeout(100);
 // 歌库：封面上 ▶ 亮、点了放（不打开那首）
 await p.click("#libBtn"); await p.waitForTimeout(800);
-await p.waitForSelector(`[data-ms-play="${id}"].is-final`, { timeout: 8000 }).catch(() => null);
-check(!!(await p.$(`[data-ms-play="${id}"].is-final`)), "歌库卡片：定稿的封面上 ▶ 亮着");
-await p.click(`[data-ms-play="${id}"]`); await p.waitForTimeout(900);
+const actionSel = `.gallery-tile:has(.gallery-tile-name[title="${id}"]) .gallery-tile-action.ready`;   // 图库包 0.8.0：ui.tileAction 画的钮（事实到了才有）
+await p.waitForSelector(actionSel, { timeout: 8000 }).catch(() => null);
+check(!!(await p.$(actionSel)), "歌库卡片：定稿的封面上 ▶ 亮着（包的动作钮）");
+await p.click(actionSel); await p.waitForTimeout(900);
 check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "点 ▶ 没有打开那首（还在歌库）");
 check(!(await p.$eval(".ms-player", (e) => e.hidden)) && /定稿 1/.test(await p.$eval(".ms-player-title", (e) => e.textContent ?? "")), "底边出了播放条（歌名 · 定稿 1）");
 const playingId = await p.evaluate(() => window.__moonsinger.gallery()?.playing());
