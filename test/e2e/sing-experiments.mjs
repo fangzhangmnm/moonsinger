@@ -26,9 +26,12 @@ const txt = await p.$eval(".inst-page details.ip-adv", (e) => e.textContent ?? "
 check(/齐平/.test(txt) && /齐平过渡/.test(txt) && /齐平上限/.test(txt) && /借元音门槛/.test(txt) && /气息/.test(txt), "五行旋钮都在");
 check(await p.$eval('.inst-page [data-v="core:level:0.8"]', (e) => e.classList.contains("is-on") && /默认/.test(e.textContent ?? "")), "齐平「0.8（默认）」亮着");
 check(await p.$eval('.inst-page [data-v="core:levelContinuous:1"]', (e) => e.classList.contains("is-on") && /默认/.test(e.textContent ?? "")), "齐平过渡「连续（默认）」亮着");
-// 切「每字重起」→ 存进候选 + 重唱带新旋钮
+// 切「每字重起」→ 存进候选 + 重唱带新旋钮；先滚到底（「高级」在最下面）——调一下页面不许弹回顶端（user 2026-10-17「我调歌手设置的时候每调一下页面都会弹回顶端」）
 await p.evaluate(() => { window.__opts = []; });
+const sc0 = await p.$eval(".inst-page .ip-body", (e) => { e.scrollTop = e.scrollHeight; return e.scrollTop; });
 await p.click('.inst-page [data-v="core:levelContinuous:0"]'); await p.waitForTimeout(150);
+const sc1 = await p.$eval(".inst-page .ip-body", (e) => e.scrollTop);
+check(sc0 > 50 && Math.abs(sc1 - sc0) <= 2, "调一下 = 页面停在原地（不弹回顶端）", `${sc0} → ${sc1}`);
 check(await p.$eval('.inst-page [data-v="core:levelContinuous:0"]', (e) => e.classList.contains("is-on")), "点了 = 那一格亮（重画后还开着折叠）");
 check(await p.$eval(".inst-page details.ip-adv", (e) => e.open), "重画后「高级」还开着");
 check(await p.evaluate(() => JSON.stringify(window.__moonsinger.extras()).includes('"levelContinuous":0')), "存进了休息室快照（by value）");

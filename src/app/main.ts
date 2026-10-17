@@ -2101,6 +2101,8 @@ function drawInst(): void {
     (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>高级：唱法核心的旋钮</summary>${ownAdv.map(rowOf).join("")}</details>` : "") +
     ownTail.map(rowOf).join("") +
     (!plug ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
+  // 整页重画会换掉滚动的那一层（.ip-body）：记下滚到哪、画完放回去（user 2026-10-17「我调歌手设置的时候每调一下页面都会弹回顶端」）；刚打开那一下由 openInstPage 滚回顶
+  const keepScroll = instEl.querySelector<HTMLElement>(".ip-body")?.scrollTop ?? 0;
   instEl.innerHTML =
     `<div class="ip-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="ip-title">乐器</span>` +
     (parts.length > 1 ? `<select class="ip-part" title="换一个声部">${parts.map((x) => `<option value="${esc(x.p.id)}"${x.p.id === D.st.at.part ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc(parts[0]?.label ?? rn)}</span>`) +
@@ -2124,6 +2126,7 @@ function drawInst(): void {
   inp.addEventListener("change", () => setRole(inp.value));
   inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); setRole(inp.value); drawInst(); } });
   instEl.querySelector<HTMLSelectElement>("#sfSel")?.addEventListener("change", (e) => { const picked = instPicked; if (!picked) return; picked.sel = (e.target as HTMLSelectElement).value; const p = picked.presets.find((x) => `${x.bank}:${x.program}` === picked.sel); const n = instEl.querySelector<HTMLInputElement>("#sfName"); if (n && p) n.value = p.name; });
+  if (keepScroll) instEl.querySelector<HTMLElement>(".ip-body")!.scrollTop = keepScroll;
   instEl.querySelector<HTMLDetailsElement>("details.ip-adv")?.addEventListener("toggle", (e) => { instAdvOpen = (e.target as HTMLDetailsElement).open; });
   instEl.querySelector<HTMLSelectElement>(".ip-part")?.addEventListener("change", (e) => { commitRoleName(); instPicked = null; update(setFocus(D.st, D.st.at.paper, (e.target as HTMLSelectElement).value)); sound.allOff(); void prepareBank(); pad.render(); drawInst(); });
 }
