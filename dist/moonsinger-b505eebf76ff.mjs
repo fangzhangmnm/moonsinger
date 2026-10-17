@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.23-2026-10-16";
+var APP_VERSION = "v0.12.24-2026-10-17";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -13177,6 +13177,10 @@ var GALLERY_TEXT = {
   "cf.cloudAccountOfflineInfo": { zh: "\u4E91\u7AEF\uFF1A{who}\uFF08\u79BB\u7EBF\uFF09", en: "Cloud: {who} (offline)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\uFF09" },
   "cf.cloudAccountOfflineTitle": { zh: "\u4E91\u7AEF\uFF1A{who}\uFF08\u79BB\u7EBF\uFF0C\u65E0\u6CD5\u63A8 / \u62C9\uFF09", en: "Cloud: {who} (offline, cannot push / pull)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}\uFF08\u30AA\u30D5\u30E9\u30A4\u30F3\u3001push / pull \u4E0D\u53EF\uFF09" },
   "cf.cloudAccountTitle": { zh: "\u4E91\u7AEF\uFF1A{who}\uFF08\u70B9\u5F00\u8D26\u53F7\u83DC\u5355\uFF09", en: "Cloud: {who} (tap to open account menu)", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A{who}\uFF08\u30A2\u30AB\u30A6\u30F3\u30C8\u30E1\u30CB\u30E5\u30FC\u3092\u958B\u304F\uFF09" },
+  "cf.cloudGoneTitle": { zh: "\u4E91\u7AEF\u6CA1\u6709\u8FD9\u4EFD", en: "Not in the cloud", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u3042\u308A\u307E\u305B\u3093" },
+  "cf.body.absent": { zh: "\u300C{name}\u300D\u5728\u4E91\u7AEF\u5DF2\u7ECF\u4E0D\u5728\u4E86\uFF08\u522B\u7684\u8BBE\u5907\u5220\u4E86\uFF0C\u6216\u79FB\u8FDB\u4E86\u56DE\u6536\u7AD9\uFF09\uFF0C\u672C\u673A\u8FD8\u6709\u4E00\u4EFD\u6CA1\u4E0A\u4F20\u7684\u3002\u4E91\u7AEF\u8986\u76D6\u672C\u5730 = \u8DDF\u7740\u4E91\u7AEF\uFF0C\u672C\u673A\u8FD9\u4EFD\u79FB\u5230\u56DE\u6536\u7AD9\uFF1B\u672C\u5730\u8986\u76D6\u4E91\u7AEF = \u628A\u672C\u673A\u7684\u4F20\u56DE\u53BB\u3002", en: "\u201C{name}\u201D is no longer in the cloud (deleted or trashed on another device); this device still has an un-uploaded copy. Cloud overwrites local = follow the cloud, this copy goes to the trash; Local overwrites cloud = upload it back.", ja: "\u300C{name}\u300D\u306F\u30AF\u30E9\u30A6\u30C9\u304B\u3089\u6D88\u3048\u3066\u3044\u307E\u3059\uFF08\u5225\u306E\u7AEF\u672B\u3067\u524A\u9664\u307E\u305F\u306F\u3054\u307F\u7BB1\u3078\uFF09\u3002\u3053\u306E\u7AEF\u672B\u306B\u306F\u672A\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u306E\u7248\u304C\u3042\u308A\u307E\u3059\u3002\u30AF\u30E9\u30A6\u30C9\u3067\u30ED\u30FC\u30AB\u30EB\u3092\u4E0A\u66F8\u304D = \u30AF\u30E9\u30A6\u30C9\u306B\u5408\u308F\u305B\u3066\u3054\u307F\u7BB1\u3078\uFF1B\u30ED\u30FC\u30AB\u30EB\u3067\u30AF\u30E9\u30A6\u30C9\u3092\u4E0A\u66F8\u304D = \u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u3002" },
+  "cf.body.never": { zh: "\u300C{name}\u300D\u4ECE\u6CA1\u4F20\u5230\u4E91\u7AEF\u8FC7\u3002\u672C\u5730\u8986\u76D6\u4E91\u7AEF = \u7B2C\u4E00\u6B21\u4E0A\u4F20\uFF1B\u4E91\u7AEF\u8986\u76D6\u672C\u5730 = \u4E91\u7AEF\u6CA1\u6709\u8FD9\u4EFD\uFF0C\u672C\u673A\u8FD9\u4EFD\u79FB\u5230\u56DE\u6536\u7AD9\u3002", en: "\u201C{name}\u201D has never been uploaded. Local overwrites cloud = upload it for the first time; Cloud overwrites local = the cloud has none, so this copy goes to the trash.", ja: "\u300C{name}\u300D\u306F\u4E00\u5EA6\u3082\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u3055\u308C\u3066\u3044\u307E\u305B\u3093\u3002\u30ED\u30FC\u30AB\u30EB\u3067\u30AF\u30E9\u30A6\u30C9\u3092\u4E0A\u66F8\u304D = \u521D\u56DE\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\uFF1B\u30AF\u30E9\u30A6\u30C9\u3067\u30ED\u30FC\u30AB\u30EB\u3092\u4E0A\u66F8\u304D = \u30AF\u30E9\u30A6\u30C9\u306B\u7121\u3044\u306E\u3067\u3054\u307F\u7BB1\u3078\u3002" },
+  "cf.body.unchanged": { zh: "\u300C{name}\u300D\u4E91\u7AEF\u8FD8\u662F\u4E0A\u6B21\u540C\u6B65\u7684\u90A3\u4E00\u7248\uFF0C\u672C\u673A\u6709\u65B0\u6539\u52A8\u6CA1\u4E0A\u4F20\u3002", en: "\u201C{name}\u201D in the cloud is still the last synced version; this device has new changes not uploaded yet.", ja: "\u300C{name}\u300D\u306E\u30AF\u30E9\u30A6\u30C9\u7248\u306F\u524D\u56DE\u540C\u671F\u306E\u307E\u307E\u3001\u3053\u306E\u7AEF\u672B\u306B\u672A\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u3002" },
   "cf.cloudNewerTitle": { zh: "\u4E91\u7AEF\u6709\u65B0\u7248\u672C", en: "A newer version exists in the cloud", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u65B0\u3057\u3044\u30D0\u30FC\u30B8\u30E7\u30F3\u304C\u3042\u308A\u307E\u3059" },
   "cf.cloudNotConfigured": { zh: "\u4E91\u7AEF\uFF1A\u672A\u914D\u7F6E", en: "Cloud: not configured", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u672A\u8A2D\u5B9A" },
   "cf.cloudNotSignedIn": { zh: "\u4E91\u7AEF\uFF1A\u672A\u767B\u5F55", en: "Cloud: not signed in", ja: "\u30AF\u30E9\u30A6\u30C9\uFF1A\u672A\u30ED\u30B0\u30A4\u30F3" },
@@ -13212,7 +13216,6 @@ var GALLERY_TEXT = {
   "gal.busy.purge": { zh: "\u6B63\u5728\u6C38\u4E45\u5220\u9664 {name}\u2026", en: "Deleting {name} forever\u2026", ja: "\u5B8C\u5168\u306B\u524A\u9664\u4E2D {name}\u2026" },
   "gal.busy.rename": { zh: "\u6B63\u5728\u91CD\u547D\u540D {name} \u2192 {to}\u2026", en: "Renaming {name} \u2192 {to}\u2026", ja: "\u540D\u524D\u5909\u66F4\u4E2D {name} \u2192 {to}\u2026" },
   "gal.busy.restore": { zh: "\u6B63\u5728\u6062\u590D {name}\u2026", en: "Restoring {name}\u2026", ja: "\u5FA9\u5143\u4E2D {name}\u2026" },
-  "gal.busy.reupload": { zh: "\u91CD\u65B0\u4E0A\u4F20\u4E2D\u2026", en: "Re-uploading\u2026", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u4E2D\u2026" },
   "gal.copy": { zh: "\u521B\u5EFA\u526F\u672C", en: "Duplicate", ja: "\u8907\u88FD\u3092\u4F5C\u6210" },
   "gal.del.activeSuffix": { zh: " \u5F53\u524D\u753B\u5E03\u4F1A\u5173\u95ED\u3002", en: " The current canvas will close.", ja: " \u73FE\u5728\u306E\u30AD\u30E3\u30F3\u30D0\u30B9\u306F\u9589\u3058\u3089\u308C\u307E\u3059\u3002" },
   "gal.del.cloudDetail": { zh: "\u4F1A\u8FDB\u4E91\u7AEF\u56DE\u6536\u7AD9\uFF0C\u53EF\u6062\u590D\u3002", en: "Goes to cloud trash; can be restored.", ja: "\u30AF\u30E9\u30A6\u30C9\u306E\u30B4\u30DF\u7BB1\u306B\u5165\u308A\u3001\u5FA9\u5143\u53EF\u80FD\u3067\u3059\u3002" },
@@ -13265,13 +13268,20 @@ var GALLERY_TEXT = {
   "gal.ph.newName": { zh: "\u65B0\u540D\u5B57", en: "New name", ja: "\u65B0\u3057\u3044\u540D\u524D" },
   "gal.pullLocal": { zh: "\u62C9\u53D6\u5230\u672C\u5730", en: "Pull to local", ja: "\u30ED\u30FC\u30AB\u30EB\u306B\u53D6\u5F97" },
   "gal.purge": { zh: "\u6C38\u4E45\u5220\u9664", en: "Delete forever", ja: "\u5B8C\u5168\u306B\u524A\u9664" },
-  "gal.pushCloud": { zh: "\u63A8\u9001\u5230\u4E91\u7AEF", en: "Push to cloud", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u9001\u4FE1" },
   "gal.reload": { zh: "\u91CD\u65B0\u8F7D\u5165\u5E94\u7528", en: "Reload app", ja: "\u30A2\u30D7\u30EA\u3092\u518D\u8AAD\u307F\u8FBC\u307F" },
   "gal.rename": { zh: "\u91CD\u547D\u540D", en: "Rename", ja: "\u540D\u524D\u3092\u5909\u66F4" },
   "gal.renameKeep": { zh: "\u91CD\u547D\u540D\u7559\u5B58", en: "Rename & keep", ja: "\u540D\u524D\u3092\u5909\u3048\u3066\u4FDD\u6301" },
   "gal.restore": { zh: "\u6062\u590D", en: "Restore", ja: "\u5FA9\u5143" },
   "gal.retry": { zh: "\u91CD\u8BD5", en: "Retry", ja: "\u518D\u8A66\u884C" },
-  "gal.reupload": { zh: "\u91CD\u65B0\u4E0A\u4F20", en: "Re-upload", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9" },
+  "gal.resolve": { zh: "\u5904\u7406\u2026", en: "Resolve\u2026", ja: "\u51E6\u7406\u2026" },
+  "gal.busy.resolve": { zh: "\u6B63\u5728\u5904\u7406 {name}\u2026", en: "Resolving {name}\u2026", ja: "{name} \u3092\u51E6\u7406\u4E2D\u2026" },
+  "gal.st.resolve.tookCloud": { zh: "\u4E91\u7AEF\u8986\u76D6\u4E86\u672C\u5730\uFF1A{name}\uFF08\u8FD9\u53F0\u7684\u90A3\u4EFD\u8FDB\u4E86\u5907\u4EFD\u7BB1\uFF09", en: "Cloud overwrote local: {name} (this device's copy went to the backup bin)", ja: "\u30AF\u30E9\u30A6\u30C9\u3067\u30ED\u30FC\u30AB\u30EB\u3092\u4E0A\u66F8\u304D\uFF1A{name}\uFF08\u3053\u306E\u7AEF\u672B\u306E\u7248\u306F\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3078\uFF09" },
+  "gal.st.resolve.pushed": { zh: "\u672C\u5730\u8986\u76D6\u4E86\u4E91\u7AEF\uFF1A{name}", en: "Local overwrote cloud: {name}", ja: "\u30ED\u30FC\u30AB\u30EB\u3067\u30AF\u30E9\u30A6\u30C9\u3092\u4E0A\u66F8\u304D\uFF1A{name}" },
+  "gal.st.resolve.trashed": { zh: "\u8DDF\u4E86\u4E91\u7AEF\uFF1A\u4E91\u7AEF\u90A3\u4EFD\u5DF2\u7ECF\u6CA1\u4E86\uFF0C\u8FD9\u53F0\u7684 {name} \u79FB\u5230\u56DE\u6536\u7AD9\uFF08\u80FD\u6062\u590D\uFF09", en: "Followed the cloud: it is gone there, so {name} on this device went to the trash (recoverable)", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u5408\u308F\u305B\u307E\u3057\u305F\uFF1A\u30AF\u30E9\u30A6\u30C9\u306B\u7121\u3044\u306E\u3067 {name} \u306F\u3054\u307F\u7BB1\u3078\uFF08\u5FA9\u5143\u53EF\uFF09" },
+  "gal.st.resolve.cancelled": { zh: "\u8FD9\u6B21\u6CA1\u52A8\uFF1A{name}", en: "Nothing changed: {name}", ja: "\u5909\u66F4\u306A\u3057\uFF1A{name}" },
+  "gal.st.resolve.clean": { zh: "{name} \u6CA1\u6709\u8981\u5904\u7406\u7684\u6539\u52A8", en: "{name} has nothing to resolve", ja: "{name} \u306B\u51E6\u7406\u3059\u3079\u304D\u5909\u66F4\u306F\u3042\u308A\u307E\u305B\u3093" },
+  "gal.st.resolve.offline": { zh: "\u73B0\u5728\u79BB\u7EBF\uFF0C\u8FDE\u4E0D\u4E0A\u4E91\u7AEF\uFF1A{name}", en: "Offline, cannot reach the cloud: {name}", ja: "\u30AA\u30D5\u30E9\u30A4\u30F3\u306E\u305F\u3081\u30AF\u30E9\u30A6\u30C9\u306B\u63A5\u7D9A\u3067\u304D\u307E\u305B\u3093\uFF1A{name}" },
+  "gal.st.resolve.unresolved": { zh: "\u6CA1\u5904\u7406\u6210\uFF1A{name}\uFF08{e}\uFF09", en: "Could not resolve: {name} ({e})", ja: "\u51E6\u7406\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\uFF1A{name}\uFF08{e}\uFF09" },
   "gal.root": { zh: "\u6839\u76EE\u5F55", en: "root", ja: "\u30EB\u30FC\u30C8" },
   "gal.rootFolder": { zh: "/ \u6839\u76EE\u5F55", en: "/ root", ja: "/ \u30EB\u30FC\u30C8" },
   "gal.scope.both": { zh: "\u672C\u5730\u548C\u4E91\u7AEF", en: "local and cloud", ja: "\u30ED\u30FC\u30AB\u30EB\u3068\u30AF\u30E9\u30A6\u30C9" },
@@ -13324,9 +13334,6 @@ var GALLERY_TEXT = {
   "gal.st.restoreFail": { zh: "\u6062\u590D\u5931\u8D25\uFF1A{e}", en: "Restore failed: {e}", ja: "\u5FA9\u5143\u5931\u6557\uFF1A{e}" },
   "gal.st.restored": { zh: "\u5DF2\u6062\u590D\uFF1A{name}", en: "Restored: {name}", ja: "\u5FA9\u5143\uFF1A{name}" },
   "gal.st.restoredRenamed": { zh: "\u5DF2\u6062\u590D\uFF1A{name}\uFF08\u539F\u540D {orig} \u5DF2\u88AB\u5360\u7528\uFF09", en: "Restored: {name} (original name {orig} was taken)", ja: "\u5FA9\u5143\uFF1A{name}\uFF08\u5143\u306E\u540D\u524D {orig} \u306F\u4F7F\u7528\u4E2D\uFF09" },
-  "gal.st.reuploadConflict": { zh: "\u4E91\u7AEF\u5DF2\u5B58\u5728\u540C\u540D\u6587\u4EF6\uFF0C\u672A\u8986\u76D6\uFF1A{name}\uFF08\u8BF7\u6539\u540D\u6216\u4ECE\u4E91\u7AEF\u62C9\u53D6\uFF09", en: "A file with that name already exists on cloud; not overwritten: {name}", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u540C\u540D\u30D5\u30A1\u30A4\u30EB\u304C\u65E2\u306B\u5B58\u5728\u3057\u307E\u3059\u3002\u4E0A\u66F8\u304D\u3057\u307E\u305B\u3093\uFF1A{name}" },
-  "gal.st.reuploadFail": { zh: "\u91CD\u65B0\u4E0A\u4F20\u5931\u8D25\uFF1A{e}", en: "Re-upload failed: {e}", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u5931\u6557\uFF1A{e}" },
-  "gal.st.reuploaded": { zh: "\u5DF2\u91CD\u65B0\u4E0A\u4F20\uFF1A{name}", en: "Re-uploaded: {name}", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u5B8C\u4E86\uFF1A{name}" },
   "gal.st.unlocked": { zh: "\u5DF2\u89E3\u9501\u52A0\u5BC6\u4F5C\u54C1\uFF08\u5BC6\u7801\u53EA\u5728\u5185\u5B58\uFF0C\u5173\u9875\u5373\u5FD8\uFF09", en: "Unlocked (password kept in memory only, forgotten on close)", ja: "\u30ED\u30C3\u30AF\u89E3\u9664\uFF08\u30D1\u30B9\u30EF\u30FC\u30C9\u306F\u30E1\u30E2\u30EA\u306E\u307F\u3001\u9589\u3058\u308B\u3068\u7834\u68C4\uFF09" },
   "gal.toTrash": { zh: "\u9001\u5230\u56DE\u6536\u7AD9", en: "Move to trash", ja: "\u30B4\u30DF\u7BB1\u3078" },
   "gal.unloadLocal": { zh: "\u5378\u8F7D\u672C\u5730", en: "Unload local", ja: "\u30ED\u30FC\u30AB\u30EB\u3092\u89E3\u653E" },
@@ -13452,6 +13459,7 @@ var GALLERY_TEXT = {
   "st.fileDecrypting": { zh: "\u6B63\u5728\u89E3\u9664\u52A0\u5BC6 {name}\u2026", en: "Decrypting {name}\u2026", ja: "\u6697\u53F7\u5316\u89E3\u9664\u4E2D {name}\u2026" },
   "st.fileRekeying": { zh: "\u6B63\u5728\u6362\u5BC6\u7801\u91CD\u5C01 {name}\u2026", en: "Re-keying {name}\u2026", ja: "\u30D1\u30B9\u30EF\u30FC\u30C9\u5909\u66F4\u4E2D {name}\u2026" },
   "st.fileReuploading": { zh: "\u91CD\u65B0\u4E0A\u4F20\u2026", en: "Re-uploading\u2026", ja: "\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u4E2D\u2026" },
+  "st.fileUploading": { zh: "\u6B63\u5728\u4E0A\u4F20\u2026", en: "Uploading\u2026", ja: "\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\u4E2D\u2026" },
   "st.folderCreating": { zh: "\u65B0\u5EFA\u6587\u4EF6\u5939\u2026", en: "Creating folder\u2026", ja: "\u30D5\u30A9\u30EB\u30C0\u4F5C\u6210\u4E2D\u2026" },
   "st.folderDeleting": { zh: "\u5220\u9664\u6587\u4EF6\u5939\u2026", en: "Deleting folder\u2026", ja: "\u30D5\u30A9\u30EB\u30C0\u524A\u9664\u4E2D\u2026" },
   // tLatin() 引用的 key（机器抄漏 → 手补 2026-09-10）
@@ -17310,7 +17318,7 @@ function createStore(config) {
     return { ok: true, where: r10.where, oldKept: r10.oldKept, oldUnknown: r10.oldUnknown, oldCloudOrphan: r10.oldCloudOrphan, cloudDeferred: r10.cloudDeferred, oldName: from };
   });
   const onConflictFor = (occasion) => async ({ name }) => {
-    return ui3.resolveConflict({ name, local: await local.get(name), cloud: null, occasion });
+    return ui3.resolveConflict({ name, local: await local.get(name), cloud: null, occasion, cloudState: "changed" });
   };
   const onConflict = onConflictFor("push");
   async function encTailBytes(name, n10, tryCloud) {
@@ -17596,10 +17604,22 @@ function createStore(config) {
           return { status: "clean" };
         if (!isOnline())
           return { status: "offline" };
-        const choice = await onConflictFor("push")({ name });
+        let cloudState = "changed";
+        try {
+          const meta = await cloud.fetchMeta(name);
+          cloudState = !meta ? head.seenBase(name) == null ? "never" : "absent" : meta.etag === head.seenBase(name) ? "unchanged" : "changed";
+        } catch (e10) {
+          ui3.reportError(e10, "log");
+        }
+        const choice = await ui3.resolveConflict({ name, local: await local.get(name), cloud: null, occasion: "push", cloudState });
         if (choice === "cancel")
           return { status: "cancelled" };
         if (choice === "takeCloud") {
+          if (cloudState === "absent" || cloudState === "never") {
+            const d3 = await delSF(name);
+            notifyFolderOf(name);
+            return d3.status === "trashed" ? { status: "trashed" } : { status: "unresolved", reason: d3.status };
+          }
           const r11 = await safeResolve.resolveConflict(name, "takeCloud", { adopt: opts?.adopt });
           notifyFolderOf(name);
           return r11.status === "resolved" ? { status: "took-cloud", backupName: r11.backupName } : { status: "unresolved", reason: r11.reason };
@@ -17889,7 +17909,9 @@ function createStore(config) {
         /** 把所有 dirty 文件推上云（不开文档；per-name serialize 与用户操作互斥）。
          *  failed 返名字是**错误报告**不是列举面（量级=失败数）：离线/冲突/落地未确认都算失败留 dirty（0.15.1 起**加密锁定不再是失败原因**：at-rest 字节直推，不要密码），
          *  绝不谎报——绿灯门以 `count()===0` 为准，不以本方法返回为准。冲突不在这里弹面（batch 里不级联
-         *  sheet）；名字留在 failed 里，用户打开该文件走正常 save/冲突面解决。 */
+         *  sheet）；名字留在 failed 里，用户打开该文件走正常 save/冲突面解决。
+         *  ⚠ 滥用警示：这是**自动续推**（登录后 / 回线 / 回前台把已 consent 的保存补上去），If-Match 守着、撞上就留 dirty。
+         *  **不要**把它接到用户按的「传上去 / 全部推送」按钮上——那是替人选了「本地覆盖云端」的方向。失败名单里的文件只能经 `resolve()` 处理。 */
         pushAll: async () => {
           roGuard("dirty.pushAll");
           await migrationReady;
@@ -19680,9 +19702,6 @@ function createGalleryVerbs(d3) {
       }
     });
   }
-  async function push(item) {
-    await d3.doc.push(item);
-  }
   async function unload(item) {
     await d3.doc.unload(item);
   }
@@ -19696,21 +19715,20 @@ function createGalleryVerbs(d3) {
       }
     });
   }
-  async function reupload(item) {
-    await d3.host.busy(t("gal.busy.reupload"), async () => {
+  async function resolve(item) {
+    const isActive = item.identifier === d3.host.activeIdentifier();
+    await d3.host.busy(t("gal.busy.resolve", { name: item.stem }), async () => {
       try {
-        const r10 = await docFile(item.identifier).reupload();
-        if (r10.status === "no-local") {
-          d3.host.status(t("gal.st.reuploadFail", { e: "no-local" }), true);
-          return;
-        }
-        d3.host.status(t("gal.st.reuploaded", { name: item.stem }));
+        if (isActive)
+          await d3.doc.exit();
+        const r10 = await docFile(item.identifier).resolve();
+        const key = r10.status === "took-cloud" ? "gal.st.resolve.tookCloud" : r10.status === "pushed" ? "gal.st.resolve.pushed" : r10.status === "trashed" ? "gal.st.resolve.trashed" : r10.status === "cancelled" ? "gal.st.resolve.cancelled" : r10.status === "clean" ? "gal.st.resolve.clean" : r10.status === "offline" ? "gal.st.resolve.offline" : "gal.st.resolve.unresolved";
+        const bad = key === "gal.st.resolve.offline" || key === "gal.st.resolve.unresolved";
+        d3.host.status(t(key, { name: item.stem, e: r10.reason ?? r10.status }), bad);
+        if (isActive && (r10.status === "took-cloud" || r10.status === "trashed") && d3.doc.open)
+          await d3.doc.open(item);
       } catch (e10) {
-        const msg = errMsg(e10);
-        if (e10?.name === "CloudNameCollisionError" || /collision|已存在|exists/i.test(msg))
-          d3.host.status(t("gal.st.reuploadConflict", { name: item.stem }), true);
-        else
-          d3.host.status(t("gal.st.reuploadFail", { e: msg }), true);
+        d3.host.status(t("gal.st.resolve.unresolved", { name: item.stem, e: errMsg(e10) }), true);
       }
     });
   }
@@ -19909,7 +19927,7 @@ function createGalleryVerbs(d3) {
       d3.host.status(t("gal.st.unlocked"));
     return ok2;
   }
-  return { rename, move, moveTargets, copy, push, unload, keepOffline, reupload, del, deleteImage, folderDelete, asideRestore, asidePurge, emptyAside, encryptItem, decryptItem, unlock, whereLabel };
+  return { rename, move, moveTargets, copy, resolve, unload, keepOffline, del, deleteImage, folderDelete, asideRestore, asidePurge, emptyAside, encryptItem, decryptItem, unlock, whereLabel };
 }
 
 // node_modules/@internal/gallery/dist/core/thumbs/thumb-store.js
@@ -20377,6 +20395,7 @@ var STORE_TEXT_KEYS = {
   "file.encrypting": "st.fileEncrypting",
   "file.decrypting": "st.fileDecrypting",
   "file.rekeying": "st.fileRekeying",
+  "file.uploading": "st.fileUploading",
   "file.reuploading": "st.fileReuploading",
   "folder.creating": "st.folderCreating",
   "folder.deleting": "st.folderDeleting"
@@ -20405,8 +20424,11 @@ function storeUIFor(d3) {
   return {
     busy: (label, fn, key) => key && QUIET_KEYS.has(key) ? quietBusy(label, fn) : d3.busy(label, fn),
     text: (key, params) => d3.text?.(key, params) ?? (STORE_TEXT_KEYS[key] ? t(STORE_TEXT_KEYS[key], params) : void 0),
-    resolveConflict: async ({ name, occasion }) => {
+    resolveConflict: async ({ name, occasion, cloudState }) => {
       const n10 = bare(name);
+      const gone = cloudState === "absent" || cloudState === "never";
+      const pushTitle = gone ? t("cf.cloudGoneTitle") : t("cf.cloudNewerTitle");
+      const pushBody = cloudState === "absent" ? t("cf.body.absent", { name: n10 }) : cloudState === "never" ? t("cf.body.never", { name: n10 }) : cloudState === "unchanged" ? t("cf.body.unchanged", { name: n10 }) : t("cf.body.push", { name: n10 });
       const choice = occasion === "open" ? await d3.sheets.lockSyncGate({
         title: t("cf.cloudNewerTitle"),
         message: t("cf.body.open", { name: n10 }),
@@ -20414,8 +20436,8 @@ function storeUIFor(d3) {
         showSpinner: false,
         actions: [{ label: t("cf.act.openLocal"), value: "cancel", primary: true }, { label: t("cf.act.cloudWins"), value: "takeCloud" }]
       }) : await d3.sheets.lockSyncGate({
-        title: t("cf.cloudNewerTitle"),
-        message: t("cf.body.push", { name: n10 }),
+        title: pushTitle,
+        message: pushBody,
         note: t("cf.note.keptSafe"),
         showSpinner: false,
         // 0.7.1：主按钮 = 云端覆盖本地（user 2026-10-16「默认云端才是 authority」「一切对齐」；此前主按钮是本地覆盖云端，挂机醒来顺手一点就把云端的新改动盖进备份箱）
@@ -20986,8 +21008,7 @@ function mountGalleryScreen(el2, d3) {
       const rename = wrap((item) => verbs.rename(item));
       const move = wrap((item) => verbs.move(item, { folder: folder.value, folderNames: data.folderNames }));
       const copy = wrap((item) => verbs.copy(item, data.files.map((it2) => it2.identifier)));
-      const push = wrap((item) => verbs.push(item));
-      const reupload = wrap((item) => verbs.reupload(item));
+      const resolve = wrap((item) => verbs.resolve(item));
       const unload = wrap((item) => verbs.unload(item));
       const keepOffline = wrap((item) => verbs.keepOffline(item));
       const del = wrap((item) => verbs.del(item));
@@ -21070,14 +21091,13 @@ function mountGalleryScreen(el2, d3) {
         moveTo: t("gal.moveTo"),
         copy: t("gal.copy"),
         pullLocal: t("gal.pullLocal"),
-        pushCloud: t("gal.pushCloud"),
+        resolve: t("gal.resolve"),
         unloadLocal: t("gal.unloadLocal"),
         encrypt: t("menu.encrypt"),
         decrypt: t("menu.decrypt"),
         toTrash: t("gal.toTrash"),
         restore: t("gal.restore"),
         purge: t("gal.purge"),
-        reupload: t("gal.reupload"),
         imageFile: t("gal.imageFile"),
         otherFile: t("gal.otherFile"),
         retry: t("gal.retry"),
@@ -21133,8 +21153,7 @@ function mountGalleryScreen(el2, d3) {
         rename,
         move,
         copy,
-        push,
-        reupload,
+        resolve,
         unload,
         keepOffline,
         del,
@@ -21231,7 +21250,7 @@ var GALLERY_TEMPLATE = `
                 <button type="button" class="danger" @click="del(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash-can"/></svg><span>{{ L.discardToTrash }}</span></button>
               </template>
               <template v-else-if="row.t.pendingGone">
-                <button type="button" @click="reupload(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#upload"/></svg><span>{{ L.reupload }}</span></button>
+                <button type="button" @click="resolve(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#cloud-pending"/></svg><span>{{ L.resolve }}</span></button>
                 <button type="button" class="danger" @click="del(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash-can"/></svg><span>{{ L.toTrash }}</span></button>
               </template>
               <template v-else>
@@ -21240,8 +21259,7 @@ var GALLERY_TEMPLATE = `
                 <button type="button" @click="copy(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#copy"/></svg><span>{{ L.copy }}</span></button>
                 <button v-if="row.t.badge==='cloudOnly'" type="button" @click="openTile(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#download"/></svg><span>{{ L.pullLocal }}</span></button>
                 <button v-if="row.t.badge==='cloudOnly'" type="button" @click="keepOffline(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#local-cache"/></svg><span>{{ L.keepOffline }}</span></button>
-                <button v-if="row.t.badge==='localOnly' || row.t.badge==='float'" type="button" @click="push(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#cloud-upload"/></svg><span>{{ L.pushCloud }}</span></button>
-                <button v-if="row.t.badge==='dirtyBoth' || row.t.badge==='conflictBoth'" type="button" @click="push(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#cloud-upload"/></svg><span>{{ L.pushCloud }}</span></button>
+                <button v-if="row.t.badge==='localOnly' || row.t.badge==='float' || row.t.badge==='dirtyBoth' || row.t.badge==='conflictBoth'" type="button" @click="resolve(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#cloud-pending"/></svg><span>{{ L.resolve }}</span></button>
                 <button v-if="row.t.hasLocal && row.t.hasCloud" type="button" @click="unload(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#unload-local-cache"/></svg><span>{{ L.unloadLocal }}</span></button>
                 <button v-if="hasEncryption && row.t.hasLocal && !row.t.encrypted" type="button" @click="encryptItem(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#lock"/></svg><span>{{ L.encrypt }}</span></button>
                 <button v-if="hasEncryption && row.t.hasLocal && row.t.encrypted" type="button" @click="decryptItem(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#unlock"/></svg><span>{{ L.decrypt }}</span></button>
@@ -45585,4 +45603,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1750ddb1a1a5.mjs.map
+//# sourceMappingURL=moonsinger-b505eebf76ff.mjs.map
