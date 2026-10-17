@@ -1,6 +1,6 @@
 # 定稿 mp3「听起来差很多、有破音」查案
 
-> created 20261017 by Claude Fable 5.1 · as-of v0.13.1 / 2026-10-17
+> created 20261017 by Claude Fable 5.1 · as-of v0.13.2 / 2026-10-17
 > user 2026-10-17：「有个bug一起fable修，定稿的mp3听起来差很多，你可以看一下onedrive里面的团子，渲染的定稿有破音」。AI 不听（家族红线）：下面全是量出来的，好不好听归 user 耳朵。
 
 ## 0. 结论先行
@@ -43,15 +43,30 @@
 
 SNR 不是听感（mp3 的相位 / 高频处理会压低样本级 SNR），只能比大小方向：同样大小 joint 比现状高 7 dB，码率每上一档再高 2–12 dB。
 
-## 4. 改了什么（v0.13.1）
+## 3½. 真 LAME（v0.13.2，user「lamejs一口气修」「标准192同意」）
 
-- `vendor/lamejs/lamejs.js` 一处本地补丁：`Mp3Encoder(ch, sr, kbps, opts?)`，`opts = { joint, reservoir, quality }`；不给 = 和上游逐字节一样。README / .d.ts 记了，升级上游要重打。
-- `src/export/mp3-worker.ts`：立体声传 `{ joint: true }`。单声道（「小文件」档）不受影响。
-- `test/mp3-encoder.test.ts`：帧头 mode 位守着（立体声 = joint、单声道 = mono、不给 opts = 上游）。
-- **默认码率没动**（标准仍 128k）：改默认 = 文件大小变（1 MB/分 → 1.4 MB/分 @192k），等 user 定。
+lamejs 的比特池修不了（移植坏在哪没必要挖），就把编码器换成**真 LAME**：libmp3lame 3.100 原版源码 + 我们的 `vendor/lame/lame-glue.c`，emscripten 编成 `lame.mjs` + `lame.wasm`（211 KB，`vendor/lame/build-lame.sh`，源码在家族检疫桶 `third-party/lame-3.100/`）。联合立体声 + 比特池都正常，直接吃 float（`lame_encode_buffer_ieee_float`），编码快 3–6 倍。同一把尺子（源 = 团子前 60 s）：
+
+| 设置 | 大小 | SNR 整体 | 瞬态秒均 | 最差的秒 | 编码 60 s 用时 |
+|---|---|---|---|---|---|
+| lamejs 现状（stereo、无比特池、q3）128k | 938 KB | 16.8 dB | 16.9 | 14.5 | 6.2 s |
+| lamejs 只开 joint 128k（v0.13.1） | 938 KB | 23.7 | 22.6 | 17.2 | 5.9 s |
+| **LAME joint + 比特池 q2 128k** | 938 KB | 24.2 | 23.5 | 19.1 | 1.9 s |
+| LAME joint + 比特池 q2 160k | 1172 KB | 25.0 | 24.5 | 21.0 | 2.1 s |
+| **LAME joint + 比特池 q2 192k（新的「标准」）** | 1407 KB | 29.4 | 28.9 | 25.8 | 1.6 s |
+| LAME joint + 比特池 q2 256k | 1876 KB | 41.9 | 39.5 | 32.5 | 1.8 s |
+| LAME stereo 无比特池 q3 128k（= lamejs 的设置，真 LAME 跑） | 938 KB | 23.1 | 22.2 | 19.9 | 1.0 s |
+
+最后一行说明 lamejs 的差不只是设置：同样的设置真 LAME 高 6 dB——移植本身就糙。
+
+## 4. 改了什么（v0.13.1 → v0.13.2）
+
+- v0.13.1（过渡，一天就被 v0.13.2 取代）：vendored lamejs 打本地补丁开 joint。
+- **v0.13.2：lamejs 整个删掉，换真 LAME**——`vendor/lame/`（`lame-glue.c` / `build-lame.sh` / `lame.mjs` / `lame.wasm` / `LICENSE.txt` LGPL v2 / `SOURCE.md`）；`src/export/lame.ts` = JS 接口（`createMp3Encoder` / `encodeAll`，联合立体声 + 比特池默认开、q2、CBR、不写 Xing 帧）；`src/export/mp3-worker.ts` 运行时从 `vendor/lame/lame.mjs` 载（同 WORLD 的做法，emscripten 产物不进打包），直接喂 float；`scripts/render-song.mjs` 的 mp3 输出同一份。守卫 `test/mp3-encoder.test.ts`（6 条：joint / stereo / mono 帧头、CBR 大小、确定性、分块 = 一口气、报错不静默）。
+- **「标准」= 立体声 192k（约 1.4 MB/分）**，user 2026-10-17「标准192同意」；「小文件」仍单声道 64k；参考窗的音频压缩仍 128k。
 
 ## 5. 没查到 / 等 user
 
 - 「破音」到底是哪一声我没法听。文件里没有削波；编码器这一步是唯一和实时不一样的地方，修了一半。**user 重新定稿一次（改稿 → 定稿）再听**：还破 = 下一个嫌疑是 F-16 那种小月相自己唱出来的爆音（实时里也有，只是 mp3 把它再糊一层）或者码率。
-- lamejs 的比特池为什么坏：没往下挖（它是 LGPL 的纯 JS 移植，坏在哪不影响我们——不开就是）。真要更好的编码器 = 换 WASM 的 LAME（另一轮）。
+- ~~lamejs 的比特池为什么坏：没往下挖~~ → 同日换成真 LAME（§3½），lamejs 删了。
 - 实时和定稿还剩一个物理差异：实时按设备采样率（多半 48 kHz）、定稿 44.1 kHz。两边都是同一个 Studio 类按 sr 算系数，没量过差别。

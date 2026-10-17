@@ -1,29 +1,23 @@
 // mp3-worker.ts —— 在 worker 里把样本编成 mp3（不卡界面）。created 2026-10-07 by Claude Opus 5.5；立体声 2026-10-08 by Claude Opus 5.5（导出面板「标准」档）
-// 编码器 = vendored lamejs（LGPL-3.0，见 vendor/lamejs/README.md）；只打进这个 worker 文件，点导出才加载。
-import { Mp3Encoder } from "../../vendor/lamejs/lamejs.js";
+// 2026-10-17 Claude Fable 5.1：编码器换成真 LAME（vendor/lame/lame.mjs + lame.wasm，libmp3lame 3.100 + 我们的 lame-glue.c，LGPL v2；user「lamejs一口气修」）——
+//   原来 vendored 的 lamejs（纯 JS 移植）写死左右各编各的 + 关比特池、比特池那段移植是坏的，同一份团子 128k 对源 SNR 16.8 dB；真 LAME 联合立体声 + 比特池 24.2 dB（128k）/ 29.4 dB（192k），
+//   编码还快 3–6 倍，直接吃 float 不先转 16 位。查案 = ai-docs/20261017-final-mp3-quality.md。
+//   emscripten 产物带 node 分支，不进打包：运行时按地址载（同 src/singer/worker.ts 载 WORLD 的做法），wasm 由它自己从同目录取；点导出 / 定稿才加载。
+import { encodeAll, type LameModule } from "./lame.ts";
 
 /** right 给了 = 立体声（left / right 等长）；没给 = 单声道（left）。 */
 export interface Mp3Request { left: Float32Array; right?: Float32Array; sr: number; kbps: number }
 export type Mp3Reply = { ok: true; bytes: Uint8Array<ArrayBuffer> } | { ok: false; message: string };
 
-const toPcm = (src: Float32Array, i: number, n: number, pcm: Int16Array) => {
-  for (let k = 0; k < n; k++) { const x = Math.max(-1, Math.min(1, src[i + k])); pcm[k] = Math.round(x < 0 ? x * 32768 : x * 32767); }
-  return n === pcm.length ? pcm : pcm.subarray(0, n);
-};
-self.onmessage = (ev: MessageEvent<Mp3Request>) => {
+const LAME_URL = new URL("../vendor/lame/lame.mjs", import.meta.url);   // 相对 dist/mp3-worker-<hash>.mjs
+let lameP: Promise<LameModule> | null = null;
+const lame = (): Promise<LameModule> => (lameP ??= import(/* @vite-ignore */ LAME_URL.href).then((m: { default: () => Promise<LameModule> }) => m.default()));
+
+self.onmessage = async (ev: MessageEvent<Mp3Request>) => {
   try {
-    // joint = 联合立体声（2026-10-17 Claude Fable 5.1；user「定稿的mp3听起来差很多…有破音」）：上游 lamejs 的 Mp3Encoder 写死左右各编各的（128k = 每边 64k，中间的人声两边各存一份）；
-    //   同一份团子 128k 对源的 SNR 16.8 → 23.7 dB、文件一样大（ai-docs/20261017-final-mp3-quality.md）。比特池（reservoir）lamejs 的实现是坏的（开了解出来和源不相关），照旧关着。
-    const { left, right, sr, kbps } = ev.data, stereo = !!right, enc = new Mp3Encoder(stereo ? 2 : 1, sr, kbps, { joint: stereo }), parts: Uint8Array[] = [];
-    const BLOCK = 1152 * 16, pl = new Int16Array(BLOCK), pr = new Int16Array(BLOCK);
-    for (let i = 0; i < left.length; i += BLOCK) {
-      const n = Math.min(BLOCK, left.length - i);
-      const out = stereo ? enc.encodeBuffer(toPcm(left, i, n, pl), toPcm(right!, i, n, pr)) : enc.encodeBuffer(toPcm(left, i, n, pl));
-      if (out.length) parts.push(out.slice());
-    }
-    const tail = enc.flush(); if (tail.length) parts.push(tail.slice());
-    const bytes = new Uint8Array(parts.reduce((a, p) => a + p.length, 0));
-    let o = 0; for (const p of parts) { bytes.set(p, o); o += p.length; }
+    const { left, right, sr, kbps } = ev.data, M = await lame();
+    const out = encodeAll(M, { channels: right ? 2 : 1, sr, kbps, joint: true }, left, right);
+    const bytes = new Uint8Array(new ArrayBuffer(out.length)); bytes.set(out);
     (self as unknown as Worker).postMessage({ ok: true, bytes } satisfies Mp3Reply, [bytes.buffer]);
   } catch (e) {
     (self as unknown as Worker).postMessage({ ok: false, message: (e as Error).message } satisfies Mp3Reply);

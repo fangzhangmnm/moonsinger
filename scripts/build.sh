@@ -61,7 +61,7 @@ hashed() {   # $1 = 入口, $2 = 名字前缀, 其余 = 额外 esbuild 参数 �
 rm -f ./dist/*.mjs ./dist/*.mjs.map   # 旧哈希的产物不留（dist 进 git：只留这一版）
 # 月读的 worker（唱法核心 src/singer/sing-core.mjs + 朗读库底层出口的前端 / ort / ojt 胶水打进来；WORLD 运行时从 vendor/world/ 载，模型 / 运行时 wasm / 词典随模型包来）
 SINGER=$(hashed ./src/singer/worker.ts singer-worker); echo "[build] ✓ dist/$SINGER"
-# mp3 编码 worker（vendored lamejs，LGPL-3.0，单独一个文件；点导出才加载）
+# mp3 编码 worker（真 LAME：vendor/lame/lame.mjs + lame.wasm 运行时从 vendor/ 载，LGPL v2；点导出才加载）
 MP3=$(hashed ./src/export/mp3-worker.ts mp3-worker); echo "[build] ✓ dist/$MP3"
 # 录音房的 AudioWorklet 模块（src/engine/studio-processor.ts：走带 / 通道 / TinySoundFont / 元音采样器 / 块回放 / 母线；WASM 由主线程编好递进去，vendor/tsf/tsf-standalone.wasm）
 STUDIO=$(hashed ./src/engine/studio-processor.ts studio-worklet); echo "[build] ✓ dist/$STUDIO"

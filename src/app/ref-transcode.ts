@@ -1,7 +1,7 @@
 // ref-transcode.ts —— 参考窗的「压一下」（注入给 @internal/reference-window 0.4.0 的 RefTranscoder）。created 2026-10-09 by Claude Opus 5.5
 // user「库升minor + mp3功能，最好加一个压制转录的injection抽象接口」「然后api的应该是图片音频视频转码都是app提供」
 //   「不过我们mp3其实默认不压，导入的时候有一个对话框告诉你大小，然后问你要不要压。图片也一样」「应用内小面板 如果支持压缩的话应该有压缩选项和估计」。
-// · 音频：浏览器解码（OfflineAudioContext，统一到 44.1 kHz）→ 导出 mp3 用的同一个 lamejs worker，128 kbps（单声道也 128k：扒谱要听得清）；
+// · 音频：浏览器解码（OfflineAudioContext，统一到 44.1 kHz）→ 导出 mp3 用的同一个 LAME worker，128 kbps（单声道也 128k：扒谱要听得清）；
 //   估计 = 时长 × 128 kbps（时长从 <audio> 的元数据读，不解码——估的时候不吃内存）。
 // · 图片：src/image/shrink.ts（长边 ≤ 2048、256 色 PNG）；估计 = 真压一遍（记住结果，选了「压一下」直接用这份，不压第二遍）。
 // · 视频：不压（库这一版也没有视频卡）。

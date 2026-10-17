@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.13.1-2026-10-17";
+var APP_VERSION = "v0.13.2-2026-10-17";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -22292,12 +22292,13 @@ function describe(s10, b3) {
 
 // src/export/mp3.ts
 var MP3_QUALITY = {
-  standard: { label: "\u6807\u51C6", note: "\u7ACB\u4F53\u58F0 128k\uFF0C\u7EA6 1 MB / \u5206\u949F", stereo: true, kbps: 128 },
+  standard: { label: "\u6807\u51C6", note: "\u7ACB\u4F53\u58F0 192k\uFF0C\u7EA6 1.4 MB / \u5206\u949F", stereo: true, kbps: 192 },
+  // 2026-10-17 user「标准192同意」（定稿 mp3 查案：ai-docs/20261017-final-mp3-quality.md）
   small: { label: "\u5C0F\u6587\u4EF6", note: "\u5355\u58F0\u9053 64k\uFF0C\u7EA6 0.5 MB / \u5206\u949F", stereo: false, kbps: 64 }
 };
 function encodeMp3(left, right, sr2, kbps = 64) {
   return new Promise((ok2, fail) => {
-    const w2 = new Worker(new URL(`./${"mp3-worker-8eb0b9c3e8ba.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"mp3-worker-1ebe72af5e6d.mjs"}`, import.meta.url), { type: "module" });
     w2.onmessage = (ev2) => {
       w2.terminate();
       if (ev2.data.ok) ok2(ev2.data.bytes);
@@ -45878,4 +45879,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6636da993c7b.mjs.map
+//# sourceMappingURL=moonsinger-ec61e7c99a51.mjs.map

@@ -62,6 +62,9 @@ await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ 
 await p.waitForTimeout(100);
 check((await p.evaluate(() => window.__moonsinger.state().song.title)) !== "定稿的歌" && (await p.evaluate(() => window.__moonsinger.final())) !== null, "歌名被拒（全冻）、定稿还在");
 check((await p.evaluate(() => { const b = window.__moonsinger.finalMp3(); return b && String.fromCharCode(b[0], b[1], b[2]); })) === "ID3", "存的 mp3 带着 ID3 标签（发行的那一份）");
+// 真 LAME（v0.13.2）：ID3 后面第一个帧头 = 联合立体声、192k、44.1k（编码器在 worker 里从 vendor/lame 载——这条守的是浏览器那条路真走通了，不只是 node 单元测试）
+{ const h = await p.evaluate(() => { const b = window.__moonsinger.finalMp3(); if (!b) return null; let i = 10 + (((b[6] & 0x7f) << 21) | ((b[7] & 0x7f) << 14) | ((b[8] & 0x7f) << 7) | (b[9] & 0x7f)); while (i < b.length - 4 && !(b[i] === 0xff && (b[i + 1] & 0xe0) === 0xe0)) i++; return { mode: ["stereo", "joint", "dual", "mono"][(b[i + 3] >> 6) & 3], kbps: [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320][(b[i + 2] >> 4) & 15], sr: [44100, 48000, 32000][(b[i + 2] >> 2) & 3] }; });
+  check(h && h.mode === "joint" && h.kbps === 192 && h.sr === 44100, "定稿的 mp3 = 真 LAME 编的联合立体声 192k 44.1k（标准档）", JSON.stringify(h)); }
 await saved();
 check(!/•/.test(await title()), "定稿后照样自动存（没被第 ④ 层拦）", await title());
 // ④ 存出去的字节：有 final.mp3 entry、manifest.final、指纹对得上（开回来还是定稿的）

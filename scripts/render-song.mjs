@@ -24,7 +24,7 @@ import { coreHash } from "./core-hash.mjs";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const argv = process.argv.slice(2), opt = (k, d = null) => { const a = argv.find((x) => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d; }, flag = (k) => argv.includes(`--${k}`);
 const file = argv.find((a) => !a.startsWith("--"));
-if (!file) { console.error("用法：node scripts/render-song.mjs 歌.mxl [--out=x.mp3|x.wav] [--mono] [--kbps=128] [--sr=44100] [--piper=…] [--sounds=…] [--check]"); process.exit(2); }
+if (!file) { console.error("用法：node scripts/render-song.mjs 歌.mxl [--out=x.mp3|x.wav] [--mono] [--kbps=192] [--sr=44100] [--piper=…] [--sounds=…] [--check]"); process.exit(2); }
 const sha256 = (b) => createHash("sha256").update(b).digest("hex");
 const say = (m) => process.stderr.write(`[render] ${m}\n`);
 
@@ -101,7 +101,7 @@ async function sing(tl, progress) {
 
 // ── 渲 ──
 const song = o.song, parts = audibleParts(song, () => ({ muted: false, solo: false }));
-const sr = Number(opt("sr", "44100")), kbps = Number(opt("kbps", "128")), mono = flag("mono");
+const sr = Number(opt("sr", "44100")), kbps = Number(opt("kbps", "192")), mono = flag("mono");
 const out = opt("out") ?? `${file.replace(/\.(mxl|musicxml|xml)$/i, "")}-render.mp3`;
 const t0 = performance.now();
 let lastMsg = "";
@@ -121,11 +121,10 @@ if (/\.wav$/i.test(out)) {
   for (let i = 0, p = 44; i < n; i++) { data.setInt16(p, q(left[i]), true); p += 2; if (right) { data.setInt16(p, q(right[i]), true); p += 2; } }
   fs.writeFileSync(out, Buffer.from(data.buffer));
 } else {
-  const { Mp3Encoder } = await import(pathToFileURL(path.join(ROOT, "vendor/lamejs/lamejs.js")).href);   // 和 app 的 mp3 worker 同一份编码器（LGPL，只在编码这一步用）
-  const enc = new Mp3Encoder(right ? 2 : 1, r.sr, kbps), parts = [], BLOCK = 1152 * 16, pl = new Int16Array(BLOCK), pr = new Int16Array(BLOCK);
-  const toPcm = (src, i, n, pcm) => { for (let k = 0; k < n; k++) { const x = Math.max(-1, Math.min(1, src[i + k])); pcm[k] = Math.round(x < 0 ? x * 32768 : x * 32767); } return n === pcm.length ? pcm : pcm.subarray(0, n); };
-  for (let i = 0; i < left.length; i += BLOCK) { const n = Math.min(BLOCK, left.length - i); const b = right ? enc.encodeBuffer(toPcm(left, i, n, pl), toPcm(right, i, n, pr)) : enc.encodeBuffer(toPcm(left, i, n, pl)); if (b.length) parts.push(Buffer.from(b)); }
-  const tail = enc.flush(); if (tail.length) parts.push(Buffer.from(tail));
-  fs.writeFileSync(out, Buffer.concat(parts));
+  // 和 app 的 mp3 worker 同一份编码器：真 LAME（vendor/lame，LGPL v2，只在编码这一步用）+ 同一个 JS 接口 src/export/lame.ts（联合立体声 + 比特池；2026-10-17 换掉 lamejs）
+  const { default: createLame } = await import(pathToFileURL(path.join(ROOT, "vendor/lame/lame.mjs")).href);
+  const { encodeAll } = await import(pathToFileURL(path.join(ROOT, "src/export/lame.ts")).href);
+  const bytes = encodeAll(await createLame(), { channels: right ? 2 : 1, sr: r.sr, kbps, joint: true }, left, right ?? undefined);
+  fs.writeFileSync(out, Buffer.from(bytes.buffer, bytes.byteOffset, bytes.length));
 }
 say(`写好了：${out}（${(fs.statSync(out).size / 1e3).toFixed(0)} KB）`);

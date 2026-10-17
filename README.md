@@ -51,6 +51,6 @@ https://tyc.rei-yumesaki.net/material/corpus/
 ## 许可证
 
 - 本仓自己写的代码与文档：MIT（`LICENSE`）。
-- `vendor/` 下的第三方各按各的许可证：Bravura（SIL OFL 1.1）、lamejs（LGPL-3.0）、WORLD（modified BSD），原文都在各自目录里。
+- `vendor/` 下的第三方各按各的许可证：Bravura（SIL OFL 1.1）、LAME（LGPL v2，自己编的 WASM，`vendor/lame/`）、WORLD（modified BSD），原文都在各自目录里。
 - `assets/preview/`（试听元音表）是小月相唱出来的声音，按上面つくよみちゃん 的条款，不在 MIT 之内。
 - 模型（家族模型仓 pwa-models 的包）的许可证随包附带。
