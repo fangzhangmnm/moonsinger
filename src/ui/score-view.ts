@@ -25,6 +25,7 @@ import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
 import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg, toSvgParts } from "../render/svg.ts";
+import { span, record } from "./perf-trace.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
 import { TitleEditor } from "./title-editor.ts";
@@ -176,9 +177,9 @@ export class ScoreView {
       return h;
     };
     this.handles = { start: mkHandle("start"), end: mkHandle("end") };
-    this.lyrics = new LyricEditor(this.ink, host, () => this.layout, () => this.render());
-    this.marks = new MarkEditor(this.ink, host, () => this.layout, () => this.render());
-    this.title = new TitleEditor(this.ink, host, () => this.layout);
+    this.lyrics = new LyricEditor(this.ink, host, () => this.layoutNow(), () => this.render());
+    this.marks = new MarkEditor(this.ink, host, () => this.layoutNow(), () => this.render());
+    this.title = new TitleEditor(this.ink, host, () => this.layoutNow());
     el.addEventListener("pointerdown", (e) => this.down(e));
     el.addEventListener("pointermove", (e) => this.move(e));
     el.addEventListener("wheel", () => { this.userScrollAt = performance.now(); }, { passive: true });   // 自己滚了：自动翻让开 4 秒
@@ -242,47 +243,68 @@ export class ScoreView {
     const f = `${px}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
     return (s) => { if (this.ctx.font !== f) this.ctx.font = f; return this.ctx.measureText(s).width; };
   }
-  render(): void {
-    const st = this.host.get(), { sp, width, strict, page, margins } = this.frame();
-    const was = this.hscroll; this.hscroll = !!this.host.scroll?.();
-    if (was && !this.hscroll) this.el.scrollLeft = 0;
-    this.el.classList.toggle("hscroll", this.hscroll);
-    const totalW = width + (margins.l + margins.r) * sp; this.paperW = totalW;
-    this.el.classList.toggle("desk", (strict && totalW < this.el.clientWidth - 1) || !!page);
-    this.el.classList.toggle("pages", !!page);
-    this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
+  /** 排版这一半（engrave + 缓存），画是另一半（render）。谁要最新的排版就叫它——歌词框 / 记号框 / head() / E2E 钩子——不用等到下一帧画；
+   *  render() 画之前也先叫它。同一份 EditorState 问第二次 = 直接回上次的（不读 DOM、不算键）；谱 / 几何都没变 = 回缓存（W-17 第 1 刀）。
+   *  2026-10-17 Fable：画合并到下一帧之后（main.ts queuePaint），状态改了到画之间这一小段，排版照样拿得到最新的。 */
+  layoutNow(force = false): Layout {
+    const st = this.host.get();
+    if (!force && this.layout && this.layoutSt === st && this.frameNow) return this.layout;
+    const { sp, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
     const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars = this.host.autoBars?.() ?? true, paperLabel = paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind];
     const lyricRaise = page && this.host.lyricRaise?.() ? this.host.lyricRaise() : 0;
     const tailOpen = !st.sel && st.caret >= tr(st).length;   // 写字头在尾巴后面（含补齐的小节里）：最后一行五线画到右边
     // 排版缓存（W-17 第 1 刀）：谱没变（引用）、排版的选项没变 = 不重排。光标 / 选区 / 写字头的蓝 / 强调色不在这个键里——它们在下面的 ink 层和 class 上做；字体还在装 = 装好再排一次
-    const geoKey = JSON.stringify([width, sp, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, this.hscroll, autoBars, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
+    const geoKey = JSON.stringify([width, sp, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, hscroll, autoBars, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v: unknown) => (v instanceof Set ? [...v] : v));
     if (!this.layout || this.geoSong !== st.song || this.geoKey !== geoKey) {
-      this.layout = engrave(st.song, { width, sp, at: st.at, parts: partsNow, measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
-        ...(lyricRaise ? { lyricRaise } : {}), autoBars, paperLabel, ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(this.hscroll ? { scroll: true } : {}) });
+      this.layout = span("engrave", () => engrave(st.song, { width, sp, at: st.at, parts: partsNow, measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
+        ...(lyricRaise ? { lyricRaise } : {}), autoBars, paperLabel, ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}) }));
       this.geoSong = st.song; this.geoKey = geoKey;
     }
-    this.ink.style.left = `${this.layout.pageX.left}px`;
-    if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout.width + this.layout.pageX.left + this.layout.pageX.right)}px`;   // 横卷：纸按内容撑宽，谱面板横着滚
+    this.layoutSt = st; this.frameNow = { sp, width, strict, page, margins, hscroll };
+    return this.layout;
+  }
+  private layoutSt: EditorState | null = null;
+  private frameNow: { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null; margins: { l: number; r: number; t: number; b: number }; hscroll: boolean } | null = null;
+  private paintedSt: EditorState | null = null;
+  /** 这份状态已经画过了（main.ts 的下一帧画用：中途有人显式 render 过就不再画一遍）。 */
+  paintedFor(st: EditorState): boolean { return this.paintedSt === st; }
+  render(): void {
+    const st = this.host.get();
+    this.layoutNow(true);
+    const { sp, width, strict, page, margins, hscroll } = this.frameNow!;
+    const was = this.hscroll; this.hscroll = hscroll;
+    if (was && !this.hscroll) this.el.scrollLeft = 0;
+    this.el.classList.toggle("hscroll", this.hscroll);
+    const totalW = width + (margins.l + margins.r) * sp; this.paperW = totalW;
+    this.el.classList.toggle("desk", (strict && totalW < this.el.clientWidth - 1) || !!page);
+    this.el.classList.toggle("pages", !!page);
+    this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
+    this.paintedSt = st;
+    this.ink.style.left = `${this.layout!.pageX.left}px`;
+    if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout!.width + this.layout!.pageX.left + this.layout!.pageX.right)}px`;   // 横卷：纸按内容撑宽，谱面板横着滚
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;   // ¾ 屏（一整屏有时让人以为白屏了；user 2026-10-08「留的滚动空白不应该是一整页…3/4左右？」）
     // 智能重画第一刀（W-17，2026-10-14）：SVG 按行谱分成几十个 <g>，和上一次逐组比字符串、只换变了的组（挪一格光标 = 两组）；
     //   框变了（宽高 / viewBox）或组数变了 = 整张换（和以前一样）。排版本身照旧整首算（engrave），省的是建 5000 个节点那七成。
-    const parts = toSvgParts(this.layout);
+    const parts = span("svg-parts", () => toSvgParts(this.layout!));
     const old = this.sheet.querySelector("svg");
     const prev = this.svgParts;
     let swapped = false;
-    if (!old || !prev || prev.open !== parts.open || prev.groups.length !== parts.groups.length || old.children.length !== parts.groups.length) {
-      const svg = parts.open + parts.groups.join("") + parts.close;
-      if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
-      swapped = true;
-    } else {
-      const kids = old.children;
-      for (let k = 0; k < parts.groups.length; k++) if (parts.groups[k] !== prev.groups[k]) { kids[k].outerHTML = parts.groups[k]; swapped = true; }
-    }
+    span("svg-dom", () => {
+      if (!old || !prev || prev.open !== parts.open || prev.groups.length !== parts.groups.length || old.children.length !== parts.groups.length) {
+        const svg = parts.open + parts.groups.join("") + parts.close;
+        if (old) old.outerHTML = svg; else this.sheet.insertAdjacentHTML("afterbegin", svg);
+        swapped = true;
+      } else {
+        const kids = old.children;
+        for (let k = 0; k < parts.groups.length; k++) if (parts.groups[k] !== prev.groups[k]) { kids[k].outerHTML = parts.groups[k]; swapped = true; }
+      }
+    });
     this.svgParts = parts;
     if (swapped) this.tokEls = null;
+    const tDecor = performance.now();
     this.decorate();   // 写字头的蓝 / 选中 / 强调色（class）
     this.drawCaret();  // 光标（ink 层）
     this.drawSel();    // 选区带（ink 层）
@@ -295,6 +317,7 @@ export class ScoreView {
     this.title.reposition();
     this.drawPins();
     this.drawGhost();   // 「弹」的鬼音符照着新的排版重摆（只是摆，不影响排版）
+    record("decor", performance.now() - tDecor);
     // 只在光标 / 选区 / 编辑框挪了的时候才把视图拉过去；别的重画（静音 / 独奏的角标、隐藏、换纸设置…）不动人家滚到哪
     //   （user 2026-10-08「toggle mute solo的时候页面滚动会变」：原来每次重画都 follow，滚开了光标那行再点静音 = 被拽回去）
     const base = this.baseKey(), fk = `${base}|${this.el.clientWidth}x${this.el.clientHeight}`;   // 窗口变了（pad 弹出把谱挤矮）照样跟
@@ -304,7 +327,7 @@ export class ScoreView {
     if (fk !== this.followKey) {
       const moved = this.followKey.slice(0, this.followKey.lastIndexOf("|")) !== base;
       this.followKey = fk;
-      if (base !== this.heldBase && (moved || this.caretSeen)) { this.heldBase = null; this.follow(); }
+      if (base !== this.heldBase && (moved || this.caretSeen)) { this.heldBase = null; span("follow", () => this.follow()); }
     }
     this.caretSeen = this.caretVisible();
   }
@@ -569,7 +592,7 @@ export class ScoreView {
   /** 光标画在哪（W-17 第 1 刀：不进排版，从落点 slots 里查）：这条 track 上这个 caret 的落点；补齐的小节里 = lead 那个；点在行末放的（caretEnd）= end 那个。
    *  大谱表：两张谱表各一个落点，光标跟着前一个音在哪张。有选区 / 还没排好 = null。shift = 那里的谱号 / 八度线位移（鬼音符用）。 */
   head(): { system: number; x: number; shift: number } | null {
-    const L = this.layout, st = this.host.get(); if (!L || st.sel) return null;
+    const st = this.host.get(); if (st.sel) return null; const L = this.layoutNow();
     const mine = (s: CaretHead) => { const r = L.systems[s.system]; return !!r && r.paper === st.at.paper && r.part === st.at.part; };
     const want = st.lead ? L.heads.filter((s) => mine(s) && s.lead === st.lead)
       : this.caretEnd === caretKey(st) ? L.heads.filter((s) => mine(s) && !!s.end && s.caret === st.caret)

@@ -2243,9 +2243,9 @@ var init_upng_esm = __esm({
         if (alwaysBlend) for (var j2 = 0; j2 < frms.length; j2++) {
           var frm = frms[j2];
           if (frm.blend == 1) continue;
-          var r02 = frm.rect, r13 = frms[j2 - 1].rect;
-          var miX = Math.min(r02.x, r13.x), miY = Math.min(r02.y, r13.y);
-          var maX = Math.max(r02.x + r02.width, r13.x + r13.width), maY = Math.max(r02.y + r02.height, r13.y + r13.height);
+          var r02 = frm.rect, r14 = frms[j2 - 1].rect;
+          var miX = Math.min(r02.x, r14.x), miY = Math.min(r02.y, r14.y);
+          var maX = Math.max(r02.x + r02.width, r14.x + r14.width), maY = Math.max(r02.y + r02.height, r14.y + r14.height);
           var r10 = { x: miX, y: miY, width: maX - miX, height: maY - miY };
           frms[j2 - 1].dispose = 1;
           if (j2 - 1 != 0)
@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.26-2026-10-17";
+var APP_VERSION = "v0.13.0-2026-10-17";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6129,7 +6129,7 @@ function timeMapOf(song, order) {
   const tempo = tempoMapOf(song, order), g3 = grooveMapOf(song, order);
   if (!g3.some((e10) => swingRatio(e10.style, e10.amount))) return tempo;
   const seq = order ? order.flatMap((id2) => song.papers.filter((p2) => p2.id === id2)) : song.papers.filter((p2) => !p2.hidden);
-  const spans = [];
+  const spans2 = [];
   let at2 = 0;
   for (const p0 of seq) {
     const p2 = expandPaper(song, p0, () => -1), len = paperTicks(p2), owner = tempoOwner(song, p2), toks = owner ? p2.tracks[owner] ?? [] : [];
@@ -6145,10 +6145,10 @@ function timeMapOf(song, order) {
         if (t10 >= measure) break;
       }
     }
-    spans.push({ at: at2, end: at2 + len, origin: at2 + (b1 > 0 && b1 < measure ? b1 % TPQ : 0) });
+    spans2.push({ at: at2, end: at2 + len, origin: at2 + (b1 > 0 && b1 < measure ? b1 % TPQ : 0) });
     at2 += len;
   }
-  const originAt = (tick) => (spans.find((s10) => tick >= s10.at && tick < s10.end) ?? spans[spans.length - 1])?.origin ?? 0;
+  const originAt = (tick) => (spans2.find((s10) => tick >= s10.at && tick < s10.end) ?? spans2[spans2.length - 1])?.origin ?? 0;
   const bpmAt = (tick) => {
     let b3 = tempo[0]?.bpm ?? DEFAULT_BPM;
     for (const e10 of tempo) if (e10.tick <= tick) b3 = e10.bpm;
@@ -6593,6 +6593,39 @@ function createMidiKeyboard(h2, nav = navigator) {
     return status;
   }, connect, resume };
 }
+
+// src/ui/perf-trace.ts
+var KEEP = 64;
+var spans = /* @__PURE__ */ new Map();
+function span(name, fn) {
+  const t10 = performance.now();
+  try {
+    return fn();
+  } finally {
+    record(name, performance.now() - t10);
+  }
+}
+function record(name, ms) {
+  let a10 = spans.get(name);
+  if (!a10) {
+    a10 = [];
+    spans.set(name, a10);
+  }
+  a10.push(ms);
+  if (a10.length > KEEP) a10.shift();
+}
+function perfReport() {
+  const out = {};
+  for (const [k2, a10] of spans) {
+    const s10 = [...a10].sort((x2, y2) => x2 - y2);
+    out[k2] = { n: a10.length, med: r1(s10[s10.length >> 1]), max: r1(s10[s10.length - 1]), last: r1(a10[a10.length - 1]) };
+  }
+  return out;
+}
+function perfReset() {
+  spans.clear();
+}
+var r1 = (x2) => Math.round(x2 * 10) / 10;
 
 // src/score/lyrics.ts
 var MELISMA_MARK = "\u30FC";
@@ -7395,8 +7428,8 @@ function autoOttava(tokens, ds) {
       break;
     }
     if (n10 >= 2) {
-      const span = items.slice(k2, e10 + 1).filter((x2) => x2.note);
-      const shift = dir === -1 ? -1 : span.some((x2) => x2.hi - 7 > TOP && ledgerLines(x2.hi - 7) >= 3) ? 2 : 1;
+      const span2 = items.slice(k2, e10 + 1).filter((x2) => x2.note);
+      const shift = dir === -1 ? -1 : span2.some((x2) => x2.hi - 7 > TOP && ledgerLines(x2.hi - 7) >= 3) ? 2 : 1;
       const from = items[k2].i, to2 = items[e10].i;
       for (let j2 = from; j2 <= to2; j2++) {
         ott[j2] = shift;
@@ -8226,8 +8259,8 @@ function engrave(song, o10) {
       }
     }
     const cols = [...colMap.values()].sort((a10, b3) => a10.tick - b3.tick || a10.slot - b3.slot || a10.n - b3.n);
-    const spans = per.flatMap((q2) => q2.units.filter((u2) => u2.kind === "chunk").map((u2) => [u2.tick, u2.tick + u2.ticks]));
-    const breakableAt = (tick) => !spans.some(([a10, b3]) => a10 < tick - 1e-6 && b3 > tick + 1e-6);
+    const spans2 = per.flatMap((q2) => q2.units.filter((u2) => u2.kind === "chunk").map((u2) => [u2.tick, u2.tick + u2.ticks]));
+    const breakableAt = (tick) => !spans2.some(([a10, b3]) => a10 < tick - 1e-6 && b3 > tick + 1e-6);
     const FAM_W = openFams.length && o10.titlePlaceholder ? 0.8 : 0;
     const ind0 = Math.max(...parts.map((p2) => Math.max(...nameLines(p2.name, p2.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;
     const indN = parts.some((p2) => p2.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p2) => nameW(p2.abbr ?? ""))) + 1.4 + FAM_W : 0;
@@ -8472,9 +8505,9 @@ function engrave(song, o10) {
         }
         if (loIds.has(q2.p.id)) return;
         if (s10 === 0) {
-          const r02 = rowOf(s10, r10, 0), r13 = rEnd(s10), lines2 = nameLines(q2.p.name, pr !== r10 ? 2 : q2.staves), LH = PART_EM * 1.15;
+          const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), lines2 = nameLines(q2.p.name, pr !== r10 ? 2 : q2.staves), LH = PART_EM * 1.15;
           const tl2 = ten.map((t10) => nameLines(t10.name, 1)[0] ?? ""), nAll = lines2.length + tl2.length;
-          const ny2 = (yOf(r02, MID_LINE) + yOf(r13, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2);
+          const ny2 = (yOf(r02, MID_LINE) + yOf(r14, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2);
           const ncls = q2.p.empty ? "part-name empty" : q2.focused ? "part-name focus" : "part-name";
           lines2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: ln3, cls: ncls, size: PART_EM * sp2, anchor: "start" }));
           tl2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (lines2.length + k2)), s: ln3, cls: "part-name tenant", size: PART_EM * sp2, anchor: "start" }));
@@ -8484,24 +8517,24 @@ function engrave(song, o10) {
           }
           if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (nAll - 1)) + P2(1.5), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
           {
-            const y02 = yOf(r02, TOP_LINE) - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - P2(PART_EM * 0.95) : yOf(r13, BOTTOM_LINE) + P2(1.2);
+            const y02 = yOf(r02, TOP_LINE) - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - P2(PART_EM * 0.95) : yOf(r14, BOTTOM_LINE) + P2(1.2);
             partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: y02, w: P2(ind0 + 0.2), h: yEnd - y02 });
           }
           if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
         } else if (q2.p.abbr) {
-          const r02 = rowOf(s10, r10, 0), r13 = rEnd(s10), LH = PART_EM * 1.15, ta2 = ten.map((t10) => t10.abbr ?? "");
-          const ny2 = (yOf(r02, MID_LINE) + yOf(r13, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * ta2.length / 2);
+          const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), LH = PART_EM * 1.15, ta2 = ten.map((t10) => t10.abbr ?? "");
+          const ny2 = (yOf(r02, MID_LINE) + yOf(r14, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * ta2.length / 2);
           prims.push({ t: "text", x: P2(MARGIN), y: ny2, s: q2.p.abbr, cls: q2.p.empty ? "part-name abbr empty" : q2.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp2, anchor: "start" });
           ta2.forEach((a10, k2) => {
             prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (k2 + 1)), s: a10, cls: "part-name abbr tenant", size: PART_EM * sp2, anchor: "start" });
             partsHit.push({ paper: paper.id, part: ten[k2].id, x: P2(MARGIN - 0.4), y: ny2 + P2(LH * (k2 + 1)) - P2(PART_EM * 0.95), w: P2(indN + 0.2), h: P2(LH) });
           });
           if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
-          partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: yOf(r02, TOP_LINE) - P2(1.2), w: P2(indN + 0.2), h: yOf(r13, BOTTOM_LINE) - yOf(r02, TOP_LINE) + P2(2.4) });
+          partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: yOf(r02, TOP_LINE) - P2(1.2), w: P2(indN + 0.2), h: yOf(r14, BOTTOM_LINE) - yOf(r02, TOP_LINE) + P2(2.4) });
         }
         if (q2.p.colorIdx !== void 0) {
-          const r02 = rowOf(s10, r10, 0), r13 = rEnd(s10);
-          prims.push({ t: "rect", x: P2(MARGIN + ind - 0.8), y: yOf(r02, TOP_LINE), w: P2(0.3), h: yOf(r13, BOTTOM_LINE) - yOf(r02, TOP_LINE), cls: `cat-bar cat-${q2.p.colorIdx}` });
+          const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10);
+          prims.push({ t: "rect", x: P2(MARGIN + ind - 0.8), y: yOf(r02, TOP_LINE), w: P2(0.3), h: yOf(r14, BOTTOM_LINE) - yOf(r02, TOP_LINE), cls: `cat-bar cat-${q2.p.colorIdx}` });
         }
         if (q2.staves === 2 || pr !== r10) {
           const bx = P2(MARGIN + ind - 0.7), y02 = yOf(rowOf(s10, r10, 0), TOP_LINE), y1 = yOf(rEnd(s10), BOTTOM_LINE);
@@ -8511,7 +8544,7 @@ function engrave(song, o10) {
       if (ind > 0 && o10.titlePlaceholder) for (const fam of openFams) {
         const rs2 = fam.ids.map((id2) => per.findIndex((q2) => q2.p.id === id2)).filter((i10) => i10 >= 0);
         if (rs2.length < 2) continue;
-        const r02 = Math.min(...rs2), r13 = Math.max(...rs2), x3 = P2(MARGIN + ind - 1.55), y02 = yOf(rowOf(s10, r02, 0), TOP_LINE) - P2(0.6), y1 = yOf(rowOf(s10, r13, per[r13].staves - 1), BOTTOM_LINE) + P2(0.6);
+        const r02 = Math.min(...rs2), r14 = Math.max(...rs2), x3 = P2(MARGIN + ind - 1.55), y02 = yOf(rowOf(s10, r02, 0), TOP_LINE) - P2(0.6), y1 = yOf(rowOf(s10, r14, per[r14].staves - 1), BOTTOM_LINE) + P2(0.6);
         prims.push({ t: "path", d: `M${x3 + P2(0.55)},${y02}L${x3},${y02}L${x3},${y1}L${x3 + P2(0.55)},${y1}`, cls: "family-bracket" });
         families.push({ paper: paper.id, host: fam.host, x: x3 - P2(0.6), y: y02, w: P2(1.3), h: y1 - y02 });
       }
@@ -10157,9 +10190,9 @@ var ScoreView = class {
       return h2;
     };
     this.handles = { start: mkHandle("start"), end: mkHandle("end") };
-    this.lyrics = new LyricEditor(this.ink, host, () => this.layout, () => this.render());
-    this.marks = new MarkEditor(this.ink, host, () => this.layout, () => this.render());
-    this.title = new TitleEditor(this.ink, host, () => this.layout);
+    this.lyrics = new LyricEditor(this.ink, host, () => this.layoutNow(), () => this.render());
+    this.marks = new MarkEditor(this.ink, host, () => this.layoutNow(), () => this.render());
+    this.title = new TitleEditor(this.ink, host, () => this.layoutNow());
     el2.addEventListener("pointerdown", (e10) => this.down(e10));
     el2.addEventListener("pointermove", (e10) => this.move(e10));
     el2.addEventListener("wheel", () => {
@@ -10310,28 +10343,24 @@ var ScoreView = class {
       return this.ctx.measureText(s10).width;
     };
   }
-  render() {
-    const st2 = this.host.get(), { sp: sp2, width, strict, page, margins } = this.frame();
-    const was = this.hscroll;
-    this.hscroll = !!this.host.scroll?.();
-    if (was && !this.hscroll) this.el.scrollLeft = 0;
-    this.el.classList.toggle("hscroll", this.hscroll);
-    const totalW = width + (margins.l + margins.r) * sp2;
-    this.paperW = totalW;
-    this.el.classList.toggle("desk", strict && totalW < this.el.clientWidth - 1 || !!page);
-    this.el.classList.toggle("pages", !!page);
-    this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
+  /** 排版这一半（engrave + 缓存），画是另一半（render）。谁要最新的排版就叫它——歌词框 / 记号框 / head() / E2E 钩子——不用等到下一帧画；
+   *  render() 画之前也先叫它。同一份 EditorState 问第二次 = 直接回上次的（不读 DOM、不算键）；谱 / 几何都没变 = 回缓存（W-17 第 1 刀）。
+   *  2026-10-17 Fable：画合并到下一帧之后（main.ts queuePaint），状态改了到画之间这一小段，排版照样拿得到最新的。 */
+  layoutNow(force = false) {
+    const st2 = this.host.get();
+    if (!force && this.layout && this.layoutSt === st2 && this.frameNow) return this.layout;
+    const { sp: sp2, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
     const paper = st2.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st2) || st2.sel)) this.caretEnd = null;
     const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars2 = this.host.autoBars?.() ?? true, paperLabel = paper.kind === "other" ? "\u5176\u4ED6\u7EB8" : PAPER_LABEL[paper.kind];
     const lyricRaise = page && this.host.lyricRaise?.() ? this.host.lyricRaise() : 0;
     const tailOpen = !st2.sel && st2.caret >= tr(st2).length;
     const geoKey = JSON.stringify(
-      [width, sp2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, this.hscroll, autoBars2, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
+      [width, sp2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, hscroll, autoBars2, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v) => v instanceof Set ? [...v] : v
     );
     if (!this.layout || this.geoSong !== st2.song || this.geoKey !== geoKey) {
-      this.layout = engrave(st2.song, {
+      this.layout = span("engrave", () => engrave(st2.song, {
         width,
         sp: sp2,
         at: st2.at,
@@ -10345,32 +10374,60 @@ var ScoreView = class {
         paperLabel,
         ...page ? { page } : { margins },
         ...scopeSeg ? { onlyPaper: st2.at.paper } : {},
-        ...this.hscroll ? { scroll: true } : {}
-      });
+        ...hscroll ? { scroll: true } : {}
+      }));
       this.geoSong = st2.song;
       this.geoKey = geoKey;
     }
+    this.layoutSt = st2;
+    this.frameNow = { sp: sp2, width, strict, page, margins, hscroll };
+    return this.layout;
+  }
+  layoutSt = null;
+  frameNow = null;
+  paintedSt = null;
+  /** 这份状态已经画过了（main.ts 的下一帧画用：中途有人显式 render 过就不再画一遍）。 */
+  paintedFor(st2) {
+    return this.paintedSt === st2;
+  }
+  render() {
+    const st2 = this.host.get();
+    this.layoutNow(true);
+    const { sp: sp2, width, strict, page, margins, hscroll } = this.frameNow;
+    const was = this.hscroll;
+    this.hscroll = hscroll;
+    if (was && !this.hscroll) this.el.scrollLeft = 0;
+    this.el.classList.toggle("hscroll", this.hscroll);
+    const totalW = width + (margins.l + margins.r) * sp2;
+    this.paperW = totalW;
+    this.el.classList.toggle("desk", strict && totalW < this.el.clientWidth - 1 || !!page);
+    this.el.classList.toggle("pages", !!page);
+    this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
+    this.paintedSt = st2;
     this.ink.style.left = `${this.layout.pageX.left}px`;
     if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout.width + this.layout.pageX.left + this.layout.pageX.right)}px`;
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;
-    const parts = toSvgParts(this.layout);
+    const parts = span("svg-parts", () => toSvgParts(this.layout));
     const old = this.sheet.querySelector("svg");
     const prev = this.svgParts;
     let swapped = false;
-    if (!old || !prev || prev.open !== parts.open || prev.groups.length !== parts.groups.length || old.children.length !== parts.groups.length) {
-      const svg = parts.open + parts.groups.join("") + parts.close;
-      if (old) old.outerHTML = svg;
-      else this.sheet.insertAdjacentHTML("afterbegin", svg);
-      swapped = true;
-    } else {
-      const kids2 = old.children;
-      for (let k2 = 0; k2 < parts.groups.length; k2++) if (parts.groups[k2] !== prev.groups[k2]) {
-        kids2[k2].outerHTML = parts.groups[k2];
+    span("svg-dom", () => {
+      if (!old || !prev || prev.open !== parts.open || prev.groups.length !== parts.groups.length || old.children.length !== parts.groups.length) {
+        const svg = parts.open + parts.groups.join("") + parts.close;
+        if (old) old.outerHTML = svg;
+        else this.sheet.insertAdjacentHTML("afterbegin", svg);
         swapped = true;
+      } else {
+        const kids2 = old.children;
+        for (let k2 = 0; k2 < parts.groups.length; k2++) if (parts.groups[k2] !== prev.groups[k2]) {
+          kids2[k2].outerHTML = parts.groups[k2];
+          swapped = true;
+        }
       }
-    }
+    });
     this.svgParts = parts;
     if (swapped) this.tokEls = null;
+    const tDecor = performance.now();
     this.decorate();
     this.drawCaret();
     this.drawSel();
@@ -10383,6 +10440,7 @@ var ScoreView = class {
     this.title.reposition();
     this.drawPins();
     this.drawGhost();
+    record("decor", performance.now() - tDecor);
     const base3 = this.baseKey(), fk = `${base3}|${this.el.clientWidth}x${this.el.clientHeight}`;
     if (this.holdView) this.heldBase = base3;
     if (fk !== this.followKey) {
@@ -10390,7 +10448,7 @@ var ScoreView = class {
       this.followKey = fk;
       if (base3 !== this.heldBase && (moved || this.caretSeen)) {
         this.heldBase = null;
-        this.follow();
+        span("follow", () => this.follow());
       }
     }
     this.caretSeen = this.caretVisible();
@@ -10794,8 +10852,9 @@ var ScoreView = class {
   /** 光标画在哪（W-17 第 1 刀：不进排版，从落点 slots 里查）：这条 track 上这个 caret 的落点；补齐的小节里 = lead 那个；点在行末放的（caretEnd）= end 那个。
    *  大谱表：两张谱表各一个落点，光标跟着前一个音在哪张。有选区 / 还没排好 = null。shift = 那里的谱号 / 八度线位移（鬼音符用）。 */
   head() {
-    const L2 = this.layout, st2 = this.host.get();
-    if (!L2 || st2.sel) return null;
+    const st2 = this.host.get();
+    if (st2.sel) return null;
+    const L2 = this.layoutNow();
     const mine = (s10) => {
       const r10 = L2.systems[s10.system];
       return !!r10 && r10.paper === st2.at.paper && r10.part === st2.at.part;
@@ -19307,7 +19366,7 @@ __export(diag_log_exports, {
   flush: () => flush,
   initDiagLog: () => initDiagLog,
   note: () => note,
-  record: () => record,
+  record: () => record2,
   toText: () => toText
 });
 var _app = "app";
@@ -19346,7 +19405,7 @@ function flush() {
     }
   }
 }
-function record(level, msg) {
+function record2(level, msg) {
   const arr = load();
   arr.push({ t: Date.now(), l: level, m: String(msg).slice(0, MAX_MSG) });
   if (arr.length > MAX_ENTRIES)
@@ -19354,7 +19413,7 @@ function record(level, msg) {
   scheduleFlush();
 }
 function note(tag2, msg) {
-  record("note", `[${tag2}] ${msg}`);
+  record2("note", `[${tag2}] ${msg}`);
 }
 function entries() {
   return load();
@@ -21663,11 +21722,24 @@ function createPadHost(padEl2, g3) {
     }
   }
   function noteDown(p2, id2, raw = false) {
-    if (!padImpro()) {
-      if (!padAccept(id2)) return false;
-      padWrite(p2, id2, raw);
+    if (padImpro()) {
+      padSound(p2, id2, raw);
+      return true;
     }
-    padSound(p2, id2, raw);
+    if (!padAccept(id2)) return false;
+    const sp2 = raw ? p2 : soundingPitch(st2(), p2).pitch;
+    g3.sound.down(sp2, id2);
+    padWrite(p2, id2, raw);
+    const n10 = padNotes.get(id2);
+    if (!n10) {
+      padNotes.set(id2, { index: -1, base: sp2 });
+      return true;
+    }
+    if (n10.index >= 0) g3.soundAfterWrite(st2(), n10.index, id2, sp2);
+    else if (!raw) {
+      const r10 = soundingPitch(st2(), p2);
+      if (r10.st !== st2()) g3.update(r10.st);
+    }
     return true;
   }
   function noteUp(id2) {
@@ -26562,7 +26634,7 @@ var Studio = class {
   renderVowels(pool, mono, L2, R2, off, cnt) {
     const sr2 = this.sr, attack = 1 / (V_ATTACK * sr2), relK = Math.exp(-1 / (V_RELEASE * sr2)), cutK = Math.exp(-1 / (V_CUT * sr2)), glideK = 1 - Math.exp(-1 / (V_GLIDE * sr2));
     for (let vi = pool.length - 1; vi >= 0; vi--) {
-      const v = pool[vi], d3 = v.data, span = v.loopEnd - v.loopStart;
+      const v = pool[vi], d3 = v.data, span2 = v.loopEnd - v.loopStart;
       for (let i10 = 0; i10 < cnt; i10++) {
         if (v.state === "attack") {
           v.env += attack;
@@ -26580,8 +26652,8 @@ var Studio = class {
           R2[off + i10] += y2 * v.gr;
         }
         v.pos += v.rate;
-        if (span > 0) {
-          while (v.pos >= v.loopEnd) v.pos -= span;
+        if (span2 > 0) {
+          while (v.pos >= v.loopEnd) v.pos -= span2;
         } else if (v.pos >= d3.length - 1) {
           v.env = 0;
           v.state = "cut";
@@ -27361,11 +27433,11 @@ function buildTimeline(inp) {
     const e10 = tl2.find((x2) => sec >= x2.t0 && sec < x2.t1) ?? (sec >= 0 && tl2.length && sec < tl2[tl2.length - 1].t1 + 1e-9 ? tl2[tl2.length - 1] : null);
     if (!e10) return null;
     const tick = e10.start + (sec - e10.t0) / Math.max(1e-9, e10.t1 - e10.t0) * e10.tok.dur;
-    let span = papers[0];
-    for (const p2 of papers) if (p2.tick0 <= tick + 1e-9) span = p2;
-    if (!span) return null;
-    let inPaper = tick - span.tick0;
-    const segs = segsOf2(span.paper.id);
+    let span2 = papers[0];
+    for (const p2 of papers) if (p2.tick0 <= tick + 1e-9) span2 = p2;
+    if (!span2) return null;
+    let inPaper = tick - span2.tick0;
+    const segs = segsOf2(span2.paper.id);
     if (segs) {
       let cum = 0;
       for (const s10 of segs) {
@@ -27377,23 +27449,23 @@ function buildTimeline(inp) {
         cum += len;
       }
     }
-    return { paperId: span.paper.id, tick: Math.max(0, Math.floor(inPaper)) };
+    return { paperId: span2.paper.id, tick: Math.max(0, Math.floor(inPaper)) };
   };
   const secondsAt = (paperId, tick, near2) => {
     if (!ref) return null;
     const { tokens } = flat(ref.id), tl2 = timeline(tokens, map);
     let best = null;
-    for (const span of papers) {
-      if (span.paper.id !== paperId) continue;
-      const segs = segsOf2(span.paper.id);
+    for (const span2 of papers) {
+      if (span2.paper.id !== paperId) continue;
+      const segs = segsOf2(span2.paper.id);
       const cands3 = [];
       if (segs) {
         let cum = 0;
         for (const sg2 of segs) {
-          if (tick >= sg2.t0 && tick < sg2.t1) cands3.push(span.tick0 + cum + (tick - sg2.t0));
+          if (tick >= sg2.t0 && tick < sg2.t1) cands3.push(span2.tick0 + cum + (tick - sg2.t0));
           cum += sg2.t1 - sg2.t0;
         }
-      } else cands3.push(span.tick0 + tick);
+      } else cands3.push(span2.tick0 + tick);
       for (const T2 of cands3) {
         const e10 = tl2.find((x2) => T2 >= x2.start && T2 < x2.start + x2.tok.dur);
         if (!e10) continue;
@@ -27973,7 +28045,7 @@ var COALESCE_MS = 1500;
 var emptyHistory = () => ({ past: [], future: [], lastKey: null, lastAt: 0 });
 var snapOf = (st2, extras, locus) => ({ song: st2.song, extras, at: st2.at, caret: st2.caret, sel: st2.sel, locus });
 var applySnap = (st2, s10) => ({ ...st2, song: s10.song, at: s10.at, caret: s10.caret, sel: s10.sel, log: [] });
-function record2(h2, prev, prevExtras, gesture, now2, locus) {
+function record3(h2, prev, prevExtras, gesture, now2, locus) {
   if (gesture && gesture === h2.lastKey && now2 - h2.lastAt < COALESCE_MS && h2.past.length) {
     const last = h2.past[h2.past.length - 1];
     return { ...h2, past: [...h2.past.slice(0, -1), { ...last, locus }], future: [], lastAt: now2 };
@@ -28661,11 +28733,11 @@ function createPerformance(host) {
   }
   function jumpPlaybackToPaper2(id2) {
     if (!engine2.playing && !preparing) return;
-    const span = host.viewScope() === "all" && engine2.playing ? playTl?.papers.find((x2) => x2.paper.id === id2) : void 0;
-    if (span && playTl) {
+    const span2 = host.viewScope() === "all" && engine2.playing ? playTl?.papers.find((x2) => x2.paper.id === id2) : void 0;
+    if (span2 && playTl) {
       const r10 = playRange(playTl);
-      playMute = span.t0;
-      engine2.seek(clampTo(r10, span.t0 - PRE_ROLL), playMute);
+      playMute = span2.t0;
+      engine2.seek(clampTo(r10, span2.t0 - PRE_ROLL), playMute);
       return;
     }
     stopPlay2();
@@ -29089,7 +29161,7 @@ function bandsDb(x2, sr2) {
     return m2 * m2 / enbw;
   };
   const dens = (b3) => pw(b3) * b3 * Math.LN2;
-  const span = Math.log2(SPEC_FMAX / SPEC_FMIN) / SPEC_BANDS;
+  const span2 = Math.log2(SPEC_FMAX / SPEC_FMIN) / SPEC_BANDS;
   for (let k2 = 0; k2 < SPEC_BANDS; k2++) {
     const lo2 = SPEC_FMIN * (SPEC_FMAX / SPEC_FMIN) ** (k2 / SPEC_BANDS), hi = SPEC_FMIN * (SPEC_FMAX / SPEC_FMIN) ** ((k2 + 1) / SPEC_BANDS);
     let e10 = 0, any = false;
@@ -29098,7 +29170,7 @@ function bandsDb(x2, sr2) {
       any = true;
     }
     let v;
-    if (any) v = e10 / span;
+    if (any) v = e10 / span2;
     else {
       const fb = Math.sqrt(lo2 * hi) / binHz, b0 = Math.min(half2 - 2, Math.max(1, Math.floor(fb))), t10 = Math.log(Math.max(fb, 1) / b0) / Math.log((b0 + 1) / b0);
       const d0 = 10 * Math.log10(Math.max(1e-12, dens(b0))), d1 = 10 * Math.log10(Math.max(1e-12, dens(b0 + 1)));
@@ -29145,7 +29217,7 @@ var paramsOf = (fx) => {
 };
 var fullyWet = (fx) => (fx.kind === "reverb" || fx.kind === "delay" || fx.kind === "chorus") && fx.on !== false && paramsOf(fx).dry === 0;
 var near = (a10, b3, e10 = 1e-3) => Math.abs(a10 - b3) <= e10;
-var r1 = (x2) => Math.round(x2 * 10) / 10;
+var r12 = (x2) => Math.round(x2 * 10) / 10;
 var knob01 = (...xs) => Math.round(Math.max(0, Math.min(1, xs.reduce((a10, b3) => a10 + b3, 0) / xs.length)) * 20) / 20;
 var nearestBeat = (b3) => b3 ? [0.5, 0.75, 1].reduce((a10, c10) => Math.abs(c10 - b3) < Math.abs(a10 - b3) ? c10 : a10) : 0.75;
 var pct = (v) => `${Math.round(v * 100)}%`;
@@ -29243,7 +29315,7 @@ var EQ_SIMPLE = {
   },
   write(v, p2) {
     const t10 = Math.max(-1, Math.min(1, v.tilt ?? 0));
-    return { ...p2, hpAuto: v.autoLow ? 1 : 0, hpHz: 0, lpHz: 0, midDb: 0, lowHz: TILT_LO, highHz: TILT_HI, lowDb: r1(-t10 * TILT_DB), highDb: r1(t10 * TILT_DB) };
+    return { ...p2, hpAuto: v.autoLow ? 1 : 0, hpHz: 0, lpHz: 0, midDb: 0, lowHz: TILT_LO, highHz: TILT_HI, lowDb: r12(-t10 * TILT_DB), highDb: r12(t10 * TILT_DB) };
   },
   /** 低切开着（自动或手调）= 自动低切；高架减低架的一半 = 倾斜；中峰 / 高切丢掉。 */
   project(p2) {
@@ -29252,7 +29324,7 @@ var EQ_SIMPLE = {
 };
 var compOf = (a10, keyed = false) => {
   const thr = -6 - 30 * a10, ratio = 1.5 + 4.5 * a10;
-  return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: keyed ? 0 : r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) };
+  return { thresholdDb: r12(thr), ratio: r12(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: keyed ? 0 : r12(0.5 * -thr * (1 - 1 / ratio) * 0.5) };
 };
 var compSimple = (keyed) => ({
   controls: [{ id: "amount", label: keyed ? "\u8BA9\u591A\u5C11" : "\u538B\u591A\u5C11", hint: keyed ? "\u88AB\u90A3\u6761\u8F68\u538B\uFF1A\u5B83\u4E00\u54CD\uFF0C\u8FD9\u6761\u5C31\u8BA9\u51FA\u6765\uFF1B\u5F80\u53F3 = \u8BA9\u5F97\u8D8A\u591A\uFF08\u4E0D\u8865\u507F\uFF1A\u5B83\u4E0D\u54CD\u7684\u65F6\u5019\u8FD9\u6761\u7167\u63A8\u5B50\u7684\u97F3\u91CF\uFF09" : "\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73\uFF1A\u5F80\u53F3 = \u538B\u5F97\u8D8A\u72E0\uFF08\u54CD\u7684\u5B57\u538B\u4E0B\u6765\u3001\u8F7B\u7684\u76F8\u5BF9\u663E\u51FA\u6765\uFF09", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a10) => {
@@ -29274,7 +29346,7 @@ var compSimple = (keyed) => ({
 });
 var COMP_SIMPLE = compSimple(false);
 var COMP_SIMPLE_KEYED = compSimple(true);
-var revOf = (d3) => ({ mix: r1((0.08 + 0.4 * d3) * 100) / 100, dry: 1, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
+var revOf = (d3) => ({ mix: r12((0.08 + 0.4 * d3) * 100) / 100, dry: 1, room: r12((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
 var REV_SIMPLE = {
   controls: [{ id: "far", label: "\u8FDC\u8FD1", hint: "\u5F80\u53F3 = \u8D8A\u8FDC\u3001\u8D8A\u5927\u7684\u623F\u95F4\uFF08\u94C3\u53EF\u4EE5\u8FDC\u4E00\u70B9\uFF0C\u8D34\u8033\u7684\u4EBA\u58F0\u8FD1\u4E00\u70B9\uFF09\uFF1B\u539F\u58F0\u4E0D\u52A8\uFF0C\u53EA\u5F80\u4E0A\u52A0\u6DF7\u54CD", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d3) => {
     const c10 = revOf(d3);
@@ -29291,7 +29363,7 @@ var REV_SIMPLE = {
     return { far: knob01((p2.mix - 0.08) / 0.4, (p2.room - 0.3) / 0.65) };
   }
 };
-var dlyOf = (e10) => ({ mix: r1((0.1 + 0.4 * e10) * 100) / 100, dry: 1, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3 });
+var dlyOf = (e10) => ({ mix: r12((0.1 + 0.4 * e10) * 100) / 100, dry: 1, feedback: r12((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3 });
 var DLY_SIMPLE = {
   controls: [
     { id: "echo", label: "\u56DE\u58F0\u591A\u5C11", hint: "\u5F80\u53F3 = \u56DE\u58F0\u8D8A\u54CD\u3001\u8D8A\u4E45\uFF1B\u539F\u58F0\u4E0D\u52A8", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e10) => {
@@ -29311,7 +29383,7 @@ var DLY_SIMPLE = {
     return { echo: knob01((p2.mix - 0.1) / 0.4, (p2.feedback - 0.15) / 0.5), beats: nearestBeat(p2.syncBeats) };
   }
 };
-var choOf = (w2) => ({ mix: r1((0.2 + 0.4 * w2) * 100) / 100, dry: 1, depthMs: r1(1 + 4 * w2), spread: r1((0.4 + 0.6 * w2) * 100) / 100, voices: 3, delayMs: 18, rateHz: 0.6 });
+var choOf = (w2) => ({ mix: r12((0.2 + 0.4 * w2) * 100) / 100, dry: 1, depthMs: r12(1 + 4 * w2), spread: r12((0.4 + 0.6 * w2) * 100) / 100, voices: 3, delayMs: 18, rateHz: 0.6 });
 var CHO_SIMPLE = {
   controls: [{ id: "wide", label: "\u5BBD", hint: "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF1B\u539F\u58F0\u4E0D\u52A8", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (w2) => {
     const c10 = choOf(w2);
@@ -29351,7 +29423,7 @@ var SIMPLE_BUS = {
     },
     write(v, p2) {
       const d3 = Math.max(0, Math.min(1, v.size ?? 0));
-      return { ...p2, room: r1((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1, dry: 0 };
+      return { ...p2, room: r12((0.3 + 0.65 * d3) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1, dry: 0 };
     },
     project(p2) {
       return { size: knob01((p2.room - 0.3) / 0.65) };
@@ -29365,7 +29437,7 @@ var SIMPLE_BUS = {
     },
     write(v, p2) {
       const e10 = Math.max(0, Math.min(1, v.echo ?? 0));
-      return { ...p2, feedback: r1((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3, mix: 1, dry: 0, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
+      return { ...p2, feedback: r12((0.15 + 0.5 * e10) * 100) / 100, dampHz: 6e3, mix: 1, dry: 0, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 };
     },
     project(p2) {
       return { echo: knob01((p2.feedback - 0.15) / 0.5), beats: nearestBeat(p2.syncBeats) };
@@ -29375,7 +29447,7 @@ var SIMPLE_BUS = {
     controls: [{ ...CHO_SIMPLE.controls[0], hint: "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09", fmt: (w2) => `\u6296\u52A8 ${choOf(w2).depthMs} ms` }],
     read(p2) {
       const w2 = (p2.depthMs - 1) / 4;
-      return wet1(p2) && w2 >= -1e-3 && w2 <= 1 + 1e-3 && near(p2.spread, r1((0.4 + 0.6 * w2) * 100) / 100, 6e-3) && p2.voices === 3 && p2.delayMs === 18 && p2.rateHz === 0.6 ? { wide: Math.round(w2 * 20) / 20 } : null;
+      return wet1(p2) && w2 >= -1e-3 && w2 <= 1 + 1e-3 && near(p2.spread, r12((0.4 + 0.6 * w2) * 100) / 100, 6e-3) && p2.voices === 3 && p2.delayMs === 18 && p2.rateHz === 0.6 ? { wide: Math.round(w2 * 20) / 20 } : null;
     },
     write(v, p2) {
       const w2 = Math.max(0, Math.min(1, v.wide ?? 0));
@@ -31740,8 +31812,8 @@ function tK(e10, t10 = 1 / 0, n10) {
     else {
       let r11;
       if ("[object Object]" === (r11 = e10, I.call(r11))) {
-        for (let r13 in e10) tK(e10[r13], t10, n10);
-        for (let r13 of Object.getOwnPropertySymbols(e10)) Object.prototype.propertyIsEnumerable.call(e10, r13) && tK(e10[r13], t10, n10);
+        for (let r14 in e10) tK(e10[r14], t10, n10);
+        for (let r14 of Object.getOwnPropertySymbols(e10)) Object.prototype.propertyIsEnumerable.call(e10, r14) && tK(e10[r14], t10, n10);
       }
     }
   }
@@ -32507,14 +32579,14 @@ function rs(e10) {
     }, o11 = s10 ? () => {
       let t11 = s10(l11, (t12) => function(e12, t13) {
         if (n3(e12) && "[" === e12.data) {
-          let n12 = 1, r13 = e12.nextSibling;
-          for (; r13; ) {
-            if (1 === r13.nodeType) {
-              if (false === t13(r13)) break;
-            } else if (n3(r13)) if ("]" === r13.data) {
+          let n12 = 1, r14 = e12.nextSibling;
+          for (; r14; ) {
+            if (1 === r14.nodeType) {
+              if (false === t13(r14)) break;
+            } else if (n3(r14)) if ("]" === r14.data) {
               if (0 == --n12) break;
-            } else "[" === r13.data && n12++;
-            r13 = r13.nextSibling;
+            } else "[" === r14.data && n12++;
+            r14 = r14.nextSibling;
           }
         } else t13(e12);
       }(e11, t12));
@@ -32825,11 +32897,11 @@ function r0(e10) {
   let t10 = lS();
   return t10.setupContext || (t10.setupContext = lO(t10));
 }
-function r12(e10) {
+function r13(e10) {
   return T(e10) ? e10.reduce((e11, t10) => (e11[t10] = null, e11), {}) : e10;
 }
 function r2(e10, t10) {
-  let n10 = r12(e10);
+  let n10 = r13(e10);
   for (let e11 in t10) {
     if (e11.startsWith("__skip")) continue;
     let r10 = n10[e11];
@@ -32838,7 +32910,7 @@ function r2(e10, t10) {
   return n10;
 }
 function r6(e10, t10) {
-  return e10 && t10 ? T(e10) && T(t10) ? e10.concat(t10) : S({}, r12(e10), r12(t10)) : e10 || t10;
+  return e10 && t10 ? T(e10) && T(t10) ? e10.concat(t10) : S({}, r13(e10), r13(t10)) : e10 || t10;
 }
 function r3(e10, t10) {
   let n10 = {};
@@ -32905,7 +32977,7 @@ function il(e10, t10) {
   return e10 ? S(/* @__PURE__ */ Object.create(null), e10, t10) : t10;
 }
 function is(e10, t10) {
-  return e10 ? T(e10) && T(t10) ? [.../* @__PURE__ */ new Set([...e10, ...t10])] : S(/* @__PURE__ */ Object.create(null), r12(e10), r12(null != t10 ? t10 : {})) : t10;
+  return e10 ? T(e10) && T(t10) ? [.../* @__PURE__ */ new Set([...e10, ...t10])] : S(/* @__PURE__ */ Object.create(null), r13(e10), r13(null != t10 ? t10 : {})) : t10;
 }
 function io() {
   return { app: null, config: { isNativeTag: y, performance: false, globalProperties: {}, optionMergeStrategies: {}, errorHandler: void 0, warnHandler: void 0, compilerOptions: {} }, mixins: [], components: {}, directives: {}, provides: /* @__PURE__ */ Object.create(null), optionsCache: /* @__PURE__ */ new WeakMap(), propsCache: /* @__PURE__ */ new WeakMap(), emitsCache: /* @__PURE__ */ new WeakMap() };
@@ -33150,8 +33222,8 @@ function iL(e10, t10) {
       else if (2 & u3 && g3.class !== m2.class && o10(c11, "class", null, m2.class, i11), 4 & u3 && o10(c11, "style", g3.style, m2.style, i11), 8 & u3) {
         let e12 = t11.dynamicProps;
         for (let t12 = 0; t12 < e12.length; t12++) {
-          let r13 = e12[t12], l12 = g3[r13], s12 = m2[r13];
-          (s12 !== l12 || "value" === r13) && o10(c11, r13, l12, s12, i11, n11);
+          let r14 = e12[t12], l12 = g3[r14], s12 = m2[r14];
+          (s12 !== l12 || "value" === r14) && o10(c11, r14, l12, s12, i11, n11);
         }
       }
       1 & u3 && e11.children !== t11.children && p2(c11, t11.children);
@@ -33183,23 +33255,23 @@ function iL(e10, t10) {
     let o11 = e11.component = lb(e11, r11, i11);
     if (ra(e11) && (o11.ctx.renderer = el2), lw(o11, false, s11), o11.asyncDep) {
       if (i11 && i11.registerDep(o11, q2, s11), !e11.el) {
-        let r13 = o11.subTree = ls(iY);
-        T2(null, r13, t11, n11), e11.placeholder = r13.el;
+        let r14 = o11.subTree = ls(iY);
+        T2(null, r14, t11, n11), e11.placeholder = r14.el;
       }
     } else q2(o11, e11, t11, n11, i11, l11, s11);
   }, U2 = (e11, t11, n11) => {
     let r11 = t11.component = e11.component;
     if (function(e12, t12, n12) {
-      let { props: r13, children: i11, component: l11 } = e12, { props: s11, children: o11, patchFlag: a11 } = t12, c11 = l11.emitsOptions;
+      let { props: r14, children: i11, component: l11 } = e12, { props: s11, children: o11, patchFlag: a11 } = t12, c11 = l11.emitsOptions;
       if (t12.dirs || t12.transition) return true;
-      if (!n12 || !(a11 >= 0)) return (!!i11 || !!o11) && (!o11 || !o11.$stable) || r13 !== s11 && (r13 ? !s11 || ib(r13, s11, c11) : !!s11);
+      if (!n12 || !(a11 >= 0)) return (!!i11 || !!o11) && (!o11 || !o11.$stable) || r14 !== s11 && (r14 ? !s11 || ib(r14, s11, c11) : !!s11);
       if (1024 & a11) return true;
-      if (16 & a11) return r13 ? ib(r13, s11, c11) : !!s11;
+      if (16 & a11) return r14 ? ib(r14, s11, c11) : !!s11;
       if (8 & a11) {
         let e13 = t12.dynamicProps;
         for (let t13 = 0; t13 < e13.length; t13++) {
           let n13 = e13[t13];
-          if (i_(s11, r13, n13) && !ig(c11, n13)) return true;
+          if (i_(s11, r14, n13) && !ig(c11, n13)) return true;
         }
       }
       return false;
@@ -33210,7 +33282,7 @@ function iL(e10, t10) {
     e11.scope.on();
     let a11 = e11.effect = new ey(() => {
       if (e11.isMounted) {
-        let t12, { next: n12, bu: r13, u: i11, parent: a12, vnode: u4 } = e11;
+        let t12, { next: n12, bu: r14, u: i11, parent: a12, vnode: u4 } = e11;
         {
           let t13 = function e12(t14) {
             let n13 = t14.subTree.component;
@@ -33227,7 +33299,7 @@ function iL(e10, t10) {
           }
         }
         let d4 = n12;
-        iV(e11, false), n12 ? (n12.el = u4.el, W3(e11, n12, o11)) : n12 = u4, r13 && H(r13), (t12 = n12.props && n12.props.onVnodeBeforeUpdate) && lm(t12, a12, n12, u4), iV(e11, true);
+        iV(e11, false), n12 ? (n12.el = u4.el, W3(e11, n12, o11)) : n12 = u4, r14 && H(r14), (t12 = n12.props && n12.props.onVnodeBeforeUpdate) && lm(t12, a12, n12, u4), iV(e11, true);
         let p3 = im(e11), f2 = e11.subTree;
         e11.subTree = p3, x2(f2, p3, h2(f2.el), en2(f2), e11, l11, s11), n12.el = p3.el, null === d4 && iS(e11, p3.el), i11 && iM(i11, l11), (t12 = n12.props && n12.props.onVnodeUpdated) && iM(() => lm(t12, a12, n12, u4), l11);
       } else {
@@ -33255,13 +33327,13 @@ function iL(e10, t10) {
   }, W3 = (e11, t11, n11) => {
     t11.component = e11;
     let r11 = e11.vnode.props;
-    e11.vnode = t11, e11.next = null, function(e12, t12, n12, r13) {
+    e11.vnode = t11, e11.next = null, function(e12, t12, n12, r14) {
       let { props: i11, attrs: l11, vnode: { patchFlag: s11 } } = e12, o11 = tb(i11), [a11] = e12.propsOptions, c11 = false;
-      if ((r13 || s11 > 0) && !(16 & s11)) {
+      if ((r14 || s11 > 0) && !(16 & s11)) {
         if (8 & s11) {
           let n13 = e12.vnode.dynamicProps;
-          for (let r14 = 0; r14 < n13.length; r14++) {
-            let s12 = n13[r14];
+          for (let r15 = 0; r15 < n13.length; r15++) {
+            let s12 = n13[r15];
             if (ig(e12.emitsOptions, s12)) continue;
             let u3 = t12[s12];
             if (a11) if (k(l11, s12)) u3 !== l11[s12] && (l11[s12] = u3, c11 = true);
@@ -33273,14 +33345,14 @@ function iL(e10, t10) {
           }
         }
       } else {
-        let r14;
-        for (let s12 in ik(e12, t12, i11, l11) && (c11 = true), o11) t12 && (k(t12, s12) || (r14 = V(s12)) !== s12 && k(t12, r14)) || (a11 ? n12 && (void 0 !== n12[s12] || void 0 !== n12[r14]) && (i11[s12] = iT(a11, o11, s12, void 0, e12, true)) : delete i11[s12]);
+        let r15;
+        for (let s12 in ik(e12, t12, i11, l11) && (c11 = true), o11) t12 && (k(t12, s12) || (r15 = V(s12)) !== s12 && k(t12, r15)) || (a11 ? n12 && (void 0 !== n12[s12] || void 0 !== n12[r15]) && (i11[s12] = iT(a11, o11, s12, void 0, e12, true)) : delete i11[s12]);
         if (l11 !== o11) for (let e13 in l11) t12 && k(t12, e13) || (delete l11[e13], c11 = true);
       }
       c11 && eU(e12.attrs, "set", "");
     }(e11, t11.props, r11, n11), ((e12, t12, n12) => {
-      let { vnode: r13, slots: i11 } = e12, l11 = true, s11 = f;
-      if (32 & r13.shapeFlag) {
+      let { vnode: r14, slots: i11 } = e12, l11 = true, s11 = f;
+      if (32 & r14.shapeFlag) {
         let e13 = t12._;
         e13 ? n12 && 1 === e13 ? l11 = false : iP(i11, t12, n12) : (l11 = !t12.$stable, iI(t12, i11)), s11 = t12;
       } else t12 && (iO(e12, t12), s11 = { default: 1 });
@@ -33298,21 +33370,21 @@ function iL(e10, t10) {
     e11 = e11 || g2, t11 = t11 || g2;
     let u3 = e11.length, d4 = t11.length, p3 = Math.min(u3, d4);
     for (c11 = 0; c11 < p3; c11++) {
-      let r13 = t11[c11] = a11 ? lh(t11[c11]) : lp(t11[c11]);
-      x2(e11[c11], r13, n11, null, i11, l11, s11, o11, a11);
+      let r14 = t11[c11] = a11 ? lh(t11[c11]) : lp(t11[c11]);
+      x2(e11[c11], r14, n11, null, i11, l11, s11, o11, a11);
     }
     u3 > d4 ? et3(e11, i11, l11, true, false, p3) : O2(t11, n11, r11, i11, l11, s11, o11, a11, p3);
   }, G2 = (e11, t11, n11, r11, i11, l11, s11, o11, a11) => {
     let c11 = 0, u3 = t11.length, d4 = e11.length - 1, p3 = u3 - 1;
     for (; c11 <= d4 && c11 <= p3; ) {
-      let r13 = e11[c11], u4 = t11[c11] = a11 ? lh(t11[c11]) : lp(t11[c11]);
-      if (lt(r13, u4)) x2(r13, u4, n11, null, i11, l11, s11, o11, a11);
+      let r14 = e11[c11], u4 = t11[c11] = a11 ? lh(t11[c11]) : lp(t11[c11]);
+      if (lt(r14, u4)) x2(r14, u4, n11, null, i11, l11, s11, o11, a11);
       else break;
       c11++;
     }
     for (; c11 <= d4 && c11 <= p3; ) {
-      let r13 = e11[d4], c12 = t11[p3] = a11 ? lh(t11[p3]) : lp(t11[p3]);
-      if (lt(r13, c12)) x2(r13, c12, n11, null, i11, l11, s11, o11, a11);
+      let r14 = e11[d4], c12 = t11[p3] = a11 ? lh(t11[p3]) : lp(t11[p3]);
+      if (lt(r14, c12)) x2(r14, c12, n11, null, i11, l11, s11, o11, a11);
       else break;
       d4--, p3--;
     }
@@ -33331,20 +33403,20 @@ function iL(e10, t10) {
       let b5 = 0, _3 = p3 - m2 + 1, S2 = false, C3 = 0, k2 = Array(_3);
       for (c11 = 0; c11 < _3; c11++) k2[c11] = 0;
       for (c11 = f2; c11 <= d4; c11++) {
-        let r13, u4 = e11[c11];
+        let r14, u4 = e11[c11];
         if (b5 >= _3) {
           Q2(u4, i11, l11, true);
           continue;
         }
-        if (null != u4.key) r13 = y3.get(u4.key);
+        if (null != u4.key) r14 = y3.get(u4.key);
         else for (h3 = m2; h3 <= p3; h3++) if (0 === k2[h3 - m2] && lt(u4, t11[h3])) {
-          r13 = h3;
+          r14 = h3;
           break;
         }
-        void 0 === r13 ? Q2(u4, i11, l11, true) : (k2[r13 - m2] = c11 + 1, r13 >= C3 ? C3 = r13 : S2 = true, x2(u4, t11[r13], n11, null, i11, l11, s11, o11, a11), b5++);
+        void 0 === r14 ? Q2(u4, i11, l11, true) : (k2[r14 - m2] = c11 + 1, r14 >= C3 ? C3 = r14 : S2 = true, x2(u4, t11[r14], n11, null, i11, l11, s11, o11, a11), b5++);
       }
       let T3 = S2 ? function(e12) {
-        let t12, n12, r13, i12, l12, s12 = e12.slice(), o12 = [0], a12 = e12.length;
+        let t12, n12, r14, i12, l12, s12 = e12.slice(), o12 = [0], a12 = e12.length;
         for (t12 = 0; t12 < a12; t12++) {
           let a13 = e12[t12];
           if (0 !== a13) {
@@ -33352,11 +33424,11 @@ function iL(e10, t10) {
               s12[t12] = n12, o12.push(t12);
               continue;
             }
-            for (r13 = 0, i12 = o12.length - 1; r13 < i12; ) e12[o12[l12 = r13 + i12 >> 1]] < a13 ? r13 = l12 + 1 : i12 = l12;
-            a13 < e12[o12[r13]] && (r13 > 0 && (s12[t12] = o12[r13 - 1]), o12[r13] = t12);
+            for (r14 = 0, i12 = o12.length - 1; r14 < i12; ) e12[o12[l12 = r14 + i12 >> 1]] < a13 ? r14 = l12 + 1 : i12 = l12;
+            a13 < e12[o12[r14]] && (r14 > 0 && (s12[t12] = o12[r14 - 1]), o12[r14] = t12);
           }
         }
-        for (r13 = o12.length, i12 = o12[r13 - 1]; r13-- > 0; ) o12[r13] = i12, i12 = s12[i12];
+        for (r14 = o12.length, i12 = o12[r14 - 1]; r14-- > 0; ) o12[r14] = i12, i12 = s12[i12];
         return o12;
       }(k2) : g2;
       for (h3 = T3.length - 1, c11 = _3 - 1; c11 >= 0; c11--) {
@@ -33379,18 +33451,18 @@ function iL(e10, t10) {
       l10(e11.anchor, t11, n11);
       return;
     }
-    if (a11 === i0) return void (({ el: e12, anchor: t12 }, n12, r13) => {
+    if (a11 === i0) return void (({ el: e12, anchor: t12 }, n12, r14) => {
       let i12;
-      for (; e12 && e12 !== t12; ) i12 = y2(e12), l10(e12, n12, r13), e12 = i12;
-      l10(t12, n12, r13);
+      for (; e12 && e12 !== t12; ) i12 = y2(e12), l10(e12, n12, r14), e12 = i12;
+      l10(t12, n12, r14);
     })(e11, t11, n11);
     if (2 !== r11 && 1 & d4 && c11) if (0 === r11) c11.persisted && !o11[nP] ? l10(o11, t11, n11) : (c11.beforeEnter(o11), l10(o11, t11, n11), iM(() => c11.enter(o11), i11));
     else {
-      let { leave: r13, delayLeave: i12, afterLeave: a12 } = c11, u4 = () => {
+      let { leave: r14, delayLeave: i12, afterLeave: a12 } = c11, u4 = () => {
         e11.ctx.isUnmounted ? s10(o11) : l10(o11, t11, n11);
       }, d5 = () => {
         let e12 = o11._isLeaving || !!o11[nP];
-        o11._isLeaving && o11[nP](true), c11.persisted && !e12 ? u4() : r13(o11, () => {
+        o11._isLeaving && o11[nP](true), c11.persisted && !e12 ? u4() : r14(o11, () => {
           u4(), a12 && a12();
         });
       };
@@ -33422,8 +33494,8 @@ function iL(e10, t10) {
       s10(n11), i11 && !i11.persisted && i11.afterLeave && i11.afterLeave();
     };
     if (1 & e11.shapeFlag && i11 && !i11.persisted) {
-      let { leave: t12, delayLeave: r13 } = i11, s11 = () => t12(n11, l11);
-      r13 ? r13(e11.el, l11, s11) : s11();
+      let { leave: t12, delayLeave: r14 } = i11, s11 = () => t12(n11, l11);
+      r14 ? r14(e11.el, l11, s11) : s11();
     } else l11();
   }, Y2 = (e11, t11) => {
     let n11;
@@ -33724,8 +33796,8 @@ function lb(e10, t10, n10) {
     if (!w(t11)) {
       let i12 = (t12) => {
         c10 = true;
-        let [r13, i13] = e11(t12, n11, true);
-        S(o10, r13), i13 && a10.push(...i13);
+        let [r14, i13] = e11(t12, n11, true);
+        S(o10, r14), i13 && a10.push(...i13);
       };
       !r11 && n11.mixins.length && n11.mixins.forEach(i12), t11.extends && i12(t11.extends), t11.mixins && t11.mixins.forEach(i12);
     }
@@ -33737,7 +33809,7 @@ function lb(e10, t10, n10) {
     else if (s10) for (let e12 in s10) {
       let t12 = L(e12);
       if (iN(t12)) {
-        let n12 = s10[e12], r13 = o10[t12] = T(n12) || w(n12) ? { type: n12 } : S({}, n12), i12 = r13.type, l12 = false, c11 = true;
+        let n12 = s10[e12], r14 = o10[t12] = T(n12) || w(n12) ? { type: n12 } : S({}, n12), i12 = r14.type, l12 = false, c11 = true;
         if (T(i12)) for (let e13 = 0; e13 < i12.length; ++e13) {
           let t13 = i12[e13], n13 = w(t13) && t13.name;
           if ("Boolean" === n13) {
@@ -33747,7 +33819,7 @@ function lb(e10, t10, n10) {
           "String" === n13 && (c11 = false);
         }
         else l12 = w(i12) && "Boolean" === i12.name;
-        r13[0] = l12, r13[1] = c11, (l12 || k(r13, "default")) && a10.push(t12);
+        r14[0] = l12, r14[1] = c11, (l12 || k(r14, "default")) && a10.push(t12);
       }
     }
     let u2 = [o10, a10];
@@ -33758,8 +33830,8 @@ function lb(e10, t10, n10) {
     let s10 = t11.emits, o10 = {}, a10 = false;
     if (!w(t11)) {
       let i12 = (t12) => {
-        let r13 = e11(t12, n11, true);
-        r13 && (a10 = true, S(o10, r13));
+        let r14 = e11(t12, n11, true);
+        r14 && (a10 = true, S(o10, r14));
       };
       !r11 && n11.mixins.length && n11.mixins.forEach(i12), t11.extends && i12(t11.extends), t11.mixins && t11.mixins.forEach(i12);
     }
@@ -33855,8 +33927,8 @@ function lR(e10, t10, n10) {
         let { data: i10, computed: l10, methods: s10, watch: o10, provide: a10, inject: c10, created: u2, beforeMount: d3, mounted: p2, beforeUpdate: h2, updated: f2, activated: g3, deactivated: y2, beforeUnmount: b3, unmounted: _2, render: S2, renderTracked: x2, renderTriggered: C2, errorCaptured: k2, serverPrefetch: A2, expose: R2, inheritAttrs: I2, components: O2, directives: P2 } = t12;
         if (c10 && function(e12, t13) {
           for (let n12 in T(e12) && (e12 = ir(e12)), e12) {
-            let r13, i11 = e12[n12];
-            tC(r13 = E(i11) ? "default" in i11 ? np(i11.from || n12, i11.default, true) : np(i11.from || n12) : np(i11)) ? Object.defineProperty(t13, n12, { enumerable: true, configurable: true, get: () => r13.value, set: (e13) => r13.value = e13 }) : t13[n12] = r13;
+            let r14, i11 = e12[n12];
+            tC(r14 = E(i11) ? "default" in i11 ? np(i11.from || n12, i11.default, true) : np(i11.from || n12) : np(i11)) ? Object.defineProperty(t13, n12, { enumerable: true, configurable: true, get: () => r14.value, set: (e13) => r14.value = e13 }) : t13[n12] = r14;
           }
         }(c10, r11), s10) for (let e12 in s10) {
           let t13 = s10[e12];
@@ -33870,15 +33942,15 @@ function lR(e10, t10, n10) {
           let t13 = l10[e12], i11 = w(t13) ? t13.bind(n11, n11) : w(t13.get) ? t13.get.bind(n11, n11) : m, s11 = lD({ get: i11, set: !w(t13) && w(t13.set) ? t13.set.bind(n11) : m });
           Object.defineProperty(r11, e12, { enumerable: true, configurable: true, get: () => s11.value, set: (e13) => s11.value = e13 });
         }
-        if (o10) for (let e12 in o10) !function e13(t13, n12, r13, i11) {
-          let l11 = i11.includes(".") ? nx(r13, i11) : () => r13[i11];
+        if (o10) for (let e12 in o10) !function e13(t13, n12, r14, i11) {
+          let l11 = i11.includes(".") ? nx(r14, i11) : () => r14[i11];
           if (N(t13)) {
             let e14 = n12[t13];
             w(e14) && nb(l11, e14);
-          } else if (w(t13)) nb(l11, t13.bind(r13));
-          else if (E(t13)) if (T(t13)) t13.forEach((t14) => e13(t14, n12, r13, i11));
+          } else if (w(t13)) nb(l11, t13.bind(r14));
+          else if (E(t13)) if (T(t13)) t13.forEach((t14) => e13(t14, n12, r14, i11));
           else {
-            let e14 = w(t13.handler) ? t13.handler.bind(r13) : n12[t13.handler];
+            let e14 = w(t13.handler) ? t13.handler.bind(r14) : n12[t13.handler];
             w(e14) && nb(l11, e14, t13);
           }
         }(o10[e12], r11, n11, e12);
@@ -34121,17 +34193,17 @@ function sh(e10) {
     let r11 = e10(t10.proxy);
     t10.ce ? sf(t10.ce, r11) : function e11(t11, n11) {
       if (128 & t11.shapeFlag) {
-        let r13 = t11.suspense;
-        t11 = r13.activeBranch, r13.pendingBranch && !r13.isHydrating && r13.effects.push(() => {
-          e11(r13.activeBranch, n11);
+        let r14 = t11.suspense;
+        t11 = r14.activeBranch, r14.pendingBranch && !r14.isHydrating && r14.effects.push(() => {
+          e11(r14.activeBranch, n11);
         });
       }
       for (; t11.component; ) t11 = t11.component.subTree;
       if (1 & t11.shapeFlag && t11.el) sf(t11.el, n11);
       else if (t11.type === iQ) t11.children.forEach((t12) => e11(t12, n11));
       else if (t11.type === i0) {
-        let { el: e12, anchor: r13 } = t11;
-        for (; e12 && (sf(e12, n11), e12 !== r13); ) e12 = e12.nextSibling;
+        let { el: e12, anchor: r14 } = t11;
+        for (; e12 && (sf(e12, n11), e12 !== r14); ) e12 = e12.nextSibling;
       }
     }(t10.subTree, r11), n10(r11);
   };
@@ -34267,9 +34339,9 @@ var sE = (e10, t10, n10, r10, i10, l10) => {
             e12.stopImmediatePropagation = () => {
               n12.call(e12), e12._stopped = true;
             };
-            let r13 = t12.slice(), i12 = [e12];
-            for (let t13 = 0; t13 < r13.length && !e12._stopped; t13++) {
-              let e13 = r13[t13];
+            let r14 = t12.slice(), i12 = [e12];
+            for (let t13 = 0; t13 < r14.length && !e12._stopped; t13++) {
+              let e13 = r14[t13];
               e13 && tX(e13, o11, 5, i12);
             }
           } else tX(t12, o11, 5, [e12]);
@@ -34499,14 +34571,14 @@ var sU = (om = { name: "TransitionGroup", props: S({}, l3, { tag: String, moveCl
     if (!n10.length) return;
     let t11 = e10.moveClass || `${e10.name || "v"}-move`;
     if (!function(e11, t12, n11) {
-      let r13 = e11.cloneNode(), i11 = e11[l2];
+      let r14 = e11.cloneNode(), i11 = e11[l2];
       i11 && i11.forEach((e12) => {
-        e12.split(/\s+/).forEach((e13) => e13 && r13.classList.remove(e13));
-      }), n11.split(/\s+/).forEach((e12) => e12 && r13.classList.add(e12)), r13.style.display = "none";
+        e12.split(/\s+/).forEach((e13) => e13 && r14.classList.remove(e13));
+      }), n11.split(/\s+/).forEach((e12) => e12 && r14.classList.add(e12)), r14.style.display = "none";
       let l11 = 1 === t12.nodeType ? t12 : t12.parentNode;
-      l11.appendChild(r13);
-      let { hasTransform: s10 } = si(r13);
-      return l11.removeChild(r13), s10;
+      l11.appendChild(r14);
+      let { hasTransform: s10 } = si(r14);
+      return l11.removeChild(r14), s10;
     }(n10[0].el, i10.vnode.el, t11)) {
       n10 = [];
       return;
@@ -34514,8 +34586,8 @@ var sU = (om = { name: "TransitionGroup", props: S({}, l3, { tag: String, moveCl
     n10.forEach(sH), n10.forEach(sq);
     let r11 = n10.filter(sW);
     so(i10.vnode.el), r11.forEach((e11) => {
-      let n11 = e11.el, r13 = n11.style;
-      l7(n11, t11), r13.transform = r13.webkitTransform = r13.transitionDuration = "";
+      let n11 = e11.el, r14 = n11.style;
+      l7(n11, t11), r14.transform = r14.webkitTransform = r14.transitionDuration = "";
       let i11 = n11[sB] = (e12) => {
         (!e12 || e12.target === n11) && (!e12 || e12.propertyName.endsWith("transform")) && (n11.removeEventListener("transitionend", i11), n11[sB] = null, se(n11, t11));
       };
@@ -34702,8 +34774,8 @@ var ot = (e10, t10) => {
   let n10 = e10._withMods || (e10._withMods = {}), r10 = t10.join(".");
   return n10[r10] || (n10[r10] = (n11, ...r11) => {
     for (let e11 = 0; e11 < t10.length; e11++) {
-      let r13 = oe[t10[e11]];
-      if (r13 && r13(n11, t10)) return;
+      let r14 = oe[t10[e11]];
+      if (r14 && r14(n11, t10)) return;
     }
     return e10(n11, ...r11);
   });
@@ -35584,9 +35656,9 @@ function cu(e10, t10) {
       if (0 === o10) return o10;
       if (o10 < n10 && (n10 = o10), 0 === (i10 = 4 === s10.type ? ca(s10, t10) : 14 === s10.type ? function e12(t11, n11) {
         if (14 === t11.type && !N(t11.callee) && cc.has(t11.callee)) {
-          let r13 = t11.arguments[0];
-          if (4 === r13.type) return ca(r13, n11);
-          if (14 === r13.type) return e12(r13, n11);
+          let r14 = t11.arguments[0];
+          if (4 === r14.type) return ca(r14, n11);
+          if (14 === r14.type) return e12(r14, n11);
         }
         return 0;
       }(s10, t10) : 0)) return i10;
@@ -35729,7 +35801,7 @@ function cb(e10, t10) {
         let o10 = s10.length > 1;
         n11(o10 ? "{" : "{ "), o10 && r11();
         for (let e12 = 0; e12 < s10.length; e12++) {
-          let { key: r13, value: i12 } = s10[e12];
+          let { key: r14, value: i12 } = s10[e12];
           !function(e13, t12) {
             let { push: n12 } = t12;
             if (8 === e13.type) n12("["), cS(e13, t12), n12("]");
@@ -35737,7 +35809,7 @@ function cb(e10, t10) {
               let t13;
               n12((t13 = e13.content, ay.test(t13)) ? JSON.stringify(e13.content) : e13.content, -2, e13);
             } else n12(`[${e13.content}]`, -3, e13);
-          }(r13, t11), n11(": "), cb(i12, t11), e12 < s10.length - 1 && (n11(","), l10());
+          }(r14, t11), n11(": "), cb(i12, t11), e12 < s10.length - 1 && (n11(","), l10());
         }
         o10 && i11(), n11(o10 ? "}" : " }");
       }(e10, t10);
@@ -35755,8 +35827,8 @@ function cb(e10, t10) {
       !function(e11, t11) {
         let { test: n11, consequent: r11, alternate: i11, newline: l10 } = e11, { push: s10, indent: o10, deindent: a10, newline: c10 } = t11;
         if (4 === n11.type) {
-          let e12, r13 = (e12 = n11.content, !!ay.test(e12));
-          r13 && s10("("), c_(n11, t11), r13 && s10(")");
+          let e12, r14 = (e12 = n11.content, !!ay.test(e12));
+          r14 && s10("("), c_(n11, t11), r14 && s10(")");
         } else s10("("), cb(n11, t11), s10(")");
         l10 && o10(), t11.indentLevel++, l10 || s10(" "), s10("? "), cb(r11, t11), t11.indentLevel--, l10 && c10(), l10 || s10(" "), s10(": ");
         let u2 = 19 === i11.type;
@@ -35915,8 +35987,8 @@ var cP = (e10, t10) => function() {
     n10 = r11.props, p2 = r11.patchFlag, l10 = r11.dynamicPropNames;
     let i11 = r11.directives;
     s10 = i11 && i11.length ? o5(i11.map((e11) => function(e12, t11) {
-      let n11 = [], r13 = cO.get(e12);
-      r13 ? n11.push(t11.helperString(r13)) : (t11.helper(oM), t11.directives.add(e12.name), n11.push(aF(e12.name, "directive")));
+      let n11 = [], r14 = cO.get(e12);
+      r14 ? n11.push(t11.helperString(r14)) : (t11.helper(oM), t11.directives.add(e12.name), n11.push(aF(e12.name, "directive")));
       let { loc: i12 } = e12;
       if (e12.exp && n11.push(e12.exp), e12.arg && (e12.exp || n11.push("void 0"), n11.push(e12.arg)), Object.keys(e12.modifiers).length) {
         e12.arg || (e12.exp || n11.push("void 0"), n11.push("void 0"));
@@ -35979,17 +36051,17 @@ var cP = (e10, t10) => function() {
       }
       let f2 = o11 ? 2 : !function e12(t12) {
         for (let n13 = 0; n13 < t12.length; n13++) {
-          let r13 = t12[n13];
-          switch (r13.type) {
+          let r14 = t12[n13];
+          switch (r14.type) {
             case 1:
-              if (2 === r13.tagType || e12(r13.children)) return true;
+              if (2 === r14.tagType || e12(r14.children)) return true;
               break;
             case 9:
-              if (e12(r13.branches)) return true;
+              if (e12(r14.branches)) return true;
               break;
             case 10:
             case 11:
-              if (e12(r13.children)) return true;
+              if (e12(r14.children)) return true;
           }
         }
         return false;
@@ -36093,8 +36165,8 @@ var cL = (e10, t10) => {
         } else "bind" === n12.name && n12.arg && am(n12.arg) && (n12.arg.content = L(n12.arg.content)), i11.push(n12);
       }
       if (i11.length > 0) {
-        let { props: r13, directives: l11 } = cM(e11, t11, i11, false, false);
-        n11 = r13, l11.length && t11.onError(ag(36, l11[0].loc));
+        let { props: r14, directives: l11 } = cM(e11, t11, i11, false, false);
+        n11 = r14, l11.length && t11.onError(ag(36, l11[0].loc));
       }
       return { slotName: r11, slotProps: n11 };
     }(e10, t10), s10 = [t10.prefixIdentifiers ? "_ctx.$slots" : "$slots", i10, "{}", "undefined", "true"], o10 = 2;
@@ -36278,8 +36350,8 @@ var ur = { cloak: () => ({ props: [] }), html: (e10, t10, n10) => {
   let { key: i10, value: l10 } = t11.props[0], { keyModifiers: s10, nonKeyModifiers: o10, eventOptionModifiers: a10 } = ((e11, t12, n11, r11) => {
     let i11 = [], l11 = [], s11 = [];
     for (let n12 = 0; n12 < t12.length; n12++) {
-      let r13 = t12[n12].content;
-      c8(r13) ? s11.push(r13) : c9(r13) ? am(e11) ? c7(e11.content.toLowerCase()) ? i11.push(r13) : l11.push(r13) : (i11.push(r13), l11.push(r13)) : c5(r13) ? l11.push(r13) : i11.push(r13);
+      let r14 = t12[n12].content;
+      c8(r14) ? s11.push(r14) : c9(r14) ? am(e11) ? c7(e11.content.toLowerCase()) ? i11.push(r14) : l11.push(r14) : (i11.push(r14), l11.push(r14)) : c5(r14) ? l11.push(r14) : i11.push(r14);
     }
     return { keyModifiers: i11, nonKeyModifiers: l11, eventOptionModifiers: s11 };
   })(i10, r10, 0, e10.loc);
@@ -36317,13 +36389,13 @@ function ul(e10, t10) {
         a0.mode = "html" === aU.parseMode ? 1 : 2 * ("sfc" === aU.parseMode), a0.inXML = 1 === aU.ns || 2 === aU.ns;
         let n12 = t13 && t13.delimiters;
         n12 && (a0.delimiterOpen = ad(n12[0]), a0.delimiterClose = ad(n12[1]));
-        let r13 = aH = /* @__PURE__ */ function(e14, t14 = "") {
+        let r14 = aH = /* @__PURE__ */ function(e14, t14 = "") {
           return { type: 0, source: t14, children: e14, helpers: /* @__PURE__ */ new Set(), components: [], directives: [], hoists: [], imports: [], cached: [], temps: 0, codegenNode: void 0, loc: o4 };
         }([], e13);
-        return a0.parse(aq), r13.loc = cr(0, e13.length), r13.children = ce(r13.children), aH = null, r13;
+        return a0.parse(aq), r14.loc = cr(0, e13.length), r14.children = ce(r14.children), aH = null, r14;
       }(e12, s11) : e12, [a10, c10] = [[cJ, cH, cx, cz, cw, cL, cP, cR, cj], { on: c$, bind: cV, model: cq }];
-      return r11 = function(e13, { filename: t13 = "", prefixIdentifiers: n12 = false, hoistStatic: r13 = false, hmr: i12 = false, cacheHandlers: l12 = false, nodeTransforms: s12 = [], directiveTransforms: o11 = {}, transformHoist: a11 = null, isBuiltInComponent: c11 = m, isCustomElement: u2 = m, expressionPlugins: d3 = [], scopeId: p2 = null, slotted: h2 = true, ssr: g3 = false, inSSR: y2 = false, ssrCssVars: b3 = "", bindingMetadata: _2 = f, inline: S2 = false, isTS: x2 = false, onError: C2 = ah, onWarn: k2 = af, compatConfig: T2 }) {
-        let w2 = t13.replace(/\?.*$/, "").match(/([^/\\]+)\.\w+$/), A2 = { filename: t13, selfName: w2 && B(L(w2[1])), prefixIdentifiers: n12, hoistStatic: r13, hmr: i12, cacheHandlers: l12, nodeTransforms: s12, directiveTransforms: o11, transformHoist: a11, isBuiltInComponent: c11, isCustomElement: u2, expressionPlugins: d3, scopeId: p2, slotted: h2, ssr: g3, inSSR: y2, ssrCssVars: b3, bindingMetadata: _2, inline: S2, isTS: x2, onError: C2, onWarn: k2, compatConfig: T2, root: e13, helpers: /* @__PURE__ */ new Map(), components: /* @__PURE__ */ new Set(), directives: /* @__PURE__ */ new Set(), hoists: [], imports: [], cached: [], constantCache: /* @__PURE__ */ new WeakMap(), temps: 0, identifiers: /* @__PURE__ */ Object.create(null), scopes: { vFor: 0, vSlot: 0, vPre: 0, vOnce: 0 }, parent: null, grandParent: null, currentNode: e13, childIndex: 0, inVOnce: false, helper(e14) {
+      return r11 = function(e13, { filename: t13 = "", prefixIdentifiers: n12 = false, hoistStatic: r14 = false, hmr: i12 = false, cacheHandlers: l12 = false, nodeTransforms: s12 = [], directiveTransforms: o11 = {}, transformHoist: a11 = null, isBuiltInComponent: c11 = m, isCustomElement: u2 = m, expressionPlugins: d3 = [], scopeId: p2 = null, slotted: h2 = true, ssr: g3 = false, inSSR: y2 = false, ssrCssVars: b3 = "", bindingMetadata: _2 = f, inline: S2 = false, isTS: x2 = false, onError: C2 = ah, onWarn: k2 = af, compatConfig: T2 }) {
+        let w2 = t13.replace(/\?.*$/, "").match(/([^/\\]+)\.\w+$/), A2 = { filename: t13, selfName: w2 && B(L(w2[1])), prefixIdentifiers: n12, hoistStatic: r14, hmr: i12, cacheHandlers: l12, nodeTransforms: s12, directiveTransforms: o11, transformHoist: a11, isBuiltInComponent: c11, isCustomElement: u2, expressionPlugins: d3, scopeId: p2, slotted: h2, ssr: g3, inSSR: y2, ssrCssVars: b3, bindingMetadata: _2, inline: S2, isTS: x2, onError: C2, onWarn: k2, compatConfig: T2, root: e13, helpers: /* @__PURE__ */ new Map(), components: /* @__PURE__ */ new Set(), directives: /* @__PURE__ */ new Set(), hoists: [], imports: [], cached: [], constantCache: /* @__PURE__ */ new WeakMap(), temps: 0, identifiers: /* @__PURE__ */ Object.create(null), scopes: { vFor: 0, vSlot: 0, vPre: 0, vOnce: 0 }, parent: null, grandParent: null, currentNode: e13, childIndex: 0, inVOnce: false, helper(e14) {
           let t14 = A2.helpers.get(e14) || 0;
           return A2.helpers.set(e14, t14 + 1), e14;
         }, removeHelper(e14) {
@@ -36344,18 +36416,18 @@ function ul(e10, t10) {
           let t14 = ae(`_hoisted_${A2.hoists.length}`, false, e14.loc, 2);
           return t14.hoisted = e14, t14;
         }, cache(e14, t14 = false, n13 = false) {
-          let r14 = /* @__PURE__ */ function(e15, t15, n14 = false, r15 = false) {
-            return { type: 20, index: e15, value: t15, needPauseTracking: n14, inVOnce: r15, needArraySpread: false, loc: o4 };
+          let r15 = /* @__PURE__ */ function(e15, t15, n14 = false, r16 = false) {
+            return { type: 20, index: e15, value: t15, needPauseTracking: n14, inVOnce: r16, needArraySpread: false, loc: o4 };
           }(A2.cached.length, e14, t14, n13);
-          return A2.cached.push(r14), r14;
+          return A2.cached.push(r15), r15;
         } };
         return A2;
-      }(o10, n11 = S({}, s11, { nodeTransforms: [...a10, ...t12.nodeTransforms || []], directiveTransforms: S({}, c10, t12.directiveTransforms || {}) })), cp(o10, r11), n11.hoistStatic && function e13(t13, n12, r13, i12 = false, l12 = false) {
+      }(o10, n11 = S({}, s11, { nodeTransforms: [...a10, ...t12.nodeTransforms || []], directiveTransforms: S({}, c10, t12.directiveTransforms || {}) })), cp(o10, r11), n11.hoistStatic && function e13(t13, n12, r14, i12 = false, l12 = false) {
         let { children: s12 } = t13, o11 = [];
         for (let n13 = 0; n13 < s12.length; n13++) {
           let a12 = s12[n13];
           if (1 === a12.type && 0 === a12.tagType) {
-            let e14 = i12 ? 0 : ca(a12, r13);
+            let e14 = i12 ? 0 : ca(a12, r14);
             if (e14 > 0) {
               if (e14 >= 2) {
                 a12.codegenNode.patchFlag = -1, o11.push(a12);
@@ -36365,22 +36437,22 @@ function ul(e10, t10) {
               let e15 = a12.codegenNode;
               if (13 === e15.type) {
                 let t14 = e15.patchFlag;
-                if ((void 0 === t14 || 512 === t14 || 1 === t14) && cu(a12, r13) >= 2) {
+                if ((void 0 === t14 || 512 === t14 || 1 === t14) && cu(a12, r14) >= 2) {
                   let t15 = cd(a12);
-                  t15 && (e15.props = r13.hoist(t15));
+                  t15 && (e15.props = r14.hoist(t15));
                 }
-                e15.dynamicProps && (e15.dynamicProps = r13.hoist(e15.dynamicProps));
+                e15.dynamicProps && (e15.dynamicProps = r14.hoist(e15.dynamicProps));
               }
             }
-          } else if (12 === a12.type && (i12 ? 0 : ca(a12, r13)) >= 2) {
+          } else if (12 === a12.type && (i12 ? 0 : ca(a12, r14)) >= 2) {
             14 === a12.codegenNode.type && a12.codegenNode.arguments.length > 0 && a12.codegenNode.arguments.push("-1"), o11.push(a12);
             continue;
           }
           if (1 === a12.type) {
             let n14 = 1 === a12.tagType;
-            n14 && r13.scopes.vSlot++, e13(a12, t13, r13, false, l12), n14 && r13.scopes.vSlot--;
-          } else if (11 === a12.type) e13(a12, t13, r13, 1 === a12.children.length, true);
-          else if (9 === a12.type) for (let n14 = 0; n14 < a12.branches.length; n14++) e13(a12.branches[n14], t13, r13, 1 === a12.branches[n14].children.length, l12);
+            n14 && r14.scopes.vSlot++, e13(a12, t13, r14, false, l12), n14 && r14.scopes.vSlot--;
+          } else if (11 === a12.type) e13(a12, t13, r14, 1 === a12.children.length, true);
+          else if (9 === a12.type) for (let n14 = 0; n14 < a12.branches.length; n14++) e13(a12.branches[n14], t13, r14, 1 === a12.branches[n14].children.length, l12);
         }
         let a11 = false;
         if (o11.length === s12.length && 1 === t13.type) {
@@ -36389,13 +36461,13 @@ function ul(e10, t10) {
             let e14 = u2(t13.codegenNode, "default");
             e14 && (e14.returns = c11(o5(e14.returns)), a11 = true);
           } else if (3 === t13.tagType && n12 && 1 === n12.type && 1 === n12.tagType && n12.codegenNode && 13 === n12.codegenNode.type && n12.codegenNode.children && !T(n12.codegenNode.children) && 15 === n12.codegenNode.children.type) {
-            let e14 = aT(t13, "slot", true), r14 = e14 && e14.arg && u2(n12.codegenNode, e14.arg);
-            r14 && (r14.returns = c11(o5(r14.returns)), a11 = true);
+            let e14 = aT(t13, "slot", true), r15 = e14 && e14.arg && u2(n12.codegenNode, e14.arg);
+            r15 && (r15.returns = c11(o5(r15.returns)), a11 = true);
           }
         }
-        if (!a11) for (let e14 of o11) e14.codegenNode = r13.cache(e14.codegenNode);
+        if (!a11) for (let e14 of o11) e14.codegenNode = r14.cache(e14.codegenNode);
         function c11(e14) {
-          let t14 = r13.cache(e14);
+          let t14 = r14.cache(e14);
           return t14.needArraySpread = true, t14;
         }
         function u2(e14, t14) {
@@ -36404,19 +36476,19 @@ function ul(e10, t10) {
             return n13 && n13.value;
           }
         }
-        o11.length && r13.transformHoist && r13.transformHoist(s12, r13, t13);
+        o11.length && r14.transformHoist && r14.transformHoist(s12, r14, t13);
       }(o10, void 0, r11, !!co(o10)), n11.ssr || function(e13, t13) {
-        let { helper: n12 } = t13, { children: r13 } = e13;
-        if (1 === r13.length) {
+        let { helper: n12 } = t13, { children: r14 } = e13;
+        if (1 === r14.length) {
           let n13 = co(e13);
           if (n13 && n13.codegenNode) {
-            let r14 = n13.codegenNode;
-            13 === r14.type && al(r14, t13), e13.codegenNode = r14;
-          } else e13.codegenNode = r13[0];
-        } else r13.length > 1 && (e13.codegenNode = o8(t13, n12(ob), void 0, e13.children, 64, void 0, void 0, true, void 0, false));
+            let r15 = n13.codegenNode;
+            13 === r15.type && al(r15, t13), e13.codegenNode = r15;
+          } else e13.codegenNode = r14[0];
+        } else r14.length > 1 && (e13.codegenNode = o8(t13, n12(ob), void 0, e13.children, 64, void 0, void 0, true, void 0, false));
       }(o10, r11), o10.helpers = /* @__PURE__ */ new Set([...r11.helpers.keys()]), o10.components = [...r11.components], o10.directives = [...r11.directives], o10.imports = r11.imports, o10.hoists = r11.hoists, o10.temps = r11.temps, o10.cached = r11.cached, o10.transformed = true, function(e13, t13 = {}) {
-        let n12 = function(e14, { mode: t14 = "function", prefixIdentifiers: n13 = "module" === t14, sourceMap: r14 = false, filename: i13 = "template.vue.html", scopeId: l13 = null, optimizeImports: s13 = false, runtimeGlobalName: o12 = "Vue", runtimeModuleName: a12 = "vue", ssrRuntimeModuleName: c12 = "vue/server-renderer", ssr: u3 = false, isTS: d4 = false, inSSR: p3 = false }) {
-          let h3 = { mode: t14, prefixIdentifiers: n13, sourceMap: r14, filename: i13, scopeId: l13, optimizeImports: s13, runtimeGlobalName: o12, runtimeModuleName: a12, ssrRuntimeModuleName: c12, ssr: u3, isTS: d4, inSSR: p3, source: e14.source, code: "", column: 1, line: 1, offset: 0, indentLevel: 0, pure: false, map: void 0, helper: (e15) => `_${o3[e15]}`, push(e15, t15 = -2, n14) {
+        let n12 = function(e14, { mode: t14 = "function", prefixIdentifiers: n13 = "module" === t14, sourceMap: r15 = false, filename: i13 = "template.vue.html", scopeId: l13 = null, optimizeImports: s13 = false, runtimeGlobalName: o12 = "Vue", runtimeModuleName: a12 = "vue", ssrRuntimeModuleName: c12 = "vue/server-renderer", ssr: u3 = false, isTS: d4 = false, inSSR: p3 = false }) {
+          let h3 = { mode: t14, prefixIdentifiers: n13, sourceMap: r15, filename: i13, scopeId: l13, optimizeImports: s13, runtimeGlobalName: o12, runtimeModuleName: a12, ssrRuntimeModuleName: c12, ssr: u3, isTS: d4, inSSR: p3, source: e14.source, code: "", column: 1, line: 1, offset: 0, indentLevel: 0, pure: false, map: void 0, helper: (e15) => `_${o3[e15]}`, push(e15, t15 = -2, n14) {
             h3.code += e15;
           }, indent() {
             f2(++h3.indentLevel);
@@ -36432,9 +36504,9 @@ function ul(e10, t10) {
           return h3;
         }(e13, t13);
         t13.onContextCreated && t13.onContextCreated(n12);
-        let { mode: r13, push: i12, prefixIdentifiers: l12, indent: s12, deindent: o11, newline: a11, ssr: c11 } = n12, u2 = Array.from(e13.helpers), d3 = u2.length > 0, p2 = !l12 && "module" !== r13;
+        let { mode: r14, push: i12, prefixIdentifiers: l12, indent: s12, deindent: o11, newline: a11, ssr: c11 } = n12, u2 = Array.from(e13.helpers), d3 = u2.length > 0, p2 = !l12 && "module" !== r14;
         !function(e14, t14) {
-          let { push: n13, newline: r14, runtimeGlobalName: i13 } = t14, l13 = Array.from(e14.helpers);
+          let { push: n13, newline: r15, runtimeGlobalName: i13 } = t14, l13 = Array.from(e14.helpers);
           if (l13.length > 0 && (n13(`const _Vue = ${i13}
 `, -1), e14.hoists.length)) {
             let e15 = [oN, oA, oE, oR, oI].filter((e16) => l13.includes(e16)).map(cg).join(", ");
@@ -36444,14 +36516,14 @@ function ul(e10, t10) {
           (function(e15, t15) {
             if (!e15.length) return;
             t15.pure = true;
-            let { push: n14, newline: r15 } = t15;
-            r15();
+            let { push: n14, newline: r16 } = t15;
+            r16();
             for (let i14 = 0; i14 < e15.length; i14++) {
               let l14 = e15[i14];
-              l14 && (n14(`const _hoisted_${i14 + 1} = `), cb(l14, t15), r15());
+              l14 && (n14(`const _hoisted_${i14 + 1} = `), cb(l14, t15), r16());
             }
             t15.pure = false;
-          })(e14.hoists, t14), r14(), n13("return ");
+          })(e14.hoists, t14), r15(), n13("return ");
         }(e13, n12);
         let h2 = (c11 ? ["_ctx", "_push", "_parent", "_attrs"] : ["_ctx", "_cache"]).join(", ");
         if (i12(`function ${c11 ? "ssrRender" : "render"}(${h2}) {`), s12(), p2 && (i12("with (_ctx) {"), s12(), d3 && (i12(`const { ${u2.map(cg).join(", ")} } = _Vue
@@ -40288,10 +40360,10 @@ function parseTtf(bytes) {
     return 0;
   };
   const advance = (gid) => u162(bytes, hmtx.off + 4 * Math.min(Math.max(gid, 0), numHMetrics - 1));
-  const span = (gid) => longLoca ? [u32(bytes, loca.off + 4 * gid), u32(bytes, loca.off + 4 * gid + 4)] : [u162(bytes, loca.off + 2 * gid) * 2, u162(bytes, loca.off + 2 * gid + 2) * 2];
+  const span2 = (gid) => longLoca ? [u32(bytes, loca.off + 4 * gid), u32(bytes, loca.off + 4 * gid + 4)] : [u162(bytes, loca.off + 2 * gid) * 2, u162(bytes, loca.off + 2 * gid + 2) * 2];
   const inkOf = (gid) => {
     if (gid < 0 || gid >= numGlyphs) return null;
-    const [a10, e10] = span(gid);
+    const [a10, e10] = span2(gid);
     if (e10 <= a10) return null;
     const o10 = glyf.off + a10;
     return [i16(bytes, o10 + 2), i16(bytes, o10 + 4), i16(bytes, o10 + 6), i16(bytes, o10 + 8)];
@@ -40306,7 +40378,7 @@ function parseTtf(bytes) {
     todo.push(0);
     while (todo.length) {
       const g3 = todo.pop();
-      const [a10, e10] = span(g3);
+      const [a10, e10] = span2(g3);
       if (e10 - a10 < 10) continue;
       let o10 = glyf.off + a10;
       if (i16(bytes, o10) >= 0) continue;
@@ -40327,7 +40399,7 @@ function parseTtf(bytes) {
     }
     let total = 0;
     for (const g3 of keep2) {
-      const [a10, e10] = span(g3);
+      const [a10, e10] = span2(g3);
       total += e10 - a10 + 3 & ~3;
     }
     const newGlyf = new Uint8Array(total), newLoca = new Uint8Array(4 * (numGlyphs + 1));
@@ -40336,7 +40408,7 @@ function parseTtf(bytes) {
     for (let g3 = 0; g3 < numGlyphs; g3++) {
       dv.setUint32(4 * g3, pos);
       if (keep2.has(g3)) {
-        const [a10, e10] = span(g3);
+        const [a10, e10] = span2(g3);
         newGlyf.set(bytes.subarray(glyf.off + a10, glyf.off + e10), pos);
         pos += e10 - a10 + 3 & ~3;
       }
@@ -40978,7 +41050,7 @@ function createDocument(init, hooks) {
     const nextSt = songChanged && hooks.normalize ? hooks.normalize(nextSt0) : nextSt0;
     if (o10.undo !== false && (songChanged || exChanged)) {
       const locus = o10.locus ?? describeSongChange(st2, asked.song !== st2.song ? asked : nextSt);
-      history = record2(history, st2, extras, o10.gesture ?? null, hooks.now(), locus);
+      history = record3(history, st2, extras, o10.gesture ?? null, hooks.now(), locus);
     }
     const prevSt = st2, prevEx = extras;
     st2 = nextSt;
@@ -41520,6 +41592,17 @@ var soundTok = (s10, i10, id2 = "main") => {
   extra.forEach((q2, k2) => sound.down(q2, `${id2}~${k2 + 1}`));
   if (extra.length) chordVoices.set(id2, extra.length);
 };
+var soundAfterWrite = (s10, i10, id2, sounded) => {
+  const t10 = tr(s10)[i10];
+  if (t10?.kind !== "note" || !t10.pitch) return;
+  if (midiOf(t10.pitch) !== midiOf(sounded)) {
+    soundTok(s10, i10, id2);
+    return;
+  }
+  const extra = t10.chord ?? [];
+  extra.forEach((q2, k2) => sound.down(q2, `${id2}~${k2 + 1}`));
+  if (extra.length) chordVoices.set(id2, extra.length);
+};
 function previewEdited() {
   const toks = tr(D2.st);
   let i10 = -1;
@@ -41723,6 +41806,7 @@ var padHost = createPadHost(padEl, {
   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p2, id2) => sound.down(p2, id2), up: (id2) => sound.up(id2) },
   soundTok,
+  soundAfterWrite,
   impro: () => impro,
   finderOpen: () => finder.isOpen,
   finderShown,
@@ -41820,14 +41904,28 @@ function afterState(prev, next2, moved, userEdit) {
     sound.allOff();
     void prepareBank();
   }
-  view.render();
-  pad3.render();
-  renderTitle();
-  changed();
-  updateChrome();
+  span("changed", () => changed());
   schedulePlaybackRefresh();
   schedulePrewarm();
-  refreshIssues();
+  queuePaint();
+}
+var paintQueued = 0;
+function queuePaint() {
+  if (!paintQueued) paintQueued = requestAnimationFrame(() => {
+    paintQueued = 0;
+    paintNow();
+  });
+}
+function paintNow() {
+  if (paintQueued) {
+    cancelAnimationFrame(paintQueued);
+    paintQueued = 0;
+  }
+  if (!view.paintedFor(D2.st)) span("view.render", () => view.render());
+  span("pad.render", () => pad3.render());
+  span("title", () => renderTitle());
+  span("chrome", () => updateChrome());
+  span("issues", () => refreshIssues());
   renderUndo();
 }
 function afterExtras(prev, next2, locus) {
@@ -42456,6 +42554,9 @@ window.__moonsinger = {
   locked: () => D2.locked(),
   // 指令式唯一入口（E2E / 以后的 MCP 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describe(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
+  perf: () => perfReport(),
+  perfReset: () => perfReset(),
+  // 热路径秒表（scripts/probe-input-latency.mjs 读）
   speechCache: (op2) => singer.cache(op2, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
   setTrack: (id2, patch) => {
@@ -42479,7 +42580,7 @@ window.__moonsinger = {
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
   },
-  layout: () => view.layout ? { ...view.layout, head: view.head() } : null,
+  layout: () => ({ ...view.layoutNow(), head: view.head() }),
   bytes: () => bytesNow(),
   open: (name, bytes) => openBytes(name, bytes),
   view,
@@ -45504,8 +45605,16 @@ function run(a10, repeat, code) {
       }
       if (a10.cmd.k === "degree") {
         if (!repeat && padHost.monoAccept(`key${code}`)) {
-          const c10 = { ...a10.cmd, mono: !canStack() }, i10 = writeAndLocate((s10) => apply(s10, c10, performance.now()));
-          keyTok(D2.st, i10, code);
+          const c10 = { ...a10.cmd, mono: !canStack() }, n10 = apply(D2.st, c10, performance.now());
+          if (n10 !== D2.st) {
+            const t02 = tr(n10)[n10.caret - 1];
+            if (t02?.kind === "note" && t02.pitch) {
+              sound.down(t02.pitch, `key${code}`);
+              pad3.showDown(midiOf(t02.pitch), `key${code}`);
+            }
+            update(n10);
+            if (t02?.kind === "note" && t02.pitch) soundAfterWrite(D2.st, D2.st.caret - 1, `key${code}`, t02.pitch);
+          }
           afterWrite();
         }
         return true;
@@ -45769,4 +45878,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-50627d33225d.mjs.map
+//# sourceMappingURL=moonsinger-62a31f8e6e73.mjs.map

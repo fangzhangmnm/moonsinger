@@ -22,6 +22,9 @@ async function series(label, n = 15) {
   for (let i = 0; i < n; i++) { r.push(await p.evaluate((k) => window.__press(60 + (k % 12)), i)); await p.waitForTimeout(120); }
   const ts = r.map((x) => x.toSound).filter((x) => x !== null), hs = r.map((x) => x.handler);
   console.log(`${label}: 到出声 中位 ${med(ts).toFixed(1)} ms / 最大 ${Math.max(...ts).toFixed(1)} ms；整个处理 中位 ${med(hs).toFixed(1)} ms（${ts.length}/${n} 次有声）`);
+  const perf = await p.evaluate(() => { const r = window.__moonsinger.perf(); window.__moonsinger.perfReset(); return r; });
+  const order = ["view.render", "engrave", "svg-parts", "svg-dom", "decor", "follow", "pad.render", "title", "changed", "chrome", "issues"];
+  console.log("    分账（中位 / 最大 ms ×次数）: " + order.filter((k) => perf[k]).map((k) => `${k} ${perf[k].med}/${perf[k].max}×${perf[k].n}`).join(" · "));
 }
 await series("空歌 · 写音");
 const tokCount = await p.evaluate(() => {
@@ -36,7 +39,7 @@ const tokCount = await p.evaluate(() => {
 await p.waitForTimeout(1500);
 console.log(`(现造的大歌：这条 track ${tokCount} 个 token)`);
 await series("大歌 · 写音");
-for (let r = 0; r < 3; r++) { const out = await p.evaluate(() => window.__run([60, 62, 64, 65], 20)); console.log(`大歌 · 写音 · 四个键隔 20 ms：每个键 该响→真响 ${out.map((o) => (o.toSound ?? NaN).toFixed(0)).join(" / ")} ms（其中排队等主线程 ${out.map((o) => o.wait.toFixed(0)).join(" / ")} ms）`); await p.waitForTimeout(400); }
+for (let r = 0; r < 3; r++) { await p.evaluate(() => window.__moonsinger.perfReset()); const out = await p.evaluate(() => window.__run([60, 62, 64, 65], 20)); await p.waitForTimeout(400); const perf = await p.evaluate(() => window.__moonsinger.perf()); console.log(`大歌 · 写音 · 四个键隔 20 ms：每个键 该响→真响 ${out.map((o) => (o.toSound ?? NaN).toFixed(0)).join(" / ")} ms（其中排队等主线程 ${out.map((o) => o.wait.toFixed(0)).join(" / ")} ms；重排了 ${perf.engrave?.n ?? 0} 次）`); }
 await p.keyboard.press("Backquote"); await p.waitForTimeout(200);
 await series("大歌 · 弹（只响不写）");
 await b.close();

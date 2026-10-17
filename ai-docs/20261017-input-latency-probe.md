@@ -52,3 +52,35 @@ noteDown → padWrite → writeAndLocate → update → D.commit → afterState:
 ## 5. 改完怎么验
 
 同一把尺子：`node scripts/probe-input-latency.mjs`，前后对比「大歌写音」和「快弹」两行（目标：写音和「弹」一样在 1 ms 内交给音频线程；快弹不累积）。手感守卫照旧 = E2E `@pad`（含 `midi.mjs`）。iPad 真机的数字要 user 在真机上看（无头量不到 iPad 的主线程）。
+
+## 6. 改完的数（v0.13.0，2026-10-17，Claude Fable 5.1；user「bump minor，然后开始动大性能刀…先发声再显示可以吗」）
+
+落了两刀（代码量很小）：
+- **先响后写**：`pad-host.ts noteDown`（pad 手指 + MIDI）和 `main.ts` 电脑键盘的音键——按下那一刻先 `sound.down`，再写谱；写完成了和弦只补多出来的音、主音变了才重响（`soundAfterWrite`）。
+- **画合并到下一帧**：`main.ts afterState` 不再同步重画，`queuePaint()` 排一帧，rAF 里 `paintNow()` 做一次（谱 / pad / 标题 / 挂签 / 清单 / 撤销钮）；`changed()`（脏 / 自动存）和两个定时器照旧同步。谁在帧之前要最新排版 = `ScoreView.layoutNow()`（歌词框 / 记号框 / head / E2E 钩子；同一份状态问第二次直接回）。中途有人显式 `view.render()` 过（`paintedFor`）这一帧不再画谱。
+- 分账秒表 `src/ui/perf-trace.ts`（`__moonsinger.perf()`），常驻。
+
+同一把尺子（`scripts/probe-input-latency.mjs`，无头 Chromium，PC），改前 → 改后：
+
+| 情况 | 改前 | 改后 |
+|---|---|---|
+| 空歌写音 → 交给音频线程 | 中位 3.0–3.4 ms | **0.2 ms** |
+| 大歌（1204 token）写音 → 交给音频线程 | 中位 34–37、最大 85 ms | **0.4 ms、最大 2 ms** |
+| 大歌四键隔 20 ms 快弹（每键该响→真响） | 28 / 43 / 53 / 60；坏的一轮 30 / 96 / 117 / 140 | 2 / 16 / 29 / 9；坏的一轮 1 / 17 / 83 / 64（重排 3 次而不是 4） |
+| 「弹」只响不写 | 0.3 ms | 0.3 ms（不变） |
+
+分账（大歌写一个音，主线程上那一帧）：view.render 37 ms = **engrave 28** + svg-parts 4.7 + svg-dom 0.7 + decor 1.8；pad.render 0.5；标题 / 挂签 / 清单 / changed 都 ≤ 0.2。
+
+**还剩什么**：快弹时第 2 个键起的等待（16–80 ms）全是「上一次 engrave 正在跑、主线程腾不出来」——这是 §4 说的天花板。再往下只有两条路：① engrave 挪进 worker（主线程每键只剩 svg-parts + DOM ≈ 7 ms）；② engrave 本身变便宜（按纸 / 按行增量）。两条都归「优化 app」那一侧，见 §7。
+
+## 7. 排版进 worker：理不理性（给 user 的回答，2026-10-17 Fable）
+
+user：「也许需要移动渲染到副线程。全量渲染，包括月读。然后显示是不是也能移到另外一个独立的线程。这样理性吗」。
+
+- **月读 / 出声引擎早就不在主线程**：唱在 `src/singer/worker.ts`（1–2 条道）、出声在 AudioWorklet（`src/engine/studio-processor.ts`）、mp3 在 worker。这一半没有东西可搬。
+- **显示这一侧**，主线程上每键的大头只有 engrave（28 ms / 1204 token，PC；iPad 估 2–3 倍）。它从 v0.12.14 起是纯函数（谱 + 选项 → Layout），**原则上能进 worker**。要解决的三件事：
+  1. **量字宽**：engrave 靠 `measureLyric`（canvas `measureText`，字体栈 `system-ui, Hiragino Sans, PingFang SC, Noto Sans CJK JP`，全是系统字体，不含 Bravura——力度字的墨迹是常数表）。worker 里 OffscreenCanvas 也能 measureText（Chrome 早有；Safari 16.4 起有 OffscreenCanvas 2D）。**要核**：同一串字 worker 量出来和主线程一模一样吗（PDF 的所见即所得靠这把尺子；差一点 = 断行不同）。
+  2. **Layout 要能过线**：现在 `Layout` 带三个闭包（`lyricY / yOf / dOf`），structured clone 过不去 → 改成平数据 + 主线程重建那三个函数。
+  3. **异步**：排版晚一帧回来。点击 / 拖 / 歌词框定位读「最近一份」排版（本来画也是下一帧了）；要「立刻要」的地方（E2E 钩子、PDF）给一个同步退路（主线程也留一份 engrave 能跑）。
+- 收益与代价：主线程每键从 37 ms 降到约 7 ms（svg-parts + DOM + 装饰），快弹不再等 engrave；代价 = 每键一次 song 的 structured clone（1200 token 约 100 KB，≈1 ms）+ Layout 回传 + 上面三件事的改动量。**另一条路（增量排版，按纸记忆）**对多纸的歌（団子 5 张纸）同样能把 28 ms 砍到几 ms，不动线程、不碰字宽；但对一张纸 1200 个音的极端谱没用。
+- **我的判断**：先核 1（半小时的探针：worker vs 主线程各量同一组中 / 日 / 英字串）；核得过 → worker engrave 值得做（是结构解耦，不是「欺负 app」）；核不过 → 走按纸增量。两条都没动，等 user 点头。

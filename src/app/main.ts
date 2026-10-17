@@ -15,7 +15,8 @@ import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, groo
 import { type Pitch, midiOf, spellMidi, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../keyboard/keys.ts";
-import { createMidiKeyboard, type MidiStatus } from "../keyboard/midi.ts";   // MIDI 键盘（Web MIDI）：琴键号进来，翻译归 pad-host
+import { createMidiKeyboard, type MidiStatus } from "../keyboard/midi.ts";
+import { span, perfReport, perfReset } from "../ui/perf-trace.ts";   // 热路径秒表（按键 → 上屏分账）   // MIDI 键盘（Web MIDI）：琴键号进来，翻译归 pad-host
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { lyricIssues, lyricWhyText, prettyReading, type LyricIssue } from "../score/lyric-check.ts";
 import { ScoreView } from "../ui/score-view.ts";
@@ -370,6 +371,13 @@ const soundTok = (s: EditorState, i: number, id = "main") => {
   sound.up(id);   // 同一个来源上次的和弦先松干净（这次的音少了也不留尾巴）
   sound.down(t.pitch, id); const extra = t.chord ?? []; extra.forEach((q, k) => sound.down(q, `${id}~${k + 1}`)); if (extra.length) chordVoices.set(id, extra.length);
 };
+/** 先响后写之后的补课（2026-10-17 Fable）：按下那一刻已经按 sounded 响了；写完如果这个音成了和弦 = 只把和弦里多出来的音补响（不重启主音）；
+ *  写完主音变了（只选了一个音时 XOR 把按的那个拿掉了）= 按谱上现在的样子重响。 */
+const soundAfterWrite = (s: EditorState, i: number, id: string, sounded: Pitch) => {
+  const t = tr(s)[i]; if (t?.kind !== "note" || !t.pitch) return;
+  if (midiOf(t.pitch) !== midiOf(sounded)) { soundTok(s, i, id); return; }
+  const extra = t.chord ?? []; extra.forEach((q, k) => sound.down(q, `${id}~${k + 1}`)); if (extra.length) chordVoices.set(id, extra.length);
+};
 /** 改了音高之后响一下（user 2026-10-10「按住音的时候应该能听到preview，拖动音高，或者改动yngk的时候也会，但是改时长不会」）：有选区 = 选区里第一个音，否则光标前那个音。 */
 function previewEdited(): void {
   const toks = tr(D.st); let i = -1;
@@ -514,7 +522,7 @@ function insertMarkHere(kind: MarkVal["kind"]): void {
 //   这里只给它一组访问器；pad 一创建就画，所以它读的状态（padHint、ui.page、autoBars…）都已在上面声明。
 const padHost = createPadHost(padEl, {
   state: () => D.st, update: (n) => update(n), writeAndLocate, afterWrite, previewEdited, info: (m) => info(m), canStack,   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
-  sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok,
+  sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok, soundAfterWrite,
   impro: () => impro, finderOpen: () => finder.isOpen, finderShown, instShown,
   toggleImpro: () => toggleImpro(),
   kbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
@@ -566,14 +574,23 @@ function updateBoth(next: EditorState, nextExtras: Extras, locus: Locus): void {
 function afterState(prev: EditorState, next: EditorState, moved: boolean, userEdit: boolean): void {
   if (userEdit && (next.song !== prev.song || next.caret !== prev.caret || next.sel !== prev.sel)) view.noteUserEdit();
   if (moved) { sound.allOff(); void prepareBank(); }
-  view.render();
-  pad.render();
-  renderTitle();
-  changed();
-  updateChrome();
+  span("changed", () => changed());
   schedulePlaybackRefresh();   // 放着的时候改谱：时间线重算（正在响的不动）
   schedulePrewarm();            // 没在放：停下 700 ms 后先把光标附近唱好
-  refreshIssues();              // 写了第一个音的声部要是没人上场 = 进清单（§2.2½）；删光了 = 出清单
+  queuePaint();
+}
+// 画合并到下一帧（2026-10-17 Claude Fable 5.1；量 + 方案 = ai-docs/20261017-input-latency-probe.md）：状态改了这里只排一帧，重排 / 重画 / 标题 / 挂签 / 清单在 rAF 里做一次。
+//   出声不等它（pad-host / 电脑键盘先响后写）；快弹几个键落在同一帧 = 只重排一次。谁在这一帧之前就要最新的排版 = view.layoutNow()（歌词框 / 记号框 / head / E2E 钩子）。
+//   中途有人显式 view.render() 过（视图开关 / 转屏…）= 这一帧不再画谱，别的照做。
+let paintQueued = 0;
+function queuePaint(): void { if (!paintQueued) paintQueued = requestAnimationFrame(() => { paintQueued = 0; paintNow(); }); }
+function paintNow(): void {
+  if (paintQueued) { cancelAnimationFrame(paintQueued); paintQueued = 0; }
+  if (!view.paintedFor(D.st)) span("view.render", () => view.render());
+  span("pad.render", () => pad.render());
+  span("title", () => renderTitle());
+  span("chrome", () => updateChrome());
+  span("issues", () => refreshIssues());   // 写了第一个音的声部要是没人上场 = 进清单（§2.2½）；删光了 = 出清单
   renderUndo();
 }
 /** extras 换了之后的副作用（原 updateExtras 的后半）。 */
@@ -964,13 +981,14 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   final: () => D.extras.final, finalize: (q?: Mp3Quality) => finalizeNow(q), unfinalize: () => unfinalizeNow(false), finalMp3: () => D.extras.finalMp3,   // 定稿 / 改稿（E2E 用）
   run: (c: Command) => D.run(c), commit: (next: { st?: EditorState; extras?: Extras }, o?: Parameters<typeof D.commit>[1]) => D.commit(next, o), locked: () => D.locked(),   // 指令式唯一入口（E2E / 以后的 MCP 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describeResources(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
+  perf: () => perfReport(), perfReset: () => perfReset(),   // 热路径秒表（scripts/probe-input-latency.mjs 读）
   speechCache: (op: "info" | "clear") => singer.cache(op, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
   setTrack: (id: string, patch: Record<string, unknown>) => { updateExtras(withTrack(D.extras, id, patch as never), { kind: "studio", label: `轨「${id}」` }); },
   addBus: (name = "总线") => { const id = newBusId(D.extras); updateExtras(withTrack(D.extras, id, { kind: "bus", name }), { kind: "studio", label: `加总线「${name}」` }); return id; },
   removeBus: (id: string) => updateExtras(withoutBus(D.extras, id), { kind: "studio", label: `删总线「${id}」` }),
   setMaster: (patch: Record<string, unknown>) => updateExtras(withMaster(D.extras, patch as never), { kind: "studio", label: "总轨" }),
-  studioTracks: () => studioTracks(D.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, D.st.song.hum, songLangOf(tokens, D.st.song.hum), map); }, state: () => D.st, cssHash: __CSS_HASH__, extras: () => D.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => (view.layout ? { ...view.layout, head: view.head() } : null) /* head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） */, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
+  studioTracks: () => studioTracks(D.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, D.st.song.hum, songLangOf(tokens, D.st.song.hum), map); }, state: () => D.st, cssHash: __CSS_HASH__, extras: () => D.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => ({ ...view.layoutNow(), head: view.head() }) /* head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） */, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { stem: o.stem, named: true, extras: o.extras, handle: null, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
   setChunk: (v: "phrase" | "sheet" | "whole") => { const role = D.st.song.parts.find((x) => x.id === D.st.at.part)?.role; if (role) updateExtras(withSingChunk(D.extras, role, v, D.st.song.hum), { kind: "lounge", label: `分段唱：${v}` }); },
   set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(D.st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => doc.identifier, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
@@ -3030,7 +3048,16 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       if (a.cmd.k === "backspace" && ws.mode === "symbols") { update(apply(D.st, { k: "symBackspace" }, performance.now())); return true; }   // 符：退格删记号（user「我早就想用退格删强度曲线了」）
       if (a.cmd.k === "backspace" && ws.mode === "lyrics") { lyricBackspace(); return true; }
       if (a.cmd.k === "degree") {
-        if (!repeat && padHost.monoAccept(`key${code}`)) { const c = { ...a.cmd, mono: !canStack() }, i = writeAndLocate((s) => apply(s, c, performance.now())); keyTok(D.st, i, code); afterWrite(); }   // 先写再取 D.st（写完才有这个音）
+        if (!repeat && padHost.monoAccept(`key${code}`)) {   // 先响后写（2026-10-17 Fable）：响的就是要写进去的那个音（算在没提交的 n 里）；写完按 D.st 定位（normalize 可能在前面补力度，下标会挪）
+          const c = { ...a.cmd, mono: !canStack() }, n = apply(D.st, c, performance.now());
+          if (n !== D.st) {
+            const t0 = tr(n)[n.caret - 1];
+            if (t0?.kind === "note" && t0.pitch) { sound.down(t0.pitch, `key${code}`); pad.showDown(midiOf(t0.pitch), `key${code}`); }
+            update(n);
+            if (t0?.kind === "note" && t0.pitch) soundAfterWrite(D.st, D.st.caret - 1, `key${code}`, t0.pitch);   // 成了和弦（叠亮着）= 补响多出来的音；主音变了 = 重响
+          }
+          afterWrite();
+        }
         return true;
       }
       update(apply(D.st, withHalf(a.cmd), performance.now()));

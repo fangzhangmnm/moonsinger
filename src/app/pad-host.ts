@@ -39,6 +39,8 @@ export interface PadGlue {
   sound: { down(p: Pitch, id: string): void; up(id: string): void };
   /** 谱上第 i 个音出声（和弦整个响）。 */
   soundTok(s: EditorState, i: number, id: string): void;
+  /** 先响后写的补课：按下时已按 sounded 响了，写完成了和弦 = 只补多出来的音；主音变了 = 重响。 */
+  soundAfterWrite(s: EditorState, i: number, id: string, sounded: Pitch): void;
   /** 顶栏「弹」开着。 */
   impro(): boolean;
   /** 找人视图开着（真对象 finder.isOpen；pad 创建时 finder 还没建，所以是访问器）。 */
@@ -174,10 +176,18 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     if (n && n.index >= 0) g.soundTok(st(), n.index, id);
     else { const r = raw ? { pitch: p, st: st() } : soundingPitch(st(), p); if (!raw) g.update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); g.sound.down(r.pitch, id); if (g.ghost.on()) { g.ghost.set(id, r.pitch); g.ghost.sync(); } }
   }
-  /** 一个音键按下（pad 的第 k 级、MIDI 的琴键都走这里）：不在「弹」时先写（宿主不收 = false），再响。 */
+  /** 一个音键按下（pad 的第 k 级、MIDI 的琴键都走这里）：「弹」= 只响；否则**先响后写**（2026-10-17 Claude Fable 5.1；量 = ai-docs/20261017-input-latency-probe.md：
+   *  原来先写、整张重排、再响，大歌里出声晚 30–80 ms）。响的就是要写的那个音：升降锁算进去但这里不消耗（写进谱时 writePitch 自己消耗；写进谱只换拼法不换音高）。 */
   function noteDown(p: Pitch, id: string, raw = false): boolean {
-    if (!padImpro()) { if (!padAccept(id)) return false; padWrite(p, id, raw); }
-    padSound(p, id, raw);
+    if (padImpro()) { padSound(p, id, raw); return true; }
+    if (!padAccept(id)) return false;
+    const sp = raw ? p : soundingPitch(st(), p).pitch;
+    g.sound.down(sp, id);
+    padWrite(p, id, raw);
+    const n = padNotes.get(id);
+    if (!n) { padNotes.set(id, { index: -1, base: sp }); return true; }
+    if (n.index >= 0) g.soundAfterWrite(st(), n.index, id, sp);   // 成了和弦（只选了一个音时叠上去）= 补响多出来的音；主音变了（XOR 拿掉了按的那个）= 重响
+    else if (!raw) { const r = soundingPitch(st(), p); if (r.st !== st()) g.update(r.st); }   // 没写进谱（叠音观望 / 写不进）：升降锁照样用掉一次（原来 padSound 做的）
     return true;
   }
   /** 先按松开的顺序定观望中的叠音（要看谁还按着），再放。 */
