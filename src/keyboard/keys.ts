@@ -190,6 +190,7 @@ export function renderKeysDoc(): string {
   md += `# 键盘\n\n> 生成自 \`src/keyboard/keys.ts\`\n\n`;
   md += `谱面上有三种状态：**写**（光标，打的音插在光标处）、**改**（选中了一段，打的音覆盖选中）、**弹**（「弹」开着：音符键只唱不写，其余键照写 / 改）。\n`;
   md += `按物理键位认（换输入法 / 键盘布局不乱）；Ctrl / ⌘ 组合只接存 / 导出 / 打开，其余交给浏览器。\n\n`;
+  md += `**MIDI 键盘**（电子琴 / MIDI 键盘用 USB 插电脑，设置里点「连接」；src/keyboard/midi.ts）：琴键就是音符键——写 / 改 / 弹同上，按哪个键写哪个音（按光标处的调号拼写）；词 / 听里只出声。iPad / iPhone 上的浏览器没有 Web MIDI。\n\n`;
   const score = BINDINGS.filter((b) => b.does.write || b.does.edit || b.does.impro);
   const groups = [...new Set(score.map((b) => b.group))];
   for (const g of groups) {

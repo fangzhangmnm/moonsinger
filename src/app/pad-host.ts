@@ -10,6 +10,8 @@
 //   user「之前的判定是ab落的时候相近。现在的判定是b落的时候不在a的尾巴上」「如果ab，b按下去之后a马上松，那么就不应该是和弦」
 //   「尾巴时间规则也需要考虑相对比例，比如如果我快速跳音轻按ab多次的时候」「和弦输入的时候应该支持有长间隔的连按…慢慢按，xor toggle，手指数量不够的时候也能好」
 //   A（根音：写进谱、还按着的那个）按着时按下 B：B 马上响，进不进谱**观望**到分得出来（不先写再撤——撤销栈干净、替换模式不丢时值）；规则逐条在 chords.ts 头注释。
+// MIDI 键盘（2026-10-16 by Claude Opus 5.5）= 又一台发音键的设备：noteDown / noteUp 收绝对音高，写 / 改 / 叠音观望 / 单声护栏 / 弹和 pad 音键同一条路，
+//   只是不吃 pad 的升降锁（raw：琴键本身就分黑白键，按的是哪个就是哪个）。
 
 import { type Pitch, alterBy, keySpell } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
@@ -75,6 +77,9 @@ export interface PadHostApi {
   release(id: string): void;
   /** 失焦 / 页面隐藏：抬手的事件可能收不到——观望中的都按「键都松了」定下来（写成单个的音）、根音清空、按着的清空。 */
   reset(): void;
+  /** 外接键盘（MIDI）按下一个音：绝对音高，不吃 pad 的升降锁；其余同 pad 音键（写 / 改 / 叠音观望 / 单声护栏 / 弹）。false = 单声护栏没收。 */
+  noteDown(p: Pitch, id: string): boolean;
+  noteUp(id: string): void;
 }
 
 interface ChordRoot { tokId: number; t: number; keyId?: string }
@@ -137,17 +142,17 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   const padAccept = (id: string): boolean => (g.canStack() ? (monoHeld.add(id), true) : monoAccept(id));
   /** pad 音键写一个音（找人视图开着一律不接：试听台不碰谱——user「试听的时候写入的东西不会不小心输入到乐谱吧…是不是应该disable」）：
    *  改这个音（只选了一个 / 叠亮着）/ 叠音观望（能叠音的声部）/ 普通写。 */
-  function padWrite(p: Pitch, id: string): void {
+  function padWrite(p: Pitch, id: string, raw = false): void {
     if (g.finderOpen()) return;
     const now = performance.now(), s = st();
     { const one = singleSel(s); if (one >= 0) {   // 改这个音（只选了一个 / 叠亮着）：XOR（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）；单声乐器 = 换音高
-      g.update(writePitch(s, p, false, !g.canStack())); padNotes.set(id, { index: one, base: p }); g.previewEdited(); return;
+      g.update(writePitch(s, p, raw, !g.canStack())); padNotes.set(id, { index: one, base: p }); g.previewEdited(); return;
     } }
     if (g.canStack()) {
       settleChords("force");   // 又按下一个键：还在观望的先定（根音还按着 = 叠）
       const root = chordRoot();
       if (root) {
-        const sp = soundingPitch(st(), p).pitch;
+        const sp = raw ? p : soundingPitch(st(), p).pitch;
         padNotes.set(id, { index: -1, base: p });   // 先响（padSound 按 base 出声），进不进谱、叠不叠，等分出来再定
         if (chordHead(root, { t: now })) { chordMerge(root, sp); return; }   // 头：和根音几乎同时落下 = 马上叠
         const w: ChordWait = { keyId: id, pitch: sp, t: now, root, timer: 0, done: false };
@@ -156,7 +161,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
         return;
       }
     }
-    const i = g.writeAndLocate((x) => writePitch(x, p, false, !g.canStack()));
+    const i = g.writeAndLocate((x) => writePitch(x, p, raw, !g.canStack()));
     if (i < 0) { padNotes.set(id, { index: -1, base: p }); return; }
     const t = tr(st())[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
@@ -164,11 +169,19 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     g.afterWrite();
   }
   /** pad 音键出声：写进谱的那个音（和弦整个响）；弹 = 带上挂着的 ♯ / ♭、谱上画鬼音符。 */
-  function padSound(p: Pitch, id: string): void {
+  function padSound(p: Pitch, id: string, raw = false): void {
     const n = padNotes.get(id);
     if (n && n.index >= 0) g.soundTok(st(), n.index, id);
-    else { const r = soundingPitch(st(), p); g.update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); g.sound.down(r.pitch, id); if (g.ghost.on()) { g.ghost.set(id, r.pitch); g.ghost.sync(); } }
+    else { const r = raw ? { pitch: p, st: st() } : soundingPitch(st(), p); if (!raw) g.update(r.st); padNotes.set(id, { index: -1, base: r.pitch }); g.sound.down(r.pitch, id); if (g.ghost.on()) { g.ghost.set(id, r.pitch); g.ghost.sync(); } }
   }
+  /** 一个音键按下（pad 的第 k 级、MIDI 的琴键都走这里）：不在「弹」时先写（宿主不收 = false），再响。 */
+  function noteDown(p: Pitch, id: string, raw = false): boolean {
+    if (!padImpro()) { if (!padAccept(id)) return false; padWrite(p, id, raw); }
+    padSound(p, id, raw);
+    return true;
+  }
+  /** 先按松开的顺序定观望中的叠音（要看谁还按着），再放。 */
+  function noteUp(id: string): void { chordKeyUp(id); padNotes.delete(id); monoHeld.delete(id); g.sound.up(id); if (g.ghost.delete(id)) g.ghost.sync(); }
   /** pad 发来的按键 id → 翻译（src/app/pad-keys.ts）→ 做：命令走 runPadCommand（锁 / 披露），插记号开记号框，开小菜单。找人视图开着一律不接。 */
   function padKey(id: string, mods: { ramp: boolean }): void {
     if (g.finderOpen()) return;
@@ -208,13 +221,8 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     onImpro: () => g.toggleImpro(),
     onKbSwitch: () => g.kbSwitch(),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
     // 音键按下：第 k 级是什么音问 music；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
-    onNoteDown: (k, id) => {
-      const p = music.pitchAt(k);
-      if (!padImpro()) { if (!padAccept(id)) return false; padWrite(p, id); }
-      padSound(p, id);
-      return true;
-    },
-    onNoteUp: (id) => { chordKeyUp(id); padNotes.delete(id); monoHeld.delete(id); g.sound.up(id); if (g.ghost.delete(id)) g.ghost.sync(); },   // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
+    onNoteDown: (k, id) => noteDown(music.pitchAt(k), id),
+    onNoteUp: (id) => noteUp(id),
     onStack: (down) => g.stackKey(down),
     canStack: () => g.canStack(),
     onAlter: (id, alt) => {
@@ -247,5 +255,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     pad, music, monoAccept,
     release: (id) => { monoHeld.delete(id); },
     reset: () => { settleChords("lost"); chordRoots.clear(); monoHeld.clear(); },
+    noteDown: (p, id) => noteDown(p, id, true),
+    noteUp,
   };
 }

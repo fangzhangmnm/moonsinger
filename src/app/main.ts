@@ -12,9 +12,10 @@ import { initPwaShell } from "./pwa-shell.ts";
 import { singleSel, currentIndex, ensureStartDyns, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
-import { type Pitch, midiOf, KEY_LABEL } from "../score/pitch.ts";
+import { type Pitch, midiOf, spellMidi, KEY_LABEL } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type Action, type Where, route, isSoundKey } from "../keyboard/keys.ts";
+import { createMidiKeyboard, type MidiStatus } from "../keyboard/midi.ts";   // MIDI 键盘（Web MIDI）：琴键号进来，翻译归 pad-host
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { lyricIssues, lyricWhyText, prettyReading, type LyricIssue } from "../score/lyric-check.ts";
 import { ScoreView } from "../ui/score-view.ts";
@@ -863,6 +864,7 @@ function openSettings(): void {
     `<label class="set-field">模型来源<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>` +
     `<label class="set-field">音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
     `<div class="set-field">音源库缓存（留在设备上，没网也能用；歌自己带声音，这里只是货架）<div id="sndCache" class="set-packs">…</div></div>` +
+    `<div class="set-field">MIDI 键盘<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">连接</button>` : ""}</div></div>` +
     `<div class="offer-msg">先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。</div>` +
     `<div class="set-row"><button class="btn" data-v="default">恢复默认</button>` +
     `<label class="btn" title="选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包<input id="impIn" type="file" multiple hidden /></label></div>` +
@@ -898,12 +900,14 @@ function openSettings(): void {
       cached.filter((c) => !known.has(c.sha256)).map((c) => { const u = uses.get(c.sha256); return `<div class="set-row"><span>${u ? `「${esc(u.names.join("、"))}」的声音（这首歌${u.packed ? "也打包着" : "引用着；删了要从「" + esc(u.origin.name) + "」找"}）` : `别的歌 / 别的版本 / 别的 app 留的（${c.sha256.slice(0, 8)}…）`} · ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">删掉</button></div>`; }).join("") || "（没有）";
   };
   void refreshSounds();
-  const close = () => { clearInterval(resTimer); models.source = srcIn.value; sources.source = sndIn.value; box.remove(); ui.closed(close); scoreEl.focus(); };
+  midiRowSync = (s) => { const el = box.querySelector<HTMLElement>("#midiSt"); if (el) el.innerHTML = midiStatusHtml(s); if (s.k !== "off" && s.k !== "denied") box.querySelector('[data-v="midi:connect"]')?.remove(); };
+  const close = () => { clearInterval(resTimer); midiRowSync = null; models.source = srcIn.value; sources.source = sndIn.value; box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
+    else if (v === "midi:connect") void midi.connect();
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
@@ -3104,6 +3108,36 @@ window.addEventListener("keyup", (e) => { padHost.release(`key${e.code}`); if (g
 // 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）
 window.addEventListener("blur", () => { padHost.reset(); sound.allOff(); pad.clearHeld(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } });
 document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { padHost.reset(); sound.allOff(); pad.clearHeld(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } } });
+// MIDI 键盘（src/keyboard/midi.ts；2026-10-16 by Claude Opus 5.5，user「今天把midi键盘做一下吧…可以插电子琴上弄」）：琴键 = 绝对音高，
+//   能写谱的时候走 pad 的同一个翻译层（写 / 改 / 叠音观望 / 单声护栏 / 弹 = 只响）；别的场合（词 / 听 / 歌词框 / 面板开着 / 歌库上的乐器目录）只出声；歌库 = 不接。
+//   拼写 = 光标处的调号（调内用调号的写法，调外按调的方向；落进谱时 writePitch 照样按调号简化）。力度这一版不管（同 pad：响多大听光标处的力度）。
+const midiHeld = new Map<string, "pad" | "sound">();   // 按着的琴键走了哪条路（松开走同一条）
+function midiRoute(): "pad" | "sound" | null {
+  if (gallery?.isOpen()) return finderShown() ? "sound" : null;
+  if (finder.isOpen || instShown()) return "pad";   // 找人视图 / 乐器页：pad 宿主自己当「弹」（只响、不碰谱）
+  if (listenOn() || ws.mode === "lyrics") return "sound";
+  const w = whereNow(); return w === "write" || w === "edit" || w === "impro" ? "pad" : "sound";
+}
+let midiRowSync: ((s: MidiStatus) => void) | null = null;   // 设置面板开着时那一行跟着变
+const midi = createMidiKeyboard({
+  down: (note, _vel, id) => {
+    const r = midiRoute(); if (!r) return;
+    const p = spellMidi(note, keyAt(tr(D.st), D.st.sel ? D.st.sel.from : D.st.caret));
+    if (r === "pad") { if (padHost.noteDown(p, id)) midiHeld.set(id, r); }
+    else { sound.down(p, id); midiHeld.set(id, r); }
+  },
+  up: (id) => { const r = midiHeld.get(id); midiHeld.delete(id); if (r === "pad") padHost.noteUp(id); else if (r === "sound") sound.up(id); },
+  plug: (name, on) => info(on ? `MIDI 键盘接上了：${name}` : `MIDI 键盘拔掉了：${name}`),
+  status: (s) => { diagNote("midi", s.k === "on" ? `on: ${s.inputs.join(", ") || "(no input)"}` : s.k === "denied" ? `denied: ${s.why}` : s.k); midiRowSync?.(s); },
+});
+/** 设置里「MIDI 键盘」那一行的字。 */
+function midiStatusHtml(s: MidiStatus): string {
+  if (s.k === "unsupported") return `这个浏览器读不了 MIDI 键盘（iPad / iPhone 上的浏览器都没有 Web MIDI）；电脑上的 Chrome / Edge / Firefox 可以`;
+  if (s.k === "asking") return `等浏览器的许可…`;
+  if (s.k === "denied") return `浏览器没给（${esc(s.why)}）。在地址栏左边的站点设置里允许 MIDI，再点连接`;
+  if (s.k === "off") return `琴用 USB 插上电脑，点「连接」（浏览器会问一次，以后开 app 自己接上）`;
+  return s.inputs.length ? `接着：${esc(s.inputs.join("、"))}。弹的音按光标处的长短写进谱；「弹」开着 / 词 / 听里只出声` : `开着，还没插琴（插上就认）`;
+}
 // 切后台回来：声音被系统收起来了（iPad = interrupted）就叫醒；记一笔延迟（回来后系统可能换了缓冲大小——播放头按扬声器的时钟走，会自己跟上）
 document.addEventListener("visibilitychange", () => {
   if (studio.isOpen) { engine.meter(document.visibilityState === "visible"); syncSpectrum(); }   // 看不见就不统计（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）
@@ -3129,4 +3163,5 @@ if (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash)) {
 }
 // 试听元音表（约 3 MB）在画好之后的空闲时下载：选了月读就是意图，第一下就该响（user「选这个乐器就是意图，然后第一下就响」）
 setTimeout(() => { void ensureVowels().catch((e) => showError(`试听元音表没下载下来：${(e as Error).message}`)); void engine.ensure().catch(() => undefined); }, 300);
-setTimeout(() => schedulePrewarm(), 1200);   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响
+setTimeout(() => schedulePrewarm(), 1200);
+void midi.resume();   // 浏览器记住了「允许」= 静默接上 MIDI 键盘（没记住不弹框，等设置里点「连接」）   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响

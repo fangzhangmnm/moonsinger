@@ -29,8 +29,8 @@ describe("pad 按键 → 动作（翻译层）", () => {
     eq(J(padKeyAction("repeat")), J({ kind: "menu", menu: "repeat" })); eq(J(padKeyAction("ottava")), J({ kind: "menu", menu: "ottava" }));
     eq(padKeyAction("nope"), null); eq(padKeyAction("dyn:ramp"), null); eq(padKeyAction("caret:2"), null);
   });
-  it("键盘模块是纯前端：pad / drum / wheel / param-row / latch / chords / pad-layout 不 import 谱 / 音乐 / 宿主（keys.ts 是电脑键盘的键位表，带着命令，例外）", () => {
-    for (const f of ["pad", "drum", "wheel", "param-row", "latch", "chords", "pad-layout"]) {
+  it("键盘模块是纯前端：pad / drum / wheel / param-row / latch / chords / pad-layout / midi 不 import 谱 / 音乐 / 宿主（keys.ts 是电脑键盘的键位表，带着命令，例外）", () => {
+    for (const f of ["pad", "drum", "wheel", "param-row", "latch", "chords", "pad-layout", "midi"]) {
       const src = fs.readFileSync(new URL(`../src/keyboard/${f}.ts`, import.meta.url), "utf8");
       assert(!/from "\.\.\/(score|app|engine|singer|gm|format|performers)\//.test(src), `src/keyboard/${f}.ts import 了 src/score|app|engine|…（键盘不懂音乐，音乐知识走 PadMusic 注入）`);
     }

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.25-2026-10-17";
+var APP_VERSION = "v0.12.26-2026-10-17";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2847,10 +2847,10 @@ function stepBy(p2, steps, fifths) {
 function alterBy(p2, d3) {
   return { ...p2, alter: Math.max(-2, Math.min(2, p2.alter + d3)) };
 }
-function spellMidi(midi, fifths, prefer = fifths < 0 ? -1 : 1) {
+function spellMidi(midi2, fifths, prefer = fifths < 0 ? -1 : 1) {
   const cands3 = [];
-  for (const step of STEPS) for (let o10 = Math.floor(midi / 12) - 2; o10 <= Math.floor(midi / 12); o10++) {
-    const alter = midi - midiOf({ step, alter: 0, octave: o10 });
+  for (const step of STEPS) for (let o10 = Math.floor(midi2 / 12) - 2; o10 <= Math.floor(midi2 / 12); o10++) {
+    const alter = midi2 - midiOf({ step, alter: 0, octave: o10 });
     if (Math.abs(alter) <= 1) cands3.push({ step, alter, octave: o10 });
   }
   return cands3.find((p2) => p2.alter === keyAlter(p2.step, fifths)) ?? cands3.find((p2) => p2.alter === prefer) ?? cands3.find((p2) => p2.alter === 0) ?? cands3[0];
@@ -6492,6 +6492,106 @@ function route(e10, where, base3 = "write") {
 }
 function isSoundKey(e10) {
   return BINDINGS.some((b3) => b3.sound && b3.keys.some((c10) => c10.code === e10.code));
+}
+
+// src/keyboard/midi.ts
+function parseMidi(data) {
+  if (data.length < 3) return null;
+  const st2 = data[0] & 240, ch2 = data[0] & 15, a10 = data[1] & 127, b3 = data[2] & 127;
+  if (st2 === 144) return b3 > 0 ? { k: "on", ch: ch2, note: a10, vel: b3 } : { k: "off", ch: ch2, note: a10 };
+  if (st2 === 128) return { k: "off", ch: ch2, note: a10 };
+  if (st2 === 176) return { k: "cc", ch: ch2, cc: a10, value: b3 };
+  return null;
+}
+var portName = (p2) => (p2.name || p2.manufacturer || "MIDI \u952E\u76D8").trim();
+function createMidiKeyboard(h2, nav = navigator) {
+  let status = typeof nav.requestMIDIAccess === "function" ? { k: "off" } : { k: "unsupported" };
+  let access = null;
+  const ports = /* @__PURE__ */ new Map();
+  const held = /* @__PURE__ */ new Map();
+  const set = (s10) => {
+    status = s10;
+    h2.status?.(s10);
+  };
+  const report = () => {
+    if (access) set({ k: "on", inputs: [...ports.values()].map(portName) });
+  };
+  const release = (portId) => {
+    for (const [id2, p2] of [...held]) if (p2 === portId) {
+      held.delete(id2);
+      h2.up(id2);
+    }
+  };
+  function attach(p2) {
+    if (ports.has(p2.id)) return false;
+    ports.set(p2.id, p2);
+    p2.onmidimessage = (e10) => {
+      const m2 = e10.data ? parseMidi(e10.data) : null;
+      if (!m2 || m2.k === "cc") return;
+      const id2 = `midi:${p2.id}:${m2.ch}:${m2.note}`;
+      if (m2.k === "off") {
+        if (held.delete(id2)) h2.up(id2);
+        return;
+      }
+      if (held.has(id2)) h2.up(id2);
+      held.set(id2, p2.id);
+      h2.down(m2.note, m2.vel / 127, id2);
+    };
+    return true;
+  }
+  function detach(p2) {
+    const had = ports.get(p2.id);
+    if (!had) return false;
+    had.onmidimessage = null;
+    ports.delete(p2.id);
+    release(p2.id);
+    return true;
+  }
+  function adopt(a10) {
+    access = a10;
+    a10.inputs.forEach((p2) => {
+      if (p2.state !== "disconnected") attach(p2);
+    });
+    a10.onstatechange = (e10) => {
+      const p2 = e10.port;
+      if (!p2 || p2.type && p2.type !== "input") return;
+      const changed2 = p2.state === "disconnected" ? detach(p2) : attach(p2);
+      if (changed2) {
+        h2.plug?.(portName(p2), p2.state !== "disconnected");
+        report();
+      }
+    };
+    report();
+  }
+  let pending = null;
+  function connect() {
+    if (access || status.k === "unsupported") return Promise.resolve(status);
+    if (pending) return pending;
+    set({ k: "asking" });
+    pending = nav.requestMIDIAccess({ sysex: false }).then((a10) => {
+      adopt(a10);
+      return status;
+    }).catch((e10) => {
+      set({ k: "denied", why: e10 instanceof Error ? e10.message || e10.name : String(e10) });
+      return status;
+    }).finally(() => {
+      pending = null;
+    });
+    return pending;
+  }
+  async function resume() {
+    if (access || status.k === "unsupported" || !nav.permissions) return;
+    let state = "";
+    try {
+      state = (await nav.permissions.query({ name: "midi" })).state;
+    } catch {
+      return;
+    }
+    if (state === "granted") await connect();
+  }
+  return { get status() {
+    return status;
+  }, connect, resume };
 }
 
 // src/score/lyrics.ts
@@ -12585,8 +12685,8 @@ var Pad = class {
     b3.classList.toggle("lock", m2 === "lock");
   }
   /** 某个来源（手指 / 电脑键盘的键）按下了某个音（MIDI）：pad 上同音高的键亮着，直到 showUp（调式里没有这个音 = 不亮）。 */
-  showDown(midi, id2) {
-    this.held.set(id2, midi);
+  showDown(midi2, id2) {
+    this.held.set(id2, midi2);
     this.refresh(this.host.view());
   }
   showUp(id2) {
@@ -12654,9 +12754,9 @@ function ladderAt(sc2, k2, tonicD, fifths) {
   const pitch = alterBy(fromDiatonic(tonicD + deg.deg - 1 + 7 * oct, fifths), deg.alt);
   return { pitch, deg, oct };
 }
-function ladderFirstAtOrAbove(sc2, midi, tonicD, fifths) {
-  let k2 = Math.floor((midi - midiOf(ladderAt(sc2, 0, tonicD, fifths).pitch)) / 12 * sc2.degs.length) - sc2.degs.length;
-  while (midiOf(ladderAt(sc2, k2, tonicD, fifths).pitch) < midi) k2++;
+function ladderFirstAtOrAbove(sc2, midi2, tonicD, fifths) {
+  let k2 = Math.floor((midi2 - midiOf(ladderAt(sc2, 0, tonicD, fifths).pitch)) / 12 * sc2.degs.length) - sc2.degs.length;
+  while (midiOf(ladderAt(sc2, k2, tonicD, fifths).pitch) < midi2) k2++;
   return k2;
 }
 function ladderHome(sc2, tonicD, fifths) {
@@ -21510,13 +21610,13 @@ function createPadHost(padEl2, g3) {
   const music = createPadMusic(st2);
   const padImpro = () => g3.impro() || g3.finderShown() || g3.instShown();
   const padAccept = (id2) => g3.canStack() ? (monoHeld.add(id2), true) : monoAccept(id2);
-  function padWrite(p2, id2) {
+  function padWrite(p2, id2, raw = false) {
     if (g3.finderOpen()) return;
     const now2 = performance.now(), s10 = st2();
     {
       const one = singleSel(s10);
       if (one >= 0) {
-        g3.update(writePitch(s10, p2, false, !g3.canStack()));
+        g3.update(writePitch(s10, p2, raw, !g3.canStack()));
         padNotes.set(id2, { index: one, base: p2 });
         g3.previewEdited();
         return;
@@ -21526,7 +21626,7 @@ function createPadHost(padEl2, g3) {
       settleChords("force");
       const root = chordRoot();
       if (root) {
-        const sp2 = soundingPitch(st2(), p2).pitch;
+        const sp2 = raw ? p2 : soundingPitch(st2(), p2).pitch;
         padNotes.set(id2, { index: -1, base: p2 });
         if (chordHead(root, { t: now2 })) {
           chordMerge(root, sp2);
@@ -21538,7 +21638,7 @@ function createPadHost(padEl2, g3) {
         return;
       }
     }
-    const i10 = g3.writeAndLocate((x2) => writePitch(x2, p2, false, !g3.canStack()));
+    const i10 = g3.writeAndLocate((x2) => writePitch(x2, p2, raw, !g3.canStack()));
     if (i10 < 0) {
       padNotes.set(id2, { index: -1, base: p2 });
       return;
@@ -21548,12 +21648,12 @@ function createPadHost(padEl2, g3) {
     if (g3.canStack() && t10) chordRoots.set(id2, { tokId: t10.id, t: now2 });
     g3.afterWrite();
   }
-  function padSound(p2, id2) {
+  function padSound(p2, id2, raw = false) {
     const n10 = padNotes.get(id2);
     if (n10 && n10.index >= 0) g3.soundTok(st2(), n10.index, id2);
     else {
-      const r10 = soundingPitch(st2(), p2);
-      g3.update(r10.st);
+      const r10 = raw ? { pitch: p2, st: st2() } : soundingPitch(st2(), p2);
+      if (!raw) g3.update(r10.st);
       padNotes.set(id2, { index: -1, base: r10.pitch });
       g3.sound.down(r10.pitch, id2);
       if (g3.ghost.on()) {
@@ -21561,6 +21661,21 @@ function createPadHost(padEl2, g3) {
         g3.ghost.sync();
       }
     }
+  }
+  function noteDown(p2, id2, raw = false) {
+    if (!padImpro()) {
+      if (!padAccept(id2)) return false;
+      padWrite(p2, id2, raw);
+    }
+    padSound(p2, id2, raw);
+    return true;
+  }
+  function noteUp(id2) {
+    chordKeyUp(id2);
+    padNotes.delete(id2);
+    monoHeld.delete(id2);
+    g3.sound.up(id2);
+    if (g3.ghost.delete(id2)) g3.ghost.sync();
   }
   function padKey(id2, mods) {
     if (g3.finderOpen()) return;
@@ -21625,23 +21740,8 @@ function createPadHost(padEl2, g3) {
     onKbSwitch: () => g3.kbSwitch(),
     // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
     // 音键按下：第 k 级是什么音问 music；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
-    onNoteDown: (k2, id2) => {
-      const p2 = music.pitchAt(k2);
-      if (!padImpro()) {
-        if (!padAccept(id2)) return false;
-        padWrite(p2, id2);
-      }
-      padSound(p2, id2);
-      return true;
-    },
-    onNoteUp: (id2) => {
-      chordKeyUp(id2);
-      padNotes.delete(id2);
-      monoHeld.delete(id2);
-      g3.sound.up(id2);
-      if (g3.ghost.delete(id2)) g3.ghost.sync();
-    },
-    // 先按松开的顺序定观望中的叠音（要看谁还按着），再放
+    onNoteDown: (k2, id2) => noteDown(music.pitchAt(k2), id2),
+    onNoteUp: (id2) => noteUp(id2),
     onStack: (down) => g3.stackKey(down),
     canStack: () => g3.canStack(),
     onAlter: (id2, alt) => {
@@ -21692,7 +21792,9 @@ function createPadHost(padEl2, g3) {
       settleChords("lost");
       chordRoots.clear();
       monoHeld.clear();
-    }
+    },
+    noteDown: (p2, id2) => noteDown(p2, id2, true),
+    noteUp
   };
 }
 
@@ -21766,16 +21868,16 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
       return;
     }
     if (t10.kind !== "note") return;
-    const midi = midiOf(effectivePitch(tokens, i10));
+    const midi2 = midiOf(effectivePitch(tokens, i10));
     const last = out[out.length - 1];
     if ((t10.lyric === MELISMA_MARK || t10.tie) && last && !last.rest) {
-      last.notes.push([midi, len]);
+      last.notes.push([midi2, len]);
       return;
     }
     const lyric = t10.lyric && t10.lyric !== MELISMA_MARK ? t10.lyric : null;
     const wh = artOf(t10).includes("whisper") ? { whisper: true } : {};
     if (!lyric) {
-      push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true, ...wh });
+      push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi2, len]], hum: true, ...wh });
       return;
     }
     if (isSmallKana(lyric)) {
@@ -21788,12 +21890,12 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
       }
       if (!last.rest) {
         last.kana += lyric;
-        last.notes.push([midi, len]);
+        last.notes.push([midi2, len]);
         return;
       }
     }
     const parts = lyric.split(ELISION).filter(Boolean).reduce((a10, k2) => a10.length && isSmallKana(k2) ? [...a10.slice(0, -1), a10[a10.length - 1] + k2] : [...a10, k2], []);
-    parts.forEach((kana, k2) => push({ kana, notes: [[midi, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {}, ...wh }));
+    parts.forEach((kana, k2) => push({ kana, notes: [[midi2, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {}, ...wh }));
   }
   const TEXT2 = lang === "en" ? out.map((e10) => e10.kana + (e10.hyph ? "" : " ")).join("").trim() : out.map((e10, k2) => e10.kana + (e10.rest ? "\u3001" : k2 === out.length - 1 ? "\u3002" : "")).join("");
   return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base3, LANG: lang };
@@ -27157,15 +27259,15 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
     const arp = poly && ps.length > 1 && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks?.arpeggioSec ?? 0.035, (t12 - t02) * 0.5 / (ps.length - 1)) : 0;
     const rank = arp ? new Map([...ps].map((q2) => midiOf(q2)).sort((a10, b3) => a10 - b3).map((m2, k2) => [m2, k2])) : null;
     for (const p2 of ps) {
-      const midi = midiOf(p2), prev = tok.tie ? open.get(midi) : void 0;
+      const midi2 = midiOf(p2), prev = tok.tie ? open.get(midi2) : void 0;
       if (prev) {
         prev.t1 = marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12;
-        nextOpen.set(midi, prev);
+        nextOpen.set(midi2, prev);
         continue;
       }
-      const n10 = { midi, t0: rank ? Math.max(0, t02 - (ps.length - 1 - (rank.get(midi) ?? 0)) * arp) : t02, t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {} };
+      const n10 = { midi: midi2, t0: rank ? Math.max(0, t02 - (ps.length - 1 - (rank.get(midi2) ?? 0)) * arp) : t02, t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {} };
       notes.push(n10);
-      nextOpen.set(midi, n10);
+      nextOpen.set(midi2, n10);
     }
     open = nextOpen;
   }
@@ -27611,11 +27713,11 @@ var soundfont = registerPerformer({
   inspector: ({ extras, role, catalog, esc: esc9, chip: chip2, dynTable: dynTable2 }) => {
     const active = activeGm(extras, role), sp2 = activePerfSpec(extras, role), tr3 = activeTranspose(extras, role), rows = [];
     {
-      const midi = Math.round(activeVelocity(extras, role) * 127), def = sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127);
-      const L2 = active && active.origin.library === GS_LIBRARY_ID && catalog ? velLayersOf(catalog, active.bank, active.program, active.note) : null, k2 = L2 ? L2.ranges.findIndex(([lo2, hi]) => midi >= lo2 && midi <= hi) : -1;
+      const midi2 = Math.round(activeVelocity(extras, role) * 127), def = sp2.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127);
+      const L2 = active && active.origin.library === GS_LIBRARY_ID && catalog ? velLayersOf(catalog, active.bank, active.program, active.note) : null, k2 = L2 ? L2.ranges.findIndex(([lo2, hi]) => midi2 >= lo2 && midi2 <= hi) : -1;
       rows.push({
         label: "\u529B\u5EA6",
-        control: `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09">\u22128</button><button class="btn" data-v="vel:8" title="\u91CD\u4E00\u70B9\uFF08+8\uFF09">+8</button>` + (midi !== def ? `<button class="btn" data-v="vel:def" title="\u56DE\u5230 ${def}">\u9ED8\u8BA4</button>` : ""),
+        control: `<b class="ip-val">${midi2}</b><button class="btn" data-v="vel:-8" title="\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09">\u22128</button><button class="btn" data-v="vel:8" title="\u91CD\u4E00\u70B9\uFF08+8\uFF09">+8</button>` + (midi2 !== def ? `<button class="btn" data-v="vel:def" title="\u56DE\u5230 ${def}">\u9ED8\u8BA4</button>` : ""),
         note: `\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002` + (sp2.dynamicsVel ? `\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +${sp2.accentVel}\u3001\u5F3A\u97F3 +${sp2.marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A${dynTable2(L2)}` : `\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A${dynTable2(null)}`) + (L2 ? L2.count > 1 ? `GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 ${L2.count} \u4E2A\u529B\u5EA6\u5C42${k2 >= 0 ? `\uFF0C\u73B0\u5728\u5728\u7B2C ${k2 + 1} \u5C42\uFF08${L2.ranges[k2][0]}\u2013${L2.ranges[k2][1]}\uFF09` : ""}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002` : "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002" : "")
       });
     }
@@ -42165,7 +42267,7 @@ function openSettings() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(models.source)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(sources.source)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc8(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? `
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(models.source)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(sources.source)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="set-field">MIDI \u952E\u76D8<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">\u8FDE\u63A5</button>` : ""}</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc8(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? `
     \u6539\u52A8\uFF1A${c10.modified}` : ""}`).join("\n"))}</pre></details><details class="set-credit"><summary>\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><div class="part-sec">\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09</div><pre>${esc8(CREDIT.credit)}
 
 ${esc8(CREDIT.terms)}
@@ -42215,8 +42317,14 @@ ${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C
     }).join("") || "\uFF08\u6CA1\u6709\uFF09";
   };
   void refreshSounds();
+  midiRowSync = (s10) => {
+    const el2 = box.querySelector("#midiSt");
+    if (el2) el2.innerHTML = midiStatusHtml(s10);
+    if (s10.k !== "off" && s10.k !== "denied") box.querySelector('[data-v="midi:connect"]')?.remove();
+  };
   const close = () => {
     clearInterval(resTimer);
+    midiRowSync = null;
     models.source = srcIn.value;
     sources.source = sndIn.value;
     box.remove();
@@ -42230,7 +42338,8 @@ ${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C
     else if (v === "default") {
       srcIn.value = MODEL_SOURCE_DEFAULT;
       sndIn.value = SOUNDS_SOURCE_DEFAULT;
-    } else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
+    } else if (v === "midi:connect") void midi.connect();
+    else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
     else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
@@ -45584,6 +45693,46 @@ document.addEventListener("visibilitychange", () => {
     }
   }
 });
+var midiHeld = /* @__PURE__ */ new Map();
+function midiRoute() {
+  if (gallery?.isOpen()) return finderShown() ? "sound" : null;
+  if (finder.isOpen || instShown()) return "pad";
+  if (listenOn() || ws.mode === "lyrics") return "sound";
+  const w2 = whereNow();
+  return w2 === "write" || w2 === "edit" || w2 === "impro" ? "pad" : "sound";
+}
+var midiRowSync = null;
+var midi = createMidiKeyboard({
+  down: (note2, _vel, id2) => {
+    const r10 = midiRoute();
+    if (!r10) return;
+    const p2 = spellMidi(note2, keyAt(tr(D2.st), D2.st.sel ? D2.st.sel.from : D2.st.caret));
+    if (r10 === "pad") {
+      if (padHost.noteDown(p2, id2)) midiHeld.set(id2, r10);
+    } else {
+      sound.down(p2, id2);
+      midiHeld.set(id2, r10);
+    }
+  },
+  up: (id2) => {
+    const r10 = midiHeld.get(id2);
+    midiHeld.delete(id2);
+    if (r10 === "pad") padHost.noteUp(id2);
+    else if (r10 === "sound") sound.up(id2);
+  },
+  plug: (name, on2) => info(on2 ? `MIDI \u952E\u76D8\u63A5\u4E0A\u4E86\uFF1A${name}` : `MIDI \u952E\u76D8\u62D4\u6389\u4E86\uFF1A${name}`),
+  status: (s10) => {
+    diagNote("midi", s10.k === "on" ? `on: ${s10.inputs.join(", ") || "(no input)"}` : s10.k === "denied" ? `denied: ${s10.why}` : s10.k);
+    midiRowSync?.(s10);
+  }
+});
+function midiStatusHtml(s10) {
+  if (s10.k === "unsupported") return `\u8FD9\u4E2A\u6D4F\u89C8\u5668\u8BFB\u4E0D\u4E86 MIDI \u952E\u76D8\uFF08iPad / iPhone \u4E0A\u7684\u6D4F\u89C8\u5668\u90FD\u6CA1\u6709 Web MIDI\uFF09\uFF1B\u7535\u8111\u4E0A\u7684 Chrome / Edge / Firefox \u53EF\u4EE5`;
+  if (s10.k === "asking") return `\u7B49\u6D4F\u89C8\u5668\u7684\u8BB8\u53EF\u2026`;
+  if (s10.k === "denied") return `\u6D4F\u89C8\u5668\u6CA1\u7ED9\uFF08${esc8(s10.why)}\uFF09\u3002\u5728\u5730\u5740\u680F\u5DE6\u8FB9\u7684\u7AD9\u70B9\u8BBE\u7F6E\u91CC\u5141\u8BB8 MIDI\uFF0C\u518D\u70B9\u8FDE\u63A5`;
+  if (s10.k === "off") return `\u7434\u7528 USB \u63D2\u4E0A\u7535\u8111\uFF0C\u70B9\u300C\u8FDE\u63A5\u300D\uFF08\u6D4F\u89C8\u5668\u4F1A\u95EE\u4E00\u6B21\uFF0C\u4EE5\u540E\u5F00 app \u81EA\u5DF1\u63A5\u4E0A\uFF09`;
+  return s10.inputs.length ? `\u63A5\u7740\uFF1A${esc8(s10.inputs.join("\u3001"))}\u3002\u5F39\u7684\u97F3\u6309\u5149\u6807\u5904\u7684\u957F\u77ED\u5199\u8FDB\u8C31\uFF1B\u300C\u5F39\u300D\u5F00\u7740 / \u8BCD / \u542C\u91CC\u53EA\u51FA\u58F0` : `\u5F00\u7740\uFF0C\u8FD8\u6CA1\u63D2\u7434\uFF08\u63D2\u4E0A\u5C31\u8BA4\uFF09`;
+}
 document.addEventListener("visibilitychange", () => {
   if (studio.isOpen) {
     engine.meter(document.visibilityState === "visible");
@@ -45614,9 +45763,10 @@ setTimeout(() => {
   void engine.ensure().catch(() => void 0);
 }, 300);
 setTimeout(() => schedulePrewarm(), 1200);
+void midi.resume();
 /**
 * vue v3.5.35
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c428e974de80.mjs.map
+//# sourceMappingURL=moonsinger-50627d33225d.mjs.map
