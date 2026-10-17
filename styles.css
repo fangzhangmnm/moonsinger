@@ -653,6 +653,17 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .doc-name { border: 0; background: transparent; padding: 0 6px; height: 34px; min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; letter-spacing: .02em; cursor: pointer; color: var(--ink); text-align: left; }
 .doc-name:hover, .doc-name:focus-visible { color: var(--accent); outline: none; }
 .btn.tb-lock { color: var(--muted); min-width: 30px; padding: 0 6px; }
+/* 顶栏「MIDI」（W-42，2026-10-17）：状态即按钮——没连 = 灰字；连着没插琴 = 空心点；插着 = 实心点（来音闪一下）；没给 = 警告色。窄屏没连就不露（设置里照样能连） */
+.btn.tb-midi { gap: 5px; padding: 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--muted); }
+.tb-midi .midi-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; box-sizing: border-box; }
+.tb-midi.m-off .midi-dot, .tb-midi.m-denied .midi-dot { display: none; }
+.tb-midi.m-on { color: var(--ink); }
+.tb-midi.m-on .midi-dot { background: #2f9e44; border-color: #2f9e44; }
+.tb-midi.m-denied { color: var(--danger); }
+.tb-midi.hit .midi-dot { background: var(--warn); border-color: var(--warn); box-shadow: 0 0 0 3px color-mix(in srgb, var(--warn) 30%, transparent); }
+@media (max-width: 480px) { .tb-midi.m-off { display: none; } }
+.ctx-menu.midi-menu { max-width: 300px; }
+.ctx-menu .ctx-msg { padding: 6px 10px 8px; font-size: 13px; line-height: 1.5; color: var(--ink); white-space: normal; }
 .save-btn.s-clean { color: var(--info); }
 .save-btn.s-unsynced { color: var(--accent); }
 .save-btn.s-local, .save-btn.s-offline, .save-btn.s-saving, .save-btn.s-fileClean, .save-btn.s-fresh { color: var(--muted); }

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.13.2-2026-10-17";
+var APP_VERSION = "v0.13.3-2026-10-17";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -41342,7 +41342,7 @@ function showUpdateBar() {
   document.body.append(el2);
 }
 var PLAY_TITLE = "\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\u3002\u957F\u6309 / \u53F3\u952E = \u63A5\u7740\u653E / \u81EA\u52A8\u7FFB / \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A";
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="midiBtn" class="btn tb-midi" hidden>MIDI<span class="midi-dot"></span></button><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var busMuted = /* @__PURE__ */ new Set();
@@ -42576,7 +42576,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "3aa41a9f8821",
+  cssHash: "0706cc13771a",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -45815,7 +45815,10 @@ var midiRowSync = null;
 var midi = createMidiKeyboard({
   down: (note2, _vel, id2) => {
     const r10 = midiRoute();
-    if (!r10) return;
+    if (!r10) {
+      midiBlink();
+      return;
+    }
     const p2 = spellMidi(note2, keyAt(tr(D2.st), D2.st.sel ? D2.st.sel.from : D2.st.caret));
     if (r10 === "pad") {
       if (padHost.noteDown(p2, id2)) midiHeld.set(id2, r10);
@@ -45823,6 +45826,7 @@ var midi = createMidiKeyboard({
       sound.down(p2, id2);
       midiHeld.set(id2, r10);
     }
+    midiBlink();
   },
   up: (id2) => {
     const r10 = midiHeld.get(id2);
@@ -45834,8 +45838,69 @@ var midi = createMidiKeyboard({
   status: (s10) => {
     diagNote("midi", s10.k === "on" ? `on: ${s10.inputs.join(", ") || "(no input)"}` : s10.k === "denied" ? `denied: ${s10.why}` : s10.k);
     midiRowSync?.(s10);
+    syncMidiChip(s10);
   }
 });
+var midiBtn = $2("midiBtn");
+var KV_MIDI_CHIP_HIDDEN = "midi-chip-hidden";
+var MIDI_CHIP_TITLE = { off: "MIDI \u952E\u76D8\uFF1A\u8FD8\u6CA1\u8FDE\uFF08\u70B9\u4E00\u4E0B\u770B\u600E\u4E48\u8FDE\uFF09", asking: "MIDI \u952E\u76D8\uFF1A\u7B49\u6D4F\u89C8\u5668\u7684\u8BB8\u53EF\u2026", denied: "MIDI \u952E\u76D8\uFF1A\u6D4F\u89C8\u5668\u6CA1\u7ED9\uFF08\u70B9\u4E00\u4E0B\u770B\u600E\u4E48\u529E\uFF09", idle: "MIDI \u952E\u76D8\uFF1A\u5F00\u7740\uFF0C\u8FD8\u6CA1\u63D2\u7434\uFF08\u63D2\u4E0A\u5C31\u8BA4\uFF09" };
+function syncMidiChip(s10) {
+  const k2 = s10.k === "on" ? s10.inputs.length ? "on" : "idle" : s10.k;
+  midiBtn.hidden = s10.k === "unsupported" || s10.k === "off" && deviceKvGet2(KV_MIDI_CHIP_HIDDEN) === "1";
+  midiBtn.classList.remove("m-off", "m-asking", "m-denied", "m-idle", "m-on");
+  midiBtn.classList.add(`m-${k2}`);
+  midiBtn.title = s10.k === "on" && s10.inputs.length ? `MIDI \u952E\u76D8\uFF1A\u63A5\u7740 ${s10.inputs.join("\u3001")}\uFF08\u5F39\u4E00\u4E0B\u8FD9\u4E2A\u70B9\u4F1A\u95EA\uFF09` : MIDI_CHIP_TITLE[k2] ?? "MIDI \u952E\u76D8";
+}
+var midiBlinkT = 0;
+function midiBlink() {
+  midiBtn.classList.add("hit");
+  clearTimeout(midiBlinkT);
+  midiBlinkT = window.setTimeout(() => midiBtn.classList.remove("hit"), 120);
+}
+var midiMenuClose = null;
+function openMidiMenu() {
+  if (midiMenuClose) {
+    midiMenuClose();
+    return;
+  }
+  ui2.close();
+  const s10 = midi.status, box = document.createElement("div");
+  box.className = "track-card ctx-menu midi-menu";
+  box.setAttribute("role", "menu");
+  const item = (v, label, title) => `<button class="btn ctx-item" data-v="${v}" title="${esc8(title)}">${label}</button>`;
+  box.innerHTML = `<div class="ctx-msg">${midiStatusHtml(s10)}</div>` + (s10.k === "off" || s10.k === "denied" ? item("connect", "\u8FDE\u63A5", "\u95EE\u6D4F\u89C8\u5668\u8981 MIDI \u7684\u8BB8\u53EF\uFF08\u6D4F\u89C8\u5668\u4F1A\u5F39\u5B83\u81EA\u5DF1\u7684\u6846\uFF09\uFF1B\u7ED9\u8FC7\u4E00\u6B21\u4EE5\u540E\u5F00 app \u81EA\u5DF1\u63A5\u4E0A") : "") + (s10.k === "off" ? item("hide", "\u6211\u6CA1\u6709 MIDI \u952E\u76D8", "\u9876\u680F\u4E0D\u518D\u9732\u300CMIDI\u300D\uFF1B\u4EE5\u540E\u8981\u8FDE\uFF1A\u83DC\u5355 \u2192 \u8BBE\u7F6E \u2192 MIDI \u952E\u76D8") : "");
+  document.body.append(box);
+  const b3 = midiBtn.getBoundingClientRect(), w2 = box.offsetWidth, m2 = 8;
+  box.style.left = `${Math.max(m2, Math.min(b3.right - w2, innerWidth - w2 - m2))}px`;
+  box.style.top = `${b3.bottom + 4}px`;
+  const outside = (e10) => {
+    if (!box.contains(e10.target) && !midiBtn.contains(e10.target)) close();
+  };
+  const close = () => {
+    document.removeEventListener("pointerdown", outside, true);
+    box.remove();
+    midiMenuClose = null;
+    ui2.closed(close);
+  };
+  setTimeout(() => {
+    if (box.isConnected) document.addEventListener("pointerdown", outside, true);
+  }, 0);
+  midiMenuClose = close;
+  ui2.open({ k: "menu", close });
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (!v) return;
+    close();
+    if (v === "connect") void midi.connect();
+    else if (v === "hide") {
+      deviceKvSet2(KV_MIDI_CHIP_HIDDEN, "1");
+      syncMidiChip(midi.status);
+      info("\u9876\u680F\u4E0D\u9732\u300CMIDI\u300D\u4E86\uFF1B\u4EE5\u540E\u8981\u8FDE\uFF1A\u83DC\u5355 \u2192 \u8BBE\u7F6E \u2192 MIDI \u952E\u76D8");
+    }
+  });
+}
+midiBtn.addEventListener("click", openMidiMenu);
+syncMidiChip(midi.status);
 function midiStatusHtml(s10) {
   if (s10.k === "unsupported") return `\u8FD9\u4E2A\u6D4F\u89C8\u5668\u8BFB\u4E0D\u4E86 MIDI \u952E\u76D8\uFF08iPad / iPhone \u4E0A\u7684\u6D4F\u89C8\u5668\u90FD\u6CA1\u6709 Web MIDI\uFF09\uFF1B\u7535\u8111\u4E0A\u7684 Chrome / Edge / Firefox \u53EF\u4EE5`;
   if (s10.k === "asking") return `\u7B49\u6D4F\u89C8\u5668\u7684\u8BB8\u53EF\u2026`;
@@ -45879,4 +45944,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ec61e7c99a51.mjs.map
+//# sourceMappingURL=moonsinger-c39a7fbabdf2.mjs.map

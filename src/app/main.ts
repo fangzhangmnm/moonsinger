@@ -218,7 +218,8 @@ bar.innerHTML =
   `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button>` +
   `</div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div>` +
-  `<div class="tb-right"><button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
+  `<div class="tb-right"><button id="midiBtn" class="btn tb-midi" hidden>MIDI<span class="midi-dot"></span></button>` +
+  `<button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
   `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
   `<button id="setBtn" class="btn" title="菜单：新建 / 打开 / 导出 / 封面 / 声音与署名 / 设置"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
 /** 渲染进度条（顶栏底边；播放的准备和 mp3 导出共用 renderMix 这一条路）。顶栏的 HTML 写好之后再挂（上面 bar.innerHTML = … 会冲掉先挂的）。 */
@@ -3148,15 +3149,55 @@ function midiRoute(): "pad" | "sound" | null {
 let midiRowSync: ((s: MidiStatus) => void) | null = null;   // 设置面板开着时那一行跟着变
 const midi = createMidiKeyboard({
   down: (note, _vel, id) => {
-    const r = midiRoute(); if (!r) return;
+    const r = midiRoute(); if (!r) { midiBlink(); return; }
     const p = spellMidi(note, keyAt(tr(D.st), D.st.sel ? D.st.sel.from : D.st.caret));
     if (r === "pad") { if (padHost.noteDown(p, id)) midiHeld.set(id, r); }
     else { sound.down(p, id); midiHeld.set(id, r); }
+    midiBlink();
   },
   up: (id) => { const r = midiHeld.get(id); midiHeld.delete(id); if (r === "pad") padHost.noteUp(id); else if (r === "sound") sound.up(id); },
   plug: (name, on) => info(on ? `MIDI 键盘接上了：${name}` : `MIDI 键盘拔掉了：${name}`),
-  status: (s) => { diagNote("midi", s.k === "on" ? `on: ${s.inputs.join(", ") || "(no input)"}` : s.k === "denied" ? `denied: ${s.why}` : s.k); midiRowSync?.(s); },
+  status: (s) => { diagNote("midi", s.k === "on" ? `on: ${s.inputs.join(", ") || "(no input)"}` : s.k === "denied" ? `denied: ${s.why}` : s.k); midiRowSync?.(s); syncMidiChip(s); },
 });
+// 顶栏「MIDI」（W-42；user 2026-10-17「midi是ux的问题：我不知道需要进设置连」→「同意顶栏显示midi状态。不一开始弹」）：状态即按钮，点开 = 现在怎样 + 能做的（连接 / 我没有）。
+//   没有 Web MIDI（iPad / iPhone）= 不露；没连 = 灰字（窄屏不露，设置里照样能连）；连着没插琴 = 空心点；插着 = 实心点，来一个音闪一下（一眼知道琴到了 app）；没给 = 警告色。
+//   开 app 不弹浏览器的许可框（浏览器记住了允许 = 静默接上，同 v0.12.26）。
+const midiBtn = $("midiBtn"), KV_MIDI_CHIP_HIDDEN = "midi-chip-hidden";   // 「我没有 MIDI 键盘」= 这台浏览器没连的时候顶栏不露（连上了照样露）
+const MIDI_CHIP_TITLE: Record<string, string> = { off: "MIDI 键盘：还没连（点一下看怎么连）", asking: "MIDI 键盘：等浏览器的许可…", denied: "MIDI 键盘：浏览器没给（点一下看怎么办）", idle: "MIDI 键盘：开着，还没插琴（插上就认）" };
+function syncMidiChip(s: MidiStatus): void {
+  const k = s.k === "on" ? (s.inputs.length ? "on" : "idle") : s.k;
+  midiBtn.hidden = s.k === "unsupported" || (s.k === "off" && deviceKvGet(KV_MIDI_CHIP_HIDDEN) === "1");
+  midiBtn.classList.remove("m-off", "m-asking", "m-denied", "m-idle", "m-on"); midiBtn.classList.add(`m-${k}`);
+  midiBtn.title = s.k === "on" && s.inputs.length ? `MIDI 键盘：接着 ${s.inputs.join("、")}（弹一下这个点会闪）` : MIDI_CHIP_TITLE[k] ?? "MIDI 键盘";
+}
+let midiBlinkT = 0;
+function midiBlink(): void { midiBtn.classList.add("hit"); clearTimeout(midiBlinkT); midiBlinkT = window.setTimeout(() => midiBtn.classList.remove("hit"), 120); }
+let midiMenuClose: (() => void) | null = null;
+function openMidiMenu(): void {
+  if (midiMenuClose) { midiMenuClose(); return; }   // 再点一下钮 = 收
+  ui.close();
+  const s = midi.status, box = document.createElement("div");
+  box.className = "track-card ctx-menu midi-menu"; box.setAttribute("role", "menu");
+  const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
+  box.innerHTML = `<div class="ctx-msg">${midiStatusHtml(s)}</div>` +
+    (s.k === "off" || s.k === "denied" ? item("connect", "连接", "问浏览器要 MIDI 的许可（浏览器会弹它自己的框）；给过一次以后开 app 自己接上") : "") +
+    (s.k === "off" ? item("hide", "我没有 MIDI 键盘", "顶栏不再露「MIDI」；以后要连：菜单 → 设置 → MIDI 键盘") : "");
+  document.body.append(box);
+  const b = midiBtn.getBoundingClientRect(), w = box.offsetWidth, m = 8;
+  box.style.left = `${Math.max(m, Math.min(b.right - w, innerWidth - w - m))}px`; box.style.top = `${b.bottom + 4}px`;
+  const outside = (e: PointerEvent) => { if (!box.contains(e.target as Node) && !midiBtn.contains(e.target as Node)) close(); };
+  const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); midiMenuClose = null; ui.closed(close); };
+  setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
+  midiMenuClose = close; ui.open({ k: "menu", close });
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
+    close();
+    if (v === "connect") void midi.connect();
+    else if (v === "hide") { deviceKvSet(KV_MIDI_CHIP_HIDDEN, "1"); syncMidiChip(midi.status); info("顶栏不露「MIDI」了；以后要连：菜单 → 设置 → MIDI 键盘"); }
+  });
+}
+midiBtn.addEventListener("click", openMidiMenu);
+syncMidiChip(midi.status);
 /** 设置里「MIDI 键盘」那一行的字。 */
 function midiStatusHtml(s: MidiStatus): string {
   if (s.k === "unsupported") return `这个浏览器读不了 MIDI 键盘（iPad / iPhone 上的浏览器都没有 Web MIDI）；电脑上的 Chrome / Edge / Firefox 可以`;
@@ -3191,4 +3232,4 @@ if (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash)) {
 // 试听元音表（约 3 MB）在画好之后的空闲时下载：选了月读就是意图，第一下就该响（user「选这个乐器就是意图，然后第一下就响」）
 setTimeout(() => { void ensureVowels().catch((e) => showError(`试听元音表没下载下来：${(e as Error).message}`)); void engine.ensure().catch(() => undefined); }, 300);
 setTimeout(() => schedulePrewarm(), 1200);
-void midi.resume();   // 浏览器记住了「允许」= 静默接上 MIDI 键盘（没记住不弹框，等设置里点「连接」）   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响
+void midi.resume();   // 浏览器记住了「允许」= 静默接上 MIDI 键盘（没记住不弹框，等顶栏「MIDI」或设置里点「连接」；W-42）   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响
