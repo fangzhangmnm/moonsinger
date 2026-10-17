@@ -84,3 +84,9 @@ user：「也许需要移动渲染到副线程。全量渲染，包括月读。�
   3. **异步**：排版晚一帧回来。点击 / 拖 / 歌词框定位读「最近一份」排版（本来画也是下一帧了）；要「立刻要」的地方（E2E 钩子、PDF）给一个同步退路（主线程也留一份 engrave 能跑）。
 - 收益与代价：主线程每键从 37 ms 降到约 7 ms（svg-parts + DOM + 装饰），快弹不再等 engrave；代价 = 每键一次 song 的 structured clone（1200 token 约 100 KB，≈1 ms）+ Layout 回传 + 上面三件事的改动量。**另一条路（增量排版，按纸记忆）**对多纸的歌（団子 5 张纸）同样能把 28 ms 砍到几 ms，不动线程、不碰字宽；但对一张纸 1200 个音的极端谱没用。
 - **我的判断**：先核 1（半小时的探针：worker vs 主线程各量同一组中 / 日 / 英字串）；核得过 → worker engrave 值得做（是结构解耦，不是「欺负 app」）；核不过 → 走按纸增量。两条都没动，等 user 点头。
+
+### 7½. 两项前提核过了（2026-10-17 当晚，Fable；探针在 job tmp，没进仓）
+
+1. **worker 里量字宽 = 主线程**：同一个字体栈、7 种字号 × 18 串（假名 / 汉字 / 英文 / 数字 / 标点 / 「‿」）共 126 个宽度，OffscreenCanvas 和主线程 canvas **逐位相同（最大差 0）**。无头 Chromium；Safari 没核（iPad 上 OffscreenCanvas 2D 从 16.4 起有，字体解析是否一致要真机看——核法：同一个探针在 iPad 上跑一遍）。
+2. **Layout 过线的代价**：去掉三个闭包后 Layout 平数据 **735 KB（JSON）、structuredClone 6.8 ms**；song 106 KB、0.5 ms。→ 把整个 Layout 传回主线程每键要花 7 ms，吃掉小半收益。**所以 SVG 串化（toSvgParts，4.7 ms）也应该在 worker 里做**，回主线程的只有：SVG 分组字符串（字符串拷贝是 memcpy 级）+ 命中 / 定位要的几何（notes / rests / heads / systems / lyrics / marks / dyns / bars / measures / 纸边…，Layout 里的小头）。这样主线程每键 ≈ DOM 补丁 0.7 + 装饰 1.8 + 消息 ≈ **3–4 ms**（现在 37）。
+3. 形状：`src/render/` 里 engrave + toSvgParts 本来就是纯函数（`src/core` 的无头渲染也在用），worker 壳 = 一个文件；主线程 `ScoreView` 读「最近一份」几何、`layoutNow()` 留同步退路（主线程也能跑 engrave，E2E / PDF 用）；`yOf / dOf / lyricY` 从 systems 数据重建。预计改动：`src/render/layout-data.ts`（几何子集的类型 + 从 Layout 切出）、`src/render/engrave-worker.ts`、`score-view.ts` 的读法、`build.sh` 多一个 bundle。**没动，等 user 点头。**
