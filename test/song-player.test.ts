@@ -50,14 +50,14 @@ describe("歌库播放器（锁屏）", () => {
     eq(player.state().key, null, "静音不算装着歌"); eq(ms.handlers.size, 0, "静音不登记锁屏"); eq(ms.playbackState, "none");
     player.arm(); eq(audio.plays, 1, "拿过许可 = 不再空放");
   });
-  it("锁屏按钮在开始放之后才登记（iPad 太早不认）；登记了 播放 / 暂停 / 停 / 拖 / 快退快进、没有上一首下一首", async () => {
+  it("锁屏按钮在开始放之后才登记（iPad 太早不认）；登记了 播放 / 暂停 / 停 / 拖 / 快退快进 / 上一首（= 从头放）、没有下一首", async () => {
     const { audio, ms, player } = setup();
     audio.holdNext = true;
     const p = player.play(track());
     eq(player.state().key, "a.mxl", "装上了"); eq(ms.handlers.size, 0, "还没开始放 = 还没登记");
     audio.hold!.ok(); eq(await p, "playing");
-    for (const a of ["play", "pause", "stop", "seekto", "seekbackward", "seekforward"]) assert(ms.handlers.has(a), `登记了 ${a}`);
-    assert(!ms.handlers.has("previoustrack") && !ms.handlers.has("nexttrack"), "只有一首：不画上一首 / 下一首");
+    for (const a of ["play", "pause", "stop", "seekto", "seekbackward", "seekforward", "previoustrack"]) assert(ms.handlers.has(a), `登记了 ${a}`);
+    assert(!ms.handlers.has("nexttrack"), "只有一首：不画下一首");
     eq(meta(ms)?.title, "団子"); eq(ms.playbackState, "playing");
   });
   it("播放 / 暂停 / 停 都报给系统；停 = 锁屏控件收走", async () => {
@@ -86,6 +86,18 @@ describe("歌库播放器（锁屏）", () => {
     ms.handlers.get("seekto")!({ seekTime: 99 }); eq(audio.currentTime, 30, "拖过头 = 结尾");
     audio.currentTime = 5; ms.handlers.get("seekbackward")!({}); eq(audio.currentTime, 0, "快退 10 秒夹在 0");
     ms.handlers.get("seekforward")!({ seekOffset: 3 }); eq(audio.currentTime, 3);
+  });
+  it("从头放：放着 = 回到 0 接着放；暂停着 / 放完了 = 回到 0 并开始放；锁屏「上一首」同一条；没装 = 什么都不做", async () => {
+    const { audio, ms, player } = setup();
+    player.restart(); eq(audio.plays, 0, "没装歌：不动");
+    await player.play(track()); audio.duration = 30;
+    audio.currentTime = 12; player.restart(); await tick();
+    eq(audio.currentTime, 0); eq(player.playing(), "a.mxl", "放着照样放");
+    audio.currentTime = 20; player.toggle(); eq(player.state().paused, true);
+    player.restart(); await tick(); eq(audio.currentTime, 0); eq(player.playing(), "a.mxl", "暂停着 = 从头开始放");
+    audio.currentTime = 30; audio.pause(); audio.fire("ended");
+    ms.handlers.get("previoustrack")!({}); await tick(); eq(audio.currentTime, 0); eq(player.playing(), "a.mxl", "锁屏「上一首」= 从头放");
+    player.stop(); assert(!ms.handlers.has("previoustrack"), "停了收走");
   });
   it("浏览器不让自己开始放 = blocked：装着、暂停着，点 ▶（toggle）再放", async () => {
     const { audio, player } = setup();

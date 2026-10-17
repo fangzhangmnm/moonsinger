@@ -6,6 +6,7 @@
 //   ② 锁屏按钮在开始放之前登记 iPad 可能不认 → 每首第一次 playing 时才登记；
 //   ③ 播放 / 暂停、进度（含循环绕回开头）都报给系统，锁屏上的按钮和进度条才对得上、能拖。
 //   循环 = 这次打开有效（同编辑器的「循环」，不进存储）；锁屏上系统没有循环钮，在播放条上开好再锁屏。
+//   从头放 = restart()（2026-10-17 by Claude Opus 5.5；user「gallery播放没有从头再来的功能，我有时候想从头听」→ 播放条加键「做」）：播放条的 |▶ 和锁屏 / 耳机的「上一首」都走它。
 //   不碰界面：播放条归宿主（gallery-host.ts），这里只出状态 + onChange。
 
 export interface SongTrack {
@@ -79,7 +80,8 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
     const d = audio.duration;
     audio.currentTime = Math.max(0, Number.isFinite(d) ? Math.min(to, d) : to);
   }
-  /** 第一次 playing 时登记锁屏（太早 iPad 不认）。只有一首：不画上一首 / 下一首，给快退 / 快进 / 拖进度。 */
+  /** 第一次 playing 时登记锁屏（太早 iPad 不认）。只有一首：「上一首」= 从头放（同音乐 app 的 ⏮）、不画下一首；给快退 / 快进 / 拖进度。
+   *  iPad 锁屏登记了「上一首」左边那颗会从快退换成 ⏮（进度条照样能拖）。 */
   function announce(): void {
     if (!ms || !track) return;
     setMetadata();
@@ -89,12 +91,12 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
     setAction("seekto", (e) => { if (e.seekTime != null) seek(e.seekTime); });
     setAction("seekbackward", (e) => seek(audio.currentTime - (e.seekOffset || SEEK_STEP_SECS)));
     setAction("seekforward", (e) => seek(audio.currentTime + (e.seekOffset || SEEK_STEP_SECS)));
-    setAction("previoustrack", null); setAction("nexttrack", null);
+    setAction("previoustrack", () => restart()); setAction("nexttrack", null);
     announced = true;
   }
   function unannounce(): void {
     if (!ms) return;
-    for (const a of ["play", "pause", "stop", "seekto", "seekbackward", "seekforward"] as MediaSessionAction[]) setAction(a, null);
+    for (const a of ["play", "pause", "stop", "seekto", "seekbackward", "seekforward", "previoustrack"] as MediaSessionAction[]) setAction(a, null);
     try { ms.metadata = null; } catch { /* 无妨 */ }
     setPlaybackState("none");
   }
@@ -143,11 +145,13 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
     void audio.play().then(() => { blessed = true; }, () => emit());
   }
   function toggle(): void { if (!track) return; if (audio.paused) resume(); else audio.pause(); }
+  /** 从头放：回到开头、放着 / 停着 / 放完了都接着放。 */
+  function restart(): void { if (!track) return; seek(0); resume(); }
   function stop(): void { const had = track != null; unload(); unannounce(); if (had) emit(); }
   function setLoop(on: boolean): void { loop = on; if (track) audio.loop = on; emit(); }
   const state = (): SongPlayerState => ({ key: track?.key ?? null, paused: !track || audio.paused, time: track ? audio.currentTime : 0, duration: track ? audio.duration : NaN, loop });
   return {
-    arm, play, toggle, stop, setLoop, state,
+    arm, play, toggle, restart, stop, setLoop, state,
     /** 在放的那首（暂停 / 没装 = null）。 */
     playing: (): string | null => (track && !audio.paused ? track.key : null),
     onChange(fn: () => void): () => void { listeners.add(fn); return () => listeners.delete(fn); },

@@ -144,11 +144,12 @@ export function initGalleryHost(d: GalleryHostDeps) {
     if (!b) return null;
     try { return parseFinalRecord((JSON.parse(await b.text()) as { final?: unknown }).final); } catch { return null; }
   }
-  // ── 迷你播放条（歌库底边）：▶ / ⏸、歌名、时间、循环、✕。出声 = src/app/song-player.ts（<audio> + 系统媒体控件：主屏 PWA 锁屏照放，锁屏 / 控制中心 / 耳机键能控）──
+  // ── 迷你播放条（歌库底边）：|▶ 从头放、▶ / ⏸、歌名、时间、循环、✕。出声 = src/app/song-player.ts（<audio> + 系统媒体控件：主屏 PWA 锁屏照放，锁屏 / 控制中心 / 耳机键能控）──
   //   user 2026-10-16「至少在gallery侧能做到锁屏播放吗（可以选择是否loop）」「歌库里面可以设置循环与否」：循环 = 播放条上的开关，这次打开有效，锁屏下照样绕回开头。
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player"; playerEl.hidden = true;
-  playerEl.innerHTML = `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="放 / 暂停">${iconHtml("pause")}</button>` +
+  playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="从头放（锁屏 / 耳机的「上一首」也是）">${iconHtml("play-from-start")}</button>` +   // user 2026-10-17「gallery播放没有从头再来的功能，我有时候想从头听」：加键不做手势（歌库只有接着 / 从头两样，藏进手势就找不到）
+    `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="放 / 暂停">${iconHtml("pause")}</button>` +
     `<span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span>` +
     `<button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">循环</button>` +
     `<button type="button" class="btn" data-p="close" title="停">${iconHtml("x")}</button>`;
@@ -195,7 +196,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
   }
   playerEl.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-p]")?.dataset.p; if (!v) return;
-    if (v === "toggle") player.toggle(); else if (v === "loop") player.setLoop(!player.state().loop); else if (v === "close") player.stop();
+    if (v === "toggle") player.toggle(); else if (v === "restart") player.restart(); else if (v === "loop") player.setLoop(!player.state().loop); else if (v === "close") player.stop();
   });
   /** 新建文件夹（2026-10-10 user「gallery怎么没接新建文件夹的功能，这个应该只是接线吧，不过小心一点」）：照 WeebPaint gallery-shell 的接法——
    *  名字先查合法（OneDrive 不收的字符）→ 锁屏 → store 的唯一占用检查（files.occupied：同名文件 / 夹占着就说）→ store.files.newFolder（库内单飞；离线也能建，回线补建）→ 刷新歌库。

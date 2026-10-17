@@ -97,6 +97,10 @@ else console.log("  · 这个浏览器没放出声（无头）：锁屏控件那
 check((await p.$eval(".ms-player-loop", (e) => e.getAttribute("aria-pressed"))) === "false", "循环钮：默认关");
 await p.click('.ms-player [data-p="loop"]'); await p.waitForTimeout(60);
 check((await p.evaluate(() => window.__moonsinger.gallery().playerState().loop)) && (await p.$eval(".ms-player-loop", (e) => e.getAttribute("aria-pressed"))) === "true", "点「循环」= 开（播放器跟着、钮上看得出）");
+// 从头放（user 2026-10-17「gallery播放没有从头再来的功能，我有时候想从头听」）：|▶ 在播放条最左
+check(/从头放/.test(await p.$eval('.ms-player [data-p="restart"]', (e) => e.title)), "播放条有「从头放」钮");
+await p.waitForTimeout(600); await p.click('.ms-player [data-p="restart"]'); await p.waitForTimeout(80);
+{ const ps = await p.evaluate(() => window.__moonsinger.gallery().playerState()); check(ps.key === id && ps.time < 0.4, "点「从头放」= 回到开头、还装着这首", JSON.stringify(ps)); }
 await p.click('.ms-player [data-p="close"]'); await p.waitForTimeout(100);
 check(await p.$eval(".ms-player", (e) => e.hidden), "✕ = 停、播放条收起");
 check((await actIcon()) === "#play", "停了：卡片上变回 ▶", await actIcon());

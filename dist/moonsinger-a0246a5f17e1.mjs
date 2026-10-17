@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.13.5-2026-10-17";
+var APP_VERSION = "v0.13.6-2026-10-17";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -36653,13 +36653,13 @@ function createSongPlayer(deps = {}) {
     });
     setAction("seekbackward", (e10) => seek(audio.currentTime - (e10.seekOffset || SEEK_STEP_SECS)));
     setAction("seekforward", (e10) => seek(audio.currentTime + (e10.seekOffset || SEEK_STEP_SECS)));
-    setAction("previoustrack", null);
+    setAction("previoustrack", () => restart());
     setAction("nexttrack", null);
     announced = true;
   }
   function unannounce() {
     if (!ms) return;
-    for (const a10 of ["play", "pause", "stop", "seekto", "seekbackward", "seekforward"]) setAction(a10, null);
+    for (const a10 of ["play", "pause", "stop", "seekto", "seekbackward", "seekforward", "previoustrack"]) setAction(a10, null);
     try {
       ms.metadata = null;
     } catch {
@@ -36769,6 +36769,11 @@ function createSongPlayer(deps = {}) {
     if (audio.paused) resume();
     else audio.pause();
   }
+  function restart() {
+    if (!track) return;
+    seek(0);
+    resume();
+  }
   function stop() {
     const had = track != null;
     unload();
@@ -36785,6 +36790,7 @@ function createSongPlayer(deps = {}) {
     arm,
     play,
     toggle,
+    restart,
     stop,
     setLoop: setLoop2,
     state,
@@ -36954,7 +36960,7 @@ function initGalleryHost(d3) {
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player";
   playerEl.hidden = true;
-  playerEl.innerHTML = `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="\u653E / \u6682\u505C">${iconHtml2("pause")}</button><span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span><button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">\u5FAA\u73AF</button><button type="button" class="btn" data-p="close" title="\u505C">${iconHtml2("x")}</button>`;
+  playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="\u4ECE\u5934\u653E\uFF08\u9501\u5C4F / \u8033\u673A\u7684\u300C\u4E0A\u4E00\u9996\u300D\u4E5F\u662F\uFF09">${iconHtml2("play-from-start")}</button><button type="button" class="btn ms-player-toggle" data-p="toggle" title="\u653E / \u6682\u505C">${iconHtml2("pause")}</button><span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span><button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">\u5FAA\u73AF</button><button type="button" class="btn" data-p="close" title="\u505C">${iconHtml2("x")}</button>`;
   fullEl.append(playerEl);
   const appIcon = (file, sizes) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
@@ -37023,6 +37029,7 @@ function initGalleryHost(d3) {
     const v = e10.target.closest("[data-p]")?.dataset.p;
     if (!v) return;
     if (v === "toggle") player.toggle();
+    else if (v === "restart") player.restart();
     else if (v === "loop") player.setLoop(!player.state().loop);
     else if (v === "close") player.stop();
   });
@@ -45946,4 +45953,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-cf9a85c65aeb.mjs.map
+//# sourceMappingURL=moonsinger-a0246a5f17e1.mjs.map
