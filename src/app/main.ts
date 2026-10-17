@@ -1967,7 +1967,8 @@ let instPicked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel
 type Chosen = { name: string; bank: number; program: number; note?: number; sfx?: SfxInfo; subset: Uint8Array; sha256: string; origin: GmCandidate["origin"]; credit: { attribution: string[]; license: { name: string; url?: string; text?: string } } };
 const UNKNOWN_TITLE = "这一版出不了声（别的软件原来的乐器）";   // 认得出的候选：说明由插件自报（description）
 /** 小月相唱法核心的旋钮 = 乐器页「高级」（存进候选 defaults，by value、走 undo、换人跟人走；默认 = TSUKUYOMI_DEFAULTS）。
- *  2026-10-15 user 拍板：齐平默认关（「应该leverage就是齐平，我觉得不开没什么影响吧，默认不开」），旋钮进高级设置持久化；「连续」也放着试。物理意义 = ai-docs/20261013-dango-c10-pop-probe.md §6。 */
+ *  2026-10-15 user 拍板：齐平默认关（「应该leverage就是齐平，我觉得不开没什么影响吧，默认不开」），旋钮进高级设置持久化；「连续」也放着试。物理意义 = ai-docs/20261013-dango-c10-pop-probe.md §6。
+ *  2026-10-17 改回齐平 0.8 + 连续（user「那个破音是因为默认关了齐平导致的…加上连续过渡然后用那个默认」「齐平还是默认开吧。爆音至少比响度不可控好」；format/performance.ts TSUKUYOMI_DEFAULTS）。 */
 let instAdvOpen = false;   // 乐器页「高级」折叠开着没（重画保持）
 function openInstPage(): void {
   ui.close();

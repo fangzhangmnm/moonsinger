@@ -49,8 +49,11 @@ export const DEFAULT_CALIBRATION_DB = -6;
 /** 小月相唱法核心的旋钮（by value 存在候选的 defaults 里，乐器页「高级」里改；没写 = 这张表；新建时抄进去）。2026-10-15 user 拍板：「应该leverage就是齐平，我觉得不开没什么影响吧，
  *  默认不开，然后月相可以设置，齐平和其他的也都放在高级设置里面可以持久化」「嗯你试一下连续也行」。物理意义见 ai-docs/20261013-dango-c10-pop-probe.md §6：
  *  level = 每个字的响度往整句中位数拉几成（0 = 关 = 照念的轻重；唱法核心自己的默认 0.8 只给 Lab 命令行）；levelMaxDb = 最多拉几 dB；levelContinuous = 1 时增益从前一个字连续过渡到这个字（不每字跳回 0）；
- *  cleanMax = 一个字自己的元音杂到这个数以上就借同句干净的同元音来唱；breath = 合成前把杂度压到最干净那几帧的程度（0 = 全压成实声，1 = 照 piper 念的留着）。 */
-export const TSUKUYOMI_DEFAULTS: Record<string, number> = { level: 0, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 0 };
+ *  cleanMax = 一个字自己的元音杂到这个数以上就借同句干净的同元音来唱；breath = 合成前把杂度压到最干净那几帧的程度（0 = 全压成实声，1 = 照 piper 念的留着）。
+ *  2026-10-17 改回齐平开 + 连续（Claude Opus 5.5）：user「那个破音是因为默认关了齐平导致的，能不能考古一下修齐平之前的默认是什么？加上连续过渡然后用那个默认？」「齐平还是默认开吧。爆音至少比响度不可控好」——
+ *  考古 = v0.12.9 之前编辑器用唱法核心自己的默认（level 0.8 / levelMaxDb 6 / cleanMax 0.4 / breath 0，那时没有 levelContinuous = 每字重起），v0.12.9 只把 level 改成 0；
+ *  现在 = 那一套 + levelContinuous 1（每字重起在字边界上先跳回 0 再爬 = 「そ」破音的来路，连续不跳）。候选里写了值的歌（v0.12.9 起新建的会抄进 level 0）照旧，不偷偷改。 */
+export const TSUKUYOMI_DEFAULTS: Record<string, number> = { level: 0.8, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 1 };
 
 const REPO = "https://github.com/fangzhangmnm/moonsinger";
 /** 月读的署名块 + 条款（包内 LICENSE 要求显示；出处 = 模型仓 voices/tsukuyomi-chan-zhen.json，经 packs.gen.ts 内嵌）。 */

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.13.3-2026-10-17";
+var APP_VERSION = "v0.13.4-2026-10-17";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -6964,7 +6964,7 @@ var MARCATO_DB = 7;
 var SOUNDFONT_DEFAULTS = { velocity: 0.8 };
 var SOUNDFONT_CALIBRATION_DB = -6;
 var DEFAULT_CALIBRATION_DB = -6;
-var TSUKUYOMI_DEFAULTS = { level: 0, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 0 };
+var TSUKUYOMI_DEFAULTS = { level: 0.8, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 1 };
 var REPO = "https://github.com/fangzhangmnm/moonsinger";
 var TSUKUYOMI_CREDIT = {
   attribution: [CREDIT.credit, ...CREDIT.attribution],
@@ -27232,7 +27232,7 @@ function performerOf(engine2) {
 // src/performers/tsukuyomi.ts
 var TSUKUYOMI_RANGE = { lo: 57, hi: 76, who: "\u5C0F\u6708\u76F8" };
 var SING_CORE_ROWS = [
-  { key: "level", label: "\u9F50\u5E73", values: [0, 0.4, 0.8], names: { 0: "\u5173" }, why: "\u6BCF\u4E2A\u5B57\u7684\u54CD\u5EA6\u5F80\u6574\u53E5\u7684\u4E2D\u4F4D\u6570\u62C9\u51E0\u6210\uFF1A\u5173 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF08\u56E2\u5B50 C \u6BB5\u7B2C 10 \u5C0F\u8282\u300C\u305D\u300D\u7684\u7834\u97F3\u5C31\u662F\u9F50\u5E73\u5728\u5B57\u7684\u8FB9\u754C\u4E0A\u8DF3\u51FA\u6765\u7684\u53F0\u9636\uFF0C\u5173\u4E86\u5C31\u6CA1\u4E86\uFF09\uFF1B0.8 = \u62C9\u516B\u6210\uFF08\u539F\u6765\u7684\u9ED8\u8BA4\uFF09" },
+  { key: "level", label: "\u9F50\u5E73", values: [0, 0.4, 0.8], names: { 0: "\u5173" }, why: "\u6BCF\u4E2A\u5B57\u7684\u54CD\u5EA6\u5F80\u6574\u53E5\u7684\u4E2D\u4F4D\u6570\u62C9\u51E0\u6210\uFF1A\u5173 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF08\u5B57\u548C\u5B57\u4E4B\u95F4\u54CD\u5EA6\u4E0D\u53EF\u63A7\uFF09\uFF1B0.8 = \u62C9\u516B\u6210\uFF08\u9ED8\u8BA4\uFF1B2026-10-14 \u5230 10-17 \u9ED8\u8BA4\u5173\u8FC7\uFF09\u3002\u56E2\u5B50 C \u6BB5\u7B2C 10 \u5C0F\u8282\u300C\u305D\u300D\u7684\u7834\u97F3\u662F\u9F50\u5E73\u300C\u6BCF\u5B57\u91CD\u8D77\u300D\u5728\u5B57\u7684\u8FB9\u754C\u4E0A\u8DF3\u51FA\u6765\u7684\u53F0\u9636\uFF0C\u300C\u8FDE\u7EED\u300D\u4E0D\u8DF3" },
   { key: "levelContinuous", label: "\u9F50\u5E73\u8FC7\u6E21", values: [0, 1], names: { 0: "\u6BCF\u5B57\u91CD\u8D77", 1: "\u8FDE\u7EED" }, why: "\u9F50\u5E73\u5F00\u7740\u65F6\u589E\u76CA\u600E\u4E48\u4ECE\u4E00\u4E2A\u5B57\u6362\u5230\u4E0B\u4E00\u4E2A\u5B57\uFF1A\u6BCF\u5B57\u91CD\u8D77 = \u5728\u6BCF\u4E2A\u5B57\u7684\u5143\u97F3\u8D77\u70B9\u4ECE 0 \u8D77\u300130 ms \u5185\u722C\u5230\u8FD9\u4E2A\u5B57\u7684\u76EE\u6807\uFF0C\u8F85\u97F3\u4E0D\u52A0\uFF1B\u8FDE\u7EED = \u4ECE\u524D\u4E00\u4E2A\u5B57\u7684\u589E\u76CA\u8D77\uFF0C\u7ECF\u8FC7\u8F85\u97F3\u5230\u5143\u97F3\u8D77\u70B9\u540E 30 ms \u5E73\u6ED1\u8FC7\u6E21\u5230\u8FD9\u4E2A\u5B57\u7684" },
   { key: "levelMaxDb", label: "\u9F50\u5E73\u4E0A\u9650", values: [6, 12], names: { 6: "6 dB", 12: "12 dB" }, why: "\u9F50\u5E73\u6700\u591A\u628A\u4E00\u4E2A\u5B57\u62C9\u51E0 dB" },
   { key: "cleanMax", label: "\u501F\u5143\u97F3\u95E8\u69DB", values: [0.3, 0.4, 0.5], why: "\u4E00\u4E2A\u5B57\u81EA\u5DF1\u6700\u5E72\u51C0\u90A3\u4E09\u5206\u4E4B\u4E00\u5E27\u7684\u6742\u5EA6\u8D85\u8FC7\u8FD9\u4E2A\u6570 = \u5F53\u5B83\u662F\u6C14\u58F0\u5FF5\u7684\uFF0C\u62FF\u540C\u4E00\u53E5\u91CC\u522B\u7684\u5E72\u51C0\u7684\u540C\u5143\u97F3\u6765\u5531\uFF08\u300C\u305D\u300D\u662F 0.34\uFF09" },
@@ -30283,7 +30283,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "bdd05c918f5931b4" : "dev";
+var CORE_HASH = true ? "74826a3c5bf1699e" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -45944,4 +45944,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c39a7fbabdf2.mjs.map
+//# sourceMappingURL=moonsinger-062c72e0d6be.mjs.map

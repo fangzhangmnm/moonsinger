@@ -11,7 +11,7 @@ export const TSUKUYOMI_RANGE = { lo: 57, hi: 76, who: "小月相" } as const;
 
 /** 乐器页「高级：唱法核心的旋钮」（存进候选的 defaults，by value、走 undo；2026-10-15 user「齐平和其他的也都放在高级设置里面可以持久化」）。why = 物理意义（探针 ai-docs/20261013-dango-c10-pop-probe.md §5 / §6）。 */
 export const SING_CORE_ROWS: { key: SingCoreKey; label: string; values: number[]; names?: Record<number, string>; why: string }[] = [
-  { key: "level", label: "齐平", values: [0, 0.4, 0.8], names: { 0: "关" }, why: "每个字的响度往整句的中位数拉几成：关 = 照念的时候自己的轻重（团子 C 段第 10 小节「そ」的破音就是齐平在字的边界上跳出来的台阶，关了就没了）；0.8 = 拉八成（原来的默认）" },
+  { key: "level", label: "齐平", values: [0, 0.4, 0.8], names: { 0: "关" }, why: "每个字的响度往整句的中位数拉几成：关 = 照念的时候自己的轻重（字和字之间响度不可控）；0.8 = 拉八成（默认；2026-10-14 到 10-17 默认关过）。团子 C 段第 10 小节「そ」的破音是齐平「每字重起」在字的边界上跳出来的台阶，「连续」不跳" },
   { key: "levelContinuous", label: "齐平过渡", values: [0, 1], names: { 0: "每字重起", 1: "连续" }, why: "齐平开着时增益怎么从一个字换到下一个字：每字重起 = 在每个字的元音起点从 0 起、30 ms 内爬到这个字的目标，辅音不加；连续 = 从前一个字的增益起，经过辅音到元音起点后 30 ms 平滑过渡到这个字的" },
   { key: "levelMaxDb", label: "齐平上限", values: [6, 12], names: { 6: "6 dB", 12: "12 dB" }, why: "齐平最多把一个字拉几 dB" },
   { key: "cleanMax", label: "借元音门槛", values: [0.3, 0.4, 0.5], why: "一个字自己最干净那三分之一帧的杂度超过这个数 = 当它是气声念的，拿同一句里别的干净的同元音来唱（「そ」是 0.34）" },

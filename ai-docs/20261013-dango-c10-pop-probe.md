@@ -76,3 +76,10 @@ user：「好像只有齐平多少有用」（level 关到 0 才不破；cleanMa
 → v0.12.9：核心加 `levelContinuous`（默认 false = 原路逐样本不变，node 里核过 sha256 相同）：true = 增益从前一个字的目标起、经过这个字的辅音、到元音起点后 30 ms 线性过渡到这个字的目标（休止后从 0 起），辅音也跟着过渡；乐器页第五行「齐平过渡：每字重起 / 连续」。齐平本身保留（它是为「有些音突然很轻」加的）。听感归 user。
 **拍板（2026-10-15 user）**：「应该leverage就是齐平，我觉得不开没什么影响吧，默认不开，然后月相可以设置，齐平和其他的也都放在高级设置里面可以持久化」「嗯你试一下连续也行」→ v0.12.9：`TSUKUYOMI_DEFAULTS = { level: 0, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 0 }`（app 永远显式传 level，唱法核心自己的 0.8 只剩 Lab 命令行用）；五个旋钮住候选的 `defaults`（by value，乐器页「高级」改，走 undo、进文件、换人跟人走）；v0.12.4 的实验行退场。旧歌候选里没写 = 默认表 = 齐平关（user「不开没什么影响」）。
 
+
+## 7. 默认改回齐平开 + 连续（2026-10-17，v0.13.4，edited by Claude Opus 5.5）
+- user：「那个破音是因为默认关了齐平导致的，能不能考古一下修齐平之前的默认是什么？加上连续过渡然后用那个默认？」「齐平还是默认开吧。爆音至少比响度不可控好」。
+- 考古：v0.12.9 之前 `TSUKUYOMI_DEFAULTS = {}`，编辑器用 `sing-core.mjs` 自己的默认——**level 0.8 / levelMaxDb 6 / cleanMax 0.4 / breath 0**，没有 levelContinuous（= 每字重起）。v0.12.9（c6b154a）只把 level 改成 0，别的没动。
+- 现在：`TSUKUYOMI_DEFAULTS = { level 0.8, levelMaxDb 6, cleanMax 0.4, breath 0, levelContinuous 1 }`。核心哈希 bdd05c918f5931b4 → 74826a3c5bf1699e。
+- 谁会变：候选里**没写过**这些键的歌（v0.12.9 之前建的，团子就是——10 个小月相候选 `defaults: {}`）跟着新默认重唱；v0.12.9 起新建的歌建的时候把 level 0 抄进了候选，照旧（不偷偷改，乐器页「高级」里自己点 0.8 / 连续）。已经定稿的歌冻着，改稿后重唱才变。
+- AI 没听：连续能不能把「そ」的台阶抹掉、开齐平后别处还破不破，归 user 耳朵。
