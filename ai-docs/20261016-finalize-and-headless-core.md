@@ -75,7 +75,7 @@ export const CORE_VERSION: string; export const CORE_HASH: string; export const 
 - **图库包的接口** → **user 2026-10-16「图库包批了」**：gallery 0.8.0 加 `ui.tileAction`（卡片右下角一粒动作钮，点了不开卡）+ `policy.facts`（卡片的「事实」尾读：缓存 / 并发 / 字节变了重取 / 响应式重画，同缩略图那套）；宿主那三处绕路（CSS 放行 / capture 拦点击 / MutationObserver 扫）拆掉。
 - **iPad 真机**：后台播放 / 锁屏控件、▶ 的手感、`CSS.escape` 在 Safari 都没验。
 - **封面图进 mp3 只有 PNG（歌库卡片那张 ≤ 256²）**：要大图得另存一份原图，W-30 一起想。
-- **歌库卡片上「定稿」字样**：现在只有 ▶ 亮不亮；要不要再印一枚「定稿 N」= 封面排版的事（song-cover.ts）。
+- ~~**歌库卡片上「定稿」字样**~~ → **user 2026-10-16「印定稿n」：v0.12.25 底栏日期后面印「定稿 N」**（edited by Claude Opus 5.5）：现在只有 ▶ 亮不亮；要不要再印一枚「定稿 N」= 封面排版的事（song-cover.ts）。
 - **W-30 自动预览图**没碰；定稿时顺手生成是个自然的入口（要光栅化，家规「字节进出不走 canvas」）。
 - **定稿时记的 issues** 只存不显示（面板上定稿前显示一次）。
 - **核心版本 bump 纪律**：CORE_VERSION 0.1.0 起；改唱法 / 录音房数学 / 效果器 / 元音表 = patch。AI 看着办；写进 version.ts 头注释。

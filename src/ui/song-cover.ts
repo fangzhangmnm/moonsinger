@@ -43,13 +43,16 @@ function verticalRuns(title: string): string {
 export function placeholderHtml(stem: string): string {
   return `<span class="ms-cover-bg hue-${planCover(stem).hue}"></span>`;
 }
-/** 印在封面上的那一层（图库包的覆盖层槽）：歌名 / 作者 / 日期。底下是封面图还是底色，印法都一样。 */
-export interface CoverExtra { artist?: string | null; sizeText?: string; editedText?: string }
+/** 印在封面上的那一层（图库包的覆盖层槽）：歌名 / 作者 / 日期。底下是封面图还是底色，印法都一样。
+ *  finalRev = 定稿了第几版（W-38；user 2026-10-16「印定稿n」）：底栏左边日期后面印「定稿 N」；没定稿 = 不印。 */
+export interface CoverExtra { artist?: string | null; sizeText?: string; editedText?: string; finalRev?: number | null }
 export function coverHtml(stem: string, extra: CoverExtra = {}): string {
   const p = planCover(stem);
   const cls = `ms-cover ${p.vertical ? "v" : "h"} sz-${p.size}${p.coded ? " coded" : ""}`;
   const title = p.vertical ? verticalRuns(p.title) : esc(p.title);
   const artist = extra.artist ? `<span class="ms-cover-artist">${esc(extra.artist)}</span>` : "";
-  const bar = `<span class="ms-cover-bar">${p.date ? `<span class="ms-cover-date">${esc(p.date)}</span>` : "<span></span>"}${extra.sizeText ? `<span class="ms-cover-size">${esc(extra.sizeText)}</span>` : ""}</span>`;
+  const fin = extra.finalRev != null ? `<span class="ms-cover-final">定稿 ${extra.finalRev}</span>` : "";
+  const left = p.date || fin ? `<span class="ms-cover-left">${p.date ? `<span class="ms-cover-date">${esc(p.date)}</span>` : ""}${fin}</span>` : "<span></span>";
+  const bar = `<span class="ms-cover-bar">${left}${extra.sizeText ? `<span class="ms-cover-size">${esc(extra.sizeText)}</span>` : ""}</span>`;
   return `<span class="${cls}"${extra.editedText ? ` title="${esc(extra.editedText)}"` : ""}><span class="ms-cover-title"${p.vertical ? "" : ' lang="en"'}>${title}</span>${artist}${bar}</span>`;
 }

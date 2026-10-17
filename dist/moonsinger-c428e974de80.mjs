@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.12.24-2026-10-17";
+var APP_VERSION = "v0.12.25-2026-10-17";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -36404,7 +36404,9 @@ function coverHtml(stem, extra = {}) {
   const cls = `ms-cover ${p2.vertical ? "v" : "h"} sz-${p2.size}${p2.coded ? " coded" : ""}`;
   const title = p2.vertical ? verticalRuns(p2.title) : esc7(p2.title);
   const artist = extra.artist ? `<span class="ms-cover-artist">${esc7(extra.artist)}</span>` : "";
-  const bar2 = `<span class="ms-cover-bar">${p2.date ? `<span class="ms-cover-date">${esc7(p2.date)}</span>` : "<span></span>"}${extra.sizeText ? `<span class="ms-cover-size">${esc7(extra.sizeText)}</span>` : ""}</span>`;
+  const fin = extra.finalRev != null ? `<span class="ms-cover-final">\u5B9A\u7A3F ${extra.finalRev}</span>` : "";
+  const left = p2.date || fin ? `<span class="ms-cover-left">${p2.date ? `<span class="ms-cover-date">${esc7(p2.date)}</span>` : ""}${fin}</span>` : "<span></span>";
+  const bar2 = `<span class="ms-cover-bar">${left}${extra.sizeText ? `<span class="ms-cover-size">${esc7(extra.sizeText)}</span>` : ""}</span>`;
   return `<span class="${cls}"${extra.editedText ? ` title="${esc7(extra.editedText)}"` : ""}><span class="ms-cover-title"${p2.vertical ? "" : ' lang="en"'}>${title}</span>${artist}${bar2}</span>`;
 }
 
@@ -36730,15 +36732,20 @@ function initGalleryHost(d3) {
     ui: {
       iconHtml: (name, opts) => iconHtml2(name, opts),
       tilePlaceholderHtml: (id2) => placeholderHtml(identifiers.parse(id2)?.stem ?? id2),
-      tileOverlayHtml: (id2, item) => coverHtml(identifiers.parse(id2)?.stem ?? id2, {
+      tileOverlayHtml: (id2, item, facts) => coverHtml(identifiers.parse(id2)?.stem ?? id2, {
         sizeText: item?.size != null ? humanSize(item.size) : void 0,
-        editedText: item?.lastModified ? `\u6539\u4E8E ${new Date(item.lastModified).toLocaleString()}` : void 0
+        editedText: item?.lastModified ? `\u6539\u4E8E ${new Date(item.lastModified).toLocaleString()}` : void 0,
+        finalRev: factsOf(facts ?? null)?.final.rev
+        // 底栏印「定稿 N」（user 2026-10-16「印定稿n」）
       }),
-      // 定稿了的歌：右下角 ▶（事实没到 = 不画；没定稿 = 不画）
-      // （卡片只在事实变了时重画，不跟着播放走：在放什么看底边的播放条，这里不写「正在放」）
-      tileAction: (_id, _info, facts) => {
+      // 定稿了的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；没定稿 = 不画。
+      //   跟着播放变：包在 Vue 的 computed 里算这个函数，读了 playTick（同一个 Vue 的 ref）= 包记住这个依赖，播放状态一变 +1 就重算。
+      //   靠的是包「在响应式里调 tileAction」这一点（d.ts：事实到了会重算）；包要是改了，E2E final.mjs「卡片 ▶ 跟着变」会红。
+      tileAction: (id2, _info, facts) => {
         const f2 = factsOf(facts);
-        return f2 ? { icon: "play", title: `\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C ${f2.final.rev} \u7248\uFF0C${f2.final.secs.toFixed(0)} \u79D2\uFF09`, state: "ready" } : null;
+        if (!f2) return null;
+        void playTick.value;
+        return player.playing() === id2 ? { icon: "pause", title: "\u6682\u505C\uFF08\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u4E5F\u80FD\u63A7\uFF09", state: "ready" } : { icon: "play", title: `\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C ${f2.final.rev} \u7248\uFF0C${f2.final.secs.toFixed(0)} \u79D2\uFF09`, state: "ready" };
       }
     },
     policy: {
@@ -36790,7 +36797,16 @@ function initGalleryHost(d3) {
     loopBtn.setAttribute("aria-pressed", String(s10.loop));
     loopBtn.title = s10.loop ? "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5F00\u7740\uFF08\u653E\u5B8C\u4ECE\u5934\u518D\u653E\uFF0C\u9501\u5C4F\u4E5F\u4E00\u6837\uFF09" : "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5173\u7740\uFF08\u653E\u5B8C\u5C31\u505C\uFF09";
   }
-  player.onChange(drawPlayer);
+  const playTick = tk(0);
+  let tickedFor = null;
+  player.onChange(() => {
+    const k2 = player.playing();
+    if (k2 !== tickedFor) {
+      tickedFor = k2;
+      playTick.value++;
+    }
+    drawPlayer();
+  });
   async function playTile(id2, facts) {
     if (player.state().key === id2) {
       player.toggle();
@@ -42349,7 +42365,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "98bcd64e254d",
+  cssHash: "3aa41a9f8821",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -45603,4 +45619,4 @@ setTimeout(() => schedulePrewarm(), 1200);
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b505eebf76ff.mjs.map
+//# sourceMappingURL=moonsinger-c428e974de80.mjs.map

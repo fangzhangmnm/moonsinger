@@ -109,13 +109,19 @@ export function initGalleryHost(d: GalleryHostDeps) {
     ui: {
       iconHtml: (name, opts) => iconHtml(name, opts),
       tilePlaceholderHtml: (id) => placeholderHtml(identifiers.parse(id)?.stem ?? id),
-      tileOverlayHtml: (id: string, item?: TileInfo) => coverHtml(identifiers.parse(id)?.stem ?? id, {
+      tileOverlayHtml: (id: string, item?: TileInfo, facts?: unknown) => coverHtml(identifiers.parse(id)?.stem ?? id, {
         sizeText: item?.size != null ? humanSize(item.size) : undefined,
         editedText: item?.lastModified ? `改于 ${new Date(item.lastModified).toLocaleString()}` : undefined,
+        finalRev: factsOf(facts ?? null)?.final.rev,   // 底栏印「定稿 N」（user 2026-10-16「印定稿n」）
       }),
-      // 定稿了的歌：右下角 ▶（事实没到 = 不画；没定稿 = 不画）
-      // （卡片只在事实变了时重画，不跟着播放走：在放什么看底边的播放条，这里不写「正在放」）
-      tileAction: (_id: string, _info: TileInfo, facts: unknown): TileAction | null => { const f = factsOf(facts); return f ? { icon: "play", title: `听定稿的 mp3（第 ${f.final.rev} 版，${f.final.secs.toFixed(0)} 秒）`, state: "ready" } : null; },
+      // 定稿了的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；没定稿 = 不画。
+      //   跟着播放变：包在 Vue 的 computed 里算这个函数，读了 playTick（同一个 Vue 的 ref）= 包记住这个依赖，播放状态一变 +1 就重算。
+      //   靠的是包「在响应式里调 tileAction」这一点（d.ts：事实到了会重算）；包要是改了，E2E final.mjs「卡片 ▶ 跟着变」会红。
+      tileAction: (id: string, _info: TileInfo, facts: unknown): TileAction | null => {
+        const f = factsOf(facts); if (!f) return null;
+        void playTick.value;
+        return player.playing() === id ? { icon: "pause", title: "暂停（底边播放条上也能控）", state: "ready" } : { icon: "play", title: `听定稿的 mp3（第 ${f.final.rev} 版，${f.final.secs.toFixed(0)} 秒）`, state: "ready" };
+      },
     },
     policy: {
       isImage: () => false,
@@ -162,7 +168,9 @@ export function initGalleryHost(d: GalleryHostDeps) {
     loopBtn.classList.toggle("is-on", s.loop); loopBtn.setAttribute("aria-pressed", String(s.loop));
     loopBtn.title = s.loop ? "单曲循环：开着（放完从头再放，锁屏也一样）" : "单曲循环：关着（放完就停）";
   }
-  player.onChange(drawPlayer);
+  const playTick = ref(0);   // 在放哪首（含暂停）变了才 +1：卡片上的 ▶ / ⏸ 重算（进度每秒几跳不碰它，不然整个网格跟着重算）
+  let tickedFor: string | null = null;
+  player.onChange(() => { const k = player.playing(); if (k !== tickedFor) { tickedFor = k; playTick.value++; } drawPlayer(); });
   /** 点了封面上的 ▶（包只在定稿了的卡上画它；facts = 包缓存的事实）：抓 mp3 放；再点同一首 = 放 / 暂停。 */
   async function playTile(id: string, facts: SongFacts): Promise<void> {
     if (player.state().key === id) { player.toggle(); return; }

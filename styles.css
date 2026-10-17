@@ -641,6 +641,8 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .ms-cover.v .ms-cover-artist { writing-mode: vertical-rl; margin: 0 .4em 0 0; }
 /* 底栏：左 yyyymmdd、右 大小（学 WXHW 书架：很窄的一条贴底、半透明垫底、不描边） */
 .ms-cover-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 17px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 6px; font-size: 9px; line-height: 17px; letter-spacing: .02em; color: var(--cover-ink-soft); background: color-mix(in srgb, var(--cover-paper) 72%, transparent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ms-cover-left { display: flex; gap: 5px; min-width: 0; }
+.ms-cover-final { font-weight: 700; color: var(--cover-ink); }   /* 定稿 N（user 2026-10-16「印定稿n」）：底栏里唯一加粗的一格 */
 /* 底下是封面图：歌名垫一块半透明的纸（学 WXHW 2026-10-01「标题的字下面还是垫一个半透明吧」），不描边 */
 img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-title { background: color-mix(in srgb, var(--cover-paper) 78%, transparent); padding: .18em; border-radius: .22em; box-sizing: border-box; }
 img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover.v .ms-cover-title { height: fit-content; }

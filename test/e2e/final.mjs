@@ -78,6 +78,9 @@ await p.click("#libBtn"); await p.waitForTimeout(800);
 const actionSel = `.gallery-tile:has(.gallery-tile-name[title="${id}"]) .gallery-tile-action.ready`;   // 图库包 0.8.0：ui.tileAction 画的钮（事实到了才有）
 await p.waitForSelector(actionSel, { timeout: 8000 }).catch(() => null);
 check(!!(await p.$(actionSel)), "歌库卡片：定稿的封面上 ▶ 亮着（包的动作钮）");
+const tileSel = `.gallery-tile:has(.gallery-tile-name[title="${id}"])`;
+const actIcon = () => p.$eval(actionSel, (e) => e.querySelector("use")?.getAttribute("href") ?? "");
+check((await p.$eval(`${tileSel} .ms-cover-final`, (e) => e.textContent).catch(() => null)) === "定稿 1", "封面底栏印「定稿 1」");
 await p.click(actionSel); await p.waitForTimeout(900);
 check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "点 ▶ 没有打开那首（还在歌库）");
 check(!(await p.$eval(".ms-player", (e) => e.hidden)) && /定稿 1/.test(await p.$eval(".ms-player-title", (e) => e.textContent ?? "")), "底边出了播放条（歌名 · 定稿 1）");
@@ -86,13 +89,14 @@ check(playingId === id || (await p.evaluate(() => !document.querySelector(".ms-p
 // 锁屏（系统媒体控件，src/app/song-player.ts）：开始放了才登记；歌名 / 图 / 在放报给系统；循环钮在播放条上
 const msNow = () => p.evaluate(() => ({ title: navigator.mediaSession.metadata?.title ?? null, art: navigator.mediaSession.metadata?.artwork?.length ?? 0, state: navigator.mediaSession.playbackState }));
 const stem = id.replace(/^.*\//, "").replace(/\.mxl$/, "");
-if (playingId === id) { const m = await msNow(); check(m.title === stem && m.art > 0 && m.state === "playing", "锁屏控件：歌名 / 图 / 在放", JSON.stringify(m)); }
+if (playingId === id) { const m = await msNow(); check(m.title === stem && m.art > 0 && m.state === "playing", "锁屏控件：歌名 / 图 / 在放", JSON.stringify(m)); check((await actIcon()) === "#pause", "放着：卡片上的 ▶ 变成 ⏸", await actIcon()); }
 else console.log("  · 这个浏览器没放出声（无头）：锁屏控件那一条跳过");
 check((await p.$eval(".ms-player-loop", (e) => e.getAttribute("aria-pressed"))) === "false", "循环钮：默认关");
 await p.click('.ms-player [data-p="loop"]'); await p.waitForTimeout(60);
 check((await p.evaluate(() => window.__moonsinger.gallery().playerState().loop)) && (await p.$eval(".ms-player-loop", (e) => e.getAttribute("aria-pressed"))) === "true", "点「循环」= 开（播放器跟着、钮上看得出）");
 await p.click('.ms-player [data-p="close"]'); await p.waitForTimeout(100);
 check(await p.$eval(".ms-player", (e) => e.hidden), "✕ = 停、播放条收起");
+check((await actIcon()) === "#play", "停了：卡片上变回 ▶", await actIcon());
 { const m = await msNow(); check(m.title === null && m.state === "none", "停了 = 锁屏控件收走", JSON.stringify(m)); }
 // 打开那首 → 改稿 → 能写了；存出去没有 mp3
 await p.click(`.gallery-tile:not(.folder) >> nth=0`); await p.waitForTimeout(600);
