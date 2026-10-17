@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.13.0-2026-10-17";
+var APP_VERSION = "v0.13.1-2026-10-17";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -22297,7 +22297,7 @@ var MP3_QUALITY = {
 };
 function encodeMp3(left, right, sr2, kbps = 64) {
   return new Promise((ok2, fail) => {
-    const w2 = new Worker(new URL(`./${"mp3-worker-b681ea012d1c.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = new Worker(new URL(`./${"mp3-worker-8eb0b9c3e8ba.mjs"}`, import.meta.url), { type: "module" });
     w2.onmessage = (ev2) => {
       w2.terminate();
       if (ev2.data.ok) ok2(ev2.data.bytes);
@@ -45878,4 +45878,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-62a31f8e6e73.mjs.map
+//# sourceMappingURL=moonsinger-6636da993c7b.mjs.map

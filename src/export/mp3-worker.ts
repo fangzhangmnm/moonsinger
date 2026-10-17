@@ -12,7 +12,9 @@ const toPcm = (src: Float32Array, i: number, n: number, pcm: Int16Array) => {
 };
 self.onmessage = (ev: MessageEvent<Mp3Request>) => {
   try {
-    const { left, right, sr, kbps } = ev.data, stereo = !!right, enc = new Mp3Encoder(stereo ? 2 : 1, sr, kbps), parts: Uint8Array[] = [];
+    // joint = 联合立体声（2026-10-17 Claude Fable 5.1；user「定稿的mp3听起来差很多…有破音」）：上游 lamejs 的 Mp3Encoder 写死左右各编各的（128k = 每边 64k，中间的人声两边各存一份）；
+    //   同一份团子 128k 对源的 SNR 16.8 → 23.7 dB、文件一样大（ai-docs/20261017-final-mp3-quality.md）。比特池（reservoir）lamejs 的实现是坏的（开了解出来和源不相关），照旧关着。
+    const { left, right, sr, kbps } = ev.data, stereo = !!right, enc = new Mp3Encoder(stereo ? 2 : 1, sr, kbps, { joint: stereo }), parts: Uint8Array[] = [];
     const BLOCK = 1152 * 16, pl = new Int16Array(BLOCK), pr = new Int16Array(BLOCK);
     for (let i = 0; i < left.length; i += BLOCK) {
       const n = Math.min(BLOCK, left.length - i);

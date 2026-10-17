@@ -9598,12 +9598,16 @@ function br() {
   this.setModules = function(w, Z) {
   };
 }
-function cr(w, Z, X) {
-  arguments.length != 3 && (console.error("WARN: Mp3Encoder(channels, samplerate, kbps) not specified"), w = 1, Z = 44100, X = 128);
+// MoonSinger 本地补丁（2026-10-17 by Claude Fable 5.1；见 README.md）：第 4 个参数 opts = { joint, reservoir, quality }。
+//   上游写死 mode = STEREO（左右各编各的）、disable_reservoir = true（关掉比特池：帧之间不能借比特，瞬态帧饿着）、quality 3。
+//   不给 opts = 和上游逐字节一样的行为；MoonSinger 的 mp3 worker 传 { joint: true, reservoir: true }。
+function cr(w, Z, X, opts) {
+  arguments.length < 3 && (console.error("WARN: Mp3Encoder(channels, samplerate, kbps) not specified"), w = 1, Z = 44100, X = 128);
+  opts = opts || {};
   var z = new ar(), u0 = new ur(), W = new tr(), Q = new vr(), D = new rr(), g = new sr(), f0 = new ir(), A = new hr(), m = new or(), O = new br(), s0 = new _r(), K = new nr(), t0 = new fr(), U = new mr();
   z.setModules(W, Q, D, g, f0, A, m, O, U), Q.setModules(W, U, m, A), O.setModules(Q, m), D.setModules(z), f0.setModules(Q, s0, g, K), g.setModules(K, s0, z.enc.psy), s0.setModules(Q), K.setModules(g), A.setModules(z, Q, m), u0.setModules(t0, U), t0.setModules(m, O, D);
   var R = z.lame_init();
-  R.num_channels = w, R.in_samplerate = Z, R.brate = X, R.mode = lr.STEREO, R.quality = 3, R.bWriteVbrTag = !1, R.disable_reservoir = !0, R.write_id3tag_automatic = !1, z.lame_init_params(R);
+  R.num_channels = w, R.in_samplerate = Z, R.brate = X, R.mode = w == 1 ? lr.STEREO : opts.joint ? lr.JOINT_STEREO : lr.STEREO, R.quality = typeof opts.quality == "number" ? opts.quality : 3, R.bWriteVbrTag = !1, R.disable_reservoir = !opts.reservoir, R.write_id3tag_automatic = !1, z.lame_init_params(R);
   var o = 1152, u = 0 | 1.25 * o + 7200, d = ua(u);
   this.encodeBuffer = function(e, l) {
     w == 1 && (l = e), er(e.length == l.length), e.length > o && (o = e.length, u = 0 | 1.25 * o + 7200, d = ua(u));

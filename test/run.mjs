@@ -32,6 +32,7 @@ import "./overlay.test.ts";
 import "./latch.test.ts";
 import "./chords.test.ts";
 import "./midi.test.ts";
+import "./mp3-encoder.test.ts";
 import "./pad-keys.test.ts";
 import "./pad-music.test.ts";
 import "./svg-groups.test.ts";

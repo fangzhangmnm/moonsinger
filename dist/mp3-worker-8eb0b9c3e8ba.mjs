@@ -9716,12 +9716,13 @@ function br() {
   this.setModules = function(w, Z) {
   };
 }
-function cr(w, Z, X) {
-  arguments.length != 3 && (console.error("WARN: Mp3Encoder(channels, samplerate, kbps) not specified"), w = 1, Z = 44100, X = 128);
+function cr(w, Z, X, opts) {
+  arguments.length < 3 && (console.error("WARN: Mp3Encoder(channels, samplerate, kbps) not specified"), w = 1, Z = 44100, X = 128);
+  opts = opts || {};
   var z = new ar(), u0 = new ur(), W = new tr(), Q = new vr(), D = new rr(), g = new sr(), f0 = new ir(), A = new hr(), m = new or(), O = new br(), s0 = new _r(), K = new nr(), t0 = new fr(), U = new mr();
   z.setModules(W, Q, D, g, f0, A, m, O, U), Q.setModules(W, U, m, A), O.setModules(Q, m), D.setModules(z), f0.setModules(Q, s0, g, K), g.setModules(K, s0, z.enc.psy), s0.setModules(Q), K.setModules(g), A.setModules(z, Q, m), u0.setModules(t0, U), t0.setModules(m, O, D);
   var R = z.lame_init();
-  R.num_channels = w, R.in_samplerate = Z, R.brate = X, R.mode = lr.STEREO, R.quality = 3, R.bWriteVbrTag = false, R.disable_reservoir = true, R.write_id3tag_automatic = false, z.lame_init_params(R);
+  R.num_channels = w, R.in_samplerate = Z, R.brate = X, R.mode = w == 1 ? lr.STEREO : opts.joint ? lr.JOINT_STEREO : lr.STEREO, R.quality = typeof opts.quality == "number" ? opts.quality : 3, R.bWriteVbrTag = false, R.disable_reservoir = !opts.reservoir, R.write_id3tag_automatic = false, z.lame_init_params(R);
   var o = 1152, u = 0 | 1.25 * o + 7200, d = ua(u);
   this.encodeBuffer = function(e, l) {
     w == 1 && (l = e), er(e.length == l.length), e.length > o && (o = e.length, u = 0 | 1.25 * o + 7200, d = ua(u));
@@ -9773,7 +9774,7 @@ var toPcm = (src, i, n, pcm) => {
 };
 self.onmessage = (ev) => {
   try {
-    const { left, right, sr: sr2, kbps } = ev.data, stereo = !!right, enc = new Sr(stereo ? 2 : 1, sr2, kbps), parts = [];
+    const { left, right, sr: sr2, kbps } = ev.data, stereo = !!right, enc = new Sr(stereo ? 2 : 1, sr2, kbps, { joint: stereo }), parts = [];
     const BLOCK = 1152 * 16, pl = new Int16Array(BLOCK), pr = new Int16Array(BLOCK);
     for (let i = 0; i < left.length; i += BLOCK) {
       const n = Math.min(BLOCK, left.length - i);
@@ -9793,4 +9794,4 @@ self.onmessage = (ev) => {
     self.postMessage({ ok: false, message: e.message });
   }
 };
-//# sourceMappingURL=mp3-worker-b681ea012d1c.mjs.map
+//# sourceMappingURL=mp3-worker-8eb0b9c3e8ba.mjs.map
