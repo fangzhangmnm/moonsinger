@@ -132,7 +132,7 @@ try {
   check((await tokens()) === toks1, "切回来音符仍相同");
   // 歌库里把小星星扔进回收站（模拟歌库动词：直接走 store；gallery-first 下它已经不是打开中的）→ 新建再写一笔：绝不把删掉的名字复活
   await p.click("#libBtn"); await p.waitForTimeout(600);
-  const del = await p.evaluate(async (id) => (await window.__moonsinger.store().zip(id, { mode: "existing" }).delete()).status, id2);
+  const del = await p.evaluate(async (id) => (await window.__moonsinger.store().zip(id, { mode: "existing" }).trash()).status, id2);
   check(typeof del === "string", "删掉小星星（store delete）", del);
   await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(600);
   await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2"); await saved();

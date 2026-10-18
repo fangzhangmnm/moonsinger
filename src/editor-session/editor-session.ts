@@ -50,7 +50,7 @@ export interface StoreLike {
     //   此字段（undefined）→ 行为退化为修前现状，结构类型天然向后兼容。
     save(bytes: Blob, opts?: { tryPush?: boolean; hint?: unknown }): Promise<{ pushed: boolean; reason?: string; resolution?: string }>;
     tryMove(to: string): Promise<TryMoveResult>;   // 改身份/移动唯一入口（含 nameOccupied 占用检查）——挂在 file 上
-    delete(): Promise<{ status: string }>;   // status 不是「成功」的同义词（cancelled/noop 也走这里）
+    trash(): Promise<{ status: string }>;   // = store 的 file.trash()（2.1.2 前叫 delete；移进回收站）。status 不是「成功」的同义词（cancelled/noop 也走这里）
   };
 }
 
@@ -261,7 +261,7 @@ export function createEditorSession(config: EditorSessionConfig): EditorSession 
       if (!_name) return;
       const n = _name;
       _name = null; _dirty = false; _pushPending = false;
-      await fileOf(n).delete();
+      await fileOf(n).trash();
     },
 
     start(): void {
