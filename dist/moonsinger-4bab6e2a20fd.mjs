@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.13.7-2026-10-18";
+var APP_VERSION = "v0.13.8-2026-10-18";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -39496,19 +39496,25 @@ canvas:active { cursor: grabbing; }
    \u4E0E\u53F3\u4E0B resize \u628A\u624B\u540C\u5F62\u5236\u540C\u5C3A\u5BF8\u2014\u2014\u70B9\u9635\u88C1\u6210\u5DE6\u4E0A\u4E09\u89D2\u3001\u65E0\u5E95\u65E0\u6846\uFF0C\u53EA\u9760 opacity \u547C\u5438\u3002gizmo \u7EB9\u7406\u975E icon\u3002 */
 /* \u4E24\u628A\u624B\u5728\u6697\u56FE\uFF08\u4E09\u6B21\u5143\u76F8\u7247\uFF09\u4E0A\u770B\u4E0D\u6E05\uFF08user 0830\uFF09\u2192 \u4E0E \uFF0B \u540C\u6B3E\u300C\u534A\u900F\u660E\u4E3B\u9898\u5E95 + \u4E3B\u8272 gizmo\u300D\uFF1A
    \u5143\u7D20\u672C\u8EAB\u88C1\u6210\u4E09\u89D2\u5F62\u5E95\u677F\uFF08clip-path\uFF09\uFF0C\u7EB9\u7406\u8D70 ::after \u7528 currentColor=--ink\u3002\u6D45\u4E3B\u9898=\u767D\u5E95\u9ED1\u70B9\u3001\u6697\u4E3B\u9898=\u9ED1\u5E95\u767D\u70B9\u3002 */
+/* 0.4.1\uFF08user 2026-10-13\u300C\u53C2\u8003\u7A97\u5DE6\u4E0A\u89D2\u5176\u5B9E\u4E00\u76F4\u6BD4\u8F83\u96BE\u62D6\u300D\uFF09\uFF1A\u4EE5\u524D clip-path \u88C1\u5728\u5143\u7D20\u672C\u8EAB\u4E0A\u2014\u2014**\u80FD\u70B9\u4E2D\u7684\u533A\u57DF\u4E5F\u88AB\u88C1\u6210\u4E86\u4E09\u89D2**\uFF0C
+   22 px \u65B9\u5757\u53EA\u5269\u4E00\u534A\u80FD\u6309\u3002\u73B0\u5728\u5143\u7D20 = \u900F\u660E\u7684 36 px \u65B9\u5757\uFF08\u89E6\u5C4F 44 px\uFF09\u4E13\u7BA1\u6309\uFF0C\u770B\u5F97\u89C1\u7684\u4E09\u89D2\u5E95\u677F + \u70B9\u9635\u632A\u5230 ::before / ::after\uFF0C\u6837\u5B50\u4E0D\u53D8\u3002 */
 .move {
-  position: absolute; left: 0; top: 0; width: 22px; height: 22px; z-index: 3;
+  position: absolute; left: 0; top: 0; width: 36px; height: 36px; z-index: 3;
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
   color: var(--ink, #e8eaed); opacity: 0.85;
+  transition: opacity 0.35s;
+}
+@media (pointer: coarse) { .move { width: 44px; height: 44px; } }
+.move::before {
+  content: ""; position: absolute; left: 0; top: 0; width: 22px; height: 22px;
   background: color-mix(in srgb, var(--bg, #202124) 72%, transparent);
   clip-path: polygon(0 0, 100% 0, 0 100%);
-  transition: opacity 0.35s;
 }
 .move:hover { opacity: 1; }
 .move:active { cursor: grabbing; }
 /* \u663E\u5F0F 6 \u70B9\uFF083-2-1 \u4E09\u89D2\u6392\u5E03\uFF0Cpitch 5.5\uFF09\uFF1A\u79BB\u5E95\u677F\u659C\u8FB9 \u22653px\uFF0C\u4E0D\u51FA\u534A\u9897\u70B9\uFF08user 0830\u300C\u767D\u7684\u5E94\u8BE5\u8D85\u8FC7\u88C1\u5207\u4E00\u70B9\u300D\uFF09 */
 .move::after {
-  content: ""; position: absolute; inset: 0;
+  content: ""; position: absolute; left: 0; top: 0; width: 22px; height: 22px;
   background-image:
     radial-gradient(circle at 4px 4px,     currentColor 1.2px, transparent 1.7px),
     radial-gradient(circle at 9.5px 4px,   currentColor 1.2px, transparent 1.7px),
@@ -39553,6 +39559,21 @@ canvas:active { cursor: grabbing; }
    .away = \u80FD\u60AC\u505C\u7684\u8BBE\u5907\u6307\u9488\u79BB\u7A97 \u2192 \u5168\u9690\uFF08\u8FDB\u7A97\u5373\u73B0\uFF09\uFF1B.idle = \u95F2\u7F6E 2.5s \u6DE1\u81F3 .35\uFF08\u89E6\u5C4F\u65E0\u60AC\u505C\u53EA\u6709\u8FD9\u6863\uFF0C
    \u5168\u9690\u4F1A\u8BA9 chips \u53D8\u76F2\u64CD\u4F5C\uFF09\u3002\u83DC\u5355\u5F39\u5C42\u4E0D\u5728\u5176\u5217\u3002 */
 :host(.idle) .plus, :host(.idle) .close, :host(.idle) .grip, :host(.idle) .chips, :host(.idle) .move { opacity: 0.35; }
+/* 0.4.1 \u6536\u6210\u5C0F\u56FE\u6807\uFF08user 2026-10-09\u300Creference window\u52A0\u4E00\u4E2A\u6700\u5C0F\u5316\uFF08\u53D8\u6210\u4E00\u4E2A\u53EF\u62D6\u52A8\u5C0F\u56FE\u6807\uFF09\u7684\u529F\u80FD\uFF0C\u4EE5\u540E\u8BA9opus\u5F04\u300D\uFF09\uFF1A
+   \u7A97\u7F29\u6210 44 px \u5706\u94AE\uFF08\u5C3A\u5BF8\u7528 !important \u538B\u4F4F style \u91CC\u7684\u5BBD\u9AD8\u2014\u2014\u539F\u6765\u7684\u5BBD\u9AD8\u539F\u6837\u7559\u7740\uFF0C\u6062\u590D\u5C31\u56DE\u53BB\uFF09\uFF1B\u91CC\u9762\u53EA\u5269 .bubble\uFF1A\u62D6 = \u632A\u4F4D\u7F6E\uFF0C\u70B9 = \u6062\u590D\u3002 */
+:host([minimized]) {
+  box-sizing: border-box !important; width: 44px !important; height: 44px !important; min-width: 0 !important; min-height: 0 !important;
+  border-radius: 50% !important; resize: none !important; background-color: color-mix(in srgb, var(--bg, #202124) 85%, transparent);
+}
+:host([minimized]) :is(canvas, .text, .audio, .empty, .move, .plus, .close, .grip, .chips) { display: none !important; }
+.bubble { display: none; }
+:host([minimized]) .bubble {
+  display: flex; position: absolute; inset: 0; z-index: 4; align-items: center; justify-content: center;
+  padding: 0; border: none; border-radius: 50%; background: transparent; color: var(--ink, #e8eaed);
+  cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
+}
+:host([minimized]) .bubble:active { cursor: grabbing; }
+.bubble svg { width: 22px; height: 22px; pointer-events: none; }
 :host(.away) .plus, :host(.away) .close, :host(.away) .grip, :host(.away) .chips, :host(.away) .move { opacity: 0; }
 /* \u83DC\u5355\u4E0D\u5728 shadow \u91CC\uFF082026-09-02\uFF09\uFF1A\u6302 body \u8D70 ui/popup-menu\u2014\u2014absolute \u5B50\u8282\u70B9\u4F1A\u88AB :host overflow:hidden \u88C1\u3001
    \u4E5F\u56F0\u5728 :host \u7684 stacking context \u91CC\u88AB\u522B\u7684\u6D6E\u7A97\u76D6\uFF08\u8001\u9519\u8BEF\u590D\u53D1\u6839\u56E0\uFF09\u3002 */
@@ -39600,6 +39621,7 @@ canvas:active { cursor: grabbing; }
 <button class="plus" part="plus" type="button" aria-haspopup="true">${iconMarkup(REF_ICON_IDS.plus)}</button>
 <button class="close" part="close" type="button">${iconMarkup(REF_ICON_IDS.x)}</button>
 <div class="grip" part="grip"></div>
+<button class="bubble" part="bubble" type="button" title="Restore (drag to move)" aria-label="Restore (drag to move)">${iconMarkup(REF_ICON_IDS.pip)}</button>
 <div class="chips hidden">
   <button class="chip" data-page="-1" type="button">${iconMarkup(REF_ICON_IDS.prev)}</button>
   <button class="chip chip-count" data-jump type="button">1/1</button>
@@ -39609,7 +39631,7 @@ canvas:active { cursor: grabbing; }
 }
 var WpReferenceWindow = class extends HTMLElement {
   static get observedAttributes() {
-    return ["open", "no-cloud"];
+    return ["open", "no-cloud", "minimized"];
   }
   /** 0.3.1：窗身可拿焦点（粘贴归焦点）。属性只能在这里加（自定义元素构造器里加属性 = createElement 直接炸）；宿主可自定 tabindex。 */
   connectedCallback() {
@@ -39767,10 +39789,31 @@ var WpReferenceWindow = class extends HTMLElement {
   }
   set open(v) {
     this.toggleAttribute("open", !!v);
-    if (!v)
+    if (!v) {
       this._menu?.close();
+      this.toggleAttribute("minimized", false);
+    }
   }
-  // 关窗 = 菜单一并收（菜单挂 body，不随窗隐）
+  // 关窗 = 菜单一并收（菜单挂 body，不随窗隐）；收着的小图标也一起还原（再开 = 整窗）
+  /** 0.4.1 收成小图标（程序性 set 不发事件，同 open）。收着的时候 `rect` 照样报原来的宽高（只有位置跟着小图标走），宿主存的大小不会被 44×44 盖掉。 */
+  get minimized() {
+    return this.hasAttribute("minimized");
+  }
+  set minimized(v) {
+    if (!!v === this.minimized)
+      return;
+    if (v) {
+      const r10 = this.getBoundingClientRect();
+      if (r10.width > 0 && r10.height > 0)
+        this._restoreSize = { w: r10.width, h: r10.height };
+    }
+    this.toggleAttribute("minimized", !!v);
+    if (v)
+      this._menu?.close();
+    else
+      this._afterRestore();
+  }
+  _restoreSize = null;
   attributeChangedCallback(name, oldV, newV) {
     if (name === "no-cloud") {
       this._menu?.refresh();
@@ -39906,6 +39949,10 @@ var WpReferenceWindow = class extends HTMLElement {
   }
   get rect() {
     const r10 = this.getBoundingClientRect();
+    if (this.minimized) {
+      const w2 = this._restoreSize?.w ?? (parseFloat(this.style.width) || 280) + 2, h2 = this._restoreSize?.h ?? (parseFloat(this.style.height) || 320) + 2;
+      return { left: r10.left, top: r10.top, width: w2, height: h2 };
+    }
     return { left: r10.left, top: r10.top, width: r10.width, height: r10.height };
   }
   set rect(o10) {
@@ -39916,6 +39963,8 @@ var WpReferenceWindow = class extends HTMLElement {
         this.style.width = o10.width + "px";
       if (o10.height)
         this.style.height = o10.height + "px";
+      if (this.minimized && o10.width && o10.height)
+        this._restoreSize = null;
       this._clampIntoViewport();
     } else if (!this.style.left || !this.style.top) {
       this.style.left = SPAWN_LEFT + "px";
@@ -39941,6 +39990,7 @@ var WpReferenceWindow = class extends HTMLElement {
     setTitle2('[data-page="1"]', l10.next);
     setTitle2("[data-jump]", l10.jump);
     setTitle2(".grip", l10.resize, l10.resizeAria);
+    setTitle2(".bubble", l10.restore);
   }
   // ---- 多参考内容 API（宿主灌注；程序性，不发事件）----
   /** 整表替换（load 恢复用）。旧 image bitmap 全部释放。 */
@@ -40447,6 +40497,43 @@ ${this._ramMissingText()}`;
     };
     move.addEventListener("pointerup", endMove);
     move.addEventListener("pointercancel", endMove);
+    const bubble = root.querySelector(".bubble");
+    let bub = null;
+    bubble.addEventListener("pointerdown", (e10) => {
+      const r10 = this.getBoundingClientRect();
+      bub = { id: e10.pointerId, sx: e10.clientX, sy: e10.clientY, ol: r10.left, ot: r10.top, moved: false };
+      try {
+        bubble.setPointerCapture(e10.pointerId);
+      } catch {
+      }
+      e10.preventDefault();
+    });
+    bubble.addEventListener("pointermove", (e10) => {
+      if (!bub || e10.pointerId !== bub.id)
+        return;
+      const dx = e10.clientX - bub.sx, dy = e10.clientY - bub.sy;
+      if (!bub.moved && Math.hypot(dx, dy) < 4)
+        return;
+      bub.moved = true;
+      const w2 = this.offsetWidth, h2 = this.offsetHeight;
+      this.style.left = clamp2(bub.ol + dx, 0, window.innerWidth - w2) + "px";
+      this.style.top = clamp2(bub.ot + dy, this.topFloor, Math.max(this.topFloor, window.innerHeight - this.bottomFloor - h2)) + "px";
+      this._emitRect();
+    });
+    const endBubble = (e10) => {
+      if (!bub || e10.pointerId !== bub.id)
+        return;
+      try {
+        bubble.releasePointerCapture(e10.pointerId);
+      } catch {
+      }
+      const tap = !bub.moved && e10.type === "pointerup";
+      bub = null;
+      if (tap)
+        this._setMinimizedByUser(false);
+    };
+    bubble.addEventListener("pointerup", endBubble);
+    bubble.addEventListener("pointercancel", endBubble);
     root.addEventListener("pointerdown", () => this._pokeIdle(), { capture: true });
     root.addEventListener("pointermove", () => this._pokeIdle(), { capture: true, passive: true });
     const hoverCapable = typeof matchMedia === "function" && matchMedia("(hover: hover)").matches;
@@ -40591,6 +40678,7 @@ ${this._ramMissingText()}`;
       // 0.4.0 音频卡：循环（ROUND 的设想：放在 ＋ 菜单）；速度只在宿主给了档位时列（user 2026-10-09「默认不开，moonsinger开」）。点了不关，可以连点
       ...this._deck.current?.kind === "audio" ? this._audioMenuItems() : [],
       // 只放内存（user 2026-10-09「然后能不能加RAM only，就是不落盘，每次重新上传」）：有自己字节的卡才有（链接卡 / 宿主画面 / 读回来的空位没有）
+      { id: "minimize", label: l10.minimize ?? "Minimize to icon", icon: REF_ICON_IDS.pip, separatorBefore: true },
       {
         id: "ram",
         label: l10.ram ?? "Keep in memory only (not saved)",
@@ -40743,6 +40831,8 @@ ${this._ramMissingText()}`;
           this._emitItems();
         } else if (id2 === "onetoone")
           this.oneToOne();
+        else if (id2 === "minimize")
+          this._setMinimizedByUser(true);
       }
     });
     this._menuAnchor = this._menu ? this._plusEl : null;
@@ -41044,6 +41134,25 @@ ${this._ramMissingText()}`;
   reclamp() {
     if (this._clampIntoViewport())
       this._emitRect();
+  }
+  /** 0.4.1 用户收起 / 恢复（菜单项、点小图标）：改状态 + 发 minimizechange（宿主想记住就记）。 */
+  _setMinimizedByUser(v) {
+    if (v === this.minimized)
+      return;
+    this.minimized = v;
+    this._emit("minimizechange", { minimized: v });
+  }
+  /** 恢复成整窗之后：小图标可能被挪到了右下角——整窗钳回可见区；画面重新按窗大小铺（收着时 canvas 是隐藏的）。 */
+  _afterRestore() {
+    if (!this.open)
+      return;
+    if (this._clampIntoViewport())
+      this._emitRect();
+    this._resizeCanvasToBody();
+    if (this.live)
+      this._liveDirty = true;
+    this._pokeIdle();
+    this._invalidate();
   }
   _clampIntoViewport() {
     const vw = window.innerWidth, vh = window.innerHeight;
@@ -41467,7 +41576,10 @@ function createReferenceHost(d3) {
     loop: "\u5FAA\u73AF",
     rate: "\u901F\u5EA6",
     ram: "\u53EA\u653E\u5185\u5B58\uFF08\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF09",
-    ramMissing: "\u53EA\u5728\u5185\u5B58\u91CC\uFF0C\u6CA1\u5B58\u8FDB\u6B4C\u91CC\u2014\u2014\u628A\u8FD9\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u70B9 \uFF0B \u91CD\u65B0\u5BFC\u5165\uFF0C\u5C31\u8865\u56DE\u8FD9\u91CC"
+    ramMissing: "\u53EA\u5728\u5185\u5B58\u91CC\uFF0C\u6CA1\u5B58\u8FDB\u6B4C\u91CC\u2014\u2014\u628A\u8FD9\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u70B9 \uFF0B \u91CD\u65B0\u5BFC\u5165\uFF0C\u5C31\u8865\u56DE\u8FD9\u91CC",
+    minimize: "\u7F29\u6210\u5C0F\u56FE\u6807",
+    restore: "\u70B9\u4E00\u4E0B\u6062\u590D\uFF0C\u6309\u4F4F\u62D6\u52A8\u632A\u4F4D\u7F6E"
+    // 参考窗 0.4.1（关窗那个已经叫「收起」，这里用「缩」区分）
   };
   el2.audioRates = [1, 0.75, 0.5];
   const transcoder = createRefTranscoder();
@@ -47715,4 +47827,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-61d0dab348ef.mjs.map
+//# sourceMappingURL=moonsinger-4bab6e2a20fd.mjs.map

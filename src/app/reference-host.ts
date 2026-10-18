@@ -68,6 +68,7 @@ export function createReferenceHost(d: ReferenceHostDeps) {
     moveEarlier: "往前挪", moveLater: "往后挪", jump: "跳到…", kindNames: { image: "图片", text: "文字", audio: "音频" }, linkMissing: "内容不在了",
     load: "导入图片 / 音频 / 文字…", play: "播放", pause: "暂停", loop: "循环", rate: "速度",
     ram: "只放内存（不存进歌里）", ramMissing: "只在内存里，没存进歌里——把这个文件拖进来，或者点 ＋ 重新导入，就补回这里",
+    minimize: "缩成小图标", restore: "点一下恢复，按住拖动挪位置",   // 参考窗 0.4.1（关窗那个已经叫「收起」，这里用「缩」区分）
   };
   el.audioRates = [1, 0.75, 0.5];   // 扒谱用（保音高）
   const transcoder = createRefTranscoder();
