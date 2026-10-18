@@ -64,7 +64,7 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   el.setAttribute("no-cloud", "");                     // 不从云盘选图（歌库不是图库；iPad 的「文件」已经能挑相册 / OneDrive）
   el.labels = {
     paste: "粘贴", oneToOne: "原尺寸", del: "删掉这张", delConfirm: "再点一次删掉", closeWin: "收起参考窗",
-    prev: "上一张", next: "下一张", menu: "参考窗菜单", move: "拖动", resize: "改大小", resizeAria: "改大小",
+    prev: "上一张", next: "下一张", menu: "参考窗菜单", move: "点一下缩成小图标，按住拖动挪位置", resize: "改大小", resizeAria: "改大小",
     moveEarlier: "往前挪", moveLater: "往后挪", jump: "跳到…", kindNames: { image: "图片", text: "文字", audio: "音频" }, linkMissing: "内容不在了",
     load: "导入图片 / 音频 / 文字…", play: "播放", pause: "暂停", loop: "循环", rate: "速度",
     ram: "只放内存（不存进歌里）", ramMissing: "只在内存里，没存进歌里——把这个文件拖进来，或者点 ＋ 重新导入，就补回这里",

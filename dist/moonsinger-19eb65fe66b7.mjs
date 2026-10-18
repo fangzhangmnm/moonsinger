@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.13.8-2026-10-18";
+var APP_VERSION = "v0.13.9-2026-10-18";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -39491,38 +39491,35 @@ canvas:active { cursor: grabbing; }
 .close { right: 4px; }
 .plus { right: 36px; }
 .plus svg, .close svg { width: 16px; height: 16px; pointer-events: none; }
+/* 0.4.4\uFF1A\u4E09\u9897\u5706\u94AE\u52A0\u4E00\u5708\u6DE1\u8FB9\u2014\u2014\u5E95\u8272\u548C\u5361\u7247\u4E00\u6837\u6697\u7684\u65F6\u5019\uFF08KudsRocket \u6587\u5B57\u5361\uFF09\u5706\u94AE\u6574\u4E2A\u770B\u4E0D\u89C1\u3001\u53EA\u5269\u4E2A\u56FE\u6807\uFF0810-18 \u622A\u56FE\u6838\u8FC7\uFF09 */
+.plus, .close, .move .knob { box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink, #e8eaed) 28%, transparent); }
 .plus:hover, .close:hover { background: color-mix(in srgb, var(--bg, #202124) 90%, transparent); }
 /* \u62D6\u52A8\u628A\u624B\uFF08user 0830\u300C\u5DE6\u4E0A\u89D2\u52A0\u4E00\u70B9\u5C0F\u70B9\u4E00\u6837\u7684\u62D6\u52A8\u533A\u57DF\u2026\u4E09\u89D2\u5F62\u5E03\u5C40\uFF0C\u6CA1\u6709\u6309\u94AE\u5F0F\u9AD8\u4EAE\uFF0C\u53C2\u8003 resize\u300D\uFF09\uFF1A
    \u4E0E\u53F3\u4E0B resize \u628A\u624B\u540C\u5F62\u5236\u540C\u5C3A\u5BF8\u2014\u2014\u70B9\u9635\u88C1\u6210\u5DE6\u4E0A\u4E09\u89D2\u3001\u65E0\u5E95\u65E0\u6846\uFF0C\u53EA\u9760 opacity \u547C\u5438\u3002gizmo \u7EB9\u7406\u975E icon\u3002 */
 /* \u4E24\u628A\u624B\u5728\u6697\u56FE\uFF08\u4E09\u6B21\u5143\u76F8\u7247\uFF09\u4E0A\u770B\u4E0D\u6E05\uFF08user 0830\uFF09\u2192 \u4E0E \uFF0B \u540C\u6B3E\u300C\u534A\u900F\u660E\u4E3B\u9898\u5E95 + \u4E3B\u8272 gizmo\u300D\uFF1A
    \u5143\u7D20\u672C\u8EAB\u88C1\u6210\u4E09\u89D2\u5F62\u5E95\u677F\uFF08clip-path\uFF09\uFF0C\u7EB9\u7406\u8D70 ::after \u7528 currentColor=--ink\u3002\u6D45\u4E3B\u9898=\u767D\u5E95\u9ED1\u70B9\u3001\u6697\u4E3B\u9898=\u9ED1\u5E95\u767D\u70B9\u3002 */
-/* 0.4.1\uFF08user 2026-10-13\u300C\u53C2\u8003\u7A97\u5DE6\u4E0A\u89D2\u5176\u5B9E\u4E00\u76F4\u6BD4\u8F83\u96BE\u62D6\u300D\uFF09\uFF1A\u4EE5\u524D clip-path \u88C1\u5728\u5143\u7D20\u672C\u8EAB\u4E0A\u2014\u2014**\u80FD\u70B9\u4E2D\u7684\u533A\u57DF\u4E5F\u88AB\u88C1\u6210\u4E86\u4E09\u89D2**\uFF0C
-   22 px \u65B9\u5757\u53EA\u5269\u4E00\u534A\u80FD\u6309\u3002\u73B0\u5728\u5143\u7D20 = \u900F\u660E\u7684 36 px \u65B9\u5757\uFF08\u89E6\u5C4F 44 px\uFF09\u4E13\u7BA1\u6309\uFF0C\u770B\u5F97\u89C1\u7684\u4E09\u89D2\u5E95\u677F + \u70B9\u9635\u632A\u5230 ::before / ::after\uFF0C\u6837\u5B50\u4E0D\u53D8\u3002 */
+/* 0.4.1\uFF08user 2026-10-13\u300C\u53C2\u8003\u7A97\u5DE6\u4E0A\u89D2\u5176\u5B9E\u4E00\u76F4\u6BD4\u8F83\u96BE\u62D6\u300D\uFF09\uFF1A\u53EF\u70B9\u533A\u653E\u5927\u5230 36 px \u900F\u660E\u65B9\u5757\uFF0C\u770B\u5F97\u89C1\u7684\u8FD8\u662F 22 px \u5C0F\u4E09\u89D2\u2014\u2014\u4EBA\u7784\u7740\u4E09\u89D2\u6309\uFF0C\u8FD8\u662F\u70B9\u4E0D\u4E2D\u3002
+   0.4.3\uFF08user 2026-10-18\u300C\u5DE6\u4E0A\u89D2\u90A3\u4E2A\u5F88akward\u5F88\u96BE\u70B9\u7684\u3002\u3002\u3002\u603B\u662F\u70B9\u4E0D\u4E2D\uFF0C\u4F18\u5316\u4E00\u4E0B\uFF0C\u6216\u8005\u5E72\u8106\u6362\u6210\u4E00\u4E2A\u70B9\u4E86\u4E4B\u540E\u53D8\u6210\u56FE\u6807\uFF0C\u62D6\u52A8\u662F\u62D6\u52A8\u7684\u591A\u4E49\u6309\u94AE\u300D\uFF09\uFF1A
+   \u6362\u6210\u548C \uFF0B / \xD7 \u540C\u6B3E\u7684\u5706\u94AE\uFF0828 px\uFF0C\u534A\u900F\u660E\u4E3B\u9898\u5E95 + \u56FE\u6807\uFF09\uFF0C\u53EF\u70B9\u533A 36 px\uFF08\u89E6\u5C4F 44 px\uFF09\u3002**\u70B9\u4E00\u4E0B = \u7F29\u6210\u5C0F\u56FE\u6807**\uFF08\u5C0F\u56FE\u6807\u5C31\u51FA\u73B0\u5728\u540C\u4E00\u4E2A\u4F4D\u7F6E\u3001\u540C\u4E00\u4E2A\u56FE\u6807\uFF0C
+   \u518D\u70B9\u4E00\u4E0B\u6062\u590D\uFF09\uFF0C**\u6309\u4F4F\u62D6 = \u632A\u7A97**\uFF08\u52A8\u8FC7 4 px \u624D\u7B97\u62D6\uFF09\u3002\u56FE\u6807\u7528\u5C0F\u7A97\u90A3\u4E2A\uFF08= \u6536\u8D77\u540E\u7684\u5C0F\u56FE\u6807\uFF09\uFF0C\u770B\u5F97\u51FA\u300C\u70B9\u4E86\u4F1A\u53D8\u6210\u4EC0\u4E48\u300D\u3002 */
 .move {
   position: absolute; left: 0; top: 0; width: 36px; height: 36px; z-index: 3;
+  padding: 0; border: none; background: transparent;
   cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;
   color: var(--ink, #e8eaed); opacity: 0.85;
   transition: opacity 0.35s;
 }
 @media (pointer: coarse) { .move { width: 44px; height: 44px; } }
-.move::before {
-  content: ""; position: absolute; left: 0; top: 0; width: 22px; height: 22px;
+.move .knob {
+  position: absolute; left: 4px; top: 4px; width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
   background: color-mix(in srgb, var(--bg, #202124) 72%, transparent);
-  clip-path: polygon(0 0, 100% 0, 0 100%);
+  pointer-events: none;
 }
+.move .knob svg { width: 16px; height: 16px; }
 .move:hover { opacity: 1; }
+.move:hover .knob { background: color-mix(in srgb, var(--bg, #202124) 90%, transparent); }
 .move:active { cursor: grabbing; }
-/* \u663E\u5F0F 6 \u70B9\uFF083-2-1 \u4E09\u89D2\u6392\u5E03\uFF0Cpitch 5.5\uFF09\uFF1A\u79BB\u5E95\u677F\u659C\u8FB9 \u22653px\uFF0C\u4E0D\u51FA\u534A\u9897\u70B9\uFF08user 0830\u300C\u767D\u7684\u5E94\u8BE5\u8D85\u8FC7\u88C1\u5207\u4E00\u70B9\u300D\uFF09 */
-.move::after {
-  content: ""; position: absolute; left: 0; top: 0; width: 22px; height: 22px;
-  background-image:
-    radial-gradient(circle at 4px 4px,     currentColor 1.2px, transparent 1.7px),
-    radial-gradient(circle at 9.5px 4px,   currentColor 1.2px, transparent 1.7px),
-    radial-gradient(circle at 15px 4px,    currentColor 1.2px, transparent 1.7px),
-    radial-gradient(circle at 4px 9.5px,   currentColor 1.2px, transparent 1.7px),
-    radial-gradient(circle at 9.5px 9.5px, currentColor 1.2px, transparent 1.7px),
-    radial-gradient(circle at 4px 15px,    currentColor 1.2px, transparent 1.7px);
-}
 /* resize \u628A\u624B\uFF1A\u659C\u7EB9\u6CBF styles.css .float-panel-resize \u5BB6\u65CF\u6807\u51C6\u4EF6\uFF1B19\uFF08user 0830\uFF1A\u89C6\u89C9\u4E0A\u659C\u7EB9\u6BD4\u70B9\u9635\u663E\u5927\uFF0C\u7A0D\u5C0F\u4E00\u70B9\uFF09 */
 .grip {
   position: absolute; right: 0; bottom: 0; width: 19px; height: 19px;
@@ -39581,7 +39578,7 @@ canvas:active { cursor: grabbing; }
    \u5E95\u8272\u7528\u4E3B\u9898\u5E95\u800C\u4E0D\u662F\u70B9\u9635\uFF1A\u5B57\u8981\u80FD\u8BFB\u3002\u9009\u4E2D\u6587\u5B57\u9700\u8981\u628A\u7126\u70B9\u62FF\u8FC7\u6765 \u2192 data-takes-focus \u653E\u884C\uFF08\u5176\u4F59 gizmo \u4E0D\u62A2\u7126\u70B9\uFF09\u3002 */
 .text {
   position: absolute; inset: 0; display: none; overflow: auto; z-index: 1;
-  box-sizing: border-box; padding: 10px 12px 30px 12px;
+  box-sizing: border-box; padding: 36px 12px 30px 12px;   /* 0.4.4\uFF1A\u4E0A\u8FB9\u7559\u51FA\u5706\u94AE\u90A3\u4E00\u6392\uFF084 + 28 px\uFF09\uFF0C\u5B57\u4E0D\u518D\u88AB\u5DE6\u4E0A\u89D2\u5706\u94AE / \uFF0B / \xD7 \u76D6\u4F4F */
   color: var(--ink, #e8eaed);
   background: color-mix(in srgb, var(--bg, #202124) 94%, transparent);
   font-size: calc(13px * var(--ref-text-scale, 1)); line-height: 1.55;
@@ -39617,7 +39614,7 @@ canvas:active { cursor: grabbing; }
 <div class="text" part="text" data-takes-focus></div>
 <div class="audio" part="audio"><button class="aplay" type="button"></button><div class="ainfo"><div class="aname"></div><input class="aseek" type="range" min="0" max="1000" step="1" value="0"><div class="atime"></div></div></div>
 <div class="empty"><slot name="empty"><p>\uFF0B \u5BFC\u5165\u53C2\u8003</p></slot></div>
-<div class="move" part="move"></div>
+<button class="move" part="move" type="button" title="Tap: minimize \xB7 drag: move" aria-label="Tap: minimize \xB7 drag: move"><span class="knob">${iconMarkup(REF_ICON_IDS.pip)}</span></button>
 <button class="plus" part="plus" type="button" aria-haspopup="true">${iconMarkup(REF_ICON_IDS.plus)}</button>
 <button class="close" part="close" type="button">${iconMarkup(REF_ICON_IDS.x)}</button>
 <div class="grip" part="grip"></div>
@@ -40478,6 +40475,8 @@ ${this._ramMissingText()}`;
       const d3 = this._panelDrag;
       if (!d3 || e10.pointerId !== d3.id)
         return;
+      if (!d3.moved && Math.hypot(e10.clientX - d3.sx, e10.clientY - d3.sy) < 4)
+        return;
       d3.moved = true;
       const w2 = this.offsetWidth, h2 = this.offsetHeight;
       const left = clamp2(d3.ol + (e10.clientX - d3.sx), 0, window.innerWidth - w2);
@@ -40487,16 +40486,23 @@ ${this._ramMissingText()}`;
       this._emitRect();
     });
     const endMove = (e10) => {
-      if (this._panelDrag && e10.pointerId === this._panelDrag.id) {
+      const d3 = this._panelDrag;
+      if (d3 && e10.pointerId === d3.id) {
         try {
           move.releasePointerCapture(e10.pointerId);
         } catch {
         }
         this._panelDrag = null;
+        if (e10.type === "pointerup" && !d3.moved)
+          this._setMinimizedByUser(true);
       }
     };
     move.addEventListener("pointerup", endMove);
     move.addEventListener("pointercancel", endMove);
+    move.addEventListener("click", (e10) => {
+      if (e10.detail === 0)
+        this._setMinimizedByUser(true);
+    });
     const bubble = root.querySelector(".bubble");
     let bub = null;
     bubble.addEventListener("pointerdown", (e10) => {
@@ -41562,7 +41568,7 @@ function createReferenceHost(d3) {
     prev: "\u4E0A\u4E00\u5F20",
     next: "\u4E0B\u4E00\u5F20",
     menu: "\u53C2\u8003\u7A97\u83DC\u5355",
-    move: "\u62D6\u52A8",
+    move: "\u70B9\u4E00\u4E0B\u7F29\u6210\u5C0F\u56FE\u6807\uFF0C\u6309\u4F4F\u62D6\u52A8\u632A\u4F4D\u7F6E",
     resize: "\u6539\u5927\u5C0F",
     resizeAria: "\u6539\u5927\u5C0F",
     moveEarlier: "\u5F80\u524D\u632A",
@@ -47827,4 +47833,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-4bab6e2a20fd.mjs.map
+//# sourceMappingURL=moonsinger-19eb65fe66b7.mjs.map
