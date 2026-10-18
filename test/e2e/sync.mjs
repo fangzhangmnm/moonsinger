@@ -14,7 +14,9 @@ let pass = 0, fail = 0, gaps = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 // 库的已知缺口（2026-10-08 查出、已 escalate，handoff-to-opus §5）：freshness.refresh（pullIfClean）in-sync 时不 markSeen → 「开局未登录时开的歌，登录后第一次编辑
 //   推上去 = 没带 If-Match → 409 → 误报冲突面」。库修了（refresh 的 in-sync 分支调 head.markSeen，同 open）这几条就成硬检查；没修之前算「已知缺口」不算失败、但照样打印。
-const libSrc = fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../node_modules/@internal/store/dist/freshness.js"), "utf8");
+// store 2.1.1 起源码分三个夹（dist/works/freshness.js）；老版本在 dist/ 顶层。两处都找。edited 20261018 by Claude Opus 5.5
+const libDist = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../node_modules/@internal/store/dist");
+const libSrc = fs.readFileSync(["works/freshness.js", "freshness.js"].map((f) => path.join(libDist, f)).find((f) => fs.existsSync(f)), "utf8");
 const libHasRecapture = libSrc.slice(libSrc.indexOf("async function refresh(")).includes("markSeen(");
 const gap = (ok, name, extra = "") => { if (ok || libHasRecapture) return check(ok, name, extra); gaps++; console.log(`  ✗ ${name}  ${extra}  ← 已知库缺口（store 的 refresh 不重捕 base），等库修`); };
 // node 侧的云：hook 能在测试里挂起某一次 upload（模拟「推到一半页面死掉」）
