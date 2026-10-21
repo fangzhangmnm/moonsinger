@@ -58,7 +58,7 @@ try {
   check((await p.evaluate(() => document.getElementById("saveBtn").dataset.kind)) === "fresh", "smart save = fresh（新谱没改过）");
   await p.click("#saveBtn"); await p.waitForTimeout(300);
   check((await p.evaluate(() => window.__moonsinger.identifier())) === null, "空谱按「存」= 诚实回话，不塞空壳进歌库");
-  await p.click("#score", { position: { x: 600, y: 400 } });
+  await p.click("#score", { position: { x: 600, y: 200 } });
   await p.keyboard.press("Digit1");
   await p.waitForFunction(() => !!window.__moonsinger.identifier()); await p.waitForTimeout(400);
   const id1 = await p.evaluate(() => window.__moonsinger.identifier()); check(/^\d{8}-[0-9a-f]{4}\.mxl$/.test(id1 ?? ""), "第一笔 → 有了 store 身份", id1);
@@ -122,7 +122,7 @@ try {
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "从歌库里刷新 → 回来还在歌库");
   // 第二首：新建后歌库两张卡，点第一张切回
   await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(600);
-  await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2");
+  await p.click("#score", { position: { x: 600, y: 200 } }); await p.keyboard.press("Digit2");
   await p.waitForFunction(() => !!window.__moonsinger.identifier()); await p.waitForTimeout(400);
   const id3 = await p.evaluate(() => window.__moonsinger.identifier()); check(id3 !== id2 && /\.mxl$/.test(id3), "第二首：第一笔之后有身份", id3);
   await p.click("#libBtn"); await p.waitForTimeout(1200);
@@ -135,7 +135,7 @@ try {
   const del = await p.evaluate(async (id) => (await window.__moonsinger.store().zip(id, { mode: "existing" }).trash()).status, id2);
   check(typeof del === "string", "删掉小星星（store delete）", del);
   await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(600);
-  await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("Digit2"); await saved();
+  await p.click("#score", { position: { x: 600, y: 200 } }); await p.keyboard.press("Digit2"); await saved();
   check(!(await p.evaluate((id) => window.__moonsinger.store().files.occupied(id), id2)), "之后新建再写也不会把删掉的名字复活");
   const id4 = await p.evaluate(() => window.__moonsinger.identifier()); check(!!id4 && id4 !== id2 && id4 !== id3, "新的一首有自己的身份", id4);
   // 新建文件夹（2026-10-10 user「gallery怎么没接新建文件夹的功能，这个应该只是接线吧，不过小心一点」）：歌库顶栏的钮 → 起名 → store.files.newFolder → 歌库里出现这个夹

@@ -72,6 +72,9 @@ button, input, select { font: inherit; color: inherit; }
 /* toast 栈：谱那一块的底边居中（v0.10.23：原来顶栏下面，长的报错压住挂签 / 混音台顶条）；位置由 main.ts 量谱的那一块填进 --notice-bottom / --notice-x（竖屏 = 键盘上面，不盖键）。对话框开着 = 库挪到顶上 */
 .notice-stack { top: auto; bottom: var(--notice-bottom, max(env(safe-area-inset-bottom, 0px), 20px)); left: var(--notice-x, 50%); }
 .notice-stack.docked-top { top: calc(var(--safe-top) + 54px); bottom: auto; left: 50%; }
+/* 开着面板（.offer：设置 / 导出 / 问一句 / 定稿…）时 toast 挪到顶上，别压住面板的钮（库自己只认 .backdrop[data-open]，本仓的面板是 .offer；
+   2026-10-21 底座贴底后谱那一块变矮、toast 落在屏幕中间 = 正好压住居中的卡片，E2E final / issues 点不到「mp3」） */
+body:has(.offer:not([hidden])) .notice-stack { top: calc(var(--safe-top) + 54px); bottom: auto; left: 50%; }
 /* 歌手牌：第一行谱号左边的声部名 */
 .staff-svg .part-name { fill: var(--ink); font-weight: 600; cursor: pointer; }
 .staff-svg .part-name.empty { fill: var(--muted); font-weight: 400; }

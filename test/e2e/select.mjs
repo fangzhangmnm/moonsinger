@@ -12,7 +12,7 @@ try {
   // v0.10.39：纸头自动补了一个力度（下标 3），音从 4 起——下面的下标都 +1
   const S = () => p.evaluate(() => { const s = window.__moonsinger.state(); return { sel: s.sel, caret: s.caret, n: s.song.papers[0].tracks.P1.length }; });
   const notes = () => p.$$eval("#score text.note", (ts) => ts.map((t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
-  await p.click("#score", { position: { x: 600, y: 400 } });
+  await p.click("#score", { position: { x: 600, y: 200 } });
   for (const k of ["Digit1", "Digit2", "Digit3", "Digit5", "Digit6", "Digit5"]) await p.keyboard.press(k);
   await p.waitForTimeout(200);
   const ns = await notes(); check(ns.length === 6, "写了 6 个音", String(ns.length));

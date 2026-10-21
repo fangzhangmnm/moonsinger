@@ -21,14 +21,14 @@ const title = () => p.textContent("#docTitle");
 const tokens = () => p.evaluate(() => JSON.stringify(window.__moonsinger.state().song.papers[0].tracks.P1));
 await p.goto(`http://127.0.0.1:${PORT}/`); await p.waitForTimeout(400);
 const stem0 = await title(); check(/^\d{8}-[0-9a-f]{4}$/.test(stem0), "开局 = 默认名 yyyymmdd-hex4、没改过", stem0);
-await p.click("#score", { position: { x: 600, y: 400 } });
+await p.click("#score", { position: { x: 600, y: 200 } });
 for (const k of ["Digit1", "Digit2", "Digit3", "Enter", "Digit5", "Minus", "Digit6"]) await p.keyboard.press(k);
 await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTimeout(200);   // v0.9.19：歌词框只在「词」里点得开
 const n0 = await p.$eval("#score text.note", (t) => { const b = t.getBoundingClientRect(); return { x: b.x + b.width / 2 }; });
 const staffBottom = await p.$$eval("#score line.staff", (ls) => Math.max(...ls.slice(0, 5).map((l) => l.getBoundingClientRect().y)));
 await p.mouse.click(n0.x, staffBottom + 52); await p.keyboard.type("さくら"); await p.keyboard.press("Enter");
 await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(150);
-await p.click("#score", { position: { x: 700, y: 400 } });
+await p.click("#score", { position: { x: 700, y: 200 } });
 check((await title()) === `${stem0} •`, "写了之后标题带「•」（改过没存）");
 // 纸面最上面点歌名、填上
 const tb = await p.evaluate(() => { const L = window.__moonsinger.layout(), r = document.querySelector("#score .sheet").getBoundingClientRect(); return { x: r.left + L.pageX.left + L.title.x + L.title.w / 2, y: r.top + L.title.y + L.title.h / 2 }; });   // 歌名的命中框（纸有上边距，2026-10-08）
@@ -39,7 +39,7 @@ const day = stem0.slice(0, 8);   // 文件名 = 年月日-歌名（没存过时�
 const titleSettles = (t) => p.waitForFunction((t) => document.getElementById("docTitle").textContent === t, t, { timeout: 3000 }).catch(() => {});
 await titleSettles(`${day}-春の歌 •`);
 check((await title()) === `${day}-春の歌 •` && (await p.$$eval("#score text.song-title", (ts) => ts.map((t) => t.textContent).join("|"))) === "春の歌", "点纸面最上面填歌名：纸上画出来、顶栏的文件名 = 年月日-歌名");
-await p.click("#score", { position: { x: 700, y: 400 } });
+await p.click("#score", { position: { x: 700, y: 200 } });
 const before = await tokens();
 // 存：Ctrl+S → 面板 → 下载
 await p.keyboard.press("Control+KeyS");
@@ -63,7 +63,7 @@ check(!!(await p.$('.offer [data-v="mp3"]')) && !!(await p.$('.offer [data-v="mx
 await p.click('.offer [data-v="mxl"]'); await p.waitForSelector('.offer [data-v="download"]');
 const [dl2] = await Promise.all([p.waitForEvent("download"), p.click('.offer [data-v="download"]')]);
 check(new RegExp(`^${day}-春の歌-\\d{8}-\\d{4}\\.mxl$`).test(dl2.suggestedFilename()) && (await title()) === `${day}-春の歌 •`, "存一份 .mxl 副本：文件名带时刻、「•」还在（导出不清 dirty）", dl2.suggestedFilename());
-await p.click("#score", { position: { x: 700, y: 400 } });
+await p.click("#score", { position: { x: 700, y: 200 } });
 await p.keyboard.press("Control+Shift+KeyS"); await p.waitForFunction(() => document.querySelector(".offer .offer-title")?.textContent === "导出");
 check(true, "Ctrl+Shift+S → 导出 hub（原来的另存为键）");
 await p.click('.offer [data-v="close"]'); await p.waitForTimeout(100);
@@ -109,7 +109,7 @@ await p.click('.offer [data-v="go"]'); await p.waitForTimeout(300);
 check((await title()) === "dropped", "拖进来的 .musicxml 打开了（顶栏 = 它的文件名）");
 await p.click(".notice-error .dismiss").catch(() => undefined);
 // 改过没存关页面 → 挽留框
-await p.click("#score", { position: { x: 700, y: 400 } }); await p.keyboard.press("Digit3");
+await p.click("#score", { position: { x: 700, y: 200 } }); await p.keyboard.press("Digit3");
 let dialog = "";
 p.on("dialog", async (d) => { dialog = d.type(); await d.dismiss(); });
 await p.close({ runBeforeUnload: true }); await new Promise((r) => setTimeout(r, 500));

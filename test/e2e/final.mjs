@@ -18,7 +18,7 @@ await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitF
 await p.click("#libBtn"); await p.waitForTimeout(600);
 await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(500);
 await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 2).fill(0.02), sr: 22050 }); });
-await p.click("#score", { position: { x: 600, y: 400 } });
+await p.click("#score", { position: { x: 600, y: 200 } });
 for (const k of ["Digit1", "Digit3", "Digit5"]) { await p.keyboard.press(k); await p.waitForTimeout(40); }
 await p.waitForFunction(() => !!window.__moonsinger.identifier()); await saved();
 const id = await p.evaluate(() => window.__moonsinger.identifier());
@@ -114,7 +114,7 @@ await p.click('.main-menu [data-v="unfinal"]'); await p.waitForTimeout(150);
 check(/改稿/.test(await p.$eval(".offer .offer-title", (e) => e.textContent ?? "")), "改稿先问一句");
 await p.click('.offer [data-v="ok"]'); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.final())) === null && (await p.evaluate(() => window.__moonsinger.workspace().mode)) !== "listen" && !(await p.$("#fileBtn .final-badge")), "改稿 = 记录没了、回到写、角标没了");
-await p.click("#score", { position: { x: 600, y: 400 } }); await p.keyboard.press("End"); await p.keyboard.press("Digit2"); await p.waitForTimeout(100);
+await p.click("#score", { position: { x: 600, y: 200 } }); await p.keyboard.press("End"); await p.keyboard.press("Digit2"); await p.waitForTimeout(100);
 check((await notes()) === "CEGD", "改稿后能写了", await notes());
 await saved();
 const saved2 = await p.evaluate(async (id) => { const m = window.__moonsinger, bl = await m.store().zip(id, { mode: "existing" }).open(); const bytes = new Uint8Array(await bl.arrayBuffer()); return { list: m.zipList(bytes), manifest: JSON.parse(m.zipText(bytes, ".moonsinger/manifest.json")) }; }, id);
