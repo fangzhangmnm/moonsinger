@@ -93,6 +93,7 @@ import { copyTokens, cutTokens, pasteTokens, selectAll, toJianpu, fromJianpu, fi
 import { type Locus, type Restored } from "../score/history.ts";
 import { createDocument, type SavedMark } from "./document.ts";
 import { createHome, assertNever, type Home } from "./home.ts";
+import { createEncoder } from "../format/encode-client.ts";
 import { freshDesk, freshPartView, serializeDesk, unserializeDesk, PAD_UNITS, type Desk, type PartViewState } from "../score/desk.ts";
 import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
 import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongClefs } from "../score/clef.ts";
@@ -411,6 +412,8 @@ let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消�
 const view = new ScoreView(scoreEl, {
   get: () => D.st,
   set: (n, o) => update(n, o?.gesture),
+  layoutWorker: () => new URL(`./${__LAYOUT_WORKER__}`, import.meta.url),   // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
+  onLayoutWorker: (why) => diagNote("layout", why),
   audition: (i, hold) => { clearTimeout(upTimer); soundTok(D.st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
   glide: (i) => { clearTimeout(upTimer); const t = tr(D.st)[i]; if (t?.kind === "note" && t.pitch) sound.glide(t.pitch, "score"); },
   release: () => { clearTimeout(upTimer); sound.up("score"); },
@@ -598,7 +601,7 @@ let paintQueued = 0;
 function queuePaint(): void { if (!paintQueued) paintQueued = requestAnimationFrame(() => { paintQueued = 0; paintNow(); }); }
 function paintNow(): void {
   if (paintQueued) { cancelAnimationFrame(paintQueued); paintQueued = 0; }
-  if (!view.paintedFor(D.st)) span("view.render", () => view.render());
+  if (!view.paintedFor(D.st)) span("view.render", () => view.renderAsync());   // 排版进 worker（2026-10-21）：现成就画，不现成发出去、回来再画
   span("pad.render", () => pad.render());
   span("title", () => renderTitle());
   span("chrome", () => updateChrome());
@@ -2240,6 +2243,8 @@ function openPicked(picked: docFile.Picked): void {
 }
 /** 封面的腰封 = 作者栏第一行（每次存重写，withPngText 先删旧块）；没有封面图就没有封面 entry。 */
 const extrasForSave = (base: Extras = D.extras): Extras => (base.thumbnail ? withThumbnail(base, coverWithBlurb(base.thumbnail, (D.st.song.credits ?? "").split("\n").map((l) => l.trim()).find(Boolean) ?? null)) : base);
+/** 自动存 / 存的编码口：worker 里 saveMxl（大歌 20–60 ms 不再占主线程；2026-10-21 音游级延迟那一刀）。导出 / PDF / 定稿那些同步要字节的照旧 bytesNow()。 */
+const encoder = createEncoder(() => new URL(`./${__ENCODE_WORKER__}`, import.meta.url), (why) => diagNote("encode", why));
 /** 这首歌的 .mxl 字节；extras = 换一份休息室 / 音源来存（导出「打包音源」的副本：只改那一份，不改正本）。 */
 const bytesNow = (extras?: Extras, song: Song = D.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 /** saveMxl 要的那一份（指纹也按它算，不带参考窗——参考窗不进指纹）。core = 渲染核心的版本 + 哈希（每次保存都记）。 */
@@ -2705,7 +2710,8 @@ const es = createEditorSession({
   editor: {
     adopt: async (blob) => { const id = pendingOpenId ?? H.identifier(); if (!id) throw new Error("adopt without an identifier"); adoptStoreBytes(id, new Uint8Array(await blob.arrayBuffer())); },
     onChange: () => { /* 内容变化走 changed()（update() + 1 s 心跳）→ es.markDirty() */ },
-    encode: async () => { await refHost.settled(); encodedSnap = D.savedMark(); return { bytes: new Blob([bytesNow() as unknown as BlobPart], { type: "application/vnd.recordare.musicxml" }) }; },
+    // 编码在 worker 里（src/format/encode-client.ts；2026-10-21）：主线程只克隆一份歌 + 休息室 + 参考窗的文件；worker 没了就在主线程算（同以前）
+    encode: async () => { await refHost.settled(); encodedSnap = D.savedMark(); const bytes = await encoder.encode({ ...saveArgs(), references: refHost.files() }); return { bytes: new Blob([bytes as unknown as BlobPart], { type: "application/vnd.recordare.musicxml" }) }; },
     // 第 ④ 层护栏（store 接缝）：定稿着、出声内容的指纹却变了 = 不落盘、不推，脏留着（顶栏「•」照亮 = 诚实），说一句。前面三层都没拦住才会走到这儿。
     canPersist: () => { const f = D.extras.final; if (!f) return null; try { return contentFingerprintOf(saveArgs()) === f.fingerprint ? null : "这首歌定稿了，内容却变了：没有存、也不会推上云。先「改稿」（定稿的 mp3 作废）再存，或者撤销刚才的改动。"; } catch (e) { return `存不了：${(e as Error).message}`; } },
     onRefused: (why) => { showError(why); diagNote("doc", `persist refused: ${why}`); },

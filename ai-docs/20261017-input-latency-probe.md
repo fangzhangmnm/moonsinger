@@ -90,3 +90,20 @@ user：「也许需要移动渲染到副线程。全量渲染，包括月读。�
 1. **worker 里量字宽 = 主线程**：同一个字体栈、7 种字号 × 18 串（假名 / 汉字 / 英文 / 数字 / 标点 / 「‿」）共 126 个宽度，OffscreenCanvas 和主线程 canvas **逐位相同（最大差 0）**。无头 Chromium；Safari 没核（iPad 上 OffscreenCanvas 2D 从 16.4 起有，字体解析是否一致要真机看——核法：同一个探针在 iPad 上跑一遍）。
 2. **Layout 过线的代价**：去掉三个闭包后 Layout 平数据 **735 KB（JSON）、structuredClone 6.8 ms**；song 106 KB、0.5 ms。→ 把整个 Layout 传回主线程每键要花 7 ms，吃掉小半收益。**所以 SVG 串化（toSvgParts，4.7 ms）也应该在 worker 里做**，回主线程的只有：SVG 分组字符串（字符串拷贝是 memcpy 级）+ 命中 / 定位要的几何（notes / rests / heads / systems / lyrics / marks / dyns / bars / measures / 纸边…，Layout 里的小头）。这样主线程每键 ≈ DOM 补丁 0.7 + 装饰 1.8 + 消息 ≈ **3–4 ms**（现在 37）。
 3. 形状：`src/render/` 里 engrave + toSvgParts 本来就是纯函数（`src/core` 的无头渲染也在用），worker 壳 = 一个文件；主线程 `ScoreView` 读「最近一份」几何、`layoutNow()` 留同步退路（主线程也能跑 engrave，E2E / PDF 用）；`yOf / dOf / lyricY` 从 systems 数据重建。预计改动：`src/render/layout-data.ts`（几何子集的类型 + 从 Layout 切出）、`src/render/engrave-worker.ts`、`score-view.ts` 的读法、`build.sh` 多一个 bundle。**没动，等 user 点头。**
+
+## 8. 排版 + 存档编码进 worker 之后的数（v0.14.0，2026-10-21，Claude Fable 5.1；user「排版搬到后台线程…这个活也加进去，而且不止这个，好好的看一下性能，怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」）
+
+落了两刀：
+- **排版进 worker**（`src/render/layout-worker.ts` + `score-view.ts renderAsync`）：engrave + toSvgParts 在 worker 里跑（OffscreenCanvas 量字宽，字体串 `src/render/lyric-font.ts` 三处同一份）；主线程发 song 的结构化克隆（0.4 ms）+ 选项，收 SVG 分组字符串 + 去掉闭包的 Layout（`attachLayoutFns` 装回 yOf / dOf / lyricY）。在飞期间又改了 = 记着最新的、回来再发（一次只有一个在飞）。谁同步要排版（歌词框 / 记号框 / E2E 钩子 / PDF）= 主线程自己算、在途回执按 seq 作废；没有 Worker / OffscreenCanvas 或 worker 坏了 = 永远走同步路（= v0.13.x）。
+- **存档编码进 worker**（`src/format/encode-worker.ts` + `encode-client.ts`）：editor-session 的 `encode()` 把 SaveArgs（歌 + 休息室 + 参考窗文件）克隆给 worker 做 saveMxl；worker 没了就在主线程算。导出 / PDF / 定稿那些同步要字节的照旧主线程。
+
+同一把尺子（`scripts/probe-input-latency.mjs`，无头 Chromium，PC），v0.13.10 → v0.14.0：
+
+| 情况 | v0.13.10 | v0.14.0 |
+|---|---|---|
+| 大歌（1204 token）写音：主线程这一帧 view.render | 48.7 ms 中位（engrave 35.5 + svg-parts 6.7 + decor 2.6） | **1.5 ms**（post 0.4 + svg-dom 0.5 + decor 1.9；engrave 29.7 在 worker 里） |
+| 大歌四键隔 20 ms：每个键 该响→真响 | 1 / 51 / 32 / 13 ms（排队等主线程 0 / 51 / 32 / 12） | **1 / 0 / 1 / 1 ms（排队 0）**，三轮都是 |
+| 大歌写音 → 交给音频线程 | 0.5 ms | 0.5 ms（不变） |
+| 自动存的 saveMxl（大歌，每 2 s 一次） | 主线程 19–58 ms | worker；主线程只剩克隆 |
+
+**剩下的主线程尖刺**：svg-dom 整张换（组数变了 = 多了一行）最大 16.7 ms；decor（写字头 / 选区的 class 开关）1.9 ms；pad.render 0.7 ms。再往下 = 按行键控的 DOM 换（组数变了只换新行）+ 虚拟化（只排看得见的，W-17 第 3 刀）。**iPad 真机没量**（无头量不到 iPad 的主线程；worker 在 iOS 16.4+ 的 WebKit 有 OffscreenCanvas，字宽一致性要真机核一次——不一致 = 断行会和 PDF 不同）。

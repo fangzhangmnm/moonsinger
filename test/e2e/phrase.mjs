@@ -14,7 +14,7 @@ try {
   check(await p.evaluate(() => !!document.querySelector("#bar #transport #playBtn") && !document.getElementById("stage").querySelector(".transport")), "走带回到顶栏中间");
   await p.click("#score", { position: { x: 300, y: 300 } });
   for (const k of ["Digit1", "Digit2", "Digit3", "Digit5"]) await p.keyboard.press(k);
-  check(await p.$("svg .note.cur") != null, "刚写完：写字头（前一个音）亮着");
+  check(await p.waitForSelector("svg .note.cur", { timeout: 2000 }).then(() => true, () => false), "刚写完：写字头（前一个音）亮着");   // 排版进 worker（2026-10-21）：画在回执之后，等它
   // 轻点第一个音 → 光标，写字头不亮
   const ns = await p.$$eval("#score text.note", (ts) => ts.map((t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
   await p.mouse.click(ns[0].x, ns[0].y); await p.waitForTimeout(100);

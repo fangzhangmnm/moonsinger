@@ -157,9 +157,20 @@ export interface Layout {
   pages: { top: number; h: number }[];           // 分页时每页占的竖直范围（px）；连续 = []
   paperChip: Box | null;                         // 纸右上角小钮的点击区域（px）
   shortBars: number;   // 拍数和拍号对不上的小节有几个（状态行用；第一小节当弱起不算）
+  /** 每行歌词的基线 y（px；= lyricY(system) 的平数据，排版进 worker 后主线程靠它重建 lyricY；2026-10-21）。 */
+  lyricYs: number[];
   lyricY: (system: number) => number;
   yOf: (system: number, d: number) => number;
   dOf: (system: number, y: number) => number;
+}
+/** 排版过线用的平数据（worker → 主线程 structuredClone）：Layout 去掉三个闭包。2026-10-21 by Claude Fable 5.1（排版进 worker；user 10-21「这个活也加进去」）。 */
+export type LayoutData = Omit<Layout, "lyricY" | "yOf" | "dOf">;
+export function stripLayoutFns(l: Layout): LayoutData { const { lyricY: _a, yOf: _b, dOf: _c, ...d } = l; return d; }
+/** 把三个闭包装回去：yOf / dOf 只看那一行的 staffTop 和 sp（和 engrave 里的定义逐字相同），lyricY 读 lyricYs。test/layout-worker.test.ts 对着 engrave 原装的闭包逐行核。 */
+export function attachLayoutFns(d: LayoutData): Layout {
+  const half = d.sp * 0.5;
+  const yOf = (r: number, dd: number): number => d.systems[r].staffTop + (TOP_LINE - dd) * half;
+  return { ...d, yOf, dOf: (r, y) => Math.round(TOP_LINE - (y - d.systems[r].staffTop) / half), lyricY: (r) => d.lyricYs[r] };
 }
 
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
@@ -175,7 +186,8 @@ const SPACING: Record<Density, { staffAbove: number; rowH: number; rowHNoLyric: 
   cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },   // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
   compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 },
 };
-const TOP_LINE = 38, MID_LINE = 34, BOTTOM_LINE = 30;
+export const TOP_LINE = 38;   // 五线谱最上面那条线的 d（attachLayoutFns 重建 yOf / dOf 要它；2026-10-21 排版进 worker）
+const MID_LINE = 34, BOTTOM_LINE = 30;
 // 修的字形（SMuFL；宽 / 高 = staff space，浏览器里量的 Bravura：重音 1.36 × 0.99、跳音点 0.28、保持线 1.35 × 0.17）。Above 的从基线往上长，Below 的往下长
 const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp" | "ghost" | "whisper" | "swellUp" | "swellDown" | "swellBoth" | "arpeggio">, { above: string; below: string; w: number; h: number }> = {
   stress: { above: "\u{E4B6}", below: "\u{E4B7}", w: 1.0, h: 1.0 },     // 次重音（2026-10-08 深夜；宽高 = canvas 量的 Bravura 墨迹）
@@ -1499,7 +1511,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
 }
 
 export type { Token };

@@ -23,7 +23,7 @@ async function series(label, n = 15) {
   const ts = r.map((x) => x.toSound).filter((x) => x !== null), hs = r.map((x) => x.handler);
   console.log(`${label}: 到出声 中位 ${med(ts).toFixed(1)} ms / 最大 ${Math.max(...ts).toFixed(1)} ms；整个处理 中位 ${med(hs).toFixed(1)} ms（${ts.length}/${n} 次有声）`);
   const perf = await p.evaluate(() => { const r = window.__moonsinger.perf(); window.__moonsinger.perfReset(); return r; });
-  const order = ["view.render", "engrave", "svg-parts", "svg-dom", "decor", "follow", "pad.render", "title", "changed", "chrome", "issues"];
+  const order = ["view.render", "engrave", "engrave-worker", "post", "reply", "encode-post", "encode-worker", "svg-parts", "svg-dom", "decor", "follow", "pad.render", "title", "changed", "chrome", "issues"];
   console.log("    分账（中位 / 最大 ms ×次数）: " + order.filter((k) => perf[k]).map((k) => `${k} ${perf[k].med}/${perf[k].max}×${perf[k].n}`).join(" · "));
 }
 await series("空歌 · 写音");

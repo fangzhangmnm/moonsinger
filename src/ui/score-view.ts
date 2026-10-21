@@ -23,8 +23,12 @@ import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL,
 import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
-import { engrave, LYRIC_EM, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
+import { engrave, attachLayoutFns, LYRIC_EM, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg, toSvgParts } from "../render/svg.ts";
+import { lyricFont, measurerOn } from "../render/lyric-font.ts";
+import type { LayoutJob, LayoutReply, SvgParts } from "../render/layout-worker.ts";
+/** 这一次排版用的几何（谱大小 / 纸宽 / 严格按纸 / 分页 / 边距 / 横卷）。 */
+type FrameNow = { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null; margins: { l: number; r: number; t: number; b: number }; hscroll: boolean };
 import { span, record } from "./perf-trace.ts";
 import { LyricEditor } from "./lyric-editor.ts";
 import { MarkEditor } from "./mark-editor.ts";
@@ -93,6 +97,10 @@ export interface ScoreViewHost {
   scroll?(): boolean;
   /** 排谱按多宽算（px）：横屏时键盘 / 混音台在右边一栏，收起来谱面变宽——按「它在」的宽度排，切键盘（符号 → 打字…）时谱的大小不跳（v0.10.33）。没给 = 谱面多宽就多宽。 */
   layoutWidth?(): number;
+  /** 排版 worker 的地址（dist/layout-worker-<hash>.mjs；构建时 define 进主 bundle）。没给 / 浏览器没有 OffscreenCanvas = 排版留在主线程。2026-10-21 */
+  layoutWorker?(): URL;
+  /** 排版 worker 建不起来 / 中途坏了（之后一直走主线程）：宿主记进黑匣子。 */
+  onLayoutWorker?(why: string): void;
   /** 分页（= 打印预览）时歌词行往下让多少（sp）：选了拼音字体印 PDF 时 = 拼音那一截（PDF 和分页预览排出来一样）。 */
   lyricRaise?(): number;
   /** 范围：segment = 一次只看光标所在的那张纸（曲段），‹ › 翻；all = 全部（隐藏的纸折叠着）。 */
@@ -239,16 +247,25 @@ export class ScoreView {
   }
 
   /** 量文字宽（px，歌词字号 = px）：屏幕和 PDF 共用这一把尺子——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。 */
-  measureAt(px: number): (s: string) => number {
-    const f = `${px}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
-    return (s) => { if (this.ctx.font !== f) this.ctx.font = f; return this.ctx.measureText(s).width; };
-  }
+  measureAt(px: number): (s: string) => number { return measurerOn(this.ctx, lyricFont(px)); }   // 字体串在 src/render/lyric-font.ts（worker 同一串）
   /** 排版这一半（engrave + 缓存），画是另一半（render）。谁要最新的排版就叫它——歌词框 / 记号框 / head() / E2E 钩子——不用等到下一帧画；
    *  render() 画之前也先叫它。同一份 EditorState 问第二次 = 直接回上次的（不读 DOM、不算键）；谱 / 几何都没变 = 回缓存（W-17 第 1 刀）。
    *  2026-10-17 Fable：画合并到下一帧之后（main.ts queuePaint），状态改了到画之间这一小段，排版照样拿得到最新的。 */
   layoutNow(force = false): Layout {
     const st = this.host.get();
     if (!force && this.layout && this.layoutSt === st && this.frameNow) return this.layout;
+    const g = this.geo(st);
+    if (!this.layout || this.geoSong !== st.song || this.geoKey !== g.geoKey) {
+      // 主线程自己排（同步退路：谁立刻要排版——歌词框 / 记号框 / E2E 钩子 / PDF，或没有 worker）；在途的 worker 回执作废（按 seq 丢）
+      this.layout = span("engrave", () => engrave(st.song, { ...g.opts, measureLyric: this.measureAt(g.lyricPx) }));
+      this.geoSong = st.song; this.geoKey = g.geoKey; this.workerParts = null; this.pending = null; this.queued = null;
+    }
+    this.layoutSt = st; this.frameNow = g.frame;
+    if (this.needPaint) this.render();   // 排版是为了画的（renderAsync 发出去还没回来，这里先算好了）= 顺手画掉；render 自己清 needPaint
+    return this.layout;
+  }
+  /** 排版的几何与选项（layoutNow 的同步路和 renderAsync 的 worker 路共用一份）：frame（谱大小 / 纸宽 / 分页）+ 缓存键 + engrave 的选项（不含量字宽的闭包，worker 自己配）。 */
+  private geo(st: EditorState): { frame: FrameNow; geoKey: string; opts: Omit<EngraveOpts, "measureLyric">; lyricPx: number } {
     const { sp, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
@@ -258,20 +275,79 @@ export class ScoreView {
     // 排版缓存（W-17 第 1 刀）：谱没变（引用）、排版的选项没变 = 不重排。光标 / 选区 / 写字头的蓝 / 强调色不在这个键里——它们在下面的 ink 层和 class 上做；字体还在装 = 装好再排一次
     const geoKey = JSON.stringify([width, sp, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, hscroll, autoBars, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v: unknown) => (v instanceof Set ? [...v] : v));
-    if (!this.layout || this.geoSong !== st.song || this.geoKey !== geoKey) {
-      this.layout = span("engrave", () => engrave(st.song, { width, sp, at: st.at, parts: partsNow, measureLyric: this.measureAt(LYRIC_EM * sp), titlePlaceholder: true, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
-        ...(lyricRaise ? { lyricRaise } : {}), autoBars, paperLabel, ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}) }));
-      this.geoSong = st.song; this.geoKey = geoKey;
-    }
-    this.layoutSt = st; this.frameNow = { sp, width, strict, page, margins, hscroll };
-    return this.layout;
+    const opts: Omit<EngraveOpts, "measureLyric"> = { width, sp, at: st.at, parts: partsNow, titlePlaceholder: true, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
+      ...(lyricRaise ? { lyricRaise } : {}), autoBars, paperLabel, ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}) };
+    return { frame: { sp, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp };
+  }
+  // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
+  //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），
+  //   回来的是 SVG 分组字符串 + 去掉闭包的 Layout（attachLayoutFns 装回去），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
+  //   谁同步要排版（layoutNow）= 主线程自己算、在途回执作废。没有 Worker / OffscreenCanvas、或 worker 坏了 = 永远走同步路（行为同 v0.13.x）。
+  private worker: Worker | null | undefined;   // undefined = 还没试；null = 没有 / 坏了
+  private seq = 0;
+  private pending: { seq: number; st: EditorState; song: Song; geoKey: string; frame: FrameNow } | null = null;
+  private queued: EditorState | null = null;
+  private workerParts: { for: Layout; parts: SvgParts } | null = null;   // worker 串好的 SVG（和它配套的那份 Layout）；主线程 render 时不再 toSvgParts
+  private needPaint = false;   // renderAsync 要画、还没画成
+  private workerOrNull(): Worker | null {
+    if (this.worker !== undefined) return this.worker;
+    this.worker = null;
+    try {
+      const url = this.host.layoutWorker?.();
+      if (!url || typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") return null;
+      const w = new Worker(url, { type: "module" });
+      w.onmessage = (e: MessageEvent<LayoutReply>) => this.onReply(e.data);
+      w.onerror = (e) => this.dropWorker(`worker error: ${e.message ?? "?"}`);
+      this.worker = w;
+    } catch (e) { this.dropWorker(`worker unavailable: ${(e as Error).message}`); }
+    return this.worker;
+  }
+  private dropWorker(why: string): void {
+    this.host.onLayoutWorker?.(why);
+    try { this.worker?.terminate(); } catch { /* ignore */ }
+    this.worker = null; this.pending = null; this.queued = null;
+    if (this.needPaint) this.render();
+  }
+  /** 画（给下一帧用的异步入口）：排版现成就画，不现成交给 worker、回来再画。 */
+  renderAsync(): void {
+    const w = this.workerOrNull();
+    if (!w) { this.render(); return; }
+    const st = this.host.get(), g = this.geo(st);
+    if (this.layout && this.geoSong === st.song && this.geoKey === g.geoKey) { this.layoutSt = st; this.frameNow = g.frame; this.render(); return; }   // 只挪了光标 / 选区 / 装饰
+    this.needPaint = true;
+    if (this.pending) { this.queued = st; return; }   // 在飞：回来再发最新的
+    this.post(w, st, g);
+  }
+  private post(w: Worker, st: EditorState, g: ReturnType<ScoreView["geo"]>): void {
+    const seq = ++this.seq;
+    this.pending = { seq, st, song: st.song, geoKey: g.geoKey, frame: g.frame }; this.queued = null;
+    const t0 = performance.now();
+    w.postMessage({ seq, song: st.song, opts: g.opts, font: lyricFont(g.lyricPx) } satisfies LayoutJob);
+    record("post", performance.now() - t0);
+  }
+  private onReply(r: LayoutReply): void {
+    const p = this.pending;
+    if (!p || r.seq !== p.seq) return;   // 作废（主线程自己算过了 / 更新的在飞）
+    this.pending = null;
+    if ("error" in r) { this.dropWorker(`layout job failed: ${r.error}`); return; }
+    const t0 = performance.now();
+    this.layout = attachLayoutFns(r.data); this.geoSong = p.song; this.geoKey = p.geoKey; this.layoutSt = p.st; this.frameNow = p.frame;
+    this.workerParts = { for: this.layout, parts: r.parts };
+    record("engrave-worker", r.ms); record("reply", performance.now() - t0);
+    const q = this.queued; this.queued = null;
+    if (!q) { this.render(); return; }
+    // 在飞期间又改了：同一首歌只挪了光标 = 直接画；歌 / 几何变了 = 不画这份过时的，马上发最新的
+    const g = this.geo(q);
+    if (this.geoSong === q.song && this.geoKey === g.geoKey) { this.layoutSt = q; this.frameNow = g.frame; this.render(); }
+    else { const w = this.workerOrNull(); if (w) this.post(w, q, g); else this.render(); }
   }
   private layoutSt: EditorState | null = null;
-  private frameNow: { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null; margins: { l: number; r: number; t: number; b: number }; hscroll: boolean } | null = null;
+  private frameNow: FrameNow | null = null;
   private paintedSt: EditorState | null = null;
   /** 这份状态已经画过了（main.ts 的下一帧画用：中途有人显式 render 过就不再画一遍）。 */
   paintedFor(st: EditorState): boolean { return this.paintedSt === st; }
   render(): void {
+    this.needPaint = false;
     const st = this.host.get();
     this.layoutNow(true);
     const { sp, width, strict, page, margins, hscroll } = this.frameNow!;
@@ -288,7 +364,7 @@ export class ScoreView {
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;   // ¾ 屏（一整屏有时让人以为白屏了；user 2026-10-08「留的滚动空白不应该是一整页…3/4左右？」）
     // 智能重画第一刀（W-17，2026-10-14）：SVG 按行谱分成几十个 <g>，和上一次逐组比字符串、只换变了的组（挪一格光标 = 两组）；
     //   框变了（宽高 / viewBox）或组数变了 = 整张换（和以前一样）。排版本身照旧整首算（engrave），省的是建 5000 个节点那七成。
-    const parts = span("svg-parts", () => toSvgParts(this.layout!));
+    const parts = this.workerParts?.for === this.layout ? this.workerParts.parts : span("svg-parts", () => toSvgParts(this.layout!));   // worker 串好的直接用
     const old = this.sheet.querySelector("svg");
     const prev = this.svgParts;
     let swapped = false;

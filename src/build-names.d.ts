@@ -2,6 +2,8 @@
 declare const __SINGER_WORKER__: string;
 declare const __STUDIO_WORKLET__: string;   // dist/studio-worklet-<hash>.mjs（AudioWorklet 里的录音房：走带 / 通道 / TinySoundFont / 元音采样器 / 块回放，src/engine/studio-processor.ts）
 declare const __MP3_WORKER__: string;
+declare const __ENCODE_WORKER__: string;   // dist/encode-worker-<hash>.mjs（存档编码 worker：saveMxl，src/format/encode-worker.ts；2026-10-21 Claude Fable 5.1）
+declare const __LAYOUT_WORKER__: string;   // dist/layout-worker-<hash>.mjs（排版 worker：engrave + SVG 串化，src/render/layout-worker.ts；2026-10-21 Claude Fable 5.1）
 /** styles.css 的内容哈希（index.html 里写成 styles.css?v=<它>）。主 bundle 引用它 = 样式一改主 bundle 的哈希也变 = 离线壳换新缓存。edited by Claude Opus 5.5 2026-10-07 */
 declare const __CSS_HASH__: string;
 /** 渲染核心的代码哈希（scripts/core-hash.mjs；src/core/version.ts 读它，没定义 = "dev"）。edited by Claude Fable 5.1 2026-10-16 */

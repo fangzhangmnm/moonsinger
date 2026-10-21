@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.13.10-2026-10-21";
+var APP_VERSION = "v0.14.0-2026-10-21";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7641,6 +7641,11 @@ var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
 var TEMPO_EM = 1.35;
+function attachLayoutFns(d3) {
+  const half2 = d3.sp * 0.5;
+  const yOf = (r10, dd) => d3.systems[r10].staffTop + (TOP_LINE - dd) * half2;
+  return { ...d3, yOf, dOf: (r10, y2) => Math.round(TOP_LINE - (y2 - d3.systems[r10].staffTop) / half2), lyricY: (r10) => d3.lyricYs[r10] };
+}
 var SQUEEZE = 0.15;
 var MARGIN = 1.2;
 var BAR_W = 1.6;
@@ -9200,7 +9205,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P2(PG.h) : yCur + P2(MX.b);
-  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricY, yOf, dOf };
+  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper: addPaper2, nav, paperMenu, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_2, r10) => lyricY(r10)), lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -9258,6 +9263,15 @@ function toSvgParts(l10) {
     buckets[k2].push(primSvg(p2, fs, lfs, rx2));
   }
   return { open, groups: buckets.map((b3, k2) => `<g data-sys="${k2 - 1}">${b3.join("")}</g>`), close: "</svg>" };
+}
+
+// src/render/lyric-font.ts
+var lyricFont = (px) => `${px}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
+function measurerOn(ctx2, font) {
+  return (s10) => {
+    if (ctx2.font !== font) ctx2.font = font;
+    return ctx2.measureText(s10).width;
+  };
 }
 
 // src/ui/lyric-editor.ts
@@ -10337,18 +10351,31 @@ var ScoreView = class {
   }
   /** 量文字宽（px，歌词字号 = px）：屏幕和 PDF 共用这一把尺子——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。 */
   measureAt(px) {
-    const f2 = `${px}px system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif`;
-    return (s10) => {
-      if (this.ctx.font !== f2) this.ctx.font = f2;
-      return this.ctx.measureText(s10).width;
-    };
+    return measurerOn(this.ctx, lyricFont(px));
   }
+  // 字体串在 src/render/lyric-font.ts（worker 同一串）
   /** 排版这一半（engrave + 缓存），画是另一半（render）。谁要最新的排版就叫它——歌词框 / 记号框 / head() / E2E 钩子——不用等到下一帧画；
    *  render() 画之前也先叫它。同一份 EditorState 问第二次 = 直接回上次的（不读 DOM、不算键）；谱 / 几何都没变 = 回缓存（W-17 第 1 刀）。
    *  2026-10-17 Fable：画合并到下一帧之后（main.ts queuePaint），状态改了到画之间这一小段，排版照样拿得到最新的。 */
   layoutNow(force = false) {
     const st2 = this.host.get();
     if (!force && this.layout && this.layoutSt === st2 && this.frameNow) return this.layout;
+    const g3 = this.geo(st2);
+    if (!this.layout || this.geoSong !== st2.song || this.geoKey !== g3.geoKey) {
+      this.layout = span("engrave", () => engrave(st2.song, { ...g3.opts, measureLyric: this.measureAt(g3.lyricPx) }));
+      this.geoSong = st2.song;
+      this.geoKey = g3.geoKey;
+      this.workerParts = null;
+      this.pending = null;
+      this.queued = null;
+    }
+    this.layoutSt = st2;
+    this.frameNow = g3.frame;
+    if (this.needPaint) this.render();
+    return this.layout;
+  }
+  /** 排版的几何与选项（layoutNow 的同步路和 renderAsync 的 worker 路共用一份）：frame（谱大小 / 纸宽 / 分页）+ 缓存键 + engrave 的选项（不含量字宽的闭包，worker 自己配）。 */
+  geo(st2) {
     const { sp: sp2, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
     const paper = st2.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st2) || st2.sel)) this.caretEnd = null;
@@ -10359,29 +10386,124 @@ var ScoreView = class {
       [width, sp2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, hscroll, autoBars2, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v) => v instanceof Set ? [...v] : v
     );
-    if (!this.layout || this.geoSong !== st2.song || this.geoKey !== geoKey) {
-      this.layout = span("engrave", () => engrave(st2.song, {
-        width,
-        sp: sp2,
-        at: st2.at,
-        parts: partsNow,
-        measureLyric: this.measureAt(LYRIC_EM * sp2),
-        titlePlaceholder: true,
-        ...this.rules.edit ? {} : { foldAll: true },
-        ...tailOpen ? { tailOpen: true } : {},
-        ...lyricRaise ? { lyricRaise } : {},
-        autoBars: autoBars2,
-        paperLabel,
-        ...page ? { page } : { margins },
-        ...scopeSeg ? { onlyPaper: st2.at.paper } : {},
-        ...hscroll ? { scroll: true } : {}
-      }));
-      this.geoSong = st2.song;
-      this.geoKey = geoKey;
+    const opts = {
+      width,
+      sp: sp2,
+      at: st2.at,
+      parts: partsNow,
+      titlePlaceholder: true,
+      ...this.rules.edit ? {} : { foldAll: true },
+      ...tailOpen ? { tailOpen: true } : {},
+      ...lyricRaise ? { lyricRaise } : {},
+      autoBars: autoBars2,
+      paperLabel,
+      ...page ? { page } : { margins },
+      ...scopeSeg ? { onlyPaper: st2.at.paper } : {},
+      ...hscroll ? { scroll: true } : {}
+    };
+    return { frame: { sp: sp2, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp2 };
+  }
+  // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
+  //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），
+  //   回来的是 SVG 分组字符串 + 去掉闭包的 Layout（attachLayoutFns 装回去），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
+  //   谁同步要排版（layoutNow）= 主线程自己算、在途回执作废。没有 Worker / OffscreenCanvas、或 worker 坏了 = 永远走同步路（行为同 v0.13.x）。
+  worker;
+  // undefined = 还没试；null = 没有 / 坏了
+  seq = 0;
+  pending = null;
+  queued = null;
+  workerParts = null;
+  // worker 串好的 SVG（和它配套的那份 Layout）；主线程 render 时不再 toSvgParts
+  needPaint = false;
+  // renderAsync 要画、还没画成
+  workerOrNull() {
+    if (this.worker !== void 0) return this.worker;
+    this.worker = null;
+    try {
+      const url = this.host.layoutWorker?.();
+      if (!url || typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") return null;
+      const w2 = new Worker(url, { type: "module" });
+      w2.onmessage = (e10) => this.onReply(e10.data);
+      w2.onerror = (e10) => this.dropWorker(`worker error: ${e10.message ?? "?"}`);
+      this.worker = w2;
+    } catch (e10) {
+      this.dropWorker(`worker unavailable: ${e10.message}`);
     }
-    this.layoutSt = st2;
-    this.frameNow = { sp: sp2, width, strict, page, margins, hscroll };
-    return this.layout;
+    return this.worker;
+  }
+  dropWorker(why) {
+    this.host.onLayoutWorker?.(why);
+    try {
+      this.worker?.terminate();
+    } catch {
+    }
+    this.worker = null;
+    this.pending = null;
+    this.queued = null;
+    if (this.needPaint) this.render();
+  }
+  /** 画（给下一帧用的异步入口）：排版现成就画，不现成交给 worker、回来再画。 */
+  renderAsync() {
+    const w2 = this.workerOrNull();
+    if (!w2) {
+      this.render();
+      return;
+    }
+    const st2 = this.host.get(), g3 = this.geo(st2);
+    if (this.layout && this.geoSong === st2.song && this.geoKey === g3.geoKey) {
+      this.layoutSt = st2;
+      this.frameNow = g3.frame;
+      this.render();
+      return;
+    }
+    this.needPaint = true;
+    if (this.pending) {
+      this.queued = st2;
+      return;
+    }
+    this.post(w2, st2, g3);
+  }
+  post(w2, st2, g3) {
+    const seq = ++this.seq;
+    this.pending = { seq, st: st2, song: st2.song, geoKey: g3.geoKey, frame: g3.frame };
+    this.queued = null;
+    const t02 = performance.now();
+    w2.postMessage({ seq, song: st2.song, opts: g3.opts, font: lyricFont(g3.lyricPx) });
+    record("post", performance.now() - t02);
+  }
+  onReply(r10) {
+    const p2 = this.pending;
+    if (!p2 || r10.seq !== p2.seq) return;
+    this.pending = null;
+    if ("error" in r10) {
+      this.dropWorker(`layout job failed: ${r10.error}`);
+      return;
+    }
+    const t02 = performance.now();
+    this.layout = attachLayoutFns(r10.data);
+    this.geoSong = p2.song;
+    this.geoKey = p2.geoKey;
+    this.layoutSt = p2.st;
+    this.frameNow = p2.frame;
+    this.workerParts = { for: this.layout, parts: r10.parts };
+    record("engrave-worker", r10.ms);
+    record("reply", performance.now() - t02);
+    const q2 = this.queued;
+    this.queued = null;
+    if (!q2) {
+      this.render();
+      return;
+    }
+    const g3 = this.geo(q2);
+    if (this.geoSong === q2.song && this.geoKey === g3.geoKey) {
+      this.layoutSt = q2;
+      this.frameNow = g3.frame;
+      this.render();
+    } else {
+      const w2 = this.workerOrNull();
+      if (w2) this.post(w2, q2, g3);
+      else this.render();
+    }
   }
   layoutSt = null;
   frameNow = null;
@@ -10391,6 +10513,7 @@ var ScoreView = class {
     return this.paintedSt === st2;
   }
   render() {
+    this.needPaint = false;
     const st2 = this.host.get();
     this.layoutNow(true);
     const { sp: sp2, width, strict, page, margins, hscroll } = this.frameNow;
@@ -10407,7 +10530,7 @@ var ScoreView = class {
     this.ink.style.left = `${this.layout.pageX.left}px`;
     if (this.hscroll) this.sheet.style.width = `${Math.ceil(this.layout.width + this.layout.pageX.left + this.layout.pageX.right)}px`;
     this.tail.style.height = `${Math.round(this.el.clientHeight * 0.75)}px`;
-    const parts = span("svg-parts", () => toSvgParts(this.layout));
+    const parts = this.workerParts?.for === this.layout ? this.workerParts.parts : span("svg-parts", () => toSvgParts(this.layout));
     const old = this.sheet.querySelector("svg");
     const prev = this.svgParts;
     let swapped = false;
@@ -32045,7 +32168,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "74826a3c5bf1699e" : "dev";
+var CORE_HASH = true ? "a8736fbb9074e981" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -43203,6 +43326,77 @@ function createHome(init, ports) {
   };
 }
 
+// src/format/encode-client.ts
+function createEncoder(workerUrl, onFallback) {
+  let worker;
+  let seq = 0;
+  const pending = /* @__PURE__ */ new Map();
+  const drop = (why) => {
+    onFallback(why);
+    try {
+      worker?.terminate();
+    } catch {
+    }
+    worker = null;
+    for (const [, p2] of pending) {
+      try {
+        p2.resolve(saveMxl(p2.args));
+      } catch (e10) {
+        p2.reject(e10);
+      }
+    }
+    pending.clear();
+  };
+  const get = () => {
+    if (worker !== void 0) return worker;
+    worker = null;
+    try {
+      const url = workerUrl();
+      if (!url || typeof Worker === "undefined") return null;
+      const w2 = new Worker(url, { type: "module" });
+      w2.onmessage = (e10) => {
+        const p2 = pending.get(e10.data.seq);
+        if (!p2) return;
+        pending.delete(e10.data.seq);
+        if ("bytes" in e10.data) {
+          record("encode-worker", e10.data.ms);
+          p2.resolve(e10.data.bytes);
+        } else p2.reject(new Error(e10.data.error));
+      };
+      w2.onerror = (e10) => drop(`encode worker error: ${e10.message ?? "?"}`);
+      worker = w2;
+    } catch (e10) {
+      drop(`encode worker unavailable: ${e10.message}`);
+    }
+    return worker;
+  };
+  return {
+    encode: (args) => {
+      const w2 = get();
+      if (!w2) return Promise.resolve(saveMxl(args));
+      return new Promise((resolve, reject) => {
+        const id2 = ++seq;
+        pending.set(id2, { args, resolve, reject });
+        const t02 = performance.now();
+        try {
+          w2.postMessage({ seq: id2, args });
+        } catch (e10) {
+          pending.delete(id2);
+          drop(`encode postMessage failed: ${e10.message}`);
+          try {
+            resolve(saveMxl(args));
+          } catch (err2) {
+            reject(err2);
+          }
+          return;
+        }
+        record("encode-post", performance.now() - t02);
+      });
+    },
+    offMain: () => worker != null
+  };
+}
+
 // src/score/desk.ts
 var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
@@ -43736,6 +43930,9 @@ var upTimer = 0;
 var view = new ScoreView(scoreEl, {
   get: () => D2.st,
   set: (n10, o10) => update(n10, o10?.gesture),
+  layoutWorker: () => new URL(`./${"layout-worker-6fb0185cdc6b.mjs"}`, import.meta.url),
+  // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
+  onLayoutWorker: (why) => diagNote("layout", why),
   audition: (i10, hold) => {
     clearTimeout(upTimer);
     soundTok(D2.st, i10, "score");
@@ -44022,7 +44219,7 @@ function paintNow() {
     cancelAnimationFrame(paintQueued);
     paintQueued = 0;
   }
-  if (!view.paintedFor(D2.st)) span("view.render", () => view.render());
+  if (!view.paintedFor(D2.st)) span("view.render", () => view.renderAsync());
   span("pad.render", () => pad3.render());
   span("title", () => renderTitle());
   span("chrome", () => updateChrome());
@@ -46515,6 +46712,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = D2.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
+var encoder = createEncoder(() => new URL(`./${"encode-worker-43a54aafce91.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -47087,10 +47285,12 @@ var es2 = createEditorSession({
     },
     onChange: () => {
     },
+    // 编码在 worker 里（src/format/encode-client.ts；2026-10-21）：主线程只克隆一份歌 + 休息室 + 参考窗的文件；worker 没了就在主线程算（同以前）
     encode: async () => {
       await refHost.settled();
       encodedSnap = D2.savedMark();
-      return { bytes: new Blob([bytesNow()], { type: "application/vnd.recordare.musicxml" }) };
+      const bytes = await encoder.encode({ ...saveArgs(), references: refHost.files() });
+      return { bytes: new Blob([bytes], { type: "application/vnd.recordare.musicxml" }) };
     },
     // 第 ④ 层护栏（store 接缝）：定稿着、出声内容的指纹却变了 = 不落盘、不推，脏留着（顶栏「•」照亮 = 诚实），说一句。前面三层都没拦住才会走到这儿。
     canPersist: () => {
@@ -47970,4 +48170,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-444f2d0026b1.mjs.map
+//# sourceMappingURL=moonsinger-18d58d1f81d3.mjs.map
