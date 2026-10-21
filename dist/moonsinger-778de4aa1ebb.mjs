@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.1-2026-10-21";
+var APP_VERSION = "v0.14.2-2026-10-21";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -10143,6 +10143,10 @@ var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
 var MAX_ZOOM = 6;
 var MIN_ZOOM = 0.4;
+var ZOOM_STEPS = [0.4, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6];
+var DOUBLE_TAP_MS2 = 300;
+var DOUBLE_TAP_PX = 30;
+var DOUBLE_TAP_ZOOM = 2;
 var realPart = (id2) => id2.replace(/~.*$/, "");
 var ScoreView = class {
   constructor(el2, host) {
@@ -10164,8 +10168,8 @@ var ScoreView = class {
     this.zoomBtn = document.createElement("button");
     this.zoomBtn.className = "btn zoom-reset";
     this.zoomBtn.type = "button";
-    this.zoomBtn.textContent = "1:1";
-    this.zoomBtn.title = "\u56DE\u5230\u539F\u5927";
+    this.zoomBtn.textContent = "100%";
+    this.zoomBtn.title = "\u73B0\u5728\u7684\u7F29\u653E\uFF1B\u70B9 = \u56DE\u5230\u81EA\u52A8\u5927\u5C0F\uFF08Ctrl / \u2318 + 0\uFF09\u3002Ctrl / \u2318 + \u6EDA\u8F6E\u3001\u634F\u5408 = \u7F29\u653E\uFF1BCtrl / \u2318 + = / \u2212 = \u4E00\u6863\u4E00\u6863";
     this.zoomBtn.hidden = true;
     this.zoomBtn.addEventListener("pointerdown", (e10) => {
       e10.preventDefault();
@@ -10216,8 +10220,8 @@ var ScoreView = class {
     el2.addEventListener("wheel", (e10) => {
       if (!e10.ctrlKey) return;
       e10.preventDefault();
-      const sr2 = this.sheet.getBoundingClientRect(), z2 = this.zoom, k2 = Math.exp(-(e10.deltaMode === 1 ? e10.deltaY * 16 : e10.deltaY) * 2e-3);
-      this.setZoom(z2 * k2, { x: e10.clientX, y: e10.clientY, cx: (e10.clientX - sr2.left) / z2, cy: (e10.clientY - sr2.top) / z2 });
+      const sr2 = this.sheet.getBoundingClientRect(), z2 = this.zoom, d3 = Math.max(-300, Math.min(300, e10.deltaMode === 1 ? e10.deltaY * 16 : e10.deltaMode === 2 ? e10.deltaY * 300 : e10.deltaY));
+      this.setZoom(z2 * Math.exp(-d3 * 2e-3), { x: e10.clientX, y: e10.clientY, cx: (e10.clientX - sr2.left) / z2, cy: (e10.clientY - sr2.top) / z2 });
     }, { passive: false });
     el2.addEventListener("scroll", () => {
       this.placePins();
@@ -11166,6 +11170,41 @@ var ScoreView = class {
   maxZoom() {
     return MAX_ZOOM;
   }
+  // ── 缩放的口（2026-10-21，Claude Fable 5.1；user「曲谱的缩放不合理，也理一下。可以对标一下pdf浏览器，然后ctrl wheel好好的帮我全量拦截一下」）：
+  //   键盘（Ctrl / ⌘ + = / − / 0，platform-guards 在窗口捕获阶段全拦、路由到这里）一档一档、以谱面板中心为锚；读数按钮 = 现在的百分比、点 = 回自动；
+  //   滚轮 / 捏合照旧连续、以指针 / 两指中点为锚；听模式手指双击 = 2 倍 / 回自动。1 = 自动大小（同 PDF 阅读器的「自动缩放」：放得下 = 工作大小，放不下 = 按屏宽）。
+  zoomLevel() {
+    return this.zoom;
+  }
+  zoomIn() {
+    this.zoomStep(1);
+  }
+  zoomOut() {
+    this.zoomStep(-1);
+  }
+  zoomReset() {
+    this.setZoom(1, null);
+  }
+  zoomStep(dir) {
+    const z2 = this.zoom, eps = 0.01;
+    const next2 = dir > 0 ? ZOOM_STEPS.find((s10) => s10 > z2 + eps) : [...ZOOM_STEPS].reverse().find((s10) => s10 < z2 - eps);
+    if (next2 !== void 0) this.setZoom(next2, null);
+  }
+  /** 谱面板中心下面那个纸面点（键盘缩放 / 回自动用的锚；同 PDF 阅读器：以视口中心缩放，不跳到左上角）。 */
+  centerAnchor() {
+    const r10 = this.el.getBoundingClientRect(), sr2 = this.sheet.getBoundingClientRect(), z2 = this.zoom, x2 = r10.left + r10.width / 2, y2 = r10.top + r10.height / 2;
+    return { x: x2, y: y2, cx: (x2 - sr2.left) / z2, cy: (y2 - sr2.top) / z2 };
+  }
+  lastTap = null;
+  /** 听模式的手指轻点：是不是双击（上一下没点中控件、隔得近）= 放大 2 倍 / 回自动，以这一点为锚。 */
+  doubleTapZoom(x2, y2) {
+    const now2 = performance.now(), lt2 = this.lastTap;
+    this.lastTap = null;
+    if (!lt2 || now2 - lt2.t > DOUBLE_TAP_MS2 || Math.hypot(x2 - lt2.x, y2 - lt2.y) > DOUBLE_TAP_PX) return false;
+    const sr2 = this.sheet.getBoundingClientRect(), z2 = this.zoom;
+    this.setZoom(z2 > 1 + 0.02 ? 1 : DOUBLE_TAP_ZOOM, { x: x2, y: y2, cx: (x2 - sr2.left) / z2, cy: (y2 - sr2.top) / z2 });
+    return true;
+  }
   pinchStart() {
     const [a10, b3] = [...this.touches.values()], r10 = this.sheet.getBoundingClientRect(), z0 = this.zoom, mx = (a10.x + b3.x) / 2, my = (a10.y + b3.y) / 2;
     if (this.pinch?.raf) cancelAnimationFrame(this.pinch.raf);
@@ -11196,23 +11235,22 @@ var ScoreView = class {
     this.sheet.style.transformOrigin = "";
     this.setZoom(pi.z0 * pi.k, { x: pi.mx, y: pi.my, cx: pi.sx, cy: pi.sy });
   }
-  /** 放大 / 缩小到 z（1 = 原大，最多到纸和屏幕一样宽）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
+  /** 放大 / 缩小到 z（1 = 自动大小）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 以谱面板中心为锚，同 PDF 阅读器；2026-10-21 之前 null = 跳回左上角）。 */
   setZoom(z2, anchor) {
     z2 = Math.max(MIN_ZOOM, Math.min(this.maxZoom(), z2));
     if (Math.abs(z2 - 1) < 0.02) z2 = 1;
+    const a10 = anchor ?? this.centerAnchor();
     const r10 = this.el.getBoundingClientRect();
     this.zoom = z2;
     this.sheet.style.zoom = z2 === 1 ? "" : String(z2);
     this.el.classList.toggle("zoomed", this.paperW * z2 > this.el.clientWidth + 1);
     this.zoomBtn.hidden = z2 === 1;
-    if (anchor) {
-      const nsr = this.sheet.getBoundingClientRect(), nl2 = nsr.left - r10.left + this.el.scrollLeft, nt2 = nsr.top - r10.top + this.el.scrollTop;
-      this.el.scrollLeft = nl2 + anchor.cx * z2 - (anchor.x - r10.left);
-      this.el.scrollTop = nt2 + anchor.cy * z2 - (anchor.y - r10.top);
-    } else {
-      this.el.scrollLeft = 0;
-    }
-    if (!this.zoomBtn.hidden) Object.assign(this.zoomBtn.style, { left: `${r10.right - 54}px`, top: `${r10.top + 8}px` });
+    this.zoomBtn.textContent = `${Math.round(z2 * 100)}%`;
+    const nsr = this.sheet.getBoundingClientRect(), nl2 = nsr.left - r10.left + this.el.scrollLeft, nt2 = nsr.top - r10.top + this.el.scrollTop;
+    this.el.scrollLeft = this.el.classList.contains("zoomed") || this.hscroll ? nl2 + a10.cx * z2 - (a10.x - r10.left) : 0;
+    const top = nt2 + a10.cy * z2 - (a10.y - r10.top), maxTop = Math.max(0, nt2 + nsr.height - this.el.clientHeight);
+    this.el.scrollTop = anchor ? top : Math.min(maxTop, Math.max(0, top));
+    if (!this.zoomBtn.hidden) Object.assign(this.zoomBtn.style, { left: `${r10.right - 64}px`, top: `${r10.top + 8}px` });
   }
   /** y 落在哪条谱行（行与行之间的空隙归上面那条；都不是 = 最近的一条）。 */
   rowAt(y2) {
@@ -11975,14 +12013,19 @@ var ScoreView = class {
         this.press = null;
         clearTimeout(pr2.timer);
       }
+      const viewTap = (x2, y2, pid) => {
+        if (e10.pointerType === "touch" && this.doubleTapZoom(x2, y2)) return;
+        const handled = this.tap(x2, y2, false, pid, true);
+        if (e10.pointerType === "touch" && !handled) this.lastTap = { t: performance.now(), x: x2, y: y2 };
+      };
       if (lt2 && e10.pointerId === lt2.pid) {
         this.lockTap = null;
-        if (!lt2.moved && !fired) this.tap(lt2.x, lt2.y, false, e10.pointerId, true);
+        if (!lt2.moved && !fired) viewTap(lt2.x, lt2.y, e10.pointerId);
         return;
       }
       if (f2 && e10.pointerId === f2.pid) {
         this.finger = null;
-        if (!f2.moved && !fired) this.tap(f2.x, f2.y, false, null, true);
+        if (!f2.moved && !fired) viewTap(f2.x, f2.y, null);
         return;
       }
       return;
@@ -12078,8 +12121,16 @@ function isTextTarget(t10) {
   if (!el2 || !el2.tagName) return false;
   return el2.tagName === "INPUT" || el2.tagName === "TEXTAREA" || el2.tagName === "SELECT" || el2.isContentEditable;
 }
-function installPlatformGuards(surfaces) {
+function installPlatformGuards(surfaces, opts = {}) {
   const cap = { capture: true, passive: false };
+  window.addEventListener("keydown", (e10) => {
+    if (!(e10.ctrlKey || e10.metaKey) || e10.altKey) return;
+    const dir = e10.code === "Equal" || e10.code === "NumpadAdd" || e10.key === "+" || e10.key === "=" ? 1 : e10.code === "Minus" || e10.code === "NumpadSubtract" || e10.key === "-" || e10.key === "_" ? -1 : e10.code === "Digit0" || e10.code === "Numpad0" || e10.key === "0" ? 0 : null;
+    if (dir === null) return;
+    e10.preventDefault();
+    e10.stopPropagation();
+    if (!e10.repeat || dir !== 0) opts.zoom?.(dir);
+  }, cap);
   window.addEventListener("dblclick", (e10) => {
     if (!isTextTarget(e10.target)) e10.preventDefault();
   }, cap);
@@ -30353,11 +30404,11 @@ function createPerformance(host) {
       if (!engine2.playing) for (const b3 of playBtns2()) b3.classList.remove("is-on");
     }
   }
-  const DOUBLE_TAP_MS2 = 350;
+  const DOUBLE_TAP_MS3 = 350;
   let lastPlayTap = 0;
   function playPause2(at2 = performance.now()) {
     const now2 = at2;
-    if (now2 - lastPlayTap < DOUBLE_TAP_MS2) {
+    if (now2 - lastPlayTap < DOUBLE_TAP_MS3) {
       lastPlayTap = 0;
       playFromHead2();
       return;
@@ -43618,7 +43669,7 @@ async function askRefImport(q2) {
   return await openChoiceSheet(q2.kind === "audio" ? "\u8FD9\u6BB5\u97F3\u9891\u6709\u70B9\u5927" : "\u8FD9\u5F20\u56FE\u6709\u70B9\u5927", msg, list) ?? "cancel";
 }
 new ResizeObserver(() => refHost.relayout()).observe(bar);
-installPlatformGuards([scoreEl, padEl]);
+installPlatformGuards([scoreEl, padEl], { zoom: (d3) => d3 === 0 ? view.zoomReset() : d3 > 0 ? view.zoomIn() : view.zoomOut() });
 var shell = initPwaShell({ onUpdateAvailable: () => {
   diagNote("sw", "update available");
   showUpdateBar();
@@ -44874,7 +44925,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "eeb39b8d6d82",
+  cssHash: "c7381487bb1e",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -46713,7 +46764,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = D2.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var encoder = createEncoder(() => new URL(`./${"encode-worker-5038f0412b10.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
+var encoder = createEncoder(() => new URL(`./${"encode-worker-dbe2d753a626.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -48171,4 +48222,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-531adc2d59ab.mjs.map
+//# sourceMappingURL=moonsinger-778de4aa1ebb.mjs.map

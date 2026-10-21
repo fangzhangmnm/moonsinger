@@ -112,6 +112,10 @@ type Grab = { kind: "lyric" | "mark"; index: number; system: number };
 
 /** 捏合最多放大到原大的几倍（同 PDF 阅读器，横着能滚）。 */
 const MAX_ZOOM = 6, MIN_ZOOM = 0.4;   // 缩小（v0.10.30：大屏上 A4 太大，Ctrl + 滚轮缩）
+/** 缩放的档（Ctrl / ⌘ + = / −、读数按钮；同 PDF 阅读器的那串）：1 = 自动（放得下 = 工作大小 10 px / 格，放不下 = 按屏宽缩）。滚轮 / 捏合照旧连续。2026-10-21 */
+const ZOOM_STEPS = [0.4, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6];
+/** 听模式里手指双击 = 放大到 2 倍 / 回到自动（PDF 阅读器的手势；写的模式里不接——轻点就是放光标）。两下隔 ≤ 300 ms、≤ 30 px。 */
+const DOUBLE_TAP_MS = 300, DOUBLE_TAP_PX = 30, DOUBLE_TAP_ZOOM = 2;
 /** 合租虚拟的几条（`主人~lo` / `主人~v2` / `主人~lo~v2`）→ 真的那一位（主人）。 */
 const realPart = (id: string): string => id.replace(/~.*$/, "");
 export class ScoreView {
@@ -162,7 +166,7 @@ export class ScoreView {
     this.tail = document.createElement("div"); this.tail.className = "sheet-tail"; this.tail.setAttribute("aria-hidden", "true");
     el.appendChild(this.tail);
     this.ink = document.createElement("div"); this.ink.className = "sheet-ink"; this.sheet.appendChild(this.ink);
-    this.zoomBtn = document.createElement("button"); this.zoomBtn.className = "btn zoom-reset"; this.zoomBtn.type = "button"; this.zoomBtn.textContent = "1:1"; this.zoomBtn.title = "回到原大"; this.zoomBtn.hidden = true;
+    this.zoomBtn = document.createElement("button"); this.zoomBtn.className = "btn zoom-reset"; this.zoomBtn.type = "button"; this.zoomBtn.textContent = "100%"; this.zoomBtn.title = "现在的缩放；点 = 回到自动大小（Ctrl / ⌘ + 0）。Ctrl / ⌘ + 滚轮、捏合 = 缩放；Ctrl / ⌘ + = / − = 一档一档"; this.zoomBtn.hidden = true;
     this.zoomBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); this.setZoom(1, null); });
     el.appendChild(this.zoomBtn);
     const mkHandle = (which: "start" | "end") => {
@@ -196,8 +200,8 @@ export class ScoreView {
     el.addEventListener("wheel", (e) => {
       if (!e.ctrlKey) return;
       e.preventDefault();
-      const sr = this.sheet.getBoundingClientRect(), z = this.zoom, k = Math.exp(-(e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY) * 0.002);
-      this.setZoom(z * k, { x: e.clientX, y: e.clientY, cx: (e.clientX - sr.left) / z, cy: (e.clientY - sr.top) / z });
+      const sr = this.sheet.getBoundingClientRect(), z = this.zoom, d = Math.max(-300, Math.min(300, e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * 300 : e.deltaY));   // 一下最多 ±300 px（别一格跳太远；按行 / 按页报的滚轮折成像素）
+      this.setZoom(z * Math.exp(-d * 0.002), { x: e.clientX, y: e.clientY, cx: (e.clientX - sr.left) / z, cy: (e.clientY - sr.top) / z });
     }, { passive: false });
     el.addEventListener("scroll", () => { this.placePins(); this.caretSeen = this.caretVisible(); }, { passive: true });   // 横卷：钉在左边的歌手名跟着横滚挪
     el.addEventListener("pointerup", (e) => this.up(e));
@@ -794,6 +798,32 @@ export class ScoreView {
   private paperW = 0;
   /** 最多放大几倍（同 PDF 阅读器：可以比屏幕宽、横着滚；user 2026-10-10「ipad可以放的很大，就和pdf浏览器一样」——取代 v0.9.19 的「最多到纸和屏幕一样宽」）。 */
   private maxZoom(): number { return MAX_ZOOM; }
+  // ── 缩放的口（2026-10-21，Claude Fable 5.1；user「曲谱的缩放不合理，也理一下。可以对标一下pdf浏览器，然后ctrl wheel好好的帮我全量拦截一下」）：
+  //   键盘（Ctrl / ⌘ + = / − / 0，platform-guards 在窗口捕获阶段全拦、路由到这里）一档一档、以谱面板中心为锚；读数按钮 = 现在的百分比、点 = 回自动；
+  //   滚轮 / 捏合照旧连续、以指针 / 两指中点为锚；听模式手指双击 = 2 倍 / 回自动。1 = 自动大小（同 PDF 阅读器的「自动缩放」：放得下 = 工作大小，放不下 = 按屏宽）。
+  zoomLevel(): number { return this.zoom; }
+  zoomIn(): void { this.zoomStep(1); }
+  zoomOut(): void { this.zoomStep(-1); }
+  zoomReset(): void { this.setZoom(1, null); }
+  private zoomStep(dir: 1 | -1): void {
+    const z = this.zoom, eps = 0.01;
+    const next = dir > 0 ? ZOOM_STEPS.find((s) => s > z + eps) : [...ZOOM_STEPS].reverse().find((s) => s < z - eps);
+    if (next !== undefined) this.setZoom(next, null);
+  }
+  /** 谱面板中心下面那个纸面点（键盘缩放 / 回自动用的锚；同 PDF 阅读器：以视口中心缩放，不跳到左上角）。 */
+  private centerAnchor(): { x: number; y: number; cx: number; cy: number } {
+    const r = this.el.getBoundingClientRect(), sr = this.sheet.getBoundingClientRect(), z = this.zoom, x = r.left + r.width / 2, y = r.top + r.height / 2;
+    return { x, y, cx: (x - sr.left) / z, cy: (y - sr.top) / z };
+  }
+  private lastTap: { t: number; x: number; y: number } | null = null;
+  /** 听模式的手指轻点：是不是双击（上一下没点中控件、隔得近）= 放大 2 倍 / 回自动，以这一点为锚。 */
+  private doubleTapZoom(x: number, y: number): boolean {
+    const now = performance.now(), lt = this.lastTap; this.lastTap = null;
+    if (!lt || now - lt.t > DOUBLE_TAP_MS || Math.hypot(x - lt.x, y - lt.y) > DOUBLE_TAP_PX) return false;
+    const sr = this.sheet.getBoundingClientRect(), z = this.zoom;
+    this.setZoom(z > 1 + 0.02 ? 1 : DOUBLE_TAP_ZOOM, { x, y, cx: (x - sr.left) / z, cy: (y - sr.top) / z });
+    return true;
+  }
   private pinchStart(): void {
     const [a, b] = [...this.touches.values()], r = this.sheet.getBoundingClientRect(), z0 = this.zoom, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
     if (this.pinch?.raf) cancelAnimationFrame(this.pinch.raf);
@@ -815,20 +845,22 @@ export class ScoreView {
     this.sheet.style.transform = ""; this.sheet.style.willChange = ""; this.sheet.style.transformOrigin = "";
     this.setZoom(pi.z0 * pi.k, { x: pi.mx, y: pi.my, cx: pi.sx, cy: pi.sy });   // 落定：重排一次，滚到让那个点还在两指中点下面
   }
-  /** 放大 / 缩小到 z（1 = 原大，最多到纸和屏幕一样宽）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 左上角）。 */
+  /** 放大 / 缩小到 z（1 = 自动大小）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 以谱面板中心为锚，同 PDF 阅读器；2026-10-21 之前 null = 跳回左上角）。 */
   private setZoom(z: number, anchor: { x: number; y: number; cx: number; cy: number } | null): void {
-    z = Math.max(MIN_ZOOM, Math.min(this.maxZoom(), z)); if (Math.abs(z - 1) < 0.02) z = 1;   // 回到原大附近 = 吸到 1
+    z = Math.max(MIN_ZOOM, Math.min(this.maxZoom(), z)); if (Math.abs(z - 1) < 0.02) z = 1;   // 回到自动附近 = 吸到 1
+    const a = anchor ?? this.centerAnchor();
     const r = this.el.getBoundingClientRect();
     this.zoom = z; this.sheet.style.zoom = z === 1 ? "" : String(z);
     this.el.classList.toggle("zoomed", this.paperW * z > this.el.clientWidth + 1);   // 比屏幕宽了才靠左 + 横着滚（窄的照旧居中；v0.10.30 缩小 / 大屏上放大一点也居中）
-    this.zoomBtn.hidden = z === 1;   // 放大 / 缩小了 = 露「1:1」
-    if (anchor) {
-      // 纸面点 (cx, cy)（纸面坐标）要落在屏幕 (x, y) 下面：滚动到 纸的位置 + 点 × zoom − (x − 滚动区左上)
-      const nsr = this.sheet.getBoundingClientRect(), nl = nsr.left - r.left + this.el.scrollLeft, nt = nsr.top - r.top + this.el.scrollTop;
-      this.el.scrollLeft = nl + anchor.cx * z - (anchor.x - r.left);
-      this.el.scrollTop = nt + anchor.cy * z - (anchor.y - r.top);
-    } else { this.el.scrollLeft = 0; }
-    if (!this.zoomBtn.hidden) Object.assign(this.zoomBtn.style, { left: `${r.right - 54}px`, top: `${r.top + 8}px` });
+    this.zoomBtn.hidden = z === 1;   // 放大 / 缩小了 = 露读数（点 = 回自动）
+    this.zoomBtn.textContent = `${Math.round(z * 100)}%`;
+    // 纸面点 (cx, cy)（纸面坐标）要落在屏幕 (x, y) 下面：滚动到 纸的位置 + 点 × zoom − (x − 滚动区左上)
+    const nsr = this.sheet.getBoundingClientRect(), nl = nsr.left - r.left + this.el.scrollLeft, nt = nsr.top - r.top + this.el.scrollTop;
+    this.el.scrollLeft = this.el.classList.contains("zoomed") || this.hscroll ? nl + a.cx * z - (a.x - r.left) : 0;   // 没比屏幕宽 = 居中，横向不用对
+    const top = nt + a.cy * z - (a.y - r.top), maxTop = Math.max(0, nt + nsr.height - this.el.clientHeight);
+    // 指针 / 两指下面有具体的点 = 那个点钉住（短的纸会借用底下那 ¾ 屏空白，手下的东西不跑）；回自动 / 键盘一档一档（没有具体的点）= 以中心为锚但不滚进空白：纸比窗口矮 = 贴顶（同 PDF 阅读器）
+    this.el.scrollTop = anchor ? top : Math.min(maxTop, Math.max(0, top));
+    if (!this.zoomBtn.hidden) Object.assign(this.zoomBtn.style, { left: `${r.right - 64}px`, top: `${r.top + 8}px` });
   }
   /** y 落在哪条谱行（行与行之间的空隙归上面那条；都不是 = 最近的一条）。 */
   private rowAt(y: number): number {
@@ -1323,8 +1355,14 @@ export class ScoreView {
       if (this.roGesture && this.roAt && ((lt && e.pointerId === lt.pid && !lt.moved && !fired) || (f && e.pointerId === f.pid && !f.moved && !fired))) { const at = this.roAt; this.roAt = null; this.roGesture = false; this.cancelPress(); this.lockTap = null; this.finger = null; this.expandFamilyAt(at.x, at.y); return; }
       if (!this.touches.size) this.roGesture = false;
       if (pr && pr.pid === e.pointerId) { this.press = null; clearTimeout(pr.timer); }
-      if (lt && e.pointerId === lt.pid) { this.lockTap = null; if (!lt.moved && !fired) this.tap(lt.x, lt.y, false, e.pointerId, true); return; }
-      if (f && e.pointerId === f.pid) { this.finger = null; if (!f.moved && !fired) this.tap(f.x, f.y, false, null, true); return; }
+      // 听模式的手指轻点：没点中控件的一下记下来，紧接着再点一下 = 双击缩放（PDF 阅读器手势；2026-10-21）
+      const viewTap = (x: number, y: number, pid: number | null) => {
+        if (e.pointerType === "touch" && this.doubleTapZoom(x, y)) return;
+        const handled = this.tap(x, y, false, pid, true);
+        if (e.pointerType === "touch" && !handled) this.lastTap = { t: performance.now(), x, y };
+      };
+      if (lt && e.pointerId === lt.pid) { this.lockTap = null; if (!lt.moved && !fired) viewTap(lt.x, lt.y, e.pointerId); return; }
+      if (f && e.pointerId === f.pid) { this.finger = null; if (!f.moved && !fired) viewTap(f.x, f.y, null); return; }
       return;
     }
     if (this.lift && e.pointerId === this.lift.pid) { this.cancelPress(); this.finger = null; this.endLift(); return; }

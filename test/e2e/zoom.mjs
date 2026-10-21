@@ -48,6 +48,16 @@ check((await state()).sl > 100, "单指横着拖 = 横着滚", String((await sta
 // 角上 1:1 回原大
 await p.evaluate(() => document.querySelector(".zoom-reset").dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))); await p.waitForTimeout(200);
 check((await state()).zoom === 1, "1:1 = 回原大");
+// 听模式手指双击 = 2 倍 / 回自动（PDF 阅读器手势；写的模式里双击照旧不缩放；2026-10-21）
+await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTimeout(200);
+const blank = await p.evaluate(() => { const r = document.querySelector("#score .sheet").getBoundingClientRect(), L = window.__moonsinger.layout(), row = L.systems[0], el = document.querySelector("#score"); const y = r.top + (row.top + row.bottom) / 2; el.scrollTop = Math.max(0, el.scrollTop + (y - (el.getBoundingClientRect().top + el.clientHeight / 2))); const r2 = document.querySelector("#score .sheet").getBoundingClientRect(); return { x: r2.right - 24, y: r2.top + (row.top + row.bottom) / 2 }; });   // 第一行谱右边的空白（没有控件、没有音）
+await p.touchscreen.tap(blank.x, blank.y); await p.waitForTimeout(80); await p.touchscreen.tap(blank.x, blank.y); await p.waitForTimeout(300);
+check(Math.abs((await state()).zoom - 2) < 0.01, "听模式双击 = 放大到 2 倍", String((await state()).zoom));
+await p.touchscreen.tap(blank.x, blank.y); await p.waitForTimeout(80); await p.touchscreen.tap(blank.x, blank.y); await p.waitForTimeout(300);
+check((await state()).zoom === 1, "再双击 = 回自动", String((await state()).zoom));
+await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(200);
+await p.touchscreen.tap(blank.x, blank.y); await p.waitForTimeout(80); await p.touchscreen.tap(blank.x, blank.y); await p.waitForTimeout(300);
+check((await state()).zoom === 1, "写的模式里双击不缩放（轻点 = 放光标）", String((await state()).zoom));
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nzoom: ${pass} passed, ${fail} failed`);

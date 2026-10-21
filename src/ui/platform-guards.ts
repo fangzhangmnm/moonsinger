@@ -14,8 +14,17 @@ function isTextTarget(t: EventTarget | null): boolean {
   return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT" || el.isContentEditable;
 }
 
-export function installPlatformGuards(surfaces: HTMLElement[]): void {
+export function installPlatformGuards(surfaces: HTMLElement[], opts: { /** Ctrl / ⌘ + = / − / 0（含小键盘）→ 缩放谱面（1 放大 / −1 缩小 / 0 回自动）；浏览器的网页缩放一律拦下。 */ zoom?: (dir: 1 | -1 | 0) => void } = {}): void {
   const cap = { capture: true, passive: false } as const;
+  // 全量拦截浏览器缩放（2026-10-21；user「ctrl wheel好好的帮我全量拦截一下」）：Ctrl / ⌘ + 滚轮（下面）之外还有 Ctrl / ⌘ + = / + / − / 0 这几个键——不管焦点在哪（输入框里也一样，
+  //   PDF 阅读器就是这样）都不让网页缩放；交给谱面的缩放。Alt 按着的不管（别家快捷键）。
+  window.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    const dir = e.code === "Equal" || e.code === "NumpadAdd" || e.key === "+" || e.key === "=" ? 1 : e.code === "Minus" || e.code === "NumpadSubtract" || e.key === "-" || e.key === "_" ? -1 : e.code === "Digit0" || e.code === "Numpad0" || e.key === "0" ? 0 : null;
+    if (dir === null) return;
+    e.preventDefault(); e.stopPropagation();
+    if (!e.repeat || dir !== 0) opts.zoom?.(dir);
+  }, cap);
   window.addEventListener("dblclick", (e) => { if (!isTextTarget(e.target)) e.preventDefault(); }, cap);
   window.addEventListener("touchstart", (e) => { if (e.touches.length >= 3 && !isTextTarget(e.target)) e.preventDefault(); }, cap);
   window.addEventListener("gesturestart", (e) => e.preventDefault(), cap);

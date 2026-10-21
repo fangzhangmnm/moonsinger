@@ -45,7 +45,7 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
   font-family: system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif; font-size: 14px;
-  touch-action: manipulation; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+  touch-action: pan-x pan-y; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; overscroll-behavior: none; }   /* pan-x pan-y（不是 manipulation）= 哪儿都不许捏合缩放网页（Chromium 系触屏；WebKit 另有 gesturestart 拦）；谱面自己的捏合在 .score 上（touch-action: none）。2026-10-21 */
 [hidden] { display: none !important; }
 button, input, select { font: inherit; color: inherit; }
 

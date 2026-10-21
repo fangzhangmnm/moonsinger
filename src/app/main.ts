@@ -202,7 +202,7 @@ async function askRefImport(q: RefImportQuestion): Promise<RefImportChoice> {
 }
 
 new ResizeObserver(() => refHost.relayout()).observe(bar);
-installPlatformGuards([scoreEl, padEl]);   // iPad：长按放大镜 / 系统菜单 / 双击缩放（照 WeebPaint）
+installPlatformGuards([scoreEl, padEl], { zoom: (d) => (d === 0 ? view.zoomReset() : d > 0 ? view.zoomIn() : view.zoomOut()) });   // iPad：长按放大镜 / 系统菜单 / 双击缩放（照 WeebPaint）；Ctrl / ⌘ + = / − / 0 = 谱面缩放（2026-10-21）
 
 // ── PWA 壳（2026-10-07 出生）：service worker + 四路更新检测；有新版不强刷，顶上出一条「有新版本 · 刷新」（不用系统弹窗） ─────
 const shell = initPwaShell({ onUpdateAvailable: () => { diagNote("sw", "update available"); showUpdateBar(); } });
