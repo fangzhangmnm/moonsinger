@@ -17,6 +17,14 @@
  *  manifest 2 / score 2（2026-10-08，0.5.0 多声部多纸，存法 B）：纸的顺序表 + 声部并集；每张纸一份 MusicXML 正本，score.musicxml 变派生件。 */
 export const FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 } as const;
 export type FormatFile = keyof typeof FORMAT;
+/** 家族格式版本纪律（2026-10-21，家族根 ai-docs/20261021-format-version-discipline.md；user「版本纪律能做成 catsup moonsinger 一样不同 component 有自己的拍子…这个变成全家的版本纪律」「三级语义 同意」）：
+ *  `version` = major（整数拍照旧：不可兼容 / 重大安全问题才 +1；老读者只认它，比自己新 = 拒开），再加两个可选整数键 `minor` / `patch`（缺 = 0）：
+ *  minor +1 = 加了可选字段 / 新的子表 / 新的默认行为（老读者能开能改能存、未知键原样带回、告诉用户一次）；patch +1 = 写法 / 默认值修正（老读者静默）。
+ *  minor 1 = 追认 major 2 之后加过的所有可选字段（2026-10-08 → 10-21：manifest 的 core / final / finalRev / sounds；score 的 view / arrangement / lyricFit / barNumbers / parts.clef / host / autoOttava、
+ *  papers 的 phrases / swells / hidden；lounge 的 articulation / chain / defaults 那些；studio v2 的 master.chain / bypass / sends / dry…）——以前写的文件没有这两个键 = 0.0，读起来一样。
+ *  指纹（定稿）不看 minor / patch（project.ts fpTextOf）。改 minor / patch 不用迁移、不用冻结样本，只跑 freeze-format-sample 更新形状快照。added 2026-10-21 by Claude Fable 5.1 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 1, lounge: 1, studio: 1 };
+export const FORMAT_PATCH: Readonly<Record<FormatFile, number>> = { manifest: 0, score: 0, lounge: 0, studio: 0 };
 
 // ═══ 现役（project.ts 写的就是这些）═══════════════════════════════════════════════════════
 

@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.3-2026-10-21";
+var APP_VERSION = "v0.14.4-2026-10-21";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -26163,6 +26163,8 @@ function readMusicXml(xml, hints) {
 
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
+var FORMAT_MINOR = { manifest: 1, score: 1, lounge: 1, studio: 1 };
+var FORMAT_PATCH = { manifest: 0, score: 0, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
 var K2 = new Uint32Array([
@@ -26399,6 +26401,12 @@ var instrumentOf = (c10) => c10 && c10.instrument && typeof c10.instrument === "
 var isVoice = (i10) => !!i10 && (i10.engine === "tsukuyomi" || i10.engine === "vowel-sampler");
 var roleOf = (extras, role, hum) => structuredClone(extras.lounge[role] ?? defaultRole(hum, role));
 var nextKey2 = (ids, prefix) => `${prefix}${Math.max(0, ...ids.map((x2) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x2)?.[1] ?? 0))) + 1}`;
+var stampOf = (k2) => ({ version: FORMAT[k2], minor: FORMAT_MINOR[k2], patch: FORMAT_PATCH[k2] });
+var fpTextOf = (o10) => {
+  const { minor: _m, patch: _p, ...rest } = o10;
+  return JSON.stringify(rest, null, 2) + "\n";
+};
+var KNOWN_SCORE_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers"]);
 function saveMxl(a10) {
   const { out, fingerprint } = buildEntries(a10);
   if (a10.extras.final && a10.extras.final.fingerprint !== fingerprint) throw new Error("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u5B9A\u7A3F\u7740\u4E0D\u80FD\u8FD9\u6837\u5B58\u3002\u5148\u300C\u6539\u7A3F\u300D\u518D\u6539\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002");
@@ -26492,8 +26500,10 @@ function buildEntries(a10) {
     }
     return { info: { ...infos[k2], ...first && first !== "G" ? { clef: first } : {} }, tokens: toks, breaks: new Map(starts.slice(1).map((s10) => [s10.index, s10.paper.name])) };
   }) }, meta);
+  const scoreRest = Object.fromEntries(Object.entries(a10.extras.scoreExt ?? {}).filter(([k2]) => !KNOWN_SCORE_KEYS.has(k2)));
   const scoreExt = {
-    version: FORMAT.score,
+    ...scoreRest,
+    ...stampOf("score"),
     papers,
     parts: song.parts.map((p2) => ({ id: p2.id, role: p2.role, mic: p2.mic, kind: "pitched", ...p2.staves === 2 ? {} : { clef: p2.clef ?? "auto" }, ...p2.autoOttava === false ? { autoOttava: false } : {}, ...p2.host ? { host: p2.host } : {} })),
     // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
@@ -26510,9 +26520,9 @@ function buildEntries(a10) {
   const jsonText = (o10) => JSON.stringify(o10, null, 2) + "\n";
   const fpParts = {
     papers: Object.fromEntries(papers.map((p2) => [p2.id, strFromU8(files[p2.file])])),
-    scoreExt: jsonText(scoreExt),
-    lounge: Object.fromEntries(Object.entries(lounge).map(([id2, r10]) => [id2, jsonText(r10)])),
-    studio: jsonText(studio2),
+    scoreExt: fpTextOf(scoreExt),
+    lounge: Object.fromEntries(Object.entries(lounge).map(([id2, r10]) => [id2, fpTextOf(r10)])),
+    studio: fpTextOf(studio2),
     sounds: sounds.map(([p2]) => p2),
     thumbnail: a10.extras.thumbnail
   };
@@ -26521,7 +26531,7 @@ function buildEntries(a10) {
   const manifest = {
     ...manifestRest,
     format: "moonsinger",
-    version: FORMAT.manifest,
+    ...stampOf("manifest"),
     app: a10.app,
     saved: a10.date,
     files: {
@@ -26554,8 +26564,8 @@ function buildEntries(a10) {
   out["score.musicxml"] = strToU8(flat.xml);
   out[`${DIR}score.json`] = json(scoreExt);
   for (const [path, bytes] of Object.entries(files)) out[path] = bytes;
-  for (const [id2, r10] of Object.entries(lounge)) out[`${DIR}lounge/${id2}.json`] = json(r10);
-  out[`${DIR}studio.json`] = json(studio2);
+  for (const [id2, r10] of Object.entries(lounge)) out[`${DIR}lounge/${id2}.json`] = json({ ...r10, ...stampOf("lounge") });
+  out[`${DIR}studio.json`] = json({ ...studio2, ...stampOf("studio") });
   for (const [path, bytes] of sounds) out[path] = bytes;
   for (const [path, bytes] of Object.entries(a10.references ?? {})) {
     if (!path.startsWith(REFERENCES_DIR)) throw new Error(`\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 ${REFERENCES_DIR} \u4E0B\uFF1A${path}`);
@@ -26979,17 +26989,20 @@ function openBytes(name, bytes) {
     references[p2] = b3;
     known.add(p2);
   }
-  const newer = (what, v, mine) => {
-    if (Number(v) > mine) throw new Error(`\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08${what} \u7B2C ${v} \u7248\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BA4\u5230\u7B2C ${mine} \u7248\uFF09\uFF0C\u6253\u5F00\u518D\u5B58\u4F1A\u4E22\u4E1C\u897F\uFF0C\u6240\u4EE5\u6CA1\u6709\u6253\u5F00\u3002\u8BF7\u5148\u66F4\u65B0 app\u3002`);
+  const newerMinor = [];
+  const newer = (what, j2, kind) => {
+    const major = Number(j2.version ?? 1), minor = Number(j2.minor ?? 0);
+    if (major > FORMAT[kind]) throw new Error(`\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08${what} \u7B2C ${major} \u7248\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BA4\u5230\u7B2C ${FORMAT[kind]} \u7248\uFF09\uFF0C\u6253\u5F00\u518D\u5B58\u4F1A\u4E22\u4E1C\u897F\uFF0C\u6240\u4EE5\u6CA1\u6709\u6253\u5F00\u3002\u8BF7\u5148\u66F4\u65B0 app\u3002`);
+    if (major === FORMAT[kind] && minor > FORMAT_MINOR[kind]) newerMinor.push(what);
   };
-  newer("\u603B\u76EE\u5F55", manifest.version, FORMAT.manifest);
+  newer("\u603B\u76EE\u5F55", manifest, "manifest");
   extras.manifest = migrate("manifest", manifest);
   const rawLounge = {};
   let scoreExt = null;
   if (files[`${DIR}score.json`]) {
     const s02 = parse2(`${DIR}score.json`);
     known.add(`${DIR}score.json`);
-    newer("\u8C31\u7684\u6269\u5C55", s02.version, FORMAT.score);
+    newer("\u8C31\u7684\u6269\u5C55", s02, "score");
     scoreExt = migrate("score", s02);
     extras.scoreExt = scoreExt;
   }
@@ -26997,16 +27010,16 @@ function openBytes(name, bytes) {
     const m2 = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p2);
     if (m2) {
       const r10 = parse2(p2);
-      newer(`\u4F11\u606F\u5BA4\u300C${r10.name ?? m2[1]}\u300D`, r10.version, FORMAT.lounge);
+      newer(`\u4F11\u606F\u5BA4\u300C${r10.name ?? m2[1]}\u300D`, r10, "lounge");
       extras.lounge[m2[1]] = migrate("lounge", r10);
       known.add(p2);
-      rawLounge[m2[1]] = strFromU8(files[p2]);
+      rawLounge[m2[1]] = fpTextOf(r10);
     }
   }
   if (files[`${DIR}studio.json`]) {
     const s10 = parse2(`${DIR}studio.json`);
     known.add(`${DIR}studio.json`);
-    newer("\u5F55\u97F3\u623F", s10.version, FORMAT.studio);
+    newer("\u5F55\u97F3\u623F", s10, "studio");
     extras.studio = migrate("studio", s10);
   }
   for (const p2 of Object.keys(files)) if (p2.startsWith(SOUNDS2) && !p2.endsWith("/")) {
@@ -27024,7 +27037,7 @@ function openBytes(name, bytes) {
       const f2 = String(p2.file ?? paperFile(String(p2.id)));
       if (files[f2]) papersRaw[String(p2.id)] = strFromU8(files[f2]);
     }
-    const fp = rec && files[`${DIR}score.json`] && files[`${DIR}studio.json`] ? contentFingerprint({ papers: papersRaw, scoreExt: strFromU8(files[`${DIR}score.json`]), lounge: rawLounge, studio: strFromU8(files[`${DIR}studio.json`]), sounds: Object.keys(extras.sounds), thumbnail: files[THUMBNAIL_ENTRY] ?? null }) : null;
+    const fp = rec && files[`${DIR}score.json`] && files[`${DIR}studio.json`] ? contentFingerprint({ papers: papersRaw, scoreExt: fpTextOf(parse2(`${DIR}score.json`)), lounge: rawLounge, studio: fpTextOf(parse2(`${DIR}studio.json`)), sounds: Object.keys(extras.sounds), thumbnail: files[THUMBNAIL_ENTRY] ?? null }) : null;
     if (!rec) finalNotices.push("\u8FD9\u9996\u6B4C\u7684\u5B9A\u7A3F\u8BB0\u5F55\u8BFB\u4E0D\u61C2\uFF08\u522B\u7684\u7248\u672C\u5199\u7684\uFF1F\uFF09\uFF1A\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002");
     else if (!mp3 || mp3.length !== rec.mp3.bytes) finalNotices.push(`\u5B9A\u7A3F\u7684 mp3 \u4E0D\u5728\u6B4C\u91CC\u6216\u5927\u5C0F\u4E0D\u5BF9\uFF08\u8BB0\u5F55 ${rec.mp3.bytes} \u5B57\u8282\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002`);
     else if (fp !== rec.fingerprint) finalNotices.push(`\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u540E\u88AB\u6539\u8FC7\uFF08\u53EF\u80FD\u662F\u65E7\u7248 app \u6216\u522B\u7684\u8F6F\u4EF6\u6539\u7684\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u90A3\u4EFD mp3 \u4E0D\u7B97\u6570\u4E86\u3002\u8981\u7684\u8BDD\u6539\u5B8C\u518D\u5B9A\u7A3F\u4E00\u6B21\u3002`);
@@ -27069,7 +27082,8 @@ function openBytes(name, bytes) {
   for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
   const song = songFromReads(reads, papers, scoreExt?.parts ?? null);
   const o10 = finish(reads, song, pruneSounds(extras), ours, name);
-  return { ...o10, notices: [...finalNotices, ...o10.notices], references };
+  const advice = newerMinor.length ? [`\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08${newerMinor.join("\u3001")}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u90A3\u4E9B\u4E1C\u897F\u4FDD\u5B58\u65F6\u4E0D\u4F1A\u4E22\uFF0C\u53EA\u662F\u5728\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\u3002`] : [];
+  return { ...o10, notices: [...finalNotices, ...o10.notices], references, advice };
 }
 function songFromReads(reads, papers, partList = null) {
   const ps = papers ?? [paperOfRead("p1", reads[0])];
@@ -27146,7 +27160,7 @@ function finish(reads, song0, extras, ours, name) {
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;
-  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}, ...extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null, references: {} };
+  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}, ...extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null, references: {}, advice: [] };
 }
 
 // src/format/credits.ts
@@ -32457,7 +32471,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "a8736fbb9074e981" : "dev";
+var CORE_HASH = true ? "8a090c76775a91e7" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -46995,13 +47009,14 @@ function openPicked(picked) {
     const o10 = openBytes(picked.name, picked.bytes), own = o10.ours && !o10.notices.length;
     loadDoc(o10.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
     if (o10.notices.length) showError(o10.notices.join(" "));
+    if (o10.advice.length) info(o10.advice.join(" "));
     else info(`\u6253\u5F00\u4E86 ${picked.name}`);
   } catch (e10) {
     showError(`\u6253\u4E0D\u5F00 ${picked.name}\uFF1A${e10.message}`);
   }
 }
 var extrasForSave = (base3 = D2.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var encoder = createEncoder(() => new URL(`./${"encode-worker-878fb79a7fd9.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
+var encoder = createEncoder(() => new URL(`./${"encode-worker-ff01cff2fb0d.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -47623,6 +47638,7 @@ function adoptStoreBytes(id2, bytes) {
   const o10 = openBytes(id2, bytes);
   loadDoc(o10.song, { home: { kind: "gallery", identifier: id2 }, stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
   if (o10.notices.length) showError(o10.notices.join(" "));
+  if (o10.advice.length) info(o10.advice.join(" "));
 }
 var stemOfId = (id2) => identifiers.parse(id2)?.stem ?? id2;
 async function openStoreDoc(id2) {
@@ -48459,4 +48475,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-454716430cd4.mjs.map
+//# sourceMappingURL=moonsinger-d2157454d54d.mjs.map

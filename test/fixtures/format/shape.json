@@ -49,6 +49,8 @@
       },
       "finalRev": "number",
       "format": "string",
+      "minor": "number",
+      "patch": "number",
       "saved": "string",
       "sounds": [
         {
@@ -63,6 +65,7 @@
       "arrangement": "string",
       "barNumbers": "string",
       "lyricFit": "string",
+      "minor": "number",
       "papers": [
         {
           "file": "string",
@@ -102,6 +105,7 @@
           "role": "string"
         }
       ],
+      "patch": "number",
       "version": "number",
       "view": {
         "mode": "string",
@@ -304,7 +308,9 @@
         }
       },
       "id": "string",
+      "minor": "number",
       "name": "string",
+      "patch": "number",
       "sound": "string",
       "version": "number"
     },
@@ -322,6 +328,8 @@
         "gainDb": "number",
         "limiter": "boolean"
       },
+      "minor": "number",
+      "patch": "number",
       "tracks": [
         {
           "bypass": "boolean",

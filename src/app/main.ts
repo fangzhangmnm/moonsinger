@@ -2237,7 +2237,7 @@ function openPicked(picked: docFile.Picked): void {
   try {
     const o = openBytes(picked.name, picked.bytes), own = o.ours && !o.notices.length;
     loadDoc(o.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references });
-    if (o.notices.length) showError(o.notices.join(" "));
+    if (o.notices.length) showError(o.notices.join(" ")); if (o.advice.length) info(o.advice.join(" "));
     else info(`打开了 ${picked.name}`);
   } catch (e) { showError(`打不开 ${picked.name}：${(e as Error).message}`); }
 }
@@ -2730,7 +2730,7 @@ setInterval(() => { changed(); if (H.home.kind === "gallery") renderTitle(); }, 
 function adoptStoreBytes(id: string, bytes: Uint8Array): void {
   const o = openBytes(id, bytes);
   loadDoc(o.song, { home: { kind: "gallery", identifier: id }, stem: identifiers.parse(id)?.stem ?? o.stem, named: true, extras: o.extras, view: o.view, references: o.references });
-  if (o.notices.length) showError(o.notices.join(" "));
+  if (o.notices.length) showError(o.notices.join(" ")); if (o.advice.length) info(o.advice.join(" "));
 }
 const stemOfId = (id: string) => identifiers.parse(id)?.stem ?? id;
 /** 打开歌库里的一首。false = 没切过去（本地没字节 / 读不了 / 用户不走）。

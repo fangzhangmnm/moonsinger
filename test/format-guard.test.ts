@@ -6,9 +6,10 @@ const fs = (await import("node:fs" as string)) as {
   readFileSync(u: URL, enc: "utf8"): string; readFileSync(u: URL): Uint8Array;
   readdirSync(u: URL): string[]; existsSync(u: URL): boolean;
 };
-import { saveMxl, openBytes, activeInstrument, FORMAT } from "../src/format/project.ts";
+import { saveMxl, openBytes, activeInstrument, contentFingerprintOf, FORMAT } from "../src/format/project.ts";
+import { FORMAT_MINOR, FORMAT_PATCH } from "../src/format/contract.ts";
 import { MIGRATIONS } from "../src/format/migrate/index.ts";
-import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
+import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong, sampleView, sampleExtras, canonTokens, canonTracks, shapeOf, mergeShape } from "./fixtures/format/sample-song.ts";
 
 const DIR = new URL("./fixtures/format/", import.meta.url);
@@ -33,11 +34,50 @@ describe("持久化守卫", () => {
   });
   it("写永远只写当前版：每份 version = FORMAT，manifest.files 列的版本也对", () => {
     const w = writeNow();
-    for (const k of KINDS) eq(w[k].version, FORMAT[k], `${k}.version`);
+    for (const k of KINDS) { eq(w[k].version, FORMAT[k], `${k}.version`); eq(w[k].minor, FORMAT_MINOR[k], `${k}.minor`); eq(w[k].patch, FORMAT_PATCH[k], `${k}.patch`); }   // 三级拍子（2026-10-21）
+    for (const r of w.loungeAll) { eq(r.minor, FORMAT_MINOR.lounge); eq(r.patch, FORMAT_PATCH.lounge); }
     const files = w.manifest.files as Record<string, number>;
     eq(files["score.json"], FORMAT.score); eq(files["studio.json"], FORMAT.studio); eq(files["lounge/r1.json"], FORMAT.lounge); eq(files["lounge/r2.json"], FORMAT.lounge);
     eq(files["papers/p1.musicxml"], 0); eq(files["papers/p2.musicxml"], 0);   // 标准件记 0
     eq(JSON.stringify(w.manifest.derived), JSON.stringify(["score.musicxml"]));
+  });
+  /** 拿当前冻结样本、改掉某份 JSON 的拍子再打包回去（别的 entry 原样）。 */
+  const sampleWith = (file: string, patch: (j: Json) => Json): Uint8Array => {
+    const tag = `v${Object.values(FORMAT).join("-")}`;
+    const files = unzipSync(new Uint8Array(fs.readFileSync(at(tag, "sample.mxl"))));
+    files[file] = strToU8(JSON.stringify(patch(JSON.parse(strFromU8(files[file]))), null, 2) + "\n");
+    return zipSync(Object.fromEntries(Object.entries(files).map(([k, v]) => [k, [v, { level: k === "mimetype" ? 0 : 6 }] as [Uint8Array, { level: 0 | 6 }]])));
+  };
+  it("三级拍子读取（家族格式版本纪律 2026-10-21）：minor 比自己新 = 能开 + advice 一句；patch 比自己新 = 静默；major 比自己新 = 拒开", () => {
+    const o1 = openBytes("x.mxl", sampleWith(".moonsinger/score.json", (j) => ({ ...j, minor: FORMAT_MINOR.score + 1 })));
+    eq(o1.advice.length, 1, "minor 更新 = 一句 advice"); assert(o1.advice[0].includes("谱的扩展"), o1.advice[0]); eq(o1.notices.length, 0, "不是报错");
+    eq((o1.extras.scoreExt as Json).minor, FORMAT_MINOR.score + 1, "读进来的拍子原样留着（写出去时换成自己的）");
+    const o2 = openBytes("x.mxl", sampleWith(".moonsinger/studio.json", (j) => ({ ...j, patch: FORMAT_PATCH.studio + 7 })));
+    eq(o2.advice.length, 0, "patch 更新 = 静默");
+    const o3 = openBytes("x.mxl", sampleWith(".moonsinger/lounge/r1.json", (j) => ({ ...j, minor: FORMAT_MINOR.lounge + 1 })));
+    eq(o3.advice.length, 1); assert(o3.advice[0].includes("休息室"), o3.advice[0]);
+    let threw = "";
+    try { openBytes("x.mxl", sampleWith(".moonsinger/manifest.json", (j) => ({ ...j, version: FORMAT.manifest + 1 }))); } catch (e) { threw = (e as Error).message; }
+    assert(/更新版本/.test(threw), `major 更新 = 拒开：${threw}`);
+    // 再存：写出去的拍子是自己的（不是读进来的更高 minor）
+    const files = unzipSync(saveMxl({ song: o1.song, hum: o1.hum, extras: o1.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: null }));
+    eq(JSON.parse(strFromU8(files[".moonsinger/score.json"])).minor, FORMAT_MINOR.score, "写永远只写当前拍");
+  });
+  it("定稿的指纹不看 minor / patch（升 minor 之后再存，定稿的歌不能被判成「内容变了」）；老样本读进来的指纹 = 这一版重新写出去的指纹", () => {
+    const song = sampleSong(), extras = sampleExtras(song);
+    const base = { song, hum: song.hum, extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: sampleView() };
+    const fp0 = contentFingerprintOf(base);
+    const bumped = { ...extras, scoreExt: { ...((extras.scoreExt ?? {}) as Json), minor: 9, patch: 9 }, studio: { ...((extras.studio ?? {}) as Json), minor: 3 }, lounge: Object.fromEntries(Object.entries(extras.lounge).map(([k, r]) => [k, { ...r, patch: 5 }])) };
+    eq(contentFingerprintOf({ ...base, extras: bumped as typeof extras }), fp0, "拍子变了指纹不变");
+    // 读进来再写出去：指纹相同（读侧按去掉拍子的文本算，写侧同一把尺）
+    const o = openBytes("x.mxl", saveMxl(base));
+    eq(contentFingerprintOf({ song: o.song, hum: o.hum, extras: o.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: o.view }), fp0, "读写往返指纹不变");
+  });
+  it("score.json 不认识的顶层键原样带回（未知键直通）", () => {
+    const o = openBytes("x.mxl", sampleWith(".moonsinger/score.json", (j) => ({ ...j, futureThing: { a: 1 } })));
+    eq(o.advice.length, 0, "只是多了个键、拍子没变 = 不提示");
+    const files = unzipSync(saveMxl({ song: o.song, hum: o.hum, extras: o.extras, app: "guard", date: "2026-10-21T00:00:00.000Z", view: null }));
+    eq(JSON.stringify(JSON.parse(strFromU8(files[".moonsinger/score.json"])).futureThing), JSON.stringify({ a: 1 }), "再存还在");
   });
   it("迁移链完整：MIGRATIONS[kind].length === FORMAT[kind] - 1（升了版本没写迁移 = 红）", () => {
     for (const k of KINDS) eq(MIGRATIONS[k].length, FORMAT[k] - 1, `${k}：第 1 版升到第 ${FORMAT[k]} 版要 ${FORMAT[k] - 1} 步纯函数（src/format/migrate/index.ts）`);

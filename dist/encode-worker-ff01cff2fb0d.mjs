@@ -2541,6 +2541,8 @@ ${bodies.join("\n")}
 
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
+var FORMAT_MINOR = { manifest: 1, score: 1, lounge: 1, studio: 1 };
+var FORMAT_PATCH = { manifest: 0, score: 0, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
 var K = new Uint32Array([
@@ -2685,7 +2687,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/version.ts
-var APP_VERSION = "v0.14.3-2026-10-21";
+var APP_VERSION = "v0.14.4-2026-10-21";
 
 // src/format/performance.ts
 var DYNAMICS_DB = { ppp: -24, pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12, fff: 18 };
@@ -2760,6 +2762,12 @@ var cands = (role) => role?.candidates ?? [];
 var instrumentOf = (c) => c && c.instrument && typeof c.instrument === "object" ? c.instrument : null;
 var isVoice = (i) => !!i && (i.engine === "tsukuyomi" || i.engine === "vowel-sampler");
 var roleOf = (extras, role, hum) => structuredClone(extras.lounge[role] ?? defaultRole(hum, role));
+var stampOf = (k) => ({ version: FORMAT[k], minor: FORMAT_MINOR[k], patch: FORMAT_PATCH[k] });
+var fpTextOf = (o) => {
+  const { minor: _m, patch: _p, ...rest } = o;
+  return JSON.stringify(rest, null, 2) + "\n";
+};
+var KNOWN_SCORE_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers"]);
 function saveMxl(a) {
   const { out, fingerprint } = buildEntries(a);
   if (a.extras.final && a.extras.final.fingerprint !== fingerprint) throw new Error("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u5B9A\u7A3F\u7740\u4E0D\u80FD\u8FD9\u6837\u5B58\u3002\u5148\u300C\u6539\u7A3F\u300D\u518D\u6539\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002");
@@ -2850,8 +2858,10 @@ function buildEntries(a) {
     }
     return { info: { ...infos[k], ...first && first !== "G" ? { clef: first } : {} }, tokens: toks, breaks: new Map(starts.slice(1).map((s) => [s.index, s.paper.name])) };
   }) }, meta);
+  const scoreRest = Object.fromEntries(Object.entries(a.extras.scoreExt ?? {}).filter(([k]) => !KNOWN_SCORE_KEYS.has(k)));
   const scoreExt = {
-    version: FORMAT.score,
+    ...scoreRest,
+    ...stampOf("score"),
     papers,
     parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched", ...p.staves === 2 ? {} : { clef: p.clef ?? "auto" }, ...p.autoOttava === false ? { autoOttava: false } : {}, ...p.host ? { host: p.host } : {} })),
     // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
@@ -2868,9 +2878,9 @@ function buildEntries(a) {
   const jsonText = (o) => JSON.stringify(o, null, 2) + "\n";
   const fpParts = {
     papers: Object.fromEntries(papers.map((p) => [p.id, strFromU8(files[p.file])])),
-    scoreExt: jsonText(scoreExt),
-    lounge: Object.fromEntries(Object.entries(lounge).map(([id, r]) => [id, jsonText(r)])),
-    studio: jsonText(studio),
+    scoreExt: fpTextOf(scoreExt),
+    lounge: Object.fromEntries(Object.entries(lounge).map(([id, r]) => [id, fpTextOf(r)])),
+    studio: fpTextOf(studio),
     sounds: sounds.map(([p]) => p),
     thumbnail: a.extras.thumbnail
   };
@@ -2879,7 +2889,7 @@ function buildEntries(a) {
   const manifest = {
     ...manifestRest,
     format: "moonsinger",
-    version: FORMAT.manifest,
+    ...stampOf("manifest"),
     app: a.app,
     saved: a.date,
     files: {
@@ -2912,8 +2922,8 @@ function buildEntries(a) {
   out["score.musicxml"] = strToU8(flat.xml);
   out[`${DIR}score.json`] = json(scoreExt);
   for (const [path, bytes] of Object.entries(files)) out[path] = bytes;
-  for (const [id, r] of Object.entries(lounge)) out[`${DIR}lounge/${id}.json`] = json(r);
-  out[`${DIR}studio.json`] = json(studio);
+  for (const [id, r] of Object.entries(lounge)) out[`${DIR}lounge/${id}.json`] = json({ ...r, ...stampOf("lounge") });
+  out[`${DIR}studio.json`] = json({ ...studio, ...stampOf("studio") });
   for (const [path, bytes] of sounds) out[path] = bytes;
   for (const [path, bytes] of Object.entries(a.references ?? {})) {
     if (!path.startsWith(REFERENCES_DIR)) throw new Error(`\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 ${REFERENCES_DIR} \u4E0B\uFF1A${path}`);
@@ -2965,4 +2975,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-878fb79a7fd9.mjs.map
+//# sourceMappingURL=encode-worker-ff01cff2fb0d.mjs.map
