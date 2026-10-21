@@ -47,7 +47,7 @@ describe("store-wiring", () => {
     has(s, /store: \{ file: \(name, o\) => \{ const f = requireStore\(\)\.zip\(name, \{ mode: o\.mode \}\);/, "editor-session 的 StoreLike 必须包 store.zip（0.16.1：zip 种类才有 getPeek / 尾读）");
     has(s, /diagNote\("sync", `push \$\{name\}/, "每次推的结果（pushed / reason / resolution）要进黑匣子");
     has(s, /pushOn: \["exit"/, "policy.pushOn 必须含 exit（退出 / 换歌时推云）");
-    has(s, /adopt: async \(blob\) => \{ const id = pendingOpenId \?\? doc\.identifier/, "adapter.adopt 要能在 takeCloud 重载（没有 pendingOpenId）时用 doc.identifier");
+    has(s, /adopt: async \(blob\) => \{ const id = pendingOpenId \?\? H\.identifier\(\)/, "adapter.adopt 要能在 takeCloud 重载（没有 pendingOpenId）时用 H.identifier()（2026-10-21 起家在 src/app/home.ts）");
     has(s, /files\.dirty\.pushAll\(\)/, "登录后必须 pushAll（0.15.1：at-rest 字节直推）");
     has(s, /drainOfflineQueue\(\)/, "登录后必须回放离线队列");
   });

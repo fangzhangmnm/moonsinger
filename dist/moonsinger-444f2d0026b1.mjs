@@ -1498,13 +1498,13 @@ var init_upng_esm = __esm({
             if (i10 == 0) {
               if ((x2 & 7) != 0) x2 += 8 - (x2 & 7);
               var K4 = (x2 >>> 3) + 4, m2 = o10[K4 - 4] | o10[K4 - 3] << 8;
-              if (A2) j2 = H2(j2, N2 + m2);
+              if (A2) j2 = H3(j2, N2 + m2);
               j2.set(new I2(o10.buffer, o10.byteOffset + K4, m2), N2);
               x2 = K4 + m2 << 3;
               N2 += m2;
               continue;
             }
-            if (A2) j2 = H2(j2, N2 + (1 << 17));
+            if (A2) j2 = H3(j2, N2 + (1 << 17));
             if (i10 == 1) {
               P2 = D3.g;
               J2 = D3.A;
@@ -1560,7 +1560,7 @@ var init_upng_esm = __esm({
                 x2 += e10 & 15;
                 var E2 = e10 >>> 4, c10 = D3.h[E2], q2 = (c10 >>> 4) + s10(o10, x2, c10 & 15);
                 x2 += c10 & 15;
-                if (A2) j2 = H2(j2, N2 + (1 << 17));
+                if (A2) j2 = H3(j2, N2 + (1 << 17));
                 while (N2 < M3) {
                   j2[N2] = j2[N2++ - q2];
                   j2[N2] = j2[N2++ - q2];
@@ -1573,7 +1573,7 @@ var init_upng_esm = __esm({
           }
           return j2.length == N2 ? j2 : j2.slice(0, N2);
         }
-        function H2(o10, j2) {
+        function H3(o10, j2) {
           var I2 = o10.length;
           if (j2 <= I2) return o10;
           var A2 = new Uint8Array(Math.max(I2 << 1, j2));
@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.13.9-2026-10-18";
+var APP_VERSION = "v0.13.10-2026-10-21";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -7721,10 +7721,10 @@ var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 function unitsOf(tokens, o10) {
-  const H2 = headLen(tokens);
+  const H3 = headLen(tokens);
   let fifths = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx = {};
-  for (let i10 = 0; i10 < H2; i10++) {
+  for (let i10 = 0; i10 < H3; i10++) {
     const t10 = tokens[i10];
     if (t10.kind === "key") fifths = t10.fifths;
     else if (t10.kind === "time") time = { beats: t10.beats, beatType: t10.beatType };
@@ -7754,7 +7754,7 @@ function unitsOf(tokens, o10) {
     if (o10.autoBars && inBar >= len && inBar > 0) pushBar(-1, true);
   };
   tokens.forEach((t10, i10) => {
-    if (i10 < H2) return;
+    if (i10 < H3) return;
     if (t10.kind === "bar") {
       pushBar(i10, false);
       return;
@@ -8928,9 +8928,9 @@ function engrave(song, o10) {
         }
         const swl = c10.j === 0 ? swellOf(tokens[c10.index]) : void 0;
         if (swl) {
-          const y2 = (noteDynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4)) - P2(0.5), xa = nhX(c10) + (c10.art.some((a10) => a10 === "sfz" || a10 === "fp") ? P2(2.4) : 0), xb = Math.max(xa + P2(1.6), nhX(c10) + P2(c10.w) - P2(0.8)), H3 = P2(0.35);
+          const y2 = (noteDynYAt.get(rowOf(c10.system, r10, 0)) ?? yOf(RW(c10), TOP_LINE + 2.4)) - P2(0.5), xa = nhX(c10) + (c10.art.some((a10) => a10 === "sfz" || a10 === "fp") ? P2(2.4) : 0), xb = Math.max(xa + P2(1.6), nhX(c10) + P2(c10.w) - P2(0.8)), H4 = P2(0.35);
           const cl2 = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
-          const d4 = swl === "<" ? `M${xb},${y2 - H3}L${xa},${y2}L${xb},${y2 + H3}` : swl === ">" ? `M${xa},${y2 - H3}L${xb},${y2}L${xa},${y2 + H3}` : `M${xa},${y2}L${mx},${y2 - H3}L${xb},${y2}M${xa},${y2}L${mx},${y2 + H3}L${xb},${y2}`;
+          const d4 = swl === "<" ? `M${xb},${y2 - H4}L${xa},${y2}L${xb},${y2 + H4}` : swl === ">" ? `M${xa},${y2 - H4}L${xb},${y2}L${xa},${y2 + H4}` : `M${xa},${y2}L${mx},${y2 - H4}L${xb},${y2}M${xa},${y2}L${mx},${y2 + H4}L${xb},${y2}`;
           prims.push({ t: "path", d: d4, cls: cl2 });
         }
         if (c10.art.includes("arpeggio")) {
@@ -8998,7 +8998,7 @@ function engrave(song, o10) {
         const leftOf = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((c10) => nhX(c10)), P2(right)) - P2(1);
         const segs = [];
         for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf(sy2), sy2 === s12 ? endX : P2(right) - P2(0.3)]);
-        const total = segs.reduce((n10, [, a10, b3]) => n10 + Math.max(0, b3 - a10), 0) || 1, H3 = P2(0.5);
+        const total = segs.reduce((n10, [, a10, b3]) => n10 + Math.max(0, b3 - a10), 0) || 1, H4 = P2(0.5);
         const midY = (sy2) => (dynYAt.get(rowOf(sy2, r10, 0)) ?? yOf(rowOf(sy2, r10, 0), TOP_LINE + 2.4)) - P2(0.5);
         if (total > P2(right - MARGIN)) {
           const word = dir === "cresc" ? "cresc." : "dim.", ww = P2(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
@@ -9020,7 +9020,7 @@ function engrave(song, o10) {
             if (b3 - a10 < P2(0.3)) continue;
             const f0 = acc2 / total, f1 = (acc2 + b3 - a10) / total;
             acc2 += b3 - a10;
-            const [h0, h1] = dir === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)], y2 = midY(sy2);
+            const [h0, h1] = dir === "cresc" ? [H4 * f0, H4 * f1] : [H4 * (1 - f0), H4 * (1 - f1)], y2 = midY(sy2);
             let d3 = `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`;
             if (ramp) {
               const hAt = (x3) => h0 + (h1 - h0) * ((x3 - a10) / (b3 - a10)), on2 = P2(RAMP_DASH.len), per2 = P2(RAMP_DASH.len + RAMP_DASH.gap);
@@ -9123,21 +9123,21 @@ function engrave(song, o10) {
         if (acc >= c10.ratio[1] * minBase - 1e-6) closeRun();
       }
       closeRun();
-      const H2 = headLen(tokens);
+      const H3 = headLen(tokens);
       const firstUnitOf = /* @__PURE__ */ new Map();
       for (const u2 of units) if (u2.kind !== "head" && u2.index >= 0 && !firstUnitOf.has(u2.index)) firstUnitOf.set(u2.index, u2);
       const realLen = q2.realLen;
-      for (let c10 = H2; c10 <= realLen; c10++) {
+      for (let c10 = H3; c10 <= realLen; c10++) {
         const u2 = c10 < tokens.length ? firstUnitOf.get(c10) : void 0;
         const last = u2 ? null : [...units].reverse().find((v) => v.kind !== "head");
         const sys = u2 ? u2.system : last ? last.system : 0, x3 = u2 ? P2(u2.x) : last ? P2(last.x + last.w) : P2(sysStarts[0]);
         for (let k2 = 0; k2 < q2.staves; k2++) slots.push({ caret: c10, system: rowOf(sys, r10, k2), x: x3 });
       }
       const shiftAt2 = (c10) => {
-        const kk = Math.min(c10, realLen) - 1, si2 = kk >= H2 ? kk : -1;
+        const kk = Math.min(c10, realLen) - 1, si2 = kk >= H3 ? kk : -1;
         return Array.from({ length: q2.staves }, (_2, k2) => shAt(q2, k2 + 1, si2));
       };
-      for (let c10 = H2; c10 <= realLen; c10++) {
+      for (let c10 = H3; c10 <= realLen; c10++) {
         const u0 = c10 < tokens.length ? firstUnitOf.get(c10) : void 0;
         let sys, x3;
         if (!u0) {
@@ -9169,7 +9169,7 @@ function engrave(song, o10) {
         }
       }
       let lastSys = -1;
-      for (let c10 = H2; c10 < Math.min(tokens.length, realLen + 1); c10++) {
+      for (let c10 = H3; c10 < Math.min(tokens.length, realLen + 1); c10++) {
         const u2 = firstUnitOf.get(c10);
         if (!u2) continue;
         const crossed = lastSys >= 0 && u2.system > lastSys;
@@ -12666,11 +12666,11 @@ var Pad = class {
     }
     const v = this.knobList(knob), n10 = v.items.length, pid = e10.pointerId, y0 = e10.clientY;
     const rollItems = v.loop ? [v.items[n10 - 1], ...v.items, v.items[0]] : v.items, at0 = v.loop ? v.index + 1 : v.index;
-    let moved = false, cur = v.index, roll = null, H2 = 0;
+    let moved = false, cur = v.index, roll = null, H3 = 0;
     const room = (dir) => v.loop || v.index + dir >= 0 && v.index + dir < n10 ? STEP : STEP * 0.3;
     const paint = (dy) => {
       const off = Math.max(-room(1), Math.min(room(-1), dy));
-      roll.style.transform = `translateY(${(-at0 * STEP + off) * (H2 / STEP)}px)`;
+      roll.style.transform = `translateY(${(-at0 * STEP + off) * (H3 / STEP)}px)`;
       return Math.abs(off) >= STEP / 2 ? (v.index - Math.sign(off) + n10) % n10 : v.index;
     };
     const move = (ev2) => {
@@ -12679,10 +12679,10 @@ var Pad = class {
       if (!moved) {
         if (Math.abs(dy) < MOVE) return;
         moved = true;
-        H2 = b3.clientHeight;
+        H3 = b3.clientHeight;
         roll = document.createElement("div");
         roll.className = "kroll";
-        roll.innerHTML = rollItems.map((h2) => `<div class="kroll-i" style="height:${H2}px">${h2}</div>`).join("");
+        roll.innerHTML = rollItems.map((h2) => `<div class="kroll-i" style="height:${H3}px">${h2}</div>`).join("");
         b3.appendChild(roll);
         b3.classList.add("rolling");
       }
@@ -20384,13 +20384,13 @@ function createGalleryVerbs(d3) {
   const docFile = (identifier, mode = "existing") => d3.store().file(identifier, { mode });
   const ids = () => d3.store().identifiers;
   const whereLabel = (where) => where === "local" ? t("gal.loc.local") : t("gal.loc.cloud");
-  const stemOf3 = (identifier) => ids().parse(identifier)?.stem ?? identifier.slice(identifier.lastIndexOf("/") + 1);
+  const stemOf2 = (identifier) => ids().parse(identifier)?.stem ?? identifier.slice(identifier.lastIndexOf("/") + 1);
   const cloudOn = () => d3.host.signedIn() && d3.host.online();
   async function rename(item) {
     if (item.identifier === d3.host.activeIdentifier()) {
       const nn2 = await d3.doc.renameActive();
       if (nn2 && nn2 !== item.identifier)
-        d3.host.status(t("gal.st.renamed2", { from: item.stem, to: stemOf3(nn2) }));
+        d3.host.status(t("gal.st.renamed2", { from: item.stem, to: stemOf2(nn2) }));
       return;
     }
     const d0 = ids().parse(item.identifier);
@@ -20491,7 +20491,7 @@ function createGalleryVerbs(d3) {
         const taken = new Set(currentIdentifiers);
         const newIdentifier = copyTargetName(item.identifier, (n10) => taken.has(n10), ids());
         await docFile(newIdentifier, "new").save(bytes, { tryPush: cloudOn() });
-        d3.host.status(t("gal.st.copied", { name: stemOf3(newIdentifier) }));
+        d3.host.status(t("gal.st.copied", { name: stemOf2(newIdentifier) }));
       } catch (e10) {
         d3.host.status(t("gal.st.copyFail", { e: errMsg(e10) }), true);
       }
@@ -20587,7 +20587,7 @@ function createGalleryVerbs(d3) {
           encrypted: item.encrypted
         });
         const rn2 = res.name ?? item.identifier;
-        d3.host.status(rn2 !== item.identifier ? t("gal.st.restoredRenamed", { name: stemOf3(rn2), orig: item.stem }) : t("gal.st.restored", { name: item.stem }));
+        d3.host.status(rn2 !== item.identifier ? t("gal.st.restoredRenamed", { name: stemOf2(rn2), orig: item.stem }) : t("gal.st.restored", { name: item.stem }));
       } catch (e10) {
         d3.host.status(t("gal.st.restoreFail", { e: errMsg(e10) }), true);
       }
@@ -24229,7 +24229,7 @@ var Sha256 = class {
     return this;
   }
   block(p2, o10) {
-    const w2 = this.w, H2 = this.h;
+    const w2 = this.w, H3 = this.h;
     for (let t10 = 0; t10 < 16; t10++, o10 += 4)
       w2[t10] = p2[o10] << 24 | p2[o10 + 1] << 16 | p2[o10 + 2] << 8 | p2[o10 + 3];
     for (let t10 = 16; t10 < 64; t10++) {
@@ -24238,7 +24238,7 @@ var Sha256 = class {
       const s12 = (y2 >>> 17 | y2 << 15) ^ (y2 >>> 19 | y2 << 13) ^ y2 >>> 10;
       w2[t10] = w2[t10 - 16] + s02 + w2[t10 - 7] + s12 | 0;
     }
-    let a10 = H2[0], b3 = H2[1], c10 = H2[2], d3 = H2[3], e10 = H2[4], f2 = H2[5], g3 = H2[6], h2 = H2[7];
+    let a10 = H3[0], b3 = H3[1], c10 = H3[2], d3 = H3[3], e10 = H3[4], f2 = H3[5], g3 = H3[6], h2 = H3[7];
     for (let t10 = 0; t10 < 64; t10++) {
       const S1 = (e10 >>> 6 | e10 << 26) ^ (e10 >>> 11 | e10 << 21) ^ (e10 >>> 25 | e10 << 7);
       const ch2 = e10 & f2 ^ ~e10 & g3;
@@ -24255,14 +24255,14 @@ var Sha256 = class {
       b3 = a10;
       a10 = t12 + t23 | 0;
     }
-    H2[0] += a10;
-    H2[1] += b3;
-    H2[2] += c10;
-    H2[3] += d3;
-    H2[4] += e10;
-    H2[5] += f2;
-    H2[6] += g3;
-    H2[7] += h2;
+    H3[0] += a10;
+    H3[1] += b3;
+    H3[2] += c10;
+    H3[3] += d3;
+    H3[4] += e10;
+    H3[5] += f2;
+    H3[6] += g3;
+    H3[7] += h2;
   }
   hex() {
     if (this.done)
@@ -25211,18 +25211,18 @@ var ottavaXml = (shift, open, auto = false) => {
 function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
   const staffs = staffOfTokens(toks, staves);
   const head = headLen(toks);
-  const H2 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
+  const H3 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
   for (let i10 = 0; i10 < head; i10++) {
     const t10 = toks[i10];
-    if (t10.kind === "key") H2.fifths = t10.fifths;
+    if (t10.kind === "key") H3.fifths = t10.fifths;
     else if (t10.kind === "time") {
-      H2.beats = t10.beats;
-      H2.beatType = t10.beatType;
-    } else if (t10.kind === "tempo") H2.bpm = t10.bpm;
+      H3.beats = t10.beats;
+      H3.beatType = t10.beatType;
+    } else if (t10.kind === "tempo") H3.bpm = t10.bpm;
   }
   const langs = syllableLangs(toks);
   const measures = [];
-  let cur = [], ticks = 0, len = measureLen(H2.beats, H2.beatType);
+  let cur = [], ticks = 0, len = measureLen(H3.beats, H3.beatType);
   let ending = null;
   const endingCloses = (i10) => {
     for (let j2 = i10 + 1; j2 < toks.length; j2++) {
@@ -25243,8 +25243,8 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
     ticks = 0;
   };
   const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : clefXml(clef);
-  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H2.fifths}</fifths></key><time><beats>${H2.beats}</beats><beat-type>${H2.beatType}</beat-type></time>${clefs}</attributes>`);
-  if (first) cur.push(tempoXml(H2.bpm));
+  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H3.fifths}</fifths></key><time><beats>${H3.beats}</beats><beat-type>${H3.beatType}</beat-type></time>${clefs}</attributes>`);
+  if (first) cur.push(tempoXml(H3.bpm));
   let prevHyph = false;
   const syllabic = (t10) => {
     const s10 = t10.hyph ? prevHyph ? "middle" : "begin" : prevHyph ? "end" : "single";
@@ -25423,10 +25423,10 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
   if (cur.length || !measures.length) close(false);
   return { measures, unwritten, lastLen: len };
 }
-function writeMusicXml(doc2, meta) {
-  const paper = doc2.paper ?? paperOf(DEFAULT_PAPER);
+function writeMusicXml(doc, meta) {
+  const paper = doc.paper ?? paperOf(DEFAULT_PAPER);
   autoSeq = 0;
-  const built = doc2.parts.map((p2, k2) => ({ p: p2, ...partMeasures(p2.tokens, p2.breaks, k2 === 0, p2.info.clef ?? "G", p2.info.staves === 2 ? 2 : 1) }));
+  const built = doc.parts.map((p2, k2) => ({ p: p2, ...partMeasures(p2.tokens, p2.breaks, k2 === 0, p2.info.clef ?? "G", p2.info.staves === 2 ? 2 : 1) }));
   const nMeas = Math.max(0, ...built.map((b3) => b3.measures.length));
   const manualBars = {}, unwritten = [];
   const bodies = built.map((b3) => {
@@ -25435,22 +25435,22 @@ function writeMusicXml(doc2, meta) {
       if (m2.manual) mb.push(n10 + 1);
       return `<measure number="${n10 + 1}">${m2.body.join("")}</measure>`;
     });
-    if (doc2.padMeasures) for (let n10 = b3.measures.length; n10 < nMeas; n10++) ms.push(`<measure number="${n10 + 1}"><note><rest measure="yes"/><duration>${Math.round(b3.lastLen)}</duration><voice>1</voice></note></measure>`);
+    if (doc.padMeasures) for (let n10 = b3.measures.length; n10 < nMeas; n10++) ms.push(`<measure number="${n10 + 1}"><note><rest measure="yes"/><duration>${Math.round(b3.lastLen)}</duration><voice>1</voice></note></measure>`);
     manualBars[b3.p.info.id] = mb;
     unwritten.push(...b3.unwritten);
     return `<part id="${b3.p.info.id}">
 ${ms.join("\n")}
 </part>`;
   });
-  const partList = doc2.parts.map(({ info: P2 }) => `<score-part id="${P2.id}"><part-name>${esc2(P2.name)}</part-name><score-instrument id="${P2.id}-I1"><instrument-name>${esc2(P2.instrumentName)}</instrument-name><instrument-sound>${esc2(P2.sound)}</instrument-sound>${P2.variant ? `<virtual-instrument><virtual-library>${esc2(P2.variant.library)}</virtual-library><virtual-name>${esc2(P2.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P2.id}-I1"><midi-program>${P2.program}</midi-program>${P2.volume !== void 0 ? `<volume>${P2.volume}</volume>` : ""}${P2.pan !== void 0 ? `<pan>${P2.pan}</pan>` : ""}</midi-instrument></score-part>`).join("");
+  const partList = doc.parts.map(({ info: P2 }) => `<score-part id="${P2.id}"><part-name>${esc2(P2.name)}</part-name><score-instrument id="${P2.id}-I1"><instrument-name>${esc2(P2.instrumentName)}</instrument-name><instrument-sound>${esc2(P2.sound)}</instrument-sound>${P2.variant ? `<virtual-instrument><virtual-library>${esc2(P2.variant.library)}</virtual-library><virtual-name>${esc2(P2.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P2.id}-I1"><midi-program>${P2.program}</midi-program>${P2.volume !== void 0 ? `<volume>${P2.volume}</volume>` : ""}${P2.pan !== void 0 ? `<pan>${P2.pan}</pan>` : ""}</midi-instrument></score-part>`).join("");
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
 <score-partwise version="4.0">
-${doc2.title ? `<work><work-title>${esc2(doc2.title)}</work-title></work>
-` : ""}${doc2.movementTitle ? `<movement-title>${esc2(doc2.movementTitle)}</movement-title>
-` : ""}<identification>${doc2.rights ? `<rights>${esc2(doc2.rights)}</rights>` : ""}<encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
+${doc.title ? `<work><work-title>${esc2(doc.title)}</work-title></work>
+` : ""}${doc.movementTitle ? `<movement-title>${esc2(doc.movementTitle)}</movement-title>
+` : ""}<identification>${doc.rights ? `<rights>${esc2(doc.rights)}</rights>` : ""}<encoding><software>${esc2(meta.software)}</software><encoding-date>${esc2(meta.date)}</encoding-date></encoding></identification>
 ${defaultsXml(paper)}
-${doc2.credits ? creditXml(doc2.credits, paper) + "\n" : ""}<part-list>${partList}</part-list>
+${doc.credits ? creditXml(doc.credits, paper) + "\n" : ""}<part-list>${partList}</part-list>
 ${bodies.join("\n")}
 </score-partwise>
 `;
@@ -25538,7 +25538,7 @@ function readMusicXml(xml, hints) {
   const parts = partEls.map((pe, pi) => {
     const pid = pe.attrs.id ?? `P${pi + 1}`, info2 = infos.find((x2) => x2.id === pid) ?? { id: pid, name: "" };
     const manual = hints?.manualBars ? new Set(hints.manualBars[pid] ?? []) : null;
-    const H2 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
+    const H3 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
     const body2 = [], langRead = /* @__PURE__ */ new Map();
     let headPhase = true, divisions = TPQ, voice = null;
     const openSlurs = /* @__PURE__ */ new Set();
@@ -25582,25 +25582,25 @@ function readMusicXml(xml, hints) {
           const key = kid(c10, "key"), time = kid(c10, "time");
           if (key && childText(key, "fifths") !== void 0) {
             const f2 = Number(childText(key, "fifths"));
-            if (headPhase && !H2.gotKey) {
-              H2.fifths = f2;
-              H2.gotKey = true;
+            if (headPhase && !H3.gotKey) {
+              H3.fifths = f2;
+              H3.gotKey = true;
             } else mark({ kind: "key", id: 0, fifths: f2 });
           }
           if (time && childText(time, "beats")) {
             const b3 = Number(childText(time, "beats")), bt = Number(childText(time, "beat-type"));
-            if (headPhase && !H2.gotTime) {
-              H2.beats = b3;
-              H2.beatType = bt;
-              H2.gotTime = true;
+            if (headPhase && !H3.gotTime) {
+              H3.beats = b3;
+              H3.beatType = bt;
+              H3.gotTime = true;
             } else mark({ kind: "time", id: 0, beats: b3, beatType: bt });
           }
         } else if (c10.name === "direction" || c10.name === "sound") {
           const bpm = tempoOf(c10);
           if (bpm) {
-            if (headPhase && !H2.gotTempo) {
-              H2.bpm = bpm;
-              H2.gotTempo = true;
+            if (headPhase && !H3.gotTempo) {
+              H3.bpm = bpm;
+              H3.gotTempo = true;
             } else mark({ kind: "tempo", id: 0, bpm });
           }
           for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const os2 of kids(dt, "octave-shift")) {
@@ -25726,7 +25726,7 @@ function readMusicXml(xml, hints) {
       if (rightRepeat || rightStyle || (manual ? manual.has(n10) : mi < measures.length - 1)) body2.push({ kind: "bar", id: 0, ...rightRepeat ? { repeat: "end", ...rightRepeat.times > 2 ? { times: rightRepeat.times } : {} } : rightStyle ? { style: rightStyle } : {} });
     });
     for (const [k2, t10] of body2.entries()) if (t10.kind === "note" && !t10.chord?.length && t10.art?.includes("arpeggio")) body2[k2] = withArt(t10, "arpeggio", false);
-    const tokens = [{ kind: "key", id: 0, fifths: H2.fifths }, { kind: "time", id: 0, beats: H2.beats, beatType: H2.beatType }, { kind: "tempo", id: 0, bpm: H2.bpm }, ...body2];
+    const tokens = [{ kind: "key", id: 0, fifths: H3.fifths }, { kind: "time", id: 0, beats: H3.beats, beatType: H3.beatType }, { kind: "tempo", id: 0, bpm: H3.bpm }, ...body2];
     keepOnlyOverrides(tokens, tokens.map((t10) => langRead.get(t10) ?? null));
     if (info2.staves === 2) {
       const auto = autoStaffs(tokens, 2);
@@ -25737,7 +25737,7 @@ function readMusicXml(xml, hints) {
         }
       });
     } else for (const t10 of tokens) if ((t10.kind === "note" || t10.kind === "rest") && t10.staff !== void 0) delete t10.staff;
-    return { info: info2, tokens, gotTempo: H2.gotTempo };
+    return { info: info2, tokens, gotTempo: H3.gotTempo };
   });
   const bpm0 = parts[0].tokens[2].bpm;
   for (const p2 of parts.slice(1)) if (!p2.gotTempo) p2.tokens[2].bpm = bpm0;
@@ -25828,7 +25828,7 @@ function sha256HexSync(data) {
   const dv = new DataView(padded.buffer);
   dv.setUint32(padded.length - 8, Math.floor(bitLen / 4294967296));
   dv.setUint32(padded.length - 4, bitLen >>> 0);
-  const H2 = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
+  const H3 = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
   const W3 = new Uint32Array(64);
   for (let o10 = 0; o10 < padded.length; o10 += 64) {
     for (let i10 = 0; i10 < 16; i10++) W3[i10] = dv.getUint32(o10 + i10 * 4);
@@ -25836,7 +25836,7 @@ function sha256HexSync(data) {
       const s02 = rotr(W3[i10 - 15], 7) ^ rotr(W3[i10 - 15], 18) ^ W3[i10 - 15] >>> 3, s12 = rotr(W3[i10 - 2], 17) ^ rotr(W3[i10 - 2], 19) ^ W3[i10 - 2] >>> 10;
       W3[i10] = W3[i10 - 16] + s02 + W3[i10 - 7] + s12 >>> 0;
     }
-    let a10 = H2[0], b3 = H2[1], c10 = H2[2], d3 = H2[3], e10 = H2[4], f2 = H2[5], g3 = H2[6], h2 = H2[7];
+    let a10 = H3[0], b3 = H3[1], c10 = H3[2], d3 = H3[3], e10 = H3[4], f2 = H3[5], g3 = H3[6], h2 = H3[7];
     for (let i10 = 0; i10 < 64; i10++) {
       const S1 = rotr(e10, 6) ^ rotr(e10, 11) ^ rotr(e10, 25), ch2 = e10 & f2 ^ ~e10 & g3, t12 = h2 + S1 + ch2 + K2[i10] + W3[i10] >>> 0;
       const S0 = rotr(a10, 2) ^ rotr(a10, 13) ^ rotr(a10, 22), maj = a10 & b3 ^ a10 & c10 ^ b3 & c10, t23 = S0 + maj >>> 0;
@@ -25849,17 +25849,17 @@ function sha256HexSync(data) {
       b3 = a10;
       a10 = t12 + t23 >>> 0;
     }
-    H2[0] = H2[0] + a10 >>> 0;
-    H2[1] = H2[1] + b3 >>> 0;
-    H2[2] = H2[2] + c10 >>> 0;
-    H2[3] = H2[3] + d3 >>> 0;
-    H2[4] = H2[4] + e10 >>> 0;
-    H2[5] = H2[5] + f2 >>> 0;
-    H2[6] = H2[6] + g3 >>> 0;
-    H2[7] = H2[7] + h2 >>> 0;
+    H3[0] = H3[0] + a10 >>> 0;
+    H3[1] = H3[1] + b3 >>> 0;
+    H3[2] = H3[2] + c10 >>> 0;
+    H3[3] = H3[3] + d3 >>> 0;
+    H3[4] = H3[4] + e10 >>> 0;
+    H3[5] = H3[5] + f2 >>> 0;
+    H3[6] = H3[6] + g3 >>> 0;
+    H3[7] = H3[7] + h2 >>> 0;
   }
   let out = "";
-  for (let i10 = 0; i10 < 8; i10++) out += H2[i10].toString(16).padStart(8, "0");
+  for (let i10 = 0; i10 < 8; i10++) out += H3[i10].toString(16).padStart(8, "0");
   return out;
 }
 var sha256TextSync = (s10) => sha256HexSync(new TextEncoder().encode(s10));
@@ -30730,7 +30730,7 @@ var Finder = class {
     if (!this.cat) {
       this.loading ??= (async () => {
         const [cat2, sprite] = await Promise.all([loadCatalog(this.host.base), loadIconSprite(this.host.base)]);
-        const doc2 = new DOMParser().parseFromString(sprite, "image/svg+xml"), svg = doc2.documentElement;
+        const doc = new DOMParser().parseFromString(sprite, "image/svg+xml"), svg = doc.documentElement;
         if (svg.tagName.toLowerCase() === "svg") {
           const node = document.importNode(svg, true);
           node.setAttribute("style", "display:none");
@@ -31047,14 +31047,14 @@ function paramView0(kind, d3) {
   if (key === "reverb.width") return { label: "\u5BBD\u5EA6\uFF080 = \u5355\u58F0\u9053\uFF0C100% = \u5DE6\u53F3\u94FA\u6EE1\uFF09", min: 0, max: 1, step: 0.01, toV: (x2) => x2, toS: (x2) => x2, fmt: pct };
   if (key === "chorus.spread") return { label: "\u5DE6\u53F3\u94FA\u5F00\uFF080 = \u90FD\u5728\u4E2D\u95F4\uFF0C100% = \u94FA\u5230\u4E24\u8FB9\uFF09", min: 0, max: 1, step: 0.01, toV: (x2) => x2, toS: (x2) => x2, fmt: pct };
   if (d3.unit === "Hz") {
-    const lo2 = Math.max(20, d3.min || 20), hi = d3.max, offable = d3.min === 0, L2 = Math.log(lo2), H2 = Math.log(hi);
+    const lo2 = Math.max(20, d3.min || 20), hi = d3.max, offable = d3.min === 0, L2 = Math.log(lo2), H3 = Math.log(hi);
     return {
       label: d3.label,
       min: offable ? -0.02 : 0,
       max: 1,
       step: 2e-3,
-      toV: (x2) => offable && x2 < 0 ? 0 : Math.round(Math.exp(L2 + Math.max(0, x2) * (H2 - L2))),
-      toS: (v) => offable && v <= 0 ? -0.02 : (Math.log(Math.max(lo2, v)) - L2) / (H2 - L2),
+      toV: (x2) => offable && x2 < 0 ? 0 : Math.round(Math.exp(L2 + Math.max(0, x2) * (H3 - L2))),
+      toS: (v) => offable && v <= 0 ? -0.02 : (Math.log(Math.max(lo2, v)) - L2) / (H3 - L2),
       fmt: (v) => v <= 0 ? "\u5173" : v >= 1e3 ? `${(v / 1e3).toFixed(v >= 1e4 ? 1 : 2)} kHz` : `${Math.round(v)} Hz`
     };
   }
@@ -32003,9 +32003,9 @@ ${tg2.fx}`);
     if (!box || !card) return;
     const cs2 = getComputedStyle(box), gap = parseFloat(cs2.rowGap) || 0, pad4 = (parseFloat(cs2.paddingTop) || 0) + (parseFloat(cs2.paddingBottom) || 0);
     const head = [...el2.children].filter((c10) => c10 !== box && !c10.hidden).reduce((n11, c10) => n11 + c10.getBoundingClientRect().height, 0);
-    const H2 = card.getBoundingClientRect().height, cols = cs2.gridTemplateColumns.split(" ").filter(Boolean).length || 1, rows = Math.ceil(box.querySelectorAll(".strip").length / cols);
-    const fit = Math.max(1, Math.floor((innerHeight * 0.5 - head - pad4 + gap) / (H2 + gap))), n10 = Math.min(rows, fit);
-    el2.style.maxHeight = `${Math.ceil(head + pad4 + n10 * H2 + (n10 - 1) * gap + 2)}px`;
+    const H3 = card.getBoundingClientRect().height, cols = cs2.gridTemplateColumns.split(" ").filter(Boolean).length || 1, rows = Math.ceil(box.querySelectorAll(".strip").length / cols);
+    const fit = Math.max(1, Math.floor((innerHeight * 0.5 - head - pad4 + gap) / (H3 + gap))), n10 = Math.min(rows, fit);
+    el2.style.maxHeight = `${Math.ceil(head + pad4 + n10 * H3 + (n10 - 1) * gap + 2)}px`;
   }
   render() {
     const box = this.el.querySelector(".studio-strips"), m2 = this.host.master(), tab = this.tab, off = this.host.bypass();
@@ -32162,6 +32162,8 @@ var SCOPES2 = ["Files.ReadWrite.AppFolder", "offline_access"];
 var MSAL_URL2 = "./vendor/msal/msal-browser.min.js";
 var SONG_SUFFIX = ".mxl";
 var LOCAL_SAVE_DEBOUNCE_MS = 2e3;
+var WAKE_CHECK_AFTER_MS = 10 * 6e4;
+var WAKE_CHECK_TIMEOUT_MS = 2e4;
 
 // src/identifiers.ts
 var SONG_KIND = "song";
@@ -38630,7 +38632,7 @@ function initGalleryHost(d3) {
   const mountEl = fullEl.querySelector(".gallery-mount"), asideBar = fullEl.querySelector(".gallery-asidebar");
   const cloudBtn = fullEl.querySelector('[data-v="cloud"]'), refreshBtn = fullEl.querySelector('[data-v="refresh"]');
   const storeFace = () => hasStore() ? requireStore() : null;
-  const doc2 = {
+  const doc = {
     open: async (item) => {
       const ok2 = await d3.openAny(item.identifier);
       if (ok2) close();
@@ -38660,7 +38662,7 @@ function initGalleryHost(d3) {
   const deps = {
     vue,
     store: storeFace,
-    doc: doc2,
+    doc,
     host: {
       signedIn: () => isSignedIn2(),
       online: () => typeof navigator === "undefined" || navigator.onLine !== false,
@@ -39088,9 +39090,9 @@ function createEditorSession(config) {
           void persist(false);
         }, policy.autosaveMs);
       }
-      const doc2 = globalThis.document;
+      const doc = globalThis.document;
       const win = globalThis.addEventListener ? globalThis : null;
-      doc2?.addEventListener?.("visibilitychange", () => {
+      doc?.addEventListener?.("visibilitychange", () => {
         if (globalThis.document?.visibilityState === "hidden") void persist(false);
       });
       win?.addEventListener?.("pagehide", (e10) => {
@@ -41108,10 +41110,10 @@ ${this._ramMissingText()}`;
         this._liveDirty = false;
     }
     const dpr = window.devicePixelRatio || 1;
-    const W3 = this._canvas.width, H2 = this._canvas.height;
+    const W3 = this._canvas.width, H3 = this._canvas.height;
     const ctx2 = this._cctx;
     ctx2.setTransform(1, 0, 0, 1, 0, 0);
-    ctx2.clearRect(0, 0, W3, H2);
+    ctx2.clearRect(0, 0, W3, H3);
     let source = null;
     if (cur?.kind === "live") {
       if (!this._liveSource)
@@ -41845,7 +41847,7 @@ function svgToPdfPath(d3) {
   }
   return out;
 }
-function writePdf(doc2, font, music, opts = {}) {
+function writePdf(doc, font, music, opts = {}) {
   const chunks2 = [];
   let length = 0;
   const offsets = [0];
@@ -41880,20 +41882,20 @@ stream
   const catalog = reserve(), pagesObj = reserve(), fontObj = reserve(), cidObj = reserve(), descObj = reserve(), fileObj = reserve(), uniObj = reserve(), infoObj = reserve();
   const used = /* @__PURE__ */ new Map(), missing = /* @__PURE__ */ new Set(), missingMusic = /* @__PURE__ */ new Set();
   const forms = /* @__PURE__ */ new Map();
-  const pageObjs = doc2.pages.map(() => reserve());
+  const pageObjs = doc.pages.map(() => reserve());
   const em2 = music.unitsPerEm;
-  doc2.pages.forEach((page, pi) => {
-    const H2 = page.h;
+  doc.pages.forEach((page, pi) => {
+    const H3 = page.h;
     let c10 = "";
     const xobj = /* @__PURE__ */ new Set();
     for (const o10 of page.ops) {
-      if (o10.op === "rect") c10 += `${rgb(o10.color, false)} ${num(o10.x)} ${num(H2 - o10.y - o10.h)} ${num(o10.w)} ${num(o10.h)} re f
+      if (o10.op === "rect") c10 += `${rgb(o10.color, false)} ${num(o10.x)} ${num(H3 - o10.y - o10.h)} ${num(o10.w)} ${num(o10.h)} re f
 `;
-      else if (o10.op === "line") c10 += `${rgb(o10.color, true)} ${num(o10.width)} w ${o10.round ? 1 : 0} J [${(o10.dash ?? []).map(num).join(" ")}] 0 d ${num(o10.x1)} ${num(H2 - o10.y1)} m ${num(o10.x2)} ${num(H2 - o10.y2)} l S
+      else if (o10.op === "line") c10 += `${rgb(o10.color, true)} ${num(o10.width)} w ${o10.round ? 1 : 0} J [${(o10.dash ?? []).map(num).join(" ")}] 0 d ${num(o10.x1)} ${num(H3 - o10.y1)} m ${num(o10.x2)} ${num(H3 - o10.y2)} l S
 `;
       else if (o10.op === "path") {
         let p3 = "";
-        for (const s10 of o10.segs) p3 += s10.k === "Z" ? "h " : s10.k === "C" ? `${num(s10.x1)} ${num(H2 - s10.y1)} ${num(s10.x2)} ${num(H2 - s10.y2)} ${num(s10.x)} ${num(H2 - s10.y)} c ` : `${num(s10.x)} ${num(H2 - s10.y)} ${s10.k === "M" ? "m" : "l"} `;
+        for (const s10 of o10.segs) p3 += s10.k === "Z" ? "h " : s10.k === "C" ? `${num(s10.x1)} ${num(H3 - s10.y1)} ${num(s10.x2)} ${num(H3 - s10.y2)} ${num(s10.x)} ${num(H3 - s10.y)} c ` : `${num(s10.x)} ${num(H3 - s10.y)} ${s10.k === "M" ? "m" : "l"} `;
         c10 += o10.fill ? `${rgb(o10.color, false)} ${p3}f
 ` : `${rgb(o10.color, true)} ${num(o10.width ?? 1)} w ${o10.round ? 1 : 0} J ${o10.round ? 1 : 0} j [${(o10.dash ?? []).map(num).join(" ")}] 0 d ${p3}S
 `;
@@ -41910,7 +41912,7 @@ stream
         }
         xobj.add(o10.code);
         const s10 = o10.size / em2;
-        c10 += `q ${rgb(o10.color, false)} ${num(s10)} 0 0 ${num(s10)} ${num(o10.x)} ${num(H2 - o10.y)} cm /G${o10.code} Do Q
+        c10 += `q ${rgb(o10.color, false)} ${num(s10)} 0 0 ${num(s10)} ${num(o10.x)} ${num(H3 - o10.y)} cm /G${o10.code} Do Q
 `;
       } else {
         let hex = "";
@@ -41922,7 +41924,7 @@ stream
           hex += hex4(g3);
         });
         if (!hex) continue;
-        const tm2 = o10.italic ? `1 0 0.2 1 ${num(o10.x)} ${num(H2 - o10.y)} Tm` : `1 0 0 1 ${num(o10.x)} ${num(H2 - o10.y)} Tm`;
+        const tm2 = o10.italic ? `1 0 0.2 1 ${num(o10.x)} ${num(H3 - o10.y)} Tm` : `1 0 0 1 ${num(o10.x)} ${num(H3 - o10.y)} Tm`;
         const bold = o10.bold ? ` 2 Tr ${num(o10.size * 0.035)} w ${rgb(o10.color, true)}` : " 0 Tr";
         c10 += `BT /F1 ${num(o10.size)} Tf ${rgb(o10.color, false)}${bold} ${tm2} <${hex}> Tj ET
 `;
@@ -41983,7 +41985,7 @@ endbfchar
     const off = -d3.getTimezoneOffset(), sign = off < 0 ? "-" : "+", ao2 = Math.abs(off);
     return `D:${d3.getFullYear()}${p22(d3.getMonth() + 1)}${p22(d3.getDate())}${p22(d3.getHours())}${p22(d3.getMinutes())}${p22(d3.getSeconds())}${sign}${p22(Math.floor(ao2 / 60))}'${p22(ao2 % 60)}'`;
   };
-  obj(infoObj, `<< /Title ${hexString(doc2.title)} /Producer ${hexString(doc2.producer ?? "MoonSinger")}${doc2.created ? ` /CreationDate (${pdfDate(doc2.created)})` : ""} >>`);
+  obj(infoObj, `<< /Title ${hexString(doc.title)} /Producer ${hexString(doc.producer ?? "MoonSinger")}${doc.created ? ` /CreationDate (${pdfDate(doc.created)})` : ""} >>`);
   obj(catalog, `<< /Type /Catalog /Pages ${pagesObj} 0 R >>`);
   const xrefAt = length, count = offsets.length;
   let xref = `xref
@@ -42096,8 +42098,8 @@ function printOpts(song, sp2, parts, measureLyric, autoBars2, lyricRaise, onlyPa
 function scorePdf(a10) {
   const paper = a10.song.paper ?? paperOf(DEFAULT_PAPER), sp2 = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp2;
   const L2 = engrave(a10.song, printOpts(a10.song, sp2, a10.parts, a10.measureAt ? a10.measureAt(lyricPx) : (s10) => textEm(a10.font, s10) * lyricPx, a10.autoBars ?? true, LYRIC_RAISE[a10.fontId], a10.onlyPaper));
-  const W3 = paper.widthMm * PT_PER_MM, H2 = paper.heightMm * PT_PER_MM, dx = L2.pageX.left;
-  const pages = L2.pages.map(() => ({ w: W3, h: H2, ops: [] }));
+  const W3 = paper.widthMm * PT_PER_MM, H3 = paper.heightMm * PT_PER_MM, dx = L2.pageX.left;
+  const pages = L2.pages.map(() => ({ w: W3, h: H3, ops: [] }));
   const pageOf = (y2) => {
     for (let k2 = 0; k2 < L2.pages.length; k2++) if (y2 >= L2.pages[k2].top && y2 < L2.pages[k2].top + L2.pages[k2].h) return k2;
     return -1;
@@ -43005,6 +43007,202 @@ function createDocument(init, hooks) {
   };
 }
 
+// src/app/home.ts
+function assertNever(x2) {
+  throw new Error("[home] non-exhaustive switch: " + JSON.stringify(x2));
+}
+function createHome(init, ports) {
+  let home = init.home, stem = init.stem, named = init.named;
+  const same = (a10, b3) => a10.kind === "gallery" ? b3.kind === "gallery" && a10.identifier === b3.identifier : a10.kind === "file" ? b3.kind === "file" && a10.handle === b3.handle : b3.kind === "none" && a10.pendingFolder === b3.pendingFolder;
+  function setHome(next2) {
+    const prev = home;
+    if (same(prev, next2)) {
+      home = next2;
+      return;
+    }
+    home = next2;
+    if (prev.kind === "gallery" && next2.kind !== "gallery") ports.gallery.release();
+    ports.onHome(prev, next2);
+  }
+  function setName(s10, n10) {
+    if (s10 === stem && n10 === named) return;
+    stem = s10;
+    named = n10;
+    ports.onName();
+  }
+  const name = () => {
+    const t10 = fileSafe(ports.title());
+    return named || !t10 ? stem : `${stem.slice(0, 8)}-${t10}`;
+  };
+  const fixName = () => setName(name(), true);
+  const stemOfFile = (fileName2) => fileName2.replace(/\.(mxl|musicxml|xml)$/i, "");
+  const stemOfId2 = (id2) => ports.ids.parse(id2)?.stem ?? id2;
+  const pending = () => home.kind === "none" && home.pendingFolder != null;
+  async function mint(folder) {
+    const base3 = name();
+    let id2 = ports.ids.join(folder, base3);
+    for (let n10 = 0; n10 < 50 && await ports.gallery.occupied(id2); n10++) id2 = ports.ids.join(folder, `${base3}-${ports.freshStem().slice(9)}`);
+    return id2;
+  }
+  async function adopt(id2) {
+    setHome({ kind: "gallery", identifier: id2 });
+    setName(stemOfId2(id2), true);
+    ports.gallery.adopted(id2, { create: true });
+    try {
+      await ports.gallery.flushLocal();
+      return true;
+    } catch (e10) {
+      ports.report(e10, "error");
+      return false;
+    }
+  }
+  let homing = null;
+  function settle() {
+    if (homing) return homing;
+    const h2 = home;
+    if (h2.kind !== "none" || h2.pendingFolder == null) return Promise.resolve();
+    homing = (async () => {
+      const id2 = await mint(h2.pendingFolder);
+      if (home !== h2) return;
+      await adopt(id2);
+    })().finally(() => {
+      homing = null;
+    });
+    return homing;
+  }
+  const settleIfEdited = () => pending() && ports.dirty() ? settle() : Promise.resolve();
+  async function save() {
+    if (pending()) {
+      if (!ports.dirty()) return { k: "blank" };
+      await settle();
+    }
+    const h2 = home;
+    switch (h2.kind) {
+      case "gallery":
+        await ports.gallery.save();
+        return { k: "gallery" };
+      case "file": {
+        const now2 = await ports.file.mtime(h2.handle);
+        if (ports.file.isStale(h2.mtime, now2) && !await ports.ask.overwriteStale(h2.handle.name)) return { k: "declined" };
+        await ports.file.writeTo(h2.handle, ports.bytes());
+        if (home === h2) {
+          home = { kind: "file", handle: h2.handle, mtime: await ports.file.mtime(h2.handle) };
+          fixName();
+          ports.markSaved();
+        }
+        return { k: "written", name: h2.handle.name };
+      }
+      case "none": {
+        if (ports.file.canPickSave()) {
+          const handle = await ports.file.pickSave(name() + ports.suffix);
+          if (!handle) return { k: "cancelled" };
+          await ports.file.writeTo(handle, ports.bytes());
+          setHome({ kind: "file", handle, mtime: await ports.file.mtime(handle) });
+          setName(stemOfFile(handle.name) || stem, true);
+          ports.markSaved();
+          return { k: "written", name: handle.name };
+        }
+        const fileName2 = name() + ports.suffix;
+        ports.offerDownload(ports.bytes(), fileName2, () => {
+          fixName();
+          ports.markSaved();
+        });
+        return { k: "offered", name: fileName2 };
+      }
+      default:
+        return assertNever(h2);
+    }
+  }
+  async function rename(raw) {
+    const s10 = fileSafe(raw), h2 = home;
+    switch (h2.kind) {
+      case "file":
+        return { k: "fileHome", name: h2.handle.name };
+      case "none":
+        if (!s10 || s10 === name()) return { k: "same" };
+        setName(s10, true);
+        return { k: "renamed", stem: s10, oldKept: false };
+      case "gallery": {
+        const p2 = ports.ids.parse(h2.identifier);
+        if (!p2 || !s10 || s10 === p2.stem) return { k: "same" };
+        const to2 = ports.ids.join(p2.folder, s10);
+        const r10 = await ports.gallery.rename(to2);
+        if (!r10.ok) return { k: "taken", where: r10.where };
+        setHome({ kind: "gallery", identifier: to2 });
+        setName(s10, true);
+        return { k: "renamed", stem: s10, oldKept: !!r10.oldKept };
+      }
+      default:
+        return assertNever(h2);
+    }
+  }
+  async function leave2(what, o10 = {}) {
+    await settleIfEdited();
+    const h2 = home;
+    switch (h2.kind) {
+      case "gallery":
+        if (!o10.nextIsGallery) {
+          try {
+            await ports.gallery.flushAndPush();
+          } catch (e10) {
+            ports.report(e10, "warning");
+          }
+        }
+        return true;
+      case "file":
+      case "none":
+        return ports.dirty() ? ports.ask.discard(what) : true;
+      default:
+        return assertNever(h2);
+    }
+  }
+  async function intoGallery(folder) {
+    if (pending()) {
+      if (!ports.dirty()) return { k: "blank" };
+      await settle();
+      return home.kind === "gallery" ? { k: "settled", identifier: home.identifier } : { k: "blank" };
+    }
+    const id2 = await mint(folder);
+    const flushed = await adopt(id2);
+    return { k: "moved", identifier: id2, flushed };
+  }
+  function release() {
+    if (home.kind === "gallery") setHome({ kind: "none", pendingFolder: null });
+  }
+  function noteChanged() {
+    if (home.kind === "gallery") {
+      if (ports.dirty()) ports.gallery.markDirty();
+    } else if (pending() && ports.dirty()) void settle();
+  }
+  return {
+    get home() {
+      return home;
+    },
+    get stem() {
+      return stem;
+    },
+    get named() {
+      return named;
+    },
+    identifier: () => home.kind === "gallery" ? home.identifier : null,
+    pending,
+    name,
+    fileName: () => home.kind === "file" ? home.handle.name : name() + ports.suffix,
+    load: (h2, o10) => {
+      setHome(h2);
+      setName(o10.stem, h2.kind === "none" ? o10.named : true);
+    },
+    save,
+    rename,
+    leave: leave2,
+    settle,
+    settleIfEdited,
+    intoGallery,
+    release,
+    noteChanged
+  };
+}
+
 // src/score/desk.ts
 var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
@@ -43119,16 +43317,34 @@ var D2 = createDocument({ st: initState(), extras: emptyExtras() }, {
   onRestored: (r10, verb, prev) => afterRestore(r10, verb, prev),
   extraDirty: () => refHost.rev()
 });
-var doc = {
-  stem: defaultStem(),
-  named: false,
-  handle: null,
-  mtime: null,
-  /** 歌库里的家（v0.6.0）：store 身份（`夹/主干.mxl`）；null = 无地（本地文件句柄 / 还没家）。三种家互斥：identifier 优先于 handle。 */
-  identifier: null,
-  /** 首笔安家（v0.6.9，user 2026-10-08「首笔安家做」，照 WeebPaint lazyblank）：歌库里「新建」出来的空谱**没有家、不落盘**，记着要进哪个夹；第一笔编辑才铸身份（homeNow）。空着离开 = 零损失、歌库里不留空壳。 */
-  pendingHome: null
-};
+var H2 = createHome({ home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false }, {
+  gallery: { save: () => smartSaveStore(), flushLocal: () => es2.flushLocal(), flushAndPush: () => es2.flushAndPush(), markDirty: () => es2.markDirty(), adopted: (id2, o10) => es2.adopted(id2, o10), release: () => es2.release(), rename: (to2) => es2.rename(to2), occupied: (id2) => requireStore().files.occupied(id2) },
+  file: { canPickSave, pickSave, writeTo, mtime, isStale },
+  ids: { join: (folder, stem) => identifiers.join({ folder, stem, suffix: SONG_SUFFIX }), parse: (id2) => identifiers.parse(id2) },
+  suffix: SONG_SUFFIX,
+  bytes: () => bytesNow(),
+  dirty: () => D2.dirty(),
+  title: () => D2.st.song.title ?? "",
+  freshStem: () => defaultStem(),
+  ask: { discard: (what) => confirmDiscard(what), overwriteStale: (name) => askSheet(`\u300C${name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7`, "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002", "\u8986\u76D6") },
+  offerDownload: (bytes, name, onSaved) => {
+    const file = new File([bytes], name, { type: "application/vnd.recordare.musicxml" });
+    offerFile(file, "\u5B58\u6210 .mxl", `${esc8(file.name)} \xB7 ${sizeText2(file.size)}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, onSaved);
+  },
+  markSaved: () => {
+    D2.markSaved();
+    renderTitle();
+  },
+  report: (e10, level) => reportError(e10, level === "error" ? "error" : "warning"),
+  // 家换了：告诉 store 谁开着（冲突面 / 歌库卡片要知道）、「上次开着哪首」的指针（歌库里 = 它；放下身份 / 新建空谱 = 清掉；开本机文件不动它——reload 回到上一首歌库里的歌，v0.6 起就这样）、重画顶栏
+  onHome: (prev, next2) => {
+    setActiveIdentifier(next2.kind === "gallery" ? next2.identifier : null);
+    if (next2.kind === "gallery") deviceKvSet2(KV_LAST_DOC, next2.identifier);
+    else if (next2.kind === "none" && (prev.kind === "gallery" || next2.pendingFolder != null)) deviceKvSet2(KV_LAST_DOC, null);
+    renderTitle();
+  },
+  onName: () => renderTitle()
+});
 var curPart = () => D2.st.song.parts.find((p2) => p2.id === D2.st.at.part) ?? D2.st.song.parts[0];
 var ignoredFor = (role) => {
   const sp2 = activePerfSpec(D2.extras, role);
@@ -43159,10 +43375,7 @@ var isShown = (id2) => {
   const only = D2.st.song.parts.some((p2) => pv(p2.id).only);
   return only ? pv(id2).only : !pv(id2).hidden;
 };
-var docName = () => {
-  const t10 = fileSafe(D2.st.song.title ?? "");
-  return doc.named || !t10 ? doc.stem : `${doc.stem.slice(0, 8)}-${t10}`;
-};
+var docName = () => H2.name();
 var $2 = (id2) => document.getElementById(id2);
 var bar = $2("bar");
 var scoreEl = $2("score");
@@ -44474,7 +44687,7 @@ window.__moonsinger = {
   view,
   zipList: (bytes) => Object.keys(unzipSync(bytes)),
   zipText: (bytes, path) => new TextDecoder().decode(unzipSync(bytes)[path]),
-  load: (o10) => loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: null, view: o10.view, references: o10.references }),
+  load: (o10) => loadDoc(o10.song, { home: { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references }),
   refHost,
   makePdf: async (id2, pick) => {
     const { r: r10, file } = await makePdf(id2, pick);
@@ -44492,6 +44705,7 @@ window.__moonsinger = {
   afterSignIn: () => afterSignIn(),
   diagText: () => diagText(),
   refreshOpenDoc: () => refreshOpenDoc(),
+  wake: (awayMs) => wakeCheck(awayMs),
   pushDirtyAll: () => pushDirtyAll(),
   gateOpen: () => isGateOpen(),
   undo: () => undoNow(),
@@ -44526,7 +44740,8 @@ window.__moonsinger = {
   openGallery: () => openGallery(),
   newStoreSong: () => newStoreSong(),
   openStoreDoc: (id2) => openStoreDoc(id2),
-  identifier: () => doc.identifier,
+  identifier: () => H2.identifier(),
+  home: () => H2.home.kind,
   dirty: () => dirty(),
   auth
 };
@@ -44556,19 +44771,25 @@ function renderTitle() {
       b3.append(t10);
     }
   }
-  $2("fileBtn").title = `\u6587\u4EF6\u540D\uFF08${fileWhere()}\uFF09\xB7 ${doc.handle ? "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539" : "\u70B9\u4E86\u6539\u540D"}`;
+  $2("fileBtn").title = `\u6587\u4EF6\u540D\uFF08${fileWhere()}\uFF09\xB7 ${H2.home.kind === "file" ? "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539" : "\u70B9\u4E86\u6539\u540D"}`;
   renderSaveButton();
   renderUndo();
 }
 function syncKind() {
-  if (doc.identifier) {
-    if (dirty()) return "saving";
-    if (!isSignedIn2()) return "local";
-    if (!navigator.onLine) return "offline";
-    return es2.isPushPending() ? "unsynced" : "clean";
+  const h2 = H2.home;
+  switch (h2.kind) {
+    case "gallery":
+      if (dirty()) return "saving";
+      if (!isSignedIn2()) return "local";
+      if (!navigator.onLine) return "offline";
+      return es2.isPushPending() ? "unsynced" : "clean";
+    case "file":
+      return dirty() ? "fileDirty" : "fileClean";
+    case "none":
+      return dirty() ? "unsaved" : "fresh";
+    default:
+      return assertNever(h2);
   }
-  if (doc.handle) return dirty() ? "fileDirty" : "fileClean";
-  return dirty() ? "unsaved" : "fresh";
 }
 var SAVE_SPEC = {
   saving: { icon: "database", cls: "s-saving", title: "\u6539\u4E86\uFF0C\u9A6C\u4E0A\u81EA\u52A8\u5B58\u5230\u8FD9\u53F0\u8BBE\u5907\uFF08\u70B9 = \u73B0\u5728\u5B58 + \u63A8\uFF09" },
@@ -46213,12 +46434,7 @@ function loadDoc(song, o10) {
   if (impro) toggleImpro();
   ui2.close();
   closeInstPage();
-  doc.stem = o10.stem;
-  doc.named = o10.named;
-  doc.handle = o10.handle;
-  doc.mtime = o10.handle ? o10.mtime ?? null : null;
-  doc.identifier = o10.identifier ?? null;
-  setActiveIdentifier(doc.identifier);
+  H2.load(o10.home, { stem: o10.stem, named: o10.named });
   coverTouched = false;
   const st0 = initState(song), startDyns = ensureStartDyns(st0.song, st0.nextId).added.length;
   D2.load(withStartDyns(st0), o10.extras);
@@ -46242,12 +46458,6 @@ function loadDoc(song, o10) {
   if (D2.extras.final) info(`\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF08\u7B2C ${D2.extras.final.rev} \u7248\uFF0Cmp3 ${mp3SizeText(D2.extras.final.mp3.bytes)}\uFF09\uFF1A\u53EA\u80FD\u542C\u3002\u8981\u6539\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u3002`);
   if (startDyns) info(`\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 ${startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09`);
   schedulePrewarm();
-}
-function markSaved() {
-  doc.stem = docName();
-  doc.named = true;
-  D2.markSaved();
-  renderTitle();
 }
 function confirmDiscard(what) {
   if (!dirty()) return Promise.resolve(true);
@@ -46279,12 +46489,12 @@ async function fileNew() {
     await newStoreSong();
     return;
   }
-  if (!await confirmDiscard("\u65B0\u5EFA")) return;
-  loadDoc(initState().song, { stem: defaultStem(), named: false, extras: emptyExtras(), handle: null });
+  if (!await H2.leave("\u65B0\u5EFA")) return;
+  loadDoc(initState().song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: emptyExtras() });
   info("\u65B0\u7684\u4E00\u9996");
 }
 async function fileOpen() {
-  if (!await leaveCurrent("\u6253\u5F00\u522B\u7684\u6B4C")) return;
+  if (!await H2.leave("\u6253\u5F00\u522B\u7684\u6B4C")) return;
   let picked;
   try {
     picked = await pickOpen();
@@ -46297,7 +46507,7 @@ async function fileOpen() {
 function openPicked(picked) {
   try {
     const o10 = openBytes(picked.name, picked.bytes), own = o10.ours && !o10.notices.length;
-    loadDoc(o10.song, { stem: o10.stem, named: true, extras: o10.extras, handle: own ? picked.handle : null, mtime: own ? picked.mtime : null, view: o10.view, references: o10.references });
+    loadDoc(o10.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
     if (o10.notices.length) showError(o10.notices.join(" "));
     else info(`\u6253\u5F00\u4E86 ${picked.name}`);
   } catch (e10) {
@@ -46309,45 +46519,30 @@ var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 var mxlFile = (name, extras, song) => new File([bytesNow(extras, song)], name, { type: "application/vnd.recordare.musicxml" });
-var stemOf2 = (name) => name.replace(/\.(mxl|musicxml|xml)$/i, "");
 var sizeText2 = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 async function fileSave() {
   try {
-    if (doc.identifier) {
-      await smartSaveStore();
-      return;
-    }
-    if (doc.handle) {
-      const h2 = doc.handle, now2 = await mtime(h2);
-      if (isStale(doc.mtime, now2) && !await askSheet(`\u300C${h2.name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7`, "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002", "\u8986\u76D6")) {
+    const r10 = await H2.save();
+    switch (r10.k) {
+      case "blank":
+        info("\u8FD8\u662F\u7A7A\u7684\uFF0C\u6CA1\u4EC0\u4E48\u53EF\u5B58");
+        return;
+      // WeebPaint blankNothingToSave
+      case "gallery":
+      case "offered":
+        return;
+      case "written":
+        info(`\u5B58\u597D\u4E86\uFF1A${r10.name}`);
+        return;
+      case "declined":
         info("\u6CA1\u5B58");
         return;
-      }
-      await writeTo(h2, bytesNow());
-      if (doc.handle === h2) {
-        doc.mtime = await mtime(h2);
-        markSaved();
-      }
-      info(`\u5B58\u597D\u4E86\uFF1A${h2.name}`);
-      return;
-    }
-    if (canPickSave()) {
-      const h2 = await pickSave(`${docName()}.mxl`);
-      if (!h2) {
+      case "cancelled":
         info("\u6CA1\u5B58\uFF08\u53D6\u6D88\u4E86\uFF09");
         return;
-      }
-      await writeTo(h2, bytesNow());
-      doc.stem = stemOf2(h2.name) || doc.stem;
-      doc.named = true;
-      doc.handle = h2;
-      doc.mtime = await mtime(h2);
-      markSaved();
-      info(`\u5B58\u597D\u4E86\uFF1A${h2.name}`);
-      return;
+      default:
+        return assertNever(r10);
     }
-    const file = mxlFile(`${docName()}.mxl`);
-    offerFile(file, "\u5B58\u6210 .mxl", `${esc8(file.name)} \xB7 ${sizeText2(file.size)}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002`, markSaved);
   } catch (e10) {
     showError(`\u6CA1\u5B58\u4E0A\uFF1A${e10.message}`);
   }
@@ -46560,11 +46755,21 @@ var performersBlock = (roles, title = "\u7F72\u540D") => {
   return creditsBlock(lines, title) + hints.map((h2) => `<div class="offer-msg credits-hint">${esc8(h2)}</div>`).join("");
 };
 function fileWhere() {
-  return doc.identifier ? `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58${isSignedIn2() ? "\uFF1B\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u65F6\u63A8\u4E0A OneDrive" : "\uFF08\u6CA1\u767B\u5F55\uFF0C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09"}` : doc.pendingHome ? "\u65B0\u7684\u4E00\u9996\uFF1A\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93" : doc.handle ? `\u5B58\u5728\u672C\u673A\u6587\u4EF6 ${doc.handle.name}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB` : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl";
+  const h2 = H2.home;
+  switch (h2.kind) {
+    case "gallery":
+      return `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58${isSignedIn2() ? "\uFF1B\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u65F6\u63A8\u4E0A OneDrive" : "\uFF08\u6CA1\u767B\u5F55\uFF0C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09"}`;
+    case "file":
+      return `\u5B58\u5728\u672C\u673A\u6587\u4EF6 ${h2.handle.name}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB`;
+    case "none":
+      return h2.pendingFolder != null ? "\u65B0\u7684\u4E00\u9996\uFF1A\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93" : canPickSave() ? "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl";
+    default:
+      return assertNever(h2);
+  }
 }
 function clickFileName() {
-  if (doc.handle) {
-    info(`\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F ${doc.handle.name}\uFF09`);
+  if (H2.home.kind === "file") {
+    info(`\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F ${H2.home.handle.name}\uFF09`);
     return;
   }
   void renameActive();
@@ -46578,9 +46783,9 @@ function openMainMenu() {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu main-menu";
   box.setAttribute("role", "menu");
-  const inStore = doc.identifier != null;
+  const inStore = H2.home.kind === "gallery";
   const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc8(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
-  box.innerHTML = `<div class="ctx-head"><b>${esc8(doc.handle ? doc.handle.name : `${docName()}${SONG_SUFFIX}`)}</b><span>${esc8(fileWhere())}</span></div>` + item("new", "new", "\u65B0\u5EFA") + item("open", "folder-open", "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026", "\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09") + item("export", "export", "\u5BFC\u51FA\u2026", "mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09") + (hasStore() && !inStore && !doc.pendingHome ? item("intoLib", "import", "\u5B58\u8FDB\u6B4C\u5E93", "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : "") + `<div class="ctx-sep"></div>` + (doc.handle ? "" : item("rename", "rename", "\u6539\u6587\u4EF6\u540D\u2026", "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09")) + item("cover", "image", "\u5C01\u9762\u56FE\u2026", "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE") + item("sounds", "volume", "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026", "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3") + (finalOn() ? item("unfinal", "unlock", `\u6539\u7A3F\u2026\uFF08\u7B2C ${D2.extras.final.rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF09`, "\u89E3\u9501\uFF1A\u8C31 / \u6B4C\u624B / \u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u5B9A\u7A3F\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u6CA1\u4E86\uFF09") : item("final", "lock", "\u5B9A\u7A3F\u2026", "\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF0C\u4E4B\u540E\u53EA\u80FD\u542C\u3001\u4E0D\u80FD\u6539\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002\u6539\u7A3F\u968F\u65F6\u89E3\u9501")) + item("ref", "picture-in-picture", refHost.isOpen() ? "\u6536\u8D77\u53C2\u8003\u7A97" : `\u53C2\u8003\u7A97${refHost.count() ? `\uFF08${refHost.count()} \u5F20\uFF09` : ""}`, "\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58") + `<div class="ctx-sep"></div><div class="ctx-ver">${esc8(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
+  box.innerHTML = `<div class="ctx-head"><b>${esc8(H2.fileName())}</b><span>${esc8(fileWhere())}</span></div>` + item("new", "new", "\u65B0\u5EFA") + item("open", "folder-open", "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026", "\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09") + item("export", "export", "\u5BFC\u51FA\u2026", "mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09") + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", "\u5B58\u8FDB\u6B4C\u5E93", "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : "") + `<div class="ctx-sep"></div>` + (H2.home.kind === "file" ? "" : item("rename", "rename", "\u6539\u6587\u4EF6\u540D\u2026", "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09")) + item("cover", "image", "\u5C01\u9762\u56FE\u2026", "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE") + item("sounds", "volume", "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026", "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3") + (finalOn() ? item("unfinal", "unlock", `\u6539\u7A3F\u2026\uFF08\u7B2C ${D2.extras.final.rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF09`, "\u89E3\u9501\uFF1A\u8C31 / \u6B4C\u624B / \u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u5B9A\u7A3F\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u6CA1\u4E86\uFF09") : item("final", "lock", "\u5B9A\u7A3F\u2026", "\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF0C\u4E4B\u540E\u53EA\u80FD\u542C\u3001\u4E0D\u80FD\u6539\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002\u6539\u7A3F\u968F\u65F6\u89E3\u9501")) + item("ref", "picture-in-picture", refHost.isOpen() ? "\u6536\u8D77\u53C2\u8003\u7A97" : `\u53C2\u8003\u7A97${refHost.count() ? `\uFF08${refHost.count()} \u5F20\uFF09` : ""}`, "\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58") + `<div class="ctx-sep"></div><div class="ctx-ver">${esc8(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
   item("settings", "settings", "\u8BBE\u7F6E\u2026", "\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C");
   document.body.append(box);
   const r10 = $2("setBtn").getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -46657,7 +46862,7 @@ async function finalizeNow(quality = mp3Quality) {
   if (finalizing || finalOn()) return null;
   finalizing = true;
   try {
-    await homeIfEdited();
+    await H2.settleIfEdited();
     const r10 = await perfApi.renderMp3({ quality, scope: "all" });
     const is2 = perfApi.issues();
     const tagged = new Uint8Array(perfApi.mp3Tag(r10.roles).tag.length + r10.bytes.length);
@@ -46679,7 +46884,7 @@ async function finalizeNow(quality = mp3Quality) {
     }
     const c10 = D2.commit({ extras: withFinal(D2.extras, rec, tagged) }, { locus: { kind: "final", label: "\u5B9A\u7A3F" }, undo: false });
     if (!c10.ok) throw new Error(c10.why);
-    info(`\u5B9A\u7A3F\u4E86\uFF08\u7B2C ${rec.rev} \u7248\uFF09\uFF1Amp3 ${mp3SizeText(r10.bytes.length)}\u3001${r10.secs.toFixed(1)} \u79D2\uFF0C\u5B58\u8FDB\u4E86\u6B4C\u91CC\uFF1B${doc.identifier ? "\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002" : "\u6309\u300C\u5B58\u300D\u5199\u8FDB\u6587\u4EF6\u3002"}\u53EA\u80FD\u542C\u4E86\u2014\u2014\u8981\u6539\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u3002`);
+    info(`\u5B9A\u7A3F\u4E86\uFF08\u7B2C ${rec.rev} \u7248\uFF09\uFF1Amp3 ${mp3SizeText(r10.bytes.length)}\u3001${r10.secs.toFixed(1)} \u79D2\uFF0C\u5B58\u8FDB\u4E86\u6B4C\u91CC\uFF1B${H2.home.kind === "gallery" ? "\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002" : "\u6309\u300C\u5B58\u300D\u5199\u8FDB\u6587\u4EF6\u3002"}\u53EA\u80FD\u542C\u4E86\u2014\u2014\u8981\u6539\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u3002`);
     diagNote("doc", `finalized rev ${rec.rev} core ${rec.core.version}@${rec.core.hash} mp3 ${r10.bytes.length}B`);
     return rec;
   } catch (e10) {
@@ -46758,7 +46963,7 @@ function openSoundsSheet() {
   });
 }
 function renameFile() {
-  if (doc.handle) return;
+  if (H2.home.kind === "file") return;
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
@@ -46771,14 +46976,11 @@ function renameFile() {
     scoreEl.focus();
   };
   const ok2 = () => {
-    const v = fileSafe(inp.value);
-    if (v && v !== docName()) {
-      doc.stem = v;
-      doc.named = true;
-      renderTitle();
-      info(`\u6587\u4EF6\u540D\u6539\u6210 ${v}.mxl`);
-    }
+    const v = inp.value;
     close();
+    void H2.rename(v).then((r10) => {
+      if (r10.k === "renamed") info(`\u6587\u4EF6\u540D\u6539\u6210 ${r10.stem}${SONG_SUFFIX}`);
+    });
   };
   ui2.open({ k: "sheet", close });
   inp.addEventListener("keydown", (e10) => {
@@ -46826,7 +47028,7 @@ window.addEventListener("beforeunload", (e10) => {
   if (navigatingForAuth || !dirty()) return;
   e10.preventDefault();
   e10.returnValue = "";
-  if (doc.identifier) void es2.flushLocal().catch(() => void 0);
+  if (H2.home.kind === "gallery") void es2.flushLocal().catch(() => void 0);
 });
 window.addEventListener("dragover", (e10) => {
   if (e10.dataTransfer?.types.includes("Files")) {
@@ -46839,7 +47041,7 @@ window.addEventListener("drop", (e10) => {
   if (!gr) return;
   e10.preventDefault();
   void (async () => {
-    if (!await leaveCurrent(`\u6253\u5F00\u300C${gr.file.name}\u300D`)) return;
+    if (!await H2.leave(`\u6253\u5F00\u300C${gr.file.name}\u300D`)) return;
     try {
       openPicked(await fromGrab(gr));
     } catch (err2) {
@@ -46849,7 +47051,7 @@ window.addEventListener("drop", (e10) => {
 });
 consumeLaunchFiles((h2) => {
   void (async () => {
-    if (!await leaveCurrent(`\u6253\u5F00\u300C${h2.name}\u300D`)) return;
+    if (!await H2.leave(`\u6253\u5F00\u300C${h2.name}\u300D`)) return;
     try {
       openPicked(await readHandle(h2));
     } catch (err2) {
@@ -46879,7 +47081,7 @@ var es2 = createEditorSession({
   } },
   editor: {
     adopt: async (blob) => {
-      const id2 = pendingOpenId ?? doc.identifier;
+      const id2 = pendingOpenId ?? H2.identifier();
       if (!id2) throw new Error("adopt without an identifier");
       adoptStoreBytes(id2, new Uint8Array(await blob.arrayBuffer()));
     },
@@ -46921,68 +47123,21 @@ var es2 = createEditorSession({
   // consent 制（同 WeebPaint）：推云只在换歌 / 退出 / 按「存」/ 进歌库；失焦只落本机
 });
 function changed() {
-  if (doc.identifier && dirty()) es2.markDirty();
-  else if (doc.pendingHome && dirty()) void homeNow();
-}
-var homeIfEdited = () => doc.pendingHome && dirty() ? homeNow() : Promise.resolve();
-var homing = null;
-function homeNow() {
-  if (homing) return homing;
-  const home = doc.pendingHome;
-  if (!home) return Promise.resolve();
-  homing = (async () => {
-    const store = requireStore(), base3 = docName();
-    let id2 = identifiers.join({ folder: home.folder, stem: base3, suffix: SONG_SUFFIX });
-    for (let n10 = 0; n10 < 50 && await store.files.occupied(id2); n10++) id2 = identifiers.join({ folder: home.folder, stem: `${base3}-${defaultStem().slice(9)}`, suffix: SONG_SUFFIX });
-    if (doc.pendingHome !== home) return;
-    doc.identifier = id2;
-    doc.handle = null;
-    doc.mtime = null;
-    doc.stem = stemOfId(id2);
-    doc.named = true;
-    doc.pendingHome = null;
-    setActiveIdentifier(id2);
-    es2.adopted(id2, { create: true });
-    try {
-      await es2.flushLocal();
-      deviceKvSet2(KV_LAST_DOC, id2);
-      diagNote("doc", `home ${id2}`);
-    } catch (e10) {
-      reportError(e10);
-    }
-    renderTitle();
-  })().finally(() => {
-    homing = null;
-  });
-  return homing;
+  H2.noteChanged();
 }
 es2.start();
 setInterval(() => {
   changed();
-  if (doc.identifier) renderTitle();
+  if (H2.home.kind === "gallery") renderTitle();
 }, 1e3);
 function adoptStoreBytes(id2, bytes) {
   const o10 = openBytes(id2, bytes);
-  loadDoc(o10.song, { stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, handle: null, identifier: id2, view: o10.view, references: o10.references });
-  deviceKvSet2(KV_LAST_DOC, id2);
+  loadDoc(o10.song, { home: { kind: "gallery", identifier: id2 }, stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
   if (o10.notices.length) showError(o10.notices.join(" "));
 }
 var stemOfId = (id2) => identifiers.parse(id2)?.stem ?? id2;
-async function leaveCurrent(what) {
-  await homeIfEdited();
-  if (doc.identifier) {
-    try {
-      await es2.flushAndPush();
-    } catch (e10) {
-      reportError(e10, "warning");
-    }
-    return true;
-  }
-  return confirmDiscard(what);
-}
 async function openStoreDoc(id2) {
-  await homeIfEdited();
-  if (doc.identifier !== id2 && !doc.identifier && !await confirmDiscard(`\u6253\u5F00\u300C${stemOfId(id2)}\u300D`)) return false;
+  if (!await H2.leave(`\u6253\u5F00\u300C${stemOfId(id2)}\u300D`, { nextIsGallery: true })) return false;
   if (isSignedIn2() && navigator.onLine) {
     try {
       if (await requireStore().files.dirty.count() > 0) await pushDirtyAll();
@@ -47008,72 +47163,35 @@ async function openStoreDoc(id2) {
 }
 async function newStoreSong() {
   attachForUser();
-  if (!await leaveCurrent("\u65B0\u5EFA")) return;
+  if (!await H2.leave("\u65B0\u5EFA")) return;
   const folder = gallery?.currentFolder() ?? "";
-  es2.release();
-  loadDoc(initState().song, { stem: defaultStem(), named: false, extras: emptyExtras(), handle: null, identifier: null });
-  doc.pendingHome = { folder };
-  deviceKvSet2(KV_LAST_DOC, null);
-  renderTitle();
+  loadDoc(initState().song, { home: { kind: "none", pendingFolder: folder }, stem: defaultStem(), named: false, extras: emptyExtras() });
   info("\u65B0\u7684\u4E00\u9996\uFF08\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93\uFF09");
 }
 async function saveIntoGallery() {
-  if (doc.pendingHome) {
-    if (!dirty()) {
-      info("\u8FD8\u662F\u7A7A\u7684\uFF1A\u5199\u4E0B\u7B2C\u4E00\u7B14\u5C31\u81EA\u52A8\u8FDB\u6B4C\u5E93");
-      return;
-    }
-    await homeNow();
-    return;
-  }
   attachForUser();
-  const store = requireStore(), folder = gallery?.currentFolder() ?? "", base3 = docName();
-  let id2 = identifiers.join({ folder, stem: base3, suffix: SONG_SUFFIX });
-  for (let n10 = 0; n10 < 50 && await store.files.occupied(id2); n10++) id2 = identifiers.join({ folder, stem: `${base3}-${defaultStem().slice(9)}`, suffix: SONG_SUFFIX });
-  doc.identifier = id2;
-  doc.handle = null;
-  doc.mtime = null;
-  doc.stem = stemOfId(id2);
-  doc.named = true;
-  setActiveIdentifier(id2);
-  es2.adopted(id2, { create: true });
-  try {
-    await es2.flushLocal();
-    deviceKvSet2(KV_LAST_DOC, id2);
-    renderTitle();
-    info(`\u8FDB\u6B4C\u5E93\u4E86\uFF1A${doc.stem}${SONG_SUFFIX}`);
-  } catch (e10) {
-    doc.identifier = null;
-    setActiveIdentifier(null);
-    renderTitle();
-    reportError(e10);
-  }
+  const r10 = await H2.intoGallery(gallery?.currentFolder() ?? "");
+  if (r10.k === "blank") info("\u8FD8\u662F\u7A7A\u7684\uFF1A\u5199\u4E0B\u7B2C\u4E00\u7B14\u5C31\u81EA\u52A8\u8FDB\u6B4C\u5E93");
+  else if (r10.k === "moved" && r10.flushed) info(`\u8FDB\u6B4C\u5E93\u4E86\uFF1A${H2.stem}${SONG_SUFFIX}`);
 }
 async function renameActive() {
-  if (!doc.identifier) {
+  if (H2.home.kind !== "gallery") {
     renameFile();
     return null;
   }
-  const p2 = identifiers.parse(doc.identifier);
+  const p2 = identifiers.parse(H2.home.identifier);
   if (!p2) return null;
   const v = await openInputSheet("\u6539\u6587\u4EF6\u540D", { defaultValue: p2.stem, message: "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002", okLabel: "\u6539" });
   if (v == null) return null;
-  const stem = fileSafe(v);
-  if (!stem || stem === p2.stem) return null;
-  const to2 = identifiers.join({ folder: p2.folder, stem, suffix: p2.suffix });
   try {
-    const r10 = await es2.rename(to2);
-    if (!r10.ok) {
-      showError(`\u300C${stem}\u300D\u5DF2\u7ECF\u6709\u4E86\uFF08${r10.where === "cloud" ? "\u4E91\u7AEF" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A"}\uFF09\uFF0C\u6CA1\u6539`);
+    const r10 = await H2.rename(v);
+    if (r10.k === "taken") {
+      showError(`\u300C${fileSafe(v)}\u300D\u5DF2\u7ECF\u6709\u4E86\uFF08${r10.where === "cloud" ? "\u4E91\u7AEF" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A"}\uFF09\uFF0C\u6CA1\u6539`);
       return null;
     }
-    doc.identifier = to2;
-    doc.stem = stem;
-    setActiveIdentifier(to2);
-    deviceKvSet2(KV_LAST_DOC, to2);
-    renderTitle();
-    info(r10.oldKept ? `\u6587\u4EF6\u540D\u6539\u6210 ${stem}${SONG_SUFFIX}\uFF08\u65E7\u540D\u7684\u90A3\u4EFD\u8C31\u7CFB\u4E0D\u660E\uFF0C\u539F\u5730\u7559\u7740\u4E86\uFF09` : `\u6587\u4EF6\u540D\u6539\u6210 ${stem}${SONG_SUFFIX}`);
-    return to2;
+    if (r10.k !== "renamed") return null;
+    info(r10.oldKept ? `\u6587\u4EF6\u540D\u6539\u6210 ${r10.stem}${SONG_SUFFIX}\uFF08\u65E7\u540D\u7684\u90A3\u4EFD\u8C31\u7CFB\u4E0D\u660E\uFF0C\u539F\u5730\u7559\u7740\u4E86\uFF09` : `\u6587\u4EF6\u540D\u6539\u6210 ${r10.stem}${SONG_SUFFIX}`);
+    return H2.identifier();
   } catch (e10) {
     reportError(e10);
     return null;
@@ -47117,23 +47235,21 @@ function ensureGallery() {
   if (gallery) return gallery;
   let padWas = true;
   gallery = initGalleryHost({
-    activeIdentifier: () => doc.identifier,
+    activeIdentifier: () => H2.identifier(),
     openAny: (id2) => openStoreDoc(id2),
     // 打开中的那首被歌库挪了夹：字节已在新身份下 → 先放下旧身份（不然 es.open 的「切歌前先存旧的」会把旧名字写回去复活），再按新身份重开
     setIdentifier: (id2) => {
-      es2.release();
-      doc.identifier = null;
-      setActiveIdentifier(null);
+      H2.release();
       void openStoreDoc(id2);
     },
     renameActive,
     pushNow: () => es2.forceSaveAndPush().then(renderTitle),
-    flushLocal: () => doc.identifier ? es2.flushLocal() : Promise.resolve(),
+    flushLocal: () => H2.home.kind === "gallery" ? es2.flushLocal() : Promise.resolve(),
     newSong: async () => {
       await newStoreSong();
-      if (doc.identifier || doc.pendingHome) gallery.close();
+      if (H2.home.kind === "gallery" || H2.pending()) gallery.close();
     },
-    // 首笔安家：新建出来的空谱还没身份（pendingHome）也回到谱
+    // 首笔安家：新建出来的空谱还没身份（pendingFolder）也回到谱
     openSettings: () => openSettings(),
     openInstruments: () => openFinder(),
     // 歌库开着 = 只弹着玩的目录，盖在歌库上面
@@ -47163,15 +47279,11 @@ function ensureGallery() {
   return gallery;
 }
 async function afterGalleryClosed() {
-  if (!doc.identifier) return;
+  if (H2.home.kind !== "gallery") return;
   try {
-    if (await requireStore().files.occupied(doc.identifier)) return;
-    const stem = doc.stem;
-    es2.release();
-    doc.identifier = null;
-    setActiveIdentifier(null);
-    deviceKvSet2(KV_LAST_DOC, null);
-    renderTitle();
+    if (await requireStore().files.occupied(H2.home.identifier)) return;
+    const stem = H2.stem;
+    H2.release();
     showError(`\u300C${stem}\u300D\u5DF2\u7ECF\u8FDB\u4E86\u56DE\u6536\u7AD9\uFF1B\u624B\u91CC\u8FD9\u4EFD\u73B0\u5728\u6CA1\u6709\u5BB6\u4E86\uFF08\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA\uFF0C\u6216\u300C\u5B58\u8FDB\u6B4C\u5E93\u300D\uFF09\u3002`);
   } catch (e10) {
     reportError(e10, "log");
@@ -47179,12 +47291,8 @@ async function afterGalleryClosed() {
 }
 async function openGallery() {
   attachForUser();
-  if (!await leaveCurrent("\u8FDB\u6B4C\u5E93")) return;
-  if (doc.identifier) {
-    es2.release();
-    doc.identifier = null;
-    setActiveIdentifier(null);
-  }
+  if (!await H2.leave("\u8FDB\u6B4C\u5E93")) return;
+  H2.release();
   deviceKvSet2(KV_LAST_DOC, null);
   renderTitle();
   await gallery.open();
@@ -47230,11 +47338,7 @@ async function signOutFlow() {
     await backupDirty();
   }
   gallery?.close();
-  es2.release();
-  doc.identifier = null;
-  setActiveIdentifier(null);
-  doc.pendingHome = null;
-  deviceKvSet2(KV_LAST_DOC, null);
+  H2.release();
   try {
     await detachStore();
   } catch (e10) {
@@ -47245,7 +47349,7 @@ async function signOutFlow() {
   } catch (e10) {
     reportError(e10);
   }
-  loadDoc(initState().song, { stem: defaultStem(), named: false, extras: emptyExtras(), handle: null, identifier: null });
+  loadDoc(initState().song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: emptyExtras() });
   renderTitle();
   info("\u9000\u51FA\u4E86\uFF1A\u6B4C\u90FD\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u518D\u8FDB\u6B4C\u5E93\u5C31\u80FD\u63A5\u7740\u7528");
 }
@@ -47278,7 +47382,8 @@ function downloadFile(file) {
 }
 var navigatingForAuth = false;
 async function signInFlow() {
-  if (doc.identifier) {
+  const inGallery = H2.home.kind === "gallery";
+  if (inGallery) {
     try {
       await es2.flushLocal();
     } catch (e10) {
@@ -47287,7 +47392,7 @@ async function signInFlow() {
   }
   await openChoiceSheet(
     "\u53BB\u5FAE\u8F6F\u767B\u5F55",
-    `\u9875\u9762\u4F1A\u8DF3\u5230\u5FAE\u8F6F\u7684\u767B\u5F55\u9875\uFF08\u53EA\u8BA4\u4E2A\u4EBA\u8D26\u53F7\uFF09\uFF0C\u767B\u5F55\u5B8C\u81EA\u52A8\u56DE\u5230\u8FD9\u91CC\u3002${doc.identifier ? "\u624B\u91CC\u7684\u6B4C\u5DF2\u7ECF\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\u3002" : dirty() ? "\u624B\u91CC\u8FD9\u9996\u65E0\u5730\u7684\u6B4C\u6539\u8FC7\u8FD8\u6CA1\u5B58\u2014\u2014\u8DF3\u8D70\u4F1A\u4E22\uFF0C\u5148\u5B58\u4E00\u4E0B\u518D\u6765\u3002" : ""}`,
+    `\u9875\u9762\u4F1A\u8DF3\u5230\u5FAE\u8F6F\u7684\u767B\u5F55\u9875\uFF08\u53EA\u8BA4\u4E2A\u4EBA\u8D26\u53F7\uFF09\uFF0C\u767B\u5F55\u5B8C\u81EA\u52A8\u56DE\u5230\u8FD9\u91CC\u3002${inGallery ? "\u624B\u91CC\u7684\u6B4C\u5DF2\u7ECF\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\u3002" : dirty() ? "\u624B\u91CC\u8FD9\u9996\u65E0\u5730\u7684\u6B4C\u6539\u8FC7\u8FD8\u6CA1\u5B58\u2014\u2014\u8DF3\u8D70\u4F1A\u4E22\uFF0C\u5148\u5B58\u4E00\u4E0B\u518D\u6765\u3002" : ""}`,
     [{ label: "\u53BB\u767B\u5F55", value: "go", primary: true, onPick: redirectToSignIn }]
   );
 }
@@ -47301,8 +47406,9 @@ function redirectToSignIn() {
   });
 }
 var refreshing = false;
+var replaceInFlight = false;
 async function refreshOpenDoc() {
-  const id2 = doc.identifier;
+  const id2 = H2.identifier();
   if (!id2 || refreshing || !hasStore() || !isSignedIn2() || !navigator.onLine || dirty() || es2.isPushPending()) return;
   refreshing = true;
   let froze = false;
@@ -47312,11 +47418,12 @@ async function refreshOpenDoc() {
       localDirty: () => dirty() || es2.isPushPending(),
       onReplaceStart: () => {
         froze = true;
+        replaceInFlight = true;
         diagNote("sync", `replace-start ${stemOfId(id2)}: input frozen`);
         void lockSyncGate({ title: "\u4E91\u7AEF\u6709\u65B0\u7248\u672C", message: `\u300C${stemOfId(id2)}\u300D\u5728\u522B\u7684\u8BBE\u5907\u4E0A\u6539\u8FC7\u4E86\uFF0C\u6B63\u5728\u6362\u6210\u6700\u65B0\u7684\u2026\u2026\u5148\u522B\u6253\u5B57\u3002`, showSpinner: true, actions: [] });
       }
     });
-    if (r10?.status === "fast-forwarded" && doc.identifier === id2) {
+    if (r10?.status === "fast-forwarded" && H2.identifier() === id2) {
       pendingOpenId = id2;
       const ok2 = await es2.open(id2).finally(() => {
         pendingOpenId = null;
@@ -47327,7 +47434,10 @@ async function refreshOpenDoc() {
   } catch (e10) {
     reportError(e10, "warning");
   } finally {
-    if (froze) unlockSyncGate();
+    if (froze) {
+      replaceInFlight = false;
+      unlockSyncGate();
+    }
     refreshing = false;
   }
 }
@@ -47338,7 +47448,7 @@ function afterSignIn() {
   if (afterSignInInFlight) return afterSignInInFlight;
   afterSignInInFlight = (async () => {
     diagNote("auth", "afterSignIn");
-    if (doc.identifier) {
+    if (H2.home.kind === "gallery") {
       try {
         await es2.flushAndPush();
       } catch (e10) {
@@ -47413,19 +47523,8 @@ async function smartSaveStore() {
   }
   info(es2.isPushPending() ? "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u4E91\u7AEF\u7A0D\u540E\u518D\u63A8" : before === "clean" ? "\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684" : "\u5B58\u597D\u4E86\uFF0C\u4E91\u7AEF\u4E5F\u66F4\u65B0\u4E86");
 }
-async function smartSave() {
-  if (doc.pendingHome) {
-    if (!dirty()) {
-      info("\u8FD8\u662F\u7A7A\u7684\uFF0C\u6CA1\u4EC0\u4E48\u53EF\u5B58");
-      return;
-    }
-    await homeNow();
-  }
-  if (doc.identifier) await smartSaveStore();
-  else await fileSave();
-}
 $2("saveBtn").addEventListener("click", () => {
-  void smartSave();
+  void fileSave();
 });
 $2("undoBtn").addEventListener("click", () => undoNow());
 $2("redoBtn").addEventListener("click", () => redoNow());
@@ -47453,10 +47552,48 @@ window.addEventListener("online", () => {
   else retrySilent();
 });
 window.addEventListener("offline", () => renderTitle());
+var hiddenAt = 0;
+var describeAway = (ms) => {
+  const m2 = Math.round(ms / 6e4);
+  return m2 < 60 ? `${m2} \u5206\u949F` : m2 < 60 * 24 ? `${Math.round(m2 / 60)} \u5C0F\u65F6` : `${Math.round(m2 / 60 / 24)} \u5929`;
+};
+async function wakeCheck(awayMs) {
+  if (H2.home.kind !== "gallery" || !hasStore() || !isSignedIn2() || !navigator.onLine) return false;
+  if (dirty() || es2.isPushPending()) {
+    diagNote("sync", `wake after ${describeAway(awayMs)}: local changes pending, cloud check skipped`);
+    return false;
+  }
+  diagNote("sync", `wake after ${describeAway(awayMs)}: checking cloud before input`);
+  void lockSyncGate({ title: "\u56DE\u6765\u4E86", message: `\u79BB\u5F00\u4E86 ${describeAway(awayMs)}\uFF0C\u5148\u770B\u770B\u4E91\u7AEF\u6709\u6CA1\u6709\u65B0\u7248\u672C\u2026\u2026\u7A0D\u7B49\uFF0C\u5148\u522B\u6253\u5B57\u3002`, showSpinner: true, actions: [] });
+  let timedOut = false;
+  try {
+    await Promise.race([refreshOpenDoc(), new Promise((r10) => setTimeout(() => {
+      timedOut = true;
+      r10();
+    }, WAKE_CHECK_TIMEOUT_MS))]);
+  } finally {
+    if (!timedOut) unlockSyncGate();
+    else {
+      diagNote("sync", "wake check timed out: input released, check continues in background");
+      if (!replaceInFlight) unlockSyncGate();
+    }
+  }
+  return true;
+}
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState !== "visible" || !hasStore()) return;
-  if (isSignedIn2()) void refreshOpenDoc();
-  else retrySilent();
+  if (document.visibilityState !== "visible") {
+    hiddenAt = Date.now();
+    return;
+  }
+  const away = hiddenAt ? Date.now() - hiddenAt : 0;
+  hiddenAt = 0;
+  if (!hasStore()) return;
+  if (!isSignedIn2()) {
+    retrySilent();
+    return;
+  }
+  if (away >= WAKE_CHECK_AFTER_MS) void wakeCheck(away);
+  else void refreshOpenDoc();
 });
 function whereNow() {
   if (ui2.overlay || isSheetOpen() || isGateOpen()) return "sheet";
@@ -47833,4 +47970,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-19eb65fe66b7.mjs.map
+//# sourceMappingURL=moonsinger-444f2d0026b1.mjs.map

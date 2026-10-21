@@ -35,6 +35,9 @@ const tb = await p.evaluate(() => { const L = window.__moonsinger.layout(), r = 
 await p.mouse.click(tb.x, tb.y); await p.waitForSelector(".title-input:not([hidden])");
 await p.keyboard.type("春の歌"); await p.keyboard.press("Enter");
 const day = stem0.slice(0, 8);   // 文件名 = 年月日-歌名（没存过时跟着歌名；user「用歌名可以，然后也要yyyymmdd规则」）
+// v0.13.0 起顶栏在下一帧重画：等它（F-66；之前紧跟着读 = 时红时绿）
+const titleSettles = (t) => p.waitForFunction((t) => document.getElementById("docTitle").textContent === t, t, { timeout: 3000 }).catch(() => {});
+await titleSettles(`${day}-春の歌 •`);
 check((await title()) === `${day}-春の歌 •` && (await p.$$eval("#score text.song-title", (ts) => ts.map((t) => t.textContent).join("|"))) === "春の歌", "点纸面最上面填歌名：纸上画出来、顶栏的文件名 = 年月日-歌名");
 await p.click("#score", { position: { x: 700, y: 400 } });
 const before = await tokens();
@@ -46,7 +49,7 @@ const [dl] = await Promise.all([p.waitForEvent("download"), p.click('.offer [dat
 const saved = `${DIR}/${dl.suggestedFilename()}`; await dl.saveAs(saved);
 check(dl.suggestedFilename() === `${day}-春の歌.mxl` && (await title()) === `${day}-春の歌`, "存的文件名 = 年月日-歌名、存了之后「•」消失", dl.suggestedFilename());
 // 改一下 → 打开 → 先问
-await p.keyboard.press("Digit7");
+await p.keyboard.press("Digit7"); await titleSettles(`${day}-春の歌 •`);
 check((await title()) === `${day}-春の歌 •`, "又改了");
 // 点文件名 = 改名（同 WXHW：文件名是管理用的把手；2026-10-08 起不再弹文件菜单）
 await p.click("#fileBtn"); await p.waitForSelector(".offer #fnIn");

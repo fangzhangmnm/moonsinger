@@ -136,6 +136,17 @@ try {
   await typeAtEnd(A, ["Digit7"]);
   await A.evaluate(() => Promise.all([window.__moonsinger.es().flushAndPush(), window.__moonsinger.pushDirtyAll(), window.__moonsinger.es().flushAndPush()])); await A.waitForTimeout(200);
   check((await gate(A)) === null && (await cloudNotes(A, id)).endsWith("A5 B5"), "三路同时推：零冲突、云端跟着", await cloudNotes(A, id));
+  // ⑧ 挂机很久醒来先核云端（F-67 / KudsRocket W-25）：B 干净、睡了很久、云端已经是 A 推的新版本 → 醒来 = 闸先锁住输入、核完换成云端的、闸开；
+  //    A 本机有没存上的改动 → 醒来不锁、不动（库的快进不动脏的；分叉留给下一次 consent 推的 412）。短暂切走不走这条（visibilitychange 那里按时长分）。
+  const beforeB = await notes(B);
+  const gatedB = await B.evaluate(() => window.__moonsinger.wake(11 * 60 * 1000)); await B.waitForTimeout(400);
+  check(gatedB === true, "（⑧）B 睡了 11 分钟醒来：闸先锁住输入、核云端");
+  check((await gate(B)) === null && (await notes(B)).endsWith("A5 B5"), "（⑧）核完换成云端的新版本（…A5 B5）、闸开", `${beforeB} → ${await notes(B)}`);
+  await typeAtEnd(A, ["Digit1"]);
+  const nA = await notes(A);
+  const gatedA = await A.evaluate(() => window.__moonsinger.wake(11 * 60 * 1000)); await A.waitForTimeout(200);
+  check(gatedA === false && (await gate(A)) === null && (await notes(A)) === nA, "（⑧）A 本机有没存上的改动：醒来不锁、不动");
+  await push(A); await A.waitForTimeout(200);
   // 黑匣子里记着每次推
   const diag = await A.evaluate(() => window.__moonsinger.diagText());
   check(/\[sync\] push .*pushed/.test(diag), "诊断日志里记着每次推", diag.split("\n").filter((l) => l.includes("[sync]")).slice(-3).join(" | "));

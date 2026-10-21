@@ -15,3 +15,8 @@ export const SONG_SUFFIX = ".mxl";
 //    user「用weebpaint方案，对付大歌，这不是txt」——歌是整个 .mxl（封面、以后还有音源），15 s 一推太勤。原来的 15 s 防抖 / 30 s 心跳（WXHW 制）撤了）──
 /** 编辑 → 本地落盘（IDB）防抖：正文改了 2 s 后落本机（「•」= 还没落）。 */
 export const LOCAL_SAVE_DEBOUNCE_MS = 2_000;
+/** 挂机很久醒来先核云端、再放行输入（家族周账 F-67 / KudsRocket W-25；user 2026-10-15「就是防止一个挂机了一年的设备误覆盖新版本」）：
+ *  离开前台超过这么久回来 = 同步闸先锁住输入、核完云端再放开。短暂切走不锁（每次切 tab 都弹太烦）。数是 AI 起的（10 分钟），user 可改。added 2026-10-21 by Claude Fable 5.1 */
+export const WAKE_CHECK_AFTER_MS = 10 * 60_000;
+/** 醒来那次核对最多让人等多久：超时闸先放开（核对在后台接着跑，真有新版本到了照样锁到重载完）。 */
+export const WAKE_CHECK_TIMEOUT_MS = 20_000;

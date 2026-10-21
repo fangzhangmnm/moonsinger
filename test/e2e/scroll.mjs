@@ -49,8 +49,11 @@ await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTim
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: 3 }); });   // 从开头往右挪
 await p.evaluate(() => { document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(200);
 let worst = Infinity, moved = 0;
+// v0.13.0 起画（含跟随滚动）合并到下一帧：挪完光标等一帧再量（F-66；之前同步量到的是上一帧的 scrollTop，差一行）
+const frame = () => p.evaluate(() => new Promise((r) => requestAnimationFrame(() => r(undefined))));
 for (let k = 0; k < 90; k++) {
   await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: Math.min(s.caret + 1, s.song.papers[0].tracks[s.at.part].length) }); });
+  await frame();
   const g2 = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), el = document.querySelector("#score"), sh = el.querySelector(".sheet"); if (!L.head) return null;
     const row = L.systems[L.head.system], z = 1, top = sh.offsetTop + row.top * z, bot = sh.offsetTop + row.bottom * z; return { gap: el.scrollTop + el.clientHeight - bot, rowH: bot - top, h: el.clientHeight, st: el.scrollTop }; });
   if (!g2) continue;
