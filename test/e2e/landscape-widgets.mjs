@@ -1,11 +1,11 @@
-// test/e2e/landscape-widgets.mjs —— 真浏览器 E2E（横屏）：小键盘写字那一排全部看得见（叠 / 升降不藏，折成两行）；混音台歌手卡顶上「静 / 独」= 谱上的静音 / 独奏（v0.10.34）。
+// test/e2e/landscape-widgets.mjs —— 真浏览器 E2E（winmini 档 = 横屏且矮，键盘在左边一栏；2026-10-21 起横屏默认贴底，这档只剩矮屏）：小键盘写字那一排全部看得见（叠 / 升降不藏，折成两行）；混音台歌手卡顶上「静 / 独」= 谱上的静音 / 独奏（v0.10.34）。
 // created 2026-10-10 by Claude Opus 5.5（user「横屏的时候小键盘的叠不见了。横屏的时候能显示全部widget吗」「混音台基础里面应该有mute和solo，和我们已经有的mute和solo绑定」）
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/landscape-widgets.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
-const p = await (await b.newContext({ viewport: { width: 1180, height: 820 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
+const p = await (await b.newContext({ viewport: { width: 1180, height: 600 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 const w = await p.$$eval(".pad-tools.writes .btn", (bs) => bs.map((b) => b.getBoundingClientRect().width));
 check(w.length >= 10 && w.every((x) => x > 20), "横屏：写字那一排的键全都看得见（含叠、升降）", w.map(Math.round).join(","));

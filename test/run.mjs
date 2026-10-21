@@ -46,6 +46,7 @@ import "./document.test.ts";
 import "./home.test.ts";
 import "./layout-worker.test.ts";
 import "./encode-worker.test.ts";
+import "./dock-layout.test.ts";
 import "./master.test.ts";
 import "./fx.test.ts";
 import "./pack.test.ts";

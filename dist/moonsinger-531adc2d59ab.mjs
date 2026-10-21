@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.0-2026-10-21";
+var APP_VERSION = "v0.14.1-2026-10-21";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -10062,6 +10062,7 @@ function dockOf(s10) {
   return s10.mode === "notes" ? "keys" : s10.mode === "symbols" ? "symbols" : s10.mode === "listen" ? "studio" : "none";
 }
 var hasKeys = (m2) => m2 === "notes" || m2 === "symbols" || m2 === "listen";
+var SIDE_DOCK_MQ = "(min-aspect-ratio: 1/1) and (max-height: 720px)";
 
 // src/ui/part-colors.ts
 var TAB20 = [
@@ -32116,12 +32117,12 @@ ${tg2.fx}`);
     const spec = this.tab === "eq" ? this.specSvg(id2) : this.tab === "basic" ? GONIO_SVG : this.tab === "comp" ? this.compSvg(id2) : "";
     return `<div class="strip${cls}" data-id="${esc5(id2)}"${color ? ` data-color style="--cat:${esc5(color)}"` : ""}>${spec}<div class="strip-meter"><i></i><b></b></div>${name}${who ? `<div class="strip-who">${esc5(who)}</div>` : ""}<div class="strip-body">${body2}</div></div>`;
   }
-  /** 竖屏（混音台在底下）：高度 = 顶上两条 + 正好 N 排卡片（N = 半屏放得下的最多排，至少一排；卡片不多 = 有几排就几排），不再切在第二排中间。
+  /** 贴底（混音台在底下，默认）：高度 = 顶上两条 + 正好 N 排卡片（N = 半屏放得下的最多排，至少一排；卡片不多 = 有几排就几排），不再切在第二排中间。
    *  v0.10.38；user「混音台的高度是怎么决定的，现在怎么不三不四的」→「按整排卡片对齐，最高半屏；iPad mini 上就是一排」「好」。横屏 / 全屏 = 不管（CSS）。 */
   fitHeight() {
     const el2 = this.el;
     el2.style.maxHeight = "";
-    if (this.full || el2.hidden || !matchMedia("(max-aspect-ratio: 1/1)").matches) return;
+    if (this.full || el2.hidden || matchMedia(SIDE_DOCK_MQ).matches) return;
     const box = el2.querySelector(".studio-strips"), card = box?.querySelector(".strip");
     if (!box || !card) return;
     const cs2 = getComputedStyle(box), gap = parseFloat(cs2.rowGap) || 0, pad4 = (parseFloat(cs2.paddingTop) || 0) + (parseFloat(cs2.paddingBottom) || 0);
@@ -43987,10 +43988,10 @@ var view = new ScoreView(scoreEl, {
   reflow: () => reflow,
   pages: () => pageFlow && !scrollFlow,
   scroll: () => scrollFlow,
-  // 横屏（底座在右边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）
+  // winmini 档（底座在左边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
   layoutWidth: () => {
     const w2 = scoreEl.clientWidth, sw2 = stageEl.clientWidth;
-    if (!matchMedia("(min-aspect-ratio: 1/1)").matches) return w2;
+    if (!matchMedia(SIDE_DOCK_MQ).matches) return w2;
     if (stageEl.dataset.dock !== "none") {
       dockedSide = sw2 - w2;
       return w2;
@@ -44873,7 +44874,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "0706cc13771a",
+  cssHash: "eeb39b8d6d82",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -46712,7 +46713,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = D2.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var encoder = createEncoder(() => new URL(`./${"encode-worker-43a54aafce91.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
+var encoder = createEncoder(() => new URL(`./${"encode-worker-5038f0412b10.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -48170,4 +48171,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-18d58d1f81d3.mjs.map
+//# sourceMappingURL=moonsinger-531adc2d59ab.mjs.map

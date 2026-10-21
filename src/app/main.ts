@@ -28,7 +28,7 @@ import { createPadHost } from "./pad-host.ts";   // pad 的宿主 = 翻译层（
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
-import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, type Mode, type WorkspaceState } from "./workspace.ts";
+import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, SIDE_DOCK_MQ, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
@@ -440,10 +440,10 @@ const view = new ScoreView(scoreEl, {
   reflow: () => reflow,
   pages: () => pageFlow && !scrollFlow,
   scroll: () => scrollFlow,
-  // 横屏（底座在右边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）
+  // winmini 档（底座在左边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
   layoutWidth: () => {
     const w = scoreEl.clientWidth, sw = stageEl.clientWidth;
-    if (!matchMedia("(min-aspect-ratio: 1/1)").matches) return w;   // 竖屏：底座在下面，不占宽
+    if (!matchMedia(SIDE_DOCK_MQ).matches) return w;   // 贴底（默认）：底座在下面，不占宽
     if (stageEl.dataset.dock !== "none") { dockedSide = sw - w; return w; }
     return dockedSide > 0 ? Math.max(200, sw - dockedSide) : w;
   },

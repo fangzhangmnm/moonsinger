@@ -14,6 +14,7 @@ const SPEC_TICKS = [100, 1000, 10000];
 import { DEFAULT_EQ_ID, PLUGIN_KINDS, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, viewOfFx, type Params } from "./plugins.ts";
 import { paramRow, slider, wireParamRows } from "../keyboard/param-row.ts";
 import { stereoShape } from "./scopes.ts";
+import { SIDE_DOCK_MQ } from "../app/workspace.ts";
 
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）
 export interface StudioHost {
@@ -482,11 +483,11 @@ export class Studio {
     // 卡片一样高（= 基础页的那么高；v0.10.21，user「混音台能解决卡片太长的问题吗？不方便纵览。能不能约定一个卡片的fixed的大小，然后里面自己想办法」「我比较喜欢基础模式的卡片大小」）：名字钉在上面，下面的放不下 = 卡片里自己滚
     return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}>${spec}<div class="strip-meter"><i></i><b></b></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}<div class="strip-body">${body}</div></div>`;
   }
-  /** 竖屏（混音台在底下）：高度 = 顶上两条 + 正好 N 排卡片（N = 半屏放得下的最多排，至少一排；卡片不多 = 有几排就几排），不再切在第二排中间。
+  /** 贴底（混音台在底下，默认）：高度 = 顶上两条 + 正好 N 排卡片（N = 半屏放得下的最多排，至少一排；卡片不多 = 有几排就几排），不再切在第二排中间。
    *  v0.10.38；user「混音台的高度是怎么决定的，现在怎么不三不四的」→「按整排卡片对齐，最高半屏；iPad mini 上就是一排」「好」。横屏 / 全屏 = 不管（CSS）。 */
   private fitHeight(): void {
     const el = this.el; el.style.maxHeight = "";
-    if (this.full || el.hidden || !matchMedia("(max-aspect-ratio: 1/1)").matches) return;
+    if (this.full || el.hidden || matchMedia(SIDE_DOCK_MQ).matches) return;   // 贴底（默认）才按整排算；winmini 档在左边一栏 = CSS 管
     const box = el.querySelector<HTMLElement>(".studio-strips"), card = box?.querySelector<HTMLElement>(".strip"); if (!box || !card) return;
     const cs = getComputedStyle(box), gap = parseFloat(cs.rowGap) || 0, pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
     const head = [...el.children].filter((c) => c !== box && !(c as HTMLElement).hidden).reduce((n, c) => n + (c as HTMLElement).getBoundingClientRect().height, 0);

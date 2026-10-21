@@ -61,3 +61,7 @@ export function dockOf(s: WorkspaceState): Dock {
 }
 /** 这个模式底下有东西可收起 / 弹出吗（底下那粒 tab 露不露；听 = 混音台）。 */
 export const hasKeys = (m: Mode): boolean => m === "notes" || m === "symbols" || m === "listen";
+
+/** 底座（键盘 / 混音台）放左边一栏的那一档 = 横屏且矮（winmini；user 2026-10-21「ui默认键盘在下面，就是很长很宽的屏幕，键盘，混音台，都在下面，只有极端情况（其实就是winmini一个）才考虑放左边」）。
+ *  其余一律贴底。styles.css 里同一串（test/dock-layout.test.ts 守着两边一致）；改阈值两边一起改。added 2026-10-21 by Claude Fable 5.1 */
+export const SIDE_DOCK_MQ = "(min-aspect-ratio: 1/1) and (max-height: 720px)";

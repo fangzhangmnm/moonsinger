@@ -91,16 +91,19 @@ button, input, select { font: inherit; color: inherit; }
 
 /* 舞台：谱面板（内部滚）+ pad 面板 */
 /* 舞台 = 命名区域的 grid，不是 flex 流（user 2026-10-07「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）：
-   谱区 / 找人视图都占 main，pad 永远占 pad；节点顺序随便，位置由这里钉死。横屏 main | pad，竖屏 main 上 pad 下；pad 收起 = 那一列 / 行消失。 */
-#stage { min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) 300px; grid-template-rows: minmax(0, 1fr); grid-template-areas: "main pad"; }
-#stage[data-dock="none"] { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main"; }   /* 底座空着（收起 / 词 / 听）：谱占满 */
+   谱区 / 找人视图都占 main，pad 永远占 pad；节点顺序随便，位置由这里钉死。pad 收起 = 那一列 / 行消失。
+   底座（键盘 / 混音台）**默认在下面**——再宽再长的屏幕也在下面（user 2026-10-21「ui默认键盘在下面，就是很长很宽的屏幕，键盘，混音台，都在下面，只有极端情况（其实就是winmini一个）才考虑放左边」）；
+   只有「横屏且矮」（winmini 档：高 ≤ 720 px，下面放键盘谱就没地方了）才 pad | main 放在**左边**。那一档的规则全在下面 `@media (min-aspect-ratio: 1/1) and (max-height: 720px)` 里，
+   JS 里同一串 = src/app/workspace.ts SIDE_DOCK_MQ（test/dock-layout.test.ts 守着两边一致）。2026-10-21 之前是横屏一律右边一栏。 */
+#stage { min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "main" "pad"; }
+#stage[data-dock="none"] { grid-template-rows: minmax(0, 1fr); grid-template-areas: "main"; }   /* 底座空着（收起 / 词 / 听）：谱占满 */
 .score, .finder, .inst-page { grid-area: main; }
 .studio { grid-area: pad; }   /* 录音室在底座里（键盘那个位子，和键盘互斥；2026-10-10） */
 .pad-panel { grid-area: pad; }
 .score { flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; outline: none; background: var(--panel);
   -webkit-overflow-scrolling: touch; touch-action: pan-y; }
 .score svg { display: block; }
-.pad-panel { min-width: 0; min-height: 0; border-left: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; padding: 10px; gap: 8px; }   /* 宽度由 #stage 的 grid 列定 */
+.pad-panel { min-width: 0; min-height: 0; border-top: 1px solid var(--line); background: var(--bg); display: flex; flex-direction: column; padding: 6px 8px 8px; gap: 6px; }   /* 宽度由 #stage 的 grid 列定 */
 
 .err-banner { position: fixed; left: 8px; right: 8px; bottom: calc(8px + var(--safe-bottom)); z-index: var(--z-err); background: #c0392b; color: #fff;
   padding: 10px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
@@ -166,14 +169,8 @@ body.listen-mode .ink-caret { display: none; }
 .pad-key .abs { font-size: 10px; color: var(--muted); }
 .pad-key.hit, .pad-key.down { background: var(--accent-soft); }
 
-/* 竖屏（iPad mini 竖着拿）：像 iPad 软键盘贴底——全宽，不是正方形；键高按手指定 */
-@media (max-aspect-ratio: 1/1) {
-  #stage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; grid-template-areas: "main" "pad"; }
-  #stage[data-dock="none"] { grid-template-rows: minmax(0, 1fr); grid-template-areas: "main"; }
-  .studio { max-height: 46vh; border-left: 0 !important; border-top: 1px solid var(--line); }
-  .pad-panel { border-left: 0; border-top: 1px solid var(--line); padding: 6px 8px 8px; gap: 6px; }
-  .pad-tools .btn { height: 44px; }
-}
+/* 贴底（默认，像 iPad 软键盘——全宽，不是正方形；键高按手指定） */
+.pad-tools .btn { height: 44px; }
 
 
 /* UX-2 工具条：候选、Shift 状态、时值字形、即兴 */
@@ -189,8 +186,14 @@ body.listen-mode .ink-caret { display: none; }
 .pad-tools .t-unit .smufl { font-family: "Bravura"; font-size: 30px; line-height: 1; position: relative; top: 8px; }
 .pad-tools .t-unit sup { font-size: 10px; color: var(--accent); }
 .pad-tools .btn.cand { font-size: 13px; }
-/* 横屏侧栏 300 宽：工具条折成两行 */
-@media (min-aspect-ratio: 1/1) { #stage { grid-template-columns: minmax(0, 1fr) 340px; } .pad-tools .btn { height: 36px; font-size: 15px; } }
+/* winmini 档（横屏且矮）：底座在左边一栏 340 宽；工具条折成两行、键矮一点 */
+@media (min-aspect-ratio: 1/1) and (max-height: 720px) {
+  #stage { grid-template-columns: 340px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); grid-template-areas: "pad main"; }
+  #stage[data-dock="none"] { grid-template-columns: minmax(0, 1fr); grid-template-areas: "main"; }
+  .pad-panel { border-top: 0; border-right: 1px solid var(--line); padding: 10px; gap: 8px; }
+  .studio { max-height: none; border-top: 0; border-right: 1px solid var(--line); }
+  .pad-tools .btn { height: 36px; font-size: 15px; }
+}
 
 /* 「好了」面板（导出歌声后：分享 / 下载 / 关；应用内，不用系统弹窗） */
 .offer { position: fixed; inset: 0; z-index: var(--z-sheet); display: flex; align-items: center; justify-content: center; background: rgba(40, 38, 34, .28); padding: 16px; }
@@ -459,7 +462,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .prov-tag { display: inline-block; font-size: 10px; line-height: 1.5; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; margin-right: 5px; color: var(--muted); vertical-align: 1px; }
 
 /* 录音室（src/ui/studio.ts）：占 #stage 的 main 区；一个声部一条 */
-.studio { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--panel); border-left: 1px solid var(--line); overflow: hidden; }
+.studio { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--panel); border-top: 1px solid var(--line); max-height: 46vh; overflow: hidden; }
 .studio-strips { flex: 1; overflow: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; padding: 10px; align-content: start; }   /* 网格：撑不满一排的卡片也和别的一样宽（2026-10-10 user「录音房撑不满行宽的卡片应该也一样大，看着舒服」；原来 flex 换行、最后一排被拉宽） */
 .strip { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--bg); height: var(--card-h, 248px); overflow: hidden; }   /* 一样高 = 基础页那么高（v0.10.21） */
 .strip-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 6px; margin: 0 -4px; padding: 0 4px; }   /* 放不下 = 卡片里自己滚 */
@@ -707,8 +710,8 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 /* pad：叠音键（Shift 逻辑同 /2）；单声乐器的声部叠不了 = 灰 */
 .pad-tools .btn.stack.off { opacity: .3; pointer-events: none; }
 @container (max-width: 520px) { .pad-tools.writes .btn.stack { display: none; } }
-/* 横屏（键盘在右边一栏，窄）：写字那一排不藏键、折成两行（v0.10.34；user「横屏的时候小键盘的叠不见了。横屏的时候能显示全部widget吗」） */
-@media (min-aspect-ratio: 1/1) {
+/* winmini 档（键盘在左边一栏，窄）：写字那一排不藏键、折成两行（v0.10.34；user「横屏的时候小键盘的叠不见了。横屏的时候能显示全部widget吗」） */
+@media (min-aspect-ratio: 1/1) and (max-height: 720px) {
   .pad-tools.writes { flex-wrap: wrap; }
   @container (max-width: 520px) {
     .pad-tools.writes .btn.stack, .pad-tools.writes .btn.accshift { display: flex; }
@@ -933,26 +936,21 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 .dock-tab .dock-tr { display: flex; gap: 4px; }
 .dock-tab .pad-tab { position: static; transform: none; border-radius: 7px; padding: 0 8px; box-shadow: none; background: var(--panel); bottom: auto; left: auto; }
 .dock-tab .pad-tab[hidden] { display: none; }
-/* 横屏：键盘在右边 = 挂在它左边、竖着排 */
-#stage:not([data-dock="none"]) > .dock-tab { grid-area: pad; right: 100%; top: 8px; flex-direction: column; border-right: 0; border-radius: 10px 0 0 10px; }
-#stage[data-dock="none"] > .dock-tab { grid-area: main; right: 0; top: 8px; flex-direction: column; border-right: 0; border-radius: 10px 0 0 10px; }
-#stage > .dock-tab .mode-seg, #stage > .dock-tab .dock-tr { flex-direction: column; }
-#stage > .dock-tab .mode-seg .btn + .btn { border-left: 0; border-top: 1px solid var(--line); }
-#stage > .dock-tab .pad-tab span { display: none; }   /* 横屏竖着排：「键盘」只留图标（字会折成两行；悬停有说明） */
-/* 竖屏：键盘贴底 = 挂在它左上角、往上、横着排；收起 = 贴屏幕左下 */
-@media (max-aspect-ratio: 1/1) {
-  #stage:not([data-dock="none"]) > .dock-tab { grid-area: pad; right: auto; left: 8px; top: auto; bottom: 100%; flex-direction: row; border: 1px solid var(--line); border-bottom: 0; border-radius: 10px 10px 0 0; }
-  #stage[data-dock="none"] > .dock-tab { grid-area: main; right: auto; left: 8px; top: auto; bottom: max(8px, var(--safe-bottom)); flex-direction: row; border: 1px solid var(--line); border-radius: 10px; }
-  #stage > .dock-tab .mode-seg, #stage > .dock-tab .dock-tr { flex-direction: row; }
-  #stage > .dock-tab .mode-seg .btn + .btn { border-top: 0; border-left: 1px solid var(--line); }
-  #stage > .dock-tab .pad-tab span { display: inline; }
+/* 默认（键盘贴底）：挂在它左上角、往上、横着排；收起 = 贴屏幕左下 */
+#stage:not([data-dock="none"]) > .dock-tab { grid-area: pad; left: 8px; bottom: 100%; flex-direction: row; border-bottom: 0; border-radius: 10px 10px 0 0; }
+#stage[data-dock="none"] > .dock-tab { grid-area: main; left: 8px; bottom: max(8px, var(--safe-bottom)); flex-direction: row; border-radius: 10px; }
+/* 选区条：在谱那一块里居中（原来按整个舞台居中，宽了会伸到键盘那边、压住小条） */
+#stage > .sel-bar { grid-area: main; left: 50%; max-width: calc(100% - 16px); }
+/* winmini 档：键盘在左边一栏 = 小条挂在它右边、竖着排；收起 = 贴屏幕左上。谱的左边让出小条那一条（margin：谱宽按 clientWidth 算，padding 会算进去）；选区条也让 */
+@media (min-aspect-ratio: 1/1) and (max-height: 720px) {
+  #stage:not([data-dock="none"]) > .dock-tab { grid-area: pad; left: 100%; bottom: auto; top: 8px; flex-direction: column; border-left: 0; border-bottom: 1px solid var(--line); border-radius: 0 10px 10px 0; }
+  #stage[data-dock="none"] > .dock-tab { grid-area: main; left: 0; bottom: auto; top: 8px; flex-direction: column; border-left: 0; border-radius: 0 10px 10px 0; }
+  #stage > .dock-tab .mode-seg, #stage > .dock-tab .dock-tr { flex-direction: column; }
+  #stage > .dock-tab .mode-seg .btn + .btn { border-left: 0; border-top: 1px solid var(--line); }
+  #stage > .dock-tab .pad-tab span { display: none; }   /* 竖着排：「键盘」只留图标（字会折成两行；悬停有说明） */
+  #stage > .score { margin-left: 46px; }
+  #stage > .sel-bar { left: calc(46px + (100% - 46px) / 2); max-width: calc(100% - 16px - 46px); }
 }
-/* 小条不盖谱：横屏 = 谱的右边让出小条那一条（margin：谱宽按 clientWidth 算，padding 会算进去）；竖屏不用让——谱底下本来就留了 ¾ 屏能滚过去 */
-#stage > .score { margin-right: 46px; }
-@media (max-aspect-ratio: 1/1) { #stage > .score { margin-right: 0; } }
-/* 选区条：在谱那一块里居中（原来按整个舞台居中，宽了会伸到键盘那边、压住小条）；横屏让出小条那 46px */
-#stage > .sel-bar { grid-area: main; left: calc((100% - 46px) / 2); max-width: calc(100% - 16px - 46px); }
-@media (max-aspect-ratio: 1/1) { #stage > .sel-bar { left: 50%; max-width: calc(100% - 16px); } }
 /* |▶ 开着循环：右上角一个小「循环」 */
 .play-btn { position: relative; }
 .play-btn.looping::after { content: "循环"; position: absolute; top: -6px; right: -8px; padding: 0 3px; border-radius: 6px; font-size: 9px; line-height: 13px; background: var(--accent); color: #fff; pointer-events: none; }
