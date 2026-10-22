@@ -39,12 +39,14 @@ const pushQuiet = async (p) => { const r = await Promise.race([push(p).then(() =
 const pending = (p) => p.evaluate(() => window.__moonsinger.es().isPushPending());
 const backups = (p) => p.evaluate(() => window.__moonsinger.store().files.listBackup().then((l) => l.length));
 // mock 云的登录态 = 页面全局（src/app-store.ts）：reload 后回到「未登录」，和真机 initAuth 之前一样（开局 open 不查云）；signIn() = 登录 + 跑 afterSignIn（真机 initAuth 之后那一串）
-const signIn = async (p) => { await p.evaluate(() => { window.__moonsingerCloudSignedIn = true; return window.__moonsinger.afterSignIn(); }); await p.waitForTimeout(300); };
+// 2026-10-21 全家：登录后有没传上去的先问一次「有 N 首歌还没传上去，现在传吗？」——这里一律答「传上去」（asked 记着问没问，场景里核）
+const signIn = async (p) => { p.__asked = false; const done = p.evaluate(() => { window.__moonsingerCloudSignedIn = true; return window.__moonsinger.afterSignIn(); }); const btn = await p.waitForSelector(".offer button:has-text('传上去')", { timeout: 1500 }).catch(() => null); if (btn) { p.__asked = true; await btn.click(); } await done; await p.waitForTimeout(300); };
 const reloadAndSignIn = async (p) => { await p.reload(); await p.waitForFunction(() => !!window.__moonsinger?.identifier()); await p.waitForTimeout(300); await signIn(p); };
 try {
   // ① A：进歌库、新建、写、推；再改再推 ×4
   const A = await newPage(ctxA);
   await A.evaluate(() => window.__moonsinger.attach()); await signIn(A); await A.evaluate(() => window.__moonsinger.newStoreSong()); await A.waitForTimeout(300);
+  check(A.__asked === false, "没有没传上去的歌 = 登录后不问");
   check((await A.evaluate(() => window.__moonsinger.identifier())) === null, "新建 = 空谱还没有家（首笔安家）");
   await typeAtEnd(A, ["Digit1", "Digit2", "Digit3"]); await A.waitForFunction(() => !!window.__moonsinger.identifier()); await A.waitForTimeout(200);
   const id = await A.evaluate(() => window.__moonsinger.identifier()); check(/\.mxl$/.test(id ?? ""), "第一笔之后 A 在歌库里有了身份", id);
@@ -69,6 +71,7 @@ try {
   check((await cloudNotes(A, id)) === "C4 D4 E4 G4 A4 G4 E4 C4 D4 E4", "页面死前的上传在云端落地了", await cloudNotes(A, id));
   check((await gate(A)) === null && (await notes(A)) === "C4 D4 E4 G4 A4 G4 E4 C4 D4 E4", "开局（还没登录）直接开本地，不弹", await notes(A));
   await signIn(A); await A.waitForTimeout(200);
+  check(A.__asked === true, "登录后有没传上去的 = 先问一次「现在传吗？」再推（全家 2026-10-21）");
   check((await gate(A)) === null && (await A.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 0, "登录后补推：自愈（云端字节 = 本地字节），不弹冲突面、脏标清了");
   await typeAtEnd(A, ["Digit4"]); await push(A); await A.waitForTimeout(200);
   check((await gate(A)) === null && (await cloudNotes(A, id)) === "C4 D4 E4 G4 A4 G4 E4 C4 D4 E4 F4", "自愈之后再推：零冲突", await cloudNotes(A, id));

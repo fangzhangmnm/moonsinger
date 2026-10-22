@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.5-2026-10-21";
+var APP_VERSION = "v0.14.6-2026-10-21";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -47259,7 +47259,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = D2.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var encoder = createEncoder(() => new URL(`./${"encode-worker-2d31348f3d68.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
+var encoder = createEncoder(() => new URL(`./${"encode-worker-b9fa63911391.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -48196,19 +48196,38 @@ function afterSignIn() {
   if (afterSignInInFlight) return afterSignInInFlight;
   afterSignInInFlight = (async () => {
     diagNote("auth", "afterSignIn");
-    if (H2.home.kind === "gallery") {
-      try {
-        await es2.flushAndPush();
-      } catch (e10) {
-        reportError(e10, "warning");
-      }
-    }
     try {
       await requireStore().files.drainOfflineQueue();
     } catch (e10) {
       reportError(e10, "log");
     }
-    await pushDirtyAll();
+    let n10 = 0;
+    try {
+      n10 = await requireStore().files.dirty.count();
+    } catch (e10) {
+      reportError(e10, "log");
+    }
+    if (H2.home.kind === "gallery" && dirty()) n10 = Math.max(n10, 1);
+    let go = n10 === 0;
+    if (n10 > 0) {
+      try {
+        go = await openChoiceSheet(`\u6709 ${n10} \u9996\u6B4C\u8FD8\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u73B0\u5728\u4F20\u5417\uFF1F`, "\u4F20\u4E0A\u53BB = \u540C\u6B65\u5230 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF1B\u6682\u4E0D = \u5148\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u7684\u65F6\u5019\u7167\u65E7\u4F1A\u63A8\u3002", [{ label: "\u4F20\u4E0A\u53BB", value: "push", primary: true }, { label: "\u6682\u4E0D", value: "later" }]) === "push";
+      } catch (e10) {
+        reportError(e10, "log");
+        go = false;
+      }
+    }
+    diagNote("auth", `afterSignIn: ${n10} not pushed \u2192 ${go ? "push" : "later"}`);
+    if (go) {
+      if (H2.home.kind === "gallery") {
+        try {
+          await es2.flushAndPush();
+        } catch (e10) {
+          reportError(e10, "warning");
+        }
+      }
+      await pushDirtyAll();
+    }
     await refreshOpenDoc();
     gallery?.refresh();
     gallery?.renderCloud();
@@ -48718,4 +48737,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-dffeac40d1bf.mjs.map
+//# sourceMappingURL=moonsinger-01bdb001dead.mjs.map

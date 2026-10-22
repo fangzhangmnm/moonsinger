@@ -2935,9 +2935,18 @@ function afterSignIn(): Promise<void> {
   if (afterSignInInFlight) return afterSignInInFlight;
   afterSignInInFlight = (async () => {
     diagNote("auth", "afterSignIn");
-    if (H.home.kind === "gallery") { try { await es.flushAndPush(); } catch (e) { reportError(e, "warning"); } }
-    try { await requireStore().files.drainOfflineQueue(); } catch (e) { reportError(e, "log"); }
-    await pushDirtyAll();
+    try { await requireStore().files.drainOfflineQueue(); } catch (e) { reportError(e, "log"); }   // 排着的离线操作本来就同意过
+    // 全家 2026-10-21（统筹转述 user）：登录 / 回线后不再静默推——有没传上去的先问一次；数字 = dirty.count()（从没传过的 + 传过改了没推的合计）+ 手里这首内存里还没落盘的；
+    //   「暂不」= 留在这台设备上，换歌 / 退出 / 按「存」/ 进歌库那些 consent 时刻照旧推（v0.6 起的节律不变）。面被 busy 挡住开不了 = 当「暂不」、记一笔。
+    let n = 0; try { n = await requireStore().files.dirty.count(); } catch (e) { reportError(e, "log"); }
+    if (H.home.kind === "gallery" && dirty()) n = Math.max(n, 1);
+    let go = n === 0;
+    if (n > 0) {
+      try { go = (await openChoiceSheet<"push" | "later">(`有 ${n} 首歌还没传上去，现在传吗？`, "传上去 = 同步到 OneDrive 的「应用」文件夹；暂不 = 先留在这台设备上，换歌 / 退出 / 按「存」的时候照旧会推。", [{ label: "传上去", value: "push", primary: true }, { label: "暂不", value: "later" }])) === "push"; }
+      catch (e) { reportError(e, "log"); go = false; }
+    }
+    diagNote("auth", `afterSignIn: ${n} not pushed → ${go ? "push" : "later"}`);
+    if (go) { if (H.home.kind === "gallery") { try { await es.flushAndPush(); } catch (e) { reportError(e, "warning"); } } await pushDirtyAll(); }
     await refreshOpenDoc();
     gallery?.refresh(); gallery?.renderCloud(); renderTitle();
   })().finally(() => { afterSignInInFlight = null; });
