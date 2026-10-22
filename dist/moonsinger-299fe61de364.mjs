@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.6-2026-10-21";
+var APP_VERSION = "v0.14.7-2026-10-21";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -39699,7 +39699,13 @@ function cloneView(v) {
 function clonePlay(p2) {
   if (!p2 || !Number.isFinite(p2.t))
     return null;
-  return { t: p2.t, loop: !!p2.loop };
+  const fps = typeof p2.fps === "number" && Number.isFinite(p2.fps) && p2.fps > 0 ? p2.fps : void 0;
+  return fps !== void 0 ? { t: p2.t, loop: !!p2.loop, fps } : { t: p2.t, loop: !!p2.loop };
+}
+function cloneExtra(x2) {
+  if (!x2 || typeof x2 !== "object" || Array.isArray(x2) || Object.keys(x2).length === 0)
+    return null;
+  return JSON.parse(JSON.stringify(x2));
 }
 function cloneCarried(c10) {
   return { at: c10.at, item: JSON.parse(JSON.stringify(c10.item)), files: { ...c10.files } };
@@ -39714,6 +39720,7 @@ function clampIndex(i10, n10) {
 function createDeck() {
   let cards = [];
   let carried = [];
+  let extra = {};
   let index = 0;
   let seq = 0;
   const listeners = /* @__PURE__ */ new Set();
@@ -39742,9 +39749,10 @@ function createDeck() {
     vp: cloneView(c10.vp),
     play: clonePlay(c10.play),
     origin: c10.origin ?? null,
-    ram: c10.ram && Number.isFinite(c10.ram.bytes) ? { bytes: c10.ram.bytes } : null
+    ram: c10.ram && Number.isFinite(c10.ram.bytes) ? { bytes: c10.ram.bytes } : null,
+    extra: cloneExtra(c10.extra)
   });
-  const copy = (c10) => ({ ...c10, vp: cloneView(c10.vp), play: clonePlay(c10.play), ram: c10.ram ? { bytes: c10.ram.bytes } : null });
+  const copy = (c10) => ({ ...c10, vp: cloneView(c10.vp), play: clonePlay(c10.play), ram: c10.ram ? { bytes: c10.ram.bytes } : null, extra: cloneExtra(c10.extra) });
   const deck = {
     get size() {
       return cards.length;
@@ -39758,7 +39766,7 @@ function createDeck() {
     cards: () => cards,
     get: (id2) => cards.find((c10) => c10.id === id2) ?? null,
     indexOf: (id2) => cards.findIndex((c10) => c10.id === id2),
-    snapshot: () => ({ index, cards: cards.map(copy), carried: carried.map(cloneCarried) }),
+    snapshot: () => ({ index, cards: cards.map(copy), carried: carried.map(cloneCarried), extra: cloneExtra(extra) ?? {} }),
     restore(s10) {
       if (!s10 || !Array.isArray(s10.cards))
         throw new TypeError("Deck.restore expects { cards: [...] }");
@@ -39768,6 +39776,7 @@ function createDeck() {
         return make(c10);
       });
       carried = (s10.carried ?? []).map(cloneCarried);
+      extra = cloneExtra(s10.extra) ?? {};
       index = clampIndex(s10.index ?? 0, cards.length);
       emit({ type: "reset" });
       return cards.map((c10) => c10.id);
@@ -39775,6 +39784,7 @@ function createDeck() {
     clear() {
       cards = [];
       carried = [];
+      extra = {};
       index = 0;
       emit({ type: "reset" });
     },
@@ -39835,7 +39845,7 @@ function createDeck() {
       const p2 = clonePlay(play);
       if (!c10 || !p2)
         return;
-      if (c10.play && c10.play.t === p2.t && c10.play.loop === p2.loop)
+      if (c10.play && c10.play.t === p2.t && c10.play.loop === p2.loop && c10.play.fps === p2.fps)
         return;
       c10.play = p2;
       emit({ type: "view" });
@@ -39888,6 +39898,7 @@ function createDeck() {
 }
 
 // node_modules/@internal/reference-window/dist/deck/import.js
+var DEFAULT_RAM = { image: false, text: false, audio: true, video: true };
 function sniffKind(f2) {
   const t10 = (f2.type || "").toLowerCase(), n10 = (f2.name || "").toLowerCase();
   if (t10.startsWith("image/"))
@@ -39922,17 +39933,17 @@ async function importIntoDeck(deck, files, o10) {
       continue;
     }
     try {
-      let blob = f2, mime = f2.type || "", ram = false;
+      const ramDefault = o10.defaultRam?.[kind] ?? DEFAULT_RAM[kind];
+      let blob = f2, mime = f2.type || "", ram = ramDefault;
       const canCompress = !!o10.transcoder?.kinds.includes(kind), limit = o10.askAbove?.[kind];
       if (o10.ask && limit !== void 0 && f2.size > limit) {
         const estimate = canCompress && o10.transcoder?.estimate ? await o10.transcoder.estimate(kind, f2).catch(() => null) : null;
-        const choice = await o10.ask({ name, kind, bytes: f2.size, estimate, canCompress, suggestRam: o10.ramAbove !== void 0 && f2.size > o10.ramAbove });
+        const choice = await o10.ask({ name, kind, bytes: f2.size, estimate, canCompress, suggestRam: ramDefault || o10.ramAbove !== void 0 && f2.size > o10.ramAbove });
         if (choice === "cancel") {
           out.skipped.push({ name, why: "cancelled" });
           continue;
         }
-        if (choice === "ram")
-          ram = true;
+        ram = choice === "ram";
         if (choice === "compress" && canCompress) {
           const r10 = await o10.transcoder.encode(kind, f2);
           blob = r10.blob;
@@ -39991,7 +40002,10 @@ var REF_ICON_IDS = {
   current: "check",
   // 0.4.0（2026-10-09）：音频卡的播放 / 暂停。图标库里现成的。
   play: "play",
-  pause: "pause"
+  pause: "pause",
+  // 0.5.0（2026-10-21）：视频卡的上一帧 / 下一帧 = 图标库现成的 ⏮ ⏭（skip-prev / skip-next，20260821 入库）。没有新画。
+  prevFrame: "skip-prev",
+  nextFrame: "skip-next"
 };
 function iconMarkup(id2) {
   const sym = typeof document !== "undefined" ? document.querySelector(`svg symbol[id="${id2}"]`) : null;
@@ -40120,7 +40134,7 @@ canvas:active { cursor: grabbing; }
   box-sizing: border-box !important; width: 44px !important; height: 44px !important; min-width: 0 !important; min-height: 0 !important;
   border-radius: 50% !important; resize: none !important; background-color: color-mix(in srgb, var(--bg, #202124) 85%, transparent);
 }
-:host([minimized]) :is(canvas, .text, .audio, .empty, .move, .plus, .close, .grip, .chips) { display: none !important; }
+:host([minimized]) :is(canvas, .text, .audio, .video, .empty, .move, .plus, .close, .grip, .chips) { display: none !important; }
 .bubble { display: none; }
 :host([minimized]) .bubble {
   display: flex; position: absolute; inset: 0; z-index: 4; align-items: center; justify-content: center;
@@ -40165,12 +40179,26 @@ canvas:active { cursor: grabbing; }
 .audio .aseek { width: 100%; margin: 0; accent-color: var(--ink, #e8eaed); }
 .audio .atime { font-size: 12px; color: var(--ink-soft, #9aa0a6); font-variant-numeric: tabular-nums; }
 .audio.missing .aname { color: var(--ink-soft, #9aa0a6); font-style: italic; }
+/* 0.5.0 \u89C6\u9891\u5361\uFF082026-10-21\uFF09\uFF1A\u753B\u9762\u8D70 canvas\uFF08\u548C\u56FE\u7247\u4E00\u5957\u624B\u52BF\uFF09\uFF0C\u8FD9\u91CC\u53EA\u6709\u4E00\u6761\u5E95\u90E8\u63A7\u5236\u6761\uFF1A\u4E0A\u4E00\u5E27 / \u64AD\u653E / \u4E0B\u4E00\u5E27 / \u8FDB\u5EA6 / \u65F6\u95F4\u3002\u7FFB\u9875\u6761\u5728\u5E95\u4E0B\u65F6\u8BA9\u51FA\u4E00\u6392\u3002 */
+.video { position: absolute; left: 4px; right: 4px; bottom: 4px; display: none; z-index: 2; align-items: center; gap: 2px; padding: 2px 6px; box-sizing: border-box; border-radius: 14px;
+  background: color-mix(in srgb, var(--bg, #202124) 72%, transparent); color: var(--ink, #e8eaed); font-size: 11px; transition: opacity 0.35s; }
+.video.shown { display: flex; }
+.video.paged { bottom: 28px; }
+.video button { flex: none; width: 24px; height: 24px; padding: 0; border: none; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; display: grid; place-items: center; }
+.video button:hover { background: color-mix(in srgb, var(--ink, #e8eaed) 14%, transparent); }
+.video button:disabled { opacity: 0.35; cursor: default; }
+.video button svg { width: 16px; height: 16px; pointer-events: none; }
+.video .vseek { flex: 1; min-width: 24px; margin: 0 4px; accent-color: var(--ink, #e8eaed); }
+.video .vtime { flex: none; color: var(--ink-soft, #9aa0a6); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* <video> \u672C\u5C0A\uFF1A\u85CF\u8D77\u6765\u4F46\u4E0D display:none\uFF08WebKit \u5BF9\u4E0D\u5728\u753B\u9762\u91CC\u7684 video \u4F1A\u505C\u66F4\u5E27 / \u4E0D\u53D1\u5E27\u56DE\u8C03\uFF09\uFF0C\u753B\u9762\u7531 canvas \u753B */
+.vsrc { position: absolute; left: 0; top: 0; width: 1px; height: 1px; clip-path: inset(50%); pointer-events: none; }
 .empty ::slotted(*), .empty p { margin: 0; }
 :host(:focus) { box-shadow: var(--shadow, 0 8px 24px rgba(0, 0, 0, 0.4)), inset 0 0 0 2px color-mix(in srgb, var(--ink, #e8eaed) 45%, transparent); }   /* \u6709\u7126\u70B9 = \u7C98\u8D34\u843D\u8FD9\u91CC\uFF1A\u4E00\u5708\u7EC6\u63CF\u8FB9 */
 </style>
 <canvas></canvas>
 <div class="text" part="text" data-takes-focus></div>
 <div class="audio" part="audio"><button class="aplay" type="button"></button><div class="ainfo"><div class="aname"></div><input class="aseek" type="range" min="0" max="1000" step="1" value="0"><div class="atime"></div></div></div>
+<div class="video" part="video"><button class="vprev" type="button" title="Previous frame" aria-label="Previous frame">${iconMarkup(REF_ICON_IDS.prevFrame)}</button><button class="vplay" type="button"></button><button class="vnext" type="button" title="Next frame" aria-label="Next frame">${iconMarkup(REF_ICON_IDS.nextFrame)}</button><input class="vseek" type="range" min="0" max="1000" step="1" value="0"><div class="vtime"></div></div>
 <div class="empty"><slot name="empty"><p>\uFF0B \u5BFC\u5165\u53C2\u8003</p></slot></div>
 <button class="move" part="move" type="button" title="Tap: minimize \xB7 drag: move" aria-label="Tap: minimize \xB7 drag: move"><span class="knob">${iconMarkup(REF_ICON_IDS.pip)}</span></button>
 <button class="plus" part="plus" type="button" aria-haspopup="true">${iconMarkup(REF_ICON_IDS.plus)}</button>
@@ -40207,7 +40235,7 @@ var WpReferenceWindow = class extends HTMLElement {
   /** 拖把地板（宿主注入 = ui/floating-window 运行时量的「顶栏下缘」；缺省 60 = 旧常数，裸挂可用）。
    *  拖 / 恢复 / 视口钳制三条路都吃它——出血区规则只准一个出处（2026-09-02 C2）。 */
   topFloor = DRAG_TOP_FLOOR;
-  /** 0.4.0 音频卡的速度档（宿主注入，如 [1, 0.75, 0.5]；保音高）。null = 不给速度（库的缺省；user 2026-10-09「默认不开，moonsinger开」）。 */
+  /** 0.4.0 音频卡的速度档（宿主注入，如 [1, 0.75, 0.5]；保音高）。null = 不给速度（库的缺省；user 2026-10-09「默认不开，moonsinger开」）。0.5.0 起视频卡也用它。 */
   audioRates = null;
   /** 底边地板（宿主注入 = 屏底被占掉的高度：app 内软键盘、iOS 键盘那一块……；缺省 0）。拖 / resize / 视口钳制都吃它——
    *  否则右下角的 resize 把手会被键盘盖住（user 2026-09-30「参考窗或者任何浮窗需要保证 move 和 resize 能点到」）。改了之后宿主调 reclamp()。 */
@@ -40225,6 +40253,24 @@ var WpReferenceWindow = class extends HTMLElement {
   _audioOf = null;
   _audioUrl = null;
   _rate = 1;
+  /** 0.5.0 视频卡：一个窗一个 <video>（藏在 shadow 里，画面由 canvas 画）。 */
+  _videoLayer;
+  _vPlay;
+  _vPrev;
+  _vNext;
+  _vSeek;
+  _vTime;
+  _video = null;
+  _videoOf = null;
+  _videoUrl = null;
+  _vFrameTime = null;
+  // 现在画着的这一帧的 mediaTime（requestVideoFrameCallback 报的；seek 之后清空等下一帧）
+  _vFrameDur = null;
+  // 量到 / 宿主给的帧长（秒）；null = 还不知道
+  _vStepping = null;
+  // 「播到下一帧就停」进行中
+  _vRaf = null;
+  // 播放时逐帧重画的循环
   _emptyEl;
   _plusEl;
   _menu = null;
@@ -40305,11 +40351,40 @@ var WpReferenceWindow = class extends HTMLElement {
       }
     });
     this._aSeek.addEventListener("change", () => this._saveAudioPos());
+    this._videoLayer = root.querySelector(".video");
+    this._vPlay = root.querySelector(".vplay");
+    this._vPrev = root.querySelector(".vprev");
+    this._vNext = root.querySelector(".vnext");
+    this._vSeek = root.querySelector(".vseek");
+    this._vTime = root.querySelector(".vtime");
+    this._vPlay.innerHTML = iconMarkup(REF_ICON_IDS.play);
+    this._vPlay.addEventListener("click", () => this.togglePlay());
+    this._vPrev.addEventListener("click", () => this.stepFrame(-1));
+    this._vNext.addEventListener("click", () => this.stepFrame(1));
+    this._vSeek.addEventListener("input", () => {
+      const v = this._video;
+      if (v && this._videoOf === this._deck.current?.id && Number.isFinite(v.duration)) {
+        this._cancelStep();
+        v.currentTime = Number(this._vSeek.value) / 1e3 * v.duration;
+        this._updateVideoLayer();
+      }
+    });
     this.addEventListener("keydown", (e10) => {
-      if (e10.key === " " && this._deck.current?.kind === "audio" && !e10.composedPath()[0]?.closest?.("input, .text")) {
+      const cur = this._deck.current;
+      if (!cur || cur.kind !== "audio" && cur.kind !== "video" || e10.composedPath()[0]?.closest?.("input, .text"))
+        return;
+      if (e10.key === " ") {
         e10.preventDefault();
         e10.stopPropagation();
         this.togglePlay();
+      } else if (cur.kind === "video" && (e10.key === "ArrowRight" || e10.key === ".")) {
+        e10.preventDefault();
+        e10.stopPropagation();
+        this.stepFrame(1);
+      } else if (cur.kind === "video" && (e10.key === "ArrowLeft" || e10.key === ",")) {
+        e10.preventDefault();
+        e10.stopPropagation();
+        this.stepFrame(-1);
       }
     });
     this._emptyEl = root.querySelector(".empty");
@@ -40381,10 +40456,10 @@ var WpReferenceWindow = class extends HTMLElement {
     this.open = false;
   }
   // 程序性关（不发事件）
-  /** 0.4.0 导入漏斗（deck/import.ts）：嗅种类 → 够大就问宿主（ask）→ 原样 / 压（宿主注入的 transcoder）/ 不要 → 进牌组；加进去了就开窗。
-   *  kinds 缺省 = 图片 / 文字 / 音频。结果（加了哪些、哪些没进、为什么）原样还给宿主，由宿主明说。 */
+  /** 0.4.0 导入漏斗（deck/import.ts）：嗅种类 → 够大就问宿主（ask）→ 原样 / 压（宿主注入的 transcoder）/ 只放内存 / 不要 → 进牌组；加进去了就开窗。
+   *  kinds 缺省 = 图片 / 文字 / 音频 / 视频（0.5.0 起含视频）。音频 / 视频默认只放内存（0.5.0；opts.defaultRam 可按种类改）。结果（加了哪些、哪些没进、为什么）原样还给宿主，由宿主明说。 */
   async importFiles(files, opts = {}) {
-    const r10 = await importIntoDeck(this._deck, files, { ...opts, kinds: opts.kinds ?? ["image", "text", "audio"] });
+    const r10 = await importIntoDeck(this._deck, files, { ...opts, kinds: opts.kinds ?? ["image", "text", "audio", "video"] });
     if (r10.added.length || r10.filled.length)
       this.open = true;
     return r10;
@@ -40392,28 +40467,272 @@ var WpReferenceWindow = class extends HTMLElement {
   /** 元素从文档里拿掉 = 停（关窗不停；整个窗没了才停）。 */
   disconnectedCallback() {
     this._audio?.pause();
+    this._cancelStep();
+    this._video?.pause();
   }
-  // ---- 0.4.0 音频卡 ----
-  /** 当前这张音频卡：播放 / 暂停（换了一张卡 = 先停上一张、从这张记着的位置放）。不是音频卡 = 什么都不做。 */
+  // ---- 0.4.0 音频卡 / 0.5.0 视频卡 ----
+  /** 当前这张音频 / 视频卡：播放 / 暂停（换了一张卡 = 先停上一张、从这张记着的位置放）。不是音视频卡 = 什么都不做。 */
   togglePlay() {
     const cur = this._deck.current;
-    if (!cur || cur.kind !== "audio")
+    if (!cur || cur.kind !== "audio" && cur.kind !== "video")
       return;
     const bytes = cur.bytes ?? this._linked.get(cur.id) ?? null;
     if (!bytes)
       return;
+    const fail = (e10) => this._emit("notice", { level: "error", code: "decode-failed", id: cur.id, name: cur.name, message: String(e10?.message ?? e10) });
+    if (cur.kind === "video") {
+      if (this._videoOf !== cur.id)
+        this._loadVideo(cur, bytes);
+      this._cancelStep();
+      const v = this._video;
+      if (v.paused || v.ended)
+        v.play().catch(fail);
+      else
+        v.pause();
+      this._updateVideoLayer();
+      return;
+    }
     if (this._audioOf !== cur.id)
       this._loadAudio(cur, bytes);
     const a10 = this._audio;
     if (a10.paused)
-      a10.play().catch((e10) => this._emit("notice", { level: "error", code: "decode-failed", id: cur.id, name: cur.name, message: String(e10?.message ?? e10) }));
+      a10.play().catch(fail);
     else
       a10.pause();
     this._updateAudioLayer();
   }
-  /** 正在放（任何一张音频卡）。 */
+  /** 正在放（任何一张音频卡，或当前这张视频卡；逐帧时那一下短暂的静音播放不算）。 */
   get playing() {
-    return !!this._audio && !this._audio.paused;
+    return !!this._audio && !this._audio.paused || !!this._video && !this._video.paused && !this._video.ended && !this._vStepping;
+  }
+  // ---- 0.5.0 视频卡 ----
+  /** 当前这张视频卡：上一帧（-1）/ 下一帧（+1）。放着的先暂停。不是视频卡 = 什么都不做。做法见文件头「0.5.0」。 */
+  stepFrame(delta) {
+    const cur = this._deck.current;
+    if (!cur || cur.kind !== "video")
+      return;
+    const bytes = cur.bytes ?? this._linked.get(cur.id) ?? null;
+    if (!bytes)
+      return;
+    if (this._videoOf !== cur.id)
+      this._loadVideo(cur, bytes);
+    const v = this._video;
+    if (this._vStepping)
+      return;
+    if (!v.paused)
+      v.pause();
+    const base3 = this._vFrameTime ?? v.currentTime;
+    const d3 = this._vFrameDur;
+    if (delta > 0) {
+      if (d3 != null)
+        this._seekVideo(base3 + 1.5 * d3);
+      else if (typeof v.requestVideoFrameCallback === "function") {
+        const timer = setTimeout(() => {
+          if (this._vStepping?.timer === timer) {
+            const st2 = this._vStepping;
+            this._vStepping = null;
+            v.pause();
+            v.muted = st2.restoreMuted;
+            this._updateVideoLayer();
+          }
+        }, 300);
+        this._vStepping = { from: base3, restoreMuted: v.muted, timer };
+        v.muted = true;
+        v.play().catch(() => {
+          this._cancelStep();
+        });
+      } else
+        this._seekVideo(v.currentTime + 1 / (cur.play?.fps ?? 24));
+    } else {
+      this._seekVideo(Math.max(0, base3 - 0.5 * (d3 ?? 1 / (cur.play?.fps ?? 24))));
+    }
+    this._updateVideoLayer();
+  }
+  _seekVideo(t10) {
+    const v = this._video;
+    if (!v)
+      return;
+    v.currentTime = Number.isFinite(v.duration) ? Math.max(0, Math.min(v.duration, t10)) : Math.max(0, t10);
+  }
+  _cancelStep() {
+    const st2 = this._vStepping;
+    if (!st2)
+      return;
+    this._vStepping = null;
+    clearTimeout(st2.timer);
+    const v = this._video;
+    if (v) {
+      v.pause();
+      v.muted = st2.restoreMuted;
+    }
+  }
+  /** requestVideoFrameCallback：新画了一帧。记帧的起点、量帧长、收「播到下一帧就停」的尾。 */
+  _onVideoFrame(v, mediaTime) {
+    const prev = this._vFrameTime;
+    this._vFrameTime = mediaTime;
+    if (prev != null && !v.seeking) {
+      const d3 = mediaTime - prev;
+      if (d3 > 1 / 240 && d3 < 1 && (this._vFrameDur == null || d3 < this._vFrameDur - 1e-6)) {
+        this._vFrameDur = d3;
+        this._saveVideoPos();
+      }
+    }
+    const st2 = this._vStepping;
+    if (st2 && mediaTime > st2.from + 1e-6) {
+      this._vStepping = null;
+      clearTimeout(st2.timer);
+      v.pause();
+      v.muted = st2.restoreMuted;
+      if (Math.abs(v.currentTime - mediaTime) > 1e-4)
+        v.currentTime = mediaTime;
+    }
+    this._invalidate();
+    this._updateVideoLayer();
+  }
+  _armFrameCallback(v) {
+    const rvfc = v.requestVideoFrameCallback;
+    if (typeof rvfc !== "function")
+      return;
+    rvfc.call(v, (_now, meta) => {
+      if (this._video !== v)
+        return;
+      this._onVideoFrame(v, meta.mediaTime);
+      this._armFrameCallback(v);
+    });
+  }
+  _loadVideo(c10, bytes) {
+    this._stopVideo();
+    const v = document.createElement("video"), t02 = c10.play?.t ?? 0;
+    v.className = "vsrc";
+    v.playsInline = true;
+    v.preload = "auto";
+    v.loop = !!c10.play?.loop;
+    v.playbackRate = this._rate;
+    v.preservesPitch = true;
+    this._videoUrl = URL.createObjectURL(bytes);
+    v.src = this._videoUrl;
+    this._vFrameDur = c10.play?.fps ? 1 / c10.play.fps : null;
+    this._vFrameTime = null;
+    const on2 = (ev2, fn, opts) => v.addEventListener(ev2, () => {
+      if (this._video === v)
+        fn();
+    }, opts);
+    on2("loadedmetadata", () => {
+      if (t02 > 0)
+        v.currentTime = Math.min(t02, Number.isFinite(v.duration) ? v.duration : t02);
+      this._updateVideoLayer();
+    }, { once: true });
+    on2("loadeddata", () => {
+      if (this._deck.current?.id === c10.id) {
+        if (!this._deck.current.vp)
+          this.fitToPanelSilent();
+        this._invalidate();
+      }
+      this._updateVideoLayer();
+    });
+    for (const ev2 of ["play", "pause", "ended", "timeupdate", "durationchange"])
+      on2(ev2, () => this._updateVideoLayer());
+    on2("seeking", () => {
+      this._vFrameTime = null;
+    });
+    on2("seeked", () => {
+      this._saveVideoPos();
+      this._invalidate();
+      this._updateVideoLayer();
+    });
+    on2("play", () => this._startVideoLoop(v));
+    on2("pause", () => {
+      this._saveVideoPos();
+      this._stopVideoLoop();
+    });
+    on2("ended", () => {
+      this._cancelStep();
+      this._stopVideoLoop();
+      this._saveVideoPos();
+    });
+    on2("error", () => this._emit("notice", { level: "error", code: "decode-failed", id: c10.id, name: c10.name, message: "video could not be decoded" }));
+    this.shadowRoot.appendChild(v);
+    this._video = v;
+    this._videoOf = c10.id;
+    this._armFrameCallback(v);
+  }
+  _stopVideo() {
+    this._cancelStep();
+    this._stopVideoLoop();
+    if (this._video) {
+      this._saveVideoPos();
+      this._video.pause();
+      this._video.removeAttribute("src");
+      this._video.load();
+      this._video.remove();
+    }
+    if (this._videoUrl)
+      URL.revokeObjectURL(this._videoUrl);
+    this._video = null;
+    this._videoOf = null;
+    this._videoUrl = null;
+    this._vFrameTime = null;
+    this._vFrameDur = null;
+  }
+  /** 播放中逐帧重画（有没有帧回调都画——帧回调只管精确计时）。 */
+  _startVideoLoop(v) {
+    if (this._vRaf != null)
+      return;
+    const tick = () => {
+      this._vRaf = null;
+      if (this._video !== v || v.paused || v.ended)
+        return;
+      this._render();
+      this._updateVideoLayer();
+      this._vRaf = requestAnimationFrame(tick);
+    };
+    this._vRaf = requestAnimationFrame(tick);
+  }
+  _stopVideoLoop() {
+    if (this._vRaf != null) {
+      cancelAnimationFrame(this._vRaf);
+      this._vRaf = null;
+    }
+  }
+  /** 放到哪 / 循环 / 帧率记进卡（视图态：牌组发 view，不标脏）。 */
+  _saveVideoPos() {
+    const v = this._video, id2 = this._videoOf;
+    if (!v || !id2 || this._deck.indexOf(id2) < 0)
+      return;
+    const fps = this._vFrameDur ? Math.round(1 / this._vFrameDur * 1e3) / 1e3 : void 0;
+    this._deck.setPlay(id2, { t: Math.round(v.currentTime * 1e3) / 1e3, loop: v.loop, ...fps ? { fps } : {} });
+  }
+  _updateVideoLayer() {
+    const cur = this._deck.current, isVideo = cur?.kind === "video";
+    const v = this._video;
+    if (v && (!isVideo || this._videoOf !== cur.id)) {
+      this._cancelStep();
+      if (!v.paused)
+        v.pause();
+    }
+    const bytes = isVideo && cur ? cur.bytes ?? this._linked.get(cur.id) ?? null : null;
+    const shown = !!bytes;
+    this._videoLayer.classList.toggle("shown", shown);
+    if (!shown || !cur)
+      return;
+    if (this._videoOf !== cur.id)
+      this._loadVideo(cur, bytes);
+    const vv = this._video, playing = !vv.paused && !vv.ended && !this._vStepping;
+    const want = playing ? REF_ICON_IDS.pause : REF_ICON_IDS.play;
+    if (this._vPlay.dataset.icon !== want) {
+      this._vPlay.innerHTML = iconMarkup(want);
+      this._vPlay.dataset.icon = want;
+    }
+    this._vPlay.setAttribute("aria-label", playing ? this._labels.pause ?? "Pause" : this._labels.play ?? "Play");
+    this._videoLayer.classList.toggle("paged", this._deck.size >= 2);
+    const dur = Number.isFinite(vv.duration) ? vv.duration : null, t10 = vv.currentTime, d3 = this._vFrameDur;
+    this._vSeek.disabled = !dur;
+    this._vSeek.value = String(dur ? Math.round(t10 / dur * 1e3) : 0);
+    this._vPrev.disabled = this._vNext.disabled = !!this._vStepping;
+    const fmt = (x2) => `${Math.floor(x2 / 60)}:${String(Math.floor(x2 % 60)).padStart(2, "0")}.${Math.floor(x2 % 1 * 10)}`;
+    const text2 = `${fmt(t10)}${dur ? ` / ${fmt(dur)}` : ""}${d3 ? ` \xB7 #${Math.round((this._vFrameTime ?? t10) / d3)}` : ""}${vv.playbackRate !== 1 ? ` \xB7 ${vv.playbackRate}\xD7` : ""}${cur.play?.loop ? ` \xB7 ${this._labels.loop ?? "loop"}` : ""}`;
+    if (this._vTime.textContent !== text2)
+      this._vTime.textContent = text2;
   }
   _loadAudio(c10, bytes) {
     this._stopAudio();
@@ -40546,6 +40865,8 @@ var WpReferenceWindow = class extends HTMLElement {
     setTitle2("[data-jump]", l10.jump);
     setTitle2(".grip", l10.resize, l10.resizeAria);
     setTitle2(".bubble", l10.restore);
+    setTitle2(".vprev", l10.prevFrame);
+    setTitle2(".vnext", l10.nextFrame);
   }
   // ---- 多参考内容 API（宿主灌注；程序性，不发事件）----
   /** 整表替换（load 恢复用）。旧 image bitmap 全部释放。 */
@@ -40810,6 +41131,7 @@ var WpReferenceWindow = class extends HTMLElement {
     this._texts.clear();
     this._linked.clear();
     this._linkMissing.clear();
+    this._stopVideo();
   }
   /** 别人（宿主直接用 .deck、或共用这副牌的另一个视图）改了牌组。 */
   _onDeckChange(what) {
@@ -40828,6 +41150,8 @@ var WpReferenceWindow = class extends HTMLElement {
         this._texts.delete(c10.id);
         this._bitmaps.get(c10.id)?.close?.();
         this._bitmaps.delete(c10.id);
+        if (this._videoOf === c10.id)
+          this._stopVideo();
       }
     }
     this._syncFromDeck();
@@ -40849,6 +41173,8 @@ var WpReferenceWindow = class extends HTMLElement {
         this._linkMissing.delete(id2);
     if (this._audioOf && this._deck.indexOf(this._audioOf) < 0)
       this._stopAudio();
+    if (this._videoOf && this._deck.indexOf(this._videoOf) < 0)
+      this._stopVideo();
     for (const c10 of this._deck.cards()) {
       if (c10.kind === "live")
         continue;
@@ -40944,6 +41270,7 @@ var WpReferenceWindow = class extends HTMLElement {
     this._updateChips();
     this._updateTextLayer();
     this._updateAudioLayer();
+    this._updateVideoLayer();
     this._invalidate();
   }
   /** 文字卡：内容层显示 / 隐藏 + 灌内容 + 字号 + 滚动位置。 */
@@ -40992,6 +41319,10 @@ ${this._ramMissingText()}`;
       if (!this._liveSource && this.liveProvider)
         this._takeLiveFrame(cur);
       return this._liveSource ? this._liveSize : null;
+    }
+    if (cur.kind === "video") {
+      const v = this._video;
+      return v && this._videoOf === cur.id && v.videoWidth > 0 ? { w: v.videoWidth, h: v.videoHeight } : null;
     }
     const bm = this._bitmaps.get(cur.id);
     return bm ? { w: bm.width, h: bm.height } : null;
@@ -41239,8 +41570,8 @@ ${this._ramMissingText()}`;
       // 宿主出画面的卡：宿主没给 provider 就不列（写作 app 没有画布可镜像）；多台相机的宿主经 liveTargets 列多项
       ...this._liveMenuItems(),
       { id: "onetoone", label: l10.oneToOne ?? "1:1", icon: REF_ICON_IDS.oneToOne, hidden: this._deck.current?.kind === "audio" },
-      // 0.4.0 音频卡：循环（ROUND 的设想：放在 ＋ 菜单）；速度只在宿主给了档位时列（user 2026-10-09「默认不开，moonsinger开」）。点了不关，可以连点
-      ...this._deck.current?.kind === "audio" ? this._audioMenuItems() : [],
+      // 0.4.0 音频卡（0.5.0 视频卡同）：循环（ROUND 的设想：放在 ＋ 菜单）；速度只在宿主给了档位时列（user 2026-10-09「默认不开，moonsinger开」）。点了不关，可以连点
+      ...cur?.kind === "audio" || cur?.kind === "video" ? this._audioMenuItems() : [],
       // 只放内存（user 2026-10-09「然后能不能加RAM only，就是不落盘，每次重新上传」）：有自己字节的卡才有（链接卡 / 宿主画面 / 读回来的空位没有）
       { id: "minimize", label: l10.minimize ?? "Minimize to icon", icon: REF_ICON_IDS.pip, separatorBefore: true },
       {
@@ -41366,8 +41697,12 @@ ${this._ramMissingText()}`;
           const loop = !cur.play?.loop;
           if (this._audio && this._audioOf === cur.id)
             this._audio.loop = loop;
-          this._deck.setPlay(cur.id, { t: this._audio && this._audioOf === cur.id ? this._audio.currentTime : cur.play?.t ?? 0, loop });
+          if (this._video && this._videoOf === cur.id)
+            this._video.loop = loop;
+          const media = this._audioOf === cur.id ? this._audio : this._videoOf === cur.id ? this._video : null;
+          this._deck.setPlay(cur.id, { t: media ? media.currentTime : cur.play?.t ?? 0, loop, ...cur.play?.fps ? { fps: cur.play.fps } : {} });
           this._updateAudioLayer();
+          this._updateVideoLayer();
           return "keep";
         }
         if (id2 === "ram") {
@@ -41380,7 +41715,10 @@ ${this._ramMissingText()}`;
           this._rate = Number(id2.slice(5)) || 1;
           if (this._audio)
             this._audio.playbackRate = this._rate;
+          if (this._video)
+            this._video.playbackRate = this._rate;
           this._updateAudioLayer();
+          this._updateVideoLayer();
           return "keep";
         }
         if (id2 === "load")
@@ -41675,6 +42013,9 @@ ${this._ramMissingText()}`;
       if (!this._liveSource)
         this._recomposeLive();
       source = this._liveSource;
+    } else if (cur?.kind === "video") {
+      const v2 = this._video;
+      source = v2 && this._videoOf === cur.id && v2.readyState >= 2 && v2.videoWidth > 0 ? v2 : null;
     } else if (cur)
       source = this._bitmaps.get(cur.id) ?? null;
     if (!source)
@@ -41686,7 +42027,7 @@ ${this._ramMissingText()}`;
     const v = this._vp;
     const c10 = Math.cos(v.rot), s10 = Math.sin(v.rot);
     ctx2.setTransform(v.scale * c10 * dpr, v.scale * s10 * dpr, -v.scale * s10 * dpr, v.scale * c10 * dpr, v.tx * dpr, v.ty * dpr);
-    const size = cur?.kind === "live" && this._liveSize ? this._liveSize : { w: source.width, h: source.height };
+    const size = cur?.kind === "live" && this._liveSize ? this._liveSize : source instanceof HTMLVideoElement ? { w: source.videoWidth, h: source.videoHeight } : { w: source.width, h: source.height };
     ctx2.drawImage(source, -size.w / 2, -size.h / 2, size.w, size.h);
   }
   _updateEmptyHint() {
@@ -41768,8 +42109,38 @@ if (!customElements.get(WP_REFERENCE_WINDOW_TAG)) {
 }
 
 // node_modules/@internal/reference-window/dist/deck/manifest.js
-var DECK_MANIFEST_VERSION = 1;
+var DECK_MANIFEST_STAMP = { major: 1, minor: 1, patch: 0 };
+var DECK_MANIFEST_VERSION = DECK_MANIFEST_STAMP.major;
 var DECK_MANIFEST_NAME = "manifest.json";
+var nat = (v) => typeof v === "number" && Number.isInteger(v) && v >= 0 ? v : null;
+function readDeckStamp(json) {
+  const o10 = isObj(json) ? json : {};
+  const major = typeof o10.version === "number" && Number.isFinite(o10.version) ? Math.trunc(o10.version) : 1;
+  return { major, minor: nat(o10.minor) ?? 0, patch: nat(o10.patch) ?? 0 };
+}
+function compareDeckStamp(file, mine = DECK_MANIFEST_STAMP) {
+  if (file.major !== mine.major)
+    return "older";
+  if (file.minor > mine.minor)
+    return "newer-minor";
+  if (file.minor < mine.minor)
+    return "older";
+  if (file.patch > mine.patch)
+    return "newer-patch";
+  if (file.patch < mine.patch)
+    return "older";
+  return "same";
+}
+var KNOWN_MANIFEST_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "index", "items"]);
+var KNOWN_ITEM_KEYS = /* @__PURE__ */ new Set(["kind", "src", "vp", "name", "mime", "target", "origin", "play", "ram"]);
+function pickExtra(o10, known) {
+  let out = null;
+  for (const k2 of Object.keys(o10))
+    if (!known.has(k2)) {
+      (out ??= {})[k2] = JSON.parse(JSON.stringify(o10[k2] ?? null));
+    }
+  return out;
+}
 function deckDir(app) {
   if (!/^[a-z][a-z0-9-]*$/.test(app))
     throw new Error(`deckDir: app name must be lowercase [a-z0-9-], got "${app}"`);
@@ -41834,7 +42205,7 @@ function isObj(x2) {
 }
 function migrateDeckManifest(json) {
   const src = isObj(json) ? json : {};
-  let v = typeof src.version === "number" && Number.isFinite(src.version) ? Math.trunc(src.version) : 1;
+  let v = readDeckStamp(src).major;
   if (v > DECK_MANIFEST_VERSION)
     throw new DeckManifestTooNewError(v, DECK_MANIFEST_VERSION);
   let cur = src;
@@ -41849,7 +42220,8 @@ function migrateDeckManifest(json) {
   }
   const items = Array.isArray(cur.items) ? cur.items.filter((it2) => isObj(it2) && typeof it2.kind === "string" && !!it2.kind) : [];
   const index = typeof cur.index === "number" && Number.isFinite(cur.index) ? Math.trunc(cur.index) : 0;
-  return { version: DECK_MANIFEST_VERSION, index, items };
+  const { minor, patch } = readDeckStamp(cur);
+  return { version: DECK_MANIFEST_VERSION, minor, patch, index, items, extra: pickExtra(cur, KNOWN_MANIFEST_KEYS) ?? {} };
 }
 function readView(x2) {
   if (!isObj(x2))
@@ -41861,14 +42233,15 @@ function readView(x2) {
 function readPlay(x2) {
   if (!isObj(x2) || typeof x2.t !== "number" || !Number.isFinite(x2.t))
     return null;
-  return { t: x2.t, loop: !!x2.loop };
+  const fps = typeof x2.fps === "number" && Number.isFinite(x2.fps) && x2.fps > 0 ? x2.fps : void 0;
+  return fps !== void 0 ? { t: x2.t, loop: !!x2.loop, fps } : { t: x2.t, loop: !!x2.loop };
 }
 var str = (x2) => typeof x2 === "string" ? x2 : "";
 async function decodeDeck(o10) {
   const dir = deckDir(o10.app);
   const blob = o10.getFile(`${dir}/${DECK_MANIFEST_NAME}`);
   if (!blob)
-    return { index: 0, cards: [], carried: [] };
+    return { index: 0, cards: [], carried: [], extra: {}, stamp: { ...DECK_MANIFEST_STAMP }, verdict: "same" };
   let json;
   try {
     json = JSON.parse(await blob.text());
@@ -41878,7 +42251,9 @@ async function decodeDeck(o10) {
   return decodeDeckFromJson(json, o10);
 }
 function decodeDeckFromJson(manifestJson, o10) {
+  const stamp2 = readDeckStamp(manifestJson);
   const m2 = migrateDeckManifest(manifestJson);
+  const verdict = compareDeckStamp(stamp2);
   const known = new Set(o10.knownKinds);
   const cards = [];
   const carried = [];
@@ -41908,12 +42283,13 @@ function decodeDeckFromJson(manifestJson, o10) {
       vp: readView(raw.vp),
       play: readPlay(raw.play),
       origin: str(raw.origin) || null,
-      ram
+      ram,
+      extra: pickExtra(raw, KNOWN_ITEM_KEYS)
     });
   });
   if (!indexSet)
     index = Math.max(0, Math.min(cards.length - 1, m2.index));
-  return { index, cards, carried };
+  return { index, cards, carried, extra: m2.extra, stamp: stamp2, verdict };
 }
 function encodeDeck(s10, o10) {
   const dir = deckDir(o10.app);
@@ -41958,12 +42334,22 @@ function encodeDeck(s10, o10) {
     if (c10.origin)
       item.origin = c10.origin;
     if (c10.play)
-      item.play = { t: c10.play.t, loop: c10.play.loop };
+      item.play = c10.play.fps ? { t: c10.play.t, loop: c10.play.loop, fps: c10.play.fps } : { t: c10.play.t, loop: c10.play.loop };
     if (c10.ram)
       item.ram = { bytes: c10.ram.bytes };
+    if (c10.extra) {
+      for (const k2 of Object.keys(c10.extra))
+        if (!KNOWN_ITEM_KEYS.has(k2))
+          item[k2] = c10.extra[k2];
+    }
     items.push(item);
   });
-  const manifest = { version: DECK_MANIFEST_VERSION, index, items };
+  const manifest = { version: DECK_MANIFEST_STAMP.major, minor: DECK_MANIFEST_STAMP.minor, patch: DECK_MANIFEST_STAMP.patch };
+  for (const k2 of Object.keys(s10.extra ?? {}))
+    if (!KNOWN_MANIFEST_KEYS.has(k2))
+      manifest[k2] = s10.extra[k2];
+  manifest.index = index;
+  manifest.items = items;
   const out = /* @__PURE__ */ new Map();
   out.set(`${dir}/${DECK_MANIFEST_NAME}`, new Blob([JSON.stringify(manifest)], { type: "application/json" }));
   for (const [n10, b3] of files)
@@ -42096,7 +42482,7 @@ function createRefTranscoder() {
 
 // src/app/reference-host.ts
 var APP = "moonsinger";
-var KINDS = ["image", "text", "audio"];
+var KINDS = ["image", "text", "audio", "video"];
 var ASK_ABOVE = 1024 * 1024;
 var RAM_ABOVE = 4 * 1024 * 1024;
 function createReferenceHost(d3) {
@@ -42106,7 +42492,7 @@ function createReferenceHost(d3) {
   fileInput2.type = "file";
   fileInput2.multiple = true;
   fileInput2.hidden = true;
-  fileInput2.accept = "image/*,audio/*,.txt,.md,text/plain,text/markdown";
+  fileInput2.accept = "image/*,audio/*,video/*,.txt,.md,text/plain,text/markdown";
   document.body.append(el2, fileInput2);
   let encoded = {};
   let rev2 = 0;
@@ -42132,13 +42518,16 @@ function createReferenceHost(d3) {
     moveEarlier: "\u5F80\u524D\u632A",
     moveLater: "\u5F80\u540E\u632A",
     jump: "\u8DF3\u5230\u2026",
-    kindNames: { image: "\u56FE\u7247", text: "\u6587\u5B57", audio: "\u97F3\u9891" },
+    kindNames: { image: "\u56FE\u7247", text: "\u6587\u5B57", audio: "\u97F3\u9891", video: "\u89C6\u9891" },
     linkMissing: "\u5185\u5BB9\u4E0D\u5728\u4E86",
-    load: "\u5BFC\u5165\u56FE\u7247 / \u97F3\u9891 / \u6587\u5B57\u2026",
+    load: "\u5BFC\u5165\u56FE\u7247 / \u97F3\u9891 / \u89C6\u9891 / \u6587\u5B57\u2026",
     play: "\u64AD\u653E",
     pause: "\u6682\u505C",
     loop: "\u5FAA\u73AF",
     rate: "\u901F\u5EA6",
+    prevFrame: "\u4E0A\u4E00\u5E27",
+    nextFrame: "\u4E0B\u4E00\u5E27",
+    // 参考窗 0.5.0 视频卡（图标 = 库里的 skip-prev / skip-next，user「逐帧按钮先不用」= 不另画）
     ram: "\u53EA\u653E\u5185\u5B58\uFF08\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF09",
     ramMissing: "\u53EA\u5728\u5185\u5B58\u91CC\uFF0C\u6CA1\u5B58\u8FDB\u6B4C\u91CC\u2014\u2014\u628A\u8FD9\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u70B9 \uFF0B \u91CD\u65B0\u5BFC\u5165\uFF0C\u5C31\u8865\u56DE\u8FD9\u91CC",
     minimize: "\u7F29\u6210\u5C0F\u56FE\u6807",
@@ -42232,7 +42621,7 @@ function createReferenceHost(d3) {
     }
   });
   async function importFiles(files) {
-    const r10 = await el2.importFiles(files, { kinds: KINDS, transcoder, ask: (q2) => d3.askImport(q2), askAbove: { image: ASK_ABOVE, audio: ASK_ABOVE }, ramAbove: RAM_ABOVE });
+    const r10 = await el2.importFiles(files, { kinds: KINDS, transcoder, ask: (q2) => d3.askImport(q2), askAbove: { image: ASK_ABOVE, audio: ASK_ABOVE, video: ASK_ABOVE }, ramAbove: RAM_ABOVE });
     for (const k2 of r10.skipped) {
       if (k2.why === "unsupported") d3.error(`\u8BA4\u4E0D\u51FA\uFF1A${k2.name}\uFF08\u53C2\u8003\u7A97\u6536\u56FE\u7247\u3001\u97F3\u9891\u548C\u6587\u5B57\uFF09`);
       else if (k2.why === "failed") d3.error(`\u6CA1\u52A0\u4E0A\uFF1A${k2.name}\uFF08${k2.message ?? "\u51FA\u9519\u4E86"}\uFF09`);
@@ -42290,10 +42679,14 @@ function createReferenceHost(d3) {
       placed = !!panel;
       try {
         if (!Object.keys(files).length) el2.deck.clear();
-        else el2.deck.restore(await decodeDeck({ app: APP, knownKinds: KINDS, getFile: (p2) => {
-          const b3 = files[p2];
-          return b3 ? new Blob([b3], { type: mimeForName(p2) }) : null;
-        } }));
+        else {
+          const decoded = await decodeDeck({ app: APP, knownKinds: KINDS, getFile: (p2) => {
+            const b3 = files[p2];
+            return b3 ? new Blob([b3], { type: mimeForName(p2) }) : null;
+          } });
+          el2.deck.restore(decoded);
+          if (decoded.verdict === "newer-minor") d3.info("\u8FD9\u9996\u6B4C\u7684\u53C2\u8003\u7A97\u662F\u66F4\u65B0\u7248\u672C\u7684 app \u5B58\u7684\uFF1A\u8FD9\u7248\u6CA1\u6709\u7684\u529F\u80FD\u4FDD\u5B58\u65F6\u4E0D\u4E22\uFF0C\u53EA\u662F\u770B\u4E0D\u5230");
+        }
       } catch (e10) {
         el2.deck.clear();
         if (e10 instanceof DeckManifestTooNewError) {
@@ -44137,14 +44530,15 @@ var refHost = createReferenceHost({
 });
 new ResizeObserver(() => refHost.relayout()).observe(padEl);
 async function askRefImport(q2) {
-  const mb = (n10) => `${(n10 / 1024 / 1024).toFixed(1)} MB`, what = q2.kind === "audio" ? "mp3 128k" : "PNG 256 \u8272\u3001\u957F\u8FB9\u6700\u591A 2048";
+  const mb = (n10) => `${(n10 / 1024 / 1024).toFixed(1)} MB`, what = q2.kind === "audio" ? "mp3 128k" : "PNG 256 \u8272\u3001\u957F\u8FB9\u6700\u591A 2048", av2 = q2.kind === "audio" || q2.kind === "video";
+  const big = q2.bytes > RAM_ABOVE;
   const smaller = q2.canCompress && (q2.estimate === null || q2.estimate < q2.bytes * 0.9);
   const keep2 = { label: `\u5B58\u8FDB\u6B4C\u91CC\uFF08${mb(q2.bytes)}\uFF09`, value: "keep" };
   const zip = { label: q2.estimate === null ? `\u538B\u4E00\u4E0B\u518D\u5B58\uFF08${what}\uFF09` : `\u538B\u4E00\u4E0B\u518D\u5B58\uFF08\u7EA6 ${mb(q2.estimate)}\uFF09`, value: "compress" };
   const ram = { label: q2.suggestRam ? "\u53EA\u653E\u5185\u5B58\uFF08\u63A8\u8350\uFF09" : "\u53EA\u653E\u5185\u5B58\uFF08\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF09", value: "ram" };
-  const msg = `\u300C${q2.name}\u300D${mb(q2.bytes)}\u3002\u53C2\u8003\u7A97\u91CC\u7684\u4E1C\u897F\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58\u3001\u4E00\u8D77\u540C\u6B65\u3002` + (q2.canCompress && !smaller ? `\u538B\u4E86\u4E5F\u4E0D\u4F1A\u66F4\u5C0F\uFF0C\u5C31\u4E0D\u5217\u4E86\u3002` : smaller ? `\u538B\u4E00\u4E0B = ${what}\u3002` : "") + `\u53EA\u653E\u5185\u5B58 = \u8FD9\u6B21\u6253\u5F00\u80FD${q2.kind === "audio" ? "\u542C" : "\u770B"}\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E0B\u6B21\u6253\u5F00\u662F\u4E2A\u7A7A\u4F4D\uFF0C\u628A\u540C\u4E00\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\u5C31\u8865\u4E0A\u3002` + (q2.suggestRam ? `\u8D85\u8FC7 4 MB \u7684\uFF0C\u5B58\u8FDB\u53BB\u8FD9\u9996\u6B4C\u4F1A\u5927\u8FD9\u4E48\u591A\u3001\u540C\u6B65\u4E5F\u6162\uFF0C\u6240\u4EE5\u5148\u63A8\u8350\u53EA\u653E\u5185\u5B58\u3002` : "");
+  const msg = `\u300C${q2.name}\u300D${mb(q2.bytes)}\u3002\u53C2\u8003\u7A97\u91CC\u7684\u4E1C\u897F\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58\u3001\u4E00\u8D77\u540C\u6B65\u3002` + (q2.canCompress && !smaller ? `\u538B\u4E86\u4E5F\u4E0D\u4F1A\u66F4\u5C0F\uFF0C\u5C31\u4E0D\u5217\u4E86\u3002` : smaller ? `\u538B\u4E00\u4E0B = ${what}\u3002` : "") + `\u53EA\u653E\u5185\u5B58 = \u8FD9\u6B21\u6253\u5F00\u80FD${q2.kind === "audio" ? "\u542C" : "\u770B"}\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E0B\u6B21\u6253\u5F00\u662F\u4E2A\u7A7A\u4F4D\uFF0C\u628A\u540C\u4E00\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\u5C31\u8865\u4E0A\u3002` + (q2.suggestRam ? big ? `\u8D85\u8FC7 4 MB \u7684\uFF0C\u5B58\u8FDB\u53BB\u8FD9\u9996\u6B4C\u4F1A\u5927\u8FD9\u4E48\u591A\u3001\u540C\u6B65\u4E5F\u6162\uFF0C\u6240\u4EE5\u5148\u63A8\u8350\u53EA\u653E\u5185\u5B58\u3002` : `\u97F3\u9891 / \u89C6\u9891\u9ED8\u8BA4\u53EA\u653E\u5185\u5B58\uFF08\u8FD9\u6B21\u6253\u5F00\u6709\u6548\uFF09\uFF1B\u8981\u8DDF\u7740\u6B4C\u8D70\u5C31\u9009\u300C\u5B58\u8FDB\u6B4C\u91CC\u300D\u3002` : "");
   const list = q2.suggestRam ? [{ ...ram, primary: true }, ...smaller ? [zip] : [], keep2] : [{ ...keep2, primary: true }, ...smaller ? [zip] : [], ram];
-  return await openChoiceSheet(q2.kind === "audio" ? "\u8FD9\u6BB5\u97F3\u9891\u6709\u70B9\u5927" : "\u8FD9\u5F20\u56FE\u6709\u70B9\u5927", msg, list) ?? "cancel";
+  return await openChoiceSheet(q2.kind === "audio" ? "\u8FD9\u6BB5\u97F3\u9891\u6709\u70B9\u5927" : q2.kind === "video" ? "\u8FD9\u6BB5\u89C6\u9891\u6709\u70B9\u5927" : "\u8FD9\u5F20\u56FE\u6709\u70B9\u5927", msg, list) ?? "cancel";
 }
 new ResizeObserver(() => refHost.relayout()).observe(bar);
 installPlatformGuards([scoreEl, padEl], { zoom: (d3) => d3 === 0 ? view.zoomReset() : d3 > 0 ? view.zoomIn() : view.zoomOut() });
@@ -47259,7 +47653,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = D2.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var encoder = createEncoder(() => new URL(`./${"encode-worker-b9fa63911391.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
+var encoder = createEncoder(() => new URL(`./${"encode-worker-b4d29c7e0056.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -48737,4 +49131,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-01bdb001dead.mjs.map
+//# sourceMappingURL=moonsinger-299fe61de364.mjs.map

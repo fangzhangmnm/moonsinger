@@ -71,7 +71,8 @@ await wav("扒谱.wav", 8);
 const imp1 = p.evaluate(async () => { await window.__moonsinger.refHost.importFiles([window.__wav]); });
 await p.waitForTimeout(600);
 const s1 = await p.$$eval(".offer .sheet-choices button", (e) => e.map((x) => x.textContent));
-check(/存进歌里/.test(s1[0] ?? "") && s1.some((x) => /压一下再存（约 0\.1 MB）/.test(x)) && s1.some((x) => /只放内存/.test(x)), "1.4 MB 的 wav：问（存进歌里排第一、压一下带估计、只放内存）", s1.join(" | "));
+check(/只放内存（推荐）/.test(s1[0] ?? "") && s1.some((x) => /压一下再存（约 0\.1 MB）/.test(x)) && s1.some((x) => /存进歌里/.test(x)), "1.4 MB 的 wav：问（库 0.5.0 音频默认只放内存 → 排第一（推荐）、压一下带估计、存进歌里也在）", s1.join(" | "));
+check(/音频 \/ 视频默认只放内存/.test(await p.textContent(".offer")), "面板说清推荐只放内存是默认（这段不到 4 MB，不是因为大）");
 await p.click(".offer .sheet-choices >> text=压一下再存"); await imp1; await p.waitForTimeout(300);
 let dk = await deckOf(), a = dk.find((c) => c.name === "扒谱.wav");
 check(a && a.kind === "audio" && a.mime === "audio/mpeg" && a.size > 100_000 && a.size < 160_000, "压一下 = mp3 128k（8 秒约 128 KB）", JSON.stringify(a));
@@ -106,6 +107,20 @@ check(!(await p.evaluate(() => window.__moonsinger.dirty())), "补回空位不�
 await p.evaluate(async () => { const c = document.createElement("canvas"); c.width = c.height = 8; const b = await new Promise((r) => c.toBlob(r, "image/png")); await window.__moonsinger.refHost.importFiles([new File([b], "小.png", { type: "image/png" })]); });
 await p.waitForTimeout(200);
 check((await p.$$eval(".offer .offer-card", (e) => e.length)) === 0 && (await deckOf()).some((c) => c.name === "小.png"), "小于 1 MB：不问、直接加");
+// 库 0.5.0 清单拍子：minor 比这版新 = 照样读、告诉一次（不弹窗不拦）、没改过就存 = 原样写回（更新版本的拍子 + 不认识的键都在）
+const newerMinor = await p.evaluate(async () => {
+  const m = window.__moonsinger; await m.refHost.settled(); const o = m.open("x.mxl", m.bytes()), man = ".moonsinger/references/manifest.json";
+  const j = JSON.parse(new TextDecoder().decode(o.references[man])); const before = { v: j.version, minor: j.minor, n: m.refHost.count() };
+  j.minor = (j.minor ?? 0) + 7; j.futureKey = { x: 1 }; o.references[man] = new TextEncoder().encode(JSON.stringify(j));
+  m.load(o); await new Promise((ok) => setTimeout(ok, 400));
+  const back = JSON.parse(new TextDecoder().decode(m.open("y.mxl", m.bytes()).references[man]));
+  return { before, n: m.refHost.count(), open: m.refHost.isOpen(), backMinor: back.minor, futureKey: back.futureKey };
+});
+check(newerMinor.before.v === 1 && newerMinor.before.minor === 1, "这版写的参考清单拍子 = 1.1.x", JSON.stringify(newerMinor.before));
+check(newerMinor.n === newerMinor.before.n && newerMinor.n > 0, "minor 比这版新：照样读出来、卡都在、不拦", JSON.stringify(newerMinor));
+check(newerMinor.backMinor === newerMinor.before.minor + 7 && newerMinor.futureKey?.x === 1, "没改过就存 = 原样写回（更新的拍子 + 不认识的键）", JSON.stringify(newerMinor));
+const minorText = await p.$$eval(".notice, [role=alert]", (e) => e.map((x) => x.textContent).join(" | "));
+check(/更新版本.*看不到/.test(minorText), "告诉一次：更新版本写的、看不到不丢（info，不是报错）", minorText.slice(0, 120));
 // 参考清单比这一版新：明说，原样写回
 const tooNew = await p.evaluate(async () => {
   const m = window.__moonsinger, o = m.open("x.mxl", m.bytes()), man = ".moonsinger/references/manifest.json";

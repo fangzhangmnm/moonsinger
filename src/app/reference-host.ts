@@ -22,8 +22,8 @@ import { togglePopupMenu } from "@internal/workbench-elements";
 import { createRefTranscoder } from "./ref-transcode.ts";
 
 const APP = "moonsinger";                          // 目录 = .moonsinger/references/（库按 app 名算）
-const KINDS = ["image", "text", "audio"] as const; // 这个宿主画得出来的；其余的库原样带着
-export const ASK_ABOVE = 1024 * 1024;              // 图片 / 音频超过 1 MB 先问（存 / 压 / 只放内存 / 算了）
+const KINDS = ["image", "text", "audio", "video"] as const; // 这个宿主画得出来的（视频 = 参考窗 0.5.0 起）；其余的库原样带着
+export const ASK_ABOVE = 1024 * 1024;              // 图片 / 音频 / 视频超过 1 MB 先问（存 / 压 / 只放内存 / 算了）；音频 / 视频默认只放内存（库 0.5.0，不覆盖）
 export const RAM_ABOVE = 4 * 1024 * 1024;          // 超过 4 MB：问的时候「只放内存」排第一（技术方案批过的 4 MB 提醒线）
 export type { RefImportQuestion, RefImportChoice };
 /** 窗的位置 / 开着没有（视图态：存进 score.json 的 view.ref，不标脏、不进撤销）。 */
@@ -48,7 +48,7 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   const el = document.createElement("wp-reference-window") as WpReferenceWindow;
   el.className = "ref-window";
   const fileInput = document.createElement("input");
-  fileInput.type = "file"; fileInput.multiple = true; fileInput.hidden = true; fileInput.accept = "image/*,audio/*,.txt,.md,text/plain,text/markdown";
+  fileInput.type = "file"; fileInput.multiple = true; fileInput.hidden = true; fileInput.accept = "image/*,audio/*,video/*,.txt,.md,text/plain,text/markdown";
   document.body.append(el, fileInput);
 
   let encoded: Record<string, Uint8Array> = {};      // 现在要存的那份字节（路径 → 字节；路径都在 .moonsinger/references/ 下）
@@ -65,8 +65,9 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   el.labels = {
     paste: "粘贴", oneToOne: "原尺寸", del: "删掉这张", delConfirm: "再点一次删掉", closeWin: "收起参考窗",
     prev: "上一张", next: "下一张", menu: "参考窗菜单", move: "点一下缩成小图标，按住拖动挪位置", resize: "改大小", resizeAria: "改大小",
-    moveEarlier: "往前挪", moveLater: "往后挪", jump: "跳到…", kindNames: { image: "图片", text: "文字", audio: "音频" }, linkMissing: "内容不在了",
-    load: "导入图片 / 音频 / 文字…", play: "播放", pause: "暂停", loop: "循环", rate: "速度",
+    moveEarlier: "往前挪", moveLater: "往后挪", jump: "跳到…", kindNames: { image: "图片", text: "文字", audio: "音频", video: "视频" }, linkMissing: "内容不在了",
+    load: "导入图片 / 音频 / 视频 / 文字…", play: "播放", pause: "暂停", loop: "循环", rate: "速度",
+    prevFrame: "上一帧", nextFrame: "下一帧",   // 参考窗 0.5.0 视频卡（图标 = 库里的 skip-prev / skip-next，user「逐帧按钮先不用」= 不另画）
     ram: "只放内存（不存进歌里）", ramMissing: "只在内存里，没存进歌里——把这个文件拖进来，或者点 ＋ 重新导入，就补回这里",
     minimize: "缩成小图标", restore: "点一下恢复，按住拖动挪位置",   // 参考窗 0.4.1（关窗那个已经叫「收起」，这里用「缩」区分）
   };
@@ -114,7 +115,7 @@ export function createReferenceHost(d: ReferenceHostDeps) {
 
   /** 导入（菜单 / 拖放 / 粘贴文件）：库的漏斗（嗅种类 → 超过 1 MB 问 → 原样 / 压 / 只放内存 / 不要），结果如实说。 */
   async function importFiles(files: File[]): Promise<void> {
-    const r = await el.importFiles(files, { kinds: KINDS, transcoder, ask: (q) => d.askImport(q), askAbove: { image: ASK_ABOVE, audio: ASK_ABOVE }, ramAbove: RAM_ABOVE });
+    const r = await el.importFiles(files, { kinds: KINDS, transcoder, ask: (q) => d.askImport(q), askAbove: { image: ASK_ABOVE, audio: ASK_ABOVE, video: ASK_ABOVE }, ramAbove: RAM_ABOVE });   // defaultRam 不传 = 库 0.5.0 的默认：音频 / 视频只放内存（当次有效），图片 / 文字随歌
     for (const k of r.skipped) {
       if (k.why === "unsupported") d.error(`认不出：${k.name}（参考窗收图片、音频和文字）`);
       else if (k.why === "failed") d.error(`没加上：${k.name}（${k.message ?? "出错了"}）`);
@@ -148,7 +149,12 @@ export function createReferenceHost(d: ReferenceHostDeps) {
       seq++; applying = true; carried = false; encoded = { ...files }; placed = !!panel;
       try {
         if (!Object.keys(files).length) el.deck.clear();
-        else el.deck.restore(await decodeDeck({ app: APP, knownKinds: KINDS, getFile: (p) => { const b = files[p]; return b ? new Blob([b as unknown as BlobPart], { type: mimeForName(p) }) : null; } }));
+        else {
+          const decoded = await decodeDeck({ app: APP, knownKinds: KINDS, getFile: (p) => { const b = files[p]; return b ? new Blob([b as unknown as BlobPart], { type: mimeForName(p) }) : null; } });
+          el.deck.restore(decoded);
+          // 库 0.5.0 清单拍子：minor 比这版新 = 照样读写，告诉用户一次（不弹窗不拦）；patch 比这版新 = 静默；major 比这版新 = 下面的 DeckManifestTooNewError
+          if (decoded.verdict === "newer-minor") d.info("这首歌的参考窗是更新版本的 app 存的：这版没有的功能保存时不丢，只是看不到");
+        }
       } catch (e) {
         el.deck.clear();
         if (e instanceof DeckManifestTooNewError) { carried = true; d.error(`这首歌的参考窗是更新版本的 app 存的（参考清单第 ${e.fileVersion} 版，这一版认到第 ${e.libVersion} 版）：原样留着、存的时候原样写回，这里先不显示`); }

@@ -81,7 +81,7 @@ import { SONG_SUFFIX, LOCAL_SAVE_DEBOUNCE_MS, WAKE_CHECK_AFTER_MS, WAKE_CHECK_TI
 import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
 import { createEditorSession } from "../editor-session/index.ts";
 import { openInputSheet, openChoiceSheet, type Choice, openConfirmSheet, isSheetOpen, closeSheet, isGateOpen, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
-import { createReferenceHost, type RefImportQuestion, type RefImportChoice } from "./reference-host.ts";
+import { createReferenceHost, type RefImportQuestion, type RefImportChoice, RAM_ABOVE } from "./reference-host.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
 import { scorePdf, LYRIC_RAISE, type PdfFontId } from "../export/score-pdf.ts";
 import { loadPdfFont, loadMusicOutlines, PDF_FONT_MB } from "../export/pdf-assets.ts";
@@ -186,10 +186,12 @@ const refHost = createReferenceHost({
   onCards: () => { renderTitle(); changed(); },
 });
 new ResizeObserver(() => refHost.relayout()).observe(padEl);
-/** 参考窗导入的问询（库 0.4.0：超过 1 MB 的图片 / 音频）：存进歌里 / 压一下（约 X MB）/ 只放内存 / 算了。
- *  user「应用内小面板 如果支持压缩的话应该有压缩选项和估计」；超过 4 MB（q.suggestRam）「只放内存」排第一、说为什么（user 选 B：「这里可能是全家族仓我们唯一一个真的需要nudge用户」）。 */
+/** 参考窗导入的问询（库 0.4.0：超过 1 MB 的图片 / 音频 / 视频）：存进歌里 / 压一下（约 X MB）/ 只放内存 / 算了。
+ *  user「应用内小面板 如果支持压缩的话应该有压缩选项和估计」；q.suggestRam = 「只放内存」排第一、说为什么——超过 4 MB（user 选 B：「这里可能是全家族仓我们唯一一个真的需要nudge用户」），
+ *  或者是音频 / 视频（库 0.5.0 起默认只放内存、当次有效；user 2026-10-21「音视频应该是当此有效」；MoonSinger 照默认不覆盖，要不要例外 = wishlist W-44）。 */
 async function askRefImport(q: RefImportQuestion): Promise<RefImportChoice> {
-  const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`, what = q.kind === "audio" ? "mp3 128k" : "PNG 256 色、长边最多 2048";
+  const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`, what = q.kind === "audio" ? "mp3 128k" : "PNG 256 色、长边最多 2048", av = q.kind === "audio" || q.kind === "video";
+  const big = q.bytes > RAM_ABOVE;
   const smaller = q.canCompress && (q.estimate === null || q.estimate < q.bytes * 0.9);
   const keep: Choice<RefImportChoice> = { label: `存进歌里（${mb(q.bytes)}）`, value: "keep" };
   const zip: Choice<RefImportChoice> = { label: q.estimate === null ? `压一下再存（${what}）` : `压一下再存（约 ${mb(q.estimate)}）`, value: "compress" };
@@ -197,9 +199,9 @@ async function askRefImport(q: RefImportQuestion): Promise<RefImportChoice> {
   const msg = `「${q.name}」${mb(q.bytes)}。参考窗里的东西跟着歌一起存、一起同步。` +
     (q.canCompress && !smaller ? `压了也不会更小，就不列了。` : smaller ? `压一下 = ${what}。` : "") +
     `只放内存 = 这次打开能${q.kind === "audio" ? "听" : "看"}，不存进歌里；下次打开是个空位，把同一个文件拖进来就补上。` +
-    (q.suggestRam ? `超过 4 MB 的，存进去这首歌会大这么多、同步也慢，所以先推荐只放内存。` : "");
+    (q.suggestRam ? (big ? `超过 4 MB 的，存进去这首歌会大这么多、同步也慢，所以先推荐只放内存。` : `音频 / 视频默认只放内存（这次打开有效）；要跟着歌走就选「存进歌里」。`) : "");
   const list = q.suggestRam ? [{ ...ram, primary: true }, ...(smaller ? [zip] : []), keep] : [{ ...keep, primary: true }, ...(smaller ? [zip] : []), ram];
-  return (await openChoiceSheet(q.kind === "audio" ? "这段音频有点大" : "这张图有点大", msg, list)) ?? "cancel";
+  return (await openChoiceSheet(q.kind === "audio" ? "这段音频有点大" : q.kind === "video" ? "这段视频有点大" : "这张图有点大", msg, list)) ?? "cancel";
 }
 
 new ResizeObserver(() => refHost.relayout()).observe(bar);
