@@ -38,7 +38,8 @@ await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{
 for (let i = 1; i <= 20; i++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: 300 - i * 12, y: 500, id: 1 }, { x: 340 + i * 12, y: 500, id: 2 }] });
 await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await p.waitForTimeout(250);
 const s2 = await state();
-check(Math.abs(s2.zoom - 6) < 0.01, "最多放到 6 倍", `zoom ${s2.zoom}`);
+const mx = await p.evaluate(() => 8 / window.__moonsinger.zoomInfo().auto);   // 上限 = 8 倍实际尺寸（物理；2026-10-21）
+check(Math.abs(s2.zoom - mx) < 0.01, "最多放到 8 倍实际尺寸", `zoom ${s2.zoom}（上限 ${mx.toFixed(3)}）`);
 // 横着滚（单指）
 await p.evaluate(() => { document.querySelector("#score").scrollLeft = 0; }); await p.waitForTimeout(50);
 await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 600, y: 600, id: 3 }] });

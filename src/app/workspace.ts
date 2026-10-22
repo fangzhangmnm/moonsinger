@@ -62,6 +62,16 @@ export function dockOf(s: WorkspaceState): Dock {
 /** 这个模式底下有东西可收起 / 弹出吗（底下那粒 tab 露不露；听 = 混音台）。 */
 export const hasKeys = (m: Mode): boolean => m === "notes" || m === "symbols" || m === "listen";
 
-/** 底座（键盘 / 混音台）放左边一栏的那一档 = 横屏且矮（winmini；user 2026-10-21「ui默认键盘在下面，就是很长很宽的屏幕，键盘，混音台，都在下面，只有极端情况（其实就是winmini一个）才考虑放左边」）。
- *  其余一律贴底。styles.css 里同一串（test/dock-layout.test.ts 守着两边一致）；改阈值两边一起改。added 2026-10-21 by Claude Fable 5.1 */
-export const SIDE_DOCK_MQ = "(min-aspect-ratio: 1/1) and (max-height: 720px)";
+/** 底座（键盘 / 混音台）贴右边一栏的判断。默认贴底（user 2026-10-21「ui默认键盘在下面，就是很长很宽的屏幕，键盘，混音台，都在下面」）；
+ *  同日下午 user「实在做不到再贴右边。比如只能看到一行谱子」→ 取代上午那版的固定阈值「横屏且 ≤ 720 高放左边」：
+ *  贴底之后谱面剩下的高看不到 SIDE_DOCK_LINES 行谱（一行谱 ≈ LINE_SP 个线间距：五线 4 + 上下留白 + 歌词，单声部）= 只剩约一行 → 底座改贴**右边**；
+ *  屏幕不够宽放右边一栏（竖屏 / 手机竖着）= 照旧贴底。底座的高按键盘贴底时量（混音台跟键盘同一个判断，切模式底座不跳）；
+ *  一格几 px 按贴底时谱面的自动大小算（和用户的缩放无关）——所以只跟设备（屏幕大小 + 键盘排数）走，不跟歌走。
+ *  styles.css 那一档的规则全挂在 #stage[data-side="right"] 上（main.ts syncDock 写；test/dock-layout.test.ts 守着 CSS 里不再有按长宽比 / 高度分的底座 @media）。added 2026-10-21 by Claude Fable 5.1 */
+export const SIDE_DOCK_W = 340, SIDE_DOCK_LINES = 2, LINE_SP = 14, SIDE_DOCK_MIN_SCORE_W = 360;
+export function sideDock(stageW: number, stageH: number, dockH: number, spPx: number): boolean {
+  if (stageW - SIDE_DOCK_W < SIDE_DOCK_MIN_SCORE_W) return false;
+  return stageH - dockH < SIDE_DOCK_LINES * LINE_SP * spPx;
+}
+/** 现在底座在右边一栏吗（main.ts syncDock 算好写在 #stage 的 data-side 上；studio.ts / layoutWidth 读这里，不自己算）。 */
+export const sideDocked = (stage: HTMLElement | null | undefined): boolean => stage?.dataset.side === "right";

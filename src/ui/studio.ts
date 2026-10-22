@@ -14,7 +14,7 @@ const SPEC_TICKS = [100, 1000, 10000];
 import { DEFAULT_EQ_ID, PLUGIN_KINDS, freshParams, fullParams, fxSummary, paramsOf, pluginName, fullyWet, paramView, projectToSimple, viewOfFx, type Params } from "./plugins.ts";
 import { paramRow, slider, wireParamRows } from "../keyboard/param-row.ts";
 import { stereoShape } from "./scopes.ts";
-import { SIDE_DOCK_MQ } from "../app/workspace.ts";
+import { sideDocked } from "../app/workspace.ts";
 
 export interface StudioStrip { id: string; name: string; performer: string; gainDb: number; pan: number; muted: boolean; solo: boolean; refs: number; color?: string }   // color = 类别色（卡片顶边，v0.9.31）   // refs = 在几张纸上（0 = 能删）
 export interface StudioHost {
@@ -487,7 +487,7 @@ export class Studio {
    *  v0.10.38；user「混音台的高度是怎么决定的，现在怎么不三不四的」→「按整排卡片对齐，最高半屏；iPad mini 上就是一排」「好」。横屏 / 全屏 = 不管（CSS）。 */
   private fitHeight(): void {
     const el = this.el; el.style.maxHeight = "";
-    if (this.full || el.hidden || matchMedia(SIDE_DOCK_MQ).matches) return;   // 贴底（默认）才按整排算；winmini 档在左边一栏 = CSS 管
+    if (this.full || el.hidden || sideDocked(el.closest("#stage") as HTMLElement | null)) return;   // 贴底（默认）才按整排算；贴右边那一档 = CSS 管
     const box = el.querySelector<HTMLElement>(".studio-strips"), card = box?.querySelector<HTMLElement>(".strip"); if (!box || !card) return;
     const cs = getComputedStyle(box), gap = parseFloat(cs.rowGap) || 0, pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
     const head = [...el.children].filter((c) => c !== box && !(c as HTMLElement).hidden).reduce((n, c) => n + (c as HTMLElement).getBoundingClientRect().height, 0);
@@ -495,6 +495,8 @@ export class Studio {
     const fit = Math.max(1, Math.floor((innerHeight * 0.5 - head - pad + gap) / (H + gap))), n = Math.min(rows, fit);
     el.style.maxHeight = `${Math.ceil(head + pad + n * H + (n - 1) * gap + 2)}px`;
   }
+  /** 底座贴底 ↔ 贴右边翻了（main.ts syncDock）：重新按整排对齐 / 放开。 */
+  relayout(): void { this.fitHeight(); }
   render(): void {
     const box = this.el.querySelector(".studio-strips")!, m = this.host.master(), tab = this.tab, off = this.host.bypass();
     const ab = this.el.querySelector<HTMLElement>(".mix-ab")!;   // A/B：效果开着 / 全关（user「混音台加一个暂时禁用所有魔法的toggle」）

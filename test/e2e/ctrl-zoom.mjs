@@ -33,10 +33,11 @@ check((await zoom()) === 1, "不按 Ctrl 的滚轮 = 照常滚，不缩放");
 // 键盘（2026-10-21「全量拦截」）：Ctrl / ⌘ + = / − / 0 不让浏览器缩放网页、交给谱面一档一档；读数按钮写百分比；回自动以谱面板中心为锚（不跳回左上角）
 await p.evaluate(() => { window.__kp = []; window.addEventListener("keydown", (e) => { if (e.ctrlKey && /^(Equal|Minus|Digit0)$/.test(e.code)) window.__kp.push([e.code, e.defaultPrevented]); }, { capture: false }); });
 await p.keyboard.press("Control+Equal"); await p.waitForTimeout(80); await p.keyboard.press("Control+Equal"); await p.waitForTimeout(80);
-const zk = await zoom(); check(Math.abs(zk - 1.25) < 0.01, "Ctrl+= 两下 = 一档一档放大（1 → 1.1 → 1.25）", String(zk));
-check(await p.$eval(".zoom-reset", (e) => !e.hidden && e.textContent === "125%"), "读数按钮写 125%", await p.$eval(".zoom-reset", (e) => e.textContent));
+const info = () => p.evaluate(() => window.__moonsinger.zoomInfo());   // 物理倍数（100% = 纸的实际尺寸；2026-10-21 user「100% 要不要对应真实尺寸 可以」）
+const zk = await info(); check(Math.abs(zk.phys - 2) < 0.01 && zk.auto > 1.4 && zk.auto < 1.6, "Ctrl+= 两下 = 一档一档放大（物理倍数：自动 ≈ 151% → 175% → 200%）", JSON.stringify(zk));
+check(await p.$eval(".zoom-reset", (e) => !e.hidden && e.textContent === "200%"), "读数按钮写 200%（物理百分比）", await p.$eval(".zoom-reset", (e) => e.textContent));
 await p.keyboard.press("Control+Minus"); await p.waitForTimeout(80);
-check(Math.abs((await zoom()) - 1.1) < 0.01, "Ctrl+− = 退一档（1.25 → 1.1）", String(await zoom()));
+check(Math.abs((await info()).phys - 1.75) < 0.01, "Ctrl+− = 退一档（200% → 175%）", String((await info()).phys));
 const before0 = await p.evaluate(() => document.querySelector("#score").scrollTop);
 await p.keyboard.press("Control+Digit0"); await p.waitForTimeout(80);
 check((await zoom()) === 1 && await p.$eval(".zoom-reset", (e) => e.hidden), "Ctrl+0 = 回自动、读数收起", String(await zoom()));
@@ -46,8 +47,14 @@ check(kp.length === 0 || kp.every(([, pv]) => pv), "Ctrl+= / − / 0 都在捕�
 const tb = await p.evaluate(() => { const L = window.__moonsinger.layout(), r = document.querySelector("#score .sheet").getBoundingClientRect(); return { x: r.left + L.pageX.left + L.title.x + L.title.w / 2, y: r.top + L.title.y + L.title.h / 2 }; });
 await p.mouse.click(tb.x, tb.y); await p.waitForSelector(".title-input:not([hidden])").catch(() => {});
 await p.keyboard.press("Control+Equal"); await p.waitForTimeout(80);
-check(Math.abs((await zoom()) - 1.1) < 0.01, "歌名框开着按 Ctrl+= = 还是缩谱（网页不缩）", String(await zoom()));
+check(Math.abs((await info()).phys - 1.75) < 0.01, "歌名框开着按 Ctrl+= = 还是缩谱（网页不缩；自动 → 175%）", String((await info()).phys));
 await p.keyboard.press("Escape"); await p.keyboard.press("Control+Digit0"); await p.waitForTimeout(80);
+// 跨会话记住（2026-10-21 user「缩放跨会话记住，按设备存」）：缩到 175% → 重开 = 还是 175%（读数也在）；回自动 → 重开 = 自动
+await p.keyboard.press("Control+Equal"); await p.waitForTimeout(80);
+await p.reload(); await p.waitForTimeout(800);
+const re = await info(); check(Math.abs(re.phys - 1.75) < 0.01 && re.saved !== null && await p.$eval(".zoom-reset", (e) => !e.hidden && e.textContent === "175%"), "重开 app = 还是 175%（按设备记住，读数也在）", JSON.stringify(re));
+await p.keyboard.press("Control+Digit0"); await p.waitForTimeout(80); await p.reload(); await p.waitForTimeout(800);
+check((await zoom()) === 1 && (await info()).saved === null, "回自动再重开 = 自动", JSON.stringify(await info()));
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nctrl-zoom: ${pass} passed, ${fail} failed`);

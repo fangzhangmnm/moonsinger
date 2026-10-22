@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.7-2026-10-21";
+var APP_VERSION = "v0.14.8-2026-10-21";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -10065,7 +10065,15 @@ function dockOf(s10) {
   return s10.mode === "notes" ? "keys" : s10.mode === "symbols" ? "symbols" : s10.mode === "listen" ? "studio" : "none";
 }
 var hasKeys = (m2) => m2 === "notes" || m2 === "symbols" || m2 === "listen";
-var SIDE_DOCK_MQ = "(min-aspect-ratio: 1/1) and (max-height: 720px)";
+var SIDE_DOCK_W = 340;
+var SIDE_DOCK_LINES = 2;
+var LINE_SP = 14;
+var SIDE_DOCK_MIN_SCORE_W = 360;
+function sideDock(stageW, stageH, dockH, spPx) {
+  if (stageW - SIDE_DOCK_W < SIDE_DOCK_MIN_SCORE_W) return false;
+  return stageH - dockH < SIDE_DOCK_LINES * LINE_SP * spPx;
+}
+var sideDocked = (stage) => stage?.dataset.side === "right";
 
 // src/ui/part-colors.ts
 var TAB20 = [
@@ -10144,9 +10152,10 @@ function partAbbr(label, o10) {
 var caretKey = (st2) => `${st2.at.paper}|${st2.at.part}|${st2.caret}`;
 var CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 };
 var DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => v * TPQ / 48);
-var MAX_ZOOM = 6;
-var MIN_ZOOM = 0.4;
-var ZOOM_STEPS = [0.4, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6];
+var PX_PER_MM = 96 / 25.4;
+var MAX_ZOOM = 8;
+var MIN_ZOOM = 0.25;
+var ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 5, 6, 8];
 var DOUBLE_TAP_MS2 = 300;
 var DOUBLE_TAP_PX = 30;
 var DOUBLE_TAP_ZOOM = 2;
@@ -10172,7 +10181,7 @@ var ScoreView = class {
     this.zoomBtn.className = "btn zoom-reset";
     this.zoomBtn.type = "button";
     this.zoomBtn.textContent = "100%";
-    this.zoomBtn.title = "\u73B0\u5728\u7684\u7F29\u653E\uFF1B\u70B9 = \u56DE\u5230\u81EA\u52A8\u5927\u5C0F\uFF08Ctrl / \u2318 + 0\uFF09\u3002Ctrl / \u2318 + \u6EDA\u8F6E\u3001\u634F\u5408 = \u7F29\u653E\uFF1BCtrl / \u2318 + = / \u2212 = \u4E00\u6863\u4E00\u6863";
+    this.zoomBtn.title = "\u73B0\u5728\u7684\u7F29\u653E\uFF08100% = \u7EB8\u7684\u5B9E\u9645\u5C3A\u5BF8\uFF09\uFF1B\u70B9 = \u56DE\u5230\u81EA\u52A8\u5927\u5C0F\uFF08Ctrl / \u2318 + 0\uFF09\u3002Ctrl / \u2318 + \u6EDA\u8F6E\u3001\u634F\u5408 = \u7F29\u653E\uFF1BCtrl / \u2318 + = / \u2212 = \u4E00\u6863\u4E00\u6863";
     this.zoomBtn.hidden = true;
     this.zoomBtn.addEventListener("pointerdown", (e10) => {
       e10.preventDefault();
@@ -10336,6 +10345,12 @@ var ScoreView = class {
    *  d0 = 起手两指距离；z0 = 起手的 zoom；sx / sy = 两指中点下面那个纸面点（sheet 坐标、原大）；left / top = 起手时 sheet 在屏幕上的位置；k = 现在相对 z0 的倍数；mx / my = 现在的两指中点。 */
   pinch = null;
   zoom = 1;
+  // 乘在 sheet 上的倍数（1 = 自动大小）= zoomPhys × physPx / spAuto
+  zoomPhys = null;
+  // 记住的物理倍数（null = 自动）——跨会话记住的就是它（宿主 onZoom → device-kv）
+  spAuto = 10;
+  physPx = 10;
+  // 最近一次 frame：自动大小一格几 px；100% 实际尺寸一格几 px（纸的谱大小 × PX_PER_MM）
   zoomBtn;
   lyrics;
   marks;
@@ -10344,8 +10359,20 @@ var ScoreView = class {
    *  放不下（手机）：默认不折行 = 整张纸按比例缩小；选了「折行」= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
    *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
   frame() {
+    const f2 = this.frameAt(this.host.layoutWidth?.() ?? this.el.clientWidth);
+    const paper = this.host.get().song.paper ?? paperOf(DEFAULT_PAPER);
+    this.spAuto = f2.sp;
+    this.physPx = spMm(paper) * PX_PER_MM;
+    this.syncZoom();
+    return f2;
+  }
+  /** 谱面多宽时自动大小一格几 px（宿主判底座贴不贴边用：按贴底时的全宽算，和用户的缩放无关；2026-10-21）。 */
+  spaceAt(avail) {
+    return this.frameAt(avail).sp;
+  }
+  frameAt(avail) {
     const st2 = this.host.get(), paper = st2.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
-    const base3 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale, avail = this.host.layoutWidth?.() ?? this.el.clientWidth;
+    const base3 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale;
     const geo = pageGeoOf(paper), page = this.host.pages?.() ? geo : null;
     if (this.host.scroll?.()) return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base3, avail / 42 * scale)) : base3, width: Math.max(320, avail - (CONT_MARGIN.l + CONT_MARGIN.r) * base3), strict: false, page: null, margins: CONT_MARGIN };
     const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
@@ -10531,6 +10558,7 @@ var ScoreView = class {
     this.el.classList.toggle("hscroll", this.hscroll);
     const totalW = width + (margins.l + margins.r) * sp2;
     this.paperW = totalW;
+    if (this.zoom !== 1) this.el.classList.toggle("zoomed", this.paperW * this.zoom > this.el.clientWidth + 1);
     this.el.classList.toggle("desk", strict && totalW < this.el.clientWidth - 1 || !!page);
     this.el.classList.toggle("pages", !!page);
     this.sheet.style.width = strict ? `${Math.ceil(totalW)}px` : "";
@@ -11171,13 +11199,35 @@ var ScoreView = class {
   paperW = 0;
   /** 最多放大几倍（同 PDF 阅读器：可以比屏幕宽、横着滚；user 2026-10-10「ipad可以放的很大，就和pdf浏览器一样」——取代 v0.9.19 的「最多到纸和屏幕一样宽」）。 */
   maxZoom() {
-    return MAX_ZOOM;
+    return this.mulOf(MAX_ZOOM);
+  }
+  minZoom() {
+    return this.mulOf(MIN_ZOOM);
+  }
+  /** 物理倍数 ↔ 乘在 sheet 上的倍数（自动大小 = 1）。 */
+  mulOf(phys) {
+    return phys * this.physPx / this.spAuto;
+  }
+  physOf(mul) {
+    return mul * this.spAuto / this.physPx;
+  }
+  clampMul(z2) {
+    return Math.max(this.minZoom(), Math.min(this.maxZoom(), z2));
   }
   // ── 缩放的口（2026-10-21，Claude Fable 5.1；user「曲谱的缩放不合理，也理一下。可以对标一下pdf浏览器，然后ctrl wheel好好的帮我全量拦截一下」）：
   //   键盘（Ctrl / ⌘ + = / − / 0，platform-guards 在窗口捕获阶段全拦、路由到这里）一档一档、以谱面板中心为锚；读数按钮 = 现在的百分比、点 = 回自动；
   //   滚轮 / 捏合照旧连续、以指针 / 两指中点为锚；听模式手指双击 = 2 倍 / 回自动。1 = 自动大小（同 PDF 阅读器的「自动缩放」：放得下 = 工作大小，放不下 = 按屏宽）。
   zoomLevel() {
     return this.zoom;
+  }
+  /** 现在的物理倍数（1 = 纸的实际尺寸）、自动大小折成几倍物理、记住的那个（null = 自动）。 */
+  zoomInfo() {
+    return { phys: this.physOf(this.zoom), auto: this.physOf(1), saved: this.zoomPhys };
+  }
+  /** 开机：按这台设备记住的物理倍数（null = 自动）摆好，下一次排版落实（宿主从 device-kv 读；2026-10-21 user「缩放跨会话记住，按设备存」）。 */
+  restoreZoom(phys) {
+    this.zoomPhys = phys === null || !Number.isFinite(phys) ? null : Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, phys));
+    if (this.frameNow) this.syncZoom();
   }
   zoomIn() {
     this.zoomStep(1);
@@ -11189,9 +11239,27 @@ var ScoreView = class {
     this.setZoom(1, null);
   }
   zoomStep(dir) {
-    const z2 = this.zoom, eps = 0.01;
-    const next2 = dir > 0 ? ZOOM_STEPS.find((s10) => s10 > z2 + eps) : [...ZOOM_STEPS].reverse().find((s10) => s10 < z2 - eps);
-    if (next2 !== void 0) this.setZoom(next2, null);
+    const ph = this.physOf(this.zoom), eps = 0.01;
+    const next2 = dir > 0 ? ZOOM_STEPS.find((s10) => s10 > ph + eps) : [...ZOOM_STEPS].reverse().find((s10) => s10 < ph - eps);
+    if (next2 !== void 0) this.setZoom(this.mulOf(next2), null);
+  }
+  /** frame 变了（窗口 / 底座 / 纸 / 密度）：记住的物理倍数不变，乘在 sheet 上的倍数跟着重算（自动 = 1）；读数 / 靠左横滚跟着。 */
+  syncZoom() {
+    const want = this.zoomPhys === null ? 1 : this.clampMul(this.mulOf(this.zoomPhys));
+    if (Math.abs(want - this.zoom) < 1e-3) return;
+    this.zoom = want;
+    this.sheet.style.zoom = want === 1 ? "" : String(want);
+    this.paintZoomUi();
+  }
+  paintZoomUi() {
+    const z2 = this.zoom;
+    this.el.classList.toggle("zoomed", z2 !== 1 && this.paperW * z2 > this.el.clientWidth + 1);
+    this.zoomBtn.hidden = z2 === 1;
+    this.zoomBtn.textContent = `${Math.round(this.physOf(z2) * 100)}%`;
+    if (!this.zoomBtn.hidden) {
+      const r10 = this.el.getBoundingClientRect();
+      Object.assign(this.zoomBtn.style, { left: `${r10.right - 64}px`, top: `${r10.top + 8}px` });
+    }
   }
   /** 谱面板中心下面那个纸面点（键盘缩放 / 回自动用的锚；同 PDF 阅读器：以视口中心缩放，不跳到左上角）。 */
   centerAnchor() {
@@ -11217,7 +11285,7 @@ var ScoreView = class {
   }
   pinchMove() {
     const pi = this.pinch, [a10, b3] = [...this.touches.values()], d3 = Math.max(1, Math.hypot(a10.x - b3.x, a10.y - b3.y));
-    pi.k = Math.max(MIN_ZOOM, Math.min(this.maxZoom(), pi.z0 * (d3 / pi.d0))) / pi.z0;
+    pi.k = this.clampMul(pi.z0 * (d3 / pi.d0)) / pi.z0;
     pi.mx = (a10.x + b3.x) / 2;
     pi.my = (a10.y + b3.y) / 2;
     if (!pi.raf) pi.raf = requestAnimationFrame(() => {
@@ -11238,17 +11306,19 @@ var ScoreView = class {
     this.sheet.style.transformOrigin = "";
     this.setZoom(pi.z0 * pi.k, { x: pi.mx, y: pi.my, cx: pi.sx, cy: pi.sy });
   }
-  /** 放大 / 缩小到 z（1 = 自动大小）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 以谱面板中心为锚，同 PDF 阅读器；2026-10-21 之前 null = 跳回左上角）。 */
+  /** 放大 / 缩小到倍数 z（1 = 自动大小；物理倍数 = physOf(z)，记进 zoomPhys、报给宿主按设备存）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 以谱面板中心为锚，同 PDF 阅读器；2026-10-21 之前 null = 跳回左上角）。 */
   setZoom(z2, anchor) {
-    z2 = Math.max(MIN_ZOOM, Math.min(this.maxZoom(), z2));
+    z2 = this.clampMul(z2);
     if (Math.abs(z2 - 1) < 0.02) z2 = 1;
     const a10 = anchor ?? this.centerAnchor();
     const r10 = this.el.getBoundingClientRect();
     this.zoom = z2;
     this.sheet.style.zoom = z2 === 1 ? "" : String(z2);
-    this.el.classList.toggle("zoomed", this.paperW * z2 > this.el.clientWidth + 1);
+    this.el.classList.toggle("zoomed", z2 !== 1 && this.paperW * z2 > this.el.clientWidth + 1);
     this.zoomBtn.hidden = z2 === 1;
-    this.zoomBtn.textContent = `${Math.round(z2 * 100)}%`;
+    this.zoomBtn.textContent = `${Math.round(this.physOf(z2) * 100)}%`;
+    this.zoomPhys = z2 === 1 ? null : this.physOf(z2);
+    this.host.onZoom?.(this.zoomPhys);
     const nsr = this.sheet.getBoundingClientRect(), nl2 = nsr.left - r10.left + this.el.scrollLeft, nt2 = nsr.top - r10.top + this.el.scrollTop;
     this.el.scrollLeft = this.el.classList.contains("zoomed") || this.hscroll ? nl2 + a10.cx * z2 - (a10.x - r10.left) : 0;
     const top = nt2 + a10.cy * z2 - (a10.y - r10.top), maxTop = Math.max(0, nt2 + nsr.height - this.el.clientHeight);
@@ -32552,7 +32622,7 @@ ${tg2.fx}`);
   fitHeight() {
     const el2 = this.el;
     el2.style.maxHeight = "";
-    if (this.full || el2.hidden || matchMedia(SIDE_DOCK_MQ).matches) return;
+    if (this.full || el2.hidden || sideDocked(el2.closest("#stage"))) return;
     const box = el2.querySelector(".studio-strips"), card = box?.querySelector(".strip");
     if (!box || !card) return;
     const cs2 = getComputedStyle(box), gap = parseFloat(cs2.rowGap) || 0, pad4 = (parseFloat(cs2.paddingTop) || 0) + (parseFloat(cs2.paddingBottom) || 0);
@@ -32560,6 +32630,10 @@ ${tg2.fx}`);
     const H3 = card.getBoundingClientRect().height, cols = cs2.gridTemplateColumns.split(" ").filter(Boolean).length || 1, rows = Math.ceil(box.querySelectorAll(".strip").length / cols);
     const fit = Math.max(1, Math.floor((innerHeight * 0.5 - head - pad4 + gap) / (H3 + gap))), n10 = Math.min(rows, fit);
     el2.style.maxHeight = `${Math.ceil(head + pad4 + n10 * H3 + (n10 - 1) * gap + 2)}px`;
+  }
+  /** 底座贴底 ↔ 贴右边翻了（main.ts syncDock）：重新按整排对齐 / 放开。 */
+  relayout() {
+    this.fitHeight();
   }
   render() {
     const box = this.el.querySelector(".studio-strips"), m2 = this.host.master(), tab = this.tab, off = this.host.bypass();
@@ -44528,7 +44602,10 @@ var refHost = createReferenceHost({
     changed();
   }
 });
-new ResizeObserver(() => refHost.relayout()).observe(padEl);
+new ResizeObserver(() => {
+  refHost.relayout();
+  syncDock();
+}).observe(padEl);
 async function askRefImport(q2) {
   const mb = (n10) => `${(n10 / 1024 / 1024).toFixed(1)} MB`, what = q2.kind === "audio" ? "mp3 128k" : "PNG 256 \u8272\u3001\u957F\u8FB9\u6700\u591A 2048", av2 = q2.kind === "audio" || q2.kind === "video";
   const big = q2.bytes > RAM_ABOVE;
@@ -44565,6 +44642,27 @@ var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var busMuted = /* @__PURE__ */ new Set();
 var dockedSide = 0;
+var padBottomCache = 0;
+var PAD_BOTTOM_FALLBACK = 364;
+function padBottomH() {
+  if (padEl.hidden) return padBottomCache || PAD_BOTTOM_FALLBACK;
+  const was = stageEl.dataset.side;
+  if (was) delete stageEl.dataset.side;
+  const h2 = padEl.offsetHeight;
+  if (was) stageEl.dataset.side = was;
+  if (h2 > 0) padBottomCache = h2;
+  return h2 || padBottomCache || PAD_BOTTOM_FALLBACK;
+}
+function syncDock() {
+  const side = sideDock(stageEl.clientWidth, stageEl.clientHeight, padBottomH(), view.spaceAt(stageEl.clientWidth));
+  if (side === sideDocked(stageEl)) return;
+  if (side) stageEl.dataset.side = "right";
+  else delete stageEl.dataset.side;
+  studio.relayout();
+  view.render();
+  refHost.relayout();
+}
+addEventListener("resize", () => syncDock());
 var attr = (s10) => s10.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 var padTab = document.createElement("button");
 padTab.id = "padTab";
@@ -44911,16 +45009,18 @@ var view = new ScoreView(scoreEl, {
   reflow: () => reflow,
   pages: () => pageFlow && !scrollFlow,
   scroll: () => scrollFlow,
-  // winmini 档（底座在左边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
+  // 贴右边那一档（底座在右边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
   layoutWidth: () => {
     const w2 = scoreEl.clientWidth, sw2 = stageEl.clientWidth;
-    if (!matchMedia(SIDE_DOCK_MQ).matches) return w2;
+    if (!sideDocked(stageEl)) return w2;
     if (stageEl.dataset.dock !== "none") {
       dockedSide = sw2 - w2;
       return w2;
     }
     return dockedSide > 0 ? Math.max(200, sw2 - dockedSide) : w2;
   },
+  onZoom: (phys) => deviceKvSet2(KV_ZOOM, phys === null ? null : phys.toFixed(3)),
+  // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
   lyricRaise: () => LYRIC_RAISE[pdfFont],
   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope
@@ -45121,6 +45221,7 @@ function updateBoth(next2, nextExtras, locus) {
   D2.commit({ st: next2, extras: nextExtras }, { locus });
 }
 function afterState(prev, next2, moved, userEdit) {
+  if (next2.song.paper !== prev.song.paper) syncDock();
   if (userEdit && (next2.song !== prev.song || next2.caret !== prev.caret || next2.sel !== prev.sel)) view.noteUserEdit();
   if (moved) {
     sound.allOff();
@@ -45813,12 +45914,14 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "7f8a3be32ceb",
+  cssHash: "6655d73d3a02",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
   },
   layout: () => ({ ...view.layoutNow(), head: view.head() }),
+  zoomInfo: () => view.zoomInfo(),
+  dockSide: () => stageEl.dataset.side ?? null,
   bytes: () => bytesNow(),
   open: (name, bytes) => openBytes(name, bytes),
   view,
@@ -47653,7 +47756,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = D2.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var encoder = createEncoder(() => new URL(`./${"encode-worker-b4d29c7e0056.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
+var encoder = createEncoder(() => new URL(`./${"encode-worker-2eb44362ca4e.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -48199,6 +48302,7 @@ consumeLaunchFiles((h2) => {
   })();
 });
 var KV_LAST_DOC = "last-doc";
+var KV_ZOOM = "zoom";
 var gallery = null;
 var pendingOpenId = null;
 var encodedSnap = null;
@@ -49107,6 +49211,10 @@ document.addEventListener("visibilitychange", () => {
   diagNote("audio", `visible again: ctx ${c10.state}, playing ${engine.playing}, currentTime ${c10.currentTime.toFixed(3)}, ts ${ts2 ? `${ts2.contextTime?.toFixed(3)} @ ${ts2.performanceTime?.toFixed(0)}` : "none"}, now ${performance.now().toFixed(0)}`);
 });
 await document.fonts.load(`40px Bravura`).catch(() => void 0);
+{
+  const z2 = deviceKvGet2(KV_ZOOM);
+  view.restoreZoom(z2 === null ? null : Number(z2));
+}
 view.render();
 pad3.render();
 renderTitle();
@@ -49131,4 +49239,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-299fe61de364.mjs.map
+//# sourceMappingURL=moonsinger-90e4c750d6af.mjs.map

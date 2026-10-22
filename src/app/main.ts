@@ -28,7 +28,7 @@ import { createPadHost } from "./pad-host.ts";   // pad 的宿主 = 翻译层（
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
-import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, SIDE_DOCK_MQ, type Mode, type WorkspaceState } from "./workspace.ts";
+import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
@@ -185,7 +185,7 @@ const refHost = createReferenceHost({
   askImport: (q) => askRefImport(q),
   onCards: () => { renderTitle(); changed(); },
 });
-new ResizeObserver(() => refHost.relayout()).observe(padEl);
+new ResizeObserver(() => { refHost.relayout(); syncDock(); }).observe(padEl);   // 键盘换了排数 / 开合 = 重判底座贴底还是贴右边
 /** 参考窗导入的问询（库 0.4.0：超过 1 MB 的图片 / 音频 / 视频）：存进歌里 / 压一下（约 X MB）/ 只放内存 / 算了。
  *  user「应用内小面板 如果支持压缩的话应该有压缩选项和估计」；q.suggestRam = 「只放内存」排第一、说为什么——超过 4 MB（user 选 B：「这里可能是全家族仓我们唯一一个真的需要nudge用户」），
  *  或者是音频 / 视频（库 0.5.0 起默认只放内存、当次有效；user 2026-10-21「音视频应该是当此有效」；MoonSinger 照默认不覆盖，要不要例外 = wishlist W-44）。 */
@@ -241,7 +241,25 @@ bar.innerHTML =
 const renderBar = new RenderProgress(bar);
 const stageEl = $("stage");
 const busMuted = new Set<string>();   // 静音的混音轨（v0.10.35，视图态：不进文件、不进 undo；换歌清空）
-let dockedSide = 0;   // 横屏底座在的时候，舞台里谱面以外占的宽（px；排谱宽度不跟着底座开合跳，见 view 的 layoutWidth；v0.10.33）   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
+let dockedSide = 0;
+// ── 底座贴底还是贴右边（2026-10-21 下午 user「实在做不到再贴右边。比如只能看到一行谱子」）：贴底后谱面剩的高看不到两行谱 = 贴右边。判断 = workspace.ts sideDock（纯函数），这里只量数、写 #stage 的 data-side；
+//    CSS 那一档全挂在 #stage[data-side="right"] 上。量：键盘贴底时的高（露着就量；在右边一栏时先按贴底摆一下再量，同一帧内不画）+ 贴底时谱面自动大小一格几 px（view.spaceAt，和缩放无关）。 ──
+let padBottomCache = 0;
+const PAD_BOTTOM_FALLBACK = 364;   // 默认排数时量到的（没量过时用）
+function padBottomH(): number {
+  if (padEl.hidden) return padBottomCache || PAD_BOTTOM_FALLBACK;
+  const was = stageEl.dataset.side; if (was) delete stageEl.dataset.side;
+  const h = padEl.offsetHeight; if (was) stageEl.dataset.side = was;
+  if (h > 0) padBottomCache = h;
+  return h || padBottomCache || PAD_BOTTOM_FALLBACK;
+}
+function syncDock(): void {
+  const side = sideDock(stageEl.clientWidth, stageEl.clientHeight, padBottomH(), view.spaceAt(stageEl.clientWidth));
+  if (side === sideDocked(stageEl)) return;
+  if (side) stageEl.dataset.side = "right"; else delete stageEl.dataset.side;
+  studio.relayout(); view.render(); refHost.relayout();
+}
+addEventListener("resize", () => syncDock());   // 横屏底座在的时候，舞台里谱面以外占的宽（px；排谱宽度不跟着底座开合跳，见 view 的 layoutWidth；v0.10.33）   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
 const attr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = "键盘（pad）";
 padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>键盘</span>`;
@@ -443,13 +461,14 @@ const view = new ScoreView(scoreEl, {
   reflow: () => reflow,
   pages: () => pageFlow && !scrollFlow,
   scroll: () => scrollFlow,
-  // winmini 档（底座在左边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
+  // 贴右边那一档（底座在右边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
   layoutWidth: () => {
     const w = scoreEl.clientWidth, sw = stageEl.clientWidth;
-    if (!matchMedia(SIDE_DOCK_MQ).matches) return w;   // 贴底（默认）：底座在下面，不占宽
+    if (!sideDocked(stageEl)) return w;   // 贴底（默认）：底座在下面，不占宽
     if (stageEl.dataset.dock !== "none") { dockedSide = sw - w; return w; }
     return dockedSide > 0 ? Math.max(200, sw - dockedSide) : w;
   },
+  onZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),   // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
   lyricRaise: () => LYRIC_RAISE[pdfFont],   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope,
 });
@@ -590,6 +609,7 @@ function updateExtras(next: Extras, locus: Locus, gesture?: string): void { D.co
 function updateBoth(next: EditorState, nextExtras: Extras, locus: Locus): void { D.commit({ st: next, extras: nextExtras }, { locus }); }
 /** 谱换了之后的副作用（原 applyState；D 换好真相再叫）。userEdit = 你在谱上动了（播放几秒内不拽视图，v0.10.12）；撤销 / 重做不算。 */
 function afterState(prev: EditorState, next: EditorState, moved: boolean, userEdit: boolean): void {
+  if (next.song.paper !== prev.song.paper) syncDock();   // 换纸 / 密度 = 一行谱的高变了，重判底座贴底还是贴右边
   if (userEdit && (next.song !== prev.song || next.caret !== prev.caret || next.sel !== prev.sel)) view.noteUserEdit();
   if (moved) { sound.allOff(); void prepareBank(); }
   span("changed", () => changed());
@@ -1014,7 +1034,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   addBus: (name = "总线") => { const id = newBusId(D.extras); updateExtras(withTrack(D.extras, id, { kind: "bus", name }), { kind: "studio", label: `加总线「${name}」` }); return id; },
   removeBus: (id: string) => updateExtras(withoutBus(D.extras, id), { kind: "studio", label: `删总线「${id}」` }),
   setMaster: (patch: Record<string, unknown>) => updateExtras(withMaster(D.extras, patch as never), { kind: "studio", label: "总轨" }),
-  studioTracks: () => studioTracks(D.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, D.st.song.hum, songLangOf(tokens, D.st.song.hum), map); }, state: () => D.st, cssHash: __CSS_HASH__, extras: () => D.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => ({ ...view.layoutNow(), head: view.head() }) /* head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） */, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { home: { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
+  studioTracks: () => studioTracks(D.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, D.st.song.hum, songLangOf(tokens, D.st.song.hum), map); }, state: () => D.st, cssHash: __CSS_HASH__, extras: () => D.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => ({ ...view.layoutNow(), head: view.head() }) /* head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） */, zoomInfo: () => view.zoomInfo(), dockSide: () => stageEl.dataset.side ?? null, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { home: { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
   setChunk: (v: "phrase" | "sheet" | "whole") => { const role = D.st.song.parts.find((x) => x.id === D.st.at.part)?.role; if (role) updateExtras(withSingChunk(D.extras, role, v, D.st.song.hum), { kind: "lounge", label: `分段唱：${v}` }); },
   set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), wake: (awayMs: number) => wakeCheck(awayMs), pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(D.st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => H.identifier(), home: () => H.home.kind, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
@@ -2710,6 +2730,7 @@ docFile.consumeLaunchFiles((h) => { void (async () => {
 //   节律（2026-10-08 晚起 = WeebPaint 的 consent 制，user「用weebpaint方案，对付大歌，这不是txt」；常量在 src/config.ts）：改了 2 s 自动落本地（「•」= 还没落）；推云只在换歌 / 退出 / 进歌库 / 按「存」/ 登录后 pushAll；
 //   「存」= 立刻落盘 + 推（不脏也动）。冲突 / 报错 / busy 在建 store 时就接好线（src/store-ui.ts；test/store-wiring.test.mjs 守着）。
 const KV_LAST_DOC = "last-doc";
+const KV_ZOOM = "zoom";   // 谱面缩放（物理倍数；没有 = 自动）——按设备记、不跟账号（2026-10-21 user「缩放跨会话记住，按设备存」「每台屏幕不同」）
 let gallery: GalleryHost | null = null;
 let pendingOpenId: string | null = null;   // es.open(id) 进行中的那个身份（adapter.adopt 收字节时要知道是谁的）
 let encodedSnap: SavedMark | null = null;   // encode 那一刻的快照：落盘成功才把它记成「已存」（快照之后的改动继续算脏）
@@ -3240,6 +3261,7 @@ document.addEventListener("visibilitychange", () => {
 });
 
 await document.fonts.load(`40px Bravura`).catch(() => undefined);
+{ const z = deviceKvGet(KV_ZOOM); view.restoreZoom(z === null ? null : Number(z)); }   // 这台设备记住的缩放（物理倍数；2026-10-21 user「缩放跨会话记住，按设备存」）——第一帧就按它排
 view.render();
 pad.render();
 renderTitle();
