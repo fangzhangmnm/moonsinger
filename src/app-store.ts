@@ -3,7 +3,7 @@
 //   身份 / 字节 / 云访问全走库，app 层不碰 localStorage / IDB / MSAL / Graph（device 层标量走 src/device-kv.ts）。
 //   store **懒建**（attachStore）：没进过歌库的设备 = 无地模式（v0.3.0），不开 IDB、不载 MSAL（user 2026-10-01「用户有意图才弄」）；
 //   进过一次（device-kv storeAttached）以后开局就建，且**先建 store 再 initAuth**（CatsUp 2026-09-22 教训：没建 store 时库的报错是 no-op，登录回跳失败人看不到）。
-import { createStore, createOneDriveProvider, requestStoragePersistence, isCached, isDirty, withStemTail } from "@internal/store";
+import { createStore, createOneDriveProvider, requestStoragePersistence, isCached, isDirty, withStemTail, wipeAppNamespace, scanAppNamespace, WipeConsentError } from "@internal/store";
 import type { Store, OneDriveAuth, CloudProvider } from "@internal/store";
 import { APP_ID, CLIENT_ID, AUTHORITY, SCOPES, MSAL_URL } from "./config.ts";
 import { DOC_KINDS } from "./identifiers.ts";
@@ -66,4 +66,6 @@ export async function disposeStore(): Promise<void> { const s = _store; _store =
 export async function detachStore(): Promise<void> { await disposeStore(); deviceKvSet(KV_ATTACHED, null); }
 
 export { requestStoragePersistence, isCached, isDirty, withStemTail };
+/** 还原出厂（src/app/factory-reset.ts）用的库口子：深清本 appId 的全部命名空间 / 无痕扫残留（同 WeebPaint：maintenance 面经接缝）。2026-10-21 */
+export { wipeAppNamespace, scanAppNamespace, WipeConsentError };
 export type { Store, OneDriveAuth };

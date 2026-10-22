@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.4-2026-10-21";
+var APP_VERSION = "v0.14.5-2026-10-21";
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2672,19 +2672,22 @@ function initPwaShell(opts) {
     reg.waiting.postMessage({ type: "skip-waiting" });
     setTimeout(doReload, 5e3);
   }
+  async function clearOwnShell() {
+    if (navigator.serviceWorker) {
+      const r10 = await navigator.serviceWorker.getRegistration();
+      if (r10) await r10.unregister().catch(() => {
+      });
+    }
+    if (typeof caches !== "undefined") for (const k2 of await caches.keys()) {
+      if (k2.startsWith(SHELL_CACHE_PREFIX)) await caches.delete(k2).catch(() => {
+      });
+    }
+  }
   async function forceReset() {
     const settle = (p2, ms) => Promise.race([Promise.resolve(p2).catch(() => void 0), new Promise((r10) => setTimeout(r10, ms))]);
     await settle(opts.onBeforeReload?.(), 4e3);
     try {
-      if (navigator.serviceWorker) {
-        const r10 = await navigator.serviceWorker.getRegistration();
-        if (r10) await r10.unregister().catch(() => {
-        });
-      }
-      if (typeof caches !== "undefined") for (const k2 of await caches.keys()) {
-        if (k2.startsWith(SHELL_CACHE_PREFIX)) await caches.delete(k2).catch(() => {
-        });
-      }
+      await clearOwnShell();
     } catch {
     }
     const target = `${location.pathname}?reset=${Date.now()}`;
@@ -2749,7 +2752,7 @@ function initPwaShell(opts) {
       console.warn("[pwa] SW register failed", err2);
     });
   }
-  return { isDevRoute, reload, forceReset, checkForUpdate };
+  return { isDevRoute, reload, forceReset, clearOwnShell, checkForUpdate };
 }
 
 // src/score/paper.ts
@@ -19149,6 +19152,106 @@ function createStore(config) {
   };
 }
 
+// node_modules/@internal/store/dist/works/maintenance.js
+var WipeConsentError = class extends Error {
+  code = "WIPE_CONSENT";
+  constructor(msg) {
+    super(msg);
+    this.name = "WipeConsentError";
+  }
+};
+var BLOCKED_TIMEOUT_MS = 2e3;
+var _idb = () => globalThis.indexedDB ?? null;
+var _ls = () => {
+  try {
+    return globalThis.localStorage ?? null;
+  } catch {
+    return null;
+  }
+};
+async function listNamespaceDbs(appId, idb) {
+  if (typeof idb.databases !== "function")
+    return { supported: false, names: [] };
+  try {
+    const all = await idb.databases();
+    return { supported: true, names: all.map((d3) => d3.name ?? "").filter((n10) => n10.startsWith(`${appId}.`)) };
+  } catch {
+    return { supported: false, names: [] };
+  }
+}
+function listNamespaceLsKeys(appId, ls2) {
+  const prefix = `${appId}.`;
+  const keys = [];
+  for (let i10 = 0; i10 < ls2.length; i10++) {
+    const k2 = ls2.key(i10);
+    if (k2 && k2.startsWith(prefix))
+      keys.push(k2);
+  }
+  return keys;
+}
+function deleteDbOrBlocked(idb, name) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (r10) => {
+      if (!settled) {
+        settled = true;
+        resolve(r10);
+      }
+    };
+    const timer = setTimeout(() => done("blocked"), BLOCKED_TIMEOUT_MS);
+    const req = idb.deleteDatabase(name);
+    req.onsuccess = () => {
+      clearTimeout(timer);
+      done("deleted");
+    };
+    req.onerror = () => {
+      clearTimeout(timer);
+      done("blocked");
+    };
+    req.onblocked = () => {
+    };
+  });
+}
+async function scanAppNamespace(appId) {
+  if (!appId)
+    throw new Error("scanAppNamespace: appId required");
+  const idb = _idb();
+  const ls2 = _ls();
+  const dbs = idb ? await listNamespaceDbs(appId, idb) : { supported: false, names: [] };
+  return {
+    databasesSupported: dbs.supported,
+    databases: dbs.names,
+    localStorageKeys: ls2 ? listNamespaceLsKeys(appId, ls2).length : 0
+  };
+}
+async function wipeAppNamespace(opts) {
+  const { appId, consent } = opts;
+  if (!appId)
+    throw new Error("wipeAppNamespace: appId required");
+  const expected = consent?.expected?.trim() ?? "";
+  if (expected.length < 4)
+    throw new WipeConsentError("wipe refused: consent.expected missing or too short (app must show the user a real confirmation phrase)");
+  if (consent.typed !== consent.expected)
+    throw new WipeConsentError("wipe refused: typed consent does not match the expected phrase");
+  const report = { deletedDatabases: [], blockedDatabases: [], localStorageKeysRemoved: 0 };
+  const idb = _idb();
+  if (idb) {
+    const dbs = await listNamespaceDbs(appId, idb);
+    for (const name of dbs.names) {
+      const r10 = await deleteDbOrBlocked(idb, name);
+      (r10 === "deleted" ? report.deletedDatabases : report.blockedDatabases).push(name);
+    }
+  }
+  const ls2 = _ls();
+  if (ls2) {
+    const keys = listNamespaceLsKeys(appId, ls2);
+    for (const k2 of keys)
+      ls2.removeItem(k2);
+    report.localStorageKeysRemoved = keys.length;
+  }
+  return report;
+}
+
 // node_modules/@internal/store/dist/base/providers/range-body.js
 async function readBody(r10, onProgress) {
   const body2 = r10.body;
@@ -20573,6 +20676,13 @@ var STORE2 = "entries";
 var _dbName = null;
 var _opened = false;
 var _warnedLegacy = false;
+function configureGalleryRegistry(opts) {
+  if (!opts?.dbName)
+    throw new Error("configureGalleryRegistry: dbName required");
+  if (_opened)
+    throw new Error(`configureGalleryRegistry: too late \u2014 the registry database was already opened as "${_dbName ?? LEGACY_DB_NAME}" (configure before the first gallery call)`);
+  _dbName = opts.dbName;
+}
 function galleryRegistryDbName() {
   return _dbName ?? LEGACY_DB_NAME;
 }
@@ -23674,7 +23784,7 @@ function createGallery(el2, deps) {
 // src/device-kv.ts
 var PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
 var _mem2 = /* @__PURE__ */ new Map();
-function _ls() {
+function _ls2() {
   try {
     const ls2 = globalThis.localStorage;
     ls2.getItem(PREFIX + "__probe");
@@ -23685,7 +23795,7 @@ function _ls() {
 }
 function deviceKvGet2(key) {
   const k2 = PREFIX + key;
-  const ls2 = _ls();
+  const ls2 = _ls2();
   if (ls2) {
     try {
       return ls2.getItem(k2);
@@ -23696,7 +23806,7 @@ function deviceKvGet2(key) {
 }
 function deviceKvSet2(key, v) {
   const k2 = PREFIX + key;
-  const ls2 = _ls();
+  const ls2 = _ls2();
   if (ls2) {
     try {
       if (v == null) ls2.removeItem(k2);
@@ -23708,6 +23818,24 @@ function deviceKvSet2(key, v) {
   }
   if (v == null) _mem2.delete(k2);
   else _mem2.set(k2, v);
+}
+function deviceKvWipeAll() {
+  let n10 = 0;
+  const ls2 = _ls2();
+  if (ls2) {
+    try {
+      const keys = [];
+      for (let i10 = 0; i10 < ls2.length; i10++) {
+        const k2 = ls2.key(i10);
+        if (k2 && k2.startsWith(PREFIX)) keys.push(k2);
+      }
+      for (const k2 of keys) ls2.removeItem(k2);
+      n10 = keys.length;
+    } catch {
+    }
+  }
+  _mem2.clear();
+  return n10;
 }
 
 // src/app/report-error.ts
@@ -32587,6 +32715,7 @@ var AUTHORITY2 = "https://login.microsoftonline.com/consumers";
 var SCOPES2 = ["Files.ReadWrite.AppFolder", "offline_access"];
 var MSAL_URL2 = "./vendor/msal/msal-browser.min.js";
 var SONG_SUFFIX = ".mxl";
+var APP_DB_PREFIX = "moonsinger-5b1e7c0a92d34f6e.";
 var LOCAL_SAVE_DEBOUNCE_MS = 2e3;
 var WAKE_CHECK_AFTER_MS = 10 * 6e4;
 var WAKE_CHECK_TIMEOUT_MS = 2e4;
@@ -39028,6 +39157,7 @@ async function artworkOf(cover) {
 }
 
 // src/gallery-host.ts
+configureGalleryRegistry({ dbName: `${APP_DB_PREFIX}gallery-registry` });
 var KV_FOLDER = "gallery-folder";
 var KV_SCENE = "last-scene";
 var THUMB_PEEK_BYTES = 128 * 1024;
@@ -43700,6 +43830,103 @@ function createEncoder(workerUrl, onFallback) {
   };
 }
 
+// src/app/factory-reset.ts
+var CONSENT_PHRASE = "\u5220\u9664\u5168\u90E8\u672C\u5730\u6570\u636E";
+var OWN_DBS = ["moonsinger-thumbs", "moonsinger-facts", "moonsinger-speech"];
+var BLOCKED_TIMEOUT_MS2 = 2e3;
+var isOurDb = (name) => OWN_DBS.includes(name) || name.startsWith(APP_DB_PREFIX);
+function deleteDbOrBlocked2(name) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (r10) => {
+      if (!settled) {
+        settled = true;
+        resolve(r10);
+      }
+    };
+    const timer = setTimeout(() => done("blocked"), BLOCKED_TIMEOUT_MS2);
+    try {
+      const req = indexedDB.deleteDatabase(name);
+      req.onsuccess = () => {
+        clearTimeout(timer);
+        done("deleted");
+      };
+      req.onerror = () => {
+        clearTimeout(timer);
+        done("blocked");
+      };
+    } catch {
+      clearTimeout(timer);
+      done("blocked");
+    }
+  });
+}
+async function listOurDbs() {
+  try {
+    if (typeof indexedDB === "undefined" || typeof indexedDB.databases !== "function") return [...OWN_DBS];
+    return (await indexedDB.databases()).map((d3) => d3.name ?? "").filter(isOurDb);
+  } catch {
+    return [...OWN_DBS];
+  }
+}
+async function wipeOwnFootprint() {
+  const r10 = { deleted: [], blocked: [], lsRemoved: 0 };
+  for (const name of /* @__PURE__ */ new Set([...await listOurDbs(), ...OWN_DBS])) (await deleteDbOrBlocked2(name) === "deleted" ? r10.deleted : r10.blocked).push(name);
+  r10.lsRemoved = deviceKvWipeAll();
+  return r10;
+}
+async function runFactoryReset(d3) {
+  let dirtyN = 0;
+  if (d3.attached()) {
+    try {
+      dirtyN = await d3.dirtyCount();
+    } catch (e10) {
+      d3.report(e10, "log");
+    }
+  }
+  const lines = [
+    "\u5220\u9664\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\uFF1A\u6B4C\u5E93\u91CC\u7684\u6B4C\uFF08\u672C\u673A\u526F\u672C\uFF09\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\uFF1B\u79BB\u7EBF\u58F3\u4E5F\u91CD\u88C5\u3002\u4E91\u7AEF\uFF08OneDrive\uFF09\u4E0A\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u53D7\u5F71\u54CD\u3002",
+    d3.attached() ? dirtyN > 0 ? `\u6709 ${dirtyN} \u9996\u8FD8\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u4F1A\u4E00\u8D77\u5220\u6389\uFF08\u4E0D\u9020\u9003\u751F\u526F\u672C\uFF09\u3002` : "\u6B4C\u5E93\u91CC\u7684\u6B4C\u90FD\u4F20\u4E0A\u53BB\u4E86\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u6CA1\u8FDB\u8FC7\u6B4C\u5E93\u3002"
+  ];
+  if (d3.openUnsaved()) lines.push("\u624B\u91CC\u8FD9\u9996\u6539\u8FC7\u8FD8\u6CA1\u5B58\uFF0C\u4E5F\u4F1A\u4E22\u3002");
+  if (!await openConfirmSheet("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E", lines.join("\n"), { okLabel: "\u7EE7\u7EED", danger: true })) return "cancelled";
+  const typed = await openInputSheet("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E", { placeholder: CONSENT_PHRASE, message: `\u9010\u5B57\u8F93\u5165\u300C${CONSENT_PHRASE}\u300D\u786E\u8BA4\u3002\u8FD9\u4E00\u6B65\u505A\u5B8C app \u4F1A\u91CD\u5F00\u6210\u65B0\u88C5\u7684\u6837\u5B50\u3002`, okLabel: "\u5220\u9664" });
+  if (typed == null) return "cancelled";
+  if (typed.trim() !== CONSENT_PHRASE) {
+    d3.info("\u8F93\u5165\u7684\u4E0D\u4E00\u6837\uFF0C\u4EC0\u4E48\u90FD\u6CA1\u52A8\u3002");
+    return "mismatch";
+  }
+  try {
+    await d3.prepare();
+    const storeReport = await wipeAppNamespace({ appId: APP_ID, consent: { expected: CONSENT_PHRASE, typed: typed.trim() } });
+    const own = await wipeOwnFootprint();
+    const scan = await scanAppNamespace(APP_ID);
+    const residueOwn = (await listOurDbs()).length;
+    const blocked = storeReport.blockedDatabases.length + own.blocked.length;
+    if (blocked > 0) {
+      await openConfirmSheet("\u8FD8\u6CA1\u5220\u5E72\u51C0", `\u6709 ${blocked} \u4E2A\u5E93\u88AB\u522B\u7684\u6807\u7B7E\u9875\u5360\u7740\uFF0C\u5220\u4E0D\u6389\u3002\u5173\u6389\u5176\u4ED6 MoonSinger \u6807\u7B7E\u9875\uFF08\u6216\u522B\u7684\u7A97\u53E3\uFF09\u518D\u6765\u4E00\u6B21\u2014\u2014\u518D\u505A\u4E00\u904D\u662F\u5B89\u5168\u7684\u3002`, { okLabel: "\u597D", cancelLabel: "\u5173\u95ED" });
+      return "blocked";
+    }
+    const db = storeReport.deletedDatabases.length + own.deleted.length, ls2 = storeReport.localStorageKeysRemoved + own.lsRemoved;
+    const residue = scan.databases.length + scan.localStorageKeys + residueOwn;
+    await openConfirmSheet("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E", residue === 0 ? `\u5220\u4E86 ${db} \u4E2A\u5E93\u3001${ls2} \u4E2A\u952E\uFF0C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u6CA1\u6709\u6B8B\u7559\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002` : `\u5220\u4E86 ${db} \u4E2A\u5E93\u3001${ls2} \u4E2A\u952E\uFF1B\u8FD8\u5269 ${residue} \u5904\u6B8B\u7559\uFF08\u679A\u4E3E\u4E0D\u5230\u7684\u5E73\u53F0 / \u521A\u88AB\u91CD\u5EFA\uFF09\uFF0C\u91CD\u5F00\u540E\u518D\u505A\u4E00\u904D\u5C31\u6CA1\u4E86\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002`, { okLabel: "\u597D", cancelLabel: "\u597D" });
+    try {
+      await d3.clearShell();
+    } catch (e10) {
+      d3.report(e10, "log");
+    }
+    location.replace(`${location.pathname}?reset=${Date.now()}`);
+    return "done";
+  } catch (e10) {
+    if (e10?.name === "WipeConsentError") {
+      d3.info("\u8F93\u5165\u7684\u4E0D\u4E00\u6837\uFF0C\u4EC0\u4E48\u90FD\u6CA1\u52A8\u3002");
+      return "mismatch";
+    }
+    d3.report(e10, "error");
+    return "blocked";
+  }
+}
+
 // src/score/desk.ts
 var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
@@ -44976,7 +45203,7 @@ ${esc8(CREDIT.attribution.join("\n"))}</pre><div class="part-sec">\u4E2D\u6587\u
 
 ${esc8(CREDIT_TRANSLATIONS.zh.terms)}</pre><div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc8(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">\u6E05\u7A7A\u5FF5\u7F13\u5B58</button></div></div><div class="set-field">\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5">\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE</button></div></div><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc8(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:download">\u4E0B\u8F7D .txt</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">\u5206\u4EAB\u2026</button>` : ""}<button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">\u6E05\u7A7A\u5FF5\u7F13\u5B58</button></div></div><div class="set-field">\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5">\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE</button></div></div><details class="set-credit set-dev"><summary>\u5F00\u53D1\u8005</summary><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc8(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:download">\u4E0B\u8F7D .txt</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">\u5206\u4EAB\u2026</button>` : ""}<button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-field">\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09<div class="set-row"><button class="btn danger" data-v="factory">\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -45066,7 +45293,23 @@ ${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C
       } else info(r10 === "latest" ? "\u5DF2\u7ECF\u662F\u6700\u65B0\u7248" : "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0");
     });
     else if (v === "reset") void shell.forceReset();
-    else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => {
+    else if (v === "factory") {
+      close();
+      void runFactoryReset({
+        attached: () => hasStore(),
+        dirtyCount: () => requireStore().files.dirty.count(),
+        openUnsaved: () => dirty(),
+        prepare: async () => {
+          H2.release();
+          singer.restart();
+          if (hasStore()) await detachStore();
+        },
+        // 放下身份（es 不再写）、关掉举着念缓存库的 worker、dispose store；不 drain、不造逃生副本（说明 sheet 已经说清）
+        clearShell: () => shell.clearOwnShell(),
+        info,
+        report: (e11, level) => reportError(e11, level)
+      });
+    } else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => {
       refreshSpeech();
       info("\u5FF5\u7F13\u5B58\u6E05\u7A7A\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5\uFF09");
     });
@@ -47016,7 +47259,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base3 = D2.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var encoder = createEncoder(() => new URL(`./${"encode-worker-ff01cff2fb0d.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
+var encoder = createEncoder(() => new URL(`./${"encode-worker-2d31348f3d68.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -48475,4 +48718,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d2157454d54d.mjs.map
+//# sourceMappingURL=moonsinger-dffeac40d1bf.mjs.map

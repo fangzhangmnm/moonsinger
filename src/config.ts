@@ -10,6 +10,9 @@ export const MSAL_URL = "./vendor/msal/msal-browser.min.js";
 
 /** 歌的文档种类（store 0.16 docKinds）：一首歌 = 一个 `.mxl`（MusicXML 压缩包，别的乐谱软件也能开；自家的东西在里面的 `.moonsinger/`）。 */
 export const SONG_SUFFIX = ".mxl";
+/** 本 app 私有库的 GUID 前缀（家族命名规矩「<app>-<guid>.<用途>」）：gallery-registry 等归这个前缀；device-kv 的键前缀是同一个 GUID（`moonsinger-5b1e7c0a92d34f6e:`）。
+ *  还原出厂（src/app/factory-reset.ts）按它删自家的库。added 2026-10-21 by Claude Fable 5.1 */
+export const APP_DB_PREFIX = "moonsinger-5b1e7c0a92d34f6e.";
 
 // ── 节律（2026-10-08 晚起 = WeebPaint 的 consent 制：推云只在换歌 / 退出 / 按「存」/ 进歌库；平时只落本机。
 //    user「用weebpaint方案，对付大歌，这不是txt」——歌是整个 .mxl（封面、以后还有音源），15 s 一推太勤。原来的 15 s 防抖 / 30 s 心跳（WXHW 制）撤了）──

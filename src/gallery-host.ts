@@ -5,6 +5,10 @@
 //   派生缓存 IDB `moonsinger-thumbs`（user 2026-10-08「没问题」批；CLAUDE.md 持久层白名单表登记）。
 import { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } from "../vendor/vue/vue.esm-browser.prod.js";
 import { createGallery, humanSize, type CreateGalleryDeps, type GalleryDocHost, type VueRuntime, type GItem, type TileInfo, type TileAction, type VerbStore, type DataFaceStore, type Gallery, type GalleryView, type AsideKind, type AsideScope } from "@internal/gallery";
+import { configureGalleryRegistry } from "@internal/gallery";
+import { APP_DB_PREFIX } from "./config.ts";
+// 图库包的注册表（0.8.7 起库名归宿主）：本 app 不用它（单库），但万一包内部开了，也落在自家 GUID 前缀下（家族命名规矩；还原出厂按前缀删得到）。import 本身零 IDB 访问。2026-10-21
+configureGalleryRegistry({ dbName: `${APP_DB_PREFIX}gallery-registry` });
 import { requireStore, auth, hasStore, isSignedIn } from "./app-store.ts";
 import { THUMBNAIL_ENTRY, FINAL_MP3_ENTRY } from "./format/project.ts";
 import { parseFinalRecord, type FinalRecord } from "./format/final.ts";

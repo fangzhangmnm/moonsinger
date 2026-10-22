@@ -94,6 +94,7 @@ import { type Locus, type Restored } from "../score/history.ts";
 import { createDocument, type SavedMark } from "./document.ts";
 import { createHome, assertNever, type Home } from "./home.ts";
 import { createEncoder } from "../format/encode-client.ts";
+import { runFactoryReset } from "./factory-reset.ts";
 import { freshDesk, freshPartView, serializeDesk, unserializeDesk, PAD_UNITS, type Desk, type PartViewState } from "../score/desk.ts";
 import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
 import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongClefs } from "../score/clef.ts";
@@ -908,7 +909,11 @@ function openSettings(): void {
       `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc(CREDIT_TRANSLATIONS.en.credit)}\n\n${esc(CREDIT_TRANSLATIONS.en.terms)}</pre></details>` +
     `<div class="set-field">小月相的念缓存（设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念）<div id="spCache" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="sp:clear">清空念缓存</button></div></div>` +
     `<div class="set-field">引擎负载与内存（能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说）<div id="engRes" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="eng:restart" title="小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念">重开小月相引擎</button></div></div>` +
-    `<details class="set-credit"><summary>诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:download">下载 .txt</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">分享…</button>` : ""}<button class="btn" data-v="diag:clear">清空</button></div></details>` +
+    // 开发者节（家族规矩 2½，2026-10-21）：诊断日志 + 「还原出厂设置…」住这里；「检查更新 / 清缓存重启」留在普通那一行
+    `<details class="set-credit set-dev"><summary>开发者</summary>` +
+      `<details class="set-credit"><summary>诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:download">下载 .txt</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">分享…</button>` : ""}<button class="btn" data-v="diag:clear">清空</button></div></details>` +
+      `<div class="set-field">还原出厂设置（这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在上面「模型包」里逐个删）<div class="set-row"><button class="btn danger" data-v="factory">还原出厂设置…</button></div></div>` +
+    `</details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
@@ -950,6 +955,10 @@ function openSettings(): void {
     else if (v === "snd:mem") { releaseSoundMemory(); void refreshSounds(); }
     else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
     else if (v === "reset") void shell.forceReset();
+    else if (v === "factory") { close(); void runFactoryReset({
+      attached: () => hasStore(), dirtyCount: () => requireStore().files.dirty.count(), openUnsaved: () => dirty(),
+      prepare: async () => { H.release(); singer.restart(); if (hasStore()) await detachStore(); },   // 放下身份（es 不再写）、关掉举着念缓存库的 worker、dispose store；不 drain、不造逃生副本（说明 sheet 已经说清）
+      clearShell: () => shell.clearOwnShell(), info, report: (e, level) => reportError(e, level) }); }
     else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => { refreshSpeech(); info("念缓存清空了（念过的句子要重念）"); });
     else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info("小月相引擎重开了，内存还回去了（念过的句子存在这台设备上，不用重念）"); }
   });

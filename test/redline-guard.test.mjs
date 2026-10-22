@@ -5,7 +5,7 @@ import { join, relative, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, it, assert } from "./runner.mjs";
 
-const SEAM = new Set(["src/app-store.ts", "src/device-kv.ts", "src/config.ts", "src/singer/speech-store.ts"]);   // speech-store = 念缓存全局池（可再生派生 IDB，user 2026-10-10 批）
+const SEAM = new Set(["src/app-store.ts", "src/device-kv.ts", "src/config.ts", "src/singer/speech-store.ts", "src/app/factory-reset.ts"]);   // factory-reset = 还原出厂：删自家派生缓存库 + 自家 GUID 前缀库（家族规矩 2½，2026-10-21）   // speech-store = 念缓存全局池（可再生派生 IDB，user 2026-10-10 批）
 // @internal/gallery 的值级 import 点（图库屏 / 纯函数缩图 / store 的 ui 接线器 storeUIFor / 黑匣子 diagLog）
 const GALLERY_OK = new Set(["src/gallery-host.ts", "src/image/cover.ts", "src/image/shrink.ts", "src/store-ui.ts", "src/app/report-error.ts"]);   // shrink.ts = 参考窗「压一下」的缩图（纯函数），2026-10-09 Opus 5.5
 const BAD = [

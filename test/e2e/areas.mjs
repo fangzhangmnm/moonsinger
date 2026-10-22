@@ -20,7 +20,7 @@ export const AREAS = {
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "landscape-widgets", "modes", "dyn-levels", "sing-experiments"],
   // 歌库 / 云 / 文件 / 念缓存
-  store: ["store", "sync", "speech-store", "save-keys", "final"],
+  store: ["store", "sync", "speech-store", "save-keys", "final", "factory-reset"],
   // 导出
   export: ["pdf", "pdf-wysiwyg", "issues", "final"],
   // 参考窗
