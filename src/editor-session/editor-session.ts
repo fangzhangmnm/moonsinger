@@ -38,8 +38,9 @@ export interface EditorAdapter {
 //   ok:true 仍可能有话要说 —— 旧名的去向不是只有「搬走了」一种：
 //   oldKept=谱系不明，改名降级为另存、旧名原地留着 · oldCloudOrphan=旧名没能挪进回收站 · cloudDeferred=云端没推成。
 export type TryMoveResult =
-  | { ok: true; where?: string; oldName?: string; oldKept?: boolean; oldUnknown?: boolean; oldCloudOrphan?: boolean; cloudDeferred?: boolean }
-  | { ok: false; reason: "name-collision"; where: "local" | "cloud" };
+  | { ok: true; where?: string; oldName?: string; oldKept?: boolean; oldKeptByUser?: boolean; oldUnknown?: boolean; oldCloudOrphan?: boolean; cloudDeferred?: boolean }
+  | { ok: false; reason: "name-collision"; where: "local" | "cloud" }
+  | { ok: false; reason: "cancelled" };   // store 2.2.2：人在「搬不搬云端旧的」面里选了取消 → 一个字节没动
 export interface StoreLike {
   // mode 显式必填（new=新建、existing=打开已有）；editor-session 处理的都是已建身份 → 恒 "existing"。
   file(name: string, opts: { isZip: boolean; mode: "new" | "existing" }): {

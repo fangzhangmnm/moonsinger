@@ -2766,12 +2766,11 @@ function adoptStoreBytes(id: string, bytes: Uint8Array): void {
 }
 const stemOfId = (id: string) => identifiers.parse(id)?.stem ?? id;
 /** 打开歌库里的一首。false = 没切过去（本地没字节 / 读不了 / 用户不走）。
- *  登录着且设备上有没推上去的字节 → **先推再开**：上一次推要是「上传落了云、回执没回来」（切后台 / reload 把页面杀了），本地就带着旧 base 和脏标；
- *  库的推路径会拿云端字节和本地字节比对、相同就自愈（lost-response heal），而 open 的新鲜度检查不比字节、直接弹「打开本地 / 云端覆盖本地」——
- *  两边其实一样，白问一次（2026-10-08 user「一直会遇到云端冲突的提示」；test/e2e/sync.mjs ③b 复现）。真分叉 pushAll 不弹面、留脏，照旧由 open 的冲突面问人。 */
+ *  2026-10-26 起不再「先推再开」：以前这里无条件 `pushDirtyAll()` 一遍，为的是借推路径的字节比对自愈躲开 open 的假面（上传落了云、回执没回来 → open 只比版本号、
+ *  直接弹「打开本地 / 云端覆盖本地」；10-08 user「一直会遇到云端冲突的提示」；e2e sync ③b）。store 2.2.2 把同一条自愈补到了 open 路（大小一样才拉来比、可被「跳过到离线」打断），
+ *  批量推这个没问过人的动作就撤了（user 10-26「修」；库 pushAll 的 JSDoc 本来就说别接到这种地方）。真分叉照旧由 open 的冲突面问人。 */
 async function openStoreDoc(id: string): Promise<boolean> {
   if (!(await H.leave(`打开「${stemOfId(id)}」`, { nextIsGallery: true }))) return false;   // 等着安家的有笔先安家；无地 / 本机文件改过没存先问；歌库里的不在这儿推（es.open 切歌前自己先存旧的）
-  if (isSignedIn() && navigator.onLine) { try { if ((await requireStore().files.dirty.count()) > 0) await pushDirtyAll(); } catch (e) { reportError(e, "log"); } }
   pendingOpenId = id;
   try {
     const ok = await es.open(id);   // 切歌前 es 自己先存旧的（退出语义）；open 里含新鲜度检查 / 冲突面 / 崩溃恢复（store 的 ui）
@@ -2806,8 +2805,10 @@ async function renameActive(): Promise<string | null> {
   try {
     const r = await H.rename(v);
     if (r.k === "taken") { showError(`「${fileSafe(v)}」已经有了（${r.where === "cloud" ? "云端" : "这台设备上"}），没改`); return null; }
+    if (r.k === "renameCancelled") { info("这次没动"); return null; }   // store 2.2.2：「搬不搬云端旧的」面里选了取消
     if (r.k !== "renamed") return null;
-    info(r.oldKept ? `文件名改成 ${r.stem}${SONG_SUFFIX}（旧名的那份谱系不明，原地留着了）` : `文件名改成 ${r.stem}${SONG_SUFFIX}`);
+    // store 2.2.2 起谱系不明会先弹面问；oldKept 还为真只剩两种：人选了「留着」（说清是你选的）、或宿主没接回调时的默认（如实说旧的还在）
+    info(r.oldKept ? (r.oldKeptByUser ? `文件名改成 ${r.stem}${SONG_SUFFIX}；照你的意思，云端旧名那份留着没动` : `文件名改成 ${r.stem}${SONG_SUFFIX}（旧名的那份谱系不明，云端原地留着了——歌库里还看得见）`) : `文件名改成 ${r.stem}${SONG_SUFFIX}`);
     return H.identifier();
   } catch (e) { reportError(e); return null; }
 }
@@ -2875,13 +2876,13 @@ $("libBtn").addEventListener("click", () => { void openGallery(); });
 async function openCloudMenu(): Promise<void> {
   const signed = isSignedIn();
   let who = ""; try { const a = auth.getActiveAccount() as { username?: string; name?: string } | null; who = a?.name || a?.username || ""; } catch { /* 没登录 */ }
-  const v = await openChoiceSheet<"in" | "out" | "refresh" | "pushAll">("云端（OneDrive）",
+  // 2026-10-26 user「修」：「把没上云的都推上去」撤——app 侧的方向动词（库 dirty.pushAll 的 JSDoc 明说别接到这种钮上；10-16「冲突只在库的面里三选一」）。没同步好的在歌库「要处理的」里逐首处理。
+  const v = await openChoiceSheet<"in" | "out" | "refresh">("云端（OneDrive）",
     signed ? `已登录${who ? ` ${who}` : ""}。歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。` : "登录微软个人账号后，歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。不登录也能用，歌只在这台设备上。",
-    signed ? [{ label: "刷新云端", value: "refresh" }, { label: "把没上云的都推上去", value: "pushAll" }, { label: "退出登录", value: "out", danger: true, hint: "歌还留在这台设备上" }] : [{ label: "登录微软账号", value: "in", primary: true }]);
+    signed ? [{ label: "刷新云端", value: "refresh" }, { label: "退出登录", value: "out", danger: true, hint: "歌还留在这台设备上" }] : [{ label: "登录微软账号", value: "in", primary: true }]);
   if (v === "in") await signInFlow();
   else if (v === "out") await signOutFlow();
   else if (v === "refresh") gallery?.refresh();
-  else if (v === "pushAll") await pushDirtyAll({ verbose: true });
 }
 /** 退出登录 = 脏门 + 备份 + 拆库 + 退出（同 WeebPaint disconnectFlow：先绿灯门卸库，后 signOut；user 2026-10-08「4 和weebpaint对齐」）：
  *  还有没上云的 → 问：「先推上去 / 推不上的逐首下载备份」（推完重扫再问，数字会变小）或「照样退出」或算了；

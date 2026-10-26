@@ -19,7 +19,7 @@ export type Home =
 /** 消费点 exhaustive 守卫：switch 落到这儿 = 联合类型加了新成员而这个消费点没跟上。 */
 export function assertNever(x: never): never { throw new Error("[home] non-exhaustive switch: " + JSON.stringify(x)); }
 
-export type RenameResult = { ok: true; oldKept?: boolean } | { ok: false; where: "cloud" | "local" };
+export type RenameResult = { ok: true; oldKept?: boolean; oldKeptByUser?: boolean } | { ok: false; reason?: "name-collision" | "cancelled"; where?: "cloud" | "local" };   // store 2.2.2：多 oldKeptByUser / reason cancelled oldKept?: boolean } | { ok: false; where: "cloud" | "local" };
 
 /** 宿主注入的四条路：歌库（editor-session + store）/ 本机文件（doc-file）/ 身份拼法 / 问人与副作用。这里零 DOM、零持久化。 */
 export interface HomePorts {
@@ -78,7 +78,8 @@ export type SaveOutcome =
   | { k: "cancelled" }                   // 保存框取消了（AbortError ≠ 环境不支持，不降级弹下载）
   | { k: "offered"; name: string };      // 递出了下载 / 分享面板（点了才算存了）
 export type RenameOutcome =
-  | { k: "renamed"; stem: string; oldKept: boolean }
+  | { k: "renamed"; stem: string; oldKept: boolean; oldKeptByUser?: boolean }   // oldKeptByUser（store 2.2.2）= 留着旧名是人在面里选的
+  | { k: "renameCancelled" }             // store 2.2.2：「搬不搬云端旧的」面里选了取消，什么都没动
   | { k: "same" }                        // 空名 / 没变
   | { k: "fileHome"; name: string }      // 本机文件的名字浏览器改不了，在文件管理器里改
   | { k: "taken"; where: "cloud" | "local" };
@@ -216,10 +217,10 @@ export function createHome(init: { home: Home; stem: string; named: boolean }, p
         if (!p || !s || s === p.stem) return { k: "same" };
         const to = ports.ids.join(p.folder, s);
         const r = await ports.gallery.rename(to);   // tryMove：撞名不覆盖、旧名进回收站
-        if (!r.ok) return { k: "taken", where: r.where };
+        if (!r.ok) return r.reason === "cancelled" ? { k: "renameCancelled" } : { k: "taken", where: r.where ?? "local" };
         setHome({ kind: "gallery", identifier: to });
         setName(s, true);
-        return { k: "renamed", stem: s, oldKept: !!r.oldKept };
+        return { k: "renamed", stem: s, oldKept: !!r.oldKept, oldKeptByUser: !!r.oldKeptByUser };
       }
       default: return assertNever(h);
     }
