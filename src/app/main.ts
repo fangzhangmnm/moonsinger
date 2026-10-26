@@ -2959,17 +2959,18 @@ function afterSignIn(): Promise<void> {
   afterSignInInFlight = (async () => {
     diagNote("auth", "afterSignIn");
     try { await requireStore().files.drainOfflineQueue(); } catch (e) { reportError(e, "log"); }   // 排着的离线操作本来就同意过
-    // 全家 2026-10-21（统筹转述 user）：登录 / 回线后不再静默推——有没传上去的先问一次；数字 = dirty.count()（从没传过的 + 传过改了没推的合计）+ 手里这首内存里还没落盘的；
-    //   「暂不」= 留在这台设备上，换歌 / 退出 / 按「存」/ 进歌库那些 consent 时刻照旧推（v0.6 起的节律不变）。面被 busy 挡住开不了 = 当「暂不」、记一笔。
+    // 2026-10-26 改（家族周账 F-98 / F-88；user 10-26「列表面」「收，救火」；CatsUp 同形）：10-21 的「问一次 → pushDirtyAll」是 / 否框撤了——
+    //   它说「还没传上去」对「传过、后来改了没推」只说对了一半，批量推完失败只剩一条报错、没有动作。现在：有没同步好的 → 问一句「去处理吗」→ 开歌库进「要处理的」视图
+    //   （gallery 0.8.8：顶部横幅 + 每首一粒可见的「处理…」，点了当场弹库的三选一面）。不再自己批量推：每一首都由人在面里选。
+    //   手里这首脏的照旧走它自己的保存节律（换歌 / 退出 / 按「存」/ 进歌库 consent 时刻推）。store 2.2.1 起谱系丢了的脏歌推前会先问云端，没人动就直接推成。
     let n = 0; try { n = await requireStore().files.dirty.count(); } catch (e) { reportError(e, "log"); }
-    if (H.home.kind === "gallery" && dirty()) n = Math.max(n, 1);
-    let go = n === 0;
+    let go = false;
     if (n > 0) {
-      try { go = (await openChoiceSheet<"push" | "later">(`有 ${n} 首歌还没传上去，现在传吗？`, "传上去 = 同步到 OneDrive 的「应用」文件夹；暂不 = 先留在这台设备上，换歌 / 退出 / 按「存」的时候照旧会推。", [{ label: "传上去", value: "push", primary: true }, { label: "暂不", value: "later" }])) === "push"; }
+      try { go = (await openChoiceSheet<"go" | "later">(`有 ${n} 首歌没同步好`, "只在这台设备上，或改了还没传上去。到歌库里逐首「处理…」，每一首都会问你用云端的还是这台的；暂不 = 先留在这台设备上。", [{ label: "去处理", value: "go", primary: true }, { label: "暂不", value: "later" }])) === "go"; }
       catch (e) { reportError(e, "log"); go = false; }
     }
-    diagNote("auth", `afterSignIn: ${n} not pushed → ${go ? "push" : "later"}`);
-    if (go) { if (H.home.kind === "gallery") { try { await es.flushAndPush(); } catch (e) { reportError(e, "warning"); } } await pushDirtyAll(); }
+    diagNote("auth", `afterSignIn: ${n} not in sync → ${go ? "gallery attention view" : "later"}`);
+    if (go) { await openGallery(); gallery?.setAttentionOnly(true); }
     await refreshOpenDoc();
     gallery?.refresh(); gallery?.renderCloud(); renderTitle();
   })().finally(() => { afterSignInInFlight = null; });

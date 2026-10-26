@@ -287,8 +287,11 @@ export function initGalleryHost(d: GalleryHostDeps) {
     d.onClosed?.();
   }
   const isOpen = () => !fullEl.hidden;
+  /** gallery 0.8.8：开歌库直接进「要处理的」视图（顶部横幅 + 每首一粒「处理…」）。登录后发现有没同步好的 → 「去处理」走这里（2026-10-26，家族周账 F-98 / F-88）。 */
+  async function openAttention(): Promise<void> { await open(); ensureMounted().handle.setAttentionOnly(true); }
   return {
-    open, close, isOpen, renderCloud,
+    open, close, isOpen, renderCloud, openAttention,
+    setAttentionOnly: (on: boolean) => gallery?.handle.setAttentionOnly(on),
     /** boot 用：上次是在歌库里离开的（刷新 / 关标签 / SW 更新重载）。 */
     wasInGallery: () => deviceKvGet(KV_SCENE) === "gallery",
     refresh: () => gallery?.handle.refresh(),
