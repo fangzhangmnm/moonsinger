@@ -1,6 +1,6 @@
 # 工单 A 验收报告：MoonSinger 上 itch + 备用版 + 模型包读出重核
 
-> created 20261103 by Claude Opus 5.5 · as-of v0.14.12 / 2026-11-03
+> created 20261103 by Claude Opus 5.5 · as-of v0.14.13 / 2026-11-03（A2 节在文末）
 > 工单 = 家族根 `ai-docs/20261103-work-orders.md`「工单 A」；规则书 = 家族根 `ai-docs/20261103-three-shapes-rulebook.md`。
 > **prod / itch 都没推，dev 也没推**（原因见 §4 第 ③ 条）。所有 commit 都在本仓 main 本地 + 库仓本地。
 
@@ -61,7 +61,7 @@
 
 - **Safari 不实测**（工单写明不做）：「存不住」那一句是在 Chromium 里模拟出来测的；data: 起不来换 blob: 的那条路在 Chromium 上走不到（data: 本来就起得来），也没测。
 - **备用版在真浏览器里双击时「存」是系统保存框**（桌面 Chromium 在 file:// 下有，存了就是一个文件、以后 Ctrl+S 写回）；无头点不了那个框，烟测把它拿掉、测的是「存 = 下载」那条路。
-- **备用版的念缓存存不住**：线程是 data: 起的（origin 为 null），每次打开第一遍要重念（设置页那一行如实说了）。
+- ~~**备用版的念缓存存不住**：线程是 data: 起的（origin 为 null），每次打开第一遍要重念（设置页那一行如实说了）。~~ **A2 更正**：Chromium 双击打开实测存得住——data: 起的线程的 IndexedDB 落在 file:// 那个共用桶里，唱一句、刷新，念缓存还在（3 条 / 300 KB 原样）。设置页那句改成只在真存不住时显示。
 - **itch 上的 MIDI / 剪贴板给不给**：没测（要真 itch 页 + 真浏览器）。
 - **库仓没推远端、没建 gh release**：MoonSinger 走的是库仓本地产物（收货脚本的离线后备路，tag 在）。JRB（工单 E）在同一台机器上收货也能用这条路；要不要推库仓 + 建 release，等一句话。
 - **`test/e2e/sync.mjs` 没改**：它对着现在的源码会卡住（见 §4 ③），那是同步那一块的期望要改，归 Fable。
@@ -97,3 +97,77 @@
 ## 7. 新图标需求
 
 无（灰入口用现有的云图标 + 文字；「检查更新」「导入模型包」画灰用现有图标）。
+
+---
+
+## A2：Fable 裁定之后续做（2026-11-03，v0.14.13）
+
+Fable 审过 A（信任根两段、policy 单测、两条守卫都过），对五道门裁定：① 推 prod 等 user（Fable 会建议先推 dev 用几天）；② 备用版放哪等 user，脚本准备到一条命令；③ sync.mjs 我来改、断言不许动、加「dist 没重打」守卫，跑绿后推 dev；④ itch / 备用版歌库画灰；⑤ 三个缓存库改名、不搬、老库探删。
+
+### A2.1 做了什么
+
+| commit | 内容 |
+|---|---|
+| `ab75508` | v0.14.13：④ ⑤ ③ ②（下面逐条） |
+| （本节那一笔） | 报告 A2 节 |
+
+### A2.2 ③ `test/e2e/sync.mjs`：动过的地方（断言一行没动）
+
+核对办法：把改前 / 改后两份里所有 `check(` / `gap(` 行抽出来 diff = 一字不差。
+
+| 位置 | 改了什么 | 断言动没动 |
+|---|---|---|
+| 登录助手 `signIn` | 原来等「传上去」钮、点了 = 批量推。现在：问句一出现（认「去处理」钮）就记 `asked`，点场景指定的那个钮（默认「暂不」）；没问句 = 什么都不点 | 没动 |
+| 场景③「推到一半页面死掉 → 回来登录」 | `signIn(A)` → `signIn(A, "去处理")` + 点这首卡片上的「处理…」（新流程设计的那条路） | 没动。**结果：「登录后补推：自愈（云端字节 = 本地字节），不弹冲突面、脏标清了」红**（见 A2.3） |
+| 场景③ 之后 | 新增两步让后面的场景接着跑：面开着就选「本地覆盖云端」（两边本来一样），再点卡片回到这首 | 没动 |
+| 场景⑥「离线改了、对面推了、回来登录」 | `reloadAndSignIn(B)` → `reloadAndSignIn(B, "暂不")` | 没动；但要说清：它原来测的是「登录后批量推撞真分叉、不弹面、留脏」，v0.14.10 起登录后不再批量推，这条路已经不存在；现在同一组断言测的是「答暂不 = 不推、不弹、留脏」 |
+| 两条断言的说明文字 | 还是旧说法（「现在传吗？」「pushAll」）——按「断言不动」没改，要改字 Fable 说一声 | 没动 |
+
+结果：43 条里过 42 条（单跑、并行都一样）。整套 E2E：68 过 · 1 红（就是这条）· `playhead` 并行红单跑绿（负载）。
+
+### A2.3 那一条红：库那一层的问题（交 Fable）
+
+场景③：上传落了地、回执没回来、页面重开、再登录。核过 **云端字节 = 本机字节**（sha256 都是 `40c8770c5f439f89…`）。新流程下三条界面路都不能悄悄自愈：
+
+- **去处理 → 卡片上「处理…」**：弹库的面「云端有新版本——在云端和本机各有一版新改动」（云端覆盖本地 / 本地覆盖云端 / 取消）。两边一模一样，这句是假话（UX 误导 = 数据安全缺陷那一类）。
+- **去处理之后什么都不点**：进歌库并不会替这首推（编辑器里这首是干净的，脏的是同步库那一层），它就挂在「要处理的」里。
+- **暂不 → 按「存」**：「存」会先重存一次（时间戳走字）再推，字节已经和云端那份不一样了 → 也弹同一个面。
+
+10-26 以前（v0.14.8 那份包）登录后是批量推：批量推不重存，按字节一比、自己就好了，所以当时这条是绿的。v0.14.10 把批量推撤了，这条自愈也一起没了。改法要动库（「处理…」这一步先比字节）或者 app 的登录流程，两样都是同步 / 数据安全那块，我没动。**所以 dev 没推**（Fable 的条件是跑绿再推）。
+
+### A2.4 ③ 防再犯：dist 新鲜度守卫
+
+- `scripts/build.sh` 末尾调 `scripts/source-stamp.mjs --write`：把进 bundle 的输入（`src/`、`vendor-pkgs/`、`package-lock.json`、`styles.css`、`vendor/internal-css`、`vendor/fflate|vue|upng`、`scripts/build.sh`、`scripts/core-hash.mjs`）的 git blob 哈希合成指纹，连同版本号、主 bundle 名写进 `dist/build-stamp.json`。
+- `test/dist-fresh.test.mjs`（在 `npm test` 里）只看 HEAD：HEAD 的戳 = HEAD 那些输入的指纹；HEAD 的 index.html 指着的主 bundle 在 HEAD 里、里面的版本号 = HEAD 的 `src/version.ts`。改着没提交、打了包没提交都不红；**源码提交了、dist 没重打 = 红**。
+- 反证：临时分支上只改 `src/score/scales.ts` 一行就提交 → 红（「源码指纹对不上」），分支已删。
+
+### A2.5 ④ itch / 备用版的歌库画灰
+
+- `src/deployment-policy.ts` 加本 app 自己的键 `library`（site true / itch false / local false），`test/deployment.test.mjs` 逐格 + 消费者守卫自然盖住。
+- 消费者：`main.ts` 歌库钮（灰 + 点了一行「歌库只在官网版里有（sing.weebpaint.com）：这里的歌没有浏览器外的家——『存』= 下载成 .mxl 文件，『打开』= 选文件」+「去官网」钮）、开局不进歌库、`ensureAttached` 再挡一道（万一别的路走到也不建库）。文案在 `site-hint.ts`（`libSiteTitle`，`SITE_URL` 插值）。
+- 夹具：itch 18/0、备用版 23/0，新加三条：歌库钮灰、点了那一行 +「去官网」且不进歌库、**没建 store 的 IndexedDB**（只看得到 `…speech` 念缓存库）。
+- 官网没登录时歌库只在浏览器里：按 Fable 说的这轮没动。
+
+### A2.6 ⑤ 三个派生缓存库改名
+
+- 名字唯一来源 = `src/config.ts`：`APP_NS = "moonsinger-5b1e7c0a92d34f6e"`、`CACHE_DBS = { thumbs, facts, speech } = "<APP_NS>.<用途>"`、`LEGACY_CACHE_DBS` = 三个老名字。建库处（`gallery-host.ts`、`singer/worker.ts`）都引它。
+- 老库：`factory-reset.ts dropLegacyCacheDbs()`——照 WeebPaint `_openLegacyIfExists`：无版本号 open，不在就触发 oldVersion 0 的升级、当场 abort（不建）；在 = 关掉再删，被别的标签页占着 = 这次算没删成、下次再来。`main.ts` 在空闲片里一页一次调；删了就进黑匣子 + 提示一次「念缓存和封面缓存换了新名字，会重新生成一次（歌不受影响）」。还原出厂也清老名字（有才删）。不搬。
+- E2E `test/e2e/legacy-dbs.mjs`（登记在 store 区）6/6：没有老库时一个老名字都不会被建出来；造三个老库 + 一个别人的库 → 重开、空闲 → 三个老库没了、别人的还在、黑匣子记着；再开不会重新长出来。
+- 跟着改的守卫（强度不变，都是「钉住名字」从老名字钉到新名字）：`store-wiring.test.mjs`（钉 `THUMB_DB = CACHE_DBS.thumbs` + `CACHE_DBS.thumbs` 就是 `moonsinger-5b1e7c0a92d34f6e.thumbs`）、`factory-reset.test.ts`（钉建库处引 `CACHE_DBS`、`OWN_DBS` = 它、都在 GUID 前缀下、老名字就是那三个）、`namespace.test.mjs`（模板里的 `${APP_NS}` 代回去再认 + `CACHE_DBS` 逐个认）、`storage-whitelist.test.mjs`（只改了说明文字）。
+- 披露：commit 说明 + 本仓 CLAUDE.md + 上面那句提示。
+
+### A2.7 ② 备用版推送脚本（写好、没执行）
+
+`bash scripts/push-local.sh [vX.Y.Z] [--only=itch|github]`：跟 prod 守卫（比 tree）→ 打备用版 + 跑烟测（红就停）→ `.local-build/MoonSinger-<版本>.zip` → butler 推 itch `local` 下载条目（首推后 itch 后台这一条**不勾**「在浏览器里玩」）→ GitHub release `<版本>`（--target prod）挂 zip，已有就补传。要 user 先做一次：`tools/butler/butler login`、`gh auth login`（应该都登过）。
+
+### A2.8 还卡着的（人话）
+
+1. **同步测试那一条红（等 Fable）**：「推到一半页面死掉、回来登录」这种情况，现在的流程里没有一条路能自己愈合——两边其实一模一样，可是点「处理…」会说「云端和本机各有一版新改动」，让人在两份一样的东西里挑一份。修要动同步库或登录流程，归 Fable。在它定之前开发版没推。
+2. **推正式版 / itch / 备用版**：照旧等 user。备用版的推送脚本已经准备好，一条命令。
+
+### A2.9 Fable 要看的
+
+- 「动过的断言」= A2.2 那张表。
+- 新守卫：`test/dist-fresh.test.mjs` + `scripts/source-stamp.mjs`；跟着改名动过的四个守卫见 A2.6 最后一条。
+- 老库探删：`src/app/factory-reset.ts` 里 `legacyExists` / `dropIfExists` / `dropLegacyCacheDbs`。
+
