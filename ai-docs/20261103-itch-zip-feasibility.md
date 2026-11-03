@@ -115,3 +115,7 @@ itch 的前提（WeebPaint `src/remember-password.ts` 2026-10-17 已记）：**�
 - user「wishlist让weebpaint也这么学，记账」→ 家族周账 F-139（wishlist）+ WeebPaint 便条 `ai-docs/inbox/20261103-from-moonsinger-double-click-folder.md`。
 - Safari 为什么不行（文献 = WeebPaint `ai-docs/20260825-localfile-knight-survey.md` §5.1，没实测；user 设备里没有 Mac）：同一个问题（双击打开的网页互相是陌生邻居），三家三种答法——Chromium 让所有双击打开的网页共用一份存储（能用、但互相看得见）；Firefox 按文件夹隔开；Safari 干脆不给，一碰存储就 SecurityError（除非开发者菜单里关掉本地文件限制）。另外 Safari 不让 data: 地址起 worker（blob 可），而 Chromium 双击时 blob 起不了出声线程——两家要的起法正好相反。老实脚本本身 Safari 照样能载。
 - 如果做：Safari 双击打开时先不碰存储、认出来就整页说「请用 Chrome / Edge 打开，或去官网装」（做不到的明说），不白屏。真要支持 Safari = 存储处处兜 + 线程按浏览器挑起法 + 找一台 Mac 真机验。
+
+## 8. 往后看家族推荐稿（2026-11-03 续）
+
+user「全家对齐，包括weebpaint记账和未来的catsup」→ 三种形态（官网 / itch 内嵌 / 备用版）的存储行为 + 设备接口提到家族级：家族根 `ai-docs/20261103-three-shapes-storage-contract.md`（家族周账 F-140）。本文 §4 的 itch 逐条以那份为准；那份定稿前本仓不动代码。顺带：MoonSinger 的登录不认得自己被别的页面套着（官网没禁止被套），推荐稿 §4 记着。
