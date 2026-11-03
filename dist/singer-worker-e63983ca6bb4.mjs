@@ -1235,6 +1235,10 @@ function createPackStore(deps) {
       sha.update(new Uint8Array(await b.slice(o, Math.min(o + SLICE, b.size)).arrayBuffer()));
     return sha.hex();
   }
+  const verifiedBlobs = /* @__PURE__ */ new Map();
+  const forget = (slug) => {
+    verifiedBlobs.delete(slug);
+  };
   async function cachedChunkSizes(slug, m) {
     const cache = await openCache();
     const sizes = [];
@@ -1245,6 +1249,7 @@ function createPackStore(deps) {
     return sizes;
   }
   async function putChunk(slug, name, bytes) {
+    forget(slug);
     const cache = await openCache();
     const size = bytes instanceof Blob ? bytes.size : bytes.length;
     await cache.put(keyOf(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
@@ -1268,6 +1273,7 @@ function createPackStore(deps) {
     const marker = await cache.match(keyOf(slug, "verified.json"));
     if (!marker || (await marker.json()).packId === packId)
       return;
+    forget(slug);
     for (const c of m.chunks)
       await cache.delete(keyOf(slug, c.name));
     await cache.delete(keyOf(slug, "verified.json"));
@@ -1393,6 +1399,7 @@ function createPackStore(deps) {
     return Promise.all(slugs.map(status));
   }
   async function deletePack(slug) {
+    forget(slug);
     const { manifest: m } = manifestOf(slug);
     const cache = await openCache();
     for (const c of m.chunks)
@@ -1410,6 +1417,9 @@ function createPackStore(deps) {
         await deletePack(slug);
     },
     async chunks(slug) {
+      const memo = verifiedBlobs.get(slug);
+      if (memo)
+        return memo.slice();
       if (!(await status(slug)).ready)
         throw new Error("pack-missing");
       const { manifest: m } = manifestOf(slug);
@@ -1419,9 +1429,16 @@ function createPackStore(deps) {
         const r = await cache.match(keyOf(slug, c.name));
         if (!r)
           throw new Error("pack-missing");
-        out.push(await r.blob());
+        const b = await r.blob();
+        if (b.size !== c.bytes || await hashBlob(b) !== c.sha256) {
+          await cache.delete(keyOf(slug, c.name));
+          await cache.delete(keyOf(slug, "verified.json"));
+          throw new Error(`pack-corrupt: ${slug}/${c.name} failed sha256 on read (cache tampered or corrupted; dropped it, download or import again)`);
+        }
+        out.push(b);
       }
-      return out;
+      verifiedBlobs.set(slug, out);
+      return out.slice();
     }
   };
 }
@@ -7933,10 +7950,31 @@ var heapNow = () => {
 };
 var baseHeap;
 var memNow = () => ({ wasm: heapNow(), cache: speech.used, base: baseHeap });
-var WORLD = new URL("../vendor/world/", import.meta.url);
+var worldBase = () => new URL("../vendor/world/", import.meta.url);
+var hostFiles = false;
+var needSeq = 0;
+var needs = /* @__PURE__ */ new Map();
+function hostGet(path, sha2562) {
+  return new Promise((ok, fail) => {
+    const nid = ++needSeq;
+    needs.set(nid, { ok, fail });
+    self.postMessage({ type: "need", nid, path, ...sha2562 ? { sha256: sha2562 } : {} });
+  });
+}
+var hostPacks = /* @__PURE__ */ new Map();
 var bases = ["https://fangzhangmnm.github.io/pwa-models"];
 var store = createPackStore({ packs: PACKS });
 async function ensurePacks(slugs, what, say) {
+  if (hostFiles) {
+    for (const slug of slugs) {
+      if (hostPacks.has(slug)) continue;
+      say(`\u4ECE\u6587\u4EF6\u5939\u8BFB${what}`);
+      const blobs = [];
+      for (const c of PACKS[slug].manifest.chunks) blobs.push(new Blob([await hostGet(`pwa-models/packs/${slug}/${c.name}`, c.sha256)]));
+      hostPacks.set(slug, blobs);
+    }
+    return;
+  }
   if ((await store.status(slugs)).every((s) => s.ready)) return;
   let last = null;
   for (const base of bases) {
@@ -7949,11 +7987,24 @@ async function ensurePacks(slugs, what, say) {
   }
   throw new Error(`${what}\u4E0B\u8F7D\u4E0D\u4E0B\u6765\uFF08\u8BD5\u8FC7 ${bases.join("\u3001")}\uFF09\uFF1A${last?.message ?? last}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u6A21\u578B\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165`);
 }
+async function chunksOf(slug) {
+  if (hostFiles) {
+    const b = hostPacks.get(slug);
+    if (!b) throw new Error("pack-missing");
+    return b;
+  }
+  try {
+    return await store.chunks(slug);
+  } catch (e) {
+    if (/^pack-corrupt/.test(e?.message ?? "")) throw new Error(`\u7F13\u5B58\u91CC\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u548C\u6E05\u5355\u5BF9\u4E0D\u4E0A\uFF08\u88AB\u6539\u8FC7\u6216\u574F\u4E86\uFF09\uFF0C\u574F\u7684\u90A3\u4E00\u7247\u5DF2\u7ECF\u4E22\u6389\uFF1A\u518D\u5531\u4E00\u6B21\u4F1A\u91CD\u65B0\u4E0B\u8F7D\uFF08${e.message}\uFF09`);
+    throw e;
+  }
+}
 async function packFile(slug, path) {
   const files = PACKS[slug].manifest.files;
   const f = files.find((x) => x.path === path);
   if (!f) throw new Error(`${slug}: \u5305\u91CC\u6CA1\u6709 ${path}`);
-  const piece = new Blob(await store.chunks(slug)).slice(f.offset, f.offset + f.bytes);
+  const piece = new Blob(await chunksOf(slug)).slice(f.offset, f.offset + f.bytes);
   if (!path.endsWith(".gz")) return new Uint8Array(await piece.arrayBuffer());
   return new Uint8Array(await new Response(piece.stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
 }
@@ -7970,7 +8021,13 @@ var speechStore = () => storeP ??= (diskBudget <= 0 ? Promise.resolve(null) : op
   st?.setBudget(diskBudget);
   return st;
 }).catch(() => null);
-var hex16 = async (bytes) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
+var hex16 = async (bytes) => {
+  try {
+    return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    return new Sha256().update(bytes).hex().slice(0, 16);
+  }
+};
 var bootMs = {};
 async function loadEngine(say) {
   const V = SINGER.voice, JA = SINGER.lang.ja;
@@ -7996,7 +8053,7 @@ async function loadEngine(say) {
   say("\u52A0\u8F7D\u65E5\u8BED\u524D\u7AEF");
   const Module2 = await ojt_default({ wasmBinary: await packFile(JA, "ja/ojt.wasm.gz"), print: () => {
   }, printErr: () => {
-  } });
+  }, ...hostFiles ? { locateFile: (p) => p } : {} });
   mountDictionaryBytes(Module2, { sys: await packFile(JA, "ja/sys.dic.gz"), matrix: await packFile(JA, "ja/matrix.bin.gz"), char: await packFile(JA, "ja/char.bin.gz"), unk: await packFile(JA, "ja/unk.dic.gz") });
   const ja = createJaFrontend(Module2, "/dic", { naniModel: await packJson(JA, "ja/nani-model.json.gz") });
   lap("jaFrontend");
@@ -8047,15 +8104,32 @@ async function loadEngine(say) {
     phonemizeEnWords: (words) => en2.phonemizeWords(words)
   });
   say("\u52A0\u8F7D WORLD");
-  const { default: createWorld } = await import(
-    /* @vite-ignore */
-    new URL("world.mjs", WORLD).href
-  );
-  const wasm = await fetch(new URL("world.wasm", WORLD));
-  if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
-  const worldBytes = new Uint8Array(await wasm.arrayBuffer());
+  let createWorld, worldBytes;
+  if (hostFiles) {
+    const js = await hostGet("vendor/world/world.mjs"), url = URL.createObjectURL(new Blob([js], { type: "text/javascript" }));
+    try {
+      ({ default: createWorld } = await import(
+        /* @vite-ignore */
+        url
+      ));
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+    worldBytes = await hostGet("vendor/world/world.wasm");
+  } else {
+    ({ default: createWorld } = await import(
+      /* @vite-ignore */
+      new URL("world.mjs", worldBase()).href
+    ));
+    const wasm = await fetch(new URL("world.wasm", worldBase()));
+    if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
+    worldBytes = new Uint8Array(await wasm.arrayBuffer());
+  }
   if (store2) speech.attachStore(store2, `${PACKS[V].packId.slice(0, 16)}:${PACKS[SINGER.runtime].packId.slice(0, 16)}:w${await hex16(worldBytes)}:v${SPEECH_FORMAT}`);
-  const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: worldBytes })));
+  const world = speech.wrapWorld(wrapWorld(await createWorld(hostFiles ? { locateFile: (p) => p, instantiateWasm: (imports, done2) => {
+    void WebAssembly.instantiate(worldBytes, imports).then((r) => done2(r.instance));
+    return {};
+  } } : { wasmBinary: worldBytes })));
   lap("world");
   baseHeap = heapNow();
   return { piper, world, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
@@ -8063,6 +8137,18 @@ async function loadEngine(say) {
 var cancelled = /* @__PURE__ */ new Set();
 self.onmessage = async (ev) => {
   const q2 = ev.data;
+  if (q2.type === "init") {
+    hostFiles = q2.hostFiles;
+    return;
+  }
+  if (q2.type === "file") {
+    const n = needs.get(q2.nid);
+    needs.delete(q2.nid);
+    if (!n) return;
+    if (q2.bytes) n.ok(new Uint8Array(q2.bytes));
+    else n.fail(new Error(q2.error ?? "\u4E3B\u7EBF\u7A0B\u6CA1\u8BFB\u5230\u8FD9\u4E2A\u6587\u4EF6"));
+    return;
+  }
   const post = (m, transfer = []) => self.postMessage(m, transfer);
   if (q2.type === "cancel") {
     cancelled.add(q2.id);
@@ -8177,4 +8263,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-c79b9ef6990f.mjs.map
+//# sourceMappingURL=singer-worker-e63983ca6bb4.mjs.map

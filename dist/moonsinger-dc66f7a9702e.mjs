@@ -2644,7 +2644,39 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.8-2026-10-21";
+var APP_VERSION = "v0.14.12-2026-11-03";
+
+// src/deployment.ts
+function detectDeployment(protocol, marker) {
+  if (protocol === "file:") return "local";
+  if (marker === "itch") return "itch";
+  if (marker === "local") return "local";
+  return "site";
+}
+var memo = null;
+function deployment() {
+  if (memo) return memo;
+  const g3 = globalThis;
+  memo = detectDeployment(g3.location?.protocol, g3.document?.querySelector?.('meta[name="deployment"]')?.getAttribute("content"));
+  return memo;
+}
+function embedded() {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
+// src/deployment-policy.ts
+var TABLE = {
+  site: { cloud: true, serviceWorker: true, siteHint: false },
+  itch: { cloud: false, serviceWorker: false, siteHint: true },
+  local: { cloud: false, serviceWorker: false, siteHint: true }
+};
+function currentPolicy() {
+  return TABLE[deployment()];
+}
 
 // src/app/pwa-shell.ts
 var LOCAL_HOSTS = /* @__PURE__ */ new Set(["localhost", "127.0.0.1", "::1", ""]);
@@ -2730,7 +2762,7 @@ function initPwaShell(opts) {
     if (document.visibilityState === "visible") onFg();
   });
   window.addEventListener("focus", onFg);
-  if ("serviceWorker" in navigator && !LOCAL_HOSTS.has(location.hostname)) {
+  if (currentPolicy().serviceWorker && "serviceWorker" in navigator && !LOCAL_HOSTS.has(location.hostname)) {
     navigator.serviceWorker.addEventListener("message", (e10) => {
       if (e10.data?.type === "asset-updated") opts.onUpdateAvailable();
     });
@@ -2836,8 +2868,8 @@ function degreeStepIndex(degree2, fifths) {
 function placeDegree(degree2, fifths, prev, dir) {
   const s10 = degreeStepIndex(degree2, fifths);
   const ref = diatonicIndex(prev ?? HOME);
-  const base3 = Math.floor(ref / 7) * 7 + s10;
-  const cands3 = [base3 - 7, base3, base3 + 7];
+  const base2 = Math.floor(ref / 7) * 7 + s10;
+  const cands3 = [base2 - 7, base2, base2 + 7];
   let d3;
   if (dir === "near") d3 = cands3.reduce((a10, b3) => Math.abs(b3 - ref) < Math.abs(a10 - ref) ? b3 : a10);
   else if (dir === "up") d3 = cands3.find((c10) => c10 > ref);
@@ -3598,9 +3630,9 @@ function withArt(t10, a10, on2) {
     set.add(a10);
   } else set.delete(a10);
   const art = ARTS.filter((x2) => set.has(x2));
-  const base3 = !set.has("breath") && t10.inhale ? (({ inhale: _i, ...r10 }) => r10)(t10) : t10;
-  if (art.length) return { ...base3, art };
-  const { art: _a2, ...rest } = base3;
+  const base2 = !set.has("breath") && t10.inhale ? (({ inhale: _i, ...r10 }) => r10)(t10) : t10;
+  if (art.length) return { ...base2, art };
+  const { art: _a2, ...rest } = base2;
   return rest;
 }
 var selNoteIdx = (st2) => {
@@ -4679,20 +4711,20 @@ function movePart(st2, partId, d3) {
   [blocks[bi], blocks[bj]] = [blocks[bj], blocks[bi]];
   return { ...st2, song: keepSheetTempos(st2.song, { ...st2.song, parts: blocks.flat() }) };
 }
-function setPartHost(st2, partId, host) {
+function setPartHost(st2, partId, host2) {
   const ps = st2.song.parts, me = ps.find((p2) => p2.id === partId);
   if (!me) return st2;
-  if (host === null) {
+  if (host2 === null) {
     if (!me.host) return st2;
     const { host: _h, ...rest } = me;
     return { ...st2, song: { ...st2.song, parts: ps.map((p2) => p2.id === partId ? rest : p2) } };
   }
-  const h2 = ps.find((p2) => p2.id === host);
+  const h2 = ps.find((p2) => p2.id === host2);
   if (!h2 || h2.id === partId || h2.host || ps.some((p2) => p2.host === partId)) return st2;
   const others = ps.filter((p2) => p2.id !== partId), hi = others.indexOf(h2);
   let at2 = hi + 1;
-  while (at2 < others.length && others[at2].host === host) at2++;
-  const parts = familyOrder([...others.slice(0, at2), { ...me, host }, ...others.slice(at2)]);
+  while (at2 < others.length && others[at2].host === host2) at2++;
+  const parts = familyOrder([...others.slice(0, at2), { ...me, host: host2 }, ...others.slice(at2)]);
   return { ...st2, song: keepSheetTempos(st2.song, { ...st2.song, parts }) };
 }
 function addTrack(st2, paperId, partId) {
@@ -5983,16 +6015,16 @@ function describeGroove(s10, beats, beatType) {
     return `\u4E24\u5C0F\u8282\u4E00\u8F6E\uFF1A\u7B2C\u4E00\u5C0F\u8282 ${bar2(0)}\uFF1B\u7B2C\u4E8C\u5C0F\u8282 ${bar2(1)}\uFF1B\u91CD\u7684\u683C\u5B50\uFF08\u5C0F\u8282-\u7B2C\u51E0\u4E2A\u5341\u516D\u5206\uFF09${hits.join(" ")}`;
   }
   const beatsTxt = starts.map((st2, k2) => `${BEAT_NO[k2] ?? k2 + 1}\u62CD ${WORD(tb2.weights[st2])}`).join(" \xB7 ");
-  const subs = [], finer = [];
+  const subs2 = [], finer = [];
   starts.forEach((st2, k2) => {
-    for (let q2 = 1; q2 < bg.groups[k2]; q2++) (bg.sub >= 1 && Number.isInteger(bg.sub) && q2 % bg.sub === 0 ? subs : finer).push(tb2.weights[st2 + q2]);
+    for (let q2 = 1; q2 < bg.groups[k2]; q2++) (bg.sub >= 1 && Number.isInteger(bg.sub) && q2 % bg.sub === 0 ? subs2 : finer).push(tb2.weights[st2 + q2]);
   });
   const one = (xs) => {
     const ws2 = [...new Set(xs.map(WORD))];
     return ws2.length === 1 ? ws2[0] : ws2.join(" / ");
   };
   const subName = bg.groups.some((g3) => g3 === 6) ? "\u62CD\u91CC\u7684\u516B\u5206" : "\u534A\u62CD";
-  return `${beatsTxt}${subs.length ? `\uFF1B${subName} ${one(subs)}` : ""}${finer.length ? `\uFF1B\u66F4\u7EC6\u7684 ${one(finer)}` : ""}`;
+  return `${beatsTxt}${subs2.length ? `\uFF1B${subName} ${one(subs2)}` : ""}${finer.length ? `\uFF1B\u66F4\u7EC6\u7684 ${one(finer)}` : ""}`;
 }
 function classicalWeights(beats, beatType) {
   const grid = beats * 16 / beatType;
@@ -6469,8 +6501,8 @@ var NAME = {
   NumpadDivide: "\u5C0F\u952E\u76D8 /"
 };
 function chordName(c10) {
-  const base3 = NAME[c10.code] ?? c10.code.replace(/^Digit/, "").replace(/^Key/, "").replace(/^Numpad(\d)$/, "\u5C0F\u952E\u76D8 $1");
-  return `${c10.mod ? "Ctrl / \u2318+" : ""}${c10.alt ? "Alt+" : ""}${c10.shift ? "Shift+" : ""}${base3}`;
+  const base2 = NAME[c10.code] ?? c10.code.replace(/^Digit/, "").replace(/^Key/, "").replace(/^Numpad(\d)$/, "\u5C0F\u952E\u76D8 $1");
+  return `${c10.mod ? "Ctrl / \u2318+" : ""}${c10.alt ? "Alt+" : ""}${c10.shift ? "Shift+" : ""}${base2}`;
 }
 function hint(id2) {
   const b3 = BINDINGS.find((x2) => x2.id === id2);
@@ -6481,7 +6513,7 @@ function matches(c10, e10) {
   if (/^Numpad\d$/.test(c10.code) && !/^\d$/.test(e10.key)) return false;
   return true;
 }
-function route(e10, where, base3 = "write") {
+function route(e10, where, base2 = "write") {
   if (e10.isComposing) return null;
   const tryWhere = (w2) => {
     for (const b3 of BINDINGS) {
@@ -6491,7 +6523,7 @@ function route(e10, where, base3 = "write") {
     }
     return null;
   };
-  return tryWhere(where) ?? (where === "impro" ? tryWhere(base3) : null);
+  return tryWhere(where) ?? (where === "impro" ? tryWhere(base2) : null);
 }
 function isSoundKey(e10) {
   return BINDINGS.some((b3) => b3.sound && b3.keys.some((c10) => c10.code === e10.code));
@@ -6993,11 +7025,11 @@ function gainSegments(tokens, map, spec, bounds, groove) {
   for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, map)) {
     const gw = vel ? 0 : groove?.get(index) ?? 0;
     const L2 = levels?.get(index), soft = tok.kind === "note" && !vel ? artOf(tok).includes("ghost") ? spec.ghostDb ?? M.ghostDb : artOf(tok).includes("unstress") ? spec.unstressDb ?? M.unstressDb : gw < 0 ? -gw * (spec.unstressDb ?? M.unstressDb) : 0 : 0;
-    const base3 = (L2 ? L2.at0 : 0) + soft, baseEnd = (L2 ? L2.at1 : 0) + soft;
-    if (base3 !== 0 || baseEnd !== 0) any = true;
+    const base2 = (L2 ? L2.at0 : 0) + soft, baseEnd = (L2 ? L2.at1 : 0) + soft;
+    if (base2 !== 0 || baseEnd !== 0) any = true;
     if (tok.kind !== "note") {
-      if (baseEnd !== base3) ramp(base3, baseEnd, t02, t12);
-      else segs.push({ t0: t02, t1: t12, dB: base3 });
+      if (baseEnd !== base2) ramp(base2, baseEnd, t02, t12);
+      else segs.push({ t0: t02, t1: t12, dB: base2 });
       continue;
     }
     const art = artOf(tok);
@@ -7031,22 +7063,22 @@ function gainSegments(tokens, map, spec, bounds, groove) {
     }
     if (art.includes("sfz") && !vel) {
       const e10 = Math.min(t12, t02 + (spec.sfzSec ?? M.sfzSec)), b3 = spec.sfzDb ?? M.sfzDb;
-      ramp(base3 + b3, baseEnd === base3 ? base3 : base3 + (baseEnd - base3) * (e10 - t02) / Math.max(1e-9, t12 - t02), t02, e10);
+      ramp(base2 + b3, baseEnd === base2 ? base2 : base2 + (baseEnd - base2) * (e10 - t02) / Math.max(1e-9, t12 - t02), t02, e10);
       cur = e10;
       any = true;
     }
     const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : art.includes("stress") ? spec.stressDb ?? M.stressDb : gw > 0 ? gw * (spec.stressDb ?? M.stressDb) : 0;
     if (boost) {
       const e10 = Math.min(t12, t02 + (spec.accentSec ?? M.accentSec));
-      segs.push({ t0: t02, t1: e10, dB: base3 + boost });
+      segs.push({ t0: t02, t1: e10, dB: base2 + boost });
       cur = e10;
       any = true;
     }
     if (t12 > cur) {
-      const a02 = base3 + (baseEnd - base3) * (cur - t02) / Math.max(1e-9, t12 - t02);
+      const a02 = base2 + (baseEnd - base2) * (cur - t02) / Math.max(1e-9, t12 - t02);
       if (sw2) shaped(a02, baseEnd, cur, t12);
-      else if (baseEnd !== base3) ramp(a02, baseEnd, cur, t12);
-      else segs.push({ t0: cur, t1: t12, dB: base3 });
+      else if (baseEnd !== base2) ramp(a02, baseEnd, cur, t12);
+      else segs.push({ t0: cur, t1: t12, dB: base2 });
     }
   }
   return any ? segs : null;
@@ -7127,16 +7159,16 @@ function dynOverridden(tokens, bounds) {
   });
   if (!fpNotes.size) return out;
   const levels = (ts2) => [...dynLevels(ts2, void 0, T2, 0, 0.5, bounds)].filter(([k2]) => !fpNotes.has(k2)).map(([k2, l10]) => `${k2}:${l10.at0}:${l10.at1}`).join("|");
-  let base3 = null;
+  let base2 = null;
   for (let i10 = 0; i10 < tokens.length; i10++) {
     const t10 = tokens[i10];
     if (t10.kind !== "dyn") continue;
     let j2 = i10 + 1;
     while (j2 < tokens.length && !isTimed(tokens[j2])) j2++;
     if (!fpNotes.has(j2)) continue;
-    base3 ??= levels(tokens);
+    base2 ??= levels(tokens);
     const alt = (v) => levels(tokens.map((x2, k2) => k2 === i10 ? { ...t10, value: v } : x2));
-    if (alt(t10.value === "pp" ? "ff" : "pp") === base3 && alt(t10.value === "mf" ? "p" : "mf") === base3) out.add(i10);
+    if (alt(t10.value === "pp" ? "ff" : "pp") === base2 && alt(t10.value === "mf" ? "p" : "mf") === base2) out.add(i10);
   }
   return out;
 }
@@ -7475,7 +7507,7 @@ function resolveSongClefs(song) {
 var HEAD_ARTS = ["ghost", "whisper"];
 var SWITCH = 5;
 function planHands(tracks, wantsGrand2, homes, force = false) {
-  const host = tracks[0] ?? [], time = host.find((t10) => t10.kind === "time");
+  const host2 = tracks[0] ?? [], time = host2.find((t10) => t10.kind === "time");
   const bar2 = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t10) => Math.floor(t10 / bar2 + 1e-9);
   const med = (xs) => {
     const a10 = [...xs].sort((x2, y2) => x2 - y2);
@@ -7540,7 +7572,7 @@ function planHands(tracks, wantsGrand2, homes, force = false) {
 }
 function mergeTracks(tracks, opt = {}) {
   const { keyOf: keyOf2, pick } = opt, barsOnly = opt.marks === "bars";
-  const host = tracks[0] ?? [], head = host.slice(0, headLen(host));
+  const host2 = tracks[0] ?? [], head = host2.slice(0, headLen(host2));
   const evs = [], marks = [];
   let end = 0;
   tracks.forEach((toks, m2) => {
@@ -7720,8 +7752,8 @@ function notate(dur) {
   }
   return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
 }
-var flagLevel = (base3) => base3 >= TPQ ? 0 : Math.round(Math.log2(TPQ / base3));
-var baseWidth = (base3) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base3 / TPQ));
+var flagLevel = (base2) => base2 >= TPQ ? 0 : Math.round(Math.log2(TPQ / base2));
+var baseWidth = (base2) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base2 / TPQ));
 var SLOT = { phrase: -1, bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, head: 4, chunk: 5 };
 var CLEF_CUE = 0.72;
 var CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
@@ -7990,23 +8022,23 @@ function engrave(song, o10) {
   }
   let arrangement = null, arrLast = 0;
   if (!o10.onlyPaper) {
-    const as2 = P2(1.25), wOf = (t10, size) => o10.measureLyric(t10) * size / LYRIC_EM, row2 = Math.max(lines.length, 1), base3 = y0 + row2 * cs2 * 1.35;
+    const as2 = P2(1.25), wOf = (t10, size) => o10.measureLyric(t10) * size / LYRIC_EM, row2 = Math.max(lines.length, 1), base2 = y0 + row2 * cs2 * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
-    const label = "\u7F16\u6392\u3000", lw2 = wOf(label, 1.25), x0 = P2(MARGIN) + lw2, avail = o10.width - P2(2 * MARGIN) - lw2;
-    prims.push({ t: "text", x: P2(MARGIN), y: base3, s: label, cls: txt ? "arr-label" : "arr-label empty", size: as2, anchor: "start" });
-    arrLast = base3;
+    const label = "\u7F16\u6392\u3000", lw2 = wOf(label, 1.25), x0 = P2(MARGIN) + lw2, avail2 = o10.width - P2(2 * MARGIN) - lw2;
+    prims.push({ t: "text", x: P2(MARGIN), y: base2, s: label, cls: txt ? "arr-label" : "arr-label empty", size: as2, anchor: "start" });
+    arrLast = base2;
     if (txt) {
-      prims.push({ t: "text", x: x0, y: base3, s: txt, cls: "arr", size: as2, anchor: "start" });
+      prims.push({ t: "text", x: x0, y: base2, s: txt, cls: "arr", size: as2, anchor: "start" });
       if (arr.issues.length) {
-        const why = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? ` \u7B49 ${arr.issues.length} \u5904` : ""}`, tw2 = wOf(txt, 1.25) + P2(0.8), fits = tw2 + wOf(why, 1.1) <= avail;
-        prims.push({ t: "text", x: fits ? x0 + tw2 : x0, y: fits ? base3 : base3 + cs2 * 1.35, s: why, cls: "arr-issue", size: P2(1.1), anchor: "start" });
-        if (!fits) arrLast = base3 + cs2 * 1.35;
+        const why = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? ` \u7B49 ${arr.issues.length} \u5904` : ""}`, tw2 = wOf(txt, 1.25) + P2(0.8), fits = tw2 + wOf(why, 1.1) <= avail2;
+        prims.push({ t: "text", x: fits ? x0 + tw2 : x0, y: fits ? base2 : base2 + cs2 * 1.35, s: why, cls: "arr-issue", size: P2(1.1), anchor: "start" });
+        if (!fits) arrLast = base2 + cs2 * 1.35;
       }
     } else if (o10.titlePlaceholder) {
       const full = "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09", short = "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D";
-      prims.push({ t: "text", x: x0, y: base3, s: wOf(full, 1.25) <= avail ? full : short, cls: "arr-empty", size: as2, anchor: "start" });
+      prims.push({ t: "text", x: x0, y: base2, s: wOf(full, 1.25) <= avail2 ? full : short, cls: "arr-empty", size: as2, anchor: "start" });
     }
-    arrangement = { x: x0 - P2(0.3), y: base3 - as2 * 1.15, w: avail + P2(0.3), h: as2 * 1.6, baseline: base3, size: as2 };
+    arrangement = { x: x0 - P2(0.3), y: base2 - as2 * 1.15, w: avail2 + P2(0.3), h: as2 * 1.6, baseline: base2, size: as2 };
   }
   let yCur = Math.max(TOP2 + P2(TITLE_H + 0.5), credits && lines.length ? credits.y + credits.h + P2(0.3) : 0, arrangement ? arrLast + P2(0.8) : 0);
   const ensure = (h2) => {
@@ -8251,9 +8283,9 @@ function engrave(song, o10) {
     for (const q2 of per) {
       const seen = /* @__PURE__ */ new Map();
       for (const u2 of q2.units) {
-        const sl2 = u2.kind === "nav" ? u2.slot : SLOT[u2.kind], base3 = `${u2.tick}:${sl2}`, n10 = seen.get(base3) ?? 0;
-        seen.set(base3, n10 + 1);
-        const key = `${base3}:${n10}`;
+        const sl2 = u2.kind === "nav" ? u2.slot : SLOT[u2.kind], base2 = `${u2.tick}:${sl2}`, n10 = seen.get(base2) ?? 0;
+        seen.set(base2, n10 + 1);
+        const key = `${base2}:${n10}`;
         let c10 = colMap.get(key);
         if (!c10) {
           c10 = { tick: u2.tick, slot: sl2, n: n10, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false, phrase: false };
@@ -8327,11 +8359,11 @@ function engrave(song, o10) {
     const nSys = system + 1;
     for (let s10 = 0; s10 < nSys; s10++) {
       const row2 = cols.filter((c10) => c10.system === s10);
-      const end = row2.reduce((m2, c10) => Math.max(m2, c10.x + c10.w), sysStarts[s10]), avail = brk - sysStarts[s10], used = end - sysStarts[s10];
-      if (used <= avail + 1e-6 && (s10 === nSys - 1 || used < avail * 0.6)) continue;
+      const end = row2.reduce((m2, c10) => Math.max(m2, c10.x + c10.w), sysStarts[s10]), avail2 = brk - sysStarts[s10], used = end - sysStarts[s10];
+      if (used <= avail2 + 1e-6 && (s10 === nSys - 1 || used < avail2 * 0.6)) continue;
       const gw = chunkW(row2);
       if (!gw) continue;
-      const k2 = (avail - used) / gw;
+      const k2 = (avail2 - used) / gw;
       let xx = sysStarts[s10];
       for (const c10 of row2) {
         c10.x = xx;
@@ -8486,7 +8518,7 @@ function engrave(song, o10) {
         const pr = lowOf.has(q2.p.id) ? per.findIndex((x3) => x3.p.id === lowOf.get(q2.p.id)) : r10, rEnd = (sy2) => rowOf(sy2, pr, per[pr].staves - 1);
         const f2 = sysKeys[s10].get(q2.p.id) ?? q2.head.key;
         for (let k2 = 0; k2 < q2.staves; k2++) {
-          const row2 = rowOf(s10, r10, k2), clef = q2.staves === 2 ? k2 ? "F" : "G" : clefAtSys(q2, s10), base3 = baseClef(clef);
+          const row2 = rowOf(s10, r10, k2), clef = q2.staves === 2 ? k2 ? "F" : "G" : clefAtSys(q2, s10), base2 = baseClef(clef);
           if (rows[row2]) rows[row2].x1 = P2(staffEnd[s10]);
           const pm = pmode[r10];
           for (let L2 = 0; L2 < 5; L2++) {
@@ -8496,12 +8528,12 @@ function engrave(song, o10) {
           }
           let hx = MARGIN + ind + 0.6;
           if (pm) prims.push({ t: "glyph", x: P2(hx), y: yOf(row2, MID_LINE), ch: PERC_CLEF, cls: "clef perc-clef" });
-          else prims.push({ t: "glyph", x: P2(hx), y: yOf(row2, base3 === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
+          else prims.push({ t: "glyph", x: P2(hx), y: yOf(row2, base2 === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
           if (q2.staves === 1 && !pm && !q2.vrt) clefs.push({ kind: "start", paper: paper.id, part: q2.p.id, index: clefSrcAtSys(q2, s10), system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(clefW(q2) + 0.6) });
           hx += clefW(q2) + 1;
           const keyX0 = hx;
           const fk = pm ? 0 : f2;
-          drawKeySig(row2, hx, fk, "keysig", base3);
+          drawKeySig(row2, hx, fk, "keysig", base2);
           hx += Math.abs(fk) * 1.05;
           if (s10 === 0) {
             if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row2, x: P2(keyX0 - 0.3), ...staffHit(row2), w: P2(Math.max(1.2, hx - keyX0 + 0.3)) });
@@ -8778,8 +8810,8 @@ function engrave(song, o10) {
         if (u2.kind === "clef") {
           if (q2.staves === 2) continue;
           const first = !units.some((x3) => x3.system === u2.system && x3.index >= 0 && x3.index < u2.index && x3.kind !== "ottava");
-          const base3 = baseClef(u2.clef), cls = "clef cue";
-          if (!first) prims.push({ t: "glyph", x: P2(u2.x + 0.35), y: yOf(row2, base3 === "F" ? 36 : 32), ch: CLEF_GLYPH[u2.clef], cls, size: P2(4 * CLEF_CUE) });
+          const base2 = baseClef(u2.clef), cls = "clef cue";
+          if (!first) prims.push({ t: "glyph", x: P2(u2.x + 0.35), y: yOf(row2, base2 === "F" ? 36 : 32), ch: CLEF_GLYPH[u2.clef], cls, size: P2(4 * CLEF_CUE) });
           clefs.push({ kind: "mid", paper: paper.id, part: q2.p.id, index: u2.index, system: row2, x: P2(u2.x), ...staffHit(row2), w: P2(Math.max(u2.w, 1.6)) });
           continue;
         }
@@ -9250,7 +9282,7 @@ function yOfPrim(p2) {
 }
 function toSvgParts(l10) {
   const L2 = l10.pageX?.left ?? 0, R2 = l10.pageX?.right ?? 0, W3 = l10.width + L2 + R2;
-  const open = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W3)}" height="${n(l10.height)}" viewBox="${n(-L2)} 0 ${n(W3)} ${n(l10.height)}">`;
+  const open2 = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W3)}" height="${n(l10.height)}" viewBox="${n(-L2)} 0 ${n(W3)} ${n(l10.height)}">`;
   const fs = n(4 * l10.sp), lfs = n(LYRIC_EM * l10.sp), rx2 = n(l10.sp * 0.6);
   const boxes = l10.systems.map((s10) => [s10.top, s10.bottom]);
   const buckets = Array.from({ length: boxes.length + 1 }, () => []);
@@ -9265,7 +9297,7 @@ function toSvgParts(l10) {
     }
     buckets[k2].push(primSvg(p2, fs, lfs, rx2));
   }
-  return { open, groups: buckets.map((b3, k2) => `<g data-sys="${k2 - 1}">${b3.join("")}</g>`), close: "</svg>" };
+  return { open: open2, groups: buckets.map((b3, k2) => `<g data-sys="${k2 - 1}">${b3.join("")}</g>`), close: "</svg>" };
 }
 
 // src/render/lyric-font.ts
@@ -9285,9 +9317,9 @@ var splitPunct = (v) => {
 };
 var CJK = /[\p{Script=Han}぀-ヿ]/u;
 var LyricEditor = class {
-  constructor(parent, host, layout, rerender) {
+  constructor(parent, host2, layout, rerender) {
     this.parent = parent;
-    this.host = host;
+    this.host = host2;
     this.layout = layout;
     this.rerender = rerender;
     const i10 = document.createElement("input");
@@ -9659,7 +9691,7 @@ function mountWheel(col, c10) {
   col.innerHTML = `<div class="drum-pad" style="height:${row2 * padRows}px"></div>` + Array.from({ length: n10 * copies }, (_2, r10) => `<div class="drum-item" data-i="${r10}" style="height:${row2}px">${c10.items[r10 % n10]}</div>`).join("") + `<div class="drum-pad" style="height:${row2 * padRows}px"></div>`;
   const items = [...col.querySelectorAll(".drum-item")], total = items.length;
   const raw = () => Math.max(0, Math.min(total - 1, Math.round(col.scrollTop / row2)));
-  let shown = c10.index, recenter = 0;
+  let shown2 = c10.index, recenter = 0;
   const paint = () => {
     const top = col.scrollTop, a10 = raw();
     items.forEach((el2, i10) => {
@@ -9672,8 +9704,8 @@ function mountWheel(col, c10) {
   col.addEventListener("scroll", () => {
     paint();
     const i10 = raw() % n10;
-    if (i10 !== shown) {
-      shown = i10;
+    if (i10 !== shown2) {
+      shown2 = i10;
       c10.onChange(i10);
     }
     if (c10.loop) {
@@ -9688,8 +9720,8 @@ function mountWheel(col, c10) {
     const it2 = e10.target.closest(".drum-item");
     if (!it2) return;
     const i10 = Number(it2.dataset.i) % n10;
-    if (i10 !== shown) {
-      shown = i10;
+    if (i10 !== shown2) {
+      shown2 = i10;
       c10.onChange(i10);
     }
     if (c10.onPick) c10.onPick(i10);
@@ -9701,7 +9733,7 @@ function mountWheel(col, c10) {
       if (h2 !== void 0) el2.innerHTML = h2;
     }),
     scrollTo: (i10) => {
-      shown = i10;
+      shown2 = i10;
       col.scrollTop = (i10 + mid) * row2;
       paint();
     }
@@ -9742,8 +9774,8 @@ var WHEEL_VISIBLE = 5;
 var WHEEL_ITEMS = Array.from({ length: WHEEL_MAX - WHEEL_MIN + 1 }, (_2, i10) => String(WHEEL_MIN + i10));
 var wheelIndex = (bpm) => Math.max(WHEEL_MIN, Math.min(WHEEL_MAX, Math.round(bpm))) - WHEEL_MIN;
 var MarkEditor = class {
-  constructor(parent, host, layout, rerender) {
-    this.host = host;
+  constructor(parent, host2, layout, rerender) {
+    this.host = host2;
     this.layout = layout;
     this.rerender = rerender;
     this.box = document.createElement("div");
@@ -9962,8 +9994,8 @@ var MarkEditor = class {
 // src/ui/title-editor.ts
 var TitleEditor = class {
   // 正在改编排那一行（2026-10-08 深夜 Opus 5.5）
-  constructor(parent, host, layout) {
-    this.host = host;
+  constructor(parent, host2, layout) {
+    this.host = host2;
     this.layout = layout;
     this.input = document.createElement("input");
     this.input.className = "title-input";
@@ -10126,9 +10158,9 @@ function shortName(name) {
 }
 var dispWidth = (s10) => [...s10].reduce((n10, ch2) => n10 + (/[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]/.test(ch2) ? 2 : 1), 0);
 var ABBR_W = 7;
-function fitAbbr(base3, num2 = "", W3 = ABBR_W) {
-  if (dispWidth(base3 + num2) <= W3) return base3 + num2;
-  const b3 = base3.replace(/\.\s+/g, ".");
+function fitAbbr(base2, num2 = "", W3 = ABBR_W) {
+  if (dispWidth(base2 + num2) <= W3) return base2 + num2;
+  const b3 = base2.replace(/\.\s+/g, ".");
   if (dispWidth(b3 + num2) <= W3) return b3 + num2;
   const budget = Math.max(2, W3 - dispWidth(num2)), cjk = dispWidth(b3) > [...b3].length;
   let out = "", wd = 0;
@@ -10142,10 +10174,10 @@ function fitAbbr(base3, num2 = "", W3 = ABBR_W) {
   return (cjk ? out : `${out}.`) + num2;
 }
 function partAbbr(label, o10) {
-  const m2 = / (\d+)$/.exec(label), base3 = m2 ? label.slice(0, -m2[0].length) : label, num2 = m2 ? ` ${m2[1]}` : "", low = base3.toLowerCase();
+  const m2 = / (\d+)$/.exec(label), base2 = m2 ? label.slice(0, -m2[0].length) : label, num2 = m2 ? ` ${m2[1]}` : "", low = base2.toLowerCase();
   if (o10.conceptAbbr && o10.conceptNames?.some((n10) => n10.toLowerCase() === low)) return fitAbbr(o10.conceptAbbr, num2);
-  if (o10.voice && VOICE_ABBR[base3]) return fitAbbr(VOICE_ABBR[base3], num2);
-  return fitAbbr(shortName(base3), num2);
+  if (o10.voice && VOICE_ABBR[base2]) return fitAbbr(VOICE_ABBR[base2], num2);
+  return fitAbbr(shortName(base2), num2);
 }
 
 // src/ui/score-view.ts
@@ -10161,9 +10193,9 @@ var DOUBLE_TAP_PX = 30;
 var DOUBLE_TAP_ZOOM = 2;
 var realPart = (id2) => id2.replace(/~.*$/, "");
 var ScoreView = class {
-  constructor(el2, host) {
+  constructor(el2, host2) {
     this.el = el2;
-    this.host = host;
+    this.host = host2;
     this.sheet = document.createElement("div");
     this.sheet.className = "sheet";
     this.boxEl = document.createElement("div");
@@ -10221,9 +10253,9 @@ var ScoreView = class {
       return h2;
     };
     this.handles = { start: mkHandle("start"), end: mkHandle("end") };
-    this.lyrics = new LyricEditor(this.ink, host, () => this.layoutNow(), () => this.render());
-    this.marks = new MarkEditor(this.ink, host, () => this.layoutNow(), () => this.render());
-    this.title = new TitleEditor(this.ink, host, () => this.layoutNow());
+    this.lyrics = new LyricEditor(this.ink, host2, () => this.layoutNow(), () => this.render());
+    this.marks = new MarkEditor(this.ink, host2, () => this.layoutNow(), () => this.render());
+    this.title = new TitleEditor(this.ink, host2, () => this.layoutNow());
     el2.addEventListener("pointerdown", (e10) => this.down(e10));
     el2.addEventListener("pointermove", (e10) => this.move(e10));
     el2.addEventListener("wheel", () => {
@@ -10367,22 +10399,22 @@ var ScoreView = class {
     return f2;
   }
   /** 谱面多宽时自动大小一格几 px（宿主判底座贴不贴边用：按贴底时的全宽算，和用户的缩放无关；2026-10-21）。 */
-  spaceAt(avail) {
-    return this.frameAt(avail).sp;
+  spaceAt(avail2) {
+    return this.frameAt(avail2).sp;
   }
-  frameAt(avail) {
+  frameAt(avail2) {
     const st2 = this.host.get(), paper = st2.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
-    const base3 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale;
+    const base2 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale;
     const geo = pageGeoOf(paper), page = this.host.pages?.() ? geo : null;
-    if (this.host.scroll?.()) return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base3, avail / 42 * scale)) : base3, width: Math.max(320, avail - (CONT_MARGIN.l + CONT_MARGIN.r) * base3), strict: false, page: null, margins: CONT_MARGIN };
+    if (this.host.scroll?.()) return { sp: avail2 > 0 && avail2 < 420 ? Math.max(8.5 * scale, Math.min(base2, avail2 / 42 * scale)) : base2, width: Math.max(320, avail2 - (CONT_MARGIN.l + CONT_MARGIN.r) * base2), strict: false, page: null, margins: CONT_MARGIN };
     const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
-    const extra = margins.l + margins.r, want = Math.ceil((lineSp(paper) + extra) * base3);
-    if (avail > 0 && want <= avail) return { sp: base3, width: lineSp(paper) * base3, strict: true, page, margins };
-    if (avail > 0 && (page || !(this.host.reflow?.() ?? false))) {
-      const sp2 = base3 * avail / want;
+    const extra = margins.l + margins.r, want = Math.ceil((lineSp(paper) + extra) * base2);
+    if (avail2 > 0 && want <= avail2) return { sp: base2, width: lineSp(paper) * base2, strict: true, page, margins };
+    if (avail2 > 0 && (page || !(this.host.reflow?.() ?? false))) {
+      const sp2 = base2 * avail2 / want;
       return { sp: sp2, width: lineSp(paper) * sp2, strict: false, page, margins };
     }
-    return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base3, avail / 42 * scale)) : base3, width: Math.max(320, avail), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
+    return { sp: avail2 > 0 && avail2 < 420 ? Math.max(8.5 * scale, Math.min(base2, avail2 / 42 * scale)) : base2, width: Math.max(320, avail2), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
   }
   /** 量文字宽（px，歌词字号 = px）：屏幕和 PDF 共用这一把尺子——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。 */
   measureAt(px) {
@@ -10600,12 +10632,12 @@ var ScoreView = class {
     this.drawPins();
     this.drawGhost();
     record("decor", performance.now() - tDecor);
-    const base3 = this.baseKey(), fk = `${base3}|${this.el.clientWidth}x${this.el.clientHeight}`;
-    if (this.holdView) this.heldBase = base3;
+    const base2 = this.baseKey(), fk = `${base2}|${this.el.clientWidth}x${this.el.clientHeight}`;
+    if (this.holdView) this.heldBase = base2;
     if (fk !== this.followKey) {
-      const moved = this.followKey.slice(0, this.followKey.lastIndexOf("|")) !== base3;
+      const moved = this.followKey.slice(0, this.followKey.lastIndexOf("|")) !== base2;
       this.followKey = fk;
-      if (base3 !== this.heldBase && (moved || this.caretSeen)) {
+      if (base2 !== this.heldBase && (moved || this.caretSeen)) {
         this.heldBase = null;
         span("follow", () => this.follow());
       }
@@ -10666,12 +10698,12 @@ var ScoreView = class {
     const fs = 4 * sp2, nh2 = 1.18 * sp2, ext = 0.4 * sp2, parts = [];
     const toks = tr(st2), at2 = one >= 0 ? one : st2.caret, fifths = keyAt(toks, at2);
     for (const p0 of this.ghostP) {
-      const p2 = keySpell(p0, fifths), shown = shownAccAt(toks, at2, p2);
+      const p2 = keySpell(p0, fifths), shown2 = shownAccAt(toks, at2, p2);
       const d3 = diatonicIndex(p2) + shift, y2 = L2.yOf(row2, d3);
       for (let k2 = 28; k2 >= d3; k2 -= 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row2, k2)}" y2="${L2.yOf(row2, k2)}" stroke-width="${0.16 * sp2}"/>`);
       for (let k2 = 40; k2 <= d3; k2 += 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row2, k2)}" y2="${L2.yOf(row2, k2)}" stroke-width="${0.16 * sp2}"/>`);
       parts.push(`<text x="${x2}" y="${y2}" font-family="Bravura" font-size="${fs}">\uE0A4</text>`);
-      const acc = shown === null ? "" : shown === 1 ? "\uE262" : shown === -1 ? "\uE260" : shown === 2 ? "\uE263" : shown === -2 ? "\uE264" : "\uE261";
+      const acc = shown2 === null ? "" : shown2 === 1 ? "\uE262" : shown2 === -1 ? "\uE260" : shown2 === 2 ? "\uE263" : shown2 === -2 ? "\uE264" : "\uE261";
       if (acc) parts.push(`<text x="${x2 - 1.2 * sp2}" y="${y2}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
     }
     g3.innerHTML = parts.join("");
@@ -12301,9 +12333,9 @@ function tupletMark(n10, unit) {
   return `<svg class="tupsvg" viewBox="0 0 ${W3} 28.5" width="${(W3 * 32 / 28.5).toFixed(1)}" height="32" aria-label="${n10} \u8FDE\u97F3"><path class="br" d="M${M3} ${by + 2.5}V${by}H${cx2 - 3.6}M${cx2 + 3.6} ${by}H${W3 - M3}V${by + 2.5}"/><text x="${cx2}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(59520 + n10)}</text>${stems}${beam}${heads}</svg>`;
 }
 var Pad = class {
-  constructor(el2, host) {
+  constructor(el2, host2) {
     this.el = el2;
-    this.host = host;
+    this.host = host2;
     this.render();
     addEventListener("resize", () => this.render());
   }
@@ -12350,8 +12382,8 @@ var Pad = class {
   accSel = 1;
   rows() {
     if (this.rowsSetting !== "auto") return this.rowsSetting;
-    const m2 = KEY_METRIC[padForm()], avail = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
-    return Math.max(4, Math.min(6, Math.floor((avail + m2.gap) / (m2.h + m2.gap))));
+    const m2 = KEY_METRIC[padForm()], avail2 = innerHeight >= innerWidth ? innerHeight * 0.45 - 110 : innerHeight - 160;
+    return Math.max(4, Math.min(6, Math.floor((avail2 + m2.gap) / (m2.h + m2.gap))));
   }
   /** 音域窗口第 shift 档的范围文字「最低–最高」（user「G4也谜语人，应该是xx-xx」）。 */
   spanText(shift, rows) {
@@ -12383,7 +12415,7 @@ var Pad = class {
    *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render() {
     const v = this.host.view(), rows = this.rows(), form = padForm();
-    const base3 = this.baseAt(this.rowShift, rows);
+    const base2 = this.baseAt(this.rowShift, rows);
     this.el.dataset.form = form;
     this.el.style.setProperty("--cols", String(this.cols));
     this.el.style.setProperty("--rows", String(rows));
@@ -12470,10 +12502,10 @@ var Pad = class {
       };
       for (const t10 of ["pointerup", "pointercancel", "lostpointercapture"]) ak2.addEventListener(t10, (e10) => akUp(e10));
     }
-    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.ramp.mode}|${this.host.staves()}|${this.symStates()}` : `${this.host.music.sig()}|${base3}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
+    const hr = this.hint(), gridSig = this.symbols !== "off" ? `symbols|${this.symPage}|${this.ramp.mode}|${this.host.staves()}|${this.symStates()}` : `${this.host.music.sig()}|${base2}|${rows}x${this.cols}|${this.layoutMode}|${hr ? `${hr.lo}-${hr.hi}-${hr.who}` : "-"}`;
     if (gridSig !== this.gridFor) {
       if (this.symbols !== "off") this.buildSymbols();
-      else this.buildGrid(base3, rows);
+      else this.buildGrid(base2, rows);
       this.gridFor = gridSig;
     }
     const toolSig = this.mode === "normal" ? `normal|${v.hasSel}|${this.symbols !== "off" ? `${this.symPage}|${this.ramp.mode}` : ""}` : `${this.mode}|${v.hasSel}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.host.music.marksHere()) : ""}`;
@@ -12703,12 +12735,12 @@ var Pad = class {
       this.render();
     }
   }
-  buildGrid(base3, rows) {
+  buildGrid(base2, rows) {
     const cells = [], music = this.host.music, hr = this.hint();
     this.keys.clear();
     for (let row2 = rows - 1; row2 >= 0; row2--) {
       for (let col = 0; col < this.cols; col++) {
-        const k2 = base3 + row2 * this.cols + col, c10 = music.cell(k2), m2 = c10.midi;
+        const k2 = base2 + row2 * this.cols + col, c10 = music.cell(k2), m2 = c10.midi;
         const inRange = !!hr && m2 >= hr.lo && m2 <= hr.hi;
         this.keys.set(k2, c10);
         cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k2}" title="${inRange ? hr.title ?? `${hr.who}\u7684\u97F3\u57DF\u91CC` : ""}"><span class="deg">${octDots(Math.max(0, c10.oct))}<span class="num"><span class="acc"></span>${c10.deg}</span>${octDots(Math.max(0, -c10.oct))}</span><span class="abs">${c10.abs}</span></button>`);
@@ -13337,7 +13369,7 @@ function _mount(el2, opts, hooks) {
       h2.close();
   if (opts.ariaLabel)
     el2.setAttribute("aria-label", opts.ariaLabel);
-  let open = true;
+  let open2 = true;
   const position = () => {
     if (!hooks.reposition)
       return;
@@ -13381,7 +13413,7 @@ function _mount(el2, opts, hooks) {
     }
   };
   const onResize = () => {
-    if (open)
+    if (open2)
       position();
   };
   let anchorAt = anchorPos();
@@ -13390,7 +13422,7 @@ function _mount(el2, opts, hooks) {
     return { x: r10.left, y: r10.top };
   }
   const onScroll = (e10) => {
-    if (!open)
+    if (!open2)
       return;
     const t10 = e10.target;
     if (t10 && el2.contains(t10))
@@ -13402,21 +13434,21 @@ function _mount(el2, opts, hooks) {
   };
   const handle = {
     get isOpen() {
-      return open;
+      return open2;
     },
     el: el2,
     anchor: opts.anchor,
     refresh() {
-      if (!open)
+      if (!open2)
         return;
       hooks.onRefresh?.();
       position();
       anchorAt = anchorPos();
     },
     close() {
-      if (!open)
+      if (!open2)
         return;
-      open = false;
+      open2 = false;
       document.removeEventListener("pointerdown", onDocPointerDown, true);
       document.removeEventListener("keydown", onKey, true);
       document.removeEventListener("scroll", onScroll, true);
@@ -13430,7 +13462,7 @@ function _mount(el2, opts, hooks) {
   };
   position();
   setTimeout(() => {
-    if (!open)
+    if (!open2)
       return;
     document.addEventListener("pointerdown", onDocPointerDown, true);
     document.addEventListener("keydown", onKey, true);
@@ -13499,12 +13531,12 @@ function showNotice(opts) {
   txt.className = "notice-text";
   txt.textContent = opts.text;
   el2.appendChild(txt);
-  let open = true;
+  let open2 = true;
   let timer = null;
   const close = () => {
-    if (!open)
+    if (!open2)
       return;
-    open = false;
+    open2 = false;
     if (timer)
       clearTimeout(timer);
     el2.remove();
@@ -13553,7 +13585,7 @@ function showNotice(opts) {
       txt.textContent = t10;
     },
     close,
-    isOpen: () => open
+    isOpen: () => open2
   };
   _live.set(id2, handle);
   return handle;
@@ -13684,6 +13716,10 @@ var GALLERY_TEXT = {
   "gal.restore": { zh: "\u6062\u590D", en: "Restore", ja: "\u5FA9\u5143" },
   "gal.retry": { zh: "\u91CD\u8BD5", en: "Retry", ja: "\u518D\u8A66\u884C" },
   "gal.resolve": { zh: "\u5904\u7406\u2026", en: "Resolve\u2026", ja: "\u51E6\u7406\u2026" },
+  "gal.attention.banner": { zh: "\u6709 {n} \u4EFD\u6CA1\u540C\u6B65\u597D\uFF0C\u8981\u4F60\u5904\u7406", en: "{n} file(s) need your attention (not in sync)", ja: "{n} \u4EF6\u304C\u672A\u540C\u671F\u30FB\u5BFE\u5FDC\u304C\u5FC5\u8981\u3067\u3059" },
+  "gal.attention.showing": { zh: "\u53EA\u770B\u8981\u5904\u7406\u7684\uFF08{n} \u4EFD\uFF09", en: "Showing only the {n} that need attention", ja: "\u5BFE\u5FDC\u304C\u5FC5\u8981\u306A {n} \u4EF6\u306E\u307F\u8868\u793A\u4E2D" },
+  "gal.attention.list": { zh: "\u770B\u5217\u8868", en: "Show them", ja: "\u4E00\u89A7\u3092\u898B\u308B" },
+  "gal.attention.all": { zh: "\u56DE\u5230\u5168\u90E8", en: "Show all", ja: "\u3059\u3079\u3066\u8868\u793A" },
   "gal.busy.resolve": { zh: "\u6B63\u5728\u5904\u7406 {name}\u2026", en: "Resolving {name}\u2026", ja: "{name} \u3092\u51E6\u7406\u4E2D\u2026" },
   "gal.st.resolve.tookCloud": { zh: "\u4E91\u7AEF\u8986\u76D6\u4E86\u672C\u5730\uFF1A{name}\uFF08\u8FD9\u53F0\u7684\u90A3\u4EFD\u8FDB\u4E86\u5907\u4EFD\u7BB1\uFF09", en: "Cloud overwrote local: {name} (this device's copy went to the backup bin)", ja: "\u30AF\u30E9\u30A6\u30C9\u3067\u30ED\u30FC\u30AB\u30EB\u3092\u4E0A\u66F8\u304D\uFF1A{name}\uFF08\u3053\u306E\u7AEF\u672B\u306E\u7248\u306F\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3078\uFF09" },
   "gal.st.resolve.pushed": { zh: "\u672C\u5730\u8986\u76D6\u4E86\u4E91\u7AEF\uFF1A{name}", en: "Local overwrote cloud: {name}", ja: "\u30ED\u30FC\u30AB\u30EB\u3067\u30AF\u30E9\u30A6\u30C9\u3092\u4E0A\u66F8\u304D\uFF1A{name}" },
@@ -13741,6 +13777,17 @@ var GALLERY_TEXT = {
   "gal.st.purged": { zh: "\u5DF2\u6C38\u4E45\u5220\u9664\uFF1A{name}", en: "Permanently deleted: {name}", ja: "\u5B8C\u5168\u306B\u524A\u9664\uFF1A{name}" },
   "gal.st.renamed": { zh: "\u5DF2\u91CD\u547D\u540D\uFF1A{to}", en: "Renamed: {to}", ja: "\u540D\u524D\u5909\u66F4\uFF1A{to}" },
   "gal.st.renamed2": { zh: "\u5DF2\u91CD\u547D\u540D\uFF1A{from} \u2192 {to}", en: "Renamed: {from} \u2192 {to}", ja: "\u540D\u524D\u5909\u66F4\uFF1A{from} \u2192 {to}" },
+  "gal.st.movedOldKept": { zh: "\u5DF2\u53E6\u5B58\u4E3A\u300C{to}\u300D\uFF1B\u4E91\u7AEF\u90A3\u4EFD\u300C{from}\u300D\u6CA1\u52A8\uFF08\u5B83\u548C\u8FD9\u53F0\u7684\u6539\u52A8\u5BF9\u4E0D\u4E0A\uFF0C\u6216\u4E0D\u77E5\u9053\u8FD9\u53F0\u6D3E\u751F\u81EA\u54EA\u4E00\u7248\uFF09\u2014\u2014 \u56FE\u5E93\u91CC\u8FD8\u770B\u5F97\u89C1\uFF0C\u4E0D\u8981\u4E86\u81EA\u5DF1\u9001\u56DE\u6536\u7AD9", en: "Saved as \u201C{to}\u201D; the cloud copy \u201C{from}\u201D was left untouched (it diverged from this device, or this device's lineage is unknown) \u2014 it is still listed; trash it yourself if you do not want it", ja: "\u300C{to}\u300D\u3068\u3057\u3066\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002\u30AF\u30E9\u30A6\u30C9\u306E\u300C{from}\u300D\u306F\u305D\u306E\u307E\u307E\uFF08\u3053\u306E\u7AEF\u672B\u306E\u5909\u66F4\u3068\u98DF\u3044\u9055\u3046\u3001\u307E\u305F\u306F\u7CFB\u8B5C\u4E0D\u660E\uFF09\u2014\u2014\u4E00\u89A7\u306B\u6B8B\u3063\u3066\u3044\u307E\u3059\u3002\u4E0D\u8981\u306A\u3089\u81EA\u5206\u3067\u30B4\u30DF\u7BB1\u3078" },
+  "gal.st.movedOldOrphan": { zh: "\u5DF2\u6539\u6210\u300C{to}\u300D\uFF0C\u4F46\u4E91\u7AEF\u65E7\u7684\u300C{from}\u300D\u6CA1\u80FD\u8FDB\u56DE\u6536\u7AD9 \u2014\u2014 \u56FE\u5E93\u91CC\u8FD8\u770B\u5F97\u89C1\uFF0C\u81EA\u5DF1\u5904\u7406", en: "Now \u201C{to}\u201D, but the old cloud copy \u201C{from}\u201D could not be moved to the trash \u2014 it is still listed; handle it yourself", ja: "\u300C{to}\u300D\u306B\u306A\u308A\u307E\u3057\u305F\u304C\u3001\u30AF\u30E9\u30A6\u30C9\u306E\u65E7\u300C{from}\u300D\u3092\u30B4\u30DF\u7BB1\u3078\u79FB\u305B\u307E\u305B\u3093\u3067\u3057\u305F\u2014\u2014\u4E00\u89A7\u306B\u6B8B\u3063\u3066\u3044\u307E\u3059" },
+  "gal.st.movedOldUnknown": { zh: "\u5DF2\u6539\u6210\u300C{to}\u300D\uFF1B\u4E91\u7AEF\u72B6\u6001\u6CA1\u95EE\u5230\uFF0C\u65E7\u7684\u300C{from}\u300D\u53EF\u80FD\u8FD8\u5728\u4E91\u7AEF", en: "Now \u201C{to}\u201D; the cloud could not be checked, so the old \u201C{from}\u201D may still be there", ja: "\u300C{to}\u300D\u306B\u306A\u308A\u307E\u3057\u305F\u3002\u30AF\u30E9\u30A6\u30C9\u3092\u78BA\u8A8D\u3067\u304D\u305A\u3001\u65E7\u300C{from}\u300D\u304C\u6B8B\u3063\u3066\u3044\u308B\u53EF\u80FD\u6027\u304C\u3042\u308A\u307E\u3059" },
+  "gal.st.movedOldKeptByUser": { zh: "\u5DF2\u53E6\u5B58\u4E3A\u300C{to}\u300D\uFF1B\u7167\u4F60\u7684\u610F\u601D\uFF0C\u4E91\u7AEF\u90A3\u4EFD\u300C{from}\u300D\u7559\u7740\u6CA1\u52A8", en: "Saved as \u201C{to}\u201D; as you chose, the cloud copy \u201C{from}\u201D was left in place", ja: "\u300C{to}\u300D\u3068\u3057\u3066\u4FDD\u5B58\u3057\u307E\u3057\u305F\u3002\u9078\u629E\u3069\u304A\u308A\u30AF\u30E9\u30A6\u30C9\u306E\u300C{from}\u300D\u306F\u305D\u306E\u307E\u307E\u6B8B\u3057\u3066\u3044\u307E\u3059" },
+  "rn.title": { zh: "\u300C{name}\u300D\u4E91\u7AEF\u90A3\u4EFD\u548C\u8FD9\u53F0\u7684\u5BF9\u4E0D\u4E0A", en: "\u201C{name}\u201D: the cloud copy does not match this device", ja: "\u300C{name}\u300D\uFF1A\u30AF\u30E9\u30A6\u30C9\u306E\u7248\u304C\u3053\u306E\u7AEF\u672B\u3068\u5408\u3044\u307E\u305B\u3093" },
+  "rn.body.diverged": { zh: "\u4F60\u8981\u628A\u300C{from}\u300D\u6539\u540D\u6210\u300C{to}\u300D\uFF0C\u4F46\u4E91\u7AEF\u7684\u300C{from}\u300D\u88AB\u522B\u7684\u8BBE\u5907\u6539\u8FC7\u3001\u8FD9\u53F0\u7684\u6539\u52A8\u8FD8\u6CA1\u4F20\u4E0A\u53BB\u3002\u65B0\u540D\u5B57\u300C{to}\u300D\u4F1A\u4F20\u4E0A\u53BB\uFF1B\u4E91\u7AEF\u90A3\u4EFD\u65E7\u7684\u8981\u642C\u8FDB\u56DE\u6536\u7AD9\uFF08\u80FD\u6062\u590D\uFF09\uFF0C\u8FD8\u662F\u7559\u7740\uFF08\u4E24\u4EFD\u90FD\u5728\uFF09\uFF1F", en: "You are renaming \u201C{from}\u201D to \u201C{to}\u201D, but the cloud copy of \u201C{from}\u201D was changed on another device and this device's edits are not uploaded. \u201C{to}\u201D will be uploaded; should the old cloud copy go to the trash (recoverable) or stay (both kept)?", ja: "\u300C{from}\u300D\u3092\u300C{to}\u300D\u306B\u6539\u540D\u3057\u307E\u3059\u304C\u3001\u30AF\u30E9\u30A6\u30C9\u306E\u300C{from}\u300D\u306F\u5225\u306E\u7AEF\u672B\u3067\u5909\u66F4\u3055\u308C\u3066\u304A\u308A\u3001\u3053\u306E\u7AEF\u672B\u306E\u5909\u66F4\u306F\u672A\u9001\u4FE1\u3067\u3059\u3002\u300C{to}\u300D\u306F\u9001\u4FE1\u3057\u307E\u3059\u3002\u30AF\u30E9\u30A6\u30C9\u306E\u65E7\u7248\u306F\u30B4\u30DF\u7BB1\u3078\uFF08\u5FA9\u5143\u53EF\uFF09\u3001\u305D\u308C\u3068\u3082\u6B8B\u3057\u307E\u3059\u304B\uFF08\u4E21\u65B9\u6B8B\u308B\uFF09\uFF1F" },
+  "rn.body.unknown": { zh: "\u4F60\u8981\u628A\u300C{from}\u300D\u6539\u540D\u6210\u300C{to}\u300D\uFF0C\u4F46\u8FD9\u53F0\u4E0D\u77E5\u9053\u81EA\u5DF1\u8FD9\u4EFD\u662F\u4ECE\u4E91\u7AEF\u54EA\u4E00\u7248\u6539\u51FA\u6765\u7684\u3002\u65B0\u540D\u5B57\u300C{to}\u300D\u4F1A\u4F20\u4E0A\u53BB\uFF1B\u4E91\u7AEF\u90A3\u4EFD\u65E7\u7684\u8981\u642C\u8FDB\u56DE\u6536\u7AD9\uFF08\u80FD\u6062\u590D\uFF09\uFF0C\u8FD8\u662F\u7559\u7740\uFF08\u4E24\u4EFD\u90FD\u5728\uFF09\uFF1F", en: "You are renaming \u201C{from}\u201D to \u201C{to}\u201D, but this device cannot tell which cloud version its copy came from. \u201C{to}\u201D will be uploaded; should the old cloud copy go to the trash (recoverable) or stay (both kept)?", ja: "\u300C{from}\u300D\u3092\u300C{to}\u300D\u306B\u6539\u540D\u3057\u307E\u3059\u304C\u3001\u3053\u306E\u7AEF\u672B\u306E\u7248\u304C\u30AF\u30E9\u30A6\u30C9\u306E\u3069\u306E\u7248\u304B\u3089\u6765\u305F\u306E\u304B\u5206\u304B\u308A\u307E\u305B\u3093\u3002\u300C{to}\u300D\u306F\u9001\u4FE1\u3057\u307E\u3059\u3002\u30AF\u30E9\u30A6\u30C9\u306E\u65E7\u7248\u306F\u30B4\u30DF\u7BB1\u3078\uFF08\u5FA9\u5143\u53EF\uFF09\u3001\u305D\u308C\u3068\u3082\u6B8B\u3057\u307E\u3059\u304B\uFF08\u4E21\u65B9\u6B8B\u308B\uFF09\uFF1F" },
+  "rn.note": { zh: "\u642C\u8FDB\u56DE\u6536\u7AD9\u4E0D\u662F\u5220\u9664\uFF0C\u968F\u65F6\u80FD\u6062\u590D\u3002\u53D6\u6D88 = \u4E0D\u6539\u540D\uFF0C\u4EC0\u4E48\u90FD\u4E0D\u52A8\u3002", en: "Trash is not delete; it can be restored any time. Cancel = no rename, nothing changes.", ja: "\u30B4\u30DF\u7BB1\u306F\u524A\u9664\u3067\u306F\u306A\u304F\u3001\u3044\u3064\u3067\u3082\u5FA9\u5143\u3067\u304D\u307E\u3059\u3002\u30AD\u30E3\u30F3\u30BB\u30EB\uFF1D\u6539\u540D\u305B\u305A\u4F55\u3082\u5909\u3048\u307E\u305B\u3093\u3002" },
+  "rn.act.trash": { zh: "\u642C\u8D70\u65E7\u7684\uFF08\u8FDB\u56DE\u6536\u7AD9\uFF09", en: "Move the old one to trash", ja: "\u65E7\u7248\u3092\u30B4\u30DF\u7BB1\u3078" },
+  "rn.act.keep": { zh: "\u7559\u7740\u65E7\u7684", en: "Keep the old one", ja: "\u65E7\u7248\u3092\u6B8B\u3059" },
+  "gal.st.movedCloudDeferred": { zh: "\u5DF2\u6539\u6210\u300C{to}\u300D\uFF08\u672C\u673A\uFF09\uFF1B\u4E91\u7AEF\u90A3\u4EFD\u8FD8\u6CA1\u63A8\u4E0A\u53BB\uFF0C\u4E0B\u6B21\u4FDD\u5B58\u8865\u63A8", en: "Now \u201C{to}\u201D on this device; the cloud copy is not pushed yet (next save will)", ja: "\u300C{to}\u300D\u306B\u306A\u308A\u307E\u3057\u305F\uFF08\u3053\u306E\u7AEF\u672B\uFF09\u3002\u30AF\u30E9\u30A6\u30C9\u3078\u306F\u307E\u3060\u672A\u9001\u4FE1\u3001\u6B21\u56DE\u4FDD\u5B58\u6642\u306B\u9001\u308A\u307E\u3059" },
   "gal.st.restoreFail": { zh: "\u6062\u590D\u5931\u8D25\uFF1A{e}", en: "Restore failed: {e}", ja: "\u5FA9\u5143\u5931\u6557\uFF1A{e}" },
   "gal.st.restored": { zh: "\u5DF2\u6062\u590D\uFF1A{name}", en: "Restored: {name}", ja: "\u5FA9\u5143\uFF1A{name}" },
   "gal.st.restoredRenamed": { zh: "\u5DF2\u6062\u590D\uFF1A{name}\uFF08\u539F\u540D {orig} \u5DF2\u88AB\u5360\u7528\uFF09", en: "Restored: {name} (original name {orig} was taken)", ja: "\u5FA9\u5143\uFF1A{name}\uFF08\u5143\u306E\u540D\u524D {orig} \u306F\u4F7F\u7528\u4E2D\uFF09" },
@@ -13832,7 +13879,7 @@ var GALLERY_TEXT = {
   "gv.badge.conflictBoth": { zh: "\u4E91\u7AEF\u4E0E\u672C\u673A\u5404\u6709\u65B0\u6539\u52A8 \u2014\u2014 \u6253\u5F00\u6216\u63A8\u9001\u65F6\u4F1A\u8BF7\u4F60\u88C1\u51B3", en: "New changes both in the cloud and on this device \u2014 you'll be asked to resolve on open or push", ja: "\u30AF\u30E9\u30A6\u30C9\u3068\u3053\u306E\u7AEF\u672B\u306E\u4E21\u65B9\u306B\u65B0\u3057\u3044\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u958B\u304F\u304B\u30D7\u30C3\u30B7\u30E5\u6642\u306B\u9078\u629E\u3092\u6C42\u3081\u3089\u308C\u307E\u3059" },
   "gv.badge.dirtyBoth": { zh: "\u672C\u5730+\u4E91\u7AEF \xB7 \u672C\u5730\u6709\u672A\u63A8\u6539\u52A8", en: "Local+cloud \xB7 unpushed local edits", ja: "\u30ED\u30FC\u30AB\u30EB+\u30AF\u30E9\u30A6\u30C9 \xB7 \u672A\u30D7\u30C3\u30B7\u30E5\u306E\u5909\u66F4\u3042\u308A" },
   "gv.badge.float": { zh: "\u4EC5\u672C\u5730 \xB7 \u6709\u672A\u4E0A\u4F20\u7684\u6539\u52A8\uFF08\u4ECE\u672A\u540C\u6B65\uFF09", en: "Local only \xB7 unsynced edits (never uploaded)" },
-  "gv.badge.ghost": { zh: "\u4E91\u7AEF\u526F\u672C\u5DF2\u88AB\u79FB\u52A8\u6216\u5220\u9664\uFF0C\u672C\u5730\u6709\u672A\u63A8\u9001\u7684\u4FEE\u6539 \u2014\u2014 \u53EF\u300C\u91CD\u547D\u540D\u7559\u5B58\u300D\u6216\u300C\u4E22\u5F03\u300D", en: "Cloud copy was moved or deleted while local has unpushed edits \u2014 \u201Crename & keep\u201D or \u201Cdiscard\u201D", ja: "\u30AF\u30E9\u30A6\u30C9\u5074\u304C\u79FB\u52D5/\u524A\u9664\u3055\u308C\u3001\u30ED\u30FC\u30AB\u30EB\u306B\u672A\u30D7\u30C3\u30B7\u30E5\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u300C\u6539\u540D\u3057\u3066\u4FDD\u6301\u300D\u304B\u300C\u7834\u68C4\u300D\u3092" },
+  "gv.badge.ghost": { zh: "\u4E91\u7AEF\u526F\u672C\u5DF2\u88AB\u79FB\u52A8\u6216\u5220\u9664\uFF0C\u672C\u5730\u6709\u672A\u63A8\u9001\u7684\u4FEE\u6539 \u2014\u2014 \u300C\u5904\u7406\u2026\u300D\u91CC\u9009\uFF1A\u672C\u5730\u8986\u76D6\u4E91\u7AEF\uFF08\u4F20\u56DE\u53BB\uFF09\u6216\u4E91\u7AEF\u8986\u76D6\u672C\u5730\uFF08\u8FD9\u4EFD\u8FDB\u56DE\u6536\u7AD9\uFF09\uFF1B\u4E5F\u53EF\u300C\u91CD\u547D\u540D\u7559\u5B58\u300D", en: "Cloud copy was moved or deleted while local has unpushed edits \u2014 use \u201CResolve\u2026\u201D: local overwrites cloud (upload again) or cloud overwrites local (to trash); or \u201Crename & keep\u201D", ja: "\u30AF\u30E9\u30A6\u30C9\u5074\u304C\u79FB\u52D5/\u524A\u9664\u3055\u308C\u3001\u30ED\u30FC\u30AB\u30EB\u306B\u672A\u30D7\u30C3\u30B7\u30E5\u306E\u5909\u66F4\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u300C\u51E6\u7406\u2026\u300D\u3067\uFF1A\u30ED\u30FC\u30AB\u30EB\u3067\u30AF\u30E9\u30A6\u30C9\u3092\u4E0A\u66F8\u304D\uFF08\u518D\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\uFF09\uFF0F\u30AF\u30E9\u30A6\u30C9\u3067\u30ED\u30FC\u30AB\u30EB\u3092\u4E0A\u66F8\u304D\uFF08\u30B4\u30DF\u7BB1\u3078\uFF09\u3002\u307E\u305F\u306F\u300C\u6539\u540D\u3057\u3066\u4FDD\u6301\u300D" },
   "gv.badge.localOnly": { zh: "\u4EC5\u672C\u5730\uFF08\u672A\u4E0A\u4F20\u4E91\u7AEF\uFF09", en: "Local only (not uploaded)", ja: "\u30ED\u30FC\u30AB\u30EB\u306E\u307F\uFF08\u672A\u30A2\u30C3\u30D7\u30ED\u30FC\u30C9\uFF09" },
   "gv.badge.localPlain": { zh: "\u672C\u5730", en: "Local", ja: "\u30ED\u30FC\u30AB\u30EB" },
   "gv.badge.newerOnCloud": { zh: "\u4E91\u7AEF\u6709\u65B0\u7248\u672C \u2014\u2014 \u6253\u5F00\u4F1A\u81EA\u52A8\u66F4\u65B0\u5230\u4E91\u7AEF\u7248", en: "A newer version exists in the cloud \u2014 opening will update to it", ja: "\u30AF\u30E9\u30A6\u30C9\u306B\u65B0\u3057\u3044\u30D0\u30FC\u30B8\u30E7\u30F3\u304C\u3042\u308A\u307E\u3059\u2014\u2014\u958B\u304F\u3068\u81EA\u52D5\u7684\u306B\u66F4\u65B0\u3055\u308C\u307E\u3059" },
@@ -14153,10 +14200,10 @@ var LockedError = class extends Error {
   }
 };
 function cryptExtFor(name) {
-  const base3 = name.includes("/") ? name.slice(name.lastIndexOf("/") + 1) : name;
-  const dot = base3.lastIndexOf(".");
-  if (dot > 0 && dot < base3.length - 1)
-    return base3.slice(dot + 1);
+  const base2 = name.includes("/") ? name.slice(name.lastIndexOf("/") + 1) : name;
+  const dot = base2.lastIndexOf(".");
+  if (dot > 0 && dot < base2.length - 1)
+    return base2.slice(dot + 1);
   return void 0;
 }
 function createSeal(cfg) {
@@ -14271,17 +14318,17 @@ function createIdentifiers(docKinds) {
       return null;
     const slash = identifier.lastIndexOf("/");
     const folder = slash < 0 ? "" : identifier.slice(0, slash);
-    const base3 = slash < 0 ? identifier : identifier.slice(slash + 1);
-    const low = base3.toLowerCase();
+    const base2 = slash < 0 ? identifier : identifier.slice(slash + 1);
+    const low = base2.toLowerCase();
     for (const s10 of suffixesLongestFirst) {
       if (!(low.length > s10.length && low.endsWith(s10)))
         continue;
-      const stem = base3.slice(0, base3.length - s10.length);
+      const stem = base2.slice(0, base2.length - s10.length);
       const rows = bySuffix.get(s10);
       const row2 = rows.find((r10) => r10.stem && r10.stem.test(stem)) ?? rows.find((r10) => !r10.stem);
       if (!row2)
         continue;
-      return { row: row2, d: { identifier, folder, stem, suffix: base3.slice(base3.length - s10.length), kind: row2.kind, container: row2.container, tier: row2.tier ?? "work" } };
+      return { row: row2, d: { identifier, folder, stem, suffix: base2.slice(base2.length - s10.length), kind: row2.kind, container: row2.container, tier: row2.tier ?? "work" } };
     }
     return null;
   }
@@ -14309,9 +14356,9 @@ function withStemTail(identifier, tail, ids) {
   if (d3)
     return ids.join({ folder: d3.folder, stem: `${d3.stem}${tail}`, suffix: d3.suffix });
   const slash = identifier.lastIndexOf("/");
-  const base3 = slash < 0 ? identifier : identifier.slice(slash + 1);
-  const dot = base3.lastIndexOf(".");
-  const stem = dot > 0 ? base3.slice(0, dot) : base3, rest = dot > 0 ? base3.slice(dot) : "";
+  const base2 = slash < 0 ? identifier : identifier.slice(slash + 1);
+  const dot = base2.lastIndexOf(".");
+  const stem = dot > 0 ? base2.slice(0, dot) : base2, rest = dot > 0 ? base2.slice(dot) : "";
   return `${slash < 0 ? "" : identifier.slice(0, slash + 1)}${stem}${tail}${rest}`;
 }
 
@@ -14419,16 +14466,43 @@ function retriable(e10) {
   return (s10 == null || s10 === 429 || s10 >= 500 && s10 <= 599) && x2?.name !== "CloudConflictError" && x2?.name !== "CloudNameCollisionError";
 }
 function createPush(cfg) {
-  const { cloud, head, seal, safeResolve, serialize, editVersion, busy = passBusy, maxAttempts = pushRetryDefaults.maxAttempts, backoffMs = pushRetryDefaults.backoffMs, exponential = pushRetryDefaults.exponential, sleep = (ms) => new Promise((r10) => setTimeout(r10, ms)) } = cfg;
+  const { cloud, head, seal, safeResolve, serialize, editVersion, recaptureLineage = true, busy = passBusy, maxAttempts = pushRetryDefaults.maxAttempts, backoffMs = pushRetryDefaults.backoffMs, exponential = pushRetryDefaults.exponential, sleep = (ms) => new Promise((r10) => setTimeout(r10, ms)) } = cfg;
   async function doPush(name, { encode: encode2, getEditVersion = editVersion, onConflict, adopt, surfaceCollision = false, onProgress, loserBackup }) {
-    const ifMatch = head.ifMatchFor(name);
+    let ifMatch = head.ifMatchFor(name);
     const v0 = getEditVersion();
     const e02 = head.editCount?.(name) ?? 0;
     const editedSince = () => getEditVersion() !== v0 || (head.editCount?.(name) ?? 0) !== e02;
     const bytes = await seal.sealForWrite(name, await toU8(await encode2()));
     const isEnc = await seal.isContainer(bytes);
     const session = cfg.sessionFor ? await cfg.sessionFor(name, bytes) : void 0;
+    let staleKnown = false;
+    const durable = head.seenBase?.(name) ?? null;
+    if (ifMatch == null && recaptureLineage && durable != null && cloud.fetchMeta && head.markSeen) {
+      let meta;
+      try {
+        meta = await cloud.fetchMeta(name);
+      } catch {
+        meta = void 0;
+      }
+      if (meta && meta.etag === durable) {
+        head.markSeen(name, meta.etag);
+        ifMatch = head.ifMatchFor(name);
+      } else if (meta)
+        staleKnown = true;
+    }
+    const onCloudConflict = async () => {
+      if (await safeResolve.tryHeal(name, bytes)) {
+        const dirtyAfter = editedSince();
+        if (dirtyAfter)
+          head.recordEdit(name);
+        return { status: "healed", dirtyAfter };
+      }
+      const choice = onConflict ? await onConflict({ name, cloudState: "changed" }) : "cancel";
+      return await safeResolve.resolveConflict(name, choice, { bytes, adopt, inChain: true, loserBackup });
+    };
     return busy("sync.pushing", async () => {
+      if (staleKnown)
+        return onCloudConflict();
       let attempt = 0, lastErr;
       while (attempt < maxAttempts) {
         attempt++;
@@ -14440,16 +14514,8 @@ function createPush(cfg) {
           head.onPushed(name, item.eTag, dirtyAfter);
           return { status: "pushed", dirtyAfter };
         } catch (e10) {
-          if (isConflict(e10)) {
-            if (await safeResolve.tryHeal(name, bytes)) {
-              const dirtyAfter = editedSince();
-              if (dirtyAfter)
-                head.recordEdit(name);
-              return { status: "healed", dirtyAfter };
-            }
-            const choice = onConflict ? await onConflict({ name }) : "cancel";
-            return await safeResolve.resolveConflict(name, choice, { bytes, adopt, inChain: true, loserBackup });
-          }
+          if (isConflict(e10))
+            return onCloudConflict();
           if (surfaceCollision && e10?.name === "CloudNameCollisionError") {
             const choice = onConflict ? await onConflict({ name }) : "cancel";
             return await safeResolve.resolveConflict(name, choice, { bytes, adopt, inChain: true, loserBackup });
@@ -14486,12 +14552,12 @@ function createFreshness(cfg) {
   };
   const hintedInSync = (name) => {
     const h2 = hints?.peek(name);
-    const base3 = head.seenBase(name);
-    return !!h2 && base3 != null && h2.etag === base3;
+    const base2 = head.seenBase(name);
+    return !!h2 && base2 != null && h2.etag === base2;
   };
   const pullFailText = (reason) => reason === "invalid-cloud-bytes" ? "\u4E91\u7AEF\u5185\u5BB9\u6CA1\u901A\u8FC7\u6821\u9A8C\uFF0C\u53EF\u80FD\u662F\u516C\u5171 Wi-Fi \u767B\u5F55\u9875\u52AB\u6301\u6216\u6587\u4EF6\u635F\u574F" : reason === "cloud-vanished" ? "\u4E91\u7AEF\u6587\u4EF6\u521A\u521A\u88AB\u79FB\u52A8\u6216\u5220\u9664" : reason === "backup-failed" ? "\u672C\u5730\u7559\u5E95\u5931\u8D25\uFF0C\u4E3A\u4FDD\u6570\u636E\u6CA1\u6709\u8986\u76D6" : reason;
-  async function open(name, opts = {}) {
-    const { isOnline = () => true, probe, onNewer, adopt, localDirty, busy = passBusy2 } = opts;
+  async function open2(name, opts = {}) {
+    const { isOnline = () => true, probe, onNewer, adopt, localDirty, busy = passBusy2, localBytes } = opts;
     if (!isOnline()) {
       adoptDurableBase(name, localDirty);
       return { source: "local", reason: "offline" };
@@ -14527,8 +14593,8 @@ function createFreshness(cfg) {
       }
       if (!meta)
         return { source: "local", reason: "cloud-absent" };
-      const base3 = head.seenBase(name);
-      if (base3 != null && meta.etag === base3) {
+      const base2 = head.seenBase(name);
+      if (base2 != null && meta.etag === base2) {
         head.markSeen(name, meta.etag);
         return { source: "local", reason: "in-sync" };
       }
@@ -14539,7 +14605,28 @@ function createFreshness(cfg) {
           reportStoreError(new Error(`\u300C${name}\u300D\u4E91\u7AEF\u6709\u65B0\u7248\u672C\u4F46\u6682\u65F6\u53D6\u4E0D\u5230\uFF08${pullFailText(r10.reason)}\uFF09\uFF0C\u5DF2\u6253\u5F00\u672C\u5730\u7248\u672C`), "info");
         return r10.ok ? { source: "fast-forwarded", backupName: r10.backupName } : { source: "local", reason: r10.reason, error: r10.error };
       }
-      const choice = onNewer ? await onNewer({ name, cloudEtag: meta.etag, baseEtag: base3, cloudTime: meta.lastModified }) : "cancel";
+      if (localBytes && safeResolve.tryHeal) {
+        const mine = await localBytes().catch((e10) => {
+          reportStoreError(e10, "log");
+          return null;
+        });
+        if (mine && (meta.size == null || meta.size === mine.byteLength)) {
+          const healing = (async () => {
+            try {
+              return await safeResolve.tryHeal(name, mine);
+            } catch (e10) {
+              reportStoreError(e10, "log");
+              return false;
+            }
+          })();
+          const outcome = probe ? await Promise.race([healing.then((h2) => ({ k: "heal", h: h2 })), Promise.resolve(probe).then(() => ({ k: "skip" }))]) : { k: "heal", h: await healing };
+          if (outcome.k === "skip")
+            return { source: "local", reason: "skipped" };
+          if (outcome.h)
+            return { source: "local", reason: "healed" };
+        }
+      }
+      const choice = onNewer ? await onNewer({ name, cloudEtag: meta.etag, baseEtag: base2, cloudTime: meta.lastModified }) : "cancel";
       if (choice === "takeCloud") {
         const r10 = await safeResolve.safePull(name, { adopt, forceBackup: true });
         if (!r10.ok)
@@ -14569,8 +14656,8 @@ function createFreshness(cfg) {
       }
       if (!meta)
         return { status: "cloud-absent" };
-      const base3 = head.seenBase(name);
-      if (base3 != null && meta.etag === base3) {
+      const base2 = head.seenBase(name);
+      if (base2 != null && meta.etag === base2) {
         head.markSeen(name, meta.etag);
         return { status: "in-sync" };
       }
@@ -14593,7 +14680,7 @@ function createFreshness(cfg) {
       return r10.ok ? { status: "fast-forwarded" } : { status: "ff-failed", reason: r10.reason };
     });
   }
-  return { open, refresh };
+  return { open: open2, refresh };
 }
 
 // node_modules/@internal/store/dist/works/fresh-hints.js
@@ -15075,13 +15162,13 @@ function createCloudSync(cfg) {
   async function restore(cloudRef, targetName, opts = {}) {
     const clean = targetName;
     const folder = clean.includes("/") ? clean.slice(0, clean.lastIndexOf("/")) : "";
-    const base3 = baseName(clean);
+    const base2 = baseName(clean);
     const mkName = opts.encrypted && encFileName ? encFileName : fileName2;
     const folderId = await provider.ensureFolder(folder);
     const disp = restoreStampDisplay(opts.snapshotStamp, now2());
-    const stamped = (suf) => withStemTail(base3, ` [${suf}]`, ids);
+    const stamped = (suf) => withStemTail(base2, ` [${suf}]`, ids);
     for (let attempt = 1; attempt < 100; attempt++) {
-      const candidate = attempt === 1 ? base3 : attempt === 2 ? stamped(disp) : stamped(`${disp}-${attempt - 1}`);
+      const candidate = attempt === 1 ? base2 : attempt === 2 ? stamped(disp) : stamped(`${disp}-${attempt - 1}`);
       try {
         return await provider.move(cloudRef, folderId, { newName: mkName(candidate), conflictBehavior: "fail", eTag: opts.eTag ?? null });
       } catch (e10) {
@@ -15272,7 +15359,7 @@ function createCloudSync(cfg) {
 // node_modules/@internal/store/dist/works/identity.js
 var passBusy4 = (_l, fn) => fn();
 function createIdentity(cfg) {
-  const { cloud, local, head, doPush, serialize, serialize2, seal, busy: _busy = passBusy4, isOnline, deleteOffline, queueUpload, nameOccupied } = cfg;
+  const { cloud, local, head, doPush, serialize, serialize2, seal, busy: _busy = passBusy4, isOnline, deleteOffline, queueUpload, nameOccupied, askKeepOld } = cfg;
   const unseal = (name, blob) => seal ? seal.unsealForRead(name, blob) : Promise.resolve(blob);
   async function assertNameFree(newName, doCloud) {
     if (doCloud && nameOccupied) {
@@ -15311,6 +15398,19 @@ function createIdentity(cfg) {
         await deleteOffline(oldName);
         return { status: "renamed", where: "offline-move", newName };
       }
+      let userOld = null;
+      if (doCloud && askKeepOld && hasLocal && bytes != null && (!isOnline || isOnline()) && head.isDirtyAnywhere(oldName)) {
+        const pre = await probeOld(oldName);
+        if (pre.known && pre.meta) {
+          const base0 = head.seenBase(oldName);
+          if (base0 == null || base0 !== pre.meta.etag) {
+            const c10 = await askKeepOld({ oldName, newName, reason: base0 == null ? "unknown-lineage" : "diverged" });
+            if (c10 === "cancel")
+              return { status: "cancelled", oldName, newName };
+            userOld = c10;
+          }
+        }
+      }
       if (local && hasLocal) {
         await local.save(newName, bytes);
         await local.hardDelete(oldName);
@@ -15334,11 +15434,11 @@ function createIdentity(cfg) {
         const baseAtStart = head.seenBase(oldName);
         await doPush(newName, { encode: () => bytes, getEditVersion });
         const after = await probeOld(oldName);
-        let oldCloudOrphan = false, oldKept = false, oldUnknown = false;
+        let oldCloudOrphan = false, oldKept = false, oldUnknown = false, oldKeptByUser = false;
         if (!after.known) {
           oldUnknown = true;
         } else if (after.meta == null) {
-        } else if (baseAtStart != null && baseAtStart === after.meta.etag) {
+        } else if (baseAtStart != null && baseAtStart === after.meta.etag || userOld === "trash") {
           try {
             await cloud.trash(oldName, asideStamp(Date.now()), { baseEtag: after.meta.etag });
           } catch (e10) {
@@ -15347,6 +15447,7 @@ function createIdentity(cfg) {
           }
         } else {
           oldKept = true;
+          oldKeptByUser = userOld === "keep";
         }
         head.forget(oldName);
         return {
@@ -15355,6 +15456,7 @@ function createIdentity(cfg) {
           newName,
           oldCloudOrphan,
           oldKept,
+          oldKeptByUser,
           oldUnknown,
           oldName
         };
@@ -15995,7 +16097,7 @@ function createCollection(cfg) {
     cloud.setDirty(name, true);
     scheduleLocalWrite();
   }
-  async function init() {
+  async function init2() {
     await hydrateLocal();
     if (!idbHad)
       await seedInit();
@@ -16053,7 +16155,7 @@ function createCollection(cfg) {
   function isDirty2() {
     return cloud.isDirty(name);
   }
-  return { init, reconcileWithRemote, setItem, deleteItem, getItem, getEntry, entries: entries2, keys, onChange, flushLocal, isDirty: isDirty2 };
+  return { init: init2, reconcileWithRemote, setItem, deleteItem, getItem, getEntry, entries: entries2, keys, onChange, flushLocal, isDirty: isDirty2 };
 }
 
 // node_modules/@internal/store/dist/works/listing.js
@@ -16318,8 +16420,8 @@ function parseCloudTrashName(cloudName, toName) {
   const m2 = cloudName.match(STAMP_RE);
   if (m2)
     return { base: m2[1], id: m2[2], ts: m2[3], encrypted: !!m2[4] };
-  const base3 = toName(cloudName);
-  return { base: base3, id: null, ts: null, encrypted: base3 !== cloudName };
+  const base2 = toName(cloudName);
+  return { base: base2, id: null, ts: null, encrypted: base2 !== cloudName };
 }
 function parseLocalStamp(trashKey) {
   const slash = trashKey.indexOf("/");
@@ -16331,11 +16433,11 @@ var byTs = (a10, b3) => (a10.ts || "").localeCompare(b3.ts || "");
 function mergeTrash(localEntries, cloudEntries, liveCloudNames = /* @__PURE__ */ new Set(), toName = defaultCloudToName) {
   const localByBase = /* @__PURE__ */ new Map();
   for (const e10 of localEntries) {
-    const base3 = baseNameOf(e10.name);
-    const bucket = localByBase.get(base3) ?? [];
+    const base2 = baseNameOf(e10.name);
+    const bucket = localByBase.get(base2) ?? [];
     const st2 = parseLocalStamp(e10.trashKey);
     bucket.push({ entry: e10, id: st2.id, ts: st2.ts });
-    localByBase.set(base3, bucket);
+    localByBase.set(base2, bucket);
   }
   const cloudByBase = /* @__PURE__ */ new Map();
   for (const it2 of cloudEntries) {
@@ -16346,9 +16448,9 @@ function mergeTrash(localEntries, cloudEntries, liveCloudNames = /* @__PURE__ */
   }
   const out = [];
   const bases = /* @__PURE__ */ new Set([...localByBase.keys(), ...cloudByBase.keys()]);
-  for (const base3 of bases) {
-    const locals = (localByBase.get(base3) ?? []).slice().sort(byTs);
-    const clouds = (cloudByBase.get(base3) ?? []).slice().sort(byTs);
+  for (const base2 of bases) {
+    const locals = (localByBase.get(base2) ?? []).slice().sort(byTs);
+    const clouds = (cloudByBase.get(base2) ?? []).slice().sort(byTs);
     const usedCloud = /* @__PURE__ */ new Set();
     const byId = /* @__PURE__ */ new Map();
     clouds.forEach((c10, i10) => {
@@ -16372,7 +16474,7 @@ function mergeTrash(localEntries, cloudEntries, liveCloudNames = /* @__PURE__ */
     clouds.forEach((c10, i10) => {
       if (usedCloud.has(i10))
         return;
-      out.push({ identifier: base3, ts: c10.ts, side: "cloud", encrypted: c10.encrypted, conflictLive: false, localKey: null, cloudRef: c10.item.ref });
+      out.push({ identifier: base2, ts: c10.ts, side: "cloud", encrypted: c10.encrypted, conflictLive: false, localKey: null, cloudRef: c10.item.ref });
     });
   }
   return out;
@@ -17311,7 +17413,7 @@ function createDownloadSessions(cfg) {
         return false;
     return true;
   };
-  async function open(name) {
+  async function open2(name) {
     let cm0 = null, cloudErr = null;
     try {
       cm0 = await fetchMeta(name);
@@ -17641,7 +17743,7 @@ function createDownloadSessions(cfg) {
       // 关会话把命中账落盘（有账才写：promote 清过的不复活）
     };
   }
-  return { open, coverage, promoteFromStaging, purgeName, _enforceCap: enforceCap, _scheduler: scheduler };
+  return { open: open2, coverage, promoteFromStaging, purgeName, _enforceCap: enforceCap, _scheduler: scheduler };
 }
 
 // node_modules/@internal/store/dist/base/kv-namespace.js
@@ -17879,8 +17981,8 @@ function resolveStoreText(custom, key, params) {
   const fromHost = custom?.(key, params);
   if (fromHost != null)
     return fromHost;
-  const base3 = STORE_TEXT_EN[key];
-  return base3 != null ? interpolate2(base3, params) : String(key);
+  const base2 = STORE_TEXT_EN[key];
+  return base2 != null ? interpolate2(base2, params) : String(key);
 }
 
 // node_modules/@internal/store/dist/create-store.js
@@ -18314,7 +18416,8 @@ function createStore(config) {
       }
     };
   } : void 0;
-  const pushMod = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: busyT, sessionFor, ...config.pushRetry });
+  const recaptureLineage = config.recaptureLineageOnPush ?? true;
+  const pushMod = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: busyT, sessionFor, recaptureLineage, ...config.pushRetry });
   const uploadReplayPolicy = config.offlineUploadReplay ?? "manual";
   if (uploadReplayPolicy !== "manual") {
     if (!ui3.onReplayStatus)
@@ -18322,7 +18425,7 @@ function createStore(config) {
     if (uploadReplayPolicy === "ask" && !ui3.confirmReplay)
       throw new Error("createStore: offlineUploadReplay='ask' \u9700 ui.confirmReplay\uFF08\u56DE\u7EBF\u8BE2\u95EE\u7528\u6237\uFF09");
   }
-  const pushBg = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: (_l, fn) => fn(), sessionFor, ...config.pushRetry });
+  const pushBg = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: (_l, fn) => fn(), sessionFor, recaptureLineage, ...config.pushRetry });
   async function pushLocalBytes(name) {
     const blob = await local.get(name);
     if (!blob)
@@ -18360,8 +18463,10 @@ function createStore(config) {
     // 完整离线删语义（move-aside + base-etag 云删排队 + null 守卫 + forget）
     queueUpload: (name) => uploadReplay.enqueue(name),
     // never-synced float 重连补推（ADR-0018）
-    nameOccupied
+    nameOccupied,
     // 唯一占用检查（assertNameFree 据此抛）
+    askKeepOld: ui3.resolveRenameOld
+    // 2.2.2：谱系不明 / 分叉的改名先问人搬不搬云端旧的（宿主没给 = 默认留着 + oldKept）
   });
   const trashMod = createTrash({ cloud, local, head, busy: busyT });
   async function aggregateBox(box) {
@@ -18408,6 +18513,8 @@ function createStore(config) {
     if (occ)
       return { ok: false, reason: "name-collision", where: occ };
     const r10 = await identity.rename(from, to2, { skipOccupiedCheck: true });
+    if (r10.status === "cancelled")
+      return { ok: false, reason: "cancelled" };
     notifyFolderOf(from);
     notifyFolderOf(to2);
     for (const cb2 of renameListeners) {
@@ -18417,12 +18524,23 @@ function createStore(config) {
         ui3.reportError(e10, "warning");
       }
     }
-    return { ok: true, where: r10.where, oldKept: r10.oldKept, oldUnknown: r10.oldUnknown, oldCloudOrphan: r10.oldCloudOrphan, cloudDeferred: r10.cloudDeferred, oldName: from };
+    return { ok: true, where: r10.where, oldKept: r10.oldKept, oldKeptByUser: r10.oldKeptByUser, oldUnknown: r10.oldUnknown, oldCloudOrphan: r10.oldCloudOrphan, cloudDeferred: r10.cloudDeferred, oldName: from };
   });
-  const onConflictFor = (occasion) => async ({ name }) => {
+  const cloudStateNow = async (name) => {
+    try {
+      const meta = await cloud.fetchMeta(name);
+      const base2 = head.seenBase(name);
+      return !meta ? base2 == null ? "never" : "absent" : meta.etag === base2 ? "unchanged" : "changed";
+    } catch (e10) {
+      ui3.reportError(e10, "log");
+      return "changed";
+    }
+  };
+  const onConflictFor = (occasion) => async ({ name, cloudState, cloudEtag }) => {
     if (tierOf(name) === "auto-backup")
       return "keepMine";
-    return ui3.resolveConflict({ name, local: await local.get(name), cloud: null, occasion, cloudState: "changed" });
+    const state = cloudState ?? (cloudEtag != null ? "changed" : await cloudStateNow(name));
+    return ui3.resolveConflict({ name, local: await local.get(name), cloud: null, occasion, cloudState: state });
   };
   const onConflict = onConflictFor("push");
   async function encTailBytes(name, n10, tryCloud) {
@@ -18692,7 +18810,12 @@ function createStore(config) {
               isOnline,
               probe: esc9?.probe,
               onNewer: onConflictFor("open"),
-              localDirty: () => sub.edits.localDirty()
+              localDirty: () => sub.edits.localDirty(),
+              localBytes: async () => {
+                const b3 = await local.get(name);
+                return b3 ? await toU8(b3 instanceof Blob ? b3 : new Blob([b3])) : null;
+              }
+              // 2.2.2：回执丢失自愈
             }).catch((e10) => ui3.reportError(e10));
           } finally {
             esc9?.settle();
@@ -19071,24 +19194,30 @@ function createStore(config) {
           await migrationReady;
           let pushed = 0;
           const failed = [];
+          const failures = [];
           for (const name of dirtyNames()) {
             const st2 = await sub.serialize(name, async () => {
               if (!head.isDirtyAnywhere(name))
                 return "clean";
               try {
                 const r10 = await pushLocalBytes(name);
-                return r10.status === "pushed" || r10.status === "healed" ? "pushed" : "failed";
+                if (r10.status === "pushed" || r10.status === "healed")
+                  return "pushed";
+                return r10.status === "deferred" ? "deferred" : "conflict";
               } catch (e10) {
                 ui3.reportError(e10, "warning");
-                return "failed";
+                const n10 = e10?.name;
+                return n10 === "CloudNameCollisionError" ? "collision" : n10 === "CloudNetworkError" ? "network" : "error";
               }
             });
             if (st2 === "pushed")
               pushed++;
-            else if (st2 === "failed")
+            else if (st2 !== "clean") {
               failed.push(name);
+              failures.push({ name, reason: st2 });
+            }
           }
-          return { pushed, failed };
+          return { pushed, failed, failures };
         }
       }),
       /** 订阅**一个**文件夹（网盘模型）：立即本地帧 + 云端帧同一 cb 再闪；之后本夹任何本地写即时重推本地帧。返回退订。 */
@@ -19424,19 +19553,19 @@ function createGraph(tokenSource, opts = {}) {
   async function graphFetch(method, pathOrUrl, { headers = {}, body: body2 = null } = {}) {
     const token = await getToken2();
     const url = pathOrUrl.startsWith("http") ? pathOrUrl : `${GRAPH_BASE}${pathOrUrl}`;
-    const init = { method, headers: { Authorization: `Bearer ${token}`, ...headers }, signal: timed("meta") };
+    const init2 = { method, headers: { Authorization: `Bearer ${token}`, ...headers }, signal: timed("meta") };
     if (body2 != null) {
       if (typeof body2 === "string" || body2 instanceof ArrayBuffer || ArrayBuffer.isView(body2) || body2 instanceof Blob) {
-        init.body = body2;
+        init2.body = body2;
       } else {
-        init.body = JSON.stringify(body2);
-        if (!init.headers["Content-Type"])
-          init.headers["Content-Type"] = "application/json";
+        init2.body = JSON.stringify(body2);
+        if (!init2.headers["Content-Type"])
+          init2.headers["Content-Type"] = "application/json";
       }
     }
     let response;
     try {
-      response = await fetch(url, init);
+      response = await fetch(url, init2);
     } catch (e10) {
       throw new CloudNetworkError(`Graph ${method} ${pathOrUrl}: network fetch failed (${String(e10)})`, e10);
     }
@@ -19940,9 +20069,9 @@ function _acquireSingleFlight(key, account, where) {
     }
     _latched.delete(key);
   }
-  const inflight = _inflight.get(key);
-  if (inflight)
-    return inflight;
+  const inflight2 = _inflight.get(key);
+  if (inflight2)
+    return inflight2;
   const p2 = (async () => {
     try {
       const result = await pca.acquireTokenSilent({ scopes: SCOPES, account });
@@ -20332,6 +20461,7 @@ var hasLocalCopy = (s10) => isCached(s10);
 var hasCloudCopy = (s10) => s10 === "cloud-only" || s10 === "synced" || s10 === "unpushed" || s10 === "newer-on-cloud" || s10 === "conflict";
 var hasUnpushed = (s10) => isDirty(s10);
 var cloudBytesNewer = (s10) => s10 === "newer-on-cloud" || s10 === "conflict";
+var ATTENTION_BADGES = /* @__PURE__ */ new Set(["float", "dirtyBoth", "conflictBoth", "ghost", "pendingGone"]);
 var BADGE_OF = {
   "cloud-only": "cloudOnly",
   synced: "syncedBoth",
@@ -20363,7 +20493,8 @@ function tileFor(item, opts) {
     pendingGone: s10 === "pendingGone",
     isActive: !!opts.activeIdentifier && item.identifier === opts.activeIdentifier,
     // 加密态由调用方探测后注入（store 的 Item 内容盲、没有 encrypted 轴）。
-    encrypted: !!opts.encrypted
+    encrypted: !!opts.encrypted,
+    attention: opts.signedIn && ATTENTION_BADGES.has(badge)
   };
 }
 function breadcrumb(folder) {
@@ -20407,8 +20538,8 @@ function humanSize(b3) {
   return `${(b3 / 1073741824).toFixed(2)} GiB`;
 }
 function asideTileFor(item) {
-  const base3 = item.side === "both" ? t("gv.src.both") : item.side === "local" ? t("gv.src.local") : t("gv.src.cloud");
-  const source = item.conflictLive ? t("gv.src.cloudStillAlive", { base: base3 }) : base3;
+  const base2 = item.side === "both" ? t("gv.src.both") : item.side === "local" ? t("gv.src.local") : t("gv.src.cloud");
+  const source = item.conflictLive ? t("gv.src.cloudStillAlive", { base: base2 }) : base2;
   return { key: item.key, identifier: item.identifier, stem: item.stem, at: item.at, source };
 }
 function fullTime(ts2) {
@@ -20457,7 +20588,7 @@ function createFrameGate(apply2, opts) {
       capTimer = null;
     }
   }
-  function open() {
+  function open2() {
     held = false;
     clearTail();
     clearCap();
@@ -20481,7 +20612,7 @@ function createFrameGate(apply2, opts) {
       clearTail();
       if (!held) {
         held = true;
-        capTimer = timers.set(open, maxHoldMs);
+        capTimer = timers.set(open2, maxHoldMs);
       }
     },
     pointerUp() {
@@ -20489,12 +20620,12 @@ function createFrameGate(apply2, opts) {
         pointers--;
       if (pointers === 0 && held) {
         clearTail();
-        tailTimer = timers.set(open, tailMs);
+        tailTimer = timers.set(open2, tailMs);
       }
     },
     reset() {
       pointers = 0;
-      open();
+      open2();
     },
     isHeld: () => held
   };
@@ -20985,9 +21116,14 @@ function createGalleryVerbs(d3) {
       const result = await d3.host.busy(t("gal.busy.rename", { name: item.stem, to: shownTarget }), async () => {
         try {
           const r10 = await docFile(item.identifier).tryMove(target);
-          if (!r10.ok)
-            return { taken: whereLabel(r10.where) };
-          d3.host.status(t("gal.st.renamed", { to: shownTarget }));
+          if (!r10.ok) {
+            if (r10.reason === "cancelled") {
+              d3.host.status(t("gal.st.cancelled"));
+              return { ok: true };
+            }
+            return { taken: whereLabel(r10.where ?? "local") };
+          }
+          afterMoveStatus(r10, t("gal.st.renamed", { to: shownTarget }), item.stem, shownTarget);
           return { ok: true };
         } catch (e10) {
           return { error: errMsg(e10) };
@@ -21006,6 +21142,20 @@ function createGalleryVerbs(d3) {
       return;
     }
   }
+  function afterMoveStatus(r10, okText, from, to2) {
+    if (r10.oldKept && r10.oldKeptByUser)
+      d3.host.status(t("gal.st.movedOldKeptByUser", { from, to: to2 }));
+    else if (r10.oldKept)
+      d3.host.status(t("gal.st.movedOldKept", { from, to: to2 }), true);
+    else if (r10.oldCloudOrphan)
+      d3.host.status(t("gal.st.movedOldOrphan", { from, to: to2 }), true);
+    else if (r10.oldUnknown)
+      d3.host.status(t("gal.st.movedOldUnknown", { from, to: to2 }), true);
+    else if (r10.cloudDeferred)
+      d3.host.status(t("gal.st.movedCloudDeferred", { to: to2 }));
+    else
+      d3.host.status(okText);
+  }
   function moveTargets(item, ctx2) {
     const cur = pathFolder(item.identifier);
     const targets = [];
@@ -21016,13 +21166,13 @@ function createGalleryVerbs(d3) {
     return [...new Set(targets)].filter((f2) => f2 !== cur).sort((a10, b3) => a10 === "" ? -1 : b3 === "" ? 1 : naturalCompare(a10, b3));
   }
   async function move(item, ctx2) {
-    const base3 = item.stem;
+    const base2 = item.stem;
     const sorted = moveTargets(item, ctx2);
     if (!sorted.length) {
       d3.host.status(t("gal.st.noOtherFolder"));
       return;
     }
-    const target = await d3.host.chooseFolder(t("gal.dlg.moveTitle", { base: base3 }), t("gal.dlg.moveMsg"), sorted.map((f2) => ({ label: f2 === "" ? t("gal.rootFolder") : f2, value: f2 })));
+    const target = await d3.host.chooseFolder(t("gal.dlg.moveTitle", { base: base2 }), t("gal.dlg.moveMsg"), sorted.map((f2) => ({ label: f2 === "" ? t("gal.rootFolder") : f2, value: f2 })));
     if (target == null)
       return;
     const d0 = ids().parse(item.identifier);
@@ -21031,16 +21181,20 @@ function createGalleryVerbs(d3) {
       d3.host.status(t("gal.st.alreadyInFolder"));
       return;
     }
-    await d3.host.busy(t("gal.busy.move", { base: base3, target: target || t("gal.root") }), async () => {
+    await d3.host.busy(t("gal.busy.move", { base: base2, target: target || t("gal.root") }), async () => {
       try {
         const r10 = await docFile(item.identifier).tryMove(newIdentifier);
         if (!r10.ok) {
-          d3.host.status(t("gal.st.nameTakenTarget", { loc: whereLabel(r10.where), base: base3 }), true);
+          if (r10.reason === "cancelled") {
+            d3.host.status(t("gal.st.cancelled"));
+            return;
+          }
+          d3.host.status(t("gal.st.nameTakenTarget", { loc: whereLabel(r10.where ?? "local"), base: base2 }), true);
           return;
         }
         if (item.identifier === d3.host.activeIdentifier())
           d3.doc.setIdentifier(newIdentifier);
-        d3.host.status(t("gal.st.moved", { target: target || t("gal.root") }));
+        afterMoveStatus(r10, t("gal.st.moved", { target: target || t("gal.root") }), item.stem, item.stem);
       } catch (e10) {
         d3.host.status(t("gal.st.moveFail", { e: errMsg(e10) }), true);
       }
@@ -21079,21 +21233,25 @@ function createGalleryVerbs(d3) {
   }
   async function resolve(item) {
     const isActive = item.identifier === d3.host.activeIdentifier();
-    await d3.host.busy(t("gal.busy.resolve", { name: item.stem }), async () => {
-      try {
-        if (isActive)
-          await d3.doc.exit();
-        const r10 = await docFile(item.identifier).resolve();
-        const key = r10.status === "took-cloud" ? "gal.st.resolve.tookCloud" : r10.status === "pushed" ? "gal.st.resolve.pushed" : r10.status === "trashed" ? "gal.st.resolve.trashed" : r10.status === "cancelled" ? "gal.st.resolve.cancelled" : r10.status === "clean" ? "gal.st.resolve.clean" : r10.status === "offline" ? "gal.st.resolve.offline" : "gal.st.resolve.unresolved";
-        const bad = key === "gal.st.resolve.offline" || key === "gal.st.resolve.unresolved";
-        d3.host.status(t(key, { name: item.stem, e: r10.reason ?? r10.status }), bad);
-        if (isActive && (r10.status === "took-cloud" || r10.status === "trashed") && d3.doc.open)
-          await d3.doc.open(item);
-      } catch (e10) {
-        d3.host.status(t("gal.st.resolve.unresolved", { name: item.stem, e: errMsg(e10) }), true);
-      }
-    });
+    if (_resolving.has(item.identifier))
+      return;
+    _resolving.add(item.identifier);
+    try {
+      if (isActive)
+        await d3.doc.exit();
+      const r10 = await docFile(item.identifier).resolve();
+      const key = r10.status === "took-cloud" ? "gal.st.resolve.tookCloud" : r10.status === "pushed" ? "gal.st.resolve.pushed" : r10.status === "trashed" ? "gal.st.resolve.trashed" : r10.status === "cancelled" ? "gal.st.resolve.cancelled" : r10.status === "clean" ? "gal.st.resolve.clean" : r10.status === "offline" ? "gal.st.resolve.offline" : "gal.st.resolve.unresolved";
+      const bad = key === "gal.st.resolve.offline" || key === "gal.st.resolve.unresolved";
+      d3.host.status(t(key, { name: item.stem, e: r10.reason ?? r10.status }), bad);
+      if (isActive && (r10.status === "took-cloud" || r10.status === "trashed") && d3.doc.open)
+        await d3.doc.open(item);
+    } catch (e10) {
+      d3.host.status(t("gal.st.resolve.unresolved", { name: item.stem, e: errMsg(e10) }), true);
+    } finally {
+      _resolving.delete(item.identifier);
+    }
   }
+  const _resolving = /* @__PURE__ */ new Set();
   async function del(item) {
     const isActive = item.identifier === d3.host.activeIdentifier();
     const isLocal = hasLocalCopy(item.syncState), isCloud = hasCloudCopy(item.syncState);
@@ -21310,7 +21468,7 @@ function memoryThumbStore() {
 function idbThumbStore(opts) {
   const storeName = opts.storeName ?? "thumbs", version = opts.version ?? 1;
   let _db = null;
-  const open = () => new Promise((resolve, reject) => {
+  const open2 = () => new Promise((resolve, reject) => {
     const req = indexedDB.open(opts.dbName, version);
     req.onupgradeneeded = () => {
       const db2 = req.result;
@@ -21324,9 +21482,9 @@ function idbThumbStore(opts) {
   const db = () => {
     if (_db)
       return _db;
-    _db = open().catch(async (e12) => {
+    _db = open2().catch(async (e12) => {
       try {
-        return await open();
+        return await open2();
       } catch {
         _db = null;
         throw e12;
@@ -21807,6 +21965,17 @@ function storeUIFor(d3) {
       });
       return choice ?? "cancel";
     },
+    // 0.8.10（store 2.2.2；user 2026-10-26「同意，反正不删就行了」）：改名 / 移动撞上「不知道云端旧的该不该搬」→ 先问人。搬走 = 进回收站（可恢复），不是删。
+    resolveRenameOld: async ({ oldName, newName, reason }) => {
+      const choice = await d3.sheets.lockSyncGate({
+        title: t("rn.title", { name: bare(oldName) }),
+        message: reason === "diverged" ? t("rn.body.diverged", { from: bare(oldName), to: bare(newName) }) : t("rn.body.unknown", { from: bare(oldName), to: bare(newName) }),
+        note: t("rn.note"),
+        showSpinner: false,
+        actions: [{ label: t("rn.act.trash"), value: "trash", primary: true }, { label: t("rn.act.keep"), value: "keep" }, { label: t("common.cancel"), value: "cancel" }]
+      });
+      return choice ?? "cancel";
+    },
     reportError: (err2, level) => {
       if (err2?.name === "CloudNetworkError") {
         d3.reportError(err2, "log");
@@ -21851,6 +22020,12 @@ var GALLERY_TEMPLATE = `
         </template>
       </div>
 
+      <!-- 0.8.8\uFF1A\u6709\u6CA1\u540C\u6B65\u597D\u7684 \u2192 \u9876\u4E0A\u4E00\u6761\u6A2A\u5E45\u300C\u6709 N \u4EFD\u8981\u5904\u7406 \u2192 \u770B\u5217\u8868\u300D\uFF1B\u70B9\u4E86\u53EA\u770B\u90A3\u51E0\u5F20\uFF08\u6BCF\u5F20\u53F3\u4E0B\u89D2\u4E00\u7C92\u53EF\u89C1\u7684\u300C\u5904\u7406\u2026\u300D\u94AE\uFF09\u3002\u590D\u7528\u9762\u5305\u5C51\u5BB9\u5668\u6837\u5F0F\u3002 -->
+      <div class="gallery-breadcrumb gallery-attention-bar" v-if="view==='files' && !loading && attentionCount>0">
+        <span class="gallery-attention-text">{{ attentionText }}</span>
+        <button type="button" class="gallery-attention-toggle" @click="toggleAttentionOnly">{{ attentionOnly ? L.attentionAll : L.attentionList }}</button>
+      </div>
+
       <!-- 0.8.6\uFF1A\u56DE\u6536\u7AD9 / \u5907\u4EFD\u7BB1\u89C6\u56FE\u9876\u4E0A\u4E00\u6761\u52A8\u4F5C\uFF08store files.emptyTrash / emptyBackup \u4E00\u76F4\u6709\u3001\u56FE\u5E93\u4ECE\u6CA1\u7ED9\u8FC7\u5165\u53E3\u2014\u2014store README\u300C\u6682\u65E0 gallery UI\u300D\uFF09\u3002\u590D\u7528\u9762\u5305\u5C51\u7684\u5BB9\u5668\u4E0E\u6309\u94AE\u6837\u5F0F\uFF0C\u5BBF\u4E3B\u96F6 CSS\u3002 -->
       <div class="gallery-breadcrumb gallery-aside-bar" v-if="view!=='files' && !loading && !isEmpty">
         <button type="button" class="danger" @click="emptyAside(view)">{{ view==='trash' ? L.emptyTrash : L.emptyBackup }}</button>
@@ -21870,7 +22045,7 @@ var GALLERY_TEMPLATE = `
         </div>
 
         <template v-if="view==='files' && !loading">
-          <div v-for="ft in folderTiles" :key="'F:'+ft.path" class="gallery-tile folder" @click="enterFolder(ft.path)">
+          <div v-for="ft in (attentionOnly ? [] : folderTiles)" :key="'F:'+ft.path" class="gallery-tile folder" @click="enterFolder(ft.path)">
             <div class="gallery-tile-thumb" v-html="ICON.folder"></div>
             <div class="gallery-tile-name-row">
               <div class="gallery-tile-name" :title="ft.path">{{ ft.name }}</div>
@@ -21882,10 +22057,10 @@ var GALLERY_TEMPLATE = `
             </div></Teleport>
           </div>
 
-          <div v-for="row in fileTiles" :key="row.t.identifier" class="gallery-tile" :class="{ active: row.t.isActive, encrypted: row.t.encrypted }" @click="openTile(row.item)">
+          <div v-for="row in shownFileTiles" :key="row.t.identifier" class="gallery-tile" :class="{ active: row.t.isActive, encrypted: row.t.encrypted, attention: row.t.attention }" @click="openTile(row.item)">
             <ThumbCell :enc-name="row.t.encrypted && row.thumb ? row.t.identifier : null" :fetchable="!row.t.encrypted && (row.t.hasCloud || row.t.hasLocal) && row.thumb" :is-cloud="!row.t.hasLocal && row.t.hasCloud" :cloud-newer="row.t.cloudNewer" :thumb-token="String(row.t.time || row.t.size || 0)" :fallback="row.t.stem.slice(0,1) || '?'" :fallback-html="phHtml(row.t.identifier, row.info)" :alt="row.t.identifier" @unlock="onUnlock" />
             <span v-if="row.ov" class="gallery-tile-overlay" v-html="row.ov"></span>
-            <span v-if="row.act" class="gallery-tile-action-slot"><button type="button" class="gallery-tile-action" :class="row.act.state || 'ready'" :title="row.act.title" :aria-label="row.act.title" @click.stop="tileAction(row.item)" @pointerdown.stop v-html="badgeIcon2(row.act.icon)"></button></span>
+            <span v-if="row.act" class="gallery-tile-action-slot"><button type="button" class="gallery-tile-action" :class="[row.act.state || 'ready', row.act.verb ? 'verb-' + row.act.verb : '']" :title="row.act.title" :aria-label="row.act.title" @click.stop="tileAction(row)" @pointerdown.stop><span class="gallery-tile-action-ico" v-html="badgeIcon2(row.act.icon)"></span><span v-if="row.act.verb" class="gallery-tile-action-label">{{ row.act.title }}</span></button></span>
             <span v-if="row.t.encrypted" class="gallery-tile-lockmark" :title="L.encrypted" v-html="ICON.lock"></span>
             <div class="gallery-tile-name-row">
               <span v-if="row.t.isActive" class="gallery-tile-active-tag">{{ L.activeTag }}</span>
@@ -21926,7 +22101,7 @@ var GALLERY_TEMPLATE = `
             </div></Teleport>
           </div>
 
-          <div v-for="im in imageTiles" :key="'I:'+im.identifier" class="gallery-tile image-file" @click="openImageTile(im.raw)">
+          <div v-for="im in (attentionOnly ? [] : imageTiles)" :key="'I:'+im.identifier" class="gallery-tile image-file" @click="openImageTile(im.raw)">
             <ImageThumbCell :identifier="im.identifier" :token="im.token" :fallback="im.label.slice(0,1) || '?'" :alt="im.label" />
             <div class="gallery-tile-name-row">
               <div class="gallery-tile-name" :title="im.identifier">{{ im.label }}</div>
@@ -21940,7 +22115,7 @@ var GALLERY_TEMPLATE = `
               <button type="button" class="danger" @click="deleteImage(im.raw)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash-can"/></svg><span>{{ L.toTrash }}</span></button>
             </div></Teleport>
           </div>
-          <div v-for="ot in otherTiles" :key="'O:'+ot.identifier" class="gallery-tile other-file">
+          <div v-for="ot in (attentionOnly ? [] : otherTiles)" :key="'O:'+ot.identifier" class="gallery-tile other-file">
             <div class="gallery-tile-thumb" v-html="ICON.file"></div>
             <div class="gallery-tile-name-row">
               <div class="gallery-tile-name" :title="ot.identifier">{{ ot.label }}</div>
@@ -22070,48 +22245,54 @@ function galleryRender(Vue) {
   const _hoisted_2 = ["onClick"];
   const _hoisted_3 = {
     key: 1,
+    class: "gallery-breadcrumb gallery-attention-bar"
+  };
+  const _hoisted_4 = { class: "gallery-attention-text" };
+  const _hoisted_5 = {
+    key: 2,
     class: "gallery-breadcrumb gallery-aside-bar"
   };
-  const _hoisted_4 = {
+  const _hoisted_6 = {
     key: 0,
     class: "gallery-loading"
   };
-  const _hoisted_5 = { class: "gallery-stalled" };
-  const _hoisted_6 = { class: "gallery-stalled-actions" };
-  const _hoisted_7 = ["onClick"];
-  const _hoisted_8 = ["innerHTML"];
-  const _hoisted_9 = { class: "gallery-tile-name-row" };
-  const _hoisted_10 = ["title"];
-  const _hoisted_11 = { class: "gallery-tile-meta" };
-  const _hoisted_12 = ["aria-label", "onClick"];
-  const _hoisted_13 = ["data-menu"];
-  const _hoisted_14 = ["onClick"];
-  const _hoisted_15 = ["onClick"];
-  const _hoisted_16 = ["innerHTML"];
-  const _hoisted_17 = {
+  const _hoisted_7 = { class: "gallery-stalled" };
+  const _hoisted_8 = { class: "gallery-stalled-actions" };
+  const _hoisted_9 = ["onClick"];
+  const _hoisted_10 = ["innerHTML"];
+  const _hoisted_11 = { class: "gallery-tile-name-row" };
+  const _hoisted_12 = ["title"];
+  const _hoisted_13 = { class: "gallery-tile-meta" };
+  const _hoisted_14 = ["aria-label", "onClick"];
+  const _hoisted_15 = ["data-menu"];
+  const _hoisted_16 = ["onClick"];
+  const _hoisted_17 = ["onClick"];
+  const _hoisted_18 = ["innerHTML"];
+  const _hoisted_19 = {
     key: 1,
     class: "gallery-tile-action-slot"
   };
-  const _hoisted_18 = ["title", "aria-label", "onClick", "innerHTML"];
-  const _hoisted_19 = ["title", "innerHTML"];
-  const _hoisted_20 = { class: "gallery-tile-name-row" };
-  const _hoisted_21 = {
+  const _hoisted_20 = ["title", "aria-label", "onClick"];
+  const _hoisted_21 = ["innerHTML"];
+  const _hoisted_22 = {
+    key: 0,
+    class: "gallery-tile-action-label"
+  };
+  const _hoisted_23 = ["title", "innerHTML"];
+  const _hoisted_24 = { class: "gallery-tile-name-row" };
+  const _hoisted_25 = {
     key: 0,
     class: "gallery-tile-active-tag"
   };
-  const _hoisted_22 = ["title"];
-  const _hoisted_23 = ["title"];
-  const _hoisted_24 = ["title"];
-  const _hoisted_25 = { class: "gallery-tile-meta" };
-  const _hoisted_26 = ["title", "innerHTML"];
-  const _hoisted_27 = ["title", "innerHTML"];
-  const _hoisted_28 = ["aria-label", "onClick"];
-  const _hoisted_29 = ["data-menu"];
-  const _hoisted_30 = { class: "gallery-menu-note" };
-  const _hoisted_31 = ["onClick"];
-  const _hoisted_32 = ["onClick"];
-  const _hoisted_33 = ["onClick"];
-  const _hoisted_34 = ["onClick"];
+  const _hoisted_26 = ["title"];
+  const _hoisted_27 = ["title"];
+  const _hoisted_28 = ["title"];
+  const _hoisted_29 = { class: "gallery-tile-meta" };
+  const _hoisted_30 = ["title", "innerHTML"];
+  const _hoisted_31 = ["title", "innerHTML"];
+  const _hoisted_32 = ["aria-label", "onClick"];
+  const _hoisted_33 = ["data-menu"];
+  const _hoisted_34 = { class: "gallery-menu-note" };
   const _hoisted_35 = ["onClick"];
   const _hoisted_36 = ["onClick"];
   const _hoisted_37 = ["onClick"];
@@ -22122,27 +22303,31 @@ function galleryRender(Vue) {
   const _hoisted_42 = ["onClick"];
   const _hoisted_43 = ["onClick"];
   const _hoisted_44 = ["onClick"];
-  const _hoisted_45 = { class: "gallery-tile-name-row" };
-  const _hoisted_46 = ["title"];
-  const _hoisted_47 = { class: "gallery-tile-meta" };
-  const _hoisted_48 = ["title", "innerHTML"];
-  const _hoisted_49 = ["aria-label", "onClick"];
-  const _hoisted_50 = ["data-menu"];
-  const _hoisted_51 = ["onClick"];
-  const _hoisted_52 = ["innerHTML"];
-  const _hoisted_53 = { class: "gallery-tile-name-row" };
-  const _hoisted_54 = ["title"];
-  const _hoisted_55 = { class: "gallery-tile-meta" };
-  const _hoisted_56 = ["title", "innerHTML"];
-  const _hoisted_57 = ["innerHTML"];
-  const _hoisted_58 = ["title", "innerHTML"];
-  const _hoisted_59 = { class: "gallery-tile-name-row" };
-  const _hoisted_60 = ["title"];
-  const _hoisted_61 = ["title"];
-  const _hoisted_62 = ["aria-label", "onClick"];
-  const _hoisted_63 = ["data-menu"];
-  const _hoisted_64 = ["onClick"];
-  const _hoisted_65 = ["onClick"];
+  const _hoisted_45 = ["onClick"];
+  const _hoisted_46 = ["onClick"];
+  const _hoisted_47 = ["onClick"];
+  const _hoisted_48 = ["onClick"];
+  const _hoisted_49 = { class: "gallery-tile-name-row" };
+  const _hoisted_50 = ["title"];
+  const _hoisted_51 = { class: "gallery-tile-meta" };
+  const _hoisted_52 = ["title", "innerHTML"];
+  const _hoisted_53 = ["aria-label", "onClick"];
+  const _hoisted_54 = ["data-menu"];
+  const _hoisted_55 = ["onClick"];
+  const _hoisted_56 = ["innerHTML"];
+  const _hoisted_57 = { class: "gallery-tile-name-row" };
+  const _hoisted_58 = ["title"];
+  const _hoisted_59 = { class: "gallery-tile-meta" };
+  const _hoisted_60 = ["title", "innerHTML"];
+  const _hoisted_61 = ["innerHTML"];
+  const _hoisted_62 = ["title", "innerHTML"];
+  const _hoisted_63 = { class: "gallery-tile-name-row" };
+  const _hoisted_64 = ["title"];
+  const _hoisted_65 = ["title"];
+  const _hoisted_66 = ["aria-label", "onClick"];
+  const _hoisted_67 = ["data-menu"];
+  const _hoisted_68 = ["onClick"];
+  const _hoisted_69 = ["onClick"];
   return function render(_ctx, _cache) {
     const _component_ThumbCell = _resolveComponent("ThumbCell");
     const _component_ImageThumbCell = _resolveComponent("ImageThumbCell");
@@ -22185,13 +22370,33 @@ function galleryRender(Vue) {
           2
           /* CLASS */
         )) : _createCommentVNode("v-if", true),
-        _ctx.view !== "files" && !_ctx.loading && !_ctx.isEmpty ? (_openBlock(), _createElementBlock("div", _hoisted_3, [
+        _ctx.view === "files" && !_ctx.loading && _ctx.attentionCount > 0 ? (_openBlock(), _createElementBlock("div", _hoisted_3, [
+          _createElementVNode(
+            "span",
+            _hoisted_4,
+            _toDisplayString(_ctx.attentionText),
+            1
+            /* TEXT */
+          ),
+          _createElementVNode(
+            "button",
+            {
+              type: "button",
+              class: "gallery-attention-toggle",
+              onClick: _cache[0] || (_cache[0] = (...args) => _ctx.toggleAttentionOnly && _ctx.toggleAttentionOnly(...args))
+            },
+            _toDisplayString(_ctx.attentionOnly ? _ctx.L.attentionAll : _ctx.L.attentionList),
+            1
+            /* TEXT */
+          )
+        ])) : _createCommentVNode("v-if", true),
+        _ctx.view !== "files" && !_ctx.loading && !_ctx.isEmpty ? (_openBlock(), _createElementBlock("div", _hoisted_5, [
           _createElementVNode(
             "button",
             {
               type: "button",
               class: "danger",
-              onClick: _cache[0] || (_cache[0] = ($event) => _ctx.emptyAside(_ctx.view))
+              onClick: _cache[1] || (_cache[1] = ($event) => _ctx.emptyAside(_ctx.view))
             },
             _toDisplayString(_ctx.view === "trash" ? _ctx.L.emptyTrash : _ctx.L.emptyBackup),
             1
@@ -22205,7 +22410,7 @@ function galleryRender(Vue) {
             style: _normalizeStyle(_ctx.tileStyle)
           },
           [
-            _ctx.loading ? (_openBlock(), _createElementBlock("div", _hoisted_4, [
+            _ctx.loading ? (_openBlock(), _createElementBlock("div", _hoisted_6, [
               !_ctx.stalled ? (_openBlock(), _createElementBlock(
                 _Fragment,
                 { key: 0 },
@@ -22224,18 +22429,18 @@ function galleryRender(Vue) {
                 [
                   _createElementVNode(
                     "div",
-                    _hoisted_5,
+                    _hoisted_7,
                     _toDisplayString(_ctx.stalled),
                     1
                     /* TEXT */
                   ),
-                  _createElementVNode("div", _hoisted_6, [
+                  _createElementVNode("div", _hoisted_8, [
                     _createElementVNode(
                       "button",
                       {
                         type: "button",
                         class: "sheet-action ghost gallery-retry-btn",
-                        onClick: _cache[1] || (_cache[1] = (...args) => _ctx.retry && _ctx.retry(...args))
+                        onClick: _cache[2] || (_cache[2] = (...args) => _ctx.retry && _ctx.retry(...args))
                       },
                       _toDisplayString(_ctx.L.retry),
                       1
@@ -22246,7 +22451,7 @@ function galleryRender(Vue) {
                       {
                         type: "button",
                         class: "sheet-action ghost",
-                        onClick: _cache[2] || (_cache[2] = (...args) => _ctx.openDiag && _ctx.openDiag(...args))
+                        onClick: _cache[3] || (_cache[3] = (...args) => _ctx.openDiag && _ctx.openDiag(...args))
                       },
                       _toDisplayString(_ctx.L.openDiag),
                       1
@@ -22257,7 +22462,7 @@ function galleryRender(Vue) {
                       {
                         type: "button",
                         class: "sheet-action ghost",
-                        onClick: _cache[3] || (_cache[3] = (...args) => _ctx.reloadApp && _ctx.reloadApp(...args))
+                        onClick: _cache[4] || (_cache[4] = (...args) => _ctx.reloadApp && _ctx.reloadApp(...args))
                       },
                       _toDisplayString(_ctx.L.reload),
                       1
@@ -22276,7 +22481,7 @@ function galleryRender(Vue) {
                 (_openBlock(true), _createElementBlock(
                   _Fragment,
                   null,
-                  _renderList(_ctx.folderTiles, (ft) => {
+                  _renderList(_ctx.attentionOnly ? [] : _ctx.folderTiles, (ft) => {
                     return _openBlock(), _createElementBlock("div", {
                       key: "F:" + ft.path,
                       class: "gallery-tile folder",
@@ -22285,15 +22490,15 @@ function galleryRender(Vue) {
                       _createElementVNode("div", {
                         class: "gallery-tile-thumb",
                         innerHTML: _ctx.ICON.folder
-                      }, null, 8, _hoisted_8),
-                      _createElementVNode("div", _hoisted_9, [
+                      }, null, 8, _hoisted_10),
+                      _createElementVNode("div", _hoisted_11, [
                         _createElementVNode("div", {
                           class: "gallery-tile-name",
                           title: ft.path
-                        }, _toDisplayString(ft.name), 9, _hoisted_10),
+                        }, _toDisplayString(ft.name), 9, _hoisted_12),
                         _createElementVNode(
                           "div",
-                          _hoisted_11,
+                          _hoisted_13,
                           _toDisplayString(_ctx.L.folder),
                           1
                           /* TEXT */
@@ -22304,7 +22509,7 @@ function galleryRender(Vue) {
                         class: "gallery-tile-menu-btn",
                         "aria-label": _ctx.L.more,
                         onClick: _withModifiers(($event) => _ctx.toggleMenu("F:" + ft.path, $event), ["stop"])
-                      }, [..._cache[9] || (_cache[9] = [
+                      }, [..._cache[10] || (_cache[10] = [
                         _createElementVNode(
                           "svg",
                           {
@@ -22317,12 +22522,12 @@ function galleryRender(Vue) {
                           -1
                           /* CACHED */
                         )
-                      ])], 8, _hoisted_12),
+                      ])], 8, _hoisted_14),
                       (_openBlock(), _createBlock(_Teleport, { to: _ctx.menuMount }, [
                         _createElementVNode("div", {
                           class: "gallery-tile-menu-popup hidden",
                           "data-menu": "F:" + ft.path,
-                          onClick: _cache[4] || (_cache[4] = _withModifiers(() => {
+                          onClick: _cache[5] || (_cache[5] = _withModifiers(() => {
                           }, ["stop"]))
                         }, [
                           _createElementVNode("button", {
@@ -22330,7 +22535,7 @@ function galleryRender(Vue) {
                             class: "danger",
                             onClick: ($event) => _ctx.folderDelete(ft)
                           }, [
-                            _cache[10] || (_cache[10] = _createElementVNode(
+                            _cache[11] || (_cache[11] = _createElementVNode(
                               "svg",
                               {
                                 viewBox: "0 0 24 24",
@@ -22349,10 +22554,10 @@ function galleryRender(Vue) {
                               1
                               /* TEXT */
                             )
-                          ], 8, _hoisted_14)
-                        ], 8, _hoisted_13)
+                          ], 8, _hoisted_16)
+                        ], 8, _hoisted_15)
                       ], 8, ["to"]))
-                    ], 8, _hoisted_7);
+                    ], 8, _hoisted_9);
                   }),
                   128
                   /* KEYED_FRAGMENT */
@@ -22360,10 +22565,10 @@ function galleryRender(Vue) {
                 (_openBlock(true), _createElementBlock(
                   _Fragment,
                   null,
-                  _renderList(_ctx.fileTiles, (row2) => {
+                  _renderList(_ctx.shownFileTiles, (row2) => {
                     return _openBlock(), _createElementBlock("div", {
                       key: row2.t.identifier,
-                      class: _normalizeClass(["gallery-tile", { active: row2.t.isActive, encrypted: row2.t.encrypted }]),
+                      class: _normalizeClass(["gallery-tile", { active: row2.t.isActive, encrypted: row2.t.encrypted, attention: row2.t.attention }]),
                       onClick: ($event) => _ctx.openTile(row2.item)
                     }, [
                       _createVNode(_component_ThumbCell, {
@@ -22381,29 +22586,40 @@ function galleryRender(Vue) {
                         key: 0,
                         class: "gallery-tile-overlay",
                         innerHTML: row2.ov
-                      }, null, 8, _hoisted_16)) : _createCommentVNode("v-if", true),
-                      row2.act ? (_openBlock(), _createElementBlock("span", _hoisted_17, [
+                      }, null, 8, _hoisted_18)) : _createCommentVNode("v-if", true),
+                      row2.act ? (_openBlock(), _createElementBlock("span", _hoisted_19, [
                         _createElementVNode("button", {
                           type: "button",
-                          class: _normalizeClass(["gallery-tile-action", row2.act.state || "ready"]),
+                          class: _normalizeClass(["gallery-tile-action", [row2.act.state || "ready", row2.act.verb ? "verb-" + row2.act.verb : ""]]),
                           title: row2.act.title,
                           "aria-label": row2.act.title,
-                          onClick: _withModifiers(($event) => _ctx.tileAction(row2.item), ["stop"]),
-                          onPointerdown: _cache[5] || (_cache[5] = _withModifiers(() => {
-                          }, ["stop"])),
-                          innerHTML: _ctx.badgeIcon2(row2.act.icon)
-                        }, null, 42, _hoisted_18)
+                          onClick: _withModifiers(($event) => _ctx.tileAction(row2), ["stop"]),
+                          onPointerdown: _cache[6] || (_cache[6] = _withModifiers(() => {
+                          }, ["stop"]))
+                        }, [
+                          _createElementVNode("span", {
+                            class: "gallery-tile-action-ico",
+                            innerHTML: _ctx.badgeIcon2(row2.act.icon)
+                          }, null, 8, _hoisted_21),
+                          row2.act.verb ? (_openBlock(), _createElementBlock(
+                            "span",
+                            _hoisted_22,
+                            _toDisplayString(row2.act.title),
+                            1
+                            /* TEXT */
+                          )) : _createCommentVNode("v-if", true)
+                        ], 42, _hoisted_20)
                       ])) : _createCommentVNode("v-if", true),
                       row2.t.encrypted ? (_openBlock(), _createElementBlock("span", {
                         key: 2,
                         class: "gallery-tile-lockmark",
                         title: _ctx.L.encrypted,
                         innerHTML: _ctx.ICON.lock
-                      }, null, 8, _hoisted_19)) : _createCommentVNode("v-if", true),
-                      _createElementVNode("div", _hoisted_20, [
+                      }, null, 8, _hoisted_23)) : _createCommentVNode("v-if", true),
+                      _createElementVNode("div", _hoisted_24, [
                         row2.t.isActive ? (_openBlock(), _createElementBlock(
                           "span",
-                          _hoisted_21,
+                          _hoisted_25,
                           _toDisplayString(_ctx.L.activeTag),
                           1
                           /* TEXT */
@@ -22416,30 +22632,30 @@ function galleryRender(Vue) {
                             key: 0,
                             class: "gallery-marker unread",
                             title: _ctx.L.unread
-                          }, null, 8, _hoisted_23)) : _createCommentVNode("v-if", true),
+                          }, null, 8, _hoisted_27)) : _createCommentVNode("v-if", true),
                           _createTextVNode(
                             _toDisplayString(row2.t.stem),
                             1
                             /* TEXT */
                           )
-                        ], 8, _hoisted_22),
+                        ], 8, _hoisted_26),
                         row2.sub ? (_openBlock(), _createElementBlock("div", {
                           key: 1,
                           class: "gallery-tile-sub",
                           title: row2.sub
-                        }, _toDisplayString(row2.sub), 9, _hoisted_24)) : _createCommentVNode("v-if", true),
-                        _createElementVNode("div", _hoisted_25, [
+                        }, _toDisplayString(row2.sub), 9, _hoisted_28)) : _createCommentVNode("v-if", true),
+                        _createElementVNode("div", _hoisted_29, [
                           row2.t.encrypted ? (_openBlock(), _createElementBlock("span", {
                             key: 0,
                             class: "gallery-tile-state-icon enc",
                             title: _ctx.L.encrypted,
                             innerHTML: _ctx.ICON.lock
-                          }, null, 8, _hoisted_26)) : _createCommentVNode("v-if", true),
+                          }, null, 8, _hoisted_30)) : _createCommentVNode("v-if", true),
                           _createElementVNode("span", {
                             class: _normalizeClass("gallery-tile-state-icon b-" + row2.t.badge),
                             title: row2.t.badgeTitle,
                             innerHTML: _ctx.badgeIcon(row2.t.badge)
-                          }, null, 10, _hoisted_27),
+                          }, null, 10, _hoisted_31),
                           _createElementVNode(
                             "span",
                             null,
@@ -22454,7 +22670,7 @@ function galleryRender(Vue) {
                         class: "gallery-tile-menu-btn",
                         "aria-label": _ctx.L.more,
                         onClick: _withModifiers(($event) => _ctx.toggleMenu(row2.t.identifier, $event), ["stop"])
-                      }, [..._cache[11] || (_cache[11] = [
+                      }, [..._cache[12] || (_cache[12] = [
                         _createElementVNode(
                           "svg",
                           {
@@ -22467,12 +22683,12 @@ function galleryRender(Vue) {
                           -1
                           /* CACHED */
                         )
-                      ])], 8, _hoisted_28),
+                      ])], 8, _hoisted_32),
                       (_openBlock(), _createBlock(_Teleport, { to: _ctx.menuMount }, [
                         _createElementVNode("div", {
                           class: "gallery-tile-menu-popup hidden",
                           "data-menu": row2.t.identifier,
-                          onClick: _cache[6] || (_cache[6] = _withModifiers(() => {
+                          onClick: _cache[7] || (_cache[7] = _withModifiers(() => {
                           }, ["stop"]))
                         }, [
                           row2.t.ghost ? (_openBlock(), _createElementBlock(
@@ -22481,7 +22697,7 @@ function galleryRender(Vue) {
                             [
                               _createElementVNode(
                                 "div",
-                                _hoisted_30,
+                                _hoisted_34,
                                 _toDisplayString(_ctx.L.divergedNote),
                                 1
                                 /* TEXT */
@@ -22490,7 +22706,7 @@ function galleryRender(Vue) {
                                 type: "button",
                                 onClick: ($event) => _ctx.resolve(row2.item)
                               }, [
-                                _cache[12] || (_cache[12] = _createElementVNode(
+                                _cache[13] || (_cache[13] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22509,12 +22725,12 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_31),
+                              ], 8, _hoisted_35),
                               _createElementVNode("button", {
                                 type: "button",
                                 onClick: ($event) => _ctx.rename(row2.item)
                               }, [
-                                _cache[13] || (_cache[13] = _createElementVNode(
+                                _cache[14] || (_cache[14] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22533,7 +22749,7 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_32)
+                              ], 8, _hoisted_36)
                             ],
                             64
                             /* STABLE_FRAGMENT */
@@ -22542,7 +22758,7 @@ function galleryRender(Vue) {
                             type: "button",
                             onClick: ($event) => _ctx.resolve(row2.item)
                           }, [
-                            _cache[14] || (_cache[14] = _createElementVNode(
+                            _cache[15] || (_cache[15] = _createElementVNode(
                               "svg",
                               {
                                 viewBox: "0 0 24 24",
@@ -22561,7 +22777,7 @@ function galleryRender(Vue) {
                               1
                               /* TEXT */
                             )
-                          ], 8, _hoisted_33)) : (_openBlock(), _createElementBlock(
+                          ], 8, _hoisted_37)) : (_openBlock(), _createElementBlock(
                             _Fragment,
                             { key: 2 },
                             [
@@ -22569,7 +22785,7 @@ function galleryRender(Vue) {
                                 type: "button",
                                 onClick: ($event) => _ctx.rename(row2.item)
                               }, [
-                                _cache[15] || (_cache[15] = _createElementVNode(
+                                _cache[16] || (_cache[16] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22588,12 +22804,12 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_34),
+                              ], 8, _hoisted_38),
                               _createElementVNode("button", {
                                 type: "button",
                                 onClick: ($event) => _ctx.move(row2.item)
                               }, [
-                                _cache[16] || (_cache[16] = _createElementVNode(
+                                _cache[17] || (_cache[17] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22612,12 +22828,12 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_35),
+                              ], 8, _hoisted_39),
                               _createElementVNode("button", {
                                 type: "button",
                                 onClick: ($event) => _ctx.copy(row2.item)
                               }, [
-                                _cache[17] || (_cache[17] = _createElementVNode(
+                                _cache[18] || (_cache[18] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22636,13 +22852,13 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_36),
+                              ], 8, _hoisted_40),
                               row2.t.badge === "cloudOnly" ? (_openBlock(), _createElementBlock("button", {
                                 key: 0,
                                 type: "button",
                                 onClick: ($event) => _ctx.openTile(row2.item)
                               }, [
-                                _cache[18] || (_cache[18] = _createElementVNode(
+                                _cache[19] || (_cache[19] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22661,13 +22877,13 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_37)) : _createCommentVNode("v-if", true),
+                              ], 8, _hoisted_41)) : _createCommentVNode("v-if", true),
                               row2.t.badge === "cloudOnly" ? (_openBlock(), _createElementBlock("button", {
                                 key: 1,
                                 type: "button",
                                 onClick: ($event) => _ctx.keepOffline(row2.item)
                               }, [
-                                _cache[19] || (_cache[19] = _createElementVNode(
+                                _cache[20] || (_cache[20] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22686,13 +22902,13 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_38)) : _createCommentVNode("v-if", true),
+                              ], 8, _hoisted_42)) : _createCommentVNode("v-if", true),
                               row2.t.badge === "localOnly" || row2.t.badge === "float" || row2.t.badge === "dirtyBoth" || row2.t.badge === "conflictBoth" ? (_openBlock(), _createElementBlock("button", {
                                 key: 2,
                                 type: "button",
                                 onClick: ($event) => _ctx.resolve(row2.item)
                               }, [
-                                _cache[20] || (_cache[20] = _createElementVNode(
+                                _cache[21] || (_cache[21] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22711,13 +22927,13 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_39)) : _createCommentVNode("v-if", true),
+                              ], 8, _hoisted_43)) : _createCommentVNode("v-if", true),
                               row2.t.hasLocal && row2.t.hasCloud ? (_openBlock(), _createElementBlock("button", {
                                 key: 3,
                                 type: "button",
                                 onClick: ($event) => _ctx.unload(row2.item)
                               }, [
-                                _cache[21] || (_cache[21] = _createElementVNode(
+                                _cache[22] || (_cache[22] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22736,13 +22952,13 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_40)) : _createCommentVNode("v-if", true),
+                              ], 8, _hoisted_44)) : _createCommentVNode("v-if", true),
                               _ctx.hasEncryption && row2.t.hasLocal && !row2.t.encrypted ? (_openBlock(), _createElementBlock("button", {
                                 key: 4,
                                 type: "button",
                                 onClick: ($event) => _ctx.encryptItem(row2.item)
                               }, [
-                                _cache[22] || (_cache[22] = _createElementVNode(
+                                _cache[23] || (_cache[23] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22761,13 +22977,13 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_41)) : _createCommentVNode("v-if", true),
+                              ], 8, _hoisted_45)) : _createCommentVNode("v-if", true),
                               _ctx.hasEncryption && row2.t.hasLocal && row2.t.encrypted ? (_openBlock(), _createElementBlock("button", {
                                 key: 5,
                                 type: "button",
                                 onClick: ($event) => _ctx.decryptItem(row2.item)
                               }, [
-                                _cache[23] || (_cache[23] = _createElementVNode(
+                                _cache[24] || (_cache[24] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22786,13 +23002,13 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_42)) : _createCommentVNode("v-if", true),
+                              ], 8, _hoisted_46)) : _createCommentVNode("v-if", true),
                               _createElementVNode("button", {
                                 type: "button",
                                 class: "danger",
                                 onClick: ($event) => _ctx.del(row2.item)
                               }, [
-                                _cache[24] || (_cache[24] = _createElementVNode(
+                                _cache[25] || (_cache[25] = _createElementVNode(
                                   "svg",
                                   {
                                     viewBox: "0 0 24 24",
@@ -22811,14 +23027,14 @@ function galleryRender(Vue) {
                                   1
                                   /* TEXT */
                                 )
-                              ], 8, _hoisted_43)
+                              ], 8, _hoisted_47)
                             ],
                             64
                             /* STABLE_FRAGMENT */
                           ))
-                        ], 8, _hoisted_29)
+                        ], 8, _hoisted_33)
                       ], 8, ["to"]))
-                    ], 10, _hoisted_15);
+                    ], 10, _hoisted_17);
                   }),
                   128
                   /* KEYED_FRAGMENT */
@@ -22826,7 +23042,7 @@ function galleryRender(Vue) {
                 (_openBlock(true), _createElementBlock(
                   _Fragment,
                   null,
-                  _renderList(_ctx.imageTiles, (im2) => {
+                  _renderList(_ctx.attentionOnly ? [] : _ctx.imageTiles, (im2) => {
                     return _openBlock(), _createElementBlock("div", {
                       key: "I:" + im2.identifier,
                       class: "gallery-tile image-file",
@@ -22838,17 +23054,17 @@ function galleryRender(Vue) {
                         fallback: im2.label.slice(0, 1) || "?",
                         alt: im2.label
                       }, null, 8, ["identifier", "token", "fallback", "alt"]),
-                      _createElementVNode("div", _hoisted_45, [
+                      _createElementVNode("div", _hoisted_49, [
                         _createElementVNode("div", {
                           class: "gallery-tile-name",
                           title: im2.identifier
-                        }, _toDisplayString(im2.label), 9, _hoisted_46),
-                        _createElementVNode("div", _hoisted_47, [
+                        }, _toDisplayString(im2.label), 9, _hoisted_50),
+                        _createElementVNode("div", _hoisted_51, [
                           _createElementVNode("span", {
                             class: "gallery-tile-state-icon",
                             title: _ctx.L.imageFile,
                             innerHTML: _ctx.ICON.image
-                          }, null, 8, _hoisted_48),
+                          }, null, 8, _hoisted_52),
                           _createElementVNode(
                             "span",
                             null,
@@ -22863,7 +23079,7 @@ function galleryRender(Vue) {
                         class: "gallery-tile-menu-btn",
                         "aria-label": _ctx.L.more,
                         onClick: _withModifiers(($event) => _ctx.toggleMenu("I:" + im2.identifier, $event), ["stop"])
-                      }, [..._cache[25] || (_cache[25] = [
+                      }, [..._cache[26] || (_cache[26] = [
                         _createElementVNode(
                           "svg",
                           {
@@ -22876,12 +23092,12 @@ function galleryRender(Vue) {
                           -1
                           /* CACHED */
                         )
-                      ])], 8, _hoisted_49),
+                      ])], 8, _hoisted_53),
                       (_openBlock(), _createBlock(_Teleport, { to: _ctx.menuMount }, [
                         _createElementVNode("div", {
                           class: "gallery-tile-menu-popup hidden",
                           "data-menu": "I:" + im2.identifier,
-                          onClick: _cache[7] || (_cache[7] = _withModifiers(() => {
+                          onClick: _cache[8] || (_cache[8] = _withModifiers(() => {
                           }, ["stop"]))
                         }, [
                           _createElementVNode("button", {
@@ -22889,7 +23105,7 @@ function galleryRender(Vue) {
                             class: "danger",
                             onClick: ($event) => _ctx.deleteImage(im2.raw)
                           }, [
-                            _cache[26] || (_cache[26] = _createElementVNode(
+                            _cache[27] || (_cache[27] = _createElementVNode(
                               "svg",
                               {
                                 viewBox: "0 0 24 24",
@@ -22908,10 +23124,10 @@ function galleryRender(Vue) {
                               1
                               /* TEXT */
                             )
-                          ], 8, _hoisted_51)
-                        ], 8, _hoisted_50)
+                          ], 8, _hoisted_55)
+                        ], 8, _hoisted_54)
                       ], 8, ["to"]))
-                    ], 8, _hoisted_44);
+                    ], 8, _hoisted_48);
                   }),
                   128
                   /* KEYED_FRAGMENT */
@@ -22919,7 +23135,7 @@ function galleryRender(Vue) {
                 (_openBlock(true), _createElementBlock(
                   _Fragment,
                   null,
-                  _renderList(_ctx.otherTiles, (ot2) => {
+                  _renderList(_ctx.attentionOnly ? [] : _ctx.otherTiles, (ot2) => {
                     return _openBlock(), _createElementBlock("div", {
                       key: "O:" + ot2.identifier,
                       class: "gallery-tile other-file"
@@ -22927,18 +23143,18 @@ function galleryRender(Vue) {
                       _createElementVNode("div", {
                         class: "gallery-tile-thumb",
                         innerHTML: _ctx.ICON.file
-                      }, null, 8, _hoisted_52),
-                      _createElementVNode("div", _hoisted_53, [
+                      }, null, 8, _hoisted_56),
+                      _createElementVNode("div", _hoisted_57, [
                         _createElementVNode("div", {
                           class: "gallery-tile-name",
                           title: ot2.identifier
-                        }, _toDisplayString(ot2.label), 9, _hoisted_54),
-                        _createElementVNode("div", _hoisted_55, [
+                        }, _toDisplayString(ot2.label), 9, _hoisted_58),
+                        _createElementVNode("div", _hoisted_59, [
                           _createElementVNode("span", {
                             class: "gallery-tile-state-icon",
                             title: _ctx.L.otherFile,
                             innerHTML: _ctx.ICON.file
-                          }, null, 8, _hoisted_56),
+                          }, null, 8, _hoisted_60),
                           _createElementVNode(
                             "span",
                             null,
@@ -22980,29 +23196,29 @@ function galleryRender(Vue) {
                       key: 0,
                       class: "gallery-tile-overlay",
                       innerHTML: row2.ov
-                    }, null, 8, _hoisted_57)) : _createCommentVNode("v-if", true),
+                    }, null, 8, _hoisted_61)) : _createCommentVNode("v-if", true),
                     row2.item.encrypted ? (_openBlock(), _createElementBlock("span", {
                       key: 1,
                       class: "gallery-tile-lockmark",
                       title: _ctx.L.encrypted,
                       innerHTML: _ctx.ICON.lock
-                    }, null, 8, _hoisted_58)) : _createCommentVNode("v-if", true),
-                    _createElementVNode("div", _hoisted_59, [
+                    }, null, 8, _hoisted_62)) : _createCommentVNode("v-if", true),
+                    _createElementVNode("div", _hoisted_63, [
                       _createElementVNode("div", {
                         class: "gallery-tile-name",
                         title: row2.t.identifier
-                      }, _toDisplayString(row2.t.stem), 9, _hoisted_60),
+                      }, _toDisplayString(row2.t.stem), 9, _hoisted_64),
                       _createElementVNode("div", {
                         class: "gallery-tile-meta",
                         title: _ctx.fullTime(row2.t.at)
-                      }, _toDisplayString(row2.t.source) + " \xB7 " + _toDisplayString(_ctx.humanTime(row2.t.at)) + " " + _toDisplayString(row2.atWord), 9, _hoisted_61)
+                      }, _toDisplayString(row2.t.source) + " \xB7 " + _toDisplayString(_ctx.humanTime(row2.t.at)) + " " + _toDisplayString(row2.atWord), 9, _hoisted_65)
                     ]),
                     _createElementVNode("button", {
                       type: "button",
                       class: "gallery-tile-menu-btn",
                       "aria-label": _ctx.L.more,
                       onClick: _withModifiers(($event) => _ctx.toggleMenu("A:" + row2.t.key, $event), ["stop"])
-                    }, [..._cache[27] || (_cache[27] = [
+                    }, [..._cache[28] || (_cache[28] = [
                       _createElementVNode(
                         "svg",
                         {
@@ -23015,19 +23231,19 @@ function galleryRender(Vue) {
                         -1
                         /* CACHED */
                       )
-                    ])], 8, _hoisted_62),
+                    ])], 8, _hoisted_66),
                     (_openBlock(), _createBlock(_Teleport, { to: _ctx.menuMount }, [
                       _createElementVNode("div", {
                         class: "gallery-tile-menu-popup hidden",
                         "data-menu": "A:" + row2.t.key,
-                        onClick: _cache[8] || (_cache[8] = _withModifiers(() => {
+                        onClick: _cache[9] || (_cache[9] = _withModifiers(() => {
                         }, ["stop"]))
                       }, [
                         _createElementVNode("button", {
                           type: "button",
                           onClick: ($event) => _ctx.asideRestore(row2.item)
                         }, [
-                          _cache[28] || (_cache[28] = _createElementVNode(
+                          _cache[29] || (_cache[29] = _createElementVNode(
                             "svg",
                             {
                               viewBox: "0 0 24 24",
@@ -23046,13 +23262,13 @@ function galleryRender(Vue) {
                             1
                             /* TEXT */
                           )
-                        ], 8, _hoisted_64),
+                        ], 8, _hoisted_68),
                         _createElementVNode("button", {
                           type: "button",
                           class: "danger",
                           onClick: ($event) => _ctx.asidePurge(row2.item)
                         }, [
-                          _cache[29] || (_cache[29] = _createElementVNode(
+                          _cache[30] || (_cache[30] = _createElementVNode(
                             "svg",
                             {
                               viewBox: "0 0 24 24",
@@ -23071,8 +23287,8 @@ function galleryRender(Vue) {
                             1
                             /* TEXT */
                           )
-                        ], 8, _hoisted_65)
-                      ], 8, _hoisted_63)
+                        ], 8, _hoisted_69)
+                      ], 8, _hoisted_67)
                     ], 8, ["to"]))
                   ],
                   2
@@ -23578,11 +23794,27 @@ function mountGalleryScreen(el2, d3) {
         document.removeEventListener("pointercancel", _onGatePtrUp, true);
       });
       const folderTiles = computed(() => data.folderNames.map((fn) => ({ name: fn, path: pathJoin(folder.value, fn) })));
+      const attentionAction = (tile) => tile.attention ? { icon: "cloud-pending", title: t("gal.resolve"), state: "ready", verb: "resolve" } : null;
       const fileTiles = computed(() => data.files.map((it2) => {
         const tile = tileFor(it2, { signedIn: d3.host.signedIn(), activeIdentifier: d3.host.activeIdentifier(), encrypted: !!encByName[it2.identifier] });
         const info2 = fileInfo(it2), facts = factsOf2(it2.identifier);
-        return { item: it2, t: tile, sub: subtitleOf(it2), marker: markerOf(it2), ov: ovHtml(it2.identifier, info2, facts), thumb: hasThumb(it2.kind), info: info2, facts, act: actionOf(it2.identifier, info2, facts) };
+        return { item: it2, t: tile, sub: subtitleOf(it2), marker: markerOf(it2), ov: ovHtml(it2.identifier, info2, facts), thumb: hasThumb(it2.kind), info: info2, facts, act: actionOf(it2.identifier, info2, facts) ?? attentionAction(tile) };
       }));
+      const attentionWanted = ref(false);
+      const attentionCount = computed(() => fileTiles.value.reduce((n10, r10) => n10 + (r10.t.attention ? 1 : 0), 0));
+      const attentionOnly = computed(() => attentionWanted.value && attentionCount.value > 0);
+      const shownFileTiles = computed(() => attentionOnly.value ? fileTiles.value.filter((r10) => r10.t.attention) : fileTiles.value);
+      const attentionText = computed(() => t(attentionOnly.value ? "gal.attention.showing" : "gal.attention.banner", { n: attentionCount.value }));
+      let _prevAttention = 0;
+      watch(() => attentionCount.value, () => {
+        const n10 = attentionCount.value;
+        if (n10 === 0 && _prevAttention > 0)
+          attentionWanted.value = false;
+        _prevAttention = n10;
+      });
+      const setAttentionOnly = (on2) => {
+        attentionWanted.value = on2;
+      };
       const askFacts = () => {
         if (!d3.facts)
           return;
@@ -23658,7 +23890,12 @@ function mountGalleryScreen(el2, d3) {
         if (await verbs.unlock(name))
           await reload();
       }
-      function tileAction(item) {
+      function tileAction(row2) {
+        if (row2.act?.verb === "resolve") {
+          void resolve(row2.item);
+          return;
+        }
+        const item = row2.item;
         try {
           void Promise.resolve(d3.doc.tileAction?.(item, factsOf2(item.identifier))).catch((e10) => d3.reportError(e10));
         } catch (e10) {
@@ -23738,7 +23975,10 @@ function mountGalleryScreen(el2, d3) {
         openDiag: t("gal.openDiag"),
         reload: t("gal.reload"),
         keepOffline: t("gal.keepOffline"),
-        unread: t("gal.marker.unread")
+        unread: t("gal.marker.unread"),
+        attentionList: t("gal.attention.list"),
+        attentionAll: t("gal.attention.all")
+        // 0.8.8
       };
       const tileAspect = typeof d3.tile?.aspect === "number" && Number.isFinite(d3.tile.aspect) && d3.tile.aspect > 0 ? d3.tile.aspect : null;
       const tileTall = tileAspect != null && tileAspect < 1;
@@ -23764,11 +24004,18 @@ function mountGalleryScreen(el2, d3) {
         phHtml,
         folderTiles,
         fileTiles,
+        shownFileTiles,
         imageTiles,
         otherTiles,
         asideTiles,
         crumbs,
         badgeIcon2,
+        attentionOnly,
+        attentionCount,
+        attentionText,
+        setAttentionOnly,
+        toggleAttentionOnly: () => setAttentionOnly(!attentionWanted.value),
+        // 0.8.8
         badgeIcon,
         fmtMeta,
         humanTime,
@@ -23817,6 +24064,9 @@ function mountGalleryScreen(el2, d3) {
     getView: () => vm.view,
     setLayout: (l10) => vm.setLayout(l10),
     getLayout: () => vm.layout,
+    setAttentionOnly: (on2) => vm.setAttentionOnly(on2),
+    getAttentionCount: () => vm.attentionCount,
+    // 0.8.8
     setFolder: (p2) => vm.setFolder(p2),
     hydrateFolder: (p2) => vm.hydrateFolder(p2),
     getFolder: () => vm.folder,
@@ -23863,6 +24113,19 @@ function _ls2() {
     return null;
   }
 }
+function deviceKvUsable() {
+  return _ls2() !== null;
+}
+var _onFallback = null;
+function onDeviceKvFallback(cb2) {
+  _onFallback = cb2;
+}
+var _fellBack = (e10) => {
+  try {
+    _onFallback?.(e10?.name || String(e10));
+  } catch {
+  }
+};
 function deviceKvGet2(key) {
   const k2 = PREFIX + key;
   const ls2 = _ls2();
@@ -23883,7 +24146,8 @@ function deviceKvSet2(key, v) {
       else ls2.setItem(k2, v);
       _mem2.delete(k2);
       return;
-    } catch {
+    } catch (e10) {
+      _fellBack(e10);
     }
   }
   if (v == null) _mem2.delete(k2);
@@ -24246,7 +24510,7 @@ function createPadHost(padEl2, g3) {
 var HUM_SYLLABLE = { la: { ja: "\u3089", zh: "\u5566", en: "la" }, n: { ja: "\u3093", zh: "\u55EF", en: "hum" }, u: { ja: "\u3046", zh: "\u545C", en: "ooh" }, o: { ja: "\u304A", zh: "\u54E6", en: "oh" }, a: { ja: "\u3042", zh: "\u554A", en: "ah" } };
 function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range2, tokenEntry) {
   const inRange = (i10) => !range2 || i10 >= range2[0] && i10 < range2[1];
-  const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base3 = tl2.find((x2) => inRange(x2.index))?.bpm ?? 90;
+  const eighth = TPQ / 2, tl2 = timeline(tokens, tempoMap), base2 = tl2.find((x2) => inRange(x2.index))?.bpm ?? 90;
   const bpmOf = new Map(tl2.map((x2) => [x2.index, x2.bpm]));
   const dwOf = new Map(tl2.filter((x2) => x2.dw0 !== void 0).map((x2) => [x2.index, x2.dw1 - x2.dw0]));
   const out = [];
@@ -24305,7 +24569,7 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
     if (tokenEntry && t10.kind === "note" && out.length) tokenEntry.set(i10, out.length > n02 ? n02 : out.length - 1);
   }
   function one0(t10, i10) {
-    const len = (t10.dur + (dwOf.get(i10) ?? 0)) / eighth * (base3 / bpmOf.get(i10));
+    const len = (t10.dur + (dwOf.get(i10) ?? 0)) / eighth * (base2 / bpmOf.get(i10));
     if (t10.kind === "rest") {
       const last2 = out[out.length - 1];
       if (last2) last2.rest = (last2.rest ?? 0) + len;
@@ -24342,7 +24606,7 @@ function toLabScore(tokens, hum, lang = "ja", tempoMap, sing = SING_MARKS, range
     parts.forEach((kana, k2) => push({ kana, notes: [[midi2, len / parts.length]], ...lang === "en" && t10.hyph && k2 === parts.length - 1 ? { hyph: true } : {}, ...wh }));
   }
   const TEXT2 = lang === "en" ? out.map((e10) => e10.kana + (e10.hyph ? "" : " ")).join("").trim() : out.map((e10, k2) => e10.kana + (e10.rest ? "\u3001" : k2 === out.length - 1 ? "\u3002" : "")).join("");
-  return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base3, LANG: lang };
+  return { SCORE: out, TEXT: TEXT2, TEMPO_QUARTER: base2, LANG: lang };
 }
 var PHRASE_REST_SEC = 0.25;
 function singChunks(tokens, tempoMap, bounds, mode) {
@@ -24361,6 +24625,603 @@ function singChunks(tokens, tempoMap, bounds, mode) {
   }
   const starts = [0, ...[...cuts].sort((a10, b3) => a10 - b3)];
   return starts.map((a10, k2) => [a10, starts[k2 + 1] ?? tokens.length]).filter(([a10, b3]) => tokens.slice(a10, b3).some((t10) => t10.kind === "note"));
+}
+
+// node_modules/@internal/model-packs/dist/sha256.js
+var K = new Uint32Array([
+  1116352408,
+  1899447441,
+  3049323471,
+  3921009573,
+  961987163,
+  1508970993,
+  2453635748,
+  2870763221,
+  3624381080,
+  310598401,
+  607225278,
+  1426881987,
+  1925078388,
+  2162078206,
+  2614888103,
+  3248222580,
+  3835390401,
+  4022224774,
+  264347078,
+  604807628,
+  770255983,
+  1249150122,
+  1555081692,
+  1996064986,
+  2554220882,
+  2821834349,
+  2952996808,
+  3210313671,
+  3336571891,
+  3584528711,
+  113926993,
+  338241895,
+  666307205,
+  773529912,
+  1294757372,
+  1396182291,
+  1695183700,
+  1986661051,
+  2177026350,
+  2456956037,
+  2730485921,
+  2820302411,
+  3259730800,
+  3345764771,
+  3516065817,
+  3600352804,
+  4094571909,
+  275423344,
+  430227734,
+  506948616,
+  659060556,
+  883997877,
+  958139571,
+  1322822218,
+  1537002063,
+  1747873779,
+  1955562222,
+  2024104815,
+  2227730452,
+  2361852424,
+  2428436474,
+  2756734187,
+  3204031479,
+  3329325298
+]);
+var Sha256 = class {
+  h = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
+  buf = new Uint8Array(64);
+  bufLen = 0;
+  total = 0;
+  w = new Uint32Array(64);
+  done = false;
+  update(bytes) {
+    if (this.done)
+      throw new Error("Sha256: update after hex()");
+    let i10 = 0;
+    this.total += bytes.length;
+    if (this.bufLen) {
+      const take = Math.min(64 - this.bufLen, bytes.length);
+      this.buf.set(bytes.subarray(0, take), this.bufLen);
+      this.bufLen += take;
+      i10 = take;
+      if (this.bufLen === 64) {
+        this.block(this.buf, 0);
+        this.bufLen = 0;
+      }
+    }
+    for (; i10 + 64 <= bytes.length; i10 += 64)
+      this.block(bytes, i10);
+    if (i10 < bytes.length) {
+      this.buf.set(bytes.subarray(i10), 0);
+      this.bufLen = bytes.length - i10;
+    }
+    return this;
+  }
+  block(p2, o10) {
+    const w2 = this.w, H3 = this.h;
+    for (let t10 = 0; t10 < 16; t10++, o10 += 4)
+      w2[t10] = p2[o10] << 24 | p2[o10 + 1] << 16 | p2[o10 + 2] << 8 | p2[o10 + 3];
+    for (let t10 = 16; t10 < 64; t10++) {
+      const x2 = w2[t10 - 15], y2 = w2[t10 - 2];
+      const s02 = (x2 >>> 7 | x2 << 25) ^ (x2 >>> 18 | x2 << 14) ^ x2 >>> 3;
+      const s12 = (y2 >>> 17 | y2 << 15) ^ (y2 >>> 19 | y2 << 13) ^ y2 >>> 10;
+      w2[t10] = w2[t10 - 16] + s02 + w2[t10 - 7] + s12 | 0;
+    }
+    let a10 = H3[0], b3 = H3[1], c10 = H3[2], d3 = H3[3], e10 = H3[4], f2 = H3[5], g3 = H3[6], h2 = H3[7];
+    for (let t10 = 0; t10 < 64; t10++) {
+      const S1 = (e10 >>> 6 | e10 << 26) ^ (e10 >>> 11 | e10 << 21) ^ (e10 >>> 25 | e10 << 7);
+      const ch2 = e10 & f2 ^ ~e10 & g3;
+      const t12 = h2 + S1 + ch2 + K[t10] + w2[t10] | 0;
+      const S0 = (a10 >>> 2 | a10 << 30) ^ (a10 >>> 13 | a10 << 19) ^ (a10 >>> 22 | a10 << 10);
+      const maj = a10 & b3 ^ a10 & c10 ^ b3 & c10;
+      const t23 = S0 + maj | 0;
+      h2 = g3;
+      g3 = f2;
+      f2 = e10;
+      e10 = d3 + t12 | 0;
+      d3 = c10;
+      c10 = b3;
+      b3 = a10;
+      a10 = t12 + t23 | 0;
+    }
+    H3[0] += a10;
+    H3[1] += b3;
+    H3[2] += c10;
+    H3[3] += d3;
+    H3[4] += e10;
+    H3[5] += f2;
+    H3[6] += g3;
+    H3[7] += h2;
+  }
+  hex() {
+    if (this.done)
+      throw new Error("Sha256: hex() twice");
+    const total = this.total;
+    const padLen = (this.bufLen < 56 ? 56 - this.bufLen : 120 - this.bufLen) + 8;
+    const pad4 = new Uint8Array(padLen);
+    pad4[0] = 128;
+    const bits2 = total * 8, hi = Math.floor(bits2 / 4294967296), lo2 = bits2 >>> 0, n10 = padLen;
+    pad4[n10 - 8] = hi >>> 24;
+    pad4[n10 - 7] = hi >>> 16;
+    pad4[n10 - 6] = hi >>> 8;
+    pad4[n10 - 5] = hi;
+    pad4[n10 - 4] = lo2 >>> 24;
+    pad4[n10 - 3] = lo2 >>> 16;
+    pad4[n10 - 2] = lo2 >>> 8;
+    pad4[n10 - 1] = lo2;
+    this.total -= padLen;
+    this.update(pad4);
+    this.done = true;
+    return Array.from(this.h, (x2) => x2.toString(16).padStart(8, "0")).join("");
+  }
+};
+
+// node_modules/@internal/model-packs/dist/pack-store.js
+var SLICE = 1 << 20;
+function createPackStore(deps) {
+  const cacheName = deps.cacheName ?? "pwa-models";
+  const keyOf2 = (slug, name) => `${location.origin}/__pwa-models__/${slug}/${name}`;
+  function manifestOf(slug) {
+    const p2 = deps.packs[slug];
+    if (!p2)
+      throw new Error(`unknown pack: ${slug}`);
+    return p2;
+  }
+  const openCache = () => caches.open(cacheName);
+  async function hashBlob(b3) {
+    const sha = new Sha256();
+    for (let o10 = 0; o10 < b3.size; o10 += SLICE)
+      sha.update(new Uint8Array(await b3.slice(o10, Math.min(o10 + SLICE, b3.size)).arrayBuffer()));
+    return sha.hex();
+  }
+  const verifiedBlobs = /* @__PURE__ */ new Map();
+  const forget = (slug) => {
+    verifiedBlobs.delete(slug);
+  };
+  async function cachedChunkSizes(slug, m2) {
+    const cache = await openCache();
+    const sizes = [];
+    for (const c10 of m2.chunks) {
+      const r10 = await cache.match(keyOf2(slug, c10.name));
+      sizes.push(r10 ? Number(r10.headers.get("content-length") ?? 0) : 0);
+    }
+    return sizes;
+  }
+  async function putChunk(slug, name, bytes) {
+    forget(slug);
+    const cache = await openCache();
+    const size = bytes instanceof Blob ? bytes.size : bytes.length;
+    await cache.put(keyOf2(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
+  }
+  async function markVerified(slug, packId) {
+    const cache = await openCache();
+    await cache.put(keyOf2(slug, "verified.json"), new Response(JSON.stringify({ packId, at: (/* @__PURE__ */ new Date()).toISOString() }), { headers: { "content-type": "application/json" } }));
+  }
+  async function status(slug) {
+    const { packId, manifest: m2 } = manifestOf(slug);
+    const cache = await openCache();
+    const sizes = await cachedChunkSizes(slug, m2);
+    const complete = sizes.every((n10, i10) => n10 === m2.chunks[i10].bytes);
+    const marker = await cache.match(keyOf2(slug, "verified.json"));
+    const verified = marker ? (await marker.json()).packId === packId : false;
+    return { slug, ready: complete && verified, bytesCached: sizes.reduce((a10, b3) => a10 + b3, 0), bytesTotal: m2.totalBytes };
+  }
+  async function dropIfStale(slug) {
+    const { packId, manifest: m2 } = manifestOf(slug);
+    const cache = await openCache();
+    const marker = await cache.match(keyOf2(slug, "verified.json"));
+    if (!marker || (await marker.json()).packId === packId)
+      return;
+    forget(slug);
+    for (const c10 of m2.chunks)
+      await cache.delete(keyOf2(slug, c10.name));
+    await cache.delete(keyOf2(slug, "verified.json"));
+  }
+  async function sealIfComplete(slug, fresh) {
+    const { packId, manifest: m2 } = manifestOf(slug);
+    const sizes = await cachedChunkSizes(slug, m2);
+    if (!sizes.every((n10, i10) => n10 === m2.chunks[i10].bytes))
+      return;
+    const cache = await openCache();
+    for (const c10 of m2.chunks) {
+      if (fresh.has(c10.name))
+        continue;
+      const r10 = await cache.match(keyOf2(slug, c10.name));
+      const ok2 = !!r10 && await hashBlob(await r10.blob()) === c10.sha256;
+      if (!ok2) {
+        await cache.delete(keyOf2(slug, c10.name));
+        return;
+      }
+    }
+    await markVerified(slug, packId);
+  }
+  async function download(slug, base2, progress2) {
+    const { packId, manifest: m2 } = manifestOf(slug);
+    await dropIfStale(slug);
+    const sizes = await cachedChunkSizes(slug, m2);
+    let done = sizes.reduce((a10, n10, i10) => a10 + (n10 === m2.chunks[i10].bytes ? n10 : 0), 0);
+    progress2({ done, total: m2.totalBytes });
+    const root = base2.replace(/\/+$/, "");
+    for (let i10 = 0; i10 < m2.chunks.length; i10++) {
+      const c10 = m2.chunks[i10];
+      if (sizes[i10] === c10.bytes)
+        continue;
+      const res = await fetch(`${root}/packs/${slug}/${c10.name}`, { cache: "no-store" });
+      if (!res.ok || !res.body)
+        throw new Error(`fetch ${c10.name}: HTTP ${res.status}`);
+      const reader = res.body.getReader();
+      const sha = new Sha256();
+      const buf = new Uint8Array(c10.bytes);
+      let got = 0, lastReported = 0;
+      for (; ; ) {
+        const { value, done: end } = await reader.read();
+        if (end)
+          break;
+        if (got + value.length > c10.bytes)
+          throw new Error(`${c10.name}: larger than manifest says`);
+        sha.update(value);
+        buf.set(value, got);
+        got += value.length;
+        if (got - lastReported >= 1048576 || got === c10.bytes) {
+          lastReported = got;
+          progress2({ done: done + got, total: m2.totalBytes });
+        }
+      }
+      if (got !== c10.bytes)
+        throw new Error(`${c10.name}: got ${got} bytes, expected ${c10.bytes}`);
+      if (sha.hex() !== c10.sha256)
+        throw new Error(`${c10.name}: sha256 mismatch (source tampered or corrupted)`);
+      await putChunk(slug, c10.name, buf);
+      done += got;
+    }
+    await markVerified(slug, packId);
+    return status(slug);
+  }
+  async function importFiles(slugs, files, progress2) {
+    const packs = slugs.map((slug) => ({ slug, m: manifestOf(slug).manifest }));
+    for (const p2 of packs)
+      await dropIfStale(p2.slug);
+    const fresh = new Map(packs.map((p2) => [p2.slug, /* @__PURE__ */ new Set()]));
+    const total = files.reduce((a10, f2) => a10 + f2.size, 0);
+    let done = 0, matched = 0;
+    const bad = [];
+    for (const f2 of files) {
+      const whole = packs.find((p2) => p2.m.chunks.length > 1 && p2.m.totalBytes === f2.size);
+      if (whole) {
+        let offset = 0;
+        for (const c10 of whole.m.chunks) {
+          const piece = f2.slice(offset, offset + c10.bytes);
+          if (await hashBlob(piece) !== c10.sha256)
+            throw new Error(`${f2.name}: sha256 mismatch at ${c10.name} (wrong or corrupted file)`);
+          await putChunk(whole.slug, c10.name, piece);
+          fresh.get(whole.slug).add(c10.name);
+          offset += c10.bytes;
+          progress2({ done: done + offset, total });
+        }
+        matched++;
+      } else {
+        const sameSize = packs.flatMap((p2) => p2.m.chunks.filter((c10) => c10.bytes === f2.size).map((c10) => ({ slug: p2.slug, c: c10 })));
+        if (sameSize.length) {
+          const hex = await hashBlob(f2);
+          const hits = sameSize.filter((x2) => x2.c.sha256 === hex);
+          if (!hits.length)
+            bad.push(f2.name);
+          for (const h2 of hits) {
+            await putChunk(h2.slug, h2.c.name, f2);
+            fresh.get(h2.slug).add(h2.c.name);
+          }
+          if (hits.length)
+            matched++;
+        }
+      }
+      done += f2.size;
+      progress2({ done, total });
+    }
+    for (const p2 of packs)
+      await sealIfComplete(p2.slug, fresh.get(p2.slug));
+    if (bad.length)
+      throw new Error(`${bad[0]}: sha256 mismatch (wrong or corrupted file)`);
+    if (!matched)
+      throw new Error("no-matching-file");
+    return Promise.all(slugs.map(status));
+  }
+  async function downloadAll(slugs, base2, progress2) {
+    const total = slugs.reduce((a10, s10) => a10 + manifestOf(s10).manifest.totalBytes, 0);
+    const have = (await Promise.all(slugs.map(status))).map((st2) => st2.bytesCached);
+    const report = () => progress2({ done: have.reduce((a10, b3) => a10 + b3, 0), total });
+    report();
+    for (let i10 = 0; i10 < slugs.length; i10++)
+      await download(slugs[i10], base2, (p2) => {
+        have[i10] = p2.done;
+        report();
+      });
+    return Promise.all(slugs.map(status));
+  }
+  async function deletePack(slug) {
+    forget(slug);
+    const { manifest: m2 } = manifestOf(slug);
+    const cache = await openCache();
+    for (const c10 of m2.chunks)
+      await cache.delete(keyOf2(slug, c10.name));
+    await cache.delete(keyOf2(slug, "verified.json"));
+  }
+  const noop = () => {
+  };
+  return {
+    status: (slugs) => Promise.all(slugs.map(status)),
+    download: (slugs, base2, onProgress) => downloadAll(slugs, base2, onProgress ?? noop),
+    importFiles: (slugs, files, onProgress) => importFiles(slugs, files, onProgress ?? noop),
+    async delete(slugs) {
+      for (const slug of slugs)
+        await deletePack(slug);
+    },
+    async chunks(slug) {
+      const memo2 = verifiedBlobs.get(slug);
+      if (memo2)
+        return memo2.slice();
+      if (!(await status(slug)).ready)
+        throw new Error("pack-missing");
+      const { manifest: m2 } = manifestOf(slug);
+      const cache = await openCache();
+      const out = [];
+      for (const c10 of m2.chunks) {
+        const r10 = await cache.match(keyOf2(slug, c10.name));
+        if (!r10)
+          throw new Error("pack-missing");
+        const b3 = await r10.blob();
+        if (b3.size !== c10.bytes || await hashBlob(b3) !== c10.sha256) {
+          await cache.delete(keyOf2(slug, c10.name));
+          await cache.delete(keyOf2(slug, "verified.json"));
+          throw new Error(`pack-corrupt: ${slug}/${c10.name} failed sha256 on read (cache tampered or corrupted; dropped it, download or import again)`);
+        }
+        out.push(b3);
+      }
+      verifiedBlobs.set(slug, out);
+      return out.slice();
+    }
+  };
+}
+
+// src/resources.ts
+var bundle;
+function localBundle() {
+  if (bundle !== void 0) return bundle;
+  try {
+    const el2 = typeof document !== "undefined" ? document.getElementById("ms-local") : null;
+    bundle = el2?.textContent ? JSON.parse(el2.textContent) : null;
+  } catch {
+    bundle = null;
+  }
+  return bundle;
+}
+var fromFolder = () => deployment() === "local";
+function siteUrl(path) {
+  return new URL(path, typeof document !== "undefined" ? document.baseURI : "http://localhost/");
+}
+function resourcesInFolder() {
+  return fromFolder();
+}
+async function sha256Hex(b3) {
+  const subtle = globalThis.crypto?.subtle;
+  if (subtle) {
+    try {
+      return [...new Uint8Array(await subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+    } catch {
+    }
+  }
+  const sha = new Sha256();
+  for (let o10 = 0; o10 < b3.length; o10 += 1 << 20) sha.update(b3.subarray(o10, Math.min(o10 + (1 << 20), b3.length)));
+  return sha.hex();
+}
+function fromBase64(s10) {
+  const native = Uint8Array.fromBase64;
+  if (native) return native(s10);
+  const bin = atob(s10), out = new Uint8Array(bin.length);
+  for (let i10 = 0; i10 < bin.length; i10++) out[i10] = bin.charCodeAt(i10);
+  return out;
+}
+function loadDataScript(src, key) {
+  return new Promise((ok2, fail) => {
+    const s10 = document.createElement("script");
+    s10.src = src;
+    s10.async = true;
+    s10.onload = () => {
+      s10.remove();
+      const bag = globalThis.__pwaData;
+      const v = bag?.[key];
+      if (bag) delete bag[key];
+      if (typeof v === "string") ok2(v);
+      else fail(new Error(`${src} \u8F7D\u8FDB\u6765\u4E86\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u300C${key}\u300D`));
+    };
+    s10.onerror = () => {
+      s10.remove();
+      fail(new Error(`\u5907\u7528\u7248\u6587\u4EF6\u5939\u91CC\u5C11\u4E86 ${src}\uFF08\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u8BFB\uFF09`));
+    };
+    document.head.append(s10);
+  });
+}
+var inflight = /* @__PURE__ */ new Map();
+async function readFolder(path, opts) {
+  const e10 = localBundle()?.files[path];
+  if (!e10) throw new Error(`\u5907\u7528\u7248\u91CC\u6CA1\u6709 ${path}`);
+  const parts = [];
+  let done = 0;
+  for (let k2 = 0; k2 < e10.parts; k2++) {
+    const b3 = fromBase64(await loadDataScript(siteUrl(e10.parts === 1 ? `${path}.data.js` : `${path}.${k2}.data.js`).href, e10.parts === 1 ? path : `${path}#${k2}`));
+    parts.push(b3);
+    done += b3.length;
+    opts.onProgress?.(done, e10.bytes);
+  }
+  const out = parts.length === 1 ? parts[0] : (() => {
+    const o10 = new Uint8Array(done);
+    let at2 = 0;
+    for (const p2 of parts) {
+      o10.set(p2, at2);
+      at2 += p2.length;
+    }
+    return o10;
+  })();
+  const want = opts.sha256 ?? e10.sha256;
+  if (out.length !== e10.bytes || await sha256Hex(out) !== want) throw new Error(`${path}\uFF1A\u5907\u7528\u7248\u6587\u4EF6\u5939\u91CC\u7684\u8FD9\u4E2A\u6587\u4EF6\u548C app \u91CC\u9489\u7684\u54C8\u5E0C\u5BF9\u4E0D\u4E0A\uFF08\u88AB\u6539\u8FC7\u6216\u574F\u4E86\uFF09`);
+  return out;
+}
+async function readSite(path, opts) {
+  const r10 = await fetch(siteUrl(path));
+  if (!r10.ok) throw new Error(`${path}\uFF1AHTTP ${r10.status}`);
+  let out;
+  if (opts.onProgress && r10.body) {
+    const total = Number(r10.headers.get("content-length") ?? 0), reader = r10.body.getReader(), chunks2 = [];
+    let got = 0;
+    for (; ; ) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      chunks2.push(value);
+      got += value.length;
+      opts.onProgress(got, total || got);
+    }
+    out = new Uint8Array(got);
+    let at2 = 0;
+    for (const c10 of chunks2) {
+      out.set(c10, at2);
+      at2 += c10.length;
+    }
+  } else out = new Uint8Array(await r10.arrayBuffer());
+  if (opts.sha256 && await sha256Hex(out) !== opts.sha256) throw new Error(`${path}\uFF1A\u548C app \u91CC\u9489\u7684\u54C8\u5E0C\u5BF9\u4E0D\u4E0A\uFF08\u88AB\u6539\u8FC7\u6216\u574F\u4E86\uFF09`);
+  return out;
+}
+function getBytes(path, opts = {}) {
+  if (!fromFolder()) return readSite(path, opts);
+  const key = `${path}|${opts.sha256 ?? ""}`;
+  let p2 = inflight.get(key);
+  if (!p2) {
+    p2 = readFolder(path, opts).finally(() => inflight.delete(key));
+    inflight.set(key, p2);
+  }
+  return p2;
+}
+async function getText(path, opts = {}) {
+  return new TextDecoder().decode(await getBytes(path, opts));
+}
+async function getJson(path, opts = {}) {
+  return JSON.parse(await getText(path, opts));
+}
+
+// src/threads.ts
+function siteFile(name) {
+  const pick = (v) => {
+    try {
+      return v();
+    } catch {
+      return "";
+    }
+  };
+  switch (name) {
+    case "singer-worker":
+      return pick(() => "singer-worker-e63983ca6bb4.mjs");
+    case "mp3-worker":
+      return pick(() => "mp3-worker-da08b4c8433f.mjs");
+    case "studio-worklet":
+      return pick(() => "studio-worklet-5c1a2c2736d5.mjs");
+    case "layout-worker":
+      return pick(() => "layout-worker-6fb0185cdc6b.mjs");
+    case "encode-worker":
+      return pick(() => "encode-worker-c6150719602f.mjs");
+  }
+}
+var inFolder = () => deployment() === "local";
+function workersFetchSiteFiles() {
+  return !inFolder();
+}
+function utf8Base64(s10) {
+  const b3 = new TextEncoder().encode(s10);
+  const native = b3.toBase64;
+  if (native) return native.call(b3);
+  let bin = "";
+  for (let i10 = 0; i10 < b3.length; i10 += 32768) bin += String.fromCharCode(...b3.subarray(i10, i10 + 32768));
+  return btoa(bin);
+}
+var fromBag = /* @__PURE__ */ new Map();
+function threadUrls(name) {
+  if (!inFolder()) {
+    const f2 = siteFile(name);
+    return f2 ? [siteUrl(`dist/${f2}`).href] : [];
+  }
+  let urls = fromBag.get(name);
+  if (!urls) {
+    const src = localBundle()?.threads[name];
+    urls = src ? [`data:text/javascript;base64,${utf8Base64(src)}`, URL.createObjectURL(new Blob([src], { type: "text/javascript" }))] : [];
+    fromBag.set(name, urls);
+  }
+  return urls;
+}
+var failSubs = /* @__PURE__ */ new Set();
+function onThreadFail(cb2) {
+  failSubs.add(cb2);
+  return () => failSubs.delete(cb2);
+}
+function reportThreadFail(name, why) {
+  for (const cb2 of failSubs) {
+    try {
+      cb2(name, why);
+    } catch {
+    }
+  }
+}
+function startWorker(name) {
+  const urls = threadUrls(name);
+  let last = new Error("\u6CA1\u6709\u53EF\u7528\u7684\u8D77\u6CD5\uFF08\u6253\u5305\u65F6\u6CA1\u5E26\u8FD9\u4E2A\u7EBF\u7A0B\uFF09");
+  for (const u2 of urls) {
+    try {
+      return new Worker(u2, { type: "module" });
+    } catch (e10) {
+      last = e10;
+    }
+  }
+  const why = `\u540E\u53F0\u7EBF\u7A0B\u300C${name}\u300D\u8D77\u4E0D\u6765\uFF1A${last?.message ?? last}`;
+  reportThreadFail(name, why);
+  throw new Error(why);
+}
+async function addWorklet(ctx2, name) {
+  const urls = threadUrls(name);
+  let last = new Error("\u6CA1\u6709\u53EF\u7528\u7684\u8D77\u6CD5\uFF08\u6253\u5305\u65F6\u6CA1\u5E26\u8FD9\u4E2A\u7EBF\u7A0B\uFF09");
+  for (const u2 of urls) {
+    try {
+      await ctx2.audioWorklet.addModule(u2);
+      return;
+    } catch (e10) {
+      last = e10;
+    }
+  }
+  const why = `\u51FA\u58F0\u7EBF\u7A0B\u300C${name}\u300D\u8D77\u4E0D\u6765\uFF1A${last?.message ?? last}`;
+  reportThreadFail(name, why);
+  throw new Error(why);
 }
 
 // src/singer/audio.ts
@@ -24445,10 +25306,22 @@ var Singer = class {
   }
   worker(l10) {
     if (l10.w) return l10.w;
-    const w2 = new Worker(new URL(`./${"singer-worker-c79b9ef6990f.mjs"}`, import.meta.url), { type: "module" });
+    const w2 = startWorker("singer-worker");
     l10.w = w2;
+    if (!workersFetchSiteFiles()) w2.postMessage({ type: "init", hostFiles: true });
     w2.onmessage = (ev2) => {
-      const m2 = ev2.data, p2 = this.pending.get(m2.id);
+      const m2 = ev2.data;
+      if (m2.type === "need") {
+        void getBytes(m2.path, m2.sha256 ? { sha256: m2.sha256 } : {}).then(
+          (b3) => {
+            const ab2 = b3.byteOffset === 0 && b3.byteLength === b3.buffer.byteLength ? b3.buffer : b3.slice().buffer;
+            w2.postMessage({ type: "file", nid: m2.nid, bytes: ab2 }, [ab2]);
+          },
+          (e10) => w2.postMessage({ type: "file", nid: m2.nid, error: e10.message })
+        );
+        return;
+      }
+      const p2 = this.pending.get(m2.id);
       if (!p2) return;
       if (m2.type === "progress") {
         p2.progress(m2.stage);
@@ -24669,8 +25542,9 @@ var MP3_QUALITY = {
   small: { label: "\u5C0F\u6587\u4EF6", note: "\u5355\u58F0\u9053 64k\uFF0C\u7EA6 0.5 MB / \u5206\u949F", stereo: false, kbps: 64 }
 };
 function encodeMp3(left, right, sr2, kbps = 64) {
-  return new Promise((ok2, fail) => {
-    const w2 = new Worker(new URL(`./${"mp3-worker-1ebe72af5e6d.mjs"}`, import.meta.url), { type: "module" });
+  const lame = workersFetchSiteFiles() ? Promise.resolve(void 0) : Promise.all([getBytes("vendor/lame/lame.mjs"), getBytes("vendor/lame/lame.wasm")]).then(([js, wasm]) => ({ js: js.slice().buffer, wasm: wasm.slice().buffer }));
+  return lame.then((lib) => new Promise((ok2, fail) => {
+    const w2 = startWorker("mp3-worker");
     w2.onmessage = (ev2) => {
       w2.terminate();
       if (ev2.data.ok) ok2(ev2.data.bytes);
@@ -24680,9 +25554,9 @@ function encodeMp3(left, right, sr2, kbps = 64) {
       w2.terminate();
       fail(new Error(e10.message || "mp3 \u7F16\u7801 worker \u51FA\u9519"));
     };
-    const req = { left: left.slice(), ...right ? { right: right.slice() } : {}, sr: sr2, kbps };
-    w2.postMessage(req, [req.left.buffer, ...req.right ? [req.right.buffer] : []]);
-  });
+    const req = { left: left.slice(), ...right ? { right: right.slice() } : {}, sr: sr2, kbps, ...lib ? { lame: lib } : {} };
+    w2.postMessage(req, [req.left.buffer, ...req.right ? [req.right.buffer] : [], ...lib ? [lib.js, lib.wasm] : []]);
+  }));
 }
 
 // src/export/id3.ts
@@ -24741,371 +25615,6 @@ function id3v2(f2) {
 }
 var firstUrl = (s10) => s10 ? /https?:\/\/[\x21-\x7e]+/.exec(s10)?.[0] : void 0;
 
-// node_modules/@internal/model-packs/dist/sha256.js
-var K = new Uint32Array([
-  1116352408,
-  1899447441,
-  3049323471,
-  3921009573,
-  961987163,
-  1508970993,
-  2453635748,
-  2870763221,
-  3624381080,
-  310598401,
-  607225278,
-  1426881987,
-  1925078388,
-  2162078206,
-  2614888103,
-  3248222580,
-  3835390401,
-  4022224774,
-  264347078,
-  604807628,
-  770255983,
-  1249150122,
-  1555081692,
-  1996064986,
-  2554220882,
-  2821834349,
-  2952996808,
-  3210313671,
-  3336571891,
-  3584528711,
-  113926993,
-  338241895,
-  666307205,
-  773529912,
-  1294757372,
-  1396182291,
-  1695183700,
-  1986661051,
-  2177026350,
-  2456956037,
-  2730485921,
-  2820302411,
-  3259730800,
-  3345764771,
-  3516065817,
-  3600352804,
-  4094571909,
-  275423344,
-  430227734,
-  506948616,
-  659060556,
-  883997877,
-  958139571,
-  1322822218,
-  1537002063,
-  1747873779,
-  1955562222,
-  2024104815,
-  2227730452,
-  2361852424,
-  2428436474,
-  2756734187,
-  3204031479,
-  3329325298
-]);
-var Sha256 = class {
-  h = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
-  buf = new Uint8Array(64);
-  bufLen = 0;
-  total = 0;
-  w = new Uint32Array(64);
-  done = false;
-  update(bytes) {
-    if (this.done)
-      throw new Error("Sha256: update after hex()");
-    let i10 = 0;
-    this.total += bytes.length;
-    if (this.bufLen) {
-      const take = Math.min(64 - this.bufLen, bytes.length);
-      this.buf.set(bytes.subarray(0, take), this.bufLen);
-      this.bufLen += take;
-      i10 = take;
-      if (this.bufLen === 64) {
-        this.block(this.buf, 0);
-        this.bufLen = 0;
-      }
-    }
-    for (; i10 + 64 <= bytes.length; i10 += 64)
-      this.block(bytes, i10);
-    if (i10 < bytes.length) {
-      this.buf.set(bytes.subarray(i10), 0);
-      this.bufLen = bytes.length - i10;
-    }
-    return this;
-  }
-  block(p2, o10) {
-    const w2 = this.w, H3 = this.h;
-    for (let t10 = 0; t10 < 16; t10++, o10 += 4)
-      w2[t10] = p2[o10] << 24 | p2[o10 + 1] << 16 | p2[o10 + 2] << 8 | p2[o10 + 3];
-    for (let t10 = 16; t10 < 64; t10++) {
-      const x2 = w2[t10 - 15], y2 = w2[t10 - 2];
-      const s02 = (x2 >>> 7 | x2 << 25) ^ (x2 >>> 18 | x2 << 14) ^ x2 >>> 3;
-      const s12 = (y2 >>> 17 | y2 << 15) ^ (y2 >>> 19 | y2 << 13) ^ y2 >>> 10;
-      w2[t10] = w2[t10 - 16] + s02 + w2[t10 - 7] + s12 | 0;
-    }
-    let a10 = H3[0], b3 = H3[1], c10 = H3[2], d3 = H3[3], e10 = H3[4], f2 = H3[5], g3 = H3[6], h2 = H3[7];
-    for (let t10 = 0; t10 < 64; t10++) {
-      const S1 = (e10 >>> 6 | e10 << 26) ^ (e10 >>> 11 | e10 << 21) ^ (e10 >>> 25 | e10 << 7);
-      const ch2 = e10 & f2 ^ ~e10 & g3;
-      const t12 = h2 + S1 + ch2 + K[t10] + w2[t10] | 0;
-      const S0 = (a10 >>> 2 | a10 << 30) ^ (a10 >>> 13 | a10 << 19) ^ (a10 >>> 22 | a10 << 10);
-      const maj = a10 & b3 ^ a10 & c10 ^ b3 & c10;
-      const t23 = S0 + maj | 0;
-      h2 = g3;
-      g3 = f2;
-      f2 = e10;
-      e10 = d3 + t12 | 0;
-      d3 = c10;
-      c10 = b3;
-      b3 = a10;
-      a10 = t12 + t23 | 0;
-    }
-    H3[0] += a10;
-    H3[1] += b3;
-    H3[2] += c10;
-    H3[3] += d3;
-    H3[4] += e10;
-    H3[5] += f2;
-    H3[6] += g3;
-    H3[7] += h2;
-  }
-  hex() {
-    if (this.done)
-      throw new Error("Sha256: hex() twice");
-    const total = this.total;
-    const padLen = (this.bufLen < 56 ? 56 - this.bufLen : 120 - this.bufLen) + 8;
-    const pad4 = new Uint8Array(padLen);
-    pad4[0] = 128;
-    const bits2 = total * 8, hi = Math.floor(bits2 / 4294967296), lo2 = bits2 >>> 0, n10 = padLen;
-    pad4[n10 - 8] = hi >>> 24;
-    pad4[n10 - 7] = hi >>> 16;
-    pad4[n10 - 6] = hi >>> 8;
-    pad4[n10 - 5] = hi;
-    pad4[n10 - 4] = lo2 >>> 24;
-    pad4[n10 - 3] = lo2 >>> 16;
-    pad4[n10 - 2] = lo2 >>> 8;
-    pad4[n10 - 1] = lo2;
-    this.total -= padLen;
-    this.update(pad4);
-    this.done = true;
-    return Array.from(this.h, (x2) => x2.toString(16).padStart(8, "0")).join("");
-  }
-};
-
-// node_modules/@internal/model-packs/dist/pack-store.js
-var SLICE = 1 << 20;
-function createPackStore(deps) {
-  const cacheName = deps.cacheName ?? "pwa-models";
-  const keyOf2 = (slug, name) => `${location.origin}/__pwa-models__/${slug}/${name}`;
-  function manifestOf(slug) {
-    const p2 = deps.packs[slug];
-    if (!p2)
-      throw new Error(`unknown pack: ${slug}`);
-    return p2;
-  }
-  const openCache = () => caches.open(cacheName);
-  async function hashBlob(b3) {
-    const sha = new Sha256();
-    for (let o10 = 0; o10 < b3.size; o10 += SLICE)
-      sha.update(new Uint8Array(await b3.slice(o10, Math.min(o10 + SLICE, b3.size)).arrayBuffer()));
-    return sha.hex();
-  }
-  async function cachedChunkSizes(slug, m2) {
-    const cache = await openCache();
-    const sizes = [];
-    for (const c10 of m2.chunks) {
-      const r10 = await cache.match(keyOf2(slug, c10.name));
-      sizes.push(r10 ? Number(r10.headers.get("content-length") ?? 0) : 0);
-    }
-    return sizes;
-  }
-  async function putChunk(slug, name, bytes) {
-    const cache = await openCache();
-    const size = bytes instanceof Blob ? bytes.size : bytes.length;
-    await cache.put(keyOf2(slug, name), new Response(bytes, { headers: { "content-length": String(size), "content-type": "application/octet-stream" } }));
-  }
-  async function markVerified(slug, packId) {
-    const cache = await openCache();
-    await cache.put(keyOf2(slug, "verified.json"), new Response(JSON.stringify({ packId, at: (/* @__PURE__ */ new Date()).toISOString() }), { headers: { "content-type": "application/json" } }));
-  }
-  async function status(slug) {
-    const { packId, manifest: m2 } = manifestOf(slug);
-    const cache = await openCache();
-    const sizes = await cachedChunkSizes(slug, m2);
-    const complete = sizes.every((n10, i10) => n10 === m2.chunks[i10].bytes);
-    const marker = await cache.match(keyOf2(slug, "verified.json"));
-    const verified = marker ? (await marker.json()).packId === packId : false;
-    return { slug, ready: complete && verified, bytesCached: sizes.reduce((a10, b3) => a10 + b3, 0), bytesTotal: m2.totalBytes };
-  }
-  async function dropIfStale(slug) {
-    const { packId, manifest: m2 } = manifestOf(slug);
-    const cache = await openCache();
-    const marker = await cache.match(keyOf2(slug, "verified.json"));
-    if (!marker || (await marker.json()).packId === packId)
-      return;
-    for (const c10 of m2.chunks)
-      await cache.delete(keyOf2(slug, c10.name));
-    await cache.delete(keyOf2(slug, "verified.json"));
-  }
-  async function sealIfComplete(slug, fresh) {
-    const { packId, manifest: m2 } = manifestOf(slug);
-    const sizes = await cachedChunkSizes(slug, m2);
-    if (!sizes.every((n10, i10) => n10 === m2.chunks[i10].bytes))
-      return;
-    const cache = await openCache();
-    for (const c10 of m2.chunks) {
-      if (fresh.has(c10.name))
-        continue;
-      const r10 = await cache.match(keyOf2(slug, c10.name));
-      const ok2 = !!r10 && await hashBlob(await r10.blob()) === c10.sha256;
-      if (!ok2) {
-        await cache.delete(keyOf2(slug, c10.name));
-        return;
-      }
-    }
-    await markVerified(slug, packId);
-  }
-  async function download(slug, base3, progress2) {
-    const { packId, manifest: m2 } = manifestOf(slug);
-    await dropIfStale(slug);
-    const sizes = await cachedChunkSizes(slug, m2);
-    let done = sizes.reduce((a10, n10, i10) => a10 + (n10 === m2.chunks[i10].bytes ? n10 : 0), 0);
-    progress2({ done, total: m2.totalBytes });
-    const root = base3.replace(/\/+$/, "");
-    for (let i10 = 0; i10 < m2.chunks.length; i10++) {
-      const c10 = m2.chunks[i10];
-      if (sizes[i10] === c10.bytes)
-        continue;
-      const res = await fetch(`${root}/packs/${slug}/${c10.name}`, { cache: "no-store" });
-      if (!res.ok || !res.body)
-        throw new Error(`fetch ${c10.name}: HTTP ${res.status}`);
-      const reader = res.body.getReader();
-      const sha = new Sha256();
-      const buf = new Uint8Array(c10.bytes);
-      let got = 0, lastReported = 0;
-      for (; ; ) {
-        const { value, done: end } = await reader.read();
-        if (end)
-          break;
-        if (got + value.length > c10.bytes)
-          throw new Error(`${c10.name}: larger than manifest says`);
-        sha.update(value);
-        buf.set(value, got);
-        got += value.length;
-        if (got - lastReported >= 1048576 || got === c10.bytes) {
-          lastReported = got;
-          progress2({ done: done + got, total: m2.totalBytes });
-        }
-      }
-      if (got !== c10.bytes)
-        throw new Error(`${c10.name}: got ${got} bytes, expected ${c10.bytes}`);
-      if (sha.hex() !== c10.sha256)
-        throw new Error(`${c10.name}: sha256 mismatch (source tampered or corrupted)`);
-      await putChunk(slug, c10.name, buf);
-      done += got;
-    }
-    await markVerified(slug, packId);
-    return status(slug);
-  }
-  async function importFiles(slugs, files, progress2) {
-    const packs = slugs.map((slug) => ({ slug, m: manifestOf(slug).manifest }));
-    for (const p2 of packs)
-      await dropIfStale(p2.slug);
-    const fresh = new Map(packs.map((p2) => [p2.slug, /* @__PURE__ */ new Set()]));
-    const total = files.reduce((a10, f2) => a10 + f2.size, 0);
-    let done = 0, matched = 0;
-    const bad = [];
-    for (const f2 of files) {
-      const whole = packs.find((p2) => p2.m.chunks.length > 1 && p2.m.totalBytes === f2.size);
-      if (whole) {
-        let offset = 0;
-        for (const c10 of whole.m.chunks) {
-          const piece = f2.slice(offset, offset + c10.bytes);
-          if (await hashBlob(piece) !== c10.sha256)
-            throw new Error(`${f2.name}: sha256 mismatch at ${c10.name} (wrong or corrupted file)`);
-          await putChunk(whole.slug, c10.name, piece);
-          fresh.get(whole.slug).add(c10.name);
-          offset += c10.bytes;
-          progress2({ done: done + offset, total });
-        }
-        matched++;
-      } else {
-        const sameSize = packs.flatMap((p2) => p2.m.chunks.filter((c10) => c10.bytes === f2.size).map((c10) => ({ slug: p2.slug, c: c10 })));
-        if (sameSize.length) {
-          const hex = await hashBlob(f2);
-          const hits = sameSize.filter((x2) => x2.c.sha256 === hex);
-          if (!hits.length)
-            bad.push(f2.name);
-          for (const h2 of hits) {
-            await putChunk(h2.slug, h2.c.name, f2);
-            fresh.get(h2.slug).add(h2.c.name);
-          }
-          if (hits.length)
-            matched++;
-        }
-      }
-      done += f2.size;
-      progress2({ done, total });
-    }
-    for (const p2 of packs)
-      await sealIfComplete(p2.slug, fresh.get(p2.slug));
-    if (bad.length)
-      throw new Error(`${bad[0]}: sha256 mismatch (wrong or corrupted file)`);
-    if (!matched)
-      throw new Error("no-matching-file");
-    return Promise.all(slugs.map(status));
-  }
-  async function downloadAll(slugs, base3, progress2) {
-    const total = slugs.reduce((a10, s10) => a10 + manifestOf(s10).manifest.totalBytes, 0);
-    const have = (await Promise.all(slugs.map(status))).map((st2) => st2.bytesCached);
-    const report = () => progress2({ done: have.reduce((a10, b3) => a10 + b3, 0), total });
-    report();
-    for (let i10 = 0; i10 < slugs.length; i10++)
-      await download(slugs[i10], base3, (p2) => {
-        have[i10] = p2.done;
-        report();
-      });
-    return Promise.all(slugs.map(status));
-  }
-  async function deletePack(slug) {
-    const { manifest: m2 } = manifestOf(slug);
-    const cache = await openCache();
-    for (const c10 of m2.chunks)
-      await cache.delete(keyOf2(slug, c10.name));
-    await cache.delete(keyOf2(slug, "verified.json"));
-  }
-  const noop = () => {
-  };
-  return {
-    status: (slugs) => Promise.all(slugs.map(status)),
-    download: (slugs, base3, onProgress) => downloadAll(slugs, base3, onProgress ?? noop),
-    importFiles: (slugs, files, onProgress) => importFiles(slugs, files, onProgress ?? noop),
-    async delete(slugs) {
-      for (const slug of slugs)
-        await deletePack(slug);
-    },
-    async chunks(slug) {
-      if (!(await status(slug)).ready)
-        throw new Error("pack-missing");
-      const { manifest: m2 } = manifestOf(slug);
-      const cache = await openCache();
-      const out = [];
-      for (const c10 of m2.chunks) {
-        const r10 = await cache.match(keyOf2(slug, c10.name));
-        if (!r10)
-          throw new Error("pack-missing");
-        out.push(await r10.blob());
-      }
-      return out;
-    }
-  };
-}
-
 // src/singer/credit-translations.ts
 var CREDIT_TRANSLATIONS = {
   /** 译自的原文（sha256）。 */
@@ -25161,7 +25670,7 @@ var keyOf = (sha256) => `${location.origin}/__pwa-sounds__/${sha256}`;
 var MEM_MAX = 2;
 var memory = /* @__PURE__ */ new Map();
 var hasCaches = () => typeof caches !== "undefined";
-var sha256Hex = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+var sha256Hex2 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
 function rememberInMemory(sha256, bytes) {
   memory.delete(sha256);
   memory.set(sha256, bytes);
@@ -25178,7 +25687,7 @@ async function cachedSound(sha256) {
     const c10 = await caches.open(CACHE), r10 = await c10.match(keyOf(sha256));
     if (!r10) return null;
     const bytes = new Uint8Array(await r10.arrayBuffer());
-    if (await sha256Hex(bytes) !== sha256) {
+    if (await sha256Hex2(bytes) !== sha256) {
       await c10.delete(keyOf(sha256));
       return null;
     }
@@ -25453,7 +25962,7 @@ function sf2Info(input) {
 }
 
 // src/sources/sha256.ts
-var sha256Hex2 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+var sha256Hex3 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
 
 // src/sources/sounds.ts
 function createSoundSources(o10) {
@@ -25464,33 +25973,40 @@ function createSoundSources(o10) {
     const hit = await cachedSound(e10.sha256);
     if (hit) return hit;
     let last = "";
-    for (const base3 of bases()) {
+    const sameSite = bases()[0];
+    for (const base2 of bases()) {
       try {
-        const res = await fetch(`${base3}/${e10.file}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const out = new Uint8Array(e10.bytes);
-        let o11 = 0;
-        const rd2 = res.body?.getReader();
-        if (!rd2) {
-          const b3 = new Uint8Array(await res.arrayBuffer());
-          if (b3.length !== e10.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${b3.length} \u2260 ${e10.bytes}\uFF09`);
-          out.set(b3);
-          o11 = b3.length;
-        } else for (; ; ) {
-          const { done, value } = await rd2.read();
-          if (done) break;
-          if (o11 + value.length > e10.bytes) throw new Error("\u6BD4\u76EE\u5F55\u91CC\u8BF4\u7684\u5927");
-          out.set(value, o11);
-          o11 += value.length;
-          onProgress(o11);
+        let out, o11;
+        if (base2 === sameSite) {
+          out = await getBytes(`pwa-sounds/${e10.file}`, { onProgress: (d3) => onProgress(d3) });
+          o11 = out.length;
+        } else {
+          const res = await fetch(`${base2}/${e10.file}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          out = new Uint8Array(e10.bytes);
+          o11 = 0;
+          const rd2 = res.body?.getReader();
+          if (!rd2) {
+            const b3 = new Uint8Array(await res.arrayBuffer());
+            if (b3.length !== e10.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${b3.length} \u2260 ${e10.bytes}\uFF09`);
+            out.set(b3);
+            o11 = b3.length;
+          } else for (; ; ) {
+            const { done, value } = await rd2.read();
+            if (done) break;
+            if (o11 + value.length > e10.bytes) throw new Error("\u6BD4\u76EE\u5F55\u91CC\u8BF4\u7684\u5927");
+            out.set(value, o11);
+            o11 += value.length;
+            onProgress(o11);
+          }
         }
         if (o11 !== e10.bytes) throw new Error(`\u5927\u5C0F\u4E0D\u5BF9\uFF08${o11} \u2260 ${e10.bytes}\uFF09`);
-        const got = await sha256Hex2(out);
+        const got = await sha256Hex3(out);
         if (got !== e10.sha256) throw new Error(`\u5185\u5BB9\u548C\u76EE\u5F55\u91CC\u9489\u7684\u4E0D\u4E00\u6837\uFF08sha256 ${got.slice(0, 12)}\u2026 \u2260 ${e10.sha256.slice(0, 12)}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83`);
         await rememberSound(e10.sha256, out, true);
         return out;
       } catch (err2) {
-        last = `${base3}\uFF1A${err2.message}`;
+        last = `${base2}\uFF1A${err2.message}`;
       }
     }
     throw new Error(`\u300C${e10.name}\u300D\u62FF\u4E0D\u5230\uFF08\u8BD5\u8FC7 ${bases().join("\u3001")}\uFF09\u3002\u6700\u540E\u4E00\u6B21\uFF1A${last}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u97F3\u6E90\u5E93\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A .sf2 \u6587\u4EF6\u9009\u3002`);
@@ -25517,7 +26033,7 @@ function createSoundSources(o10) {
       }
     }
     if (!bank) throw new Error(`\u300C${g3.name}\u300D\u7684\u58F0\u97F3\u6CA1\u968F\u6B4C\u5E26\uFF08\u5F31\u5F15\u7528\uFF09\uFF0C\u8FD9\u53F0\u8BBE\u5907\u548C\u5BB6\u65CF\u97F3\u6E90\u5E93\u91CC\u4E5F\u6CA1\u6709\u5B83\u6765\u81EA\u7684\u300C${g3.origin.name}\u300D\uFF08sha256 ${g3.origin.fileSha256.slice(0, 12)}\u2026\uFF09\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C${o10.roleLabel()}\u300D\uFF0C\u7ED9\u5B83\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u6216\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D`);
-    const subset = subsetSf2(bank, [{ bank: g3.bank, program: g3.program }]), sha = await sha256Hex2(subset);
+    const subset = subsetSf2(bank, [{ bank: g3.bank, program: g3.program }]), sha = await sha256Hex3(subset);
     if (sha !== g3.subsetSha256) throw new Error(`\u4ECE\u300C${g3.origin.name}\u300D\u5207\u51FA\u6765\u7684\u300C${g3.name}\u300D\u548C\u6B4C\u91CC\u8BB0\u7684\u4E0D\u4E00\u6837\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g3.subsetSha256.slice(0, 12)}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83`);
     session.set(g3.subsetSha256, subset);
     return subset;
@@ -25726,8 +26242,8 @@ var measureLen = (beats, beatType) => beats * WHOLE / beatType;
 var TYPES = [["whole", WHOLE], ["half", WHOLE / 2], ["quarter", TPQ], ["eighth", TPQ / 2], ["16th", TPQ / 4], ["32nd", TPQ / 8], ["64th", TPQ / 16]];
 var TUPLETS = [[1, 1], [3, 2], [5, 4], [6, 4], [7, 4]];
 function noteType(dur) {
-  for (const [act, norm] of TUPLETS) for (const [type, base3] of TYPES) for (let dots = 0; dots <= 2; dots++) {
-    if (Math.abs(base3 * (2 - 1 / 2 ** dots) * (norm / act) - dur) < 0.5) return { type, dots, tuplet: act === 1 ? null : [act, norm] };
+  for (const [act, norm] of TUPLETS) for (const [type, base2] of TYPES) for (let dots = 0; dots <= 2; dots++) {
+    if (Math.abs(base2 * (2 - 1 / 2 ** dots) * (norm / act) - dur) < 0.5) return { type, dots, tuplet: act === 1 ? null : [act, norm] };
   }
   return null;
 }
@@ -25812,9 +26328,9 @@ function clefOfXml(sign, octave) {
   return null;
 }
 var autoSeq = 0;
-var ottavaXml = (shift, open, auto = false) => {
+var ottavaXml = (shift, open2, auto = false) => {
   const id2 = () => auto ? ` id="ms-auto-${++autoSeq}"` : "";
-  const stop = open ? `<direction><direction-type><octave-shift type="stop" size="${open === 2 ? 15 : 8}"${id2()}/></direction-type></direction>` : "";
+  const stop = open2 ? `<direction><direction-type><octave-shift type="stop" size="${open2 === 2 ? 15 : 8}"${id2()}/></direction-type></direction>` : "";
   if (!shift) return stop;
   return stop + `<direction placement="${shift > 0 ? "above" : "below"}"><direction-type><octave-shift type="${shift > 0 ? "down" : "up"}" size="${shift === 2 ? 15 : 8}"${id2()}/></direction-type></direction>`;
 };
@@ -26135,10 +26651,10 @@ function readMusicXml(xml, hints) {
     if (art.length) tok.art = art;
     if (tok.inhale && !set.has("breath")) delete tok.inhale;
   };
-  const slurEvents = (note2, open) => {
+  const slurEvents = (note2, open2) => {
     const sl2 = kids(note2, "notations").flatMap((nn2) => kids(nn2, "slur"));
-    for (const e10 of sl2) if (e10.attrs.type === "stop") open.delete(e10.attrs.number ?? "1");
-    for (const e10 of sl2) if (e10.attrs.type === "start") open.add(e10.attrs.number ?? "1");
+    for (const e10 of sl2) if (e10.attrs.type === "stop") open2.delete(e10.attrs.number ?? "1");
+    for (const e10 of sl2) if (e10.attrs.type === "start") open2.add(e10.attrs.number ?? "1");
   };
   const tempoOf = (el2) => {
     const s10 = el2.name === "sound" ? el2 : kid(el2, "sound");
@@ -26527,12 +27043,12 @@ function loungeV1toV2(json) {
     if (gm.variant === "tsukuyomi") return { ...c10, ...common2, instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, defaults: { ...TSUKUYOMI_DEFAULTS_V1 }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC), ...Object.keys(engines).length ? { engines } : {} };
     if (gm.variant === "tsukuyomi-vowels") return { ...c10, ...common2, instrument: { engine: "vowel-sampler", table: "builtin", hum }, defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC), ...Object.keys(engines).length ? { engines } : {} };
     if (src?.kind === "sf2") {
-      const embedded = typeof src.embedded === "string" ? src.embedded : null;
-      const subsetSha256 = typeof src.subsetSha256 === "string" ? src.subsetSha256 : embedded ? embedded.slice(embedded.lastIndexOf("/") + 1).replace(/\.sf2$/, "") : "";
+      const embedded2 = typeof src.embedded === "string" ? src.embedded : null;
+      const subsetSha256 = typeof src.subsetSha256 === "string" ? src.subsetSha256 : embedded2 ? embedded2.slice(embedded2.lastIndexOf("/") + 1).replace(/\.sf2$/, "") : "";
       return {
         ...c10,
         ...common2,
-        instrument: { engine: "soundfont", bank: Number(src.bank), program: Number(src.program), source: { embedded, subsetBytes: Number(src.subsetBytes ?? 0), subsetSha256, origin: src.origin ?? { name: "", fileSha256: "", bytes: 0 } } },
+        instrument: { engine: "soundfont", bank: Number(src.bank), program: Number(src.program), source: { embedded: embedded2, subsetBytes: Number(src.subsetBytes ?? 0), subsetSha256, origin: src.origin ?? { name: "", fileSha256: "", bytes: 0 } } },
         defaults: { ...SOUNDFONT_DEFAULTS },
         credit: c02.credit ?? { attribution: [], license: { name: "unknown" } },
         spec: c02.spec ?? structuredClone(SOUNDFONT_SPEC),
@@ -29266,13 +29782,14 @@ var StudioClient = class {
   gen = 0;
   hist = [];
   // 最近 3 s 的位置报告（音频时钟 → 走带位置）：播放头按扬声器的时钟查这张表（2026-10-10 Opus 5.5；user「ipad后台唤起后音频和动画错位」）   // 走带代号：play / stop 各加一；录音房的位置报告带着发出时的代号，旧代号的（停了之后还在路上的）扔掉——不然「停」之后一条迟到的 pos 会把 playing 翻回 true
+  // 起法 / 字节由宿主给（2026-11-03 家族工单 A：worklet 怎么起归 threads.ts、wasm 从哪读归 resources.ts——备用版是 data: 起、从老实脚本读）
   ctx;
-  moduleUrl;
-  wasmUrl;
-  constructor(ctx2, moduleUrl, wasmUrl) {
+  addModule;
+  wasmBytes;
+  constructor(ctx2, addModule, wasmBytes) {
     this.ctx = ctx2;
-    this.moduleUrl = moduleUrl;
-    this.wasmUrl = wasmUrl;
+    this.addModule = addModule;
+    this.wasmBytes = wasmBytes;
   }
   on(ev2, cb2) {
     let set = this.listeners.get(ev2);
@@ -29304,9 +29821,9 @@ var StudioClient = class {
     return this.chunkKeys.has(key);
   }
   wasmModule() {
-    return this.wasm ??= fetch(this.wasmUrl).then(async (r10) => {
-      if (!r10.ok) throw new Error(`TinySoundFont (standalone): HTTP ${r10.status}`);
-      return WebAssembly.compile(await r10.arrayBuffer());
+    return this.wasm ??= this.wasmBytes().then((b3) => WebAssembly.compile(b3)).catch((e10) => {
+      this.wasm = null;
+      throw new Error(`TinySoundFont (standalone): ${e10.message}`);
     });
   }
   /** 装好 worklet + WASM（第一次用才做；AudioContext 可以还没解锁）。 */
@@ -29314,7 +29831,7 @@ var StudioClient = class {
     if (this.readyP) return this.readyP;
     this.readyP = (async () => {
       const ctx2 = this.ctx();
-      const [, module] = await Promise.all([ctx2.audioWorklet.addModule(this.moduleUrl.href), this.wasmModule()]);
+      const [, module] = await Promise.all([this.addModule(ctx2), this.wasmModule()]);
       const node = new AudioWorkletNode(ctx2, "studio", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: { module } });
       await new Promise((ok2, fail) => {
         node.port.onmessage = (e10) => {
@@ -29710,7 +30227,7 @@ function songLangOf(tokens, hum) {
 }
 function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
   const notes = [];
-  let open = /* @__PURE__ */ new Map();
+  let open2 = /* @__PURE__ */ new Map();
   for (const { index, tok, t0: t02, t1: t12 } of timeline(tokens, tempoMap)) {
     if (tok.kind !== "note") continue;
     const ps = poly && tok.pitch ? allPitches(tok) : [effectivePitch(tokens, index)];
@@ -29718,7 +30235,7 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
     const arp = poly && ps.length > 1 && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks?.arpeggioSec ?? 0.035, (t12 - t02) * 0.5 / (ps.length - 1)) : 0;
     const rank = arp ? new Map([...ps].map((q2) => midiOf(q2)).sort((a10, b3) => a10 - b3).map((m2, k2) => [m2, k2])) : null;
     for (const p2 of ps) {
-      const midi2 = midiOf(p2), prev = tok.tie ? open.get(midi2) : void 0;
+      const midi2 = midiOf(p2), prev = tok.tie ? open2.get(midi2) : void 0;
       if (prev) {
         prev.t1 = marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12;
         nextOpen.set(midi2, prev);
@@ -29728,7 +30245,7 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
       notes.push(n10);
       nextOpen.set(midi2, n10);
     }
-    open = nextOpen;
+    open2 = nextOpen;
   }
   return notes.sort((a10, b3) => a10.t0 - b3.t0);
 }
@@ -29932,17 +30449,15 @@ function loadCatalogFromJson(concepts, gmMap) {
   return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c10) => [c10.id, c10])), gmSelf, rows, defs: { ...gmMap.defs ?? {}, ...concepts.defs } };
 }
 var cached = null;
-var sha256Hex3 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
-async function fetchChecked(base3, k2) {
-  const e10 = INSTRUMENT_FILES[k2], r10 = await fetch(new URL(`../${e10.file}`, base3));
-  if (!r10.ok) throw new Error(`${e10.file}: HTTP ${r10.status}`);
-  const b3 = new Uint8Array(await r10.arrayBuffer());
-  if (b3.length !== e10.bytes || await sha256Hex3(b3) !== e10.sha256) throw new Error(`${e10.file} \u548C app \u5185\u5D4C\u7684\u4E0D\u4E00\u6837\uFF08\u88AB\u6539\u8FC7\uFF1F\uFF09`);
+var sha256Hex4 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
+async function fetchChecked(k2) {
+  const e10 = INSTRUMENT_FILES[k2], b3 = await getBytes(e10.file, { sha256: e10.sha256 });
+  if (b3.length !== e10.bytes || await sha256Hex4(b3) !== e10.sha256) throw new Error(`${e10.file} \u548C app \u5185\u5D4C\u7684\u4E0D\u4E00\u6837\uFF08\u88AB\u6539\u8FC7\uFF1F\uFF09`);
   return b3;
 }
-function loadCatalog(base3) {
+function loadCatalog() {
   return cached ??= (async () => {
-    const [c10, g3] = await Promise.all([fetchChecked(base3, "concepts"), fetchChecked(base3, "gmMap")]);
+    const [c10, g3] = await Promise.all([fetchChecked("concepts"), fetchChecked("gmMap")]);
     const dec = new TextDecoder();
     return loadCatalogFromJson(JSON.parse(dec.decode(c10)), JSON.parse(dec.decode(g3)));
   })().catch((e10) => {
@@ -29950,8 +30465,8 @@ function loadCatalog(base3) {
     throw e10;
   });
 }
-async function loadIconSprite(base3) {
-  return new TextDecoder().decode(await fetchChecked(base3, "icons"));
+async function loadIconSprite() {
+  return new TextDecoder().decode(await fetchChecked("icons"));
 }
 function providersOf(cat2, c10) {
   const self2 = (c10.ids.gm ?? []).map((g3) => {
@@ -30469,14 +30984,14 @@ function describeSongChange(prev, next2) {
 }
 
 // src/app/performance.ts
-function createPerformance(host) {
-  const { engine: engine2, singer: singer2, view: view2 } = host;
-  const { progress: progress2, info: info2, showError: showError2, renderBar: renderBar2, playBtns: playBtns2, playIcon: playIcon2, offerFile: offerFile2 } = host.ui;
-  const { resolveGmBytes, ensureVowels: ensureVowels2, soundMemoryBytes: soundMemoryBytes2, modelBases } = host.sounds;
-  const { creditsOf: creditsOf2, creditsBlock: creditsBlock2 } = host.credits;
+function createPerformance(host2) {
+  const { engine: engine2, singer: singer2, view: view2 } = host2;
+  const { progress: progress2, info: info2, showError: showError2, renderBar: renderBar2, playBtns: playBtns2, playIcon: playIcon2, offerFile: offerFile2 } = host2.ui;
+  const { resolveGmBytes, ensureVowels: ensureVowels2, soundMemoryBytes: soundMemoryBytes2, modelBases } = host2.sounds;
+  const { creditsOf: creditsOf2, creditsBlock: creditsBlock2 } = host2.credits;
   const escHtml = (x2) => x2.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10] ?? c10);
-  const st2 = () => host.state(), extras = () => host.extras(), pv2 = (id2) => host.pv(id2), curRole2 = () => host.curRole(), docName2 = () => host.docName();
-  const playSong2 = () => host.viewScope() === "segment" ? songOnlyPaper(st2().song, st2().at.paper) : st2().song;
+  const st2 = () => host2.state(), extras = () => host2.extras(), pv2 = (id2) => host2.pv(id2), curRole2 = () => host2.curRole(), docName2 = () => host2.docName();
+  const playSong2 = () => host2.viewScope() === "segment" ? songOnlyPaper(st2().song, st2().at.paper) : st2().song;
   const curFlat2 = () => {
     const s10 = playSong2(), order = songPlayOrder(s10);
     return { tokens: flattenPart(s10, st2().at.part, { order }).tokens, map: timeMapOf(s10, order) };
@@ -30486,7 +31001,7 @@ function createPerformance(host) {
   const audibleParts3 = () => audibleParts(st2().song, pv2);
   const micOf3 = (part) => micOf(extras(), part);
   const channelOf3 = (part) => channelOf(extras(), part);
-  const planOf = (song, parts, raw = mixBypass) => ({ song, extras: extras(), hum: st2().song.hum, parts, mixBypass: raw, busMuted: host.busMuted() });
+  const planOf = (song, parts, raw = mixBypass) => ({ song, extras: extras(), hum: st2().song.hum, parts, mixBypass: raw, busMuted: host2.busMuted() });
   const deps = { engine: engine2, sounds: { resolveGmBytes, ensureVowels: ensureVowels2 }, sing: (tl2) => awaitAllChunks(tl2) };
   let mixBypass = false;
   function pushChannels2(raw = mixBypass) {
@@ -30516,7 +31031,7 @@ function createPerformance(host) {
     const had = issues.length;
     issuesKey = key;
     issues = next2;
-    host.ui.onIssues(next2);
+    host2.ui.onIssues(next2);
     if (next2.length) showError2(`${issuesText(next2)}\u3002\u8FD9${next2.length > 1 ? `${next2.length} \u6761\u8F68` : "\u6761\u8F68"}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002`);
     else if (had) info2("\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0\u4E86");
   }
@@ -30540,7 +31055,7 @@ function createPerformance(host) {
   async function pump() {
     if (pumping) return;
     pumping = true;
-    let shown = 0;
+    let shown2 = 0;
     const running = /* @__PURE__ */ new Set();
     try {
       for (; ; ) {
@@ -30553,9 +31068,9 @@ function createPerformance(host) {
             continue;
           }
           const who = roleName(extras(), st2().song.parts.find((p3) => p3.id === c10.part)?.role ?? ""), left = pendingChunks();
-          if (left > shown) {
+          if (left > shown2) {
             renderBar2.start(left);
-            shown = left;
+            shown2 = left;
           }
           const failed = chunkFailed.get(key);
           if (failed !== void 0) {
@@ -30741,7 +31256,7 @@ function createPerformance(host) {
     const from = tl2.range.from, to2 = tl2.range.to;
     let loopFrom = from;
     const song = playSong2(), a10 = parseArrangement(song.arrangement, song.papers);
-    if (host.viewScope() === "all" && a10.loop && tl2.papers[a10.order.length]) loopFrom = tl2.papers[a10.order.length].t0;
+    if (host2.viewScope() === "all" && a10.loop && tl2.papers[a10.order.length]) loopFrom = tl2.papers[a10.order.length].t0;
     return { from, to: to2, loopFrom };
   }
   let startMark = null;
@@ -31105,7 +31620,7 @@ function createPerformance(host) {
     if (exporting || preparing) return;
     exporting = true;
     try {
-      const fin = host.final?.();
+      const fin = host2.final?.();
       const r10 = fin && o10.scope === "all" ? { bytes: fin.mp3, secs: fin.secs, kbps: fin.kbps, stereo: fin.stereo, roles: fin.roles, fromFinal: true } : { ...await renderMp3(o10), fromFinal: false };
       const { tag: tag2, lines, fellBack } = mp3Tag(r10.roles);
       const file = new File([...r10.fromFinal ? [] : [tag2], r10.bytes], `${stampedCopy(`${docName2()}${o10.scope === "segment" ? `-${fileSafe(st2().song.papers.find((p2) => p2.id === st2().at.paper)?.name || "\u8FD9\u4E00\u5F20")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
@@ -31120,7 +31635,7 @@ function createPerformance(host) {
   }
   function jumpPlaybackToPaper2(id2) {
     if (!engine2.playing && !preparing) return;
-    const span2 = host.viewScope() === "all" && engine2.playing ? playTl?.papers.find((x2) => x2.paper.id === id2) : void 0;
+    const span2 = host2.viewScope() === "all" && engine2.playing ? playTl?.papers.find((x2) => x2.paper.id === id2) : void 0;
     if (span2 && playTl) {
       const r10 = playRange(playTl);
       playMute = span2.t0;
@@ -31273,20 +31788,17 @@ function createOverlayRegistry() {
 }
 
 // src/engine/vowel-table.ts
-var base = new URL("../assets/preview/", import.meta.url);
 var loading = null;
 function loadVowelTable() {
   if (loading) return loading;
   loading = (async () => {
     const [idx, pcm] = await Promise.all([
-      // no-cache = 每次跟服务器核对（重新生成过的表不吃浏览器缓存）
-      fetch(new URL("vowels.json", base), { cache: "no-cache" }).then((r10) => {
-        if (!r10.ok) throw new Error(`\u8BD5\u542C\u5143\u97F3\u8868\uFF1AHTTP ${r10.status}\uFF08\u5148\u8DD1 node scripts/gen-preview-vowels.mjs\uFF1F\uFF09`);
-        return r10.json();
+      getJson("assets/preview/vowels.json").catch((e10) => {
+        throw new Error(`\u8BD5\u542C\u5143\u97F3\u8868\uFF1A${e10.message}\uFF08\u5148\u8DD1 node scripts/gen-preview-vowels.mjs\uFF1F\uFF09`);
       }),
-      fetch(new URL("vowels.pcm16", base), { cache: "no-cache" }).then((r10) => r10.arrayBuffer())
+      getBytes("assets/preview/vowels.pcm16")
     ]);
-    return { sr: idx.sr, entries: idx.entries, pcm: new Int16Array(pcm) };
+    return { sr: idx.sr, entries: idx.entries, pcm: new Int16Array(pcm.buffer, pcm.byteOffset, pcm.byteLength >> 1) };
   })().catch((e10) => {
     loading = null;
     throw e10;
@@ -31312,8 +31824,8 @@ var Finder = class {
   playOnly = false;
   // 从歌库进的 = 只弹着玩：不出「上场」，返回回歌库
   host;
-  constructor(parent, host) {
-    this.host = host;
+  constructor(parent, host2) {
+    this.host = host2;
     this.el = document.createElement("div");
     this.el.className = "finder";
     this.el.hidden = true;
@@ -31353,7 +31865,7 @@ var Finder = class {
     this.el.querySelector(".finder-sort").value = this.mode;
     if (!this.cat) {
       this.loading ??= (async () => {
-        const [cat2, sprite] = await Promise.all([loadCatalog(this.host.base), loadIconSprite(this.host.base)]);
+        const [cat2, sprite] = await Promise.all([loadCatalog(), loadIconSprite()]);
         const doc = new DOMParser().parseFromString(sprite, "image/svg+xml"), svg = doc.documentElement;
         if (svg.tagName.toLowerCase() === "svg") {
           const node = document.importNode(svg, true);
@@ -31483,18 +31995,18 @@ var Finder = class {
     if (sel.value !== String(cur)) sel.value = String(cur);
   }
   rowHtml(e10, groupId) {
-    const cat2 = this.cat, c10 = e10.concept, pk = e10.preset ? gmKey(e10.preset) : "", o10 = `${groupId}::${c10.id}${pk ? `::${pk}` : ""}`, open = this.opened === o10, icon = c10.icon?.id;
+    const cat2 = this.cat, c10 = e10.concept, pk = e10.preset ? gmKey(e10.preset) : "", o10 = `${groupId}::${c10.id}${pk ? `::${pk}` : ""}`, open2 = this.opened === o10, icon = c10.icon?.id;
     const w2 = e10.weight ?? 0, stars = w2 ? `<span class="inst-w" title="${esc3(weightLabel(cat2, w2))}">${"\u2605".repeat(w2)}</span>` : "";
     const asName = e10.as ? cat2.byId.get(e10.as)?.names.zh ?? e10.as : "", asTag = asName ? `<span class="inst-as" title="\u5728\u8FD9\u79CD\u98CE\u91CC\u9876\u66FF\u300C${esc3(asName)}\u300D">\u9876 ${esc3(asName)}</span>` : "";
     const year = e10.preset?.year ?? c10.year, approx = e10.preset ? !!e10.preset.yearApprox : c10.yearApprox;
     const meta = [eraLabel(cat2, c10), year !== null && year !== void 0 ? `${approx ? "\u7EA6 " : ""}${fmtYear(year)}` : ""].filter(Boolean).join(" \xB7 ");
     let body2 = "";
-    if (open) {
+    if (open2) {
       const provs = providersOf(cat2, c10).filter((x2) => !pk || gmKey(x2) === pk), pitched = c10.kind === "voice";
       const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc3(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">\u9876\u66FF</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934">\u25B6 \u542C\u5F00\u5934</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF0C\u56DE\u5230\u4E50\u5668\u9875">\u9009\u8FD9\u4E2A</button>`}</div></div>`;
       body2 = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? `\u9F13\u4EF6 \xB7 ${esc3(p2.gmName)}\uFF08Standard \u9F13\u7EC4\u7684 ${p2.note} \u53F7\u952E\uFF09` : p2.bank === 128 ? `\u9F13\u7EC4 \xB7 ${esc3(p2.gmName)}` : `GeneralUser GS \xB7 ${esc3(p2.gmName)}`}`, p2.kind === "substitute" ? `\u9876\u66FF${p2.basis === "official" ? "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09" : p2.basis === "lineage" ? "\uFF08\u524D\u8EAB\uFF09" : p2.basis === "imitation" ? "\uFF08\u4EFF\u58F0\uFF09" : p2.basis === "family" ? "\uFF08\u540C\u7C7B\uFF09" : "\uFF08\u53EA\u662F\u540C\u540D\uFF09"}${p2.reason ? `\uFF1A${esc3(p2.reason)}` : ""}` : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, "\u5C0F\u6708\u76F8", "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531", false) : "") + (!provs.length && !pitched ? `<div class="prov-none">\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83</div>` : "") + `</div>`;
     }
-    return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}"${pk ? ` data-k="${esc3(pk)}"` : ""}>` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b><span class="zh">${esc3(c10.names.zh)}</span>${e10.preset ? `<span class="inst-preset"> \xB7 ${esc3(e10.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body2;
+    return `<div class="inst-row${open2 ? " is-open" : ""}" data-c="${esc3(c10.id)}" data-o="${esc3(o10)}"${pk ? ` data-k="${esc3(pk)}"` : ""}>` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc3(icon)}"/></svg>` : `<span class="inst-ico none">${esc3(c10.names.zh.slice(0, 1))}</span>`) + `<div class="inst-name"><b><span class="zh">${esc3(c10.names.zh)}</span>${e10.preset ? `<span class="inst-preset"> \xB7 ${esc3(e10.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span>${esc3(roleNameOf(c10))}${c10.names.ja ? ` \xB7 ${esc3(c10.names.ja)}` : ""}</span></div><div class="inst-meta">${esc3(meta)}</div></div>` + body2;
   }
 };
 
@@ -32001,8 +32513,8 @@ var RMS_ROW = row("\u5E73\u5747", HINT2.rms, `<output class="rms-val">\u2014</ou
 var CORR_ROW = row("\u5DE6\u53F3\u76F8\u5173", HINT2.corr, `<output class="corr-val">\u2014</output>`, "", "strip-row");
 var GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="gon-axis" d="M0,-1L0,1M-1,0L1,0"/><path class="gon" d=""/></svg>`;
 var Studio2 = class {
-  constructor(parent, host) {
-    this.host = host;
+  constructor(parent, host2) {
+    this.host = host2;
     addEventListener("resize", () => this.fitHeight());
     this.el = document.createElement("div");
     this.el.className = "studio";
@@ -32514,10 +33026,10 @@ ${tg2.fx}`);
   simpleSet(tg2, id2, v, live, input) {
     const s10 = this.slotOf(tg2);
     if (!s10) return;
-    const bus = this.onBus(tg2.track), view2 = viewOfFx(s10.fx, bus), base3 = view2.read(paramsOf(s10.fx));
-    if (!base3) return;
+    const bus = this.onBus(tg2.track), view2 = viewOfFx(s10.fx, bus), base2 = view2.read(paramsOf(s10.fx));
+    if (!base2) return;
     const ctl = view2.controls.find((c10) => c10.id === id2);
-    this.patch(tg2, (fx) => ({ ...fx, params: view2.write({ ...base3, [id2]: v }, paramsOf(fx)) }), ctl?.label ?? id2, live);
+    this.patch(tg2, (fx) => ({ ...fx, params: view2.write({ ...base2, [id2]: v }, paramsOf(fx)) }), ctl?.label ?? id2, live);
     if (live && input) {
       const w2 = input.closest("[data-fxwrap]");
       const out = w2?.querySelector(`output[data-c="${id2}"]`);
@@ -32673,7 +33185,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "8a090c76775a91e7" : "dev";
+var CORE_HASH = true ? "81a207dc032cff80" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -32684,15 +33196,8 @@ var TYPES2 = [{ description: "MusicXML \u4E50\u8C31\uFF08MoonSinger \u5B58\u6210
 var ACCEPT = ".mxl,.musicxml,.xml";
 var accepts = (name) => /\.(mxl|musicxml|xml)$/i.test(name);
 var g = globalThis;
-var topLevel = () => {
-  try {
-    return window.self === window.top;
-  } catch {
-    return false;
-  }
-};
-var canPickOpen = () => topLevel() && typeof g.showOpenFilePicker === "function";
-var canPickSave = () => topLevel() && typeof g.showSaveFilePicker === "function";
+var canPickOpen = () => !embedded() && typeof g.showOpenFilePicker === "function";
+var canPickSave = () => !embedded() && typeof g.showSaveFilePicker === "function";
 var aborted = (e10) => e10.name === "AbortError";
 async function fromFile(f2, handle) {
   return { name: f2.name, bytes: new Uint8Array(await f2.arrayBuffer()), handle, mtime: f2.lastModified };
@@ -32788,6 +33293,8 @@ var CLIENT_ID2 = "ce612efe-ea39-4a52-872d-550cd9f7d71b";
 var AUTHORITY2 = "https://login.microsoftonline.com/consumers";
 var SCOPES2 = ["Files.ReadWrite.AppFolder", "offline_access"];
 var MSAL_URL2 = "./vendor/msal/msal-browser.min.js";
+var SITE_URL = "https://sing.weebpaint.com";
+var REPORT_URL = "https://github.com/fangzhangmnm/moonsinger/issues";
 var SONG_SUFFIX = ".mxl";
 var APP_DB_PREFIX = "moonsinger-5b1e7c0a92d34f6e.";
 var LOCAL_SAVE_DEBOUNCE_MS = 2e3;
@@ -32993,7 +33500,7 @@ function openChoiceSheet(title, message, choices) {
 
 // src/store-ui.ts
 var stemOf = (id2) => identifiers.parse(id2)?.stem ?? id2;
-var base2 = storeUIFor({
+var base = storeUIFor({
   busy: (label, fn) => withBusy(label, fn),
   showNotice,
   sheets: { lockSyncGate, settleSyncGate },
@@ -33001,11 +33508,11 @@ var base2 = storeUIFor({
   stemOf
 });
 var storeUI = {
-  ...base2,
+  ...base,
   // 冲突面每次弹出 / 人选了什么都进黑匣子（user 2026-10-08「一直会遇到云端冲突的提示」——诊断日志里得看得见是哪首、哪个场合、怎么选的）。
   resolveConflict: async (q2) => {
     diagNote("sync", `conflict occasion=${q2.occasion} ${stemOf(q2.name)}`);
-    const r10 = await base2.resolveConflict(q2);
+    const r10 = await base.resolveConflict(q2);
     diagNote("sync", `conflict \u2192 ${r10}`);
     return r10;
   },
@@ -33015,7 +33522,7 @@ var storeUI = {
       reportError(err2, "log");
       return;
     }
-    base2.reportError(err2, level);
+    base.reportError(err2, level);
   },
   // ADR-0018：offlineUploadReplay:"auto"（离线新建的歌回线自动补推）的进度 / 撞名 surface——库在 createStore 时强制要有这条线（没有就当场抛）。
   onReplayStatus: ({ phase, name, done, total }) => {
@@ -33063,8 +33570,8 @@ async function _deriveKey(password, salt) {
   if (hit)
     return hit;
   const subtle = globalThis.crypto.subtle;
-  const base3 = await subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
-  const key = await subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: PBKDF2_ITERS }, base3, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+  const base2 = await subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveKey"]);
+  const key = await subtle.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt, iterations: PBKDF2_ITERS }, base2, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
   _keyCache.set(cacheKey, key);
   return key;
 }
@@ -33228,7 +33735,16 @@ var appEncryption = createEncryption();
 
 // src/app-store.ts
 var od = createOneDriveProvider({ clientId: CLIENT_ID2, scopes: SCOPES2, authority: AUTHORITY2, msalUrl: MSAL_URL2 });
-var auth = od.auth;
+var cloudAvailable = () => currentPolicy().cloud;
+var auth = cloudAvailable() ? od.auth : {
+  ...od.auth,
+  isAuthConfigured: () => false,
+  initAuth: async () => ({ signedIn: false, account: null, notConfigured: true }),
+  signIn: async () => {
+    throw new Error("cloud sign-in is not available in this deployment (itch / offline copy)");
+  },
+  retrySilentSignIn: async () => false
+};
 var _activeIdentifier = null;
 function setActiveIdentifier(id2) {
   _activeIdentifier = id2;
@@ -33286,6 +33802,95 @@ async function disposeStore() {
 async function detachStore() {
   await disposeStore();
   deviceKvSet2(KV_ATTACHED, null);
+}
+
+// src/persistence.ts
+var avail = null;
+var reasons = [];
+var subs = /* @__PURE__ */ new Set();
+function init() {
+  if (avail) return avail;
+  if (!deviceKvUsable()) {
+    avail = "unavailable";
+    reasons.push(deployment() === "local" ? "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u7528\u5B58\u50A8" : "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u73B0\u5728\u4E0D\u8BA9\u8FD9\u4E00\u9875\u7528\u5B58\u50A8");
+  } else {
+    avail = "best-effort";
+    if (deployment() !== "site") reasons.push(deployment() === "itch" ? "\u548C itch \u4E0A\u522B\u7684\u6E38\u620F\u5171\u7528\u4E00\u4E2A\u5B58\u50A8\u6876" : "\u548C\u8FD9\u53F0\u7535\u8111\u4E0A\u522B\u7684\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u5171\u7528\u4E00\u4E2A\u5B58\u50A8\u6876");
+  }
+  onDeviceKvFallback((why) => {
+    if (avail !== "best-effort") return;
+    avail = "session";
+    reasons.push(`\u5199\u4E0D\u8FDB\u5B58\u50A8\u4E86\uFF08${why}\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u4E4B\u540E\u7684\u8BBE\u7F6E\u53EA\u7559\u5728\u5185\u5B58\u91CC`);
+    const h2 = health();
+    for (const cb2 of subs) {
+      try {
+        cb2(h2);
+      } catch {
+      }
+    }
+  });
+  return avail;
+}
+function availability() {
+  return init();
+}
+function health() {
+  const a10 = init();
+  return { level: a10 === "unavailable" ? "unavailable" : a10 === "session" ? "degraded" : "ok", reasons: [...reasons] };
+}
+function onHealth(cb2) {
+  init();
+  subs.add(cb2);
+  return () => subs.delete(cb2);
+}
+
+// src/app/site-hint.ts
+var host = (u2) => u2.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+var SITE_HOST = host(SITE_URL);
+var SITE_TEXT = {
+  itchLine: `\u8FD9\u662F itch \u4E0A\u7684\u8BD5\u73A9\u7248\uFF1A\u9664\u4E86\u7F51\u76D8\u540C\u6B65\uFF0C\u522B\u7684\u90FD\u6709\u3002\u5B8C\u6574\u7248\u5728 ${SITE_HOST}`,
+  localLine: `\u8FD9\u662F\u4E0B\u8F7D\u4E0B\u6765\u7684\u5907\u7528\u7248\uFF1A\u9664\u4E86\u7F51\u76D8\u540C\u6B65\uFF0C\u522B\u7684\u90FD\u6709\u3002\u5B8C\u6574\u7248\u5728 ${SITE_HOST}`,
+  untested: `\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6253\u5F00\u5907\u7528\u7248\u6CA1\u6D4B\u8FC7\uFF1A\u8BBE\u7F6E\u548C\u7F13\u5B58\u5B58\u4E0D\u4F4F\uFF08\u5173\u4E86\u5C31\u5FD8\uFF09\uFF0C\u6B4C\u8BF7\u8BB0\u5F97\u300C\u5B58\u300D\u4E0B\u6765\u3002\u9047\u5230\u95EE\u9898\u8BF7\u5230 ${host(REPORT_URL)} \u544A\u8BC9\u6211\u4EEC`,
+  degraded: "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u5199\u4E0D\u8FDB\u5B58\u50A8\u4E86\uFF1A\u8FD9\u6B21\u6253\u5F00\u4E4B\u540E\u6539\u7684\u8BBE\u7F6E\u53EA\u7559\u5728\u5185\u5B58\u91CC\uFF0C\u5173\u4E86\u5C31\u5FD8",
+  cloudOff: "\u7F51\u76D8\u5728\u5B98\u7F51",
+  cloudOffTitle: `\u7F51\u76D8\uFF08OneDrive\uFF09\u540C\u6B65\u53EA\u5728\u5B98\u7F51\u7248\u91CC\u6709\uFF1A${SITE_HOST}`,
+  libOffTitle: `\u8FD9\u4E2A\u6D4F\u89C8\u5668\u5B58\u4E0D\u4F4F\u6B4C\u5E93\uFF08\u5173\u4E86\u5C31\u5FD8\uFF09\uFF1A\u6B4C\u8BF7\u7528\u300C\u5B58\u300D\u4E0B\u8F7D\u6210\u6587\u4EF6\uFF1B\u6B4C\u5E93\u5728\u5B98\u7F51\u7248\u91CC\uFF1A${SITE_HOST}`,
+  noShell: deployment() === "itch" ? "itch \u7248\u8DDF\u7740 itch \u4E0A\u7684\u7248\u672C\u8D70\uFF1A\u4F5C\u8005\u63A8\u4E86\u65B0\u7248\uFF0C\u5237\u65B0\u8FD9\u4E00\u9875\u5C31\u662F\u65B0\u7684" : deployment() === "local" ? `\u5907\u7528\u7248\u4E0D\u4F1A\u81EA\u5DF1\u66F4\u65B0\uFF1A\u8981\u65B0\u7248\u5C31\u91CD\u65B0\u4E0B\u8F7D\u8FD9\u4E2A\u6587\u4EF6\u5939\uFF0C\u6216\u53BB\u5B98\u7F51 ${SITE_HOST}` : "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF0C\u4E0D\u7528\u66F4\u65B0",
+  goSite: "\u53BB\u5B98\u7F51",
+  report: "\u62A5\u544A\u95EE\u9898"
+};
+var open = (url) => {
+  try {
+    window.open(url, "_blank", "noopener");
+  } catch {
+  }
+};
+var FOLDER_TEXT = {
+  models: "\u5907\u7528\u7248\uFF1A\u5C0F\u6708\u76F8\u7684\u6A21\u578B\u5305\u5C31\u5728\u8FD9\u4E2A\u6587\u4EF6\u5939\u7684 pwa-models/ \u91CC\uFF0C\u7528\u5230\u624D\u8BFB\u3001\u8BFB\u7684\u65F6\u5019\u6838\u54C8\u5E0C\uFF1B\u4E0D\u7528\u4E0B\u8F7D\u3001\u4E5F\u4E0D\u7528\u5BFC\u5165",
+  sounds: "\u5907\u7528\u7248\uFF1A\u97F3\u6E90\u5C31\u5728\u8FD9\u4E2A\u6587\u4EF6\u5939\u7684 pwa-sounds/ \u91CC\uFF0C\u7528\u5230\u624D\u8BFB\uFF1B\u6D4F\u89C8\u5668\u7F13\u5B58\u5728\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u91CC\u7528\u4E0D\u4E86\uFF0C\u8FD9\u91CC\u6CA1\u6709\u300C\u7559\u5728\u8BBE\u5907\u4E0A\u300D\u8FD9\u56DE\u4E8B",
+  speech: "\u5907\u7528\u7248\uFF1A\u540E\u53F0\u7EBF\u7A0B\u5B58\u4E0D\u4F4F\u4E1C\u897F\uFF0C\u5FF5\u7F13\u5B58\u53EA\u5728\u5185\u5B58\u91CC\uFF08\u6BCF\u6B21\u6253\u5F00\u7B2C\u4E00\u904D\u8981\u91CD\u5FF5\uFF09"
+};
+var shown = false;
+function showSiteHint() {
+  if (shown || !currentPolicy().siteHint) return;
+  shown = true;
+  const lost = availability() === "unavailable";
+  const line = deployment() === "itch" ? SITE_TEXT.itchLine : SITE_TEXT.localLine;
+  showNotice({
+    id: "site-hint",
+    level: lost ? "warning" : "neutral",
+    dismissible: true,
+    text: lost ? `${line}\u3002${SITE_TEXT.untested}` : line,
+    actions: lost ? [{ label: SITE_TEXT.report, onClick: () => open(REPORT_URL) }, { label: SITE_TEXT.goSite, onClick: () => open(SITE_URL) }] : [{ label: SITE_TEXT.goSite, onClick: () => open(SITE_URL) }]
+  });
+}
+function watchStorageHealth() {
+  onHealth((h2) => {
+    if (h2.level === "degraded") showNotice({ id: "storage-degraded", level: "warning", dismissible: true, text: SITE_TEXT.degraded });
+  });
+}
+function cloudOffHtml() {
+  return `<a class="site-hint-link" href="${SITE_URL}" target="_blank" rel="noopener" title="${SITE_TEXT.cloudOffTitle}">${SITE_TEXT.cloudOff}</a>`;
 }
 
 // vendor/vue/vue.esm-browser.prod.js
@@ -38984,7 +39589,7 @@ function createSongPlayer(deps = {}) {
   const audio = deps.audio ?? new Audio();
   audio.preload = "auto";
   const ms = deps.mediaSession !== void 0 ? deps.mediaSession : typeof navigator !== "undefined" && "mediaSession" in navigator ? navigator.mediaSession : null;
-  const makeMetadata = deps.makeMetadata ?? ((init) => new MediaMetadata(init));
+  const makeMetadata = deps.makeMetadata ?? ((init2) => new MediaMetadata(init2));
   let track = null;
   let url = null;
   let loop = false;
@@ -39257,7 +39862,8 @@ function initGalleryHost(d3) {
   fullEl.setAttribute("role", "dialog");
   fullEl.setAttribute("aria-modal", "true");
   fullEl.setAttribute("aria-label", "\u6B4C\u5E93");
-  fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button><button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u5373\u5174\uFF1A\u6311\u4E50\u5668\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u5373\u5174</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\uFF1A\u4E00\u9996\u6B4C / \u4E00\u4E2A\u6587\u4EF6\u5939" aria-haspopup="menu">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
+  fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span>` + // 网盘关着（itch / 备用版）= 云按钮画灰 + 旁边一行「网盘在官网」（家族规则书 §1 第 6 条：入口不许露着却点不动；2026-11-03）
+  (currentPolicy().cloud ? `<button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button>` : `<button type="button" class="btn is-off" data-v="cloud" disabled title="${SITE_TEXT.cloudOffTitle}">${iconHtml2("cloud")}</button>${cloudOffHtml()}`) + `<button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u5373\u5174\uFF1A\u6311\u4E50\u5668\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u5373\u5174</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\uFF1A\u4E00\u9996\u6B4C / \u4E00\u4E2A\u6587\u4EF6\u5939" aria-haspopup="menu">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector(".gallery-mount"), asideBar = fullEl.querySelector(".gallery-asidebar");
   const cloudBtn = fullEl.querySelector('[data-v="cloud"]'), refreshBtn = fullEl.querySelector('[data-v="refresh"]');
@@ -39521,6 +40127,7 @@ function initGalleryHost(d3) {
     } else if (v === "settings") d3.openSettings();
   });
   function renderCloud() {
+    if (!currentPolicy().cloud) return;
     const on2 = isSignedIn2();
     cloudBtn.classList.toggle("is-on", on2);
     cloudBtn.title = on2 ? `\u4E91\u7AEF\uFF1A\u5DF2\u767B\u5F55${accountName() ? ` ${accountName()}` : ""}` : "\u4E91\u7AEF\uFF1A\u6CA1\u767B\u5F55\uFF08\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09";
@@ -39535,7 +40142,7 @@ function initGalleryHost(d3) {
     }
   }
   auth.onAuthChanged(() => renderCloud());
-  async function open() {
+  async function open2() {
     await d3.flushLocal();
     const g3 = ensureMounted();
     document.body.dataset.mode = "gallery";
@@ -39556,11 +40163,17 @@ function initGalleryHost(d3) {
     d3.onClosed?.();
   }
   const isOpen = () => !fullEl.hidden;
+  async function openAttention() {
+    await open2();
+    ensureMounted().handle.setAttentionOnly(true);
+  }
   return {
-    open,
+    open: open2,
     close,
     isOpen,
     renderCloud,
+    openAttention,
+    setAttentionOnly: (on2) => gallery2?.handle.setAttentionOnly(on2),
     /** boot 用：上次是在歌库里离开的（刷新 / 关标签 / SW 更新重载）。 */
     wasInGallery: () => deviceKvGet2(KV_SCENE) === "gallery",
     refresh: () => gallery2?.handle.refresh(),
@@ -40595,11 +41208,11 @@ var WpReferenceWindow = class extends HTMLElement {
       return;
     if (!v.paused)
       v.pause();
-    const base3 = this._vFrameTime ?? v.currentTime;
+    const base2 = this._vFrameTime ?? v.currentTime;
     const d3 = this._vFrameDur;
     if (delta > 0) {
       if (d3 != null)
-        this._seekVideo(base3 + 1.5 * d3);
+        this._seekVideo(base2 + 1.5 * d3);
       else if (typeof v.requestVideoFrameCallback === "function") {
         const timer = setTimeout(() => {
           if (this._vStepping?.timer === timer) {
@@ -40610,7 +41223,7 @@ var WpReferenceWindow = class extends HTMLElement {
             this._updateVideoLayer();
           }
         }, 300);
-        this._vStepping = { from: base3, restoreMuted: v.muted, timer };
+        this._vStepping = { from: base2, restoreMuted: v.muted, timer };
         v.muted = true;
         v.play().catch(() => {
           this._cancelStep();
@@ -40618,7 +41231,7 @@ var WpReferenceWindow = class extends HTMLElement {
       } else
         this._seekVideo(v.currentTime + 1 / (cur.play?.fps ?? 24));
     } else {
-      this._seekVideo(Math.max(0, base3 - 0.5 * (d3 ?? 1 / (cur.play?.fps ?? 24))));
+      this._seekVideo(Math.max(0, base2 - 0.5 * (d3 ?? 1 / (cur.play?.fps ?? 24))));
     }
     this._updateVideoLayer();
   }
@@ -40785,9 +41398,9 @@ var WpReferenceWindow = class extends HTMLElement {
         v.pause();
     }
     const bytes = isVideo && cur ? cur.bytes ?? this._linked.get(cur.id) ?? null : null;
-    const shown = !!bytes;
-    this._videoLayer.classList.toggle("shown", shown);
-    if (!shown || !cur)
+    const shown2 = !!bytes;
+    this._videoLayer.classList.toggle("shown", shown2);
+    if (!shown2 || !cur)
       return;
     if (this._videoOf !== cur.id)
       this._loadVideo(cur, bytes);
@@ -42261,8 +42874,8 @@ var EXT_BY_MIME_ALIAS = {
   "audio/aacp": "aac"
 };
 function extForMime(mime) {
-  const base3 = (mime || "").split(";")[0].trim().toLowerCase();
-  return EXT_BY_MIME[base3] ?? EXT_BY_MIME_ALIAS[base3] ?? (base3.startsWith("image/") ? "img" : "bin");
+  const base2 = (mime || "").split(";")[0].trim().toLowerCase();
+  return EXT_BY_MIME[base2] ?? EXT_BY_MIME_ALIAS[base2] ?? (base2.startsWith("image/") ? "img" : "bin");
 }
 function mimeForName(name) {
   const m2 = /\.([A-Za-z0-9]+)$/.exec(name || "");
@@ -42972,7 +43585,7 @@ stream
     prefix += String.fromCharCode(65 + v % 26);
     v = Math.floor(v / 26) + i10 * 7;
   }
-  const base3 = `${prefix}+${font.psName}`;
+  const base2 = `${prefix}+${font.psName}`;
   let W3 = "";
   for (let i10 = 0; i10 < gids.length; ) {
     let j2 = i10;
@@ -42985,8 +43598,8 @@ stream
     i10 = j2;
   }
   stream(fileObj, `/Length1 ${sub.length}`, sub);
-  obj(descObj, `<< /Type /FontDescriptor /FontName /${base3} /Flags 4 /FontBBox [${font.bbox.map(sc2).join(" ")}] /ItalicAngle 0 /Ascent ${sc2(font.ascender)} /Descent ${sc2(font.descender)} /CapHeight ${sc2(font.capHeight)} /StemV 80 /FontFile2 ${fileObj} 0 R >>`);
-  obj(cidObj, `<< /Type /Font /Subtype /CIDFontType2 /BaseFont /${base3} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor ${descObj} 0 R /DW 1000 /W [ ${W3}] /CIDToGIDMap /Identity >>`);
+  obj(descObj, `<< /Type /FontDescriptor /FontName /${base2} /Flags 4 /FontBBox [${font.bbox.map(sc2).join(" ")}] /ItalicAngle 0 /Ascent ${sc2(font.ascender)} /Descent ${sc2(font.descender)} /CapHeight ${sc2(font.capHeight)} /StemV 80 /FontFile2 ${fileObj} 0 R >>`);
+  obj(cidObj, `<< /Type /Font /Subtype /CIDFontType2 /BaseFont /${base2} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor ${descObj} 0 R /DW 1000 /W [ ${W3}] /CIDToGIDMap /Identity >>`);
   let cmapText = "/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n";
   const pairs = gids.filter((g3) => g3 !== 0).map((g3) => {
     const cp2 = used.get(g3);
@@ -43002,7 +43615,7 @@ endbfchar
   }
   cmapText += "endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend\n";
   stream(uniObj, "", enc2.encode(cmapText));
-  obj(fontObj, `<< /Type /Font /Subtype /Type0 /BaseFont /${base3} /Encoding /Identity-H /DescendantFonts [${cidObj} 0 R] /ToUnicode ${uniObj} 0 R >>`);
+  obj(fontObj, `<< /Type /Font /Subtype /Type0 /BaseFont /${base2} /Encoding /Identity-H /DescendantFonts [${cidObj} 0 R] /ToUnicode ${uniObj} 0 R >>`);
   const pdfDate = (d3) => {
     const p22 = (v) => String(v).padStart(2, "0");
     const off = -d3.getTimezoneOffset(), sign = off < 0 ? "-" : "+", ao2 = Math.abs(off);
@@ -43384,7 +43997,7 @@ function parseTtf(bytes) {
 }
 function buildRclt(b3, t10) {
   if (!t10 || t10.len < 10) return null;
-  const base3 = t10.off, featureList = base3 + u162(b3, base3 + 6), lookupList = base3 + u162(b3, base3 + 8);
+  const base2 = t10.off, featureList = base2 + u162(b3, base2 + 6), lookupList = base2 + u162(b3, base2 + 8);
   const wanted = /* @__PURE__ */ new Set();
   for (let i10 = 0, n10 = u162(b3, featureList); i10 < n10; i10++) {
     const r10 = featureList + 2 + 6 * i10;
@@ -43455,11 +44068,11 @@ function buildRclt(b3, t10) {
     }
   };
   function subsOf(lookup) {
-    let subs = lookupCache.get(lookup);
-    if (subs) return subs;
-    subs = [];
-    lookupCache.set(lookup, subs);
-    if (lookup >= u162(b3, lookupList)) return subs;
+    let subs2 = lookupCache.get(lookup);
+    if (subs2) return subs2;
+    subs2 = [];
+    lookupCache.set(lookup, subs2);
+    if (lookup >= u162(b3, lookupList)) return subs2;
     const lo2 = lookupList + u162(b3, lookupList + 2 + 2 * lookup);
     let type = u162(b3, lo2);
     for (let k2 = 0, n10 = u162(b3, lo2 + 4); k2 < n10; k2++) {
@@ -43469,9 +44082,9 @@ function buildRclt(b3, t10) {
         st2 = st2 + u32(b3, st2 + 4);
       }
       const sub = makeSub(ty2, st2);
-      if (sub) subs.push(sub);
+      if (sub) subs2.push(sub);
     }
-    return subs;
+    return subs2;
   }
   function makeSub(type, o10) {
     const fmt = u162(b3, o10);
@@ -43613,15 +44226,15 @@ async function gunzip(b3) {
   return gunzipSync(b3);
 }
 async function loadPdfFont(id2) {
-  const r10 = await fetch(id2 === "pinyin" ? "./vendor/fonts/pinyin.ttf.gz" : "./vendor/fonts/sans.ttf.gz");
-  if (!r10.ok) throw new Error(`\u5B57\u4F53\u4E0B\u4E0D\u6765\uFF08${r10.status}\uFF09`);
-  const b3 = new Uint8Array(await r10.arrayBuffer());
+  const b3 = await getBytes(id2 === "pinyin" ? "vendor/fonts/pinyin.ttf.gz" : "vendor/fonts/sans.ttf.gz").catch((e10) => {
+    throw new Error(`\u5B57\u4F53\u4E0B\u4E0D\u6765\uFF08${e10.message}\uFF09`);
+  });
   return parseTtf(b3[0] === 31 && b3[1] === 139 ? await gunzip(b3) : b3);
 }
 async function loadMusicOutlines() {
-  const r10 = await fetch("./vendor/fonts/bravura/outlines.json");
-  if (!r10.ok) throw new Error(`\u97F3\u4E50\u5B57\u5F62\u4E0B\u4E0D\u6765\uFF08${r10.status}\uFF09`);
-  return await r10.json();
+  return getJson("vendor/fonts/bravura/outlines.json").catch((e10) => {
+    throw new Error(`\u97F3\u4E50\u5B57\u5F62\u4E0B\u4E0D\u6765\uFF08${e10.message}\uFF09`);
+  });
 }
 var PDF_FONT_MB = { sans: 6.3, pinyin: 12.2 };
 
@@ -43945,8 +44558,8 @@ var fifthsAtSel = (st2) => keyAt(tr(st2), st2.sel ? st2.sel.from : Math.max(0, s
 // src/app/document.ts
 var LOCK_WHAT = { score: "\u8C31 / \u6B4C\u540D / \u4F5C\u8005\u680F", paper: "\u7EB8", lounge: "\u6B4C\u624B / \u4E50\u5668", studio: "\u6DF7\u97F3", cover: "\u5C01\u9762" };
 var extrasKey = (e10) => JSON.stringify([e10.final?.at ?? null, Object.entries(e10.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), e10.studio ?? null]);
-function createDocument(init, hooks) {
-  let st2 = init.st, extras = init.extras, history = emptyHistory();
+function createDocument(init2, hooks) {
+  let st2 = init2.st, extras = init2.extras, history = emptyHistory();
   const mark = () => ({ song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: hooks.extraDirty?.() ?? 0 });
   let saved = { song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: 0 };
   const locked = () => isFinal(extras) ? `\u5B9A\u7A3F\u4E86\uFF08\u7B2C ${extras.final.rev} \u7248\uFF09` : null;
@@ -44034,8 +44647,8 @@ function createDocument(init, hooks) {
 function assertNever(x2) {
   throw new Error("[home] non-exhaustive switch: " + JSON.stringify(x2));
 }
-function createHome(init, ports) {
-  let home = init.home, stem = init.stem, named = init.named;
+function createHome(init2, ports) {
+  let home = init2.home, stem = init2.stem, named = init2.named;
   const same = (a10, b3) => a10.kind === "gallery" ? b3.kind === "gallery" && a10.identifier === b3.identifier : a10.kind === "file" ? b3.kind === "file" && a10.handle === b3.handle : b3.kind === "none" && a10.pendingFolder === b3.pendingFolder;
   function setHome(next2) {
     const prev = home;
@@ -44062,9 +44675,9 @@ function createHome(init, ports) {
   const stemOfId2 = (id2) => ports.ids.parse(id2)?.stem ?? id2;
   const pending = () => home.kind === "none" && home.pendingFolder != null;
   async function mint(folder) {
-    const base3 = name();
-    let id2 = ports.ids.join(folder, base3);
-    for (let n10 = 0; n10 < 50 && await ports.gallery.occupied(id2); n10++) id2 = ports.ids.join(folder, `${base3}-${ports.freshStem().slice(9)}`);
+    const base2 = name();
+    let id2 = ports.ids.join(folder, base2);
+    for (let n10 = 0; n10 < 50 && await ports.gallery.occupied(id2); n10++) id2 = ports.ids.join(folder, `${base2}-${ports.freshStem().slice(9)}`);
     return id2;
   }
   async function adopt(id2) {
@@ -44150,10 +44763,10 @@ function createHome(init, ports) {
         if (!p2 || !s10 || s10 === p2.stem) return { k: "same" };
         const to2 = ports.ids.join(p2.folder, s10);
         const r10 = await ports.gallery.rename(to2);
-        if (!r10.ok) return { k: "taken", where: r10.where };
+        if (!r10.ok) return r10.reason === "cancelled" ? { k: "renameCancelled" } : { k: "taken", where: r10.where ?? "local" };
         setHome({ kind: "gallery", identifier: to2 });
         setName(s10, true);
-        return { k: "renamed", stem: s10, oldKept: !!r10.oldKept };
+        return { k: "renamed", stem: s10, oldKept: !!r10.oldKept, oldKeptByUser: !!r10.oldKeptByUser };
       }
       default:
         return assertNever(h2);
@@ -44426,8 +45039,8 @@ function serializeDesk(d3) {
   if (pd.low !== null) pj.low = pd.low;
   if (Object.keys(pj).length) out.pad = pj;
   if (d3.ref) {
-    const { open, left, top, width, height } = d3.ref;
-    out.ref = { ...open ? { open: true } : {}, left, top, width, height };
+    const { open: open2, left, top, width, height } = d3.ref;
+    out.ref = { ...open2 ? { open: true } : {}, left, top, width, height };
   }
   return Object.keys(out).length ? out : null;
 }
@@ -44470,7 +45083,7 @@ function unserializeDesk(json) {
 // src/ui/sel-bar.ts
 var SelBar = class {
   el;
-  constructor(parent, host) {
+  constructor(parent, host2) {
     this.el = document.createElement("div");
     this.el.className = "sel-bar";
     this.el.hidden = true;
@@ -44478,7 +45091,7 @@ var SelBar = class {
     this.el.addEventListener("pointerdown", (e10) => e10.stopPropagation());
     this.el.addEventListener("click", (e10) => {
       const v = e10.target.closest("[data-v]")?.dataset.v;
-      if (v) host.verb(v);
+      if (v) host2.verb(v);
     });
   }
   /** 画：sel = 有没有选区（几个 token）；clip = 剪贴板里有没有东西；over = 别的全屏视图盖着（藏）；fix = 「修」开着（那一排开关的状态）。 */
@@ -44637,7 +45250,7 @@ function showUpdateBar() {
   document.body.append(el2);
 }
 var PLAY_TITLE = "\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\u3002\u957F\u6309 / \u53F3\u952E = \u63A5\u7740\u653E / \u81EA\u52A8\u7FFB / \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A";
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="midiBtn" class="btn tb-midi" hidden>MIDI<span class="midi-dot"></span></button><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? "\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09" : `\u6B4C\u5E93\uFF1A\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7684\u6B4C\uFF08${SITE_TEXT.cloudOffTitle}\uFF09`}"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="midiBtn" class="btn tb-midi" hidden>MIDI<span class="midi-dot"></span></button><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var busMuted = /* @__PURE__ */ new Set();
@@ -44831,7 +45444,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), new URL(`./${"studio-worklet-5c1a2c2736d5.mjs"}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+var engine = new StudioClient(() => singer.unlock(), (ctx2) => addWorklet(ctx2, "studio-worklet"), () => getBytes("vendor/tsf/tsf-standalone.wasm"));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -44952,7 +45565,7 @@ var upTimer = 0;
 var view = new ScoreView(scoreEl, {
   get: () => D2.st,
   set: (n10, o10) => update(n10, o10?.gesture),
-  layoutWorker: () => new URL(`./${"layout-worker-6fb0185cdc6b.mjs"}`, import.meta.url),
+  layoutWorker: () => threadUrls("layout-worker")[0] ?? null,
   // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
   onLayoutWorker: (why) => diagNote("layout", why),
   audition: (i10, hold) => {
@@ -45681,14 +46294,19 @@ var models = createModelSources();
 var packStore = createPackStore({ packs: PACKS });
 var esc8 = (s10) => s10.replace(/[&<>"]/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c10]);
 async function packStatusText() {
+  if (resourcesInFolder()) {
+    const files = localBundle()?.files ?? {};
+    return Object.entries(PACKS).map(([slug, p2]) => `${p2.manifest.chunks.every((c10) => files[`pwa-models/packs/${slug}/${c10.name}`]) ? "\u2713 \u5728\u6587\u4EF6\u5939\u91CC" : "\xB7 \u6587\u4EF6\u5939\u91CC\u6CA1\u6709"} ${slug}\uFF08${(p2.manifest.totalBytes / 1e6).toFixed(1)} MB\uFF09`).join("\n");
+  }
   const packs = await packStore.status(Object.keys(PACKS));
   return packs.map((s10) => `${s10.ready ? "\u2713" : "\xB7"} ${s10.slug}\uFF08${(s10.bytesTotal / 1e6).toFixed(1)} MB\uFF09`).join("\n");
 }
 function openSettings() {
   ui2.close();
+  const inFolder2 = resourcesInFolder();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div><label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(models.source)}" /></label><label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(sources.source)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="set-field">MIDI \u952E\u76D8<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">\u8FDE\u63A5</button>` : ""}</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button><label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div><pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc8(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? `
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">\u8BBE\u7F6E</div>` + (inFolder2 ? `<label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" disabled value="${esc8(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>` : `<label class="set-field">\u6A21\u578B\u6765\u6E90<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(models.source)}" /></label>`) + `<label class="set-field">\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc8(sources.source)}" /></label><div class="set-field">\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09<div id="sndCache" class="set-packs">\u2026</div></div><div class="set-field">MIDI \u952E\u76D8<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">\u8FDE\u63A5</button>` : ""}</div></div><div class="offer-msg">\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002</div><div class="set-row"><button class="btn" data-v="default">\u6062\u590D\u9ED8\u8BA4</button>` + (inFolder2 ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305</span><input id="impIn" type="file" multiple hidden disabled /></div>` : `<label class="btn" title="\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"><svg class="ico"><use href="#import"/></svg>\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305<input id="impIn" type="file" multiple hidden /></label></div>`) + `<pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit"><summary>\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C${ICON_CREDITS.length} \u4E2A\uFF09</summary><pre>${esc8(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? `
     \u6539\u52A8\uFF1A${c10.modified}` : ""}`).join("\n"))}</pre></details><details class="set-credit"><summary>\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E</summary><div class="part-sec">\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09</div><pre>${esc8(CREDIT.credit)}
 
 ${esc8(CREDIT.terms)}
@@ -45698,7 +46316,7 @@ ${esc8(CREDIT.attribution.join("\n"))}</pre><div class="part-sec">\u4E2D\u6587\u
 
 ${esc8(CREDIT_TRANSLATIONS.zh.terms)}</pre><div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc8(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">\u6E05\u7A7A\u5FF5\u7F13\u5B58</button></div></div><div class="set-field">\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5">\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE</button></div></div><details class="set-credit set-dev"><summary>\u5F00\u53D1\u8005</summary><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc8(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:download">\u4E0B\u8F7D .txt</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">\u5206\u4EAB\u2026</button>` : ""}<button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-field">\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09<div class="set-row"><button class="btn danger" data-v="factory">\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button><button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
+${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">\u6E05\u7A7A\u5FF5\u7F13\u5B58</button></div></div><div class="set-field">\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5">\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE</button></div></div><details class="set-credit set-dev"><summary>\u5F00\u53D1\u8005</summary><details class="set-credit"><summary>\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09</summary><pre id="diagTxt" class="set-packs diag-log">${esc8(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">\u590D\u5236</button><button class="btn" data-v="diag:download">\u4E0B\u8F7D .txt</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">\u5206\u4EAB\u2026</button>` : ""}<button class="btn" data-v="diag:clear">\u6E05\u7A7A</button></div></details><div class="set-field">\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09<div class="set-row"><button class="btn danger" data-v="factory">\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">\u68C0\u67E5\u66F4\u65B0</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">\u68C0\u67E5\u66F4\u65B0</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220">\u6E05\u7F13\u5B58\u91CD\u542F</button></div><div class="offer-btns"><button class="btn primary" data-v="close">\u597D</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -45715,7 +46333,7 @@ ${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C
   const spCache = box.querySelector("#spCache");
   const refreshSpeech = () => {
     void singer.cache("info", BUDGET.speechDisk).then((d3) => {
-      spCache.textContent = d3 ? `${sizeText2(d3.bytes)} / \u9884\u7B97 ${sizeText2(d3.budget)}\uFF0C${d3.entries} \u6761` : "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6CA1\u6709 IndexedDB\uFF1A\u53EA\u7528\u5185\u5B58";
+      spCache.textContent = d3 ? `${sizeText2(d3.bytes)} / \u9884\u7B97 ${sizeText2(d3.budget)}\uFF0C${d3.entries} \u6761` : inFolder2 ? FOLDER_TEXT.speech : "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6CA1\u6709 IndexedDB\uFF1A\u53EA\u7528\u5185\u5B58";
     }).catch((e10) => {
       spCache.textContent = `\u8BFB\u4E0D\u5230\uFF1A${e10.message}`;
     });
@@ -45723,6 +46341,10 @@ ${esc8(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">\u5C
   refreshSpeech();
   const sndIn = box.querySelector("#sndIn"), sndCache = box.querySelector("#sndCache");
   const refreshSounds = async () => {
+    if (inFolder2) {
+      sndCache.innerHTML = `<div class="set-row"><span class="set-note">${FOLDER_TEXT.sounds}</span></div>`;
+      return;
+    }
     const cached2 = await listCachedSounds(), bySha = new Map(cached2.map((c10) => [c10.sha256, c10])), known = new Set(Object.values(SOUNDS).map((e10) => e10.sha256)), uses = new Map(soundUses(D2.extras).map((u2) => [u2.subsetSha256, u2]));
     const total = cached2.reduce((n10, c10) => n10 + c10.bytes, 0), mem = soundMemoryBytes();
     let quota = "";
@@ -45914,7 +46536,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "6655d73d3a02",
+  cssHash: "c7bac431a1d3",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -46033,7 +46655,7 @@ function syncKind() {
 }
 var SAVE_SPEC = {
   saving: { icon: "database", cls: "s-saving", title: "\u6539\u4E86\uFF0C\u9A6C\u4E0A\u81EA\u52A8\u5B58\u5230\u8FD9\u53F0\u8BBE\u5907\uFF08\u70B9 = \u73B0\u5728\u5B58 + \u63A8\uFF09" },
-  local: { icon: "database", cls: "s-local", title: "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u6CA1\u767B\u5F55 OneDrive\uFF0C\u4E0D\u4E0A\u4E91\uFF1B\u70B9 = \u5B58 + \u53BB\u767B\u5F55\uFF09" },
+  local: { icon: "database", cls: "s-local", title: cloudAvailable() ? "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u6CA1\u767B\u5F55 OneDrive\uFF0C\u4E0D\u4E0A\u4E91\uFF1B\u70B9 = \u5B58 + \u53BB\u767B\u5F55\uFF09" : `\u5B58\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\uFF08${SITE_TEXT.cloudOffTitle}\uFF09` },
   offline: { icon: "cloud-unavailable", cls: "s-offline", title: "\u79BB\u7EBF\uFF1A\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u56DE\u7EBF\u518D\u63A8\u4E0A\u4E91" },
   unsynced: { icon: "cloud-upload", cls: "s-unsynced", title: "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u63A8\u4E0A\u4E91\uFF08\u70B9 = \u73B0\u5728\u63A8\uFF09" },
   clean: { icon: "cloud-synced", cls: "s-clean", title: "\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684\uFF08\u70B9 = \u590D\u67E5\u4E91\u7AEF\uFF09" },
@@ -46057,7 +46679,7 @@ function padHint() {
   if (!plug) return null;
   if (plug.hintRange) return plug.hintRange;
   if (!catalogNow) {
-    void loadCatalog(new URL(import.meta.url)).then((c10) => {
+    void loadCatalog().then((c10) => {
       catalogNow = c10;
       pad3.render();
     }).catch(() => {
@@ -46082,7 +46704,7 @@ function padHint() {
 }
 var GS = SOUNDS["generaluser-gs-2.0.3"];
 async function setAudition(p2) {
-  const cat2 = p2?.kind === "gs" ? catalogNow ??= await loadCatalog(new URL(import.meta.url)) : null;
+  const cat2 = p2?.kind === "gs" ? catalogNow ??= await loadCatalog() : null;
   const sk2 = cat2 && p2?.kind === "gs" && p2.provider.note === void 0 ? sampleKeyOf(cat2, p2.provider.bank, p2.provider.program) : null;
   auditionHint = !p2 || sk2 ? null : p2.kind === "voice" ? TSUKUYOMI_RANGE : ((r10) => r10 ? { ...r10, who: p2.concept.names.zh } : null)(rangeOf(p2.concept));
   if (auditionHint) pad3.follow(auditionHint.lo, auditionHint.hi);
@@ -46095,7 +46717,7 @@ async function setAudition(p2) {
   try {
     const bank = await sources.fetchSound(GS, (done) => progress(`\u4E0B\u8F7D ${GS.name} ${Math.round(done / GS.bytes * 100)}%`));
     progress("");
-    const subset = subsetSf2(bank, [{ bank: p2.provider.bank, program: p2.provider.program }]), sha256 = await sha256Hex2(subset);
+    const subset = subsetSf2(bank, [{ bank: p2.provider.bank, program: p2.provider.program }]), sha256 = await sha256Hex3(subset);
     audition = { bank: p2.provider.bank, program: p2.provider.program, ...cat2 ? gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note) : {}, sha256, subset, label: p2.provider.gmName };
     sound.allOff();
     await engine.bank(sha256, subset);
@@ -46150,7 +46772,7 @@ function gapDefaultOf(role) {
   if (!g3) return { gapSec: 0, label: "\u4EBA\u58F0\uFF08\u8FDE\u7740\u5531\uFF09" };
   if (g3.origin.library !== GS_LIBRARY_ID) return { gapSec: 0, label: "\u81EA\u5DF1\u7684 .sf2\uFF08\u76EE\u5F55\u91CC\u6CA1\u6709\u8FD9\u4E2A\u97F3\u8272\u7684\u8FDE\u65AD\u6570\u636E\uFF09" };
   if (!catalogNow) {
-    void loadCatalog(new URL(import.meta.url)).then((c10) => {
+    void loadCatalog().then((c10) => {
       catalogNow = c10;
       if (instShown()) drawInst();
     }).catch(() => void 0);
@@ -46184,7 +46806,7 @@ async function playHeadWith(p2) {
 }
 async function castPick(p2) {
   if (finderPlayOnly()) return;
-  const cat2 = await loadCatalog(new URL(import.meta.url)), c10 = p2.concept;
+  const cat2 = await loadCatalog(), c10 = p2.concept;
   const sound2 = p2.kind === "gs" ? p2.provider.sound ?? roleSoundOf(cat2, c10) : roleSoundOf(cat2, c10);
   updateExtras(withRoleConcept(D2.extras, curRole(), { name: roleNameOf(c10), sound: sound2, concept: { ids: { wikidata: c10.ids.wikidata, local: c10.ids.local, musicxml: c10.ids.musicxml, gm: c10.ids.gm.map((g3) => ({ program: g3.program, bank: g3.bank })), hs: c10.ids.hs }, name: { zh: c10.names.zh, en: c10.names.en, ...c10.names.ja ? { ja: c10.names.ja } : {} } } }, D2.st.song.hum), { kind: "lounge", label: `\u300C${roleNameOf(c10)}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668` }, "cast");
   if (p2.kind === "voice") {
@@ -46216,7 +46838,7 @@ async function castPick(p2) {
   setActive(activeId(D2.extras, curRole()));
   info(`\u300C${roleNameOf(c10)}\u300D\u6362\u6210\uFF1A${p2.provider.gmName}`);
 }
-var finder = new Finder($2("stage"), { base: new URL(import.meta.url), roleName: () => roleName(D2.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
+var finder = new Finder($2("stage"), { roleName: () => roleName(D2.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
 var partLabel = (id2) => {
   const k2 = D2.st.song.parts.findIndex((p2) => p2.id === id2);
   return k2 < 0 ? id2 : partLabels(D2.st.song, D2.extras)[k2];
@@ -46569,7 +47191,7 @@ function partLooks() {
   const labels = partLabels(D2.st.song, D2.extras), sounds = D2.st.song.parts.map((p2) => roleSound(D2.extras, p2.role));
   const colors = partColorIndices(sounds);
   const needCat = !catalogNow && D2.st.song.parts.some((p2) => !!D2.extras.lounge[p2.role]?.concept);
-  if (needCat) void loadCatalog(new URL(import.meta.url)).then((c10) => {
+  if (needCat) void loadCatalog().then((c10) => {
     catalogNow = c10;
     view.render();
   }).catch(() => void 0);
@@ -47464,7 +48086,7 @@ var findBankFile = (id2) => {
   if (!g3) return;
   fileInput(".sf2,audio/x-soundfont", async (f2) => {
     try {
-      const bytes = new Uint8Array(await f2.arrayBuffer()), sha = await sha256Hex2(bytes);
+      const bytes = new Uint8Array(await f2.arrayBuffer()), sha = await sha256Hex3(bytes);
       if (sha !== g3.origin.fileSha256) throw new Error(`\u300C${f2.name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C${g3.origin.name}\u300D\uFF08sha256 ${sha.slice(0, 12)}\u2026 \u2260 ${g3.origin.fileSha256.slice(0, 12)}\u2026\uFF09`);
       await rememberSound(sha, bytes, true);
       sources.session.drop(g3.subsetSha256);
@@ -47498,10 +48120,10 @@ async function addPicked() {
   const name = instEl.querySelector("#sfName")?.value.trim() || preset.name;
   try {
     const subset = subsetSf2(picked.bytes, [{ bank, program }]), inf = sf2Info(picked.bytes);
-    const [sha256, fileSha256] = await Promise.all([sha256Hex2(subset), sha256Hex2(picked.bytes)]);
+    const [sha256, fileSha256] = await Promise.all([sha256Hex3(subset), sha256Hex3(picked.bytes)]);
     const lib = picked.library;
     const credit = lib ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } } : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x2) => !!x2), license: { name: "unknown", text: inf.comment } };
-    const keys = lib?.id === GS_LIBRARY_ID ? gsKeyArgs(catalogNow ??= await loadCatalog(new URL(import.meta.url)), bank, program) : {};
+    const keys = lib?.id === GS_LIBRARY_ID ? gsKeyArgs(catalogNow ??= await loadCatalog(), bank, program) : {};
     await finishAdd({ name, bank, program, ...keys, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...lib ? { library: lib.id } : {} }, credit });
   } catch (e10) {
     showError(`\u52A0\u4E0D\u8FDB\u6765\uFF1A${e10.message}`);
@@ -47755,8 +48377,8 @@ function openPicked(picked) {
     showError(`\u6253\u4E0D\u5F00 ${picked.name}\uFF1A${e10.message}`);
   }
 }
-var extrasForSave = (base3 = D2.extras) => base3.thumbnail ? withThumbnail(base3, coverWithBlurb(base3.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base3;
-var encoder = createEncoder(() => new URL(`./${"encode-worker-2eb44362ca4e.mjs"}`, import.meta.url), (why) => diagNote("encode", why));
+var extrasForSave = (base2 = D2.extras) => base2.thumbnail ? withThumbnail(base2, coverWithBlurb(base2.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base2;
+var encoder = createEncoder(() => threadUrls("encode-worker")[0] ?? null, (why) => diagNote("encode", why));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -48000,7 +48622,7 @@ function fileWhere() {
   const h2 = H2.home;
   switch (h2.kind) {
     case "gallery":
-      return `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58${isSignedIn2() ? "\uFF1B\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u65F6\u63A8\u4E0A OneDrive" : "\uFF08\u6CA1\u767B\u5F55\uFF0C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09"}`;
+      return `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58${isSignedIn2() ? "\uFF1B\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u65F6\u63A8\u4E0A OneDrive" : cloudAvailable() ? "\uFF08\u6CA1\u767B\u5F55\uFF0C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09" : "\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09"}`;
     case "file":
       return `\u5B58\u5728\u672C\u673A\u6587\u4EF6 ${h2.handle.name}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB`;
     case "none":
@@ -48027,7 +48649,7 @@ function openMainMenu() {
   box.setAttribute("role", "menu");
   const inStore = H2.home.kind === "gallery";
   const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc8(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
-  box.innerHTML = `<div class="ctx-head"><b>${esc8(H2.fileName())}</b><span>${esc8(fileWhere())}</span></div>` + item("new", "new", "\u65B0\u5EFA") + item("open", "folder-open", "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026", "\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09") + item("export", "export", "\u5BFC\u51FA\u2026", "mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09") + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", "\u5B58\u8FDB\u6B4C\u5E93", "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : "") + `<div class="ctx-sep"></div>` + (H2.home.kind === "file" ? "" : item("rename", "rename", "\u6539\u6587\u4EF6\u540D\u2026", "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09")) + item("cover", "image", "\u5C01\u9762\u56FE\u2026", "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE") + item("sounds", "volume", "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026", "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3") + (finalOn() ? item("unfinal", "unlock", `\u6539\u7A3F\u2026\uFF08\u7B2C ${D2.extras.final.rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF09`, "\u89E3\u9501\uFF1A\u8C31 / \u6B4C\u624B / \u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u5B9A\u7A3F\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u6CA1\u4E86\uFF09") : item("final", "lock", "\u5B9A\u7A3F\u2026", "\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF0C\u4E4B\u540E\u53EA\u80FD\u542C\u3001\u4E0D\u80FD\u6539\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002\u6539\u7A3F\u968F\u65F6\u89E3\u9501")) + item("ref", "picture-in-picture", refHost.isOpen() ? "\u6536\u8D77\u53C2\u8003\u7A97" : `\u53C2\u8003\u7A97${refHost.count() ? `\uFF08${refHost.count()} \u5F20\uFF09` : ""}`, "\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58") + `<div class="ctx-sep"></div><div class="ctx-ver">${esc8(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
+  box.innerHTML = `<div class="ctx-head"><b>${esc8(H2.fileName())}</b><span>${esc8(fileWhere())}</span></div>` + item("new", "new", "\u65B0\u5EFA") + item("open", "folder-open", "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026", "\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09") + item("export", "export", "\u5BFC\u51FA\u2026", "mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09") + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", "\u5B58\u8FDB\u6B4C\u5E93", cloudAvailable() ? "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09" : "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09") : "") + `<div class="ctx-sep"></div>` + (H2.home.kind === "file" ? "" : item("rename", "rename", "\u6539\u6587\u4EF6\u540D\u2026", "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09")) + item("cover", "image", "\u5C01\u9762\u56FE\u2026", "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE") + item("sounds", "volume", "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026", "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3") + (finalOn() ? item("unfinal", "unlock", `\u6539\u7A3F\u2026\uFF08\u7B2C ${D2.extras.final.rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF09`, "\u89E3\u9501\uFF1A\u8C31 / \u6B4C\u624B / \u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u5B9A\u7A3F\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u6CA1\u4E86\uFF09") : item("final", "lock", "\u5B9A\u7A3F\u2026", "\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF0C\u4E4B\u540E\u53EA\u80FD\u542C\u3001\u4E0D\u80FD\u6539\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002\u6539\u7A3F\u968F\u65F6\u89E3\u9501")) + item("ref", "picture-in-picture", refHost.isOpen() ? "\u6536\u8D77\u53C2\u8003\u7A97" : `\u53C2\u8003\u7A97${refHost.count() ? `\uFF08${refHost.count()} \u5F20\uFF09` : ""}`, "\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58") + `<div class="ctx-sep"></div><div class="ctx-ver">${esc8(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
   item("settings", "settings", "\u8BBE\u7F6E\u2026", "\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C");
   document.body.append(box);
   const r10 = $2("setBtn").getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -48116,7 +48738,7 @@ async function finalizeNow(quality = mp3Quality) {
       app: APP_VERSION,
       core: coreInfo(),
       fingerprint: contentFingerprintOf(saveArgs()),
-      mp3: { path: FINAL_MP3_ENTRY, bytes: tagged.length, sha256: await sha256Hex2(tagged), secs: r10.secs, sr: r10.sr, kbps: r10.kbps, stereo: r10.stereo },
+      mp3: { path: FINAL_MP3_ENTRY, bytes: tagged.length, sha256: await sha256Hex3(tagged), secs: r10.secs, sr: r10.sr, kbps: r10.kbps, stereo: r10.stereo },
       parts: r10.parts,
       ...is2.length ? { issues: is2.map((i10) => ({ part: i10.part, why: i10.why })) } : {}
     };
@@ -48384,13 +49006,6 @@ function adoptStoreBytes(id2, bytes) {
 var stemOfId = (id2) => identifiers.parse(id2)?.stem ?? id2;
 async function openStoreDoc(id2) {
   if (!await H2.leave(`\u6253\u5F00\u300C${stemOfId(id2)}\u300D`, { nextIsGallery: true })) return false;
-  if (isSignedIn2() && navigator.onLine) {
-    try {
-      if (await requireStore().files.dirty.count() > 0) await pushDirtyAll();
-    } catch (e10) {
-      reportError(e10, "log");
-    }
-  }
   pendingOpenId = id2;
   try {
     const ok2 = await es2.open(id2);
@@ -48435,8 +49050,12 @@ async function renameActive() {
       showError(`\u300C${fileSafe(v)}\u300D\u5DF2\u7ECF\u6709\u4E86\uFF08${r10.where === "cloud" ? "\u4E91\u7AEF" : "\u8FD9\u53F0\u8BBE\u5907\u4E0A"}\uFF09\uFF0C\u6CA1\u6539`);
       return null;
     }
+    if (r10.k === "renameCancelled") {
+      info("\u8FD9\u6B21\u6CA1\u52A8");
+      return null;
+    }
     if (r10.k !== "renamed") return null;
-    info(r10.oldKept ? `\u6587\u4EF6\u540D\u6539\u6210 ${r10.stem}${SONG_SUFFIX}\uFF08\u65E7\u540D\u7684\u90A3\u4EFD\u8C31\u7CFB\u4E0D\u660E\uFF0C\u539F\u5730\u7559\u7740\u4E86\uFF09` : `\u6587\u4EF6\u540D\u6539\u6210 ${r10.stem}${SONG_SUFFIX}`);
+    info(r10.oldKept ? r10.oldKeptByUser ? `\u6587\u4EF6\u540D\u6539\u6210 ${r10.stem}${SONG_SUFFIX}\uFF1B\u7167\u4F60\u7684\u610F\u601D\uFF0C\u4E91\u7AEF\u65E7\u540D\u90A3\u4EFD\u7559\u7740\u6CA1\u52A8` : `\u6587\u4EF6\u540D\u6539\u6210 ${r10.stem}${SONG_SUFFIX}\uFF08\u65E7\u540D\u7684\u90A3\u4EFD\u8C31\u7CFB\u4E0D\u660E\uFF0C\u4E91\u7AEF\u539F\u5730\u7559\u7740\u4E86\u2014\u2014\u6B4C\u5E93\u91CC\u8FD8\u770B\u5F97\u89C1\uFF09` : `\u6587\u4EF6\u540D\u6539\u6210 ${r10.stem}${SONG_SUFFIX}`);
     return H2.identifier();
   } catch (e10) {
     reportError(e10);
@@ -48458,7 +49077,7 @@ function ensureAttached() {
   ensureGallery();
 }
 function startAuth() {
-  if (authStarted) return;
+  if (authStarted || !currentPolicy().cloud) return;
   authStarted = true;
   auth.onAuthChanged((s10) => {
     diagNote("auth", `changed signedIn=${String(s10.signedIn)}`);
@@ -48543,7 +49162,16 @@ async function openGallery() {
   renderTitle();
   await gallery.open();
 }
+var libOff = availability() === "unavailable";
+if (libOff) {
+  $2("libBtn").classList.add("is-off");
+  $2("libBtn").title = SITE_TEXT.libOffTitle;
+}
 $2("libBtn").addEventListener("click", () => {
+  if (libOff) {
+    showError(SITE_TEXT.libOffTitle);
+    return;
+  }
   void openGallery();
 });
 async function openCloudMenu() {
@@ -48557,12 +49185,11 @@ async function openCloudMenu() {
   const v = await openChoiceSheet(
     "\u4E91\u7AEF\uFF08OneDrive\uFF09",
     signed ? `\u5DF2\u767B\u5F55${who ? ` ${who}` : ""}\u3002\u6B4C\u5E93\u540C\u6B65\u5230 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF08\u8FD9\u4E2A app \u53EA\u80FD\u770B\u81EA\u5DF1\u7684\u90A3\u4E2A\u5939\uFF0C\u770B\u4E0D\u5230\u4F60\u522B\u7684\u6587\u4EF6\uFF09\u3002` : "\u767B\u5F55\u5FAE\u8F6F\u4E2A\u4EBA\u8D26\u53F7\u540E\uFF0C\u6B4C\u5E93\u540C\u6B65\u5230 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF08\u8FD9\u4E2A app \u53EA\u80FD\u770B\u81EA\u5DF1\u7684\u90A3\u4E2A\u5939\uFF0C\u770B\u4E0D\u5230\u4F60\u522B\u7684\u6587\u4EF6\uFF09\u3002\u4E0D\u767B\u5F55\u4E5F\u80FD\u7528\uFF0C\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002",
-    signed ? [{ label: "\u5237\u65B0\u4E91\u7AEF", value: "refresh" }, { label: "\u628A\u6CA1\u4E0A\u4E91\u7684\u90FD\u63A8\u4E0A\u53BB", value: "pushAll" }, { label: "\u9000\u51FA\u767B\u5F55", value: "out", danger: true, hint: "\u6B4C\u8FD8\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A" }] : [{ label: "\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7", value: "in", primary: true }]
+    signed ? [{ label: "\u5237\u65B0\u4E91\u7AEF", value: "refresh" }, { label: "\u9000\u51FA\u767B\u5F55", value: "out", danger: true, hint: "\u6B4C\u8FD8\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A" }] : [{ label: "\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7", value: "in", primary: true }]
   );
   if (v === "in") await signInFlow();
   else if (v === "out") await signOutFlow();
   else if (v === "refresh") gallery?.refresh();
-  else if (v === "pushAll") await pushDirtyAll({ verbose: true });
 }
 async function signOutFlow() {
   const store = requireStore();
@@ -48705,26 +49332,19 @@ function afterSignIn() {
     } catch (e10) {
       reportError(e10, "log");
     }
-    if (H2.home.kind === "gallery" && dirty()) n10 = Math.max(n10, 1);
-    let go = n10 === 0;
+    let go = false;
     if (n10 > 0) {
       try {
-        go = await openChoiceSheet(`\u6709 ${n10} \u9996\u6B4C\u8FD8\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u73B0\u5728\u4F20\u5417\uFF1F`, "\u4F20\u4E0A\u53BB = \u540C\u6B65\u5230 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF1B\u6682\u4E0D = \u5148\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u7684\u65F6\u5019\u7167\u65E7\u4F1A\u63A8\u3002", [{ label: "\u4F20\u4E0A\u53BB", value: "push", primary: true }, { label: "\u6682\u4E0D", value: "later" }]) === "push";
+        go = await openChoiceSheet(`\u6709 ${n10} \u9996\u6B4C\u6CA1\u540C\u6B65\u597D`, "\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6216\u6539\u4E86\u8FD8\u6CA1\u4F20\u4E0A\u53BB\u3002\u5230\u6B4C\u5E93\u91CC\u9010\u9996\u300C\u5904\u7406\u2026\u300D\uFF0C\u6BCF\u4E00\u9996\u90FD\u4F1A\u95EE\u4F60\u7528\u4E91\u7AEF\u7684\u8FD8\u662F\u8FD9\u53F0\u7684\uFF1B\u6682\u4E0D = \u5148\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002", [{ label: "\u53BB\u5904\u7406", value: "go", primary: true }, { label: "\u6682\u4E0D", value: "later" }]) === "go";
       } catch (e10) {
         reportError(e10, "log");
         go = false;
       }
     }
-    diagNote("auth", `afterSignIn: ${n10} not pushed \u2192 ${go ? "push" : "later"}`);
+    diagNote("auth", `afterSignIn: ${n10} not in sync \u2192 ${go ? "gallery attention view" : "later"}`);
     if (go) {
-      if (H2.home.kind === "gallery") {
-        try {
-          await es2.flushAndPush();
-        } catch (e10) {
-          reportError(e10, "warning");
-        }
-      }
-      await pushDirtyAll();
+      await openGallery();
+      gallery?.setAttentionOnly(true);
     }
     await refreshOpenDoc();
     gallery?.refresh();
@@ -49221,7 +49841,20 @@ renderTitle();
 chromeReady = true;
 applyWorkspace();
 scoreEl.focus();
-if (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash)) {
+showSiteHint();
+watchStorageHealth();
+onThreadFail((_name, why) => {
+  diagNote("thread", why);
+  showError(why);
+});
+Object.assign(window.__moonsinger, {
+  readSite: (path, sha256) => getBytes(path, sha256 ? { sha256 } : {}).then((b3) => b3.length),
+  threadKinds: () => Object.fromEntries(["singer-worker", "mp3-worker", "studio-worklet", "layout-worker", "encode-worker"].map((n10) => [n10, threadUrls(n10).map((u2) => u2.slice(0, u2.indexOf(":")))])),
+  mp3Test: (samples = 44100) => encodeMp3(new Float32Array(samples).map((_2, i10) => Math.sin(i10 / 10) * 0.3), null, 44100, 64).then((b3) => b3.length),
+  availability: () => availability()
+});
+diagNote("boot", `deployment ${deployment()} \xB7 storage ${availability()}`);
+if (storeWasAttached() || currentPolicy().cloud && /[#&](code|error|state)=/.test(location.hash)) {
   ensureAttached();
   const last = deviceKvGet2(KV_LAST_DOC);
   if (gallery.wasInGallery() || !last) await gallery.open();
@@ -49239,4 +49872,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-90e4c750d6af.mjs.map
+//# sourceMappingURL=moonsinger-dc66f7a9702e.mjs.map

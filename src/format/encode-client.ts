@@ -10,7 +10,7 @@ export interface Encoder {
   /** 现在是在 worker 里编码吗（设置页 / 诊断用）。 */
   offMain(): boolean;
 }
-export function createEncoder(workerUrl: () => URL | null, onFallback: (why: string) => void): Encoder {
+export function createEncoder(workerUrl: () => string | URL | null, onFallback: (why: string) => void): Encoder {
   let worker: Worker | null | undefined;   // undefined = 还没试；null = 没有 / 坏了
   let seq = 0;
   const pending = new Map<number, { args: SaveArgs; resolve: (b: Uint8Array) => void; reject: (e: Error) => void }>();

@@ -15,7 +15,7 @@ import { SpeechCache } from "./speech-cache.ts";
 import { openSpeechStore, type SpeechStore } from "./speech-store.ts";
 import { makeEnglishFront } from "./en-front.mjs";
 import type { SingLang } from "../score/lab-score.ts";
-import { createPackStore } from "@internal/model-packs";
+import { createPackStore, Sha256 } from "@internal/model-packs";
 import { PACKS, SINGER } from "./packs.gen.ts";
 
 export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: SingLang; opt?: Record<string, unknown>; breath?: boolean;
@@ -36,7 +36,11 @@ export interface CancelRequest { type: "cancel"; id: number }
 export interface CacheRequest { type: "cache"; id: number; op: "info" | "clear"; diskBytes?: number }
 /** 读音（歌词旁显示引擎念成什么，v0.9.34）：只注音、分音节，不唱。引擎没起来 / 中文前端没载 / 英文 = ready false（不为了看读音去下模型：重资源要等有意图）。 */
 export interface ReadRequest { type: "read"; id: number; score: unknown[]; text: string; lang: SingLang }
+/** 备用版（file: 双击打开）：线程是 data: 起的，origin 为 null、联不了网——要的文件（WORLD、模型包分片）由主线程经 resources.ts 读好、核过交过来（2026-11-03 家族工单 A）。 */
+export interface InitRequest { type: "init"; hostFiles: boolean }
+export interface FileReply { type: "file"; nid: number; bytes?: ArrayBuffer; error?: string }
 export type SingReply =
+  | { type: "need"; nid: number; path: string; sha256?: string }   // worker → 主线程：要一个站点里的文件（只在 hostFiles 时）
   | { type: "progress"; id: number; stage: string }
   | { type: "done"; id: number; samples: Float32Array; sr: number; ms: { load: number; sing: number; boot?: Record<string, number> };
       /** 这条 worker 现在占多少（刀 6 内存监控）：wasm = 三块 WASM 堆（ort / OpenJTalk / WORLD，只涨不落）；cache = 念缓存的字节；
@@ -72,7 +76,16 @@ const heapNow = () => { let n = 0; for (const m of wasmMems) n += m.buffer.byteL
 let baseHeap: number | undefined;
 const memNow = () => ({ wasm: heapNow(), cache: speech.used, base: baseHeap });
 
-const WORLD = new URL("../vendor/world/", import.meta.url);   // 相对 dist/singer-worker.mjs
+const worldBase = () => new URL("../vendor/world/", import.meta.url);   // 相对 dist/singer-worker.mjs（只在官网 / itch 算：data: 起的线程 import.meta.url 当不了基址）
+
+// ── 备用版：要的文件向主线程要（hostFiles；data: 起的线程联不了网）──
+let hostFiles = false, needSeq = 0;
+const needs = new Map<number, { ok: (b: Uint8Array) => void; fail: (e: Error) => void }>();
+function hostGet(path: string, sha256?: string): Promise<Uint8Array> {
+  return new Promise((ok, fail) => { const nid = ++needSeq; needs.set(nid, { ok, fail }); (self as unknown as Worker).postMessage({ type: "need", nid, path, ...(sha256 ? { sha256 } : {}) } satisfies SingReply); });
+}
+/** 备用版里读过的包（主线程核过 sha256 才交过来）。 */
+const hostPacks = new Map<string, Blob[]>();
 
 // ── 模型包 ──
 // 模型源 = 宿主随请求给的候选列表（ADR-0006 ③：界面上能改、出厂预填；user 2026-10-07「i might worry about hardcode my gh link…」）；
@@ -81,6 +94,16 @@ let bases: string[] = ["https://fangzhangmnm.github.io/pwa-models"];
 const store = createPackStore({ packs: PACKS });
 /** 这几个包不在缓存里就下（只下这一次）；进度报给界面。 */
 async function ensurePacks(slugs: string[], what: string, say: (s: string) => void): Promise<void> {
+  if (hostFiles) {   // 备用版：文件夹本身就是缓存（老实脚本，主线程读、核哈希）；不下载、不进 Cache Storage
+    for (const slug of slugs) {
+      if (hostPacks.has(slug)) continue;
+      say(`从文件夹读${what}`);
+      const blobs: Blob[] = [];
+      for (const c of PACKS[slug].manifest.chunks) blobs.push(new Blob([(await hostGet(`pwa-models/packs/${slug}/${c.name}`, c.sha256)) as unknown as BlobPart]));
+      hostPacks.set(slug, blobs);
+    }
+    return;
+  }
   if ((await store.status(slugs)).every((s) => s.ready)) return;
   let last: unknown = null;
   for (const base of bases) {   // 按顺序试；已经下好的分片不重取（续传 + 逐片验，从两个来源各拿一部分也没关系）
@@ -91,6 +114,7 @@ async function ensurePacks(slugs: string[], what: string, say: (s: string) => vo
 }
 /** 一个包核过的分片。model-packs 0.1.1 起读缓存也逐片重核 sha256（家族规则书 §1 第 7 条）：对不上 = 库已经把坏的那片作废，这里说人话、不替补。 */
 async function chunksOf(slug: string): Promise<Blob[]> {
+  if (hostFiles) { const b = hostPacks.get(slug); if (!b) throw new Error("pack-missing"); return b; }
   try { return await store.chunks(slug); }
   catch (e) {
     if (/^pack-corrupt/.test((e as Error)?.message ?? "")) throw new Error(`缓存里的小月相模型和清单对不上（被改过或坏了），坏的那一片已经丢掉：再唱一次会重新下载（${(e as Error).message}）`);
@@ -119,7 +143,10 @@ const speech = new SpeechCache(32e6);
 const SPEECH_DB = "moonsinger-speech", SPEECH_FORMAT = 1;
 let diskBudget = 512e6, storeP: Promise<SpeechStore | null> | null = null;
 const speechStore = () => (storeP ??= (diskBudget <= 0 ? Promise.resolve<SpeechStore | null>(null) : openSpeechStore(SPEECH_DB, diskBudget)).then((st) => { st?.setBudget(diskBudget); return st; }).catch(() => null));
-const hex16 = async (bytes: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join("");
+const hex16 = async (bytes: Uint8Array) => {   // data: 起的线程可能不给 crypto.subtle：退回 JS 那份（同一个哈希）
+  try { return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes as unknown as BufferSource))].slice(0, 8).map((b) => b.toString(16).padStart(2, "0")).join(""); }
+  catch { return new Sha256().update(bytes).hex().slice(0, 16); }
+};
 
 let bootMs: Record<string, number> = {};   // 冷启动各段多久（刀 5；诊断用）
 async function loadEngine(say: (s: string) => void): Promise<Engine> {
@@ -136,7 +163,8 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const sess = await ort.InferenceSession.create(await packFile(V, "model.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
   ort.env.wasm.wasmBinary = undefined; lap("session");
   say("加载日语前端");
-  const Module = await createOjt({ wasmBinary: await packFile(JA, "ja/ojt.wasm.gz"), print: () => {}, printErr: () => {} });
+  // 备用版：线程是 data: 起的，胶水的 findWasmBinary() 不管给没给字节都按 import.meta.url 拼网址（data: 当不了基址）→ 给 locateFile 绕开（字节照样从包里给）
+  const Module = await createOjt({ wasmBinary: await packFile(JA, "ja/ojt.wasm.gz"), print: () => {}, printErr: () => {}, ...(hostFiles ? { locateFile: (p: string) => p } : {}) });
   mountDictionaryBytes(Module, { sys: await packFile(JA, "ja/sys.dic.gz"), matrix: await packFile(JA, "ja/matrix.bin.gz"), char: await packFile(JA, "ja/char.bin.gz"), unk: await packFile(JA, "ja/unk.dic.gz") });
   const ja = createJaFrontend(Module, "/dic", { naniModel: await packJson(JA, "ja/nani-model.json.gz") }); lap("jaFrontend");
   const config = await packJson(V, "config.json");
@@ -175,19 +203,32 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
     phonemizeEnWords: (words: string[]) => en.phonemizeWords(words),
   });
   say("加载 WORLD");
-  const { default: createWorld } = await import(/* @vite-ignore */ new URL("world.mjs", WORLD).href);   // emscripten 产物带 node 分支，不进打包，运行时按地址载
-  const wasm = await fetch(new URL("world.wasm", WORLD)); if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
-  const worldBytes = new Uint8Array(await wasm.arrayBuffer());
+  let createWorld: (o: unknown) => Promise<unknown>, worldBytes: Uint8Array;
+  if (hostFiles) {   // 备用版：胶水和 wasm 都由主线程读好交过来；胶水从 blob: 载（data: 起的线程里 import(blob:) 可用，§2.2 实测）
+    const js = await hostGet("vendor/world/world.mjs"), url = URL.createObjectURL(new Blob([js as unknown as BlobPart], { type: "text/javascript" }));
+    try { ({ default: createWorld } = await import(/* @vite-ignore */ url)); } finally { URL.revokeObjectURL(url); }
+    worldBytes = await hostGet("vendor/world/world.wasm");
+  } else {
+    ({ default: createWorld } = await import(/* @vite-ignore */ new URL("world.mjs", worldBase()).href));   // emscripten 产物带 node 分支，不进打包，运行时按地址载
+    const wasm = await fetch(new URL("world.wasm", worldBase())); if (!wasm.ok) throw new Error(`WORLD: HTTP ${wasm.status}`);
+    worldBytes = new Uint8Array(await wasm.arrayBuffer());
+  }
   if (store) speech.attachStore(store, `${PACKS[V].packId.slice(0, 16)}:${PACKS[SINGER.runtime].packId.slice(0, 16)}:w${await hex16(worldBytes)}:v${SPEECH_FORMAT}`);
-  const world = speech.wrapWorld(wrapWorld(await createWorld({ wasmBinary: worldBytes })));   // 「念」缓存：分析按它来自哪段 piper 输出记
+  // 备用版：胶水从 blob: 载——这版 emscripten 胶水不读 wasmBinary（官网上它其实一直自己按网址取 world.wasm），只认 instantiateWasm / locateFile：字节自己实例化交给它，
+  //   locateFile 让 findWasmBinary() 别按 import.meta.url 拼网址（blob: 当不了基址）。经 WebAssembly.instantiate 走 = 上面的内存登记照样记到 WORLD 的堆。
+  const world = speech.wrapWorld(wrapWorld(await createWorld(hostFiles
+    ? { locateFile: (p: string) => p, instantiateWasm: (imports: WebAssembly.Imports, done: (inst: WebAssembly.Instance) => void) => { void WebAssembly.instantiate(worldBytes as unknown as BufferSource, imports).then((r) => done(r.instance)); return {}; } }
+    : { wasmBinary: worldBytes })));   // 「念」缓存：分析按它来自哪段 piper 输出记
   lap("world");
   baseHeap = heapNow();
   return { piper, world, ensureZh, ensureEn, zhReady: () => !!zh, presetDefault: config.preset_default ?? {} };
 }
 
 const cancelled = new Set<number>();
-self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelRequest | CacheRequest | ReadRequest>) => {
+self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelRequest | CacheRequest | ReadRequest | InitRequest | FileReply>) => {
   const q = ev.data;
+  if (q.type === "init") { hostFiles = q.hostFiles; return; }
+  if (q.type === "file") { const n = needs.get(q.nid); needs.delete(q.nid); if (!n) return; if (q.bytes) n.ok(new Uint8Array(q.bytes)); else n.fail(new Error(q.error ?? "主线程没读到这个文件")); return; }
   const post = (m: SingReply, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(m, transfer);
   if (q.type === "cancel") { cancelled.add(q.id); return; }
   if (q.type === "cache") {

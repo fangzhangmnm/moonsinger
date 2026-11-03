@@ -54,8 +54,9 @@ export class StudioClient {
   private gen = 0;
   private hist: PosSample[] = [];   // 最近 3 s 的位置报告（音频时钟 → 走带位置）：播放头按扬声器的时钟查这张表（2026-10-10 Opus 5.5；user「ipad后台唤起后音频和动画错位」）   // 走带代号：play / stop 各加一；录音房的位置报告带着发出时的代号，旧代号的（停了之后还在路上的）扔掉——不然「停」之后一条迟到的 pos 会把 playing 翻回 true
 
-  private ctx: () => AudioContext; private moduleUrl: URL; private wasmUrl: URL;
-  constructor(ctx: () => AudioContext, moduleUrl: URL, wasmUrl: URL) { this.ctx = ctx; this.moduleUrl = moduleUrl; this.wasmUrl = wasmUrl; }
+  // 起法 / 字节由宿主给（2026-11-03 家族工单 A：worklet 怎么起归 threads.ts、wasm 从哪读归 resources.ts——备用版是 data: 起、从老实脚本读）
+  private ctx: () => AudioContext; private addModule: (ctx: AudioContext) => Promise<void>; private wasmBytes: () => Promise<Uint8Array>;
+  constructor(ctx: () => AudioContext, addModule: (ctx: AudioContext) => Promise<void>, wasmBytes: () => Promise<Uint8Array>) { this.ctx = ctx; this.addModule = addModule; this.wasmBytes = wasmBytes; }
 
   on<K extends keyof StudioEvents>(ev: K, cb: StudioEvents[K]): () => void {
     let set = this.listeners.get(ev); if (!set) { set = new Set(); this.listeners.set(ev, set); }
@@ -70,14 +71,14 @@ export class StudioClient {
   hasChunk(key: string): boolean { return this.chunkKeys.has(key); }
 
   private wasmModule(): Promise<WebAssembly.Module> {
-    return (this.wasm ??= fetch(this.wasmUrl).then(async (r) => { if (!r.ok) throw new Error(`TinySoundFont (standalone): HTTP ${r.status}`); return WebAssembly.compile(await r.arrayBuffer()); }));
+    return (this.wasm ??= this.wasmBytes().then((b) => WebAssembly.compile(b as unknown as BufferSource)).catch((e) => { this.wasm = null; throw new Error(`TinySoundFont (standalone): ${(e as Error).message}`); }));
   }
   /** 装好 worklet + WASM（第一次用才做；AudioContext 可以还没解锁）。 */
   ensure(): Promise<void> {
     if (this.readyP) return this.readyP;
     this.readyP = (async () => {
       const ctx = this.ctx();
-      const [, module] = await Promise.all([ctx.audioWorklet.addModule(this.moduleUrl.href), this.wasmModule()]);
+      const [, module] = await Promise.all([this.addModule(ctx), this.wasmModule()]);
       const node = new AudioWorkletNode(ctx, "studio", { numberOfInputs: 0, numberOfOutputs: 1, outputChannelCount: [2], processorOptions: { module } });
       await new Promise<void>((ok, fail) => {
         node.port.onmessage = (e: MessageEvent<StudioOut>) => {

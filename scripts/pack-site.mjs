@@ -76,4 +76,18 @@ export function selfCheck(out, label) {
   return { total, n, biggest };
 }
 
+/** 备用版里运行时要读的 app 自带文件（resources.ts getBytes 的那些路径 + 线程向主线程要的 WORLD / LAME）。乐器目录的三个文件按 instruments.gen.ts 另外加。
+ *  test/local-files.test.mjs 守着：源码里出现的 vendor/… assets/… 读取路径都得在这里（漏了 = 备用版里那一处读不到）。 */
+export const LOCAL_APP_FILES = [
+  "assets/preview/vowels.json", "assets/preview/vowels.pcm16",
+  "vendor/tsf/tsf-standalone.wasm",
+  "vendor/fonts/pinyin.ttf.gz", "vendor/fonts/sans.ttf.gz", "vendor/fonts/bravura/outlines.json",
+  "vendor/world/world.mjs", "vendor/world/world.wasm",
+  "vendor/lame/lame.mjs", "vendor/lame/lame.wasm",
+];
+export async function instrumentFiles() {
+  const { INSTRUMENT_FILES } = await import(join(ROOT, "src/gm/instruments.gen.ts"));
+  return Object.values(INSTRUMENT_FILES).map((e) => ({ path: e.file, sha256: e.sha256 }));
+}
+
 export const writeFile = (p, data) => { mkdirSync(dirname(p), { recursive: true }); writeFileSync(p, data); };

@@ -27,6 +27,13 @@ export const SITE_TEXT = {
 
 const open = (url: string) => { try { window.open(url, "_blank", "noopener"); } catch { /* 被拦就算了：网址就写在那一行里 */ } };
 
+/** 备用版设置页里画灰的那几行的说明（模型 / 音源就在文件夹里；后台线程存不住念缓存）。 */
+export const FOLDER_TEXT = {
+  models: "备用版：小月相的模型包就在这个文件夹的 pwa-models/ 里，用到才读、读的时候核哈希；不用下载、也不用导入",
+  sounds: "备用版：音源就在这个文件夹的 pwa-sounds/ 里，用到才读；浏览器缓存在双击打开的网页里用不了，这里没有「留在设备上」这回事",
+  speech: "备用版：后台线程存不住东西，念缓存只在内存里（每次打开第一遍要重念）",
+};
+
 let shown = false;
 /** 开局那一行（只在 siteHint 开着时；一页只说一次）。存储开局就不可用（Safari 双击）= 换成「没测过」那一句 + 报告入口。 */
 export function showSiteHint(): void {

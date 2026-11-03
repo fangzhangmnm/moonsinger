@@ -77,15 +77,29 @@ function encodeAll(M, o, left, right) {
 }
 
 // src/export/mp3-worker.ts
-var LAME_URL = new URL("../vendor/lame/lame.mjs", import.meta.url);
+var lameUrl = () => new URL("../vendor/lame/lame.mjs", import.meta.url);
 var lameP = null;
-var lame = () => lameP ??= import(
-  /* @vite-ignore */
-  LAME_URL.href
-).then((m) => m.default());
+var lame = (given) => lameP ??= (async () => {
+  if (!given) return (await import(
+    /* @vite-ignore */
+    lameUrl().href
+  )).default();
+  const url = URL.createObjectURL(new Blob([given.js], { type: "text/javascript" }));
+  try {
+    return (await import(
+      /* @vite-ignore */
+      url
+    )).default({ locateFile: (p) => p, instantiateWasm: (imports, done) => {
+      void WebAssembly.instantiate(given.wasm, imports).then((r) => done(r.instance));
+      return {};
+    } });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+})();
 self.onmessage = async (ev) => {
   try {
-    const { left, right, sr, kbps } = ev.data, M = await lame();
+    const { left, right, sr, kbps } = ev.data, M = await lame(ev.data.lame);
     const out = encodeAll(M, { channels: right ? 2 : 1, sr, kbps, joint: true }, left, right);
     const bytes = new Uint8Array(new ArrayBuffer(out.length));
     bytes.set(out);
@@ -94,4 +108,4 @@ self.onmessage = async (ev) => {
     self.postMessage({ ok: false, message: e.message });
   }
 };
-//# sourceMappingURL=mp3-worker-1ebe72af5e6d.mjs.map
+//# sourceMappingURL=mp3-worker-da08b4c8433f.mjs.map

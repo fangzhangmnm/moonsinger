@@ -6,6 +6,7 @@ import { cachedSound, rememberSound } from "../gm/sound-cache.ts";
 import { subsetSf2 } from "../gm/sf2-subset.ts";
 import type { GmCandidate } from "../format/project.ts";
 import { sha256Hex } from "./sha256.ts";
+import { getBytes } from "../resources.ts";
 
 export interface SoundSources {
   /** 设置里填的音源库来源（这次打开里有效；空 = 出厂默认）。 */
@@ -30,14 +31,20 @@ export function createSoundSources(o: { progress(msg: string): void; /** 报错�
   async function fetchSound(e: SoundEntry, onProgress: (done: number) => void): Promise<Uint8Array> {
     const hit = await cachedSound(e.sha256); if (hit) return hit;   // 本次内存 / 持久缓存 `pwa-sounds`（user「可以缓存指定的包，不然没网的时候很麻烦」）
     let last = "";
+    const sameSite = bases()[0];
     for (const base of bases()) {
       try {
-        const res = await fetch(`${base}/${e.file}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const out = new Uint8Array(e.bytes); let o = 0;
-        const rd = res.body?.getReader();
-        if (!rd) { const b = new Uint8Array(await res.arrayBuffer()); if (b.length !== e.bytes) throw new Error(`大小不对（${b.length} ≠ ${e.bytes}）`); out.set(b); o = b.length; }
-        else for (;;) { const { done, value } = await rd.read(); if (done) break; if (o + value.length > e.bytes) throw new Error("比目录里说的大"); out.set(value, o); o += value.length; onProgress(o); }
+        let out: Uint8Array, o: number;
+        if (base === sameSite) {   // 同站点那一份 = resources.ts（官网 / itch = fetch；备用版 = 文件夹里的老实脚本；2026-11-03 家族工单 A）
+          out = await getBytes(`pwa-sounds/${e.file}`, { onProgress: (d) => onProgress(d) }); o = out.length;
+        } else {
+          const res = await fetch(`${base}/${e.file}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          out = new Uint8Array(e.bytes); o = 0;
+          const rd = res.body?.getReader();
+          if (!rd) { const b = new Uint8Array(await res.arrayBuffer()); if (b.length !== e.bytes) throw new Error(`大小不对（${b.length} ≠ ${e.bytes}）`); out.set(b); o = b.length; }
+          else for (;;) { const { done, value } = await rd.read(); if (done) break; if (o + value.length > e.bytes) throw new Error("比目录里说的大"); out.set(value, o); o += value.length; onProgress(o); }
+        }
         if (o !== e.bytes) throw new Error(`大小不对（${o} ≠ ${e.bytes}）`);
         const got = await sha256Hex(out);
         if (got !== e.sha256) throw new Error(`内容和目录里钉的不一样（sha256 ${got.slice(0, 12)}… ≠ ${e.sha256.slice(0, 12)}…），没有用它`);

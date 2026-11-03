@@ -6,7 +6,6 @@ import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, er
 
 export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept };
 export interface FinderHost {
-  base: URL;                                                   // 主 bundle 的 import.meta.url（找 vendor/）
   roleName(): string;                                          // 现在的角色名（顶条写「找人给「X」」）
   audition(p: FinderPick | null): Promise<void>;                     // 试听台：载进实时合成器（pad 弹它）；null = 停
   playHead(p: FinderPick): Promise<void>;                            // 用它放本声部开头
@@ -58,7 +57,7 @@ export class Finder {
     this.el.querySelector<HTMLSelectElement>(".finder-sort")!.value = this.mode;
     if (!this.cat) {
       this.loading ??= (async () => {
-        const [cat, sprite] = await Promise.all([loadCatalog(this.host.base), loadIconSprite(this.host.base)]);
+        const [cat, sprite] = await Promise.all([loadCatalog(), loadIconSprite()]);
         const doc = new DOMParser().parseFromString(sprite, "image/svg+xml"), svg = doc.documentElement;
         if (svg.tagName.toLowerCase() === "svg") { const node = document.importNode(svg, true) as unknown as SVGElement; node.setAttribute("style", "display:none"); this.el.prepend(node); }
         this.cat = cat;

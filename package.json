@@ -14,7 +14,11 @@
     "e2e": "npm run build && node test/e2e/run.mjs",
     "render": "node scripts/render-song.mjs",
     "e2e:changed": "npm run build && node test/e2e/run.mjs --changed",
-    "test:full": "npm run check && node test/e2e/run.mjs --smoke"
+    "test:full": "npm run check && node test/e2e/run.mjs --smoke && npm run fixture:itch && npm run smoke:local",
+    "pack:itch": "node scripts/pack-itch.mjs",
+    "pack:local": "node scripts/pack-local.mjs",
+    "fixture:itch": "node scripts/pack-itch.mjs && node tools/itch-fixture.mjs",
+    "smoke:local": "node scripts/pack-local.mjs && node tools/local-smoke.mjs"
   },
   "devDependencies": {
     "typescript": "5.7.3"

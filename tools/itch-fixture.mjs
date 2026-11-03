@@ -83,7 +83,7 @@ try {
   const wrote = await frame.evaluate(() => window.__moonsinger.state().song.papers[0].tracks[Object.keys(window.__moonsinger.state().song.papers[0].tracks)[0]].filter((t) => t.kind === "note").length);
   check("写进了音（键盘在框里管用）", wrote >= 3, `${wrote} 个音`);
   await frame.click("#playBtn");
-  const played = await frame.waitForFunction(() => { const e = window.__moonsinger.engine; return e.playing && e.position > 0.3 && !e.waiting; }, null, { timeout: 90000, polling: 200 }).then(() => true, () => false);
+  const played = await frame.waitForFunction(() => { const e = window.__moonsinger.engine, r = window.__moonsinger.resource().snapshot; return e.playing && e.position > 0.3 && !e.waiting && r.chunks > 0 && r.lanes.some((l) => l && l.wasm > 0); }, null, { timeout: 90000, polling: 200 }).then(() => true, () => false);
   const modelHits = inner.log.filter((r) => r.path.startsWith("/pwa-models/packs/"));
   check("小月相唱起来了（后台线程起、模型包到手）", played, `${((Date.now() - t0) / 1000).toFixed(1)} s`);
   check("模型包从同站点（zip 里那份）下", modelHits.length > 0 && modelHits.every((r) => r.status === 200), modelHits.map((r) => `${r.path.split("/")[3]}/${r.path.split("/")[4]}`).join("、"));

@@ -16,6 +16,7 @@
 | 单元 + 三份守卫 | `npm test` | 2.9 s（730 条） | 之前记的「十几秒」今天量不到 |
 | 构建（含 tsc + 接缝 lint） | `npm run build` | 3.6 s | |
 | 两份冒烟（真浏览器 + 真 SW） | `npm run smoke` | 39 s | 各自起服务 |
+| itch 夹具 + 备用版烟测（2026-11-03 家族工单 A，Claude Opus 5.5） | `npm run fixture:itch` / `npm run smoke:local` | 打包 ≈ 30 s + 各 ≈ 10 s | 先打包（整站 zip / 双击文件夹，要兄弟仓 PWA Models / PWA Sounds 在本机）；无头；`test:full` 末尾串着跑 |
 | 60 个 E2E 串着（旧 `npm run e2e`） | — | 484 s = 8 m 04 s | 全绿；最慢 follow 44 s · hscroll 38 s · singer-delete 36 s · store 32 s；`waitForTimeout` 共 796 处，store 一个文件就睡 29 s |
 | 60 个 E2E 并行 8 条（新 `npm run e2e`） | `node test/e2e/run.mjs` | **1 m 21 s** | 下限 = 最慢那个文件（follow 44 s）；机器几乎在睡觉，不是在算 |
 

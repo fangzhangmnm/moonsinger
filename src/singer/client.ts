@@ -6,7 +6,9 @@
 //   句子按内容哈希认一条「自己的道」（同一句的念缓存只在那条道上有：按键试听永远去自己的道，整句唱优先自己的道、它忙就去空着的那条）。
 //   内存吃紧 = 主线程 setLanes(1)：多出来的道算完手上的就关（WASM 堆只有关掉 worker 才还回去）。
 import type { LabScore } from "../score/lab-score.ts";
-import type { SingReply, SingRequest, WarmRequest, CancelRequest, CacheRequest, ReadRequest } from "./worker.ts";
+import type { SingReply, SingRequest, WarmRequest, CancelRequest, CacheRequest, ReadRequest, InitRequest, FileReply } from "./worker.ts";
+import { startWorker, workersFetchSiteFiles } from "../threads.ts";
+import { getBytes } from "../resources.ts";
 import { audioCtx } from "./audio.ts";
 import { diagNote } from "../app/report-error.ts";
 
@@ -59,10 +61,19 @@ export class Singer {
   private laneIndex(l: Lane): number { return this.lanes.indexOf(l); }
   private worker(l: Lane): Worker {
     if (l.w) return l.w;
-    const w = new Worker(new URL(`./${__SINGER_WORKER__}`, import.meta.url), { type: "module" });
+    const w = startWorker("singer-worker");   // 起法归 threads.ts（官网 / itch = dist/ 网址；备用版 = data: → blob:）
     l.w = w;
+    // 备用版：worker 联不了网，要的文件（WORLD、模型包分片）由这边经 resources.ts 读、核过哈希再交过去（2026-11-03 家族工单 A）
+    if (!workersFetchSiteFiles()) w.postMessage({ type: "init", hostFiles: true } satisfies InitRequest);
     w.onmessage = (ev: MessageEvent<SingReply>) => {
-      const m = ev.data, p = this.pending.get(m.id); if (!p) return;
+      const m = ev.data;
+      if (m.type === "need") {
+        void getBytes(m.path, m.sha256 ? { sha256: m.sha256 } : {}).then(
+          (b) => { const ab = b.byteOffset === 0 && b.byteLength === b.buffer.byteLength ? b.buffer as ArrayBuffer : b.slice().buffer as ArrayBuffer; w.postMessage({ type: "file", nid: m.nid, bytes: ab } satisfies FileReply, [ab]); },
+          (e) => w.postMessage({ type: "file", nid: m.nid, error: (e as Error).message } satisfies FileReply));
+        return;
+      }
+      const p = this.pending.get(m.id); if (!p) return;
       if (m.type === "progress") { p.progress(m.stage); return; }
       this.pending.delete(m.id);
       if (m.type === "cache") { (p as Pending & { cache?: (d: DiskInfo | null) => void }).cache?.(m.disk); return; }

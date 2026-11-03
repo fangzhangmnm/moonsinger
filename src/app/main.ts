@@ -76,10 +76,12 @@ import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
 import { attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, cloudAvailable } from "../app-store.ts";
-import { showSiteHint, watchStorageHealth, SITE_TEXT } from "./site-hint.ts";
+import { showSiteHint, watchStorageHealth, SITE_TEXT, FOLDER_TEXT } from "./site-hint.ts";
 import { availability } from "../persistence.ts";
 import { currentPolicy } from "../deployment-policy.ts";
 import { deployment } from "../deployment.ts";
+import { addWorklet, threadUrls, onThreadFail } from "../threads.ts";
+import { getBytes, resourcesInFolder, localBundle } from "../resources.ts";
 import { identifiers } from "../identifiers.ts";
 import { SONG_SUFFIX, LOCAL_SAVE_DEBOUNCE_MS, WAKE_CHECK_AFTER_MS, WAKE_CHECK_TIMEOUT_MS } from "../config.ts";
 import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
@@ -360,7 +362,7 @@ configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 // ── 录音房（src/engine/：音频线程里的走带 / 通道 / TinySoundFont / 元音采样器 / 块回放；按键试听也走它的通道）──────────────────
 //   替代原来的元音采样器（主线程 WebAudio）和实时合成器（gm-synth worklet）——2026-10-09 Claude Fable 5.1，实时试听刀 1。
 //   试听走通道的增益 / 声像、绕过静音 / 独奏和总轨限幅（user「按键不管solomute同意」「限幅嗯」）；光标处的力度归刀 3。
-const engine = new StudioClient(() => singer.unlock(), new URL(`./${__STUDIO_WORKLET__}`, import.meta.url), new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url));
+const engine = new StudioClient(() => singer.unlock(), (ctx) => addWorklet(ctx, "studio-worklet"), () => getBytes("vendor/tsf/tsf-standalone.wasm"));   // 起法 / 读口 = threads.ts / resources.ts（备用版 data: 起、老实脚本读；2026-11-03）
 let vowelsReady = false, vowelLoading: Promise<void> | null = null;
 /** 元音表进录音房（只下载一次；失败了下次重试）。user「选这个乐器就是意图，然后第一下就响」。 */
 function ensureVowels(): Promise<void> { return (vowelLoading ??= loadVowelTable().then((t) => { engine.vowels(t); vowelsReady = true; }, (e) => { vowelLoading = null; throw e; })); }
@@ -437,7 +439,7 @@ let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消�
 const view = new ScoreView(scoreEl, {
   get: () => D.st,
   set: (n, o) => update(n, o?.gesture),
-  layoutWorker: () => new URL(`./${__LAYOUT_WORKER__}`, import.meta.url),   // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
+  layoutWorker: () => threadUrls("layout-worker")[0] ?? null,   // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
   onLayoutWorker: (why) => diagNote("layout", why),
   audition: (i, hold) => { clearTimeout(upTimer); soundTok(D.st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
   glide: (i) => { clearTimeout(upTimer); const t = tr(D.st)[i]; if (t?.kind === "note" && t.pitch) sound.glide(t.pitch, "score"); },
@@ -911,22 +913,29 @@ const models = createModelSources();
 const packStore = createPackStore({ packs: PACKS });   // 只用来导入 / 看状态；下载在 worker 里（同一个 Cache Storage pwa-models）
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
 async function packStatusText(): Promise<string> {
+  if (resourcesInFolder()) {   // 备用版：模型包就在文件夹里（老实脚本），用到才读、读时核哈希；浏览器缓存在 file: 里用不了（2026-11-03 家族工单 A）
+    const files = localBundle()?.files ?? {};
+    return Object.entries(PACKS).map(([slug, p]) => `${p.manifest.chunks.every((c) => files[`pwa-models/packs/${slug}/${c.name}`]) ? "✓ 在文件夹里" : "· 文件夹里没有"} ${slug}（${(p.manifest.totalBytes / 1e6).toFixed(1)} MB）`).join("\n");
+  }
   const packs = await packStore.status(Object.keys(PACKS));
   return packs.map((s) => `${s.ready ? "✓" : "·"} ${s.slug}（${(s.bytesTotal / 1e6).toFixed(1)} MB）`).join("\n");
 }
 /** 设置面板（应用内，不用系统弹窗）：模型来源、从本机文件导入模型包、月读的署名与使用条款（包内 LICENSE [1][2] 要求显示）。 */
 function openSettings(): void {
   ui.close();
+  const inFolder = resourcesInFolder();   // 备用版：模型 / 音源都在文件夹里，浏览器缓存用不了——这几行画灰 + 说一句（规则书 §1 第 6 条）
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">设置</div>` +
-    `<label class="set-field">模型来源<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>` +
+    (inFolder ? `<label class="set-field">模型来源<input id="srcIn" type="url" disabled value="${esc(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>`
+      : `<label class="set-field">模型来源<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>`) +
     `<label class="set-field">音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
     `<div class="set-field">音源库缓存（留在设备上，没网也能用；歌自己带声音，这里只是货架）<div id="sndCache" class="set-packs">…</div></div>` +
     `<div class="set-field">MIDI 键盘<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">连接</button>` : ""}</div></div>` +
     `<div class="offer-msg">先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。</div>` +
     `<div class="set-row"><button class="btn" data-v="default">恢复默认</button>` +
-    `<label class="btn" title="选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包<input id="impIn" type="file" multiple hidden /></label></div>` +
+    (inFolder ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包</span><input id="impIn" type="file" multiple hidden disabled /></div>`
+      : `<label class="btn" title="选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包<input id="impIn" type="file" multiple hidden /></label></div>`) +
     `<pre id="packSt" class="set-packs">…</pre>` +
     `<details class="set-credit"><summary>乐器目录的图标（第三方，${ICON_CREDITS.length} 个）</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}${c.modified ? `\n    改动：${c.modified}` : ""}`).join("\n"))}</pre></details>` +
     // 原文在上（条款要求的是原文）；中 / 英译文在下、只给人读（user 2026-10-08「月读的license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）
@@ -950,10 +959,11 @@ function openSettings(): void {
   const refreshRes = () => { const lat = engine.latencyMs(); engRes.textContent = `${describeResources(resourceSnapshot(), BUDGET)} 小月相 ${singer.parallelism} 条道（设备预算 ${BUDGET.lanes}）。${lat !== null ? `声音的输出延迟（浏览器报的）${Math.round(lat)} ms。` : ""}`; };
   refreshRes(); const resTimer = window.setInterval(refreshRes, 1000);
   const spCache = box.querySelector<HTMLElement>("#spCache")!;
-  const refreshSpeech = () => { void singer.cache("info", BUDGET.speechDisk).then((d) => { spCache.textContent = d ? `${sizeText(d.bytes)} / 预算 ${sizeText(d.budget)}，${d.entries} 条` : "这个浏览器没有 IndexedDB：只用内存"; }).catch((e) => { spCache.textContent = `读不到：${(e as Error).message}`; }); };
+  const refreshSpeech = () => { void singer.cache("info", BUDGET.speechDisk).then((d) => { spCache.textContent = d ? `${sizeText(d.bytes)} / 预算 ${sizeText(d.budget)}，${d.entries} 条` : inFolder ? FOLDER_TEXT.speech : "这个浏览器没有 IndexedDB：只用内存"; }).catch((e) => { spCache.textContent = `读不到：${(e as Error).message}`; }); };
   refreshSpeech();
   const sndIn = box.querySelector<HTMLInputElement>("#sndIn")!, sndCache = box.querySelector<HTMLElement>("#sndCache")!;
   const refreshSounds = async () => {
+    if (inFolder) { sndCache.innerHTML = `<div class="set-row"><span class="set-note">${FOLDER_TEXT.sounds}</span></div>`; return; }
     const cached = await listCachedSounds(), bySha = new Map(cached.map((c) => [c.sha256, c])), known = new Set(Object.values(SOUNDS).map((e) => e.sha256)), uses = new Map(soundUses(D.extras).map((u) => [u.subsetSha256, u]));
     const total = cached.reduce((n, c) => n + c.bytes, 0), mem = soundMemoryBytes();
     let quota = ""; const est = await siteStorageEstimate(); if (est) quota = `；这个站点共用了 ${sizeText(est.usage)} / 配额 ${sizeText(est.quota)}`;
@@ -1112,7 +1122,7 @@ function padHint(): HintRange {
   const plug = performerOf(activeInstrument(D.extras, curRole())?.engine);
   if (!plug) return null;
   if (plug.hintRange) return plug.hintRange;   // 人声：固定音域（插件自报）；乐器 = 下面按目录查（音效 / 采样键只对 GS 成立，各自有守卫；概念音域和引擎无关）
-  if (!catalogNow) { void loadCatalog(new URL(import.meta.url)).then((c) => { catalogNow = c; pad.render(); }).catch(() => { /* 目录载不了：不画提示 */ }); return null; }
+  if (!catalogNow) { void loadCatalog().then((c) => { catalogNow = c; pad.render(); }).catch(() => { /* 目录载不了：不画提示 */ }); return null; }
   // GS 的音效预设（仓鼠 v8，TinySoundFont 实测；只对 GS 成立，别的 .sf2 不套）：固定原速 = 哪个键都一样、不提示（同鼓件）；
   //   关了固定 = 提示原速键；再开音高对齐 = 提示「原速时听到的那个音」（谱上写它 = 原来的样子）
   const g = activeGm(D.extras, curRole());
@@ -1132,7 +1142,7 @@ const GS = SOUNDS["generaluser-gs-2.0.3"];
 async function setAudition(p: FinderPick | null): Promise<void> {
   // 键盘的音域跟着试听的那位走（user 2026-10-08「试弹的时候键盘上的音域没有跟进」）：月读 = 她的；乐器 = 目录里它的音域（没有 = 不画提示，窗口不动）
   //   GS 的音效预设试听 = 固定原速（仓鼠 v8；哪个键都一样，同鼓件，不提示）；其余 = 概念的常用音域
-  const cat = p?.kind === "gs" ? (catalogNow ??= await loadCatalog(new URL(import.meta.url))) : null;
+  const cat = p?.kind === "gs" ? (catalogNow ??= await loadCatalog()) : null;
   const sk = cat && p?.kind === "gs" && p.provider.note === undefined ? sampleKeyOf(cat, p.provider.bank, p.provider.program) : null;
   auditionHint = !p || sk ? null : p.kind === "voice" ? TSUKUYOMI_RANGE : ((r) => (r ? { ...r, who: p.concept.names.zh } : null))(rangeOf(p.concept));
   if (auditionHint) pad.follow(auditionHint.lo, auditionHint.hi); else pad.render();
@@ -1193,7 +1203,7 @@ function gapDefaultOf(role: string): { gapSec: number; label: string } | null {
   const g = activeGm(D.extras, role);
   if (!g) return { gapSec: 0, label: "人声（连着唱）" };
   if (g.origin.library !== GS_LIBRARY_ID) return { gapSec: 0, label: "自己的 .sf2（目录里没有这个音色的连断数据）" };
-  if (!catalogNow) { void loadCatalog(new URL(import.meta.url)).then((c) => { catalogNow = c; if (instShown()) drawInst(); }).catch(() => undefined); return null; }
+  if (!catalogNow) { void loadCatalog().then((c) => { catalogNow = c; if (instShown()) drawInst(); }).catch(() => undefined); return null; }
   const j = jointOf(catalogNow, g.bank, g.program, g.note);
   return j ? { gapSec: j.gapSec, label: j.zh } : { gapSec: 0, label: "一下就完 / 音效（不留缝）" };
 }
@@ -1219,7 +1229,7 @@ async function playHeadWith(p: FinderPick): Promise<void> {
  *  GS 整包在设备缓存 / 家族音源库里找得到；要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。 */
 async function castPick(p: FinderPick): Promise<void> {
   if (finderPlayOnly()) return;   // 只弹着玩：没有要写进去的歌
-  const cat = await loadCatalog(new URL(import.meta.url)), c = p.concept;
+  const cat = await loadCatalog(), c = p.concept;
   const sound = p.kind === "gs" ? (p.provider.sound ?? roleSoundOf(cat, c)) : roleSoundOf(cat, c);
   updateExtras(withRoleConcept(D.extras, curRole(), { name: roleNameOf(c), sound, concept: { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) } } }, D.st.song.hum), { kind: "lounge", label: `「${roleNameOf(c)}」改成这个乐器` }, "cast");
   if (p.kind === "voice") { setActive(CANDIDATE_ID.full); closeFinder(); return; }
@@ -1232,7 +1242,7 @@ async function castPick(p: FinderPick): Promise<void> {
   sources.session.keep(sha256, subset);
   closeFinder(); setActive(activeId(D.extras, curRole())); info(`「${roleNameOf(c)}」换成：${p.provider.gmName}`);
 }
-const finder = new Finder($("stage"), { base: new URL(import.meta.url), roleName: () => roleName(D.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
+const finder = new Finder($("stage"), { roleName: () => roleName(D.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
 // ── 录音室（src/ui/studio.ts）：全屏替掉谱区，一个声部一条推子条；增益 / 声像进录音房（studio.json），静音 / 独奏 = partView ──
 const partLabel = (id: string): string => { const k = D.st.song.parts.findIndex((p) => p.id === id); return k < 0 ? id : partLabels(D.st.song, D.extras)[k]; };
 const studio = new Studio($("stage"), {
@@ -1457,7 +1467,7 @@ function partLooks(): { colors: number[]; abbrs: string[] } {
   const labels = partLabels(D.st.song, D.extras), sounds = D.st.song.parts.map((p) => roleSound(D.extras, p.role));
   const colors = partColorIndices(sounds);
   const needCat = !catalogNow && D.st.song.parts.some((p) => !!(D.extras.lounge[p.role] as { concept?: unknown } | undefined)?.concept);
-  if (needCat) void loadCatalog(new URL(import.meta.url)).then((c) => { catalogNow = c; view.render(); }).catch(() => undefined);
+  if (needCat) void loadCatalog().then((c) => { catalogNow = c; view.render(); }).catch(() => undefined);
   const abbrs = D.st.song.parts.map((p, k) => {
     const ids = (D.extras.lounge[p.role] as { concept?: { ids?: { wikidata?: string | null; local?: string | null } } } | undefined)?.concept?.ids;
     const c = catalogNow && ids ? (ids.wikidata ? catalogNow.byId.get(ids.wikidata) : undefined) ?? (ids.local ? catalogNow.byId.get(ids.local) ?? catalogNow.byId.get(`x:${ids.local}`) : undefined) : undefined;
@@ -2101,7 +2111,7 @@ async function addPicked(): Promise<void> {
       ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } }
       : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x): x is string => !!x), license: { name: "unknown", text: inf.comment } };
     // GS 的音效：和找人视图上场一样默认固定原速（sampleKey 只对 GS 成立；鼓组 bank 128 的预设在 GS 里是整套鼓，不是单件，不带 note）
-    const keys = lib?.id === GS_LIBRARY_ID ? gsKeyArgs(catalogNow ??= await loadCatalog(new URL(import.meta.url)), bank, program) : {};
+    const keys = lib?.id === GS_LIBRARY_ID ? gsKeyArgs(catalogNow ??= await loadCatalog(), bank, program) : {};
     await finishAdd({ name, bank, program, ...keys, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...(lib ? { library: lib.id } : {}) }, credit });
   } catch (e) { showError(`加不进来：${(e as Error).message}`); }
 }
@@ -2279,7 +2289,7 @@ function openPicked(picked: docFile.Picked): void {
 /** 封面的腰封 = 作者栏第一行（每次存重写，withPngText 先删旧块）；没有封面图就没有封面 entry。 */
 const extrasForSave = (base: Extras = D.extras): Extras => (base.thumbnail ? withThumbnail(base, coverWithBlurb(base.thumbnail, (D.st.song.credits ?? "").split("\n").map((l) => l.trim()).find(Boolean) ?? null)) : base);
 /** 自动存 / 存的编码口：worker 里 saveMxl（大歌 20–60 ms 不再占主线程；2026-10-21 音游级延迟那一刀）。导出 / PDF / 定稿那些同步要字节的照旧 bytesNow()。 */
-const encoder = createEncoder(() => new URL(`./${__ENCODE_WORKER__}`, import.meta.url), (why) => diagNote("encode", why));
+const encoder = createEncoder(() => threadUrls("encode-worker")[0] ?? null, (why) => diagNote("encode", why));
 /** 这首歌的 .mxl 字节；extras = 换一份休息室 / 音源来存（导出「打包音源」的副本：只改那一份，不改正本）。 */
 const bytesNow = (extras?: Extras, song: Song = D.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 /** saveMxl 要的那一份（指纹也按它算，不带参考窗——参考窗不进指纹）。core = 渲染核心的版本 + 哈希（每次保存都记）。 */
@@ -3278,6 +3288,14 @@ chromeReady = true; applyWorkspace();   // 模式 / 底座的初始状态（音�
 scoreEl.focus();
 // itch / 备用版：开局一行「完整版在官网」（不弹窗、一页只说一次）；存储半路写不进也说一次（家族规则书 §1 第 6 / 12 条）。2026-11-03
 showSiteHint(); watchStorageHealth();
+onThreadFail((_name, why) => { diagNote("thread", why); showError(why); });   // 线程试过所有起法都起不来（备用版 data: / blob:）：说一声，不静默
+// 测试口子（tools/itch-fixture.mjs / tools/local-smoke.mjs）：资源读口读一个站点文件（核哈希）、线程用的起法、mp3 线程编一小段
+Object.assign((window as unknown as { __moonsinger: Record<string, unknown> }).__moonsinger, {
+  readSite: (path: string, sha256?: string) => getBytes(path, sha256 ? { sha256 } : {}).then((b) => b.length),
+  threadKinds: () => Object.fromEntries((["singer-worker", "mp3-worker", "studio-worklet", "layout-worker", "encode-worker"] as const).map((n) => [n, threadUrls(n).map((u) => u.slice(0, u.indexOf(":")))])),
+  mp3Test: (samples = 44100) => encodeMp3(new Float32Array(samples).map((_, i) => Math.sin(i / 10) * 0.3), null, 44100, 64).then((b) => b.length),
+  availability: () => availability(),
+});
 diagNote("boot", `deployment ${deployment()} · storage ${availability()}`);
 // 歌库 boot：进过歌库的设备（或带着 OAuth 回跳）开局就建 store（先建再 initAuth），回到上次的地方——上次在歌库里就开歌库，上次开着哪首就开哪首，开不了就进歌库。没进过的 = 无地，照旧。
 if (storeWasAttached() || (currentPolicy().cloud && /[#&](code|error|state)=/.test(location.hash))) {

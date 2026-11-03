@@ -2,6 +2,7 @@
 // created 2026-10-07 by Claude Fable 5.1。数据 = vendor/instruments/（scripts/gen-instruments.mjs 从仓鼠会话的 export 拷来；user：两张表、id 束、GM 只是头脑风暴的起点）。
 // 这是视图层的目录，不进歌：歌里钉的是角色的 id 束 + 名字（契约 §6⅞）；目录常改没关系。
 import { INSTRUMENT_FILES } from "./instruments.gen.ts";
+import { getBytes } from "../resources.ts";
 
 export interface GmRef { program: number; bank: number; note?: number }
 export interface Concept {
@@ -59,23 +60,22 @@ export function loadCatalogFromJson(concepts: { v?: number; defs: Defs; concepts
 }
 let cached: Promise<Catalog> | null = null;
 const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b as unknown as BufferSource))].map((x) => x.toString(16).padStart(2, "0")).join("");
-async function fetchChecked(base: URL, k: keyof typeof INSTRUMENT_FILES): Promise<Uint8Array> {
-  const e = INSTRUMENT_FILES[k], r = await fetch(new URL(`../${e.file}`, base));
-  if (!r.ok) throw new Error(`${e.file}: HTTP ${r.status}`);
-  const b = new Uint8Array(await r.arrayBuffer());
+/** 同站点那一份（resources.ts：官网 / itch = fetch，备用版 = 老实脚本），核过 app 内嵌的哈希才用。2026-11-03 起不再按主 bundle 的地址拼路径（备用版的主程序内联在 index.html 里）。 */
+async function fetchChecked(k: keyof typeof INSTRUMENT_FILES): Promise<Uint8Array> {
+  const e = INSTRUMENT_FILES[k], b = await getBytes(e.file, { sha256: e.sha256 });
   if (b.length !== e.bytes || (await sha256Hex(b)) !== e.sha256) throw new Error(`${e.file} 和 app 内嵌的不一样（被改过？）`);
   return b;
 }
-/** 打开找人视图时才加载（两份 JSON 共 260 KB）；base = 主 bundle 的 import.meta.url（dist/ 下）。 */
-export function loadCatalog(base: URL): Promise<Catalog> {
+/** 打开找人视图时才加载（两份 JSON 共 260 KB）。 */
+export function loadCatalog(): Promise<Catalog> {
   return (cached ??= (async () => {
-    const [c, g] = await Promise.all([fetchChecked(base, "concepts"), fetchChecked(base, "gmMap")]);
+    const [c, g] = await Promise.all([fetchChecked("concepts"), fetchChecked("gmMap")]);
     const dec = new TextDecoder();
     return loadCatalogFromJson(JSON.parse(dec.decode(c)), JSON.parse(dec.decode(g)));
   })().catch((e) => { cached = null; throw e; }));
 }
 /** 图标 sprite（103 KB，49 个），核过 sha256 的字节。 */
-export async function loadIconSprite(base: URL): Promise<string> { return new TextDecoder().decode(await fetchChecked(base, "icons")); }
+export async function loadIconSprite(): Promise<string> { return new TextDecoder().decode(await fetchChecked("icons")); }
 
 export function providersOf(cat: Catalog, c: Concept): Provider[] {
   const self = (c.ids.gm ?? []).map((g) => { const r = cat.gmSelf.get(gmKey(g)); return { kind: "self" as const, bank: g.bank, program: g.program, ...(g.note !== undefined ? { note: g.note } : {}), gmName: r?.gmName ?? (g.note !== undefined ? `鼓件 ${g.note}` : `GM ${g.program + 1}`), sound: r?.musicxmlSound ?? c.ids.musicxml }; });

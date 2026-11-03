@@ -121,6 +121,7 @@ import "./song-player.test.ts";
 import "./song-cover.test.ts";
 import "./deployment.test.mjs";
 import "./namespace.test.mjs";
+import "./local-files.test.mjs";
 import { run } from "./runner.mjs";
 
 await run();

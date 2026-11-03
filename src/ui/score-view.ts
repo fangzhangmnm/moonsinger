@@ -100,7 +100,7 @@ export interface ScoreViewHost {
   /** 缩放变了（物理倍数；null = 自动）：宿主按设备记住（device-kv），下次开 app 还是这个大小（2026-10-21 user「缩放跨会话记住，按设备存」）。 */
   onZoom?(phys: number | null): void;
   /** 排版 worker 的地址（dist/layout-worker-<hash>.mjs；构建时 define 进主 bundle）。没给 / 浏览器没有 OffscreenCanvas = 排版留在主线程。2026-10-21 */
-  layoutWorker?(): URL;
+  layoutWorker?(): string | URL | null;
   /** 排版 worker 建不起来 / 中途坏了（之后一直走主线程）：宿主记进黑匣子。 */
   onLayoutWorker?(why: string): void;
   /** 分页（= 打印预览）时歌词行往下让多少（sp）：选了拼音字体印 PDF 时 = 拼音那一截（PDF 和分页预览排出来一样）。 */

@@ -6,16 +6,25 @@
 import { encodeAll, type LameModule } from "./lame.ts";
 
 /** right 给了 = 立体声（left / right 等长）；没给 = 单声道（left）。 */
-export interface Mp3Request { left: Float32Array; right?: Float32Array; sr: number; kbps: number }
+export interface Mp3Request { left: Float32Array; right?: Float32Array; sr: number; kbps: number;
+  /** 备用版：主线程读好的 LAME 胶水（lame.mjs 的字节）+ wasm（data: 起的线程联不了网；2026-11-03）。没给 = 自己按网址载（官网 / itch）。 */
+  lame?: { js: ArrayBuffer; wasm: ArrayBuffer } }
 export type Mp3Reply = { ok: true; bytes: Uint8Array<ArrayBuffer> } | { ok: false; message: string };
 
-const LAME_URL = new URL("../vendor/lame/lame.mjs", import.meta.url);   // 相对 dist/mp3-worker-<hash>.mjs
+const lameUrl = () => new URL("../vendor/lame/lame.mjs", import.meta.url);   // 相对 dist/mp3-worker-<hash>.mjs（只在官网 / itch 算：data: 起的线程 import.meta.url 当不了基址）
 let lameP: Promise<LameModule> | null = null;
-const lame = (): Promise<LameModule> => (lameP ??= import(/* @vite-ignore */ LAME_URL.href).then((m: { default: () => Promise<LameModule> }) => m.default()));
+const lame = (given?: Mp3Request["lame"]): Promise<LameModule> => (lameP ??= (async () => {
+  if (!given) return (await import(/* @vite-ignore */ lameUrl().href) as { default: () => Promise<LameModule> }).default();
+  const url = URL.createObjectURL(new Blob([given.js], { type: "text/javascript" }));   // data: 起的线程里 import(blob:) 可用（§2.2 实测）
+  // 这版 emscripten 胶水不读 Module.wasmBinary（只认 instantiateWasm / locateFile）：字节自己实例化交给它；locateFile 让它别按 import.meta.url 拼网址（blob: 当不了基址）
+  type Glue = (o: { instantiateWasm: (imports: WebAssembly.Imports, done: (inst: WebAssembly.Instance) => void) => object; locateFile: (p: string) => string }) => Promise<LameModule>;
+  try { return (await import(/* @vite-ignore */ url) as { default: Glue }).default({ locateFile: (p) => p, instantiateWasm: (imports, done) => { void WebAssembly.instantiate(given.wasm, imports).then((r) => done(r.instance)); return {}; } }); }
+  finally { URL.revokeObjectURL(url); }
+})());
 
 self.onmessage = async (ev: MessageEvent<Mp3Request>) => {
   try {
-    const { left, right, sr, kbps } = ev.data, M = await lame();
+    const { left, right, sr, kbps } = ev.data, M = await lame(ev.data.lame);
     const out = encodeAll(M, { channels: right ? 2 : 1, sr, kbps, joint: true }, left, right);
     const bytes = new Uint8Array(new ArrayBuffer(out.length)); bytes.set(out);
     (self as unknown as Worker).postMessage({ ok: true, bytes } satisfies Mp3Reply, [bytes.buffer]);
