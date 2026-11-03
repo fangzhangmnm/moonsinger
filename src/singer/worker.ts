@@ -89,11 +89,19 @@ async function ensurePacks(slugs: string[], what: string, say: (s: string) => vo
   }
   throw new Error(`${what}下载不下来（试过 ${bases.join("、")}）：${(last as Error)?.message ?? last}。可以在设置里换模型来源，或从本机文件导入`);
 }
+/** 一个包核过的分片。model-packs 0.1.1 起读缓存也逐片重核 sha256（家族规则书 §1 第 7 条）：对不上 = 库已经把坏的那片作废，这里说人话、不替补。 */
+async function chunksOf(slug: string): Promise<Blob[]> {
+  try { return await store.chunks(slug); }
+  catch (e) {
+    if (/^pack-corrupt/.test((e as Error)?.message ?? "")) throw new Error(`缓存里的小月相模型和清单对不上（被改过或坏了），坏的那一片已经丢掉：再唱一次会重新下载（${(e as Error).message}）`);
+    throw e;
+  }
+}
 /** 包里的一个文件：按清单的偏移切出来，.gz 的解开（包里的压缩文件是 gzip 格式）。 */
 async function packFile(slug: string, path: string): Promise<Uint8Array> {
   const files = PACKS[slug].manifest.files as { path: string; offset: number; bytes: number }[];
   const f = files.find((x) => x.path === path); if (!f) throw new Error(`${slug}: 包里没有 ${path}`);
-  const piece = new Blob(await store.chunks(slug)).slice(f.offset, f.offset + f.bytes);
+  const piece = new Blob(await chunksOf(slug)).slice(f.offset, f.offset + f.bytes);
   if (!path.endsWith(".gz")) return new Uint8Array(await piece.arrayBuffer());
   return new Uint8Array(await new Response(piece.stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
 }
