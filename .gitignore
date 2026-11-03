@@ -17,3 +17,7 @@ dev-assets/
 .e2e-times.json
 # 机器生成的报告（架构总览 html 等；同 WeebPaint，本机留着不进仓）
 ai-docs/reports/
+# itch / 备用版的打包产物与 butler（scripts/pack-itch.mjs、scripts/pack-local.mjs；2026-11-03）
+.itch-build/
+.local-build/
+tools/butler/
