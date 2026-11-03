@@ -982,3 +982,10 @@ body.doc-final .inst-page .finder-bar::after { content: "定稿了：锁着（�
 .ms-player .ms-player-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
 .ms-player .ms-player-time { color: var(--muted); font-variant-numeric: tabular-nums; }
 .ms-player .ms-player-loop.is-on { color: var(--accent); border-color: var(--accent); }
+
+/* 做不到的画灰 + 一句话指路（家族规则书 §1 第 6 / 12 条；itch / 备用版没有网盘、Safari 双击存不住歌库；2026-11-03 Opus 5.5） */
+.btn.is-off { opacity: .45; }
+.btn.is-off:disabled { cursor: default; }
+.site-hint-link { align-self: center; font-size: 12px; color: var(--muted); text-decoration: underline; text-underline-offset: 2px; white-space: nowrap; margin: 0 6px 0 -2px; }
+.site-hint-link:hover { color: var(--accent); }
+.set-row .set-note { font-size: 12px; color: var(--muted); align-self: center; }

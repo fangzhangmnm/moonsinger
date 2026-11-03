@@ -7,6 +7,8 @@
 //   模块顶层调用（不进 window.load：type=module 时 load 可能早已过去——RealHome 坑 #0）。
 
 
+import { currentPolicy } from "../deployment-policy.ts";
+
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", ""]);
 
 /** 本 app 壳缓存的名字前缀（= service-worker.js 的 `moonsinger-<hash>` / `moonsinger-boot`）。清缓存只许动这个前缀。 */
@@ -88,7 +90,8 @@ export function initPwaShell(opts: PwaShellOptions): PwaShell {
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") onFg(); });
   window.addEventListener("focus", onFg);
 
-  if ("serviceWorker" in navigator && !LOCAL_HOSTS.has(location.hostname)) {
+  // itch / 备用版不注册离线壳（家族规则书 §2「离线壳 ✗」：itch 推新版时 SW 缓存会和它打架、壳缓存也落在共用的存储里；file: 本来就注册不了）。2026-11-03
+  if (currentPolicy().serviceWorker && "serviceWorker" in navigator && !LOCAL_HOSTS.has(location.hostname)) {
     navigator.serviceWorker.addEventListener("message", (e: MessageEvent) => {
       if ((e.data as { type?: string } | null)?.type === "asset-updated") opts.onUpdateAvailable();
     });

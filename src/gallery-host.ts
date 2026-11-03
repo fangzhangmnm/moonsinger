@@ -10,6 +10,8 @@ import { APP_DB_PREFIX } from "./config.ts";
 // 图库包的注册表（0.8.7 起库名归宿主）：本 app 不用它（单库），但万一包内部开了，也落在自家 GUID 前缀下（家族命名规矩；还原出厂按前缀删得到）。import 本身零 IDB 访问。2026-10-21
 configureGalleryRegistry({ dbName: `${APP_DB_PREFIX}gallery-registry` });
 import { requireStore, auth, hasStore, isSignedIn } from "./app-store.ts";
+import { currentPolicy } from "./deployment-policy.ts";
+import { cloudOffHtml, SITE_TEXT } from "./app/site-hint.ts";
 import { THUMBNAIL_ENTRY, FINAL_MP3_ENTRY } from "./format/project.ts";
 import { parseFinalRecord, type FinalRecord } from "./format/final.ts";
 import { identifiers } from "./identifiers.ts";
@@ -70,7 +72,9 @@ export function initGalleryHost(d: GalleryHostDeps) {
   fullEl.setAttribute("role", "dialog"); fullEl.setAttribute("aria-modal", "true"); fullEl.setAttribute("aria-label", "歌库");
   fullEl.innerHTML = `<div class="gallery-chrome">` +
     `<div class="gallery-chrome-title">歌库</div><span class="spacer"></span>` +
-    `<button type="button" class="btn" data-v="cloud" title="云端：登录 / 退出">${iconHtml("cloud")}</button>` +
+    // 网盘关着（itch / 备用版）= 云按钮画灰 + 旁边一行「网盘在官网」（家族规则书 §1 第 6 条：入口不许露着却点不动；2026-11-03）
+    (currentPolicy().cloud ? `<button type="button" class="btn" data-v="cloud" title="云端：登录 / 退出">${iconHtml("cloud")}</button>`
+      : `<button type="button" class="btn is-off" data-v="cloud" disabled title="${SITE_TEXT.cloudOffTitle}">${iconHtml("cloud")}</button>${cloudOffHtml()}`) +
     `<button type="button" class="btn" data-v="refresh" title="刷新云端" hidden>${iconHtml("refresh")}</button>` +
     `<button type="button" class="btn gallery-inst" data-v="instruments" title="即兴：挑乐器、用键盘弹着玩（不写进哪首歌）"><span>即兴</span></button>` +
     `<button type="button" class="btn" data-v="new" title="新建：一首歌 / 一个文件夹" aria-haspopup="menu">${iconHtml("new")}<span>新建</span></button>` +
@@ -259,6 +263,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
   });
   /** 云按钮的样子跟登录态走（图标 + 「已登录」态）。 */
   function renderCloud(): void {
+    if (!currentPolicy().cloud) return;   // 灰着的那颗不跟登录态变（永远没登录）
     const on = isSignedIn();
     cloudBtn.classList.toggle("is-on", on); cloudBtn.title = on ? `云端：已登录${accountName() ? ` ${accountName()}` : ""}` : "云端：没登录（歌只在这台设备上）";
     refreshBtn.hidden = !on;

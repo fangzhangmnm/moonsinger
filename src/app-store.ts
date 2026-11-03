@@ -10,10 +10,21 @@ import { DOC_KINDS } from "./identifiers.ts";
 import { storeUI } from "./store-ui.ts";
 import { appEncryption } from "./encryption.ts";
 import { deviceKvGet, deviceKvSet } from "./device-kv.ts";
+import { currentPolicy } from "./deployment-policy.ts";
 
 const od = createOneDriveProvider({ clientId: CLIENT_ID, scopes: SCOPES, authority: AUTHORITY, msalUrl: MSAL_URL });
-/** OneDrive 登录态（initAuth / signIn / signOut / onAuthChanged）。MSAL 脚本在 initAuth 时才载。 */
-export const auth: OneDriveAuth = od.auth;
+/** 这个部署方式有没有网盘（家族规则书 §2：itch / 备用版没有）。开关的唯一来源 = deployment-policy；宿主的灰入口也读它。 */
+export const cloudAvailable = (): boolean => currentPolicy().cloud;
+/** OneDrive 登录态（initAuth / signIn / signOut / onAuthChanged）。MSAL 脚本在 initAuth 时才载（signIn / retrySilentSignIn 里面也走 initAuth）。
+ *  **网盘关着（itch / 备用版）= 这三个口子不碰 MSAL**：不 initAuth、不载脚本、不跳微软（规则书 §4 第 5 项；itch 夹具看网络里没有 msal 请求）。
+ *  包在这一处 = 以后谁在别处新加一个登录调用也载不进来。2026-11-03 */
+export const auth: OneDriveAuth = cloudAvailable() ? od.auth : {
+  ...od.auth,
+  isAuthConfigured: () => false,
+  initAuth: async () => ({ signedIn: false, account: null, notConfigured: true }),
+  signIn: async () => { throw new Error("cloud sign-in is not available in this deployment (itch / offline copy)"); },
+  retrySilentSignIn: async () => false,
+} as OneDriveAuth;
 
 let _activeIdentifier: string | null = null;
 /** 当前打开的歌的身份（cloud-gone 去抖绝不动它）。 */

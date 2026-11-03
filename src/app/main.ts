@@ -75,7 +75,11 @@ import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
-import { attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore } from "../app-store.ts";
+import { attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, cloudAvailable } from "../app-store.ts";
+import { showSiteHint, watchStorageHealth, SITE_TEXT } from "./site-hint.ts";
+import { availability } from "../persistence.ts";
+import { currentPolicy } from "../deployment-policy.ts";
+import { deployment } from "../deployment.ts";
 import { identifiers } from "../identifiers.ts";
 import { SONG_SUFFIX, LOCAL_SAVE_DEBOUNCE_MS, WAKE_CHECK_AFTER_MS, WAKE_CHECK_TIMEOUT_MS } from "../config.ts";
 import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
@@ -229,7 +233,7 @@ function showUpdateBar(): void {
 /** |▶ 的说明（顶栏和底座边上那个一样）。⋯ 收进长按 / 右键（v0.10.20；user「play的...收到长按和右键play里面 / 然后顶栏只单放一个一样的play」）。 */
 const PLAY_TITLE = "从起点放 / 停（空格）；连按两下 = 从头放。长按 / 右键 = 接着放 / 自动翻 / 循环 / 从头放 / 接缝。起点 = 长按 / 右键谱面「从这儿放」挪";
 bar.innerHTML =
-  `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）"><svg class="ico"><use href="#album"/></svg></button>` +
+  `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? "歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）" : `歌库：这个浏览器里的歌（${SITE_TEXT.cloudOffTitle}）`}"><svg class="ico"><use href="#album"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button>` +
   `</div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div>` +
@@ -936,7 +940,7 @@ function openSettings(): void {
       `<details class="set-credit"><summary>诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:download">下载 .txt</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">分享…</button>` : ""}<button class="btn" data-v="diag:clear">清空</button></div></details>` +
       `<div class="set-field">还原出厂设置（这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在上面「模型包」里逐个删）<div class="set-row"><button class="btn danger" data-v="factory">还原出厂设置…</button></div></div>` +
     `</details>` +
-    `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span><button class="btn" data-v="check">检查更新</button><button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删">清缓存重启</button></div>` +
+    `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">检查更新</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">检查更新</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删">清缓存重启</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector<HTMLInputElement>("#srcIn")!, packSt = box.querySelector<HTMLElement>("#packSt")!;
@@ -1081,7 +1085,7 @@ function syncKind(): SyncKind {
 }
 const SAVE_SPEC: Record<SyncKind, { icon: string; cls: string; title: string }> = {
   saving: { icon: "database", cls: "s-saving", title: "改了，马上自动存到这台设备（点 = 现在存 + 推）" },
-  local: { icon: "database", cls: "s-local", title: "存在这台设备上（没登录 OneDrive，不上云；点 = 存 + 去登录）" },
+  local: { icon: "database", cls: "s-local", title: cloudAvailable() ? "存在这台设备上（没登录 OneDrive，不上云；点 = 存 + 去登录）" : `存在这个浏览器里（${SITE_TEXT.cloudOffTitle}）` },
   offline: { icon: "cloud-unavailable", cls: "s-offline", title: "离线：存在这台设备上，回线再推上云" },
   unsynced: { icon: "cloud-upload", cls: "s-unsynced", title: "存在这台设备上了，还没推上云（点 = 现在推）" },
   clean: { icon: "cloud-synced", cls: "s-clean", title: "云端也是最新的（点 = 复查云端）" },
@@ -2509,7 +2513,7 @@ const performersBlock = (roles: readonly string[], title = "署名") => {
 function fileWhere(): string {
   const h = H.home;
   switch (h.kind) {
-    case "gallery": return `在歌库里，自动存${isSignedIn() ? "；换歌 / 退出 / 按「存」时推上 OneDrive" : "（没登录，只在这台设备上）"}`;
+    case "gallery": return `在歌库里，自动存${isSignedIn() ? "；换歌 / 退出 / 按「存」时推上 OneDrive" : cloudAvailable() ? "（没登录，只在这台设备上）" : "（只在这个浏览器里；网盘在官网版）"}`;
     case "file": return `存在本机文件 ${h.handle.name}，「存」= 存回去`;
     case "none": return h.pendingFolder != null ? "新的一首：第一笔写下去就进歌库" : docFile.canPickSave() ? "还没存过：「存」会问存到哪" : "这台设备上「存」= 下载或分享一个 .mxl";
     default: return assertNever(h);
@@ -2530,7 +2534,7 @@ function openMainMenu(): void {
     `<div class="ctx-head"><b>${esc(H.fileName())}</b><span>${esc(fileWhere())}</span></div>` +
     item("new", "new", "新建") + item("open", "folder-open", "打开本机文件…", "打开 .mxl / .musicxml（拖进来也行；Ctrl / ⌘+O）") +
     item("export", "export", "导出…", "mp3、.mxl 副本（打包音源）…（Ctrl / ⌘+Shift+S）") +
-    (hasStore() && !inStore && !H.pending() ? item("intoLib", "import", "存进歌库", "把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）") : "") +
+    (hasStore() && !inStore && !H.pending() ? item("intoLib", "import", "存进歌库", cloudAvailable() ? "把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）" : "把这首歌放进歌库（只在这个浏览器里留一份；网盘在官网版）") : "") +
     `<div class="ctx-sep"></div>` +
     (H.home.kind === "file" ? "" : item("rename", "rename", "改文件名…", "只改文件名，纸上的歌名不变（点顶栏的文件名也一样）")) +
     item("cover", "image", "封面图…", "歌库卡片上的图") +
@@ -2826,7 +2830,7 @@ function ensureAttached(): void {
 }
 /** 登录探测（一次）：先建 store（库的报错器在 createStore 时才接上，CatsUp 2026-09-22）、本地恢复完了再调（boot 顺序 = 建 store → 本地恢复 → initAuth）。 */
 function startAuth(): void {
-  if (authStarted) return;
+  if (authStarted || !currentPolicy().cloud) return;   // itch / 备用版没有网盘：不 initAuth、不载 MSAL（家族规则书 §2 / §4 第 5 项；app-store 的 auth 也包了一层）
   authStarted = true;
   auth.onAuthChanged((s) => { diagNote("auth", `changed signedIn=${String(s.signedIn)}`); gallery?.renderCloud(); renderTitle(); if (s.signedIn) void afterSignIn(); });
   void auth.initAuth().then((s) => { diagNote("auth", `initAuth signedIn=${s.signedIn}`); gallery?.renderCloud(); renderTitle(); if (s.signedIn) void afterSignIn(); }).catch((e) => reportError(e, "warning"));
@@ -2872,7 +2876,10 @@ async function openGallery(): Promise<void> {
   renderTitle();
   await gallery!.open();
 }
-$("libBtn").addEventListener("click", () => { void openGallery(); });
+// 存储开局就不可用（Safari 双击打开备用版）= 歌库存不住：入口画灰、点了说一句为什么（家族规则书 §1 第 12 条；不白屏、不假装能用）。2026-11-03
+const libOff = availability() === "unavailable";
+if (libOff) { $("libBtn").classList.add("is-off"); $("libBtn").title = SITE_TEXT.libOffTitle; }
+$("libBtn").addEventListener("click", () => { if (libOff) { showError(SITE_TEXT.libOffTitle); return; } void openGallery(); });
 async function openCloudMenu(): Promise<void> {
   const signed = isSignedIn();
   let who = ""; try { const a = auth.getActiveAccount() as { username?: string; name?: string } | null; who = a?.name || a?.username || ""; } catch { /* 没登录 */ }
@@ -3269,8 +3276,11 @@ pad.render();
 renderTitle();
 chromeReady = true; applyWorkspace();   // 模式 / 底座的初始状态（音、键盘在）落到界面上
 scoreEl.focus();
+// itch / 备用版：开局一行「完整版在官网」（不弹窗、一页只说一次）；存储半路写不进也说一次（家族规则书 §1 第 6 / 12 条）。2026-11-03
+showSiteHint(); watchStorageHealth();
+diagNote("boot", `deployment ${deployment()} · storage ${availability()}`);
 // 歌库 boot：进过歌库的设备（或带着 OAuth 回跳）开局就建 store（先建再 initAuth），回到上次的地方——上次在歌库里就开歌库，上次开着哪首就开哪首，开不了就进歌库。没进过的 = 无地，照旧。
-if (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash)) {
+if (storeWasAttached() || (currentPolicy().cloud && /[#&](code|error|state)=/.test(location.hash))) {
   ensureAttached();
   const last = deviceKvGet(KV_LAST_DOC);
   if (gallery!.wasInGallery() || !last) await gallery!.open();

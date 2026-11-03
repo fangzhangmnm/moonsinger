@@ -8,6 +8,11 @@ export const AUTHORITY = "https://login.microsoftonline.com/consumers";
 export const SCOPES = ["Files.ReadWrite.AppFolder", "offline_access"];
 export const MSAL_URL = "./vendor/msal/msal-browser.min.js";
 
+/** 官网网址（家族规则书 §1 第 6 条：一个 app 一处常量，「去官网」的文案都插这个，不许散在 UI 字符串里）。added 2026-11-03 by Claude Opus 5.5 */
+export const SITE_URL = "https://sing.weebpaint.com";
+/** 「没测过 + 报告入口」那一句的报告入口（规则书 §1 第 12 条；= 本仓公开的 GitHub issues）。added 2026-11-03 by Claude Opus 5.5 */
+export const REPORT_URL = "https://github.com/fangzhangmnm/moonsinger/issues";
+
 /** 歌的文档种类（store 0.16 docKinds）：一首歌 = 一个 `.mxl`（MusicXML 压缩包，别的乐谱软件也能开；自家的东西在里面的 `.moonsinger/`）。 */
 export const SONG_SUFFIX = ".mxl";
 /** 本 app 私有库的 GUID 前缀（家族命名规矩「<app>-<guid>.<用途>」）：gallery-registry 等归这个前缀；device-kv 的键前缀是同一个 GUID（`moonsinger-5b1e7c0a92d34f6e:`）。

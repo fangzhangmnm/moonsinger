@@ -9,6 +9,8 @@
 //   · 拖进来打开（grabDrop / fromGrab）：桌面 Chromium 用 getAsFileSystemHandle 拿句柄 = 有家；别的浏览器只有 File = 没家。
 //   · 安装成 PWA 后双击 .mxl 打开（manifest file_handlers → launchQueue，consumeLaunchFiles；照 WeebPaint）。
 
+import { embedded } from "../deployment.ts";
+
 export interface FileHandle {
   name: string;
   getFile(): Promise<File>;
@@ -24,9 +26,9 @@ const ACCEPT = ".mxl,.musicxml,.xml";
 export const accepts = (name: string): boolean => /\.(mxl|musicxml|xml)$/i.test(name);
 type G = { showOpenFilePicker?: (o: unknown) => Promise<FileHandle[]>; showSaveFilePicker?: (o: unknown) => Promise<FileHandle> };
 const g = globalThis as unknown as G;
-const topLevel = () => { try { return window.self === window.top; } catch { return false; } };   // 跨域 iframe 里系统面板会被拦
-export const canPickOpen = () => topLevel() && typeof g.showOpenFilePicker === "function";
-export const canPickSave = () => topLevel() && typeof g.showSaveFilePicker === "function";
+// 被套在别人页面里（itch 的框）系统面板会被拦 → 存 = 下载、开 = 选文件。「套没套着」只在 deployment.ts 认（家族规则书 §1 第 9 条；2026-11-03）
+export const canPickOpen = () => !embedded() && typeof g.showOpenFilePicker === "function";
+export const canPickSave = () => !embedded() && typeof g.showSaveFilePicker === "function";
 const aborted = (e: unknown) => (e as { name?: string }).name === "AbortError";
 
 async function fromFile(f: File, handle: FileHandle | null): Promise<Picked> {

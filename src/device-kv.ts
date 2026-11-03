@@ -16,6 +16,13 @@ function _ls(): Storage | null {
     return ls;
   } catch { return null; }
 }
+// 健康口（2026-11-03，家族规则书 §3「持久化深模块报 availability」：本文件是它的键值一半，src/persistence.ts 在上面算健康）。
+/** 这一页开局时 localStorage 用不用得了（Safari 双击打开 / 存储被禁 = 不能 → 全程只在内存）。 */
+export function deviceKvUsable(): boolean { return _ls() !== null; }
+let _onFallback: ((why: string) => void) | null = null;
+/** 写不进、退到内存时通知一声（只一个听众 = persistence.ts）。 */
+export function onDeviceKvFallback(cb: (why: string) => void): void { _onFallback = cb; }
+const _fellBack = (e: unknown) => { try { _onFallback?.((e as Error)?.name || String(e)); } catch { /* 通知失败不影响写 */ } };
 
 export function deviceKvGet(key: string): string | null {
   const k = PREFIX + key;
@@ -33,7 +40,7 @@ export function deviceKvSet(key: string, v: string | null): void {
       if (v == null) ls.removeItem(k); else ls.setItem(k, v);
       _mem.delete(k);
       return;
-    } catch { /* fall through to memory */ }
+    } catch (e) { _fellBack(e); /* fall through to memory */ }
   }
   if (v == null) _mem.delete(k); else _mem.set(k, v);
 }
