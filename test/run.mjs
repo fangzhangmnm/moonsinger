@@ -120,6 +120,7 @@ import "./sw-redirect.test.ts";
 import "./song-player.test.ts";
 import "./song-cover.test.ts";
 import "./deployment.test.mjs";
+import "./namespace.test.mjs";
 import { run } from "./runner.mjs";
 
 await run();
