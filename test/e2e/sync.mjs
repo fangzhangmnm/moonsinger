@@ -40,8 +40,10 @@ const pending = (p) => p.evaluate(() => window.__moonsinger.es().isPushPending()
 const backups = (p) => p.evaluate(() => window.__moonsinger.store().files.listBackup().then((l) => l.length));
 // mock 云的登录态 = 页面全局（src/app-store.ts）：reload 后回到「未登录」，和真机 initAuth 之前一样（开局 open 不查云）；signIn() = 登录 + 跑 afterSignIn（真机 initAuth 之后那一串）
 // 2026-10-21 全家：登录后有没传上去的先问一次「有 N 首歌还没传上去，现在传吗？」——这里一律答「传上去」（asked 记着问没问，场景里核）
-const signIn = async (p) => { p.__asked = false; const done = p.evaluate(() => { window.__moonsingerCloudSignedIn = true; return window.__moonsinger.afterSignIn(); }); const btn = await p.waitForSelector(".offer button:has-text('传上去')", { timeout: 1500 }).catch(() => null); if (btn) { p.__asked = true; await btn.click(); } await done; await p.waitForTimeout(300); };
-const reloadAndSignIn = async (p) => { await p.reload(); await p.waitForFunction(() => !!window.__moonsinger?.identifier()); await p.waitForTimeout(300); await signIn(p); };
+// 2026-11-03（Claude Opus 5.5，家族工单 A2 ③）：v0.14.10 起登录后的问句 = 「有 N 首歌没同步好」+「去处理 / 暂不」（原来的「传上去 → 批量推」撤了，main.ts afterSignIn）。
+//   answer = 场景里点哪个钮（问句一出现就记 asked，同原来）；没有问句 = 什么都不点。只改了点钮这一步，断言一条没动（报告 ai-docs/20261103-rulebook-adoption-report.md「A2」节逐条列）。
+const signIn = async (p, answer = "暂不") => { p.__asked = false; const done = p.evaluate(() => { window.__moonsingerCloudSignedIn = true; return window.__moonsinger.afterSignIn(); }); const asked = await p.waitForSelector(".offer button:has-text('去处理')", { timeout: 1500 }).catch(() => null); if (asked) { p.__asked = true; await p.click(`.offer button:has-text('${answer}')`); } await done; await p.waitForTimeout(300); };
+const reloadAndSignIn = async (p, answer) => { await p.reload(); await p.waitForFunction(() => !!window.__moonsinger?.identifier()); await p.waitForTimeout(300); await signIn(p, answer); };
 try {
   // ① A：进歌库、新建、写、推；再改再推 ×4
   const A = await newPage(ctxA);
@@ -70,9 +72,15 @@ try {
   await typeAtEnd(A, ["Digit3"]); await killMidPush(A);
   check((await cloudNotes(A, id)) === "C4 D4 E4 G4 A4 G4 E4 C4 D4 E4", "页面死前的上传在云端落地了", await cloudNotes(A, id));
   check((await gate(A)) === null && (await notes(A)) === "C4 D4 E4 G4 A4 G4 E4 C4 D4 E4", "开局（还没登录）直接开本地，不弹", await notes(A));
-  await signIn(A); await A.waitForTimeout(200);
+  // v0.14.10 起登录后不再批量推：问句答「去处理」= 开歌库「要处理的」视图，逐首点「处理…」（库来定：能自愈就自愈，不能才三选一）。
+  //   2026-11-03 现状（报告 A2 节）：这里云端字节 = 本机字节（sha256 相同），「处理…」照样弹「云端和本机各有一版新改动」→ 下面「不弹冲突面」那条断言如实红，等库 / Fable 定。
+  await signIn(A, "去处理"); await A.waitForTimeout(400);
+  await A.click(`#galleryFull .gallery-tile:has(.gallery-tile-name[title="${id}"]) button:has-text('处理')`); await A.waitForTimeout(800);
   check(A.__asked === true, "登录后有没传上去的 = 先问一次「现在传吗？」再推（全家 2026-10-21）");
   check((await gate(A)) === null && (await A.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 0, "登录后补推：自愈（云端字节 = 本地字节），不弹冲突面、脏标清了");
+  // 让后面的场景接着跑：面开着就选「本地覆盖云端」（两边本来一样，输家照样进备份箱），再点它的卡片回到这首（进歌库 = 放下了手里的歌）
+  if (await gate(A)) { await A.click(".gate-sheet .gate-actions button:has-text('本地覆盖云端')"); await A.waitForTimeout(500); }
+  await A.click(`#galleryFull .gallery-tile:has(.gallery-tile-name[title="${id}"])`); await A.waitForTimeout(600);
   await typeAtEnd(A, ["Digit4"]); await push(A); await A.waitForTimeout(200);
   check((await gate(A)) === null && (await cloudNotes(A, id)) === "C4 D4 E4 G4 A4 G4 E4 C4 D4 E4 F4", "自愈之后再推：零冲突", await cloudNotes(A, id));
   // ③b 同样的死法，但回来后**登录着、从歌库再开这首**（真机上 user 的路径：进歌库点同一首）：open 的新鲜度检查不比字节、会直接弹「打开本地 / 云端覆盖本地」
@@ -126,7 +134,7 @@ try {
   await typeAtEnd(B, ["Digit5"]); await push(B).catch(() => {}); await B.waitForTimeout(200);
   check(await pending(B), "B 推不上去 = 待推");
   await typeAtEnd(A, ["Digit6"]); await push(A); await A.waitForTimeout(200);
-  await reloadAndSignIn(B);
+  await reloadAndSignIn(B, "暂不");   // v0.14.10 起登录后不再批量推：问句答「暂不」= 先留在这台设备上（不推、不弹、留脏）
   check((await gate(B)) === null && (await B.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 1, "B reload 登录后：真分叉 pushAll 不弹、留脏（脏数 1）");
   check((await notes(B)).endsWith("C5 E5 G5"), "B 本地还是自己那版（…G5）", await notes(B));
   await typeAtEnd(B, ["Digit7"]);

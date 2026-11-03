@@ -6,7 +6,7 @@
 import { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } from "../vendor/vue/vue.esm-browser.prod.js";
 import { createGallery, humanSize, type CreateGalleryDeps, type GalleryDocHost, type VueRuntime, type GItem, type TileInfo, type TileAction, type VerbStore, type DataFaceStore, type Gallery, type GalleryView, type AsideKind, type AsideScope } from "@internal/gallery";
 import { configureGalleryRegistry } from "@internal/gallery";
-import { APP_DB_PREFIX } from "./config.ts";
+import { APP_DB_PREFIX, CACHE_DBS } from "./config.ts";
 // 图库包的注册表（0.8.7 起库名归宿主）：本 app 不用它（单库），但万一包内部开了，也落在自家 GUID 前缀下（家族命名规矩；还原出厂按前缀删得到）。import 本身零 IDB 访问。2026-10-21
 configureGalleryRegistry({ dbName: `${APP_DB_PREFIX}gallery-registry` });
 import { requireStore, auth, hasStore, isSignedIn } from "./app-store.ts";
@@ -51,11 +51,11 @@ const THUMB_PEEK_BYTES = 128 * 1024;
  *  = 图库包 0.8.0 的「事实」（`policy.facts`，包按身份 + 字节版本缓存进 IDB `moonsinger-facts`、全删可再生、到了响应式重画；user 2026-10-16「图库包批了」）；
  *  有 = 卡片右下角一粒 ▶（`ui.tileAction`，包画、包接点击、不开卡），点了按 entry 名抓 `.moonsinger/final.mp3`（不压缩；本地 = Blob.slice，云端 = byte-range，不整份下载）放给你听。 */
 const MANIFEST_ENTRY = ".moonsinger/manifest.json";
-const FACTS_DB = "moonsinger-facts";
+const FACTS_DB = CACHE_DBS.facts;   // 2026-11-03 起带 GUID（原 moonsinger-facts；老库空闲时探到就删，factory-reset.ts dropLegacyCacheDbs）
 /** 卡片的事实（我们这边的形状；包不认识它）：定稿了 = { final: { rev, secs } }；没定稿 = null。 */
 type SongFacts = { final: { rev: number; secs: number } } | null;
 const factsOf = (v: unknown): SongFacts => { const f = (v as { final?: { rev?: unknown; secs?: unknown } } | null)?.final; return f && typeof f.rev === "number" ? { final: { rev: f.rev, secs: Number(f.secs ?? 0) } } : null; };
-const THUMB_DB = "moonsinger-thumbs";
+const THUMB_DB = CACHE_DBS.thumbs;   // 2026-11-03 起带 GUID（原 moonsinger-thumbs）
 // 包内 zh 默认是 WeebPaint 口吻；会露面的几条换成歌库口吻（其余沿用）。key 必须是包的 GalleryTextKey（类型守着）。
 const TEXT: Partial<Record<Parameters<NonNullable<NonNullable<CreateGalleryDeps["text"]>["t"]>>[0], string>> = {
   "gal.empty.none": "还没有歌。点「新建」写一首，或把 .mxl 拖进来。",

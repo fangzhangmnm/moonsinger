@@ -1453,6 +1453,12 @@ var PACKS = {
   "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
 };
 
+// src/config.ts
+var APP_NS = "moonsinger-5b1e7c0a92d34f6e";
+var APP_DB_PREFIX = `${APP_NS}.`;
+var CACHE_DBS = { thumbs: `${APP_NS}.thumbs`, facts: `${APP_NS}.facts`, speech: `${APP_NS}.speech` };
+var WAKE_CHECK_AFTER_MS = 10 * 6e4;
+
 // node_modules/@internal/read-aloud/backend/piper-plus/vendor/onnxruntime-web/ort.wasm.bundle.min.mjs
 var ort_wasm_bundle_min_exports = {};
 __export(ort_wasm_bundle_min_exports, {
@@ -8013,7 +8019,7 @@ var SR = 22050;
 var HOP = 256;
 var engine = null;
 var speech = new SpeechCache(32e6);
-var SPEECH_DB = "moonsinger-speech";
+var SPEECH_DB = CACHE_DBS.speech;
 var SPEECH_FORMAT = 1;
 var diskBudget = 512e6;
 var storeP = null;
@@ -8263,4 +8269,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-e63983ca6bb4.mjs.map
+//# sourceMappingURL=singer-worker-1b251bf19ea9.mjs.map

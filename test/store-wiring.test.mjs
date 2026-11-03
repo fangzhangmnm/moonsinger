@@ -36,9 +36,11 @@ describe("store-wiring", () => {
     assert(!/Files\.ReadWrite"|Files\.Read"|Files\.ReadWrite\.All/.test(s), "不许申请全盘 scope");
     has(s, /AUTHORITY = "https:\/\/login\.microsoftonline\.com\/consumers"/, "authority 必须是 /consumers（/common 禁止）");
   });
-  it("src/gallery-host.ts：缩略图派生缓存只叫 moonsinger-thumbs、只给 song 种类、fetch 走 store getPeek（source 透传）", () => {
+  it("src/gallery-host.ts：缩略图派生缓存只叫 moonsinger-5b1e7c0a92d34f6e.thumbs、只给 song 种类、fetch 走 store getPeek（source 透传）", () => {
     const s = read("src/gallery-host.ts");
-    has(s, /THUMB_DB = "moonsinger-thumbs"/, "派生 IDB 名字必须是 moonsinger-thumbs（CLAUDE.md 持久层白名单登记的那个）");
+    // 2026-11-03 改名（家族工单 A2 ⑤，Fable 裁定：<app>-<guid>.<用途>）：名字住 config.ts CACHE_DBS，这里钉「引的是它」+「它就是登记的那个名字」，强度不变
+    has(s, /THUMB_DB = CACHE_DBS\.thumbs;/, "派生 IDB 名字必须取 config.ts CACHE_DBS.thumbs（CLAUDE.md 持久层白名单登记的那个）");
+    has(read("src/config.ts"), /APP_NS = "moonsinger-5b1e7c0a92d34f6e";[\s\S]*CACHE_DBS = \{ thumbs: `\$\{APP_NS\}\.thumbs`/, "CACHE_DBS.thumbs 必须是 moonsinger-5b1e7c0a92d34f6e.thumbs");
     has(s, /thumbs:\s*\{\s*kinds:\s*\["song"\],\s*dbName:\s*THUMB_DB,\s*fetch:\s*\(id, source\) => zipFile\(id\)\.getPeek\(\{[^}]*source\s*\}\)/, "thumbs.fetch 必须把 source 原样递给 getPeek（cloud 绝不落回本地）");
     has(s, /reportError: \(e, level\) => reportError\(e, level \?\? "error"\)/, "图库的 reportError 必须进 app 漏斗");
   });

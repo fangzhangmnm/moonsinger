@@ -17,6 +17,7 @@ import { makeEnglishFront } from "./en-front.mjs";
 import type { SingLang } from "../score/lab-score.ts";
 import { createPackStore, Sha256 } from "@internal/model-packs";
 import { PACKS, SINGER } from "./packs.gen.ts";
+import { CACHE_DBS } from "../config.ts";
 
 export interface SingRequest { type: "sing"; id: number; score: unknown[]; text: string; tempo: number; lang: SingLang; opt?: Record<string, unknown>; breath?: boolean;
   /** true = 回 WORLD 的原样输出（不归一化、不补尾巴）：分段唱时宿主自己拼、整首最后归一化一次（2026-10-08 深夜）。 */
@@ -140,7 +141,7 @@ const speech = new SpeechCache(32e6);
  *  盘键里的「引擎标签」= 语音包 packId + 运行时包 packId + WORLD wasm 的 sha256（前 16 位各）+ 存法版本——发声引擎哪一块修了（换模型 / 换 ORT / 重编 WORLD）旧键自然不命中、按 LRU 走，不用手动版本号
  *  （user 2026-10-10「修了发声引擎后语音cache应该invalid，你看一下用什么版本号来invalid」）。前端（日 / 中 / 英）的改动已经在内容键里（音素 id / 韵律是键的一部分）。
  *  只有缓存**存法**变了（bf16 → 别的）才手动 bump SPEECH_FORMAT。唱法核心（重建 / 合成）在缓存之后，改它不用失效。 */
-const SPEECH_DB = "moonsinger-speech", SPEECH_FORMAT = 1;
+const SPEECH_DB = CACHE_DBS.speech, SPEECH_FORMAT = 1;   // 2026-11-03 起带 GUID（原 moonsinger-speech；不搬、老库空闲时由主线程探到就删）
 let diskBudget = 512e6, storeP: Promise<SpeechStore | null> | null = null;
 const speechStore = () => (storeP ??= (diskBudget <= 0 ? Promise.resolve<SpeechStore | null>(null) : openSpeechStore(SPEECH_DB, diskBudget)).then((st) => { st?.setBudget(diskBudget); return st; }).catch(() => null));
 const hex16 = async (bytes: Uint8Array) => {   // data: 起的线程可能不给 crypto.subtle：退回 JS 那份（同一个哈希）

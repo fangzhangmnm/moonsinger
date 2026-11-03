@@ -1,4 +1,4 @@
-// 念缓存全局池（IndexedDB `moonsinger-speech`）在真浏览器里开得起来：看大小 / 清空走 worker 的 cache 请求（不起引擎、不下模型）。
+// 念缓存全局池（IndexedDB `moonsinger-5b1e7c0a92d34f6e.speech`，2026-11-03 前叫 moonsinger-speech）在真浏览器里开得起来：看大小 / 清空走 worker 的 cache 请求（不起引擎、不下模型）。
 // created 2026-10-10 by Claude Fable 5.1。真唱 + 重开页面命中的那一路要模型包，在 tmp 的 probe 里量（见 CLAUDE.md v0.9.15）。
 import { chromium } from "./pw.mjs";
 const BASE = process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/";

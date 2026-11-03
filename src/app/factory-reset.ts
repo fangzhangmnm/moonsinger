@@ -8,14 +8,14 @@
 //   护栏 = 两步、不硬拦：① 说明 sheet（有 N 首还没传上去会一起删掉、不造逃生副本；手里的歌没存也丢；可取消）② 逐字确认（输入那一句，库内比对，不对不执行）。
 //   删不掉的库（别的标签页开着）= 报出来、不 reload（关掉再来一次，幂等）。
 import { wipeAppNamespace, scanAppNamespace } from "../app-store.ts";
-import { APP_ID, APP_DB_PREFIX } from "../config.ts";
+import { APP_ID, APP_DB_PREFIX, CACHE_DBS, LEGACY_CACHE_DBS } from "../config.ts";
 import { deviceKvWipeAll } from "../device-kv.ts";
 import { openConfirmSheet, openInputSheet } from "../ui/sheets.ts";
 
 /** 逐字确认那一句（和 WeebPaint 同一句，全家一个口令）。 */
 export const CONSENT_PHRASE = "删除全部本地数据";
-/** 自家派生缓存库（白名单表登记的三个；gallery-host.ts / singer/worker.ts 里的字面量要和这里一致——test/factory-reset.test.ts 守）。 */
-export const OWN_DBS = ["moonsinger-thumbs", "moonsinger-facts", "moonsinger-speech"] as const;
+/** 自家派生缓存库（白名单表登记的三个；名字唯一来源 = config.ts CACHE_DBS，gallery-host.ts / singer/worker.ts 引的就是它——test/factory-reset.test.ts 守）。 */
+export const OWN_DBS = [CACHE_DBS.thumbs, CACHE_DBS.facts, CACHE_DBS.speech] as const;
 const BLOCKED_TIMEOUT_MS = 2000;
 
 export interface FactoryResetDeps {
@@ -54,10 +54,35 @@ async function listOurDbs(): Promise<string[]> {
     return (await indexedDB.databases()).map((d) => d.name ?? "").filter(isOurDb);
   } catch { return [...OWN_DBS]; }
 }
+/** 老库在不在：无版本号 open——不在会触发 oldVersion 0 的升级，当场 abort（什么都不建）；在 = 打开了（马上关）。照 WeebPaint src/storage.ts _openLegacyIfExists。 */
+function legacyExists(name: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    let absent = false;
+    try {
+      const req = indexedDB.open(name);
+      req.onupgradeneeded = (ev) => { if ((ev as IDBVersionChangeEvent).oldVersion === 0) { absent = true; req.transaction?.abort(); } };
+      req.onsuccess = () => { try { req.result.close(); } catch { /* 已关 */ } resolve(!absent); };
+      req.onerror = (ev) => { (ev as Event).preventDefault?.(); resolve(false); };   // 我们自己 abort 的那次 = 没有；别的错 = 当没有（下次再探）
+      req.onblocked = () => resolve(true);
+    } catch { resolve(false); }
+  });
+}
+/** 有才删（不盲删：防和同源老 bundle 赛跑——那边还开着就算这次没删成，下次再来）。 */
+async function dropIfExists(name: string): Promise<"deleted" | "blocked" | "absent"> {
+  if (typeof indexedDB === "undefined" || !(await legacyExists(name))) return "absent";
+  return deleteDbOrBlocked(name);
+}
+/** 派生缓存库改名后的老库（moonsinger-thumbs / facts / speech）：不搬，探到就删。空闲片里一页一次（main.ts）；返回这次删掉的。2026-11-03 家族工单 A2 ⑤ */
+export async function dropLegacyCacheDbs(): Promise<string[]> {
+  const out: string[] = [];
+  for (const name of LEGACY_CACHE_DBS) { try { if ((await dropIfExists(name)) === "deleted") out.push(name); } catch { /* 下次再来 */ } }
+  return out;
+}
 /** 自家足迹深清（store 的命名空间由库口子负责）。 */
 async function wipeOwnFootprint(): Promise<{ deleted: string[]; blocked: string[]; lsRemoved: number }> {
   const r = { deleted: [] as string[], blocked: [] as string[], lsRemoved: 0 };
   for (const name of new Set([...(await listOurDbs()), ...OWN_DBS])) ((await deleteDbOrBlocked(name)) === "deleted" ? r.deleted : r.blocked).push(name);
+  for (const name of LEGACY_CACHE_DBS) { const g = await dropIfExists(name); if (g === "deleted") r.deleted.push(name); else if (g === "blocked") r.blocked.push(name); }   // 改名前的老名字（有才删）
   r.lsRemoved = deviceKvWipeAll();
   return r;
 }

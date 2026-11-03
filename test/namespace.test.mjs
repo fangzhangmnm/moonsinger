@@ -4,6 +4,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, assert } from "./runner.mjs";
+import { APP_NS, APP_DB_PREFIX, CACHE_DBS } from "../src/config.ts";
 
 function* walk(dir) { for (const f of readdirSync(dir)) { const p = join(dir, f); if (statSync(p).isDirectory()) yield* walk(p); else if (/\.(ts|mjs|js)$/.test(f) && !f.endsWith(".d.ts")) yield p.replace(/\\/g, "/"); } }
 const SOURCES = [...walk("src"), "service-worker.js"];
@@ -18,14 +19,18 @@ const NAMERS = [
   /\b(?:let|const) CACHE_NAME\s*=\s*["'`]([^"'`$]+)/g,
 ];
 const OK = /^(moonsinger[-.]|pwa-)/;
+// 名字用模板拼的（2026-11-03 起派生缓存库 = `${APP_NS}.speech` 这种，config.ts）：先把这两个常量代回去再认
+const SUBST = { APP_NS, APP_DB_PREFIX };
+const subst = (s) => s.replace(/\$\{(APP_NS|APP_DB_PREFIX)\}/g, (_, k) => SUBST[k]);
 
 describe("命名空间：存储 / 锁 / 频道名都带自家前缀（规则书 §1 第 3 条）", () => {
   it("src + service-worker.js 里起的名字全带前缀", () => {
     const bad = [], seen = [];
     for (const p of SOURCES) {
-      const s = readFileSync(p, "utf8");
+      const s = subst(readFileSync(p, "utf8"));
       for (const re of NAMERS) for (const m of s.matchAll(re)) { seen.push(m[1]); if (!OK.test(m[1])) bad.push(`${p}: ${m[1]}`); }
     }
+    for (const [k, v] of Object.entries(CACHE_DBS)) { seen.push(v); if (!OK.test(v)) bad.push(`src/config.ts CACHE_DBS.${k}: ${v}`); }   // 派生缓存库的名字住这张表（建库处引它）
     assert(seen.length >= 5, `扫到的名字太少（${seen.length}）：起名写法变了，守卫要跟着改`);
     assert(bad.length === 0, "不带自家前缀的名字：\n" + bad.join("\n"));
   });

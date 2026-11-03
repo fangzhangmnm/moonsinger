@@ -20,6 +20,7 @@ export const SITE_TEXT = {
   cloudOff: "网盘在官网",
   cloudOffTitle: `网盘（OneDrive）同步只在官网版里有：${SITE_HOST}`,
   libOffTitle: `这个浏览器存不住歌库（关了就忘）：歌请用「存」下载成文件；歌库在官网版里：${SITE_HOST}`,
+  libSiteTitle: `歌库只在官网版里有（${SITE_HOST}）：这里的歌没有浏览器外的家——「存」= 下载成 .mxl 文件，「打开」= 选文件`,
   noShell: deployment() === "itch" ? "itch 版跟着 itch 上的版本走：作者推了新版，刷新这一页就是新的" : deployment() === "local" ? `备用版不会自己更新：要新版就重新下载这个文件夹，或去官网 ${SITE_HOST}` : "这里没有离线壳，不用更新",
   goSite: "去官网",
   report: "报告问题",
@@ -31,7 +32,7 @@ const open = (url: string) => { try { window.open(url, "_blank", "noopener"); } 
 export const FOLDER_TEXT = {
   models: "备用版：小月相的模型包就在这个文件夹的 pwa-models/ 里，用到才读、读的时候核哈希；不用下载、也不用导入",
   sounds: "备用版：音源就在这个文件夹的 pwa-sounds/ 里，用到才读；浏览器缓存在双击打开的网页里用不了，这里没有「留在设备上」这回事",
-  speech: "备用版：后台线程存不住东西，念缓存只在内存里（每次打开第一遍要重念）",
+  speech: "这个浏览器不让双击打开的网页的后台线程存东西：念缓存只在内存里（每次打开第一遍要重念）",   // 只在真存不住时显示（Chromium 实测存得住、显示的是大小；2026-11-03）
 };
 
 let shown = false;
@@ -51,6 +52,10 @@ export function showSiteHint(): void {
 /** 半路写不进存储：说一次（任何部署方式都可能）。 */
 export function watchStorageHealth(): void {
   onHealth((h) => { if (h.level === "degraded") showNotice({ id: "storage-degraded", level: "warning", dismissible: true, text: SITE_TEXT.degraded }); });
+}
+/** 点了灰着的歌库钮：说一句为什么 + 「去官网」（不弹窗，同开局那一行）。 */
+export function showLibraryOff(): void {
+  showNotice({ id: "library-off", level: "neutral", dismissible: true, text: SITE_TEXT.libSiteTitle, actions: [{ label: SITE_TEXT.goSite, onClick: () => open(SITE_URL) }] });
 }
 /** 灰掉的网盘入口旁边的副标题（链接到官网）。 */
 export function cloudOffHtml(): string {

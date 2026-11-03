@@ -1,0 +1,17 @@
+{
+ "source": "6c3764f07ce10e77d2519692d6c570e516f82f5203fd8fa02800e4a94140c4a9",
+ "version": "v0.14.13-2026-11-03",
+ "main": "moonsinger-aada68500f02.mjs",
+ "paths": [
+  "src",
+  "vendor-pkgs",
+  "package-lock.json",
+  "styles.css",
+  "vendor/internal-css",
+  "vendor/fflate",
+  "vendor/vue",
+  "vendor/upng",
+  "scripts/build.sh",
+  "scripts/core-hash.mjs"
+ ]
+}

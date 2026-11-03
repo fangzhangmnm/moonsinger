@@ -44,11 +44,11 @@ describe("部署方式只在 deployment.ts 认（规则书 §1 第 9 条）", ()
 });
 
 describe("deployment-policy = 规则书 §2 表（逐格）", () => {
-  // §2 行：网盘 / 离线壳（SW）/ 「去官网」一句
+  // §2 行：网盘 / 离线壳（SW）/ 「去官网」一句 + 本 app 自己的歌库（2026-11-03 Fable 裁定：itch / 备用版歌没有浏览器外的家 → 画灰）
   const TABLE = {
-    site:  { cloud: true,  serviceWorker: true,  siteHint: false },
-    itch:  { cloud: false, serviceWorker: false, siteHint: true },
-    local: { cloud: false, serviceWorker: false, siteHint: true },
+    site:  { cloud: true,  serviceWorker: true,  siteHint: false, library: true },
+    itch:  { cloud: false, serviceWorker: false, siteHint: true,  library: false },
+    local: { cloud: false, serviceWorker: false, siteHint: true,  library: false },
   };
   for (const d of ["site", "itch", "local"]) {
     it(`${d}：每一格都对、没有多的键`, () => {

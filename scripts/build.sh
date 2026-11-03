@@ -83,3 +83,5 @@ sed -i -E "s|href=\"\./vendor/internal-css/workbench-elements\.css(\?v=[a-z0-9]+
 sed -i -E "s|href=\"\./vendor/internal-css/gallery\.css(\?v=[a-z0-9]+)?\"|href=\"./vendor/internal-css/gallery.css?v=$CSS_HASH\"|" index.html
 grep -q "styles.css?v=$CSS_HASH" index.html || { echo "[build] ✗ index.html 没改到样式表的新版本号" >&2; exit 1; }
 echo "[build] index.html → ./dist/$MAIN"
+# 源码戳（2026-11-03 家族工单 A2 ③）：dist 是从哪一份源码打出来的；test/dist-fresh.test.mjs 拿 HEAD 的戳对 HEAD 的源码（防「源码提交了、dist 没重打」）
+node scripts/source-stamp.mjs --write

@@ -76,7 +76,8 @@ import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
 import { attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, cloudAvailable } from "../app-store.ts";
-import { showSiteHint, watchStorageHealth, SITE_TEXT, FOLDER_TEXT } from "./site-hint.ts";
+import { showSiteHint, watchStorageHealth, showLibraryOff, SITE_TEXT, FOLDER_TEXT } from "./site-hint.ts";
+import { dropLegacyCacheDbs } from "./factory-reset.ts";
 import { availability } from "../persistence.ts";
 import { currentPolicy } from "../deployment-policy.ts";
 import { deployment } from "../deployment.ts";
@@ -2829,6 +2830,7 @@ async function renameActive(): Promise<string | null> {
 let authStarted = false, afterSignInInFlight: Promise<void> | null = null;
 /** 建 store + 歌库屏（幂等；不碰登录）。第一次要在用户手势里（persist 申请）。 */
 function ensureAttached(): void {
+  if (!currentPolicy().library) throw new Error("这个部署方式没有歌库（itch / 备用版：歌只用文件存）");   // 第二道：入口已经灰了，万一有别的路走到这里也不建库
   const fresh = !hasStore();
   attachStore();
   if (fresh) {
@@ -2886,10 +2888,12 @@ async function openGallery(): Promise<void> {
   renderTitle();
   await gallery!.open();
 }
-// 存储开局就不可用（Safari 双击打开备用版）= 歌库存不住：入口画灰、点了说一句为什么（家族规则书 §1 第 12 条；不白屏、不假装能用）。2026-11-03
-const libOff = availability() === "unavailable";
-if (libOff) { $("libBtn").classList.add("is-off"); $("libBtn").title = SITE_TEXT.libOffTitle; }
-$("libBtn").addEventListener("click", () => { if (libOff) { showError(SITE_TEXT.libOffTitle); return; } void openGallery(); });
+// 歌库画灰的两种情形（家族规则书 §1 第 1 / 6 / 12 条；入口露着、点了说为什么，不白屏、不假装能用）。2026-11-03
+//   ① 这个部署方式没有歌库（itch / 备用版：歌没有浏览器外的家；policy.library，Fable 裁定 A2 ④）→ 说「歌库在官网」+「去官网」；
+//   ② 存储开局就不可用（Safari 双击打开）= 歌库存不住 → 说一句为什么。
+const libOff: "site" | "storage" | null = !currentPolicy().library ? "site" : availability() === "unavailable" ? "storage" : null;
+if (libOff) { $("libBtn").classList.add("is-off"); $("libBtn").title = libOff === "site" ? SITE_TEXT.libSiteTitle : SITE_TEXT.libOffTitle; }
+$("libBtn").addEventListener("click", () => { if (libOff === "site") { showLibraryOff(); return; } if (libOff) { showError(SITE_TEXT.libOffTitle); return; } void openGallery(); });
 async function openCloudMenu(): Promise<void> {
   const signed = isSignedIn();
   let who = ""; try { const a = auth.getActiveAccount() as { username?: string; name?: string } | null; who = a?.name || a?.username || ""; } catch { /* 没登录 */ }
@@ -3297,8 +3301,11 @@ Object.assign((window as unknown as { __moonsinger: Record<string, unknown> })._
   availability: () => availability(),
 });
 diagNote("boot", `deployment ${deployment()} · storage ${availability()}`);
+// 派生缓存库改了名（带 GUID，家族工单 A2 ⑤）：老的 moonsinger-thumbs / facts / speech 不搬，空闲片里探到就删（一页一次；被别的标签页占着 = 下次再来）
+{ const idle = (cb: () => void) => { const ric = (globalThis as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback; if (ric) ric(cb, { timeout: 10_000 }); else setTimeout(cb, 3000); };
+  idle(() => { void dropLegacyCacheDbs().then((gone) => { if (!gone.length) return; diagNote("storage", `dropped legacy cache DBs: ${gone.join(", ")}`); info("念缓存和封面缓存换了新名字，会重新生成一次（歌不受影响）"); }).catch((e) => reportError(e, "log")); }); }
 // 歌库 boot：进过歌库的设备（或带着 OAuth 回跳）开局就建 store（先建再 initAuth），回到上次的地方——上次在歌库里就开歌库，上次开着哪首就开哪首，开不了就进歌库。没进过的 = 无地，照旧。
-if (storeWasAttached() || (currentPolicy().cloud && /[#&](code|error|state)=/.test(location.hash))) {
+if (currentPolicy().library && (storeWasAttached() || (currentPolicy().cloud && /[#&](code|error|state)=/.test(location.hash)))) {
   ensureAttached();
   const last = deviceKvGet(KV_LAST_DOC);
   if (gallery!.wasInGallery() || !last) await gallery!.open();

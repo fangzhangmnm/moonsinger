@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.12-2026-11-03";
+var APP_VERSION = "v0.14.13-2026-11-03";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -2670,9 +2670,9 @@ function embedded() {
 
 // src/deployment-policy.ts
 var TABLE = {
-  site: { cloud: true, serviceWorker: true, siteHint: false },
-  itch: { cloud: false, serviceWorker: false, siteHint: true },
-  local: { cloud: false, serviceWorker: false, siteHint: true }
+  site: { cloud: true, serviceWorker: true, siteHint: false, library: true },
+  itch: { cloud: false, serviceWorker: false, siteHint: true, library: false },
+  local: { cloud: false, serviceWorker: false, siteHint: true, library: false }
 };
 function currentPolicy() {
   return TABLE[deployment()];
@@ -25144,7 +25144,7 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-e63983ca6bb4.mjs");
+      return pick(() => "singer-worker-1b251bf19ea9.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
@@ -25152,7 +25152,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-6fb0185cdc6b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-c6150719602f.mjs");
+      return pick(() => "encode-worker-147d48461e58.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -33185,7 +33185,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "81a207dc032cff80" : "dev";
+var CORE_HASH = true ? "fe8490e6fd71af0f" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -33296,7 +33296,10 @@ var MSAL_URL2 = "./vendor/msal/msal-browser.min.js";
 var SITE_URL = "https://sing.weebpaint.com";
 var REPORT_URL = "https://github.com/fangzhangmnm/moonsinger/issues";
 var SONG_SUFFIX = ".mxl";
-var APP_DB_PREFIX = "moonsinger-5b1e7c0a92d34f6e.";
+var APP_NS = "moonsinger-5b1e7c0a92d34f6e";
+var APP_DB_PREFIX = `${APP_NS}.`;
+var CACHE_DBS = { thumbs: `${APP_NS}.thumbs`, facts: `${APP_NS}.facts`, speech: `${APP_NS}.speech` };
+var LEGACY_CACHE_DBS = ["moonsinger-thumbs", "moonsinger-facts", "moonsinger-speech"];
 var LOCAL_SAVE_DEBOUNCE_MS = 2e3;
 var WAKE_CHECK_AFTER_MS = 10 * 6e4;
 var WAKE_CHECK_TIMEOUT_MS = 2e4;
@@ -33855,6 +33858,7 @@ var SITE_TEXT = {
   cloudOff: "\u7F51\u76D8\u5728\u5B98\u7F51",
   cloudOffTitle: `\u7F51\u76D8\uFF08OneDrive\uFF09\u540C\u6B65\u53EA\u5728\u5B98\u7F51\u7248\u91CC\u6709\uFF1A${SITE_HOST}`,
   libOffTitle: `\u8FD9\u4E2A\u6D4F\u89C8\u5668\u5B58\u4E0D\u4F4F\u6B4C\u5E93\uFF08\u5173\u4E86\u5C31\u5FD8\uFF09\uFF1A\u6B4C\u8BF7\u7528\u300C\u5B58\u300D\u4E0B\u8F7D\u6210\u6587\u4EF6\uFF1B\u6B4C\u5E93\u5728\u5B98\u7F51\u7248\u91CC\uFF1A${SITE_HOST}`,
+  libSiteTitle: `\u6B4C\u5E93\u53EA\u5728\u5B98\u7F51\u7248\u91CC\u6709\uFF08${SITE_HOST}\uFF09\uFF1A\u8FD9\u91CC\u7684\u6B4C\u6CA1\u6709\u6D4F\u89C8\u5668\u5916\u7684\u5BB6\u2014\u2014\u300C\u5B58\u300D= \u4E0B\u8F7D\u6210 .mxl \u6587\u4EF6\uFF0C\u300C\u6253\u5F00\u300D= \u9009\u6587\u4EF6`,
   noShell: deployment() === "itch" ? "itch \u7248\u8DDF\u7740 itch \u4E0A\u7684\u7248\u672C\u8D70\uFF1A\u4F5C\u8005\u63A8\u4E86\u65B0\u7248\uFF0C\u5237\u65B0\u8FD9\u4E00\u9875\u5C31\u662F\u65B0\u7684" : deployment() === "local" ? `\u5907\u7528\u7248\u4E0D\u4F1A\u81EA\u5DF1\u66F4\u65B0\uFF1A\u8981\u65B0\u7248\u5C31\u91CD\u65B0\u4E0B\u8F7D\u8FD9\u4E2A\u6587\u4EF6\u5939\uFF0C\u6216\u53BB\u5B98\u7F51 ${SITE_HOST}` : "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF0C\u4E0D\u7528\u66F4\u65B0",
   goSite: "\u53BB\u5B98\u7F51",
   report: "\u62A5\u544A\u95EE\u9898"
@@ -33868,7 +33872,8 @@ var open = (url) => {
 var FOLDER_TEXT = {
   models: "\u5907\u7528\u7248\uFF1A\u5C0F\u6708\u76F8\u7684\u6A21\u578B\u5305\u5C31\u5728\u8FD9\u4E2A\u6587\u4EF6\u5939\u7684 pwa-models/ \u91CC\uFF0C\u7528\u5230\u624D\u8BFB\u3001\u8BFB\u7684\u65F6\u5019\u6838\u54C8\u5E0C\uFF1B\u4E0D\u7528\u4E0B\u8F7D\u3001\u4E5F\u4E0D\u7528\u5BFC\u5165",
   sounds: "\u5907\u7528\u7248\uFF1A\u97F3\u6E90\u5C31\u5728\u8FD9\u4E2A\u6587\u4EF6\u5939\u7684 pwa-sounds/ \u91CC\uFF0C\u7528\u5230\u624D\u8BFB\uFF1B\u6D4F\u89C8\u5668\u7F13\u5B58\u5728\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u91CC\u7528\u4E0D\u4E86\uFF0C\u8FD9\u91CC\u6CA1\u6709\u300C\u7559\u5728\u8BBE\u5907\u4E0A\u300D\u8FD9\u56DE\u4E8B",
-  speech: "\u5907\u7528\u7248\uFF1A\u540E\u53F0\u7EBF\u7A0B\u5B58\u4E0D\u4F4F\u4E1C\u897F\uFF0C\u5FF5\u7F13\u5B58\u53EA\u5728\u5185\u5B58\u91CC\uFF08\u6BCF\u6B21\u6253\u5F00\u7B2C\u4E00\u904D\u8981\u91CD\u5FF5\uFF09"
+  speech: "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u7684\u540E\u53F0\u7EBF\u7A0B\u5B58\u4E1C\u897F\uFF1A\u5FF5\u7F13\u5B58\u53EA\u5728\u5185\u5B58\u91CC\uFF08\u6BCF\u6B21\u6253\u5F00\u7B2C\u4E00\u904D\u8981\u91CD\u5FF5\uFF09"
+  // 只在真存不住时显示（Chromium 实测存得住、显示的是大小；2026-11-03）
 };
 var shown = false;
 function showSiteHint() {
@@ -33889,8 +33894,155 @@ function watchStorageHealth() {
     if (h2.level === "degraded") showNotice({ id: "storage-degraded", level: "warning", dismissible: true, text: SITE_TEXT.degraded });
   });
 }
+function showLibraryOff() {
+  showNotice({ id: "library-off", level: "neutral", dismissible: true, text: SITE_TEXT.libSiteTitle, actions: [{ label: SITE_TEXT.goSite, onClick: () => open(SITE_URL) }] });
+}
 function cloudOffHtml() {
   return `<a class="site-hint-link" href="${SITE_URL}" target="_blank" rel="noopener" title="${SITE_TEXT.cloudOffTitle}">${SITE_TEXT.cloudOff}</a>`;
+}
+
+// src/app/factory-reset.ts
+var CONSENT_PHRASE = "\u5220\u9664\u5168\u90E8\u672C\u5730\u6570\u636E";
+var OWN_DBS = [CACHE_DBS.thumbs, CACHE_DBS.facts, CACHE_DBS.speech];
+var BLOCKED_TIMEOUT_MS2 = 2e3;
+var isOurDb = (name) => OWN_DBS.includes(name) || name.startsWith(APP_DB_PREFIX);
+function deleteDbOrBlocked2(name) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (r10) => {
+      if (!settled) {
+        settled = true;
+        resolve(r10);
+      }
+    };
+    const timer = setTimeout(() => done("blocked"), BLOCKED_TIMEOUT_MS2);
+    try {
+      const req = indexedDB.deleteDatabase(name);
+      req.onsuccess = () => {
+        clearTimeout(timer);
+        done("deleted");
+      };
+      req.onerror = () => {
+        clearTimeout(timer);
+        done("blocked");
+      };
+    } catch {
+      clearTimeout(timer);
+      done("blocked");
+    }
+  });
+}
+async function listOurDbs() {
+  try {
+    if (typeof indexedDB === "undefined" || typeof indexedDB.databases !== "function") return [...OWN_DBS];
+    return (await indexedDB.databases()).map((d3) => d3.name ?? "").filter(isOurDb);
+  } catch {
+    return [...OWN_DBS];
+  }
+}
+function legacyExists(name) {
+  return new Promise((resolve) => {
+    let absent = false;
+    try {
+      const req = indexedDB.open(name);
+      req.onupgradeneeded = (ev2) => {
+        if (ev2.oldVersion === 0) {
+          absent = true;
+          req.transaction?.abort();
+        }
+      };
+      req.onsuccess = () => {
+        try {
+          req.result.close();
+        } catch {
+        }
+        resolve(!absent);
+      };
+      req.onerror = (ev2) => {
+        ev2.preventDefault?.();
+        resolve(false);
+      };
+      req.onblocked = () => resolve(true);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+async function dropIfExists(name) {
+  if (typeof indexedDB === "undefined" || !await legacyExists(name)) return "absent";
+  return deleteDbOrBlocked2(name);
+}
+async function dropLegacyCacheDbs() {
+  const out = [];
+  for (const name of LEGACY_CACHE_DBS) {
+    try {
+      if (await dropIfExists(name) === "deleted") out.push(name);
+    } catch {
+    }
+  }
+  return out;
+}
+async function wipeOwnFootprint() {
+  const r10 = { deleted: [], blocked: [], lsRemoved: 0 };
+  for (const name of /* @__PURE__ */ new Set([...await listOurDbs(), ...OWN_DBS])) (await deleteDbOrBlocked2(name) === "deleted" ? r10.deleted : r10.blocked).push(name);
+  for (const name of LEGACY_CACHE_DBS) {
+    const g3 = await dropIfExists(name);
+    if (g3 === "deleted") r10.deleted.push(name);
+    else if (g3 === "blocked") r10.blocked.push(name);
+  }
+  r10.lsRemoved = deviceKvWipeAll();
+  return r10;
+}
+async function runFactoryReset(d3) {
+  let dirtyN = 0;
+  if (d3.attached()) {
+    try {
+      dirtyN = await d3.dirtyCount();
+    } catch (e10) {
+      d3.report(e10, "log");
+    }
+  }
+  const lines = [
+    "\u5220\u9664\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\uFF1A\u6B4C\u5E93\u91CC\u7684\u6B4C\uFF08\u672C\u673A\u526F\u672C\uFF09\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\uFF1B\u79BB\u7EBF\u58F3\u4E5F\u91CD\u88C5\u3002\u4E91\u7AEF\uFF08OneDrive\uFF09\u4E0A\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u53D7\u5F71\u54CD\u3002",
+    d3.attached() ? dirtyN > 0 ? `\u6709 ${dirtyN} \u9996\u8FD8\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u4F1A\u4E00\u8D77\u5220\u6389\uFF08\u4E0D\u9020\u9003\u751F\u526F\u672C\uFF09\u3002` : "\u6B4C\u5E93\u91CC\u7684\u6B4C\u90FD\u4F20\u4E0A\u53BB\u4E86\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u6CA1\u8FDB\u8FC7\u6B4C\u5E93\u3002"
+  ];
+  if (d3.openUnsaved()) lines.push("\u624B\u91CC\u8FD9\u9996\u6539\u8FC7\u8FD8\u6CA1\u5B58\uFF0C\u4E5F\u4F1A\u4E22\u3002");
+  if (!await openConfirmSheet("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E", lines.join("\n"), { okLabel: "\u7EE7\u7EED", danger: true })) return "cancelled";
+  const typed = await openInputSheet("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E", { placeholder: CONSENT_PHRASE, message: `\u9010\u5B57\u8F93\u5165\u300C${CONSENT_PHRASE}\u300D\u786E\u8BA4\u3002\u8FD9\u4E00\u6B65\u505A\u5B8C app \u4F1A\u91CD\u5F00\u6210\u65B0\u88C5\u7684\u6837\u5B50\u3002`, okLabel: "\u5220\u9664" });
+  if (typed == null) return "cancelled";
+  if (typed.trim() !== CONSENT_PHRASE) {
+    d3.info("\u8F93\u5165\u7684\u4E0D\u4E00\u6837\uFF0C\u4EC0\u4E48\u90FD\u6CA1\u52A8\u3002");
+    return "mismatch";
+  }
+  try {
+    await d3.prepare();
+    const storeReport = await wipeAppNamespace({ appId: APP_ID, consent: { expected: CONSENT_PHRASE, typed: typed.trim() } });
+    const own = await wipeOwnFootprint();
+    const scan = await scanAppNamespace(APP_ID);
+    const residueOwn = (await listOurDbs()).length;
+    const blocked = storeReport.blockedDatabases.length + own.blocked.length;
+    if (blocked > 0) {
+      await openConfirmSheet("\u8FD8\u6CA1\u5220\u5E72\u51C0", `\u6709 ${blocked} \u4E2A\u5E93\u88AB\u522B\u7684\u6807\u7B7E\u9875\u5360\u7740\uFF0C\u5220\u4E0D\u6389\u3002\u5173\u6389\u5176\u4ED6 MoonSinger \u6807\u7B7E\u9875\uFF08\u6216\u522B\u7684\u7A97\u53E3\uFF09\u518D\u6765\u4E00\u6B21\u2014\u2014\u518D\u505A\u4E00\u904D\u662F\u5B89\u5168\u7684\u3002`, { okLabel: "\u597D", cancelLabel: "\u5173\u95ED" });
+      return "blocked";
+    }
+    const db = storeReport.deletedDatabases.length + own.deleted.length, ls2 = storeReport.localStorageKeysRemoved + own.lsRemoved;
+    const residue = scan.databases.length + scan.localStorageKeys + residueOwn;
+    await openConfirmSheet("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E", residue === 0 ? `\u5220\u4E86 ${db} \u4E2A\u5E93\u3001${ls2} \u4E2A\u952E\uFF0C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u6CA1\u6709\u6B8B\u7559\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002` : `\u5220\u4E86 ${db} \u4E2A\u5E93\u3001${ls2} \u4E2A\u952E\uFF1B\u8FD8\u5269 ${residue} \u5904\u6B8B\u7559\uFF08\u679A\u4E3E\u4E0D\u5230\u7684\u5E73\u53F0 / \u521A\u88AB\u91CD\u5EFA\uFF09\uFF0C\u91CD\u5F00\u540E\u518D\u505A\u4E00\u904D\u5C31\u6CA1\u4E86\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002`, { okLabel: "\u597D", cancelLabel: "\u597D" });
+    try {
+      await d3.clearShell();
+    } catch (e10) {
+      d3.report(e10, "log");
+    }
+    location.replace(`${location.pathname}?reset=${Date.now()}`);
+    return "done";
+  } catch (e10) {
+    if (e10?.name === "WipeConsentError") {
+      d3.info("\u8F93\u5165\u7684\u4E0D\u4E00\u6837\uFF0C\u4EC0\u4E48\u90FD\u6CA1\u52A8\u3002");
+      return "mismatch";
+    }
+    d3.report(e10, "error");
+    return "blocked";
+  }
 }
 
 // vendor/vue/vue.esm-browser.prod.js
@@ -39841,12 +39993,12 @@ var KV_FOLDER = "gallery-folder";
 var KV_SCENE = "last-scene";
 var THUMB_PEEK_BYTES = 128 * 1024;
 var MANIFEST_ENTRY = ".moonsinger/manifest.json";
-var FACTS_DB = "moonsinger-facts";
+var FACTS_DB = CACHE_DBS.facts;
 var factsOf = (v) => {
   const f2 = v?.final;
   return f2 && typeof f2.rev === "number" ? { final: { rev: f2.rev, secs: Number(f2.secs ?? 0) } } : null;
 };
-var THUMB_DB = "moonsinger-thumbs";
+var THUMB_DB = CACHE_DBS.thumbs;
 var TEXT = {
   "gal.empty.none": "\u8FD8\u6CA1\u6709\u6B4C\u3002\u70B9\u300C\u65B0\u5EFA\u300D\u5199\u4E00\u9996\uFF0C\u6216\u628A .mxl \u62D6\u8FDB\u6765\u3002",
   "gal.empty.folder": "\u8FD9\u4E2A\u5939\u91CC\u8FD8\u6CA1\u6709\u6B4C\u3002",
@@ -44910,103 +45062,6 @@ function createEncoder(workerUrl, onFallback) {
   };
 }
 
-// src/app/factory-reset.ts
-var CONSENT_PHRASE = "\u5220\u9664\u5168\u90E8\u672C\u5730\u6570\u636E";
-var OWN_DBS = ["moonsinger-thumbs", "moonsinger-facts", "moonsinger-speech"];
-var BLOCKED_TIMEOUT_MS2 = 2e3;
-var isOurDb = (name) => OWN_DBS.includes(name) || name.startsWith(APP_DB_PREFIX);
-function deleteDbOrBlocked2(name) {
-  return new Promise((resolve) => {
-    let settled = false;
-    const done = (r10) => {
-      if (!settled) {
-        settled = true;
-        resolve(r10);
-      }
-    };
-    const timer = setTimeout(() => done("blocked"), BLOCKED_TIMEOUT_MS2);
-    try {
-      const req = indexedDB.deleteDatabase(name);
-      req.onsuccess = () => {
-        clearTimeout(timer);
-        done("deleted");
-      };
-      req.onerror = () => {
-        clearTimeout(timer);
-        done("blocked");
-      };
-    } catch {
-      clearTimeout(timer);
-      done("blocked");
-    }
-  });
-}
-async function listOurDbs() {
-  try {
-    if (typeof indexedDB === "undefined" || typeof indexedDB.databases !== "function") return [...OWN_DBS];
-    return (await indexedDB.databases()).map((d3) => d3.name ?? "").filter(isOurDb);
-  } catch {
-    return [...OWN_DBS];
-  }
-}
-async function wipeOwnFootprint() {
-  const r10 = { deleted: [], blocked: [], lsRemoved: 0 };
-  for (const name of /* @__PURE__ */ new Set([...await listOurDbs(), ...OWN_DBS])) (await deleteDbOrBlocked2(name) === "deleted" ? r10.deleted : r10.blocked).push(name);
-  r10.lsRemoved = deviceKvWipeAll();
-  return r10;
-}
-async function runFactoryReset(d3) {
-  let dirtyN = 0;
-  if (d3.attached()) {
-    try {
-      dirtyN = await d3.dirtyCount();
-    } catch (e10) {
-      d3.report(e10, "log");
-    }
-  }
-  const lines = [
-    "\u5220\u9664\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\uFF1A\u6B4C\u5E93\u91CC\u7684\u6B4C\uFF08\u672C\u673A\u526F\u672C\uFF09\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\uFF1B\u79BB\u7EBF\u58F3\u4E5F\u91CD\u88C5\u3002\u4E91\u7AEF\uFF08OneDrive\uFF09\u4E0A\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u53D7\u5F71\u54CD\u3002",
-    d3.attached() ? dirtyN > 0 ? `\u6709 ${dirtyN} \u9996\u8FD8\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u4F1A\u4E00\u8D77\u5220\u6389\uFF08\u4E0D\u9020\u9003\u751F\u526F\u672C\uFF09\u3002` : "\u6B4C\u5E93\u91CC\u7684\u6B4C\u90FD\u4F20\u4E0A\u53BB\u4E86\u3002" : "\u8FD9\u53F0\u8BBE\u5907\u6CA1\u8FDB\u8FC7\u6B4C\u5E93\u3002"
-  ];
-  if (d3.openUnsaved()) lines.push("\u624B\u91CC\u8FD9\u9996\u6539\u8FC7\u8FD8\u6CA1\u5B58\uFF0C\u4E5F\u4F1A\u4E22\u3002");
-  if (!await openConfirmSheet("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E", lines.join("\n"), { okLabel: "\u7EE7\u7EED", danger: true })) return "cancelled";
-  const typed = await openInputSheet("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E", { placeholder: CONSENT_PHRASE, message: `\u9010\u5B57\u8F93\u5165\u300C${CONSENT_PHRASE}\u300D\u786E\u8BA4\u3002\u8FD9\u4E00\u6B65\u505A\u5B8C app \u4F1A\u91CD\u5F00\u6210\u65B0\u88C5\u7684\u6837\u5B50\u3002`, okLabel: "\u5220\u9664" });
-  if (typed == null) return "cancelled";
-  if (typed.trim() !== CONSENT_PHRASE) {
-    d3.info("\u8F93\u5165\u7684\u4E0D\u4E00\u6837\uFF0C\u4EC0\u4E48\u90FD\u6CA1\u52A8\u3002");
-    return "mismatch";
-  }
-  try {
-    await d3.prepare();
-    const storeReport = await wipeAppNamespace({ appId: APP_ID, consent: { expected: CONSENT_PHRASE, typed: typed.trim() } });
-    const own = await wipeOwnFootprint();
-    const scan = await scanAppNamespace(APP_ID);
-    const residueOwn = (await listOurDbs()).length;
-    const blocked = storeReport.blockedDatabases.length + own.blocked.length;
-    if (blocked > 0) {
-      await openConfirmSheet("\u8FD8\u6CA1\u5220\u5E72\u51C0", `\u6709 ${blocked} \u4E2A\u5E93\u88AB\u522B\u7684\u6807\u7B7E\u9875\u5360\u7740\uFF0C\u5220\u4E0D\u6389\u3002\u5173\u6389\u5176\u4ED6 MoonSinger \u6807\u7B7E\u9875\uFF08\u6216\u522B\u7684\u7A97\u53E3\uFF09\u518D\u6765\u4E00\u6B21\u2014\u2014\u518D\u505A\u4E00\u904D\u662F\u5B89\u5168\u7684\u3002`, { okLabel: "\u597D", cancelLabel: "\u5173\u95ED" });
-      return "blocked";
-    }
-    const db = storeReport.deletedDatabases.length + own.deleted.length, ls2 = storeReport.localStorageKeysRemoved + own.lsRemoved;
-    const residue = scan.databases.length + scan.localStorageKeys + residueOwn;
-    await openConfirmSheet("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E", residue === 0 ? `\u5220\u4E86 ${db} \u4E2A\u5E93\u3001${ls2} \u4E2A\u952E\uFF0C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u6CA1\u6709\u6B8B\u7559\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002` : `\u5220\u4E86 ${db} \u4E2A\u5E93\u3001${ls2} \u4E2A\u952E\uFF1B\u8FD8\u5269 ${residue} \u5904\u6B8B\u7559\uFF08\u679A\u4E3E\u4E0D\u5230\u7684\u5E73\u53F0 / \u521A\u88AB\u91CD\u5EFA\uFF09\uFF0C\u91CD\u5F00\u540E\u518D\u505A\u4E00\u904D\u5C31\u6CA1\u4E86\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002`, { okLabel: "\u597D", cancelLabel: "\u597D" });
-    try {
-      await d3.clearShell();
-    } catch (e10) {
-      d3.report(e10, "log");
-    }
-    location.replace(`${location.pathname}?reset=${Date.now()}`);
-    return "done";
-  } catch (e10) {
-    if (e10?.name === "WipeConsentError") {
-      d3.info("\u8F93\u5165\u7684\u4E0D\u4E00\u6837\uFF0C\u4EC0\u4E48\u90FD\u6CA1\u52A8\u3002");
-      return "mismatch";
-    }
-    d3.report(e10, "error");
-    return "blocked";
-  }
-}
-
 // src/score/desk.ts
 var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
@@ -49065,6 +49120,7 @@ async function renameActive() {
 var authStarted = false;
 var afterSignInInFlight = null;
 function ensureAttached() {
+  if (!currentPolicy().library) throw new Error("\u8FD9\u4E2A\u90E8\u7F72\u65B9\u5F0F\u6CA1\u6709\u6B4C\u5E93\uFF08itch / \u5907\u7528\u7248\uFF1A\u6B4C\u53EA\u7528\u6587\u4EF6\u5B58\uFF09");
   const fresh = !hasStore();
   attachStore();
   if (fresh) {
@@ -49162,12 +49218,16 @@ async function openGallery() {
   renderTitle();
   await gallery.open();
 }
-var libOff = availability() === "unavailable";
+var libOff = !currentPolicy().library ? "site" : availability() === "unavailable" ? "storage" : null;
 if (libOff) {
   $2("libBtn").classList.add("is-off");
-  $2("libBtn").title = SITE_TEXT.libOffTitle;
+  $2("libBtn").title = libOff === "site" ? SITE_TEXT.libSiteTitle : SITE_TEXT.libOffTitle;
 }
 $2("libBtn").addEventListener("click", () => {
+  if (libOff === "site") {
+    showLibraryOff();
+    return;
+  }
   if (libOff) {
     showError(SITE_TEXT.libOffTitle);
     return;
@@ -49854,7 +49914,21 @@ Object.assign(window.__moonsinger, {
   availability: () => availability()
 });
 diagNote("boot", `deployment ${deployment()} \xB7 storage ${availability()}`);
-if (storeWasAttached() || currentPolicy().cloud && /[#&](code|error|state)=/.test(location.hash)) {
+{
+  const idle = (cb2) => {
+    const ric = globalThis.requestIdleCallback;
+    if (ric) ric(cb2, { timeout: 1e4 });
+    else setTimeout(cb2, 3e3);
+  };
+  idle(() => {
+    void dropLegacyCacheDbs().then((gone) => {
+      if (!gone.length) return;
+      diagNote("storage", `dropped legacy cache DBs: ${gone.join(", ")}`);
+      info("\u5FF5\u7F13\u5B58\u548C\u5C01\u9762\u7F13\u5B58\u6362\u4E86\u65B0\u540D\u5B57\uFF0C\u4F1A\u91CD\u65B0\u751F\u6210\u4E00\u6B21\uFF08\u6B4C\u4E0D\u53D7\u5F71\u54CD\uFF09");
+    }).catch((e10) => reportError(e10, "log"));
+  });
+}
+if (currentPolicy().library && (storeWasAttached() || currentPolicy().cloud && /[#&](code|error|state)=/.test(location.hash))) {
   ensureAttached();
   const last = deviceKvGet2(KV_LAST_DOC);
   if (gallery.wasInGallery() || !last) await gallery.open();
@@ -49872,4 +49946,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-dc66f7a9702e.mjs.map
+//# sourceMappingURL=moonsinger-aada68500f02.mjs.map

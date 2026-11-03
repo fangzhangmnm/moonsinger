@@ -17,7 +17,12 @@ export const REPORT_URL = "https://github.com/fangzhangmnm/moonsinger/issues";
 export const SONG_SUFFIX = ".mxl";
 /** 本 app 私有库的 GUID 前缀（家族命名规矩「<app>-<guid>.<用途>」）：gallery-registry 等归这个前缀；device-kv 的键前缀是同一个 GUID（`moonsinger-5b1e7c0a92d34f6e:`）。
  *  还原出厂（src/app/factory-reset.ts）按它删自家的库。added 2026-10-21 by Claude Fable 5.1 */
-export const APP_DB_PREFIX = "moonsinger-5b1e7c0a92d34f6e.";
+export const APP_NS = "moonsinger-5b1e7c0a92d34f6e";
+export const APP_DB_PREFIX = `${APP_NS}.`;
+/** 自家派生缓存库（全删可再生）。2026-11-03 起按家族规则书 §1 第 3 条的形状 `<app>-<guid>.<用途>`（Fable 裁定，家族工单 A2 ⑤）；建库处（gallery-host / singer worker）和还原出厂都读这一处。 */
+export const CACHE_DBS = { thumbs: `${APP_NS}.thumbs`, facts: `${APP_NS}.facts`, speech: `${APP_NS}.speech` } as const;
+/** 改名前的老名字：不搬（都是可再生的派生物，搬 = 配额双倍压力），空闲片里探到就删（factory-reset.ts dropLegacyCacheDbs）。 */
+export const LEGACY_CACHE_DBS = ["moonsinger-thumbs", "moonsinger-facts", "moonsinger-speech"] as const;
 
 // ── 节律（2026-10-08 晚起 = WeebPaint 的 consent 制：推云只在换歌 / 退出 / 按「存」/ 进歌库；平时只落本机。
 //    user「用weebpaint方案，对付大歌，这不是txt」——歌是整个 .mxl（封面、以后还有音源），15 s 一推太勤。原来的 15 s 防抖 / 30 s 心跳（WXHW 制）撤了）──

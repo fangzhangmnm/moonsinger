@@ -17,12 +17,15 @@ export interface DeploymentPolicy {
   readonly serviceWorker: boolean;
   /** 「完整版在官网」那一句（开局一行 + 灰入口的副标题；网址 = config.ts SITE_URL）。 */
   readonly siteHint: boolean;
+  /** 歌库（store：浏览器里的本机副本 + 网盘同步）。MoonSinger 自己的键（2026-11-03 Fable 裁定，家族工单 A2 ④）：itch / 备用版里歌没有浏览器外的家
+   *  （规则书 §1 第 1 条；itch 还是和所有游戏共用的存储 + 试用版）→ 歌库入口画灰 +「去官网」；存 = 下载 / 开 = 选文件照旧。别拿 cloud 兼任。 */
+  readonly library: boolean;
 }
 
 const TABLE: Readonly<Record<Deployment, DeploymentPolicy>> = {
-  site:  { cloud: true,  serviceWorker: true,  siteHint: false },
-  itch:  { cloud: false, serviceWorker: false, siteHint: true },
-  local: { cloud: false, serviceWorker: false, siteHint: true },
+  site:  { cloud: true,  serviceWorker: true,  siteHint: false, library: true },
+  itch:  { cloud: false, serviceWorker: false, siteHint: true,  library: false },
+  local: { cloud: false, serviceWorker: false, siteHint: true,  library: false },
 };
 
 /** §2 表的一列。 */

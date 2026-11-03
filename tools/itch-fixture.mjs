@@ -121,14 +121,18 @@ try {
   await top.close({ runBeforeUnload: true }); await new Promise((r) => setTimeout(r, 1500));
   note("对照：同一个包顶层打开、脏文档关页", topDialogs.includes("beforeunload") ? "弹了" : "没弹");
 
-  // ⑧ 歌库：网盘入口灰 + 「去官网」（新开一页、同样被套着）
+  // ⑧ 歌库：入口灰 + 「去官网」（新开一页、同样被套着）
   const p3 = await ctx.newPage(); await p3.goto(`http://localhost:${P1}/`);
   const f3 = await (async () => { for (let i = 0; i < 100; i++) { const f = p3.frames().find((x) => x.url().includes(`127.0.0.1:${P2}`)); if (f) return f; await p3.waitForTimeout(100); } throw new Error("iframe 没出来"); })();
   await f3.waitForFunction(() => !!window.__moonsinger, null, { timeout: 30000 });
-  await f3.click("#libBtn"); await f3.waitForSelector("#galleryFull:not([hidden])", { timeout: 15000 });
-  const g = await f3.evaluate(() => { const b = document.querySelector('#galleryFull [data-v="cloud"]'); const a = document.querySelector("#galleryFull .site-hint-link"); return { disabled: !!b?.disabled, link: a?.getAttribute("href"), text: a?.textContent }; });
-  check("歌库：网盘按钮灰着点不了", g.disabled);
-  check("歌库：旁边一行「网盘在官网」链到 SITE_URL", g.link === SITE_URL && /官网/.test(g.text ?? ""), `${g.text} → ${g.link}`);
+  // 2026-11-03 A2 ④（Fable 裁定）：itch 上歌库画灰 +「去官网」（规则书 §1 第 1 条：歌没有浏览器外的家；itch 是共用存储 + 试用版）
+  const g = await f3.evaluate(async () => { const b = document.getElementById("libBtn"); return { off: b.classList.contains("is-off"), title: b.title }; });
+  check("歌库钮画灰（这里的歌没有浏览器外的家）", g.off && /官网/.test(g.title), g.title);
+  await f3.click("#libBtn"); await p3.waitForTimeout(400);
+  const g2 = await f3.evaluate(async () => ({ gallery: !!document.getElementById("galleryFull"), line: [...document.querySelectorAll("*")].map((e) => e.childElementCount === 0 ? e.textContent : "").find((t) => /歌库只在官网版里有/.test(t ?? "")) ?? null,
+    go: [...document.querySelectorAll("button")].filter((b) => /去官网/.test(b.textContent ?? "")).length, dbs: indexedDB.databases ? (await indexedDB.databases()).map((d) => d.name) : [] }));
+  check("点歌库 = 一行「歌库只在官网版里有 …」+「去官网」，不进歌库", !g2.gallery && !!g2.line && g2.line.includes("sing.weebpaint.com") && g2.go > 0, g2.line ?? "没找到");
+  check("没建歌库的本机库（store 的 IndexedDB 一个都没有）", !g2.dbs.some((n) => /^moonsinger\./.test(n ?? "")), JSON.stringify(g2.dbs));
 
   // ⑨ 网络：整场没有 MSAL / 微软登录
   const msal = [...net.filter((u) => /msal|login\.microsoftonline|graph\.microsoft/i.test(u)), ...inner.log.filter((r) => /msal/i.test(r.path)).map((r) => r.path)];

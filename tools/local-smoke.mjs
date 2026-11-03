@@ -83,10 +83,15 @@ try {
   const z2 = await zoom();
   check("设置跨刷新还在（缩放按设备记）", Math.abs(z1 - 1) > 0.01 && Math.abs(z2 - z1) < 0.01, `缩放 ${z1.toFixed(3)} → 刷新后 ${z2.toFixed(3)}`);
 
-  // ⑦ 歌库：网盘入口灰 + 去官网
-  await page.click("#libBtn"); await page.waitForSelector("#galleryFull:not([hidden])", { timeout: 15000 });
-  const g = await page.evaluate(() => { const b = document.querySelector('#galleryFull [data-v="cloud"]'); const a = document.querySelector("#galleryFull .site-hint-link"); return { disabled: !!b?.disabled, link: a?.getAttribute("href"), text: a?.textContent }; });
-  check("歌库：网盘按钮灰着、旁边「网盘在官网」链到 SITE_URL", g.disabled && g.link === SITE_URL, `${g.text} → ${g.link}`);
+  // ⑦ 歌库：入口灰 + 去官网
+  // 2026-11-03 A2 ④（Fable 裁定）：备用版里歌库画灰 +「去官网」（歌没有浏览器外的家；存 = 下载 / 开 = 选文件照旧）
+  const g = await page.evaluate(async () => { const b = document.getElementById("libBtn"); return { off: b.classList.contains("is-off"), title: b.title }; });
+  check("歌库钮画灰（这里的歌没有浏览器外的家）", g.off && /官网/.test(g.title), g.title);
+  await page.click("#libBtn"); await page.waitForTimeout(400);
+  const g2 = await page.evaluate(async () => ({ gallery: !!document.getElementById("galleryFull"), line: [...document.querySelectorAll("*")].map((e) => e.childElementCount === 0 ? e.textContent : "").find((t) => /歌库只在官网版里有/.test(t ?? "")) ?? null,
+    go: [...document.querySelectorAll("button")].filter((b) => /去官网/.test(b.textContent ?? "")).length, dbs: indexedDB.databases ? (await indexedDB.databases()).map((d) => d.name) : [] }));
+  check("点歌库 = 一行「歌库只在官网版里有 …」+「去官网」，不进歌库", !g2.gallery && !!g2.line && g2.line.includes("sing.weebpaint.com") && g2.go > 0, g2.line ?? "没找到");
+  check("没建歌库的本机库（store 的 IndexedDB 一个都没有）", !g2.dbs.some((n) => /^moonsinger\./.test(n ?? "")), JSON.stringify(g2.dbs));
   check("页面没有未接住的脚本错误", errs.length === 0, errs.slice(0, 3).join(" | "));
 
   // ⑧ 模拟「这个浏览器不给双击打开的网页用存储」（Safari 的样子；Chromium 里拿 localStorage 抛 SecurityError 来演）
