@@ -5,7 +5,7 @@
 //   改着源码还没提交时不红（HEAD 自洽）；打了包没提交也不红（HEAD 照旧自洽）。
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,7 +21,8 @@ export function fingerprint(entries) {
 }
 /** 工作区（打包这一刻）：受管的 + 没忽略的新文件，按内容算 blob 哈希（和提交后 git 存的一样）。 */
 export function workingEntries() {
-  const files = git(["ls-files", "-co", "--exclude-standard", "--", ...STAMP_PATHS]).split("\n").filter(Boolean);
+  // 受管的 + 没忽略的新文件，去掉磁盘上已经删了的（收新版包时旧 tgz 还在索引里、文件已删——打包用的是磁盘上的东西）
+  const files = git(["ls-files", "-co", "--exclude-standard", "--", ...STAMP_PATHS]).split("\n").filter(Boolean).filter((f) => existsSync(join(ROOT, f)));
   const blobs = git(["hash-object", "--stdin-paths"], files.join("\n") + "\n").split("\n").filter(Boolean);
   return files.map((f, i) => [blobs[i], f]);
 }

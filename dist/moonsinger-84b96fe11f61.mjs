@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.13-2026-11-03";
+var APP_VERSION = "v0.14.14-2026-11-03";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -18886,6 +18886,13 @@ function createStore(config) {
         } catch (e10) {
           ui3.reportError(e10, "log");
         }
+        if (cloudState === "changed") {
+          const cur = await local.get(name);
+          if (cur && await safeResolve.tryHeal(name, await toU8(cur instanceof Blob ? cur : new Blob([cur])))) {
+            notifyFolderOf(name);
+            return { status: "pushed" };
+          }
+        }
         const choice = tierOf(name) === "auto-backup" ? "keepMine" : await ui3.resolveConflict({ name, local: await local.get(name), cloud: null, occasion: "push", cloudState });
         if (choice === "cancel")
           return { status: "cancelled" };
@@ -25152,7 +25159,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-6fb0185cdc6b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-147d48461e58.mjs");
+      return pick(() => "encode-worker-00f42caa279b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -49946,4 +49953,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-aada68500f02.mjs.map
+//# sourceMappingURL=moonsinger-84b96fe11f61.mjs.map

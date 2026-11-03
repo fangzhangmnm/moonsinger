@@ -3,25 +3,18 @@
 # 和 WeebPaint 不同：itch 版 = 整站 zip（index.html + dist/ + vendor/ + assets/ + 资源子集），不是单文件；组装在 scripts/pack-itch.mjs。
 # butler 对同一 channel 重复 push = 原地更新同一条 upload（itch.io/docs/butler/pushing.html）。首推后 itch 后台一次性勾「This file will be played in the browser」。
 # 认证（一次性，只有 user 能做）：tools/butler/butler login（浏览器授权，本机留凭据）。
-# channel = html（浏览器里玩）。备用版（下载的文件夹双击能用）放哪 = 等 user 定（itch「可下载」条目 / GitHub release），这个脚本先不推它。
-# 用法：bash scripts/push-itch.sh [vX.Y.Z]   # 不给版本则读 src/version.ts
+# channel = html（浏览器里玩）。备用版（下载的文件夹双击能用）= scripts/push-local.sh（itch `local` 下载条目 + GitHub release；user 11-03「3 同意」）。
+# 用法：bash scripts/push-itch.sh [vX.Y.Z]   # 不给版本则读 src/version.ts。先推开发版、等部署完（守卫核线上 /dev/）再跑
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 USERGAME="${MS_ITCH_TARGET:-fangzhangmnm/moonsinger}"   # itch 上的项目名（user 建项目时定；不一样就用环境变量改）
 BUTLER="./tools/butler/butler"
 
-# 【跟 prod 铁律】（WeebPaint 2026-08-30 user 拍板「itch ritual 跟 prod 不跟 main」）：itch 是生产渠道，dev 上的改动在 push prod 之前不许流进 itch。
-git fetch origin prod --quiet 2>/dev/null || true
-PROD_SHA=$(git rev-parse origin/prod 2>/dev/null || git rev-parse prod 2>/dev/null || true)
-HEAD_SHA=$(git rev-parse HEAD)
-[ -n "$PROD_SHA" ] || { echo "[push-itch] ✗ 找不到 prod 分支——itch 跟 prod，没 prod 不推" >&2; exit 1; }
-if [ "$(git rev-parse "$HEAD_SHA^{tree}")" != "$(git rev-parse "$PROD_SHA^{tree}")" ]; then
-  # 本仓推 prod 用「空合并 commit」（CLAUDE.md git 节）：prod 的 commit 和 main 的 sha 不同、tree 相同 → 比 tree
-  echo "[push-itch] ✗ HEAD 的内容（$HEAD_SHA）≠ prod（$PROD_SHA）——itch 跟 prod 不跟 main（dev）。先推 prod（等 user 一句话），或 checkout prod 后再跑。" >&2
-  exit 1
-fi
-[ -z "$(git status --porcelain -- index.html dist vendor assets styles.css)" ] || { echo "[push-itch] ✗ 站点文件有没提交的改动——itch 只推 prod 的原样字节" >&2; exit 1; }
+# 【跟开发版】（2026-11-03 起，取代「跟 prod」）：user 11-03（Fable 会话转述）「2 开发版，和itch一起」= itch 直接跟开发版这一版、不等正式版。
+#   理由：itch = 试用版语义；user 自己平时用的就是开发版。WeebPaint 的「itch 跟 prod」（user 2026-08-30）是 WeebPaint 的规矩，不变。守卫细节 = scripts/require-dev-deployed.sh。
+source scripts/require-dev-deployed.sh
+require_dev_deployed push-itch
 
 VER="${1:-}"
 if [ -z "$VER" ]; then FULLVER=$(grep -o '"v[0-9][^"]*"' src/version.ts | head -1 | tr -d '"'); VER=${FULLVER%%-*}; fi
