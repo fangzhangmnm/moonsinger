@@ -24,9 +24,8 @@ const fromFolder = (): boolean => deployment() === "local";
 
 /** 站点里的一个路径（index.html 永远在站点根：官网 / dev / itch 的 zip / 备用版文件夹）。 */
 export function siteUrl(path: string): URL { return new URL(path, typeof document !== "undefined" ? document.baseURI : "http://localhost/"); }
-/** 家族共用的 Cache Storage（pwa-models / pwa-sounds）在这一页用不用得了：备用版（file:）写不进，资源本来就在文件夹里。 */
-export function cacheable(): boolean { return !fromFolder(); }
-/** 资源是不是就在本地文件夹里（备用版）：界面上「下载 / 导入模型包」「下载留着」这些动作在这里没有意义。 */
+/** 资源是不是就在本地文件夹里（备用版）：家族共用的 Cache Storage（pwa-models / pwa-sounds）在 file: 里写不进，
+ *  界面上「下载 / 导入模型包」「下载留着」这些动作在这里没有意义（设置页按它画灰）。 */
 export function resourcesInFolder(): boolean { return fromFolder(); }
 
 export interface GetOpts { sha256?: string; onProgress?: (done: number, total: number) => void }
