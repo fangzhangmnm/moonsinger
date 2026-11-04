@@ -9,6 +9,7 @@
 //     node test/e2e/run.mjs rest lift       文件名含 rest / lift 的
 //     node test/e2e/run.mjs --changed       看 git 改了哪些文件 → 推出该跑哪些区（main.ts / styles.css / index.html = 整套）
 //     node test/e2e/run.mjs --smoke         顺带把两份冒烟（shell-smoke / file-smoke）也当两个任务一起跑（它们自己起服务，不用 8710）
+//     --task-timeout=秒（默认 300）：单个任务超时 = 杀掉整组进程（含它起的浏览器）、记成红、接着跑别的（家族周账 F-144：2026-11-03 sync.mjs 卡死过两次，运行器原来会一直等）
 //     --jobs=N  --list  --base=http://…（不自己起服务）  MS_E2E_BASE 同 --base  --port=N（自己起一口在这个端口；worktree 里用，别借主目录的 8710）
 //   每个 E2E 文件照旧能单独 `node test/e2e/x.mjs`（要 8710 在跑）——这里只是调度，不改它们。
 import { spawn, execSync } from "node:child_process";
@@ -31,6 +32,7 @@ const opt = (name) => { const a = argv.find((x) => x.startsWith(`--${name}=`)); 
 const words = argv.filter((a) => !a.startsWith("--"));
 const JOBS = Math.max(1, Number(opt("jobs")) || Math.min(8, Math.max(1, (os.availableParallelism?.() ?? os.cpus().length) - 2)));
 let base = opt("base") ?? process.env.MS_E2E_BASE ?? null;
+const TASK_TIMEOUT_S = Number(opt("task-timeout")) || 300;
 
 const all = fs.readdirSync(HERE).filter((f) => f.endsWith(".mjs")).map((f) => f.slice(0, -4)).filter((n) => !HELPERS.includes(n)).sort();
 const known = new Set(all);
@@ -107,9 +109,21 @@ const t0 = performance.now();
 let next = 0;
 const runOne = (t) => new Promise((done) => {
   const start = performance.now();
-  const child = spawn(process.execPath, [t.file], { cwd: ROOT, env: { ...process.env, ...(t.needsServer ? { MS_E2E_BASE: base } : {}) } });
-  let buf = ""; child.stdout.on("data", (d) => (buf += d)); child.stderr.on("data", (d) => (buf += d));
-  const fin = (code) => { const m = /(\d+) passed, (\d+) failed/.exec(buf); done({ ok: code === 0, secs: (performance.now() - start) / 1000, out: buf, counts: m ? `${m[1]}/${Number(m[1]) + Number(m[2])}` : "" }); };
+  // detached = 自成一个进程组：超时能连它起的浏览器一起杀（只杀 node 的话，浏览器还攥着输出管道，close 永远不来）
+  const child = spawn(process.execPath, [t.file], { cwd: ROOT, detached: true, env: { ...process.env, ...(t.needsServer ? { MS_E2E_BASE: base } : {}) } });
+  let buf = "", settled = false;
+  child.stdout.on("data", (d) => (buf += d)); child.stderr.on("data", (d) => (buf += d));
+  const fin = (code) => {
+    if (settled) return;
+    settled = true; clearTimeout(timer);
+    const m = /(\d+) passed, (\d+) failed/.exec(buf);
+    done({ ok: code === 0, secs: (performance.now() - start) / 1000, out: buf, counts: m ? `${m[1]}/${Number(m[1]) + Number(m[2])}` : "" });
+  };
+  const timer = setTimeout(() => {
+    buf += `\n✗ 超时：${TASK_TIMEOUT_S} s 没跑完，整组进程杀掉（--task-timeout 可调）\n`;
+    try { process.kill(-child.pid, "SIGKILL"); } catch { try { child.kill("SIGKILL"); } catch { /* 已经没了 */ } }
+    fin(124);
+  }, TASK_TIMEOUT_S * 1000);
   child.on("close", fin); child.on("error", (e) => { buf += String(e); fin(1); });
 });
 const mark = (ok) => (ok ? "\x1b[32m✓\x1b[0m" : "\x1b[31m✗\x1b[0m");
