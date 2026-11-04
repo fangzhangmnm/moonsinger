@@ -230,7 +230,7 @@ itch 项目页 https://fangzhangmnm.itch.io/moonsinger 现在还是草稿（外�
 | commit | 内容 |
 |---|---|
 | `3d7a1bc` | F-144：E2E 运行器单任务超时（默认 300 s，`--task-timeout`），到点杀整组进程、记红、接着跑别的 |
-| （H 这一笔，见 git log） | v0.14.15：闸门（`src/cloud-gate.ts` + `src/app/cloud-gate-ui.ts`）；歌库披露条 + 全部导出（`src/app/export-all.ts`）+ 连接网盘；F-147 B；F-145；收 store 2.2.4；E2E `test/e2e/gate.mjs`；运行器超时当场印最后几行 |
+| `9b68d0d` | v0.14.15：闸门（`src/cloud-gate.ts` + `src/app/cloud-gate-ui.ts`）；歌库披露条 + 全部导出（`src/app/export-all.ts`）+ 连接网盘；F-147 B；F-145；收 store 2.2.4；E2E `test/e2e/gate.mjs`；运行器超时当场印最后几行 |
 
 验证（v0.14.15）：`npm run test:full` exit 0（单元 910、E2E 72、itch 夹具 18 过 0 红、备用版 23 过 0 红）。`sync.mjs` 的断言一条没动（醒来那段 ⑧ 现在走闸门，照样过）。
 
