@@ -392,7 +392,7 @@ edited by Claude Opus 5.5 2026-11-04
 
 - 基线（main 5178760，没改动，临时 worktree 跑）：`npm test` 932 过 / 0 红。
 - WIP 原样（接手提交的 WIP commit）：`npm test` 952 过 / 2 红（都是 dist 新鲜度：半成品的 dist 是改版本号之前打的）；重打 dist 后 e2e gate 101/101、sync 43/43、store 55/55、folder-home 68/68。
-- 接手做完（重打 dist 后）：`npm test` 953 过 / 0 红；整套 e2e + 两份冒烟 73 个任务全绿（follow / loop / mixer-fx 并行时红、运行器单跑绿 = 负载 flake，同 v0.14.3 起的老样子）；gate 124/124、sync 43/43、store 55/55、folder-home 68/68、final 47/47、shell-smoke 6/6、file-smoke 24/24；sync 单独 5 遍 5 遍 43/43。
+- 接手做完（重打 dist 后，06f52e0）：`npm test` 955 过 / 0 红（提交后跑；提交前 953 过 + dist 新鲜度 2 红，那两条只认已提交的 dist）、typecheck 过、`fixture:itch` 18 过 / 0 红、`smoke:local` 24 过 / 0 红（两份各 3 条「如实记」，同前）；整套 e2e + 两份冒烟 73 个任务全绿（follow / loop / mixer-fx 并行时红、运行器单跑绿 = 负载 flake，同 v0.14.3 起的老样子）；gate 124/124、sync 43/43、store 55/55、folder-home 68/68、final 47/47、shell-smoke 6/6、file-smoke 24/24；sync 单独 5 遍 5 遍 43/43。
 
 **真机零。** 没测到的：60 s 定时器本身（只有假时钟单测，没在浏览器里等满一分钟）；家是文件夹时问句「现在写进「夹名」？」；面被别的面挡住时「这次不问、下次再问」；离线时新建的歌按过「存」再回来那条（上面的副作用）。
 
