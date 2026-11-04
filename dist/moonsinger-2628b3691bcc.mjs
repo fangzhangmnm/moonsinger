@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.17-2026-11-04";
+var APP_VERSION = "v0.14.18-2026-11-04";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -18891,9 +18891,20 @@ function createStore(config) {
         }
         if (cloudState === "changed") {
           const cur = await local.get(name);
-          if (cur && await safeResolve.tryHeal(name, await toU8(cur instanceof Blob ? cur : new Blob([cur])))) {
-            notifyFolderOf(name);
-            return { status: "pushed" };
+          if (cur) {
+            const esc9 = ui3.offlineEscape?.();
+            try {
+              const healing = safeResolve.tryHeal(name, await toU8(cur instanceof Blob ? cur : new Blob([cur])));
+              const outcome = esc9 ? await Promise.race([healing.then((h2) => ({ k: "heal", h: h2 })), Promise.resolve(esc9.probe).then(() => ({ k: "skip" }))]) : { k: "heal", h: await healing };
+              if (outcome.k === "skip")
+                return { status: "offline" };
+              if (outcome.h) {
+                notifyFolderOf(name);
+                return { status: "pushed" };
+              }
+            } finally {
+              esc9?.settle();
+            }
           }
         }
         const choice = tierOf(name) === "auto-backup" ? "keepMine" : await ui3.resolveConflict({ name, local: await local.get(name), cloud: null, occasion: "push", cloudState });
@@ -25470,7 +25481,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-6fb0185cdc6b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-2331b6483ee4.mjs");
+      return pick(() => "encode-worker-ed815fb2b62b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -51436,4 +51447,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c2f13aae8643.mjs.map
+//# sourceMappingURL=moonsinger-2628b3691bcc.mjs.map

@@ -362,24 +362,38 @@ edited by Claude Opus 5.5 2026-11-04
 
 ## H4：回来时没传的分三种 + 离线期间静默再试（2026-11-04，v0.14.18）
 
-规则书 §1 第 15 条（11-03 夜改写）、闸门设计稿 §3（11-04 补的两条硬要求）。库零改。prod / itch 没推。
+规则书 §1 第 15 条（11-03 夜改写）、闸门设计稿 §3（11-04 补的两条硬要求）。库零改。prod / itch / dev 都没推；分支 `h4-finish`，没合回 main。
 
-| 情形 | 现在 | 证据 |
-|---|---|---|
-| (a) 从没传过（float） | 问一次「现在传 / 稍后」；稍后进列表；一页一次 | e2e gate「H4 (a)」 |
-| (b) 传过、按过存没传成 | 回来自动续传，不问 | e2e gate「H4 (b)」；单元 isPushOwed 5 条（抄 WeebPaint 语义） |
-| (c) 传过、只是自动保存 | 不传不问，一条说明 +「去处理」 | e2e gate ③（原来的「去处理」问句换成这条） |
-| `dirty.pushAll` | 全仓两处：这张面、退出时的「下载备份」 | `test/cloud-return.test.mjs` |
-| 离线期间再试 | 每 60 s + 回前台；失败不弹不扰 | `test/cloud-gate.test.mjs` 假时钟 |
-| 续签成了、云端不答 | 不清离线（硬超时 8 s） | 同上 + e2e gate「§3」（实测约 8 s 放弃） |
-| online 事件 | 同样先问一次再清 | 同上 |
+**来历**：前一位 Opus 11-04 约 00:50 写到一半进程被杀（快照分支 `wip/h4-killed-20261104-0052`）。接手的 Opus 把半成品原样提交成 WIP，再逐条核、补证据、收 store 2.2.5、重打 dist。下表「证据」一栏是接手后核过的；「反证」= 把那行产品代码去掉 / 改坏、重 build，看对应测试会不会红（会红 = 测试真的在守它）。
 
-**顺手查出来的真漏洞（要看）**：选了「离线继续」之后按「存」**照样走网**。库的 `save` 只看 `tryPush`、不看 `isOnline`（`create-store.ts` 1045 行往下），H 那轮 e2e 只测了切后台，没测这条。修在 app 这头：`main.ts` 给 editor-session 的 store 接缝里，`tryPush` 且 `!homeOnline()` 时改成不尝试推，这一笔记成欠一推。**小黑屋、CatsUp、WeebPaint 要不要核一下同样的路，Fable 定**（我没查它们；小黑屋 D4 时我顺手核）。
+| 情形 | 现在 | 证据 | 反证 |
+|---|---|---|---|
+| (a) 从没传过（float） | 问一次「现在传 / 稍后」；稍后进列表、不传；一页一次、下次打开再问 | e2e gate「H4 (a)」 | 没做 |
+| (b) 传过、按过存没传成 | 回来自动续传，不问 | e2e gate「H4 (b)」「H4 (b)+(c)」；单测 isPushOwed 六条（第六条是接手补的：本 app 的编辑走 `markDirty`，原来五条只核了 `onChange` 那条路，而本 app 的 `onChange` 是空的） | 去掉 markDirty 清欠 → 新单测红 |
+| (c) 传过、只是自动保存 | 不传不问，一条「N 首没传上去，在「要处理」列表里」+「去处理」 | e2e gate「③」（接手补了「云端字节没动」「脏还在」两条：原来只核了「不问」、没核「不传」）、「H4 (b)+(c)」（不是开着的那首也不传） | 让 (c) 偷偷 pushAll → ③ 红 2 条、(b)+(c) 红 2 条 |
+| (a)(c) 同时有 | 面上两样都说「有 1 首只在这台设备，还有 1 首改过没传。现在全传？」；点了两首一起传 | e2e gate「H4 (a)+(c)」（接手新加；原表说有、原来没有 e2e） | 没做 |
+| `dirty.pushAll` | 全仓两处：这张面、退出时的「下载备份」 | `test/cloud-return.test.mjs` 守卫 | main.ts 多一处 / home.ts 多一处 → 都红 |
+| 选了离线按「存」 | 一条网都不打，记成欠一推 | e2e gate「H4 (b)」：按存前后 mock 云的请求日志零增长（接手补；原来只比云端字节）+ 云端字节没变 | 去掉 `main.ts` 接缝里那一行 → 红 3 条（请求日志里是 getItemByPath,upload） |
+| 离线期间再试 | 每 60 s + 回前台；页面藏着不试；失败不弹不扰；成了停表 | `test/cloud-gate.test.mjs` 假时钟六条 + afterPass 一条 | 不起表 / 藏着也试 / 成了不停表 / 周期改 30 s → 都红 |
+| 续签成了、云端不答 | 不清离线、不弹；硬超时 8 s | 单测同上；e2e「闸门 §3」实测 8003 ms 放弃，接手补了「等的期间 `cloudOnline()` 一直是假」「这期间只有一次探路」 | 去掉「先问云端」→ 单测红 4 条、e2e 红 1 条（只看最后结果的话 e2e 不红：库的检查自己也有 8 s 超时） |
+| online 事件 | 同样先问一次再清 | 单测「§3 online 事件那条路同样先问一次再清」 | 同上（去掉先问云端时红） |
 
-**动了的存量守卫 / e2e（断言没减）**：`test/cloud-gate.test.mjs` §8①（reconnect 的 race 换了形状，加了 reachable）；`test/e2e/sync.mjs` 的 `signIn`（点钮那一步按新面改）、`pushDirtyAll` 钩子删了改直接调库；`gate.mjs` ③、H2 场景；`store.mjs` 重开后答「稍后」。
+**顺手查出来的真漏洞（要看）**：选了「离线继续」之后按「存」**照样走网**。库的 `save` 只看 `tryPush`、不看 `isOnline`（库 `src/create-store.ts` 1045 行往下，接手核过源码：确实没看）。H 那轮 e2e 只测了切后台，没测这条。修在 app 这头：`main.ts` 给 editor-session 的 store 接缝里，`tryPush` 且 `!homeOnline()` 时改成不尝试推，这一笔记成欠一推。**两个问题归 Fable**：① 这该不该是库的事（设计稿 §3 写的是「库在离线态一条网都不打」，save 这条路实际不守）；② 小黑屋、CatsUp、WeebPaint 同样的路要不要核（没查）。副作用（接手读代码看出来的，没 e2e）：从没传过的歌在离线时按「存」，原来会进库的离线补推队列、回线自动推；现在不进队列，回来按 (a) 问一次——和第 15 条 (a)「离线时新建 = 问一次」一致，但它是行为变化。
 
-**一个没定因的现象（如实记）**：`sync.mjs` 有一次卡在「等冲突面」30 s，之后连跑 6 次全过，H4 之前也见过同类（F-144「不再卡死整套，没根治」）。没复现，**猜想没证实**：`editor-session.persist` 第一行 `_saving` 为真就直接 return，按「存」正好撞上 2 s 自动存在飞时，这次按存什么都不做。要是真的，那人按存也可能被静默吞掉，值得在库 / 接缝那轮核。
+**动了的存量守卫 / e2e（断言行数没减）**：`test/cloud-gate.test.mjs` §8①（reconnect 的 race 换了形状，加了 reachable）；`test/e2e/sync.mjs` 的 `signIn`（点钮那一步按新面改）、`pushDirtyAll` 钩子删了改直接调库；`gate.mjs` ③、H2 场景；`store.mjs` 重开后答「稍后」；`folder-home.mjs` 答「稍后」。断言行数（main → 现在）：gate 83 → 130、cloud-gate 单测 108 → 131、sync 45 → 45、store 57 → 57、folder-home 69 → 69。
 
-**真机零。**
+**收 store 2.2.5**（tag v2.2.5，b0170dc；gh release 正货，sha256 与库仓根 release 产物相同）：内容 = 「处理…」（file.resolve）弹面前比字节那趟和「跳过到离线」赛跑。`dist/index.d.ts`、`create-store.d.ts` 和 2.2.4 逐字相同，接线零改动；红线 / 白名单 / store-wiring 守卫都绿。本 app 的 `offlineEscape`：闸门在场 = 闸门的逃生钮，不在场 = 图库包的默认。
+
+**sync.mjs 偶发卡在「等冲突面」**：11-04 接手后单独连跑 5 遍，5 遍 43/43、每遍 25–27 s，**没复现**。猜想（`editor-session.persist` 第一行 `_saving` 为真就直接 return）**代码上成立**：用 node 探针（不进仓）让自动存的本地写挂着、这时调 `forceSaveAndPush`——库的 save 一次都没被叫到推，`isPushPending` = 真、`isPushOwed` = 真；顶栏那句是「存在这台设备上了，云端稍后再推」，但在线时没有谁会再推（要等退出 / 下次按存 / 下次「回来」）。不丢字节（自动存那一笔落了本机，之后的改动还是脏的），但这一下人按的「存」被静默吞掉。sync.mjs 里「改 → 立刻推 → 等冲突面」那几步撞上 2 s 自动存时就会卡 30 s，和现象对得上。**行为没改**（editor-session 和 WeebPaint 是同一份代码；改法候选：在飞时把这一下排到在飞那趟之后再跑，而不是丢掉）——等 Fable。
+
+**测试数（接手后，`h4-finish` 最后一个 commit 上）**：见下面「数」小节。
+
+### 数
+
+- 基线（main 5178760，没改动，临时 worktree 跑）：`npm test` 932 过 / 0 红。
+- WIP 原样（接手提交的 WIP commit）：`npm test` 952 过 / 2 红（都是 dist 新鲜度：半成品的 dist 是改版本号之前打的）；重打 dist 后 e2e gate 101/101、sync 43/43、store 55/55、folder-home 68/68。
+- 接手做完（重打 dist 后）：`npm test` 953 过 / 0 红；整套 e2e + 两份冒烟 73 个任务全绿（follow / loop / mixer-fx 并行时红、运行器单跑绿 = 负载 flake，同 v0.14.3 起的老样子）；gate 124/124、sync 43/43、store 55/55、folder-home 68/68、final 47/47、shell-smoke 6/6、file-smoke 24/24；sync 单独 5 遍 5 遍 43/43。
+
+**真机零。** 没测到的：60 s 定时器本身（只有假时钟单测，没在浏览器里等满一分钟）；家是文件夹时问句「现在写进「夹名」？」；面被别的面挡住时「这次不问、下次再问」；离线时新建的歌按过「存」再回来那条（上面的副作用）。
 
 edited by Claude Opus 5.5 2026-11-04

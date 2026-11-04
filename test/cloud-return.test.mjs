@@ -46,6 +46,13 @@ describe("EditorSession.isPushOwed：按过存没传成，和只是改过分得�
     r.edit(); await r.es.forceSaveAndPush(); r.edit();
     assert(!r.es.isPushOwed());
   });
+  // 2026-11-04 Claude Opus 5.5（接手 H4）：MoonSinger 的编辑不走 editor.onChange（main.ts 里是空的），走 changed() → es.markDirty()；上一条只核了 onChange 那条路
+  it("按存没传成，之后 markDirty（本 app 真实的编辑路径）：不欠", async () => {
+    const r = rig(false); await r.es.open("x.mxl");
+    r.es.markDirty(); await r.es.forceSaveAndPush(); assert(r.es.isPushOwed(), "前提：欠");
+    r.es.markDirty();
+    assert(!r.es.isPushOwed()); assert(r.es.isPushPending());
+  });
   it("按存传成了：不欠；续传成了也清", async () => {
     const r = rig(true); await r.es.open("x.mxl");
     r.edit(); await r.es.forceSaveAndPush();
