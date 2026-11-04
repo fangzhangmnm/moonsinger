@@ -7,7 +7,10 @@
 // UX-2（账本 §9¾）：选中 = 改、光标 = 写；歌词在谱下面点进去写（底部歌词栏拿掉了）；「弹」= 即兴只唱不写。
 // 调号 / 拍号 / 速度是谱里的记号 token，点谱上的记号就地改，pad「＋」在光标处插——顶栏不再有全局的调号 / 拍号 / 速度。
 
-import { _t } from "../i18n/index.ts";
+import { iconHtml } from "../ui/icon.ts";
+import { installTouchTips } from "../ui/touch-tip.ts";
+import { conceptName, zhOnly } from "../gm/catalog-i18n.ts";
+import { _t, lang, langChosen, saveLang, applyDocumentLang, LANG_NAME, type Lang } from "../i18n/index.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { singleSel, currentIndex, ensureStartDyns, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
@@ -29,7 +32,7 @@ import { createPadHost } from "./pad-host.ts";   // pad 的宿主 = 翻译层（
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
-import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
+import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
@@ -117,6 +120,9 @@ import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongClefs } from "../score
 import type { ClefHit } from "../render/engrave.ts";
 import { TAB20, partColorIndices, partAbbr } from "../ui/part-colors.ts";
 
+installTouchTips();
+applyDocumentLang();   // <html lang> + CSS 里写死的几句：第一个做，后面画界面都已经是这个语言
+document.getElementById("score")?.setAttribute("aria-label", _t("乐谱"));
 initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
 /** 文档 = 真相 + **改它的唯一入口**（src/app/document.ts，2026-10-16 doc 这一刀）：谱的状态 `D.st`、文件里的其余部分 `D.extras`、撤销栈、「改过没存」的基线、定稿的锁。
  *  改状态一律 `D.commit()`（下面的 update / updateExtras / updateBoth 只是薄壳）；界面的副作用在 afterState / afterExtras / afterRestore 三个 hook 里（函数声明会提升，这里引用没问题）。 */
@@ -212,7 +218,7 @@ async function askRefImport(q: RefImportQuestion): Promise<RefImportChoice> {
   const keep: Choice<RefImportChoice> = { label: _t("存进歌里（{bytes}）", { bytes: mb(q.bytes) }), value: "keep" };
   const zip: Choice<RefImportChoice> = { label: q.estimate === null ? _t("压一下再存（{what}）", { what }) : _t("压一下再存（约 {estimate}）", { estimate: mb(q.estimate) }), value: "compress" };
   const ram: Choice<RefImportChoice> = { label: q.suggestRam ? _t("只放内存（推荐）") : _t("只放内存（不存进歌里）"), value: "ram" };
-  const msg = _t("「{name}」{bytes}。参考窗里的东西跟着歌一起存、一起同步。{smaller}只放内存 = 这次打开能{p}，不存进歌里；下次打开是个空位，把同一个文件拖进来就补上。{suggestRam}", { name: q.name, bytes: mb(q.bytes), smaller: (q.canCompress && !smaller ? _t("压了也不会更小，就不列了。") : smaller ? _t("压一下 = {what}。", { what }) : ""), p: q.kind === "audio" ? _t("听") : _t("看"), suggestRam: (q.suggestRam ? (big ? _t("超过 4 MB 的，存进去这首歌会大这么多、同步也慢，所以先推荐只放内存。") : _t("音频 / 视频默认只放内存（这次打开有效）；要跟着歌走就选「存进歌里」。")) : "") });
+  const msg = _t("「{name}」{bytes}。参考窗里的东西跟着歌一起存、一起同步。{smaller}只放内存 = 这次打开能{p}，不存进歌里；下次打开是个空位，把同一个文件拖进来就补上。{suggestRam}", { name: q.name, bytes: mb(q.bytes), smaller: (q.canCompress && !smaller ? _t("压了也不会更小，就不列了。") : smaller ? _t("压一下 = {what}。", { what }) : ""), p: q.kind === "audio" ? _t("听##动词") : _t("看##动词"), suggestRam: (q.suggestRam ? (big ? _t("超过 4 MB 的，存进去这首歌会大这么多、同步也慢，所以先推荐只放内存。") : _t("音频 / 视频默认只放内存（这次打开有效）；要跟着歌走就选「存进歌里」。")) : "") });
   const list = q.suggestRam ? [{ ...ram, primary: true }, ...(smaller ? [zip] : []), keep] : [{ ...keep, primary: true }, ...(smaller ? [zip] : []), ram];
   return (await openChoiceSheet(q.kind === "audio" ? _t("这段音频有点大") : q.kind === "video" ? _t("这段视频有点大") : _t("这张图有点大"), msg, list)) ?? "cancel";
 }
@@ -298,7 +304,7 @@ padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>${_t("键盘
 //   按键盘的时候东西就在手边，鼠标不用上下跑（user「音符词听那个小面版变成靠着键盘 / 加一个按一下弹出键盘的钮…所以竖屏的时候就是左下角，拉着键盘的左上角 / 横屏的时候变成竖排可以吗 /
 //   这样按键盘的时候东西就在手边 / 然后走带控制也放这个面版上面 / 就是 play/pause undo redo 音符词听」「尤其是模式条的位置（这个其实蛮重要的，不然鼠标上下跑）」）。位置全在 CSS（grid 区域定位）。
 const dockTab = document.createElement("div"); dockTab.className = "dock-tab"; dockTab.setAttribute("role", "toolbar");
-dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="${_t("模式：这一下点的是哪一层")}">${MODE_BAR.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
+dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="${_t("模式：这一下点的是哪一层")}">${MODE_BAR.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}" aria-label="${attr(MODE_LABEL[m])}">${iconHtml(MODE_ICON[m])}</button>`).join("")}</span>` +
   `<span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
   `<button id="undoBtn" class="btn" title="${_t("撤销（Ctrl / ⌘+Z）")}" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="${_t("重做（Ctrl / ⌘+Shift+Z）")}" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
 dockTab.append(padTab);
@@ -945,6 +951,14 @@ async function packStatusText(): Promise<string> {
   const packs = await packStore.status(Object.keys(PACKS));
   return packs.map((s) => `${s.ready ? "✓" : "·"} ${s.slug}（${(s.bytesTotal / 1e6).toFixed(1)} MB）`).join("\n");
 }
+/** 语言这一行：两种语言的字都写，走错语言的人也认得出。切换 = 存 + 重载（语言锁死在这一页，不要半译状态；没存的改动由挽留框 / 退出落盘那一套管）。 */
+const LANG_LABEL = "语言 · Language";   // i18n-keep
+function langChips(): string {
+  const cur = langChosen();
+  const chip = (v: string, label: string, on: boolean) => `<button class="btn chip${on ? " is-on" : ""}" data-v="lang:${v}">${esc(label)}</button>`;
+  return chip("auto", _t("跟系统"), cur === null) + chip("zh", LANG_NAME.zh, cur === "zh") + chip("en", LANG_NAME.en, cur === "en");
+}
+
 /** 设置面板（应用内，不用系统弹窗）：模型来源、从本机文件导入模型包、月读的署名与使用条款（包内 LICENSE [1][2] 要求显示）。 */
 function openSettings(): void {
   ui.close();
@@ -952,6 +966,7 @@ function openSettings(): void {
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
+    `<div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${langChips()}</div></div>` +
     (inFolder ? `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" disabled value="${esc(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>`
       : `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>`) +
     `<label class="set-field">${_t("音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
@@ -962,10 +977,10 @@ function openSettings(): void {
     (inFolder ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入模型包")}</span><input id="impIn" type="file" multiple hidden disabled /></div>`
       : `<label class="btn" title="${_t("选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件")}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入模型包")}<input id="impIn" type="file" multiple hidden /></label></div>`) +
     `<pre id="packSt" class="set-packs">…</pre>` +
-    `<details class="set-credit"><summary>${_t("乐器目录的图标（第三方，{n} 个）", { n: ICON_CREDITS.length })}</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}${c.modified ? _t("\n    改动：{modified}", { modified: c.modified }) : ""}`).join("\n"))}</pre></details>` +
+    `<details class="set-credit" data-i18n-skip><summary>${_t("乐器目录的图标（第三方，{n} 个）", { n: ICON_CREDITS.length })}</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}${c.modified ? _t("\n    改动：{modified}", { modified: c.modified }) : ""}`).join("\n"))}</pre></details>` +
     // 原文在上（条款要求的是原文）；中 / 英译文在下、只给人读（user 2026-10-08「月读的license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）
-    `<details class="set-credit"><summary>${_t("小月相（つくよみちゃん）的署名与使用条款")}</summary><div class="part-sec">${_t("原文（以此为准）")}</div><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre>` +
-      `<div class="part-sec">${_t("中文译文（仅供阅读，以日文原文为准）")}</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` +
+    `<details class="set-credit" data-i18n-skip><summary>${_t("小月相（つくよみちゃん）的署名与使用条款")}</summary><div class="part-sec">${_t("原文（以此为准）")}</div><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre>` +
+      (lang() === "zh" ? `<div class="part-sec">${_t("中文译文（仅供阅读，以日文原文为准）")}</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` : "") +
       `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc(CREDIT_TRANSLATIONS.en.credit)}\n\n${esc(CREDIT_TRANSLATIONS.en.terms)}</pre></details>` +
     `<div class="set-field">${_t("小月相的念缓存（设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念）")}<div id="spCache" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("清空念缓存")}</button></div></div>` +
     `<div class="set-field">${_t("引擎负载与内存（能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说）")}<div id="engRes" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念")}">${_t("重开小月相引擎")}</button></div></div>` +
@@ -1006,6 +1021,7 @@ function openSettings(): void {
     if (e.target === box || v === "close") close();
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "midi:connect") void midi.connect();
+    else if (v?.startsWith("lang:")) { const l = v.slice(5); saveLang(l === "auto" ? null : l as Lang); location.reload(); }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
@@ -1040,7 +1056,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   box.className = "offer";
   box.innerHTML = `<div class="offer-card"><div class="offer-title">${title}</div><div class="offer-msg">${msg}</div><div class="offer-btns">` +
     (canShare ? `<button class="btn primary" data-v="share">${_t("分享")}</button>` : "") +
-    `<button class="btn${canShare ? "" : " primary"}" data-v="download">${_t("下载")}</button><button class="btn" data-v="close">${_t("关")}</button></div></div>`;
+    `<button class="btn${canShare ? "" : " primary"}" data-v="download">${_t("下载")}</button><button class="btn" data-v="close">${_t("关##关窗")}</button></div></div>`;
   document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
@@ -1167,7 +1183,7 @@ function padHint(): HintRange {
   const concept = D.extras.lounge[curRole()]?.concept as { ids?: { wikidata?: string | null; local?: string | null }; name?: { zh?: string } } | undefined;
   const id = concept?.ids?.wikidata ?? concept?.ids?.local; if (!id) return null;
   const r = rangeOf(catalogNow.byId.get(id));
-  return r ? { ...r, who: concept?.name?.zh ?? roleName(D.extras, curRole()) } : null;
+  return r ? { ...r, who: (lang() === "zh" ? concept?.name?.zh : null) ?? roleName(D.extras, curRole()) } : null;
 }   // 试听台上的（GS 预设；note = 鼓件，pad 任何键都敲它）；null = 月读 / 没选
 const GS = SOUNDS["generaluser-gs-2.0.3"];
 /** 试听台：从 GS 切出这个预设、载进实时合成器（22 ms + 几 MB）；换到月读 = 清掉。 */
@@ -1176,7 +1192,7 @@ async function setAudition(p: FinderPick | null): Promise<void> {
   //   GS 的音效预设试听 = 固定原速（仓鼠 v8；哪个键都一样，同鼓件，不提示）；其余 = 概念的常用音域
   const cat = p?.kind === "gs" ? (catalogNow ??= await loadCatalog()) : null;
   const sk = cat && p?.kind === "gs" && p.provider.note === undefined ? sampleKeyOf(cat, p.provider.bank, p.provider.program) : null;
-  auditionHint = !p || sk ? null : p.kind === "voice" ? TSUKUYOMI_RANGE : ((r) => (r ? { ...r, who: p.concept.names.zh } : null))(rangeOf(p.concept));
+  auditionHint = !p || sk ? null : p.kind === "voice" ? TSUKUYOMI_RANGE : ((r) => (r ? { ...r, who: conceptName(p.concept.names) } : null))(rangeOf(p.concept));
   if (auditionHint) pad.follow(auditionHint.lo, auditionHint.hi); else pad.render();
   if (!p || p.kind === "voice") { audition = null; sound.allOff(); return; }
   try {
@@ -1206,7 +1222,7 @@ function marksTableHtml(role: string, eng: string): string {
   //   「我觉得其实可以不同的类别乐器卡可以说一下」）：按这位实际走的那条路说（perform.ts：有力度表 = MIDI 力度，否则 = 音量曲线乘在出来的声音上）
   const how = vel
     ? _t("按下那一下的轻重（MIDI 力度）：渐强渐弱 = 每个新音一个台阶，按住的音中间不变；一个音里面要变，用音内起伏{canSwell}", { canSwell: sp.canSwell ? "" : _t("（这件乐器按下去就自然衰减：音内只能变弱）") })
-    : _t("一条连续的音量曲线（乘在{sung}出来的声音上）：渐强渐弱在一个长音中间也一直在变，和音内起伏是同一种变法；只变响度、不变音色{sung2}", { sung: sung ? _t("唱") : _t("弹"), sung2: sung ? _t("（真人渐弱会变虚、变暗，这个还没有）") : "" });
+    : _t("一条连续的音量曲线（乘在{sung}出来的声音上）：渐强渐弱在一个长音中间也一直在变，和音内起伏是同一种变法；只变响度、不变音色{sung2}", { sung: sung ? _t("唱##出声") : _t("弹##出声"), sung2: sung ? _t("（真人渐弱会变虚、变暗，这个还没有）") : "" });
   const rows: [string, string, string][] = [
     [_t("力度怎么变"), "", how],
     [_t("力度记号"), "", vel ? _t("力度表：{string}", { string: (Object.entries(sp.dynamicsVel!) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ") }) : _t("音量：{dynamicsDb}", { dynamicsDb: (Object.entries(sp.dynamicsDb) as [string, number][]).map(([d, x]) => `${d} ${db(x)}`).join(" · ") })],
@@ -1920,7 +1936,7 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
     });
     if (who.length) hints.push(_t("这张纸上：{p}（按乐器类别，预设给的）", { p: who.join(" · ") }));
   }
-  const chips = GROOVE_STYLES.filter((x) => x.id !== "none").map((x) => `<button class="btn ctx-chip${t.style === x.id ? " is-on" : ""}" data-v="style:${x.id}" title="${esc(x.aliases.length ? _t("也叫 {p}", { p: x.aliases.join(" / ") }) : x.name.zh)}">${esc(x.name.en)}<small> · ${esc(x.name.zh)}</small></button>`).join("") +   // 谱上写英文（user「风格名用英文」），按钮带中文
+  const chips = GROOVE_STYLES.filter((x) => x.id !== "none").map((x) => `<button class="btn ctx-chip${t.style === x.id ? " is-on" : ""}" data-v="style:${x.id}" title="${esc(x.aliases.length ? _t("也叫 {p}", { p: x.aliases.join(" / ") }) : grooveName(x.id))}">${esc(x.name.en)}${lang() === "zh" ? `<small> · ${esc(x.name.zh)}</small>` : ""}</button>`).join("") +   // 谱上写英文（user「风格名用英文」），按钮带中文
     `<button class="btn ctx-chip${t.style === "none" ? " is-on" : ""}" data-v="style:none" title="${_t("从这儿起不加拍子轻重")}">${_t("不加轻重")}</button>`;
   const amounts = [0.5, 1, 1.5, 2].map((a) => `<button class="btn ctx-chip${Math.abs(amount - a) < 1e-9 ? " is-on" : ""}" data-v="amount:${a}" title="${_t("幅度：预设的 {a} 倍", { a })}">×${a}</button>`).join("");
   const box = document.createElement("div");
@@ -2210,7 +2226,7 @@ function drawInst(): void {
       candidates(D.extras, role).map((c) => chip(`cand:${c.id}`, !performerOf(c.engine) ? _t("{name}（没人能演）", { name: esc(c.name) }) : esc(c.name), aid === c.id, chipTitle(c)) +
         (aid !== c.id && (performerOf(c.engine)?.removable ?? true) ? `<button class="btn cand-del" data-v="del:${esc(c.id)}" title="${_t("从休息室删掉（它嵌在歌里的声音一起丢）")}">×</button>` : "")).join("") + `</div>` + status +
       `<div class="ip-sub">${_t("换人")}</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("全屏的乐器目录：按曲风 / 年代 / 族 / 发声方式浏览，右边的键盘试听，上场")}">${_t("打开乐器目录…")}</button>` +
-      Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(_t("{description}（{bytes}；家族音源库，第一次点才下载、之后留在设备上；{name}）", { description: e.description ?? e.name, bytes: sizeText(e.bytes), name: e.license.name }))}">${_t("从 {name} 选…", { name: esc(e.name) })}</button>`).join("") +
+      Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(_t("{description}（{bytes}；家族音源库，第一次点才下载、之后留在设备上；{name}）", { description: (e.description && zhOnly(e.description)) || e.name, bytes: sizeText(e.bytes), name: e.license.name }))}">${_t("从 {name} 选…", { name: esc(e.name) })}</button>`).join("") +
       `<button class="btn" data-v="sf2:pick" title="${_t("自己的 .sf2 文件：选中的那一件切出来留在这台设备上（几 MB），歌里只记来源；整个文件不留")}">${_t("从 .sf2 文件选…")}</button></div>` + pickerHtml() +
       `<div class="ip-note">${_t("选的琴歌里只记来源（歌小）：声音从这台设备 / 家族音源库 / 你的文件里找。要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。")}</div></section>` +
     `<section class="ip-card ip-how"><h3>${_t("{who} 怎么演", { who: esc(who) })}<small>${_t("右边的键盘弹的就是台上这位，改了马上能试")}</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section>` +

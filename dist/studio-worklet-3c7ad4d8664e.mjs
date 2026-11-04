@@ -67,6 +67,68 @@ var Tsf = class {
   }
 };
 
+// src/device-kv.ts
+var PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
+var _mem = /* @__PURE__ */ new Map();
+function _ls() {
+  try {
+    const ls = globalThis.localStorage;
+    ls.getItem(PREFIX + "__probe");
+    return ls;
+  } catch {
+    return null;
+  }
+}
+function deviceKvGet(key) {
+  const k = PREFIX + key;
+  const ls = _ls();
+  if (ls) {
+    try {
+      return ls.getItem(k);
+    } catch {
+    }
+  }
+  return _mem.get(k) ?? null;
+}
+
+// src/i18n/index.ts
+var LANGS = ["zh", "en"];
+var valid = (v) => LANGS.includes(v) ? v : null;
+function detect() {
+  const g = globalThis;
+  if (g.process?.versions?.node) return "zh";
+  if (typeof g.document === "undefined") {
+    const m = typeof g.name === "string" ? /^lang=(\w+)/.exec(g.name) : null;
+    return valid(m?.[1]) ?? "zh";
+  }
+  const saved = valid(deviceKvGet("lang"));
+  if (saved) return saved;
+  return (g.navigator?.language ?? "en").toLowerCase().startsWith("zh") ? "zh" : "en";
+}
+var _lang = null;
+function lang() {
+  return _lang ??= detect();
+}
+function fill(raw, params) {
+  if (!params) return raw;
+  return raw.replace(/\{(\w+)(?:\|([^|}]*)\|([^}]*))?\}/g, (m, k, one, many) => {
+    if (!(k in params)) return m;
+    return one !== void 0 ? Number(params[k]) === 1 ? one : many ?? "" : String(params[k]);
+  });
+}
+var TABLE = true ? {} : S;
+function lookup(key) {
+  if (lang() === "zh") {
+    const i = key.indexOf("##");
+    return i < 0 ? key : key.slice(0, i);
+  }
+  const e = TABLE[key];
+  return e?.en || key;
+}
+function _t(key, params) {
+  return fill(lookup(key), params);
+}
+
 // src/engine/fx.ts
 var clamp = (v, lo, hi) => v < lo ? lo : v > hi ? hi : v;
 var dbToLin = (dB) => 10 ** (dB / 20);
@@ -158,18 +220,18 @@ var Biquad = class {
 };
 var EQ = {
   kind: "eq",
-  name: "\u5747\u8861",
-  formula: "\u6BCF\u6BB5\u4E00\u4E2A\u53CC\u4E8C\u9636 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)\uFF0C\u7CFB\u6570\u6309 RBJ Audio EQ Cookbook\uFF08hp / lp Q = 0.707\uFF1B\u67B6\u5B50 Q = 0.707\uFF1B\u5CF0 Q \u53EF\u8C03\uFF09\u3002hpHz / lpHz = 0 \u5173\u3002",
+  name: _t("\u5747\u8861"),
+  formula: _t("\u6BCF\u6BB5\u4E00\u4E2A\u53CC\u4E8C\u9636 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)\uFF0C\u7CFB\u6570\u6309 RBJ Audio EQ Cookbook\uFF08hp / lp Q = 0.707\uFF1B\u67B6\u5B50 Q = 0.707\uFF1B\u5CF0 Q \u53EF\u8C03\uFF09\u3002hpHz / lpHz = 0 \u5173\u3002"),
   params: [
-    { id: "hpHz", unit: "Hz", min: 0, max: 2e3, default: 0, label: "\u4F4E\u5207" },
-    { id: "lpHz", unit: "Hz", min: 0, max: 2e4, default: 0, label: "\u9AD8\u5207" },
-    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: "\u4F4E\u67B6" },
-    { id: "lowHz", unit: "Hz", min: 40, max: 1e3, default: 200, label: "\u4F4E\u67B6\u9891\u7387" },
-    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: "\u4E2D\u5CF0" },
-    { id: "midHz", unit: "Hz", min: 100, max: 1e4, default: 1500, label: "\u4E2D\u5CF0\u9891\u7387" },
-    { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: "\u4E2D\u5CF0\u5BBD" },
-    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: "\u9AD8\u67B6" },
-    { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, default: 5e3, label: "\u9AD8\u67B6\u9891\u7387" }
+    { id: "hpHz", unit: "Hz", min: 0, max: 2e3, default: 0, label: _t("\u4F4E\u5207") },
+    { id: "lpHz", unit: "Hz", min: 0, max: 2e4, default: 0, label: _t("\u9AD8\u5207") },
+    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4F4E\u67B6") },
+    { id: "lowHz", unit: "Hz", min: 40, max: 1e3, default: 200, label: _t("\u4F4E\u67B6\u9891\u7387") },
+    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u4E2D\u5CF0") },
+    { id: "midHz", unit: "Hz", min: 100, max: 1e4, default: 1500, label: _t("\u4E2D\u5CF0\u9891\u7387") },
+    { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: _t("\u4E2D\u5CF0\u5BBD") },
+    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("\u9AD8\u67B6") },
+    { id: "highHz", unit: "Hz", min: 1e3, max: 16e3, default: 5e3, label: _t("\u9AD8\u67B6\u9891\u7387") }
   ]
 };
 function eqSections(p) {
@@ -214,15 +276,15 @@ var Eq = class {
 };
 var COMP = {
   kind: "comp",
-  name: "\u538B\u7F29",
-  formula: "\u5305\u7EDC e[n] = max(|x|, e[n-1]\xB7r) \u8D77\uFF08attack\uFF09\u843D\uFF08release\uFF09\u5404\u4E00\u4E2A\u65F6\u95F4\u5E38\u6570\uFF1B\u8D85\u8FC7 threshold \u7684\u90E8\u5206\u6309 ratio \u538B\uFF08kneeDb \u5185\u8F6F\u62D0\u70B9\uFF1Ag = -(x - T + K/2)^2 \xB7 (1 - 1/R) / (2K)\uFF09\uFF1B\u589E\u76CA = 10^(g/20) \xD7 10^(makeup/20)\u3002key \u7ED9\u4E86 = \u542C\u522B\u7684\u8F68\uFF08\u4FA7\u94FE\uFF09\uFF0C\u4E0D\u7ED9 = \u542C\u81EA\u5DF1\u3002",
+  name: _t("\u538B\u7F29"),
+  formula: _t("\u5305\u7EDC e[n] = max(|x|, e[n-1]\xB7r) \u8D77\uFF08attack\uFF09\u843D\uFF08release\uFF09\u5404\u4E00\u4E2A\u65F6\u95F4\u5E38\u6570\uFF1B\u8D85\u8FC7 threshold \u7684\u90E8\u5206\u6309 ratio \u538B\uFF08kneeDb \u5185\u8F6F\u62D0\u70B9\uFF1Ag = -(x - T + K/2)^2 \xB7 (1 - 1/R) / (2K)\uFF09\uFF1B\u589E\u76CA = 10^(g/20) \xD7 10^(makeup/20)\u3002key \u7ED9\u4E86 = \u542C\u522B\u7684\u8F68\uFF08\u4FA7\u94FE\uFF09\uFF0C\u4E0D\u7ED9 = \u542C\u81EA\u5DF1\u3002"),
   params: [
-    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: "\u9608\u503C" },
-    { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: "\u6BD4\u4F8B" },
-    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: "\u8D77" },
-    { id: "releaseMs", unit: "ms", min: 5, max: 2e3, default: 120, label: "\u843D" },
-    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: "\u62D0\u70B9" },
-    { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: "\u8865\u507F" }
+    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: _t("\u9608\u503C") },
+    { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: _t("\u6BD4\u4F8B") },
+    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: _t("\u8D77") },
+    { id: "releaseMs", unit: "ms", min: 5, max: 2e3, default: 120, label: _t("\u843D") },
+    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: _t("\u62D0\u70B9") },
+    { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: _t("\u8865\u507F") }
   ]
 };
 var Comp = class {
@@ -285,14 +347,14 @@ var Comp = class {
 };
 var DELAY = {
   kind: "delay",
-  name: "\u5EF6\u8FDF",
-  formula: "y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = 1 \u2212 mix\uFF0Cv0.10.10 \u524D\u7684\u5199\u6CD5\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002",
+  name: _t("\u5EF6\u8FDF"),
+  formula: _t("y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = 1 \u2212 mix\uFF0Cv0.10.10 \u524D\u7684\u5199\u6CD5\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002"),
   params: [
-    { id: "timeMs", unit: "ms", min: 1, max: 2e3, default: 375, label: "\u65F6\u95F4" },
-    { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: "\u53CD\u9988" },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "\u6E7F" },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "\u539F\u58F0" },
-    { id: "dampHz", unit: "Hz", min: 500, max: 2e4, default: 6e3, label: "\u53CD\u9988\u9AD8\u5207" }
+    { id: "timeMs", unit: "ms", min: 1, max: 2e3, default: 375, label: _t("\u65F6\u95F4") },
+    { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("\u53CD\u9988") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
+    { id: "dampHz", unit: "Hz", min: 500, max: 2e4, default: 6e3, label: _t("\u53CD\u9988\u9AD8\u5207") }
   ]
 };
 var Delay = class {
@@ -347,15 +409,15 @@ var Delay = class {
 };
 var REVERB = {
   kind: "reverb",
-  name: "\u6DF7\u54CD",
-  formula: "Freeverb\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7(1-mix) + wet\xB7mix\u3002",
+  name: _t("\u6DF7\u54CD"),
+  formula: _t("Freeverb\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7(1-mix) + wet\xB7mix\u3002"),
   params: [
-    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u623F\u95F4\u5927\u5C0F" },
-    { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u9AD8\u9891\u5438\u6536" },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "\u6E7F" },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "\u539F\u58F0" },
-    { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: "\u9884\u5EF6\u8FDF" },
-    { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: "\u5BBD\u5EA6" }
+    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u623F\u95F4\u5927\u5C0F") },
+    { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u9AD8\u9891\u5438\u6536") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") },
+    { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: _t("\u9884\u5EF6\u8FDF") },
+    { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u5BBD\u5EA6") }
   ],
   stereoOnly: true
 };
@@ -452,16 +514,16 @@ var Reverb = class {
 };
 var CHORUS = {
   kind: "chorus",
-  name: "\u5408\u5531",
-  formula: "v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v\u3002",
+  name: _t("\u5408\u5531"),
+  formula: _t("v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v\u3002"),
   params: [
-    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: "\u51E0\u6761" },
-    { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: "\u5EF6\u8FDF" },
-    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: "\u6296\u52A8\u6DF1\u5EA6" },
-    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: "\u6296\u52A8\u5FEB\u6162" },
-    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: "\u5DE6\u53F3\u94FA\u5F00" },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: "\u6E7F" },
-    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "\u539F\u58F0" }
+    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: _t("\u51E0\u6761") },
+    { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: _t("\u5EF6\u8FDF") },
+    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: _t("\u6296\u52A8\u6DF1\u5EA6") },
+    { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: _t("\u6296\u52A8\u5FEB\u6162") },
+    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: _t("\u5DE6\u53F3\u94FA\u5F00") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("\u6E7F") },
+    { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("\u539F\u58F0") }
   ]
 };
 var Chorus = class {
@@ -517,6 +579,7 @@ var Chorus = class {
     }
   }
 };
+var GAIN = { kind: "gain", name: _t("\u589E\u76CA"), formula: "y = x \xB7 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: _t("\u589E\u76CA") }] };
 var Gain = class {
   kind = "gain";
   on = true;
@@ -1816,4 +1879,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-5c1a2c2736d5.mjs.map
+//# sourceMappingURL=studio-worklet-3c7ad4d8664e.mjs.map

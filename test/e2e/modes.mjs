@@ -20,7 +20,7 @@ const mode = async (m) => {
 let w = await W();
 check(w.mode === "notes" && w.dock === "keys" && !(await p.$eval(".pad-panel", (e) => e.hidden)), "默认 = 「音」、底座是音键", JSON.stringify(w));
 check((await p.$$eval(".mode-seg [data-mode]", (bs) => bs.map((b) => b.dataset.mode).join(","))) === "notes,lyrics,listen", "模式条 = 音 / 词 / 听（「符」不是模式了）");
-check(!(await p.$(".pad-tools [data-symbols]")) && (await p.$eval(".pad-head [data-kbswitch]", (e) => e.textContent)) === "符", "pad 顶上有「符」切换键（只换键盘，v0.10.37）");
+check(!(await p.$(".pad-tools [data-symbols]")) && (await p.$eval(".pad-head [data-kbswitch]", (e) => e.getAttribute("aria-label"))) === "符", "pad 顶上有「符」切换键（只换键盘，v0.10.37）");
 check(await p.$eval(".pad-head", (h) => new Set([...h.children].map((c) => Math.round(c.getBoundingClientRect().top))).size === 1), "pad 顶上一排没折行（加了钮要加列：「⋯」掉到第二排过两次）");
 for (let i = 0; i < 4; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(30); }
 check((await notes()) === "· · · ·", "写了四个音");

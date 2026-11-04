@@ -25,6 +25,8 @@ export const AREAS = {
   export: ["pdf", "pdf-wysiwyg", "issues", "final"],
   // 参考窗
   ref: ["reference"],
+  // 界面语言：英文巡检（剩下的中文、撑爆的控件）
+  i18n: ["i18n-en"],
   // 模式与底座（workspace.ts 那张表）
   modes: ["modes", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys", "final", "midi", "dock-side"],
 };

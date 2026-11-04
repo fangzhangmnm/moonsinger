@@ -15,6 +15,8 @@ export const MODE_BAR: readonly Mode[] = ["notes", "lyrics", "listen"];
 /** 模式条上哪个钮亮：用符号格时「音」亮。 */
 export const barMode = (m: Mode): Mode => (m === "symbols" ? "notes" : m);
 export const MODE_LABEL: Record<Mode, string> = { notes: _t("音"), lyrics: _t("词"), symbols: _t("符"), listen: _t("听") };
+/** 模式钮的图标：窄（32 px），放不下英文单词，中英文都用图标（user 2026-11-04「能图标就不文字」）。 */
+export const MODE_ICON: Record<Mode, string> = { notes: "music-note", lyrics: "text", symbols: "music-note", listen: "headphones" };
 export const MODE_TITLE: Record<Mode, string> = {
   notes: _t("音：写音和记号——谱上音和记号都能改（点音 = 光标，笔 / 鼠标拖音 = 改音高 / 时值；点记号 = 它的菜单、按住拖 = 挪）；小键盘顶上「符 / 音」切音键 / 符号格，退格删什么跟着键盘"),
   lyrics: _t("词：点音或它下面 = 写这个音的歌词；按住字拖 = 挪 / 合；退格 = 删光标前那个音的字"),

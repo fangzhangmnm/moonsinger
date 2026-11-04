@@ -12,7 +12,7 @@
 //   （和 pad 弹出的滚轮同一份 mountWheel：慢拖一格 ±1、一甩靠惯性滑一大段），拨到头就停；拨到哪试到哪，同样按「确定」才写；滚轮 / 候选 / 打字三边互相跟。
 // 跟踪的是 token id（谱改了下标会变）。
 
-import { _t } from "../i18n/index.ts";
+import { _t, lang } from "../i18n/index.ts";
 import { type EditorState, type MarkTok, type MarkVal, setMark, deleteMark, headLen, TEMPO_WORDS, tempoWord, TEMPO_MIN, TEMPO_MAX, tr } from "../score/song.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { markText, parseMark } from "../score/marks.ts";
@@ -119,7 +119,7 @@ export class MarkEditor {
     else if (t.kind === "time") h = TIMES.map(([b, bt]) => chip({ kind: "time", beats: b, beatType: bt }, `${b}/${bt}`, b === t.beats && bt === t.beatType)).join("");
     else {
       const cur = tempoWord(t.bpm).it;
-      h = TEMPO_WORDS.map((w) => chip({ kind: "tempo", bpm: w.typical }, `<b>${w.it}</b><small>${w.zh} ${w.typical}</small>`, w.it === cur, _t("{from} 起", { from: w.from }))).join("");
+      h = TEMPO_WORDS.map((w) => chip({ kind: "tempo", bpm: w.typical }, `<b>${w.it}</b><small>${lang() === "zh" ? `${w.zh} ` : ""}${w.typical}</small>`, w.it === cur, _t("{from} 起", { from: w.from }))).join("");
     }
     if (deletable) h += `<button class="btn cand danger" data-v="delete">${_t("删除")}</button>`;
     this.list.innerHTML = h;

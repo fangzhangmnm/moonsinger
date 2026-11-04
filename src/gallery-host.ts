@@ -3,7 +3,7 @@
 //   缩略图 = 歌 zip 最后一个 entry Thumbnails/thumbnail.png 尾读，WXHW ADR-0012 同款）、chrome（返回 / 云 / 刷新 / 新建 / 回收站 / 设置）。
 //   封面的字（歌名 / 日期 / 大小）= src/ui/song-cover.ts 排版进包的两个槽；文案 = 包内 zh 默认 + 几条换成歌库口吻。
 //   派生缓存 IDB `moonsinger-thumbs`（user 2026-10-08「没问题」批；CLAUDE.md 持久层白名单表登记）。
-import { _t } from "./i18n/index.ts";
+import { _t, lang } from "./i18n/index.ts";
 import { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } from "../vendor/vue/vue.esm-browser.prod.js";
 import { createGallery, humanSize, type CreateGalleryDeps, type GalleryDocHost, type VueRuntime, type GItem, type TileInfo, type TileAction, type VerbStore, type DataFaceStore, type Gallery, type GalleryView, type AsideKind, type AsideScope } from "@internal/gallery";
 import { CACHE_DBS } from "./config.ts";
@@ -154,7 +154,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
     isGalleryVisible: () => document.body.dataset.mode === "gallery",
     reportError: (e, level) => reportError(e, level ?? "error"),
     reloadApp: () => location.reload(),
-    text: { lang: "zh", t: (key) => TEXT[key] },
+    text: { lang: lang(), t: (key) => TEXT[key] },
   };
   let gallery: Gallery | null = null;
   /** 这首的总目录里有没有定稿记录（尾读一次；source 同缩略图：本地优先 / 只看云端）。云端不可达 = 抛 → 包不记，下次再问。 */

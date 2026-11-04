@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-51 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+60 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -9,18 +9,30 @@
 
 ```html
 <!-- 内联 icons.svg -->
-<svg width="24" height="24"><use href="#sliders"/></svg>
+<svg width="24" height="24"><use href="#text"/></svg>
 ```
 
-> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`album`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
+> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`album`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
 > 见库 `index.html` 的「待过目」栏；过目后进库/打回归库 session。
 
+
+## tool
+
+| name | 说明 |
+|------|------|
+| `text` | 文字工具:框内衬线 T (定稿=原 text-6;其余变体已 archive) |
 
 ## image-processing
 
 | name | 说明 |
 |------|------|
 | `sliders` | 不写类别 |
+
+## selection
+
+| name | 说明 |
+|------|------|
+| `select-all` | 全选:实线外框 + 内嵌虚线框, 内部浅填充表示整幅已选中 |
 
 ## edit
 
@@ -29,6 +41,8 @@
 | `arrow-undo` | 撤销:向左的直角回勾箭头 |
 | `arrow-redo` | 重做:arrow-undo 的水平镜像 |
 | `paste` | 粘贴:剪贴板不缩(库尺寸)+文档探出右下角, 按 copy 的前后件比例 |
+| `copy` | 两个文件叠放 |
+| `cut` | 剪切到剪贴板(WebPaint v0.9.22 Ctrl+X): 剪刀 CCW 转 145°(甲方 20260821 拍板取向, 刃朝左下/柄朝右上); 圆环柄 r2.3+描边把手+实心渐尖刃(枢轴半宽 0.85 收到尖), 刃比柄粗=纸剪不是医疗剪。⚠改动时注意: 几何先按 k=0.82 纵向压短再转 —— 原尺寸直接转墨迹会到 20.6x22.0(全家族最大), 而整体 scale 会连线宽一起缩(select-pen 缩放笔即因此落选), 故压几何保线宽恒 1.7; 转后 19.05x19.75 与 grid 同级。落选: 纯描边 X 型(偏医疗剪)、家用不对称柄版、宽刃版 |
 
 ## media
 
@@ -41,6 +55,10 @@
 | `play-from-start` 👁待过目 | 从起点放 \|▶:左边一道竖杠(粗 2.4 圆帽) + 实心右向三角(play 同款画法,整体右移让出杠)；= 回到设定的起点再放【MoonSinger 顶栏走带主键「从起点放」（放着时换成 stop）；2026-10-10 Claude Opus 5.5 自画未过目】 |
 | `skip-prev` | 上一曲 ⏮: skip-next 的精确镜像(translate+scale(-1,1), 同 replay 画法)。20260821 入库 |
 | `skip-next` | 下一曲 ⏭(BR 播放器): 实心右三角+竖杠(stroke 2.8 圆帽), 体量对齐 fast-forward; 与 fast-forward(双三角=快进)分工。20260821 甲方拍板候选1号入库(实心 rect 杠版/轻量版落选) |
+| `music-note` 👁待过目 | 音符(八分音符):实心斜椭圆符头 + 符干 + 一道弯符尾；通用的「音乐 / 音符」符号【MoonSinger 底座小条「音」模式钮、小键盘顶上切回音键的钮；Claude Opus 5.5 画；未过目】 |
+| `headphones` 👁待过目 | 耳机(听):头梁圆弧 + 两边实心耳罩；只听不写【MoonSinger 底座小条「听」模式钮；Claude Opus 5.5 画；未过目】 |
+| `piano-keys` 👁待过目 | 琴键(弹着玩):方框里三个白键、两个实心黑键从上往下插；与 keyboard(电脑键盘)分工【MoonSinger 小键盘顶上「弹」钮：音键只响不写；Claude Opus 5.5 画；未过目】 |
+| `note-stack` 👁待过目 | 叠音(和弦):一根符干上叠三个实心符头；与 music-note(一个音)成对【MoonSinger 小键盘写字排「叠」键；Claude Opus 5.5 画；未过目】 |
 
 ## file
 
@@ -79,6 +97,7 @@
 | `chevron-right` 👁待过目 | › chevron-left 的精确镜像【WeebPaint 参考窗翻页 chip；fable 自画未过目】 |
 | `forward` 👁待过目 | 前进:back 的精确镜像(右向整箭头带杆;与 chevron-right 裸 chevron 分工)【WebXiaoHeiWu 侧栏页头「回退」右邻的「前进」钮（回退之后再回去）；2026-09-10 fable 自画未过目】 |
 | `check` | 勾 |
+| `chevron-down` | 下移:竖线 + 底端 ∨ 箭头 |
 
 ## cloud
 

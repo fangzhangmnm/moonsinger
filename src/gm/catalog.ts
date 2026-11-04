@@ -1,7 +1,8 @@
 // catalog.ts —— 找人视图的目录：乐器概念（百科，表 ①）+ GM 映射（表 ②）。纯数据层：加载 / 核 sha256 / 排序分组 / 「谁能演」。
 // created 2026-10-07 by Claude Fable 5.1。数据 = vendor/instruments/（scripts/gen-instruments.mjs 从仓鼠会话的 export 拷来；user：两张表、id 束、GM 只是头脑风暴的起点）。
 // 这是视图层的目录，不进歌：歌里钉的是角色的 id 束 + 名字（契约 §6⅞）；目录常改没关系。
-import { _t } from "../i18n/index.ts";
+import { _t, lang } from "../i18n/index.ts";
+import { conceptName, defLabel, zhOnly } from "./catalog-i18n.ts";
 import { INSTRUMENT_FILES } from "./instruments.gen.ts";
 import { getBytes } from "../resources.ts";
 
@@ -86,7 +87,7 @@ export function providersOf(cat: Catalog, c: Concept): Provider[] {
 /** 这个概念在 pad 上提示哪几个键（提示条 / 试听时窗口跟进用）：有常用音域 = 那一段；音效有「最像的键」= 就那一个；都没有 = null。 */
 export function rangeOf(c: Concept | undefined): { lo: number; hi: number; title: string } | null {
   const r = c?.range;
-  if (r && Number.isFinite(r.low) && Number.isFinite(r.high) && r.low <= r.high) return { lo: r.low, hi: r.high, title: _t("{zh}的常用音域{basis}", { zh: c!.names.zh, basis: r.basis ? _t("（依据：{basis}）", { basis: r.basis }) : "" }) };
+  if (r && Number.isFinite(r.low) && Number.isFinite(r.high) && r.low <= r.high) return { lo: r.low, hi: r.high, title: _t("{zh}的常用音域{basis}", { zh: conceptName(c!.names), basis: r.basis && zhOnly(r.basis) ? _t("（依据：{basis}）", { basis: r.basis }) : "" }) };
   // naturalKey（「听起来像哪个音高」）不拿来当提示键：音效的键名 ≠ 听到的音高（仓鼠 v8：电话原速键 64，听到的最强频率在 C7 附近）。按哪个键 = sampleKeyOf
   return null;
 }
@@ -100,7 +101,7 @@ export function sampleKeyOf(cat: Catalog, bank: number, program: number): { key:
   const covers = (r?: string) => { const m = /^(\d+)\s*[–-]\s*(\d+)$/.exec(r ?? ""); return !m || (k.recommended >= +m[1] && k.recommended <= +m[2]); };
   const ls = (k.layers ?? []).filter((l) => covers(l.keyRange) && l.peakAtRecommended?.pitched && l.centsPerKey);
   const main = ls.find((l) => Math.round(l.originalSpeedKey ?? NaN) === k.recommended) ?? ls[0];
-  return { key: k.recommended, title: _t("原速键：按这个键，采样不拉伸不压缩{recommendedBasis}", { recommendedBasis: k.recommendedBasis ? `（${k.recommendedBasis}）` : "" }),
+  return { key: k.recommended, title: _t("原速键：按这个键，采样不拉伸不压缩{recommendedBasis}", { recommendedBasis: k.recommendedBasis && zhOnly(k.recommendedBasis) ? `（${k.recommendedBasis}）` : "" }),
     ...(main ? { midi: Math.round(main.peakAtRecommended!.midi * 100) / 100, centsPerKey: main.centsPerKey } : {}) };
 }
 /** 连断的底色（仓鼠 v11 的 joint）：这个 GM 号建议音和音之间留多大缝 + 中文名 + 依据。目录里没有 / 没写（旧版目录、鼓件、音效）= null。
@@ -108,7 +109,7 @@ export function sampleKeyOf(cat: Catalog, bank: number, program: number): { key:
 export function jointOf(cat: Catalog, bank: number, program: number, note?: number): { gapSec: number; zh: string; basis: string } | null {
   const row = cat.rows.find((r) => r.bank === bank && r.program === program && r.note === note && r.joint) ?? cat.rows.find((r) => r.bank === bank && r.program === program && r.joint);
   const j = row?.joint; if (!j || j.id === null || j.gapMs === null) return null;
-  const zh = (cat.defs as Defs & { joints?: { id: string; zh: string }[] }).joints?.find((x) => x.id === j.id)?.zh ?? j.id;
+  const zh = defLabel((cat.defs as Defs & { joints?: { id: string; zh: string }[] }).joints?.find((x) => x.id === j.id)?.zh ?? j.id);
   return { gapSec: j.gapMs / 1000, zh, basis: j.basis ?? "" };
 }
 /** 这个预设能不能一直响（仓鼠 v11 实测）："sustained" / "decaying" / "oneshot"；没有 = null。 */
@@ -167,12 +168,12 @@ export function groupConcepts(cat: Catalog, mode: SortMode, query = ""): Group[]
   const asItems = (gs: { id: string; label: string; concepts: Concept[] }[]): Group[] => gs.map((g) => ({ id: g.id, label: g.label, items: g.concepts.map((concept) => ({ concept })) }));
   if (mode === "family") {
     const order = new Map(cat.defs.families.map((f, i) => [f.id, i]));
-    for (const c of list) { const f = (c.family ?? [])[0] ?? "other"; put(f, cat.defs.families.find((x) => x.id === f)?.zh ?? (c.kind === "voice" ? _t("人声") : c.kind === "sound" ? _t("音效") : _t("其他")), c); }   // GM 以外的乐器（二胡）没有 family
+    for (const c of list) { const f = (c.family ?? [])[0] ?? "other"; put(f, (lang() === "zh" ? cat.defs.families.find((x) => x.id === f)?.zh : cat.defs.families.find((x) => x.id === f)?.en) ?? (c.kind === "voice" ? _t("人声") : c.kind === "sound" ? _t("音效") : _t("其他")), c); }   // GM 以外的乐器（二胡）没有 family
     return asItems([...groups.values()].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).map((g) => ({ ...g, concepts: g.concepts.sort(byGm) })));
   }
   if (mode === "year") {
     const eras = cat.defs.eras;
-    for (const c of list) { const e = eras.find((x) => x.id === c.era); put(e?.id ?? "unknown", e ? `${e.zh}${e.from !== null ? _t("（{from} 起）", { from: fmtYear(e.from) }) : ""}` : _t("年代不详"), c); }
+    for (const c of list) { const e = eras.find((x) => x.id === c.era); put(e?.id ?? "unknown", e ? `${defLabel(e.zh)}${e.from !== null ? _t("（{from} 起）", { from: fmtYear(e.from) }) : ""}` : _t("年代不详"), c); }
     const order = new Map(eras.map((e, i) => [e.id, i]));
     return asItems([...groups.values()].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.year ?? 1e9) - (b.year ?? 1e9)) })));
   }
@@ -207,7 +208,7 @@ function styleGroups(cat: Catalog, q: string, hit: (c: Concept) => boolean): Gro
   return [...groups.values()].sort((a, b) => (a.id === "none" ? 1 : b.id === "none" ? -1 : a.label.localeCompare(b.label, "zh")))
     .map((g) => ({ ...g, items: g.items.sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0) || yearOf(a) - yearOf(b) || gmOf(a) - gmOf(b) || a.concept.names.zh.localeCompare(b.concept.names.zh, "zh")) }));
 }
-export const weightLabel = (cat: Catalog, w: number): string => cat.defs.weights?.find((x) => x.id === w)?.zh ?? "";
-function styleLabel(cat: Catalog, tag: string): string { const s = cat.defs.styles?.find((x) => (x.id ?? x.tag) === tag); return s?.zh ?? s?.en ?? tag; }
+export const weightLabel = (cat: Catalog, w: number): string => defLabel(cat.defs.weights?.find((x) => x.id === w)?.zh ?? "");
+function styleLabel(cat: Catalog, tag: string): string { const s = cat.defs.styles?.find((x) => (x.id ?? x.tag) === tag); return (s?.zh ? defLabel(s.zh) : s?.en) ?? tag; }
 export const fmtYear = (y: number): string => (y < 0 ? _t("公元前 {y}", { y: -y }) : String(y));
-export const eraLabel = (cat: Catalog, c: Concept): string => cat.defs.eras.find((e) => e.id === c.era)?.zh ?? "";
+export const eraLabel = (cat: Catalog, c: Concept): string => defLabel(cat.defs.eras.find((e) => e.id === c.era)?.zh ?? "");

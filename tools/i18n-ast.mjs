@@ -18,7 +18,7 @@ export const SKIP_FILES = {
 export const isSkipFile = (rel) => !!SKIP_FILES[rel] || rel.endsWith(".gen.ts");
 
 const SKIP_CALLS = new Set(["includes", "startsWith", "endsWith", "indexOf", "lastIndexOf", "replace", "replaceAll", "split", "test", "match", "matchAll", "search", "localeCompare"]);
-const SKIP_CALLEES = new Set(["console", "diagNote", "diagLog", "_t", "_tDyn"]);
+const SKIP_CALLEES = new Set(["console", "diagNote", "diagLog", "_t"]);
 
 /** 这个中文字面量是不是不算文案（比较、查找、日志、对象键、类型……）。 */
 export function isSkippedContext(node) {

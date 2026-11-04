@@ -78,7 +78,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const arg = process.argv[2];
   const used = usedKeys();
   const table = readTable();
-  const missing = [...used.keys()].filter((k) => !table.has(k));
+  const missing = [...used.keys()].filter((k) => !table.get(k));
   const unused = [...table.keys()].filter((k) => !used.has(k));
   if (arg === "--missing") {
     fs.writeFileSync(process.argv[3], JSON.stringify(missing.map((k, id) => ({ id, k, w: used.get(k) }))));

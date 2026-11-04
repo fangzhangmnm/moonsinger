@@ -5,7 +5,7 @@
 //   w > 0 = 按次重音的量加（w = 1 就是一个次重音），w < 0 = 按弱化的量减（w = −1 就是一个弱化）——同一把尺子，演奏者配置里次重音 / 弱化调多少，这里跟着变。
 //   谱上写了音头记号（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）的音 = 写的说了算，拍子轻重不叠上去（「音的强度只能有一种」）。
 //   连过来的音（tie）不是新的音头，不算。摇摆（时值）v0.9.36 起接了：timeMapOf（下面）把它做进放的时候的时间表，三种演奏者同一个扭曲（song.ts swingDelta）。
-import { _t } from "../i18n/index.ts";
+import { _t, lang } from "../i18n/index.ts";
 import { type Token, type NoteTok, type Song, type PaperSeg, type GrooveTok, type TempoMap, WHOLE, TPQ, ATTACKS, DEFAULT_TIME, DEFAULT_BPM, artOf, isTimed, paperTicks, tempoMapOf, tempoOwner } from "./song.ts";
 import { expandPaper } from "./repeats.ts";
 import { GROOVE_STYLES, type GrooveStyle } from "./grooves.gen.ts";
@@ -13,7 +13,7 @@ import { GROOVE_STYLES, type GrooveStyle } from "./grooves.gen.ts";
 export { GROOVE_STYLES, type GrooveStyle };
 export const grooveStyle = (id: string): GrooveStyle | null => GROOVE_STYLES.find((s) => s.id === id) ?? null;
 /** 预设的名字（"none" = 「不加轻重」，比预设名「无」好懂）；不认识的预设（以后的版本写的）= 原样显示 id。 */
-export const grooveName = (style: string): string => { const s = grooveStyle(style); return style === "none" ? _t("不加轻重") : s ? s.name.zh : style; };
+export const grooveName = (style: string): string => { const s = grooveStyle(style); return style === "none" ? _t("不加轻重") : s ? (lang() === "zh" ? s.name.zh : s.name.en) : style; };
 /** 预设的英文名（谱面语言，同速度的 Andante；user「风格名用英文」）："none" = none；不认识的预设 = 原样 id。 */
 export const grooveNameEn = (style: string): string => { const s = grooveStyle(style); return style === "none" ? "none" : s ? s.name.en : style; };
 /** 谱上 / MusicXML 里写的字：「Style: Classical」（光写名字像谜语，user「光说一个古典比较谜语人，说风格：古典」；

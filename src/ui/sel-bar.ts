@@ -35,7 +35,8 @@ export class SelBar {
     const tweak = `<div class="sel-row sel-tweak">${t("up", "↑", _t("往上一级（调内）"))}${t("down", "↓", _t("往下一级（调内）"))}${t("sharp", "♯", _t("升半音"))}${t("flat", "♭", _t("降半音"))}` +
       `${t("octUp", "↑8", _t("高八度"))}${t("octDown", "↓8", _t("低八度"))}<span class="sel-gap"></span>${t("half", "÷2", _t("时值减半"))}${t("double", "×2", _t("时值加倍"))}${t("dot", _t("附点"), _t("加附点（都有附点 = 去掉）"))}</div>`;
     this.el.classList.toggle("has-tweak", !!sel);
-    const row1 = `<span class="sel-n">${_t("{sel} 个", { sel })}</span>` + b("all", _t("全选")) + b("copy", _t("复制")) + b("cut", _t("剪切")) + (clip ? b("paste", _t("粘贴")) : "") + b("transpose", _t("操作…")) + b("delete", _t("删"), "trash-can", "danger") + b("clear", "", "x");
+    const ib = (v: SelVerb, label: string, icon: string, cls = "") => `<button type="button" class="btn sel-ico ${cls}" data-v="${v}" title="${label}" aria-label="${label}">${iconHtml(icon)}</button>`;
+    const row1 = `<span class="sel-n">${_t("{sel} 个", { sel })}</span>` + ib("all", _t("全选"), "select-all") + ib("copy", _t("复制"), "copy") + ib("cut", _t("剪切"), "cut") + (clip ? ib("paste", _t("粘贴"), "paste") : "") + b("transpose", _t("操作…")) + ib("delete", _t("删"), "trash-can", "danger") + b("clear", "", "x");
     this.el.innerHTML = sel ? `<div class="sel-row">${row1}</div>${tweak}` : b("paste", _t("粘贴到光标处")) + b("forget", "", "x");
     this.el.hidden = false;
   }

@@ -2,6 +2,7 @@
 // created 2026-10-07 by Claude Fable 5.1。user 2026-10-07「找人视图同意，然后最好是全屏的而不是弹出窗口，类似gallery，然后能用这个音乐键盘」「默认按年代排哈哈哈」
 //   「试听不生成演奏者」（试听台 = 临时槽；只在「上场」时才 by value 造演奏者）「顺序本来就是先选概念再选演奏者」。
 // 数据 = src/gm/catalog.ts（vendor/instruments/ 的两张表 + 图标 sprite）；音频 / 选角归 host（src/app/main.ts）。
+import { conceptName, conceptAlt, defLabel, zhOnly } from "../gm/catalog-i18n.ts";
 import { _t } from "../i18n/index.ts";
 import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightLabel, SORT_LABEL, type Catalog, type Concept, type Entry, type Provider, type SortMode } from "../gm/catalog.ts";
 
@@ -143,7 +144,7 @@ export class Finder {
     const cat = this.cat!, c = e.concept, pk = e.preset ? gmKey(e.preset) : "", o = `${groupId}::${c.id}${pk ? `::${pk}` : ""}`, open = this.opened === o, icon = c.icon?.id;
     // 按曲风显示承重：★★★ 承重 / ★★ 常用 / ★ 点缀（仓鼠 v3；user「每个风里面按照承重排…让他ui里面显示出来」）；音色行 = 这个音色自己的（v8 起逐个音色判）
     const w = e.weight ?? 0, stars = w ? `<span class="inst-w" title="${esc(weightLabel(cat, w))}">${"★".repeat(w)}</span>` : "";
-    const asName = e.as ? (cat.byId.get(e.as)?.names.zh ?? e.as) : "", asTag = asName ? `<span class="inst-as" title="${_t("在这种风里顶替「{asName}」", { asName: esc(asName) })}">${_t("顶 {asName}", { asName: esc(asName) })}</span>` : "";
+    const asConcept = e.as ? cat.byId.get(e.as) : null, asName = e.as ? (asConcept ? conceptName(asConcept.names) : e.as) : "", asTag = asName ? `<span class="inst-as" title="${_t("在这种风里顶替「{asName}」", { asName: esc(asName) })}">${_t("顶 {asName}", { asName: esc(asName) })}</span>` : "";
     const year = e.preset?.year ?? c.year, approx = e.preset ? !!(e.preset as { yearApprox?: boolean }).yearApprox : c.yearApprox;
     const meta = [eraLabel(cat, c), year !== null && year !== undefined ? `${approx ? _t("约 ") : ""}${fmtYear(year)}` : ""].filter(Boolean).join(" · ");
     let body = "";
@@ -155,12 +156,12 @@ export class Finder {
       const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("顶替")}</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
         `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("用它放这条声部的开头")}">${_t("▶ 听开头")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("选它来演这个声部，回到乐器页")}">${_t("选这个")}</button>`}</div></div>`;
       body = `<div class="inst-prov">` +
-        provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? _t("鼓件 · {gmName}（Standard 鼓组的 {note} 号键）", { gmName: esc(p.gmName), note: p.note }) : p.bank === 128 ? _t("鼓组 · {gmName}", { gmName: esc(p.gmName) }) : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? _t("顶替{p}{reason}", { p: p.basis === "official" ? _t("（GM 原文认可）") : p.basis === "lineage" ? _t("（前身）") : p.basis === "imitation" ? _t("（仿声）") : p.basis === "family" ? _t("（同类）") : _t("（只是同名）"), reason: p.reason ? `：${esc(p.reason)}` : "" }) : "", true, p.kind === "substitute")).join("") +
+        provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? _t("鼓件 · {gmName}（Standard 鼓组的 {note} 号键）", { gmName: esc(p.gmName), note: p.note }) : p.bank === 128 ? _t("鼓组 · {gmName}", { gmName: esc(p.gmName) }) : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? _t("顶替{p}{reason}", { p: p.basis === "official" ? _t("（GM 原文认可）") : p.basis === "lineage" ? _t("（前身）") : p.basis === "imitation" ? _t("（仿声）") : p.basis === "family" ? _t("（同类）") : _t("（只是同名）"), reason: p.reason && zhOnly(p.reason) ? `：${esc(p.reason)}` : "" }) : "", true, p.kind === "substitute")).join("") +
         (pitched ? prov(`${c.id}|voice`, _t("小月相"), _t("唱歌词；没写歌词的音按「哼的字」唱"), false) : "") +
         (!provs.length && !pitched ? `<div class="prov-none">${_t("目录里还没有谁能演它")}</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc(c.id)}" data-o="${esc(o)}"${pk ? ` data-k="${esc(pk)}"` : ""}>` +
-      (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc(icon)}"/></svg>` : `<span class="inst-ico none">${esc(c.names.zh.slice(0, 1))}</span>`) +
-      `<div class="inst-name"><b><span class="zh">${esc(c.names.zh)}</span>${e.preset ? `<span class="inst-preset"> · ${esc(e.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span>${esc(roleNameOf(c))}${c.names.ja ? ` · ${esc(c.names.ja)}` : ""}</span></div><div class="inst-meta">${esc(meta)}</div></div>` + body;
+      (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc(icon)}"/></svg>` : `<span class="inst-ico none">${esc(conceptName(c.names).slice(0, 1))}</span>`) +
+      `<div class="inst-name"><b><span class="zh">${esc(conceptName(c.names))}</span>${e.preset ? `<span class="inst-preset"> · ${esc(e.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span data-i18n-skip>${esc(conceptAlt(roleNameOf(c), c.names))}</span></div><div class="inst-meta">${esc(meta)}</div></div>` + body;
   }
 }

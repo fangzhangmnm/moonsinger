@@ -63,5 +63,5 @@ export function describeSongChange(prev: EditorState, next: EditorState): Locus 
   const pa = a.papers.find((p) => p.id === prev.at.paper), pb = b.papers.find((p) => p.id === prev.at.paper);
   if (pa && pb && !!pa.hidden !== !!pb.hidden) return { kind: "paper", label: pb.hidden ? _t("隐藏了这张纸") : _t("取消隐藏这张纸") };
   if (pa && pb && pa.name !== pb.name) return { kind: "paper", label: _t("改曲段名") };
-  return { kind: "score", label: _t("改") };
+  return { kind: "score", label: _t("改##谱") };
 }

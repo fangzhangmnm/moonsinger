@@ -2,7 +2,7 @@
 //   形状抄 WeebPaint src/i18n（一张表、类型门、语言一经解析就锁死、切换 = 存 + 重载），差别：键 = 中文原文。
 //   为什么键用原文：① 源码读得懂（两千条散在模板串里，换成代号就没法读了）② 中文界面零改动、现有测试照跑
 //   ③ `_t("新的话")` 表里没有 = tsc 报错 = 漏译编译不过；工具 tools/i18n-sync.mjs 列出缺的。
-//   同一句中文要两种英文 = 第二个参数里给 ctx，写成表里的另一条（少见）。
+//   同一句中文要两种英文 = 键后面加 `##上下文`（`_t("弹##出声")`）：中文只显示 ## 前面，表里是另一条（少见）。
 //
 //   语言怎么定（一处）：
 //     · 主线程：device-kv `lang`（人选过）→ 系统语言（zh* = 中文，别的 = 英文；同 WeebPaint「未支持的语言 → 英文」）
@@ -39,16 +39,20 @@ export function langChosen(): Lang | null { return valid(deviceKvGet("lang")); }
 /** 存下选择。重载由调用方做（要先把手上的歌落盘）。null = 回到跟系统。 */
 export function saveLang(l: Lang | null): void { deviceKvSet("lang", l); }
 
+/** {n} = 参数；{n|song|songs} = 按 n 是不是 1 挑单复数（只有英文用，中文没有复数）。 */
 function fill(raw: string, params?: Record<string, unknown>): string {
   if (!params) return raw;
-  return raw.replace(/\{(\w+)\}/g, (m, k: string) => (k in params ? String(params[k]) : m));
+  return raw.replace(/\{(\w+)(?:\|([^|}]*)\|([^}]*))?\}/g, (m, k: string, one?: string, many?: string) => {
+    if (!(k in params)) return m;
+    return one !== undefined ? (Number(params[k]) === 1 ? one : many ?? "") : String(params[k]);
+  });
 }
 
 declare const __I18N_OFF__: boolean | undefined;   // AudioWorklet 的 bundle 定义成 true：它不显示字，翻译表不打进音频线程
 const TABLE: Record<string, { en: string } | undefined> = typeof __I18N_OFF__ !== "undefined" && __I18N_OFF__ ? {} : S;
 
 function lookup(key: string): string {
-  if (lang() === "zh") return key;
+  if (lang() === "zh") { const i = key.indexOf("##"); return i < 0 ? key : key.slice(0, i); }   // 「弹##出声」= 中文显示「弹」，英文是另一条
   const e = TABLE[key];
   return e?.en || key;   // 表里没有（只可能是 _tDyn 收到的运行时字串）= 原文
 }
@@ -57,11 +61,6 @@ function lookup(key: string): string {
 export function _t(key: Key, params?: Record<string, unknown>): string {
   return fill(lookup(key), params);
 }
-/** 只有运行时才知道是哪一句（worker 发来的进度字、表驱动的说明）：表里有就翻，没有原样。尽量别用。 */
-export function _tDyn(key: string, params?: Record<string, unknown>): string {
-  return fill(lookup(key), params);
-}
-
 /** 起 worker 用：把语言带进去（worker 里读不到 device-kv）。 */
 export function workerOptions(): WorkerOptions {
   return { type: "module", name: `lang=${lang()}` };
@@ -72,4 +71,10 @@ export function applyDocumentLang(): void {
   const root = document.documentElement;
   root.lang = lang() === "zh" ? "zh-CN" : lang();
   root.dataset.lang = lang();
+  // styles.css 里 ::after 的 content 走变量（CSS 没有 _t）；中文 = CSS 里的默认值，不用设
+  if (lang() !== "zh") {
+    root.style.setProperty("--t-loop", JSON.stringify(_t("循环")));
+    root.style.setProperty("--t-final-mix", JSON.stringify(_t("定稿了：混音锁着（三条杠里「改稿」解锁）")));
+    root.style.setProperty("--t-final-lock", JSON.stringify(_t("定稿了：锁着（三条杠里「改稿」解锁）")));
+  }
 }

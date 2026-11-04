@@ -950,7 +950,7 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 #stage[data-side="right"] > .sel-bar { left: calc((100% - 46px) / 2); max-width: calc(100% - 16px - 46px); }
 /* |▶ 开着循环：右上角一个小「循环」 */
 .play-btn { position: relative; }
-.play-btn.looping::after { content: "循环"; position: absolute; top: -6px; right: -8px; padding: 0 3px; border-radius: 6px; font-size: 9px; line-height: 13px; background: var(--accent); color: #fff; pointer-events: none; }
+.play-btn.looping::after { content: var(--t-loop, "循环"); position: absolute; top: -6px; right: -8px; padding: 0 3px; border-radius: 6px; font-size: 9px; line-height: 13px; background: var(--accent); color: #fff; pointer-events: none; }
 /* |▶ 左上角「N 条轨不出声」（ADR-0004 §2.2½ 四个出口之一，2026-10-14）：点它 = 开清单；钮本身照旧是放 / 停。右上角留给「循环」 */
 .play-btn .issues-badge { position: absolute; top: -6px; left: -8px; min-width: 13px; padding: 0 4px; border-radius: 7px; font-size: 9px; line-height: 13px; background: var(--danger, #c0392b); color: #fff; text-align: center; cursor: pointer; }
 .issue-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
@@ -972,8 +972,8 @@ body.doc-final .mode-seg [data-mode]:not([data-mode="listen"]) { opacity: .4; }
 body.doc-final .inst-page .ip-card { pointer-events: none; opacity: .72; }
 body.doc-final .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
 body.doc-final .studio .studio-strips, body.doc-final .studio .fx-panel, body.doc-final .studio .mix-menu { pointer-events: none; opacity: .72; }
-body.doc-final .studio .finder-bar::after { content: "定稿了：混音锁着（三条杠里「改稿」解锁）"; margin-left: 8px; font-size: 12px; color: var(--muted); }
-body.doc-final .inst-page .finder-bar::after { content: "定稿了：锁着（三条杠里「改稿」解锁）"; margin-left: 8px; font-size: 12px; color: var(--muted); }
+body.doc-final .studio .finder-bar::after { content: var(--t-final-mix, "定稿了：混音锁着（三条杠里「改稿」解锁）"); margin-left: 8px; font-size: 12px; color: var(--muted); }
+body.doc-final .inst-page .finder-bar::after { content: var(--t-final-lock, "定稿了：锁着（三条杠里「改稿」解锁）"); margin-left: 8px; font-size: 12px; color: var(--muted); }
 /* 歌库封面上的 ▶ = 图库包 0.8.0 的动作钮（.gallery-tile-action，包画 + 包接点击；样式在 vendor/internal-css/gallery.css，这里只调颜色） */
 .gallery-tile-action { background: color-mix(in srgb, var(--accent) 88%, transparent); }
 /* 歌库底边的迷你播放条 */
@@ -995,3 +995,12 @@ body.doc-final .inst-page .finder-bar::after { content: "定稿了：锁着（�
 .gallery-home-bar[hidden] { display: none; }
 .gallery-home-text { flex: 1 1 14em; min-width: 0; }
 .gallery-home-bar .spacer { display: none; }
+
+/* v0.15.0：窄钮换成图标后的大小（中英同一套，user 2026-11-04「能图标就不文字」） */
+.mode-seg [data-mode] svg { width: 18px; height: 18px; display: block; }
+.pad-head .kb-switch svg, .pad-head .impro-pad svg, .pad-head .hide-pad svg { width: 20px; height: 20px; display: block; margin: auto; }
+.pad-head .kb-switch .smufl { font-size: 22px; line-height: 1; display: block; transform: translateY(-2px); }
+.pad-tool-key svg, .pad-tools svg { width: 18px; height: 18px; }
+/* 长按提示气泡（src/ui/touch-tip.ts）：触屏没有 tooltip */
+.touch-tip { position: fixed; z-index: var(--z-menu); max-width: min(280px, calc(100vw - 16px)); padding: 6px 10px; border-radius: 8px; background: var(--ink, #222); color: var(--paper, #fff); font-size: 13px; line-height: 1.35; pointer-events: none; box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
+.sel-bar .sel-ico svg { width: 18px; height: 18px; display: block; }

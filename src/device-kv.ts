@@ -1,7 +1,7 @@
 // device-kv —— device 层唯一 localStorage 入口（抄 WeebPaint / WebXiaoHeiWu src/device-kv.ts 的形状）。created 2026-10-08 by Claude Fable 5.1
 //
 // 纪律：**全 app 禁裸 localStorage**（红线守卫测试 test/redline-guard.test.mjs 守着）——device 层标量一律经本器官。
-//   住这里的：storeAttached（这台设备挂过图库 = 开机先建 store 再 initAuth，CatsUp 2026-09-22 教训）、gallery-folder（上次在哪个夹）、
+//   住这里的：lang（界面语言，v0.15.0）、storeAttached（这台设备挂过图库 = 开机先建 store 再 initAuth，CatsUp 2026-09-22 教训）、gallery-folder（上次在哪个夹）、
 //   last-scene（在书架里离开 → 回来在书架）、diag-log（黑匣子环，经 @internal/gallery diagLog）。
 // localStorage 不可用（隐私模式 / 配额）→ try/catch 降级纯内存（本 session 内一致，不跨刷新）。
 // key 前缀带 GUID 命名空间（同 origin 兄弟 PWA 共桶防撞；永不碰非自己前缀的键）。

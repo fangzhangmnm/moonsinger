@@ -14,7 +14,7 @@ await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musi
 const top = () => p.evaluate(() => Math.round(document.getElementById("score").scrollTop));
 const padShown = () => p.evaluate(() => !document.getElementById("padPanel").hidden);
 const caretSeen = () => p.evaluate(() => { const sc = document.getElementById("score").getBoundingClientRect(), c = document.querySelector("#score .caret")?.getBoundingClientRect(); return !!c && c.bottom > sc.top && c.top < sc.bottom; });
-const togglePad = async () => { if (await padShown()) { const bs = await p.$$("#padPanel button"); for (const x of bs) if ((await x.textContent()).trim() === "收起") { await x.click(); break; } } else await p.click("#padTab"); await p.waitForTimeout(300); };
+const togglePad = async () => { if (await padShown()) { await p.click("#padPanel .hide-pad"); } else await p.click("#padTab"); await p.waitForTimeout(300); };
 // 光标放在开头附近，然后滚开很远
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, caret: 5, sel: null }); }); await p.waitForTimeout(200);
 await p.evaluate(() => { document.getElementById("score").scrollTop = 3000; }); await p.waitForTimeout(200);

@@ -255,6 +255,17 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **部署**：itch = 文件模式（入口灰 +「去官网」）；备用版 = 文件夹是它的家（网盘那一个灰着）；备用版的浏览器选不了夹 = 入口灰 + 说为什么。
 - 测试：`test/move-songs.test.mjs`（10）、`test/library-home.test.mjs`、E2E `test/e2e/folder-home.mjs`（假 FSA = OPFS 子目录，`test/e2e/fake-fsa.mjs`；存量 store / final 也走真入口）、`tools/local-smoke.mjs`、`tools/itch-fixture.mjs`。**真机零**：真选夹对话框、双击形态下选夹（无头 file: 不给 OPFS）、再授权的系统提示。
 
+## 界面语言 = 中 / 英（v0.15.0，2026-11-04，Claude Opus 5.5；user「itch发布前先把i18n补一下吧。关键是UI的宽度…最好的办法是像weebpaint的procreate风格一样，能图标就不文字」「以及bump minor」「日文先不做」）
+
+- **加字**：界面的字一律 `_t("中文原文")`（`src/i18n/index.ts`），带参数 `_t("写了 {n} 个", { n })`；键就是中文原文，英文在 `src/i18n/strings.ts`。表里没有 = tsc 红（`node tools/i18n-sync.mjs` 列缺的 / 多的）。同一句中文要两种英文 = `_t("弹##出声")`（中文只显示 ## 前面）。英文复数 `{n|song|songs}`。英文别写 `"`（很多条落在 `title="…"` 里，用 “ ”）。守卫 `test/i18n-guard.test.mjs`（新写的中文没走 `_t` = 红；故意不翻的行尾写 `// i18n-keep`）。
+- **语言怎么定**：device-kv `lang`（设置最上面一行：跟系统 / 中文 / English；切换 = 存 + 重载，语言锁死在这一页）→ 否则系统语言：zh* = 中文，别的 = 英文（官网 / itch / 备用版同一条规则）。worker 读不到 device-kv = 主线程写进 worker 名字（`workerOptions()`）；node（单测 / 命令行渲染 / 生成 docs/keys.md）和 AudioWorklet = 中文原文（worklet 的 bundle `__I18N_OFF__`，不打翻译表）。E2E 经 `test/e2e/pw.mjs` 钉在 zh-CN，要测英文明写 `locale: "en-US"`。
+- **不翻的**：哼的字（`lab-score.ts`，进唱法）；小月相条款（`credit-translations.ts` 自有中英；英文界面只显示原文 + 英文）；目录的日文名。写进文件的默认值（小月相 → Tsukuyomi-chan、麦克风 → Mic、许可文字）按当时的界面语言 by value 存，旧歌不改。谱面记谱语言本来就是英文 / 意大利文。
+- **乐器目录**（`src/gm/catalog-i18n.ts`）：概念名有 zh / en / ja；年代 / 曲风 / 承重 / 连断只有 zh = 对照表写在这里（快照不改，取货多了标签 `test/catalog-i18n.test.mjs` 红）；reason / basis 这类只有中文的长说明 = 英文界面不显示。
+- **窄钮 = 图标，中英一套**（库里待过目层新画 `music-note` `headphones` `piano-keys` `note-stack`；`text` `chevron-down` `select-all` `copy` `cut` 是现成的）：模式钮、切键盘（`f` 字形 ↔ 音符）、弹、收起、叠、选区条的动词。字留在 title / aria-label。放得下的小字用短写（Acc. / Artic. / Dyn.）。
+- **触屏提示** `src/ui/touch-tip.ts`：触屏没有 tooltip，长按名单里的纯图标钮 = 冒气泡、这一下不算点。有自己长按的钮（|▶、退格、旋钮）不进名单。
+- **宽度靠量**：`test/e2e/i18n-en.mjs` 用英文走四种屏幕（iPad mini 竖 / 横、手机、桌面）的主要界面，查剩下的汉字 + 字宽超过控件的。**没量到的**：高度方向（乐谱字形的行高会误报，只量宽度）、下拉框里的字、真机字体。
+- **网页简介没翻**：`index.html` 的 description / og、`manifest` 的 description 还是中文（文案归 user，标题照旧只有 MoonSinger）。
+
 ## 回来时没传的东西分三种 + 离线期间静默再试（v0.14.18，2026-11-04，Claude Opus 5.5；家族工单 H4；规则书 §1 第 15 条、闸门设计稿 §3）
 
 - **传的时机不变**（按「存」或退出；自动保存只落本机）。回来（开机登录好 / 网回来 / 文件夹再授权）时：**(a) 从没传过**（列举 syncState = float；`local-only` 不算）= 问一次「有 N 首只在这台设备，现在传上去？」（家是文件夹 = 「现在写进「夹名」？」），「现在传 / 稍后」，稍后 = 进「要处理」列表、什么都不传；**(b) 传过、按过存没传成**（`es.isPushOwed()`，同 WeebPaint：之后再改就不算）= 自动续传不问，只有开着那首知道；**(c) 传过、只是自动保存** = 不传不问，一条「N 首没传上去，在要处理列表里」+「去处理」。a、c 同时有 = 面上两样都说「有 A 首只在这台设备，还有 C 首改过没传。现在全传？」，人点了一起传（Fable 11-03 拍）。一页只问一次（下次打开再问）。纯函数 `src/app/cloud-return.ts`；接线 `main.ts settleReturn / askReturn`。「欠一推」只认按「存」：本 app 的编辑走 `changed()` → `es.markDirty()`（`editor.onChange` 是空的），markDirty 清欠（单测核了这条路）。
@@ -294,7 +305,7 @@ user 2026-10-08「真的需要做store了…要不要硬着头皮进store」「�
 
 | 文件 | 碰什么 | 为什么 |
 |---|---|---|
-| `src/device-kv.ts` | localStorage（前缀 `moonsinger-5b1e7c0a92d34f6e:`） | device 层标量：storeAttached / gallery-folder / last-scene / last-doc / diag-log / midi-chip-hidden（v0.13.3）/ zoom（谱面缩放的物理倍数，v0.14.8；user 2026-10-21「缩放跨会话记住，按设备存」批） |
+| `src/device-kv.ts` | localStorage（前缀 `moonsinger-5b1e7c0a92d34f6e:`） | device 层标量：lang / storeAttached / gallery-folder / last-scene / last-doc / diag-log / midi-chip-hidden（v0.13.3）/ zoom（谱面缩放的物理倍数，v0.14.8；user 2026-10-21「缩放跨会话记住，按设备存」批） |
 | `src/app/pwa-shell.ts` | Cache Storage | 清缓存只清自己前缀 `moonsinger-` 的壳缓存 |
 | `src/gm/sound-cache.ts` | Cache Storage `pwa-sounds` | 音源整包按 sha256 留着离线能用（user 2026-10-07 批）；2026-10-08 起也存**子集**（自己的 .sf2 加进来时 / 解包时留的，同样按 sha256、取出来核过；设置里逐条能删，认得出是哪首歌的哪件——Opus 5.5 加，没另问 user，形状同一种）；`navigator.storage.estimate` 只读显示 |
 | `service-worker.js` | Cache Storage `moonsinger-<hash>` | app 壳 |
