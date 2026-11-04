@@ -92,7 +92,7 @@ import { exportAll, exportAllSay } from "./export-all.ts";
 import { zipSync } from "../../vendor/fflate/fflate.esm.js";
 import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
 import { createEditorSession } from "../editor-session/index.ts";
-import { withBusy, openInputSheet, openChoiceSheet, type Choice, openConfirmSheet, isSheetOpen, closeSheet, isGateOpen, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
+import { withBusy, openInputSheet, openChoiceSheet, type Choice, openConfirmSheet, isSheetOpen, closeSheet, isGateOpen, gateGeneration, whenGateClosed, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
 import { createReferenceHost, type RefImportQuestion, type RefImportChoice, RAM_ABOVE } from "./reference-host.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
 import { scorePdf, LYRIC_RAISE, type PdfFontId } from "../export/score-pdf.ts";
@@ -225,9 +225,18 @@ const shell = initPwaShell({ onUpdateAvailable: () => { diagNote("sw", "update a
 async function flushBeforeReload(): Promise<void> {
   if (H.home.kind !== "gallery" || !hasStore()) return;   // 无地 / 本机文件没有云；改过没存的挽留框照旧
   const t0 = Date.now();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  await Promise.race([es.flushAndPush(), new Promise<void>((r) => { timer = setTimeout(r, RELOAD_PUSH_TIMEOUT_MS); })]).catch((e) => reportError(e, "warning"));
-  clearTimeout(timer);
+  const push = es.flushAndPush().catch((e) => reportError(e, "warning"));
+  // 最多等 5 s（云端挂着也得刷得掉），但面开着这段不算：人正在被问，不许刷掉（工单 H2，Fable 2026-11-03 裁「面开着就不刷」）。
+  //   面关了再给 5 s：选了 = 按选的推 / 拉完再刷；取消 = 推很快回来、刷新继续、脏留本地。面在这 5 s 里开过又关了同样重新算。
+  let seen = gateGeneration();
+  for (;;) {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([push, new Promise<void>((r) => { timer = setTimeout(r, RELOAD_PUSH_TIMEOUT_MS); })]);
+    clearTimeout(timer);
+    if (isGateOpen()) { diagNote("sw", "reload waits: a face is open"); await whenGateClosed(); seen = gateGeneration(); continue; }
+    if (gateGeneration() !== seen) { seen = gateGeneration(); continue; }
+    break;
+  }
   diagNote("sw", `flush before reload: ${Date.now() - t0}ms, push pending=${String(es.isPushPending())}`);
 }
 function showUpdateBar(): void {

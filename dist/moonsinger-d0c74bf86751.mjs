@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.15-2026-11-03";
+var APP_VERSION = "v0.14.16-2026-11-03";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -25162,7 +25162,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-6fb0185cdc6b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-328df8965ed4.mjs");
+      return pick(() => "encode-worker-66e39f77f4c4.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -33357,6 +33357,7 @@ async function withBusy(label, fn) {
 var gateEl = null;
 var gatePending = null;
 var gateFocusBack = null;
+var gateClosedWaiters = [];
 var gateGen = 0;
 var gateGeneration = () => gateGen;
 function lockSyncGate({ title, message, note: note2, showSpinner, actions }) {
@@ -33392,6 +33393,9 @@ function lockSyncGate({ title, message, note: note2, showSpinner, actions }) {
 function unlockSyncGate() {
   if (gateEl) gateEl.hidden = true;
   gatePending = null;
+  const waiters = gateClosedWaiters;
+  gateClosedWaiters = [];
+  for (const r10 of waiters) r10();
   const back = gateFocusBack;
   gateFocusBack = null;
   if (back?.isConnected && (document.activeElement === document.body || document.activeElement == null)) {
@@ -33409,6 +33413,9 @@ function settleSyncGate(value) {
   }
 }
 var isGateOpen = () => gatePending != null;
+var whenGateClosed = () => gatePending == null ? Promise.resolve() : new Promise((r10) => {
+  gateClosedWaiters.push(r10);
+});
 var sheetOpen = null;
 var isSheetOpen = () => sheetOpen != null;
 function closeSheet() {
@@ -45689,11 +45696,26 @@ var shell = initPwaShell({ onUpdateAvailable: () => {
 async function flushBeforeReload() {
   if (H2.home.kind !== "gallery" || !hasStore()) return;
   const t02 = Date.now();
-  let timer;
-  await Promise.race([es2.flushAndPush(), new Promise((r10) => {
-    timer = setTimeout(r10, RELOAD_PUSH_TIMEOUT_MS);
-  })]).catch((e10) => reportError(e10, "warning"));
-  clearTimeout(timer);
+  const push = es2.flushAndPush().catch((e10) => reportError(e10, "warning"));
+  let seen = gateGeneration();
+  for (; ; ) {
+    let timer;
+    await Promise.race([push, new Promise((r10) => {
+      timer = setTimeout(r10, RELOAD_PUSH_TIMEOUT_MS);
+    })]);
+    clearTimeout(timer);
+    if (isGateOpen()) {
+      diagNote("sw", "reload waits: a face is open");
+      await whenGateClosed();
+      seen = gateGeneration();
+      continue;
+    }
+    if (gateGeneration() !== seen) {
+      seen = gateGeneration();
+      continue;
+    }
+    break;
+  }
   diagNote("sw", `flush before reload: ${Date.now() - t02}ms, push pending=${String(es2.isPushPending())}`);
 }
 function showUpdateBar() {
@@ -50437,4 +50459,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-77e2e72a5dae.mjs.map
+//# sourceMappingURL=moonsinger-d0c74bf86751.mjs.map

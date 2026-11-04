@@ -289,7 +289,7 @@ user 2026-10-08「真的需要做store了…要不要硬着头皮进store」「�
 
 - **闸门**（`src/cloud-gate.ts` 状态机，同小黑屋一份；`src/app/cloud-gate-ui.ts` 界面）：挂了库 ∧ 有账号 ∧ 手里不是本机文件 = 开机 / 醒来本机那首摆着、罩「正在核对网盘上的版本…」+ 第一帧起就有「先离线用」→ 静默续签 + 问一次云端 → 放行 / 库的冲突面（优先，闸门不抢）/ 闸「网盘没连上」（登录过期了 · 现在没有网络 · 网盘没有回应）+「重新登录」「离线继续」；8 s 没回 = 自动进闸，云端回了自己放行。选离线 = 内存布尔（接进 `createStore({ isOnline })`，不进任何存储）+ notice「离线 · 还有 N 份没传上去」+「看列表」；回线 / 回前台 / 云菜单「重新连接」悄悄续签，成了问「去处理」、条收掉。**云端判断一律 `cloudOnline()`**，别再看 `navigator.onLine`（守卫核）。醒来：离开不足 `WAKE_CHECK_AFTER_MS`（10 分钟）/ 手里有没推的改动 = 不罩、悄悄核，核不上才弹闸。E2E `test/e2e/gate.mjs`，假登录 = `window.__moonsingerAuth`（`app-store.ts injectedAuth`，只在本机地址上认）。
 - **歌库披露**：这台设备没有网盘账号时顶上常驻「这些歌只在这台设备的浏览器里，没有备份」+「全部导出」（`src/app/export-all.ts`，一个 zip）+「连接网盘」。有账号但登录过期不说（那不是实话）。不改入口、不删功能；后面两步（文件夹歌库、收入口）在核对单 §4。
-- **更新重载前先推**（F-147 B）：点「有新版本 · 刷新」= `flushAndPush` ≤ 5 s，到点照样刷。自动存、页面隐藏、pagehide 照旧只落本地。正式版 / 开发版壳缓存分开（`moonsinger-dev-<hash>`，F-145）。
+- **更新重载前先推**（F-147 B）：点「有新版本 · 刷新」= `flushAndPush` ≤ 5 s，到点照样刷。**冲突面开着不算在 5 s 里（H2，v0.14.16；Fable 11-03 裁「面开着就不刷」）**：人正在被问，等面关了再走——选了 = 按选的推 / 拉完再刷，取消 = 刷新继续、脏留本地（`main.ts flushBeforeReload` + `sheets.ts whenGateClosed`）。自动存、页面隐藏、pagehide 照旧只落本地。正式版 / 开发版壳缓存分开（`moonsinger-dev-<hash>`，F-145）。
 
 ## 三种出货形态：官网 / itch / 备用版（v0.14.12，2026-11-03，Claude Opus 5.5；家族工单 A，规则书 = 家族根 `ai-docs/20261103-three-shapes-rulebook.md`；验收报告 = `ai-docs/20261103-rulebook-adoption-report.md`）
 

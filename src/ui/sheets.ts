@@ -25,6 +25,7 @@ export function setBusyText(label: string): void { if (busyEl && !busyEl.hidden)
 interface GateAction<T> { label: string; value: T; primary?: boolean }
 export interface GateOpts<T> { title: string; message: string; note?: string; showSpinner?: boolean; actions: GateAction<T>[] }
 let gateEl: HTMLElement | null = null, gatePending: ((v: unknown) => void) | null = null, gateFocusBack: HTMLElement | null = null;
+let gateClosedWaiters: (() => void)[] = [];
 let gateGen = 0;   // 锁屏位每被占一次 +1：闸门靠它认「上面还是不是我那张」（2026-11-03，库的冲突面可能已经盖上来了，不许顺手关掉别人的面）
 export const gateGeneration = (): number => gateGen;
 export function lockSyncGate<T = string>({ title, message, note, showSpinner, actions }: GateOpts<T>): Promise<T> {
@@ -49,11 +50,15 @@ export function lockSyncGate<T = string>({ title, message, note, showSpinner, ac
 export function unlockSyncGate(): void {
   if (gateEl) gateEl.hidden = true;
   gatePending = null;
+  const waiters = gateClosedWaiters; gateClosedWaiters = [];
+  for (const r of waiters) r();
   const back = gateFocusBack; gateFocusBack = null;
   if (back?.isConnected && (document.activeElement === document.body || document.activeElement == null)) { try { back.focus({ preventScroll: true }); } catch { /* ignore */ } }
 }
 export function settleSyncGate(value: unknown): void { if (gatePending) { const r = gatePending; unlockSyncGate(); r(value); } }
 export const isGateOpen = (): boolean => gatePending != null;
+/** 锁屏位空了才回（已经空着 = 马上回）。更新重载等人答完冲突面用（2026-11-03，工单 H2）。 */
+export const whenGateClosed = (): Promise<void> => (gatePending == null ? Promise.resolve() : new Promise<void>((r) => { gateClosedWaiters.push(r); }));
 
 // ── 交互 sheet：一次只开一个；主钮 / 取消 / 背板 / Esc ──
 let sheetOpen: (() => void) | null = null;   // 当前 sheet 的取消路径

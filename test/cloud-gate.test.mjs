@@ -296,7 +296,8 @@ describe("闸门 · 结构守卫（§8）", () => {
   });
   it("F-147 B：只有「点刷新」才在重载前推，≤ 5 s；页面隐藏 / pagehide 只落本地（自动存不推 = ADR-0016 / 0018）", () => {
     assert(/onBeforeReload: \(\) => flushBeforeReload\(\)/.test(app), "接在更新重载上");
-    assert(/Promise\.race\(\[es\.flushAndPush\(\), new Promise<void>\(\(r\) => \{ timer = setTimeout\(r, RELOAD_PUSH_TIMEOUT_MS\)/.test(app), "有上限");
+    assert(/const push = es\.flushAndPush\(\)/.test(app) && /Promise\.race\(\[push, new Promise<void>\(\(r\) => \{ timer = setTimeout\(r, RELOAD_PUSH_TIMEOUT_MS\)/.test(app), "有上限");
+    assert(/if \(isGateOpen\(\)\) \{[^\n]*await whenGateClosed\(\)/.test(app), "H2：面开着不算在 5 s 里，等面关了再走");
     assert(/RELOAD_PUSH_TIMEOUT_MS = 5000/.test(read("src/config.ts")));
     assert(/addEventListener\?\.\("pagehide", \(e: Event\) => \{ if \(!\(e as \{ persisted\?: boolean \}\)\.persisted\) void persist\(false\); \}\)/.test(session), "pagehide 只落本地");
     assert(/visibilityState === "hidden"\) void persist\(false\)/.test(session), "页面隐藏只落本地");

@@ -372,6 +372,72 @@ scenario("F-147 B：点「刷新」先推手里这首；云端挂着最多等 5 
   await p.close2();
 });
 
+scenario("H2：冲突面开着 5 s 到点不刷；选了 / 取消之后才刷", async (w) => {
+  const { p, id } = await seed(w, { account: true, signedIn: false, renew: "ok" });
+  await p.waitPhase("open"); await p.waitForTimeout(600);
+  const other = await w.device();
+  await other.setAuth({ account: true, signedIn: true, renew: "ok" }); await other.reopen();
+  await other.evaluate(() => window.__moonsinger.attach()); await other.waitForTimeout(300); await other.waitPhase("open");
+  const otherPushes = async (keys) => {
+    await other.evaluate((x) => window.__moonsinger.openStoreDoc(x), id); await other.waitForTimeout(400);
+    await typeNote(other, keys); await other.waitForTimeout(150);
+    await other.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await other.waitForTimeout(300);
+  };
+  const faceButtons = () => p.evaluate(() => { const g = document.querySelector(".gate-sheet"); return g && !g.hidden ? [...g.querySelectorAll(".gate-actions button")].map((b) => b.textContent) : null; });
+  const cloudHex = async () => { const it = (await w.cloud.list("")).find((x) => x.name === id); return Buffer.from(await (await w.cloud.download(it.ref)).arrayBuffer()).toString("hex"); };
+  const noteCount = (pg) => pg.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").length);
+  const askReload = async () => { await p.evaluate(() => { window.__notReloaded = true; void window.__moonsinger.updateReload(); }); await p.waitForSelector(".gate-sheet:not([hidden]) .gate-actions button", { timeout: 8000 }); };
+  const reloaded = () => p.evaluate(() => !window.__notReloaded);
+
+  // ① 面开着：5 s 到点不刷，人选「本地覆盖云端」= 按选的推完才刷
+  await otherPushes(["5"]);
+  await typeNote(p, ["1"]); await p.waitForTimeout(150);
+  const forked = await cloudHex();
+  await askReload();
+  const buttons = await faceButtons();
+  check(!!buttons && buttons.includes("本地覆盖云端") && buttons.includes("云端覆盖本地"), "点刷新撞上真分叉 = 冲突面", JSON.stringify(buttons));
+  await p.waitForTimeout(6500);
+  check(!(await reloaded()), "面开着：过了 5 s 也没刷");
+  check(!!(await faceButtons()), "面还开着");
+  check((await cloudHex()) === forked, "人没选：云端没动");
+  const mineNotes = await noteCount(p);
+  let nav = p.waitForEvent("load", { timeout: 9000 });
+  await p.clickGate("本地覆盖云端");
+  await nav; await p.waitForFunction(() => !!window.__moonsinger?.gate);
+  check((await cloudHex()) !== forked, "选了本地覆盖云端：推完才刷（云端变了）");
+  await p.waitPhase("open"); await p.waitForTimeout(600);
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 0, "推完没有脏");
+  check((await noteCount(p)) === mineNotes, "刷完还是自己这一版", String(await noteCount(p)));
+
+  // ② 取消 = 刷新继续，云端不动、脏留本地
+  await otherPushes(["6"]);
+  await typeNote(p, ["2"]); await p.waitForTimeout(150);
+  const forked2 = await cloudHex();
+  await askReload();
+  nav = p.waitForEvent("load", { timeout: 9000 });
+  await p.clickGate("取消");
+  await nav; await p.waitForFunction(() => !!window.__moonsinger?.gate);
+  check((await cloudHex()) === forked2, "取消：云端没动");
+  await p.waitForTimeout(800);
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) >= 1, "取消：脏留在本地");
+
+  // ③ 选「云端覆盖本地」= 拉完才刷，刷完是云端那一版；本机那版进备份箱
+  await p.waitPhase("open");
+  await p.click(".offer:not(.gate-sheet) button:has-text('暂不')", { timeout: 5000 });   // 留着脏 = 登录后照常问一句「有 N 首没同步好」
+  await p.waitForTimeout(300);
+  await typeNote(p, ["3"]); await p.waitForTimeout(150);
+  await askReload();
+  nav = p.waitForEvent("load", { timeout: 9000 });
+  await p.clickGate("云端覆盖本地");
+  await nav; await p.waitForFunction(() => !!window.__moonsinger?.gate);
+  await p.waitPhase("open"); await p.waitForTimeout(600);
+  check((await cloudHex()) === forked2, "选了云端覆盖本地：云端没动");
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 0, "拉完没有脏");
+  check((await p.evaluate(() => window.__moonsinger.store().files.listBackup().then((l) => l.length))) >= 1, "本机那一版进了备份箱");
+  check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
+  await other.close2(); await p.close2();
+});
+
 const only = process.argv[2] ?? "";
 for (const s of scenarios) {
   if (only && !s.name.includes(only)) continue;
