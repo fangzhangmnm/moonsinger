@@ -11,6 +11,7 @@ import { storeUI } from "./store-ui.ts";
 import { appEncryption } from "./encryption.ts";
 import { deviceKvGet, deviceKvSet } from "./device-kv.ts";
 import { currentPolicy } from "./deployment-policy.ts";
+import { cloudOnline } from "./cloud-gate.ts";
 
 const od = createOneDriveProvider({ clientId: CLIENT_ID, scopes: SCOPES, authority: AUTHORITY, msalUrl: MSAL_URL });
 /** 这个部署方式有没有网盘（家族规则书 §2：itch / 备用版没有）。开关的唯一来源 = deployment-policy；宿主的灰入口也读它。 */
@@ -18,13 +19,18 @@ export const cloudAvailable = (): boolean => currentPolicy().cloud;
 /** OneDrive 登录态（initAuth / signIn / signOut / onAuthChanged）。MSAL 脚本在 initAuth 时才载（signIn / retrySilentSignIn 里面也走 initAuth）。
  *  **网盘关着（itch / 备用版）= 这三个口子不碰 MSAL**：不 initAuth、不载脚本、不跳微软（规则书 §4 第 5 项；itch 夹具看网络里没有 msal 请求）。
  *  包在这一处 = 以后谁在别处新加一个登录调用也载不进来。2026-11-03 */
-export const auth: OneDriveAuth = cloudAvailable() ? od.auth : {
+/** 只给 E2E（test/e2e/gate.mjs）：页面开局前塞一个假登录（有账号 / 续签成败 / 挂起）。同 injectedCloud：只在本机地址上认，线上页面这条路不存在。 */
+function injectedAuth(): OneDriveAuth | null {
+  const g = globalThis as { __moonsingerAuth?: OneDriveAuth; location?: { hostname: string } };
+  return g.__moonsingerAuth && /^(127\.0\.0\.1|localhost)$/.test(g.location?.hostname ?? "") ? g.__moonsingerAuth : null;
+}
+export const auth: OneDriveAuth = injectedAuth() ?? (cloudAvailable() ? od.auth : {
   ...od.auth,
   isAuthConfigured: () => false,
   initAuth: async () => ({ signedIn: false, account: null, notConfigured: true }),
   signIn: async () => { throw new Error("cloud sign-in is not available in this deployment (itch / offline copy)"); },
   retrySilentSignIn: async () => false,
-} as OneDriveAuth;
+} as OneDriveAuth);
 
 let _activeIdentifier: string | null = null;
 /** 当前打开的歌的身份（cloud-gone 去抖绝不动它）。 */
@@ -61,6 +67,7 @@ export function attachStore(): Store {
     autoCacheOpenedFile: true,           // 编辑器：打开就留本地（离线能开）
     offlineUploadReplay: "auto",         // 离线新建的歌回线自动补推（ADR-0018；进度走 storeUI.onReplayStatus）
     signedIn: () => _signedIn(),
+    isOnline: cloudOnline,               // 2026-11-03 闸门：选了「离线继续」= 库一条网都不打（家族设计稿 cloud-gate §3；store 2.2.4 起 collection 也认）
     activeIdentifier: () => _activeIdentifier,
   });
   deviceKvSet(KV_ATTACHED, "1");

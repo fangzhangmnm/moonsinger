@@ -122,6 +122,8 @@ const runOne = (t) => new Promise((done) => {
   const timer = setTimeout(() => {
     buf += `\n✗ 超时：${TASK_TIMEOUT_S} s 没跑完，整组进程杀掉（--task-timeout 可调）\n`;
     try { process.kill(-child.pid, "SIGKILL"); } catch { try { child.kill("SIGKILL"); } catch { /* 已经没了 */ } }
+    // 当场印最后几行：单跑一遍绿了之后这份输出就被盖掉了，下次卡住要看得出卡在哪（2026-11-03 gate + sync 同时卡满 5 分钟一次、重跑三次没复现、没留下线索）
+    console.log(`  ⏱ ${t.name} 超时，最后几行：\n    ` + buf.split("\n").filter((l) => l.trim()).slice(-7, -1).join("\n    "));
     fin(124);
   }, TASK_TIMEOUT_S * 1000);
   child.on("close", fin); child.on("error", (e) => { buf += String(e); fin(1); });

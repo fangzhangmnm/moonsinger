@@ -7,6 +7,7 @@ import type { StoreUI } from "@internal/store";
 import { showNotice } from "@internal/workbench-elements";
 import { withBusy, lockSyncGate, settleSyncGate } from "./ui/sheets.ts";
 import { reportError, diagNote } from "./app/report-error.ts";
+import { noteAuthFailure, type CloudGate } from "./cloud-gate.ts";
 import { identifiers } from "./identifiers.ts";
 
 const stemOf = (id: string) => identifiers.parse(id)?.stem ?? id;
@@ -17,12 +18,21 @@ const base = storeUIFor({
   reportError,
   stemOf,
 });
+let _gate: CloudGate | null = null;
+/** app 组装层把闸门递进来（store-ui 在 createStore 时就要，闸门要等 app 起来才有）。 */
+export function attachGate(g: CloudGate): void { _gate = g; }
 export const storeUI: StoreUI = {
   ...base,
+  // 闸门在场：跟闸门的「先离线用」赛跑，不另开一张面（家族设计稿 cloud-gate §4）
+  offlineEscape: () => _gate?.storeEscape() ?? base.offlineEscape!(),
   // 冲突面每次弹出 / 人选了什么都进黑匣子（user 2026-10-08「一直会遇到云端冲突的提示」——诊断日志里得看得见是哪首、哪个场合、怎么选的）。
   resolveConflict: async (q) => { diagNote("sync", `conflict occasion=${q.occasion} ${stemOf(q.name)}`); const r = await base.resolveConflict(q); diagNote("sync", `conflict → ${r}`); return r; },
   // 未登录时库的后台云动作会撞 auth 的 "Not signed in"——那是正常态不是故障，只进黑匣子不上横幅（WXHW 2026-09-03 截图：橙条常驻）。其余照包的分级（CloudNetworkError 换人话）。
-  reportError: (err, level) => { if ((err as { message?: string } | null)?.message === "Not signed in") { reportError(err, "log"); return; } base.reportError(err, level); },
+  reportError: (err, level) => {
+    if ((err as { message?: string } | null)?.message === "Not signed in") { reportError(err, "log"); return; }
+    noteAuthFailure(String((err as { message?: string } | null)?.message ?? ""));   // 闸门：续签失败的原因码只有这行日志里有（行格式 test/cloud-gate.test.mjs 对着库钉住）
+    base.reportError(err, level);
+  },
   // ADR-0018：offlineUploadReplay:"auto"（离线新建的歌回线自动补推）的进度 / 撞名 surface——库在 createStore 时强制要有这条线（没有就当场抛）。
   onReplayStatus: ({ phase, name, done, total }) => {
     const n = name ? stemOf(name) : "";

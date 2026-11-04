@@ -25,7 +25,10 @@ export function setBusyText(label: string): void { if (busyEl && !busyEl.hidden)
 interface GateAction<T> { label: string; value: T; primary?: boolean }
 export interface GateOpts<T> { title: string; message: string; note?: string; showSpinner?: boolean; actions: GateAction<T>[] }
 let gateEl: HTMLElement | null = null, gatePending: ((v: unknown) => void) | null = null, gateFocusBack: HTMLElement | null = null;
+let gateGen = 0;   // 锁屏位每被占一次 +1：闸门靠它认「上面还是不是我那张」（2026-11-03，库的冲突面可能已经盖上来了，不许顺手关掉别人的面）
+export const gateGeneration = (): number => gateGen;
 export function lockSyncGate<T = string>({ title, message, note, showSpinner, actions }: GateOpts<T>): Promise<T> {
+  gateGen++;
   // 焦点先拿走：弹出来时常常正在打字，不然键盘隔着遮罩继续往谱里写（WXHW 2026-09-29）。
   const a = document.activeElement;
   if (a instanceof HTMLElement && a !== document.body) { gateFocusBack = a; a.blur(); }

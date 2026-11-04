@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.14-2026-11-03";
+var APP_VERSION = "v0.14.15-2026-11-03";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -13590,6 +13590,9 @@ function showNotice(opts) {
   _live.set(id2, handle);
   return handle;
 }
+function closeNotice(id2) {
+  _live.get(id2)?.close();
+}
 
 // node_modules/@internal/gallery/dist/core/text.js
 var GALLERY_TEXT = {
@@ -18044,9 +18047,9 @@ function createStore(config) {
   };
   const local = config.local ?? createLocalCache(ns2.dbName, { identifiers: ids });
   const collectionLocal = config.local ?? createCollectionCache(ns2.dbName);
-  const rawOnline = config.isOnline ?? (() => globalThis.navigator?.onLine !== false);
+  const rawOnline2 = config.isOnline ?? (() => globalThis.navigator?.onLine !== false);
   const signedIn = config.signedIn ?? (() => true);
-  const isOnline = () => rawOnline() && signedIn();
+  const isOnline = () => rawOnline2() && signedIn();
   const getPassword = config.crypt?.getPassword ?? config.getPassword ?? (() => null);
   if (!config.encryption)
     throw new Error("createStore: config.encryption is required (pass createEncryption(), codec-less is fine) \u2014 no substitutes");
@@ -18200,7 +18203,7 @@ function createStore(config) {
       return { kind: d3?.kind, tier: d3?.tier ?? "work" };
     }
   });
-  const ctxNow = () => ({ signedIn: signedIn(), online: rawOnline() });
+  const ctxNow = () => ({ signedIn: signedIn(), online: rawOnline2() });
   const LOCAL_CTX = { signedIn: false, online: false };
   const folderWatchers = /* @__PURE__ */ new Map();
   const unAuth = provider.onAuthChanged?.((ev2) => {
@@ -19144,7 +19147,7 @@ function createStore(config) {
     const cached2 = _collections.get(name);
     if (cached2)
       return cached2;
-    const coll = rejectAfterDispose(createCollection({ cloud: collectionsCloud, name, local: collectionLocal, manual: opts.manual, getInitData: opts.getInitData }));
+    const coll = rejectAfterDispose(createCollection({ cloud: collectionsCloud, name, local: collectionLocal, manual: opts.manual, getInitData: opts.getInitData, isOnline }));
     registerScaffold(name);
     _collections.set(name, coll);
     return coll;
@@ -23635,7 +23638,7 @@ function mountGalleryScreen(el2, d3) {
         }
         void probeEncrypted();
       }
-      const gate = createFrameGate(applyFrame);
+      const gate2 = createFrameGate(applyFrame);
       const stalled = ref(null);
       const wd = createFirstFrameWatchdog(({ folder: f2, elapsedMs }) => {
         if (!loading2.value)
@@ -23698,15 +23701,15 @@ function mountGalleryScreen(el2, d3) {
           if (loading2.value)
             applyFrame(snap);
           else
-            gate.push(snap);
+            gate2.push(snap);
         }, { onError: onFrameError });
       }
       const isVisible = d3.isGalleryVisible ?? (() => true);
       const _onGatePtrDown = () => {
         if (isVisible())
-          gate.pointerDown();
+          gate2.pointerDown();
       };
-      const _onGatePtrUp = () => gate.pointerUp();
+      const _onGatePtrUp = () => gate2.pointerUp();
       document.addEventListener("pointerdown", _onGatePtrDown, true);
       document.addEventListener("pointerup", _onGatePtrUp, true);
       document.addEventListener("pointercancel", _onGatePtrUp, true);
@@ -23795,7 +23798,7 @@ function mountGalleryScreen(el2, d3) {
         _unsub?.();
         _unsub = null;
         wd.cancel();
-        gate.reset();
+        gate2.reset();
         document.removeEventListener("pointerdown", _onGatePtrDown, true);
         document.removeEventListener("pointerup", _onGatePtrUp, true);
         document.removeEventListener("pointercancel", _onGatePtrUp, true);
@@ -25159,7 +25162,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-6fb0185cdc6b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-00f42caa279b.mjs");
+      return pick(() => "encode-worker-328df8965ed4.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -33309,7 +33312,8 @@ var CACHE_DBS = { thumbs: `${APP_NS}.thumbs`, facts: `${APP_NS}.facts`, speech: 
 var LEGACY_CACHE_DBS = ["moonsinger-thumbs", "moonsinger-facts", "moonsinger-speech"];
 var LOCAL_SAVE_DEBOUNCE_MS = 2e3;
 var WAKE_CHECK_AFTER_MS = 10 * 6e4;
-var WAKE_CHECK_TIMEOUT_MS = 2e4;
+var CLOUD_CHECK_TIMEOUT_MS = 8e3;
+var RELOAD_PUSH_TIMEOUT_MS = 5e3;
 
 // src/identifiers.ts
 var SONG_KIND = "song";
@@ -33353,7 +33357,10 @@ async function withBusy(label, fn) {
 var gateEl = null;
 var gatePending = null;
 var gateFocusBack = null;
+var gateGen = 0;
+var gateGeneration = () => gateGen;
 function lockSyncGate({ title, message, note: note2, showSpinner, actions }) {
+  gateGen++;
   const a10 = document.activeElement;
   if (a10 instanceof HTMLElement && a10 !== document.body) {
     gateFocusBack = a10;
@@ -33508,6 +33515,254 @@ function openChoiceSheet(title, message, choices) {
   });
 }
 
+// src/cloud-gate.ts
+var _userOffline = false;
+var _offlineSubs = /* @__PURE__ */ new Set();
+function isUserOffline() {
+  return _userOffline;
+}
+function rawOnline() {
+  return typeof navigator === "undefined" || navigator.onLine !== false;
+}
+function cloudOnline() {
+  return rawOnline() && !_userOffline;
+}
+function setUserOffline(on2) {
+  if (_userOffline === on2) return;
+  _userOffline = on2;
+  for (const f2 of _offlineSubs) f2();
+}
+function onUserOfflineChange(f2) {
+  _offlineSubs.add(f2);
+  return () => {
+    _offlineSubs.delete(f2);
+  };
+}
+var AUTH_LINE = /^\[auth\] silent token renewal failed \(([^)]*)\): name=(\S*) code=(\S*) sub=(\S*)/;
+var NEEDS_INTERACTION = /^(interaction_required|login_required|consent_required|no_tokens_found|invalid_grant|bad_token|refresh_token_expired|token_refresh_required|no_account_error)$/;
+function parseAuthFailure(message) {
+  const m2 = AUTH_LINE.exec(message);
+  if (!m2) return null;
+  const [, where = "", name = "", code = "", sub = ""] = m2;
+  const expired = name === "InteractionRequiredAuthError" || NEEDS_INTERACTION.test(code) || NEEDS_INTERACTION.test(sub);
+  return { where, name, code, sub, reason: expired ? "expired" : "noResponse" };
+}
+var _lastFailure = null;
+function noteAuthFailure(message) {
+  const f2 = parseAuthFailure(message);
+  if (f2) _lastFailure = f2;
+  return f2;
+}
+var never = new Promise(() => {
+});
+function createCloudGate(d3) {
+  const timeoutMs = d3.timeoutMs ?? CLOUD_CHECK_TIMEOUT_MS;
+  const now2 = d3.now ?? (() => Date.now());
+  let phase = "open";
+  let runId = 0;
+  let quietInFlight = false;
+  let reconnecting = false;
+  let reason = "noResponse";
+  let escaped = null;
+  let probe = null;
+  const armEscape = () => {
+    probe = new Promise((res) => {
+      escaped = res;
+    });
+    return probe;
+  };
+  async function renewOnce(trigger) {
+    if (d3.signedIn()) return null;
+    _lastFailure = null;
+    const t02 = now2();
+    let ok2 = false;
+    try {
+      ok2 = await d3.renew();
+    } catch (e10) {
+      d3.note(`silent renew threw (${trigger}): ${String(e10?.message ?? e10)}`);
+    }
+    const f2 = _lastFailure;
+    d3.note(`silent renew (${trigger}): ${ok2 ? "ok" : "failed"} elapsed=${now2() - t02}ms${f2 ? ` name=${f2.name} code=${f2.code} sub=${f2.sub}` : ""}`);
+    if (ok2) return null;
+    return !rawOnline() ? "offline" : f2?.reason ?? "expired";
+  }
+  async function verify(trigger) {
+    const r10 = await renewOnce(trigger);
+    if (r10) return r10;
+    const status = await d3.check();
+    d3.note(`cloud check (${trigger}): ${String(status ?? "skipped")}`);
+    return status === "cloud-error" ? rawOnline() ? "noResponse" : "offline" : "ok";
+  }
+  function block(r10, why) {
+    if (d3.ui.foreignFaceUp()) {
+      phase = "open";
+      d3.note(`gate: ${why} \u2192 ${r10}, but another face is up (cloud answered) \u2192 stay out of the way`);
+      return;
+    }
+    phase = "blocked";
+    reason = r10;
+    d3.note(`gate: blocked reason=${r10} (${why})`);
+    showBlocked();
+  }
+  function showBlocked() {
+    d3.ui.blocked(reason, { signIn: () => {
+      void pressSignIn();
+    }, offline: () => chooseOffline("continue") });
+  }
+  function chooseOffline(how) {
+    runId++;
+    phase = "open";
+    setUserOffline(true);
+    d3.note(`gate: offline chosen (${how})`);
+    escaped?.();
+    d3.ui.release();
+    d3.ui.bar("offline");
+  }
+  async function pressSignIn() {
+    if (!rawOnline() || d3.signedIn()) {
+      await run2("retry", true);
+      return;
+    }
+    d3.ui.release();
+    let went = null;
+    try {
+      went = await d3.signIn();
+    } catch (e10) {
+      d3.note(`gate: sign-in threw: ${String(e10?.message ?? e10)}`);
+    }
+    if (went !== true && phase === "blocked") showBlocked();
+  }
+  async function run2(trigger, lock) {
+    if (!d3.hasHome()) return;
+    if (_userOffline) {
+      if (rawOnline()) await reconnect();
+      return;
+    }
+    if (phase === "checking" || !lock && quietInFlight) return;
+    if (d3.ui.foreignFaceUp()) return;
+    const wasBlocked = phase === "blocked";
+    const id2 = ++runId;
+    if (!rawOnline()) {
+      block("offline", trigger);
+      return;
+    }
+    const esc9 = armEscape();
+    if (lock) {
+      phase = "checking";
+      d3.ui.checking(() => chooseOffline("escape"));
+    } else quietInFlight = true;
+    const t02 = now2();
+    const work = verify(trigger).catch((e10) => {
+      d3.note(`gate: verify threw: ${String(e10?.message ?? e10)}`);
+      return "noResponse";
+    });
+    let timer;
+    const timedOut = new Promise((res) => {
+      timer = setTimeout(() => res("timeout"), timeoutMs);
+    });
+    const r10 = await Promise.race([work, timedOut, esc9.then(() => "escaped")]);
+    clearTimeout(timer);
+    if (!lock) quietInFlight = false;
+    if (id2 !== runId || r10 === "escaped") return;
+    if (r10 === "ok") {
+      phase = "open";
+      d3.ui.release();
+      d3.note(`gate: released (${trigger}) after ${now2() - t02}ms`);
+      if (wasBlocked || trigger === "retry") void d3.catchUp();
+      return;
+    }
+    block(r10 === "timeout" ? "noResponse" : r10, r10 === "timeout" ? `${trigger}: no answer in ${timeoutMs}ms` : trigger);
+    if (r10 === "timeout") {
+      void work.then((late) => {
+        if (id2 === runId && late === "ok" && phase === "blocked") {
+          phase = "open";
+          d3.ui.release();
+          d3.note("gate: late answer \u2192 released");
+          void d3.catchUp();
+        }
+      });
+    }
+  }
+  async function reconnect() {
+    if (!_userOffline || reconnecting || !rawOnline()) return;
+    reconnecting = true;
+    let timer;
+    const timedOut = new Promise((res) => {
+      timer = setTimeout(() => res("timeout"), timeoutMs);
+    });
+    try {
+      const r10 = await Promise.race([renewOnce("reconnect"), timedOut]);
+      if (r10 !== null) {
+        d3.note(`gate: reconnect: still offline (${String(r10)})`);
+        return;
+      }
+      setUserOffline(false);
+      const c10 = await Promise.race([d3.check(), timedOut]);
+      if (c10 === "timeout" || c10 === "cloud-error") {
+        setUserOffline(true);
+        d3.note(`gate: reconnect: cloud ${String(c10)} \u2192 stay offline`);
+        return;
+      }
+      d3.note("gate: reconnected \u2192 catching up");
+      d3.ui.bar("syncing");
+      try {
+        await d3.catchUp();
+      } catch (e10) {
+        d3.note(`gate: catch-up threw: ${String(e10?.message ?? e10)}`);
+      }
+      d3.ui.bar("hidden");
+    } finally {
+      clearTimeout(timer);
+      reconnecting = false;
+    }
+  }
+  return {
+    phase: () => phase,
+    locked: () => phase !== "open",
+    boot: () => run2("boot", true),
+    wake: (lock) => run2("wake", lock),
+    netBack: () => {
+      if (_userOffline) {
+        void reconnect();
+        return true;
+      }
+      if (phase === "blocked") {
+        void run2("retry", true);
+        return true;
+      }
+      return false;
+    },
+    netLost: () => {
+      if (phase === "checking") {
+        runId++;
+        block("offline", "went offline while checking");
+      }
+    },
+    authChanged: (signedIn, why) => {
+      if (!signedIn) {
+        if (why !== "signOut") return;
+        runId++;
+        phase = "open";
+        setUserOffline(false);
+        d3.ui.release();
+        d3.ui.bar("hidden");
+        return;
+      }
+      if (_userOffline) {
+        void reconnect();
+        return;
+      }
+      if (phase === "blocked") void run2("retry", true);
+    },
+    reconnect,
+    storeEscape: () => {
+      if (phase === "open") return null;
+      return { probe: probe ?? never, settle: () => {
+      } };
+    }
+  };
+}
+
 // src/store-ui.ts
 var stemOf = (id2) => identifiers.parse(id2)?.stem ?? id2;
 var base = storeUIFor({
@@ -33517,8 +33772,14 @@ var base = storeUIFor({
   reportError,
   stemOf
 });
+var _gate = null;
+function attachGate(g3) {
+  _gate = g3;
+}
 var storeUI = {
   ...base,
+  // 闸门在场：跟闸门的「先离线用」赛跑，不另开一张面（家族设计稿 cloud-gate §4）
+  offlineEscape: () => _gate?.storeEscape() ?? base.offlineEscape(),
   // 冲突面每次弹出 / 人选了什么都进黑匣子（user 2026-10-08「一直会遇到云端冲突的提示」——诊断日志里得看得见是哪首、哪个场合、怎么选的）。
   resolveConflict: async (q2) => {
     diagNote("sync", `conflict occasion=${q2.occasion} ${stemOf(q2.name)}`);
@@ -33532,6 +33793,7 @@ var storeUI = {
       reportError(err2, "log");
       return;
     }
+    noteAuthFailure(String(err2?.message ?? ""));
     base.reportError(err2, level);
   },
   // ADR-0018：offlineUploadReplay:"auto"（离线新建的歌回线自动补推）的进度 / 撞名 surface——库在 createStore 时强制要有这条线（没有就当场抛）。
@@ -33746,7 +34008,11 @@ var appEncryption = createEncryption();
 // src/app-store.ts
 var od = createOneDriveProvider({ clientId: CLIENT_ID2, scopes: SCOPES2, authority: AUTHORITY2, msalUrl: MSAL_URL2 });
 var cloudAvailable = () => currentPolicy().cloud;
-var auth = cloudAvailable() ? od.auth : {
+function injectedAuth() {
+  const g3 = globalThis;
+  return g3.__moonsingerAuth && /^(127\.0\.0\.1|localhost)$/.test(g3.location?.hostname ?? "") ? g3.__moonsingerAuth : null;
+}
+var auth = injectedAuth() ?? (cloudAvailable() ? od.auth : {
   ...od.auth,
   isAuthConfigured: () => false,
   initAuth: async () => ({ signedIn: false, account: null, notConfigured: true }),
@@ -33754,7 +34020,7 @@ var auth = cloudAvailable() ? od.auth : {
     throw new Error("cloud sign-in is not available in this deployment (itch / offline copy)");
   },
   retrySilentSignIn: async () => false
-};
+});
 var _activeIdentifier = null;
 function setActiveIdentifier(id2) {
   _activeIdentifier = id2;
@@ -33794,6 +34060,8 @@ function attachStore() {
     offlineUploadReplay: "auto",
     // 离线新建的歌回线自动补推（ADR-0018；进度走 storeUI.onReplayStatus）
     signedIn: () => _signedIn(),
+    isOnline: cloudOnline,
+    // 2026-11-03 闸门：选了「离线继续」= 库一条网都不打（家族设计稿 cloud-gate §3；store 2.2.4 起 collection 也认）
     activeIdentifier: () => _activeIdentifier
   });
   deviceKvSet2(KV_ATTACHED, "1");
@@ -34051,6 +34319,122 @@ async function runFactoryReset(d3) {
     return "blocked";
   }
 }
+
+// src/app/cloud-gate-ui.ts
+var GATE_TEXT = {
+  checking: "\u6B63\u5728\u6838\u5BF9\u7F51\u76D8\u4E0A\u7684\u7248\u672C\u2026",
+  skip: "\u5148\u79BB\u7EBF\u7528",
+  title: "\u7F51\u76D8\u6CA1\u8FDE\u4E0A",
+  reason: { expired: "\u767B\u5F55\u8FC7\u671F\u4E86", offline: "\u73B0\u5728\u6CA1\u6709\u7F51\u7EDC", noResponse: "\u7F51\u76D8\u6CA1\u6709\u56DE\u5E94" },
+  signIn: "\u91CD\u65B0\u767B\u5F55",
+  offline: "\u79BB\u7EBF\u7EE7\u7EED",
+  bar: (n10) => n10 > 0 ? `\u79BB\u7EBF \xB7 \u8FD8\u6709 ${n10} \u4EFD\u6CA1\u4F20\u4E0A\u53BB` : "\u79BB\u7EBF",
+  barSyncing: "\u5DF2\u8FDE\u4E0A\u7F51\u76D8\uFF0C\u6B63\u5728\u540C\u6B65\u2026",
+  barList: "\u770B\u5217\u8868",
+  reconnect: "\u91CD\u65B0\u8FDE\u63A5"
+};
+var BAR_ID = "offline-bar";
+var BAR_REFRESH_MS = 3e3;
+function createGateUi(o10) {
+  let mine = -1;
+  const ownFace = () => isGateOpen() && gateGeneration() === mine;
+  let barState = "hidden", barCount = -1;
+  let barTimer = null;
+  async function paintCount() {
+    const n10 = await o10.dirtyCount().catch((e10) => {
+      reportError(e10, "log");
+      return 0;
+    });
+    if (barState !== "offline" || n10 === barCount) return;
+    barCount = n10;
+    showNotice({ id: BAR_ID, level: "neutral", text: GATE_TEXT.bar(n10), dismissible: false, actions: n10 > 0 ? [{ label: GATE_TEXT.barList, onClick: () => o10.openList() }] : [] });
+  }
+  return {
+    checking(onEscape) {
+      void lockSyncGate({ title: GATE_TEXT.checking, message: "", showSpinner: true, actions: [{ label: GATE_TEXT.skip, value: "skip" }] }).then((v) => {
+        if (v === "skip") onEscape();
+      });
+      mine = gateGeneration();
+    },
+    blocked(reason, on2) {
+      void lockSyncGate({
+        title: GATE_TEXT.title,
+        message: GATE_TEXT.reason[reason],
+        actions: [{ label: GATE_TEXT.signIn, value: "signin", primary: true }, { label: GATE_TEXT.offline, value: "offline" }]
+      }).then((v) => {
+        if (v === "signin") on2.signIn();
+        else if (v === "offline") on2.offline();
+      });
+      mine = gateGeneration();
+    },
+    release() {
+      if (!ownFace()) return;
+      unlockSyncGate();
+      o10.afterRelease();
+    },
+    foreignFaceUp: () => isGateOpen() && gateGeneration() !== mine,
+    bar(state) {
+      barState = state;
+      barCount = -1;
+      if (barTimer) {
+        clearInterval(barTimer);
+        barTimer = null;
+      }
+      if (state === "hidden") {
+        closeNotice(BAR_ID);
+        return;
+      }
+      if (state === "syncing") {
+        showNotice({ id: BAR_ID, level: "neutral", text: GATE_TEXT.barSyncing, dismissible: false });
+        return;
+      }
+      showNotice({ id: BAR_ID, level: "neutral", text: GATE_TEXT.bar(0), dismissible: false });
+      void paintCount();
+      barTimer = setInterval(() => {
+        void paintCount();
+      }, BAR_REFRESH_MS);
+    }
+  };
+}
+
+// src/app/export-all.ts
+async function exportAll(p2) {
+  const ids = [], failed = [];
+  const queue = [""];
+  while (queue.length) {
+    const dir = queue.shift();
+    try {
+      const f2 = await p2.listFolder(dir);
+      ids.push(...f2.identifiers);
+      queue.push(...f2.folders);
+    } catch {
+      failed.push(dir ? `${dir}/\uFF08\u6574\u4E2A\u6587\u4EF6\u5939\uFF09` : "\uFF08\u6839\u6587\u4EF6\u5939\uFF09");
+    }
+  }
+  const entries2 = [];
+  for (const id2 of ids) {
+    try {
+      const blob = await p2.bytes(id2);
+      if (!blob) {
+        failed.push(id2);
+        continue;
+      }
+      entries2.push({ path: id2, data: new Uint8Array(await blob.arrayBuffer()) });
+    } catch {
+      failed.push(id2);
+    }
+  }
+  return { zip: entries2.length ? await p2.pack(entries2) : null, count: entries2.length, failed };
+}
+function exportAllSay(r10, fileName2) {
+  if (!r10.count && !r10.failed.length) return { text: "\u6B4C\u5E93\u91CC\u8FD8\u6CA1\u6709\u6B4C", bad: false };
+  if (!r10.failed.length) return { text: `\u5DF2\u5BFC\u51FA ${r10.count} \u9996\u5230 ${fileName2}`, bad: false };
+  const names = r10.failed.slice(0, 5).join("\u3001") + (r10.failed.length > 5 ? ` \u7B49 ${r10.failed.length} \u9879` : "");
+  return { text: r10.count ? `\u53EA\u5BFC\u51FA\u4E86 ${r10.count} \u9996\u5230 ${fileName2}\u3002\u8FD9\u4E9B\u6CA1\u62FF\u5230\uFF1A${names}` : `\u6CA1\u80FD\u5BFC\u51FA\uFF1A${names}`, bad: true };
+}
+
+// src/app/main.ts
+init_fflate_esm();
 
 // vendor/vue/vue.esm-browser.prod.js
 var e;
@@ -40022,9 +40406,10 @@ function initGalleryHost(d3) {
   fullEl.setAttribute("aria-modal", "true");
   fullEl.setAttribute("aria-label", "\u6B4C\u5E93");
   fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span>` + // 网盘关着（itch / 备用版）= 云按钮画灰 + 旁边一行「网盘在官网」（家族规则书 §1 第 6 条：入口不许露着却点不动；2026-11-03）
-  (currentPolicy().cloud ? `<button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button>` : `<button type="button" class="btn is-off" data-v="cloud" disabled title="${SITE_TEXT.cloudOffTitle}">${iconHtml2("cloud")}</button>${cloudOffHtml()}`) + `<button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u5373\u5174\uFF1A\u6311\u4E50\u5668\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u5373\u5174</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\uFF1A\u4E00\u9996\u6B4C / \u4E00\u4E2A\u6587\u4EF6\u5939" aria-haspopup="menu">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
+  (currentPolicy().cloud ? `<button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button>` : `<button type="button" class="btn is-off" data-v="cloud" disabled title="${SITE_TEXT.cloudOffTitle}">${iconHtml2("cloud")}</button>${cloudOffHtml()}`) + `<button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u5373\u5174\uFF1A\u6311\u4E50\u5668\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u5373\u5174</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\uFF1A\u4E00\u9996\u6B4C / \u4E00\u4E2A\u6587\u4EF6\u5939" aria-haspopup="menu">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-home-bar" hidden><span class="gallery-home-text">\u8FD9\u4E9B\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u7684\u6D4F\u89C8\u5668\u91CC\uFF0C\u6CA1\u6709\u5907\u4EFD</span><span class="spacer"></span><button type="button" class="btn" data-v="export-all">\u5168\u90E8\u5BFC\u51FA</button><button type="button" class="btn primary" data-v="connect">\u8FDE\u63A5\u7F51\u76D8</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector(".gallery-mount"), asideBar = fullEl.querySelector(".gallery-asidebar");
+  const homeBar = fullEl.querySelector(".gallery-home-bar");
   const cloudBtn = fullEl.querySelector('[data-v="cloud"]'), refreshBtn = fullEl.querySelector('[data-v="refresh"]');
   const storeFace = () => hasStore() ? requireStore() : null;
   const doc = {
@@ -40060,7 +40445,7 @@ function initGalleryHost(d3) {
     doc,
     host: {
       signedIn: () => isSignedIn2(),
-      online: () => typeof navigator === "undefined" || navigator.onLine !== false,
+      online: cloudOnline,
       activeIdentifier: () => d3.activeIdentifier(),
       confirm: (title, msg) => openConfirmSheet(title, msg),
       input: (title, def, opts) => openInputSheet(title, { defaultValue: def, placeholder: opts?.placeholder }),
@@ -40284,8 +40669,11 @@ function initGalleryHost(d3) {
       if (cur === "trash") h2.emptyTrash();
       else if (cur === "backup") h2.emptyBackup();
     } else if (v === "settings") d3.openSettings();
+    else if (v === "export-all") d3.exportAll();
+    else if (v === "connect") d3.connectCloud();
   });
   function renderCloud() {
+    homeBar.hidden = !d3.showNoBackup();
     if (!currentPolicy().cloud) return;
     const on2 = isSignedIn2();
     cloudBtn.classList.toggle("is-on", on2);
@@ -45297,7 +45685,17 @@ installPlatformGuards([scoreEl, padEl], { zoom: (d3) => d3 === 0 ? view.zoomRese
 var shell = initPwaShell({ onUpdateAvailable: () => {
   diagNote("sw", "update available");
   showUpdateBar();
-} });
+}, onBeforeReload: () => flushBeforeReload() });
+async function flushBeforeReload() {
+  if (H2.home.kind !== "gallery" || !hasStore()) return;
+  const t02 = Date.now();
+  let timer;
+  await Promise.race([es2.flushAndPush(), new Promise((r10) => {
+    timer = setTimeout(r10, RELOAD_PUSH_TIMEOUT_MS);
+  })]).catch((e10) => reportError(e10, "warning"));
+  clearTimeout(timer);
+  diagNote("sw", `flush before reload: ${Date.now() - t02}ms, push pending=${String(es2.isPushPending())}`);
+}
 function showUpdateBar() {
   if (document.getElementById("updateBar")) return;
   const el2 = document.createElement("div");
@@ -46598,7 +46996,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "c7bac431a1d3",
+  cssHash: "6a01c06ee16f",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -46629,7 +47027,11 @@ window.__moonsinger = {
   afterSignIn: () => afterSignIn(),
   diagText: () => diagText(),
   refreshOpenDoc: () => refreshOpenDoc(),
-  wake: (awayMs) => wakeCheck(awayMs),
+  wake: async (awayMs) => {
+    const lock = lockOnWake(awayMs);
+    if (hasCloudHome()) await gate.wake(lock);
+    return lock;
+  },
   pushDirtyAll: () => pushDirtyAll(),
   gateOpen: () => isGateOpen(),
   undo: () => undoNow(),
@@ -46705,7 +47107,7 @@ function syncKind() {
     case "gallery":
       if (dirty()) return "saving";
       if (!isSignedIn2()) return "local";
-      if (!navigator.onLine) return "offline";
+      if (!cloudOnline()) return "offline";
       return es2.isPushPending() ? "unsynced" : "clean";
     case "file":
       return dirty() ? "fileDirty" : "fileClean";
@@ -49125,7 +49527,41 @@ async function renameActive() {
   }
 }
 var authStarted = false;
+var authSettled = false;
 var afterSignInInFlight = null;
+var homeKnown = false;
+var hasCloudHome = () => hasStore() && (homeKnown || isSignedIn2());
+var gate = createCloudGate({
+  ui: createGateUi({
+    dirtyCount: () => requireStore().files.dirty.count(),
+    openList: () => {
+      void openGallery().then(() => gallery?.setAttentionOnly(true));
+    },
+    afterRelease: () => {
+      if (!gate.locked() && !isSheetOpen()) scoreEl.focus();
+    }
+  }),
+  hasHome: () => hasCloudHome() && H2.home.kind !== "file",
+  signedIn: () => isSignedIn2(),
+  renew: async () => {
+    if (document.readyState !== "complete") await new Promise((r10) => window.addEventListener("load", r10, { once: true }));
+    return auth.retrySilentSignIn();
+  },
+  check: async () => {
+    const s10 = await refreshOpenDoc({ gate: true });
+    if (s10 && s10 !== "dirty-skip" && s10 !== "offline") return s10;
+    return await requireStore().collectionPeek("gate-probe") === "unknown" ? "cloud-error" : "asked";
+  },
+  catchUp: () => afterSignIn(),
+  // 只补排队的、问「去处理」、快进；手里这首照旧等 consent 时刻推（ADR-0016 / 0018）
+  signIn: () => signInFlow(),
+  note: (line) => diagNote("gate", line)
+});
+attachGate(gate);
+onUserOfflineChange(() => {
+  renderTitle();
+  gallery?.renderCloud();
+});
 function ensureAttached() {
   if (!currentPolicy().library) throw new Error("\u8FD9\u4E2A\u90E8\u7F72\u65B9\u5F0F\u6CA1\u6709\u6B4C\u5E93\uFF08itch / \u5907\u7528\u7248\uFF1A\u6B4C\u53EA\u7528\u6587\u4EF6\u5B58\uFF09");
   const fresh = !hasStore();
@@ -49143,17 +49579,28 @@ function startAuth() {
   if (authStarted || !currentPolicy().cloud) return;
   authStarted = true;
   auth.onAuthChanged((s10) => {
-    diagNote("auth", `changed signedIn=${String(s10.signedIn)}`);
+    diagNote("auth", `changed signedIn=${String(s10.signedIn)} reason=${String(s10.reason ?? "?")}`);
+    const why = s10.reason;
+    if (s10.signedIn) homeKnown = true;
+    else if (why === "signOut") homeKnown = false;
+    gate.authChanged(s10.signedIn, why);
     gallery?.renderCloud();
     renderTitle();
     if (s10.signedIn) void afterSignIn();
   });
   void auth.initAuth().then((s10) => {
-    diagNote("auth", `initAuth signedIn=${s10.signedIn}`);
+    homeKnown = s10.signedIn || !!s10.probing;
+    authSettled = true;
+    diagNote("auth", `initAuth signedIn=${s10.signedIn} probing=${String(!!s10.probing)} home=${String(homeKnown)}`);
     gallery?.renderCloud();
     renderTitle();
+    void gate.boot();
     if (s10.signedIn) void afterSignIn();
-  }).catch((e10) => reportError(e10, "warning"));
+  }).catch((e10) => {
+    authSettled = true;
+    gallery?.renderCloud();
+    reportError(e10, "warning");
+  });
 }
 function attachForUser() {
   ensureAttached();
@@ -49183,6 +49630,14 @@ function ensureGallery() {
     // 歌库开着 = 只弹着玩的目录，盖在歌库上面
     openCloudMenu: () => {
       void openCloudMenu();
+    },
+    // 登录探测落地之前不说（不然有账号的人开局闪一下这句假话）；有账号但登录过期 = 歌在网盘上有，归闸门和常驻条说，这里不说「没有备份」
+    showNoBackup: () => currentPolicy().cloud && authSettled && !homeKnown && !isSignedIn2(),
+    exportAll: () => {
+      void exportAllSongs();
+    },
+    connectCloud: () => {
+      void signInFlow();
     },
     onOpened: () => {
       ui2.close();
@@ -49252,11 +49707,51 @@ async function openCloudMenu() {
   const v = await openChoiceSheet(
     "\u4E91\u7AEF\uFF08OneDrive\uFF09",
     signed ? `\u5DF2\u767B\u5F55${who ? ` ${who}` : ""}\u3002\u6B4C\u5E93\u540C\u6B65\u5230 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF08\u8FD9\u4E2A app \u53EA\u80FD\u770B\u81EA\u5DF1\u7684\u90A3\u4E2A\u5939\uFF0C\u770B\u4E0D\u5230\u4F60\u522B\u7684\u6587\u4EF6\uFF09\u3002` : "\u767B\u5F55\u5FAE\u8F6F\u4E2A\u4EBA\u8D26\u53F7\u540E\uFF0C\u6B4C\u5E93\u540C\u6B65\u5230 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF08\u8FD9\u4E2A app \u53EA\u80FD\u770B\u81EA\u5DF1\u7684\u90A3\u4E2A\u5939\uFF0C\u770B\u4E0D\u5230\u4F60\u522B\u7684\u6587\u4EF6\uFF09\u3002\u4E0D\u767B\u5F55\u4E5F\u80FD\u7528\uFF0C\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002",
-    signed ? [{ label: "\u5237\u65B0\u4E91\u7AEF", value: "refresh" }, { label: "\u9000\u51FA\u767B\u5F55", value: "out", danger: true, hint: "\u6B4C\u8FD8\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A" }] : [{ label: "\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7", value: "in", primary: true }]
+    signed ? [...isUserOffline() && rawOnline() ? [{ label: GATE_TEXT.reconnect, value: "reconnect", primary: true }] : [{ label: "\u5237\u65B0\u4E91\u7AEF", value: "refresh" }], { label: "\u9000\u51FA\u767B\u5F55", value: "out", danger: true, hint: "\u6B4C\u8FD8\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A" }] : [{ label: "\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7", value: "in", primary: true }]
   );
   if (v === "in") await signInFlow();
   else if (v === "out") await signOutFlow();
   else if (v === "refresh") gallery?.refresh();
+  else if (v === "reconnect") void gate.reconnect();
+}
+async function exportAllSongs() {
+  try {
+    const store = requireStore();
+    const now2 = /* @__PURE__ */ new Date(), p2 = (n10) => String(n10).padStart(2, "0");
+    const name = `MoonSinger-\u6B4C\u5E93-${now2.getFullYear()}${p2(now2.getMonth() + 1)}${p2(now2.getDate())}-${p2(now2.getHours())}${p2(now2.getMinutes())}.zip`;
+    const r10 = await withBusy("\u6B63\u5728\u6253\u5305\u6B4C\u5E93\u2026", () => exportAll({
+      listFolder: (folder) => new Promise((resolve, reject) => {
+        let done = false, off = null;
+        off = store.files.watchFolder(folder, (snap) => {
+          if (done) return;
+          done = true;
+          off?.();
+          resolve({ identifiers: snap.items.filter((i10) => isCached(i10.syncState)).map((i10) => i10.identifier), folders: snap.folders });
+        }, { onError: (e10) => {
+          if (!done) {
+            done = true;
+            off?.();
+            reject(e10);
+          }
+        } });
+        if (done) off();
+      }),
+      bytes: async (id2) => {
+        if (H2.identifier() === id2) await es2.flushLocal();
+        return store.zip(id2, { mode: "existing" }).open();
+      },
+      pack: async (entries2) => new Blob([zipSync(Object.fromEntries(entries2.map((e10) => [e10.path, [e10.data, { level: 0 }]])))], { type: "application/zip" })
+    }));
+    diagNote("gallery", `export-all count=${r10.count} failed=${r10.failed.length}`);
+    const said = exportAllSay(r10, name);
+    if (r10.zip) offerFile(new File([r10.zip], name, { type: "application/zip" }), "\u6B4C\u5E93\u6253\u5305\u597D\u4E86", said.text);
+    else if (said.bad) showError(said.text);
+    else info(said.text);
+    if (r10.zip && said.bad) showError(said.text);
+  } catch (e10) {
+    reportError(e10);
+    showError(`\u5BFC\u51FA\u6CA1\u6210\uFF1A${e10?.message ?? e10}`);
+  }
 }
 async function signOutFlow() {
   const store = requireStore();
@@ -49330,11 +49825,12 @@ async function signInFlow() {
       reportError(e10, "warning");
     }
   }
-  await openChoiceSheet(
+  const v = await openChoiceSheet(
     "\u53BB\u5FAE\u8F6F\u767B\u5F55",
     `\u9875\u9762\u4F1A\u8DF3\u5230\u5FAE\u8F6F\u7684\u767B\u5F55\u9875\uFF08\u53EA\u8BA4\u4E2A\u4EBA\u8D26\u53F7\uFF09\uFF0C\u767B\u5F55\u5B8C\u81EA\u52A8\u56DE\u5230\u8FD9\u91CC\u3002${inGallery ? "\u624B\u91CC\u7684\u6B4C\u5DF2\u7ECF\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\u3002" : dirty() ? "\u624B\u91CC\u8FD9\u9996\u65E0\u5730\u7684\u6B4C\u6539\u8FC7\u8FD8\u6CA1\u5B58\u2014\u2014\u8DF3\u8D70\u4F1A\u4E22\uFF0C\u5148\u5B58\u4E00\u4E0B\u518D\u6765\u3002" : ""}`,
     [{ label: "\u53BB\u767B\u5F55", value: "go", primary: true, onPick: redirectToSignIn }]
   );
+  return v === "go";
 }
 function redirectToSignIn() {
   navigatingForAuth = true;
@@ -49346,10 +49842,9 @@ function redirectToSignIn() {
   });
 }
 var refreshing = false;
-var replaceInFlight = false;
-async function refreshOpenDoc() {
+async function refreshOpenDoc(o10 = {}) {
   const id2 = H2.identifier();
-  if (!id2 || refreshing || !hasStore() || !isSignedIn2() || !navigator.onLine || dirty() || es2.isPushPending()) return;
+  if (!id2 || refreshing || !hasStore() || !isSignedIn2() || !cloudOnline() || dirty() || es2.isPushPending()) return void 0;
   refreshing = true;
   let froze = false;
   try {
@@ -49358,7 +49853,6 @@ async function refreshOpenDoc() {
       localDirty: () => dirty() || es2.isPushPending(),
       onReplaceStart: () => {
         froze = true;
-        replaceInFlight = true;
         diagNote("sync", `replace-start ${stemOfId(id2)}: input frozen`);
         void lockSyncGate({ title: "\u4E91\u7AEF\u6709\u65B0\u7248\u672C", message: `\u300C${stemOfId(id2)}\u300D\u5728\u522B\u7684\u8BBE\u5907\u4E0A\u6539\u8FC7\u4E86\uFF0C\u6B63\u5728\u6362\u6210\u6700\u65B0\u7684\u2026\u2026\u5148\u522B\u6253\u5B57\u3002`, showSpinner: true, actions: [] });
       }
@@ -49370,12 +49864,13 @@ async function refreshOpenDoc() {
       });
       if (ok2) info("\u6362\u6210\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u4E86");
       else showError(`\u300C${stemOfId(id2)}\u300D\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u62C9\u4E0B\u6765\u4E86\uFF0C\u4F46\u91CD\u5F00\u5931\u8D25\u2014\u2014\u8BF7\u4ECE\u6B4C\u5E93\u518D\u6253\u5F00\u4E00\u6B21`);
-    } else if (r10?.status === "ff-failed" || r10?.status === "cloud-error") reportError(r10.error ?? new Error(`refresh ${r10.status}: ${r10.reason ?? ""}`), "warning");
+    } else if (r10?.status === "ff-failed" || r10?.status === "cloud-error") reportError(r10.error ?? new Error(`refresh ${r10.status}: ${r10.reason ?? ""}`), o10.gate && r10.status === "cloud-error" ? "log" : "warning");
+    return r10?.status;
   } catch (e10) {
-    reportError(e10, "warning");
+    reportError(e10, o10.gate ? "log" : "warning");
+    return "cloud-error";
   } finally {
     if (froze) {
-      replaceInFlight = false;
       unlockSyncGate();
     }
     refreshing = false;
@@ -49461,7 +49956,7 @@ async function smartSaveStore() {
   await es2.forceSaveAndPush();
   renderTitle();
   if (!isSignedIn2()) {
-    if (signInDeclined || navigator.onLine === false || !auth.isAuthConfigured()) {
+    if (signInDeclined || !cloudOnline() || !auth.isAuthConfigured()) {
       info("\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86");
       return;
     }
@@ -49500,52 +49995,37 @@ if (window.visualViewport) {
 window.addEventListener("online", () => {
   renderTitle();
   if (!hasStore()) return;
+  if (gate.netBack()) return;
   if (isSignedIn2()) void afterSignIn();
   else retrySilent();
 });
-window.addEventListener("offline", () => renderTitle());
+window.addEventListener("offline", () => {
+  renderTitle();
+  gate.netLost();
+});
 var hiddenAt = 0;
-var describeAway = (ms) => {
-  const m2 = Math.round(ms / 6e4);
-  return m2 < 60 ? `${m2} \u5206\u949F` : m2 < 60 * 24 ? `${Math.round(m2 / 60)} \u5C0F\u65F6` : `${Math.round(m2 / 60 / 24)} \u5929`;
-};
-async function wakeCheck(awayMs) {
-  if (H2.home.kind !== "gallery" || !hasStore() || !isSignedIn2() || !navigator.onLine) return false;
-  if (dirty() || es2.isPushPending()) {
-    diagNote("sync", `wake after ${describeAway(awayMs)}: local changes pending, cloud check skipped`);
-    return false;
-  }
-  diagNote("sync", `wake after ${describeAway(awayMs)}: checking cloud before input`);
-  void lockSyncGate({ title: "\u56DE\u6765\u4E86", message: `\u79BB\u5F00\u4E86 ${describeAway(awayMs)}\uFF0C\u5148\u770B\u770B\u4E91\u7AEF\u6709\u6CA1\u6709\u65B0\u7248\u672C\u2026\u2026\u7A0D\u7B49\uFF0C\u5148\u522B\u6253\u5B57\u3002`, showSpinner: true, actions: [] });
-  let timedOut = false;
-  try {
-    await Promise.race([refreshOpenDoc(), new Promise((r10) => setTimeout(() => {
-      timedOut = true;
-      r10();
-    }, WAKE_CHECK_TIMEOUT_MS))]);
-  } finally {
-    if (!timedOut) unlockSyncGate();
-    else {
-      diagNote("sync", "wake check timed out: input released, check continues in background");
-      if (!replaceInFlight) unlockSyncGate();
-    }
-  }
-  return true;
+function lockOnWake(awayMs) {
+  return awayMs >= WAKE_CHECK_AFTER_MS && H2.home.kind === "gallery" && !dirty() && !es2.isPushPending();
 }
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") {
-    hiddenAt = Date.now();
+    hiddenAt ||= Date.now();
     return;
   }
   const away = hiddenAt ? Date.now() - hiddenAt : 0;
   hiddenAt = 0;
   if (!hasStore()) return;
-  if (!isSignedIn2()) {
+  if (!hasCloudHome()) {
     retrySilent();
     return;
   }
-  if (away >= WAKE_CHECK_AFTER_MS) void wakeCheck(away);
-  else void refreshOpenDoc();
+  void gate.wake(lockOnWake(away));
+});
+window.addEventListener("pageshow", (e10) => {
+  if (e10.persisted) {
+    hiddenAt = 0;
+    void gate.wake(lockOnWake(WAKE_CHECK_AFTER_MS));
+  }
 });
 function whereNow() {
   if (ui2.overlay || isSheetOpen() || isGateOpen()) return "sheet";
@@ -49915,6 +50395,10 @@ onThreadFail((_name, why) => {
   showError(why);
 });
 Object.assign(window.__moonsinger, {
+  gate,
+  cloudOnline,
+  noteAuthFailure,
+  updateReload: () => shell.reload(),
   readSite: (path, sha256) => getBytes(path, sha256 ? { sha256 } : {}).then((b3) => b3.length),
   threadKinds: () => Object.fromEntries(["singer-worker", "mp3-worker", "studio-worklet", "layout-worker", "encode-worker"].map((n10) => [n10, threadUrls(n10).map((u2) => u2.slice(0, u2.indexOf(":")))])),
   mp3Test: (samples = 44100) => encodeMp3(new Float32Array(samples).map((_2, i10) => Math.sin(i10 / 10) * 0.3), null, 44100, 64).then((b3) => b3.length),
@@ -49953,4 +50437,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-84b96fe11f61.mjs.map
+//# sourceMappingURL=moonsinger-77e2e72a5dae.mjs.map

@@ -285,6 +285,12 @@ user 2026-10-08「真的需要做store了…要不要硬着头皮进store」「�
 | `src/app/factory-reset.ts` | IDB **只删**：自家派生缓存库（`config.ts CACHE_DBS`，GUID 前缀下）+ 改名前的老名字 `moonsinger-thumbs` / `facts` / `speech`（有才删；平时空闲片里也探一次 = `dropLegacyCacheDbs`）+ 自家 GUID 前缀库 `moonsinger-5b1e7c0a92d34f6e.*`（gallery-registry）；localStorage 走 device-kv `deviceKvWipeAll`；store 的命名空间走库口子 `wipeAppNamespace` | 「还原出厂设置…」（家族规矩 2½，user 2026-10-21「全家swipe的语义统一…开发者菜单里面」）：不建库不写；`test/factory-reset.test.ts` 守名字和建库处一致 |
 | `src/singer/speech-store.ts` | IDB `moonsinger-5b1e7c0a92d34f6e.speech`（`config.ts CACHE_DBS`；2026-11-03 前叫 `moonsinger-speech`；住在月读的 worker 里） | 念缓存的全局池：念过的句子（piper 音频 + WORLD 分析 bf16）跨歌共用、重开 app 也在；键 = 模型包 id + 内容键 sha256；LRU 字节预算（小设备 128 MB / 桌面 512 MB）；全删可再生（设置里「清空念缓存」）。user 2026-10-10「代价约每首32MB 建议一个全局池by key and model config hash而不是每首歌」批 |
 
+## 网盘闸门 + 歌库披露（v0.14.15，2026-11-03，Claude Opus 5.5；家族工单 H；设计稿 = 家族根 `ai-docs/20261103-cloud-gate-design.md`、`20261103-library-needs-a-home.md` §4）
+
+- **闸门**（`src/cloud-gate.ts` 状态机，同小黑屋一份；`src/app/cloud-gate-ui.ts` 界面）：挂了库 ∧ 有账号 ∧ 手里不是本机文件 = 开机 / 醒来本机那首摆着、罩「正在核对网盘上的版本…」+ 第一帧起就有「先离线用」→ 静默续签 + 问一次云端 → 放行 / 库的冲突面（优先，闸门不抢）/ 闸「网盘没连上」（登录过期了 · 现在没有网络 · 网盘没有回应）+「重新登录」「离线继续」；8 s 没回 = 自动进闸，云端回了自己放行。选离线 = 内存布尔（接进 `createStore({ isOnline })`，不进任何存储）+ notice「离线 · 还有 N 份没传上去」+「看列表」；回线 / 回前台 / 云菜单「重新连接」悄悄续签，成了问「去处理」、条收掉。**云端判断一律 `cloudOnline()`**，别再看 `navigator.onLine`（守卫核）。醒来：离开不足 `WAKE_CHECK_AFTER_MS`（10 分钟）/ 手里有没推的改动 = 不罩、悄悄核，核不上才弹闸。E2E `test/e2e/gate.mjs`，假登录 = `window.__moonsingerAuth`（`app-store.ts injectedAuth`，只在本机地址上认）。
+- **歌库披露**：这台设备没有网盘账号时顶上常驻「这些歌只在这台设备的浏览器里，没有备份」+「全部导出」（`src/app/export-all.ts`，一个 zip）+「连接网盘」。有账号但登录过期不说（那不是实话）。不改入口、不删功能；后面两步（文件夹歌库、收入口）在核对单 §4。
+- **更新重载前先推**（F-147 B）：点「有新版本 · 刷新」= `flushAndPush` ≤ 5 s，到点照样刷。自动存、页面隐藏、pagehide 照旧只落本地。正式版 / 开发版壳缓存分开（`moonsinger-dev-<hash>`，F-145）。
+
 ## 三种出货形态：官网 / itch / 备用版（v0.14.12，2026-11-03，Claude Opus 5.5；家族工单 A，规则书 = 家族根 `ai-docs/20261103-three-shapes-rulebook.md`；验收报告 = `ai-docs/20261103-rulebook-adoption-report.md`）
 
 - **部署方式只认一次**：`src/deployment.ts`（`deployment()` = site / itch / local：file: 协议 → local，烤进 index.html 的 `<meta name="deployment" content="itch|local">`；`embedded()` = 被套在别人页面里）。别处不许看 `location.protocol` / `window.top` / 标记（`test/deployment.test.mjs` 守）。开关 = `src/deployment-policy.ts`（cloud / serviceWorker / siteHint + 本 app 自己的 library；folderGallery / rememberPassword 本 app 没有消费者、不进来）。**itch / 备用版没有歌库**（2026-11-03 Fable 裁定：歌没有浏览器外的家）：歌库钮画灰、点了说「歌库只在官网版里有」+「去官网」，存 = 下载 / 开 = 选文件，每个键必须有消费者（同一个守卫）。官网网址 = `config.ts SITE_URL`，报告入口 = `REPORT_URL`。

@@ -31,5 +31,7 @@ export const LOCAL_SAVE_DEBOUNCE_MS = 2_000;
 /** 挂机很久醒来先核云端、再放行输入（家族周账 F-67 / KudsRocket W-25；user 2026-10-15「就是防止一个挂机了一年的设备误覆盖新版本」）：
  *  离开前台超过这么久回来 = 同步闸先锁住输入、核完云端再放开。短暂切走不锁（每次切 tab 都弹太烦）。数是 AI 起的（10 分钟），user 可改。added 2026-10-21 by Claude Fable 5.1 */
 export const WAKE_CHECK_AFTER_MS = 10 * 60_000;
-/** 醒来那次核对最多让人等多久：超时闸先放开（核对在后台接着跑，真有新版本到了照样锁到重载完）。 */
-export const WAKE_CHECK_TIMEOUT_MS = 20_000;
+/** 闸门问云端的硬超时（家族设计稿 cloud-gate §4：≥ 8 s 没回 = 当没网进闸；数字可调，艺术类 app 不要更短）。 */
+export const CLOUD_CHECK_TIMEOUT_MS = 8000;
+/** 点「有新版本 · 刷新」：重载前先推这么久（家族周账 F-147 B）。推不完也照样重载：字节已经落本机，下次开再推。 */
+export const RELOAD_PUSH_TIMEOUT_MS = 5000;

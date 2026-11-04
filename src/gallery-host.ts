@@ -10,6 +10,7 @@ import { APP_DB_PREFIX, CACHE_DBS } from "./config.ts";
 // 图库包的注册表（0.8.7 起库名归宿主）：本 app 不用它（单库），但万一包内部开了，也落在自家 GUID 前缀下（家族命名规矩；还原出厂按前缀删得到）。import 本身零 IDB 访问。2026-10-21
 configureGalleryRegistry({ dbName: `${APP_DB_PREFIX}gallery-registry` });
 import { requireStore, auth, hasStore, isSignedIn } from "./app-store.ts";
+import { cloudOnline } from "./cloud-gate.ts";
 import { currentPolicy } from "./deployment-policy.ts";
 import { cloudOffHtml, SITE_TEXT } from "./app/site-hint.ts";
 import { THUMBNAIL_ENTRY, FINAL_MP3_ENTRY } from "./format/project.ts";
@@ -39,6 +40,12 @@ export interface GalleryHostDeps {
   openInstruments: () => void;
   /** 云按钮：登录 / 退出 / 账号（宿主的 auth 菜单）。 */
   openCloudMenu: (anchor: HTMLElement) => void;
+  /** 顶上要不要挂「只在这台设备的浏览器里，没有备份」：这台设备没有网盘账号（一处判定，住 main.ts）。 */
+  showNoBackup: () => boolean;
+  /** 「全部导出」：整个歌库打一个 zip。 */
+  exportAll: () => void;
+  /** 「连接网盘」。 */
+  connectCloud: () => void;
   onOpened?: () => void;
   onClosed?: () => void;
 }
@@ -80,12 +87,15 @@ export function initGalleryHost(d: GalleryHostDeps) {
     `<button type="button" class="btn" data-v="new" title="新建：一首歌 / 一个文件夹" aria-haspopup="menu">${iconHtml("new")}<span>新建</span></button>` +
     `<button type="button" class="btn" data-v="aside" title="回收站和备份箱">${iconHtml("trash-can")}</button>` +
     `<button type="button" class="btn" data-v="settings" title="设置">${iconHtml("menu")}</button></div>` +
+    // 没有家的披露条（家族 library-needs-a-home §4 第 1 步，工单 H）：不改入口、不删功能，先说实话 + 给出口
+    `<div class="gallery-home-bar" hidden><span class="gallery-home-text">这些歌只在这台设备的浏览器里，没有备份</span><span class="spacer"></span><button type="button" class="btn" data-v="export-all">全部导出</button><button type="button" class="btn primary" data-v="connect">连接网盘</button></div>` +
     `<div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml("back")}<span>回到歌</span></button>` +
     `<div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml("trash-can")}<span>回收站</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml("archive-box")}<span>备份箱</span></button></div>` +
     `<span class="spacer"></span><button type="button" class="btn danger" data-v="empty">清空</button></div>` +
     `<div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector<HTMLElement>(".gallery-mount")!, asideBar = fullEl.querySelector<HTMLElement>(".gallery-asidebar")!;
+  const homeBar = fullEl.querySelector<HTMLElement>(".gallery-home-bar")!;
   const cloudBtn = fullEl.querySelector<HTMLElement>('[data-v="cloud"]')!, refreshBtn = fullEl.querySelector<HTMLElement>('[data-v="refresh"]')!;
 
   const storeFace = (): (VerbStore & DataFaceStore) | null => (hasStore() ? (requireStore() as unknown as VerbStore & DataFaceStore) : null);
@@ -106,7 +116,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
     store: storeFace,
     doc,
     host: {
-      signedIn: () => isSignedIn(), online: () => (typeof navigator === "undefined" || navigator.onLine !== false), activeIdentifier: () => d.activeIdentifier(),
+      signedIn: () => isSignedIn(), online: cloudOnline, activeIdentifier: () => d.activeIdentifier(),
       confirm: (title, msg) => openConfirmSheet(title, msg),
       input: (title, def, opts) => openInputSheet(title, { defaultValue: def, placeholder: opts?.placeholder }),
       chooseFolder: (title, msg, options) => openChoiceSheet<string>(title, msg, options.map((o) => ({ label: o.label, value: o.value }))),
@@ -260,9 +270,12 @@ export function initGalleryHost(d: GalleryHostDeps) {
     else if (v === "trash" || v === "backup") showAside(v);
     else if (v === "empty") { const h = ensureMounted().handle, cur = h.getView(); if (cur === "trash") h.emptyTrash(); else if (cur === "backup") h.emptyBackup(); }
     else if (v === "settings") d.openSettings();
+    else if (v === "export-all") d.exportAll();
+    else if (v === "connect") d.connectCloud();
   });
   /** 云按钮的样子跟登录态走（图标 + 「已登录」态）。 */
   function renderCloud(): void {
+    homeBar.hidden = !d.showNoBackup();
     if (!currentPolicy().cloud) return;   // 灰着的那颗不跟登录态变（永远没登录）
     const on = isSignedIn();
     cloudBtn.classList.toggle("is-on", on); cloudBtn.title = on ? `云端：已登录${accountName() ? ` ${accountName()}` : ""}` : "云端：没登录（歌只在这台设备上）";
