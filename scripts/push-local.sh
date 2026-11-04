@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # push-local.sh —— 备用版（下载的文件夹双击就能用）推到两个地方：itch「可下载」条目 + GitHub release。created 2026-11-03 by Claude Opus 5.5（家族工单 A2 ②）
 #   放哪：两处都放（照 WeebPaint 先例：GH release 挂单文件 + itch standalone channel）；user 11-03（Fable 会话转述）「3 同意」。
-#   **这个脚本准备好、没执行过**（推 = 对外发东西，等 user 说）。
+#   推 = 对外发东西，要 user 本人点头（2026-11-03 v0.14.14 首推，user 当面选了「三处都推」）。
 #   步骤：① 跟开发版守卫（HEAD = github/main = 线上 /dev/ 发着的那一版；scripts/require-dev-deployed.sh）② 打备用版 + 无头烟测（红了就停）
 #        ③ 按版本号命名的 zip ④ butler 推 itch channel `local`（首推后 itch 后台一次性：这一条**不勾**「played in the browser」，它是给人下载的）
 #        ⑤ GitHub release `<版本>`（--target = HEAD 那一提交）挂 zip；已经有这个 release = 补传（--clobber）。

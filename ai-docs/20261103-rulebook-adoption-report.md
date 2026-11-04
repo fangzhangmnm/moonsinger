@@ -1,6 +1,6 @@
 # 工单 A 验收报告：MoonSinger 上 itch + 备用版 + 模型包读出重核
 
-> created 20261103 by Claude Opus 5.5 · as-of v0.14.13 / 2026-11-03（A2 节在文末）
+> created 20261103 by Claude Opus 5.5 · as-of v0.14.14 / 2026-11-03（A2、A3 两节在文末）
 > 工单 = 家族根 `ai-docs/20261103-work-orders.md`「工单 A」；规则书 = 家族根 `ai-docs/20261103-three-shapes-rulebook.md`。
 > **prod / itch 都没推，dev 也没推**（原因见 §4 第 ③ 条）。所有 commit 都在本仓 main 本地 + 库仓本地。
 
@@ -170,4 +170,54 @@ Fable 审过 A（信任根两段、policy 单测、两条守卫都过），对�
 - 「动过的断言」= A2.2 那张表。
 - 新守卫：`test/dist-fresh.test.mjs` + `scripts/source-stamp.mjs`；跟着改名动过的四个守卫见 A2.6 最后一条。
 - 老库探删：`src/app/factory-reset.ts` 里 `legacyExists` / `dropIfExists` / `dropLegacyCacheDbs`。
+
+---
+
+## A3：收 store 2.2.3 + 推开发版 + 推 itch + 备用版（2026-11-03，v0.14.14）
+
+**结论**：同步测试转绿；开发版、itch 两个条目、GitHub release 都推了，都核过。**正式版没推**（还是 v0.12.25）。
+
+### A3.1 版本和测试
+
+- 收 `@internal/store` 2.2.3（导出签名和 2.2.2 一字不差，纯行为补丁：「处理…」弹面前先比字节，一样就认领）。
+- `test/e2e/sync.mjs` **43/43**，断言零改动，A2.3 那条假面没了。
+- 整套 E2E **69/69**（1 分 20 秒）· 单元 867 · 冒烟 6 + 24 · itch 夹具 18/0 · 备用版烟测 23/0（推送脚本里又跑了一次，23/0）。
+
+### A3.2 推了哪几处
+
+| 去处 | 内容 | 核对 |
+|---|---|---|
+| 开发版 https://sing.weebpaint.com/dev/ | commit `230b2a3`（github + OneDrive 两个远端的 main，从 `bf6373c` 快进） | 部署 run 41737079145 成功；线上主 bundle `moonsinger-84b96fe11f61`、`dist/build-stamp.json` 指纹 `458be2ca9335`、包里版本号 v0.14.14，都和 HEAD 对上 |
+| itch「浏览器里玩」`fangzhangmnm/moonsinger:html` | 整站 + 小月相 5 包 + GM 音源，123 MiB | butler status：build #2293230 ✓ v0.14.14 |
+| itch「可下载」`fangzhangmnm/moonsinger:local` | 备用版文件夹，185 MiB | butler status：build #2293235 ✓ v0.14.14 |
+| GitHub release https://github.com/fangzhangmnm/moonsinger/releases/tag/v0.14.14 | `MoonSinger-v0.14.14.zip`（145 MB），target = `230b2a3` | 线上 sha256 = 本机 `c6711955a1e4…` |
+
+itch 项目页 https://fangzhangmnm.itch.io/moonsinger 现在还是草稿（外人打开 404）：**见 A3.4**。
+
+### A3.3 守卫改了什么
+
+`scripts/require-dev-deployed.sh`（`push-itch.sh` / `push-local.sh` 共用）：HEAD 的内容 = github/main，且线上 `/dev/` 发着的主 bundle 名 + 源码指纹都 = HEAD；站点文件没有未提交改动。取代原来的「HEAD == prod」。依据写在脚本头：user 11-03（Fable 转述）「2 开发版，和itch一起」「3 同意」，理由 = itch 是试用版、user 自己用的就是开发版；WeebPaint 的「itch 跟 prod」不变。
+
+**对外发布的批准**：转述不算 user 对这个会话的批准（user 在这里亲口说过「itch 不推」），所以推之前当面问了一次，user 选「三处都推」「项目建好了，还是草稿」。
+
+顺带修了一个我自己写的 bug：`scripts/source-stamp.mjs` 算戳时，收新包会碰到「旧 tgz 还在索引里、文件已删」，`hash-object` 崩掉。现在跳过磁盘上不在的文件。
+
+### A3.4 还要 user 做的（只能本人做）
+
+在 itch 后台（https://itch.io/game/edit 这个项目）一次性设好再发布：
+- `html` 条目勾「This file will be played in the browser」；
+- `local` 条目**不勾**（它是给人下载的）；
+- 项目状态从 Draft 改成 Public（或 Restricted 先自己看）。
+
+不做 = 外人打不开页面，推上去的东西留在那里不生效。
+
+### A3.5 一件没查清的事（如实记）
+
+`sync.mjs` 这一轮有过 **2 次**不稳定，现场都没抓到：
+1. 一次整套 E2E（8 路并行）里它一直没跑完，整套跑到 590 秒被掐（同一轮 `final` / `routing` / `follow` 也红了，单跑都绿）；
+2. 紧接着单跑一遍，卡在「两边都改、B 先推、A 后推 → A 等冲突面」，30 秒没等到。
+
+之后共 20 遍全绿（串行 8 遍；带看门狗的调试副本 4 路并行 3 轮 12 遍），整套 69/69 也含它。2.2.3 只改「处理…」那条路，不在这条路上，所以判断不是这次引入的，但**没有证据定因**。猜测（没验证）：负载下 A 那一笔按键没写进去，A 是干净的，自然不会冲突——那就是测试的问题，不是产品的问题；可是也不能排除别的。
+
+另外 `test/e2e/run.mjs` 没有单任务超时，一个卡住就卡死整套，值得记一笔。
 
