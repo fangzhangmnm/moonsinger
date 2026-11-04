@@ -5,12 +5,9 @@
 //   派生缓存 IDB `moonsinger-thumbs`（user 2026-10-08「没问题」批；CLAUDE.md 持久层白名单表登记）。
 import { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } from "../vendor/vue/vue.esm-browser.prod.js";
 import { createGallery, humanSize, type CreateGalleryDeps, type GalleryDocHost, type VueRuntime, type GItem, type TileInfo, type TileAction, type VerbStore, type DataFaceStore, type Gallery, type GalleryView, type AsideKind, type AsideScope } from "@internal/gallery";
-import { configureGalleryRegistry } from "@internal/gallery";
-import { APP_DB_PREFIX, CACHE_DBS } from "./config.ts";
-// 图库包的注册表（0.8.7 起库名归宿主）：本 app 不用它（单库），但万一包内部开了，也落在自家 GUID 前缀下（家族命名规矩；还原出厂按前缀删得到）。import 本身零 IDB 访问。2026-10-21
-configureGalleryRegistry({ dbName: `${APP_DB_PREFIX}gallery-registry` });
-import { requireStore, auth, hasStore, isSignedIn } from "./app-store.ts";
-import { cloudOnline } from "./cloud-gate.ts";
+import { CACHE_DBS } from "./config.ts";
+import "./library-home.ts";   // 图库包的名册库名归它配（自家 GUID 前缀）
+import { requireStore, auth, hasStore, isSignedIn, homeOnline, folderHome } from "./app-store.ts";
 import { currentPolicy } from "./deployment-policy.ts";
 import { cloudOffHtml, SITE_TEXT } from "./app/site-hint.ts";
 import { THUMBNAIL_ENTRY, FINAL_MP3_ENTRY } from "./format/project.ts";
@@ -40,12 +37,13 @@ export interface GalleryHostDeps {
   openInstruments: () => void;
   /** 云按钮：登录 / 退出 / 账号（宿主的 auth 菜单）。 */
   openCloudMenu: (anchor: HTMLElement) => void;
-  /** 顶上要不要挂「只在这台设备的浏览器里，没有备份」：这台设备没有网盘账号（一处判定，住 main.ts）。 */
-  showNoBackup: () => boolean;
-  /** 「全部导出」：整个歌库打一个 zip。 */
-  exportAll: () => void;
-  /** 「连接网盘」。 */
-  connectCloud: () => void;
+  /** 顶上挂什么（没有家的披露 / 文件夹权限掉了 / 还有旧歌没搬；一处判定，住 main.ts）。null = 不挂。 */
+  homeBar: () => { text: string; buttons: { v: string; label: string }[] } | null;
+  /** 顶上那条的钮。**点击同步栈里调**（选文件夹 / 再授权要手势）。 */
+  homeAction: (v: string) => void;
+  /** 文件夹当家时的名字（不是 = null）：云按钮换成文件夹按钮。 */
+  homeLabel: () => string | null;
+  openHomeMenu: () => void;
   onOpened?: () => void;
   onClosed?: () => void;
 }
@@ -80,6 +78,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
   fullEl.innerHTML = `<div class="gallery-chrome">` +
     `<div class="gallery-chrome-title">歌库</div><span class="spacer"></span>` +
     // 网盘关着（itch / 备用版）= 云按钮画灰 + 旁边一行「网盘在官网」（家族规则书 §1 第 6 条：入口不许露着却点不动；2026-11-03）
+    `<button type="button" class="btn gallery-home-btn" data-v="home" hidden>${iconHtml("folder")}<span class="gallery-home-name"></span></button>` +
     (currentPolicy().cloud ? `<button type="button" class="btn" data-v="cloud" title="云端：登录 / 退出">${iconHtml("cloud")}</button>`
       : `<button type="button" class="btn is-off" data-v="cloud" disabled title="${SITE_TEXT.cloudOffTitle}">${iconHtml("cloud")}</button>${cloudOffHtml()}`) +
     `<button type="button" class="btn" data-v="refresh" title="刷新云端" hidden>${iconHtml("refresh")}</button>` +
@@ -88,14 +87,14 @@ export function initGalleryHost(d: GalleryHostDeps) {
     `<button type="button" class="btn" data-v="aside" title="回收站和备份箱">${iconHtml("trash-can")}</button>` +
     `<button type="button" class="btn" data-v="settings" title="设置">${iconHtml("menu")}</button></div>` +
     // 没有家的披露条（家族 library-needs-a-home §4 第 1 步，工单 H）：不改入口、不删功能，先说实话 + 给出口
-    `<div class="gallery-home-bar" hidden><span class="gallery-home-text">这些歌只在这台设备的浏览器里，没有备份</span><span class="spacer"></span><button type="button" class="btn" data-v="export-all">全部导出</button><button type="button" class="btn primary" data-v="connect">连接网盘</button></div>` +
+    `<div class="gallery-home-bar" hidden><span class="gallery-home-text"></span><span class="spacer"></span><span class="gallery-home-btns"></span></div>` +
     `<div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml("back")}<span>回到歌</span></button>` +
     `<div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml("trash-can")}<span>回收站</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml("archive-box")}<span>备份箱</span></button></div>` +
     `<span class="spacer"></span><button type="button" class="btn danger" data-v="empty">清空</button></div>` +
     `<div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector<HTMLElement>(".gallery-mount")!, asideBar = fullEl.querySelector<HTMLElement>(".gallery-asidebar")!;
-  const homeBar = fullEl.querySelector<HTMLElement>(".gallery-home-bar")!;
+  const homeBar = fullEl.querySelector<HTMLElement>(".gallery-home-bar")!, homeBtn = fullEl.querySelector<HTMLElement>('[data-v="home"]')!;
   const cloudBtn = fullEl.querySelector<HTMLElement>('[data-v="cloud"]')!, refreshBtn = fullEl.querySelector<HTMLElement>('[data-v="refresh"]')!;
 
   const storeFace = (): (VerbStore & DataFaceStore) | null => (hasStore() ? (requireStore() as unknown as VerbStore & DataFaceStore) : null);
@@ -110,13 +109,14 @@ export function initGalleryHost(d: GalleryHostDeps) {
     tileAction: (item, facts) => playTile(item.identifier, factsOf(facts)),   // 封面上的 ▶（0.8.0 包画、包接点击、不开卡）
   };
   const zipFile = (id: string) => requireStore().zip(id, { mode: "existing" });
+  const storeKey = (): string => folderHome()?.id ?? "default";   // 缩略图 / 事实按家分开（同名的歌在两个家里不是一回事）
   const status = (msg: string, isError?: boolean) => reportError(msg, isError ? "error" : "info");
   const deps: CreateGalleryDeps = {
     vue,
     store: storeFace,
     doc,
     host: {
-      signedIn: () => isSignedIn(), online: cloudOnline, activeIdentifier: () => d.activeIdentifier(),
+      signedIn: () => isSignedIn(), online: homeOnline, activeIdentifier: () => d.activeIdentifier(),
       confirm: (title, msg) => openConfirmSheet(title, msg),
       input: (title, def, opts) => openInputSheet(title, { defaultValue: def, placeholder: opts?.placeholder }),
       chooseFolder: (title, msg, options) => openChoiceSheet<string>(title, msg, options.map((o) => ({ label: o.label, value: o.value }))),
@@ -144,9 +144,9 @@ export function initGalleryHost(d: GalleryHostDeps) {
     policy: {
       isImage: () => false,
       // 缩略图：fetch = store getPeek 按身份尾读（source 必填：cloud 绝不落回本地）。null = 到达了但没有（进缓存、显示底色）；抛 = 够不着（不缓存）。
-      thumbs: { kinds: ["song"], dbName: THUMB_DB, fetch: (id, source) => zipFile(id).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: THUMBNAIL_ENTRY, source }) },
+      thumbs: { kinds: ["song"], dbName: THUMB_DB, galleryId: storeKey, fetch: (id, source) => zipFile(id).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: THUMBNAIL_ENTRY, source }) },
       // 事实（0.8.0）：尾读总目录看有没有定稿记录；null = 确定没定稿（进缓存）；抛 = 够不着（不缓存，下次再问）
-      facts: { kinds: ["song"], dbName: FACTS_DB, fetch: async (id, source) => { const rec = await peekFinal(id, source); return rec ? { final: { rev: rec.rev, secs: rec.mp3.secs } } : null; } },
+      facts: { kinds: ["song"], dbName: FACTS_DB, galleryId: storeKey, fetch: async (id, source) => { const rec = await peekFinal(id, source); return rec ? { final: { rev: rec.rev, secs: rec.mp3.secs } } : null; } },
     },
     tile: { aspect: 1 },   // 唱片封面 = 方图（user 2026-10-08「我们这个应该是唱片封面，是矩形的」）
     folderMemory: { get: () => deviceKvGet(KV_FOLDER) ?? "", set: (p) => deviceKvSet(KV_FOLDER, p || null) },
@@ -270,27 +270,39 @@ export function initGalleryHost(d: GalleryHostDeps) {
     else if (v === "trash" || v === "backup") showAside(v);
     else if (v === "empty") { const h = ensureMounted().handle, cur = h.getView(); if (cur === "trash") h.emptyTrash(); else if (cur === "backup") h.emptyBackup(); }
     else if (v === "settings") d.openSettings();
-    else if (v === "export-all") d.exportAll();
-    else if (v === "connect") d.connectCloud();
+    else if (v === "home") d.openHomeMenu();
+    else if ((e.target as HTMLElement).closest(".gallery-home-btns")) d.homeAction(v);
   });
   /** 云按钮的样子跟登录态走（图标 + 「已登录」态）。 */
   function renderCloud(): void {
-    homeBar.hidden = !d.showNoBackup();
-    if (!currentPolicy().cloud) return;   // 灰着的那颗不跟登录态变（永远没登录）
+    const bar = d.homeBar();
+    homeBar.hidden = !bar;
+    if (bar) {
+      homeBar.querySelector(".gallery-home-text")!.textContent = bar.text;
+      const btns = homeBar.querySelector<HTMLElement>(".gallery-home-btns")!;
+      btns.replaceChildren(...bar.buttons.map((b) => { const el = document.createElement("button"); el.type = "button"; el.className = "btn"; el.dataset.v = b.v; el.textContent = b.label; return el; }));
+    }
+    const folder = d.homeLabel();
+    homeBtn.hidden = folder == null;
+    if (folder != null) { homeBtn.querySelector(".gallery-home-name")!.textContent = folder; homeBtn.title = `歌库在文件夹「${folder}」`; refreshBtn.hidden = false; if (currentPolicy().cloud) cloudBtn.hidden = true; return; }
+    if (!currentPolicy().cloud) { refreshBtn.hidden = true; return; }   // 灰着的那颗不跟登录态变（永远没登录）
     const on = isSignedIn();
+    cloudBtn.hidden = false;
     cloudBtn.classList.toggle("is-on", on); cloudBtn.title = on ? `云端：已登录${accountName() ? ` ${accountName()}` : ""}` : "云端：没登录（歌只在这台设备上）";
     refreshBtn.hidden = !on;
   }
   function accountName(): string { try { const a = auth.getActiveAccount() as { username?: string; name?: string } | null; return a?.name || a?.username || ""; } catch { return ""; } }
   auth.onAuthChanged(() => renderCloud());
 
+  let storeChanged = false;
   async function open(): Promise<void> {
     await d.flushLocal();
     const g = ensureMounted();
     document.body.dataset.mode = "gallery";
     fullEl.hidden = false;
-    const dir = deviceKvGet(KV_FOLDER) ?? "";
+    const dir = storeChanged ? "" : deviceKvGet(KV_FOLDER) ?? "";   // 换了家：回根（上个家的夹在这里不一定有）
     if (dir !== g.handle.getFolder()) g.handle.setFolder(dir);
+    if (storeChanged) { storeChanged = false; deviceKvSet(KV_FOLDER, null); g.handle.refresh(); }   // 旧 store 上的订阅已经死了
     showAside(null);
     renderCloud();
     deviceKvSet(KV_SCENE, "gallery");
@@ -309,6 +321,8 @@ export function initGalleryHost(d: GalleryHostDeps) {
   async function openAttention(): Promise<void> { await open(); ensureMounted().handle.setAttentionOnly(true); }
   return {
     open, close, isOpen, renderCloud, openAttention,
+    /** 换了家（store 换了实例）：图库的订阅要重来（下次开 = 回根 + 重新列）。 */
+    noteStoreChanged: () => { storeChanged = true; if (!fullEl.hidden) { storeChanged = false; deviceKvSet(KV_FOLDER, null); gallery?.handle.setFolder(""); gallery?.handle.refresh(); } },
     setAttentionOnly: (on: boolean) => gallery?.handle.setAttentionOnly(on),
     /** boot 用：上次是在歌库里离开的（刷新 / 关标签 / SW 更新重载）。 */
     wasInGallery: () => deviceKvGet(KV_SCENE) === "gallery",

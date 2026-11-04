@@ -2644,7 +2644,7 @@ var init_upng_esm = __esm({
 });
 
 // src/version.ts
-var APP_VERSION = "v0.14.16-2026-11-03";
+var APP_VERSION = "v0.14.17-2026-11-04";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -2670,9 +2670,9 @@ function embedded() {
 
 // src/deployment-policy.ts
 var TABLE = {
-  site: { cloud: true, serviceWorker: true, siteHint: false, library: true },
-  itch: { cloud: false, serviceWorker: false, siteHint: true, library: false },
-  local: { cloud: false, serviceWorker: false, siteHint: true, library: false }
+  site: { cloud: true, serviceWorker: true, siteHint: false, folderGallery: true, library: true },
+  itch: { cloud: false, serviceWorker: false, siteHint: true, folderGallery: false, library: false },
+  local: { cloud: false, serviceWorker: false, siteHint: true, folderGallery: true, library: true }
 };
 function currentPolicy() {
   return TABLE[deployment()];
@@ -8030,8 +8030,8 @@ function engrave(song, o10) {
     if (txt) {
       prims.push({ t: "text", x: x0, y: base2, s: txt, cls: "arr", size: as2, anchor: "start" });
       if (arr.issues.length) {
-        const why = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? ` \u7B49 ${arr.issues.length} \u5904` : ""}`, tw2 = wOf(txt, 1.25) + P2(0.8), fits = tw2 + wOf(why, 1.1) <= avail2;
-        prims.push({ t: "text", x: fits ? x0 + tw2 : x0, y: fits ? base2 : base2 + cs2 * 1.35, s: why, cls: "arr-issue", size: P2(1.1), anchor: "start" });
+        const why2 = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? ` \u7B49 ${arr.issues.length} \u5904` : ""}`, tw2 = wOf(txt, 1.25) + P2(0.8), fits = tw2 + wOf(why2, 1.1) <= avail2;
+        prims.push({ t: "text", x: fits ? x0 + tw2 : x0, y: fits ? base2 : base2 + cs2 * 1.35, s: why2, cls: "arr-issue", size: P2(1.1), anchor: "start" });
         if (!fits) arrLast = base2 + cs2 * 1.35;
       }
     } else if (o10.titlePlaceholder) {
@@ -10498,8 +10498,8 @@ var ScoreView = class {
     }
     return this.worker;
   }
-  dropWorker(why) {
-    this.host.onLayoutWorker?.(why);
+  dropWorker(why2) {
+    this.host.onLayoutWorker?.(why2);
     try {
       this.worker?.terminate();
     } catch {
@@ -11574,11 +11574,11 @@ var ScoreView = class {
   /** 这条声部台上那位不唱字？是 = 说一次为什么（同一位歌手只说一次，换了再说）。 */
   noLyricsSaid = "";
   noLyricsHere(part) {
-    const why = this.host.parts().find((p2) => p2.id === part)?.noLyrics;
-    if (!why) return false;
-    if (this.noLyricsSaid !== why) {
-      this.noLyricsSaid = why;
-      this.host.notice?.(why);
+    const why2 = this.host.parts().find((p2) => p2.id === part)?.noLyrics;
+    if (!why2) return false;
+    if (this.noLyricsSaid !== why2) {
+      this.noLyricsSaid = why2;
+      this.host.notice?.(why2);
     }
     return true;
   }
@@ -13045,10 +13045,10 @@ var CHORD_WIN = 80;
 var CHORD_MS = 50;
 var chordHead = (root, b3, win = CHORD_WIN) => b3.t - root.t < win;
 var chordBothAfterMs = (root, b3) => b3.t - root.t + 5;
-function chordVerdict(root, b3, now2, why, rootHeld, keyHeld) {
-  if (why === "rootUp") return now2 - b3.t > b3.t - root.t ? "chord" : "two";
-  if (why === "keyUp") return rootHeld ? "chord" : "two";
-  if (why === "both") return rootHeld && keyHeld ? "chord" : null;
+function chordVerdict(root, b3, now2, why2, rootHeld, keyHeld) {
+  if (why2 === "rootUp") return now2 - b3.t > b3.t - root.t ? "chord" : "two";
+  if (why2 === "keyUp") return rootHeld ? "chord" : "two";
+  if (why2 === "both") return rootHeld && keyHeld ? "chord" : null;
   return rootHeld ? "chord" : "two";
 }
 var monoClash = (heldCount, lastAt, now2, ms = CHORD_MS) => heldCount > 0 && now2 - lastAt < ms;
@@ -17408,7 +17408,7 @@ function createDownloadSessions(cfg) {
     h2.failures = 0;
     h2.downUntil = 0;
   };
-  const sameBytes = (a10, b3) => {
+  const sameBytes2 = (a10, b3) => {
     if (a10.length !== b3.length)
       return false;
     for (let i10 = 0; i10 < a10.length; i10++)
@@ -17534,7 +17534,7 @@ function createDownloadSessions(cfg) {
       }
       if (!mirror)
         return;
-      if (sameBytes(ref, bytes)) {
+      if (sameBytes2(ref, bytes)) {
         verified.add(i10);
         if (mirrored.delete(i10)) {
           meta.mirrored = mirrored.size ? [...mirrored] : void 0;
@@ -17602,7 +17602,7 @@ function createDownloadSessions(cfg) {
                 let checker = false;
                 if (!firstCheck) {
                   checker = true;
-                  firstCheck = range2(item, off, len).then((ref) => sameBytes(ref, b3) ? "same" : "differs", (e10) => {
+                  firstCheck = range2(item, off, len).then((ref) => sameBytes2(ref, b3) ? "same" : "differs", (e10) => {
                     reportStoreError(e10, "log");
                     return "unknown";
                   });
@@ -19731,10 +19731,10 @@ function createGraph(tokenSource, opts = {}) {
     const forget = () => session ? session.clear().catch(() => {
     }) : Promise.resolve();
     let failures = 0;
-    const resumeFrom = async (why) => {
+    const resumeFrom = async (why2) => {
       failures++;
       if (failures > CHUNK_RETRY_MAX)
-        throw new CloudNetworkError(`Graph chunked upload ${path}: gave up after ${CHUNK_RETRY_MAX} retries at ${offset}/${total} (${why})`);
+        throw new CloudNetworkError(`Graph chunked upload ${path}: gave up after ${CHUNK_RETRY_MAX} retries at ${offset}/${total} (${why2})`);
       await graphSleep(chunkBackoffMs(failures));
       let st2;
       try {
@@ -19743,12 +19743,12 @@ function createGraph(tokenSource, opts = {}) {
         throw new CloudNetworkError(`Graph upload session status: network fetch failed (${String(e10)})`, e10);
       }
       if (!st2.ok)
-        throw new CloudNetworkError(`Graph upload session ${path}: gone (${st2.status}) after ${why}`);
+        throw new CloudNetworkError(`Graph upload session ${path}: gone (${st2.status}) after ${why2}`);
       const j2 = await st2.json().catch(() => null);
       const next2 = j2?.nextExpectedRanges?.[0]?.split("-")[0];
       const at2 = next2 != null ? Number(next2) : NaN;
       if (!Number.isFinite(at2) || at2 < 0 || at2 > total)
-        throw new CloudNetworkError(`Graph upload session ${path}: no usable nextExpectedRanges after ${why}`);
+        throw new CloudNetworkError(`Graph upload session ${path}: no usable nextExpectedRanges after ${why2}`);
       return at2;
     };
     const cancelSession = async () => {
@@ -20430,6 +20430,314 @@ function createOneDriveProvider(config = {}) {
     provider,
     // CloudProvider（喂 createCloudSync）
     auth: { isAuthConfigured, initAuth, signIn, signOut, getToken, isSignedIn, getActiveAccount, retrySilentSignIn, onAuthChanged, getAuthState }
+  };
+}
+
+// node_modules/@internal/store/dist/base/providers/folder.js
+function statusError(status, message) {
+  const e10 = new Error(message);
+  e10.status = status;
+  return e10;
+}
+var isNotFound = (e10) => e10?.name === "NotFoundError";
+var isMismatch = (e10) => e10?.name === "TypeMismatchError";
+var OS_JUNK = /* @__PURE__ */ new Set(["desktop.ini", ".ds_store", "thumbs.db"]);
+var isJunk = (name) => OS_JUNK.has(name.toLowerCase()) || name.toLowerCase().startsWith("~$");
+var ROOT_REF = "/";
+var eTagOf = (f2) => `${f2.lastModified}-${f2.size}`;
+var joinPath = (folder, name) => folder && folder !== ROOT_REF ? `${folder}/${name}` : name;
+var splitPath = (path) => {
+  const i10 = path.lastIndexOf("/");
+  return i10 < 0 ? { folder: "", base: path } : { folder: path.slice(0, i10), base: path.slice(i10 + 1) };
+};
+function createFolderProvider(root) {
+  if (!root || root.kind !== "directory")
+    throw new Error("createFolderProvider: root \u76EE\u5F55\u53E5\u67C4\u5FC5\u4F20");
+  async function childByName(dir, name) {
+    try {
+      return await dir.getFileHandle(name);
+    } catch (e10) {
+      if (!isNotFound(e10) && !isMismatch(e10))
+        throw e10;
+    }
+    try {
+      return await dir.getDirectoryHandle(name);
+    } catch (e10) {
+      if (!isNotFound(e10) && !isMismatch(e10))
+        throw e10;
+    }
+    const lower = name.toLowerCase();
+    for await (const h2 of dir.values())
+      if (h2.name.toLowerCase() === lower)
+        return h2;
+    return null;
+  }
+  async function resolveDir(path) {
+    if (!path || path === ROOT_REF)
+      return root;
+    let dir = root;
+    for (const seg of path.split("/")) {
+      const h2 = await childByName(dir, seg);
+      if (!h2 || h2.kind !== "directory")
+        return null;
+      dir = h2;
+    }
+    return dir;
+  }
+  async function resolveRef(ref) {
+    if (!ref || ref === ROOT_REF)
+      return null;
+    const segs = ref.split("/");
+    let parent = root;
+    const real = [];
+    for (const seg of segs.slice(0, -1)) {
+      const h2 = await childByName(parent, seg);
+      if (!h2 || h2.kind !== "directory")
+        return null;
+      parent = h2;
+      real.push(h2.name);
+    }
+    const handle = await childByName(parent, segs[segs.length - 1]);
+    if (!handle)
+      return null;
+    real.push(handle.name);
+    return { handle, parent, path: real.join("/") };
+  }
+  async function fileItem(handle, path) {
+    const f2 = await handle.getFile();
+    return { ref: path, name: handle.name, path, size: f2.size, eTag: eTagOf(f2), lastModifiedDateTime: f2.lastModified, isFolder: false };
+  }
+  function dirItem(handle, path) {
+    return { ref: path, name: handle.name, path, size: 0, eTag: "0", lastModifiedDateTime: 0, isFolder: true };
+  }
+  async function assertMatch(handle, expected, path) {
+    if (expected == null)
+      return;
+    const cur = eTagOf(await handle.getFile());
+    if (cur !== expected)
+      throw statusError(412, `folder-provider: eTag mismatch on ${path} (expected ${expected}, found ${cur})`);
+  }
+  async function writeFile(dir, name, blob) {
+    const fh = await dir.getFileHandle(name, { create: true });
+    const w2 = await fh.createWritable();
+    await w2.write(blob instanceof Blob ? blob : new Blob([blob]));
+    await w2.close();
+    return fh;
+  }
+  async function copyVerify(src, targetDir, newName) {
+    const bytes = await src.getFile();
+    const dst = await writeFile(targetDir, newName, bytes);
+    const check = await dst.getFile();
+    if (check.size !== bytes.size)
+      throw new Error(`folder-provider: copy verify failed for ${newName} (${check.size}\u2260${bytes.size})\u2014\u2014\u6E90\u672A\u5220\uFF0C\u5B57\u8282\u4FDD\u4F4F`);
+    return dst;
+  }
+  async function moveFile(ref, targetFolderRef, newName, eTag, conflictBehavior) {
+    const r10 = await resolveRef(ref);
+    if (!r10 || r10.handle.kind !== "file")
+      throw statusError(404, `folder-provider: item \u4E0D\u5728\u4E86: ${ref}`);
+    const src = r10.handle;
+    await assertMatch(src, eTag, r10.path);
+    const targetDir = await resolveDir(targetFolderRef);
+    if (!targetDir)
+      throw statusError(404, `folder-provider: \u76EE\u6807\u6587\u4EF6\u5939\u4E0D\u5728\u4E86: ${targetFolderRef}`);
+    const base2 = newName ?? src.name;
+    const occupied = await childByName(targetDir, base2);
+    const samePlace = occupied === src;
+    if (occupied && !samePlace) {
+      if (conflictBehavior === "fail")
+        throw statusError(409, `folder-provider: \u76EE\u6807\u5DF2\u6709\u540C\u540D: ${joinPath(targetFolderRef, base2)}`);
+      if (occupied.kind !== "file")
+        throw statusError(409, `folder-provider: \u76EE\u6807\u540C\u540D\u662F\u6587\u4EF6\u5939: ${base2}`);
+      throw statusError(409, `folder-provider: move conflictBehavior=replace \u672A\u652F\u6301\uFF08engine \u53EA\u53D1 fail\uFF09`);
+    }
+    const newPath = joinPath(targetFolderRef === ROOT_REF ? "" : targetFolderRef, base2);
+    if (typeof src.move === "function") {
+      try {
+        const { folder: srcFolder } = splitPath(r10.path);
+        const tgtFolder = targetFolderRef === ROOT_REF ? "" : targetFolderRef;
+        const sameDir = srcFolder.toLowerCase() === tgtFolder.toLowerCase();
+        if (sameDir)
+          await src.move(base2);
+        else
+          await src.move(targetDir, base2);
+        const moved = await childByName(targetDir, base2);
+        if (moved && moved.kind === "file")
+          return fileItem(moved, newPath);
+      } catch {
+      }
+    }
+    const dst = await copyVerify(src, targetDir, base2);
+    await r10.parent.removeEntry(src.name);
+    return fileItem(dst, newPath);
+  }
+  return {
+    async list(folder = "") {
+      const dir = await resolveDir(folder);
+      if (!dir)
+        throw statusError(404, `folder-provider: folder \u4E0D\u5B58\u5728: ${folder}`);
+      const out = [];
+      for await (const h2 of dir.values()) {
+        if (isJunk(h2.name))
+          continue;
+        const p2 = joinPath(folder, h2.name);
+        out.push(h2.kind === "file" ? await fileItem(h2, p2) : dirItem(h2, p2));
+      }
+      return out;
+    },
+    async getItemByPath(path) {
+      const r10 = await resolveRef(path);
+      if (!r10)
+        return null;
+      return r10.handle.kind === "file" ? fileItem(r10.handle, r10.path) : dirItem(r10.handle, r10.path);
+    },
+    async getApprootRef() {
+      return ROOT_REF;
+    },
+    async download(ref) {
+      const r10 = await resolveRef(ref);
+      if (!r10 || r10.handle.kind !== "file")
+        throw statusError(404, `folder-provider: item \u4E0D\u5728\u4E86: ${ref}`);
+      return r10.handle.getFile();
+    },
+    async downloadRange(ref, offset, length) {
+      const r10 = await resolveRef(ref);
+      if (!r10 || r10.handle.kind !== "file")
+        throw statusError(404, `folder-provider: item \u4E0D\u5728\u4E86: ${ref}`);
+      const f2 = await r10.handle.getFile();
+      const start = Math.max(0, offset);
+      return f2.slice(start, Math.min(f2.size, start + Math.max(0, length)));
+    },
+    // 0.17.0 流式：逐块写进 createWritable（FSA 写临时文件、close 原子替换 → 中途断了没有半成品）。只准新建（fail）。
+    async uploadStream(path, source, opts = {}) {
+      const { conflictBehavior = "fail", onProgress } = opts;
+      if (conflictBehavior !== "fail")
+        throw new Error('folder-provider: uploadStream \u53EA\u652F\u6301 conflictBehavior:"fail"\uFF08\u65B0\u5EFA\uFF09');
+      const { folder, base: base2 } = splitPath(path);
+      const dir = await resolveDir(folder) ?? await (async () => {
+        throw statusError(404, `folder-provider: folder \u4E0D\u5B58\u5728: ${folder}`);
+      })();
+      const existing = await childByName(dir, base2);
+      if (existing)
+        throw statusError(409, `folder-provider: \u5DF2\u5B58\u5728: ${path}`);
+      const fh = await dir.getFileHandle(base2, { create: true });
+      const w2 = await fh.createWritable();
+      const CHUNK = 8 * 1024 * 1024;
+      onProgress?.(0, source.size);
+      for (let off = 0; off < source.size; off += CHUNK) {
+        const bytes = await source.read(off, Math.min(CHUNK, source.size - off));
+        await w2.write(new Blob([bytes]));
+        onProgress?.(Math.min(off + CHUNK, source.size), source.size);
+      }
+      await w2.close();
+      return fileItem(fh, joinPath(folder, base2));
+    },
+    async upload(path, blob, opts = {}) {
+      const { eTag = null, conflictBehavior = "replace", onProgress } = opts;
+      const total = blob instanceof Blob ? blob.size : blob.byteLength;
+      onProgress?.(0, total);
+      if (conflictBehavior === "replace" && !eTag)
+        throw new Error(`folder-provider: blind overwrite forbidden: conflictBehavior:"replace" requires If-Match eTag (${path})`);
+      if (conflictBehavior === "rename")
+        throw new Error("folder-provider: conflictBehavior=rename \u672A\u652F\u6301\uFF08engine \u4E0D\u53D1\uFF09");
+      const { folder, base: base2 } = splitPath(path);
+      const dir = await resolveDir(folder) ?? await (async () => {
+        throw statusError(404, `folder-provider: folder \u4E0D\u5B58\u5728: ${folder}`);
+      })();
+      const existing = await childByName(dir, base2);
+      if (existing && existing.kind !== "file")
+        throw statusError(409, `folder-provider: ${path} \u662F\u6587\u4EF6\u5939`);
+      if (conflictBehavior === "fail") {
+        if (existing)
+          throw statusError(409, `folder-provider: \u5DF2\u5B58\u5728: ${path}`);
+        const fh = await writeFile(dir, base2, blob);
+        onProgress?.(total, total);
+        return fileItem(fh, joinPath(folder, base2));
+      }
+      if (!existing)
+        throw statusError(412, `folder-provider: eTag \u6307\u7684\u90A3\u4EFD\u4E0D\u5728\u4E86: ${path}`);
+      await assertMatch(existing, eTag, path);
+      const written = await writeFile(dir, existing.name, blob);
+      onProgress?.(total, total);
+      return fileItem(written, joinPath(folder, existing.name));
+    },
+    async ensureFolder(path) {
+      if (!path || path === ROOT_REF)
+        return ROOT_REF;
+      let dir = root;
+      const realSegs = [];
+      for (const seg of path.split("/")) {
+        const hit = await childByName(dir, seg);
+        if (hit && hit.kind === "directory") {
+          dir = hit;
+          realSegs.push(hit.name);
+          continue;
+        }
+        if (hit)
+          throw new Error(`folder-provider: ${seg} \u5DF2\u5B58\u5728\u4F46\u4E0D\u662F\u6587\u4EF6\u5939`);
+        dir = await dir.getDirectoryHandle(seg, { create: true });
+        realSegs.push(dir.name);
+      }
+      return realSegs.join("/");
+    },
+    async delete(ref, eTag) {
+      const r10 = await resolveRef(ref);
+      if (!r10)
+        throw statusError(404, `folder-provider: item \u4E0D\u5728\u4E86: ${ref}`);
+      if (r10.handle.kind === "file")
+        await assertMatch(r10.handle, eTag ?? null, r10.path);
+      await r10.parent.removeEntry(r10.handle.name);
+    },
+    async deleteEmptyFolder(path) {
+      let dir;
+      try {
+        dir = await resolveDir(path);
+      } catch {
+        return { status: "list-failed" };
+      }
+      if (!dir || dir === root)
+        return dir ? { status: "non-empty" } : { status: "already-gone" };
+      const junk = [];
+      try {
+        for await (const h2 of dir.values()) {
+          if (h2.kind === "file" && isJunk(h2.name)) {
+            junk.push(h2.name);
+            continue;
+          }
+          return { status: "non-empty" };
+        }
+      } catch {
+        return { status: "list-failed" };
+      }
+      const { folder, base: base2 } = splitPath(path);
+      const parent = await resolveDir(folder);
+      if (!parent)
+        return { status: "already-gone" };
+      for (const j2 of junk)
+        await dir.removeEntry(j2);
+      const realName = (await childByName(parent, base2))?.name ?? base2;
+      await parent.removeEntry(realName);
+      return { status: "deleted" };
+    },
+    move(ref, targetFolderRef, opts = {}) {
+      return moveFile(ref, targetFolderRef, opts.newName ?? null, opts.eTag, opts.conflictBehavior ?? "fail");
+    },
+    async copy(ref, targetFolderRef, newName) {
+      const r10 = await resolveRef(ref);
+      if (!r10 || r10.handle.kind !== "file")
+        throw statusError(404, `folder-provider: item \u4E0D\u5728\u4E86: ${ref}`);
+      const targetDir = await resolveDir(targetFolderRef);
+      if (!targetDir)
+        throw statusError(404, `folder-provider: \u76EE\u6807\u6587\u4EF6\u5939\u4E0D\u5728\u4E86: ${targetFolderRef}`);
+      if (await childByName(targetDir, newName))
+        throw statusError(409, `folder-provider: \u76EE\u6807\u5DF2\u6709\u540C\u540D: ${newName}`);
+      const dst = await copyVerify(r10.handle, targetDir, newName);
+      return fileItem(dst, joinPath(targetFolderRef === ROOT_REF ? "" : targetFolderRef, newName));
+    },
+    async rename(ref, newName, eTag) {
+      const { folder } = splitPath(ref);
+      return moveFile(ref, folder || ROOT_REF, newName, eTag, "fail");
+    }
   };
 }
 
@@ -24280,9 +24588,9 @@ function createPadHost(padEl2, g3) {
     g3.update(toggleChordPitch(s10, ri2, keySpell(pitch, keyAt(tr(s10), ri2))));
     return true;
   }
-  function decideChord(w2, why) {
+  function decideChord(w2, why2) {
     if (w2.done) return;
-    const now2 = performance.now(), keyHeld = monoHeld.has(w2.keyId), v = chordVerdict(w2.root, w2, now2, why, monoHeld.has(w2.root.keyId), keyHeld);
+    const now2 = performance.now(), keyHeld = monoHeld.has(w2.keyId), v = chordVerdict(w2.root, w2, now2, why2, monoHeld.has(w2.root.keyId), keyHeld);
     if (v === null) return;
     w2.done = true;
     clearTimeout(w2.timer);
@@ -24297,9 +24605,9 @@ function createPadHost(padEl2, g3) {
     if (keyHeld && t10) chordRoots.set(w2.keyId, { tokId: t10.id, t: w2.t });
     g3.afterWrite();
   }
-  function settleChords(why) {
+  function settleChords(why2) {
     for (const w2 of [...chordWaits]) {
-      if (why === "lost") {
+      if (why2 === "lost") {
         monoHeld.delete(w2.root.keyId);
       }
       decideChord(w2, "force");
@@ -25162,7 +25470,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-6fb0185cdc6b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-66e39f77f4c4.mjs");
+      return pick(() => "encode-worker-2331b6483ee4.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -25196,10 +25504,10 @@ function onThreadFail(cb2) {
   failSubs.add(cb2);
   return () => failSubs.delete(cb2);
 }
-function reportThreadFail(name, why) {
+function reportThreadFail(name, why2) {
   for (const cb2 of failSubs) {
     try {
-      cb2(name, why);
+      cb2(name, why2);
     } catch {
     }
   }
@@ -25214,9 +25522,9 @@ function startWorker(name) {
       last = e10;
     }
   }
-  const why = `\u540E\u53F0\u7EBF\u7A0B\u300C${name}\u300D\u8D77\u4E0D\u6765\uFF1A${last?.message ?? last}`;
-  reportThreadFail(name, why);
-  throw new Error(why);
+  const why2 = `\u540E\u53F0\u7EBF\u7A0B\u300C${name}\u300D\u8D77\u4E0D\u6765\uFF1A${last?.message ?? last}`;
+  reportThreadFail(name, why2);
+  throw new Error(why2);
 }
 async function addWorklet(ctx2, name) {
   const urls = threadUrls(name);
@@ -25229,9 +25537,9 @@ async function addWorklet(ctx2, name) {
       last = e10;
     }
   }
-  const why = `\u51FA\u58F0\u7EBF\u7A0B\u300C${name}\u300D\u8D77\u4E0D\u6765\uFF1A${last?.message ?? last}`;
-  reportThreadFail(name, why);
-  throw new Error(why);
+  const why2 = `\u51FA\u58F0\u7EBF\u7A0B\u300C${name}\u300D\u8D77\u4E0D\u6765\uFF1A${last?.message ?? last}`;
+  reportThreadFail(name, why2);
+  throw new Error(why2);
 }
 
 // src/singer/audio.ts
@@ -33354,6 +33662,9 @@ async function withBusy(label, fn) {
     }
   }
 }
+function setBusyText(label) {
+  if (busyEl && !busyEl.hidden) busyEl.querySelector(".busy-text").textContent = label;
+}
 var gateEl = null;
 var gatePending = null;
 var gateFocusBack = null;
@@ -33508,7 +33819,7 @@ function openChoiceSheet(title, message, choices) {
       resolve(v);
     };
     const m2 = mount(
-      `<div class="offer-title">${esc6(title)}</div>` + (message ? `<div class="offer-msg">${esc6(message)}</div>` : "") + `<div class="sheet-choices">${choices.map((c10, i10) => `<button type="button" class="btn${c10.primary ? " primary" : ""}${c10.danger ? " danger" : ""}" data-i="${i10}" ${c10.hint ? `title="${esc6(c10.hint)}"` : ""}>${esc6(c10.label)}</button>`).join("")}</div><div class="offer-btns"><button type="button" class="btn" data-v="no">\u7B97\u4E86</button></div>`,
+      `<div class="offer-title">${esc6(title)}</div>` + (message ? `<div class="offer-msg">${esc6(message)}</div>` : "") + `<div class="sheet-choices">${choices.map((c10, i10) => `<button type="button" class="btn${c10.primary ? " primary" : ""}${c10.danger ? " danger" : ""}${c10.off ? " is-off" : ""}" data-i="${i10}" ${c10.off ? "disabled" : ""} ${c10.hint ? `title="${esc6(c10.hint)}"` : ""}>${esc6(c10.label)}</button>`).join("")}</div><div class="offer-btns"><button type="button" class="btn" data-v="no">\u7B97\u4E86</button></div>`,
       () => done(null)
     );
     m2.box.addEventListener("click", (e10) => {
@@ -33600,15 +33911,15 @@ function createCloudGate(d3) {
     d3.note(`cloud check (${trigger}): ${String(status ?? "skipped")}`);
     return status === "cloud-error" ? rawOnline() ? "noResponse" : "offline" : "ok";
   }
-  function block(r10, why) {
+  function block(r10, why2) {
     if (d3.ui.foreignFaceUp()) {
       phase = "open";
-      d3.note(`gate: ${why} \u2192 ${r10}, but another face is up (cloud answered) \u2192 stay out of the way`);
+      d3.note(`gate: ${why2} \u2192 ${r10}, but another face is up (cloud answered) \u2192 stay out of the way`);
       return;
     }
     phase = "blocked";
     reason = r10;
-    d3.note(`gate: blocked reason=${r10} (${why})`);
+    d3.note(`gate: blocked reason=${r10} (${why2})`);
     showBlocked();
   }
   function showBlocked() {
@@ -33745,9 +34056,9 @@ function createCloudGate(d3) {
         block("offline", "went offline while checking");
       }
     },
-    authChanged: (signedIn, why) => {
+    authChanged: (signedIn, why2) => {
       if (!signedIn) {
-        if (why !== "signOut") return;
+        if (why2 !== "signOut") return;
         runId++;
         phase = "open";
         setUserOffline(false);
@@ -33780,13 +34091,23 @@ var base = storeUIFor({
   stemOf
 });
 var _gate = null;
+var _folderLost = null;
+var _isFolder = () => false;
+function attachFolderLost(cb2, isFolder) {
+  _folderLost = cb2;
+  _isFolder = isFolder;
+}
+var NO_ESCAPE = { probe: new Promise(() => {
+}), settle: () => {
+} };
 function attachGate(g3) {
   _gate = g3;
 }
 var storeUI = {
   ...base,
   // 闸门在场：跟闸门的「先离线用」赛跑，不另开一张面（家族设计稿 cloud-gate §4）
-  offlineEscape: () => _gate?.storeEscape() ?? base.offlineEscape(),
+  offlineEscape: () => _isFolder() ? NO_ESCAPE : _gate?.storeEscape() ?? base.offlineEscape(),
+  // 家是文件夹：问的是本机硬盘，不挂死、不用逃生（也不许闪「检查云端」）
   // 冲突面每次弹出 / 人选了什么都进黑匣子（user 2026-10-08「一直会遇到云端冲突的提示」——诊断日志里得看得见是哪首、哪个场合、怎么选的）。
   resolveConflict: async (q2) => {
     diagNote("sync", `conflict occasion=${q2.occasion} ${stemOf(q2.name)}`);
@@ -33797,6 +34118,11 @@ var storeUI = {
   // 未登录时库的后台云动作会撞 auth 的 "Not signed in"——那是正常态不是故障，只进黑匣子不上横幅（WXHW 2026-09-03 截图：橙条常驻）。其余照包的分级（CloudNetworkError 换人话）。
   reportError: (err2, level) => {
     if (err2?.message === "Not signed in") {
+      reportError(err2, "log");
+      return;
+    }
+    if (err2?.name === "NotAllowedError" && _folderLost) {
+      _folderLost();
       reportError(err2, "log");
       return;
     }
@@ -34034,6 +34360,9 @@ function setActiveIdentifier(id2) {
 }
 var KV_ATTACHED = "storeAttached";
 var storeWasAttached = () => deviceKvGet2(KV_ATTACHED) === "1";
+function forgetLegacyAttach() {
+  deviceKvSet2(KV_ATTACHED, null);
+}
 var _store = null;
 var _signedIn = () => od.auth.isSignedIn();
 var isSignedIn2 = () => _signedIn();
@@ -34041,12 +34370,10 @@ function injectedCloud() {
   const g3 = globalThis;
   return g3.__moonsingerCloud && /^(127\.0\.0\.1|localhost)$/.test(g3.location?.hostname ?? "") ? g3.__moonsingerCloud : null;
 }
-function attachStore() {
-  if (_store) return _store;
-  const inj = injectedCloud();
-  if (inj) _signedIn = () => globalThis.__moonsingerCloudSignedIn === true;
-  _store = createStore({
-    provider: inj ?? od.provider,
+function buildStore(o10) {
+  return createStore({
+    provider: o10.provider,
+    ...o10.databaseId ? { databaseId: o10.databaseId } : {},
     ui: storeUI,
     appId: APP_ID,
     persistence: "app-managed",
@@ -34066,13 +34393,58 @@ function attachStore() {
     // 编辑器：打开就留本地（离线能开）
     offlineUploadReplay: "auto",
     // 离线新建的歌回线自动补推（ADR-0018；进度走 storeUI.onReplayStatus）
-    signedIn: () => _signedIn(),
-    isOnline: cloudOnline,
-    // 2026-11-03 闸门：选了「离线继续」= 库一条网都不打（家族设计稿 cloud-gate §3；store 2.2.4 起 collection 也认）
+    signedIn: o10.signedIn,
+    isOnline: o10.isOnline,
     activeIdentifier: () => _activeIdentifier
   });
+}
+var _home = null;
+var _folderOnline = true;
+var _cloudAccount = false;
+var folderHome = () => _home?.kind === "folder" ? _home.entry : null;
+var folderOnline = () => _folderOnline;
+function setFolderOnline(v) {
+  _folderOnline = v;
+}
+function noteCloudAccount(known) {
+  _cloudAccount = known;
+}
+var cloudAccountKnown = () => _cloudAccount;
+var hasCloudHome = () => _home?.kind === "cloud" && (_cloudAccount || _signedIn());
+var hasHome = () => folderHome() != null || hasCloudHome();
+var homeOnline = () => folderHome() ? _folderOnline : cloudOnline();
+function attachStore(home = { kind: "cloud" }) {
+  if (_store) return _store;
+  _home = home;
+  if (home.kind === "folder") {
+    if (!home.entry.handle) throw new Error("folder home has no handle");
+    _signedIn = () => true;
+    _store = buildStore({ provider: createFolderProvider(home.entry.handle), signedIn: () => true, isOnline: () => _folderOnline, databaseId: home.entry.dbId });
+    return _store;
+  }
+  const inj = injectedCloud();
+  _signedIn = inj ? () => globalThis.__moonsingerCloudSignedIn === true : () => od.auth.isSignedIn();
+  _store = buildStore({ provider: inj ?? od.provider, signedIn: () => _signedIn(), isOnline: cloudOnline });
   deviceKvSet2(KV_ATTACHED, "1");
   return _store;
+}
+var LEGACY_DB2 = `${APP_ID}.defaultStore`;
+async function legacyLibraryExists() {
+  try {
+    const r10 = await scanAppNamespace(APP_ID);
+    return r10.databasesSupported ? r10.databases.includes(LEGACY_DB2) : storeWasAttached();
+  } catch {
+    return storeWasAttached();
+  }
+}
+function openLegacyLibrary() {
+  return buildStore({ provider: injectedCloud() ?? od.provider, signedIn: () => false, isOnline: () => false });
+}
+async function readFromFolder(entry, identifier) {
+  const p2 = createFolderProvider(entry.handle);
+  const it2 = await p2.getItemByPath(identifier);
+  if (!it2) return null;
+  return new Uint8Array(await (await p2.download(it2.ref)).arrayBuffer());
 }
 var hasStore = () => _store != null;
 function requireStore() {
@@ -34082,11 +34454,128 @@ function requireStore() {
 async function disposeStore() {
   const s10 = _store;
   _store = null;
+  _home = null;
+  _folderOnline = true;
   if (s10) await s10.dispose();
 }
 async function detachStore() {
   await disposeStore();
   deviceKvSet2(KV_ATTACHED, null);
+}
+
+// src/library-home.ts
+configureGalleryRegistry({ dbName: `${APP_DB_PREFIX}gallery-registry` });
+var KV_FOLDER_USED = "folderHomeUsed";
+var picker = () => globalThis.showDirectoryPicker;
+var canPickFolder = () => currentPolicy().folderGallery && !embedded() && typeof picker() === "function";
+function pickFolderHome() {
+  const pick = picker();
+  if (!pick) return Promise.reject(new Error("this browser cannot pick a folder (no File System Access)"));
+  const asked = pick({ mode: "readwrite" });
+  return (async () => {
+    let handle;
+    try {
+      handle = await asked;
+    } catch {
+      return null;
+    }
+    const entry = await galleryRegistry.mintFolder(handle);
+    deviceKvSet2(KV_FOLDER_USED, "1");
+    return entry;
+  })();
+}
+async function folderPermission(entry, o10) {
+  const h2 = entry.handle;
+  try {
+    if (!h2?.queryPermission) return true;
+    if (await h2.queryPermission({ mode: "readwrite" }) === "granted") return true;
+    if (o10.request && h2.requestPermission) return await h2.requestPermission({ mode: "readwrite" }) === "granted";
+    return false;
+  } catch {
+    return false;
+  }
+}
+async function lastFolderHome() {
+  if (deviceKvGet2(KV_FOLDER_USED) !== "1") return null;
+  const e10 = await galleryRegistry.lastActive();
+  return e10?.kind === "folder" && e10.handle ? e10 : null;
+}
+var touchFolderHome = (id2) => galleryRegistry.touch(id2);
+var clearFolderHome = () => galleryRegistry.clearLastActive();
+
+// src/app/move-songs.ts
+function moveKindOf(syncState) {
+  if (syncState === "float" || syncState === "local-only") return "move";
+  if (syncState === "unpushed" || syncState === "conflict" || syncState === "ghost") return "copy";
+  return null;
+}
+var sameBytes = (a10, b3) => {
+  if (a10.length !== b3.length) return false;
+  for (let i10 = 0; i10 < a10.length; i10++) if (a10[i10] !== b3[i10]) return false;
+  return true;
+};
+var why = (e10) => e10 instanceof Error ? e10.message : String(e10);
+async function moveSongs(songs, p2) {
+  const r10 = { moved: [], copied: [], failed: [], stuck: [] };
+  let done = 0;
+  for (const s10 of songs) {
+    p2.progress?.(done, songs.length, s10.identifier);
+    done++;
+    let bytes;
+    try {
+      bytes = await p2.read(s10.identifier);
+    } catch (e10) {
+      r10.failed.push({ identifier: s10.identifier, why: why(e10) });
+      continue;
+    }
+    if (!bytes) {
+      r10.failed.push({ identifier: s10.identifier, why: "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BFB\u4E0D\u5230\u5B83\u7684\u5B57\u8282" });
+      continue;
+    }
+    let target = s10.identifier;
+    try {
+      const there = await p2.readBack(target);
+      if (!there || !sameBytes(there, bytes)) {
+        if (there) target = p2.altName(s10.identifier);
+        await p2.write(target, bytes);
+      }
+      const back = await p2.readBack(target);
+      if (!back) {
+        r10.failed.push({ identifier: s10.identifier, why: "\u5199\u5B8C\u5728\u65B0\u5BB6\u91CC\u627E\u4E0D\u5230" });
+        continue;
+      }
+      if (!sameBytes(back, bytes)) {
+        r10.failed.push({ identifier: s10.identifier, why: "\u5199\u8FDB\u53BB\u7684\u5B57\u8282\u548C\u539F\u6765\u7684\u5BF9\u4E0D\u4E0A" });
+        continue;
+      }
+    } catch (e10) {
+      r10.failed.push({ identifier: s10.identifier, why: why(e10) });
+      continue;
+    }
+    if (s10.kind === "copy") {
+      r10.copied.push({ from: s10.identifier, to: target });
+      continue;
+    }
+    try {
+      await p2.remove(s10.identifier);
+      r10.moved.push({ from: s10.identifier, to: target });
+    } catch (e10) {
+      r10.stuck.push({ identifier: s10.identifier, why: why(e10) });
+    }
+  }
+  p2.progress?.(songs.length, songs.length, "");
+  return r10;
+}
+var moveFinished = (r10) => r10.failed.length === 0 && r10.stuck.length === 0;
+function moveSay(r10, home, stemOf2) {
+  const names = (l10) => l10.slice(0, 5).map((x2) => stemOf2(x2.identifier)).join("\u3001") + (l10.length > 5 ? ` \u7B49 ${l10.length} \u9996` : "");
+  const parts = [];
+  if (r10.moved.length) parts.push(`\u642C\u597D\u4E86 ${r10.moved.length} \u9996\u5230\u300C${home}\u300D`);
+  if (r10.copied.length) parts.push(`${r10.copied.length} \u9996\u8FDE\u7740\u7F51\u76D8\u7684\u62F7\u4E86\u4E00\u4EFD\u8FC7\u53BB\uFF0C\u6D4F\u89C8\u5668\u91CC\u90A3\u4EFD\u7559\u7740\uFF08\u767B\u5F55\u540E\u7167\u5E38\u540C\u6B65\uFF09`);
+  if (r10.stuck.length) parts.push(`${r10.stuck.length} \u9996\u5DF2\u7ECF\u5728\u300C${home}\u300D\u91CC\u4E86\uFF0C\u4F46\u6D4F\u89C8\u5668\u91CC\u7684\u65E7\u7684\u6CA1\u79FB\u8D70\uFF1A${names(r10.stuck)}`);
+  if (r10.failed.length) parts.push(`${r10.failed.length} \u9996\u6CA1\u642C\u6210\uFF0C\u8FD8\u5728\u6D4F\u89C8\u5668\u91CC\uFF0C\u4E00\u4E2A\u5B57\u8282\u6CA1\u52A8\uFF1A${names(r10.failed)}`);
+  if (!parts.length) parts.push("\u6CA1\u6709\u8981\u642C\u7684\u6B4C");
+  return { text: parts.join("\uFF1B"), bad: r10.failed.length > 0 || r10.stuck.length > 0 };
 }
 
 // src/persistence.ts
@@ -34102,10 +34591,10 @@ function init() {
     avail = "best-effort";
     if (deployment() !== "site") reasons.push(deployment() === "itch" ? "\u548C itch \u4E0A\u522B\u7684\u6E38\u620F\u5171\u7528\u4E00\u4E2A\u5B58\u50A8\u6876" : "\u548C\u8FD9\u53F0\u7535\u8111\u4E0A\u522B\u7684\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u5171\u7528\u4E00\u4E2A\u5B58\u50A8\u6876");
   }
-  onDeviceKvFallback((why) => {
+  onDeviceKvFallback((why2) => {
     if (avail !== "best-effort") return;
     avail = "session";
-    reasons.push(`\u5199\u4E0D\u8FDB\u5B58\u50A8\u4E86\uFF08${why}\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u4E4B\u540E\u7684\u8BBE\u7F6E\u53EA\u7559\u5728\u5185\u5B58\u91CC`);
+    reasons.push(`\u5199\u4E0D\u8FDB\u5B58\u50A8\u4E86\uFF08${why2}\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u4E4B\u540E\u7684\u8BBE\u7F6E\u53EA\u7559\u5728\u5185\u5B58\u91CC`);
     const h2 = health();
     for (const cb2 of subs) {
       try {
@@ -34142,6 +34631,7 @@ var SITE_TEXT = {
   libOffTitle: `\u8FD9\u4E2A\u6D4F\u89C8\u5668\u5B58\u4E0D\u4F4F\u6B4C\u5E93\uFF08\u5173\u4E86\u5C31\u5FD8\uFF09\uFF1A\u6B4C\u8BF7\u7528\u300C\u5B58\u300D\u4E0B\u8F7D\u6210\u6587\u4EF6\uFF1B\u6B4C\u5E93\u5728\u5B98\u7F51\u7248\u91CC\uFF1A${SITE_HOST}`,
   libSiteTitle: `\u6B4C\u5E93\u53EA\u5728\u5B98\u7F51\u7248\u91CC\u6709\uFF08${SITE_HOST}\uFF09\uFF1A\u8FD9\u91CC\u7684\u6B4C\u6CA1\u6709\u6D4F\u89C8\u5668\u5916\u7684\u5BB6\u2014\u2014\u300C\u5B58\u300D= \u4E0B\u8F7D\u6210 .mxl \u6587\u4EF6\uFF0C\u300C\u6253\u5F00\u300D= \u9009\u6587\u4EF6`,
   noShell: deployment() === "itch" ? "itch \u7248\u8DDF\u7740 itch \u4E0A\u7684\u7248\u672C\u8D70\uFF1A\u4F5C\u8005\u63A8\u4E86\u65B0\u7248\uFF0C\u5237\u65B0\u8FD9\u4E00\u9875\u5C31\u662F\u65B0\u7684" : deployment() === "local" ? `\u5907\u7528\u7248\u4E0D\u4F1A\u81EA\u5DF1\u66F4\u65B0\uFF1A\u8981\u65B0\u7248\u5C31\u91CD\u65B0\u4E0B\u8F7D\u8FD9\u4E2A\u6587\u4EF6\u5939\uFF0C\u6216\u53BB\u5B98\u7F51 ${SITE_HOST}` : "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF0C\u4E0D\u7528\u66F4\u65B0",
+  libNoFolderTitle: `\u8FD9\u4E2A\u6D4F\u89C8\u5668\u9009\u4E0D\u4E86\u6587\u4EF6\u5939\uFF08\u684C\u9762\u7248 Chrome / Edge \u53EF\u4EE5\uFF09\uFF0C\u6240\u4EE5\u5907\u7528\u7248\u5728\u8FD9\u91CC\u6CA1\u6709\u6B4C\u5E93\uFF1A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6210 .mxl \u6587\u4EF6\uFF0C\u300C\u6253\u5F00\u300D= \u9009\u6587\u4EF6\uFF1B\u6B4C\u5E93\u4E5F\u5728\u5B98\u7F51\u7248\u91CC\uFF1A${SITE_HOST}`,
   goSite: "\u53BB\u5B98\u7F51",
   report: "\u62A5\u544A\u95EE\u9898"
 };
@@ -40386,7 +40876,6 @@ async function artworkOf(cover) {
 }
 
 // src/gallery-host.ts
-configureGalleryRegistry({ dbName: `${APP_DB_PREFIX}gallery-registry` });
 var KV_FOLDER = "gallery-folder";
 var KV_SCENE = "last-scene";
 var THUMB_PEEK_BYTES = 128 * 1024;
@@ -40412,11 +40901,10 @@ function initGalleryHost(d3) {
   fullEl.setAttribute("role", "dialog");
   fullEl.setAttribute("aria-modal", "true");
   fullEl.setAttribute("aria-label", "\u6B4C\u5E93");
-  fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span>` + // 网盘关着（itch / 备用版）= 云按钮画灰 + 旁边一行「网盘在官网」（家族规则书 §1 第 6 条：入口不许露着却点不动；2026-11-03）
-  (currentPolicy().cloud ? `<button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button>` : `<button type="button" class="btn is-off" data-v="cloud" disabled title="${SITE_TEXT.cloudOffTitle}">${iconHtml2("cloud")}</button>${cloudOffHtml()}`) + `<button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u5373\u5174\uFF1A\u6311\u4E50\u5668\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u5373\u5174</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\uFF1A\u4E00\u9996\u6B4C / \u4E00\u4E2A\u6587\u4EF6\u5939" aria-haspopup="menu">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-home-bar" hidden><span class="gallery-home-text">\u8FD9\u4E9B\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u7684\u6D4F\u89C8\u5668\u91CC\uFF0C\u6CA1\u6709\u5907\u4EFD</span><span class="spacer"></span><button type="button" class="btn" data-v="export-all">\u5168\u90E8\u5BFC\u51FA</button><button type="button" class="btn primary" data-v="connect">\u8FDE\u63A5\u7F51\u76D8</button></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
+  fullEl.innerHTML = `<div class="gallery-chrome"><div class="gallery-chrome-title">\u6B4C\u5E93</div><span class="spacer"></span><button type="button" class="btn gallery-home-btn" data-v="home" hidden>${iconHtml2("folder")}<span class="gallery-home-name"></span></button>` + (currentPolicy().cloud ? `<button type="button" class="btn" data-v="cloud" title="\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA">${iconHtml2("cloud")}</button>` : `<button type="button" class="btn is-off" data-v="cloud" disabled title="${SITE_TEXT.cloudOffTitle}">${iconHtml2("cloud")}</button>${cloudOffHtml()}`) + `<button type="button" class="btn" data-v="refresh" title="\u5237\u65B0\u4E91\u7AEF" hidden>${iconHtml2("refresh")}</button><button type="button" class="btn gallery-inst" data-v="instruments" title="\u5373\u5174\uFF1A\u6311\u4E50\u5668\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09"><span>\u5373\u5174</span></button><button type="button" class="btn" data-v="new" title="\u65B0\u5EFA\uFF1A\u4E00\u9996\u6B4C / \u4E00\u4E2A\u6587\u4EF6\u5939" aria-haspopup="menu">${iconHtml2("new")}<span>\u65B0\u5EFA</span></button><button type="button" class="btn" data-v="aside" title="\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1">${iconHtml2("trash-can")}</button><button type="button" class="btn" data-v="settings" title="\u8BBE\u7F6E">${iconHtml2("menu")}</button></div><div class="gallery-home-bar" hidden><span class="gallery-home-text"></span><span class="spacer"></span><span class="gallery-home-btns"></span></div><div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml2("back")}<span>\u56DE\u5230\u6B4C</span></button><div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml2("trash-can")}<span>\u56DE\u6536\u7AD9</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml2("archive-box")}<span>\u5907\u4EFD\u7BB1</span></button></div><span class="spacer"></span><button type="button" class="btn danger" data-v="empty">\u6E05\u7A7A</button></div><div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector(".gallery-mount"), asideBar = fullEl.querySelector(".gallery-asidebar");
-  const homeBar = fullEl.querySelector(".gallery-home-bar");
+  const homeBar = fullEl.querySelector(".gallery-home-bar"), homeBtn = fullEl.querySelector('[data-v="home"]');
   const cloudBtn = fullEl.querySelector('[data-v="cloud"]'), refreshBtn = fullEl.querySelector('[data-v="refresh"]');
   const storeFace = () => hasStore() ? requireStore() : null;
   const doc = {
@@ -40445,6 +40933,7 @@ function initGalleryHost(d3) {
     // 封面上的 ▶（0.8.0 包画、包接点击、不开卡）
   };
   const zipFile = (id2) => requireStore().zip(id2, { mode: "existing" });
+  const storeKey = () => folderHome()?.id ?? "default";
   const status = (msg, isError) => reportError(msg, isError ? "error" : "info");
   const deps = {
     vue,
@@ -40452,7 +40941,7 @@ function initGalleryHost(d3) {
     doc,
     host: {
       signedIn: () => isSignedIn2(),
-      online: cloudOnline,
+      online: homeOnline,
       activeIdentifier: () => d3.activeIdentifier(),
       confirm: (title, msg) => openConfirmSheet(title, msg),
       input: (title, def, opts) => openInputSheet(title, { defaultValue: def, placeholder: opts?.placeholder }),
@@ -40483,9 +40972,9 @@ function initGalleryHost(d3) {
     policy: {
       isImage: () => false,
       // 缩略图：fetch = store getPeek 按身份尾读（source 必填：cloud 绝不落回本地）。null = 到达了但没有（进缓存、显示底色）；抛 = 够不着（不缓存）。
-      thumbs: { kinds: ["song"], dbName: THUMB_DB, fetch: (id2, source) => zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: THUMBNAIL_ENTRY, source }) },
+      thumbs: { kinds: ["song"], dbName: THUMB_DB, galleryId: storeKey, fetch: (id2, source) => zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: THUMBNAIL_ENTRY, source }) },
       // 事实（0.8.0）：尾读总目录看有没有定稿记录；null = 确定没定稿（进缓存）；抛 = 够不着（不缓存，下次再问）
-      facts: { kinds: ["song"], dbName: FACTS_DB, fetch: async (id2, source) => {
+      facts: { kinds: ["song"], dbName: FACTS_DB, galleryId: storeKey, fetch: async (id2, source) => {
         const rec = await peekFinal(id2, source);
         return rec ? { final: { rev: rec.rev, secs: rec.mp3.secs } } : null;
       } }
@@ -40676,13 +41165,39 @@ function initGalleryHost(d3) {
       if (cur === "trash") h2.emptyTrash();
       else if (cur === "backup") h2.emptyBackup();
     } else if (v === "settings") d3.openSettings();
-    else if (v === "export-all") d3.exportAll();
-    else if (v === "connect") d3.connectCloud();
+    else if (v === "home") d3.openHomeMenu();
+    else if (e10.target.closest(".gallery-home-btns")) d3.homeAction(v);
   });
   function renderCloud() {
-    homeBar.hidden = !d3.showNoBackup();
-    if (!currentPolicy().cloud) return;
+    const bar2 = d3.homeBar();
+    homeBar.hidden = !bar2;
+    if (bar2) {
+      homeBar.querySelector(".gallery-home-text").textContent = bar2.text;
+      const btns = homeBar.querySelector(".gallery-home-btns");
+      btns.replaceChildren(...bar2.buttons.map((b3) => {
+        const el2 = document.createElement("button");
+        el2.type = "button";
+        el2.className = "btn";
+        el2.dataset.v = b3.v;
+        el2.textContent = b3.label;
+        return el2;
+      }));
+    }
+    const folder = d3.homeLabel();
+    homeBtn.hidden = folder == null;
+    if (folder != null) {
+      homeBtn.querySelector(".gallery-home-name").textContent = folder;
+      homeBtn.title = `\u6B4C\u5E93\u5728\u6587\u4EF6\u5939\u300C${folder}\u300D`;
+      refreshBtn.hidden = false;
+      if (currentPolicy().cloud) cloudBtn.hidden = true;
+      return;
+    }
+    if (!currentPolicy().cloud) {
+      refreshBtn.hidden = true;
+      return;
+    }
     const on2 = isSignedIn2();
+    cloudBtn.hidden = false;
     cloudBtn.classList.toggle("is-on", on2);
     cloudBtn.title = on2 ? `\u4E91\u7AEF\uFF1A\u5DF2\u767B\u5F55${accountName() ? ` ${accountName()}` : ""}` : "\u4E91\u7AEF\uFF1A\u6CA1\u767B\u5F55\uFF08\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09";
     refreshBtn.hidden = !on2;
@@ -40696,13 +41211,19 @@ function initGalleryHost(d3) {
     }
   }
   auth.onAuthChanged(() => renderCloud());
+  let storeChanged = false;
   async function open2() {
     await d3.flushLocal();
     const g3 = ensureMounted();
     document.body.dataset.mode = "gallery";
     fullEl.hidden = false;
-    const dir = deviceKvGet2(KV_FOLDER) ?? "";
+    const dir = storeChanged ? "" : deviceKvGet2(KV_FOLDER) ?? "";
     if (dir !== g3.handle.getFolder()) g3.handle.setFolder(dir);
+    if (storeChanged) {
+      storeChanged = false;
+      deviceKvSet2(KV_FOLDER, null);
+      g3.handle.refresh();
+    }
     showAside(null);
     renderCloud();
     deviceKvSet2(KV_SCENE, "gallery");
@@ -40727,6 +41248,16 @@ function initGalleryHost(d3) {
     isOpen,
     renderCloud,
     openAttention,
+    /** 换了家（store 换了实例）：图库的订阅要重来（下次开 = 回根 + 重新列）。 */
+    noteStoreChanged: () => {
+      storeChanged = true;
+      if (!fullEl.hidden) {
+        storeChanged = false;
+        deviceKvSet2(KV_FOLDER, null);
+        gallery2?.handle.setFolder("");
+        gallery2?.handle.refresh();
+      }
+    },
     setAttentionOnly: (on2) => gallery2?.handle.setAttentionOnly(on2),
     /** boot 用：上次是在歌库里离开的（刷新 / 关标签 / SW 更新重载）。 */
     wasInGallery: () => deviceKvGet2(KV_SCENE) === "gallery",
@@ -40781,11 +41312,11 @@ function createEditorSession(config) {
     const need = force || (tryPush ? _dirty || _pushPending : _dirty);
     if (!_name || !need || _saving) return;
     {
-      const why = editor.canPersist?.();
-      if (why) {
+      const why2 = editor.canPersist?.();
+      if (why2) {
         if (_refusedEpoch !== _editEpoch) {
           _refusedEpoch = _editEpoch;
-          editor.onRefused?.(why);
+          editor.onRefused?.(why2);
         }
         return;
       }
@@ -45398,8 +45929,8 @@ function createEncoder(workerUrl, onFallback) {
   let worker;
   let seq = 0;
   const pending = /* @__PURE__ */ new Map();
-  const drop = (why) => {
-    onFallback(why);
+  const drop = (why2) => {
+    onFallback(why2);
     try {
       worker?.terminate();
     } catch {
@@ -45619,8 +46150,8 @@ function discloseArt(prev, a10) {
   const n10 = (s10) => tr(s10).filter(has).length;
   if (n10(D2.st) <= n10(prev)) return;
   const role = curPart().role, who = activeCandidateName(D2.extras, role) || "\u53F0\u4E0A\u8FD9\u4F4D";
-  const why = whyIgnored(performerOf(activeInstrument(D2.extras, role)?.engine), a10);
-  info(why === "decay" ? `${who}\u7684\u97F3\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF0C${MARK_NAME[a10]}\u505A\u4E0D\u5230\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u97F3\u5185\u6E10\u5F31\u7167\u505A` : why === "sung" ? `${who}\u672C\u6765\u5C31\u8FDE\u7740\u5531\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u8981\u65AD\u53E5\u7528\u547C\u5438` : why === "gap" ? `${who}\u672C\u6765\u5C31\u4E0D\u7559\u7F1D\uFF08\u4E50\u5668\u9875\u300C\u97F3\u548C\u97F3\u4E4B\u95F4\u300D= 0\uFF09\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8` : `${who}\u4E0D\u8BA4${MARK_NAME[a10]}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD`);
+  const why2 = whyIgnored(performerOf(activeInstrument(D2.extras, role)?.engine), a10);
+  info(why2 === "decay" ? `${who}\u7684\u97F3\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF0C${MARK_NAME[a10]}\u505A\u4E0D\u5230\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u97F3\u5185\u6E10\u5F31\u7167\u505A` : why2 === "sung" ? `${who}\u672C\u6765\u5C31\u8FDE\u7740\u5531\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u8981\u65AD\u53E5\u7528\u547C\u5438` : why2 === "gap" ? `${who}\u672C\u6765\u5C31\u4E0D\u7559\u7F1D\uFF08\u4E50\u5668\u9875\u300C\u97F3\u548C\u97F3\u4E4B\u95F4\u300D= 0\uFF09\uFF1A${MARK_NAME[a10]}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8` : `${who}\u4E0D\u8BA4${MARK_NAME[a10]}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD`);
 }
 function discloseDynOverride(prev) {
   const toks = tr(D2.st), now2 = dynOverridden(toks);
@@ -45732,7 +46263,7 @@ function showUpdateBar() {
   document.body.append(el2);
 }
 var PLAY_TITLE = "\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\u3002\u957F\u6309 / \u53F3\u952E = \u63A5\u7740\u653E / \u81EA\u52A8\u7FFB / \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A";
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? "\u6B4C\u5E93\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7684\u6B4C\uFF0C\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7\u540E\u540C\u6B65\u5230 OneDrive\uFF08\u5E94\u7528\u6587\u4EF6\u5939\uFF09" : `\u6B4C\u5E93\uFF1A\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7684\u6B4C\uFF08${SITE_TEXT.cloudOffTitle}\uFF09`}"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="midiBtn" class="btn tb-midi" hidden>MIDI<span class="midi-dot"></span></button><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? "\u6B4C\u5E93\uFF1A\u6B4C\u653E\u5728\u7F51\u76D8\uFF08OneDrive\uFF09\u6216\u4F60\u9009\u7684\u6587\u4EF6\u5939\u91CC" : "\u6B4C\u5E93\uFF1A\u6B4C\u653E\u5728\u4F60\u9009\u7684\u6587\u4EF6\u5939\u91CC"}"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D"><span id="docTitle" class="title">\u672A\u547D\u540D</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="midiBtn" class="btn tb-midi" hidden>MIDI<span class="midi-dot"></span></button><button id="lockBtn" class="btn tb-lock" title="\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="\u5B58"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var busMuted = /* @__PURE__ */ new Set();
@@ -46049,7 +46580,7 @@ var view = new ScoreView(scoreEl, {
   set: (n10, o10) => update(n10, o10?.gesture),
   layoutWorker: () => threadUrls("layout-worker")[0] ?? null,
   // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
-  onLayoutWorker: (why) => diagNote("layout", why),
+  onLayoutWorker: (why2) => diagNote("layout", why2),
   audition: (i10, hold) => {
     clearTimeout(upTimer);
     soundTok(D2.st, i10, "score");
@@ -47085,6 +47616,10 @@ window.__moonsinger = {
   es: () => es2,
   gallery: () => gallery,
   attach: () => ensureAttached(),
+  hasHome: () => hasHome(),
+  folderHome: () => folderHome()?.label ?? null,
+  legacySongs: () => legacySongs(),
+  offerMove: () => offerMove(),
   openGallery: () => openGallery(),
   newStoreSong: () => newStoreSong(),
   openStoreDoc: (id2) => openStoreDoc(id2),
@@ -47129,7 +47664,7 @@ function syncKind() {
     case "gallery":
       if (dirty()) return "saving";
       if (!isSignedIn2()) return "local";
-      if (!cloudOnline()) return "offline";
+      if (!homeOnline()) return "offline";
       return es2.isPushPending() ? "unsynced" : "clean";
     case "file":
       return dirty() ? "fileDirty" : "fileClean";
@@ -47150,11 +47685,17 @@ var SAVE_SPEC = {
   unsaved: { icon: "floppy-disk", cls: "s-unsynced", title: "\u8FD8\u6CA1\u5B58\uFF08\u70B9 = \u5B58\uFF09" },
   fresh: { icon: "floppy-disk", cls: "s-fresh", title: "\u65B0\u7684\u4E00\u9996\uFF0C\u8FD8\u6CA1\u5B58" }
 };
+var FOLDER_SAVE_TITLE = {
+  saving: "\u6539\u4E86\uFF0C\u9A6C\u4E0A\u81EA\u52A8\u5B58\u5230\u8FD9\u53F0\u8BBE\u5907\uFF08\u70B9 = \u73B0\u5728\u5B58 + \u5199\u8FDB\u6587\u4EF6\u5939\uFF09",
+  offline: "\u6587\u4EF6\u5939\u7684\u6743\u9650\u6389\u4E86\uFF1A\u6539\u52A8\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u70B9 = \u91CD\u65B0\u6388\u6743\uFF09",
+  unsynced: "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939\uFF08\u70B9 = \u73B0\u5728\u5199\uFF09",
+  clean: "\u6587\u4EF6\u5939\u91CC\u4E5F\u662F\u6700\u65B0\u7684\uFF08\u70B9 = \u590D\u67E5\uFF09"
+};
 function renderSaveButton() {
   const k2 = syncKind(), spec = SAVE_SPEC[k2], b3 = $2("saveBtn");
   b3.innerHTML = `<svg class="ico"><use href="#${spec.icon}"/></svg>`;
   b3.className = `btn save-btn ${spec.cls}`;
-  b3.title = spec.title;
+  b3.title = folderHome() && FOLDER_SAVE_TITLE[k2] || spec.title;
   b3.dataset.kind = k2;
 }
 var fmtDb = (dB) => `${dB > 0 ? "+" : dB < 0 ? "\u2212" : ""}${Math.abs(dB)} dB`;
@@ -48214,11 +48755,11 @@ var NAV_HELP = {
 function openNavMenu(i10, at2) {
   const t10 = tr(D2.st)[i10];
   if (!t10 || t10.kind !== "nav") return;
-  const paper = D2.st.song.papers.find((p2) => p2.id === D2.st.at.paper), why = paper ? navWhy(D2.st.song, paper, D2.st.at.part, t10) : null;
+  const paper = D2.st.song.papers.find((p2) => p2.id === D2.st.at.paper), why2 = paper ? navWhy(D2.st.song, paper, D2.st.at.part, t10) : null;
   const chips = t10.what === "ending" ? ENDINGS.map((n10) => `<button class="btn ctx-chip${n10.join() === (t10.nums ?? [1]).join() ? " is-on" : ""}" data-v="nums:${n10.join(",")}">${esc8(endingLabel(n10))}</button>`).join("") : JUMPS.map((w2) => `<button class="btn ctx-chip${t10.what === w2 ? " is-on" : ""}" data-v="nav:${w2}" title="${esc8(NAV_HELP[w2])}">${esc8(NAV_LABEL[w2])}</button>`).join("");
   ctxMenu(
     "nav-menu",
-    (why ? `<div class="ctx-hint">\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A${esc8(why)}</div>` : "") + `<div class="ctx-hint ctx-what">${esc8(t10.what === "ending" ? `\u623F\u5B50\uFF1A\u7B2C ${(t10.nums ?? [1]).join("\u3001")} \u904D\u8D70\u8FD9\u4E2A\u62EC\u53F7\uFF0C\u522B\u7684\u904D\u8DF3\u8FC7` : NAV_HELP[t10.what])}</div><div class="ctx-row">${chips}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">\u5220\u9664</button>`,
+    (why2 ? `<div class="ctx-hint">\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A${esc8(why2)}</div>` : "") + `<div class="ctx-hint ctx-what">${esc8(t10.what === "ending" ? `\u623F\u5B50\uFF1A\u7B2C ${(t10.nums ?? [1]).join("\u3001")} \u904D\u8D70\u8FD9\u4E2A\u62EC\u53F7\uFF0C\u522B\u7684\u904D\u8DF3\u8FC7` : NAV_HELP[t10.what])}</div><div class="ctx-row">${chips}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">\u5220\u9664</button>`,
     at2,
     (v) => {
       if (v === "del") {
@@ -48864,7 +49405,7 @@ function openPicked(picked) {
   }
 }
 var extrasForSave = (base2 = D2.extras) => base2.thumbnail ? withThumbnail(base2, coverWithBlurb(base2.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base2;
-var encoder = createEncoder(() => threadUrls("encode-worker")[0] ?? null, (why) => diagNote("encode", why));
+var encoder = createEncoder(() => threadUrls("encode-worker")[0] ?? null, (why2) => diagNote("encode", why2));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
@@ -49108,6 +49649,7 @@ function fileWhere() {
   const h2 = H2.home;
   switch (h2.kind) {
     case "gallery":
+      if (folderHome()) return `\u5728\u6B4C\u5E93\u91CC\uFF08\u6587\u4EF6\u5939\u300C${folderHome().label}\u300D\uFF09\uFF0C\u81EA\u52A8\u5B58\uFF1B\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u65F6\u5199\u8FDB\u6587\u4EF6\u5939`;
       return `\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58${isSignedIn2() ? "\uFF1B\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u65F6\u63A8\u4E0A OneDrive" : cloudAvailable() ? "\uFF08\u6CA1\u767B\u5F55\uFF0C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09" : "\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09"}`;
     case "file":
       return `\u5B58\u5728\u672C\u673A\u6587\u4EF6 ${h2.handle.name}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB`;
@@ -49455,9 +49997,9 @@ var es2 = createEditorSession({
         return `\u5B58\u4E0D\u4E86\uFF1A${e10.message}`;
       }
     },
-    onRefused: (why) => {
-      showError(why);
-      diagNote("doc", `persist refused: ${why}`);
+    onRefused: (why2) => {
+      showError(why2);
+      diagNote("doc", `persist refused: ${why2}`);
     },
     onSaved: (name) => {
       if (encodedSnap) {
@@ -49550,9 +50092,8 @@ async function renameActive() {
 }
 var authStarted = false;
 var authSettled = false;
+var authUnknown = false;
 var afterSignInInFlight = null;
-var homeKnown = false;
-var hasCloudHome = () => hasStore() && (homeKnown || isSignedIn2());
 var gate = createCloudGate({
   ui: createGateUi({
     dirtyCount: () => requireStore().files.dirty.count(),
@@ -49584,10 +50125,11 @@ onUserOfflineChange(() => {
   renderTitle();
   gallery?.renderCloud();
 });
-function ensureAttached() {
-  if (!currentPolicy().library) throw new Error("\u8FD9\u4E2A\u90E8\u7F72\u65B9\u5F0F\u6CA1\u6709\u6B4C\u5E93\uFF08itch / \u5907\u7528\u7248\uFF1A\u6B4C\u53EA\u7528\u6587\u4EF6\u5B58\uFF09");
+function ensureAttached(home = { kind: "cloud" }) {
+  if (!currentPolicy().library) throw new Error("\u8FD9\u4E2A\u90E8\u7F72\u65B9\u5F0F\u6CA1\u6709\u6B4C\u5E93\uFF08itch\uFF1A\u6B4C\u53EA\u7528\u6587\u4EF6\u5B58\uFF09");
+  if (home.kind === "cloud" && !currentPolicy().cloud) throw new Error("\u8FD9\u4E2A\u90E8\u7F72\u65B9\u5F0F\u6CA1\u6709\u7F51\u76D8\uFF08\u5907\u7528\u7248\uFF1A\u6B4C\u5E93\u7684\u5BB6\u53EA\u80FD\u662F\u6587\u4EF6\u5939\uFF09");
   const fresh = !hasStore();
-  attachStore();
+  attachStore(home);
   if (fresh) {
     void requestStoragePersistence();
     diagNote("boot", "store attached");
@@ -49598,34 +50140,36 @@ function ensureAttached() {
   ensureGallery();
 }
 function startAuth() {
-  if (authStarted || !currentPolicy().cloud) return;
+  if (authStarted || !currentPolicy().cloud || folderHome()) return;
   authStarted = true;
   auth.onAuthChanged((s10) => {
     diagNote("auth", `changed signedIn=${String(s10.signedIn)} reason=${String(s10.reason ?? "?")}`);
-    const why = s10.reason;
-    if (s10.signedIn) homeKnown = true;
-    else if (why === "signOut") homeKnown = false;
-    gate.authChanged(s10.signedIn, why);
+    const why2 = s10.reason;
+    if (s10.signedIn) noteCloudAccount(true);
+    else if (why2 === "signOut") noteCloudAccount(false);
+    gate.authChanged(s10.signedIn, why2);
     gallery?.renderCloud();
     renderTitle();
     if (s10.signedIn) void afterSignIn();
   });
   void auth.initAuth().then((s10) => {
-    homeKnown = s10.signedIn || !!s10.probing;
+    noteCloudAccount(s10.signedIn || !!s10.probing);
     authSettled = true;
-    diagNote("auth", `initAuth signedIn=${s10.signedIn} probing=${String(!!s10.probing)} home=${String(homeKnown)}`);
+    diagNote("auth", `initAuth signedIn=${s10.signedIn} probing=${String(!!s10.probing)} home=${String(cloudAccountKnown())}`);
     gallery?.renderCloud();
     renderTitle();
     void gate.boot();
     if (s10.signedIn) void afterSignIn();
+    else void settleNoHome();
   }).catch((e10) => {
     authSettled = true;
+    authUnknown = true;
     gallery?.renderCloud();
     reportError(e10, "warning");
   });
 }
 function attachForUser() {
-  ensureAttached();
+  if (!hasStore()) throw new Error("no library home yet (ensureHome first)");
   startAuth();
 }
 function ensureGallery() {
@@ -49653,13 +50197,11 @@ function ensureGallery() {
     openCloudMenu: () => {
       void openCloudMenu();
     },
-    // 登录探测落地之前不说（不然有账号的人开局闪一下这句假话）；有账号但登录过期 = 歌在网盘上有，归闸门和常驻条说，这里不说「没有备份」
-    showNoBackup: () => currentPolicy().cloud && authSettled && !homeKnown && !isSignedIn2(),
-    exportAll: () => {
-      void exportAllSongs();
-    },
-    connectCloud: () => {
-      void signInFlow();
+    homeBar: () => homeBarNow(),
+    homeAction: (v) => homeAction(v),
+    homeLabel: () => folderHome()?.label ?? null,
+    openHomeMenu: () => {
+      void openHomeMenu();
     },
     onOpened: () => {
       ui2.close();
@@ -49695,17 +50237,272 @@ async function afterGalleryClosed() {
   }
 }
 async function openGallery() {
+  if (!await ensureHome()) return;
   attachForUser();
   if (!await H2.leave("\u8FDB\u6B4C\u5E93")) return;
   H2.release();
   deviceKvSet2(KV_LAST_DOC, null);
   renderTitle();
   await gallery.open();
+  void offerMove();
 }
-var libOff = !currentPolicy().library ? "site" : availability() === "unavailable" ? "storage" : null;
+async function ensureHome() {
+  if (hasHome()) return true;
+  if (hasStore() && (!authSettled || (await legacySongs()).length > 0)) return true;
+  return chooseHome();
+}
+async function chooseHome() {
+  const cloud = currentPolicy().cloud, folder = canPickFolder();
+  let picking = null;
+  const v = await openChoiceSheet(
+    "\u6B4C\u5E93\u8981\u5148\u6709\u4E2A\u5BB6",
+    `\u6B4C\u653E\u5728\u6D4F\u89C8\u5668\u5916\u9762\u3001\u4F60\u81EA\u5DF1\u591F\u5F97\u7740\u7684\u5730\u65B9\uFF0C\u624D\u4E0D\u6015\u6D4F\u89C8\u5668\u6E05\u7F13\u5B58\u3002${cloud ? "" : `\u7F51\u76D8\u5728\u5B98\u7F51\u7248\u91CC\uFF08${SITE_HOST}\uFF09\u3002`}${folder ? "" : "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u9009\u4E0D\u4E86\u6587\u4EF6\u5939\uFF08\u684C\u9762\u7248 Chrome / Edge \u53EF\u4EE5\uFF09\u3002"}\u4E0D\u60F3\u9009\u4E5F\u884C\uFF1A\u300C\u5B58\u300D= \u5B58\u6210\u6587\u4EF6\uFF0C\u300C\u6253\u5F00\u300D= \u9009\u6587\u4EF6\u3002`,
+    [
+      { label: "\u8FDE\u63A5\u7F51\u76D8\uFF08OneDrive\uFF09", value: "cloud", primary: cloud, off: !cloud, onPick: redirectToSignIn },
+      { label: "\u9009\u4E00\u4E2A\u6587\u4EF6\u5939", value: "folder", primary: !cloud && folder, off: !folder, onPick: () => {
+        picking = pickFolderHome();
+      } }
+    ]
+  );
+  if (v !== "folder" || !picking) return false;
+  const entry = await picking.catch((e10) => {
+    reportError(e10, "warning");
+    return null;
+  });
+  return entry ? useFolderHome(entry) : false;
+}
+async function useFolderHome(entry) {
+  if (hasStore()) {
+    if (!await H2.leave("\u6362\u5230\u6587\u4EF6\u5939")) return false;
+    H2.release();
+    await disposeStore();
+  }
+  setFolderOnline(await folderPermission(entry, { request: true }));
+  ensureAttached({ kind: "folder", entry });
+  forgetLegacyAttach();
+  gallery?.noteStoreChanged();
+  await touchFolderHome(entry.id).catch((e10) => reportError(e10, "log"));
+  diagNote("home", `folder "${entry.label}" db=${entry.dbId} online=${String(folderOnline())}`);
+  gallery?.renderCloud();
+  renderTitle();
+  return true;
+}
+async function regrantFolder() {
+  const f2 = folderHome();
+  if (!f2) return false;
+  const ok2 = await folderPermission(f2, { request: true });
+  setFolderOnline(ok2);
+  diagNote("home", `regrant "${f2.label}" \u2192 ${String(ok2)}`);
+  gallery?.renderCloud();
+  renderTitle();
+  if (!ok2) {
+    showError(`\u6CA1\u62FF\u5230\u300C${f2.label}\u300D\u7684\u6743\u9650\uFF1A\u6539\u52A8\u8FD8\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u4E00\u9996\u6CA1\u4E22\u3002`);
+    return false;
+  }
+  gallery?.refresh();
+  void afterSignIn();
+  return true;
+}
+async function checkFolderPermission() {
+  const f2 = folderHome();
+  if (!f2) return;
+  const ok2 = await folderPermission(f2, { request: false });
+  if (ok2 === folderOnline()) return;
+  setFolderOnline(ok2);
+  gallery?.renderCloud();
+  renderTitle();
+  if (ok2) {
+    gallery?.refresh();
+    void afterSignIn();
+  }
+}
+attachFolderLost(() => {
+  if (folderHome() && folderOnline()) {
+    setFolderOnline(false);
+    diagNote("home", "folder permission lost");
+    gallery?.renderCloud();
+    renderTitle();
+  }
+}, () => folderHome() != null);
+function homeBarNow() {
+  const f2 = folderHome();
+  if (f2 && !folderOnline()) return { text: `\u6587\u4EF6\u5939\u300C${f2.label}\u300D\u7684\u6743\u9650\u6389\u4E86\uFF1A\u6539\u52A8\u5148\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u4E00\u9996\u6CA1\u4E22`, buttons: [{ v: "regrant", label: "\u91CD\u65B0\u6388\u6743" }] };
+  if (f2 && legacyLeft > 0) return { text: `\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u8FD8\u6709 ${legacyLeft} \u9996\u65E7\u6B4C\uFF0C\u6CA1\u642C\u8FDB\u300C${f2.label}\u300D`, buttons: [{ v: "move", label: "\u642C\u8FDB\u6765" }, { v: "export-legacy", label: "\u5168\u90E8\u5BFC\u51FA" }] };
+  if (!f2 && currentPolicy().cloud && authSettled && !authUnknown && !cloudAccountKnown() && !isSignedIn2()) return { text: "\u8FD9\u4E9B\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u7684\u6D4F\u89C8\u5668\u91CC\uFF0C\u6CA1\u6709\u5907\u4EFD", buttons: [...canPickFolder() ? [{ v: "move", label: "\u642C\u8FDB\u4E00\u4E2A\u6587\u4EF6\u5939" }] : [], { v: "export-all", label: "\u5168\u90E8\u5BFC\u51FA" }, { v: "connect", label: "\u8FDE\u63A5\u7F51\u76D8" }] };
+  return null;
+}
+function homeAction(v) {
+  if (v === "regrant") void regrantFolder();
+  else if (v === "export-all") void exportAllSongs();
+  else if (v === "export-legacy") void exportAllSongs({ legacy: true });
+  else if (v === "connect") void signInFlow();
+  else if (v === "move") {
+    if (folderHome()) void moveSongsFlow(folderHome());
+    else void pickFolderHome().then((e10) => e10 ? moveSongsFlow(e10) : void 0).catch((e10) => reportError(e10, "warning"));
+  }
+}
+async function openHomeMenu() {
+  const f2 = folderHome();
+  if (!f2) return;
+  const lost = !folderOnline();
+  const v = await openChoiceSheet(
+    `\u6B4C\u5E93\u5728\u6587\u4EF6\u5939\u300C${f2.label}\u300D`,
+    `\u6B4C\u5C31\u662F\u8FD9\u4E2A\u6587\u4EF6\u5939\u91CC\u7684 .mxl\uFF0C\u8D44\u6E90\u7BA1\u7406\u5668\u91CC\u4E5F\u770B\u5F97\u5230\uFF1B\u56DE\u6536\u7AD9 / \u5907\u4EFD\u7BB1\u662F\u91CC\u9762\u7684 .trash / .backup\u3002${lost ? "\n\u73B0\u5728\u6743\u9650\u6389\u4E86\uFF1A\u6539\u52A8\u5148\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002" : ""}`,
+    [...lost ? [{ label: "\u91CD\u65B0\u6388\u6743", value: "regrant", primary: true }] : [{ label: "\u5237\u65B0", value: "refresh" }], { label: "\u4E0D\u7528\u8FD9\u4E2A\u6587\u4EF6\u5939\u4E86\u2026", value: "leave", hint: "\u5939\u91CC\u7684\u6B4C\u4E00\u9996\u4E0D\u52A8\uFF1B\u4E4B\u540E\u53EF\u4EE5\u518D\u9009\u4E00\u4E2A\u5BB6" }]
+  );
+  if (v === "regrant") await regrantFolder();
+  else if (v === "refresh") {
+    await checkFolderPermission();
+    gallery?.refresh();
+  } else if (v === "leave") await signOutFlow();
+}
+var KV_MOVE_ASKED = "moveAsked";
+var KV_LEGACY_RETIRED = "legacyRetired";
+var legacyLeft = 0;
+var firstFrame = (store, folder) => new Promise((resolve, reject) => {
+  let done = false, off = null;
+  off = store.files.watchFolder(folder, (snap) => {
+    if (done) return;
+    done = true;
+    off?.();
+    resolve(snap);
+  }, { onError: (e10) => {
+    if (!done) {
+      done = true;
+      off?.();
+      reject(e10);
+    }
+  } });
+  if (done) off();
+});
+async function songsToMoveIn(store) {
+  const out = [], q2 = [""];
+  while (q2.length) {
+    const f2 = await firstFrame(store, q2.shift());
+    for (const it2 of f2.items) {
+      const kind = moveKindOf(it2.syncState);
+      if (kind) out.push({ identifier: it2.identifier, kind });
+    }
+    q2.push(...f2.folders);
+  }
+  return out;
+}
+async function legacySongs() {
+  if (hasCloudHome()) return [];
+  if (hasStore() && !folderHome()) return authSettled && !authUnknown ? songsToMoveIn(requireStore()) : [];
+  if (!folderHome() || deviceKvGet2(KV_LEGACY_RETIRED) === "1" || !await legacyLibraryExists()) return [];
+  const legacy = openLegacyLibrary();
+  try {
+    return await songsToMoveIn(legacy);
+  } finally {
+    await legacy.dispose();
+  }
+}
+var bootedOnStore = false;
+async function settleNoHome() {
+  if (!bootedOnStore || hasHome() || !hasStore()) return;
+  const songs = await legacySongs().catch((e10) => {
+    reportError(e10, "log");
+    return null;
+  });
+  if (!songs) return;
+  legacyLeft = songs.length;
+  gallery?.renderCloud();
+  if (songs.length) {
+    void offerMove();
+    return;
+  }
+  if (H2.home.kind === "gallery" || H2.pending()) return;
+  gallery?.close();
+  await detachStore();
+  gallery?.noteStoreChanged();
+  renderTitle();
+  diagNote("home", "no account, no songs \u2192 no library");
+}
+var moveOffering = false;
+async function offerMove() {
+  if (moveOffering || deviceKvGet2(KV_MOVE_ASKED) === "1" && legacyLeft === 0 && !folderHome()) return;
+  moveOffering = true;
+  try {
+    const songs = await legacySongs();
+    legacyLeft = songs.length;
+    gallery?.renderCloud();
+    if (!songs.length) {
+      if (folderHome()) deviceKvSet2(KV_LEGACY_RETIRED, "1");
+      return;
+    }
+    if (deviceKvGet2(KV_MOVE_ASKED) === "1" || isSheetOpen() || isGateOpen()) return;
+    deviceKvSet2(KV_MOVE_ASKED, "1");
+    const f2 = folderHome(), n10 = songs.length;
+    let picking = null;
+    const v = await openChoiceSheet(
+      `\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u6709 ${n10} \u9996\u6B4C`,
+      `\u5B83\u4EEC\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\uFF0C\u6E05\u7F13\u5B58\u5C31\u6CA1\u4E86\u3002${f2 ? `\u642C\u8FDB\u300C${f2.label}\u300D\uFF1A\u9010\u9996\u6838\u5BF9\u5B57\u8282\uFF0C\u4E00\u6A21\u4E00\u6837\u624D\u4ECE\u6D4F\u89C8\u5668\u79FB\u8D70\u3002` : "\u9009\u4E00\u4E2A\u5BB6\u642C\u8FC7\u53BB\uFF1B\u6216\u8005\u5148\u5168\u90E8\u5BFC\u51FA\u6210\u6587\u4EF6\u3002"}\u7A0D\u540E\u4E5F\u884C\uFF1A\u6B4C\u5E93\u9876\u4E0A\u90A3\u6761\u8FD8\u5728\u3002`,
+      [
+        f2 ? { label: `\u642C\u8FDB\u300C${f2.label}\u300D`, value: "move", primary: true } : { label: "\u9009\u4E00\u4E2A\u6587\u4EF6\u5939\uFF0C\u642C\u8FDB\u53BB", value: "move", primary: true, off: !canPickFolder(), onPick: () => {
+          picking = pickFolderHome();
+        } },
+        ...!f2 && currentPolicy().cloud ? [{ label: "\u8FDE\u63A5\u7F51\u76D8", value: "cloud", onPick: redirectToSignIn }] : [],
+        { label: "\u5168\u90E8\u5BFC\u51FA", value: "export" },
+        { label: "\u7A0D\u540E", value: "later" }
+      ]
+    );
+    if (v === "move") {
+      const entry = f2 ?? (picking ? await picking : null);
+      if (entry) await moveSongsFlow(entry);
+    } else if (v === "export") await exportAllSongs({ legacy: !!f2 });
+  } catch (e10) {
+    reportError(e10, "warning");
+  } finally {
+    moveOffering = false;
+  }
+}
+async function moveSongsFlow(entry) {
+  if (!folderHome() && !await useFolderHome(entry)) return;
+  if (!folderOnline() && !await regrantFolder()) return;
+  const legacy = openLegacyLibrary();
+  let result;
+  try {
+    const songs = await songsToMoveIn(legacy);
+    result = await withBusy(`\u6B63\u5728\u628A\u6B4C\u642C\u8FDB\u300C${entry.label}\u300D\u2026`, () => moveSongs(songs, {
+      read: async (id2) => {
+        const b3 = await legacy.zip(id2, { mode: "existing" }).open();
+        return b3 ? new Uint8Array(await b3.arrayBuffer()) : null;
+      },
+      readBack: (id2) => readFromFolder(entry, id2),
+      write: async (id2, bytes) => {
+        const r10 = await requireStore().zip(id2, { mode: "new" }).save(bytes, { tryPush: true });
+        if (r10?.pushed !== true) throw new Error("\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939");
+      },
+      remove: async (id2) => {
+        const t10 = await legacy.zip(id2, { mode: "existing" }).trash();
+        if (t10.status !== "trashed") throw new Error(`\u65E7\u5E93\u6CA1\u79FB\u8D70\uFF08${t10.status}\uFF09`);
+      },
+      altName: (id2) => withStemTail(id2, defaultStem().slice(-5), identifiers),
+      // defaultStem = yyyymmdd-hex4：取「-hex4」
+      progress: (done, total) => setBusyText(`\u6B63\u5728\u642C\u6B4C ${done} / ${total}\u2026`)
+    }));
+  } catch (e10) {
+    reportError(e10);
+    showError(`\u642C\u5BB6\u6CA1\u6210\uFF1A${e10?.message ?? e10}\u3002\u6D4F\u89C8\u5668\u91CC\u7684\u6B4C\u4E00\u9996\u6CA1\u52A8\u3002`);
+    return;
+  } finally {
+    await legacy.dispose();
+  }
+  const finished = moveFinished(result);
+  legacyLeft = finished ? 0 : result.failed.length + result.stuck.length;
+  if (finished) deviceKvSet2(KV_LEGACY_RETIRED, "1");
+  diagNote("home", `move: moved=${result.moved.length} copied=${result.copied.length} failed=${result.failed.length} stuck=${result.stuck.length}`);
+  const said = moveSay(result, entry.label, stemOfId);
+  if (said.bad) showError(said.text);
+  else info(said.text);
+  gallery?.refresh();
+  gallery?.renderCloud();
+}
+var libOff = !currentPolicy().library ? "site" : availability() === "unavailable" ? "storage" : !currentPolicy().cloud && !canPickFolder() ? "nofolder" : null;
 if (libOff) {
   $2("libBtn").classList.add("is-off");
-  $2("libBtn").title = libOff === "site" ? SITE_TEXT.libSiteTitle : SITE_TEXT.libOffTitle;
+  $2("libBtn").title = libOff === "site" ? SITE_TEXT.libSiteTitle : libOff === "nofolder" ? SITE_TEXT.libNoFolderTitle : SITE_TEXT.libOffTitle;
 }
 $2("libBtn").addEventListener("click", () => {
   if (libOff === "site") {
@@ -49713,7 +50510,7 @@ $2("libBtn").addEventListener("click", () => {
     return;
   }
   if (libOff) {
-    showError(SITE_TEXT.libOffTitle);
+    showError(libOff === "nofolder" ? SITE_TEXT.libNoFolderTitle : SITE_TEXT.libOffTitle);
     return;
   }
   void openGallery();
@@ -49736,30 +50533,20 @@ async function openCloudMenu() {
   else if (v === "refresh") gallery?.refresh();
   else if (v === "reconnect") void gate.reconnect();
 }
-async function exportAllSongs() {
+async function exportAllSongs(o10 = {}) {
+  const legacy = o10.legacy ? openLegacyLibrary() : null;
   try {
-    const store = requireStore();
+    const store = legacy ?? requireStore();
     const now2 = /* @__PURE__ */ new Date(), p2 = (n10) => String(n10).padStart(2, "0");
     const name = `MoonSinger-\u6B4C\u5E93-${now2.getFullYear()}${p2(now2.getMonth() + 1)}${p2(now2.getDate())}-${p2(now2.getHours())}${p2(now2.getMinutes())}.zip`;
     const r10 = await withBusy("\u6B63\u5728\u6253\u5305\u6B4C\u5E93\u2026", () => exportAll({
-      listFolder: (folder) => new Promise((resolve, reject) => {
-        let done = false, off = null;
-        off = store.files.watchFolder(folder, (snap) => {
-          if (done) return;
-          done = true;
-          off?.();
-          resolve({ identifiers: snap.items.filter((i10) => isCached(i10.syncState)).map((i10) => i10.identifier), folders: snap.folders });
-        }, { onError: (e10) => {
-          if (!done) {
-            done = true;
-            off?.();
-            reject(e10);
-          }
-        } });
-        if (done) off();
-      }),
+      listFolder: async (folder) => {
+        const f2 = await firstFrame(store, folder);
+        return { identifiers: f2.items.filter((i10) => isCached(i10.syncState)).map((i10) => i10.identifier), folders: f2.folders };
+      },
+      // 第一帧 = 本地帧（没登录就只有它）；这台没字节的不收（不是「只在浏览器里」的）
       bytes: async (id2) => {
-        if (H2.identifier() === id2) await es2.flushLocal();
+        if (!legacy && H2.identifier() === id2) await es2.flushLocal();
         return store.zip(id2, { mode: "existing" }).open();
       },
       pack: async (entries2) => new Blob([zipSync(Object.fromEntries(entries2.map((e10) => [e10.path, [e10.data, { level: 0 }]])))], { type: "application/zip" })
@@ -49773,10 +50560,12 @@ async function exportAllSongs() {
   } catch (e10) {
     reportError(e10);
     showError(`\u5BFC\u51FA\u6CA1\u6210\uFF1A${e10?.message ?? e10}`);
+  } finally {
+    await legacy?.dispose();
   }
 }
 async function signOutFlow() {
-  const store = requireStore();
+  const store = requireStore(), f2 = folderHome();
   for (; ; ) {
     let n10 = 0;
     try {
@@ -49786,7 +50575,7 @@ async function signOutFlow() {
     }
     if (n10 === 0) break;
     const v = await openChoiceSheet(
-      `\u8FD8\u6709 ${n10} \u9996\u6CA1\u4E0A\u4E91`,
+      f2 ? `\u8FD8\u6709 ${n10} \u9996\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939` : `\u8FD8\u6709 ${n10} \u9996\u6CA1\u4E0A\u4E91`,
       "\u9000\u51FA\u540E\u8FD9\u4E9B\u6539\u52A8\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002\u53EF\u4EE5\u5148\u63A8\u4E0A\u53BB\uFF08\u63A8\u4E0D\u4E0A\u53BB\u7684\u9010\u9996\u4E0B\u8F7D\u5907\u4EFD\uFF09\uFF0C\u6216\u8005\u7167\u6837\u9000\u51FA\u3002",
       [{ label: "\u5148\u63A8\u4E0A\u53BB / \u4E0B\u8F7D\u5907\u4EFD", value: "backup", primary: true }, { label: "\u7167\u6837\u9000\u51FA", value: "force", danger: true }]
     );
@@ -49801,14 +50590,18 @@ async function signOutFlow() {
   } catch (e10) {
     reportError(e10, "warning");
   }
-  try {
-    await auth.signOut();
-  } catch (e10) {
-    reportError(e10);
+  gallery?.noteStoreChanged();
+  if (f2) await clearFolderHome().catch((e10) => reportError(e10, "log"));
+  else {
+    try {
+      await auth.signOut();
+    } catch (e10) {
+      reportError(e10);
+    }
   }
   loadDoc(initState().song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: emptyExtras() });
   renderTitle();
-  info("\u9000\u51FA\u4E86\uFF1A\u6B4C\u90FD\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u518D\u8FDB\u6B4C\u5E93\u5C31\u80FD\u63A5\u7740\u7528");
+  info(f2 ? `\u4E0D\u7528\u300C${f2.label}\u300D\u4E86\uFF1A\u5939\u91CC\u7684\u6B4C\u4E00\u9996\u6CA1\u52A8\uFF0C\u518D\u8FDB\u6B4C\u5E93\u53EF\u4EE5\u9009\u5BB6` : "\u9000\u51FA\u4E86\uFF1A\u6B4C\u90FD\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u518D\u8FDE\u4E0A\u7F51\u76D8\u5C31\u80FD\u63A5\u7740\u7528");
 }
 async function backupDirty() {
   const store = requireStore();
@@ -49911,10 +50704,12 @@ function afterSignIn() {
       reportError(e10, "log");
     }
     let n10 = 0;
-    try {
-      n10 = await requireStore().files.dirty.count();
-    } catch (e10) {
-      reportError(e10, "log");
+    if (!folderHome()) {
+      try {
+        n10 = await requireStore().files.dirty.count();
+      } catch (e10) {
+        reportError(e10, "log");
+      }
     }
     let go = false;
     if (n10 > 0) {
@@ -49971,6 +50766,7 @@ async function smartSaveStore() {
   b3.classList.add("flash");
   setTimeout(() => b3.classList.remove("flash"), 500);
   void requestStoragePersistence();
+  if (folderHome() && !folderOnline()) await regrantFolder();
   const before = syncKind();
   if (before === "clean") {
     await refreshOpenDoc();
@@ -49988,6 +50784,10 @@ async function smartSaveStore() {
       [{ label: "\u53BB\u767B\u5F55", value: "go", primary: true, onPick: redirectToSignIn }, { label: "\u6682\u4E0D", value: "later" }]
     );
     if (v === "later") signInDeclined = true;
+    return;
+  }
+  if (folderHome()) {
+    info(es2.isPushPending() ? "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939" : before === "clean" ? "\u6587\u4EF6\u5939\u91CC\u4E5F\u662F\u6700\u65B0\u7684" : `\u5B58\u597D\u4E86\uFF1A\u5199\u8FDB\u4E86\u300C${folderHome().label}\u300D`);
     return;
   }
   info(es2.isPushPending() ? "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u4E91\u7AEF\u7A0D\u540E\u518D\u63A8" : before === "clean" ? "\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684" : "\u5B58\u597D\u4E86\uFF0C\u4E91\u7AEF\u4E5F\u66F4\u65B0\u4E86");
@@ -50016,7 +50816,7 @@ if (window.visualViewport) {
 }
 window.addEventListener("online", () => {
   renderTitle();
-  if (!hasStore()) return;
+  if (!hasStore() || folderHome()) return;
   if (gate.netBack()) return;
   if (isSignedIn2()) void afterSignIn();
   else retrySilent();
@@ -50037,6 +50837,10 @@ document.addEventListener("visibilitychange", () => {
   const away = hiddenAt ? Date.now() - hiddenAt : 0;
   hiddenAt = 0;
   if (!hasStore()) return;
+  if (folderHome()) {
+    void checkFolderPermission();
+    return;
+  }
   if (!hasCloudHome()) {
     retrySilent();
     return;
@@ -50044,7 +50848,7 @@ document.addEventListener("visibilitychange", () => {
   void gate.wake(lockOnWake(away));
 });
 window.addEventListener("pageshow", (e10) => {
-  if (e10.persisted) {
+  if (e10.persisted && !folderHome()) {
     hiddenAt = 0;
     void gate.wake(lockOnWake(WAKE_CHECK_AFTER_MS));
   }
@@ -50412,9 +51216,9 @@ applyWorkspace();
 scoreEl.focus();
 showSiteHint();
 watchStorageHealth();
-onThreadFail((_name, why) => {
-  diagNote("thread", why);
-  showError(why);
+onThreadFail((_name, why2) => {
+  diagNote("thread", why2);
+  showError(why2);
 });
 Object.assign(window.__moonsinger, {
   gate,
@@ -50441,8 +51245,22 @@ diagNote("boot", `deployment ${deployment()} \xB7 storage ${availability()}`);
     }).catch((e10) => reportError(e10, "log"));
   });
 }
-if (currentPolicy().library && (storeWasAttached() || currentPolicy().cloud && /[#&](code|error|state)=/.test(location.hash))) {
+var bootFolder = currentPolicy().library ? await lastFolderHome().catch((e10) => {
+  reportError(e10, "warning");
+  return null;
+}) : null;
+if (bootFolder) {
+  setFolderOnline(await folderPermission(bootFolder, { request: false }));
+  ensureAttached({ kind: "folder", entry: bootFolder });
+  diagNote("home", `boot folder "${bootFolder.label}" online=${String(folderOnline())}`);
+  const last = deviceKvGet2(KV_LAST_DOC);
+  if (gallery.wasInGallery() || !last) await gallery.open();
+  else if (!await openStoreDoc(last)) await gallery.open();
+  if (folderOnline()) void afterSignIn();
+  void offerMove();
+} else if (currentPolicy().library && currentPolicy().cloud && (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash))) {
   ensureAttached();
+  bootedOnStore = true;
   const last = deviceKvGet2(KV_LAST_DOC);
   if (gallery.wasInGallery() || !last) await gallery.open();
   else if (!await openStoreDoc(last)) await gallery.open();
@@ -50459,4 +51277,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d0c74bf86751.mjs.map
+//# sourceMappingURL=moonsinger-540907c090e4.mjs.map

@@ -41,7 +41,7 @@ describe("store-wiring", () => {
     // 2026-11-03 改名（家族工单 A2 ⑤，Fable 裁定：<app>-<guid>.<用途>）：名字住 config.ts CACHE_DBS，这里钉「引的是它」+「它就是登记的那个名字」，强度不变
     has(s, /THUMB_DB = CACHE_DBS\.thumbs;/, "派生 IDB 名字必须取 config.ts CACHE_DBS.thumbs（CLAUDE.md 持久层白名单登记的那个）");
     has(read("src/config.ts"), /APP_NS = "moonsinger-5b1e7c0a92d34f6e";[\s\S]*CACHE_DBS = \{ thumbs: `\$\{APP_NS\}\.thumbs`/, "CACHE_DBS.thumbs 必须是 moonsinger-5b1e7c0a92d34f6e.thumbs");
-    has(s, /thumbs:\s*\{\s*kinds:\s*\["song"\],\s*dbName:\s*THUMB_DB,\s*fetch:\s*\(id, source\) => zipFile\(id\)\.getPeek\(\{[^}]*source\s*\}\)/, "thumbs.fetch 必须把 source 原样递给 getPeek（cloud 绝不落回本地）");
+    has(s, /thumbs:\s*\{\s*kinds:\s*\["song"\],\s*dbName:\s*THUMB_DB,\s*galleryId:\s*storeKey,\s*fetch:\s*\(id, source\) => zipFile\(id\)\.getPeek\(\{[^}]*source\s*\}\)/, "thumbs.fetch 必须把 source 原样递给 getPeek（cloud 绝不落回本地）");
     has(s, /reportError: \(e, level\) => reportError\(e, level \?\? "error"\)/, "图库的 reportError 必须进 app 漏斗");
   });
   it("src/app/main.ts：editor-session 接的是 store.zip、takeCloud 重载走同一条 adopt 管线、pushOn 含 exit", () => {

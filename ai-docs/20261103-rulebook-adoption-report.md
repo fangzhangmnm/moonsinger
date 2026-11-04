@@ -306,3 +306,56 @@ Fable 审 H 时裁的：**面开着就不刷**。H 那版点「刷新」后一�
 - F-144 记为「不再卡死整套，没根治」（Fable 定的说法）。
 
 edited by Claude Opus 5.5 2026-11-03
+
+## H3：文件夹歌库 + 歌库必须有家 + 搬家（2026-11-04，v0.14.17）
+
+工单 = 家族根 `ai-docs/20261103-work-orders.md`「工单 H3」。库零改。prod / itch 没推。
+
+### library-needs-a-home 六个问题（现在）
+
+| # | 问题 | 现在 | 证据 |
+|---|---|---|---|
+| Q1 | 没有 provider 时能建库存歌吗 | 不能：入口先选家；取消什么都不建 | `src/app/main.ts` `ensureHome` / `chooseHome`；e2e「入口」（取消后没有 `moonsinger.*` IndexedDB） |
+| Q2 | 有本地文件夹这个家吗 | 有 | `src/library-home.ts`、`src/app-store.ts` `attachStore`；e2e「选夹 → 存一首」 |
+| Q3 | 没有家能做什么 | 文件模式（存 = 存成文件 / 开 = 选文件），之前就有 | `src/app/doc-file.ts` |
+| Q4 | 没有家时入口长什么样 | 一句说明 + 两个去处，不可用的画灰 + 说为什么；itch 整个灰 +「去官网」 | e2e「选不了夹」、`tools/local-smoke.mjs`、`tools/itch-fixture.mjs` |
+| Q5 | 设备上有只在浏览器里的歌吗 | 可能有 → 开机 / 进歌库问一次，搬 / 导出 / 稍后 | e2e「搬家」两组 |
+| Q6 | 崩溃影子 | 没动 | — |
+
+### 搬家（**这一步 Fable 看 diff**）
+
+看 `src/app/move-songs.ts`（纯函数 + 头注释的铁律）和 `src/app/main.ts` 的 `moveSongsFlow`、`legacySongs`；`src/app-store.ts` 的 `openLegacyLibrary`、`readFromFolder`。
+
+和工单不一样、请确认的三处：
+
+1. **两类歌**：工单说「逐首写、比字节、才从旧库移走」。但连着网盘谱系的歌（unpushed / conflict / ghost）不能移走：库的 `del` 离线时只要有 base etag 就排一条云端删除，回线会把网盘上那份也删了（`works/delete.ts`，读代码确认的）。所以这类**拷一份进新家、旧的不动**；只有从没同步过的（float / local-only）才搬走；正本在网盘的（synced）不碰。
+2. **「移走」= 进旧库的回收站**，不是硬删。退役后没有入口，只有还原出厂才清，占一点本机空间。选了「能恢复」优先于「省空间」。
+3. **「弹一次」= 一台设备一次**（device-kv）。之后只有顶上那条：「搬进一个文件夹 / 全部导出 / 连接网盘」，或文件夹模式下「还有 N 首旧歌 · 搬进来」。
+
+反证：单元 `test/move-songs.test.mjs` 钉了顺序（日志逐步比）、字节对不上不移走、撞名不覆盖、连着网盘的不移走。
+
+### 改了存量守卫（断言没减，只改形状；Fable 看一眼）
+
+- `test/cloud-gate.test.mjs` §8②、接线：判据搬进 app-store，意思不变；isOnline 改成「网盘这个家 = cloudOnline」。
+- `test/store-wiring.test.mjs`：thumbs 多了 `galleryId`（缩略图按家分开）。
+- `test/deployment.test.mjs`：**表变了**，`folderGallery` 新键；`local.library` 从 false 变 true（A2 ④ 的裁定被 H3 取代）。
+- `test/redline-guard.test.mjs`：`GALLERY_OK` 加 `src/library-home.ts`。
+- `tools/local-smoke.mjs`：⑦ 从「备用版歌库画灰」改成「先选家」（同一原因）。
+- `test/e2e/store.mjs`、`final.mjs`：第一次点歌库改走选夹（「不登录」的家现在就是文件夹）；final 两处 `.offer` 选择器排除 gate-sheet。
+
+### 测试结果
+
+`npm run check` 通过（单元全绿）；E2E 71 + `folder-home`；`smoke`、`fixture:itch` 18 过、`smoke:local` 24 过。
+
+### 没做 / 真机项
+
+- **真机零**：真的系统选夹框、再授权提示；双击形态下选夹（无头 file: 不给 OPFS，`local-smoke` 如实记了）；iPad 没有选夹框，只能网盘。
+- 冲突面、回收站里的字还写「云端」（库和图库包的文案）：库零改，文件夹模式下读起来略怪。要改得动库，等你定。
+- 「回来问一次」的新面归 H4：H3 里文件夹模式不弹旧问句。
+- 还原出厂不动夹里的文件（库只清自己的命名空间），面板文案没提这一句。
+
+### 新图标
+
+没有（`folder` 库里本来就有，已在 sprite）。
+
+edited by Claude Opus 5.5 2026-11-04

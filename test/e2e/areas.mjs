@@ -20,7 +20,7 @@ export const AREAS = {
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "landscape-widgets", "modes", "dyn-levels", "sing-experiments"],
   // 歌库 / 云 / 文件 / 念缓存
-  store: ["store", "sync", "gate", "speech-store", "save-keys", "final", "factory-reset", "legacy-dbs"],
+  store: ["store", "sync", "gate", "folder-home", "speech-store", "save-keys", "final", "factory-reset", "legacy-dbs"],
   // 导出
   export: ["pdf", "pdf-wysiwyg", "issues", "final"],
   // 参考窗
@@ -30,7 +30,7 @@ export const AREAS = {
 };
 
 /** 不是测试的 E2E 目录成员（运行器和分区守卫都跳过）。 */
-export const HELPERS = ["pw", "cloud-bridge", "run", "areas"];
+export const HELPERS = ["fake-fsa", "pw", "cloud-bridge", "run", "areas"];
 
 /** 源码路径 → 区。从上往下第一条匹配的算（正则按仓根相对路径匹配）。"all" = 整套；[] = 没有 E2E 管它（只跑单元 / 冒烟）。
  *  "smoke" 不是 E2E 区：命中 = 运行器提醒你跑 npm run smoke（壳 / 文件逃生口在那里守）。 */
@@ -65,7 +65,7 @@ export const AREA_OF_PATH = [
   [/^src\/(engine|gm|singer)\//, ["studio", "play"]],
   [/^src\/app\/(names)\.ts$/, ["studio"]],
   // 文件 / 云 / 歌库 / 格式
-  [/^src\/(app-store|identifiers|encryption)\.ts$|^src\/app\/doc-file\.ts$|^src\/ui\/(sheets|song-cover)\.ts$|^src\/editor-session\//, ["store"]],
+  [/^src\/(app-store|library-home|identifiers|encryption)\.ts$|^src\/app\/move-songs\.ts$|^src\/app\/doc-file\.ts$|^src\/ui\/(sheets|song-cover)\.ts$|^src\/editor-session\//, ["store"]],
   [/^src\/format\//, ["store", "export", "score"]],
   // 导出 / 参考窗 / 模式表
   [/^src\/export\//, ["export"]],

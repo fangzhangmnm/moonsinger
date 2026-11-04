@@ -122,6 +122,8 @@ import "./song-cover.test.ts";
 import "./deployment.test.mjs";
 import "./namespace.test.mjs";
 import "./cloud-gate.test.mjs";   // 2026-11-03 网盘闸门：状态机 + 结构守卫（家族设计稿 cloud-gate §7 §8）
+import "./move-songs.test.mjs";   // 2026-11-03 H3 搬家：字节核过才动旧库
+import "./library-home.test.mjs";   // 2026-11-03 H3 歌库必须有家：守卫
 import "./export-all.test.mjs";   // 2026-11-03 歌库全部导出
 import "./sw-cache-scope.test.mjs";   // 2026-11-03 正式版 / 开发版的壳缓存互不相删（F-145）
 import "./local-files.test.mjs";

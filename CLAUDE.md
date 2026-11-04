@@ -245,6 +245,16 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **改格式的规矩**（CatsUp 立宪）：只加可选字段 → `node scripts/freeze-format-sample.mjs` 更新形状快照、审 diff；删 / 改字段 → `contract.ts` 的 FORMAT +1 + `src/format/migrate/index.ts` 加一步纯函数 + 跑 freeze 生成新版样本、**旧版目录不删**。老文件永远能开，只拒开比 app 新的；不认识的字段 / 文件原样写回。
 - **分工（2026-10-07 深夜起：一个 session 管契约 + 编辑器）**：user「你让那个fable把东西都交给你，我现在把你升级成fable，两个agent反而打架」→ 格式 session 交接后不再动仓（交接全文 = `ai-docs/20261007-format-handoff-to-editor-session.md`：等 user 拍的清单、未落档的对话事实、B 落地逐文件改动点、守卫 / freeze 注意）。下面「格式 session」的字样此后指同一个 session，对账 = 自己对着 0.2.x 手感核。此前两次分工：多轨等编辑器活由 user 带别的 session 做。**契约（`contract.ts` v2 + 契约草稿）是推荐稿，不是定稿**（user「fable的任何数据结构契约都只是推荐稿，不对立刻说」「小节线按照我们0.2.x做好的，fable可能不知道我们之前调的手感」）：做多轨的 session 对着 0.2.x 的手感用，哪里不对立刻报 user、同时 SendMessage 格式 session 对账（不是审批）；碰到还没定的格式问题写进契约草稿 §7 再继续。**守卫测试照旧有效**——它防的是丢数据（版本号 / 迁移 / 冻结样本），不定设计。
 
+## 歌库必须有家：网盘或文件夹（v0.14.17，2026-11-04，Claude Opus 5.5；家族工单 H3；规则书 §1 第 13 条，user 11-03「不是只是用接线吗？隔壁都做好了」；READ FIRST before touching storage）
+
+- **家** = OneDrive 或本地文件夹（folder provider，「folder 就是另一朵云」，照 WeebPaint；`.trash` / `.backup` 在夹内）。**`hasHome()` 全 app 一处**（`src/app-store.ts`）；`createStore` 只有 `buildStore` 一个调用点，provider 非空；`attachStore` 只有 `ensureAttached` 一个调用点（守卫 `test/library-home.test.mjs`）。
+- **入口**（`main.ts ensureHome / chooseHome`）：有家 = 进；登录探测没落地 / 旧库里还有歌（「稍后」= 入口不收）= 进；否则先选家：一句说明 + 「连接网盘」「选一个文件夹」（这里用不了的画灰 + 说为什么）；没选 = 文件模式，什么都不建。
+- **选夹**（`src/library-home.ts`）：`policy.folderGallery`（官网 / 备用版 ✓、itch ✗）+ 没被套着 + 浏览器有选夹框（桌面 Chromium）。名册 = `@internal/gallery` 的 galleryRegistry（库名带 APP_NS 前缀，device-local）；只挂一个家，不做 WeebPaint 的多库切换。开机只 query 权限、绝不弹框；**权限掉了 ≠ 没有家** = 离线态：本机缓存照看、改动攒着，歌库顶上一颗「重新授权」/ 点「存」顺手要；中途掉（provider 抛 NotAllowedError）`store-ui.ts` 认。家是文件夹时不碰微软、闸门不管、云按钮让位给文件夹按钮（菜单：刷新 / 重新授权 / 不用这个文件夹了）；状态字说「文件夹」。
+- **没有家、也没有歌**（开局挂着旧库、登录探测落地没账号、一首都没有）= 拆掉，不留空库（`settleNoHome`）。
+- **搬家**（`src/app/move-songs.ts`，铁律在头注释）：旧库 = 默认 databaseId、没账号。开机 / 进歌库问一次（一台设备一次）「搬进文件夹 / 连接网盘 / 全部导出 / 稍后」；稍后 = 披露条照挂。逐首：读旧库 → 写新家（mode new，撞名不覆盖：字节相同算搬成，不同换 -hex4）→ **从夹里真的读回来比字节**（`readFromFolder` 另开 provider，不走 store 缓存）→ 才移进旧库回收站。**两类**：从没同步过（float / local-only）搬走；连着网盘有没传的（unpushed / conflict / ghost）拷一份、**旧的不动**（移走 = 库排一条云端删除，回线把网盘那份也删了）；正本在网盘的不碰。旧库实例 `openLegacyLibrary` 永远离线。只有全部搬成才退役（device-kv legacyRetired）；移走的留在旧库回收站（还原出厂才清）。
+- **部署**：itch = 文件模式（入口灰 +「去官网」）；备用版 = 文件夹是它的家（网盘那一个灰着）；备用版的浏览器选不了夹 = 入口灰 + 说为什么。
+- 测试：`test/move-songs.test.mjs`（10）、`test/library-home.test.mjs`、E2E `test/e2e/folder-home.mjs`（假 FSA = OPFS 子目录，`test/e2e/fake-fsa.mjs`；存量 store / final 也走真入口）、`tools/local-smoke.mjs`、`tools/itch-fixture.mjs`。**真机零**：真选夹对话框、双击形态下选夹（无头 file: 不给 OPFS）、再授权的系统提示。
+
 ## 歌库 = @internal/store + @internal/gallery + OneDrive（v0.6.0，2026-10-08，Claude Fable 5.1；READ FIRST before touching storage）
 
 user 2026-10-08「真的需要做store了…要不要硬着头皮进store」「身份走库的……反正严格按照库的护栏干」「冲突面照家规 必须做的非常严格…不要发生没有接线的情况」。起手读 `ai-docs/20261008-store-gallery-wiring-handoff.md`（接了什么、节律、两家对比里要 user 拍的 12 条、还没验的）。家规 `../CLAUDE.md`「云同步 store 库」+ skill `pwa-cloud-store` 全适用：**只准走 createStore()，app 层零 localStorage / IDB / MSAL / fetch 云端**。

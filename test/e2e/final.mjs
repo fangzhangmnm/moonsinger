@@ -5,9 +5,10 @@
 //   反证：把 main.ts update() 里 finalOn 那一行删掉 = 「打字不动谱」红；把 saveMxl 的指纹检查删掉 + 把 update 的护栏删掉 = 存出去的字节里 final 和谱对不上（这里核的是指纹对得上）。
 // created 2026-10-16 by Claude Fable 5.1
 import { chromium } from "./pw.mjs";
+import { FAKE_FSA, pickFolderFromEntry } from "./fake-fsa.mjs";   // 2026-11-03 H3：歌库必须有家
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 800 } });
+const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 800 } }); await ctx.addInitScript(FAKE_FSA);
 const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 const title = () => p.textContent("#docTitle");
 const saved = async () => { for (let i = 0; i < 80 && /•/.test((await title()) ?? ""); i++) await p.waitForTimeout(100); };
@@ -15,7 +16,7 @@ const notes = () => p.evaluate(() => window.__moonsinger.state().song.papers[0].
 const toasts = () => p.$$eval(".notice-stack .toast, .notice, [role=alert]", (es) => es.map((e) => e.textContent ?? ""));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(600);
 // 进歌库、新建、写三个音（首笔安家）；小月相在测试里 = 静音块（同 transport.mjs）
-await p.click("#libBtn"); await p.waitForTimeout(600);
+await pickFolderFromEntry(p); await p.waitForTimeout(300);
 await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(500);
 await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 2).fill(0.02), sr: 22050 }); });
 await p.click("#score", { position: { x: 600, y: 200 } });
@@ -74,7 +75,7 @@ check(saved1.manifest.final?.rev === 1 && saved1.manifest.finalRev === 1 && type
 check(!!saved1.final && saved1.mp3 === rec.mp3.bytes && saved1.notices.length === 0, "开回来：定稿记录在、指纹对得上、mp3 字节在", saved1.notices.join(" | "));
 // 导出 mp3 = 定稿的那一份（面板不再有音质）
 await p.click("#setBtn"); await p.waitForTimeout(120); await p.click('.main-menu [data-v="export"]'); await p.waitForTimeout(150); await p.click('.offer [data-v="mp3"]'); await p.waitForTimeout(150);
-check(!(await p.$('.offer [data-v="q:standard"]')) && /定稿的那一份/.test(await p.$eval(".offer", (e) => e.textContent ?? "")), "导出面板：定稿的那一份，不重渲");
+check(!(await p.$('.offer [data-v="q:standard"]')) && /定稿的那一份/.test(await p.$eval(".offer:not(.gate-sheet)", (e) => e.textContent ?? "")), "导出面板：定稿的那一份，不重渲");
 await p.click('.offer [data-v="close"]'); await p.waitForTimeout(100);
 // 歌库：封面上 ▶ 亮、点了放（不打开那首）
 await p.click("#libBtn"); await p.waitForTimeout(800);
@@ -111,7 +112,7 @@ check((await p.evaluate(() => window.__moonsinger.identifier())) === id && (awai
 await p.click("#setBtn"); await p.waitForTimeout(120);
 check(!!(await p.$('.main-menu [data-v="unfinal"]')), "三条杠里是「改稿…」");
 await p.click('.main-menu [data-v="unfinal"]'); await p.waitForTimeout(150);
-check(/改稿/.test(await p.$eval(".offer .offer-title", (e) => e.textContent ?? "")), "改稿先问一句");
+check(/改稿/.test(await p.$eval(".offer:not(.gate-sheet) .offer-title", (e) => e.textContent ?? "")), "改稿先问一句");
 await p.click('.offer [data-v="ok"]'); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.final())) === null && (await p.evaluate(() => window.__moonsinger.workspace().mode)) !== "listen" && !(await p.$("#fileBtn .final-badge")), "改稿 = 记录没了、回到写、角标没了");
 await p.click("#score", { position: { x: 600, y: 200 } }); await p.keyboard.press("End"); await p.keyboard.press("Digit2"); await p.waitForTimeout(100);

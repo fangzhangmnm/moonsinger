@@ -19,17 +19,22 @@ const base = storeUIFor({
   stemOf,
 });
 let _gate: CloudGate | null = null;
+let _folderLost: (() => void) | null = null, _isFolder: () => boolean = () => false;
+/** 文件夹的权限中途掉了（provider 原样抛 NotAllowedError）：宿主画 chip（家族工单 H3）。isFolder = 家是不是文件夹（本文件被 app-store 引，不能反过来 import 它）。 */
+export function attachFolderLost(cb: () => void, isFolder: () => boolean): void { _folderLost = cb; _isFolder = isFolder; }
+const NO_ESCAPE = { probe: new Promise<unknown>(() => {}), settle: () => {} };
 /** app 组装层把闸门递进来（store-ui 在 createStore 时就要，闸门要等 app 起来才有）。 */
 export function attachGate(g: CloudGate): void { _gate = g; }
 export const storeUI: StoreUI = {
   ...base,
   // 闸门在场：跟闸门的「先离线用」赛跑，不另开一张面（家族设计稿 cloud-gate §4）
-  offlineEscape: () => _gate?.storeEscape() ?? base.offlineEscape!(),
+  offlineEscape: () => (_isFolder() ? NO_ESCAPE : _gate?.storeEscape() ?? base.offlineEscape!()),   // 家是文件夹：问的是本机硬盘，不挂死、不用逃生（也不许闪「检查云端」）
   // 冲突面每次弹出 / 人选了什么都进黑匣子（user 2026-10-08「一直会遇到云端冲突的提示」——诊断日志里得看得见是哪首、哪个场合、怎么选的）。
   resolveConflict: async (q) => { diagNote("sync", `conflict occasion=${q.occasion} ${stemOf(q.name)}`); const r = await base.resolveConflict(q); diagNote("sync", `conflict → ${r}`); return r; },
   // 未登录时库的后台云动作会撞 auth 的 "Not signed in"——那是正常态不是故障，只进黑匣子不上横幅（WXHW 2026-09-03 截图：橙条常驻）。其余照包的分级（CloudNetworkError 换人话）。
   reportError: (err, level) => {
     if ((err as { message?: string } | null)?.message === "Not signed in") { reportError(err, "log"); return; }
+    if ((err as { name?: string } | null)?.name === "NotAllowedError" && _folderLost) { _folderLost(); reportError(err, "log"); return; }   // 权限掉了 = 离线态不算故障：chip 说，不上横幅
     noteAuthFailure(String((err as { message?: string } | null)?.message ?? ""));   // 闸门：续签失败的原因码只有这行日志里有（行格式 test/cloud-gate.test.mjs 对着库钉住）
     base.reportError(err, level);
   },

@@ -22,6 +22,7 @@ export const SITE_TEXT = {
   libOffTitle: `这个浏览器存不住歌库（关了就忘）：歌请用「存」下载成文件；歌库在官网版里：${SITE_HOST}`,
   libSiteTitle: `歌库只在官网版里有（${SITE_HOST}）：这里的歌没有浏览器外的家——「存」= 下载成 .mxl 文件，「打开」= 选文件`,
   noShell: deployment() === "itch" ? "itch 版跟着 itch 上的版本走：作者推了新版，刷新这一页就是新的" : deployment() === "local" ? `备用版不会自己更新：要新版就重新下载这个文件夹，或去官网 ${SITE_HOST}` : "这里没有离线壳，不用更新",
+  libNoFolderTitle: `这个浏览器选不了文件夹（桌面版 Chrome / Edge 可以），所以备用版在这里没有歌库：「存」= 下载成 .mxl 文件，「打开」= 选文件；歌库也在官网版里：${SITE_HOST}`,
   goSite: "去官网",
   report: "报告问题",
 };

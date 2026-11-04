@@ -263,8 +263,9 @@ describe("闸门 · 结构守卫（§8）", () => {
   it("§8② 有家才闸：run() 第一句看 hasHome；文件模式永不闸；有家 = 挂了库 ∧ MSAL 有账号（不新增存储）", () => {
     assert(/async function run\(trigger: Trigger, lock: boolean\): Promise<void> \{\n\s*if \(!d\.hasHome\(\)\) return;/.test(gateSrc));
     assert(/hasHome: \(\) => hasCloudHome\(\) && H\.home\.kind !== "file"/.test(app), "手里是本机文件 = 永不闸");
-    assert(/const hasCloudHome = \(\): boolean => hasStore\(\) && \(homeKnown \|\| isSignedIn\(\)\)/.test(app), "没挂库 = 永不闸");
-    assert(/homeKnown = s\.signedIn \|\| !!\(s as \{ probing\?: boolean \}\)\.probing/.test(app), "有家的判据");
+    // 2026-11-03 H3：判据搬进 app-store（hasHome 全 app 一处），意思不变：没挂库 = 永不闸（_home 只在 attachStore 时才有）；家是文件夹 = 不归闸门管
+    assert(/export const hasCloudHome = \(\): boolean => _home\?\.kind === "cloud" && \(_cloudAccount \|\| _signedIn\(\)\)/.test(appStore), "没挂库 / 家是文件夹 = 永不闸");
+    assert(/noteCloudAccount\(s\.signedIn \|\| !!\(s as \{ probing\?: boolean \}\)\.probing\)/.test(app), "有家的判据");
   });
   it("§8③ 文案：原因三句分开、标题不写失败 / 错误、没有指挥句", async () => {
     const m = /export const GATE_TEXT = \{[\s\S]*?\n\};/.exec(uiSrc);
@@ -277,7 +278,7 @@ describe("闸门 · 结构守卫（§8）", () => {
     for (const p of walk("src")) { if (!/\.ts$/.test(p)) continue; assert(!/(deviceKvSet\w*|setItem)\([^)\n]*(userOffline|isUserOffline)/.test(read(p)), `${p} 把离线写进存储了`); }
   });
   it("接线：库的 isOnline = cloudOnline；云端判断不再散在 navigator.onLine", () => {
-    assert(/isOnline: cloudOnline,/.test(appStore));
+    assert(/signedIn: \(\) => _signedIn\(\), isOnline: cloudOnline \}\);/.test(appStore), "网盘这个家：库的 isOnline = cloudOnline");
     const allowed = new Set(["src/cloud-gate.ts"]);
     for (const p of walk("src")) { if (!/\.ts$/.test(p) || allowed.has(p.replaceAll("\\", "/"))) continue; assert(!/navigator\.onLine/.test(read(p).replace(/\/\/[^\n]*/g, "")), `${p} 还在直接看 navigator.onLine（云端判断走 cloudOnline）`); }
   });

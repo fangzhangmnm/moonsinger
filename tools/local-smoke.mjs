@@ -1,6 +1,6 @@
 // local-smoke.mjs —— 备用版的无头烟测：file:// 双击打开那个文件夹。created 2026-11-03 by Claude Opus 5.5（家族工单 A 第 7 步；规则书 §3.5 / §4 第 11 项）
 //   核：不白屏、认成备用版、开局一行「去官网」、线程都从 data: 起（小月相 / mp3 / 录音房 / 排版 / 存档编码）、经 .data.js 载模型分片且哈希过（真唱一句）、
-//       老实脚本的哈希不对就不交、存 = 下载、设置跨刷新还在、歌库网盘入口灰 + 「去官网」；再模拟「这个浏览器不给存储」（Safari 双击的样子）看「没测过 + 报告入口」那一句和歌库画灰。
+//       老实脚本的哈希不对就不交、存 = 下载、设置跨刷新还在、歌库入口 = 先选家（文件夹能选、网盘灰）；再模拟「这个浏览器不给存储」（Safari 双击的样子）看「没测过 + 报告入口」那一句和歌库画灰。
 //   浏览器用默认启动参数（不加 --allow-file-access-from-files 之类放宽的开关：和用户双击打开一样）；一律无头（家规）。
 //   用法：node scripts/pack-local.mjs && node tools/local-smoke.mjs [--dir=.local-build/MoonSinger]
 import { resolve } from "node:path";
@@ -69,6 +69,15 @@ try {
   await page.click("#saveBtn");
   await page.locator('[data-v="download"]').first().click({ timeout: 10000 }).catch(() => undefined);
   const fname = await dl;
+  // H3：备用版的家 = 文件夹（规则书 §2）。入口在、不灰、点了说明 + 能选文件夹；网盘那一个去处灰着
+  const lib = await page.evaluate(() => { const b = document.getElementById("libBtn"); return { off: b.classList.contains("is-off"), can: typeof window.showDirectoryPicker === "function" }; });
+  check("歌库入口在（这个浏览器能选夹 = 不灰）", lib.can ? !lib.off : lib.off, JSON.stringify(lib));
+  if (lib.can) {
+    await page.click("#libBtn"); await page.waitForTimeout(300);
+    const face = await page.evaluate(() => { const bs = [...document.querySelectorAll(".offer:not(.gate-sheet) button")]; return { text: document.querySelector(".offer:not(.gate-sheet)")?.textContent ?? "", cloud: bs.find((x) => x.textContent.includes("连接网盘"))?.disabled, folder: bs.find((x) => x.textContent.includes("选一个文件夹"))?.disabled }; });
+    check("点了 = 先选家：文件夹能选、网盘灰着（网盘在官网）", face.folder === false && face.cloud === true && face.text.includes("官网"), JSON.stringify(face));
+    await page.click('.offer:not(.gate-sheet) button[data-v="no"]'); await page.waitForTimeout(150);
+  }
   check("存 = 下载 .mxl（存档编码线程 data: 起）", !!fname && /\.mxl$/.test(fname), fname ?? "没下载");
   note("真浏览器里双击打开时", pickerThere ? "桌面 Chromium 有系统保存框（存 = 选位置写成文件、以后 Ctrl+S 写回）；这里无头点不了那个框，拿掉后测的是下载那条路" : "没有系统保存框（存 = 下载）");
 
@@ -83,15 +92,25 @@ try {
   const z2 = await zoom();
   check("设置跨刷新还在（缩放按设备记）", Math.abs(z1 - 1) > 0.01 && Math.abs(z2 - z1) < 0.01, `缩放 ${z1.toFixed(3)} → 刷新后 ${z2.toFixed(3)}`);
 
-  // ⑦ 歌库：入口灰 + 去官网
-  // 2026-11-03 A2 ④（Fable 裁定）：备用版里歌库画灰 +「去官网」（歌没有浏览器外的家；存 = 下载 / 开 = 选文件照旧）
-  const g = await page.evaluate(async () => { const b = document.getElementById("libBtn"); return { off: b.classList.contains("is-off"), title: b.title }; });
-  check("歌库钮画灰（这里的歌没有浏览器外的家）", g.off && /官网/.test(g.title), g.title);
-  await page.click("#libBtn"); await page.waitForTimeout(400);
-  const g2 = await page.evaluate(async () => ({ gallery: !!document.getElementById("galleryFull"), line: [...document.querySelectorAll("*")].map((e) => e.childElementCount === 0 ? e.textContent : "").find((t) => /歌库只在官网版里有/.test(t ?? "")) ?? null,
-    go: [...document.querySelectorAll("button")].filter((b) => /去官网/.test(b.textContent ?? "")).length, dbs: indexedDB.databases ? (await indexedDB.databases()).map((d) => d.name) : [] }));
-  check("点歌库 = 一行「歌库只在官网版里有 …」+「去官网」，不进歌库", !g2.gallery && !!g2.line && g2.line.includes("sing.weebpaint.com") && g2.go > 0, g2.line ?? "没找到");
+  // ⑦ 歌库：备用版的家 = 文件夹（2026-11-03 工单 H3，取代 A2 ④ 的「画灰」；规则书 §2 备用版 ✓）。点了先选家（上面 ⑤ 后面核过面）；没选 = 什么都不建
+  const g2 = await page.evaluate(async () => ({ gallery: !!document.getElementById("galleryFull") && !document.getElementById("galleryFull").hidden, dbs: (await indexedDB.databases()).map((d) => d.name) }));
+  check("没选家：歌库没开", !g2.gallery);
   check("没建歌库的本机库（store 的 IndexedDB 一个都没有）", !g2.dbs.some((n) => /^moonsinger\./.test(n ?? "")), JSON.stringify(g2.dbs));
+  // 双击形态下真走一遍：假选夹 = OPFS 子目录（file: 下浏览器不一定给 OPFS，不给就如实记）
+  const opfs = await page.evaluate(async () => { try { await (await navigator.storage.getDirectory()).getDirectoryHandle("local-songs", { create: true }); return true; } catch (e) { return String(e?.name ?? e); } });
+  if (opfs === true) {
+    await page.evaluate(() => { window.showDirectoryPicker = async () => (await navigator.storage.getDirectory()).getDirectoryHandle("local-songs", { create: true }); });
+    await page.click("#libBtn"); await page.waitForTimeout(250);
+    await page.click('.offer:not(.gate-sheet) button:has-text("选一个文件夹")');
+    await page.waitForFunction(() => { const g = document.getElementById("galleryFull"); return !!g && !g.hidden; }, null, { timeout: 8000 }).catch(() => undefined);
+    check("选夹：歌库开了，家是这个文件夹", await page.evaluate(() => window.__moonsinger.folderHome()) === "local-songs");
+    await page.evaluate(() => window.__moonsinger.newStoreSong()); await page.waitForTimeout(300);
+    await page.click("#score", { position: { x: 500, y: 200 } }); for (const k of ["Digit1", "Digit2"]) { await page.keyboard.press(k); await page.waitForTimeout(40); }
+    await page.waitForFunction(() => !!window.__moonsinger.identifier(), null, { timeout: 8000 }).catch(() => undefined);
+    await page.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await page.waitForTimeout(500);
+    const inFolder = await page.evaluate(async () => { const d = await (await navigator.storage.getDirectory()).getDirectoryHandle("local-songs"), out = []; for await (const [n] of d.entries()) out.push(n); return out; });
+    check("存一首：夹里出现 .mxl", inFolder.some((n) => n.endsWith(".mxl")), JSON.stringify(inFolder));
+  } else note("双击打开时选夹", `这个浏览器的 file: 页面不给 OPFS（${opfs}），假选夹走不通：真选夹要真机点系统对话框`);
   check("页面没有未接住的脚本错误", errs.length === 0, errs.slice(0, 3).join(" | "));
 
   // ⑧ 模拟「这个浏览器不给双击打开的网页用存储」（Safari 的样子；Chromium 里拿 localStorage 抛 SecurityError 来演）

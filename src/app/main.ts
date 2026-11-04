@@ -75,8 +75,10 @@ import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
-import { isCached, attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, cloudAvailable } from "../app-store.ts";
-import { showSiteHint, watchStorageHealth, showLibraryOff, SITE_TEXT, FOLDER_TEXT } from "./site-hint.ts";
+import { isCached, attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, disposeStore, cloudAvailable, hasHome, hasCloudHome, folderHome, folderOnline, setFolderOnline, homeOnline, noteCloudAccount, cloudAccountKnown, forgetLegacyAttach, legacyLibraryExists, openLegacyLibrary, readFromFolder, withStemTail, type Store, type StoreHome } from "../app-store.ts";
+import { canPickFolder, pickFolderHome, folderPermission, lastFolderHome, touchFolderHome, clearFolderHome, type GalleryEntry } from "../library-home.ts";
+import { moveSongs, moveKindOf, moveFinished, moveSay, type SongToMove } from "./move-songs.ts";
+import { showSiteHint, watchStorageHealth, showLibraryOff, SITE_TEXT, SITE_HOST, FOLDER_TEXT } from "./site-hint.ts";
 import { dropLegacyCacheDbs } from "./factory-reset.ts";
 import { availability } from "../persistence.ts";
 import { currentPolicy } from "../deployment-policy.ts";
@@ -87,12 +89,12 @@ import { identifiers } from "../identifiers.ts";
 import { SONG_SUFFIX, LOCAL_SAVE_DEBOUNCE_MS, WAKE_CHECK_AFTER_MS, RELOAD_PUSH_TIMEOUT_MS } from "../config.ts";
 import { cloudOnline, createCloudGate, isUserOffline, noteAuthFailure, onUserOfflineChange, rawOnline } from "../cloud-gate.ts";
 import { createGateUi, GATE_TEXT } from "./cloud-gate-ui.ts";
-import { attachGate } from "../store-ui.ts";
+import { attachGate, attachFolderLost } from "../store-ui.ts";
 import { exportAll, exportAllSay } from "./export-all.ts";
 import { zipSync } from "../../vendor/fflate/fflate.esm.js";
 import { initGalleryHost, type GalleryHost } from "../gallery-host.ts";
 import { createEditorSession } from "../editor-session/index.ts";
-import { withBusy, openInputSheet, openChoiceSheet, type Choice, openConfirmSheet, isSheetOpen, closeSheet, isGateOpen, gateGeneration, whenGateClosed, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
+import { withBusy, setBusyText, openInputSheet, openChoiceSheet, type Choice, openConfirmSheet, isSheetOpen, closeSheet, isGateOpen, gateGeneration, whenGateClosed, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
 import { createReferenceHost, type RefImportQuestion, type RefImportChoice, RAM_ABOVE } from "./reference-host.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
 import { scorePdf, LYRIC_RAISE, type PdfFontId } from "../export/score-pdf.ts";
@@ -259,7 +261,7 @@ function showUpdateBar(): void {
 /** |▶ 的说明（顶栏和底座边上那个一样）。⋯ 收进长按 / 右键（v0.10.20；user「play的...收到长按和右键play里面 / 然后顶栏只单放一个一样的play」）。 */
 const PLAY_TITLE = "从起点放 / 停（空格）；连按两下 = 从头放。长按 / 右键 = 接着放 / 自动翻 / 循环 / 从头放 / 接缝。起点 = 长按 / 右键谱面「从这儿放」挪";
 bar.innerHTML =
-  `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? "歌库：这台设备上的歌，登录微软账号后同步到 OneDrive（应用文件夹）" : `歌库：这个浏览器里的歌（${SITE_TEXT.cloudOffTitle}）`}"><svg class="ico"><use href="#album"/></svg></button>` +
+  `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? "歌库：歌放在网盘（OneDrive）或你选的文件夹里" : "歌库：歌放在你选的文件夹里"}"><svg class="ico"><use href="#album"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button>` +
   `</div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div>` +
@@ -1074,7 +1076,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   setMaster: (patch: Record<string, unknown>) => updateExtras(withMaster(D.extras, patch as never), { kind: "studio", label: "总轨" }),
   studioTracks: () => studioTracks(D.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, D.st.song.hum, songLangOf(tokens, D.st.song.hum), map); }, state: () => D.st, cssHash: __CSS_HASH__, extras: () => D.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => ({ ...view.layoutNow(), head: view.head() }) /* head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） */, zoomInfo: () => view.zoomInfo(), dockSide: () => stageEl.dataset.side ?? null, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { home: { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
   setChunk: (v: "phrase" | "sheet" | "whole") => { const role = D.st.song.parts.find((x) => x.id === D.st.at.part)?.role; if (role) updateExtras(withSingChunk(D.extras, role, v, D.st.song.hum), { kind: "lounge", label: `分段唱：${v}` }); },
-  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), wake: async (awayMs: number) => { const lock = lockOnWake(awayMs); if (hasCloudHome()) await gate.wake(lock); return lock; }, pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(D.st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => H.identifier(), home: () => H.home.kind, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
+  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), wake: async (awayMs: number) => { const lock = lockOnWake(awayMs); if (hasCloudHome()) await gate.wake(lock); return lock; }, pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(D.st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), hasHome: () => hasHome(), folderHome: () => folderHome()?.label ?? null, legacySongs: () => legacySongs(), offerMove: () => offerMove(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => H.identifier(), home: () => H.home.kind, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
@@ -1110,7 +1112,7 @@ function syncKind(): SyncKind {
     case "gallery":
       if (dirty()) return "saving";
       if (!isSignedIn()) return "local";
-      if (!cloudOnline()) return "offline";
+      if (!homeOnline()) return "offline";
       return es.isPushPending() ? "unsynced" : "clean";
     case "file": return dirty() ? "fileDirty" : "fileClean";
     case "none": return dirty() ? "unsaved" : "fresh";
@@ -1128,10 +1130,17 @@ const SAVE_SPEC: Record<SyncKind, { icon: string; cls: string; title: string }> 
   unsaved: { icon: "floppy-disk", cls: "s-unsynced", title: "还没存（点 = 存）" },
   fresh: { icon: "floppy-disk", cls: "s-fresh", title: "新的一首，还没存" },
 };
+/** 歌库在文件夹时这几个状态的说法（图标照旧）。 */
+const FOLDER_SAVE_TITLE: Partial<Record<SyncKind, string>> = {
+  saving: "改了，马上自动存到这台设备（点 = 现在存 + 写进文件夹）",
+  offline: "文件夹的权限掉了：改动存在这台设备上（点 = 重新授权）",
+  unsynced: "存在这台设备上了，还没写进文件夹（点 = 现在写）",
+  clean: "文件夹里也是最新的（点 = 复查）",
+};
 function renderSaveButton(): void {
   const k = syncKind(), spec = SAVE_SPEC[k], b = $("saveBtn");
   b.innerHTML = `<svg class="ico"><use href="#${spec.icon}"/></svg>`;
-  b.className = `btn save-btn ${spec.cls}`; b.title = spec.title; b.dataset.kind = k;
+  b.className = `btn save-btn ${spec.cls}`; b.title = (folderHome() && FOLDER_SAVE_TITLE[k]) || spec.title; b.dataset.kind = k;
 }
 const fmtDb = (dB: number) => `${dB > 0 ? "+" : dB < 0 ? "−" : ""}${Math.abs(dB)} dB`;
 /** 主唱没人上场（别的软件存的谱，原来的乐器这一版没有）：不出声、报错，人来选（user「不出声，报错，人类手动换」）。 */
@@ -2547,7 +2556,7 @@ const performersBlock = (roles: readonly string[], title = "署名") => {
 function fileWhere(): string {
   const h = H.home;
   switch (h.kind) {
-    case "gallery": return `在歌库里，自动存${isSignedIn() ? "；换歌 / 退出 / 按「存」时推上 OneDrive" : cloudAvailable() ? "（没登录，只在这台设备上）" : "（只在这个浏览器里；网盘在官网版）"}`;
+    case "gallery": if (folderHome()) return `在歌库里（文件夹「${folderHome()!.label}」），自动存；换歌 / 退出 / 按「存」时写进文件夹`; return `在歌库里，自动存${isSignedIn() ? "；换歌 / 退出 / 按「存」时推上 OneDrive" : cloudAvailable() ? "（没登录，只在这台设备上）" : "（只在这个浏览器里；网盘在官网版）"}`;
     case "file": return `存在本机文件 ${h.handle.name}，「存」= 存回去`;
     case "none": return h.pendingFolder != null ? "新的一首：第一笔写下去就进歌库" : docFile.canPickSave() ? "还没存过：「存」会问存到哪" : "这台设备上「存」= 下载或分享一个 .mxl";
     default: return assertNever(h);
@@ -2850,11 +2859,9 @@ async function renameActive(): Promise<string | null> {
     return H.identifier();
   } catch (e) { reportError(e); return null; }
 }
-let authStarted = false, authSettled = false, afterSignInInFlight: Promise<void> | null = null;
+let authStarted = false, authSettled = false, authUnknown = false, afterSignInInFlight: Promise<void> | null = null;
 // ── 闸门：网盘掉登录 / 没网（家族设计稿 ai-docs/20261103-cloud-gate-design.md；状态机 src/cloud-gate.ts，界面 src/app/cloud-gate-ui.ts）──
-//   有家 = 挂了库 ∧ 这台设备的 MSAL 有账号（不新增存储）；手里是本机文件 = 和网盘无关、永不闸。itch / 备用版不 startAuth，走不到这里。
-let homeKnown = false;
-const hasCloudHome = (): boolean => hasStore() && (homeKnown || isSignedIn());
+//   闸门只管网盘这个家：挂了库 ∧ 这台设备的 MSAL 有账号（不新增存储，app-store.ts hasCloudHome）；手里是本机文件 / 家是文件夹 = 和网盘无关、永不闸。itch / 备用版不 startAuth，走不到这里。
 const gate = createCloudGate({
   ui: createGateUi({
     dirtyCount: () => requireStore().files.dirty.count(),
@@ -2880,10 +2887,11 @@ const gate = createCloudGate({
 attachGate(gate);
 onUserOfflineChange(() => { renderTitle(); gallery?.renderCloud(); });
 /** 建 store + 歌库屏（幂等；不碰登录）。第一次要在用户手势里（persist 申请）。 */
-function ensureAttached(): void {
-  if (!currentPolicy().library) throw new Error("这个部署方式没有歌库（itch / 备用版：歌只用文件存）");   // 第二道：入口已经灰了，万一有别的路走到这里也不建库
+function ensureAttached(home: StoreHome = { kind: "cloud" }): void {
+  if (!currentPolicy().library) throw new Error("这个部署方式没有歌库（itch：歌只用文件存）");   // 第二道：入口已经灰了，万一有别的路走到这里也不建库
+  if (home.kind === "cloud" && !currentPolicy().cloud) throw new Error("这个部署方式没有网盘（备用版：歌库的家只能是文件夹）");
   const fresh = !hasStore();
-  attachStore();
+  attachStore(home);
   if (fresh) {
     void requestStoragePersistence(); diagNote("boot", "store attached");
     // 按身份记的东西跟着改名走（store 0.14.0 onRenamed：谁发起的改名 / 挪夹都报）——这里只有「上次开着哪首」
@@ -2893,25 +2901,25 @@ function ensureAttached(): void {
 }
 /** 登录探测（一次）：先建 store（库的报错器在 createStore 时才接上，CatsUp 2026-09-22）、本地恢复完了再调（boot 顺序 = 建 store → 本地恢复 → initAuth）。 */
 function startAuth(): void {
-  if (authStarted || !currentPolicy().cloud) return;   // itch / 备用版没有网盘：不 initAuth、不载 MSAL（家族规则书 §2 / §4 第 5 项；app-store 的 auth 也包了一层）
+  if (authStarted || !currentPolicy().cloud || folderHome()) return;   // 家是文件夹 = 不碰微软；itch / 备用版没有网盘：不 initAuth、不载 MSAL（家族规则书 §2 / §4 第 5 项；app-store 的 auth 也包了一层）
   authStarted = true;
   auth.onAuthChanged((s) => {
     diagNote("auth", `changed signedIn=${String(s.signedIn)} reason=${String((s as { reason?: string }).reason ?? "?")}`);
     const why = (s as { reason?: string }).reason;
-    if (s.signedIn) homeKnown = true; else if (why === "signOut") homeKnown = false;
+    if (s.signedIn) noteCloudAccount(true); else if (why === "signOut") noteCloudAccount(false);
     gate.authChanged(s.signedIn, why);
     gallery?.renderCloud(); renderTitle(); if (s.signedIn) void afterSignIn();
   });
   void auth.initAuth().then((s) => {
-    homeKnown = s.signedIn || !!(s as { probing?: boolean }).probing; authSettled = true;
-    diagNote("auth", `initAuth signedIn=${s.signedIn} probing=${String(!!(s as { probing?: boolean }).probing)} home=${String(homeKnown)}`);
+    noteCloudAccount(s.signedIn || !!(s as { probing?: boolean }).probing); authSettled = true;
+    diagNote("auth", `initAuth signedIn=${s.signedIn} probing=${String(!!(s as { probing?: boolean }).probing)} home=${String(cloudAccountKnown())}`);
     gallery?.renderCloud(); renderTitle();
     void gate.boot();   // 没有家 = 什么都不发生（设计稿 §2）；本机那份已经摆好（boot 顺序 = 建 store → 本地恢复 → 这里）
-    if (s.signedIn) void afterSignIn();
-  }).catch((e) => { authSettled = true; gallery?.renderCloud(); reportError(e, "warning"); });
+    if (s.signedIn) void afterSignIn(); else void settleNoHome();
+  }).catch((e) => { authSettled = true; authUnknown = true; gallery?.renderCloud(); reportError(e, "warning"); });
 }
 /** 用户动作进歌库（点「歌库」/ 新建 / 存进歌库）：建 store + 起登录探测。 */
-function attachForUser(): void { ensureAttached(); startAuth(); }
+function attachForUser(): void { if (!hasStore()) throw new Error("no library home yet (ensureHome first)"); startAuth(); }
 function ensureGallery(): GalleryHost {
   if (gallery) return gallery;
   let padWas = true;
@@ -2927,10 +2935,10 @@ function ensureGallery(): GalleryHost {
     openSettings: () => openSettings(),
     openInstruments: () => openFinder(),   // 歌库开着 = 只弹着玩的目录，盖在歌库上面
     openCloudMenu: () => { void openCloudMenu(); },
-    // 登录探测落地之前不说（不然有账号的人开局闪一下这句假话）；有账号但登录过期 = 歌在网盘上有，归闸门和常驻条说，这里不说「没有备份」
-    showNoBackup: () => currentPolicy().cloud && authSettled && !homeKnown && !isSignedIn(),
-    exportAll: () => { void exportAllSongs(); },
-    connectCloud: () => { void signInFlow(); },
+    homeBar: () => homeBarNow(),
+    homeAction: (v) => homeAction(v),
+    homeLabel: () => folderHome()?.label ?? null,
+    openHomeMenu: () => { void openHomeMenu(); },
     onOpened: () => { ui.close(); closeFinder(false); if (ws.mode === "listen") { ws.mode = lastEditMode; applyWorkspace(); } closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },   // 进歌库 = 放下手里的歌：混音台（听）也收
     onClosed: () => { void afterGalleryClosed(); showPad(padWas); updateChrome(); scoreEl.focus(); },
   });
@@ -2948,19 +2956,204 @@ async function afterGalleryClosed(): Promise<void> {
 /** 进歌库 = 放下手里的歌（gallery-first，同 WeebPaint「进图库 = 关闭当前画作」；user 2026-10-08「7 和weebpaint对齐」）：
  *  歌库里的先落盘 + 推（退出语义）再放下身份；等着安家的空谱有笔先安家；无地的改过没存先问（同「新建」）。歌库没有「回到谱」——出口 = 打开一首 / 新建。 */
 async function openGallery(): Promise<void> {
+  if (!(await ensureHome())) return;
   attachForUser();
   if (!(await H.leave("进歌库"))) return;
   H.release();
   deviceKvSet(KV_LAST_DOC, null);   // 本机文件 / 无地的稿也一样：进了歌库 = 没有「上次开着的那首」
   renderTitle();
   await gallery!.open();
+  void offerMove();
+}
+// ── 歌库的家（家族规则书 §1 第 13 条「库必须有家：网盘或本地文件夹；没有家 = 文件模式」；工单 H3）──
+/** 进歌库之前：有家 = 走；登录探测还没落地 / 旧库里还有歌（「稍后」= 入口不收）= 走；否则先选家。 */
+async function ensureHome(): Promise<boolean> {
+  if (hasHome()) return true;
+  if (hasStore() && (!authSettled || (await legacySongs()).length > 0)) return true;
+  return chooseHome();
+}
+/** 入口：说明一句 + 两个去处（这里用不了的画灰 + 说为什么）。没选 = 还是文件模式，什么都不建。 */
+async function chooseHome(): Promise<boolean> {
+  const cloud = currentPolicy().cloud, folder = canPickFolder();
+  let picking: Promise<GalleryEntry | null> | null = null;
+  const v = await openChoiceSheet<"cloud" | "folder">("歌库要先有个家",
+    `歌放在浏览器外面、你自己够得着的地方，才不怕浏览器清缓存。${cloud ? "" : `网盘在官网版里（${SITE_HOST}）。`}${folder ? "" : "这个浏览器选不了文件夹（桌面版 Chrome / Edge 可以）。"}不想选也行：「存」= 存成文件，「打开」= 选文件。`,
+    [{ label: "连接网盘（OneDrive）", value: "cloud", primary: cloud, off: !cloud, onPick: redirectToSignIn },
+      { label: "选一个文件夹", value: "folder", primary: !cloud && folder, off: !folder, onPick: () => { picking = pickFolderHome(); } }]);
+  if (v !== "folder" || !picking) return false;   // 网盘 = 页面已经跳去微软了，回来开局接上
+  const entry = await (picking as Promise<GalleryEntry | null>).catch((e) => { reportError(e, "warning"); return null; });
+  return entry ? useFolderHome(entry) : false;
+}
+/** 把这个文件夹挂成家。手里要是旧库的歌，先落盘放下（旧库不动，走搬家）。 */
+async function useFolderHome(entry: GalleryEntry): Promise<boolean> {
+  if (hasStore()) {
+    if (!(await H.leave("换到文件夹"))) return false;
+    H.release();
+    await disposeStore();
+  }
+  setFolderOnline(await folderPermission(entry, { request: true }));
+  ensureAttached({ kind: "folder", entry });
+  forgetLegacyAttach();
+  gallery?.noteStoreChanged();
+  await touchFolderHome(entry.id).catch((e) => reportError(e, "log"));
+  diagNote("home", `folder "${entry.label}" db=${entry.dbId} online=${String(folderOnline())}`);
+  gallery?.renderCloud(); renderTitle();
+  return true;
+}
+/** 再授权（**手势里调**）：成了 = 回到在线，把攒着的写进去。 */
+async function regrantFolder(): Promise<boolean> {
+  const f = folderHome(); if (!f) return false;
+  const ok = await folderPermission(f, { request: true });
+  setFolderOnline(ok);
+  diagNote("home", `regrant "${f.label}" → ${String(ok)}`);
+  gallery?.renderCloud(); renderTitle();
+  if (!ok) { showError(`没拿到「${f.label}」的权限：改动还存在这台设备上，歌一首没丢。`); return false; }
+  gallery?.refresh();
+  void afterSignIn();
+  return true;
+}
+/** 回前台 / 开局：权限还在吗（只 query，绝不弹框）。 */
+async function checkFolderPermission(): Promise<void> {
+  const f = folderHome(); if (!f) return;
+  const ok = await folderPermission(f, { request: false });
+  if (ok === folderOnline()) return;
+  setFolderOnline(ok);
+  gallery?.renderCloud(); renderTitle();
+  if (ok) { gallery?.refresh(); void afterSignIn(); }
+}
+attachFolderLost(() => { if (folderHome() && folderOnline()) { setFolderOnline(false); diagNote("home", "folder permission lost"); gallery?.renderCloud(); renderTitle(); } }, () => folderHome() != null);
+/** 顶上那条（一处判定）：文件夹权限掉了 > 还有旧歌没搬 > 没有家的披露（登录探测落地之前不说，不然有账号的人开局闪一下这句假话；有账号但登录过期 = 歌在网盘上有，归闸门和常驻条说）。 */
+function homeBarNow(): { text: string; buttons: { v: string; label: string }[] } | null {
+  const f = folderHome();
+  if (f && !folderOnline()) return { text: `文件夹「${f.label}」的权限掉了：改动先存在这台设备上，歌一首没丢`, buttons: [{ v: "regrant", label: "重新授权" }] };
+  if (f && legacyLeft > 0) return { text: `这个浏览器里还有 ${legacyLeft} 首旧歌，没搬进「${f.label}」`, buttons: [{ v: "move", label: "搬进来" }, { v: "export-legacy", label: "全部导出" }] };
+  if (!f && currentPolicy().cloud && authSettled && !authUnknown && !cloudAccountKnown() && !isSignedIn()) return { text: "这些歌只在这台设备的浏览器里，没有备份", buttons: [...(canPickFolder() ? [{ v: "move", label: "搬进一个文件夹" }] : []), { v: "export-all", label: "全部导出" }, { v: "connect", label: "连接网盘" }] };
+  return null;
+}
+function homeAction(v: string): void {
+  if (v === "regrant") void regrantFolder();
+  else if (v === "export-all") void exportAllSongs();
+  else if (v === "export-legacy") void exportAllSongs({ legacy: true });
+  else if (v === "connect") void signInFlow();
+  else if (v === "move") {
+    if (folderHome()) void moveSongsFlow(folderHome()!);
+    else void pickFolderHome().then((e) => (e ? moveSongsFlow(e) : undefined)).catch((e) => reportError(e, "warning"));   // 选夹必须在这一下点击的同步栈里起跳
+  }
+}
+/** 文件夹按钮（家是文件夹时顶替云按钮）。 */
+async function openHomeMenu(): Promise<void> {
+  const f = folderHome(); if (!f) return;
+  const lost = !folderOnline();
+  const v = await openChoiceSheet<"regrant" | "refresh" | "leave">(`歌库在文件夹「${f.label}」`,
+    `歌就是这个文件夹里的 .mxl，资源管理器里也看得到；回收站 / 备份箱是里面的 .trash / .backup。${lost ? "\n现在权限掉了：改动先存在这台设备上。" : ""}`,
+    [...(lost ? [{ label: "重新授权", value: "regrant" as const, primary: true }] : [{ label: "刷新", value: "refresh" as const }]), { label: "不用这个文件夹了…", value: "leave" as const, hint: "夹里的歌一首不动；之后可以再选一个家" }]);
+  if (v === "regrant") await regrantFolder();
+  else if (v === "refresh") { await checkFolderPermission(); gallery?.refresh(); }
+  else if (v === "leave") await signOutFlow();
+}
+// ── 搬家（library-needs-a-home §4 第 3 步；铁律在 move-songs.ts 头注释）──
+const KV_MOVE_ASKED = "moveAsked", KV_LEGACY_RETIRED = "legacyRetired";
+/** 旧库里还剩几首要搬（顶上那条用；算过一次记着，搬完更新）。 */
+let legacyLeft = 0;
+/** 一个夹的第一帧（= 本地帧；没登录就只有它）。 */
+const firstFrame = (store: Store, folder: string) => new Promise<{ items: { identifier: string; syncState?: string }[]; folders: string[] }>((resolve, reject) => {
+  let done = false, off: (() => void) | null = null;
+  off = store.files.watchFolder(folder, (snap) => { if (done) return; done = true; off?.(); resolve(snap as never); }, { onError: (e) => { if (!done) { done = true; off?.(); reject(e); } } });
+  if (done) off();   // 帧在 watchFolder 返回前就同步来了
+});
+async function songsToMoveIn(store: Store): Promise<SongToMove[]> {
+  const out: SongToMove[] = [], q = [""];
+  while (q.length) {
+    const f = await firstFrame(store, q.shift()!);
+    for (const it of f.items) { const kind = moveKindOf(it.syncState); if (kind) out.push({ identifier: it.identifier, kind }); }
+    q.push(...f.folders);
+  }
+  return out;
+}
+/** 只在浏览器里的旧歌。网盘是家 = 同一个库，不用搬；文件夹是家 = 另开一个只读本机的旧库实例看；旧库现在就挂着（没有家）= 看它自己。 */
+async function legacySongs(): Promise<SongToMove[]> {
+  if (hasCloudHome()) return [];
+  if (hasStore() && !folderHome()) return authSettled && !authUnknown ? songsToMoveIn(requireStore()) : [];   // 还不知道有没有账号 = 不说「只在浏览器里」（有账号的人会被假话吓到）
+  if (!folderHome() || deviceKvGet(KV_LEGACY_RETIRED) === "1" || !(await legacyLibraryExists())) return [];
+  const legacy = openLegacyLibrary();
+  try { return await songsToMoveIn(legacy); } finally { await legacy.dispose(); }
+}
+/** 这一页是开局就挂着旧库起来的（storeAttached / 登录回跳）。只有这条路要在登录探测落地后收拾。 */
+let bootedOnStore = false;
+/** 登录探测落地、没有账号：没歌 = 不留一个没有家的空库（「没有家不建 store」）；有歌 = 披露条 + 问一次。 */
+async function settleNoHome(): Promise<void> {
+  if (!bootedOnStore || hasHome() || !hasStore()) return;
+  const songs = await legacySongs().catch((e) => { reportError(e, "log"); return null; });
+  if (!songs) return;
+  legacyLeft = songs.length;
+  gallery?.renderCloud();
+  if (songs.length) { void offerMove(); return; }
+  if (H.home.kind === "gallery" || H.pending()) return;   // 手里正有一首要进这个库（旧路径）：不拆
+  gallery?.close();
+  await detachStore();
+  gallery?.noteStoreChanged();
+  renderTitle();
+  diagNote("home", "no account, no songs → no library");
+}
+/** 开机 / 进歌库时问一次（一台设备一次；之后走顶上那条）。 */
+let moveOffering = false;
+async function offerMove(): Promise<void> {
+  if (moveOffering || deviceKvGet(KV_MOVE_ASKED) === "1" && legacyLeft === 0 && !folderHome()) return;
+  moveOffering = true;
+  try {
+    const songs = await legacySongs();
+    legacyLeft = songs.length;
+    gallery?.renderCloud();
+    if (!songs.length) { if (folderHome()) deviceKvSet(KV_LEGACY_RETIRED, "1"); return; }
+    if (deviceKvGet(KV_MOVE_ASKED) === "1" || isSheetOpen() || isGateOpen()) return;
+    deviceKvSet(KV_MOVE_ASKED, "1");
+    const f = folderHome(), n = songs.length;
+    let picking: Promise<GalleryEntry | null> | null = null;
+    const v = await openChoiceSheet<"move" | "cloud" | "export" | "later">(`这个浏览器里有 ${n} 首歌`,
+      `它们只在这个浏览器里，清缓存就没了。${f ? `搬进「${f.label}」：逐首核对字节，一模一样才从浏览器移走。` : "选一个家搬过去；或者先全部导出成文件。"}稍后也行：歌库顶上那条还在。`,
+      [f ? { label: `搬进「${f.label}」`, value: "move", primary: true } : { label: "选一个文件夹，搬进去", value: "move", primary: true, off: !canPickFolder(), onPick: () => { picking = pickFolderHome(); } },
+        ...(!f && currentPolicy().cloud ? [{ label: "连接网盘", value: "cloud" as const, onPick: redirectToSignIn }] : []),
+        { label: "全部导出", value: "export" }, { label: "稍后", value: "later" }]);
+    if (v === "move") {
+      const entry = f ?? (picking ? await (picking as Promise<GalleryEntry | null>) : null);
+      if (entry) await moveSongsFlow(entry);
+    } else if (v === "export") await exportAllSongs({ legacy: !!f });
+  } catch (e) { reportError(e, "warning"); }
+  finally { moveOffering = false; }
+}
+/** 搬。这一步 Fable 看 diff：顺序和「两类歌」都在 move-songs.ts，这里只接线：读旧库 / 写新家 / **从夹里真的读回来** / 移进旧库回收站。 */
+async function moveSongsFlow(entry: GalleryEntry): Promise<void> {
+  if (!folderHome() && !(await useFolderHome(entry))) return;
+  if (!folderOnline() && !(await regrantFolder())) return;
+  const legacy = openLegacyLibrary();
+  let result: Awaited<ReturnType<typeof moveSongs>>;
+  try {
+    const songs = await songsToMoveIn(legacy);
+    result = await withBusy(`正在把歌搬进「${entry.label}」…`, () => moveSongs(songs, {
+      read: async (id) => { const b = await legacy.zip(id, { mode: "existing" }).open(); return b ? new Uint8Array(await b.arrayBuffer()) : null; },
+      readBack: (id) => readFromFolder(entry, id),
+      write: async (id, bytes) => { const r = await requireStore().zip(id, { mode: "new" }).save(bytes, { tryPush: true }); if (r?.pushed !== true) throw new Error("没写进文件夹"); },
+      remove: async (id) => { const t = await legacy.zip(id, { mode: "existing" }).trash(); if (t.status !== "trashed") throw new Error(`旧库没移走（${t.status}）`); },
+      altName: (id) => withStemTail(id, defaultStem().slice(-5), identifiers),   // defaultStem = yyyymmdd-hex4：取「-hex4」
+      progress: (done, total) => setBusyText(`正在搬歌 ${done} / ${total}…`),
+    }));
+  } catch (e) { reportError(e); showError(`搬家没成：${(e as Error)?.message ?? e}。浏览器里的歌一首没动。`); return; }
+  finally { await legacy.dispose(); }
+  const finished = moveFinished(result);
+  legacyLeft = finished ? 0 : result.failed.length + result.stuck.length;
+  if (finished) deviceKvSet(KV_LEGACY_RETIRED, "1");   // 旧库退役：不再问、不再挂条；移走的在旧库的回收站里（还原出厂才清），连着网盘的还在原处
+  diagNote("home", `move: moved=${result.moved.length} copied=${result.copied.length} failed=${result.failed.length} stuck=${result.stuck.length}`);
+  const said = moveSay(result, entry.label, stemOfId);
+  if (said.bad) showError(said.text); else info(said.text);
+  gallery?.refresh(); gallery?.renderCloud();
 }
 // 歌库画灰的两种情形（家族规则书 §1 第 1 / 6 / 12 条；入口露着、点了说为什么，不白屏、不假装能用）。2026-11-03
 //   ① 这个部署方式没有歌库（itch / 备用版：歌没有浏览器外的家；policy.library，Fable 裁定 A2 ④）→ 说「歌库在官网」+「去官网」；
 //   ② 存储开局就不可用（Safari 双击打开）= 歌库存不住 → 说一句为什么。
-const libOff: "site" | "storage" | null = !currentPolicy().library ? "site" : availability() === "unavailable" ? "storage" : null;
-if (libOff) { $("libBtn").classList.add("is-off"); $("libBtn").title = libOff === "site" ? SITE_TEXT.libSiteTitle : SITE_TEXT.libOffTitle; }
-$("libBtn").addEventListener("click", () => { if (libOff === "site") { showLibraryOff(); return; } if (libOff) { showError(SITE_TEXT.libOffTitle); return; } void openGallery(); });
+//   ③ 备用版的家只能是文件夹，这个浏览器又选不了（工单 H3）→ 说一句为什么。
+const libOff: "site" | "storage" | "nofolder" | null = !currentPolicy().library ? "site" : availability() === "unavailable" ? "storage" : !currentPolicy().cloud && !canPickFolder() ? "nofolder" : null;
+if (libOff) { $("libBtn").classList.add("is-off"); $("libBtn").title = libOff === "site" ? SITE_TEXT.libSiteTitle : libOff === "nofolder" ? SITE_TEXT.libNoFolderTitle : SITE_TEXT.libOffTitle; }
+$("libBtn").addEventListener("click", () => { if (libOff === "site") { showLibraryOff(); return; } if (libOff) { showError(libOff === "nofolder" ? SITE_TEXT.libNoFolderTitle : SITE_TEXT.libOffTitle); return; } void openGallery(); });
 async function openCloudMenu(): Promise<void> {
   const signed = isSignedIn();
   let who = ""; try { const a = auth.getActiveAccount() as { username?: string; name?: string } | null; who = a?.name || a?.username || ""; } catch { /* 没登录 */ }
@@ -2974,21 +3167,15 @@ async function openCloudMenu(): Promise<void> {
   else if (v === "reconnect") void gate.reconnect();
 }
 /** 歌库「全部导出」（家族 library-needs-a-home §4 第 1 步）：整个歌库打一个 zip，文件夹结构跟着走。.mxl 本身就是压缩包，这层不再压。 */
-async function exportAllSongs(): Promise<void> {
+async function exportAllSongs(o: { legacy?: boolean } = {}): Promise<void> {
+  const legacy = o.legacy ? openLegacyLibrary() : null;   // 家是文件夹时导出的是还留在浏览器里的旧歌
   try {
-    const store = requireStore();
+    const store = legacy ?? requireStore();
     const now = new Date(), p2 = (n: number) => String(n).padStart(2, "0");
     const name = `MoonSinger-歌库-${now.getFullYear()}${p2(now.getMonth() + 1)}${p2(now.getDate())}-${p2(now.getHours())}${p2(now.getMinutes())}.zip`;
     const r = await withBusy("正在打包歌库…", () => exportAll({
-      listFolder: (folder) => new Promise((resolve, reject) => {
-        let done = false, off: (() => void) | null = null;
-        off = store.files.watchFolder(folder, (snap) => {   // 第一帧 = 本地帧（没登录就只有它）；这台没字节的不收（不是「只在浏览器里」的）
-          if (done) return; done = true; off?.();
-          resolve({ identifiers: snap.items.filter((i) => isCached(i.syncState)).map((i) => i.identifier), folders: snap.folders });
-        }, { onError: (e) => { if (!done) { done = true; off?.(); reject(e); } } });
-        if (done) off();   // 帧在 watchFolder 返回前就同步来了
-      }),
-      bytes: async (id) => { if (H.identifier() === id) await es.flushLocal(); return store.zip(id, { mode: "existing" }).open(); },
+      listFolder: async (folder) => { const f = await firstFrame(store, folder); return { identifiers: f.items.filter((i) => isCached(i.syncState as never)).map((i) => i.identifier), folders: f.folders }; },   // 第一帧 = 本地帧（没登录就只有它）；这台没字节的不收（不是「只在浏览器里」的）
+      bytes: async (id) => { if (!legacy && H.identifier() === id) await es.flushLocal(); return store.zip(id, { mode: "existing" }).open(); },
       pack: async (entries) => new Blob([zipSync(Object.fromEntries(entries.map((e) => [e.path, [e.data, { level: 0 }]])) as never) as Uint8Array<ArrayBuffer>], { type: "application/zip" }),
     }));
     diagNote("gallery", `export-all count=${r.count} failed=${r.failed.length}`);
@@ -2997,16 +3184,17 @@ async function exportAllSongs(): Promise<void> {
     else if (said.bad) showError(said.text); else info(said.text);
     if (r.zip && said.bad) showError(said.text);
   } catch (e) { reportError(e); showError(`导出没成：${(e as Error)?.message ?? e}`); }
+  finally { await legacy?.dispose(); }
 }
 /** 退出登录 = 脏门 + 备份 + 拆库 + 退出（同 WeebPaint disconnectFlow：先绿灯门卸库，后 signOut；user 2026-10-08「4 和weebpaint对齐」）：
  *  还有没上云的 → 问：「先推上去 / 推不上的逐首下载备份」（推完重扫再问，数字会变小）或「照样退出」或算了；
  *  然后放掉 store（这台设备上的歌都还在 IDB 里——再进歌库就接上）、退出微软账号、回到无地的空谱。 */
 async function signOutFlow(): Promise<void> {
-  const store = requireStore();
+  const store = requireStore(), f = folderHome();
   for (;;) {
     let n = 0; try { n = await store.files.dirty.count(); } catch (e) { reportError(e, "warning"); }
     if (n === 0) break;
-    const v = await openChoiceSheet<"backup" | "force">(`还有 ${n} 首没上云`, "退出后这些改动只在这台设备上。可以先推上去（推不上去的逐首下载备份），或者照样退出。",
+    const v = await openChoiceSheet<"backup" | "force">(f ? `还有 ${n} 首没写进文件夹` : `还有 ${n} 首没上云`, "退出后这些改动只在这台设备上。可以先推上去（推不上去的逐首下载备份），或者照样退出。",
       [{ label: "先推上去 / 下载备份", value: "backup", primary: true }, { label: "照样退出", value: "force", danger: true }]);
     if (v == null) return;
     if (v === "force") break;
@@ -3015,9 +3203,11 @@ async function signOutFlow(): Promise<void> {
   gallery?.close();
   H.release();
   try { await detachStore(); } catch (e) { reportError(e, "warning"); }
-  try { await auth.signOut(); } catch (e) { reportError(e); }
+  gallery?.noteStoreChanged();
+  if (f) await clearFolderHome().catch((e) => reportError(e, "log"));
+  else { try { await auth.signOut(); } catch (e) { reportError(e); } }
   loadDoc(initState().song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: emptyExtras() });
-  renderTitle(); info("退出了：歌都还在这台设备上，再进歌库就能接着用");
+  renderTitle(); info(f ? `不用「${f.label}」了：夹里的歌一首没动，再进歌库可以选家` : "退出了：歌都还在这台设备上，再连上网盘就能接着用");
 }
 /** 下载备份：先 pushAll 尽力推（在线时最好的备份就是云）；推不上去的（failed = 错误报告面）逐首下载 .mxl。 */
 async function backupDirty(): Promise<void> {
@@ -3081,7 +3271,7 @@ function afterSignIn(): Promise<void> {
     //   它说「还没传上去」对「传过、后来改了没推」只说对了一半，批量推完失败只剩一条报错、没有动作。现在：有没同步好的 → 问一句「去处理吗」→ 开歌库进「要处理的」视图
     //   （gallery 0.8.8：顶部横幅 + 每首一粒可见的「处理…」，点了当场弹库的三选一面）。不再自己批量推：每一首都由人在面里选。
     //   手里这首脏的照旧走它自己的保存节律（换歌 / 退出 / 按「存」/ 进歌库 consent 时刻推）。store 2.2.1 起谱系丢了的脏歌推前会先问云端，没人动就直接推成。
-    let n = 0; try { n = await requireStore().files.dirty.count(); } catch (e) { reportError(e, "log"); }
+    let n = 0; if (!folderHome()) { try { n = await requireStore().files.dirty.count(); } catch (e) { reportError(e, "log"); } }   // 家是文件夹：这个问句说的是云端（「回来问一次」的新面归工单 H4，全家一个口径）
     let go = false;
     if (n > 0) {
       try { go = (await openChoiceSheet<"go" | "later">(`有 ${n} 首歌没同步好`, "只在这台设备上，或改了还没传上去。到歌库里逐首「处理…」，每一首都会问你用云端的还是这台的；暂不 = 先留在这台设备上。", [{ label: "去处理", value: "go", primary: true }, { label: "暂不", value: "later" }])) === "go"; }
@@ -3121,6 +3311,7 @@ let signInDeclined = false;
 async function smartSaveStore(): Promise<void> {
   const b = $("saveBtn"); b.classList.add("flash"); setTimeout(() => b.classList.remove("flash"), 500);
   void requestStoragePersistence();
+  if (folderHome() && !folderOnline()) await regrantFolder();   // 手势里：点「存」顺手把权限要回来
   const before = syncKind();
   if (before === "clean") { await refreshOpenDoc(); }
   await es.forceSaveAndPush(); renderTitle();
@@ -3131,6 +3322,7 @@ async function smartSaveStore(): Promise<void> {
     if (v === "later") signInDeclined = true;
     return;
   }
+  if (folderHome()) { info(es.isPushPending() ? "存在这台设备上了，还没写进文件夹" : before === "clean" ? "文件夹里也是最新的" : `存好了：写进了「${folderHome()!.label}」`); return; }
   info(es.isPushPending() ? "存在这台设备上了，云端稍后再推" : before === "clean" ? "云端也是最新的" : "存好了，云端也更新了");
 }
 $("saveBtn").addEventListener("click", () => { void fileSave(); });   // smart save = 存 = 回家（三种家的分支在 H.save）
@@ -3153,7 +3345,7 @@ if (window.visualViewport) {
   vv.addEventListener("resize", upd); vv.addEventListener("scroll", upd);
   document.addEventListener("focusin", () => setTimeout(upd, 60)); document.addEventListener("focusout", () => setTimeout(upd, 60));
 }
-window.addEventListener("online", () => { renderTitle(); if (!hasStore()) return; if (gate.netBack()) return; if (isSignedIn()) void afterSignIn(); else retrySilent(); });   // 选了离线 / 闸着：闸门接手（续签 → 补 → 条收掉）
+window.addEventListener("online", () => { renderTitle(); if (!hasStore() || folderHome()) return; if (gate.netBack()) return; if (isSignedIn()) void afterSignIn(); else retrySilent(); });   // 选了离线 / 闸着：闸门接手（续签 → 补 → 条收掉）
 window.addEventListener("offline", () => { renderTitle(); gate.netLost(); });
 // ── 醒来：先核云端、再放行输入（家族周账 F-67 = KudsRocket W-25 的 MoonSinger 那一半；user 2026-10-15「unlock之后不应该是判断立刻推autosave。你
 //   如果一段时间不用会锁屏，然后怀疑云端有更新。想一下这个防的是什么。顺便moonsinger也没做这个功能。就是防止一个挂机了一年的设备误覆盖新版本」）。
@@ -3167,10 +3359,11 @@ document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") { hiddenAt ||= Date.now(); return; }
   const away = hiddenAt ? Date.now() - hiddenAt : 0; hiddenAt = 0;
   if (!hasStore()) return;
+  if (folderHome()) { void checkFolderPermission(); return; }
   if (!hasCloudHome()) { retrySilent(); return; }
   void gate.wake(lockOnWake(away));
 });
-window.addEventListener("pageshow", (e: PageTransitionEvent) => { if (e.persisted) { hiddenAt = 0; void gate.wake(lockOnWake(WAKE_CHECK_AFTER_MS)); } });   // 从往返缓存恢复 = 醒来（设计稿 §2）
+window.addEventListener("pageshow", (e: PageTransitionEvent) => { if (e.persisted && !folderHome()) { hiddenAt = 0; void gate.wake(lockOnWake(WAKE_CHECK_AFTER_MS)); } });   // 从往返缓存恢复 = 醒来（设计稿 §2）
 
 // ── 键盘：映射是一张表（src/keyboard/keys.ts）；这里只算「键盘现在归谁」，再照路由的结果做 ─────────────
 /** 谁在最上面归谁：导出面板 > 记号框 > 歌词框 > 谱面（弹 / 改 / 写）。 */
@@ -3389,8 +3582,20 @@ diagNote("boot", `deployment ${deployment()} · storage ${availability()}`);
 { const idle = (cb: () => void) => { const ric = (globalThis as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback; if (ric) ric(cb, { timeout: 10_000 }); else setTimeout(cb, 3000); };
   idle(() => { void dropLegacyCacheDbs().then((gone) => { if (!gone.length) return; diagNote("storage", `dropped legacy cache DBs: ${gone.join(", ")}`); info("念缓存和封面缓存换了新名字，会重新生成一次（歌不受影响）"); }).catch((e) => reportError(e, "log")); }); }
 // 歌库 boot：进过歌库的设备（或带着 OAuth 回跳）开局就建 store（先建再 initAuth），回到上次的地方——上次在歌库里就开歌库，上次开着哪首就开哪首，开不了就进歌库。没进过的 = 无地，照旧。
-if (currentPolicy().library && (storeWasAttached() || (currentPolicy().cloud && /[#&](code|error|state)=/.test(location.hash)))) {
+const bootFolder = currentPolicy().library ? await lastFolderHome().catch((e) => { reportError(e, "warning"); return null; }) : null;
+if (bootFolder) {
+  // 家是文件夹（工单 H3）：只 query 权限、绝不弹框；掉了 = 离线态（本机缓存照看，歌库顶上一颗「重新授权」）
+  setFolderOnline(await folderPermission(bootFolder, { request: false }));
+  ensureAttached({ kind: "folder", entry: bootFolder });
+  diagNote("home", `boot folder "${bootFolder.label}" online=${String(folderOnline())}`);
+  const last = deviceKvGet(KV_LAST_DOC);
+  if (gallery!.wasInGallery() || !last) await gallery!.open();
+  else if (!(await openStoreDoc(last))) await gallery!.open();
+  if (folderOnline()) void afterSignIn();
+  void offerMove();
+} else if (currentPolicy().library && currentPolicy().cloud && (storeWasAttached() || /[#&](code|error|state)=/.test(location.hash))) {
   ensureAttached();
+  bootedOnStore = true;
   const last = deviceKvGet(KV_LAST_DOC);
   if (gallery!.wasInGallery() || !last) await gallery!.open();
   else if (!(await openStoreDoc(last))) await gallery!.open();

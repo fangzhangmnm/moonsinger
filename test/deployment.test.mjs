@@ -1,7 +1,7 @@
 // 部署方式只认一次 + 规则书 §2 表的机械版（家族规则书 `../ai-docs/20261103-three-shapes-rulebook.md` §1 第 9 条 / §2 / §4 第 3、4、13 项）。
 // created 2026-11-03 by Claude Opus 5.5
 //   ① 除 src/deployment.ts 外，源码不许看 location.protocol / window.top / self === top / self !== top / 烤进来的部署标记 / "file:" 字面量；
-//   ② policy 逐格 = §2 表（本 app 用得上的三列；folderGallery / rememberPassword 不进来 = 没有消费者，见 deployment-policy.ts 头注释）；
+//   ② policy 逐格 = §2 表（本 app 用得上的列；rememberPassword 不进来 = 没有消费者，见 deployment-policy.ts 头注释）；
 //   ③ policy 每个键在 deployment-policy.ts 以外至少被一个源码文件读到（`currentPolicy().键` 或 `policy(…).键`）——没人读的开关 = 假开关。
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -44,11 +44,11 @@ describe("部署方式只在 deployment.ts 认（规则书 §1 第 9 条）", ()
 });
 
 describe("deployment-policy = 规则书 §2 表（逐格）", () => {
-  // §2 行：网盘 / 离线壳（SW）/ 「去官网」一句 + 本 app 自己的歌库（2026-11-03 Fable 裁定：itch / 备用版歌没有浏览器外的家 → 画灰）
+  // §2 行：网盘 / 离线壳（SW）/ 「去官网」一句 / 文件夹图库 + 本 app 自己的歌库（A2 ④ Fable 裁定 itch 画灰；H3：备用版有文件夹这个家）
   const TABLE = {
-    site:  { cloud: true,  serviceWorker: true,  siteHint: false, library: true },
-    itch:  { cloud: false, serviceWorker: false, siteHint: true,  library: false },
-    local: { cloud: false, serviceWorker: false, siteHint: true,  library: false },
+    site:  { cloud: true,  serviceWorker: true,  siteHint: false, folderGallery: true,  library: true },
+    itch:  { cloud: false, serviceWorker: false, siteHint: true,  folderGallery: false, library: false },
+    local: { cloud: false, serviceWorker: false, siteHint: true,  folderGallery: true,  library: true },
   };
   for (const d of ["site", "itch", "local"]) {
     it(`${d}：每一格都对、没有多的键`, () => {

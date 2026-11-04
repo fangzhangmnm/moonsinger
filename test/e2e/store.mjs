@@ -1,6 +1,7 @@
 // test/e2e/store.mjs —— 真浏览器 E2E（先 npm run build，再 npm run serve（8710），再 node test/e2e/store.mjs；借 WeebPaint 的 playwright，同 shell-smoke）。created 2026-10-08 by Claude Fable 5.1
 // 歌库 E2E（真浏览器、真 IDB、不登录云）：无地开局 → 点「歌库」attach → 新建 → 写几个音 → 自动存 → 刷新回到同一首 → 改名 → 封面图 → 歌库卡片 → 删「打开中」→ 回来变无地稿。
 import { chromium } from "./pw.mjs";
+import { FAKE_FSA, pickFolderFromEntry } from "./fake-fsa.mjs";   // 2026-11-03 H3：歌库必须有家，「不登录」的家 = 文件夹
 import os from "node:os"; import path from "node:path";
 const OUT = path.join(os.tmpdir(), "moonsinger-e2e"); import { mkdirSync } from "node:fs"; mkdirSync(OUT, { recursive: true });
 import fs from "node:fs"; import zlib from "node:zlib";
@@ -18,7 +19,7 @@ function png(w, h) {
   const raw = Buffer.alloc((w * 3 + 1) * h); for (let y = 0; y < h; y++) { raw[y * (w * 3 + 1)] = 0; for (let x = 0; x < w; x++) { const o = y * (w * 3 + 1) + 1 + x * 3; raw[o] = 200; raw[o + 1] = 40 + x; raw[o + 2] = 60; } }
   return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(raw)), chunk("IEND", Buffer.alloc(0))]);
 }
-const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 760 } });
+const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1100, height: 760 } }); await ctx.addInitScript(FAKE_FSA);
 try {
   const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => { if (m.type() === "error" && !/已经进了回收站/.test(m.text())) errs.push("console: " + m.text()); });
   const title = () => p.textContent("#docTitle");
@@ -28,8 +29,8 @@ try {
   await p.goto(URL0); await p.waitForTimeout(500);
   check(await p.evaluate(() => window.__moonsinger.store() === null), "无地开局：store 没建");
   check(await p.evaluate(() => localStorage.length === 0 || ![...Array(localStorage.length)].some((_, i) => localStorage.key(i).includes("moonsinger."))), "无地开局：没有 store 的 localStorage 键");
-  // 进歌库（attach）
-  await p.click("#libBtn"); await p.waitForTimeout(800);
+  // 进歌库（attach）：没有家 = 先选家（H3）
+  await pickFolderFromEntry(p); await p.waitForTimeout(500);
   check(await p.evaluate(() => window.__moonsinger.store() !== null), "点「歌库」= 建 store");
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "歌库屏开着");
   check(await p.evaluate(() => document.body.dataset.mode === "gallery"), "body[data-mode=gallery]");

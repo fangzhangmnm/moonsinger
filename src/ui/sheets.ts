@@ -117,14 +117,14 @@ export function openInputSheet(title: string, opts: InputOpts = {}): Promise<str
 }
 
 /** onPick：在点击事件里**同步**调（sheet 关掉之前）——登录跳转这种必须站在用户手势里起跳的动作用它（WeebPaint / WXHW 同款）。 */
-export interface Choice<T> { label: string; value: T; primary?: boolean; danger?: boolean; hint?: string; onPick?: () => void }
+export interface Choice<T> { label: string; value: T; primary?: boolean; danger?: boolean; hint?: string; onPick?: () => void; /** 这里用不了：画灰、点不动（说明写在 hint 或正文里，家族规则书 §1 第 6 条）。 */ off?: boolean }
 /** 选一个：value = 点了那个；null = 取消。 */
 export function openChoiceSheet<T>(title: string, message: string, choices: Choice<T>[]): Promise<T | null> {
   assertNotBusy("choice");
   return new Promise((resolve) => {
     const done = (v: T | null) => { m.close(); resolve(v); };
     const m = mount(`<div class="offer-title">${esc(title)}</div>` + (message ? `<div class="offer-msg">${esc(message)}</div>` : "") +
-      `<div class="sheet-choices">${choices.map((c, i) => `<button type="button" class="btn${c.primary ? " primary" : ""}${c.danger ? " danger" : ""}" data-i="${i}" ${c.hint ? `title="${esc(c.hint)}"` : ""}>${esc(c.label)}</button>`).join("")}</div>` +
+      `<div class="sheet-choices">${choices.map((c, i) => `<button type="button" class="btn${c.primary ? " primary" : ""}${c.danger ? " danger" : ""}${c.off ? " is-off" : ""}" data-i="${i}" ${c.off ? "disabled" : ""} ${c.hint ? `title="${esc(c.hint)}"` : ""}>${esc(c.label)}</button>`).join("")}</div>` +
       `<div class="offer-btns"><button type="button" class="btn" data-v="no">算了</button></div>`,
       () => done(null));
     m.box.addEventListener("click", (e) => {
