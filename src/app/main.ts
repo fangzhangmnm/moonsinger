@@ -36,7 +36,7 @@ import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS } from "
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
 import { createPackStore } from "@internal/model-packs";
-import { showNotice, configureFloors } from "@internal/workbench-elements";
+import { showNotice, closeNotice, configureFloors } from "@internal/workbench-elements";
 import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
@@ -75,7 +75,8 @@ import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
-import { isCached, attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, disposeStore, cloudAvailable, hasHome, hasCloudHome, folderHome, folderOnline, setFolderOnline, homeOnline, noteCloudAccount, cloudAccountKnown, forgetLegacyAttach, legacyLibraryExists, openLegacyLibrary, readFromFolder, withStemTail, type Store, type StoreHome } from "../app-store.ts";
+import { isCached, attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, disposeStore, cloudAvailable, hasHome, hasCloudHome, folderHome, folderOnline, setFolderOnline, homeOnline, noteCloudAccount, cloudAccountKnown, forgetLegacyAttach, legacyLibraryExists, openLegacyLibrary, readFromFolder, withStemTail, cloudReachable, type Store, type StoreHome } from "../app-store.ts";
+import { planReturn, neverUploadedIds, type ReturnPlan } from "./cloud-return.ts";
 import { canPickFolder, pickFolderHome, folderPermission, lastFolderHome, touchFolderHome, clearFolderHome, type GalleryEntry } from "../library-home.ts";
 import { moveSongs, moveKindOf, moveFinished, moveSay, type SongToMove } from "./move-songs.ts";
 import { showSiteHint, watchStorageHealth, showLibraryOff, SITE_TEXT, SITE_HOST, FOLDER_TEXT } from "./site-hint.ts";
@@ -1076,7 +1077,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   setMaster: (patch: Record<string, unknown>) => updateExtras(withMaster(D.extras, patch as never), { kind: "studio", label: "总轨" }),
   studioTracks: () => studioTracks(D.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, D.st.song.hum, songLangOf(tokens, D.st.song.hum), map); }, state: () => D.st, cssHash: __CSS_HASH__, extras: () => D.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => ({ ...view.layoutNow(), head: view.head() }) /* head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） */, zoomInfo: () => view.zoomInfo(), dockSide: () => stageEl.dataset.side ?? null, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { home: { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
   setChunk: (v: "phrase" | "sheet" | "whole") => { const role = D.st.song.parts.find((x) => x.id === D.st.at.part)?.role; if (role) updateExtras(withSingChunk(D.extras, role, v, D.st.song.hum), { kind: "lounge", label: `分段唱：${v}` }); },
-  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), wake: async (awayMs: number) => { const lock = lockOnWake(awayMs); if (hasCloudHome()) await gate.wake(lock); return lock; }, pushDirtyAll: () => pushDirtyAll(), gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(D.st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), hasHome: () => hasHome(), folderHome: () => folderHome()?.label ?? null, legacySongs: () => legacySongs(), offerMove: () => offerMove(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => H.identifier(), home: () => H.home.kind, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
+  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), wake: async (awayMs: number) => { const lock = lockOnWake(awayMs); if (hasCloudHome()) await gate.wake(lock); return lock; }, gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(D.st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), hasHome: () => hasHome(), folderHome: () => folderHome()?.label ?? null, legacySongs: () => legacySongs(), offerMove: () => offerMove(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => H.identifier(), home: () => H.home.kind, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 /** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
@@ -2785,7 +2786,7 @@ let coverTouched = false;   // 这次打开里换过封面 → 落盘后让歌�
 const es = createEditorSession({
   // store 0.16.1：zip 种类走 store.zip（有 getPeek）；isZip 由种类表说了算。save 的结果进黑匣子：推没推上、为什么（离线 / 冲突面选了什么）——诊断日志里能看到每一次推。
   store: { file: (name, o) => { const f = requireStore().zip(name, { mode: o.mode }); return { open: () => f.open(), tryMove: (to) => f.tryMove(to), trash: () => f.trash(),
-    save: async (bytes, opts) => { const r = await f.save(bytes, opts); if (opts?.tryPush) diagNote("sync", `push ${name}: ${r.pushed ? "pushed" : "not pushed"}${r.reason ? " " + r.reason : ""}${r.resolution ? " → " + r.resolution : ""}`); return r; } }; } },
+    save: async (bytes, opts0) => { const opts = opts0?.tryPush && !homeOnline() ? { ...opts0, tryPush: false } : opts0;   /* 选了离线 = 一条网都不打：库的 save 只看 tryPush、不看 isOnline（2026-11-04 H4 查出来的，按「存」原来照样走网）；这一笔记成欠一推，回来续传 */ const r = await f.save(bytes, opts); if (opts?.tryPush) diagNote("sync", `push ${name}: ${r.pushed ? "pushed" : "not pushed"}${r.reason ? " " + r.reason : ""}${r.resolution ? " → " + r.resolution : ""}`); return r; } }; } },
   editor: {
     adopt: async (blob) => { const id = pendingOpenId ?? H.identifier(); if (!id) throw new Error("adopt without an identifier"); adoptStoreBytes(id, new Uint8Array(await blob.arrayBuffer())); },
     onChange: () => { /* 内容变化走 changed()（update() + 1 s 心跳）→ es.markDirty() */ },
@@ -2880,7 +2881,10 @@ const gate = createCloudGate({
     // 这一下库没真去问云端（在歌库里 / 没开歌 / 手里有没落盘的改动）：另问一次，不然云端挂了也会放行（库的探针，「不知道」绝不当没有；只读）
     return (await requireStore().collectionPeek("gate-probe")) === "unknown" ? "cloud-error" : "asked";
   },
-  catchUp: () => afterSignIn(),   // 只补排队的、问「去处理」、快进；手里这首照旧等 consent 时刻推（ADR-0016 / 0018）
+  catchUp: () => afterSignIn(),   // 补排队的、快进、回来怎么办（规则书第 15 条：cloud-return.ts）；手里这首照旧等 consent 时刻推（ADR-0016 / 0018）
+  reachable: () => cloudReachable(),   // 离线期间再试：续签成功之后还要问云端一次才算回来（设计稿 §3）
+  afterPass: () => { void offerReturn(); },   // 一路顺利放行：开局罩着时没问成的这里问
+  pageVisible: () => document.visibilityState === "visible",
   signIn: () => signInFlow(),
   note: (line) => diagNote("gate", line),
 });
@@ -3061,14 +3065,14 @@ const firstFrame = (store: Store, folder: string) => new Promise<{ items: { iden
   off = store.files.watchFolder(folder, (snap) => { if (done) return; done = true; off?.(); resolve(snap as never); }, { onError: (e) => { if (!done) { done = true; off?.(); reject(e); } } });
   if (done) off();   // 帧在 watchFolder 返回前就同步来了
 });
-async function songsToMoveIn(store: Store): Promise<SongToMove[]> {
-  const out: SongToMove[] = [], q = [""];
-  while (q.length) {
-    const f = await firstFrame(store, q.shift()!);
-    for (const it of f.items) { const kind = moveKindOf(it.syncState); if (kind) out.push({ identifier: it.identifier, kind }); }
-    q.push(...f.folders);
-  }
+/** 这个库本地帧里所有的歌（走遍文件夹）。 */
+async function localItems(store: Store): Promise<{ identifier: string; syncState?: string }[]> {
+  const out: { identifier: string; syncState?: string }[] = [], q = [""];
+  while (q.length) { const f = await firstFrame(store, q.shift()!); out.push(...f.items); q.push(...f.folders); }
   return out;
+}
+async function songsToMoveIn(store: Store): Promise<SongToMove[]> {
+  return (await localItems(store)).flatMap((it) => { const kind = moveKindOf(it.syncState); return kind ? [{ identifier: it.identifier, kind }] : []; });
 }
 /** 只在浏览器里的旧歌。网盘是家 = 同一个库，不用搬；文件夹是家 = 另开一个只读本机的旧库实例看；旧库现在就挂着（没有家）= 看它自己。 */
 async function legacySongs(): Promise<SongToMove[]> {
@@ -3267,35 +3271,79 @@ function afterSignIn(): Promise<void> {
   afterSignInInFlight = (async () => {
     diagNote("auth", "afterSignIn");
     try { await requireStore().files.drainOfflineQueue(); } catch (e) { reportError(e, "log"); }   // 排着的离线操作本来就同意过
-    // 2026-10-26 改（家族周账 F-98 / F-88；user 10-26「列表面」「收，救火」；CatsUp 同形）：10-21 的「问一次 → pushDirtyAll」是 / 否框撤了——
-    //   它说「还没传上去」对「传过、后来改了没推」只说对了一半，批量推完失败只剩一条报错、没有动作。现在：有没同步好的 → 问一句「去处理吗」→ 开歌库进「要处理的」视图
-    //   （gallery 0.8.8：顶部横幅 + 每首一粒可见的「处理…」，点了当场弹库的三选一面）。不再自己批量推：每一首都由人在面里选。
-    //   手里这首脏的照旧走它自己的保存节律（换歌 / 退出 / 按「存」/ 进歌库 consent 时刻推）。store 2.2.1 起谱系丢了的脏歌推前会先问云端，没人动就直接推成。
-    let n = 0; if (!folderHome()) { try { n = await requireStore().files.dirty.count(); } catch (e) { reportError(e, "log"); } }   // 家是文件夹：这个问句说的是云端（「回来问一次」的新面归工单 H4，全家一个口径）
-    let go = false;
-    if (n > 0) {
-      try { go = (await openChoiceSheet<"go" | "later">(`有 ${n} 首歌没同步好`, "只在这台设备上，或改了还没传上去。到歌库里逐首「处理…」，每一首都会问你用云端的还是这台的；暂不 = 先留在这台设备上。", [{ label: "去处理", value: "go", primary: true }, { label: "暂不", value: "later" }])) === "go"; }
-      catch (e) { reportError(e, "log"); go = false; }
-    }
-    diagNote("auth", `afterSignIn: ${n} not in sync → ${go ? "gallery attention view" : "later"}`);
-    if (go) { await openGallery(); gallery?.setAttentionOnly(true); }
+    const ask = await settleReturn();   // (b) 在这里续传
     await refreshOpenDoc();
     gallery?.refresh(); gallery?.renderCloud(); renderTitle();
+    ask?.();   // 最后才问、不等人答：这条路是闸门的「正在同步」，等人 = 条一直亮着（D3 核小黑屋时查出来的同一个坑）
   })().finally(() => { afterSignInInFlight = null; });
   return afterSignInInFlight;
 }
-let pushAllInFlight: Promise<void> | null = null;
-function pushDirtyAll(opts: { verbose?: boolean } = {}): Promise<void> {
-  if (pushAllInFlight) return pushAllInFlight;
-  pushAllInFlight = (async () => {
-    try {
-      const r = await requireStore().files.dirty.pushAll();
-      if (r.pushed || r.failed.length) diagNote("sync", `dirty.pushAll: pushed=${r.pushed} failed=${r.failed.length}${r.failed.length ? " [" + r.failed.join(", ") + "]" : ""}`);
-      if (r.failed.length) showError(`有 ${r.failed.length} 首没推上云：${r.failed.map(stemOfId).join("、")}`);
-      else if (opts.verbose) info(r.pushed ? `推上去了 ${r.pushed} 首` : "没有要推的");
-    } catch (e) { reportError(e, "warning"); }
-  })().finally(() => { pushAllInFlight = null; });
-  return pushAllInFlight;
+// ── 回来（开机登录好 / 网回来）时没传的东西（规则书 §1 第 15 条，2026-11-03 夜改写；工单 H4；分法见 cloud-return.ts，同 WeebPaint）──
+//   (b) 开着那首按过存没传成 → 续传不问，每次回来都看。(a) 从没传过 → 问一次，点了才传。(c) 只是自动保存 → 不传不问，进「要处理」列表。一页只问一次。
+//   MoonSinger 传的时机（按「存」或退出）不变。**pushAll 这条自动路径只有「现在传」一处**（守卫 test/cloud-return.test.mjs）；a、c 同时有时面上两样都说，人点了一起传（Fable 11-03 拍）。
+//   吸取 10-26 的两条（user「弹了一个需要处理然后就什么交互都没了」）：话说真的；传完没传成的带名单、带「去处理」钮。
+let askedReturn = false;
+let returnRun: Promise<(() => void) | null> | null = null;
+function settleReturn(): Promise<(() => void) | null> { return (returnRun ??= settleReturnOnce().finally(() => { returnRun = null; })); }
+function offerReturn(): Promise<void> { return settleReturn().then((ask) => { ask?.(); }); }
+/** 算清楚 + 做 (b)；要问人的留给调用方最后做（回一个闭包）。 */
+async function settleReturnOnce(): Promise<(() => void) | null> {
+  if (!hasStore() || !isSignedIn() || !homeOnline() || gate.locked()) return null;   // 闸门罩着：放行时再看（afterPass）
+  if (askedReturn && !es.isPushOwed()) return null;
+  const store = requireStore();
+  const dirtyNow = await store.files.dirty.count().catch((e) => { reportError(e, "log"); return 0; });
+  if (dirtyNow <= 0) return null;
+  let never: Set<string>;
+  try { never = neverUploadedIds(await localItems(store)); }
+  catch (e) { reportError(e, "log"); return null; }
+  await resumeOwedPush(never);
+  if (askedReturn) return null;
+  const plan = planReturn(await store.files.dirty.count().catch(() => dirtyNow), never.size);
+  diagNote("sync", `back with unsynced: ${JSON.stringify(plan)}`);
+  return plan.kind === "none" ? null : () => { void askReturn(plan); };
+}
+/** (b)：开着这首人按过存、当时没传成、之后没再改 → 续传，不问。从没传过的（(a)）不在这里：它要问。 */
+async function resumeOwedPush(never: ReadonlySet<string>): Promise<void> {
+  const id = H.identifier();
+  if (!id || !es.isPushOwed() || never.has(id)) return;
+  try { await es.flushAndPush(); diagNote("sync", `resumed owed push ${id}: pending=${String(es.isPushPending())}`); }
+  catch (e) { reportError(e, "log"); }
+  gallery?.refresh(); renderTitle();
+}
+const inToHandle = (n: number): string => `${n} 首没传上去，在「要处理」列表里`;
+function showInList(n: number): void {
+  if (gallery?.isOpen()) gallery.setAttentionOnly(true);   // 已经在歌库里：直接切到「要处理的」
+  showNotice({ id: "unsynced", level: "info", text: inToHandle(n), actions: [{ label: "去处理", primary: true, onClick: () => { closeNotice("unsynced"); void openGallery().then(() => gallery?.setAttentionOnly(true)); } }] });
+}
+async function askReturn(plan: Exclude<ReturnPlan, { kind: "none" }>): Promise<void> {
+  if (askedReturn || !hasStore()) return;
+  if (plan.kind === "list") { askedReturn = true; showInList(plan.total); return; }   // 没有从没传过的：不问不推，进列表
+  if (isSheetOpen() || isGateOpen()) { diagNote("sync", "ask later: a sheet is open"); return; }   // 别盖住冲突面；下次回来再问
+  askedReturn = true;
+  const f = folderHome();
+  let go = false;
+  try {
+    go = await openConfirmSheet(
+      plan.others > 0 ? `有 ${plan.neverUploaded} 首只在这台设备，还有 ${plan.others} 首改过没传。现在全传？` : `有 ${plan.neverUploaded} 首只在这台设备，现在${f ? `写进「${f.label}」` : "传上去"}？`,
+      "别的设备改过的不会被盖掉，会留给你选。稍后 = 它们进歌库「要处理」的列表，什么都不传。",
+      { okLabel: "现在传", cancelLabel: "稍后" });
+  } catch (e) { askedReturn = false; reportError(e, "log"); return; }   // 和别的面撞了：这次没问成，下次再问
+  const total = plan.neverUploaded + plan.others;
+  diagNote("sync", `push ask → ${go ? "now" : "later"}`);
+  if (!go) { showInList(total); return; }
+  const store = requireStore();
+  const r = await store.files.dirty.pushAll().catch((e) => { reportError(e, "warning"); return null; });
+  const left = await store.files.dirty.count().catch(() => total);
+  diagNote("sync", `push ask: pushed=${String(r?.pushed ?? "-")} failed=${String(r?.failed.length ?? "-")} left=${left}`);
+  const id = H.identifier();
+  if (r && id && !r.failed.includes(id)) es.noteExternallyPushed();
+  if (left === 0) showNotice({ id: "unsynced", level: "info", text: `${r?.pushed ?? total} 首都传上去了`, autoHideMs: 4000 });
+  else {
+    const named = (r?.failed ?? []).slice(0, 3).map(stemOfId).join("、");
+    if (gallery?.isOpen()) gallery.setAttentionOnly(true);
+    showNotice({ id: "unsynced", level: "warning", text: `传上去 ${r?.pushed ?? 0} 首，还有 ${left} 首没传成${named ? `（${named}${left > 3 ? " …" : ""}）` : ""}：别的设备改过的要你选，网络问题的之后再试。`, actions: [{ label: "去处理", primary: true, onClick: () => { closeNotice("unsynced"); void openGallery().then(() => gallery?.setAttentionOnly(true)); } }] });
+  }
+  gallery?.refresh(); renderTitle();
 }
 /** 选一张图当封面：缩成 ≤ 256²、≤ 70 KB 的 PNG 存进歌（Thumbnails/thumbnail.png，zip 最后一个 entry，歌库尾读）；原图不留。 */
 async function setCover(f: File): Promise<void> {

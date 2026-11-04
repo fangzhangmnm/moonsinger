@@ -28,6 +28,7 @@ function makeGate(over = {}) {
     check: over.check ?? (async () => { calls.check++; return "in-sync"; }),
     catchUp: async () => { calls.catchUp++; },
     signIn: over.signIn ?? (async () => { calls.signIn++; return null; }),
+    reachable: over.reachable, every: over.every, pageVisible: over.pageVisible, afterPass: over.afterPass,
   });
   return { gate, calls, escape: () => onEscape(), press: () => on, setForeign: (v) => { foreign = v; }, setSigned: (v) => { signed = v; } };
 }
@@ -233,6 +234,97 @@ describe("闸门 · 网回来（§2 最后一行）", () => {
     assert(isUserOffline(), "还是离线"); eq(t.calls.catchUp, 0); eq(t.calls.bars.at(-1), "offline");
     await resetOffline();
   });
+  it("§3 离线期间每 60 s 静默再试（假时钟）：到点续签 + 问云端，成功清离线、补推、收条、停表", async () => {
+    let fire = null, stopped = 0, period = 0, renewOk = false;
+    const every = (ms, fn) => { period = ms; fire = fn; return () => { stopped++; }; };
+    const t = makeGate({ every, renew: async () => { t.calls.renew++; if (renewOk) t.setSigned(true); return renewOk; }, reachable: async () => {} });
+    await t.gate.boot();
+    t.press().offline();
+    eq(period, 60000, "一分钟一次"); assert(isUserOffline());
+    const blocked = t.calls.blocked.length;
+    fire(); await tick(); await tick();
+    assert(isUserOffline(), "续签没成：还是离线"); eq(t.calls.blocked.length, blocked, "不弹"); eq(t.calls.bars.at(-1), "offline"); eq(stopped, 0, "接着试");
+    renewOk = true;
+    fire(); await tick(); await tick(); await tick();
+    assert(!isUserOffline(), "成了：清离线"); eq(t.calls.catchUp, 1, "补推"); eq(t.calls.bars.at(-1), "hidden", "收条"); eq(stopped, 1, "停表");
+    await resetOffline();
+  });
+  it("§3 续签成功之后还要问云端：云端不答 = 不清离线、不弹（令牌可能是缓存的）", async () => {
+    let fire = null, up = false, asked = 0;
+    let broken = true;
+    const t = makeGate({ signed: true, check: async () => (broken ? "cloud-error" : "in-sync"), every: (_ms, fn) => { fire = fn; return () => {}; }, reachable: async () => { asked++; if (!up) throw new Error("net"); } });
+    await t.gate.boot();
+    broken = false;
+    t.press().offline();
+    const blocked = t.calls.blocked.length;
+    fire(); await tick(); await tick();
+    eq(asked, 1, "问了"); assert(isUserOffline(), "云端不答：不清"); eq(t.calls.catchUp, 0); eq(t.calls.blocked.length, blocked, "不弹");
+    up = true;
+    fire(); await tick(); await tick(); await tick();
+    eq(asked, 2); assert(!isUserOffline(), "答了：清"); eq(t.calls.catchUp, 1);
+    await resetOffline();
+  });
+  it("§3 云端挂着不答：硬超时后照样不清，不挂住下一次", async () => {
+    let fire = null, hang = true, asked = 0;
+    let broken = true;
+    const t = makeGate({ signed: true, timeoutMs: 15, check: async () => (broken ? "cloud-error" : "in-sync"), every: (_ms, fn) => { fire = fn; return () => {}; }, reachable: () => { asked++; return hang ? new Promise(() => {}) : Promise.resolve(); } });
+    await t.gate.boot();
+    broken = false;
+    t.press().offline();
+    fire(); await tick(40);
+    assert(isUserOffline(), "超时 = 没回来"); eq(asked, 1);
+    hang = false;
+    fire(); await tick(); await tick(); await tick();
+    eq(asked, 2, "下一次照常试"); assert(!isUserOffline());
+    await resetOffline();
+  });
+  it("§3 online 事件那条路同样先问一次再清", async () => {
+    let up = false;
+    let broken = true;
+    const t = makeGate({ signed: true, check: async () => (broken ? "cloud-error" : "in-sync"), every: () => () => {}, reachable: async () => { if (!up) throw new Error("net"); } });
+    await t.gate.boot();
+    broken = false;
+    t.press().offline();
+    eq(t.gate.netBack(), true); await tick(); await tick();
+    assert(isUserOffline(), "online 事件来了但云端不答：不清");
+    up = true;
+    t.gate.netBack(); await tick(); await tick(); await tick();
+    assert(!isUserOffline());
+    await resetOffline();
+  });
+  it("§3 页面藏着不试（回前台那一下会试）；回前台同样先问", async () => {
+    let fire = null, visible = false, asked = 0;
+    let broken = true;
+    const t = makeGate({ signed: true, check: async () => (broken ? "cloud-error" : "in-sync"), every: (_ms, fn) => { fire = fn; return () => {}; }, pageVisible: () => visible, reachable: async () => { asked++; } });
+    await t.gate.boot();
+    broken = false;
+    t.press().offline();
+    fire(); await tick();
+    eq(asked, 0, "藏着不试"); assert(isUserOffline());
+    visible = true;
+    await t.gate.wake(false); await tick(); await tick();
+    eq(asked, 1, "回前台问了"); assert(!isUserOffline());
+    await resetOffline();
+  });
+  it("§3 没进离线不起表；主动登出停表", async () => {
+    let started = 0, stopped = 0;
+    const t = makeGate({ signed: true, every: () => { started++; return () => { stopped++; }; }, reachable: async () => {} });
+    await t.gate.boot();
+    eq(started, 0, "一路顺利不起表");
+
+    const u = makeGate({ renew: async () => false, every: () => { started++; return () => { stopped++; }; } });
+    await u.gate.boot();
+    u.press().offline();
+    eq(started, 1);
+    u.gate.authChanged(false, "signOut"); await tick();
+    eq(stopped, 1, "登出停表"); assert(!isUserOffline());
+  });
+  it("一路顺利放行：走 afterPass（开局罩着时没问成的「回来问一次」在这里问）；闸过后走 catchUp", async () => {
+    let passed = 0;
+    const t = makeGate({ signed: true, afterPass: () => { passed++; } });
+    await t.gate.boot();
+    eq(passed, 1); eq(t.calls.catchUp, 0);
+  });
   it("主动登出：闸、条、离线都收掉", async () => {
     const t = makeGate({ renew: async () => false });
     await t.gate.boot();
@@ -254,7 +346,7 @@ describe("闸门 · 结构守卫（§8）", () => {
 
   it("§8① 每一趟等云端都和硬超时 + 逃生钮赛跑；开局不 await 云端", () => {
     assert(/Promise\.race\(\[work, timedOut, esc\.then/.test(gateSrc), "run() 的 race");
-    assert(/Promise\.race\(\[renewOnce\("reconnect"\), timedOut\]\)/.test(gateSrc) && /Promise\.race\(\[d\.check\(\), timedOut\]\)/.test(gateSrc), "reconnect 的 race");
+    assert(/Promise\.race\(\[renewOnce\("reconnect"\), timedOut\]\)/.test(gateSrc) && /Promise\.race\(\[d\.check\(\), new Promise<"timeout">/.test(gateSrc) && /Promise\.race\(\[d\.reachable\(\)\.then\(\(\) => true, \(\) => false\), timeout\]\)/.test(gateSrc), "reconnect 的 race");
     assert(/void gate\.boot\(\);/.test(app), "开机走闸门，不等它");
     assert(!/await\s+gate\.boot\(/.test(app), "开局不 await 闸门");
     assert(/void gate\.wake\(lockOnWake\(away\)\);/.test(app), "醒来不 await 闸门");

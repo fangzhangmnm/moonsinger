@@ -255,6 +255,13 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **部署**：itch = 文件模式（入口灰 +「去官网」）；备用版 = 文件夹是它的家（网盘那一个灰着）；备用版的浏览器选不了夹 = 入口灰 + 说为什么。
 - 测试：`test/move-songs.test.mjs`（10）、`test/library-home.test.mjs`、E2E `test/e2e/folder-home.mjs`（假 FSA = OPFS 子目录，`test/e2e/fake-fsa.mjs`；存量 store / final 也走真入口）、`tools/local-smoke.mjs`、`tools/itch-fixture.mjs`。**真机零**：真选夹对话框、双击形态下选夹（无头 file: 不给 OPFS）、再授权的系统提示。
 
+## 回来时没传的东西分三种 + 离线期间静默再试（v0.14.18，2026-11-04，Claude Opus 5.5；家族工单 H4；规则书 §1 第 15 条、闸门设计稿 §3）
+
+- **传的时机不变**（按「存」或退出；自动保存只落本机）。回来（开机登录好 / 网回来 / 文件夹再授权）时：**(a) 从没传过**（列举 syncState = float；`local-only` 不算）= 问一次「有 N 首只在这台设备，现在传上去？」，「现在传 / 稍后」，稍后 = 进「要处理」列表、什么都不传；**(b) 传过、按过存没传成**（`es.isPushOwed()`，同 WeebPaint：之后再改就不算）= 自动续传不问，只有开着那首知道；**(c) 传过、只是自动保存** = 不传不问，一条「N 首没传上去，在要处理列表里」+「去处理」。a、c 同时有 = 面上两样都说，人点了一起传（Fable 11-03 拍）。一页只问一次。纯函数 `src/app/cloud-return.ts`；接线 `main.ts settleReturn / askReturn`。
+- **`dirty.pushAll` 全仓两处**（守卫 `test/cloud-return.test.mjs`）：这张面点了「现在传」、退出时人点的「下载备份」。跟上网盘的路最后才问、不等人答。
+- **选了离线按「存」= 不走网**（`es` 的 store 接缝里 `tryPush` 看 `homeOnline()`：库的 save 只看 tryPush、不看 isOnline，H4 查出来的漏洞），这一笔记成欠一推，回来续传。
+- **闸门**：`userOffline` 期间每 60 s + 回前台静默再试（`cloud-gate.ts startOfflineRetry`，页面藏着不试）；续签成功之后还要**问云端一次**（`cloudReachable` = provider.getItemByPath，不经 store，硬超时 8 s），云端不答 = 不清离线、不弹；online 事件那条路同样先问。一路顺利放行走 `afterPass`（开局罩着时没问成的在这里问）。假时钟单测在 `test/cloud-gate.test.mjs`，e2e `gate.mjs`「H4 (a) / (b)」「§3」。
+
 ## 歌库 = @internal/store + @internal/gallery + OneDrive（v0.6.0，2026-10-08，Claude Fable 5.1；READ FIRST before touching storage）
 
 user 2026-10-08「真的需要做store了…要不要硬着头皮进store」「身份走库的……反正严格按照库的护栏干」「冲突面照家规 必须做的非常严格…不要发生没有接线的情况」。起手读 `ai-docs/20261008-store-gallery-wiring-handoff.md`（接了什么、节律、两家对比里要 user 拍的 12 条、还没验的）。家规 `../CLAUDE.md`「云同步 store 库」+ skill `pwa-cloud-store` 全适用：**只准走 createStore()，app 层零 localStorage / IDB / MSAL / fetch 云端**。

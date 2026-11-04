@@ -153,9 +153,9 @@ scenario("③ 续签失败：闸 + 两个钮；离线继续能写、条显示 N�
   check(!v.up && v.phase === "open", "离线且仍没登录：回前台不再弹闸", JSON.stringify(v));
   await p.patchAuth({ renew: "ok" });
   await p.evaluate(() => window.dispatchEvent(new Event("online")));
-  await p.waitForSelector(".offer button:has-text('暂不')", { timeout: 8000 });   // 有没同步好的 → 问「去处理」（手里这首不替人推，ADR-0016 / 0018）
-  check(/首歌没同步好/.test(await p.evaluate(() => document.querySelector(".offer:not(.gate-sheet) .offer-title")?.textContent ?? "")), "回线续签成功：问一句去不去处理（不替人推）");
-  await p.click(".offer button:has-text('暂不')");
+  await p.waitForSelector('[data-notice-id="unsynced"]', { timeout: 8000 });   // (c) 传过、只是自动保存：不传不问，进列表（规则书第 15 条；手里这首不替人推，ADR-0016 / 0018）
+  check(/要处理/.test(await p.evaluate(() => document.querySelector('[data-notice-id="unsynced"]')?.textContent ?? "")), "回线续签成功：不问不推，说一声在「要处理」列表里");
+  check(!(await p.evaluate(() => [...document.querySelectorAll(".offer:not(.gate-sheet)")].some((e) => !e.hidden))), "没有模态的面");
   await p.waitForFunction(() => !document.querySelector('[data-notice-id="offline-bar"]'), null, { timeout: 8000 });
   v = await p.view();
   check(v.bar === null && v.online === true, "条收掉、回到在线", JSON.stringify(v));
@@ -423,7 +423,6 @@ scenario("H2：冲突面开着 5 s 到点不刷；选了 / 取消之后才刷", 
 
   // ③ 选「云端覆盖本地」= 拉完才刷，刷完是云端那一版；本机那版进备份箱
   await p.waitPhase("open");
-  await p.click(".offer:not(.gate-sheet) button:has-text('暂不')", { timeout: 5000 });   // 留着脏 = 登录后照常问一句「有 N 首没同步好」
   await p.waitForTimeout(300);
   await typeNote(p, ["3"]); await p.waitForTimeout(150);
   await askReload();
@@ -436,6 +435,85 @@ scenario("H2：冲突面开着 5 s 到点不刷；选了 / 取消之后才刷", 
   check((await p.evaluate(() => window.__moonsinger.store().files.listBackup().then((l) => l.length))) >= 1, "本机那一版进了备份箱");
   check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
   await other.close2(); await p.close2();
+});
+
+scenario("H4 (a)：从没传过的 = 问一次，稍后进列表、现在传才传；一页只问一次", async (w) => {
+  const p = await w.device();
+  await p.setAuth({ renew: "ok" });
+  await p.evaluate(() => localStorage.setItem("moonsinger-5b1e7c0a92d34f6e:moveAsked", "1"));   // 这里测的是「回来问一次」，不是搬家那张面（那张归 folder-home.mjs）
+  await p.reopen();
+  await p.evaluate(() => window.__moonsinger.attach()); await p.waitForTimeout(200);
+  await p.evaluate(() => window.__moonsinger.newStoreSong()); await p.waitForTimeout(300);
+  await typeNote(p); await p.waitForTimeout(200);
+  await p.evaluate(() => window.__moonsinger.es().flushLocal());
+  const id = await p.evaluate(() => window.__moonsinger.identifier());
+  const inCloud = async () => (await w.cloud.list("")).some((x) => x.name === id);
+  const sheet = () => p.evaluate(() => { const o = [...document.querySelectorAll(".offer:not(.gate-sheet)")].find((e) => !e.hidden); return o ? o.textContent : null; });
+  const signIn = () => p.evaluate(() => { window.__moonsingerCloudSignedIn = true; return window.__moonsinger.afterSignIn(); });
+  await signIn(); await p.waitForTimeout(300);
+  const t = await sheet();
+  check(!!t && t.includes("有 1 首只在这台设备") && t.includes("现在传") && t.includes("稍后"), "问一次：两个钮", String(t));
+  check(!!t && t.includes("不会被盖掉"), "说了撞上别的设备不覆盖", String(t));
+  check(!(await inCloud()), "没点之前：没传");
+  await p.click(".offer:not(.gate-sheet) button:has-text('稍后')"); await p.waitForTimeout(300);
+  check(!(await inCloud()), "稍后：什么都不传");
+  check(/要处理/.test(await p.evaluate(() => document.querySelector('[data-notice-id="unsynced"]')?.textContent ?? "")), "稍后 = 进列表，有一条说明");
+  await signIn(); await p.waitForTimeout(300);
+  check(!(await sheet()), "一页只问一次");
+  await p.reopen(); await p.waitForTimeout(500);
+  await signIn(); await p.waitForTimeout(300);
+  check(((await sheet()) ?? "").includes("现在传"), "下次打开再问");
+  await p.click(".offer:not(.gate-sheet) button:has-text('现在传')"); await p.waitForTimeout(800);
+  check(await inCloud(), "现在传：传上去了");
+  check(/都传上去了/.test(await p.evaluate(() => document.querySelector('[data-notice-id="unsynced"]')?.textContent ?? "")), "说了传上去了");
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 0, "没有脏");
+  check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
+  await p.close2();
+});
+
+scenario("H4 (b)：传过、按过存没传成 = 回来自动续传，不问；(c) 自动保存的不跟着传", async (w) => {
+  const { p, id } = await seed(w, { account: true, signedIn: false, renew: "interaction" });
+  await p.waitPhase("blocked");
+  await p.clickGate("离线继续"); await p.waitForTimeout(300);
+  const cloudHex = async () => { const it = (await w.cloud.list("")).find((x) => x.name === id); return Buffer.from(await (await w.cloud.download(it.ref)).arrayBuffer()).toString("hex"); };
+  const before = await cloudHex();
+  await typeNote(p, ["5"]); await p.waitForTimeout(150);
+  await p.click("#saveBtn"); await p.waitForTimeout(400);   // 按「存」：离线，没传成
+  check(await p.evaluate(() => window.__moonsinger.es().isPushOwed()), "按过存没传成 = 欠一推（前提）");
+  check((await cloudHex()) === before, "选了离线按「存」：一条网都不打（这条原来是漏的）");
+  await p.patchAuth({ renew: "ok" });
+  await p.evaluate(() => window.dispatchEvent(new Event("online")));
+  await p.waitForFunction(() => !window.__moonsinger.es().isPushOwed(), null, { timeout: 8000 });
+  await p.waitForTimeout(300);
+  check((await cloudHex()) !== before, "回来：自动续传了");
+  check(!(await p.evaluate(() => [...document.querySelectorAll(".offer:not(.gate-sheet)")].some((e) => !e.hidden))), "没问");
+  check(!(await p.$('[data-notice-id="unsynced"]')), "也没有「在列表里」那条（不欠了）");
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 0, "没有脏");
+  check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
+  await p.close2();
+});
+
+scenario("闸门 §3：续签成了、云端不答 = 不清离线、不弹；云端答了才回来", async (w) => {
+  const { p } = await seed(w, { account: true, signedIn: false, renew: "interaction" });
+  await p.waitPhase("blocked");
+  await p.clickGate("离线继续"); await p.waitForTimeout(300);
+  await p.patchAuth({ renew: "ok" });
+  let release; w.hold = new Promise((r) => { release = r; });
+  const t0 = Date.now();
+  await p.evaluate(() => window.__moonsinger.gate.reconnect());
+  const dt = Date.now() - t0;
+  let v = await p.view();
+  console.log(`  云端不答：${dt} ms 后放弃`);
+  check(dt >= 7500 && dt < 12000, "硬超时 8 s 左右", String(dt));
+  check(v.online === false && !!v.bar, "还是离线，条还在", JSON.stringify(v));
+  check(!v.up, "不弹闸", JSON.stringify(v));
+  release(); w.hold = null;
+  await p.waitForTimeout(200);
+  await p.evaluate(() => window.__moonsinger.gate.reconnect()); await p.waitForTimeout(500);
+  v = await p.view();
+  check(v.online === true && v.bar === null, "云端答了：回来了", JSON.stringify(v));
+  check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
+  await p.close2();
 });
 
 const only = process.argv[2] ?? "";

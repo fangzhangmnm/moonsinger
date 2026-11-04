@@ -26,6 +26,8 @@ try {
   /** 等自动落盘：「•」消失为止（editor-session 每 2 s 一跳；原来睡 3.5 s——并行跑时它只是下限，改成等到为止更稳也更快；2026-10-14）。 */
   const saved = async () => { for (let i = 0; i < 80 && /•/.test((await title()) ?? ""); i++) await p.waitForTimeout(100); };
   const tokens = () => p.evaluate(() => JSON.stringify(window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.pitch)));
+  /** 2026-11-04 H4（规则书第 15 条）：从没写进文件夹的歌，每次打开问一次「现在传 / 稍后」；这里测的不是这张面，答稍后。 */
+  const later = async () => { const b = await p.waitForSelector(".offer:not(.gate-sheet) button:has-text('稍后')", { timeout: 800 }).catch(() => null); if (b) { await b.click(); await p.waitForTimeout(150); } };
   await p.goto(URL0); await p.waitForTimeout(500);
   check(await p.evaluate(() => window.__moonsinger.store() === null), "无地开局：store 没建");
   check(await p.evaluate(() => localStorage.length === 0 || ![...Array(localStorage.length)].some((_, i) => localStorage.key(i).includes("moonsinger."))), "无地开局：没有 store 的 localStorage 键");
@@ -76,7 +78,7 @@ try {
   const bytes1 = await p.evaluate(async (id) => { const bl = await window.__moonsinger.store().zip(id, { mode: "existing" }).open(); return bl ? bl.size : -1; }, id1);
   check(bytes1 > 500, "store 里的字节是个 .mxl", String(bytes1));
   // 刷新 → 回到同一首
-  await p.reload(); await p.waitForTimeout(1200);
+  await p.reload(); await p.waitForTimeout(1200); await later();
   check(await p.evaluate(() => window.__moonsinger.store() !== null), "刷新后 store 自动建（进过歌库）");
   check((await p.evaluate(() => window.__moonsinger.identifier())) === id1, "刷新后回到同一首", await p.evaluate(() => window.__moonsinger.identifier()));
   check((await tokens()) === toks1, "音符逐个相同");
@@ -119,7 +121,7 @@ try {
   check(await p.evaluate(() => document.getElementById("galleryFull").hidden) && (await p.evaluate(() => window.__moonsinger.identifier())) === id2, "点卡片 = 打开它、出歌库");
   check((await tokens()) === toks1, "放下再打开：音符仍相同（进歌库时落盘了）");
   // 刷新在歌库里离开 → 回来在歌库
-  await p.click("#libBtn"); await p.waitForTimeout(500); await p.reload(); await p.waitForTimeout(1200);
+  await p.click("#libBtn"); await p.waitForTimeout(500); await p.reload(); await p.waitForTimeout(1200); await later();
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)), "从歌库里刷新 → 回来还在歌库");
   // 第二首：新建后歌库两张卡，点第一张切回
   await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(600);

@@ -26,7 +26,8 @@ const b = await chromium.launch();
 const ctxA = await b.newContext({ viewport: { width: 1100, height: 760 } }), ctxB = await b.newContext({ viewport: { width: 420, height: 800 } });
 await installCloud(ctxA, cloud); await installCloud(ctxB, cloud);
 const errs = [];
-const newPage = async (ctx) => { const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message)); await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForFunction(() => !!window.__moonsinger); await p.waitForTimeout(300); return p; };
+// 2026-11-04：这里的「没登录」是 mock 云的开局（真机 initAuth 之前的样子），不是「没有账号」：搬家那张面不归这里测（归 folder-home.mjs）
+const newPage = async (ctx) => { await ctx.addInitScript(() => localStorage.setItem("moonsinger-5b1e7c0a92d34f6e:moveAsked", "1")); const p = await ctx.newPage(); p.on("pageerror", (e) => errs.push(e.message)); await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForFunction(() => !!window.__moonsinger); await p.waitForTimeout(300); return p; };
 const notes = (p) => p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.pitch.step + t.pitch.octave).join(" "));
 const gate = (p) => p.evaluate(() => { const g = document.querySelector(".gate-sheet"); return g && !g.hidden ? [...g.querySelectorAll(".gate-actions button")].map((b) => b.textContent) : null; });
 const cloudNotes = async (p, id) => { const it = (await cloud.list("")).find((x) => x.name === id); if (!it) return null; const u8 = new Uint8Array(await (await cloud.download(it.ref)).arrayBuffer()); return p.evaluate((b64) => { const u = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)); return window.__moonsinger.open("x.mxl", u).song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.pitch.step + t.pitch.octave).join(" "); }, Buffer.from(u8).toString("base64")); };
@@ -42,7 +43,18 @@ const backups = (p) => p.evaluate(() => window.__moonsinger.store().files.listBa
 // 2026-10-21 全家：登录后有没传上去的先问一次「有 N 首歌还没传上去，现在传吗？」——这里一律答「传上去」（asked 记着问没问，场景里核）
 // 2026-11-03（Claude Opus 5.5，家族工单 A2 ③）：v0.14.10 起登录后的问句 = 「有 N 首歌没同步好」+「去处理 / 暂不」（原来的「传上去 → 批量推」撤了，main.ts afterSignIn）。
 //   answer = 场景里点哪个钮（问句一出现就记 asked，同原来）；没有问句 = 什么都不点。只改了点钮这一步，断言一条没动（报告 ai-docs/20261103-rulebook-adoption-report.md「A2」节逐条列）。
-const signIn = async (p, answer = "暂不") => { p.__asked = false; const done = p.evaluate(() => { window.__moonsingerCloudSignedIn = true; return window.__moonsinger.afterSignIn(); }); const asked = await p.waitForSelector(".offer button:has-text('去处理')", { timeout: 1500 }).catch(() => null); if (asked) { p.__asked = true; await p.click(`.offer button:has-text('${answer}')`); } await done; await p.waitForTimeout(300); };
+// 2026-11-04（Claude Opus 5.5，工单 H4，规则书第 15 条）：(a) 从没传过 = 面「现在传 / 稍后」；(c) 传过只是自动保存 = 不问，一条「在要处理列表里」+「去处理」钮。asked = 这两样出现过。只改了点钮这一步。
+const signIn = async (p, answer = "稍后") => {
+  p.__asked = false;
+  await p.evaluate(() => { window.__moonsingerCloudSignedIn = true; return window.__moonsinger.afterSignIn(); });
+  const ask = p.waitForSelector(".offer:not(.gate-sheet) button:has-text('现在传')", { timeout: 1200 }).then(() => "ask", () => null);
+  const list = p.waitForSelector('[data-notice-id="unsynced"]', { timeout: 1200 }).then(() => "list", () => null);
+  const seen = await Promise.race([ask.then((v) => v ?? list), list.then((v) => v ?? ask)]);
+  if (seen) p.__asked = true;
+  if (seen === "ask") await p.click(`.offer:not(.gate-sheet) button:has-text('${answer === "去处理" ? "稍后" : answer}')`);
+  if (answer === "去处理" && seen) { await p.waitForSelector('[data-notice-id="unsynced"] button:has-text("去处理")', { timeout: 3000 }); await p.click('[data-notice-id="unsynced"] button:has-text("去处理")'); }
+  await p.waitForTimeout(300);
+};
 const reloadAndSignIn = async (p, answer) => { await p.reload(); await p.waitForFunction(() => !!window.__moonsinger?.identifier()); await p.waitForTimeout(300); await signIn(p, answer); };
 try {
   // ① A：进歌库、新建、写、推；再改再推 ×4
@@ -134,7 +146,7 @@ try {
   await typeAtEnd(B, ["Digit5"]); await push(B).catch(() => {}); await B.waitForTimeout(200);
   check(await pending(B), "B 推不上去 = 待推");
   await typeAtEnd(A, ["Digit6"]); await push(A); await A.waitForTimeout(200);
-  await reloadAndSignIn(B, "暂不");   // v0.14.10 起登录后不再批量推：问句答「暂不」= 先留在这台设备上（不推、不弹、留脏）
+  await reloadAndSignIn(B, "稍后");   // v0.14.10 起登录后不再批量推：问句答「暂不」= 先留在这台设备上（不推、不弹、留脏）
   check((await gate(B)) === null && (await B.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 1, "B reload 登录后：真分叉 pushAll 不弹、留脏（脏数 1）");
   check((await notes(B)).endsWith("C5 E5 G5"), "B 本地还是自己那版（…G5）", await notes(B));
   await typeAtEnd(B, ["Digit7"]);
@@ -145,7 +157,7 @@ try {
   check((await notes(B)).endsWith("C5 E5 A5"), "B 选云端：重载成 A 的（…A5）", await notes(B));
   // ⑦ 心跳 / 空闲推同时发：库同名串行，零冲突
   await typeAtEnd(A, ["Digit7"]);
-  await A.evaluate(() => Promise.all([window.__moonsinger.es().flushAndPush(), window.__moonsinger.pushDirtyAll(), window.__moonsinger.es().flushAndPush()])); await A.waitForTimeout(200);
+  await A.evaluate(() => Promise.all([window.__moonsinger.es().flushAndPush(), window.__moonsinger.store().files.dirty.pushAll(), window.__moonsinger.es().flushAndPush()])); await A.waitForTimeout(200);
   check((await gate(A)) === null && (await cloudNotes(A, id)).endsWith("A5 B5"), "三路同时推：零冲突、云端跟着", await cloudNotes(A, id));
   // ⑧ 挂机很久醒来先核云端（F-67 / KudsRocket W-25）：B 干净、睡了很久、云端已经是 A 推的新版本 → 醒来 = 闸先锁住输入、核完换成云端的、闸开；
   //    A 本机有没存上的改动 → 醒来不锁、不动（库的快进不动脏的；分叉留给下一次 consent 推的 412）。短暂切走不走这条（visibilitychange 那里按时长分）。

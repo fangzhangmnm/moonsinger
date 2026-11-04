@@ -106,6 +106,8 @@ export function attachStore(home: StoreHome = { kind: "cloud" }): Store {
   deviceKvSet(KV_ATTACHED, "1");
   return _store;
 }
+/** 问云端一次（闸门「离线继续」期间静默再试用）：真走一趟网，名字不存在 = 云端答了 null，也算通；不通 = 抛。**不经 store**：选了离线时 store 不出网。同 WeebPaint。 */
+export async function cloudReachable(): Promise<void> { await (injectedCloud() ?? od.provider).getItemByPath(".reachable-probe"); }
 /** 旧的「只在浏览器里」的歌库的库名（默认 databaseId：以前没登录也能建的就是它）。 */
 const LEGACY_DB = `${APP_ID}.defaultStore`;
 /** 这台设备上有没有旧库的 IndexedDB（只看名字，不开库）。浏览器不给列举 = 看 storeAttached。 */

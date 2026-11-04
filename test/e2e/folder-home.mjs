@@ -136,7 +136,7 @@ console.log("\n── 权限掉了：chip → 一键再授权；中途掉也认"
   await p.waitForTimeout(200);
   check((await p.home()).folder === "my-songs", "还是这个家");
   // 中途掉：写的时候抛 NotAllowedError
-  const later = await p.sheet(); if (later) await p.clickChoice("暂不").catch(() => {});
+  const later = await p.sheet(); if (later) await p.clickChoice("稍后").catch(() => {});
   await p.evaluate(() => { window.__fsaLost = true; });
   const pushed = await p.evaluate(async (x) => { const f = window.__moonsinger.store().zip(x, { mode: "existing" }); const b = await f.open(); const r = await f.save(new Uint8Array(await b.arrayBuffer()), { tryPush: true }); return r?.pushed; }, id);
   await p.waitForTimeout(500);

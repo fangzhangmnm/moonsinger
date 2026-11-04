@@ -16205,7 +16205,7 @@ function createListing(cfg) {
     const d3 = cfg.describe?.(n10);
     return d3 ? d3.kind !== void 0 ? { kind: d3.kind, tier: d3.tier } : { tier: d3.tier } : { tier: "work" };
   };
-  function classifyPath(path, cf2, hasLocal, cloudReachable, absenceAuthoritative, localStat) {
+  function classifyPath(path, cf2, hasLocal, cloudReachable2, absenceAuthoritative, localStat) {
     const hasCloud = cf2 != null;
     const seen = head.seenBase(path);
     const everSynced = seen != null;
@@ -16217,7 +16217,7 @@ function createListing(cfg) {
       everSynced,
       cloudMoved,
       dirty: dirty2,
-      cloudReachable,
+      cloudReachable: cloudReachable2,
       absenceAuthoritative,
       pendingGone: isPendingGone?.(path)
     });
@@ -16240,8 +16240,8 @@ function createListing(cfg) {
       reportStoreError(e10, "log");
       return null;
     }) : null;
-    const cloudReachable = cloudRes != null;
-    const absenceAuthoritative = cloudReachable && cloudRes.complete === true;
+    const cloudReachable2 = cloudRes != null;
+    const absenceAuthoritative = cloudReachable2 && cloudRes.complete === true;
     const prefix = folder ? `${folder}/` : "";
     const cloudMap = /* @__PURE__ */ new Map();
     for (const c10 of cloudRes?.files ?? []) {
@@ -16281,7 +16281,7 @@ function createListing(cfg) {
     const localStats = await statLocal(localDirect);
     const items = [];
     for (const path of paths)
-      items.push(classifyPath(path, cloudMap.get(path), localDirect.has(path), cloudReachable, absenceAuthoritative, localStats.get(path)));
+      items.push(classifyPath(path, cloudMap.get(path), localDirect.has(path), cloudReachable2, absenceAuthoritative, localStats.get(path)));
     const stale = opts?.staleCloud != null;
     if (opts?.staleCloud) {
       for (const f2 of opts.staleCloud.files) {
@@ -16308,8 +16308,8 @@ function createListing(cfg) {
       reportStoreError(e10, "log");
       return null;
     }) : null;
-    const cloudReachable = cloudRes != null;
-    const absenceAuthoritative = cloudReachable && cloudRes.complete === true;
+    const cloudReachable2 = cloudRes != null;
+    const absenceAuthoritative = cloudReachable2 && cloudRes.complete === true;
     const cloudMap = /* @__PURE__ */ new Map();
     for (const c10 of cloudRes?.files ?? []) {
       if (isHiddenAny(c10.name))
@@ -16325,7 +16325,7 @@ function createListing(cfg) {
     const localStats = await statLocal(localSet);
     const items = [];
     for (const path of paths)
-      items.push(classifyPath(path, cloudMap.get(path), localSet.has(path), cloudReachable, absenceAuthoritative, localStats.get(path)));
+      items.push(classifyPath(path, cloudMap.get(path), localSet.has(path), cloudReachable2, absenceAuthoritative, localStats.get(path)));
     const folderSet = /* @__PURE__ */ new Set();
     for (const f2 of cloudRes?.folders ?? [])
       if (!isHiddenAny(f2))
@@ -16335,7 +16335,7 @@ function createListing(cfg) {
         folderSet.add(p2);
     for (const d3 of pendingFolderDeletions?.() ?? [])
       folderSet.delete(d3);
-    return { items, folders: [...folderSet], complete: cloudReachable ? cloudRes.complete : false };
+    return { items, folders: [...folderSet], complete: cloudReachable2 ? cloudRes.complete : false };
   }
   return { listAllItems, listFolder };
 }
@@ -18474,14 +18474,14 @@ function createStore(config) {
   const trashMod = createTrash({ cloud, local, head, busy: busyT });
   async function aggregateBox(box) {
     const cloudItems = await (box === "trash" ? cloud.listTrash() : cloud.listBackup());
-    const localItems = box === "trash" ? local.listTrash ? await local.listTrash() : [] : local.listBackup ? await local.listBackup() : [];
+    const localItems2 = box === "trash" ? local.listTrash ? await local.listTrash() : [] : local.listBackup ? await local.listBackup() : [];
     let live = /* @__PURE__ */ new Set();
-    if (box === "trash" && localItems.length && isOnline()) {
+    if (box === "trash" && localItems2.length && isOnline()) {
       const all = await cloud.listAll().catch(() => null);
       if (all && all.complete)
         live = new Set(all.files.map((f2) => f2.name ?? f2.path));
     }
-    return mergeTrash(localItems, cloudItems, live, toName);
+    return mergeTrash(localItems2, cloudItems, live, toName);
   }
   const DIRTY_PREFIX = "files.dirty:";
   const dirtyNames = () => kv.keys().filter((k2) => k2.startsWith(DIRTY_PREFIX) && kv.get(k2) === "1").map((k2) => k2.slice(DIRTY_PREFIX.length));
@@ -33873,6 +33873,7 @@ function noteAuthFailure(message) {
 }
 var never = new Promise(() => {
 });
+var OFFLINE_RETRY_MS = 6e4;
 function createCloudGate(d3) {
   const timeoutMs = d3.timeoutMs ?? CLOUD_CHECK_TIMEOUT_MS;
   const now2 = d3.now ?? (() => Date.now());
@@ -33927,10 +33928,43 @@ function createCloudGate(d3) {
       void pressSignIn();
     }, offline: () => chooseOffline("continue") });
   }
+  let stopRetry = null;
+  function startOfflineRetry() {
+    if (stopRetry) return;
+    const every = d3.every ?? ((ms, fn) => {
+      const t10 = setInterval(fn, ms);
+      return () => clearInterval(t10);
+    });
+    stopRetry = every(d3.offlineRetryMs ?? OFFLINE_RETRY_MS, () => {
+      if (!_userOffline) {
+        endOfflineRetry();
+        return;
+      }
+      if (d3.pageVisible?.() === false) return;
+      void reconnect().catch((e10) => d3.note(`gate: offline retry threw: ${String(e10?.message ?? e10)}`));
+    });
+  }
+  function endOfflineRetry() {
+    stopRetry?.();
+    stopRetry = null;
+  }
+  async function cloudAnswers() {
+    if (!d3.reachable) return true;
+    let timer;
+    const timeout = new Promise((res) => {
+      timer = setTimeout(() => res(false), timeoutMs);
+    });
+    try {
+      return await Promise.race([d3.reachable().then(() => true, () => false), timeout]);
+    } finally {
+      clearTimeout(timer);
+    }
+  }
   function chooseOffline(how) {
     runId++;
     phase = "open";
     setUserOffline(true);
+    startOfflineRetry();
     d3.note(`gate: offline chosen (${how})`);
     escaped?.();
     d3.ui.release();
@@ -33987,6 +34021,7 @@ function createCloudGate(d3) {
       d3.ui.release();
       d3.note(`gate: released (${trigger}) after ${now2() - t02}ms`);
       if (wasBlocked || trigger === "retry") void d3.catchUp();
+      else d3.afterPass?.();
       return;
     }
     block(r10 === "timeout" ? "noResponse" : r10, r10 === "timeout" ? `${trigger}: no answer in ${timeoutMs}ms` : trigger);
@@ -34014,13 +34049,22 @@ function createCloudGate(d3) {
         d3.note(`gate: reconnect: still offline (${String(r10)})`);
         return;
       }
+      if (!await cloudAnswers()) {
+        d3.note("gate: reconnect: cloud did not answer \u2192 stay offline");
+        return;
+      }
       setUserOffline(false);
-      const c10 = await Promise.race([d3.check(), timedOut]);
+      let t23;
+      const c10 = await Promise.race([d3.check(), new Promise((res) => {
+        t23 = setTimeout(() => res("timeout"), timeoutMs);
+      })]);
+      clearTimeout(t23);
       if (c10 === "timeout" || c10 === "cloud-error") {
         setUserOffline(true);
         d3.note(`gate: reconnect: cloud ${String(c10)} \u2192 stay offline`);
         return;
       }
+      endOfflineRetry();
       d3.note("gate: reconnected \u2192 catching up");
       d3.ui.bar("syncing");
       try {
@@ -34062,6 +34106,7 @@ function createCloudGate(d3) {
         runId++;
         phase = "open";
         setUserOffline(false);
+        endOfflineRetry();
         d3.ui.release();
         d3.ui.bar("hidden");
         return;
@@ -34428,6 +34473,9 @@ function attachStore(home = { kind: "cloud" }) {
   deviceKvSet2(KV_ATTACHED, "1");
   return _store;
 }
+async function cloudReachable() {
+  await (injectedCloud() ?? od.provider).getItemByPath(".reachable-probe");
+}
 var LEGACY_DB2 = `${APP_ID}.defaultStore`;
 async function legacyLibraryExists() {
   try {
@@ -34461,6 +34509,16 @@ async function disposeStore() {
 async function detachStore() {
   await disposeStore();
   deviceKvSet2(KV_ATTACHED, null);
+}
+
+// src/app/cloud-return.ts
+function planReturn(dirty2, neverUploaded) {
+  if (dirty2 <= 0) return { kind: "none" };
+  if (neverUploaded <= 0) return { kind: "list", total: dirty2 };
+  return { kind: "ask", neverUploaded, others: Math.max(0, dirty2 - neverUploaded) };
+}
+function neverUploadedIds(files) {
+  return new Set(files.filter((f2) => f2.syncState === "float").map((f2) => f2.identifier));
 }
 
 // src/library-home.ts
@@ -41291,6 +41349,7 @@ function createEditorSession(config) {
   let _dirty = false;
   let _editEpoch = 0;
   let _pushPending = false;
+  let _pushOwed = false;
   let _refusedEpoch = -1;
   let _saving = false;
   let _timer = null;
@@ -41302,6 +41361,7 @@ function createEditorSession(config) {
     editor.onChange(() => {
       _dirty = true;
       _pushPending = true;
+      _pushOwed = false;
       _editEpoch++;
       if (pushOn.has("idle")) scheduleIdle();
     });
@@ -41330,7 +41390,10 @@ function createEditorSession(config) {
       if (_editEpoch === epochAtFreeze) _dirty = false;
       const mode = _createFor === _name ? "new" : "existing";
       const res = await store.file(_name, { isZip, mode }).save(bytes, { tryPush, hint: peek != null ? { peek } : void 0 });
-      if (tryPush) _pushPending = res?.pushed !== true || _editEpoch !== epochAtFreeze;
+      if (tryPush) {
+        _pushPending = res?.pushed !== true || _editEpoch !== epochAtFreeze;
+        if (!_pushPending) _pushOwed = false;
+      }
       takeCloudReload = res?.resolution === "takeCloud";
       if (_createFor === _name) _createFor = null;
       if (_name != null) editor.onSaved?.(_name);
@@ -41353,6 +41416,7 @@ function createEditorSession(config) {
     _name = name;
     _dirty = false;
     _pushPending = false;
+    _pushOwed = false;
     if (_createFor === name) _createFor = null;
     return true;
   }
@@ -41367,6 +41431,13 @@ function createEditorSession(config) {
     currentName: () => _name,
     isDirty: () => _dirty,
     isPushPending: () => _pushPending,
+    isPushOwed: () => _pushOwed,
+    noteExternallyPushed() {
+      if (!_dirty) {
+        _pushPending = false;
+        _pushOwed = false;
+      }
+    },
     async open(name) {
       if (_name && _name !== name) await persist(pushOn.has("exit"));
       wireOnChange();
@@ -41377,24 +41448,30 @@ function createEditorSession(config) {
       _name = name;
       _dirty = true;
       _pushPending = true;
+      _pushOwed = false;
       _createFor = opts?.create ? name : null;
     },
     markDirty() {
       _dirty = true;
       _pushPending = true;
+      _pushOwed = false;
     },
     // app 驱动内容变化（onChange 之外）→ 标脏
     release() {
       _name = null;
       _dirty = false;
       _pushPending = false;
+      _pushOwed = false;
       _createFor = null;
     },
     // 放下身份（见接口注释）
     flushLocal: () => persist(false),
     flushAndPush: () => persist(true),
-    forceSaveAndPush: () => persist(true, true),
-    // 用户显式按 save：无条件 encode+推（v409）
+    forceSaveAndPush: async () => {
+      await persist(true, true);
+      _pushOwed = _name != null && _pushPending && !_dirty;
+    },
+    // 用户显式按 save：无条件 encode+推（v409）；没推成且期间没再改 = 记下欠的这一推
     async rename(newName) {
       if (!_name) return { ok: true };
       await persist(false);
@@ -41408,6 +41485,7 @@ function createEditorSession(config) {
       _name = null;
       _dirty = false;
       _pushPending = false;
+      _pushOwed = false;
       await fileOf(n10).trash();
     },
     start() {
@@ -47585,7 +47663,6 @@ window.__moonsinger = {
     if (hasCloudHome()) await gate.wake(lock);
     return lock;
   },
-  pushDirtyAll: () => pushDirtyAll(),
   gateOpen: () => isGateOpen(),
   undo: () => undoNow(),
   redo: () => redoNow(),
@@ -49965,7 +50042,8 @@ var es2 = createEditorSession({
       open: () => f2.open(),
       tryMove: (to2) => f2.tryMove(to2),
       trash: () => f2.trash(),
-      save: async (bytes, opts) => {
+      save: async (bytes, opts0) => {
+        const opts = opts0?.tryPush && !homeOnline() ? { ...opts0, tryPush: false } : opts0;
         const r10 = await f2.save(bytes, opts);
         if (opts?.tryPush) diagNote("sync", `push ${name}: ${r10.pushed ? "pushed" : "not pushed"}${r10.reason ? " " + r10.reason : ""}${r10.resolution ? " \u2192 " + r10.resolution : ""}`);
         return r10;
@@ -50116,7 +50194,14 @@ var gate = createCloudGate({
     return await requireStore().collectionPeek("gate-probe") === "unknown" ? "cloud-error" : "asked";
   },
   catchUp: () => afterSignIn(),
-  // 只补排队的、问「去处理」、快进；手里这首照旧等 consent 时刻推（ADR-0016 / 0018）
+  // 补排队的、快进、回来怎么办（规则书第 15 条：cloud-return.ts）；手里这首照旧等 consent 时刻推（ADR-0016 / 0018）
+  reachable: () => cloudReachable(),
+  // 离线期间再试：续签成功之后还要问云端一次才算回来（设计稿 §3）
+  afterPass: () => {
+    void offerReturn();
+  },
+  // 一路顺利放行：开局罩着时没问成的这里问
+  pageVisible: () => document.visibilityState === "visible",
   signIn: () => signInFlow(),
   note: (line) => diagNote("gate", line)
 });
@@ -50375,17 +50460,20 @@ var firstFrame = (store, folder) => new Promise((resolve, reject) => {
   } });
   if (done) off();
 });
-async function songsToMoveIn(store) {
+async function localItems(store) {
   const out = [], q2 = [""];
   while (q2.length) {
     const f2 = await firstFrame(store, q2.shift());
-    for (const it2 of f2.items) {
-      const kind = moveKindOf(it2.syncState);
-      if (kind) out.push({ identifier: it2.identifier, kind });
-    }
+    out.push(...f2.items);
     q2.push(...f2.folders);
   }
   return out;
+}
+async function songsToMoveIn(store) {
+  return (await localItems(store)).flatMap((it2) => {
+    const kind = moveKindOf(it2.syncState);
+    return kind ? [{ identifier: it2.identifier, kind }] : [];
+  });
 }
 async function legacySongs() {
   if (hasCloudHome()) return [];
@@ -50703,53 +50791,124 @@ function afterSignIn() {
     } catch (e10) {
       reportError(e10, "log");
     }
-    let n10 = 0;
-    if (!folderHome()) {
-      try {
-        n10 = await requireStore().files.dirty.count();
-      } catch (e10) {
-        reportError(e10, "log");
-      }
-    }
-    let go = false;
-    if (n10 > 0) {
-      try {
-        go = await openChoiceSheet(`\u6709 ${n10} \u9996\u6B4C\u6CA1\u540C\u6B65\u597D`, "\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6216\u6539\u4E86\u8FD8\u6CA1\u4F20\u4E0A\u53BB\u3002\u5230\u6B4C\u5E93\u91CC\u9010\u9996\u300C\u5904\u7406\u2026\u300D\uFF0C\u6BCF\u4E00\u9996\u90FD\u4F1A\u95EE\u4F60\u7528\u4E91\u7AEF\u7684\u8FD8\u662F\u8FD9\u53F0\u7684\uFF1B\u6682\u4E0D = \u5148\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002", [{ label: "\u53BB\u5904\u7406", value: "go", primary: true }, { label: "\u6682\u4E0D", value: "later" }]) === "go";
-      } catch (e10) {
-        reportError(e10, "log");
-        go = false;
-      }
-    }
-    diagNote("auth", `afterSignIn: ${n10} not in sync \u2192 ${go ? "gallery attention view" : "later"}`);
-    if (go) {
-      await openGallery();
-      gallery?.setAttentionOnly(true);
-    }
+    const ask = await settleReturn();
     await refreshOpenDoc();
     gallery?.refresh();
     gallery?.renderCloud();
     renderTitle();
+    ask?.();
   })().finally(() => {
     afterSignInInFlight = null;
   });
   return afterSignInInFlight;
 }
-var pushAllInFlight = null;
-function pushDirtyAll(opts = {}) {
-  if (pushAllInFlight) return pushAllInFlight;
-  pushAllInFlight = (async () => {
-    try {
-      const r10 = await requireStore().files.dirty.pushAll();
-      if (r10.pushed || r10.failed.length) diagNote("sync", `dirty.pushAll: pushed=${r10.pushed} failed=${r10.failed.length}${r10.failed.length ? " [" + r10.failed.join(", ") + "]" : ""}`);
-      if (r10.failed.length) showError(`\u6709 ${r10.failed.length} \u9996\u6CA1\u63A8\u4E0A\u4E91\uFF1A${r10.failed.map(stemOfId).join("\u3001")}`);
-      else if (opts.verbose) info(r10.pushed ? `\u63A8\u4E0A\u53BB\u4E86 ${r10.pushed} \u9996` : "\u6CA1\u6709\u8981\u63A8\u7684");
-    } catch (e10) {
-      reportError(e10, "warning");
-    }
-  })().finally(() => {
-    pushAllInFlight = null;
+var askedReturn = false;
+var returnRun = null;
+function settleReturn() {
+  return returnRun ??= settleReturnOnce().finally(() => {
+    returnRun = null;
   });
-  return pushAllInFlight;
+}
+function offerReturn() {
+  return settleReturn().then((ask) => {
+    ask?.();
+  });
+}
+async function settleReturnOnce() {
+  if (!hasStore() || !isSignedIn2() || !homeOnline() || gate.locked()) return null;
+  if (askedReturn && !es2.isPushOwed()) return null;
+  const store = requireStore();
+  const dirtyNow = await store.files.dirty.count().catch((e10) => {
+    reportError(e10, "log");
+    return 0;
+  });
+  if (dirtyNow <= 0) return null;
+  let never2;
+  try {
+    never2 = neverUploadedIds(await localItems(store));
+  } catch (e10) {
+    reportError(e10, "log");
+    return null;
+  }
+  await resumeOwedPush(never2);
+  if (askedReturn) return null;
+  const plan = planReturn(await store.files.dirty.count().catch(() => dirtyNow), never2.size);
+  diagNote("sync", `back with unsynced: ${JSON.stringify(plan)}`);
+  return plan.kind === "none" ? null : () => {
+    void askReturn(plan);
+  };
+}
+async function resumeOwedPush(never2) {
+  const id2 = H2.identifier();
+  if (!id2 || !es2.isPushOwed() || never2.has(id2)) return;
+  try {
+    await es2.flushAndPush();
+    diagNote("sync", `resumed owed push ${id2}: pending=${String(es2.isPushPending())}`);
+  } catch (e10) {
+    reportError(e10, "log");
+  }
+  gallery?.refresh();
+  renderTitle();
+}
+var inToHandle = (n10) => `${n10} \u9996\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u5728\u300C\u8981\u5904\u7406\u300D\u5217\u8868\u91CC`;
+function showInList(n10) {
+  if (gallery?.isOpen()) gallery.setAttentionOnly(true);
+  showNotice({ id: "unsynced", level: "info", text: inToHandle(n10), actions: [{ label: "\u53BB\u5904\u7406", primary: true, onClick: () => {
+    closeNotice("unsynced");
+    void openGallery().then(() => gallery?.setAttentionOnly(true));
+  } }] });
+}
+async function askReturn(plan) {
+  if (askedReturn || !hasStore()) return;
+  if (plan.kind === "list") {
+    askedReturn = true;
+    showInList(plan.total);
+    return;
+  }
+  if (isSheetOpen() || isGateOpen()) {
+    diagNote("sync", "ask later: a sheet is open");
+    return;
+  }
+  askedReturn = true;
+  const f2 = folderHome();
+  let go = false;
+  try {
+    go = await openConfirmSheet(
+      plan.others > 0 ? `\u6709 ${plan.neverUploaded} \u9996\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\uFF0C\u8FD8\u6709 ${plan.others} \u9996\u6539\u8FC7\u6CA1\u4F20\u3002\u73B0\u5728\u5168\u4F20\uFF1F` : `\u6709 ${plan.neverUploaded} \u9996\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\uFF0C\u73B0\u5728${f2 ? `\u5199\u8FDB\u300C${f2.label}\u300D` : "\u4F20\u4E0A\u53BB"}\uFF1F`,
+      "\u522B\u7684\u8BBE\u5907\u6539\u8FC7\u7684\u4E0D\u4F1A\u88AB\u76D6\u6389\uFF0C\u4F1A\u7559\u7ED9\u4F60\u9009\u3002\u7A0D\u540E = \u5B83\u4EEC\u8FDB\u6B4C\u5E93\u300C\u8981\u5904\u7406\u300D\u7684\u5217\u8868\uFF0C\u4EC0\u4E48\u90FD\u4E0D\u4F20\u3002",
+      { okLabel: "\u73B0\u5728\u4F20", cancelLabel: "\u7A0D\u540E" }
+    );
+  } catch (e10) {
+    askedReturn = false;
+    reportError(e10, "log");
+    return;
+  }
+  const total = plan.neverUploaded + plan.others;
+  diagNote("sync", `push ask \u2192 ${go ? "now" : "later"}`);
+  if (!go) {
+    showInList(total);
+    return;
+  }
+  const store = requireStore();
+  const r10 = await store.files.dirty.pushAll().catch((e10) => {
+    reportError(e10, "warning");
+    return null;
+  });
+  const left = await store.files.dirty.count().catch(() => total);
+  diagNote("sync", `push ask: pushed=${String(r10?.pushed ?? "-")} failed=${String(r10?.failed.length ?? "-")} left=${left}`);
+  const id2 = H2.identifier();
+  if (r10 && id2 && !r10.failed.includes(id2)) es2.noteExternallyPushed();
+  if (left === 0) showNotice({ id: "unsynced", level: "info", text: `${r10?.pushed ?? total} \u9996\u90FD\u4F20\u4E0A\u53BB\u4E86`, autoHideMs: 4e3 });
+  else {
+    const named = (r10?.failed ?? []).slice(0, 3).map(stemOfId).join("\u3001");
+    if (gallery?.isOpen()) gallery.setAttentionOnly(true);
+    showNotice({ id: "unsynced", level: "warning", text: `\u4F20\u4E0A\u53BB ${r10?.pushed ?? 0} \u9996\uFF0C\u8FD8\u6709 ${left} \u9996\u6CA1\u4F20\u6210${named ? `\uFF08${named}${left > 3 ? " \u2026" : ""}\uFF09` : ""}\uFF1A\u522B\u7684\u8BBE\u5907\u6539\u8FC7\u7684\u8981\u4F60\u9009\uFF0C\u7F51\u7EDC\u95EE\u9898\u7684\u4E4B\u540E\u518D\u8BD5\u3002`, actions: [{ label: "\u53BB\u5904\u7406", primary: true, onClick: () => {
+      closeNotice("unsynced");
+      void openGallery().then(() => gallery?.setAttentionOnly(true));
+    } }] });
+  }
+  gallery?.refresh();
+  renderTitle();
 }
 async function setCover(f2) {
   try {
@@ -51277,4 +51436,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-540907c090e4.mjs.map
+//# sourceMappingURL=moonsinger-c2f13aae8643.mjs.map

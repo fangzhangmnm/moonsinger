@@ -69,6 +69,15 @@ export interface CloudGateDeps {
   catchUp(): Promise<void>;
   /** 交互登录。true = 已起跳（页面要走了）。 */
   signIn(): Promise<boolean | null>;
+  /** 问云端一次，**不经 store**（选了离线时 store 不出网）：抛 / 不答 = 还没回来。令牌可能是缓存的，续签成功说明不了网通（设计稿 §3，WeebPaint 实测）。 */
+  reachable?(): Promise<unknown>;
+  /** 放行了（没走 catchUp 的那种：一路顺利）：app 看要不要问「回来问一次」。 */
+  afterPass?(): void;
+  /** 定时器（默认 setInterval；测试给假时钟）。 */
+  every?(ms: number, fn: () => void): () => void;
+  offlineRetryMs?: number;
+  /** 页面看得见吗（藏着不试：回前台那一下会试）。 */
+  pageVisible?(): boolean;
   note(line: string): void;
   now?(): number;
   timeoutMs?: number;
@@ -94,6 +103,8 @@ export interface CloudGate {
 type Trigger = "boot" | "wake" | "retry";
 const never = new Promise<never>(() => {});
 
+/** 离线态期间多久静默再试一次（设计稿 §3 硬要求，2026-11-04：慢网误判离线时浏览器从没离线，online 事件永不来，不定时试就卡到下次开机）。 */
+const OFFLINE_RETRY_MS = 60_000;
 export function createCloudGate(d: CloudGateDeps): CloudGate {
   const timeoutMs = d.timeoutMs ?? CLOUD_CHECK_TIMEOUT_MS;
   const now = d.now ?? (() => Date.now());
@@ -134,10 +145,29 @@ export function createCloudGate(d: CloudGateDeps): CloudGate {
     showBlocked();
   }
   function showBlocked(): void { d.ui.blocked(reason, { signIn: () => { void pressSignIn(); }, offline: () => chooseOffline("continue") }); }
+  let stopRetry: (() => void) | null = null;
+  function startOfflineRetry(): void {
+    if (stopRetry) return;
+    const every = d.every ?? ((ms: number, fn: () => void) => { const t = setInterval(fn, ms); return () => clearInterval(t); });
+    stopRetry = every(d.offlineRetryMs ?? OFFLINE_RETRY_MS, () => {
+      if (!_userOffline) { endOfflineRetry(); return; }
+      if (d.pageVisible?.() === false) return;
+      void reconnect().catch((e) => d.note(`gate: offline retry threw: ${String((e as Error)?.message ?? e)}`));
+    });
+  }
+  function endOfflineRetry(): void { stopRetry?.(); stopRetry = null; }
+  /** 云端答话了吗（硬超时：慢网上问不出来 = 还没回来，不许挂住）。没接 reachable = 不多问。 */
+  async function cloudAnswers(): Promise<boolean> {
+    if (!d.reachable) return true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<boolean>((res) => { timer = setTimeout(() => res(false), timeoutMs); });
+    try { return await Promise.race([d.reachable().then(() => true, () => false), timeout]); } finally { clearTimeout(timer); }
+  }
   function chooseOffline(how: string): void {
     runId++;
     phase = "open";
     setUserOffline(true);
+    startOfflineRetry();
     d.note(`gate: offline chosen (${how})`);
     escaped?.();
     d.ui.release();
@@ -174,7 +204,7 @@ export function createCloudGate(d: CloudGateDeps): CloudGate {
       phase = "open";
       d.ui.release();
       d.note(`gate: released (${trigger}) after ${now() - t0}ms`);
-      if (wasBlocked || trigger === "retry") void d.catchUp();
+      if (wasBlocked || trigger === "retry") void d.catchUp(); else d.afterPass?.();
       return;
     }
     block(r === "timeout" ? "noResponse" : r, r === "timeout" ? `${trigger}: no answer in ${timeoutMs}ms` : trigger);
@@ -194,9 +224,13 @@ export function createCloudGate(d: CloudGateDeps): CloudGate {
       // 先试登录（不进库的网）；成了才把「离线」放开去问云端——问不成再收回来（设计稿 §2 最后一行：失败 = 条还在，不再弹闸）
       const r = await Promise.race([renewOnce("reconnect"), timedOut]);
       if (r !== null) { d.note(`gate: reconnect: still offline (${String(r)})`); return; }
+      if (!(await cloudAnswers())) { d.note("gate: reconnect: cloud did not answer → stay offline"); return; }   // 令牌可能是缓存的：续签成功说明不了网通；不清离线、不弹、不扰（设计稿 §3）
       setUserOffline(false);
-      const c = await Promise.race([d.check(), timedOut]);
+      let t2: ReturnType<typeof setTimeout> | undefined;
+      const c = await Promise.race([d.check(), new Promise<"timeout">((res) => { t2 = setTimeout(() => res("timeout"), timeoutMs); })]);
+      clearTimeout(t2);
       if (c === "timeout" || c === "cloud-error") { setUserOffline(true); d.note(`gate: reconnect: cloud ${String(c)} → stay offline`); return; }
+      endOfflineRetry();
       d.note("gate: reconnected → catching up");
       d.ui.bar("syncing");
       try { await d.catchUp(); } catch (e) { d.note(`gate: catch-up threw: ${String((e as Error)?.message ?? e)}`); }
@@ -221,7 +255,7 @@ export function createCloudGate(d: CloudGateDeps): CloudGate {
     authChanged: (signedIn, why) => {
       if (!signedIn) {
         if (why !== "signOut") return;
-        runId++; phase = "open"; setUserOffline(false); d.ui.release(); d.ui.bar("hidden");   // 主动登出 = 没有家了，闸和条都不该在
+        runId++; phase = "open"; setUserOffline(false); endOfflineRetry(); d.ui.release(); d.ui.bar("hidden");   // 主动登出 = 没有家了，闸和条都不该在
         return;
       }
       if (_userOffline) { void reconnect(); return; }

@@ -359,3 +359,27 @@ edited by Claude Opus 5.5 2026-11-03
 没有（`folder` 库里本来就有，已在 sprite）。
 
 edited by Claude Opus 5.5 2026-11-04
+
+## H4：回来时没传的分三种 + 离线期间静默再试（2026-11-04，v0.14.18）
+
+规则书 §1 第 15 条（11-03 夜改写）、闸门设计稿 §3（11-04 补的两条硬要求）。库零改。prod / itch 没推。
+
+| 情形 | 现在 | 证据 |
+|---|---|---|
+| (a) 从没传过（float） | 问一次「现在传 / 稍后」；稍后进列表；一页一次 | e2e gate「H4 (a)」 |
+| (b) 传过、按过存没传成 | 回来自动续传，不问 | e2e gate「H4 (b)」；单元 isPushOwed 5 条（抄 WeebPaint 语义） |
+| (c) 传过、只是自动保存 | 不传不问，一条说明 +「去处理」 | e2e gate ③（原来的「去处理」问句换成这条） |
+| `dirty.pushAll` | 全仓两处：这张面、退出时的「下载备份」 | `test/cloud-return.test.mjs` |
+| 离线期间再试 | 每 60 s + 回前台；失败不弹不扰 | `test/cloud-gate.test.mjs` 假时钟 |
+| 续签成了、云端不答 | 不清离线（硬超时 8 s） | 同上 + e2e gate「§3」（实测约 8 s 放弃） |
+| online 事件 | 同样先问一次再清 | 同上 |
+
+**顺手查出来的真漏洞（要看）**：选了「离线继续」之后按「存」**照样走网**。库的 `save` 只看 `tryPush`、不看 `isOnline`（`create-store.ts` 1045 行往下），H 那轮 e2e 只测了切后台，没测这条。修在 app 这头：`main.ts` 给 editor-session 的 store 接缝里，`tryPush` 且 `!homeOnline()` 时改成不尝试推，这一笔记成欠一推。**小黑屋、CatsUp、WeebPaint 要不要核一下同样的路，Fable 定**（我没查它们；小黑屋 D4 时我顺手核）。
+
+**动了的存量守卫 / e2e（断言没减）**：`test/cloud-gate.test.mjs` §8①（reconnect 的 race 换了形状，加了 reachable）；`test/e2e/sync.mjs` 的 `signIn`（点钮那一步按新面改）、`pushDirtyAll` 钩子删了改直接调库；`gate.mjs` ③、H2 场景；`store.mjs` 重开后答「稍后」。
+
+**一个没定因的现象（如实记）**：`sync.mjs` 有一次卡在「等冲突面」30 s，之后连跑 6 次全过，H4 之前也见过同类（F-144「不再卡死整套，没根治」）。没复现，**猜想没证实**：`editor-session.persist` 第一行 `_saving` 为真就直接 return，按「存」正好撞上 2 s 自动存在飞时，这次按存什么都不做。要是真的，那人按存也可能被静默吞掉，值得在库 / 接缝那轮核。
+
+**真机零。**
+
+edited by Claude Opus 5.5 2026-11-04
