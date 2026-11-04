@@ -4,6 +4,7 @@
 //   两个调用方：浏览器（src/app/performance.ts：播放的准备 / mp3 导出 / 定稿）和 node 命令行（scripts/render-song.mjs）。
 //   这里只 import 纯的东西（score / engine / performers / format）：没有 DOM、没有 worker、没有 fetch——录音房 / 唱 / 音源都从 RenderDeps 注入。
 //   出声的数学一行不在这里（时间线 timeline.ts、录音房 studio.ts、唱法核心 sing-core.mjs）；这里是把它们接起来的那根线。
+import { _t } from "../i18n/index.ts";
 import { type Song, type PartDef, headLen, tempoAt } from "../score/song.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { grooveCategory, followOf } from "../score/groove.ts";
@@ -127,11 +128,11 @@ export async function renderSong(plan: RenderPlan, deps: RenderDeps, o: { sr?: n
   const errors = await prepareParts(plan.parts, plan.extras, deps);
   const tl = timelineOf(plan, (sha, bank, program) => deps.engine.presetIndex(sha, bank, program));
   o.onPrepared?.(errors, tl);
-  if (!tl.tracks.length) throw new Error(`没有出声：${[...errors.map((e) => e.why), ...tl.unplayable.map((u) => u.why)].join("；") || "没有会出声的声部"}`);
+  if (!tl.tracks.length) throw new Error(_t("没有出声：{e}", { e: [...errors.map((e) => e.why), ...tl.unplayable.map((u) => u.why)].join("；") || _t("没有会出声的声部") }));
   if (tl.chunks.length) await deps.sing(tl, (m) => say(m));
   pushMix(deps.engine, { ...plan, mixBypass: false }, pv);   // 导出照常带效果（A/B 的「效果全关」只管播放）
-  say("混音…", 0);
-  const m = await deps.engine.renderOffline({ tracks: tl.tracks, range: tl.range, loop: false }, { sr: o.sr ?? RENDER_SR, progress: (f) => say("混音…", f) });
+  say(_t("混音…"), 0);
+  const m = await deps.engine.renderOffline({ tracks: tl.tracks, range: tl.range, loop: false }, { sr: o.sr ?? RENDER_SR, progress: (f) => say(_t("混音…"), f) });
   return { left: m.left, right: m.right, sr: m.sr, secs: m.left.length / m.sr, timeline: tl, errors };
 }
 /** 立体声 → 单声道（左右平均）。 */

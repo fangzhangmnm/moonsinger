@@ -15,6 +15,7 @@
 //   · 纸内各声部按 tick 对齐（从纸的开头数；不按小节线对齐——小节线只是各自的记谱）；纸界 = 硬对齐点（短的补休止到最长的那条，契约 §6¾）。
 //   · 速度 = 第一个声部的状态机（其余声部的速度记号只是跟着抄、不出声不画）。
 
+import { _t } from "../i18n/index.ts";
 import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
 import { latchDown, latchWrite, LATCH_OFF } from "../keyboard/latch.ts";   // 升降 Shift 的那条规则和 /2、渐到同一份（编辑状态机第 2 期，2026-10-15）
 import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell, keyAlter } from "./pitch.ts";
@@ -68,7 +69,7 @@ export type MarkTok = KeyTok | TimeTok | TempoTok;
  *  演奏法 = 挂在音上（art，按 ARTS 的顺序、不重复）；MusicXML <notations><articulations> 原生——呼吸 = <breath-mark/>，挂在呼吸前的那个音上。
  *  出声：跳音 = 截短（候选的 articulation.staccatoGate）、重音 = 音头加 accentDb、保持 = 满长；呼吸 = 月读在下一个字前换一口气（唱法核心的「v」），乐器不受影响。 */
 export type Swell = "<" | ">" | "<>";
-export const SWELL_NAME: Record<Swell, string> = { "<": "音内渐强", ">": "音内渐弱", "<>": "音内鼓起" };
+export const SWELL_NAME: Record<Swell, string> = { "<": _t("音内渐强"), ">": _t("音内渐弱"), "<>": _t("音内鼓起") };
 export type Art = "staccato" | "accent" | "marcato" | "sfz" | "fp" | "tenuto" | "breath" | "stress" | "unstress" | "ghost" | "whisper" | "swellUp" | "swellDown" | "swellBoth" | "arpeggio";
    // arpeggio = 琶音（和弦左边一条竖的波浪线：从低到高依次奏出；v0.9.45，user「和弦的波浪线还是没有做，做一下，绿袖子要。这个是标准的记号吧」；MusicXML <arpeggiate/>）
    // swellUp / swellDown / swellBoth = 音内渐强 < / 音内渐弱 > / 音内鼓起 <>（v0.9.44 起归演奏法：user「音内渐强渐弱和鼓起应该属于演奏法，数据结构和逻辑上也应该，因为是跟着音符的」；
@@ -81,7 +82,7 @@ export type Art = "staccato" | "accent" | "marcato" | "sfz" | "fp" | "tenuto" | 
 //   音头那一组（重音 / 强音 / sfz / fp）互斥——开一个就关掉别的（ATTACKS）。
 export const ARTS: readonly Art[] = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "stress", "unstress", "ghost", "whisper", "swellUp", "swellDown", "swellBoth", "arpeggio"];
 export const ATTACKS: readonly Art[] = ["ghost", "unstress", "stress", "accent", "marcato", "sfz", "fp"];   // 一个音的强度只有一种（互斥）
-export const ART_NAME: Record<Art, string> = { staccato: "跳音", accent: "重音", marcato: "强音", sfz: "突强", fp: "强后即弱", tenuto: "保持", breath: "呼吸", stress: "次重音", unstress: "弱化", ghost: "幽灵音", whisper: "气声", swellUp: "音内渐强", swellDown: "音内渐弱", swellBoth: "音内鼓起", arpeggio: "琶音" };
+export const ART_NAME: Record<Art, string> = { staccato: _t("跳音"), accent: _t("重音"), marcato: _t("强音"), sfz: _t("突强"), fp: _t("强后即弱"), tenuto: _t("保持"), breath: _t("呼吸"), stress: _t("次重音"), unstress: _t("弱化"), ghost: _t("幽灵音"), whisper: _t("气声"), swellUp: _t("音内渐强"), swellDown: _t("音内渐弱"), swellBoth: _t("音内鼓起"), arpeggio: _t("琶音") };
 /** 音内的起伏这一组（互斥）：演奏法的值 ↔ 记号（< / > / <>，score.json 和画法用）。 */
 export const SWELL_ART: Record<Swell, Art> = { "<": "swellUp", ">": "swellDown", "<>": "swellBoth" };
 export const SWELL_ARTS: readonly Art[] = ["swellUp", "swellDown", "swellBoth"];
@@ -334,16 +335,16 @@ export function tempoAt(tokens: Token[], i: number): number {
 /** 速度的「语义」：数据只存 bpm（绝对的那个数），词按 bpm 落在哪一档推出来，谱上画「词 ♩ = 数」
  *  （user「速度记号可以用语义+数字吗。绝对零度。」）。typical = 候选里点这个词时给的 bpm；档的边界是常见范围取的整数。 */
 export const TEMPO_WORDS: { from: number; it: string; zh: string; typical: number }[] = [
-  { from: 0, it: "Largo", zh: "广板", typical: 50 },
-  { from: 60, it: "Larghetto", zh: "小广板", typical: 63 },
-  { from: 66, it: "Adagio", zh: "柔板", typical: 70 },
-  { from: 76, it: "Andante", zh: "行板", typical: 88 },
-  { from: 100, it: "Moderato", zh: "中板", typical: 108 },
-  { from: 112, it: "Allegretto", zh: "小快板", typical: 116 },
-  { from: 120, it: "Allegro", zh: "快板", typical: 132 },
-  { from: 156, it: "Vivace", zh: "活板", typical: 160 },
-  { from: 176, it: "Presto", zh: "急板", typical: 184 },
-  { from: 200, it: "Prestissimo", zh: "最急板", typical: 208 },
+  { from: 0, it: "Largo", zh: _t("广板"), typical: 50 },
+  { from: 60, it: "Larghetto", zh: _t("小广板"), typical: 63 },
+  { from: 66, it: "Adagio", zh: _t("柔板"), typical: 70 },
+  { from: 76, it: "Andante", zh: _t("行板"), typical: 88 },
+  { from: 100, it: "Moderato", zh: _t("中板"), typical: 108 },
+  { from: 112, it: "Allegretto", zh: _t("小快板"), typical: 116 },
+  { from: 120, it: "Allegro", zh: _t("快板"), typical: 132 },
+  { from: 156, it: "Vivace", zh: _t("活板"), typical: 160 },
+  { from: 176, it: "Presto", zh: _t("急板"), typical: 184 },
+  { from: 200, it: "Prestissimo", zh: _t("最急板"), typical: 208 },
 ];
 /** 速度能写多少（♩ = 每分钟几个四分音符）：打字和速度框的滚轮同一个范围（user 2026-10-07「typing到400的话wheel也到400或者都300…反正对齐一点」）。
  *  上限 400：2/2 的快歌「二分音符 = 160」在这里是 ♩ = 320，bebop / 速核也过 300；唱歌本身用不到这么快，但没有技术理由卡。 */

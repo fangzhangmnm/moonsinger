@@ -64,7 +64,7 @@ SINGER=$(hashed ./src/singer/worker.ts singer-worker); echo "[build] ✓ dist/$S
 # mp3 编码 worker（真 LAME：vendor/lame/lame.mjs + lame.wasm 运行时从 vendor/ 载，LGPL v2；点导出才加载）
 MP3=$(hashed ./src/export/mp3-worker.ts mp3-worker); echo "[build] ✓ dist/$MP3"
 # 录音房的 AudioWorklet 模块（src/engine/studio-processor.ts：走带 / 通道 / TinySoundFont / 元音采样器 / 块回放 / 母线；WASM 由主线程编好递进去，vendor/tsf/tsf-standalone.wasm）
-STUDIO=$(hashed ./src/engine/studio-processor.ts studio-worklet); echo "[build] ✓ dist/$STUDIO"
+STUDIO=$(hashed ./src/engine/studio-processor.ts studio-worklet "--define:__I18N_OFF__=true"); echo "[build] ✓ dist/$STUDIO"
 # 排版 worker（src/render/layout-worker.ts：engrave + SVG 串化；主线程只收字符串 + 命中数据；2026-10-21 音游级延迟那一刀）
 LAYOUT=$(hashed ./src/render/layout-worker.ts layout-worker); echo "[build] ✓ dist/$LAYOUT"
 # 存档编码 worker（src/format/encode-worker.ts：saveMxl = MusicXML 串化 + zip；自动存每 2 s 一次、大歌 20–60 ms，不占主线程；2026-10-21）

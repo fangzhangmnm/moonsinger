@@ -5,6 +5,7 @@
 //   · 每种效果一张参数表（id / 量纲 / 范围 / 默认 / 公式）——vault 自描述，anti-abandonware（user「必须存latex公式…或者github链接，在歌里面」）。
 //   · 参数只在 setParams 时算系数；process 里只乘加。全部零延迟（限幅器那种要前瞻的不放这里）。
 //   · 不认识的 kind = 不出声、原样带着（画灰归界面）。
+import { _t } from "../i18n/index.ts";
 import type { FxV2 } from "../format/contract.ts";
 
 export interface ParamDef { id: string; unit: "dB" | "Hz" | "ms" | "ratio" | "0..1" | "bool"; min: number; max: number; default: number; label: string }
@@ -41,12 +42,12 @@ class Biquad {
 }
 
 // ── EQ：高切 / 低切 + 低架 / 高架 + 一个峰 ────────────────────────────────────────────────────────────────────────
-const EQ: FxKindDef = { kind: "eq", name: "均衡", formula: "每段一个双二阶 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)，系数按 RBJ Audio EQ Cookbook（hp / lp Q = 0.707；架子 Q = 0.707；峰 Q 可调）。hpHz / lpHz = 0 关。",
+const EQ: FxKindDef = { kind: "eq", name: _t("均衡"), formula: _t("每段一个双二阶 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)，系数按 RBJ Audio EQ Cookbook（hp / lp Q = 0.707；架子 Q = 0.707；峰 Q 可调）。hpHz / lpHz = 0 关。"),
   params: [
-    { id: "hpHz", unit: "Hz", min: 0, max: 2000, default: 0, label: "低切" }, { id: "lpHz", unit: "Hz", min: 0, max: 20000, default: 0, label: "高切" },
-    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: "低架" }, { id: "lowHz", unit: "Hz", min: 40, max: 1000, default: 200, label: "低架频率" },
-    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: "中峰" }, { id: "midHz", unit: "Hz", min: 100, max: 10000, default: 1500, label: "中峰频率" }, { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: "中峰宽" },
-    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: "高架" }, { id: "highHz", unit: "Hz", min: 1000, max: 16000, default: 5000, label: "高架频率" },
+    { id: "hpHz", unit: "Hz", min: 0, max: 2000, default: 0, label: _t("低切") }, { id: "lpHz", unit: "Hz", min: 0, max: 20000, default: 0, label: _t("高切") },
+    { id: "lowDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("低架") }, { id: "lowHz", unit: "Hz", min: 40, max: 1000, default: 200, label: _t("低架频率") },
+    { id: "midDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("中峰") }, { id: "midHz", unit: "Hz", min: 100, max: 10000, default: 1500, label: _t("中峰频率") }, { id: "midQ", unit: "ratio", min: 0.2, max: 10, default: 1, label: _t("中峰宽") },
+    { id: "highDb", unit: "dB", min: -24, max: 24, default: 0, label: _t("高架") }, { id: "highHz", unit: "Hz", min: 1000, max: 16000, default: 5000, label: _t("高架频率") },
   ] };
 type EqSection = [boolean, "hp" | "lp" | "lowshelf" | "peak" | "highshelf", number, number, number];
 /** EQ 的五段（录音房设系数和画响应曲线共用这一份，v0.10.11）：开不开、类型、频率、Q、增益。 */
@@ -87,11 +88,11 @@ class Eq implements FxInstance {
 }
 
 // ── 压缩器（峰值检波、软拐点、可侧链；立体声联动）────────────────────────────────────────────────────────────────
-const COMP: FxKindDef = { kind: "comp", name: "压缩", formula: "包络 e[n] = max(|x|, e[n-1]·r) 起（attack）落（release）各一个时间常数；超过 threshold 的部分按 ratio 压（kneeDb 内软拐点：g = -(x - T + K/2)^2 · (1 - 1/R) / (2K)）；增益 = 10^(g/20) × 10^(makeup/20)。key 给了 = 听别的轨（侧链），不给 = 听自己。",
+const COMP: FxKindDef = { kind: "comp", name: _t("压缩"), formula: _t("包络 e[n] = max(|x|, e[n-1]·r) 起（attack）落（release）各一个时间常数；超过 threshold 的部分按 ratio 压（kneeDb 内软拐点：g = -(x - T + K/2)^2 · (1 - 1/R) / (2K)）；增益 = 10^(g/20) × 10^(makeup/20)。key 给了 = 听别的轨（侧链），不给 = 听自己。"),
   params: [
-    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: "阈值" }, { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: "比例" },
-    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: "起" }, { id: "releaseMs", unit: "ms", min: 5, max: 2000, default: 120, label: "落" },
-    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: "拐点" }, { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: "补偿" },
+    { id: "thresholdDb", unit: "dB", min: -60, max: 0, default: -18, label: _t("阈值") }, { id: "ratio", unit: "ratio", min: 1, max: 20, default: 3, label: _t("比例") },
+    { id: "attackMs", unit: "ms", min: 0.1, max: 200, default: 10, label: _t("起") }, { id: "releaseMs", unit: "ms", min: 5, max: 2000, default: 120, label: _t("落") },
+    { id: "kneeDb", unit: "dB", min: 0, max: 24, default: 6, label: _t("拐点") }, { id: "makeupDb", unit: "dB", min: -12, max: 24, default: 0, label: _t("补偿") },
   ] };
 class Comp implements FxInstance {
   readonly kind = "comp"; on = true;
@@ -126,10 +127,10 @@ class Comp implements FxInstance {
 }
 
 // ── 延迟（反馈里一个低通，立体声同长）─────────────────────────────────────────────────────────────────────────────
-const DELAY: FxKindDef = { kind: "delay", name: "延迟", formula: "y[n] = x[n]·dry + d[n]·mix（dry 没写 = 1 − mix，v0.10.10 前的写法），d[n] = x[n - D] + fb · LP(d[n - D])，LP = 一阶低通 dampHz。D = timeMs（最长 2 s）。",
+const DELAY: FxKindDef = { kind: "delay", name: _t("延迟"), formula: _t("y[n] = x[n]·dry + d[n]·mix（dry 没写 = 1 − mix，v0.10.10 前的写法），d[n] = x[n - D] + fb · LP(d[n - D])，LP = 一阶低通 dampHz。D = timeMs（最长 2 s）。"),
   params: [
-    { id: "timeMs", unit: "ms", min: 1, max: 2000, default: 375, label: "时间" }, { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: "反馈" },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "湿" }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "原声" }, { id: "dampHz", unit: "Hz", min: 500, max: 20000, default: 6000, label: "反馈高切" },
+    { id: "timeMs", unit: "ms", min: 1, max: 2000, default: 375, label: _t("时间") }, { id: "feedback", unit: "0..1", min: 0, max: 0.95, default: 0.35, label: _t("反馈") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("原声") }, { id: "dampHz", unit: "Hz", min: 500, max: 20000, default: 6000, label: _t("反馈高切") },
   ] };
 class Delay implements FxInstance {
   readonly kind = "delay"; on = true;
@@ -154,10 +155,10 @@ class Delay implements FxInstance {
 }
 
 // ── 算法混响（Freeverb 结构：8 条梳状 + 4 条全通，每边一组、右边错开；公共领域的经典结构）────────────────────────────
-const REVERB: FxKindDef = { kind: "reverb", name: "混响", formula: "Freeverb：8 条低通反馈梳状（长度 1116…1617 @44.1k，按采样率缩放；反馈 = 0.7 + 0.28·room，低通 = damp）并联，再串 4 条全通（g = 0.5）；右边各长 23 个采样；前面一段 preDelayMs 纯延迟；y = x·(1-mix) + wet·mix。",
+const REVERB: FxKindDef = { kind: "reverb", name: _t("混响"), formula: _t("Freeverb：8 条低通反馈梳状（长度 1116…1617 @44.1k，按采样率缩放；反馈 = 0.7 + 0.28·room，低通 = damp）并联，再串 4 条全通（g = 0.5）；右边各长 23 个采样；前面一段 preDelayMs 纯延迟；y = x·(1-mix) + wet·mix。"),
   params: [
-    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: "房间大小" }, { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: "高频吸收" },
-    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: "湿" }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "原声" }, { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: "预延迟" }, { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: "宽度" },
+    { id: "room", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("房间大小") }, { id: "damp", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("高频吸收") },
+    { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.3, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("原声") }, { id: "preDelayMs", unit: "ms", min: 0, max: 200, default: 10, label: _t("预延迟") }, { id: "width", unit: "0..1", min: 0, max: 1, default: 1, label: _t("宽度") },
   ], stereoOnly: true };
 const COMBS = [1116, 1188, 1277, 1356, 1422, 1491, 1557, 1617], ALLPASS = [556, 441, 341, 225], SPREAD = 23;
 class Comb { buf: Float32Array; idx = 0; store = 0; constructor(n: number) { this.buf = new Float32Array(n); }
@@ -198,11 +199,11 @@ class Reverb implements FxInstance {
 }
 
 // ── 合唱 / 加倍（user 2026-10-10「齐唱 我想的是用混音效果做，clannad也只有茶太一名歌手啊」）：几条短延迟各自被低频抖动（= 轻微的音高抖动），分到左右，和干声叠在一起 ──
-const CHORUS: FxKindDef = { kind: "chorus", name: "合唱", formula: "v 条延迟 d_k(t) = delayMs + depthMs · sin(2π · rateHz · t + 2πk/v)（线性插值读），第 k 条摆在 pan_k = spread · (2k/(v-1) - 1)；y = x·(1-mix) + mix · Σ_k d_k / v。",
+const CHORUS: FxKindDef = { kind: "chorus", name: _t("合唱"), formula: _t("v 条延迟 d_k(t) = delayMs + depthMs · sin(2π · rateHz · t + 2πk/v)（线性插值读），第 k 条摆在 pan_k = spread · (2k/(v-1) - 1)；y = x·(1-mix) + mix · Σ_k d_k / v。"),
   params: [
-    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: "几条" }, { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: "延迟" },
-    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: "抖动深度" }, { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: "抖动快慢" },
-    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: "左右铺开" }, { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: "湿" }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: "原声" },
+    { id: "voices", unit: "ratio", min: 1, max: 4, default: 3, label: _t("几条") }, { id: "delayMs", unit: "ms", min: 5, max: 40, default: 18, label: _t("延迟") },
+    { id: "depthMs", unit: "ms", min: 0, max: 10, default: 2.5, label: _t("抖动深度") }, { id: "rateHz", unit: "Hz", min: 0.05, max: 5, default: 0.6, label: _t("抖动快慢") },
+    { id: "spread", unit: "0..1", min: 0, max: 1, default: 0.8, label: _t("左右铺开") }, { id: "mix", unit: "0..1", min: 0, max: 1, default: 0.5, label: _t("湿") }, { id: "dry", unit: "0..1", min: 0, max: 1, default: 1, label: _t("原声") },
   ] };
 class Chorus implements FxInstance {
   readonly kind = "chorus"; on = true;
@@ -236,7 +237,7 @@ class Chorus implements FxInstance {
 }
 
 // ── 增益 ──────────────────────────────────────────────────────────────────────────────────────────────────────────
-const GAIN: FxKindDef = { kind: "gain", name: "增益", formula: "y = x · 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: "增益" }] };
+const GAIN: FxKindDef = { kind: "gain", name: _t("增益"), formula: "y = x · 10^(dB/20)", params: [{ id: "dB", unit: "dB", min: -60, max: 24, default: 0, label: _t("增益") }] };
 class Gain implements FxInstance {
   readonly kind = "gain"; on = true; private g = 1;
   readonly id: string;
@@ -275,4 +276,4 @@ export function buildChain(specs: readonly FxV2[], prev: FxInstance[], sr: numbe
   return out;
 }
 /** vault README 用：这条链每个效果的算法说明。 */
-export function describeFx(spec: FxV2): string { const d = FX_KINDS[spec.kind]; return d ? `${d.name}（${spec.kind}）：${d.formula}` : `${spec.kind}：这一版不认识`; }
+export function describeFx(spec: FxV2): string { const d = FX_KINDS[spec.kind]; return d ? `${d.name}（${spec.kind}）：${d.formula}` : _t("{kind}：这一版不认识", { kind: spec.kind }); }

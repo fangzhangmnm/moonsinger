@@ -2,6 +2,7 @@
 //   家族规则书 §1 第 6 / 12 条、§4 第 10 项：官网网址只有 config.ts SITE_URL 一处，文案插它；位置 = 开局一行 + 灰入口的副标题；不弹窗、不重复。
 //   MoonSinger 界面只有中文、没有 i18n 层：这一组字住这一张表（不散在各处）。
 //   开关来自 deployment-policy（siteHint）；存储靠不靠得住来自 persistence（availability / onHealth）——本文件只读、不自己判形态。
+import { _t } from "../i18n/index.ts";
 import { SITE_URL, REPORT_URL } from "../config.ts";
 import { currentPolicy } from "../deployment-policy.ts";
 import { deployment } from "../deployment.ts";
@@ -13,27 +14,27 @@ export const SITE_HOST = host(SITE_URL);
 
 /** 文案表（人话；网址都从 SITE_URL / REPORT_URL 插）。 */
 export const SITE_TEXT = {
-  itchLine: `这是 itch 上的试玩版：除了网盘同步，别的都有。完整版在 ${SITE_HOST}`,
-  localLine: `这是下载下来的备用版：除了网盘同步，别的都有。完整版在 ${SITE_HOST}`,
-  untested: `这个浏览器打开备用版没测过：设置和缓存存不住（关了就忘），歌请记得「存」下来。遇到问题请到 ${host(REPORT_URL)} 告诉我们`,
-  degraded: "这个浏览器写不进存储了：这次打开之后改的设置只留在内存里，关了就忘",
-  cloudOff: "网盘在官网",
-  cloudOffTitle: `网盘（OneDrive）同步只在官网版里有：${SITE_HOST}`,
-  libOffTitle: `这个浏览器存不住歌库（关了就忘）：歌请用「存」下载成文件；歌库在官网版里：${SITE_HOST}`,
-  libSiteTitle: `歌库只在官网版里有（${SITE_HOST}）：这里的歌没有浏览器外的家——「存」= 下载成 .mxl 文件，「打开」= 选文件`,
-  noShell: deployment() === "itch" ? "itch 版跟着 itch 上的版本走：作者推了新版，刷新这一页就是新的" : deployment() === "local" ? `备用版不会自己更新：要新版就重新下载这个文件夹，或去官网 ${SITE_HOST}` : "这里没有离线壳，不用更新",
-  libNoFolderTitle: `这个浏览器选不了文件夹（桌面版 Chrome / Edge 可以），所以备用版在这里没有歌库：「存」= 下载成 .mxl 文件，「打开」= 选文件；歌库也在官网版里：${SITE_HOST}`,
-  goSite: "去官网",
-  report: "报告问题",
+  itchLine: _t("这是 itch 上的试玩版：除了网盘同步，别的都有。完整版在 {SITE_HOST}", { SITE_HOST }),
+  localLine: _t("这是下载下来的备用版：除了网盘同步，别的都有。完整版在 {SITE_HOST}", { SITE_HOST }),
+  untested: _t("这个浏览器打开备用版没测过：设置和缓存存不住（关了就忘），歌请记得「存」下来。遇到问题请到 {REPORT_URL} 告诉我们", { REPORT_URL: host(REPORT_URL) }),
+  degraded: _t("这个浏览器写不进存储了：这次打开之后改的设置只留在内存里，关了就忘"),
+  cloudOff: _t("网盘在官网"),
+  cloudOffTitle: _t("网盘（OneDrive）同步只在官网版里有：{SITE_HOST}", { SITE_HOST }),
+  libOffTitle: _t("这个浏览器存不住歌库（关了就忘）：歌请用「存」下载成文件；歌库在官网版里：{SITE_HOST}", { SITE_HOST }),
+  libSiteTitle: _t("歌库只在官网版里有（{SITE_HOST}）：这里的歌没有浏览器外的家——「存」= 下载成 .mxl 文件，「打开」= 选文件", { SITE_HOST }),
+  noShell: deployment() === "itch" ? _t("itch 版跟着 itch 上的版本走：作者推了新版，刷新这一页就是新的") : deployment() === "local" ? _t("备用版不会自己更新：要新版就重新下载这个文件夹，或去官网 {SITE_HOST}", { SITE_HOST }) : _t("这里没有离线壳，不用更新"),
+  libNoFolderTitle: _t("这个浏览器选不了文件夹（桌面版 Chrome / Edge 可以），所以备用版在这里没有歌库：「存」= 下载成 .mxl 文件，「打开」= 选文件；歌库也在官网版里：{SITE_HOST}", { SITE_HOST }),
+  goSite: _t("去官网"),
+  report: _t("报告问题"),
 };
 
 const open = (url: string) => { try { window.open(url, "_blank", "noopener"); } catch { /* 被拦就算了：网址就写在那一行里 */ } };
 
 /** 备用版设置页里画灰的那几行的说明（模型 / 音源就在文件夹里；后台线程存不住念缓存）。 */
 export const FOLDER_TEXT = {
-  models: "备用版：小月相的模型包就在这个文件夹的 pwa-models/ 里，用到才读、读的时候核哈希；不用下载、也不用导入",
-  sounds: "备用版：音源就在这个文件夹的 pwa-sounds/ 里，用到才读；浏览器缓存在双击打开的网页里用不了，这里没有「留在设备上」这回事",
-  speech: "这个浏览器不让双击打开的网页的后台线程存东西：念缓存只在内存里（每次打开第一遍要重念）",   // 只在真存不住时显示（Chromium 实测存得住、显示的是大小；2026-11-03）
+  models: _t("备用版：小月相的模型包就在这个文件夹的 pwa-models/ 里，用到才读、读的时候核哈希；不用下载、也不用导入"),
+  sounds: _t("备用版：音源就在这个文件夹的 pwa-sounds/ 里，用到才读；浏览器缓存在双击打开的网页里用不了，这里没有「留在设备上」这回事"),
+  speech: _t("这个浏览器不让双击打开的网页的后台线程存东西：念缓存只在内存里（每次打开第一遍要重念）"),   // 只在真存不住时显示（Chromium 实测存得住、显示的是大小；2026-11-03）
 };
 
 let shown = false;

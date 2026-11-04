@@ -1,13 +1,14 @@
 // 参数行（深模块，created by Claude Opus 5.5 2026-10-10）：名字 + 小方块问号 + 读数 + 控件。
 // 滑块的手感全在这里：拖 / 滚轮一格一步 / 双击回默认，三条路都只发 input 事件，宿主照旧只听 input。
 // user「鼠标滚轮能不能一格一格滚各种slider，帮助强迫症」「或者你干脆做一个旋钮的深模块」→「我觉得还是滑块吧？」（触屏上滑块直接拖）。
+import { _t } from "../i18n/index.ts";
 import { wheelSteps } from "./wheel.ts";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 /** 一行：名字 + 问号（iPad 点了在这一行下面展开说明；桌面悬停也有）+ 读数 + 控件（滑块 / 开关 / 下拉…）。 */
 export function paramRow(label: string, hint: string, out: string, control: string, cls = "fx-row"): string {
-  return `<div class="param ${cls}" title="${esc(hint)}"><span class="row-lab">${esc(label)}<button class="q" type="button" aria-label="这是什么">?</button> ${out}</span>${control}<div class="row-help">${esc(hint)}</div></div>`;
+  return `<div class="param ${cls}" title="${esc(hint)}"><span class="row-lab">${esc(label)}<button class="q" type="button" aria-label="${_t("这是什么")}">?</button> ${out}</span>${control}<div class="row-help">${esc(hint)}</div></div>`;
 }
 
 export interface SliderSpec {
@@ -22,7 +23,7 @@ export interface SliderSpec {
   disabled?: boolean;
 }
 export function slider(s: SliderSpec): string {
-  const def = s.def == null || !Number.isFinite(s.def) ? "" : ` data-def="${s.def}" title="双击回 ${esc(s.defText ?? String(s.def))}"`;
+  const def = s.def == null || !Number.isFinite(s.def) ? "" : _t(" data-def=\"{def}\" title=\"双击回 {defText}\"", { def: s.def, defText: esc(s.defText ?? String(s.def)) });
   return `<input type="range" min="${s.min}" max="${s.max}" step="${s.step}" value="${s.value}"${def}${s.disabled ? " disabled" : ""} ${s.attrs} />`;
 }
 

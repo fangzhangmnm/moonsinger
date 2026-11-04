@@ -8,6 +8,7 @@
 //   user 2026-10-06「我日语能力还没进prealpha哦，没歌词输入的话月读念什么」「哼歌会用什么」→ 开关「同意」）。
 // 开头的休止 Lab 格式表达不了（它有固定的 leadIn），第一版直接丢掉。
 
+import { _t } from "../i18n/index.ts";
 import { midiOf } from "./pitch.ts";
 import { type Token, type Hum, type TempoMap, TPQ, effectivePitch, isTimed, timeline, artOf } from "./song.ts";
 import { MELISMA_MARK, ELISION, isSmallKana, isSokuon } from "./lyrics.ts";
@@ -19,7 +20,7 @@ export interface LabScore { SCORE: LabEntry[]; TEXT: string; TEMPO_QUARTER: numb
 
 /** 「哼的字」四档在两种语言里的字：la 舌尖起音、节奏最清楚；n 闭嘴哼（同高的几个音会连成一个）；u = Ooh；a = Ahh（GM 人声兜底的两个元音）。 */
 // 英文歌里：la / hum / ooh / oh / ah（「mm」「hmm」词典里没有元音唱不出来，嗯 只好用 hum）
-export const HUM_SYLLABLE: Record<Hum, Record<SingLang, string>> = { la: { ja: "ら", zh: "啦", en: "la" }, n: { ja: "ん", zh: "嗯", en: "hum" }, u: { ja: "う", zh: "呜", en: "ooh" }, o: { ja: "お", zh: "哦", en: "oh" }, a: { ja: "あ", zh: "啊", en: "ah" } };
+export const HUM_SYLLABLE: Record<Hum, Record<SingLang, string>> = { la: { ja: "ら", zh: _t("啦"), en: "la" }, n: { ja: "ん", zh: _t("嗯"), en: "hum" }, u: { ja: "う", zh: _t("呜"), en: "ooh" }, o: { ja: "お", zh: _t("哦"), en: "oh" }, a: { ja: "あ", zh: _t("啊"), en: "ah" } };
 
 /** tokens = 一个声部（压平后的一串）；tempoMap = 第一个声部的速度表（这个声部不是第一个时给，自己串里的速度记号不算数）。 */
 /** range = 只出这一段的 token（下标 [from, to)；月读分段唱用，见 singChunks）——速度、没写音高的音照样按整串的上下文算。不给 = 整串。 */

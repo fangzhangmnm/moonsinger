@@ -8,6 +8,7 @@
 //     al Fine = 跳回来之后在 Fine 停，al Coda = 跳回来之后在 To Coda 去 Coda；**跳回来之后反复不再反复**（MuseScore 等的默认）；D.C. / D.S. 只跳一次。
 //   · 展开 = 按段（tick 区间）切每一条 track 再接起来：段里的音照抄（第二次起换负 id，同编排重复的纸）；跳过去的地方补上那一刻生效的调号 / 拍号 / 速度 / 力度 / 风格；
 //     段尾截齐、段里短了补休止（所有声部一样长）；反复小节线变回普通小节线，房子 / 跳转记号拿掉（展开完就用掉了）。
+import { _t } from "../i18n/index.ts";
 import { type Token, type PaperSeg, type Song, type NavTok, type BarTok, type NavWhat, isTimed, tempoOwner, paperTicks } from "./song.ts";
 
 export interface Seg { t0: number; t1: number }
@@ -131,9 +132,9 @@ export function expandPaper(song: Song, paper: PaperSeg, newId: () => number): P
 export function navWhy(song: Song, paper: PaperSeg, partId: string, t: Token): string | null {
   if (!(t.kind === "nav" || (t.kind === "bar" && t.repeat))) return null;
   const owner = tempoOwner(song, paper);
-  if (owner && owner !== partId) return "反复 / 跳转只看这张纸最上面那位歌手那一行";
-  if (t.kind === "nav" && (t.what === "ds" || t.what === "dsFine" || t.what === "dsCoda") && !paper.tracks[partId]?.some((x) => x.kind === "nav" && x.what === "segno")) return "这张纸上没有 Segno，D.S. 跳不了";
-  if (t.kind === "nav" && (t.what === "dcCoda" || t.what === "dsCoda") && !paper.tracks[partId]?.some((x) => x.kind === "nav" && x.what === "toCoda")) return "没有 To Coda：跳回来之后一路放到纸尾";
+  if (owner && owner !== partId) return _t("反复 / 跳转只看这张纸最上面那位歌手那一行");
+  if (t.kind === "nav" && (t.what === "ds" || t.what === "dsFine" || t.what === "dsCoda") && !paper.tracks[partId]?.some((x) => x.kind === "nav" && x.what === "segno")) return _t("这张纸上没有 Segno，D.S. 跳不了");
+  if (t.kind === "nav" && (t.what === "dcCoda" || t.what === "dsCoda") && !paper.tracks[partId]?.some((x) => x.kind === "nav" && x.what === "toCoda")) return _t("没有 To Coda：跳回来之后一路放到纸尾");
   return null;
 }
 export type { NavTok };

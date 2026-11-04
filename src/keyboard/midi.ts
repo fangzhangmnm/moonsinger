@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // midi.ts —— MIDI 键盘（Web MIDI）：插在电脑上的电子琴 / MIDI 键盘 = 又一个只发按键的输入设备。created 2026-10-16 by Claude Opus 5.5
 //   user 2026-10-16「今天把midi键盘做一下吧，最好ipad也能支持，可以插电子琴上弄」（10-09 杂事账「midi键盘能做就做」）。
 // 键盘模块的规矩照旧（ai-docs/20261014-editing-mental-model.md §2）：只管交互，不懂音乐——发出来的是「第几号琴键按下 / 松开」，
@@ -55,7 +56,7 @@ export interface MidiNavigator {
   permissions?: { query(d: { name: string }): Promise<{ state: string }> };
 }
 
-const portName = (p: PortLike): string => (p.name || p.manufacturer || "MIDI 键盘").trim();
+const portName = (p: PortLike): string => (p.name || p.manufacturer || _t("MIDI 键盘")).trim();
 
 export function createMidiKeyboard(h: MidiHandlers, nav: MidiNavigator = navigator as unknown as MidiNavigator): MidiKeyboard {
   let status: MidiStatus = typeof nav.requestMIDIAccess === "function" ? { k: "off" } : { k: "unsupported" };

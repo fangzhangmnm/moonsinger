@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // song-player.ts —— 歌库的播放器：一个 <audio> + 系统媒体控件（锁屏 / 控制中心 / 耳机键 / 键盘媒体键）。created 2026-10-16 by Claude Opus 5.5
 //   user 2026-10-16「至少在gallery侧能做到锁屏播放吗（可以选择是否loop）」→「那么只做歌库的锁屏，做干净点」「歌库里面可以设置循环与否」。
 //   为什么是 <audio> 不是 Web Audio：iPad 一锁屏就把 Web Audio 掐掉（编辑器的实时引擎就是这样，那边不做）；媒体元素在主屏 PWA 里锁屏照放。
@@ -114,7 +115,7 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
   // 循环绕回开头不一定有 seeked：时间往回跳了就重报一次进度（锁屏的进度条是系统按上次报的自己往前推的）
   audio.addEventListener("timeupdate", () => { if (!track) return; const t = audio.currentTime; if (t + 1 < lastTime) pushPosition(); lastTime = t; emit(); });
   audio.addEventListener("ended", () => { if (track) emit(); });   // 没开循环：放完停在结尾，再点 ▶ 从头放
-  audio.addEventListener("error", () => { if (!track) return; stop(); deps.onError?.("这份 mp3 放不了（文件坏了？）"); });
+  audio.addEventListener("error", () => { if (!track) return; stop(); deps.onError?.(_t("这份 mp3 放不了（文件坏了？）")); });
 
   /** 在点击里同步调（取 mp3 之前）：空放一小段静音，让 iPad 给这个元素放的许可。拿到过就不再做。 */
   function arm(): void {

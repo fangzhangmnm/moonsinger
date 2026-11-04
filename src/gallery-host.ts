@@ -3,6 +3,7 @@
 //   缩略图 = 歌 zip 最后一个 entry Thumbnails/thumbnail.png 尾读，WXHW ADR-0012 同款）、chrome（返回 / 云 / 刷新 / 新建 / 回收站 / 设置）。
 //   封面的字（歌名 / 日期 / 大小）= src/ui/song-cover.ts 排版进包的两个槽；文案 = 包内 zh 默认 + 几条换成歌库口吻。
 //   派生缓存 IDB `moonsinger-thumbs`（user 2026-10-08「没问题」批；CLAUDE.md 持久层白名单表登记）。
+import { _t } from "./i18n/index.ts";
 import { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } from "../vendor/vue/vue.esm-browser.prod.js";
 import { createGallery, humanSize, type CreateGalleryDeps, type GalleryDocHost, type VueRuntime, type GItem, type TileInfo, type TileAction, type VerbStore, type DataFaceStore, type Gallery, type GalleryView, type AsideKind, type AsideScope } from "@internal/gallery";
 import { CACHE_DBS } from "./config.ts";
@@ -63,10 +64,10 @@ const factsOf = (v: unknown): SongFacts => { const f = (v as { final?: { rev?: u
 const THUMB_DB = CACHE_DBS.thumbs;   // 2026-11-03 起带 GUID（原 moonsinger-thumbs）
 // 包内 zh 默认是 WeebPaint 口吻；会露面的几条换成歌库口吻（其余沿用）。key 必须是包的 GalleryTextKey（类型守着）。
 const TEXT: Partial<Record<Parameters<NonNullable<NonNullable<CreateGalleryDeps["text"]>["t"]>>[0], string>> = {
-  "gal.empty.none": "还没有歌。点「新建」写一首，或把 .mxl 拖进来。",
-  "gal.empty.folder": "这个夹里还没有歌。",
-  "gal.empty.trash": "回收站是空的。",
-  "gal.tile.active": "打开中",
+  "gal.empty.none": _t("还没有歌。点「新建」写一首，或把 .mxl 拖进来。"),
+  "gal.empty.folder": _t("这个夹里还没有歌。"),
+  "gal.empty.trash": _t("回收站是空的。"),
+  "gal.tile.active": _t("打开中"),
 };
 
 export function initGalleryHost(d: GalleryHostDeps) {
@@ -74,23 +75,23 @@ export function initGalleryHost(d: GalleryHostDeps) {
   // 一屏容器 + chrome（不进 index.html：歌库是懒的，没进过歌库的设备连 DOM 都不长）。没有「回到谱」：进歌库 = 放下手里的歌（gallery-first，同 WeebPaint；user 2026-10-08「7 和weebpaint对齐」），出口 = 打开一首 / 新建
   const fullEl = document.createElement("div");
   fullEl.id = "galleryFull"; fullEl.className = "gallery-full"; fullEl.hidden = true;
-  fullEl.setAttribute("role", "dialog"); fullEl.setAttribute("aria-modal", "true"); fullEl.setAttribute("aria-label", "歌库");
+  fullEl.setAttribute("role", "dialog"); fullEl.setAttribute("aria-modal", "true"); fullEl.setAttribute("aria-label", _t("歌库"));
   fullEl.innerHTML = `<div class="gallery-chrome">` +
-    `<div class="gallery-chrome-title">歌库</div><span class="spacer"></span>` +
+    `<div class="gallery-chrome-title">${_t("歌库")}</div><span class="spacer"></span>` +
     // 网盘关着（itch / 备用版）= 云按钮画灰 + 旁边一行「网盘在官网」（家族规则书 §1 第 6 条：入口不许露着却点不动；2026-11-03）
     `<button type="button" class="btn gallery-home-btn" data-v="home" hidden>${iconHtml("folder")}<span class="gallery-home-name"></span></button>` +
-    (currentPolicy().cloud ? `<button type="button" class="btn" data-v="cloud" title="云端：登录 / 退出">${iconHtml("cloud")}</button>`
+    (currentPolicy().cloud ? `<button type="button" class="btn" data-v="cloud" title="${_t("云端：登录 / 退出")}">${iconHtml("cloud")}</button>`
       : `<button type="button" class="btn is-off" data-v="cloud" disabled title="${SITE_TEXT.cloudOffTitle}">${iconHtml("cloud")}</button>${cloudOffHtml()}`) +
-    `<button type="button" class="btn" data-v="refresh" title="刷新云端" hidden>${iconHtml("refresh")}</button>` +
-    `<button type="button" class="btn gallery-inst" data-v="instruments" title="即兴：挑乐器、用键盘弹着玩（不写进哪首歌）"><span>即兴</span></button>` +
-    `<button type="button" class="btn" data-v="new" title="新建：一首歌 / 一个文件夹" aria-haspopup="menu">${iconHtml("new")}<span>新建</span></button>` +
-    `<button type="button" class="btn" data-v="aside" title="回收站和备份箱">${iconHtml("trash-can")}</button>` +
-    `<button type="button" class="btn" data-v="settings" title="设置">${iconHtml("menu")}</button></div>` +
+    `<button type="button" class="btn" data-v="refresh" title="${_t("刷新云端")}" hidden>${iconHtml("refresh")}</button>` +
+    `<button type="button" class="btn gallery-inst" data-v="instruments" title="${_t("即兴：挑乐器、用键盘弹着玩（不写进哪首歌）")}"><span>${_t("即兴")}</span></button>` +
+    `<button type="button" class="btn" data-v="new" title="${_t("新建：一首歌 / 一个文件夹")}" aria-haspopup="menu">${iconHtml("new")}<span>${_t("新建")}</span></button>` +
+    `<button type="button" class="btn" data-v="aside" title="${_t("回收站和备份箱")}">${iconHtml("trash-can")}</button>` +
+    `<button type="button" class="btn" data-v="settings" title="${_t("设置")}">${iconHtml("menu")}</button></div>` +
     // 没有家的披露条（家族 library-needs-a-home §4 第 1 步，工单 H）：不改入口、不删功能，先说实话 + 给出口
     `<div class="gallery-home-bar" hidden><span class="gallery-home-text"></span><span class="spacer"></span><span class="gallery-home-btns"></span></div>` +
-    `<div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml("back")}<span>回到歌</span></button>` +
-    `<div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml("trash-can")}<span>回收站</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml("archive-box")}<span>备份箱</span></button></div>` +
-    `<span class="spacer"></span><button type="button" class="btn danger" data-v="empty">清空</button></div>` +
+    `<div class="gallery-asidebar" hidden><button type="button" class="btn" data-v="files">${iconHtml("back")}<span>${_t("回到歌")}</span></button>` +
+    `<div class="gallery-aside-tabs"><button type="button" class="btn gallery-aside-tab" data-v="trash">${iconHtml("trash-can")}<span>${_t("回收站")}</span></button><button type="button" class="btn gallery-aside-tab" data-v="backup">${iconHtml("archive-box")}<span>${_t("备份箱")}</span></button></div>` +
+    `<span class="spacer"></span><button type="button" class="btn danger" data-v="empty">${_t("清空")}</button></div>` +
     `<div class="gallery-mount"></div>`;
   document.body.append(fullEl);
   const mountEl = fullEl.querySelector<HTMLElement>(".gallery-mount")!, asideBar = fullEl.querySelector<HTMLElement>(".gallery-asidebar")!;
@@ -129,7 +130,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       tilePlaceholderHtml: (id) => placeholderHtml(identifiers.parse(id)?.stem ?? id),
       tileOverlayHtml: (id: string, item?: TileInfo, facts?: unknown) => coverHtml(identifiers.parse(id)?.stem ?? id, {
         sizeText: item?.size != null ? humanSize(item.size) : undefined,
-        editedText: item?.lastModified ? `改于 ${new Date(item.lastModified).toLocaleString()}` : undefined,
+        editedText: item?.lastModified ? _t("改于 {lastModified}", { lastModified: new Date(item.lastModified).toLocaleString() }) : undefined,
         finalRev: factsOf(facts ?? null)?.final.rev,   // 底栏印「定稿 N」（user 2026-10-16「印定稿n」）
       }),
       // 定稿了的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；没定稿 = 不画。
@@ -138,7 +139,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       tileAction: (id: string, _info: TileInfo, facts: unknown): TileAction | null => {
         const f = factsOf(facts); if (!f) return null;
         void playTick.value;
-        return player.playing() === id ? { icon: "pause", title: "暂停（底边播放条上也能控）", state: "ready" } : { icon: "play", title: `听定稿的 mp3（第 ${f.final.rev} 版，${f.final.secs.toFixed(0)} 秒）`, state: "ready" };
+        return player.playing() === id ? { icon: "pause", title: _t("暂停（底边播放条上也能控）"), state: "ready" } : { icon: "play", title: _t("听定稿的 mp3（第 {rev} 版，{p} 秒）", { rev: f.final.rev, p: f.final.secs.toFixed(0) }), state: "ready" };
       },
     },
     policy: {
@@ -166,11 +167,11 @@ export function initGalleryHost(d: GalleryHostDeps) {
   //   user 2026-10-16「至少在gallery侧能做到锁屏播放吗（可以选择是否loop）」「歌库里面可以设置循环与否」：循环 = 播放条上的开关，这次打开有效，锁屏下照样绕回开头。
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player"; playerEl.hidden = true;
-  playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="从头放（锁屏 / 耳机的「上一首」也是）">${iconHtml("play-from-start")}</button>` +   // user 2026-10-17「gallery播放没有从头再来的功能，我有时候想从头听」：加键不做手势（歌库只有接着 / 从头两样，藏进手势就找不到）
-    `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="放 / 暂停">${iconHtml("pause")}</button>` +
+  playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="${_t("从头放（锁屏 / 耳机的「上一首」也是）")}">${iconHtml("play-from-start")}</button>` +   // user 2026-10-17「gallery播放没有从头再来的功能，我有时候想从头听」：加键不做手势（歌库只有接着 / 从头两样，藏进手势就找不到）
+    `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="${_t("放 / 暂停")}">${iconHtml("pause")}</button>` +
     `<span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span>` +
-    `<button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">循环</button>` +
-    `<button type="button" class="btn" data-p="close" title="停">${iconHtml("x")}</button>`;
+    `<button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">${_t("循环")}</button>` +
+    `<button type="button" class="btn" data-p="close" title="${_t("停")}">${iconHtml("x")}</button>`;
   fullEl.append(playerEl);
   const appIcon = (file: string, sizes: string) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
@@ -185,7 +186,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
     playerEl.querySelector<HTMLElement>(".ms-player-toggle")!.innerHTML = iconHtml(s.paused ? "play" : "pause");
     const loopBtn = playerEl.querySelector<HTMLElement>(".ms-player-loop")!;
     loopBtn.classList.toggle("is-on", s.loop); loopBtn.setAttribute("aria-pressed", String(s.loop));
-    loopBtn.title = s.loop ? "单曲循环：开着（放完从头再放，锁屏也一样）" : "单曲循环：关着（放完就停）";
+    loopBtn.title = s.loop ? _t("单曲循环：开着（放完从头再放，锁屏也一样）") : _t("单曲循环：关着（放完就停）");
   }
   const playTick = ref(0);   // 在放哪首（含暂停）变了才 +1：卡片上的 ▶ / ⏸ 重算（进度每秒几跳不碰它，不然整个网格跟着重算）
   let tickedFor: string | null = null;
@@ -193,24 +194,24 @@ export function initGalleryHost(d: GalleryHostDeps) {
   /** 点了封面上的 ▶（包只在定稿了的卡上画它；facts = 包缓存的事实）：抓 mp3 放；再点同一首 = 放 / 暂停。 */
   async function playTile(id: string, facts: SongFacts): Promise<void> {
     if (player.state().key === id) { player.toggle(); return; }
-    if (!facts) { status("这首还没定稿：打开它，三条杠里「定稿…」——定稿后封面上就能直接听。"); return; }
+    if (!facts) { status(_t("这首还没定稿：打开它，三条杠里「定稿…」——定稿后封面上就能直接听。")); return; }
     player.arm();   // 还在点击里：先拿 iPad 放的许可（下面要等取 mp3，等完就不算点击了）
     const stem = identifiers.parse(id)?.stem ?? id;
     try {
-      const b = await withBusy(`取「${stem}」的 mp3…`, async () => {
+      const b = await withBusy(_t("取「{stem}」的 mp3…", { stem }), async () => {
         const rec = await peekFinal(id);
         if (!rec) { void gallery?.facts?.invalidate(id); return null; }   // 事实过期了（改稿后还没重取）：清掉让包重问
         const blob = await zipFile(id).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: rec.mp3.path, source: "local" });
-        if (!blob || blob.size !== rec.mp3.bytes) throw new Error(`mp3 没取到（${blob ? `${blob.size} ≠ ${rec.mp3.bytes}` : "空"}）`);
+        if (!blob || blob.size !== rec.mp3.bytes) throw new Error(_t("mp3 没取到（{blob}）", { blob: blob ? `${blob.size} ≠ ${rec.mp3.bytes}` : _t("空") }));
         return { rec, blob };
       });
-      if (!b) { status("这首还没定稿：打开它，三条杠里「定稿…」——定稿后封面上就能直接听。"); return; }
+      if (!b) { status(_t("这首还没定稿：打开它，三条杠里「定稿…」——定稿后封面上就能直接听。")); return; }
       const cover = (await gallery?.thumbs?.read(id).catch(() => null))?.blob ?? null;   // 锁屏上的图 = 歌库缓存着的封面（没有 = app 图标）
-      barTitle = `${stem} · 定稿 ${b.rec.rev}`;
-      const r = await player.play({ key: id, blob: new Blob([b.blob], { type: "audio/mpeg" }), title: stem, artist: "MoonSinger", album: `定稿 第 ${b.rec.rev} 版`, cover });
-      if (r === "blocked") status("没能自己开始放：点底边播放条上的 ▶");
+      barTitle = _t("{stem} · 定稿 {rev}", { stem, rev: b.rec.rev });
+      const r = await player.play({ key: id, blob: new Blob([b.blob], { type: "audio/mpeg" }), title: stem, artist: "MoonSinger", album: _t("定稿 第 {rev} 版", { rev: b.rec.rev }), cover });
+      if (r === "blocked") status(_t("没能自己开始放：点底边播放条上的 ▶"));
       diagNote("gallery", `play final ${id} (${b.blob.size} B) → ${r}`);
-    } catch (e) { reportError(e, "warning"); status(`放不了：${(e as Error).message ?? String(e)}`, true); player.stop(); }
+    } catch (e) { reportError(e, "warning"); status(_t("放不了：{Error}", { Error: (e as Error).message ?? String(e) }), true); player.stop(); }
   }
   playerEl.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-p]")?.dataset.p; if (!v) return;
@@ -221,18 +222,18 @@ export function initGalleryHost(d: GalleryHostDeps) {
    *  只建在现在这个夹里；app 不碰云端、不自己拼请求。 */
   const warn = (msg: string) => reportError(msg, "warning");   // 名字不对 / 占了 = 提醒（不是出错）
   async function newFolder(): Promise<void> {
-    if (!hasStore()) { warn("歌库还没接上，建不了文件夹"); return; }
+    if (!hasStore()) { warn(_t("歌库还没接上，建不了文件夹")); return; }
     const g = ensureMounted();
-    const name = await openInputSheet("新建文件夹", { defaultValue: "新文件夹", placeholder: "文件夹名" });
+    const name = await openInputSheet(_t("新建文件夹"), { defaultValue: _t("新文件夹"), placeholder: _t("文件夹名") });
     if (name == null) return;
     const n = name.trim();
-    if (!n) { warn("文件夹名不能空着"); return; }
-    if (/[\\/:*?"<>|]/.test(n) || /^[.\s]|[.\s]$/.test(n)) { warn("文件夹名里不能有 / \\ : * ? \" < > |，也不能用点或空格开头 / 结尾（OneDrive 不收）"); return; }
+    if (!n) { warn(_t("文件夹名不能空着")); return; }
+    if (/[\\/:*?"<>|]/.test(n) || /^[.\s]|[.\s]$/.test(n)) { warn(_t("文件夹名里不能有 / \\ : * ? \" < > |，也不能用点或空格开头 / 结尾（OneDrive 不收）")); return; }
     const here = g.handle.getFolder(), full = here ? `${here}/${n}` : n;
-    await withBusy(`新建文件夹「${n}」…`, async () => {
-      if (await requireStore().files.occupied(full)) { warn(`「${n}」这个名字已经有了（同名的歌或文件夹）`); return; }
-      try { await requireStore().files.newFolder(full); status(`建好了文件夹「${n}」`); diagNote("gallery", `new folder ${full}`); }
-      catch (e) { reportError(e, "warning"); status(`新建文件夹没成功：${(e as Error).message ?? String(e)}`, true); }
+    await withBusy(_t("新建文件夹「{n}」…", { n }), async () => {
+      if (await requireStore().files.occupied(full)) { warn(_t("「{n}」这个名字已经有了（同名的歌或文件夹）", { n })); return; }
+      try { await requireStore().files.newFolder(full); status(_t("建好了文件夹「{n}」", { n })); diagNote("gallery", `new folder ${full}`); }
+      catch (e) { reportError(e, "warning"); status(_t("新建文件夹没成功：{Error}", { Error: (e as Error).message ?? String(e) }), true); }
     });
     g.handle.refresh();
   }
@@ -249,8 +250,8 @@ export function initGalleryHost(d: GalleryHostDeps) {
     if (newMenu) { closeNewMenu(); return; }
     const m = document.createElement("div"); newMenu = m;
     m.className = "track-card ctx-menu gallery-new-menu"; m.setAttribute("role", "menu");
-    m.innerHTML = `<button type="button" class="btn ctx-item" data-v="new-song">${iconHtml("new")}<span>新建歌</span></button>` +
-      `<button type="button" class="btn ctx-item" data-v="new-folder" title="在现在这个夹里">${iconHtml("create-folder")}<span>新建文件夹…</span></button>`;
+    m.innerHTML = `<button type="button" class="btn ctx-item" data-v="new-song">${iconHtml("new")}<span>${_t("新建歌")}</span></button>` +
+      `<button type="button" class="btn ctx-item" data-v="new-folder" title="${_t("在现在这个夹里")}">${iconHtml("create-folder")}<span>${_t("新建文件夹…")}</span></button>`;
     fullEl.append(m);
     const r = btn.getBoundingClientRect(), w = m.offsetWidth;
     Object.assign(m.style, { position: "fixed", top: `${r.bottom + 4}px`, left: `${Math.max(8, Math.min(r.right - w, innerWidth - w - 8))}px` });
@@ -284,11 +285,11 @@ export function initGalleryHost(d: GalleryHostDeps) {
     }
     const folder = d.homeLabel();
     homeBtn.hidden = folder == null;
-    if (folder != null) { homeBtn.querySelector(".gallery-home-name")!.textContent = folder; homeBtn.title = `歌库在文件夹「${folder}」`; refreshBtn.hidden = false; if (currentPolicy().cloud) cloudBtn.hidden = true; return; }
+    if (folder != null) { homeBtn.querySelector(".gallery-home-name")!.textContent = folder; homeBtn.title = _t("歌库在文件夹「{folder}」", { folder }); refreshBtn.hidden = false; if (currentPolicy().cloud) cloudBtn.hidden = true; return; }
     if (!currentPolicy().cloud) { refreshBtn.hidden = true; return; }   // 灰着的那颗不跟登录态变（永远没登录）
     const on = isSignedIn();
     cloudBtn.hidden = false;
-    cloudBtn.classList.toggle("is-on", on); cloudBtn.title = on ? `云端：已登录${accountName() ? ` ${accountName()}` : ""}` : "云端：没登录（歌只在这台设备上）";
+    cloudBtn.classList.toggle("is-on", on); cloudBtn.title = on ? _t("云端：已登录{p}", { p: accountName() ? ` ${accountName()}` : "" }) : _t("云端：没登录（歌只在这台设备上）");
     refreshBtn.hidden = !on;
   }
   function accountName(): string { try { const a = auth.getActiveAccount() as { username?: string; name?: string } | null; return a?.name || a?.username || ""; } catch { return ""; } }

@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // export-all.ts —— 歌库「全部导出」（家族 ai-docs/20261103-library-needs-a-home.md §4 第 1 步；created 2026-11-03 by Claude Opus 5.5，工单 H；形状同 CatsUp src/app/export-all.ts）。
 //   没登录时歌库里的歌只在这台设备的浏览器里：先给一个把它们全部拿走的出口，再谈以后收入口（「先保住已有的作品，再收入口」）。
 //   打成一个 zip：一次下几十个单文件会被浏览器拦 / iPad 上弹几十次分享。文件夹结构跟歌库走。歌本身就是 .mxl，别的乐谱软件能直接开；MoonSinger 不加密，没有密文这一路。
@@ -19,7 +20,7 @@ export async function exportAll(p: ExportAllPorts): Promise<ExportAllResult> {
   while (queue.length) {
     const dir = queue.shift()!;
     try { const f = await p.listFolder(dir); ids.push(...f.identifiers); queue.push(...f.folders); }
-    catch { failed.push(dir ? `${dir}/（整个文件夹）` : "（根文件夹）"); }
+    catch { failed.push(dir ? _t("{dir}/（整个文件夹）", { dir }) : _t("（根文件夹）")); }
   }
   const entries: { path: string; data: Uint8Array }[] = [];
   for (const id of ids) {
@@ -34,8 +35,8 @@ export async function exportAll(p: ExportAllPorts): Promise<ExportAllResult> {
 
 /** 导出结果说一句人话。 */
 export function exportAllSay(r: ExportAllResult, fileName: string): { text: string; bad: boolean } {
-  if (!r.count && !r.failed.length) return { text: "歌库里还没有歌", bad: false };
-  if (!r.failed.length) return { text: `已导出 ${r.count} 首到 ${fileName}`, bad: false };
-  const names = r.failed.slice(0, 5).join("、") + (r.failed.length > 5 ? ` 等 ${r.failed.length} 项` : "");
-  return { text: r.count ? `只导出了 ${r.count} 首到 ${fileName}。这些没拿到：${names}` : `没能导出：${names}`, bad: true };
+  if (!r.count && !r.failed.length) return { text: _t("歌库里还没有歌"), bad: false };
+  if (!r.failed.length) return { text: _t("已导出 {count} 首到 {fileName}", { count: r.count, fileName }), bad: false };
+  const names = r.failed.slice(0, 5).join("、") + (r.failed.length > 5 ? _t(" 等 {n} 项", { n: r.failed.length }) : "");
+  return { text: r.count ? _t("只导出了 {count} 首到 {fileName}。这些没拿到：{names}", { count: r.count, fileName, names }) : _t("没能导出：{names}", { names }), bad: true };
 }

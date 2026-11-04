@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // workspace.ts —— 编辑模式 + 底座（pad 那个位子放什么）的唯一规则表。created 2026-10-10 by Claude Opus 5.5
 // user 2026-10-10：「模式！音，歌词，强度和articulation！我早就想用退格删强度曲线了。还有一个就是播放模式，锁写谱，但是可以调录音室」
 //   →「强度和演奏法能不能合并，就是符号编辑，和别的符号也合并」→「录音室的键盘位化，和键盘互相排斥，或者不如说就是键盘的模式和编辑模式好好对齐一下。
@@ -13,12 +14,12 @@ export const MODES: readonly Mode[] = ["notes", "lyrics", "symbols", "listen"];
 export const MODE_BAR: readonly Mode[] = ["notes", "lyrics", "listen"];
 /** 模式条上哪个钮亮：用符号格时「音」亮。 */
 export const barMode = (m: Mode): Mode => (m === "symbols" ? "notes" : m);
-export const MODE_LABEL: Record<Mode, string> = { notes: "音", lyrics: "词", symbols: "符", listen: "听" };
+export const MODE_LABEL: Record<Mode, string> = { notes: _t("音"), lyrics: _t("词"), symbols: _t("符"), listen: _t("听") };
 export const MODE_TITLE: Record<Mode, string> = {
-  notes: "音：写音和记号——谱上音和记号都能改（点音 = 光标，笔 / 鼠标拖音 = 改音高 / 时值；点记号 = 它的菜单、按住拖 = 挪）；小键盘顶上「符 / 音」切音键 / 符号格，退格删什么跟着键盘",
-  lyrics: "词：点音或它下面 = 写这个音的歌词；按住字拖 = 挪 / 合；退格 = 删光标前那个音的字",
-  symbols: "符：键盘 = 符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号；退格 = 删记号）。谱上和「音」一样：音和记号都能改",
-  listen: "听：谱锁住防误触——轻点只认看谱的（歌手牌 / 翻纸 / 本段），不跳播；长按 / 右键谱面 = 从这儿放 / 接着放 / 从头放；空格 = 放 / 停；底下是混音台（Esc 回到写）",
+  notes: _t("音：写音和记号——谱上音和记号都能改（点音 = 光标，笔 / 鼠标拖音 = 改音高 / 时值；点记号 = 它的菜单、按住拖 = 挪）；小键盘顶上「符 / 音」切音键 / 符号格，退格删什么跟着键盘"),
+  lyrics: _t("词：点音或它下面 = 写这个音的歌词；按住字拖 = 挪 / 合；退格 = 删光标前那个音的字"),
+  symbols: _t("符：键盘 = 符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号；退格 = 删记号）。谱上和「音」一样：音和记号都能改"),
+  listen: _t("听：谱锁住防误触——轻点只认看谱的（歌手牌 / 翻纸 / 本段），不跳播；长按 / 右键谱面 = 从这儿放 / 接着放 / 从头放；空格 = 放 / 停；底下是混音台（Esc 回到写）"),
 };
 
 /** 一个模式下谱面的每种手势归谁（score-view 只看这个）。 */

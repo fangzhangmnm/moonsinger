@@ -5,6 +5,7 @@
 //   「基础数学反而不怕不用fable。fable主要承重还是架构设计。下礼拜慢慢理吧，今天先摸ux，大不了以后吃书」
 //   → 今天不升格式：一格就是 studio.json v2 现成的 FxV2 { id, kind, on?, params }；params 存全量（原语参数表的每一个），一键面板只是按公式写进去。
 //   两个「主线程换算」的参数：eq.hpAuto = 1（低切按这个声部最低的音自动放）、delay.syncBeats > 0（时间按速度算几拍）——录音房收到之前就换成 hpHz / timeMs。
+import { _t } from "../i18n/index.ts";
 import { FX_KINDS, type ParamDef } from "../engine/fx.ts";
 import type { FxV2 } from "../format/contract.ts";
 
@@ -17,8 +18,8 @@ export const pluginName = (kind: string): string => FX_KINDS[kind]?.name ?? kind
 
 /** 主线程换算的参数（不是原语的，录音房不认）。 */
 const HOST_PARAMS: Record<string, ParamDef[]> = {
-  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: "自动低切" }],
-  delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: "跟速度（几拍一次；0 = 用上面的毫秒）" }],
+  eq: [{ id: "hpAuto", unit: "bool", min: 0, max: 1, default: 0, label: _t("自动低切") }],
+  delay: [{ id: "syncBeats", unit: "ratio", min: 0, max: 2, default: 0, label: _t("跟速度（几拍一次；0 = 用上面的毫秒）") }],
 };
 /** 全量面板：原语参数表的每一个 + 主线程换算的那几个。 */
 export function fullParams(kind: string): ParamDef[] { return [...(HOST_PARAMS[kind] ?? []), ...(FX_KINDS[kind]?.params ?? [])]; }
@@ -62,64 +63,64 @@ export const dampOfKHz = (k: number): number => clamp01(Math.exp((-2 * Math.PI *
 /** 线性倍数 ↔ dB（−60 dB 及以下 = 关）。 */
 export const linDb = (x: number): number => (x <= 0.001 ? -60 : 20 * Math.log10(x));
 export const dbLin = (d: number): number => (d <= -60 ? 0 : 10 ** (d / 20));
-const dbt = (d: number) => (d <= -60 ? "关" : `${d > 0 ? "+" : ""}${d.toFixed(1)} dB`);
+const dbt = (d: number) => (d <= -60 ? _t("关") : `${d > 0 ? "+" : ""}${d.toFixed(1)} dB`);
 /** 每个参数干什么用（面板上的 tooltip + iPad 能点的小问号；user「每个参数能不能加一个tooltip解释一下是干什么用的」「然后参数后面加一个小的方块问号这样ipad也可以点」）。 */
 export const PARAM_HINT: Record<string, string> = {
-  "eq.hpAuto": "自动低切：按这个声部最低的音放低切（往下大三度），切掉它用不着的低频——隆隆声、和别的轨糊在一起的低频",
-  "eq.hpHz": "低切：这个频率以下的都切掉。人声常在 80–120 Hz，铃这类高的乐器可以更高；最左 = 关",
-  "eq.lpHz": "高切：这个频率以上的都切掉，去刺耳、嘶嘶声；最左 = 关",
-  "eq.lowDb": "低架：转折频率以下整体加 / 减多少。减 = 去闷、给别的轨让出低频；加 = 加厚",
-  "eq.lowHz": "低架的转折频率：从这里往下算「低」",
-  "eq.midDb": "中峰：在一个频段上推 / 挖多少。两样东西糊在一起时，在其中一个上挖一刀给另一个让位",
-  "eq.midHz": "中峰的中心频率：推 / 挖的是哪一段",
-  "eq.midQ": "中峰的宽窄：Q 越大越窄（1 ≈ 一个多八度宽，4 ≈ 小半个八度）",
-  "eq.highDb": "高架：转折频率以上整体加 / 减多少。加 = 亮、减 = 暗",
-  "eq.highHz": "高架的转折频率：从这里往上算「高」",
-  "comp.thresholdDb": "阈值：声音超过这个电平才开始压；越低，压到的越多",
-  "comp.ratio": "比例：超过阈值的部分压成几分之一（4:1 = 超出 4 dB 的只剩 1 dB）",
-  "comp.attackMs": "起压：超过阈值之后多快压下去。短 = 连字头一起压平；长 = 让字头先冲出来、更有劲",
-  "comp.releaseMs": "放开：声音落回阈值以下之后多快松开。太短会一抽一抽的，太长下一个字也被压着",
-  "comp.kneeDb": "拐点：阈值附近这么宽的一段里慢慢开始压（软）；0 = 一到阈值就压（硬）",
-  "comp.makeupDb": "补偿：压完整体加回来多少（压缩会让整体变轻）",
-  "reverb.room": "混响时间（RT60）：声音停了之后，尾巴衰减 60 dB 要多久。小房间不到 1 秒，大厅 2–3 秒，教堂更长",
-  "reverb.damp": "高频从这里开始衰减：真实的房间里高频被吸收得快，尾巴越往后越暗；数越低越暗",
-  "reverb.mix": "湿：混响的声音有多响",
-  "reverb.dry": "原声：原来的声音留多少。插在歌手轨上一般 0 dB（不动）；当发送的返回轨用 = 关",
-  "reverb.preDelayMs": "预延迟：原声之后过多久混响才进来。拉开一点，人声更清楚、不被糊住",
-  "reverb.width": "宽度：混响在左右铺多开",
-  "delay.syncBeats": "跟速度：回声隔几拍，按歌的速度算时间；0 = 用下面的毫秒",
-  "delay.timeMs": "时间：每次回声隔多久",
-  "delay.feedback": "每次回声：每重复一次轻多少 dB；越接近 0，回声越久",
-  "delay.mix": "湿：回声有多响",
-  "delay.dry": "原声：原来的声音留多少。插在歌手轨上一般 0 dB（不动）；当发送的返回轨用 = 关",
-  "delay.dampHz": "反馈高切：每次回声都把这个频率以上的削掉一点，越往后越暗（像真的回声）",
-  "chorus.voices": "几条：同时有几个稍微错开的副本",
-  "chorus.delayMs": "延迟：副本比原声晚多少",
-  "chorus.depthMs": "抖动深度：副本的延迟来回晃多大——晃 = 音高轻微起伏，像好几个人唱不齐",
-  "chorus.rateHz": "抖动快慢：每秒晃几次",
-  "chorus.spread": "左右铺开：副本摆得多开",
-  "chorus.mix": "湿：副本有多响",
-  "chorus.dry": "原声：原来的声音留多少。插在歌手轨上一般 0 dB（不动）；当发送的返回轨用 = 关",
-  "gain.dB": "增益：单纯调大调小（前面的插件把音量改了，用它补回来）",
+  "eq.hpAuto": _t("自动低切：按这个声部最低的音放低切（往下大三度），切掉它用不着的低频——隆隆声、和别的轨糊在一起的低频"),
+  "eq.hpHz": _t("低切：这个频率以下的都切掉。人声常在 80–120 Hz，铃这类高的乐器可以更高；最左 = 关"),
+  "eq.lpHz": _t("高切：这个频率以上的都切掉，去刺耳、嘶嘶声；最左 = 关"),
+  "eq.lowDb": _t("低架：转折频率以下整体加 / 减多少。减 = 去闷、给别的轨让出低频；加 = 加厚"),
+  "eq.lowHz": _t("低架的转折频率：从这里往下算「低」"),
+  "eq.midDb": _t("中峰：在一个频段上推 / 挖多少。两样东西糊在一起时，在其中一个上挖一刀给另一个让位"),
+  "eq.midHz": _t("中峰的中心频率：推 / 挖的是哪一段"),
+  "eq.midQ": _t("中峰的宽窄：Q 越大越窄（1 ≈ 一个多八度宽，4 ≈ 小半个八度）"),
+  "eq.highDb": _t("高架：转折频率以上整体加 / 减多少。加 = 亮、减 = 暗"),
+  "eq.highHz": _t("高架的转折频率：从这里往上算「高」"),
+  "comp.thresholdDb": _t("阈值：声音超过这个电平才开始压；越低，压到的越多"),
+  "comp.ratio": _t("比例：超过阈值的部分压成几分之一（4:1 = 超出 4 dB 的只剩 1 dB）"),
+  "comp.attackMs": _t("起压：超过阈值之后多快压下去。短 = 连字头一起压平；长 = 让字头先冲出来、更有劲"),
+  "comp.releaseMs": _t("放开：声音落回阈值以下之后多快松开。太短会一抽一抽的，太长下一个字也被压着"),
+  "comp.kneeDb": _t("拐点：阈值附近这么宽的一段里慢慢开始压（软）；0 = 一到阈值就压（硬）"),
+  "comp.makeupDb": _t("补偿：压完整体加回来多少（压缩会让整体变轻）"),
+  "reverb.room": _t("混响时间（RT60）：声音停了之后，尾巴衰减 60 dB 要多久。小房间不到 1 秒，大厅 2–3 秒，教堂更长"),
+  "reverb.damp": _t("高频从这里开始衰减：真实的房间里高频被吸收得快，尾巴越往后越暗；数越低越暗"),
+  "reverb.mix": _t("湿：混响的声音有多响"),
+  "reverb.dry": _t("原声：原来的声音留多少。插在歌手轨上一般 0 dB（不动）；当发送的返回轨用 = 关"),
+  "reverb.preDelayMs": _t("预延迟：原声之后过多久混响才进来。拉开一点，人声更清楚、不被糊住"),
+  "reverb.width": _t("宽度：混响在左右铺多开"),
+  "delay.syncBeats": _t("跟速度：回声隔几拍，按歌的速度算时间；0 = 用下面的毫秒"),
+  "delay.timeMs": _t("时间：每次回声隔多久"),
+  "delay.feedback": _t("每次回声：每重复一次轻多少 dB；越接近 0，回声越久"),
+  "delay.mix": _t("湿：回声有多响"),
+  "delay.dry": _t("原声：原来的声音留多少。插在歌手轨上一般 0 dB（不动）；当发送的返回轨用 = 关"),
+  "delay.dampHz": _t("反馈高切：每次回声都把这个频率以上的削掉一点，越往后越暗（像真的回声）"),
+  "chorus.voices": _t("几条：同时有几个稍微错开的副本"),
+  "chorus.delayMs": _t("延迟：副本比原声晚多少"),
+  "chorus.depthMs": _t("抖动深度：副本的延迟来回晃多大——晃 = 音高轻微起伏，像好几个人唱不齐"),
+  "chorus.rateHz": _t("抖动快慢：每秒晃几次"),
+  "chorus.spread": _t("左右铺开：副本摆得多开"),
+  "chorus.mix": _t("湿：副本有多响"),
+  "chorus.dry": _t("原声：原来的声音留多少。插在歌手轨上一般 0 dB（不动）；当发送的返回轨用 = 关"),
+  "gain.dB": _t("增益：单纯调大调小（前面的插件把音量改了，用它补回来）"),
 };
 /** 全量面板里一个参数的旋钮：滑块用的物理量纲 ↔ 存的值。 */
 export interface ParamView { hint: string; label: string; min: number; max: number; step: number; toV: (s: number) => number; toS: (v: number) => number; fmt: (v: number) => string }
 export function paramView(kind: string, d: ParamDef): ParamView { return { hint: PARAM_HINT[`${kind}.${d.id}`] ?? d.label, ...paramView0(kind, d) }; }
 function paramView0(kind: string, d: ParamDef): Omit<ParamView, "hint"> {
   const key = `${kind}.${d.id}`;
-  if (key === "reverb.room") return { label: "混响时间（RT60）", min: 0.6, max: 10, step: 0.1, toV: roomOfRt60, toS: rt60OfRoom, fmt: (v) => `${rt60OfRoom(v).toFixed(1)} s` };
-  if (key === "reverb.damp") return { label: "高频从这里开始衰减", min: 7, max: 20, step: 0.1, toV: (k) => (k >= 20 ? 0 : dampOfKHz(k)), toS: (v) => Math.min(20, dampKHz(v)), fmt: (v) => (dampKHz(v) >= 20 ? "不衰减（20 kHz 以上）" : `${dampKHz(v).toFixed(1)} kHz`) };
-  if (d.id === "mix" || d.id === "dry") return { label: d.id === "mix" ? "湿（效果）" : "原声", min: -60, max: 0, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => dbt(linDb(v)) };
-  if (key === "delay.feedback") return { label: "每次回声", min: -40, max: -0.5, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => `${linDb(v).toFixed(1)} dB / 次` };
-  if (key === "reverb.width") return { label: "宽度（0 = 单声道，100% = 左右铺满）", min: 0, max: 1, step: 0.01, toV: (x) => x, toS: (x) => x, fmt: pct };
-  if (key === "chorus.spread") return { label: "左右铺开（0 = 都在中间，100% = 铺到两边）", min: 0, max: 1, step: 0.01, toV: (x) => x, toS: (x) => x, fmt: pct };
+  if (key === "reverb.room") return { label: _t("混响时间（RT60）"), min: 0.6, max: 10, step: 0.1, toV: roomOfRt60, toS: rt60OfRoom, fmt: (v) => `${rt60OfRoom(v).toFixed(1)} s` };
+  if (key === "reverb.damp") return { label: _t("高频从这里开始衰减"), min: 7, max: 20, step: 0.1, toV: (k) => (k >= 20 ? 0 : dampOfKHz(k)), toS: (v) => Math.min(20, dampKHz(v)), fmt: (v) => (dampKHz(v) >= 20 ? _t("不衰减（20 kHz 以上）") : `${dampKHz(v).toFixed(1)} kHz`) };
+  if (d.id === "mix" || d.id === "dry") return { label: d.id === "mix" ? _t("湿（效果）") : _t("原声"), min: -60, max: 0, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => dbt(linDb(v)) };
+  if (key === "delay.feedback") return { label: _t("每次回声"), min: -40, max: -0.5, step: 0.5, toV: dbLin, toS: linDb, fmt: (v) => _t("{v} dB / 次", { v: linDb(v).toFixed(1) }) };
+  if (key === "reverb.width") return { label: _t("宽度（0 = 单声道，100% = 左右铺满）"), min: 0, max: 1, step: 0.01, toV: (x) => x, toS: (x) => x, fmt: pct };
+  if (key === "chorus.spread") return { label: _t("左右铺开（0 = 都在中间，100% = 铺到两边）"), min: 0, max: 1, step: 0.01, toV: (x) => x, toS: (x) => x, fmt: pct };
   if (d.unit === "Hz") {
     const lo = Math.max(20, d.min || 20), hi = d.max, offable = d.min === 0, L = Math.log(lo), H = Math.log(hi);
     return { label: d.label, min: offable ? -0.02 : 0, max: 1, step: 0.002, toV: (x) => (offable && x < 0 ? 0 : Math.round(Math.exp(L + Math.max(0, x) * (H - L)))), toS: (v) => (offable && v <= 0 ? -0.02 : (Math.log(Math.max(lo, v)) - L) / (H - L)),
-      fmt: (v) => (v <= 0 ? "关" : v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 1 : 2)} kHz` : `${Math.round(v)} Hz`) };
+      fmt: (v) => (v <= 0 ? _t("关") : v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 1 : 2)} kHz` : `${Math.round(v)} Hz`) };
   }
   const step = d.unit === "dB" ? 0.5 : d.unit === "ms" ? (d.max > 500 ? 5 : 0.5) : d.unit === "0..1" ? 0.01 : d.unit === "ratio" ? (d.max <= 4 ? 1 : 0.1) : 1;
-  const fmt = (v: number) => (d.unit === "dB" ? dbt(v) : d.unit === "ms" ? `${v} ms` : d.unit === "0..1" ? pct(v) : d.unit === "ratio" ? (d.id === "ratio" ? `${v}:1` : d.id === "voices" ? `${v} 条` : d.id === "midQ" ? `Q ${v}` : String(v)) : String(v));
+  const fmt = (v: number) => (d.unit === "dB" ? dbt(v) : d.unit === "ms" ? `${v} ms` : d.unit === "0..1" ? pct(v) : d.unit === "ratio" ? (d.id === "ratio" ? `${v}:1` : d.id === "voices" ? _t("{v} 条", { v }) : d.id === "midQ" ? `Q ${v}` : String(v)) : String(v));
   return { label: d.label, min: d.min, max: d.max, step, toV: (x) => x, toS: (x) => x, fmt };
 }
 
@@ -127,8 +128,8 @@ function paramView0(kind: string, d: ParamDef): Omit<ParamView, "hint"> {
 const TILT_DB = 6, TILT_LO = 300, TILT_HI = 3000;
 const EQ_SIMPLE: SimpleView = {
   controls: [
-    { id: "autoLow", label: "自动低切", hint: "切掉这个声部用不着的低频：低切放在它最低的音往下一点", kind: "toggle" },
-    { id: "tilt", label: "厚 ↔ 亮", hint: "往左 = 厚（低的多一点、高的少一点），往右 = 亮；中间 = 不动", kind: "knob", min: -1, max: 1, step: 0.05, fmt: (v) => (near(v, 0, 0.01) ? "平" : v < 0 ? `厚 ${Math.round(-v * TILT_DB * 10) / 10} dB` : `亮 ${Math.round(v * TILT_DB * 10) / 10} dB`) },
+    { id: "autoLow", label: _t("自动低切"), hint: _t("切掉这个声部用不着的低频：低切放在它最低的音往下一点"), kind: "toggle" },
+    { id: "tilt", label: _t("厚 ↔ 亮"), hint: _t("往左 = 厚（低的多一点、高的少一点），往右 = 亮；中间 = 不动"), kind: "knob", min: -1, max: 1, step: 0.05, fmt: (v) => (near(v, 0, 0.01) ? _t("平") : v < 0 ? _t("厚 {p} dB", { p: Math.round(-v * TILT_DB * 10) / 10 }) : _t("亮 {p} dB", { p: Math.round(v * TILT_DB * 10) / 10 })) },
   ],
   read(p) {
     if (p.midDb !== 0 || p.lpHz !== 0 || (!p.hpAuto && p.hpHz !== 0)) return null;
@@ -144,7 +145,7 @@ const EQ_SIMPLE: SimpleView = {
  *  「被谁压」（侧链让路）时补偿 = 0（v0.10.15）：让路就是要它让出来；原来照自己压自己那套补，别人不唱的时候被压的轨比推子响（查 user 的 団子大家族 时发现：+2.8 dB）。 */
 const compOf = (a: number, keyed = false) => { const thr = -6 - 30 * a, ratio = 1.5 + 4.5 * a; return { thresholdDb: r1(thr), ratio: r1(ratio), attackMs: 10, releaseMs: 150, kneeDb: 6, makeupDb: keyed ? 0 : r1(0.5 * -thr * (1 - 1 / ratio) * 0.5) }; };
 const compSimple = (keyed: boolean): SimpleView => ({
-  controls: [{ id: "amount", label: keyed ? "让多少" : "压多少", hint: keyed ? "被那条轨压：它一响，这条就让出来；往右 = 让得越多（不补偿：它不响的时候这条照推子的音量）" : "把忽大忽小拉平：往右 = 压得越狠（响的字压下来、轻的相对显出来）", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a) => { const c = compOf(a, keyed); return `${c.thresholdDb} dB 起压 · ${c.ratio}:1`; } }],
+  controls: [{ id: "amount", label: keyed ? _t("让多少") : _t("压多少"), hint: keyed ? _t("被那条轨压：它一响，这条就让出来；往右 = 让得越多（不补偿：它不响的时候这条照推子的音量）") : _t("把忽大忽小拉平：往右 = 压得越狠（响的字压下来、轻的相对显出来）"), kind: "knob", min: 0, max: 1, step: 0.05, fmt: (a) => { const c = compOf(a, keyed); return _t("{thresholdDb} dB 起压 · {ratio}:1", { thresholdDb: c.thresholdDb, ratio: c.ratio }); } }],
   read(p) {
     const a = (-p.thresholdDb - 6) / 30; if (a < -1e-3 || a > 1 + 1e-3) return null;
     const c = compOf(a, keyed);
@@ -158,7 +159,7 @@ const COMP_SIMPLE = compSimple(false), COMP_SIMPLE_KEYED = compSimple(true);
  *  房间 0.3 → 0.95；高频吸收 0.5、预延迟 10 ms、宽度满。 */
 const revOf = (d: number) => ({ mix: r1((0.08 + 0.4 * d) * 100) / 100, dry: 1, room: r1((0.3 + 0.65 * d) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1 });
 const REV_SIMPLE: SimpleView = {
-  controls: [{ id: "far", label: "远近", hint: "往右 = 越远、越大的房间（铃可以远一点，贴耳的人声近一点）；原声不动，只往上加混响", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d) => { const c = revOf(d); return `湿 ${dbt(linDb(c.mix))} · ${rt60OfRoom(c.room).toFixed(1)} s`; } }],
+  controls: [{ id: "far", label: _t("远近"), hint: _t("往右 = 越远、越大的房间（铃可以远一点，贴耳的人声近一点）；原声不动，只往上加混响"), kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d) => { const c = revOf(d); return _t("湿 {mix} · {room} s", { mix: dbt(linDb(c.mix)), room: rt60OfRoom(c.room).toFixed(1) }); } }],
   read(p) { const d = (p.mix - 0.08) / 0.4, c = revOf(d); return d >= -1e-3 && d <= 1 + 1e-3 && p.dry === 1 && near(p.room, c.room, 0.006) && p.damp === 0.5 && p.preDelayMs === 10 && p.width === 1 ? { far: Math.round(d * 20) / 20 } : null; },
   write(v, p) { return { ...p, ...revOf(Math.max(0, Math.min(1, v.far ?? 0))) }; },
   project(p) { return { far: knob01((p.mix - 0.08) / 0.4, (p.room - 0.3) / 0.65) }; },
@@ -167,8 +168,8 @@ const REV_SIMPLE: SimpleView = {
 const dlyOf = (e: number) => ({ mix: r1((0.1 + 0.4 * e) * 100) / 100, dry: 1, feedback: r1((0.15 + 0.5 * e) * 100) / 100, dampHz: 6000 });   // 原声 100% 不动（同混响，v0.10.10）
 const DLY_SIMPLE: SimpleView = {
   controls: [
-    { id: "echo", label: "回声多少", hint: "往右 = 回声越响、越久；原声不动", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e) => { const c = dlyOf(e); return `湿 ${dbt(linDb(c.mix))} · 每次 ${linDb(c.feedback).toFixed(1)} dB`; } },
-    { id: "beats", label: "几拍一次", hint: "回声和拍子对齐（跟着歌的速度）", kind: "choice", choices: [{ v: 0.5, label: "八分" }, { v: 0.75, label: "附点八分" }, { v: 1, label: "四分" }] },
+    { id: "echo", label: _t("回声多少"), hint: _t("往右 = 回声越响、越久；原声不动"), kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e) => { const c = dlyOf(e); return _t("湿 {mix} · 每次 {feedback} dB", { mix: dbt(linDb(c.mix)), feedback: linDb(c.feedback).toFixed(1) }); } },
+    { id: "beats", label: _t("几拍一次"), hint: _t("回声和拍子对齐（跟着歌的速度）"), kind: "choice", choices: [{ v: 0.5, label: _t("八分") }, { v: 0.75, label: _t("附点八分") }, { v: 1, label: _t("四分") }] },
   ],
   read(p) { const e = (p.mix - 0.1) / 0.4, c = dlyOf(e); return e >= -1e-3 && e <= 1 + 1e-3 && p.dry === 1 && near(p.feedback, c.feedback, 0.006) && p.dampHz === 6000 && [0.5, 0.75, 1].includes(p.syncBeats) ? { echo: Math.round(e * 20) / 20, beats: p.syncBeats } : null; },
   write(v, p) { return { ...p, ...dlyOf(Math.max(0, Math.min(1, v.echo ?? 0))), syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 }; },
@@ -177,13 +178,13 @@ const DLY_SIMPLE: SimpleView = {
 /** 合唱一键 = 「宽」w：湿 20% → 60%、抖动深度 1 → 5 ms、左右铺开 0.4 → 1；三条、延迟 18 ms、抖动 0.6 Hz。 */
 const choOf = (w: number) => ({ mix: r1((0.2 + 0.4 * w) * 100) / 100, dry: 1, depthMs: r1(1 + 4 * w), spread: r1((0.4 + 0.6 * w) * 100) / 100, voices: 3, delayMs: 18, rateHz: 0.6 });   // 原声 100% 不动（同混响，v0.10.10）
 const CHO_SIMPLE: SimpleView = {
-  controls: [{ id: "wide", label: "宽", hint: "往右 = 越宽、越像好几个人；原声不动", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (w) => { const c = choOf(w); return `湿 ${dbt(linDb(c.mix))} · 抖动 ${c.depthMs} ms`; } }],
+  controls: [{ id: "wide", label: _t("宽"), hint: _t("往右 = 越宽、越像好几个人；原声不动"), kind: "knob", min: 0, max: 1, step: 0.05, fmt: (w) => { const c = choOf(w); return _t("湿 {mix} · 抖动 {depthMs} ms", { mix: dbt(linDb(c.mix)), depthMs: c.depthMs }); } }],
   read(p) { const w = (p.mix - 0.2) / 0.4, c = choOf(w); return w >= -1e-3 && w <= 1 + 1e-3 && p.dry === 1 && near(p.depthMs, c.depthMs, 0.06) && near(p.spread, c.spread, 0.006) && p.voices === 3 && p.delayMs === 18 && p.rateHz === 0.6 ? { wide: Math.round(w * 20) / 20 } : null; },
   write(v, p) { return { ...p, ...choOf(Math.max(0, Math.min(1, v.wide ?? 0))) }; },
   project(p) { return { wide: knob01((p.mix - 0.2) / 0.4, (p.depthMs - 1) / 4, (p.spread - 0.4) / 0.6) }; },
 };
 const GAIN_SIMPLE: SimpleView = {
-  controls: [{ id: "dB", label: "增益", hint: "插件链中间单纯调大调小（前面的插件把音量改了，用它补回来）", kind: "knob", min: -24, max: 12, step: 0.5, fmt: (v) => `${v > 0 ? "+" : ""}${v.toFixed(1)} dB` }],
+  controls: [{ id: "dB", label: _t("增益"), hint: _t("插件链中间单纯调大调小（前面的插件把音量改了，用它补回来）"), kind: "knob", min: -24, max: 12, step: 0.5, fmt: (v) => `${v > 0 ? "+" : ""}${v.toFixed(1)} dB` }],
   read(p) { return { dB: p.dB }; },
   write(v, p) { return { ...p, dB: v.dB ?? 0 }; },
   project(p) { return { dB: p.dB }; },
@@ -193,15 +194,15 @@ export const SIMPLE: Record<string, SimpleView> = { eq: EQ_SIMPLE, comp: COMP_SI
  *  同一个插件、同一组参数，只是一键面板的公式换一套：湿 = 100% 固定，旋钮管房间大小 / 回声长短 / 宽窄（v0.10.9）。 */
 const wet1 = (p: Params) => p.mix === 1 && p.dry === 0;
 export const SIMPLE_BUS: Record<string, SimpleView> = {
-  reverb: { controls: [{ id: "size", label: "混响时间", hint: "尾巴衰减 60 dB 要多久（RT60）：往右 = 越大的房间（发多少由发送那边的旋钮管）", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d) => `${rt60OfRoom(0.3 + 0.65 * d).toFixed(1)} s` }],
+  reverb: { controls: [{ id: "size", label: _t("混响时间"), hint: _t("尾巴衰减 60 dB 要多久（RT60）：往右 = 越大的房间（发多少由发送那边的旋钮管）"), kind: "knob", min: 0, max: 1, step: 0.05, fmt: (d) => `${rt60OfRoom(0.3 + 0.65 * d).toFixed(1)} s` }],
     read(p) { const d = (p.room - 0.3) / 0.65; return wet1(p) && d >= -1e-3 && d <= 1 + 1e-3 && p.damp === 0.5 && p.preDelayMs === 10 && p.width === 1 ? { size: Math.round(d * 20) / 20 } : null; },
     write(v, p) { const d = Math.max(0, Math.min(1, v.size ?? 0)); return { ...p, room: r1((0.3 + 0.65 * d) * 100) / 100, damp: 0.5, preDelayMs: 10, width: 1, mix: 1, dry: 0 }; },
     project(p) { return { size: knob01((p.room - 0.3) / 0.65) }; } },
-  delay: { controls: [{ id: "echo", label: "回声多长", hint: "往右 = 回声重复得越久（发多少由发送那边的旋钮管）", kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e) => `每次 ${linDb(0.15 + 0.5 * e).toFixed(1)} dB` }, DLY_SIMPLE.controls[1]],
+  delay: { controls: [{ id: "echo", label: _t("回声多长"), hint: _t("往右 = 回声重复得越久（发多少由发送那边的旋钮管）"), kind: "knob", min: 0, max: 1, step: 0.05, fmt: (e) => _t("每次 {e} dB", { e: linDb(0.15 + 0.5 * e).toFixed(1) }) }, DLY_SIMPLE.controls[1]],
     read(p) { const e = (p.feedback - 0.15) / 0.5; return wet1(p) && e >= -1e-3 && e <= 1 + 1e-3 && p.dampHz === 6000 && [0.5, 0.75, 1].includes(p.syncBeats) ? { echo: Math.round(e * 20) / 20, beats: p.syncBeats } : null; },
     write(v, p) { const e = Math.max(0, Math.min(1, v.echo ?? 0)); return { ...p, feedback: r1((0.15 + 0.5 * e) * 100) / 100, dampHz: 6000, mix: 1, dry: 0, syncBeats: [0.5, 0.75, 1].includes(v.beats) ? v.beats : 0.75 }; },
     project(p) { return { echo: knob01((p.feedback - 0.15) / 0.5), beats: nearestBeat(p.syncBeats) }; } },
-  chorus: { controls: [{ ...CHO_SIMPLE.controls[0], hint: "往右 = 越宽、越像好几个人（发多少由发送那边的旋钮管）", fmt: (w) => `抖动 ${choOf(w).depthMs} ms` }],
+  chorus: { controls: [{ ...CHO_SIMPLE.controls[0], hint: _t("往右 = 越宽、越像好几个人（发多少由发送那边的旋钮管）"), fmt: (w) => _t("抖动 {w} ms", { w: choOf(w).depthMs }) }],
     read(p) { const w = (p.depthMs - 1) / 4; return wet1(p) && w >= -1e-3 && w <= 1 + 1e-3 && near(p.spread, r1((0.4 + 0.6 * w) * 100) / 100, 0.006) && p.voices === 3 && p.delayMs === 18 && p.rateHz === 0.6 ? { wide: Math.round(w * 20) / 20 } : null; },
     write(v, p) { const w = Math.max(0, Math.min(1, v.wide ?? 0)); return { ...p, ...choOf(w), mix: 1, dry: 0 }; },
     project(p) { return { wide: knob01((p.depthMs - 1) / 4, (p.spread - 0.4) / 0.6) }; } },
@@ -230,9 +231,9 @@ export function freshParams(kind: string, onBus = false): Params {
 /** 一格在卡片上的一句话（插件格小钮上的字）。 */
 export function fxSummary(fx: FxV2, onBus = false): string {
   const view = viewOfFx(fx, onBus), p = paramsOf(fx), s = view?.read(p), name = pluginName(fx.kind);
-  if (fx.on === false) return `${name}（关）`;
-  if (!s) return `${name}（全量）`;
-  if (fx.kind === "eq") return `${name}${s.autoLow ? " 低切" : ""}${near(s.tilt, 0, 0.01) ? (s.autoLow ? "" : "（平）") : s.tilt < 0 ? " 厚" : " 亮"}`;
+  if (fx.on === false) return _t("{name}（关）", { name });
+  if (!s) return _t("{name}（全量）", { name });
+  if (fx.kind === "eq") return `${name}${s.autoLow ? _t(" 低切") : ""}${near(s.tilt, 0, 0.01) ? (s.autoLow ? "" : _t("（平）")) : s.tilt < 0 ? _t(" 厚") : _t(" 亮")}`;
   const c = view!.controls[0];
   return `${name} ${c.fmt ? c.fmt(s[c.id]) : s[c.id]}`;
 }

@@ -8,6 +8,7 @@
 //     session      = 开局还行、半路写不进了（配额 / 被清）：已经在的还读得到，新写的只在这次打开里
 //     unavailable  = 开局就碰不了存储（Safari 双击打开、隐私设置禁了）：全程只在内存，关了就忘
 //   health = 人话的理由（进黑匣子、给「没测过 + 报告入口」那一句和半路的提醒用）。
+import { _t } from "./i18n/index.ts";
 import { deployment } from "./deployment.ts";
 import { deviceKvUsable, onDeviceKvFallback } from "./device-kv.ts";
 
@@ -20,14 +21,14 @@ const subs = new Set<(h: Health) => void>();
 
 function init(): Availability {
   if (avail) return avail;
-  if (!deviceKvUsable()) { avail = "unavailable"; reasons.push(deployment() === "local" ? "这个浏览器不让双击打开的网页用存储" : "这个浏览器现在不让这一页用存储"); }
+  if (!deviceKvUsable()) { avail = "unavailable"; reasons.push(deployment() === "local" ? _t("这个浏览器不让双击打开的网页用存储") : _t("这个浏览器现在不让这一页用存储")); }
   else {
     avail = "best-effort";
-    if (deployment() !== "site") reasons.push(deployment() === "itch" ? "和 itch 上别的游戏共用一个存储桶" : "和这台电脑上别的双击打开的网页共用一个存储桶");
+    if (deployment() !== "site") reasons.push(deployment() === "itch" ? _t("和 itch 上别的游戏共用一个存储桶") : _t("和这台电脑上别的双击打开的网页共用一个存储桶"));
   }
   onDeviceKvFallback((why) => {
     if (avail !== "best-effort") return;   // 已经降过了：只说一次
-    avail = "session"; reasons.push(`写不进存储了（${why}）：这次打开之后的设置只留在内存里`);
+    avail = "session"; reasons.push(_t("写不进存储了（{why}）：这次打开之后的设置只留在内存里", { why }));
     const h = health(); for (const cb of subs) { try { cb(h); } catch { /* 一个听众出错不影响别的 */ } }
   });
   return avail;

@@ -1,22 +1,23 @@
 // cloud-gate-ui.ts —— 闸门的界面：罩 / 闸借 ui/sheets.ts 的 lockSyncGate 那个锁屏位，常驻条 = workbench-elements 的 notice。created 2026-11-03 by Claude Opus 5.5（家族工单 H；设计稿 §5）
 //   锁屏位只有一个：库的冲突面来了会盖掉罩——这是对的（冲突面优先）。靠 gateGeneration 认「现在上面是不是我那张」：不是我的就不关、不抢。
 //   MoonSinger 孵化中、界面只有中文：文案住这一张表，不许「失败 / 错误」当标题、不许指挥句（test/cloud-gate.test.mjs 守）。
+import { _t } from "../i18n/index.ts";
 import { closeNotice, showNotice } from "@internal/workbench-elements";
 import { gateGeneration, isGateOpen, lockSyncGate, unlockSyncGate } from "../ui/sheets.ts";
 import { reportError } from "./report-error.ts";
 import type { BarState, GateReason, GateUi } from "../cloud-gate.ts";
 
 export const GATE_TEXT = {
-  checking: "正在核对网盘上的版本…",
-  skip: "先离线用",
-  title: "网盘没连上",
-  reason: { expired: "登录过期了", offline: "现在没有网络", noResponse: "网盘没有回应" } as Record<GateReason, string>,
-  signIn: "重新登录",
-  offline: "离线继续",
-  bar: (n: number): string => (n > 0 ? `离线 · 还有 ${n} 份没传上去` : "离线"),
-  barSyncing: "已连上网盘，正在同步…",
-  barList: "看列表",
-  reconnect: "重新连接",
+  checking: _t("正在核对网盘上的版本…"),
+  skip: _t("先离线用"),
+  title: _t("网盘没连上"),
+  reason: { expired: _t("登录过期了"), offline: _t("现在没有网络"), noResponse: _t("网盘没有回应") } as Record<GateReason, string>,
+  signIn: _t("重新登录"),
+  offline: _t("离线继续"),
+  bar: (n: number): string => (n > 0 ? _t("离线 · 还有 {n} 份没传上去", { n }) : _t("离线")),
+  barSyncing: _t("已连上网盘，正在同步…"),
+  barList: _t("看列表"),
+  reconnect: _t("重新连接"),
 };
 const BAR_ID = "offline-bar";
 const BAR_REFRESH_MS = 3000;   // 离线时份数会随写歌变：条开着才数（库里是一次标量读）

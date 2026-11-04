@@ -4,6 +4,7 @@
 //   以前（v0.12.19 及之前）main.ts 里改状态的口子有五个（update / updateExtras / updateBoth / restore / loadDoc）+ 三处直接写 `doc.extras =`，定稿的锁得在四处各补一刀；
 //   现在**全部经 commit()**：锁一处判、undo 一处记、脏一处算；界面的副作用（重画 / 推进录音房 / 清单 / 标题）由宿主用 hooks 接，这里不碰 DOM、不碰持久化（node 能跑）。
 //   指令式：run(Command) = apply(st, c) → commit（`src/score/commands.ts` 的那些键盘命令）；别的改动（纯函数算出 next 再 commit）以后逐个收编成 Command，入口不用再动。
+import { _t } from "../i18n/index.ts";
 import { type EditorState, type Song } from "../score/song.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { emptyHistory, record, undo as undoH, redo as redoH, describeSongChange, type History, type Locus, type Restored } from "../score/history.ts";
@@ -19,7 +20,7 @@ export interface DocHooks {
   /** 被锁拒了（定稿着）：what = 改的是什么（人话）。 */
   onRefused(what: string): void;
   /** 撤销 / 重做落地之后（st / extras 已换、栈已换）：宿主让视图跟过去、说一句。 */
-  onRestored(r: Restored, verb: "撤销" | "重做", prev: { st: EditorState; extras: Extras }): void;
+  onRestored(r: Restored, verb: string, prev: { st: EditorState; extras: Extras }): void;
   /** commit 之前对 song 变了的 next 做规整（纸头补力度那类；同一步、能一起撤销）。 */
   normalize?(next: EditorState): EditorState;
   /** 文件之外、但也算「改过没存」的东西的版本号（参考窗的卡）。 */
@@ -64,7 +65,7 @@ export interface Document {
   markSaved(): void;
 }
 
-const LOCK_WHAT: Record<string, string> = { score: "谱 / 歌名 / 作者栏", paper: "纸", lounge: "歌手 / 乐器", studio: "混音", cover: "封面" };
+const LOCK_WHAT: Record<string, string> = { score: _t("谱 / 歌名 / 作者栏"), paper: _t("纸"), lounge: _t("歌手 / 乐器"), studio: _t("混音"), cover: _t("封面") };
 /** 休息室 + 录音房 + 定稿的 JSON 键（脏比较用；字节在 extras.sounds 不在这里，每秒一次 stringify 无所谓）。 */
 const extrasKey = (e: Extras): string => JSON.stringify([e.final?.at ?? null, Object.entries(e.lounge).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)), e.studio ?? null]);
 
@@ -72,7 +73,7 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
   let st = init.st, extras = init.extras, history = emptyHistory();
   const mark = (): SavedMark => ({ song: st.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: hooks.extraDirty?.() ?? 0 });
   let saved: SavedMark = { song: st.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: 0 };   // 出生那一刻不问 extraDirty（宿主的参考窗可能还没建）
-  const locked = (): string | null => (isFinal(extras) ? `定稿了（第 ${extras.final!.rev} 版）` : null);
+  const locked = (): string | null => (isFinal(extras) ? _t("定稿了（第 {rev} 版）", { rev: extras.final!.rev }) : null);
   function commit(next: { st?: EditorState; extras?: Extras }, o: CommitOpts = {}): CommitResult {
     const nextSt0 = next.st ?? st, nextEx = next.extras ?? extras;
     const songChanged = nextSt0.song !== st.song, exChanged = nextEx !== extras, stChanged = nextSt0 !== st;
@@ -81,7 +82,7 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
     if (locked() && (songChanged || exChanged) && o.locus?.kind !== "final") {
       const what = o.locus ? LOCK_WHAT[o.locus.kind] ?? o.locus.label : LOCK_WHAT.score;
       hooks.onRefused(what);
-      return { ok: false, why: `${locked()}：${what}改不了` };
+      return { ok: false, why: _t("{p}：{what}改不了", { p: locked(), what }) };
     }
     const asked = nextSt0;   // 撤销提示按你做的那一下说（规整补的不算「写了几个」）
     const nextSt = songChanged && hooks.normalize ? hooks.normalize(nextSt0) : nextSt0;
@@ -97,7 +98,7 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
     }
     return { ok: true, changed: true };
   }
-  function restore(r: Restored | null, verb: "撤销" | "重做"): boolean {
+  function restore(r: Restored | null, verb: string): boolean {
     if (!r) return false;
     const prev = { st, extras };
     history = r.h; st = r.st; extras = r.extras;
@@ -108,8 +109,8 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
     get st() { return st; }, get extras() { return extras; }, get history() { return history; }, get final() { return extras.final; },
     locked, commit,
     run: (c, o) => commit({ st: apply(st, c, hooks.now()) }, o),
-    undo: () => { if (locked()) { hooks.onRefused("撤销"); return false; } return restore(undoH(history, st, extras), "撤销"); },
-    redo: () => { if (locked()) { hooks.onRefused("重做"); return false; } return restore(redoH(history, st, extras), "重做"); },
+    undo: () => { if (locked()) { hooks.onRefused(_t("撤销")); return false; } return restore(undoH(history, st, extras), _t("撤销")); },
+    redo: () => { if (locked()) { hooks.onRefused(_t("重做")); return false; } return restore(redoH(history, st, extras), _t("重做")); },
     load: (s, e) => { st = s; extras = e; history = emptyHistory(); saved = mark(); },
     dirty: () => st.song !== saved.song || extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs,
     savedMark: mark, adoptSaved: (m) => { saved = m; }, markSaved: () => { saved = mark(); },

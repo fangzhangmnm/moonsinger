@@ -15,6 +15,7 @@
 //       超过 4 MB 把「只放内存」排第一（user「这里可能是全家族仓我们唯一一个真的需要nudge用户」）。问的面板是宿主的（main.ts askImport），不用系统对话框。
 //   · 音频卡（库 0.4.0）：播放 / 暂停 + 进度条；循环、速度 1 / 0.75 / 0.5（user「默认不开，moonsinger开」）；关窗、翻卡不停（user「不停」）
 //   · 粘贴看焦点：窗有焦点 = 贴进窗；没有 = 宿主照旧（谱里贴简谱文字）
+import { _t } from "../i18n/index.ts";
 import "@internal/reference-window";
 import type { WpReferenceWindow, RefMenuPort, RefPanelRect, RefImportQuestion, RefImportChoice } from "@internal/reference-window";
 import { encodeDeck, decodeDeck, mimeForName, DeckManifestTooNewError } from "@internal/reference-window/deck";
@@ -63,13 +64,13 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   el.menuPort = ((o) => togglePopupMenu(o)) as RefMenuPort;
   el.setAttribute("no-cloud", "");                     // 不从云盘选图（歌库不是图库；iPad 的「文件」已经能挑相册 / OneDrive）
   el.labels = {
-    paste: "粘贴", oneToOne: "原尺寸", del: "删掉这张", delConfirm: "再点一次删掉", closeWin: "收起参考窗",
-    prev: "上一张", next: "下一张", menu: "参考窗菜单", move: "点一下缩成小图标，按住拖动挪位置", resize: "改大小", resizeAria: "改大小",
-    moveEarlier: "往前挪", moveLater: "往后挪", jump: "跳到…", kindNames: { image: "图片", text: "文字", audio: "音频", video: "视频" }, linkMissing: "内容不在了",
-    load: "导入图片 / 音频 / 视频 / 文字…", play: "播放", pause: "暂停", loop: "循环", rate: "速度",
-    prevFrame: "上一帧", nextFrame: "下一帧",   // 参考窗 0.5.0 视频卡（图标 = 库里的 skip-prev / skip-next，user「逐帧按钮先不用」= 不另画）
-    ram: "只放内存（不存进歌里）", ramMissing: "只在内存里，没存进歌里——把这个文件拖进来，或者点 ＋ 重新导入，就补回这里",
-    minimize: "缩成小图标", restore: "点一下恢复，按住拖动挪位置",   // 参考窗 0.4.1（关窗那个已经叫「收起」，这里用「缩」区分）
+    paste: _t("粘贴"), oneToOne: _t("原尺寸"), del: _t("删掉这张"), delConfirm: _t("再点一次删掉"), closeWin: _t("收起参考窗"),
+    prev: _t("上一张"), next: _t("下一张"), menu: _t("参考窗菜单"), move: _t("点一下缩成小图标，按住拖动挪位置"), resize: _t("改大小"), resizeAria: _t("改大小"),
+    moveEarlier: _t("往前挪"), moveLater: _t("往后挪"), jump: _t("跳到…"), kindNames: { image: _t("图片"), text: _t("文字"), audio: _t("音频"), video: _t("视频") }, linkMissing: _t("内容不在了"),
+    load: _t("导入图片 / 音频 / 视频 / 文字…"), play: _t("播放"), pause: _t("暂停"), loop: _t("循环"), rate: _t("速度"),
+    prevFrame: _t("上一帧"), nextFrame: _t("下一帧"),   // 参考窗 0.5.0 视频卡（图标 = 库里的 skip-prev / skip-next，user「逐帧按钮先不用」= 不另画）
+    ram: _t("只放内存（不存进歌里）"), ramMissing: _t("只在内存里，没存进歌里——把这个文件拖进来，或者点 ＋ 重新导入，就补回这里"),
+    minimize: _t("缩成小图标"), restore: _t("点一下恢复，按住拖动挪位置"),   // 参考窗 0.4.1（关窗那个已经叫「收起」，这里用「缩」区分）
   };
   el.audioRates = [1, 0.75, 0.5];   // 扒谱用（保音高）
   const transcoder = createRefTranscoder();
@@ -103,13 +104,13 @@ export function createReferenceHost(d: ReferenceHostDeps) {
     if (files.length) { void importFiles(files); return; }
     const text = cd.getData("text/plain");
     if (text.trim()) { el.addText(text, { name: "" }); el.open = true; return; }
-    d.error("剪贴板里没有图片或文字");
+    d.error(_t("剪贴板里没有图片或文字"));
   }, true);
   el.addEventListener("dragover", (e) => { if (e.dataTransfer && Array.from(e.dataTransfer.types).includes("Files")) { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = "copy"; } });
   el.addEventListener("drop", (e) => { const files = [...(e.dataTransfer?.files ?? [])]; if (!files.length) return; e.preventDefault(); e.stopPropagation(); void importFiles(files); });
   el.addEventListener("notice", (e) => {
     const n = (e as CustomEvent).detail as { level: string; code: string; name?: string; message: string };
-    d.error(n.code === "decode-failed" ? `这张图这个浏览器打不开${n.name ? `：${n.name}` : ""}` : `参考窗：${n.message}`);
+    d.error(n.code === "decode-failed" ? _t("这张图这个浏览器打不开{name}", { name: n.name ? `：${n.name}` : "" }) : _t("参考窗：{message}", { message: n.message }));
   });
   el.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); d.focusScore(); } });   // Esc = 焦点回谱（窗留着）
 
@@ -117,23 +118,23 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   async function importFiles(files: File[]): Promise<void> {
     const r = await el.importFiles(files, { kinds: KINDS, transcoder, ask: (q) => d.askImport(q), askAbove: { image: ASK_ABOVE, audio: ASK_ABOVE, video: ASK_ABOVE }, ramAbove: RAM_ABOVE });   // defaultRam 不传 = 库 0.5.0 的默认：音频 / 视频只放内存（当次有效），图片 / 文字随歌
     for (const k of r.skipped) {
-      if (k.why === "unsupported") d.error(`认不出：${k.name}（参考窗收图片、音频和文字）`);
-      else if (k.why === "failed") d.error(`没加上：${k.name}（${k.message ?? "出错了"}）`);
+      if (k.why === "unsupported") d.error(_t("认不出：{name}（参考窗收图片、音频和文字）", { name: k.name }));
+      else if (k.why === "failed") d.error(_t("没加上：{name}（{message}）", { name: k.name, message: k.message ?? _t("出错了") }));
     }
-    const said = [r.added.length ? `加了 ${r.added.length} 张` : "", r.filled.length ? `补回 ${r.filled.length} 张（只放内存的空位）` : "", ...r.notes].filter(Boolean);
-    if (r.added.length || r.filled.length) { el.focus({ preventScroll: true }); d.info(`参考窗：${said.join("；")}`); }
+    const said = [r.added.length ? _t("加了 {n} 张", { n: r.added.length }) : "", r.filled.length ? _t("补回 {n} 张（只放内存的空位）", { n: r.filled.length }) : "", ...r.notes].filter(Boolean);
+    if (r.added.length || r.filled.length) { el.focus({ preventScroll: true }); d.info(_t("参考窗：{p}", { p: said.join("；") })); }
   }
   async function pasteFromClipboard(): Promise<void> {
     try {
       for (const it of await navigator.clipboard.read()) {
         const img = it.types.find((x) => x.startsWith("image/"));
-        if (img) { await importFiles([new File([await it.getType(img)], `粘贴.${img.split("/")[1] ?? "png"}`, { type: img })]); return; }
+        if (img) { await importFiles([new File([await it.getType(img)], _t("粘贴.{p}", { p: img.split("/")[1] ?? "png" }), { type: img })]); return; }
         if (it.types.includes("text/plain")) { const text = await (await it.getType("text/plain")).text(); if (text.trim()) { el.addText(text, { name: "" }); el.open = true; return; } }
       }
-      d.error("剪贴板里没有图片或文字");
+      d.error(_t("剪贴板里没有图片或文字"));
     } catch {
       try { const text = await navigator.clipboard.readText(); if (text.trim()) { el.addText(text, { name: "" }); el.open = true; return; } } catch { /* 浏览器不给读 */ }
-      d.error("读不了剪贴板：点一下参考窗，再按 Ctrl / ⌘+V");
+      d.error(_t("读不了剪贴板：点一下参考窗，再按 Ctrl / ⌘+V"));
     }
   }
 
@@ -153,12 +154,12 @@ export function createReferenceHost(d: ReferenceHostDeps) {
           const decoded = await decodeDeck({ app: APP, knownKinds: KINDS, getFile: (p) => { const b = files[p]; return b ? new Blob([b as unknown as BlobPart], { type: mimeForName(p) }) : null; } });
           el.deck.restore(decoded);
           // 库 0.5.0 清单拍子：minor 比这版新 = 照样读写，告诉用户一次（不弹窗不拦）；patch 比这版新 = 静默；major 比这版新 = 下面的 DeckManifestTooNewError
-          if (decoded.verdict === "newer-minor") d.info("这首歌的参考窗是更新版本的 app 存的：这版没有的功能保存时不丢，只是看不到");
+          if (decoded.verdict === "newer-minor") d.info(_t("这首歌的参考窗是更新版本的 app 存的：这版没有的功能保存时不丢，只是看不到"));
         }
       } catch (e) {
         el.deck.clear();
-        if (e instanceof DeckManifestTooNewError) { carried = true; d.error(`这首歌的参考窗是更新版本的 app 存的（参考清单第 ${e.fileVersion} 版，这一版认到第 ${e.libVersion} 版）：原样留着、存的时候原样写回，这里先不显示`); }
-        else { carried = true; d.error(`参考窗读不出来：${(e as Error).message}（字节原样留着、存的时候原样写回）`); }
+        if (e instanceof DeckManifestTooNewError) { carried = true; d.error(_t("这首歌的参考窗是更新版本的 app 存的（参考清单第 {fileVersion} 版，这一版认到第 {libVersion} 版）：原样留着、存的时候原样写回，这里先不显示", { fileVersion: e.fileVersion, libVersion: e.libVersion })); }
+        else { carried = true; d.error(_t("参考窗读不出来：{Error}（字节原样留着、存的时候原样写回）", { Error: (e as Error).message })); }
       } finally { applying = false; }
       if (panel) el.rect = { left: panel.left, top: panel.top, width: panel.width, height: panel.height };
       el.open = !!panel?.open && !carried;
@@ -168,7 +169,7 @@ export function createReferenceHost(d: ReferenceHostDeps) {
     panel(): RefPanel | null { if (!placed) return null; const r: RefPanelRect = el.rect; return { open: el.open, left: Math.round(r.left), top: Math.round(r.top), width: Math.round(r.width), height: Math.round(r.height) }; },
     /** 菜单入口：开 = 顺手给焦点（开窗 → Ctrl+V 一步到位）；关 = 焦点回谱。 */
     toggle(): void {
-      if (carried) { d.error("这首歌的参考窗是更新版本的 app 存的，这一版先不显示（原样留着）"); return; }
+      if (carried) { d.error(_t("这首歌的参考窗是更新版本的 app 存的，这一版先不显示（原样留着）")); return; }
       el.open = !el.open;
       if (el.open) { placed = true; syncFloor(); el.focus({ preventScroll: true }); } else d.focusScore();
     },

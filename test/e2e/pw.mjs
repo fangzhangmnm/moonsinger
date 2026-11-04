@@ -8,4 +8,16 @@ const common = path.resolve(execSync("git rev-parse --git-common-dir", { encodin
 const family = path.dirname(path.dirname(common));                                                       // 主仓 → 家族目录
 const pw = process.env.PLAYWRIGHT_INDEX ?? path.join(family, "20260524 WeebPaint", "node_modules", "playwright", "index.mjs");
 const mod = await import(pathToFileURL(pw).href);
-export const { chromium, firefox, webkit } = mod;
+// 测试看中文界面（v0.15.0 起界面跟系统语言；无头浏览器默认 en-US）。要测英文 = newContext({ locale: "en-US" }) 明写。edited by Claude Opus 5.5 2026-11-04
+const ZH = { locale: "zh-CN" };
+const wrapBrowser = (b) => new Proxy(b, { get(t, k) {
+  if (k === "newContext") return (o = {}) => t.newContext({ ...ZH, ...o });
+  if (k === "newPage") return (o = {}) => t.newPage({ ...ZH, ...o });
+  const v = t[k]; return typeof v === "function" ? v.bind(t) : v;
+} });
+const wrapType = (ty) => new Proxy(ty, { get(t, k) {
+  if (k === "launch") return async (...a) => wrapBrowser(await t.launch(...a));
+  if (k === "launchPersistentContext") return (dir, o = {}) => t.launchPersistentContext(dir, { ...ZH, ...o });
+  const v = t[k]; return typeof v === "function" ? v.bind(t) : v;
+} });
+export const chromium = wrapType(mod.chromium), firefox = wrapType(mod.firefox), webkit = wrapType(mod.webkit);

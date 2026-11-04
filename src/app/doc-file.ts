@@ -9,6 +9,7 @@
 //   · 拖进来打开（grabDrop / fromGrab）：桌面 Chromium 用 getAsFileSystemHandle 拿句柄 = 有家；别的浏览器只有 File = 没家。
 //   · 安装成 PWA 后双击 .mxl 打开（manifest file_handlers → launchQueue，consumeLaunchFiles；照 WeebPaint）。
 
+import { _t } from "../i18n/index.ts";
 import { embedded } from "../deployment.ts";
 
 export interface FileHandle {
@@ -19,7 +20,7 @@ export interface FileHandle {
 /** 拿到手的一个文件：字节 + （桌面 Chromium）句柄 + 打开那一刻的 lastModified（没有句柄的 = 只是参考，不会再写回）。 */
 export interface Picked { name: string; bytes: Uint8Array; handle: FileHandle | null; mtime: number | null }
 
-const TYPES = [{ description: "MusicXML 乐谱（MoonSinger 存成 .mxl）", accept: {
+const TYPES = [{ description: _t("MusicXML 乐谱（MoonSinger 存成 .mxl）"), accept: {
   "application/vnd.recordare.musicxml": [".mxl"], "application/vnd.recordare.musicxml+xml": [".musicxml", ".xml"] } }];
 const ACCEPT = ".mxl,.musicxml,.xml";
 /** 认不认这个文件名（打开 / 拖进来 / 双击都看它）。 */

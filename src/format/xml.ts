@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // xml.ts —— 读写 MusicXML 用的最小 XML：解析成一棵元素树、转义写出。created 2026-10-07 by Claude Opus 5.5
 // 为什么自己写：浏览器有 DOMParser，但 node 跑测试没有；MusicXML 只用到元素 / 属性 / 文字 / 注释 / DOCTYPE / 处理指令 / CDATA / 实体，
 // 一百行以内能写对，比 vendor 一个 XML 库轻（家规 vendor everything，能不加依赖就不加）。不做命名空间、不做 DTD 展开。
@@ -14,7 +15,7 @@ export const esc = (s: string): string => s.replace(/[&<>"]/g, (c) => ({ "&": "&
 /** 解析整份 XML，返回根元素。格式不对就抛错（说清在哪）。 */
 export function parseXml(src: string): El {
   let i = 0;
-  const fail = (what: string): never => { throw new Error(`XML 读不懂（第 ${src.slice(0, i).split("\n").length} 行）：${what}`); };
+  const fail = (what: string): never => { throw new Error(_t("XML 读不懂（第 {i} 行）：{what}", { i: src.slice(0, i).split("\n").length, what })); };
   const stack: El[] = [{ name: "#doc", attrs: {}, children: [] }];
   while (i < src.length) {
     const lt = src.indexOf("<", i);
@@ -22,21 +23,21 @@ export function parseXml(src: string): El {
     if (text && stack.length > 1) stack[stack.length - 1].children.push(decode(text));
     if (lt < 0) break;
     i = lt;
-    if (src.startsWith("<!--", i)) { const e = src.indexOf("-->", i); if (e < 0) fail("注释没收尾"); i = e + 3; continue; }
-    if (src.startsWith("<![CDATA[", i)) { const e = src.indexOf("]]>", i); if (e < 0) fail("CDATA 没收尾"); stack[stack.length - 1].children.push(src.slice(i + 9, e)); i = e + 3; continue; }
-    if (src.startsWith("<?", i)) { const e = src.indexOf("?>", i); if (e < 0) fail("处理指令没收尾"); i = e + 2; continue; }
+    if (src.startsWith("<!--", i)) { const e = src.indexOf("-->", i); if (e < 0) fail(_t("注释没收尾")); i = e + 3; continue; }
+    if (src.startsWith("<![CDATA[", i)) { const e = src.indexOf("]]>", i); if (e < 0) fail(_t("CDATA 没收尾")); stack[stack.length - 1].children.push(src.slice(i + 9, e)); i = e + 3; continue; }
+    if (src.startsWith("<?", i)) { const e = src.indexOf("?>", i); if (e < 0) fail(_t("处理指令没收尾")); i = e + 2; continue; }
     if (src.startsWith("<!", i)) {   // DOCTYPE（可能带 [内部子集]）
       let depth = 0, j = i;
       for (; j < src.length; j++) { const c = src[j]; if (c === "[") depth++; else if (c === "]") depth--; else if (c === ">" && depth === 0) break; }
       i = j + 1; continue;
     }
     if (src[i + 1] === "/") {
-      const e = src.indexOf(">", i); if (e < 0) fail("结束标签没收尾");
+      const e = src.indexOf(">", i); if (e < 0) fail(_t("结束标签没收尾"));
       const name = src.slice(i + 2, e).trim(), top = stack.pop()!;
-      if (!top || top.name !== name) fail(`结束标签 </${name}> 对不上 <${top?.name}>`);
+      if (!top || top.name !== name) fail(_t("结束标签 </{name}> 对不上 <{top}>", { name, top: top?.name }));
       i = e + 1; continue;
     }
-    const m = /^<([^\s/>]+)/.exec(src.slice(i, i + 200)); if (!m) fail("标签名");
+    const m = /^<([^\s/>]+)/.exec(src.slice(i, i + 200)); if (!m) fail(_t("标签名"));
     const el: El = { name: m![1], attrs: {}, children: [] };
     i += m![0].length;
     const attrRe = /\s*([^\s=/>]+)\s*=\s*("([^"]*)"|'([^']*)')/y;
@@ -50,13 +51,13 @@ export function parseXml(src: string): El {
     while (/\s/.test(src[i] ?? "")) i++;
     stack[stack.length - 1].children.push(el);
     if (src.startsWith("/>", i)) { i += 2; continue; }
-    if (src[i] !== ">") fail(`<${el.name}> 里有读不懂的东西`);
+    if (src[i] !== ">") fail(_t("<{name}> 里有读不懂的东西", { name: el.name }));
     i++;
     stack.push(el);
   }
-  if (stack.length !== 1) fail(`<${stack[stack.length - 1].name}> 没有结束`);
+  if (stack.length !== 1) fail(_t("<{name}> 没有结束", { name: stack[stack.length - 1].name }));
   const root = stack[0].children.find((c): c is El => typeof c !== "string");
-  if (!root) fail("没有根元素");
+  if (!root) fail(_t("没有根元素"));
   return root!;
 }
 

@@ -29,6 +29,7 @@
 // · 2026-10-15（键盘模块刀 2，Claude Fable 5.1）：pad 是纯前端，不懂音乐——user 10-14「键盘确实是前端，音乐知识比如和弦有几个是外部注入的…
 //   然后出来的也是按键而不是和弦，翻译成音符输入别的人管。键盘只管交互状态机，它不懂音乐」。音键只认「第 k 级」（PadMusic 给它是什么音、怎么标），
 //   写字键 / 符号格往外发按键 id（翻译成命令 = src/app/pad-keys.ts），谱的输入态只看一张小快照（PadView）。不 import src/score/*。
+import { _t } from "../i18n/index.ts";
 import { LATCH_OFF, latchTap, latchWrite, latchOn, type Latch } from "./latch.ts";
 import { hint } from "./keys.ts";
 import { type SymPage, SYM_PAGES, SYM_PAGE_NAME, SYM_PAGE_TITLE } from "./pad-layout.ts";   // 符号格三页的布局（哪个 id 在哪一页）；按键 id 的全集也在那儿
@@ -99,7 +100,7 @@ const octDots = (n: number) => (n > 0 ? `<span class="jp-dots">${"<i></i>".repea
 const UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];   // SMuFL note32ndUp / 16thUp / 8thUp / QuarterUp / HalfUp / Whole（写成转义，免得编辑器吞掉私用区字符）
 /** 插记号按钮上的音乐符号（Bravura；SMuFL timeSig0–9 = U+E080–E089、metNoteQuarterUp）。写成转义，免得编辑器吞掉私用区字符。 */
 const QUARTER = "\uECA5", TS = (n: number) => String.fromCodePoint(0xe080 + n);   // QUARTER = metNoteQuarterUp（速度记号里用的小号音符）
-const UNIT_NAME = ["三十二分", "十六分", "八分", "四分", "二分", "全音符"];
+const UNIT_NAME = [_t("三十二分"), _t("十六分"), _t("八分"), _t("四分"), _t("二分"), _t("全音符")];
 /** 连音的样子 = 真画一组 n 个小蝌蚪，跟着长短基线变：三十二分 3 道横梁、十六分 2 道、八分 1 道、四分只有符干、二分空心、全音符空心没符干；
  *  上面一道括号，中间是连音数字（Bravura tuplet0–9 = U+E880–E889）。user「三联我是说画具体的小蝌蚪」「三联五联的小蝌蚪应该跟着base时值adaptive的变」。 */
 function tupletMark(n: number, unit: number): string {
@@ -109,7 +110,7 @@ function tupletMark(n: number, unit: number): string {
     `<ellipse class="${hollow ? "ho" : "fi"}" cx="${hx(i)}" cy="${HY}" rx="${unit === 5 ? 3 : 2.6}" ry="1.85" transform="rotate(-20 ${hx(i)} ${HY})"/>`).join("");
   const stems = unit <= 4 ? Array.from({ length: n }, (_, i) => `<line x1="${sx(i)}" y1="${HY - 0.5}" x2="${sx(i)}" y2="${TOP}"/>`).join("") : "";
   const beam = Array.from({ length: beams }, (_, k) => `<rect x="${sx(0) - 0.45}" y="${TOP + k * 3}" width="${sx(n - 1) - sx(0) + 0.9}" height="1.8"/>`).join("");
-  return `<svg class="tupsvg" viewBox="0 0 ${W} 28.5" width="${((W * 32) / 28.5).toFixed(1)}" height="32" aria-label="${n} 连音">` +
+  return `<svg class="tupsvg" viewBox="0 0 ${W} 28.5" width="${((W * 32) / 28.5).toFixed(1)}" height="32" aria-label="${_t("{n} 连音", { n })}">` +
     `<path class="br" d="M${M} ${by + 2.5}V${by}H${cx - 3.6}M${cx + 3.6} ${by}H${W - M}V${by + 2.5}"/>` +
     `<text x="${cx}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(0xe880 + n)}</text>${stems}${beam}${heads}</svg>`;
 }
@@ -213,17 +214,17 @@ export class Pad {
     this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols)); this.el.style.setProperty("--rows", String(rows));   // --rows：符号层的高 = 音键那几排（几何不变，多了滚）
     if (!this.el.querySelector(".pad-grid")) {
       this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes">` +
-        `<button class="btn" data-caret="-1" title="光标左移（${hint("left")}）">←</button>` +
-        `<button class="btn" data-caret="1" title="光标右移（${hint("right")}）">→</button>` +
-        `<button class="btn wk" data-cmd="rest" title="休止（${hint("rest")}）"><span>0</span><small>休止</small></button>` +
-        `<button class="btn wk" data-cmd="bar" title="小节线（${hint("bar")}）"><span>|</span><small>小节线</small></button>` +
+        `<button class="btn" data-caret="-1" title="${_t("光标左移（{p}）", { p: hint("left") })}">←</button>` +
+        `<button class="btn" data-caret="1" title="${_t("光标右移（{p}）", { p: hint("right") })}">→</button>` +
+        `<button class="btn wk" data-cmd="rest" title="${_t("休止（{p}）", { p: hint("rest") })}"><span>0</span><small>${_t("休止")}</small></button>` +
+        `<button class="btn wk" data-cmd="bar" title="${_t("小节线（{p}）", { p: hint("bar") })}"><span>|</span><small>${_t("小节线")}</small></button>` +
         // 呼吸放在写音那一排（user 2026-10-08「呼吸应该是我在first pass 旋律flow的时候非常高频会用到的符号」）：和符号层「演奏法」页那一格同一件事——光标前那个音后面换气，再点去掉；符号层开着也能按
-        `<button class="btn wk breath" data-breath="1" title="呼吸：光标前那个音后面换一口气（小月相唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"><span class="smufl">\uE4CE</span><small>呼吸</small></button>` +
-        `<button class="btn wk accshift" data-accshift="1" title="升降（和 Shift 一样）：点一下 = 下一个音；连点两下 = 锁住，再点解开；按住写 = 按住期间。在键上上下滑换 𝄪 / ♯ / ♭ / 𝄫"><span class="ag"></span><small>升降</small></button>` +
-        `<button class="btn wk stack" data-stack="1" title="叠（像 Caps Lock）：按一下 = 选中光标前那个音来改——按音键叠上 / 拿掉（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）、— 长一步、⌫ 短一步、← → 换前后的音；再按一下 = 回到它后面接着写。单声乐器的声部叠不了"><span>叠</span><small>叠音</small></button>` +
-        `<button class="btn wk half" data-half="1" title="减半（长短基线短一档）：点一下 = 下一个音；连点两下 = 锁住，再点解开；也可以按住写"><span>/2</span><small>减半</small></button>` +
-        `<button class="btn wk" data-cmd="extend" title="拉长一份（${hint("extend")}）"><span>—</span><small>拉长</small></button>` +
-        `<button class="btn" data-cmd="backspace" title="退格（${hint("backspace")}）"><svg class="ico"><use href="#backspace"/></svg></button></div>` +
+        `<button class="btn wk breath" data-breath="1" title="${_t("呼吸：光标前那个音后面换一口气（小月相唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）")}"><span class="smufl"></span><small>${_t("呼吸")}</small></button>` +
+        `<button class="btn wk accshift" data-accshift="1" title="${_t("升降（和 Shift 一样）：点一下 = 下一个音；连点两下 = 锁住，再点解开；按住写 = 按住期间。在键上上下滑换 𝄪 / ♯ / ♭ / 𝄫")}"><span class="ag"></span><small>${_t("升降")}</small></button>` +
+        `<button class="btn wk stack" data-stack="1" title="${_t("叠（像 Caps Lock）：按一下 = 选中光标前那个音来改——按音键叠上 / 拿掉（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）、— 长一步、⌫ 短一步、← → 换前后的音；再按一下 = 回到它后面接着写。单声乐器的声部叠不了")}"><span>${_t("叠")}</span><small>${_t("叠音")}</small></button>` +
+        `<button class="btn wk half" data-half="1" title="${_t("减半（长短基线短一档）：点一下 = 下一个音；连点两下 = 锁住，再点解开；也可以按住写")}"><span>/2</span><small>${_t("减半")}</small></button>` +
+        `<button class="btn wk" data-cmd="extend" title="${_t("拉长一份（{p}）", { p: hint("extend") })}"><span>—</span><small>${_t("拉长")}</small></button>` +
+        `<button class="btn" data-cmd="backspace" title="${_t("退格（{p}）", { p: hint("backspace") })}"><svg class="ico"><use href="#backspace"/></svg></button></div>` +
         `<div class="pad-grid"></div>`;
       { const g = this.el.querySelector<HTMLElement>(".pad-grid")!; g.addEventListener("wheel", (e) => this.gridWheel(g, e), { passive: false }); }
       const w = this.el.querySelector<HTMLElement>(".writes")!;
@@ -286,7 +287,7 @@ export class Pad {
   /** 这一页符号格的状态签名（谁不认 / 谁亮着）：变了就重建格子。 */
   private symStates(): string { return SYM_PAGES[this.symPage].map((id) => { const ks = this.host.keyState?.(id); return ks ? `${ks.off ? "x" : ""}${ks.on ? "o" : ""}` : ""; }).join(","); }
   private cands(rows: number): string {
-    const back = `<button class="btn cand" data-back="1">返回</button>`;
+    const back = `<button class="btn cand" data-back="1">${_t("返回")}</button>`;
     const c = (attrs: string, label: string, on = false, title = "") => `<button class="btn cand${on ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
     switch (this.mode) {
       // 「⋯」里可以多行：插记号直接展开（user「...里面可以多行，放很多东西。所以插记号可以展开，然后应该也是用音乐符号？也许用一个加号？」）；
@@ -295,12 +296,12 @@ export class Pad {
       case "more": {
         const m = this.host.music.marksHere(), plus = `<span class="plus">+</span>`;
         const digits = (n: number) => [...String(n)].map((ch) => TS(Number(ch))).join("");
-        return c(`data-mark="key"`, `${plus}1=${m.key}`, false, "插调号（在光标处；先填现在的，插了再改）") +
-          c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.beats)}</span><span>${digits(m.beatType)}</span></span>`, false, "插拍号（在光标处；先填现在的，插了再改）") +
-          c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, "插速度（在光标处；先填现在的，插了再改）") +
-          c(`data-autobars="1"`, "自动小节线", this.host.autoBars(), "按拍号自动画小节线（只画、不进数据）；手插的「|」= 从那里重新数，弱起 = 写完弱起的音按一下「|」") +
-          (this.host.staves() === 2 ? c(`data-staff="1"`, "换谱表", false, "大谱表：刚写的音（或选中的）挪到另一张谱表；再按一次回到按音高自动分") : "") +
-          c(`data-open="layout"`, "布局…", false, "几行几列、首调 / 绝对") + back;
+        return c(`data-mark="key"`, `${plus}1=${m.key}`, false, _t("插调号（在光标处；先填现在的，插了再改）")) +
+          c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.beats)}</span><span>${digits(m.beatType)}</span></span>`, false, _t("插拍号（在光标处；先填现在的，插了再改）")) +
+          c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, _t("插速度（在光标处；先填现在的，插了再改）")) +
+          c(`data-autobars="1"`, _t("自动小节线"), this.host.autoBars(), _t("按拍号自动画小节线（只画、不进数据）；手插的「|」= 从那里重新数，弱起 = 写完弱起的音按一下「|」")) +
+          (this.host.staves() === 2 ? c(`data-staff="1"`, _t("换谱表"), false, _t("大谱表：刚写的音（或选中的）挪到另一张谱表；再按一次回到按音高自动分")) : "") +
+          c(`data-open="layout"`, _t("布局…"), false, _t("几行几列、首调 / 绝对")) + back;
       }
       default: return "";
     }
@@ -313,18 +314,18 @@ export class Pad {
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     const tabs = this.symbols !== "off" && this.mode === "normal";   // 符号层：1= / 长短 / 音域（只管音键）换成三页的标签，位置 / 大小不变
     box.innerHTML = this.mode !== "normal" ? this.cands(rows) : tabs ?
-      (Object.keys(SYM_PAGES) as SymPage[]).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">渐到</small>` : ""}</button>`).join("") +
-      `<button class="btn kb-switch" data-kbswitch="1" title="换回音键（写音 / 休止 / 小节线）">音</button>` +
-      `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="弹：音键只响不写（快捷键 \`）；再点回到写">弹</button>` +
-      `<button class="btn hide-pad" data-hide="1" title="收起键盘（点五线谱再弹出来）">收起</button>` +
-      `<button class="btn knob k-more" data-knob="more" title="更多：布局、插记号"><span class="kl">⋯</span></button>` :
-      `<button class="btn knob k-key" data-knob="key" title="1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）"><span class="kl"></span><span class="kh">⇅</span></button>` +
-      `<button class="btn knob k-unit" data-knob="unit" title="长短基线：按住上下滑 / 点开选（含连音）"><span class="kl"></span><span class="kh">⇅</span></button>` +
-      `<button class="btn knob k-range" data-knob="range" title="音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的"><span class="kl"></span><span class="kh">⇅</span></button>` +
-      `<button class="btn kb-switch" data-kbswitch="1" title="换成符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号）——谱上音和记号本来就一起改，这里只换键盘">符</button>` +
-      `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="弹：音键只响不写（快捷键 \`）；再点回到写">弹</button>` +
-      `<button class="btn hide-pad" data-hide="1" title="收起键盘（点五线谱再弹出来）">收起</button>` +
-      `<button class="btn knob k-more" data-knob="more" title="更多：布局、插记号"><span class="kl">⋯</span></button>`;
+      (Object.keys(SYM_PAGES) as SymPage[]).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">${_t("渐到")}</small>` : ""}</button>`).join("") +
+      `<button class="btn kb-switch" data-kbswitch="1" title="${_t("换回音键（写音 / 休止 / 小节线）")}">${_t("音")}</button>` +
+      `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("弹：音键只响不写（快捷键 `）；再点回到写")}">${_t("弹")}</button>` +
+      `<button class="btn hide-pad" data-hide="1" title="${_t("收起键盘（点五线谱再弹出来）")}">${_t("收起")}</button>` +
+      `<button class="btn knob k-more" data-knob="more" title="${_t("更多：布局、插记号")}"><span class="kl">⋯</span></button>` :
+      `<button class="btn knob k-key" data-knob="key" title="${_t("1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
+      `<button class="btn knob k-unit" data-knob="unit" title="${_t("长短基线：按住上下滑 / 点开选（含连音）")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
+      `<button class="btn knob k-range" data-knob="range" title="${_t("音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
+      `<button class="btn kb-switch" data-kbswitch="1" title="${_t("换成符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号）——谱上音和记号本来就一起改，这里只换键盘")}">${_t("符")}</button>` +
+      `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("弹：音键只响不写（快捷键 `）；再点回到写")}">${_t("弹")}</button>` +
+      `<button class="btn hide-pad" data-hide="1" title="${_t("收起键盘（点五线谱再弹出来）")}">${_t("收起")}</button>` +
+      `<button class="btn knob k-more" data-knob="more" title="${_t("更多：布局、插记号")}"><span class="kl">⋯</span></button>`;
     box.querySelectorAll<HTMLElement>("[data-knob]").forEach((b) => { b.addEventListener("pointerdown", (e) => { e.preventDefault(); this.knobDown(b, e); }); b.addEventListener("wheel", (e) => this.knobWheel(b, e), { passive: false }); });
     // 候选
     this.on(box, "[data-open]", () => { this.back(); this.openLayout(); });   // 「布局…」= 对话框（不再占 pad 头那一排：换成几排会把键盘挤变形；user 2026-10-08「要不键盘layout还是一个模态对话框，不会破坏键盘的尺寸」）
@@ -346,15 +347,15 @@ export class Pad {
     box.className = "offer pad-layout";
     const c = (attrs: string, label: string, on = false, title = "") => `<button type="button" class="btn cand${on ? " is-on" : ""}" ${attrs}${title ? ` title="${title}"` : ""}>${label}</button>`;
     const step = (k: "r" | "c", name: string, v: number, lo: number, hi: number) =>
-      `<button type="button" class="btn cand lay-step" data-${k}step="-1"${v <= lo ? " disabled" : ""} title="少一${name}">−</button><span class="lay-v">${v}</span>` +
-      `<button type="button" class="btn cand lay-step" data-${k}step="1"${v >= hi ? " disabled" : ""} title="多一${name}">+</button>`;
+      `<button type="button" class="btn cand lay-step" data-${k}step="-1"${v <= lo ? " disabled" : ""} title="${_t("少一{name}", { name })}">−</button><span class="lay-v">${v}</span>` +
+      `<button type="button" class="btn cand lay-step" data-${k}step="1"${v >= hi ? " disabled" : ""} title="${_t("多一{name}", { name })}">+</button>`;
     const grp = (label: string, inner: string, title = "") => `<div class="lay-line"><span class="lay-k">${label}</span><span class="lay-grp"${title ? ` title="${title}"` : ""}>${inner}</span></div>`;
-    const body = () => grp("行", step("r", "行", this.rows(), ROWS_MIN, ROWS_MAX) + c(`data-rows="auto"`, "自动", this.rowsSetting === "auto", "按屏幕高度自动定几行"), "键盘几行（高度）") +
-      grp("列", step("c", "列", this.cols, COLS_MIN, COLS_MAX), "键盘几列") +
-      grp("键位", c(`data-pl="movable"`, "首调", this.layoutMode === "movable", "每行从 1 起，跟着「1=」走") + c(`data-pl="absolute"`, "绝对", this.layoutMode === "absolute", "每行从 C 起（不跟着「1=」挪）")) +
-      grp("滑", c(`data-swipe="glide"`, "滚键盘", this.swipeMode === "glide", "手指按着滑到下一个键 = 响下一个（写的时候一路写）") + c(`data-swipe="alter"`, "升降", this.swipeMode === "alter", "在音键上上下滑 = 这一个音升 / 降（黏着）"));
-    box.innerHTML = `<div class="offer-card pad-layout-card"><div class="offer-title">键盘布局</div><div class="lay-body">${body()}</div>` +
-      `<div class="offer-btns"><button type="button" class="btn primary" data-v="close">好</button></div></div>`;
+    const body = () => grp(_t("行"), step("r", _t("行"), this.rows(), ROWS_MIN, ROWS_MAX) + c(`data-rows="auto"`, _t("自动"), this.rowsSetting === "auto", _t("按屏幕高度自动定几行")), _t("键盘几行（高度）")) +
+      grp(_t("列"), step("c", _t("列"), this.cols, COLS_MIN, COLS_MAX), _t("键盘几列")) +
+      grp(_t("键位"), c(`data-pl="movable"`, _t("首调"), this.layoutMode === "movable", _t("每行从 1 起，跟着「1=」走")) + c(`data-pl="absolute"`, _t("绝对"), this.layoutMode === "absolute", _t("每行从 C 起（不跟着「1=」挪）"))) +
+      grp(_t("滑"), c(`data-swipe="glide"`, _t("滚键盘"), this.swipeMode === "glide", _t("手指按着滑到下一个键 = 响下一个（写的时候一路写）")) + c(`data-swipe="alter"`, _t("升降"), this.swipeMode === "alter", _t("在音键上上下滑 = 这一个音升 / 降（黏着）")));
+    box.innerHTML = `<div class="offer-card pad-layout-card"><div class="offer-title">${_t("键盘布局")}</div><div class="lay-body">${body()}</div>` +
+      `<div class="offer-btns"><button type="button" class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
     document.body.append(box);
     const lay = box.querySelector<HTMLElement>(".lay-body")!;
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } };
@@ -381,38 +382,38 @@ export class Pad {
     const cell = (id: string, big: string, label: string, title: string, state = "") => {
       // 台上这位不认（off）：照样能写，格子标出来（不静默失效）；力度：现在生效的那个亮着（on）。哪个格子写哪种记号 = 宿主的事（keyState）
       const ks = this.host.keyState?.(id) ?? {}, art = /^(art:|inhale:|swell:)|^slur$/.test(id), off = !!ks.off, on = !!ks.on;
-      return `<button class="pad-key sym${art ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id}" title="${title}${off ? "（台上这位不认：写在谱上画灰，出声不受影响）" : ""}">${big}<small>${label}${off ? `<span class="ign-tag">不认</span>` : ""}</small></button>`;
+      return `<button class="pad-key sym${art ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id}" title="${title}${off ? _t("（台上这位不认：写在谱上画灰，出声不受影响）") : ""}">${big}<small>${label}${off ? `<span class="ign-tag">${_t("不认")}</span>` : ""}</small></button>`;
     };
     const items = [
-      cell("phrase", `<span class="big">。</span>`, "句号", "句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）"),
-      cell("art:arpeggio", `<span class="smufl">\uEAA9\uEAA9</span>`, "琶音", "琶音：光标前那个和弦（有选区 = 选中的）从低到高依次奏出（和弦左边一条波浪线）；再点一次去掉"),
-      cell("art:staccato", `<span class="smufl">\uE4A2</span>`, "跳音", "跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉"),
-      cell("art:ghost", `<span class="smufl">\uE0F5\uE0A4\uE0F6</span>`, "幽灵音", "幽灵音（括号符头）：光标前那个音（有选区 = 选中的）很轻、几乎听不见；音的强度只有一种：和弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱互斥"),
-      cell("art:unstress", `<span class="smufl">\uE4B8</span>`, "弱化", "弱化：光标前那个音（有选区 = 选中的）轻一点；和别的强度互斥"),
-      cell("art:stress", `<span class="smufl">\uE4B6</span>`, "次重音", "次重音：比重音轻的重音（四拍子「强弱次强弱」的次强）；和别的强度互斥"),
-      cell("art:accent", `<span class="smufl">\uE4A0</span>`, "重音", "重音：光标前那个音（有选区 = 选中的）加重；再点一次去掉"),
-      cell("art:marcato", `<span class="smufl">\uE4AC</span>`, "强音", "强音：光标前那个音（有选区 = 选中的）比重音更重；再点一次去掉"),
-      cell("art:sfz", `<span class="smufl">\uE539</span>`, "突强", "突强 sfz：光标前那个音（有选区 = 选中的）音头猛地冲一下再落回来；和重音 / 强音 / fp 互斥"),
-      cell("art:fp", `<span class="smufl">\uE534</span>`, "强后即弱", "强后即弱 fp：音头 f，马上落到 p，之后的音都是 p；和重音 / 强音 / sfz 互斥"),
-      cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, "保持", "保持：光标前那个音（有选区 = 选中的）唱 / 弹满；再点一次去掉"),
-      cell("wedge:cresc", CRESC_CELL, "渐强", "渐强 <：从光标前那个音（有选区 = 选区第一个音）起，一路渐强到这张纸里下一个力度记号；没写 = 走一档（谱上灰字标出推定的终点）；再点一次去掉"),
-      cell("wedge:dim", DIM_CELL, "渐弱", "渐弱 >：从光标前那个音（有选区 = 选区第一个音）起，一路渐弱到这张纸里下一个力度记号；没写 = 走一档（谱上灰字标出推定的终点）；再点一次去掉"),
-      ...(["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => cell(`dyn:${d}`, `<span class="smufl">${DYN_CELL[d]}</span>`, "力度", `力度 ${d}：从光标前那个音起（有选区 = 选区开头），管到下一个力度记号；那儿已经是它 = 去掉（user 2026-10-08「mp mf 在哪里加啊」）`)),
-      cell("dyn:ramp", RAMP_CELL, "渐到", "渐到：点一下 = 下一个力度从这张纸里上一个力度记号那儿一路渐变过来（谱上画虚线发夹；手写的渐强渐弱是实线）；连点两下 = 锁住，之后写的力度都是渐到；再点 = 关。不开 = 到那儿突变", this.ramp.mode === "off" ? "" : this.ramp.mode),
-      ...(["<", ">", "<>"] as const).map((w) => cell(`swell:${w}`, SWELL_CELL[w], w === "<" ? "音内渐强" : w === ">" ? "音内渐弱" : "音内鼓起", `${w === "<" ? "音内渐强" : w === ">" ? "音内渐弱（锯齿）" : "音内鼓起（messa di voce）"}：光标前那个音（有选区 = 选中的）自己里面的起伏；和段落的渐强渐弱是两层，可以叠；再点 = 去掉`)),
-      cell("slur", SLUR_CELL, "连线", "连线：光标前那个音连到下一个音（连奏、不留缝；有选区 = 选中的连起来；再点一次去掉）。同一个音上又有呼吸 = 呼吸算数：那里照样断开换气，连线照画"),
-      cell("art:breath", `<span class="smufl">\uE4CE</span>`, "呼吸", "呼吸：光标前那个音后面换一口气（小月相唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）"),
-      cell("inhale:soft", `<span class="glyphs"><span class="smufl">\uE4CE</span><span class="big">吸</span></span>`, "轻吸", "出声的换气（轻吸）：光标前那个音后面换气、听得见吸气声（没有呼吸记号就连逗号一起加上；再点一次 = 整个去掉）。只有点了的地方才出声，普通的呼吸记号照旧静默"),
-      cell("inhale:big", `<span class="glyphs"><span class="smufl">\uE4CE</span><span class="big">深吸</span></span>`, "深吸", "出声的换气（深吸）：大口吸气、换气的空当也长一点（从前一个音末尾借时间）；再点一次 = 整个去掉"),
-      cell("art:whisper", `<span class="smufl">\uE0A9</span>`, "气声", "气声（× 符头）：光标前那个音（有选区 = 选中的）不唱音高、用气声唱这个字（念白 / 耳语）；再点一次去掉。只有小月相做得到，乐器上画灰"),
-      cell("key", `<span class="big">1=</span>`, "调号", "插调号（在光标处；先填现在的，插了再改）"),
-      cell("time", `<span class="big">4/4</span>`, "拍号", "插拍号（在光标处）"),
-      cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, "速度", "插速度（在光标处）"),
-      cell("clef", `<span class="smufl">\uE050</span>`, "谱号", "谱号：从光标处起换谱号（高音 / 低音 / 下加 8 / 上加 8 / 上加 15）；只管画，音高不变。每行开头的谱号也能直接点"),
-      cell("ottava", `<span class="smufl">\uE511</span>`, "八度线", "八度线：从光标处起谱上画低（8va / 15ma）或画高（8vb）；有选区 = 这一段；「结束」= 到这儿收。只管画，音高不变"),
-      cell("groove", `<span class="big it">风格</span>`, "拍子轻重", "风格记号：从光标前那个音起到这张纸结尾，每个音按它在小节里的位置轻一点 / 重一点（古典 / 流行 / 华尔兹 / 进行曲…点开选）；整张纸的歌手一起听，各人跟多少按乐器"),
-      cell("repeat", `<span class="big">:|</span>`, "反复", "谱内反复 / 跳转：|: :|、房子 1. 2.、Segno / Coda / D.C. / D.S. / Fine…（点开选；插在光标处，挨着小节线 = 把那条改成反复的）。不跨纸；放的时候只看这张纸最上面那位歌手那一行"),
-      ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, "换谱表", "大谱表：这个音换到另一张谱表")] : []),
+      cell("phrase", `<span class="big">。</span>`, _t("句号"), _t("句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）")),
+      cell("art:arpeggio", `<span class="smufl">\uEAA9\uEAA9</span>`, _t("琶音"), _t("琶音：光标前那个和弦（有选区 = 选中的）从低到高依次奏出（和弦左边一条波浪线）；再点一次去掉")),
+      cell("art:staccato", `<span class="smufl">\uE4A2</span>`, _t("跳音"), _t("跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉")),
+      cell("art:ghost", `<span class="smufl">\uE0F5\uE0A4\uE0F6</span>`, _t("幽灵音"), _t("幽灵音（括号符头）：光标前那个音（有选区 = 选中的）很轻、几乎听不见；音的强度只有一种：和弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱互斥")),
+      cell("art:unstress", `<span class="smufl">\uE4B8</span>`, _t("弱化"), _t("弱化：光标前那个音（有选区 = 选中的）轻一点；和别的强度互斥")),
+      cell("art:stress", `<span class="smufl">\uE4B6</span>`, _t("次重音"), _t("次重音：比重音轻的重音（四拍子「强弱次强弱」的次强）；和别的强度互斥")),
+      cell("art:accent", `<span class="smufl">\uE4A0</span>`, _t("重音"), _t("重音：光标前那个音（有选区 = 选中的）加重；再点一次去掉")),
+      cell("art:marcato", `<span class="smufl">\uE4AC</span>`, _t("强音"), _t("强音：光标前那个音（有选区 = 选中的）比重音更重；再点一次去掉")),
+      cell("art:sfz", `<span class="smufl">\uE539</span>`, _t("突强"), _t("突强 sfz：光标前那个音（有选区 = 选中的）音头猛地冲一下再落回来；和重音 / 强音 / fp 互斥")),
+      cell("art:fp", `<span class="smufl">\uE534</span>`, _t("强后即弱"), _t("强后即弱 fp：音头 f，马上落到 p，之后的音都是 p；和重音 / 强音 / sfz 互斥")),
+      cell("art:tenuto", `<span class="smufl">\uE4A4</span>`, _t("保持"), _t("保持：光标前那个音（有选区 = 选中的）唱 / 弹满；再点一次去掉")),
+      cell("wedge:cresc", CRESC_CELL, _t("渐强"), _t("渐强 <：从光标前那个音（有选区 = 选区第一个音）起，一路渐强到这张纸里下一个力度记号；没写 = 走一档（谱上灰字标出推定的终点）；再点一次去掉")),
+      cell("wedge:dim", DIM_CELL, _t("渐弱"), _t("渐弱 >：从光标前那个音（有选区 = 选区第一个音）起，一路渐弱到这张纸里下一个力度记号；没写 = 走一档（谱上灰字标出推定的终点）；再点一次去掉")),
+      ...(["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => cell(`dyn:${d}`, `<span class="smufl">${DYN_CELL[d]}</span>`, _t("力度"), _t("力度 {d}：从光标前那个音起（有选区 = 选区开头），管到下一个力度记号；那儿已经是它 = 去掉（user 2026-10-08「mp mf 在哪里加啊」）", { d }))),
+      cell("dyn:ramp", RAMP_CELL, _t("渐到"), _t("渐到：点一下 = 下一个力度从这张纸里上一个力度记号那儿一路渐变过来（谱上画虚线发夹；手写的渐强渐弱是实线）；连点两下 = 锁住，之后写的力度都是渐到；再点 = 关。不开 = 到那儿突变"), this.ramp.mode === "off" ? "" : this.ramp.mode),
+      ...(["<", ">", "<>"] as const).map((w) => cell(`swell:${w}`, SWELL_CELL[w], w === "<" ? _t("音内渐强") : w === ">" ? _t("音内渐弱") : _t("音内鼓起"), _t("{p}：光标前那个音（有选区 = 选中的）自己里面的起伏；和段落的渐强渐弱是两层，可以叠；再点 = 去掉", { p: w === "<" ? _t("音内渐强") : w === ">" ? _t("音内渐弱（锯齿）") : _t("音内鼓起（messa di voce）") }))),
+      cell("slur", SLUR_CELL, _t("连线"), _t("连线：光标前那个音连到下一个音（连奏、不留缝；有选区 = 选中的连起来；再点一次去掉）。同一个音上又有呼吸 = 呼吸算数：那里照样断开换气，连线照画")),
+      cell("art:breath", `<span class="smufl">\uE4CE</span>`, _t("呼吸"), _t("呼吸：光标前那个音后面换一口气（小月相唱到这儿换气；乐器在这儿稍微断开；连线连着也照样断开；再点一次去掉）")),
+      cell("inhale:soft", `<span class="glyphs"><span class="smufl"></span><span class="big">${_t("吸")}</span></span>`, _t("轻吸"), _t("出声的换气（轻吸）：光标前那个音后面换气、听得见吸气声（没有呼吸记号就连逗号一起加上；再点一次 = 整个去掉）。只有点了的地方才出声，普通的呼吸记号照旧静默")),
+      cell("inhale:big", `<span class="glyphs"><span class="smufl"></span><span class="big">${_t("深吸")}</span></span>`, _t("深吸"), _t("出声的换气（深吸）：大口吸气、换气的空当也长一点（从前一个音末尾借时间）；再点一次 = 整个去掉")),
+      cell("art:whisper", `<span class="smufl">\uE0A9</span>`, _t("气声"), _t("气声（× 符头）：光标前那个音（有选区 = 选中的）不唱音高、用气声唱这个字（念白 / 耳语）；再点一次去掉。只有小月相做得到，乐器上画灰")),
+      cell("key", `<span class="big">1=</span>`, _t("调号"), _t("插调号（在光标处；先填现在的，插了再改）")),
+      cell("time", `<span class="big">4/4</span>`, _t("拍号"), _t("插拍号（在光标处）")),
+      cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, _t("速度"), _t("插速度（在光标处）")),
+      cell("clef", `<span class="smufl">\uE050</span>`, _t("谱号"), _t("谱号：从光标处起换谱号（高音 / 低音 / 下加 8 / 上加 8 / 上加 15）；只管画，音高不变。每行开头的谱号也能直接点")),
+      cell("ottava", `<span class="smufl">\uE511</span>`, _t("八度线"), _t("八度线：从光标处起谱上画低（8va / 15ma）或画高（8vb）；有选区 = 这一段；「结束」= 到这儿收。只管画，音高不变")),
+      cell("groove", `<span class="big it">${_t("风格")}</span>`, _t("拍子轻重"), _t("风格记号：从光标前那个音起到这张纸结尾，每个音按它在小节里的位置轻一点 / 重一点（古典 / 流行 / 华尔兹 / 进行曲…点开选）；整张纸的歌手一起听，各人跟多少按乐器")),
+      cell("repeat", `<span class="big">:|</span>`, _t("反复"), _t("谱内反复 / 跳转：|: :|、房子 1. 2.、Segno / Coda / D.C. / D.S. / Fine…（点开选；插在光标处，挨着小节线 = 把那条改成反复的）。不跨纸；放的时候只看这张纸最上面那位歌手那一行")),
+      ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, _t("换谱表"), _t("大谱表：这个音换到另一张谱表"))] : []),
     ];
     const byId = new Map(items.map((h) => [/data-sym="([^"]+)"/.exec(h)![1], h]));
     grid.innerHTML = SYM_PAGES[this.symPage].flatMap((id) => byId.get(id) ?? []).join("");
@@ -473,7 +474,7 @@ export class Pad {
         const k = base + row * this.cols + col, c = music.cell(k), m = c.midi;
         const inRange = !!hr && m >= hr.lo && m <= hr.hi;
         this.keys.set(k, c);
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k}" title="${inRange ? hr.title ?? `${hr.who}的音域里` : ""}">` +
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k}" title="${inRange ? hr.title ?? _t("{who}的音域里", { who: hr.who }) : ""}">` +
           `<span class="deg">${octDots(Math.max(0, c.oct))}<span class="num"><span class="acc"></span>${c.deg}</span>${octDots(Math.max(0, -c.oct))}</span><span class="abs">${c.abs}</span></button>`);
       }
     }
@@ -530,16 +531,16 @@ export class Pad {
     { // 改一个音（只选了一个 / 叠亮着；v0.10.5）：叠亮着、⌫ = 短一步、— = 长一步（user「不，我说的就是退格，不过在这个context下面可以改图标」）
       const one = v.one, stk = q("[data-stack]"), bs = q('[data-cmd="backspace"]'), ex = q('[data-cmd="extend"] small');
       stk?.classList.toggle("lock", one);
-      if (bs && bs.dataset.one !== String(one)) { bs.dataset.one = String(one); bs.innerHTML = one ? `<span>−</span><small>短一步</small>` : `<svg class="ico"><use href="#backspace"/></svg>`; bs.classList.toggle("wk", one); bs.title = one ? "短一步（退格）：选中的这个音短一档，空出来的变成休止" : "退格"; }
-      if (ex && ex.textContent !== (one ? "长一步" : "拉长")) ex.textContent = one ? "长一步" : "拉长";
+      if (bs && bs.dataset.one !== String(one)) { bs.dataset.one = String(one); bs.innerHTML = one ? `<span>−</span><small>${_t("短一步")}</small>` : `<svg class="ico"><use href="#backspace"/></svg>`; bs.classList.toggle("wk", one); bs.title = one ? _t("短一步（退格）：选中的这个音短一档，空出来的变成休止") : _t("退格"); }
+      if (ex && ex.textContent !== (one ? _t("长一步") : _t("拉长"))) ex.textContent = one ? _t("长一步") : _t("拉长");
     }
     const k = q(".k-key .kl");
-    if (k) { const kc = this.host.music.keyChoices(); k.innerHTML = kc.items[kc.index]; k.parentElement!.classList.toggle("stack", k.parentElement!.clientWidth < STACK); k.parentElement!.title = `${kc.name}（pad 自己的调和调式）：按住上下滑换调 / 点开选调和调式`; }
+    if (k) { const kc = this.host.music.keyChoices(); k.innerHTML = kc.items[kc.index]; k.parentElement!.classList.toggle("stack", k.parentElement!.clientWidth < STACK); k.parentElement!.title = _t("{name}（pad 自己的调和调式）：按住上下滑换调 / 点开选调和调式", { name: kc.name }); }
     const u = q(".k-unit .kl");
-    if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[v.unit]}</span>${v.tuplet ? `<sup>${v.tuplet}</sup>` : ""}`; u.parentElement!.title = `长短基线：${UNIT_NAME[v.unit]}${v.tuplet ? `（${v.tuplet} 连音）` : ""}——按住上下滑 / 点开选`; }   // 长短旋钮 = 接下来写的长短（有选区也一样：替换模式按它吃；整组改时值在选区菜单里）
+    if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[v.unit]}</span>${v.tuplet ? `<sup>${v.tuplet}</sup>` : ""}`; u.parentElement!.title = _t("长短基线：{p}{tuplet}——按住上下滑 / 点开选", { p: UNIT_NAME[v.unit], tuplet: v.tuplet ? _t("（{tuplet} 连音）", { tuplet: v.tuplet }) : "" }); }   // 长短旋钮 = 接下来写的长短（有选区也一样：替换模式按它吃；整组改时值在选区菜单里）
     q(".impro-pad")?.classList.toggle("is-on", this.host.isImpro());   // 「弹」亮不亮（键盘快捷键 / 找人视图也会改它）
     const r = q(".k-range .kl");
-    if (r) { const nr = this.rangeNarrow(); r.parentElement!.classList.toggle("narrow", nr); r.parentElement!.classList.toggle("tight", r.parentElement!.clientWidth < TIGHT); r.innerHTML = this.spanHtml(this.rowShift, this.rows(), nr); r.parentElement!.title = `音域 ${this.spanText(this.rowShift, this.rows())}：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的`; }
+    if (r) { const nr = this.rangeNarrow(); r.parentElement!.classList.toggle("narrow", nr); r.parentElement!.classList.toggle("tight", r.parentElement!.clientWidth < TIGHT); r.innerHTML = this.spanHtml(this.rowShift, this.rows(), nr); r.parentElement!.title = _t("音域 {rowShift}：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的", { rowShift: this.spanText(this.rowShift, this.rows()) }); }
     // 电脑键盘挂着 ♯ / ♭（Shift）：音键显示升 / 降之后的样子；手指正在滑的那个键显示它自己的
     this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => {
       const k = Number(b.dataset.k), sw = [...this.swipes.values()].find((s) => s.key === b), a = sw ? sw.alt : v.acc;
@@ -575,11 +576,11 @@ export class Pad {
     const v = this.host.view();
     if (knob === "key") {   // 1=F♯ … 1=C … 1=G♭（档位归 music）
       const kc = this.host.music.keyChoices();
-      return { items: kc.items, index: kc.index, title: "pad 的调（五度圈）", set: (i) => this.host.onPick("key", i), loop: true };
+      return { items: kc.items, index: kc.index, title: _t("pad 的调（五度圈）"), set: (i) => this.host.onPick("key", i), loop: true };
     }
-    if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(v.unit)), title: "长短基线", set: (i) => this.host.onUnit(UNITS[i]) };
+    if (knob === "unit") return { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>`), index: Math.max(0, UNITS.indexOf(v.unit)), title: _t("长短基线"), set: (i) => this.host.onUnit(UNITS[i]) };
     const rows = this.rows();   // 音域：高的在上（一张纸：往上推 = 看下面更低的）
-    return { items: SHIFTS.map((sh) => this.spanHtml(sh, rows, narrow)), index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), title: "音域窗口",
+    return { items: SHIFTS.map((sh) => this.spanHtml(sh, rows, narrow)), index: Math.max(0, SHIFTS.indexOf(Math.max(-4, Math.min(4, this.rowShift)))), title: _t("音域窗口"),
       set: (i) => { this.rowShift = SHIFTS[i]; this.render(); } };
   }
 
@@ -658,10 +659,10 @@ export class Pad {
       const v = this.host.view();
       // 宽的旋钮：两列分它的宽度（user「能不能共用原来的宽度」），连音那列占一半多一点；窄的：长短 56 + 连音 84
       const [wu, wt] = w >= 142 ? [w - Math.round(w * 0.55) - 2, Math.round(w * 0.55)] : [56, 84];   // 2 = 两列之间的缝
-      const tups = (u: number) => TUP.map((n) => (n ? tupletMark(n, u) : `<span class="plain">不连</span>`));
+      const tups = (u: number) => TUP.map((n) => (n ? tupletMark(n, u) : `<span class="plain">${_t("不连")}</span>`));
       const h: DrumHandle = openDrum(anchor, [
-        { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: Math.max(0, UNITS.indexOf(v.unit)), width: wu, title: "长短基线" },
-        { items: tups(v.unit), index: Math.max(0, TUP.indexOf(v.tuplet as 0 | 3 | 5 | 6 | 7)), width: wt, title: "连音" },
+        { items: UNITS.map((u) => `<span class="smufl">${UNIT_GLYPH[u]}</span>${wu >= 100 ? `<small>${UNIT_NAME[u]}</small>` : ""}`), index: Math.max(0, UNITS.indexOf(v.unit)), width: wu, title: _t("长短基线") },
+        { items: tups(v.unit), index: Math.max(0, TUP.indexOf(v.tuplet as 0 | 3 | 5 | 6 | 7)), width: wt, title: _t("连音") },
       ], { onChange: (c, i) => { if (c === 0) { this.host.onUnit(UNITS[i]); h.setItems(1, tups(UNITS[i])); } else this.host.onTuplet(TUP[i]); } });
       return;
     }
@@ -669,8 +670,8 @@ export class Pad {
       const d = this.host.music.keyDrum();
       const [wk, ws] = w >= 210 ? [Math.round(w * 0.36), w - Math.round(w * 0.36) - 2] : [72, 136];
       openDrum(anchor, [
-        { items: d.keys.items, index: d.keys.index, width: wk, title: "pad 的调（五度圈）", loop: true },
-        { items: d.scales.items, index: d.scales.index, width: ws, title: "调式：pad 上排哪些音" },
+        { items: d.keys.items, index: d.keys.index, width: wk, title: _t("pad 的调（五度圈）"), loop: true },
+        { items: d.scales.items, index: d.scales.index, width: ws, title: _t("调式：pad 上排哪些音") },
       ], { onChange: (c, i) => this.host.onPick(c === 0 ? "key" : "scale", i) });
       return;
     }

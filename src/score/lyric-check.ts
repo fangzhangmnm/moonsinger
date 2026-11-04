@@ -7,6 +7,7 @@
 // 唱法核心按读音数拍，一个音一拍（src/singer/sing-core.mjs「sung syllables in the text」）：
 //   日语：汉字的读音几拍说不准（星 = ほし 两拍）、字母 / 数字会被念成别的、一个音上两拍（ラー）→ 拍数对不上，整条不出声；
 //   中文：一个音一个汉字；英文：拉丁字母（词典查不到的现在查不出来）。小字 / 促音自己占一个音是可以的（lab-score 兜住）。
+import { _t } from "../i18n/index.ts";
 import type { Token } from "./song.ts";
 import { MELISMA_MARK, ELISION, isSmallKana } from "./lyrics.ts";
 
@@ -45,10 +46,10 @@ export function lyricIssues(tokens: Token[], lyrics: "words" | "hum" | "none" | 
 
 /** 给人看的那句话。 */
 export function lyricWhyText(x: LyricIssue, engineName: string): string {
-  if (x.why === "notSung") return `${engineName}不唱歌词（只哼 / 只弹）；歌词照写照存`;
-  if (x.why === "kanji") return "这一段有假名、按日语唱：汉字小月相按读音数拍，一个字可能好几拍、对不上音——写成假名（一段都是汉字才按中文唱；段 = 歌手牌里的「分段唱」）";
-  if (x.why === "beats") return `一个音上 ${x.beats} 拍：小月相一个音唱一拍——拆成 ${x.beats} 个音，或者用「+」连着写`;
-  return x.lang === "ja" ? "这一段按日语唱：字母 / 数字 / 符号念不准——写成假名" : x.lang === "zh" ? "这一段按中文唱：一个音写一个汉字" : "这一段按英文唱：写拉丁字母";
+  if (x.why === "notSung") return _t("{engineName}不唱歌词（只哼 / 只弹）；歌词照写照存", { engineName });
+  if (x.why === "kanji") return _t("这一段有假名、按日语唱：汉字小月相按读音数拍，一个字可能好几拍、对不上音——写成假名（一段都是汉字才按中文唱；段 = 歌手牌里的「分段唱」）");
+  if (x.why === "beats") return _t("一个音上 {beats} 拍：小月相一个音唱一拍——拆成 {beats2} 个音，或者用「+」连着写", { beats: x.beats, beats2: x.beats });
+  return x.lang === "ja" ? _t("这一段按日语唱：字母 / 数字 / 符号念不准——写成假名") : x.lang === "zh" ? _t("这一段按中文唱：一个音写一个汉字") : _t("这一段按英文唱：写拉丁字母");
 }
 
 /** 引擎念成什么的显示（v0.9.34，歌词框下面那条）：日语前端的音素写成好认的样子——ん（N_n / N_m / N_ng…）= n，促音 cl = 双写下一个辅音（cl + ch = tch）；

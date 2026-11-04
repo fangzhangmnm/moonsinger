@@ -8,6 +8,7 @@
 //   防「多按几次静默变了没在看的纸 / 声部 / 模块」（user 2026-10-08 的顾虑）。纸 / 声部从快照的 at 里来，locus 只说模块 + 人话。
 // 连续动作并成一步：拖音高 / 拖时值（gesture "drag"）、歌词框里连打（"lyric"）、推子（"mix:…"）——同一个 gesture 1.5 s 内连着来 = 同一步（留第一次之前的快照，locus 用最新的）。
 // 输入状态（长短基线、升降 Shift）不进 undo；「本次输入记录」（退格撤回刚写的）在 undo 后清空（那些 token 可能已经不在了）。
+import { _t } from "../i18n/index.ts";
 import type { EditorState, Song, Focus } from "./song.ts";
 import { trackOf } from "./song.ts";
 import type { Extras } from "../format/project.ts";
@@ -51,16 +52,16 @@ const body = (song: Song, at: Focus) => trackOf(song, at.paper, at.part).filter(
 /** 谱的一步改了什么（人话，给 toast）：看光标所在 track 的 token 数变化；数没变再看歌名 / 作者栏 / 纸数 / 声部数；都没变 = 「改」。纯函数，便宜。 */
 export function describeSongChange(prev: EditorState, next: EditorState): Locus {
   const a = prev.song, b = next.song;
-  if (a.papers.length !== b.papers.length) return { kind: "paper", label: b.papers.length > a.papers.length ? "加了一张纸" : "删了一张纸" };
-  if (a.parts.length !== b.parts.length) return { kind: "score", label: b.parts.length > a.parts.length ? "加了一个声部" : "删了一个声部" };
-  if (a.parts.some((p, k) => p.id !== b.parts[k]?.id)) return { kind: "score", label: "挪了声部顺序" };
+  if (a.papers.length !== b.papers.length) return { kind: "paper", label: b.papers.length > a.papers.length ? _t("加了一张纸") : _t("删了一张纸") };
+  if (a.parts.length !== b.parts.length) return { kind: "score", label: b.parts.length > a.parts.length ? _t("加了一个声部") : _t("删了一个声部") };
+  if (a.parts.some((p, k) => p.id !== b.parts[k]?.id)) return { kind: "score", label: _t("挪了声部顺序") };
   const d = body(b, prev.at).length - body(a, prev.at).length;
-  if (d > 0) return { kind: "score", label: `写了 ${d} 个` };
-  if (d < 0) return { kind: "score", label: `删了 ${-d} 个` };
-  if ((a.title ?? "") !== (b.title ?? "")) return { kind: "score", label: "改歌名" };
-  if ((a.credits ?? "") !== (b.credits ?? "")) return { kind: "score", label: "改作者栏" };
+  if (d > 0) return { kind: "score", label: _t("写了 {d} 个", { d }) };
+  if (d < 0) return { kind: "score", label: _t("删了 {d} 个", { d: -d }) };
+  if ((a.title ?? "") !== (b.title ?? "")) return { kind: "score", label: _t("改歌名") };
+  if ((a.credits ?? "") !== (b.credits ?? "")) return { kind: "score", label: _t("改作者栏") };
   const pa = a.papers.find((p) => p.id === prev.at.paper), pb = b.papers.find((p) => p.id === prev.at.paper);
-  if (pa && pb && !!pa.hidden !== !!pb.hidden) return { kind: "paper", label: pb.hidden ? "隐藏了这张纸" : "取消隐藏这张纸" };
-  if (pa && pb && pa.name !== pb.name) return { kind: "paper", label: "改曲段名" };
-  return { kind: "score", label: "改" };
+  if (pa && pb && !!pa.hidden !== !!pb.hidden) return { kind: "paper", label: pb.hidden ? _t("隐藏了这张纸") : _t("取消隐藏这张纸") };
+  if (pa && pb && pa.name !== pb.name) return { kind: "paper", label: _t("改曲段名") };
+  return { kind: "score", label: _t("改") };
 }

@@ -5,6 +5,7 @@
 // 2026-10-10（Claude Fable 5.1，刀 6 ③）：**几条工作道（lane）并行唱**——每条道一个 worker（各自一份引擎 + 念缓存）；PC 两条、iPad 一条（主线程按设备定 setLanes）。
 //   句子按内容哈希认一条「自己的道」（同一句的念缓存只在那条道上有：按键试听永远去自己的道，整句唱优先自己的道、它忙就去空着的那条）。
 //   内存吃紧 = 主线程 setLanes(1)：多出来的道算完手上的就关（WASM 堆只有关掉 worker 才还回去）。
+import { _t } from "../i18n/index.ts";
 import type { LabScore } from "../score/lab-score.ts";
 import type { SingReply, SingRequest, WarmRequest, CancelRequest, CacheRequest, ReadRequest, InitRequest, FileReply } from "./worker.ts";
 import { startWorker, workersFetchSiteFiles } from "../threads.ts";
@@ -83,7 +84,7 @@ export class Singer {
       if (l.closing && ![...this.pending.values()].some((q) => q.lane === l)) this.closeLane(l);
     };
     w.onerror = (e) => {   // 坏了就丢掉，下次用重建（不然下一次永远等不到回复）
-      this.failLane(l, new Error(e.message || "小月相的 worker 出错"));
+      this.failLane(l, new Error(e.message || _t("小月相的 worker 出错")));
     };
     return w;
   }
@@ -95,9 +96,9 @@ export class Singer {
   }
 
   /** 重开所有道：wasm 的内存只涨不落，只有整个 worker 关掉才真还回去。 */
-  restart(): void { for (const l of this.lanes) this.failLane(l, new Error("小月相的 worker 重开了")); }
+  restart(): void { for (const l of this.lanes) this.failLane(l, new Error(_t("小月相的 worker 重开了"))); }
   /** 只重开一条道（换歌时：上一首的长句把这条道的堆撑大了、现在空着；念缓存盘上那份还在）。 */
-  restartLane(i: number): void { const l = this.lanes[i]; if (l) this.failLane(l, new Error("小月相的 worker 重开了")); }
+  restartLane(i: number): void { const l = this.lanes[i]; if (l) this.failLane(l, new Error(_t("小月相的 worker 重开了"))); }
   /** 还没开始算的全扔掉（以 "cancelled" 拒绝）；正在算的照常回来。返回扔了几个。 */
   cancelPending(): number {
     const n = this.queue.length;
@@ -151,12 +152,12 @@ export class Singer {
       const msg = (e as Error).message ?? "";
       if (!OOM.test(msg)) throw e;
       diagNote("singer", `out of memory, restarting worker and retrying once: ${msg}`);
-      this.failLane(lane, new Error("小月相的 worker 重开了")); progress("内存不够：重开小月相的引擎再试一次");
+      this.failLane(lane, new Error(_t("小月相的 worker 重开了"))); progress(_t("内存不够：重开小月相的引擎再试一次"));
       try { return await this.singOnce(lane, s, progress, extra); }
       catch (e2) {
         const m2 = (e2 as Error).message ?? "";
         diagNote("singer", `retry after restart failed: ${m2}`);
-        if (OOM.test(m2)) throw new Error("这台设备的内存不够，小月相的引擎起不来（已经重开过一次引擎）。可以把别的乐器声部静音再放，或者关掉 app 重新打开；也可以给这个声部换「小月相（元音）」");
+        if (OOM.test(m2)) throw new Error(_t("这台设备的内存不够，小月相的引擎起不来（已经重开过一次引擎）。可以把别的乐器声部静音再放，或者关掉 app 重新打开；也可以给这个声部换「小月相（元音）」"));
         throw e2;
       }
     }

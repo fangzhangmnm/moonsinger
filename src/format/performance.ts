@@ -1,6 +1,7 @@
 // performance.ts —— 新建候选（乐器）时 by value 抄进歌里的默认数：力度表、演奏法、月读的署名 / 规格、SoundFont 的规格。
 // created 2026-10-07 by Claude Fable 5.1。契约草稿 §8：渲染 = 纯函数(文件)，候选快照里写全纯函数要的一切，不依赖 app 里的默认表——
 //   这些常量只在「新建候选那一刻」用一次，之后歌里的数就是歌自己的（app 升级改了这里也动不到旧歌，「later edits … dont nuke us」）。
+import { _t } from "../i18n/index.ts";
 import { CREDIT, SINGER, PACKS } from "../singer/packs.gen.ts";
 import { APP_VERSION } from "../version.ts";
 import type { Credit, Spec, Dynamic } from "./contract.ts";
@@ -59,7 +60,7 @@ const REPO = "https://github.com/fangzhangmnm/moonsinger";
 /** 月读的署名块 + 条款（包内 LICENSE 要求显示；出处 = 模型仓 voices/tsukuyomi-chan-zhen.json，经 packs.gen.ts 内嵌）。 */
 export const TSUKUYOMI_CREDIT: Credit = {
   attribution: [CREDIT.credit, ...CREDIT.attribution],
-  license: { name: "つくよみちゃんコーパス利用規約（衍生模型）", url: CREDIT.termsUrl, text: CREDIT.terms },
+  license: { name: _t("つくよみちゃんコーパス利用規約（衍生模型）"), url: CREDIT.termsUrl, text: CREDIT.terms },
 };
 /** 月读完整版 = 我们写的引擎（piper 时长接管 + WORLD 重建；唱法 src/singer/sing-core.mjs）；§10.6 vault：指向源码出处 + 文档章节。 */
 export const TSUKUYOMI_SPEC: Spec = { kind: "ours", doc: "#tsukuyomi", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sing-core.mjs" } };

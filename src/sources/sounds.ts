@@ -1,6 +1,7 @@
 // sounds.ts —— 音源从哪来 + 弱引用怎么解析（家族音源库 pwa-sounds = 黄线白名单 ③：只读 GET、到手核目录钉的 sha256；ADR-0006 ③ 反弃坑：出厂预填、设置里能改）。
 // created 2026-10-15 by Claude Fable 5.1（刀 4 音源来源接缝：从 src/app/main.ts 原样搬来，行为不变；user 2026-10-08「我后悔自动 embed 音源了，改成弱引用吧，app 可以自己找吗」）。
 //   解析链：歌里嵌的 → 本次已解析的（session）→ 设备留着的子集 → 设备留着的整包 / 家族音源库（按整包 sha256 对条目）→ 切子集核 sha256 → 都没有 = 抛错（没人上场、报出来、人换；不替补）。
+import { _t } from "../i18n/index.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT, type SoundEntry } from "../gm/sounds.gen.ts";
 import { cachedSound, rememberSound } from "../gm/sound-cache.ts";
 import { subsetSf2 } from "../gm/sf2-subset.ts";
@@ -42,34 +43,34 @@ export function createSoundSources(o: { progress(msg: string): void; /** 报错�
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           out = new Uint8Array(e.bytes); o = 0;
           const rd = res.body?.getReader();
-          if (!rd) { const b = new Uint8Array(await res.arrayBuffer()); if (b.length !== e.bytes) throw new Error(`大小不对（${b.length} ≠ ${e.bytes}）`); out.set(b); o = b.length; }
-          else for (;;) { const { done, value } = await rd.read(); if (done) break; if (o + value.length > e.bytes) throw new Error("比目录里说的大"); out.set(value, o); o += value.length; onProgress(o); }
+          if (!rd) { const b = new Uint8Array(await res.arrayBuffer()); if (b.length !== e.bytes) throw new Error(_t("大小不对（{n} ≠ {bytes}）", { n: b.length, bytes: e.bytes })); out.set(b); o = b.length; }
+          else for (;;) { const { done, value } = await rd.read(); if (done) break; if (o + value.length > e.bytes) throw new Error(_t("比目录里说的大")); out.set(value, o); o += value.length; onProgress(o); }
         }
-        if (o !== e.bytes) throw new Error(`大小不对（${o} ≠ ${e.bytes}）`);
+        if (o !== e.bytes) throw new Error(_t("大小不对（{o} ≠ {bytes}）", { o, bytes: e.bytes }));
         const got = await sha256Hex(out);
-        if (got !== e.sha256) throw new Error(`内容和目录里钉的不一样（sha256 ${got.slice(0, 12)}… ≠ ${e.sha256.slice(0, 12)}…），没有用它`);
+        if (got !== e.sha256) throw new Error(_t("内容和目录里钉的不一样（sha256 {p}… ≠ {p2}…），没有用它", { p: got.slice(0, 12), p2: e.sha256.slice(0, 12) }));
         await rememberSound(e.sha256, out, true);   // 核过了才留；第一次下载就留在设备上（user「每次加乐器都会重新下一下GS」）
         return out;
       } catch (err) { last = `${base}：${(err as Error).message}`; }
     }
-    throw new Error(`「${e.name}」拿不到（试过 ${bases().join("、")}）。最后一次：${last}。可以在设置里换音源库来源，或从本机 .sf2 文件选。`);
+    throw new Error(_t("「{name}」拿不到（试过 {p}）。最后一次：{last}。可以在设置里换音源库来源，或从本机 .sf2 文件选。", { name: e.name, p: bases().join("、"), last }));
   }
   /** 拿到一个 SoundFont 候选的子集字节（契约 Sf2Source）：歌里嵌的 → 本次已解析的 → 弱引用去找整包（本次内存 / 持久缓存 / 家族音源库按整包 sha256 对条目）→ 切子集、核 sha256。
    *  都找不到 = 抛错（没人上场、报出来、人换 = 换人的窄接口）；人也可以在歌手牌里「找文件…」把整包给它。 */
   async function resolveGmBytes(g: GmCandidate): Promise<Uint8Array> {
     if (g.bytes) return g.bytes;
-    if (g.path) throw new Error(`「${g.name}」的声音（${g.path}）没随这首歌带来`);
+    if (g.path) throw new Error(_t("「{name}」的声音（{path}）没随这首歌带来", { name: g.name, path: g.path }));
     const have = session.get(g.subsetSha256); if (have) return have;
     const kept = await cachedSound(g.subsetSha256);   // 设备上留着的子集（自己的 .sf2 加进来时 / 解包时留的；按子集 sha256 存，取出来核过）
     if (kept) { session.set(g.subsetSha256, kept); return kept; }
     let bank = await cachedSound(g.origin.fileSha256);
     if (!bank) {
       const e = Object.values(SOUNDS).find((x) => x.sha256 === g.origin.fileSha256);
-      if (e) { try { bank = await fetchSound(e, (done) => o.progress(`找「${g.name}」的声音：下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`)); } finally { o.progress(""); } }
+      if (e) { try { bank = await fetchSound(e, (done) => o.progress(_t("找「{name}」的声音：下载 {name2} {bytes}%", { name: g.name, name2: e.name, bytes: Math.round((done / e.bytes) * 100) }))); } finally { o.progress(""); } }
     }
-    if (!bank) throw new Error(`「${g.name}」的声音没随歌带（弱引用），这台设备和家族音源库里也没有它来自的「${g.origin.name}」（sha256 ${g.origin.fileSha256.slice(0, 12)}…）。点谱前面的「${o.roleLabel()}」，给它「找文件…」，或换一个「谁来演」`);
+    if (!bank) throw new Error(_t("「{name}」的声音没随歌带（弱引用），这台设备和家族音源库里也没有它来自的「{name2}」（sha256 {p}…）。点谱前面的「{p2}」，给它「找文件…」，或换一个「谁来演」", { name: g.name, name2: g.origin.name, p: g.origin.fileSha256.slice(0, 12), p2: o.roleLabel() }));
     const subset = subsetSf2(bank, [{ bank: g.bank, program: g.program }]), sha = await sha256Hex(subset);
-    if (sha !== g.subsetSha256) throw new Error(`从「${g.origin.name}」切出来的「${g.name}」和歌里记的不一样（sha256 ${sha.slice(0, 12)}… ≠ ${g.subsetSha256.slice(0, 12)}…），没有用它`);
+    if (sha !== g.subsetSha256) throw new Error(_t("从「{name}」切出来的「{name2}」和歌里记的不一样（sha256 {p}… ≠ {p2}…），没有用它", { name: g.origin.name, name2: g.name, p: sha.slice(0, 12), p2: g.subsetSha256.slice(0, 12) }));
     session.set(g.subsetSha256, subset);
     return subset;
   }

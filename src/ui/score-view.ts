@@ -19,6 +19,7 @@
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
+import { _t, workerOptions } from "../i18n/index.ts";
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL, pageGeoOf } from "../score/paper.ts";
 import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
@@ -175,7 +176,7 @@ export class ScoreView {
     this.tail = document.createElement("div"); this.tail.className = "sheet-tail"; this.tail.setAttribute("aria-hidden", "true");
     el.appendChild(this.tail);
     this.ink = document.createElement("div"); this.ink.className = "sheet-ink"; this.sheet.appendChild(this.ink);
-    this.zoomBtn = document.createElement("button"); this.zoomBtn.className = "btn zoom-reset"; this.zoomBtn.type = "button"; this.zoomBtn.textContent = "100%"; this.zoomBtn.title = "现在的缩放（100% = 纸的实际尺寸）；点 = 回到自动大小（Ctrl / ⌘ + 0）。Ctrl / ⌘ + 滚轮、捏合 = 缩放；Ctrl / ⌘ + = / − = 一档一档"; this.zoomBtn.hidden = true;
+    this.zoomBtn = document.createElement("button"); this.zoomBtn.className = "btn zoom-reset"; this.zoomBtn.type = "button"; this.zoomBtn.textContent = "100%"; this.zoomBtn.title = _t("现在的缩放（100% = 纸的实际尺寸）；点 = 回到自动大小（Ctrl / ⌘ + 0）。Ctrl / ⌘ + 滚轮、捏合 = 缩放；Ctrl / ⌘ + = / − = 一档一档"); this.zoomBtn.hidden = true;
     this.zoomBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); e.stopPropagation(); this.setZoom(1, null); });
     el.appendChild(this.zoomBtn);
     const mkHandle = (which: "start" | "end") => {
@@ -291,7 +292,7 @@ export class ScoreView {
     const { sp, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
-    const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars = this.host.autoBars?.() ?? true, paperLabel = paper.kind === "other" ? "其他纸" : PAPER_LABEL[paper.kind];
+    const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars = this.host.autoBars?.() ?? true, paperLabel = paper.kind === "other" ? _t("其他纸") : PAPER_LABEL[paper.kind];
     const lyricRaise = page && this.host.lyricRaise?.() ? this.host.lyricRaise() : 0;
     const tailOpen = !st.sel && st.caret >= tr(st).length;   // 写字头在尾巴后面（含补齐的小节里）：最后一行五线画到右边
     // 排版缓存（W-17 第 1 刀）：谱没变（引用）、排版的选项没变 = 不重排。光标 / 选区 / 写字头的蓝 / 强调色不在这个键里——它们在下面的 ink 层和 class 上做；字体还在装 = 装好再排一次
@@ -317,7 +318,7 @@ export class ScoreView {
     try {
       const url = this.host.layoutWorker?.();
       if (!url || typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") return null;
-      const w = new Worker(url, { type: "module" });
+      const w = new Worker(url, workerOptions());
       w.onmessage = (e: MessageEvent<LayoutReply>) => this.onReply(e.data);
       w.onerror = (e) => this.dropWorker(`worker error: ${e.message ?? "?"}`);
       this.worker = w;
@@ -653,7 +654,7 @@ export class ScoreView {
     const sys = L.systems[h.system].sys, rows = L.systems.filter((r) => r.paper === p.paperId && r.sys === sys);
     const top = Math.min(...rows.map((r) => r.top)), bottom = Math.max(...rows.map((r) => r.bottom));
     let el = this.startEl;
-    if (!el || !el.isConnected) { el = document.createElement("div"); el.className = "start-mark"; el.title = "起点：|▶ 从这儿放（长按 / 右键空白处「从这儿放」挪它；编辑不动它）"; this.ink.appendChild(el); this.startEl = el; }
+    if (!el || !el.isConnected) { el = document.createElement("div"); el.className = "start-mark"; el.title = _t("起点：|▶ 从这儿放（长按 / 右键空白处「从这儿放」挪它；编辑不动它）"); this.ink.appendChild(el); this.startEl = el; }
     el.style.left = `${h.x - 4}px`; el.style.top = `${top}px`; el.style.height = `${Math.max(1, bottom - top)}px`;
   }
   /** 光标 / 选区 / 编辑框在哪（变了才跟）。 */
@@ -1041,7 +1042,7 @@ export class ScoreView {
     const order = [...new Set(L.systems.filter((r) => r.paper === fb.paper).map((r) => realPart(r.part)))], idx = order.map((id, i) => (inFam(id) ? i : -1)).filter((i) => i >= 0);
     const first = Math.min(...idx), last = Math.max(...idx);   // 主人可能不在这张纸上：按这一家在场的头尾算
     const next = order.slice(last + 1).find(loose) ?? [...order.slice(0, first)].reverse().find(loose) ?? order.slice(last + 1)[0] ?? null;
-    if (!next) { this.host.notice?.("这张纸上只有这一家：没有别的歌手可以挪过去（切到「听」就都叠起来）"); return true; }
+    if (!next) { this.host.notice?.(_t("这张纸上只有这一家：没有别的歌手可以挪过去（切到「听」就都叠起来）")); return true; }
     this.holdView = true; this.host.set(setFocus(this.host.get(), fb.paper, next)); this.holdView = false;
     this.heldBase = this.baseKey();
     return true;
@@ -1194,8 +1195,8 @@ export class ScoreView {
       else this.host.onMarkPress?.(f.grab.index, { x: f.cx, y: f.cy });
       return;
     }
-    if (f.grab.kind === "lyric" && f.short) this.host.notice?.(f.cur > f.src ? "这一句后面没有空着的音了（句号是边界），字只能挪到这儿" : "前面隔着句号（或者没有音了），字挪不过去");
-    if (f.grab.kind === "mark" && f.removed) this.host.notice?.(`顺手去掉了 ${f.removed} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）`);
+    if (f.grab.kind === "lyric" && f.short) this.host.notice?.(f.cur > f.src ? _t("这一句后面没有空着的音了（句号是边界），字只能挪到这儿") : _t("前面隔着句号（或者没有音了），字挪不过去"));
+    if (f.grab.kind === "mark" && f.removed) this.host.notice?.(_t("顺手去掉了 {removed} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）", { removed: f.removed }));
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
   private noteAt(x: number, y: number, finger = false): HitNote | null {

@@ -7,6 +7,7 @@
 // UX-2（账本 §9¾）：选中 = 改、光标 = 写；歌词在谱下面点进去写（底部歌词栏拿掉了）；「弹」= 即兴只唱不写。
 // 调号 / 拍号 / 速度是谱里的记号 token，点谱上的记号就地改，pad「＋」在光标处插——顶栏不再有全局的调号 / 拍号 / 速度。
 
+import { _t } from "../i18n/index.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { singleSel, currentIndex, ensureStartDyns, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
@@ -133,8 +134,8 @@ const H = createHome({ home: { kind: "none", pendingFolder: null }, stem: defaul
   ids: { join: (folder, stem) => identifiers.join({ folder, stem, suffix: SONG_SUFFIX }), parse: (id) => identifiers.parse(id) },
   suffix: SONG_SUFFIX,
   bytes: () => bytesNow(), dirty: () => D.dirty(), title: () => D.st.song.title ?? "", freshStem: () => defaultStem(),
-  ask: { discard: (what) => confirmDiscard(what), overwriteStale: (name) => askSheet(`「${name}」在外面被改过`, "打开或上次存之后，这个文件被别的程序改过。覆盖 = 外面改的那些会丢。", "覆盖") },
-  offerDownload: (bytes, name, onSaved) => { const file = new File([bytes as unknown as BlobPart], name, { type: "application/vnd.recordare.musicxml" }); offerFile(file, "存成 .mxl", `${esc(file.name)} · ${sizeText(file.size)}。下载或分享到「文件」里；以后从文件菜单「打开」。`, onSaved); },
+  ask: { discard: (what) => confirmDiscard(what), overwriteStale: (name) => askSheet(_t("「{name}」在外面被改过", { name }), _t("打开或上次存之后，这个文件被别的程序改过。覆盖 = 外面改的那些会丢。"), _t("覆盖")) },
+  offerDownload: (bytes, name, onSaved) => { const file = new File([bytes as unknown as BlobPart], name, { type: "application/vnd.recordare.musicxml" }); offerFile(file, _t("存成 .mxl"), _t("{name} · {size}。下载或分享到「文件」里；以后从文件菜单「打开」。", { name: esc(file.name), size: sizeText(file.size) }), onSaved); },
   markSaved: () => { D.markSaved(); renderTitle(); },
   report: (e, level) => reportError(e, level === "error" ? "error" : "warning"),
   // 家换了：告诉 store 谁开着（冲突面 / 歌库卡片要知道）、「上次开着哪首」的指针（歌库里 = 它；放下身份 / 新建空谱 = 清掉；开本机文件不动它——reload 回到上一首歌库里的歌，v0.6 起就这样）、重画顶栏
@@ -146,26 +147,26 @@ const curPart = (): PartDef => D.st.song.parts.find((p) => p.id === D.st.at.part
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
 const ignoredFor = (role: string): Mark[] => { const sp = activePerfSpec(D.extras, role); return ignoredArts(performerOf(activeInstrument(D.extras, role)?.engine), sp.gapSec, sp.canSwell); };
 const ignoredHere = (): Mark[] => ignoredFor(curPart().role);
-const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: "连线", swellGrow: "音内渐强 / 鼓起", swellFade: "音内渐弱", inhale: "出声的换气" };
+const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: _t("连线"), swellGrow: _t("音内渐强 / 鼓起"), swellFade: _t("音内渐弱"), inhale: _t("出声的换气") };
 /** 刚写上了一个台上那位不认的记号 → 明说（照样写进谱、画灰，出声不受影响）。连线 / 保持在「本来就不留缝」的人那里也是这样（连断，2026-10-08）。 */
 function discloseArt(prev: EditorState, a: Mark): void {
   if (!ignoredHere().includes(a)) return;
   const has = (t: Token) => t.kind === "note" && (a === "slur" ? !!t.slur : a === "inhale" ? !!t.inhale : a === "swellGrow" ? swellOf(t) === "<" || swellOf(t) === "<>" : a === "swellFade" ? swellOf(t) === ">" : (t.art ?? []).includes(a as Art));
   const n = (s: EditorState) => tr(s).filter(has).length;
   if (n(D.st) <= n(prev)) return;
-  const role = curPart().role, who = activeCandidateName(D.extras, role) || "台上这位";
+  const role = curPart().role, who = activeCandidateName(D.extras, role) || _t("台上这位");
   const why = whyIgnored(performerOf(activeInstrument(D.extras, role)?.engine), a);
-  info(why === "decay" ? `${who}的音按下去就自然衰减，${MARK_NAME[a]}做不到：写在谱上了（画灰），出声不变；音内渐弱照做`
-    : why === "sung" ? `${who}本来就连着唱：${MARK_NAME[a]}写在谱上了（画灰），出声不变；要断句用呼吸`
-    : why === "gap" ? `${who}本来就不留缝（乐器页「音和音之间」= 0）：${MARK_NAME[a]}写在谱上了（画灰），出声不变`
-    : `${who}不认${MARK_NAME[a]}：写在谱上了（画灰），出声不受影响`);
+  info(why === "decay" ? _t("{who}的音按下去就自然衰减，{p}做不到：写在谱上了（画灰），出声不变；音内渐弱照做", { who, p: MARK_NAME[a] })
+    : why === "sung" ? _t("{who}本来就连着唱：{p}写在谱上了（画灰），出声不变；要断句用呼吸", { who, p: MARK_NAME[a] })
+    : why === "gap" ? _t("{who}本来就不留缝（乐器页「音和音之间」= 0）：{p}写在谱上了（画灰），出声不变", { who, p: MARK_NAME[a] })
+    : _t("{who}不认{p}：写在谱上了（画灰），出声不受影响", { who, p: MARK_NAME[a] }));
 }
 /** 刚写的力度记号 / 强后即弱让一个力度记号不起作用了（紧跟着的音是 fp：音头按 f、随后落到 p）→ 明说（照写、画灰；2026-10-09 user「要不要按纪律把 mf 画灰、说一句？ 要」）。 */
 function discloseDynOverride(prev: EditorState): void {
   const toks = tr(D.st), now = dynOverridden(toks);
   if (now.size <= dynOverridden(tr(prev)).size) return;
   const v = [...now].map((i) => toks[i]).find((t) => t.kind === "dyn");
-  info(`这个 ${v && v.kind === "dyn" ? v.value : "力度记号"} 不起作用（画灰）：后面那个音是强后即弱（fp），音头按 f、随后落到 p`);
+  info(_t("这个 {p} 不起作用（画灰）：后面那个音是强后即弱（fp），音头按 f、随后落到 p", { p: v && v.kind === "dyn" ? v.value : _t("力度记号") }));
 }
 const curRole = (): string => curPart().role;
 /** 声部的显示 / 出声状态：隐藏（不画）、静音、独奏——这次打开里有效，不进文件（user 2026-10-08「不同的声部视图和出声应该分别可以solo和hide」）。 */
@@ -205,18 +206,15 @@ new ResizeObserver(() => { refHost.relayout(); syncDock(); }).observe(padEl);   
  *  user「应用内小面板 如果支持压缩的话应该有压缩选项和估计」；q.suggestRam = 「只放内存」排第一、说为什么——超过 4 MB（user 选 B：「这里可能是全家族仓我们唯一一个真的需要nudge用户」），
  *  或者是音频 / 视频（库 0.5.0 起默认只放内存、当次有效；user 2026-10-21「音视频应该是当此有效」；MoonSinger 照默认不覆盖，要不要例外 = wishlist W-44）。 */
 async function askRefImport(q: RefImportQuestion): Promise<RefImportChoice> {
-  const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`, what = q.kind === "audio" ? "mp3 128k" : "PNG 256 色、长边最多 2048", av = q.kind === "audio" || q.kind === "video";
+  const mb = (n: number) => `${(n / 1024 / 1024).toFixed(1)} MB`, what = q.kind === "audio" ? "mp3 128k" : _t("PNG 256 色、长边最多 2048"), av = q.kind === "audio" || q.kind === "video";
   const big = q.bytes > RAM_ABOVE;
   const smaller = q.canCompress && (q.estimate === null || q.estimate < q.bytes * 0.9);
-  const keep: Choice<RefImportChoice> = { label: `存进歌里（${mb(q.bytes)}）`, value: "keep" };
-  const zip: Choice<RefImportChoice> = { label: q.estimate === null ? `压一下再存（${what}）` : `压一下再存（约 ${mb(q.estimate)}）`, value: "compress" };
-  const ram: Choice<RefImportChoice> = { label: q.suggestRam ? "只放内存（推荐）" : "只放内存（不存进歌里）", value: "ram" };
-  const msg = `「${q.name}」${mb(q.bytes)}。参考窗里的东西跟着歌一起存、一起同步。` +
-    (q.canCompress && !smaller ? `压了也不会更小，就不列了。` : smaller ? `压一下 = ${what}。` : "") +
-    `只放内存 = 这次打开能${q.kind === "audio" ? "听" : "看"}，不存进歌里；下次打开是个空位，把同一个文件拖进来就补上。` +
-    (q.suggestRam ? (big ? `超过 4 MB 的，存进去这首歌会大这么多、同步也慢，所以先推荐只放内存。` : `音频 / 视频默认只放内存（这次打开有效）；要跟着歌走就选「存进歌里」。`) : "");
+  const keep: Choice<RefImportChoice> = { label: _t("存进歌里（{bytes}）", { bytes: mb(q.bytes) }), value: "keep" };
+  const zip: Choice<RefImportChoice> = { label: q.estimate === null ? _t("压一下再存（{what}）", { what }) : _t("压一下再存（约 {estimate}）", { estimate: mb(q.estimate) }), value: "compress" };
+  const ram: Choice<RefImportChoice> = { label: q.suggestRam ? _t("只放内存（推荐）") : _t("只放内存（不存进歌里）"), value: "ram" };
+  const msg = _t("「{name}」{bytes}。参考窗里的东西跟着歌一起存、一起同步。{smaller}只放内存 = 这次打开能{p}，不存进歌里；下次打开是个空位，把同一个文件拖进来就补上。{suggestRam}", { name: q.name, bytes: mb(q.bytes), smaller: (q.canCompress && !smaller ? _t("压了也不会更小，就不列了。") : smaller ? _t("压一下 = {what}。", { what }) : ""), p: q.kind === "audio" ? _t("听") : _t("看"), suggestRam: (q.suggestRam ? (big ? _t("超过 4 MB 的，存进去这首歌会大这么多、同步也慢，所以先推荐只放内存。") : _t("音频 / 视频默认只放内存（这次打开有效）；要跟着歌走就选「存进歌里」。")) : "") });
   const list = q.suggestRam ? [{ ...ram, primary: true }, ...(smaller ? [zip] : []), keep] : [{ ...keep, primary: true }, ...(smaller ? [zip] : []), ram];
-  return (await openChoiceSheet(q.kind === "audio" ? "这段音频有点大" : q.kind === "video" ? "这段视频有点大" : "这张图有点大", msg, list)) ?? "cancel";
+  return (await openChoiceSheet(q.kind === "audio" ? _t("这段音频有点大") : q.kind === "video" ? _t("这段视频有点大") : _t("这张图有点大"), msg, list)) ?? "cancel";
 }
 
 new ResizeObserver(() => refHost.relayout()).observe(bar);
@@ -246,7 +244,7 @@ function showUpdateBar(): void {
   if (document.getElementById("updateBar")) return;
   const el = document.createElement("div");
   el.id = "updateBar"; el.className = "update-bar";
-  el.innerHTML = `<span>有新版本</span><button class="btn primary" data-v="reload">刷新</button><button class="btn" data-v="later">待会儿</button>`;
+  el.innerHTML = `<span>${_t("有新版本")}</span><button class="btn primary" data-v="reload">${_t("刷新")}</button><button class="btn" data-v="later">${_t("待会儿")}</button>`;
   el.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (v === "reload") void shell.reload(); else if (v === "later") el.remove();
@@ -260,16 +258,16 @@ function showUpdateBar(): void {
 //   走带（唱 / 弹 / 录音室 / 进度）在顶栏中间（2026-10-08 试过挂胶囊，user「看着碍眼，还是收到顶栏里面吧」）。
 //   键盘开关不在顶栏：pad 自己有「收起」，收起后屏幕最下面一粒「键盘」tab 再弹出来；点谱也弹（user「软键盘的 toggle 可以放在屏幕最下面」）。
 /** |▶ 的说明（顶栏和底座边上那个一样）。⋯ 收进长按 / 右键（v0.10.20；user「play的...收到长按和右键play里面 / 然后顶栏只单放一个一样的play」）。 */
-const PLAY_TITLE = "从起点放 / 停（空格）；连按两下 = 从头放。长按 / 右键 = 接着放 / 自动翻 / 循环 / 从头放 / 接缝。起点 = 长按 / 右键谱面「从这儿放」挪";
+const PLAY_TITLE = _t("从起点放 / 停（空格）；连按两下 = 从头放。长按 / 右键 = 接着放 / 自动翻 / 循环 / 从头放 / 接缝。起点 = 长按 / 右键谱面「从这儿放」挪");
 bar.innerHTML =
-  `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? "歌库：歌放在网盘（OneDrive）或你选的文件夹里" : "歌库：歌放在你选的文件夹里"}"><svg class="ico"><use href="#album"/></svg></button>` +
-  `<button id="fileBtn" class="doc-name" title="文件名 · 点了改名"><span id="docTitle" class="title">未命名</span></button>` +
+  `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? _t("歌库：歌放在网盘（OneDrive）或你选的文件夹里") : _t("歌库：歌放在你选的文件夹里")}"><svg class="ico"><use href="#album"/></svg></button>` +
+  `<button id="fileBtn" class="doc-name" title="${_t("文件名 · 点了改名")}"><span id="docTitle" class="title">${_t("未命名")}</span></button>` +
   `</div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div>` +
   `<div class="tb-right"><button id="midiBtn" class="btn tb-midi" hidden>MIDI<span class="midi-dot"></span></button>` +
-  `<button id="lockBtn" class="btn tb-lock" title="这首歌没加密（MoonSinger 这一版还不加密）"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
-  `<button id="saveBtn" class="btn save-btn" title="存"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
-  `<button id="setBtn" class="btn" title="菜单：新建 / 打开 / 导出 / 封面 / 声音与署名 / 设置"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
+  `<button id="lockBtn" class="btn tb-lock" title="${_t("这首歌没加密（MoonSinger 这一版还不加密）")}"><svg class="ico ico-sm"><use href="#unlock"/></svg></button>` +
+  `<button id="saveBtn" class="btn save-btn" title="${_t("存")}"><svg class="ico"><use href="#floppy-disk"/></svg></button>` +
+  `<button id="setBtn" class="btn" title="${_t("菜单：新建 / 打开 / 导出 / 封面 / 声音与署名 / 设置")}"><svg class="ico"><use href="#menu"/></svg></button></div>`;   // 三条杠 = 菜单（同 CatsUp 顶栏；扳手留给「配置这一样东西」，如纸右上角）
 /** 渲染进度条（顶栏底边；播放的准备和 mp3 导出共用 renderMix 这一条路）。顶栏的 HTML 写好之后再挂（上面 bar.innerHTML = … 会冲掉先挂的）。 */
 const renderBar = new RenderProgress(bar);
 const stageEl = $("stage");
@@ -294,15 +292,15 @@ function syncDock(): void {
 }
 addEventListener("resize", () => syncDock());   // 横屏底座在的时候，舞台里谱面以外占的宽（px；排谱宽度不跟着底座开合跳，见 view 的 layoutWidth；v0.10.33）   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
 const attr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
-const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = "键盘（pad）";
-padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>键盘</span>`;
+const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = _t("键盘（pad）");
+padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>${_t("键盘")}</span>`;
 // 底座边上的小条（v0.10.20）：模式四个钮 + |▶ + 撤销 / 重做 + 收起后叫回键盘，贴在键盘边上（竖屏 = 键盘左上角往上挂；横屏 = 键盘左边竖着挂；键盘收起 = 贴屏幕边）——
 //   按键盘的时候东西就在手边，鼠标不用上下跑（user「音符词听那个小面版变成靠着键盘 / 加一个按一下弹出键盘的钮…所以竖屏的时候就是左下角，拉着键盘的左上角 / 横屏的时候变成竖排可以吗 /
 //   这样按键盘的时候东西就在手边 / 然后走带控制也放这个面版上面 / 就是 play/pause undo redo 音符词听」「尤其是模式条的位置（这个其实蛮重要的，不然鼠标上下跑）」）。位置全在 CSS（grid 区域定位）。
 const dockTab = document.createElement("div"); dockTab.className = "dock-tab"; dockTab.setAttribute("role", "toolbar");
-dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="模式：这一下点的是哪一层">${MODE_BAR.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
+dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="${_t("模式：这一下点的是哪一层")}">${MODE_BAR.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}">${MODE_LABEL[m]}</button>`).join("")}</span>` +
   `<span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
-  `<button id="undoBtn" class="btn" title="撤销（Ctrl / ⌘+Z）" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="重做（Ctrl / ⌘+Shift+Z）" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
+  `<button id="undoBtn" class="btn" title="${_t("撤销（Ctrl / ⌘+Z）")}" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="${_t("重做（Ctrl / ⌘+Shift+Z）")}" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
 dockTab.append(padTab);
 stageEl.append(dockTab);
 padTab.addEventListener("click", () => showPad(ws.mode === "listen" ? !studio.isOpen : padEl.hidden));
@@ -310,7 +308,7 @@ padTab.addEventListener("click", () => showPad(ws.mode === "listen" ? !studio.is
 //   user 2026-10-10「模式切换不是下拉，回到之前的四个排一起的按钮，然后模式切换，曲段和声部选择这三个不是在顶栏，而是顶栏下面创建一个类似tab的往下的东西，可以遮挡屏幕」
 //   （v0.10.2 那版 = 三个下拉挤在顶栏左上角，user 原话「我希望有一个快速选择看全部或者哪个曲段，以及快速看全部或者哪个声部的下拉框」「模式收到下拉框里面」）。
 const viewTab = document.createElement("div"); viewTab.className = "view-tab";
-viewTab.innerHTML = `<select id="paperSel" class="vt-sel" title="看哪一段：全部 / 只看这一段"></select><select id="partSel" class="vt-sel" title="看哪位歌手：全部 / 只看这一位"></select>`;
+viewTab.innerHTML = `<select id="paperSel" class="vt-sel" title="${_t("看哪一段：全部 / 只看这一段")}"></select><select id="partSel" class="vt-sel" title="${_t("看哪位歌手：全部 / 只看这一位")}"></select>`;
 stageEl.append(viewTab);
 // 选区条（2026-10-08 改的手感；src/ui/sel-bar.ts）：有选区时挂在胶囊下面；剪贴板两层 = app 内 token（clip）+ 系统剪贴板一行简谱文字（clipText）
 const selBar = new SelBar(stageEl, { verb: (v) => { void selVerb(v); } });
@@ -323,8 +321,8 @@ let topSelsSig = "";
 function renderTopSels(): void {
   const ps = $("paperSel") as HTMLSelectElement | null, qs = $("partSel") as HTMLSelectElement | null; if (!ps || !qs) return;
   const labels = partLabels(D.st.song, D.extras), only = D.st.song.parts.filter((p) => pv(p.id).only);
-  const paperOpts = [["all", "全部曲段"], ...D.st.song.papers.map((p, k) => [p.id, `${p.name || `第 ${k + 1} 段`}${p.hidden ? "（隐藏）" : ""}`])] as const;
-  const partOpts = [["all", "全部歌手"], ...D.st.song.parts.map((p, k) => [p.id, labels[k] ?? p.id])] as const;
+  const paperOpts = [["all", _t("全部曲段")], ...D.st.song.papers.map((p, k) => [p.id, `${p.name || _t("第 {p} 段", { p: k + 1 })}${p.hidden ? _t("（隐藏）") : ""}`])] as const;
+  const partOpts = [["all", _t("全部歌手")], ...D.st.song.parts.map((p, k) => [p.id, labels[k] ?? p.id])] as const;
   const sig = JSON.stringify([paperOpts, partOpts]);
   if (sig !== topSelsSig) {
     topSelsSig = sig;
@@ -343,7 +341,7 @@ function updateChrome(): void {
   const dockOpen = ws.mode === "listen" ? studio.isOpen : !padEl.hidden;
   padTab.hidden = ((gallery?.isOpen() ?? false) && !finderShown()) || (!hasKeys(ws.mode) && ws.mode !== "listen");
   padTab.classList.toggle("is-on", dockOpen);
-  { const lab = ws.mode === "listen" ? "混音台" : "键盘", sp = padTab.querySelector("span"); if (sp && sp.textContent !== lab) sp.textContent = lab; padTab.title = `${ws.mode === "listen" ? "混音台" : "键盘（pad）"}：${dockOpen ? "点 = 收起" : "点 = 打开"}`; }
+  { const lab = ws.mode === "listen" ? _t("混音台") : _t("键盘"), sp = padTab.querySelector("span"); if (sp && sp.textContent !== lab) sp.textContent = lab; padTab.title = `${ws.mode === "listen" ? _t("混音台") : _t("键盘（pad）")}：${dockOpen ? _t("点 = 收起") : _t("点 = 打开")}`; }
   renderTopSels();   // 「词 / 听」没有键盘：不露「键盘」tab
   viewTab.hidden = over || (($("paperSel") as HTMLSelectElement).hidden && ($("partSel") as HTMLSelectElement).hidden);   // 挂签只剩看哪一段 / 哪位：都不用选 = 不挂
   finder.setPadShown(!padEl.hidden);
@@ -362,14 +360,14 @@ async function pasteNow(): Promise<void> {
   let sys = ""; try { sys = (await navigator.clipboard?.readText?.()) ?? ""; } catch { /* 浏览器不给读：用 app 内的 */ }
   let toks: Token[] | null = sys && sys.trim() !== clipText.trim() ? fromJianpu(sys, fifthsAtSel(D.st)) : null;
   if (!toks) toks = clip;
-  if (!toks) { info(sys ? "剪贴板里的不是简谱（像 1 2 3 | 5 - - 这样的才认）" : "剪贴板里没有东西"); return; }
-  update(pasteTokens(D.st, toks)); info(`贴了 ${toks.length} 个`);
+  if (!toks) { info(sys ? _t("剪贴板里的不是简谱（像 1 2 3 | 5 - - 这样的才认）") : _t("剪贴板里没有东西")); return; }
+  update(pasteTokens(D.st, toks)); info(_t("贴了 {n} 个", { n: toks.length }));
 }
 async function selVerb(v: SelVerb): Promise<void> {
   switch (v) {
     case "all": update(selectAll(D.st)); break;
-    case "copy": { const t = copyTokens(D.st); if (t) { setClip(t); info(`复制了 ${t.length} 个`); } break; }
-    case "cut": { const r = cutTokens(D.st); if (r) { setClip(r.toks); update(r.st); info(`剪切了 ${r.toks.length} 个`); } break; }
+    case "copy": { const t = copyTokens(D.st); if (t) { setClip(t); info(_t("复制了 {n} 个", { n: t.length })); } break; }
+    case "cut": { const r = cutTokens(D.st); if (r) { setClip(r.toks); update(r.st); info(_t("剪切了 {n} 个", { n: r.toks.length })); } break; }
     case "paste": await pasteNow(); break;
     case "transpose": if (D.st.sel) openSelMenu(selBarAnchor()); break;   // 选区菜单（移调 / 转调 / 时值…；user「不要用keyboard，而是一个小的上下文菜单」）
     case "delete": if (D.st.sel) update(apply(D.st, { k: "delete" })); break;
@@ -379,8 +377,8 @@ async function selVerb(v: SelVerb): Promise<void> {
     case "up": case "down": if (D.st.sel) { update(apply(D.st, { k: "step", d: v === "up" ? 1 : -1 }, performance.now())); previewEdited(); } break;
     case "sharp": case "flat": if (D.st.sel) { update(apply(D.st, { k: "alter", d: v === "sharp" ? 1 : -1 }, performance.now())); previewEdited(); } break;
     case "octUp": case "octDown": if (D.st.sel) { update(apply(D.st, { k: "octave", d: v === "octUp" ? 1 : -1 }, performance.now())); previewEdited(); } break;
-    case "half": case "double": if (D.st.sel) { const nx = apply(D.st, { k: "selscale", f: v === "half" ? 0.5 : 2 }, performance.now()); if (nx === D.st) info(v === "half" ? "再短就没有这种时值了" : "再长就没有这种时值了"); else update(nx); } break;
-    case "dot": if (D.st.sel) { const nx = toggleSelDot(D.st); if (nx === D.st) info("选中的里面没有能加附点的时值"); else update(nx); } break;
+    case "half": case "double": if (D.st.sel) { const nx = apply(D.st, { k: "selscale", f: v === "half" ? 0.5 : 2 }, performance.now()); if (nx === D.st) info(v === "half" ? _t("再短就没有这种时值了") : _t("再长就没有这种时值了")); else update(nx); } break;
+    case "dot": if (D.st.sel) { const nx = toggleSelDot(D.st); if (nx === D.st) info(_t("选中的里面没有能加附点的时值")); else update(nx); } break;
   }
   if (v !== "transpose") scoreEl.focus();
 }
@@ -484,7 +482,7 @@ const view = new ScoreView(scoreEl, {
   notice: (s) => info(s),
   onClef: (hit, at) => openClefMenu(hit, at),
   onPaperMenu: (id) => openPaperMenu(id),
-  onAddPaper: () => { update(addPaper(D.st)); info("新的一张纸"); },
+  onAddPaper: () => { update(addPaper(D.st)); info(_t("新的一张纸")); },
   onNav: (dir) => navPaper(dir),
   onNavFrom: (paper, dir) => navPaperFrom(paper, dir),
   onScopeOf: (paper) => { if (viewScope === "segment" && D.st.at.paper === paper) viewScope = "all"; else { viewScope = "segment"; if (D.st.at.paper !== paper) navPaperTo(paper); } view.render(); },
@@ -530,12 +528,12 @@ function halfKey(down: boolean): void { setHalf(down ? latchDown(half, performan
  *  亮不亮跟着「是不是正在改一个音」（点一个音选中它也亮），pad 自己看 singleSel。 */
 function stackKey(down: boolean): void {
   if (!down) return;
-  if (!canStack()) { info(`「${roleName(D.extras, curRole())}」是单声乐器，这个声部叠不了音`); return; }
+  if (!canStack()) { info(_t("「{extras}」是单声乐器，这个声部叠不了音", { extras: roleName(D.extras, curRole()) })); return; }
   if (singleSel(D.st) >= 0) { update(setCaret(D.st, D.st.sel!.to)); return; }
   const tk = tr(D.st); let i = -1;
   if (D.st.sel) { for (let k = D.st.sel.to - 1; k >= D.st.sel.from; k--) if (isTimed(tk[k])) { i = k; break; } }   // 选了好几个 = 改最后那个
   else i = currentIndex(D.st);
-  if (i < 0) { info("光标前面还没有音"); return; }
+  if (i < 0) { info(_t("光标前面还没有音")); return; }
   update(select(D.st, i, i + 1));
 }
 /** 升降键（pad）：和 Shift 一个逻辑（点一下 = 下一个、350 ms 内连点两下 = 锁、再点 = 关；按住写 = 按住期间、松手回去），
@@ -626,7 +624,7 @@ function ghostSync(): void { view.showGhost(ghostOn() ? [...ghostHeld.values()] 
 const finalOn = (): boolean => D.locked() !== null;
 let lockSaidAt = 0;
 /** 定稿着被拒的那一下：说一句（同一句 3 s 内不重复）。 */
-function lockedSay(what: string): void { const t = performance.now(); if (t - lockSaidAt < 3000) return; lockSaidAt = t; showError(`这首歌定稿了，${what}改不了：先在三条杠里「改稿」（定稿的 mp3 会作废），再改。`); }
+function lockedSay(what: string): void { const t = performance.now(); if (t - lockSaidAt < 3000) return; lockSaidAt = t; showError(_t("这首歌定稿了，{what}改不了：先在三条杠里「改稿」（定稿的 mp3 会作废），再改。", { what })); }
 function onLockRefused(what: string): void { lockedSay(what); view.render(); pad.render(); drawInst(); ui.redraw(); if (studio.isOpen) studio.show(); }
 function update(next: EditorState, gesture?: string): void { D.commit({ st: next }, { gesture }); }
 /** 每张纸（曲段）开头没写力度的补上（song.ts ensureStartDyns：补的是那里本来就生效的那个）；补在光标那条、光标前面 = 光标挪到它后面（接着写的音在力度后面）。 */
@@ -674,12 +672,12 @@ function afterExtras(prev: Extras, next: Extras, locus: Locus): void {
   if (locus.kind === "final") { applyWorkspace(); view.render(); }   // 定稿 / 改稿：锁的样子（body.doc-final / 模式钮）跟着
   drawInst(); ui.redraw(); updateChrome();   // 歌手名在挂签的下拉里
 }
-function undoNow(): void { if (D.locked()) { D.undo(); return; } if (!D.history.past.length) { info("没有可撤销的"); return; } ui.close(); view.lyrics.commitAndClose(); D.undo(); }
-function redoNow(): void { if (D.locked()) { D.redo(); return; } if (!D.history.future.length) { info("没有可重做的"); return; } ui.close(); view.lyrics.commitAndClose(); D.redo(); }
+function undoNow(): void { if (D.locked()) { D.undo(); return; } if (!D.history.past.length) { info(_t("没有可撤销的")); return; } ui.close(); view.lyrics.commitAndClose(); D.undo(); }
+function redoNow(): void { if (D.locked()) { D.redo(); return; } if (!D.history.future.length) { info(_t("没有可重做的")); return; } ui.close(); view.lyrics.commitAndClose(); D.redo(); }
 let lastUndoText = "";   // 测试钩子看的：最近一次撤销 / 重做的 toast
 /** 撤销 / 重做落地（D 已换好 D.st / extras / 栈）：换 extras（选角变了合成器重备）→ 视图跟着 locus 走（那条声部要看得见；纸随快照的 at）→ 换谱 → toast 说明撤了什么
  *  （user 2026-10-08 的顾虑「多按几次会不会静默变你没有监视的页面、曲段」：不会静默——视图跟过去 + 每一下都说一句）。 */
-function afterRestore(r: Restored, verb: "撤销" | "重做", prev: { st: EditorState; extras: Extras }): void {
+function afterRestore(r: Restored, verb: string, prev: { st: EditorState; extras: Extras }): void {
   if (r.extras !== prev.extras) {
     if (r.extras.thumbnail !== prev.extras.thumbnail) coverTouched = true;
     if (r.locus.kind === "lounge") { sound.allOff(); void prepareBank(); pad.render(); view.render(); }   // 谱上的 × 符头跟着演奏者
@@ -699,11 +697,11 @@ function revealPart(id: string): void {
 }
 /** toast 的人话：纸 · 声部 · 改了什么（谱）/ 休息室 · … / 录音室 · … / 封面 · …（只有一张纸 / 一个声部时不啰嗦）。 */
 function locusText(at: EditorState, l: Locus): string {
-  const k = at.song.papers.findIndex((p) => p.id === at.at.paper), paperName = at.song.papers[k]?.name || `第 ${k + 1} 段`;
+  const k = at.song.papers.findIndex((p) => p.id === at.at.paper), paperName = at.song.papers[k]?.name || _t("第 {p} 段", { p: k + 1 });
   const part = at.song.parts.find((p) => p.id === at.at.part), partName = part ? roleName(D.extras, part.role) : "";
   if (l.kind === "score") return `${at.song.papers.length > 1 ? paperName + " · " : ""}${at.song.parts.length > 1 ? partName + " · " : ""}${l.label}`;
   if (l.kind === "paper") return `${paperName} · ${l.label}`;
-  return `${l.kind === "lounge" ? "休息室" : l.kind === "studio" ? "混音台" : "封面"} · ${l.label}`;
+  return `${l.kind === "lounge" ? _t("休息室") : l.kind === "studio" ? _t("混音台") : _t("封面")} · ${l.label}`;
 }
 function renderUndo(): void { $<HTMLButtonElement>("undoBtn").disabled = !D.history.past.length; $<HTMLButtonElement>("redoBtn").disabled = !D.history.future.length; }
 
@@ -738,7 +736,7 @@ function onIssuesChanged(list: readonly Issue[]): void { issueParts = new Set(li
 function drawIssueBadges(): void {
   for (const b of playBtns()) {
     b.querySelector(".issues-badge")?.remove();
-    if (issueCount) { const t = document.createElement("span"); t.className = "issues-badge"; t.textContent = String(issueCount); t.title = `${issueCount} 条轨不出声：点开看清单`; b.append(t); }
+    if (issueCount) { const t = document.createElement("span"); t.className = "issues-badge"; t.textContent = String(issueCount); t.title = _t("{issueCount} 条轨不出声：点开看清单", { issueCount }); b.append(t); }
   }
 }
 // ── 唱歌 / 播放 / 导出的胶水 = src/app/performance.ts（刀 1 之二，2026-10-14）：这里只给访问器，拿回一组函数 + 走带态的 getter ──────────
@@ -756,7 +754,7 @@ const BUDGET = perfApi.budget, TURN_LEADS = perfApi.TURN_LEADS;
 function typingIn(t: EventTarget | null): boolean { const el = t as HTMLElement | null; if (!el) return false; if (el.tagName === "TEXTAREA" || el.isContentEditable) return true; return el.tagName === "INPUT" && !["range", "checkbox", "radio", "button"].includes((el as HTMLInputElement).type); }
 /** 混音台上一条轨的 id → studio.json 里那条轨的 id（歌手 = 它的麦克风轨；路由轨 = 自己）。 */
 function trackKey(track: string): string { return D.st.song.parts.find((x) => x.id === track)?.mic ?? track; }
-function routeName(track: string): string { if (track === "master") return "总轨"; const k = D.st.song.parts.findIndex((x) => x.id === track); return k >= 0 ? partLabels(D.st.song, D.extras)[k] : studioTrack(D.extras, track)?.name ?? track; }
+function routeName(track: string): string { if (track === "master") return _t("总轨"); const k = D.st.song.parts.findIndex((x) => x.id === track); return k >= 0 ? partLabels(D.st.song, D.extras)[k] : studioTrack(D.extras, track)?.name ?? track; }
 /** 听模式（2026-10-10 user「还有一个就是播放模式，锁写谱，但是可以调录音室」「我蛮需要播放欣赏的时候防误触的哈哈」）：谱锁住（轻点不跳播、长按 / 右键 = 从这儿放、拖 = 滚动），
  *  pad 收起、键盘只认空格（放 / 暂停）和 Esc（回到写）；录音室照样能开能调。 */
 // ── 模式 + 底座（2026-10-10 Opus 5.5；规则表 = src/app/workspace.ts）：音 / 词 / 符 + 听；pad 那个位子 = 底座，放 音键 / 符号格 / 录音室（互斥）。
@@ -781,7 +779,7 @@ function applyWorkspace(): void {
 /** 换模式：收起编辑框；进「音 / 符」= 键盘弹出来；进「听」= 谱锁住、键盘收起（录音室开着的话留着）。 */
 function setMode(m: Mode): void {
   if (m === ws.mode) return;
-  if (finalOn() && m !== "listen") { lockedSay("模式"); return; }   // 第 ① 层：定稿着只有「听」
+  if (finalOn() && m !== "listen") { lockedSay(_t("模式")); return; }   // 第 ① 层：定稿着只有「听」
   ui.close(); view.lyrics.commitAndClose(); view.marks.commitAndClose();
   if (m !== "listen") lastEditMode = m;
   ws.mode = m; if (hasKeys(m)) ws.collapsed = false;
@@ -795,7 +793,7 @@ function openListenMenu(at: { x: number; y: number }, a: { paper: string; part: 
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
-  box.innerHTML = item("here", "从这儿放", "起点挪到这个小节的头，从这儿放") + (perfApi.paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放") : "") + item("head", "从头放", "起点回到开头，从头放（也可以连按两下 |▶ / 空格）");
+  box.innerHTML = item("here", _t("从这儿放"), _t("起点挪到这个小节的头，从这儿放")) + (perfApi.paused && !engine.playing ? item("resume", _t("接着放"), _t("从上次停下的地方接着放")) : "") + item("head", _t("从头放"), _t("起点回到开头，从头放（也可以连按两下 |▶ / 空格）"));
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8; let y = at.y + 10; if (y + h > innerHeight - m) y = at.y - h - 10;
   box.style.left = `${Math.max(m, Math.min(at.x + 6, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, y)}px`;
@@ -817,12 +815,12 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
-  box.innerHTML = (perfApi.paused && !engine.playing ? item("resume", "接着放", "从上次停下的地方接着放（起点不动）") : "") +
-    (engine.playing || perfApi.paused ? item("reveal", "跳到正在放的地方", "谱滚到正在放（停着 = 停下）的那一行；刚才自己滚过也照样过去、接着跟") : "") +
-    `<div class="ctx-row" title="翻谱提前多少：快到行尾（或编排跳回去之前）这么久就先翻过去，最后一小截靠记——像钢琴家翻谱。0 = 换了行才翻"><span class="ctx-lab">提前翻</span>${TURN_LEADS.map((v) => `<button class="btn ctx-seg${v === perfApi.turnLead ? " is-on" : ""}" data-v="lead:${v}">${v ? `${v} s` : "不"}</button>`).join("")}</div>` +
-    item("follow", `${view.autoFollow ? "✓ " : ""}自动翻`, "放着的时候谱跟着正在放的那一行滚（出了屏幕舒服的那一段才滚；你自己滚过 4 秒内不跟）") +
-    item("loop", `${perfApi.loopOn ? "✓ " : ""}循环`, "放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环") +
-    item("head", "从头放", "起点回到开头，从头放（也可以连按两下 |▶ / 空格）") + (perfApi.loopOn ? item("seam", "听接缝", "从循环段结尾前几秒放起，跳回开头再放几秒就停") : "");
+  box.innerHTML = (perfApi.paused && !engine.playing ? item("resume", _t("接着放"), _t("从上次停下的地方接着放（起点不动）")) : "") +
+    (engine.playing || perfApi.paused ? item("reveal", _t("跳到正在放的地方"), _t("谱滚到正在放（停着 = 停下）的那一行；刚才自己滚过也照样过去、接着跟")) : "") +
+    `<div class="ctx-row" title="${_t("翻谱提前多少：快到行尾（或编排跳回去之前）这么久就先翻过去，最后一小截靠记——像钢琴家翻谱。0 = 换了行才翻")}"><span class="ctx-lab">${_t("提前翻")}</span>${TURN_LEADS.map((v) => `<button class="btn ctx-seg${v === perfApi.turnLead ? " is-on" : ""}" data-v="lead:${v}">${v ? `${v} s` : _t("不")}</button>`).join("")}</div>` +
+    item("follow", _t("{autoFollow}自动翻", { autoFollow: view.autoFollow ? "✓ " : "" }), _t("放着的时候谱跟着正在放的那一行滚（出了屏幕舒服的那一段才滚；你自己滚过 4 秒内不跟）")) +
+    item("loop", _t("{loopOn}循环", { loopOn: perfApi.loopOn ? "✓ " : "" }), _t("放到头接着从头放；编排写了 [循环段] = 前面放一遍、括住的一直循环")) +
+    item("head", _t("从头放"), _t("起点回到开头，从头放（也可以连按两下 |▶ / 空格）")) + (perfApi.loopOn ? item("seam", _t("听接缝"), _t("从循环段结尾前几秒放起，跳回开头再放几秒就停")) : "");
   document.body.append(box);
   const b = btn.getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, m = 8;
   box.style.left = `${Math.max(m, Math.min(b.left, innerWidth - w - m))}px`;
@@ -835,9 +833,9 @@ function openTransportMenu(btn: HTMLElement = $("playBtn")): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
     if (v === "resume") resumePlay();
-    else if (v.startsWith("lead:")) { perfApi.turnLead = Number(v.slice(5)); info(perfApi.turnLead ? `翻谱提前 ${perfApi.turnLead} 秒` : "翻谱不提前（换了行才翻）"); }
-    else if (v === "reveal") { if (!view.revealPlayhead()) info("现在没有在放的地方"); }
-    else if (v === "follow") { view.autoFollow = !view.autoFollow; info(view.autoFollow ? "自动翻：开" : "自动翻：关"); }
+    else if (v.startsWith("lead:")) { perfApi.turnLead = Number(v.slice(5)); info(perfApi.turnLead ? _t("翻谱提前 {turnLead} 秒", { turnLead: perfApi.turnLead }) : _t("翻谱不提前（换了行才翻）")); }
+    else if (v === "reveal") { if (!view.revealPlayhead()) info(_t("现在没有在放的地方")); }
+    else if (v === "follow") { view.autoFollow = !view.autoFollow; info(view.autoFollow ? _t("自动翻：开") : _t("自动翻：关")); }
     else if (v === "loop") setLoop(!perfApi.loopOn);
     else if (v === "head") playFromHead();
     else if (v === "seam") playSeam();
@@ -884,12 +882,12 @@ let mp3Scope: "all" | "segment" = "all";   // 范围只在这次打开里记着�
 /** §2.2½ 出口 ②：不出声的声部清单（非模态小面板，每行一个该按的钮）。入口 = |▶ 角上的数字。不替人换、不自愈（10-07 纪律）。 */
 function openIssuesSheet(): void {
   ui.close();
-  const list = perfApi.issues(); if (!list.length) { info("现在的声部都能出声"); return; }
+  const list = perfApi.issues(); if (!list.length) { info(_t("现在的声部都能出声")); return; }
   const box = document.createElement("div"); box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">不出声的声部</div>` +
-    list.map((i) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc(i.label)}</b><small>${esc(i.why)}</small></div><button class="btn primary" data-v="inst:${esc(i.part)}">换人 / 找声音…</button></div>`).join("") +
-    `<div class="offer-msg">放和导出的 mp3 里都没有这${list.length > 1 ? `${list.length} 条轨` : "条轨"}的声音，其余照放。换谁由你定，不替补。</div>` +
-    `<div class="offer-btns"><button class="btn" data-v="close">知道了</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("不出声的声部")}</div>` +
+    list.map((i) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc(i.label)}</b><small>${esc(i.why)}</small></div><button class="btn primary" data-v="inst:${esc(i.part)}">${_t("换人 / 找声音…")}</button></div>`).join("") +
+    `<div class="offer-msg">${_t("放和导出的 mp3 里都没有这{p}的声音，其余照放。换谁由你定，不替补。", { p: list.length > 1 ? _t("{n} 条轨", { n: list.length }) : _t("条轨") })}</div>` +
+    `<div class="offer-btns"><button class="btn" data-v="close">${_t("知道了")}</button></div></div>`;
   document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); };
   ui.open({ k: "sheet", close });
@@ -914,13 +912,13 @@ function openMp3Panel(): void {
     const chip = (v: string, label: string, note: string, on: boolean) => `<button class="btn cand${on ? " is-on" : ""}" data-v="${v}">${esc(label)}<small>${esc(note)}</small></button>`;
     const er = D.st.song.rights ? exportRights(soundingRoles()) : null;
     const fin = D.extras.final;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">导出歌声（mp3）</div>` +
-      (fin ? `<div class="offer-msg">定稿的那一份（第 ${fin.rev} 版 · ${fin.mp3.stereo ? "立体声" : "单声道"} ${fin.mp3.kbps}k · ${mp3SizeText(fin.mp3.bytes)}）直接导出，不重渲；要别的音质先「改稿」。</div>` :
-      `<div class="part-sec">音质</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>`) +
-      (D.st.song.papers.length > 1 && !fin ? `<div class="part-sec">范围</div><div class="set-row">${chip("s:all", "整首", "隐藏的纸不放", mp3Scope === "all")}${chip("s:segment", "这一张纸", paper?.name || `第 ${k + 1} 张`, mp3Scope === "segment")}</div>` : "") +
-      (er ? `<div class="offer-msg">许可：${er.fellBack ? `这份按「未声明」写——你选的许可允许别人改编，和小月相的条款可能冲突（作者栏里的选择没动）` : esc(er.rights!)}。和署名一起写进 mp3 的标签。</div>` : "") +
-      ((is) => (is.length ? `<div class="offer-msg issue-warn">${is.length} 条轨不出声，mp3 里不会有它们：${esc(perfApi.issuesText(is))}。换人在谱前面的声部名里。</div>` : ""))(perfApi.issues()) +   // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
-      `<div class="offer-btns"><button class="btn primary" data-v="go">${perfApi.issues().length ? "照样导出" : "导出"}</button><button class="btn" data-v="close">算了</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("导出歌声（mp3）")}</div>` +
+      (fin ? `<div class="offer-msg">${_t("定稿的那一份（第 {rev} 版 · {stereo} {kbps}k · {bytes}）直接导出，不重渲；要别的音质先「改稿」。", { rev: fin.rev, stereo: fin.mp3.stereo ? _t("立体声") : _t("单声道"), kbps: fin.mp3.kbps, bytes: mp3SizeText(fin.mp3.bytes) })}</div>` :
+      `<div class="part-sec">${_t("音质")}</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>`) +
+      (D.st.song.papers.length > 1 && !fin ? `<div class="part-sec">${_t("范围")}</div><div class="set-row">${chip("s:all", _t("整首"), _t("隐藏的纸不放"), mp3Scope === "all")}${chip("s:segment", _t("这一张纸"), paper?.name || _t("第 {p} 张", { p: k + 1 }), mp3Scope === "segment")}</div>` : "") +
+      (er ? `<div class="offer-msg">${_t("许可：{fellBack}。和署名一起写进 mp3 的标签。", { fellBack: er.fellBack ? _t("这份按「未声明」写——你选的许可允许别人改编，和小月相的条款可能冲突（作者栏里的选择没动）") : esc(er.rights!) })}</div>` : "") +
+      ((is) => (is.length ? `<div class="offer-msg issue-warn">${_t("{n} 条轨不出声，mp3 里不会有它们：{is}。换人在谱前面的声部名里。", { n: is.length, is: esc(perfApi.issuesText(is)) })}</div>` : ""))(perfApi.issues()) +   // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
+      `<div class="offer-btns"><button class="btn primary" data-v="go">${perfApi.issues().length ? _t("照样导出") : _t("导出")}</button><button class="btn" data-v="close">${_t("算了")}</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -942,7 +940,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 async function packStatusText(): Promise<string> {
   if (resourcesInFolder()) {   // 备用版：模型包就在文件夹里（老实脚本），用到才读、读时核哈希；浏览器缓存在 file: 里用不了（2026-11-03 家族工单 A）
     const files = localBundle()?.files ?? {};
-    return Object.entries(PACKS).map(([slug, p]) => `${p.manifest.chunks.every((c) => files[`pwa-models/packs/${slug}/${c.name}`]) ? "✓ 在文件夹里" : "· 文件夹里没有"} ${slug}（${(p.manifest.totalBytes / 1e6).toFixed(1)} MB）`).join("\n");
+    return Object.entries(PACKS).map(([slug, p]) => `${p.manifest.chunks.every((c) => files[`pwa-models/packs/${slug}/${c.name}`]) ? _t("✓ 在文件夹里") : _t("· 文件夹里没有")} ${slug}（${(p.manifest.totalBytes / 1e6).toFixed(1)} MB）`).join("\n");
   }
   const packs = await packStore.status(Object.keys(PACKS));
   return packs.map((s) => `${s.ready ? "✓" : "·"} ${s.slug}（${(s.bytesTotal / 1e6).toFixed(1)} MB）`).join("\n");
@@ -953,51 +951,51 @@ function openSettings(): void {
   const inFolder = resourcesInFolder();   // 备用版：模型 / 音源都在文件夹里，浏览器缓存用不了——这几行画灰 + 说一句（规则书 §1 第 6 条）
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">设置</div>` +
-    (inFolder ? `<label class="set-field">模型来源<input id="srcIn" type="url" disabled value="${esc(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>`
-      : `<label class="set-field">模型来源<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>`) +
-    `<label class="set-field">音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
-    `<div class="set-field">音源库缓存（留在设备上，没网也能用；歌自己带声音，这里只是货架）<div id="sndCache" class="set-packs">…</div></div>` +
-    `<div class="set-field">MIDI 键盘<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">连接</button>` : ""}</div></div>` +
-    `<div class="offer-msg">先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。</div>` +
-    `<div class="set-row"><button class="btn" data-v="default">恢复默认</button>` +
-    (inFolder ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包</span><input id="impIn" type="file" multiple hidden disabled /></div>`
-      : `<label class="btn" title="选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"><svg class="ico"><use href="#import"/></svg>从本机文件导入模型包<input id="impIn" type="file" multiple hidden /></label></div>`) +
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
+    (inFolder ? `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" disabled value="${esc(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>`
+      : `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>`) +
+    `<label class="set-field">${_t("音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
+    `<div class="set-field">${_t("音源库缓存（留在设备上，没网也能用；歌自己带声音，这里只是货架）")}<div id="sndCache" class="set-packs">…</div></div>` +
+    `<div class="set-field">${_t("MIDI 键盘")}<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("连接")}</button>` : ""}</div></div>` +
+    `<div class="offer-msg">${_t("先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。")}</div>` +
+    `<div class="set-row"><button class="btn" data-v="default">${_t("恢复默认")}</button>` +
+    (inFolder ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入模型包")}</span><input id="impIn" type="file" multiple hidden disabled /></div>`
+      : `<label class="btn" title="${_t("选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件")}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入模型包")}<input id="impIn" type="file" multiple hidden /></label></div>`) +
     `<pre id="packSt" class="set-packs">…</pre>` +
-    `<details class="set-credit"><summary>乐器目录的图标（第三方，${ICON_CREDITS.length} 个）</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}${c.modified ? `\n    改动：${c.modified}` : ""}`).join("\n"))}</pre></details>` +
+    `<details class="set-credit"><summary>${_t("乐器目录的图标（第三方，{n} 个）", { n: ICON_CREDITS.length })}</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}${c.modified ? _t("\n    改动：{modified}", { modified: c.modified }) : ""}`).join("\n"))}</pre></details>` +
     // 原文在上（条款要求的是原文）；中 / 英译文在下、只给人读（user 2026-10-08「月读的license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）
-    `<details class="set-credit"><summary>小月相（つくよみちゃん）的署名与使用条款</summary><div class="part-sec">原文（以此为准）</div><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre>` +
-      `<div class="part-sec">中文译文（仅供阅读，以日文原文为准）</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` +
+    `<details class="set-credit"><summary>${_t("小月相（つくよみちゃん）的署名与使用条款")}</summary><div class="part-sec">${_t("原文（以此为准）")}</div><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre>` +
+      `<div class="part-sec">${_t("中文译文（仅供阅读，以日文原文为准）")}</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` +
       `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc(CREDIT_TRANSLATIONS.en.credit)}\n\n${esc(CREDIT_TRANSLATIONS.en.terms)}</pre></details>` +
-    `<div class="set-field">小月相的念缓存（设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念）<div id="spCache" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="sp:clear">清空念缓存</button></div></div>` +
-    `<div class="set-field">引擎负载与内存（能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说）<div id="engRes" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="eng:restart" title="小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念">重开小月相引擎</button></div></div>` +
+    `<div class="set-field">${_t("小月相的念缓存（设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念）")}<div id="spCache" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("清空念缓存")}</button></div></div>` +
+    `<div class="set-field">${_t("引擎负载与内存（能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说）")}<div id="engRes" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念")}">${_t("重开小月相引擎")}</button></div></div>` +
     // 开发者节（家族规矩 2½，2026-10-21）：诊断日志 + 「还原出厂设置…」住这里；「检查更新 / 清缓存重启」留在普通那一行
-    `<details class="set-credit set-dev"><summary>开发者</summary>` +
-      `<details class="set-credit"><summary>诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">复制</button><button class="btn" data-v="diag:download">下载 .txt</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">分享…</button>` : ""}<button class="btn" data-v="diag:clear">清空</button></div></details>` +
-      `<div class="set-field">还原出厂设置（这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在上面「模型包」里逐个删）<div class="set-row"><button class="btn danger" data-v="factory">还原出厂设置…</button></div></div>` +
+    `<details class="set-credit set-dev"><summary>${_t("开发者")}</summary>` +
+      `<details class="set-credit"><summary>${_t("诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("复制")}</button><button class="btn" data-v="diag:download">${_t("下载 .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("分享…")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("清空")}</button></div></details>` +
+      `<div class="set-field">${_t("还原出厂设置（这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在上面「模型包」里逐个删）")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button></div></div>` +
     `</details>` +
-    `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">检查更新</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">检查更新</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删">清缓存重启</button></div>` +
-    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+    `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删")}">${_t("清缓存重启")}</button></div>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector<HTMLInputElement>("#srcIn")!, packSt = box.querySelector<HTMLElement>("#packSt")!;
   const refresh = () => { void packStatusText().then((t) => (packSt.textContent = t)); };
   refresh();
   const engRes = box.querySelector<HTMLElement>("#engRes")!;
-  const refreshRes = () => { const lat = engine.latencyMs(); engRes.textContent = `${describeResources(resourceSnapshot(), BUDGET)} 小月相 ${singer.parallelism} 条道（设备预算 ${BUDGET.lanes}）。${lat !== null ? `声音的输出延迟（浏览器报的）${Math.round(lat)} ms。` : ""}`; };
+  const refreshRes = () => { const lat = engine.latencyMs(); engRes.textContent = _t("{BUDGET} 小月相 {parallelism} 条道（设备预算 {lanes}）。{p}", { BUDGET: describeResources(resourceSnapshot(), BUDGET), parallelism: singer.parallelism, lanes: BUDGET.lanes, p: lat !== null ? _t("声音的输出延迟（浏览器报的）{lat} ms。", { lat: Math.round(lat) }) : "" }); };
   refreshRes(); const resTimer = window.setInterval(refreshRes, 1000);
   const spCache = box.querySelector<HTMLElement>("#spCache")!;
-  const refreshSpeech = () => { void singer.cache("info", BUDGET.speechDisk).then((d) => { spCache.textContent = d ? `${sizeText(d.bytes)} / 预算 ${sizeText(d.budget)}，${d.entries} 条` : inFolder ? FOLDER_TEXT.speech : "这个浏览器没有 IndexedDB：只用内存"; }).catch((e) => { spCache.textContent = `读不到：${(e as Error).message}`; }); };
+  const refreshSpeech = () => { void singer.cache("info", BUDGET.speechDisk).then((d) => { spCache.textContent = d ? _t("{bytes} / 预算 {budget}，{entries} 条", { bytes: sizeText(d.bytes), budget: sizeText(d.budget), entries: d.entries }) : inFolder ? FOLDER_TEXT.speech : _t("这个浏览器没有 IndexedDB：只用内存"); }).catch((e) => { spCache.textContent = _t("读不到：{Error}", { Error: (e as Error).message }); }); };
   refreshSpeech();
   const sndIn = box.querySelector<HTMLInputElement>("#sndIn")!, sndCache = box.querySelector<HTMLElement>("#sndCache")!;
   const refreshSounds = async () => {
     if (inFolder) { sndCache.innerHTML = `<div class="set-row"><span class="set-note">${FOLDER_TEXT.sounds}</span></div>`; return; }
     const cached = await listCachedSounds(), bySha = new Map(cached.map((c) => [c.sha256, c])), known = new Set(Object.values(SOUNDS).map((e) => e.sha256)), uses = new Map(soundUses(D.extras).map((u) => [u.subsetSha256, u]));
     const total = cached.reduce((n, c) => n + c.bytes, 0), mem = soundMemoryBytes();
-    let quota = ""; const est = await siteStorageEstimate(); if (est) quota = `；这个站点共用了 ${sizeText(est.usage)} / 配额 ${sizeText(est.quota)}`;
-    sndCache.innerHTML = `<div class="set-row"><span>设备上留着 ${sizeText(total)}${quota}；内存里现在 ${sizeText(mem)}</span>${mem ? `<button class="btn" data-v="snd:mem" title="放掉内存里的整包（设备上留着的不动，下次用再从设备读）">放掉内存</button>` : ""}</div>` +
-      Object.values(SOUNDS).map((e) => { const c = bySha.get(e.sha256); return `<div class="set-row"><span>${esc(e.name)} · ${sizeText(e.bytes)} · ${c ? "已留在设备上" : "没下载"}</span>${c ? `<button class="btn" data-v="snd:del:${esc(e.id)}">删掉</button>` : `<button class="btn" data-v="snd:get:${esc(e.id)}">下载留着</button>`}</div>`; }).join("") +
+    let quota = ""; const est = await siteStorageEstimate(); if (est) quota = _t("；这个站点共用了 {usage} / 配额 {quota}", { usage: sizeText(est.usage), quota: sizeText(est.quota) });
+    sndCache.innerHTML = `<div class="set-row"><span>${_t("设备上留着 {total}{quota}；内存里现在 {mem}", { total: sizeText(total), quota, mem: sizeText(mem) })}</span>${mem ? `<button class="btn" data-v="snd:mem" title="${_t("放掉内存里的整包（设备上留着的不动，下次用再从设备读）")}">${_t("放掉内存")}</button>` : ""}</div>` +
+      Object.values(SOUNDS).map((e) => { const c = bySha.get(e.sha256); return `<div class="set-row"><span>${esc(e.name)} · ${sizeText(e.bytes)} · ${c ? _t("已留在设备上") : _t("没下载")}</span>${c ? `<button class="btn" data-v="snd:del:${esc(e.id)}">${_t("删掉")}</button>` : `<button class="btn" data-v="snd:get:${esc(e.id)}">${_t("下载留着")}</button>`}</div>`; }).join("") +
       // 子集（自己的 .sf2 加进来时 / 解包时留的，按子集 sha256 存）：这首歌弱引用着的写出名字——删了它，没有原文件就找不回来
-      cached.filter((c) => !known.has(c.sha256)).map((c) => { const u = uses.get(c.sha256); return `<div class="set-row"><span>${u ? `「${esc(u.names.join("、"))}」的声音（这首歌${u.packed ? "也打包着" : "引用着；删了要从「" + esc(u.origin.name) + "」找"}）` : `别的歌 / 别的版本 / 别的 app 留的（${c.sha256.slice(0, 8)}…）`} · ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">删掉</button></div>`; }).join("") || "（没有）";
+      cached.filter((c) => !known.has(c.sha256)).map((c) => { const u = uses.get(c.sha256); return `<div class="set-row"><span>${u ? _t("「{p}」的声音（这首歌{packed}）", { p: esc(u.names.join("、")), packed: u.packed ? _t("也打包着") : _t("引用着；删了要从「{name}」找", { name: esc(u.origin.name) }) }) : _t("别的歌 / 别的版本 / 别的 app 留的（{p}…）", { p: c.sha256.slice(0, 8) })} · ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">${_t("删掉")}</button></div>`; }).join("") || _t("（没有）");
   };
   void refreshSounds();
   midiRowSync = (s) => { const el = box.querySelector<HTMLElement>("#midiSt"); if (el) el.innerHTML = midiStatusHtml(s); if (s.k !== "off" && s.k !== "denied") box.querySelector('[data-v="midi:connect"]')?.remove(); };
@@ -1012,24 +1010,24 @@ function openSettings(): void {
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
     else if (v === "diag:clear") clearDiag(box.querySelector("#diagTxt"), info);
-    else if (v?.startsWith("snd:get:")) { const e = SOUNDS[v.slice(8)]; sources.source = sndIn.value; void sources.fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`)).then(() => { progress(""); info(`${e.name} 留在设备上了`); }).catch((err) => { progress(""); showError((err as Error).message); }).finally(() => void refreshSounds()); }
+    else if (v?.startsWith("snd:get:")) { const e = SOUNDS[v.slice(8)]; sources.source = sndIn.value; void sources.fetchSound(e, (done) => progress(_t("下载 {name} {bytes}%", { name: e.name, bytes: Math.round((done / e.bytes) * 100) }))).then(() => { progress(""); info(_t("{name} 留在设备上了", { name: e.name })); }).catch((err) => { progress(""); showError((err as Error).message); }).finally(() => void refreshSounds()); }
     else if (v?.startsWith("snd:del:")) { const e = SOUNDS[v.slice(8)]; void forgetSound(e.sha256).then(refreshSounds); }
     else if (v?.startsWith("snd:delsha:")) void forgetSound(v.slice(11)).then(refreshSounds);
     else if (v === "snd:mem") { releaseSoundMemory(); void refreshSounds(); }
-    else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? "已经是最新版" : "这里没有离线壳（本机开发 / 浏览器不支持），不用更新"); });
+    else if (v === "check") void shell.checkForUpdate().then((r) => { if (r === "found") { close(); showUpdateBar(); } else info(r === "latest" ? _t("已经是最新版") : _t("这里没有离线壳（本机开发 / 浏览器不支持），不用更新")); });
     else if (v === "reset") void shell.forceReset();
     else if (v === "factory") { close(); void runFactoryReset({
       attached: () => hasStore(), dirtyCount: () => requireStore().files.dirty.count(), openUnsaved: () => dirty(),
       prepare: async () => { H.release(); singer.restart(); if (hasStore()) await detachStore(); },   // 放下身份（es 不再写）、关掉举着念缓存库的 worker、dispose store；不 drain、不造逃生副本（说明 sheet 已经说清）
       clearShell: () => shell.clearOwnShell(), info, report: (e, level) => reportError(e, level) }); }
-    else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => { refreshSpeech(); info("念缓存清空了（念过的句子要重念）"); });
-    else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info("小月相引擎重开了，内存还回去了（念过的句子存在这台设备上，不用重念）"); }
+    else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => { refreshSpeech(); info(_t("念缓存清空了（念过的句子要重念）")); });
+    else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info(_t("小月相引擎重开了，内存还回去了（念过的句子存在这台设备上，不用重念）")); }
   });
   box.querySelector<HTMLInputElement>("#impIn")!.addEventListener("change", async (e) => {
     const files = [...((e.target as HTMLInputElement).files ?? [])]; if (!files.length) return;
-    packSt.textContent = "导入中…";
-    try { await packStore.importFiles(Object.keys(PACKS), files, (p) => (packSt.textContent = `导入中… ${Math.floor((p.done / p.total) * 100)}%`)); }
-    catch (err) { showError(`导入没成：${(err as Error).message === "no-matching-file" ? "这些文件不是小月相要的模型包分片" : (err as Error).message}`); }
+    packSt.textContent = _t("导入中…");
+    try { await packStore.importFiles(Object.keys(PACKS), files, (p) => (packSt.textContent = _t("导入中… {total}%", { total: Math.floor((p.done / p.total) * 100) }))); }
+    catch (err) { showError(_t("导入没成：{Error}", { Error: (err as Error).message === "no-matching-file" ? _t("这些文件不是小月相要的模型包分片") : (err as Error).message })); }
     refresh();
   });
 }
@@ -1041,8 +1039,8 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card"><div class="offer-title">${title}</div><div class="offer-msg">${msg}</div><div class="offer-btns">` +
-    (canShare ? `<button class="btn primary" data-v="share">分享</button>` : "") +
-    `<button class="btn${canShare ? "" : " primary"}" data-v="download">下载</button><button class="btn" data-v="close">关</button></div></div>`;
+    (canShare ? `<button class="btn primary" data-v="share">${_t("分享")}</button>` : "") +
+    `<button class="btn${canShare ? "" : " primary"}" data-v="download">${_t("下载")}</button><button class="btn" data-v="close">${_t("关")}</button></div></div>`;
   document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
@@ -1053,10 +1051,10 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
       const a = document.createElement("a"), url = URL.createObjectURL(file);
       a.href = url; a.download = file.name; document.body.append(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 30_000);
-      info(`已下载 ${file.name}`); onDone?.(); close();
+      info(_t("已下载 {name}", { name: file.name })); onDone?.(); close();
     } else if (v === "share") {
-      try { await navigator.share({ files: [file], title: file.name }); info("已分享"); onDone?.(); close(); }
-      catch (err) { if ((err as { name?: string }).name !== "AbortError") showError(`分享失败：${(err as Error).message}`); }
+      try { await navigator.share({ files: [file], title: file.name }); info(_t("已分享")); onDone?.(); close(); }
+      catch (err) { if ((err as { name?: string }).name !== "AbortError") showError(_t("分享失败：{Error}", { Error: (err as Error).message })); }
     }
   });
 }
@@ -1071,12 +1069,12 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   perf: () => perfReport(), perfReset: () => perfReset(),   // 热路径秒表（scripts/probe-input-latency.mjs 读）
   speechCache: (op: "info" | "clear") => singer.cache(op, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
-  setTrack: (id: string, patch: Record<string, unknown>) => { updateExtras(withTrack(D.extras, id, patch as never), { kind: "studio", label: `轨「${id}」` }); },
-  addBus: (name = "总线") => { const id = newBusId(D.extras); updateExtras(withTrack(D.extras, id, { kind: "bus", name }), { kind: "studio", label: `加总线「${name}」` }); return id; },
-  removeBus: (id: string) => updateExtras(withoutBus(D.extras, id), { kind: "studio", label: `删总线「${id}」` }),
-  setMaster: (patch: Record<string, unknown>) => updateExtras(withMaster(D.extras, patch as never), { kind: "studio", label: "总轨" }),
+  setTrack: (id: string, patch: Record<string, unknown>) => { updateExtras(withTrack(D.extras, id, patch as never), { kind: "studio", label: _t("轨「{id}」", { id }) }); },
+  addBus: (name = _t("总线")) => { const id = newBusId(D.extras); updateExtras(withTrack(D.extras, id, { kind: "bus", name }), { kind: "studio", label: _t("加总线「{name}」", { name }) }); return id; },
+  removeBus: (id: string) => updateExtras(withoutBus(D.extras, id), { kind: "studio", label: _t("删总线「{id}」", { id }) }),
+  setMaster: (patch: Record<string, unknown>) => updateExtras(withMaster(D.extras, patch as never), { kind: "studio", label: _t("总轨") }),
   studioTracks: () => studioTracks(D.extras), labScore: () => { const { tokens, map } = curFlat(); return toLabScore(tokens, D.st.song.hum, songLangOf(tokens, D.st.song.hum), map); }, state: () => D.st, cssHash: __CSS_HASH__, extras: () => D.extras, setEmbedSoftLimit: (n: number) => { embedSoftLimit = n; }, layout: () => ({ ...view.layoutNow(), head: view.head() }) /* head = 光标画在哪（ink 层，W-17 第 1 刀；E2E 看它） */, zoomInfo: () => view.zoomInfo(), dockSide: () => stageEl.dataset.side ?? null, bytes: () => bytesNow(), open: (name: string, bytes: Uint8Array) => openBytes(name, bytes), view, zipList: (bytes: Uint8Array) => Object.keys(unzipSync(bytes)), zipText: (bytes: Uint8Array, path: string) => new TextDecoder().decode(unzipSync(bytes)[path]), load: (o: ReturnType<typeof openBytes>) => loadDoc(o.song, { home: { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references }), refHost, makePdf: async (id: PdfFontId, pick?: PdfPick) => { const { r, file } = await makePdf(id, pick); progress(""); return { bytes: r.bytes, pages: r.pages, stats: r.stats, name: file.name }; },
-  setChunk: (v: "phrase" | "sheet" | "whole") => { const role = D.st.song.parts.find((x) => x.id === D.st.at.part)?.role; if (role) updateExtras(withSingChunk(D.extras, role, v, D.st.song.hum), { kind: "lounge", label: `分段唱：${v}` }); },
+  setChunk: (v: "phrase" | "sheet" | "whole") => { const role = D.st.song.parts.find((x) => x.id === D.st.at.part)?.role; if (role) updateExtras(withSingChunk(D.extras, role, v, D.st.song.hum), { kind: "lounge", label: _t("分段唱：{v}", { v }) }); },
   set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), wake: async (awayMs: number) => { const lock = lockOnWake(awayMs); if (hasCloudHome()) await gate.wake(lock); return lock; }, gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(D.st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), hasHome: () => hasHome(), folderHome: () => folderHome()?.label ?? null, legacySongs: () => legacySongs(), offerMove: () => offerMove(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => H.identifier(), home: () => H.home.kind, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
@@ -1098,8 +1096,8 @@ const dirty = () => D.dirty();   // 改过没存（谱 / 休息室 / 录音房 /
 function renderTitle(): void {
   const d = dirty(), name = docName(), fin = D.extras.final;
   $("docTitle").textContent = `${name}${d ? " •" : ""}`;
-  { const b = $("fileBtn"); b.classList.toggle("is-final", !!fin); b.querySelector(".final-badge")?.remove(); if (fin) { const t = document.createElement("span"); t.className = "final-badge"; t.textContent = `定稿 ${fin.rev}`; t.title = `定稿了（第 ${fin.rev} 版，${fin.at.slice(0, 10)}）：只能听，改不了；三条杠里「改稿」解锁`; b.append(t); } }
-  $("fileBtn").title = `文件名（${fileWhere()}）· ${H.home.kind === "file" ? "本机文件的名字在文件管理器里改" : "点了改名"}`;
+  { const b = $("fileBtn"); b.classList.toggle("is-final", !!fin); b.querySelector(".final-badge")?.remove(); if (fin) { const t = document.createElement("span"); t.className = "final-badge"; t.textContent = _t("定稿 {rev}", { rev: fin.rev }); t.title = _t("定稿了（第 {rev} 版，{p}）：只能听，改不了；三条杠里「改稿」解锁", { rev: fin.rev, p: fin.at.slice(0, 10) }); b.append(t); } }
+  $("fileBtn").title = _t("文件名（{p}）· {p2}", { p: fileWhere(), p2: H.home.kind === "file" ? _t("本机文件的名字在文件管理器里改") : _t("点了改名") });
   // 网页标题不跟歌名（W-22，user 2026-10-11「标题不要显示歌名，不然这样浏览器老是会记错」）：永远是 index.html 那一句（也是 SEO 的门面）；「•」只在顶栏
   renderSaveButton();
   renderUndo();
@@ -1121,22 +1119,22 @@ function syncKind(): SyncKind {
   }
 }
 const SAVE_SPEC: Record<SyncKind, { icon: string; cls: string; title: string }> = {
-  saving: { icon: "database", cls: "s-saving", title: "改了，马上自动存到这台设备（点 = 现在存 + 推）" },
-  local: { icon: "database", cls: "s-local", title: cloudAvailable() ? "存在这台设备上（没登录 OneDrive，不上云；点 = 存 + 去登录）" : `存在这个浏览器里（${SITE_TEXT.cloudOffTitle}）` },
-  offline: { icon: "cloud-unavailable", cls: "s-offline", title: "离线：存在这台设备上，回线再推上云" },
-  unsynced: { icon: "cloud-upload", cls: "s-unsynced", title: "存在这台设备上了，还没推上云（点 = 现在推）" },
-  clean: { icon: "cloud-synced", cls: "s-clean", title: "云端也是最新的（点 = 复查云端）" },
-  fileDirty: { icon: "floppy-disk", cls: "s-unsynced", title: "改过还没存回文件（点 = 存）" },
-  fileClean: { icon: "floppy-disk", cls: "s-fileClean", title: "存在本地文件里了" },
-  unsaved: { icon: "floppy-disk", cls: "s-unsynced", title: "还没存（点 = 存）" },
-  fresh: { icon: "floppy-disk", cls: "s-fresh", title: "新的一首，还没存" },
+  saving: { icon: "database", cls: "s-saving", title: _t("改了，马上自动存到这台设备（点 = 现在存 + 推）") },
+  local: { icon: "database", cls: "s-local", title: cloudAvailable() ? _t("存在这台设备上（没登录 OneDrive，不上云；点 = 存 + 去登录）") : _t("存在这个浏览器里（{cloudOffTitle}）", { cloudOffTitle: SITE_TEXT.cloudOffTitle }) },
+  offline: { icon: "cloud-unavailable", cls: "s-offline", title: _t("离线：存在这台设备上，回线再推上云") },
+  unsynced: { icon: "cloud-upload", cls: "s-unsynced", title: _t("存在这台设备上了，还没推上云（点 = 现在推）") },
+  clean: { icon: "cloud-synced", cls: "s-clean", title: _t("云端也是最新的（点 = 复查云端）") },
+  fileDirty: { icon: "floppy-disk", cls: "s-unsynced", title: _t("改过还没存回文件（点 = 存）") },
+  fileClean: { icon: "floppy-disk", cls: "s-fileClean", title: _t("存在本地文件里了") },
+  unsaved: { icon: "floppy-disk", cls: "s-unsynced", title: _t("还没存（点 = 存）") },
+  fresh: { icon: "floppy-disk", cls: "s-fresh", title: _t("新的一首，还没存") },
 };
 /** 歌库在文件夹时这几个状态的说法（图标照旧）。 */
 const FOLDER_SAVE_TITLE: Partial<Record<SyncKind, string>> = {
-  saving: "改了，马上自动存到这台设备（点 = 现在存 + 写进文件夹）",
-  offline: "文件夹的权限掉了：改动存在这台设备上（点 = 重新授权）",
-  unsynced: "存在这台设备上了，还没写进文件夹（点 = 现在写）",
-  clean: "文件夹里也是最新的（点 = 复查）",
+  saving: _t("改了，马上自动存到这台设备（点 = 现在存 + 写进文件夹）"),
+  offline: _t("文件夹的权限掉了：改动存在这台设备上（点 = 重新授权）"),
+  unsynced: _t("存在这台设备上了，还没写进文件夹（点 = 现在写）"),
+  clean: _t("文件夹里也是最新的（点 = 复查）"),
 };
 function renderSaveButton(): void {
   const k = syncKind(), spec = SAVE_SPEC[k], b = $("saveBtn");
@@ -1146,7 +1144,7 @@ function renderSaveButton(): void {
 const fmtDb = (dB: number) => `${dB > 0 ? "+" : dB < 0 ? "−" : ""}${Math.abs(dB)} dB`;
 /** 主唱没人上场（别的软件存的谱，原来的乐器这一版没有）：不出声、报错，人来选（user「不出声，报错，人类手动换」）。 */
 function noCast(what: string): void {
-  showError(`「${roleName(D.extras, curRole())}」这个角色还没有人上场（原来的乐器这一版没有），所以没有${what}。要小月相来唱，点谱前面的「${roleName(D.extras, curRole())}」，在「谁来演」选小月相。`);
+  showError(_t("「{extras}」这个角色还没有人上场（原来的乐器这一版没有），所以没有{what}。要小月相来唱，点谱前面的「{extras2}」，在「谁来演」选小月相。", { extras: roleName(D.extras, curRole()), what, extras2: roleName(D.extras, curRole()) }));
 }
 // ── 找人视图（src/ui/finder.ts）：全屏替掉谱区，pad 当试听键盘；试听台 = 临时的一个槽（不进休息室），「上场」才造演奏者 ──────────
 let audition: { bank: number; program: number; note?: number; sfx?: SfxInfo; sha256: string; subset: Uint8Array; label: string } | null = null;
@@ -1163,7 +1161,7 @@ function padHint(): HintRange {
   if (g?.sfx) {
     if (g.note !== undefined) return null;
     const s = g.sfx, al = s.align && canAlign(s), k = al ? Math.round(s.midi!) : s.key;
-    return { lo: k, hi: k, who: g.name, title: al ? "写这个音 = 原速（音高对齐：写的音 ≈ 听到的音）" : "原速键：按这个键，采样不拉伸不压缩" };
+    return { lo: k, hi: k, who: g.name, title: al ? _t("写这个音 = 原速（音高对齐：写的音 ≈ 听到的音）") : _t("原速键：按这个键，采样不拉伸不压缩") };
   }
   if (g && g.note === undefined && g.origin.library === GS_LIBRARY_ID) { const sk = sampleKeyOf(catalogNow, g.bank, g.program); if (sk) return { lo: sk.key, hi: sk.key, who: g.name, title: sk.title }; }   // 旧歌（上场时还没抄 sfx）
   const concept = D.extras.lounge[curRole()]?.concept as { ids?: { wikidata?: string | null; local?: string | null }; name?: { zh?: string } } | undefined;
@@ -1182,11 +1180,11 @@ async function setAudition(p: FinderPick | null): Promise<void> {
   if (auditionHint) pad.follow(auditionHint.lo, auditionHint.hi); else pad.render();
   if (!p || p.kind === "voice") { audition = null; sound.allOff(); return; }
   try {
-    const bank = await sources.fetchSound(GS, (done) => progress(`下载 ${GS.name} ${Math.round((done / GS.bytes) * 100)}%`)); progress("");
+    const bank = await sources.fetchSound(GS, (done) => progress(_t("下载 {name} {bytes}%", { name: GS.name, bytes: Math.round((done / GS.bytes) * 100) }))); progress("");
     const subset = subsetSf2(bank, [{ bank: p.provider.bank, program: p.provider.program }]), sha256 = await sha256Hex(subset);
     audition = { bank: p.provider.bank, program: p.provider.program, ...(cat ? gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note) : {}), sha256, subset, label: p.provider.gmName };   // 音效默认固定原速（上场后也是）
     sound.allOff(); await engine.bank(sha256, subset);
-  } catch (e) { progress(""); audition = null; showError(`试听不了：${(e as Error).message}`); }
+  } catch (e) { progress(""); audition = null; showError(_t("试听不了：{Error}", { Error: (e as Error).message })); }
 }
 /** GS 预设上场 / 试听时带的键设置：鼓件 = 固定那个键；音效（GM 116–128，仓鼠 v8 的 sampleKey）= **默认固定原速**（note = 原速键）+ 按值抄原速键和音高锚点（sfx）；
  *  其余不带（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）。 */
@@ -1202,53 +1200,53 @@ function gsKeyArgs(cat: Catalog, bank: number, program: number, drumNote?: numbe
 function marksTableHtml(role: string, eng: string): string {
   const sp = activePerfSpec(D.extras, role), ms = (x: number) => `${Math.round(x * 1000)} ms`, pct = (x: number) => `${Math.round(x * 100)}%`, db = (x: number) => `${x > 0 ? "+" : ""}${x} dB`;
   const ign = ignoredArts(performerOf(eng), sp.gapSec), sung = performerOf(eng)?.sound === "chunks", gray = (m: string) => (ign.includes(m as Mark) ? ` class="ign"` : "");
-  const singTxt = (k: string) => { const m = sp.sing[k]; return m ? `${m.at === "next" ? "下一个字" : "这个字"}前「${m.mark}」${m.mark === "^" ? "（顿一下，不换气）" : m.mark === "v" ? "（换气）" : "（大口换气）"}` : "不变成唱法记号"; };
+  const singTxt = (k: string) => { const m = sp.sing[k]; return m ? _t("{p}前「{mark}」{p2}", { p: m.at === "next" ? _t("下一个字") : _t("这个字"), mark: m.mark, p2: m.mark === "^" ? _t("（顿一下，不换气）") : m.mark === "v" ? _t("（换气）") : _t("（大口换气）") }) : _t("不变成唱法记号"); };
   const vel = !!sp.dynamicsVel;
   // 这一类怎么变响 / 变轻（2026-10-08 深夜 Opus 5.5；user「月读吃音内减弱吗，普通减弱可以有一样的效果吗还是只影响输入的…月读又是弦又是管所以应该是实时调制的」
   //   「我觉得其实可以不同的类别乐器卡可以说一下」）：按这位实际走的那条路说（perform.ts：有力度表 = MIDI 力度，否则 = 音量曲线乘在出来的声音上）
   const how = vel
-    ? `按下那一下的轻重（MIDI 力度）：渐强渐弱 = 每个新音一个台阶，按住的音中间不变；一个音里面要变，用音内起伏${sp.canSwell ? "" : "（这件乐器按下去就自然衰减：音内只能变弱）"}`
-    : `一条连续的音量曲线（乘在${sung ? "唱" : "弹"}出来的声音上）：渐强渐弱在一个长音中间也一直在变，和音内起伏是同一种变法；只变响度、不变音色${sung ? "（真人渐弱会变虚、变暗，这个还没有）" : ""}`;
+    ? _t("按下那一下的轻重（MIDI 力度）：渐强渐弱 = 每个新音一个台阶，按住的音中间不变；一个音里面要变，用音内起伏{canSwell}", { canSwell: sp.canSwell ? "" : _t("（这件乐器按下去就自然衰减：音内只能变弱）") })
+    : _t("一条连续的音量曲线（乘在{sung}出来的声音上）：渐强渐弱在一个长音中间也一直在变，和音内起伏是同一种变法；只变响度、不变音色{sung2}", { sung: sung ? _t("唱") : _t("弹"), sung2: sung ? _t("（真人渐弱会变虚、变暗，这个还没有）") : "" });
   const rows: [string, string, string][] = [
-    ["力度怎么变", "", how],
-    ["力度记号", "", vel ? `力度表：${(Object.entries(sp.dynamicsVel!) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ")}` : `音量：${(Object.entries(sp.dynamicsDb) as [string, number][]).map(([d, x]) => `${d} ${db(x)}`).join(" · ")}`],
-    ["渐强渐弱没写终点", "", vel ? `走一档 = 力度 ${sp.wedgeStepVel}` : `走一档 = ${db(sp.wedgeStepDb)}`],
-    ["幽灵音", "ghost", vel ? `力度 ${sp.ghostVel}` : `整个音 ${db(sp.ghostDb)}`],
-    ["弱化", "unstress", vel ? `力度 ${sp.unstressVel}` : `整个音 ${db(sp.unstressDb)}`],
-    ["次重音", "stress", vel ? `力度 +${sp.stressVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.stressDb)}`],
-    ["重音", "accent", vel ? `力度 +${sp.accentVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.accentDb)}${sung ? `；${singTxt("accent")}` : ""}`],
-    ["强音", "marcato", vel ? `力度 +${sp.marcatoVel}` : `音头 ${ms(sp.accentSec)} ${db(sp.marcatoDb)}${sung ? `；${singTxt("marcato")}` : ""}`],
-    ["突强 sfz", "sfz", vel ? `力度 +${sp.sfzVel}` : `音头 ${db(sp.sfzDb)}，${ms(sp.sfzSec)} 里落回来${sung ? `；${singTxt("sfz")}` : ""}`],
-    ["强后即弱 fp", "fp", `音头按 f，${ms(sp.fpSec)} 里落到 p，之后都是 p${sung ? `；${singTxt("fp")}` : ""}`],
-    ["音内渐强 / 鼓起", "swellGrow", sp.canSwell ? `写的力度是最高点：< 从 −${sp.swellDb} dB 长到写的力度；<> 两头 −${sp.swellDb} dB、中间回到写的力度（强后即弱之后的 < 长回音头的 f）` : "做不到：这件乐器按下去就自然衰减"],
-    ["音内渐弱", "swellFade", `一路往下到 −${sp.swellDb} dB`],
-    ["跳音", "staccato", sung ? singTxt("staccato") : `唱 / 弹 ${pct(sp.staccatoGate)} 的长度`],
-    ["保持", "tenuto", "这个音不留缝"],
-    ["连线", "slur", "连到下一个音、不留缝"],
-    ["呼吸", "breath", sung ? singTxt("breath") : `前一个音收短 ${ms(sp.breathSec)}（最多 ${pct(sp.breathShare)}）`],
-    ["出声的换气（轻吸 / 深吸）", "inhale", sung ? "换气的空当里一声吸气（按下一个字的元音塑形，比它轻约 28 dB；深吸 = 空当长一点、响 4 dB）" : "做不到：这位只断开，不出吸气声"],
-    ["气声（× 符头）", "whisper", sung ? "这个字不唱音高：用念的时候的气声（谱包络照旧、声带不振），再轻 6 dB" : "做不到：这位只按音高出声"],
-    ["音和音之间", "", sung ? "连着唱" : `${ms(sp.gapSec)}（最多 ${pct(sp.gapShare)}）`],
+    [_t("力度怎么变"), "", how],
+    [_t("力度记号"), "", vel ? _t("力度表：{string}", { string: (Object.entries(sp.dynamicsVel!) as [string, number][]).map(([d, x]) => `${d} ${x}`).join(" · ") }) : _t("音量：{dynamicsDb}", { dynamicsDb: (Object.entries(sp.dynamicsDb) as [string, number][]).map(([d, x]) => `${d} ${db(x)}`).join(" · ") })],
+    [_t("渐强渐弱没写终点"), "", vel ? _t("走一档 = 力度 {wedgeStepVel}", { wedgeStepVel: sp.wedgeStepVel }) : _t("走一档 = {wedgeStepDb}", { wedgeStepDb: db(sp.wedgeStepDb) })],
+    [_t("幽灵音"), "ghost", vel ? _t("力度 {ghostVel}", { ghostVel: sp.ghostVel }) : _t("整个音 {ghostDb}", { ghostDb: db(sp.ghostDb) })],
+    [_t("弱化"), "unstress", vel ? _t("力度 {unstressVel}", { unstressVel: sp.unstressVel }) : _t("整个音 {unstressDb}", { unstressDb: db(sp.unstressDb) })],
+    [_t("次重音"), "stress", vel ? _t("力度 +{stressVel}", { stressVel: sp.stressVel }) : _t("音头 {accentSec} {stressDb}", { accentSec: ms(sp.accentSec), stressDb: db(sp.stressDb) })],
+    [_t("重音"), "accent", vel ? _t("力度 +{accentVel}", { accentVel: sp.accentVel }) : _t("音头 {accentSec} {accentDb}{sung}", { accentSec: ms(sp.accentSec), accentDb: db(sp.accentDb), sung: sung ? `；${singTxt("accent")}` : "" })],
+    [_t("强音"), "marcato", vel ? _t("力度 +{marcatoVel}", { marcatoVel: sp.marcatoVel }) : _t("音头 {accentSec} {marcatoDb}{sung}", { accentSec: ms(sp.accentSec), marcatoDb: db(sp.marcatoDb), sung: sung ? `；${singTxt("marcato")}` : "" })],
+    [_t("突强 sfz"), "sfz", vel ? _t("力度 +{sfzVel}", { sfzVel: sp.sfzVel }) : _t("音头 {sfzDb}，{sfzSec} 里落回来{sung}", { sfzDb: db(sp.sfzDb), sfzSec: ms(sp.sfzSec), sung: sung ? `；${singTxt("sfz")}` : "" })],
+    [_t("强后即弱 fp"), "fp", _t("音头按 f，{fpSec} 里落到 p，之后都是 p{sung}", { fpSec: ms(sp.fpSec), sung: sung ? `；${singTxt("fp")}` : "" })],
+    [_t("音内渐强 / 鼓起"), "swellGrow", sp.canSwell ? _t("写的力度是最高点：< 从 −{swellDb} dB 长到写的力度；<> 两头 −{swellDb2} dB、中间回到写的力度（强后即弱之后的 < 长回音头的 f）", { swellDb: sp.swellDb, swellDb2: sp.swellDb }) : _t("做不到：这件乐器按下去就自然衰减")],
+    [_t("音内渐弱"), "swellFade", _t("一路往下到 −{swellDb} dB", { swellDb: sp.swellDb })],
+    [_t("跳音"), "staccato", sung ? singTxt("staccato") : _t("唱 / 弹 {staccatoGate} 的长度", { staccatoGate: pct(sp.staccatoGate) })],
+    [_t("保持"), "tenuto", _t("这个音不留缝")],
+    [_t("连线"), "slur", _t("连到下一个音、不留缝")],
+    [_t("呼吸"), "breath", sung ? singTxt("breath") : _t("前一个音收短 {breathSec}（最多 {breathShare}）", { breathSec: ms(sp.breathSec), breathShare: pct(sp.breathShare) })],
+    [_t("出声的换气（轻吸 / 深吸）"), "inhale", sung ? _t("换气的空当里一声吸气（按下一个字的元音塑形，比它轻约 28 dB；深吸 = 空当长一点、响 4 dB）") : _t("做不到：这位只断开，不出吸气声")],
+    [_t("气声（× 符头）"), "whisper", sung ? _t("这个字不唱音高：用念的时候的气声（谱包络照旧、声带不振），再轻 6 dB") : _t("做不到：这位只按音高出声")],
+    [_t("音和音之间"), "", sung ? _t("连着唱") : _t("{gapSec}（最多 {gapShare}）", { gapSec: ms(sp.gapSec), gapShare: pct(sp.gapShare) })],
   ];
-  return `<details class="ip-marks"><summary>记号怎么演（这位自己的配置，跟着演奏者存进歌）</summary><table>${rows.map(([k, m, v]) => `<tr${gray(m)}><th>${k}</th><td>${esc(v)}${m && ign.includes(m as Mark) ? `<span class="ign-tag">不认</span>` : ""}</td></tr>`).join("")}</table></details>`;
+  return `<details class="ip-marks"><summary>${_t("记号怎么演（这位自己的配置，跟着演奏者存进歌）")}</summary><table>${rows.map(([k, m, v]) => `<tr${gray(m)}><th>${k}</th><td>${esc(v)}${m && ign.includes(m as Mark) ? `<span class="ign-tag">${_t("不认")}</span>` : ""}</td></tr>`).join("")}</table></details>`;
 }
 /** 乐器页「音和音之间」的默认 + 说明：GS 货架上的 = 目录的 joint；自己的 .sf2 = 0（目录不认识）；元音版 = 0（人声连着唱）。目录还没载 = null（先载，载好重画）。 */
 function gapDefaultOf(role: string): { gapSec: number; label: string } | null {
   const g = activeGm(D.extras, role);
-  if (!g) return { gapSec: 0, label: "人声（连着唱）" };
-  if (g.origin.library !== GS_LIBRARY_ID) return { gapSec: 0, label: "自己的 .sf2（目录里没有这个音色的连断数据）" };
+  if (!g) return { gapSec: 0, label: _t("人声（连着唱）") };
+  if (g.origin.library !== GS_LIBRARY_ID) return { gapSec: 0, label: _t("自己的 .sf2（目录里没有这个音色的连断数据）") };
   if (!catalogNow) { void loadCatalog().then((c) => { catalogNow = c; if (instShown()) drawInst(); }).catch(() => undefined); return null; }
   const j = jointOf(catalogNow, g.bank, g.program, g.note);
-  return j ? { gapSec: j.gapSec, label: j.zh } : { gapSec: 0, label: "一下就完 / 音效（不留缝）" };
+  return j ? { gapSec: j.gapSec, label: j.zh } : { gapSec: 0, label: _t("一下就完 / 音效（不留缝）") };
 }
 /** 用试听台上那位放本声部的开头（前 8 秒；走录音房，不写谱）。 */
 async function playHeadWith(p: FinderPick): Promise<void> {
   if (engine.playing) stopPlay();
   const { tokens, map } = curFlat(), notes = lightNotes(tokens, map).filter((n) => n.t0 < 8);
-  if (!notes.length) { info("谱上还没有音"); return; }
+  if (!notes.length) { info(_t("谱上还没有音")); return; }
   singer.unlock();
   let track: TrackSpec, label: string;
-  if (p.kind === "voice") { await ensureVowels(); track = { id: "audition", kind: "vowel", kana: HUM_KANA[D.st.song.hum ?? "n"], notes: notes.map((n) => ({ t0: n.t0, t1: Math.min(n.t1, 8), key: n.midi, vel: 1, preset: 0 })), gain: null }; label = "小月相（哼）"; }
+  if (p.kind === "voice") { await ensureVowels(); track = { id: "audition", kind: "vowel", kana: HUM_KANA[D.st.song.hum ?? "n"], notes: notes.map((n) => ({ t0: n.t0, t1: Math.min(n.t1, 8), key: n.midi, vel: 1, preset: 0 })), gain: null }; label = _t("小月相（哼）"); }
   else {
     if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
     if (!audition) return;
@@ -1265,32 +1263,32 @@ async function castPick(p: FinderPick): Promise<void> {
   if (finderPlayOnly()) return;   // 只弹着玩：没有要写进去的歌
   const cat = await loadCatalog(), c = p.concept;
   const sound = p.kind === "gs" ? (p.provider.sound ?? roleSoundOf(cat, c)) : roleSoundOf(cat, c);
-  updateExtras(withRoleConcept(D.extras, curRole(), { name: roleNameOf(c), sound, concept: { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) } } }, D.st.song.hum), { kind: "lounge", label: `「${roleNameOf(c)}」改成这个乐器` }, "cast");
+  updateExtras(withRoleConcept(D.extras, curRole(), { name: roleNameOf(c), sound, concept: { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) } } }, D.st.song.hum), { kind: "lounge", label: _t("「{c}」改成这个乐器", { c: roleNameOf(c) }) }, "cast");
   if (p.kind === "voice") { setActive(CANDIDATE_ID.full); closeFinder(); return; }
   if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
   if (!audition) { view.render(); renderTitle(); return; }
   const { subset, sha256 } = audition, inf = sf2Info(subset);
   const fileSha256 = GS.sha256;   // 试听台的整包 = 货架上的那份（哈希就是目录钉的）
   updateExtras(withSf2Candidate(D.extras, curRole(), { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false,
-    origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, D.st.song.hum), { kind: "lounge", label: `「${roleNameOf(c)}」上场：${p.provider.gmName}` }, "cast");
+    origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, D.st.song.hum), { kind: "lounge", label: _t("「{c}」上场：{gmName}", { c: roleNameOf(c), gmName: p.provider.gmName }) }, "cast");
   sources.session.keep(sha256, subset);
-  closeFinder(); setActive(activeId(D.extras, curRole())); info(`「${roleNameOf(c)}」换成：${p.provider.gmName}`);
+  closeFinder(); setActive(activeId(D.extras, curRole())); info(_t("「{c}」换成：{gmName}", { c: roleNameOf(c), gmName: p.provider.gmName }));
 }
 const finder = new Finder($("stage"), { roleName: () => roleName(D.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
 // ── 录音室（src/ui/studio.ts）：全屏替掉谱区，一个声部一条推子条；增益 / 声像进录音房（studio.json），静音 / 独奏 = partView ──
 const partLabel = (id: string): string => { const k = D.st.song.parts.findIndex((p) => p.id === id); return k < 0 ? id : partLabels(D.st.song, D.extras)[k]; };
 const studio = new Studio($("stage"), {
-  strips: () => { const labels = partLabels(D.st.song, D.extras), cols = partColorIndices(D.st.song.parts.map((p) => roleSound(D.extras, p.role))); return D.st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], color: TAB20[cols[k]], refs: D.st.song.papers.filter((pp) => pp.tracks[p.id]).length, performer: activeCandidateName(D.extras, p.role) ?? "（没人上场）", ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
-  setGain: (id, dB) => { const p = D.st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(D.extras, p.mic, { gainDb: dB }), { kind: "studio", label: `${partLabel(id)} 增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id}`); },
-  setPan: (id, pan) => { const p = D.st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(D.extras, p.mic, { pan }), { kind: "studio", label: `${partLabel(id)} 声像 ${Math.abs(pan) < 0.025 ? "中" : pan < 0 ? `左 ${Math.round(-pan * 100)}` : `右 ${Math.round(pan * 100)}`}` }, `mix:pan:${id}`); },
+  strips: () => { const labels = partLabels(D.st.song, D.extras), cols = partColorIndices(D.st.song.parts.map((p) => roleSound(D.extras, p.role))); return D.st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], color: TAB20[cols[k]], refs: D.st.song.papers.filter((pp) => pp.tracks[p.id]).length, performer: activeCandidateName(D.extras, p.role) ?? _t("（没人上场）"), ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
+  setGain: (id, dB) => { const p = D.st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(D.extras, p.mic, { gainDb: dB }), { kind: "studio", label: _t("{id} 增益 {p}{p2} dB", { id: partLabel(id), p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, `mix:gain:${id}`); },
+  setPan: (id, pan) => { const p = D.st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(D.extras, p.mic, { pan }), { kind: "studio", label: _t("{id} 声像 {pan}", { id: partLabel(id), pan: Math.abs(pan) < 0.025 ? _t("中") : pan < 0 ? _t("左 {p}", { p: Math.round(-pan * 100) }) : _t("右 {p}", { p: Math.round(pan * 100) }) }) }, `mix:pan:${id}`); },
   toggleMute: (id) => { setPv(id, { muted: !pv(id).muted }); afterViewChange(); },   // 放着的时候马上静（录音房推子到底、发送一起停）+ 时间线重算（v0.10.38；user「我mute了之后它的reverb为什么还是进了reverb轨？」）
   toggleSolo: (id) => { setPv(id, { solo: !pv(id).solo }); afterViewChange(); },
   play: () => playPause(),
   close: () => closeStudio(),
   master: () => activeMaster(D.extras),
-  setMasterGain: (dB) => updateExtras(withMaster(D.extras, { gainDb: dB }), { kind: "studio", label: `总轨增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, "mix:master"),
+  setMasterGain: (dB) => updateExtras(withMaster(D.extras, { gainDb: dB }), { kind: "studio", label: _t("总轨增益 {p}{p2} dB", { p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, "mix:master"),
   bypass: () => perfApi.mixBypass, setBypass: (on) => { perfApi.mixBypass = on; pushChannels(); diagNote("studio", `bypass ${on ? "on" : "off"}`); },
-  toggleLimiter: () => { const on = !activeMaster(D.extras).limiter; updateExtras(withMaster(D.extras, { limiter: on }), { kind: "studio", label: `母线限幅${on ? "开" : "关"}` }); },
+  toggleLimiter: () => { const on = !activeMaster(D.extras).limiter; updateExtras(withMaster(D.extras, { limiter: on }), { kind: "studio", label: _t("母线限幅{on}", { on: on ? _t("开") : _t("关") }) }); },
   // 插件格（v0.10.8）：总轨 = studio.json master.chain；歌手 = 它那条麦克风轨的 chain
   chain: (track) => (track === STUDIO_MASTER ? activeMaster(D.extras).chain : studioTrack(D.extras, trackKey(track))?.chain ?? []),
   resolve: (track, fx) => resolveChain([fx], { lowestMidi: D.st.song.parts.some((x) => x.id === track) ? lowestMidiOf(track) : null, bpm: songBpm() })[0],   // 和 pushChannels 同一份换算
@@ -1304,16 +1302,16 @@ const studio = new Studio($("stage"), {
   // 路由轨（v0.10.9；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨。比如我可以放两个路由轨然后放混响」「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
   buses: () => studioTracks(D.extras).filter((t) => t.kind === "bus").map((b) => ({ id: b.id, name: b.name, gainDb: b.gainDb, pan: b.pan, bypass: b.bypass, muted: busMuted.has(b.id) })),
   toggleBusMute: (id) => { if (!busMuted.delete(id)) busMuted.add(id); pushChannels(); },   // 混音轨静音：视图态（不进文件、不进 undo），同歌手的静音
-  setBusBypass: (id, on) => updateExtras(withTrack(D.extras, id, { bypass: on }), { kind: "studio", label: `${studioTrack(D.extras, id)?.name ?? id} ${on ? "旁通" : "取消旁通"}` }),
-  addBus: () => { const id = newBusId(D.extras), n = studioTracks(D.extras).filter((t) => t.kind === "bus").length + 1, name = `混音轨 ${n}`; updateExtras(withTrack(D.extras, id, { kind: "bus", name }), { kind: "studio", label: `加${name}` }); return id; },
-  removeBus: (id) => { const name = studioTrack(D.extras, id)?.name ?? id; updateExtras(withoutBus(D.extras, id), { kind: "studio", label: `删${name}` }); },
-  renameBus: (id, name) => updateExtras(withTrack(D.extras, id, { name }), { kind: "studio", label: `改名「${name}」` }),
+  setBusBypass: (id, on) => updateExtras(withTrack(D.extras, id, { bypass: on }), { kind: "studio", label: `${studioTrack(D.extras, id)?.name ?? id} ${on ? _t("旁通") : _t("取消旁通")}` }),
+  addBus: () => { const id = newBusId(D.extras), n = studioTracks(D.extras).filter((t) => t.kind === "bus").length + 1, name = _t("混音轨 {n}", { n }); updateExtras(withTrack(D.extras, id, { kind: "bus", name }), { kind: "studio", label: _t("加{name}", { name }) }); return id; },
+  removeBus: (id) => { const name = studioTrack(D.extras, id)?.name ?? id; updateExtras(withoutBus(D.extras, id), { kind: "studio", label: _t("删{name}", { name }) }); },
+  renameBus: (id, name) => updateExtras(withTrack(D.extras, id, { name }), { kind: "studio", label: _t("改名「{name}」", { name }) }),
   movePart: (id, dir) => { update(movePart(D.st, id, dir)); renderTitle(); },   // 和谱上声部菜单的「上移 / 下移」同一个
-  moveBus: (id, dir) => updateExtras(moveBus(D.extras, id, dir), { kind: "studio", label: `${studioTrack(D.extras, id)?.name ?? id} 往${dir < 0 ? "前" : "后"}挪` }),
-  setBusGain: (id, dB) => updateExtras(withTrack(D.extras, id, { gainDb: dB }), { kind: "studio", label: `${studioTrack(D.extras, id)?.name ?? id} 增益 ${dB > 0 ? "+" : ""}${dB.toFixed(1)} dB` }, `mix:gain:${id}`),
-  setBusPan: (id, pan) => updateExtras(withTrack(D.extras, id, { pan }), { kind: "studio", label: `${studioTrack(D.extras, id)?.name ?? id} 声像` }, `mix:pan:${id}`),
+  moveBus: (id, dir) => updateExtras(moveBus(D.extras, id, dir), { kind: "studio", label: _t("{extras} 往{p}挪", { extras: studioTrack(D.extras, id)?.name ?? id, p: dir < 0 ? _t("前") : _t("后") }) }),
+  setBusGain: (id, dB) => updateExtras(withTrack(D.extras, id, { gainDb: dB }), { kind: "studio", label: _t("{extras} 增益 {p}{p2} dB", { extras: studioTrack(D.extras, id)?.name ?? id, p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, `mix:gain:${id}`),
+  setBusPan: (id, pan) => updateExtras(withTrack(D.extras, id, { pan }), { kind: "studio", label: _t("{extras} 声像", { extras: studioTrack(D.extras, id)?.name ?? id }) }, `mix:pan:${id}`),
   outTo: (track) => studioTrack(D.extras, trackKey(track))?.to ?? "master",
-  setOutTo: (track, to) => updateExtras(withTrack(D.extras, trackKey(track), { to }), { kind: "studio", label: `${routeName(track)} 出到 ${routeName(to)}` }),
+  setOutTo: (track, to) => updateExtras(withTrack(D.extras, trackKey(track), { to }), { kind: "studio", label: _t("{track} 出到 {to}", { track: routeName(track), to: routeName(to) }) }),
   sends: (track) => studioTrack(D.extras, trackKey(track))?.sends ?? [],
   setSends: (track, sends, label, merge) => updateExtras(withTrack(D.extras, trackKey(track), { sends }), { kind: "studio", label: `${routeName(track)} ${label}` }, merge),
   /** 这条轨能出到 / 发给的路由轨：除了自己，以及会接成环的（从那条走得回这条的）。 */
@@ -1324,8 +1322,8 @@ const studio = new Studio($("stage"), {
   deletePart: (id) => {
     const p = D.st.song.parts.find((x) => x.id === id); if (!p || D.st.song.papers.some((pp) => pp.tracks[id])) return;
     const name = partLabel(id);
-    updateBoth(removePart(D.st, id), withoutRole(D.extras, p.role), { kind: "studio", label: `删掉歌手「${name}」` });
-    studio.render(); renderTitle(); info(`删掉了「${name}」（撤销能找回来）`);
+    updateBoth(removePart(D.st, id), withoutRole(D.extras, p.role), { kind: "studio", label: _t("删掉歌手「{name}」", { name }) });
+    studio.render(); renderTitle(); info(_t("删掉了「{name}」（撤销能找回来）", { name }));
   },
 });
 /** 录音室 = 底座里（键盘那个位子；和键盘互斥），谱留着能看（2026-10-10 user「录音室的键盘位化，和键盘互相排斥」；之前是全屏页）。 */
@@ -1346,23 +1344,23 @@ function openFinder(): void {
 /** back = 关了回乐器页（默认 = 它是从乐器页开的）；开混音台 / 开乐器页 / 进歌库时传 false = 不回。 */
 function closeFinder(back: boolean = ui.page.k === "finder" && ui.page.backToInst): void { if (!finder.isOpen) return; const wasPlayOnly = finderPlayOnly(); ui.setPage({ k: "score" }); if (wasPlayOnly) document.body.classList.remove("finder-over-gallery"); finder.hide(); audition = null; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = back; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (back) openInstPage(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
-function setActive(id: string): void { const next = withActive(D.extras, curRole(), id, D.st.song.hum); updateExtras(next, { kind: "lounge", label: `「${roleName(next, curRole())}」换人：${activeCandidateName(next, curRole()) ?? id}` }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
+function setActive(id: string): void { const next = withActive(D.extras, curRole(), id, D.st.song.hum); updateExtras(next, { kind: "lounge", label: _t("「{next}」换人：{next2}", { next: roleName(next, curRole()), next2: activeCandidateName(next, curRole()) ?? id }) }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
 /** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。
  *  不提醒、不帮用户写任何东西（user「只是举例子，然后这个你也不应该强迫或者提醒用户写这个，因为谱子也不绑定乐器的」「…一键插入按钮 不要」）。 */
 function openCreditsSheet(): void {
   ui.close();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">作者栏</div>` +
-    `<textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="几行都行，照写的显示在纸上（标题下面靠右）">${esc(D.st.song.credits ?? "")}</textarea>` +
-    `<div class="offer-msg">可不填。存进 MusicXML「印在页面上的字」，别的乐谱软件打开也在纸上。</div>` +
+  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">${_t("作者栏")}</div>` +
+    `<textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="${_t("几行都行，照写的显示在纸上（标题下面靠右）")}">${esc(D.st.song.credits ?? "")}</textarea>` +
+    `<div class="offer-msg">${_t("可不填。存进 MusicXML「印在页面上的字」，别的乐谱软件打开也在纸上。")}</div>` +
     // 这首歌自己的许可（user 2026-10-08「你计算的时候别忘了用户自己写的那一部分，用户可以选」）：默认不写、不替用户选；选了照抄进 <rights>，还能改
     // 折叠着（user「只有用户自己关心协议的时候才提出这些」）：选过许可才默认展开
-    `<details class="rights-sec"${D.st.song.rights ? " open" : ""}><summary class="part-sec">许可（可选；你写的这部分：词 / 曲 / 编）</summary><div class="set-row">` +
-    `<button class="btn cand" data-r="-1" title="不写：法律默认 = 保留所有权利（别人用要先问你）">未声明（默认）</button>` + RIGHTS_PRESETS.map((p, k) => `<button class="btn cand" data-r="${k}" title="${esc(p.note)}">${esc(p.label)}</button>`).join("") + `</div>` +
-    `<input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="空着 = 未声明（法律默认就是保留所有权利）；也可以自己写" value="${esc(D.st.song.rights ?? "")}" />` +
-    `<div class="offer-msg">从紧到松排；CC 那几个发出去以后对已经发出去的收不回。存进 MusicXML 的 &lt;rights&gt;；导出 mp3 时连同署名写进文件的标签里。</div></details>` +
-    `<div class="offer-btns"><button class="btn primary" data-v="ok">好</button></div></div>`;
+    `<details class="rights-sec"${D.st.song.rights ? " open" : ""}><summary class="part-sec">${_t("许可（可选；你写的这部分：词 / 曲 / 编）")}</summary><div class="set-row">` +
+    `<button class="btn cand" data-r="-1" title="${_t("不写：法律默认 = 保留所有权利（别人用要先问你）")}">${_t("未声明（默认）")}</button>` + RIGHTS_PRESETS.map((p, k) => `<button class="btn cand" data-r="${k}" title="${esc(p.note)}">${esc(p.label)}</button>`).join("") + `</div>` +
+    `<input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="${_t("空着 = 未声明（法律默认就是保留所有权利）；也可以自己写")}" value="${esc(D.st.song.rights ?? "")}" />` +
+    `<div class="offer-msg">${_t("从紧到松排；CC 那几个发出去以后对已经发出去的收不回。存进 MusicXML 的 &lt;rights&gt;；导出 mp3 时连同署名写进文件的标签里。")}</div></details>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="ok">${_t("好")}</button></div></div>`;
   document.body.append(box);
   const ta = box.querySelector<HTMLTextAreaElement>("#crIn")!, rt = box.querySelector<HTMLInputElement>("#rtIn")!;
   const close = () => { update(setRights(setCredits(D.st, ta.value), rt.value)); box.remove(); ui.closed(close); scoreEl.focus(); };
@@ -1382,33 +1380,33 @@ function openPaperSheet(): void {
   box.className = "offer";
   const draw = () => {
     const p = D.st.song.paper ?? paperOf(DEFAULT_PAPER);
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">纸</div><div class="set-row">` +
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("纸")}</div><div class="set-row">` +
       PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${PAPER_LABEL[k]}<small>${PAPER_NOTE[k]}</small></button>`).join("") +
-      (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">其他<small>${paperSizeText(p)}</small></button>` : "") + `</div>` +
-      `<div class="offer-msg">整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。</div>` +
-      `<div class="part-sec">版式</div><div class="set-row">` +
+      (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("其他")}<small>${paperSizeText(p)}</small></button>` : "") + `</div>` +
+      `<div class="offer-msg">${_t("整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。")}</div>` +
+      `<div class="part-sec">${_t("版式")}</div><div class="set-row">` +
       DENSITIES.map((z) => `<button class="btn cand${densityOf(p) === z.id ? " is-on" : ""}" data-v="density:${z.id}">${z.label}<small>${z.note}</small></button>`).join("") + `</div>` +
-      `<div class="offer-msg">紧凑 = 谱小一号、行距和谱距收紧、没写歌词的声部不留歌词位。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。</div>` +
-      `<div class="part-sec">纸（曲段）</div>` + D.st.song.papers.map((pp, k) => `<div class="set-row paper-row"><span class="paper-row-name">${k + 1}. ${esc(pp.name || "（没名字）")}${pp.hidden ? "（隐藏 · 不放）" : ""}${pp.id === D.st.at.paper ? " ←" : ""}</span>` +
-        `<button class="btn" data-v="pm:${esc(pp.id)}" title="这张纸的菜单：改名 / 挪 / 加声部 / 删">⋯</button></div>`).join("") +
-      `<div class="set-row"><button class="btn" data-v="addpaper">＋ 新的纸（接在最后）</button></div>` +
+      `<div class="offer-msg">${_t("紧凑 = 谱小一号、行距和谱距收紧、没写歌词的声部不留歌词位。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。")}</div>` +
+      `<div class="part-sec">${_t("纸（曲段）")}</div>` + D.st.song.papers.map((pp, k) => `<div class="set-row paper-row"><span class="paper-row-name">${k + 1}. ${esc(pp.name || _t("（没名字）"))}${pp.hidden ? _t("（隐藏 · 不放）") : ""}${pp.id === D.st.at.paper ? " ←" : ""}</span>` +
+        `<button class="btn" data-v="pm:${esc(pp.id)}" title="${_t("这张纸的菜单：改名 / 挪 / 加声部 / 删")}">⋯</button></div>`).join("") +
+      `<div class="set-row"><button class="btn" data-v="addpaper">${_t("＋ 新的纸（接在最后）")}</button></div>` +
       // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
-      ((one) => `<div class="part-sec">显示</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && D.st.song.parts.every((q) => q === one || !pv(q.id).only) ? " is-on" : ""}" data-v="only1">只看一号轨<small>只看「${esc(partLabels(D.st.song, D.extras)[0] ?? "")}」（速度、风格、反复写在最上面那位身上）；再点 = 都看</small></button></div>`)(D.st.song.parts[0]) +
-      `<div class="part-sec">排法</div><div class="set-row">` +
-      `<button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">连续<small>不断页，每一行和分页一样</small></button>` +
-      `<button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">分页<small>按纸（A4 / A5）的真实高度断页，预览打印</small></button>` +
-      `<button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">横卷<small>每张纸一行、一直往右，横着滚；歌手名钉在左边</small></button></div>` +
-      `<div class="part-sec">小节号</div><div class="set-row">` +
-      `<button class="btn cand${D.st.song.barNumbers === "off" ? "" : " is-on"}" data-v="bn:on">每行开头<small>每行最上面那条谱的左上角，小字；每张纸从 1 数，弱起算 0</small></button>` +
-      `<button class="btn cand${D.st.song.barNumbers === "off" ? " is-on" : ""}" data-v="bn:off">不印</button></div>` +
-      `<div class="part-sec">歌词</div><div class="set-row">` +
-      `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">按节奏<small>音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 小一号 → 上下错开 → 还放不下画灰</small></button>` +
-      `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">按歌词<small>长的字把音推开（出版谱的老规矩）</small></button></div>` +
-      `<div class="part-sec">屏幕放不下纸的时候</div><div class="set-row">` +
-      `<button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">不折行<small>整张纸缩小，行和纸上一样</small></button>` +
-      `<button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">折行<small>按屏幕宽排，谱大一点</small></button></div>` +
-      `<div class="offer-msg">以后插图片也在这里。</div>` +
-      `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+      ((one) => `<div class="part-sec">${_t("显示")}</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && D.st.song.parts.every((q) => q === one || !pv(q.id).only) ? " is-on" : ""}" data-v="only1">${_t("只看一号轨")}<small>${_t("只看「{song}」（速度、风格、反复写在最上面那位身上）；再点 = 都看", { song: esc(partLabels(D.st.song, D.extras)[0] ?? "") })}</small></button></div>`)(D.st.song.parts[0]) +
+      `<div class="part-sec">${_t("排法")}</div><div class="set-row">` +
+      `<button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">${_t("连续")}<small>${_t("不断页，每一行和分页一样")}</small></button>` +
+      `<button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">${_t("分页")}<small>${_t("按纸（A4 / A5）的真实高度断页，预览打印")}</small></button>` +
+      `<button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">${_t("横卷")}<small>${_t("每张纸一行、一直往右，横着滚；歌手名钉在左边")}</small></button></div>` +
+      `<div class="part-sec">${_t("小节号")}</div><div class="set-row">` +
+      `<button class="btn cand${D.st.song.barNumbers === "off" ? "" : " is-on"}" data-v="bn:on">${_t("每行开头")}<small>${_t("每行最上面那条谱的左上角，小字；每张纸从 1 数，弱起算 0")}</small></button>` +
+      `<button class="btn cand${D.st.song.barNumbers === "off" ? " is-on" : ""}" data-v="bn:off">${_t("不印")}</button></div>` +
+      `<div class="part-sec">${_t("歌词")}</div><div class="set-row">` +
+      `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">${_t("按节奏")}<small>${_t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 小一号 → 上下错开 → 还放不下画灰")}</small></button>` +
+      `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("按歌词")}<small>${_t("长的字把音推开（出版谱的老规矩）")}</small></button></div>` +
+      `<div class="part-sec">${_t("屏幕放不下纸的时候")}</div><div class="set-row">` +
+      `<button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("不折行")}<small>${_t("整张纸缩小，行和纸上一样")}</small></button>` +
+      `<button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">${_t("折行")}<small>${_t("按屏幕宽排，谱大一点")}</small></button></div>` +
+      `<div class="offer-msg">${_t("以后插图片也在这里。")}</div>` +
+      `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -1419,7 +1417,7 @@ function openPaperSheet(): void {
     if (e.target === box || v === "close") { close(); return; }
     if (v && (PAPER_KINDS as string[]).includes(v)) { update(setPaper(D.st, v as PaperKind)); draw(); }
     else if (v?.startsWith("density:")) { update(setDensity(D.st, v.slice(8) as Density)); draw(); }
-    else if (v === "addpaper") { close(); update(addPaper(D.st)); info("新的一张纸"); }
+    else if (v === "addpaper") { close(); update(addPaper(D.st)); info(_t("新的一张纸")); }
     else if (v?.startsWith("pm:")) { close(); openPaperMenu(v.slice(3)); }
     else if (v === "fit" || v === "reflow") { reflow = v === "reflow"; view.render(); draw(); }
     else if (v === "bn:on" || v === "bn:off") { update(setBarNumbers(D.st, v === "bn:on")); draw(); }   // 小节号（v0.9.42）：进歌里、能撤销；PDF 跟着
@@ -1438,7 +1436,7 @@ function openPaperSheet(): void {
  *  所以是你可以写或者选role的名字，帮我多想几个preset。然后名字之外再选乐器」）：
  *  上 = 角色名（谱上写的、MusicXML <part-name>；写或者点预设），中 = 谁来演（乐器 = 候选，名字不上谱——窄接口），下 = 就地改它的设置。改了立刻生效。
  *  现在一个声部、乐器只有月读（完整 / 轻量）= 多乐器的占位（数据契约「每个声部在谱号前面选角色和麦克风」）。 */
-const HUMS: [Hum, string][] = [["n", "ん / 嗯"], ["a", "あ / 啊"], ["o", "お / 哦"], ["u", "う / 呜"], ["la", "ら / 啦"]];
+const HUMS: [Hum, string][] = [["n", _t("ん / 嗯")], ["a", _t("あ / 啊")], ["o", _t("お / 哦")], ["u", _t("う / 呜")], ["la", _t("ら / 啦")]];
 /** 要画的声部：谱上写角色名（同名同种带号）、没人上场的画淡色、第一个声部上面画速度；隐藏的缩成细行；名字下面打出声 / 显示的角标。 */
 /** 每个声部唱不出来的歌词（token id → 为什么；纪律「做不到的一律画灰 + 明说」）。按歌 + 休息室缓存（每次重画都要，别每次重算）。 */
 let lyricMuteKey: unknown[] = [], lyricMuteVal = new Map<string, Map<number, LyricIssue>>();
@@ -1493,8 +1491,8 @@ function lyricReadingAt(i: number): LyricReading | null {
     return null;
   }
   const parts = (r.labels ?? r.said).map((x) => prettyReading(s.LANG, x));
-  if (!r.labels) return { parts, at: -1, note: `小月相念出来 ${r.said.length} 个音节、谱上 ${s.SCORE.length} 个，对不上（唱的时候会报错）：` };
-  return { parts, at: plan.entryOf.get(t.id) ?? -1, note: s.LANG === "zh" ? "小月相念成（音素 + 声调）：" : "小月相念成：" };
+  if (!r.labels) return { parts, at: -1, note: _t("小月相念出来 {n} 个音节、谱上 {n2} 个，对不上（唱的时候会报错）：", { n: r.said.length, n2: s.SCORE.length }) };
+  return { parts, at: plan.entryOf.get(t.id) ?? -1, note: s.LANG === "zh" ? _t("小月相念成（音素 + 声调）：") : _t("小月相念成：") };
 }
 /** 每位歌手的类别色（tab20 下标）和谱前简写（v0.9.31；user「乐手名和颜色同意」）。简写要目录（仓鼠 v12 的 abbr）：没载就先缩名字，载好了重画。 */
 function partLooks(): { colors: number[]; abbrs: string[] } {
@@ -1512,11 +1510,11 @@ function partLooks(): { colors: number[]; abbrs: string[] } {
 function partViews(): PartView[] {
   const labels = partLabels(D.st.song, D.extras), mutes = lyricMutes(), looks = partLooks();
   return D.st.song.parts.map((p, k) => {
-    const v = pv(p.id), badges = [v.muted ? "静音" : "", v.solo ? "独奏" : "", v.only ? "只看它" : "", issueParts.has(p.id) ? "不出声" : ""].filter(Boolean);   // 不出声 = 清单里有它（§2.2½ 出口 ①）
+    const v = pv(p.id), badges = [v.muted ? _t("静音") : "", v.solo ? _t("独奏") : "", v.only ? _t("只看它") : "", issueParts.has(p.id) ? _t("不出声") : ""].filter(Boolean);   // 不出声 = 清单里有它（§2.2½ 出口 ①）
     const eng = activeInstrument(D.extras, p.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
-    const ly = plug?.lyrics, noLyrics = ly === "hum" || ly === "none" ? `${labels[k]}${ly === "hum" ? "（元音版）只哼" : "不唱歌词"}：空着的歌词位不开框；已经写了的字点开能改、能删` : "";
+    const ly = plug?.lyrics, noLyrics = ly === "hum" || ly === "none" ? _t("{p}{p2}：空着的歌词位不开框；已经写了的字点开能改、能删", { p: labels[k], p2: ly === "hum" ? _t("（元音版）只哼") : _t("不唱歌词") }) : "";
     return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: !plug?.poly, ...(plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
@@ -1550,7 +1548,7 @@ function addNewPart(paper = D.st.at.paper, giveFrom?: string): void {
   const id = `P${Math.max(0, ...D.st.song.parts.map((p) => Number(/^P(\d+)$/.exec(p.id)?.[1] ?? 0))) + 1}`;
   let next = addPart(D.st, { id, role, mic }, giveFrom ? null : paper);
   if (giveFrom) next = rebindTrack(next, paper, giveFrom, id);
-  updateBoth(next, withNewRole(D.extras, role, D.st.song.hum), { kind: "score", label: giveFrom ? "这一行交给了新歌手" : "加了一位歌手" });
+  updateBoth(next, withNewRole(D.extras, role, D.st.song.hum), { kind: "score", label: giveFrom ? _t("这一行交给了新歌手") : _t("加了一位歌手") });
   renderTitle();
   openInstPage();   // 新歌手：先给它挑乐器
 }
@@ -1562,13 +1560,13 @@ function openPaperMenu(id: string): void {
   const absent = D.st.song.parts.flatMap((p, i) => (paper.tracks[p.id] ? [] : [{ id: p.id, name: labels[i] }]));
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc(paper.name || `第 ${k + 1} 张纸`)}</div>` +
-    `<div class="set-row"><button class="btn" data-v="name">改曲段名…</button><button class="btn" data-v="up"${k === 0 ? " disabled" : ""}>上移</button><button class="btn" data-v="down"${k === D.st.song.papers.length - 1 ? " disabled" : ""}>下移</button><button class="btn" data-v="add">在它后面加一张纸</button><button class="btn" data-v="transpose" title="这张纸 / 整首所有声部一起移调、转调（调号跟着挪）">移调 / 转调…</button>` +
-    `<button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="隐藏 = 不放、不进压平件；谱上折叠着，翻页能进去">${paper.hidden ? "显示（现在隐藏着）" : "隐藏（不放）"}</button></div>` +
-    (absent.length ? `<div class="part-sec">这张纸上加歌手</div><div class="set-row">${absent.map((a) => `<button class="btn cand" data-v="track:${esc(a.id)}">${esc(a.name)}</button>`).join("")}</div>` : "") +
-    `<div class="set-row"><button class="btn" data-v="newpart" title="新的一位歌手，只出现在这张纸上">＋ 新歌手…</button>${D.st.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">删这张纸…</button>` : ""}</div>` +
-    `<div class="offer-msg">纸 = 曲段：每张纸是一个新的开始，各声部在这里重新对齐；一张纸上要哪些声部随它。</div>` +
-    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc(paper.name || _t("第 {p} 张纸", { p: k + 1 }))}</div>` +
+    `<div class="set-row"><button class="btn" data-v="name">${_t("改曲段名…")}</button><button class="btn" data-v="up"${k === 0 ? " disabled" : ""}>${_t("上移")}</button><button class="btn" data-v="down"${k === D.st.song.papers.length - 1 ? " disabled" : ""}>${_t("下移")}</button><button class="btn" data-v="add">${_t("在它后面加一张纸")}</button><button class="btn" data-v="transpose" title="${_t("这张纸 / 整首所有声部一起移调、转调（调号跟着挪）")}">${_t("移调 / 转调…")}</button>` +
+    `<button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="${_t("隐藏 = 不放、不进压平件；谱上折叠着，翻页能进去")}">${paper.hidden ? _t("显示（现在隐藏着）") : _t("隐藏（不放）")}</button></div>` +
+    (absent.length ? `<div class="part-sec">${_t("这张纸上加歌手")}</div><div class="set-row">${absent.map((a) => `<button class="btn cand" data-v="track:${esc(a.id)}">${esc(a.name)}</button>`).join("")}</div>` : "") +
+    `<div class="set-row"><button class="btn" data-v="newpart" title="${_t("新的一位歌手，只出现在这张纸上")}">${_t("＋ 新歌手…")}</button>${D.st.song.papers.length > 1 ? `<button class="btn cand danger" data-v="del">${_t("删这张纸…")}</button>` : ""}</div>` +
+    `<div class="offer-msg">${_t("纸 = 曲段：每张纸是一个新的开始，各声部在这里重新对齐；一张纸上要哪些声部随它。")}</div>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "menu", close });
@@ -1578,14 +1576,14 @@ function openPaperMenu(id: string): void {
     if (!v) return;
     if (v === "name") { close(); view.title.openNow(id); return; }
     if (v === "up" || v === "down") { update(movePaper(D.st, id, v === "up" ? -1 : 1)); close(); return; }
-    if (v === "add") { update(addPaper(D.st, id)); close(); info("新的一张纸"); return; }
+    if (v === "add") { update(addPaper(D.st, id)); close(); info(_t("新的一张纸")); return; }
     if (v === "transpose") { close(); const r = scoreEl.getBoundingClientRect(); openTransposeMenu(id, { x: r.left + r.width / 2, y: r.top + 60 }); return; }
-    if (v === "hide") { update(setPaperHidden(D.st, id, !paper.hidden)); close(); info(paper.hidden ? "这张纸显示了（会放）" : "这张纸隐藏了（不放）"); return; }
+    if (v === "hide") { update(setPaperHidden(D.st, id, !paper.hidden)); close(); info(paper.hidden ? _t("这张纸显示了（会放）") : _t("这张纸隐藏了（不放）")); return; }
     if (v.startsWith("track:")) { update(addTrack(D.st, id, v.slice(6))); close(); return; }
     if (v === "newpart") { close(); addNewPart(id); return; }
     if (v === "del") {
       close();
-      void askSheet(`删掉「${paper.name || `第 ${k + 1} 张纸`}」？`, "这张纸上所有声部写的东西一起删掉（能撤销：撤销 / Ctrl+Z）。", "删").then((ok) => { if (ok) update(removePaper(D.st, id)); });
+      void askSheet(_t("删掉「{p}」？", { p: paper.name || _t("第 {p} 张纸", { p: k + 1 }) }), _t("这张纸上所有声部写的东西一起删掉（能撤销：撤销 / Ctrl+Z）。"), _t("删")).then((ok) => { if (ok) update(removePaper(D.st, id)); });
     }
   });
 }
@@ -1606,30 +1604,30 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     // 换绑 / 加歌手（2026-10-08，user「已有的track绑换不同的声部」「这一段交给别的歌手 就是我刚才说的换绑」「新歌手只出现在当前这张纸嗯」）：只改这一张纸
     if (page !== "main") {
       const list = page === "give" ? D.st.song.parts.filter((p) => p.id !== me.id) : D.st.song.parts.filter((p) => !here[p.id]);
-      box.innerHTML = `<div class="tc-sub"><button class="btn" data-v="back">‹ ${page === "give" ? `「${esc(label)}」这一行交给…` : "这张纸上加歌手"}</button></div>` +
-        `<div class="tc-list">${list.map((p) => `<button class="btn cand" data-v="${page}:${esc(p.id)}">${esc(labels[D.st.song.parts.indexOf(p)] ?? p.id)}${page === "give" && here[p.id] ? "<small>（对调）</small>" : ""}</button>`).join("")}` +
-        `<button class="btn cand" data-v="${page}new">＋ 新歌手…</button></div>` +
-        `<div class="tc-hint">${page === "give" ? "只改这张纸：音、歌词、记号都不动，换一位歌手唱；跨纸按歌手接起来。对方在这张纸上已经有一行 = 两行对调。" : "只加在这张纸上（别的纸照旧）。"}</div>`;
+      box.innerHTML = `<div class="tc-sub"><button class="btn" data-v="back">‹ ${page === "give" ? _t("「{label}」这一行交给…", { label: esc(label) }) : _t("这张纸上加歌手")}</button></div>` +
+        `<div class="tc-list">${list.map((p) => `<button class="btn cand" data-v="${page}:${esc(p.id)}">${esc(labels[D.st.song.parts.indexOf(p)] ?? p.id)}${page === "give" && here[p.id] ? `<small>${_t("（对调）")}</small>` : ""}</button>`).join("")}` +
+        `<button class="btn cand" data-v="${page}new">${_t("＋ 新歌手…")}</button></div>` +
+        `<div class="tc-hint">${page === "give" ? _t("只改这张纸：音、歌词、记号都不动，换一位歌手唱；跨纸按歌手接起来。对方在这张纸上已经有一行 = 两行对调。") : _t("只加在这张纸上（别的纸照旧）。")}</div>`;
       return;
     }
     const onPaper = Object.keys(D.st.song.papers.find((p) => p.id === D.st.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
     box.innerHTML =
-      `<button class="tc-inst" data-v="inst" title="这个声部是什么、谁来演、怎么演（全屏一页，右边的键盘能试）"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? `${esc(who)} 在演` : "没人上场"))(activeCandidateName(D.extras, me.role))}</small></span><span class="tc-go">乐器 ›</span></button>` +
+      `<button class="tc-inst" data-v="inst" title="${_t("这个声部是什么、谁来演、怎么演（全屏一页，右边的键盘能试）")}"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? _t("{who} 在演", { who: esc(who) }) : _t("没人上场")))(activeCandidateName(D.extras, me.role))}</small></span><span class="tc-go">${_t("乐器 ›")}</span></button>` +
       ((m) => { if (!m || !m.size) return ""; const xs = [...m.values()], first = xs[0];   // 唱不出来的歌词：几个、为什么（纪律：画灰 + 明说）
-        return `<div class="tc-warn">${first.why === "notSung" ? esc(lyricWhyText(first, roleName(D.extras, me.role))) : `有 ${xs.length} 个字唱不出来（谱上画灰）：${esc(lyricWhyText(first, roleName(D.extras, me.role)))}${xs.some((x) => x.why !== first.why) ? " 等" : ""}`}</div>`; })(lyricMutes().get(me.id)) +
+        return `<div class="tc-warn">${first.why === "notSung" ? esc(lyricWhyText(first, roleName(D.extras, me.role))) : _t("有 {n} 个字唱不出来（谱上画灰）：{first}{x}", { n: xs.length, first: esc(lyricWhyText(first, roleName(D.extras, me.role))), x: xs.some((x) => x.why !== first.why) ? _t(" 等") : "" })}</div>`; })(lyricMutes().get(me.id)) +
       `<div class="tc-grid">` +
-      `<span class="tc-k">显示</span><div class="tc-v">${chip("hide", "隐藏", v.hidden, "谱上缩成一条细行（点细行再放出来）；照样出声")}${chip("only", "只看它", v.only, "其余声部都缩成细行（可以几个一起「只看」）")}</div>` +
-      `<span class="tc-k">出声</span><div class="tc-v">${chip("mute", "静音", v.muted, "播放时不出声；谱上照画")}${chip("solo", "独奏", v.solo, "播放时只出有独奏的声部")}</div>` +
-      `<span class="tc-k">谱表</span><div class="tc-v">${chip("staves:1", "一张", one)}${chip("staves:2", "大谱表", !one, "上高音下低音（钢琴）：中央 C 以下自动落下面，pad「⋯ → 换谱表」能手动挪")}</div>` +
-      (one ? `<span class="tc-k">谱号</span><div class="tc-v">${chip("clef:auto", "自动", !me.clef, "按每张纸的音挑加线最省的谱号（很高的会挑 15ma / 8va，很低的挑低音 / 低音 8vb）；只管画，音高不变。还不看乐器的习惯（比如吉他写 8vb），要的话手动选")}${CLEFS.map((c) => chip(`clef:${c}`, CLEF_LABEL[c], me.clef === c, CLEF_TITLE[c])).join("")}</div>` : "") +
+      `<span class="tc-k">${_t("显示")}</span><div class="tc-v">${chip("hide", _t("隐藏"), v.hidden, _t("谱上缩成一条细行（点细行再放出来）；照样出声"))}${chip("only", _t("只看它"), v.only, _t("其余声部都缩成细行（可以几个一起「只看」）"))}</div>` +
+      `<span class="tc-k">${_t("出声")}</span><div class="tc-v">${chip("mute", _t("静音"), v.muted, _t("播放时不出声；谱上照画"))}${chip("solo", _t("独奏"), v.solo, _t("播放时只出有独奏的声部"))}</div>` +
+      `<span class="tc-k">${_t("谱表")}</span><div class="tc-v">${chip("staves:1", _t("一张"), one)}${chip("staves:2", _t("大谱表"), !one, _t("上高音下低音（钢琴）：中央 C 以下自动落下面，pad「⋯ → 换谱表」能手动挪"))}</div>` +
+      (one ? `<span class="tc-k">${_t("谱号")}</span><div class="tc-v">${chip("clef:auto", _t("自动"), !me.clef, _t("按每张纸的音挑加线最省的谱号（很高的会挑 15ma / 8va，很低的挑低音 / 低音 8vb）；只管画，音高不变。还不看乐器的习惯（比如吉他写 8vb），要的话手动选"))}${CLEFS.map((c) => chip(`clef:${c}`, CLEF_LABEL[c], me.clef === c, CLEF_TITLE[c])).join("")}</div>` : "") +
       // 合租（v0.10.24；user「合租还是有主人吧，这样钢琴小花可以挂钢琴上」）：画在谁的谱线上；只管画，出声 / 混音台照旧各是各的
-      ((cands, hasTenants) => D.st.song.parts.length > 1 ? `<span class="tc-k">合租</span><div class="tc-v">${hasTenants ? `<span class="tc-hint">有别的歌手挂在这一行上（它是主人），不能再去挂别人</span>`
-        : `<select class="tc-sel" data-hostsel title="挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）"><option value="">自己一行</option>${cands.map((p) => `<option value="${esc(p.id)}"${me.host === p.id ? " selected" : ""}>挂在「${esc(labels[D.st.song.parts.indexOf(p)] ?? p.id)}」上</option>`).join("")}</select>`}</div>` : "")(
+      ((cands, hasTenants) => D.st.song.parts.length > 1 ? `<span class="tc-k">${_t("合租")}</span><div class="tc-v">${hasTenants ? `<span class="tc-hint">${_t("有别的歌手挂在这一行上（它是主人），不能再去挂别人")}</span>`
+        : `<select class="tc-sel" data-hostsel title="${_t("挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）")}"><option value="">${_t("自己一行")}</option>${cands.map((p) => `<option value="${esc(p.id)}"${me.host === p.id ? " selected" : ""}>${_t("挂在「{p}」上", { p: esc(labels[D.st.song.parts.indexOf(p)] ?? p.id) })}</option>`).join("")}</select>`}</div>` : "")(
         D.st.song.parts.filter((p) => p.id !== me.id && !p.host), D.st.song.parts.some((p) => p.host === me.id)) +
-      (D.st.song.parts.length > 1 ? `<span class="tc-k">顺序</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="往上挪一格（最上面那个声部的速度记号说了算）">↑ 往上</button><button class="btn" data-v="movedown"${k === D.st.song.parts.length - 1 ? " disabled" : ""} title="往下挪一格">↓ 往下</button></div>` : "") +
-      `</div><div class="tc-foot"><button class="btn" data-v="give" title="这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）">交给…</button><button class="btn" data-v="add" title="这张纸上再加一位歌手（已有的或新的；只加在这张纸上）">＋ 加歌手…</button>` +
-      (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="这张纸上不要这个声部（别的纸照旧）">这张纸上去掉</button>` : "") +
-      `<button class="btn" data-v="studio" title="混音台（= 听的底座）：每位歌手一条（增益 / 声像 / 静音 / 独奏）；一张纸都不在的歌手在那里删">歌手管理（混音台）…</button></div>`;   // 纸上不删歌手（2026-10-08 深夜 user「在纸上不应该可以直接删歌手，这个功能去掉，只有没引用的时候才可以在歌手管理里面删」）：删 = 录音室里、一张纸都不在的那位；三条杠里不放录音室（user「三条杠里面不应该有乐器目录，云端，歌库 录音室」），手机上从这里进
+      (D.st.song.parts.length > 1 ? `<span class="tc-k">${_t("顺序")}</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="${_t("往上挪一格（最上面那个声部的速度记号说了算）")}">${_t("↑ 往上")}</button><button class="btn" data-v="movedown"${k === D.st.song.parts.length - 1 ? " disabled" : ""} title="${_t("往下挪一格")}">${_t("↓ 往下")}</button></div>` : "") +
+      `</div><div class="tc-foot"><button class="btn" data-v="give" title="${_t("这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）")}">${_t("交给…")}</button><button class="btn" data-v="add" title="${_t("这张纸上再加一位歌手（已有的或新的；只加在这张纸上）")}">${_t("＋ 加歌手…")}</button>` +
+      (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="${_t("这张纸上不要这个声部（别的纸照旧）")}">${_t("这张纸上去掉")}</button>` : "") +
+      `<button class="btn" data-v="studio" title="${_t("混音台（= 听的底座）：每位歌手一条（增益 / 声像 / 静音 / 独奏）；一张纸都不在的歌手在那里删")}">${_t("歌手管理（混音台）…")}</button></div>`;   // 纸上不删歌手（2026-10-08 深夜 user「在纸上不应该可以直接删歌手，这个功能去掉，只有没引用的时候才可以在歌手管理里面删」）：删 = 录音室里、一张纸都不在的那位；三条杠里不放录音室（user「三条杠里面不应该有乐器目录，云端，歌库 录音室」），手机上从这里进
   };
   draw(); document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
@@ -1651,7 +1649,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     const next = setPartHost(D.st, curPart().id, t.value || null);
     update(next); renderTitle(); draw();
     // 一家（主人 + 房客）里有谁在写 = 整家拆开（user「host也应该只读，只有展开时才能编辑」）：挂上之后去别的歌手那儿写，这一家才叠成一行
-    if (t.value && next !== D.st) info("挂上了：在别的歌手那儿写的时候，这一家叠在一行上看（只读）；点名字 = 拆开来写");
+    if (t.value && next !== D.st) info(_t("挂上了：在别的歌手那儿写的时候，这一家叠在一行上看（只读）；点名字 = 拆开来写"));
   });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
@@ -1660,7 +1658,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     if (v === "studio") { close(); openStudio(); return; }
     if (v === "give" || v === "add") { page = v; draw(); return; }
     if (v === "back") { page = "main"; draw(); return; }
-    if (v.startsWith("give:")) { const to = v.slice(5), name = partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.id === to)] ?? ""; close(); update(rebindTrack(D.st, D.st.at.paper, me.id, to)); renderTitle(); info(`这张纸上这一行交给了「${name}」`); return; }
+    if (v.startsWith("give:")) { const to = v.slice(5), name = partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.id === to)] ?? ""; close(); update(rebindTrack(D.st, D.st.at.paper, me.id, to)); renderTitle(); info(_t("这张纸上这一行交给了「{name}」", { name })); return; }
     if (v === "givenew") { close(); addNewPart(D.st.at.paper, me.id); return; }
     if (v.startsWith("add:")) { close(); update(addTrack(D.st, D.st.at.paper, v.slice(4))); return; }
     if (v === "addnew") { close(); addNewPart(D.st.at.paper); return; }
@@ -1687,8 +1685,8 @@ function dynTable(sp: { dynamicsDb: Record<Dyn, number>; dynamicsVel: Record<Dyn
   const cells = (f: (d: Dyn) => string) => DYNS.map((d) => `<td>${f(d)}</td>`).join("");
   const vel = sp.dynamicsVel;
   return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d) => `<th title="${d}"><span class="smufl">${DYN_MENU[d]}</span></th>`).join("")}</tr>` +
-    (vel ? `<tr><th>MIDI 力度</th>${cells((d) => String(vel[d]))}</tr>` : `<tr><th>音量 dB</th>${cells((d) => db(sp.dynamicsDb[d]))}</tr>`) +
-    (vel && layers && layers.count > 1 ? `<tr><th>GS 力度层</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
+    (vel ? `<tr><th>${_t("MIDI 力度")}</th>${cells((d) => String(vel[d]))}</tr>` : `<tr><th>${_t("音量 dB")}</th>${cells((d) => db(sp.dynamicsDb[d]))}</tr>`) +
+    (vel && layers && layers.count > 1 ? `<tr><th>${_t("GS 力度层")}</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
 }
 function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: number } | null): void {
   ui.close();
@@ -1696,15 +1694,15 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
   box.innerHTML =
-    item("play", "从这儿放", "起点挪到这个小节的头，从这儿放（之后 |▶ 回到这儿重放；编辑、挪光标都不动起点）") + `<div class="ctx-sep"></div>` +
-    item("paste", "粘贴", "贴在这里：app 里复制的，或系统剪贴板里的简谱文字（1 2 3 | 5 - -）") +
+    item("play", _t("从这儿放"), _t("起点挪到这个小节的头，从这儿放（之后 |▶ 回到这儿重放；编辑、挪光标都不动起点）")) + `<div class="ctx-sep"></div>` +
+    item("paste", _t("粘贴"), _t("贴在这里：app 里复制的，或系统剪贴板里的简谱文字（1 2 3 | 5 - -）")) +
     `<div class="ctx-sep"></div>` +
-    item("bar", "小节线 |", "从这里重新数小节（弱起）") + item("phrase", "句号", "这一句到这儿（「合」挪字的边界；不换行不换气）") +
-    item("mark:key", "调号…") + item("mark:time", "拍号…") + item("mark:tempo", "速度…") + item("clef", "谱号…", "从这儿起换谱号（只管画）") + item("ottava", "八度线…", "8va / 15ma / 8vb（只管画）") + item("transpose", "移调 / 转调…", "这张纸 / 整首所有声部一起挪（调号跟着挪）；只挪一段 = 选中它，用选区菜单") +
+    item("bar", _t("小节线 |"), _t("从这里重新数小节（弱起）")) + item("phrase", _t("句号"), _t("这一句到这儿（「合」挪字的边界；不换行不换气）")) +
+    item("mark:key", _t("调号…")) + item("mark:time", _t("拍号…")) + item("mark:tempo", _t("速度…")) + item("clef", _t("谱号…"), _t("从这儿起换谱号（只管画）")) + item("ottava", _t("八度线…"), _t("8va / 15ma / 8vb（只管画）")) + item("transpose", _t("移调 / 转调…"), _t("这张纸 / 整首所有声部一起挪（调号跟着挪）；只挪一段 = 选中它，用选区菜单")) +
     // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
-    `<div class="ctx-row ctx-dyn">${(["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(D.st), D.st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="力度 ${d}：从这儿前面那个音起"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
+    `<div class="ctx-row ctx-dyn">${(["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(D.st), D.st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="${_t("力度 {d}：从这儿前面那个音起", { d })}"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
     `<div class="ctx-sep"></div>` +
-    item("all", "全选");   // 「全选这一行」去掉了（2026-10-10 user「wishlist 全选这一行没啥用，去掉」）
+    item("all", _t("全选"));   // 「全选这一行」去掉了（2026-10-10 user「wishlist 全选这一行没啥用，去掉」）
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let x = at.x + 6, y = at.y + 10;
@@ -1736,7 +1734,7 @@ const WEDGE_MENU = { cresc: `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidd
 /** 风格记号（拍子轻重）：放在光标前那个音上（先放「古典」= 拍号自带的强弱，最不挑人），马上开它的小菜单换风格 / 幅度。 */
 function insertGrooveHere(): void {
   const nx = setGroove(D.st, "classical");
-  if (nx === D.st) { info("风格记号要放在一个音上（这张纸里还没有音）"); return; }
+  if (nx === D.st) { info(_t("风格记号要放在一个音上（这张纸里还没有音）")); return; }
   update(nx);
   const toks = tr(D.st), an = markAnchor(D.st);
   let k = -1; for (let j = an - 1; j >= 0 && !isTimed(toks[j]) && toks[j].kind !== "bar"; j--) if (toks[j].kind === "groove") { k = j; break; }
@@ -1764,7 +1762,7 @@ function ctxMenu(cls: string, html: string, at: { x: number; y: number }, pick: 
 /** 写了反复 / 跳转之后：光标所在这一行不是这张纸最上面那位 = 明说（谱上画灰；纪律「做不到的一律画灰 + 明说」）。 */
 function discloseNav(): void {
   const paper = D.st.song.papers.find((p) => p.id === D.st.at.paper), owner = paper ? tempoOwner(D.st.song, paper) : null;
-  if (owner && owner !== D.st.at.part) info(`反复 / 跳转只看这张纸最上面那位（${roleName(D.extras, D.st.song.parts.find((p) => p.id === owner)?.role ?? "")}）那一行：这一行写的画灰、不起作用`);
+  if (owner && owner !== D.st.at.part) info(_t("反复 / 跳转只看这张纸最上面那位（{extras}）那一行：这一行写的画灰、不起作用", { extras: roleName(D.extras, D.st.song.parts.find((p) => p.id === owner)?.role ?? "") }));
 }
 /** 整段 / 整首移调转调（v0.9.33；user 2026-10-09「杂事记账：段级别和工程级别的整体移调转调」→ 10-10「小件做」）：
  *  纸的「⋯」/ 空白处小菜单 →「移调 / 转调…」。这张纸（或整首）上所有声部一起挪、调号跟着挪；点了不收、可以连着点，每一下一步撤销。
@@ -1772,27 +1770,27 @@ function discloseNav(): void {
 function openTransposeMenu(paperId: string, at: { x: number; y: number }): void {
   let whole = false, told = false;
   const many = D.st.song.papers.length > 1;
-  const nameOf = (id: string) => { const k = D.st.song.papers.findIndex((p) => p.id === id); return D.st.song.papers[k]?.name || `第 ${k + 1} 张纸`; };
+  const nameOf = (id: string) => { const k = D.st.song.papers.findIndex((p) => p.id === id); return D.st.song.papers[k]?.name || _t("第 {p} 张纸", { p: k + 1 }); };
   const ids = () => (whole ? D.st.song.papers.map((p) => p.id) : [paperId]);
   const chip = (v: string, label: string, on = false, title = "") => `<button class="btn ctx-chip${on ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
   const html = () => {
     const now = scopeKey(D.st.song, ids());
-    return (many ? `<div class="ctx-row"><span class="ctx-k">范围</span>${chip("scope:paper", `这一段「${esc(nameOf(paperId))}」`, !whole)}${chip("scope:song", "整首", whole)}</div>` : "") +
-      `<div class="ctx-row"><span class="ctx-k">移调</span>${chip("tr:1", "↑ 半音")}${chip("tr:-1", "↓ 半音")}${chip("tr:2", "↑ 全音")}${chip("tr:-2", "↓ 全音")}</div>` +
-      `<div class="ctx-row"><span class="ctx-k">八度</span>${chip("tr:12", "↑ 八度")}${chip("tr:-12", "↓ 八度")}</div>` +
-      `<div class="ctx-hint ctx-what">转调到（现在 1=${KEY_LABEL[now] ?? now}）：音按两个主音之间的音程挪</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k) => chip(`mod:${k}`, `1=${KEY_LABEL[k]}`, k === now)).join("")}</div>` +
-      `<div class="ctx-hint">${whole ? "整首" : "这张纸上"}所有声部一起挪，调号跟着挪（取升降号少的写法；挪八度调号不变）。歌词、记号、谱号不动；鼓 / 固定敲一个键的声部（写的音高 = 敲哪个）不动；pad 的「1=」不跟。</div>`;
+    return (many ? `<div class="ctx-row"><span class="ctx-k">${_t("范围")}</span>${chip("scope:paper", _t("这一段「{paperId}」", { paperId: esc(nameOf(paperId)) }), !whole)}${chip("scope:song", _t("整首"), whole)}</div>` : "") +
+      `<div class="ctx-row"><span class="ctx-k">${_t("移调")}</span>${chip("tr:1", _t("↑ 半音"))}${chip("tr:-1", _t("↓ 半音"))}${chip("tr:2", _t("↑ 全音"))}${chip("tr:-2", _t("↓ 全音"))}</div>` +
+      `<div class="ctx-row"><span class="ctx-k">${_t("八度")}</span>${chip("tr:12", _t("↑ 八度"))}${chip("tr:-12", _t("↓ 八度"))}</div>` +
+      `<div class="ctx-hint ctx-what">${_t("转调到（现在 1={now}）：音按两个主音之间的音程挪", { now: KEY_LABEL[now] ?? now })}</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k) => chip(`mod:${k}`, `1=${KEY_LABEL[k]}`, k === now)).join("")}</div>` +
+      `<div class="ctx-hint">${_t("{whole}所有声部一起挪，调号跟着挪（取升降号少的写法；挪八度调号不变）。歌词、记号、谱号不动；鼓 / 固定敲一个键的声部（写的音高 = 敲哪个）不动；pad 的「1=」不跟。", { whole: whole ? _t("整首") : _t("这张纸上") })}</div>`;
   };
   ctxMenu("transpose-menu", html(), at, (v) => {
     if (v.startsWith("scope:")) whole = v === "scope:song";
     else {
       const skip = new Set(partViews().filter((x) => x.xHead || x.perc).map((x) => x.id));   // 固定敲一个键 / 鼓（整套鼓：写的音高 = 敲哪个鼓，挪了就换了鼓，v0.10.27）不挪
       const nx = v.startsWith("tr:") ? transposePapers(D.st, ids(), { semis: Number(v.slice(3)) }, skip) : v.startsWith("mod:") ? transposePapers(D.st, ids(), { toFifths: Number(v.slice(4)) }, skip) : D.st;
-      if (nx === D.st) info(v.startsWith("mod:") ? "已经是这个调" : "没有可以挪的音");
+      if (nx === D.st) info(v.startsWith("mod:") ? _t("已经是这个调") : _t("没有可以挪的音"));
       else {
         update(nx);
         const held = ids().flatMap((id) => Object.keys(D.st.song.papers.find((p) => p.id === id)?.tracks ?? {})).filter((pid) => skip.has(pid));
-        if (held.length && !told) { told = true; const labels = partLabels(D.st.song, D.extras); info(`${[...new Set(held)].map((pid) => labels[D.st.song.parts.findIndex((p) => p.id === pid)]).join("、")} 是鼓 / 固定敲一个键（写的音高 = 敲哪个），没挪`); }
+        if (held.length && !told) { told = true; const labels = partLabels(D.st.song, D.extras); info(_t("{held} 是鼓 / 固定敲一个键（写的音高 = 敲哪个），没挪", { held: [...new Set(held)].map((pid) => labels[D.st.song.parts.findIndex((p) => p.id === pid)]).join("、") })); }
       }
     }
     const box = document.querySelector<HTMLElement>(".ctx-menu.transpose-menu"); if (box) box.innerHTML = html();
@@ -1804,10 +1802,10 @@ function openRepeatMenu(): void {
   const r = padEl.getBoundingClientRect();
   const chip = (v: string, label: string, title: string) => `<button class="btn ctx-chip" data-v="${v}" title="${esc(title)}">${esc(label)}</button>`;
   ctxMenu("repeat-menu",
-    `<div class="ctx-hint ctx-what">谱内反复：插在光标处；光标挨着小节线 = 把那条改成反复的。放的时候按这张纸最上面那位歌手那一行展开，别的声部跟着；不跨纸。跳回来（D.C. / D.S.）之后反复不再反复。</div>` +
-    `<div class="ctx-row">${chip("bar:start", "|:", "反复开始")}${chip("bar:end", ":|", "反复结束：回到 |:（没有 = 这张纸开头）再放一遍")}${chip("bar:both", ":|:", "前一段反复结束、后一段反复开始")}${chip("bar:end:3", ":| ×3", "一共放三遍")}${chip("bar:end:4", ":| ×4", "一共放四遍")}${chip("bar:plain", "|", "改回普通小节线")}</div>` +
-    `<div class="ctx-row">${chip("bs:double", "‖ 段落线", "段落线（两根细线）：分段的记号，不是两根小节线；挨着小节线 = 把那条改成段落线")}${chip("bs:final", "终止线", "终止线（细 + 粗）：曲子 / 这一段到这儿结束")}</div>` +
-    `<div class="ctx-row">${ENDINGS.map((n) => chip(`end:${n.join(",")}`, endingLabel(n), `房子：第 ${n.join("、")} 遍走这里`)).join("")}</div>` +
+    `<div class="ctx-hint ctx-what">${_t("谱内反复：插在光标处；光标挨着小节线 = 把那条改成反复的。放的时候按这张纸最上面那位歌手那一行展开，别的声部跟着；不跨纸。跳回来（D.C. / D.S.）之后反复不再反复。")}</div>` +
+    `<div class="ctx-row">${chip("bar:start", "|:", _t("反复开始"))}${chip("bar:end", ":|", _t("反复结束：回到 |:（没有 = 这张纸开头）再放一遍"))}${chip("bar:both", ":|:", _t("前一段反复结束、后一段反复开始"))}${chip("bar:end:3", ":| ×3", _t("一共放三遍"))}${chip("bar:end:4", ":| ×4", _t("一共放四遍"))}${chip("bar:plain", "|", _t("改回普通小节线"))}</div>` +
+    `<div class="ctx-row">${chip("bs:double", _t("‖ 段落线"), _t("段落线（两根细线）：分段的记号，不是两根小节线；挨着小节线 = 把那条改成段落线"))}${chip("bs:final", _t("终止线"), _t("终止线（细 + 粗）：曲子 / 这一段到这儿结束"))}</div>` +
+    `<div class="ctx-row">${ENDINGS.map((n) => chip(`end:${n.join(",")}`, endingLabel(n), _t("房子：第 {p} 遍走这里", { p: n.join("、") }))).join("")}</div>` +
     `<div class="ctx-row">${JUMPS.slice(0, 4).map((w) => chip(`nav:${w}`, NAV_LABEL[w], NAV_HELP[w])).join("")}</div>` +
     `<div class="ctx-row">${JUMPS.slice(4).map((w) => chip(`nav:${w}`, NAV_LABEL[w], NAV_HELP[w])).join("")}</div>`,
     { x: r.left + r.width / 2, y: r.top - 4 },
@@ -1821,16 +1819,16 @@ function openRepeatMenu(): void {
 }
 // ── 谱号 / 八度线（v0.9.28；user「谱号的显示模式跟着谱号而不是乐器」「默认自动同意」「加格式同意」「8va可以做了吗」）：只管画，音高数据不动 ──
 const OTTAVAS: readonly (1 | 2 | -1)[] = [1, 2, -1];
-const OTT_HELP: Record<number, string> = { 1: "8va：谱上画低一个八度（实际照写的高八度响）", 2: "15ma：谱上画低两个八度", [-1]: "8vb：谱上画高一个八度（实际照写的低八度响）", 0: "到这儿结束八度线" };
+const OTT_HELP: Record<number, string> = { 1: _t("8va：谱上画低一个八度（实际照写的高八度响）"), 2: _t("15ma：谱上画低两个八度"), [-1]: _t("8vb：谱上画高一个八度（实际照写的低八度响）"), 0: _t("到这儿结束八度线") };
 const clefChips = (on: ClefName | null, prefix: string) => CLEFS.map((c) => `<button class="btn ctx-chip${on === c ? " is-on" : ""}" data-v="${prefix}${c}" title="${esc(CLEF_TITLE[c])}">${esc(CLEF_LABEL[c])}</button>`).join("");
 /** 插谱号（pad 符号层 / 空白处菜单）：从光标处起换。 */
 function openInsertClefMenu(at: { x: number; y: number }): void {
-  ctxMenu("clef-menu", `<div class="ctx-hint ctx-what">谱号：从光标处起换（只管画，音高不变）。每行开头的谱号也能直接点。</div><div class="ctx-row">${clefChips(null, "c:")}</div>`, at,
+  ctxMenu("clef-menu", `<div class="ctx-hint ctx-what">${_t("谱号：从光标处起换（只管画，音高不变）。每行开头的谱号也能直接点。")}</div><div class="ctx-row">${clefChips(null, "c:")}</div>`, at,
     (v) => { if (v.startsWith("c:")) update(insertClef(D.st, v.slice(2) as ClefName)); });
 }
 /** 插八度线：从光标处起（有选区 = 这一段）。 */
 function openInsertOttavaMenu(at: { x: number; y: number }): void {
-  ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">八度线：从光标处起${D.st.sel ? "（有选区 = 只画这一段）" : "，到下一个八度线记号为止"}。只管画，音高不变。</div>` +
+  ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">${_t("八度线：从光标处起{sel}。只管画，音高不变。", { sel: D.st.sel ? _t("（有选区 = 只画这一段）") : _t("，到下一个八度线记号为止") })}</div>` +
     `<div class="ctx-row">${[...OTTAVAS, 0].map((v) => `<button class="btn ctx-chip" data-v="o:${v}" title="${esc(OTT_HELP[v])}">${esc(OTTAVA_LABEL[v])}</button>`).join("")}</div>`, at,
     (v) => { if (v.startsWith("o:")) update(insertOttava(D.st, Number(v.slice(2)) as -1 | 0 | 1 | 2)); });
 }
@@ -1840,34 +1838,34 @@ function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {
   const part = D.st.song.parts.find((p) => p.id === hit.part); if (!part) return;
   if (hit.kind === "ottava" && hit.run) {   // 自动画的八度线（v0.9.37；user「自动加」）：不存进谱；可以固定成手写的，或者这位不要自动
     const r = hit.run, lab = OTTAVA_LABEL[r.shift];
-    ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">自动八度线：这一串音要三条以上加线，自动画了 ${esc(lab)}。只管画、不存进谱，音高不变；改了音会跟着重算。手写的八度线说了算。</div>` +
-      `<button class="btn ctx-item" data-v="pin">固定成手写的 ${esc(lab)}（之后自己改）</button><button class="btn ctx-item" data-v="off">这位歌手不要自动八度线</button>`, at,
+    ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">${_t("自动八度线：这一串音要三条以上加线，自动画了 {lab}。只管画、不存进谱，音高不变；改了音会跟着重算。手写的八度线说了算。", { lab: esc(lab) })}</div>` +
+      `<button class="btn ctx-item" data-v="pin">${_t("固定成手写的 {lab}（之后自己改）", { lab: esc(lab) })}</button><button class="btn ctx-item" data-v="off">${_t("这位歌手不要自动八度线")}</button>`, at,
       (v) => {
         if (v === "pin") update(insertOttava({ ...setFocus(D.st, hit.paper, hit.part, r.from), sel: { from: r.from, to: r.to + 1 } }, r.shift));
-        else if (v === "off") { update(setPartAutoOttava(D.st, hit.part, false)); info("这位歌手的自动八度线关了（谱号小菜单里能再开）"); }
+        else if (v === "off") { update(setPartAutoOttava(D.st, hit.part, false)); info(_t("这位歌手的自动八度线关了（谱号小菜单里能再开）")); }
       });
     return;
   }
   if (hit.kind === "ottava") {
     const t = toks[hit.index]; if (!t || t.kind !== "ottava") return;
-    ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">八度线：${esc(OTT_HELP[t.shift])}。只管画，音高不变。</div>` +
-      `<div class="ctx-row">${OTTAVAS.map((v) => `<button class="btn ctx-chip${t.shift === v ? " is-on" : ""}" data-v="o:${v}" title="${esc(OTT_HELP[v])}">${esc(OTTAVA_LABEL[v])}</button>`).join("")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">删掉这条八度线</button>`, at,
+    ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">${_t("八度线：{p}。只管画，音高不变。", { p: esc(OTT_HELP[t.shift]) })}</div>` +
+      `<div class="ctx-row">${OTTAVAS.map((v) => `<button class="btn ctx-chip${t.shift === v ? " is-on" : ""}" data-v="o:${v}" title="${esc(OTT_HELP[v])}">${esc(OTTAVA_LABEL[v])}</button>`).join("")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("删掉这条八度线")}</button>`, at,
       (v) => { if (v === "del") update(setDisplayMark(D.st, hit.paper, hit.part, hit.index, null)); else if (v.startsWith("o:")) update(setDisplayMark(D.st, hit.paper, hit.part, hit.index, Number(v.slice(2)) as -1 | 1 | 2)); });
     return;
   }
   if (hit.index >= 0) {   // 谱号记号（行中间的，或管着这一行开头的）
     const t = toks[hit.index]; if (!t || t.kind !== "clef") return;
-    ctxMenu("clef-menu", `<div class="ctx-hint ctx-what">这个谱号记号：从这儿起换成别的谱号（只管画，音高不变）。</div><div class="ctx-row">${clefChips(t.clef, "c:")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">删掉这个谱号记号</button>`, at,
+    ctxMenu("clef-menu", `<div class="ctx-hint ctx-what">${_t("这个谱号记号：从这儿起换成别的谱号（只管画，音高不变）。")}</div><div class="ctx-row">${clefChips(t.clef, "c:")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("删掉这个谱号记号")}</button>`, at,
       (v) => { if (v === "del") update(setDisplayMark(D.st, hit.paper, hit.part, hit.index, null)); else if (v.startsWith("c:")) update(setDisplayMark(D.st, hit.paper, hit.part, hit.index, v.slice(2) as ClefName)); });
     return;
   }
   const auto = !part.clef, now = auto ? (resolveSongClefs(D.st.song).get(hit.paper)?.get(hit.part) ?? "G") : part.clef!;
   ctxMenu("clef-menu",
-    `<div class="ctx-hint ctx-what">这个声部的谱号（每张纸开头都用它）：${auto ? `自动（这张纸挑了「${esc(CLEF_LABEL[now])}」）` : esc(CLEF_LABEL[now])}。只管画，音高不变。</div>` +
-    `<div class="ctx-row"><button class="btn ctx-chip${auto ? " is-on" : ""}" data-v="p:auto" title="按每张纸的音挑加线最少的谱号">自动</button>${clefChips(auto ? null : now, "p:")}</div>` +
-    `<div class="ctx-hint">只改这张纸（在这张纸开头放一个谱号记号）：</div><div class="ctx-row">${clefChips(null, "here:")}</div>` +
-    `<div class="ctx-hint">自动八度线：一串很高 / 很低的音（每个都要三条以上加线）自动画 8va / 15ma / 8vb；手写的说了算，不存进谱。</div>` +
-    `<div class="ctx-row"><button class="btn ctx-chip${part.autoOttava !== false ? " is-on" : ""}" data-v="ao:on">开</button><button class="btn ctx-chip${part.autoOttava === false ? " is-on" : ""}" data-v="ao:off">关</button></div>`, at,
+    `<div class="ctx-hint ctx-what">${_t("这个声部的谱号（每张纸开头都用它）：{auto}。只管画，音高不变。", { auto: auto ? _t("自动（这张纸挑了「{p}」）", { p: esc(CLEF_LABEL[now]) }) : esc(CLEF_LABEL[now]) })}</div>` +
+    `<div class="ctx-row"><button class="btn ctx-chip${auto ? " is-on" : ""}" data-v="p:auto" title="${_t("按每张纸的音挑加线最少的谱号")}">${_t("自动")}</button>${clefChips(auto ? null : now, "p:")}</div>` +
+    `<div class="ctx-hint">${_t("只改这张纸（在这张纸开头放一个谱号记号）：")}</div><div class="ctx-row">${clefChips(null, "here:")}</div>` +
+    `<div class="ctx-hint">${_t("自动八度线：一串很高 / 很低的音（每个都要三条以上加线）自动画 8va / 15ma / 8vb；手写的说了算，不存进谱。")}</div>` +
+    `<div class="ctx-row"><button class="btn ctx-chip${part.autoOttava !== false ? " is-on" : ""}" data-v="ao:on">${_t("开")}</button><button class="btn ctx-chip${part.autoOttava === false ? " is-on" : ""}" data-v="ao:off">${_t("关")}</button></div>`, at,
     (v) => {
       if (v.startsWith("ao:")) { update(setPartAutoOttava(D.st, hit.part, v === "ao:on")); return; }
       if (v.startsWith("p:")) update(setPartClef(D.st, hit.part, v === "p:auto" ? null : (v.slice(2) as ClefName)));
@@ -1875,9 +1873,9 @@ function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {
     });
 }
 const NAV_HELP: Record<Exclude<NavWhat, "ending">, string> = {
-  segno: "Segno：D.S. 跳回到这儿", coda: "Coda：To Coda 跳到这儿", fine: "Fine：跳回来（al Fine）之后在这儿停", toCoda: "To Coda：跳回来（al Coda）之后从这儿去 Coda",
-  dc: "D.C.：跳回这张纸开头，放到纸尾", dcFine: "D.C. al Fine：跳回开头，放到 Fine", dcCoda: "D.C. al Coda：跳回开头，到 To Coda 去 Coda",
-  ds: "D.S.：跳回 Segno，放到纸尾", dsFine: "D.S. al Fine：跳回 Segno，放到 Fine", dsCoda: "D.S. al Coda：跳回 Segno，到 To Coda 去 Coda",
+  segno: _t("Segno：D.S. 跳回到这儿"), coda: _t("Coda：To Coda 跳到这儿"), fine: _t("Fine：跳回来（al Fine）之后在这儿停"), toCoda: _t("To Coda：跳回来（al Coda）之后从这儿去 Coda"),
+  dc: _t("D.C.：跳回这张纸开头，放到纸尾"), dcFine: _t("D.C. al Fine：跳回开头，放到 Fine"), dcCoda: _t("D.C. al Coda：跳回开头，到 To Coda 去 Coda"),
+  ds: _t("D.S.：跳回 Segno，放到纸尾"), dsFine: _t("D.S. al Fine：跳回 Segno，放到 Fine"), dsCoda: _t("D.S. al Coda：跳回 Segno，到 To Coda 去 Coda"),
 };
 /** 点谱上的房子 / 跳转记号：换成别的 / 删；不起作用的说为什么。 */
 function openNavMenu(i: number, at: { x: number; y: number }): void {
@@ -1887,9 +1885,9 @@ function openNavMenu(i: number, at: { x: number; y: number }): void {
     ? ENDINGS.map((n) => `<button class="btn ctx-chip${n.join() === (t.nums ?? [1]).join() ? " is-on" : ""}" data-v="nums:${n.join(",")}">${esc(endingLabel(n))}</button>`).join("")
     : JUMPS.map((w) => `<button class="btn ctx-chip${t.what === w ? " is-on" : ""}" data-v="nav:${w}" title="${esc(NAV_HELP[w])}">${esc(NAV_LABEL[w])}</button>`).join("");
   ctxMenu("nav-menu",
-    (why ? `<div class="ctx-hint">不起作用（画灰）：${esc(why)}</div>` : "") +
-    `<div class="ctx-hint ctx-what">${esc(t.what === "ending" ? `房子：第 ${(t.nums ?? [1]).join("、")} 遍走这个括号，别的遍跳过` : NAV_HELP[t.what])}</div>` +
-    `<div class="ctx-row">${chips}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">删除</button>`,
+    (why ? `<div class="ctx-hint">${_t("不起作用（画灰）：{why}", { why: esc(why) })}</div>` : "") +
+    `<div class="ctx-hint ctx-what">${esc(t.what === "ending" ? _t("房子：第 {nums} 遍走这个括号，别的遍跳过", { nums: (t.nums ?? [1]).join("、") }) : NAV_HELP[t.what])}</div>` +
+    `<div class="ctx-row">${chips}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("删除")}</button>`,
     at,
     (v) => {
       if (v === "del") { update(editMarkAt(D.st, i, null)); return; }
@@ -1906,33 +1904,33 @@ function openGrooveMenu(i: number, at: { x: number; y: number }): void {
   const meters = new Set([`${timeAt(toks, i).beats}/${timeAt(toks, i).beatType}`]);
   for (let j = i + 1; j < end; j++) { const u = toks[j]; if (u.kind === "time") meters.add(`${u.beats}/${u.beatType}`); }
   const hints: string[] = [];
-  if (!style && t.style !== "none") hints.push(`这一版不认识「${t.style}」：不加轻重（换一个风格就好）`);
+  if (!style && t.style !== "none") hints.push(_t("这一版不认识「{style}」：不加轻重（换一个风格就好）", { style: t.style }));
   if (style && t.style !== "none") for (const m of meters) { const [b, bt] = m.split("/").map(Number), d = describeGroove(style, b, bt); if (d) hints.push(`${grooveName(t.style)} ${m}：${d}`); }   // 这个风格在这儿怎么轻重（从数据现算）
   if (style && t.style !== "none") {
     const derived = [...meters].filter((m) => { const [b, bt] = m.split("/").map(Number); return grooveTable(style, b, bt)?.derived; });
     const none = [...meters].filter((m) => { const [b, bt] = m.split("/").map(Number); return !grooveTable(style, b, bt); });
-    if (derived.length) hints.push(`${derived.join("、")} 这个预设没列：按古典的强弱推${derived.some((m) => m.endsWith("/8") && Number(m.split("/")[0]) % 3 !== 0 && Number(m.split("/")[0]) > 3) ? "（几个八分一组谱上没记，按 2 + 2 + … + 3 推）" : ""}`);
-    if (none.length) hints.push(`${none.join("、")}：这个预设不加轻重`);
+    if (derived.length) hints.push(_t("{p} 这个预设没列：按古典的强弱推{m}", { p: derived.join("、"), m: derived.some((m) => m.endsWith("/8") && Number(m.split("/")[0]) % 3 !== 0 && Number(m.split("/")[0]) > 3) ? _t("（几个八分一组谱上没记，按 2 + 2 + … + 3 推）") : "" }));
+    if (none.length) hints.push(_t("{p}：这个预设不加轻重", { p: none.join("、") }));
     if (style.swing) { const r = swingRatio(t.style, amount), [lo, hi] = style.swing.range;   // 摇摆（v0.9.36）：按数据现算（纪律：做到什么程度明说）
-      hints.push(`摇摆：一拍里前一个八分占 ${Math.round(r * 100)}%（直 = 50%，三连音感 ≈ 67%；幅度只放大 / 缩小比直的多出来的那一截，夹在 ${Math.round(lo * 100)}–${Math.round(hi * 100)}%）。这张纸上所有歌手一起摇（小月相也是，不分跟多少）；写成连音的音、6/8 这类拍号不摇`); }
+      hints.push(_t("摇摆：一拍里前一个八分占 {p}%（直 = 50%，三连音感 ≈ 67%；幅度只放大 / 缩小比直的多出来的那一截，夹在 {p2}–{p3}%）。这张纸上所有歌手一起摇（小月相也是，不分跟多少）；写成连音的音、6/8 这类拍号不摇", { p: Math.round(r * 100), p2: Math.round(lo * 100), p3: Math.round(hi * 100) })); }
     const paper = D.st.song.papers.find((p) => p.id === D.st.at.paper);
     const who = D.st.song.parts.filter((p) => paper?.tracks[p.id]).map((p) => {
       const f = followOf(style, grooveCategory(performerOf(activeInstrument(D.extras, p.role)?.engine)?.grooveCategory ?? null, activeGm(D.extras, p.role)));
-      return `${roleName(D.extras, p.role)} ${f > 0 ? `跟 ${Math.round(f * 100)}%` : "不跟"}`;
+      return `${roleName(D.extras, p.role)} ${f > 0 ? _t("跟 {p}%", { p: Math.round(f * 100) }) : _t("不跟")}`;
     });
-    if (who.length) hints.push(`这张纸上：${who.join(" · ")}（按乐器类别，预设给的）`);
+    if (who.length) hints.push(_t("这张纸上：{p}（按乐器类别，预设给的）", { p: who.join(" · ") }));
   }
-  const chips = GROOVE_STYLES.filter((x) => x.id !== "none").map((x) => `<button class="btn ctx-chip${t.style === x.id ? " is-on" : ""}" data-v="style:${x.id}" title="${esc(x.aliases.length ? `也叫 ${x.aliases.join(" / ")}` : x.name.zh)}">${esc(x.name.en)}<small> · ${esc(x.name.zh)}</small></button>`).join("") +   // 谱上写英文（user「风格名用英文」），按钮带中文
-    `<button class="btn ctx-chip${t.style === "none" ? " is-on" : ""}" data-v="style:none" title="从这儿起不加拍子轻重">不加轻重</button>`;
-  const amounts = [0.5, 1, 1.5, 2].map((a) => `<button class="btn ctx-chip${Math.abs(amount - a) < 1e-9 ? " is-on" : ""}" data-v="amount:${a}" title="幅度：预设的 ${a} 倍">×${a}</button>`).join("");
+  const chips = GROOVE_STYLES.filter((x) => x.id !== "none").map((x) => `<button class="btn ctx-chip${t.style === x.id ? " is-on" : ""}" data-v="style:${x.id}" title="${esc(x.aliases.length ? _t("也叫 {p}", { p: x.aliases.join(" / ") }) : x.name.zh)}">${esc(x.name.en)}<small> · ${esc(x.name.zh)}</small></button>`).join("") +   // 谱上写英文（user「风格名用英文」），按钮带中文
+    `<button class="btn ctx-chip${t.style === "none" ? " is-on" : ""}" data-v="style:none" title="${_t("从这儿起不加拍子轻重")}">${_t("不加轻重")}</button>`;
+  const amounts = [0.5, 1, 1.5, 2].map((a) => `<button class="btn ctx-chip${Math.abs(amount - a) < 1e-9 ? " is-on" : ""}" data-v="amount:${a}" title="${_t("幅度：预设的 {a} 倍", { a })}">×${a}</button>`).join("");
   const box = document.createElement("div");
   box.className = "track-card ctx-menu groove-menu"; box.setAttribute("role", "menu");
-  box.innerHTML = `<div class="ctx-hint ctx-what">风格 = 拍子轻重：从这个音起到这张纸结尾，每个音按它落在小节里的哪一拍轻一点或重一点（像鼓手的律动）；写了重音 / 弱化的音照写的来。</div>` +
+  box.innerHTML = `<div class="ctx-hint ctx-what">${_t("风格 = 拍子轻重：从这个音起到这张纸结尾，每个音按它落在小节里的哪一拍轻一点或重一点（像鼓手的律动）；写了重音 / 弱化的音照写的来。")}</div>` +
     `<div class="ctx-row ctx-groove">${chips}</div>` + (t.style !== "none" ? `<div class="ctx-row ctx-amount">${amounts}</div>` : "") +
-    (grooveHasPhase(style) ? `<div class="ctx-row ctx-phase"><button class="btn ctx-chip${t.shift ? "" : " is-on"}" data-v="shift:0" title="一轮的第一小节是三击那边（前句），从这个记号那一小节起数">3-2</button><button class="btn ctx-chip${t.shift ? " is-on" : ""}" data-v="shift:1" title="错开一小节：两小节对调，第一小节是两击那边">2-3（错开一小节）</button></div>` : "") +
+    (grooveHasPhase(style) ? `<div class="ctx-row ctx-phase"><button class="btn ctx-chip${t.shift ? "" : " is-on"}" data-v="shift:0" title="${_t("一轮的第一小节是三击那边（前句），从这个记号那一小节起数")}">3-2</button><button class="btn ctx-chip${t.shift ? " is-on" : ""}" data-v="shift:1" title="${_t("错开一小节：两小节对调，第一小节是两击那边")}">${_t("2-3（错开一小节）")}</button></div>` : "") +
     hints.map((h) => `<div class="ctx-hint">${esc(h)}</div>`).join("") + `<div class="ctx-sep"></div>` +
-    `<button class="btn ctx-item danger" data-v="del" title="去掉这个风格记号（这儿起回到前一个风格；这张纸开头 = 不加）">删除</button>` +
-    `<div class="ctx-hint">只管这张纸：从这个音到这张纸结尾（或下一个风格记号）。长按拖 = 挪到别的音上</div>`;
+    `<button class="btn ctx-item danger" data-v="del" title="${_t("去掉这个风格记号（这儿起回到前一个风格；这张纸开头 = 不加）")}">${_t("删除")}</button>` +
+    `<div class="ctx-hint">${_t("只管这张纸：从这个音到这张纸结尾（或下一个风格记号）。长按拖 = 挪到别的音上")}</div>`;
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
@@ -1967,16 +1965,16 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
   const box = document.createElement("div");
   box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
   const row = t.kind === "dyn"
-    ? (["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => `<button class="btn ctx-chip${t.value === d ? " is-on" : ""}" data-v="dyn:${d}" title="改成 ${d}"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")
-    : (["cresc", "dim"] as const).map((d) => `<button class="btn ctx-chip${t.dir === d ? " is-on" : ""}" data-v="dir:${d}" title="${d === "cresc" ? "渐强" : "渐弱"}">${WEDGE_MENU[d]}</button>`).join("");
+    ? (["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => `<button class="btn ctx-chip${t.value === d ? " is-on" : ""}" data-v="dyn:${d}" title="${_t("改成 {d}", { d })}"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")
+    : (["cresc", "dim"] as const).map((d) => `<button class="btn ctx-chip${t.dir === d ? " is-on" : ""}" data-v="dir:${d}" title="${d === "cresc" ? _t("渐强") : _t("渐弱")}">${WEDGE_MENU[d]}</button>`).join("");
   // 渐到（只给力度记号）：开关 + 做不到时说为什么（纪律：画灰 + 明说）
-  const rampWhy = src === "none" ? "这张纸里前面没有力度记号，没有地方渐过来" : src === "hairpin" ? "中间有手写的渐强渐弱，按手写的走" : "";
-  const offWhy = t.kind === "dyn" && dynOverridden(toks).has(i) ? `<div class="ctx-hint">不起作用（画灰）：后面那个音是强后即弱（fp）——音头按 f、随后落到 p，之后也是 p，这个 ${t.value} 管不到</div>` : "";
-  const rampRow = t.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t.ramp ? " disabled" : ""} title="渐到：从这张纸里上一个力度记号那儿一路渐变到这里（谱上虚线发夹）；关 = 到这儿突变">${t.ramp ? "✓ " : ""}渐到（从上一个力度渐变过来）</button>` +
-    (rampWhy ? `<div class="ctx-hint">${t.ramp ? "不起作用：" : ""}${esc(rampWhy)}</div>` : "");
+  const rampWhy = src === "none" ? _t("这张纸里前面没有力度记号，没有地方渐过来") : src === "hairpin" ? _t("中间有手写的渐强渐弱，按手写的走") : "";
+  const offWhy = t.kind === "dyn" && dynOverridden(toks).has(i) ? `<div class="ctx-hint">${_t("不起作用（画灰）：后面那个音是强后即弱（fp）——音头按 f、随后落到 p，之后也是 p，这个 {value} 管不到", { value: t.value })}</div>` : "";
+  const rampRow = t.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t.ramp ? " disabled" : ""} title="${_t("渐到：从这张纸里上一个力度记号那儿一路渐变到这里（谱上虚线发夹）；关 = 到这儿突变")}">${_t("{ramp}渐到（从上一个力度渐变过来）", { ramp: t.ramp ? "✓ " : "" })}</button>` +
+    (rampWhy ? `<div class="ctx-hint">${t.ramp ? _t("不起作用：") : ""}${esc(rampWhy)}</div>` : "");
   box.innerHTML = `${offWhy}<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div>` +
-    `<button class="btn ctx-item danger" data-v="del" title="${t.kind === "dyn" ? "去掉这个力度记号（后面的音回到前一个力度记号）" : "去掉这个渐强 / 渐弱"}">删除</button>` +
-    `<div class="ctx-hint">长按拖 = 挪到别的音上</div>`;
+    `<button class="btn ctx-item danger" data-v="del" title="${t.kind === "dyn" ? _t("去掉这个力度记号（后面的音回到前一个力度记号）") : _t("去掉这个渐强 / 渐弱")}">${_t("删除")}</button>` +
+    `<div class="ctx-hint">${_t("长按拖 = 挪到别的音上")}</div>`;
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
@@ -2013,16 +2011,16 @@ function openSelMenu(at: { x: number; y: number }): void {
   const draw = (page: "main" | "keys") => {
     if (page === "keys") {
       const now = keyAt(tr(D.st), D.st.sel?.from ?? 0);
-      box.innerHTML = item("back", "‹ 转调到…") + `<div class="ctx-grid">` + KEY_CIRCLE_MENU.map((k) => chip(`mod:${k}`, `1=${KEY_LABEL[k]}`, k === now ? "现在的调" : "")).join("") + `</div>`;
+      box.innerHTML = item("back", _t("‹ 转调到…")) + `<div class="ctx-grid">` + KEY_CIRCLE_MENU.map((k) => chip(`mod:${k}`, `1=${KEY_LABEL[k]}`, k === now ? _t("现在的调") : "")).join("") + `</div>`;
       return;
     }
     box.innerHTML =
-      `<div class="ctx-row"><span class="ctx-k">移调</span>${chip("tr:1", "↑ 半音")}${chip("tr:-1", "↓ 半音")}${chip("tr:2", "↑ 全音")}${chip("tr:-2", "↓ 全音")}${chip("oct:1", "↑ 八度")}${chip("oct:-1", "↓ 八度")}</div>` +
-      item("keys", "转调…", "整段转到另一个调：音按两个主音之间的音程挪，调号跟着换") +
-      item("respell", "按调号拼写", "音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动") +
-      `<div class="ctx-row"><span class="ctx-k">时值</span>${chip("short", "÷2")}${chip("long", "×2")}${chip("seldur", `都改成 <span class="smufl">${UNIT_SMUFL[D.st.input.unit]}</span>`, "都改成长短旋钮现在那一档")}</div>` +
-      `<div class="ctx-row"><span class="ctx-k">清掉记号</span>${chip("clr:phrase", "曲级", "力度字、渐强渐弱、渐到、风格（选区第一个音前面挂着的也算）")}${chip("clr:note", "音级", "演奏法、音头（重音 / 突强…）、音内起伏、连线、呼吸、气声")}${chip("clr:all", "都清", "曲级 + 音级；音、歌词、调号拍号速度、反复不动")}</div>` +
-      `<div class="ctx-sep"></div>` + item("copy", "复制") + item("cut", "剪切") + (clip ? item("paste", "粘贴（替换选中的）") : "") + item("delete", "删掉", "", "danger");
+      `<div class="ctx-row"><span class="ctx-k">${_t("移调")}</span>${chip("tr:1", _t("↑ 半音"))}${chip("tr:-1", _t("↓ 半音"))}${chip("tr:2", _t("↑ 全音"))}${chip("tr:-2", _t("↓ 全音"))}${chip("oct:1", _t("↑ 八度"))}${chip("oct:-1", _t("↓ 八度"))}</div>` +
+      item("keys", _t("转调…"), _t("整段转到另一个调：音按两个主音之间的音程挪，调号跟着换")) +
+      item("respell", _t("按调号拼写"), _t("音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动")) +
+      `<div class="ctx-row"><span class="ctx-k">${_t("时值")}</span>${chip("short", "÷2")}${chip("long", "×2")}${chip("seldur", `${_t("都改成")} <span class="smufl">${UNIT_SMUFL[D.st.input.unit]}</span>`, _t("都改成长短旋钮现在那一档"))}</div>` +
+      `<div class="ctx-row"><span class="ctx-k">${_t("清掉记号")}</span>${chip("clr:phrase", _t("曲级"), _t("力度字、渐强渐弱、渐到、风格（选区第一个音前面挂着的也算）"))}${chip("clr:note", _t("音级"), _t("演奏法、音头（重音 / 突强…）、音内起伏、连线、呼吸、气声"))}${chip("clr:all", _t("都清"), _t("曲级 + 音级；音、歌词、调号拍号速度、反复不动"))}</div>` +
+      `<div class="ctx-sep"></div>` + item("copy", _t("复制")) + item("cut", _t("剪切")) + (clip ? item("paste", _t("粘贴（替换选中的）")) : "") + item("delete", _t("删掉"), "", "danger");
   };
   draw("main");
   document.body.append(box);
@@ -2044,7 +2042,7 @@ function openSelMenu(at: { x: number; y: number }): void {
     if (v === "short") { cmd({ k: "selscale", f: 0.5 }); return; }
     if (v === "long") { cmd({ k: "selscale", f: 2 }); return; }
     if (v === "seldur") { cmd({ k: "seldur" }); return; }
-    if (v.startsWith("clr:")) { const n = clearMarks(D.st, v.slice(4) as "phrase" | "note" | "all"); if (n === D.st) info("选中的这一段没有这类记号"); else update(n); close(); scoreEl.focus(); return; }
+    if (v.startsWith("clr:")) { const n = clearMarks(D.st, v.slice(4) as "phrase" | "note" | "all"); if (n === D.st) info(_t("选中的这一段没有这类记号")); else update(n); close(); scoreEl.focus(); return; }
     if (v === "keys") { draw("keys"); place(); return; }
     if (v === "back") { draw("main"); place(); return; }
     close();
@@ -2061,7 +2059,7 @@ $("stage").append(instEl);
 // 找人：从货架（家族音源库）或自己的 .sf2 文件挑一把琴 → 只把那一件切出来（契约 §10.2）
 let instPicked: { name: string; bytes: Uint8Array; presets: Sf2PresetInfo[]; sel: string; library?: SoundEntry } | null = null;
 type Chosen = { name: string; bank: number; program: number; note?: number; sfx?: SfxInfo; subset: Uint8Array; sha256: string; origin: GmCandidate["origin"]; credit: { attribution: string[]; license: { name: string; url?: string; text?: string } } };
-const UNKNOWN_TITLE = "这一版出不了声（别的软件原来的乐器）";   // 认得出的候选：说明由插件自报（description）
+const UNKNOWN_TITLE = _t("这一版出不了声（别的软件原来的乐器）");   // 认得出的候选：说明由插件自报（description）
 /** 小月相唱法核心的旋钮 = 乐器页「高级」（存进候选 defaults，by value、走 undo、换人跟人走；默认 = TSUKUYOMI_DEFAULTS）。
  *  2026-10-15 user 拍板：齐平默认关（「应该leverage就是齐平，我觉得不开没什么影响吧，默认不开」），旋钮进高级设置持久化；「连续」也放着试。物理意义 = ai-docs/20261013-dango-c10-pop-probe.md §6。
  *  2026-10-17 改回齐平 0.8 + 连续（user「那个破音是因为默认关了齐平导致的…加上连续过渡然后用那个默认」「齐平还是默认开吧。爆音至少比响度不可控好」；format/performance.ts TSUKUYOMI_DEFAULTS）。 */
@@ -2082,7 +2080,7 @@ function closeInstPage(): void {
 }
 const setRole = (name: string, sound?: string) => {
   const n = name.trim(); if (!n || (n === roleName(D.extras, curRole()) && (!sound || sound === roleSound(D.extras, curRole())))) return;
-  updateExtras(withRoleName(D.extras, curRole(), n, D.st.song.hum, sound), { kind: "lounge", label: `角色改名：${n}` }); view.render();
+  updateExtras(withRoleName(D.extras, curRole(), n, D.st.song.hum, sound), { kind: "lounge", label: _t("角色改名：{n}", { n }) }); view.render();
 };
 const commitRoleName = () => { const inp = instEl.querySelector<HTMLInputElement>("#roleIn"); if (inp && !instEl.hidden) setRole(inp.value); };
 const fileInput = (accept: string, onFile: (f: File) => Promise<void>) => {
@@ -2093,7 +2091,7 @@ const fileInput = (accept: string, onFile: (f: File) => Promise<void>) => {
 async function pickOfficial(id: string): Promise<void> {
   const e = SOUNDS[id];
   try {
-    const bytes = await sources.fetchSound(e, (done) => progress(`下载 ${e.name} ${Math.round((done / e.bytes) * 100)}%`));
+    const bytes = await sources.fetchSound(e, (done) => progress(_t("下载 {name} {bytes}%", { name: e.name, bytes: Math.round((done / e.bytes) * 100) })));
     progress("");
     const presets = listSf2Presets(bytes), first = presets.find((p) => p.bank === 0) ?? presets[0];
     instPicked = { name: e.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e }; drawInst();
@@ -2102,10 +2100,10 @@ async function pickOfficial(id: string): Promise<void> {
 const pickFile = () => fileInput(".sf2,audio/x-soundfont", async (f) => {
   try {
     const bytes = new Uint8Array(await f.arrayBuffer()), presets = listSf2Presets(bytes);
-    if (!presets.length) throw new Error("里面没有乐器");
+    if (!presets.length) throw new Error(_t("里面没有乐器"));
     const first = presets.find((p) => p.bank === 0) ?? presets[0];
     instPicked = { name: f.name, bytes, presets, sel: `${first.bank}:${first.program}` }; drawInst();
-  } catch (e) { showError(`读不了「${f.name}」：${(e as Error).message}`); }
+  } catch (e) { showError(_t("读不了「{name}」：{Error}", { name: f.name, Error: (e as Error).message })); }
 });
 // 弱引用找不到整包时：人把文件给它（核整包 sha256；对了就留在设备上）
 const findBankFile = (id: string) => {
@@ -2113,9 +2111,9 @@ const findBankFile = (id: string) => {
   fileInput(".sf2,audio/x-soundfont", async (f) => {
     try {
       const bytes = new Uint8Array(await f.arrayBuffer()), sha = await sha256Hex(bytes);
-      if (sha !== g.origin.fileSha256) throw new Error(`「${f.name}」不是歌里记的那个「${g.origin.name}」（sha256 ${sha.slice(0, 12)}… ≠ ${g.origin.fileSha256.slice(0, 12)}…）`);
+      if (sha !== g.origin.fileSha256) throw new Error(_t("「{name}」不是歌里记的那个「{name2}」（sha256 {p}… ≠ {p2}…）", { name: f.name, name2: g.origin.name, p: sha.slice(0, 12), p2: g.origin.fileSha256.slice(0, 12) }));
       await rememberSound(sha, bytes, true); sources.session.drop(g.subsetSha256);
-      await sources.resolveGmBytes(g); info(`找到了：「${g.name}」能响了`); drawInst();
+      await sources.resolveGmBytes(g); info(_t("找到了：「{name}」能响了", { name: g.name })); drawInst();
     } catch (e) { showError((e as Error).message); }
   });
 };
@@ -2123,12 +2121,12 @@ const findBankFile = (id: string) => {
 //   货架上的（音源库）= 整包在设备缓存 / 音源库里找得到；自己的 .sf2 = 把切出来的子集留进设备的音源缓存（几 MB），下次打开 app 自己找得到。
 //   要歌自己带着声音（发给别人）= 文件菜单「全部打包进歌」或导出「打包音源」的副本。
 async function finishAdd(c: Chosen): Promise<void> {
-  updateExtras(withSf2Candidate(D.extras, curRole(), { ...c, embed: false }, D.st.song.hum), { kind: "lounge", label: `「${roleName(D.extras, curRole())}」换成：${c.name}` });
+  updateExtras(withSf2Candidate(D.extras, curRole(), { ...c, embed: false }, D.st.song.hum), { kind: "lounge", label: _t("「{extras}」换成：{name}", { extras: roleName(D.extras, curRole()), name: c.name }) });
   sources.session.keep(c.sha256, c.subset);   // 本次打开里直接能响
   instPicked = null; sound.allOff(); void prepareBank(); view.render(); renderTitle(); drawInst();
   if (!c.origin.library) {
     await rememberSound(c.sha256, c.subset, true);
-    if (!(await isSoundPersisted(c.sha256))) showError(`「${c.name}」的声音没能留在这台设备上（空间不够，或这个浏览器不让存）：这次打开里能响；下次要从「${c.origin.name}」文件找。想让歌自己带着它：文件菜单「全部打包进歌」。`);
+    if (!(await isSoundPersisted(c.sha256))) showError(_t("「{name}」的声音没能留在这台设备上（空间不够，或这个浏览器不让存）：这次打开里能响；下次要从「{name2}」文件找。想让歌自己带着它：文件菜单「全部打包进歌」。", { name: c.name, name2: c.origin.name }));
   }
 }
 async function addPicked(): Promise<void> {
@@ -2147,17 +2145,17 @@ async function addPicked(): Promise<void> {
     // GS 的音效：和找人视图上场一样默认固定原速（sampleKey 只对 GS 成立；鼓组 bank 128 的预设在 GS 里是整套鼓，不是单件，不带 note）
     const keys = lib?.id === GS_LIBRARY_ID ? gsKeyArgs(catalogNow ??= await loadCatalog(), bank, program) : {};
     await finishAdd({ name, bank, program, ...keys, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...(lib ? { library: lib.id } : {}) }, credit });
-  } catch (e) { showError(`加不进来：${(e as Error).message}`); }
+  } catch (e) { showError(_t("加不进来：{Error}", { Error: (e as Error).message })); }
 }
 function pickerHtml(): string {
   const picked = instPicked; if (!picked) return "";
   const banks = [...new Set(picked.presets.map((p) => p.bank))].sort((a, b) => a - b);
-  const label = (b: number) => (b === 128 ? "鼓组" : b === 0 ? "乐器" : `变体（bank ${b}）`);
+  const label = (b: number) => (b === 128 ? _t("鼓组") : b === 0 ? _t("乐器") : _t("变体（bank {b}）", { b }));
   const cur = picked.presets.find((p) => `${p.bank}:${p.program}` === picked.sel);
-  return `<div class="ip-picker"><div class="ip-sub">${esc(picked.name)}（${picked.presets.length} 件）</div><select id="sfSel" class="role-sel">` +
+  return `<div class="ip-picker"><div class="ip-sub">${_t("{name}（{n} 件）", { name: esc(picked.name), n: picked.presets.length })}</div><select id="sfSel" class="role-sel">` +
     banks.map((b) => `<optgroup label="${label(b)}">${picked.presets.filter((p) => p.bank === b).map((p) => `<option value="${p.bank}:${p.program}"${`${p.bank}:${p.program}` === picked.sel ? " selected" : ""}>${String(p.program).padStart(3, "0")} ${esc(p.name)}</option>`).join("")}</optgroup>`).join("") +
-    `</select><label class="role-name">叫<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(cur?.name ?? "")}" /></label>` +
-    `<div class="ip-btns"><button class="btn primary" data-v="sf2:add">加进来、选它</button><button class="btn" data-v="sf2:cancel">算了</button></div></div>`;
+    `</select><label class="role-name">${_t("叫")}<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(cur?.name ?? "")}" /></label>` +
+    `<div class="ip-btns"><button class="btn primary" data-v="sf2:add">${_t("加进来、选它")}</button><button class="btn" data-v="sf2:cancel">${_t("算了")}</button></div></div>`;
 }
 /** 乐器页的内容（每次改完整页重画；输入框里正在打的字不受影响——只有提交时才改 extras）。 */
 /** 插件自报参数行要的上下文（ADR-0004 §2.5）：休息室 / 角色 / 哼的字 / 音乐目录（没载 = null）/ 排版小工具。 */
@@ -2167,11 +2165,11 @@ function inspectorCtx(role: string): InspectorCtx {
 function drawInst(): void {
   if (!instShown()) return;
   const eng = engineNow(), h = D.st.song.hum, role = curRole(), rn = roleName(D.extras, role), rs = roleSound(D.extras, role), aid = activeId(D.extras, role);
-  const gms = new Map(gmCandidates(D.extras, role).map((g) => [g.id, g])), active = gms.get(aid), who = activeCandidateName(D.extras, role) ?? "（没人上场）";
-  const chipTitle = (c: { id: string; engine: Engine }) => { const g = gms.get(c.id); if (!g) return performerOf(c.engine)?.description ?? UNKNOWN_TITLE; return g.bytes ? `SoundFont ${g.bank}:${g.program}，声音嵌在歌里（${sizeText(g.bytes.length)}）` : g.path ? "声音没随这首歌带来" : `弱引用：声音不在歌里，用时从「${g.origin.name}」找`; };
-  const status = !active ? "" : active.bytes ? `<div class="cand-status">声音嵌在歌里（${sizeText(active.bytes.length)}）${active.origin.library ? `，来自家族音源库的 ${esc(active.origin.name)}` : `，来自 ${esc(active.origin.name)}`}</div>`
-    : active.path ? `<div class="cand-status">声音没随这首歌带来，所以没人上场——换一个「谁来演」</div>`
-    : ((found) => `<div class="cand-status">弱引用：歌里不带声音，用时从「${esc(active.origin.name)}」找（${found ? "本次已找到" : "家族音源库 / 设备缓存 / 你的文件"}）${found ? "" : `<button class="btn" data-v="find:${esc(active.id)}">找文件…</button>`}</div>`)(sources.session.has(active.subsetSha256));
+  const gms = new Map(gmCandidates(D.extras, role).map((g) => [g.id, g])), active = gms.get(aid), who = activeCandidateName(D.extras, role) ?? _t("（没人上场）");
+  const chipTitle = (c: { id: string; engine: Engine }) => { const g = gms.get(c.id); if (!g) return performerOf(c.engine)?.description ?? UNKNOWN_TITLE; return g.bytes ? _t("SoundFont {bank}:{program}，声音嵌在歌里（{n}）", { bank: g.bank, program: g.program, n: sizeText(g.bytes.length) }) : g.path ? _t("声音没随这首歌带来") : _t("弱引用：声音不在歌里，用时从「{name}」找", { name: g.origin.name }); };
+  const status = !active ? "" : active.bytes ? `<div class="cand-status">${_t("声音嵌在歌里（{n}）{library}", { n: sizeText(active.bytes.length), library: active.origin.library ? _t("，来自家族音源库的 {name}", { name: esc(active.origin.name) }) : _t("，来自 {name}", { name: esc(active.origin.name) }) })}</div>`
+    : active.path ? `<div class="cand-status">${_t("声音没随这首歌带来，所以没人上场——换一个「谁来演」")}</div>`
+    : ((found) => `<div class="cand-status">${_t("弱引用：歌里不带声音，用时从「{name}」找（{found}）", { name: esc(active.origin.name), found: found ? _t("本次已找到") : _t("家族音源库 / 设备缓存 / 你的文件") })}${found ? "" : `<button class="btn" data-v="find:${esc(active.id)}">${_t("找文件…")}</button>`}</div>`)(sources.session.has(active.subsetSha256));
   const labels = partLabels(D.st.song, D.extras), onPaper = new Set(Object.keys(D.st.song.papers.find((p) => p.id === D.st.at.paper)?.tracks ?? {}));
   const parts = D.st.song.parts.map((p, k) => ({ p, label: labels[k] })).filter((x) => onPaper.has(x.p.id));
   const cal = activeCalibrationDb(D.extras, role), tr = activeTranspose(D.extras, role);
@@ -2182,40 +2180,40 @@ function drawInst(): void {
   const own = plug?.inspector?.(ictx) ?? [], ownMain = own.filter((x) => !x.place), ownAdv = own.filter((x) => x.place === "adv"), ownTail = own.filter((x) => x.place === "tail");
   const rowOf = (x: { label: string; control: string; note?: string }) => row(x.label, x.control, x.note ?? "");
   const how =
-    (plug ? row("响度", `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="这位演奏者小声 1 dB">−1 dB</button><button class="btn" data-v="cal:1" title="大声 1 dB">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="回到默认 ${fmtDb(DEFAULT_CALIBRATION_DB)}">默认</button>` : ""}`,
-      `这位演奏者自己的音量：默认都是 ${fmtDb(DEFAULT_CALIBRATION_DB)}（小月相也是），几个声部叠在一起才不顶到天花板、不把声音压变样；混音台的推子另算`) : "") +
+    (plug ? row(_t("响度"), `<b class="ip-val">${fmtDb(cal)}</b><button class="btn" data-v="cal:-1" title="${_t("这位演奏者小声 1 dB")}">−1 dB</button><button class="btn" data-v="cal:1" title="${_t("大声 1 dB")}">+1 dB</button>${cal !== DEFAULT_CALIBRATION_DB ? `<button class="btn" data-v="cal:def" title="${_t("回到默认 {DEFAULT_CALIBRATION_DB}", { DEFAULT_CALIBRATION_DB: fmtDb(DEFAULT_CALIBRATION_DB) })}">${_t("默认")}</button>` : ""}`,
+      _t("这位演奏者自己的音量：默认都是 {DEFAULT_CALIBRATION_DB}（小月相也是），几个声部叠在一起才不顶到天花板、不把声音压变样；混音台的推子另算", { DEFAULT_CALIBRATION_DB: fmtDb(DEFAULT_CALIBRATION_DB) })) : "") +
     // 连断的底色（2026-10-08，user「连断 预设 都同意」）：不写记号的音之间留多大缝（毫秒）；按 GM 音色家族给的默认只是起点，好不好听归耳朵。
     //   月读还不认（唱法核心的连 / 断是第 3 步）：不给这一行，谱上的连线 / 保持照规矩画灰
-    (plug?.sound === "notes" ? ((gap, d) => row("音和音之间", `<b class="ip-val">${Math.round(gap * 1000)} ms</b>` +
-      `<button class="btn" data-v="gap:-0.01" title="缝小 10 ms（更连）">−10</button><button class="btn" data-v="gap:0.01" title="缝大 10 ms（更断）">+10</button>` +
-      (d && Math.abs(gap - d.gapSec) > 1e-9 ? `<button class="btn" data-v="gap:def" title="回到默认 ${Math.round(d.gapSec * 1000)} ms">默认</button>` : ""),
-      `不写记号的音和下一个音之间留的缝：0 = 连着。${d ? `${esc(d.label)}：默认 ${Math.round(d.gapSec * 1000)} ms（音乐目录给的，按音色逐个）。` : ""}连线（连奏）、保持的音不留缝；呼吸 = 这里断开；跳音另算`))(activePerfSpec(D.extras, role).gapSec, gapDefaultOf(role)) : "") +
+    (plug?.sound === "notes" ? ((gap, d) => row(_t("音和音之间"), `<b class="ip-val">${Math.round(gap * 1000)} ms</b>` +
+      `<button class="btn" data-v="gap:-0.01" title="${_t("缝小 10 ms（更连）")}">−10</button><button class="btn" data-v="gap:0.01" title="${_t("缝大 10 ms（更断）")}">+10</button>` +
+      (d && Math.abs(gap - d.gapSec) > 1e-9 ? `<button class="btn" data-v="gap:def" title="${_t("回到默认 {p} ms", { p: Math.round(d.gapSec * 1000) })}">${_t("默认")}</button>` : ""),
+      _t("不写记号的音和下一个音之间留的缝：0 = 连着。{d}连线（连奏）、保持的音不留缝；呼吸 = 这里断开；跳音另算", { d: d ? _t("{label}：默认 {p} ms（音乐目录给的，按音色逐个）。", { label: esc(d.label), p: Math.round(d.gapSec * 1000) }) : "" })))(activePerfSpec(D.extras, role).gapSec, gapDefaultOf(role)) : "") +
     ownMain.map(rowOf).join("") +
     // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-    (plug?.dynamics === "gain" ? row("力度记号", "", `力度记号 = 音量（相对 mf，dB）；一档 6 dB ≈ 振幅翻倍 / 减半。力度记号没有标准的 dB，是相对的：每位演奏者自己带一张表，这是这位的：${dynTable(activePerfSpec(D.extras, role), null)}`) : "") +
-    ((plug?.lyrics ?? "none") !== "none" ? row("哼的字", HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), "没写歌词的音唱什么（整首歌一个）") : "") +
-    (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>高级：唱法核心的旋钮</summary>${ownAdv.map(rowOf).join("")}</details>` : "") +
+    (plug?.dynamics === "gain" ? row(_t("力度记号"), "", _t("力度记号 = 音量（相对 mf，dB）；一档 6 dB ≈ 振幅翻倍 / 减半。力度记号没有标准的 dB，是相对的：每位演奏者自己带一张表，这是这位的：{extras}", { extras: dynTable(activePerfSpec(D.extras, role), null) })) : "") +
+    ((plug?.lyrics ?? "none") !== "none" ? row(_t("哼的字"), HUMS.map(([v, l]) => chip(`hum:${v}`, l, h === v)).join(""), _t("没写歌词的音唱什么（整首歌一个）")) : "") +
+    (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("高级：唱法核心的旋钮")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") +
     ownTail.map(rowOf).join("") +
-    (!plug ? row("", "", "这一版出不了声（别的软件原来的乐器）：换一个「谁来演」") : "");
+    (!plug ? row("", "", _t("这一版出不了声（别的软件原来的乐器）：换一个「谁来演」")) : "");
   // 整页重画会换掉滚动的那一层（.ip-body）：记下滚到哪、画完放回去（user 2026-10-17「我调歌手设置的时候每调一下页面都会弹回顶端」）；刚打开那一下由 openInstPage 滚回顶
   const keepScroll = instEl.querySelector<HTMLElement>(".ip-body")?.scrollTop ?? 0;
   instEl.innerHTML =
-    `<div class="ip-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="ip-title">乐器</span>` +
-    (parts.length > 1 ? `<select class="ip-part" title="换一个声部">${parts.map((x) => `<option value="${esc(x.p.id)}"${x.p.id === D.st.at.part ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc(parts[0]?.label ?? rn)}</span>`) +
-    `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="试听键盘：开 / 关"><svg class="ico"><use href="#grid"/></svg><span>键盘</span></button></div>` +
+    `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("回到谱（Esc）")}">${_t("← 谱")}</button><span class="ip-title">${_t("乐器")}</span>` +
+    (parts.length > 1 ? `<select class="ip-part" title="${_t("换一个声部")}">${parts.map((x) => `<option value="${esc(x.p.id)}"${x.p.id === D.st.at.part ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc(parts[0]?.label ?? rn)}</span>`) +
+    `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="${_t("试听键盘：开 / 关")}"><svg class="ico"><use href="#grid"/></svg><span>${_t("键盘")}</span></button></div>` +
     `<div class="ip-body"><div class="ip-cols">` +
-    `<section class="ip-card"><h3>这个声部是什么<small>谱上写它的名字</small></h3><select id="roleSel" class="role-sel">` +
-      (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${esc(rn)}（自己写的）</option>`) +
+    `<section class="ip-card"><h3>${_t("这个声部是什么")}<small>${_t("谱上写它的名字")}</small></h3><select id="roleSel" class="role-sel">` +
+      (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${_t("{rn}（自己写的）", { rn: esc(rn) })}</option>`) +
       ROLE_GROUPS.map((g) => `<optgroup label="${g.group}">${g.items.map((r) => `<option value="${esc(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc(r.name)} — ${r.zh}</option>`).join("")}</optgroup>`).join("") +
-      `</select><label class="role-name">谱上写<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" /></label><div class="role-sound">MusicXML：<code>${esc(rs)}</code></div></section>` +
-    `<section class="ip-card"><h3>谁来演<small>演奏者和他手里的琴；名字不上谱</small></h3><div class="ip-cands">` +
-      candidates(D.extras, role).map((c) => chip(`cand:${c.id}`, !performerOf(c.engine) ? `${esc(c.name)}（没人能演）` : esc(c.name), aid === c.id, chipTitle(c)) +
-        (aid !== c.id && (performerOf(c.engine)?.removable ?? true) ? `<button class="btn cand-del" data-v="del:${esc(c.id)}" title="从休息室删掉（它嵌在歌里的声音一起丢）">×</button>` : "")).join("") + `</div>` + status +
-      `<div class="ip-sub">换人</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="全屏的乐器目录：按曲风 / 年代 / 族 / 发声方式浏览，右边的键盘试听，上场">打开乐器目录…</button>` +
-      Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(`${e.description ?? e.name}（${sizeText(e.bytes)}；家族音源库，第一次点才下载、之后留在设备上；${e.license.name}）`)}">从 ${esc(e.name)} 选…</button>`).join("") +
-      `<button class="btn" data-v="sf2:pick" title="自己的 .sf2 文件：选中的那一件切出来留在这台设备上（几 MB），歌里只记来源；整个文件不留">从 .sf2 文件选…</button></div>` + pickerHtml() +
-      `<div class="ip-note">选的琴歌里只记来源（歌小）：声音从这台设备 / 家族音源库 / 你的文件里找。要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。</div></section>` +
-    `<section class="ip-card ip-how"><h3>${esc(who)} 怎么演<small>右边的键盘弹的就是台上这位，改了马上能试</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section>` +
+      `</select><label class="role-name">${_t("谱上写")}<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" /></label><div class="role-sound">MusicXML：<code>${esc(rs)}</code></div></section>` +
+    `<section class="ip-card"><h3>${_t("谁来演")}<small>${_t("演奏者和他手里的琴；名字不上谱")}</small></h3><div class="ip-cands">` +
+      candidates(D.extras, role).map((c) => chip(`cand:${c.id}`, !performerOf(c.engine) ? _t("{name}（没人能演）", { name: esc(c.name) }) : esc(c.name), aid === c.id, chipTitle(c)) +
+        (aid !== c.id && (performerOf(c.engine)?.removable ?? true) ? `<button class="btn cand-del" data-v="del:${esc(c.id)}" title="${_t("从休息室删掉（它嵌在歌里的声音一起丢）")}">×</button>` : "")).join("") + `</div>` + status +
+      `<div class="ip-sub">${_t("换人")}</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("全屏的乐器目录：按曲风 / 年代 / 族 / 发声方式浏览，右边的键盘试听，上场")}">${_t("打开乐器目录…")}</button>` +
+      Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(_t("{description}（{bytes}；家族音源库，第一次点才下载、之后留在设备上；{name}）", { description: e.description ?? e.name, bytes: sizeText(e.bytes), name: e.license.name }))}">${_t("从 {name} 选…", { name: esc(e.name) })}</button>`).join("") +
+      `<button class="btn" data-v="sf2:pick" title="${_t("自己的 .sf2 文件：选中的那一件切出来留在这台设备上（几 MB），歌里只记来源；整个文件不留")}">${_t("从 .sf2 文件选…")}</button></div>` + pickerHtml() +
+      `<div class="ip-note">${_t("选的琴歌里只记来源（歌小）：声音从这台设备 / 家族音源库 / 你的文件里找。要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。")}</div></section>` +
+    `<section class="ip-card ip-how"><h3>${_t("{who} 怎么演", { who: esc(who) })}<small>${_t("右边的键盘弹的就是台上这位，改了马上能试")}</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section>` +
     `</div></div>`;
   const inp = instEl.querySelector<HTMLInputElement>("#roleIn")!, sel = instEl.querySelector<HTMLSelectElement>("#roleSel")!;
   sel.addEventListener("change", () => { const [snd, ...nm] = sel.value.split("|"); if (snd) { setRole(nm.join("|"), snd); drawInst(); } });
@@ -2233,14 +2231,14 @@ instEl.addEventListener("click", (e) => {
   if (v === "pad") { showPad(padEl.hidden); drawInst(); return; }
   if (v === "finder") { commitRoleName(); openFinder(); return; }
   if (v.startsWith("cand:")) setActive(v.slice(5));
-  else if (v.startsWith("del:")) { try { updateExtras(withoutCandidate(D.extras, role, v.slice(4)), { kind: "lounge", label: `「${rn}」退掉一位候选` }); } catch (err) { showError((err as Error).message); } }
+  else if (v.startsWith("del:")) { try { updateExtras(withoutCandidate(D.extras, role, v.slice(4)), { kind: "lounge", label: _t("「{rn}」退掉一位候选", { rn }) }); } catch (err) { showError((err as Error).message); } }
   else if (v.startsWith("find:")) { findBankFile(v.slice(5)); return; }
   else if (v === "sf2:pick") { pickFile(); return; }
   else if (v.startsWith("sound:")) { void pickOfficial(v.slice(6)); return; }
   else if (v === "sf2:add") { void addPicked(); return; }
   else if (v === "sf2:cancel") instPicked = null;
-  else if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(D.extras, role).gapSec + Number(v.slice(4)))); updateExtras(withGapSec(D.extras, role, next, D.st.song.hum), { kind: "lounge", label: `「${rn}」音和音之间 ${Math.round(next * 1000)} ms` }, "gap"); }
-  else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(D.extras, role) + d)); updateExtras(withCalibration(D.extras, role, next, D.st.song.hum), { kind: "lounge", label: `「${rn}」响度校准 ${next} dB` }, "cal"); }
+  else if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(D.extras, role).gapSec + Number(v.slice(4)))); updateExtras(withGapSec(D.extras, role, next, D.st.song.hum), { kind: "lounge", label: _t("「{rn}」音和音之间 {p} ms", { rn, p: Math.round(next * 1000) }) }, "gap"); }
+  else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? DEFAULT_CALIBRATION_DB : activeCalibrationDb(D.extras, role) + d)); updateExtras(withCalibration(D.extras, role, next, D.st.song.hum), { kind: "lounge", label: _t("「{rn}」响度校准 {next} dB", { rn, next }) }, "cal"); }
   else if (v.startsWith("hum:")) update(setHum(D.st, v.slice(4) as Hum));
   else { const ch = performerOf(engineNow())?.onInspector?.(v, inspectorCtx(role)); if (!ch) return; updateExtras(ch.extras, { kind: "lounge", label: ch.label }, ch.gesture); if (ch.silence) sound.allOff(); }   // 这位自己的行（力度 / 音效 / 修八度 / 唱法旋钮 / 分段唱…）：插件自己管（ADR-0004 §2.5）
   drawInst();
@@ -2275,8 +2273,8 @@ function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extr
   onSongSwitch(); sound.allOff(); void prepareBank(); refreshIssues();   // 开歌那一刻清单重算：有事 = 一条 toast + 角标（§2.2½ 出口 ③）   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
   view.render(); pad.render(); renderTitle(); updateChrome();   // 挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
   if (D.st.song.parts.some((p) => performerOf(activeInstrument(D.extras, p.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
-  if (D.extras.final) info(`这首歌定稿了（第 ${D.extras.final.rev} 版，mp3 ${mp3SizeText(D.extras.final.mp3.bytes)}）：只能听。要改，三条杠里「改稿」。`);
-  if (startDyns) info(`每张纸开头补了 ${startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）`);   // v0.10.39（user「每张纸（曲段）开头，对」）
+  if (D.extras.final) info(_t("这首歌定稿了（第 {rev} 版，mp3 {bytes}）：只能听。要改，三条杠里「改稿」。", { rev: D.extras.final.rev, bytes: mp3SizeText(D.extras.final.mp3.bytes) }));
+  if (startDyns) info(_t("每张纸开头补了 {startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）", { startDyns }));   // v0.10.39（user「每张纸（曲段）开头，对」）
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }
 /** 改过没存时先问一句（应用内面板，不用系统弹窗）。 */
@@ -2286,8 +2284,8 @@ function confirmDiscard(what: string): Promise<boolean> {
     ui.close();
     const box = document.createElement("div");
     box.className = "offer";
-    box.innerHTML = `<div class="offer-card"><div class="offer-title">「${esc(docName())}」改过还没存</div><div class="offer-msg">${what}会丢掉这些改动。</div>` +
-      `<div class="offer-btns"><button class="btn" data-v="save">先存</button><button class="btn" data-v="go">丢掉，继续</button><button class="btn primary" data-v="no">算了</button></div></div>`;
+    box.innerHTML = `<div class="offer-card"><div class="offer-title">${_t("「{p}」改过还没存", { p: esc(docName()) })}</div><div class="offer-msg">${_t("{what}会丢掉这些改动。", { what })}</div>` +
+      `<div class="offer-btns"><button class="btn" data-v="save">${_t("先存")}</button><button class="btn" data-v="go">${_t("丢掉，继续")}</button><button class="btn primary" data-v="no">${_t("算了")}</button></div></div>`;
     document.body.append(box);
     const dismiss = () => close(false), close = (ok: boolean) => { box.remove(); ui.closed(dismiss); resolve(ok); };
     ui.open({ k: "sheet", close: dismiss });
@@ -2301,14 +2299,14 @@ function confirmDiscard(what: string): Promise<boolean> {
 }
 async function fileNew(): Promise<void> {
   if (hasStore()) { await newStoreSong(); return; }   // 进过歌库 = 新歌生在歌库里
-  if (!(await H.leave("新建"))) return;
+  if (!(await H.leave(_t("新建")))) return;
   loadDoc(initState().song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: emptyExtras() });
-  info("新的一首");
+  info(_t("新的一首"));
 }
 async function fileOpen(): Promise<void> {
-  if (!(await H.leave("打开别的歌"))) return;
+  if (!(await H.leave(_t("打开别的歌")))) return;
   let picked: docFile.Picked | null;
-  try { picked = await docFile.pickOpen(); } catch (e) { showError(`没打开：${(e as Error).message}`); return; }
+  try { picked = await docFile.pickOpen(); } catch (e) { showError(_t("没打开：{Error}", { Error: (e as Error).message })); return; }
   if (picked) openPicked(picked);
 }
 /** 拿到的文件（选的 / 拖进来的 / 双击打开的）→ 读进来。别的软件存的谱、或有读不进来的东西：不认它的家（存回去会把没读进来的丢掉 → 第一次「存」= 问存到哪）。 */
@@ -2317,8 +2315,8 @@ function openPicked(picked: docFile.Picked): void {
     const o = openBytes(picked.name, picked.bytes), own = o.ours && !o.notices.length;
     loadDoc(o.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references });
     if (o.notices.length) showError(o.notices.join(" ")); if (o.advice.length) info(o.advice.join(" "));
-    else info(`打开了 ${picked.name}`);
-  } catch (e) { showError(`打不开 ${picked.name}：${(e as Error).message}`); }
+    else info(_t("打开了 {name}", { name: picked.name }));
+  } catch (e) { showError(_t("打不开 {name}：{Error}", { name: picked.name, Error: (e as Error).message })); }
 }
 /** 封面的腰封 = 作者栏第一行（每次存重写，withPngText 先删旧块）；没有封面图就没有封面 entry。 */
 const extrasForSave = (base: Extras = D.extras): Extras => (base.thumbnail ? withThumbnail(base, coverWithBlurb(base.thumbnail, (D.st.song.credits ?? "").split("\n").map((l) => l.trim()).find(Boolean) ?? null)) : base);
@@ -2341,14 +2339,14 @@ async function fileSave(): Promise<void> {
   try {
     const r = await H.save();
     switch (r.k) {
-      case "blank": info("还是空的，没什么可存"); return;   // WeebPaint blankNothingToSave
+      case "blank": info(_t("还是空的，没什么可存")); return;   // WeebPaint blankNothingToSave
       case "gallery": case "offered": return;
-      case "written": info(`存好了：${r.name}`); return;
-      case "declined": info("没存"); return;
-      case "cancelled": info("没存（取消了）"); return;
+      case "written": info(_t("存好了：{name}", { name: r.name })); return;
+      case "declined": info(_t("没存")); return;
+      case "cancelled": info(_t("没存（取消了）")); return;
       default: return assertNever(r);
     }
-  } catch (e) { showError(`没存上：${(e as Error).message}`); }
+  } catch (e) { showError(_t("没存上：{Error}", { Error: (e as Error).message })); }
 }
 /** 导出 hub 的「存一份 .mxl 副本」= 原来的另存为（user 2026-08-20「另存为也变成导出」「复制一份就是导出的语义…放在导出的选项里面」）：
  *  一份带时刻戳的拷贝，家不变、「•」不变（导出永不清 dirty）。桌面 = 系统保存框；iPad = 下载 / 分享。
@@ -2361,19 +2359,19 @@ async function exportCopyMxl(packed = false): Promise<void> {
     if (packed) {
       const { got, missing } = await gatherSubsets(extras);
       extras = withPacked(extras, (sha) => got.get(sha)).extras;
-      if (missing.length) showError(`这几件找不到声音，副本里没带：${missing.join("、")}。点谱前面的声部名，在「谁来演」里「找文件…」，再导出一次。`);
+      if (missing.length) showError(_t("这几件找不到声音，副本里没带：{p}。点谱前面的声部名，在「谁来演」里「找文件…」，再导出一次。", { p: missing.join("、") }));
     }
     const roles = soundingRoles(), { rights, fellBack } = exportRights(roles);
     const song: Song = fellBack ? (({ rights: _r, ...rest }) => rest)(D.st.song) : D.st.song;
-    const credits = (fellBack ? `<div class="offer-msg">许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。</div>` : "") +
-      creditsBlock(creditsOf(roles, rights).lines, "署名") + creditsBlock(packedLicenses(extras), "打包分发的许可（这份副本里带着这些源文件）");
+    const credits = (fellBack ? `<div class="offer-msg">${_t("许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。")}</div>` : "") +
+      creditsBlock(creditsOf(roles, rights).lines, _t("署名")) + creditsBlock(packedLicenses(extras), _t("打包分发的许可（这份副本里带着这些源文件）"));
     if (docFile.canPickSave()) {
       const h = await docFile.pickSave(name); if (!h) return;
-      await docFile.writeTo(h, bytesNow(extras, song)); info(`存了一份：${h.name}${fellBack ? "（许可按未声明写）" : ""}`); return;
+      await docFile.writeTo(h, bytesNow(extras, song)); info(_t("存了一份：{name}{fellBack}", { name: h.name, fellBack: fellBack ? _t("（许可按未声明写）") : "" })); return;
     }
     const file = mxlFile(name, extras, song);
-    offerFile(file, packed ? "存一份 .mxl 副本（打包音源）" : "存一份 .mxl 副本", `${esc(file.name)} · ${sizeText(file.size)}。现在这首歌的一份拷贝；这里再改，它不会跟着变。${credits}`);
-  } catch (e) { showError(`没存上：${(e as Error).message}`); }
+    offerFile(file, packed ? _t("存一份 .mxl 副本（打包音源）") : _t("存一份 .mxl 副本"), _t("{name} · {size}。现在这首歌的一份拷贝；这里再改，它不会跟着变。{credits}", { name: esc(file.name), size: sizeText(file.size), credits }));
+  } catch (e) { showError(_t("没存上：{Error}", { Error: (e as Error).message })); }
 }
 // ── 音源打包 / 解包（Blender 式；2026-10-08 by Claude Opus 5.5；user「类似blender，可以pack all packable resources或者unpack all…不过月读不能pack吧，pack了也很难跑起来」）──
 //   只动字节（embedded），sha256 / origin 不碰（project.ts withPacked / withUnpacked）；月读 / 元音版不在其列（家族模型包 / app 随带的表，歌里只钉哈希）。
@@ -2391,19 +2389,19 @@ async function packAll(): Promise<void> {
   const { got, missing } = await gatherSubsets(D.extras);
   const r = withPacked(D.extras, (sha) => got.get(sha));
   if (r.packed.length) {
-    updateExtras(r.extras, { kind: "lounge", label: `打包了 ${r.packed.length} 件声音` });
+    updateExtras(r.extras, { kind: "lounge", label: _t("打包了 {n} 件声音", { n: r.packed.length }) });
     const size = Object.values(D.extras.sounds).reduce((n, b) => n + b.length, 0);
-    info(`打包了 ${r.packed.length} 件声音进歌：现在歌里带着 ${sizeText(size)}${size > embedSoftLimit ? `（超过 ${sizeText(embedSoftLimit)}：存 / 同步会慢一点）` : ""}，发给别人也能响`);
+    info(_t("打包了 {n} 件声音进歌：现在歌里带着 {size}{embedSoftLimit}，发给别人也能响", { n: r.packed.length, size: sizeText(size), embedSoftLimit: size > embedSoftLimit ? _t("（超过 {embedSoftLimit}：存 / 同步会慢一点）", { embedSoftLimit: sizeText(embedSoftLimit) }) : "" }));
   }
-  if (missing.length) showError(`这几件找不到声音，没打包：${missing.join("、")}。点谱前面的声部名，在「谁来演」里「找文件…」。`);
-  if (!r.packed.length && !missing.length) info("没有要打包的（小月相 / 元音版不打包：它们是模型包，歌里只钉哈希）");
+  if (missing.length) showError(_t("这几件找不到声音，没打包：{p}。点谱前面的声部名，在「谁来演」里「找文件…」。", { p: missing.join("、") }));
+  if (!r.packed.length && !missing.length) info(_t("没有要打包的（小月相 / 元音版不打包：它们是模型包，歌里只钉哈希）"));
 }
 async function unpackAll(): Promise<void> {
   // 先把字节留到设备上；留不住、家族音源库里又没有的不解（解了就找不回来——数据安全优先，明说）
   const bytesBySha = new Map<string, Uint8Array>();
   for (const role of Object.keys(D.extras.lounge)) for (const g of gmCandidates(D.extras, role)) if (g.bytes) bytesBySha.set(g.subsetSha256, g.bytes);
   const uses = soundUses(D.extras).filter((u) => u.packed && bytesBySha.has(u.subsetSha256));
-  if (!uses.length) { info("歌里没有打包着的声音"); return; }
+  if (!uses.length) { info(_t("歌里没有打包着的声音")); return; }
   const ok = new Set<string>(), stuck: string[] = [];
   for (const u of uses) {
     const b = bytesBySha.get(u.subsetSha256)!;
@@ -2413,37 +2411,37 @@ async function unpackAll(): Promise<void> {
   }
   const r = withUnpacked(D.extras, (sha) => ok.has(sha));
   if (r.removed.size) {
-    updateExtras(r.extras, { kind: "lounge", label: `解包了 ${r.removed.size} 件声音` });
-    info(`解包了 ${r.removed.size} 件：歌里只记来源（小了 ${sizeText([...r.removed.values()].reduce((n, b) => n + b.length, 0))}）；这台设备上留着，照样能响。别的设备上从家族音源库或原文件找`);
+    updateExtras(r.extras, { kind: "lounge", label: _t("解包了 {size} 件声音", { size: r.removed.size }) });
+    info(_t("解包了 {size} 件：歌里只记来源（小了 {n}）；这台设备上留着，照样能响。别的设备上从家族音源库或原文件找", { size: r.removed.size, n: sizeText([...r.removed.values()].reduce((n, b) => n + b.length, 0)) }));
   }
-  if (stuck.length) showError(`这几件没解包：${stuck.join("；")}——这台设备留不住它的声音（空间不够，或浏览器不让存），家族音源库里也没有，解了就找不回来。`);
+  if (stuck.length) showError(_t("这几件没解包：{p}——这台设备留不住它的声音（空间不够，或浏览器不让存），家族音源库里也没有，解了就找不回来。", { p: stuck.join("；") }));
 }
 /** 署名推演的一块（文件菜单 / 导出好了的面板里；src/format/credits.ts）：空 = 不画。「复制署名」由下面那个全局监听接。 */
 /** 署名一块：**折叠着**，点开才看（user 2026-10-08「只有用户自己关心协议的时候才提出这些」——不推到眼前）。 */
 function creditsBlock(lines: CreditLine[], title: string): string {
   if (!lines.length) return "";
   return `<details class="credits-box"><summary class="part-sec">${esc(title)}</summary><pre class="credits-pre">${esc(creditsText(lines))}</pre>` +
-    `<button class="btn" data-copy-credits title="复制下来贴进作品说明">复制署名</button></details>`;
+    `<button class="btn" data-copy-credits title="${_t("复制下来贴进作品说明")}">${_t("复制署名")}</button></details>`;
 }
 document.addEventListener("click", (e) => {
   const b = (e.target as HTMLElement).closest<HTMLElement>("[data-copy-credits]"); if (!b) return;
   e.stopPropagation();
   const text = b.parentElement?.querySelector(".credits-pre")?.textContent ?? "";
-  void navigator.clipboard?.writeText(text).then(() => info("署名复制好了"), () => showError("复制不了（浏览器不让）：长按上面的字自己选"));
+  void navigator.clipboard?.writeText(text).then(() => info(_t("署名复制好了")), () => showError(_t("复制不了（浏览器不让）：长按上面的字自己选")));
 }, true);
 /** 导出 hub（照 WeebPaint「导出与另存」hub：导出 = 寄明信片，和「存 = 回家」分开住）：歌声 mp3 / .mxl 副本；乐谱 PDF 以后也进这里。 */
 function openExportHub(): void {
   ui.close();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">导出</div>` +
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("导出")}</div>` +
     `<div class="set-row file-row">` +
-    `<button class="btn" data-v="mp3" title="${finalOn() ? "定稿的那一份 mp3，直接分享或下载（不重渲）" : "小月相唱一遍，编成 mp3，分享或下载"}"><svg class="ico"><use href="#export"/></svg>歌声（mp3${finalOn() ? "，定稿的那份" : ""}）…</button>` +
-    `<button class="btn" data-v="pdf" title="印出来的谱（按这首歌的纸张分页；歌词用嵌进去的字体，能选中复制）"><svg class="ico"><use href="#export"/></svg>乐谱（PDF）…</button>` +
-    `<button class="btn" data-v="mxl" title="现在这首歌的一份拷贝（文件名带时刻）；这里的歌还住原来的家"><svg class="ico"><use href="#save-as"/></svg>存一份 .mxl 副本…</button>` +
-    (soundUses(D.extras).some((u) => !u.packed) ? `<button class="btn" data-v="mxlPacked" title="副本里把乐器的声音也装进去（发给别人也能响）；这里的歌照旧只记来源"><svg class="ico"><use href="#save-as"/></svg>存一份 .mxl 副本（打包音源）…</button>` : "") + `</div>` +
-    `<div class="offer-msg">导出 = 寄一份出去，这里的歌还是原来那个家，「存」才是存回去。</div>` +
-    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+    `<button class="btn" data-v="mp3" title="${finalOn() ? _t("定稿的那一份 mp3，直接分享或下载（不重渲）") : _t("小月相唱一遍，编成 mp3，分享或下载")}"><svg class="ico"><use href="#export"/></svg>${_t("歌声（mp3{p}）…", { p: finalOn() ? _t("，定稿的那份") : "" })}</button>` +
+    `<button class="btn" data-v="pdf" title="${_t("印出来的谱（按这首歌的纸张分页；歌词用嵌进去的字体，能选中复制）")}"><svg class="ico"><use href="#export"/></svg>${_t("乐谱（PDF）…")}</button>` +
+    `<button class="btn" data-v="mxl" title="${_t("现在这首歌的一份拷贝（文件名带时刻）；这里的歌还住原来的家")}"><svg class="ico"><use href="#save-as"/></svg>${_t("存一份 .mxl 副本…")}</button>` +
+    (soundUses(D.extras).some((u) => !u.packed) ? `<button class="btn" data-v="mxlPacked" title="${_t("副本里把乐器的声音也装进去（发给别人也能响）；这里的歌照旧只记来源")}"><svg class="ico"><use href="#save-as"/></svg>${_t("存一份 .mxl 副本（打包音源）…")}</button>` : "") + `</div>` +
+    `<div class="offer-msg">${_t("导出 = 寄一份出去，这里的歌还是原来那个家，「存」才是存回去。")}</div>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
@@ -2469,13 +2467,13 @@ function openPdfPanel(): void {
   const draw = () => {
     const chip = (id: PdfFontId, label: string, note: string) => `<button class="btn cand${pdfFont === id ? " is-on" : ""}" data-v="font:${id}" title="${esc(note)}">${label}</button>`;
     const pick = (v: string, on: boolean, label: string, note: string) => `<button class="btn cand${on ? " is-on" : ""}" data-v="${v}" title="${esc(note)}">${esc(label)}</button>`;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">乐谱（PDF）</div>` +
-      (D.st.song.papers.length > 1 ? `<div class="part-sec">印哪些</div><div class="set-row">${pick("paper:all", paperPick === "all", "整首", "每张纸按顺序接着排（= 分页 + 「全部」）")}${pick("paper:one", paperPick === "one", `这一段「${curPaper.name || "这张纸"}」`, "只印光标所在的这张纸（= 分页 + 「本段」）")}</div>` : "") +
-      (someHidden ? `<div class="part-sec">声部</div><div class="set-row">${pick("parts:view", partPick === "view", "照分页预览", "隐藏的声部不印，预览里那条细行的位置空着（和预览一样）")}${pick("parts:shown", partPick === "shown", `只排看得见的：${shownNames.join("、")}`, "隐藏的声部整个拿掉、重新排，不留空位（像抽出来的分谱；和分页预览不一样）")}</div>` : "") +
-      `<div class="part-sec">歌词的字体</div><div class="set-row">${chip("sans", "黑体", "思源黑体：中文 / 日文 / 英文都有")}${chip("pinyin", "拼音", "萌神手写体：汉字头上标普通话拼音（可爱）；日文歌的汉字也会被标上普通话拼音")}</div>` +
-      `<div class="offer-msg">${pdfFont === "pinyin" ? "萌神手写体：汉字头上标普通话拼音，歌词那一行会往下让出拼音的地方。日文歌的汉字也会被标上普通话拼音。" : "思源黑体：中文、日文、英文都有。"}第一次要下载字体（约 ${PDF_FONT_MB[pdfFont]} MB），之后离线也能用。纸张 = 这首歌的纸（纸的扳手里改）。</div>` +
-      `<div class="offer-msg">${partPick === "shown" ? `只排看得见的声部（${esc(shownNames.join("、"))}）：重新排、不留空位——和分页预览不一样。` : `印出来的 = 扳手里「分页」+ 曲段控件「${paperPick === "one" ? "本段" : "全部"}」看到的样子，去掉按钮和提示；隐藏的${paperPick === "one" ? "" : "纸 / "}声部不印（预览里那条细行的位置空着）。`}</div>` +
-      `<div class="offer-btns"><button class="btn" data-v="close">算了</button><button class="btn primary" data-v="go">生成 PDF</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("乐谱（PDF）")}</div>` +
+      (D.st.song.papers.length > 1 ? `<div class="part-sec">${_t("印哪些")}</div><div class="set-row">${pick("paper:all", paperPick === "all", _t("整首"), _t("每张纸按顺序接着排（= 分页 + 「全部」）"))}${pick("paper:one", paperPick === "one", _t("这一段「{p}」", { p: curPaper.name || _t("这张纸") }), _t("只印光标所在的这张纸（= 分页 + 「本段」）"))}</div>` : "") +
+      (someHidden ? `<div class="part-sec">${_t("声部")}</div><div class="set-row">${pick("parts:view", partPick === "view", _t("照分页预览"), _t("隐藏的声部不印，预览里那条细行的位置空着（和预览一样）"))}${pick("parts:shown", partPick === "shown", _t("只排看得见的：{p}", { p: shownNames.join("、") }), _t("隐藏的声部整个拿掉、重新排，不留空位（像抽出来的分谱；和分页预览不一样）"))}</div>` : "") +
+      `<div class="part-sec">${_t("歌词的字体")}</div><div class="set-row">${chip("sans", _t("黑体"), _t("思源黑体：中文 / 日文 / 英文都有"))}${chip("pinyin", _t("拼音"), _t("萌神手写体：汉字头上标普通话拼音（可爱）；日文歌的汉字也会被标上普通话拼音"))}</div>` +
+      `<div class="offer-msg">${_t("{p}第一次要下载字体（约 {p2} MB），之后离线也能用。纸张 = 这首歌的纸（纸的扳手里改）。", { p: pdfFont === "pinyin" ? _t("萌神手写体：汉字头上标普通话拼音，歌词那一行会往下让出拼音的地方。日文歌的汉字也会被标上普通话拼音。") : _t("思源黑体：中文、日文、英文都有。"), p2: PDF_FONT_MB[pdfFont] })}</div>` +
+      `<div class="offer-msg">${partPick === "shown" ? _t("只排看得见的声部（{p}）：重新排、不留空位——和分页预览不一样。", { p: esc(shownNames.join("、")) }) : _t("印出来的 = 扳手里「分页」+ 曲段控件「{p}」看到的样子，去掉按钮和提示；隐藏的{p2}声部不印（预览里那条细行的位置空着）。", { p: paperPick === "one" ? _t("本段") : _t("全部"), p2: paperPick === "one" ? "" : _t("纸 / ") })}</div>` +
+      `<div class="offer-btns"><button class="btn" data-v="close">${_t("算了")}</button><button class="btn primary" data-v="go">${_t("生成 PDF")}</button></div></div>`;
   };
   draw(); document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
@@ -2495,9 +2493,9 @@ let pdfBusy = false;
 /** 生成乐谱 PDF = 「全部 + 分页」预览除了控件和提示的样子（2026-10-09 user「…做到除了控件和提示外的wysiwyg」）：整首；隐藏的纸 / 声部不印（预览里那条细行的位置空着），
  *  同一份声部视图、同一把量字的尺子（view.measureAt）、同一个小节线开关、同样的拼音让位。 */
 async function makePdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<{ file: File; r: ReturnType<typeof scorePdf> }> {
-    progress(`下载字体（第一次约 ${PDF_FONT_MB[fontId]} MB）…`);
+    progress(_t("下载字体（第一次约 {p} MB）…", { p: PDF_FONT_MB[fontId] }));
     const [font, music] = await Promise.all([loadPdfFont(fontId), loadMusicOutlines()]);
-    progress("排版…");
+    progress(_t("排版…"));
     const title = D.st.song.title || docName();
     let song = D.st.song, parts = partViews();
     if (pick.onlyShown) {   // 只排看得见的：隐藏的声部（连它在各张纸上的轨）整个拿掉；一个看得见的声部都没有的纸也拿掉
@@ -2506,7 +2504,7 @@ async function makePdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<{ file: F
       parts = parts.filter((v) => keep.has(v.id)).map((v, k) => ({ ...v, hidden: false, first: k === 0 }));
     }
     const r = scorePdf({ song, parts, font, fontId, music, title, created: new Date(), measureAt: (px) => view.measureAt(px), autoBars, ...(pick.paper ? { onlyPaper: pick.paper } : {}) });
-    const paperName = pick.paper ? (D.st.song.papers.find((p) => p.id === pick.paper)?.name || "这一段") : "";
+    const paperName = pick.paper ? (D.st.song.papers.find((p) => p.id === pick.paper)?.name || _t("这一段")) : "";
     const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x) => fileSafe(x)).join("-");
     return { file: new File([r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${suffix ? `-${suffix}` : ""}`)}.pdf`, { type: "application/pdf" }), r };   // 名[-曲段 / 声部]-YYYYMMDD-HHMM（v0.9.47）
 }
@@ -2516,11 +2514,11 @@ async function exportPdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<void> {
   try {
     const { file, r } = await makePdf(fontId, pick);
     progress("");
-    const miss = r.stats.missing.length ? `<div class="offer-msg">这些字这款字体里没有，PDF 里是空白：${esc(r.stats.missing.slice(0, 20).join(" "))}${r.stats.missing.length > 20 ? " …" : ""}</div>` : "";
-    const missM = r.stats.missingMusic.length ? `<div class="offer-msg">有 ${r.stats.missingMusic.length} 种记谱符号没画出来（${esc(r.stats.missingMusic.join(" "))}）——这是 app 的毛病，请告诉我们。</div>` : "";
-    offerFile(file, "乐谱 PDF 好了", `${r.pages} 页 · ${fontId === "pinyin" ? "拼音字体" : "黑体"} · ${file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`}` + miss + missM);
+    const miss = r.stats.missing.length ? `<div class="offer-msg">${_t("这些字这款字体里没有，PDF 里是空白：{p}{p2}", { p: esc(r.stats.missing.slice(0, 20).join(" ")), p2: r.stats.missing.length > 20 ? " …" : "" })}</div>` : "";
+    const missM = r.stats.missingMusic.length ? `<div class="offer-msg">${_t("有 {n} 种记谱符号没画出来（{p}）——这是 app 的毛病，请告诉我们。", { n: r.stats.missingMusic.length, p: esc(r.stats.missingMusic.join(" ")) })}</div>` : "";
+    offerFile(file, _t("乐谱 PDF 好了"), _t("{pages} 页 · {p} · {e6}{miss}{missM}", { pages: r.pages, p: fontId === "pinyin" ? _t("拼音字体") : _t("黑体"), e6: file.size < 1e6 ? `${Math.round(file.size / 1e3)} KB` : `${(file.size / 1e6).toFixed(1)} MB`, miss, missM }));
   } catch (e) {
-    progress(""); showError(`PDF 生成失败：${(e as Error).message}`);
+    progress(""); showError(_t("PDF 生成失败：{Error}", { Error: (e as Error).message }));
   } finally { pdfBusy = false; }
 }
 /** 现在会出声的声部的角色（预览演出署名用）：出声的（静音 / 独奏照现在的）、整首里有音的；导出 mp3 时按真渲染出了声的算（renderMix 的 roles）。 */
@@ -2531,10 +2529,10 @@ function soundingRoles(): string[] {
 function soundsSection(): string {
   const uses = soundUses(D.extras); if (!uses.length) return "";
   const packed = uses.filter((u) => u.packed), size = packed.reduce((n, u) => n + u.bytes, 0);
-  return `<div class="part-sec">乐器的声音</div>` +
-    `<div class="offer-msg">${uses.length} 件：打包在歌里 ${packed.length} 件${packed.length ? `（${sizeText(size)}）` : ""}，只记来源 ${uses.length - packed.length} 件。打包 = 声音跟着歌走（发给别人也能响，文件变大）；只记来源 = 歌小，声音从这台设备 / 家族音源库 / 你的文件里找。小月相不打包（她是模型包，歌里只钉哈希）。</div>` +
-    `<div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">全部打包进歌</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">全部解包（只记来源）</button>` : ""}</div>` +
-    creditsBlock(packedLicenses(D.extras), "打包分发的许可（文件里带着这些源文件）");
+  return `<div class="part-sec">${_t("乐器的声音")}</div>` +
+    `<div class="offer-msg">${_t("{n} 件：打包在歌里 {n2} 件{length}，只记来源 {n3} 件。打包 = 声音跟着歌走（发给别人也能响，文件变大）；只记来源 = 歌小，声音从这台设备 / 家族音源库 / 你的文件里找。小月相不打包（她是模型包，歌里只钉哈希）。", { n: uses.length, n2: packed.length, length: packed.length ? `（${sizeText(size)}）` : "", n3: uses.length - packed.length })}</div>` +
+    `<div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">${_t("全部打包进歌")}</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">${_t("全部解包（只记来源）")}</button>` : ""}</div>` +
+    creditsBlock(packedLicenses(D.extras), _t("打包分发的许可（文件里带着这些源文件）"));
 }
 /** 演出署名（文件菜单 / 导出）：用了谁的声音——出了声的声部上场那位，打包 / 弱引用都算；冷板凳、没出声的声部不算（user 2026-10-08 口径）。 */
 /** 署名 = 这首歌自己那一条（作者栏 + 用户选的许可；都空 = 没有这条）+ 演出署名；外加只提示不拦的提醒（licenseHints）。导出 mp3 写进 ID3 也用这一份。 */
@@ -2544,7 +2542,7 @@ function creditsOf(roles: readonly string[], rights: string | undefined = D.st.s
   return { lines: own ? [own, ...perf] : perf, hints: licenseHints(rights, perf) };
 }
 /** 文件菜单里的署名（折叠）；提醒只在用户自己选了许可时才可能出现（licenseHints 要 rights）。 */
-const performersBlock = (roles: readonly string[], title = "署名") => {
+const performersBlock = (roles: readonly string[], title = _t("署名")) => {
   const { lines, hints } = creditsOf(roles);
   return creditsBlock(lines, title) + hints.map((h) => `<div class="offer-msg credits-hint">${esc(h)}</div>`).join("");
 };
@@ -2557,14 +2555,14 @@ const performersBlock = (roles: readonly string[], title = "署名") => {
 function fileWhere(): string {
   const h = H.home;
   switch (h.kind) {
-    case "gallery": if (folderHome()) return `在歌库里（文件夹「${folderHome()!.label}」），自动存；换歌 / 退出 / 按「存」时写进文件夹`; return `在歌库里，自动存${isSignedIn() ? "；换歌 / 退出 / 按「存」时推上 OneDrive" : cloudAvailable() ? "（没登录，只在这台设备上）" : "（只在这个浏览器里；网盘在官网版）"}`;
-    case "file": return `存在本机文件 ${h.handle.name}，「存」= 存回去`;
-    case "none": return h.pendingFolder != null ? "新的一首：第一笔写下去就进歌库" : docFile.canPickSave() ? "还没存过：「存」会问存到哪" : "这台设备上「存」= 下载或分享一个 .mxl";
+    case "gallery": if (folderHome()) return _t("在歌库里（文件夹「{label}」），自动存；换歌 / 退出 / 按「存」时写进文件夹", { label: folderHome()!.label }); return _t("在歌库里，自动存{p}", { p: isSignedIn() ? _t("；换歌 / 退出 / 按「存」时推上 OneDrive") : cloudAvailable() ? _t("（没登录，只在这台设备上）") : _t("（只在这个浏览器里；网盘在官网版）") });
+    case "file": return _t("存在本机文件 {name}，「存」= 存回去", { name: h.handle.name });
+    case "none": return h.pendingFolder != null ? _t("新的一首：第一笔写下去就进歌库") : docFile.canPickSave() ? _t("还没存过：「存」会问存到哪") : _t("这台设备上「存」= 下载或分享一个 .mxl");
     default: return assertNever(h);
   }
 }
 function clickFileName(): void {
-  if (H.home.kind === "file") { info(`本机文件的名字在文件管理器里改（现在是 ${H.home.handle.name}）`); return; }
+  if (H.home.kind === "file") { info(_t("本机文件的名字在文件管理器里改（现在是 {name}）", { name: H.home.handle.name })); return; }
   void renameActive();
 }
 $("fileBtn").addEventListener("click", () => clickFileName());
@@ -2576,18 +2574,18 @@ function openMainMenu(): void {
   const item = (v: string, icon: string, label: string, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
   box.innerHTML =
     `<div class="ctx-head"><b>${esc(H.fileName())}</b><span>${esc(fileWhere())}</span></div>` +
-    item("new", "new", "新建") + item("open", "folder-open", "打开本机文件…", "打开 .mxl / .musicxml（拖进来也行；Ctrl / ⌘+O）") +
-    item("export", "export", "导出…", "mp3、.mxl 副本（打包音源）…（Ctrl / ⌘+Shift+S）") +
-    (hasStore() && !inStore && !H.pending() ? item("intoLib", "import", "存进歌库", cloudAvailable() ? "把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）" : "把这首歌放进歌库（只在这个浏览器里留一份；网盘在官网版）") : "") +
+    item("new", "new", _t("新建")) + item("open", "folder-open", _t("打开本机文件…"), _t("打开 .mxl / .musicxml（拖进来也行；Ctrl / ⌘+O）")) +
+    item("export", "export", _t("导出…"), _t("mp3、.mxl 副本（打包音源）…（Ctrl / ⌘+Shift+S）")) +
+    (hasStore() && !inStore && !H.pending() ? item("intoLib", "import", _t("存进歌库"), cloudAvailable() ? _t("把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）") : _t("把这首歌放进歌库（只在这个浏览器里留一份；网盘在官网版）")) : "") +
     `<div class="ctx-sep"></div>` +
-    (H.home.kind === "file" ? "" : item("rename", "rename", "改文件名…", "只改文件名，纸上的歌名不变（点顶栏的文件名也一样）")) +
-    item("cover", "image", "封面图…", "歌库卡片上的图") +
-    item("sounds", "volume", "声音与署名…", "乐器的声音打包 / 解包；这首歌用了谁的声音") +
-    (finalOn() ? item("unfinal", "unlock", `改稿…（第 ${D.extras.final!.rev} 版定稿作废）`, "解锁：谱 / 歌手 / 混音又能改；定稿那份 mp3 作废（下次存就没了）") : item("final", "lock", "定稿…", "写好了：整首渲染成 mp3 存进歌里，之后只能听、不能改；歌库封面上能直接听。改稿随时解锁")) +
-    item("ref", "picture-in-picture", refHost.isOpen() ? "收起参考窗" : `参考窗${refHost.count() ? `（${refHost.count()} 张）` : ""}`, "截图 / 文字放在旁边对着看：点开后粘贴（Ctrl / ⌘+V）、拖进来，或者「＋」导入；跟着歌一起存") +
+    (H.home.kind === "file" ? "" : item("rename", "rename", _t("改文件名…"), _t("只改文件名，纸上的歌名不变（点顶栏的文件名也一样）"))) +
+    item("cover", "image", _t("封面图…"), _t("歌库卡片上的图")) +
+    item("sounds", "volume", _t("声音与署名…"), _t("乐器的声音打包 / 解包；这首歌用了谁的声音")) +
+    (finalOn() ? item("unfinal", "unlock", _t("改稿…（第 {rev} 版定稿作废）", { rev: D.extras.final!.rev }), _t("解锁：谱 / 歌手 / 混音又能改；定稿那份 mp3 作废（下次存就没了）")) : item("final", "lock", _t("定稿…"), _t("写好了：整首渲染成 mp3 存进歌里，之后只能听、不能改；歌库封面上能直接听。改稿随时解锁"))) +
+    item("ref", "picture-in-picture", refHost.isOpen() ? _t("收起参考窗") : _t("参考窗{p}", { p: refHost.count() ? _t("（{p} 张）", { p: refHost.count() }) : "" }), _t("截图 / 文字放在旁边对着看：点开后粘贴（Ctrl / ⌘+V）、拖进来，或者「＋」导入；跟着歌一起存")) +
     `<div class="ctx-sep"></div>` +
     `<div class="ctx-ver">${esc(APP_VERSION)}</div>` +   // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
-    item("settings", "settings", "设置…", "模型 / 音源库来源、缓存、署名与条款、诊断日志、版本");
+    item("settings", "settings", _t("设置…"), _t("模型 / 音源库来源、缓存、署名与条款、诊断日志、版本"));
   document.body.append(box);
   const r = $("setBtn").getBoundingClientRect(), w = box.offsetWidth, h = box.offsetHeight, m = 8;
   box.style.left = `${Math.max(m, Math.min(r.right - w, innerWidth - w - m))}px`; box.style.top = `${Math.max(m, Math.min(r.bottom + 6, innerHeight - h - m))}px`;
@@ -2609,19 +2607,19 @@ function openMainMenu(): void {
 //   自动存（歌库）/「•」（本机）。之后四层护栏（final.ts 头注释）。改稿 = 记录和 mp3 一起丢掉。两件都不进 undo（定稿是一次渲染，撤销 = 改稿）。
 function openFinalPanel(): void {
   ui.close();
-  if (finalOn()) { info("已经定稿了。要改先「改稿」。"); return; }
+  if (finalOn()) { info(_t("已经定稿了。要改先「改稿」。")); return; }
   const box = document.createElement("div");
   box.className = "offer";
   const draw = () => {
     const chip = (v: string, label: string, note: string, on: boolean) => `<button class="btn cand${on ? " is-on" : ""}" data-v="${v}">${esc(label)}<small>${esc(note)}</small></button>`;
     const parts = audibleParts(), labels = partLabels(D.st.song, D.extras), names = D.st.song.parts.map((p, k) => (parts.includes(p) ? labels[k] : null)).filter((x): x is string => !!x);
     const is = perfApi.issues().filter((i) => parts.some((p) => p.id === i.part));
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">定稿${D.extras.finalRev ? `（第 ${D.extras.finalRev + 1} 版）` : ""}</div>` +
-      `<div class="offer-msg">写好了：整首渲染成 mp3（带歌名 / 作者栏 / 许可的标签和封面图）存进歌里；之后<b>只能听</b>——谱、歌名、作者栏、许可、封面、歌手、混音全锁住，能改的只有文件名。随时「改稿」解锁（那份 mp3 作废）。歌库的封面上能直接听。</div>` +
-      `<div class="part-sec">音质</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>` +
-      `<div class="offer-msg">进 mp3 的：${names.length ? esc(names.join("、")) : "（没有出声的声部）"}${D.st.song.parts.length !== parts.length ? "（静音 / 独奏按现在的；要都进来先取消静音）" : ""}。</div>` +
-      (is.length ? `<div class="offer-msg issue-warn">${is.length} 条轨不出声，mp3 里不会有它们：${esc(perfApi.issuesText(is))}。换人在谱前面的声部名里。</div>` : "") +
-      `<div class="offer-btns"><button class="btn primary" data-v="go"${names.length ? "" : " disabled"}>${is.length ? "照样定稿" : "定稿"}</button><button class="btn" data-v="close">算了</button></div></div>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("定稿{finalRev}", { finalRev: D.extras.finalRev ? _t("（第 {p} 版）", { p: D.extras.finalRev + 1 }) : "" })}</div>` +
+      `<div class="offer-msg">${_t("写好了：整首渲染成 mp3（带歌名 / 作者栏 / 许可的标签和封面图）存进歌里；之后<b>只能听</b>——谱、歌名、作者栏、许可、封面、歌手、混音全锁住，能改的只有文件名。随时「改稿」解锁（那份 mp3 作废）。歌库的封面上能直接听。")}</div>` +
+      `<div class="part-sec">${_t("音质")}</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>` +
+      `<div class="offer-msg">${_t("进 mp3 的：{length}{length2}。", { length: names.length ? esc(names.join("、")) : _t("（没有出声的声部）"), length2: D.st.song.parts.length !== parts.length ? _t("（静音 / 独奏按现在的；要都进来先取消静音）") : "" })}</div>` +
+      (is.length ? `<div class="offer-msg issue-warn">${_t("{n} 条轨不出声，mp3 里不会有它们：{is}。换人在谱前面的声部名里。", { n: is.length, is: esc(perfApi.issuesText(is)) })}</div>` : "") +
+      `<div class="offer-btns"><button class="btn primary" data-v="go"${names.length ? "" : " disabled"}>${is.length ? _t("照样定稿") : _t("定稿")}</button><button class="btn" data-v="close">${_t("算了")}</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -2648,21 +2646,21 @@ async function finalizeNow(quality: Mp3Quality = mp3Quality): Promise<FinalRecor
     const rec: FinalRecord = { at: new Date().toISOString(), rev: D.extras.finalRev + 1, app: APP_VERSION, core: coreInfo(), fingerprint: contentFingerprintOf(saveArgs()),
       mp3: { path: FINAL_MP3_ENTRY, bytes: tagged.length, sha256: await sha256Hex(tagged), secs: r.secs, sr: r.sr, kbps: r.kbps, stereo: r.stereo }, parts: r.parts, ...(is.length ? { issues: is.map((i) => ({ part: i.part, why: i.why })) } : {}) };
     if (ws.mode !== "listen") { lastEditMode = ws.mode; ws.mode = "listen"; }
-    const c = D.commit({ extras: withFinal(D.extras, rec, tagged) }, { locus: { kind: "final", label: "定稿" }, undo: false });   // 同一个入口（不进 undo：撤销 = 改稿）；基线带着 final.at → 标脏 → 歌库自动存 / 本机「•」
+    const c = D.commit({ extras: withFinal(D.extras, rec, tagged) }, { locus: { kind: "final", label: _t("定稿") }, undo: false });   // 同一个入口（不进 undo：撤销 = 改稿）；基线带着 final.at → 标脏 → 歌库自动存 / 本机「•」
     if (!c.ok) throw new Error(c.why);
-    info(`定稿了（第 ${rec.rev} 版）：mp3 ${mp3SizeText(r.bytes.length)}、${r.secs.toFixed(1)} 秒，存进了歌里；${H.home.kind === "gallery" ? "歌库封面上能直接听。" : "按「存」写进文件。"}只能听了——要改，三条杠里「改稿」。`);
+    info(_t("定稿了（第 {rev} 版）：mp3 {n}、{p} 秒，存进了歌里；{p2}只能听了——要改，三条杠里「改稿」。", { rev: rec.rev, n: mp3SizeText(r.bytes.length), p: r.secs.toFixed(1), p2: H.home.kind === "gallery" ? _t("歌库封面上能直接听。") : _t("按「存」写进文件。") }));
     diagNote("doc", `finalized rev ${rec.rev} core ${rec.core.version}@${rec.core.hash} mp3 ${r.bytes.length}B`);
     return rec;
-  } catch (e) { showError(`没定稿：${(e as Error).message}`); return null; }
+  } catch (e) { showError(_t("没定稿：{Error}", { Error: (e as Error).message })); return null; }
   finally { finalizing = false; }
 }
 /** 改稿：问一句 → 记录和 mp3 一起丢掉 → 回到写。 */
 async function unfinalizeNow(ask = true): Promise<boolean> {
   const f = D.extras.final; if (!f) return false;
-  if (ask && !(await askSheet("改稿", `解锁后谱、歌名、作者栏、封面、歌手、混音又能改；第 ${f.rev} 版定稿的 mp3 作废（下次存就从歌里去掉；歌库封面上也听不了，要再定稿一次）。`, "改稿"))) return false;
-  D.commit({ extras: withoutFinal(D.extras) }, { locus: { kind: "final", label: "改稿" }, undo: false });
+  if (ask && !(await askSheet(_t("改稿"), _t("解锁后谱、歌名、作者栏、封面、歌手、混音又能改；第 {rev} 版定稿的 mp3 作废（下次存就从歌里去掉；歌库封面上也听不了，要再定稿一次）。", { rev: f.rev }), _t("改稿")))) return false;
+  D.commit({ extras: withoutFinal(D.extras) }, { locus: { kind: "final", label: _t("改稿") }, undo: false });
   setMode(lastEditMode === "listen" ? "notes" : lastEditMode);
-  info(`改稿了：第 ${f.rev} 版定稿作废，能改了。`);
+  info(_t("改稿了：第 {rev} 版定稿作废，能改了。", { rev: f.rev }));
   diagNote("doc", `unfinalized rev ${f.rev}`);
   return true;
 }
@@ -2673,12 +2671,12 @@ function openCoverSheet(): void {
   box.className = "offer";
   const thumb = D.extras.thumbnail;
   const coverUrl = thumb ? URL.createObjectURL(new Blob([thumb as unknown as BlobPart], { type: "image/png" })) : null;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">封面图</div>` +
-    `<div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="封面" />` : `<span class="cover-none">没有封面图</span>`}</span>` +
-    `<label class="btn" title="选一张图当封面（缩成 256² 存进歌里；歌库卡片上歌名印在图上面）"><svg class="ico"><use href="#image"/></svg>${thumb ? "换一张…" : "选一张图…"}<input id="coverIn" type="file" accept="image/*" hidden /></label>` +
-    (thumb ? `<button class="btn" data-v="coverOff">去掉封面图</button>` : "") + `</div>` +
-    `<div class="offer-msg">歌库卡片上的图；歌名和日期照样印在上面。缩成 256² 存进歌里。</div>` +
-    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("封面图")}</div>` +
+    `<div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="${_t("封面")}" />` : `<span class="cover-none">${_t("没有封面图")}</span>`}</span>` +
+    `<label class="btn" title="${_t("选一张图当封面（缩成 256² 存进歌里；歌库卡片上歌名印在图上面）")}"><svg class="ico"><use href="#image"/></svg>${thumb ? _t("换一张…") : _t("选一张图…")}<input id="coverIn" type="file" accept="image/*" hidden /></label>` +
+    (thumb ? `<button class="btn" data-v="coverOff">${_t("去掉封面图")}</button>` : "") + `</div>` +
+    `<div class="offer-msg">${_t("歌库卡片上的图；歌名和日期照样印在上面。缩成 256² 存进歌里。")}</div>` +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); if (coverUrl) URL.revokeObjectURL(coverUrl); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
@@ -2686,7 +2684,7 @@ function openCoverSheet(): void {
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") { close(); return; }
-    if (v === "coverOff") { close(); updateExtras(withThumbnail(D.extras, null), { kind: "cover", label: "去掉封面图" }); info("去掉了封面图"); }
+    if (v === "coverOff") { close(); updateExtras(withThumbnail(D.extras, null), { kind: "cover", label: _t("去掉封面图") }); info(_t("去掉了封面图")); }
   });
 }
 /** 声音与署名：乐器的声音打包 / 解包（Blender 式）+ 这首歌用了谁的声音（演出署名，折叠）。 */
@@ -2695,9 +2693,9 @@ function openSoundsSheet(): void {
   const box = document.createElement("div");
   box.className = "offer";
   const sounds = soundsSection();
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">声音与署名</div>` +
-    (sounds || `<div class="offer-msg">这首歌没用乐器的声音文件（小月相 / 元音版的声音随 app 走，不进歌）。</div>`) + performersBlock(soundingRoles()) +
-    `<div class="offer-btns"><button class="btn primary" data-v="close">好</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("声音与署名")}</div>` +
+    (sounds || `<div class="offer-msg">${_t("这首歌没用乐器的声音文件（小月相 / 元音版的声音随 app 走，不进歌）。")}</div>`) + performersBlock(soundingRoles()) +
+    `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
@@ -2714,14 +2712,14 @@ function renameFile(): void {
   ui.close();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card"><div class="offer-title">改文件名</div>` +
-    `<label class="set-field">文件名<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc(docName())}" /></label>` +
-    `<div class="offer-msg">只改文件名，纸上的歌名不变。下次存的时候用这个名字。</div>` +
-    `<div class="offer-btns"><button class="btn" data-v="cancel">算了</button><button class="btn primary" data-v="ok">改</button></div></div>`;
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">${_t("改文件名")}</div>` +
+    `<label class="set-field">${_t("文件名")}<input id="fnIn" type="text" spellcheck="false" autocomplete="off" value="${esc(docName())}" /></label>` +
+    `<div class="offer-msg">${_t("只改文件名，纸上的歌名不变。下次存的时候用这个名字。")}</div>` +
+    `<div class="offer-btns"><button class="btn" data-v="cancel">${_t("算了")}</button><button class="btn primary" data-v="ok">${_t("改")}</button></div></div>`;
   document.body.append(box);
   const inp = box.querySelector<HTMLInputElement>("#fnIn")!;
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
-  const ok = () => { const v = inp.value; close(); void H.rename(v).then((r) => { if (r.k === "renamed") info(`文件名改成 ${r.stem}${SONG_SUFFIX}`); }); };
+  const ok = () => { const v = inp.value; close(); void H.rename(v).then((r) => { if (r.k === "renamed") info(_t("文件名改成 {stem}{SONG_SUFFIX}", { stem: r.stem, SONG_SUFFIX })); }); };
   ui.open({ k: "sheet", close });
   inp.addEventListener("keydown", (e) => { if (e.isComposing) return; if (e.key === "Enter") { e.preventDefault(); e.stopPropagation(); ok(); } else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); close(); } });
   box.addEventListener("click", (e) => {
@@ -2737,7 +2735,7 @@ function askSheet(title: string, msg: string, okLabel: string): Promise<boolean>
     const box = document.createElement("div");
     box.className = "offer";
     box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc(title)}</div><div class="offer-msg">${esc(msg)}</div>` +
-      `<div class="offer-btns"><button class="btn" data-v="ok">${esc(okLabel)}</button><button class="btn primary" data-v="no">算了</button></div></div>`;
+      `<div class="offer-btns"><button class="btn" data-v="ok">${esc(okLabel)}</button><button class="btn primary" data-v="no">${_t("算了")}</button></div></div>`;
     document.body.append(box);
     const dismiss = () => close(false), close = (ok: boolean) => { box.remove(); ui.closed(dismiss); scoreEl.focus(); resolve(ok); };
     ui.open({ k: "sheet", close: dismiss });
@@ -2762,14 +2760,14 @@ window.addEventListener("drop", (e) => {
   if (!gr) return;   // 不是我们认的文件 = 不拦这次 drop
   e.preventDefault();
   void (async () => {
-    if (!(await H.leave(`打开「${gr.file.name}」`))) return;
-    try { openPicked(await docFile.fromGrab(gr)); } catch (err) { showError(`没打开：${(err as Error).message}`); }
+    if (!(await H.leave(_t("打开「{name}」", { name: gr.file.name })))) return;
+    try { openPicked(await docFile.fromGrab(gr)); } catch (err) { showError(_t("没打开：{Error}", { Error: (err as Error).message })); }
   })();
 });
 // 安装成 PWA 后双击 .mxl 用 MoonSinger 打开（manifest file_handlers → launchQueue；照 WeebPaint consumeLaunchFiles）。
 docFile.consumeLaunchFiles((h) => { void (async () => {
-  if (!(await H.leave(`打开「${h.name}」`))) return;
-  try { openPicked(await docFile.readHandle(h)); } catch (err) { showError(`没打开：${(err as Error).message}`); }
+  if (!(await H.leave(_t("打开「{name}」", { name: h.name })))) return;
+  try { openPicked(await docFile.readHandle(h)); } catch (err) { showError(_t("没打开：{Error}", { Error: (err as Error).message })); }
 })(); });
 
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：store（接缝 src/app-store.ts）+ 歌库屏（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ───────────
@@ -2793,7 +2791,7 @@ const es = createEditorSession({
     // 编码在 worker 里（src/format/encode-client.ts；2026-10-21）：主线程只克隆一份歌 + 休息室 + 参考窗的文件；worker 没了就在主线程算（同以前）
     encode: async () => { await refHost.settled(); encodedSnap = D.savedMark(); const bytes = await encoder.encode({ ...saveArgs(), references: refHost.files() }); return { bytes: new Blob([bytes as unknown as BlobPart], { type: "application/vnd.recordare.musicxml" }) }; },
     // 第 ④ 层护栏（store 接缝）：定稿着、出声内容的指纹却变了 = 不落盘、不推，脏留着（顶栏「•」照亮 = 诚实），说一句。前面三层都没拦住才会走到这儿。
-    canPersist: () => { const f = D.extras.final; if (!f) return null; try { return contentFingerprintOf(saveArgs()) === f.fingerprint ? null : "这首歌定稿了，内容却变了：没有存、也不会推上云。先「改稿」（定稿的 mp3 作废）再存，或者撤销刚才的改动。"; } catch (e) { return `存不了：${(e as Error).message}`; } },
+    canPersist: () => { const f = D.extras.final; if (!f) return null; try { return contentFingerprintOf(saveArgs()) === f.fingerprint ? null : _t("这首歌定稿了，内容却变了：没有存、也不会推上云。先「改稿」（定稿的 mp3 作废）再存，或者撤销刚才的改动。"); } catch (e) { return _t("存不了：{Error}", { Error: (e as Error).message }); } },
     onRefused: (why) => { showError(why); diagNote("doc", `persist refused: ${why}`); },
     onSaved: (name) => { if (encodedSnap) { D.adoptSaved(encodedSnap); encodedSnap = null; } if (coverTouched) { coverTouched = false; gallery?.invalidateThumb(name); } renderTitle(); },
   },
@@ -2818,11 +2816,11 @@ const stemOfId = (id: string) => identifiers.parse(id)?.stem ?? id;
  *  直接弹「打开本地 / 云端覆盖本地」；10-08 user「一直会遇到云端冲突的提示」；e2e sync ③b）。store 2.2.2 把同一条自愈补到了 open 路（大小一样才拉来比、可被「跳过到离线」打断），
  *  批量推这个没问过人的动作就撤了（user 10-26「修」；库 pushAll 的 JSDoc 本来就说别接到这种地方）。真分叉照旧由 open 的冲突面问人。 */
 async function openStoreDoc(id: string): Promise<boolean> {
-  if (!(await H.leave(`打开「${stemOfId(id)}」`, { nextIsGallery: true }))) return false;   // 等着安家的有笔先安家；无地 / 本机文件改过没存先问；歌库里的不在这儿推（es.open 切歌前自己先存旧的）
+  if (!(await H.leave(_t("打开「{id}」", { id: stemOfId(id) }), { nextIsGallery: true }))) return false;   // 等着安家的有笔先安家；无地 / 本机文件改过没存先问；歌库里的不在这儿推（es.open 切歌前自己先存旧的）
   pendingOpenId = id;
   try {
     const ok = await es.open(id);   // 切歌前 es 自己先存旧的（退出语义）；open 里含新鲜度检查 / 冲突面 / 崩溃恢复（store 的 ui）
-    if (!ok) { showError(`打不开「${stemOfId(id)}」：这台设备上没有它的字节（离线、或还没从云端拉下来）`); return false; }
+    if (!ok) { showError(_t("打不开「{id}」：这台设备上没有它的字节（离线、或还没从云端拉下来）", { id: stemOfId(id) })); return false; }
     diagNote("doc", `open ${id}`);
     return true;
   } catch (e) { reportError(e); return false; }
@@ -2832,31 +2830,31 @@ async function openStoreDoc(id: string): Promise<boolean> {
  *  空着离开 = 零损失、歌库里不留空壳；空谱不算「上次开着的歌」（reload 回歌库）。 */
 async function newStoreSong(): Promise<void> {
   attachForUser();
-  if (!(await H.leave("新建"))) return;
+  if (!(await H.leave(_t("新建")))) return;
   const folder = gallery?.currentFolder() ?? "";
   loadDoc(initState().song, { home: { kind: "none", pendingFolder: folder }, stem: defaultStem(), named: false, extras: emptyExtras() });   // 换家 = 放下旧身份（autosave 绝不能把空谱写进上一首）+ last-doc 清空（reload 回歌库）
-  info("新的一首（第一笔写下去就进歌库）");
+  info(_t("新的一首（第一笔写下去就进歌库）"));
 }
 /** 把手里这首无地的歌放进歌库（文件名沿用；撞名加 -hex4，不加序号——user 2026-10-08「3 weebpaint写handoff和我们对齐」）。 */
 async function saveIntoGallery(): Promise<void> {
   attachForUser();
   const r = await H.intoGallery(gallery?.currentFolder() ?? "");   // 等着安家的空谱：有笔就安家，没笔不塞空壳（WeebPaint「未动过的空白不塞进新库」）；落盘报了错 = 身份留着、下一轮 autosave 再试（错已报）
-  if (r.k === "blank") info("还是空的：写下第一笔就自动进歌库");
-  else if (r.k === "moved" && r.flushed) info(`进歌库了：${H.stem}${SONG_SUFFIX}`);
+  if (r.k === "blank") info(_t("还是空的：写下第一笔就自动进歌库"));
+  else if (r.k === "moved" && r.flushed) info(_t("进歌库了：{stem}{SONG_SUFFIX}", { stem: H.stem, SONG_SUFFIX }));
 }
 /** 改当前这首的文件名：歌库里的走 store（tryMove：撞名不覆盖、旧名进回收站）；无地的只改下次存的名字。返回新身份（歌库 VerbDoc.renameActive 的契约）。 */
 async function renameActive(): Promise<string | null> {
   if (H.home.kind !== "gallery") { renameFile(); return null; }
   const p = identifiers.parse(H.home.identifier); if (!p) return null;
-  const v = await openInputSheet("改文件名", { defaultValue: p.stem, message: "只改文件名，纸上的歌名不变。", okLabel: "改" });
+  const v = await openInputSheet(_t("改文件名"), { defaultValue: p.stem, message: _t("只改文件名，纸上的歌名不变。"), okLabel: _t("改") });
   if (v == null) return null;
   try {
     const r = await H.rename(v);
-    if (r.k === "taken") { showError(`「${fileSafe(v)}」已经有了（${r.where === "cloud" ? "云端" : "这台设备上"}），没改`); return null; }
-    if (r.k === "renameCancelled") { info("这次没动"); return null; }   // store 2.2.2：「搬不搬云端旧的」面里选了取消
+    if (r.k === "taken") { showError(_t("「{v}」已经有了（{p}），没改", { v: fileSafe(v), p: r.where === "cloud" ? _t("云端") : _t("这台设备上") })); return null; }
+    if (r.k === "renameCancelled") { info(_t("这次没动")); return null; }   // store 2.2.2：「搬不搬云端旧的」面里选了取消
     if (r.k !== "renamed") return null;
     // store 2.2.2 起谱系不明会先弹面问；oldKept 还为真只剩两种：人选了「留着」（说清是你选的）、或宿主没接回调时的默认（如实说旧的还在）
-    info(r.oldKept ? (r.oldKeptByUser ? `文件名改成 ${r.stem}${SONG_SUFFIX}；照你的意思，云端旧名那份留着没动` : `文件名改成 ${r.stem}${SONG_SUFFIX}（旧名的那份谱系不明，云端原地留着了——歌库里还看得见）`) : `文件名改成 ${r.stem}${SONG_SUFFIX}`);
+    info(r.oldKept ? (r.oldKeptByUser ? _t("文件名改成 {stem}{SONG_SUFFIX}；照你的意思，云端旧名那份留着没动", { stem: r.stem, SONG_SUFFIX }) : _t("文件名改成 {stem}{SONG_SUFFIX}（旧名的那份谱系不明，云端原地留着了——歌库里还看得见）", { stem: r.stem, SONG_SUFFIX })) : _t("文件名改成 {stem}{SONG_SUFFIX}", { stem: r.stem, SONG_SUFFIX }));
     return H.identifier();
   } catch (e) { reportError(e); return null; }
 }
@@ -2892,8 +2890,8 @@ attachGate(gate);
 onUserOfflineChange(() => { renderTitle(); gallery?.renderCloud(); });
 /** 建 store + 歌库屏（幂等；不碰登录）。第一次要在用户手势里（persist 申请）。 */
 function ensureAttached(home: StoreHome = { kind: "cloud" }): void {
-  if (!currentPolicy().library) throw new Error("这个部署方式没有歌库（itch：歌只用文件存）");   // 第二道：入口已经灰了，万一有别的路走到这里也不建库
-  if (home.kind === "cloud" && !currentPolicy().cloud) throw new Error("这个部署方式没有网盘（备用版：歌库的家只能是文件夹）");
+  if (!currentPolicy().library) throw new Error(_t("这个部署方式没有歌库（itch：歌只用文件存）"));   // 第二道：入口已经灰了，万一有别的路走到这里也不建库
+  if (home.kind === "cloud" && !currentPolicy().cloud) throw new Error(_t("这个部署方式没有网盘（备用版：歌库的家只能是文件夹）"));
   const fresh = !hasStore();
   attachStore(home);
   if (fresh) {
@@ -2954,7 +2952,7 @@ async function afterGalleryClosed(): Promise<void> {
   try {
     if (await requireStore().files.occupied(H.home.identifier)) return;
     const stem = H.stem; H.release();
-    showError(`「${stem}」已经进了回收站；手里这份现在没有家了（「存」会问存到哪，或「存进歌库」）。`);
+    showError(_t("「{stem}」已经进了回收站；手里这份现在没有家了（「存」会问存到哪，或「存进歌库」）。", { stem }));
   } catch (e) { reportError(e, "log"); }
 }
 /** 进歌库 = 放下手里的歌（gallery-first，同 WeebPaint「进图库 = 关闭当前画作」；user 2026-10-08「7 和weebpaint对齐」）：
@@ -2962,7 +2960,7 @@ async function afterGalleryClosed(): Promise<void> {
 async function openGallery(): Promise<void> {
   if (!(await ensureHome())) return;
   attachForUser();
-  if (!(await H.leave("进歌库"))) return;
+  if (!(await H.leave(_t("进歌库")))) return;
   H.release();
   deviceKvSet(KV_LAST_DOC, null);   // 本机文件 / 无地的稿也一样：进了歌库 = 没有「上次开着的那首」
   renderTitle();
@@ -2980,10 +2978,10 @@ async function ensureHome(): Promise<boolean> {
 async function chooseHome(): Promise<boolean> {
   const cloud = currentPolicy().cloud, folder = canPickFolder();
   let picking: Promise<GalleryEntry | null> | null = null;
-  const v = await openChoiceSheet<"cloud" | "folder">("歌库要先有个家",
-    `歌放在浏览器外面、你自己够得着的地方，才不怕浏览器清缓存。${cloud ? "" : `网盘在官网版里（${SITE_HOST}）。`}${folder ? "" : "这个浏览器选不了文件夹（桌面版 Chrome / Edge 可以）。"}不想选也行：「存」= 存成文件，「打开」= 选文件。`,
-    [{ label: "连接网盘（OneDrive）", value: "cloud", primary: cloud, off: !cloud, onPick: redirectToSignIn },
-      { label: "选一个文件夹", value: "folder", primary: !cloud && folder, off: !folder, onPick: () => { picking = pickFolderHome(); } }]);
+  const v = await openChoiceSheet<"cloud" | "folder">(_t("歌库要先有个家"),
+    _t("歌放在浏览器外面、你自己够得着的地方，才不怕浏览器清缓存。{cloud}{folder}不想选也行：「存」= 存成文件，「打开」= 选文件。", { cloud: cloud ? "" : _t("网盘在官网版里（{SITE_HOST}）。", { SITE_HOST }), folder: folder ? "" : _t("这个浏览器选不了文件夹（桌面版 Chrome / Edge 可以）。") }),
+    [{ label: _t("连接网盘（OneDrive）"), value: "cloud", primary: cloud, off: !cloud, onPick: redirectToSignIn },
+      { label: _t("选一个文件夹"), value: "folder", primary: !cloud && folder, off: !folder, onPick: () => { picking = pickFolderHome(); } }]);
   if (v !== "folder" || !picking) return false;   // 网盘 = 页面已经跳去微软了，回来开局接上
   const entry = await (picking as Promise<GalleryEntry | null>).catch((e) => { reportError(e, "warning"); return null; });
   return entry ? useFolderHome(entry) : false;
@@ -2991,7 +2989,7 @@ async function chooseHome(): Promise<boolean> {
 /** 把这个文件夹挂成家。手里要是旧库的歌，先落盘放下（旧库不动，走搬家）。 */
 async function useFolderHome(entry: GalleryEntry): Promise<boolean> {
   if (hasStore()) {
-    if (!(await H.leave("换到文件夹"))) return false;
+    if (!(await H.leave(_t("换到文件夹")))) return false;
     H.release();
     await disposeStore();
   }
@@ -3011,7 +3009,7 @@ async function regrantFolder(): Promise<boolean> {
   setFolderOnline(ok);
   diagNote("home", `regrant "${f.label}" → ${String(ok)}`);
   gallery?.renderCloud(); renderTitle();
-  if (!ok) { showError(`没拿到「${f.label}」的权限：改动还存在这台设备上，歌一首没丢。`); return false; }
+  if (!ok) { showError(_t("没拿到「{label}」的权限：改动还存在这台设备上，歌一首没丢。", { label: f.label })); return false; }
   gallery?.refresh();
   void afterSignIn();
   return true;
@@ -3029,9 +3027,9 @@ attachFolderLost(() => { if (folderHome() && folderOnline()) { setFolderOnline(f
 /** 顶上那条（一处判定）：文件夹权限掉了 > 还有旧歌没搬 > 没有家的披露（登录探测落地之前不说，不然有账号的人开局闪一下这句假话；有账号但登录过期 = 歌在网盘上有，归闸门和常驻条说）。 */
 function homeBarNow(): { text: string; buttons: { v: string; label: string }[] } | null {
   const f = folderHome();
-  if (f && !folderOnline()) return { text: `文件夹「${f.label}」的权限掉了：改动先存在这台设备上，歌一首没丢`, buttons: [{ v: "regrant", label: "重新授权" }] };
-  if (f && legacyLeft > 0) return { text: `这个浏览器里还有 ${legacyLeft} 首旧歌，没搬进「${f.label}」`, buttons: [{ v: "move", label: "搬进来" }, { v: "export-legacy", label: "全部导出" }] };
-  if (!f && currentPolicy().cloud && authSettled && !authUnknown && !cloudAccountKnown() && !isSignedIn()) return { text: "这些歌只在这台设备的浏览器里，没有备份", buttons: [...(canPickFolder() ? [{ v: "move", label: "搬进一个文件夹" }] : []), { v: "export-all", label: "全部导出" }, { v: "connect", label: "连接网盘" }] };
+  if (f && !folderOnline()) return { text: _t("文件夹「{label}」的权限掉了：改动先存在这台设备上，歌一首没丢", { label: f.label }), buttons: [{ v: "regrant", label: _t("重新授权") }] };
+  if (f && legacyLeft > 0) return { text: _t("这个浏览器里还有 {legacyLeft} 首旧歌，没搬进「{label}」", { legacyLeft, label: f.label }), buttons: [{ v: "move", label: _t("搬进来") }, { v: "export-legacy", label: _t("全部导出") }] };
+  if (!f && currentPolicy().cloud && authSettled && !authUnknown && !cloudAccountKnown() && !isSignedIn()) return { text: _t("这些歌只在这台设备的浏览器里，没有备份"), buttons: [...(canPickFolder() ? [{ v: "move", label: _t("搬进一个文件夹") }] : []), { v: "export-all", label: _t("全部导出") }, { v: "connect", label: _t("连接网盘") }] };
   return null;
 }
 function homeAction(v: string): void {
@@ -3048,9 +3046,9 @@ function homeAction(v: string): void {
 async function openHomeMenu(): Promise<void> {
   const f = folderHome(); if (!f) return;
   const lost = !folderOnline();
-  const v = await openChoiceSheet<"regrant" | "refresh" | "leave">(`歌库在文件夹「${f.label}」`,
-    `歌就是这个文件夹里的 .mxl，资源管理器里也看得到；回收站 / 备份箱是里面的 .trash / .backup。${lost ? "\n现在权限掉了：改动先存在这台设备上。" : ""}`,
-    [...(lost ? [{ label: "重新授权", value: "regrant" as const, primary: true }] : [{ label: "刷新", value: "refresh" as const }]), { label: "不用这个文件夹了…", value: "leave" as const, hint: "夹里的歌一首不动；之后可以再选一个家" }]);
+  const v = await openChoiceSheet<"regrant" | "refresh" | "leave">(_t("歌库在文件夹「{label}」", { label: f.label }),
+    _t("歌就是这个文件夹里的 .mxl，资源管理器里也看得到；回收站 / 备份箱是里面的 .trash / .backup。{lost}", { lost: lost ? _t("\n现在权限掉了：改动先存在这台设备上。") : "" }),
+    [...(lost ? [{ label: _t("重新授权"), value: "regrant" as const, primary: true }] : [{ label: _t("刷新"), value: "refresh" as const }]), { label: _t("不用这个文件夹了…"), value: "leave" as const, hint: _t("夹里的歌一首不动；之后可以再选一个家") }]);
   if (v === "regrant") await regrantFolder();
   else if (v === "refresh") { await checkFolderPermission(); gallery?.refresh(); }
   else if (v === "leave") await signOutFlow();
@@ -3113,11 +3111,11 @@ async function offerMove(): Promise<void> {
     deviceKvSet(KV_MOVE_ASKED, "1");
     const f = folderHome(), n = songs.length;
     let picking: Promise<GalleryEntry | null> | null = null;
-    const v = await openChoiceSheet<"move" | "cloud" | "export" | "later">(`这个浏览器里有 ${n} 首歌`,
-      `它们只在这个浏览器里，清缓存就没了。${f ? `搬进「${f.label}」：逐首核对字节，一模一样才从浏览器移走。` : "选一个家搬过去；或者先全部导出成文件。"}稍后也行：歌库顶上那条还在。`,
-      [f ? { label: `搬进「${f.label}」`, value: "move", primary: true } : { label: "选一个文件夹，搬进去", value: "move", primary: true, off: !canPickFolder(), onPick: () => { picking = pickFolderHome(); } },
-        ...(!f && currentPolicy().cloud ? [{ label: "连接网盘", value: "cloud" as const, onPick: redirectToSignIn }] : []),
-        { label: "全部导出", value: "export" }, { label: "稍后", value: "later" }]);
+    const v = await openChoiceSheet<"move" | "cloud" | "export" | "later">(_t("这个浏览器里有 {n} 首歌", { n }),
+      _t("它们只在这个浏览器里，清缓存就没了。{f}稍后也行：歌库顶上那条还在。", { f: f ? _t("搬进「{label}」：逐首核对字节，一模一样才从浏览器移走。", { label: f.label }) : _t("选一个家搬过去；或者先全部导出成文件。") }),
+      [f ? { label: _t("搬进「{label}」", { label: f.label }), value: "move", primary: true } : { label: _t("选一个文件夹，搬进去"), value: "move", primary: true, off: !canPickFolder(), onPick: () => { picking = pickFolderHome(); } },
+        ...(!f && currentPolicy().cloud ? [{ label: _t("连接网盘"), value: "cloud" as const, onPick: redirectToSignIn }] : []),
+        { label: _t("全部导出"), value: "export" }, { label: _t("稍后"), value: "later" }]);
     if (v === "move") {
       const entry = f ?? (picking ? await (picking as Promise<GalleryEntry | null>) : null);
       if (entry) await moveSongsFlow(entry);
@@ -3133,15 +3131,15 @@ async function moveSongsFlow(entry: GalleryEntry): Promise<void> {
   let result: Awaited<ReturnType<typeof moveSongs>>;
   try {
     const songs = await songsToMoveIn(legacy);
-    result = await withBusy(`正在把歌搬进「${entry.label}」…`, () => moveSongs(songs, {
+    result = await withBusy(_t("正在把歌搬进「{label}」…", { label: entry.label }), () => moveSongs(songs, {
       read: async (id) => { const b = await legacy.zip(id, { mode: "existing" }).open(); return b ? new Uint8Array(await b.arrayBuffer()) : null; },
       readBack: (id) => readFromFolder(entry, id),
-      write: async (id, bytes) => { const r = await requireStore().zip(id, { mode: "new" }).save(bytes, { tryPush: true }); if (r?.pushed !== true) throw new Error("没写进文件夹"); },
-      remove: async (id) => { const t = await legacy.zip(id, { mode: "existing" }).trash(); if (t.status !== "trashed") throw new Error(`旧库没移走（${t.status}）`); },
+      write: async (id, bytes) => { const r = await requireStore().zip(id, { mode: "new" }).save(bytes, { tryPush: true }); if (r?.pushed !== true) throw new Error(_t("没写进文件夹")); },
+      remove: async (id) => { const t = await legacy.zip(id, { mode: "existing" }).trash(); if (t.status !== "trashed") throw new Error(_t("旧库没移走（{status}）", { status: t.status })); },
       altName: (id) => withStemTail(id, defaultStem().slice(-5), identifiers),   // defaultStem = yyyymmdd-hex4：取「-hex4」
-      progress: (done, total) => setBusyText(`正在搬歌 ${done} / ${total}…`),
+      progress: (done, total) => setBusyText(_t("正在搬歌 {done} / {total}…", { done, total })),
     }));
-  } catch (e) { reportError(e); showError(`搬家没成：${(e as Error)?.message ?? e}。浏览器里的歌一首没动。`); return; }
+  } catch (e) { reportError(e); showError(_t("搬家没成：{Error}。浏览器里的歌一首没动。", { Error: (e as Error)?.message ?? e })); return; }
   finally { await legacy.dispose(); }
   const finished = moveFinished(result);
   legacyLeft = finished ? 0 : result.failed.length + result.stuck.length;
@@ -3162,9 +3160,9 @@ async function openCloudMenu(): Promise<void> {
   const signed = isSignedIn();
   let who = ""; try { const a = auth.getActiveAccount() as { username?: string; name?: string } | null; who = a?.name || a?.username || ""; } catch { /* 没登录 */ }
   // 2026-10-26 user「修」：「把没上云的都推上去」撤——app 侧的方向动词（库 dirty.pushAll 的 JSDoc 明说别接到这种钮上；10-16「冲突只在库的面里三选一」）。没同步好的在歌库「要处理的」里逐首处理。
-  const v = await openChoiceSheet<"in" | "out" | "refresh" | "reconnect">("云端（OneDrive）",
-    signed ? `已登录${who ? ` ${who}` : ""}。歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。` : "登录微软个人账号后，歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。不登录也能用，歌只在这台设备上。",
-    signed ? [...(isUserOffline() && rawOnline() ? [{ label: GATE_TEXT.reconnect, value: "reconnect" as const, primary: true }] : [{ label: "刷新云端", value: "refresh" as const }]), { label: "退出登录", value: "out" as const, danger: true, hint: "歌还留在这台设备上" }] : [{ label: "登录微软账号", value: "in", primary: true }]);
+  const v = await openChoiceSheet<"in" | "out" | "refresh" | "reconnect">(_t("云端（OneDrive）"),
+    signed ? _t("已登录{who}。歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。", { who: who ? ` ${who}` : "" }) : _t("登录微软个人账号后，歌库同步到 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹，看不到你别的文件）。不登录也能用，歌只在这台设备上。"),
+    signed ? [...(isUserOffline() && rawOnline() ? [{ label: GATE_TEXT.reconnect, value: "reconnect" as const, primary: true }] : [{ label: _t("刷新云端"), value: "refresh" as const }]), { label: _t("退出登录"), value: "out" as const, danger: true, hint: _t("歌还留在这台设备上") }] : [{ label: _t("登录微软账号"), value: "in", primary: true }]);
   if (v === "in") await signInFlow();
   else if (v === "out") await signOutFlow();
   else if (v === "refresh") gallery?.refresh();
@@ -3176,18 +3174,18 @@ async function exportAllSongs(o: { legacy?: boolean } = {}): Promise<void> {
   try {
     const store = legacy ?? requireStore();
     const now = new Date(), p2 = (n: number) => String(n).padStart(2, "0");
-    const name = `MoonSinger-歌库-${now.getFullYear()}${p2(now.getMonth() + 1)}${p2(now.getDate())}-${p2(now.getHours())}${p2(now.getMinutes())}.zip`;
-    const r = await withBusy("正在打包歌库…", () => exportAll({
+    const name = _t("MoonSinger-歌库-{p}{p2}{p3}-{p4}{p5}.zip", { p: now.getFullYear(), p2: p2(now.getMonth() + 1), p3: p2(now.getDate()), p4: p2(now.getHours()), p5: p2(now.getMinutes()) });
+    const r = await withBusy(_t("正在打包歌库…"), () => exportAll({
       listFolder: async (folder) => { const f = await firstFrame(store, folder); return { identifiers: f.items.filter((i) => isCached(i.syncState as never)).map((i) => i.identifier), folders: f.folders }; },   // 第一帧 = 本地帧（没登录就只有它）；这台没字节的不收（不是「只在浏览器里」的）
       bytes: async (id) => { if (!legacy && H.identifier() === id) await es.flushLocal(); return store.zip(id, { mode: "existing" }).open(); },
       pack: async (entries) => new Blob([zipSync(Object.fromEntries(entries.map((e) => [e.path, [e.data, { level: 0 }]])) as never) as Uint8Array<ArrayBuffer>], { type: "application/zip" }),
     }));
     diagNote("gallery", `export-all count=${r.count} failed=${r.failed.length}`);
     const said = exportAllSay(r, name);
-    if (r.zip) offerFile(new File([r.zip], name, { type: "application/zip" }), "歌库打包好了", said.text);
+    if (r.zip) offerFile(new File([r.zip], name, { type: "application/zip" }), _t("歌库打包好了"), said.text);
     else if (said.bad) showError(said.text); else info(said.text);
     if (r.zip && said.bad) showError(said.text);
-  } catch (e) { reportError(e); showError(`导出没成：${(e as Error)?.message ?? e}`); }
+  } catch (e) { reportError(e); showError(_t("导出没成：{Error}", { Error: (e as Error)?.message ?? e })); }
   finally { await legacy?.dispose(); }
 }
 /** 退出登录 = 脏门 + 备份 + 拆库 + 退出（同 WeebPaint disconnectFlow：先绿灯门卸库，后 signOut；user 2026-10-08「4 和weebpaint对齐」）：
@@ -3198,8 +3196,8 @@ async function signOutFlow(): Promise<void> {
   for (;;) {
     let n = 0; try { n = await store.files.dirty.count(); } catch (e) { reportError(e, "warning"); }
     if (n === 0) break;
-    const v = await openChoiceSheet<"backup" | "force">(f ? `还有 ${n} 首没写进文件夹` : `还有 ${n} 首没上云`, "退出后这些改动只在这台设备上。可以先推上去（推不上去的逐首下载备份），或者照样退出。",
-      [{ label: "先推上去 / 下载备份", value: "backup", primary: true }, { label: "照样退出", value: "force", danger: true }]);
+    const v = await openChoiceSheet<"backup" | "force">(f ? _t("还有 {n} 首没写进文件夹", { n }) : _t("还有 {n} 首没上云", { n }), _t("退出后这些改动只在这台设备上。可以先推上去（推不上去的逐首下载备份），或者照样退出。"),
+      [{ label: _t("先推上去 / 下载备份"), value: "backup", primary: true }, { label: _t("照样退出"), value: "force", danger: true }]);
     if (v == null) return;
     if (v === "force") break;
     await backupDirty();
@@ -3211,7 +3209,7 @@ async function signOutFlow(): Promise<void> {
   if (f) await clearFolderHome().catch((e) => reportError(e, "log"));
   else { try { await auth.signOut(); } catch (e) { reportError(e); } }
   loadDoc(initState().song, { home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false, extras: emptyExtras() });
-  renderTitle(); info(f ? `不用「${f.label}」了：夹里的歌一首没动，再进歌库可以选家` : "退出了：歌都还在这台设备上，再连上网盘就能接着用");
+  renderTitle(); info(f ? _t("不用「{label}」了：夹里的歌一首没动，再进歌库可以选家", { label: f.label }) : _t("退出了：歌都还在这台设备上，再连上网盘就能接着用"));
 }
 /** 下载备份：先 pushAll 尽力推（在线时最好的备份就是云）；推不上去的（failed = 错误报告面）逐首下载 .mxl。 */
 async function backupDirty(): Promise<void> {
@@ -3222,7 +3220,7 @@ async function backupDirty(): Promise<void> {
     try { const bl = await store.zip(id, { mode: "existing" }).open(); if (bl) downloadFile(new File([bl], `${stemOfId(id)}${SONG_SUFFIX}`, { type: "application/vnd.recordare.musicxml" })); }
     catch (e) { reportError(e, "warning"); }
   }
-  info(failed.length ? `推不上去的 ${failed.length} 首已下载备份` : "都推上去了");
+  info(failed.length ? _t("推不上去的 {n} 首已下载备份", { n: failed.length }) : _t("都推上去了"));
 }
 function downloadFile(file: File): void {
   const a = document.createElement("a"), url = URL.createObjectURL(file);
@@ -3235,8 +3233,8 @@ let navigatingForAuth = false;
 async function signInFlow(): Promise<boolean> {
   const inGallery = H.home.kind === "gallery";
   if (inGallery) { try { await es.flushLocal(); } catch (e) { reportError(e, "warning"); } }
-  const v = await openChoiceSheet("去微软登录", `页面会跳到微软的登录页（只认个人账号），登录完自动回到这里。${inGallery ? "手里的歌已经存在这台设备上了。" : dirty() ? "手里这首无地的歌改过还没存——跳走会丢，先存一下再来。" : ""}`,
-    [{ label: "去登录", value: "go", primary: true, onPick: redirectToSignIn }]);
+  const v = await openChoiceSheet(_t("去微软登录"), _t("页面会跳到微软的登录页（只认个人账号），登录完自动回到这里。{inGallery}", { inGallery: inGallery ? _t("手里的歌已经存在这台设备上了。") : dirty() ? _t("手里这首无地的歌改过还没存——跳走会丢，先存一下再来。") : "" }),
+    [{ label: _t("去登录"), value: "go", primary: true, onPick: redirectToSignIn }]);
   return v === "go";
 }
 /** 在点击里同步起跳（redirect）；跳走期间不拦 beforeunload。 */
@@ -3252,12 +3250,12 @@ async function refreshOpenDoc(o: { gate?: boolean } = {}): Promise<string | unde
     //   user 2026-10-08「我们也要拿新版本时锁输入，感觉wxhw更理想一点」）。闸 = 遮罩 + 没有按钮；重载完（或失败）解锁
     // store 0.18.1 trustHints:false：这里的刷新都发生在回前台 / 回线 / 登录后——怀疑自己过期的时刻，不采信 30 s 内的旧清单，一定问云端（WXHW e2e 10-16 翻红那条）
     const r = await requireStore().zip(id, { mode: "existing" }).pullIfClean({ trustHints: false, localDirty: () => dirty() || es.isPushPending(),
-      onReplaceStart: () => { froze = true; diagNote("sync", `replace-start ${stemOfId(id)}: input frozen`); void lockSyncGate({ title: "云端有新版本", message: `「${stemOfId(id)}」在别的设备上改过了，正在换成最新的……先别打字。`, showSpinner: true, actions: [] }); } });
+      onReplaceStart: () => { froze = true; diagNote("sync", `replace-start ${stemOfId(id)}: input frozen`); void lockSyncGate({ title: _t("云端有新版本"), message: _t("「{id}」在别的设备上改过了，正在换成最新的……先别打字。", { id: stemOfId(id) }), showSpinner: true, actions: [] }); } });
     if (r?.status === "fast-forwarded" && H.identifier() === id) {
       // 本地字节已换成云端版本（刚 markSynced）→ 内存里的是旧世界线，必须整体重载（同名 es.open = openInto 管线；不重载 = 下次自动存把旧版写回云端，WeebPaint 2026-08-25 案卷）
       pendingOpenId = id;
       const ok = await es.open(id).finally(() => { pendingOpenId = null; });
-      if (ok) info("换成云端的新版本了"); else showError(`「${stemOfId(id)}」云端的新版本拉下来了，但重开失败——请从歌库再打开一次`);
+      if (ok) info(_t("换成云端的新版本了")); else showError(_t("「{id}」云端的新版本拉下来了，但重开失败——请从歌库再打开一次", { id: stemOfId(id) }));
     } else if (r?.status === "ff-failed" || r?.status === "cloud-error") reportError(r.error ?? new Error(`refresh ${r.status}: ${r.reason ?? ""}`), o.gate && r.status === "cloud-error" ? "log" : "warning");   // 闸门问的：没问成归闸门说，不再上一条横幅
     return r?.status;
   } catch (e) { reportError(e, o.gate ? "log" : "warning"); return "cloud-error"; }
@@ -3310,10 +3308,10 @@ async function resumeOwedPush(never: ReadonlySet<string>): Promise<void> {
   catch (e) { reportError(e, "log"); }
   gallery?.refresh(); renderTitle();
 }
-const inToHandle = (n: number): string => `${n} 首没传上去，在「要处理」列表里`;
+const inToHandle = (n: number): string => _t("{n} 首没传上去，在「要处理」列表里", { n });
 function showInList(n: number): void {
   if (gallery?.isOpen()) gallery.setAttentionOnly(true);   // 已经在歌库里：直接切到「要处理的」
-  showNotice({ id: "unsynced", level: "info", text: inToHandle(n), actions: [{ label: "去处理", primary: true, onClick: () => { closeNotice("unsynced"); void openGallery().then(() => gallery?.setAttentionOnly(true)); } }] });
+  showNotice({ id: "unsynced", level: "info", text: inToHandle(n), actions: [{ label: _t("去处理"), primary: true, onClick: () => { closeNotice("unsynced"); void openGallery().then(() => gallery?.setAttentionOnly(true)); } }] });
 }
 async function askReturn(plan: Exclude<ReturnPlan, { kind: "none" }>): Promise<void> {
   if (askedReturn || !hasStore()) return;
@@ -3324,9 +3322,9 @@ async function askReturn(plan: Exclude<ReturnPlan, { kind: "none" }>): Promise<v
   let go = false;
   try {
     go = await openConfirmSheet(
-      plan.others > 0 ? `有 ${plan.neverUploaded} 首只在这台设备，还有 ${plan.others} 首改过没传。现在全传？` : `有 ${plan.neverUploaded} 首只在这台设备，现在${f ? `写进「${f.label}」` : "传上去"}？`,
-      "别的设备改过的不会被盖掉，会留给你选。稍后 = 它们进歌库「要处理」的列表，什么都不传。",
-      { okLabel: "现在传", cancelLabel: "稍后" });
+      plan.others > 0 ? _t("有 {neverUploaded} 首只在这台设备，还有 {others} 首改过没传。现在全传？", { neverUploaded: plan.neverUploaded, others: plan.others }) : _t("有 {neverUploaded} 首只在这台设备，现在{f}？", { neverUploaded: plan.neverUploaded, f: f ? _t("写进「{label}」", { label: f.label }) : _t("传上去") }),
+      _t("别的设备改过的不会被盖掉，会留给你选。稍后 = 它们进歌库「要处理」的列表，什么都不传。"),
+      { okLabel: _t("现在传"), cancelLabel: _t("稍后") });
   } catch (e) { askedReturn = false; reportError(e, "log"); return; }   // 和别的面撞了：这次没问成，下次再问
   const total = plan.neverUploaded + plan.others;
   diagNote("sync", `push ask → ${go ? "now" : "later"}`);
@@ -3337,11 +3335,11 @@ async function askReturn(plan: Exclude<ReturnPlan, { kind: "none" }>): Promise<v
   diagNote("sync", `push ask: pushed=${String(r?.pushed ?? "-")} failed=${String(r?.failed.length ?? "-")} left=${left}`);
   const id = H.identifier();
   if (r && id && !r.failed.includes(id)) es.noteExternallyPushed();
-  if (left === 0) showNotice({ id: "unsynced", level: "info", text: `${r?.pushed ?? total} 首都传上去了`, autoHideMs: 4000 });
+  if (left === 0) showNotice({ id: "unsynced", level: "info", text: _t("{r} 首都传上去了", { r: r?.pushed ?? total }), autoHideMs: 4000 });
   else {
     const named = (r?.failed ?? []).slice(0, 3).map(stemOfId).join("、");
     if (gallery?.isOpen()) gallery.setAttentionOnly(true);
-    showNotice({ id: "unsynced", level: "warning", text: `传上去 ${r?.pushed ?? 0} 首，还有 ${left} 首没传成${named ? `（${named}${left > 3 ? " …" : ""}）` : ""}：别的设备改过的要你选，网络问题的之后再试。`, actions: [{ label: "去处理", primary: true, onClick: () => { closeNotice("unsynced"); void openGallery().then(() => gallery?.setAttentionOnly(true)); } }] });
+    showNotice({ id: "unsynced", level: "warning", text: _t("传上去 {r} 首，还有 {left} 首没传成{named}：别的设备改过的要你选，网络问题的之后再试。", { r: r?.pushed ?? 0, left, named: named ? `（${named}${left > 3 ? " …" : ""}）` : "" }), actions: [{ label: _t("去处理"), primary: true, onClick: () => { closeNotice("unsynced"); void openGallery().then(() => gallery?.setAttentionOnly(true)); } }] });
   }
   gallery?.refresh(); renderTitle();
 }
@@ -3349,9 +3347,9 @@ async function askReturn(plan: Exclude<ReturnPlan, { kind: "none" }>): Promise<v
 async function setCover(f: File): Promise<void> {
   try {
     const png = await makeCoverPng(new Uint8Array(await f.arrayBuffer()));
-    updateExtras(withThumbnail(D.extras, png), { kind: "cover", label: "换封面图" });
-    info(`封面图换好了（${sizeText(png.length)}）`);
-  } catch (e) { showError(`这张图用不了：${(e as Error).message}`); }
+    updateExtras(withThumbnail(D.extras, png), { kind: "cover", label: _t("换封面图") });
+    info(_t("封面图换好了（{n}）", { n: sizeText(png.length) }));
+  } catch (e) { showError(_t("这张图用不了：{Error}", { Error: (e as Error).message })); }
 }
 /** smart save（歌库里的歌；顶栏钮 / Ctrl+S / 文件菜单「存」同一入口）：脏 → 立刻落盘 + 推；干净且登录着 → 复查云端再 force 推一次（时间戳走字）；
  *  没登录 → 落本地 + 问一次「去登录？」（同一 session 点过「暂不」就不再弹，只提示）。 */
@@ -3364,19 +3362,19 @@ async function smartSaveStore(): Promise<void> {
   if (before === "clean") { await refreshOpenDoc(); }
   await es.forceSaveAndPush(); renderTitle();
   if (!isSignedIn()) {
-    if (signInDeclined || !cloudOnline() || !auth.isAuthConfigured()) { info("存在这台设备上了"); return; }
-    const v = await openChoiceSheet("存在这台设备上了", "要同步到 OneDrive 吗？登录微软个人账号后，歌库同步到你 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹）。",
-      [{ label: "去登录", value: "go", primary: true, onPick: redirectToSignIn }, { label: "暂不", value: "later" }]);
+    if (signInDeclined || !cloudOnline() || !auth.isAuthConfigured()) { info(_t("存在这台设备上了")); return; }
+    const v = await openChoiceSheet(_t("存在这台设备上了"), _t("要同步到 OneDrive 吗？登录微软个人账号后，歌库同步到你 OneDrive 的「应用」文件夹（这个 app 只能看自己的那个夹）。"),
+      [{ label: _t("去登录"), value: "go", primary: true, onPick: redirectToSignIn }, { label: _t("暂不"), value: "later" }]);
     if (v === "later") signInDeclined = true;
     return;
   }
-  if (folderHome()) { info(es.isPushPending() ? "存在这台设备上了，还没写进文件夹" : before === "clean" ? "文件夹里也是最新的" : `存好了：写进了「${folderHome()!.label}」`); return; }
-  info(es.isPushPending() ? "存在这台设备上了，云端稍后再推" : before === "clean" ? "云端也是最新的" : "存好了，云端也更新了");
+  if (folderHome()) { info(es.isPushPending() ? _t("存在这台设备上了，还没写进文件夹") : before === "clean" ? _t("文件夹里也是最新的") : _t("存好了：写进了「{label}」", { label: folderHome()!.label })); return; }
+  info(es.isPushPending() ? _t("存在这台设备上了，云端稍后再推") : before === "clean" ? _t("云端也是最新的") : _t("存好了，云端也更新了"));
 }
 $("saveBtn").addEventListener("click", () => { void fileSave(); });   // smart save = 存 = 回家（三种家的分支在 H.save）
 $("undoBtn").addEventListener("click", () => undoNow());
 $("redoBtn").addEventListener("click", () => redoNow());
-$("lockBtn").addEventListener("click", () => info("这首歌没加密。MoonSinger 这一版还不加密（要的话告诉开发者：照 WXHW 接 zip.js + 7z 就能开）。"));
+$("lockBtn").addEventListener("click", () => info(_t("这首歌没加密。MoonSinger 这一版还不加密（要的话告诉开发者：照 WXHW 接 zip.js + 7z 就能开）。")));
 // iOS 软键盘（user 2026-10-08「弹软键盘的时候最下面滚动不上去」）：visualViewport 矮了多少 = --kb-offset，整个 app 缩到键盘上面（styles #app），谱的最底下才滚得到；
 //   iOS 把视口顶上去时拉回 0（固定的顶栏别被推出屏）；键盘露 / 收之后光标那行滚进视野。照 WXHW app.ts 的做法。
 if (window.visualViewport) {
@@ -3437,7 +3435,7 @@ function lyricBackspace(): void {
 function run(a: Action, repeat: boolean, code: string): boolean {
   switch (a.k) {
     case "cmd":
-      if (ws.mode === "lyrics" && NOTE_EDIT.has(a.cmd.k)) { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(`「${MODE_LABEL[ws.mode]}」里键盘不写音（切到「音」再写）`); } return true; }   // 「符」里电脑键盘照样写音（v0.10.36 音符一起编辑）；只有「词」不写
+      if (ws.mode === "lyrics" && NOTE_EDIT.has(a.cmd.k)) { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(_t("「{p}」里键盘不写音（切到「音」再写）", { p: MODE_LABEL[ws.mode] })); } return true; }   // 「符」里电脑键盘照样写音（v0.10.36 音符一起编辑）；只有「词」不写
       if (a.cmd.k === "backspace" && ws.mode === "symbols") { update(apply(D.st, { k: "symBackspace" }, performance.now())); return true; }   // 符：退格删记号（user「我早就想用退格删强度曲线了」）
       if (a.cmd.k === "backspace" && ws.mode === "lyrics") { lyricBackspace(); return true; }
       if (a.cmd.k === "degree") {
@@ -3467,8 +3465,8 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     }
     case "stack":   // Shift+1–7 = 叠（同 pad「叠」：XOR；单声乐器的声部叠不了）
       if (repeat) return true;
-      if (ws.mode !== "notes") { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(`「${MODE_LABEL[ws.mode]}」里键盘不写音（切到「音」再写）`); } return true; }
-      if (!canStack()) { info("这条声部台上是单声的（小月相 / 元音版 / 没人）：叠不了。换成能叠音的乐器再叠"); return true; }
+      if (ws.mode !== "notes") { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(_t("「{p}」里键盘不写音（切到「音」再写）", { p: MODE_LABEL[ws.mode] })); } return true; }
+      if (!canStack()) { info(_t("这条声部台上是单声的（小月相 / 元音版 / 没人）：叠不了。换成能叠音的乐器再叠")); return true; }
       { const n = stackDegree(D.st, a.degree); if (n === D.st) return true; update(n); previewEdited(); }
       return true;
     case "play": playPause(keyTs); return true;
@@ -3548,19 +3546,19 @@ const midi = createMidiKeyboard({
     midiBlink();
   },
   up: (id) => { const r = midiHeld.get(id); midiHeld.delete(id); if (r === "pad") padHost.noteUp(id); else if (r === "sound") sound.up(id); },
-  plug: (name, on) => info(on ? `MIDI 键盘接上了：${name}` : `MIDI 键盘拔掉了：${name}`),
+  plug: (name, on) => info(on ? _t("MIDI 键盘接上了：{name}", { name }) : _t("MIDI 键盘拔掉了：{name}", { name })),
   status: (s) => { diagNote("midi", s.k === "on" ? `on: ${s.inputs.join(", ") || "(no input)"}` : s.k === "denied" ? `denied: ${s.why}` : s.k); midiRowSync?.(s); syncMidiChip(s); },
 });
 // 顶栏「MIDI」（W-42；user 2026-10-17「midi是ux的问题：我不知道需要进设置连」→「同意顶栏显示midi状态。不一开始弹」）：状态即按钮，点开 = 现在怎样 + 能做的（连接 / 我没有）。
 //   没有 Web MIDI（iPad / iPhone）= 不露；没连 = 灰字（窄屏不露，设置里照样能连）；连着没插琴 = 空心点；插着 = 实心点，来一个音闪一下（一眼知道琴到了 app）；没给 = 警告色。
 //   开 app 不弹浏览器的许可框（浏览器记住了允许 = 静默接上，同 v0.12.26）。
 const midiBtn = $("midiBtn"), KV_MIDI_CHIP_HIDDEN = "midi-chip-hidden";   // 「我没有 MIDI 键盘」= 这台浏览器没连的时候顶栏不露（连上了照样露）
-const MIDI_CHIP_TITLE: Record<string, string> = { off: "MIDI 键盘：还没连（点一下看怎么连）", asking: "MIDI 键盘：等浏览器的许可…", denied: "MIDI 键盘：浏览器没给（点一下看怎么办）", idle: "MIDI 键盘：开着，还没插琴（插上就认）" };
+const MIDI_CHIP_TITLE: Record<string, string> = { off: _t("MIDI 键盘：还没连（点一下看怎么连）"), asking: _t("MIDI 键盘：等浏览器的许可…"), denied: _t("MIDI 键盘：浏览器没给（点一下看怎么办）"), idle: _t("MIDI 键盘：开着，还没插琴（插上就认）") };
 function syncMidiChip(s: MidiStatus): void {
   const k = s.k === "on" ? (s.inputs.length ? "on" : "idle") : s.k;
   midiBtn.hidden = s.k === "unsupported" || (s.k === "off" && deviceKvGet(KV_MIDI_CHIP_HIDDEN) === "1");
   midiBtn.classList.remove("m-off", "m-asking", "m-denied", "m-idle", "m-on"); midiBtn.classList.add(`m-${k}`);
-  midiBtn.title = s.k === "on" && s.inputs.length ? `MIDI 键盘：接着 ${s.inputs.join("、")}（弹一下这个点会闪）` : MIDI_CHIP_TITLE[k] ?? "MIDI 键盘";
+  midiBtn.title = s.k === "on" && s.inputs.length ? _t("MIDI 键盘：接着 {p}（弹一下这个点会闪）", { p: s.inputs.join("、") }) : MIDI_CHIP_TITLE[k] ?? _t("MIDI 键盘");
 }
 let midiBlinkT = 0;
 function midiBlink(): void { midiBtn.classList.add("hit"); clearTimeout(midiBlinkT); midiBlinkT = window.setTimeout(() => midiBtn.classList.remove("hit"), 120); }
@@ -3572,8 +3570,8 @@ function openMidiMenu(): void {
   box.className = "track-card ctx-menu midi-menu"; box.setAttribute("role", "menu");
   const item = (v: string, label: string, title: string) => `<button class="btn ctx-item" data-v="${v}" title="${esc(title)}">${label}</button>`;
   box.innerHTML = `<div class="ctx-msg">${midiStatusHtml(s)}</div>` +
-    (s.k === "off" || s.k === "denied" ? item("connect", "连接", "问浏览器要 MIDI 的许可（浏览器会弹它自己的框）；给过一次以后开 app 自己接上") : "") +
-    (s.k === "off" ? item("hide", "我没有 MIDI 键盘", "顶栏不再露「MIDI」；以后要连：菜单 → 设置 → MIDI 键盘") : "");
+    (s.k === "off" || s.k === "denied" ? item("connect", _t("连接"), _t("问浏览器要 MIDI 的许可（浏览器会弹它自己的框）；给过一次以后开 app 自己接上")) : "") +
+    (s.k === "off" ? item("hide", _t("我没有 MIDI 键盘"), _t("顶栏不再露「MIDI」；以后要连：菜单 → 设置 → MIDI 键盘")) : "");
   document.body.append(box);
   const b = midiBtn.getBoundingClientRect(), w = box.offsetWidth, m = 8;
   box.style.left = `${Math.max(m, Math.min(b.right - w, innerWidth - w - m))}px`; box.style.top = `${b.bottom + 4}px`;
@@ -3585,18 +3583,18 @@ function openMidiMenu(): void {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
     if (v === "connect") void midi.connect();
-    else if (v === "hide") { deviceKvSet(KV_MIDI_CHIP_HIDDEN, "1"); syncMidiChip(midi.status); info("顶栏不露「MIDI」了；以后要连：菜单 → 设置 → MIDI 键盘"); }
+    else if (v === "hide") { deviceKvSet(KV_MIDI_CHIP_HIDDEN, "1"); syncMidiChip(midi.status); info(_t("顶栏不露「MIDI」了；以后要连：菜单 → 设置 → MIDI 键盘")); }
   });
 }
 midiBtn.addEventListener("click", openMidiMenu);
 syncMidiChip(midi.status);
 /** 设置里「MIDI 键盘」那一行的字。 */
 function midiStatusHtml(s: MidiStatus): string {
-  if (s.k === "unsupported") return `这个浏览器读不了 MIDI 键盘（iPad / iPhone 上的浏览器都没有 Web MIDI）；电脑上的 Chrome / Edge / Firefox 可以`;
-  if (s.k === "asking") return `等浏览器的许可…`;
-  if (s.k === "denied") return `浏览器没给（${esc(s.why)}）。在地址栏左边的站点设置里允许 MIDI，再点连接`;
-  if (s.k === "off") return `琴用 USB 插上电脑，点「连接」（浏览器会问一次，以后开 app 自己接上）`;
-  return s.inputs.length ? `接着：${esc(s.inputs.join("、"))}。弹的音按光标处的长短写进谱；「弹」开着 / 词 / 听里只出声` : `开着，还没插琴（插上就认）`;
+  if (s.k === "unsupported") return _t("这个浏览器读不了 MIDI 键盘（iPad / iPhone 上的浏览器都没有 Web MIDI）；电脑上的 Chrome / Edge / Firefox 可以");
+  if (s.k === "asking") return _t("等浏览器的许可…");
+  if (s.k === "denied") return _t("浏览器没给（{why}）。在地址栏左边的站点设置里允许 MIDI，再点连接", { why: esc(s.why) });
+  if (s.k === "off") return _t("琴用 USB 插上电脑，点「连接」（浏览器会问一次，以后开 app 自己接上）");
+  return s.inputs.length ? _t("接着：{p}。弹的音按光标处的长短写进谱；「弹」开着 / 词 / 听里只出声", { p: esc(s.inputs.join("、")) }) : _t("开着，还没插琴（插上就认）");
 }
 // 切后台回来：声音被系统收起来了（iPad = interrupted）就叫醒；记一笔延迟（回来后系统可能换了缓冲大小——播放头按扬声器的时钟走，会自己跟上）
 document.addEventListener("visibilitychange", () => {
@@ -3628,7 +3626,7 @@ Object.assign((window as unknown as { __moonsinger: Record<string, unknown> })._
 diagNote("boot", `deployment ${deployment()} · storage ${availability()}`);
 // 派生缓存库改了名（带 GUID，家族工单 A2 ⑤）：老的 moonsinger-thumbs / facts / speech 不搬，空闲片里探到就删（一页一次；被别的标签页占着 = 下次再来）
 { const idle = (cb: () => void) => { const ric = (globalThis as { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number }).requestIdleCallback; if (ric) ric(cb, { timeout: 10_000 }); else setTimeout(cb, 3000); };
-  idle(() => { void dropLegacyCacheDbs().then((gone) => { if (!gone.length) return; diagNote("storage", `dropped legacy cache DBs: ${gone.join(", ")}`); info("念缓存和封面缓存换了新名字，会重新生成一次（歌不受影响）"); }).catch((e) => reportError(e, "log")); }); }
+  idle(() => { void dropLegacyCacheDbs().then((gone) => { if (!gone.length) return; diagNote("storage", `dropped legacy cache DBs: ${gone.join(", ")}`); info(_t("念缓存和封面缓存换了新名字，会重新生成一次（歌不受影响）")); }).catch((e) => reportError(e, "log")); }); }
 // 歌库 boot：进过歌库的设备（或带着 OAuth 回跳）开局就建 store（先建再 initAuth），回到上次的地方——上次在歌库里就开歌库，上次开着哪首就开哪首，开不了就进歌库。没进过的 = 无地，照旧。
 const bootFolder = currentPolicy().library ? await lastFolderHome().catch((e) => { reportError(e, "warning"); return null; }) : null;
 if (bootFolder) {
@@ -3650,6 +3648,6 @@ if (bootFolder) {
   startAuth();   // 本地恢复完了再 initAuth（CatsUp 2026-09-22 顺序：建 store → 本地恢复 → 登录探测）
 }
 // 试听元音表（约 3 MB）在画好之后的空闲时下载：选了月读就是意图，第一下就该响（user「选这个乐器就是意图，然后第一下就响」）
-setTimeout(() => { void ensureVowels().catch((e) => showError(`试听元音表没下载下来：${(e as Error).message}`)); void engine.ensure().catch(() => undefined); }, 300);
+setTimeout(() => { void ensureVowels().catch((e) => showError(_t("试听元音表没下载下来：{Error}", { Error: (e as Error).message }))); void engine.ensure().catch(() => undefined); }, 300);
 setTimeout(() => schedulePrewarm(), 1200);
 void midi.resume();   // 浏览器记住了「允许」= 静默接上 MIDI 键盘（没记住不弹框，等顶栏「MIDI」或设置里点「连接」；W-42）   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响

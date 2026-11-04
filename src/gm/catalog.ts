@@ -1,6 +1,7 @@
 // catalog.ts —— 找人视图的目录：乐器概念（百科，表 ①）+ GM 映射（表 ②）。纯数据层：加载 / 核 sha256 / 排序分组 / 「谁能演」。
 // created 2026-10-07 by Claude Fable 5.1。数据 = vendor/instruments/（scripts/gen-instruments.mjs 从仓鼠会话的 export 拷来；user：两张表、id 束、GM 只是头脑风暴的起点）。
 // 这是视图层的目录，不进歌：歌里钉的是角色的 id 束 + 名字（契约 §6⅞）；目录常改没关系。
+import { _t } from "../i18n/index.ts";
 import { INSTRUMENT_FILES } from "./instruments.gen.ts";
 import { getBytes } from "../resources.ts";
 
@@ -63,7 +64,7 @@ const sha256Hex = async (b: Uint8Array) => [...new Uint8Array(await crypto.subtl
 /** 同站点那一份（resources.ts：官网 / itch = fetch，备用版 = 老实脚本），核过 app 内嵌的哈希才用。2026-11-03 起不再按主 bundle 的地址拼路径（备用版的主程序内联在 index.html 里）。 */
 async function fetchChecked(k: keyof typeof INSTRUMENT_FILES): Promise<Uint8Array> {
   const e = INSTRUMENT_FILES[k], b = await getBytes(e.file, { sha256: e.sha256 });
-  if (b.length !== e.bytes || (await sha256Hex(b)) !== e.sha256) throw new Error(`${e.file} 和 app 内嵌的不一样（被改过？）`);
+  if (b.length !== e.bytes || (await sha256Hex(b)) !== e.sha256) throw new Error(_t("{file} 和 app 内嵌的不一样（被改过？）", { file: e.file }));
   return b;
 }
 /** 打开找人视图时才加载（两份 JSON 共 260 KB）。 */
@@ -78,14 +79,14 @@ export function loadCatalog(): Promise<Catalog> {
 export async function loadIconSprite(): Promise<string> { return new TextDecoder().decode(await fetchChecked("icons")); }
 
 export function providersOf(cat: Catalog, c: Concept): Provider[] {
-  const self = (c.ids.gm ?? []).map((g) => { const r = cat.gmSelf.get(gmKey(g)); return { kind: "self" as const, bank: g.bank, program: g.program, ...(g.note !== undefined ? { note: g.note } : {}), gmName: r?.gmName ?? (g.note !== undefined ? `鼓件 ${g.note}` : `GM ${g.program + 1}`), sound: r?.musicxmlSound ?? c.ids.musicxml }; });
+  const self = (c.ids.gm ?? []).map((g) => { const r = cat.gmSelf.get(gmKey(g)); return { kind: "self" as const, bank: g.bank, program: g.program, ...(g.note !== undefined ? { note: g.note } : {}), gmName: r?.gmName ?? (g.note !== undefined ? _t("鼓件 {note}", { note: g.note }) : `GM ${g.program + 1}`), sound: r?.musicxmlSound ?? c.ids.musicxml }; });
   if (self.length) return self;
   return (c.substitutes ?? []).map((s) => ({ kind: "substitute" as const, bank: s.bank, program: s.program, ...(s.note !== undefined ? { note: s.note } : {}), gmName: s.gmName, sound: c.ids.musicxml, basis: s.basis, reason: s.reason }));
 }
 /** 这个概念在 pad 上提示哪几个键（提示条 / 试听时窗口跟进用）：有常用音域 = 那一段；音效有「最像的键」= 就那一个；都没有 = null。 */
 export function rangeOf(c: Concept | undefined): { lo: number; hi: number; title: string } | null {
   const r = c?.range;
-  if (r && Number.isFinite(r.low) && Number.isFinite(r.high) && r.low <= r.high) return { lo: r.low, hi: r.high, title: `${c!.names.zh}的常用音域${r.basis ? `（依据：${r.basis}）` : ""}` };
+  if (r && Number.isFinite(r.low) && Number.isFinite(r.high) && r.low <= r.high) return { lo: r.low, hi: r.high, title: _t("{zh}的常用音域{basis}", { zh: c!.names.zh, basis: r.basis ? _t("（依据：{basis}）", { basis: r.basis }) : "" }) };
   // naturalKey（「听起来像哪个音高」）不拿来当提示键：音效的键名 ≠ 听到的音高（仓鼠 v8：电话原速键 64，听到的最强频率在 C7 附近）。按哪个键 = sampleKeyOf
   return null;
 }
@@ -99,7 +100,7 @@ export function sampleKeyOf(cat: Catalog, bank: number, program: number): { key:
   const covers = (r?: string) => { const m = /^(\d+)\s*[–-]\s*(\d+)$/.exec(r ?? ""); return !m || (k.recommended >= +m[1] && k.recommended <= +m[2]); };
   const ls = (k.layers ?? []).filter((l) => covers(l.keyRange) && l.peakAtRecommended?.pitched && l.centsPerKey);
   const main = ls.find((l) => Math.round(l.originalSpeedKey ?? NaN) === k.recommended) ?? ls[0];
-  return { key: k.recommended, title: `原速键：按这个键，采样不拉伸不压缩${k.recommendedBasis ? `（${k.recommendedBasis}）` : ""}`,
+  return { key: k.recommended, title: _t("原速键：按这个键，采样不拉伸不压缩{recommendedBasis}", { recommendedBasis: k.recommendedBasis ? `（${k.recommendedBasis}）` : "" }),
     ...(main ? { midi: Math.round(main.peakAtRecommended!.midi * 100) / 100, centsPerKey: main.centsPerKey } : {}) };
 }
 /** 连断的底色（仓鼠 v11 的 joint）：这个 GM 号建议音和音之间留多大缝 + 中文名 + 依据。目录里没有 / 没写（旧版目录、鼓件、音效）= null。
@@ -133,12 +134,12 @@ export function conceptOfIds(cat: Catalog, ids: { wikidata?: string | null; loca
 /** 乐器页「八度」那一行说的话（v0.9.32；user「几个铃的到底哪个八度算数还是没有弄清楚。不过先向用户披露」）：没有可说的 = null。clefLabel = 谱号的中文名（「高音 15ma」）。 */
 export function octaveDisclosure(nt: Concept["notation"] | undefined, oc: OctaveCheck | null, clefLabel: (c: string) => string): string | null {
   if (!oc && !(nt && nt.octave)) return null;
-  const parts = ["谱上写的就是实际音高（MoonSinger 不按乐器移调），发给音源的也是这个音。"];
-  if (nt && nt.octave) parts.push(`这件乐器的谱习惯写${nt.octave > 0 ? "低" : "高"} ${Math.abs(nt.octave) / 12} 个八度（实际${nt.octave > 0 ? "高" : "低"}）；想要谱面好读，用谱号（这件乐器按实际音高时常用「${clefLabel(nt.concertClef)}」，谱号「自动」也会挑）或 8va 线，出声不变。`);
-  if (oc) parts.push(oc.perceived === null ? `GS 这个音色实测：判不准——每个键最强的那个分音比键名高 ${Math.round(oc.measured)} 半音，听起来多半跟着它。`
-    : oc.perceived === 0 && Math.abs(oc.measured) < 0.5 ? "GS 这个音色实测：按哪个键，耳朵听到的就是那个音。"
-    : oc.perceived === 0 ? `GS 这个音色实测：最强的分音比键名高 ${Math.round(oc.measured)} 半音（${oc.measuredOctave} 个八度），但耳朵听到的音名还是键名（钟的打击音）——听着觉得高了是这个原因。`
-    : `GS 这个音色实测：耳朵听到的比键名${oc.perceived > 0 ? "高" : "低"} ${Math.abs(oc.perceived)} 半音。`);
+  const parts = [_t("谱上写的就是实际音高（MoonSinger 不按乐器移调），发给音源的也是这个音。")];
+  if (nt && nt.octave) parts.push(_t("这件乐器的谱习惯写{p} {octave} 个八度（实际{p2}）；想要谱面好读，用谱号（这件乐器按实际音高时常用「{concertClef}」，谱号「自动」也会挑）或 8va 线，出声不变。", { p: nt.octave > 0 ? _t("低") : _t("高"), octave: Math.abs(nt.octave) / 12, p2: nt.octave > 0 ? _t("高") : _t("低"), concertClef: clefLabel(nt.concertClef) }));
+  if (oc) parts.push(oc.perceived === null ? _t("GS 这个音色实测：判不准——每个键最强的那个分音比键名高 {measured} 半音，听起来多半跟着它。", { measured: Math.round(oc.measured) })
+    : oc.perceived === 0 && Math.abs(oc.measured) < 0.5 ? _t("GS 这个音色实测：按哪个键，耳朵听到的就是那个音。")
+    : oc.perceived === 0 ? _t("GS 这个音色实测：最强的分音比键名高 {measured} 半音（{measuredOctave} 个八度），但耳朵听到的音名还是键名（钟的打击音）——听着觉得高了是这个原因。", { measured: Math.round(oc.measured), measuredOctave: oc.measuredOctave })
+    : _t("GS 这个音色实测：耳朵听到的比键名{p} {perceived} 半音。", { p: oc.perceived > 0 ? _t("高") : _t("低"), perceived: Math.abs(oc.perceived) }));
   return parts.join("");
 }
 /** GS 在家族音源库里的 id（sampleKey 只对它成立）。 */
@@ -150,8 +151,8 @@ export const roleSoundOf = (cat: Catalog, c: Concept): string | null => c.ids.mu
 
 export type SortMode = "family" | "year" | "hs" | "style";
 // 「按曲风」= 原「按〇〇风」（user 2026-10-08「按OO风换一个更正式好懂的名字」）；组名（和风 / 中华风 / 贝多风…）照旧用仓鼠表里的
-export const SORT_LABEL: Record<SortMode, string> = { style: "按曲风", family: "按族（GM 的顺序）", year: "按年代", hs: "按发声方式" };   // 下拉的顺序 = 这里的顺序（默认的排第一）
-const HS_CLASS: Record<string, string> = { "1": "体鸣（敲它自己）", "2": "膜鸣（敲皮）", "3": "弦鸣（弦）", "4": "气鸣（气）", "5": "电鸣（电）" };
+export const SORT_LABEL: Record<SortMode, string> = { style: _t("按曲风"), family: _t("按族（GM 的顺序）"), year: _t("按年代"), hs: _t("按发声方式") };   // 下拉的顺序 = 这里的顺序（默认的排第一）
+const HS_CLASS: Record<string, string> = { "1": _t("体鸣（敲它自己）"), "2": _t("膜鸣（敲皮）"), "3": _t("弦鸣（弦）"), "4": _t("气鸣（气）"), "5": _t("电鸣（电）") };
 /** 列表里的一行：一个概念；按曲风时可以是概念名下的**一个音色**（preset = 那一行 GM 映射，星级 / 入选按它自己的，user 2026-10-08「音色为单位而不是家族一把捞」）。 */
 export interface Entry { concept: Concept; preset?: GmRow; weight?: number; as?: string }
 export interface Group { id: string; label: string; items: Entry[] }
@@ -166,17 +167,17 @@ export function groupConcepts(cat: Catalog, mode: SortMode, query = ""): Group[]
   const asItems = (gs: { id: string; label: string; concepts: Concept[] }[]): Group[] => gs.map((g) => ({ id: g.id, label: g.label, items: g.concepts.map((concept) => ({ concept })) }));
   if (mode === "family") {
     const order = new Map(cat.defs.families.map((f, i) => [f.id, i]));
-    for (const c of list) { const f = (c.family ?? [])[0] ?? "other"; put(f, cat.defs.families.find((x) => x.id === f)?.zh ?? (c.kind === "voice" ? "人声" : c.kind === "sound" ? "音效" : "其他"), c); }   // GM 以外的乐器（二胡）没有 family
+    for (const c of list) { const f = (c.family ?? [])[0] ?? "other"; put(f, cat.defs.families.find((x) => x.id === f)?.zh ?? (c.kind === "voice" ? _t("人声") : c.kind === "sound" ? _t("音效") : _t("其他")), c); }   // GM 以外的乐器（二胡）没有 family
     return asItems([...groups.values()].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).map((g) => ({ ...g, concepts: g.concepts.sort(byGm) })));
   }
   if (mode === "year") {
     const eras = cat.defs.eras;
-    for (const c of list) { const e = eras.find((x) => x.id === c.era); put(e?.id ?? "unknown", e ? `${e.zh}${e.from !== null ? `（${fmtYear(e.from)} 起）` : ""}` : "年代不详", c); }
+    for (const c of list) { const e = eras.find((x) => x.id === c.era); put(e?.id ?? "unknown", e ? `${e.zh}${e.from !== null ? _t("（{from} 起）", { from: fmtYear(e.from) }) : ""}` : _t("年代不详"), c); }
     const order = new Map(eras.map((e, i) => [e.id, i]));
     return asItems([...groups.values()].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.year ?? 1e9) - (b.year ?? 1e9)) })));
   }
   if (mode === "hs") {
-    for (const c of list) { const k = c.ids.hs?.[0] ?? "?"; put(k, HS_CLASS[k] ?? "分类不详", c); }
+    for (const c of list) { const k = c.ids.hs?.[0] ?? "?"; put(k, HS_CLASS[k] ?? _t("分类不详"), c); }
     return asItems([...groups.values()].sort((a, b) => (a.id.localeCompare(b.id))).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.ids.hs ?? "~").localeCompare(b.ids.hs ?? "~")) })));
   }
   return styleGroups(cat, q, hit);
@@ -186,7 +187,7 @@ export function groupConcepts(cat: Catalog, mode: SortMode, query = ""): Group[]
  *  组内：承重降序 → 年份升序 → GM 号（user「每个风里面按照承重排」；同承重按时间 = 仓鼠转述的 user 口径）。 */
 function styleGroups(cat: Catalog, q: string, hit: (c: Concept) => boolean): Group[] {
   const groups = new Map<string, Group>();
-  const put = (tag: string, e: Entry) => { let g = groups.get(tag); if (!g) { g = { id: tag, label: tag === "none" ? "没贴风格" : styleLabel(cat, tag), items: [] }; groups.set(tag, g); } g.items.push(e); };
+  const put = (tag: string, e: Entry) => { let g = groups.get(tag); if (!g) { g = { id: tag, label: tag === "none" ? _t("没贴风格") : styleLabel(cat, tag), items: [] }; groups.set(tag, g); } g.items.push(e); };
   const self = [...cat.gmSelf.values()];
   const styled = new Set(self.filter((r) => r.styles?.length).map((r) => r.concept));   // 有逐音色风格的概念：成员按音色算
   for (const r of self) {
@@ -208,5 +209,5 @@ function styleGroups(cat: Catalog, q: string, hit: (c: Concept) => boolean): Gro
 }
 export const weightLabel = (cat: Catalog, w: number): string => cat.defs.weights?.find((x) => x.id === w)?.zh ?? "";
 function styleLabel(cat: Catalog, tag: string): string { const s = cat.defs.styles?.find((x) => (x.id ?? x.tag) === tag); return s?.zh ?? s?.en ?? tag; }
-export const fmtYear = (y: number): string => (y < 0 ? `公元前 ${-y}` : String(y));
+export const fmtYear = (y: number): string => (y < 0 ? _t("公元前 {y}", { y: -y }) : String(y));
 export const eraLabel = (cat: Catalog, c: Concept): string => cat.defs.eras.find((e) => e.id === c.era)?.zh ?? "";

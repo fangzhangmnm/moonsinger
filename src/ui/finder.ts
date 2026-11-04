@@ -2,6 +2,7 @@
 // created 2026-10-07 by Claude Fable 5.1。user 2026-10-07「找人视图同意，然后最好是全屏的而不是弹出窗口，类似gallery，然后能用这个音乐键盘」「默认按年代排哈哈哈」
 //   「试听不生成演奏者」（试听台 = 临时槽；只在「上场」时才 by value 造演奏者）「顺序本来就是先选概念再选演奏者」。
 // 数据 = src/gm/catalog.ts（vendor/instruments/ 的两张表 + 图标 sprite）；音频 / 选角归 host（src/app/main.ts）。
+import { _t } from "../i18n/index.ts";
 import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightLabel, SORT_LABEL, type Catalog, type Concept, type Entry, type Provider, type SortMode } from "../gm/catalog.ts";
 
 export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept };
@@ -13,7 +14,7 @@ export interface FinderHost {
   close(): void;
   togglePad(): void;                                                 // 顶条「键盘」：开 / 关试听键盘（user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）
 }
-const HINT = "点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「选这个」（回到乐器页）。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。";   // 不叫「上场」：user 2026-10-10「选乐器不要用上场这个词不然让会让人以为直接跳回主界面，但是实际上我们还是回到乐器配置界面」
+const HINT = _t("点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「选这个」（回到乐器页）。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。");   // 不叫「上场」：user 2026-10-10「选乐器不要用上场这个词不然让会让人以为直接跳回主界面，但是实际上我们还是回到乐器配置界面」
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export class Finder {
@@ -30,13 +31,13 @@ export class Finder {
   constructor(parent: HTMLElement, host: FinderHost) {
     this.host = host;
     this.el = document.createElement("div"); this.el.className = "finder"; this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="回到谱（Esc）">← 谱</button><span class="finder-title"></span>` +
-      `<input class="finder-q" type="search" placeholder="搜乐器（中 / 英 / 日）" spellcheck="false" autocomplete="off" />` +
+    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="${_t("回到谱（Esc）")}">${_t("← 谱")}</button><span class="finder-title"></span>` +
+      `<input class="finder-q" type="search" placeholder="${_t("搜乐器（中 / 英 / 日）")}" spellcheck="false" autocomplete="off" />` +
       `<select class="finder-sort">${(Object.keys(SORT_LABEL) as SortMode[]).map((m) => `<option value="${m}">${SORT_LABEL[m]}</option>`).join("")}</select>` +
-      `<button class="btn finder-pad" data-v="pad" title="试听键盘：开 / 关"><svg class="ico"><use href="#grid"/></svg><span>键盘</span></button></div>` +
+      `<button class="btn finder-pad" data-v="pad" title="${_t("试听键盘：开 / 关")}"><svg class="ico"><use href="#grid"/></svg><span>${_t("键盘")}</span></button></div>` +
       `<div class="finder-hint">${HINT}</div>` +
-      `<div class="finder-jump" hidden><span>跳到</span><select class="finder-jump-sel" title="列表滚到这一组"></select></div>` +
-      `<div class="finder-list"><div class="finder-empty">加载目录…</div></div>`;
+      `<div class="finder-jump" hidden><span>${_t("跳到")}</span><select class="finder-jump-sel" title="${_t("列表滚到这一组")}"></select></div>` +
+      `<div class="finder-list"><div class="finder-empty">${_t("加载目录…")}</div></div>`;
     parent.append(this.el);   // 位置由 #stage 的 grid 命名区域钉死（.finder 占 main、pad 占 pad），和节点顺序无关（user「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）
     this.el.querySelector<HTMLInputElement>(".finder-q")!.addEventListener("input", (e) => { this.q = (e.target as HTMLInputElement).value; this.render(); });
     this.el.querySelector<HTMLSelectElement>(".finder-sort")!.addEventListener("change", (e) => { this.mode = (e.target as HTMLSelectElement).value as SortMode; this.render(); });
@@ -51,9 +52,9 @@ export class Finder {
   setPadShown(on: boolean): void { this.el.querySelector(".finder-pad")?.classList.toggle("is-on", on); }
   async show(o: { playOnly?: boolean } = {}): Promise<void> {
     this.el.hidden = false; this.playOnly = !!o.playOnly;
-    this.el.querySelector(".finder-title")!.textContent = this.playOnly ? "乐器目录（弹着玩）" : `找人给「${this.host.roleName()}」`;
-    this.el.querySelector('[data-v="back"]')!.textContent = this.playOnly ? "← 歌库" : "← 谱";
-    this.el.querySelector(".finder-hint")!.textContent = this.playOnly ? "点一件乐器 → 挑谁来演 → 用键盘弹着玩。要给歌里的声部选乐器：开一首歌，点谱前面的声部名。" : HINT;
+    this.el.querySelector(".finder-title")!.textContent = this.playOnly ? _t("乐器目录（弹着玩）") : _t("找人给「{p}」", { p: this.host.roleName() });
+    this.el.querySelector('[data-v="back"]')!.textContent = this.playOnly ? _t("← 歌库") : _t("← 谱");
+    this.el.querySelector(".finder-hint")!.textContent = this.playOnly ? _t("点一件乐器 → 挑谁来演 → 用键盘弹着玩。要给歌里的声部选乐器：开一首歌，点谱前面的声部名。") : HINT;
     this.el.querySelector<HTMLSelectElement>(".finder-sort")!.value = this.mode;
     if (!this.cat) {
       this.loading ??= (async () => {
@@ -61,7 +62,7 @@ export class Finder {
         const doc = new DOMParser().parseFromString(sprite, "image/svg+xml"), svg = doc.documentElement;
         if (svg.tagName.toLowerCase() === "svg") { const node = document.importNode(svg, true) as unknown as SVGElement; node.setAttribute("style", "display:none"); this.el.prepend(node); }
         this.cat = cat;
-      })().catch((e) => { this.el.querySelector(".finder-list")!.innerHTML = `<div class="finder-empty">目录加载不了：${esc((e as Error).message)}</div>`; throw e; }).finally(() => { this.loading = null; });
+      })().catch((e) => { this.el.querySelector(".finder-list")!.innerHTML = `<div class="finder-empty">${_t("目录加载不了：{Error}", { Error: esc((e as Error).message) })}</div>`; throw e; }).finally(() => { this.loading = null; });
       await this.loading;
     }
     this.render();
@@ -99,8 +100,8 @@ export class Finder {
     // 类级跳转（user 2026-10-08「分类能不能有一个类级别的跳转功能，不然一个一个下拉很累」）：一组一项，选了列表滚到那组；只有一组就不出。
     //   做成下拉（user 同日「category选项能做成下拉而不是滑动吗」；原来是横着滑的一排粒）
     jump.hidden = groups.length < 2;
-    jump.querySelector("select")!.innerHTML = groups.map((g, k) => `<option value="${k}">${esc(g.label)} · ${g.items.length} 件</option>`).join("");
-    if (!groups.length) { list.innerHTML = `<div class="finder-empty">没有叫「${esc(this.q)}」的</div>`; return; }
+    jump.querySelector("select")!.innerHTML = groups.map((g, k) => `<option value="${k}">${_t("{label} · {n} 件", { label: esc(g.label), n: g.items.length })}</option>`).join("");
+    if (!groups.length) { list.innerHTML = `<div class="finder-empty">${_t("没有叫「{q}」的", { q: esc(this.q) })}</div>`; return; }
     // 多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）：每组里的行放进自适应网格（styles.css .finder-items：每格至少 320 px，窄屏一列）；
     //   点开的「谁能演」紧跟在行后面（DOM 顺序不变），横跨整行、落在那件乐器所在那一行的下面（grid dense，同一行别的格子不被挤走）
     list.innerHTML = groups.map((g, k) => `<div class="finder-group" data-g="${k}"><div class="finder-group-h">${esc(g.label)}<span>${g.items.length}</span></div><div class="finder-items">${g.items.map((e) => this.rowHtml(e, g.id)).join("")}</div></div>`).join("");
@@ -142,21 +143,21 @@ export class Finder {
     const cat = this.cat!, c = e.concept, pk = e.preset ? gmKey(e.preset) : "", o = `${groupId}::${c.id}${pk ? `::${pk}` : ""}`, open = this.opened === o, icon = c.icon?.id;
     // 按曲风显示承重：★★★ 承重 / ★★ 常用 / ★ 点缀（仓鼠 v3；user「每个风里面按照承重排…让他ui里面显示出来」）；音色行 = 这个音色自己的（v8 起逐个音色判）
     const w = e.weight ?? 0, stars = w ? `<span class="inst-w" title="${esc(weightLabel(cat, w))}">${"★".repeat(w)}</span>` : "";
-    const asName = e.as ? (cat.byId.get(e.as)?.names.zh ?? e.as) : "", asTag = asName ? `<span class="inst-as" title="在这种风里顶替「${esc(asName)}」">顶 ${esc(asName)}</span>` : "";
+    const asName = e.as ? (cat.byId.get(e.as)?.names.zh ?? e.as) : "", asTag = asName ? `<span class="inst-as" title="${_t("在这种风里顶替「{asName}」", { asName: esc(asName) })}">${_t("顶 {asName}", { asName: esc(asName) })}</span>` : "";
     const year = e.preset?.year ?? c.year, approx = e.preset ? !!(e.preset as { yearApprox?: boolean }).yearApprox : c.yearApprox;
-    const meta = [eraLabel(cat, c), year !== null && year !== undefined ? `${approx ? "约 " : ""}${fmtYear(year)}` : ""].filter(Boolean).join(" · ");
+    const meta = [eraLabel(cat, c), year !== null && year !== undefined ? `${approx ? _t("约 ") : ""}${fmtYear(year)}` : ""].filter(Boolean).join(" · ");
     let body = "";
     if (open) {
       // 月读只在人声类概念下面（user 2026-10-07「为什么月读可以全量平替所有乐器…也许不大合适」：她实现的是人声，不是小提琴；
       //   「让她哼一下这条线听听」归监听方式（草稿听，契约 §1），不是选角）
       const provs = providersOf(cat, c).filter((x) => !pk || gmKey(x) === pk), pitched = c.kind === "voice";   // 音色行 = 只列它自己
       // 平替弱化显示（user「平替换的ui也需要弄出区别」「也许需要弱化显示」）：虚线框、灰字、「顶替」标
-      const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">顶替</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
-        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="用它放这条声部的开头">▶ 听开头</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="选它来演这个声部，回到乐器页">选这个</button>`}</div></div>`;
+      const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("顶替")}</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
+        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("用它放这条声部的开头")}">${_t("▶ 听开头")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("选它来演这个声部，回到乐器页")}">${_t("选这个")}</button>`}</div></div>`;
       body = `<div class="inst-prov">` +
-        provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? `鼓件 · ${esc(p.gmName)}（Standard 鼓组的 ${p.note} 号键）` : p.bank === 128 ? `鼓组 · ${esc(p.gmName)}` : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? `顶替${p.basis === "official" ? "（GM 原文认可）" : p.basis === "lineage" ? "（前身）" : p.basis === "imitation" ? "（仿声）" : p.basis === "family" ? "（同类）" : "（只是同名）"}${p.reason ? `：${esc(p.reason)}` : ""}` : "", true, p.kind === "substitute")).join("") +
-        (pitched ? prov(`${c.id}|voice`, "小月相", "唱歌词；没写歌词的音按「哼的字」唱", false) : "") +
-        (!provs.length && !pitched ? `<div class="prov-none">目录里还没有谁能演它</div>` : "") + `</div>`;
+        provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? _t("鼓件 · {gmName}（Standard 鼓组的 {note} 号键）", { gmName: esc(p.gmName), note: p.note }) : p.bank === 128 ? _t("鼓组 · {gmName}", { gmName: esc(p.gmName) }) : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? _t("顶替{p}{reason}", { p: p.basis === "official" ? _t("（GM 原文认可）") : p.basis === "lineage" ? _t("（前身）") : p.basis === "imitation" ? _t("（仿声）") : p.basis === "family" ? _t("（同类）") : _t("（只是同名）"), reason: p.reason ? `：${esc(p.reason)}` : "" }) : "", true, p.kind === "substitute")).join("") +
+        (pitched ? prov(`${c.id}|voice`, _t("小月相"), _t("唱歌词；没写歌词的音按「哼的字」唱"), false) : "") +
+        (!provs.length && !pitched ? `<div class="prov-none">${_t("目录里还没有谁能演它")}</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc(c.id)}" data-o="${esc(o)}"${pk ? ` data-k="${esc(pk)}"` : ""}>` +
       (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc(icon)}"/></svg>` : `<span class="inst-ico none">${esc(c.names.zh.slice(0, 1))}</span>`) +

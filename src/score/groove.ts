@@ -5,6 +5,7 @@
 //   w > 0 = 按次重音的量加（w = 1 就是一个次重音），w < 0 = 按弱化的量减（w = −1 就是一个弱化）——同一把尺子，演奏者配置里次重音 / 弱化调多少，这里跟着变。
 //   谱上写了音头记号（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）的音 = 写的说了算，拍子轻重不叠上去（「音的强度只能有一种」）。
 //   连过来的音（tie）不是新的音头，不算。摇摆（时值）v0.9.36 起接了：timeMapOf（下面）把它做进放的时候的时间表，三种演奏者同一个扭曲（song.ts swingDelta）。
+import { _t } from "../i18n/index.ts";
 import { type Token, type NoteTok, type Song, type PaperSeg, type GrooveTok, type TempoMap, WHOLE, TPQ, ATTACKS, DEFAULT_TIME, DEFAULT_BPM, artOf, isTimed, paperTicks, tempoMapOf, tempoOwner } from "./song.ts";
 import { expandPaper } from "./repeats.ts";
 import { GROOVE_STYLES, type GrooveStyle } from "./grooves.gen.ts";
@@ -12,7 +13,7 @@ import { GROOVE_STYLES, type GrooveStyle } from "./grooves.gen.ts";
 export { GROOVE_STYLES, type GrooveStyle };
 export const grooveStyle = (id: string): GrooveStyle | null => GROOVE_STYLES.find((s) => s.id === id) ?? null;
 /** 预设的名字（"none" = 「不加轻重」，比预设名「无」好懂）；不认识的预设（以后的版本写的）= 原样显示 id。 */
-export const grooveName = (style: string): string => { const s = grooveStyle(style); return style === "none" ? "不加轻重" : s ? s.name.zh : style; };
+export const grooveName = (style: string): string => { const s = grooveStyle(style); return style === "none" ? _t("不加轻重") : s ? s.name.zh : style; };
 /** 预设的英文名（谱面语言，同速度的 Andante；user「风格名用英文」）："none" = none；不认识的预设 = 原样 id。 */
 export const grooveNameEn = (style: string): string => { const s = grooveStyle(style); return style === "none" ? "none" : s ? s.name.en : style; };
 /** 谱上 / MusicXML 里写的字：「Style: Classical」（光写名字像谜语，user「光说一个古典比较谜语人，说风格：古典」；
@@ -28,24 +29,24 @@ function beatGroups(beats: number, beatType: number): { groups: number[]; sub: n
   if (beatType === 8 && beats > 3) { const n = Math.floor(beats / 2), g = Array(n).fill(4); if (beats % 2) g[n - 1] = 6; return { groups: g, sub: 2 }; }
   const L = 16 / beatType; return { groups: Array(beats).fill(L), sub: L / 2 };
 }
-const WORD = (w: number) => (w >= 0.95 ? "最重" : w >= 0.7 ? "很重" : w >= 0.45 ? "重" : w > 0.05 ? "稍重" : w > -0.05 ? "不变" : w > -0.35 ? "稍轻" : "轻");
-const BEAT_NO = ["一", "二", "三", "四", "五", "六", "七", "八", "九", "十", "十一", "十二"];
+const WORD = (w: number) => (w >= 0.95 ? _t("最重") : w >= 0.7 ? _t("很重") : w >= 0.45 ? _t("重") : w > 0.05 ? _t("稍重") : w > -0.05 ? _t("不变") : w > -0.35 ? _t("稍轻") : _t("轻"));
+const BEAT_NO = [_t("一"), _t("二"), _t("三"), _t("四"), _t("五"), _t("六"), _t("七"), _t("八"), _t("九"), _t("十"), _t("十一"), _t("十二")];
 /** 人话说这个风格在这个拍号下怎么轻重（从数据现算，数据变了说明跟着变）：「一拍 最重 · 二拍 不变 · …；半拍 稍轻；更细的 轻」。 */
 export function describeGroove(s: GrooveStyle, beats: number, beatType: number): string | null {
   const tb = grooveTable(s, beats, beatType), bg = beatGroups(beats, beatType);
   if (!tb || !bg) return null;
   const starts: number[] = []; let at = 0; for (const g of bg.groups) { starts.push(at); at += g; }
   if (tb.bars > 1) {   // 两小节一轮（克拉维）：两小节各说一句拍上的轻重，再说哪几个格子最重（克拉维的击点）
-    const bar = (b: number) => starts.map((st, k) => `${BEAT_NO[k] ?? k + 1}拍 ${WORD(tb.weights[b * tb.grid + st])}`).join(" · ");
+    const bar = (b: number) => starts.map((st, k) => _t("{p}拍 {p2}", { p: BEAT_NO[k] ?? k + 1, p2: WORD(tb.weights[b * tb.grid + st]) })).join(" · ");
     const hits = tb.weights.map((w, k) => (w >= 0.7 ? k : -1)).filter((k) => k >= 0).map((k) => `${Math.floor(k / tb.grid) + 1}-${(k % tb.grid) + 1}`);
-    return `两小节一轮：第一小节 ${bar(0)}；第二小节 ${bar(1)}；重的格子（小节-第几个十六分）${hits.join(" ")}`;
+    return _t("两小节一轮：第一小节 {p}；第二小节 {p2}；重的格子（小节-第几个十六分）{p3}", { p: bar(0), p2: bar(1), p3: hits.join(" ") });
   }
-  const beatsTxt = starts.map((st, k) => `${BEAT_NO[k] ?? k + 1}拍 ${WORD(tb.weights[st])}`).join(" · ");
+  const beatsTxt = starts.map((st, k) => _t("{p}拍 {p2}", { p: BEAT_NO[k] ?? k + 1, p2: WORD(tb.weights[st]) })).join(" · ");
   const subs: number[] = [], finer: number[] = [];
   starts.forEach((st, k) => { for (let q = 1; q < bg.groups[k]; q++) (bg.sub >= 1 && Number.isInteger(bg.sub) && q % bg.sub === 0 ? subs : finer).push(tb.weights[st + q]); });
   const one = (xs: number[]) => { const ws = [...new Set(xs.map(WORD))]; return ws.length === 1 ? ws[0] : ws.join(" / "); };
-  const subName = bg.groups.some((g) => g === 6) ? "拍里的八分" : "半拍";
-  return `${beatsTxt}${subs.length ? `；${subName} ${one(subs)}` : ""}${finer.length ? `；更细的 ${one(finer)}` : ""}`;
+  const subName = bg.groups.some((g) => g === 6) ? _t("拍里的八分") : _t("半拍");
+  return `${beatsTxt}${subs.length ? `；${subName} ${one(subs)}` : ""}${finer.length ? _t("；更细的 {finer}", { finer: one(finer) }) : ""}`;
 }
 
 /** 没列的拍号按古典层级推（仓鼠 meterFallback.rule = "classical" 的说法）：小节第一拍 1；四拍的第三拍 0.5；其余拍 0；

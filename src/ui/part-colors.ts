@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // part-colors.ts —— 歌手的颜色（克制的类别色）+ 谱前的简写。纯函数（node 测试 test/part-colors.test.ts）。created 2026-10-10 by Claude Opus 5.5
 // user 2026-10-10「我希望有非常克制的color coding， mpl的 tab20？ 然后不同颜色默认绑不同乐器类别」→ AI 提的画法（每行左边细色条 / 名字前小色点 / 播放高亮 / 录音室卡片顶边；音符照旧黑）→ user「乐手名和颜色同意」。
 // 类别 = 角色的 MusicXML sound id 的前缀（voice. / keyboard. / pluck. / strings. / brass. / wind. / synth. / drum. / metal. …），不用等目录载进来。
@@ -8,7 +9,7 @@ export const TAB20 = ["#1f77b4", "#aec7e8", "#ff7f0e", "#ffbb78", "#2ca02c", "#9
 /** 类别 → tab20 的第几种颜色（0–9）。 */
 const HUE: Record<string, number> = { keys: 0, voice: 1, strings: 2, brass: 3, wind: 4, pluck: 5, synth: 6, perc: 7, mallet: 8, fx: 9 };
 export type PartCategory = keyof typeof HUE;
-export const CATEGORY_LABEL: Record<string, string> = { keys: "键盘", voice: "人声", strings: "弦乐", brass: "铜管", wind: "木管", pluck: "弹拨", synth: "合成", perc: "打击", mallet: "有音高打击 / 铃", fx: "音效 / 其他" };
+export const CATEGORY_LABEL: Record<string, string> = { keys: _t("键盘"), voice: _t("人声"), strings: _t("弦乐"), brass: _t("铜管"), wind: _t("木管"), pluck: _t("弹拨"), synth: _t("合成"), perc: _t("打击"), mallet: _t("有音高打击 / 铃"), fx: _t("音效 / 其他") };
 
 /** 角色的 sound id → 类别。 */
 export function categoryOfSound(sound: string): PartCategory {

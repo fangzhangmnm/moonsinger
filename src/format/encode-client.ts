@@ -1,5 +1,6 @@
 // encode-client.ts —— 主线程这边的存档编码口：有 worker 就发过去（src/format/encode-worker.ts），没有 / 坏了就在主线程 saveMxl（行为同 v0.13.x）。
 //   created 2026-10-21 by Claude Fable 5.1。一次只允许的事：每个 job 一个 seq，回执按 seq 对号；worker 中途坏了 = 在途的全部改在主线程算一遍（自动存不能因为 worker 没了就丢）。
+import { workerOptions } from "../i18n/index.ts";
 import { saveMxl, type SaveArgs } from "./project.ts";
 import type { EncodeJob, EncodeReply } from "./encode-worker.ts";
 import { record } from "../ui/perf-trace.ts";
@@ -27,7 +28,7 @@ export function createEncoder(workerUrl: () => string | URL | null, onFallback: 
     try {
       const url = workerUrl();
       if (!url || typeof Worker === "undefined") return null;
-      const w = new Worker(url, { type: "module" });
+      const w = new Worker(url, workerOptions());
       w.onmessage = (e: MessageEvent<EncodeReply>) => {
         const p = pending.get(e.data.seq); if (!p) return;
         pending.delete(e.data.seq);

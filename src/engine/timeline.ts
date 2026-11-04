@@ -3,6 +3,7 @@
 //   谱是 tick + 速度表 + 反复 + 编排，这里一次解成秒，seek / 循环 / 排程就是算术，三个引擎共一个钟）。派生物，改谱重算，不进文件。
 // 月读的块：只在够长的休止处切，**不在纸界切**（user「曲段的边界算句子吧…也许还是同意可以跨曲段句子。cache应该不伤，听你的试试」；
 //   弱起 / 连音线跨段的一句拦腰切 = 中间多一道接缝）；粒度仍是歌手的属性（句 / 曲段 / 一整首）。块的内容键里没有位置 → 歌词移位再复原照样命中。
+import { _t } from "../i18n/index.ts";
 import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type Hum, type NoteTok, flattenPart, timeline, effectivePitch, allPitches, paperTicks, tempoOwner } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
@@ -142,7 +143,7 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const { tokens, starts } = flat(part.id), bounds = starts.map((s) => s.index), tl = timeline(tokens, map);
     if (tl.length) total = Math.max(total, tl[tl.length - 1].t1);
     const info = inp.info(part);
-    if (!info.plugin) { unplayable.push({ part: part.id, why: "还没有人上场" }); continue; }
+    if (!info.plugin) { unplayable.push({ part: part.id, why: _t("还没有人上场") }); continue; }
     const groove = grooveWeights(tokens, bounds, gmap, info.follow);
     const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove);
     if (info.plugin.sound === "chunks") {   // 慢引擎：按句出块（谁唱由 worker 按插件定；现在只有小月相）
@@ -167,7 +168,7 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     const notes = lightNotes(tokens, map, info.plugin.poly, lightMarks(info.spec), (i) => vels.get(i) ?? info.velocity);
     // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）
     const built = info.plugin.track?.({ id: part.id, notes, gain, ...(info.chain?.length ? { chain: info.chain } : {}), hum, info });
-    if (!built) { unplayable.push({ part: part.id, why: `「${info.plugin.label}」不会按音符表出声` }); continue; }
+    if (!built) { unplayable.push({ part: part.id, why: _t("「{label}」不会按音符表出声", { label: info.plugin.label }) }); continue; }
     if ("unplayable" in built) { unplayable.push({ part: part.id, why: built.unplayable }); continue; }
     if (built.from !== undefined) from = Math.min(from, built.from);   // 着力点提前了的音：比第一个音还早 = 时间线从那儿起（同月读的辅音提前）
     tracks.push(built.track);

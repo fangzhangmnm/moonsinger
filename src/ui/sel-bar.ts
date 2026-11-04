@@ -1,6 +1,7 @@
 // sel-bar.ts —— 选区条：有选区时挂在走带胶囊下面的一条（照 WeebPaint 的上下文条）：全选 / 复制 / 剪切 / 粘贴 / 操作…（选区菜单：移调 / 转调 / 时值…）/ 修 / 删 / ✕。created 2026-10-08 by Claude Fable 5.1
 //   user 2026-10-08「有选区时，胶囊下面出一条选区条…对」「快捷键其实现在我都没用过」（触屏优先；快捷键只是顺手）。
 //   没选区但剪贴板里有东西 = 只露「粘贴 / ✕」（贴在光标处；✕ = 忘掉剪贴板）。记号（跳音 / 呼吸…）以后也进这里（user「写完改的」）。
+import { _t } from "../i18n/index.ts";
 import { iconHtml } from "./icon.ts";
 import { ARTS, DYNS, type Art, type Dyn } from "../score/song.ts";
 
@@ -13,7 +14,7 @@ export const CRESC_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden=
 export const DIM_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 /** 连线的钮面：一道弧（SMuFL 没有单个连线字形）。 */
 export const SLUR_SVG = `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,9 Q11,1 20,9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`;
-const ART_LABEL: Record<Art, [string, string]> = { swellUp: ["<", "音内渐强"], swellDown: [">", "音内渐弱"], swellBoth: ["<>", "音内鼓起"], arpeggio: ["\u{EAA9}", "琶音"], staccato: ["\u{E4A2}", "跳音"], accent: ["\u{E4A0}", "重音"], marcato: ["\u{E4AC}", "强音"], sfz: ["\u{E539}", "突强"], fp: ["\u{E534}", "强后弱"], tenuto: ["\u{E4A4}", "保持"], breath: ["\u{E4CE}", "呼吸"], stress: ["\u{E4B6}", "次重音"], unstress: ["\u{E4B8}", "弱化"], ghost: ["\u{E0F5}\u{E0A4}\u{E0F6}", "幽灵音"], whisper: ["\u{E0A9}", "气声"] };
+const ART_LABEL: Record<Art, [string, string]> = { swellUp: ["<", _t("音内渐强")], swellDown: [">", _t("音内渐弱")], swellBoth: ["<>", _t("音内鼓起")], arpeggio: ["\u{EAA9}", _t("琶音")], staccato: ["\u{E4A2}", _t("跳音")], accent: ["\u{E4A0}", _t("重音")], marcato: ["\u{E4AC}", _t("强音")], sfz: ["\u{E539}", _t("突强")], fp: ["\u{E534}", _t("强后弱")], tenuto: ["\u{E4A4}", _t("保持")], breath: ["\u{E4CE}", _t("呼吸")], stress: ["\u{E4B6}", _t("次重音")], unstress: ["\u{E4B8}", _t("弱化")], ghost: ["\u{E0F5}\u{E0A4}\u{E0F6}", _t("幽灵音")], whisper: ["\u{E0A9}", _t("气声")] };
 const DYN_GLYPH: Record<Dyn, string> = { ppp: "\u{E52A}", pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}", fff: "\u{E530}" };
 export interface SelBarHost { verb(v: SelVerb): void }
 
@@ -31,11 +32,11 @@ export class SelBar {
     const b = (v: SelVerb, label: string, icon?: string, cls = "") => `<button type="button" class="btn ${cls}" data-v="${v}">${icon ? iconHtml(icon) : ""}<span>${label}</span></button>`;
     // 第二排：微调（点了不收、选区留着、可以连着点；每一下一步撤销）——触屏上不拖也能改高低长短（user「既然拖动超级容易误触…选中一个或者几个音的时候出小控件」→「选区多微调同意」）
     const t = (v: SelVerb, label: string, title: string) => `<button type="button" class="btn sel-tw" data-v="${v}" title="${title}">${label}</button>`;
-    const tweak = `<div class="sel-row sel-tweak">${t("up", "↑", "往上一级（调内）")}${t("down", "↓", "往下一级（调内）")}${t("sharp", "♯", "升半音")}${t("flat", "♭", "降半音")}` +
-      `${t("octUp", "↑8", "高八度")}${t("octDown", "↓8", "低八度")}<span class="sel-gap"></span>${t("half", "÷2", "时值减半")}${t("double", "×2", "时值加倍")}${t("dot", "附点", "加附点（都有附点 = 去掉）")}</div>`;
+    const tweak = `<div class="sel-row sel-tweak">${t("up", "↑", _t("往上一级（调内）"))}${t("down", "↓", _t("往下一级（调内）"))}${t("sharp", "♯", _t("升半音"))}${t("flat", "♭", _t("降半音"))}` +
+      `${t("octUp", "↑8", _t("高八度"))}${t("octDown", "↓8", _t("低八度"))}<span class="sel-gap"></span>${t("half", "÷2", _t("时值减半"))}${t("double", "×2", _t("时值加倍"))}${t("dot", _t("附点"), _t("加附点（都有附点 = 去掉）"))}</div>`;
     this.el.classList.toggle("has-tweak", !!sel);
-    const row1 = `<span class="sel-n">${sel} 个</span>` + b("all", "全选") + b("copy", "复制") + b("cut", "剪切") + (clip ? b("paste", "粘贴") : "") + b("transpose", "操作…") + b("delete", "删", "trash-can", "danger") + b("clear", "", "x");
-    this.el.innerHTML = sel ? `<div class="sel-row">${row1}</div>${tweak}` : b("paste", "粘贴到光标处") + b("forget", "", "x");
+    const row1 = `<span class="sel-n">${_t("{sel} 个", { sel })}</span>` + b("all", _t("全选")) + b("copy", _t("复制")) + b("cut", _t("剪切")) + (clip ? b("paste", _t("粘贴")) : "") + b("transpose", _t("操作…")) + b("delete", _t("删"), "trash-can", "danger") + b("clear", "", "x");
+    this.el.innerHTML = sel ? `<div class="sel-row">${row1}</div>${tweak}` : b("paste", _t("粘贴到光标处")) + b("forget", "", "x");
     this.el.hidden = false;
   }
 }

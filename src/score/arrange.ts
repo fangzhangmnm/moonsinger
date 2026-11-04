@@ -6,6 +6,7 @@
 //   · 重复：名字或括号后面跟 ×N（x / X / * 也认），如 A×2、(A A1)×3——房子 = 结尾单独做成一张小纸，主体共用，括起来重复；
 //   · 循环段：[ … ]，只能一个、放在最后：前面放一遍，括住的一直循环（单曲循环 / 游戏的「前奏 + 循环段」）。
 // 不写 = 每张纸按顺序各放一遍（隐藏的不放；和以前一样）。写错的（找不到这张纸、循环段后面还有东西…）照写照存、谱上那一行画出来、说为什么，放的时候跳过（纪律「做不到的一律画灰 + 明说」）。
+import { _t } from "../i18n/index.ts";
 import { type PaperSeg, type Token, type TempoMap, timeline } from "./song.ts";
 
 export type ArrNode = { kind: "ref"; paper: string; text: string; at: number } | { kind: "rep"; body: ArrNode[]; n: number };
@@ -35,23 +36,23 @@ export function parseArrangement(text: string | undefined, papers: readonly Pape
     const out: ArrNode[] = [];
     for (;;) {
       ws();
-      if (i >= src.length) { if (close) issues.push({ at: src.length, len: 0, why: `少了「${close}」` }); return out; }
+      if (i >= src.length) { if (close) issues.push({ at: src.length, len: 0, why: _t("少了「{close}」", { close }) }); return out; }
       const c = src[i];
       if (close && c === close) { i++; return out; }
-      if (c === ")" || c === "]") { issues.push({ at: i, len: 1, why: `多了「${c}」` }); i++; continue; }
+      if (c === ")" || c === "]") { issues.push({ at: i, len: 1, why: _t("多了「{c}」", { c }) }); i++; continue; }
       if (c === "[") return out;   // 循环段由外层处理
       let node: ArrNode;
       const at = i;
       if (c === "(") { i++; node = { kind: "rep", body: seq(")"), n: 1 }; }
       else {
         let name = ""; while (i < src.length && !/[\s、,，→()[\]×*]/.test(src[i]) && !(/[xX]/.test(src[i]) && /\d/.test(src[i + 1] ?? "") && name)) name += src[i++];
-        if (!name) { issues.push({ at: i, len: 1, why: `看不懂「${src[i]}」` }); i++; continue; }
+        if (!name) { issues.push({ at: i, len: 1, why: _t("看不懂「{p}」", { p: src[i] }) }); i++; continue; }
         const paper = findPaper(name);
-        if (!paper) { issues.push({ at, len: name.length, why: `没有叫「${name}」的纸（写曲段名，或者第几张纸的序号）` }); node = { kind: "rep", body: [], n: 1 }; }
+        if (!paper) { issues.push({ at, len: name.length, why: _t("没有叫「{name}」的纸（写曲段名，或者第几张纸的序号）", { name }) }); node = { kind: "rep", body: [], n: 1 }; }
         else node = { kind: "ref", paper, text: name, at };
       }
       const n = rep();
-      if (n !== null) { if (n < 1 || n > 99) issues.push({ at, len: i - at, why: "重复次数要在 1 到 99 之间" }); if (n >= 1) node = { kind: "rep", body: [node], n: Math.min(99, n) }; }
+      if (n !== null) { if (n < 1 || n > 99) issues.push({ at, len: i - at, why: _t("重复次数要在 1 到 99 之间") }); if (n >= 1) node = { kind: "rep", body: [node], n: Math.min(99, n) }; }
       out.push(node);
     }
   };
@@ -61,9 +62,9 @@ export function parseArrangement(text: string | undefined, papers: readonly Pape
   if (i < src.length && src[i] === "[") {
     const at = i; i++;
     loopNodes = seq("]");
-    if (!loopNodes.length) issues.push({ at, len: i - at, why: "循环段是空的" });
+    if (!loopNodes.length) issues.push({ at, len: i - at, why: _t("循环段是空的") });
     ws();
-    if (i < src.length) { issues.push({ at: i, len: src.length - i, why: "循环段只能放在最后：后面的永远放不到" }); }
+    if (i < src.length) { issues.push({ at: i, len: src.length - i, why: _t("循环段只能放在最后：后面的永远放不到") }); }
   }
   const expand = (ns: ArrNode[]): string[] => ns.flatMap((n) => (n.kind === "ref" ? [n.paper] : Array.from({ length: n.n }, () => expand(n.body)).flat()));
   const loop = loopNodes ? expand(loopNodes) : null;

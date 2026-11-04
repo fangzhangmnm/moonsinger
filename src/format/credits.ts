@@ -6,6 +6,7 @@
 //   打包分发的许可（packedLicenses）= 文件（.mxl）里带着谁的源文件字节（打包的 SoundFont 子集；冷板凳的打包字节也在文件里，也算）——分发这份文件要守的，和演出署名是两回事。
 //   以后的参考窗里的素材都不算。
 // 来源只看歌里 by value 的署名快照（候选的 credit：音源库条目 / sf2 INFO / 月读 CREDIT 块），**不联网查**；推演是提示，不拦存 / 不拦导出（家规「不许规训用户」）。
+import { _t } from "../i18n/index.ts";
 import type { Credit } from "./contract.ts";
 import { activeOrDefaultCandidate, type Extras } from "./project.ts";
 
@@ -49,19 +50,19 @@ export function packedLicenses(extras: Extras): CreditLine[] {
  *  作者栏和许可都空着 = 不出这一条（作者栏的规矩：不提醒、不替用户写）。 */
 export function songCreditLine(song: { title?: string; credits?: string; rights?: string }): CreditLine | null {
   if (!song.credits?.trim() && !song.rights?.trim()) return null;
-  return { who: [song.title?.trim() ? `「${song.title.trim()}」` : "这首歌"], attribution: (song.credits ?? "").split("\n").map((s) => s.trim()).filter(Boolean), license: { name: song.rights?.trim() || "（没声明许可）" } };
+  return { who: [song.title?.trim() ? `「${song.title.trim()}」` : _t("这首歌")], attribution: (song.credits ?? "").split("\n").map((s) => s.trim()).filter(Boolean), license: { name: song.rights?.trim() || _t("（没声明许可）") } };
 }
 /** 这首歌自己的许可的常用选项，从紧到松（文字照抄进 <rights>；选了还能改，也能自己写）。默认 = 未声明 = 法律默认的保留所有权利，不替用户选
  *  （user 2026-10-08「我建议是默认未知，不然用户想做商业闭园或者自定义的，你帮他静默导出了一个mit就比较恶性」「不要只提供开源的选项…有些人还是想要守的比较紧的吧」）。 */
 export const RIGHTS_PRESETS: { label: string; note: string; text: (year: number) => string }[] = [
-  { label: "保留所有权利", note: "什么都要先问你（法律默认就是这样，这里只是写明）", text: (y) => `© ${y} 保留所有权利` },
-  { label: "仅供欣赏", note: "听可以；转载、改编、商用都要先问你", text: (y) => `© ${y} 保留所有权利。仅供个人欣赏，禁止转载、改编、商用。` },
-  { label: "商用请联系", note: "保留所有权利，并告诉别人商用怎么找你", text: (y) => `© ${y} 保留所有权利。商用请联系作者。` },
-  { label: "CC BY-NC-ND 4.0", note: "注明出处可以原样转发；不许改、不许商用（最紧的 CC）", text: () => "CC BY-NC-ND 4.0 https://creativecommons.org/licenses/by-nc-nd/4.0/" },
-  { label: "CC BY-NC 4.0", note: "注明出处可以改；不许商用", text: () => "CC BY-NC 4.0 https://creativecommons.org/licenses/by-nc/4.0/" },
-  { label: "CC BY-SA 4.0", note: "注明出处可以改、可以商用；改了的要用同样的许可", text: () => "CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/" },
-  { label: "CC BY 4.0", note: "注明出处随便用", text: () => "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" },
-  { label: "CC0", note: "放弃权利，谁都能随便用（发出去收不回）", text: () => "CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/" },
+  { label: _t("保留所有权利"), note: _t("什么都要先问你（法律默认就是这样，这里只是写明）"), text: (y) => _t("© {y} 保留所有权利", { y }) },
+  { label: _t("仅供欣赏"), note: _t("听可以；转载、改编、商用都要先问你"), text: (y) => _t("© {y} 保留所有权利。仅供个人欣赏，禁止转载、改编、商用。", { y }) },
+  { label: _t("商用请联系"), note: _t("保留所有权利，并告诉别人商用怎么找你"), text: (y) => _t("© {y} 保留所有权利。商用请联系作者。", { y }) },
+  { label: "CC BY-NC-ND 4.0", note: _t("注明出处可以原样转发；不许改、不许商用（最紧的 CC）"), text: () => "CC BY-NC-ND 4.0 https://creativecommons.org/licenses/by-nc-nd/4.0/" },
+  { label: "CC BY-NC 4.0", note: _t("注明出处可以改；不许商用"), text: () => "CC BY-NC 4.0 https://creativecommons.org/licenses/by-nc/4.0/" },
+  { label: "CC BY-SA 4.0", note: _t("注明出处可以改、可以商用；改了的要用同样的许可"), text: () => "CC BY-SA 4.0 https://creativecommons.org/licenses/by-sa/4.0/" },
+  { label: "CC BY 4.0", note: _t("注明出处随便用"), text: () => "CC BY 4.0 https://creativecommons.org/licenses/by/4.0/" },
+  { label: "CC0", note: _t("放弃权利，谁都能随便用（发出去收不回）"), text: () => "CC0 1.0 https://creativecommons.org/publicdomain/zero/1.0/" },
 ];
 /** 推演出来的提醒（只提示，不拦）：这首歌选了允许别人改编 / 当素材再用的许可（CC BY / SA / NC、CC0、公有领域；不许改编的 ND 不算），可里面有月读出声——
  *  月读条款禁止「以允许他人二次利用（当作素材）的形式公开」。是 AI 对条款的理解，不是法律意见：提醒写「可能冲突」。 */
@@ -69,12 +70,12 @@ export function licenseHints(rights: string | undefined, performers: readonly Cr
   const reusable = !!rights && (/CC0|public ?domain|公有领域|publicdomain\/zero/i.test(rights) || (/CC[ -]?BY/i.test(rights) && !/\bND\b|-nd\//i.test(rights)));
   const tsukuyomi = performers.some((l) => l.license.name.includes("つくよみちゃん"));
   // 不拦、不当警察（user「即使版权冲突…也不block导出mp3和工程文件。而只是回到未声明。不警察用户」）：导出那一份的许可按未声明写，这里只说明一句
-  return reusable && tsukuyomi ? ["你选的许可允许别人改编 / 当素材再用，可里面有小月相的声音，小月相的条款不许这样公开（设置里有原文和译文），所以导出时许可那一项按「未声明」写；你在这里的选择没动。"] : [];
+  return reusable && tsukuyomi ? [_t("你选的许可允许别人改编 / 当素材再用，可里面有小月相的声音，小月相的条款不许这样公开（设置里有原文和译文），所以导出时许可那一项按「未声明」写；你在这里的选择没动。")] : [];
 }
 /** 推成纯文字（可直接贴进作品说明）：每组首行「谁 — 许可证」，下面逐行署名（月读的署名块自带换行，原样保留），组间空一行。空 = ""。 */
 export function creditsText(lines: readonly CreditLine[]): string {
   return lines.map((l) => {
-    const lic = l.license.name === "unknown" ? "许可证不明" : `${l.license.name}${l.license.url ? ` ${l.license.url}` : ""}`;
-    return [`${l.who.join("、")} — ${lic}`, ...(l.attribution.length ? l.attribution : ["（没有署名信息）"])].join("\n");
+    const lic = l.license.name === "unknown" ? _t("许可证不明") : `${l.license.name}${l.license.url ? ` ${l.license.url}` : ""}`;
+    return [`${l.who.join("、")} — ${lic}`, ...(l.attribution.length ? l.attribution : [_t("（没有署名信息）")])].join("\n");
   }).join("\n\n");
 }

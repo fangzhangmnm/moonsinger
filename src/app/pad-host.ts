@@ -13,6 +13,7 @@
 // MIDI 键盘（2026-10-16 by Claude Opus 5.5）= 又一台发音键的设备：noteDown / noteUp 收绝对音高，写 / 改 / 叠音观望 / 单声护栏 / 弹和 pad 音键同一条路，
 //   只是不吃 pad 的升降锁（raw：琴键本身就分黑白键，按的是哪个就是哪个）。
 
+import { _t } from "../i18n/index.ts";
 import { type Pitch, alterBy, keySpell } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { type EditorState, ART_NAME, singleSel, writePitch, soundingPitch, setNote, setUnit, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt } from "../score/song.ts";
@@ -122,7 +123,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     w.done = true; clearTimeout(w.timer); chordWaits = chordWaits.filter((x) => x !== w);
     if (v === "chord" && chordMerge(w.root, w.pitch)) return;
     const i = g.writeAndLocate((s) => writePitch(s, w.pitch, true));   // 两个音：现在补写（音高按下时就带好了 ♯ / ♭）
-    if (i < 0) { if (st().sel) g.info("选区写满了：写不出选区。要往后写，先点别处退出选区"); return; }
+    if (i < 0) { if (st().sel) g.info(_t("选区写满了：写不出选区。要往后写，先点别处退出选区")); return; }
     const t = tr(st())[i];
     if (keyHeld && t) chordRoots.set(w.keyId, { tokId: t.id, t: w.t });   // B 还按着：它成了下一个的根音
     g.afterWrite();
@@ -207,15 +208,15 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   function runPadCommand(c: Command): void {
     if (c.k === "caret") g.half.caretMoved();   // 挪光标 = 取消「凑满一份」（锁住的不动）
     const prev = st(), nx = apply(prev, g.half.wrap(c), performance.now());
-    if (c.k === "art" && nx === prev) { g.info(c.a === "arpeggio" ? "琶音只挂在和弦上：光标前那个音（或选中的）是单音" : `${ART_NAME[c.a]}要挂在一个音上（光标前面是休止或者还没有音）`); return; }
-    if (c.k === "slur" && nx === prev) { g.info("连线从一个音连到下一个音（光标前面是休止或者还没有音）"); return; }
-    if (c.k === "inhale" && nx === prev) { g.info("出声的换气挂在一个音后面（光标前面是休止或者还没有音）"); return; }
-    if (c.k === "swell" && nx === prev) { g.info("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）"); return; }
-    if (c.k === "wedge" && nx === prev) { g.info(`${c.w === "cresc" ? "渐强" : "渐弱"}从一个音到下一个音（光标前面是休止或者还没有音）`); return; }
+    if (c.k === "art" && nx === prev) { g.info(c.a === "arpeggio" ? _t("琶音只挂在和弦上：光标前那个音（或选中的）是单音") : _t("{p}要挂在一个音上（光标前面是休止或者还没有音）", { p: ART_NAME[c.a] })); return; }
+    if (c.k === "slur" && nx === prev) { g.info(_t("连线从一个音连到下一个音（光标前面是休止或者还没有音）")); return; }
+    if (c.k === "inhale" && nx === prev) { g.info(_t("出声的换气挂在一个音后面（光标前面是休止或者还没有音）")); return; }
+    if (c.k === "swell" && nx === prev) { g.info(_t("音内的起伏要挂在一个音上（光标前面是休止或者还没有音）")); return; }
+    if (c.k === "wedge" && nx === prev) { g.info(_t("{p}从一个音到下一个音（光标前面是休止或者还没有音）", { p: c.w === "cresc" ? _t("渐强") : _t("渐弱") })); return; }
     g.update(nx); if (c.k === "rest" || c.k === "extend") g.afterWrite();
     if (c.k === "backspace" || c.k === "delete") {   // 删音顺手湮灭了不再管任何音的力度记号 / 渐强渐弱：说一声（不静默；撤销能回来）
       const marks = (s: EditorState) => tr(s).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length, gone = marks(prev) - marks(st()) - (prev.sel ? tr(prev).slice(prev.sel.from, prev.sel.to).filter((t) => t.kind === "dyn" || t.kind === "hairpin").length : 0);
-      if (gone > 0) g.info(`顺手去掉了 ${gone} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）`);
+      if (gone > 0) g.info(_t("顺手去掉了 {gone} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）", { gone }));
     }
     if (c.k === "art") g.discloseArt(prev, c.a === "swellDown" ? "swellFade" : c.a === "swellUp" || c.a === "swellBoth" ? "swellGrow" : c.a);   // 音内起伏在演奏法里（v0.9.44），「做不到」的说法照旧按 swellGrow / swellFade
     if (c.k === "slur") g.discloseArt(prev, "slur");

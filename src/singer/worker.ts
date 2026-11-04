@@ -9,6 +9,7 @@
 //   WORLD = 自己编的 WASM，vendored 在 `vendor/world/`。元音图谱那条开发期实验路（只靠兄弟私有仓的软链才通）2026-10-14 删了：公开仓不许依赖私有仓（反弃坑红线）；要再做就走模型包。
 // piper.run 的喂法照抄 third-party/piper-plus/dur-override-exp/piper-node.mjs 的 run()（逐符号相同的输入 = 浏览器 == Node 的前提）。
 
+import { _t } from "../i18n/index.ts";
 import { singCore, readingCore } from "./sing-core.mjs";
 import { wrapWorld } from "./world-wrap.mjs";
 import { SpeechCache } from "./speech-cache.ts";
@@ -98,7 +99,7 @@ async function ensurePacks(slugs: string[], what: string, say: (s: string) => vo
   if (hostFiles) {   // 备用版：文件夹本身就是缓存（老实脚本，主线程读、核哈希）；不下载、不进 Cache Storage
     for (const slug of slugs) {
       if (hostPacks.has(slug)) continue;
-      say(`从文件夹读${what}`);
+      say(_t("从文件夹读{what}", { what }));
       const blobs: Blob[] = [];
       for (const c of PACKS[slug].manifest.chunks) blobs.push(new Blob([(await hostGet(`pwa-models/packs/${slug}/${c.name}`, c.sha256)) as unknown as BlobPart]));
       hostPacks.set(slug, blobs);
@@ -108,24 +109,24 @@ async function ensurePacks(slugs: string[], what: string, say: (s: string) => vo
   if ((await store.status(slugs)).every((s) => s.ready)) return;
   let last: unknown = null;
   for (const base of bases) {   // 按顺序试；已经下好的分片不重取（续传 + 逐片验，从两个来源各拿一部分也没关系）
-    try { await store.download(slugs, base, (p) => say(`下载${what}（${(p.total / 1e6).toFixed(0)} MB，只下这一次）${Math.floor((p.done / p.total) * 100)}%`)); return; }
+    try { await store.download(slugs, base, (p) => say(_t("下载{what}（{e6} MB，只下这一次）{total}%", { what, e6: (p.total / 1e6).toFixed(0), total: Math.floor((p.done / p.total) * 100) }))); return; }
     catch (e) { last = e; }
   }
-  throw new Error(`${what}下载不下来（试过 ${bases.join("、")}）：${(last as Error)?.message ?? last}。可以在设置里换模型来源，或从本机文件导入`);
+  throw new Error(_t("{what}下载不下来（试过 {p}）：{Error}。可以在设置里换模型来源，或从本机文件导入", { what, p: bases.join("、"), Error: (last as Error)?.message ?? last }));
 }
 /** 一个包核过的分片。model-packs 0.1.1 起读缓存也逐片重核 sha256（家族规则书 §1 第 7 条）：对不上 = 库已经把坏的那片作废，这里说人话、不替补。 */
 async function chunksOf(slug: string): Promise<Blob[]> {
   if (hostFiles) { const b = hostPacks.get(slug); if (!b) throw new Error("pack-missing"); return b; }
   try { return await store.chunks(slug); }
   catch (e) {
-    if (/^pack-corrupt/.test((e as Error)?.message ?? "")) throw new Error(`缓存里的小月相模型和清单对不上（被改过或坏了），坏的那一片已经丢掉：再唱一次会重新下载（${(e as Error).message}）`);
+    if (/^pack-corrupt/.test((e as Error)?.message ?? "")) throw new Error(_t("缓存里的小月相模型和清单对不上（被改过或坏了），坏的那一片已经丢掉：再唱一次会重新下载（{Error}）", { Error: (e as Error).message }));
     throw e;
   }
 }
 /** 包里的一个文件：按清单的偏移切出来，.gz 的解开（包里的压缩文件是 gzip 格式）。 */
 async function packFile(slug: string, path: string): Promise<Uint8Array> {
   const files = PACKS[slug].manifest.files as { path: string; offset: number; bytes: number }[];
-  const f = files.find((x) => x.path === path); if (!f) throw new Error(`${slug}: 包里没有 ${path}`);
+  const f = files.find((x) => x.path === path); if (!f) throw new Error(_t("{slug}: 包里没有 {path}", { slug, path }));
   const piece = new Blob(await chunksOf(slug)).slice(f.offset, f.offset + f.bytes);
   if (!path.endsWith(".gz")) return new Uint8Array(await piece.arrayBuffer());
   return new Uint8Array(await new Response(piece.stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer());
@@ -153,17 +154,17 @@ let bootMs: Record<string, number> = {};   // 冷启动各段多久（刀 5；�
 async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const V = SINGER.voice, JA = SINGER.lang.ja;
   let tk = performance.now(); const lap = (name: string) => { const t = performance.now(); bootMs[name] = Math.round(t - tk); tk = t; };
-  await ensurePacks([V, SINGER.runtime, JA], "小月相", say); lap("packs");
+  await ensurePacks([V, SINGER.runtime, JA], _t("小月相"), say); lap("packs");
   const store = await speechStore();   // 持久层（没有 IndexedDB = 只用内存）；引擎标签等 WORLD 的字节到手再算
-  say("加载 piper 引擎");
+  say(_t("加载 piper 引擎"));
   const ort: any = ortLib;
   ort.env.wasm.numThreads = 1; ort.env.wasm.proxy = false;
   ort.env.wasm.wasmBinary = await packFile(SINGER.runtime, "ort-wasm-simd-threaded.wasm.gz"); lap("ortWasm");
-  say("加载小月相的模型");
+  say(_t("加载小月相的模型"));
   // 中英增强（zhen）时长接管版：全 0 = 中英增强原包（日 / 中 / 英逐样本相同，2026-10-07 实测），中 / 英按它的预设读——user「中英增强的日文是原版的，理论上我们只需要host这一个模型就行了」
   const sess = await ort.InferenceSession.create(await packFile(V, "model.onnx"), { executionProviders: ["wasm"], graphOptimizationLevel: "disabled" });
   ort.env.wasm.wasmBinary = undefined; lap("session");
-  say("加载日语前端");
+  say(_t("加载日语前端"));
   // 备用版：线程是 data: 起的，胶水的 findWasmBinary() 不管给没给字节都按 import.meta.url 拼网址（data: 当不了基址）→ 给 locateFile 绕开（字节照样从包里给）
   const Module = await createOjt({ wasmBinary: await packFile(JA, "ja/ojt.wasm.gz"), print: () => {}, printErr: () => {}, ...(hostFiles ? { locateFile: (p: string) => p } : {}) });
   mountDictionaryBytes(Module, { sys: await packFile(JA, "ja/sys.dic.gz"), matrix: await packFile(JA, "ja/matrix.bin.gz"), char: await packFile(JA, "ja/char.bin.gz"), unk: await packFile(JA, "ja/unk.dic.gz") });
@@ -173,7 +174,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const ensureZh = async (say: (s: string) => void) => {
     if (zh) return;
     const ZH = SINGER.lang.zh;
-    await ensurePacks([ZH], "中文前端", say);
+    await ensurePacks([ZH], _t("中文前端"), say);
     zh = createChineseG2p({ single: await packJson(ZH, "zh/pinyin_single.tone3.json.gz"), phrases: await packJson(ZH, "zh/pinyin_phrases.tone3.json.gz") });
   };
   // 英文前端（朗读库同一份 en-g2p.js + CMUdict 约 3.7 MB）：第一次唱英文才加载（家规：有意图才加载重资源）
@@ -181,7 +182,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
   const ensureEn = async (say: (s: string) => void) => {
     if (en) return;
     const EN = SINGER.lang.en;
-    await ensurePacks([EN], "英文词典", say);
+    await ensurePacks([EN], _t("英文词典"), say);
     en = makeEnglishFront({ g2p: createEnglishG2p({ cmudict: await packJson(EN, "en/cmudict_data.json.gz"), homographs: await packJson(EN, "en/homographs.json.gz") }), encodeTokens, idMap: config.phoneme_id_map });
   };
   // ↓ piper-node.mjs run() 原样（feeds 的名字、类型、形状、默认值）
@@ -203,7 +204,7 @@ async function loadEngine(say: (s: string) => void): Promise<Engine> {
     encode: (tokens: string[], prosody: number[][]) => encodeTokens(tokens, prosody, config.phoneme_id_map),
     phonemizeEnWords: (words: string[]) => en.phonemizeWords(words),
   });
-  say("加载 WORLD");
+  say(_t("加载 WORLD"));
   let createWorld: (o: unknown) => Promise<unknown>, worldBytes: Uint8Array;
   if (hostFiles) {   // 备用版：胶水和 wasm 都由主线程读好交过来；胶水从 blob: 载（data: 起的线程里 import(blob:) 可用，§2.2 实测）
     const js = await hostGet("vendor/world/world.mjs"), url = URL.createObjectURL(new Blob([js as unknown as BlobPart], { type: "text/javascript" }));
@@ -229,7 +230,7 @@ const cancelled = new Set<number>();
 self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelRequest | CacheRequest | ReadRequest | InitRequest | FileReply>) => {
   const q = ev.data;
   if (q.type === "init") { hostFiles = q.hostFiles; return; }
-  if (q.type === "file") { const n = needs.get(q.nid); needs.delete(q.nid); if (!n) return; if (q.bytes) n.ok(new Uint8Array(q.bytes)); else n.fail(new Error(q.error ?? "主线程没读到这个文件")); return; }
+  if (q.type === "file") { const n = needs.get(q.nid); needs.delete(q.nid); if (!n) return; if (q.bytes) n.ok(new Uint8Array(q.bytes)); else n.fail(new Error(q.error ?? _t("主线程没读到这个文件"))); return; }
   const post = (m: SingReply, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(m, transfer);
   if (q.type === "cancel") { cancelled.add(q.id); return; }
   if (q.type === "cache") {
@@ -264,15 +265,15 @@ self.onmessage = async (ev: MessageEvent<SingRequest | WarmRequest | CancelReque
     if (q.lang === "zh") await e.ensureZh(say);
     if (q.lang === "en") await e.ensureEn(say);
     const t1 = performance.now();
-    say("小月相在唱");
+    say(_t("小月相在唱"));
     // 元音图谱：关（user 2026-10-06「元音图谱一般般，先不做」；它那条开发期的路 2026-10-14 删了）；断气默认关（原来随图谱）
     const breath = q.breath ?? false;
     const preset = e.presetDefault[q.lang] ?? 0;   // 模型配置的 preset_default（中 3、英 9；日语没写 = 0 = 原版），同 Lab piper-node.mjs
     // 这一句自己的 piper / WORLD 视图：段与段之间报进度、认取消（sing-core 一行不动）
     let runs = 0;
-    const piper = { ...e.piper, run: async (ids: number[], pros: number[][], o: Record<string, unknown>) => { check(); say(runs++ === 0 ? "念（1/2）" : "念（2/2）"); const r = await e.piper.run(ids, pros, o); check(); return r; } };
-    const names: Record<string, string> = { f0: "分析（1/3 音高）", sp: "分析（2/3 谱包络）", ap: "分析（3/3 气声）", cached: "分析（缓存）" };
-    const world = { ...e.world, analyze: (x: ArrayLike<number>, fs: number, o?: Record<string, unknown>) => e.world.analyze(x, fs, o, { stage: (n: string) => say(names[n] ?? n), check }), synth: (a: unknown) => { check(); say("合成"); return e.world.synth(a); } };
+    const piper = { ...e.piper, run: async (ids: number[], pros: number[][], o: Record<string, unknown>) => { check(); say(runs++ === 0 ? _t("念（1/2）") : _t("念（2/2）")); const r = await e.piper.run(ids, pros, o); check(); return r; } };
+    const names: Record<string, string> = { f0: _t("分析（1/3 音高）"), sp: _t("分析（2/3 谱包络）"), ap: _t("分析（3/3 气声）"), cached: _t("分析（缓存）") };
+    const world = { ...e.world, analyze: (x: ArrayLike<number>, fs: number, o?: Record<string, unknown>) => e.world.analyze(x, fs, o, { stage: (n: string) => say(names[n] ?? n), check }), synth: (a: unknown) => { check(); say(_t("合成")); return e.world.synth(a); } };
     check();   // W-37（2026-10-13）：开唱前认一次取消——拍数对不上这类检查在第一次 piper.run 之前就抛，等到检查点才认 = 一句已经取消的请求回去的是「32 sung syllables…」不是 cancelled
     const r = await singCore({ score: q.score, text: q.text, tempo: q.tempo, lang: q.lang, atlas: "off", breath, preset, piper, world, loadAtlas: null, opt: q.opt ?? {}, only: q.only ?? null });
     check();

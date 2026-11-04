@@ -12,6 +12,7 @@
 //   （和 pad 弹出的滚轮同一份 mountWheel：慢拖一格 ±1、一甩靠惯性滑一大段），拨到头就停；拨到哪试到哪，同样按「确定」才写；滚轮 / 候选 / 打字三边互相跟。
 // 跟踪的是 token id（谱改了下标会变）。
 
+import { _t } from "../i18n/index.ts";
 import { type EditorState, type MarkTok, type MarkVal, setMark, deleteMark, headLen, TEMPO_WORDS, tempoWord, TEMPO_MIN, TEMPO_MAX, tr } from "../score/song.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { markText, parseMark } from "../score/marks.ts";
@@ -23,7 +24,7 @@ interface Host { get(): EditorState; set(next: EditorState): void }
 
 const KEY_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, -1, -2, -3, -4, -5, -6, -7];
 const TIMES: [number, number][] = [[2, 4], [3, 4], [4, 4], [5, 4], [3, 8], [6, 8], [9, 8], [12, 8], [7, 8], [2, 2]];
-const accName = (f: number) => (f > 0 ? `${f}♯` : f < 0 ? `${-f}♭` : "无升降");
+const accName = (f: number) => (f > 0 ? `${f}♯` : f < 0 ? `${-f}♭` : _t("无升降"));
 const WHEEL_MIN = TEMPO_MIN, WHEEL_MAX = TEMPO_MAX, WHEEL_ROW = 40, WHEEL_VISIBLE = 5;
 const WHEEL_ITEMS = Array.from({ length: WHEEL_MAX - WHEEL_MIN + 1 }, (_, i) => String(WHEEL_MIN + i));
 const wheelIndex = (bpm: number) => Math.max(WHEEL_MIN, Math.min(WHEEL_MAX, Math.round(bpm))) - WHEEL_MIN;
@@ -51,8 +52,8 @@ export class MarkEditor {
     this.box = document.createElement("div");
     this.box.className = "mark-ed"; this.box.hidden = true;
     this.box.innerHTML = `<div class="mark-row"><input class="mark-in" type="text" autocomplete="off" spellcheck="false" autocapitalize="off" enterkeyhint="done" />` +
-      `<div class="metro" hidden title="按这个速度摆：摆到一头 = 一拍"><div class="metro-arm"></div></div><button class="btn primary mark-ok" hidden>确定</button></div>` +
-      `<div class="mark-body"><div class="tempo-wheel" hidden title="拨速度：一格 = 1，一甩滑一大段"></div><div class="mark-cands"></div></div>`;
+      `<div class="metro" hidden title="${_t("按这个速度摆：摆到一头 = 一拍")}"><div class="metro-arm"></div></div><button class="btn primary mark-ok" hidden>${_t("确定")}</button></div>` +
+      `<div class="mark-body"><div class="tempo-wheel" hidden title="${_t("拨速度：一格 = 1，一甩滑一大段")}"></div><div class="mark-cands"></div></div>`;
     parent.appendChild(this.box);
     this.input = this.box.querySelector("input")!;
     this.list = this.box.querySelector(".mark-cands")!;
@@ -118,9 +119,9 @@ export class MarkEditor {
     else if (t.kind === "time") h = TIMES.map(([b, bt]) => chip({ kind: "time", beats: b, beatType: bt }, `${b}/${bt}`, b === t.beats && bt === t.beatType)).join("");
     else {
       const cur = tempoWord(t.bpm).it;
-      h = TEMPO_WORDS.map((w) => chip({ kind: "tempo", bpm: w.typical }, `<b>${w.it}</b><small>${w.zh} ${w.typical}</small>`, w.it === cur, `${w.from} 起`)).join("");
+      h = TEMPO_WORDS.map((w) => chip({ kind: "tempo", bpm: w.typical }, `<b>${w.it}</b><small>${w.zh} ${w.typical}</small>`, w.it === cur, _t("{from} 起", { from: w.from }))).join("");
     }
-    if (deletable) h += `<button class="btn cand danger" data-v="delete">删除</button>`;
+    if (deletable) h += `<button class="btn cand danger" data-v="delete">${_t("删除")}</button>`;
     this.list.innerHTML = h;
     this.list.className = `mark-cands ${t.kind}`;
   }

@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // paper.ts —— 纸：A4 / A5 / A6（默认 A5）。created 2026-10-07 by Claude Opus 5.5
 // user 2026-10-07「五线谱宽度：要不还是按照固定物理页框？看看webxiaoheiwu的选项。正经纸和小册子？」→「嗯A4 A5 A6三种，可以定」
 //   「默认A5同意」「非打印的时候不用断页」；纸的模型（数据契约草稿 §6¾）：纸只属于谱这一层，整首歌一个纸张设置。
@@ -14,7 +15,7 @@ export interface Paper { kind: PaperKind | "other"; widthMm: number; heightMm: n
 
 /** 五线谱高（四个线间距）mm：7 mm = 一个线间距 1.75 mm（打谱软件的常用大小）= 舒适档；紧凑 5 mm。 */
 export const STAFF_MM = 7, STAFF_MM_COMPACT = 5;
-export const DENSITIES: { id: Density; label: string; note: string }[] = [{ id: "cozy", label: "舒适", note: "谱大" }, { id: "compact", label: "紧凑", note: "谱小一号、行距再卷一点；总谱声部多用这个" }];
+export const DENSITIES: { id: Density; label: string; note: string }[] = [{ id: "cozy", label: _t("舒适"), note: _t("谱大") }, { id: "compact", label: _t("紧凑"), note: _t("谱小一号、行距再卷一点；总谱声部多用这个") }];
 export const densityOf = (p: Paper): Density => p.density ?? "cozy";
 export const staffMmOf = (p: Paper): number => p.staffMm ?? (densityOf(p) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
 /** 一个线间距 mm（按这张纸的谱大小）。 */
@@ -24,8 +25,8 @@ const SIZES: Record<PaperKind, { w: number; h: number; m: number }> = { A3L: { w
 export const PAPER_KINDS: PaperKind[] = ["A3L", "A4", "A5", "A6"];
 export const DEFAULT_PAPER: PaperKind = "A5";
 /** 档名后面的一句话（纸的设置面板里）。 */
-export const PAPER_NOTE: Record<PaperKind, string> = { A3L: "横放：总谱 / 大屏", A4: "正经纸", A5: "小册子（A4 对折）", A6: "口袋本" };
-export const PAPER_LABEL: Record<PaperKind, string> = { A3L: "A3 横", A4: "A4", A5: "A5", A6: "A6" };
+export const PAPER_NOTE: Record<PaperKind, string> = { A3L: _t("横放：总谱 / 大屏"), A4: _t("正经纸"), A5: _t("小册子（A4 对折）"), A6: _t("口袋本") };
+export const PAPER_LABEL: Record<PaperKind, string> = { A3L: _t("A3 横"), A4: "A4", A5: "A5", A6: "A6" };
 
 export function paperOf(kind: PaperKind, density: Density = "cozy"): Paper {
   const s = SIZES[kind];

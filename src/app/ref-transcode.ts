@@ -6,6 +6,7 @@
 // · 图片：src/image/shrink.ts（长边 ≤ 2048、256 色 PNG）；估计 = 真压一遍（记住结果，选了「压一下」直接用这份，不压第二遍）。
 // · 视频：不压（库这一版也没有视频卡）。
 // 本文件只 import 库的类型（接缝守卫只管值级 import；值级只在 reference-host.ts）。
+import { _t } from "../i18n/index.ts";
 import type { RefTranscoder, RefImportKind } from "@internal/reference-window";
 import { encodeMp3 } from "../export/mp3.ts";
 import { shrinkImage, REF_IMAGE_EDGE, REF_IMAGE_COLORS } from "../image/shrink.ts";
@@ -28,7 +29,7 @@ function durationOf(f: Blob): Promise<number | null> {
 async function decodeAudio(f: Blob): Promise<AudioBuffer> {
   const Ctx = (globalThis as { OfflineAudioContext?: typeof OfflineAudioContext; webkitOfflineAudioContext?: typeof OfflineAudioContext }).OfflineAudioContext
     ?? (globalThis as { webkitOfflineAudioContext?: typeof OfflineAudioContext }).webkitOfflineAudioContext;
-  if (!Ctx) throw new Error("这个浏览器解不了音频");
+  if (!Ctx) throw new Error(_t("这个浏览器解不了音频"));
   return await new Ctx(1, 1, SR).decodeAudioData(await f.arrayBuffer());
 }
 
@@ -37,7 +38,7 @@ export function createRefTranscoder(): RefTranscoder {
   const image = (f: Blob) => {
     let p = images.get(f);
     if (!p) {
-      p = shrinkImage(f).then((r) => ({ blob: new Blob([r.png as unknown as BlobPart], { type: "image/png" }), mime: "image/png", note: `PNG ${REF_IMAGE_COLORS} 色、${r.w} × ${r.h}（长边最多 ${REF_IMAGE_EDGE}）` }));
+      p = shrinkImage(f).then((r) => ({ blob: new Blob([r.png as unknown as BlobPart], { type: "image/png" }), mime: "image/png", note: _t("PNG {REF_IMAGE_COLORS} 色、{w} × {h}（长边最多 {REF_IMAGE_EDGE}）", { REF_IMAGE_COLORS, w: r.w, h: r.h, REF_IMAGE_EDGE }) }));
       images.set(f, p); p.catch(() => images.delete(f));
     }
     return p;
@@ -54,9 +55,9 @@ export function createRefTranscoder(): RefTranscoder {
       if (kind === "audio") {
         const buf = await decodeAudio(f), left = buf.getChannelData(0), right = buf.numberOfChannels > 1 ? buf.getChannelData(1) : null;
         const bytes = await encodeMp3(left, right, buf.sampleRate, REF_MP3_KBPS);
-        return { blob: new Blob([bytes], { type: "audio/mpeg" }), mime: "audio/mpeg", note: `mp3 ${REF_MP3_KBPS}k${right ? "" : " 单声道"}、${(buf.duration / 60).toFixed(1)} 分钟` };
+        return { blob: new Blob([bytes], { type: "audio/mpeg" }), mime: "audio/mpeg", note: _t("mp3 {REF_MP3_KBPS}k{right}、{p} 分钟", { REF_MP3_KBPS, right: right ? "" : _t(" 单声道"), p: (buf.duration / 60).toFixed(1) }) };
       }
-      throw new Error(`不会压这种：${kind}`);
+      throw new Error(_t("不会压这种：{kind}", { kind }));
     },
   };
 }

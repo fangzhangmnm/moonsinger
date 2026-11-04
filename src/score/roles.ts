@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // roles.ts —— 角色（声部）名的预设 = MusicXML 官方的乐器语义（<instrument-sound> 的标准 id）+ 打谱的标准英文名。created 2026-10-07 by Claude Opus 5.5
 // user 2026-10-07「谱上面显示的不应跟是月读，而是人声，女声 lead bass violin之类功能的东西，还记得之前说的给role assign 乐器的逻辑吗？
 //   所以是你可以写或者选role的名字，帮我多想几个preset。然后名字之外再选乐器」→「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的（又可以逼我练识谱了）」。
@@ -10,22 +11,22 @@ export interface RolePreset { sound: string; name: string; zh: string }
  *  人声 = 主唱 / 和声 + 合唱四部（专业谱上声部名就是功能）；乐队 = 流行编制的几个位置。每项背后是一个官方 id（官方表按乐器分、没有 Lead 这种功能名，
  *  所以「合成主音」落在 synth.tone.sawtooth、「和声」和主唱同是 voice.vocals）。表外的名字自己写（官方 id 不变）。 */
 export const ROLE_GROUPS: { group: string; items: RolePreset[] }[] = [
-  { group: "人声", items: [
-    { sound: "voice.vocals", name: "Vocals", zh: "主唱" },
-    { sound: "voice.vocals", name: "Backing Vocals", zh: "和声" },
-    { sound: "voice.soprano", name: "Soprano", zh: "女高音（合唱）" },
-    { sound: "voice.alto", name: "Alto", zh: "女低音（合唱）" },
-    { sound: "voice.tenor", name: "Tenor", zh: "男高音（合唱）" },
-    { sound: "voice.bass", name: "Bass", zh: "男低音（合唱）" },
+  { group: _t("人声"), items: [
+    { sound: "voice.vocals", name: "Vocals", zh: _t("主唱") },
+    { sound: "voice.vocals", name: "Backing Vocals", zh: _t("和声") },
+    { sound: "voice.soprano", name: "Soprano", zh: _t("女高音（合唱）") },
+    { sound: "voice.alto", name: "Alto", zh: _t("女低音（合唱）") },
+    { sound: "voice.tenor", name: "Tenor", zh: _t("男高音（合唱）") },
+    { sound: "voice.bass", name: "Bass", zh: _t("男低音（合唱）") },
   ] },
-  { group: "乐队", items: [
-    { sound: "keyboard.piano", name: "Piano", zh: "钢琴 / 键盘" },
-    { sound: "pluck.guitar", name: "Guitar", zh: "吉他" },
-    { sound: "pluck.bass", name: "Bass", zh: "贝斯" },
-    { sound: "drum.group.set", name: "Drums", zh: "鼓" },
-    { sound: "strings.group", name: "Strings", zh: "弦乐" },
-    { sound: "synth.pad", name: "Synth Pad", zh: "合成铺底" },
-    { sound: "synth.tone.sawtooth", name: "Synth Lead", zh: "合成主音" },
+  { group: _t("乐队"), items: [
+    { sound: "keyboard.piano", name: "Piano", zh: _t("钢琴 / 键盘") },
+    { sound: "pluck.guitar", name: "Guitar", zh: _t("吉他") },
+    { sound: "pluck.bass", name: "Bass", zh: _t("贝斯") },
+    { sound: "drum.group.set", name: "Drums", zh: _t("鼓") },
+    { sound: "strings.group", name: "Strings", zh: _t("弦乐") },
+    { sound: "synth.pad", name: "Synth Pad", zh: _t("合成铺底") },
+    { sound: "synth.tone.sawtooth", name: "Synth Lead", zh: _t("合成主音") },
   ] },
 ];
 export const ROLE_PRESETS: RolePreset[] = ROLE_GROUPS.flatMap((g) => g.items);

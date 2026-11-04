@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // resource-watch.ts —— 刀 6 ④：负载和内存监控防闪退（user 2026-10-10「负载和内存监控防闪退 做」；阶梯 = user 同日「超预算先放块 / 减并行 / 明说」）。
 // created 2026-10-10 by Claude Fable 5.1
 // 纯函数：主线程把能算到的数（每条月读 worker 的 WASM 堆 + 念缓存、录音房里的块、音源在内存里的整包、音频线程的忙闲）凑成一张快照，
@@ -68,7 +69,7 @@ export function advise(s: Snapshot, b: Budget): Advice[] {
 const sizeText = (n: number) => (n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : n >= 1e6 ? `${(n / 1e6).toFixed(0)} MB` : `${(n / 1e3).toFixed(0)} KB`);
 /** 设置页 / 诊断用的一句人话（能算的那部分，不假装是页面总内存）。 */
 export function describe(s: Snapshot, b: Budget): string {
-  const lanes = s.lanes.length ? s.lanes.map((l, i) => `道 ${i + 1}：堆 ${sizeText(l.wasm)}${l.base !== undefined ? `（刚起来 ${sizeText(l.base)}）` : ""} + 念缓存 ${sizeText(l.cache)}`).join("；") : "小月相引擎没起";
-  const audio = s.audioBusy === null ? "音频线程：没在报" : `音频线程最近 1 s 忙 ${Math.round(s.audioBusy * 100)}%${s.audioBusy > AUDIO_HOT ? "（热：可能爆音）" : ""}`;
-  return `能算到的占用 ${sizeText(totalBytes(s))} / 预算 ${sizeText(b.total)}（${lanes}；录音房里 ${s.chunks} 块 ${sizeText(s.chunkBytes)}；音源内存 ${sizeText(s.soundMem)}）。${audio}。`;
+  const lanes = s.lanes.length ? s.lanes.map((l, i) => _t("道 {p}：堆 {wasm}{p2} + 念缓存 {cache}", { p: i + 1, wasm: sizeText(l.wasm), p2: l.base !== undefined ? _t("（刚起来 {base}）", { base: sizeText(l.base) }) : "", cache: sizeText(l.cache) })).join("；") : _t("小月相引擎没起");
+  const audio = s.audioBusy === null ? _t("音频线程：没在报") : _t("音频线程最近 1 s 忙 {p}%{AUDIO_HOT}", { p: Math.round(s.audioBusy * 100), AUDIO_HOT: s.audioBusy > AUDIO_HOT ? _t("（热：可能爆音）") : "" });
+  return _t("能算到的占用 {s} / 预算 {total}（{lanes}；录音房里 {chunks} 块 {chunkBytes}；音源内存 {soundMem}）。{audio}。", { s: sizeText(totalBytes(s)), total: sizeText(b.total), lanes, chunks: s.chunks, chunkBytes: sizeText(s.chunkBytes), soundMem: sizeText(s.soundMem), audio });
 }

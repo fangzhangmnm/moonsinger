@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // song-cover.ts —— 书架卡片的封面：唱片封面式（方图），歌名印大字、作者一行小字、日期更小；图只是背景。created 2026-10-08 by Claude Fable 5.1
 //   user 2026-10-08：「用户选的封面图，不用第一页…没有的时候自己生成排版，看看wxhw的自动封面」「我们这个应该是唱片封面，是矩形的，你可以想想各个音乐app是怎么弄的，
 //   不管日期小字，消歧码的逻辑都可以学」「都是 HTML 排版进 gallery 的两个槽 对」。
@@ -51,7 +52,7 @@ export function coverHtml(stem: string, extra: CoverExtra = {}): string {
   const cls = `ms-cover ${p.vertical ? "v" : "h"} sz-${p.size}${p.coded ? " coded" : ""}`;
   const title = p.vertical ? verticalRuns(p.title) : esc(p.title);
   const artist = extra.artist ? `<span class="ms-cover-artist">${esc(extra.artist)}</span>` : "";
-  const fin = extra.finalRev != null ? `<span class="ms-cover-final">定稿 ${extra.finalRev}</span>` : "";
+  const fin = extra.finalRev != null ? `<span class="ms-cover-final">${_t("定稿 {finalRev}", { finalRev: extra.finalRev })}</span>` : "";
   const left = p.date || fin ? `<span class="ms-cover-left">${p.date ? `<span class="ms-cover-date">${esc(p.date)}</span>` : ""}${fin}</span>` : "<span></span>";
   const bar = `<span class="ms-cover-bar">${left}${extra.sizeText ? `<span class="ms-cover-size">${esc(extra.sizeText)}</span>` : ""}</span>`;
   return `<span class="${cls}"${extra.editedText ? ` title="${esc(extra.editedText)}"` : ""}><span class="ms-cover-title"${p.vertical ? "" : ' lang="en"'}>${title}</span>${artist}${bar}</span>`;

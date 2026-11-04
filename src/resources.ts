@@ -7,6 +7,7 @@
 //   哈希从哪来：调用者给（模型包分片 = packs.gen.ts、音源 = sounds.gen.ts、乐器目录 = instruments.gen.ts，都是 app 里钉的）；
 //     没给的 app 自带文件（字体、元音表、wasm）在备用版里按打包时记进 index.html 的清单核（和代码同一份信任），官网 / itch 照旧不核（同源的 app 文件）。
 //   文件不在 / 哈希不对 = 和官网下载失败同一种错：如实报，不替补（家规）。
+import { _t } from "./i18n/index.ts";
 import { deployment } from "./deployment.ts";
 import { Sha256 } from "@internal/model-packs";
 
@@ -52,16 +53,16 @@ function loadDataScript(src: string, key: string): Promise<string> {
       s.remove();
       const bag = (globalThis as unknown as { __pwaData?: DataBag }).__pwaData;
       const v = bag?.[key]; if (bag) delete bag[key];
-      if (typeof v === "string") ok(v); else fail(new Error(`${src} 载进来了，但里面没有「${key}」`));
+      if (typeof v === "string") ok(v); else fail(new Error(_t("{src} 载进来了，但里面没有「{key}」", { src, key })));
     };
-    s.onerror = () => { s.remove(); fail(new Error(`备用版文件夹里少了 ${src}（或浏览器不让读）`)); };
+    s.onerror = () => { s.remove(); fail(new Error(_t("备用版文件夹里少了 {src}（或浏览器不让读）", { src }))); };
     document.head.append(s);
   });
 }
 const inflight = new Map<string, Promise<Uint8Array>>();
 async function readFolder(path: string, opts: GetOpts): Promise<Uint8Array> {
   const e = localBundle()?.files[path];
-  if (!e) throw new Error(`备用版里没有 ${path}`);
+  if (!e) throw new Error(_t("备用版里没有 {path}", { path }));
   const parts: Uint8Array[] = []; let done = 0;
   for (let k = 0; k < e.parts; k++) {
     const b = fromBase64(await loadDataScript(siteUrl(e.parts === 1 ? `${path}.data.js` : `${path}.${k}.data.js`).href, e.parts === 1 ? path : `${path}#${k}`));
@@ -69,7 +70,7 @@ async function readFolder(path: string, opts: GetOpts): Promise<Uint8Array> {
   }
   const out = parts.length === 1 ? parts[0]! : (() => { const o = new Uint8Array(done); let at = 0; for (const p of parts) { o.set(p, at); at += p.length; } return o; })();
   const want = opts.sha256 ?? e.sha256;
-  if (out.length !== e.bytes || (await sha256Hex(out)) !== want) throw new Error(`${path}：备用版文件夹里的这个文件和 app 里钉的哈希对不上（被改过或坏了）`);
+  if (out.length !== e.bytes || (await sha256Hex(out)) !== want) throw new Error(_t("{path}：备用版文件夹里的这个文件和 app 里钉的哈希对不上（被改过或坏了）", { path }));
   return out;
 }
 async function readSite(path: string, opts: GetOpts): Promise<Uint8Array> {
@@ -81,7 +82,7 @@ async function readSite(path: string, opts: GetOpts): Promise<Uint8Array> {
     for (;;) { const { value, done } = await reader.read(); if (done) break; chunks.push(value); got += value.length; opts.onProgress(got, total || got); }
     out = new Uint8Array(got); let at = 0; for (const c of chunks) { out.set(c, at); at += c.length; }
   } else out = new Uint8Array(await r.arrayBuffer());
-  if (opts.sha256 && (await sha256Hex(out)) !== opts.sha256) throw new Error(`${path}：和 app 里钉的哈希对不上（被改过或坏了）`);
+  if (opts.sha256 && (await sha256Hex(out)) !== opts.sha256) throw new Error(_t("{path}：和 app 里钉的哈希对不上（被改过或坏了）", { path }));
   return out;
 }
 /** 站点里那一份字节（官网 / itch = fetch；备用版 = 老实脚本）。给了 sha256 / 备用版 = 核过才交出。 */

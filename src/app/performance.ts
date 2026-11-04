@@ -4,6 +4,7 @@
 //   播放头与翻谱 / 放着时改谱的重算 / 预唱 / mp3 导出 / 按键试听要的库。界面（钮、菜单、面板）和文件都不在这里——main.ts 通过 PerfHost 给访问器，这里只回调。
 //   原文一字不改地搬过来（注释里的 user 原话与日期是搬家前的），只把 st / doc.extras / viewScope / busMuted 换成 host 的访问器；行为与 v0.12.1 相同。
 //   形状 = createPerformance(host) → 一组函数 + 几个 getter / setter（走带态是这次打开里有效的东西，不进歌）。
+import { _t } from "../i18n/index.ts";
 import { APP_VERSION } from "../version.ts";
 import { DEFAULT_TIME, WHOLE, isTimed, type EditorState, type Song, type PartDef, timeline, songOnlyPaper, flattenPart } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
@@ -106,7 +107,7 @@ export function createPerformance(host: PerfHost) {
     return st().song.parts.flatMap((p, k): Issue[] => {
       if (!hasNotes(p.id)) return [];   // 没写音的声部不出声也不丢什么
       const plugin = performerOf(activeInstrument(extras(), p.role)?.engine);
-      if (!plugin) return [{ part: p.id, role: p.role, label: labels[k], kind: "unknown", why: "还没有人上场（别的软件原来的乐器，这一版认不出）" }];
+      if (!plugin) return [{ part: p.id, role: p.role, label: labels[k], kind: "unknown", why: _t("还没有人上场（别的软件原来的乐器，这一版认不出）") }];
       const e = prepErrs.get(p.id);
       return e && e.cand === activeId(extras(), p.role) ? [{ part: p.id, role: p.role, label: labels[k], kind: e.kind, why: e.why }] : [];
     });
@@ -117,8 +118,8 @@ export function createPerformance(host: PerfHost) {
     const next = computeIssues(), key = JSON.stringify(next.map((i) => [i.part, i.kind, i.why]));
     if (key === issuesKey) return;
     const had = issues.length; issuesKey = key; issues = next; host.ui.onIssues(next);
-    if (next.length) showError(`${issuesText(next)}。这${next.length > 1 ? `${next.length} 条轨` : "条轨"}放和导出都不出声，其余照放；点 |▶ 角上的数字看清单，点谱前面的声部名换一个「谁来演」。`);
-    else if (had) info("现在的声部都能出声了");
+    if (next.length) showError(_t("{next}。这{p}放和导出都不出声，其余照放；点 |▶ 角上的数字看清单，点谱前面的声部名换一个「谁来演」。", { next: issuesText(next), p: next.length > 1 ? _t("{n} 条轨", { n: next.length }) : _t("条轨") }));
+    else if (had) info(_t("现在的声部都能出声了"));
   }
   /** 月读的块 = 调度器（src/engine/scheduler.ts）+ 一次一块的泵（刀 2，边算边放；user「第一句好了就开播 嗯」「实时播放的时候…预提前算然后用cache invalid」）：
    *  顺序 = 播放头所在的那块先、往后按距离、循环绕回；seek / 改谱 = 换顺序（正在算的那块算完照样进缓存）。唱不了的一句 = 报错 + 空着（不替补）；
@@ -156,9 +157,9 @@ export function createPerformance(host: PerfHost) {
           const failed = chunkFailed.get(key);
           if (failed !== undefined) {   // 预唱时就唱不了的：不再试；真播放 = 报出来、这一句空着（不出声、不替补）
             if (pumpQuiet) { chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key); continue; }
-            showError(`「${who}」唱不了这一句：${failed}`); engine.chunk(key, 22050, new Float32Array(0)); renderBar.next(); continue;
+            showError(_t("「{who}」唱不了这一句：{failed}", { who, failed })); engine.chunk(key, 22050, new Float32Array(0)); renderBar.next(); continue;
           }
-          progress(`${who}：${pumpQuiet ? "先唱着" : "还有"} ${left} 句…`);
+          progress(_t("{who}：{pumpQuiet} {left} 句…", { who, pumpQuiet: pumpQuiet ? _t("先唱着") : _t("还有"), left }));
           inflightKeys.add(key);
           const p: Promise<void> = singOne(key, c, who).finally(() => { inflightKeys.delete(key); running.delete(p); });
           running.add(p);
@@ -181,7 +182,7 @@ export function createPerformance(host: PerfHost) {
       if (msg === "cancelled") return;
       if (!chunkPlans.has(key)) return;   // W-37（2026-10-13）：这句已经不在这首歌里（换歌 / 改了）= 静默丢掉——不报、不记、不塞空块（成功分支早就这么核了，失败分支漏了：换歌后红框报的是上一首的那一句）
       chunkFailed.set(key, msg);
-      if (!pumpQuiet) { showError(`「${who}」唱不了这一句：${msg}`); engine.chunk(key, 22050, new Float32Array(0)); }
+      if (!pumpQuiet) { showError(_t("「{who}」唱不了这一句：{msg}", { who, msg })); engine.chunk(key, 22050, new Float32Array(0)); }
       else chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key);
     }
     renderBar.next();
@@ -240,8 +241,8 @@ export function createPerformance(host: PerfHost) {
     const snap = resourceSnapshot();
     for (const a of advise(snap, BUDGET)) {
       if (a.kind === "pruneChunks") shrinkChunks(snap, a.toBytes);
-      else if (a.kind === "fewerLanes") { if (singer.parallelism > a.lanes) { singer.setLanes(a.lanes); watch.lanesCut = true; diagNote("resource", `lanes → ${a.lanes}`); resourceSay("lanes", "内存 / 负载吃紧：小月相改成一条道唱（慢一点，声音不变）"); } }
-      else if (a.kind === "audioHot") { if (++watch.hot >= 3) resourceSay("audio", `音频线程最近 1 s 忙 ${Math.round(a.busy * 100)}%：可能爆音。效果链 / 声部是你的混音，不替你动；可以先把没在听的声部静音`); }
+      else if (a.kind === "fewerLanes") { if (singer.parallelism > a.lanes) { singer.setLanes(a.lanes); watch.lanesCut = true; diagNote("resource", `lanes → ${a.lanes}`); resourceSay("lanes", _t("内存 / 负载吃紧：小月相改成一条道唱（慢一点，声音不变）")); } }
+      else if (a.kind === "audioHot") { if (++watch.hot >= 3) resourceSay("audio", _t("音频线程最近 1 s 忙 {p}%：可能爆音。效果链 / 声部是你的混音，不替你动；可以先把没在听的声部静音", { p: Math.round(a.busy * 100) })); }
     }
     if (snap.audioBusy !== null && snap.audioBusy <= AUDIO_HOT) watch.hot = 0;
     if (watch.lanesCut && totalBytes(snap) < BUDGET.total * 0.6 && (snap.audioBusy ?? 0) < AUDIO_HOT * 0.7) { singer.setLanes(BUDGET.lanes); watch.lanesCut = false; diagNote("resource", `lanes → ${BUDGET.lanes} (recovered)`); }   // 吃紧过去了 = 道数回到设备预算
@@ -263,7 +264,7 @@ export function createPerformance(host: PerfHost) {
     for (const e of errs) prepErrs.set(e.part, { cand: e.cand, kind: "sound", why: e.why });
     for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); }
     refreshIssues();
-    if (!tl.tracks.length) { showError(`没有出声：${issuesText(issues) || "没有会出声的声部"}。点谱前面的声部名换一个「谁来演」。`); return null; }   // 一个都放不了 = 这一下必须说
+    if (!tl.tracks.length) { showError(_t("没有出声：{issues}。点谱前面的声部名换一个「谁来演」。", { issues: issuesText(issues) || _t("没有会出声的声部") })); return null; }   // 一个都放不了 = 这一下必须说
     pruneChunks(tl);
     if (o.chunks !== false) await awaitAllChunks(tl);
     pushChannels(o.raw);
@@ -359,8 +360,8 @@ export function createPerformance(host: PerfHost) {
       await engine.play(atNow, playMute);
       paused = null;
       playIcon(true);
-      progress(loopOn ? `循环 ${(r.to - r.loopFrom).toFixed(1)} 秒` : `${(r.to - atNow).toFixed(1)} 秒`);
-    } catch (e) { showError(`放不了：${(e as Error).message}`); progress(""); playIcon(false); }
+      progress(loopOn ? _t("循环 {loopFrom} 秒", { loopFrom: (r.to - r.loopFrom).toFixed(1) }) : _t("{atNow} 秒", { atNow: (r.to - atNow).toFixed(1) }));
+    } catch (e) { showError(_t("放不了：{Error}", { Error: (e as Error).message })); progress(""); playIcon(false); }
     finally { releaseAudio(); preparing = false; if (!engine.playing) for (const b of playBtns()) b.classList.remove("is-on"); }
   }
   /** 主键（空格）= |▶ 从起点放 / 放着 = 停（停的地方记下来，⋯ 里「接着放」从那儿接）。
@@ -405,7 +406,7 @@ export function createPerformance(host: PerfHost) {
   }
   engine.on("ended", () => { playIcon(false); view.setPlayhead(null); phKey = ""; paused = null; });
   // 录音房渲染里抛了（v0.10.15）：报出来 + 进黑匣子（带栈），走带停；节点照活，再按播放能放（原来 worklet 死掉、之后永远没声，日志里也没有）
-  engine.on("crash", (msg) => { diagNote("engine", `render crash: ${msg}`); playIcon(false); view.setPlayhead(null); phKey = ""; paused = null; showError(`播放出错了，已经停下（错误记进了诊断日志）：${msg.split("\n")[0]}`); });
+  engine.on("crash", (msg) => { diagNote("engine", `render crash: ${msg}`); playIcon(false); view.setPlayhead(null); phKey = ""; paused = null; showError(_t("播放出错了，已经停下（错误记进了诊断日志）：{p}", { p: msg.split("\n")[0] })); });
   function setLoop(on: boolean): void {
     loopOn = on; for (const b of playBtns()) b.classList.toggle("looping", on);   // |▶ 上一个小「循环」角标（原来写在 ⋯ 钮上）
     // 放着的时候切 = 这一轮就按新的来：到尾（尾巴还在响也算）跳回去 / 不跳；开了循环 = 循环头那几句也排进去先唱（不然跳回去要冻着等月读）
@@ -443,7 +444,7 @@ export function createPerformance(host: PerfHost) {
   engine.on("pos", (sec, playing, waiting) => {
     if (!playing) return;
     if (playTl && !phRaf) phRaf = requestAnimationFrame(playheadFrame);
-    if (waiting) progress("等小月相唱好这一句…");
+    if (waiting) progress(_t("等小月相唱好这一句…"));
     if (playMute !== undefined && sec > playMute + 1) playMute = undefined;   // 走过起点了：之后排队照常（循环绕回来前一段照样响）
     if (playTl && performance.now() - lastReorder > 1000) { lastReorder = performance.now(); const r = playRange(playTl); setChunkOrder(playTl, sec, loopOn ? { from: r.loopFrom, to: r.to } : null); }   // 顺序跟着播放头走
   });
@@ -488,7 +489,7 @@ export function createPerformance(host: PerfHost) {
     const g = activeGm(extras(), curRole()); if (!g || engine.hasBank(g.subsetSha256)) return Promise.resolve();
     if (bankPreparing) return bankPreparing;
     bankPreparing = (async () => { await engine.bank(g.subsetSha256, await resolveGmBytes(g)); })()
-      .catch((e) => { showError(`「${g.name}」响不了：${(e as Error).message}`); })
+      .catch((e) => { showError(_t("「{name}」响不了：{Error}", { name: g.name, Error: (e as Error).message })); })
       .finally(() => { bankPreparing = null; });
     return bankPreparing;
   }
@@ -504,13 +505,13 @@ export function createPerformance(host: PerfHost) {
   async function renderMp3(o: { quality: Mp3Quality; scope: "all" | "segment" }): Promise<{ bytes: Uint8Array; secs: number; sr: number; kbps: number; stereo: boolean; roles: string[]; parts: string[] }> {
     if (engine.playing) stopPlay();
     const parts = audibleParts(), song = songIn(o.scope);
-    progress("准备…");
+    progress(_t("准备…"));
     const r = await renderSong(planOf(song, parts, false), { ...deps, sing: async (tl) => { pruneChunks(tl); await awaitAllChunks(tl); } },
       { sr: GM_SR, pv, progress: (m, f) => { if (f === undefined) { progress(m); return; } if (f === 0) { progress(m); renderBar.start(1); } renderBar.frac(f); },
         onPrepared: (errs, tl) => { for (const p of parts) prepErrs.delete(p.id); for (const e of errs) prepErrs.set(e.part, { cand: e.cand, kind: "sound", why: e.why }); for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); } refreshIssues(); } })
       .finally(() => { renderBar.end(); if (mixBypass) pushChannels(); });   // 效果全关（A/B）不影响导出；导完按开关重推
     const roles = st().song.parts.filter((p) => r.timeline.tracks.some((t) => t.id === p.id)).map((p) => p.role);   // 真出了声的声部（署名推演）
-    progress("编 mp3…");
+    progress(_t("编 mp3…"));
     const Q = MP3_QUALITY[o.quality];
     const left = Q.stereo ? r.left : toMono(r.left, r.right), right = Q.stereo ? r.right : null;   // 小文件：左右平均成单声道
     const bytes = await encodeMp3(left, right, r.sr, Q.kbps);
@@ -534,14 +535,11 @@ export function createPerformance(host: PerfHost) {
       const { tag, lines, fellBack } = mp3Tag(r.roles);
       // 文件名 = 名[-曲段]-YYYYMMDD-HHMM（v0.9.47；user「看一下wxhw还是weebpaint，导出的时候文件名应该还有导出的时间，也许还有防撞」= WeebPaint naming.ts「下载版本 = 名-YYYYMMDD-HHMM」；
       //   同一分钟再导 = 浏览器 / 系统自己补 (1)——WeebPaint 的规矩：撞名后缀只在能查占用的去处（云端）做，本地下载 / 分享查不了，交给系统）
-      const file = new File([...(r.fromFinal ? [] : [tag as unknown as BlobPart]), r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || "这一张")}` : ""}`)}.mp3`, { type: "audio/mpeg" });
-      const Q = r.stereo ? "立体声" : "单声道";
-      offerFile(file, "歌声导出好了", `${r.secs.toFixed(1)} 秒 · mp3 ${Q} ${r.kbps}k ${mp3SizeText(file.size)}${r.fromFinal ? "（定稿的那一份，没有重渲）" : ""}` +
-        (fellBack ? `<div class="offer-msg">许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。</div>` : "") +
-        (!r.fromFinal && issues.length ? `<div class="offer-msg issue-warn">这几条轨没出声，mp3 里没有它们：${escHtml(issuesText(issues))}</div>` : "") +
-        creditsBlock(lines, "署名 · 已写进 mp3 的标签"));
+      const file = new File([...(r.fromFinal ? [] : [tag as unknown as BlobPart]), r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || _t("这一张"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
+      const Q = r.stereo ? _t("立体声") : _t("单声道");
+      offerFile(file, _t("歌声导出好了"), _t("{p} 秒 · mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r.secs.toFixed(1), Q, kbps: r.kbps, size: mp3SizeText(file.size), fromFinal: r.fromFinal ? _t("（定稿的那一份，没有重渲）") : "", fellBack: (fellBack ? `<div class="offer-msg">${_t("许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。")}</div>` : ""), length: (!r.fromFinal && issues.length ? `<div class="offer-msg issue-warn">${_t("这几条轨没出声，mp3 里没有它们：")}${escHtml(issuesText(issues))}</div>` : ""), lines: creditsBlock(lines, _t("署名 · 已写进 mp3 的标签")) }));
     } catch (e) {
-      progress(""); showError(`导出失败：${(e as Error).message}`);
+      progress(""); showError(_t("导出失败：{Error}", { Error: (e as Error).message }));
     } finally { exporting = false; }
   }
   /** 放着的时候换曲段（‹ › / 挂签下拉 / 每张纸自己的曲段控件；只认这几处明说的「换段」，点谱上别的纸里的音不算）= 从那一段的开头放
@@ -559,8 +557,8 @@ export function createPerformance(host: PerfHost) {
   async function previewTrack(track: TrackSpec, to: number, label: string): Promise<void> {
     engine.channel("audition", { gainDb: 0, pan: 0, mute: false, solo: false });
     playTl = null; engine.setTimeline({ tracks: [track], range: { from: 0, to }, loop: false });
-    try { await engine.play(0); playIcon(true); progress(`${label} · 开头 ${to.toFixed(1)} 秒`); }
-    catch (e) { showError(`放不了：${(e as Error).message}`); }
+    try { await engine.play(0); playIcon(true); progress(_t("{label} · 开头 {p} 秒", { label, p: to.toFixed(1) })); }
+    catch (e) { showError(_t("放不了：{Error}", { Error: (e as Error).message })); }
   }
   /** 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回。 */
   function onSongSwitch(): void { engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; chunkPlans = new Map(); singer.cancelPending(); singer.cancelInflight(); trimLanesForNewSong(); }

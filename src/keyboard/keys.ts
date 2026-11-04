@@ -12,6 +12,7 @@
 //   其余一律不接（浏览器的，Ctrl+1–8 是切标签页）；
 // 输入法正在拼（isComposing）的时候一律不接（拼音、假名输入法不被打断）。
 
+import { _t } from "../i18n/index.ts";
 import type { Command } from "../score/commands.ts";
 import type { Dir } from "../score/pitch.ts";
 
@@ -56,90 +57,90 @@ const degree = (dir: Dir) => (i: number, where: Where): Action =>
 // grill 账本 Q/UX-1/UX-2 的键位；user 原话在账本里（1–7 就近、Shift 往上、QWERTYU 往下「赞」、0 休止、8 / 9 诺基亚短长、- 简谱横线……）
 export const BINDINGS: Binding[] = [
   // ── 写音 ──
-  { id: "degree.near", group: "写音", keys: [...range(DIGITS), ...range(NUMPAD)], show: "1–7（小键盘也行）", sound: true, act: degree("near"),
-    does: { write: "写一个音：调里第几级，落在离上一个音最近处", edit: "把选中的第一个音改成这一级，选中跳到下一个音", impro: "只唱不写" } },
+  { id: "degree.near", group: _t("写音"), keys: [...range(DIGITS), ...range(NUMPAD)], show: _t("1–7（小键盘也行）"), sound: true, act: degree("near"),
+    does: { write: _t("写一个音：调里第几级，落在离上一个音最近处"), edit: _t("把选中的第一个音改成这一级，选中跳到下一个音"), impro: _t("只唱不写") } },
   // Shift = 叠（2026-10-10 user「shift旧的功能不要，shift用来叠音输入和弦，以及pc上面叠功能找不到了」）：原来 Shift+1–7 = 往上找，撤了（往下找的 QWERTYU 留着）
-  { id: "stack", group: "写音", keys: range(DIGITS, { shift: true }), show: "Shift+1–7", act: (i, where) => (where === "impro" ? { k: "audition", degree: (i % 7) + 1, dir: "near" } : { k: "stack", degree: (i % 7) + 1 }),
-    does: { write: "叠：这一级叠到光标前那个音上（和弦，落在离它现有的音最近处；已经有 = 去掉）。同 pad「叠」", edit: "叠到刚写的那个 / 选区第一个音上", impro: "只唱不写" } },
-  { id: "degree.down", group: "写音", keys: range(DOWN_ROW), show: "Q W E R T Y U", sound: true, act: degree("down"),
-    does: { write: "同上，往下找（数字正下方那一排）", edit: "同上，往下找", impro: "只唱不写（往下找）" } },
-  { id: "rest", group: "写音", keys: [{ code: "Digit0" }, { code: "Numpad0" }], act: cmd({ k: "rest" }),
-    does: { write: "休止", edit: "选区里写一个休止（替换模式：按长短档吃掉选区里的音，不写出选区）" } },
-  { id: "bar", group: "写音", keys: [{ code: "Enter" }, { code: "NumpadEnter" }, { code: "Backslash", shift: true }], show: "Enter / |", act: cmd({ k: "bar" }),
-    does: { write: "小节线", edit: "在选中后面插小节线" } },
-  { id: "phrase", group: "写音", keys: [{ code: "Enter", shift: true }, { code: "NumpadEnter", shift: true }], show: "Shift+Enter", act: cmd({ k: "phrase" }),
-    does: { write: "句号（这一句到这儿：「合」挪字的边界；没有语义：不换气、不换行、不是小节线）", edit: "在选中后面插句号" } },
+  { id: "stack", group: _t("写音"), keys: range(DIGITS, { shift: true }), show: "Shift+1–7", act: (i, where) => (where === "impro" ? { k: "audition", degree: (i % 7) + 1, dir: "near" } : { k: "stack", degree: (i % 7) + 1 }),
+    does: { write: _t("叠：这一级叠到光标前那个音上（和弦，落在离它现有的音最近处；已经有 = 去掉）。同 pad「叠」"), edit: _t("叠到刚写的那个 / 选区第一个音上"), impro: _t("只唱不写") } },
+  { id: "degree.down", group: _t("写音"), keys: range(DOWN_ROW), show: "Q W E R T Y U", sound: true, act: degree("down"),
+    does: { write: _t("同上，往下找（数字正下方那一排）"), edit: _t("同上，往下找"), impro: _t("只唱不写（往下找）") } },
+  { id: "rest", group: _t("写音"), keys: [{ code: "Digit0" }, { code: "Numpad0" }], act: cmd({ k: "rest" }),
+    does: { write: _t("休止"), edit: _t("选区里写一个休止（替换模式：按长短档吃掉选区里的音，不写出选区）") } },
+  { id: "bar", group: _t("写音"), keys: [{ code: "Enter" }, { code: "NumpadEnter" }, { code: "Backslash", shift: true }], show: "Enter / |", act: cmd({ k: "bar" }),
+    does: { write: _t("小节线"), edit: _t("在选中后面插小节线") } },
+  { id: "phrase", group: _t("写音"), keys: [{ code: "Enter", shift: true }, { code: "NumpadEnter", shift: true }], show: "Shift+Enter", act: cmd({ k: "phrase" }),
+    does: { write: _t("句号（这一句到这儿：「合」挪字的边界；没有语义：不换气、不换行、不是小节线）"), edit: _t("在选中后面插句号") } },
   // ── 时值 ──
-  { id: "shorter", group: "时值", keys: [{ code: "Digit8" }, { code: "Numpad8" }], act: cmd({ k: "shorter" }),
-    does: { write: "短：下一个音的时值减半（到三十二分为止）", edit: "短：接下来写的减半（选区里写 = 按这一档替换；整组改时值走选区菜单）" } },
-  { id: "longer", group: "时值", keys: [{ code: "Digit9" }, { code: "Numpad9" }], act: cmd({ k: "longer" }),
-    does: { write: "长：下一个音的时值加倍（到全音符为止）", edit: "长：接下来写的加倍（选区里写 = 按这一档替换；整组改时值走选区菜单）" } },
-  { id: "tuplet", group: "时值", keys: [{ code: "Digit8", shift: true }], act: cmd({ k: "tuplet" }),
-    does: { write: "三连音开 / 关（下一个音起）", edit: "三连音开 / 关（下一个音起）" } },
-  { id: "extend", group: "时值", keys: [{ code: "Minus" }, { code: "NumpadSubtract" }], act: cmd({ k: "extend" }),
-    does: { write: "刚写的音加一份（简谱的横线）；隔着小节线 = 新开一个连着的同音", edit: "选中的音各加一份" } },
+  { id: "shorter", group: _t("时值"), keys: [{ code: "Digit8" }, { code: "Numpad8" }], act: cmd({ k: "shorter" }),
+    does: { write: _t("短：下一个音的时值减半（到三十二分为止）"), edit: _t("短：接下来写的减半（选区里写 = 按这一档替换；整组改时值走选区菜单）") } },
+  { id: "longer", group: _t("时值"), keys: [{ code: "Digit9" }, { code: "Numpad9" }], act: cmd({ k: "longer" }),
+    does: { write: _t("长：下一个音的时值加倍（到全音符为止）"), edit: _t("长：接下来写的加倍（选区里写 = 按这一档替换；整组改时值走选区菜单）") } },
+  { id: "tuplet", group: _t("时值"), keys: [{ code: "Digit8", shift: true }], act: cmd({ k: "tuplet" }),
+    does: { write: _t("三连音开 / 关（下一个音起）"), edit: _t("三连音开 / 关（下一个音起）") } },
+  { id: "extend", group: _t("时值"), keys: [{ code: "Minus" }, { code: "NumpadSubtract" }], act: cmd({ k: "extend" }),
+    does: { write: _t("刚写的音加一份（简谱的横线）；隔着小节线 = 新开一个连着的同音"), edit: _t("选中的音各加一份") } },
   // ── 音高 ──
-  { id: "sharp", group: "音高", keys: [{ code: "BracketRight" }], act: cmd({ k: "acc", acc: 1 }),
-    does: { write: "♯：点一下管下一个音，连点两下锁住，再点解开", edit: "选中的音升半音" } },
-  { id: "flat", group: "音高", keys: [{ code: "BracketLeft" }], act: cmd({ k: "acc", acc: -1 }),
-    does: { write: "♭：同上", edit: "选中的音降半音" } },
-  { id: "octave.up", group: "音高", keys: [{ code: "Quote" }, { code: "NumpadMultiply" }, { code: "ArrowUp", alt: true }], act: cmd({ k: "octave", d: 1 }),
-    does: { write: "光标前那个音高八度", edit: "选中的音高八度" } },
-  { id: "octave.down", group: "音高", keys: [{ code: "Comma" }, { code: "NumpadDivide" }, { code: "ArrowDown", alt: true }], act: cmd({ k: "octave", d: -1 }),
-    does: { write: "光标前那个音低八度", edit: "选中的音低八度" } },
-  { id: "step.up", group: "音高", keys: [{ code: "ArrowUp" }], act: cmd({ k: "step", d: 1 }), does: { write: "光标前那个音往上一级", edit: "选中的音往上一级" } },
-  { id: "step.down", group: "音高", keys: [{ code: "ArrowDown" }], act: cmd({ k: "step", d: -1 }), does: { write: "光标前那个音往下一级", edit: "选中的音往下一级" } },
-  { id: "alter.up", group: "音高", keys: [{ code: "ArrowUp", shift: true }], act: cmd({ k: "alter", d: 1 }), does: { write: "光标前那个音升半音（按调拼写：C 大调 E → F）", edit: "选中的音整体升半音（按调拼写）" } },
-  { id: "alter.down", group: "音高", keys: [{ code: "ArrowDown", shift: true }], act: cmd({ k: "alter", d: -1 }), does: { write: "光标前那个音降半音（按调拼写）", edit: "选中的音整体降半音（按调拼写）" } },
+  { id: "sharp", group: _t("音高"), keys: [{ code: "BracketRight" }], act: cmd({ k: "acc", acc: 1 }),
+    does: { write: _t("♯：点一下管下一个音，连点两下锁住，再点解开"), edit: _t("选中的音升半音") } },
+  { id: "flat", group: _t("音高"), keys: [{ code: "BracketLeft" }], act: cmd({ k: "acc", acc: -1 }),
+    does: { write: _t("♭：同上"), edit: _t("选中的音降半音") } },
+  { id: "octave.up", group: _t("音高"), keys: [{ code: "Quote" }, { code: "NumpadMultiply" }, { code: "ArrowUp", alt: true }], act: cmd({ k: "octave", d: 1 }),
+    does: { write: _t("光标前那个音高八度"), edit: _t("选中的音高八度") } },
+  { id: "octave.down", group: _t("音高"), keys: [{ code: "Comma" }, { code: "NumpadDivide" }, { code: "ArrowDown", alt: true }], act: cmd({ k: "octave", d: -1 }),
+    does: { write: _t("光标前那个音低八度"), edit: _t("选中的音低八度") } },
+  { id: "step.up", group: _t("音高"), keys: [{ code: "ArrowUp" }], act: cmd({ k: "step", d: 1 }), does: { write: _t("光标前那个音往上一级"), edit: _t("选中的音往上一级") } },
+  { id: "step.down", group: _t("音高"), keys: [{ code: "ArrowDown" }], act: cmd({ k: "step", d: -1 }), does: { write: _t("光标前那个音往下一级"), edit: _t("选中的音往下一级") } },
+  { id: "alter.up", group: _t("音高"), keys: [{ code: "ArrowUp", shift: true }], act: cmd({ k: "alter", d: 1 }), does: { write: _t("光标前那个音升半音（按调拼写：C 大调 E → F）"), edit: _t("选中的音整体升半音（按调拼写）") } },
+  { id: "alter.down", group: _t("音高"), keys: [{ code: "ArrowDown", shift: true }], act: cmd({ k: "alter", d: -1 }), does: { write: _t("光标前那个音降半音（按调拼写）"), edit: _t("选中的音整体降半音（按调拼写）") } },
   // ── 光标与选中 ──
-  { id: "left", group: "光标与选中", keys: [{ code: "ArrowLeft" }], act: cmd({ k: "caret", d: -1 }), does: { write: "光标左移", edit: "收成选中左边的光标（回到写）" } },
-  { id: "right", group: "光标与选中", keys: [{ code: "ArrowRight" }], act: cmd({ k: "caret", d: 1 }), does: { write: "光标右移", edit: "收成选中右边的光标（回到写）" } },
-  { id: "sel.left", group: "光标与选中", keys: [{ code: "ArrowLeft", shift: true }], act: cmd({ k: "selext", d: -1 }), does: { write: "选中光标前那个（写 → 改）", edit: "选中往左扩一个" } },
-  { id: "sel.right", group: "光标与选中", keys: [{ code: "ArrowRight", shift: true }], act: cmd({ k: "selext", d: 1 }), does: { write: "选中光标后那个（写 → 改）", edit: "选中往右扩一个" } },
-  { id: "sel.home", group: "光标与选中", keys: [{ code: "Home", shift: true }], act: cmd({ k: "seledge", d: -1 }), does: { write: "从光标选到开头（写 → 改）", edit: "选到开头" } },
-  { id: "sel.end", group: "光标与选中", keys: [{ code: "End", shift: true }], act: cmd({ k: "seledge", d: 1 }), does: { write: "从光标选到末尾（Home 再 Shift+End = 全选）", edit: "选到末尾" } },
-  { id: "home", group: "光标与选中", keys: [{ code: "Home" }], act: cmd({ k: "home" }), does: { write: "光标到开头", edit: "光标到开头" } },
-  { id: "end", group: "光标与选中", keys: [{ code: "End" }], act: cmd({ k: "end" }), does: { write: "光标到末尾", edit: "光标到末尾" } },
-  { id: "escape", group: "光标与选中", keys: [{ code: "Escape" }], act: (_i, w) => (w === "lyric" ? { k: "lyric", a: "cancel" } : w === "mark" ? { k: "mark", a: "cancel" } : w === "sheet" ? { k: "sheet", a: "close" } : { k: "cmd", cmd: { k: "escape" } }),
-    does: { write: "选中光标前那个（写 → 改）", lyric: "收起，不贴框里的字", mark: "收起，不改（刚插的记号 = 撤掉）", sheet: "关掉面板" } },
-  { id: "backspace", group: "光标与选中", keys: [{ code: "Backspace" }], act: (_i, w) => (w === "lyric" ? { k: "lyric", a: "back" } : { k: "cmd", cmd: { k: "backspace" } }),
-    does: { write: "撤回本次输入的最后一笔（「−」、音）；挪过光标后 = 删光标前一个", edit: "删掉选中", lyric: "框是空的：回到上一个音，把它的字拿出来接着删" } },
-  { id: "delete", group: "光标与选中", keys: [{ code: "Delete" }], act: cmd({ k: "delete" }), does: { write: "删光标后一个", edit: "删掉选中" } },
+  { id: "left", group: _t("光标与选中"), keys: [{ code: "ArrowLeft" }], act: cmd({ k: "caret", d: -1 }), does: { write: _t("光标左移"), edit: _t("收成选中左边的光标（回到写）") } },
+  { id: "right", group: _t("光标与选中"), keys: [{ code: "ArrowRight" }], act: cmd({ k: "caret", d: 1 }), does: { write: _t("光标右移"), edit: _t("收成选中右边的光标（回到写）") } },
+  { id: "sel.left", group: _t("光标与选中"), keys: [{ code: "ArrowLeft", shift: true }], act: cmd({ k: "selext", d: -1 }), does: { write: _t("选中光标前那个（写 → 改）"), edit: _t("选中往左扩一个") } },
+  { id: "sel.right", group: _t("光标与选中"), keys: [{ code: "ArrowRight", shift: true }], act: cmd({ k: "selext", d: 1 }), does: { write: _t("选中光标后那个（写 → 改）"), edit: _t("选中往右扩一个") } },
+  { id: "sel.home", group: _t("光标与选中"), keys: [{ code: "Home", shift: true }], act: cmd({ k: "seledge", d: -1 }), does: { write: _t("从光标选到开头（写 → 改）"), edit: _t("选到开头") } },
+  { id: "sel.end", group: _t("光标与选中"), keys: [{ code: "End", shift: true }], act: cmd({ k: "seledge", d: 1 }), does: { write: _t("从光标选到末尾（Home 再 Shift+End = 全选）"), edit: _t("选到末尾") } },
+  { id: "home", group: _t("光标与选中"), keys: [{ code: "Home" }], act: cmd({ k: "home" }), does: { write: _t("光标到开头"), edit: _t("光标到开头") } },
+  { id: "end", group: _t("光标与选中"), keys: [{ code: "End" }], act: cmd({ k: "end" }), does: { write: _t("光标到末尾"), edit: _t("光标到末尾") } },
+  { id: "escape", group: _t("光标与选中"), keys: [{ code: "Escape" }], act: (_i, w) => (w === "lyric" ? { k: "lyric", a: "cancel" } : w === "mark" ? { k: "mark", a: "cancel" } : w === "sheet" ? { k: "sheet", a: "close" } : { k: "cmd", cmd: { k: "escape" } }),
+    does: { write: _t("选中光标前那个（写 → 改）"), lyric: _t("收起，不贴框里的字"), mark: _t("收起，不改（刚插的记号 = 撤掉）"), sheet: _t("关掉面板") } },
+  { id: "backspace", group: _t("光标与选中"), keys: [{ code: "Backspace" }], act: (_i, w) => (w === "lyric" ? { k: "lyric", a: "back" } : { k: "cmd", cmd: { k: "backspace" } }),
+    does: { write: _t("撤回本次输入的最后一笔（「−」、音）；挪过光标后 = 删光标前一个"), edit: _t("删掉选中"), lyric: _t("框是空的：回到上一个音，把它的字拿出来接着删") } },
+  { id: "delete", group: _t("光标与选中"), keys: [{ code: "Delete" }], act: cmd({ k: "delete" }), does: { write: _t("删光标后一个"), edit: _t("删掉选中") } },
   // ── 播放 ──
-  { id: "play", group: "播放", keys: [{ code: "Space" }], act: () => ({ k: "play" }), does: { write: "小月相唱 / 停", edit: "小月相唱 / 停" } },
-  { id: "impro", group: "播放", keys: [{ code: "Backquote" }], show: "`", act: () => ({ k: "impro" }), does: { write: "「弹」开 / 关（音符键只唱不写）", edit: "「弹」开 / 关", impro: "「弹」关" } },
+  { id: "play", group: _t("播放"), keys: [{ code: "Space" }], act: () => ({ k: "play" }), does: { write: _t("小月相唱 / 停"), edit: _t("小月相唱 / 停") } },
+  { id: "impro", group: _t("播放"), keys: [{ code: "Backquote" }], show: "`", act: () => ({ k: "impro" }), does: { write: _t("「弹」开 / 关（音符键只唱不写）"), edit: _t("「弹」开 / 关"), impro: _t("「弹」关") } },
   // ── 文件（无地逃生口：.mxl；user 2026-10-07「先按照无地规范导入导出做逃生口」）。新建只在菜单里（Ctrl+N 浏览器不让拦） ──
-  { id: "file.save", group: "文件", keys: [{ code: "KeyS", mod: true }], show: "Ctrl / ⌘+S", act: () => ({ k: "file", a: "save" }),
-    does: { write: "存（存回打开的那个文件；还没有家 = 问存到哪 / iPad 下载）", edit: "存", impro: "存", lyric: "存", mark: "存" } },
-  { id: "file.export", group: "文件", keys: [{ code: "KeyS", mod: true, shift: true }], show: "Ctrl / ⌘+Shift+S", act: () => ({ k: "file", a: "export" }),
-    does: { write: "导出…（歌声 mp3 / 存一份 .mxl 副本；原来的「另存为」住这里）", edit: "导出…", impro: "导出…", lyric: "导出…", mark: "导出…" } },
-  { id: "file.open", group: "文件", keys: [{ code: "KeyO", mod: true }], show: "Ctrl / ⌘+O", act: () => ({ k: "file", a: "open" }),
-    does: { write: "打开…（.mxl / .musicxml）", edit: "打开…", impro: "打开…", lyric: "打开…", mark: "打开…" } },
+  { id: "file.save", group: _t("文件"), keys: [{ code: "KeyS", mod: true }], show: "Ctrl / ⌘+S", act: () => ({ k: "file", a: "save" }),
+    does: { write: _t("存（存回打开的那个文件；还没有家 = 问存到哪 / iPad 下载）"), edit: _t("存"), impro: _t("存"), lyric: _t("存"), mark: _t("存") } },
+  { id: "file.export", group: _t("文件"), keys: [{ code: "KeyS", mod: true, shift: true }], show: "Ctrl / ⌘+Shift+S", act: () => ({ k: "file", a: "export" }),
+    does: { write: _t("导出…（歌声 mp3 / 存一份 .mxl 副本；原来的「另存为」住这里）"), edit: _t("导出…"), impro: _t("导出…"), lyric: _t("导出…"), mark: _t("导出…") } },
+  { id: "file.open", group: _t("文件"), keys: [{ code: "KeyO", mod: true }], show: "Ctrl / ⌘+O", act: () => ({ k: "file", a: "open" }),
+    does: { write: _t("打开…（.mxl / .musicxml）"), edit: _t("打开…"), impro: _t("打开…"), lyric: _t("打开…"), mark: _t("打开…") } },
   // ── 选区（2026-10-08 改的手感：长按选、选区条上的动词；这里只是键盘入口） ──
-  { id: "clip.copy", group: "选区", keys: [{ code: "KeyC", mod: true }], show: "Ctrl / ⌘+C", act: () => ({ k: "clip", a: "copy" }), does: { edit: "复制选中（app 内原样 + 系统剪贴板一行简谱）" } },
-  { id: "clip.cut", group: "选区", keys: [{ code: "KeyX", mod: true }], show: "Ctrl / ⌘+X", act: () => ({ k: "clip", a: "cut" }), does: { edit: "剪切选中" } },
-  { id: "clip.paste", group: "选区", keys: [{ code: "KeyV", mod: true }], show: "Ctrl / ⌘+V", act: () => ({ k: "clip", a: "paste" }), does: { write: "贴在光标处（app 内复制过的；没有就试着读系统剪贴板里的简谱文字）", edit: "贴 = 替换选中" } },
-  { id: "clip.all", group: "选区", keys: [{ code: "KeyA", mod: true }], show: "Ctrl / ⌘+A", act: () => ({ k: "clip", a: "all" }), does: { write: "全选（这张纸上这个声部）", edit: "全选" } },
+  { id: "clip.copy", group: _t("选区"), keys: [{ code: "KeyC", mod: true }], show: "Ctrl / ⌘+C", act: () => ({ k: "clip", a: "copy" }), does: { edit: _t("复制选中（app 内原样 + 系统剪贴板一行简谱）") } },
+  { id: "clip.cut", group: _t("选区"), keys: [{ code: "KeyX", mod: true }], show: "Ctrl / ⌘+X", act: () => ({ k: "clip", a: "cut" }), does: { edit: _t("剪切选中") } },
+  { id: "clip.paste", group: _t("选区"), keys: [{ code: "KeyV", mod: true }], show: "Ctrl / ⌘+V", act: () => ({ k: "clip", a: "paste" }), does: { write: _t("贴在光标处（app 内复制过的；没有就试着读系统剪贴板里的简谱文字）"), edit: _t("贴 = 替换选中") } },
+  { id: "clip.all", group: _t("选区"), keys: [{ code: "KeyA", mod: true }], show: "Ctrl / ⌘+A", act: () => ({ k: "clip", a: "all" }), does: { write: _t("全选（这张纸上这个声部）"), edit: _t("全选") } },
   // ── 撤销 / 重做（2026-10-08；顶栏 ↶ ↷ 同一入口） ──
-  { id: "undo", group: "撤销", keys: [{ code: "KeyZ", mod: true }], show: "Ctrl / ⌘+Z", act: () => ({ k: "undo" }), does: { write: "撤销上一步（拖 / 连打歌词算一步）", edit: "撤销", impro: "撤销" } },
-  { id: "redo", group: "撤销", keys: [{ code: "KeyZ", mod: true, shift: true }, { code: "KeyY", mod: true }], show: "Ctrl / ⌘+Shift+Z / Ctrl+Y", act: () => ({ k: "redo" }), does: { write: "重做", edit: "重做", impro: "重做" } },
+  { id: "undo", group: _t("撤销"), keys: [{ code: "KeyZ", mod: true }], show: "Ctrl / ⌘+Z", act: () => ({ k: "undo" }), does: { write: _t("撤销上一步（拖 / 连打歌词算一步）"), edit: _t("撤销"), impro: _t("撤销") } },
+  { id: "redo", group: _t("撤销"), keys: [{ code: "KeyZ", mod: true, shift: true }, { code: "KeyY", mod: true }], show: "Ctrl / ⌘+Shift+Z / Ctrl+Y", act: () => ({ k: "redo" }), does: { write: _t("重做"), edit: _t("重做"), impro: _t("重做") } },
   // ── 歌词框（点谱下面打开；输入法照常用，中文 / 日文选定一段字就按字往后贴） ──
-  { id: "lyric.next", group: "歌词框", keys: [{ code: "Space" }, { code: "Tab" }], show: "空格 / Tab", act: () => ({ k: "lyric", a: "next" }),
-    does: { lyric: "这个词完了：贴上、跳下一个音（框是空的 = 只跳）" } },
-  { id: "lyric.prev", group: "歌词框", keys: [{ code: "Tab", shift: true }], act: () => ({ k: "lyric", a: "prev" }), does: { lyric: "回上一个音" } },
-  { id: "lyric.hyphen", group: "歌词框", keys: [{ code: "Minus" }], show: "-", act: () => ({ k: "lyric", a: "hyphen" }),
-    does: { lyric: "跟在字母后面：音节完了、词没完（谱上画连字符），跳下一个音" } },
-  { id: "lyric.commit", group: "歌词框", keys: [{ code: "Enter" }, { code: "NumpadEnter" }], act: () => ({ k: "lyric", a: "commit" }), does: { lyric: "贴上、收起" } },
+  { id: "lyric.next", group: _t("歌词框"), keys: [{ code: "Space" }, { code: "Tab" }], show: _t("空格 / Tab"), act: () => ({ k: "lyric", a: "next" }),
+    does: { lyric: _t("这个词完了：贴上、跳下一个音（框是空的 = 只跳）") } },
+  { id: "lyric.prev", group: _t("歌词框"), keys: [{ code: "Tab", shift: true }], act: () => ({ k: "lyric", a: "prev" }), does: { lyric: _t("回上一个音") } },
+  { id: "lyric.hyphen", group: _t("歌词框"), keys: [{ code: "Minus" }], show: "-", act: () => ({ k: "lyric", a: "hyphen" }),
+    does: { lyric: _t("跟在字母后面：音节完了、词没完（谱上画连字符），跳下一个音") } },
+  { id: "lyric.commit", group: _t("歌词框"), keys: [{ code: "Enter" }, { code: "NumpadEnter" }], act: () => ({ k: "lyric", a: "commit" }), does: { lyric: _t("贴上、收起") } },
   // ── 记号框（点谱上的调号 / 拍号 / 速度打开） ──
-  { id: "mark.commit", group: "记号框", keys: [{ code: "Enter" }, { code: "NumpadEnter" }], act: () => ({ k: "mark", a: "commit" }), does: { mark: "按框里的字改（1=D / Bb / 2# · 3/4 · 90 或 Andante）、收起" } },
+  { id: "mark.commit", group: _t("记号框"), keys: [{ code: "Enter" }, { code: "NumpadEnter" }], act: () => ({ k: "mark", a: "commit" }), does: { mark: _t("按框里的字改（1=D / Bb / 2# · 3/4 · 90 或 Andante）、收起") } },
 ];
 
 /** 键名（文档 / 提示用）。 */
 const NAME: Record<string, string> = {
-  Minus: "-", BracketRight: "]", BracketLeft: "[", Backslash: "\\", Quote: "'", Comma: ",", Backquote: "`", Space: "空格",
-  Enter: "Enter", NumpadEnter: "小键盘 Enter", Escape: "Esc", Backspace: "退格", Delete: "Delete", Home: "Home", End: "End", Tab: "Tab",
+  Minus: "-", BracketRight: "]", BracketLeft: "[", Backslash: "\\", Quote: "'", Comma: ",", Backquote: "`", Space: _t("空格"),
+  Enter: "Enter", NumpadEnter: _t("小键盘 Enter"), Escape: "Esc", Backspace: _t("退格"), Delete: "Delete", Home: "Home", End: "End", Tab: "Tab",
   ArrowUp: "↑", ArrowDown: "↓", ArrowLeft: "←", ArrowRight: "→",
-  NumpadSubtract: "小键盘 -", NumpadMultiply: "小键盘 *", NumpadDivide: "小键盘 /",
+  NumpadSubtract: _t("小键盘 -"), NumpadMultiply: _t("小键盘 *"), NumpadDivide: _t("小键盘 /"),
 };
 export function chordName(c: Chord): string {
   const base = NAME[c.code] ?? c.code.replace(/^Digit/, "").replace(/^Key/, "").replace(/^Numpad(\d)$/, "小键盘 $1");
@@ -179,29 +180,29 @@ export function isSoundKey(e: KeyLike): boolean {
 }
 
 // ── 文档（scripts/gen-keys-doc.mjs 写成 docs/keys.md；test/keys.test.ts 守着它不过期） ─────────────
-const WHERE_TITLE: Record<"lyric" | "mark" | "sheet", string> = { lyric: "歌词框", mark: "记号框", sheet: "面板（导出好了）" };
+const WHERE_TITLE: Record<"lyric" | "mark" | "sheet", string> = { lyric: _t("歌词框"), mark: _t("记号框"), sheet: _t("面板（导出好了）") };
 const keysOf = (b: Binding) => b.show ?? b.keys.map(chordName).join(" / ");
 /** 表格里的键：代码样式；反引号键用双反引号包；「|」在表格里即使在代码里也要转义（GFM）。 */
 const code = (k: string) => (k.includes("`") ? `\`\` ${k} \`\`` : `\`${k}\``).replace(/\|/g, "\\|");
 const cell = (s: string | undefined) => (s ?? "—").replace(/\|/g, "\\|");
 
 export function renderKeysDoc(): string {
-  let md = `<!-- 自动生成：node scripts/gen-keys-doc.mjs 从 src/keyboard/keys.ts 的 BINDINGS 生成——别手改，改表再重跑（测试守着它不过期）。 -->\n\n`;
-  md += `# 键盘\n\n> 生成自 \`src/keyboard/keys.ts\`\n\n`;
-  md += `谱面上有三种状态：**写**（光标，打的音插在光标处）、**改**（选中了一段，打的音覆盖选中）、**弹**（「弹」开着：音符键只唱不写，其余键照写 / 改）。\n`;
-  md += `按物理键位认（换输入法 / 键盘布局不乱）；Ctrl / ⌘ 组合只接存 / 导出 / 打开，其余交给浏览器。\n\n`;
-  md += `**MIDI 键盘**（电子琴 / MIDI 键盘用 USB 插电脑，点顶栏的「MIDI」→「连接」（设置里也有）；src/keyboard/midi.ts）：琴键就是音符键——写 / 改 / 弹同上，按哪个键写哪个音（按光标处的调号拼写）；词 / 听里只出声。iPad / iPhone 上的浏览器没有 Web MIDI。\n\n`;
+  let md = _t("<!-- 自动生成：node scripts/gen-keys-doc.mjs 从 src/keyboard/keys.ts 的 BINDINGS 生成——别手改，改表再重跑（测试守着它不过期）。 -->\n\n");
+  md += _t("# 键盘\n\n> 生成自 `src/keyboard/keys.ts`\n\n");
+  md += _t("谱面上有三种状态：**写**（光标，打的音插在光标处）、**改**（选中了一段，打的音覆盖选中）、**弹**（「弹」开着：音符键只唱不写，其余键照写 / 改）。\n");
+  md += _t("按物理键位认（换输入法 / 键盘布局不乱）；Ctrl / ⌘ 组合只接存 / 导出 / 打开，其余交给浏览器。\n\n");
+  md += _t("**MIDI 键盘**（电子琴 / MIDI 键盘用 USB 插电脑，点顶栏的「MIDI」→「连接」（设置里也有）；src/keyboard/midi.ts）：琴键就是音符键——写 / 改 / 弹同上，按哪个键写哪个音（按光标处的调号拼写）；词 / 听里只出声。iPad / iPhone 上的浏览器没有 Web MIDI。\n\n");
   const score = BINDINGS.filter((b) => b.does.write || b.does.edit || b.does.impro);
   const groups = [...new Set(score.map((b) => b.group))];
   for (const g of groups) {
-    md += `## ${g}\n\n| 键 | 写 | 改 | 弹 |\n|---|---|---|---|\n`;
-    for (const b of score.filter((x) => x.group === g)) md += `| ${code(keysOf(b))} | ${cell(b.does.write)} | ${cell(b.does.edit)} | ${b.does.impro ? cell(b.does.impro) : "照常"} |\n`;
+    md += _t("## {g}\n\n| 键 | 写 | 改 | 弹 |\n|---|---|---|---|\n", { g });
+    for (const b of score.filter((x) => x.group === g)) md += `| ${code(keysOf(b))} | ${cell(b.does.write)} | ${cell(b.does.edit)} | ${b.does.impro ? cell(b.does.impro) : _t("照常")} |\n`;
     md += "\n";
   }
   for (const w of ["lyric", "mark", "sheet"] as const) {
     const rows = BINDINGS.filter((b) => b.does[w]);
     if (!rows.length) continue;
-    md += `## ${WHERE_TITLE[w]}\n\n| 键 | 做什么 |\n|---|---|\n`;
+    md += _t("## {p}\n\n| 键 | 做什么 |\n|---|---|\n", { p: WHERE_TITLE[w] });
     for (const b of rows) md += `| ${code(keysOf(b))} | ${cell(b.does[w])} |\n`;
     md += "\n";
   }

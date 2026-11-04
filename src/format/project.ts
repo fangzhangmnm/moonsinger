@@ -9,6 +9,7 @@
 // 规矩（照 CatsUp 立宪）：每份扩展文件自带版本号；读到比这一版新的 = 拒开、明说（打开再存会丢东西）；
 //   不认识的文件、不认识的字段（以后的版本、别的工具加的、这台设备用不了的引擎配置）读进来留着、存档时原样写回。
 // 无地逃生口（user 2026-10-07「先不急着store。可以先按照无地规范导入导出做逃生口」）：这里只管字节 ↔ 歌，打开 / 存的界面在 app 里。
+import { _t } from "../i18n/index.ts";
 import { DEFAULT_ROLE, numberParts } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
 import { swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, CLEFS, flattenPart, familyOrder } from "../score/song.ts";
@@ -69,8 +70,8 @@ const common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [] as unkn
 /** 新建角色：从 app 内置预设 by value 拷进歌（契约 §8；之后 app 升级改了预设也不影响这首歌）。 */
 function defaultRole(hum: Hum, id: string): Json {
   return { version: FORMAT.lounge, id, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
-    { id: CANDIDATE_ID.full, name: "小月相", instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
-    { id: CANDIDATE_ID.light, name: "小月相（元音）", instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) },
+    { id: CANDIDATE_ID.full, name: _t("小月相"), instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
+    { id: CANDIDATE_ID.light, name: _t("小月相（元音）"), instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) },
   ] };
 }
 const cands = (role: Json | undefined): Json[] => ((role?.candidates as Json[] | undefined) ?? []);
@@ -91,7 +92,7 @@ export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; d
 /** 歌 → .mxl 的字节。定稿着的歌：出声内容的指纹必须和记录里的一样，不一样 = 抛（格式层的护栏，user 2026-10-16「定稿的时候得从多个窄接口上护栏住写入」）。 */
 export function saveMxl(a: SaveArgs): Uint8Array {
   const { out, fingerprint } = buildEntries(a);
-  if (a.extras.final && a.extras.final.fingerprint !== fingerprint) throw new Error("这首歌定稿了，内容却变了：定稿着不能这样存。先「改稿」再改，或者撤销刚才的改动。");
+  if (a.extras.final && a.extras.final.fingerprint !== fingerprint) throw new Error(_t("这首歌定稿了，内容却变了：定稿着不能这样存。先「改稿」再改，或者撤销刚才的改动。"));
   const entries: Record<string, [Uint8Array, { level: 0 | 1 | 6 }]> = {};
   for (const [path, bytes] of Object.entries(out)) entries[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY || path === FINAL_MP3_ENTRY ? 0 : path.startsWith(SOUNDS) ? 1 : path.startsWith(REFERENCES_DIR) && !path.endsWith(".json") ? 0 : 6 }];   // 参考图本来就压过了：不再压   // mimetype 必须第一个、不压缩（插入顺序 = zip 里的顺序）；封面不压缩（尾读按 entry 名抓原始字节）；定稿 mp3 不压缩（本来就压过、歌库按 entry 名抓）；采样大、压不动，level 1 省时间
   return zipSync(entries);
@@ -109,13 +110,13 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   }
   const studio: Json = structuredClone(a.extras.studio ?? emptyStudio());
   const tracks = ((studio.tracks as Json[] | undefined) ?? []).slice();
-  for (const part of song.parts) if (!tracks.some((m) => m.id === part.mic)) tracks.push(micTrack(part.mic, `麦克风 ${tracks.filter((t) => t.kind === "mic").length + 1}`));   // 每个声部的麦克风一条轨
+  for (const part of song.parts) if (!tracks.some((m) => m.id === part.mic)) tracks.push(micTrack(part.mic, _t("麦克风 {t}", { t: tracks.filter((t) => t.kind === "mic").length + 1 })));   // 每个声部的麦克风一条轨
   studio.tracks = tracks; if (!studio.master) studio.master = { gainDb: 0, limiter: true, chain: [] };
   const mics = tracks.filter((t) => t.kind === "mic");
   const labels = partLabels(song, { ...a.extras, lounge });
   const infoOf = (part: PartDef, k: number): PartInfo => {
     const role = lounge[part.role], active = cands(role).find((c) => c.id === role.active), mic = mics.find((m) => m.id === part.mic);
-    return { id: part.id, name: labels[k], ...(part.staves === 2 ? { staves: 2 as const } : {}), instrumentName: String(active?.name ?? "小月相"), sound: String(role.sound ?? DEFAULT_ROLE.sound),
+    return { id: part.id, name: labels[k], ...(part.staves === 2 ? { staves: 2 as const } : {}), instrumentName: String(active?.name ?? _t("小月相")), sound: String(role.sound ?? DEFAULT_ROLE.sound),
       program: Number((active?.gm as Json | undefined)?.program ?? 55),
       variant: typeof (active?.gm as Json | undefined)?.variant === "string" ? { library: "MoonSinger", name: String((active!.gm as Json).variant) } : undefined,
       pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : undefined };
@@ -197,7 +198,7 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   out[`${DIR}studio.json`] = json({ ...studio, ...stampOf("studio") });
   for (const [path, bytes] of sounds) out[path] = bytes;
   for (const [path, bytes] of Object.entries(a.references ?? {})) {
-    if (!path.startsWith(REFERENCES_DIR)) throw new Error(`参考窗的文件不在 ${REFERENCES_DIR} 下：${path}`);
+    if (!path.startsWith(REFERENCES_DIR)) throw new Error(_t("参考窗的文件不在 {REFERENCES_DIR} 下：{path}", { REFERENCES_DIR, path }));
     out[path] = bytes;
   }
   if (a.extras.final && a.extras.finalMp3) out[FINAL_MP3_ENTRY] = a.extras.finalMp3;   // 定稿 mp3：大，排在大件后面
@@ -250,7 +251,7 @@ export function withTrack(extras: Extras, id: string, patch: Partial<Omit<Studio
   const studio: Json = structuredClone(extras.studio ?? emptyStudio());
   const tracks = ((studio.tracks as Json[] | undefined) ?? []).slice();
   let t = tracks.find((x) => x.id === id);
-  if (!t) { t = patch.kind === "bus" ? { ...micTrack(id, patch.name ?? "总线"), kind: "bus" } : micTrack(id, patch.name ?? `麦克风 ${tracks.filter((x) => x.kind === "mic").length + 1}`); tracks.push(t); }
+  if (!t) { t = patch.kind === "bus" ? { ...micTrack(id, patch.name ?? _t("总线")), kind: "bus" } : micTrack(id, patch.name ?? _t("麦克风 {x}", { x: tracks.filter((x) => x.kind === "mic").length + 1 })); tracks.push(t); }
   const { kind: _k, ...rest } = patch; Object.assign(t, structuredClone(rest));
   if (t.bypass !== true) delete t.bypass;   // 旁通只写 true（没开 = 不写这个字段）
   studio.tracks = tracks;
@@ -391,7 +392,7 @@ export function pruneSounds(extras: Extras): Extras {
 /** 删一个候选（人删的；上场的那个不许删——先换人）。它的嵌入块没别人引用 = 一起丢。 */
 export function withoutCandidate(extras: Extras, role: string, id: string): Extras {
   const r = structuredClone(extras.lounge[role]); if (!r) return extras;
-  if (r.active === id) throw new Error("上场的候选不能删，先换一个「谁来演」");
+  if (r.active === id) throw new Error(_t("上场的候选不能删，先换一个「谁来演」"));
   r.candidates = cands(r).filter((c) => c.id !== id);
   return pruneSounds({ ...extras, lounge: { ...extras.lounge, [role]: r } });
 }
@@ -574,12 +575,12 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     return finish([r], songFromReads([r], null), emptyExtras(), false, name);
   }
   let files: Record<string, Uint8Array>;
-  try { files = unzipSync(bytes); } catch (e) { throw new Error(`这个文件解不开（不是完整的 .mxl？）：${(e as Error).message}`); }
+  try { files = unzipSync(bytes); } catch (e) { throw new Error(_t("这个文件解不开（不是完整的 .mxl？）：{Error}", { Error: (e as Error).message })); }
   const container = files["META-INF/container.xml"];
-  if (!container) throw new Error("这个压缩包里没有 META-INF/container.xml，不是 .mxl");
+  if (!container) throw new Error(_t("这个压缩包里没有 META-INF/container.xml，不是 .mxl"));
   const paths = [...strFromU8(container).matchAll(/<rootfile\b[^>]*full-path="([^"]+)"[^>]*?(?:media-type="([^"]*)")?[^>]*\/?>/g)].map((m) => ({ path: m[1], mediaType: m[2] ?? "" }));
   const main = paths[0]?.path;
-  if (!main || !files[main]) throw new Error("container.xml 指的主乐谱在包里找不到");
+  if (!main || !files[main]) throw new Error(_t("container.xml 指的主乐谱在包里找不到"));
   const extras = emptyExtras();
   extras.rootfiles = paths.slice(1);
   const known = new Set(["mimetype", "META-INF/container.xml", main]);
@@ -591,7 +592,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     const r = foreign(readMusicXml(strFromU8(files[main])));
     return finish([r], songFromReads([r], null), extras, false, name);
   }
-  const parse = (p: string): Json => { try { return JSON.parse(strFromU8(files[p])) as Json; } catch { throw new Error(`${p} 读不懂（文件坏了？）`); } };
+  const parse = (p: string): Json => { try { return JSON.parse(strFromU8(files[p])) as Json; } catch { throw new Error(_t("{p} 读不懂（文件坏了？）", { p })); } };
   const manifest = parse(`${DIR}manifest.json`); known.add(`${DIR}manifest.json`);
   const references: Record<string, Uint8Array> = {};   // 参考窗：整个目录原样拿出来（库去解）
   const finalNotices: string[] = [];   // 定稿记录读的时候要说的话（finish 的 notices 前面）
@@ -600,22 +601,22 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   const newerMinor: string[] = [];
   const newer = (what: string, j: Json, kind: FormatFile) => {
     const major = Number(j.version ?? 1), minor = Number(j.minor ?? 0);
-    if (major > FORMAT[kind]) throw new Error(`这首歌是更新版本的 MoonSinger 存的（${what} 第 ${major} 版，这一版只认到第 ${FORMAT[kind]} 版），打开再存会丢东西，所以没有打开。请先更新 app。`);
+    if (major > FORMAT[kind]) throw new Error(_t("这首歌是更新版本的 MoonSinger 存的（{what} 第 {major} 版，这一版只认到第 {p} 版），打开再存会丢东西，所以没有打开。请先更新 app。", { what, major, p: FORMAT[kind] }));
     if (major === FORMAT[kind] && minor > FORMAT_MINOR[kind]) newerMinor.push(what);
   };
-  newer("总目录", manifest, "manifest");
+  newer(_t("总目录"), manifest, "manifest");
   extras.manifest = migrate("manifest", manifest);
   const rawLounge: Record<string, string> = {};   // 指纹用：文件里的原文（读进来的和写出去的同一份字符串）
   let scoreExt: Json | null = null;
   if (files[`${DIR}score.json`]) {
-    const s0 = parse(`${DIR}score.json`); known.add(`${DIR}score.json`); newer("谱的扩展", s0, "score");
+    const s0 = parse(`${DIR}score.json`); known.add(`${DIR}score.json`); newer(_t("谱的扩展"), s0, "score");
     scoreExt = migrate("score", s0); extras.scoreExt = scoreExt;
   }
   for (const p of Object.keys(files)) {
     const m = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(p);
-    if (m) { const r = parse(p); newer(`休息室「${r.name ?? m[1]}」`, r, "lounge"); extras.lounge[m[1]] = migrate("lounge", r); known.add(p); rawLounge[m[1]] = fpTextOf(r); }
+    if (m) { const r = parse(p); newer(_t("休息室「{name}」", { name: r.name ?? m[1] }), r, "lounge"); extras.lounge[m[1]] = migrate("lounge", r); known.add(p); rawLounge[m[1]] = fpTextOf(r); }
   }
-  if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer("录音房", s, "studio"); extras.studio = migrate("studio", s); }
+  if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer(_t("录音房"), s, "studio"); extras.studio = migrate("studio", s); }
   for (const p of Object.keys(files)) if (p.startsWith(SOUNDS) && !p.endsWith("/")) { extras.sounds[p] = files[p]; known.add(p); }   // 嵌的音源字节（整份留着；存档只写还引用着的）
   // 定稿（src/format/final.ts）：总目录里的记录 + mp3 entry。记录不像样 / entry 不在 / 大小不对 / 指纹对不上（定稿后被旧版 app 或别的软件改过）= 定稿作废、说一声、mp3 不带着走
   extras.finalRev = Math.max(0, Math.floor(Number(manifest.finalRev ?? 0))) || 0;
@@ -629,9 +630,9 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     const fp = rec && files[`${DIR}score.json`] && files[`${DIR}studio.json`]
       ? contentFingerprint({ papers: papersRaw, scoreExt: fpTextOf(parse(`${DIR}score.json`)), lounge: rawLounge, studio: fpTextOf(parse(`${DIR}studio.json`)), sounds: Object.keys(extras.sounds), thumbnail: files[THUMBNAIL_ENTRY] ?? null })
       : null;
-    if (!rec) finalNotices.push("这首歌的定稿记录读不懂（别的版本写的？）：按没定稿打开。");
-    else if (!mp3 || mp3.length !== rec.mp3.bytes) finalNotices.push(`定稿的 mp3 不在歌里或大小不对（记录 ${rec.mp3.bytes} 字节）：定稿作废，按没定稿打开。`);
-    else if (fp !== rec.fingerprint) finalNotices.push(`这首歌定稿后被改过（可能是旧版 app 或别的软件改的）：定稿作废，那份 mp3 不算数了。要的话改完再定稿一次。`);
+    if (!rec) finalNotices.push(_t("这首歌的定稿记录读不懂（别的版本写的？）：按没定稿打开。"));
+    else if (!mp3 || mp3.length !== rec.mp3.bytes) finalNotices.push(_t("定稿的 mp3 不在歌里或大小不对（记录 {bytes} 字节）：定稿作废，按没定稿打开。", { bytes: rec.mp3.bytes }));
+    else if (fp !== rec.fingerprint) finalNotices.push(_t("这首歌定稿后被改过（可能是旧版 app 或别的软件改的）：定稿作废，那份 mp3 不算数了。要的话改完再定稿一次。"));
     else { extras.final = rec; extras.finalMp3 = mp3; }
   }
   // 纸：按 score.json 的顺序表逐张读；第 1 版存的（迁移后 papers = [p1]，文件指向 papers/p1.musicxml）包里没那份 = 读 score.musicxml（文件级迁移在这里做，migrate() 只管 JSON）
@@ -641,7 +642,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   list.forEach((p, k) => {
     const file = String(p.file ?? paperFile(String(p.id)));
     const b = files[file] ?? (k === 0 ? files[main] : undefined);
-    if (!b) throw new Error(`纸「${p.id}」的谱（${file}）在包里找不到`);
+    if (!b) throw new Error(_t("纸「{id}」的谱（{file}）在包里找不到", { id: p.id, file }));
     known.add(file);
     const r = readMusicXml(strFromU8(b), { manualBars: (p.manualBars as Record<string, number[]> | undefined) ?? {}, unwritten: (p.unwritten as string[] | undefined) ?? [] });
     reads.push(r);
@@ -655,7 +656,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
   const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null);
   const o = finish(reads, song, pruneSounds(extras), ours, name);
-  const advice = newerMinor.length ? [`这首歌是更新版本的 MoonSinger 存的（${newerMinor.join("、")}里有这一版还没有的东西）：照样能开能改能存，那些东西保存时不会丢，只是在这一版看不到。`] : [];
+  const advice = newerMinor.length ? [_t("这首歌是更新版本的 MoonSinger 存的（{p}里有这一版还没有的东西）：照样能开能改能存，那些东西保存时不会丢，只是在这一版看不到。", { p: newerMinor.join("、") })] : [];
   return { ...o, notices: [...finalNotices, ...o.notices], references, advice };
 }
 
@@ -691,21 +692,21 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   song0 = { ...song0, parts: song0.parts.map((part) => {
     if (!usedRoles.has(part.role)) { usedRoles.add(part.role); return part; }
     const nr = newRoleId(extras, { ...song0, parts: [...song0.parts, ...[...usedRoles].map((r) => ({ id: "", role: r, mic: "" }))] });   // 这一轮已经分出去的也算占用
-    if (extras.lounge[part.role]) { extras.lounge[nr] = structuredClone(extras.lounge[part.role]); notices.push(`声部「${String(extras.lounge[part.role].name ?? part.id)}」和别的声部共用一位歌手；一个声部就是一位歌手，所以拆成了两位（谁来演、怎么演都照抄）。`); }
+    if (extras.lounge[part.role]) { extras.lounge[nr] = structuredClone(extras.lounge[part.role]); notices.push(_t("声部「{name}」和别的声部共用一位歌手；一个声部就是一位歌手，所以拆成了两位（谁来演、怎么演都照抄）。", { name: String(extras.lounge[part.role].name ?? part.id) })); }
     usedRoles.add(nr);
     return { ...part, role: nr };
   }) };
   const dropped: Record<string, number> = {};
   for (const r of reads) for (const [k, n] of Object.entries(r.dropped)) dropped[k] = (dropped[k] ?? 0) + n;
   const dl = Object.entries(dropped);
-  if (dl.length) notices.push(`这份谱里有这一版还不支持的东西，没有读进来：${dl.map(([k, n]) => `${k} ${n} 处`).join("、")}。存的时候它们不会在新文件里——要留原样，请「另存为」新文件。`);
+  if (dl.length) notices.push(_t("这份谱里有这一版还不支持的东西，没有读进来：{k}。存的时候它们不会在新文件里——要留原样，请「另存为」新文件。", { k: dl.map(([k, n]) => _t("{k} {n} 处", { k, n })).join("、") }));
   const infos = new Map<string, ReadPart>();
   for (const r of reads) for (const p of r.parts) if (!infos.has(p.info.id)) infos.set(p.info.id, p.info);
   for (const part of song0.parts) {
     if (extras.lounge[part.role] || ours) continue;
     // 别的软件存的谱：声部原来的乐器记成这个角色的候选（引擎 unknown）、就是它上场；这一版没有那件乐器 → 没人上场，人来选（user「不出声，报错，人类手动换」）
     const p = infos.get(part.id);
-    const was = p?.instrumentName || p?.name || "原来的乐器";
+    const was = p?.instrumentName || p?.name || _t("原来的乐器");
     const gm = p?.program;
     const role = defaultRole("n", part.role);
     role.name = p?.name || DEFAULT_ROLE.name;
@@ -713,12 +714,12 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
     role.active = "c0";
     cands(role).unshift({ id: "c0", name: was, instrument: { engine: "unknown", midi: { program: gm ?? null, variant: p?.variant ?? null } }, gm: { program: gm ?? null, variant: p?.variant ?? null }, ...common(), defaults: {}, credit: { attribution: [], license: { name: "unknown" } }, spec: { kind: "unknown" } });
     extras.lounge[part.role] = role;
-    notices.push(`声部「${role.name}」原来是${was}${gm ? `（GM ${gm} 号）` : ""}；这一版没有这件乐器，所以还没人上场。要小月相来唱，点谱前面的「${role.name}」，在「谁来演」选小月相。`);
+    notices.push(_t("声部「{name}」原来是{was}{gm}；这一版没有这件乐器，所以还没人上场。要小月相来唱，点谱前面的「{name2}」，在「谁来演」选小月相。", { name: role.name, was, gm: gm ? _t("（GM {gm} 号）", { gm }) : "", name2: role.name }));
   }
   for (const part of song0.parts) {
     const role = extras.lounge[part.role]; if (!role) continue;
     const gm = activeGm(extras, part.role);
-    if (gm && gm.path && !gm.bytes) notices.push(`「${gm.name}」的声音（${gm.path}）没随这首歌一起带来，所以没人上场。点谱前面的「${role.name ?? ""}」换一个「谁来演」。`);   // 强引用、文件里却少了那块：不静默（§10）。弱引用（path = null）要出声时去找，找不到再报
+    if (gm && gm.path && !gm.bytes) notices.push(_t("「{name}」的声音（{path}）没随这首歌一起带来，所以没人上场。点谱前面的「{name2}」换一个「谁来演」。", { name: gm.name, path: gm.path, name2: role.name ?? "" }));   // 强引用、文件里却少了那块：不静默（§10）。弱引用（path = null）要出声时去找，找不到再报
   }
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);

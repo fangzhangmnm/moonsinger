@@ -2,6 +2,7 @@
 // user 2026-10-10：「谱号的显示模式跟着谱号而不是乐器，然后先不要双谱线模式，然后加一个可以移八度显示的功能（或者其实这个就是用标准的音乐记号，然后系统自己判断？能不能这样？」
 //   →「默认自动同意」「加格式同意」「中音这个冷门没人用吧，即使做，自动也不会选」「铃铛会很高。8va可以做了吗」。
 // 位置的单位 = diatonicIndex（C0 = 0，一级 = 一个线或间）：高音谱号第一线 E4 = 30、第五线 F5 = 38。
+import { _t } from "../i18n/index.ts";
 import { type ClefName, type Token, type Song, CLEFS, isTimed } from "./song.ts";
 import { type Pitch, diatonicIndex } from "./pitch.ts";
 
@@ -12,12 +13,12 @@ export const isFClef = (c: ClefName): boolean => c === "F" || c === "F8vb";
 export const baseClef = (c: ClefName): "G" | "F" => (isFClef(c) ? "F" : "G");
 /** 八度线：8va（1）= 谱上画低一个八度 → −7；15ma（2）→ −14；8vb（−1）→ +7；结束（0）→ 0。 */
 export const ottavaShift = (s: number): number => -7 * s;
-export const CLEF_LABEL: Record<ClefName, string> = { G: "高音", G8vb: "高音 8vb", G8va: "高音 8va", G15ma: "高音 15ma", F: "低音", F8vb: "低音 8vb" };
+export const CLEF_LABEL: Record<ClefName, string> = { G: _t("高音"), G8vb: _t("高音 8vb"), G8va: _t("高音 8va"), G15ma: _t("高音 15ma"), F: _t("低音"), F8vb: _t("低音 8vb") };
 export const CLEF_TITLE: Record<ClefName, string> = {
-  G: "高音谱号", G8vb: "高音谱号下面挂 8：谱上写的音实际低一个八度响（吉他、男高音）", G8va: "高音谱号上面挂 8：实际高一个八度（短笛）",
-  G15ma: "高音谱号上面挂 15：实际高两个八度（钟琴、铃）", F: "低音谱号", F8vb: "低音谱号下面挂 8：实际低一个八度（低音提琴、贝斯）",
+  G: _t("高音谱号"), G8vb: _t("高音谱号下面挂 8：谱上写的音实际低一个八度响（吉他、男高音）"), G8va: _t("高音谱号上面挂 8：实际高一个八度（短笛）"),
+  G15ma: _t("高音谱号上面挂 15：实际高两个八度（钟琴、铃）"), F: _t("低音谱号"), F8vb: _t("低音谱号下面挂 8：实际低一个八度（低音提琴、贝斯）"),
 };
-export const OTTAVA_LABEL: Record<number, string> = { 1: "8va", 2: "15ma", [-1]: "8vb", 0: "结束八度线" };
+export const OTTAVA_LABEL: Record<number, string> = { 1: "8va", 2: "15ma", [-1]: "8vb", 0: _t("结束八度线") };
 
 const BOTTOM = 30, TOP = 38;
 /** 谱上这个位置要几条加线。 */

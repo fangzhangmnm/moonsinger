@@ -3,6 +3,7 @@
 //   备用版（file:）= 打包时把每个线程打成一个自给自足的单文件、当字符串烤进 index.html（resources.ts localBundle().threads）→ data: 先（Chromium 实测 ✓），
 //     起不来换 blob:（Safari 文献）；都不行 = 报健康（onThreadFail）+ 抛错（调用者已有的报错路走）。
 //   data: 起的线程 origin 是 null、自己联不了网也存不住：要的文件由主线程经 resources.ts 读好、核过再交过去（workersFetchSiteFiles() = false 时）。
+import { _t, workerOptions } from "./i18n/index.ts";
 import { deployment } from "./deployment.ts";
 import { siteUrl, localBundle } from "./resources.ts";
 
@@ -50,17 +51,17 @@ export function reportThreadFail(name: ThreadName, why: string): void { for (con
 
 /** 起一个 module worker：按顺序试（data: → blob:），同步抛的换下一种；都不行 = 报健康 + 抛。 */
 export function startWorker(name: ThreadName): Worker {
-  const urls = threadUrls(name); let last: unknown = new Error("没有可用的起法（打包时没带这个线程）");
-  for (const u of urls) { try { return new Worker(u, { type: "module" }); } catch (e) { last = e; } }
-  const why = `后台线程「${name}」起不来：${(last as Error)?.message ?? last}`;
+  const urls = threadUrls(name); let last: unknown = new Error(_t("没有可用的起法（打包时没带这个线程）"));
+  for (const u of urls) { try { return new Worker(u, workerOptions()); } catch (e) { last = e; } }
+  const why = _t("后台线程「{name}」起不来：{Error}", { name, Error: (last as Error)?.message ?? last });
   reportThreadFail(name, why);
   throw new Error(why);
 }
 /** 出声线程（AudioWorklet）：按顺序 addModule，起不来换下一种。 */
 export async function addWorklet(ctx: BaseAudioContext, name: ThreadName): Promise<void> {
-  const urls = threadUrls(name); let last: unknown = new Error("没有可用的起法（打包时没带这个线程）");
+  const urls = threadUrls(name); let last: unknown = new Error(_t("没有可用的起法（打包时没带这个线程）"));
   for (const u of urls) { try { await ctx.audioWorklet.addModule(u); return; } catch (e) { last = e; } }
-  const why = `出声线程「${name}」起不来：${(last as Error)?.message ?? last}`;
+  const why = _t("出声线程「{name}」起不来：{Error}", { name, Error: (last as Error)?.message ?? last });
   reportThreadFail(name, why);
   throw new Error(why);
 }

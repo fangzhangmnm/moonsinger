@@ -1,3 +1,4 @@
+import { _t } from "../i18n/index.ts";
 // sheets.ts —— 应用内模态原语：busy 遮罩 / 同步闸（冲突面，不可 dismiss）/ 问一句 / 输入一行 / 选一个。created 2026-10-08 by Claude Fable 5.1
 //   抄 WebXiaoHeiWu src/sheets.ts 的形状，DOM 自己造（不靠 index.html 里预埋 id）；样式用本仓已有的 .offer / .offer-card（settings 面板同款）。
 //   家规：禁系统 alert / prompt / confirm。busy 与交互 sheet 互斥（WeebPaint 2026-06-12 死锁：遮罩盖住输入框 → await 永不 resolve）：
@@ -93,7 +94,7 @@ export function openConfirmSheet(title: string, message: string, opts: ConfirmOp
   return new Promise((resolve) => {
     const done = (v: boolean) => { m.close(); resolve(v); };
     const m = mount(`<div class="offer-title">${esc(title)}</div><div class="offer-msg">${esc(message)}</div>` +
-      `<div class="offer-btns"><button type="button" class="btn" data-v="no">${esc(opts.cancelLabel ?? "算了")}</button><button type="button" class="btn ${opts.danger ? "danger" : "primary"}" data-v="ok">${esc(opts.okLabel ?? "好")}</button></div>`,
+      `<div class="offer-btns"><button type="button" class="btn" data-v="no">${esc(opts.cancelLabel ?? _t("算了"))}</button><button type="button" class="btn ${opts.danger ? "danger" : "primary"}" data-v="ok">${esc(opts.okLabel ?? _t("好"))}</button></div>`,
       () => done(false), () => done(true));
     m.box.addEventListener("click", (e) => { const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (v === "ok") done(true); else if (v === "no") done(false); });
     m.box.querySelector<HTMLButtonElement>('[data-v="ok"]')!.focus();
@@ -108,7 +109,7 @@ export function openInputSheet(title: string, opts: InputOpts = {}): Promise<str
     const done = (v: string | null) => { m.close(); resolve(v); };
     const m = mount(`<div class="offer-title">${esc(title)}</div>` + (opts.message ? `<div class="offer-msg">${esc(opts.message)}</div>` : "") +
       `<label class="set-field"><input class="sheet-input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" value="${esc(opts.defaultValue ?? "")}" placeholder="${esc(opts.placeholder ?? "")}" /></label>` +
-      `<div class="offer-btns"><button type="button" class="btn" data-v="no">算了</button><button type="button" class="btn primary" data-v="ok">${esc(opts.okLabel ?? "好")}</button></div>`,
+      `<div class="offer-btns"><button type="button" class="btn" data-v="no">${_t("算了")}</button><button type="button" class="btn primary" data-v="ok">${esc(opts.okLabel ?? _t("好"))}</button></div>`,
       () => done(null), () => done(inp.value));
     const inp = m.box.querySelector<HTMLInputElement>("input")!;
     m.box.addEventListener("click", (e) => { const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (v === "ok") done(inp.value); else if (v === "no") done(null); });
@@ -125,7 +126,7 @@ export function openChoiceSheet<T>(title: string, message: string, choices: Choi
     const done = (v: T | null) => { m.close(); resolve(v); };
     const m = mount(`<div class="offer-title">${esc(title)}</div>` + (message ? `<div class="offer-msg">${esc(message)}</div>` : "") +
       `<div class="sheet-choices">${choices.map((c, i) => `<button type="button" class="btn${c.primary ? " primary" : ""}${c.danger ? " danger" : ""}${c.off ? " is-off" : ""}" data-i="${i}" ${c.off ? "disabled" : ""} ${c.hint ? `title="${esc(c.hint)}"` : ""}>${esc(c.label)}</button>`).join("")}</div>` +
-      `<div class="offer-btns"><button type="button" class="btn" data-v="no">算了</button></div>`,
+      `<div class="offer-btns"><button type="button" class="btn" data-v="no">${_t("算了")}</button></div>`,
       () => done(null));
     m.box.addEventListener("click", (e) => {
       const t = e.target as HTMLElement, b = t.closest<HTMLElement>("[data-i]");
