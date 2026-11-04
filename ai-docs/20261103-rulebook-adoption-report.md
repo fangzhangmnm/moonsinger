@@ -204,7 +204,7 @@ itch 项目页 https://fangzhangmnm.itch.io/moonsinger 现在还是草稿（外�
 
 ### A3.4 还要 user 做的（只能本人做）
 
-在 itch 后台（https://itch.io/game/edit 这个项目）一次性设好再发布：
+在 itch 后台（https://itch.io/dashboard → 这个项目 → Edit game）一次性设好再发布：
 - `html` 条目勾「This file will be played in the browser」；
 - `local` 条目**不勾**（它是给人下载的）；
 - 项目状态从 Draft 改成 Public（或 Restricted 先自己看）。
