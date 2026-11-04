@@ -345,7 +345,7 @@ edited by Claude Opus 5.5 2026-11-03
 
 ### 测试结果
 
-`npm run check` 通过（单元全绿）；E2E 71 + `folder-home`；`smoke`、`fixture:itch` 18 过、`smoke:local` 24 过。
+`npm run check` 单元 932 全绿；E2E 整套 71 个文件全绿（含 `folder-home` 68 条）；`smoke` 24 过、`fixture:itch` 18 过、`smoke:local` 24 过。commit 6925ca2。
 
 ### 没做 / 真机项
 
