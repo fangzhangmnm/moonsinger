@@ -316,14 +316,14 @@ export class Pad {
     const tabs = this.symbols !== "off" && this.mode === "normal";   // 符号层：1= / 长短 / 音域（只管音键）换成三页的标签，位置 / 大小不变
     box.innerHTML = this.mode !== "normal" ? this.cands(rows) : tabs ?
       (Object.keys(SYM_PAGES) as SymPage[]).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">${_t("渐到")}</small>` : ""}</button>`).join("") +
-      `<button class="btn kb-switch" data-kbswitch="1" title="${_t("换回音键（写音 / 休止 / 小节线）")}" aria-label="${_t("音")}">${iconHtml("music-note")}</button>` +
+      `<button class="btn kb-switch" data-kbswitch="1" title="${_t("换回音键（写音 / 休止 / 小节线）")}" aria-label="${_t("音")}">${iconHtml("notes-symbols")}</button>` +
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("弹：音键只响不写（快捷键 `）；再点回到写")}" aria-label="${_t("弹")}">${iconHtml("piano-keys")}</button>` +
       `<button class="btn hide-pad" data-hide="1" title="${_t("收起键盘（点五线谱再弹出来）")}" aria-label="${_t("收起")}">${iconHtml("chevron-down")}</button>` +
       `<button class="btn knob k-more" data-knob="more" title="${_t("更多：布局、插记号")}"><span class="kl">⋯</span></button>` :
       `<button class="btn knob k-key" data-knob="key" title="${_t("1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-unit" data-knob="unit" title="${_t("长短基线：按住上下滑 / 点开选（含连音）")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-range" data-knob="range" title="${_t("音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
-      `<button class="btn kb-switch" data-kbswitch="1" title="${_t("换成符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号）——谱上音和记号本来就一起改，这里只换键盘")}" aria-label="${_t("符")}"><span class="smufl">\uE522</span></button>` +
+      `<button class="btn kb-switch" data-kbswitch="1" title="${_t("换成符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号）——谱上音和记号本来就一起改，这里只换键盘")}" aria-label="${_t("符")}">${iconHtml("notes-symbols")}</button>` +
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("弹：音键只响不写（快捷键 `）；再点回到写")}" aria-label="${_t("弹")}">${iconHtml("piano-keys")}</button>` +
       `<button class="btn hide-pad" data-hide="1" title="${_t("收起键盘（点五线谱再弹出来）")}" aria-label="${_t("收起")}">${iconHtml("chevron-down")}</button>` +
       `<button class="btn knob k-more" data-knob="more" title="${_t("更多：布局、插记号")}"><span class="kl">⋯</span></button>`;

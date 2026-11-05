@@ -998,9 +998,11 @@ body.doc-final .inst-page .finder-bar::after { content: var(--t-final-lock, "定
 
 /* v0.15.0：窄钮换成图标后的大小（中英同一套，user 2026-11-04「能图标就不文字」） */
 .mode-seg [data-mode] svg { width: 18px; height: 18px; display: block; }
+.mode-seg [data-mode="lyrics"] svg { width: 24px; height: 24px; }   /* 气泡里有两个字，大一点才认得出 */
 .pad-head .kb-switch svg, .pad-head .impro-pad svg, .pad-head .hide-pad svg { width: 20px; height: 20px; display: block; margin: auto; }
-.pad-head .kb-switch .smufl { font-size: 22px; line-height: 1; display: block; transform: translateY(-2px); }
+.pad-head .kb-switch svg { width: 32px; height: 32px; }
 .pad-tool-key svg, .pad-tools svg { width: 18px; height: 18px; }
 /* 长按提示气泡（src/ui/touch-tip.ts）：触屏没有 tooltip */
 .touch-tip { position: fixed; z-index: var(--z-menu); max-width: min(280px, calc(100vw - 16px)); padding: 6px 10px; border-radius: 8px; background: var(--ink, #222); color: var(--paper, #fff); font-size: 13px; line-height: 1.35; pointer-events: none; box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
 .sel-bar .sel-ico svg { width: 18px; height: 18px; display: block; }
+.mode-seg [data-mode] { width: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }   /* 三颗一样宽，不随图标大小变 */

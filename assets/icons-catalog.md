@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-60 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+61 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -9,18 +9,12 @@
 
 ```html
 <!-- 内联 icons.svg -->
-<svg width="24" height="24"><use href="#text"/></svg>
+<svg width="24" height="24"><use href="#sliders"/></svg>
 ```
 
-> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`album`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
+> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`album`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
 > 见库 `index.html` 的「待过目」栏；过目后进库/打回归库 session。
 
-
-## tool
-
-| name | 说明 |
-|------|------|
-| `text` | 文字工具:框内衬线 T (定稿=原 text-6;其余变体已 archive) |
 
 ## image-processing
 
@@ -59,6 +53,8 @@
 | `headphones` 👁待过目 | 耳机(听):头梁圆弧 + 两边实心耳罩；只听不写【MoonSinger 底座小条「听」模式钮；Claude Opus 5.5 画；未过目】 |
 | `piano-keys` 👁待过目 | 琴键(弹着玩):方框里三个白键、两个实心黑键从上往下插；与 keyboard(电脑键盘)分工【MoonSinger 小键盘顶上「弹」钮：音键只响不写；Claude Opus 5.5 画；未过目】 |
 | `note-stack` 👁待过目 | 叠音(和弦):一根符干上叠三个实心符头；与 music-note(一个音)成对【MoonSinger 小键盘写字排「叠」键；Claude Opus 5.5 画；未过目】 |
+| `notes-symbols` 👁待过目 | 音符 / 记号切换:左上力度字 f(Bravura 轮廓) + 右下八分音符 + 中间一道斜线,同「A/あ」输入法切换键的读法;两面键盘同一颗,不随状态换图【MoonSinger 小键盘顶上切音键 / 符号格的钮;形状 = user 2026-11-04 提的「左上角f右下角音符中间斜线」;Claude Opus 5.5 画;未过目】 |
+| `lyrics-bubble` 👁待过目 | 歌词(对话气泡里写字):圆角气泡 + 左下尾巴,里面并排「文」「あ」= 哪种语言的词都能写;字形烘焙不依赖设备字体(同 translate);与 dialog-box(气泡 + 两行线 = 逐段)分工【MoonSinger 底座小条「词」模式钮;形状 = user 2026-11-04 拍的「用 c,里面放文 + 日文 a」;Claude Opus 5.5 画;未过目】 |
 
 ## file
 

@@ -261,7 +261,7 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **语言怎么定**：device-kv `lang`（设置最上面一行：跟系统 / 中文 / English；切换 = 存 + 重载，语言锁死在这一页）→ 否则系统语言：zh* = 中文，别的 = 英文（官网 / itch / 备用版同一条规则）。worker 读不到 device-kv = 主线程写进 worker 名字（`workerOptions()`）；node（单测 / 命令行渲染 / 生成 docs/keys.md）和 AudioWorklet = 中文原文（worklet 的 bundle `__I18N_OFF__`，不打翻译表）。E2E 经 `test/e2e/pw.mjs` 钉在 zh-CN，要测英文明写 `locale: "en-US"`。
 - **不翻的**：哼的字（`lab-score.ts`，进唱法）；小月相条款（`credit-translations.ts` 自有中英；英文界面只显示原文 + 英文）；目录的日文名。写进文件的默认值（小月相 → Tsukuyomi-chan、麦克风 → Mic、许可文字）按当时的界面语言 by value 存，旧歌不改。谱面记谱语言本来就是英文 / 意大利文。
 - **乐器目录**（`src/gm/catalog-i18n.ts`）：概念名有 zh / en / ja；年代 / 曲风 / 承重 / 连断只有 zh = 对照表写在这里（快照不改，取货多了标签 `test/catalog-i18n.test.mjs` 红）；reason / basis 这类只有中文的长说明 = 英文界面不显示。
-- **窄钮 = 图标，中英一套**（库里待过目层新画 `music-note` `headphones` `piano-keys` `note-stack`；`text` `chevron-down` `select-all` `copy` `cut` 是现成的）：模式钮、切键盘（`f` 字形 ↔ 音符）、弹、收起、叠、选区条的动词。字留在 title / aria-label。放得下的小字用短写（Acc. / Artic. / Dyn.）。
+- **窄钮 = 图标，中英一套**（库里待过目层新画 `music-note` `headphones` `piano-keys` `note-stack` `notes-symbols` `lyrics-bubble`（词 = 气泡里写「文」「あ」，user 拍的形状）；`chevron-down` `select-all` `copy` `cut` 是现成的）：模式钮、切键盘（`notes-symbols` = 左上 f + 右下音符 + 斜线，两面同一颗；形状是 user 提的，v0.15.1）、弹、收起、叠、选区条的动词。字留在 title / aria-label。放得下的小字用短写（Acc. / Artic. / Dyn.）。
 - **触屏提示** `src/ui/touch-tip.ts`：触屏没有 tooltip，长按名单里的纯图标钮 = 冒气泡、这一下不算点。有自己长按的钮（|▶、退格、旋钮）不进名单。
 - **宽度靠量**：`test/e2e/i18n-en.mjs` 用英文走四种屏幕（iPad mini 竖 / 横、手机、桌面）的主要界面，查剩下的汉字 + 字宽超过控件的。**没量到的**：高度方向（乐谱字形的行高会误报，只量宽度）、下拉框里的字、真机字体。
 - **网页简介没翻**：`index.html` 的 description / og、`manifest` 的 description 还是中文（文案归 user，标题照旧只有 MoonSinger）。
