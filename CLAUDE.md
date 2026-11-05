@@ -264,6 +264,7 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **窄钮 = 图标，中英一套**（库里待过目层新画 `music-note` `headphones` `piano-keys` `note-stack` `notes-symbols` `lyrics-bubble`（词 = 气泡里写「文」「あ」，user 拍的形状）；`chevron-down` `select-all` `copy` `cut` 是现成的）：模式钮、切键盘（`notes-symbols` = 左上 f + 右下音符 + 斜线，两面同一颗；形状是 user 提的，v0.15.1）、弹、收起、叠、选区条的动词。字留在 title / aria-label。放得下的小字用短写（Acc. / Artic. / Dyn.）。
 - **触屏提示** `src/ui/touch-tip.ts`：触屏没有 tooltip，长按名单里的纯图标钮 = 冒气泡、这一下不算点。有自己长按的钮（|▶、退格、旋钮）不进名单。
 - **宽度靠量**：`test/e2e/i18n-en.mjs` 用英文走四种屏幕（iPad mini 竖 / 横、手机、桌面）的主要界面，查剩下的汉字 + 字宽超过控件的。**没量到的**：高度方向（乐谱字形的行高会误报，只量宽度）、下拉框里的字、真机字体。
+- **发布**：2026-11-04 user「好，推prod和itch吧」→ **prod = v0.15.1**（空合并 12654ae，run 41945320839，根目录 bundle 676bb2b9d421 核过；从 v0.12.25 直接跳过来）；itch `html` #2301967 / `local` #2301969 = v0.15.1；GitHub release 这次没推（只说了 prod 和 itch）。发布前：单元 960、两份壳冒烟、itch 夹具、备用版冒烟全绿；全量 E2E 最后一次在 v0.15.0（73/74，`folder-home` 的 `seedLegacy` 时好时坏，改前的版本同样红），v0.15.1 只改了图标和钮宽。
 - **网页简介没翻**：`index.html` 的 description / og、`manifest` 的 description 还是中文（文案归 user，标题照旧只有 MoonSinger）。
 
 ## 回来时没传的东西分三种 + 离线期间静默再试（v0.14.18，2026-11-04，Claude Opus 5.5；家族工单 H4；规则书 §1 第 15 条、闸门设计稿 §3）
