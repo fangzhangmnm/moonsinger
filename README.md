@@ -1,37 +1,107 @@
+<!-- rewritten by Claude Opus 5.5 · 2026-11-06 -->
+
 # MoonSinger
 
-在五线谱上写旋律和歌词，让小月相唱出来。
-created 2026-10-07 by Claude Opus 5.5（公开工坊道首日）
+![MoonSinger banner](README.files/banner-960x200.png)
 
-- **开发版（随 main 更新）**：https://sing.weebpaint.com/dev/
-- **正式版**：https://sing.weebpaint.com/ （2026-10-11 从 `fangzhangmnm.github.io/moonsinger/` 搬过来，旧地址自动跳到这里；2026-10-07 首次上线 = v0.2.31；编辑器第一版：歌存成 `.mxl` 文件——打开 / 存 / 导出（歌声 mp3、.mxl 副本）；还没有撤销、还没接云）
+Sing before writing a song. MoonSinger is an open-source music-making app (a DAW) that runs in the browser, on iPad, phones, and desktops. Write staff notation and lyrics, let Tsukuyomi-chan sing them, arrange with GS instruments, mix, and export an mp3. No account, no installation, no server.
 
-## 现状（as-of v0.1.1 / 2026-10-07）
+- **Use it:** https://sing.weebpaint.com/
+- **Standalone version:** a zip that runs from a double-click on `index.html` — [GitHub Releases](https://github.com/fangzhangmnm/moonsinger/releases) or [itch.io](https://fangzhangmnm.itch.io/moonsinger).
+- **Video:** [MoonSinger tech demo on YouTube](https://www.youtube.com/watch?v=llTEyZCwDPs)
 
-- 真五线谱，旋律是一串 token（音符 / 休止 / 小节线 / 调号 / 拍号 / 速度）。三路输入写同一串：电脑键盘（键位表 `docs/keys.md`）、笔 / 鼠标、手指 pad。
-- 小月相（つくよみちゃん）唱日文 / 中文 / 英文歌词，没写歌词的音唱「哼的字」。第一次整首唱要下载约 65 MB 模型（家族模型仓，之后不再下）；轻量版是小月相的元音采样，按下即响。
-- 存成 `.mxl`（MusicXML 乐谱的压缩包，别的乐谱软件也能打开；MoonSinger 自己的东西放在里面的 `.moonsinger/`，格式说明 = `ai-docs/20261007-data-contract-draft.md`）。
-- 导出 mp3；装成 PWA 后离线可用。
-- 这是一个**公开工坊**：`ai-docs/` 是 AI 时代的 source，与代码一起公开；`journals/` 是人类区，不进仓。
+> as-of v0.15.4 · 2026-11-06
 
-## 跑起来
+![MoonSinger on a desktop browser: a multi-part score playing, with the current bar highlighted](README.files/score-playing-desktop.png)
+
+<img src="README.files/play-typing.gif" width="320" alt="Typing a melody on the touch keyboard"> <img src="README.files/sing-lyrics.gif" width="320" alt="Typing lyrics, then Tsukuyomi-chan sings them">
+
+## Features
+
+Singing
+
+- Tsukuyomi-chan (つくよみちゃん) sings Japanese, Chinese, and English lyrics. A new song starts with her as the default instrument.
+- Notes without lyrics are hummed.
+- The voice model is about 68 MB, downloaded once on first use. A lightweight vowel sampler answers the moment you press a key.
+
+Writing
+
+- Real staff notation: multiple parts, multiple sheets (sections), grand staff, clefs, octave lines, repeats and jumps.
+- A touch keyboard for iPad and phones, modeled on the Donner MEDO: keys are scale degrees and follow the key and mode.
+- Computer keyboard, mouse, and pen input; MIDI keyboards in browsers with Web MIDI.
+- Undo and redo for the score, the casting, and the mix.
+
+Expression
+
+- Written as marks, not curves: dynamics (ppp to fff), hairpins, accents, staccato, tenuto, slurs, breaths, whispers, sfz, fp, arpeggios.
+- Each performer has its own table for reading the marks, so changing the instrument does not mean rewriting them.
+- Style marks for beat weight (classical, pop, waltz, march, swing, bossa, and more).
+- Marks a performer cannot play are shown in gray with the reason. The same goes for lyrics it cannot sing.
+
+Instruments
+
+- A catalog you can browse by genre, era, instrument family, or sound source, with a keyboard to try each one.
+- GeneralUser GS 2.0.3 (32 MB, downloaded when you first need it), or your own `.sf2` files.
+- Sounds can be linked or packed into the song file.
+
+Playback and mixing
+
+- Real-time playback from any bar, with looping.
+- Mixer: gain, pan, mute, solo, EQ, compressor with sidechain, reverb, delay, chorus, sends, buses, master limiter.
+- Meters, spectrum, and stereo scopes.
+
+Files
+
+- Songs are `.mxl` (compressed MusicXML), which other notation software can open. MoonSinger's own data lives in a `.moonsinger/` folder inside the file. Format notes: [ai-docs/20261007-data-contract-draft.md](ai-docs/20261007-data-contract-draft.md).
+- Export mp3, PDF scores, and MusicXML.
+- A reference window for screenshots, text, and audio while you transcribe.
+- Library in a local folder or in OneDrive (personal Microsoft accounts; the app can only access its own `Apps/MoonSinger/` folder).
+- No library needed: you can also just open and save files.
+
+Platform
+
+- Installable PWA, works offline once installed.
+- UI languages: English, 中文.
+
+## Install as an app (PWA)
+
+Open https://sing.weebpaint.com/ in the browser, then:
+
+- **iPad / iPhone:** Share → "Add to Home Screen".
+- **Windows / Mac (Chrome / Edge):** install icon in the address bar.
+
+## Shortcuts
+
+The generated list is in [docs/keys.md](docs/keys.md) (Chinese for now).
+
+Basics: `1`–`7` write a note, `0` a rest, `Space` plays, `Ctrl+S` saves.
+
+## Coming soon
+
+- Live recording of your own singing and playing.
+- Numbered notation (jianpu) and piano roll.
+- A math-and-code DSP interface, for AIs that want to make music.
+
+## Technical notes
+
+- The `/dev/` path on sing.weebpaint.com serves the development branch. It is a working area and can be broken mid-change.
+- iPad and iPhone browsers have no Web MIDI, so MIDI keyboards work on desktop only.
+- Nothing you sing or write leaves your device except through the cloud library you choose. Voice model and sound files are verified by SHA-256 when downloaded.
+- This is a public workshop: `ai-docs/` is developed in the open along with the code.
+
+## Running it
 
 ```
-npm install          # 只为 tsc 类型门和 vendored 的家族内部库
-npm test             # node 24 直跑 test/
+npm install          # only for the tsc type gate and the vendored family libraries
+npm test             # node 24 runs test/ directly
 bash scripts/build.sh
-npm run serve        # 开 http://localhost:8710/
-npm run smoke        # 真浏览器 + 真 service worker 冒烟（借兄弟仓 WeebPaint 的 playwright）
+npm run serve        # http://localhost:8710/
+npm run smoke        # real browser + real service worker smoke test
 ```
 
-## 读什么
+Where to read next: [CLAUDE.md](CLAUDE.md) (repo rules and history), [ai-docs/20261005-moonsinger-upheaval.md](ai-docs/20261005-moonsinger-upheaval.md) (why Tsukuyomi-chan), [docs/keys.md](docs/keys.md) (keys).
 
-1. `CLAUDE.md`（仓库纪律、出货状态、黄线区）
-2. `ai-docs/20261005-moonsinger-upheaval.md`（为什么是小月相）
-3. `ai-docs/20261006-editor-v0-grill.md`（编辑器第一版的决定与原话）
-4. `docs/keys.md`（键位，由 `src/keyboard/keys.ts` 生成）
-
-## 小月相的声音
+## Tsukuyomi-chan's voice
 
 本ソフトウェアの音声合成には、フリー素材キャラクター「つくよみちゃん」（© Rei Yumesaki）が無料公開している音声データを使用しています。
 ■つくよみちゃんコーパス（CV.夢前黎）
@@ -48,9 +118,12 @@ https://tyc.rei-yumesaki.net/material/corpus/
 - ayousanz/piper-plus-base — CC-BY-4.0 (zh / en language vectors)
 - Open JTalk · MeCab · NAIST-jdic · pyopenjtalk-plus · CMUdict · g2p-en · pypinyin · ONNX Runtime
 
-## 许可证
+Illustration of Tsukuyomi-chan in the banner: fangzhangmnm.
 
-- 本仓自己写的代码与文档：MIT（`LICENSE`）。
-- `vendor/` 下的第三方各按各的许可证：Bravura（SIL OFL 1.1）、LAME（LGPL v2，自己编的 WASM，`vendor/lame/`）、WORLD（modified BSD），原文都在各自目录里。
-- `assets/preview/`（试听元音表）是小月相唱出来的声音，按上面つくよみちゃん 的条款，不在 MIT 之内。
-- 模型（家族模型仓 pwa-models 的包）的许可证随包附带。
+## License
+
+- The code and docs written in this repo: MIT ([LICENSE](LICENSE)). Most of the code was written with Claude Code.
+- Third-party code and fonts under `vendor/` keep their own licenses: Bravura (SIL OFL 1.1), LAME (LGPL v2, our own WASM build, `vendor/lame/`), WORLD (modified BSD). The original texts are in each folder.
+- `assets/preview/` (the preview vowel table) is sung by Tsukuyomi-chan and falls under her terms above, not MIT.
+- Models (packs from the family repo `pwa-models`) carry their own licenses.
+- Instruments: GeneralUser GS 2.0.3 by S. Christian Collins, via the family sound repo `pwa-sounds`.
