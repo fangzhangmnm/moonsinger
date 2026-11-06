@@ -80,7 +80,7 @@ import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
 // ── 歌库（v0.6.0，2026-10-08 Claude Fable 5.1）：@internal/store（接缝 src/app-store.ts）+ @internal/gallery（src/gallery-host.ts）+ WeebPaint 的 editor-session 节律 ──
 import { isCached, attachStore, hasStore, requireStore, storeWasAttached, auth, setActiveIdentifier, requestStoragePersistence, isSignedIn, detachStore, disposeStore, cloudAvailable, hasHome, hasCloudHome, folderHome, folderOnline, setFolderOnline, homeOnline, noteCloudAccount, cloudAccountKnown, forgetLegacyAttach, legacyLibraryExists, openLegacyLibrary, readFromFolder, withStemTail, cloudReachable, type Store, type StoreHome } from "../app-store.ts";
-import { planReturn, neverUploadedIds, type ReturnPlan } from "./cloud-return.ts";
+import { planReturn, neverUploadedIds, isOpenDocAutosaveOnly, stillLocalIds, type ReturnPlan } from "./cloud-return.ts";
 import { canPickFolder, pickFolderHome, folderPermission, lastFolderHome, touchFolderHome, clearFolderHome, type GalleryEntry } from "../library-home.ts";
 import { moveSongs, moveKindOf, moveFinished, moveSay, type SongToMove } from "./move-songs.ts";
 import { showSiteHint, watchStorageHealth, showLibraryOff, SITE_TEXT, SITE_HOST, FOLDER_TEXT } from "./site-hint.ts";
@@ -3293,9 +3293,9 @@ function afterSignIn(): Promise<void> {
   return afterSignInInFlight;
 }
 // ── 回来（开机登录好 / 网回来）时没传的东西（规则书 §1 第 15 条，2026-11-03 夜改写；工单 H4；分法见 cloud-return.ts，同 WeebPaint）──
-//   (b) 开着那首按过存没传成 → 续传不问，每次回来都看。(a) 从没传过 → 问一次，点了才传。(c) 只是自动保存 → 不传不问，进「要处理」列表。一页只问一次。
-//   MoonSinger 传的时机（按「存」或退出）不变。**pushAll 这条自动路径只有「现在传」一处**（守卫 test/cloud-return.test.mjs）；a、c 同时有时面上两样都说，人点了一起传（Fable 11-03 拍）。
-//   吸取 10-26 的两条（user「弹了一个需要处理然后就什么交互都没了」）：话说真的；传完没传成的带名单、带「去处理」钮。
+//   (b) 开着那首按过存没传成 → 续传不问，每次回来都看。(a) 从没传过 → 问一次，点了才传。(c) 只是自动保存 → 不自动传，进「要处理」列表；别的歌有 (c) = 说一声 +「传上去」，开着的这首不算。一页只问一次。
+//   MoonSinger 传的时机（按「存」或退出）不变。**pushAll 这条路只有 pushAllNow 一处，只由人点的钮调**（守卫 test/cloud-return.test.mjs）；a、c 同时有时面上两样都说，人点了一起传（Fable 11-03 拍）。
+//   吸取 10-26 的两条（user「弹了一个需要处理然后就什么交互都没了」）：话说真的；传完没传成的带名单、带「去处理」钮。11-05（F-200）：切 app 回来不再把开着的这首算成「没传上去」。
 let askedReturn = false;
 let returnRun: Promise<(() => void) | null> | null = null;
 function settleReturn(): Promise<(() => void) | null> { return (returnRun ??= settleReturnOnce().finally(() => { returnRun = null; })); }
@@ -3307,14 +3307,19 @@ async function settleReturnOnce(): Promise<(() => void) | null> {
   const store = requireStore();
   const dirtyNow = await store.files.dirty.count().catch((e) => { reportError(e, "log"); return 0; });
   if (dirtyNow <= 0) return null;
-  let never: Set<string>;
-  try { never = neverUploadedIds(await localItems(store)); }
+  let items: { identifier: string; syncState?: string }[];
+  try { items = await localItems(store); }
   catch (e) { reportError(e, "log"); return null; }
+  const never = neverUploadedIds(items);
+  const openId = H.identifier(), owed = es.isPushOwed();
+  const openAutosaveOnly = isOpenDocAutosaveOnly(items, openId, owed);   // 续传之前算（见函数注释）
   await resumeOwedPush(never);
   if (askedReturn) return null;
-  const plan = planReturn(await store.files.dirty.count().catch(() => dirtyNow), never.size);
-  diagNote("sync", `back with unsynced: ${JSON.stringify(plan)}`);
-  return plan.kind === "none" ? null : () => { void askReturn(plan); };
+  const plan = planReturn(await store.files.dirty.count().catch(() => dirtyNow), never.size, openAutosaveOnly);
+  diagNote("sync", `back with unsynced: ${JSON.stringify(plan)}${openAutosaveOnly ? " (open doc is autosave-only, not counted)" : ""}`);
+  if (plan.kind === "none") return null;
+  const names = plan.kind === "list" ? stillLocalIds(owed ? await localItems(store).catch(() => items) : items, openAutosaveOnly ? openId : null) : [];
+  return () => { void askReturn(plan, names, openAutosaveOnly); };
 }
 /** (b)：开着这首人按过存、当时没传成、之后没再改 → 续传，不问。从没传过的（(a)）不在这里：它要问。 */
 async function resumeOwedPush(never: ReadonlySet<string>): Promise<void> {
@@ -3324,14 +3329,39 @@ async function resumeOwedPush(never: ReadonlySet<string>): Promise<void> {
   catch (e) { reportError(e, "log"); }
   gallery?.refresh(); renderTitle();
 }
-const inToHandle = (n: number): string => _t("{n} 首没传上去，在「要处理」列表里", { n });
-function showInList(n: number): void {
+/** (c)：别的歌改过、还只在这台设备上（开着这首不算）。人点「传上去」才传，**不离开当前这首**；「以后再说」= 歌库「要处理」里照旧看得见。
+ *  以前这里是「去处理」→ 进歌库 = 离开这首才传，人被弹回歌库、列表已空（user 11-05「点了之后虽然处理好了但是弹回图库了」）。openToo = 开着这首也会一起传，说在前面，回执的数才对得上。 */
+function showStillLocal(n: number, names: readonly string[], openToo: boolean): void {
   if (gallery?.isOpen()) gallery.setAttentionOnly(true);   // 已经在歌库里：直接切到「要处理的」
-  showNotice({ id: "unsynced", level: "info", text: inToHandle(n), actions: [{ label: _t("去处理"), primary: true, onClick: () => { closeNotice("unsynced"); void openGallery().then(() => gallery?.setAttentionOnly(true)); } }] });
+  const named = names.length ? `（${names.slice(0, 3).map(stemOfId).join("、")}${n > 3 ? " …" : ""}）` : "";
+  const f = folderHome();
+  showNotice({ id: "unsynced", level: "info", text: _t("{n} 首改过的还只在这台设备上{named}", { n, named }) + (openToo ? _t("；传的话连正在写的这首一起") : ""),
+    actions: [
+      { label: f ? _t("写进「{label}」", { label: f.label }) : _t("传上去"), primary: true, onClick: () => { closeNotice("unsynced"); void pushAllNow(n + (openToo ? 1 : 0)); } },
+      { label: _t("以后再说"), onClick: () => closeNotice("unsynced") },
+    ] });
 }
-async function askReturn(plan: Exclude<ReturnPlan, { kind: "none" }>): Promise<void> {
+/** 人点了传（「现在传」/「传上去」共用这一条）。有没落盘的先落：说了连这首一起，就得是最新的那份。 */
+async function pushAllNow(total: number): Promise<void> {
+  if (!hasStore()) return;
+  if (H.identifier()) await es.flushLocal().catch((e) => { reportError(e, "log"); });
+  const store = requireStore();
+  const r = await store.files.dirty.pushAll().catch((e) => { reportError(e, "warning"); return null; });
+  const left = await store.files.dirty.count().catch(() => total);
+  diagNote("sync", `push: pushed=${String(r?.pushed ?? "-")} failed=${String(r?.failed.length ?? "-")} left=${left}`);
+  const id = H.identifier();
+  if (r && id && !r.failed.includes(id)) es.noteExternallyPushed();
+  if (left === 0) showNotice({ id: "unsynced", level: "info", text: _t("{r} 首都传上去了", { r: r?.pushed ?? total }), autoHideMs: 4000 });
+  else {
+    const named = (r?.failed ?? []).slice(0, 3).map(stemOfId).join("、");
+    if (gallery?.isOpen()) gallery.setAttentionOnly(true);
+    showNotice({ id: "unsynced", level: "warning", text: _t("传上去 {r} 首，还有 {left} 首没传成{named}：别的设备改过的要你选，网络问题的之后再试。", { r: r?.pushed ?? 0, left, named: named ? `（${named}${left > 3 ? " …" : ""}）` : "" }), actions: [{ label: _t("去处理"), primary: true, onClick: () => { closeNotice("unsynced"); void openGallery().then(() => gallery?.setAttentionOnly(true)); } }] });   // 这条的「去处理」留着：真要人选（冲突 / 网络），去歌库是对的
+  }
+  gallery?.refresh(); renderTitle();
+}
+async function askReturn(plan: Exclude<ReturnPlan, { kind: "none" }>, names: readonly string[], openToo: boolean): Promise<void> {
   if (askedReturn || !hasStore()) return;
-  if (plan.kind === "list") { askedReturn = true; showInList(plan.total); return; }   // 没有从没传过的：不问不推，进列表
+  if (plan.kind === "list") { askedReturn = true; showStillLocal(plan.total, names, openToo); return; }   // 没有从没传过的：不问不推，说一声；人点了才传
   if (isSheetOpen() || isGateOpen()) { diagNote("sync", "ask later: a sheet is open"); return; }   // 别盖住冲突面；下次回来再问
   askedReturn = true;
   const f = folderHome();
@@ -3344,20 +3374,12 @@ async function askReturn(plan: Exclude<ReturnPlan, { kind: "none" }>): Promise<v
   } catch (e) { askedReturn = false; reportError(e, "log"); return; }   // 和别的面撞了：这次没问成，下次再问
   const total = plan.neverUploaded + plan.others;
   diagNote("sync", `push ask → ${go ? "now" : "later"}`);
-  if (!go) { showInList(total); return; }
-  const store = requireStore();
-  const r = await store.files.dirty.pushAll().catch((e) => { reportError(e, "warning"); return null; });
-  const left = await store.files.dirty.count().catch(() => total);
-  diagNote("sync", `push ask: pushed=${String(r?.pushed ?? "-")} failed=${String(r?.failed.length ?? "-")} left=${left}`);
-  const id = H.identifier();
-  if (r && id && !r.failed.includes(id)) es.noteExternallyPushed();
-  if (left === 0) showNotice({ id: "unsynced", level: "info", text: _t("{r} 首都传上去了", { r: r?.pushed ?? total }), autoHideMs: 4000 });
-  else {
-    const named = (r?.failed ?? []).slice(0, 3).map(stemOfId).join("、");
+  if (!go) {   // 稍后 = 进列表，什么都不推；回执一句就够（人刚说了稍后，不再追一个钮）
     if (gallery?.isOpen()) gallery.setAttentionOnly(true);
-    showNotice({ id: "unsynced", level: "warning", text: _t("传上去 {r} 首，还有 {left} 首没传成{named}：别的设备改过的要你选，网络问题的之后再试。", { r: r?.pushed ?? 0, left, named: named ? `（${named}${left > 3 ? " …" : ""}）` : "" }), actions: [{ label: _t("去处理"), primary: true, onClick: () => { closeNotice("unsynced"); void openGallery().then(() => gallery?.setAttentionOnly(true)); } }] });
+    showNotice({ id: "unsynced", level: "info", text: _t("{n} 首留在这台设备上，歌库「要处理」里看得见", { n: total }), autoHideMs: 4000 });
+    return;
   }
-  gallery?.refresh(); renderTitle();
+  await pushAllNow(total);
 }
 /** 选一张图当封面：缩成 ≤ 256²、≤ 70 KB 的 PNG 存进歌（Thumbnails/thumbnail.png，zip 最后一个 entry，歌库尾读）；原图不留。 */
 async function setCover(f: File): Promise<void> {

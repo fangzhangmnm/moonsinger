@@ -158,8 +158,9 @@ scenario("③ 续签失败：闸 + 两个钮；离线继续能写、条显示 N�
   check(!v.up && v.phase === "open", "离线且仍没登录：回前台不再弹闸", JSON.stringify(v));
   await p.patchAuth({ renew: "ok" });
   await p.evaluate(() => window.dispatchEvent(new Event("online")));
-  await p.waitForSelector('[data-notice-id="unsynced"]', { timeout: 8000 });   // (c) 传过、只是自动保存：不传不问，进列表（规则书第 15 条；手里这首不替人推，ADR-0016 / 0018）
-  check(/要处理/.test(await p.evaluate(() => document.querySelector('[data-notice-id="unsynced"]')?.textContent ?? "")), "回线续签成功：不问不推，说一声在「要处理」列表里");
+  // (c) 传过、只是自动保存、就是开着的这首：不传不问，也不说（F-200：说了 = 假警报；手里这首不替人推，ADR-0016 / 0018）
+  await p.waitForFunction(() => !document.querySelector('[data-notice-id="offline-bar"]'), null, { timeout: 8000 }); await p.waitForTimeout(600);
+  check(!(await p.evaluate(() => document.querySelector('[data-notice-id="unsynced"]'))), "回线续签成功：开着的这首不算，不说「没传上去」");
   check(!(await p.evaluate(() => [...document.querySelectorAll(".offer:not(.gate-sheet)")].some((e) => !e.hidden))), "没有模态的面");
   await p.waitForFunction(() => !document.querySelector('[data-notice-id="offline-bar"]'), null, { timeout: 8000 });
   await p.waitForTimeout(500);
@@ -465,7 +466,8 @@ scenario("H4 (a)：从没传过的 = 问一次，稍后进列表、现在传才�
   check(!(await inCloud()), "没点之前：没传");
   await p.click(".offer:not(.gate-sheet) button:has-text('稍后')"); await p.waitForTimeout(300);
   check(!(await inCloud()), "稍后：什么都不传");
-  check(/要处理/.test(await p.evaluate(() => document.querySelector('[data-notice-id="unsynced"]')?.textContent ?? "")), "稍后 = 进列表，有一条说明");
+  check(/要处理/.test(await p.evaluate(() => document.querySelector('[data-notice-id="unsynced"]')?.textContent ?? "")), "稍后 = 进列表，有一句回执");
+  check(!/去处理|传上去/.test(await p.evaluate(() => document.querySelector('[data-notice-id="unsynced"]')?.textContent ?? "")), "回执不带动作钮：人刚说了稍后");
   await signIn(); await p.waitForTimeout(300);
   check(!(await sheet()), "一页只问一次");
   await p.reopen(); await p.waitForTimeout(500);
@@ -533,12 +535,96 @@ scenario("H4 (b)+(c)：开着那首按过存 = 续传；另一首只是改过、
   check((await cloudHexOf(w, a)) !== aBefore, "A 续传了");
   check((await cloudHexOf(w, bId)) === bBefore, "B 没传");
   check(!(await anySheet(p)), "没问");
-  check(/1 首没传上去/.test(await noticeText(p)) && /要处理/.test(await noticeText(p)), "说了 1 首在「要处理」列表里", await noticeText(p));
+  check(/1 首改过的还只在这台设备上/.test(await noticeText(p)), "说了别的 1 首还只在这台设备上", await noticeText(p));
+  check(/传上去/.test(await noticeText(p)) && /以后再说/.test(await noticeText(p)) && !/去处理/.test(await noticeText(p)), "钮 = 传上去 / 以后再说，不把人送去歌库", await noticeText(p));
   check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 1, "脏只剩 B");
   check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
   await p.close2();
 });
 
+// 2026-11-05 Claude Opus 5.5（F-200；user 11-05「切换前后台之后说需要处理，点了之后虽然处理好了但是弹回图库了」）
+scenario("F-200 切 app 回来：只有开着的这首只是自动保存 = 不说、不传", async (w) => {
+  const { p, id } = await seed(w, { account: true, signedIn: true, renew: "ok" }, { reopen: false });
+  await typeNote(p, ["5"]); await p.waitForTimeout(150);
+  await p.evaluate(() => window.__moonsinger.es().flushLocal());
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 1, "前提：这首在脏账上");
+  const before = await cloudHexOf(w, id);
+  await p.hide(); await p.waitForTimeout(100); await p.show(); await p.waitForTimeout(900);
+  check(!(await p.$('[data-notice-id="unsynced"]')), "回来：不说「没传上去」", await noticeText(p));
+  check(!(await anySheet(p)), "也不问");
+  check((await cloudHexOf(w, id)) === before, "也不替人传（(c) 不自动推）");
+  check((await p.evaluate(() => window.__moonsinger.identifier())) === id, "还开着这首");
+  check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
+  await p.close2();
+});
+scenario("F-200 别的歌也只在这台设备上 = 说一声；「传上去」两首一起传、不离开当前这首；回执的数对得上", async (w) => {
+  const { p, id: a } = await seed(w, { account: true, signedIn: false, renew: "interaction" }, { reopen: false });
+  await p.evaluate(() => window.__moonsinger.newStoreSong()); await p.waitForTimeout(300);
+  await typeNote(p, ["6"]); await p.waitForTimeout(200);
+  await p.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await p.waitForTimeout(400);
+  const b = await p.evaluate(() => window.__moonsinger.identifier());
+  check(b !== a && (await cloudHexOf(w, b)) !== null, "前提：两首都在云端", String(b));
+  await p.evaluate((x) => window.__moonsinger.openStoreDoc(x), a); await p.waitForTimeout(400);
+  await p.reopen();
+  await p.waitPhase("blocked");
+  await p.clickGate("离线继续"); await p.waitForTimeout(300);
+  const aBefore = await cloudHexOf(w, a), bBefore = await cloudHexOf(w, b);
+  await p.evaluate((x) => window.__moonsinger.openStoreDoc(x), b); await p.waitForTimeout(400);
+  await typeNote(p, ["7"]); await p.waitForTimeout(150);
+  await p.evaluate(() => window.__moonsinger.es().flushLocal());   // 另一首：只落本机
+  await p.evaluate((x) => window.__moonsinger.openStoreDoc(x), a); await p.waitForTimeout(400);
+  await typeNote(p, ["5"]); await p.waitForTimeout(150);
+  await p.evaluate(() => window.__moonsinger.es().flushLocal());   // 开着这首：也只是自动保存
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 2, "前提：两首都在脏账上");
+  await p.patchAuth({ renew: "ok" });
+  await p.evaluate(() => window.dispatchEvent(new Event("online")));
+  await p.waitForSelector('[data-notice-id="unsynced"]', { timeout: 8000 }); await p.waitForTimeout(200);
+  const t = await noticeText(p);
+  check(t.includes("1 首改过的还只在这台设备上"), "开着这首不算进数", t);
+  check(t.includes("连正在写的这首一起"), "传的时候会带上它：说在前面", t);
+  check(t.includes("传上去") && t.includes("以后再说") && !t.includes("去处理"), "两个钮，不把人送去歌库", t);
+  check((await cloudHexOf(w, a)) === aBefore && (await cloudHexOf(w, b)) === bBefore, "没点之前：什么都没传");
+  await p.click('[data-notice-id="unsynced"] button:has-text("传上去")');
+  await p.waitForFunction(() => window.__moonsinger.store().files.dirty.count().then((n) => n === 0), null, { timeout: 8000 });
+  await p.waitForTimeout(200);
+  check((await p.evaluate(() => window.__moonsinger.identifier())) === a, "传完还开着这首（不被弹回歌库）");
+  check((await p.evaluate(() => document.body.dataset.mode)) !== "gallery", "没进歌库");
+  check((await cloudHexOf(w, a)) !== aBefore && (await cloudHexOf(w, b)) !== bBefore, "两首都上去了");
+  check(/2 首都传上去了/.test(await noticeText(p)), "回执：2 首", await noticeText(p));
+  check(!(await p.evaluate(() => window.__moonsinger.es().isPushPending())), "开着这首不再显示没上云");
+  check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
+  await p.close2();
+});
+scenario("F-200「以后再说」= 什么都不传，这一页不再说；歌库「要处理」里照旧看得见", async (w) => {
+  const { p, id: a } = await seed(w, { account: true, signedIn: false, renew: "interaction" }, { reopen: false });
+  await p.evaluate(() => window.__moonsinger.newStoreSong()); await p.waitForTimeout(300);
+  await typeNote(p, ["6"]); await p.waitForTimeout(200);
+  await p.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await p.waitForTimeout(400);
+  const b = await p.evaluate(() => window.__moonsinger.identifier());
+  await p.evaluate((x) => window.__moonsinger.openStoreDoc(x), a); await p.waitForTimeout(400);
+  await p.reopen();
+  await p.waitPhase("blocked");
+  await p.clickGate("离线继续"); await p.waitForTimeout(300);
+  await p.evaluate((x) => window.__moonsinger.openStoreDoc(x), b); await p.waitForTimeout(400);
+  await typeNote(p, ["7"]); await p.waitForTimeout(150);
+  await p.evaluate(() => window.__moonsinger.es().flushLocal());
+  await p.evaluate((x) => window.__moonsinger.openStoreDoc(x), a); await p.waitForTimeout(400);
+  const bBefore = await cloudHexOf(w, b);
+  await p.patchAuth({ renew: "ok" });
+  await p.evaluate(() => window.dispatchEvent(new Event("online")));
+  await p.waitForSelector('[data-notice-id="unsynced"]', { timeout: 8000 }); await p.waitForTimeout(200);
+  const t = await noticeText(p);
+  check(t.includes("1 首改过的还只在这台设备上") && !t.includes("连正在写的这首"), "开着这首是干净的：不提它", t);
+  await p.click('[data-notice-id="unsynced"] button:has-text("以后再说")'); await p.waitForTimeout(200);
+  check(!(await p.$('[data-notice-id="unsynced"]')), "通知收了");
+  check((await p.evaluate(() => window.__moonsinger.identifier())) === a, "还开着这首");
+  check((await cloudHexOf(w, b)) === bBefore, "什么都没传");
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 1, "脏账还在 = 歌库「要处理」里看得见");
+  await p.hide(); await p.waitForTimeout(100); await p.show(); await p.waitForTimeout(700);
+  check(!(await p.$('[data-notice-id="unsynced"]')), "这一页不再说");
+  check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
+  await p.close2();
+});
 scenario("H4 (a)+(c)：从没传过的 + 传过只改过的 = 面上两样都说；现在传 = 两首一起传", async (w) => {
   const { p, id: a } = await seed(w, { account: true, signedIn: false, renew: "interaction" });
   await p.waitPhase("blocked");

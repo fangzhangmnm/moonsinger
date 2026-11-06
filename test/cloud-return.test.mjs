@@ -3,7 +3,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { createEditorSession } from "../src/editor-session/index.ts";
-import { planReturn, neverUploadedIds } from "../src/app/cloud-return.ts";
+import { planReturn, neverUploadedIds, isOpenDocAutosaveOnly, stillLocalIds } from "../src/app/cloud-return.ts";
 
 describe("planReturn", () => {
   it("什么都没脏：不问不提", () => eq(planReturn(0, 0).kind, "none"));
@@ -11,6 +11,26 @@ describe("planReturn", () => {
   it("只有从没传过的（a）：问，others = 0", () => { const p = planReturn(2, 2); eq(p.kind, "ask"); eq(p.neverUploaded, 2); eq(p.others, 0); });
   it("两样都有：问，两个数都带上", () => { const p = planReturn(5, 2); eq(p.kind, "ask"); eq(p.neverUploaded, 2); eq(p.others, 3); });
   it("数不齐（列举比脏账多）：others 不为负", () => eq(planReturn(1, 2).others, 0));
+  // F-200（user 11-05「切换前后台之后说需要处理」）：开着这首只是自动保存 = 它不是回来发现的事
+  it("只有开着的这首自动保存：什么都不说", () => eq(planReturn(1, 0, true).kind, "none"));
+  it("开着的 + 别的一首：说 1 首", () => { const p = planReturn(2, 0, true); eq(p.kind, "list"); eq(p.total, 1); });
+  it("开着的从没传过（它是 (a)，不算自动保存）：问", () => { const p = planReturn(1, 1, false); eq(p.kind, "ask"); eq(p.neverUploaded, 1); });
+  it("要问 (a) 时不减：现在全传确实会连开着的一起传，面上的数要算它", () => { const p = planReturn(2, 1, true); eq(p.kind, "ask"); eq(p.others, 1); });
+});
+describe("isOpenDocAutosaveOnly：问库，不问 isPushPending", () => {
+  const files = [{ identifier: "a.mxl", syncState: "unpushed" }, { identifier: "b.mxl", syncState: "synced" }, { identifier: "c.mxl", syncState: "conflict" }, { identifier: "d.mxl", syncState: "float" }];
+  it("库说它改过没传、人没按过存：是", () => assert(isOpenDocAutosaveOnly(files, "a.mxl", false)));
+  it("人按过存（(b)，要么续传成了不在账上、要么真没传成）：不是", () => assert(!isOpenDocAutosaveOnly(files, "a.mxl", true)));
+  it("字节还没落盘 = 不在脏账上（库说 synced）：不是——减了就把别的歌藏掉了", () => assert(!isOpenDocAutosaveOnly(files, "b.mxl", false)));
+  it("分叉（真要人选）/ 从没传过：不是", () => { assert(!isOpenDocAutosaveOnly(files, "c.mxl", false)); assert(!isOpenDocAutosaveOnly(files, "d.mxl", false)); });
+  it("没开着歌：不是", () => assert(!isOpenDocAutosaveOnly(files, null, false)));
+});
+describe("stillLocalIds", () => {
+  it("点名传过还没传的，不含开着那首、不含从没传过的、不含干净的", () => {
+    const f = [{ identifier: "a", syncState: "unpushed" }, { identifier: "b", syncState: "unpushed" }, { identifier: "c", syncState: "conflict" }, { identifier: "d", syncState: "float" }, { identifier: "e", syncState: "synced" }];
+    eq(stillLocalIds(f, "a").join(), "b,c");
+    eq(stillLocalIds(f, null).join(), "a,b,c");
+  });
 });
 describe("neverUploadedIds", () => {
   it("只认 float：local-only 是人选了只留本机（干净），unpushed / conflict / ghost 是传过或撞名的", () => {
@@ -71,21 +91,33 @@ describe("接线守卫（规则书第 15 条）", () => {
   const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
   const main = readFileSync("src/app/main.ts", "utf8");
   const ask = main.slice(main.indexOf("async function askReturn("), main.indexOf("/** 选一张图当封面"));
-  it("全仓 pushAll 只有两处：问一次面点了「现在传」、退出时人点的「下载备份」", () => {
+  const still = main.slice(main.indexOf("function showStillLocal("), main.indexOf("async function pushAllNow("));
+  const now = main.slice(main.indexOf("async function pushAllNow("), main.indexOf("async function askReturn("));
+  it("全仓 pushAll 只有两处：人点了传（pushAllNow）、退出时人点的「下载备份」", () => {
     const sites = []; for (const p of walk("src")) { const n = strip(readFileSync(p, "utf8")).split("dirty.pushAll(").length - 1; if (n) sites.push(`${p}:${n}`); }
     eq(sites.join(" "), "src/app/main.ts:2");
     assert(strip(main.slice(main.indexOf("async function backupDirty("), main.indexOf("async function backupDirty(") + 400)).includes("dirty.pushAll("), "第二处是 backupDirty");
-    assert(ask.includes("dirty.pushAll("), "第一处是问一次面");
+    assert(now.includes("dirty.pushAll("), "第一处是 pushAllNow");
   });
-  it("先问才推；不是「现在传」就不推；一页只问一次；没有从没传过的 = 不问不推", () => {
-    assert(ask.indexOf("openConfirmSheet") >= 0 && ask.indexOf("openConfirmSheet") < ask.indexOf("dirty.pushAll("), "先问");
-    assert(/if \(!go\) \{ showInList\(total\); return; \}/.test(ask), "稍后 = 进列表，什么都不推");
+  it("pushAllNow 只由人点的钮调：问一次面点了「现在传」、通知上的「传上去」", () => {
+    eq(strip(main).split("pushAllNow(").length - 1, 3, "定义一处 + 两个调用");
+    assert(/onClick: \(\) => \{ closeNotice\("unsynced"\); void pushAllNow\(/.test(still), "通知上：在 onClick 里");
+    assert(/openConfirmSheet[\s\S]*if \(!go\) \{[\s\S]*return;[\s\S]*\}\s*await pushAllNow\(total\);/.test(ask), "面上：先问、稍后 return、点了才传");
+    assert(!/dirty\.pushAll/.test(ask) && !/dirty\.pushAll/.test(still), "别处不直接推");
+  });
+  it("(c) 通知不把人送去歌库：没有「去处理」，有「以后再说」；pushAll 没传成那条的「去处理」留着", () => {
+    assert(!still.includes("去处理") && !still.includes("openGallery"), "传上去不离开当前这首");
+    assert(still.includes("以后再说"));
+    assert(now.includes("去处理") && now.includes("openGallery"), "真要人选的才去歌库");
+  });
+  it("一页只问一次；没有从没传过的 = 不问不推", () => {
     assert(/askedReturn = true;[\s\S]*openConfirmSheet/.test(ask), "一页只问一次");
-    assert(/plan\.kind === "list"\) \{ askedReturn = true; showInList\(plan\.total\); return; \}/.test(ask), "只有 (c)：列表");
+    assert(/plan\.kind === "list"\) \{ askedReturn = true; showStillLocal\(/.test(ask), "只有 (c)：说一声");
   });
   it("(b) 先续传再数；从没传过的不走续传", () => {
-    const s = main.slice(main.indexOf("async function settleReturnOnce("), main.indexOf("const inToHandle"));
+    const s = main.slice(main.indexOf("async function settleReturnOnce("), main.indexOf("function showStillLocal("));
     assert(s.indexOf("resumeOwedPush(never)") < s.indexOf("planReturn("));
+    assert(s.indexOf("isOpenDocAutosaveOnly(") < s.indexOf("resumeOwedPush(never)"), "开着这首算不算在续传之前定：续传之后列表是旧的");
     assert(/!es\.isPushOwed\(\) \|\| never\.has\(id\)/.test(s));
   });
   it("跟上网盘的路不等人答：问在最后、不 await", () => {

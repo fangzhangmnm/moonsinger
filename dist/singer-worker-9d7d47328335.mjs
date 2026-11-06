@@ -931,7 +931,10 @@ var S = {
   "\u300C{id}\u300D\u5728\u522B\u7684\u8BBE\u5907\u4E0A\u6539\u8FC7\u4E86\uFF0C\u6B63\u5728\u6362\u6210\u6700\u65B0\u7684\u2026\u2026\u5148\u522B\u6253\u5B57\u3002": { en: "\u201C{id}\u201D was changed on another device, switching to the latest\u2026 hold off on typing." },
   "\u6362\u6210\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u4E86": { en: "Switched to the newer cloud version" },
   "\u300C{id}\u300D\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u62C9\u4E0B\u6765\u4E86\uFF0C\u4F46\u91CD\u5F00\u5931\u8D25\u2014\u2014\u8BF7\u4ECE\u6B4C\u5E93\u518D\u6253\u5F00\u4E00\u6B21": { en: "The newer cloud version of \u201C{id}\u201D was pulled, but reopening failed \u2014 please open it again from the library" },
-  "{n} \u9996\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u5728\u300C\u8981\u5904\u7406\u300D\u5217\u8868\u91CC": { en: "{n} {n|song|songs} not uploaded, in the \u201CNeeds attention\u201D list" },
+  "{n} \u9996\u6539\u8FC7\u7684\u8FD8\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A{named}": { en: "{n} edited {n|song is|songs are} still only on this device{named}" },
+  "\uFF1B\u4F20\u7684\u8BDD\u8FDE\u6B63\u5728\u5199\u7684\u8FD9\u9996\u4E00\u8D77": { en: "; uploading also includes the song you're writing" },
+  "\u4EE5\u540E\u518D\u8BF4": { en: "Not now" },
+  "{n} \u9996\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u300C\u8981\u5904\u7406\u300D\u91CC\u770B\u5F97\u89C1": { en: "{n} {n|song stays|songs stay} on this device, in the library's \u201CNeeds attention\u201D list" },
   "\u53BB\u5904\u7406": { en: "Handle them" },
   "\u6709 {neverUploaded} \u9996\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\uFF0C\u8FD8\u6709 {others} \u9996\u6539\u8FC7\u6CA1\u4F20\u3002\u73B0\u5728\u5168\u4F20\uFF1F": { en: "{neverUploaded} {neverUploaded|song exists|songs exist} only on this device, and {others} more {others|has|have} changes not uploaded. Upload everything now?" },
   "\u6709 {neverUploaded} \u9996\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\uFF0C\u73B0\u5728{f}\uFF1F": { en: "{neverUploaded} {neverUploaded|song exists|songs exist} only on this device. {f} now?" },
@@ -10352,4 +10355,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-088e09944588.mjs.map
+//# sourceMappingURL=singer-worker-9d7d47328335.mjs.map

@@ -3639,7 +3639,10 @@ var S = {
   "\u300C{id}\u300D\u5728\u522B\u7684\u8BBE\u5907\u4E0A\u6539\u8FC7\u4E86\uFF0C\u6B63\u5728\u6362\u6210\u6700\u65B0\u7684\u2026\u2026\u5148\u522B\u6253\u5B57\u3002": { en: "\u201C{id}\u201D was changed on another device, switching to the latest\u2026 hold off on typing." },
   "\u6362\u6210\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u4E86": { en: "Switched to the newer cloud version" },
   "\u300C{id}\u300D\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u62C9\u4E0B\u6765\u4E86\uFF0C\u4F46\u91CD\u5F00\u5931\u8D25\u2014\u2014\u8BF7\u4ECE\u6B4C\u5E93\u518D\u6253\u5F00\u4E00\u6B21": { en: "The newer cloud version of \u201C{id}\u201D was pulled, but reopening failed \u2014 please open it again from the library" },
-  "{n} \u9996\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u5728\u300C\u8981\u5904\u7406\u300D\u5217\u8868\u91CC": { en: "{n} {n|song|songs} not uploaded, in the \u201CNeeds attention\u201D list" },
+  "{n} \u9996\u6539\u8FC7\u7684\u8FD8\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A{named}": { en: "{n} edited {n|song is|songs are} still only on this device{named}" },
+  "\uFF1B\u4F20\u7684\u8BDD\u8FDE\u6B63\u5728\u5199\u7684\u8FD9\u9996\u4E00\u8D77": { en: "; uploading also includes the song you're writing" },
+  "\u4EE5\u540E\u518D\u8BF4": { en: "Not now" },
+  "{n} \u9996\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u300C\u8981\u5904\u7406\u300D\u91CC\u770B\u5F97\u89C1": { en: "{n} {n|song stays|songs stay} on this device, in the library's \u201CNeeds attention\u201D list" },
   "\u53BB\u5904\u7406": { en: "Handle them" },
   "\u6709 {neverUploaded} \u9996\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\uFF0C\u8FD8\u6709 {others} \u9996\u6539\u8FC7\u6CA1\u4F20\u3002\u73B0\u5728\u5168\u4F20\uFF1F": { en: "{neverUploaded} {neverUploaded|song exists|songs exist} only on this device, and {others} more {others|has|have} changes not uploaded. Upload everything now?" },
   "\u6709 {neverUploaded} \u9996\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\uFF0C\u73B0\u5728{f}\uFF1F": { en: "{neverUploaded} {neverUploaded|song exists|songs exist} only on this device. {f} now?" },
@@ -4946,7 +4949,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.15.1-2026-11-04";
+var APP_VERSION = "v0.15.2-2026-11-05";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -27708,15 +27711,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-088e09944588.mjs");
+      return pick(() => "singer-worker-9d7d47328335.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-428b14ea79fe.mjs");
+      return pick(() => "layout-worker-eba27996d10e.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-8bbd70e62f22.mjs");
+      return pick(() => "encode-worker-01d4b236587f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36758,10 +36761,18 @@ async function detachStore() {
 }
 
 // src/app/cloud-return.ts
-function planReturn(dirty2, neverUploaded) {
+function planReturn(dirty2, neverUploaded, openDocAutosaveOnly = false) {
   if (dirty2 <= 0) return { kind: "none" };
-  if (neverUploaded <= 0) return { kind: "list", total: dirty2 };
-  return { kind: "ask", neverUploaded, others: Math.max(0, dirty2 - neverUploaded) };
+  if (neverUploaded > 0) return { kind: "ask", neverUploaded, others: Math.max(0, dirty2 - neverUploaded) };
+  const total = dirty2 - (openDocAutosaveOnly ? 1 : 0);
+  return total > 0 ? { kind: "list", total } : { kind: "none" };
+}
+function isOpenDocAutosaveOnly(files, openId, owed) {
+  if (!openId || owed) return false;
+  return files.some((f2) => f2.identifier === openId && f2.syncState === "unpushed");
+}
+function stillLocalIds(files, except) {
+  return files.filter((f2) => f2.identifier !== except && (f2.syncState === "unpushed" || f2.syncState === "conflict" || f2.syncState === "ghost")).map((f2) => f2.identifier);
 }
 function neverUploadedIds(files) {
   return new Set(files.filter((f2) => f2.syncState === "float").map((f2) => f2.identifier));
@@ -53076,19 +53087,24 @@ async function settleReturnOnce() {
     return 0;
   });
   if (dirtyNow <= 0) return null;
-  let never2;
+  let items;
   try {
-    never2 = neverUploadedIds(await localItems(store));
+    items = await localItems(store);
   } catch (e10) {
     reportError(e10, "log");
     return null;
   }
+  const never2 = neverUploadedIds(items);
+  const openId = H2.identifier(), owed = es2.isPushOwed();
+  const openAutosaveOnly = isOpenDocAutosaveOnly(items, openId, owed);
   await resumeOwedPush(never2);
   if (askedReturn) return null;
-  const plan = planReturn(await store.files.dirty.count().catch(() => dirtyNow), never2.size);
-  diagNote("sync", `back with unsynced: ${JSON.stringify(plan)}`);
-  return plan.kind === "none" ? null : () => {
-    void askReturn(plan);
+  const plan = planReturn(await store.files.dirty.count().catch(() => dirtyNow), never2.size, openAutosaveOnly);
+  diagNote("sync", `back with unsynced: ${JSON.stringify(plan)}${openAutosaveOnly ? " (open doc is autosave-only, not counted)" : ""}`);
+  if (plan.kind === "none") return null;
+  const names = plan.kind === "list" ? stillLocalIds(owed ? await localItems(store).catch(() => items) : items, openAutosaveOnly ? openId : null) : [];
+  return () => {
+    void askReturn(plan, names, openAutosaveOnly);
   };
 }
 async function resumeOwedPush(never2) {
@@ -53103,19 +53119,54 @@ async function resumeOwedPush(never2) {
   gallery?.refresh();
   renderTitle();
 }
-var inToHandle = (n10) => _t("{n} \u9996\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u5728\u300C\u8981\u5904\u7406\u300D\u5217\u8868\u91CC", { n: n10 });
-function showInList(n10) {
+function showStillLocal(n10, names, openToo) {
   if (gallery?.isOpen()) gallery.setAttentionOnly(true);
-  showNotice({ id: "unsynced", level: "info", text: inToHandle(n10), actions: [{ label: _t("\u53BB\u5904\u7406"), primary: true, onClick: () => {
-    closeNotice("unsynced");
-    void openGallery().then(() => gallery?.setAttentionOnly(true));
-  } }] });
+  const named = names.length ? `\uFF08${names.slice(0, 3).map(stemOfId).join("\u3001")}${n10 > 3 ? " \u2026" : ""}\uFF09` : "";
+  const f2 = folderHome();
+  showNotice({
+    id: "unsynced",
+    level: "info",
+    text: _t("{n} \u9996\u6539\u8FC7\u7684\u8FD8\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A{named}", { n: n10, named }) + (openToo ? _t("\uFF1B\u4F20\u7684\u8BDD\u8FDE\u6B63\u5728\u5199\u7684\u8FD9\u9996\u4E00\u8D77") : ""),
+    actions: [
+      { label: f2 ? _t("\u5199\u8FDB\u300C{label}\u300D", { label: f2.label }) : _t("\u4F20\u4E0A\u53BB"), primary: true, onClick: () => {
+        closeNotice("unsynced");
+        void pushAllNow(n10 + (openToo ? 1 : 0));
+      } },
+      { label: _t("\u4EE5\u540E\u518D\u8BF4"), onClick: () => closeNotice("unsynced") }
+    ]
+  });
 }
-async function askReturn(plan) {
+async function pushAllNow(total) {
+  if (!hasStore()) return;
+  if (H2.identifier()) await es2.flushLocal().catch((e10) => {
+    reportError(e10, "log");
+  });
+  const store = requireStore();
+  const r10 = await store.files.dirty.pushAll().catch((e10) => {
+    reportError(e10, "warning");
+    return null;
+  });
+  const left = await store.files.dirty.count().catch(() => total);
+  diagNote("sync", `push: pushed=${String(r10?.pushed ?? "-")} failed=${String(r10?.failed.length ?? "-")} left=${left}`);
+  const id2 = H2.identifier();
+  if (r10 && id2 && !r10.failed.includes(id2)) es2.noteExternallyPushed();
+  if (left === 0) showNotice({ id: "unsynced", level: "info", text: _t("{r} \u9996\u90FD\u4F20\u4E0A\u53BB\u4E86", { r: r10?.pushed ?? total }), autoHideMs: 4e3 });
+  else {
+    const named = (r10?.failed ?? []).slice(0, 3).map(stemOfId).join("\u3001");
+    if (gallery?.isOpen()) gallery.setAttentionOnly(true);
+    showNotice({ id: "unsynced", level: "warning", text: _t("\u4F20\u4E0A\u53BB {r} \u9996\uFF0C\u8FD8\u6709 {left} \u9996\u6CA1\u4F20\u6210{named}\uFF1A\u522B\u7684\u8BBE\u5907\u6539\u8FC7\u7684\u8981\u4F60\u9009\uFF0C\u7F51\u7EDC\u95EE\u9898\u7684\u4E4B\u540E\u518D\u8BD5\u3002", { r: r10?.pushed ?? 0, left, named: named ? `\uFF08${named}${left > 3 ? " \u2026" : ""}\uFF09` : "" }), actions: [{ label: _t("\u53BB\u5904\u7406"), primary: true, onClick: () => {
+      closeNotice("unsynced");
+      void openGallery().then(() => gallery?.setAttentionOnly(true));
+    } }] });
+  }
+  gallery?.refresh();
+  renderTitle();
+}
+async function askReturn(plan, names, openToo) {
   if (askedReturn || !hasStore()) return;
   if (plan.kind === "list") {
     askedReturn = true;
-    showInList(plan.total);
+    showStillLocal(plan.total, names, openToo);
     return;
   }
   if (isSheetOpen() || isGateOpen()) {
@@ -53139,29 +53190,11 @@ async function askReturn(plan) {
   const total = plan.neverUploaded + plan.others;
   diagNote("sync", `push ask \u2192 ${go ? "now" : "later"}`);
   if (!go) {
-    showInList(total);
+    if (gallery?.isOpen()) gallery.setAttentionOnly(true);
+    showNotice({ id: "unsynced", level: "info", text: _t("{n} \u9996\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u300C\u8981\u5904\u7406\u300D\u91CC\u770B\u5F97\u89C1", { n: total }), autoHideMs: 4e3 });
     return;
   }
-  const store = requireStore();
-  const r10 = await store.files.dirty.pushAll().catch((e10) => {
-    reportError(e10, "warning");
-    return null;
-  });
-  const left = await store.files.dirty.count().catch(() => total);
-  diagNote("sync", `push ask: pushed=${String(r10?.pushed ?? "-")} failed=${String(r10?.failed.length ?? "-")} left=${left}`);
-  const id2 = H2.identifier();
-  if (r10 && id2 && !r10.failed.includes(id2)) es2.noteExternallyPushed();
-  if (left === 0) showNotice({ id: "unsynced", level: "info", text: _t("{r} \u9996\u90FD\u4F20\u4E0A\u53BB\u4E86", { r: r10?.pushed ?? total }), autoHideMs: 4e3 });
-  else {
-    const named = (r10?.failed ?? []).slice(0, 3).map(stemOfId).join("\u3001");
-    if (gallery?.isOpen()) gallery.setAttentionOnly(true);
-    showNotice({ id: "unsynced", level: "warning", text: _t("\u4F20\u4E0A\u53BB {r} \u9996\uFF0C\u8FD8\u6709 {left} \u9996\u6CA1\u4F20\u6210{named}\uFF1A\u522B\u7684\u8BBE\u5907\u6539\u8FC7\u7684\u8981\u4F60\u9009\uFF0C\u7F51\u7EDC\u95EE\u9898\u7684\u4E4B\u540E\u518D\u8BD5\u3002", { r: r10?.pushed ?? 0, left, named: named ? `\uFF08${named}${left > 3 ? " \u2026" : ""}\uFF09` : "" }), actions: [{ label: _t("\u53BB\u5904\u7406"), primary: true, onClick: () => {
-      closeNotice("unsynced");
-      void openGallery().then(() => gallery?.setAttentionOnly(true));
-    } }] });
-  }
-  gallery?.refresh();
-  renderTitle();
+  await pushAllNow(total);
 }
 async function setCover(f2) {
   try {
@@ -53689,4 +53722,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-676bb2b9d421.mjs.map
+//# sourceMappingURL=moonsinger-e321f40885bb.mjs.map
