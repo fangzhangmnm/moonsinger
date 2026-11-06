@@ -3659,11 +3659,8 @@ var S = {
   "\u8981\u540C\u6B65\u5230 OneDrive \u5417\uFF1F\u767B\u5F55\u5FAE\u8F6F\u4E2A\u4EBA\u8D26\u53F7\u540E\uFF0C\u6B4C\u5E93\u540C\u6B65\u5230\u4F60 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF08\u8FD9\u4E2A app \u53EA\u80FD\u770B\u81EA\u5DF1\u7684\u90A3\u4E2A\u5939\uFF09\u3002": { en: "Sync to OneDrive? After signing in with a personal Microsoft account, the library syncs to your OneDrive's Apps folder (this app can only see its own folder)." },
   "\u6682\u4E0D": { en: "Not now" },
   "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939": { en: "Saved on this device, not written to the folder yet" },
-  "\u6587\u4EF6\u5939\u91CC\u4E5F\u662F\u6700\u65B0\u7684": { en: "The folder is up to date too" },
-  "\u5B58\u597D\u4E86\uFF1A\u5199\u8FDB\u4E86\u300C{label}\u300D": { en: "Saved: written into \u201C{label}\u201D" },
+  "\u5DF2\u5B58 \u2713": { en: "Saved \u2713" },
   "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u4E91\u7AEF\u7A0D\u540E\u518D\u63A8": { en: "Saved on this device, uploading to the cloud later" },
-  "\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684": { en: "The cloud is up to date too" },
-  "\u5B58\u597D\u4E86\uFF0C\u4E91\u7AEF\u4E5F\u66F4\u65B0\u4E86": { en: "Saved, and the cloud is updated too" },
   "\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\u3002MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF08\u8981\u7684\u8BDD\u544A\u8BC9\u5F00\u53D1\u8005\uFF1A\u7167 WXHW \u63A5 zip.js + 7z \u5C31\u80FD\u5F00\uFF09\u3002": { en: "This song isn't encrypted. This version of MoonSinger doesn't encrypt yet." },
   "\u300C{p}\u300D\u91CC\u952E\u76D8\u4E0D\u5199\u97F3\uFF08\u5207\u5230\u300C\u97F3\u300D\u518D\u5199\uFF09": { en: "In \u201C{p}\u201D the keys don't write notes (switch to \u201CNotes\u201D to write)" },
   "\u8FD9\u6761\u58F0\u90E8\u53F0\u4E0A\u662F\u5355\u58F0\u7684\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248 / \u6CA1\u4EBA\uFF09\uFF1A\u53E0\u4E0D\u4E86\u3002\u6362\u6210\u80FD\u53E0\u97F3\u7684\u4E50\u5668\u518D\u53E0": { en: "This part's performer is monophonic (Tsukuyomi-chan / vowel version / nobody): it can't stack. Switch to an instrument that can" },
@@ -4949,7 +4946,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.15.2-2026-11-05";
+var APP_VERSION = "v0.15.3-2026-11-05";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -27711,15 +27708,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-9d7d47328335.mjs");
+      return pick(() => "singer-worker-e0a461bb4ab7.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-eba27996d10e.mjs");
+      return pick(() => "layout-worker-cb2a9711a75c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-01d4b236587f.mjs");
+      return pick(() => "encode-worker-c35b362e2f95.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -49891,7 +49888,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "2363a883be94",
+  cssHash: "fab9c8be1992",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -53231,12 +53228,25 @@ async function smartSaveStore() {
     if (v === "later") signInDeclined = true;
     return;
   }
-  if (folderHome()) {
-    info(es2.isPushPending() ? _t("\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939") : before === "clean" ? _t("\u6587\u4EF6\u5939\u91CC\u4E5F\u662F\u6700\u65B0\u7684") : _t("\u5B58\u597D\u4E86\uFF1A\u5199\u8FDB\u4E86\u300C{label}\u300D", { label: folderHome().label }));
+  if (es2.isPushPending()) {
+    info(folderHome() ? _t("\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939") : _t("\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u4E91\u7AEF\u7A0D\u540E\u518D\u63A8"));
     return;
   }
-  info(es2.isPushPending() ? _t("\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u4E91\u7AEF\u7A0D\u540E\u518D\u63A8") : before === "clean" ? _t("\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684") : _t("\u5B58\u597D\u4E86\uFF0C\u4E91\u7AEF\u4E5F\u66F4\u65B0\u4E86"));
+  flashSaved();
 }
+function flashSaved() {
+  document.querySelector(".save-flash")?.remove();
+  const r10 = $2("saveBtn").getBoundingClientRect();
+  const el2 = document.createElement("div");
+  el2.className = "save-flash";
+  el2.setAttribute("role", "status");
+  el2.textContent = _t("\u5DF2\u5B58 \u2713");
+  el2.style.top = `${Math.round(r10.bottom + 4)}px`;
+  el2.style.right = `${Math.max(4, Math.round(innerWidth - r10.right))}px`;
+  document.body.appendChild(el2);
+  setTimeout(() => el2.remove(), SAVE_FLASH_MS);
+}
+var SAVE_FLASH_MS = 1200;
 $2("saveBtn").addEventListener("click", () => {
   void fileSave();
 });
@@ -53722,4 +53732,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e321f40885bb.mjs.map
+//# sourceMappingURL=moonsinger-71d08e4e1d20.mjs.map

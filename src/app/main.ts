@@ -3406,9 +3406,23 @@ async function smartSaveStore(): Promise<void> {
     if (v === "later") signInDeclined = true;
     return;
   }
-  if (folderHome()) { info(es.isPushPending() ? _t("存在这台设备上了，还没写进文件夹") : before === "clean" ? _t("文件夹里也是最新的") : _t("存好了：写进了「{label}」", { label: folderHome()!.label })); return; }
-  info(es.isPushPending() ? _t("存在这台设备上了，云端稍后再推") : before === "clean" ? _t("云端也是最新的") : _t("存好了，云端也更新了"));
+  // 符合预期的不进通知栈，存钮旁一闪；不符合预期的（只落了本机）才开口。冲突 / 失败走库的面和报错，不到这里（家族周账 F-201，user 11-05「上传成功的toast是不是太多了」「2可以」）。
+  if (es.isPushPending()) { info(folderHome() ? _t("存在这台设备上了，还没写进文件夹") : _t("存在这台设备上了，云端稍后再推")); return; }
+  flashSaved();
 }
+/** 按「存」成了：存钮下面一闪「已存」，1.2 s。不占顶栏的位置（顶栏不许被挤动），不进通知栈，点得穿。状态的正本照旧是存钮自己（SAVE_SPEC）。 */
+function flashSaved(): void {
+  document.querySelector(".save-flash")?.remove();
+  const r = $("saveBtn").getBoundingClientRect();
+  const el = document.createElement("div");
+  el.className = "save-flash"; el.setAttribute("role", "status");
+  el.textContent = _t("已存 ✓");
+  el.style.top = `${Math.round(r.bottom + 4)}px`;
+  el.style.right = `${Math.max(4, Math.round(innerWidth - r.right))}px`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), SAVE_FLASH_MS);
+}
+const SAVE_FLASH_MS = 1200;
 $("saveBtn").addEventListener("click", () => { void fileSave(); });   // smart save = 存 = 回家（三种家的分支在 H.save）
 $("undoBtn").addEventListener("click", () => undoNow());
 $("redoBtn").addEventListener("click", () => redoNow());

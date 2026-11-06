@@ -542,6 +542,33 @@ scenario("H4 (b)+(c)：开着那首按过存 = 续传；另一首只是改过、
   await p.close2();
 });
 
+// 2026-11-05 Claude Opus 5.5（F-201；user 11-05「上传成功的toast是不是太多了」「2可以」）
+scenario("F-201 按「存」成了 = 存钮旁一闪、不进通知栈；只落了本机 = 通知栈照说", async (w) => {
+  const { p, id } = await seed(w, { account: true, signedIn: true, renew: "ok" }, { reopen: false });
+  const flash = () => p.evaluate(() => document.querySelector(".save-flash")?.textContent ?? null);
+  const info = () => p.evaluate(() => document.querySelector('[data-notice-id="info"]')?.textContent ?? null);
+  await p.waitForFunction(() => !document.querySelector('[data-notice-id="info"]'), null, { timeout: 5000 });
+  const hdr = await p.evaluate(() => JSON.stringify(document.getElementById("saveBtn").getBoundingClientRect()));
+  const before = await cloudHexOf(w, id);
+  await typeNote(p, ["5"]); await p.waitForTimeout(150);
+  await p.click("#saveBtn"); await p.waitForSelector(".save-flash", { timeout: 4000 });
+  check((await flash())?.includes("已存"), "存钮旁一闪", String(await flash()));
+  check((await info()) === null, "不进通知栈", String(await info()));
+  check((await cloudHexOf(w, id)) !== before, "前提：真传上去了");
+  check((await p.evaluate(() => JSON.stringify(document.getElementById("saveBtn").getBoundingClientRect()))) === hdr, "顶栏没被挤动");
+  check(await p.evaluate(() => { const el = document.querySelector(".save-flash"), b = document.getElementById("saveBtn").getBoundingClientRect(), r = el.getBoundingClientRect(); return getComputedStyle(el).pointerEvents === "none" && r.top >= b.bottom && r.right <= innerWidth; }), "在存钮下面、点得穿、不出屏");
+  await p.waitForFunction(() => !document.querySelector(".save-flash"), null, { timeout: 3000 });
+  check(true, "一闪就没了");
+  // 只落了本机：要开口（不是预期）
+  await p.patchAuth({ net: false }); await p.evaluate(() => window.dispatchEvent(new Event("offline"))); await p.waitForTimeout(300);
+  if (await p.evaluate(() => { const g = document.querySelector(".gate-sheet"); return !!g && !g.hidden; })) { await p.clickGate("离线继续"); await p.waitForTimeout(300); }
+  await typeNote(p, ["6"]); await p.waitForTimeout(150);
+  await p.click("#saveBtn"); await p.waitForSelector('[data-notice-id="info"]', { timeout: 4000 });
+  check(/云端稍后再推/.test(String(await info())), "只落了本机：通知栈照说", String(await info()));
+  check((await flash()) === null, "这时不一闪");
+  check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
+  await p.close2();
+});
 // 2026-11-05 Claude Opus 5.5（F-200；user 11-05「切换前后台之后说需要处理，点了之后虽然处理好了但是弹回图库了」）
 scenario("F-200 切 app 回来：只有开着的这首只是自动保存 = 不说、不传", async (w) => {
   const { p, id } = await seed(w, { account: true, signedIn: true, renew: "ok" }, { reopen: false });

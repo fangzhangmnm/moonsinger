@@ -1006,3 +1006,9 @@ body.doc-final .inst-page .finder-bar::after { content: var(--t-final-lock, "定
 .touch-tip { position: fixed; z-index: var(--z-menu); max-width: min(280px, calc(100vw - 16px)); padding: 6px 10px; border-radius: 8px; background: var(--ink, #222); color: var(--paper, #fff); font-size: 13px; line-height: 1.35; pointer-events: none; box-shadow: 0 2px 10px rgba(0, 0, 0, .25); }
 .sel-bar .sel-ico svg { width: 18px; height: 18px; display: block; }
 .mode-seg [data-mode] { width: 36px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }   /* 三颗一样宽，不随图标大小变 */
+
+/* 按「存」成了：存钮下面一闪（main.ts flashSaved，家族周账 F-201）。不占顶栏的位置、点得穿；动画只有淡出，减弱动态时只显隐。 */
+.save-flash { position: fixed; z-index: var(--z-float); pointer-events: none; padding: 2px 8px; border-radius: 6px; font-size: 12px; line-height: 1.5; white-space: nowrap;
+  background: var(--panel, #fff); color: var(--ink, #222); border: 1px solid var(--line, rgba(0,0,0,.15)); animation: save-flash-out 1.2s ease-in forwards; }
+@keyframes save-flash-out { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .save-flash { animation: none; } }
