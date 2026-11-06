@@ -584,6 +584,41 @@ scenario("F-200 切 app 回来：只有开着的这首只是自动保存 = 不�
   check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
   await p.close2();
 });
+scenario("F-200 刷新 / 被系统杀掉重开：这一页不知道它没传（存钮显示干净），开着的这首照说、能当场传", async (w) => {
+  const { p, id } = await seed(w, { account: true, signedIn: true, renew: "ok" }, { reopen: false });
+  await typeNote(p, ["5"]); await p.waitForTimeout(150);
+  await p.evaluate(() => window.__moonsinger.es().flushLocal());
+  const before = await cloudHexOf(w, id);
+  await p.reopen();
+  await p.waitForSelector('[data-notice-id="unsynced"]', { timeout: 8000 }); await p.waitForTimeout(200);
+  const t = await noticeText(p);
+  check(t.includes("1 首改过的还只在这台设备上"), "如实说", t);
+  check(!t.includes("连正在写的这首"), "点的就是它，不用另说", t);
+  check((await cloudHexOf(w, id)) === before, "没点之前没传");
+  await p.click('[data-notice-id="unsynced"] button:has-text("传上去")');
+  await p.waitForFunction(() => window.__moonsinger.store().files.dirty.count().then((n) => n === 0), null, { timeout: 8000 });
+  await p.waitForTimeout(200);
+  check((await cloudHexOf(w, id)) !== before, "传上去了");
+  check((await p.evaluate(() => window.__moonsinger.identifier())) === id, "还开着这首");
+  check(/1 首都传上去了/.test(await noticeText(p)), "回执：1 首", await noticeText(p));
+  check(p.__errs.length === 0, "页面零报错", p.__errs.join(" ; "));
+  await p.close2();
+});
+// 老问题，这轮没修，钉住现状（家族周账 F-204）：修了之后这几条要反过来。created 2026-11-05 by Claude Opus 5.5
+scenario("F-204（已知老问题）刷新后本机有没传的：存钮显示干净、离开也不传", async (w) => {
+  const { p, id } = await seed(w, { account: true, signedIn: true, renew: "ok" }, { reopen: false });
+  await typeNote(p, ["5"]); await p.waitForTimeout(150);
+  await p.evaluate(() => window.__moonsinger.es().flushLocal());
+  const before = await cloudHexOf(w, id);
+  await p.reopen(); await p.waitForTimeout(800);
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 1, "库：这首有没传的");
+  check(!(await p.evaluate(() => window.__moonsinger.es().isPushPending())), "这一页：以为没有");
+  check(await p.evaluate(() => document.getElementById("saveBtn").classList.contains("s-clean")), "存钮：显示干净", await p.evaluate(() => document.getElementById("saveBtn").className));
+  await p.evaluate(() => window.__moonsinger.openGallery()); await p.waitForTimeout(800);
+  check((await cloudHexOf(w, id)) === before, "离开这首（进歌库）：也不传");
+  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 1, "字节没丢：还在脏账上、歌库「要处理」里");
+  await p.close2();
+});
 scenario("F-200 别的歌也只在这台设备上 = 说一声；「传上去」两首一起传、不离开当前这首；回执的数对得上", async (w) => {
   const { p, id: a } = await seed(w, { account: true, signedIn: false, renew: "interaction" }, { reopen: false });
   await p.evaluate(() => window.__moonsinger.newStoreSong()); await p.waitForTimeout(300);

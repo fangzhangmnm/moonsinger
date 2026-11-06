@@ -89,7 +89,7 @@ try {
   //   2026-11-03 现状（报告 A2 节）：这里云端字节 = 本机字节（sha256 相同），「处理…」照样弹「云端和本机各有一版新改动」→ 下面「不弹冲突面」那条断言如实红，等库 / Fable 定。
   await signIn(A, "去处理"); await A.waitForTimeout(400);
   await A.click(`#galleryFull .gallery-tile:has(.gallery-tile-name[title="${id}"]) button:has-text('处理')`); await A.waitForTimeout(800);
-  check(A.__asked === false, "没传上去的只有开着的这首 = 登录后不说（F-200）");
+  check(A.__asked === true, "刷新后这一页不知道它没传（存钮显示干净）= 登录后如实说一声（F-200 只管同一页里切 app）");
   check((await gate(A)) === null && (await A.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 0, "登录后补推：自愈（云端字节 = 本地字节），不弹冲突面、脏标清了");
   // 让后面的场景接着跑：面开着就选「本地覆盖云端」（两边本来一样，输家照样进备份箱），再点它的卡片回到这首（进歌库 = 放下了手里的歌）
   if (await gate(A)) { await A.click(".gate-sheet .gate-actions button:has-text('本地覆盖云端')"); await A.waitForTimeout(500); }

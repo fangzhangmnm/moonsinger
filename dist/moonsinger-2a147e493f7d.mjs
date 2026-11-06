@@ -4946,7 +4946,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.15.3-2026-11-05";
+var APP_VERSION = "v0.15.4-2026-11-05";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -27716,7 +27716,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-cb2a9711a75c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-c35b362e2f95.mjs");
+      return pick(() => "encode-worker-2aba6f7f3460.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36764,8 +36764,8 @@ function planReturn(dirty2, neverUploaded, openDocAutosaveOnly = false) {
   const total = dirty2 - (openDocAutosaveOnly ? 1 : 0);
   return total > 0 ? { kind: "list", total } : { kind: "none" };
 }
-function isOpenDocAutosaveOnly(files, openId, owed) {
-  if (!openId || owed) return false;
+function isOpenDocAutosaveOnly(files, openId, sessionPending) {
+  if (!openId || !sessionPending) return false;
   return files.some((f2) => f2.identifier === openId && f2.syncState === "unpushed");
 }
 function stillLocalIds(files, except) {
@@ -53093,7 +53093,7 @@ async function settleReturnOnce() {
   }
   const never2 = neverUploadedIds(items);
   const openId = H2.identifier(), owed = es2.isPushOwed();
-  const openAutosaveOnly = isOpenDocAutosaveOnly(items, openId, owed);
+  const openAutosaveOnly = isOpenDocAutosaveOnly(items, openId, es2.isPushPending() && !owed);
   await resumeOwedPush(never2);
   if (askedReturn) return null;
   const plan = planReturn(await store.files.dirty.count().catch(() => dirtyNow), never2.size, openAutosaveOnly);
@@ -53732,4 +53732,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-71d08e4e1d20.mjs.map
+//# sourceMappingURL=moonsinger-2a147e493f7d.mjs.map

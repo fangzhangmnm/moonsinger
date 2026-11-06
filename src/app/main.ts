@@ -3312,7 +3312,7 @@ async function settleReturnOnce(): Promise<(() => void) | null> {
   catch (e) { reportError(e, "log"); return null; }
   const never = neverUploadedIds(items);
   const openId = H.identifier(), owed = es.isPushOwed();
-  const openAutosaveOnly = isOpenDocAutosaveOnly(items, openId, owed);   // 续传之前算（见函数注释）
+  const openAutosaveOnly = isOpenDocAutosaveOnly(items, openId, es.isPushPending() && !owed);   // 续传之前算（见函数注释）
   await resumeOwedPush(never);
   if (askedReturn) return null;
   const plan = planReturn(await store.files.dirty.count().catch(() => dirtyNow), never.size, openAutosaveOnly);
