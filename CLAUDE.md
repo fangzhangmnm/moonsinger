@@ -266,7 +266,7 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **宽度靠量**：`test/e2e/i18n-en.mjs` 用英文走四种屏幕（iPad mini 竖 / 横、手机、桌面）的主要界面，查剩下的汉字 + 字宽超过控件的。**没量到的**：高度方向（乐谱字形的行高会误报，只量宽度）、下拉框里的字、真机字体。
 - **发布（2026-11-06，Claude Opus 5.5）**：user「把写歌这家 v0.15.4 推正式版 + itch 浏览器版 + itch 下载版 + GitHub release」→ **prod = v0.15.4**（空合并 e4c4248，tree = main 02a1c95，run 42173824958，根目录 bundle 2a147e493f7d 核过）；itch `html` #2311191 / `local` #2311194 = v0.15.4；GitHub release v0.15.4 挂了备用版（145 MB，下载 200）。发布前 `test:full` 全绿（单元 972、E2E 冒烟 74、itch 夹具 18、备用版 24）；Fable 11-06 审过（家族根施工单 §7）。**itch 项目页当时还是 draft（外部 404），公开只能 user 在后台点。** 宣发会话的 README 提交 dec6836 当时还没推，发布从 02a1c95 的临时检出跑（守卫要 HEAD = github/main；临时检出要设 `MS_MODELS_DIR` / `MS_SOUNDS_DIR`，脚本默认按 `../` 找兄弟仓），用完删了。
 - **上一次发布**：2026-11-04 user「好，推prod和itch吧」→ **prod = v0.15.1**（空合并 12654ae，run 41945320839，根目录 bundle 676bb2b9d421 核过；从 v0.12.25 直接跳过来）；itch `html` #2301967 / `local` #2301969 = v0.15.1；GitHub release v0.15.1 挂了备用版（user 同日「release也推」）。发布前：单元 960、两份壳冒烟、itch 夹具、备用版冒烟全绿；全量 E2E 最后一次在 v0.15.0（73/74，`folder-home` 的 `seedLegacy` 时好时坏，改前的版本同样红），v0.15.1 只改了图标和钮宽。
-- **网页简介没翻**：`index.html` 的 description / og、`manifest` 的 description 还是中文（文案归 user，标题照旧只有 MoonSinger）。
+- **网页 SEO（v0.15.5，2026-11-06，Claude Opus 5.5；user「开始做seo」）**：`index.html` 的 description / og、`manifest` 的 description 换成英文（标语是 user 的 Sing before writing a song），静态 `lang` = en（开机照旧按语言改），预览卡 = 根目录 `og-card-1200x630.jpg`（不写字、主体居中，出图脚本在宣发仓；在 deploy.yml 白名单里），标题照旧只有 MoonSinger。**只有 prod 根目录才算数**：canonical 指根目录，爬虫爬的是正式版。
 
 ## 回来时没传的东西分三种 + 离线期间静默再试（v0.14.18，2026-11-04，Claude Opus 5.5；家族工单 H4；规则书 §1 第 15 条、闸门设计稿 §3）
 

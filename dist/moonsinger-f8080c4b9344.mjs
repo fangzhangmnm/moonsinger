@@ -4946,7 +4946,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.15.4-2026-11-05";
+var APP_VERSION = "v0.15.5-2026-11-06";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -27716,7 +27716,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-cb2a9711a75c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-2aba6f7f3460.mjs");
+      return pick(() => "encode-worker-ff5be3e64525.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -53732,4 +53732,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2a147e493f7d.mjs.map
+//# sourceMappingURL=moonsinger-f8080c4b9344.mjs.map
