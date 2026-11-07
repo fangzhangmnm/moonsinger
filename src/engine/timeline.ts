@@ -117,13 +117,14 @@ export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, ma
     const ps = poly && tok.pitch ? allPitches(tok as NoteTok) : [effectivePitch(tokens, index)];   // 单声引擎只拿最上面那条线
     const nextOpen = new Map<number, { midi: number; t0: number; t1: number; vel?: number }>();
     // 琶音（v0.9.45；v0.9.48 改：user「建议改为旋律音准时落拍、低音提前滚奏，错开间隔35ms」）：最上面的（旋律）准时落拍，下面的从低到高依次提早 arpeggioSec
-    //   （最多摊到这个音一半长；歌开头前面没地方 = 钳在 0）；连过来的那段不再错开
+    //   （最多摊到这个音一半长；连过来的那段不再错开）。歌开头那个和弦 = 低音在 0 之前滚上来（v0.16.1，user 11-07 选 A「允许在 0 之前开始滚」；原来钳在 0 = 第一个和弦合成一下，
+    //   那是 v0.9.48 AI 顺手定的、不是 user 拍的）：时间线从最早的音起（同月读的辅音、鼓的着力点），第一拍照旧在 0
     const arp = poly && ps.length > 1 && (tok.art ?? []).includes("arpeggio") && !tok.tie ? Math.min(marks?.arpeggioSec ?? 0.035, ((t1 - t0) * 0.5) / (ps.length - 1)) : 0;
     const rank = arp ? new Map([...ps].map((q) => midiOf(q)).sort((a, b) => a - b).map((m, k) => [m, k] as const)) : null;
     for (const p of ps) {
       const midi = midiOf(p), prev = tok.tie ? open.get(midi) : undefined;
       if (prev) { prev.t1 = marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1; nextOpen.set(midi, prev); continue; }
-      const n = { midi, t0: rank ? Math.max(0, t0 - (ps.length - 1 - (rank.get(midi) ?? 0)) * arp) : t0, t1: marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}) }; notes.push(n); nextOpen.set(midi, n);
+      const n = { midi, t0: rank ? t0 - (ps.length - 1 - (rank.get(midi) ?? 0)) * arp : t0, t1: marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}) }; notes.push(n); nextOpen.set(midi, n);
     }
     open = nextOpen;
   }

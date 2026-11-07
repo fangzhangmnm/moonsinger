@@ -5,6 +5,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, addPaper, addPart, TPQ, DEFAULT_BPM, type EditorState, type Token, type Song, type PaperSeg, type PartDef } from "../src/score/song.ts";
 import { emptyExtras, activePerfSpec } from "../src/format/project.ts";
 import { buildTimeline, LEAD_IN, type PerformerInfo } from "../src/engine/timeline.ts";
+import { lightMarks } from "../src/score/perform.ts";
 
 let nid = 7000;
 const n = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", ly: string | null = null, dur = TPQ): Token => ({ kind: "note", id: nid++, pitch: { step, alter: 0, octave: 4 }, dur, lyric: ly });
@@ -94,5 +95,19 @@ describe("时间线：谱位置 → 秒（放着的时候换时间线用）", ()
     assert(first !== null && second !== null && Math.abs(first - Q) < 1e-9 && Math.abs(second - 5 * Q) < 1e-9, `两遍：${first} / ${second}`);
     const back = t2.locate(5 * Q);   // 第二遍的秒 → 纸自己的 tick（以前回的是展开后的 tick 8400，超出纸长、播放头画不出来）
     assert(back !== null && back.paperId === p1.id && back.tick === TPQ, `第二遍 locate 回纸内 tick：${JSON.stringify(back)}`);
+  });
+});
+
+// 歌开头的琶音（v0.16.1，2026-11-07 by Claude Opus 5.5；家族周账 F-209，user 11-07「琶音…如果是在曲子的第一个音的话，它不会正确播放出来，它会合在一起」→ 选 A「允许在 0 之前开始滚」）：
+//   旋律在第一拍（0），低音在 0 之前；时间线从最早的那个音起（录音房「从头放」从这里开始，所以真的滚得开）
+describe("时间线：歌开头的琶音", () => {
+  it("低音在 0 之前、旋律在 0；范围从最早的音起；不写琶音 = 范围照旧从 0 起", () => {
+    const chord = (art?: string[]): Token => ({ kind: "note", id: nid++, pitch: { step: "G", alter: 0, octave: 4 }, chord: [{ step: "E", alter: 0, octave: 4 }, { step: "C", alter: 0, octave: 4 }], dur: TPQ, lyric: null, ...(art ? { art } : {}) } as Token);
+    const t = build(two([chord(["arpeggio"]), n("C")], []), "soundfont"), tr0 = t.tracks[0] as { notes: { t0: number; key: number }[] };
+    const first = tr0.notes.slice(0, 3).map((x) => +x.t0.toFixed(3));
+    eq(JSON.stringify(first), JSON.stringify([-2 * lightMarks(spec).arpeggioSec, -lightMarks(spec).arpeggioSec, 0].map((x) => +x.toFixed(3))), "从低到高：−2 格、−1 格、0");
+    assert(Math.abs(t.range.from - first[0]) < 1e-9, `范围从最早的音起（${t.range.from}）`);
+    const plain = build(two([chord(), n("C")], []), "soundfont");
+    eq(plain.range.from, 0, "不写琶音：范围从 0 起");
   });
 });

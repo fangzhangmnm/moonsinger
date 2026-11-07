@@ -4946,7 +4946,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.0-2026-11-07";
+var APP_VERSION = "v0.16.1-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -27716,7 +27716,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-cb2a9711a75c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-8362f611b17e.mjs");
+      return pick(() => "encode-worker-97309d3d4d4e.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -32805,7 +32805,7 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf) {
         nextOpen.set(midi2, prev);
         continue;
       }
-      const n10 = { midi: midi2, t0: rank ? Math.max(0, t02 - (ps.length - 1 - (rank.get(midi2) ?? 0)) * arp) : t02, t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {} };
+      const n10 = { midi: midi2, t0: rank ? t02 - (ps.length - 1 - (rank.get(midi2) ?? 0)) * arp : t02, t1: marks ? noteEnd(t02, t12, tok.art ?? [], marks, !!tok.slur) : t12, ...velOf ? { vel: velOf(index, tok.art ?? []) } : {} };
       notes.push(n10);
       nextOpen.set(midi2, n10);
     }
@@ -33224,10 +33224,8 @@ var soundfont = registerPerformer({
       return { t0: n10.t0 - h2, t1: n10.t1, key, vel: n10.vel ?? info2.velocity, preset: g3.presetIndex };
     });
     let from;
-    if (info2.hitSec) {
-      sfNotes.sort((x2, y2) => x2.t0 - y2.t0);
-      for (const n10 of sfNotes) from = from === void 0 ? n10.t0 : Math.min(from, n10.t0);
-    }
+    if (info2.hitSec) sfNotes.sort((x2, y2) => x2.t0 - y2.t0);
+    for (const n10 of sfNotes) from = from === void 0 ? n10.t0 : Math.min(from, n10.t0);
     return { track: { id: id2, kind: "sf", sha: g3.sha, notes: sfNotes, gain, ...chain?.length ? { chain } : {} }, ...from !== void 0 ? { from } : {} };
   },
   /** × 符头 = 固定敲一个键（鼓件 / 音效固定原速）；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27）。只是画法，数据不动。 */
@@ -33834,6 +33832,7 @@ function createPerformance(host2) {
   function startSeconds(tl2, r10) {
     if (!startMark) return r10.from;
     const s10 = tl2.secondsAt(startMark.paperId, startMark.tick, 0);
+    if (s10 !== null && s10 <= 0) return r10.from;
     return s10 === null ? r10.from : clampTo(r10, s10 - PRE_ROLL);
   }
   function resumeSeconds(tl2, r10) {
@@ -35758,7 +35757,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "aa460a0e2ced3186" : "dev";
+var CORE_HASH = true ? "a9eaa870aa44f0ca" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -53757,4 +53756,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-dd3abf9a9c71.mjs.map
+//# sourceMappingURL=moonsinger-755c4dee3cda.mjs.map

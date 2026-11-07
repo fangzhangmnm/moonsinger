@@ -16,7 +16,8 @@ describe("琶音", () => {
     const ns = lightNotes([...head(), rest, chord({ art: ["arpeggio"] })], [], true, marks), on = ns.map((n) => [n.midi, +n.t0.toFixed(3)]);
     eq(JSON.stringify(on), "[[60,0.587],[64,0.627],[67,0.667]]", "最低的最早、旋律在拍上");
     const head0 = lightNotes([...head(), chord({ art: ["arpeggio"] })], [], true, marks);
-    assert(head0.every((n) => n.t0 >= 0) && head0.some((n) => n.midi === 67 && n.t0 === 0), "歌开头：钳在 0，旋律照旧在拍上");
+    // 歌开头（v0.16.1，user 11-07 选 A「允许在 0 之前开始滚」）：旋律在 0、低音在 0 之前滚上来（原来钳在 0 = 合成一下）
+    eq(JSON.stringify(head0.map((n) => [n.midi, +n.t0.toFixed(3)])), "[[60,-0.08],[64,-0.04],[67,0]]", "歌开头：低音在 0 之前、旋律在拍上");
     const off = lightNotes([...head(), chord()], [], true, marks);
     assert(off.every((n) => n.t0 === 0), "不写琶音 = 一起响");
   });

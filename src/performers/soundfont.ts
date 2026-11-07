@@ -42,7 +42,8 @@ export const soundfont = registerPerformer({
     if (!g) return { unplayable: _t("台上的不是 SoundFont 乐器") };
     const sfNotes = notes.map((n): NoteEv => { const key = sfKey(n.midi, g, info.transpose), h = info.hitSec?.(key) ?? 0; return { t0: n.t0 - h, t1: n.t1, key, vel: n.vel ?? info.velocity, preset: g.presetIndex }; });
     let from: number | undefined;
-    if (info.hitSec) { sfNotes.sort((x, y) => x.t0 - y.t0); for (const n of sfNotes) from = from === undefined ? n.t0 : Math.min(from, n.t0); }   // 提前了的音：录音房按 t0 顺序走；比第一个音还早 = 时间线从那儿起
+    if (info.hitSec) sfNotes.sort((x, y) => x.t0 - y.t0);   // 提前了的音：录音房按 t0 顺序走
+    for (const n of sfNotes) from = from === undefined ? n.t0 : Math.min(from, n.t0);   // 比 0 还早（着力点 / 歌开头的琶音，v0.16.1）= 时间线从那儿起
     return { track: { id, kind: "sf", sha: g.sha, notes: sfNotes, gain, ...(chain?.length ? { chain } : {}) }, ...(from !== undefined ? { from } : {}) };
   },
   /** × 符头 = 固定敲一个键（鼓件 / 音效固定原速）；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27）。只是画法，数据不动。 */

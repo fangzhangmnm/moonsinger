@@ -310,6 +310,7 @@ export function createPerformance(host: PerfHost) {
   function startSeconds(tl: Timeline, r: { from: number; to: number }): number {
     if (!startMark) return r.from;
     const s = tl.secondsAt(startMark.paperId, startMark.tick, 0);
+    if (s !== null && s <= 0) return r.from;   // 起点就是开头 = 从最早的声音起（歌开头的琶音 / 反向镲 / 辅音在 0 之前；v0.16.1，同「从头放」）
     return s === null ? r.from : clampTo(r, s - PRE_ROLL);   // 提前一点（月读的辅音在拍子前）
   }
   function resumeSeconds(tl: Timeline, r: { from: number; to: number }): number {
