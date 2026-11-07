@@ -25,6 +25,7 @@ import "./instruments.test.ts";
 import "./beams.test.ts";
 import "./header-spot.test.ts";
 import "./view-in-c.test.ts";
+import "./chord-name.test.ts";
 import "./clipboard.test.ts";
 import "./chord.test.ts";
 import "./history.test.ts";

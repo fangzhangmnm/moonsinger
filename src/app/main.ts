@@ -13,6 +13,7 @@ import { conceptName, zhOnly } from "../gm/catalog-i18n.ts";
 import { _t, lang, langChosen, saveLang, applyDocumentLang, LANG_NAME, type Lang } from "../i18n/index.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
+import { type ChordRead, type ChordGuess } from "../score/chord-name.ts";
 import { singleSel, currentIndex, ensureStartDyns, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
@@ -474,6 +475,10 @@ let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消�
  *  「设计里面专门开一个就是 Accessibility 辅助模式的框，这是第一个可选项」「这个是跟着系统的设置走的」「键盘的键位不能动」。PDF / 导出照实际的调。 */
 const KV_VIEW_IN_C = "view-in-c";
 let viewInC = deviceKvGet(KV_VIEW_IN_C) === "1";
+/** 和弦标级数（v0.16.11；这台设备上的设置，device-kv「chord-tags」，默认关）：叠音的和弦上方写级数（src/score/chord-name.ts），点了看候选。
+ *  user 11-07「我根本看不懂我自己摸的和弦，摸出来是几级和弦，我脑袋根本转不过来」「和弦上标级数…写个深模块…就你自己写」。 */
+const KV_CHORD_TAGS = "chord-tags";
+let chordTagsOn = deviceKvGet(KV_CHORD_TAGS) === "1";
 const view = new ScoreView(scoreEl, {
   get: () => D.st,
   set: (n, o) => update(n, o?.gesture),
@@ -485,6 +490,8 @@ const view = new ScoreView(scoreEl, {
   focus: (where) => showPad(where === "staff"),   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
   inC: () => viewInC,
+  chordTags: () => chordTagsOn,
+  onChordTag: (r, at) => openChordInfo(r, at),
   parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at) => openTrackCard(at),
   onBlankPress: (at, row) => openScoreMenu(at, row),
@@ -962,6 +969,15 @@ async function packStatusText(): Promise<string> {
 }
 /** 语言这一行：两种语言的字都写，走错语言的人也认得出。切换 = 存 + 重载（语言锁死在这一页，不要半译状态；没存的改动由挽留框 / 退出落盘那一套管）。 */
 const LANG_LABEL = "语言 · Language";   // i18n-keep
+/** 点了谱上的和弦级数：全部候选 + 怎么排的（不是选择题，只是看；认法 = src/score/chord-name.ts 头注释）。 */
+function openChordInfo(r: ChordRead, at: { x: number; y: number }): void {
+  const row = (g: ChordGuess, i: number) => `<div class="chord-cand${i === 0 ? " is-best" : ""}"><b>${esc(g.roman)}</b><span>${esc(g.name)}</span>` +
+    `<small>${[g.root.step !== g.bass.step || g.root.alter !== g.bass.alter ? _t("转位（最低音不是根音）") : "", g.omitted ? _t("省了 {n} 个音", { n: g.omitted }) : ""].filter(Boolean).join(" · ")}</small></div>`;
+  ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${_t("怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。")}</div>` +
+    r.all.slice(0, 6).map(row).join(""), at, () => true);
+}
+function setChordTags(on: boolean): void { chordTagsOn = on; deviceKvSet(KV_CHORD_TAGS, on ? "1" : "0"); view.render(); }
+const chordChips = (): string => [["off", _t("关"), !chordTagsOn], ["on", _t("开"), chordTagsOn]].map(([v, label, on]) => `<button class="btn chip${on ? " is-on" : ""}" data-v="chord:${v}">${esc(label as string)}</button>`).join("");
 function setViewInC(on: boolean): void {
   viewInC = on; deviceKvSet(KV_VIEW_IN_C, on ? "1" : "0");
   pad.setBigLabel(on ? "deg" : "abs"); view.render(); ghostSync();
@@ -982,6 +998,7 @@ function openSettings(): void {
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
     `<div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${langChips()}</div></div>` +
     `<div class="set-field">${_t("辅助 · 看谱方式")}<div class="set-row">${viewChips()}</div><span class="set-note">${_t("专业 = 按实际的调画谱，键上大字写音名。按 C 调看 = 谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数。键的位置不动；导出的 PDF 照实际的调印。只管这台设备。")}</span></div>` +
+    `<div class="set-field">${_t("辅助 · 和弦标级数")}<div class="set-row">${chordChips()}</div><span class="set-note">${_t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选。只是显示，不进歌、不印。")}</span></div>` +
     (inFolder ? `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" disabled value="${esc(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>`
       : `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>`) +
     `<label class="set-field">${_t("音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
@@ -1036,6 +1053,7 @@ function openSettings(): void {
     if (e.target === box || v === "close") close();
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "midi:connect") void midi.connect();
+    else if (v === "chord:off" || v === "chord:on") { setChordTags(v === "chord:on"); box.querySelectorAll<HTMLElement>('[data-v^="chord:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
     else if (v === "view:pro" || v === "view:inc") { setViewInC(v === "view:inc"); box.querySelectorAll<HTMLElement>('[data-v^="view:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
     else if (v?.startsWith("lang:")) { const l = v.slice(5); saveLang(l === "auto" ? null : l as Lang); location.reload(); }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);

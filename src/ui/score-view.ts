@@ -25,6 +25,7 @@ import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setF
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
 import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
+import { readChord, chordLabel, type ChordRead } from "../score/chord-name.ts";
 import { engrave, attachLayoutFns, LYRIC_EM, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg, toSvgParts } from "../render/svg.ts";
 import { lyricFont, measurerOn } from "../render/lyric-font.ts";
@@ -62,6 +63,10 @@ export interface ScoreViewHost {
   autoBars?(): boolean;
   /** 按 C 调看（辅助模式，v0.16.10；设备上的设置）：排版先把谱换到 C（src/score/view-in-c.ts）；拖音高 / 鬼音符按显示的换回实际的。 */
   inC?(): boolean;
+  /** 和弦标级数（辅助，v0.16.11；设备上的设置）：叠音的和弦上方写级数（src/score/chord-name.ts），只是覆盖层、不动排版、不印。 */
+  chordTags?(): boolean;
+  /** 点了谱上的和弦级数：宿主开一个小菜单列候选（at = 标的下沿中点，屏幕坐标）。 */
+  onChordTag?(read: ChordRead, at: { x: number; y: number }): void;
   /** 要画的声部（隐藏的不在里面；顺序 = 总谱从上到下）。 */
   parts(): PartView[];
   /** 歌手牌：某张纸第一行某条谱左边的声部名点了（那条已经成了光标所在的 track）。 */
@@ -422,6 +427,7 @@ export class ScoreView {
     this.title.reposition();
     this.drawPins();
     this.drawGhost();   // 「弹」的鬼音符照着新的排版重摆（只是摆，不影响排版）
+    this.drawChordTags();   // 和弦级数：同鬼音符，只是盖在上面
     record("decor", performance.now() - tDecor);
     // 只在光标 / 选区 / 编辑框挪了的时候才把视图拉过去；别的重画（静音 / 独奏的角标、隐藏、换纸设置…）不动人家滚到哪
     //   （user 2026-10-08「toggle mute solo的时候页面滚动会变」：原来每次重画都 follow，滚开了光标那行再点静音 = 被拽回去）
@@ -439,6 +445,36 @@ export class ScoreView {
   // ── 「弹」的鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「特别是前面有一个音的时候…如果是叠的话会在前面一个音上面加东西，但是不能动排版！！！，
   //   如果是非叠的话就是在要插入的地方加东西」「鬼音符的时候千万不能动排版！」）：盖在谱上的一层（ink 里一个不接点击的 svg），只借排版现成的位置——
   //   只选了一个音（叠亮着）= 叠画在那个音上；否则 = 光标处（下一个音要写进去的地方）。不进 engrave、不重排。
+  // ── 和弦标级数（v0.16.11）：叠音的和弦（NoteTok.chord）上方写级数，覆盖层（同鬼音符：不进排版、不接点击，点击在 tap 里按 chordTags 的框判）──
+  //   user 11-07「我根本看不懂我自己摸的和弦，摸出来是几级和弦」「和弦上标级数…写个深模块」。按谱里实际的音和那里的调号认（按 C 调看时写的级数一样）。
+  private chordEl: SVGSVGElement | null = null;
+  private chordTags: { x: number; y: number; w: number; h: number; read: ChordRead }[] = [];
+  private chordFor: [Layout | null, Song | null] = [null, null];
+  private drawChordTags(): void {
+    const L = this.layout, clear = () => { this.chordEl?.remove(); this.chordEl = null; this.chordTags = []; this.chordFor = [null, null]; };
+    if (!L || !(this.host.chordTags?.() ?? false)) { clear(); return; }
+    const song = this.host.get().song;
+    if (this.chordFor[0] === L && this.chordFor[1] === song && this.chordEl?.isConnected) return;   // 排版和谱都没变 = 不重算
+    this.chordFor = [L, song];
+    const sp = L.sp, fs = 1.25 * sp, parts: string[] = [], tags: typeof this.chordTags = [], seen = new Set<string>();
+    for (const h of L.notes) {
+      if (h.part) continue;   // 合租叠起来的那几条虚拟的不标
+      const sys = L.systems[h.system]; if (!sys) continue;
+      const k = `${sys.paper}|${sys.part}|${h.index}`; if (seen.has(k)) continue; seen.add(k);
+      const toks = trackOf(song, sys.paper, sys.part), t = toks[h.index];
+      if (t?.kind !== "note" || !t.pitch || !t.chord?.length) continue;
+      const r = readChord([t.pitch, ...t.chord], keyAt(toks, h.index)); if (!r) continue;
+      const s = chordLabel(r), cx = h.x + h.w / 2, y = Math.min(sys.staffTop - 0.6 * sp, h.y - 4 * sp), w = [...s].length * fs * 0.6 + 0.6 * sp;   // 让开向上的符干（约 3.5 个间距）
+      parts.push(`<text x="${cx}" y="${y}" font-size="${fs}" text-anchor="middle">${s.replace(/[&<>]/g, (c) => (c === "&" ? "&amp;" : c === "<" ? "&lt;" : "&gt;"))}</text>`);
+      tags.push({ x: cx - w / 2, y: y - fs * 1.05, w, h: fs * 1.4, read: r });
+    }
+    this.chordTags = tags;
+    if (!parts.length) { this.chordEl?.remove(); this.chordEl = null; return; }
+    const NS = "http://www.w3.org/2000/svg", g = (this.chordEl ??= document.createElementNS(NS, "svg"));
+    g.setAttribute("class", "chord-tags"); g.setAttribute("width", String(L.width)); g.setAttribute("height", String(L.height));
+    g.innerHTML = parts.join("");
+    if (!g.isConnected) this.ink.appendChild(g);
+  }
   private ghostEl: SVGSVGElement | null = null;
   private ghostP: Pitch[] = [];
   showGhost(ps: Pitch[]): void { this.ghostP = ps; this.drawGhost(); }
@@ -1271,6 +1307,9 @@ export class ScoreView {
     // 手指（pid === null）：歌词框开着时点谱面 = 只收框、不选中（user 2026-10-08 截图：打歌词时误触把一个音选成蓝的）；笔 / 鼠标照旧可以直接点选
     if (wasLyric && pid === null) { this.host.focus?.("staff"); return true; }
     const L = this.layout ?? L0, sp = L.sp;
+    // 0⁻. 和弦级数（v0.16.11）：点了 = 候选（听模式也认，只是看）
+    const ct = this.host.onChordTag ? this.chordTags.find((c) => this.inBox(c, x, y)) : undefined;
+    if (ct) { const b = this.clientBox(ct); this.host.onChordTag!(ct.read, { x: (b.left + b.right) / 2, y: b.bottom }); return true; }
     // 0. 纸右上角的小钮（纸张）、旁边的「＋」、歌名左边的「‹ ›」——都在歌名那一条里，先于歌名判
     if (this.inBox(L.paperChip, x, y)) { this.host.onPaper?.(); return true; }
     if (!view && this.inBox(L.addPaper, x, y)) { this.host.onAddPaper?.(); return true; }

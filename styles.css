@@ -929,6 +929,15 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 /* 补齐的淡色休止（v0.10.6）：这张纸别的声部更长，这位后面空着的那几个小节；只画不存、点它 = 点那个小节写 */
 /* 「弹」的鬼音符（v0.10.6）：盖在谱上的一层，不接点击、不影响排版 */
 .ghost-preview { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; opacity: .5; }
+/* 和弦标级数（v0.16.11）：覆盖层（不进排版、不印）；点击在 score-view tap 里按框判 */
+.chord-tags { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
+.chord-tags text { fill: var(--accent); font-family: system-ui, sans-serif; font-weight: 600; }
+.ctx-menu.chord-info { min-width: 220px; }
+.chord-cand { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 5px 10px; align-items: baseline; }
+.chord-cand b { font-size: 15px; }
+.chord-cand span { color: var(--muted); }
+.chord-cand small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
+.chord-cand.is-best { background: var(--accent-soft); border-radius: 6px; }
 .ghost-preview text { fill: var(--accent); }
 .ghost-preview line { stroke: var(--accent); }
 /* 琶音（v0.9.45）：和弦左边的波浪线 */

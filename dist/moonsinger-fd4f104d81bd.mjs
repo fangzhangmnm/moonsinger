@@ -1721,9 +1721,9 @@ var init_upng_esm = __esm({
         return data;
       }
       function _paeth(a10, b3, c10) {
-        var p2 = a10 + b3 - c10, pa = p2 - a10, pb = p2 - b3, pc = p2 - c10;
-        if (pa * pa <= pb * pb && pa * pa <= pc * pc) return a10;
-        else if (pb * pb <= pc * pc) return b3;
+        var p2 = a10 + b3 - c10, pa = p2 - a10, pb = p2 - b3, pc2 = p2 - c10;
+        if (pa * pa <= pb * pb && pa * pa <= pc2 * pc2) return a10;
+        else if (pb * pb <= pc2 * pc2) return b3;
         return c10;
       }
       function _IHDR(data, offset, out) {
@@ -1836,14 +1836,14 @@ var init_upng_esm = __esm({
       }
       function dither(sb2, w2, h2, plte, tb2, oind, MTD) {
         if (MTD == null) MTD = 1;
-        var pc = plte.length, nplt = [], rads = [];
-        for (var i10 = 0; i10 < pc; i10++) {
+        var pc2 = plte.length, nplt = [], rads = [];
+        for (var i10 = 0; i10 < pc2; i10++) {
           var c10 = plte[i10];
           nplt.push([c10 >>> 0 & 255, c10 >>> 8 & 255, c10 >>> 16 & 255, c10 >>> 24 & 255]);
         }
-        for (var i10 = 0; i10 < pc; i10++) {
+        for (var i10 = 0; i10 < pc2; i10++) {
           var ne2 = 4294967295, ni2 = 0;
-          for (var j2 = 0; j2 < pc; j2++) {
+          for (var j2 = 0; j2 < pc2; j2++) {
             var ce2 = D3(nplt[i10], nplt[j2]);
             if (j2 != i10 && ce2 < ne2) {
               ne2 = ce2;
@@ -1884,7 +1884,7 @@ var init_upng_esm = __esm({
               cc2 = [N2(sb2[i10] + ce2), N2(sb2[i10 + 1] + ce2), N2(sb2[i10 + 2] + ce2), N2(sb2[i10 + 3] + ce2)];
             }
             var ni2 = 0, nd2 = 16777215;
-            for (var j2 = 0; j2 < pc; j2++) {
+            for (var j2 = 0; j2 < pc2; j2++) {
               var cd2 = D3(cc2, nplt[j2]);
               if (cd2 < nd2) {
                 nd2 = cd2;
@@ -2916,12 +2916,19 @@ var S = {
   "\u7B97\u4E86": { en: "Never mind" },
   "\u2713 \u5728\u6587\u4EF6\u5939\u91CC": { en: "\u2713 In the folder" },
   "\xB7 \u6587\u4EF6\u5939\u91CC\u6CA1\u6709": { en: "\xB7 Not in the folder" },
+  "\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09": { en: "Inversion (the lowest note is not the root)" },
+  "\u7701\u4E86 {n} \u4E2A\u97F3": { en: "{n|note|notes} left out" },
+  "\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002": { en: "How it is read: chords that are complete (nothing left out) win \u2192 the lowest note as root wins \u2192 a root inside this key wins \u2192 simpler chords win. When two tie, both are written on the score." },
+  "\u5173": { en: "Off" },
+  "\u5F00": { en: "On" },
   "\u4E13\u4E1A": { en: "Standard" },
   "\u6309 C \u8C03\u770B\uFF081=X\uFF09": { en: "Read in C (1=X)" },
   "\u8DDF\u7CFB\u7EDF": { en: "System" },
   "\u8BBE\u7F6E": { en: "Settings" },
   "\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F": { en: "Accessibility \xB7 How to read the score" },
   "\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002": { en: "Standard = the score is drawn in its real key; the keys show note names large. Read in C = the score is drawn in C, with \u201C1=original key\u201D above each key signature; the keys show scale degrees large. Key positions never move; exported PDFs are printed in the real key. Applies to this device only." },
+  "\u8F85\u52A9 \xB7 \u548C\u5F26\u6807\u7EA7\u6570": { en: "Accessibility \xB7 Chord degrees" },
+  "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009\u3002\u53EA\u662F\u663E\u793A\uFF0C\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u5370\u3002": { en: "Writes above each stacked chord which degree it is in this key (V7, ii, \u266DVII, I/3\u2026); tap it to see all candidates. Display only: not saved in the song, not printed." },
   "\u6A21\u578B\u6765\u6E90": { en: "Model source" },
   "\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09": { en: "Sound library source (instrument banks, drum kits, sound effects; not AI models)" },
   "\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09": { en: "Sound library cache (kept on this device, works offline; songs carry their own sound, this is only the shelf)" },
@@ -3090,8 +3097,6 @@ var S = {
   "\u53F3 {p}": { en: "R {p}" },
   "\u603B\u8F68\u589E\u76CA {p}{p2} dB": { en: "Master gain {p}{p2} dB" },
   "\u6BCD\u7EBF\u9650\u5E45{on}": { en: "Bus limiter{on}" },
-  "\u5F00": { en: "On" },
-  "\u5173": { en: "Off" },
   "\u65C1\u901A": { en: "Bypass" },
   "\u53D6\u6D88\u65C1\u901A": { en: "Un-bypass" },
   "\u6DF7\u97F3\u8F68 {n}": { en: "Bus {n}" },
@@ -4974,7 +4979,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.10-2026-11-07";
+var APP_VERSION = "v0.16.11-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5117,56 +5122,6 @@ function initPwaShell(opts) {
   return { isDevRoute, reload, forceReset, clearOwnShell, checkForUpdate };
 }
 
-// src/score/paper.ts
-var STAFF_MM = 7;
-var STAFF_MM_COMPACT = 5;
-var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u8C31\u5927") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1B\u603B\u8C31\u58F0\u90E8\u591A\u7528\u8FD9\u4E2A") }];
-var densityOf = (p2) => p2.density ?? "cozy";
-var staffMmOf = (p2) => p2.staffMm ?? (densityOf(p2) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
-var spMm = (p2) => staffMmOf(p2) / 4;
-var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
-var PAPER_KINDS = ["A3L", "A4", "A5", "A6"];
-var DEFAULT_PAPER = "A5";
-var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09"), A6: _t("\u53E3\u888B\u672C") };
-var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
-function paperOf(kind, density = "cozy") {
-  const s10 = SIZES[kind];
-  return { kind, widthMm: s10.w, heightMm: s10.h, marginMm: { l: s10.m, r: s10.m, t: s10.m, b: s10.m }, ...density === "compact" ? { density } : {} };
-}
-var lineSp = (p2) => (p2.widthMm - p2.marginMm.l - p2.marginMm.r) / spMm(p2);
-var pageGeoOf = (p2) => {
-  const mm = spMm(p2), m2 = p2.marginMm;
-  return { h: p2.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm };
-};
-function detectPaper(widthMm, heightMm, marginMm, staffMm = STAFF_MM, density = "cozy") {
-  const near2 = (a10, b3) => Math.abs(a10 - b3) <= 2;
-  const kind = PAPER_KINDS.find((k2) => near2(widthMm, SIZES[k2].w) && near2(heightMm, SIZES[k2].h));
-  const want = density === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
-  const extra = { ...density === "compact" ? { density } : {}, ...Math.abs(staffMm - want) < 0.05 ? {} : { staffMm: +staffMm.toFixed(2) } };
-  return kind ? { ...paperOf(kind), marginMm, ...extra } : { kind: "other", widthMm, heightMm, marginMm, ...extra };
-}
-var paperSizeText = (p2) => `${Math.round(p2.widthMm)} \xD7 ${Math.round(p2.heightMm)} mm`;
-
-// src/keyboard/latch.ts
-var DOUBLE_TAP_MS = 350;
-var LATCH_OFF = { mode: "off", at: 0, held: false, wrote: false, left: 0 };
-function latchDown(l10, now2, uses = 1) {
-  const mode = l10.mode === "off" ? "once" : l10.mode === "once" && now2 - l10.at < DOUBLE_TAP_MS ? "lock" : "off";
-  return { mode, at: now2, held: true, wrote: false, left: mode === "once" ? uses : 0 };
-}
-function latchUp(l10) {
-  if (!l10.held) return l10;
-  return l10.wrote && l10.mode !== "lock" ? { ...LATCH_OFF, at: l10.at } : { ...l10, held: false };
-}
-var latchTap = (l10, now2, uses = 1) => latchUp(latchDown(l10, now2, uses));
-function latchWrite(l10) {
-  if (l10.held) return l10.wrote ? l10 : { ...l10, wrote: true };
-  if (l10.mode === "once") return l10.left <= 1 ? { ...LATCH_OFF, at: l10.at } : { ...l10, left: l10.left - 1 };
-  return l10;
-}
-var latchCancel = (l10) => l10.mode === "once" ? { ...LATCH_OFF, at: l10.at, held: l10.held } : l10;
-var latchOn = (l10) => l10.mode !== "off";
-
 // src/score/pitch.ts
 var STEPS = ["C", "D", "E", "F", "G", "A", "B"];
 var STEP_SEMI = [0, 2, 4, 5, 7, 9, 11];
@@ -5246,6 +5201,123 @@ function pitchName(p2) {
   return `${p2.step}${p2.alter > 0 ? "#".repeat(p2.alter) : "b".repeat(-p2.alter)}${p2.octave}`;
 }
 var KEY_LABEL = { [-7]: "C\u266D", [-6]: "G\u266D", [-5]: "D\u266D", [-4]: "A\u266D", [-3]: "E\u266D", [-2]: "B\u266D", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F\u266F", 7: "C\u266F" };
+
+// src/score/chord-name.ts
+var TPLS = [
+  { id: "maj", iv: [0, 4, 7], minor: false, rs: "", sym: "" },
+  { id: "min", iv: [0, 3, 7], minor: true, rs: "", sym: "m" },
+  { id: "dim", iv: [0, 3, 6], minor: true, rs: "\xB0", sym: "dim" },
+  { id: "aug", iv: [0, 4, 8], minor: false, rs: "+", sym: "aug" },
+  { id: "sus4", iv: [0, 5, 7], minor: false, rs: "sus4", sym: "sus4" },
+  { id: "sus2", iv: [0, 2, 7], minor: false, rs: "sus2", sym: "sus2" },
+  { id: "7", iv: [0, 4, 10], opt: [7], minor: false, rs: "7", sym: "7" },
+  { id: "m7", iv: [0, 3, 10], opt: [7], minor: true, rs: "7", sym: "m7" },
+  { id: "maj7", iv: [0, 4, 11], opt: [7], minor: false, rs: "maj7", sym: "maj7" },
+  { id: "6", iv: [0, 4, 9], opt: [7], minor: false, rs: "6", sym: "6" },
+  { id: "m6", iv: [0, 3, 9], opt: [7], minor: true, rs: "6", sym: "m6" },
+  { id: "m7b5", iv: [0, 3, 6, 10], minor: true, rs: "\xF87", sym: "m7\u266D5" },
+  { id: "dim7", iv: [0, 3, 6, 9], minor: true, rs: "\xB07", sym: "dim7" },
+  { id: "mMaj7", iv: [0, 3, 11], opt: [7], minor: true, rs: "(maj7)", sym: "m(maj7)" },
+  { id: "aug7", iv: [0, 4, 8, 10], minor: false, rs: "+7", sym: "aug7" },
+  { id: "7sus4", iv: [0, 5, 10], opt: [7], minor: false, rs: "7sus4", sym: "7sus4" },
+  { id: "add9", iv: [0, 4, 2], opt: [7], minor: false, rs: "add9", sym: "add9" },
+  { id: "madd9", iv: [0, 3, 2], opt: [7], minor: true, rs: "(add9)", sym: "m(add9)" },
+  { id: "69", iv: [0, 4, 9, 2], opt: [7], minor: false, rs: "6/9", sym: "6/9" },
+  { id: "9", iv: [0, 4, 10, 2], opt: [7], minor: false, rs: "9", sym: "9" },
+  { id: "m9", iv: [0, 3, 10, 2], opt: [7], minor: true, rs: "9", sym: "m9" },
+  { id: "maj9", iv: [0, 4, 11, 2], opt: [7], minor: false, rs: "maj9", sym: "maj9" },
+  { id: "7b9", iv: [0, 4, 10, 1], opt: [7], minor: false, rs: "7\u266D9", sym: "7\u266D9" },
+  { id: "7s9", iv: [0, 4, 10, 3], opt: [7], minor: false, rs: "7\u266F9", sym: "7\u266F9" },
+  { id: "11", iv: [0, 10, 5], opt: [7, 2], minor: false, rs: "11", sym: "11" },
+  { id: "m11", iv: [0, 3, 10, 5], opt: [7, 2], minor: true, rs: "11", sym: "m11" },
+  { id: "13", iv: [0, 4, 10, 9], opt: [7, 2], minor: false, rs: "13", sym: "13" },
+  { id: "m13", iv: [0, 3, 10, 9], opt: [7, 2], minor: true, rs: "13", sym: "m13" },
+  { id: "maj13", iv: [0, 4, 11, 9], opt: [7, 2], minor: false, rs: "maj13", sym: "maj13" }
+];
+var ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
+var ACC = (a10) => a10 === 0 ? "" : a10 > 0 ? "\u266F".repeat(a10) : "\u266D".repeat(-a10);
+var pc = (p2) => (midiOf(p2) % 12 + 12) % 12;
+function degreeOf(p2, fifths) {
+  const deg = ((stepIndex(p2.step) - tonicStepIndex(fifths)) % 7 + 7) % 7;
+  return { deg: deg + 1, acc: p2.alter - keyAlter(p2.step, fifths) };
+}
+var stepName = (p2) => `${p2.step}${ACC(p2.alter)}`;
+function readChord(pitches, fifths) {
+  const ps = [...pitches].sort((a10, b3) => midiOf(a10) - midiOf(b3));
+  const set = new Set(ps.map(pc));
+  if (set.size < 3) return null;
+  const bass = ps[0], bassPc = pc(bass);
+  const out = [];
+  for (const rootPc of set) {
+    const root = ps.find((p2) => pc(p2) === rootPc);
+    TPLS.forEach((t10, ti2) => {
+      const req = new Set(t10.iv.map((i10) => (rootPc + i10) % 12)), opt = new Set((t10.opt ?? []).map((i10) => (rootPc + i10) % 12));
+      for (const x2 of set) if (!req.has(x2) && !opt.has(x2)) return;
+      for (const x2 of req) if (!set.has(x2)) return;
+      const omitted = [...opt].filter((x2) => !set.has(x2)).length;
+      const r10 = degreeOf(root, fifths), inKey = r10.acc === 0;
+      const cost = (rootPc === bassPc ? 0 : 1) + omitted * 1.2 + (inKey ? 0 : 0.25) + ti2 * 0.01;
+      const numeral = ACC(r10.acc) + (t10.minor ? ROMAN[r10.deg - 1].toLowerCase() : ROMAN[r10.deg - 1]) + t10.rs;
+      const b3 = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(b3.acc)}${b3.deg}`;
+      out.push({ root, bass, tpl: t10.id, roman: numeral + slash, name: stepName(root) + t10.sym + (slash ? `/${stepName(bass)}` : ""), cost, omitted });
+    });
+  }
+  if (!out.length) return null;
+  out.sort((a10, b3) => a10.cost - b3.cost);
+  const best = out[0];
+  return { best, ties: out.filter((g3) => g3.cost - best.cost < 0.1), all: out };
+}
+var chordLabel = (r10) => r10.ties.slice(0, 2).map((g3) => g3.roman).join(" / ");
+
+// src/score/paper.ts
+var STAFF_MM = 7;
+var STAFF_MM_COMPACT = 5;
+var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u8C31\u5927") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1B\u603B\u8C31\u58F0\u90E8\u591A\u7528\u8FD9\u4E2A") }];
+var densityOf = (p2) => p2.density ?? "cozy";
+var staffMmOf = (p2) => p2.staffMm ?? (densityOf(p2) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
+var spMm = (p2) => staffMmOf(p2) / 4;
+var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
+var PAPER_KINDS = ["A3L", "A4", "A5", "A6"];
+var DEFAULT_PAPER = "A5";
+var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09"), A6: _t("\u53E3\u888B\u672C") };
+var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
+function paperOf(kind, density = "cozy") {
+  const s10 = SIZES[kind];
+  return { kind, widthMm: s10.w, heightMm: s10.h, marginMm: { l: s10.m, r: s10.m, t: s10.m, b: s10.m }, ...density === "compact" ? { density } : {} };
+}
+var lineSp = (p2) => (p2.widthMm - p2.marginMm.l - p2.marginMm.r) / spMm(p2);
+var pageGeoOf = (p2) => {
+  const mm = spMm(p2), m2 = p2.marginMm;
+  return { h: p2.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm };
+};
+function detectPaper(widthMm, heightMm, marginMm, staffMm = STAFF_MM, density = "cozy") {
+  const near2 = (a10, b3) => Math.abs(a10 - b3) <= 2;
+  const kind = PAPER_KINDS.find((k2) => near2(widthMm, SIZES[k2].w) && near2(heightMm, SIZES[k2].h));
+  const want = density === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
+  const extra = { ...density === "compact" ? { density } : {}, ...Math.abs(staffMm - want) < 0.05 ? {} : { staffMm: +staffMm.toFixed(2) } };
+  return kind ? { ...paperOf(kind), marginMm, ...extra } : { kind: "other", widthMm, heightMm, marginMm, ...extra };
+}
+var paperSizeText = (p2) => `${Math.round(p2.widthMm)} \xD7 ${Math.round(p2.heightMm)} mm`;
+
+// src/keyboard/latch.ts
+var DOUBLE_TAP_MS = 350;
+var LATCH_OFF = { mode: "off", at: 0, held: false, wrote: false, left: 0 };
+function latchDown(l10, now2, uses = 1) {
+  const mode = l10.mode === "off" ? "once" : l10.mode === "once" && now2 - l10.at < DOUBLE_TAP_MS ? "lock" : "off";
+  return { mode, at: now2, held: true, wrote: false, left: mode === "once" ? uses : 0 };
+}
+function latchUp(l10) {
+  if (!l10.held) return l10;
+  return l10.wrote && l10.mode !== "lock" ? { ...LATCH_OFF, at: l10.at } : { ...l10, held: false };
+}
+var latchTap = (l10, now2, uses = 1) => latchUp(latchDown(l10, now2, uses));
+function latchWrite(l10) {
+  if (l10.held) return l10.wrote ? l10 : { ...l10, wrote: true };
+  if (l10.mode === "once") return l10.left <= 1 ? { ...LATCH_OFF, at: l10.at } : { ...l10, left: l10.left - 1 };
+  return l10;
+}
+var latchCancel = (l10) => l10.mode === "once" ? { ...LATCH_OFF, at: l10.at, held: l10.held } : l10;
+var latchOn = (l10) => l10.mode !== "off";
 
 // src/score/repeats.ts
 function tickOf(tokens) {
@@ -11136,9 +11208,9 @@ function engrave(song, o10) {
           const hch = percHere && !xOf(c10) ? percHead(c10, (c10.pitches.length ? c10.pitches : [c10.pitch])[k2]).ch : ng2;
           prims.push({ tok: tokOf(c10), t: "glyph", x: second ? x0 + nhW(c10) * 0.95 : x0, y: yOf(row2, dd), ch: hch, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c10.whisper && whisperMute ? "art-mute" : ""].filter(Boolean).join(" ") });
           if (c10.art.includes("ghost")) {
-            const hx = second ? x0 + nhW(c10) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
-            prims.push({ tok: tokOf(c10), t: "glyph", x: hx - P2(0.6), y: yOf(row2, dd), ch: "\uE0F5", cls: pc });
-            prims.push({ tok: tokOf(c10), t: "glyph", x: hx + nhW(c10) + P2(0.25), y: yOf(row2, dd), ch: "\uE0F6", cls: pc });
+            const hx = second ? x0 + nhW(c10) * 0.95 : x0, pc2 = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
+            prims.push({ tok: tokOf(c10), t: "glyph", x: hx - P2(0.6), y: yOf(row2, dd), ch: "\uE0F5", cls: pc2 });
+            prims.push({ tok: tokOf(c10), t: "glyph", x: hx + nhW(c10) + P2(0.25), y: yOf(row2, dd), ch: "\uE0F6", cls: pc2 });
           }
         });
         if (c10.dotted) prims.push({ tok: tokOf(c10), t: "glyph", x: x0 + nhW(c10) + P2(0.3), y: yOf(row2, d3 % 2 === 0 ? d3 + 1 : d3), ch: GLYPH.augmentationDot, cls });
@@ -13059,6 +13131,7 @@ var ScoreView = class {
     this.title.reposition();
     this.drawPins();
     this.drawGhost();
+    this.drawChordTags();
     record("decor", performance.now() - tDecor);
     const base2 = this.baseKey(), fk = `${base2}|${this.el.clientWidth}x${this.el.clientHeight}`;
     if (this.holdView) this.heldBase = base2;
@@ -13075,6 +13148,54 @@ var ScoreView = class {
   // ── 「弹」的鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「特别是前面有一个音的时候…如果是叠的话会在前面一个音上面加东西，但是不能动排版！！！，
   //   如果是非叠的话就是在要插入的地方加东西」「鬼音符的时候千万不能动排版！」）：盖在谱上的一层（ink 里一个不接点击的 svg），只借排版现成的位置——
   //   只选了一个音（叠亮着）= 叠画在那个音上；否则 = 光标处（下一个音要写进去的地方）。不进 engrave、不重排。
+  // ── 和弦标级数（v0.16.11）：叠音的和弦（NoteTok.chord）上方写级数，覆盖层（同鬼音符：不进排版、不接点击，点击在 tap 里按 chordTags 的框判）──
+  //   user 11-07「我根本看不懂我自己摸的和弦，摸出来是几级和弦」「和弦上标级数…写个深模块」。按谱里实际的音和那里的调号认（按 C 调看时写的级数一样）。
+  chordEl = null;
+  chordTags = [];
+  chordFor = [null, null];
+  drawChordTags() {
+    const L2 = this.layout, clear2 = () => {
+      this.chordEl?.remove();
+      this.chordEl = null;
+      this.chordTags = [];
+      this.chordFor = [null, null];
+    };
+    if (!L2 || !(this.host.chordTags?.() ?? false)) {
+      clear2();
+      return;
+    }
+    const song = this.host.get().song;
+    if (this.chordFor[0] === L2 && this.chordFor[1] === song && this.chordEl?.isConnected) return;
+    this.chordFor = [L2, song];
+    const sp2 = L2.sp, fs = 1.25 * sp2, parts = [], tags = [], seen = /* @__PURE__ */ new Set();
+    for (const h2 of L2.notes) {
+      if (h2.part) continue;
+      const sys = L2.systems[h2.system];
+      if (!sys) continue;
+      const k2 = `${sys.paper}|${sys.part}|${h2.index}`;
+      if (seen.has(k2)) continue;
+      seen.add(k2);
+      const toks = trackOf(song, sys.paper, sys.part), t10 = toks[h2.index];
+      if (t10?.kind !== "note" || !t10.pitch || !t10.chord?.length) continue;
+      const r10 = readChord([t10.pitch, ...t10.chord], keyAt(toks, h2.index));
+      if (!r10) continue;
+      const s10 = chordLabel(r10), cx2 = h2.x + h2.w / 2, y2 = Math.min(sys.staffTop - 0.6 * sp2, h2.y - 4 * sp2), w2 = [...s10].length * fs * 0.6 + 0.6 * sp2;
+      parts.push(`<text x="${cx2}" y="${y2}" font-size="${fs}" text-anchor="middle">${s10.replace(/[&<>]/g, (c10) => c10 === "&" ? "&amp;" : c10 === "<" ? "&lt;" : "&gt;")}</text>`);
+      tags.push({ x: cx2 - w2 / 2, y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: r10 });
+    }
+    this.chordTags = tags;
+    if (!parts.length) {
+      this.chordEl?.remove();
+      this.chordEl = null;
+      return;
+    }
+    const NS = "http://www.w3.org/2000/svg", g3 = this.chordEl ??= document.createElementNS(NS, "svg");
+    g3.setAttribute("class", "chord-tags");
+    g3.setAttribute("width", String(L2.width));
+    g3.setAttribute("height", String(L2.height));
+    g3.innerHTML = parts.join("");
+    if (!g3.isConnected) this.ink.appendChild(g3);
+  }
   ghostEl = null;
   ghostP = [];
   showGhost(ps) {
@@ -14298,6 +14419,12 @@ var ScoreView = class {
       return true;
     }
     const L2 = this.layout ?? L0, sp2 = L2.sp;
+    const ct2 = this.host.onChordTag ? this.chordTags.find((c10) => this.inBox(c10, x2, y2)) : void 0;
+    if (ct2) {
+      const b3 = this.clientBox(ct2);
+      this.host.onChordTag(ct2.read, { x: (b3.left + b3.right) / 2, y: b3.bottom });
+      return true;
+    }
     if (this.inBox(L2.paperChip, x2, y2)) {
       this.host.onPaper?.();
       return true;
@@ -15614,7 +15741,7 @@ var AUTO_ITEM = () => `<span class="sc"><b>${_t("\u8DDF\u8C31")}</b><small>${_t(
 var pcsOf = (sc2, f2) => new Set(sc2.degs.map((_2, k2) => midiOf(ladderAt(sc2, k2, homeTonic(f2), f2).pitch) % 12));
 function outsideKey(sc2, f2, keySig) {
   const inKey = pcsOf(scaleById("major"), keySig);
-  return [...pcsOf(sc2, f2)].some((pc) => !inKey.has(pc));
+  return [...pcsOf(sc2, f2)].some((pc2) => !inKey.has(pc2));
 }
 function createPadMusic(get) {
   const f2 = () => inputKey(get()), sc2 = () => scaleById(inputScaleOf(get()));
@@ -27914,15 +28041,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-fd8116064e8c.mjs");
+      return pick(() => "singer-worker-0ee71cc390fa.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-a7c623e086bc.mjs");
+      return pick(() => "layout-worker-9af2a70efd93.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-71114e172c44.mjs");
+      return pick(() => "encode-worker-904b83587f82.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -33873,8 +34000,8 @@ function createPerformance(host2) {
     try {
       const r10 = await singer2.sing(c10.score, (stage) => {
         progress2(`${who}\uFF1A${stage}\u2026`);
-        const pc = /(\d+)%$/.exec(stage);
-        if (pc) renderBar2.frac(Number(pc[1]) / 100);
+        const pc2 = /(\d+)%$/.exec(stage);
+        if (pc2) renderBar2.frac(Number(pc2[1]) / 100);
         else if (stage in STAGE_FRAC) renderBar2.frac(STAGE_FRAC[stage]);
       }, { opt: c10.opt, models: modelBases(), raw: true, tag: key, diskBytes: BUDGET2.speechDisk });
       if (engine2.hasChunk(key) || !chunkPlans.has(key)) {
@@ -36235,7 +36362,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "87b625c4405e5098" : "dev";
+var CORE_HASH = true ? "8b82c3efb060bb52" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -49321,6 +49448,8 @@ function writeAndLocate(write) {
 var upTimer = 0;
 var KV_VIEW_IN_C = "view-in-c";
 var viewInC = deviceKvGet(KV_VIEW_IN_C) === "1";
+var KV_CHORD_TAGS = "chord-tags";
+var chordTagsOn = deviceKvGet(KV_CHORD_TAGS) === "1";
 var view = new ScoreView(scoreEl, {
   get: () => D2.st,
   set: (n10, o10) => update(n10, o10?.gesture),
@@ -49345,6 +49474,8 @@ var view = new ScoreView(scoreEl, {
   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
   inC: () => viewInC,
+  chordTags: () => chordTagsOn,
+  onChordTag: (r10, at2) => openChordInfo(r10, at2),
   parts: () => partViews(),
   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at2) => openTrackCard(at2),
@@ -49709,13 +49840,13 @@ var singer = new Singer();
 var statusLast = "";
 var statusBar = false;
 var progress = (s10) => {
-  const pc = /(\d+)%/.exec(s10);
-  if (pc) {
+  const pc2 = /(\d+)%/.exec(s10);
+  if (pc2) {
     if (!renderBar.running) {
       renderBar.start(1);
       statusBar = true;
     }
-    renderBar.frac(Number(pc[1]) / 100);
+    renderBar.frac(Number(pc2[1]) / 100);
   } else if (!s10 && statusBar) {
     renderBar.end();
     statusBar = false;
@@ -50063,6 +50194,16 @@ async function packStatusText() {
   return packs.map((s10) => `${s10.ready ? "\u2713" : "\xB7"} ${s10.slug}\uFF08${(s10.bytesTotal / 1e6).toFixed(1)} MB\uFF09`).join("\n");
 }
 var LANG_LABEL = "\u8BED\u8A00 \xB7 Language";
+function openChordInfo(r10, at2) {
+  const row2 = (g3, i10) => `<div class="chord-cand${i10 === 0 ? " is-best" : ""}"><b>${esc9(g3.roman)}</b><span>${esc9(g3.name)}</span><small>${[g3.root.step !== g3.bass.step || g3.root.alter !== g3.bass.alter ? _t("\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09") : "", g3.omitted ? _t("\u7701\u4E86 {n} \u4E2A\u97F3", { n: g3.omitted }) : ""].filter(Boolean).join(" \xB7 ")}</small></div>`;
+  ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${_t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002")}</div>` + r10.all.slice(0, 6).map(row2).join(""), at2, () => true);
+}
+function setChordTags(on2) {
+  chordTagsOn = on2;
+  deviceKvSet(KV_CHORD_TAGS, on2 ? "1" : "0");
+  view.render();
+}
+var chordChips = () => [["off", _t("\u5173"), !chordTagsOn], ["on", _t("\u5F00"), chordTagsOn]].map(([v, label, on2]) => `<button class="btn chip${on2 ? " is-on" : ""}" data-v="chord:${v}">${esc9(label)}</button>`).join("");
 function setViewInC(on2) {
   viewInC = on2;
   deviceKvSet(KV_VIEW_IN_C, on2 ? "1" : "0");
@@ -50081,7 +50222,7 @@ function openSettings() {
   const inFolder2 = resourcesInFolder();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div><div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${langChips()}</div></div><div class="set-field">${_t("\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F")}<div class="set-row">${viewChips()}</div><span class="set-note">${_t("\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002")}</span></div>` + (inFolder2 ? `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" disabled value="${esc9(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>` : `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc9(models.source)}" /></label>`) + `<label class="set-field">${_t("\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc9(sources.source)}" /></label><div class="set-field">${_t("\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09")}<div id="sndCache" class="set-packs">\u2026</div></div><div class="set-field">${_t("MIDI \u952E\u76D8")}<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}</div></div><div class="offer-msg">${_t("\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002")}</div><div class="set-row"><button class="btn" data-v="default">${_t("\u6062\u590D\u9ED8\u8BA4")}</button>` + (inFolder2 ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}</span><input id="impIn" type="file" multiple hidden disabled /></div>` : `<label class="btn" title="${_t("\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6")}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}<input id="impIn" type="file" multiple hidden /></label></div>`) + `<pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit" data-i18n-skip><summary>${_t("\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C{n} \u4E2A\uFF09", { n: ICON_CREDITS.length })}</summary><pre>${esc9(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? _t("\n    \u6539\u52A8\uFF1A{modified}", { modified: c10.modified }) : ""}`).join("\n"))}</pre></details><details class="set-credit" data-i18n-skip><summary>${_t("\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E")}</summary><div class="part-sec">${_t("\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09")}</div><pre>${esc9(CREDIT.credit)}
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div><div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${langChips()}</div></div><div class="set-field">${_t("\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F")}<div class="set-row">${viewChips()}</div><span class="set-note">${_t("\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002")}</span></div><div class="set-field">${_t("\u8F85\u52A9 \xB7 \u548C\u5F26\u6807\u7EA7\u6570")}<div class="set-row">${chordChips()}</div><span class="set-note">${_t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009\u3002\u53EA\u662F\u663E\u793A\uFF0C\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u5370\u3002")}</span></div>` + (inFolder2 ? `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" disabled value="${esc9(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>` : `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc9(models.source)}" /></label>`) + `<label class="set-field">${_t("\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc9(sources.source)}" /></label><div class="set-field">${_t("\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09")}<div id="sndCache" class="set-packs">\u2026</div></div><div class="set-field">${_t("MIDI \u952E\u76D8")}<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}</div></div><div class="offer-msg">${_t("\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002")}</div><div class="set-row"><button class="btn" data-v="default">${_t("\u6062\u590D\u9ED8\u8BA4")}</button>` + (inFolder2 ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}</span><input id="impIn" type="file" multiple hidden disabled /></div>` : `<label class="btn" title="${_t("\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6")}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}<input id="impIn" type="file" multiple hidden /></label></div>`) + `<pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit" data-i18n-skip><summary>${_t("\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C{n} \u4E2A\uFF09", { n: ICON_CREDITS.length })}</summary><pre>${esc9(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? _t("\n    \u6539\u52A8\uFF1A{modified}", { modified: c10.modified }) : ""}`).join("\n"))}</pre></details><details class="set-credit" data-i18n-skip><summary>${_t("\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E")}</summary><div class="part-sec">${_t("\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09")}</div><pre>${esc9(CREDIT.credit)}
 
 ${esc9(CREDIT.terms)}
 ${esc9(CREDIT.termsUrl)}
@@ -50156,7 +50297,10 @@ ${esc9(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t
       srcIn.value = MODEL_SOURCE_DEFAULT;
       sndIn.value = SOUNDS_SOURCE_DEFAULT;
     } else if (v === "midi:connect") void midi.connect();
-    else if (v === "view:pro" || v === "view:inc") {
+    else if (v === "chord:off" || v === "chord:on") {
+      setChordTags(v === "chord:on");
+      box.querySelectorAll('[data-v^="chord:"]').forEach((b3) => b3.classList.toggle("is-on", b3.dataset.v === v));
+    } else if (v === "view:pro" || v === "view:inc") {
       setViewInC(v === "view:inc");
       box.querySelectorAll('[data-v^="view:"]').forEach((b3) => b3.classList.toggle("is-on", b3.dataset.v === v));
     } else if (v?.startsWith("lang:")) {
@@ -50317,7 +50461,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "d21bd8b16f16",
+  cssHash: "015ff1f486a6",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -54173,4 +54317,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2db8f14415d9.mjs.map
+//# sourceMappingURL=moonsinger-fd4f104d81bd.mjs.map
