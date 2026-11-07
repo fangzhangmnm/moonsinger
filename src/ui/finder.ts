@@ -7,9 +7,11 @@ import { _t } from "../i18n/index.ts";
 import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightLabel, SORT_LABEL, type Catalog, type Concept, type Entry, type Provider, type SortMode } from "../gm/catalog.ts";
 
 export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept };
+/** 点开的那件乐器目录里没有谁能演 = 试听键盘静音（不是还弹着上一件的声音；v0.15.7，家族周账 F-210，user 11-07「如果选中的那个类别里面没有合适的音源的时候，我在即兴的时候应该是静音，而不是显示弹在上一个音源」）。 */
+export type FinderNobody = { kind: "none"; concept: Concept };
 export interface FinderHost {
   roleName(): string;                                          // 现在的角色名（顶条写「找人给「X」」）
-  audition(p: FinderPick | null): Promise<void>;                     // 试听台：载进实时合成器（pad 弹它）；null = 停
+  audition(p: FinderPick | FinderNobody | null): Promise<void>;     // 试听台：载进实时合成器（pad 弹它）；none = 静音；null = 停（回到默认的哼）
   playHead(p: FinderPick): Promise<void>;                            // 用它放本声部开头
   cast(p: FinderPick): Promise<void>;                                // 上场（声音默认弱引用：歌里只记来源，要带着走 = 文件菜单「全部打包进歌」）
   close(): void;
@@ -21,7 +23,8 @@ const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&
 export class Finder {
   readonly el: HTMLDivElement;
   private cat: Catalog | null = null;
-  private mode: SortMode = "style";         // 默认按〇〇风（user 2026-10-08「然后音色排序默认还是画风吧。年代好玩但其实每次都要多点一次哈哈」；此前 10-07「默认按年代排哈哈哈」）
+  private mode: SortMode = "year";          // 默认按年代（v0.15.7，家族周账 F-205，user 11-05「顺便记账还是默认年代排序的那个order」）；此前 10-08 改过按曲风（「年代好玩但其实每次都要多点一次哈哈」），10-07 起手就是按年代（「默认按年代排哈哈哈」）
+  private scrollY = 0;                      // 上次翻到哪（列表的 scrollTop；关目录时记、开目录时放回去——同一页里有效，重开 app 从头。v0.15.7，F-197，user 11-05「选乐器应该能记住上次翻到哪里了」）
   private q = "";
   private opened: string | null = null;     // 展开的那一行 = 「组 id::概念 id」（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）。
                                             // 记组：按曲风排时同一件乐器在好几个组里都有，只记概念 = 每个组里的它都展开、滚去第一个（user 2026-10-08「在一个category里面选择一个乐器，会跳到第一个出现这个乐器的category」）
@@ -67,8 +70,13 @@ export class Finder {
       await this.loading;
     }
     this.render();
+    // 回到上次翻到的地方（F-197）；试听跟着亮着的那一项（关掉再开：亮着的是上次选的，键盘就弹它；点开的那件没人能演 = 静音。原来关目录 = 试听清空、键盘回到哼，和亮着的对不上）
+    const list = this.el.querySelector<HTMLElement>(".finder-list")!; list.scrollTop = this.scrollY; this.markJump();
+    const openedC = this.opened ? this.cat!.byId.get(this.opened.split("::")[1]) : undefined;
+    if (this.selected) void this.host.audition(this.pickOf(this.selected));
+    else if (openedC) void this.host.audition({ kind: "none", concept: openedC });
   }
-  hide(): void { this.el.hidden = true; }
+  hide(): void { this.scrollY = this.el.querySelector<HTMLElement>(".finder-list")!.scrollTop; this.el.hidden = true; }
   private pickOf(key: string): FinderPick | null {
     if (!this.cat) return null;
     const [cid, rest] = key.split("|"), c = this.cat.byId.get(cid); if (!c) return null;
@@ -91,7 +99,7 @@ export class Finder {
     if (row) {
       const id = row.dataset.c!, o = row.dataset.o!;
       if (this.opened === o) this.opened = null;
-      else { this.opened = o; const c = this.cat!.byId.get(id)!, pk = row.dataset.k, first = providersOf(this.cat!, c).find((x) => !pk || gmKey(x) === pk); /* 音色行 = 试听它自己 */ const key = first ? `${id}|${gmKey(first)}` : c.kind === "voice" ? `${id}|voice` : ""; this.selected = key; this.renderAnchored(o, true); if (key) await this.host.audition(this.pickOf(key)); return; }
+      else { this.opened = o; const c = this.cat!.byId.get(id)!, pk = row.dataset.k, first = providersOf(this.cat!, c).find((x) => !pk || gmKey(x) === pk); /* 音色行 = 试听它自己 */ const key = first ? `${id}|${gmKey(first)}` : c.kind === "voice" ? `${id}|voice` : ""; this.selected = key; this.renderAnchored(o, true); await this.host.audition(key ? this.pickOf(key) : { kind: "none", concept: c }); return; }
       this.renderAnchored(o);
     }
   }

@@ -4946,7 +4946,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.15.6-2026-11-07";
+var APP_VERSION = "v0.15.7-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -27716,7 +27716,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-cb2a9711a75c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-448322c5287f.mjs");
+      return pick(() => "encode-worker-df7c6964cf8d.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -33094,7 +33094,7 @@ function octaveDisclosure(nt2, oc2, clefLabel) {
 var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
 var roleNameOf = (c10) => c10.names.en.replace(/^./, (ch2) => ch2.toUpperCase());
 var roleSoundOf = (cat2, c10) => c10.ids.musicxml ?? providersOf(cat2, c10)[0]?.sound ?? null;
-var SORT_LABEL = { style: _t("\u6309\u66F2\u98CE"), family: _t("\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09"), year: _t("\u6309\u5E74\u4EE3"), hs: _t("\u6309\u53D1\u58F0\u65B9\u5F0F") };
+var SORT_LABEL = { year: _t("\u6309\u5E74\u4EE3"), style: _t("\u6309\u66F2\u98CE"), family: _t("\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09"), hs: _t("\u6309\u53D1\u58F0\u65B9\u5F0F") };
 var HS_CLASS = { "1": _t("\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09"), "2": _t("\u819C\u9E23\uFF08\u6572\u76AE\uFF09"), "3": _t("\u5F26\u9E23\uFF08\u5F26\uFF09"), "4": _t("\u6C14\u9E23\uFF08\u6C14\uFF09"), "5": _t("\u7535\u9E23\uFF08\u7535\uFF09") };
 function groupConcepts(cat2, mode, query = "") {
   const q2 = query.trim().toLowerCase();
@@ -34376,8 +34376,10 @@ var esc3 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;
 var Finder = class {
   el;
   cat = null;
-  mode = "style";
-  // 默认按〇〇风（user 2026-10-08「然后音色排序默认还是画风吧。年代好玩但其实每次都要多点一次哈哈」；此前 10-07「默认按年代排哈哈哈」）
+  mode = "year";
+  // 默认按年代（v0.15.7，家族周账 F-205，user 11-05「顺便记账还是默认年代排序的那个order」）；此前 10-08 改过按曲风（「年代好玩但其实每次都要多点一次哈哈」），10-07 起手就是按年代（「默认按年代排哈哈哈」）
+  scrollY = 0;
+  // 上次翻到哪（列表的 scrollTop；关目录时记、开目录时放回去——同一页里有效，重开 app 从头。v0.15.7，F-197，user 11-05「选乐器应该能记住上次翻到哪里了」）
   q = "";
   opened = null;
   // 展开的那一行 = 「组 id::概念 id」（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）。
@@ -34446,8 +34448,15 @@ var Finder = class {
       await this.loading;
     }
     this.render();
+    const list = this.el.querySelector(".finder-list");
+    list.scrollTop = this.scrollY;
+    this.markJump();
+    const openedC = this.opened ? this.cat.byId.get(this.opened.split("::")[1]) : void 0;
+    if (this.selected) void this.host.audition(this.pickOf(this.selected));
+    else if (openedC) void this.host.audition({ kind: "none", concept: openedC });
   }
   hide() {
+    this.scrollY = this.el.querySelector(".finder-list").scrollTop;
     this.el.hidden = true;
   }
   pickOf(key) {
@@ -34500,7 +34509,7 @@ var Finder = class {
         const key = first ? `${id2}|${gmKey(first)}` : c10.kind === "voice" ? `${id2}|voice` : "";
         this.selected = key;
         this.renderAnchored(o10, true);
-        if (key) await this.host.audition(this.pickOf(key));
+        await this.host.audition(key ? this.pickOf(key) : { kind: "none", concept: c10 });
         return;
       }
       this.renderAnchored(o10);
@@ -35749,7 +35758,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "7783d612adde567f" : "dev";
+var CORE_HASH = true ? "75a5901c762d7067" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -48819,6 +48828,7 @@ function dynAtCursor(role) {
 function auditionTarget() {
   const kana = HUM_KANA[D2.st.song.hum ?? "n"];
   if (finder.isOpen) {
+    if (auditionMute) return null;
     const a10 = audition;
     if (a10) return { inst: { kind: "sf", sha: a10.sha256, preset: engine.presetIndex(a10.sha256, a10.bank, a10.program) }, key: (m2) => sfKey(m2, a10), vel: SOUNDFONT_DEFAULTS.velocity, gainDb: 0, pan: 0 };
     return { inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: 0, pan: 0 };
@@ -49061,6 +49071,8 @@ var pageFlow = false;
 var scrollFlow = false;
 var canStack = () => performerOf(engineNow())?.poly ?? false;
 var auditionHint = null;
+var auditionMute = false;
+var auditionGen = 0;
 var catalogNow = null;
 var ui2 = createOverlayRegistry();
 var instShown = () => ui2.page.k === "inst";
@@ -50069,6 +50081,16 @@ function padHint() {
 }
 var GS = SOUNDS["generaluser-gs-2.0.3"];
 async function setAudition(p2) {
+  const gen = ++auditionGen;
+  if (p2?.kind === "none") {
+    audition = null;
+    auditionMute = true;
+    auditionHint = null;
+    pad3.render();
+    sound.allOff();
+    return;
+  }
+  auditionMute = false;
   const cat2 = p2?.kind === "gs" ? catalogNow ??= await loadCatalog() : null;
   const sk2 = cat2 && p2?.kind === "gs" && p2.provider.note === void 0 ? sampleKeyOf(cat2, p2.provider.bank, p2.provider.program) : null;
   auditionHint = !p2 || sk2 ? null : p2.kind === "voice" ? TSUKUYOMI_RANGE : ((r10) => r10 ? { ...r10, who: conceptName(p2.concept.names) } : null)(rangeOf(p2.concept));
@@ -50083,6 +50105,7 @@ async function setAudition(p2) {
     const bank = await sources.fetchSound(GS, (done) => progress(_t("\u4E0B\u8F7D {name} {bytes}%", { name: GS.name, bytes: Math.round(done / GS.bytes * 100) })));
     progress("");
     const subset = subsetSf2(bank, [{ bank: p2.provider.bank, program: p2.provider.program }]), sha256 = await sha256Hex3(subset);
+    if (gen !== auditionGen) return;
     audition = { bank: p2.provider.bank, program: p2.provider.program, ...cat2 ? gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note) : {}, sha256, subset, label: p2.provider.gmName };
     sound.allOff();
     await engine.bank(sha256, subset);
@@ -50370,6 +50393,8 @@ function closeFinder(back = ui2.page.k === "finder" && ui2.page.backToInst) {
   if (wasPlayOnly) document.body.classList.remove("finder-over-gallery");
   finder.hide();
   audition = null;
+  auditionMute = false;
+  ++auditionGen;
   auditionHint = null;
   sound.allOff();
   padEl.classList.remove("is-locked");
@@ -53732,4 +53757,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-691aae8ba329.mjs.map
+//# sourceMappingURL=moonsinger-771b6a9aa049.mjs.map

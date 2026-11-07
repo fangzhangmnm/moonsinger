@@ -152,7 +152,7 @@ export const roleSoundOf = (cat: Catalog, c: Concept): string | null => c.ids.mu
 
 export type SortMode = "family" | "year" | "hs" | "style";
 // 「按曲风」= 原「按〇〇风」（user 2026-10-08「按OO风换一个更正式好懂的名字」）；组名（和风 / 中华风 / 贝多风…）照旧用仓鼠表里的
-export const SORT_LABEL: Record<SortMode, string> = { style: _t("按曲风"), family: _t("按族（GM 的顺序）"), year: _t("按年代"), hs: _t("按发声方式") };   // 下拉的顺序 = 这里的顺序（默认的排第一）
+export const SORT_LABEL: Record<SortMode, string> = { year: _t("按年代"), style: _t("按曲风"), family: _t("按族（GM 的顺序）"), hs: _t("按发声方式") };   // 下拉的顺序 = 这里的顺序（默认的排第一；v0.15.7 起默认按年代，user 11-05「还是默认年代排序的那个order」）
 const HS_CLASS: Record<string, string> = { "1": _t("体鸣（敲它自己）"), "2": _t("膜鸣（敲皮）"), "3": _t("弦鸣（弦）"), "4": _t("气鸣（气）"), "5": _t("电鸣（电）") };
 /** 列表里的一行：一个概念；按曲风时可以是概念名下的**一个音色**（preset = 那一行 GM 映射，星级 / 入选按它自己的，user 2026-10-08「音色为单位而不是家族一把捞」）。 */
 export interface Entry { concept: Concept; preset?: GmRow; weight?: number; as?: string }

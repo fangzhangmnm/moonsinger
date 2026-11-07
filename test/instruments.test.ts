@@ -4,7 +4,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL): Uint8Array; existsSync(p: string): boolean };
 const g = (await import(new URL("../scripts/gen-instruments.mjs", import.meta.url).href)) as { render(): string | null; renderPerc(): string | null };
 import { INSTRUMENT_FILES } from "../src/gm/instruments.gen.ts";
-import { loadCatalogFromJson, providersOf, gmKey, groupConcepts, jointOf, type Catalog } from "../src/gm/catalog.ts";
+import { loadCatalogFromJson, providersOf, gmKey, groupConcepts, jointOf, SORT_LABEL, type Catalog, type SortMode } from "../src/gm/catalog.ts";
 
 describe("挑乐器数据", () => {
   it("instruments.gen.ts 是最新的（不是就跑 node scripts/gen-instruments.mjs）", () => {
@@ -65,6 +65,27 @@ describe("按曲风：成员 / 星级按音色", () => {
     const missing = [...cat.gmSelf.values()].filter((r) => styled.has(r.concept) && !seen.has(gmKey(r)));
     eq(missing.length, 0, missing.map((r) => r.gmName).join(","));
   });
+});
+
+// 每种排序都不漏乐器（2026-11-07 by Claude Opus 5.5；家族周账 F-211；user 11-07「得确认一下每一种不同的排序方式不能有遗漏的乐器，就是每种乐器在排序方式里都必须得出现，
+//   不要某种乐器在某种排序方式里不出现了」）：每件乐器（概念）在每种排序里至少出现一次；每个能演的 GM 音色在每种排序里都够得着
+//   （按曲风 = 自己一行；别的排序 = 点开那件乐器的「谁能演」里有它）。
+describe("每种排序都不漏乐器", () => {
+  const read = (k: keyof typeof INSTRUMENT_FILES) => JSON.parse(fs.readFileSync(new URL(`../${INSTRUMENT_FILES[k].file}`, import.meta.url)).toString());
+  const cat: Catalog = loadCatalogFromJson(read("concepts"), read("gmMap"));
+  const modes = Object.keys(SORT_LABEL) as SortMode[];
+  for (const mode of modes) it(`${mode}：每件乐器都在、每个本尊音色都够得着`, () => {
+    const groups = groupConcepts(cat, mode), items = groups.flatMap((g) => g.items);
+    const seen = new Set(items.map((e) => e.concept.id));
+    const lost = cat.concepts.filter((c) => !seen.has(c.id));
+    eq(lost.length, 0, `漏了：${lost.map((c) => c.names.zh).join("、")}`);
+    // 本尊音色：按曲风逐音色列；没逐音色列的（别的排序、按曲风里按概念列的）= 它那件乐器点开后「谁能演」里有它
+    const reach = new Set<string>();
+    for (const e of items) { if (e.preset) reach.add(gmKey(e.preset)); else for (const p of providersOf(cat, e.concept)) reach.add(gmKey(p)); }
+    const unreached = [...cat.gmSelf.values()].filter((r) => cat.byId.has(r.concept) && !reach.has(gmKey(r)));
+    eq(unreached.length, 0, `够不着：${unreached.map((r) => r.gmName).join("、")}`);
+  });
+  it("排序的种类：年代 / 族 / 发声方式 / 曲风 四种都在", () => eq([...modes].sort().join(","), "family,hs,style,year"));
 });
 
 // 连断的底色从目录来（仓鼠 v11 的 joint，按 GM 号逐个；2026-10-08 by Claude Opus 5.5；user「midi的string系乐器是有不同的演奏方法的，你不能按乐器一刀切」

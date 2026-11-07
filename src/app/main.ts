@@ -65,7 +65,7 @@ import { buildTimeline, lightNotes, songLangOf, sungPlan, LEAD_IN, PRE_ROLL, HUM
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
 import { loadVowelTable } from "../engine/vowel-table.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
-import { Finder, type FinderPick } from "../ui/finder.ts";
+import { Finder, type FinderPick, type FinderNobody } from "../ui/finder.ts";
 import { Studio, MASTER as STUDIO_MASTER } from "../ui/studio.ts";
 import { resolveChain } from "../ui/plugins.ts";
 import { FINAL_MP3_ENTRY } from "../format/final.ts";
@@ -411,6 +411,7 @@ function dynAtCursor(role: string): { vel: number | null; dB: number } {
 function auditionTarget(): { inst: AuditionInst; key: (midi: number) => number; vel: number; gainDb: number; pan: number } | null {
   const kana = HUM_KANA[D.st.song.hum ?? "n"];
   if (finder.isOpen) {
+    if (auditionMute) return null;   // 点开的那件没人能演 = 不出声（F-210）
     const a = audition;
     if (a) return { inst: { kind: "sf", sha: a.sha256, preset: engine.presetIndex(a.sha256, a.bank, a.program) }, key: (m) => sfKey(m, a), vel: SOUNDFONT_DEFAULTS.velocity, gainDb: 0, pan: 0 };
     return { inst: { kind: "vowel", kana }, key: (m) => m, vel: 1, gainDb: 0, pan: 0 };
@@ -577,6 +578,7 @@ let scrollFlow = false;
 const canStack = (): boolean => performerOf(engineNow())?.poly ?? false;
 // pad 一创建就要提示音域（padHint）：它读的状态必须在 pad 之前声明（esbuild 打包后晚声明的 = undefined，开机就崩；2026-10-08 踩过）
 let auditionHint: HintRange = null;   // 找人视图里 pad 提示的音域 = 试听台上那位的
+let auditionMute = false, auditionGen = 0;   // 找人视图：点开的那件没人能演 = 试听键盘静音（F-210）；auditionGen = 后点的说了算（setAudition）
 let catalogNow: Catalog | null = null;   // 目录（找人视图 / 乐器声部的音域要它；第一次用到时载，260 KB）
 const ui = createOverlayRegistry();   // 盖层登记（F-17 第 1 期，2026-10-14）：原来那个「现在开着的面板怎么关」的闭包协议收成一个对象；开新的 = 旧的先关，自己收了只在还是现在这层时清
 // 整页在哪（谱 / 乐器页 / 乐器目录）= ui.page（刀 3 之二，2026-10-14）：原来五个各自维护的旗（乐器页开着 / 目录开着 / 只弹着玩 / 关了回乐器页 / 小卡的重画）从这儿推；
@@ -1187,7 +1189,10 @@ function padHint(): HintRange {
 }   // 试听台上的（GS 预设；note = 鼓件，pad 任何键都敲它）；null = 月读 / 没选
 const GS = SOUNDS["generaluser-gs-2.0.3"];
 /** 试听台：从 GS 切出这个预设、载进实时合成器（22 ms + 几 MB）；换到月读 = 清掉。 */
-async function setAudition(p: FinderPick | null): Promise<void> {
+async function setAudition(p: FinderPick | FinderNobody | null): Promise<void> {
+  const gen = ++auditionGen;   // 后点的说了算：前一件还在下载 / 切子集时又点了别的（含「没人能演」），前一件回来不许再盖上去
+  if (p?.kind === "none") { audition = null; auditionMute = true; auditionHint = null; pad.render(); sound.allOff(); return; }   // 这件没人能演 = 键盘静音（F-210）
+  auditionMute = false;
   // 键盘的音域跟着试听的那位走（user 2026-10-08「试弹的时候键盘上的音域没有跟进」）：月读 = 她的；乐器 = 目录里它的音域（没有 = 不画提示，窗口不动）
   //   GS 的音效预设试听 = 固定原速（仓鼠 v8；哪个键都一样，同鼓件，不提示）；其余 = 概念的常用音域
   const cat = p?.kind === "gs" ? (catalogNow ??= await loadCatalog()) : null;
@@ -1198,6 +1203,7 @@ async function setAudition(p: FinderPick | null): Promise<void> {
   try {
     const bank = await sources.fetchSound(GS, (done) => progress(_t("下载 {name} {bytes}%", { name: GS.name, bytes: Math.round((done / GS.bytes) * 100) }))); progress("");
     const subset = subsetSf2(bank, [{ bank: p.provider.bank, program: p.provider.program }]), sha256 = await sha256Hex(subset);
+    if (gen !== auditionGen) return;
     audition = { bank: p.provider.bank, program: p.provider.program, ...(cat ? gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note) : {}), sha256, subset, label: p.provider.gmName };   // 音效默认固定原速（上场后也是）
     sound.allOff(); await engine.bank(sha256, subset);
   } catch (e) { progress(""); audition = null; showError(_t("试听不了：{Error}", { Error: (e as Error).message })); }
@@ -1358,7 +1364,7 @@ function openFinder(): void {
   document.body.classList.toggle("finder-over-gallery", finderPlayOnly());   // 舞台整层盖到歌库上面（styles.css）
   ui.close(); scoreEl.hidden = true; ws.tryout = padLocked(ui.page); showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render(); void finder.show({ playOnly: finderPlayOnly() }); updateChrome(); }   // 「弹」亮着 = pad 只弹不写
 /** back = 关了回乐器页（默认 = 它是从乐器页开的）；开混音台 / 开乐器页 / 进歌库时传 false = 不回。 */
-function closeFinder(back: boolean = ui.page.k === "finder" && ui.page.backToInst): void { if (!finder.isOpen) return; const wasPlayOnly = finderPlayOnly(); ui.setPage({ k: "score" }); if (wasPlayOnly) document.body.classList.remove("finder-over-gallery"); finder.hide(); audition = null; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = back; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (back) openInstPage(); }
+function closeFinder(back: boolean = ui.page.k === "finder" && ui.page.backToInst): void { if (!finder.isOpen) return; const wasPlayOnly = finderPlayOnly(); ui.setPage({ k: "score" }); if (wasPlayOnly) document.body.classList.remove("finder-over-gallery"); finder.hide(); audition = null; auditionMute = false; ++auditionGen; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = back; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (back) openInstPage(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 function setActive(id: string): void { const next = withActive(D.extras, curRole(), id, D.st.song.hum); updateExtras(next, { kind: "lounge", label: _t("「{next}」换人：{next2}", { next: roleName(next, curRole()), next2: activeCandidateName(next, curRole()) ?? id }) }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
 /** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。
