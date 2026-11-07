@@ -4946,7 +4946,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.15.5-2026-11-06";
+var APP_VERSION = "v0.15.6-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -27716,7 +27716,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-cb2a9711a75c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-ff5be3e64525.mjs");
+      return pick(() => "encode-worker-448322c5287f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -49888,7 +49888,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "fab9c8be1992",
+  cssHash: "b7544ecc0230",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -53732,4 +53732,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f8080c4b9344.mjs.map
+//# sourceMappingURL=moonsinger-691aae8ba329.mjs.map
