@@ -29,10 +29,11 @@ const cap = (s: string): string => s.charAt(0).toUpperCase() + s.slice(1);
 export function conceptName(names: { zh: string; en: string }): string {
   return lang() === "zh" ? names.zh : cap(names.en);
 }
-/** 概念名下面那一行：中文界面 = 英文 + 日文；英文界面 = 日文（中文名搜索照样能搜到）。 */
-export function conceptAlt(enName: string, names: { ja?: string }): string {
-  const ja = names.ja ?? "";
-  return lang() === "zh" ? `${enName}${ja ? ` · ${ja}` : ""}` : ja;
+/** 概念名下面那一行 = 谱上名 + 详细说明（v0.16.2）：中文界面 = 谱上名 · 百科英文名（和谱上名不同才写）· 日文；英文界面（主名已是百科英文名）= 谱上名（不同才写）· 日文。
+ *  user 2026-11-07「所以应该是有详细解释，名字，简写？」：谱上名先写（选了它谱上就写这个），百科名留着当说明。中文名搜索照样能搜到。 */
+export function conceptAlt(scoreName: string, names: { en: string; ja?: string }): string {
+  const ja = names.ja ?? "", en = cap(names.en), differs = scoreName.toLowerCase() !== names.en.toLowerCase();
+  return (lang() === "zh" ? [scoreName, differs ? en : "", ja] : [differs ? scoreName : "", ja]).filter(Boolean).join(" · ");
 }
 /** 分类标签。英文界面没对照的 = 原样（测试守着不会没有）。 */
 export function defLabel(zh: string): string {

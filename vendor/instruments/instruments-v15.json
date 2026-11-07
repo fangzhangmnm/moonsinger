@@ -1,5 +1,5 @@
 {
- "v": 14,
+ "v": 15,
  "date": "2026-11-07",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效）。id = Wikidata QID（没有用 x: 本地 id）；ids 束里 gm 只放本尊，平替在 substitutes[]（按 basis 强弱 + 分类号同到的位数排）。year = 这个概念的声音第一次能被听见；lineageYear = 算上原文点名的前身。fundamentalRank 一律 null，归 user。AI 判的字段：musicxml、styles、技法号挂母乐器、平替 family / 自动、部分 hs 和中日名。",
@@ -499,6 +499,7 @@
    "clef": "clef = 按谱惯例写谱（谱面 = 记谱音高）时用的谱号（MuseScore 的 transposingClef，没有就 clef）；concertClef = 按实际音高显示时 MuseScore 用的谱号（钟琴 G15ma、木琴 G8va……）；多谱表的乐器另有 clefs / concertClefs",
    "sounds": "sounds = 实际音高 − 按基础谱号（G / F / C，不看 8va / 8vb 记号）读出的谱面音高，半音：吉他 −12（谱号 G8vb）、低音提琴 −12、短笛 +12、钢片琴 +12、钟琴 +24、B♭ 单簧管 −2、F 调圆号 −7",
    "octave": "octave = sounds 里整八度的部分（向 0 取整到 12 的倍数）：次中音萨克斯 −14 → −12、中音萨克斯 −9 → 0",
+   "scoreName": "scoreName.en = 谱表开头印的名字（乐手对这个声部的叫法：英文、首字母大写、不带括号和分类修饰；型号概念写功能名，如 Stratocaster → Electric Guitar，型号名本身就是乐器名的除外，如 Clavinet）。names = 详细说明（百科名），不上谱。来源 data/谱上名_AI.tsv（AI 判，user 可改）",
    "abbr": "abbr.en = MuseScore 的 shortName（出版总谱惯例）；zh / ja 这一版不给：MuseScore 的中日文翻译里简写大多照搬拉丁写法、写成汉字的只有二十来条且有错，没找到中文总谱通行简称的出处——显示时退回 en"
   },
   "heads": [
@@ -691,6 +692,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Piano",
+    "basis": "MuseScore instruments.xml 的 piano longName「Piano」（出版谱惯例）"
    }
   },
   {
@@ -784,6 +789,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Electric Piano",
+    "basis": "MuseScore instruments.xml 的 electric-piano longName「Electric Piano」（出版谱惯例）"
    }
   },
   {
@@ -862,6 +871,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Honky Tonk Piano",
+    "basis": "MuseScore instruments.xml 的 honky-tonk-piano longName「Honky Tonk Piano」（出版谱惯例）"
    }
   },
   {
@@ -964,6 +977,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Electric Piano",
+    "basis": "MuseScore instruments.xml 的 electric-piano longName「Electric Piano」（出版谱惯例）"
    }
   },
   {
@@ -1057,6 +1074,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Harpsichord",
+    "basis": "MuseScore instruments.xml 的 harpsichord longName「Harpsichord」（出版谱惯例）"
    }
   },
   {
@@ -1133,8 +1154,8 @@
    },
    "fundamentalRank": null,
    "abbr": {
-    "en": "Cch.",
-    "basis": "MuseScore instruments.xml 的 clavichord shortName"
+    "en": "Clav.",
+    "basis": "型号名就是乐器名（霍纳 Clavinet）；MuseScore 没有 Clavinet，对照借的是 Clavichord（另一件乐器），名字和简写 Cch. 都不借"
    },
    "notation": {
     "clef": "G",
@@ -1150,6 +1171,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Clavinet",
+    "basis": "型号名就是乐器名（霍纳 Clavinet）；MuseScore 没有 Clavinet，对照借的是 Clavichord（另一件乐器），名字和简写 Cch. 都不借"
    }
   },
   {
@@ -1256,6 +1281,10 @@
      "file": "upstream/wikipedia-en/Celesta.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Celesta",
+    "basis": "MuseScore instruments.xml 的 celesta longName「Celesta」（出版谱惯例）"
    }
   },
   {
@@ -1355,6 +1384,10 @@
      "file": "upstream/wikipedia-en/Glockenspiel.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Glockenspiel",
+    "basis": "MuseScore instruments.xml 的 glockenspiel longName「Glockenspiel」（出版谱惯例）"
    }
   },
   {
@@ -1410,7 +1443,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Music Box",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q206987",
@@ -1489,6 +1526,10 @@
      "file": "upstream/wikipedia-en/Vibraphone.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Vibraphone",
+    "basis": "MuseScore instruments.xml 的 vibraphone longName「Vibraphone」（出版谱惯例）"
    }
   },
   {
@@ -1577,6 +1618,10 @@
      "file": "upstream/wikipedia-en/Marimba.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Marimba",
+    "basis": "MuseScore instruments.xml 的 marimba longName「Marimba」（出版谱惯例）"
    }
   },
   {
@@ -1671,6 +1716,10 @@
      "file": "upstream/wikipedia-en/Xylophone.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Xylophone",
+    "basis": "MuseScore instruments.xml 的 xylophone longName「Xylophone」（出版谱惯例）"
    }
   },
   {
@@ -1751,6 +1800,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 tubular-bells：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Chimes",
+    "basis": "MuseScore instruments.xml 的 tubular-bells longName「Chimes」（出版谱惯例）"
    }
   },
   {
@@ -1835,6 +1888,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Hammered Dulcimer",
+    "basis": "MuseScore「Dulcimer」会和山地扬琴（Appalachian dulcimer）混；简写照旧 Dlc."
    }
   },
   {
@@ -1935,6 +1992,10 @@
      "F",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Hammond Organ",
+    "basis": "MuseScore instruments.xml 的 hammond-organ longName「Hammond Organ」（出版谱惯例）"
    }
   },
   {
@@ -2023,6 +2084,10 @@
      "F",
      "F8vb"
     ]
+   },
+   "scoreName": {
+    "en": "Pipe Organ",
+    "basis": "MuseScore instruments.xml 的 pipe-organ longName「Pipe Organ」（出版谱惯例）"
    }
   },
   {
@@ -2114,6 +2179,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Reed Organ",
+    "basis": "MuseScore instruments.xml 的 reed-organ longName「Reed Organ」（出版谱惯例）"
    }
   },
   {
@@ -2214,6 +2283,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Accordion",
+    "basis": "MuseScore instruments.xml 的 accordion longName「Accordion」（出版谱惯例）"
    }
   },
   {
@@ -2298,6 +2371,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 harmonica：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Harmonica",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件，或它的 longName 没写）"
    }
   },
   {
@@ -2388,6 +2465,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Bandoneon",
+    "basis": "MuseScore instruments.xml 的 bandoneon longName「Bandoneon」（出版谱惯例）"
    }
   },
   {
@@ -2490,6 +2571,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 guitar-nylon：谱号 G8vb、不移调"
+   },
+   "scoreName": {
+    "en": "Classical Guitar",
+    "basis": "MuseScore instruments.xml 的 guitar-nylon longName「Classical Guitar」（出版谱惯例）"
    }
   },
   {
@@ -2602,6 +2687,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 guitar-steel：谱号 G8vb、不移调"
+   },
+   "scoreName": {
+    "en": "Acoustic Guitar",
+    "basis": "MuseScore instruments.xml 的 guitar-steel longName「Acoustic Guitar」（对照是 AI 判，名字对得上）"
    }
   },
   {
@@ -2674,8 +2763,8 @@
    },
    "fundamentalRank": null,
    "abbr": {
-    "en": "El. Guit.",
-    "basis": "MuseScore instruments.xml 的 electric-guitar shortName"
+    "en": "Guit.",
+    "basis": "爵士乐里 archtop 这个声部谱上就写 Guitar（big band 总谱惯例，AI 判）；MuseScore 对照借的是 Electric Guitar（AI 判），简写不借"
    },
    "notation": {
     "clef": "G8vb",
@@ -2683,6 +2772,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 electric-guitar：谱号 G8vb、不移调"
+   },
+   "scoreName": {
+    "en": "Guitar",
+    "basis": "爵士乐里 archtop 这个声部谱上就写 Guitar（big band 总谱惯例，AI 判）；MuseScore 对照借的是 Electric Guitar（AI 判），简写不借"
    }
   },
   {
@@ -2798,6 +2891,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 electric-guitar：谱号 G8vb、不移调"
+   },
+   "scoreName": {
+    "en": "Electric Guitar",
+    "basis": "MuseScore instruments.xml 的 electric-guitar longName「Electric Guitar」（出版谱惯例）"
    }
   },
   {
@@ -2913,6 +3010,10 @@
      "file": "upstream/wikipedia-en/Double_bass.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Contrabass",
+    "basis": "MuseScore instruments.xml 的 contrabass longName「Contrabass」（出版谱惯例）"
    }
   },
   {
@@ -3015,6 +3116,10 @@
      "file": "upstream/wikipedia-en/Guitar.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Electric Bass",
+    "basis": "bass guitar 和 electric bass 是同一件；用 MuseScore 的叫法，简写照旧 El. B."
    }
   },
   {
@@ -3090,6 +3195,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 fretless-electric-bass：谱号 F、移调 -12 半音、实际音高显示用 F8vb"
+   },
+   "scoreName": {
+    "en": "Fretless Bass",
+    "basis": "乐手的叫法；MuseScore「Fretless Electric Bass」太长，简写照旧"
    }
   },
   {
@@ -3189,6 +3298,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Bass Synthesizer",
+    "basis": "MuseScore instruments.xml 的 bass-synthesizer longName「Bass Synthesizer」（出版谱惯例）"
    }
   },
   {
@@ -3282,6 +3395,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 violin：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Violin",
+    "basis": "MuseScore instruments.xml 的 violin longName「Violin」（出版谱惯例）"
    }
   },
   {
@@ -3360,6 +3477,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 viola：谱号 C3、不移调"
+   },
+   "scoreName": {
+    "en": "Viola",
+    "basis": "MuseScore instruments.xml 的 viola longName「Viola」（出版谱惯例）"
    }
   },
   {
@@ -3439,6 +3560,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 violoncello：谱号 F、不移调"
+   },
+   "scoreName": {
+    "en": "Violoncello",
+    "basis": "MuseScore instruments.xml 的 violoncello longName「Violoncello」（出版谱惯例）"
    }
   },
   {
@@ -3562,6 +3687,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Strings",
+    "basis": "MuseScore instruments.xml 的 strings longName「Strings」（出版谱惯例）"
    }
   },
   {
@@ -3662,6 +3791,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Harp",
+    "basis": "MuseScore instruments.xml 的 harp longName「Harp」（出版谱惯例）"
    }
   },
   {
@@ -3755,6 +3888,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 timpani：谱号 F、不移调"
+   },
+   "scoreName": {
+    "en": "Timpani",
+    "basis": "MuseScore instruments.xml 的 timpani longName「Timpani」（出版谱惯例）"
    }
   },
   {
@@ -3854,6 +3991,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "String Synthesizer",
+    "basis": "MuseScore instruments.xml 的 string-synthesizer longName「String Synthesizer」（出版谱惯例）"
    }
   },
   {
@@ -3955,7 +4096,11 @@
     "high": 84,
     "basis": "原文（Voice type）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Choir",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q7390",
@@ -4043,6 +4188,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 voice：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Voice",
+    "basis": "MuseScore instruments.xml 的 voice longName「Voice」（出版谱惯例）"
    }
   },
   {
@@ -4125,7 +4274,11 @@
     "high": 60,
     "basis": "原文换算（Voice frequency）"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Synth Voice",
+    "basis": "语音合成概念的 GM 本尊是 55 Synth Voice 一系；谱上写 Synth Voice（GM 名），不写「Speech Synthesis」"
+   }
   },
   {
    "id": "Q7100251",
@@ -4194,7 +4347,11 @@
     "license": "MIT"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Orchestra Hit",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q8338",
@@ -4292,6 +4449,10 @@
      "file": "upstream/wikipedia-en/Trumpet.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Trumpet",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件，或它的 longName 没写）"
    }
   },
   {
@@ -4375,6 +4536,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 trombone：谱号 F、不移调"
+   },
+   "scoreName": {
+    "en": "Trombone",
+    "basis": "MuseScore instruments.xml 的 trombone longName「Trombone」（出版谱惯例）"
    }
   },
   {
@@ -4464,6 +4629,10 @@
      "file": "upstream/wikipedia-en/Tuba.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Tuba",
+    "basis": "MuseScore instruments.xml 的 tuba longName「Tuba」（出版谱惯例）"
    }
   },
   {
@@ -4559,6 +4728,10 @@
     "sounds": -7,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 horn：谱号 G、移调 -7 半音"
+   },
+   "scoreName": {
+    "en": "Horn",
+    "basis": "MuseScore instruments.xml 的 horn longName「Horn」（对照是 AI 判，名字对得上）"
    }
   },
   {
@@ -4655,6 +4828,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Brass",
+    "basis": "MuseScore instruments.xml 的 brass longName「Brass」（出版谱惯例）"
    }
   },
   {
@@ -4861,6 +5038,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Synthesizer",
+    "basis": "MuseScore longName「Poly Synthesizer」去掉分类词 Poly；简写照旧 Synth."
    }
   },
   {
@@ -4944,6 +5125,10 @@
      "file": "upstream/wikipedia-en/Soprano_saxophone.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Soprano Saxophone",
+    "basis": "MuseScore instruments.xml 的 soprano-saxophone longName「Soprano Saxophone」（出版谱惯例）"
    }
   },
   {
@@ -5032,6 +5217,10 @@
      "file": "upstream/wikipedia-en/Alto_saxophone.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Alto Saxophone",
+    "basis": "MuseScore instruments.xml 的 alto-saxophone longName「Alto Saxophone」（出版谱惯例）"
    }
   },
   {
@@ -5120,6 +5309,10 @@
      "file": "upstream/wikipedia-en/Tenor_saxophone.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Tenor Saxophone",
+    "basis": "MuseScore instruments.xml 的 tenor-saxophone longName「Tenor Saxophone」（出版谱惯例）"
    }
   },
   {
@@ -5208,6 +5401,10 @@
      "file": "upstream/wikipedia-en/Baritone_saxophone.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Baritone Saxophone",
+    "basis": "MuseScore instruments.xml 的 baritone-saxophone longName「Baritone Saxophone」（出版谱惯例）"
    }
   },
   {
@@ -5288,6 +5485,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 oboe：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Oboe",
+    "basis": "MuseScore instruments.xml 的 oboe longName「Oboe」（出版谱惯例）"
    }
   },
   {
@@ -5364,6 +5565,10 @@
      "file": "upstream/wikipedia-en/Cor_anglais.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "English Horn",
+    "basis": "MuseScore instruments.xml 的 english-horn longName「English Horn」（出版谱惯例）"
    }
   },
   {
@@ -5438,6 +5643,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 bassoon：谱号 F、不移调"
+   },
+   "scoreName": {
+    "en": "Bassoon",
+    "basis": "MuseScore instruments.xml 的 bassoon longName「Bassoon」（出版谱惯例）"
    }
   },
   {
@@ -5527,6 +5736,10 @@
      "file": "upstream/wikipedia-en/Clarinet.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Clarinet",
+    "basis": "MuseScore instruments.xml 的 bb-clarinet longName「Clarinet」（对照是 AI 判，名字对得上）"
    }
   },
   {
@@ -5619,6 +5832,10 @@
      "file": "upstream/wikipedia-en/Piccolo.txt",
      "license": "CC BY-SA 4.0"
     }
+   },
+   "scoreName": {
+    "en": "Piccolo",
+    "basis": "MuseScore instruments.xml 的 piccolo longName「Piccolo」（出版谱惯例）"
    }
   },
   {
@@ -5744,6 +5961,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 flute：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Flute",
+    "basis": "MuseScore instruments.xml 的 flute longName「Flute」（出版谱惯例）"
    }
   },
   {
@@ -5831,6 +6052,10 @@
     "sounds": 12,
     "octave": 12,
     "basis": "MuseScore instruments.xml 的 recorder：谱号 G8va、不移调"
+   },
+   "scoreName": {
+    "en": "Recorder",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件，或它的 longName 没写）"
    }
   },
   {
@@ -5910,6 +6135,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 pan-flute：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Pan Flute",
+    "basis": "MuseScore instruments.xml 的 pan-flute longName「Pan Flute」（出版谱惯例）"
    }
   },
   {
@@ -5969,7 +6198,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Blown Bottle",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q524526",
@@ -6052,6 +6285,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 shakuhachi：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Shakuhachi",
+    "basis": "MuseScore instruments.xml 的 shakuhachi longName「Shakuhachi」（出版谱惯例）"
    }
   },
   {
@@ -6123,8 +6360,8 @@
    },
    "fundamentalRank": null,
    "abbr": {
-    "en": "C Tin Wh.",
-    "basis": "MuseScore instruments.xml 的 c-tin-whistle shortName"
+    "en": "Tin Wh.",
+    "basis": "MuseScore instruments.xml 的 c-tin-whistle longName「C Tin Whistle」（出版谱惯例）；去掉开头的调名"
    },
    "notation": {
     "clef": "G8va",
@@ -6132,6 +6369,10 @@
     "sounds": 12,
     "octave": 12,
     "basis": "MuseScore instruments.xml 的 c-tin-whistle：谱号 G8va、不移调"
+   },
+   "scoreName": {
+    "en": "Tin Whistle",
+    "basis": "MuseScore instruments.xml 的 c-tin-whistle longName「C Tin Whistle」（出版谱惯例）；去掉开头的调名"
    }
   },
   {
@@ -6213,6 +6454,10 @@
     "sounds": 24,
     "octave": 24,
     "basis": "MuseScore instruments.xml 的 ocarina：谱号 G15ma、不移调"
+   },
+   "scoreName": {
+    "en": "Ocarina",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件，或它的 longName 没写）"
    }
   },
   {
@@ -6282,6 +6527,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 sitar：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Sitar",
+    "basis": "MuseScore instruments.xml 的 sitar longName「Sitar」（出版谱惯例）"
    }
   },
   {
@@ -6358,6 +6607,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 banjo：谱号 G8vb、不移调"
+   },
+   "scoreName": {
+    "en": "Banjo",
+    "basis": "MuseScore instruments.xml 的 banjo longName「Banjo」（出版谱惯例）"
    }
   },
   {
@@ -6433,6 +6686,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 shamisen：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Shamisen",
+    "basis": "MuseScore instruments.xml 的 shamisen longName「Shamisen」（出版谱惯例）"
    }
   },
   {
@@ -6507,6 +6764,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 koto：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Koto",
+    "basis": "MuseScore instruments.xml 的 koto longName「Koto」（出版谱惯例）"
    }
   },
   {
@@ -6571,16 +6832,16 @@
     "basis": "AI 常识"
    },
    "fundamentalRank": null,
-   "abbr": {
-    "en": "Kal.",
-    "basis": "MuseScore instruments.xml 的 kalimba shortName"
-   },
    "notation": {
     "clef": "G",
     "concertClef": "G",
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 kalimba：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Mbira",
+    "basis": "MuseScore 对照借的是 Kalimba（AI 判，近亲但不是同一件），不借"
    }
   },
   {
@@ -6655,6 +6916,10 @@
     "sounds": -2,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 bagpipe：谱号 G、移调 -2 半音"
+   },
+   "scoreName": {
+    "en": "Bagpipe",
+    "basis": "MuseScore instruments.xml 的 bagpipe longName「Bagpipe」（出版谱惯例）"
    }
   },
   {
@@ -6727,16 +6992,16 @@
     "basis": "原文换算（Violin）"
    },
    "fundamentalRank": null,
-   "abbr": {
-    "en": "Vln.",
-    "basis": "MuseScore instruments.xml 的 violin shortName"
-   },
    "notation": {
     "clef": "G",
     "concertClef": "G",
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 violin：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Fiddle",
+    "basis": "民间提琴乐手自己叫 fiddle；MuseScore 对照借的是 Violin（AI 判），不借名字和简写"
    }
   },
   {
@@ -6813,6 +7078,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 shenai：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Shenai",
+    "basis": "MuseScore instruments.xml 的 shenai longName「Shenai」（出版谱惯例）"
    }
   },
   {
@@ -6882,6 +7151,10 @@
    "abbr": {
     "en": "Met. Wn Ch.",
     "basis": "MuseScore instruments.xml 的 metal-wind-chimes shortName"
+   },
+   "scoreName": {
+    "en": "Wind Chimes",
+    "basis": "MuseScore「Metal Wind Chimes」去掉材质词；简写照旧"
    },
    "pitched": false,
    "percussion": {
@@ -6988,6 +7261,10 @@
     "en": "Agogô",
     "basis": "MuseScore instruments.xml 的 agogo-bells shortName"
    },
+   "scoreName": {
+    "en": "Agogô Bells",
+    "basis": "MuseScore instruments.xml 的 agogo-bells longName「Agogô Bells」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -7086,6 +7363,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Steel Pans",
+    "basis": "MuseScore instruments.xml 的 steel-drums longName「Steel Pans」（出版谱惯例）"
    }
   },
   {
@@ -7155,6 +7436,10 @@
    "abbr": {
     "en": "Wd. Bl.",
     "basis": "MuseScore instruments.xml 的 wood-blocks shortName"
+   },
+   "scoreName": {
+    "en": "Wood Blocks",
+    "basis": "MuseScore instruments.xml 的 wood-blocks longName「Wood Blocks」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -7254,6 +7539,10 @@
    "abbr": {
     "en": "Taiko",
     "basis": "MuseScore instruments.xml 的 taiko shortName"
+   },
+   "scoreName": {
+    "en": "Taiko",
+    "basis": "MuseScore instruments.xml 的 taiko longName「Taiko」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -7373,6 +7662,10 @@
    "abbr": {
     "en": "Toms",
     "basis": "MuseScore instruments.xml 的 tom-toms shortName"
+   },
+   "scoreName": {
+    "en": "Toms",
+    "basis": "MuseScore instruments.xml 的 tom-toms longName「Toms」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -7497,6 +7790,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Electronic Drums",
+    "basis": "MuseScore 里没有；乐手的叫法"
+   },
    "pitched": false,
    "percussion": {
     "staff": 5,
@@ -7565,6 +7862,10 @@
    "abbr": {
     "en": "Sus. Cym.",
     "basis": "MuseScore instruments.xml 的 crash-cymbal shortName"
+   },
+   "scoreName": {
+    "en": "Suspended Cymbal",
+    "basis": "MuseScore instruments.xml 的 crash-cymbal longName「Suspended Cymbal」（对照是 AI 判，名字对得上）"
    },
    "pitched": false,
    "percussion": {
@@ -7672,6 +7973,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 guitar-steel：谱号 G8vb、不移调"
+   },
+   "scoreName": {
+    "en": "Guitar",
+    "basis": "这是吉他的总称概念；MuseScore 对照借了 Acoustic Guitar（AI 判），总称写 Guitar；简写照旧 Guit."
    }
   },
   {
@@ -7715,6 +8020,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Breathing",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -7795,6 +8104,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Seashore",
+    "basis": "音效：GM 名 Seashore（百科名 coast = 海岸，不是声音的名字）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -7883,6 +8196,10 @@
     "basis": "原文换算（Bird vocalization）"
    },
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Birdsong",
+    "basis": "音效：鸟叫的通行叫法（百科名 bird vocalization 是学术名）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -7960,6 +8277,10 @@
     "basis": "采样实测 + 推算"
    },
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Telephone Ring",
+    "basis": "音效：GM 名 Telephone Ring（百科名 ringtone 指手机铃声）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -8034,6 +8355,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Helicopter",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -8133,6 +8458,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Applause",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -8199,6 +8528,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Gunshot",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -8316,6 +8649,10 @@
    "abbr": {
     "en": "BD",
     "basis": "MuseScore instruments.xml 的 bass-drum shortName"
+   },
+   "scoreName": {
+    "en": "Bass Drum",
+    "basis": "MuseScore instruments.xml 的 bass-drum longName「Bass Drum」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -8455,6 +8792,10 @@
     "en": "SD",
     "basis": "MuseScore instruments.xml 的 snare-drum shortName"
    },
+   "scoreName": {
+    "en": "Snare Drum",
+    "basis": "MuseScore instruments.xml 的 snare-drum longName「Snare Drum」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -8552,6 +8893,10 @@
     "en": "Hd. Clp.",
     "basis": "MuseScore instruments.xml 的 hand-clap shortName"
    },
+   "scoreName": {
+    "en": "Hand Clap",
+    "basis": "MuseScore instruments.xml 的 hand-clap longName「Hand Clap」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -8641,8 +8986,12 @@
    "range": null,
    "fundamentalRank": null,
    "abbr": {
-    "en": "Toms",
-    "basis": "MuseScore instruments.xml 的 tom-toms shortName"
+    "en": "Fl. Tom",
+    "basis": "鼓组里的叫法；MuseScore 对照借的是 Toms，不借；简写 AI 判"
+   },
+   "scoreName": {
+    "en": "Floor Tom",
+    "basis": "鼓组里的叫法；MuseScore 对照借的是 Toms，不借；简写 AI 判"
    },
    "pitched": false,
    "percussion": {
@@ -8783,6 +9132,10 @@
     "en": "Hi-hat",
     "basis": "MuseScore instruments.xml 的 hi-hat shortName"
    },
+   "scoreName": {
+    "en": "Hi-hat",
+    "basis": "MuseScore instruments.xml 的 hi-hat longName「Hi-hat」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -8902,8 +9255,12 @@
    "range": null,
    "fundamentalRank": null,
    "abbr": {
-    "en": "Sus. Cym.",
-    "basis": "MuseScore instruments.xml 的 crash-cymbal shortName"
+    "en": "Cr. Cym.",
+    "basis": "鼓组里的叫法；MuseScore 对照借的是 Suspended Cymbal（借谱号），不借；简写照鼓谱常见写法（AI 判）"
+   },
+   "scoreName": {
+    "en": "Crash Cymbal",
+    "basis": "鼓组里的叫法；MuseScore 对照借的是 Suspended Cymbal（借谱号），不借；简写照鼓谱常见写法（AI 判）"
    },
    "pitched": false,
    "percussion": {
@@ -8997,6 +9354,10 @@
    "abbr": {
     "en": "R. Cym.",
     "basis": "MuseScore instruments.xml 的 ride-cymbal shortName"
+   },
+   "scoreName": {
+    "en": "Ride Cymbal",
+    "basis": "MuseScore instruments.xml 的 ride-cymbal longName「Ride Cymbal」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -9094,6 +9455,10 @@
     "en": "Ch. Cym.",
     "basis": "MuseScore instruments.xml 的 china-cymbal shortName"
    },
+   "scoreName": {
+    "en": "China Cymbal",
+    "basis": "MuseScore instruments.xml 的 china-cymbal longName「China Cymbal」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -9173,6 +9538,10 @@
     "en": "Tamb.",
     "basis": "MuseScore instruments.xml 的 tambourine shortName"
    },
+   "scoreName": {
+    "en": "Tambourine",
+    "basis": "MuseScore instruments.xml 的 tambourine longName「Tambourine」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -9250,6 +9619,10 @@
    "abbr": {
     "en": "Sp. Cym.",
     "basis": "MuseScore instruments.xml 的 splash-cymbal shortName"
+   },
+   "scoreName": {
+    "en": "Splash Cymbal",
+    "basis": "MuseScore instruments.xml 的 splash-cymbal longName「Splash Cymbal」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -9346,6 +9719,10 @@
     "en": "Cwb.",
     "basis": "MuseScore instruments.xml 的 cowbell shortName"
    },
+   "scoreName": {
+    "en": "Cowbell",
+    "basis": "MuseScore instruments.xml 的 cowbell longName「Cowbell」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -9423,6 +9800,10 @@
    "abbr": {
     "en": "Vibslp.",
     "basis": "MuseScore instruments.xml 的 vibraslap shortName"
+   },
+   "scoreName": {
+    "en": "Vibraslap",
+    "basis": "MuseScore instruments.xml 的 vibraslap longName「Vibraslap」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -9524,6 +9905,10 @@
    "abbr": {
     "en": "Bon.",
     "basis": "MuseScore instruments.xml 的 bongos shortName"
+   },
+   "scoreName": {
+    "en": "Bongos",
+    "basis": "MuseScore instruments.xml 的 bongos longName「Bongos」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -9638,6 +10023,10 @@
     "en": "Con.",
     "basis": "MuseScore instruments.xml 的 congas shortName"
    },
+   "scoreName": {
+    "en": "Congas",
+    "basis": "MuseScore instruments.xml 的 congas longName「Congas」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -9739,6 +10128,10 @@
     "en": "Timb.",
     "basis": "MuseScore instruments.xml 的 timbales shortName"
    },
+   "scoreName": {
+    "en": "Timbales",
+    "basis": "MuseScore instruments.xml 的 timbales longName「Timbales」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -9835,6 +10228,10 @@
     "en": "Cabs.",
     "basis": "MuseScore instruments.xml 的 cabasa shortName"
    },
+   "scoreName": {
+    "en": "Cabasa",
+    "basis": "MuseScore instruments.xml 的 cabasa longName「Cabasa」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -9915,6 +10312,10 @@
     "en": "Mrcs.",
     "basis": "MuseScore instruments.xml 的 maracas shortName"
    },
+   "scoreName": {
+    "en": "Maracas",
+    "basis": "MuseScore instruments.xml 的 maracas longName「Maracas」（出版谱惯例）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -9992,6 +10393,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Samba Whistle",
+    "basis": "apito de samba 的英文通行叫法"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -10060,6 +10465,10 @@
    "abbr": {
     "en": "Gro.",
     "basis": "MuseScore instruments.xml 的 guiro shortName"
+   },
+   "scoreName": {
+    "en": "Güiro",
+    "basis": "MuseScore instruments.xml 的 guiro longName「Güiro」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -10147,6 +10556,10 @@
    "abbr": {
     "en": "Clv.",
     "basis": "MuseScore instruments.xml 的 claves shortName"
+   },
+   "scoreName": {
+    "en": "Claves",
+    "basis": "MuseScore instruments.xml 的 claves longName「Claves」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -10238,6 +10651,10 @@
    "abbr": {
     "en": "Cu.",
     "basis": "MuseScore instruments.xml 的 cuica shortName"
+   },
+   "scoreName": {
+    "en": "Cuíca",
+    "basis": "MuseScore instruments.xml 的 cuica longName「Cuíca」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -10333,6 +10750,10 @@
    "abbr": {
     "en": "Trgl.",
     "basis": "MuseScore instruments.xml 的 triangle shortName"
+   },
+   "scoreName": {
+    "en": "Triangle",
+    "basis": "MuseScore instruments.xml 的 triangle longName「Triangle」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -10450,6 +10871,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Electric Piano",
+    "basis": "MuseScore instruments.xml 的 electric-piano longName「Electric Piano」（出版谱惯例）"
    }
   },
   {
@@ -10541,6 +10966,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Electric Piano",
+    "basis": "MuseScore instruments.xml 的 electric-piano longName「Electric Piano」（出版谱惯例）"
    }
   },
   {
@@ -10632,6 +11061,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Electric Piano",
+    "basis": "MuseScore instruments.xml 的 electric-piano longName「Electric Piano」（出版谱惯例）"
    }
   },
   {
@@ -10724,6 +11157,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Synthesizer",
+    "basis": "型号归「谁来演」：谱上写功能名 Synthesizer（MuseScore 把它对到 poly-synth，longName「Poly Synthesizer」多了一个分类词）"
    }
   },
   {
@@ -10806,6 +11243,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 electric-guitar：谱号 G8vb、不移调"
+   },
+   "scoreName": {
+    "en": "Electric Guitar",
+    "basis": "MuseScore instruments.xml 的 electric-guitar longName「Electric Guitar」（出版谱惯例）"
    }
   },
   {
@@ -10868,6 +11309,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 electric-bass：谱号 F、移调 -12 半音、实际音高显示用 F8vb"
+   },
+   "scoreName": {
+    "en": "Electric Bass",
+    "basis": "MuseScore instruments.xml 的 electric-bass longName「Electric Bass」（对照是 AI 判，名字对得上）"
    }
   },
   {
@@ -10936,6 +11381,10 @@
     "sounds": -12,
     "octave": -12,
     "basis": "MuseScore instruments.xml 的 electric-bass：谱号 F、移调 -12 半音、实际音高显示用 F8vb"
+   },
+   "scoreName": {
+    "en": "Electric Bass",
+    "basis": "MuseScore instruments.xml 的 electric-bass longName「Electric Bass」（对照是 AI 判，名字对得上）"
    }
   },
   {
@@ -11013,6 +11462,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Synthesizer",
+    "basis": "型号归「谁来演」：谱上写功能名 Synthesizer（MuseScore 把它对到 poly-synth，longName「Poly Synthesizer」多了一个分类词）"
    }
   },
   {
@@ -11096,6 +11549,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "String Synthesizer",
+    "basis": "MuseScore instruments.xml 的 string-synthesizer longName「String Synthesizer」（出版谱惯例）"
    }
   },
   {
@@ -11182,6 +11639,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Synthesizer",
+    "basis": "型号归「谁来演」：谱上写功能名 Synthesizer（MuseScore 把它对到 poly-synth，longName「Poly Synthesizer」多了一个分类词）"
    }
   },
   {
@@ -11259,6 +11720,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Synthesizer",
+    "basis": "型号归「谁来演」：谱上写功能名 Synthesizer（MuseScore 把它对到 poly-synth，longName「Poly Synthesizer」多了一个分类词）"
    }
   },
   {
@@ -11342,6 +11807,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Synthesizer",
+    "basis": "型号归「谁来演」：谱上写功能名 Synthesizer（MuseScore 把它对到 poly-synth，longName「Poly Synthesizer」多了一个分类词）"
    }
   },
   {
@@ -11419,6 +11888,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Synthesizer",
+    "basis": "型号归「谁来演」：谱上写功能名 Synthesizer（MuseScore 把它对到 poly-synth，longName「Poly Synthesizer」多了一个分类词）"
    }
   },
   {
@@ -11490,6 +11963,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Synthesizer",
+    "basis": "型号归「谁来演」：谱上写功能名 Synthesizer（MuseScore 把它对到 poly-synth，longName「Poly Synthesizer」多了一个分类词）"
    }
   },
   {
@@ -11557,7 +12034,11 @@
     "high": 84,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Santoor",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q877239",
@@ -11644,6 +12125,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Yangqin",
+    "basis": "MuseScore instruments.xml 的 yangqin longName「Yangqin」（出版谱惯例）"
    }
   },
   {
@@ -11729,6 +12214,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Guzheng",
+    "basis": "MuseScore instruments.xml 的 guzheng longName「Guzheng」（出版谱惯例）"
    }
   },
   {
@@ -11796,7 +12285,11 @@
     "high": 79,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Sanxian",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q1394795",
@@ -11872,7 +12365,11 @@
     "high": 88,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Xiao",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q839767",
@@ -11939,7 +12436,11 @@
     "high": 76,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Xun",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q2096912",
@@ -12007,7 +12508,11 @@
     "high": 95,
     "basis": "AI 常识"
    },
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Suona",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q726306",
@@ -12093,6 +12598,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 erhu：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Erhu",
+    "basis": "MuseScore instruments.xml 的 erhu longName「Erhu」（出版谱惯例）"
    }
   },
   {
@@ -12172,6 +12681,10 @@
     "sounds": 12,
     "octave": 12,
     "basis": "MuseScore instruments.xml 的 d-dizi：谱号 G8va、不移调"
+   },
+   "scoreName": {
+    "en": "Dizi",
+    "basis": "MuseScore instruments.xml 的 d-dizi longName「D Dizi」（对照是 AI 判，名字对得上）；去掉开头的调名"
    }
   },
   {
@@ -12237,9 +12750,9 @@
    },
    "range": null,
    "fundamentalRank": null,
-   "abbr": {
-    "en": "Dabo",
-    "basis": "MuseScore instruments.xml 的 dabo shortName"
+   "scoreName": {
+    "en": "Bo",
+    "basis": "中国钹（钹）；MuseScore 对照借的是 Dabo（另一件），不借"
    },
    "pitched": false,
    "percussion": {
@@ -12329,10 +12842,6 @@
     "basis": "原文（Bayan (accordion)）"
    },
    "fundamentalRank": null,
-   "abbr": {
-    "en": "Acc.",
-    "basis": "MuseScore instruments.xml 的 accordion shortName"
-   },
    "notation": {
     "clef": "G",
     "concertClef": "G",
@@ -12347,6 +12856,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Bayan",
+    "basis": "MuseScore 对照借的是 Accordion（借谱号），名字和简写不借"
    }
   },
   {
@@ -12415,6 +12928,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Surdo",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -12491,16 +13008,16 @@
    },
    "range": null,
    "fundamentalRank": null,
-   "abbr": {
-    "en": "Pn. Fl.",
-    "basis": "MuseScore instruments.xml 的 pan-flute shortName"
-   },
    "notation": {
     "clef": "G",
     "concertClef": "G",
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 pan-flute：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Sikus",
+    "basis": "MuseScore 对照借的是 Pan Flute（借谱号），名字和简写不借"
    }
   },
   {
@@ -12570,9 +13087,9 @@
    },
    "range": null,
    "fundamentalRank": null,
-   "abbr": {
-    "en": "Met. Wn Ch.",
-    "basis": "MuseScore instruments.xml 的 metal-wind-chimes shortName"
+   "scoreName": {
+    "en": "Fūrin",
+    "basis": "日本风铃；MuseScore 对照借的是 Metal Wind Chimes（借谱号），不借"
    },
    "pitched": false,
    "percussion": {
@@ -12692,6 +13209,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 didgeridoo：谱号 F、不移调"
+   },
+   "scoreName": {
+    "en": "Didgeridoo",
+    "basis": "MuseScore instruments.xml 的 didgeridoo longName「Didgeridoo」（出版谱惯例）"
    }
   },
   {
@@ -12753,6 +13274,10 @@
    "abbr": {
     "en": "Slt. Dr.",
     "basis": "MuseScore instruments.xml 的 slit-drum shortName"
+   },
+   "scoreName": {
+    "en": "Slit Drum",
+    "basis": "MuseScore instruments.xml 的 slit-drum longName「Slit Drum」（出版谱惯例）"
    },
    "pitched": false,
    "percussion": {
@@ -12876,6 +13401,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 ukulele：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Ukulele",
+    "basis": "MuseScore instruments.xml 的 ukulele longName「Ukulele」（出版谱惯例）"
    }
   },
   {
@@ -12957,9 +13486,9 @@
    },
    "range": null,
    "fundamentalRank": null,
-   "abbr": {
-    "en": "Tam",
-    "basis": "MuseScore instruments.xml 的 tam-tam shortName"
+   "scoreName": {
+    "en": "Gong",
+    "basis": "这是锣的总称概念；MuseScore 对照借的是 Tam-tam（管弦乐里那一种，AI 判），总称写 Gong"
    },
    "pitched": false,
    "percussion": {
@@ -13082,6 +13611,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 lute：谱号 G、不移调"
+   },
+   "scoreName": {
+    "en": "Lute",
+    "basis": "MuseScore instruments.xml 的 lute longName「Lute」（出版谱惯例）"
    }
   },
   {
@@ -13161,7 +13694,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Lyre",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q666971",
@@ -13196,6 +13733,10 @@
    ],
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Bullroarer",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13258,7 +13799,11 @@
     "license": "CC-BY-3.0"
    },
    "range": null,
-   "fundamentalRank": null
+   "fundamentalRank": null,
+   "scoreName": {
+    "en": "Musical Bow",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   }
   },
   {
    "id": "Q38681",
@@ -13324,6 +13869,10 @@
     "basis": "AI 常识"
    },
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Dog Bark",
+    "basis": "音效：只写 Bark 不知道是什么叫"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13394,6 +13943,10 @@
     "basis": "AI 常识"
    },
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Cat Meow",
+    "basis": "音效：同 Dog Bark"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13473,6 +14026,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Wind",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13557,6 +14114,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Rain",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13626,6 +14187,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Thunder",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13703,6 +14268,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Stream",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13768,6 +14337,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Fire",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13842,6 +14415,10 @@
     "basis": "AI 常识"
    },
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Cricket",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13911,6 +14488,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Cicada",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -13971,6 +14552,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Frog",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -14075,6 +14660,10 @@
     "sounds": 0,
     "octave": 0,
     "basis": "MuseScore instruments.xml 的 euphonium：谱号 F、不移调"
+   },
+   "scoreName": {
+    "en": "Euphonium",
+    "basis": "MuseScore instruments.xml 的 euphonium longName「Euphonium」（出版谱惯例）"
    }
   },
   {
@@ -14139,6 +14728,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Fireworks",
+    "basis": "音效：习惯用复数"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -14203,6 +14796,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Cannon",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -14283,6 +14880,10 @@
     "basis": "AI 常识"
    },
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Car",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -14360,6 +14961,10 @@
     "basis": "原文（Greenwich Time Signal）"
    },
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Beep",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -14425,6 +15030,10 @@
    },
    "range": null,
    "fundamentalRank": null,
+   "scoreName": {
+    "en": "Steam Engine",
+    "basis": "百科英文名去掉括号、首字母大写（MuseScore 里没有这件）"
+   },
    "pitched": false,
    "percussion": {
     "staff": 1,
@@ -14494,6 +15103,10 @@
      "G",
      "F"
     ]
+   },
+   "scoreName": {
+    "en": "Theremin",
+    "basis": "MuseScore instruments.xml 的 theremin longName「Theremin」（出版谱惯例）"
    }
   },
   {
@@ -14558,9 +15171,9 @@
    },
    "range": null,
    "fundamentalRank": null,
-   "abbr": {
-    "en": "Clv.",
-    "basis": "MuseScore instruments.xml 的 claves shortName"
+   "scoreName": {
+    "en": "Bei Bangzi",
+    "basis": "北梆子；MuseScore 对照借的是 Claves（借谱号），不借；百科名括号里的解释留在详细说明"
    },
    "pitched": false,
    "percussion": {

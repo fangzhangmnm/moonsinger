@@ -24,6 +24,9 @@ export interface Concept {
   naturalKey?: { note: number; hz?: number; basis?: string } | null;
   /** 出版谱简写（v12；MuseScore instruments.xml 的 shortName，如 Vln. / Pno. / Glock.）：总谱第二行起每行谱前写它（user「乐手名和颜色同意」）。没有 zh（仓鼠没找到中文通行简称的出处，不现编）。 */
   abbr?: { en: string; basis?: string } | null;
+  /** 谱上名（v15）：谱表开头印的、乐手对这个声部的叫法（Western concert flute → Flute、各型号 → 功能名 Electric Guitar / Synthesizer）；names = 详细说明（百科名），不上谱。
+   *  user 2026-11-07「为什么我从era里面选的flute在sheet上面显示western concept flute」「所以应该是有详细解释，名字，简写？」「不只是长笛，而是系统的看一下」。 */
+  scoreName?: { en: string; basis?: string } | null;
   /** 记谱惯例（v12）：clef = 按惯例写谱的谱号；concertClef = 按实际音高显示时的谱号（钟琴 G15ma、短笛 / 木琴 G8va、低音提琴 F8vb）；
    *  sounds = 实际音高 − 按基础谱号读的谱面音高（半音）；octave = sounds 里整八度的部分。 */
   notation?: { clef: string; clefs?: string[]; concertClef: string; concertClefs?: string[]; sounds: number; octave: number; basis?: string; wikipedia?: unknown } | null;
@@ -146,7 +149,8 @@ export function octaveDisclosure(nt: Concept["notation"] | undefined, oc: Octave
 /** GS 在家族音源库里的 id（sampleKey 只对它成立）。 */
 export const GS_LIBRARY_ID = "generaluser-gs-2.0.3";
 /** 谱上写的角色名：目录里的英文名首字母大写（打谱惯例；Vocals / Piano 同款）。 */
-export const roleNameOf = (c: Concept): string => c.names.en.replace(/^./, (ch) => ch.toUpperCase());
+/** 谱上写的名字 = 目录的谱上名（v15）；老目录没有 = 百科英文名去掉括号、首字母大写（原来整个百科名上谱：「Western concert flute」「Solid-body electric guitar (Fender Stratocaster)」）。 */
+export const roleNameOf = (c: Concept): string => c.scoreName?.en || c.names.en.replace(/\s*\([^)]*\)/g, "").trim().replace(/^./, (ch) => ch.toUpperCase());
 /** 角色的官方乐器语义 id：概念自己的；没有就用本尊预设的；再没有 = null（角色沿用原来的）。 */
 export const roleSoundOf = (cat: Catalog, c: Concept): string | null => c.ids.musicxml ?? providersOf(cat, c)[0]?.sound ?? null;
 

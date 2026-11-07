@@ -1516,6 +1516,15 @@ function lyricReadingAt(i: number): LyricReading | null {
   if (!r.labels) return { parts, at: -1, note: _t("小月相念出来 {n} 个音节、谱上 {n2} 个，对不上（唱的时候会报错）：", { n: r.said.length, n2: s.SCORE.length }) };
   return { parts, at: plan.entryOf.get(t.id) ?? -1, note: s.LANG === "zh" ? _t("小月相念成（音素 + 声调）：") : _t("小月相念成：") };
 }
+/** 乐器页「这个声部是什么」卡上的说明行（v0.16.2）：这件乐器的详细说明（百科名，按值存在歌里）+ 第二行起谱前写的简写。
+ *  user 2026-11-07「所以应该是有详细解释，名字，简写？think critically about it」：谱上名在上面的框里，这一行补另外两层。没有挂乐器（自己写的名字）= 只写简写。 */
+function roleDetail(role: string): string {
+  const cn = (D.extras.lounge[role] as { concept?: { name?: { zh: string; en: string } } } | undefined)?.concept?.name;
+  const k = D.st.song.parts.findIndex((p) => p.role === role), ab = k >= 0 ? partLooks().abbrs[k] : "";
+  const en = cn ? cn.en.replace(/^./, (c) => c.toUpperCase()) : "";
+  const what = cn ? (lang() === "zh" ? `${cn.zh} · ${en}` : en) : "";
+  return `<div class="role-detail">${what ? _t("这件乐器：{what}", { what: esc(what) }) + (ab ? " · " : "") : ""}${ab ? _t("第二行起写 {ab}", { ab: esc(ab) }) : ""}</div>`;
+}
 /** 每位歌手的类别色（tab20 下标）和谱前简写（v0.9.31；user「乐手名和颜色同意」）。简写要目录（仓鼠 v12 的 abbr）：没载就先缩名字，载好了重画。 */
 function partLooks(): { colors: number[]; abbrs: string[] } {
   const labels = partLabels(D.st.song, D.extras), sounds = D.st.song.parts.map((p) => roleSound(D.extras, p.role));
@@ -1525,7 +1534,7 @@ function partLooks(): { colors: number[]; abbrs: string[] } {
   const abbrs = D.st.song.parts.map((p, k) => {
     const ids = (D.extras.lounge[p.role] as { concept?: { ids?: { wikidata?: string | null; local?: string | null } } } | undefined)?.concept?.ids;
     const c = catalogNow && ids ? (ids.wikidata ? catalogNow.byId.get(ids.wikidata) : undefined) ?? (ids.local ? catalogNow.byId.get(ids.local) ?? catalogNow.byId.get(`x:${ids.local}`) : undefined) : undefined;
-    return partAbbr(labels[k], { ...(c ? { conceptNames: [c.names.en, c.names.zh], ...(c.abbr?.en ? { conceptAbbr: c.abbr.en } : {}) } : {}), voice: sounds[k].startsWith("voice.") });
+    return partAbbr(labels[k], { ...(c ? { conceptNames: [...(c.scoreName?.en ? [c.scoreName.en] : []), c.names.en, c.names.zh], ...(c.abbr?.en ? { conceptAbbr: c.abbr.en } : {}) } : {}), voice: sounds[k].startsWith("voice.") });
   });
   return { colors, abbrs };
 }
@@ -2227,7 +2236,7 @@ function drawInst(): void {
     `<section class="ip-card"><h3>${_t("这个声部是什么")}<small>${_t("谱上写它的名字")}</small></h3><select id="roleSel" class="role-sel">` +
       (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${_t("{rn}（自己写的）", { rn: esc(rn) })}</option>`) +
       ROLE_GROUPS.map((g) => `<optgroup label="${g.group}">${g.items.map((r) => `<option value="${esc(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc(r.name)} — ${r.zh}</option>`).join("")}</optgroup>`).join("") +
-      `</select><label class="role-name">${_t("谱上写")}<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" /></label><div class="role-sound">MusicXML：<code>${esc(rs)}</code></div></section>` +
+      `</select><label class="role-name">${_t("谱上写")}<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" /></label>${roleDetail(role)}<div class="role-sound">MusicXML：<code>${esc(rs)}</code></div></section>` +
     `<section class="ip-card"><h3>${_t("谁来演")}<small>${_t("演奏者和他手里的琴；名字不上谱")}</small></h3><div class="ip-cands">` +
       candidates(D.extras, role).map((c) => chip(`cand:${c.id}`, !performerOf(c.engine) ? _t("{name}（没人能演）", { name: esc(c.name) }) : esc(c.name), aid === c.id, chipTitle(c)) +
         (aid !== c.id && (performerOf(c.engine)?.removable ?? true) ? `<button class="btn cand-del" data-v="del:${esc(c.id)}" title="${_t("从休息室删掉（它嵌在歌里的声音一起丢）")}">×</button>` : "")).join("") + `</div>` + status +

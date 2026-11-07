@@ -2023,6 +2023,8 @@ export const S = {
   "静音（这位不出声；和谱上歌手名下面的「静」是同一个）": { en: "Mute (this part is silent; same as “M” under the part name on the score)" },
   "独奏（只听独奏的几位；和谱上的「独」是同一个）": { en: "Solo (only hear the parts on solo; same as “S” on the score)" },
   "独": { en: "S" },
+  "这件乐器：{what}": { en: "Instrument: {what}" },
+  "第二行起写 {ab}": { en: "from the 2nd system: {ab}" },
 } as const satisfies Record<string, Entry>;
 
 export type Key = keyof typeof S;

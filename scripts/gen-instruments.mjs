@@ -15,7 +15,8 @@ export const SRC = process.env.INSTRUMENTS_SRC ?? join(ROOT, "..", "..", "202608
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
 export const PERC_OUT = join(ROOT, "src", "gm", "percussion.gen.ts");
-export const VERSION = 14;   // v14 = 2026-11-07（仓鼠 eec835f：GM 122 Breath Noise 改挂长笛、奏法 = 气声、年份 ≈前 51,000，「呼吸」不再有 GM 号；user 11-07「midi breath不是呼吸是演奏技巧」，家族周账 F-212）
+export const VERSION = 15;   // v15 = 2026-11-07（仓鼠 adc0249：概念加 scoreName = 谱上名（Western concert flute → Flute、型号 → 功能名），13 个简写改正；user 11-07「为什么我从era里面选的flute在sheet上面显示western concept flute」「不只是长笛，而是系统的看一下」）
+//   v14 = 2026-11-07（仓鼠 eec835f：GM 122 Breath Noise 改挂长笛、奏法 = 气声、年份 ≈前 51,000，「呼吸」不再有 GM 号；user 11-07「midi breath不是呼吸是演奏技巧」，家族周账 F-212）
 //   v13 = 2026-10-10（仓鼠 7447213：不分音高的鼓谱写法 percussion / pitched:false / 着力点 hitSec / GS 扩展鼓键 extraDrumKeys；纯增量。工单 ai-docs/20261010-hamster-workorder-percussion-notation.md）
 //   v12 = 2026-10-10（仓鼠 ffd9a23：概念加 abbr（出版谱简写，MuseScore instruments.xml）/ notation（记谱谱号、按实际音高的谱号、sounds / octave），gm-map 铃类加 octaveCheck；纯增量。工单 ai-docs/20261010-hamster-workorder-abbr-octave.md）
 export const FILES = {

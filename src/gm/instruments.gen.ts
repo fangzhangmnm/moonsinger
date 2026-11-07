@@ -1,31 +1,31 @@
 // 生成物：node scripts/gen-instruments.mjs（源 = ../20260813 MyLlamaReborn/20261007 音乐史/export/moonsinger/，拷在 vendor/instruments/）。勿手改。
 // 找人视图的目录：乐器概念（百科，id 束）+ GM 映射 + 图标。打开视图时才 fetch，到手先对这里钉的 sha256。
-export const INSTRUMENTS_VERSION = 14;
+export const INSTRUMENTS_VERSION = 15;
 export const INSTRUMENT_FILES = {
  "concepts": {
-  "file": "vendor/instruments/instruments-v14.json",
-  "bytes": 293738,
-  "sha256": "0887121aa1aedf95f472d3830b34608c7d2bc0325c83cf0130b84bb9bbdef488"
+  "file": "vendor/instruments/instruments-v15.json",
+  "bytes": 317869,
+  "sha256": "4340e7b473321f2abc5f861066244cf60bdccfc5288fdc37e111b763d8aa7139"
  },
  "gmMap": {
-  "file": "vendor/instruments/gm-map-v14.json",
+  "file": "vendor/instruments/gm-map-v15.json",
   "bytes": 434160,
-  "sha256": "e254507acccc6df1bced24b5633d93c4f55be0423a634c5a9cbf0c22a0a8ed64"
+  "sha256": "41cd2fe8ece13b2d5f6baa867796f3894d94e592c67e9432a7f15bda2f1aa921"
  },
  "icons": {
-  "file": "vendor/instruments/instrument-icons-20261107-v14.svg",
+  "file": "vendor/instruments/instrument-icons-20261107-v15.svg",
   "bytes": 139014,
-  "sha256": "e6122d49bc2171d186397023d3b6416780c804b6860e71ff54b47a899ca9ea8f"
+  "sha256": "a94929205faabf3403223cea2ff6b69ebc2443f7b19d164434125552ecd138f0"
  },
  "iconCredits": {
-  "file": "vendor/instruments/icon-credits-v14.json",
+  "file": "vendor/instruments/icon-credits-v15.json",
   "bytes": 20670,
-  "sha256": "1d0e119c7ff8ebe03e2adcb5d660fa6f0f646a7e669ecff45fdd255478a03697"
+  "sha256": "ac545e5c65df0dc99e499329a6d066faaa932c6ebfef935347be8cdeace76592"
  },
  "licenses": {
-  "file": "vendor/instruments/LICENSES-chosen-v14.md",
+  "file": "vendor/instruments/LICENSES-chosen-v15.md",
   "bytes": 145790,
-  "sha256": "291b6e36001723e2f8fe09e68bcb1a1ed84d84ca6b0af7fc15a84516329be631"
+  "sha256": "4fafc7fdd1ba7b07113d6a34f9589406de78edafa93ebbe2edcbc15c190b89d9"
  }
 } as const;
 /** 图标署名（第三方图标，随 app vendor；设置里显示）。modified = 派生图标（--tile）改了什么（CC-BY 要求注明改动；v4 起）。 */

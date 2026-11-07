@@ -1,16 +1,16 @@
 # MoonSinger 挑乐器数据（2026-10-07）
 
-**现行版本 = v14**（2026-11-07）。v14 = GM 122 Breath Noise 改挂长笛（本尊，奏法 `air` 气声，sound id 照旧 `effect.breath`，年份 ≈前 51,000 = 最早的笛子实物、推算），「呼吸」概念不再有 GM 号——user 2026-11-07「midi breath不是呼吸是演奏技巧」；维基原文把 Breath 链到 Breathing，改在 `scripts/parse_gm.py` 的 OVERRIDE；别的概念 / 行一个字没动（Claude Opus 5.5 逐项比过）。v1–v13 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v15。
+**现行版本 = v15**（2026-11-07）。v15 = 概念加 `scoreName`（谱上名 = 谱表开头印的、乐手的叫法：Western concert flute → Flute，各型号 → 功能名 Electric Guitar / Electric Piano / Synthesizer，Clavinet / Hammond Organ 例外），13 个简写改了（借谱号就近对上 MuseScore 的不借简写，如 Clavinet 原来是 Clavichord 的 Cch.）；`names` 是详细说明、不上谱；来源 `data/谱上名_AI.tsv`（`scripts/make_score_names.py` 出初稿，user 可改）——user 2026-11-07「为什么我从era里面选的flute在sheet上面显示western concept flute」「不只是长笛，而是系统的看一下」。v14 = GM 122 Breath Noise 改挂长笛（本尊，奏法 `air` 气声，sound id 照旧 `effect.breath`，年份 ≈前 51,000 = 最早的笛子实物、推算），「呼吸」概念不再有 GM 号——user 2026-11-07「midi breath不是呼吸是演奏技巧」；维基原文把 Breath 链到 Breathing，改在 `scripts/parse_gm.py` 的 OVERRIDE；别的概念 / 行一个字没动（Claude Opus 5.5 逐项比过）。v1–v13 的文件原样留着（发出去的版本只增不改；`scripts/build_export.py` 发现这一版已存在就停）。v2 和 v1 只差图标（超过 20 KB 的两个换成候选里更轻的）。下一版（sounds.xml 全量）= v16。
 
 > 由 `scripts/build_export.py` 生成，别手改；改数据改 `data/` 再重跑。规格 = PWAProjects 的 webpaint editor v1 prototyping 会话转述的 user 拍板 + 本仓会话 user 原话（见脚本头注释）。
 
 | 文件 | 是什么 |
 |---|---|
-| `instruments-v14.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
-| `gm-map-v14.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
-| `instrument-icons-20261107-v14.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
-| `icon-credits-v14.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
-| `LICENSES-chosen-v14.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
+| `instruments-v15.json` | 表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效），161 条 |
+| `gm-map-v15.json` | 表 ② GM 映射：一行 = 一个 GM 号 → 一个概念；`relation` = `self`（本尊）/ `substitute`（平替，51 条） |
+| `instrument-icons-20261107-v15.svg` | 只装挑中图标的 sprite（69 个，都 ≤ 20 KB），每个 `<symbol>` 自带 viewBox，没有 foreignObject / 外部引用 / `<use>` / class / `<style>`；图形照原样 |
+| `icon-credits-v15.json` | 每个图标一条 `{id, set, author, license, url, bytes}` |
+| `LICENSES-chosen-v15.md` | 挑中套件的许可证原文（从 `icons/upstream/` 原样拼接） |
 
 ## v12 → v13 改了什么（只加字段）
 

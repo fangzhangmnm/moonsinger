@@ -4,7 +4,8 @@ import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL): Uint8Array; existsSync(p: string): boolean };
 const g = (await import(new URL("../scripts/gen-instruments.mjs", import.meta.url).href)) as { render(): string | null; renderPerc(): string | null };
 import { INSTRUMENT_FILES } from "../src/gm/instruments.gen.ts";
-import { loadCatalogFromJson, providersOf, gmKey, groupConcepts, jointOf, SORT_LABEL, type Catalog, type SortMode } from "../src/gm/catalog.ts";
+import { loadCatalogFromJson, providersOf, gmKey, groupConcepts, jointOf, roleNameOf, SORT_LABEL, type Catalog, type SortMode } from "../src/gm/catalog.ts";
+import { partAbbr } from "../src/ui/part-colors.ts";
 
 describe("挑乐器数据", () => {
   it("instruments.gen.ts 是最新的（不是就跑 node scripts/gen-instruments.mjs）", () => {
@@ -98,5 +99,31 @@ describe("连断的底色：目录的 joint", () => {
     eq(jointOf(cat, 0, 45), null, "Pizzicato：一下就完，没有接法");
     eq(jointOf(cat, 0, 109)?.gapSec, 0); eq(jointOf(cat, 0, 22)?.gapSec, 0.04); eq(jointOf(cat, 0, 0)?.gapSec, 0);
     eq(jointOf(cat, 128, 0, 35), null, "鼓件");
+  });
+});
+
+// 谱上名（v0.16.2，2026-11-07 by Claude Opus 5.5；仓鼠 v15 scoreName；user 11-07「为什么我从era里面选的flute在sheet上面显示western concept flute，这个名字太麻烦了」
+//   「所以应该是有详细解释，名字，简写？think critically about it」「不只是长笛，而是系统的看一下」）：谱上 = 谱上名；百科名 = 详细说明；简写认谱上名
+describe("谱上名 / 详细说明 / 简写", () => {
+  const read = (k: keyof typeof INSTRUMENT_FILES) => JSON.parse(fs.readFileSync(new URL(`../${INSTRUMENT_FILES[k].file}`, import.meta.url)).toString());
+  const cat: Catalog = loadCatalogFromJson(read("concepts"), read("gmMap"));
+  const by = (zh: string) => cat.concepts.find((c) => c.names.zh === zh)!;
+  it("长笛 → Flute；Stratocaster → Electric Guitar；DX7 → Synthesizer；Clavinet → Clavinet（不是 Clavichord）；北梆子 → Bei Bangzi", () => {
+    eq(roleNameOf(by("长笛")), "Flute"); eq(roleNameOf(by("实心电吉他（芬达 Stratocaster）")), "Electric Guitar");
+    eq(roleNameOf(by("FM 合成器（雅马哈 DX7）")), "Synthesizer"); eq(roleNameOf(by("电击弦古钢琴（霍纳 Clavinet）")), "Clavinet"); eq(roleNameOf(by("北梆子")), "Bei Bangzi");
+    eq(by("电击弦古钢琴（霍纳 Clavinet）").abbr?.en, "Clav.", "简写不再借 Clavichord 的 Cch.");
+  });
+  it("每件都有谱上名、没有括号、不超过 24 个字母", () => {
+    const bad = cat.concepts.filter((c) => !c.scoreName?.en || /[()]/.test(c.scoreName.en) || c.scoreName.en.length > 24);
+    eq(bad.length, 0, bad.map((c) => `${c.names.zh}「${c.scoreName?.en}」`).join("、"));
+  });
+  it("老目录没有谱上名 = 百科英文名去括号、首字母大写", () => {
+    eq(roleNameOf({ ...by("北梆子"), scoreName: null }), "Bei bangzi");
+  });
+  it("简写：谱上名 = Flute 也认目录简写 Fl.；自己改了名字 = 自己缩", () => {
+    const c = by("长笛"), names = [c.scoreName!.en, c.names.en, c.names.zh];
+    eq(partAbbr("Flute", { conceptNames: names, conceptAbbr: c.abbr!.en }), "Fl.");
+    eq(partAbbr("Western concert flute", { conceptNames: names, conceptAbbr: c.abbr!.en }), "Fl.", "老歌按值存着的百科名照样认");
+    assert(partAbbr("My Flute", { conceptNames: names, conceptAbbr: c.abbr!.en }) !== "Fl.", "自己起的名字不套目录简写");
   });
 });
