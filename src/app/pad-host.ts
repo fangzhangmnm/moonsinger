@@ -14,9 +14,9 @@
 //   只是不吃 pad 的升降锁（raw：琴键本身就分黑白键，按的是哪个就是哪个）。
 
 import { _t } from "../i18n/index.ts";
-import { type Pitch, alterBy, keySpell } from "../score/pitch.ts";
+import { type Pitch, alterBy, keySpell, midiOf } from "../score/pitch.ts";
 import { apply, type Command } from "../score/commands.ts";
-import { type EditorState, ART_NAME, singleSel, writePitch, soundingPitch, setNote, setUnit, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt } from "../score/song.ts";
+import { type EditorState, type NoteTok, ART_NAME, allPitches, singleSel, writePitch, soundingPitch, setNote, setUnit, setTuplet, setInputKey, setInputScale, tr, keyAt, toggleChordPitch, dynMarkAt } from "../score/song.ts";
 import type { Mark } from "../score/perform.ts";
 import { Pad, type HintRange } from "../keyboard/pad.ts";
 import { chordHead, chordBothAfterMs, chordVerdict, monoClash, type ChordWhy } from "../keyboard/chords.ts";
@@ -226,7 +226,10 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   }
 
   const pad = new Pad(padEl, {
-    view: () => { const s = st(); return { unit: s.input.unit, tuplet: s.input.tuplet, acc: s.input.acc, accMode: s.input.accMode, one: singleSel(s) >= 0, hasSel: !!s.sel }; },
+    view: () => {
+      const s = st(), i = singleSel(s), t = i >= 0 ? tr(s)[i] : null;
+      return { unit: s.input.unit, tuplet: s.input.tuplet, acc: s.input.acc, accMode: s.input.accMode, one: i >= 0, hasSel: !!s.sel, chord: t?.kind === "note" ? allPitches(t as NoteTok).map(midiOf) : [] };   // 叠亮着：和弦里已有的音高亮（v0.16.5）
+    },
     music,
     isImpro: padImpro,
     onImpro: () => g.toggleImpro(),

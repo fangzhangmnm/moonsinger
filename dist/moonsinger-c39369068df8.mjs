@@ -4950,7 +4950,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.4-2026-11-07";
+var APP_VERSION = "v0.16.5-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -15199,7 +15199,12 @@ var Pad = class {
       ak2.classList.toggle("lock", on2 && v.accMode === "lock");
     }
     const down = new Set(this.held.values());
-    this.el.querySelectorAll(".pad-key[data-k]").forEach((b3) => b3.classList.toggle("down", down.has(this.keys.get(Number(b3.dataset.k)).midi)));
+    const inChord = new Set(v.one ? v.chord ?? [] : []);
+    this.el.querySelectorAll(".pad-key[data-k]").forEach((b3) => {
+      const m2 = this.keys.get(Number(b3.dataset.k)).midi;
+      b3.classList.toggle("down", down.has(m2));
+      b3.classList.toggle("in-chord", inChord.has(m2));
+    });
     const stk = this.el.querySelector("[data-stack]");
     if (stk) stk.classList.toggle("off", !this.host.canStack());
     const symOn = this.symbols !== "off";
@@ -27037,8 +27042,8 @@ function createPadHost(padEl2, g3) {
   }
   const pad4 = new Pad(padEl2, {
     view: () => {
-      const s10 = st2();
-      return { unit: s10.input.unit, tuplet: s10.input.tuplet, acc: s10.input.acc, accMode: s10.input.accMode, one: singleSel(s10) >= 0, hasSel: !!s10.sel };
+      const s10 = st2(), i10 = singleSel(s10), t10 = i10 >= 0 ? tr(s10)[i10] : null;
+      return { unit: s10.input.unit, tuplet: s10.input.tuplet, acc: s10.input.acc, accMode: s10.input.accMode, one: i10 >= 0, hasSel: !!s10.sel, chord: t10?.kind === "note" ? allPitches(t10).map(midiOf) : [] };
     },
     music,
     isImpro: padImpro,
@@ -27750,7 +27755,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-dff11907dfc8.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-107b12d771d0.mjs");
+      return pick(() => "encode-worker-e0742d204613.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -49962,7 +49967,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "019b244010be",
+  cssHash: "fd0dfce8d4bd",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -53826,4 +53831,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-03c7db7bed90.mjs.map
+//# sourceMappingURL=moonsinger-c39369068df8.mjs.map

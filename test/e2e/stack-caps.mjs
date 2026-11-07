@@ -15,6 +15,7 @@ const toks = () => p.evaluate(() => { const s = window.__moonsinger.state(); ret
 const sel = () => p.evaluate(() => window.__moonsinger.state().sel);
 const stackOn = () => p.evaluate(() => document.querySelector(".pad-panel [data-stack]").classList.contains("lock"));
 const bsText = () => p.evaluate(() => document.querySelector('.pad-panel [data-cmd="backspace"]').textContent);
+const inChord = () => p.$$eval(".pad-panel .pad-key.in-chord .abs", (bs) => bs.map((b) => b.textContent).sort().join(","));   // 叠亮着：和弦里已有的音描一圈（v0.16.5，user 11-07「stack模式已经有的键能高亮吗」）
 const stk = () => p.dispatchEvent(".pad-panel [data-stack]", "pointerdown", { pointerId: 1, isPrimary: true, button: 0 });
 // 光标放到 C 后面（第一个音后面）
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), t = s.song.papers[0].tracks[s.at.part], i = t.findIndex((x) => x.kind === "note"); m.set({ ...s, sel: null, caret: i + 1 }); });
@@ -25,10 +26,12 @@ await stk(); await p.waitForTimeout(150);
 const s1 = await sel();
 check(!!s1 && s1.to - s1.from === 1 && (await stackOn()), "按一下叠 = 选中光标前那个音（C）、叠亮着", JSON.stringify(s1));
 check((await bsText()).includes("短一步"), "改一个音时 ⌫ 写「短一步」", await bsText());
+check((await inChord()).split(",").filter(Boolean).length === 1, "叠亮着：光标前那个音（C）的键描出来", await inChord());
 // 试听：录音房的按键试听记下来（测试里没有音色库：假装库在）
 await p.evaluate(() => { const e = window.__moonsinger.engine; e.hasBank = () => true; e.presetIndex = () => 0; window.__aud = []; e.auditionOn = (src, _inst, key) => window.__aud.push([src, key]); });
 await p.focus("#score"); await p.keyboard.press("3"); await p.waitForTimeout(150);
 check((await toks()).startsWith("E+C") || (await toks()).startsWith("C+E"), "按 3 = 叠上 E（XOR）", await toks());
+check((await inChord()).split(",").filter(Boolean).length === 2, "叠上 E 之后：C 和 E 两个键都描出来", await inChord());
 { const aud = await p.evaluate(() => window.__aud.splice(0)), last = aud.filter(([s]) => !String(s).includes("~")).at(-1)?.[0], group = aud.filter(([s]) => s === last || String(s).startsWith(`${last}~`));
   check(group.length === 2 && new Set(group.map(([, k]) => k)).size === 2, "叠上之后试听 = 整个和弦一起响（C 和 E 两个音，不只是旧的那个）", JSON.stringify(aud)); }
 await p.keyboard.press("3"); await p.keyboard.press("1"); await p.waitForTimeout(150);
@@ -37,6 +40,7 @@ await p.keyboard.press("5"); await p.waitForTimeout(150);
 check((await toks()).startsWith("G"), "休止上按 5 = 变回音（G）", await toks());
 await stk(); await p.waitForTimeout(150);
 check(!(await sel()) && !(await stackOn()), "再按一下叠 = 回到光标、叠不亮");
+check((await inChord()) === "", "叠关了：键上不描", await inChord());
 await p.keyboard.press("2"); await p.waitForTimeout(150);
 check((await toks()).split(" ")[1] === "D840" && (await toks()).split(" ")[2] === "r2520" && (await toks()).split(" ")[3] === "D1680", "光标后是休止 = 写音覆盖休止（D 八分吃掉二分休止里的一个八分，剩三个八分，后面的 D 不挪）", await toks());
 check(errs.length === 0, "页面没有报错", errs.join(" | "));

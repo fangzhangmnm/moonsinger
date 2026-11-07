@@ -325,6 +325,7 @@ body.listen-mode .ink-caret { display: none; }
 .pad-key { touch-action: none; }
 /* 月读音域里的键：底部一道细条（正面提示；音域外的键就是普通的键，不变灰——user「灰色…容易以为是unavailable，而不是not hinted」） */
 .pad-key.hint { box-shadow: inset 0 -3px 0 #e3cf9c, 0 1px 0 rgba(42, 42, 42, .28); }
+.pad-key.in-chord { box-shadow: inset 0 0 0 2px var(--accent), 0 1px 0 rgba(42, 42, 42, .28); }   /* 叠亮着：和弦里已经有的音（v0.16.5）；盖过音域提示的底边，按下照旧是底色 */
 .pad-key.swiping { background: var(--accent-soft); }
 .pad-key.swiping .acc { font-weight: 700; }
 /* 竖直滚轮（点开 pad 的旋钮；src/keyboard/drum.ts）：中间那格 = 选中 */

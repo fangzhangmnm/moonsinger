@@ -63,6 +63,8 @@ export interface PadView {
   acc: number; accMode: "off" | "once" | "lock";   // 升降 Shift 的状态（键上亮法 + 音键小字）
   one: boolean;      // 只选了一个（叠亮着；⌫ = 短一步、— = 长一步）
   hasSel: boolean;   // 有选区（头那排的重建签名）
+  /** 只选了一个音（叠亮着）时它现在的几个音高（MIDI 号）：键盘把对应的键描一圈，看得见和弦里已经有哪些（v0.16.5，user 11-07「stack模式已经有的键能高亮吗」）。键盘只比号，不懂和弦。 */
+  chord?: readonly number[];
 }
 /** 升降键选的是哪一种：𝄪 ♯ ♭ 𝄫。 */
 export type AccSel = -2 | -1 | 1 | 2;
@@ -558,7 +560,8 @@ export class Pad {
       ak.classList.toggle("once", on && v.accMode === "once"); ak.classList.toggle("lock", on && v.accMode === "lock");
     }
     const down = new Set(this.held.values());
-    this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => b.classList.toggle("down", down.has(this.keys.get(Number(b.dataset.k))!.midi)));
+    const inChord = new Set(v.one ? v.chord ?? [] : []);
+    this.el.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => { const m = this.keys.get(Number(b.dataset.k))!.midi; b.classList.toggle("down", down.has(m)); b.classList.toggle("in-chord", inChord.has(m)); });
     const stk = this.el.querySelector<HTMLElement>("[data-stack]"); if (stk) stk.classList.toggle("off", !this.host.canStack());   // 单声乐器的声部：叠不了
     // 符号层开着 = 只写记号（user 2026-10-08「符号键盘的时候该禁用的东西都禁用」）：写音那一层的键（休止 / 小节线 / 升降 / 叠 / 减半 / 拉长）灰掉、按不动（管音键的旋钮 1= / 长短 / 音域 换成了分页标签）；
     //   ← → / 退格（符号模式的退格）/ 弹 / 收起 / ⋯ 照旧。「弹」的时候「符」灰掉（弹 = 只弹不写）
