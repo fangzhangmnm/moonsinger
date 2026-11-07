@@ -4271,6 +4271,7 @@ function engrave(song, o) {
     const editingHere = !o.foldAll && o.at.paper === paper.id ? o.at.part : null;
     const absorbed = /* @__PURE__ */ new Map(), virt = /* @__PURE__ */ new Map(), lowOf = /* @__PURE__ */ new Map();
     const voice2Of = /* @__PURE__ */ new Map(), shareWith = /* @__PURE__ */ new Map(), startFor = /* @__PURE__ */ new Map();
+    const drumNames = /* @__PURE__ */ new Map();
     const famOf = (id) => hostOf(id) ?? (song.parts.some((x2) => x2.host === id) ? id : null);
     const famIds = [...new Set(visible.map((p) => famOf(p.id)).filter((x2) => !!x2))];
     const famHere = (fid) => visible.filter((p) => famOf(p.id) === fid);
@@ -4279,11 +4280,25 @@ function engrave(song, o) {
       if (ms.length < 2) continue;
       if (editingHere !== null && famOf(editingHere) === fid) continue;
       const hp = ms[0], ten = ms.slice(1), drums = ms.every((m) => !!m.perc);
-      const keyOf = drums ? (m, p) => {
+      const kitKeyOf = (m) => {
         const pk = ms[m].perc;
-        return pk.kind === "one" ? spellMidi(pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0), 0) : p;
+        return pk.kind === "one" ? pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0) : null;
+      };
+      const keyOf = drums ? (m, p) => {
+        const k = kitKeyOf(m);
+        return k !== null ? spellMidi(k, 0) : p;
       } : void 0;
       const tracksM = ms.map((m) => paper.tracks[m.id]);
+      if (drums) {
+        const lineOfKey = (key) => percOf(128, 0, key)?.line ?? 4;
+        const rep = ms.map((_, m) => {
+          const k = kitKeyOf(m);
+          if (k !== null) return lineOfKey(k);
+          const ls = (tracksM[m] ?? []).flatMap((t) => t.kind === "note" ? allPitches(t) : []).map((p) => lineOfKey(midiOf(p))).sort((a, b) => a - b);
+          return ls.length ? ls[ls.length >> 1] : 4;
+        });
+        drumNames.set(hp.id, ms.map((_, m) => m).sort((a, b) => rep[a] - rep[b] || a - b).map((m) => ms[m]));
+      }
       absorbed.set(hp.id, ten);
       const staffOf = (sid, mo, all) => {
         startFor.set(sid, startClef(mergeTracks(tracksM, all), void 0, null, true));
@@ -4678,27 +4693,42 @@ function engrave(song, o) {
           const tl = ten.map((t) => nameLines(t.name, 1)[0] ?? ""), nAll = lines2.length + tl.length;
           const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P(LH * (nAll - 1) / 2);
           const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
-          lines2.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
-          tl.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines2.length + k)), s: ln, cls: "part-name tenant", size: PART_EM * sp, anchor: "start" }));
-          if (ten.length) {
-            const lineTop = (i) => ny + P(LH * i) - P(PART_EM * 0.95);
-            ten.forEach((t, k) => partsHit.push({ paper: paper.id, part: t.id, x: P(MARGIN - 0.4), y: lineTop(lines2.length + k), w: P(ind0 + 0.2), h: P(LH) }));
+          const dn = drumNames.get(q.p.id);
+          if (dn) {
+            const at = (k) => ny + P(LH * k), hk = Math.max(0, dn.findIndex((m) => m.id === q.p.id));
+            dn.forEach((m, k) => {
+              prims.push({ t: "text", x: P(MARGIN), y: at(k), s: nameLines(m.name, 1)[0] ?? "", cls: m.id === q.p.id ? ncls : "part-name tenant", size: PART_EM * sp, anchor: "start" });
+              partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: at(k) - P(PART_EM * 0.95), w: P(ind0 + 0.2), h: P(LH) });
+            });
+            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at(dn.length - 1) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1), anchor: "start" });
+            if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at(hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
+          } else {
+            lines2.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
+            tl.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines2.length + k)), s: ln, cls: "part-name tenant", size: PART_EM * sp, anchor: "start" }));
+            if (ten.length) {
+              const lineTop = (i) => ny + P(LH * i) - P(PART_EM * 0.95);
+              ten.forEach((t, k) => partsHit.push({ paper: paper.id, part: t.id, x: P(MARGIN - 0.4), y: lineTop(lines2.length + k), w: P(ind0 + 0.2), h: P(LH) }));
+            }
+            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1), anchor: "start" });
+            {
+              const y02 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines2.length) - P(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);
+              partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y02, w: P(ind0 + 0.2), h: yEnd - y02 });
+            }
+            if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
           }
-          if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1), anchor: "start" });
-          {
-            const y02 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines2.length) - P(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);
-            partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y02, w: P(ind0 + 0.2), h: yEnd - y02 });
-          }
-          if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
         } else if (q.p.abbr) {
-          const r0 = rowOf(s, r, 0), r1 = rEnd(s), LH = PART_EM * 1.15, ta = ten.map((t) => t.abbr ?? "");
-          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P(LH * ta.length / 2);
-          prims.push({ t: "text", x: P(MARGIN), y: ny, s: q.p.abbr, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp, anchor: "start" });
-          ta.forEach((a, k) => {
-            prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (k + 1)), s: a, cls: "part-name abbr tenant", size: PART_EM * sp, anchor: "start" });
-            partsHit.push({ paper: paper.id, part: ten[k].id, x: P(MARGIN - 0.4), y: ny + P(LH * (k + 1)) - P(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) });
+          const r0 = rowOf(s, r, 0), r1 = rEnd(s), LH = PART_EM * 1.15;
+          const order = drumNames.get(q.p.id) ?? [q.p, ...ten], hk = Math.max(0, order.findIndex((m) => m.id === q.p.id));
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P(LH * (order.length - 1) / 2);
+          order.forEach((m, k) => {
+            if (m.id === q.p.id) {
+              prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: q.p.abbr, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp, anchor: "start" });
+              return;
+            }
+            prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: m.abbr ?? "", cls: "part-name abbr tenant", size: PART_EM * sp, anchor: "start" });
+            partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: ny + P(LH * k) - P(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) });
           });
-          if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
+          if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny + P(LH * hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
           partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(indN + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
         }
         if (q.p.colorIdx !== void 0) {
@@ -5459,4 +5489,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-563fb011dff6.mjs.map
+//# sourceMappingURL=layout-worker-dff11907dfc8.mjs.map

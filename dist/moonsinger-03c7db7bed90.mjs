@@ -4950,7 +4950,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.3-2026-11-07";
+var APP_VERSION = "v0.16.4-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10450,6 +10450,7 @@ function engrave(song, o10) {
     const editingHere = !o10.foldAll && o10.at.paper === paper.id ? o10.at.part : null;
     const absorbed = /* @__PURE__ */ new Map(), virt = /* @__PURE__ */ new Map(), lowOf = /* @__PURE__ */ new Map();
     const voice2Of = /* @__PURE__ */ new Map(), shareWith = /* @__PURE__ */ new Map(), startFor = /* @__PURE__ */ new Map();
+    const drumNames = /* @__PURE__ */ new Map();
     const famOf = (id2) => hostOf(id2) ?? (song.parts.some((x3) => x3.host === id2) ? id2 : null);
     const famIds = [...new Set(visible.map((p2) => famOf(p2.id)).filter((x3) => !!x3))];
     const famHere = (fid) => visible.filter((p2) => famOf(p2.id) === fid);
@@ -10458,11 +10459,25 @@ function engrave(song, o10) {
       if (ms.length < 2) continue;
       if (editingHere !== null && famOf(editingHere) === fid) continue;
       const hp = ms[0], ten = ms.slice(1), drums = ms.every((m2) => !!m2.perc);
-      const keyOf2 = drums ? (m2, p2) => {
+      const kitKeyOf = (m2) => {
         const pk = ms[m2].perc;
-        return pk.kind === "one" ? spellMidi(pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0), 0) : p2;
+        return pk.kind === "one" ? pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0) : null;
+      };
+      const keyOf2 = drums ? (m2, p2) => {
+        const k2 = kitKeyOf(m2);
+        return k2 !== null ? spellMidi(k2, 0) : p2;
       } : void 0;
       const tracksM = ms.map((m2) => paper.tracks[m2.id]);
+      if (drums) {
+        const lineOfKey = (key) => percOf(128, 0, key)?.line ?? 4;
+        const rep = ms.map((_2, m2) => {
+          const k2 = kitKeyOf(m2);
+          if (k2 !== null) return lineOfKey(k2);
+          const ls2 = (tracksM[m2] ?? []).flatMap((t10) => t10.kind === "note" ? allPitches(t10) : []).map((p2) => lineOfKey(midiOf(p2))).sort((a10, b3) => a10 - b3);
+          return ls2.length ? ls2[ls2.length >> 1] : 4;
+        });
+        drumNames.set(hp.id, ms.map((_2, m2) => m2).sort((a10, b3) => rep[a10] - rep[b3] || a10 - b3).map((m2) => ms[m2]));
+      }
       absorbed.set(hp.id, ten);
       const staffOf = (sid, mo, all) => {
         startFor.set(sid, startClef(mergeTracks(tracksM, all), void 0, null, true));
@@ -10857,27 +10872,42 @@ function engrave(song, o10) {
           const tl2 = ten.map((t10) => nameLines(t10.name, 1)[0] ?? ""), nAll = lines2.length + tl2.length;
           const ny2 = (yOf(r02, MID_LINE) + yOf(r14, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2);
           const ncls = q2.p.empty ? "part-name empty" : q2.focused ? "part-name focus" : "part-name";
-          lines2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: ln3, cls: ncls, size: PART_EM * sp2, anchor: "start" }));
-          tl2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (lines2.length + k2)), s: ln3, cls: "part-name tenant", size: PART_EM * sp2, anchor: "start" }));
-          if (ten.length) {
-            const lineTop = (i10) => ny2 + P2(LH * i10) - P2(PART_EM * 0.95);
-            ten.forEach((t10, k2) => partsHit.push({ paper: paper.id, part: t10.id, x: P2(MARGIN - 0.4), y: lineTop(lines2.length + k2), w: P2(ind0 + 0.2), h: P2(LH) }));
+          const dn = drumNames.get(q2.p.id);
+          if (dn) {
+            const at2 = (k2) => ny2 + P2(LH * k2), hk = Math.max(0, dn.findIndex((m2) => m2.id === q2.p.id));
+            dn.forEach((m2, k2) => {
+              prims.push({ t: "text", x: P2(MARGIN), y: at2(k2), s: nameLines(m2.name, 1)[0] ?? "", cls: m2.id === q2.p.id ? ncls : "part-name tenant", size: PART_EM * sp2, anchor: "start" });
+              partsHit.push({ paper: paper.id, part: m2.id, x: P2(MARGIN - 0.4), y: at2(k2) - P2(PART_EM * 0.95), w: P2(ind0 + 0.2), h: P2(LH) });
+            });
+            if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: at2(dn.length - 1) + P2(1.5), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
+            if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: at2(hk) - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
+          } else {
+            lines2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: ln3, cls: ncls, size: PART_EM * sp2, anchor: "start" }));
+            tl2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (lines2.length + k2)), s: ln3, cls: "part-name tenant", size: PART_EM * sp2, anchor: "start" }));
+            if (ten.length) {
+              const lineTop = (i10) => ny2 + P2(LH * i10) - P2(PART_EM * 0.95);
+              ten.forEach((t10, k2) => partsHit.push({ paper: paper.id, part: t10.id, x: P2(MARGIN - 0.4), y: lineTop(lines2.length + k2), w: P2(ind0 + 0.2), h: P2(LH) }));
+            }
+            if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (nAll - 1)) + P2(1.5), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
+            {
+              const y02 = yOf(r02, TOP_LINE) - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - P2(PART_EM * 0.95) : yOf(r14, BOTTOM_LINE) + P2(1.2);
+              partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: y02, w: P2(ind0 + 0.2), h: yEnd - y02 });
+            }
+            if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
           }
-          if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (nAll - 1)) + P2(1.5), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
-          {
-            const y02 = yOf(r02, TOP_LINE) - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - P2(PART_EM * 0.95) : yOf(r14, BOTTOM_LINE) + P2(1.2);
-            partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: y02, w: P2(ind0 + 0.2), h: yEnd - y02 });
-          }
-          if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
         } else if (q2.p.abbr) {
-          const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), LH = PART_EM * 1.15, ta2 = ten.map((t10) => t10.abbr ?? "");
-          const ny2 = (yOf(r02, MID_LINE) + yOf(r14, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * ta2.length / 2);
-          prims.push({ t: "text", x: P2(MARGIN), y: ny2, s: q2.p.abbr, cls: q2.p.empty ? "part-name abbr empty" : q2.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp2, anchor: "start" });
-          ta2.forEach((a10, k2) => {
-            prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (k2 + 1)), s: a10, cls: "part-name abbr tenant", size: PART_EM * sp2, anchor: "start" });
-            partsHit.push({ paper: paper.id, part: ten[k2].id, x: P2(MARGIN - 0.4), y: ny2 + P2(LH * (k2 + 1)) - P2(PART_EM * 0.95), w: P2(indN + 0.2), h: P2(LH) });
+          const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), LH = PART_EM * 1.15;
+          const order = drumNames.get(q2.p.id) ?? [q2.p, ...ten], hk = Math.max(0, order.findIndex((m2) => m2.id === q2.p.id));
+          const ny2 = (yOf(r02, MID_LINE) + yOf(r14, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * (order.length - 1) / 2);
+          order.forEach((m2, k2) => {
+            if (m2.id === q2.p.id) {
+              prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: q2.p.abbr, cls: q2.p.empty ? "part-name abbr empty" : q2.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp2, anchor: "start" });
+              return;
+            }
+            prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: m2.abbr ?? "", cls: "part-name abbr tenant", size: PART_EM * sp2, anchor: "start" });
+            partsHit.push({ paper: paper.id, part: m2.id, x: P2(MARGIN - 0.4), y: ny2 + P2(LH * k2) - P2(PART_EM * 0.95), w: P2(indN + 0.2), h: P2(LH) });
           });
-          if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
+          if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 + P2(LH * hk) - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
           partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: yOf(r02, TOP_LINE) - P2(1.2), w: P2(indN + 0.2), h: yOf(r14, BOTTOM_LINE) - yOf(r02, TOP_LINE) + P2(2.4) });
         }
         if (q2.p.colorIdx !== void 0) {
@@ -27718,9 +27748,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-563fb011dff6.mjs");
+      return pick(() => "layout-worker-dff11907dfc8.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-88aa693914cd.mjs");
+      return pick(() => "encode-worker-107b12d771d0.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -53796,4 +53826,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-065146560697.mjs.map
+//# sourceMappingURL=moonsinger-03c7db7bed90.mjs.map

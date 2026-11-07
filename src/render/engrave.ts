@@ -576,7 +576,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const hostOf = (id: string) => song.parts.find((x) => x.id === id)?.host;
     const editingHere = !o.foldAll && o.at.paper === paper.id ? o.at.part : null;   // 听模式 = 一律叠起来
     const absorbed = new Map<string, PartView[]>(), virt = new Map<string, Token[]>(), lowOf = new Map<string, string>();   // 主人 id → 叠进来的房客 / 并好的虚拟 track / 双手谱下面那张的假 id
-    const voice2Of = new Map<string, string>(), shareWith = new Map<string, string>(), startFor = new Map<string, ClefName>();   // 一张谱表 → 它的声部 2 / 声部 2 → 画在哪一位那行 / 虚拟那几条的谱号
+    const voice2Of = new Map<string, string>(), shareWith = new Map<string, string>(), startFor = new Map<string, ClefName>();
+    const drumNames = new Map<string, PartView[]>();   // 一家全是鼓：谱前名字的顺序 = 各位的音在鼓谱上的高低（v0.16.4，user 11-07「鼓合租的时候应该是按照代理音符的高低排序前面的名字」）   // 一张谱表 → 它的声部 2 / 声部 2 → 画在哪一位那行 / 虚拟那几条的谱号
     // 按一家收（主人 id）：这张纸上这一家在场的有两位以上就叠——主人不在这张纸上也照样叠，打头的那位在场的当这一行（v0.10.31；user「piano1不在的时候piano2和3没有成功合并」）
     const famOf = (id: string) => hostOf(id) ?? (song.parts.some((x) => x.host === id) ? id : null);
     const famIds = [...new Set(visible.map((p) => famOf(p.id)).filter((x): x is string => !!x))];
@@ -587,8 +588,18 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       const hp = ms[0], ten = ms.slice(1), drums = ms.every((m) => !!m.perc);
       // 一家全是鼓：固定敲一件的换成那一件的鼓键（五线鼓谱上它那一线）；音效（不是鼓键）= 一个表里没有的键（画在中间那条线）
       //   单件乐器（木鱼 / 太鼓…）= 它在一套鼓里的那个键（概念的 mainKey → kitKey）；鼓件 = 它自己的键；都没有（音效）= 一个表里没有的键（画在中间那条线）
-      const keyOf = drums ? (m: number, p: Pitch): Pitch => { const pk = ms[m].perc!; return pk.kind === "one" ? spellMidi(pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0), 0) : p; } : undefined;
+      const kitKeyOf = (m: number): number | null => { const pk = ms[m].perc!; return pk.kind === "one" ? pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0) : null; };
+      const keyOf = drums ? (m: number, p: Pitch): Pitch => { const k = kitKeyOf(m); return k !== null ? spellMidi(k, 0) : p; } : undefined;
       const tracksM = ms.map((m) => paper.tracks[m.id]);
+      if (drums) {   // 每位的「代表线」：固定敲一件 = 那一键在五线鼓谱上的线；整套鼓 = 这张纸上它的音的中位线；表里没有 = 中间那条线（4）。线小 = 画得高 = 名字在上；一样高按歌里的顺序
+        const lineOfKey = (key: number) => percOf(128, 0, key)?.line ?? 4;
+        const rep = ms.map((_, m) => {
+          const k = kitKeyOf(m); if (k !== null) return lineOfKey(k);
+          const ls = (tracksM[m] ?? []).flatMap((t) => (t.kind === "note" ? allPitches(t as NoteTok) : [])).map((p) => lineOfKey(midiOf(p))).sort((a, b) => a - b);
+          return ls.length ? ls[ls.length >> 1] : 4;
+        });
+        drumNames.set(hp.id, ms.map((_, m) => m).sort((a, b) => rep[a] - rep[b] || a - b).map((m) => ms[m]));
+      }
       absorbed.set(hp.id, ten);
       // 一张谱表的一条：谱号按这张谱上所有的音挑；声部 1 = 这一位（符干朝上）、声部 2 = 假的一位 `…~v2`，画在声部 1 那一行上（符干朝下、不画休止 / 小节线 / 名字）
       const staffOf = (sid: string, mo: (v: 1 | 2) => MergeOpts, all: MergeOpts) => {
@@ -913,6 +924,16 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           const tl = ten.map((t) => nameLines(t.name, 1)[0] ?? ""), nAll = lines.length + tl.length;
           const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (nAll - 1)) / 2);   // 几行一起竖着居中
           const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
+          const dn = drumNames.get(q.p.id);
+          if (dn) {   // 一家全是鼓：名字按各位的音在鼓谱上的高低排（主人不一定在最上面），每个名字一行、各自能点
+            const at = (k: number) => ny + P(LH * k), hk = Math.max(0, dn.findIndex((m) => m.id === q.p.id));
+            dn.forEach((m, k) => {
+              prims.push({ t: "text", x: P(MARGIN), y: at(k), s: nameLines(m.name, 1)[0] ?? "", cls: m.id === q.p.id ? ncls : "part-name tenant", size: PART_EM * sp, anchor: "start" });
+              partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: at(k) - P(PART_EM * 0.95), w: P(ind0 + 0.2), h: P(LH) });
+            });
+            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at(dn.length - 1) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });
+            if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at(hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
+          } else {
           lines.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
           tl.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines.length + k)), s: ln, cls: "part-name tenant", size: PART_EM * sp, anchor: "start" }));
           if (ten.length) {
@@ -923,12 +944,16 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           { const y0 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines.length) - P(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);   // 有房客 = 主人的点击区只到它自己的名字
             partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y0, w: P(ind0 + 0.2), h: yEnd - y0 }); }
           if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });   // 名字前一个小色点（不印）
+          }
         } else if (q.p.abbr) {   // 第二行起：简写（一行，竖着居中），点它同样开歌手牌
-          const r0 = rowOf(s, r, 0), r1 = rEnd(s), LH = PART_EM * 1.15, ta = ten.map((t) => t.abbr ?? "");
-          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * ta.length) / 2);
-          prims.push({ t: "text", x: P(MARGIN), y: ny, s: q.p.abbr, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp, anchor: "start" });
-          ta.forEach((a, k) => { prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (k + 1)), s: a, cls: "part-name abbr tenant", size: PART_EM * sp, anchor: "start" }); partsHit.push({ paper: paper.id, part: ten[k].id, x: P(MARGIN - 0.4), y: ny + P(LH * (k + 1)) - P(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) }); });   // 合租：房客的简写跟在下面
-          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
+          const r0 = rowOf(s, r, 0), r1 = rEnd(s), LH = PART_EM * 1.15;
+          const order = drumNames.get(q.p.id) ?? [q.p, ...ten], hk = Math.max(0, order.findIndex((m) => m.id === q.p.id));   // 鼓：简写也按音的高低排（同第一行的名字）；别的合租 = 主人在上、房客跟在下面
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (order.length - 1)) / 2);
+          order.forEach((m, k) => {
+            if (m.id === q.p.id) { prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: q.p.abbr!, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp, anchor: "start" }); return; }
+            prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: m.abbr ?? "", cls: "part-name abbr tenant", size: PART_EM * sp, anchor: "start" }); partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: ny + P(LH * k) - P(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) });
+          });
+          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny + P(LH * hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
           partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(indN + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
         }
         if (q.p.colorIdx !== undefined) {   // 每行左边一条细色条（类别色；不印）：谱号左边、从第一线到最后一线

@@ -74,6 +74,19 @@ describe("鼓谱：排版", () => {
     const ys = new Set(heads(L).filter((h) => h.y > row.top && h.y < row.bottom).map((h) => Math.round(((h.y - row.staffTop) / L.sp) * 2) / 2));
     assert(ys.has(3.5) && ys.has(-0.5), `大鼓 3.5、踩镲 −0.5 都在（${[...ys]}）`);
   });
+  // v0.16.4（2026-11-07 by Claude Opus 5.5；user 11-07「鼓合租的时候应该是按照代理音符的高低排序前面的名字」）：主人是大鼓（最下面）、房客是踩镲（最上面）= 名字踩镲在上
+  it("一家全是鼓：谱前名字按各位的音在鼓谱上的高低排（不按谁是主人），点名字点中的是那一位", () => {
+    let st = song([[key(60), key(60)], [key(60), key(60)], [key(60)]]);
+    const [a, b, c] = st.song.parts.map((p) => p.id);
+    st = setPartHost(st, b, a); st = setFocus(st, st.song.papers[0].id, c);
+    const L = lay(st, [{ kind: "one", info: KICK, key: 36 }, { kind: "one", info: HAT, key: 42 }, undefined]);
+    const row = L.systems[L.systems.findIndex((r) => r.part === a)];
+    const names = L.prims.filter((p) => p.t === "text" && typeof p.cls === "string" && p.cls.startsWith("part-name") && p.y > row.top - 4 * L.sp && p.y < row.bottom + 4 * L.sp) as { s: string; x: number; y: number }[];
+    const order = [...names].sort((x, y) => x.y - y.y).map((n) => n.s).join(",");
+    eq(order, "V1,V0", "踩镲（V1，房客）在上、大鼓（V0，主人）在下");
+    const top = [...names].sort((x, y) => x.y - y.y)[0], hit = L.parts.find((h) => top.x + 1 >= h.x && top.x + 1 <= h.x + h.w && top.y - 2 >= h.y && top.y - 2 <= h.y + h.h);   // 和 score-view 一样：先匹配的赢
+    eq(hit?.part, b, "点上面那个名字 = 踩镲那位");
+  });
 });
 
 describe("鼓谱：木鱼 + 太鼓合租（v0.10.31）", () => {
