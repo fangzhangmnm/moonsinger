@@ -93,7 +93,10 @@ export interface ViewV1 { scope?: "all"; pageFlow?: true; /** 排法「横卷」
    *  pdf = 乐谱 PDF 的字体（只写非默认的「拼音」）。pad = pad 的状态（同日更早加的，见 desk.ts）。 */
   pad?: Record<string, unknown>; ref?: { open?: true; left: number; top: number; width: number; height: number }; pdf?: "pinyin";
   /** 2026-10-10 加（可选，不升版本；Opus 5.5）：存的时候在哪个模式（只写非默认的；打开 = 进这个模式，成品曲存在「听」= 打开就是听、不怕误触；user「打开时记住上次的模式」）。 */
-  mode?: "lyrics" | "symbols" | "listen" }
+  mode?: "lyrics" | "symbols" | "listen";
+  /** 2026-11-07 加（可选，不升版本；Claude Opus 5.5）：乐器目录在这首歌里翻到哪（src/score/desk.ts FinderMemo；只写不是默认的）——排序 / 每种排序展开的组 / 滚到哪 / 点开的那件 / 试听的那位。
+   *  user 11-07「乐器列表记录滚动位置的话，是每个文件自己记录，不是用户设置」。 */
+  finder?: { mode?: string; open?: Record<string, string>; scroll?: number; row?: string; pick?: string } }
 export interface ScoreExtV1 {
   version: 1;
   parts: { id: string; role: string; mic: string }[];

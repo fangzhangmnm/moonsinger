@@ -54,6 +54,11 @@ try {
   }
   await p.click('.finder [data-v="back"]'); await p.waitForTimeout(200);
   check(!(await p.evaluate(() => document.getElementById("galleryFull").hidden)) && (await p.$eval(".finder", (f) => f.hidden)), "目录「← 歌库」= 回到歌库");
+  {   // 即兴里翻到哪 = 记在这台设备上（v0.16.6，user 11-07「即兴的滚动归 App 记，然后文件内的滚动归文件记」）；不进歌
+    const kv = await p.evaluate(() => { const k = Object.keys(localStorage).find((x) => x.endsWith(":finder-impro")); return k ? JSON.parse(localStorage.getItem(k)) : null; });
+    check(!!kv && !!kv.open && Object.keys(kv.open).length === 1, "即兴：展开的那一组记在设备上", JSON.stringify(kv));
+    check(!(await p.evaluate(() => window.__moonsinger.desk().finder.open && Object.keys(window.__moonsinger.desk().finder.open).length)), "即兴的记忆不进歌里");
+  }
   // 新建一首
   await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(600);
   check(await p.evaluate(() => document.getElementById("galleryFull").hidden), "新建后回到谱");

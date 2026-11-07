@@ -4795,6 +4795,18 @@ function deviceKvSet(key, v) {
   if (v == null) _mem.delete(k2);
   else _mem.set(k2, v);
 }
+function deviceKvGetJson(key, fallback) {
+  const raw = deviceKvGet(key);
+  if (raw == null) return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return fallback;
+  }
+}
+function deviceKvSetJson(key, v) {
+  deviceKvSet(key, v == null ? null : JSON.stringify(v));
+}
 function deviceKvWipeAll() {
   let n10 = 0;
   const ls2 = _ls();
@@ -4950,7 +4962,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.5-2026-11-07";
+var APP_VERSION = "v0.16.6-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5608,7 +5620,7 @@ function tempoWord(bpm) {
   return w2;
 }
 function beatTicks(beats, beatType) {
-  return beatType === 8 && beats > 3 && beats % 3 === 0 ? WHOLE * 3 / 8 : WHOLE / beatType;
+  return beatType === 8 && beats >= 3 && beats % 3 === 0 ? WHOLE * 3 / 8 : WHOLE / beatType;
 }
 var inputKey = (st2) => st2.input.inputFifths;
 function unitDur(input) {
@@ -16316,7 +16328,7 @@ function deviceKvSet2(key, v) {
   } catch {
   }
 }
-function deviceKvGetJson(key, fallback) {
+function deviceKvGetJson2(key, fallback) {
   const raw = deviceKvGet2(key);
   if (raw == null)
     return fallback;
@@ -16326,7 +16338,7 @@ function deviceKvGetJson(key, fallback) {
     return fallback;
   }
 }
-function deviceKvSetJson(key, v) {
+function deviceKvSetJson2(key, v) {
   deviceKvSet2(key, v === void 0 ? null : JSON.stringify(v));
 }
 
@@ -23374,7 +23386,7 @@ function isEntry(x2) {
 function load() {
   if (_entries)
     return _entries;
-  const raw = deviceKvGetJson(KEY2, null);
+  const raw = deviceKvGetJson2(KEY2, null);
   _entries = Array.isArray(raw) ? raw.filter(isEntry).slice(-MAX_ENTRIES) : [];
   return _entries;
 }
@@ -23390,7 +23402,7 @@ function flush() {
   }
   if (_entries) {
     try {
-      deviceKvSetJson(KEY2, _entries);
+      deviceKvSetJson2(KEY2, _entries);
     } catch {
     }
   }
@@ -27753,9 +27765,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-dff11907dfc8.mjs");
+      return pick(() => "layout-worker-31cdc76328cc.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-e0742d204613.mjs");
+      return pick(() => "encode-worker-93398314b1f6.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -34408,6 +34420,106 @@ function loadVowelTable() {
   return loading;
 }
 
+// src/score/desk.ts
+var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
+var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
+var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
+var FINDER_MODES = ["year", "style", "family", "hs"];
+var freshFinderMemo = () => ({ mode: "year", open: {}, scroll: 0, row: null, pick: "" });
+function serializeFinderMemo(m2) {
+  const o10 = {};
+  if (m2.mode !== "year") o10.mode = m2.mode;
+  if (Object.keys(m2.open).length) o10.open = { ...m2.open };
+  if (m2.scroll > 0) o10.scroll = Math.round(m2.scroll);
+  if (m2.row) o10.row = m2.row;
+  if (m2.pick) o10.pick = m2.pick;
+  return Object.keys(o10).length ? o10 : null;
+}
+function unserializeFinderMemo(json) {
+  const m2 = freshFinderMemo();
+  if (!json || typeof json !== "object") return m2;
+  const j2 = json;
+  if (FINDER_MODES.includes(j2.mode)) m2.mode = j2.mode;
+  if (j2.open && typeof j2.open === "object") {
+    for (const [k2, v] of Object.entries(j2.open)) if (FINDER_MODES.includes(k2) && typeof v === "string") m2.open[k2] = v;
+  }
+  if (typeof j2.scroll === "number" && Number.isFinite(j2.scroll) && j2.scroll > 0) m2.scroll = j2.scroll;
+  if (typeof j2.row === "string" && j2.row) m2.row = j2.row;
+  if (typeof j2.pick === "string") m2.pick = j2.pick;
+  return m2;
+}
+var freshDesk = () => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans", mode: "notes", finder: freshFinderMemo() });
+function serializeDesk(d3) {
+  const out = {};
+  if (d3.scope === "all") out.scope = "all";
+  if (d3.mp3 === "small") out.mp3 = "small";
+  if (d3.pdf === "pinyin") out.pdf = "pinyin";
+  if (d3.mode !== "notes") out.mode = d3.mode;
+  if (d3.scroll) out.scroll = true;
+  else if (d3.pageFlow) out.pageFlow = true;
+  if (d3.paper) out.paper = d3.paper;
+  const parts = {};
+  for (const [id2, p2] of Object.entries(d3.parts)) {
+    const v = {};
+    if (p2.hidden) v.hidden = true;
+    if (p2.only) v.only = true;
+    if (p2.muted) v.muted = true;
+    if (p2.solo) v.solo = true;
+    if (Object.keys(v).length) parts[id2] = v;
+  }
+  if (Object.keys(parts).length) out.parts = parts;
+  const pd = d3.pad, def = freshPad(), pj = {};
+  if (pd.fifths !== def.fifths) pj.fifths = pd.fifths;
+  if (pd.scale !== def.scale) pj.scale = pd.scale;
+  if (pd.unit !== def.unit) pj.unit = pd.unit;
+  if (pd.tuplet) pj.tuplet = pd.tuplet;
+  if (pd.low !== null) pj.low = pd.low;
+  if (Object.keys(pj).length) out.pad = pj;
+  if (d3.ref) {
+    const { open: open2, left, top, width, height } = d3.ref;
+    out.ref = { ...open2 ? { open: true } : {}, left, top, width, height };
+  }
+  const fm = serializeFinderMemo(d3.finder);
+  if (fm) out.finder = fm;
+  return Object.keys(out).length ? out : null;
+}
+function unserializeDesk(json) {
+  const d3 = freshDesk();
+  if (!json || typeof json !== "object") return d3;
+  const j2 = json;
+  if (j2.scope === "all") d3.scope = "all";
+  if (j2.pageFlow === true) d3.pageFlow = true;
+  if (j2.scroll === true) {
+    d3.scroll = true;
+    d3.pageFlow = false;
+  }
+  if (j2.mp3 === "small") d3.mp3 = "small";
+  if (j2.pdf === "pinyin") d3.pdf = "pinyin";
+  if (j2.mode === "lyrics" || j2.mode === "symbols" || j2.mode === "listen") d3.mode = j2.mode;
+  if (typeof j2.paper === "string" && j2.paper) d3.paper = j2.paper;
+  if (j2.parts && typeof j2.parts === "object") {
+    for (const [id2, v] of Object.entries(j2.parts)) {
+      if (!v || typeof v !== "object") continue;
+      const p2 = v;
+      d3.parts[id2] = { hidden: p2.hidden === true, only: p2.only === true, muted: p2.muted === true, solo: p2.solo === true };
+    }
+  }
+  if (j2.pad && typeof j2.pad === "object") {
+    const q2 = j2.pad;
+    if (Number.isInteger(q2.fifths) && Math.abs(q2.fifths) <= 7) d3.pad.fifths = q2.fifths;
+    if (typeof q2.scale === "string" && SCALES.some((sc2) => sc2.id === q2.scale)) d3.pad.scale = q2.scale;
+    if (PAD_UNITS.includes(q2.unit)) d3.pad.unit = q2.unit;
+    if (q2.tuplet === 3 || q2.tuplet === 5 || q2.tuplet === 6 || q2.tuplet === 7) d3.pad.tuplet = q2.tuplet;
+    if (Number.isInteger(q2.low) && q2.low >= 0 && q2.low <= 127) d3.pad.low = q2.low;
+  }
+  if (j2.ref && typeof j2.ref === "object") {
+    const r10 = j2.ref, n10 = (v) => typeof v === "number" && Number.isFinite(v);
+    if (n10(r10.left) && n10(r10.top) && n10(r10.width) && n10(r10.height)) d3.ref = { open: r10.open === true, left: r10.left, top: r10.top, width: r10.width, height: r10.height };
+  }
+  if (j2.finder) d3.finder = unserializeFinderMemo(j2.finder);
+  return d3;
+}
+
 // src/ui/finder.ts
 var HINT = _t("\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u9009\u8FD9\u4E2A\u300D\uFF08\u56DE\u5230\u4E50\u5668\u9875\uFF09\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002");
 var esc3 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
@@ -34429,6 +34541,9 @@ var Finder = class {
   loading = null;
   playOnly = false;
   // 从歌库进的 = 只弹着玩：不出「上场」，返回回歌库
+  ctx = "song";
+  // 现在这几个字段（mode / openG / scrollY / opened / selected）是哪一份记忆的（v0.16.6）
+  memos = { song: freshFinderMemo(), impro: freshFinderMemo() };
   host;
   constructor(parent, host2) {
     this.host = host2;
@@ -34458,11 +34573,47 @@ var Finder = class {
   get isOpen() {
     return !this.el.hidden;
   }
+  /** 把现在的字段收进这一份记忆 / 从记忆放回字段。 */
+  stash() {
+    if (this.isOpen) this.scrollY = this.el.querySelector(".finder-list").scrollTop;
+    this.memos[this.ctx] = { mode: this.mode, open: Object.fromEntries(this.openG), scroll: this.scrollY, row: this.opened, pick: this.selected };
+  }
+  unstash() {
+    const m2 = this.memos[this.ctx];
+    this.mode = ["year", "style", "family", "hs"].find((x2) => x2 === m2.mode) ?? "year";
+    this.openG = new Map(Object.entries(m2.open));
+    this.scrollY = m2.scroll;
+    this.opened = m2.row;
+    this.selected = m2.pick;
+  }
+  /** 宿主存歌 / 存设备时取（开着的话先把现在翻到哪收进来）。 */
+  memo(ctx2) {
+    if (ctx2 === this.ctx) this.stash();
+    return this.memos[ctx2];
+  }
+  /** 换歌 / 开机时放回（null = 新的：按年代、全收着、在顶上）。 */
+  restore(ctx2, m2) {
+    this.memos[ctx2] = m2 ?? freshFinderMemo();
+    if (ctx2 !== this.ctx) return;
+    this.unstash();
+    if (this.isOpen && this.cat) {
+      this.el.querySelector(".finder-sort").value = this.mode;
+      this.render();
+      this.el.querySelector(".finder-list").scrollTop = this.scrollY;
+      this.markJump();
+    }
+  }
   /** 顶条「键盘」钮亮不亮（宿主在键盘开 / 关时告诉它）。 */
   setPadShown(on2) {
     this.el.querySelector(".finder-pad")?.classList.toggle("is-on", on2);
   }
   async show(o10 = {}) {
+    const ctx2 = o10.playOnly ? "impro" : "song";
+    if (ctx2 !== this.ctx) {
+      this.stash();
+      this.ctx = ctx2;
+      this.unstash();
+    }
     this.el.hidden = false;
     this.playOnly = !!o10.playOnly;
     this.el.querySelector(".finder-title").textContent = this.playOnly ? _t("\u4E50\u5668\u76EE\u5F55\uFF08\u5F39\u7740\u73A9\uFF09") : _t("\u627E\u4EBA\u7ED9\u300C{p}\u300D", { p: this.host.roleName() });
@@ -34496,8 +34647,10 @@ var Finder = class {
     else if (openedC) void this.host.audition({ kind: "none", concept: openedC });
   }
   hide() {
-    this.scrollY = this.el.querySelector(".finder-list").scrollTop;
+    if (this.el.hidden) return;
+    this.stash();
     this.el.hidden = true;
+    this.host.memoChanged?.(this.ctx, this.memos[this.ctx]);
   }
   pickOf(key) {
     if (!this.cat) return null;
@@ -35825,7 +35978,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "dae399b7aaadc482" : "dev";
+var CORE_HASH = true ? "e8d88dfd91e883b8" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -48396,79 +48549,6 @@ function createEncoder(workerUrl, onFallback) {
   };
 }
 
-// src/score/desk.ts
-var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
-var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
-var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
-var freshDesk = () => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans", mode: "notes" });
-function serializeDesk(d3) {
-  const out = {};
-  if (d3.scope === "all") out.scope = "all";
-  if (d3.mp3 === "small") out.mp3 = "small";
-  if (d3.pdf === "pinyin") out.pdf = "pinyin";
-  if (d3.mode !== "notes") out.mode = d3.mode;
-  if (d3.scroll) out.scroll = true;
-  else if (d3.pageFlow) out.pageFlow = true;
-  if (d3.paper) out.paper = d3.paper;
-  const parts = {};
-  for (const [id2, p2] of Object.entries(d3.parts)) {
-    const v = {};
-    if (p2.hidden) v.hidden = true;
-    if (p2.only) v.only = true;
-    if (p2.muted) v.muted = true;
-    if (p2.solo) v.solo = true;
-    if (Object.keys(v).length) parts[id2] = v;
-  }
-  if (Object.keys(parts).length) out.parts = parts;
-  const pd = d3.pad, def = freshPad(), pj = {};
-  if (pd.fifths !== def.fifths) pj.fifths = pd.fifths;
-  if (pd.scale !== def.scale) pj.scale = pd.scale;
-  if (pd.unit !== def.unit) pj.unit = pd.unit;
-  if (pd.tuplet) pj.tuplet = pd.tuplet;
-  if (pd.low !== null) pj.low = pd.low;
-  if (Object.keys(pj).length) out.pad = pj;
-  if (d3.ref) {
-    const { open: open2, left, top, width, height } = d3.ref;
-    out.ref = { ...open2 ? { open: true } : {}, left, top, width, height };
-  }
-  return Object.keys(out).length ? out : null;
-}
-function unserializeDesk(json) {
-  const d3 = freshDesk();
-  if (!json || typeof json !== "object") return d3;
-  const j2 = json;
-  if (j2.scope === "all") d3.scope = "all";
-  if (j2.pageFlow === true) d3.pageFlow = true;
-  if (j2.scroll === true) {
-    d3.scroll = true;
-    d3.pageFlow = false;
-  }
-  if (j2.mp3 === "small") d3.mp3 = "small";
-  if (j2.pdf === "pinyin") d3.pdf = "pinyin";
-  if (j2.mode === "lyrics" || j2.mode === "symbols" || j2.mode === "listen") d3.mode = j2.mode;
-  if (typeof j2.paper === "string" && j2.paper) d3.paper = j2.paper;
-  if (j2.parts && typeof j2.parts === "object") {
-    for (const [id2, v] of Object.entries(j2.parts)) {
-      if (!v || typeof v !== "object") continue;
-      const p2 = v;
-      d3.parts[id2] = { hidden: p2.hidden === true, only: p2.only === true, muted: p2.muted === true, solo: p2.solo === true };
-    }
-  }
-  if (j2.pad && typeof j2.pad === "object") {
-    const q2 = j2.pad;
-    if (Number.isInteger(q2.fifths) && Math.abs(q2.fifths) <= 7) d3.pad.fifths = q2.fifths;
-    if (typeof q2.scale === "string" && SCALES.some((sc2) => sc2.id === q2.scale)) d3.pad.scale = q2.scale;
-    if (PAD_UNITS.includes(q2.unit)) d3.pad.unit = q2.unit;
-    if (q2.tuplet === 3 || q2.tuplet === 5 || q2.tuplet === 6 || q2.tuplet === 7) d3.pad.tuplet = q2.tuplet;
-    if (Number.isInteger(q2.low) && q2.low >= 0 && q2.low <= 127) d3.pad.low = q2.low;
-  }
-  if (j2.ref && typeof j2.ref === "object") {
-    const r10 = j2.ref, n10 = (v) => typeof v === "number" && Number.isFinite(v);
-    if (n10(r10.left) && n10(r10.top) && n10(r10.width) && n10(r10.height)) d3.ref = { open: r10.open === true, left: r10.left, top: r10.top, width: r10.width, height: r10.height };
-  }
-  return d3;
-}
-
 // src/ui/sel-bar.ts
 var ART_LABEL = { swellUp: ["<", _t("\u97F3\u5185\u6E10\u5F3A")], swellDown: [">", _t("\u97F3\u5185\u6E10\u5F31")], swellBoth: ["<>", _t("\u97F3\u5185\u9F13\u8D77")], arpeggio: ["\uEAA9", _t("\u7436\u97F3")], staccato: ["\uE4A2", _t("\u8DF3\u97F3")], accent: ["\uE4A0", _t("\u91CD\u97F3")], marcato: ["\uE4AC", _t("\u5F3A\u97F3")], sfz: ["\uE539", _t("\u7A81\u5F3A")], fp: ["\uE534", _t("\u5F3A\u540E\u5F31")], tenuto: ["\uE4A4", _t("\u4FDD\u6301")], breath: ["\uE4CE", _t("\u547C\u5438")], stress: ["\uE4B6", _t("\u6B21\u91CD\u97F3")], unstress: ["\uE4B8", _t("\u5F31\u5316")], ghost: ["\uE0F5\uE0A4\uE0F6", _t("\u5E7D\u7075\u97F3")], whisper: ["\uE0A9", _t("\u6C14\u58F0")] };
 var SelBar = class {
@@ -50293,7 +50373,19 @@ async function castPick(p2) {
   setActive(activeId(D2.extras, curRole()));
   info(_t("\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}", { c: roleNameOf(c10), gmName: p2.provider.gmName }));
 }
-var finder = new Finder($2("stage"), { roleName: () => roleName(D2.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden) });
+var KV_FINDER_IMPRO = "finder-impro";
+var finder = new Finder($2("stage"), {
+  roleName: () => roleName(D2.extras, curRole()),
+  audition: setAudition,
+  playHead: playHeadWith,
+  cast: castPick,
+  close: () => closeFinder(),
+  togglePad: () => showPad(padEl.hidden),
+  memoChanged: (ctx2, m2) => {
+    if (ctx2 === "impro") deviceKvSetJson(KV_FINDER_IMPRO, serializeFinderMemo(m2));
+  }
+});
+finder.restore("impro", unserializeFinderMemo(deviceKvGetJson(KV_FINDER_IMPRO, null)));
 var partLabel = (id2) => {
   const k2 = D2.st.song.parts.findIndex((p2) => p2.id === id2);
   return k2 < 0 ? id2 : partLabels(D2.st.song, D2.extras)[k2];
@@ -51738,7 +51830,8 @@ var deskNow = () => ({
   mode: ws.mode,
   pad: { fifths: D2.st.input.inputFifths, scale: D2.st.input.inputScale, unit: PAD_UNITS[D2.st.input.unit], tuplet: D2.st.input.tuplet, low: pad3.rangeLow() },
   ref: refHost.panel(),
-  pdf: pdfFont
+  pdf: pdfFont,
+  finder: finder.memo("song")
 });
 function applyDesk(d3) {
   viewScope = d3.scope;
@@ -51746,6 +51839,7 @@ function applyDesk(d3) {
   scrollFlow = d3.scroll;
   mp3Quality = d3.mp3;
   pdfFont = d3.pdf;
+  finder.restore("song", d3.finder);
   D2.commit({ st: { ...D2.st, input: { ...D2.st.input, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d3.pad.unit)), tuplet: d3.pad.tuplet } } }, { silent: true, undo: false });
   partView.clear();
   for (const [id2, p2] of Object.entries(d3.parts)) partView.set(id2, { ...freshPartView(), ...p2 });
@@ -53831,4 +53925,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c39369068df8.mjs.map
+//# sourceMappingURL=moonsinger-2f5a6bf5a9ca.mjs.map

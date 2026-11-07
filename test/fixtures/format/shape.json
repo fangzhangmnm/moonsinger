@@ -108,6 +108,16 @@
       "patch": "number",
       "version": "number",
       "view": {
+        "finder": {
+          "mode": "string",
+          "open": {
+            "style": "string",
+            "year": "string"
+          },
+          "pick": "string",
+          "row": "string",
+          "scroll": "number"
+        },
         "mode": "string",
         "mp3": "string",
         "pad": {

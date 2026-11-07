@@ -22,6 +22,7 @@ const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } }))
 await p.route(/\.sf2(\?|$)/, (r) => r.abort());   // 不下 32 MB 的 GS：点人声那一行先试 GS 会失败（报一句），接着点小月相
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 await p.click(".pad-key[data-k] >> nth=0"); await p.waitForTimeout(100);
+const blank = await p.evaluate(() => Array.from(window.__moonsinger.bytes()));   // 「另一首」= 还没碰过乐器目录的样子（⑤ 用）
 await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300);
 const openFinder = async () => { await p.click('.ip-btns [data-v="finder"]'); await p.waitForSelector(".finder-list .finder-group-h"); await p.waitForTimeout(300); };
 await openFinder();
@@ -59,6 +60,25 @@ await reveal(p, "Q209554"); await p.click('.inst-row[data-c="Q209554"]'); await 
 check(await p.$('.prov[data-p="Q209554|0:121"]') !== null, "长笛点开：有 GeneralUser GS · Breath Noise（气声）");
 await reveal(p, "Q9530"); await p.click('.inst-row[data-c="Q9530"]'); await p.waitForTimeout(300);
 check(await p.$('.inst-row.is-open[data-c="Q9530"] + .inst-prov .prov-none') !== null, "呼吸点开：目录里还没有谁能演它");
+// ⑤ 翻到哪记进这首歌的文件（v0.16.6，user 11-07「乐器列表记录滚动位置的话，是每个文件自己记录，不是用户设置」）：换一首 = 那首自己的；开回来 = 回到原位
+await p.keyboard.press("Escape"); await p.waitForTimeout(200); await p.keyboard.press("Escape"); await p.waitForTimeout(200);   // 目录 → 乐器页 → 谱
+await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300); await openFinder();
+await p.selectOption(".finder-sort", "family"); await p.waitForTimeout(150);
+await p.click('.finder-group[data-g="2"] > .finder-group-h'); await p.waitForTimeout(150);
+await p.evaluate(() => { const l = document.querySelector(".finder-list"); l.scrollTop += 120; }); await p.waitForTimeout(100);
+const want = await p.evaluate(() => ({ gid: document.querySelector('.finder-group.is-open').dataset.gid, y: document.querySelector(".finder-list").scrollTop }));
+await p.click('.finder-bar [data-v="back"]'); await p.waitForTimeout(200);
+const A = await p.evaluate(() => Array.from(window.__moonsinger.bytes()));
+const sj = await p.evaluate((arr) => window.__moonsinger.zipText(new Uint8Array(arr), ".moonsinger/score.json"), A);
+check(/"finder":\s*\{\s*"mode":\s*"family"/.test(sj) && sj.includes(want.gid), "翻到哪写进这首歌的文件（score.json 视图）", sj.slice(sj.indexOf('"finder"'), sj.indexOf('"finder"') + 120));
+const reopen = async (arr) => { await p.keyboard.press("Escape"); await p.waitForTimeout(150); await p.evaluate((a) => { const ms = window.__moonsinger; ms.load(ms.open("x.mxl", new Uint8Array(a))); }, arr); await p.waitForTimeout(300);
+  await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300); await openFinder();
+  return p.evaluate(() => ({ mode: document.querySelector(".finder-sort").value, open: [...document.querySelectorAll(".finder-group.is-open")].map((g) => g.dataset.gid).join(), y: document.querySelector(".finder-list").scrollTop })); };
+const b1 = await reopen(blank);
+check(b1.mode === "year" && b1.open === "" && b1.y === 0, "开另一首（没翻过目录）= 默认：按年代、全收着、在顶上", JSON.stringify(b1));
+await p.click('.finder-bar [data-v="back"]'); await p.waitForTimeout(200);
+const a1 = await reopen(A);
+check(a1.mode === "family" && a1.open === want.gid && Math.abs(a1.y - want.y) <= 2, "开回第一首 = 按族、那一组展开、翻到原来的位置", `${JSON.stringify(a1)} / ${JSON.stringify(want)}`);
 await p.keyboard.press("Escape"); await p.waitForTimeout(200);
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();

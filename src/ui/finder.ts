@@ -3,6 +3,7 @@
 //   「试听不生成演奏者」（试听台 = 临时槽；只在「上场」时才 by value 造演奏者）「顺序本来就是先选概念再选演奏者」。
 // 数据 = src/gm/catalog.ts（vendor/instruments/ 的两张表 + 图标 sprite）；音频 / 选角归 host（src/app/main.ts）。
 import { conceptName, conceptAlt, defLabel, zhOnly } from "../gm/catalog-i18n.ts";
+import { freshFinderMemo, type FinderMemo } from "../score/desk.ts";
 import { _t } from "../i18n/index.ts";
 import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightLabel, SORT_LABEL, type Catalog, type Concept, type Entry, type Provider, type SortMode } from "../gm/catalog.ts";
 
@@ -16,7 +17,11 @@ export interface FinderHost {
   cast(p: FinderPick): Promise<void>;                                // 上场（声音默认弱引用：歌里只记来源，要带着走 = 文件菜单「全部打包进歌」）
   close(): void;
   togglePad(): void;                                                 // 顶条「键盘」：开 / 关试听键盘（user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）
+  /** 关目录时：这一份记忆（翻到哪）变了。即兴 = 宿主存到设备上；歌里的 = 宿主存歌时顺手带（v0.16.6）。 */
+  memoChanged?(ctx: FinderCtx, m: FinderMemo): void;
 }
+/** 记忆归谁：歌里打开的 = 这首歌（文件里）；歌库「即兴」打开的 = 这台设备（app）。user 11-07「即兴的滚动归 App 记，然后文件内的滚动归文件记」。 */
+export type FinderCtx = "song" | "impro";
 const HINT = _t("点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「选这个」（回到乐器页）。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。");   // 不叫「上场」：user 2026-10-10「选乐器不要用上场这个词不然让会让人以为直接跳回主界面，但是实际上我们还是回到乐器配置界面」
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
@@ -32,6 +37,8 @@ export class Finder {
   private selected = "";                    // 试听台上的提供者（`${概念 id}|${bank}:${program}` / `${概念 id}|voice`）
   private loading: Promise<void> | null = null;
   private playOnly = false;                 // 从歌库进的 = 只弹着玩：不出「上场」，返回回歌库
+  private ctx: FinderCtx = "song";          // 现在这几个字段（mode / openG / scrollY / opened / selected）是哪一份记忆的（v0.16.6）
+  private memos: Record<FinderCtx, FinderMemo> = { song: freshFinderMemo(), impro: freshFinderMemo() };
   private host: FinderHost;
   constructor(parent: HTMLElement, host: FinderHost) {
     this.host = host;
@@ -53,9 +60,30 @@ export class Finder {
     this.el.querySelector(".finder-list")!.addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; this.markJump(); }); }, { passive: true });
   }
   get isOpen(): boolean { return !this.el.hidden; }
+  /** 把现在的字段收进这一份记忆 / 从记忆放回字段。 */
+  private stash(): void {
+    if (this.isOpen) this.scrollY = this.el.querySelector<HTMLElement>(".finder-list")!.scrollTop;
+    this.memos[this.ctx] = { mode: this.mode, open: Object.fromEntries(this.openG), scroll: this.scrollY, row: this.opened, pick: this.selected };
+  }
+  private unstash(): void {
+    const m = this.memos[this.ctx];
+    this.mode = (["year", "style", "family", "hs"] as const).find((x) => x === m.mode) ?? "year";
+    this.openG = new Map(Object.entries(m.open) as [SortMode, string][]); this.scrollY = m.scroll; this.opened = m.row; this.selected = m.pick;
+  }
+  /** 宿主存歌 / 存设备时取（开着的话先把现在翻到哪收进来）。 */
+  memo(ctx: FinderCtx): FinderMemo { if (ctx === this.ctx) this.stash(); return this.memos[ctx]; }
+  /** 换歌 / 开机时放回（null = 新的：按年代、全收着、在顶上）。 */
+  restore(ctx: FinderCtx, m: FinderMemo | null): void {
+    this.memos[ctx] = m ?? freshFinderMemo();
+    if (ctx !== this.ctx) return;
+    this.unstash();
+    if (this.isOpen && this.cat) { this.el.querySelector<HTMLSelectElement>(".finder-sort")!.value = this.mode; this.render(); this.el.querySelector<HTMLElement>(".finder-list")!.scrollTop = this.scrollY; this.markJump(); }
+  }
   /** 顶条「键盘」钮亮不亮（宿主在键盘开 / 关时告诉它）。 */
   setPadShown(on: boolean): void { this.el.querySelector(".finder-pad")?.classList.toggle("is-on", on); }
   async show(o: { playOnly?: boolean } = {}): Promise<void> {
+    const ctx: FinderCtx = o.playOnly ? "impro" : "song";
+    if (ctx !== this.ctx) { this.stash(); this.ctx = ctx; this.unstash(); }   // 歌里 ↔ 即兴：各记各的
     this.el.hidden = false; this.playOnly = !!o.playOnly;
     this.el.querySelector(".finder-title")!.textContent = this.playOnly ? _t("乐器目录（弹着玩）") : _t("找人给「{p}」", { p: this.host.roleName() });
     this.el.querySelector('[data-v="back"]')!.textContent = this.playOnly ? _t("← 歌库") : _t("← 谱");
@@ -77,7 +105,7 @@ export class Finder {
     if (this.selected) void this.host.audition(this.pickOf(this.selected));
     else if (openedC) void this.host.audition({ kind: "none", concept: openedC });
   }
-  hide(): void { this.scrollY = this.el.querySelector<HTMLElement>(".finder-list")!.scrollTop; this.el.hidden = true; }
+  hide(): void { if (this.el.hidden) return; this.stash(); this.el.hidden = true; this.host.memoChanged?.(this.ctx, this.memos[this.ctx]); }
   private pickOf(key: string): FinderPick | null {
     if (!this.cat) return null;
     const [cid, rest] = key.split("|"), c = this.cat.byId.get(cid); if (!c) return null;

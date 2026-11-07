@@ -1,7 +1,7 @@
 // desk（视图态 ↔ 文件）。created 2026-10-08 by Claude Fable 5.1
 // edited 2026-10-08 by Claude Opus 5.5：这个文件原来没登记进 test/run.mjs（一直没跑），且用 eq 比对象（eq 是 ===）——改成 deq 按 JSON 比；加导出音质那条。
 import { describe, it, eq } from "./runner.mjs";
-import { freshDesk, serializeDesk, unserializeDesk } from "../src/score/desk.ts";
+import { freshDesk, serializeDesk, unserializeDesk, unserializeFinderMemo, freshFinderMemo } from "../src/score/desk.ts";
 
 const deq = (a: unknown, b: unknown, msg?: string) => eq(JSON.stringify(a), JSON.stringify(b), msg);
 
@@ -65,5 +65,20 @@ describe("打开时的模式（v0.10.21；user「打开时记住上次的模式�
     eq(unserializeDesk({ mode: "listen" }).mode, "listen");
     eq(unserializeDesk({ mode: "lyrics" }).mode, "lyrics");
     eq(unserializeDesk({ mode: "karaoke" }).mode, "notes");
+  });
+});
+
+// 乐器目录翻到哪（v0.16.6，2026-11-07 by Claude Opus 5.5；user 11-07「乐器列表记录滚动位置的话，是每个文件自己记录，不是用户设置」「即兴的滚动归 App 记，然后文件内的滚动归文件记」）
+describe("desk：乐器目录翻到哪", () => {
+  it("默认（按年代、全收着、在顶上）= 不写；写了读回来一样", () => {
+    eq(serializeDesk(freshDesk()), null, "新歌没碰过目录 = 不写字段");
+    const d = freshDesk(); d.finder = { mode: "style", open: { style: "jazz", year: "medieval" }, scroll: 320.4, row: "jazz::Q8355", pick: "Q8355|0:40" };
+    const j = serializeDesk(d)!;
+    deq(j.finder, { mode: "style", open: { style: "jazz", year: "medieval" }, scroll: 320, row: "jazz::Q8355", pick: "Q8355|0:40" }, "只写不是默认的；滚动取整");
+    deq(unserializeDesk(JSON.parse(JSON.stringify(j))).finder, { mode: "style", open: { style: "jazz", year: "medieval" }, scroll: 320, row: "jazz::Q8355", pick: "Q8355|0:40" });
+  });
+  it("文件里乱写的 = 那一项当默认（不认识的排序、不是数的滚动、不认识的排序键）", () => {
+    deq(unserializeFinderMemo({ mode: "alphabet", open: { year: 3, bogus: "x", hs: "4" }, scroll: "lots", row: 7, pick: null }), { mode: "year", open: { hs: "4" }, scroll: 0, row: null, pick: "" });
+    deq(unserializeFinderMemo(null), freshFinderMemo());
   });
 });

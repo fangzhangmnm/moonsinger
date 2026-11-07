@@ -22,6 +22,7 @@ import "./gm-format.test.ts";
 import "./sounds.test.ts";
 import "./synth-wasm.test.ts";
 import "./instruments.test.ts";
+import "./beams.test.ts";
 import "./clipboard.test.ts";
 import "./chord.test.ts";
 import "./history.test.ts";

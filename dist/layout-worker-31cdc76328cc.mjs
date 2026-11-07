@@ -2195,7 +2195,7 @@ function tempoWord(bpm) {
   return w;
 }
 function beatTicks(beats, beatType) {
-  return beatType === 8 && beats > 3 && beats % 3 === 0 ? WHOLE * 3 / 8 : WHOLE / beatType;
+  return beatType === 8 && beats >= 3 && beats % 3 === 0 ? WHOLE * 3 / 8 : WHOLE / beatType;
 }
 var artOf = (t) => t.art ?? [];
 function rampTarget(tokens, i, end = tokens.length) {
@@ -5489,4 +5489,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-dff11907dfc8.mjs.map
+//# sourceMappingURL=layout-worker-31cdc76328cc.mjs.map

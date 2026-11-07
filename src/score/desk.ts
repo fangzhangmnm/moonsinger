@@ -21,11 +21,40 @@ export interface RefPanelDesk { open: boolean; left: number; top: number; width:
 /** pdf = 乐谱 PDF 的字体（导出面板里选的；同 mp3 音质跟着这首歌走、不标脏；2026-10-09 Opus 5.5，user「字体可以选普通的和那个拼音可爱的」）。 */
 /** scroll = 排法「横卷」（v0.9.35；一行无限往右；和 pageFlow 互斥，两个都写着 = 横卷说了算）。 */
 /** mode = 打开时进哪个模式（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」）：存的时候记下当时的模式，默认「音」不写。 */
-export interface Desk { scope: "all" | "segment"; pageFlow: boolean; scroll: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null; pdf: "sans" | "pinyin"; mode: "notes" | "lyrics" | "symbols" | "listen" }
-export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans", mode: "notes" });
+/** 乐器目录翻到哪（v0.16.6，user 11-07「乐器列表记录滚动位置的话，是每个文件自己记录，不是用户设置…即兴的滚动归 App 记，然后文件内的滚动归文件记」）：
+ *  mode = 排序；open = 每种排序展开的那一组；scroll = 列表滚到哪（px）；row = 点开的那一件（「组::概念」）；pick = 试听台上的那一位。
+ *  在歌里打开的 = 这首歌的视图态（下面 Desk.finder，存时顺手带、不标脏、不进撤销）；从歌库「即兴」打开的 = 设备上的一个键（main.ts KV_FINDER_IMPRO）。 */
+export interface FinderMemo { mode: string; open: Record<string, string>; scroll: number; row: string | null; pick: string }
+export const FINDER_MODES = ["year", "style", "family", "hs"] as const;
+export const freshFinderMemo = (): FinderMemo => ({ mode: "year", open: {}, scroll: 0, row: null, pick: "" });
+/** 文件 / 设备里的形状（只写不是默认的；全默认 = 不写）。 */
+export interface FinderMemoJson { mode?: string; open?: Record<string, string>; scroll?: number; row?: string; pick?: string }
+export function serializeFinderMemo(m: FinderMemo): FinderMemoJson | null {
+  const o: FinderMemoJson = {};
+  if (m.mode !== "year") o.mode = m.mode;
+  if (Object.keys(m.open).length) o.open = { ...m.open };
+  if (m.scroll > 0) o.scroll = Math.round(m.scroll);
+  if (m.row) o.row = m.row;
+  if (m.pick) o.pick = m.pick;
+  return Object.keys(o).length ? o : null;
+}
+/** 宽容：不认识的排序 / 不是字符串 / 不是有限的数 = 那一项默认。 */
+export function unserializeFinderMemo(json: unknown): FinderMemo {
+  const m = freshFinderMemo();
+  if (!json || typeof json !== "object") return m;
+  const j = json as Record<string, unknown>;
+  if ((FINDER_MODES as readonly unknown[]).includes(j.mode)) m.mode = j.mode as string;
+  if (j.open && typeof j.open === "object") for (const [k, v] of Object.entries(j.open as Record<string, unknown>)) if ((FINDER_MODES as readonly string[]).includes(k) && typeof v === "string") m.open[k] = v;
+  if (typeof j.scroll === "number" && Number.isFinite(j.scroll) && j.scroll > 0) m.scroll = j.scroll;
+  if (typeof j.row === "string" && j.row) m.row = j.row;
+  if (typeof j.pick === "string") m.pick = j.pick;
+  return m;
+}
+export interface Desk { scope: "all" | "segment"; pageFlow: boolean; scroll: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null; pdf: "sans" | "pinyin"; mode: "notes" | "lyrics" | "symbols" | "listen"; finder: FinderMemo }
+export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans", mode: "notes", finder: freshFinderMemo() });
 
 /** 文件里的形状（只写非默认值；全默认 = 不写这个字段）。 */
-export interface DeskJson { scope?: "all"; pageFlow?: true; scroll?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number }; pdf?: "pinyin"; mode?: "lyrics" | "symbols" | "listen" }
+export interface DeskJson { scope?: "all"; pageFlow?: true; scroll?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number }; pdf?: "pinyin"; mode?: "lyrics" | "symbols" | "listen"; finder?: FinderMemoJson }
 /** pad 在文件里的形状：只写不是默认的；全默认 = 不写。 */
 export interface PadJson { fifths?: number; scale?: string; unit?: PadUnit; tuplet?: 3 | 5 | 6 | 7; low?: number }
 export function serializeDesk(d: Desk): DeskJson | null {
@@ -51,6 +80,7 @@ export function serializeDesk(d: Desk): DeskJson | null {
   if (pd.low !== null) pj.low = pd.low;
   if (Object.keys(pj).length) out.pad = pj;
   if (d.ref) { const { open, left, top, width, height } = d.ref; out.ref = { ...(open ? { open: true as const } : {}), left, top, width, height }; }
+  const fm = serializeFinderMemo(d.finder); if (fm) out.finder = fm;
   return Object.keys(out).length ? out : null;
 }
 /** 读文件里的（宽容：不是对象 / 字段不认识 = 当默认；别家 / 更新版写的多余字段不管）。 */
@@ -84,5 +114,6 @@ export function unserializeDesk(json: unknown): Desk {
     const r = j.ref as Record<string, unknown>, n = (v: unknown) => typeof v === "number" && Number.isFinite(v);
     if (n(r.left) && n(r.top) && n(r.width) && n(r.height)) d.ref = { open: r.open === true, left: r.left as number, top: r.top as number, width: r.width as number, height: r.height as number };
   }
+  if (j.finder) d.finder = unserializeFinderMemo(j.finder);
   return d;
 }

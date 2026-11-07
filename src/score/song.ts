@@ -354,9 +354,10 @@ export function tempoWord(bpm: number): { it: string; zh: string } {
   for (const x of TEMPO_WORDS) if (bpm >= x.from) w = x;
   return w;
 }
-/** 一拍多少 tick（符杠按拍分组用）：x/2 x/4 x/8 = 那个音符；6/8 9/8 12/8 这类复拍子 = 附点四分。 */
+/** 一拍多少 tick（符杠按拍分组用）：x/2 x/4 x/8 = 那个音符；3/8 6/8 9/8 12/8 这类复拍子 = 附点四分（三个八分连成一组）。
+ *  v0.16.6 修：原来是「大于 3」，3/8 被漏掉 = 每个八分各一拍、三个不连（标准写法是一小节三个八分连成一组）；user 11-07「六八拍的支持能帮我补上去吗」核出来的。 */
 export function beatTicks(beats: number, beatType: number): number {
-  return beatType === 8 && beats > 3 && beats % 3 === 0 ? (WHOLE * 3) / 8 : WHOLE / beatType;
+  return beatType === 8 && beats >= 3 && beats % 3 === 0 ? (WHOLE * 3) / 8 : WHOLE / beatType;
 }
 /** 写的时候「1=」= 手动设过的，否则跟光标处的调号。 */
 export const inputKey = (st: EditorState): number => st.input.inputFifths;
