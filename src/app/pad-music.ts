@@ -48,7 +48,7 @@ export function createPadMusic(get: () => EditorState): PadMusicHost {
   const pitchAt = (k: number): Pitch => at(k).pitch;
   return {
     sig: () => `${f()}|${inputScaleOf(get())}`,
-    cell: (k): PadCell => { const r = at(k); return { deg: degLabel(r.deg), oct: r.oct, abs: pretty(r.pitch), midi: midiOf(r.pitch) }; },
+    cell: (k): PadCell => { const r = at(k); return { deg: degLabel(r.deg), oct: r.oct, abs: pretty(r.pitch), midi: midiOf(r.pitch), ...(r.deg.deg === 1 && r.deg.alt === 0 ? { tonic: true } : {}) }; },
     altered: (k, a) => pretty(alterBy(pitchAt(k), a)),
     anchor: (layout) => (layout === "absolute" ? ladderFirstAtOrAbove(sc(), 60, homeTonic(f()), f()) : ladderHome(sc(), homeTonic(f()), f())),
     keyChoices: () => {

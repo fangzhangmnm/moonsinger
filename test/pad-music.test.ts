@@ -11,9 +11,9 @@ const stateOf = (f: number, scale: string) => setInputScale(setInputKey(initStat
 describe("pad 的音乐知识（PadMusic）", () => {
   it("1=C 大调：第 0 级 = C4（不带点），往上一格一个调式音；第 7 级 = C5 带一个上点；负的往下", () => {
     const st = stateOf(0, "major"), m = createPadMusic(() => st);
-    eq(J(m.cell(0)), J({ deg: "1", oct: 0, abs: "C4", midi: 60 }));
+    eq(J(m.cell(0)), J({ deg: "1", oct: 0, abs: "C4", midi: 60, tonic: true }));   // 「1」带 tonic（键顶上一道短横，v0.16.10）
     eq(J(m.cell(4)), J({ deg: "5", oct: 0, abs: "G4", midi: 67 }));
-    eq(J(m.cell(7)), J({ deg: "1", oct: 1, abs: "C5", midi: 72 }));
+    eq(J(m.cell(7)), J({ deg: "1", oct: 1, abs: "C5", midi: 72, tonic: true }));
     eq(J(m.cell(-1)), J({ deg: "7", oct: -1, abs: "B3", midi: 59 }));
     eq(m.altered(0, 1), "C♯4"); eq(m.altered(2, -1), "E♭4"); eq(m.altered(6, 2), "B♯♯4");
     eq(m.sig(), "0|major");

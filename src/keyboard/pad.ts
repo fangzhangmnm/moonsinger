@@ -42,7 +42,7 @@ import { wheelSteps } from "./wheel.ts";
 /** 提示音域：谁在弹（宿主说）+ 她 / 它的音域（MIDI，含两端）。null = 不画提示。 */
 export type HintRange = { lo: number; hi: number; who: string; title?: string } | null;   // title = 键上的提示字（没有 = 「谁的音域里」）
 /** 一个音键（调式梯子上第 k 级）长什么样：简谱数字（含 ♯♭）、八度点（正 = 上面几个、负 = 下面几个）、绝对名、MIDI（只拿来比「按着的」和音域提示）。 */
-export interface PadCell { deg: string; oct: number; abs: string; midi: number }
+export interface PadCell { deg: string; oct: number; abs: string; midi: number; /** 这一格是「1」（宿主说了算）：键顶上一道短横，像电脑键盘 F / J 上的小凸起（v0.16.10，user 11-07「形状上面挑」）。 */ tonic?: boolean }
 /** 音乐知识（宿主注入，src/app/pad-music.ts）：方法都读「现在」的调 / 调式，pad 不缓存；sig() 变了 = 网格重建。以后的和弦键盘 = 另一个 PadMusic。 */
 export interface PadMusic {
   sig(): string;
@@ -165,6 +165,9 @@ export class Pad {
   private get symbols(): "off" | "lock" { return this.symWanted && !this.host.isImpro() ? "lock" : "off"; }
   /** 宿主（模式）开 / 关符号层。 */
   setSymbols(on: boolean): void { if (this.symWanted === on) return; this.symWanted = on; this.render(); }
+  /** 键上大字写什么（v0.16.10，设备上的看谱方式；user 11-07「专业模式是大写是绝对，小写是相对，然后这个助残模式是大写是相对，小写是绝对」「键盘的键位不能动」）：
+   *  abs = 大字音名、小字级数；deg = 大字级数、小字音名。只换字的大小，键的位置一个不动。 */
+  setBigLabel(big: "abs" | "deg"): void { this.el.classList.toggle("big-abs", big === "abs"); }
   /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
   private symPage: SymPage = "art"; private symBuilt: SymPage | null = null;
   /** 「渐到」先点它、再点一个力度 = 这个力度从上一个力度记号渐变过来（2026-10-08 深夜，user「渐到 做」）。Shift 逻辑（2026-10-09，user「然后软键盘到时候加一个toggle渐进到的标签，这样可以快速键盘输入」）：
@@ -475,7 +478,7 @@ export class Pad {
         const k = base + row * this.cols + col, c = music.cell(k), m = c.midi;
         const inRange = !!hr && m >= hr.lo && m <= hr.hi;
         this.keys.set(k, c);
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k}" title="${inRange ? hr.title ?? _t("{who}的音域里", { who: hr.who }) : ""}">` +
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}${c.tonic ? " tonic" : ""}" data-k="${k}" title="${inRange ? hr.title ?? _t("{who}的音域里", { who: hr.who }) : ""}">` +
           `<span class="deg">${octDots(Math.max(0, c.oct))}<span class="num"><span class="acc"></span>${c.deg}</span>${octDots(Math.max(0, -c.oct))}</span><span class="abs">${c.abs}</span></button>`);
       }
     }

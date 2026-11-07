@@ -2916,8 +2916,12 @@ var S = {
   "\u7B97\u4E86": { en: "Never mind" },
   "\u2713 \u5728\u6587\u4EF6\u5939\u91CC": { en: "\u2713 In the folder" },
   "\xB7 \u6587\u4EF6\u5939\u91CC\u6CA1\u6709": { en: "\xB7 Not in the folder" },
+  "\u4E13\u4E1A": { en: "Standard" },
+  "\u6309 C \u8C03\u770B\uFF081=X\uFF09": { en: "Read in C (1=X)" },
   "\u8DDF\u7CFB\u7EDF": { en: "System" },
   "\u8BBE\u7F6E": { en: "Settings" },
+  "\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F": { en: "Accessibility \xB7 How to read the score" },
+  "\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002": { en: "Standard = the score is drawn in its real key; the keys show note names large. Read in C = the score is drawn in C, with \u201C1=original key\u201D above each key signature; the keys show scale degrees large. Key positions never move; exported PDFs are printed in the real key. Applies to this device only." },
   "\u6A21\u578B\u6765\u6E90": { en: "Model source" },
   "\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09": { en: "Sound library source (instrument banks, drum kits, sound effects; not AI models)" },
   "\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09": { en: "Sound library cache (kept on this device, works offline; songs carry their own sound, this is only the shelf)" },
@@ -4970,7 +4974,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.9-2026-11-07";
+var APP_VERSION = "v0.16.10-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -9286,6 +9290,29 @@ function prettyReading(lang2, x2) {
   return lang2 !== "ja" ? x2 : x2.split("-").map((y2) => y2.replace(/N_[a-z]+/g, "n").replace(/^clch/, "tch").replace(/^cl([a-z])/, "$1$1")).join("-");
 }
 
+// src/score/view-in-c.ts
+var realFifthsOf = (t10) => t10.realFifths ?? t10.fifths;
+function toC(p2, fifths) {
+  if (fifths === 0) return p2;
+  const iv2 = keyInterval(fifths, 0);
+  return transposeInterval(p2, iv2.steps, iv2.semis);
+}
+var stepsToC = (fifths) => fifths === 0 ? 0 : keyInterval(fifths, 0).steps;
+function trackInC(tokens) {
+  let f2 = 0;
+  return tokens.map((t10) => {
+    if (t10.kind === "key") {
+      f2 = t10.fifths;
+      return { ...t10, fifths: 0, realFifths: t10.fifths };
+    }
+    if (t10.kind === "note" && t10.pitch && f2 !== 0) return { ...t10, pitch: toC(t10.pitch, f2), ...t10.chord ? { chord: t10.chord.map((c10) => toC(c10, f2)) } : {} };
+    return t10;
+  });
+}
+function songInC(song, skip) {
+  return { ...song, papers: song.papers.map((p2) => ({ ...p2, tracks: Object.fromEntries(Object.entries(p2.tracks).map(([id2, toks]) => [id2, skip(id2) ? toks : trackInC(toks)])) })) };
+}
+
 // src/singer/packs.gen.ts
 var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
 var PACKS = {
@@ -10104,20 +10131,23 @@ var SLOT = { phrase: -1, bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3,
 var CLEF_CUE = 0.72;
 var CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
 var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
+var KEY_LABEL_W = 3;
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 function unitsOf(tokens, o10) {
   const H3 = headLen(tokens);
-  let fifths = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
+  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx = {};
   for (let i10 = 0; i10 < H3; i10++) {
     const t10 = tokens[i10];
-    if (t10.kind === "key") fifths = t10.fifths;
-    else if (t10.kind === "time") time = { beats: t10.beats, beatType: t10.beatType };
+    if (t10.kind === "key") {
+      fifths = t10.fifths;
+      real = realFifthsOf(t10);
+    } else if (t10.kind === "time") time = { beats: t10.beats, beatType: t10.beatType };
     else if (t10.kind === "tempo") bpm = t10.bpm;
     if (t10.kind === "key" || t10.kind === "time" || t10.kind === "tempo") headIdx[t10.kind] = i10;
   }
-  const head = { key: fifths, time, bpm, idx: headIdx };
+  const head = { key: fifths, real, time, bpm, idx: headIdx };
   const units = [], measureLen2 = (b3, bt) => b3 * WHOLE / bt;
   let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0, pickup = false;
   let beat = beatTicks(time.beats, time.beatType), len = measureLen2(time.beats, time.beatType);
@@ -10147,7 +10177,8 @@ function unitsOf(tokens, o10) {
     }
     if (t10.kind === "key") {
       flushFull();
-      units.push({ kind: "key", index: i10, fifths: t10.fifths, prev: fifths, w: keyWidth(t10.fifths, fifths), x: 0, system: 0, tick, staff: 1 });
+      const rf2 = realFifthsOf(t10), inC = rf2 !== t10.fifths || "realFifths" in t10;
+      units.push({ kind: "key", index: i10, fifths: t10.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W, keyWidth(t10.fifths, fifths)) : keyWidth(t10.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf2 });
       fifths = t10.fifths;
       accState = /* @__PURE__ */ new Map();
       return;
@@ -10283,6 +10314,10 @@ function unitsOf(tokens, o10) {
 }
 function engrave(song, o10) {
   const clefStarts = resolveSongClefs(song);
+  if (o10.inC) {
+    const perc = new Set(o10.parts.filter((p2) => p2.perc).map((p2) => p2.id));
+    song = songInC(song, (id2) => perc.has(id2));
+  }
   const sp2 = o10.sp, P2 = (v) => v * sp2;
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
   const PG = o10.page ?? null, PAGE_GAP = 3, MX = o10.page ?? o10.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };
@@ -10422,6 +10457,11 @@ function engrave(song, o10) {
     prims.push({ t: "glyph", x: P2(gx), y: y2 - P2(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
     prims.push({ t: "text", x: P2(gx + 1.3), y: y2, s: num2, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
     marks.push({ index, kind: "tempo", system: r10, x: P2(x0 - 0.3), y: y2 - P2(TEMPO_EM * 1.1), w: P2(gx + 1.3 + nw2 + 0.6 - x0), h: P2(TEMPO_EM * 1.5) });
+  };
+  const keyLabel2 = (r10, x0, f2, hint2, index) => {
+    const y2 = staffTop(r10) - P2(0.8);
+    prims.push({ t: "text", x: P2(x0), y: y2, s: `1=${KEY_LABEL[f2] ?? "?"}`, cls: `keysig key-label${hint2 ? " key-hint" : ""}`, size: TEMPO_EM * sp2 * 0.85, anchor: "start" });
+    marks.push({ index, kind: "key", system: r10, x: P2(x0 - 0.2), y: y2 - P2(TEMPO_EM * 0.95), w: P2(KEY_LABEL_W), h: P2(TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r10, x0, f2, cls, clef = "G") => {
     const pos = f2 > 0 ? SHARP_POS : FLAT_POS, ch2 = f2 > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
@@ -10898,6 +10938,8 @@ function engrave(song, o10) {
           hx += Math.abs(fk) * 1.05;
           if (s10 === 0) {
             if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row2, x: P2(keyX0 - 0.3), ...staffHit(row2), w: P2(Math.max(1.2, hx - keyX0 + 0.3)) });
+            const lab = k2 === 0 && !pm && q2.head.idx.key !== void 0 ? o10.inC ? q2.head.real : o10.keyHint && fk === 0 ? 0 : null : null;
+            if (lab !== null) keyLabel2(row2, keyX0 - 0.1, lab, !o10.inC, q2.head.idx.key);
             if (fk) hx += 0.8;
             const cw2 = drawTime(row2, hx, q2.head.time.beats, q2.head.time.beatType, "timesig");
             if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(cw2 + 0.6) });
@@ -11163,7 +11205,11 @@ function engrave(song, o10) {
                 const pos = u2.prev > 0 ? SHARP_POS : FLAT_POS;
                 for (let j2 = 0; j2 < Math.abs(u2.prev); j2++) prims.push({ t: "glyph", x: P2(u2.x + 0.4 + j2 * 0.8), y: yOf(rr2, pos[j2] - (sh2 ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
               } else drawKeySig(rr2, u2.x + 0.4, u2.fifths, cls, clef);
-              if (u2.fifths === 0 && u2.prev === 0 && k2 === 0) prims.push({ t: "text", x: P2(u2.x + 0.2), y: staffTop(rr2) - P2(0.8), s: `1=${KEY_LABEL[0]}`, cls: `${cls} key-label`, size: TEMPO_EM * sp2 * 0.85, anchor: "start" });
+              if (k2 === 0) {
+                if (o10.inC) keyLabel2(rr2, u2.x + 0.2, u2.real, false, u2.index);
+                else if (u2.fifths === 0 && u2.prev === 0) keyLabel2(rr2, u2.x + 0.2, 0, false, u2.index);
+                else if (u2.fifths === 0 && o10.keyHint) keyLabel2(rr2, u2.x + 0.2, 0, true, u2.index);
+              }
               marks.push({ index: u2.index, kind: "key", system: rr2, x: P2(u2.x), ...staffHit(rr2), w: P2(Math.max(u2.w, 1.6)) });
             } else {
               const cls = "timesig";
@@ -12826,11 +12872,11 @@ var ScoreView = class {
     const { sp: sp2, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
     const paper = st2.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st2) || st2.sel)) this.caretEnd = null;
-    const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars2 = this.host.autoBars?.() ?? true, paperLabel = paper.kind === "other" ? _t("\u5176\u4ED6\u7EB8") : PAPER_LABEL[paper.kind];
+    const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars2 = this.host.autoBars?.() ?? true, inC = this.host.inC?.() ?? false, paperLabel = paper.kind === "other" ? _t("\u5176\u4ED6\u7EB8") : PAPER_LABEL[paper.kind];
     const lyricRaise = page && this.host.lyricRaise?.() ? this.host.lyricRaise() : 0;
     const tailOpen = !st2.sel && st2.caret >= tr(st2).length;
     const geoKey = JSON.stringify(
-      [width, sp2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, hscroll, autoBars2, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
+      [width, sp2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, hscroll, autoBars2, inC, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v) => v instanceof Set ? [...v] : v
     );
     const opts = {
@@ -12843,6 +12889,8 @@ var ScoreView = class {
       ...tailOpen ? { tailOpen: true } : {},
       ...lyricRaise ? { lyricRaise } : {},
       autoBars: autoBars2,
+      ...inC ? { inC: true } : {},
+      keyHint: true,
       paperLabel,
       ...page ? { page } : { margins },
       ...scopeSeg ? { onlyPaper: st2.at.paper } : {},
@@ -13077,8 +13125,9 @@ var ScoreView = class {
     g3.setAttribute("height", String(L2.height));
     const fs = 4 * sp2, nh2 = 1.18 * sp2, ext = 0.4 * sp2, parts = [];
     const toks = tr(st2), at2 = one >= 0 ? one : st2.caret, fifths = keyAt(toks, at2);
+    const inC = this.host.inC?.() ?? false, shownToks = inC ? trackInC(toks) : toks;
     for (const p0 of this.ghostP) {
-      const p2 = keySpell(p0, fifths), shown2 = shownAccAt(toks, at2, p2);
+      const p2 = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths), shown2 = shownAccAt(shownToks, at2, p2);
       const d3 = diatonicIndex(p2) + shift, y2 = L2.yOf(row2, d3);
       for (let k2 = 28; k2 >= d3; k2 -= 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row2, k2)}" y2="${L2.yOf(row2, k2)}" stroke-width="${0.16 * sp2}"/>`);
       for (let k2 = 40; k2 <= d3; k2 += 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row2, k2)}" y2="${L2.yOf(row2, k2)}" stroke-width="${0.16 * sp2}"/>`);
@@ -13817,7 +13866,8 @@ var ScoreView = class {
       const st0 = this.host.get();
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t10 = tr(this.host.get())[hit.index];
-      if (this.rules.noteDrag) this.drag = { index: hit.index, d0: hit.d, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: hit.d, ...e10.pointerType === "mouse" ? { wait: true } : {} };
+      const d0 = this.host.inC?.() && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;
+      if (this.rules.noteDrag) this.drag = { index: hit.index, d0, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: d0, ...e10.pointerType === "mouse" ? { wait: true } : {} };
       this.el.setPointerCapture(e10.pointerId);
       this.armPress(e10, p2, hit);
       return;
@@ -14789,6 +14839,11 @@ var Pad = class {
     this.symWanted = on2;
     this.render();
   }
+  /** 键上大字写什么（v0.16.10，设备上的看谱方式；user 11-07「专业模式是大写是绝对，小写是相对，然后这个助残模式是大写是相对，小写是绝对」「键盘的键位不能动」）：
+   *  abs = 大字音名、小字级数；deg = 大字级数、小字音名。只换字的大小，键的位置一个不动。 */
+  setBigLabel(big) {
+    this.el.classList.toggle("big-abs", big === "abs");
+  }
   /** 符号层现在在哪一页（pad 头那一排换成三个标签；user 2026-10-08「pad 头那一排在符号层里换成分页标签 可以」）：收起再开 / 点了记号重画都还在这一页（以前格子一重画就滚回顶上，user「切换符号键盘的时候翻页会乱」）。 */
   symPage = "art";
   symBuilt = null;
@@ -15168,7 +15223,7 @@ var Pad = class {
         const k2 = base2 + row2 * this.cols + col, c10 = music.cell(k2), m2 = c10.midi;
         const inRange = !!hr && m2 >= hr.lo && m2 <= hr.hi;
         this.keys.set(k2, c10);
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}" data-k="${k2}" title="${inRange ? hr.title ?? _t("{who}\u7684\u97F3\u57DF\u91CC", { who: hr.who }) : ""}"><span class="deg">${octDots(Math.max(0, c10.oct))}<span class="num"><span class="acc"></span>${c10.deg}</span>${octDots(Math.max(0, -c10.oct))}</span><span class="abs">${c10.abs}</span></button>`);
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}${c10.tonic ? " tonic" : ""}" data-k="${k2}" title="${inRange ? hr.title ?? _t("{who}\u7684\u97F3\u57DF\u91CC", { who: hr.who }) : ""}"><span class="deg">${octDots(Math.max(0, c10.oct))}<span class="num"><span class="acc"></span>${c10.deg}</span>${octDots(Math.max(0, -c10.oct))}</span><span class="abs">${c10.abs}</span></button>`);
       }
     }
     const grid = this.el.querySelector(".pad-grid");
@@ -15570,7 +15625,7 @@ function createPadMusic(get) {
     sig: () => `${f2()}|${inputScaleOf(get())}`,
     cell: (k2) => {
       const r10 = at2(k2);
-      return { deg: degLabel(r10.deg), oct: r10.oct, abs: pretty(r10.pitch), midi: midiOf(r10.pitch) };
+      return { deg: degLabel(r10.deg), oct: r10.oct, abs: pretty(r10.pitch), midi: midiOf(r10.pitch), ...r10.deg.deg === 1 && r10.deg.alt === 0 ? { tonic: true } : {} };
     },
     altered: (k2, a10) => pretty(alterBy(pitchAt(k2), a10)),
     anchor: (layout) => layout === "absolute" ? ladderFirstAtOrAbove(sc2(), 60, homeTonic(f2()), f2()) : ladderHome(sc2(), homeTonic(f2()), f2()),
@@ -27859,15 +27914,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-0217ae8f57f2.mjs");
+      return pick(() => "singer-worker-fd8116064e8c.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-2d3dcd66e84c.mjs");
+      return pick(() => "layout-worker-a7c623e086bc.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-537da7b5471b.mjs");
+      return pick(() => "encode-worker-71114e172c44.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36180,7 +36235,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "073767464d1cf8a0" : "dev";
+var CORE_HASH = true ? "87b625c4405e5098" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -49264,6 +49319,8 @@ function writeAndLocate(write) {
   return D2.st.caret - 1;
 }
 var upTimer = 0;
+var KV_VIEW_IN_C = "view-in-c";
+var viewInC = deviceKvGet(KV_VIEW_IN_C) === "1";
 var view = new ScoreView(scoreEl, {
   get: () => D2.st,
   set: (n10, o10) => update(n10, o10?.gesture),
@@ -49287,6 +49344,7 @@ var view = new ScoreView(scoreEl, {
   focus: (where) => showPad(where === "staff"),
   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
+  inC: () => viewInC,
   parts: () => partViews(),
   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at2) => openTrackCard(at2),
@@ -49487,6 +49545,7 @@ var padHost = createPadHost(padEl, {
   showPad: (on2) => showPad(on2)
 });
 var pad3 = padHost.pad;
+pad3.setBigLabel(viewInC ? "deg" : "abs");
 function toggleImpro() {
   if (finder.isOpen) return;
   impro = !impro;
@@ -50004,6 +50063,14 @@ async function packStatusText() {
   return packs.map((s10) => `${s10.ready ? "\u2713" : "\xB7"} ${s10.slug}\uFF08${(s10.bytesTotal / 1e6).toFixed(1)} MB\uFF09`).join("\n");
 }
 var LANG_LABEL = "\u8BED\u8A00 \xB7 Language";
+function setViewInC(on2) {
+  viewInC = on2;
+  deviceKvSet(KV_VIEW_IN_C, on2 ? "1" : "0");
+  pad3.setBigLabel(on2 ? "deg" : "abs");
+  view.render();
+  ghostSync();
+}
+var viewChips = () => [["pro", _t("\u4E13\u4E1A"), !viewInC], ["inc", _t("\u6309 C \u8C03\u770B\uFF081=X\uFF09"), viewInC]].map(([v, label, on2]) => `<button class="btn chip${on2 ? " is-on" : ""}" data-v="view:${v}">${esc9(label)}</button>`).join("");
 function langChips() {
   const cur = langChosen();
   const chip2 = (v, label, on2) => `<button class="btn chip${on2 ? " is-on" : ""}" data-v="lang:${v}">${esc9(label)}</button>`;
@@ -50014,7 +50081,7 @@ function openSettings() {
   const inFolder2 = resourcesInFolder();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div><div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${langChips()}</div></div>` + (inFolder2 ? `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" disabled value="${esc9(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>` : `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc9(models.source)}" /></label>`) + `<label class="set-field">${_t("\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc9(sources.source)}" /></label><div class="set-field">${_t("\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09")}<div id="sndCache" class="set-packs">\u2026</div></div><div class="set-field">${_t("MIDI \u952E\u76D8")}<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}</div></div><div class="offer-msg">${_t("\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002")}</div><div class="set-row"><button class="btn" data-v="default">${_t("\u6062\u590D\u9ED8\u8BA4")}</button>` + (inFolder2 ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}</span><input id="impIn" type="file" multiple hidden disabled /></div>` : `<label class="btn" title="${_t("\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6")}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}<input id="impIn" type="file" multiple hidden /></label></div>`) + `<pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit" data-i18n-skip><summary>${_t("\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C{n} \u4E2A\uFF09", { n: ICON_CREDITS.length })}</summary><pre>${esc9(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? _t("\n    \u6539\u52A8\uFF1A{modified}", { modified: c10.modified }) : ""}`).join("\n"))}</pre></details><details class="set-credit" data-i18n-skip><summary>${_t("\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E")}</summary><div class="part-sec">${_t("\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09")}</div><pre>${esc9(CREDIT.credit)}
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div><div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${langChips()}</div></div><div class="set-field">${_t("\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F")}<div class="set-row">${viewChips()}</div><span class="set-note">${_t("\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002")}</span></div>` + (inFolder2 ? `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" disabled value="${esc9(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>` : `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc9(models.source)}" /></label>`) + `<label class="set-field">${_t("\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc9(sources.source)}" /></label><div class="set-field">${_t("\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09")}<div id="sndCache" class="set-packs">\u2026</div></div><div class="set-field">${_t("MIDI \u952E\u76D8")}<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}</div></div><div class="offer-msg">${_t("\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002")}</div><div class="set-row"><button class="btn" data-v="default">${_t("\u6062\u590D\u9ED8\u8BA4")}</button>` + (inFolder2 ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}</span><input id="impIn" type="file" multiple hidden disabled /></div>` : `<label class="btn" title="${_t("\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6")}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}<input id="impIn" type="file" multiple hidden /></label></div>`) + `<pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit" data-i18n-skip><summary>${_t("\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C{n} \u4E2A\uFF09", { n: ICON_CREDITS.length })}</summary><pre>${esc9(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? _t("\n    \u6539\u52A8\uFF1A{modified}", { modified: c10.modified }) : ""}`).join("\n"))}</pre></details><details class="set-credit" data-i18n-skip><summary>${_t("\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E")}</summary><div class="part-sec">${_t("\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09")}</div><pre>${esc9(CREDIT.credit)}
 
 ${esc9(CREDIT.terms)}
 ${esc9(CREDIT.termsUrl)}
@@ -50089,7 +50156,10 @@ ${esc9(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t
       srcIn.value = MODEL_SOURCE_DEFAULT;
       sndIn.value = SOUNDS_SOURCE_DEFAULT;
     } else if (v === "midi:connect") void midi.connect();
-    else if (v?.startsWith("lang:")) {
+    else if (v === "view:pro" || v === "view:inc") {
+      setViewInC(v === "view:inc");
+      box.querySelectorAll('[data-v^="view:"]').forEach((b3) => b3.classList.toggle("is-on", b3.dataset.v === v));
+    } else if (v?.startsWith("lang:")) {
       const l10 = v.slice(5);
       saveLang(l10 === "auto" ? null : l10);
       location.reload();
@@ -50247,7 +50317,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "926e1f308012",
+  cssHash: "d21bd8b16f16",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -54103,4 +54173,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-40d77e299c08.mjs.map
+//# sourceMappingURL=moonsinger-2db8f14415d9.mjs.map

@@ -196,8 +196,12 @@ var S = {
   "\u7B97\u4E86": { en: "Never mind" },
   "\u2713 \u5728\u6587\u4EF6\u5939\u91CC": { en: "\u2713 In the folder" },
   "\xB7 \u6587\u4EF6\u5939\u91CC\u6CA1\u6709": { en: "\xB7 Not in the folder" },
+  "\u4E13\u4E1A": { en: "Standard" },
+  "\u6309 C \u8C03\u770B\uFF081=X\uFF09": { en: "Read in C (1=X)" },
   "\u8DDF\u7CFB\u7EDF": { en: "System" },
   "\u8BBE\u7F6E": { en: "Settings" },
+  "\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F": { en: "Accessibility \xB7 How to read the score" },
+  "\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002": { en: "Standard = the score is drawn in its real key; the keys show note names large. Read in C = the score is drawn in C, with \u201C1=original key\u201D above each key signature; the keys show scale degrees large. Key positions never move; exported PDFs are printed in the real key. Applies to this device only." },
   "\u6A21\u578B\u6765\u6E90": { en: "Model source" },
   "\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09": { en: "Sound library source (instrument banks, drum kits, sound effects; not AI models)" },
   "\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09": { en: "Sound library cache (kept on this device, works offline; songs carry their own sound, this is only the shelf)" },
@@ -2117,6 +2121,9 @@ function keyAlter(step, fifths) {
   if (fifths < 0) return FLAT_ORDER.slice(0, -fifths).includes(step) ? -1 : 0;
   return 0;
 }
+function tonicStepIndex(fifths) {
+  return (4 * fifths % 7 + 7) % 7;
+}
 function spellMidi(midi, fifths, prefer = fifths < 0 ? -1 : 1) {
   const cands = [];
   for (const step of STEPS) for (let o = Math.floor(midi / 12) - 2; o <= Math.floor(midi / 12); o++) {
@@ -2124,6 +2131,17 @@ function spellMidi(midi, fifths, prefer = fifths < 0 ? -1 : 1) {
     if (Math.abs(alter) <= 1) cands.push({ step, alter, octave: o });
   }
   return cands.find((p) => p.alter === keyAlter(p.step, fifths)) ?? cands.find((p) => p.alter === prefer) ?? cands.find((p) => p.alter === 0) ?? cands[0];
+}
+function transposeInterval(p, steps, semis) {
+  const d = diatonicIndex(p) + steps, step = STEPS[(d % 7 + 7) % 7], octave = Math.floor(d / 7);
+  return { step, alter: midiOf(p) + semis - midiOf({ step, alter: 0, octave }), octave };
+}
+function keyInterval(f0, f1) {
+  let semis = (7 * (f1 - f0) % 12 + 12) % 12;
+  if (semis > 6) semis -= 12;
+  let steps = ((tonicStepIndex(f1) - tonicStepIndex(f0)) % 7 + 7) % 7;
+  if (semis < 0 && steps > 0) steps -= 7;
+  return { steps, semis };
 }
 var KEY_LABEL = { [-7]: "C\u266D", [-6]: "G\u266D", [-5]: "D\u266D", [-4]: "A\u266D", [-3]: "E\u266D", [-2]: "B\u266D", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F\u266F", 7: "C\u266F" };
 
@@ -3477,6 +3495,28 @@ var STEM_DOWN_NW = [0, -0.168];
 var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
 var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
 
+// src/score/view-in-c.ts
+var realFifthsOf = (t) => t.realFifths ?? t.fifths;
+function toC(p, fifths) {
+  if (fifths === 0) return p;
+  const iv = keyInterval(fifths, 0);
+  return transposeInterval(p, iv.steps, iv.semis);
+}
+function trackInC(tokens) {
+  let f = 0;
+  return tokens.map((t) => {
+    if (t.kind === "key") {
+      f = t.fifths;
+      return { ...t, fifths: 0, realFifths: t.fifths };
+    }
+    if (t.kind === "note" && t.pitch && f !== 0) return { ...t, pitch: toC(t.pitch, f), ...t.chord ? { chord: t.chord.map((c) => toC(c, f)) } : {} };
+    return t;
+  });
+}
+function songInC(song, skip) {
+  return { ...song, papers: song.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([id, toks]) => [id, skip(id) ? toks : trackInC(toks)])) })) };
+}
+
 // src/score/clef.ts
 var CLEF_SHIFT = { G: 0, G8vb: 7, G8va: -7, G15ma: -14, F: 12, F8vb: 19 };
 var isFClef = (c) => c === "F" || c === "F8vb";
@@ -3895,20 +3935,23 @@ var SLOT = { phrase: -1, bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3,
 var CLEF_CUE = 0.72;
 var CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
 var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
+var KEY_LABEL_W = 3;
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 function unitsOf(tokens, o) {
   const H = headLen(tokens);
-  let fifths = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
+  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx = {};
   for (let i = 0; i < H; i++) {
     const t = tokens[i];
-    if (t.kind === "key") fifths = t.fifths;
-    else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType };
+    if (t.kind === "key") {
+      fifths = t.fifths;
+      real = realFifthsOf(t);
+    } else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType };
     else if (t.kind === "tempo") bpm = t.bpm;
     if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") headIdx[t.kind] = i;
   }
-  const head = { key: fifths, time, bpm, idx: headIdx };
+  const head = { key: fifths, real, time, bpm, idx: headIdx };
   const units = [], measureLen = (b, bt) => b * WHOLE / bt;
   let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0, pickup = false;
   let beat = beatTicks(time.beats, time.beatType), len = measureLen(time.beats, time.beatType);
@@ -3938,7 +3981,8 @@ function unitsOf(tokens, o) {
     }
     if (t.kind === "key") {
       flushFull();
-      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1 });
+      const rf = realFifthsOf(t), inC = rf !== t.fifths || "realFifths" in t;
+      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W, keyWidth(t.fifths, fifths)) : keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf });
       fifths = t.fifths;
       accState = /* @__PURE__ */ new Map();
       return;
@@ -4074,6 +4118,10 @@ function unitsOf(tokens, o) {
 }
 function engrave(song, o) {
   const clefStarts = resolveSongClefs(song);
+  if (o.inC) {
+    const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id));
+    song = songInC(song, (id) => perc.has(id));
+  }
   const sp = o.sp, P = (v) => v * sp;
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
   const PG = o.page ?? null, PAGE_GAP = 3, MX = o.page ?? o.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };
@@ -4213,6 +4261,11 @@ function engrave(song, o) {
     prims.push({ t: "glyph", x: P(gx), y: y - P(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
     prims.push({ t: "text", x: P(gx + 1.3), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
     marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - P(TEMPO_EM * 1.1), w: P(gx + 1.3 + nw + 0.6 - x0), h: P(TEMPO_EM * 1.5) });
+  };
+  const keyLabel = (r, x0, f, hint, index) => {
+    const y = staffTop(r) - P(0.8);
+    prims.push({ t: "text", x: P(x0), y, s: `1=${KEY_LABEL[f] ?? "?"}`, cls: `keysig key-label${hint ? " key-hint" : ""}`, size: TEMPO_EM * sp * 0.85, anchor: "start" });
+    marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - P(TEMPO_EM * 0.95), w: P(KEY_LABEL_W), h: P(TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r, x0, f, cls, clef = "G") => {
     const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
@@ -4689,6 +4742,8 @@ function engrave(song, o) {
           hx += Math.abs(fk) * 1.05;
           if (s === 0) {
             if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });
+            const lab = k === 0 && !pm && q.head.idx.key !== void 0 ? o.inC ? q.head.real : o.keyHint && fk === 0 ? 0 : null : null;
+            if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !o.inC, q.head.idx.key);
             if (fk) hx += 0.8;
             const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
             if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
@@ -4954,7 +5009,11 @@ function engrave(song, o) {
                 const pos = u.prev > 0 ? SHARP_POS : FLAT_POS;
                 for (let j = 0; j < Math.abs(u.prev); j++) prims.push({ t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
               } else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef);
-              if (u.fifths === 0 && u.prev === 0 && k === 0) prims.push({ t: "text", x: P(u.x + 0.2), y: staffTop(rr) - P(0.8), s: `1=${KEY_LABEL[0]}`, cls: `${cls} key-label`, size: TEMPO_EM * sp * 0.85, anchor: "start" });
+              if (k === 0) {
+                if (o.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index);
+                else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index);
+                else if (u.fifths === 0 && o.keyHint) keyLabel(rr, u.x + 0.2, 0, true, u.index);
+              }
               marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
             } else {
               const cls = "timesig";
@@ -5497,4 +5556,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-2d3dcd66e84c.mjs.map
+//# sourceMappingURL=layout-worker-a7c623e086bc.mjs.map

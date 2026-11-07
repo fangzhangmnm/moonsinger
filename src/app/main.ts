@@ -469,6 +469,11 @@ function writeAndLocate(write: (s: EditorState) => EditorState): number {
 }
 
 let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消旧的（不然会掐掉新音）
+/** 看谱方式（v0.16.10；这台设备上的设置，device-kv「view-in-c」）：false = 专业（按实际的调画谱，键上大字写音名）；true = 按 C 调看（辅助：谱换到 C 调画、
+ *  每个调号上方写「1=原来的调」，键上大字写级数）。user 11-07「我需要一个残疾人模式…显示的时候…帮我转到 C 大调上面，然后…写一个一等于 F」
+ *  「设计里面专门开一个就是 Accessibility 辅助模式的框，这是第一个可选项」「这个是跟着系统的设置走的」「键盘的键位不能动」。PDF / 导出照实际的调。 */
+const KV_VIEW_IN_C = "view-in-c";
+let viewInC = deviceKvGet(KV_VIEW_IN_C) === "1";
 const view = new ScoreView(scoreEl, {
   get: () => D.st,
   set: (n, o) => update(n, o?.gesture),
@@ -479,6 +484,7 @@ const view = new ScoreView(scoreEl, {
   release: () => { clearTimeout(upTimer); sound.up("score"); },
   focus: (where) => showPad(where === "staff"),   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
   autoBars: () => autoBars,
+  inC: () => viewInC,
   parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, _part, at) => openTrackCard(at),
   onBlankPress: (at, row) => openScoreMenu(at, row),
@@ -616,6 +622,7 @@ const padHost = createPadHost(padEl, {
   showPad: (on) => showPad(on),
 });
 const pad = padHost.pad;
+pad.setBigLabel(viewInC ? "deg" : "abs");
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
 /** 弹（只响不写）：开关在 pad 第一排「收起」左边（user 2026-10-08「弹这个锁还是放键盘上吧放在第一row，收起键盘的左边」）；快捷键 ` 照旧。找人视图里一直是弹、拨不动。 */
@@ -955,6 +962,11 @@ async function packStatusText(): Promise<string> {
 }
 /** 语言这一行：两种语言的字都写，走错语言的人也认得出。切换 = 存 + 重载（语言锁死在这一页，不要半译状态；没存的改动由挽留框 / 退出落盘那一套管）。 */
 const LANG_LABEL = "语言 · Language";   // i18n-keep
+function setViewInC(on: boolean): void {
+  viewInC = on; deviceKvSet(KV_VIEW_IN_C, on ? "1" : "0");
+  pad.setBigLabel(on ? "deg" : "abs"); view.render(); ghostSync();
+}
+const viewChips = (): string => [["pro", _t("专业"), !viewInC], ["inc", _t("按 C 调看（1=X）"), viewInC]].map(([v, label, on]) => `<button class="btn chip${on ? " is-on" : ""}" data-v="view:${v}">${esc(label as string)}</button>`).join("");
 function langChips(): string {
   const cur = langChosen();
   const chip = (v: string, label: string, on: boolean) => `<button class="btn chip${on ? " is-on" : ""}" data-v="lang:${v}">${esc(label)}</button>`;
@@ -969,6 +981,7 @@ function openSettings(): void {
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
     `<div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${langChips()}</div></div>` +
+    `<div class="set-field">${_t("辅助 · 看谱方式")}<div class="set-row">${viewChips()}</div><span class="set-note">${_t("专业 = 按实际的调画谱，键上大字写音名。按 C 调看 = 谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数。键的位置不动；导出的 PDF 照实际的调印。只管这台设备。")}</span></div>` +
     (inFolder ? `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" disabled value="${esc(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>`
       : `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>`) +
     `<label class="set-field">${_t("音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
@@ -1023,6 +1036,7 @@ function openSettings(): void {
     if (e.target === box || v === "close") close();
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "midi:connect") void midi.connect();
+    else if (v === "view:pro" || v === "view:inc") { setViewInC(v === "view:inc"); box.querySelectorAll<HTMLElement>('[data-v^="view:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
     else if (v?.startsWith("lang:")) { const l = v.slice(5); saveLang(l === "auto" ? null : l as Lang); location.reload(); }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);

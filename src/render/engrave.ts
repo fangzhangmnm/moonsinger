@@ -28,6 +28,7 @@ import { percOf, type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
 import { GLYPH, W, ENGRAVE, STEM_UP_SE, STEM_DOWN_NW, FLAG_ANCHOR_UP, FLAG_ANCHOR_DOWN, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } from "./smufl.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
+import { songInC, realFifthsOf } from "../score/view-in-c.ts";
 import { resolveSongClefs, displayStates, autoOttava, CLEF_SHIFT, baseClef, isFClef, ottavaShift, startClef, wantsGrand } from "../score/clef.ts";
 import { mergeTracks, planHands, type MergeOpts } from "../score/merge.ts";
 
@@ -69,6 +70,12 @@ export interface EngraveOpts {
   scroll?: boolean;
   /** 连续排法的纸边距（sp）：和分页同一张纸的几何，只是不断页（user 2026-10-08「连续和分页看到的行宽应该是一样的」「连续只是没有了断页，但是每一行还是一样的」）。 */
   margins?: { l: number; r: number; t: number; b: number };
+  /** 按 C 调看（辅助模式，v0.16.10；src/score/view-in-c.ts）：每个音从它所在的调转到 C 再排，每个调号位置上方写「1=原来的调」（中途换调那一处给字多留一点宽）。
+   *  只是看法：PDF / 导出不传（按实际的调印）。 */
+  inC?: boolean;
+  /** 调号没有升降号的地方（纸开头那处、中途换成 C 的地方）上方画淡的「1=C」（v0.16.10，user 11-07「专业模式下面C调的时候，最好也能有一个显示调号的方案，
+   *  这个样子我就不会像这次一样忘了点了」）：编辑器里的提示，不占宽、不改排版，点它 = 谱头面板；PDF 不传。 */
+  keyHint?: boolean;
   paperLabel?: string;                   // 纸右上角的小钮（扳手；这里的字只进悬停提示「纸：A5」）；点了 = 纸的设置（user「这种应该是纸的右上角有一个可以设置纸的属性吧。加图片的入口以后也可以放那里」；
                                          //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
@@ -258,7 +265,7 @@ interface Chunk {
   x: number; system: number; tick: number; staff: Staff;   // staff = 大谱表里在上还是下（单谱表 = 1）
 }
 interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean; repeat?: Repeat; times?: number; style?: "double" | "final" }   // repeat = 反复小节线（Bravura 的反复记号字形，比细线宽）   // auto = 按拍号自动画的（index = -1，不是 token）
-interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: number; x: number; system: number; tick: number; staff: Staff }
+interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: number; x: number; system: number; tick: number; staff: Staff; /** 按 C 调看时原来的调（写「1=」）。 */ real: number }
 interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface HeadU { kind: "head"; index: -1; w: 0; x: number; system: number; tick: number; staff: Staff }   // 光标：零宽
@@ -274,21 +281,23 @@ const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, nav: 0.5, clef:
 /** 行中间换谱号：小一号的谱号（谱号的 0.72）占多宽（sp）。 */
 const CLEF_CUE = 0.72, CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
 const CLEF_GLYPH: Record<ClefName, string> = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
+/** 「1=F♯」这几个字大约多宽（sp，TEMPO_EM × 0.85 的字号）：按 C 调看时中途换调那一处至少留这么宽。 */
+const KEY_LABEL_W = 3.0;
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
 const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
-interface Head { key: number; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
+interface Head { key: number; /** 按 C 调看时原来的调。 */ real: number; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
 /** 一条 track → 排版单元（第 1 步：切时值、临时记号、自动小节线；tick = 从这条的开头数）。tail = 写字头在这条的尾巴后面（排一个零宽的 head 单元：五线画到右边）。 */
 function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measureLyric: (s: string) => number; sp: number; rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */ padFrom?: number }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
   const H = headLen(tokens);
-  let fifths = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
+  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx: Head["idx"] = {};
   for (let i = 0; i < H; i++) {
     const t = tokens[i];
-    if (t.kind === "key") fifths = t.fifths; else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType }; else if (t.kind === "tempo") bpm = t.bpm;
+    if (t.kind === "key") { fifths = t.fifths; real = realFifthsOf(t); } else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType }; else if (t.kind === "tempo") bpm = t.bpm;
     if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") headIdx[t.kind] = i;
   }
-  const head: Head = { key: fifths, time, bpm, idx: headIdx };
+  const head: Head = { key: fifths, real, time, bpm, idx: headIdx };
   //   inBar = 这个小节里已经走了多少；满了（= len）不马上画小节线，等下一个音 / 记号 / 写字头 / 曲尾来了再画——
   //   紧跟着的是人插的「|」就用它那一条（不画两条）。拍号中途变了：没写完的这个小节就此结束（同存 MusicXML）。
   const units: Unit[] = [], measureLen = (b: number, bt: number) => (b * WHOLE) / bt;
@@ -312,7 +321,8 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
     if (t.kind === "bar") { pushBar(i, false); return; }
     if (t.kind === "key") {
       flushFull();
-      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1 });
+      const rf = realFifthsOf(t), inC = rf !== t.fifths || "realFifths" in t;   // 按 C 调看：这一处要写「1=X」，给字留宽（KEY_LABEL_W）
+      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W, keyWidth(t.fifths, fifths)) : keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf });
       fifths = t.fifths; accState = new Map(); return;
     }
     if (t.kind === "time") {
@@ -371,7 +381,8 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
 interface Col { tick: number; slot: number; n: number; w: number; x: number; system: number; units: Unit[]; bar: boolean; chunk: boolean; phrase: boolean }
 
 export function engrave(song: Song, o: EngraveOpts): Layout {
-  const clefStarts = resolveSongClefs(song);   // 每张纸每个声部开头的谱号（自动的按整首一路挑，和视图无关）
+  const clefStarts = resolveSongClefs(song);   // 每张纸每个声部开头的谱号（自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳
+  if (o.inC) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
   const sp = o.sp, P = (v: number) => v * sp;
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
   // 分页：第 k 页从 pageTopY(k) 起、高 PG.h；内容只放在上下边距之间；放不下的整块（一行谱 / 曲段名 + 第一行 / 细行）挪到下一页
@@ -504,6 +515,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.push({ t: "glyph", x: P(gx), y: y - P(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
     prims.push({ t: "text", x: P(gx + 1.3), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
     marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - P(TEMPO_EM * 1.1), w: P(gx + 1.3 + nw + 0.6 - x0), h: P(TEMPO_EM * 1.5) });
+  };
+  /** 调号位置上方的「1=X」（v0.16.10）：hint = 编辑器里的淡提示（不印、不占宽）。字也算这个调号的点击区（谱头面板）。 */
+  const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number) => {
+    const y = staffTop(r) - P(0.8);
+    prims.push({ t: "text", x: P(x0), y, s: `1=${KEY_LABEL[f] ?? "?"}`, cls: `keysig key-label${hint ? " key-hint" : ""}`, size: TEMPO_EM * sp * 0.85, anchor: "start" });
+    marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - P(TEMPO_EM * 0.95), w: P(KEY_LABEL_W), h: P(TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r: number, x0: number, f: number, cls: string, clef: "G" | "F" = "G") => {   // 低音谱号的升降号比高音低两级
     const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
@@ -910,6 +927,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           if (s === 0) {
             // 谱头记号的点击区域：谱号 + 调号一块（改调号）、拍号（改拍号）、上方速度（改速度）
             if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });   // 调号（谱号那一块归谱号，v0.9.28）
+            // 「1=X」（v0.16.10）：按 C 调看 = 写原来的调；专业模式没有升降号 = 淡的「1=C」提示（不占宽）。字也能点（同调号）
+            const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (o.inC ? q.head.real : o.keyHint && fk === 0 ? 0 : null) : null;
+            if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !o.inC, q.head.idx.key!);
             if (fk) hx += 0.8;
             const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
             if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
@@ -1147,8 +1167,13 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
               const cls = "keysig";
               if (u.fifths === 0) { const pos = u.prev > 0 ? SHARP_POS : FLAT_POS; for (let j = 0; j < Math.abs(u.prev); j++) prims.push({ t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls }); }
               else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef);
-              // 换到同一个调、又没有升降号（C → C）：什么都画不出来 → 写个小字，免得成了看不见的记号
-              if (u.fifths === 0 && u.prev === 0 && k === 0) prims.push({ t: "text", x: P(u.x + 0.2), y: staffTop(rr) - P(0.8), s: `1=${KEY_LABEL[0]}`, cls: `${cls} key-label`, size: TEMPO_EM * sp * 0.85, anchor: "start" });
+              // 换到同一个调、又没有升降号（C → C）：什么都画不出来 → 写个小字，免得成了看不见的记号（印）。按 C 调看 = 每一处写原来的调；
+              //   专业模式换成 C（画了还原号）= 淡的「1=C」提示（v0.16.10，不印）
+              if (k === 0) {
+                if (o.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index);
+                else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index);
+                else if (u.fifths === 0 && o.keyHint) keyLabel(rr, u.x + 0.2, 0, true, u.index);
+              }
               marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
             } else {
               const cls = "timesig";
