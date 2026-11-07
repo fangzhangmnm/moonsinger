@@ -1224,6 +1224,19 @@ export class ScoreView {
     return cands.reduce((a, b) => (Math.abs(b.x + b.w / 2 - p.x) < Math.abs(a.x + a.w / 2 - p.x) ? b : a)).index;
   }
 
+  /** 谱头那一块里离点最近的谱号 / 调号 / 拍号（只看这一行的：行首谱号 kind start + 记号 key / time）。块 = 这些框横向的并、上下各多 1.2 线距；点不在块里 = null。 */
+  private headerHitAt(x: number, y: number, row: number): { kind: "clef"; c: Layout["clefs"][number] } | { kind: "mark"; m: Layout["marks"][number] } | null {
+    const L = this.layout; if (!L) return null;
+    const pad = 1.2 * L.sp, cands: ({ kind: "clef"; c: Layout["clefs"][number]; b: { x: number; y: number; w: number; h: number } } | { kind: "mark"; m: Layout["marks"][number]; b: { x: number; y: number; w: number; h: number } })[] = [];
+    if (this.rules.edit) for (const c of L.clefs) if (c.system === row && c.kind === "start") cands.push({ kind: "clef", c, b: c });
+    if (this.rules.symbols) for (const m of L.marks) if (m.system === row && (m.kind === "key" || m.kind === "time")) cands.push({ kind: "mark", m, b: m });
+    if (!cands.length) return null;
+    const x0 = Math.min(...cands.map((k) => k.b.x)), x1 = Math.max(...cands.map((k) => k.b.x + k.b.w)), y0 = Math.min(...cands.map((k) => k.b.y)) - pad, y1 = Math.max(...cands.map((k) => k.b.y + k.b.h)) + pad;
+    if (x < x0 || x > x1 || y < y0 || y > y1) return null;
+    let best = cands[0], bd = Infinity;
+    for (const k of cands) { const d = Math.abs(x - (k.b.x + k.b.w / 2)); if (d < bd) { bd = d; best = k; } }
+    return best.kind === "clef" ? { kind: "clef", c: best.c } : { kind: "mark", m: best.m };
+  }
   private inBox(b: { x: number; y: number; w: number; h: number } | null | undefined, x: number, y: number): boolean { return !!b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; }
   /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）。点中了东西返回 true；落在空白处返回 false（调用方决定放光标还是框选）。 */
   /** view = 听模式：只认看谱的那些（纸的设置 / 翻纸 / 本段 / 歌手牌），写谱的（歌名 / 作者栏 / 编排 / 曲段名 / 纸的菜单 / 新纸）不接。 */
@@ -1260,10 +1273,13 @@ export class ScoreView {
     }
     const row = this.rowAt(y); if (row < 0) return false;
     // 0¼. 谱号 / 八度线（v0.9.28；user「谱号是高音还是低音以及移动八度应该点谱号就能做，然后每一行的谱号应该都可以点」）：写谱的模式里都认（听模式不接）
-    const ch = this.rules.edit ? L.clefs.find((c) => x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h) : undefined;
+    let ch = this.rules.edit ? L.clefs.find((c) => x >= c.x && x <= c.x + c.w && y >= c.y && y <= c.y + c.h) : undefined;
+    let mk = this.rules.symbols ? L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h) : undefined;
+    // 谱头（谱号 / 调号 / 拍号）放宽（v0.16.7，user 11-07「拍号和调号你非常难点中…优化一下他们的碰撞箱」）：没正好点在框里、但点在这一行谱头那一块里
+    //   （谱号左边到拍号右边、上下比框再多 1.2 个线距）= 算离得最近的那一个（按横向中心）。C 大调没有升降号时调号只剩一条窄缝，三个框之间还有缝——都归给最近的。只改点击判断，排版不动。
+    if (!ch && !mk) { const hd = this.headerHitAt(x, y, row); if (hd?.kind === "clef") ch = hd.c; else if (hd?.kind === "mark") mk = hd.m; }
     if (ch) { const b = this.clientBox(ch); this.host.onClef?.(ch, { x: b.left, y: b.bottom }); return true; }
     // 0½. 记号（调号 / 拍号 / 速度）：换到那条 track 再开框——只在「符」里（别的模式点它 = 放光标）
-    const mk = this.rules.symbols ? L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h) : undefined;
     if (mk) { this.host.set(this.focusRow(this.host.get(), mk.system, this.host.get().caret)); this.marks.openAt(mk.index); return true; }
     // 0¾. 力度记号 / 渐强渐弱：小菜单（改 / 删）——只在「符」里
     const dh = this.rules.symbols ? this.dynHitAt(x, y, pid === null) : null;

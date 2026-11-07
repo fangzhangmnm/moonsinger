@@ -4962,7 +4962,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.6-2026-11-07";
+var APP_VERSION = "v0.16.7-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -14149,6 +14149,30 @@ var ScoreView = class {
     const cands3 = mine.filter((n10) => n10.system === sys);
     return cands3.reduce((a10, b3) => Math.abs(b3.x + b3.w / 2 - p2.x) < Math.abs(a10.x + a10.w / 2 - p2.x) ? b3 : a10).index;
   }
+  /** 谱头那一块里离点最近的谱号 / 调号 / 拍号（只看这一行的：行首谱号 kind start + 记号 key / time）。块 = 这些框横向的并、上下各多 1.2 线距；点不在块里 = null。 */
+  headerHitAt(x2, y2, row2) {
+    const L2 = this.layout;
+    if (!L2) return null;
+    const pad4 = 1.2 * L2.sp, cands3 = [];
+    if (this.rules.edit) {
+      for (const c10 of L2.clefs) if (c10.system === row2 && c10.kind === "start") cands3.push({ kind: "clef", c: c10, b: c10 });
+    }
+    if (this.rules.symbols) {
+      for (const m2 of L2.marks) if (m2.system === row2 && (m2.kind === "key" || m2.kind === "time")) cands3.push({ kind: "mark", m: m2, b: m2 });
+    }
+    if (!cands3.length) return null;
+    const x0 = Math.min(...cands3.map((k2) => k2.b.x)), x1 = Math.max(...cands3.map((k2) => k2.b.x + k2.b.w)), y0 = Math.min(...cands3.map((k2) => k2.b.y)) - pad4, y1 = Math.max(...cands3.map((k2) => k2.b.y + k2.b.h)) + pad4;
+    if (x2 < x0 || x2 > x1 || y2 < y0 || y2 > y1) return null;
+    let best = cands3[0], bd = Infinity;
+    for (const k2 of cands3) {
+      const d3 = Math.abs(x2 - (k2.b.x + k2.b.w / 2));
+      if (d3 < bd) {
+        bd = d3;
+        best = k2;
+      }
+    }
+    return best.kind === "clef" ? { kind: "clef", c: best.c } : { kind: "mark", m: best.m };
+  }
   inBox(b3, x2, y2) {
     return !!b3 && x2 >= b3.x && x2 <= b3.x + b3.w && y2 >= b3.y && y2 <= b3.y + b3.h;
   }
@@ -14250,13 +14274,18 @@ var ScoreView = class {
     }
     const row2 = this.rowAt(y2);
     if (row2 < 0) return false;
-    const ch2 = this.rules.edit ? L2.clefs.find((c10) => x2 >= c10.x && x2 <= c10.x + c10.w && y2 >= c10.y && y2 <= c10.y + c10.h) : void 0;
+    let ch2 = this.rules.edit ? L2.clefs.find((c10) => x2 >= c10.x && x2 <= c10.x + c10.w && y2 >= c10.y && y2 <= c10.y + c10.h) : void 0;
+    let mk2 = this.rules.symbols ? L2.marks.find((m2) => x2 >= m2.x && x2 <= m2.x + m2.w && y2 >= m2.y && y2 <= m2.y + m2.h) : void 0;
+    if (!ch2 && !mk2) {
+      const hd = this.headerHitAt(x2, y2, row2);
+      if (hd?.kind === "clef") ch2 = hd.c;
+      else if (hd?.kind === "mark") mk2 = hd.m;
+    }
     if (ch2) {
       const b3 = this.clientBox(ch2);
       this.host.onClef?.(ch2, { x: b3.left, y: b3.bottom });
       return true;
     }
-    const mk2 = this.rules.symbols ? L2.marks.find((m2) => x2 >= m2.x && x2 <= m2.x + m2.w && y2 >= m2.y && y2 <= m2.y + m2.h) : void 0;
     if (mk2) {
       this.host.set(this.focusRow(this.host.get(), mk2.system, this.host.get().caret));
       this.marks.openAt(mk2.index);
@@ -27767,7 +27796,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-31cdc76328cc.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-93398314b1f6.mjs");
+      return pick(() => "encode-worker-8644a96e23b0.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -53925,4 +53954,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2f5a6bf5a9ca.mjs.map
+//# sourceMappingURL=moonsinger-9729cab1f3dc.mjs.map
