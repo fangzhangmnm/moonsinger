@@ -46,6 +46,11 @@ const y1 = await p.$eval(".finder-list", (l) => l.scrollTop);
 check(y0 > 200 && Math.abs(y1 - y0) <= 2, "重开 = 回到上次翻到的地方", `${y0} → ${y1}`);
 check(await p.$(`.inst-row.is-open[data-c="${NOBODY}"]`) !== null, "重开：上次点开的那件还开着");
 check((await press("Digit5")) === 0, "重开：还是静音（和亮着的对得上）");
+// ④ 目录 v14（仓鼠 eec835f；F-212，user 11-07「midi breath不是呼吸是演奏技巧」）：GM 122 Breath Noise 在长笛名下，「呼吸」没人能演
+await p.click('.inst-row[data-c="Q209554"]'); await p.waitForTimeout(300);
+check(await p.$('.prov[data-p="Q209554|0:121"]') !== null, "长笛点开：有 GeneralUser GS · Breath Noise（气声）");
+await p.click('.inst-row[data-c="Q9530"]'); await p.waitForTimeout(300);
+check(await p.$('.inst-row.is-open[data-c="Q9530"] + .inst-prov .prov-none') !== null, "呼吸点开：目录里还没有谁能演它");
 await p.keyboard.press("Escape"); await p.waitForTimeout(200);
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();

@@ -1,6 +1,6 @@
 {
- "v": 13,
- "date": "2026-10-10",
+ "v": 14,
+ "date": "2026-11-07",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ① 乐器史：一条 = 一个概念（乐器 / 型号 / 编制 / 人声 / 音效）。id = Wikidata QID（没有用 x: 本地 id）；ids 束里 gm 只放本尊，平替在 substitutes[]（按 basis 强弱 + 分类号同到的位数排）。year = 这个概念的声音第一次能被听见；lineageYear = 算上原文点名的前身。fundamentalRank 一律 null，归 user。AI 判的字段：musicxml、styles、技法号挂母乐器、平替 family / 自动、部分 hs 和中日名。",
  "defs": {
@@ -5631,6 +5631,10 @@
      {
       "program": 73,
       "bank": 0
+     },
+     {
+      "program": 121,
+      "bank": 0
      }
     ],
     "hs": "421.121.12"
@@ -5655,7 +5659,8 @@
    ],
    "wikipedia": "en:Western concert flute",
    "family": [
-    "pipe"
+    "pipe",
+    "sound-effects"
    ],
    "styles": [
     {
@@ -5684,6 +5689,11 @@
      "weight": 2
     },
     {
+     "tag": "space",
+     "ear": "common",
+     "weight": 2
+    },
+    {
      "tag": "military",
      "ear": "common",
      "weight": 1
@@ -5696,6 +5706,11 @@
     {
      "tag": "indian",
      "ear": "western",
+     "weight": 1
+    },
+    {
+     "tag": "nature",
+     "ear": "common",
      "weight": 1
     }
    ],
@@ -7665,12 +7680,7 @@
     "wikidata": "Q9530",
     "local": null,
     "musicxml": "effect.breath",
-    "gm": [
-     {
-      "program": 121,
-      "bank": 0
-     }
-    ],
+    "gm": [],
     "hs": null
    },
    "names": {
@@ -7686,21 +7696,7 @@
    "communityEra": null,
    "regions": [],
    "wikipedia": "en:Breathing",
-   "family": [
-    "sound-effects"
-   ],
-   "styles": [
-    {
-     "tag": "space",
-     "ear": "common",
-     "weight": 2
-    },
-    {
-     "tag": "nature",
-     "ear": "common",
-     "weight": 1
-    }
-   ],
+   "styles": [],
    "icon": {
     "id": "game-icons--lungs",
     "candidates": [

@@ -15,12 +15,13 @@ export const SRC = process.env.INSTRUMENTS_SRC ?? join(ROOT, "..", "..", "202608
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
 export const PERC_OUT = join(ROOT, "src", "gm", "percussion.gen.ts");
-export const VERSION = 13;   // v13 = 2026-10-10（仓鼠 7447213：不分音高的鼓谱写法 percussion / pitched:false / 着力点 hitSec / GS 扩展鼓键 extraDrumKeys；纯增量。工单 ai-docs/20261010-hamster-workorder-percussion-notation.md）
+export const VERSION = 14;   // v14 = 2026-11-07（仓鼠 eec835f：GM 122 Breath Noise 改挂长笛、奏法 = 气声、年份 ≈前 51,000，「呼吸」不再有 GM 号；user 11-07「midi breath不是呼吸是演奏技巧」，家族周账 F-212）
+//   v13 = 2026-10-10（仓鼠 7447213：不分音高的鼓谱写法 percussion / pitched:false / 着力点 hitSec / GS 扩展鼓键 extraDrumKeys；纯增量。工单 ai-docs/20261010-hamster-workorder-percussion-notation.md）
 //   v12 = 2026-10-10（仓鼠 ffd9a23：概念加 abbr（出版谱简写，MuseScore instruments.xml）/ notation（记谱谱号、按实际音高的谱号、sounds / octave），gm-map 铃类加 octaveCheck；纯增量。工单 ai-docs/20261010-hamster-workorder-abbr-octave.md）
 export const FILES = {
   concepts: `instruments-v${VERSION}.json`,
   gmMap: `gm-map-v${VERSION}.json`,
-  icons: `instrument-icons-20261010-v${VERSION}.svg`,   // sprite 文件名里的日期 = 那一版出图的日子（v2 / v3 = 20261007）
+  icons: `instrument-icons-20261107-v${VERSION}.svg`,   // sprite 文件名里的日期 = 那一版出图的日子（v2 / v3 = 20261007，…v13 = 20261010，v14 = 20261107；图形和 v13 一样，只差头注释里的日期和版本号）
   iconCredits: `icon-credits-v${VERSION}.json`,
   licenses: `LICENSES-chosen-v${VERSION}.md`,
 };

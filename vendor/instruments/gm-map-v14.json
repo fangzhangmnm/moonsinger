@@ -1,6 +1,6 @@
 {
- "v": 13,
- "date": "2026-10-10",
+ "v": 14,
+ "date": "2026-11-07",
  "source": "MyLlamaReborn/20261007 音乐史（scripts/build_export.py）",
  "about": "表 ② GM 映射：一行 = 一个 GM 号 → 一个概念。relation = self（本尊：这个号就是这个概念，175 个号每个恰好一条 primary: true；多重认领的另加 primary: false）/ substitute（平替：这个号能拿来顶这个概念，basis 见 defs）。program 从 0 起；鼓件 bank 128、program 0、note = MIDI 键号。musicxmlSound = 这个号自己最贴的 sound id。",
  "defs": {
@@ -10768,12 +10768,12 @@
    "gmNumber": 122,
    "gmName": "Breath Noise",
    "family": "sound-effects",
-   "concept": "Q9530",
+   "concept": "Q209554",
    "relation": "self",
    "primary": true,
-   "year": -410000000,
-   "yearApprox": false,
-   "era": "prehuman",
+   "year": -51000,
+   "yearApprox": true,
+   "era": "stone",
    "musicxmlSound": "effect.breath",
    "styles": [
     {
@@ -10824,9 +10824,9 @@
     "basis": "实测：起音 60 ms；按住 1–1.5 秒 -90.0 dB、4–5 秒 -90.0 dB；按住约 240 ms 后没声；松不松手都一样"
    },
    "technique": {
-    "id": null,
-    "zh": null,
-    "basis": "音效，不谈奏法"
+    "id": "air",
+    "zh": "气声",
+    "basis": "user 2026-11-07「midi breath不是呼吸是演奏技巧」：吹管乐器只吹气、不成音的气流声（笛子最典型，挂长笛）"
    },
    "joint": {
     "id": null,
@@ -10865,7 +10865,7 @@
     "head": "normal",
     "stem": "up",
     "voice": 1,
-    "basis": "AI 判：MuseScore 没定义；照它单件打击乐的通例（一线谱、线上、普通符头、符干朝上——instruments.xml 里几十件单件打击乐都是这样）"
+    "basis": "AI 判：GM 音效一律当不分音高（user「我用这个代指所有的sfx」）；写法照 MuseScore 单件打击乐的通例（一线谱、线上、普通符头、符干朝上）"
    }
   },
   {
