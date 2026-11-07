@@ -23,7 +23,7 @@ async function openFinder(locale, w, h) {
   await p.goto(base); await p.waitForTimeout(800);
   await p.click(".pad-key[data-k] >> nth=0"); await p.waitForTimeout(100);
   await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300);
-  await p.click('.ip-btns [data-v="finder"]'); await p.waitForSelector(".finder-list .inst-row");
+  await p.click('.ip-btns [data-v="finder"]'); await p.waitForSelector(".finder-list .finder-group-h");
   return { ctx, p, errs };
 }
 
@@ -33,8 +33,14 @@ async function openFinder(locale, w, h) {
   const modes = await p.$$eval(".finder-sort option", (os) => os.map((o) => o.value));
   for (const m of modes) {
     await p.selectOption(".finder-sort", m); await p.waitForTimeout(150);
-    const r = await measure(p);
-    check(r.n === 0 && r.sw <= r.cw, `en 820×1180 按 ${m}：没有东西伸出列表`, r.n ? `${r.sw}/${r.cw} ${r.out.join(" | ")}` : "");
+    // 手风琴（v0.16.3）：一组一组点开再量（收着的组里的行不画）
+    const ng = await p.$$eval(".finder-group", (gs) => gs.length); let worst = { n: 0, sw: 0, cw: 0, out: [] };
+    for (let k = 0; k < ng; k++) {
+      if (!(await p.$eval(`.finder-group[data-g="${k}"]`, (g) => g.classList.contains("is-open")))) { await p.click(`.finder-group[data-g="${k}"] > .finder-group-h`); await p.waitForTimeout(40); }
+      const r = await measure(p); if (r.n > worst.n || r.sw > worst.sw) worst = r;
+    }
+    const r = worst;
+    check(r.n === 0 && r.sw <= r.cw, `en 820×1180 按 ${m}：${ng} 组逐个点开，没有东西伸出列表`, r.n ? `${r.sw}/${r.cw} ${r.out.join(" | ")}` : "");
   }
   const st = await p.evaluate(() => { const l = document.querySelector(".finder-list"), cs = getComputedStyle(l); l.scrollLeft = 200; return { ox: cs.overflowX, ta: cs.touchAction, left: l.scrollLeft }; });
   check(st.ox === "hidden" && st.ta === "pan-y", "列表只许竖着滚（overflow-x hidden + touch-action pan-y）", JSON.stringify(st));
@@ -51,7 +57,11 @@ async function openFinder(locale, w, h) {
 // iPad 横屏英文 / 手机中文：默认排序量一遍
 for (const [loc, w, h] of [["en-US", 1180, 820], ["zh-CN", 390, 844]]) {
   const { ctx, p } = await openFinder(loc, w, h);
-  const r = await measure(p);
+  const ng = await p.$$eval(".finder-group", (gs) => gs.length); let r = { n: 0, sw: 0, cw: 0, out: [] };
+  for (let k = 0; k < ng; k++) {
+    if (!(await p.$eval(`.finder-group[data-g="${k}"]`, (g) => g.classList.contains("is-open")))) { await p.click(`.finder-group[data-g="${k}"] > .finder-group-h`); await p.waitForTimeout(40); }
+    const m = await measure(p); if (m.n > r.n || m.sw > r.sw) r = m;
+  }
   check(r.n === 0 && r.sw <= r.cw, `${loc} ${w}×${h}：没有东西伸出列表`, r.n ? `${r.sw}/${r.cw} ${r.out.join(" | ")}` : "");
   await ctx.close();
 }

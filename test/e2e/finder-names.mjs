@@ -6,20 +6,30 @@
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
+// 手风琴（v0.16.3）：乐器在收着的组里 = 逐组点开，直到那一行露出来
+async function reveal(p, cid) {
+  const n = await p.$$eval(".finder-group", (gs) => gs.length);
+  for (let k = 0; k < n && !(await p.$(`.inst-row[data-c="${cid}"]`)); k++) {
+    if (!(await p.$eval(`.finder-group[data-g="${k}"]`, (g) => g.classList.contains("is-open")))) { await p.click(`.finder-group[data-g="${k}"] > .finder-group-h`); await p.waitForTimeout(60); }
+  }
+  return !!(await p.$(`.inst-row[data-c="${cid}"]`));
+}
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.route(/\.sf2(\?|$)/, (r) => r.abort());   // 点人声那一行会先试 GS 的 Choir：不下 32 MB，失败报一句就行
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 await p.click(".pad-key[data-k] >> nth=0"); await p.waitForTimeout(100);
 await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300);
-await p.click('.ip-btns [data-v="finder"]'); await p.waitForSelector(".finder-list .inst-row"); await p.waitForTimeout(300);
+await p.click('.ip-btns [data-v="finder"]'); await p.waitForSelector(".finder-list .finder-group-h"); await p.waitForTimeout(300);
 
+await reveal(p, "Q209554");
 const alt = await p.$eval('.inst-row[data-c="Q209554"] .inst-name > span', (e) => e.textContent);
 check(alt.startsWith("Flute · Western concert flute"), "目录里长笛的第二行 = 谱上名 · 百科名 · 日文名", alt);
+await reveal(p, "Q208173");
 const synth = await p.$eval('.inst-row[data-c="Q208173"] .inst-name > span', (e) => e.textContent);
 check(synth.startsWith("Electric Guitar · Solid-body electric guitar (Fender Stratocaster)"), "型号：谱上写功能名，型号在详细说明里", synth);
 
-await p.click('.inst-row[data-c="Q7390"]'); await p.waitForTimeout(300);
+await reveal(p, "Q7390"); await p.click('.inst-row[data-c="Q7390"]'); await p.waitForTimeout(300);
 await p.click('.prov[data-p="Q7390|voice"] [data-v="cast"]'); await p.waitForTimeout(500);
 check(await p.$eval(".inst-page", (e) => !e.hidden), "选了 = 回到乐器页");
 const rn = await p.$eval("#roleIn", (e) => e.value);

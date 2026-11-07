@@ -2025,6 +2025,8 @@ export const S = {
   "独": { en: "S" },
   "这件乐器：{what}": { en: "Instrument: {what}" },
   "第二行起写 {ab}": { en: "from the 2nd system: {ab}" },
+  "收起这一组": { en: "Collapse this group" },
+  "展开这一组（别的收起）": { en: "Expand this group (others collapse)" },
 } as const satisfies Record<string, Entry>;
 
 export type Key = keyof typeof S;

@@ -26,6 +26,7 @@ export class Finder {
   private mode: SortMode = "year";          // 默认按年代（v0.15.7，家族周账 F-205，user 11-05「顺便记账还是默认年代排序的那个order」）；此前 10-08 改过按曲风（「年代好玩但其实每次都要多点一次哈哈」），10-07 起手就是按年代（「默认按年代排哈哈哈」）
   private scrollY = 0;                      // 上次翻到哪（列表的 scrollTop；关目录时记、开目录时放回去——同一页里有效，重开 app 从头。v0.15.7，F-197，user 11-05「选乐器应该能记住上次翻到哪里了」）
   private q = "";
+  private openG = new Map<SortMode, string>();   // 手风琴：每种排序各记一个展开的组（没有 = 全收着；v0.16.3，user 11-07「选乐器的每个category自动collapse，而且只能expand一个」）。搜索时不收（结果全露出来）
   private opened: string | null = null;     // 展开的那一行 = 「组 id::概念 id」（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）。
                                             // 记组：按曲风排时同一件乐器在好几个组里都有，只记概念 = 每个组里的它都展开、滚去第一个（user 2026-10-08「在一个category里面选择一个乐器，会跳到第一个出现这个乐器的category」）
   private selected = "";                    // 试听台上的提供者（`${概念 id}|${bank}:${program}` / `${概念 id}|voice`）
@@ -90,6 +91,7 @@ export class Finder {
     const v = btn?.dataset.v;
     if (v === "back") { this.host.close(); return; }
     if (v === "pad") { this.host.togglePad(); return; }
+    if (v === "group" && btn) { this.toggleGroup(btn.closest<HTMLElement>("[data-gid]")!.dataset.gid!); return; }
     if (v && btn) {
       const key = btn.closest<HTMLElement>("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key); if (!pick) return;
       if (v === "play") { await this.host.playHead(pick); return; }
@@ -98,6 +100,7 @@ export class Finder {
     if (prov) { const key = prov.dataset.p!; if (this.selected !== key) { this.selected = key; this.renderAnchored(rowOf(prov)); await this.host.audition(this.pickOf(key)); } return; }
     if (row) {
       const id = row.dataset.c!, o = row.dataset.o!;
+      this.openG.set(this.mode, o.split("::")[0]);   // 搜索时点开的那件：清掉搜索后展开的就是它那一组
       if (this.opened === o) this.opened = null;
       else { this.opened = o; const c = this.cat!.byId.get(id)!, pk = row.dataset.k, first = providersOf(this.cat!, c).find((x) => !pk || gmKey(x) === pk); /* 音色行 = 试听它自己 */ const key = first ? `${id}|${gmKey(first)}` : c.kind === "voice" ? `${id}|voice` : ""; this.selected = key; this.renderAnchored(o, true); await this.host.audition(key ? this.pickOf(key) : { kind: "none", concept: c }); return; }
       this.renderAnchored(o);
@@ -113,7 +116,15 @@ export class Finder {
     if (!groups.length) { list.innerHTML = `<div class="finder-empty">${_t("没有叫「{q}」的", { q: esc(this.q) })}</div>`; return; }
     // 多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）：每组里的行放进自适应网格（styles.css .finder-items：每格至少 320 px，窄屏一列）；
     //   点开的「谁能演」紧跟在行后面（DOM 顺序不变），横跨整行、落在那件乐器所在那一行的下面（grid dense，同一行别的格子不被挤走）
-    list.innerHTML = groups.map((g, k) => `<div class="finder-group" data-g="${k}"><div class="finder-group-h">${esc(g.label)}<span>${g.items.length}</span></div><div class="finder-items">${g.items.map((e) => this.rowHtml(e, g.id)).join("")}</div></div>`).join("");
+    // 手风琴（v0.16.3，user 11-07「选乐器的每个category自动collapse，而且只能expand一个」）：默认全收着、只露组头（名字 + 件数）；点组头 = 展开它、别的收起，再点 = 收起。
+    //   搜索时（框里有字）不收、只有一组也不收；收着的组不画里面的行（DOM 少，大目录也轻）
+    const acc = !this.q.trim() && groups.length > 1, openId = this.openG.get(this.mode);
+    list.innerHTML = groups.map((g, k) => {
+      const on = !acc || g.id === openId;
+      return `<div class="finder-group${acc ? " acc" : ""}${on ? " is-open" : ""}" data-g="${k}" data-gid="${esc(g.id)}"><div class="finder-group-h"${acc ? ` data-v="group" role="button" aria-expanded="${on}" title="${on ? _t("收起这一组") : _t("展开这一组（别的收起）")}"` : ""}>` +
+        `${acc ? `<svg class="ico fg-chev" aria-hidden="true"><use href="#chevron-down"/></svg>` : ""}<span class="fg-label">${esc(g.label)}</span><span>${g.items.length}</span></div>` +
+        (on ? `<div class="finder-items">${g.items.map((e) => this.rowHtml(e, g.id)).join("")}</div>` : "") + `</div>`;
+    }).join("");
     this.markJump();
   }
   /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
@@ -132,9 +143,22 @@ export class Finder {
     if (over > 0 && room > 0) list.scrollTop += Math.min(over, room);
     this.markJump();
   }
-  /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）。 */
+  /** 手风琴：展开 / 收起一组（只能开一组）。展开 = 那一组的组头滚到列表顶上；收起 = 组头留在屏幕上原来的位置。 */
+  private toggleGroup(gid: string): void {
+    const list = this.el.querySelector<HTMLElement>(".finder-list")!, sel = `[data-gid="${CSS.escape(gid)}"]`;
+    const closing = this.openG.get(this.mode) === gid, before = list.querySelector<HTMLElement>(sel)?.getBoundingClientRect().top;
+    if (closing) this.openG.delete(this.mode); else this.openG.set(this.mode, gid);
+    this.render();
+    const g = list.querySelector<HTMLElement>(sel); if (!g) return;
+    list.scrollTop += g.getBoundingClientRect().top - (closing && before !== undefined ? before : list.getBoundingClientRect().top);
+    this.markJump();
+  }
+  /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）；收着的先展开（手风琴）。 */
   private jumpTo(k: number): void {
-    const list = this.el.querySelector<HTMLElement>(".finder-list")!, g = list.querySelector<HTMLElement>(`[data-g="${k}"]`); if (!g) return;
+    const list = this.el.querySelector<HTMLElement>(".finder-list")!;
+    const g0 = list.querySelector<HTMLElement>(`[data-g="${k}"]`);
+    if (g0?.classList.contains("acc") && !g0.classList.contains("is-open")) { this.openG.set(this.mode, g0.dataset.gid!); this.render(); }
+    const g = list.querySelector<HTMLElement>(`[data-g="${k}"]`); if (!g) return;
     list.scrollTop += g.getBoundingClientRect().top - list.getBoundingClientRect().top;
     this.markJump();
   }

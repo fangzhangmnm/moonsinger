@@ -38,7 +38,7 @@ try {
   check(await p.evaluate(() => document.body.dataset.mode === "gallery"), "body[data-mode=gallery]");
   const emptyText = await p.textContent("#galleryFull"); check(/还没有歌/.test(emptyText), "空歌库文案（歌库口吻）", emptyText.slice(0, 60));
   // 歌库顶条「乐器」= 只弹着玩的乐器目录，盖在歌库上面；「←」回歌库（2026-10-08 Opus；user「歌库应该有一个专门的乐器目录的入口」）
-  await p.click('#galleryFull [data-v="instruments"]'); await p.waitForSelector(".inst-row");
+  await p.click('#galleryFull [data-v="instruments"]'); await p.waitForSelector(".finder-group-h");
   check((await p.textContent(".finder-title")) === "乐器目录（弹着玩）" && !(await p.$('.finder [data-v="cast"]')), "歌库「乐器」= 只弹着玩的目录（没有「上场」）");
   {   // 即兴时点 pad 的「1=」滑窗 = 滚轮弹出来、在最上层（v0.9.43；user「即兴的时候键盘窗口的滑窗，点不出弹窗」：滚轮写死 z 40，压在叠到歌库上的舞台下面）
     await p.click('.pad-panel [data-knob="key"]'); await p.waitForTimeout(250);
@@ -47,6 +47,7 @@ try {
     await p.click(".drum .drum-item.on"); await p.waitForTimeout(200);   // 点当前那一格 = 收起（调不变）
   }
   {   // 屏幕够宽 = 多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）
+    await p.click('.finder-group[data-g="0"] > .finder-group-h'); await p.waitForSelector(".finder-items");   // 手风琴（v0.16.3）：先点开第一组
     const fw = await p.$eval(".finder-list", (e) => e.clientWidth), cols = await p.$eval(".finder-items", (e) => getComputedStyle(e).gridTemplateColumns.split(" ").length);
     check(cols === Math.max(1, Math.floor(fw / 260)), `目录 ${fw}px 宽 = ${cols} 列（每格至少 260 px）`);
     // （点开一件 = 自动选中提供者、去拉 32 MB 的 GS 音源，本地服务器没有 → 不在这里点；点开后「谁能演」横跨整行在下面，靠 CSS .finder-items > .inst-prov，10-09 截图核过）

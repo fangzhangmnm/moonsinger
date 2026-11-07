@@ -4738,7 +4738,9 @@ var S = {
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
   "\u72EC": { en: "S" },
   "\u8FD9\u4EF6\u4E50\u5668\uFF1A{what}": { en: "Instrument: {what}" },
-  "\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}": { en: "from the 2nd system: {ab}" }
+  "\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}": { en: "from the 2nd system: {ab}" },
+  "\u6536\u8D77\u8FD9\u4E00\u7EC4": { en: "Collapse this group" },
+  "\u5C55\u5F00\u8FD9\u4E00\u7EC4\uFF08\u522B\u7684\u6536\u8D77\uFF09": { en: "Expand this group (others collapse)" }
 };
 
 // src/device-kv.ts
@@ -4948,7 +4950,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.2-2026-11-07";
+var APP_VERSION = "v0.16.3-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -27710,15 +27712,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-0d01fa3fb3cb.mjs");
+      return pick(() => "singer-worker-5d21bc49fed5.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-5ee3b418a049.mjs");
+      return pick(() => "layout-worker-563fb011dff6.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-227ed5691625.mjs");
+      return pick(() => "encode-worker-88aa693914cd.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -34382,6 +34384,8 @@ var Finder = class {
   scrollY = 0;
   // 上次翻到哪（列表的 scrollTop；关目录时记、开目录时放回去——同一页里有效，重开 app 从头。v0.15.7，F-197，user 11-05「选乐器应该能记住上次翻到哪里了」）
   q = "";
+  openG = /* @__PURE__ */ new Map();
+  // 手风琴：每种排序各记一个展开的组（没有 = 全收着；v0.16.3，user 11-07「选乐器的每个category自动collapse，而且只能expand一个」）。搜索时不收（结果全露出来）
   opened = null;
   // 展开的那一行 = 「组 id::概念 id」（一次只开一件：展开第二件第一件自动收——user「老问题，展开第二个乐器之后第一个应该收」）。
   // 记组：按曲风排时同一件乐器在好几个组里都有，只记概念 = 每个组里的它都展开、滚去第一个（user 2026-10-08「在一个category里面选择一个乐器，会跳到第一个出现这个乐器的category」）
@@ -34480,6 +34484,10 @@ var Finder = class {
       this.host.togglePad();
       return;
     }
+    if (v === "group" && btn) {
+      this.toggleGroup(btn.closest("[data-gid]").dataset.gid);
+      return;
+    }
     if (v && btn) {
       const key = btn.closest("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key);
       if (!pick) return;
@@ -34503,6 +34511,7 @@ var Finder = class {
     }
     if (row2) {
       const id2 = row2.dataset.c, o10 = row2.dataset.o;
+      this.openG.set(this.mode, o10.split("::")[0]);
       if (this.opened === o10) this.opened = null;
       else {
         this.opened = o10;
@@ -34526,7 +34535,11 @@ var Finder = class {
       list.innerHTML = `<div class="finder-empty">${_t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684", { q: esc3(this.q) })}</div>`;
       return;
     }
-    list.innerHTML = groups.map((g3, k2) => `<div class="finder-group" data-g="${k2}"><div class="finder-group-h">${esc3(g3.label)}<span>${g3.items.length}</span></div><div class="finder-items">${g3.items.map((e10) => this.rowHtml(e10, g3.id)).join("")}</div></div>`).join("");
+    const acc = !this.q.trim() && groups.length > 1, openId = this.openG.get(this.mode);
+    list.innerHTML = groups.map((g3, k2) => {
+      const on2 = !acc || g3.id === openId;
+      return `<div class="finder-group${acc ? " acc" : ""}${on2 ? " is-open" : ""}" data-g="${k2}" data-gid="${esc3(g3.id)}"><div class="finder-group-h"${acc ? ` data-v="group" role="button" aria-expanded="${on2}" title="${on2 ? _t("\u6536\u8D77\u8FD9\u4E00\u7EC4") : _t("\u5C55\u5F00\u8FD9\u4E00\u7EC4\uFF08\u522B\u7684\u6536\u8D77\uFF09")}"` : ""}>${acc ? `<svg class="ico fg-chev" aria-hidden="true"><use href="#chevron-down"/></svg>` : ""}<span class="fg-label">${esc3(g3.label)}</span><span>${g3.items.length}</span></div>` + (on2 ? `<div class="finder-items">${g3.items.map((e10) => this.rowHtml(e10, g3.id)).join("")}</div>` : "") + `</div>`;
+    }).join("");
     this.markJump();
   }
   /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
@@ -34547,9 +34560,27 @@ var Finder = class {
     if (over > 0 && room > 0) list.scrollTop += Math.min(over, room);
     this.markJump();
   }
-  /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）。 */
+  /** 手风琴：展开 / 收起一组（只能开一组）。展开 = 那一组的组头滚到列表顶上；收起 = 组头留在屏幕上原来的位置。 */
+  toggleGroup(gid) {
+    const list = this.el.querySelector(".finder-list"), sel = `[data-gid="${CSS.escape(gid)}"]`;
+    const closing = this.openG.get(this.mode) === gid, before = list.querySelector(sel)?.getBoundingClientRect().top;
+    if (closing) this.openG.delete(this.mode);
+    else this.openG.set(this.mode, gid);
+    this.render();
+    const g3 = list.querySelector(sel);
+    if (!g3) return;
+    list.scrollTop += g3.getBoundingClientRect().top - (closing && before !== void 0 ? before : list.getBoundingClientRect().top);
+    this.markJump();
+  }
+  /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）；收着的先展开（手风琴）。 */
   jumpTo(k2) {
-    const list = this.el.querySelector(".finder-list"), g3 = list.querySelector(`[data-g="${k2}"]`);
+    const list = this.el.querySelector(".finder-list");
+    const g0 = list.querySelector(`[data-g="${k2}"]`);
+    if (g0?.classList.contains("acc") && !g0.classList.contains("is-open")) {
+      this.openG.set(this.mode, g0.dataset.gid);
+      this.render();
+    }
+    const g3 = list.querySelector(`[data-g="${k2}"]`);
     if (!g3) return;
     list.scrollTop += g3.getBoundingClientRect().top - list.getBoundingClientRect().top;
     this.markJump();
@@ -49901,7 +49932,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "5cb3bba22a7f",
+  cssHash: "019b244010be",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -53765,4 +53796,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-60a37e1aff9b.mjs.map
+//# sourceMappingURL=moonsinger-065146560697.mjs.map
