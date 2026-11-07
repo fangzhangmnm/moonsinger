@@ -25,28 +25,34 @@ check((await track()).includes("o1"), "插了 8va（光标处）", await track()
 check(await p.$$eval("#score svg .ottava", (es) => es.length) >= 1, "谱上画了 8va 的字和虚线");
 // 3. 插谱号：低音
 await p.click('.pad-head [data-sympage="mark"]').catch(() => {}); await p.waitForTimeout(80);
-await p.click('.pad-grid.symbols [data-sym="clef"]'); await p.waitForTimeout(150);
-await p.click('.ctx-menu [data-v="c:F"]'); await p.waitForTimeout(200);
+await p.click('.pad-grid.symbols [data-sym="clef"]'); await p.waitForTimeout(150);   // v0.16.8：开谱头面板，谱号是第一个下拉
+await p.selectOption('.header-panel [data-hp="clef"]', "F"); await p.waitForTimeout(200);
+await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 check((await track()).includes("clef:F"), "插了低音谱号记号", await track());
 check(await p.$$eval("#score svg .clef.cue", (es) => es.length) === 1 || (await track()).startsWith("clef:F"), "行中间画了小一号的谱号（正好在行首 = 行首那个就是它）");
 check((await pitches()) === before, "音高一个没动（只管画）");
-// 4. 点行首的谱号 = 声部的谱号（自动 → 低音 8vb → 自动）
+// 4. 点行首的谱号 = 谱头面板（v0.16.8）；声部自己的谱号在歌手名的小卡里（自动 → 低音 8vb → 自动）
 await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(100);
 const clefAt = async () => p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), c = L.clefs.find((x) => x.kind === "start"), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return c ? { x: sc.left + L.pageX.left + c.x + c.w / 2, y: sc.top + c.y + c.h / 2, index: c.index } : null; });
 let c0 = await clefAt();
 check(!!c0 && c0.index === -1, "行首谱号有点击区域，管它的是声部自己的谱号");
 await p.mouse.click(c0.x, c0.y); await p.waitForTimeout(200);
-check(!!(await p.$('.ctx-menu [data-v="p:auto"].is-on')), "点谱号 = 小菜单，「自动」亮着（默认自动）");
-await p.click('.ctx-menu [data-v="p:F8vb"]'); await p.waitForTimeout(200);
+const first = await p.$eval('.header-panel [data-hp="clef"]', (s) => ({ v: s.value, t: s.options[0].textContent })).catch(() => null);
+check(!!first && first.v === "" && first.t.startsWith("跟声部（自动"), "点行首谱号 = 谱头面板，谱号停在「跟声部（自动…）」", JSON.stringify(first));
+await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
+await p.click("#score text.part-name"); await p.waitForTimeout(200);
+check(!!(await p.$('.track-card [data-v="clef:auto"].is-on')), "歌手名小卡：谱号「自动」亮着（默认自动）");
+check(!!(await p.$('.track-card [data-v="ao:on"].is-on')), "歌手名小卡：自动八度线「开」（从谱号菜单搬过来的）");
+await p.click('.track-card [data-v="clef:F8vb"]'); await p.waitForTimeout(200);
 check((await partClef()) === "F8vb", "选「低音 8vb」= 声部的谱号改了", await partClef());
 check(await p.$$eval("#score svg .clef", (es) => es.some((e) => e.textContent === "\u{E064}")), "谱上画成低音 8vb 的字形");
-c0 = await clefAt(); await p.mouse.click(c0.x, c0.y); await p.waitForTimeout(200);
-await p.click('.ctx-menu [data-v="p:auto"]'); await p.waitForTimeout(200);
+if (!(await p.$('.track-card [data-v="clef:auto"]'))) { await p.click("#score text.part-name"); await p.waitForTimeout(200); }
+await p.click('.track-card [data-v="clef:auto"]'); await p.waitForTimeout(200);
 check((await partClef()) === "auto", "再点选「自动」= 回到自动");
 // 5. 空白处右键菜单：谱号… / 八度线…
 const sh = await p.$eval("#score .sheet", (e) => { const r = e.getBoundingClientRect(); return { x: r.right - 80, y: r.top + 150 }; });
 await p.mouse.click(sh.x, sh.y, { button: "right" }); await p.waitForTimeout(200);
-check(!!(await p.$('.ctx-menu [data-v="clef"]')) && !!(await p.$('.ctx-menu [data-v="ottava"]')), "空白处右键菜单里有「谱号…」「八度线…」");
+check(!!(await p.$('.ctx-menu [data-v="header"]')) && !!(await p.$('.ctx-menu [data-v="ottava"]')), "空白处右键菜单里有「谱号 · 调号 · 拍号 · 速度…」「八度线…」");
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 // 6. 撤销：一步一步回去
 await p.keyboard.press("Control+z"); await p.waitForTimeout(120);

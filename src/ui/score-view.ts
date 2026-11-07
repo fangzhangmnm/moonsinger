@@ -80,6 +80,8 @@ export interface ScoreViewHost {
   notice?(text: string): void;
   /** 点了谱号（行首 / 行中间）或八度线开头的字（v0.9.28）：at = 屏幕坐标（小菜单开在那）。 */
   onClef?(hit: ClefHit, at: { x: number; y: number }): void;
+  /** 点中谱上的调号 / 拍号 / 速度（v0.16.8）：开谱头面板（谱号 / 调号 / 拍号 / 速度同一个面板）；没给 = 照旧开记号框。 */
+  onHeader?(paper: string, part: string, index: number, at: { x: number; y: number }): void;
   /** 光标所在那条下标 i 的歌词台上这位唱不出来的那句话（歌词框上面的小字）；唱得出来 = null。 */
   lyricHint?(i: number): string | null;
   /** 光标所在那条下标 i 那个字所在这一句月读念成什么（歌词框下面的小字，v0.9.34）；不是月读 / 引擎还没起来 = null。 */
@@ -966,7 +968,7 @@ export class ScoreView {
       this.armPress(e, p, null, grab);
       return;
     }
-    if (this.tap(p.x, p.y, e.shiftKey, e.pointerId)) return;   // 记号 / 歌词行 / 纸上的小钮（不含音符）
+    if (this.tap(p.x, p.y, e.shiftKey, e.pointerId, false, false)) return;   // 记号 / 歌词行 / 纸上的小钮（不含音符）；谱头放宽的那一圈松手才算（boxTap）
     const hit = this.noteAt(p.x, p.y);
     if (hit) {   // 笔 / 鼠标按在音上：按住就响；0.42 s 内动了 = 拖（改音高 / 时值）；不动到点 = 长按选中；抬手不动 = 轻点（光标到它后面）
       this.host.focus?.("staff");
@@ -1237,10 +1239,27 @@ export class ScoreView {
     for (const k of cands) { const d = Math.abs(x - (k.b.x + k.b.w / 2)); if (d < bd) { bd = d; best = k; } }
     return best.kind === "clef" ? { kind: "clef", c: best.c } : { kind: "mark", m: best.m };
   }
+  /** 点中了谱号 / 记号（调号 / 拍号 / 速度）：谱号 → onClef；记号 → 谱头面板（换到那条 track 再开）。 */
+  private openHeaderHit(ch: Layout["clefs"][number] | undefined, mk: Layout["marks"][number] | undefined): boolean {
+    const L = this.layout!;
+    if (ch) { const b = this.clientBox(ch); this.host.onClef?.(ch, { x: b.left, y: b.bottom }); return true; }
+    if (!mk) return false;
+    const sys = L.systems[mk.system];
+    if (this.host.onHeader && sys) { const b = this.clientBox(mk); this.host.onHeader(sys.paper, sys.part, mk.index, { x: (b.left + b.right) / 2, y: b.bottom }); return true; }
+    this.host.set(this.focusRow(this.host.get(), mk.system, this.host.get().caret)); this.marks.openAt(mk.index); return true;
+  }
+  /** 笔 / 鼠标在空白处按下没拖就松手：落在谱头放宽的那一圈里 = 点谱头（按下那一刻不抢，好让从这儿拖出框选）。 */
+  private boxTap(x: number, y: number): boolean {
+    if (!this.layout) return false;
+    const row = this.rowAt(y); if (row < 0) return false;
+    const hd = this.headerHitAt(x, y, row); if (!hd) return false;
+    return this.openHeaderHit(hd.kind === "clef" ? hd.c : undefined, hd.kind === "mark" ? hd.m : undefined);
+  }
   private inBox(b: { x: number; y: number; w: number; h: number } | null | undefined, x: number, y: number): boolean { return !!b && x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h; }
   /** 一次轻点：记号 → 记号框；歌词行 → 歌词框；音符 → 选中（+ 笔 / 鼠标开始拖）。点中了东西返回 true；落在空白处返回 false（调用方决定放光标还是框选）。 */
   /** view = 听模式：只认看谱的那些（纸的设置 / 翻纸 / 本段 / 歌手牌），写谱的（歌名 / 作者栏 / 编排 / 曲段名 / 纸的菜单 / 新纸）不接。 */
-  private tap(x: number, y: number, shift: boolean, pid: number | null, view = false): boolean {
+  /** loose = 谱头放宽的那一圈也算（v0.16.7）。笔 / 鼠标按下那一刻传 false：从那一圈按下去拖 = 照样框选，没拖就松手才算点谱头（boxTap，v0.16.8）。 */
+  private tap(x: number, y: number, shift: boolean, pid: number | null, view = false, loose = true): boolean {
     const L0 = this.layout!, wasMark = this.marks.open, wasLyric = this.lyrics.open;
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     if (wasMark) { this.host.focus?.("staff"); return true; }   // 点别处 = 先收起记号框（这一下不另做事）
@@ -1277,10 +1296,8 @@ export class ScoreView {
     let mk = this.rules.symbols ? L.marks.find((m) => x >= m.x && x <= m.x + m.w && y >= m.y && y <= m.y + m.h) : undefined;
     // 谱头（谱号 / 调号 / 拍号）放宽（v0.16.7，user 11-07「拍号和调号你非常难点中…优化一下他们的碰撞箱」）：没正好点在框里、但点在这一行谱头那一块里
     //   （谱号左边到拍号右边、上下比框再多 1.2 个线距）= 算离得最近的那一个（按横向中心）。C 大调没有升降号时调号只剩一条窄缝，三个框之间还有缝——都归给最近的。只改点击判断，排版不动。
-    if (!ch && !mk) { const hd = this.headerHitAt(x, y, row); if (hd?.kind === "clef") ch = hd.c; else if (hd?.kind === "mark") mk = hd.m; }
-    if (ch) { const b = this.clientBox(ch); this.host.onClef?.(ch, { x: b.left, y: b.bottom }); return true; }
-    // 0½. 记号（调号 / 拍号 / 速度）：换到那条 track 再开框——只在「符」里（别的模式点它 = 放光标）
-    if (mk) { this.host.set(this.focusRow(this.host.get(), mk.system, this.host.get().caret)); this.marks.openAt(mk.index); return true; }
+    if (!ch && !mk && loose) { const hd = this.headerHitAt(x, y, row); if (hd?.kind === "clef") ch = hd.c; else if (hd?.kind === "mark") mk = hd.m; }
+    if (ch || mk) return this.openHeaderHit(ch, mk);
     // 0¾. 力度记号 / 渐强渐弱：小菜单（改 / 删）——只在「符」里
     const dh = this.rules.symbols ? this.dynHitAt(x, y, pid === null) : null;
     if (dh) { this.markMenu(dh); return true; }
@@ -1450,7 +1467,7 @@ export class ScoreView {
     if (this.box && e.pointerId === this.box.pid) {
       const b = this.box; this.box = null; this.boxEl.hidden = true;
       if (b.raf) { cancelAnimationFrame(b.raf); if (b.moved && b.px !== undefined) { this.box = b; this.boxSelect(b.px, b.py!); this.box = null; } }   // 最后一下补上
-      if (!b.moved && this.layout) this.placeCaretAt(b.x0, b.y0);   // 没拖 = 放光标
+      if (!b.moved && this.layout && !this.boxTap(b.x0, b.y0)) this.placeCaretAt(b.x0, b.y0);   // 没拖 = 谱头那一圈 → 谱头面板；否则放光标
       this.host.focus?.("staff");
       return;
     }

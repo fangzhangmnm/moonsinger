@@ -297,12 +297,8 @@ export class Pad {
       // 按钮上写光标处正生效的那个（插进去的默认值），调号写「1=G」不写 ♯♭（user「+1=G才比较好懂吧，+#b只会让人觉得是加升降号」）；
       // 「+」在符号左边、小一号浅一色（user「不过加号和后面的东西也许需要分开来」→ 试过左上角角标 →「太不显眼了，能不能放在符号左边，只是字号和颜色拉开差距」）
       case "more": {
-        const m = this.host.music.marksHere(), plus = `<span class="plus">+</span>`;
-        const digits = (n: number) => [...String(n)].map((ch) => TS(Number(ch))).join("");
-        return c(`data-mark="key"`, `${plus}1=${m.key}`, false, _t("插调号（在光标处；先填现在的，插了再改）")) +
-          c(`data-mark="time"`, `${plus}<span class="mg ts"><span>${digits(m.beats)}</span><span>${digits(m.beatType)}</span></span>`, false, _t("插拍号（在光标处；先填现在的，插了再改）")) +
-          c(`data-mark="tempo"`, `${plus}<span class="mg met">${QUARTER}</span><span class="eq">=${m.bpm}</span>`, false, _t("插速度（在光标处；先填现在的，插了再改）")) +
-          c(`data-autobars="1"`, _t("自动小节线"), this.host.autoBars(), _t("按拍号自动画小节线（只画、不进数据）；手插的「|」= 从那里重新数，弱起 = 写完弱起的音按一下「|」")) +
+        // v0.16.8：插调号 / 拍号 / 速度三颗钮拿掉（user 11-07「先按照你说的归类整理」：插入入口收成符号层「记号」页 + 空白处菜单，都开谱头面板）
+        return c(`data-autobars="1"`, _t("自动小节线"), this.host.autoBars(), _t("按拍号自动画小节线（只画、不进数据）；手插的「|」= 从那里重新数，弱起 = 写完弱起的音按一下「|」")) +
           (this.host.staves() === 2 ? c(`data-staff="1"`, _t("换谱表"), false, _t("大谱表：刚写的音（或选中的）挪到另一张谱表；再按一次回到按音高自动分")) : "") +
           c(`data-open="layout"`, _t("布局…"), false, _t("几行几列、首调 / 绝对")) + back;
       }

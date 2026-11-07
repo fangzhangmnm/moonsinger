@@ -8,26 +8,26 @@ const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 for (let i = 0; i < 3; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
-// 空白处右键 → 速度…
+// 空白处右键 → 谱号 · 调号 · 拍号 · 速度…（v0.16.8 起四样同一个面板，节拍器在速度那一行）
 const box = await p.$eval("#score .sheet", (e) => { const r = e.getBoundingClientRect(); return { x: r.right - 60, y: r.top + 160 }; });
 await p.mouse.click(box.x, box.y, { button: "right" }); await p.waitForTimeout(150);
-await p.click('.ctx-menu [data-v="mark:tempo"]'); await p.waitForTimeout(300);
-check(await p.$eval(".metro", (e) => !e.hidden).catch(() => false), "速度框里有节拍器");
+await p.click('.ctx-menu [data-v="header"]'); await p.waitForTimeout(300);
+check(await p.$eval(".header-panel .metro", (e) => !e.hidden).catch(() => false), "谱头面板的速度那一行有节拍器");
 /** 在页面里每帧记摆杆角度 ms 毫秒；at 毫秒时（可选）把速度框改成 bpm。 */
 const sample = (ms, change) => p.evaluate(({ ms, change }) => new Promise((done) => {
-  const arm = document.querySelector(".metro-arm"), out = [], t0 = performance.now();
-  const ang = () => { const m = /rotate\((-?[\d.]+)deg\)/.exec(arm.style.transform); return m ? Number(m[1]) : NaN; };
+  const out = [], t0 = performance.now();
+  const ang = () => { const arm = document.querySelector(".header-panel .metro-arm"), m = arm && /rotate\((-?[\d.]+)deg\)/.exec(arm.style.transform); return m ? Number(m[1]) : NaN; };   // 面板改一次会重画：每帧重新找摆杆
   let changed = false;
   const tick = (now) => {
     out.push({ t: (now - t0) / 1000, a: ang() });
-    if (change && !changed && now - t0 >= change.at) { changed = true; const inp = document.querySelector(".mark-ed input, .mark-editor input") ?? document.querySelector(".metro").closest("div").parentElement.querySelector("input"); inp.value = String(change.bpm); inp.dispatchEvent(new Event("input", { bubbles: true })); }
+    if (change && !changed && now - t0 >= change.at) { changed = true; const inp = document.querySelector('.header-panel [data-hp="bpm"]'); inp.value = String(change.bpm); inp.dispatchEvent(new Event("change", { bubbles: true })); }
     if (now - t0 < ms) requestAnimationFrame(tick); else done(out);
   };
   requestAnimationFrame(tick);
 }), { ms, change });
 const period = (xs) => { const ups = []; for (let i = 1; i < xs.length; i++) if (xs[i - 1].a < 0 && xs[i].a >= 0) ups.push(xs[i - 1].t + (xs[i].t - xs[i - 1].t) * (-xs[i - 1].a / (xs[i].a - xs[i - 1].a))); return ups.length > 1 ? (ups[ups.length - 1] - ups[0]) / (ups.length - 1) : NaN; };
 let s = await sample(4500);   // 看后 3.5 秒（至少两个来回）
-const bpm0 = Number(await p.$eval(".metro", (e) => e.closest("div").parentElement.querySelector("input")?.value ?? "90"));
+const bpm0 = Number(await p.$eval('.header-panel [data-hp="bpm"]', (e) => e.value || e.placeholder || "90"));
 const tail0 = s.filter((x) => x.t > 1.0);
 check(Math.abs(period(tail0) - 120 / bpm0) < 0.05, `稳定时整个来回 = 两拍（♩=${bpm0} → ${(120 / bpm0).toFixed(3)} s）`, period(tail0).toFixed(3));
 check(Math.abs(Math.max(...tail0.map((x) => Math.abs(x.a))) - 32) < 3, "摆幅 ≈ ±32°", Math.max(...tail0.map((x) => Math.abs(x.a))).toFixed(1));

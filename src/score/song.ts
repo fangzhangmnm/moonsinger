@@ -869,6 +869,55 @@ export function setMark(st: EditorState, i: number, v: MarkVal): EditorState {
   }
   return n2;
 }
+// ── 谱头这一处（v0.16.8，user 11-07「调号就开头的调号、拍号和谱号，他们是同一个碰撞箱子你点进去之后，三个都可以设」「速度也要放进谱头面板」）：
+//   谱号 / 调号 / 拍号 / 速度挨在一起的那一小串 = 一处；纸开头那一处 = 这张纸从头的设置（调号 / 拍号 / 速度去不掉），中途的 = 从这里起的变化（能去掉）。
+const HEADER_KINDS: ReadonlySet<string> = new Set(["key", "time", "tempo", "clef"]);
+/** 一处在 track 里的范围 [a, b)；head = 这张纸开头那一处。 */
+export interface HeaderSpot { a: number; b: number; head: boolean }
+/** i 所在 / 紧挨着的那一处：往两边扩到不是谱号 / 调号 / 拍号 / 速度为止；两个音之间的空地 = 空的一处（a = b）。挨着纸开头 = 开头那一处。 */
+export function headerSpot(tokens: Token[], i: number): HeaderSpot {
+  let a = Math.max(0, Math.min(i, tokens.length)), b = a;
+  while (a > 0 && HEADER_KINDS.has(tokens[a - 1].kind)) a--;
+  while (b < tokens.length && HEADER_KINDS.has(tokens[b].kind)) b++;
+  return { a, b, head: a === 0 };
+}
+/** 这一处写着的（没写 = null）。 */
+export interface HeaderVals { clef: ClefName | null; key: number | null; time: { beats: number; beatType: number } | null; tempo: number | null }
+export function headerVals(tokens: Token[], spot: HeaderSpot): HeaderVals {
+  const v: HeaderVals = { clef: null, key: null, time: null, tempo: null };
+  for (let i = spot.a; i < spot.b; i++) {
+    const t = tokens[i];
+    if (t.kind === "clef" && v.clef === null) v.clef = t.clef;
+    else if (t.kind === "key" && v.key === null) v.key = t.fifths;
+    else if (t.kind === "time" && v.time === null) v.time = { beats: t.beats, beatType: t.beatType };
+    else if (t.kind === "tempo" && v.tempo === null) v.tempo = t.bpm;
+  }
+  return v;
+}
+/** 改这一处：没写的项不动，null = 去掉（开头的调号 / 拍号 / 速度去不掉）。这一处理成 调号 → 拍号 → 速度 → 谱号 的顺序（纸开头只能由调号 / 拍号 / 速度打头），
+ *  原来的记号留着 id。改调号 = 它管的音按新调号拼写；改开头的速度 = 这张纸每一行写齐（同 setMark）。光标在这条 track 上 = 跟着挪。 */
+export type HeaderPatch = Partial<HeaderVals>;
+export function setHeaderAt(st: EditorState, paperId: string, partId: string, spot: HeaderSpot, patch: HeaderPatch): EditorState {
+  const paper = st.song.papers.find((p) => p.id === paperId), toks = paper?.tracks[partId]; if (!paper || !toks) return st;
+  const old = toks.slice(spot.a, spot.b), cur = headerVals(toks, spot), pick = <K extends Token["kind"]>(k: K) => old.find((t) => t.kind === k) as Extract<Token, { kind: K }> | undefined;
+  const want: HeaderVals = { ...cur };
+  for (const k of ["clef", "key", "time", "tempo"] as const) if (patch[k] !== undefined && !(spot.head && k !== "clef" && patch[k] === null)) (want as unknown as Record<string, unknown>)[k] = patch[k];
+  if (JSON.stringify(want) === JSON.stringify(cur)) return st;   // 值没变 = 不改（不多记一步撤销；输入框回车又失焦会触发两次）
+  let id = st.nextId;
+  const build: Token[] = [];
+  if (want.key !== null) build.push({ ...(pick("key") ?? { id: id++ }), kind: "key", fifths: want.key } as KeyTok);
+  if (want.time !== null) build.push({ ...(pick("time") ?? { id: id++ }), kind: "time", beats: want.time.beats, beatType: want.time.beatType } as TimeTok);
+  if (want.tempo !== null) build.push({ ...(pick("tempo") ?? { id: id++ }), kind: "tempo", bpm: want.tempo } as TempoTok);
+  if (want.clef !== null) build.push({ ...(pick("clef") ?? { id: id++ }), kind: "clef", clef: want.clef } as ClefTok);
+  const nt = [...toks.slice(0, spot.a), ...build, ...toks.slice(spot.b)];
+  if (want.key !== null && want.key !== cur.key) respellFrom(nt, spot.a);   // 调号排在这一处最前面
+  let song = withTrack(st.song, paperId, partId, nt);
+  if (spot.head && want.tempo !== null && want.tempo !== cur.tempo) song = { ...song, papers: song.papers.map((p) => (p.id === paperId ? withSheetBpm(p, want.tempo!) : p)) };
+  const here = st.at.paper === paperId && st.at.part === partId, d = build.length - old.length;
+  const caret = !here ? st.caret : st.caret >= spot.b ? st.caret + d : st.caret > spot.a ? spot.a + build.length : st.caret;
+  return { ...st, song, caret: Math.max(headLen(nt), Math.min(nt.length, caret)), nextId: id };
+}
+
 /** 删一个中途的记号（谱头的删不掉）。 */
 export function deleteMark(st: EditorState, i: number): EditorState {
   const t = tr(st)[i];

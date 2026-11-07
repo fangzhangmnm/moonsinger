@@ -1,5 +1,5 @@
 // test/e2e/auto-ottava.mjs —— 真浏览器 E2E：自动八度线（v0.9.37；user 2026-10-10「自动加」）。一串很高 / 很低的音自动画 8va / 15ma / 8vb，不存进谱；
-//   点它 = 小菜单（固定成手写的 / 这位不要自动）；谱号小菜单里开关；谱号仍然自动（临时冒出去几个音不换谱号）。created 2026-10-10 by Claude Opus 5.5
+//   点它 = 小菜单（固定成手写的 / 这位不要自动）；歌手名小卡里开关（v0.16.8 前在谱号小菜单）；谱号仍然自动（临时冒出去几个音不换谱号）。created 2026-10-10 by Claude Opus 5.5
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/auto-ottava.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
@@ -30,11 +30,10 @@ check((await manualToks()) === "2,0", "固定成手写的 = 插了 15ma + 结束
 check((await autos()) === 1, "那一段变成手写的了（剩下 8vb 那段还是自动）", String(await autos()));
 await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
 check((await manualToks()) === "" && (await autos()) === 2, "撤销 = 回到自动");
-// 谱号小菜单：自动八度线 关
-const c = await hitAt(["start", false]);
-await p.mouse.click(c.x, c.y); await p.waitForTimeout(200);
-check(!!(await p.$('.ctx-menu [data-v="ao:on"].is-on')), "谱号小菜单里有「自动八度线」，默认开");
-await p.click('.ctx-menu [data-v="ao:off"]'); await p.waitForTimeout(250);
+// 歌手名小卡：自动八度线 关（v0.16.8 起从谱号小菜单搬到这里——谱号进了谱头面板，声部的设置归歌手）
+await p.click("#score text.part-name"); await p.waitForTimeout(200);
+check(!!(await p.$('.track-card [data-v="ao:on"].is-on')), "歌手名小卡里有「自动八度线」，默认开");
+await p.click('.track-card [data-v="ao:off"]'); await p.waitForTimeout(250);
 check((await autos()) === 0, "关了 = 不画自动的");
 check((await p.evaluate(() => window.__moonsinger.state().song.parts[0].autoOttava)) === false, "记在声部上（存进 score.json）");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));

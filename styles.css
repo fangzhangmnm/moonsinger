@@ -1020,3 +1020,13 @@ body.doc-final .inst-page .finder-bar::after { content: var(--t-final-lock, "定
   background: var(--panel, #fff); color: var(--ink, #222); border: 1px solid var(--line, rgba(0,0,0,.15)); animation: save-flash-out 1.2s ease-in forwards; }
 @keyframes save-flash-out { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .save-flash { animation: none; } }
+
+/* 谱头面板（v0.16.8，src/app/header-panel.ts）：谱号 / 调号 / 拍号 / 速度同一个面板，左边名字、右边下拉（user 11-07「谱号那里你那一大堆很闪的按钮…搜成一个下拉框」） */
+.ctx-menu.header-panel { width: min(360px, calc(100vw - 16px)); max-width: min(360px, calc(100vw - 16px)); }
+.header-panel .hp-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: center; margin: 6px 0 2px; }
+.header-panel .hp-k { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.header-panel .hp-v { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.header-panel .hp-sel { min-width: 0; flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; padding: 0 6px; }
+.header-panel .hp-in { width: 64px; flex: none; height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; font-size: 14px; color: var(--ink); -webkit-user-select: text; user-select: text; }
+.header-panel .hp-in.bad { border-color: var(--danger, #c33); }
+.header-panel .metro { width: 30px; height: 30px; }
