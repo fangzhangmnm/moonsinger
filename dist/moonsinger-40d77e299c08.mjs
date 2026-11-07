@@ -3711,6 +3711,12 @@ var S = {
   "\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A swell must go on a note (before the cursor is a rest, or no note yet)" },
   "{p}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} goes from one note to the next (before the cursor is a rest, or no note yet)" },
   "\u987A\u624B\u53BB\u6389\u4E86 {gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {gone} dynamics / hairpins that no longer govern any note (undo brings them back)" },
+  "\u8DDF\u8C31": { en: "Follow score" },
+  "\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7": { en: "Uses the key signature here" },
+  "\u624B\u52A8": { en: "Manual" },
+  "\u624B\u52A8\uFF1A\u952E\u76D8\u6309 {pad} \u6392\uFF0C\u548C\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF081={k}\uFF09\u4E0D\u4E00\u6837\u3002\u70B9\u5F00\u300C1=\u300D\uFF0C\u8C03\u5F0F\u90A3\u4E00\u5217\u6700\u4E0A\u9762\u7684\u300C\u8DDF\u8C31\u300D= \u56DE\u5230\u8DDF\u7740\u8C31\u8D70": { en: "Manual: the keyboard is laid out in {pad}, which differs from the key signature here (1={k}). Open \u201C1=\u201D and pick \u201CFollow score\u201D at the top of the mode column to follow the score again" },
+  "{name}\uFF08\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF09": { en: "{name} (follows the key signature here)" },
+  "{name}\uFF08\u624B\u52A8\uFF09": { en: "{name} (manual)" },
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF0C\u8FD9\u4E00\u7248\u8BA4\u4E0D\u51FA\uFF09": { en: "Nobody on stage yet (the other software's original instrument isn't recognized by this version)" },
   "{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "{next}. {p} silent in both playback and export, the rest plays as usual; tap the number on the corner of |\u25B6 for the list, and tap the part name at the front of the score to change \u201CWho performs\u201D." },
   "\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0\u4E86": { en: "All parts can sound now" },
@@ -4224,7 +4230,7 @@ var S = {
   "\u77ED\u4E00\u6B65": { en: "Shorter" },
   "\u77ED\u4E00\u6B65\uFF08\u9000\u683C\uFF09\uFF1A\u9009\u4E2D\u7684\u8FD9\u4E2A\u97F3\u77ED\u4E00\u6863\uFF0C\u7A7A\u51FA\u6765\u7684\u53D8\u6210\u4F11\u6B62": { en: "One step shorter (backspace): the selected note gets one notch shorter, and the freed space becomes a rest" },
   "\u957F\u4E00\u6B65": { en: "Longer" },
-  "{name}\uFF08pad \u81EA\u5DF1\u7684\u8C03\u548C\u8C03\u5F0F\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F": { en: "{name} (the pad's own key and mode): hold and slide up / down to change key, or tap to choose key and mode" },
+  "{name}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F": { en: "{name}: hold and slide up or down to change key / tap to pick key and mode" },
   "\u957F\u77ED\u57FA\u7EBF\uFF1A{p}{tuplet}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009": { en: "Note length: {p}{tuplet} \u2014 hold and slide up / down, or tap to choose" },
   "\uFF08{tuplet} \u8FDE\u97F3\uFF09": { en: " ({tuplet}-tuplet)" },
   "\u97F3\u57DF {rowShift}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684": { en: "Range {rowShift}: hold and slide up / down, or tap to choose \u2014 like pushing a sheet of paper: pushing up shows lower notes" },
@@ -4964,7 +4970,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.8-2026-11-07";
+var APP_VERSION = "v0.16.9-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5470,7 +5476,7 @@ function emptySong(m2 = {}) {
   return { hum: "n", parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m2) } }] };
 }
 function initInput() {
-  return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major" };
+  return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true };
 }
 function maxId(song) {
   let m2 = 0;
@@ -5624,7 +5630,8 @@ function tempoWord(bpm) {
 function beatTicks(beats, beatType) {
   return beatType === 8 && beats >= 3 && beats % 3 === 0 ? WHOLE * 3 / 8 : WHOLE / beatType;
 }
-var inputKey = (st2) => st2.input.inputFifths;
+var inputKey = (st2) => st2.input.inputAuto ? keyAt(tr(st2), st2.sel ? st2.sel.from : st2.caret) : st2.input.inputFifths;
+var inputScaleOf = (st2) => st2.input.inputAuto ? "major" : st2.input.inputScale;
 function unitDur(input) {
   const plain2 = LADDER[input.unit];
   if (!input.tuplet) return plain2;
@@ -6397,10 +6404,11 @@ function setAccState(st2, acc, mode) {
   return i10.acc === acc && i10.accMode === mode ? st2 : { ...st2, input: { ...i10, acc: mode === "off" ? 0 : acc, accMode: mode === "off" || acc === 0 ? "off" : mode } };
 }
 function setInputKey(st2, fifths) {
-  return { ...st2, input: { ...st2.input, inputFifths: Math.max(-7, Math.min(7, fifths)) } };
+  return { ...st2, input: { ...st2.input, inputScale: inputScaleOf(st2), inputFifths: Math.max(-7, Math.min(7, fifths)), inputAuto: false } };
 }
 function setInputScale(st2, id2) {
-  return { ...st2, input: { ...st2.input, inputScale: id2 } };
+  if (id2 === "auto") return { ...st2, input: { ...st2.input, inputAuto: true } };
+  return { ...st2, input: { ...st2.input, inputFifths: inputKey(st2), inputScale: id2, inputAuto: false } };
 }
 function firstNoteIn(st2) {
   if (!st2.sel) return -1;
@@ -12047,7 +12055,8 @@ function openDrum(anchor, cols, o10) {
   });
   const handle = {
     close,
-    setItems: (ci2, items) => wheels[ci2]?.setItems(items)
+    setItems: (ci2, items) => wheels[ci2]?.setItems(items),
+    setIndex: (ci2, i10) => wheels[ci2]?.scrollTo(i10)
   };
   current = handle;
   return handle;
@@ -12070,6 +12079,7 @@ function mountWheel(col, c10) {
   col.scrollTop = (c10.index + mid) * row2;
   paint();
   col.addEventListener("scroll", () => {
+    if (!col.isConnected) return;
     paint();
     const i10 = raw() % n10;
     if (i10 !== shown2) {
@@ -14959,7 +14969,7 @@ var Pad = class {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     const tabs = this.symbols !== "off" && this.mode === "normal";
-    box.innerHTML = this.mode !== "normal" ? this.cands(rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">${_t("\u6E10\u5230")}</small>` : ""}</button>`).join("") + `<button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09")}" aria-label="${_t("\u97F3")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("piano-keys")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-key" data-knob="key" title="${_t("1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="${_t("\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="${_t("\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8")}" aria-label="${_t("\u7B26")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("piano-keys")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">${_t("\u6E10\u5230")}</small>` : ""}</button>`).join("") + `<button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09")}" aria-label="${_t("\u97F3")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("piano-keys")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-key" data-knob="key" title="${_t("1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span><em class="k-tag" hidden></em></button><button class="btn knob k-unit" data-knob="unit" title="${_t("\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-range" data-knob="range" title="${_t("\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8")}" aria-label="${_t("\u7B26")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("piano-keys")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b3) => {
       b3.addEventListener("pointerdown", (e10) => {
         e10.preventDefault();
@@ -15240,10 +15250,15 @@ var Pad = class {
     }
     const k2 = q2(".k-key .kl");
     if (k2) {
-      const kc = this.host.music.keyChoices();
+      const kc = this.host.music.keyChoices(), kb = k2.parentElement, tg2 = kb.querySelector(".k-tag");
       k2.innerHTML = kc.items[kc.index];
-      k2.parentElement.classList.toggle("stack", k2.parentElement.clientWidth < STACK);
-      k2.parentElement.title = _t("{name}\uFF08pad \u81EA\u5DF1\u7684\u8C03\u548C\u8C03\u5F0F\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F", { name: kc.name });
+      kb.classList.toggle("stack", kb.clientWidth < STACK);
+      kb.title = _t("{name}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F", { name: kc.name }) + (kc.tag ? `
+${kc.tag.title}` : "");
+      if (tg2) {
+        tg2.hidden = !kc.tag;
+        tg2.textContent = kc.tag?.text ?? "";
+      }
     }
     const u2 = q2(".k-unit .kl");
     if (u2) {
@@ -15427,10 +15442,15 @@ var Pad = class {
     if (knob === "key") {
       const d3 = this.host.music.keyDrum();
       const [wk, ws2] = w2 >= 210 ? [Math.round(w2 * 0.36), w2 - Math.round(w2 * 0.36) - 2] : [72, 136];
-      openDrum(anchor, [
+      const h2 = openDrum(anchor, [
         { items: d3.keys.items, index: d3.keys.index, width: wk, title: _t("pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09"), loop: true },
         { items: d3.scales.items, index: d3.scales.index, width: ws2, title: _t("\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3") }
-      ], { onChange: (c10, i10) => this.host.onPick(c10 === 0 ? "key" : "scale", i10) });
+      ], { onChange: (c10, i10) => {
+        this.host.onPick(c10 === 0 ? "key" : "scale", i10);
+        const n10 = this.host.music.keyDrum();
+        if (c10 === 0) h2.setIndex(1, n10.scales.index);
+        else h2.setIndex(0, n10.keys.index);
+      } });
       return;
     }
     const v = this.knobList(knob, false), wr = Math.max(w2, 120);
@@ -15535,24 +15555,40 @@ function homeTonic(fifths) {
 var pretty = (p2) => pitchName(p2).replace(/#/g, "\u266F").replace(/b(?=\d)|b(?=b)/g, "\u266D");
 var keyLabel = (f2, sc2) => `<span class="kk">1=${KEY_LABEL[f2] ?? "?"}</span><small>${sc2.name}</small>`;
 var scaleItem = (sc2) => `<span class="sc"><b>${sc2.name}</b><small>${[...sc2.degs.slice(sc2.home), ...sc2.degs.slice(0, sc2.home)].map(degLabel).join(" ")}</small></span>`;
+var AUTO_ITEM = () => `<span class="sc"><b>${_t("\u8DDF\u8C31")}</b><small>${_t("\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7")}</small></span>`;
+var pcsOf = (sc2, f2) => new Set(sc2.degs.map((_2, k2) => midiOf(ladderAt(sc2, k2, homeTonic(f2), f2).pitch) % 12));
+function outsideKey(sc2, f2, keySig) {
+  const inKey = pcsOf(scaleById("major"), keySig);
+  return [...pcsOf(sc2, f2)].some((pc) => !inKey.has(pc));
+}
 function createPadMusic(get) {
-  const f2 = () => inputKey(get()), sc2 = () => scaleById(get().input.inputScale);
+  const f2 = () => inputKey(get()), sc2 = () => scaleById(inputScaleOf(get()));
+  const keySig = (st2) => keyAt(tr(st2), st2.sel ? st2.sel.from : st2.caret);
   const at2 = (k2) => ladderAt(sc2(), k2, homeTonic(f2()), f2());
   const pitchAt = (k2) => at2(k2).pitch;
   return {
-    sig: () => `${f2()}|${get().input.inputScale}`,
+    sig: () => `${f2()}|${inputScaleOf(get())}`,
     cell: (k2) => {
       const r10 = at2(k2);
       return { deg: degLabel(r10.deg), oct: r10.oct, abs: pretty(r10.pitch), midi: midiOf(r10.pitch) };
     },
     altered: (k2, a10) => pretty(alterBy(pitchAt(k2), a10)),
     anchor: (layout) => layout === "absolute" ? ladderFirstAtOrAbove(sc2(), 60, homeTonic(f2()), f2()) : ladderHome(sc2(), homeTonic(f2()), f2()),
-    keyChoices: () => ({ items: KNOB_KEYS.map((k2) => keyLabel(k2, sc2())), index: Math.max(0, KNOB_KEYS.indexOf(f2())), name: `1=${KEY_LABEL[f2()] ?? "?"} ${sc2().name}` }),
+    keyChoices: () => {
+      const st2 = get(), name = `1=${KEY_LABEL[f2()] ?? "?"} ${sc2().name}`, ks = keySig(st2);
+      const tag2 = !st2.input.inputAuto && outsideKey(sc2(), f2(), ks) ? { text: _t("\u624B\u52A8"), title: _t("\u624B\u52A8\uFF1A\u952E\u76D8\u6309 {pad} \u6392\uFF0C\u548C\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF081={k}\uFF09\u4E0D\u4E00\u6837\u3002\u70B9\u5F00\u300C1=\u300D\uFF0C\u8C03\u5F0F\u90A3\u4E00\u5217\u6700\u4E0A\u9762\u7684\u300C\u8DDF\u8C31\u300D= \u56DE\u5230\u8DDF\u7740\u8C31\u8D70", { pad: name, k: KEY_LABEL[ks] ?? "?" }) } : void 0;
+      return {
+        items: KNOB_KEYS.map((k2) => keyLabel(k2, sc2())),
+        index: Math.max(0, KNOB_KEYS.indexOf(f2())),
+        name: st2.input.inputAuto ? _t("{name}\uFF08\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF09", { name }) : _t("{name}\uFF08\u624B\u52A8\uFF09", { name }),
+        ...tag2 ? { tag: tag2 } : {}
+      };
+    },
     keyDrum: () => {
       const st2 = get();
       return {
         keys: { items: KNOB_KEYS.map((k2) => `1=${KEY_LABEL[k2]}`), index: Math.max(0, KNOB_KEYS.indexOf(inputKey(st2))) },
-        scales: { items: SCALES.map(scaleItem), index: Math.max(0, SCALES.findIndex((x2) => x2.id === st2.input.inputScale)) }
+        scales: { items: [AUTO_ITEM(), ...SCALES.map(scaleItem)], index: st2.input.inputAuto ? 0 : 1 + Math.max(0, SCALES.findIndex((x2) => x2.id === st2.input.inputScale)) }
       };
     },
     marksHere: () => {
@@ -15561,7 +15597,8 @@ function createPadMusic(get) {
     },
     pitchAt,
     fifthsAt: (i10) => KNOB_KEYS[i10],
-    scaleIdAt: (i10) => SCALES[i10].id
+    scaleIdAt: (i10) => i10 === 0 ? "auto" : SCALES[i10 - 1].id
+    // 第 0 档 = 跟谱（song.ts setInputScale 认 "auto"）
   };
 }
 
@@ -27822,15 +27859,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-e988b30ca3f3.mjs");
+      return pick(() => "singer-worker-0217ae8f57f2.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-9344b753a29b.mjs");
+      return pick(() => "layout-worker-2d3dcd66e84c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-ad4063fd2faf.mjs");
+      return pick(() => "encode-worker-537da7b5471b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -34485,7 +34522,7 @@ function loadVowelTable() {
 
 // src/score/desk.ts
 var PAD_UNITS = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
-var freshPad = () => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
+var freshPad = () => ({ auto: true, fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });
 var freshPartView = () => ({ hidden: false, only: false, muted: false, solo: false });
 var FINDER_MODES = ["year", "style", "family", "hs"];
 var freshFinderMemo = () => ({ mode: "year", open: {}, scroll: 0, row: null, pick: "" });
@@ -34532,8 +34569,10 @@ function serializeDesk(d3) {
   }
   if (Object.keys(parts).length) out.parts = parts;
   const pd = d3.pad, def = freshPad(), pj = {};
-  if (pd.fifths !== def.fifths) pj.fifths = pd.fifths;
-  if (pd.scale !== def.scale) pj.scale = pd.scale;
+  if (!pd.auto) {
+    pj.fifths = pd.fifths;
+    if (pd.scale !== def.scale) pj.scale = pd.scale;
+  }
   if (pd.unit !== def.unit) pj.unit = pd.unit;
   if (pd.tuplet) pj.tuplet = pd.tuplet;
   if (pd.low !== null) pj.low = pd.low;
@@ -34569,8 +34608,14 @@ function unserializeDesk(json) {
   }
   if (j2.pad && typeof j2.pad === "object") {
     const q2 = j2.pad;
-    if (Number.isInteger(q2.fifths) && Math.abs(q2.fifths) <= 7) d3.pad.fifths = q2.fifths;
-    if (typeof q2.scale === "string" && SCALES.some((sc2) => sc2.id === q2.scale)) d3.pad.scale = q2.scale;
+    if (Number.isInteger(q2.fifths) && Math.abs(q2.fifths) <= 7) {
+      d3.pad.fifths = q2.fifths;
+      d3.pad.auto = false;
+    }
+    if (typeof q2.scale === "string" && SCALES.some((sc2) => sc2.id === q2.scale)) {
+      d3.pad.scale = q2.scale;
+      d3.pad.auto = false;
+    }
     if (PAD_UNITS.includes(q2.unit)) d3.pad.unit = q2.unit;
     if (q2.tuplet === 3 || q2.tuplet === 5 || q2.tuplet === 6 || q2.tuplet === 7) d3.pad.tuplet = q2.tuplet;
     if (Number.isInteger(q2.low) && q2.low >= 0 && q2.low <= 127) d3.pad.low = q2.low;
@@ -36135,7 +36180,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "c4fb800a75fe50f4" : "dev";
+var CORE_HASH = true ? "073767464d1cf8a0" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -50202,7 +50247,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "1e598831800f",
+  cssHash: "926e1f308012",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -51961,7 +52006,7 @@ var deskNow = () => ({
   parts: Object.fromEntries(partView),
   mp3: mp3Quality,
   mode: ws.mode,
-  pad: { fifths: D2.st.input.inputFifths, scale: D2.st.input.inputScale, unit: PAD_UNITS[D2.st.input.unit], tuplet: D2.st.input.tuplet, low: pad3.rangeLow() },
+  pad: { auto: D2.st.input.inputAuto, fifths: D2.st.input.inputFifths, scale: D2.st.input.inputScale, unit: PAD_UNITS[D2.st.input.unit], tuplet: D2.st.input.tuplet, low: pad3.rangeLow() },
   ref: refHost.panel(),
   pdf: pdfFont,
   finder: finder.memo("song")
@@ -51973,7 +52018,7 @@ function applyDesk(d3) {
   mp3Quality = d3.mp3;
   pdfFont = d3.pdf;
   finder.restore("song", d3.finder);
-  D2.commit({ st: { ...D2.st, input: { ...D2.st.input, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d3.pad.unit)), tuplet: d3.pad.tuplet } } }, { silent: true, undo: false });
+  D2.commit({ st: { ...D2.st, input: { ...D2.st.input, inputAuto: d3.pad.auto, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d3.pad.unit)), tuplet: d3.pad.tuplet } } }, { silent: true, undo: false });
   partView.clear();
   for (const [id2, p2] of Object.entries(d3.parts)) partView.set(id2, { ...freshPartView(), ...p2 });
   if (d3.paper && d3.paper !== D2.st.at.paper) {
@@ -54058,4 +54103,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-485cd72fa246.mjs.map
+//# sourceMappingURL=moonsinger-40d77e299c08.mjs.map

@@ -2,7 +2,7 @@
 import { describe, it, eq } from "./runner.mjs";
 import {
   initState, emptySong, writeDegree, writeRest, writeBar, writeKey, extend, backspace, shorter, longer, setTuplet, tapAcc,
-  setCaret, select, escape, moveCaret, setInputKey, barFill, keyAt, TPQ, type NoteTok, type EditorState,
+  setCaret, select, escape, moveCaret, setInputKey, setInputScale, barFill, keyAt, TPQ, type NoteTok, type EditorState,
   headLen, writeMark, deleteMark, setMark, timeline, tempoWord, TEMPO_WORDS, transposeSel, modulateSel, selectToEdge, alterTarget, tr, songOf, scaleSelDur } from "../src/score/song.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
 import { parseMark } from "../src/score/marks.ts";
@@ -111,10 +111,12 @@ describe("song（记号：调号 / 拍号 / 速度都是 token）", () => {
     eq(deleteMark(st, 0), st);
   });
   it("插记号：旁边连着的记号里有同类 → 改它（谱头就这样改），否则新插一个", () => {
-    let st = initState(); let r = writeMark(st, { kind: "tempo", bpm: 120 });
+    let st = setInputKey(initState(), 0); let r = writeMark(st, { kind: "tempo", bpm: 120 });   // pad 手动拨在 1=C
     eq(r.fresh, false); eq(r.index, 2); eq(tr(r.st).length, H); eq(timeline(tr(r.st)).length, 0);
     st = writeDegree(r.st, 1, "near"); r = writeMark(st, { kind: "key", fifths: 2 }); eq(r.fresh, true); eq(r.index, H + 1);
-    st = writeDegree(r.st, 2, "near"); eq(show(st), "C4/1 K2 D4/1");   // 输入的调不跟谱上的调号（1=C 的 2 = D）
+    const auto = setInputScale(r.st, "auto");
+    st = writeDegree(r.st, 2, "near"); eq(show(st), "C4/1 K2 D4/1");   // 手动的「1=」不跟谱上的调号（1=C 的 2 = D）
+    eq(show(writeDegree(auto, 2, "near")), "C4/1 K2 E4/1");   // 跟谱（v0.16.9 新歌默认）= 光标处 1=D 的 2 = E
   });
   it("中途记号能删；删了光标跟着挪", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeMark(st, { kind: "time", beats: 3, beatType: 4 }).st; st = writeDegree(st, 2, "near");
@@ -196,7 +198,7 @@ import { respellSel as _respell, select as _select } from "../src/score/song.ts"
 describe("按调号拼写", () => {
   const spelled = (st: EditorState) => tr(st).filter((t) => t.kind === "note").map((t) => { const p = (t as NoteTok).pitch!; return `${p.step}${p.alter > 0 ? "#".repeat(p.alter) : "b".repeat(-p.alter)}${p.octave}`; }).join(" ");
   it("写的时候：调内的音用谱上调号的写法（A♭ → G♯），调外的照写（G♮），重升 / 重降不动", () => {
-    let st = setMark(initState(), 0, { kind: "key", fifths: 5 });   // 谱：五个升号；pad 还是 1=C
+    let st = setMark(setInputKey(initState(), 0), 0, { kind: "key", fifths: 5 });   // 谱：五个升号；pad 手动拨在 1=C
     st = _tapAcc(st, -1, 0); st = writeDegree(st, 6, "near");   // ♭ + 6 = A♭ → G♯
     st = writeDegree(st, 5, "near");                            // 5 = G（调外）→ G♮ 照写
     st = _tapAcc(st, -1, 0); st = writeDegree(st, 3, "near");   // ♭ + 3 = E♭ → D♯

@@ -4,7 +4,8 @@
 //   「把pad想成一个独立的medo式的输入设备，假设没有谱」「数字键盘左右左右空间要占满」「退格必须最右边。然后小节线和零和dash也蛮有必要的」
 //   「我还需要左右键导航」「弹应该放在顶栏」「写完再改坚决不行…就是设置好duration基线然后用dash」「退格长按可以多删」。
 // · 设备只往外发事件（音 / 休止 / — / 小节线 / 退格 / ← →），自己带旋钮：调（1=）、长短基线（含连音）、音域窗口。
-//   pad 的「1=」是它自己的，不跟谱上的调号（user「如果一个谱有好几个调怎么算」）；写进谱时按 pad 的调拼写，谱上该加临时记号就加。
+//   pad 的「1=」：v0.16.9 起默认跟着光标处的调号（一首歌几个调 = 光标走到哪跟到哪；user 11-07「键盘就有个自动模式。然后也有个手动覆盖模式」），拨过 = 手动（之前一直是手动，user 10-07「如果一个谱有好几个调怎么算」）。
+//   跟谱 / 手动、挂不挂「手动」小标都是宿主算好给的（PadMusic.keyChoices / keyDrum）——user 11-07「medo的接口要窄，宿主给他提供各种信息」。写进谱时按谱上的调号拼写，谱上该加临时记号就加。
 // · 旋钮 = 最上面一排（试过放 pad 最下面，user「别扭，还是放在上面吧」）：1= / 长短 / 音域三个分宽度，「⋯」是右边一个小方块；
 //   写字键里的 ← → 也是同样大小的方块（user「应该是方形的不应该那么宽。步进也做成固定宽度的，方便肌肉记忆，也许也是同样大小的小方形？」
 //   「步进我说的是左右」「...和左右应该宽度和高度差不多，其他的也许adaptive一些」），0 | — ⌫ 分剩下的宽，⌫ 最右。
@@ -50,9 +51,10 @@ export interface PadMusic {
   altered(k: number, a: number): string;
   /** 网格的锚点（第几级）：绝对 = 中央 C 那一行（或它上面第一个调式音）；首调 = 主音。 */
   anchor(layout: "absolute" | "movable"): number;
-  /** 「1=」旋钮：每一档的字（大的在上）+ 现在是第几档 + 旋钮上的人话名（提示用）。 */
-  keyChoices(): { items: string[]; index: number; name: string };
-  /** 「1=」点开的两列滚轮：调 / 调式。 */
+  /** 「1=」旋钮：每一档的字（大的在上）+ 现在是第几档 + 旋钮上的人话名（提示用）+ 挂在旋钮角上的小标（宿主算好的字和说明；没有 = 不挂。
+   *  v0.16.9：手动拨的「1=」和谱上这里的调号不一样时挂「手动」——什么时候挂、挂什么字全归宿主，键盘只画）。 */
+  keyChoices(): { items: string[]; index: number; name: string; tag?: { text: string; title: string } };
+  /** 「1=」点开的两列滚轮：调 / 调式（拨了一列，键盘重读一遍、把另一列挪到宿主给的现值）。 */
   keyDrum(): { keys: { items: string[]; index: number }; scales: { items: string[]; index: number } };
   /** 「⋯」里插记号钮上的现值：调号（人话调名）/ 拍号 / 速度。 */
   marksHere(): { key: string; beats: number; beatType: number; bpm: number };
@@ -318,7 +320,7 @@ export class Pad {
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("弹：音键只响不写（快捷键 `）；再点回到写")}" aria-label="${_t("弹")}">${iconHtml("piano-keys")}</button>` +
       `<button class="btn hide-pad" data-hide="1" title="${_t("收起键盘（点五线谱再弹出来）")}" aria-label="${_t("收起")}">${iconHtml("chevron-down")}</button>` +
       `<button class="btn knob k-more" data-knob="more" title="${_t("更多：布局、插记号")}"><span class="kl">⋯</span></button>` :
-      `<button class="btn knob k-key" data-knob="key" title="${_t("1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
+      `<button class="btn knob k-key" data-knob="key" title="${_t("1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）")}"><span class="kl"></span><span class="kh">⇅</span><em class="k-tag" hidden></em></button>` +
       `<button class="btn knob k-unit" data-knob="unit" title="${_t("长短基线：按住上下滑 / 点开选（含连音）")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-range" data-knob="range" title="${_t("音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn kb-switch" data-kbswitch="1" title="${_t("换成符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号）——谱上音和记号本来就一起改，这里只换键盘")}" aria-label="${_t("符")}">${iconHtml("notes-symbols")}</button>` +
@@ -534,7 +536,12 @@ export class Pad {
       if (ex && ex.textContent !== (one ? _t("长一步") : _t("拉长"))) ex.textContent = one ? _t("长一步") : _t("拉长");
     }
     const k = q(".k-key .kl");
-    if (k) { const kc = this.host.music.keyChoices(); k.innerHTML = kc.items[kc.index]; k.parentElement!.classList.toggle("stack", k.parentElement!.clientWidth < STACK); k.parentElement!.title = _t("{name}（pad 自己的调和调式）：按住上下滑换调 / 点开选调和调式", { name: kc.name }); }
+    if (k) {
+      const kc = this.host.music.keyChoices(), kb = k.parentElement!, tg = kb.querySelector<HTMLElement>(".k-tag");
+      k.innerHTML = kc.items[kc.index]; kb.classList.toggle("stack", kb.clientWidth < STACK);
+      kb.title = _t("{name}：按住上下滑换调 / 点开选调和调式", { name: kc.name }) + (kc.tag ? `\n${kc.tag.title}` : "");
+      if (tg) { tg.hidden = !kc.tag; tg.textContent = kc.tag?.text ?? ""; }
+    }
     const u = q(".k-unit .kl");
     if (u) { u.innerHTML = `<span class="smufl">${UNIT_GLYPH[v.unit]}</span>${v.tuplet ? `<sup>${v.tuplet}</sup>` : ""}`; u.parentElement!.title = _t("长短基线：{p}{tuplet}——按住上下滑 / 点开选", { p: UNIT_NAME[v.unit], tuplet: v.tuplet ? _t("（{tuplet} 连音）", { tuplet: v.tuplet }) : "" }); }   // 长短旋钮 = 接下来写的长短（有选区也一样：替换模式按它吃；整组改时值在选区菜单里）
     q(".impro-pad")?.classList.toggle("is-on", this.host.isImpro());   // 「弹」亮不亮（键盘快捷键 / 找人视图也会改它）
@@ -669,10 +676,14 @@ export class Pad {
     if (knob === "key") {   // 两列：调（五度圈）+ 调式（user「1=F能不能也做成两个的滚轮，右边可以换调性」）
       const d = this.host.music.keyDrum();
       const [wk, ws] = w >= 210 ? [Math.round(w * 0.36), w - Math.round(w * 0.36) - 2] : [72, 136];
-      openDrum(anchor, [
+      const h = openDrum(anchor, [
         { items: d.keys.items, index: d.keys.index, width: wk, title: _t("pad 的调（五度圈）"), loop: true },
         { items: d.scales.items, index: d.scales.index, width: ws, title: _t("调式：pad 上排哪些音") },
-      ], { onChange: (c, i) => this.host.onPick(c === 0 ? "key" : "scale", i) });
+      ], { onChange: (c, i) => {
+        this.host.onPick(c === 0 ? "key" : "scale", i);
+        const n = this.host.music.keyDrum();   // 拨了一列，另一列跟着宿主的现值（键盘不懂两列什么关系，只照着挪）
+        if (c === 0) h.setIndex(1, n.scales.index); else h.setIndex(0, n.keys.index);
+      } });
       return;
     }
     const v = this.knobList(knob, false), wr = Math.max(w, 120);   // 音域：滚轮至少 120 宽，一行写得下「F♯3–G♯5」

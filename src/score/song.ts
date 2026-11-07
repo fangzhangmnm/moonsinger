@@ -167,8 +167,11 @@ export interface InputState {
   acc: Acc;                           // ♯ / ♭ Shift（pad 的升降键还能 𝄪 / 𝄫 = ±2）
   accMode: "off" | "once" | "lock";   // 点一下只管下一个音，连点两下锁住（user「double tap shift is "capslock"」）
   accAt: number;                      // 上一次点 Shift 的时刻（ms，判连点）
-  inputFifths: number;                // 「1=」= 输入设备（pad / 电脑键盘）自己的调，默认 C；不跟谱上的调号（2026-10-07 user「把pad想成一个独立的medo式的输入设备，假设没有谱」「如果一个谱有好几个调怎么算」）
+  inputFifths: number;                // 手动时的「1=」（pad / 电脑键盘的调），默认 C。10-07 起是「不跟谱上的调号」（user「把pad想成一个独立的medo式的输入设备，假设没有谱」「如果一个谱有好几个调怎么算」）；v0.16.9 起默认跟谱（inputAuto），拨过才用它
   inputScale: string;                 // pad 的调式（src/score/scales.ts 的 id），默认大调；只管 pad 上排哪些音（user「1=F能不能也做成两个的滚轮，右边可以换调性」）
+  /** 「1=」跟谱（v0.16.9，user 11-07「键盘就有个自动模式。然后也有个手动覆盖模式…手动覆盖模式的时候，确实有个提示」）：true = 跟光标处的调号（按那个调号的大调排；
+   *  一首歌几个调 = 光标走到哪跟到哪），inputFifths / inputScale 不看；false = 手动（拨过 1= 或调式就固定）。取代 10-07「把pad想成一个独立的medo式的输入设备，假设没有谱」。新歌默认 true。 */
+  inputAuto: boolean;
 }
 
 /** 本次输入记录：退格撤回最后一笔（写字头在，记录就在）。 */
@@ -208,7 +211,7 @@ export function emptySong(m: { fifths?: number; beats?: number; beatType?: numbe
 export function songOf(tokens: Token[], rest: Partial<Omit<Song, "parts" | "papers">> = {}): Song {
   return { hum: "n", ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
 }
-export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major" }; }
+export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true }; }
 /** 整首歌最大的 token id（新 id 从它后面编；所有纸、所有声部一起算，id 全歌唯一）。 */
 export function maxId(song: Song): number { let m = 0; for (const p of song.papers) for (const ts of Object.values(p.tracks)) for (const t of ts) m = Math.max(m, t.id); return m; }
 /** 第一条有内容的 track（第一张纸上第一个在场的声部）。 */
@@ -359,8 +362,10 @@ export function tempoWord(bpm: number): { it: string; zh: string } {
 export function beatTicks(beats: number, beatType: number): number {
   return beatType === 8 && beats >= 3 && beats % 3 === 0 ? (WHOLE * 3) / 8 : WHOLE / beatType;
 }
-/** 写的时候「1=」= 手动设过的，否则跟光标处的调号。 */
-export const inputKey = (st: EditorState): number => st.input.inputFifths;
+/** 写的时候「1=」：跟谱 = 光标处的调号；手动 = 拨的那个（v0.16.9；原来这行注释写着「手动设过的，否则跟光标处的调号」但代码一直只有手动）。 */
+export const inputKey = (st: EditorState): number => (st.input.inputAuto ? keyAt(tr(st), st.sel ? st.sel.from : st.caret) : st.input.inputFifths);
+/** pad 的调式：跟谱 = 大调（调号只记了几个升降号，不知道是哪个调式）；手动 = 选的那个。 */
+export const inputScaleOf = (st: EditorState): string => (st.input.inputAuto ? "major" : st.input.inputScale);
 /** 下一个要写的音的时长 = 当前档 ×（连音比例）。 */
 export function unitDur(input: InputState): number {
   const plain = LADDER[input.unit];
@@ -1040,9 +1045,12 @@ export function setAccState(st: EditorState, acc: Acc, mode: InputState["accMode
   return i.acc === acc && i.accMode === mode ? st : { ...st, input: { ...i, acc: mode === "off" ? 0 : acc, accMode: mode === "off" || acc === 0 ? "off" : mode } };
 }
 /** 「1=」：只管输入（user「after you change the 1=???, the original inputted note should not be changed」）。 */
-export function setInputKey(st: EditorState, fifths: number): EditorState { return { ...st, input: { ...st.input, inputFifths: Math.max(-7, Math.min(7, fifths)) } }; }
+export function setInputKey(st: EditorState, fifths: number): EditorState { return { ...st, input: { ...st.input, inputScale: inputScaleOf(st), inputFifths: Math.max(-7, Math.min(7, fifths)), inputAuto: false } }; }   // 拨 1= = 手动（调式接着用现在的）
 /** pad 的调式：只管 pad 上排哪些音。 */
-export function setInputScale(st: EditorState, id: string): EditorState { return { ...st, input: { ...st.input, inputScale: id } }; }
+export function setInputScale(st: EditorState, id: string): EditorState {
+  if (id === "auto") return { ...st, input: { ...st.input, inputAuto: true } };   // 「跟谱（自动）」那一档
+  return { ...st, input: { ...st.input, inputFifths: inputKey(st), inputScale: id, inputAuto: false } };   // 选调式 = 手动（调先定在现在跟着的那个）
+}
 
 // ── 改（选中） ──────────────────────────────────────────────────────────
 

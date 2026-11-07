@@ -991,6 +991,12 @@ var S = {
   "\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A swell must go on a note (before the cursor is a rest, or no note yet)" },
   "{p}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} goes from one note to the next (before the cursor is a rest, or no note yet)" },
   "\u987A\u624B\u53BB\u6389\u4E86 {gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {gone} dynamics / hairpins that no longer govern any note (undo brings them back)" },
+  "\u8DDF\u8C31": { en: "Follow score" },
+  "\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7": { en: "Uses the key signature here" },
+  "\u624B\u52A8": { en: "Manual" },
+  "\u624B\u52A8\uFF1A\u952E\u76D8\u6309 {pad} \u6392\uFF0C\u548C\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF081={k}\uFF09\u4E0D\u4E00\u6837\u3002\u70B9\u5F00\u300C1=\u300D\uFF0C\u8C03\u5F0F\u90A3\u4E00\u5217\u6700\u4E0A\u9762\u7684\u300C\u8DDF\u8C31\u300D= \u56DE\u5230\u8DDF\u7740\u8C31\u8D70": { en: "Manual: the keyboard is laid out in {pad}, which differs from the key signature here (1={k}). Open \u201C1=\u201D and pick \u201CFollow score\u201D at the top of the mode column to follow the score again" },
+  "{name}\uFF08\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF09": { en: "{name} (follows the key signature here)" },
+  "{name}\uFF08\u624B\u52A8\uFF09": { en: "{name} (manual)" },
   "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF0C\u8FD9\u4E00\u7248\u8BA4\u4E0D\u51FA\uFF09": { en: "Nobody on stage yet (the other software's original instrument isn't recognized by this version)" },
   "{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "{next}. {p} silent in both playback and export, the rest plays as usual; tap the number on the corner of |\u25B6 for the list, and tap the part name at the front of the score to change \u201CWho performs\u201D." },
   "\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0\u4E86": { en: "All parts can sound now" },
@@ -1504,7 +1510,7 @@ var S = {
   "\u77ED\u4E00\u6B65": { en: "Shorter" },
   "\u77ED\u4E00\u6B65\uFF08\u9000\u683C\uFF09\uFF1A\u9009\u4E2D\u7684\u8FD9\u4E2A\u97F3\u77ED\u4E00\u6863\uFF0C\u7A7A\u51FA\u6765\u7684\u53D8\u6210\u4F11\u6B62": { en: "One step shorter (backspace): the selected note gets one notch shorter, and the freed space becomes a rest" },
   "\u957F\u4E00\u6B65": { en: "Longer" },
-  "{name}\uFF08pad \u81EA\u5DF1\u7684\u8C03\u548C\u8C03\u5F0F\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F": { en: "{name} (the pad's own key and mode): hold and slide up / down to change key, or tap to choose key and mode" },
+  "{name}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F": { en: "{name}: hold and slide up or down to change key / tap to pick key and mode" },
   "\u957F\u77ED\u57FA\u7EBF\uFF1A{p}{tuplet}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009": { en: "Note length: {p}{tuplet} \u2014 hold and slide up / down, or tap to choose" },
   "\uFF08{tuplet} \u8FDE\u97F3\uFF09": { en: " ({tuplet}-tuplet)" },
   "\u97F3\u57DF {rowShift}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684": { en: "Range {rowShift}: hold and slide up / down, or tap to choose \u2014 like pushing a sheet of paper: pushing up shows lower notes" },
@@ -4804,7 +4810,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/version.ts
-var APP_VERSION = "v0.16.8-2026-11-07";
+var APP_VERSION = "v0.16.9-2026-11-07";
 
 // src/format/performance.ts
 var DYNAMICS_DB = { ppp: -24, pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12, fff: 18 };
@@ -5092,4 +5098,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-ad4063fd2faf.mjs.map
+//# sourceMappingURL=encode-worker-537da7b5471b.mjs.map

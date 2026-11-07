@@ -356,6 +356,9 @@ body.listen-mode .ink-caret { display: none; }
 .knob.k-key .kl { align-items: baseline; gap: 6px; }
 .knob.k-key.stack .kl { flex-direction: column; align-items: center; gap: 0; line-height: 1.15; }
 .knob.k-key.stack .kl small { font-size: 10px; }
+/* 「1=」角上的小标（v0.16.9）：手动拨的调和谱上这里的调号不一样 = 「手动」；字和什么时候挂归宿主（pad-music.ts keyChoices().tag）。样子同「渐到」那个 */
+.knob.k-key .k-tag { position: absolute; top: 2px; left: 3px; font-size: 9px; font-style: normal; line-height: 1.25; padding: 0 3px; border-radius: 3px; border: 1px solid var(--accent); color: var(--accent); pointer-events: none; }
+.knob.rolling > .k-tag { visibility: hidden; }
 .kroll-i small { font-size: 11px; color: var(--muted); margin-left: 6px; }
 .drum-item .sc { display: flex; flex-direction: column; align-items: center; line-height: 1.2; max-width: 100%; padding: 0 4px; }
 .drum-item .sc b { font-weight: inherit; font-size: 15px; }

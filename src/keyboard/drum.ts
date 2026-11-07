@@ -11,8 +11,9 @@
 
 export interface DrumColumn { items: string[]; index: number; width: number; title?: string; loop?: boolean }   // items = 每格的 HTML；loop = 首尾相接
 export interface DrumOpts { onChange(col: number, index: number): void; onClose?(): void }
-/** setItems：换某一列的内容（位置不变）——长短一变，连音那列的小蝌蚪跟着变（user「三联五联的小蝌蚪应该跟着base时值adaptive的变」）。 */
-export interface DrumHandle { close(): void; setItems(col: number, items: string[]): void }
+/** setItems：换某一列的内容（位置不变）——长短一变，连音那列的小蝌蚪跟着变（user「三联五联的小蝌蚪应该跟着base时值adaptive的变」）。
+ *  setIndex：把某一列滚到第 i 格、不回报 onChange（拨了一列、宿主那边另一列的现值跟着变了：「1=」拨了调 = 调式那列从「跟谱」挪到大调，v0.16.9）。 */
+export interface DrumHandle { close(): void; setItems(col: number, items: string[]): void; setIndex(col: number, i: number): void }
 
 const ROW = 44, VISIBLE = 5;   // 每格高、看得见几格（中间那格 = 选中）
 const LOOP_COPIES = 7, RECENTER_MS = 140;   // 环：摆几份；滚停了多久挪回中间那份
@@ -58,6 +59,7 @@ export function openDrum(anchor: HTMLElement, cols: DrumColumn[], o: DrumOpts): 
   const handle: DrumHandle = {
     close,
     setItems: (ci, items) => wheels[ci]?.setItems(items),
+    setIndex: (ci, i) => wheels[ci]?.scrollTo(i),
   };
   current = handle;
   return handle;
@@ -85,6 +87,7 @@ export function mountWheel(col: HTMLElement, c: WheelOpts): WheelHandle {
   col.scrollTop = (c.index + mid) * row;
   paint();
   col.addEventListener("scroll", () => {
+    if (!col.isConnected) return;   // 收起之后才到的滚动（setIndex 挪了另一列、紧接着点选收起）：拿掉的元素 scrollTop 读成 0 = 会当成拨到第一格（v0.16.9 E2E 抓到：选「跟谱」变成 1=F♯）
     paint();
     const i = raw() % n; if (i !== shown) { shown = i; c.onChange(i); }
     if (c.loop) {   // 环：滚停了挪回中间那份（内容一样，看不出来）

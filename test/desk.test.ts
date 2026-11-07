@@ -39,11 +39,21 @@ import { LADDER, TPQ, DEFAULT_UNIT, initInput } from "../src/score/song.ts";
 describe("desk：pad 的状态", () => {
   it("全默认 = 不写；只写不是默认的", () => {
     eq(serializeDesk(freshDesk()), null);
-    const d = freshDesk(); d.pad = { ...freshPad(), fifths: -3, unit: "quarter" };
+    const d = freshDesk(); d.pad = { ...freshPad(), auto: false, fifths: -3, unit: "quarter" };
     eq(JSON.stringify(serializeDesk(d)), JSON.stringify({ pad: { fifths: -3, unit: "quarter" } }));
   });
+  it("「1=」跟谱 / 手动（v0.16.9）：跟谱 = 不写 1=；手动 1=C 大调也写 fifths: 0；旧歌写了 1= 或调式 = 手动", () => {
+    const d = freshDesk(); d.pad = { ...freshPad(), fifths: -3 };   // 跟谱时内存里残留的旧值不写
+    eq(serializeDesk(d), null);
+    d.pad = { ...freshPad(), auto: false };
+    eq(JSON.stringify(serializeDesk(d)), JSON.stringify({ pad: { fifths: 0 } }));
+    eq(unserializeDesk({ pad: { fifths: 0 } }).pad.auto, false);
+    const old = unserializeDesk({ pad: { scale: "dorian" } }).pad; eq(old.auto, false); eq(old.fifths, 0); eq(old.scale, "dorian");
+    eq(unserializeDesk({ pad: { unit: "quarter" } }).pad.auto, true);
+    eq(unserializeDesk(null).pad.auto, true);
+  });
   it("往返：1= / 调式 / 时值 / 连音 / 音域", () => {
-    const d = freshDesk(); d.pad = { fifths: 2, scale: "yu", unit: "16th", tuplet: 3, low: 55 };
+    const d = freshDesk(); d.pad = { auto: false, fifths: 2, scale: "yu", unit: "16th", tuplet: 3, low: 55 };
     eq(JSON.stringify(unserializeDesk(JSON.parse(JSON.stringify(serializeDesk(d)))).pad), JSON.stringify(d.pad));
   });
   it("宽容：每一项不认识 / 越界 = 那一项默认，别的照读", () => {
@@ -54,7 +64,7 @@ describe("desk：pad 的状态", () => {
   it("时值名和 LADDER 一一对上（存名字不存下标）；默认 = 八分 = initInput", () => {
     const want = [TPQ / 8, TPQ / 4, TPQ / 2, TPQ, TPQ * 2, TPQ * 4];
     eq(JSON.stringify([...LADDER]), JSON.stringify(want)); eq(PAD_UNITS.length, LADDER.length);
-    eq(PAD_UNITS[DEFAULT_UNIT], freshPad().unit); eq(initInput().inputScale, freshPad().scale); eq(initInput().inputFifths, freshPad().fifths);
+    eq(PAD_UNITS[DEFAULT_UNIT], freshPad().unit); eq(initInput().inputScale, freshPad().scale); eq(initInput().inputFifths, freshPad().fifths); eq(initInput().inputAuto, freshPad().auto);
   });
 });
 

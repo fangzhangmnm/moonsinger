@@ -2268,11 +2268,11 @@ instEl.addEventListener("click", (e) => {
 });
 /** 视图态（desk，src/score/desk.ts）：存时聚一下（bytesNow）、开歌时散回去（loadDoc）。变量本身仍住这里（viewScope / pageFlow / partView）。 */
 const deskNow = (): Desk => ({ scope: viewScope, pageFlow, scroll: scrollFlow, paper: D.st.at.paper, parts: Object.fromEntries(partView), mp3: mp3Quality, mode: ws.mode,
-  pad: { fifths: D.st.input.inputFifths, scale: D.st.input.inputScale, unit: PAD_UNITS[D.st.input.unit], tuplet: D.st.input.tuplet, low: pad.rangeLow() }, ref: refHost.panel(), pdf: pdfFont, finder: finder.memo("song") });   // pad 的状态跟着歌走（同 WeebPaint editor-state）
+  pad: { auto: D.st.input.inputAuto, fifths: D.st.input.inputFifths, scale: D.st.input.inputScale, unit: PAD_UNITS[D.st.input.unit], tuplet: D.st.input.tuplet, low: pad.rangeLow() }, ref: refHost.panel(), pdf: pdfFont, finder: finder.memo("song") });   // pad 的状态跟着歌走（同 WeebPaint editor-state）
 function applyDesk(d: Desk): void {
   viewScope = d.scope; pageFlow = d.pageFlow; scrollFlow = d.scroll; mp3Quality = d.mp3; pdfFont = d.pdf;
   finder.restore("song", d.finder);   // 乐器目录在这首歌里翻到哪（新歌 = 按年代、全收着、在顶上）
-  D.commit({ st: { ...D.st, input: { ...D.st.input, inputFifths: d.pad.fifths, inputScale: d.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d.pad.unit)), tuplet: d.pad.tuplet } } }, { silent: true, undo: false });   // 视图态 / 输入态：只换真相，不重画（调用方自己画）
+  D.commit({ st: { ...D.st, input: { ...D.st.input, inputAuto: d.pad.auto, inputFifths: d.pad.fifths, inputScale: d.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d.pad.unit)), tuplet: d.pad.tuplet } } }, { silent: true, undo: false });   // 视图态 / 输入态：只换真相，不重画（调用方自己画）
   partView.clear(); for (const [id, p] of Object.entries(d.parts)) partView.set(id, { ...freshPartView(), ...p });
   if (d.paper && d.paper !== D.st.at.paper) {
     const paper = D.st.song.papers.find((p) => p.id === d.paper), part = paper?.tracks[D.st.at.part] ? D.st.at.part : D.st.song.parts.find((p) => paper?.tracks[p.id])?.id;

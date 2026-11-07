@@ -11,8 +11,10 @@ import { SCALES } from "./scales.ts";
 export type PadUnit = "32nd" | "16th" | "eighth" | "quarter" | "half" | "whole";
 export const PAD_UNITS: readonly PadUnit[] = ["32nd", "16th", "eighth", "quarter", "half", "whole"];
 /** pad 的状态。low = 音域窗口最低那个键的 MIDI（换个行数 / 键位的设备也落在差不多的音域）；null = 默认那一档。 */
-export interface PadDesk { fifths: number; scale: string; unit: PadUnit; tuplet: 0 | 3 | 5 | 6 | 7; low: number | null }
-export const freshPad = (): PadDesk => ({ fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });   // 同 song.ts initInput（八分 = DEFAULT_UNIT）
+/** auto = 「1=」跟谱（v0.16.9；新歌默认）。文件里不另加字段：写了 fifths / scale = 手动（手动 1=C 大调也写 fifths: 0），都没写 = 跟谱——
+ *  v0.16.8 及以前存的歌里写着 1= / 调式的 = 当时拨过 = 手动；没写的 = 当时是 1=C 大调、现在跟谱（新歌的谱头本来就是 C）。 */
+export interface PadDesk { auto: boolean; fifths: number; scale: string; unit: PadUnit; tuplet: 0 | 3 | 5 | 6 | 7; low: number | null }
+export const freshPad = (): PadDesk => ({ auto: true, fifths: 0, scale: "major", unit: "eighth", tuplet: 0, low: null });   // 同 song.ts initInput（八分 = DEFAULT_UNIT）
 export interface PartViewState { hidden: boolean; only: boolean; muted: boolean; solo: boolean }
 export const freshPartView = (): PartViewState => ({ hidden: false, only: false, muted: false, solo: false });
 /** mp3 = 导出歌声的音质（导出面板里选的；2026-10-08 by Claude Opus 5.5，user「音质配置就是应该也跟着吧」——跟这首歌走、存时顺手带、不标脏、不进 undo）。 */
@@ -73,8 +75,7 @@ export function serializeDesk(d: Desk): DeskJson | null {
   }
   if (Object.keys(parts).length) out.parts = parts;
   const pd = d.pad, def = freshPad(), pj: PadJson = {};
-  if (pd.fifths !== def.fifths) pj.fifths = pd.fifths;
-  if (pd.scale !== def.scale) pj.scale = pd.scale;
+  if (!pd.auto) { pj.fifths = pd.fifths; if (pd.scale !== def.scale) pj.scale = pd.scale; }   // 手动 = 一定写 fifths（跟谱 = 都不写）
   if (pd.unit !== def.unit) pj.unit = pd.unit;
   if (pd.tuplet) pj.tuplet = pd.tuplet;
   if (pd.low !== null) pj.low = pd.low;
@@ -104,8 +105,8 @@ export function unserializeDesk(json: unknown): Desk {
   }
   if (j.pad && typeof j.pad === "object") {   // 每一项各自宽容：不认识 / 越界 = 那一项默认
     const q = j.pad as Record<string, unknown>;
-    if (Number.isInteger(q.fifths) && Math.abs(q.fifths as number) <= 7) d.pad.fifths = q.fifths as number;
-    if (typeof q.scale === "string" && SCALES.some((sc) => sc.id === q.scale)) d.pad.scale = q.scale;
+    if (Number.isInteger(q.fifths) && Math.abs(q.fifths as number) <= 7) { d.pad.fifths = q.fifths as number; d.pad.auto = false; }
+    if (typeof q.scale === "string" && SCALES.some((sc) => sc.id === q.scale)) { d.pad.scale = q.scale; d.pad.auto = false; }   // 只写了调式（旧歌：1=C + 某调式）= 也是手动
     if (PAD_UNITS.includes(q.unit as PadUnit)) d.pad.unit = q.unit as PadUnit;
     if (q.tuplet === 3 || q.tuplet === 5 || q.tuplet === 6 || q.tuplet === 7) d.pad.tuplet = q.tuplet;
     if (Number.isInteger(q.low) && (q.low as number) >= 0 && (q.low as number) <= 127) d.pad.low = q.low as number;

@@ -285,6 +285,13 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
   - 旧的记号框（`mark-editor.ts`）不再从界面打开（score-view 没给 onHeader 时才用），等确认没人用再删。
   - 测试：`test/header-spot.test.ts`（6）、E2E `header-panel.mjs`（13）、`metronome.mjs` / `clef.mjs` / `header-hit.mjs` 改走面板。
   - **修 v0.16.7 带进来的：从谱头附近按下去拖不出框选**（v0.16.7 放宽的那一圈在笔 / 鼠标按下那一刻就算点谱头）：放宽的那一圈改成按下没拖就松手才算（`score-view.ts boxTap`），正好点在谱号 / 调号 / 拍号框里的照旧一按就开；手指本来就是松手才判。E2E `rest.mjs`「框选框得住休止」v0.16.6 绿、v0.16.7 红、现在绿；`auto-ottava.mjs` 改去歌手名小卡里找开关。
+- **键盘「1=」跟谱 / 手动（v0.16.9，2026-11-07，Claude Opus 5.5；user 11-07「谱上调号和键盘上的一等于对不上，这样的话键盘就有个自动模式。然后也有个手动覆盖模式…手动覆盖模式的时候，确实有个提示」「medo的接口要窄，宿主给他提供各种信息」）**：取代 10-07「把pad想成一个独立的medo式的输入设备，假设没有谱」里「1= 不跟谱」那一半（键盘照旧不懂谱，只是宿主把要用的调递给它）。
+  - **跟谱**（新歌默认，`EditorState.input.inputAuto`）：「1=」= 光标处的调号、按大调排（`song.ts inputKey / inputScaleOf`）；一首歌几个调 = 光标走到哪跟到哪；pad 音键、电脑键盘 1–7 一起跟。**手动** = 拨过 1=（滑 / 滚轮 / 滚轮列）或选过调式（`setInputKey / setInputScale`；跟谱时选调式 = 调先定在当时跟着的那个）。回去 = 点开「1=」，调式那一列最上面一档「跟谱」（`setInputScale("auto")`）。
+  - **提示**：手动、而且 pad 上有谱上这里的调号以外的音（`pad-music.ts outsideKey`：同一个 1= 换个调式 = 同一套音不算，五声在里面不算）= 旋钮左上角描边小字「手动」+ 旋钮提示里说怎么回去；旋钮提示平时写「跟着谱上这里的调号」/「手动」。
+  - **接口**（窄）：键盘只多认 `PadMusic.keyChoices().tag {text, title}`（挂什么、什么时候挂归宿主）；滚轮拨了一列，键盘重读 `keyDrum()` 把另一列挪到宿主给的现值（`DrumHandle.setIndex`）。「跟谱」那一档是宿主放进调式列表的第 0 项（`scaleIdAt(0) = "auto"`）。
+  - **存**：`view.pad` 不加字段——写了 fifths / scale = 手动（手动 1=C 大调也写 `fifths: 0`），都没写 = 跟谱；v0.16.8 及以前写着 1= 或调式的旧歌 = 手动（`desk.ts`）。
+  - 顺手修滚轮：收起之后才到的滚动事件当成拨到第一格（拿掉的元素 scrollTop 读成 0；`drum.ts` 只认还在页面上的）——E2E 抓到「选跟谱变成 1=F♯」。
+  - 测试：`test/pad-music.test.ts` +2、`test/desk.test.ts` +1、`song.test.ts` 两条改成先手动拨 1=C（测的是记号 / 拼写）+ 一条跟谱对照；E2E `pad-key-auto.mjs`（14）。
 
 ## 回来时没传的东西分三种 + 离线期间静默再试（v0.14.18，2026-11-04，Claude Opus 5.5；家族工单 H4；规则书 §1 第 15 条、闸门设计稿 §3）
 
