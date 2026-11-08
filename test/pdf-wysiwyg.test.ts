@@ -37,6 +37,14 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
       assert(print.pages.length >= 2, `排成了好几页（${print.pages.length}）`);
     });
   }
+  it("按 C 调看 + 和弦级数（v0.16.13，user「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：印的带上它们，控件开关照样不改版面；专业模式 C 调的淡「1=C」不印", () => {
+    const view = { inC: true, chordTags: true }, base = printOpts(st.song, sp, parts(st), measure, true, 0, undefined, view), print = engrave(st.song, base);
+    eq(base.inC, true); eq(base.chordTags, true); eq(base.keyHint, undefined);
+    eq(geo(engrave(st.song, { ...base, titlePlaceholder: true, paperLabel: "A5", keyHint: true } as never)), geo(print), "控件 + 提示开关不改版面");
+    assert(print.prims.some((p) => (p as { cls?: string }).cls?.includes("key-label") && isPrinted((p as { cls?: string }).cls)), "「1=原来的调」印");
+    assert(!isPrinted("keysig key-label key-hint"), "淡「1=C」不印");
+    eq(geo(engrave(st.song, { ...base, chordTags: false })), geo(print), "和弦级数不占地方（开关不改版面）");
+  });
   it("只印这一张纸 = 分页预览的「本段」：控件开关同样不改版面（2026-10-09，user「只印一段或一个声部…和wxhw差不多」）", () => {
     for (const paper of st.song.papers) {
       const base = printOpts(st.song, sp, parts(st), measure, true, 0, paper.id), print = engrave(st.song, base);

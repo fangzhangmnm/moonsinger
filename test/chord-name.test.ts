@@ -33,6 +33,11 @@ describe("认和弦 + 级数", () => {
     eq(L("Bb3 D4 F4"), "♭VII"); eq(L("C4 E4 G4 Bb4", -1), "V7"); eq(L("D4 F#4 A4", 1), "V"); eq(L("E4 G#4 B4"), "III");
     eq(JSON.stringify(degreeOf(P("Bb3"), 0)), JSON.stringify({ deg: 7, acc: -1 }));
   });
+  it("缺三度（user 11-07 截图：A E G 没标）：认成七和弦缺三度，大小写按调里（C 调里 A 上面是 C = 小 = vi7(no3)；G 上面是 B = 大 = V7(no3)）", () => {
+    eq(L("A3 E4 G4"), "vi7(no3)"); eq(L("G3 D4 F4"), "V7(no3)"); eq(L("C4 G4 B4"), "Imaj7(no3)");
+    const r = readChord(["A3", "E4", "G4"].map(P), 0)!; eq(r.best.no3, true); eq(r.best.name, "Am7(no3)");
+    eq(L("C4 E4 G4 Bb4"), "I7");   // 有三度的照旧
+  });
   it("三个不同的音以下 / 表里没有的 = 认不出来（不硬猜）", () => {
     eq(L("C4 G4"), "-"); eq(L("C4 C5 G4"), "-"); eq(L("C4 C#4 D4"), "-");
   });

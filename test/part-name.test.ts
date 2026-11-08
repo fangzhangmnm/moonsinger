@@ -23,9 +23,11 @@ describe("谱前声部名", () => {
     const n = names(L("高音萨克斯管一号谱"));
     assert(n.length === 2 && n.join("") === "高音萨克斯管一号谱" && n.every((x) => wSp(x) <= 6.5), JSON.stringify(n));
   });
-  it("一个词本身太长：按字母折", () => {
-    const n = names(L("Glockenspielorchestra"));
-    assert(n.length >= 3 && n.join("") === "Glockenspielorchestra".slice(0, n.join("").length) && n.every((x) => wSp(x) <= 6.5), JSON.stringify(n));
+  it("一个词本身太长：按字母折，断开处加连字符、最后一截至少三个字母（F-207：Synthesizer 被折成「Synthesiz / er」）", () => {
+    const n = names(L("Glockenspielorchestra")), bare = n.map((x) => x.replace(/-$/, ""));
+    assert(n.length >= 3 && bare.join("") === "Glockenspielorchestra".slice(0, bare.join("").length) && n.every((x) => wSp(x) <= 6.5), JSON.stringify(n));
+    assert(n.slice(0, -1).every((x) => x.endsWith("-")) && !n[n.length - 1].endsWith("-"), `断开处带连字符：${JSON.stringify(n)}`);
+    assert([...bare[bare.length - 1]].length >= 3, `最后一截至少三个字母：${JSON.stringify(n)}`);
   });
   it("超过 3 行（单谱表）：末尾「…」", () => {
     const n = names(L("one two three four five six seven eight nine ten"));

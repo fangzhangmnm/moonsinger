@@ -1,4 +1,4 @@
-// pad.ts —— 手指面板 = 一台独立的 MEDO 式输入设备（假设没有谱）：4 个旋钮 + 6 个写字键 + 占满整宽的音键网格（自上而下）。
+// pad.ts —— 手指面板 = 一台独立的 MEDO 式输入设备（假设没有谱）：4 个旋钮（v0.16.12 起顺序 = 音域 / 长短 / 1=：user 11-05「小键盘range和调性两个滚动鼓换位置」，家族周账 F-196） + 6 个写字键 + 占满整宽的音键网格（自上而下）。
 // created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改；2026-10-07 晚 改成独立设备（下面）
 // 来历（grill 账本 Q10 / Q11 / UX-1 / UX-2 与「pad 简化讨论」）：user「Donner MEDO 是golden ui example…我只是当ocarina来按」；
 //   「把pad想成一个独立的medo式的输入设备，假设没有谱」「数字键盘左右左右空间要占满」「退格必须最右边。然后小节线和零和dash也蛮有必要的」
@@ -323,9 +323,9 @@ export class Pad {
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("弹：音键只响不写（快捷键 `）；再点回到写")}" aria-label="${_t("弹")}">${iconHtml("piano-keys")}</button>` +
       `<button class="btn hide-pad" data-hide="1" title="${_t("收起键盘（点五线谱再弹出来）")}" aria-label="${_t("收起")}">${iconHtml("chevron-down")}</button>` +
       `<button class="btn knob k-more" data-knob="more" title="${_t("更多：布局、插记号")}"><span class="kl">⋯</span></button>` :
-      `<button class="btn knob k-key" data-knob="key" title="${_t("1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）")}"><span class="kl"></span><span class="kh">⇅</span><em class="k-tag" hidden></em></button>` +
-      `<button class="btn knob k-unit" data-knob="unit" title="${_t("长短基线：按住上下滑 / 点开选（含连音）")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
       `<button class="btn knob k-range" data-knob="range" title="${_t("音域（这块 pad 从哪个音到哪个音）：按住上下滑 / 点开选——像推一张纸，往上推 = 看下面更低的")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
+      `<button class="btn knob k-unit" data-knob="unit" title="${_t("长短基线：按住上下滑 / 点开选（含连音）")}"><span class="kl"></span><span class="kh">⇅</span></button>` +
+      `<button class="btn knob k-key" data-knob="key" title="${_t("1=（pad 自己的调）：按住上下滑 / 点开选（五度圈）")}"><span class="kl"></span><span class="kh">⇅</span><em class="k-tag" hidden></em></button>` +
       `<button class="btn kb-switch" data-kbswitch="1" title="${_t("换成符号格（力度、渐强渐弱、演奏法、调号 / 拍号 / 速度、反复、风格、句号）——谱上音和记号本来就一起改，这里只换键盘")}" aria-label="${_t("符")}">${iconHtml("notes-symbols")}</button>` +
       `<button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("弹：音键只响不写（快捷键 `）；再点回到写")}" aria-label="${_t("弹")}">${iconHtml("piano-keys")}</button>` +
       `<button class="btn hide-pad" data-hide="1" title="${_t("收起键盘（点五线谱再弹出来）")}" aria-label="${_t("收起")}">${iconHtml("chevron-down")}</button>` +

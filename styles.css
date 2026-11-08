@@ -929,9 +929,8 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 /* 补齐的淡色休止（v0.10.6）：这张纸别的声部更长，这位后面空着的那几个小节；只画不存、点它 = 点那个小节写 */
 /* 「弹」的鬼音符（v0.10.6）：盖在谱上的一层，不接点击、不影响排版 */
 .ghost-preview { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; opacity: .5; }
-/* 和弦标级数（v0.16.11）：覆盖层（不进排版、不印）；点击在 score-view tap 里按框判 */
-.chord-tags { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; }
-.chord-tags text { fill: var(--accent); font-family: system-ui, sans-serif; font-weight: 600; }
+/* 和弦标级数（v0.16.13 起进排版 = 谱上的字，跟着设置印进 PDF）；点击在 score-view tap 里按 Layout.chordTags 的框判 */
+.staff-svg text.chord-tag { fill: var(--accent); font-family: system-ui, sans-serif; font-weight: 600; }
 .ctx-menu.chord-info { min-width: 220px; }
 .chord-cand { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 5px 10px; align-items: baseline; }
 .chord-cand b { font-size: 15px; }
@@ -1051,4 +1050,3 @@ body.doc-final .inst-page .finder-bar::after { content: var(--t-final-lock, "定
 .header-panel .hp-sel { min-width: 0; flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; padding: 0 6px; }
 .header-panel .hp-in { width: 64px; flex: none; height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; font-size: 14px; color: var(--ink); -webkit-user-select: text; user-select: text; }
 .header-panel .hp-in.bad { border-color: var(--danger, #c33); }
-.header-panel .metro { width: 30px; height: 30px; }

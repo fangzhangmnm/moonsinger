@@ -21,7 +21,7 @@ const PT_PER_MM = 72 / 25.4;
 const INK: Rgb = [0.1, 0.1, 0.1];
 /** 编辑器专用、不印的样式类（任一个命中就不印）。 */
 const SKIP = new Set(["cat-bar", "cat-dot", "paper-chip", "paper-chip-text", "paper-chip-icon", "part-stub", "part-stub-line", "hidden-note", "hidden-paper", "warn", "selbox", "caret", "nav-text", "part-badge",
-  "tempo-change", "dyn-implied", "arr-issue", "arr-empty", "empty", "phrase-mark", "page", "in-span"]);
+  "tempo-change", "dyn-implied", "arr-issue", "arr-empty", "empty", "phrase-mark", "page", "in-span", "key-hint"]);   // key-hint = 专业模式 C 调的淡「1=C」（提示，v0.16.10）
 /** 「empty」在占位提示上 = 不印；在声部名上 = 还没人上场（屏幕上画淡），名字照印。 */
 const skipped = (cls: string[]) => cls.some((c) => SKIP.has(c) && !(c === "empty" && cls.includes("part-name")));
 /** 这个图元印不印（按样式类；测试用）。 */
@@ -67,16 +67,20 @@ export interface ScorePdfArgs { song: Song; parts: PartView[]; font: TtfFont; fo
   /** 自动小节线（和编辑器的开关一致）。 */
   autoBars?: boolean;
   /** 只印这一张纸（= 分页预览的「本段」；2026-10-09 user「只印一段或一个声部 这个也到时候需要做，和wxhw差不多」）。不给 = 整首。 */
-  onlyPaper?: string }
+  onlyPaper?: string;
+  /** 看谱方式跟着印（v0.16.13，user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：按 C 调看 = 印 C 调 + 「1=原来的调」；和弦级数 = 印上。 */
+  view?: PrintView }
+export interface PrintView { inC?: boolean; chordTags?: boolean }
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
-export function printOpts(song: Song, sp: number, parts: PartView[], measureLyric: (s: string) => number, autoBars: boolean, lyricRaise: number, onlyPaper?: string): EngraveOpts {
+export function printOpts(song: Song, sp: number, parts: PartView[], measureLyric: (s: string) => number, autoBars: boolean, lyricRaise: number, onlyPaper?: string, view: PrintView = {}): EngraveOpts {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER);
-  return { width: lineSp(paper) * sp, sp, at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measureLyric, titlePlaceholder: false, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}) };
+  return { width: lineSp(paper) * sp, sp, at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measureLyric, titlePlaceholder: false, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}),
+    ...(view.inC ? { inC: true } : {}), ...(view.chordTags ? { chordTags: true } : {}) };   // 看谱方式 = 屏幕上那一套（预览 = PDF）；专业模式 C 调的淡「1=C」是提示，不印
 }
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */
 export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; stats: PdfStats } {
   const paper = a.song.paper ?? paperOf(DEFAULT_PAPER), sp = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp;
-  const L = engrave(a.song, printOpts(a.song, sp, a.parts, a.measureAt ? a.measureAt(lyricPx) : (s) => textEm(a.font, s) * lyricPx, a.autoBars ?? true, LYRIC_RAISE[a.fontId], a.onlyPaper));
+  const L = engrave(a.song, printOpts(a.song, sp, a.parts, a.measureAt ? a.measureAt(lyricPx) : (s) => textEm(a.font, s) * lyricPx, a.autoBars ?? true, LYRIC_RAISE[a.fontId], a.onlyPaper, a.view));
   const W = paper.widthMm * PT_PER_MM, H = paper.heightMm * PT_PER_MM, dx = L.pageX.left;
   const pages: PdfPage[] = L.pages.map(() => ({ w: W, h: H, ops: [] }));
   const pageOf = (y: number) => { for (let k = 0; k < L.pages.length; k++) if (y >= L.pages[k]!.top && y < L.pages[k]!.top + L.pages[k]!.h) return k; return -1; };

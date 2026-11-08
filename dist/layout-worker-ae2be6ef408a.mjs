@@ -70,7 +70,8 @@ var S = {
   "\u6539\u8C03\u53F7 = \u5B83\u7BA1\u7684\u97F3\u6309\u65B0\u8C03\u53F7\u62FC\u5199\uFF0C\u97F3\u9AD8\u4E0D\u53D8": { en: "Changing the key respells the notes it governs; pitches don\u2019t change" },
   "\u62CD\u53F7": { en: "Time" },
   "\u901F\u5EA6": { en: "Speed" },
-  "\u6309\u8FD9\u4E2A\u901F\u5EA6\u6446\uFF1A\u6446\u5230\u4E00\u5934 = \u4E00\u62CD": { en: "Swinging at this tempo: one end of the swing = one beat" },
+  "\u6253\u5F00\u901F\u5EA6\u6846\uFF1A\u62E8\u901F\u5EA6\u3001\u9009\u901F\u5EA6\u8BCD\u3001\u770B\u5C0F\u8282\u62CD\u5668\uFF0C\u6309\u300C\u786E\u5B9A\u300D\u624D\u5199\u8FDB\u8C31": { en: "Open the tempo box: dial the tempo, pick a tempo word, watch the metronome; nothing is written until you press OK" },
+  "\u4E0D\u53D8\uFF08\u2669={n}\uFF09\xB7 \u5728\u8FD9\u91CC\u6362\u2026": { en: "No change (\u2669={n}) \xB7 change it here\u2026" },
   "\u5220\u6389\u8FD9\u91CC\u7684\u53D8\u5316": { en: "Remove the changes here" },
   "\u4E50\u8C31": { en: "Score" },
   "\u300C{name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7": { en: "\u201C{name}\u201D was changed elsewhere" },
@@ -197,6 +198,7 @@ var S = {
   "\u2713 \u5728\u6587\u4EF6\u5939\u91CC": { en: "\u2713 In the folder" },
   "\xB7 \u6587\u4EF6\u5939\u91CC\u6CA1\u6709": { en: "\xB7 Not in the folder" },
   "\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09": { en: "Inversion (the lowest note is not the root)" },
+  "\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199": { en: "No third: major or minor can\u2019t be told apart, so it follows this key" },
   "\u7701\u4E86 {n} \u4E2A\u97F3": { en: "{n|note|notes} left out" },
   "\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002": { en: "How it is read: chords that are complete (nothing left out) win \u2192 the lowest note as root wins \u2192 a root inside this key wins \u2192 simpler chords win. When two tie, both are written on the score." },
   "\u5173": { en: "Off" },
@@ -779,6 +781,10 @@ var S = {
   "\u672C\u6BB5": { en: "This section" },
   "\u5168\u90E8": { en: "All" },
   "\u7EB8 / ": { en: "sheets /" },
+  "\u7167\u4F60\u73B0\u5728\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u8BBE\u7F6E\u300C\u8F85\u52A9\u300D\u91CC\u6539\uFF09\u3002": { en: "Printed the way you are reading now: {w} (change it under Accessibility in Settings)." },
+  "\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09": { en: "read in C (\u201C1=original key\u201D above each key signature)" },
+  "\u548C\u5F26\u7EA7\u6570": { en: "chord degrees" },
+  "\u3001": { en: ", " },
   "\u751F\u6210 PDF": { en: "Create PDF" },
   "\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7B2C\u4E00\u6B21\u7EA6 {p} MB\uFF09\u2026": { en: "Downloading font (about {p} MB the first time)\u2026" },
   "\u6392\u7248\u2026": { en: "Laying out\u2026" },
@@ -1600,7 +1606,7 @@ var S = {
   "\u6B4C\u540D": { en: "Title" },
   "\u7EB8\uFF1A{paperLabel}": { en: "Paper: {paperLabel}" },
   "\u4F5C\u8005": { en: "Author" },
-  "\u7F16\u6392\u3000": { en: "Arrangement" },
+  "\u7F16\u6392\u3000": { en: "Arrangement\u2002" },
   " \u7B49 {n} \u5904": { en: " at {n} places" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)\xD73 A A2 [Chorus])" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D": { en: "Empty = each sheet plays once in order" },
@@ -1818,6 +1824,7 @@ var S = {
   "\u8FD9\u4E2A\u5B57\u5E76\u8FDB\u524D\u4E00\u4E2A\u97F3\uFF08\u4E00\u4E2A\u97F3\u4E0A\u51E0\u4E2A\u5B57\uFF09\uFF1B\u8FD9\u4E00\u53E5\u540E\u9762\u7684\u5B57\u5F80\u524D\u632A\u4E00\u4E2A\u97F3": { en: "Merges this syllable into the previous note (several syllables on one note); later syllables in this phrase shift forward one note" },
   "\u6324\u4E86\uFF1A\u6309\u8282\u594F\u6392\uFF0C\u8FD9\u4E2A\u5B57\u653E\u4E0D\u4E0B\uFF08\u7EB8\u7684\u8BBE\u7F6E\u91CC\u6362\u6210\u300C\u6309\u6B4C\u8BCD\u300D= \u628A\u97F3\u63A8\u5F00\uFF09": { en: "Crowded: laid out by rhythm, this syllable doesn't fit (in sheet settings, \u201CBy lyrics\u201D pushes notes apart)" },
   "\u65E0\u5347\u964D": { en: "No accidentals" },
+  "\u6309\u8FD9\u4E2A\u901F\u5EA6\u6446\uFF1A\u6446\u5230\u4E00\u5934 = \u4E00\u62CD": { en: "Swinging at this tempo: one end of the swing = one beat" },
   "\u786E\u5B9A": { en: "OK" },
   "\u62E8\u901F\u5EA6\uFF1A\u4E00\u683C = 1\uFF0C\u4E00\u7529\u6ED1\u4E00\u5927\u6BB5": { en: "Dial the tempo: one notch = 1, a flick covers more" },
   "{from} \u8D77": { en: "from {from}" },
@@ -2200,6 +2207,14 @@ function effectivePitch(tokens, i) {
   return prevPitch(tokens, i) ?? HOME;
 }
 var allPitches = (t) => t.pitch ? [t.pitch, ...t.chord ?? []] : [];
+function keyAt(tokens, i) {
+  let f = DEFAULT_KEY;
+  for (let j = 0; j < i && j < tokens.length; j++) {
+    const t = tokens[j];
+    if (t.kind === "key") f = t.fifths;
+  }
+  return f;
+}
 function tempoAt(tokens, i) {
   let v = DEFAULT_BPM;
   for (let j = 0; j < i && j < tokens.length; j++) {
@@ -3522,6 +3537,81 @@ function songInC(song, skip) {
   return { ...song, papers: song.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([id, toks]) => [id, skip(id) ? toks : trackInC(toks)])) })) };
 }
 
+// src/score/chord-name.ts
+var TPLS = [
+  { id: "maj", iv: [0, 4, 7], minor: false, rs: "", sym: "" },
+  { id: "min", iv: [0, 3, 7], minor: true, rs: "", sym: "m" },
+  { id: "dim", iv: [0, 3, 6], minor: true, rs: "\xB0", sym: "dim" },
+  { id: "aug", iv: [0, 4, 8], minor: false, rs: "+", sym: "aug" },
+  { id: "sus4", iv: [0, 5, 7], minor: false, rs: "sus4", sym: "sus4" },
+  { id: "sus2", iv: [0, 2, 7], minor: false, rs: "sus2", sym: "sus2" },
+  { id: "7", iv: [0, 4, 10], opt: [7], minor: false, rs: "7", sym: "7" },
+  { id: "m7", iv: [0, 3, 10], opt: [7], minor: true, rs: "7", sym: "m7" },
+  { id: "maj7", iv: [0, 4, 11], opt: [7], minor: false, rs: "maj7", sym: "maj7" },
+  { id: "6", iv: [0, 4, 9], opt: [7], minor: false, rs: "6", sym: "6" },
+  { id: "m6", iv: [0, 3, 9], opt: [7], minor: true, rs: "6", sym: "m6" },
+  { id: "m7b5", iv: [0, 3, 6, 10], minor: true, rs: "\xF87", sym: "m7\u266D5" },
+  { id: "dim7", iv: [0, 3, 6, 9], minor: true, rs: "\xB07", sym: "dim7" },
+  { id: "mMaj7", iv: [0, 3, 11], opt: [7], minor: true, rs: "(maj7)", sym: "m(maj7)" },
+  { id: "aug7", iv: [0, 4, 8, 10], minor: false, rs: "+7", sym: "aug7" },
+  { id: "7sus4", iv: [0, 5, 10], opt: [7], minor: false, rs: "7sus4", sym: "7sus4" },
+  { id: "add9", iv: [0, 4, 2], opt: [7], minor: false, rs: "add9", sym: "add9" },
+  { id: "madd9", iv: [0, 3, 2], opt: [7], minor: true, rs: "(add9)", sym: "m(add9)" },
+  { id: "69", iv: [0, 4, 9, 2], opt: [7], minor: false, rs: "6/9", sym: "6/9" },
+  { id: "9", iv: [0, 4, 10, 2], opt: [7], minor: false, rs: "9", sym: "9" },
+  { id: "m9", iv: [0, 3, 10, 2], opt: [7], minor: true, rs: "9", sym: "m9" },
+  { id: "maj9", iv: [0, 4, 11, 2], opt: [7], minor: false, rs: "maj9", sym: "maj9" },
+  { id: "7b9", iv: [0, 4, 10, 1], opt: [7], minor: false, rs: "7\u266D9", sym: "7\u266D9" },
+  { id: "7s9", iv: [0, 4, 10, 3], opt: [7], minor: false, rs: "7\u266F9", sym: "7\u266F9" },
+  { id: "11", iv: [0, 10, 5], opt: [7, 2], minor: false, rs: "11", sym: "11" },
+  { id: "m11", iv: [0, 3, 10, 5], opt: [7, 2], minor: true, rs: "11", sym: "m11" },
+  { id: "13", iv: [0, 4, 10, 9], opt: [7, 2], minor: false, rs: "13", sym: "13" },
+  { id: "m13", iv: [0, 3, 10, 9], opt: [7, 2], minor: true, rs: "13", sym: "m13" },
+  { id: "maj13", iv: [0, 4, 11, 9], opt: [7, 2], minor: false, rs: "maj13", sym: "maj13" },
+  // 缺三度的（排在最后、算省了一个音）：A E G = Am7 还是 A7 分不出来，大小按调里的写，候选里明说
+  { id: "7no3", iv: [0, 7, 10], no3: true, minor: false, rs: "7(no3)", sym: "7(no3)" },
+  { id: "maj7no3", iv: [0, 7, 11], no3: true, minor: false, rs: "maj7(no3)", sym: "maj7(no3)" }
+];
+var ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
+var ACC = (a) => a === 0 ? "" : a > 0 ? "\u266F".repeat(a) : "\u266D".repeat(-a);
+var pc = (p) => (midiOf(p) % 12 + 12) % 12;
+function degreeOf(p, fifths) {
+  const deg = ((stepIndex(p.step) - tonicStepIndex(fifths)) % 7 + 7) % 7;
+  return { deg: deg + 1, acc: p.alter - keyAlter(p.step, fifths) };
+}
+var stepName = (p) => `${p.step}${ACC(p.alter)}`;
+function diatonicThird(root, fifths) {
+  const st = STEPS[(stepIndex(root.step) + 2) % 7], up = stepIndex(root.step) + 2 >= 7 ? 1 : 0;
+  return ((midiOf({ step: st, alter: keyAlter(st, fifths), octave: root.octave + up }) - midiOf({ ...root, alter: keyAlter(root.step, fifths) })) % 12 + 12) % 12;
+}
+function readChord(pitches, fifths) {
+  const ps = [...pitches].sort((a, b) => midiOf(a) - midiOf(b));
+  const set = new Set(ps.map(pc));
+  if (set.size < 3) return null;
+  const bass = ps[0], bassPc = pc(bass);
+  const out = [];
+  for (const rootPc of set) {
+    const root = ps.find((p) => pc(p) === rootPc);
+    TPLS.forEach((t, ti) => {
+      const req = new Set(t.iv.map((i) => (rootPc + i) % 12)), opt = new Set((t.opt ?? []).map((i) => (rootPc + i) % 12));
+      for (const x of set) if (!req.has(x) && !opt.has(x)) return;
+      for (const x of req) if (!set.has(x)) return;
+      const omitted = [...opt].filter((x) => !set.has(x)).length + (t.no3 ? 1 : 0);
+      const r = degreeOf(root, fifths), inKey = r.acc === 0;
+      const minor = t.no3 ? diatonicThird(root, fifths) === 3 : t.minor;
+      const cost = (rootPc === bassPc ? 0 : 1) + omitted * 1.2 + (inKey ? 0 : 0.25) + ti * 0.01;
+      const numeral = ACC(r.acc) + (minor ? ROMAN[r.deg - 1].toLowerCase() : ROMAN[r.deg - 1]) + t.rs;
+      const b = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(b.acc)}${b.deg}`;
+      out.push({ root, bass, tpl: t.id, roman: numeral + slash, name: stepName(root) + (t.no3 && minor ? "m" : "") + t.sym + (slash ? `/${stepName(bass)}` : ""), cost, omitted, no3: !!t.no3 });
+    });
+  }
+  if (!out.length) return null;
+  out.sort((a, b) => a.cost - b.cost);
+  const best = out[0];
+  return { best, ties: out.filter((g) => g.cost - best.cost < 0.1), all: out };
+}
+var chordLabel = (r) => r.ties.slice(0, 2).map((g) => g.roman).join(" / ");
+
 // src/score/clef.ts
 var CLEF_SHIFT = { G: 0, G8vb: 7, G8va: -7, G15ma: -14, F: 12, F8vb: 19 };
 var isFClef = (c) => c === "F" || c === "F8vb";
@@ -4155,15 +4245,24 @@ function engrave(song, o) {
     if (cur.trim()) lines2.push(cur.trimEnd());
     const out = lines2.flatMap((l) => {
       if (nameW(l) <= NAME_MAX) return [l];
+      const latin = /^[A-Za-z0-9'’.\-()&]+$/.test(l), hy = latin ? "-" : "";
       const ps = [];
       let c = "";
       for (const ch of [...l]) {
-        if (c && nameW(c + ch) > NAME_MAX) {
+        if (c && nameW(c + ch + hy) > NAME_MAX) {
           ps.push(c);
           c = ch;
         } else c += ch;
       }
       if (c) ps.push(c);
+      if (latin && ps.length > 1) {
+        const last = ps.length - 1, need = 3 - [...ps[last]].length, prev = [...ps[last - 1]];
+        if (need > 0 && prev.length > need + 2) {
+          ps[last] = prev.slice(-need).join("") + ps[last];
+          ps[last - 1] = prev.slice(0, -need).join("");
+        }
+        for (let k = 0; k < last; k++) ps[k] += hy;
+      }
       return ps;
     });
     const max = staves === 2 ? 5 : 3;
@@ -4239,6 +4338,7 @@ function engrave(song, o) {
   };
   const bars = [];
   const chordHeads = [];
+  const topAt = /* @__PURE__ */ new Map();
   const sharedRows = [], virtualOut = {}, measures = [], families = [];
   const rows = [], notes = [], slots = [], heads = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
   const partsHit = [], papersHit = [];
@@ -4945,9 +5045,9 @@ function engrave(song, o) {
           const hch = percHere && !xOf(c) ? percHead(c, (c.pitches.length ? c.pitches : [c.pitch])[k]).ch : ng;
           prims.push({ tok: tokOf(c), t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: hch, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c.whisper && whisperMute ? "art-mute" : ""].filter(Boolean).join(" ") });
           if (c.art.includes("ghost")) {
-            const hx = second ? x0 + nhW(c) * 0.95 : x0, pc = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
-            prims.push({ tok: tokOf(c), t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\uE0F5", cls: pc });
-            prims.push({ tok: tokOf(c), t: "glyph", x: hx + nhW(c) + P(0.25), y: yOf(row, dd), ch: "\uE0F6", cls: pc });
+            const hx = second ? x0 + nhW(c) * 0.95 : x0, pc2 = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
+            prims.push({ tok: tokOf(c), t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\uE0F5", cls: pc2 });
+            prims.push({ tok: tokOf(c), t: "glyph", x: hx + nhW(c) + P(0.25), y: yOf(row, dd), ch: "\uE0F6", cls: pc2 });
           }
         });
         if (c.dotted) prims.push({ tok: tokOf(c), t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(row, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
@@ -5134,6 +5234,7 @@ function engrave(song, o) {
           if (up && s.d < 27) tip = Math.min(tip, mid);
           if (!up && s.dLow > 41) tip = Math.max(tip, mid);
           tipOf.set(s.c, tip);
+          topAt.set(`${RW(s.c)}|${s.c.index}`, up ? tip : s.y);
           prims.push({ tok: tokOf(s.c), t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: tip, w: P(ENGRAVE.stem), cls: stemCls(s) });
           const lv = flagLevel(s.c.base);
           if (lv > 0) {
@@ -5149,6 +5250,7 @@ function engrave(song, o) {
         const yb0 = up ? Math.min(...g.map((s) => s.y - P(3.5) - k * (sx(s) - xa))) : Math.max(...g.map((s) => s.yLow + P(3.5) - k * (sx(s) - xa)));
         for (const s of g) {
           tipOf.set(s.c, at(sx(s), yb0));
+          topAt.set(`${RW(s.c)}|${s.c.index}`, up ? Math.min(at(sx(s), yb0) - P(ENGRAVE.beam), s.y) : s.y);
           prims.push({ tok: tokOf(s.c), t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: at(sx(s), yb0), w: P(ENGRAVE.stem), cls: stemCls(s) });
         }
         const step = P(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th = P(ENGRAVE.beam) * (up ? 1 : -1);
@@ -5471,7 +5573,26 @@ function engrave(song, o) {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
+  const chordTagsOut = [];
+  if (o.chordTags) {
+    const seen = /* @__PURE__ */ new Set(), fs = 1.25 * sp;
+    for (const h of notes) {
+      if (h.part) continue;
+      const sys = rows[h.system];
+      if (!sys) continue;
+      const k = `${sys.paper}|${sys.part}|${h.index}`;
+      if (seen.has(k)) continue;
+      seen.add(k);
+      const toks = song.papers.find((pp) => pp.id === sys.paper)?.tracks[sys.part], t = toks?.[h.index];
+      if (!toks || t?.kind !== "note" || !t.pitch || !t.chord?.length) continue;
+      const r = readChord([t.pitch, ...t.chord], keyAt(toks, h.index));
+      if (!r) continue;
+      const top = topAt.get(`${h.system}|${h.index}`) ?? h.y, s = chordLabel(r), cx = h.x + h.w / 2, y = Math.min(sys.staffTop - 0.6 * sp, top - 0.9 * sp), w = [...s].length * fs * 0.6 + 0.6 * sp;
+      prims.push({ t: "text", x: cx, y, s, cls: "chord-tag", size: fs, anchor: "middle" });
+      chordTagsOut.push({ x: cx - w / 2, y: y - fs * 1.05, w, h: fs * 1.4, read: r });
+    }
+  }
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -5561,4 +5682,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-9af2a70efd93.mjs.map
+//# sourceMappingURL=layout-worker-ae2be6ef408a.mjs.map

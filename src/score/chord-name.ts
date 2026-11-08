@@ -10,9 +10,9 @@
 //   ④ 打平（差不到 0.1）= 都给出来，显示的人自己写「vi7 / I6」；点开能看全部候选。
 // 写法：罗马数字 = 根音在调里是第几级（大写 = 大三度的和弦，小写 = 小三度的；调外的带 ♭ / ♯：B♭ 在 C 调 = ♭VII），后面跟这类和弦的记号（7 / maj7 / ° / ø7 / sus4…）；
 //   转位 = 「/」+ 最低音在调里是第几级（C/E 在 C 调 = I/3，同简谱的想法）。
-import { type Pitch, midiOf, stepIndex, tonicStepIndex, keyAlter } from "./pitch.ts";
+import { type Pitch, STEPS, midiOf, stepIndex, tonicStepIndex, keyAlter } from "./pitch.ts";
 
-interface Tpl { id: string; iv: number[]; opt?: number[]; minor: boolean; /** 罗马数字后面写的（小写的已经说了小三度，不再写 m）。 */ rs: string; /** 和弦名（根音字母后面写的，点开看候选用）。 */ sym: string }
+interface Tpl { id: string; iv: number[]; opt?: number[]; /** 缺三度（大小分不出来）：大写小写按调里这个根音上面的三度（v0.16.13，user 11-07 截图：A E G 没标）。 */ no3?: boolean; minor: boolean; /** 罗马数字后面写的（小写的已经说了小三度，不再写 m）。 */ rs: string; /** 和弦名（根音字母后面写的，点开看候选用）。 */ sym: string }
 /** 和弦表（半音，从根音数；opt = 可以省的音，一般是五度 / 九度）。顺序 = 简单的在前（同分时排前面的赢）。 */
 const TPLS: Tpl[] = [
   { id: "maj", iv: [0, 4, 7], minor: false, rs: "", sym: "" },
@@ -44,6 +44,9 @@ const TPLS: Tpl[] = [
   { id: "13", iv: [0, 4, 10, 9], opt: [7, 2], minor: false, rs: "13", sym: "13" },
   { id: "m13", iv: [0, 3, 10, 9], opt: [7, 2], minor: true, rs: "13", sym: "m13" },
   { id: "maj13", iv: [0, 4, 11, 9], opt: [7, 2], minor: false, rs: "maj13", sym: "maj13" },
+  // 缺三度的（排在最后、算省了一个音）：A E G = Am7 还是 A7 分不出来，大小按调里的写，候选里明说
+  { id: "7no3", iv: [0, 7, 10], no3: true, minor: false, rs: "7(no3)", sym: "7(no3)" },
+  { id: "maj7no3", iv: [0, 7, 11], no3: true, minor: false, rs: "maj7(no3)", sym: "maj7(no3)" },
 ];
 const ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
 const ACC = (a: number): string => (a === 0 ? "" : a > 0 ? "♯".repeat(a) : "♭".repeat(-a));
@@ -56,7 +59,8 @@ export interface ChordGuess {
   /** 级数写法：V7、ii、♭VII、I/3。 */ roman: string;
   /** 和弦名：G7、Dm、C/E（点开看候选用）。 */ name: string;
   /** 越小越像；同分 = 打平。 */ cost: number;
-  /** 省掉了几个可省的音。 */ omitted: number;
+  /** 省掉了几个可省的音（缺三度也算一个）。 */ omitted: number;
+  /** 缺三度：大小三和弦分不出来，大小写按调里的。 */ no3: boolean;
 }
 export interface ChordRead { best: ChordGuess; /** 和 best 打平的（含 best 自己，按先后）。 */ ties: ChordGuess[]; /** 全部候选（按先后）。 */ all: ChordGuess[] }
 
@@ -66,6 +70,11 @@ export function degreeOf(p: Pitch, fifths: number): { deg: number; acc: number }
   return { deg: deg + 1, acc: p.alter - keyAlter(p.step, fifths) };
 }
 const stepName = (p: Pitch): string => `${p.step}${ACC(p.alter)}`;
+/** 调里这个根音上面的三度隔几个半音（3 = 小三度、4 = 大三度）：缺三度的和弦按它定大小写。 */
+function diatonicThird(root: Pitch, fifths: number): number {
+  const st = STEPS[(stepIndex(root.step) + 2) % 7], up = stepIndex(root.step) + 2 >= 7 ? 1 : 0;
+  return (((midiOf({ step: st, alter: keyAlter(st, fifths), octave: root.octave + up }) - midiOf({ ...root, alter: keyAlter(root.step, fifths) })) % 12) + 12) % 12;
+}
 
 /** 认和弦：几个音（三个不同的音以下 = null）+ 调（1= 那个调，几个升降号）。认不出来（表里没有）= null。 */
 export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead | null {
@@ -80,12 +89,13 @@ export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead 
       const req = new Set(t.iv.map((i) => (rootPc + i) % 12)), opt = new Set((t.opt ?? []).map((i) => (rootPc + i) % 12));
       for (const x of set) if (!req.has(x) && !opt.has(x)) return;   // 按下的音都得在表里
       for (const x of req) if (!set.has(x)) return;                   // 表里该有的都得有
-      const omitted = [...opt].filter((x) => !set.has(x)).length;
+      const omitted = [...opt].filter((x) => !set.has(x)).length + (t.no3 ? 1 : 0);
       const r = degreeOf(root, fifths), inKey = r.acc === 0;
+      const minor = t.no3 ? diatonicThird(root, fifths) === 3 : t.minor;
       const cost = (rootPc === bassPc ? 0 : 1) + omitted * 1.2 + (inKey ? 0 : 0.25) + ti * 0.01;
-      const numeral = ACC(r.acc) + (t.minor ? ROMAN[r.deg - 1].toLowerCase() : ROMAN[r.deg - 1]) + t.rs;
+      const numeral = ACC(r.acc) + (minor ? ROMAN[r.deg - 1].toLowerCase() : ROMAN[r.deg - 1]) + t.rs;
       const b = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(b.acc)}${b.deg}`;
-      out.push({ root, bass, tpl: t.id, roman: numeral + slash, name: stepName(root) + t.sym + (slash ? `/${stepName(bass)}` : ""), cost, omitted });
+      out.push({ root, bass, tpl: t.id, roman: numeral + slash, name: stepName(root) + (t.no3 && minor ? "m" : "") + t.sym + (slash ? `/${stepName(bass)}` : ""), cost, omitted, no3: !!t.no3 });
     });
   }
   if (!out.length) return null;

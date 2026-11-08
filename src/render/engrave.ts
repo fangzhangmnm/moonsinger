@@ -29,6 +29,8 @@ import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
 import { GLYPH, W, ENGRAVE, STEM_UP_SE, STEM_DOWN_NW, FLAG_ANCHOR_UP, FLAG_ANCHOR_DOWN, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } from "./smufl.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { songInC, realFifthsOf } from "../score/view-in-c.ts";
+import { readChord, chordLabel, type ChordRead } from "../score/chord-name.ts";
+import { keyAt as keyAtTok } from "../score/song.ts";
 import { resolveSongClefs, displayStates, autoOttava, CLEF_SHIFT, baseClef, isFClef, ottavaShift, startClef, wantsGrand } from "../score/clef.ts";
 import { mergeTracks, planHands, type MergeOpts } from "../score/merge.ts";
 
@@ -76,6 +78,8 @@ export interface EngraveOpts {
   /** 调号没有升降号的地方（纸开头那处、中途换成 C 的地方）上方画淡的「1=C」（v0.16.10，user 11-07「专业模式下面C调的时候，最好也能有一个显示调号的方案，
    *  这个样子我就不会像这次一样忘了点了」）：编辑器里的提示，不占宽、不改排版，点它 = 谱头面板；PDF 不传。 */
   keyHint?: boolean;
+  /** 和弦标级数（v0.16.13；src/score/chord-name.ts）：叠音的和弦上方写它在这个调里是几级。不占地方、不改排版；跟着设置印进 PDF（user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）。 */
+  chordTags?: boolean;
   paperLabel?: string;                   // 纸右上角的小钮（扳手；这里的字只进悬停提示「纸：A5」）；点了 = 纸的设置（user「这种应该是纸的右上角有一个可以设置纸的属性吧。加图片的入口以后也可以放那里」；
                                          //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
@@ -142,6 +146,8 @@ export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
   /** 和弦里主音以外的那几个符头（播放时一起亮；不进 notes——点 / 拖还是按整个音；v0.10.23，user「音符高亮忘了做和弦的其他音的高亮」）。 */
   chordHeads: { index: number; system: number; x: number; y: number; w: number; part?: string }[];
+  /** 和弦级数的点击框 + 认出来的候选（o.chordTags 开着才有；点了 = 候选小菜单）。 */
+  chordTags: { x: number; y: number; w: number; h: number; read: ChordRead }[];
   /** 合租叠起来的谱行（下标 = systems 里的）：只读——点了不写、不放光标，点名字拆开（v0.10.25，user「host也应该只读，只有展开时才能编辑」）。 */
   sharedRows: number[];
   /** 合租叠起来的那一行画的是哪条虚拟 track（键 = "纸 id:主人 id"；v0.10.28，src/score/merge.ts）：这一行点击区的下标指的是它，不是主人自己的 track。 */
@@ -408,9 +414,16 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     if (cur.trim()) lines.push(cur.trimEnd());
     const out = lines.flatMap((l) => {
       if (nameW(l) <= NAME_MAX) return [l];
+      // 一个词自己就放不下：拉丁字母断开处加连字符、最后一截至少三个字母（F-207，user 11-06：iPad 上 Synthesizer 被折成「Synthesiz / er」断在词中间）；汉字照旧按字折
+      const latin = /^[A-Za-z0-9'’.\-()&]+$/.test(l), hy = latin ? "-" : "";
       const ps: string[] = []; let c = "";
-      for (const ch of [...l]) { if (c && nameW(c + ch) > NAME_MAX) { ps.push(c); c = ch; } else c += ch; }
+      for (const ch of [...l]) { if (c && nameW(c + ch + hy) > NAME_MAX) { ps.push(c); c = ch; } else c += ch; }
       if (c) ps.push(c);
+      if (latin && ps.length > 1) {
+        const last = ps.length - 1, need = 3 - [...ps[last]].length, prev = [...ps[last - 1]];
+        if (need > 0 && prev.length > need + 2) { ps[last] = prev.slice(-need).join("") + ps[last]; ps[last - 1] = prev.slice(0, -need).join(""); }
+        for (let k = 0; k < last; k++) ps[k] += hy;
+      }
       return ps;
     });
     const max = staves === 2 ? 5 : 3;
@@ -486,6 +499,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
 
   const bars: Layout["bars"] = [];
   const chordHeads: Layout["chordHeads"] = [];
+  /** 每个音（行 | 下标）往上画到哪（px）：符干朝上 = 符干尖，朝下 = 最高的符头。和弦级数放在它上面（v0.16.13：原来一律抬 4 格，符干朝下的标飘到上一行谱底下、像在标别人）。 */
+  const topAt = new Map<string, number>();
   const sharedRows: number[] = [], virtualOut: Record<string, Token[]> = {}, measures: Layout["measures"] = [], families: Layout["families"] = [];   // 合租叠起来的那几行（只读：点了不写、不放光标；v0.10.25）
   const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], heads: CaretHead[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
@@ -1261,7 +1276,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           const s = g[0];
           let tip = up ? s.y - P(3.5) : s.yLow + P(3.5);
           if (up && s.d < 27) tip = Math.min(tip, mid); if (!up && s.dLow > 41) tip = Math.max(tip, mid);
-          tipOf.set(s.c, tip);
+          tipOf.set(s.c, tip); topAt.set(`${RW(s.c)}|${s.c.index}`, up ? tip : s.y);
           prims.push({ tok: tokOf(s.c), t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: tip, w: P(ENGRAVE.stem), cls: stemCls(s) });
           const lv = flagLevel(s.c.base);
           if (lv > 0) {
@@ -1275,7 +1290,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         const k = Math.max(-0.2, Math.min(0.2, ((g[g.length - 1].y - g[0].y) / (xb - xa)) * 0.5));
         const at = (xx: number, yy0: number) => yy0 + k * (xx - xa);
         const yb0 = up ? Math.min(...g.map((s) => s.y - P(3.5) - k * (sx(s) - xa))) : Math.max(...g.map((s) => s.yLow + P(3.5) - k * (sx(s) - xa)));
-        for (const s of g) { tipOf.set(s.c, at(sx(s), yb0)); prims.push({ tok: tokOf(s.c), t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: at(sx(s), yb0), w: P(ENGRAVE.stem), cls: stemCls(s) }); }
+        for (const s of g) { tipOf.set(s.c, at(sx(s), yb0)); topAt.set(`${RW(s.c)}|${s.c.index}`, up ? Math.min(at(sx(s), yb0) - P(ENGRAVE.beam), s.y) : s.y); prims.push({ tok: tokOf(s.c), t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: at(sx(s), yb0), w: P(ENGRAVE.stem), cls: stemCls(s) }); }
         const step = P(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th = P(ENGRAVE.beam) * (up ? 1 : -1);
         const beamPath = (xL: number, xR: number, lvl: number) => {
           const of = step * lvl; const a = at(xL, yb0) + of, b = at(xR, yb0) + of;
@@ -1562,7 +1577,24 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.unshift(...frames);
   }
   const height = PG ? pageTopY(pageNo) + P(PG.h) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
+  // 和弦级数（v0.16.13）：叠音的和弦（NoteTok.chord）上方写级数，放在这个音往上画到的地方（topAt：符干朝上 = 符干尖）再上面一点；不占地方。按 C 调看时认的是换到 C 的谱 + C 调——级数一样。
+  //   合租叠起来的虚拟行不标（只看个大概的）。
+  const chordTagsOut: Layout["chordTags"] = [];
+  if (o.chordTags) {
+    const seen = new Set<string>(), fs = 1.25 * sp;
+    for (const h of notes) {
+      if (h.part) continue;
+      const sys = rows[h.system]; if (!sys) continue;
+      const k = `${sys.paper}|${sys.part}|${h.index}`; if (seen.has(k)) continue; seen.add(k);
+      const toks = song.papers.find((pp) => pp.id === sys.paper)?.tracks[sys.part], t = toks?.[h.index];
+      if (!toks || t?.kind !== "note" || !t.pitch || !t.chord?.length) continue;
+      const r = readChord([t.pitch, ...t.chord], keyAtTok(toks, h.index)); if (!r) continue;
+      const top = topAt.get(`${h.system}|${h.index}`) ?? h.y, s = chordLabel(r), cx = h.x + h.w / 2, y = Math.min(sys.staffTop - 0.6 * sp, top - 0.9 * sp), w = [...s].length * fs * 0.6 + 0.6 * sp;
+      prims.push({ t: "text", x: cx, y, s, cls: "chord-tag", size: fs, anchor: "middle" });
+      chordTagsOut.push({ x: cx - w / 2, y: y - fs * 1.05, w, h: fs * 1.4, read: r });
+    }
+  }
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
 }
 
 export type { Token };

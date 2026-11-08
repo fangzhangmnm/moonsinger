@@ -1,7 +1,7 @@
 // test/e2e/header-panel.mjs —— 真浏览器 E2E：谱头面板（v0.16.8）——谱号 / 调号 / 拍号 / 速度同一个面板。
 // created 2026-11-07 by Claude Opus 5.5（user 11-07「调号就开头的调号、拍号和谱号，他们是同一个碰撞箱子你点进去之后，三个都可以设」「速度也要放进谱头面板」
 //   「先按照你说的归类整理一下」）。
-// 守：开头那一处改调号 / 拍号 / 速度（面板不收、每改一下一步撤销）；拍号「其他…」自己写；中途空地插调号、「删掉这里的变化」；「⋯」里没有插记号的钮了。
+// 守：开头那一处改调号 / 拍号（面板不收、每改一下一步撤销）；速度那一行 = 一颗钮，点了 = 原来的速度框（v0.16.12，user「speed没叫你丢之前的窗口啊」），确定才写；拍号「其他…」自己写；中途空地插调号、「删掉这里的变化」；「⋯」里没有插记号的钮了。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/header-panel.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
@@ -18,7 +18,7 @@ const closeAll = async () => { await p.keyboard.press("Escape"); await p.waitFor
 // ① 点行首的调号 → 面板，四样都在
 const keyBox = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), k = L.marks.find((x) => x.kind === "key" && x.system === 0); return { x: sc.left + L.pageX.left + k.x + k.w / 2, y: sc.top + k.y + k.h / 2 }; });
 await p.mouse.click(keyBox.x, keyBox.y); await p.waitForTimeout(250);
-check((await panel()) === "clef,key,time,bpm,word", "点行首的调号 = 谱头面板：谱号 / 调号 / 拍号 / 速度", String(await panel()));
+check((await panel()) === "clef,key,time" && !!(await p.$('.header-panel [data-v="tempo"]')), "点行首的调号 = 谱头面板：谱号 / 调号 / 拍号 + 速度那一颗钮", String(await panel()));
 const h0 = await head();
 await p.selectOption('.header-panel [data-hp="key"]', "2"); await p.waitForTimeout(150);
 check((await head()).startsWith("k2 "), "调号改成 1=D（2 个升号）", await head());
@@ -28,10 +28,14 @@ check((await head()).includes("t6/8"), "拍号改成 6/8", await head());
 await p.selectOption('.header-panel [data-hp="time"]', "other"); await p.waitForTimeout(150);
 await p.fill('.header-panel [data-hp="timeText"]', "5/8"); await p.press('.header-panel [data-hp="timeText"]', "Enter"); await p.dispatchEvent('.header-panel [data-hp="timeText"]', "change").catch(() => {}); await p.waitForTimeout(150);
 check((await head()).includes("t5/8"), "拍号「其他…」自己写 5/8", await head());
-await p.fill('.header-panel [data-hp="bpm"]', "132"); await p.dispatchEvent('.header-panel [data-hp="bpm"]', "change"); await p.waitForTimeout(150);
-check((await head()).endsWith("q132"), "速度改成 132", await head());
+check((await p.textContent('.header-panel [data-v="tempo"]'))?.startsWith("♩="), "速度那一颗钮写着现在的速度", String(await p.textContent('.header-panel [data-v="tempo"]')));
+await p.click('.header-panel [data-v="tempo"]'); await p.waitForTimeout(250);
+check(!(await panel()) && await p.isVisible(".mark-ed .metro") && await p.isVisible(".mark-ed .tempo-wheel"), "点了 = 面板收起、原来的速度框（滚轮 + 小节拍器）");
+await p.fill(".mark-ed input", "132"); await p.waitForTimeout(80);
+check(!(await head()).endsWith("q132"), "框里改了还没写进谱（要按确定）", await head());
+await p.click(".mark-ed .mark-ok"); await p.waitForTimeout(150);
+check((await head()).endsWith("q132"), "按确定 = 速度改成 132", await head());
 await closeAll();
-check(!(await panel()), "点外面 = 收");
 // 每改一下 = 一步撤销
 for (let i = 0; i < 4; i++) { await p.keyboard.press("Control+z"); await p.waitForTimeout(100); }
 check((await head()) === h0, "撤销四步 = 回到原来", `${await head()} / ${h0}`);

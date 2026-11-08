@@ -301,7 +301,7 @@ function syncDock(): void {
 addEventListener("resize", () => syncDock());   // 横屏底座在的时候，舞台里谱面以外占的宽（px；排谱宽度不跟着底座开合跳，见 view 的 layoutWidth；v0.10.33）   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
 const attr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = _t("键盘（pad）");
-padTab.innerHTML = `<svg class="ico"><use href="#grid"/></svg><span>${_t("键盘")}</span>`;
+padTab.innerHTML = `<svg class="ico"><use href="#piano-keys"/></svg><span>${_t("键盘")}</span>`;
 // 底座边上的小条（v0.10.20）：模式四个钮 + |▶ + 撤销 / 重做 + 收起后叫回键盘，贴在键盘边上（竖屏 = 键盘左上角往上挂；横屏 = 键盘左边竖着挂；键盘收起 = 贴屏幕边）——
 //   按键盘的时候东西就在手边，鼠标不用上下跑（user「音符词听那个小面版变成靠着键盘 / 加一个按一下弹出键盘的钮…所以竖屏的时候就是左下角，拉着键盘的左上角 / 横屏的时候变成竖排可以吗 /
 //   这样按键盘的时候东西就在手边 / 然后走带控制也放这个面版上面 / 就是 play/pause undo redo 音符词听」「尤其是模式条的位置（这个其实蛮重要的，不然鼠标上下跑）」）。位置全在 CSS（grid 区域定位）。
@@ -475,10 +475,10 @@ let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消�
  *  「设计里面专门开一个就是 Accessibility 辅助模式的框，这是第一个可选项」「这个是跟着系统的设置走的」「键盘的键位不能动」。PDF / 导出照实际的调。 */
 const KV_VIEW_IN_C = "view-in-c";
 let viewInC = deviceKvGet(KV_VIEW_IN_C) === "1";
-/** 和弦标级数（v0.16.11；这台设备上的设置，device-kv「chord-tags」，默认关）：叠音的和弦上方写级数（src/score/chord-name.ts），点了看候选。
+/** 和弦标级数（v0.16.11；这台设备上的设置，device-kv「chord-tags」，v0.16.12 起默认开——user 11-07「和弦标级数默认开？」；关过的 = "0" 照旧关）：叠音的和弦上方写级数（src/score/chord-name.ts），点了看候选。
  *  user 11-07「我根本看不懂我自己摸的和弦，摸出来是几级和弦，我脑袋根本转不过来」「和弦上标级数…写个深模块…就你自己写」。 */
 const KV_CHORD_TAGS = "chord-tags";
-let chordTagsOn = deviceKvGet(KV_CHORD_TAGS) === "1";
+let chordTagsOn = deviceKvGet(KV_CHORD_TAGS) !== "0";
 const view = new ScoreView(scoreEl, {
   get: () => D.st,
   set: (n, o) => update(n, o?.gesture),
@@ -972,7 +972,7 @@ const LANG_LABEL = "语言 · Language";   // i18n-keep
 /** 点了谱上的和弦级数：全部候选 + 怎么排的（不是选择题，只是看；认法 = src/score/chord-name.ts 头注释）。 */
 function openChordInfo(r: ChordRead, at: { x: number; y: number }): void {
   const row = (g: ChordGuess, i: number) => `<div class="chord-cand${i === 0 ? " is-best" : ""}"><b>${esc(g.roman)}</b><span>${esc(g.name)}</span>` +
-    `<small>${[g.root.step !== g.bass.step || g.root.alter !== g.bass.alter ? _t("转位（最低音不是根音）") : "", g.omitted ? _t("省了 {n} 个音", { n: g.omitted }) : ""].filter(Boolean).join(" · ")}</small></div>`;
+    `<small>${[g.root.step !== g.bass.step || g.root.alter !== g.bass.alter ? _t("转位（最低音不是根音）") : "", g.no3 ? _t("没有三度：大三和弦还是小三和弦分不出来，按这个调里的写") : "", g.omitted - (g.no3 ? 1 : 0) > 0 ? _t("省了 {n} 个音", { n: g.omitted - (g.no3 ? 1 : 0) }) : ""].filter(Boolean).join(" · ")}</small></div>`;
   ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${_t("怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。")}</div>` +
     r.all.slice(0, 6).map(row).join(""), at, () => true);
 }
@@ -1902,6 +1902,7 @@ function openInsertOttavaMenu(at: { x: number; y: number }): void {
 /** 谱头面板（v0.16.8，src/app/header-panel.ts）：谱号 / 调号 / 拍号 / 速度同一个面板。 */
 const headerPanel = createHeaderPanel({
   state: () => D.st, update: (n) => update(n), menu: (cls, html, at, pick) => ctxMenu(cls, html, at, pick),
+  openTempo: (paperId, partId, index, fresh) => view.openMarkEditor(paperId, partId, index, fresh),
   partClef: (paperId, partId) => { const part = D.st.song.parts.find((p) => p.id === partId), now = part?.clef ?? resolveSongClefs(D.st.song).get(paperId)?.get(partId) ?? "G"; return part?.clef ? CLEF_LABEL[now] : _t("自动：这张纸挑了「{p}」", { p: CLEF_LABEL[now] }); },
 });
 function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {
@@ -2255,7 +2256,7 @@ function drawInst(): void {
   instEl.innerHTML =
     `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("回到谱（Esc）")}">${_t("← 谱")}</button><span class="ip-title">${_t("乐器")}</span>` +
     (parts.length > 1 ? `<select class="ip-part" title="${_t("换一个声部")}">${parts.map((x) => `<option value="${esc(x.p.id)}"${x.p.id === D.st.at.part ? " selected" : ""}>${esc(x.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc(parts[0]?.label ?? rn)}</span>`) +
-    `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="${_t("试听键盘：开 / 关")}"><svg class="ico"><use href="#grid"/></svg><span>${_t("键盘")}</span></button></div>` +
+    `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="${_t("试听键盘：开 / 关")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("键盘")}</span></button></div>` +
     `<div class="ip-body"><div class="ip-cols">` +
     `<section class="ip-card"><h3>${_t("这个声部是什么")}<small>${_t("谱上写它的名字")}</small></h3><select id="roleSel" class="role-sel">` +
       (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${_t("{rn}（自己写的）", { rn: esc(rn) })}</option>`) +
@@ -2529,6 +2530,7 @@ function openPdfPanel(): void {
       `<div class="part-sec">${_t("歌词的字体")}</div><div class="set-row">${chip("sans", _t("黑体"), _t("思源黑体：中文 / 日文 / 英文都有"))}${chip("pinyin", _t("拼音"), _t("萌神手写体：汉字头上标普通话拼音（可爱）；日文歌的汉字也会被标上普通话拼音"))}</div>` +
       `<div class="offer-msg">${_t("{p}第一次要下载字体（约 {p2} MB），之后离线也能用。纸张 = 这首歌的纸（纸的扳手里改）。", { p: pdfFont === "pinyin" ? _t("萌神手写体：汉字头上标普通话拼音，歌词那一行会往下让出拼音的地方。日文歌的汉字也会被标上普通话拼音。") : _t("思源黑体：中文、日文、英文都有。"), p2: PDF_FONT_MB[pdfFont] })}</div>` +
       `<div class="offer-msg">${partPick === "shown" ? _t("只排看得见的声部（{p}）：重新排、不留空位——和分页预览不一样。", { p: esc(shownNames.join("、")) }) : _t("印出来的 = 扳手里「分页」+ 曲段控件「{p}」看到的样子，去掉按钮和提示；隐藏的{p2}声部不印（预览里那条细行的位置空着）。", { p: paperPick === "one" ? _t("本段") : _t("全部"), p2: paperPick === "one" ? "" : _t("纸 / ") })}</div>` +
+      ((viewInC || chordTagsOn) ? `<div class="offer-msg">${_t("照你现在的看谱方式印：{w}（设置「辅助」里改）。", { w: [viewInC ? _t("按 C 调看（每个调号上方印「1=原来的调」）") : "", chordTagsOn ? _t("和弦级数") : ""].filter(Boolean).join(_t("、")) })}</div>` : "") +   // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
       `<div class="offer-btns"><button class="btn" data-v="close">${_t("算了")}</button><button class="btn primary" data-v="go">${_t("生成 PDF")}</button></div></div>`;
   };
   draw(); document.body.append(box);
@@ -2559,7 +2561,7 @@ async function makePdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<{ file: F
       song = { ...song, parts: song.parts.filter((p) => keep.has(p.id)), papers: song.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).filter(([k]) => keep.has(k))) })).filter((p) => Object.keys(p.tracks).length || p.id === pick.paper) };
       parts = parts.filter((v) => keep.has(v.id)).map((v, k) => ({ ...v, hidden: false, first: k === 0 }));
     }
-    const r = scorePdf({ song, parts, font, fontId, music, title, created: new Date(), measureAt: (px) => view.measureAt(px), autoBars, ...(pick.paper ? { onlyPaper: pick.paper } : {}) });
+    const r = scorePdf({ song, parts, font, fontId, music, title, created: new Date(), measureAt: (px) => view.measureAt(px), autoBars, view: { inC: viewInC, chordTags: chordTagsOn }, ...(pick.paper ? { onlyPaper: pick.paper } : {}) });
     const paperName = pick.paper ? (D.st.song.papers.find((p) => p.id === pick.paper)?.name || _t("这一段")) : "";
     const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x) => fileSafe(x)).join("-");
     return { file: new File([r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${suffix ? `-${suffix}` : ""}`)}.pdf`, { type: "application/pdf" }), r };   // 名[-曲段 / 声部]-YYYYMMDD-HHMM（v0.9.47）
