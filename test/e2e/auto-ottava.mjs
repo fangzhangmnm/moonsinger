@@ -31,9 +31,8 @@ check((await autos()) === 1, "那一段变成手写的了（剩下 8vb 那段还
 await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
 check((await manualToks()) === "" && (await autos()) === 2, "撤销 = 回到自动");
 // 自动八度线 关：v0.16.16 起在谱头面板「这位的谱」里（搬家 A）；歌手名小卡里「谱怎么画…」直达
-await p.click("#score text.part-name"); await p.waitForTimeout(200);
-await p.click('.track-card [data-v="score-look"]'); await p.waitForTimeout(250);
-check((await p.$eval('.header-panel [data-hp="ao"]', (s) => s.value).catch(() => null)) === "on", "小卡「谱怎么画…」= 谱头面板，自动八度线默认开");
+await p.evaluate(() => window.__moonsinger.openHeader(window.__moonsinger.state().at.part)); await p.waitForTimeout(250);   // v0.16.21：小卡里不再有「谱怎么画」，点谱号开谱头面板
+check((await p.$eval('.header-panel [data-hp="ao"]', (s) => s.value).catch(() => null)) === "on", "谱头面板「这位的谱」：自动八度线默认开");
 await p.selectOption('.header-panel [data-hp="ao"]', "off"); await p.waitForTimeout(250);
 check((await autos()) === 0, "关了 = 不画自动的");
 check((await p.evaluate(() => window.__moonsinger.state().song.parts[0].autoOttava)) === false, "记在声部上（存进 score.json）");

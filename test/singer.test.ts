@@ -92,7 +92,7 @@ describe("读到两个声部共用一位歌手 = 拆成两位", () => {
     eq(new Set(roles).size, 2, roles.join(",")); eq(o.song.parts[0].role, "r1");
     eq(JSON.stringify(o.extras.lounge[roles[1]]), JSON.stringify(o.extras.lounge.r1), "谁来演、怎么演照抄");
     eq(o.song.parts[1].mic, "m1", "麦克风照旧共用");
-    assert(o.notices.some((x) => /拆成了两位/.test(x)), o.notices.join(" | "));
+    assert(o.notices.some((x) => /拆成了两份/.test(x)), o.notices.join(" | "));
     eq(tr({ ...st, song: o.song }).length > 0, true);
   });
 });

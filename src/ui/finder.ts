@@ -150,7 +150,7 @@ export class Finder {
     const box = this.el.querySelector<HTMLElement>(".finder-used")!, used = this.playOnly ? [] : this.host.used?.() ?? [];
     box.hidden = this.playOnly || !this.host.used;
     if (box.hidden) return;
-    box.innerHTML = `<span class="fu-k">${_t("这首歌里用过的")}</span>` + used.map((u) => `<span class="fu-c"><button class="btn chip${u.on ? " is-on" : ""}" data-v="use" data-cid="${esc(u.id)}" title="${u.on ? _t("正在台上") : _t("点了 = 换成它")}">${esc(u.name)}</button>` +
+    box.innerHTML = `<span class="fu-k">${_t("这首歌的乐器预设")}</span>` + used.map((u) => `<span class="fu-c"><button class="btn chip${u.on ? " is-on" : ""}" data-v="use" data-cid="${esc(u.id)}" title="${u.on ? _t("正在台上") : _t("点了 = 换成它")}">${esc(u.name)}</button>` +
       (u.removable && !u.on ? `<button class="btn fu-del" data-v="usedel" data-cid="${esc(u.id)}" title="${_t("退掉（它嵌在歌里的声音一起丢；能撤销）")}">×</button>` : "") + `</span>`).join("") +
       (this.host.ownSf2 ? `<button class="btn" data-v="ownsf2" title="${_t("自己的 .sf2 文件：选中的那一件切出来留在这台设备上，歌里只记来源")}">${_t("自己的 .sf2…")}</button>` : "");
   }

@@ -65,7 +65,7 @@ export interface Document {
   markSaved(): void;
 }
 
-const LOCK_WHAT: Record<string, string> = { score: _t("谱 / 歌名 / 作者栏"), paper: _t("纸"), lounge: _t("歌手 / 乐器"), studio: _t("混音"), cover: _t("封面") };
+const LOCK_WHAT: Record<string, string> = { score: _t("谱 / 歌名 / 作者栏"), paper: _t("纸"), lounge: _t("声部 / 乐器"), studio: _t("混音"), cover: _t("封面") };
 /** 休息室 + 录音房 + 定稿的 JSON 键（脏比较用；字节在 extras.sounds 不在这里，每秒一次 stringify 无所谓）。 */
 const extrasKey = (e: Extras): string => JSON.stringify([e.final?.at ?? null, Object.entries(e.lounge).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)), e.studio ?? null]);
 

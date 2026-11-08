@@ -53,7 +53,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
         const timeOpts = (head ? "" : opt("", _t("不变（{t}）", { t: `${bt.beats}/${bt.beatType}` }), v.time === null)) +
           TIMES.map(([b, t]) => opt(`${b}/${t}`, `${b}/${t}`, tv === `${b}/${t}`)).join("") + (inList ? "" : opt(tv, tv, true)) + opt("other", _t("其他…（自己写）"), false);
         const any = v.clef !== null || v.key !== null || v.time !== null || v.tempo !== null;
-        return `<div class="ctx-hint ctx-what">${head ? _t("这张纸开头：从头开始的谱号 / 调号 / 拍号 / 速度。只管这一位歌手这一张纸（开头的速度整张纸一起）。") : _t("从这里起的变化（「不变」= 跟前面一样）。")}</div>` +
+        return `<div class="ctx-hint ctx-what">${head ? _t("这张纸开头：从头开始的谱号 / 调号 / 拍号 / 速度。只管这一个声部这一张纸（开头的速度整张纸一起）。") : _t("从这里起的变化（「不变」= 跟前面一样）。")}</div>` +
           `<div class="hp-grid">` +
           `<span class="hp-k">${_t("谱号")}</span><select class="hp-sel" data-hp="clef" title="${_t("只管画，音高不变")}">${clefOpts}</select>` +
           `<span class="hp-k">${_t("调号")}</span><select class="hp-sel" data-hp="key" title="${_t("改调号 = 它管的音按新调号拼写，音高不变")}">${keyOpts}</select>` +
@@ -73,7 +73,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
           `<span class="hp-k">${_t("谱表")}</span><select class="hp-sel" data-hp="staves">${opt("1", _t("一张"), one)}${opt("2", _t("大谱表（上高音下低音）"), !one)}</select>` +
           (one ? `<span class="hp-k">${_t("默认谱号")}</span><select class="hp-sel" data-hp="pclef" title="${_t("每张纸开头「跟声部」用的就是它；自动 = 按每张纸的音挑加线最省的")}">${opt("", _t("自动"), !me.clef)}${CLEFS.map((c) => opt(c, CLEF_LABEL[c], me.clef === c)).join("")}</select>` : "") +
           `<span class="hp-k">${_t("自动八度线")}</span><select class="hp-sel" data-hp="ao" title="${_t("一串很高 / 很低的音（每个都要三条以上加线）自动画 8va / 15ma / 8vb；手写的说了算，不存进谱")}">${opt("on", _t("开"), me.autoOttava !== false)}${opt("off", _t("关"), me.autoOttava === false)}</select>` +
-          (song.parts.length > 1 ? `<span class="hp-k">${_t("合租")}</span>` + (tenants ? `<span class="hp-v hp-note">${_t("有别的歌手挂在这一行上（它是主人），不能再去挂别人")}</span>`
+          (song.parts.length > 1 ? `<span class="hp-k">${_t("合租")}</span>` + (tenants ? `<span class="hp-v hp-note">${_t("有别的声部挂在这一行上（它是主人），不能再去挂别人")}</span>`
             : `<select class="hp-sel" data-hp="host" title="${_t("挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）")}">${opt("", _t("自己一行"), !me.host)}${hosts.map((p) => opt(p.id, _t("挂在「{name}」上", { name: g.partName(p.id) }), me.host === p.id)).join("")}</select>`) : "") +
           `</div>`;
       };

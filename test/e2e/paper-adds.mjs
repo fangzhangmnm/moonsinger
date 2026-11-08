@@ -22,10 +22,11 @@ const tap = async (paper, kind) => {
   await p.mouse.click(pt2.x, pt2.y); await p.waitForTimeout(300); return true;
 };
 const P0 = (await papers()).split(",")[0];
-check((await adds()) === `${P0}:part,${P0}:paper` && (await p.$$("#score rect.add-box")).length === 2, "这一段底下两个虚线框「＋ 歌手」「＋ 新曲段」", await adds());
+check((await adds()) === `${P0}:part,${P0}:paper` && (await p.$$("#score rect.add-box")).length === 2, "本段：这一段底下两个虚线框「＋ 声部」「＋ 新曲段」", await adds());
 check(!(await p.evaluate(() => "addPaper" in window.__moonsinger.layout())), "扳手旁的「＋」没了");
 await p.evaluate(() => window.__moonsinger.setPages(true)); await p.waitForTimeout(250);
-check((await adds()) === "" && (await p.$$("#score rect.add-box")).length === 0, "分页（= 打印预览）没有虚线框");
+const pg = await p.evaluate(() => { const L = window.__moonsinger.layout(), last = L.pages.at(-1); return { adds: L.paperAdds.map((a) => `${a.paper}:${a.kind}`).join(","), below: L.paperAdds.every((a) => a.y >= last.top + last.h), pages: L.pages.length }; });
+check(pg.adds === `${P0}:paper` && pg.below && pg.pages === 1, "分页（= 打印预览）：每段不画，「＋ 新曲段」在最后一页纸外面、不多出一页", JSON.stringify(pg));
 await p.evaluate(() => window.__moonsinger.setPages(false)); await p.waitForTimeout(200);
 await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTimeout(250);
 check((await adds()) === "", "听模式没有");
@@ -37,6 +38,7 @@ check(ps.length === 2 && ps[0] === P0, "「＋ 新曲段」= 在这一段下面�
 const P1 = ps[1];
 // ＋ 歌手（第一段）→ 新歌手
 await p.evaluate(() => window.__moonsinger.setScope("all")); await p.waitForTimeout(200);
+check((await adds()) === `${P0}:part,${P1}:part,${P1}:paper`, "全部曲段：每段底下「＋ 声部」，整首最下面一个「＋ 新曲段」", await adds());
 await tap(P0, "part");
 const menu = await p.$$eval(".ctx-menu [data-v]", (bs) => bs.map((x) => x.dataset.v).join(","));
 check(menu === "new,parts", "「＋ 歌手」= 小菜单：＋ 新歌手 / 声部管理（都在这一段了，没有可加的已有歌手）", menu);

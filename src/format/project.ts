@@ -701,7 +701,7 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   song0 = { ...song0, parts: song0.parts.map((part) => {
     if (!usedRoles.has(part.role)) { usedRoles.add(part.role); return part; }
     const nr = newRoleId(extras, { ...song0, parts: [...song0.parts, ...[...usedRoles].map((r) => ({ id: "", role: r, mic: "" }))] });   // 这一轮已经分出去的也算占用
-    if (extras.lounge[part.role]) { extras.lounge[nr] = structuredClone(extras.lounge[part.role]); notices.push(_t("声部「{name}」和别的声部共用一位歌手；一个声部就是一位歌手，所以拆成了两位（谁来演、怎么演都照抄）。", { name: String(extras.lounge[part.role].name ?? part.id) })); }
+    if (extras.lounge[part.role]) { extras.lounge[nr] = structuredClone(extras.lounge[part.role]); notices.push(_t("声部「{name}」和别的声部共用一份乐器设置；每个声部有自己的乐器，所以拆成了两份（乐器和设置都照抄）。", { name: String(extras.lounge[part.role].name ?? part.id) })); }
     usedRoles.add(nr);
     return { ...part, role: nr };
   }) };

@@ -811,6 +811,15 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .pm-who { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pm-k { font-size: 12px; color: var(--muted); margin-right: 2px; }
 .pm-papers .btn.chip { height: 28px; padding: 0 10px; font-size: 13px; }
+/* 从歌手名进来：顶上一条 = 这一段的事（v0.16.21）；四颗钮排成等宽格子，不按字长折行（user 11-08 不要按钮堆） */
+.pm-here { border: 1px solid #b8cde8; background: var(--accent-soft); border-radius: 9px; padding: 8px; margin: 8px 0 4px; display: flex; flex-direction: column; gap: 6px; }
+.pm-here .pm-k { font-size: 13px; color: var(--ink); font-weight: 600; }
+.pm-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
+.pm-acts .btn { height: 34px; font-size: 13px; padding: 0 8px; }
+.pm-here .pm-back { align-self: flex-start; height: 32px; font-size: 13px; border-color: transparent; background: transparent; padding: 0 4px; }
+.pm-here .tc-list { padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.pm-here .tc-hint { max-width: none; padding: 0 2px; }
+.pm-row.is-here { border-color: var(--accent); }
 .inst-page { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
 .inst-page[hidden] { display: none; }
 .ip-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }

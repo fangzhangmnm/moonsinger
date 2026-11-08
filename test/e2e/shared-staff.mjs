@@ -17,8 +17,7 @@ const rowsOf = (id) => p.evaluate((id) => window.__moonsinger.layout().systems.f
 const focus = () => p.evaluate(() => window.__moonsinger.state().at.part);
 // 先把光标放到 Violin（别让 Flute 是现在在写的那位——在写的那位拆开）
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { ...s.at, part: "P3" } }); }); await p.waitForTimeout(150);
-await p.click("#score text.part-name >> text=Flute", { button: "right" }); await p.waitForTimeout(200);
-await p.click('.track-card [data-v="score-look"]'); await p.waitForTimeout(250);   // v0.16.16 搬家 A：合租在谱头面板「这位的谱」里
+await p.evaluate(() => window.__moonsinger.openHeader("P2")); await p.waitForTimeout(250);   // v0.16.16 搬家 A：合租在谱头面板「这位的谱」里（v0.16.21 起从谱号开，小卡里没有了）
 check(!!(await p.$('.header-panel select[data-hp="host"]')), "Flute 的「谱怎么画…」里有「合租」");
 await p.selectOption('.header-panel select[data-hp="host"]', "P1"); await p.waitForTimeout(250);
 await p.keyboard.press("Escape"); await p.mouse.click(1380, 840); await p.waitForTimeout(150);

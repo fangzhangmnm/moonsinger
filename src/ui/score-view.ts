@@ -311,7 +311,7 @@ export class ScoreView {
     // 排版缓存（W-17 第 1 刀）：谱没变（引用）、排版的选项没变 = 不重排。光标 / 选区 / 写字头的蓝 / 强调色不在这个键里——它们在下面的 ink 层和 class 上做；字体还在装 = 装好再排一次
     const geoKey = JSON.stringify([width, sp, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, hscroll, autoBars, inC, chordTags, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v: unknown) => (v instanceof Set ? [...v] : v));
-    const opts: Omit<EngraveOpts, "measureLyric"> = { width, sp, at: st.at, parts: partsNow, titlePlaceholder: true, ...(this.rules.edit ? { addBoxes: true } : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
+    const opts: Omit<EngraveOpts, "measureLyric"> = { width, sp, at: st.at, parts: partsNow, titlePlaceholder: true, ...(this.rules.edit ? { editable: true } : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
       ...(lyricRaise ? { lyricRaise } : {}), autoBars, ...(inC ? { inC: true } : {}), ...(chordTags ? { chordTags: true } : {}), keyHint: true, paperLabel, ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}) };
     return { frame: { sp, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp };
   }
@@ -1063,7 +1063,7 @@ export class ScoreView {
     const order = [...new Set(L.systems.filter((r) => r.paper === fb.paper).map((r) => realPart(r.part)))], idx = order.map((id, i) => (inFam(id) ? i : -1)).filter((i) => i >= 0);
     const first = Math.min(...idx), last = Math.max(...idx);   // 主人可能不在这张纸上：按这一家在场的头尾算
     const next = order.slice(last + 1).find(loose) ?? [...order.slice(0, first)].reverse().find(loose) ?? order.slice(last + 1)[0] ?? null;
-    if (!next) { this.host.notice?.(_t("这张纸上只有这一家：没有别的歌手可以挪过去（切到「听」就都叠起来）")); return true; }
+    if (!next) { this.host.notice?.(_t("这张纸上只有这一家：没有别的声部可以挪过去（切到「听」就都叠起来）")); return true; }
     this.holdView = true; this.host.set(setFocus(this.host.get(), fb.paper, next)); this.holdView = false;
     this.heldBase = this.baseKey();
     return true;

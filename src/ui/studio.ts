@@ -562,11 +562,11 @@ export class Studio {
           `<div class="strip-btns">` +
             `<button class="btn" data-v="partleft" title="${_t("往前挪一位（谱上这个声部也往上挪）")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="${_t("往后挪一位（谱上这个声部也往下挪）")}"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
-          (s.refs ? `<div class="strip-refs">${_t("在 {refs} 张纸上", { refs: s.refs })}</div>` : `<div class="strip-refs">${_t("哪张纸上都没有")} <button class="btn cand danger" data-v="delpart" title="${_t("删掉这位歌手（休息室里它的配置一起删；能撤销）")}">${_t("删掉这位歌手")}</button></div>`)
+          (s.refs ? `<div class="strip-refs">${_t("在 {refs} 张纸上", { refs: s.refs })}</div>` : `<div class="strip-refs">${_t("哪张纸上都没有")} <button class="btn cand danger" data-v="delpart" title="${_t("删掉这个声部（它的乐器设置一起删；能撤销）")}">${_t("删掉这个声部")}</button></div>`)
         : tab === "eq" || tab === "comp" ? this.inlineHtml(s.id, tab) : tab === "send" ? this.routeHtml(s.id) : this.chipsHtml(s.id);
       // 静音 / 独奏 钉在名字右边、每一页都在（v0.10.34；原来在基础页卡片最底下，卡片定高 = 要在卡片里滚才看得到；user「混音台基础里面应该有mute和solo，和我们已经有的mute和solo绑定」）——
       //   和谱上歌手名下面的「静 / 独」、歌手牌里的是同一个开关（host.toggleMute / toggleSolo → 视图态）
-      const ms = `<span class="strip-ms"><button class="btn${s.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("静音（这位不出声；和谱上歌手名下面的「静」是同一个）")}">${_t("静")}</button><button class="btn${s.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("独奏（只听独奏的几位；和谱上的「独」是同一个）")}">${_t("独")}</button></span>`;
+      const ms = `<span class="strip-ms"><button class="btn${s.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("静音（这位不出声；和谱上声部名下面的「静」是同一个）")}">${_t("静")}</button><button class="btn${s.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("独奏（只听独奏的几位；和谱上的「独」是同一个）")}">${_t("独")}</button></span>`;
       return this.card(s.id, "", `<div class="strip-head">${nameDiv(s.name)}${ms}</div>`, s.performer, body, s.color);
     }).join("");
     box.innerHTML = master + busCards + singers;

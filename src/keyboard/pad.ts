@@ -415,8 +415,8 @@ export class Pad {
       cell("tempo", `<span class="glyphs"><span class="smufl">\uE1D5</span><span class="big">=</span></span>`, _t("速度##谱"), _t("插速度（在光标处）")),
       cell("clef", `<span class="smufl">\uE050</span>`, _t("谱号"), _t("谱号：从光标处起换谱号（高音 / 低音 / 下加 8 / 上加 8 / 上加 15）；只管画，音高不变。每行开头的谱号也能直接点")),
       cell("ottava", `<span class="smufl">\uE511</span>`, _t("八度线"), _t("八度线：从光标处起谱上画低（8va / 15ma）或画高（8vb）；有选区 = 这一段；「结束」= 到这儿收。只管画，音高不变")),
-      cell("groove", `<span class="big it">${_t("风格")}</span>`, _t("拍子轻重"), _t("风格记号：从光标前那个音起到这张纸结尾，每个音按它在小节里的位置轻一点 / 重一点（古典 / 流行 / 华尔兹 / 进行曲…点开选）；整张纸的歌手一起听，各人跟多少按乐器")),
-      cell("repeat", `<span class="big">:|</span>`, _t("反复"), _t("谱内反复 / 跳转：|: :|、房子 1. 2.、Segno / Coda / D.C. / D.S. / Fine…（点开选；插在光标处，挨着小节线 = 把那条改成反复的）。不跨纸；放的时候只看这张纸最上面那位歌手那一行")),
+      cell("groove", `<span class="big it">${_t("风格")}</span>`, _t("拍子轻重"), _t("风格记号：从光标前那个音起到这张纸结尾，每个音按它在小节里的位置轻一点 / 重一点（古典 / 流行 / 华尔兹 / 进行曲…点开选）；整张纸的声部一起听，各人跟多少按乐器")),
+      cell("repeat", `<span class="big">:|</span>`, _t("反复"), _t("谱内反复 / 跳转：|: :|、房子 1. 2.、Segno / Coda / D.C. / D.S. / Fine…（点开选；插在光标处，挨着小节线 = 把那条改成反复的）。不跨纸；放的时候只看这张纸最上面那个声部那一行")),
       ...(this.host.staves() === 2 ? [cell("staff", `<span class="big">⇅</span>`, _t("换谱表"), _t("大谱表：这个音换到另一张谱表"))] : []),
     ];
     const byId = new Map(items.map((h) => [/data-sym="([^"]+)"/.exec(h)![1], h]));

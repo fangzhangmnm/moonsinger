@@ -132,7 +132,7 @@ export function expandPaper(song: Song, paper: PaperSeg, newId: () => number): P
 export function navWhy(song: Song, paper: PaperSeg, partId: string, t: Token): string | null {
   if (!(t.kind === "nav" || (t.kind === "bar" && t.repeat))) return null;
   const owner = tempoOwner(song, paper);
-  if (owner && owner !== partId) return _t("反复 / 跳转只看这张纸最上面那位歌手那一行");
+  if (owner && owner !== partId) return _t("反复 / 跳转只看这张纸最上面那个声部那一行");
   if (t.kind === "nav" && (t.what === "ds" || t.what === "dsFine" || t.what === "dsCoda") && !paper.tracks[partId]?.some((x) => x.kind === "nav" && x.what === "segno")) return _t("这张纸上没有 Segno，D.S. 跳不了");
   if (t.kind === "nav" && (t.what === "dcCoda" || t.what === "dsCoda") && !paper.tracks[partId]?.some((x) => x.kind === "nav" && x.what === "toCoda")) return _t("没有 To Coda：跳回来之后一路放到纸尾");
   return null;
