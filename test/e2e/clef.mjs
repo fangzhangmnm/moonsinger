@@ -40,14 +40,17 @@ await p.mouse.click(c0.x, c0.y); await p.waitForTimeout(200);
 const first = await p.$eval('.header-panel [data-hp="clef"]', (s) => ({ v: s.value, t: s.options[0].textContent })).catch(() => null);
 check(!!first && first.v === "" && first.t.startsWith("跟声部（自动"), "点行首谱号 = 谱头面板，谱号停在「跟声部（自动…）」", JSON.stringify(first));
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
-await p.click("#score text.part-name"); await p.waitForTimeout(200);
-check(!!(await p.$('.track-card [data-v="clef:auto"].is-on')), "歌手名小卡：谱号「自动」亮着（默认自动）");
-check(!!(await p.$('.track-card [data-v="ao:on"].is-on')), "歌手名小卡：自动八度线「开」（从谱号菜单搬过来的）");
-await p.click('.track-card [data-v="clef:F8vb"]'); await p.waitForTimeout(200);
+// v0.16.16 搬家 A：「这位的谱」（默认谱号 / 自动八度线…）从歌手名小卡搬进谱头面板（点行首谱号）
+await p.mouse.click(c0.x, c0.y); await p.waitForTimeout(250);
+check((await p.$eval('.header-panel [data-hp="pclef"]', (s) => s.value).catch(() => null)) === "", "谱头面板「这位的谱」：默认谱号「自动」（默认）");
+check((await p.$eval('.header-panel [data-hp="ao"]', (s) => s.value).catch(() => null)) === "on", "谱头面板「这位的谱」：自动八度线「开」");
+await p.selectOption('.header-panel [data-hp="pclef"]', "F8vb"); await p.waitForTimeout(200);
 check((await partClef()) === "F8vb", "选「低音 8vb」= 声部的谱号改了", await partClef());
 check(await p.$$eval("#score svg .clef", (es) => es.some((e) => e.textContent === "\u{E064}")), "谱上画成低音 8vb 的字形");
-if (!(await p.$('.track-card [data-v="clef:auto"]'))) { await p.click("#score text.part-name"); await p.waitForTimeout(200); }
-await p.click('.track-card [data-v="clef:auto"]'); await p.waitForTimeout(200);
+if (!(await p.$('.header-panel [data-hp="pclef"]'))) { const c1 = await clefAt(); await p.mouse.click(c1.x, c1.y); await p.waitForTimeout(250); }
+await p.selectOption('.header-panel [data-hp="pclef"]', ""); await p.waitForTimeout(200);
+check(!(await p.$('.track-card [data-v="clef:auto"]')), "歌手名小卡里不再有谱号（搬走了）");
+await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 check((await partClef()) === "auto", "再点选「自动」= 回到自动");
 // 5. 空白处右键菜单：谱号… / 八度线…
 const sh = await p.$eval("#score .sheet", (e) => { const r = e.getBoundingClientRect(); return { x: r.right - 80, y: r.top + 150 }; });

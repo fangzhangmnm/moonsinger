@@ -18,8 +18,9 @@ const focus = () => p.evaluate(() => window.__moonsinger.state().at.part);
 // 先把光标放到 Violin（别让 Flute 是现在在写的那位——在写的那位拆开）
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { ...s.at, part: "P3" } }); }); await p.waitForTimeout(150);
 await p.click("#score text.part-name >> text=Flute", { button: "right" }); await p.waitForTimeout(200);
-check(!!(await p.$(".track-card select[data-hostsel]")), "Flute 的歌手牌里有「合租」");
-await p.selectOption(".track-card select[data-hostsel]", "P1"); await p.waitForTimeout(250);
+await p.click('.track-card [data-v="score-look"]'); await p.waitForTimeout(250);   // v0.16.16 搬家 A：合租在谱头面板「这位的谱」里
+check(!!(await p.$('.header-panel select[data-hp="host"]')), "Flute 的「谱怎么画…」里有「合租」");
+await p.selectOption('.header-panel select[data-hp="host"]', "P1"); await p.waitForTimeout(250);
 await p.keyboard.press("Escape"); await p.mouse.click(1380, 840); await p.waitForTimeout(150);
 // 一家里有谁在写 = 整家拆开（user「host也应该只读，只有展开时才能编辑」）：去 Violin 那儿写 = Piano + Flute 叠成一行
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { ...s.at, part: "P3" } }); }); await p.waitForTimeout(200);

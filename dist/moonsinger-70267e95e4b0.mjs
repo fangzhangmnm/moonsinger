@@ -2793,6 +2793,22 @@ var S = {
   "\u6253\u5F00\u901F\u5EA6\u6846\uFF1A\u62E8\u901F\u5EA6\u3001\u9009\u901F\u5EA6\u8BCD\u3001\u770B\u5C0F\u8282\u62CD\u5668\uFF0C\u6309\u300C\u786E\u5B9A\u300D\u624D\u5199\u8FDB\u8C31": { en: "Open the tempo box: dial the tempo, pick a tempo word, watch the metronome; nothing is written until you press OK" },
   "\u4E0D\u53D8\uFF08\u2669={n}\uFF09\xB7 \u5728\u8FD9\u91CC\u6362\u2026": { en: "No change (\u2669={n}) \xB7 change it here\u2026" },
   "\u5220\u6389\u8FD9\u91CC\u7684\u53D8\u5316": { en: "Remove the changes here" },
+  "\u300C{name}\u300D\u7684\u8C31\uFF08\u6574\u9996\u90FD\u7B97\uFF09": { en: "\u201C{name}\u201D staff (whole song)" },
+  "\u8C31\u8868": { en: "Staves" },
+  "\u4E00\u5F20": { en: "Single" },
+  "\u5927\u8C31\u8868\uFF08\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF09": { en: "Grand staff (treble above, bass below)" },
+  "\u9ED8\u8BA4\u8C31\u53F7": { en: "Default clef" },
+  "\u6BCF\u5F20\u7EB8\u5F00\u5934\u300C\u8DDF\u58F0\u90E8\u300D\u7528\u7684\u5C31\u662F\u5B83\uFF1B\u81EA\u52A8 = \u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684": { en: "What \u201CFollow the part\u201D uses at the start of each sheet; Auto = the clef with the fewest ledger lines for each sheet\u2019s notes" },
+  "\u81EA\u52A8": { en: "Auto" },
+  "\u81EA\u52A8\u516B\u5EA6\u7EBF": { en: "Auto 8va lines" },
+  "\u4E00\u4E32\u5F88\u9AD8 / \u5F88\u4F4E\u7684\u97F3\uFF08\u6BCF\u4E2A\u90FD\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF09\u81EA\u52A8\u753B 8va / 15ma / 8vb\uFF1B\u624B\u5199\u7684\u8BF4\u4E86\u7B97\uFF0C\u4E0D\u5B58\u8FDB\u8C31": { en: "A run of very high / low notes (each needing 3+ ledger lines) gets an automatic 8va / 15ma / 8vb; hand-written ones win; not saved in the score" },
+  "\u5F00": { en: "On" },
+  "\u5173": { en: "Off" },
+  "\u5408\u79DF": { en: "Shared staff" },
+  "\u6709\u522B\u7684\u6B4C\u624B\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA": { en: "Other parts are attached to this line (it's the host), so it can't attach to another" },
+  "\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09": { en: "Draw on another part's staff (shared: just an overview, colliding notes collide; only notes are drawn, no rests / lyrics / dynamics; tap the name to split it out and write)" },
+  "\u81EA\u5DF1\u4E00\u884C": { en: "Own line" },
+  "\u6302\u5728\u300C{name}\u300D\u4E0A": { en: "On \u201C{name}\u201D" },
   "\u4E50\u8C31": { en: "Score" },
   "\u300C{name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7": { en: "\u201C{name}\u201D was changed elsewhere" },
   "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002": { en: "Another program changed this file since it was opened or last saved. Overwriting will lose those changes." },
@@ -2921,8 +2937,6 @@ var S = {
   "\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199": { en: "No third: major or minor can\u2019t be told apart, so it follows this key" },
   "\u7701\u4E86 {n} \u4E2A\u97F3": { en: "{n|note|notes} left out" },
   "\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002": { en: "How it is read: chords that are complete (nothing left out) win \u2192 the lowest note as root wins \u2192 a root inside this key wins \u2192 simpler chords win. When two tie, both are written on the score." },
-  "\u5173": { en: "Off" },
-  "\u5F00": { en: "On" },
   "\u4E13\u4E1A": { en: "Standard" },
   "\u6309 C \u8C03\u770B\uFF081=X\uFF09": { en: "Read in C (1=X)" },
   "\u8DDF\u7CFB\u7EDF": { en: "System" },
@@ -3211,19 +3225,9 @@ var S = {
   "\u51FA\u58F0": { en: "Sound" },
   "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B": { en: "Silent in playback; still drawn on the score" },
   "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8": { en: "Playback only sounds the parts on solo" },
-  "\u8C31\u8868": { en: "Staves" },
-  "\u4E00\u5F20": { en: "Single" },
-  "\u5927\u8C31\u8868": { en: "Grand staff" },
-  "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A": { en: "Treble above, bass below (piano): notes below middle C drop to the lower staff automatically; pad \u201C\u22EF \u2192 Change staff\u201D moves them by hand" },
-  "\u81EA\u52A8": { en: "Auto" },
-  "\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684\u8C31\u53F7\uFF08\u5F88\u9AD8\u7684\u4F1A\u6311 15ma / 8va\uFF0C\u5F88\u4F4E\u7684\u6311\u4F4E\u97F3 / \u4F4E\u97F3 8vb\uFF09\uFF1B\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002\u8FD8\u4E0D\u770B\u4E50\u5668\u7684\u4E60\u60EF\uFF08\u6BD4\u5982\u5409\u4ED6\u5199 8vb\uFF09\uFF0C\u8981\u7684\u8BDD\u624B\u52A8\u9009": { en: "Picks the clef with the fewest ledger lines for each sheet (15ma / 8va when very high, bass / bass 8vb when very low); display only, pitch doesn't change. Doesn't know instrument conventions yet (e.g. guitar written 8vb) \u2014 choose by hand if needed" },
-  "\u81EA\u52A8\u516B\u5EA6\u7EBF": { en: "Auto 8va lines" },
-  "\u4E00\u4E32\u5F88\u9AD8 / \u5F88\u4F4E\u7684\u97F3\uFF08\u6BCF\u4E2A\u90FD\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF09\u81EA\u52A8\u753B 8va / 15ma / 8vb\uFF1B\u624B\u5199\u7684\u8BF4\u4E86\u7B97\uFF0C\u4E0D\u5B58\u8FDB\u8C31": { en: "A run of very high / low notes (each needing 3+ ledger lines) gets an automatic 8va / 15ma / 8vb; hand-written ones win; not saved in the score" },
-  "\u5408\u79DF": { en: "Shared staff" },
-  "\u6709\u522B\u7684\u6B4C\u624B\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA": { en: "Other parts are attached to this line (it's the host), so it can't attach to another" },
-  "\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09": { en: "Draw on another part's staff (shared: just an overview, colliding notes collide; only notes are drawn, no rests / lyrics / dynamics; tap the name to split it out and write)" },
-  "\u81EA\u5DF1\u4E00\u884C": { en: "Own line" },
-  "\u6302\u5728\u300C{p}\u300D\u4E0A": { en: "Attached to \u201C{p}\u201D" },
+  "\u8C31": { en: "Staff" },
+  "\u4E00\u5F20\u8C31 / \u5927\u8C31\u8868\u3001\u9ED8\u8BA4\u8C31\u53F7\u3001\u81EA\u52A8\u516B\u5EA6\u7EBF\u3001\u5408\u79DF\uFF1A\u5728\u8C31\u5934\u9762\u677F\u91CC\uFF08\u70B9\u8FD9\u4E00\u884C\u5F00\u5934\u7684\u8C31\u53F7\u4E5F\u80FD\u5F00\uFF09": { en: "One staff / grand staff, default clef, auto 8va lines, sharing: in the header panel (tapping the clef at the start of this line opens it too)" },
+  "\u8C31\u600E\u4E48\u753B\u2026": { en: "How it\u2019s drawn\u2026" },
   "\u987A\u5E8F": { en: "Order" },
   "\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09": { en: "Move up one (the top part's tempo mark is the one that counts)" },
   "\u2191 \u5F80\u4E0A": { en: "\u2191 Up" },
@@ -3237,7 +3241,6 @@ var S = {
   "\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389": { en: "Remove from this sheet" },
   "\u6DF7\u97F3\u53F0\uFF08= \u542C\u7684\u5E95\u5EA7\uFF09\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220": { en: "Mixer (= the Listen dock): one strip per part (gain / pan / mute / solo); parts on no sheet are deleted there" },
   "\u6B4C\u624B\u7BA1\u7406\uFF08\u6DF7\u97F3\u53F0\uFF09\u2026": { en: "Manage parts (mixer)\u2026" },
-  "\u6302\u4E0A\u4E86\uFF1A\u5728\u522B\u7684\u6B4C\u624B\u90A3\u513F\u5199\u7684\u65F6\u5019\uFF0C\u8FD9\u4E00\u5BB6\u53E0\u5728\u4E00\u884C\u4E0A\u770B\uFF08\u53EA\u8BFB\uFF09\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199": { en: "Attached: while writing in another part, this family stacks on one line (read-only); tap a name to split it out and write" },
   "\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u300C{name}\u300D": { en: "This sheet's line went to \u201C{name}\u201D" },
   "MIDI \u529B\u5EA6": { en: "MIDI velocity" },
   "\u97F3\u91CF dB": { en: "Volume dB" },
@@ -4990,7 +4993,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.15-2026-11-08";
+var APP_VERSION = "v0.16.16-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28061,15 +28064,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-67669e31d634.mjs");
+      return pick(() => "singer-worker-2f7c9545c705.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-52a41d162b7b.mjs");
+      return pick(() => "layout-worker-71847c5c9504.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-816dbd331a38.mjs");
+      return pick(() => "encode-worker-be09d74014ce.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35148,7 +35151,20 @@ function createHeaderPanel(g3) {
         const tv2 = v.time ? `${v.time.beats}/${v.time.beatType}` : "", inList = !v.time || TIMES2.some(([b3, t10]) => `${b3}/${t10}` === tv2);
         const timeOpts = (head ? "" : opt("", _t("\u4E0D\u53D8\uFF08{t}\uFF09", { t: `${bt.beats}/${bt.beatType}` }), v.time === null)) + TIMES2.map(([b3, t10]) => opt(`${b3}/${t10}`, `${b3}/${t10}`, tv2 === `${b3}/${t10}`)).join("") + (inList ? "" : opt(tv2, tv2, true)) + opt("other", _t("\u5176\u4ED6\u2026\uFF08\u81EA\u5DF1\u5199\uFF09"), false);
         const any = v.clef !== null || v.key !== null || v.time !== null || v.tempo !== null;
-        return `<div class="ctx-hint ctx-what">${head ? _t("\u8FD9\u5F20\u7EB8\u5F00\u5934\uFF1A\u4ECE\u5934\u5F00\u59CB\u7684\u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3002\u53EA\u7BA1\u8FD9\u4E00\u4F4D\u6B4C\u624B\u8FD9\u4E00\u5F20\u7EB8\uFF08\u5F00\u5934\u7684\u901F\u5EA6\u6574\u5F20\u7EB8\u4E00\u8D77\uFF09\u3002") : _t("\u4ECE\u8FD9\u91CC\u8D77\u7684\u53D8\u5316\uFF08\u300C\u4E0D\u53D8\u300D= \u8DDF\u524D\u9762\u4E00\u6837\uFF09\u3002")}</div><div class="hp-grid"><span class="hp-k">${_t("\u8C31\u53F7")}</span><select class="hp-sel" data-hp="clef" title="${_t("\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8")}">${clefOpts}</select><span class="hp-k">${_t("\u8C03\u53F7")}</span><select class="hp-sel" data-hp="key" title="${_t("\u6539\u8C03\u53F7 = \u5B83\u7BA1\u7684\u97F3\u6309\u65B0\u8C03\u53F7\u62FC\u5199\uFF0C\u97F3\u9AD8\u4E0D\u53D8")}">${keyOpts}</select><span class="hp-k">${_t("\u62CD\u53F7")}</span><span class="hp-v"><select class="hp-sel" data-hp="time">${timeOpts}</select>` + (timeText ? `<input class="hp-in" data-hp="timeText" type="text" inputmode="numeric" placeholder="5/8" value="${esc4(tv2)}" spellcheck="false" autocomplete="off" />` : "") + `</span><span class="hp-k">${_t("\u901F\u5EA6")}</span><span class="hp-v"><button class="btn hp-tempo" data-v="tempo" title="${_t("\u6253\u5F00\u901F\u5EA6\u6846\uFF1A\u62E8\u901F\u5EA6\u3001\u9009\u901F\u5EA6\u8BCD\u3001\u770B\u5C0F\u8282\u62CD\u5668\uFF0C\u6309\u300C\u786E\u5B9A\u300D\u624D\u5199\u8FDB\u8C31")}">` + (v.tempo !== null ? `\u2669=${v.tempo} ${esc4(tempoWord(v.tempo).it)}` : esc4(_t("\u4E0D\u53D8\uFF08\u2669={n}\uFF09\xB7 \u5728\u8FD9\u91CC\u6362\u2026", { n: bb }))) + `</button></span></div>` + (!head && any ? `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u91CC\u7684\u53D8\u5316")}</button>` : "");
+        return `<div class="ctx-hint ctx-what">${head ? _t("\u8FD9\u5F20\u7EB8\u5F00\u5934\uFF1A\u4ECE\u5934\u5F00\u59CB\u7684\u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3002\u53EA\u7BA1\u8FD9\u4E00\u4F4D\u6B4C\u624B\u8FD9\u4E00\u5F20\u7EB8\uFF08\u5F00\u5934\u7684\u901F\u5EA6\u6574\u5F20\u7EB8\u4E00\u8D77\uFF09\u3002") : _t("\u4ECE\u8FD9\u91CC\u8D77\u7684\u53D8\u5316\uFF08\u300C\u4E0D\u53D8\u300D= \u8DDF\u524D\u9762\u4E00\u6837\uFF09\u3002")}</div><div class="hp-grid"><span class="hp-k">${_t("\u8C31\u53F7")}</span><select class="hp-sel" data-hp="clef" title="${_t("\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8")}">${clefOpts}</select><span class="hp-k">${_t("\u8C03\u53F7")}</span><select class="hp-sel" data-hp="key" title="${_t("\u6539\u8C03\u53F7 = \u5B83\u7BA1\u7684\u97F3\u6309\u65B0\u8C03\u53F7\u62FC\u5199\uFF0C\u97F3\u9AD8\u4E0D\u53D8")}">${keyOpts}</select><span class="hp-k">${_t("\u62CD\u53F7")}</span><span class="hp-v"><select class="hp-sel" data-hp="time">${timeOpts}</select>` + (timeText ? `<input class="hp-in" data-hp="timeText" type="text" inputmode="numeric" placeholder="5/8" value="${esc4(tv2)}" spellcheck="false" autocomplete="off" />` : "") + `</span><span class="hp-k">${_t("\u901F\u5EA6")}</span><span class="hp-v"><button class="btn hp-tempo" data-v="tempo" title="${_t("\u6253\u5F00\u901F\u5EA6\u6846\uFF1A\u62E8\u901F\u5EA6\u3001\u9009\u901F\u5EA6\u8BCD\u3001\u770B\u5C0F\u8282\u62CD\u5668\uFF0C\u6309\u300C\u786E\u5B9A\u300D\u624D\u5199\u8FDB\u8C31")}">` + (v.tempo !== null ? `\u2669=${v.tempo} ${esc4(tempoWord(v.tempo).it)}` : esc4(_t("\u4E0D\u53D8\uFF08\u2669={n}\uFF09\xB7 \u5728\u8FD9\u91CC\u6362\u2026", { n: bb }))) + `</button></span></div>` + (head ? partHtml() : "") + (!head && any ? `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u91CC\u7684\u53D8\u5316")}</button>` : "");
+      };
+      const partHtml = () => {
+        const song = g3.state().song, me = song.parts.find((p2) => p2.id === partId);
+        if (!me) return "";
+        const opt = (value, label, on2) => `<option value="${esc4(value)}"${on2 ? " selected" : ""}>${esc4(label)}</option>`;
+        const one = (me.staves ?? 1) === 1, tenants = song.parts.some((p2) => p2.host === me.id), hosts = song.parts.filter((p2) => p2.id !== me.id && !p2.host);
+        return `<div class="ctx-sep"></div><div class="ctx-hint hp-sec">${_t("\u300C{name}\u300D\u7684\u8C31\uFF08\u6574\u9996\u90FD\u7B97\uFF09", { name: esc4(g3.partName(partId)) })}</div><div class="hp-grid"><span class="hp-k">${_t("\u8C31\u8868")}</span><select class="hp-sel" data-hp="staves">${opt("1", _t("\u4E00\u5F20"), one)}${opt("2", _t("\u5927\u8C31\u8868\uFF08\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF09"), !one)}</select>` + (one ? `<span class="hp-k">${_t("\u9ED8\u8BA4\u8C31\u53F7")}</span><select class="hp-sel" data-hp="pclef" title="${_t("\u6BCF\u5F20\u7EB8\u5F00\u5934\u300C\u8DDF\u58F0\u90E8\u300D\u7528\u7684\u5C31\u662F\u5B83\uFF1B\u81EA\u52A8 = \u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684")}">${opt("", _t("\u81EA\u52A8"), !me.clef)}${CLEFS.map((c10) => opt(c10, CLEF_LABEL[c10], me.clef === c10)).join("")}</select>` : "") + `<span class="hp-k">${_t("\u81EA\u52A8\u516B\u5EA6\u7EBF")}</span><select class="hp-sel" data-hp="ao" title="${_t("\u4E00\u4E32\u5F88\u9AD8 / \u5F88\u4F4E\u7684\u97F3\uFF08\u6BCF\u4E2A\u90FD\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF09\u81EA\u52A8\u753B 8va / 15ma / 8vb\uFF1B\u624B\u5199\u7684\u8BF4\u4E86\u7B97\uFF0C\u4E0D\u5B58\u8FDB\u8C31")}">${opt("on", _t("\u5F00"), me.autoOttava !== false)}${opt("off", _t("\u5173"), me.autoOttava === false)}</select>` + (song.parts.length > 1 ? `<span class="hp-k">${_t("\u5408\u79DF")}</span>` + (tenants ? `<span class="hp-v hp-note">${_t("\u6709\u522B\u7684\u6B4C\u624B\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA")}</span>` : `<select class="hp-sel" data-hp="host" title="${_t("\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09")}">${opt("", _t("\u81EA\u5DF1\u4E00\u884C"), !me.host)}${hosts.map((p2) => opt(p2.id, _t("\u6302\u5728\u300C{name}\u300D\u4E0A", { name: g3.partName(p2.id) }), me.host === p2.id)).join("")}</select>`) : "") + `</div>`;
+      };
+      const commit = (next2) => {
+        if (next2 === g3.state()) return;
+        g3.update(next2);
+        spot = headerSpot(track(paperId, partId), spot.a);
+        render();
       };
       const apply2 = (patch) => {
         const st2 = g3.state(), next2 = setHeaderAt(st2, paperId, partId, spot, patch);
@@ -35205,7 +35221,10 @@ function createHeaderPanel(g3) {
             timeText = false;
             apply2({ time: t10 });
           } else el2.classList.add("bad");
-        }
+        } else if (k2 === "staves") commit(setPartStaves(g3.state(), partId, el2.value === "2" ? 2 : 1));
+        else if (k2 === "pclef") commit(setPartClef(g3.state(), partId, el2.value ? el2.value : null));
+        else if (k2 === "ao") commit(setPartAutoOttava(g3.state(), partId, el2.value === "on"));
+        else if (k2 === "host") commit(setPartHost(g3.state(), partId, el2.value || null));
       });
     }
   };
@@ -50526,7 +50545,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "2afce900e757",
+  cssHash: "e95a53569b75",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -51403,12 +51422,7 @@ function openTrackCard(at2) {
       if (!m3 || !m3.size) return "";
       const xs = [...m3.values()], first = xs[0];
       return `<div class="tc-warn">${first.why === "notSung" ? esc9(lyricWhyText(first, roleName(D2.extras, me.role))) : _t("\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}", { n: xs.length, first: esc9(lyricWhyText(first, roleName(D2.extras, me.role))), x: xs.some((x3) => x3.why !== first.why) ? _t(" \u7B49") : "" })}</div>`;
-    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">${_t("\u663E\u793A")}</span><div class="tc-v">${chip("hide", _t("\u9690\u85CF"), v.hidden, _t("\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0"))}${chip("only", _t("\u53EA\u770B\u5B83"), v.only, _t("\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09"))}</div><span class="tc-k">${_t("\u51FA\u58F0")}</span><div class="tc-v">${chip("mute", _t("\u9759\u97F3"), v.muted, _t("\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B"))}${chip("solo", _t("\u72EC\u594F"), v.solo, _t("\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8"))}</div><span class="tc-k">${_t("\u8C31\u8868")}</span><div class="tc-v">${chip("staves:1", _t("\u4E00\u5F20"), one)}${chip("staves:2", _t("\u5927\u8C31\u8868"), !one, _t("\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A"))}</div>` + (one ? `<span class="tc-k">${_t("\u8C31\u53F7")}</span><div class="tc-v">${chip("clef:auto", _t("\u81EA\u52A8"), !me.clef, _t("\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684\u8C31\u53F7\uFF08\u5F88\u9AD8\u7684\u4F1A\u6311 15ma / 8va\uFF0C\u5F88\u4F4E\u7684\u6311\u4F4E\u97F3 / \u4F4E\u97F3 8vb\uFF09\uFF1B\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002\u8FD8\u4E0D\u770B\u4E50\u5668\u7684\u4E60\u60EF\uFF08\u6BD4\u5982\u5409\u4ED6\u5199 8vb\uFF09\uFF0C\u8981\u7684\u8BDD\u624B\u52A8\u9009"))}${CLEFS.map((c10) => chip(`clef:${c10}`, CLEF_LABEL[c10], me.clef === c10, CLEF_TITLE[c10])).join("")}</div>` : "") + // 自动八度线（v0.16.8 从谱号小菜单搬来：和自动谱号是一家，是这位歌手怎么写谱的策略；user 11-07「八度线…应该和谱号是同一个逻辑」）
-    `<span class="tc-k">${_t("\u81EA\u52A8\u516B\u5EA6\u7EBF")}</span><div class="tc-v">${chip("ao:on", _t("\u5F00"), me.autoOttava !== false, _t("\u4E00\u4E32\u5F88\u9AD8 / \u5F88\u4F4E\u7684\u97F3\uFF08\u6BCF\u4E2A\u90FD\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF09\u81EA\u52A8\u753B 8va / 15ma / 8vb\uFF1B\u624B\u5199\u7684\u8BF4\u4E86\u7B97\uFF0C\u4E0D\u5B58\u8FDB\u8C31"))}${chip("ao:off", _t("\u5173"), me.autoOttava === false)}</div>` + // 合租（v0.10.24；user「合租还是有主人吧，这样钢琴小花可以挂钢琴上」）：画在谁的谱线上；只管画，出声 / 混音台照旧各是各的
-    ((cands3, hasTenants) => D2.st.song.parts.length > 1 ? `<span class="tc-k">${_t("\u5408\u79DF")}</span><div class="tc-v">${hasTenants ? `<span class="tc-hint">${_t("\u6709\u522B\u7684\u6B4C\u624B\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA")}</span>` : `<select class="tc-sel" data-hostsel title="${_t("\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09")}"><option value="">${_t("\u81EA\u5DF1\u4E00\u884C")}</option>${cands3.map((p2) => `<option value="${esc9(p2.id)}"${me.host === p2.id ? " selected" : ""}>${_t("\u6302\u5728\u300C{p}\u300D\u4E0A", { p: esc9(labels[D2.st.song.parts.indexOf(p2)] ?? p2.id) })}</option>`).join("")}</select>`}</div>` : "")(
-      D2.st.song.parts.filter((p2) => p2.id !== me.id && !p2.host),
-      D2.st.song.parts.some((p2) => p2.host === me.id)
-    ) + (D2.st.song.parts.length > 1 ? `<span class="tc-k">${_t("\u987A\u5E8F")}</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="${_t("\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09")}">${_t("\u2191 \u5F80\u4E0A")}</button><button class="btn" data-v="movedown"${k2 === D2.st.song.parts.length - 1 ? " disabled" : ""} title="${_t("\u5F80\u4E0B\u632A\u4E00\u683C")}">${_t("\u2193 \u5F80\u4E0B")}</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09")}">${_t("\u4EA4\u7ED9\u2026")}</button><button class="btn" data-v="add" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09")}">${_t("\uFF0B \u52A0\u6B4C\u624B\u2026")}</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09")}">${_t("\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389")}</button>` : "") + `<button class="btn" data-v="studio" title="${_t("\u6DF7\u97F3\u53F0\uFF08= \u542C\u7684\u5E95\u5EA7\uFF09\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220")}">${_t("\u6B4C\u624B\u7BA1\u7406\uFF08\u6DF7\u97F3\u53F0\uFF09\u2026")}</button></div>`;
+    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">${_t("\u663E\u793A")}</span><div class="tc-v">${chip("hide", _t("\u9690\u85CF"), v.hidden, _t("\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0"))}${chip("only", _t("\u53EA\u770B\u5B83"), v.only, _t("\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09"))}</div><span class="tc-k">${_t("\u51FA\u58F0")}</span><div class="tc-v">${chip("mute", _t("\u9759\u97F3"), v.muted, _t("\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B"))}${chip("solo", _t("\u72EC\u594F"), v.solo, _t("\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8"))}</div><span class="tc-k">${_t("\u8C31")}</span><div class="tc-v"><button class="btn" data-v="score-look" title="${_t("\u4E00\u5F20\u8C31 / \u5927\u8C31\u8868\u3001\u9ED8\u8BA4\u8C31\u53F7\u3001\u81EA\u52A8\u516B\u5EA6\u7EBF\u3001\u5408\u79DF\uFF1A\u5728\u8C31\u5934\u9762\u677F\u91CC\uFF08\u70B9\u8FD9\u4E00\u884C\u5F00\u5934\u7684\u8C31\u53F7\u4E5F\u80FD\u5F00\uFF09")}">${_t("\u8C31\u600E\u4E48\u753B\u2026")}</button></div>` + (D2.st.song.parts.length > 1 ? `<span class="tc-k">${_t("\u987A\u5E8F")}</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="${_t("\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09")}">${_t("\u2191 \u5F80\u4E0A")}</button><button class="btn" data-v="movedown"${k2 === D2.st.song.parts.length - 1 ? " disabled" : ""} title="${_t("\u5F80\u4E0B\u632A\u4E00\u683C")}">${_t("\u2193 \u5F80\u4E0B")}</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09")}">${_t("\u4EA4\u7ED9\u2026")}</button><button class="btn" data-v="add" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09")}">${_t("\uFF0B \u52A0\u6B4C\u624B\u2026")}</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09")}">${_t("\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389")}</button>` : "") + `<button class="btn" data-v="studio" title="${_t("\u6DF7\u97F3\u53F0\uFF08= \u542C\u7684\u5E95\u5EA7\uFF09\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220")}">${_t("\u6B4C\u624B\u7BA1\u7406\uFF08\u6DF7\u97F3\u53F0\uFF09\u2026")}</button></div>`;
   };
   draw();
   document.body.append(box);
@@ -51441,15 +51455,6 @@ function openTrackCard(at2) {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
   ui2.open({ k: "card", close, redraw: draw });
-  box.addEventListener("change", (e10) => {
-    const t10 = e10.target;
-    if (t10.dataset.hostsel === void 0) return;
-    const next2 = setPartHost(D2.st, curPart().id, t10.value || null);
-    update(next2);
-    renderTitle();
-    draw();
-    if (t10.value && next2 !== D2.st) info(_t("\u6302\u4E0A\u4E86\uFF1A\u5728\u522B\u7684\u6B4C\u624B\u90A3\u513F\u5199\u7684\u65F6\u5019\uFF0C\u8FD9\u4E00\u5BB6\u53E0\u5728\u4E00\u884C\u4E0A\u770B\uFF08\u53EA\u8BFB\uFF09\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199"));
-  });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
@@ -51457,6 +51462,12 @@ function openTrackCard(at2) {
     if (v === "inst") {
       close();
       openInstPage();
+      return;
+    }
+    if (v === "score-look") {
+      const r10 = box.getBoundingClientRect();
+      close();
+      headerPanel.open(D2.st.at.paper, me.id, 0, { x: r10.left + r10.width / 2, y: r10.top + 24 });
       return;
     }
     if (v === "studio") {
@@ -51509,14 +51520,9 @@ function openTrackCard(at2) {
     } else if (v === "solo") {
       setPv(me.id, { solo: !pv(me.id).solo });
       afterViewChange();
-    } else if (v.startsWith("clef:")) update(setPartClef(D2.st, me.id, v.slice(5) === "auto" ? null : v.slice(5)));
-    else if (v.startsWith("ao:")) update(setPartAutoOttava(D2.st, me.id, v === "ao:on"));
-    else if (v === "moveup" || v === "movedown") {
+    } else if (v === "moveup" || v === "movedown") {
       update(movePart(D2.st, me.id, v === "moveup" ? -1 : 1));
       renderTitle();
-    } else if (v.startsWith("staves:")) {
-      update(setPartStaves(D2.st, me.id, v.slice(7) === "2" ? 2 : 1));
-      pad3.render();
     } else if (v === "droptrack") {
       close();
       update(removeTrack(D2.st, D2.st.at.paper, me.id));
@@ -51717,6 +51723,7 @@ var headerPanel = createHeaderPanel({
   update: (n10) => update(n10),
   menu: (cls, html, at2, pick) => ctxMenu(cls, html, at2, pick),
   openTempo: (paperId, partId, index, fresh) => view.openMarkEditor(paperId, partId, index, fresh),
+  partName: (id2) => partLabels(D2.st.song, D2.extras)[D2.st.song.parts.findIndex((p2) => p2.id === id2)] ?? id2,
   partClef: (paperId, partId) => {
     const part = D2.st.song.parts.find((p2) => p2.id === partId), now2 = part?.clef ?? resolveSongClefs(D2.st.song).get(paperId)?.get(partId) ?? "G";
     return part?.clef ? CLEF_LABEL[now2] : _t("\u81EA\u52A8\uFF1A\u8FD9\u5F20\u7EB8\u6311\u4E86\u300C{p}\u300D", { p: CLEF_LABEL[now2] });
@@ -54425,4 +54432,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-baba98c3411c.mjs.map
+//# sourceMappingURL=moonsinger-70267e95e4b0.mjs.map

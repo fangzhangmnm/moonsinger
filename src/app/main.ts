@@ -1712,14 +1712,8 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
       `<div class="tc-grid">` +
       `<span class="tc-k">${_t("显示")}</span><div class="tc-v">${chip("hide", _t("隐藏"), v.hidden, _t("谱上缩成一条细行（点细行再放出来）；照样出声"))}${chip("only", _t("只看它"), v.only, _t("其余声部都缩成细行（可以几个一起「只看」）"))}</div>` +
       `<span class="tc-k">${_t("出声")}</span><div class="tc-v">${chip("mute", _t("静音"), v.muted, _t("播放时不出声；谱上照画"))}${chip("solo", _t("独奏"), v.solo, _t("播放时只出有独奏的声部"))}</div>` +
-      `<span class="tc-k">${_t("谱表")}</span><div class="tc-v">${chip("staves:1", _t("一张"), one)}${chip("staves:2", _t("大谱表"), !one, _t("上高音下低音（钢琴）：中央 C 以下自动落下面，pad「⋯ → 换谱表」能手动挪"))}</div>` +
-      (one ? `<span class="tc-k">${_t("谱号")}</span><div class="tc-v">${chip("clef:auto", _t("自动"), !me.clef, _t("按每张纸的音挑加线最省的谱号（很高的会挑 15ma / 8va，很低的挑低音 / 低音 8vb）；只管画，音高不变。还不看乐器的习惯（比如吉他写 8vb），要的话手动选"))}${CLEFS.map((c) => chip(`clef:${c}`, CLEF_LABEL[c], me.clef === c, CLEF_TITLE[c])).join("")}</div>` : "") +
-      // 自动八度线（v0.16.8 从谱号小菜单搬来：和自动谱号是一家，是这位歌手怎么写谱的策略；user 11-07「八度线…应该和谱号是同一个逻辑」）
-      `<span class="tc-k">${_t("自动八度线")}</span><div class="tc-v">${chip("ao:on", _t("开"), me.autoOttava !== false, _t("一串很高 / 很低的音（每个都要三条以上加线）自动画 8va / 15ma / 8vb；手写的说了算，不存进谱"))}${chip("ao:off", _t("关"), me.autoOttava === false)}</div>` +
-      // 合租（v0.10.24；user「合租还是有主人吧，这样钢琴小花可以挂钢琴上」）：画在谁的谱线上；只管画，出声 / 混音台照旧各是各的
-      ((cands, hasTenants) => D.st.song.parts.length > 1 ? `<span class="tc-k">${_t("合租")}</span><div class="tc-v">${hasTenants ? `<span class="tc-hint">${_t("有别的歌手挂在这一行上（它是主人），不能再去挂别人")}</span>`
-        : `<select class="tc-sel" data-hostsel title="${_t("挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）")}"><option value="">${_t("自己一行")}</option>${cands.map((p) => `<option value="${esc(p.id)}"${me.host === p.id ? " selected" : ""}>${_t("挂在「{p}」上", { p: esc(labels[D.st.song.parts.indexOf(p)] ?? p.id) })}</option>`).join("")}</select>`}</div>` : "")(
-        D.st.song.parts.filter((p) => p.id !== me.id && !p.host), D.st.song.parts.some((p) => p.host === me.id)) +
+      // 谱表 / 默认谱号 / 自动八度线 / 合租 搬进谱头面板（v0.16.16 搬家 A；user 11-07「这些和歌手没关系…这些显示相关的，是不是全都可以收到这里面？」）：这里只留一颗钮直达
+      `<span class="tc-k">${_t("谱")}</span><div class="tc-v"><button class="btn" data-v="score-look" title="${_t("一张谱 / 大谱表、默认谱号、自动八度线、合租：在谱头面板里（点这一行开头的谱号也能开）")}">${_t("谱怎么画…")}</button></div>` +
       (D.st.song.parts.length > 1 ? `<span class="tc-k">${_t("顺序")}</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="${_t("往上挪一格（最上面那个声部的速度记号说了算）")}">${_t("↑ 往上")}</button><button class="btn" data-v="movedown"${k === D.st.song.parts.length - 1 ? " disabled" : ""} title="${_t("往下挪一格")}">${_t("↓ 往下")}</button></div>` : "") +
       `</div><div class="tc-foot"><button class="btn" data-v="give" title="${_t("这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）")}">${_t("交给…")}</button><button class="btn" data-v="add" title="${_t("这张纸上再加一位歌手（已有的或新的；只加在这张纸上）")}">${_t("＋ 加歌手…")}</button>` +
       (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="${_t("这张纸上不要这个声部（别的纸照旧）")}">${_t("这张纸上去掉")}</button>` : "") +
@@ -1740,17 +1734,11 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "card", close, redraw: draw });
-  box.addEventListener("change", (e) => {   // 合租：挂到谁上 / 自己一行
-    const t = e.target as HTMLSelectElement; if (t.dataset.hostsel === undefined) return;
-    const next = setPartHost(D.st, curPart().id, t.value || null);
-    update(next); renderTitle(); draw();
-    // 一家（主人 + 房客）里有谁在写 = 整家拆开（user「host也应该只读，只有展开时才能编辑」）：挂上之后去别的歌手那儿写，这一家才叠成一行
-    if (t.value && next !== D.st) info(_t("挂上了：在别的歌手那儿写的时候，这一家叠在一行上看（只读）；点名字 = 拆开来写"));
-  });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     const me = curPart();
     if (v === "inst") { close(); openInstPage(); return; }
+    if (v === "score-look") { const r = box.getBoundingClientRect(); close(); headerPanel.open(D.st.at.paper, me.id, 0, { x: r.left + r.width / 2, y: r.top + 24 }); return; }   // 谱怎么画 = 这张纸开头那一处的谱头面板
     if (v === "studio") { close(); openStudio(); return; }
     if (v === "give" || v === "add") { page = v; draw(); return; }
     if (v === "back") { page = "main"; draw(); return; }
@@ -1762,10 +1750,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     else if (v === "only") { setPv(me.id, { only: !pv(me.id).only }); afterViewChange(); }
     else if (v === "mute") { setPv(me.id, { muted: !pv(me.id).muted }); afterViewChange(); }
     else if (v === "solo") { setPv(me.id, { solo: !pv(me.id).solo }); afterViewChange(); }
-    else if (v.startsWith("clef:")) update(setPartClef(D.st, me.id, v.slice(5) === "auto" ? null : (v.slice(5) as ClefName)));
-    else if (v.startsWith("ao:")) update(setPartAutoOttava(D.st, me.id, v === "ao:on"));
     else if (v === "moveup" || v === "movedown") { update(movePart(D.st, me.id, v === "moveup" ? -1 : 1)); renderTitle(); }
-    else if (v.startsWith("staves:")) { update(setPartStaves(D.st, me.id, v.slice(7) === "2" ? 2 : 1)); pad.render(); }
     else if (v === "droptrack") { close(); update(removeTrack(D.st, D.st.at.paper, me.id)); return; }
     else return;
     draw();
@@ -1930,6 +1915,7 @@ function openInsertOttavaMenu(at: { x: number; y: number }): void {
 const headerPanel = createHeaderPanel({
   state: () => D.st, update: (n) => update(n), menu: (cls, html, at, pick) => ctxMenu(cls, html, at, pick),
   openTempo: (paperId, partId, index, fresh) => view.openMarkEditor(paperId, partId, index, fresh),
+  partName: (id) => partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.id === id)] ?? id,
   partClef: (paperId, partId) => { const part = D.st.song.parts.find((p) => p.id === partId), now = part?.clef ?? resolveSongClefs(D.st.song).get(paperId)?.get(partId) ?? "G"; return part?.clef ? CLEF_LABEL[now] : _t("自动：这张纸挑了「{p}」", { p: CLEF_LABEL[now] }); },
 });
 function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {

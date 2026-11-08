@@ -18,7 +18,7 @@ const closeAll = async () => { await p.keyboard.press("Escape"); await p.waitFor
 // ① 点行首的调号 → 面板，四样都在
 const keyBox = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), k = L.marks.find((x) => x.kind === "key" && x.system === 0); return { x: sc.left + L.pageX.left + k.x + k.w / 2, y: sc.top + k.y + k.h / 2 }; });
 await p.mouse.click(keyBox.x, keyBox.y); await p.waitForTimeout(250);
-check((await panel()) === "clef,key,time" && !!(await p.$('.header-panel [data-v="tempo"]')), "点行首的调号 = 谱头面板：谱号 / 调号 / 拍号 + 速度那一颗钮", String(await panel()));
+check((await panel()) === "clef,key,time,staves,pclef,ao" && !!(await p.$('.header-panel [data-v="tempo"]')), "点行首的调号 = 谱头面板：谱号 / 调号 / 拍号 + 速度那一颗钮 + 「这位的谱」（谱表 / 默认谱号 / 自动八度线；v0.16.16 搬家 A）", String(await panel()));
 const h0 = await head();
 await p.selectOption('.header-panel [data-hp="key"]', "2"); await p.waitForTimeout(150);
 check((await head()).startsWith("k2 "), "调号改成 1=D（2 个升号）", await head());
