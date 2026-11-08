@@ -301,14 +301,15 @@ function syncDock(): void {
 addEventListener("resize", () => syncDock());   // 横屏底座在的时候，舞台里谱面以外占的宽（px；排谱宽度不跟着底座开合跳，见 view 的 layoutWidth；v0.10.33）   // 走带（唱 / 弹 / 录音室）在顶栏中间（胶囊试过一轮，user 2026-10-08「播放器胶囊看着碍眼，还是收到顶栏里面吧」）
 const attr = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 const padTab = document.createElement("button"); padTab.id = "padTab"; padTab.className = "btn pad-tab"; padTab.hidden = true; padTab.title = _t("键盘（pad）");
-padTab.innerHTML = `<svg class="ico"><use href="#piano-keys"/></svg><span>${_t("键盘")}</span>`;
+padTab.innerHTML = `<svg class="ico"><use href="#piano-keys"/></svg>`; padTab.setAttribute("aria-label", _t("键盘"));   // 只留图标（v0.16.13，user「键盘旁边不要文字」）：平时钢琴、「听」里推子（= 混音台）；字在提示里
 // 底座边上的小条（v0.10.20）：模式四个钮 + |▶ + 撤销 / 重做 + 收起后叫回键盘，贴在键盘边上（竖屏 = 键盘左上角往上挂；横屏 = 键盘左边竖着挂；键盘收起 = 贴屏幕边）——
 //   按键盘的时候东西就在手边，鼠标不用上下跑（user「音符词听那个小面版变成靠着键盘 / 加一个按一下弹出键盘的钮…所以竖屏的时候就是左下角，拉着键盘的左上角 / 横屏的时候变成竖排可以吗 /
 //   这样按键盘的时候东西就在手边 / 然后走带控制也放这个面版上面 / 就是 play/pause undo redo 音符词听」「尤其是模式条的位置（这个其实蛮重要的，不然鼠标上下跑）」）。位置全在 CSS（grid 区域定位）。
 const dockTab = document.createElement("div"); dockTab.className = "dock-tab"; dockTab.setAttribute("role", "toolbar");
-dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="${_t("模式：这一下点的是哪一层")}">${MODE_BAR.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}" aria-label="${attr(MODE_LABEL[m])}">${iconHtml(MODE_ICON[m])}</button>`).join("")}</span>` +
-  `<span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
-  `<button id="undoBtn" class="btn" title="${_t("撤销（Ctrl / ⌘+Z）")}" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="${_t("重做（Ctrl / ⌘+Shift+Z）")}" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
+//   顺序（v0.16.13，user 11-07「这里顺序变成 play undo redo 选项 键盘，键盘旁边不要文字」）：|▶ · 撤销 · 重做 · 音 / 词 / 听 · 键盘（只图标）
+dockTab.innerHTML = `<span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button>` +
+  `<button id="undoBtn" class="btn" title="${_t("撤销（Ctrl / ⌘+Z）")}" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="${_t("重做（Ctrl / ⌘+Shift+Z）")}" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>` +
+  `<span class="mode-seg" role="tablist" title="${_t("模式：这一下点的是哪一层")}">${MODE_BAR.map((m) => `<button class="btn" data-mode="${m}" role="tab" title="${attr(MODE_TITLE[m])}" aria-label="${attr(MODE_LABEL[m])}">${iconHtml(MODE_ICON[m])}</button>`).join("")}</span>`;
 dockTab.append(padTab);
 stageEl.append(dockTab);
 padTab.addEventListener("click", () => showPad(ws.mode === "listen" ? !studio.isOpen : padEl.hidden));
@@ -349,7 +350,7 @@ function updateChrome(): void {
   const dockOpen = ws.mode === "listen" ? studio.isOpen : !padEl.hidden;
   padTab.hidden = ((gallery?.isOpen() ?? false) && !finderShown()) || (!hasKeys(ws.mode) && ws.mode !== "listen");
   padTab.classList.toggle("is-on", dockOpen);
-  { const lab = ws.mode === "listen" ? _t("混音台") : _t("键盘"), sp = padTab.querySelector("span"); if (sp && sp.textContent !== lab) sp.textContent = lab; padTab.title = `${ws.mode === "listen" ? _t("混音台") : _t("键盘（pad）")}：${dockOpen ? _t("点 = 收起") : _t("点 = 打开")}`; }
+  { const lab = ws.mode === "listen" ? _t("混音台") : _t("键盘"), ic = ws.mode === "listen" ? "#sliders" : "#piano-keys", u = padTab.querySelector("use"); if (u && u.getAttribute("href") !== ic) u.setAttribute("href", ic); padTab.setAttribute("aria-label", lab); padTab.title = `${ws.mode === "listen" ? _t("混音台") : _t("键盘（pad）")}：${dockOpen ? _t("点 = 收起") : _t("点 = 打开")}`; }
   renderTopSels();   // 「词 / 听」没有键盘：不露「键盘」tab
   viewTab.hidden = over || (($("paperSel") as HTMLSelectElement).hidden && ($("partSel") as HTMLSelectElement).hidden);   // 挂签只剩看哪一段 / 哪位：都不用选 = 不挂
   finder.setPadShown(!padEl.hidden);

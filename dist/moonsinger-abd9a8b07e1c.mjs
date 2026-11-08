@@ -4986,7 +4986,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.12-2026-11-07";
+var APP_VERSION = "v0.16.13-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -15156,7 +15156,7 @@ var Pad = class {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     const tabs = this.symbols !== "off" && this.mode === "normal";
-    box.innerHTML = this.mode !== "normal" ? this.cands(rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">${_t("\u6E10\u5230")}</small>` : ""}</button>`).join("") + `<button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09")}" aria-label="${_t("\u97F3")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("piano-keys")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-range" data-knob="range" title="${_t("\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="${_t("\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-key" data-knob="key" title="${_t("1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span><em class="k-tag" hidden></em></button><button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8")}" aria-label="${_t("\u7B26")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("piano-keys")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">${_t("\u6E10\u5230")}</small>` : ""}</button>`).join("") + `<button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09")}" aria-label="${_t("\u97F3")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("unplugged")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-range" data-knob="range" title="${_t("\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="${_t("\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-key" data-knob="key" title="${_t("1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span><em class="k-tag" hidden></em></button><button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8")}" aria-label="${_t("\u7B26")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("unplugged")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b3) => {
       b3.addEventListener("pointerdown", (e10) => {
         e10.preventDefault();
@@ -28054,7 +28054,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-ae2be6ef408a.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-0acf5a312bdb.mjs");
+      return pick(() => "encode-worker-e9244738563f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -49179,11 +49179,12 @@ padTab.id = "padTab";
 padTab.className = "btn pad-tab";
 padTab.hidden = true;
 padTab.title = _t("\u952E\u76D8\uFF08pad\uFF09");
-padTab.innerHTML = `<svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span>`;
+padTab.innerHTML = `<svg class="ico"><use href="#piano-keys"/></svg>`;
+padTab.setAttribute("aria-label", _t("\u952E\u76D8"));
 var dockTab = document.createElement("div");
 dockTab.className = "dock-tab";
 dockTab.setAttribute("role", "toolbar");
-dockTab.innerHTML = `<span class="mode-seg" role="tablist" title="${_t("\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42")}">${MODE_BAR.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${attr(MODE_TITLE[m2])}" aria-label="${attr(MODE_LABEL[m2])}">${iconHtml(MODE_ICON[m2])}</button>`).join("")}</span><span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="undoBtn" class="btn" title="${_t("\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09")}" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="${_t("\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09")}" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span>`;
+dockTab.innerHTML = `<span class="dock-tr"><button id="dockPlay" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button><button id="undoBtn" class="btn" title="${_t("\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09")}" disabled><svg class="ico"><use href="#arrow-undo"/></svg></button><button id="redoBtn" class="btn" title="${_t("\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09")}" disabled><svg class="ico"><use href="#arrow-redo"/></svg></button></span><span class="mode-seg" role="tablist" title="${_t("\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42")}">${MODE_BAR.map((m2) => `<button class="btn" data-mode="${m2}" role="tab" title="${attr(MODE_TITLE[m2])}" aria-label="${attr(MODE_LABEL[m2])}">${iconHtml(MODE_ICON[m2])}</button>`).join("")}</span>`;
 dockTab.append(padTab);
 stageEl.append(dockTab);
 padTab.addEventListener("click", () => showPad(ws.mode === "listen" ? !studio.isOpen : padEl.hidden));
@@ -49224,8 +49225,9 @@ function updateChrome() {
   padTab.hidden = (gallery?.isOpen() ?? false) && !finderShown() || !hasKeys(ws.mode) && ws.mode !== "listen";
   padTab.classList.toggle("is-on", dockOpen);
   {
-    const lab = ws.mode === "listen" ? _t("\u6DF7\u97F3\u53F0") : _t("\u952E\u76D8"), sp2 = padTab.querySelector("span");
-    if (sp2 && sp2.textContent !== lab) sp2.textContent = lab;
+    const lab = ws.mode === "listen" ? _t("\u6DF7\u97F3\u53F0") : _t("\u952E\u76D8"), ic2 = ws.mode === "listen" ? "#sliders" : "#piano-keys", u2 = padTab.querySelector("use");
+    if (u2 && u2.getAttribute("href") !== ic2) u2.setAttribute("href", ic2);
+    padTab.setAttribute("aria-label", lab);
     padTab.title = `${ws.mode === "listen" ? _t("\u6DF7\u97F3\u53F0") : _t("\u952E\u76D8\uFF08pad\uFF09")}\uFF1A${dockOpen ? _t("\u70B9 = \u6536\u8D77") : _t("\u70B9 = \u6253\u5F00")}`;
   }
   renderTopSels();
@@ -54333,4 +54335,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-80266167a919.mjs.map
+//# sourceMappingURL=moonsinger-abd9a8b07e1c.mjs.map

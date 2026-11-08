@@ -21,8 +21,10 @@ check(!(await p.$eval(".pad-panel", (e) => e.hidden)) && await p.$eval("#padTab"
   check(mode === "listen", "存的时候在「听」= 再打开就是「听」", mode); }
 // 「听」：小条上照样有那个开关（叫「混音台」），点 = 开 / 收（v0.10.26；user「左下角小工具条还是忘了做键盘弹出的按钮」——v0.9.18 留下的一条 CSS 在「听」里把它藏了）
 { await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTimeout(200);
-  const vis = await p.$eval("#padTab", (e) => !e.hidden && getComputedStyle(e).display !== "none" && e.getBoundingClientRect().width > 0 && !!e.closest(".dock-tab") && e.textContent.includes("混音台"));
-  check(vis, "「听」：小条上有「混音台」开关（看得见）");
+  const vis = await p.$eval("#padTab", (e) => !e.hidden && getComputedStyle(e).display !== "none" && e.getBoundingClientRect().width > 0 && !!e.closest(".dock-tab") && e.getAttribute("aria-label") === "混音台" && e.querySelector("use")?.getAttribute("href") === "#sliders" && e.textContent.trim() === "");
+  check(vis, "「听」：小条上有「混音台」开关（看得见；只有推子图标、不写字——v0.16.13 user「键盘旁边不要文字」）");
+  const order = await p.$$eval(".dock-tab > *", (els) => els.map((e) => (e.id === "padTab" ? "kb" : e.classList.contains("dock-tr") ? [...e.children].map((b) => b.id).join("+") : e.classList.contains("mode-seg") ? "modes" : e.className)).join(" | "));
+  check(order === "dockPlay+undoBtn+redoBtn | modes | kb", "小条顺序 = 放 / 撤销 / 重做 · 音词听 · 键盘（user「这里顺序变成 play undo redo 选项 键盘」）", order);
   const d0 = await p.evaluate(() => window.__moonsinger.workspace().dock); await p.click("#padTab"); await p.waitForTimeout(200);
   const d1 = await p.evaluate(() => window.__moonsinger.workspace().dock); await p.click("#padTab"); await p.waitForTimeout(200);
   const d2 = await p.evaluate(() => window.__moonsinger.workspace().dock);
