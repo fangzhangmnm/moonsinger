@@ -1336,7 +1336,10 @@ const finder = new Finder($("stage"), { roleName: () => roleName(D.extras, curRo
 finder.restore("impro", unserializeFinderMemo(deviceKvGetJson<unknown>(KV_FINDER_IMPRO, null)));
 // ── 录音室（src/ui/studio.ts）：全屏替掉谱区，一个声部一条推子条；增益 / 声像进录音房（studio.json），静音 / 独奏 = partView ──
 const partLabel = (id: string): string => { const k = D.st.song.parts.findIndex((p) => p.id === id); return k < 0 ? id : partLabels(D.st.song, D.extras)[k]; };
+const KV_MIXER_ROWS = "mixer-rows";   // 混音台贴底显示几排（v0.16.14；"auto" / 数字；这台设备）
 const studio = new Studio($("stage"), {
+  rowsPref: () => { const v = deviceKvGet(KV_MIXER_ROWS); return v && /^[1-9]\d?$/.test(v) ? Number(v) : "auto"; },
+  setRowsPref: (v) => deviceKvSet(KV_MIXER_ROWS, String(v)),
   strips: () => { const labels = partLabels(D.st.song, D.extras), cols = partColorIndices(D.st.song.parts.map((p) => roleSound(D.extras, p.role))); return D.st.song.parts.map((p, k) => ({ id: p.id, name: labels[k], color: TAB20[cols[k]], refs: D.st.song.papers.filter((pp) => pp.tracks[p.id]).length, performer: activeCandidateName(D.extras, p.role) ?? _t("（没人上场）"), ...micOf(p), muted: pv(p.id).muted, solo: pv(p.id).solo })); },
   setGain: (id, dB) => { const p = D.st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(D.extras, p.mic, { gainDb: dB }), { kind: "studio", label: _t("{id} 增益 {p}{p2} dB", { id: partLabel(id), p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, `mix:gain:${id}`); },
   setPan: (id, pan) => { const p = D.st.song.parts.find((x) => x.id === id); if (p) updateExtras(withMic(D.extras, p.mic, { pan }), { kind: "studio", label: _t("{id} 声像 {pan}", { id: partLabel(id), pan: Math.abs(pan) < 0.025 ? _t("中") : pan < 0 ? _t("左 {p}", { p: Math.round(-pan * 100) }) : _t("右 {p}", { p: Math.round(pan * 100) }) }) }, `mix:pan:${id}`); },
@@ -3591,6 +3594,12 @@ window.addEventListener("keydown", (e) => {
   // 存 / 导出 / 打开（Ctrl / ⌘+S、+Shift+S、+O）挂在最外层：不管哪一页开着、焦点在谁身上（录音室 / 乐器页 / 乐器目录 / 参考窗）都是这首歌的事，
   //   不能落到浏览器的「保存网页」（2026-10-10 user「很多地方save没有拦截」）。各页只决定别的键。
   if ((e.ctrlKey || e.metaKey) && !e.altKey && /^[so]$/i.test(e.key)) { const a = route(e, whereNow(), "write"); if (a && a.k === "file") { e.preventDefault(); run(a, e.repeat, e.code); return; } }
+  // 打字的框拿着焦点 = 键一律归框（v0.16.14，user 11-07「改名的时候没法输入空格，被播放按钮劫持了。帮我系统性的查一下这反映了什么系统问题」）：
+  //   原来「让不让路」是下面各段自己判断（乐器页、混音台、写谱各写各的），「听」那一段没判断 = 在听模式里改名，空格被拿去放 / 停。
+  //   现在这一条在所有分段之前：不论哪一页、哪个模式，光标在字框里（谱自己的歌词框 / 记号框除外，它们走路由）就不接——
+  //   只留上面的存 / 打开，和 Esc（各页自己的「收起」，原样往下走）。输入法正在拼字（空格是选字）同样不接。
+  if (e.isComposing || e.keyCode === 229) return;
+  { const tg = e.target as HTMLElement | null; if (e.key !== "Escape" && typingIn(tg) && !tg?.closest?.(".lyric-input, .mark-ed")) return; }
   if (finder.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } else finderKey(e); return; }   // 找人视图开着：Esc + 音键只弹不写（pad 的触屏键照常）
   if (instShown()) {   // 乐器页：只认 Esc（回谱）和撤销 / 重做；输入框里的照常打字
     const inField = (e.target as HTMLElement | null)?.closest("input, select, textarea");

@@ -131,9 +131,9 @@ var S = {
   "\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E": { en: "Menu: new / open / export / cover / sounds and credits / settings" },
   "\u952E\u76D8\uFF08pad\uFF09": { en: "Keyboard (pad)" },
   "\u952E\u76D8": { en: "Keys" },
-  "\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42": { en: "Mode: which layer a tap edits" },
   "\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09": { en: "Undo (Ctrl / \u2318+Z)" },
   "\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09": { en: "Redo (Ctrl / \u2318+Shift+Z)" },
+  "\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42": { en: "Mode: which layer a tap edits" },
   "\u770B\u54EA\u4E00\u6BB5\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u6BB5": { en: "Which section to view: all / just this one" },
   "\u770B\u54EA\u4F4D\u6B4C\u624B\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u4F4D": { en: "Which part to view: all / just this one" },
   "\u5168\u90E8\u66F2\u6BB5": { en: "All sections" },
@@ -1465,9 +1465,9 @@ var S = {
   "\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09": { en: "Hide the keys (tap the staff to bring them back)" },
   "\u6536\u8D77": { en: "Hide" },
   "\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7": { en: "More: layout, insert marks" },
-  "1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09": { en: "1= (the pad's own key): hold and slide up / down, or tap to choose (circle of fifths)" },
-  "\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09": { en: "Note length: hold and slide up / down, or tap to choose (tuplets included)" },
   "\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684": { en: "Range (the pad's lowest to highest note): hold and slide up / down, or tap to choose \u2014 like pushing a sheet of paper: pushing up shows lower notes" },
+  "\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09": { en: "Note length: hold and slide up / down, or tap to choose (tuplets included)" },
+  "1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09": { en: "1= (the pad's own key): hold and slide up / down, or tap to choose (circle of fifths)" },
   "\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8": { en: "Switch to the symbol grid (dynamics, hairpins, articulations, key / time / tempo, repeats, style, phrase end) \u2014 notes and marks are edited together on the score anyway; this only switches the keys" },
   "\u5C11\u4E00{name}": { en: "One fewer {name}" },
   "\u591A\u4E00{name}": { en: "One more {name}" },
@@ -2027,6 +2027,10 @@ var S = {
   "\u66F4\u591A\uFF1A\u52A0\u6DF7\u97F3\u8F68\u2026": { en: "More: add bus\u2026" },
   "\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD": { en: "Add a bus (routing track): several tracks send here to share effects, such as one reverb" },
   "\uFF0B \u6DF7\u97F3\u8F68": { en: "\uFF0B Bus" },
+  "\u8D34\u5728\u5E95\u4E0B\u65F6\u663E\u793A\u51E0\u6392\u5361\u7247\uFF08\u540C\u5C0F\u952E\u76D8\u7684\u300C\u884C\u300D\uFF09\uFF1A\u81EA\u52A8 = \u534A\u5C4F\u653E\u5F97\u4E0B\u7684\u6700\u591A\u6392\uFF1B\u624B\u52A8\u6700\u591A\u5230\u5C4F\u5E55\u653E\u5F97\u4E0B\u3001\u8C31\u8FD8\u9732\u4E00\u6761\u4E3A\u6B62\u3002\u6A2A\u7740\u653E / \u5168\u5C4F\u65F6\u4E0D\u7BA1": { en: "How many rows of cards to show when docked at the bottom (like the keypad rows): Auto = as many as fit in half the screen; manual goes up to what the screen can hold while a strip of the score stays visible. Ignored when docked at the side or full screen" },
+  "\u6392\u6570": { en: "Rows" },
+  "\u5C11\u4E00\u6392": { en: "One row fewer" },
+  "\u591A\u4E00\u6392": { en: "One row more" },
   "\u6548\u679C\u5168\u5173": { en: "All FX off" },
   "\u6548\u679C\u5F00\u7740": { en: "FX on" },
   "\u73B0\u5728\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF08\u63A8\u5B50 / \u58F0\u50CF\u7559\u7740\uFF09\u3002\u70B9 = \u6548\u679C\u56DE\u6765": { en: "Now: plugins and sends are silent (faders / pan stay). Tap = effects back" },
@@ -10380,4 +10384,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-d95a8bd68886.mjs.map
+//# sourceMappingURL=singer-worker-67669e31d634.mjs.map

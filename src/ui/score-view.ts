@@ -1280,7 +1280,9 @@ export class ScoreView {
     this.lyrics.commitAndClose(); this.marks.commitAndClose();
     if (wasMark) { this.host.focus?.("staff"); return true; }   // 点别处 = 先收起记号框（这一下不另做事）
     // 手指（pid === null）：歌词框开着时点谱面 = 只收框、不选中（user 2026-10-08 截图：打歌词时误触把一个音选成蓝的）；笔 / 鼠标照旧可以直接点选
-    if (wasLyric && pid === null) { this.host.focus?.("staff"); return true; }
+    // 歌名 / 编排那一行不算误触（不是音）：歌词框开着时点它们 = 收框的同一下直接开（v0.16.14，user 11-07「以及歌词和听模式，歌曲名和arrangment应该也可以编辑」）
+    const textRow = this.inBox(L0.title, x, y) || this.inBox(L0.arrangement, x, y);
+    if (wasLyric && pid === null && !textRow) { this.host.focus?.("staff"); return true; }
     const L = this.layout ?? L0, sp = L.sp;
     // 0⁻. 和弦级数（v0.16.11）：点了 = 候选（听模式也认，只是看）
     const ct = this.host.onChordTag ? L.chordTags.find((c) => this.inBox(c, x, y)) : undefined;
@@ -1298,6 +1300,8 @@ export class ScoreView {
     if (this.leaveFamilyAt(x, y)) return true;
     if (this.openPartAt(x, y)) return true;
     // 0¼. 纸面最上面的歌名（可不填）；歌名下面的编排那一行（全部视图里才有）
+    if (view && this.inBox(L.title, x, y)) { this.title.openNow(); this.host.focus?.("text"); return true; }   // 听：歌名 / 编排那一行照样能改（v0.16.14，user 同上）；谱别的地方照旧锁着
+    if (view && this.inBox(L.arrangement, x, y)) { this.title.openArrangement(); this.host.focus?.("text"); return true; }
     if (view) { for (const pp of L.papers) { if (this.inBox(pp.prev ?? null, x, y)) { this.host.onNavFrom?.(pp.id, -1); return true; } if (this.inBox(pp.next ?? null, x, y)) { this.host.onNavFrom?.(pp.id, 1); return true; } if (this.inBox(pp.scope, x, y)) { this.host.onScopeOf?.(pp.id); return true; } } return false; }   // 听：看谱的到此为止
     if (this.inBox(L.title, x, y)) { this.title.openNow(); this.host.focus?.("text"); return true; }
     if (this.inBox(L.arrangement, x, y)) { this.title.openArrangement(); this.host.focus?.("text"); return true; }

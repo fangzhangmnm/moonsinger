@@ -67,7 +67,13 @@ export interface StudioHost {
   targets(track: string): { id: string; name: string }[];
   /** 换页了（宿主据此开关录音房的频谱：只有 EQ 页看得见才算；user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）。 */
   tabChanged?(tab: MixTab): void;
+  /** 贴底时显示几排卡片（v0.16.14，同小键盘的「行」；user 11-07「混音应该和键盘一样，也可以显示能显示几列卡，但是看一下屏幕高度上限」）：
+   *  "auto" = 半屏放得下的最多排（原来的样子）；数字 = 就这么多排，但最多到屏幕高度上限（谱至少还露一条）。宿主记在设备上。 */
+  rowsPref?(): number | "auto";
+  setRowsPref?(v: number | "auto"): void;
 }
+/** 手动排数的高度上限：舞台高减去这么多（px）= 谱至少还露一条、能看见在哪。 */
+const SCORE_SLIVER = 96;
 export const MASTER = "__master";
 export type MixTab = "basic" | "eq" | "comp" | "send" | "chain";
 /** 页签 = 混音的顺序（平衡 / 摆位 → 频率 → 动态 → 空间；最后一页是全部插件格）。 */
@@ -127,6 +133,7 @@ export class Studio {
   private grTarget = new Map<string, number>(); private grShown = new Map<string, number>();
   private corrShown = new Map<string, number>(); private lastText = 0;
   private full = false;
+  private shownRows = 0; private capRows = 1;   // 这会儿显示了几排 / 屏幕最多放得下几排（fitHeight 算；「⋯」里排数的 − + 用）
   /** 插件参数的剪贴板（v0.10.23；user「待会：效果器预设可以拷贝，类似Unity的component，尽量严格一点避免混淆。不读快捷键」）：
    *  拷 = 这一格的种类 + 全部参数（不拷开 / 关、不拷「被谁压」）；粘参数 = 只能粘到同一种插件上（覆盖参数，开关 / 被谁压照旧）；粘成新的一格 = 链尾加一格。这次打开里有效、没有快捷键。 */
   private fxClip: { kind: string; params: Params; from: string } | null = null;
@@ -284,6 +291,11 @@ export class Studio {
     else if (v === "full") { this.full = !this.full; this.el.classList.toggle("full", this.full); this.render(); }   // 混音台全屏（user「混音台可以切全屏（就是推到最上面」）：这次打开里有效
     else if (v === "tab") { this.tab = t.closest<HTMLElement>("[data-tab]")!.dataset.tab as MixTab; this.menuOpen = false; this.addFor = null; this.specShown.clear(); this.compHist.clear(); this.render(); this.host.tabChanged?.(this.tab); }
     else if (v === "more") { this.menuOpen = !this.menuOpen; this.render(); }
+    else if (v === "rows:-" || v === "rows:+" || v === "rows:auto") {   // 排数（v0.16.14）：从现在显示的那么多排起加减；到屏幕高度上限为止
+      const pref = this.host.rowsPref?.() ?? "auto", base = pref === "auto" ? this.shownRows : Math.min(pref, this.capRows);
+      this.host.setRowsPref?.(v === "rows:auto" ? "auto" : Math.max(1, Math.min(this.capRows, base + (v === "rows:+" ? 1 : -1))));
+      this.fitHeight();
+    }
     else if (v === "addbus") { this.menuOpen = false; const id = this.host.addBus(); this.render(); this.el.querySelector<HTMLElement>(`.strip[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "nearest" }); }
     else if (v === "mute" && strip) { this.host.toggleMute(strip); this.render(); }
     else if (v === "solo" && strip) { this.host.toggleSolo(strip); this.render(); }
@@ -476,7 +488,20 @@ export class Studio {
       `<button class="btn mix-more${this.menuOpen ? " is-on" : ""}" data-v="more" title="${_t("更多：加混音轨…")}">⋯</button>`;
     const menu = this.el.querySelector<HTMLElement>(".mix-menu")!;
     menu.hidden = !this.menuOpen;
-    menu.innerHTML = this.menuOpen ? `<button class="btn cand" data-v="addbus" title="${_t("加一条混音轨（路由轨）：几条轨发过来一起过效果，比如共用一个混响")}">${_t("＋ 混音轨")}</button>` : "";
+    menu.innerHTML = this.menuOpen ? `<button class="btn cand" data-v="addbus" title="${_t("加一条混音轨（路由轨）：几条轨发过来一起过效果，比如共用一个混响")}">${_t("＋ 混音轨")}</button>` +
+      `<span class="mix-rows" title="${_t("贴在底下时显示几排卡片（同小键盘的「行」）：自动 = 半屏放得下的最多排；手动最多到屏幕放得下、谱还露一条为止。横着放 / 全屏时不管")}">${_t("排数")}` +
+        `<button class="btn" data-v="rows:-" aria-label="${_t("少一排")}">−</button><b class="mix-rows-n"></b><button class="btn" data-v="rows:+" aria-label="${_t("多一排")}">+</button>` +
+        `<button class="btn chip" data-v="rows:auto">${_t("自动")}</button></span>` : "";
+    this.syncRowsCtl();
+  }
+  /** 「⋯」里排数那一行的字和能不能按（fitHeight 算完 / 菜单画完都调）。 */
+  private syncRowsCtl(): void {
+    const m = this.el.querySelector<HTMLElement>(".mix-menu .mix-rows"); if (!m) return;
+    const pref = this.host.rowsPref?.() ?? "auto", n = pref === "auto" ? this.shownRows : Math.min(pref, this.capRows);
+    m.querySelector(".mix-rows-n")!.textContent = String(n);
+    m.querySelector<HTMLButtonElement>('[data-v="rows:-"]')!.disabled = n <= 1;
+    m.querySelector<HTMLButtonElement>('[data-v="rows:+"]')!.disabled = n >= this.capRows;
+    m.querySelector('[data-v="rows:auto"]')!.classList.toggle("is-on", pref === "auto");
   }
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   private card(id: string, cls: string, name: string, who: string, body: string, color?: string): string {
@@ -493,8 +518,13 @@ export class Studio {
     const cs = getComputedStyle(box), gap = parseFloat(cs.rowGap) || 0, pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
     const head = [...el.children].filter((c) => c !== box && !(c as HTMLElement).hidden).reduce((n, c) => n + (c as HTMLElement).getBoundingClientRect().height, 0);
     const H = card.getBoundingClientRect().height, cols = cs.gridTemplateColumns.split(" ").filter(Boolean).length || 1, rows = Math.ceil(box.querySelectorAll(".strip").length / cols);
-    const fit = Math.max(1, Math.floor((innerHeight * 0.5 - head - pad + gap) / (H + gap))), n = Math.min(rows, fit);
+    const rowsFor = (h: number) => Math.max(1, Math.floor((h - head - pad + gap) / (H + gap)));
+    const stageH = (el.closest("#stage") as HTMLElement | null)?.clientHeight ?? innerHeight;
+    this.capRows = rowsFor(stageH - SCORE_SLIVER);   // 屏幕高度上限：谱至少还露一条
+    const pref = this.host.rowsPref?.() ?? "auto", want = pref === "auto" ? Math.min(rowsFor(innerHeight * 0.5), this.capRows) : Math.min(pref, this.capRows);
+    const n = Math.min(rows, want); this.shownRows = want;
     el.style.maxHeight = `${Math.ceil(head + pad + n * H + (n - 1) * gap + 2)}px`;
+    this.syncRowsCtl();
   }
   /** 底座贴底 ↔ 贴右边翻了（main.ts syncDock）：重新按整排对齐 / 放开。 */
   relayout(): void { this.fitHeight(); }

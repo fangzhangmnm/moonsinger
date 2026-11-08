@@ -548,6 +548,9 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .mix-tabbar .mix-more { margin-left: auto; height: 28px; min-width: 32px; }
 .mix-menu { display: flex; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--bg); }
 .mix-menu[hidden] { display: none; }
+.mix-menu .mix-rows { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 13px; color: var(--muted); }
+.mix-menu .mix-rows .btn { height: 28px; min-width: 28px; padding: 0 6px; }
+.mix-menu .mix-rows b { min-width: 1.4em; text-align: center; color: var(--ink); }
 .strip { position: relative; }
 .strip-meter { position: absolute; left: 10px; right: 10px; top: 4px; height: 6px; overflow: hidden; border-radius: 3px; pointer-events: none; background: color-mix(in srgb, var(--ink) 7%, transparent); }   /* 电平条（v0.10.38：每一页每张卡都有、粗一点——user「任何模式的所有卡上面应该都有那个音量的调，这样我知道谁在动」）：淡底槽 */
 .strip-meter > i { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: color-mix(in srgb, var(--accent) 35%, transparent); }   /* 峰值：淡的 */

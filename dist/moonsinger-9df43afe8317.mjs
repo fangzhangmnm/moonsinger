@@ -2839,9 +2839,9 @@ var S = {
   "\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E": { en: "Menu: new / open / export / cover / sounds and credits / settings" },
   "\u952E\u76D8\uFF08pad\uFF09": { en: "Keyboard (pad)" },
   "\u952E\u76D8": { en: "Keys" },
-  "\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42": { en: "Mode: which layer a tap edits" },
   "\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09": { en: "Undo (Ctrl / \u2318+Z)" },
   "\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09": { en: "Redo (Ctrl / \u2318+Shift+Z)" },
+  "\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42": { en: "Mode: which layer a tap edits" },
   "\u770B\u54EA\u4E00\u6BB5\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u6BB5": { en: "Which section to view: all / just this one" },
   "\u770B\u54EA\u4F4D\u6B4C\u624B\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u4F4D": { en: "Which part to view: all / just this one" },
   "\u5168\u90E8\u66F2\u6BB5": { en: "All sections" },
@@ -4173,9 +4173,9 @@ var S = {
   "\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09": { en: "Hide the keys (tap the staff to bring them back)" },
   "\u6536\u8D77": { en: "Hide" },
   "\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7": { en: "More: layout, insert marks" },
-  "1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09": { en: "1= (the pad's own key): hold and slide up / down, or tap to choose (circle of fifths)" },
-  "\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09": { en: "Note length: hold and slide up / down, or tap to choose (tuplets included)" },
   "\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684": { en: "Range (the pad's lowest to highest note): hold and slide up / down, or tap to choose \u2014 like pushing a sheet of paper: pushing up shows lower notes" },
+  "\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09": { en: "Note length: hold and slide up / down, or tap to choose (tuplets included)" },
+  "1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09": { en: "1= (the pad's own key): hold and slide up / down, or tap to choose (circle of fifths)" },
   "\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8": { en: "Switch to the symbol grid (dynamics, hairpins, articulations, key / time / tempo, repeats, style, phrase end) \u2014 notes and marks are edited together on the score anyway; this only switches the keys" },
   "\u5C11\u4E00{name}": { en: "One fewer {name}" },
   "\u591A\u4E00{name}": { en: "One more {name}" },
@@ -4735,6 +4735,10 @@ var S = {
   "\u66F4\u591A\uFF1A\u52A0\u6DF7\u97F3\u8F68\u2026": { en: "More: add bus\u2026" },
   "\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD": { en: "Add a bus (routing track): several tracks send here to share effects, such as one reverb" },
   "\uFF0B \u6DF7\u97F3\u8F68": { en: "\uFF0B Bus" },
+  "\u8D34\u5728\u5E95\u4E0B\u65F6\u663E\u793A\u51E0\u6392\u5361\u7247\uFF08\u540C\u5C0F\u952E\u76D8\u7684\u300C\u884C\u300D\uFF09\uFF1A\u81EA\u52A8 = \u534A\u5C4F\u653E\u5F97\u4E0B\u7684\u6700\u591A\u6392\uFF1B\u624B\u52A8\u6700\u591A\u5230\u5C4F\u5E55\u653E\u5F97\u4E0B\u3001\u8C31\u8FD8\u9732\u4E00\u6761\u4E3A\u6B62\u3002\u6A2A\u7740\u653E / \u5168\u5C4F\u65F6\u4E0D\u7BA1": { en: "How many rows of cards to show when docked at the bottom (like the keypad rows): Auto = as many as fit in half the screen; manual goes up to what the screen can hold while a strip of the score stays visible. Ignored when docked at the side or full screen" },
+  "\u6392\u6570": { en: "Rows" },
+  "\u5C11\u4E00\u6392": { en: "One row fewer" },
+  "\u591A\u4E00\u6392": { en: "One row more" },
   "\u6548\u679C\u5168\u5173": { en: "All FX off" },
   "\u6548\u679C\u5F00\u7740": { en: "FX on" },
   "\u73B0\u5728\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF08\u63A8\u5B50 / \u58F0\u50CF\u7559\u7740\uFF09\u3002\u70B9 = \u6548\u679C\u56DE\u6765": { en: "Now: plugins and sends are silent (faders / pan stay). Tap = effects back" },
@@ -4986,7 +4990,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.13-2026-11-07";
+var APP_VERSION = "v0.16.14-2026-11-07";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -14419,7 +14423,8 @@ var ScoreView = class {
       this.host.focus?.("staff");
       return true;
     }
-    if (wasLyric && pid === null) {
+    const textRow = this.inBox(L0.title, x2, y2) || this.inBox(L0.arrangement, x2, y2);
+    if (wasLyric && pid === null && !textRow) {
       this.host.focus?.("staff");
       return true;
     }
@@ -14461,6 +14466,16 @@ var ScoreView = class {
     }
     if (this.leaveFamilyAt(x2, y2)) return true;
     if (this.openPartAt(x2, y2)) return true;
+    if (view2 && this.inBox(L2.title, x2, y2)) {
+      this.title.openNow();
+      this.host.focus?.("text");
+      return true;
+    }
+    if (view2 && this.inBox(L2.arrangement, x2, y2)) {
+      this.title.openArrangement();
+      this.host.focus?.("text");
+      return true;
+    }
     if (view2) {
       for (const pp of L2.papers) {
         if (this.inBox(pp.prev ?? null, x2, y2)) {
@@ -28046,15 +28061,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-d95a8bd68886.mjs");
+      return pick(() => "singer-worker-67669e31d634.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ae2be6ef408a.mjs");
+      return pick(() => "layout-worker-52a41d162b7b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-e9244738563f.mjs");
+      return pick(() => "encode-worker-cf3df35748ee.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35658,6 +35673,7 @@ function stereoShape(L2, R2) {
 
 // src/ui/studio.ts
 var SPEC_TICKS = [100, 1e3, 1e4];
+var SCORE_SLIVER = 96;
 var MASTER = "__master";
 var TABS = [
   { id: "basic", label: _t("\u57FA\u7840"), hint: _t("\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\uFF1A\u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73\u3001\u5DE6\u53F3\u6446\u5F00\uFF08\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65\uFF09") },
@@ -35730,6 +35746,9 @@ var Studio2 = class {
   corrShown = /* @__PURE__ */ new Map();
   lastText = 0;
   full = false;
+  shownRows = 0;
+  capRows = 1;
+  // 这会儿显示了几排 / 屏幕最多放得下几排（fitHeight 算；「⋯」里排数的 − + 用）
   /** 插件参数的剪贴板（v0.10.23；user「待会：效果器预设可以拷贝，类似Unity的component，尽量严格一点避免混淆。不读快捷键」）：
    *  拷 = 这一格的种类 + 全部参数（不拷开 / 关、不拷「被谁压」）；粘参数 = 只能粘到同一种插件上（覆盖参数，开关 / 被谁压照旧）；粘成新的一格 = 链尾加一格。这次打开里有效、没有快捷键。 */
   fxClip = null;
@@ -35972,6 +35991,10 @@ var Studio2 = class {
     } else if (v === "more") {
       this.menuOpen = !this.menuOpen;
       this.render();
+    } else if (v === "rows:-" || v === "rows:+" || v === "rows:auto") {
+      const pref = this.host.rowsPref?.() ?? "auto", base2 = pref === "auto" ? this.shownRows : Math.min(pref, this.capRows);
+      this.host.setRowsPref?.(v === "rows:auto" ? "auto" : Math.max(1, Math.min(this.capRows, base2 + (v === "rows:+" ? 1 : -1))));
+      this.fitHeight();
     } else if (v === "addbus") {
       this.menuOpen = false;
       const id2 = this.host.addBus();
@@ -36299,7 +36322,18 @@ ${tg2.fx}`);
     bar2.innerHTML = `<span class="fx-seg mix-tabs" role="tablist">${TABS.map((x2) => `<button class="btn${this.tab === x2.id ? " is-on" : ""}" data-v="tab" data-tab="${x2.id}" role="tab" title="${esc6(x2.hint)}">${esc6(x2.label)}</button>`).join("")}</span><button class="btn mix-more${this.menuOpen ? " is-on" : ""}" data-v="more" title="${_t("\u66F4\u591A\uFF1A\u52A0\u6DF7\u97F3\u8F68\u2026")}">\u22EF</button>`;
     const menu = this.el.querySelector(".mix-menu");
     menu.hidden = !this.menuOpen;
-    menu.innerHTML = this.menuOpen ? `<button class="btn cand" data-v="addbus" title="${_t("\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD")}">${_t("\uFF0B \u6DF7\u97F3\u8F68")}</button>` : "";
+    menu.innerHTML = this.menuOpen ? `<button class="btn cand" data-v="addbus" title="${_t("\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD")}">${_t("\uFF0B \u6DF7\u97F3\u8F68")}</button><span class="mix-rows" title="${_t("\u8D34\u5728\u5E95\u4E0B\u65F6\u663E\u793A\u51E0\u6392\u5361\u7247\uFF08\u540C\u5C0F\u952E\u76D8\u7684\u300C\u884C\u300D\uFF09\uFF1A\u81EA\u52A8 = \u534A\u5C4F\u653E\u5F97\u4E0B\u7684\u6700\u591A\u6392\uFF1B\u624B\u52A8\u6700\u591A\u5230\u5C4F\u5E55\u653E\u5F97\u4E0B\u3001\u8C31\u8FD8\u9732\u4E00\u6761\u4E3A\u6B62\u3002\u6A2A\u7740\u653E / \u5168\u5C4F\u65F6\u4E0D\u7BA1")}">${_t("\u6392\u6570")}<button class="btn" data-v="rows:-" aria-label="${_t("\u5C11\u4E00\u6392")}">\u2212</button><b class="mix-rows-n"></b><button class="btn" data-v="rows:+" aria-label="${_t("\u591A\u4E00\u6392")}">+</button><button class="btn chip" data-v="rows:auto">${_t("\u81EA\u52A8")}</button></span>` : "";
+    this.syncRowsCtl();
+  }
+  /** 「⋯」里排数那一行的字和能不能按（fitHeight 算完 / 菜单画完都调）。 */
+  syncRowsCtl() {
+    const m2 = this.el.querySelector(".mix-menu .mix-rows");
+    if (!m2) return;
+    const pref = this.host.rowsPref?.() ?? "auto", n10 = pref === "auto" ? this.shownRows : Math.min(pref, this.capRows);
+    m2.querySelector(".mix-rows-n").textContent = String(n10);
+    m2.querySelector('[data-v="rows:-"]').disabled = n10 <= 1;
+    m2.querySelector('[data-v="rows:+"]').disabled = n10 >= this.capRows;
+    m2.querySelector('[data-v="rows:auto"]').classList.toggle("is-on", pref === "auto");
   }
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   card(id2, cls, name, who, body2, color) {
@@ -36317,8 +36351,14 @@ ${tg2.fx}`);
     const cs2 = getComputedStyle(box), gap = parseFloat(cs2.rowGap) || 0, pad4 = (parseFloat(cs2.paddingTop) || 0) + (parseFloat(cs2.paddingBottom) || 0);
     const head = [...el2.children].filter((c10) => c10 !== box && !c10.hidden).reduce((n11, c10) => n11 + c10.getBoundingClientRect().height, 0);
     const H3 = card.getBoundingClientRect().height, cols = cs2.gridTemplateColumns.split(" ").filter(Boolean).length || 1, rows = Math.ceil(box.querySelectorAll(".strip").length / cols);
-    const fit = Math.max(1, Math.floor((innerHeight * 0.5 - head - pad4 + gap) / (H3 + gap))), n10 = Math.min(rows, fit);
+    const rowsFor = (h2) => Math.max(1, Math.floor((h2 - head - pad4 + gap) / (H3 + gap)));
+    const stageH = el2.closest("#stage")?.clientHeight ?? innerHeight;
+    this.capRows = rowsFor(stageH - SCORE_SLIVER);
+    const pref = this.host.rowsPref?.() ?? "auto", want = pref === "auto" ? Math.min(rowsFor(innerHeight * 0.5), this.capRows) : Math.min(pref, this.capRows);
+    const n10 = Math.min(rows, want);
+    this.shownRows = want;
     el2.style.maxHeight = `${Math.ceil(head + pad4 + n10 * H3 + (n10 - 1) * gap + 2)}px`;
+    this.syncRowsCtl();
   }
   /** 底座贴底 ↔ 贴右边翻了（main.ts syncDock）：重新按整排对齐 / 放开。 */
   relayout() {
@@ -50477,7 +50517,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "61e3d27b6f53",
+  cssHash: "2afce900e757",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -50820,7 +50860,13 @@ var partLabel = (id2) => {
   const k2 = D2.st.song.parts.findIndex((p2) => p2.id === id2);
   return k2 < 0 ? id2 : partLabels(D2.st.song, D2.extras)[k2];
 };
+var KV_MIXER_ROWS = "mixer-rows";
 var studio = new Studio2($2("stage"), {
+  rowsPref: () => {
+    const v = deviceKvGet(KV_MIXER_ROWS);
+    return v && /^[1-9]\d?$/.test(v) ? Number(v) : "auto";
+  },
+  setRowsPref: (v) => deviceKvSet(KV_MIXER_ROWS, String(v)),
   strips: () => {
     const labels = partLabels(D2.st.song, D2.extras), cols = partColorIndices(D2.st.song.parts.map((p2) => roleSound(D2.extras, p2.role)));
     return D2.st.song.parts.map((p2, k2) => ({ id: p2.id, name: labels[k2], color: TAB20[cols[k2]], refs: D2.st.song.papers.filter((pp) => pp.tracks[p2.id]).length, performer: activeCandidateName(D2.extras, p2.role) ?? _t("\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09"), ...micOf2(p2), muted: pv(p2.id).muted, solo: pv(p2.id).solo }));
@@ -54059,6 +54105,11 @@ window.addEventListener("keydown", (e10) => {
       return;
     }
   }
+  if (e10.isComposing || e10.keyCode === 229) return;
+  {
+    const tg2 = e10.target;
+    if (e10.key !== "Escape" && typingIn(tg2) && !tg2?.closest?.(".lyric-input, .mark-ed")) return;
+  }
   if (finder.isOpen) {
     if (e10.key === "Escape") {
       e10.preventDefault();
@@ -54335,4 +54386,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-abd9a8b07e1c.mjs.map
+//# sourceMappingURL=moonsinger-9df43afe8317.mjs.map

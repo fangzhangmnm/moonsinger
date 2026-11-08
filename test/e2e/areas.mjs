@@ -28,7 +28,7 @@ export const AREAS = {
   // 界面语言：英文巡检（剩下的中文、撑爆的控件）
   i18n: ["i18n-en", "finder-width"],
   // 模式与底座（workspace.ts 那张表）
-  modes: ["modes", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys", "final", "midi", "dock-side"],
+  modes: ["modes", "typing-keys", "title-modes", "mixer-rows", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys", "final", "midi", "dock-side"],
 };
 
 /** 不是测试的 E2E 目录成员（运行器和分区守卫都跳过）。 */
