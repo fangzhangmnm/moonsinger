@@ -234,6 +234,13 @@ export function withRoleConcept(extras: Extras, role: string, c: { name: string;
   r.name = c.name; if (c.sound) r.sound = c.sound; r.concept = c.concept;
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
+/** 给这个角色里的一位候选记下「当初作为哪件乐器上场」（CandidateV2.castAs；点回它时 withRoleConcept 套回去）。没这位 = 原样返回。 */
+export function withCastAs(extras: Extras, role: string, candId: string, castAs: NonNullable<import("./contract.ts").CandidateV2["castAs"]>, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), cs = r.candidates as { id: string }[] | undefined, k = cs?.findIndex((c) => c.id === candId) ?? -1;
+  if (!cs || k < 0) return extras;
+  r.candidates = cs.map((c, i) => (i === k ? { ...c, castAs } : c));
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
 /** 新声部要的角色 id（休息室里没用过的「r<n>」）。 */
 export function newRoleId(extras: Extras, song: Song): string { return nextKey([...Object.keys(extras.lounge), ...song.parts.map((p) => p.role)], "r"); }
 /** 新声部要的麦克风 id。 */
@@ -305,6 +312,8 @@ export interface CandidateInfo { id: string; name: string; engine: Engine }
 export function candidates(extras: Extras, role: string): CandidateInfo[] {
   return cands(extras.lounge[role] ?? defaultRole("n", role)).map((c) => ({ id: String(c.id), name: String(c.name ?? ""), engine: instrumentOf(c)?.engine ?? "unknown" }));
 }
+/** 这个角色里 id 那位候选（整份 json；没有 = null）。 */
+export function candidateJson(extras: Extras, role: string, id: string): Json | null { return cands(extras.lounge[role] ?? defaultRole("n", role)).find((x) => x.id === id) ?? null; }
 /** 上场的候选的 id（没有角色快照 = 默认的 c1）。 */
 export function activeId(extras: Extras, role: string): string { return String(extras.lounge[role]?.active ?? CANDIDATE_ID.full); }
 /** 现在上场的候选（整份 json）。 */

@@ -49,6 +49,8 @@ import { createSoundSources } from "../sources/sounds.ts";   // 音源来源 + �
 import { createModelSources, MODEL_SOURCE_DEFAULT } from "../sources/models.ts";
 import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
+import { withCastAs, candidateJson } from "../format/project.ts";
+import type { CandidateV2 } from "../format/contract.ts";
 import { withFinal, withoutFinal, contentFingerprintOf, type FinalRecord, moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, activePerfSpec, activeTranspose, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine, type GmCandidate } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
@@ -72,7 +74,7 @@ import { Studio, MASTER as STUDIO_MASTER } from "../ui/studio.ts";
 import { resolveChain } from "../ui/plugins.ts";
 import { FINAL_MP3_ENTRY } from "../format/final.ts";
 import { coreInfo } from "../core/version.ts";
-import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, sustainOf, GS_LIBRARY_ID, type Catalog } from "../gm/catalog.ts";
+import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, sustainOf, GS_LIBRARY_ID, gmKey, conceptOfIds, type Catalog, type Concept } from "../gm/catalog.ts";
 import { ICON_CREDITS } from "../gm/instruments.gen.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { ROLE_GROUPS, ROLE_PRESETS, DEFAULT_ROLE } from "../score/roles.ts";
@@ -1316,16 +1318,17 @@ async function playHeadWith(p: FinderPick): Promise<void> {
  *  GS 整包在设备缓存 / 家族音源库里找得到；要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。 */
 async function castPick(p: FinderPick): Promise<void> {
   if (finderPlayOnly()) return;   // 只弹着玩：没有要写进去的歌
-  const cat = await loadCatalog(), c = p.concept;
-  const sound = p.kind === "gs" ? (p.provider.sound ?? roleSoundOf(cat, c)) : roleSoundOf(cat, c);
-  updateExtras(withRoleConcept(D.extras, curRole(), { name: roleNameOf(c), sound, concept: { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) } } }, D.st.song.hum), { kind: "lounge", label: _t("「{c}」改成这个乐器", { c: roleNameOf(c) }) }, "cast");
-  if (p.kind === "voice") { setActive(CANDIDATE_ID.full); closeFinder(); return; }
+  const cat = await loadCatalog(), c = p.concept; catNow = cat;
+  const ca = castArgs(cat, c, p.kind === "gs" ? p.provider.sound : null);   // 角色改成这件乐器；候选里也记一份（castAs），点回它时套回去
+  updateExtras(withRoleConcept(D.extras, curRole(), ca, D.st.song.hum), { kind: "lounge", label: _t("「{c}」改成这个乐器", { c: roleNameOf(c) }) }, "cast");
+  if (p.kind === "voice") { updateExtras(withCastAs(D.extras, curRole(), CANDIDATE_ID.full, ca, D.st.song.hum), { kind: "lounge", label: _t("「{c}」改成这个乐器", { c: roleNameOf(c) }) }, "cast"); setActive(CANDIDATE_ID.full); closeFinder(); return; }
   if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
   if (!audition) { view.render(); renderTitle(); return; }
   const { subset, sha256 } = audition, inf = sf2Info(subset);
   const fileSha256 = GS.sha256;   // 试听台的整包 = 货架上的那份（哈希就是目录钉的）
-  updateExtras(withSf2Candidate(D.extras, curRole(), { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false,
-    origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, D.st.song.hum), { kind: "lounge", label: _t("「{c}」上场：{gmName}", { c: roleNameOf(c), gmName: p.provider.gmName }) }, "cast");
+  const withCand = (x: typeof D.extras) => withCastAs(x, curRole(), activeId(x, curRole()), ca, D.st.song.hum);   // 新上场的这位记下「作为这件乐器」
+  updateExtras(withCand(withSf2Candidate(D.extras, curRole(), { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false,
+    origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, D.st.song.hum)), { kind: "lounge", label: _t("「{c}」上场：{gmName}", { c: roleNameOf(c), gmName: p.provider.gmName }) }, "cast");
   sources.session.keep(sha256, subset);
   closeFinder(); setActive(activeId(D.extras, curRole())); info(_t("「{c}」换成：{gmName}", { c: roleNameOf(c), gmName: p.provider.gmName }));
 }
@@ -1406,7 +1409,27 @@ function openFinder(): void {
 /** back = 关了回乐器页（默认 = 它是从乐器页开的）；开混音台 / 开乐器页 / 进歌库时传 false = 不回。 */
 function closeFinder(back: boolean = ui.page.k === "finder" && ui.page.backToInst): void { if (!finder.isOpen) return; const wasPlayOnly = finderPlayOnly(); ui.setPage({ k: "score" }); if (wasPlayOnly) document.body.classList.remove("finder-over-gallery"); finder.hide(); audition = null; auditionMute = false; ++auditionGen; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = back; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (back) openInstPage(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
-function setActive(id: string): void { const next = withActive(D.extras, curRole(), id, D.st.song.hum); updateExtras(next, { kind: "lounge", label: _t("「{next}」换人：{next2}", { next: roleName(next, curRole()), next2: activeCandidateName(next, curRole()) ?? id }) }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
+/** 上场时角色跟着改成的那一份（谱上名 / MusicXML sound / 概念 by value）= withRoleConcept 的参数，也记进候选的 castAs（v0.16.15）。 */
+function castArgs(cat: Catalog, c: Concept, providerSound?: string | null): NonNullable<CandidateV2["castAs"]> {
+  return { name: roleNameOf(c), sound: providerSound ?? roleSoundOf(cat, c), concept: { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) } } };
+}
+let catNow: Catalog | null = null;   // 乐器目录（同步拿：点回旧候选时反查用；还没载 = 这一下先不反查、顺手载上）
+const catSync = (): Catalog | null => { if (!catNow) void loadCatalog().then((c) => { catNow = c; }).catch(() => {}); return catNow; };
+/** 点回这位候选时角色该变成哪件乐器：记着的（castAs）；没记的旧候选 = GS 音色按目录反查本尊、小月相 / 元音版 = 人声；自己的 .sf2（音色号不一定按 GM 排）= 不猜。 */
+function castAsOf(extras: typeof D.extras, role: string, id: string): NonNullable<CandidateV2["castAs"]> | null {
+  const c = candidateJson(extras, role, id) as { castAs?: CandidateV2["castAs"]; instrument?: { engine?: string; bank?: number; program?: number; note?: number; source?: { origin?: { library?: string } } } } | null;
+  if (!c) return null; if (c.castAs) return c.castAs;
+  const cat = catSync(), ins = c.instrument; if (!cat || !ins) return null;
+  let concept: Concept | undefined;
+  // 不按引擎名分支（演奏者注册表守卫，ADR-0004 §2.4）：带 GS 音色号的 = 目录反查本尊；会唱 / 会哼的演奏者 = 人声；别的不猜
+  if (ins.source?.origin?.library === GS_LIBRARY_ID && ins.bank !== undefined && ins.program !== undefined) { const row = cat.gmSelf.get(gmKey({ bank: ins.bank, program: ins.program, ...(ins.note !== undefined ? { note: ins.note } : {}) })); concept = row ? cat.byId.get(row.concept) : undefined; }
+  else if (ins.engine && (performerOf(ins.engine as Engine)?.lyrics ?? "none") !== "none") concept = conceptOfIds(cat, { wikidata: "Q7390" });
+  return concept ? castArgs(cat, concept) : null;
+}
+function setActive(id: string): void {
+  let next = withActive(D.extras, curRole(), id, D.st.song.hum);
+  const ca = castAsOf(next, curRole(), id); if (ca) next = withRoleConcept(next, curRole(), ca, D.st.song.hum);   // 点回旧候选 = 角色名 / 乐器跟着换回（user 11-07：先选长笛再选人声，点回长笛谱上还写 Voice）
+  updateExtras(next, { kind: "lounge", label: _t("「{next}」换人：{next2}", { next: roleName(next, curRole()), next2: activeCandidateName(next, curRole()) ?? id }) }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
 /** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。
  *  不提醒、不帮用户写任何东西（user「只是举例子，然后这个你也不应该强迫或者提醒用户写这个，因为谱子也不绑定乐器的」「…一键插入按钮 不要」）。 */
 function openCreditsSheet(): void {
@@ -2125,6 +2148,7 @@ const UNKNOWN_TITLE = _t("这一版出不了声（别的软件原来的乐器）
  *  2026-10-17 改回齐平 0.8 + 连续（user「那个破音是因为默认关了齐平导致的…加上连续过渡然后用那个默认」「齐平还是默认开吧。爆音至少比响度不可控好」；format/performance.ts TSUKUYOMI_DEFAULTS）。 */
 let instAdvOpen = false;   // 乐器页「高级」折叠开着没（重画保持）
 function openInstPage(): void {
+  catSync();   // 乐器目录先载上：点回旧候选时要同步反查（castAsOf）
   ui.close();
   if (finder.isOpen) closeFinder(false);
   ui.setPage({ k: "inst" }); instPicked = null; scoreEl.hidden = true; instEl.hidden = false;

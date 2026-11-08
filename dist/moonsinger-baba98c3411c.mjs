@@ -4990,7 +4990,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.14-2026-11-07";
+var APP_VERSION = "v0.16.15-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28069,7 +28069,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-52a41d162b7b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-cf3df35748ee.mjs");
+      return pick(() => "encode-worker-816dbd331a38.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -30230,6 +30230,12 @@ function withRoleConcept(extras, role, c10, hum) {
   r10.concept = c10.concept;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
+function withCastAs(extras, role, candId, castAs, hum) {
+  const r10 = roleOf(extras, role, hum), cs2 = r10.candidates, k2 = cs2?.findIndex((c10) => c10.id === candId) ?? -1;
+  if (!cs2 || k2 < 0) return extras;
+  r10.candidates = cs2.map((c10, i10) => i10 === k2 ? { ...c10, castAs } : c10);
+  return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
 function newRoleId(extras, song) {
   return nextKey2([...Object.keys(extras.lounge), ...song.parts.map((p2) => p2.role)], "r");
 }
@@ -30318,6 +30324,9 @@ function withMic(extras, micId, patch) {
 }
 function candidates(extras, role) {
   return cands(extras.lounge[role] ?? defaultRole("n", role)).map((c10) => ({ id: String(c10.id), name: String(c10.name ?? ""), engine: instrumentOf(c10)?.engine ?? "unknown" }));
+}
+function candidateJson(extras, role, id2) {
+  return cands(extras.lounge[role] ?? defaultRole("n", role)).find((x2) => x2.id === id2) ?? null;
 }
 function activeId(extras, role) {
   return String(extras.lounge[role]?.active ?? CANDIDATE_ID.full);
@@ -36402,7 +36411,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "106811d81f538815" : "dev";
+var CORE_HASH = true ? "6a695814363aec84" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -50812,9 +50821,11 @@ async function playHeadWith(p2) {
 async function castPick(p2) {
   if (finderPlayOnly()) return;
   const cat2 = await loadCatalog(), c10 = p2.concept;
-  const sound2 = p2.kind === "gs" ? p2.provider.sound ?? roleSoundOf(cat2, c10) : roleSoundOf(cat2, c10);
-  updateExtras(withRoleConcept(D2.extras, curRole(), { name: roleNameOf(c10), sound: sound2, concept: { ids: { wikidata: c10.ids.wikidata, local: c10.ids.local, musicxml: c10.ids.musicxml, gm: c10.ids.gm.map((g3) => ({ program: g3.program, bank: g3.bank })), hs: c10.ids.hs }, name: { zh: c10.names.zh, en: c10.names.en, ...c10.names.ja ? { ja: c10.names.ja } : {} } } }, D2.st.song.hum), { kind: "lounge", label: _t("\u300C{c}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668", { c: roleNameOf(c10) }) }, "cast");
+  catNow = cat2;
+  const ca2 = castArgs(cat2, c10, p2.kind === "gs" ? p2.provider.sound : null);
+  updateExtras(withRoleConcept(D2.extras, curRole(), ca2, D2.st.song.hum), { kind: "lounge", label: _t("\u300C{c}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668", { c: roleNameOf(c10) }) }, "cast");
   if (p2.kind === "voice") {
+    updateExtras(withCastAs(D2.extras, curRole(), CANDIDATE_ID.full, ca2, D2.st.song.hum), { kind: "lounge", label: _t("\u300C{c}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668", { c: roleNameOf(c10) }) }, "cast");
     setActive(CANDIDATE_ID.full);
     closeFinder();
     return;
@@ -50827,7 +50838,8 @@ async function castPick(p2) {
   }
   const { subset, sha256 } = audition, inf = sf2Info(subset);
   const fileSha256 = GS.sha256;
-  updateExtras(withSf2Candidate(D2.extras, curRole(), {
+  const withCand = (x2) => withCastAs(x2, curRole(), activeId(x2, curRole()), ca2, D2.st.song.hum);
+  updateExtras(withCand(withSf2Candidate(D2.extras, curRole(), {
     name: p2.provider.gmName,
     bank: p2.provider.bank,
     program: p2.provider.program,
@@ -50837,7 +50849,7 @@ async function castPick(p2) {
     embed: false,
     origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id },
     credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } }
-  }, D2.st.song.hum), { kind: "lounge", label: _t("\u300C{c}\u300D\u4E0A\u573A\uFF1A{gmName}", { c: roleNameOf(c10), gmName: p2.provider.gmName }) }, "cast");
+  }, D2.st.song.hum)), { kind: "lounge", label: _t("\u300C{c}\u300D\u4E0A\u573A\uFF1A{gmName}", { c: roleNameOf(c10), gmName: p2.provider.gmName }) }, "cast");
   sources.session.keep(sha256, subset);
   closeFinder();
   setActive(activeId(D2.extras, curRole()));
@@ -51044,8 +51056,34 @@ function closeFinder(back = ui2.page.k === "finder" && ui2.page.backToInst) {
   scoreEl.focus();
   if (back) openInstPage();
 }
+function castArgs(cat2, c10, providerSound) {
+  return { name: roleNameOf(c10), sound: providerSound ?? roleSoundOf(cat2, c10), concept: { ids: { wikidata: c10.ids.wikidata, local: c10.ids.local, musicxml: c10.ids.musicxml, gm: c10.ids.gm.map((g3) => ({ program: g3.program, bank: g3.bank })), hs: c10.ids.hs }, name: { zh: c10.names.zh, en: c10.names.en, ...c10.names.ja ? { ja: c10.names.ja } : {} } } };
+}
+var catNow = null;
+var catSync = () => {
+  if (!catNow) void loadCatalog().then((c10) => {
+    catNow = c10;
+  }).catch(() => {
+  });
+  return catNow;
+};
+function castAsOf(extras, role, id2) {
+  const c10 = candidateJson(extras, role, id2);
+  if (!c10) return null;
+  if (c10.castAs) return c10.castAs;
+  const cat2 = catSync(), ins = c10.instrument;
+  if (!cat2 || !ins) return null;
+  let concept;
+  if (ins.source?.origin?.library === GS_LIBRARY_ID && ins.bank !== void 0 && ins.program !== void 0) {
+    const row2 = cat2.gmSelf.get(gmKey({ bank: ins.bank, program: ins.program, ...ins.note !== void 0 ? { note: ins.note } : {} }));
+    concept = row2 ? cat2.byId.get(row2.concept) : void 0;
+  } else if (ins.engine && (performerOf(ins.engine)?.lyrics ?? "none") !== "none") concept = conceptOfIds(cat2, { wikidata: "Q7390" });
+  return concept ? castArgs(cat2, concept) : null;
+}
 function setActive(id2) {
-  const next2 = withActive(D2.extras, curRole(), id2, D2.st.song.hum);
+  let next2 = withActive(D2.extras, curRole(), id2, D2.st.song.hum);
+  const ca2 = castAsOf(next2, curRole(), id2);
+  if (ca2) next2 = withRoleConcept(next2, curRole(), ca2, D2.st.song.hum);
   updateExtras(next2, { kind: "lounge", label: _t("\u300C{next}\u300D\u6362\u4EBA\uFF1A{next2}", { next: roleName(next2, curRole()), next2: activeCandidateName(next2, curRole()) ?? id2 }) });
   sound.allOff();
   void prepareBank();
@@ -52013,6 +52051,7 @@ var instPicked = null;
 var UNKNOWN_TITLE = _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09");
 var instAdvOpen = false;
 function openInstPage() {
+  catSync();
   ui2.close();
   if (finder.isOpen) closeFinder(false);
   ui2.setPage({ k: "inst" });
@@ -54386,4 +54425,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-9df43afe8317.mjs.map
+//# sourceMappingURL=moonsinger-baba98c3411c.mjs.map

@@ -145,6 +145,10 @@ export interface LoungeRoleV2 {
 export interface CandidateV2 {
   id: string;                          // "c1"…（c1 / c2 = 新歌默认的月读完整 / 元音版）
   name: string;                        // 候选的名字（不上谱）
+  /** 2026-11-08 加（可选，不升版本；Claude Opus 5.5）：从乐器目录上场时，这一位是作为哪件乐器上的（角色名 / MusicXML sound / 概念，= withRoleConcept 那一份）。
+   *  在乐器页点回它 = 角色跟着换回这件乐器（user 11-07：先选长笛再选人声，点回长笛那颗谱上还写着 Voice）。没有（旧候选 / 自己的 .sf2）= 宿主按目录反查或不动。
+   *  旧 app 不认它也照常开存（候选整份写回），只是点回旧候选时名字不跟——就是它原来的样子。 */
+  castAs?: { name: string; sound: string | null; concept: NonNullable<LoungeRoleV2["concept"]> };
   instrument: InstrumentV2;            // 谁来演、怎么出声（按引擎分；不认识的引擎原样写回）
   gm: { program: number | null; variant: string | null };   // 写给别的软件看的（MusicXML <midi-program> 1 起 / <virtual-instrument>）
   calibrationDb: number;               // 响度校准（看得见、能调的默认，不偷偷自动）
