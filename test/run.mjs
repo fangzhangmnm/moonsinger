@@ -1,6 +1,7 @@
 // 测试入口：node test/run.mjs（node 24 strip-types 直跑导入的 .ts）。created 2026-10-06 by Claude Opus 5.5（抄 CatsUp）
 // 加新测试文件：在下面 import 一行即可。
 import "./smoke.test.ts";
+import "./feel-probe.test.ts";
 import "./catalog-i18n.test.mjs";
 import "./i18n-guard.test.mjs";
 import "./pitch.test.ts";

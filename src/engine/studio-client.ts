@@ -130,6 +130,8 @@ export class StudioClient {
     return p;
   }
   hasBank(sha: string): boolean { return this.presets.has(sha); }
+  /** 现在装着哪些库（sha；诊断 / 测试看：试听过的只留几件，v0.16.23）。 */
+  banks(): string[] { return [...this.presets.keys()]; }
   /** 预设下标（这份库里按 bank:program 找；没有 = −1）。 */
   presetIndex(sha: string, bank: number, program: number): number { return this.presets.get(sha)?.get(`${bank}:${program}`) ?? -1; }
   unbank(sha: string): void { this.presets.delete(sha); this.bankBytes.delete(sha); this.post({ type: "unbank", sha }); }

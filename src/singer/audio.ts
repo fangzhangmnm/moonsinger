@@ -5,6 +5,8 @@ export function audioCtx(): AudioContext {
   if (ctx.state === "suspended" || (ctx.state as string) === "interrupted") void ctx.resume();   // iPad 切后台回来 = interrupted（Safari 的非标准状态）
   return ctx;
 }
+/** 只看不建：没建过 = null（手感探针量音频时钟用；不为了量而建上下文）。 */
+export function audioCtxIfAny(): AudioContext | null { return ctx; }
 
 // 准备期间让声音一直醒着（2026-10-08 by Claude Opus 5.5；user「月读第一次渲染好了没有声音，需要重新点一次play」）：
 //   第一次唱要下模型、起引擎，几十秒；准备完再开播时早已不在点按的手势里，iPad 可能已经把声音收起来了 = 那一下没声、要再点一次。

@@ -36,7 +36,8 @@ import type { LyricReading } from "../ui/lyric-editor.ts";
 import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
-import { holdAudio, releaseAudio } from "../singer/audio.ts";
+import { holdAudio, releaseAudio, audioCtxIfAny } from "../singer/audio.ts";
+import { createFeelProbe } from "./feel-probe.ts";   // 手感探针（v0.16.23）：按下 → 接到 → 出声三段 + 主线程 / 音频时钟停顿，超标露数字
 import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS } from "../format/performance.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
@@ -437,10 +438,28 @@ function auditionTarget(): { inst: AuditionInst; key: (midi: number) => number; 
  *  「而不是一个音高一个长度cache一下」「预览时这样，不过播放的时候还是完全版的」）：完全版也走 auditionTarget 的元音那条路——表是月读自己离线预渲的
  *  （scripts/gen-preview-vowels.mjs：每种哼法 ら / ん / う / お / あ 各 7 个锚音 A3–D♯5、隔小三度，按住循环颤音整周期），按键不再去 worker 现唱。播放照旧完全版。
  *  原来（刀 3，v0.9.5–v0.10.42）：每按一下让 worker 只唱光标 / 刚写下那个字一秒——iPad 上一条工作道、和预唱抢，按键常常迟到。 */
+/** 手感探针（v0.16.23，Claude Fable 5.1；来龙去脉在 src/app/feel-probe.ts 头注释）：超标 = 键盘上沿一行小字 + 黑匣子一条；点那行字 = 这次打开不再显示。
+ *  「最慢一步」= 分账秒表（perf-trace）里上一次花得最久的那个 span：是键盘重画、谱重画还是顶栏，一眼看出主线程在忙什么。 */
+const feelChip = document.createElement("button"); feelChip.type = "button"; feelChip.className = "feel-chip"; feelChip.hidden = true; document.body.appendChild(feelChip);
+let feelMuted = false;
+feelChip.addEventListener("click", () => { feelMuted = true; feelChip.hidden = true; });
+const slowestStep = (): string => { const rows = Object.entries(perfReport()).filter(([, v]) => v.n > 0).sort((a, b) => b[1].last - a[1].last).slice(0, 2); return rows.length ? rows.map(([k, v]) => `${k} ${Math.round(v.last)} ms`).join(" / ") : "—"; };
+const feel = createFeelProbe({
+  audioNow: () => { const c = audioCtxIfAny(); return c ? { t: c.currentTime, state: c.state, sr: c.sampleRate } : null; },
+  report: (text) => {
+    if (!text || feelMuted) { feelChip.hidden = true; return; }
+    feelChip.textContent = text; feelChip.hidden = false;
+    const r = padEl.getBoundingClientRect();
+    if (r.height > 0) { feelChip.style.left = `${Math.round(r.left + 8)}px`; feelChip.style.top = `${Math.max(0, Math.round(r.top - feelChip.offsetHeight - 4))}px`; feelChip.style.maxWidth = `${Math.max(160, Math.round(r.width - 16))}px`; }
+    else { feelChip.style.left = "8px"; feelChip.style.top = ""; feelChip.style.bottom = "8px"; feelChip.style.maxWidth = "calc(100vw - 16px)"; }
+  },
+  note: (msg) => diagNote("feel", `${msg}; slowest ${slowestStep()}`),
+  text: (r) => _t("按键晚了：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 {a} ms · 最慢一步 {slow}（点一下不再显示）", { q: r.queue, s: r.toSound, st: r.stall, a: r.audioStep, slow: slowestStep() }),
+});
 const sound = {
   down: (p: Pitch, id = "main") => {
     const t = auditionTarget(); if (!t) return; if (t.inst.kind === "vowel" && !vowelsReady) { void ensureVowels(); return; }
-    singer.unlock(); engine.auditionOn(id, t.inst, t.key(midiOf(p)), t.vel, t.gainDb, t.pan);
+    singer.unlock(); engine.auditionOn(id, t.inst, t.key(midiOf(p)), t.vel, t.gainDb, t.pan); feel.sound();
   },
   glide: (p: Pitch, id = "main") => { const t = auditionTarget(); if (t) engine.auditionGlide(id, t.key(midiOf(p))); },
   up: (id = "main") => { engine.auditionOff(id); const n = chordVoices.get(id) ?? 0; for (let k = 1; k <= n; k++) engine.auditionOff(`${id}~${k}`); chordVoices.delete(id); },
@@ -623,6 +642,7 @@ function insertMarkHere(_kind?: string, at?: { x: number; y: number }): void {
 const padHost = createPadHost(padEl, {
   state: () => D.st, update: (n) => update(n), writeAndLocate, afterWrite, previewEdited, info: (m) => info(m), canStack,   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok, soundAfterWrite,
+  onTouch: (ts) => feel.touch(ts),
   impro: () => impro, finderOpen: () => finder.isOpen, finderShown, instShown,
   toggleImpro: () => toggleImpro(),
   kbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
@@ -1120,7 +1140,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   });
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
-(window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, renderMix: () => renderMixForTest(),
+(window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, auditionSha: () => audition?.sha256 ?? null, renderMix: () => renderMixForTest(),
   transport: () => ({ startMark: perfApi.startMark, paused: perfApi.paused, listen: listenOn(), loop: perfApi.loopOn, turnLead: perfApi.turnLead }),   // 走带的状态（E2E 用）
   navPaper: (d: -1 | 1) => navPaper(d), paperSpans: () => perfApi.playTl?.papers.map((x) => ({ id: x.paper.id, t0: x.t0 })) ?? null,   // 换段 / 现在放的时间线里每段从几秒起（E2E 用）
   workspace: () => ({ ...ws, dock: dockOf(ws) }), setMode: (m: Mode) => setMode(m),   // 模式 / 底座（E2E 用）
@@ -1210,6 +1230,21 @@ function noCast(what: string): void {
 }
 // ── 找人视图（src/ui/finder.ts）：全屏替掉谱区，pad 当试听键盘；试听台 = 临时的一个槽（不进休息室），「上场」才造演奏者 ──────────
 let audition: { bank: number; program: number; note?: number; sfx?: SfxInfo; sha256: string; subset: Uint8Array; label: string } | null = null;
+/** 试听过的音色库只留最近几件（v0.16.23，Claude Fable 5.1；查 11-08 iPad 按键延迟时发现的病：目录里每点一件 = 一份库解析进声音线程 + 一个专用合成器 + 主线程一份字节，
+ *  整个 app 没人调过 unbank——逛一下午目录就是几十份、几百 MB，只涨不落）。规矩：最近 AUDITION_KEEP 件留着（user 11-08「快速来回比」）；歌里（休息室任何候选）用着的永不卸；
+ *  关目录 = 试听的全卸；卸了再要 = prepareBank / setAudition 从缓存重载（几 MB、瞬时）。最近的排前面。 */
+const AUDITION_KEEP = 3;
+let auditionShas: string[] = [];
+const shasInUse = (): Set<string> => { const s = new Set<string>(); for (const role of Object.keys(D.extras.lounge)) for (const g of gmCandidates(D.extras, role)) s.add(g.subsetSha256); return s; };
+function trimAuditionBanks(keep: number): void {
+  const used = shasInUse(), cur = audition?.sha256 ?? null, stay: string[] = [];
+  for (const sha of auditionShas) {
+    if (sha === cur || stay.length < keep) { stay.push(sha); continue; }
+    if (!used.has(sha) && engine.hasBank(sha)) engine.unbank(sha);
+  }
+  auditionShas = stay;
+}
+function noteAuditionBank(sha: string): void { auditionShas = [sha, ...auditionShas.filter((x) => x !== sha)]; trimAuditionBanks(AUDITION_KEEP); }
 /** pad 键底部的提示音域 = 现在谁在弹：找人视图里 = 试听的那位；写谱时 = 光标所在声部上场的那位（月读 / 元音版 = 她的；乐器 = 目录里角色那件乐器的音域；不知道 = 不画）。 */
 function padHint(): HintRange {
   if (finderShown()) return auditionHint;
@@ -1249,7 +1284,7 @@ async function setAudition(p: FinderPick | FinderNobody | null): Promise<void> {
     const subset = subsetSf2(bank, [{ bank: p.provider.bank, program: p.provider.program }]), sha256 = await sha256Hex(subset);
     if (gen !== auditionGen) return;
     audition = { bank: p.provider.bank, program: p.provider.program, ...(cat ? gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note) : {}), sha256, subset, label: p.provider.gmName };   // 音效默认固定原速（上场后也是）
-    sound.allOff(); await engine.bank(sha256, subset);
+    sound.allOff(); await engine.bank(sha256, subset); noteAuditionBank(sha256);
   } catch (e) { progress(""); audition = null; showError(_t("试听不了：{Error}", { Error: (e as Error).message })); }
 }
 /** GS 预设上场 / 试听时带的键设置：鼓件 = 固定那个键；音效（GM 116–128，仓鼠 v8 的 sampleKey）= **默认固定原速**（note = 原速键）+ 按值抄原速键和音高锚点（sfx）；
@@ -1417,7 +1452,7 @@ function openFinder(): void {
   document.body.classList.toggle("finder-over-gallery", finderPlayOnly());   // 舞台整层盖到歌库上面（styles.css）
   ui.close(); scoreEl.hidden = true; ws.tryout = padLocked(ui.page); showPad(true); padEl.classList.add("is-locked"); pad.clearHeld(); pad.render(); void finder.show({ playOnly: finderPlayOnly() }); updateChrome(); }   // 「弹」亮着 = pad 只弹不写
 /** back = 关了回乐器页（默认 = 它是从乐器页开的）；开混音台 / 开乐器页 / 进歌库时传 false = 不回。 */
-function closeFinder(back: boolean = ui.page.k === "finder" && ui.page.backToInst): void { if (!finder.isOpen) return; const wasPlayOnly = finderPlayOnly(); ui.setPage({ k: "score" }); if (wasPlayOnly) document.body.classList.remove("finder-over-gallery"); finder.hide(); audition = null; auditionMute = false; ++auditionGen; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = back; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (back) openInstPage(); }
+function closeFinder(back: boolean = ui.page.k === "finder" && ui.page.backToInst): void { if (!finder.isOpen) return; const wasPlayOnly = finderPlayOnly(); ui.setPage({ k: "score" }); if (wasPlayOnly) document.body.classList.remove("finder-over-gallery"); finder.hide(); audition = null; trimAuditionBanks(0); auditionMute = false; ++auditionGen; auditionHint = null; sound.allOff(); padEl.classList.remove("is-locked"); ws.tryout = back; applyWorkspace(); pad.render(); scoreEl.hidden = false; void prepareBank(); view.render(); renderTitle(); updateChrome(); scoreEl.focus(); if (back) openInstPage(); }
 /** 换台上的演奏者（人选的，不自动）：改休息室快照里的 active，重画谱前的歌手牌。 */
 /** 上场时角色跟着改成的那一份（谱上名 / MusicXML sound / 概念 by value）= withRoleConcept 的参数，也记进候选的 castAs（v0.16.15）。 */
 function castArgs(cat: Catalog, c: Concept, providerSound?: string | null): NonNullable<CandidateV2["castAs"]> {

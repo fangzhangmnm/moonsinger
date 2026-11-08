@@ -4787,7 +4787,8 @@ var S = {
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8": { en: "Delete this part" },
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
-  "\u72EC": { en: "S" }
+  "\u72EC": { en: "S" },
+  "\u6309\u952E\u665A\u4E86\uFF1A\u6392\u961F {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u4E0D\u518D\u663E\u793A\uFF09": { en: "Keys are late: queued {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block {a} ms \xB7 slowest step {slow} (tap to dismiss)" }
 };
 
 // src/device-kv.ts
@@ -5009,7 +5010,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.22-2026-11-08";
+var APP_VERSION = "v0.16.23-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -15517,6 +15518,7 @@ var Pad = class {
           b3.setPointerCapture(e10.pointerId);
         } catch {
         }
+        this.host.onTouch?.(e10.timeStamp);
         const k2 = Number(b3.dataset.k), id2 = `pad${e10.pointerId}`;
         if (!this.host.onNoteDown(k2, id2)) return;
         this.swipes.set(e10.pointerId, { y0: e10.clientY, alt: 0, key: b3 });
@@ -27500,6 +27502,7 @@ function createPadHost(padEl2, g3) {
     // 音键按下：第 k 级是什么音问 music；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
     onNoteDown: (k2, id2) => noteDown(music.pitchAt(k2), id2),
     onNoteUp: (id2) => noteUp(id2),
+    onTouch: (ts2) => g3.onTouch?.(ts2),
     onStack: (down) => g3.stackKey(down),
     canStack: () => g3.canStack(),
     onAlter: (id2, alt) => {
@@ -28194,15 +28197,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-b54ad508e418.mjs");
+      return pick(() => "singer-worker-a7a55fb4d44c.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-74a5fb493bfe.mjs");
+      return pick(() => "layout-worker-0d85e410bd8e.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-6b49cc7d58c5.mjs");
+      return pick(() => "encode-worker-fa2d1e0bae36.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -28279,6 +28282,9 @@ var ctx = null;
 function audioCtx() {
   if (!ctx) ctx = new AudioContext();
   if (ctx.state === "suspended" || ctx.state === "interrupted") void ctx.resume();
+  return ctx;
+}
+function audioCtxIfAny() {
   return ctx;
 }
 var keep = null;
@@ -28583,6 +28589,126 @@ function describe(s10, b3) {
   const lanes = s10.lanes.length ? s10.lanes.map((l10, i10) => _t("\u9053 {p}\uFF1A\u5806 {wasm}{p2} + \u5FF5\u7F13\u5B58 {cache}", { p: i10 + 1, wasm: sizeText(l10.wasm), p2: l10.base !== void 0 ? _t("\uFF08\u521A\u8D77\u6765 {base}\uFF09", { base: sizeText(l10.base) }) : "", cache: sizeText(l10.cache) })).join("\uFF1B") : _t("\u5C0F\u6708\u76F8\u5F15\u64CE\u6CA1\u8D77");
   const audio = s10.audioBusy === null ? _t("\u97F3\u9891\u7EBF\u7A0B\uFF1A\u6CA1\u5728\u62A5") : _t("\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 {p}%{AUDIO_HOT}", { p: Math.round(s10.audioBusy * 100), AUDIO_HOT: s10.audioBusy > AUDIO_HOT ? _t("\uFF08\u70ED\uFF1A\u53EF\u80FD\u7206\u97F3\uFF09") : "" });
   return _t("\u80FD\u7B97\u5230\u7684\u5360\u7528 {s} / \u9884\u7B97 {total}\uFF08{lanes}\uFF1B\u5F55\u97F3\u623F\u91CC {chunks} \u5757 {chunkBytes}\uFF1B\u97F3\u6E90\u5185\u5B58 {soundMem}\uFF09\u3002{audio}\u3002", { s: sizeText(totalBytes(s10)), total: sizeText(b3.total), lanes, chunks: s10.chunks, chunkBytes: sizeText(s10.chunkBytes), soundMem: sizeText(s10.soundMem), audio });
+}
+
+// src/app/feel-probe.ts
+var FEEL_LIMITS = { queue: 80, toSound: 80, stall: 150, audioStep: 150 };
+var AWAKE_MS = 2e4;
+var CALM_MS = 5e3;
+var WINDOW_MS = 5e3;
+function queueDelay(now2, ts2) {
+  const d3 = now2 - ts2;
+  return d3 >= 0 && d3 < 6e4 ? d3 : null;
+}
+function createFeelProbe(host2, now2 = () => performance.now(), raf = (cb2) => {
+  requestAnimationFrame(cb2);
+}) {
+  let awake = false, lastTouchAt = 0, pending = null;
+  let last = null;
+  const q2 = [], s10 = [];
+  const gaps = [], steps = [];
+  let prevFrame = 0, prevAudio = null, prevAudioAt = 0;
+  let shown2 = false, calmSince = 0, lastNoted = "";
+  const trim = (xs, t10) => {
+    while (xs.length && xs[0].at < t10 - WINDOW_MS) xs.shift();
+  };
+  const maxOf = (xs) => xs.reduce((m2, x2) => Math.max(m2, x2.v), 0);
+  const med = (xs) => {
+    if (!xs.length) return 0;
+    const a10 = [...xs].sort((x2, y2) => x2 - y2);
+    return a10[a10.length >> 1];
+  };
+  function read() {
+    return { queue: Math.round(med(q2)), toSound: Math.round(med(s10)), stall: Math.round(maxOf(gaps)), audioStep: Math.round(maxOf(steps)) };
+  }
+  function over(r10) {
+    return r10.queue > FEEL_LIMITS.queue || r10.toSound > FEEL_LIMITS.toSound || r10.stall > FEEL_LIMITS.stall || r10.audioStep > FEEL_LIMITS.audioStep;
+  }
+  function judge(t10) {
+    const r10 = read();
+    last = r10;
+    if (over(r10)) {
+      calmSince = 0;
+      shown2 = true;
+      host2.report(host2.text(r10));
+      const a10 = host2.audioNow(), key = `${r10.queue}|${r10.toSound}|${r10.stall}|${r10.audioStep}`;
+      if (key !== lastNoted) {
+        lastNoted = key;
+        host2.note(`key queue ${r10.queue} ms, to sound ${r10.toSound} ms, max stall ${r10.stall} ms, audio step ${r10.audioStep} ms${a10 ? ` (ctx ${a10.state}, sr ${a10.sr})` : ""}`);
+      }
+    } else if (shown2) {
+      if (!calmSince) calmSince = t10;
+      if (t10 - calmSince > CALM_MS) {
+        shown2 = false;
+        calmSince = 0;
+        host2.report(null);
+      }
+    }
+  }
+  function frame2() {
+    const t10 = now2();
+    if (!awake) return;
+    if (prevFrame) {
+      const g3 = t10 - prevFrame;
+      if (g3 > 40) gaps.push({ at: t10, v: g3 });
+    }
+    prevFrame = t10;
+    const a10 = host2.audioNow();
+    if (a10) {
+      if (prevAudio !== null && a10.t !== prevAudio) {
+        steps.push({ at: t10, v: (a10.t - prevAudio) * 1e3 });
+        prevAudioAt = t10;
+      } else if (prevAudio !== null && a10.t === prevAudio && prevAudioAt && t10 - prevAudioAt > 150) {
+        steps.push({ at: t10, v: t10 - prevAudioAt });
+      }
+      prevAudio = a10.t;
+      if (!prevAudioAt) prevAudioAt = t10;
+    }
+    trim(gaps, t10);
+    trim(steps, t10);
+    if (t10 - lastTouchAt > AWAKE_MS) {
+      awake = false;
+      prevFrame = 0;
+      prevAudio = null;
+      prevAudioAt = 0;
+      if (shown2) {
+        shown2 = false;
+        host2.report(null);
+      }
+      return;
+    }
+    judge(t10);
+    raf(frame2);
+  }
+  return {
+    touch(ts2) {
+      const t10 = now2();
+      lastTouchAt = t10;
+      pending = { at: t10 };
+      const d3 = queueDelay(t10, ts2);
+      if (d3 !== null) {
+        q2.push(d3);
+        if (q2.length > 8) q2.shift();
+      }
+      if (!awake) {
+        awake = true;
+        prevFrame = 0;
+        prevAudio = null;
+        prevAudioAt = 0;
+        raf(frame2);
+      }
+    },
+    sound() {
+      if (!pending) return;
+      const d3 = now2() - pending.at;
+      pending = null;
+      if (d3 >= 0 && d3 < 6e4) {
+        s10.push(d3);
+        if (s10.length > 8) s10.shift();
+      }
+    },
+    reading: () => last
+  };
 }
 
 // src/export/mp3.ts
@@ -32996,6 +33122,10 @@ var StudioClient = class {
   hasBank(sha) {
     return this.presets.has(sha);
   }
+  /** 现在装着哪些库（sha；诊断 / 测试看：试听过的只留几件，v0.16.23）。 */
+  banks() {
+    return [...this.presets.keys()];
+  }
   /** 预设下标（这份库里按 bank:program 找；没有 = −1）。 */
   presetIndex(sha, bank, program) {
     return this.presets.get(sha)?.get(`${bank}:${program}`) ?? -1;
@@ -36581,7 +36711,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "c6e25da7ee7cf59e" : "dev";
+var CORE_HASH = true ? "48c1e3102c3eaee4" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -49612,6 +49742,47 @@ function auditionTarget() {
   } });
   return t10 ? { ...t10, gainDb: ch2.gainDb + t10.gainDb, pan: ch2.pan } : null;
 }
+var feelChip = document.createElement("button");
+feelChip.type = "button";
+feelChip.className = "feel-chip";
+feelChip.hidden = true;
+document.body.appendChild(feelChip);
+var feelMuted = false;
+feelChip.addEventListener("click", () => {
+  feelMuted = true;
+  feelChip.hidden = true;
+});
+var slowestStep = () => {
+  const rows = Object.entries(perfReport()).filter(([, v]) => v.n > 0).sort((a10, b3) => b3[1].last - a10[1].last).slice(0, 2);
+  return rows.length ? rows.map(([k2, v]) => `${k2} ${Math.round(v.last)} ms`).join(" / ") : "\u2014";
+};
+var feel = createFeelProbe({
+  audioNow: () => {
+    const c10 = audioCtxIfAny();
+    return c10 ? { t: c10.currentTime, state: c10.state, sr: c10.sampleRate } : null;
+  },
+  report: (text2) => {
+    if (!text2 || feelMuted) {
+      feelChip.hidden = true;
+      return;
+    }
+    feelChip.textContent = text2;
+    feelChip.hidden = false;
+    const r10 = padEl.getBoundingClientRect();
+    if (r10.height > 0) {
+      feelChip.style.left = `${Math.round(r10.left + 8)}px`;
+      feelChip.style.top = `${Math.max(0, Math.round(r10.top - feelChip.offsetHeight - 4))}px`;
+      feelChip.style.maxWidth = `${Math.max(160, Math.round(r10.width - 16))}px`;
+    } else {
+      feelChip.style.left = "8px";
+      feelChip.style.top = "";
+      feelChip.style.bottom = "8px";
+      feelChip.style.maxWidth = "calc(100vw - 16px)";
+    }
+  },
+  note: (msg) => diagNote("feel", `${msg}; slowest ${slowestStep()}`),
+  text: (r10) => _t("\u6309\u952E\u665A\u4E86\uFF1A\u6392\u961F {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u4E0D\u518D\u663E\u793A\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, a: r10.audioStep, slow: slowestStep() })
+});
 var sound = {
   down: (p2, id2 = "main") => {
     const t10 = auditionTarget();
@@ -49622,6 +49793,7 @@ var sound = {
     }
     singer.unlock();
     engine.auditionOn(id2, t10.inst, t10.key(midiOf(p2)), t10.vel, t10.gainDb, t10.pan);
+    feel.sound();
   },
   glide: (p2, id2 = "main") => {
     const t10 = auditionTarget();
@@ -49890,6 +50062,7 @@ var padHost = createPadHost(padEl, {
   sound: { down: (p2, id2) => sound.down(p2, id2), up: (id2) => sound.up(id2) },
   soundTok,
   soundAfterWrite,
+  onTouch: (ts2) => feel.touch(ts2),
   impro: () => impro,
   finderOpen: () => finder.isOpen,
   finderShown,
@@ -50678,6 +50851,7 @@ window.__moonsinger = {
   singer,
   engine,
   exportSong,
+  auditionSha: () => audition?.sha256 ?? null,
   renderMix: () => renderMixForTest(),
   transport: () => ({ startMark: perfApi.startMark, paused: perfApi.paused, listen: listenOn(), loop: perfApi.loopOn, turnLead: perfApi.turnLead }),
   // 走带的状态（E2E 用）
@@ -50718,7 +50892,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "6a880766b7b2",
+  cssHash: "da4db7867e85",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -50870,6 +51044,28 @@ function renderSaveButton() {
 }
 var fmtDb = (dB) => `${dB > 0 ? "+" : dB < 0 ? "\u2212" : ""}${Math.abs(dB)} dB`;
 var audition = null;
+var AUDITION_KEEP = 3;
+var auditionShas = [];
+var shasInUse = () => {
+  const s10 = /* @__PURE__ */ new Set();
+  for (const role of Object.keys(D2.extras.lounge)) for (const g3 of gmCandidates(D2.extras, role)) s10.add(g3.subsetSha256);
+  return s10;
+};
+function trimAuditionBanks(keep2) {
+  const used = shasInUse(), cur = audition?.sha256 ?? null, stay = [];
+  for (const sha of auditionShas) {
+    if (sha === cur || stay.length < keep2) {
+      stay.push(sha);
+      continue;
+    }
+    if (!used.has(sha) && engine.hasBank(sha)) engine.unbank(sha);
+  }
+  auditionShas = stay;
+}
+function noteAuditionBank(sha) {
+  auditionShas = [sha, ...auditionShas.filter((x2) => x2 !== sha)];
+  trimAuditionBanks(AUDITION_KEEP);
+}
 function padHint() {
   if (finderShown()) return auditionHint;
   const plug = performerOf(activeInstrument(D2.extras, curRole())?.engine);
@@ -50929,6 +51125,7 @@ async function setAudition(p2) {
     audition = { bank: p2.provider.bank, program: p2.provider.program, ...cat2 ? gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note) : {}, sha256, subset, label: p2.provider.gmName };
     sound.allOff();
     await engine.bank(sha256, subset);
+    noteAuditionBank(sha256);
   } catch (e10) {
     progress("");
     audition = null;
@@ -51240,6 +51437,7 @@ function closeFinder(back = ui2.page.k === "finder" && ui2.page.backToInst) {
   if (wasPlayOnly) document.body.classList.remove("finder-over-gallery");
   finder.hide();
   audition = null;
+  trimAuditionBanks(0);
   auditionMute = false;
   ++auditionGen;
   auditionHint = null;
@@ -54762,4 +54960,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0a1958e20e6b.mjs.map
+//# sourceMappingURL=moonsinger-5bd944b15921.mjs.map

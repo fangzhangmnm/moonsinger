@@ -132,6 +132,8 @@ export interface PadHost {
   hintRange?(): HintRange;
   /** 音键按下（第 k 级，id = 哪根手指）：写（不在「弹」时）+ 响都归宿主；回 false = 这一下不收（单音乐器几乎同时按下的第二根手指）：不亮、不记滑动。 */
   onNoteDown(k: number, id: string): boolean;
+  /** 音键 pointerdown 那一刻（事件的 timeStamp）：手感探针量「按下 → 主线程接到」（v0.16.23）；不给 = 不量。键盘只报时刻，不懂量。 */
+  onTouch?(ts: number): void;
   onNoteUp(id: string): void;
   onAlter(id: string, alt: -1 | 0 | 1): void;   // 按着的这根手指滑过门槛：刚写的音（弹 = 正在响的音）升 / 降 / 还原
   /** 写字键 / 符号格 / 「⋯」里的记号：按键 id（PAD_KEY_IDS），翻译成命令 / 插记号 / 开菜单归宿主；mods.ramp = 「渐到」亮着。 */
@@ -490,6 +492,7 @@ export class Pad {
     grid.querySelectorAll<HTMLElement>(".pad-key[data-k]").forEach((b) => {
       b.addEventListener("pointerdown", (e) => {
         e.preventDefault(); try { b.setPointerCapture(e.pointerId); } catch { /* 指针已经没了：照样响 */ }
+        this.host.onTouch?.(e.timeStamp);
         const k = Number(b.dataset.k), id = `pad${e.pointerId}`;
         if (!this.host.onNoteDown(k, id)) return;   // 宿主不收（单音乐器几乎同时按下的第二根手指；模糊护栏在宿主）= 不亮、不记滑动
         this.swipes.set(e.pointerId, { y0: e.clientY, alt: 0, key: b });

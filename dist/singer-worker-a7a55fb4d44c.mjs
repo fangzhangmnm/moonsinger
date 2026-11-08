@@ -2079,7 +2079,8 @@ var S = {
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8": { en: "Delete this part" },
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
-  "\u72EC": { en: "S" }
+  "\u72EC": { en: "S" },
+  "\u6309\u952E\u665A\u4E86\uFF1A\u6392\u961F {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u4E0D\u518D\u663E\u793A\uFF09": { en: "Keys are late: queued {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block {a} ms \xB7 slowest step {slow} (tap to dismiss)" }
 };
 
 // src/device-kv.ts
@@ -10403,4 +10404,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-b54ad508e418.mjs.map
+//# sourceMappingURL=singer-worker-a7a55fb4d44c.mjs.map

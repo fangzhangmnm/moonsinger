@@ -2074,6 +2074,7 @@ export const S = {
   "静音（这位不出声；和谱上声部名下面的「静」是同一个）": { en: "Mute (this part is silent; same as “M” under the part name on the score)" },
   "独奏（只听独奏的几位；和谱上的「独」是同一个）": { en: "Solo (only hear the parts on solo; same as “S” on the score)" },
   "独": { en: "S" },
+  "按键晚了：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 {a} ms · 最慢一步 {slow}（点一下不再显示）": { en: "Keys are late: queued {q} ms · to sound {s} ms · longest main-thread stall {st} ms · audio block {a} ms · slowest step {slow} (tap to dismiss)" },
 } as const satisfies Record<string, Entry>;
 
 export type Key = keyof typeof S;

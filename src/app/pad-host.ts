@@ -38,6 +38,8 @@ export interface PadGlue {
   /** 光标所在声部的乐器能叠音吗。 */
   canStack(): boolean;
   sound: { down(p: Pitch, id: string): void; up(id: string): void };
+  /** pad 音键按下那一刻的事件时刻（手感探针，v0.16.23）；不给 = 不量。 */
+  onTouch?(ts: number): void;
   /** 谱上第 i 个音出声（和弦整个响）。 */
   soundTok(s: EditorState, i: number, id: string): void;
   /** 先响后写的补课：按下时已按 sounded 响了，写完成了和弦 = 只补多出来的音；主音变了 = 重响。 */
@@ -237,6 +239,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     // 音键按下：第 k 级是什么音问 music；写（不在「弹」时；宿主不收 = false，pad 不亮）+ 响
     onNoteDown: (k, id) => noteDown(music.pitchAt(k), id),
     onNoteUp: (id) => noteUp(id),
+    onTouch: (ts) => g.onTouch?.(ts),
     onStack: (down) => g.stackKey(down),
     canStack: () => g.canStack(),
     onAlter: (id, alt) => {
