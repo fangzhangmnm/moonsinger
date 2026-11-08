@@ -184,3 +184,12 @@
 - dev 线上 = **v0.16.22**（cd1efd8）。
 - 工作区没提交的改动：`src/app/main.ts`（castPick 一次提交、padHint 带 key、afterExtras / afterRestore 都重画 pad）、`src/keyboard/pad.ts`（hintKey 对账、shiftFor、data-midi）、`src/render/engrave.ts`（名字居中、钮上移 2.8）、`src/i18n/strings.ts`（删了两句没用的）、新 `test/e2e/pad-follow.mjs`。dist 是 v0.16.22 的（没为这些改动构建）。
 - 剩下的活（按 user 说的顺序大致）：§25 键盘延迟 → §19 收尾推一版 → §21 乐器预设 → §23 混音台 → §17 和弦级数 / 1=F → §20 符号键盘提示 → §22 设置分页 → §18 排谱三刀 → 发版前 devlog 清单；Fable 那两件（F-195、F-208）。
+
+## 26. Fable 接手后（2026-11-08 晚，Claude Fable 5.1）
+
+- **键盘延迟**查明：同一台 iPad 浏览器标签快、装成 PWA 慢、重装照旧、Edge 新开一页快、PC 同一版快 → 不是版本回归，是独立窗那条声音通路；WebKit 报的输出延迟永远 0。做了手感探针（超标自己在键盘上沿露数字 + 进黑匣子）。user 当晚在装 iPadOS 更新。
+- **换乐器逻辑的真病**（user「看一下是不是换歌手的逻辑导致的」）：试听过的音色库永不释放。v0.16.23 只留最近三件、歌里用着的永不卸、关目录全卸。
+- **sync 两条红**是 0.16.20 的虚线框压在测试盲点上，不是丢字节；测试改成按排版点五线谱（8ca30d7）。
+- **审计** = `ai-docs/20261108-audit-016-round.md`；**五线谱显示设计稿** = `ai-docs/20261108-staff-display-design.md`（四层五刀，§6 五问等 user 拍）。
+- 工作区仍有 Opus 的三处半成品（§19），没提交：等 user 拍设计 §6 第 1 问（刀 1 先还是排谱先）再决定两颗钮缩小那一处怎么收。
+- dev 线上 = **v0.16.23**（fa9ca64）+ 两笔文档 / 测试提交。
