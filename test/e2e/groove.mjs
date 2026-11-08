@@ -34,7 +34,7 @@ await p.click('.groove-menu [data-v="amount:2"]'); await p.waitForTimeout(250);
 check(await grooves() === "pop×2", "幅度 ×2");
 check(await p.$$eval("#score text.groove-mark", (e) => e.map((x) => x.textContent).join()) === "Style: Pop ×2", "谱上「Style: Pop ×2」");
 await p.click('.groove-menu [data-v="style:swing"]'); await p.waitForTimeout(250);
-check(/摇摆：一拍里前一个八分占 75%.*所有歌手一起摇/.test(await p.$$eval(".groove-menu .ctx-hint", (e) => e.map((x) => x.textContent).join(" | "))), "Swing：明说怎么摇（幅度 ×2 = 夹到 75%，所有歌手一起；v0.9.36 起真摇）");
+check(/摇摆：一拍里前一个八分占 75%.*所有声部一起摇/.test(await p.$$eval(".groove-menu .ctx-hint", (e) => e.map((x) => x.textContent).join(" | "))), "Swing：明说怎么摇（幅度 ×2 = 夹到 75%，所有歌手一起；v0.9.36 起真摇）");
 await p.click('.groove-menu [data-v="style:pop"]'); await p.waitForTimeout(250);
 await p.click('.groove-menu [data-v="amount:1"]'); await p.waitForTimeout(250);
 await p.mouse.click(5, 880); await p.waitForTimeout(150);

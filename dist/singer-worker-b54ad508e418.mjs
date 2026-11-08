@@ -1630,13 +1630,13 @@ var S = {
   " \u7B49 {n} \u5904": { en: " at {n} places" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)\xD73 A A2 [Chorus])" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D": { en: "Empty = each sheet plays once in order" },
-  "\u9759": { en: "M" },
-  "\u72EC": { en: "S" },
-  "\u9690": { en: "H" },
-  "\u53EA": { en: "O" },
+  "\u70B9 = \u9690\u85CF / \u663E\u793A\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u53EA\u770B\u5B83": { en: "Tap = hide / show; long-press (right-click on a computer) = show only this part" },
+  "\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F": { en: "Tap = mute / unmute; long-press (right-click on a computer) = solo" },
   "\uFF0B \u58F0\u90E8": { en: "\uFF0B Part" },
   "\uFF0B \u65B0\u66F2\u6BB5": { en: "\uFF0B New section" },
   "\u66F2\u6BB5\u540D": { en: "Section name" },
+  "\u53EA\u770B\u672C\u6BB5\uFF08\u518D\u70B9 = \u770B\u5168\u90E8\u66F2\u6BB5\uFF09": { en: "Show only this section (tap again = all sections)" },
+  "\u53EA\u770B\u672C\u6BB5": { en: "Show only this section" },
   "\u9690\u85CF \xB7 \u4E0D\u653E\uFF08\u70B9\u66F2\u6BB5\u540D\u8FDB\u53BB\uFF09": { en: "Hidden \xB7 not played (tap the section name to enter)" },
   "{name} \xB7 \u9690\u85CF": { en: "{name} \xB7 hidden" },
   "\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709\u58F0\u90E8\uFF09": { en: "(no parts on this sheet)" },
@@ -2068,6 +2068,7 @@ var S = {
   "\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Delete this bus (tracks sending or outputting to it go back to master; can be undone)" },
   "\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09": { en: "Name (tap to change)" },
   "\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09": { en: "Mute: this bus is silent and sends nothing onward (the dry sound of parts sending to it is unaffected)" },
+  "\u9759": { en: "M" },
   "\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09": { en: "Bus \xB7 bypassed (all plugins skipped)" },
   "\u6DF7\u97F3\u8F68": { en: "Bus" },
   "\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09": { en: "Move earlier (this part also moves up on the score)" },
@@ -2077,7 +2078,8 @@ var S = {
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Delete this part (its instrument settings go too; undoable)" },
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8": { en: "Delete this part" },
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
-  "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" }
+  "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
+  "\u72EC": { en: "S" }
 };
 
 // src/device-kv.ts
@@ -10401,4 +10403,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-ad3f6058bbd1.mjs.map
+//# sourceMappingURL=singer-worker-b54ad508e418.mjs.map

@@ -230,9 +230,11 @@ body.listen-mode .ink-caret { display: none; }
 .staff-svg text.tempo-num, .staff-svg text.key-label { font-family: system-ui, sans-serif; }
 .staff-svg text.key-hint { fill: var(--muted); opacity: .6; }
 /* 名字下面四颗小钮（v0.16.17 搬家 B：静 / 独 / 隐 / 只）：亮着 = 涂底；编辑器里的控件，不印 */
-.staff-svg rect.part-tg { fill: var(--panel); stroke: var(--line); stroke-width: 1; rx: 3; cursor: pointer; }
-.staff-svg rect.part-tg.on { fill: var(--accent); stroke: var(--accent); }
-.staff-svg rect.part-tg.on.tg-muted { fill: #c96a3a; stroke: #c96a3a; }
+.staff-svg rect.part-tg { fill: var(--panel); stroke: var(--line); stroke-width: 1; rx: 5; cursor: pointer; }
+.staff-svg .part-tg-i { color: var(--muted); pointer-events: none; }   /* 名字下面两颗大钮的图标（v0.16.22）：眼睛 / 喇叭，图标跟着状态换 */
+.staff-svg rect.part-tg.on { fill: var(--accent); stroke: var(--accent); }                 /* 只看 / 独奏 = 主题色实底 */
+.staff-svg rect.part-tg.on.tg-muted, .staff-svg rect.part-tg.on.tg-hidden { fill: #c96a3a; stroke: #c96a3a; }   /* 静音 / 隐藏 = 橙色实底 */
+.staff-svg .part-tg-i.on { color: #fff; }
 .staff-svg text.part-tg-t { fill: var(--muted); font-family: system-ui, sans-serif; font-weight: 600; pointer-events: none; }
 .staff-svg text.part-tg-t.on { fill: #fff; }   /* 专业模式 C 调的「1=C」：编辑器里的提示，不印（v0.16.10） */
 
@@ -407,6 +409,7 @@ body.listen-mode .ink-caret { display: none; }
 .score.desk .sheet { margin: 0 auto; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 2px 10px rgba(0, 0, 0, .08); min-height: 100%; }
 .staff-svg .paper-chip { fill: var(--panel); stroke: var(--line); rx: 6px; cursor: pointer; }
 .staff-svg .paper-chip-icon { color: var(--muted); cursor: pointer; }
+.staff-svg .paper-chip-icon.on { color: var(--accent); }   /* 「只看本段」亮着 */
 /* 每张纸底下的虚线框「＋ 歌手」「＋ 新曲段」（v0.16.19 搬家 D；编辑器里、不分页时才有，PDF 不印） */
 .staff-svg rect.add-box { fill: transparent; stroke: var(--line); stroke-width: 1.2px; stroke-dasharray: 5 4; rx: 7px; cursor: pointer; }
 .staff-svg rect.add-box:hover { stroke: var(--accent); fill: var(--accent-soft); }

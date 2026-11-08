@@ -1624,13 +1624,13 @@ export const S = {
   " 等 {n} 处": { en: " at {n} places" },
   "不写 = 每张纸按顺序各放一遍（例：前奏 (A A1)×3 A A2 [副歌]）": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)×3 A A2 [Chorus])" },
   "不写 = 每张纸按顺序各放一遍": { en: "Empty = each sheet plays once in order" },
-  "静": { en: "M" },
-  "独": { en: "S" },
-  "隐": { en: "H" },
-  "只": { en: "O" },
+  "点 = 隐藏 / 显示；长按（电脑右键）= 只看它": { en: "Tap = hide / show; long-press (right-click on a computer) = show only this part" },
+  "点 = 静音 / 出声；长按（电脑右键）= 独奏": { en: "Tap = mute / unmute; long-press (right-click on a computer) = solo" },
   "＋ 声部": { en: "＋ Part" },
   "＋ 新曲段": { en: "＋ New section" },
   "曲段名": { en: "Section name" },
+  "只看本段（再点 = 看全部曲段）": { en: "Show only this section (tap again = all sections)" },
+  "只看本段": { en: "Show only this section" },
   "隐藏 · 不放（点曲段名进去）": { en: "Hidden · not played (tap the section name to enter)" },
   "{name} · 隐藏": { en: "{name} · hidden" },
   "（这张纸上没有声部）": { en: "(no parts on this sheet)" },
@@ -2062,6 +2062,7 @@ export const S = {
   "删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）": { en: "Delete this bus (tracks sending or outputting to it go back to master; can be undone)" },
   "名字（点了改）": { en: "Name (tap to change)" },
   "静音：这条混音轨不出声、也不往下发（发给它的那几位原声照旧）": { en: "Mute: this bus is silent and sends nothing onward (the dry sound of parts sending to it is unaffected)" },
+  "静": { en: "M" },
   "混音轨 · 旁通中（插件全跳过）": { en: "Bus · bypassed (all plugins skipped)" },
   "混音轨": { en: "Bus" },
   "往前挪一位（谱上这个声部也往上挪）": { en: "Move earlier (this part also moves up on the score)" },
@@ -2072,6 +2073,7 @@ export const S = {
   "删掉这个声部": { en: "Delete this part" },
   "静音（这位不出声；和谱上声部名下面的「静」是同一个）": { en: "Mute (this part is silent; same as “M” under the part name on the score)" },
   "独奏（只听独奏的几位；和谱上的「独」是同一个）": { en: "Solo (only hear the parts on solo; same as “S” on the score)" },
+  "独": { en: "S" },
 } as const satisfies Record<string, Entry>;
 
 export type Key = keyof typeof S;

@@ -139,7 +139,8 @@ export interface LyricHit { index: number; system: number; x: number; y: number;
 export type PartToggle = "muted" | "solo" | "hidden" | "only";
 export type PartToggles = Record<PartToggle, boolean>;
 /** 名字下面那四颗小钮的格子（sp）：两列两排；名字那一栏至少这么宽（屏幕和 PDF 同一条规矩 = 不改版面）。 */
-const TG_CELL_W = 1.7, TG_CELL_H = 1.45, TG_GAP = 0.3, TG_W = TG_CELL_W * 2 + TG_GAP;
+// 名字下面两颗大钮（v0.16.22；user 11-08「至少要比那些小扳手、本段这些东西大」「要粗的手指也能点」）：比纸角上的控件（CTL_H 3.0）大
+const TG_BTN = 3.2, TG_GAP = 0.4, TG_W = TG_BTN * 2 + TG_GAP;
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
 /** 谱号 / 八度线的点击区域（v0.9.28）：start = 每行开头的谱号（index = 管着它的谱号记号，−1 = 声部自己的谱号）；mid = 行中间的谱号记号；ottava = 八度线开头的字。 */
 export interface ClefHit { kind: "start" | "mid" | "ottava"; paper: string; part: string; index: number; system: number; x: number; y: number; w: number; h: number; /** 自动画的八度线（v0.9.37）：index = −1，这一段的起止下标和几度。 */ run?: { from: number; to: number; shift: 1 | 2 | -1 } }
@@ -509,17 +510,22 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const sharedRows: number[] = [], virtualOut: Record<string, Token[]> = {}, measures: Layout["measures"] = [], families: Layout["families"] = [];   // 合租叠起来的那几行（只读：点了不写、不放光标；v0.10.25）
   const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], heads: CaretHead[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
   const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], partTgHit: Layout["partToggles"] = [];
-  /** 名字下面的四颗小钮（静 独 / 隐 只）：top = 格子上沿（px）。画 = 框 + 一个字，亮着的涂底；编辑器里的控件（part-tg 不印）。 */
-  const drawToggles = (paperId: string, pv: PartView, top: number): number => {
+  /** 名字下面两颗大钮（v0.16.22；user 11-08「做两个这样的符号，他们得大，非常好点」「按是静音，长按或者双击是独奏」→ AI 提「点 = 静音 / 隐藏，长按（电脑右键）= 独奏 / 只看」→ user「按你说的做」）：
+   *  左 = 眼睛（看：开 / 隐藏 / 只看），右 = 喇叭（听：开 / 静音 / 独奏）；图标跟着状态换（图标库 visibility-* / volume-*）。点击框的 kind = 点一下切的那个（hidden / muted），长按换成 only / solo（score-view）。
+   *  top = 钮的上沿（px）；编辑器里的控件（part-tg 不印）。 */
+  const drawToggles = (paperId: string, pv: PartView, top: number, cx: number): number => {
     const t = pv.toggles; if (!t) return top;
-    const cells: [PartToggle, string][] = [["muted", _t("静")], ["solo", _t("独")], ["hidden", _t("隐")], ["only", _t("只")]];   // 静音 / 独奏 / 隐藏（缩成细线，照样出声）/ 只看它
-    cells.forEach(([k, ch], i) => {
-      const x = P(MARGIN + (i % 2) * (TG_CELL_W + TG_GAP)), y = top + P(Math.floor(i / 2) * (TG_CELL_H + TG_GAP));
-      prims.push({ t: "rect", x, y, w: P(TG_CELL_W), h: P(TG_CELL_H), cls: `part-tg${t[k] ? " on" : ""} tg-${k}` });
-      prims.push({ t: "text", x: x + P(TG_CELL_W / 2), y: y + P(TG_CELL_H * 0.74), s: ch, cls: `part-tg part-tg-t${t[k] ? " on" : ""}`, size: P(1.0), anchor: "middle" });
-      partTgHit.push({ paper: paperId, part: pv.id, kind: k, x, y, w: P(TG_CELL_W), h: P(TG_CELL_H) });
+    const btns: [PartToggle, string, string, string][] = [
+      ["hidden", t.only ? "visibility-only" : t.hidden ? "visibility-hide" : "visibility-show", t.only ? "tg-only" : t.hidden ? "tg-hidden" : "", _t("点 = 隐藏 / 显示；长按（电脑右键）= 只看它")],
+      ["muted", t.solo ? "volume-solo" : t.muted ? "volume-mute" : "volume", t.solo ? "tg-solo" : t.muted ? "tg-muted" : "", _t("点 = 静音 / 出声；长按（电脑右键）= 独奏")],
+    ];
+    btns.forEach(([k, icon, st], i) => {
+      const x = Math.max(P(0.2), cx - P(TG_W) / 2) + P(i * (TG_BTN + TG_GAP)), y = top, s = P(TG_BTN), is = P(TG_BTN * 0.72);   // 名字上面：眼睛、喇叭
+      prims.push({ t: "rect", x, y, w: s, h: s, cls: `part-tg${st ? ` on ${st}` : ""}` });
+      prims.push({ t: "icon", id: icon, x: x + (s - is) / 2, y: y + (s - is) / 2, size: is, cls: `part-tg part-tg-i${st ? ` on ${st}` : ""}`, title: btns[i][3] });
+      partTgHit.push({ paper: paperId, part: pv.id, kind: k, x, y, w: s, h: s });
     });
-    return top + P(2 * TG_CELL_H + TG_GAP);
+    return top + P(TG_BTN);
   };
   let shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
@@ -612,7 +618,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       //   「多曲段模式下面应该每个曲段都有对应的小控件组」）：每张纸自己那一行右边「‹ k/n › 本段 ⋯」——‹ › 从这张跳；本段 = 只看这张（亮）/ 回到全部；⋯ = 这张纸的菜单
       if (o.titlePlaceholder && song.papers.length > 1) {
         const k = song.papers.findIndex((p) => p.id === paper.id), n = song.papers.length, ch = P(CTL_H), cw = P(CTL_H), cy = yCur + P((PAPER_H - CTL_H) / 2);
-        const lab = `${k + 1}/${n}`, lw = (o.measureLyric(lab) * CTL_TEXT) / LYRIC_EM + P(1.0), sw = (o.measureLyric(_t("本段")) * CTL_TEXT) / LYRIC_EM + P(1.6), mw = P(CTL_H + 0.6);
+        const lab = `${k + 1}/${n}`, lw = (o.measureLyric(lab) * CTL_TEXT) / LYRIC_EM + P(1.0), sw = P(CTL_H + 0.6), mw = P(CTL_H + 0.6);   // 「只看本段」= 只看的眼睛（v0.16.22；user 11-08「本段，这个也比较谜语的，应该是只看本段…做个眼睛」）
         const segOn = o.onlyPaper === paper.id, withMenu = !!o.editable, total = cw + lw + cw + P(1.0) + sw + (withMenu ? P(0.6) + mw : 0);
         let x = o.width - P(MARGIN) - total;
         const hit = (bx: number, w: number): Box => ({ x: bx - P(0.3), y: cy - P(0.2), w: w + P(0.6), h: ch + P(0.4) });   // 上下只多 0.2：不出曲段名那一条，不抢下面谱的点
@@ -624,7 +630,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         prims.push({ t: "text", x: x + cw / 2, y: cy + ch * 0.72, s: "›", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
         const next = k < n - 1 ? hit(x, cw) : null; x += cw + P(1.0);
         prims.push({ t: "rect", x, y: cy, w: sw, h: ch, cls: segOn ? "paper-chip on" : "paper-chip" });
-        prims.push({ t: "text", x: x + sw / 2, y: cy + ch * 0.7, s: _t("本段"), cls: segOn ? "nav-text on" : "nav-text", size: P(CTL_TEXT), anchor: "middle" });
+        { const is = P(CTL_GLYPH); prims.push({ t: "icon", id: "visibility-only", x: x + (sw - is) / 2, y: cy + (ch - is) / 2, size: is, cls: segOn ? "paper-chip-icon on" : "paper-chip-icon", title: segOn ? _t("只看本段（再点 = 看全部曲段）") : _t("只看本段") }); }
         const scope = hit(x, sw); x += sw + P(0.6);
         if (withMenu) {
           prims.push({ t: "rect", x, y: cy, w: mw, h: ch, cls: "paper-chip" });
@@ -799,7 +805,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const breakableAt = (tick: number) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
     // 3. 折行（像文字：优先在小节线后折；一个小节都放不下就逐列折）。每行开头的调号 = 各声部那里生效的调号；行首宽 = 最宽的那个声部
     const FAM_W = openFams.length && o.titlePlaceholder ? 0.8 : 0;   // 有展开着的一家：名字和谱之间多让一点给括号
-    const ind0 = Math.max(TG_W, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;   // 至少放得下名字下面那四颗小钮（v0.16.17；屏幕和 PDF 同一条规矩）   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
+    const ind0 = Math.max(TG_W, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;   // 名字一栏 = 两颗大钮的宽和名字（最长 NAME_MAX，再长折行）里大的那个；屏幕和 PDF 同一条规矩（预览 = PDF）   // 至少放得下名字下面那四颗小钮（v0.16.17；屏幕和 PDF 同一条规矩）   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
     // 第二行起每行写简写（v0.9.31；user「todo 总谱的每一行都放乐器名的省空间简写」→「乐手名和颜色同意」）：缩进 = 最宽的那个简写；没给简写（测试 / 老调用）= 0，照旧
     //   v0.9.41：定宽（user 经仓鼠转达「没简写的能不能想办法也按定宽裁一下，不然有一个没查到简写就beat the propose了」）——简写已按 ABBR_W 裁好（part-colors.ts fitAbbr），
     //   列宽 = 一个 ABBR_W 宽的参照（Vln.Vc.），不随谁最长变；字形特别宽、量出来超了参照的那个才撑一点（不叠到谱上）
@@ -1003,7 +1009,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           const r0 = rowOf(s, r, 0), r1 = rEnd(s), lines = nameLines(q.p.name, pr !== r ? 2 : q.staves), LH = PART_EM * 1.15;
           // 合租：主人的名字下面接着写房客的名字（user「谱号左边放歌手名的时候在folded的模式下会同时显示所有歌手的名字」）；每个名字各自能点（点房客 = 去写它，它就拆开）
           const tl = ten.map((t) => nameLines(t.name, 1)[0] ?? ""), nAll = lines.length + tl.length;
-          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (nAll - 1)) / 2);   // 几行一起竖着居中
+          const TGH = q.p.toggles ? TG_BTN + 0.5 : 0;   // 名字上面两颗大钮那一截（v0.16.22）：钮 + 名字一起竖着居中；打印没有钮 = 名字照旧居中
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (nAll - 1)) / 2) + P(TGH / 2);   // 几行一起竖着居中
+          const tgTop = ny - P(PART_EM * 0.95) - P(TGH), tgCx = (wid: number) => (P(MARGIN - 0.95) + P(MARGIN) + P(wid)) / 2;   // 钮整排对「色点 + 名字」居中
           const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
           const dn = drumNames.get(q.p.id);
           if (dn) {   // 一家全是鼓：名字按各位的音在鼓谱上的高低排（主人不一定在最上面），每个名字一行、各自能点
@@ -1012,8 +1020,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
               prims.push({ t: "text", x: P(MARGIN), y: at(k), s: nameLines(m.name, 1)[0] ?? "", cls: m.id === q.p.id ? ncls : "part-name tenant", size: PART_EM * sp, anchor: "start" });
               partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: at(k) - P(PART_EM * 0.95), w: P(ind0 + 0.2), h: P(LH) });
             });
-            { const below = drawToggles(paper.id, q.p, at(dn.length - 1) + P(0.55));
-              if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: below + P(1.2), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" }); }
+            drawToggles(paper.id, q.p, tgTop, tgCx(Math.max(...dn.map((m) => nameW(nameLines(m.name, 1)[0] ?? "")))));   // 钮在这一家名字的上面
+            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at(dn.length - 1) + P(LH), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });
             if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at(hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
           } else {
           lines.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
@@ -1022,8 +1030,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             const lineTop = (i: number) => ny + P(LH * i) - P(PART_EM * 0.95);
             ten.forEach((t, k) => partsHit.push({ paper: paper.id, part: t.id, x: P(MARGIN - 0.4), y: lineTop(lines.length + k), w: P(ind0 + 0.2), h: P(LH) }));
           }
-          { const below = drawToggles(paper.id, q.p, ny + P(LH * (nAll - 1)) + P(0.55));   // 名字下面四颗小钮（v0.16.17）；「不出声」这类提示在它下面
-            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: below + P(1.2), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" }); }   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
+          drawToggles(paper.id, q.p, tgTop, tgCx(Math.max(...[...lines, ...tl].map(nameW))));   // 名字上面两颗大钮，对「色点 + 名字」居中（v0.16.22；user 11-08「放到歌手名的上面」）
+          { if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + P(1.4), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" }); }   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
           { const y0 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines.length) - P(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);   // 有房客 = 主人的点击区只到它自己的名字
             partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y0, w: P(ind0 + 0.2), h: yEnd - y0 }); }
           if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });   // 名字前一个小色点（不印）

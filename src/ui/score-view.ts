@@ -139,6 +139,7 @@ type Frame = { sp: number; width: number; strict: boolean; page: { h: number; l:
 const DOUBLE_TAP_MS = 300, DOUBLE_TAP_PX = 30, DOUBLE_TAP_ZOOM = 2;
 /** 合租虚拟的几条（`主人~lo` / `主人~v2` / `主人~lo~v2`）→ 真的那一位（主人）。 */
 const realPart = (id: string): string => id.replace(/~.*$/, "");
+const TG_LONG: Record<string, import("../render/engrave.ts").PartToggle> = { hidden: "only", muted: "solo", only: "only", solo: "solo" };   // 名字下面的大钮：长按 / 右键切的那个
 export class ScoreView {
   layout: Layout | null = null;
   private sheet: HTMLDivElement;
@@ -153,6 +154,7 @@ export class ScoreView {
   private boxEl: HTMLDivElement;
   private tail: HTMLDivElement;
   /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
+  private tgDown: null | { pid: number; part: string; kind: import("../render/engrave.ts").PartToggle } = null;   // 鼠标 / 笔按在名字旁的大钮上（松手才算点）
   private press: null | { pid: number; type: string; x: number; y: number; cx: number; cy: number; hit: HitNote | null; grab: Grab | null; timer: number; shift: boolean; moved: boolean; fired: boolean } = null;
   /** 拿起来拖着的字 / 记号：st0 = 拿起来之前（每一下都从它重算，谱上实时是挪过去的样子）；targets = 拿起来时这条 track 上能落的音（下标 + 位置，拖的时候不跟着重排跳）；
    *  src / cur = 原来 / 现在落在第几个；moved = 指针动过（没动 = 原地松手）。 */
@@ -230,6 +232,7 @@ export class ScoreView {
     el.addEventListener("pointerup", (e) => this.up(e));
     // 电脑右键 = 空白处的小菜单（手指 / 笔走长按）；音上右键不接（选区条管）。pointerdown 里 button 2 直接不接，免得先放一下光标 / 起框选
     el.addEventListener("contextmenu", (e) => {
+      { const tg = this.toggleAt(this.local(e).x, this.local(e).y); if (tg) { e.preventDefault(); this.cancelPress(); this.host.onPartToggle!(tg.part, TG_LONG[tg.kind]); return; } }   // 名字下面的大钮：右键 = 只看 / 独奏（同长按）
       if (this.layout && this.openPartAt(this.local(e).x, this.local(e).y)) { e.preventDefault(); this.cancelPress(); return; }   // 右键歌手名 = 歌手牌（同左键）
       if (!this.rules.edit) { e.preventDefault(); const p = this.local(e); this.cancelPress(); this.listenMenu(p.x, p.y, e.clientX, e.clientY); return; }   // 听模式：右键 = 小菜单（从这儿放…）
       if (!this.layout || (e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;
@@ -986,6 +989,7 @@ export class ScoreView {
       this.armPress(e, p, null, grab);
       return;
     }
+    { const tg = this.toggleAt(p.x, p.y); if (tg) { this.tgDown = { pid: e.pointerId, part: tg.part, kind: tg.kind }; this.armPress(e, p, null); return; } }   // 名字旁的大钮：鼠标 / 笔松手才算点（长按 = 只看 / 独奏，v0.16.22）
     if (this.tap(p.x, p.y, e.shiftKey, e.pointerId, false, false)) return;   // 记号 / 歌词行 / 纸上的小钮（不含音符）；谱头放宽的那一圈松手才算（boxTap）
     const hit = this.noteAt(p.x, p.y);
     if (hit) {   // 笔 / 鼠标按在音上：按住就响；0.42 s 内动了 = 拖（改音高 / 时值）；不动到点 = 长按选中；抬手不动 = 轻点（光标到它后面）
@@ -1011,11 +1015,14 @@ export class ScoreView {
     pr.timer = window.setTimeout(() => this.longPress(), 420);
     this.press = pr;
   }
+  /** 名字下面的大钮（点一下 = 隐藏 / 静音；长按 / 右键 = 只看 / 独奏）。 */
+  private toggleAt(x: number, y: number) { return this.host.onPartToggle && this.layout ? this.layout.partToggles.find((b) => this.inBox(b, x, y)) : undefined; }
   private cancelPress(): void { if (this.press) { clearTimeout(this.press.timer); this.press = null; } this.selDrag = null; }
   /** 长按到点：按在音上 = 选中它、进选区态（不抬手接着拖 = 扩选）；空白处 = 光标放到那里 + 小菜单（粘贴 / 插记号 / 全选…；user 2026-10-08「空白长按可以黏贴或者类似的右键上下文菜单」）。 */
   private longPress(): void {
     const pr = this.press; if (!pr || pr.moved) return;
     pr.fired = true;
+    { const tg = this.toggleAt(pr.x, pr.y); if (tg) { this.finger = null; this.lockTap = null; this.host.onPartToggle!(tg.part, TG_LONG[tg.kind]); return; } }   // 名字下面的大钮：长按 = 只看 / 独奏（v0.16.22）
     if (!this.rules.edit || this.roGesture) { this.finger = null; this.lockTap = null; this.listenMenu(pr.x, pr.y, pr.cx, pr.cy); return; }   // 听模式 / 合租叠起来的那一行：长按 = 小菜单
     if (pr.type === "touch") this.el.focus({ preventScroll: true });   // 手指按下时没抢焦点（见 down），长按到点才抢
     if (pr.grab) { this.startLift(pr.grab, pr.pid, pr.x, pr.y, pr.cx, pr.cy, pr.type === "touch"); return; }
@@ -1450,6 +1457,7 @@ export class ScoreView {
   }
 
   private up(e: PointerEvent): void {
+    if (this.tgDown && this.tgDown.pid === e.pointerId) { const t = this.tgDown, pr = this.press, fired = !!(pr && pr.pid === e.pointerId && pr.fired); this.tgDown = null; this.cancelPress(); if (!fired) this.host.onPartToggle?.(t.part, t.kind); return; }   // 大钮：没到长按 = 点一下
     // 手指轻点（没拖、没长按）= 这时才把焦点拿回谱面（down 里手指不抢）；先拿焦点再 tap：tap 打开的歌词框会自己再把焦点拿走
     if (e.pointerType === "touch" && this.press && this.press.pid === e.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
     if (this.touches.delete(e.pointerId) && this.pinch && this.touches.size < 2) { this.pinchEnd(); this.finger = null; this.cancelPress(); return; }   // 捏合结束：落定缩放；剩下那根手指不接着当滚动（会跳）

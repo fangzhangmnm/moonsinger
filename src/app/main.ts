@@ -277,7 +277,7 @@ function showUpdateBar(): void {
 /** |▶ 的说明（顶栏和底座边上那个一样）。⋯ 收进长按 / 右键（v0.10.20；user「play的...收到长按和右键play里面 / 然后顶栏只单放一个一样的play」）。 */
 const PLAY_TITLE = _t("从起点放 / 停（空格）；连按两下 = 从头放。长按 / 右键 = 接着放 / 自动翻 / 循环 / 从头放 / 接缝。起点 = 长按 / 右键谱面「从这儿放」挪");
 bar.innerHTML =
-  `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? _t("歌库：歌放在网盘（OneDrive）或你选的文件夹里") : _t("歌库：歌放在你选的文件夹里")}"><svg class="ico"><use href="#album"/></svg></button>` +
+  `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? _t("歌库：歌放在网盘（OneDrive）或你选的文件夹里") : _t("歌库：歌放在你选的文件夹里")}"><svg class="ico"><use href="#music-library"/></svg></button>` +
   `<button id="fileBtn" class="doc-name" title="${_t("文件名 · 点了改名")}"><span id="docTitle" class="title">${_t("未命名")}</span></button>` +
   `</div>` +
   `<div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div>` +

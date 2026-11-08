@@ -4338,13 +4338,13 @@ var S = {
   " \u7B49 {n} \u5904": { en: " at {n} places" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)\xD73 A A2 [Chorus])" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D": { en: "Empty = each sheet plays once in order" },
-  "\u9759": { en: "M" },
-  "\u72EC": { en: "S" },
-  "\u9690": { en: "H" },
-  "\u53EA": { en: "O" },
+  "\u70B9 = \u9690\u85CF / \u663E\u793A\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u53EA\u770B\u5B83": { en: "Tap = hide / show; long-press (right-click on a computer) = show only this part" },
+  "\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F": { en: "Tap = mute / unmute; long-press (right-click on a computer) = solo" },
   "\uFF0B \u58F0\u90E8": { en: "\uFF0B Part" },
   "\uFF0B \u65B0\u66F2\u6BB5": { en: "\uFF0B New section" },
   "\u66F2\u6BB5\u540D": { en: "Section name" },
+  "\u53EA\u770B\u672C\u6BB5\uFF08\u518D\u70B9 = \u770B\u5168\u90E8\u66F2\u6BB5\uFF09": { en: "Show only this section (tap again = all sections)" },
+  "\u53EA\u770B\u672C\u6BB5": { en: "Show only this section" },
   "\u9690\u85CF \xB7 \u4E0D\u653E\uFF08\u70B9\u66F2\u6BB5\u540D\u8FDB\u53BB\uFF09": { en: "Hidden \xB7 not played (tap the section name to enter)" },
   "{name} \xB7 \u9690\u85CF": { en: "{name} \xB7 hidden" },
   "\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709\u58F0\u90E8\uFF09": { en: "(no parts on this sheet)" },
@@ -4776,6 +4776,7 @@ var S = {
   "\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Delete this bus (tracks sending or outputting to it go back to master; can be undone)" },
   "\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09": { en: "Name (tap to change)" },
   "\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09": { en: "Mute: this bus is silent and sends nothing onward (the dry sound of parts sending to it is unaffected)" },
+  "\u9759": { en: "M" },
   "\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09": { en: "Bus \xB7 bypassed (all plugins skipped)" },
   "\u6DF7\u97F3\u8F68": { en: "Bus" },
   "\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09": { en: "Move earlier (this part also moves up on the score)" },
@@ -4785,7 +4786,8 @@ var S = {
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Delete this part (its instrument settings go too; undoable)" },
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8": { en: "Delete this part" },
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
-  "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" }
+  "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
+  "\u72EC": { en: "S" }
 };
 
 // src/device-kv.ts
@@ -5007,7 +5009,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.21-2026-11-08";
+var APP_VERSION = "v0.16.22-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10165,10 +10167,9 @@ var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
 var TEMPO_EM = 1.35;
-var TG_CELL_W = 1.7;
-var TG_CELL_H = 1.45;
-var TG_GAP = 0.3;
-var TG_W = TG_CELL_W * 2 + TG_GAP;
+var TG_BTN = 3.2;
+var TG_GAP = 0.4;
+var TG_W = TG_BTN * 2 + TG_GAP;
 function attachLayoutFns(d3) {
   const half2 = d3.sp * 0.5;
   const yOf = (r10, dd) => d3.systems[r10].staffTop + (TOP_LINE - dd) * half2;
@@ -10557,17 +10558,20 @@ function engrave(song, o10) {
   const sharedRows = [], virtualOut = {}, measures = [], families = [];
   const rows = [], notes = [], slots = [], heads = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
   const partsHit = [], papersHit = [], partTgHit = [];
-  const drawToggles = (paperId, pv2, top) => {
+  const drawToggles = (paperId, pv2, top, cx2) => {
     const t10 = pv2.toggles;
     if (!t10) return top;
-    const cells = [["muted", _t("\u9759")], ["solo", _t("\u72EC")], ["hidden", _t("\u9690")], ["only", _t("\u53EA")]];
-    cells.forEach(([k2, ch2], i10) => {
-      const x2 = P2(MARGIN + i10 % 2 * (TG_CELL_W + TG_GAP)), y2 = top + P2(Math.floor(i10 / 2) * (TG_CELL_H + TG_GAP));
-      prims.push({ t: "rect", x: x2, y: y2, w: P2(TG_CELL_W), h: P2(TG_CELL_H), cls: `part-tg${t10[k2] ? " on" : ""} tg-${k2}` });
-      prims.push({ t: "text", x: x2 + P2(TG_CELL_W / 2), y: y2 + P2(TG_CELL_H * 0.74), s: ch2, cls: `part-tg part-tg-t${t10[k2] ? " on" : ""}`, size: P2(1), anchor: "middle" });
-      partTgHit.push({ paper: paperId, part: pv2.id, kind: k2, x: x2, y: y2, w: P2(TG_CELL_W), h: P2(TG_CELL_H) });
+    const btns = [
+      ["hidden", t10.only ? "visibility-only" : t10.hidden ? "visibility-hide" : "visibility-show", t10.only ? "tg-only" : t10.hidden ? "tg-hidden" : "", _t("\u70B9 = \u9690\u85CF / \u663E\u793A\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u53EA\u770B\u5B83")],
+      ["muted", t10.solo ? "volume-solo" : t10.muted ? "volume-mute" : "volume", t10.solo ? "tg-solo" : t10.muted ? "tg-muted" : "", _t("\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F")]
+    ];
+    btns.forEach(([k2, icon, st2], i10) => {
+      const x2 = Math.max(P2(0.2), cx2 - P2(TG_W) / 2) + P2(i10 * (TG_BTN + TG_GAP)), y2 = top, s10 = P2(TG_BTN), is2 = P2(TG_BTN * 0.72);
+      prims.push({ t: "rect", x: x2, y: y2, w: s10, h: s10, cls: `part-tg${st2 ? ` on ${st2}` : ""}` });
+      prims.push({ t: "icon", id: icon, x: x2 + (s10 - is2) / 2, y: y2 + (s10 - is2) / 2, size: is2, cls: `part-tg part-tg-i${st2 ? ` on ${st2}` : ""}`, title: btns[i10][3] });
+      partTgHit.push({ paper: paperId, part: pv2.id, kind: k2, x: x2, y: y2, w: s10, h: s10 });
     });
-    return top + P2(2 * TG_CELL_H + TG_GAP);
+    return top + P2(TG_BTN);
   };
   let shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
@@ -10657,7 +10661,7 @@ function engrave(song, o10) {
       else if (o10.titlePlaceholder) prims.push({ t: "text", x: P2(MARGIN), y: pBase, s: _t("\u66F2\u6BB5\u540D"), cls: "paper-name empty", size: pSize, anchor: "start" });
       if (o10.titlePlaceholder && song.papers.length > 1) {
         const k2 = song.papers.findIndex((p2) => p2.id === paper.id), n10 = song.papers.length, ch2 = P2(CTL_H), cw2 = P2(CTL_H), cy2 = yCur + P2((PAPER_H - CTL_H) / 2);
-        const lab = `${k2 + 1}/${n10}`, lw2 = o10.measureLyric(lab) * CTL_TEXT / LYRIC_EM + P2(1), sw2 = o10.measureLyric(_t("\u672C\u6BB5")) * CTL_TEXT / LYRIC_EM + P2(1.6), mw = P2(CTL_H + 0.6);
+        const lab = `${k2 + 1}/${n10}`, lw2 = o10.measureLyric(lab) * CTL_TEXT / LYRIC_EM + P2(1), sw2 = P2(CTL_H + 0.6), mw = P2(CTL_H + 0.6);
         const segOn = o10.onlyPaper === paper.id, withMenu = !!o10.editable, total = cw2 + lw2 + cw2 + P2(1) + sw2 + (withMenu ? P2(0.6) + mw : 0);
         let x3 = o10.width - P2(MARGIN) - total;
         const hit = (bx, w2) => ({ x: bx - P2(0.3), y: cy2 - P2(0.2), w: w2 + P2(0.6), h: ch2 + P2(0.4) });
@@ -10672,7 +10676,10 @@ function engrave(song, o10) {
         const next2 = k2 < n10 - 1 ? hit(x3, cw2) : null;
         x3 += cw2 + P2(1);
         prims.push({ t: "rect", x: x3, y: cy2, w: sw2, h: ch2, cls: segOn ? "paper-chip on" : "paper-chip" });
-        prims.push({ t: "text", x: x3 + sw2 / 2, y: cy2 + ch2 * 0.7, s: _t("\u672C\u6BB5"), cls: segOn ? "nav-text on" : "nav-text", size: P2(CTL_TEXT), anchor: "middle" });
+        {
+          const is2 = P2(CTL_GLYPH);
+          prims.push({ t: "icon", id: "visibility-only", x: x3 + (sw2 - is2) / 2, y: cy2 + (ch2 - is2) / 2, size: is2, cls: segOn ? "paper-chip-icon on" : "paper-chip-icon", title: segOn ? _t("\u53EA\u770B\u672C\u6BB5\uFF08\u518D\u70B9 = \u770B\u5168\u90E8\u66F2\u6BB5\uFF09") : _t("\u53EA\u770B\u672C\u6BB5") });
+        }
         const scope = hit(x3, sw2);
         x3 += sw2 + P2(0.6);
         if (withMenu) {
@@ -11120,7 +11127,9 @@ function engrave(song, o10) {
         if (s10 === 0) {
           const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), lines2 = nameLines(q2.p.name, pr !== r10 ? 2 : q2.staves), LH = PART_EM * 1.15;
           const tl2 = ten.map((t10) => nameLines(t10.name, 1)[0] ?? ""), nAll = lines2.length + tl2.length;
-          const ny2 = (yOf(r02, MID_LINE) + yOf(r14, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2);
+          const TGH = q2.p.toggles ? TG_BTN + 0.5 : 0;
+          const ny2 = (yOf(r02, MID_LINE) + yOf(r14, MID_LINE)) / 2 + P2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2) + P2(TGH / 2);
+          const tgTop = ny2 - P2(PART_EM * 0.95) - P2(TGH), tgCx = (wid) => (P2(MARGIN - 0.95) + P2(MARGIN) + P2(wid)) / 2;
           const ncls = q2.p.empty ? "part-name empty" : q2.focused ? "part-name focus" : "part-name";
           const dn = drumNames.get(q2.p.id);
           if (dn) {
@@ -11129,10 +11138,8 @@ function engrave(song, o10) {
               prims.push({ t: "text", x: P2(MARGIN), y: at2(k2), s: nameLines(m2.name, 1)[0] ?? "", cls: m2.id === q2.p.id ? ncls : "part-name tenant", size: PART_EM * sp2, anchor: "start" });
               partsHit.push({ paper: paper.id, part: m2.id, x: P2(MARGIN - 0.4), y: at2(k2) - P2(PART_EM * 0.95), w: P2(ind0 + 0.2), h: P2(LH) });
             });
-            {
-              const below = drawToggles(paper.id, q2.p, at2(dn.length - 1) + P2(0.55));
-              if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: below + P2(1.2), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
-            }
+            drawToggles(paper.id, q2.p, tgTop, tgCx(Math.max(...dn.map((m2) => nameW(nameLines(m2.name, 1)[0] ?? "")))));
+            if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: at2(dn.length - 1) + P2(LH), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
             if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: at2(hk) - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot cat-${q2.p.colorIdx}` });
           } else {
             lines2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: ln3, cls: ncls, size: PART_EM * sp2, anchor: "start" }));
@@ -11141,9 +11148,9 @@ function engrave(song, o10) {
               const lineTop = (i10) => ny2 + P2(LH * i10) - P2(PART_EM * 0.95);
               ten.forEach((t10, k2) => partsHit.push({ paper: paper.id, part: t10.id, x: P2(MARGIN - 0.4), y: lineTop(lines2.length + k2), w: P2(ind0 + 0.2), h: P2(LH) }));
             }
+            drawToggles(paper.id, q2.p, tgTop, tgCx(Math.max(...[...lines2, ...tl2].map(nameW))));
             {
-              const below = drawToggles(paper.id, q2.p, ny2 + P2(LH * (nAll - 1)) + P2(0.55));
-              if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: below + P2(1.2), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
+              if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (nAll - 1)) + P2(1.4), s: q2.p.badges.join(" "), cls: "part-badge", size: P2(1), anchor: "start" });
             }
             {
               const y02 = yOf(r02, TOP_LINE) - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - P2(PART_EM * 0.95) : yOf(r14, BOTTOM_LINE) + P2(1.2);
@@ -12815,6 +12822,7 @@ var DOUBLE_TAP_MS2 = 300;
 var DOUBLE_TAP_PX = 30;
 var DOUBLE_TAP_ZOOM = 2;
 var realPart = (id2) => id2.replace(/~.*$/, "");
+var TG_LONG = { hidden: "only", muted: "solo", only: "only", solo: "solo" };
 var ScoreView = class {
   constructor(el2, host2) {
     this.el = el2;
@@ -12896,6 +12904,15 @@ var ScoreView = class {
     }, { passive: true });
     el2.addEventListener("pointerup", (e10) => this.up(e10));
     el2.addEventListener("contextmenu", (e10) => {
+      {
+        const tg2 = this.toggleAt(this.local(e10).x, this.local(e10).y);
+        if (tg2) {
+          e10.preventDefault();
+          this.cancelPress();
+          this.host.onPartToggle(tg2.part, TG_LONG[tg2.kind]);
+          return;
+        }
+      }
       if (this.layout && this.openPartAt(this.local(e10).x, this.local(e10).y)) {
         e10.preventDefault();
         this.cancelPress();
@@ -12970,6 +12987,8 @@ var ScoreView = class {
   boxEl;
   tail;
   /** 按下去还没松（手指 / 笔 / 鼠标都走它）：判轻点 / 长按 / 拖。hit = 按在哪个音上（null = 空白）。 */
+  tgDown = null;
+  // 鼠标 / 笔按在名字旁的大钮上（松手才算点）
   press = null;
   /** 拿起来拖着的字 / 记号：st0 = 拿起来之前（每一下都从它重算，谱上实时是挪过去的样子）；targets = 拿起来时这条 track 上能落的音（下标 + 位置，拖的时候不跟着重排跳）；
    *  src / cur = 原来 / 现在落在第几个；moved = 指针动过（没动 = 原地松手）。 */
@@ -14064,6 +14083,14 @@ var ScoreView = class {
       this.armPress(e10, p2, null, grab);
       return;
     }
+    {
+      const tg2 = this.toggleAt(p2.x, p2.y);
+      if (tg2) {
+        this.tgDown = { pid: e10.pointerId, part: tg2.part, kind: tg2.kind };
+        this.armPress(e10, p2, null);
+        return;
+      }
+    }
     if (this.tap(p2.x, p2.y, e10.shiftKey, e10.pointerId, false, false)) return;
     const hit = this.noteAt(p2.x, p2.y);
     if (hit) {
@@ -14088,6 +14115,10 @@ var ScoreView = class {
     pr.timer = window.setTimeout(() => this.longPress(), 420);
     this.press = pr;
   }
+  /** 名字下面的大钮（点一下 = 隐藏 / 静音；长按 / 右键 = 只看 / 独奏）。 */
+  toggleAt(x2, y2) {
+    return this.host.onPartToggle && this.layout ? this.layout.partToggles.find((b3) => this.inBox(b3, x2, y2)) : void 0;
+  }
   cancelPress() {
     if (this.press) {
       clearTimeout(this.press.timer);
@@ -14100,6 +14131,15 @@ var ScoreView = class {
     const pr = this.press;
     if (!pr || pr.moved) return;
     pr.fired = true;
+    {
+      const tg2 = this.toggleAt(pr.x, pr.y);
+      if (tg2) {
+        this.finger = null;
+        this.lockTap = null;
+        this.host.onPartToggle(tg2.part, TG_LONG[tg2.kind]);
+        return;
+      }
+    }
     if (!this.rules.edit || this.roGesture) {
       this.finger = null;
       this.lockTap = null;
@@ -14802,6 +14842,13 @@ var ScoreView = class {
     }
   }
   up(e10) {
+    if (this.tgDown && this.tgDown.pid === e10.pointerId) {
+      const t10 = this.tgDown, pr2 = this.press, fired = !!(pr2 && pr2.pid === e10.pointerId && pr2.fired);
+      this.tgDown = null;
+      this.cancelPress();
+      if (!fired) this.host.onPartToggle?.(t10.part, t10.kind);
+      return;
+    }
     if (e10.pointerType === "touch" && this.press && this.press.pid === e10.pointerId && !this.press.moved && !this.press.fired && !this.pinch) this.el.focus({ preventScroll: true });
     if (this.touches.delete(e10.pointerId) && this.pinch && this.touches.size < 2) {
       this.pinchEnd();
@@ -15257,7 +15304,7 @@ var Pad = class {
     const box = this.el.querySelector(".pad-head");
     box.className = `pad-head pad-tools ${this.mode === "normal" ? "knobs" : `cands m-${this.mode}`}`;
     const tabs = this.symbols !== "off" && this.mode === "normal";
-    box.innerHTML = this.mode !== "normal" ? this.cands(rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">${_t("\u6E10\u5230")}</small>` : ""}</button>`).join("") + `<button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09")}" aria-label="${_t("\u97F3")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("unplugged")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-range" data-knob="range" title="${_t("\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="${_t("\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-key" data-knob="key" title="${_t("1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span><em class="k-tag" hidden></em></button><button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8")}" aria-label="${_t("\u7B26")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("unplugged")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("chevron-down")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>`;
+    box.innerHTML = this.mode !== "normal" ? this.cands(rows) : tabs ? Object.keys(SYM_PAGES).map((pg) => `<button class="btn sym-tab${pg === this.symPage ? " is-on" : ""}" data-sympage="${pg}" title="${SYM_PAGE_TITLE[pg]}">${SYM_PAGE_NAME[pg]}${pg === "dyn" && this.ramp.mode !== "off" ? `<small class="ramp-tag${this.ramp.mode === "lock" ? " lock" : ""}">${_t("\u6E10\u5230")}</small>` : ""}</button>`).join("") + `<button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09")}" aria-label="${_t("\u97F3")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("unplugged")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("keyboard-collapse")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>` : `<button class="btn knob k-range" data-knob="range" title="${_t("\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-unit" data-knob="unit" title="${_t("\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span></button><button class="btn knob k-key" data-knob="key" title="${_t("1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09")}"><span class="kl"></span><span class="kh">\u21C5</span><em class="k-tag" hidden></em></button><button class="btn kb-switch" data-kbswitch="1" title="${_t("\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8")}" aria-label="${_t("\u7B26")}">${iconHtml("notes-symbols")}</button><button class="btn impro-pad${this.host.isImpro() ? " is-on" : ""}" data-impro="1" title="${_t("\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199")}" aria-label="${_t("\u5F39")}">${iconHtml("unplugged")}</button><button class="btn hide-pad" data-hide="1" title="${_t("\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09")}" aria-label="${_t("\u6536\u8D77")}">${iconHtml("keyboard-collapse")}</button><button class="btn knob k-more" data-knob="more" title="${_t("\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7")}"><span class="kl">\u22EF</span></button>`;
     box.querySelectorAll("[data-knob]").forEach((b3) => {
       b3.addEventListener("pointerdown", (e10) => {
         e10.preventDefault();
@@ -28147,15 +28194,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-ad3f6058bbd1.mjs");
+      return pick(() => "singer-worker-b54ad508e418.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-a6fcb98117c2.mjs");
+      return pick(() => "layout-worker-74a5fb493bfe.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-fb7818252718.mjs");
+      return pick(() => "encode-worker-6b49cc7d58c5.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -49326,7 +49373,7 @@ function showUpdateBar() {
   document.body.append(el2);
 }
 var PLAY_TITLE = _t("\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\u3002\u957F\u6309 / \u53F3\u952E = \u63A5\u7740\u653E / \u81EA\u52A8\u7FFB / \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A");
-bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? _t("\u6B4C\u5E93\uFF1A\u6B4C\u653E\u5728\u7F51\u76D8\uFF08OneDrive\uFF09\u6216\u4F60\u9009\u7684\u6587\u4EF6\u5939\u91CC") : _t("\u6B4C\u5E93\uFF1A\u6B4C\u653E\u5728\u4F60\u9009\u7684\u6587\u4EF6\u5939\u91CC")}"><svg class="ico"><use href="#album"/></svg></button><button id="fileBtn" class="doc-name" title="${_t("\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D")}"><span id="docTitle" class="title">${_t("\u672A\u547D\u540D")}</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="midiBtn" class="btn tb-midi" hidden>MIDI<span class="midi-dot"></span></button><button id="lockBtn" class="btn tb-lock" title="${_t("\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09")}"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="${_t("\u5B58")}"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="${_t("\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E")}"><svg class="ico"><use href="#menu"/></svg></button></div>`;
+bar.innerHTML = `<div class="tb-left"><button id="libBtn" class="btn tb-lib" title="${cloudAvailable() ? _t("\u6B4C\u5E93\uFF1A\u6B4C\u653E\u5728\u7F51\u76D8\uFF08OneDrive\uFF09\u6216\u4F60\u9009\u7684\u6587\u4EF6\u5939\u91CC") : _t("\u6B4C\u5E93\uFF1A\u6B4C\u653E\u5728\u4F60\u9009\u7684\u6587\u4EF6\u5939\u91CC")}"><svg class="ico"><use href="#music-library"/></svg></button><button id="fileBtn" class="doc-name" title="${_t("\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D")}"><span id="docTitle" class="title">${_t("\u672A\u547D\u540D")}</span></button></div><div class="tb-mid" id="transport"><button id="playBtn" class="btn play-btn" title="${PLAY_TITLE}"><svg class="ico"><use href="#play-from-start"/></svg></button></div><div class="tb-right"><button id="midiBtn" class="btn tb-midi" hidden>MIDI<span class="midi-dot"></span></button><button id="lockBtn" class="btn tb-lock" title="${_t("\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09")}"><svg class="ico ico-sm"><use href="#unlock"/></svg></button><button id="saveBtn" class="btn save-btn" title="${_t("\u5B58")}"><svg class="ico"><use href="#floppy-disk"/></svg></button><button id="setBtn" class="btn" title="${_t("\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E")}"><svg class="ico"><use href="#menu"/></svg></button></div>`;
 var renderBar = new RenderProgress(bar);
 var stageEl = $2("stage");
 var busMuted = /* @__PURE__ */ new Set();
@@ -50671,7 +50718,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "41e93674277c",
+  cssHash: "6a880766b7b2",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -54715,4 +54762,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-4ace7ea00c0d.mjs.map
+//# sourceMappingURL=moonsinger-0a1958e20e6b.mjs.map
