@@ -31,12 +31,12 @@ check(/汉字/.test(hint), "歌词框上面的小字说为什么", hint);
 await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), toks = s.song.papers[0].tracks[s.at.part].slice(); const i = toks.findIndex((t) => t.kind === "note" && t.lyric === "よ"); toks[i] = { ...toks[i], lyric: null }; m.set({ ...s, song: { ...s.song, papers: s.song.papers.map((pp, k) => (k === 0 ? { ...pp, tracks: { ...pp.tracks, [s.at.part]: toks } } : pp)) } }); });
 await p.waitForTimeout(150);
-await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300);
-const vs = await p.$$eval('[data-v^="cand:"]', (es) => es.map((e) => ({ v: e.dataset.v, t: e.textContent })));
+await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="swap"]'); await p.waitForTimeout(400);   // v0.16.18：换乐器 = 目录，顶上「这首歌里用过的」
+const vs = await p.$$eval('.finder-used [data-v="use"]', (es) => es.map((e) => ({ v: e.dataset.cid, t: e.textContent })));
 const vowel = vs.find((x) => /元音/.test(x.t));
-check(!!vowel, "乐器页里有元音版这个候选", JSON.stringify(vs));
-if (vowel) await p.click(`[data-v="${vowel.v}"]`);
-await p.waitForTimeout(200); await p.keyboard.press("Escape"); await p.waitForTimeout(250);
+check(!!vowel, "目录顶上「用过的」里有元音版", JSON.stringify(vs));
+if (vowel) await p.click(`.finder-used [data-cid="${vowel.v}"]`);
+await p.waitForTimeout(300); if (await p.$(".finder:not([hidden])")) { await p.keyboard.press("Escape"); await p.waitForTimeout(250); }
 await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTimeout(100);
 const slot = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = m.state(), toks = s.song.papers[0].tracks[s.at.part], i = toks.findIndex((t) => t.kind === "note" && t.lyric === null), n = L.notes.find((q) => q.index === i), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return n ? { x: sc.left + L.pageX.left + n.x + n.w / 2, y: sc.top + L.lyricY(n.system) } : null; });
 await p.mouse.click(slot.x, slot.y); await p.waitForTimeout(250);

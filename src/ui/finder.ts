@@ -19,10 +19,18 @@ export interface FinderHost {
   togglePad(): void;                                                 // 顶条「键盘」：开 / 关试听键盘（user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）
   /** 关目录时：这一份记忆（翻到哪）变了。即兴 = 宿主存到设备上；歌里的 = 宿主存歌时顺手带（v0.16.6）。 */
   memoChanged?(ctx: FinderCtx, m: FinderMemo): void;
+  /** 这首歌这个声部用过的演奏者（目录顶上一排；v0.16.18 搬家 C：原来在乐器页「谁来演」）。on = 正在台上；removable = 能退掉。 */
+  used?(): { id: string; name: string; on: boolean; removable: boolean }[];
+  /** 点了一位用过的 = 上场（角色名 / 乐器跟着换回，同 v0.16.15）。 */
+  useCandidate?(id: string): void;
+  /** 退掉一位用过的（它嵌在歌里的声音一起丢；能撤销）。 */
+  removeCandidate?(id: string): void;
+  /** 从自己的 .sf2 文件选（宿主那边的选文件 / 选预设）。 */
+  ownSf2?(): void;
 }
 /** 记忆归谁：歌里打开的 = 这首歌（文件里）；歌库「即兴」打开的 = 这台设备（app）。user 11-07「即兴的滚动归 App 记，然后文件内的滚动归文件记」。 */
 export type FinderCtx = "song" | "impro";
-const HINT = _t("点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「选这个」（回到乐器页）。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。");   // 不叫「上场」：user 2026-10-10「选乐器不要用上场这个词不然让会让人以为直接跳回主界面，但是实际上我们还是回到乐器配置界面」
+const HINT = _t("点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「选这个」= 换上（从谱上来的回到谱，从乐器页来的回到乐器页）。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。");   // 不叫「上场」：user 2026-10-10「选乐器不要用上场这个词不然让会让人以为直接跳回主界面，但是实际上我们还是回到乐器配置界面」
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export class Finder {
@@ -47,7 +55,7 @@ export class Finder {
       `<input class="finder-q" type="search" placeholder="${_t("搜乐器（中 / 英 / 日）")}" spellcheck="false" autocomplete="off" />` +
       `<select class="finder-sort">${(Object.keys(SORT_LABEL) as SortMode[]).map((m) => `<option value="${m}">${SORT_LABEL[m]}</option>`).join("")}</select>` +
       `<button class="btn finder-pad" data-v="pad" title="${_t("试听键盘：开 / 关")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("键盘")}</span></button></div>` +
-      `<div class="finder-hint">${HINT}</div>` +
+      `<div class="finder-hint">${HINT}</div><div class="finder-used" hidden></div>` +
       `<div class="finder-jump" hidden><span>${_t("跳到")}</span><select class="finder-jump-sel" title="${_t("列表滚到这一组")}"></select></div>` +
       `<div class="finder-list"><div class="finder-empty">${_t("加载目录…")}</div></div>`;
     parent.append(this.el);   // 位置由 #stage 的 grid 命名区域钉死（.finder 占 main、pad 占 pad），和节点顺序无关（user「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）
@@ -119,6 +127,9 @@ export class Finder {
     const v = btn?.dataset.v;
     if (v === "back") { this.host.close(); return; }
     if (v === "pad") { this.host.togglePad(); return; }
+    if (v === "use" && btn) { this.host.useCandidate?.(btn.dataset.cid!); return; }
+    if (v === "usedel" && btn) { this.host.removeCandidate?.(btn.dataset.cid!); this.renderUsed(); return; }
+    if (v === "ownsf2") { this.host.ownSf2?.(); return; }
     if (v === "group" && btn) { this.toggleGroup(btn.closest<HTMLElement>("[data-gid]")!.dataset.gid!); return; }
     if (v && btn) {
       const key = btn.closest<HTMLElement>("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key); if (!pick) return;
@@ -134,7 +145,17 @@ export class Finder {
       this.renderAnchored(o);
     }
   }
+  /** 顶上一排「这首歌里用过的」（歌里打开的才有；弹着玩没有）：点一位 = 上场，× = 退掉；最后一颗 = 自己的 .sf2（v0.16.18 搬家 C）。 */
+  renderUsed(): void {
+    const box = this.el.querySelector<HTMLElement>(".finder-used")!, used = this.playOnly ? [] : this.host.used?.() ?? [];
+    box.hidden = this.playOnly || !this.host.used;
+    if (box.hidden) return;
+    box.innerHTML = `<span class="fu-k">${_t("这首歌里用过的")}</span>` + used.map((u) => `<span class="fu-c"><button class="btn chip${u.on ? " is-on" : ""}" data-v="use" data-cid="${esc(u.id)}" title="${u.on ? _t("正在台上") : _t("点了 = 换成它")}">${esc(u.name)}</button>` +
+      (u.removable && !u.on ? `<button class="btn fu-del" data-v="usedel" data-cid="${esc(u.id)}" title="${_t("退掉（它嵌在歌里的声音一起丢；能撤销）")}">×</button>` : "") + `</span>`).join("") +
+      (this.host.ownSf2 ? `<button class="btn" data-v="ownsf2" title="${_t("自己的 .sf2 文件：选中的那一件切出来留在这台设备上，歌里只记来源")}">${_t("自己的 .sf2…")}</button>` : "");
+  }
   render(): void {
+    this.renderUsed();
     const list = this.el.querySelector(".finder-list")!; if (!this.cat) return;
     const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector<HTMLElement>(".finder-jump")!;
     // 类级跳转（user 2026-10-08「分类能不能有一个类级别的跳转功能，不然一个一个下拉很累」）：一组一项，选了列表滚到那组；只有一组就不出。

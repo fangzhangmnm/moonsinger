@@ -1342,7 +1342,13 @@ async function castPick(p: FinderPick): Promise<void> {
 }
 // 乐器目录翻到哪（v0.16.6，user 11-07「即兴的滚动归 App 记，然后文件内的滚动归文件记」）：歌里打开的 = 视图态跟着歌存（deskNow / applyDesk）；歌库「即兴」打开的 = 这台设备上的一个键
 const KV_FINDER_IMPRO = "finder-impro";
-const finder = new Finder($("stage"), { roleName: () => roleName(D.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden),
+const finder = new Finder($("stage"), {
+  // 目录顶上「这首歌里用过的」（v0.16.18 搬家 C：原来在乐器页「谁来演」；user 11-07「换乐器的时候…点了谱表的乐器名之后，按一个按钮就立刻能换，然后配置是另外一回事」）
+  used: () => { const aid = activeId(D.extras, curRole()); return candidates(D.extras, curRole()).map((c) => ({ id: c.id, name: !performerOf(c.engine) ? _t("{name}（没人能演）", { name: c.name }) : c.name, on: c.id === aid, removable: performerOf(c.engine)?.removable ?? true })); },
+  useCandidate: (id) => { setActive(id); closeFinder(); info(_t("换成「{who}」", { who: activeCandidateName(D.extras, curRole()) ?? id })); },
+  removeCandidate: (id) => { try { updateExtras(withoutCandidate(D.extras, curRole(), id), { kind: "lounge", label: _t("「{rn}」退掉一位候选", { rn: roleName(D.extras, curRole()) }) }); } catch (err) { showError((err as Error).message); } },
+  ownSf2: () => { closeFinder(false); openInstPage(); pickFile(); },
+  roleName: () => roleName(D.extras, curRole()), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden),
   memoChanged: (ctx, m) => { if (ctx === "impro") deviceKvSetJson(KV_FINDER_IMPRO, serializeFinderMemo(m)); } });
 finder.restore("impro", unserializeFinderMemo(deviceKvGetJson<unknown>(KV_FINDER_IMPRO, null)));
 // ── 录音室（src/ui/studio.ts）：全屏替掉谱区，一个声部一条推子条；增益 / 声像进录音房（studio.json），静音 / 独奏 = partView ──
@@ -1714,7 +1720,9 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     }
     const onPaper = Object.keys(D.st.song.papers.find((p) => p.id === D.st.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
     box.innerHTML =
-      `<button class="tc-inst" data-v="inst" title="${_t("这个声部是什么、谁来演、怎么演（全屏一页，右边的键盘能试）")}"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? _t("{who} 在演", { who: esc(who) }) : _t("没人上场")))(activeCandidateName(D.extras, me.role))}</small></span><span class="tc-go">${_t("乐器 ›")}</span></button>` +
+      // 第一颗大钮 = 换乐器：直接进乐器目录（v0.16.18 搬家 C；user 11-07「你点了谱表的乐器名之后，按一个按钮就立刻能换，然后配置是另外一回事」——轻音少女「选谁上场」）
+      `<button class="tc-inst" data-v="swap" title="${_t("换乐器：直接进乐器目录（右边的键盘能试），选好就换上、回到谱")}"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? _t("{who} 在演", { who: esc(who) }) : _t("没人上场")))(activeCandidateName(D.extras, me.role))}</small></span><span class="tc-go">${_t("换乐器 ›")}</span></button>` +
+      `<div class="tc-row"><button class="btn" data-v="inst" title="${_t("这位怎么演（响度、力度、唱法…）和谱上写什么名字：全屏一页，右边的键盘能试")}">${_t("配置…")}</button></div>` +
       ((m) => { if (!m || !m.size) return ""; const xs = [...m.values()], first = xs[0];   // 唱不出来的歌词：几个、为什么（纪律：画灰 + 明说）
         return `<div class="tc-warn">${first.why === "notSung" ? esc(lyricWhyText(first, roleName(D.extras, me.role))) : _t("有 {n} 个字唱不出来（谱上画灰）：{first}{x}", { n: xs.length, first: esc(lyricWhyText(first, roleName(D.extras, me.role))), x: xs.some((x) => x.why !== first.why) ? _t(" 等") : "" })}</div>`; })(lyricMutes().get(me.id)) +
       `<div class="tc-grid">` +
@@ -1744,6 +1752,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     const me = curPart();
     if (v === "inst") { close(); openInstPage(); return; }
+    if (v === "swap") { close(); openFinder(); return; }   // 从谱上开的：上场 / 关了回谱
     if (v === "score-look") { const r = box.getBoundingClientRect(); close(); headerPanel.open(D.st.at.paper, me.id, 0, { x: r.left + r.width / 2, y: r.top + 24 }); return; }   // 谱怎么画 = 这张纸开头那一处的谱头面板
     if (v === "studio") { close(); openStudio(); return; }
     if (v === "give" || v === "add") { page = v; draw(); return; }
@@ -2238,7 +2247,6 @@ function drawInst(): void {
   if (!instShown()) return;
   const eng = engineNow(), h = D.st.song.hum, role = curRole(), rn = roleName(D.extras, role), rs = roleSound(D.extras, role), aid = activeId(D.extras, role);
   const gms = new Map(gmCandidates(D.extras, role).map((g) => [g.id, g])), active = gms.get(aid), who = activeCandidateName(D.extras, role) ?? _t("（没人上场）");
-  const chipTitle = (c: { id: string; engine: Engine }) => { const g = gms.get(c.id); if (!g) return performerOf(c.engine)?.description ?? UNKNOWN_TITLE; return g.bytes ? _t("SoundFont {bank}:{program}，声音嵌在歌里（{n}）", { bank: g.bank, program: g.program, n: sizeText(g.bytes.length) }) : g.path ? _t("声音没随这首歌带来") : _t("弱引用：声音不在歌里，用时从「{name}」找", { name: g.origin.name }); };
   const status = !active ? "" : active.bytes ? `<div class="cand-status">${_t("声音嵌在歌里（{n}）{library}", { n: sizeText(active.bytes.length), library: active.origin.library ? _t("，来自家族音源库的 {name}", { name: esc(active.origin.name) }) : _t("，来自 {name}", { name: esc(active.origin.name) }) })}</div>`
     : active.path ? `<div class="cand-status">${_t("声音没随这首歌带来，所以没人上场——换一个「谁来演」")}</div>`
     : ((found) => `<div class="cand-status">${_t("弱引用：歌里不带声音，用时从「{name}」找（{found}）", { name: esc(active.origin.name), found: found ? _t("本次已找到") : _t("家族音源库 / 设备缓存 / 你的文件") })}${found ? "" : `<button class="btn" data-v="find:${esc(active.id)}">${_t("找文件…")}</button>`}</div>`)(sources.session.has(active.subsetSha256));
@@ -2278,11 +2286,10 @@ function drawInst(): void {
       (ROLE_PRESETS.some((r) => r.name === rn && r.sound === rs) ? "" : `<option value="" selected>${_t("{rn}（自己写的）", { rn: esc(rn) })}</option>`) +
       ROLE_GROUPS.map((g) => `<optgroup label="${g.group}">${g.items.map((r) => `<option value="${esc(`${r.sound}|${r.name}`)}"${r.name === rn && r.sound === rs ? " selected" : ""}>${esc(r.name)} — ${r.zh}</option>`).join("")}</optgroup>`).join("") +
       `</select><label class="role-name">${_t("谱上写")}<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc(rn)}" /></label>${roleDetail(role)}<div class="role-sound">MusicXML：<code>${esc(rs)}</code></div></section>` +
-    `<section class="ip-card"><h3>${_t("谁来演")}<small>${_t("演奏者和他手里的琴；名字不上谱")}</small></h3><div class="ip-cands">` +
-      candidates(D.extras, role).map((c) => chip(`cand:${c.id}`, !performerOf(c.engine) ? _t("{name}（没人能演）", { name: esc(c.name) }) : esc(c.name), aid === c.id, chipTitle(c)) +
-        (aid !== c.id && (performerOf(c.engine)?.removable ?? true) ? `<button class="btn cand-del" data-v="del:${esc(c.id)}" title="${_t("从休息室删掉（它嵌在歌里的声音一起丢）")}">×</button>` : "")).join("") + `</div>` + status +
-      `<div class="ip-sub">${_t("换人")}</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("全屏的乐器目录：按曲风 / 年代 / 族 / 发声方式浏览，右边的键盘试听，上场")}">${_t("打开乐器目录…")}</button>` +
-      Object.values(SOUNDS).map((e) => `<button class="btn" data-v="sound:${esc(e.id)}" title="${esc(_t("{description}（{bytes}；家族音源库，第一次点才下载、之后留在设备上；{name}）", { description: (e.description && zhOnly(e.description)) || e.name, bytes: sizeText(e.bytes), name: e.license.name }))}">${_t("从 {name} 选…", { name: esc(e.name) })}</button>`).join("") +
+    // 谁来演 = 一行：台上是谁 + 声音在哪 + 换（v0.16.18 搬家 C：用过的候选、退掉、从 GS 选都搬进乐器目录顶上；这页只留配置）
+    `<section class="ip-card ip-who"><h3>${_t("台上")}<small>${_t("演奏者和他手里的琴；名字不上谱")}</small></h3>` +
+      `<div class="ip-who-row"><b>${esc(activeCandidateName(D.extras, role) ?? _t("没人上场"))}</b>${status}</div>` +
+      `<div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("乐器目录：顶上是这首歌里用过的，下面按曲风 / 年代 / 族浏览；右边的键盘试听，选好就换上")}">${_t("换乐器…")}</button>` +
       `<button class="btn" data-v="sf2:pick" title="${_t("自己的 .sf2 文件：选中的那一件切出来留在这台设备上（几 MB），歌里只记来源；整个文件不留")}">${_t("从 .sf2 文件选…")}</button></div>` + pickerHtml() +
       `<div class="ip-note">${_t("选的琴歌里只记来源（歌小）：声音从这台设备 / 家族音源库 / 你的文件里找。要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。")}</div></section>` +
     `<section class="ip-card ip-how"><h3>${_t("{who} 怎么演", { who: esc(who) })}<small>${_t("右边的键盘弹的就是台上这位，改了马上能试")}</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section>` +
