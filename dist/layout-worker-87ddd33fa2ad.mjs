@@ -382,8 +382,6 @@ var S = {
   "\u4E00\u4E0B\u5C31\u5B8C / \u97F3\u6548\uFF08\u4E0D\u7559\u7F1D\uFF09": { en: "One-shot / sound effect (no gap)" },
   "\u8C31\u4E0A\u8FD8\u6CA1\u6709\u97F3": { en: "No notes on the score yet" },
   "\u5C0F\u6708\u76F8\uFF08\u54FC\uFF09": { en: "Tsukuyomi-chan (hum)" },
-  "\u300C{c}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668": { en: "Change \u201C{c}\u201D to this instrument" },
-  "\u300C{c}\u300D\u4E0A\u573A\uFF1A{gmName}": { en: "\u201C{c}\u201D on stage: {gmName}" },
   "\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}": { en: "\u201C{c}\u201D replaced by: {gmName}" },
   "{name}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09": { en: "{name} (nobody can perform it)" },
   "\u6362\u6210\u300C{who}\u300D": { en: "Changed to \u201C{who}\u201D" },
@@ -5761,4 +5759,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-0d85e410bd8e.mjs.map
+//# sourceMappingURL=layout-worker-87ddd33fa2ad.mjs.map

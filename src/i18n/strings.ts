@@ -388,8 +388,6 @@ export const S = {
   "一下就完 / 音效（不留缝）": { en: "One-shot / sound effect (no gap)" },
   "谱上还没有音": { en: "No notes on the score yet" },
   "小月相（哼）": { en: "Tsukuyomi-chan (hum)" },
-  "「{c}」改成这个乐器": { en: "Change “{c}” to this instrument" },
-  "「{c}」上场：{gmName}": { en: "“{c}” on stage: {gmName}" },
   "「{c}」换成：{gmName}": { en: "“{c}” replaced by: {gmName}" },
   "{name}（没人能演）": { en: "{name} (nobody can perform it)" },
   "换成「{who}」": { en: "Changed to “{who}”" },

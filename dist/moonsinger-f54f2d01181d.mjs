@@ -3102,8 +3102,6 @@ var S = {
   "\u4E00\u4E0B\u5C31\u5B8C / \u97F3\u6548\uFF08\u4E0D\u7559\u7F1D\uFF09": { en: "One-shot / sound effect (no gap)" },
   "\u8C31\u4E0A\u8FD8\u6CA1\u6709\u97F3": { en: "No notes on the score yet" },
   "\u5C0F\u6708\u76F8\uFF08\u54FC\uFF09": { en: "Tsukuyomi-chan (hum)" },
-  "\u300C{c}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668": { en: "Change \u201C{c}\u201D to this instrument" },
-  "\u300C{c}\u300D\u4E0A\u573A\uFF1A{gmName}": { en: "\u201C{c}\u201D on stage: {gmName}" },
   "\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}": { en: "\u201C{c}\u201D replaced by: {gmName}" },
   "{name}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09": { en: "{name} (nobody can perform it)" },
   "\u6362\u6210\u300C{who}\u300D": { en: "Changed to \u201C{who}\u201D" },
@@ -5010,7 +5008,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.23-2026-11-08";
+var APP_VERSION = "v0.16.24-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -15099,6 +15097,9 @@ var Pad = class {
   }
   rowShift = 0;
   // 音域窗口挪过几行
+  /** 上一次重画时「谁在弹」（提示音域的 key）。变了 = 窗口跟过去一次（v0.16.23；user 11-08「换歌手、换乐器的时候…默认音域，它没有跟上来…瑞士奶酪看一下…应该是推还是拉」）：
+   *  拉 + 对账——不靠每个改动的地方记得推 follow；null = 还没记过（开歌后第一次重画只记下、不挪，照存的窗口）。 */
+  hintKey = null;
   cols = 4;
   // 每行几个音（MEDO = 4）
   rowsSetting = 4;
@@ -15178,6 +15179,14 @@ var Pad = class {
    *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render() {
     const v = this.host.view(), rows = this.rows(), form = padForm();
+    {
+      const h2 = this.hint();
+      if (h2?.key && h2.key !== this.hintKey) {
+        const first = this.hintKey === null;
+        this.hintKey = h2.key;
+        if (!first) this.rowShift = this.shiftFor(h2.lo, h2.hi);
+      }
+    }
     const base2 = this.baseAt(this.rowShift, rows);
     this.el.dataset.form = form;
     this.el.style.setProperty("--cols", String(this.cols));
@@ -15471,6 +15480,7 @@ var Pad = class {
   }
   /** 开歌：按存的最低键挑最近的那一档（null = 默认那一档）。不重画（宿主接着 render）。 */
   setRangeLow(low) {
+    this.hintKey = null;
     if (low === null) {
       this.rowShift = 0;
       return;
@@ -15480,6 +15490,14 @@ var Pad = class {
   }
   /** 音域窗口挪到最能盖住 [lo, hi] 的那一档（重叠最多；一样多取中心最近的）。试听换了乐器时宿主调（「跟进」）；人自己拨旋钮照旧。 */
   follow(lo2, hi) {
+    const best = this.shiftFor(lo2, hi);
+    if (best !== this.rowShift) {
+      this.rowShift = best;
+      this.render();
+    }
+  }
+  /** 最能盖住 [lo, hi] 的那一档（重叠最多；一样多取中心最近的）。 */
+  shiftFor(lo2, hi) {
     const rows = this.rows(), mid = (lo2 + hi) / 2, m2 = this.host.music;
     let best = this.rowShift, bestOv = -Infinity, bestD = Infinity;
     for (const sh2 of SHIFTS) {
@@ -15491,10 +15509,7 @@ var Pad = class {
         bestD = d3;
       }
     }
-    if (best !== this.rowShift) {
-      this.rowShift = best;
-      this.render();
-    }
+    return best;
   }
   buildGrid(base2, rows) {
     const cells = [], music = this.host.music, hr = this.hint();
@@ -15504,7 +15519,7 @@ var Pad = class {
         const k2 = base2 + row2 * this.cols + col, c10 = music.cell(k2), m2 = c10.midi;
         const inRange = !!hr && m2 >= hr.lo && m2 <= hr.hi;
         this.keys.set(k2, c10);
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}${c10.tonic ? " tonic" : ""}" data-k="${k2}" title="${inRange ? hr.title ?? _t("{who}\u7684\u97F3\u57DF\u91CC", { who: hr.who }) : ""}"><span class="deg">${octDots(Math.max(0, c10.oct))}<span class="num"><span class="acc"></span>${c10.deg}</span>${octDots(Math.max(0, -c10.oct))}</span><span class="abs">${c10.abs}</span></button>`);
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}${c10.tonic ? " tonic" : ""}" data-k="${k2}" data-midi="${c10.midi}" title="${inRange ? hr.title ?? _t("{who}\u7684\u97F3\u57DF\u91CC", { who: hr.who }) : ""}"><span class="deg">${octDots(Math.max(0, c10.oct))}<span class="num"><span class="acc"></span>${c10.deg}</span>${octDots(Math.max(0, -c10.oct))}</span><span class="abs">${c10.abs}</span></button>`);
       }
     }
     const grid = this.el.querySelector(".pad-grid");
@@ -28197,15 +28212,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-a7a55fb4d44c.mjs");
+      return pick(() => "singer-worker-66ac305ebcbf.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-0d85e410bd8e.mjs");
+      return pick(() => "layout-worker-87ddd33fa2ad.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-fa2d1e0bae36.mjs");
+      return pick(() => "encode-worker-0deed12cbc89.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -50195,7 +50210,7 @@ function afterExtras(prev, next2, locus) {
   schedulePlaybackRefresh();
   schedulePrewarm();
   refreshIssues();
-  if (locus.kind === "lounge") pad3.render();
+  pad3.render();
   if (locus.kind === "final") {
     applyWorkspace();
     view.render();
@@ -50237,9 +50252,9 @@ function afterRestore(r10, verb, prev) {
     if (r10.locus.kind === "lounge") {
       sound.allOff();
       void prepareBank();
-      pad3.render();
       view.render();
     }
+    pad3.render();
   }
   revealPart(r10.st.at.part);
   if (r10.st !== prev.st) afterState(prev.st, r10.st, r10.st.at.paper !== prev.st.at.paper || r10.st.at.part !== prev.st.at.part, false);
@@ -51067,6 +51082,11 @@ function noteAuditionBank(sha) {
   trimAuditionBanks(AUDITION_KEEP);
 }
 function padHint() {
+  const h2 = padHintRaw();
+  if (!h2) return null;
+  return { ...h2, key: finderShown() ? `try|${h2.who}|${h2.lo}-${h2.hi}` : `${curRole()}|${activeId(D2.extras, curRole()) ?? ""}` };
+}
+function padHintRaw() {
   if (finderShown()) return auditionHint;
   const plug = performerOf(activeInstrument(D2.extras, curRole())?.engine);
   if (!plug) return null;
@@ -51211,13 +51231,17 @@ async function playHeadWith(p2) {
 }
 async function castPick(p2) {
   if (finderPlayOnly()) return;
-  const cat2 = await loadCatalog(), c10 = p2.concept;
+  const cat2 = await loadCatalog(), c10 = p2.concept, role = curRole(), hum = D2.st.song.hum;
   catNow = cat2;
   const ca2 = castArgs(cat2, c10, p2.kind === "gs" ? p2.provider.sound : null);
-  updateExtras(withRoleConcept(D2.extras, curRole(), ca2, D2.st.song.hum), { kind: "lounge", label: _t("\u300C{c}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668", { c: roleNameOf(c10) }) }, "cast");
   if (p2.kind === "voice") {
-    updateExtras(withCastAs(D2.extras, curRole(), CANDIDATE_ID.full, ca2, D2.st.song.hum), { kind: "lounge", label: _t("\u300C{c}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668", { c: roleNameOf(c10) }) }, "cast");
-    setActive(CANDIDATE_ID.full);
+    let next3 = withRoleConcept(D2.extras, role, ca2, hum);
+    next3 = withActive(withCastAs(next3, role, CANDIDATE_ID.full, ca2, hum), role, CANDIDATE_ID.full, hum);
+    updateExtras(next3, { kind: "lounge", label: _t("\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}", { c: roleNameOf(c10), gmName: activeCandidateName(next3, role) ?? "" }) });
+    sound.allOff();
+    void prepareBank();
+    view.render();
+    renderTitle();
     closeFinder();
     return;
   }
@@ -51229,8 +51253,8 @@ async function castPick(p2) {
   }
   const { subset, sha256 } = audition, inf = sf2Info(subset);
   const fileSha256 = GS.sha256;
-  const withCand = (x2) => withCastAs(x2, curRole(), activeId(x2, curRole()), ca2, D2.st.song.hum);
-  updateExtras(withCand(withSf2Candidate(D2.extras, curRole(), {
+  let next2 = withRoleConcept(D2.extras, role, ca2, hum);
+  next2 = withSf2Candidate(next2, role, {
     name: p2.provider.gmName,
     bank: p2.provider.bank,
     program: p2.provider.program,
@@ -51240,10 +51264,16 @@ async function castPick(p2) {
     embed: false,
     origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id },
     credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } }
-  }, D2.st.song.hum)), { kind: "lounge", label: _t("\u300C{c}\u300D\u4E0A\u573A\uFF1A{gmName}", { c: roleNameOf(c10), gmName: p2.provider.gmName }) }, "cast");
+  }, hum);
+  const id2 = activeId(next2, role);
+  next2 = withActive(withCastAs(next2, role, id2, ca2, hum), role, id2, hum);
+  updateExtras(next2, { kind: "lounge", label: _t("\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}", { c: roleNameOf(c10), gmName: p2.provider.gmName }) });
   sources.session.keep(sha256, subset);
+  sound.allOff();
+  void prepareBank();
+  view.render();
+  renderTitle();
   closeFinder();
-  setActive(activeId(D2.extras, curRole()));
   info(_t("\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}", { c: roleNameOf(c10), gmName: p2.provider.gmName }));
 }
 var KV_FINDER_IMPRO = "finder-impro";
@@ -54960,4 +54990,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5bd944b15921.mjs.map
+//# sourceMappingURL=moonsinger-f54f2d01181d.mjs.map

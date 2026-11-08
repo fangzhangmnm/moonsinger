@@ -721,7 +721,7 @@ function afterExtras(prev: Extras, next: Extras, locus: Locus): void {
   renderTitle(); changed(); renderUndo();
   pushChannels(); schedulePlaybackRefresh(); schedulePrewarm();   // 推子 / 校准立刻进录音房（边放边调）；换人 = 时间线重算
   refreshIssues();   // 换人 = 清单重算（换对了角标自己消）
-  if (locus.kind === "lounge") pad.render();   // 演奏者变了 = pad 的提示跟着（音域 / 原速键；固定原速 = 不提示）
+  pad.render();   // 乐器设置有任何变化都重画一次 pad（重画自己比对，没变 = 不动）：提示音域 / 原速键跟着；谁在弹换了 = 窗口跟过去（v0.16.23：原来只认 lounge 这一种改动，从目录换上、撤销走的不是它 = 提示停在旧乐器上）
   if (locus.kind === "final") { applyWorkspace(); view.render(); }   // 定稿 / 改稿：锁的样子（body.doc-final / 模式钮）跟着
   drawInst(); ui.redraw(); updateChrome();   // 歌手名在挂签的下拉里
 }
@@ -733,7 +733,8 @@ let lastUndoText = "";   // 测试钩子看的：最近一次撤销 / 重做的 
 function afterRestore(r: Restored, verb: string, prev: { st: EditorState; extras: Extras }): void {
   if (r.extras !== prev.extras) {
     if (r.extras.thumbnail !== prev.extras.thumbnail) coverTouched = true;
-    if (r.locus.kind === "lounge") { sound.allOff(); void prepareBank(); pad.render(); view.render(); }   // 谱上的 × 符头跟着演奏者
+    if (r.locus.kind === "lounge") { sound.allOff(); void prepareBank(); view.render(); }   // 谱上的 × 符头跟着演奏者
+    pad.render();   // 撤销 / 重做换回了别的乐器 = pad 的提示和窗口跟着（v0.16.23）
   }
   revealPart(r.st.at.part);
   if (r.st !== prev.st) afterState(prev.st, r.st, r.st.at.paper !== prev.st.at.paper || r.st.at.part !== prev.st.at.part, false);
@@ -1247,6 +1248,10 @@ function trimAuditionBanks(keep: number): void {
 function noteAuditionBank(sha: string): void { auditionShas = [sha, ...auditionShas.filter((x) => x !== sha)]; trimAuditionBanks(AUDITION_KEEP); }
 /** pad 键底部的提示音域 = 现在谁在弹：找人视图里 = 试听的那位；写谱时 = 光标所在声部上场的那位（月读 / 元音版 = 她的；乐器 = 目录里角色那件乐器的音域；不知道 = 不画）。 */
 function padHint(): HintRange {
+  const h = padHintRaw(); if (!h) return null;
+  return { ...h, key: finderShown() ? `try|${h.who}|${h.lo}-${h.hi}` : `${curRole()}|${activeId(D.extras, curRole()) ?? ""}` };   // 「谁在弹」：试听台 = 试的那件；写谱 = 光标那个声部台上那位（变了 = pad 的窗口跟过去一次，v0.16.23）
+}
+function padHintRaw(): HintRange {
   if (finderShown()) return auditionHint;
   const plug = performerOf(activeInstrument(D.extras, curRole())?.engine);
   if (!plug) return null;
@@ -1362,19 +1367,29 @@ async function playHeadWith(p: FinderPick): Promise<void> {
  *  GS 整包在设备缓存 / 家族音源库里找得到；要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。 */
 async function castPick(p: FinderPick): Promise<void> {
   if (finderPlayOnly()) return;   // 只弹着玩：没有要写进去的歌
-  const cat = await loadCatalog(), c = p.concept; catNow = cat;
+  const cat = await loadCatalog(), c = p.concept, role = curRole(), hum = D.st.song.hum; catNow = cat;
   const ca = castArgs(cat, c, p.kind === "gs" ? p.provider.sound : null);   // 角色改成这件乐器；候选里也记一份（castAs），点回它时套回去
-  updateExtras(withRoleConcept(D.extras, curRole(), ca, D.st.song.hum), { kind: "lounge", label: _t("「{c}」改成这个乐器", { c: roleNameOf(c) }) }, "cast");
-  if (p.kind === "voice") { updateExtras(withCastAs(D.extras, curRole(), CANDIDATE_ID.full, ca, D.st.song.hum), { kind: "lounge", label: _t("「{c}」改成这个乐器", { c: roleNameOf(c) }) }, "cast"); setActive(CANDIDATE_ID.full); closeFinder(); return; }
+  // 换一件乐器 = 一次提交 = 一步撤销（v0.16.23；原来是「改名字」「造演奏者」「换上台」三次，最后一次没并进去 = 撤销一下撤不回来；
+  //   GS 要先下声音，声音没到之前名字已经改了 = 留下「名字换了、人没换」的半截）。现在：声音到手才一起改；没到 = 什么都不动。
+  if (p.kind === "voice") {
+    let next = withRoleConcept(D.extras, role, ca, hum);
+    next = withActive(withCastAs(next, role, CANDIDATE_ID.full, ca, hum), role, CANDIDATE_ID.full, hum);
+    updateExtras(next, { kind: "lounge", label: _t("「{c}」换成：{gmName}", { c: roleNameOf(c), gmName: activeCandidateName(next, role) ?? "" }) });
+    sound.allOff(); void prepareBank(); view.render(); renderTitle(); closeFinder(); return;
+  }
   if (!audition || audition.bank !== p.provider.bank || audition.program !== p.provider.program) await setAudition(p);
-  if (!audition) { view.render(); renderTitle(); return; }
+  if (!audition) { view.render(); renderTitle(); return; }   // 声音没到（setAudition 已经说了为什么）= 不改名字、不换人
   const { subset, sha256 } = audition, inf = sf2Info(subset);
   const fileSha256 = GS.sha256;   // 试听台的整包 = 货架上的那份（哈希就是目录钉的）
-  const withCand = (x: typeof D.extras) => withCastAs(x, curRole(), activeId(x, curRole()), ca, D.st.song.hum);   // 新上场的这位记下「作为这件乐器」
-  updateExtras(withCand(withSf2Candidate(D.extras, curRole(), { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false,
-    origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, D.st.song.hum)), { kind: "lounge", label: _t("「{c}」上场：{gmName}", { c: roleNameOf(c), gmName: p.provider.gmName }) }, "cast");
+  let next = withRoleConcept(D.extras, role, ca, hum);
+  next = withSf2Candidate(next, role, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false,
+    origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, hum);
+  const id = activeId(next, role);
+  next = withActive(withCastAs(next, role, id, ca, hum), role, id, hum);   // 新上场的这位记下「作为这件乐器」，并且就是台上那位
+  updateExtras(next, { kind: "lounge", label: _t("「{c}」换成：{gmName}", { c: roleNameOf(c), gmName: p.provider.gmName }) });
   sources.session.keep(sha256, subset);
-  closeFinder(); setActive(activeId(D.extras, curRole())); info(_t("「{c}」换成：{gmName}", { c: roleNameOf(c), gmName: p.provider.gmName }));
+  sound.allOff(); void prepareBank(); view.render(); renderTitle();
+  closeFinder(); info(_t("「{c}」换成：{gmName}", { c: roleNameOf(c), gmName: p.provider.gmName }));
 }
 // 乐器目录翻到哪（v0.16.6，user 11-07「即兴的滚动归 App 记，然后文件内的滚动归文件记」）：歌里打开的 = 视图态跟着歌存（deskNow / applyDesk）；歌库「即兴」打开的 = 这台设备上的一个键
 const KV_FINDER_IMPRO = "finder-impro";

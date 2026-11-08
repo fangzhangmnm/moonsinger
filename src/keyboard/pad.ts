@@ -40,7 +40,7 @@ import { wheelSteps } from "./wheel.ts";
 
 /** 月读的音域 A3–E5（MIDI）：键底部画细条提示，音域外不拦、不变灰。宿主不给提示音域时（hintRange 没接）用它。 */
 /** 提示音域：谁在弹（宿主说）+ 她 / 它的音域（MIDI，含两端）。null = 不画提示。 */
-export type HintRange = { lo: number; hi: number; who: string; title?: string } | null;   // title = 键上的提示字（没有 = 「谁的音域里」）
+export type HintRange = { lo: number; hi: number; who: string; title?: string; /** 「现在谁在弹」的身份（宿主给；变了 = 窗口跟过去一次）。 */ key?: string } | null;   // title = 键上的提示字（没有 = 「谁的音域里」）
 /** 一个音键（调式梯子上第 k 级）长什么样：简谱数字（含 ♯♭）、八度点（正 = 上面几个、负 = 下面几个）、绝对名、MIDI（只拿来比「按着的」和音域提示）。 */
 export interface PadCell { deg: string; oct: number; abs: string; midi: number; /** 这一格是「1」（宿主说了算）：键顶上一道短横，像电脑键盘 F / J 上的小凸起（v0.16.10，user 11-07「形状上面挑」）。 */ tonic?: boolean }
 /** 音乐知识（宿主注入，src/app/pad-music.ts）：方法都读「现在」的调 / 调式，pad 不缓存；sig() 变了 = 网格重建。以后的和弦键盘 = 另一个 PadMusic。 */
@@ -156,6 +156,9 @@ type Mode = "normal" | "more";   // 有选区时的移调 / 转调 / 时值不�
 
 export class Pad {
   private rowShift = 0;       // 音域窗口挪过几行
+  /** 上一次重画时「谁在弹」（提示音域的 key）。变了 = 窗口跟过去一次（v0.16.23；user 11-08「换歌手、换乐器的时候…默认音域，它没有跟上来…瑞士奶酪看一下…应该是推还是拉」）：
+   *  拉 + 对账——不靠每个改动的地方记得推 follow；null = 还没记过（开歌后第一次重画只记下、不挪，照存的窗口）。 */
+  private hintKey: string | null = null;
   private cols = 4;           // 每行几个音（MEDO = 4）
   private rowsSetting: number | "auto" = 4;   // 默认 4 行（user「默认还是四行」）；「自动」= 按设备和屏幕剩下的高度算
   private layoutMode: "movable" | "absolute" = "absolute";   // 首调 / 绝对；默认绝对（user「键盘默认绝对布局」）
@@ -220,6 +223,7 @@ export class Pad {
    *  旋钮上滑着的时候值一直在变、网格跟着重建，旋钮那个元素不动，手指不会丢。 */
   render(): void {
     const v = this.host.view(), rows = this.rows(), form = padForm();
+    { const h = this.hint(); if (h?.key && h.key !== this.hintKey) { const first = this.hintKey === null; this.hintKey = h.key; if (!first) this.rowShift = this.shiftFor(h.lo, h.hi); } }   // 谁在弹换了 = 窗口挪过去盖住它的音域（一次；人自己拨过照旧）
     const base = this.baseAt(this.rowShift, rows);
     this.el.dataset.form = form; this.el.style.setProperty("--cols", String(this.cols)); this.el.style.setProperty("--rows", String(rows));   // --rows：符号层的高 = 音键那几排（几何不变，多了滚）
     if (!this.el.querySelector(".pad-grid")) {
@@ -457,12 +461,18 @@ export class Pad {
   }
   /** 开歌：按存的最低键挑最近的那一档（null = 默认那一档）。不重画（宿主接着 render）。 */
   setRangeLow(low: number | null): void {
+    this.hintKey = null;   // 开歌 = 窗口照存的；下一次重画只记下谁在弹、不挪
     if (low === null) { this.rowShift = 0; return; }
     const rows = this.rows(), lowOf = (sh: number) => this.host.music.cell(this.baseAt(sh, rows)).midi;
     this.rowShift = SHIFTS.reduce((best, sh) => (Math.abs(lowOf(sh) - low) < Math.abs(lowOf(best) - low) ? sh : best), 0);
   }
   /** 音域窗口挪到最能盖住 [lo, hi] 的那一档（重叠最多；一样多取中心最近的）。试听换了乐器时宿主调（「跟进」）；人自己拨旋钮照旧。 */
   follow(lo: number, hi: number): void {
+    const best = this.shiftFor(lo, hi);
+    if (best !== this.rowShift) { this.rowShift = best; this.render(); }
+  }
+  /** 最能盖住 [lo, hi] 的那一档（重叠最多；一样多取中心最近的）。 */
+  private shiftFor(lo: number, hi: number): number {
     const rows = this.rows(), mid = (lo + hi) / 2, m = this.host.music;
     let best = this.rowShift, bestOv = -Infinity, bestD = Infinity;
     for (const sh of SHIFTS) {
@@ -470,7 +480,7 @@ export class Pad {
       const ov = Math.min(hi, whi) - Math.max(lo, wlo), d = Math.abs((wlo + whi) / 2 - mid);
       if (ov > bestOv || (ov === bestOv && d < bestD)) { best = sh; bestOv = ov; bestD = d; }
     }
-    if (best !== this.rowShift) { this.rowShift = best; this.render(); }
+    return best;
   }
   private buildGrid(base: number, rows: number): void {
     const cells: string[] = [], music = this.host.music, hr = this.hint();
@@ -480,7 +490,7 @@ export class Pad {
         const k = base + row * this.cols + col, c = music.cell(k), m = c.midi;
         const inRange = !!hr && m >= hr.lo && m <= hr.hi;
         this.keys.set(k, c);
-        cells.push(`<button class="pad-key${inRange ? " hint" : ""}${c.tonic ? " tonic" : ""}" data-k="${k}" title="${inRange ? hr.title ?? _t("{who}的音域里", { who: hr.who }) : ""}">` +
+        cells.push(`<button class="pad-key${inRange ? " hint" : ""}${c.tonic ? " tonic" : ""}" data-k="${k}" data-midi="${c.midi}" title="${inRange ? hr.title ?? _t("{who}的音域里", { who: hr.who }) : ""}">` +
           `<span class="deg">${octDots(Math.max(0, c.oct))}<span class="num"><span class="acc"></span>${c.deg}</span>${octDots(Math.max(0, -c.oct))}</span><span class="abs">${c.abs}</span></button>`);
       }
     }
