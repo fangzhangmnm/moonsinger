@@ -3128,8 +3128,6 @@ var S = {
   "{extras} \u589E\u76CA {p}{p2} dB": { en: "{extras} gain {p}{p2} dB" },
   "{extras} \u58F0\u50CF": { en: "{extras} pan" },
   "{track} \u51FA\u5230 {to}": { en: "{track} output to {to}" },
-  "\u5220\u6389\u6B4C\u624B\u300C{name}\u300D": { en: "Delete part \u201C{name}\u201D" },
-  "\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Deleted \u201C{name}\u201D (undo brings it back)" },
   "\u300C{next}\u300D\u6362\u4EBA\uFF1A{next2}": { en: "\u201C{next}\u201D performer change: {next2}" },
   "\u4F5C\u8005\u680F": { en: "Credits" },
   "\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09": { en: "Any number of lines, shown as written on the sheet (right-aligned under the title)" },
@@ -3189,6 +3187,23 @@ var S = {
   "\u4E0D\u5531\u6B4C\u8BCD": { en: " doesn't sing lyrics" },
   "\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u65B0\u6B4C\u624B": { en: "This line went to a new part" },
   "\u52A0\u4E86\u4E00\u4F4D\u6B4C\u624B": { en: "Added a part" },
+  "\u5220\u6389\u6B4C\u624B\u300C{name}\u300D": { en: "Delete part \u201C{name}\u201D" },
+  "\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Deleted \u201C{name}\u201D (undo brings it back)" },
+  "\u7B2C {n} \u6BB5": { en: "Section {n}" },
+  "\u58F0\u90E8\u7BA1\u7406": { en: "Parts" },
+  "\u6BCF\u4F4D\u6B4C\u624B\u4E00\u884C\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u4E00\u6BB5\u90FD\u4E0D\u5728\u7684\u80FD\u5220": { en: "One row per singer: rename, move up or down, choose sections; a singer in no section can be deleted" },
+  "\u8C31\u4E0A\u5199\u7684\u540D\u5B57": { en: "Name written on the score" },
+  "\u5F80\u4E0A\u632A": { en: "Move up" },
+  "\u5F80\u4E0B\u632A": { en: "Move down" },
+  "\u6CA1\u4EBA\u4E0A\u573A": { en: "Nobody on stage" },
+  "\u6362\u4E50\u5668\u2026": { en: "Change instrument\u2026" },
+  "\u4E00\u6BB5\u90FD\u4E0D\u5728\uFF1A\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u80FD\u64A4\u9500\uFF09": { en: "In no section: delete this singer (undoable)" },
+  "\u5728\u54EA\u51E0\u6BB5": { en: "Sections" },
+  "\u70B9 = \u653E\u8FDB / \u62FF\u51FA\u8FD9\u4E00\u6BB5": { en: "Tap = put into / take out of this section" },
+  "\u65B0\u6B4C\u624B\u53EA\u52A0\u5728\u5149\u6807\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09\uFF0C\u52A0\u5B8C\u6311\u4E50\u5668": { en: "The new singer goes only into the cursor\u2019s section (others unchanged); then pick an instrument" },
+  "\uFF0B \u65B0\u6B4C\u624B": { en: "\uFF0B New singer" },
+  "\u89D2\u8272\u6539\u540D\uFF1A{n}": { en: "Role renamed: {n}" },
+  "\u8FD9\u4E00\u6BB5\u53EA\u5269\u5B83\u4E86\uFF0C\u62FF\u4E0D\u51FA\u6765": { en: "It is the only one left in this section, can\u2019t take it out" },
   "\u7B2C {p} \u5F20\u7EB8": { en: "Sheet {p}" },
   "\u6539\u66F2\u6BB5\u540D\u2026": { en: "Rename section\u2026" },
   "\u4E0A\u79FB": { en: "Move up" },
@@ -3210,12 +3225,13 @@ var S = {
   "\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u58F0\u90E8\u5199\u7684\u4E1C\u897F\u4E00\u8D77\u5220\u6389\uFF08\u80FD\u64A4\u9500\uFF1A\u64A4\u9500 / Ctrl+Z\uFF09\u3002": { en: "Everything written in all parts on this sheet is deleted (can be undone: Undo / Ctrl+Z)." },
   "\u5220": { en: "Delete" },
   "\u300C{label}\u300D\u8FD9\u4E00\u884C\u4EA4\u7ED9\u2026": { en: "Hand the \u201C{label}\u201D line to\u2026" },
+  "\u5728\u300C{label}\u300D\u4E0A\u9762\u52A0\u6B4C\u624B": { en: "Add a singer above \u201C{label}\u201D" },
+  "\u5728\u300C{label}\u300D\u4E0B\u9762\u52A0\u6B4C\u624B": { en: "Add a singer below \u201C{label}\u201D" },
   "\uFF08\u5BF9\u8C03\uFF09": { en: " (swap)" },
   "\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1A\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u90FD\u4E0D\u52A8\uFF0C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF1B\u8DE8\u7EB8\u6309\u6B4C\u624B\u63A5\u8D77\u6765\u3002\u5BF9\u65B9\u5728\u8FD9\u5F20\u7EB8\u4E0A\u5DF2\u7ECF\u6709\u4E00\u884C = \u4E24\u884C\u5BF9\u8C03\u3002": { en: "Changes this sheet only: notes, lyrics and marks stay, a different part performs them; across sheets, parts connect by identity. If that part already has a line here, the two lines swap." },
   "\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09\u3002": { en: "Added to this sheet only (other sheets stay the same)." },
   "\u6362\u4E50\u5668\uFF1A\u76F4\u63A5\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u56DE\u5230\u8C31": { en: "Change instrument: straight into the instrument catalog (try it on the keys at the right); pick one and it\u2019s on, back to the score" },
   "{who} \u5728\u6F14": { en: "{who} performing" },
-  "\u6CA1\u4EBA\u4E0A\u573A": { en: "Nobody on stage" },
   "\u6362\u4E50\u5668 \u203A": { en: "Change instrument \u203A" },
   "\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5": { en: "How this performer plays (loudness, dynamics, singing\u2026) and the name on the score: a full page, try it on the keys at the right" },
   "\u914D\u7F6E\u2026": { en: "Settings\u2026" },
@@ -3224,19 +3240,17 @@ var S = {
   "\u8C31": { en: "Staff" },
   "\u4E00\u5F20\u8C31 / \u5927\u8C31\u8868\u3001\u9ED8\u8BA4\u8C31\u53F7\u3001\u81EA\u52A8\u516B\u5EA6\u7EBF\u3001\u5408\u79DF\uFF1A\u5728\u8C31\u5934\u9762\u677F\u91CC\uFF08\u70B9\u8FD9\u4E00\u884C\u5F00\u5934\u7684\u8C31\u53F7\u4E5F\u80FD\u5F00\uFF09": { en: "One staff / grand staff, default clef, auto 8va lines, sharing: in the header panel (tapping the clef at the start of this line opens it too)" },
   "\u8C31\u600E\u4E48\u753B\u2026": { en: "How it\u2019s drawn\u2026" },
-  "\u987A\u5E8F": { en: "Order" },
-  "\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09": { en: "Move up one (the top part's tempo mark is the one that counts)" },
-  "\u2191 \u5F80\u4E0A": { en: "\u2191 Up" },
-  "\u5F80\u4E0B\u632A\u4E00\u683C": { en: "Move down one" },
-  "\u2193 \u5F80\u4E0B": { en: "\u2193 Down" },
+  "\u8FD9\u4E00\u6BB5\uFF08{p}\uFF09": { en: "This section ({p})" },
   "\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09": { en: "A different part performs this line on this sheet (this sheet only; notes and lyrics stay)" },
   "\u4EA4\u7ED9\u2026": { en: "Hand to\u2026" },
-  "\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09": { en: "Add another part to this sheet (existing or new; on this sheet only)" },
-  "\uFF0B \u52A0\u6B4C\u624B\u2026": { en: "\uFF0B Add part\u2026" },
+  "\u5728\u8FD9\u4E00\u884C\u4E0A\u9762\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09": { en: "Add a singer above this row (existing or new; this section only)" },
+  "\uFF0B \u4E0A\u9762\u52A0\u6B4C\u624B": { en: "\uFF0B Singer above" },
+  "\u5728\u8FD9\u4E00\u884C\u4E0B\u9762\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09": { en: "Add a singer below this row (existing or new; this section only)" },
+  "\uFF0B \u4E0B\u9762\u52A0\u6B4C\u624B": { en: "\uFF0B Singer below" },
   "\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09": { en: "Remove this part from this sheet (other sheets stay the same)" },
-  "\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389": { en: "Remove from this sheet" },
-  "\u6DF7\u97F3\u53F0\uFF08= \u542C\u7684\u5E95\u5EA7\uFF09\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220": { en: "Mixer (= the Listen dock): one strip per part (gain / pan / mute / solo); parts on no sheet are deleted there" },
-  "\u6B4C\u624B\u7BA1\u7406\uFF08\u6DF7\u97F3\u53F0\uFF09\u2026": { en: "Manage parts (mixer)\u2026" },
+  "\u8FD9\u4E00\u6BB5\u4E0D\u8981\u5B83": { en: "Drop it here" },
+  "\u6240\u6709\u6B4C\u624B\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\u3001\u52A0\u65B0\u7684\uFF1B\u4E00\u6BB5\u90FD\u4E0D\u5728\u7684\u80FD\u5220": { en: "All singers in one list: rename, move, choose sections, add new; a singer in no section can be deleted" },
+  "\u58F0\u90E8\u7BA1\u7406\u2026": { en: "Parts\u2026" },
   "\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u300C{name}\u300D": { en: "This sheet's line went to \u201C{name}\u201D" },
   "MIDI \u529B\u5EA6": { en: "MIDI velocity" },
   "\u97F3\u91CF dB": { en: "Volume dB" },
@@ -3360,7 +3374,6 @@ var S = {
   "\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09": { en: "Paste (replaces selection)" },
   "\u9009\u4E2D\u7684\u8FD9\u4E00\u6BB5\u6CA1\u6709\u8FD9\u7C7B\u8BB0\u53F7": { en: "This selection has no marks of that kind" },
   "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09": { en: "This version can't sound it (the other software's original instrument)" },
-  "\u89D2\u8272\u6539\u540D\uFF1A{n}": { en: "Role renamed: {n}" },
   "\u91CC\u9762\u6CA1\u6709\u4E50\u5668": { en: "No instruments inside" },
   "\u8BFB\u4E0D\u4E86\u300C{name}\u300D\uFF1A{Error}": { en: "Can't read \u201C{name}\u201D: {Error}" },
   "\u300C{name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C{name2}\u300D\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09": { en: "\u201C{name}\u201D isn't the \u201C{name2}\u201D recorded in the song (sha256 {p}\u2026 \u2260 {p2}\u2026)" },
@@ -3409,7 +3422,6 @@ var S = {
   "\u53F0\u4E0A": { en: "On stage" },
   "\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31": { en: "The performer and the instrument they hold; this name isn't on the score" },
   "\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A": { en: "Instrument catalog: what this song has used is at the top, browse below by style / era / family; try on the keys at the right, pick one and it\u2019s on" },
-  "\u6362\u4E50\u5668\u2026": { en: "Change instrument\u2026" },
   "\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559": { en: "Your own .sf2 file: the chosen item is cut out and kept on this device (a few MB); the song only records its source; the whole file isn't kept" },
   "\u4ECE .sf2 \u6587\u4EF6\u9009\u2026": { en: "Choose from an .sf2 file\u2026" },
   "\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002": { en: "The song only records where the chosen instrument comes from (small song): the sound is found on this device / in the family sound library / in your files. To have the song carry the sound: menu \u201CPack everything into the song\u201D, or export a \u201Cpacked sounds\u201D copy." },
@@ -4988,7 +5000,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.18-2026-11-08";
+var APP_VERSION = "v0.16.19-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -13014,11 +13026,11 @@ var ScoreView = class {
     const { sp: sp2, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
     const paper = st2.song.paper ?? paperOf(DEFAULT_PAPER);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st2) || st2.sel)) this.caretEnd = null;
-    const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars2 = this.host.autoBars?.() ?? true, inC = this.host.inC?.() ?? false, chordTags = this.host.chordTags?.() ?? false, paperLabel = paper.kind === "other" ? _t("\u5176\u4ED6\u7EB8") : PAPER_LABEL[paper.kind];
+    const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars2 = this.host.autoBars?.() ?? true, inC = this.host.inC?.() ?? false, chordTags = this.host.chordTags?.() ?? false, paperLabel2 = paper.kind === "other" ? _t("\u5176\u4ED6\u7EB8") : PAPER_LABEL[paper.kind];
     const lyricRaise = page && this.host.lyricRaise?.() ? this.host.lyricRaise() : 0;
     const tailOpen = !st2.sel && st2.caret >= tr(st2).length;
     const geoKey = JSON.stringify(
-      [width, sp2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, hscroll, autoBars2, inC, chordTags, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
+      [width, sp2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, hscroll, autoBars2, inC, chordTags, paperLabel2, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v) => v instanceof Set ? [...v] : v
     );
     const opts = {
@@ -13034,7 +13046,7 @@ var ScoreView = class {
       ...inC ? { inC: true } : {},
       ...chordTags ? { chordTags: true } : {},
       keyHint: true,
-      paperLabel,
+      paperLabel: paperLabel2,
       ...page ? { page } : { margins },
       ...scopeSeg ? { onlyPaper: st2.at.paper } : {},
       ...hscroll ? { scroll: true } : {}
@@ -28088,15 +28100,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-ac711d64d144.mjs");
+      return pick(() => "singer-worker-7a8bb636ee82.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-80d6b7771f4e.mjs");
+      return pick(() => "layout-worker-654a83be3f5a.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-286611ebbb1d.mjs");
+      return pick(() => "encode-worker-13cb79c0bede.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -50609,7 +50621,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "b4a01cdf1186",
+  cssHash: "18e755a5f2b0",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -51087,24 +51099,8 @@ var studio = new Studio2($2("stage"), {
     return all.filter((b3) => b3.id !== key && !reaches(b3.id, key)).map((b3) => ({ id: b3.id, name: b3.name }));
   },
   /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
-  deletePart: (id2) => {
-    const p2 = D2.st.song.parts.find((x2) => x2.id === id2);
-    if (!p2 || D2.st.song.papers.some((pp) => pp.tracks[id2])) return;
-    const name = partLabel(id2);
-    updateBoth(removePart(D2.st, id2), withoutRole(D2.extras, p2.role), { kind: "studio", label: _t("\u5220\u6389\u6B4C\u624B\u300C{name}\u300D", { name }) });
-    studio.render();
-    renderTitle();
-    info(_t("\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { name }));
-  }
+  deletePart: (id2) => deleteSinger(id2)
 });
-function openStudio() {
-  ui2.close();
-  closeFinder(false);
-  closeInstPage();
-  ws.collapsed = false;
-  if (ws.mode !== "listen") setMode("listen");
-  else applyWorkspace();
-}
 function closeStudio() {
   if (!studio.isOpen) return;
   ws.collapsed = true;
@@ -51410,14 +51406,118 @@ function navPaperTo(id2) {
   update(setFocus(D2.st, to2.id, part));
   jumpPlaybackToPaper(id2);
 }
-function addNewPart(paper = D2.st.at.paper, giveFrom) {
+function addNewPart(paper = D2.st.at.paper, giveFrom, place) {
   const role = newRoleId(D2.extras, D2.st.song), mic = newMicId(D2.extras, D2.st.song);
   const id2 = `P${Math.max(0, ...D2.st.song.parts.map((p2) => Number(/^P(\d+)$/.exec(p2.id)?.[1] ?? 0))) + 1}`;
-  let next2 = addPart(D2.st, { id: id2, role, mic }, giveFrom ? null : paper);
+  let next2 = addPart(D2.st, { id: id2, role, mic }, giveFrom ? null : paper, place?.anchor ?? D2.st.at.part);
+  if (place) next2 = placePart(next2, id2, place.anchor, place.above);
   if (giveFrom) next2 = rebindTrack(next2, paper, giveFrom, id2);
   updateBoth(next2, withNewRole(D2.extras, role, D2.st.song.hum), { kind: "score", label: giveFrom ? _t("\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u65B0\u6B4C\u624B") : _t("\u52A0\u4E86\u4E00\u4F4D\u6B4C\u624B") });
   renderTitle();
   openInstPage();
+}
+function deleteSinger(id2) {
+  const p2 = D2.st.song.parts.find((x2) => x2.id === id2);
+  if (!p2 || D2.st.song.papers.some((pp) => pp.tracks[id2])) return;
+  const name = partLabel(id2);
+  updateBoth(removePart(D2.st, id2), withoutRole(D2.extras, p2.role), { kind: "studio", label: _t("\u5220\u6389\u6B4C\u624B\u300C{name}\u300D", { name }) });
+  studio.render();
+  renderTitle();
+  info(_t("\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { name }));
+}
+function placePart(st2, id2, anchor, above) {
+  for (let n10 = 0; n10 < 64; n10++) {
+    const ps = st2.song.parts, i10 = ps.findIndex((p2) => p2.id === id2), a10 = ps.findIndex((p2) => p2.id === anchor);
+    if (i10 < 0 || a10 < 0 || id2 === anchor || i10 === (above ? a10 - 1 : a10 + 1)) return st2;
+    const next2 = movePart(st2, id2, i10 > a10 ? -1 : 1);
+    if (next2 === st2) return st2;
+    st2 = next2;
+  }
+  return st2;
+}
+function paperLabel(id2) {
+  const k2 = D2.st.song.papers.findIndex((p2) => p2.id === id2);
+  return D2.st.song.papers[k2]?.name || _t("\u7B2C {n} \u6BB5", { n: k2 + 1 });
+}
+function openPartsManager() {
+  ui2.close();
+  const box = document.createElement("div");
+  box.className = "offer parts-mgr";
+  const draw = () => {
+    const song = D2.st.song, labels = partLabels(song, D2.extras), cols = partColorIndices(song.parts.map((p2) => roleSound(D2.extras, p2.role)));
+    box.innerHTML = `<div class="offer-card pm-card"><div class="offer-title">${_t("\u58F0\u90E8\u7BA1\u7406")}<small>${_t("\u6BCF\u4F4D\u6B4C\u624B\u4E00\u884C\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u4E00\u6BB5\u90FD\u4E0D\u5728\u7684\u80FD\u5220")}</small></div><div class="pm-list">` + song.parts.map((p2, k2) => {
+      const on2 = song.papers.some((pp) => pp.tracks[p2.id]), who = activeCandidateName(D2.extras, p2.role);
+      return `<div class="pm-row" data-pid="${esc9(p2.id)}"><div class="pm-top"><span class="pm-dot" style="background:${TAB20[cols[k2]]}"></span><input class="pm-name" data-pid="${esc9(p2.id)}" value="${esc9(labels[k2] ?? p2.id)}" spellcheck="false" autocomplete="off" title="${_t("\u8C31\u4E0A\u5199\u7684\u540D\u5B57")}" /><button class="btn" data-v="up:${esc9(p2.id)}"${k2 === 0 ? " disabled" : ""} title="${_t("\u5F80\u4E0A\u632A")}">\u2191</button><button class="btn" data-v="down:${esc9(p2.id)}"${k2 === song.parts.length - 1 ? " disabled" : ""} title="${_t("\u5F80\u4E0B\u632A")}">\u2193</button></div><div class="pm-sub"><span class="pm-who">${esc9(who ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</span>` + (on2 ? `<button class="btn" data-v="swap:${esc9(p2.id)}">${_t("\u6362\u4E50\u5668\u2026")}</button>` : `<button class="btn danger" data-v="del:${esc9(p2.id)}" title="${_t("\u4E00\u6BB5\u90FD\u4E0D\u5728\uFF1A\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389")}</button>`) + `</div><div class="pm-papers"><span class="pm-k">${_t("\u5728\u54EA\u51E0\u6BB5")}</span>${song.papers.map((pp) => `<button class="btn chip${pp.tracks[p2.id] ? " is-on" : ""}" data-v="pp:${esc9(pp.id)}:${esc9(p2.id)}" title="${_t("\u70B9 = \u653E\u8FDB / \u62FF\u51FA\u8FD9\u4E00\u6BB5")}">${esc9(paperLabel(pp.id))}</button>`).join("")}</div></div>`;
+    }).join("") + `</div><div class="offer-btns"><button class="btn" data-v="new" title="${_t("\u65B0\u6B4C\u624B\u53EA\u52A0\u5728\u5149\u6807\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09\uFF0C\u52A0\u5B8C\u6311\u4E50\u5668")}">${_t("\uFF0B \u65B0\u6B4C\u624B")}</button><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+  };
+  draw();
+  document.body.append(box);
+  const close = () => {
+    box.remove();
+    ui2.closed(close);
+  };
+  ui2.open({ k: "sheet", close, redraw: draw });
+  box.addEventListener("change", (e10) => {
+    const t10 = e10.target, pid = t10.dataset.pid;
+    if (!pid || !t10.classList.contains("pm-name")) return;
+    const p2 = D2.st.song.parts.find((x2) => x2.id === pid), n10 = t10.value.trim();
+    if (!p2 || !n10 || n10 === roleName(D2.extras, p2.role)) {
+      draw();
+      return;
+    }
+    updateExtras(withRoleName(D2.extras, p2.role, n10, D2.st.song.hum), { kind: "lounge", label: _t("\u89D2\u8272\u6539\u540D\uFF1A{n}", { n: n10 }) });
+    renderTitle();
+    view.render();
+    draw();
+  });
+  box.addEventListener("keydown", (e10) => {
+    if (e10.key === "Enter" && e10.target.classList.contains("pm-name")) e10.target.blur();
+  });
+  box.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (e10.target === box || v === "close") {
+      close();
+      return;
+    }
+    if (!v) return;
+    if (v === "new") {
+      close();
+      addNewPart(D2.st.at.paper);
+      return;
+    }
+    const [k2, a10, b3] = v.split(":");
+    if (k2 === "up" || k2 === "down") {
+      update(movePart(D2.st, a10, k2 === "up" ? -1 : 1));
+      renderTitle();
+      draw();
+      return;
+    }
+    if (k2 === "pp") {
+      const paper = D2.st.song.papers.find((pp) => pp.id === a10);
+      if (!paper) return;
+      if (paper.tracks[b3]) {
+        const next2 = removeTrack(D2.st, a10, b3);
+        if (next2 === D2.st) info(_t("\u8FD9\u4E00\u6BB5\u53EA\u5269\u5B83\u4E86\uFF0C\u62FF\u4E0D\u51FA\u6765"));
+        else update(next2);
+      } else update(addTrack(D2.st, a10, b3));
+      renderTitle();
+      draw();
+      return;
+    }
+    if (k2 === "swap") {
+      const pp = D2.st.song.papers.find((x2) => x2.id === D2.st.at.paper && x2.tracks[a10]) ?? D2.st.song.papers.find((x2) => x2.tracks[a10]);
+      if (!pp) return;
+      close();
+      update(setFocus(D2.st, pp.id, a10));
+      openFinder();
+      return;
+    }
+    if (k2 === "del") {
+      deleteSinger(a10);
+      draw();
+      return;
+    }
+  });
 }
 function openPaperMenu(id2) {
   ui2.close();
@@ -51494,13 +51594,13 @@ function openTrackCard(at2) {
   const box = document.createElement("div");
   box.className = "track-card";
   box.setAttribute("role", "dialog");
-  let page = "main";
+  let page = "main", above = false;
   const draw = () => {
     const me = curPart(), v = pv(me.id), k2 = D2.st.song.parts.indexOf(me), labels = partLabels(D2.st.song, D2.extras), label = labels[k2] ?? "";
     const here = D2.st.song.papers.find((p2) => p2.id === D2.st.at.paper)?.tracks ?? {};
     if (page !== "main") {
       const list = page === "give" ? D2.st.song.parts.filter((p2) => p2.id !== me.id) : D2.st.song.parts.filter((p2) => !here[p2.id]);
-      box.innerHTML = `<div class="tc-sub"><button class="btn" data-v="back">\u2039 ${page === "give" ? _t("\u300C{label}\u300D\u8FD9\u4E00\u884C\u4EA4\u7ED9\u2026", { label: esc9(label) }) : _t("\u8FD9\u5F20\u7EB8\u4E0A\u52A0\u6B4C\u624B")}</button></div><div class="tc-list">${list.map((p2) => `<button class="btn cand" data-v="${page}:${esc9(p2.id)}">${esc9(labels[D2.st.song.parts.indexOf(p2)] ?? p2.id)}${page === "give" && here[p2.id] ? `<small>${_t("\uFF08\u5BF9\u8C03\uFF09")}</small>` : ""}</button>`).join("")}<button class="btn cand" data-v="${page}new">${_t("\uFF0B \u65B0\u6B4C\u624B\u2026")}</button></div><div class="tc-hint">${page === "give" ? _t("\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1A\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u90FD\u4E0D\u52A8\uFF0C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF1B\u8DE8\u7EB8\u6309\u6B4C\u624B\u63A5\u8D77\u6765\u3002\u5BF9\u65B9\u5728\u8FD9\u5F20\u7EB8\u4E0A\u5DF2\u7ECF\u6709\u4E00\u884C = \u4E24\u884C\u5BF9\u8C03\u3002") : _t("\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09\u3002")}</div>`;
+      box.innerHTML = `<div class="tc-sub"><button class="btn" data-v="back">\u2039 ${page === "give" ? _t("\u300C{label}\u300D\u8FD9\u4E00\u884C\u4EA4\u7ED9\u2026", { label: esc9(label) }) : above ? _t("\u5728\u300C{label}\u300D\u4E0A\u9762\u52A0\u6B4C\u624B", { label: esc9(label) }) : _t("\u5728\u300C{label}\u300D\u4E0B\u9762\u52A0\u6B4C\u624B", { label: esc9(label) })}</button></div><div class="tc-list">${list.map((p2) => `<button class="btn cand" data-v="${page}:${esc9(p2.id)}">${esc9(labels[D2.st.song.parts.indexOf(p2)] ?? p2.id)}${page === "give" && here[p2.id] ? `<small>${_t("\uFF08\u5BF9\u8C03\uFF09")}</small>` : ""}</button>`).join("")}<button class="btn cand" data-v="${page}new">${_t("\uFF0B \u65B0\u6B4C\u624B\u2026")}</button></div><div class="tc-hint">${page === "give" ? _t("\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1A\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u90FD\u4E0D\u52A8\uFF0C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF1B\u8DE8\u7EB8\u6309\u6B4C\u624B\u63A5\u8D77\u6765\u3002\u5BF9\u65B9\u5728\u8FD9\u5F20\u7EB8\u4E0A\u5DF2\u7ECF\u6709\u4E00\u884C = \u4E24\u884C\u5BF9\u8C03\u3002") : _t("\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09\u3002")}</div>`;
       return;
     }
     const onPaper = Object.keys(D2.st.song.papers.find((p2) => p2.id === D2.st.at.paper)?.tracks ?? {}).length, one = (me.staves ?? 1) === 1;
@@ -51509,20 +51609,20 @@ function openTrackCard(at2) {
       if (!m3 || !m3.size) return "";
       const xs = [...m3.values()], first = xs[0];
       return `<div class="tc-warn">${first.why === "notSung" ? esc9(lyricWhyText(first, roleName(D2.extras, me.role))) : _t("\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}", { n: xs.length, first: esc9(lyricWhyText(first, roleName(D2.extras, me.role))), x: xs.some((x3) => x3.why !== first.why) ? _t(" \u7B49") : "" })}</div>`;
-    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">${_t("\u8C31")}</span><div class="tc-v"><button class="btn" data-v="score-look" title="${_t("\u4E00\u5F20\u8C31 / \u5927\u8C31\u8868\u3001\u9ED8\u8BA4\u8C31\u53F7\u3001\u81EA\u52A8\u516B\u5EA6\u7EBF\u3001\u5408\u79DF\uFF1A\u5728\u8C31\u5934\u9762\u677F\u91CC\uFF08\u70B9\u8FD9\u4E00\u884C\u5F00\u5934\u7684\u8C31\u53F7\u4E5F\u80FD\u5F00\uFF09")}">${_t("\u8C31\u600E\u4E48\u753B\u2026")}</button></div>` + (D2.st.song.parts.length > 1 ? `<span class="tc-k">${_t("\u987A\u5E8F")}</span><div class="tc-v"><button class="btn" data-v="moveup"${k2 === 0 ? " disabled" : ""} title="${_t("\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09")}">${_t("\u2191 \u5F80\u4E0A")}</button><button class="btn" data-v="movedown"${k2 === D2.st.song.parts.length - 1 ? " disabled" : ""} title="${_t("\u5F80\u4E0B\u632A\u4E00\u683C")}">${_t("\u2193 \u5F80\u4E0B")}</button></div>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="give" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09")}">${_t("\u4EA4\u7ED9\u2026")}</button><button class="btn" data-v="add" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09")}">${_t("\uFF0B \u52A0\u6B4C\u624B\u2026")}</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09")}">${_t("\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389")}</button>` : "") + `<button class="btn" data-v="studio" title="${_t("\u6DF7\u97F3\u53F0\uFF08= \u542C\u7684\u5E95\u5EA7\uFF09\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220")}">${_t("\u6B4C\u624B\u7BA1\u7406\uFF08\u6DF7\u97F3\u53F0\uFF09\u2026")}</button></div>`;
+    })(lyricMutes().get(me.id)) + `<div class="tc-grid"><span class="tc-k">${_t("\u8C31")}</span><div class="tc-v"><button class="btn" data-v="score-look" title="${_t("\u4E00\u5F20\u8C31 / \u5927\u8C31\u8868\u3001\u9ED8\u8BA4\u8C31\u53F7\u3001\u81EA\u52A8\u516B\u5EA6\u7EBF\u3001\u5408\u79DF\uFF1A\u5728\u8C31\u5934\u9762\u677F\u91CC\uFF08\u70B9\u8FD9\u4E00\u884C\u5F00\u5934\u7684\u8C31\u53F7\u4E5F\u80FD\u5F00\uFF09")}">${_t("\u8C31\u600E\u4E48\u753B\u2026")}</button></div></div><div class="tc-sec">${_t("\u8FD9\u4E00\u6BB5\uFF08{p}\uFF09", { p: esc9(paperLabel(D2.st.at.paper)) })}</div><div class="tc-foot"><button class="btn" data-v="give" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09")}">${_t("\u4EA4\u7ED9\u2026")}</button><button class="btn" data-v="addabove" title="${_t("\u5728\u8FD9\u4E00\u884C\u4E0A\u9762\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09")}">${_t("\uFF0B \u4E0A\u9762\u52A0\u6B4C\u624B")}</button><button class="btn" data-v="addbelow" title="${_t("\u5728\u8FD9\u4E00\u884C\u4E0B\u9762\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09")}">${_t("\uFF0B \u4E0B\u9762\u52A0\u6B4C\u624B")}</button>` + (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="${_t("\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09")}">${_t("\u8FD9\u4E00\u6BB5\u4E0D\u8981\u5B83")}</button>` : "") + `</div><div class="tc-foot"><button class="btn" data-v="parts" title="${_t("\u6240\u6709\u6B4C\u624B\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\u3001\u52A0\u65B0\u7684\uFF1B\u4E00\u6BB5\u90FD\u4E0D\u5728\u7684\u80FD\u5220")}">${_t("\u58F0\u90E8\u7BA1\u7406\u2026")}</button></div>`;
   };
   draw();
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let x2 = (innerWidth - w2) / 2, y2 = (innerHeight - h2) / 2;
   if (at2) {
-    const below = at2.bottom + 30, above = at2.top - h2 - 10;
+    const below = at2.bottom + 30, above2 = at2.top - h2 - 10;
     if (below + h2 <= innerHeight - m2) {
       x2 = at2.left - 8;
       y2 = below;
-    } else if (above >= m2) {
+    } else if (above2 >= m2) {
       x2 = at2.left - 8;
-      y2 = above;
+      y2 = above2;
     } else {
       x2 = at2.right + 10;
       y2 = (at2.top + at2.bottom) / 2 - h2 / 2;
@@ -51562,14 +51662,15 @@ function openTrackCard(at2) {
       headerPanel.open(D2.st.at.paper, me.id, 0, { x: r10.left + r10.width / 2, y: r10.top + 24 });
       return;
     }
-    if (v === "studio") {
-      close();
-      openStudio();
+    if (v === "give" || v === "addabove" || v === "addbelow") {
+      page = v === "give" ? "give" : "add";
+      above = v === "addabove";
+      draw();
       return;
     }
-    if (v === "give" || v === "add") {
-      page = v;
-      draw();
+    if (v === "parts") {
+      close();
+      openPartsManager();
       return;
     }
     if (v === "back") {
@@ -51592,23 +51693,21 @@ function openTrackCard(at2) {
     }
     if (v.startsWith("add:")) {
       close();
-      update(addTrack(D2.st, D2.st.at.paper, v.slice(4)));
+      const id2 = v.slice(4);
+      update(placePart(addTrack(D2.st, D2.st.at.paper, id2), id2, me.id, above));
+      renderTitle();
       return;
     }
     if (v === "addnew") {
       close();
-      addNewPart(D2.st.at.paper);
+      addNewPart(D2.st.at.paper, void 0, { anchor: me.id, above });
       return;
     }
-    if (v === "moveup" || v === "movedown") {
-      update(movePart(D2.st, me.id, v === "moveup" ? -1 : 1));
-      renderTitle();
-    } else if (v === "droptrack") {
+    if (v === "droptrack") {
       close();
       update(removeTrack(D2.st, D2.st.at.paper, me.id));
       return;
-    } else return;
-    draw();
+    }
   });
 }
 var DYN_MENU = { ppp: "\uE52A", pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F", fff: "\uE530" };
@@ -54507,4 +54606,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6a65e1ab563b.mjs.map
+//# sourceMappingURL=moonsinger-503670c0039a.mjs.map

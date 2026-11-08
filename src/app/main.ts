@@ -1398,12 +1398,7 @@ const studio = new Studio($("stage"), {
     const reaches = (from: string, to: string) => { const seen = new Set<string>(), stk = [from]; while (stk.length) { const x = stk.pop()!; if (x === to) return true; if (seen.has(x)) continue; seen.add(x); stk.push(...next(x)); } return false; };
     return all.filter((b) => b.id !== key && !reaches(b.id, key)).map((b) => ({ id: b.id, name: b.name })); },
   /** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销。 */
-  deletePart: (id) => {
-    const p = D.st.song.parts.find((x) => x.id === id); if (!p || D.st.song.papers.some((pp) => pp.tracks[id])) return;
-    const name = partLabel(id);
-    updateBoth(removePart(D.st, id), withoutRole(D.extras, p.role), { kind: "studio", label: _t("删掉歌手「{name}」", { name }) });
-    studio.render(); renderTitle(); info(_t("删掉了「{name}」（撤销能找回来）", { name }));
-  },
+  deletePart: (id) => deleteSinger(id),
 });
 /** 录音室 = 底座里（键盘那个位子；和键盘互斥），谱留着能看（2026-10-10 user「录音室的键盘位化，和键盘互相排斥」；之前是全屏页）。 */
 /** 混音台 = 「听」的键盘（v0.10.2；user「能不能混音台就是听的键盘，不用单独一个键，就是不同功能有不同键盘」）：打开 = 切到听（底座 = 混音台）；收起 = 收起底座（底下那粒 tab 叫回来）。 */
@@ -1651,14 +1646,78 @@ function navPaperTo(id: string): void {
 /** 新歌手（声部就是歌手；2026-10-08 user「嗯声部就是歌手」）：休息室里建一份默认角色（月读两个候选）+ 录音房一个麦克风（歌手认领麦克风）。
  *  只在 paper 这张纸上给它一行（user「新歌手只出现在当前这张纸嗯」）；giveFrom = 「交给新歌手」：这张纸上 giveFrom 那一行直接交给它（不另起空行）。
  *  光标跳过去、开它的乐器页挑乐器。 */
-function addNewPart(paper = D.st.at.paper, giveFrom?: string): void {
+function addNewPart(paper = D.st.at.paper, giveFrom?: string, place?: { anchor: string; above: boolean }): void {
   const role = newRoleId(D.extras, D.st.song), mic = newMicId(D.extras, D.st.song);
   const id = `P${Math.max(0, ...D.st.song.parts.map((p) => Number(/^P(\d+)$/.exec(p.id)?.[1] ?? 0))) + 1}`;
-  let next = addPart(D.st, { id, role, mic }, giveFrom ? null : paper);
+  let next = addPart(D.st, { id, role, mic }, giveFrom ? null : paper, place?.anchor ?? D.st.at.part);
+  if (place) next = placePart(next, id, place.anchor, place.above);
   if (giveFrom) next = rebindTrack(next, paper, giveFrom, id);
   updateBoth(next, withNewRole(D.extras, role, D.st.song.hum), { kind: "score", label: giveFrom ? _t("这一行交给了新歌手") : _t("加了一位歌手") });
   renderTitle();
   openInstPage();   // 新歌手：先给它挑乐器
+}
+/** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销（混音台 / 声部管理共用）。 */
+function deleteSinger(id: string): void {
+  const p = D.st.song.parts.find((x) => x.id === id); if (!p || D.st.song.papers.some((pp) => pp.tracks[id])) return;
+  const name = partLabel(id);
+  updateBoth(removePart(D.st, id), withoutRole(D.extras, p.role), { kind: "studio", label: _t("删掉歌手「{name}」", { name }) });
+  studio.render(); renderTitle(); info(_t("删掉了「{name}」（撤销能找回来）", { name }));
+}
+/** 把歌手 id 挪到 anchor 紧挨着的上面 / 下面（全曲顺序；一步一步 movePart，合租的一家照它的规矩跟着走，挪不动就停）。 */
+function placePart(st: EditorState, id: string, anchor: string, above: boolean): EditorState {
+  for (let n = 0; n < 64; n++) {
+    const ps = st.song.parts, i = ps.findIndex((p) => p.id === id), a = ps.findIndex((p) => p.id === anchor);
+    if (i < 0 || a < 0 || id === anchor || i === (above ? a - 1 : a + 1)) return st;
+    const next = movePart(st, id, i > a ? -1 : 1); if (next === st) return st; st = next;
+  }
+  return st;
+}
+/** 曲段的叫法：起过名 = 名字，没起 = 「第 n 段」。 */
+function paperLabel(id: string): string { const k = D.st.song.papers.findIndex((p) => p.id === id); return D.st.song.papers[k]?.name || _t("第 {n} 段", { n: k + 1 }); }
+/** 声部管理（v0.16.19 搬家 D；user 11-07「第四类就是上移下移管理，然后他们也能系统的弄一下」「单独一页其实也是我比较想要的，先按这个做，不舒服我以后再说」）：
+ *  所有歌手排一列——改名（谱上写的）、上下挪、在哪几段（点一段 = 放进 / 拿出；那一段只剩它就拿不出）、换乐器、一段都不在的能删（能撤销）、＋ 新歌手。 */
+function openPartsManager(): void {
+  ui.close();
+  const box = document.createElement("div"); box.className = "offer parts-mgr";
+  const draw = () => {
+    const song = D.st.song, labels = partLabels(song, D.extras), cols = partColorIndices(song.parts.map((p) => roleSound(D.extras, p.role)));
+    box.innerHTML = `<div class="offer-card pm-card"><div class="offer-title">${_t("声部管理")}<small>${_t("每位歌手一行：改名、上下挪、在哪几段；一段都不在的能删")}</small></div><div class="pm-list">` +
+      song.parts.map((p, k) => {
+        const on = song.papers.some((pp) => pp.tracks[p.id]), who = activeCandidateName(D.extras, p.role);
+        return `<div class="pm-row" data-pid="${esc(p.id)}"><div class="pm-top"><span class="pm-dot" style="background:${TAB20[cols[k]]}"></span>` +
+          `<input class="pm-name" data-pid="${esc(p.id)}" value="${esc(labels[k] ?? p.id)}" spellcheck="false" autocomplete="off" title="${_t("谱上写的名字")}" />` +
+          `<button class="btn" data-v="up:${esc(p.id)}"${k === 0 ? " disabled" : ""} title="${_t("往上挪")}">↑</button><button class="btn" data-v="down:${esc(p.id)}"${k === song.parts.length - 1 ? " disabled" : ""} title="${_t("往下挪")}">↓</button></div>` +
+          `<div class="pm-sub"><span class="pm-who">${esc(who ?? _t("没人上场"))}</span>` +
+          (on ? `<button class="btn" data-v="swap:${esc(p.id)}">${_t("换乐器…")}</button>` : `<button class="btn danger" data-v="del:${esc(p.id)}" title="${_t("一段都不在：删掉这位歌手（能撤销）")}">${_t("删掉")}</button>`) + `</div>` +
+          `<div class="pm-papers"><span class="pm-k">${_t("在哪几段")}</span>${song.papers.map((pp) => `<button class="btn chip${pp.tracks[p.id] ? " is-on" : ""}" data-v="pp:${esc(pp.id)}:${esc(p.id)}" title="${_t("点 = 放进 / 拿出这一段")}">${esc(paperLabel(pp.id))}</button>`).join("")}</div></div>`;
+      }).join("") + `</div><div class="offer-btns"><button class="btn" data-v="new" title="${_t("新歌手只加在光标这一段（别的段照旧），加完挑乐器")}">${_t("＋ 新歌手")}</button><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
+  };
+  draw(); document.body.append(box);
+  const close = () => { box.remove(); ui.closed(close); };
+  ui.open({ k: "sheet", close, redraw: draw });
+  box.addEventListener("change", (e) => {   // 改名 = 角色名（谱上写的）
+    const t = e.target as HTMLInputElement, pid = t.dataset.pid; if (!pid || !t.classList.contains("pm-name")) return;
+    const p = D.st.song.parts.find((x) => x.id === pid), n = t.value.trim();
+    if (!p || !n || n === roleName(D.extras, p.role)) { draw(); return; }
+    updateExtras(withRoleName(D.extras, p.role, n, D.st.song.hum), { kind: "lounge", label: _t("角色改名：{n}", { n }) }); renderTitle(); view.render(); draw();
+  });
+  box.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.target as HTMLElement).classList.contains("pm-name")) (e.target as HTMLInputElement).blur(); });
+  box.addEventListener("click", (e) => {
+    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
+    if (e.target === box || v === "close") { close(); return; }
+    if (!v) return;
+    if (v === "new") { close(); addNewPart(D.st.at.paper); return; }
+    const [k, a, b] = v.split(":");
+    if (k === "up" || k === "down") { update(movePart(D.st, a, k === "up" ? -1 : 1)); renderTitle(); draw(); return; }
+    if (k === "pp") {
+      const paper = D.st.song.papers.find((pp) => pp.id === a); if (!paper) return;
+      if (paper.tracks[b]) { const next = removeTrack(D.st, a, b); if (next === D.st) info(_t("这一段只剩它了，拿不出来")); else update(next); }
+      else update(addTrack(D.st, a, b));
+      renderTitle(); draw(); return;
+    }
+    if (k === "swap") { const pp = D.st.song.papers.find((x) => x.id === D.st.at.paper && x.tracks[a]) ?? D.st.song.papers.find((x) => x.tracks[a]); if (!pp) return; close(); update(setFocus(D.st, pp.id, a)); openFinder(); return; }
+    if (k === "del") { deleteSinger(a); draw(); return; }
+  });
 }
 /** 纸的菜单（纸顶「⋯」）：改曲段名、挪、在后面加一张、这张纸上加 / 不加某个声部、删这张纸。 */
 function openPaperMenu(id: string): void {
@@ -1705,14 +1764,14 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   ui.close();
   const box = document.createElement("div");
   box.className = "track-card"; box.setAttribute("role", "dialog");
-  let page: "main" | "give" | "add" = "main";   // give = 这一行交给…（换绑）；add = 这张纸上加歌手
+  let page: "main" | "give" | "add" = "main", above = false;   // give = 这一行交给…（换绑）；add = 这张纸上加歌手（above = 加在这一行上面，否则下面）
   const draw = () => {
     const me = curPart(), v = pv(me.id), k = D.st.song.parts.indexOf(me), labels = partLabels(D.st.song, D.extras), label = labels[k] ?? "";
     const here = D.st.song.papers.find((p) => p.id === D.st.at.paper)?.tracks ?? {};
     // 换绑 / 加歌手（2026-10-08，user「已有的track绑换不同的声部」「这一段交给别的歌手 就是我刚才说的换绑」「新歌手只出现在当前这张纸嗯」）：只改这一张纸
     if (page !== "main") {
       const list = page === "give" ? D.st.song.parts.filter((p) => p.id !== me.id) : D.st.song.parts.filter((p) => !here[p.id]);
-      box.innerHTML = `<div class="tc-sub"><button class="btn" data-v="back">‹ ${page === "give" ? _t("「{label}」这一行交给…", { label: esc(label) }) : _t("这张纸上加歌手")}</button></div>` +
+      box.innerHTML = `<div class="tc-sub"><button class="btn" data-v="back">‹ ${page === "give" ? _t("「{label}」这一行交给…", { label: esc(label) }) : above ? _t("在「{label}」上面加歌手", { label: esc(label) }) : _t("在「{label}」下面加歌手", { label: esc(label) })}</button></div>` +
         `<div class="tc-list">${list.map((p) => `<button class="btn cand" data-v="${page}:${esc(p.id)}">${esc(labels[D.st.song.parts.indexOf(p)] ?? p.id)}${page === "give" && here[p.id] ? `<small>${_t("（对调）")}</small>` : ""}</button>`).join("")}` +
         `<button class="btn cand" data-v="${page}new">${_t("＋ 新歌手…")}</button></div>` +
         `<div class="tc-hint">${page === "give" ? _t("只改这张纸：音、歌词、记号都不动，换一位歌手唱；跨纸按歌手接起来。对方在这张纸上已经有一行 = 两行对调。") : _t("只加在这张纸上（别的纸照旧）。")}</div>`;
@@ -1728,10 +1787,11 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
       `<div class="tc-grid">` +
       // 谱表 / 默认谱号 / 自动八度线 / 合租 搬进谱头面板（v0.16.16 搬家 A；user 11-07「这些和歌手没关系…这些显示相关的，是不是全都可以收到这里面？」）：这里只留一颗钮直达
       `<span class="tc-k">${_t("谱")}</span><div class="tc-v"><button class="btn" data-v="score-look" title="${_t("一张谱 / 大谱表、默认谱号、自动八度线、合租：在谱头面板里（点这一行开头的谱号也能开）")}">${_t("谱怎么画…")}</button></div>` +
-      (D.st.song.parts.length > 1 ? `<span class="tc-k">${_t("顺序")}</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="${_t("往上挪一格（最上面那个声部的速度记号说了算）")}">${_t("↑ 往上")}</button><button class="btn" data-v="movedown"${k === D.st.song.parts.length - 1 ? " disabled" : ""} title="${_t("往下挪一格")}">${_t("↓ 往下")}</button></div>` : "") +
-      `</div><div class="tc-foot"><button class="btn" data-v="give" title="${_t("这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）")}">${_t("交给…")}</button><button class="btn" data-v="add" title="${_t("这张纸上再加一位歌手（已有的或新的；只加在这张纸上）")}">${_t("＋ 加歌手…")}</button>` +
-      (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="${_t("这张纸上不要这个声部（别的纸照旧）")}">${_t("这张纸上去掉")}</button>` : "") +
-      `<button class="btn" data-v="studio" title="${_t("混音台（= 听的底座）：每位歌手一条（增益 / 声像 / 静音 / 独奏）；一张纸都不在的歌手在那里删")}">${_t("歌手管理（混音台）…")}</button></div>`;   // 纸上不删歌手（2026-10-08 深夜 user「在纸上不应该可以直接删歌手，这个功能去掉，只有没引用的时候才可以在歌手管理里面删」）：删 = 录音室里、一张纸都不在的那位；三条杠里不放录音室（user「三条杠里面不应该有乐器目录，云端，歌库 录音室」），手机上从这里进
+      // 下半截 = 这一段的事（v0.16.19 搬家 D：顺序 / 删 / 在哪几段搬进「声部管理」；user 11-07「第四类就是上移下移管理，然后他们也能系统的弄一下」）
+      `</div><div class="tc-sec">${_t("这一段（{p}）", { p: esc(paperLabel(D.st.at.paper)) })}</div><div class="tc-foot"><button class="btn" data-v="give" title="${_t("这张纸上这一行换一位歌手唱（只改这张纸；音和歌词不动）")}">${_t("交给…")}</button>` +
+      `<button class="btn" data-v="addabove" title="${_t("在这一行上面加一位歌手（已有的或新的；只加在这一段）")}">${_t("＋ 上面加歌手")}</button><button class="btn" data-v="addbelow" title="${_t("在这一行下面加一位歌手（已有的或新的；只加在这一段）")}">${_t("＋ 下面加歌手")}</button>` +
+      (onPaper > 1 ? `<button class="btn" data-v="droptrack" title="${_t("这张纸上不要这个声部（别的纸照旧）")}">${_t("这一段不要它")}</button>` : "") + `</div>` +
+      `<div class="tc-foot"><button class="btn" data-v="parts" title="${_t("所有歌手排一列：改名、上下挪、在哪几段、加新的；一段都不在的能删")}">${_t("声部管理…")}</button></div>`;
   };
   draw(); document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
@@ -1754,17 +1814,14 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     if (v === "inst") { close(); openInstPage(); return; }
     if (v === "swap") { close(); openFinder(); return; }   // 从谱上开的：上场 / 关了回谱
     if (v === "score-look") { const r = box.getBoundingClientRect(); close(); headerPanel.open(D.st.at.paper, me.id, 0, { x: r.left + r.width / 2, y: r.top + 24 }); return; }   // 谱怎么画 = 这张纸开头那一处的谱头面板
-    if (v === "studio") { close(); openStudio(); return; }
-    if (v === "give" || v === "add") { page = v; draw(); return; }
+    if (v === "give" || v === "addabove" || v === "addbelow") { page = v === "give" ? "give" : "add"; above = v === "addabove"; draw(); return; }
+    if (v === "parts") { close(); openPartsManager(); return; }
     if (v === "back") { page = "main"; draw(); return; }
     if (v.startsWith("give:")) { const to = v.slice(5), name = partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.id === to)] ?? ""; close(); update(rebindTrack(D.st, D.st.at.paper, me.id, to)); renderTitle(); info(_t("这张纸上这一行交给了「{name}」", { name })); return; }
     if (v === "givenew") { close(); addNewPart(D.st.at.paper, me.id); return; }
-    if (v.startsWith("add:")) { close(); update(addTrack(D.st, D.st.at.paper, v.slice(4))); return; }
-    if (v === "addnew") { close(); addNewPart(D.st.at.paper); return; }
-    if (v === "moveup" || v === "movedown") { update(movePart(D.st, me.id, v === "moveup" ? -1 : 1)); renderTitle(); }
-    else if (v === "droptrack") { close(); update(removeTrack(D.st, D.st.at.paper, me.id)); return; }
-    else return;
-    draw();
+    if (v.startsWith("add:")) { close(); const id = v.slice(4); update(placePart(addTrack(D.st, D.st.at.paper, id), id, me.id, above)); renderTitle(); return; }   // 已有的歌手放进这一段，挨着这一行的上 / 下（全曲顺序跟着挪）
+    if (v === "addnew") { close(); addNewPart(D.st.at.paper, undefined, { anchor: me.id, above }); return; }
+    if (v === "droptrack") { close(); update(removeTrack(D.st, D.st.at.paper, me.id)); return; }
   });
 }
 

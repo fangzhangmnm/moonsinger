@@ -792,6 +792,21 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .tc-list .btn { height: 34px; padding: 0 12px; font-size: 13px; }
 .tc-list .btn small { font-size: 11px; color: var(--muted); margin-left: 2px; }
 .tc-hint { font-size: 12px; color: var(--muted); padding: 2px 6px 6px; max-width: 280px; line-height: 1.45; }
+/* 轨小卡下半截 = 这一段的事（v0.16.19 搬家 D） */
+.tc-sec { font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding: 8px 6px 0; }
+.tc-sec + .tc-foot { border-top: 0; padding-top: 6px; }
+/* 声部管理（v0.16.19 搬家 D）：所有歌手排一列 */
+.parts-mgr .pm-card { width: min(560px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
+.pm-card .offer-title small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; }
+.pm-list { overflow: auto; min-height: 0; flex: 1; margin: 6px -4px 12px; padding: 0 4px; }
+.pm-row { border: 1px solid var(--line); border-radius: 9px; padding: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
+.pm-top, .pm-sub, .pm-papers { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pm-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.pm-name { flex: 1; min-width: 6em; height: 32px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; padding: 0 8px; }
+.pm-top .btn, .pm-sub .btn { height: 32px; min-width: 32px; padding: 0 10px; font-size: 13px; }
+.pm-who { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pm-k { font-size: 12px; color: var(--muted); margin-right: 2px; }
+.pm-papers .btn.chip { height: 28px; padding: 0 10px; font-size: 13px; }
 .inst-page { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
 .inst-page[hidden] { display: none; }
 .ip-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }

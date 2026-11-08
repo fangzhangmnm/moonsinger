@@ -35,7 +35,7 @@ check(await who() === "P1 | P1", "交给 P1：第二张又归 P1", await who());
 check(await notes() === "P1:3 | P1:2", "音还在", await notes());
 // ＋ 加歌手：P2 加到第二张（只这张）
 await openCard();
-await p.click(".track-card [data-v=add]"); await p.waitForTimeout(150);
+await p.click(".track-card [data-v=addbelow]"); await p.waitForTimeout(150);
 const addList = await p.$$eval(".track-card .tc-list .btn", (bs) => bs.map((x) => x.textContent));
 check(addList.length === 2 && addList[1] === "＋ 新歌手…", "加歌手：列出不在这张纸上的那位 + 新歌手", addList.join(","));
 await p.click(".track-card .tc-list .btn >> nth=0"); await p.waitForTimeout(200);

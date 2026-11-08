@@ -11,12 +11,12 @@ for (let i = 0; i < 2; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); awa
 // 加一位新歌手（只在这张纸上）
 await p.click("#score text.part-name >> nth=0"); await p.waitForTimeout(200);
 check(!(await p.$('.track-card [data-v="delpart"]')), "谱上的歌手牌里没有「删掉」");
-await p.click(".track-card [data-v=add]"); await p.waitForTimeout(150); await p.click(".track-card [data-v=addnew]"); await p.waitForTimeout(300);
+await p.click(".track-card [data-v=addbelow]"); await p.waitForTimeout(150); await p.click(".track-card [data-v=addnew]"); await p.waitForTimeout(300);
 const parts = () => p.evaluate(() => window.__moonsinger.state().song.parts.map((x) => x.id).join(","));
 check((await parts()).split(",").length === 2, "两位歌手", await parts());
 await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 // 歌手管理 = 录音室（从歌手牌底下进）
-const openStudio = async () => { await p.click("#score text.part-name >> nth=0"); await p.waitForTimeout(200); await p.click('.track-card [data-v="studio"]'); await p.waitForTimeout(250); };   // 歌手牌底下「歌手管理（录音室）…」（三条杠里不放录音室）
+const openStudio = async () => { await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(150); await p.click('.dock-tab [data-mode="listen"]'); await p.waitForTimeout(300); };   // 混音台 = 听的底座（v0.16.19 起小卡里不再有「歌手管理（混音台）」，管理在「声部管理」；混音台照样能删）
 await openStudio();
 check(await p.$$eval(".studio .strip [data-v=delpart]", (e) => e.length) === 0, "都在纸上 = 都不能删");
 check(/在 1 张纸上/.test(await p.$eval(".studio .strip:not(.master):not(.bus):not(.add-bus) >> nth=0", (e) => e.textContent)), "写着在几张纸上");   // 第一位歌手的卡片（v0.10.9 起卡片顺序 = 总轨 → 混音轨 →「＋ 混音轨」→ 歌手）
