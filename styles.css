@@ -228,7 +228,13 @@ body.listen-mode .ink-caret { display: none; }
 .mark-cands .btn.danger { color: #b0412b; }
 .staff-svg text.tempo-word { font-weight: 600; font-family: system-ui, sans-serif; }
 .staff-svg text.tempo-num, .staff-svg text.key-label { font-family: system-ui, sans-serif; }
-.staff-svg text.key-hint { fill: var(--muted); opacity: .6; }   /* 专业模式 C 调的「1=C」：编辑器里的提示，不印（v0.16.10） */
+.staff-svg text.key-hint { fill: var(--muted); opacity: .6; }
+/* 名字下面四颗小钮（v0.16.17 搬家 B：静 / 独 / 隐 / 只）：亮着 = 涂底；编辑器里的控件，不印 */
+.staff-svg rect.part-tg { fill: var(--panel); stroke: var(--line); stroke-width: 1; rx: 3; cursor: pointer; }
+.staff-svg rect.part-tg.on { fill: var(--accent); stroke: var(--accent); }
+.staff-svg rect.part-tg.on.tg-muted { fill: #c96a3a; stroke: #c96a3a; }
+.staff-svg text.part-tg-t { fill: var(--muted); font-family: system-ui, sans-serif; font-weight: 600; pointer-events: none; }
+.staff-svg text.part-tg-t.on { fill: #fff; }   /* 专业模式 C 调的「1=C」：编辑器里的提示，不印（v0.16.10） */
 
 /* 框选（笔 / 鼠标在谱面空白处拖） */
 .marquee { position: absolute; z-index: 4; border: 1px dashed var(--accent); background: rgba(43, 108, 176, .08); border-radius: 3px; pointer-events: none; }

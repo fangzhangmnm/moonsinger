@@ -70,7 +70,9 @@ export interface ScoreViewHost {
   /** 要画的声部（隐藏的不在里面；顺序 = 总谱从上到下）。 */
   parts(): PartView[];
   /** 歌手牌：某张纸第一行某条谱左边的声部名点了（那条已经成了光标所在的 track）。 */
-  onPart?(paper: string, part: string, at?: { left: number; top: number; right: number; bottom: number }): void;   // at = 歌手牌在屏幕上的框（轨的小卡挨着它开）
+  onPart?(paper: string, part: string, at?: { left: number; top: number; right: number; bottom: number }): void;
+  /** 点了名字下面那四颗小钮之一（静 / 独 / 隐 / 只；v0.16.17 搬家 B）。听模式也接（本来就是播放控制）。 */
+  onPartToggle?(part: string, kind: import("../render/engrave.ts").PartToggle): void;   // at = 歌手牌在屏幕上的框（轨的小卡挨着它开）
   /** 纸顶「⋯」点了（纸的菜单）；扳手旁的「＋」点了（新的纸）；歌名左边「‹ ›」点了（上一张 / 下一张纸）。 */
   onPaperMenu?(paper: string): void;
   onAddPaper?(): void;
@@ -1296,6 +1298,8 @@ export class ScoreView {
     if (!view && this.inBox(L.paperMenu, x, y)) { this.host.onPaperMenu?.(this.host.get().at.paper); return true; }
     // 0⅙. 作词 / 作曲（标题下面靠右）
     if (!view && this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }
+    // 0⅛⁻. 名字下面的四颗小钮（静 / 独 / 隐 / 只）：一按就切，不开小卡（听模式也接）
+    { const tg = this.host.onPartToggle ? L.partToggles.find((b) => this.inBox(b, x, y)) : undefined; if (tg) { this.host.onPartToggle!(tg.part, tg.kind); return true; } }
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌
     if (this.leaveFamilyAt(x, y)) return true;
     if (this.openPartAt(x, y)) return true;

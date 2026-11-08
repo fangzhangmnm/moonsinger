@@ -21,7 +21,7 @@ const PT_PER_MM = 72 / 25.4;
 const INK: Rgb = [0.1, 0.1, 0.1];
 /** 编辑器专用、不印的样式类（任一个命中就不印）。 */
 const SKIP = new Set(["cat-bar", "cat-dot", "paper-chip", "paper-chip-text", "paper-chip-icon", "part-stub", "part-stub-line", "hidden-note", "hidden-paper", "warn", "selbox", "caret", "nav-text", "part-badge",
-  "tempo-change", "dyn-implied", "arr-issue", "arr-empty", "empty", "phrase-mark", "page", "in-span", "key-hint"]);   // key-hint = 专业模式 C 调的淡「1=C」（提示，v0.16.10）
+  "tempo-change", "dyn-implied", "arr-issue", "arr-empty", "empty", "phrase-mark", "page", "in-span", "key-hint", "part-tg"]);   // part-tg = 名字下面四颗小钮（静 / 独 / 隐 / 只，v0.16.17）   // key-hint = 专业模式 C 调的淡「1=C」（提示，v0.16.10）
 /** 「empty」在占位提示上 = 不印；在声部名上 = 还没人上场（屏幕上画淡），名字照印。 */
 const skipped = (cls: string[]) => cls.some((c) => SKIP.has(c) && !(c === "empty" && cls.includes("part-name")));
 /** 这个图元印不印（按样式类；测试用）。 */

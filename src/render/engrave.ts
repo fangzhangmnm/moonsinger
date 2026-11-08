@@ -44,7 +44,9 @@ export type Prim =
   | { t: "icon"; id: string; x: number; y: number; size: number; cls?: string; title?: string; tok?: number };   // 家族图标库的一个图标（页面里内联的 sprite，<use href="#id">）
 
 /** 要画的一个声部（顺序 = 总谱从上到下；隐藏的不在这里）。 */
-export interface PartView { id: string; name: string; abbr?: string; colorIdx?: number; empty?: boolean; first?: boolean; clef?: ClefName; staves?: 2; hidden?: boolean; badges?: string[]; mono?: boolean; xHead?: boolean; perc?: PartPerc; ignores?: readonly string[]; lyricMute?: ReadonlySet<number>; noLyrics?: string }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
+export interface PartView { id: string; name: string; abbr?: string; colorIdx?: number; empty?: boolean; first?: boolean; clef?: ClefName; staves?: 2; hidden?: boolean; badges?: string[];
+  /** 名字下面露出来的四颗小钮（v0.16.17 搬家 B：静 / 独 / 隐 / 只，一按就切；user 11-07「播放控制，这些东西反而应该是独立的按钮，不应该藏在里面」）。编辑器里的控件，PDF 不印（part-tg）。 */
+  toggles?: PartToggles; mono?: boolean; xHead?: boolean; perc?: PartPerc; ignores?: readonly string[]; lyricMute?: ReadonlySet<number>; noLyrics?: string }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
 //   empty = 还没人上场（名字画淡色）；first = 歌里第一个声部（速度画在它上面）；clef = 谱号；hidden = 隐藏的：不画谱、缩成一条细行（点它开歌手牌）；badges = 名字下面的角标（静 / 独 / 只看它）
 /** 台上那位是鼓 / 音效（v0.10.27；src/gm/percussion.ts percKindOf）：kit = 整套鼓（写的音高 = 敲哪个鼓，五线鼓谱）；one = 固定敲一件（一线谱）。 */
 export type PartPerc = { kind: "kit" } | { kind: "one"; info: PercInfo; key: number };   // key = 固定敲的那个键（合租全是鼓时并成一套鼓用）
@@ -132,6 +134,10 @@ export interface Slot { caret: number; system: number; x: number; end?: true; /*
 export interface CaretHead { caret: number; system: number; x: number; shift: number; end?: true; lead?: number }
 export interface LyricHit { index: number; system: number; x: number; y: number; tight?: true }   // x = 歌词中心，y = 基线；tight = 按节奏排时这个字挤（画灰，歌词框上说一声）
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
+export type PartToggle = "muted" | "solo" | "hidden" | "only";
+export type PartToggles = Record<PartToggle, boolean>;
+/** 名字下面那四颗小钮的格子（sp）：两列两排；名字那一栏至少这么宽（屏幕和 PDF 同一条规矩 = 不改版面）。 */
+const TG_CELL_W = 1.7, TG_CELL_H = 1.45, TG_GAP = 0.3, TG_W = TG_CELL_W * 2 + TG_GAP;
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
 /** 谱号 / 八度线的点击区域（v0.9.28）：start = 每行开头的谱号（index = 管着它的谱号记号，−1 = 声部自己的谱号）；mid = 行中间的谱号记号；ottava = 八度线开头的字。 */
 export interface ClefHit { kind: "start" | "mid" | "ottava"; paper: string; part: string; index: number; system: number; x: number; y: number; w: number; h: number; /** 自动画的八度线（v0.9.37）：index = −1，这一段的起止下标和几度。 */ run?: { from: number; to: number; shift: 1 | 2 | -1 } }
@@ -148,6 +154,8 @@ export interface Layout {
   chordHeads: { index: number; system: number; x: number; y: number; w: number; part?: string }[];
   /** 和弦级数的点击框 + 认出来的候选（o.chordTags 开着才有；点了 = 候选小菜单）。 */
   chordTags: { x: number; y: number; w: number; h: number; read: ChordRead }[];
+  /** 名字下面四颗小钮的点击框（PartView.toggles 给了才有）。 */
+  partToggles: { paper: string; part: string; kind: PartToggle; x: number; y: number; w: number; h: number }[];
   /** 合租叠起来的谱行（下标 = systems 里的）：只读——点了不写、不放光标，点名字拆开（v0.10.25，user「host也应该只读，只有展开时才能编辑」）。 */
   sharedRows: number[];
   /** 合租叠起来的那一行画的是哪条虚拟 track（键 = "纸 id:主人 id"；v0.10.28，src/score/merge.ts）：这一行点击区的下标指的是它，不是主人自己的 track。 */
@@ -503,7 +511,19 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const topAt = new Map<string, number>();
   const sharedRows: number[] = [], virtualOut: Record<string, Token[]> = {}, measures: Layout["measures"] = [], families: Layout["families"] = [];   // 合租叠起来的那几行（只读：点了不写、不放光标；v0.10.25）
   const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], heads: CaretHead[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
-  const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [];
+  const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], partTgHit: Layout["partToggles"] = [];
+  /** 名字下面的四颗小钮（静 独 / 隐 只）：top = 格子上沿（px）。画 = 框 + 一个字，亮着的涂底；编辑器里的控件（part-tg 不印）。 */
+  const drawToggles = (paperId: string, pv: PartView, top: number): number => {
+    const t = pv.toggles; if (!t) return top;
+    const cells: [PartToggle, string][] = [["muted", _t("静")], ["solo", _t("独")], ["hidden", _t("隐")], ["only", _t("只")]];   // 静音 / 独奏 / 隐藏（缩成细线，照样出声）/ 只看它
+    cells.forEach(([k, ch], i) => {
+      const x = P(MARGIN + (i % 2) * (TG_CELL_W + TG_GAP)), y = top + P(Math.floor(i / 2) * (TG_CELL_H + TG_GAP));
+      prims.push({ t: "rect", x, y, w: P(TG_CELL_W), h: P(TG_CELL_H), cls: `part-tg${t[k] ? " on" : ""} tg-${k}` });
+      prims.push({ t: "text", x: x + P(TG_CELL_W / 2), y: y + P(TG_CELL_H * 0.74), s: ch, cls: `part-tg part-tg-t${t[k] ? " on" : ""}`, size: P(1.0), anchor: "middle" });
+      partTgHit.push({ paper: paperId, part: pv.id, kind: k, x, y, w: P(TG_CELL_W), h: P(TG_CELL_H) });
+    });
+    return top + P(2 * TG_CELL_H + TG_GAP);
+  };
   let shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
   const rowAbove = new Map<number, number>(), lyricOff = new Map<number, number>(), dynYAt = new Map<number, number>(), noteDynYAt = new Map<number, number>(), navYAt = new Map<number, number>(), ottYAt = new Map<number, number>(), ottDownYAt = new Map<number, number>(), tempoYAt = new Map<number, number>(), grooveYAt = new Map<number, number>();   // + 速度记号的基线（px；第一个声部）   // 行号 → 谱上面留多少（sp）/ 歌词基线在第一线下多少（sp）；声部第一条谱行号 → 力度字基线（px）
@@ -753,7 +773,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const breakableAt = (tick: number) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
     // 3. 折行（像文字：优先在小节线后折；一个小节都放不下就逐列折）。每行开头的调号 = 各声部那里生效的调号；行首宽 = 最宽的那个声部
     const FAM_W = openFams.length && o.titlePlaceholder ? 0.8 : 0;   // 有展开着的一家：名字和谱之间多让一点给括号
-    const ind0 = Math.max(...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
+    const ind0 = Math.max(TG_W, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;   // 至少放得下名字下面那四颗小钮（v0.16.17；屏幕和 PDF 同一条规矩）   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
     // 第二行起每行写简写（v0.9.31；user「todo 总谱的每一行都放乐器名的省空间简写」→「乐手名和颜色同意」）：缩进 = 最宽的那个简写；没给简写（测试 / 老调用）= 0，照旧
     //   v0.9.41：定宽（user 经仓鼠转达「没简写的能不能想办法也按定宽裁一下，不然有一个没查到简写就beat the propose了」）——简写已按 ABBR_W 裁好（part-colors.ts fitAbbr），
     //   列宽 = 一个 ABBR_W 宽的参照（Vln.Vc.），不随谁最长变；字形特别宽、量出来超了参照的那个才撑一点（不叠到谱上）
@@ -966,7 +986,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
               prims.push({ t: "text", x: P(MARGIN), y: at(k), s: nameLines(m.name, 1)[0] ?? "", cls: m.id === q.p.id ? ncls : "part-name tenant", size: PART_EM * sp, anchor: "start" });
               partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: at(k) - P(PART_EM * 0.95), w: P(ind0 + 0.2), h: P(LH) });
             });
-            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at(dn.length - 1) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });
+            { const below = drawToggles(paper.id, q.p, at(dn.length - 1) + P(0.55));
+              if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: below + P(1.2), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" }); }
             if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at(hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
           } else {
           lines.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
@@ -975,7 +996,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             const lineTop = (i: number) => ny + P(LH * i) - P(PART_EM * 0.95);
             ten.forEach((t, k) => partsHit.push({ paper: paper.id, part: t.id, x: P(MARGIN - 0.4), y: lineTop(lines.length + k), w: P(ind0 + 0.2), h: P(LH) }));
           }
-          if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
+          { const below = drawToggles(paper.id, q.p, ny + P(LH * (nAll - 1)) + P(0.55));   // 名字下面四颗小钮（v0.16.17）；「不出声」这类提示在它下面
+            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: below + P(1.2), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" }); }   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
           { const y0 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines.length) - P(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);   // 有房客 = 主人的点击区只到它自己的名字
             partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y0, w: P(ind0 + 0.2), h: yEnd - y0 }); }
           if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });   // 名字前一个小色点（不印）
@@ -1594,7 +1616,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       chordTagsOut.push({ x: cx - w / 2, y: y - fs * 1.05, w, h: fs * 1.4, read: r });
     }
   }
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, partToggles: partTgHit, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
 }
 
 export type { Token };

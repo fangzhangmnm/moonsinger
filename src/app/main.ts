@@ -185,6 +185,13 @@ const curRole = (): string => curPart().role;
 const partView = new Map<string, PartViewState>();
 const pv = (id: string): PartViewState => partView.get(id) ?? { hidden: false, only: false, muted: false, solo: false };
 const setPv = (id: string, patch: Partial<PartViewState>) => partView.set(id, { ...pv(id), ...patch });
+/** 谱上缩成一条细线的（= 没在显示：自己隐藏着，或者别人在「只看」、它不在里面；isShown 的反面）。 */
+const stubbed = (id: string): boolean => !isShown(id);
+/** 点细线 = 放出来：有人在「只看」= 把它也加进「只看」；否则 = 取消隐藏（v0.16.17：小卡里不再有「显示」）。 */
+function showPart(id: string): void {
+  if (D.st.song.parts.some((p) => pv(p.id).only)) setPv(id, { only: true }); else setPv(id, { hidden: false });
+  afterViewChange();
+}
 /** 显示：有「只看它」的只显示那些，否则显示没隐藏的。 */
 const isShown = (id: string): boolean => { const only = D.st.song.parts.some((p) => pv(p.id).only); return only ? pv(id).only : !pv(id).hidden; };
 /** 显示 / 存档用的名字：填了歌名用歌名，没填用文件名主干。 */
@@ -496,7 +503,8 @@ const view = new ScoreView(scoreEl, {
   chordTags: () => chordTagsOn,
   onChordTag: (r, at) => openChordInfo(r, at),
   parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
-  onPart: (_paper, _part, at) => openTrackCard(at),
+  onPart: (_paper, part, at) => { if (stubbed(part)) { showPart(part); return; } openTrackCard(at); },   // 缩成细线的（隐藏 / 别人在「只看」）：点它 = 放出来（小卡里不再有「显示」，v0.16.17）
+  onPartToggle: (part, kind) => { setPv(part, { [kind]: !pv(part)[kind] }); afterViewChange(); },   // 名字下面四颗小钮（v0.16.17 搬家 B）
   onBlankPress: (at, row) => openScoreMenu(at, row),
   onListenMenu: (at, a) => openListenMenu(at, a),   // 听模式：长按 / 右键 = 从这儿放 / 接着放 / 从头放
   onSelPress: (at) => openSelMenu(at),
@@ -1604,12 +1612,12 @@ function partLooks(): { colors: number[]; abbrs: string[] } {
 function partViews(): PartView[] {
   const labels = partLabels(D.st.song, D.extras), mutes = lyricMutes(), looks = partLooks();
   return D.st.song.parts.map((p, k) => {
-    const v = pv(p.id), badges = [v.muted ? _t("静音") : "", v.solo ? _t("独奏") : "", v.only ? _t("只看它") : "", issueParts.has(p.id) ? _t("不出声") : ""].filter(Boolean);   // 不出声 = 清单里有它（§2.2½ 出口 ①）
+    const v = pv(p.id), badges = [issueParts.has(p.id) ? _t("不出声") : ""].filter(Boolean);   // 静 / 独 / 只 / 隐 现在是名字下面的四颗小钮（toggles，亮着 = 开），角标只剩「不出声」   // 不出声 = 清单里有它（§2.2½ 出口 ①）
     const eng = activeInstrument(D.extras, p.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
     const ly = plug?.lyrics, noLyrics = ly === "hum" || ly === "none" ? _t("{p}{p2}：空着的歌词位不开框；已经写了的字点开能改、能删", { p: labels[k], p2: ly === "hum" ? _t("（元音版）只哼") : _t("不唱歌词") }) : "";
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: !plug?.poly, ...(plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, toggles: { muted: v.muted, solo: v.solo, hidden: v.hidden, only: v.only }, mono: !plug?.poly, ...(plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -1710,8 +1718,6 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
       ((m) => { if (!m || !m.size) return ""; const xs = [...m.values()], first = xs[0];   // 唱不出来的歌词：几个、为什么（纪律：画灰 + 明说）
         return `<div class="tc-warn">${first.why === "notSung" ? esc(lyricWhyText(first, roleName(D.extras, me.role))) : _t("有 {n} 个字唱不出来（谱上画灰）：{first}{x}", { n: xs.length, first: esc(lyricWhyText(first, roleName(D.extras, me.role))), x: xs.some((x) => x.why !== first.why) ? _t(" 等") : "" })}</div>`; })(lyricMutes().get(me.id)) +
       `<div class="tc-grid">` +
-      `<span class="tc-k">${_t("显示")}</span><div class="tc-v">${chip("hide", _t("隐藏"), v.hidden, _t("谱上缩成一条细行（点细行再放出来）；照样出声"))}${chip("only", _t("只看它"), v.only, _t("其余声部都缩成细行（可以几个一起「只看」）"))}</div>` +
-      `<span class="tc-k">${_t("出声")}</span><div class="tc-v">${chip("mute", _t("静音"), v.muted, _t("播放时不出声；谱上照画"))}${chip("solo", _t("独奏"), v.solo, _t("播放时只出有独奏的声部"))}</div>` +
       // 谱表 / 默认谱号 / 自动八度线 / 合租 搬进谱头面板（v0.16.16 搬家 A；user 11-07「这些和歌手没关系…这些显示相关的，是不是全都可以收到这里面？」）：这里只留一颗钮直达
       `<span class="tc-k">${_t("谱")}</span><div class="tc-v"><button class="btn" data-v="score-look" title="${_t("一张谱 / 大谱表、默认谱号、自动八度线、合租：在谱头面板里（点这一行开头的谱号也能开）")}">${_t("谱怎么画…")}</button></div>` +
       (D.st.song.parts.length > 1 ? `<span class="tc-k">${_t("顺序")}</span><div class="tc-v"><button class="btn" data-v="moveup"${k === 0 ? " disabled" : ""} title="${_t("往上挪一格（最上面那个声部的速度记号说了算）")}">${_t("↑ 往上")}</button><button class="btn" data-v="movedown"${k === D.st.song.parts.length - 1 ? " disabled" : ""} title="${_t("往下挪一格")}">${_t("↓ 往下")}</button></div>` : "") +
@@ -1746,11 +1752,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     if (v === "givenew") { close(); addNewPart(D.st.at.paper, me.id); return; }
     if (v.startsWith("add:")) { close(); update(addTrack(D.st, D.st.at.paper, v.slice(4))); return; }
     if (v === "addnew") { close(); addNewPart(D.st.at.paper); return; }
-    if (v === "hide") { setPv(me.id, { hidden: !pv(me.id).hidden }); afterViewChange(); }
-    else if (v === "only") { setPv(me.id, { only: !pv(me.id).only }); afterViewChange(); }
-    else if (v === "mute") { setPv(me.id, { muted: !pv(me.id).muted }); afterViewChange(); }
-    else if (v === "solo") { setPv(me.id, { solo: !pv(me.id).solo }); afterViewChange(); }
-    else if (v === "moveup" || v === "movedown") { update(movePart(D.st, me.id, v === "moveup" ? -1 : 1)); renderTitle(); }
+    if (v === "moveup" || v === "movedown") { update(movePart(D.st, me.id, v === "moveup" ? -1 : 1)); renderTitle(); }
     else if (v === "droptrack") { close(); update(removeTrack(D.st, D.st.at.paper, me.id)); return; }
     else return;
     draw();

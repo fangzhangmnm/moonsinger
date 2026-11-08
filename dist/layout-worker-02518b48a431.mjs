@@ -460,9 +460,6 @@ var S = {
   "\u5C0F\u6708\u76F8\u5FF5\u6210\uFF1A": { en: "Tsukuyomi-chan reads it as:" },
   "\u8FD9\u4EF6\u4E50\u5668\uFF1A{what}": { en: "Instrument: {what}" },
   "\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}": { en: "from the 2nd system: {ab}" },
-  "\u9759\u97F3": { en: "Mute" },
-  "\u72EC\u594F": { en: "Solo" },
-  "\u53EA\u770B\u5B83": { en: "Show only" },
   "\u4E0D\u51FA\u58F0": { en: "Silent" },
   "{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220": { en: "{p}{p2}: empty lyric slots don't open a box; lyrics already written can still be tapped to edit or delete" },
   "\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC": { en: " (vowel version) only hums" },
@@ -499,12 +496,6 @@ var S = {
   "\u4E50\u5668 \u203A": { en: "Instrument \u203A" },
   "\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}": { en: "{n} {n|syllable|syllables} can't be sung (grayed out on the score): {first}{x}" },
   " \u7B49": { en: " etc." },
-  "\u9690\u85CF": { en: "Hide" },
-  "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0": { en: "Collapses to a thin line on the score (tap it to bring it back); still sounds" },
-  "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09": { en: "All other parts collapse to thin lines (several can be \u201Cshow only\u201D together)" },
-  "\u51FA\u58F0": { en: "Sound" },
-  "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B": { en: "Silent in playback; still drawn on the score" },
-  "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8": { en: "Playback only sounds the parts on solo" },
   "\u8C31": { en: "Staff" },
   "\u4E00\u5F20\u8C31 / \u5927\u8C31\u8868\u3001\u9ED8\u8BA4\u8C31\u53F7\u3001\u81EA\u52A8\u516B\u5EA6\u7EBF\u3001\u5408\u79DF\uFF1A\u5728\u8C31\u5934\u9762\u677F\u91CC\uFF08\u70B9\u8FD9\u4E00\u884C\u5F00\u5934\u7684\u8C31\u53F7\u4E5F\u80FD\u5F00\uFF09": { en: "One staff / grand staff, default clef, auto 8va lines, sharing: in the header panel (tapping the clef at the start of this line opens it too)" },
   "\u8C31\u600E\u4E48\u753B\u2026": { en: "How it\u2019s drawn\u2026" },
@@ -1613,6 +1604,10 @@ var S = {
   " \u7B49 {n} \u5904": { en: " at {n} places" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)\xD73 A A2 [Chorus])" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D": { en: "Empty = each sheet plays once in order" },
+  "\u9759": { en: "M" },
+  "\u72EC": { en: "S" },
+  "\u9690": { en: "H" },
+  "\u53EA": { en: "O" },
   "\u66F2\u6BB5\u540D": { en: "Section name" },
   "\u9690\u85CF \xB7 \u4E0D\u653E\uFF08\u70B9\u66F2\u6BB5\u540D\u8FDB\u53BB\uFF09": { en: "Hidden \xB7 not played (tap the section name to enter)" },
   "{name} \xB7 \u9690\u85CF": { en: "{name} \xB7 hidden" },
@@ -2040,7 +2035,6 @@ var S = {
   "\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Delete this bus (tracks sending or outputting to it go back to master; can be undone)" },
   "\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09": { en: "Name (tap to change)" },
   "\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09": { en: "Mute: this bus is silent and sends nothing onward (the dry sound of parts sending to it is unaffected)" },
-  "\u9759": { en: "M" },
   "\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09": { en: "Bus \xB7 bypassed (all plugins skipped)" },
   "\u6DF7\u97F3\u8F68": { en: "Bus" },
   "\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09": { en: "Move earlier (this part also moves up on the score)" },
@@ -2050,8 +2044,7 @@ var S = {
   "\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Delete this part (its settings in the green room go too; can be undone)" },
   "\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B": { en: "Delete this part" },
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u6B4C\u624B\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
-  "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
-  "\u72EC": { en: "S" }
+  "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" }
 };
 
 // src/device-kv.ts
@@ -3956,6 +3949,10 @@ var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
 var TEMPO_EM = 1.35;
+var TG_CELL_W = 1.7;
+var TG_CELL_H = 1.45;
+var TG_GAP = 0.3;
+var TG_W = TG_CELL_W * 2 + TG_GAP;
 function stripLayoutFns(l) {
   const { lyricY: _a, yOf: _b, dOf: _c, ...d } = l;
   return d;
@@ -4348,7 +4345,19 @@ function engrave(song, o) {
   const topAt = /* @__PURE__ */ new Map();
   const sharedRows = [], virtualOut = {}, measures = [], families = [];
   const rows = [], notes = [], slots = [], heads = [], lyrics = [], marks = [], dyns = [], rests = [], clefs = [];
-  const partsHit = [], papersHit = [];
+  const partsHit = [], papersHit = [], partTgHit = [];
+  const drawToggles = (paperId, pv, top) => {
+    const t = pv.toggles;
+    if (!t) return top;
+    const cells = [["muted", _t("\u9759")], ["solo", _t("\u72EC")], ["hidden", _t("\u9690")], ["only", _t("\u53EA")]];
+    cells.forEach(([k, ch], i) => {
+      const x = P(MARGIN + i % 2 * (TG_CELL_W + TG_GAP)), y = top + P(Math.floor(i / 2) * (TG_CELL_H + TG_GAP));
+      prims.push({ t: "rect", x, y, w: P(TG_CELL_W), h: P(TG_CELL_H), cls: `part-tg${t[k] ? " on" : ""} tg-${k}` });
+      prims.push({ t: "text", x: x + P(TG_CELL_W / 2), y: y + P(TG_CELL_H * 0.74), s: ch, cls: `part-tg part-tg-t${t[k] ? " on" : ""}`, size: P(1), anchor: "middle" });
+      partTgHit.push({ paper: paperId, part: pv.id, kind: k, x, y, w: P(TG_CELL_W), h: P(TG_CELL_H) });
+    });
+    return top + P(2 * TG_CELL_H + TG_GAP);
+  };
   let shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
   const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map(), dynYAt = /* @__PURE__ */ new Map(), noteDynYAt = /* @__PURE__ */ new Map(), navYAt = /* @__PURE__ */ new Map(), ottYAt = /* @__PURE__ */ new Map(), ottDownYAt = /* @__PURE__ */ new Map(), tempoYAt = /* @__PURE__ */ new Map(), grooveYAt = /* @__PURE__ */ new Map();
@@ -4619,7 +4628,7 @@ function engrave(song, o) {
     const spans = per.flatMap((q) => q.units.filter((u) => u.kind === "chunk").map((u) => [u.tick, u.tick + u.ticks]));
     const breakableAt = (tick) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
     const FAM_W = openFams.length && o.titlePlaceholder ? 0.8 : 0;
-    const ind0 = Math.max(...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;
+    const ind0 = Math.max(TG_W, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;
     const indN = parts.some((p) => p.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 + FAM_W : 0;
     const keyNow = new Map(per.map((q) => [q.p.id, q.head.key]));
     const clefW = (q) => q.fFam ? W.fClef : W.gClef;
@@ -4875,7 +4884,10 @@ function engrave(song, o) {
               prims.push({ t: "text", x: P(MARGIN), y: at(k), s: nameLines(m.name, 1)[0] ?? "", cls: m.id === q.p.id ? ncls : "part-name tenant", size: PART_EM * sp, anchor: "start" });
               partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: at(k) - P(PART_EM * 0.95), w: P(ind0 + 0.2), h: P(LH) });
             });
-            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at(dn.length - 1) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1), anchor: "start" });
+            {
+              const below = drawToggles(paper.id, q.p, at(dn.length - 1) + P(0.55));
+              if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: below + P(1.2), s: q.p.badges.join(" "), cls: "part-badge", size: P(1), anchor: "start" });
+            }
             if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at(hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
           } else {
             lines2.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
@@ -4884,7 +4896,10 @@ function engrave(song, o) {
               const lineTop = (i) => ny + P(LH * i) - P(PART_EM * 0.95);
               ten.forEach((t, k) => partsHit.push({ paper: paper.id, part: t.id, x: P(MARGIN - 0.4), y: lineTop(lines2.length + k), w: P(ind0 + 0.2), h: P(LH) }));
             }
-            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + P(1.5), s: q.p.badges.join(" "), cls: "part-badge", size: P(1), anchor: "start" });
+            {
+              const below = drawToggles(paper.id, q.p, ny + P(LH * (nAll - 1)) + P(0.55));
+              if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: below + P(1.2), s: q.p.badges.join(" "), cls: "part-badge", size: P(1), anchor: "start" });
+            }
             {
               const y02 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines2.length) - P(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);
               partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y02, w: P(ind0 + 0.2), h: yEnd - y02 });
@@ -5599,7 +5614,7 @@ function engrave(song, o) {
       chordTagsOut.push({ x: cx - w / 2, y: y - fs * 1.05, w, h: fs * 1.4, read: r });
     }
   }
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, partToggles: partTgHit, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, addPaper, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -5689,4 +5704,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-71847c5c9504.mjs.map
+//# sourceMappingURL=layout-worker-02518b48a431.mjs.map
