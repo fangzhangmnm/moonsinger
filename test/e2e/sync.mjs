@@ -31,7 +31,10 @@ const newPage = async (ctx) => { await ctx.addInitScript(() => localStorage.setI
 const notes = (p) => p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.pitch.step + t.pitch.octave).join(" "));
 const gate = (p) => p.evaluate(() => { const g = document.querySelector(".gate-sheet"); return g && !g.hidden ? [...g.querySelectorAll(".gate-actions button")].map((b) => b.textContent) : null; });
 const cloudNotes = async (p, id) => { const it = (await cloud.list("")).find((x) => x.name === id); if (!it) return null; const u8 = new Uint8Array(await (await cloud.download(it.ref)).arrayBuffer()); return p.evaluate((b64) => { const u = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)); return window.__moonsinger.open("x.mxl", u).song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.pitch.step + t.pitch.octave).join(" "); }, Buffer.from(u8).toString("base64")); };
-const typeAtEnd = async (p, keys) => { await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("End"); for (const k of keys) await p.keyboard.press(k); };
+/** 点谱放光标 = 点第一行五线谱的中间（按排版算坐标）。原来盲点 (300,300)：v0.16.20 起每段底下有「＋ 声部」虚线框，歌长到折成两行时它正好压在那一点上——
+ *  点中 = 开菜单、后面打的音进不了谱、云端少一个音（⑦⑧ 红）。11-08 Claude Fable 5.1 回溯 v0.15.7 / 0.16.13 / 0.16.19 绿、0.16.20 起红查出来的：是测试撞上了新控件，不是同步丢字节。 */
+const clickStaff = async (p) => { const pt = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = L.systems[0], sheet = document.querySelector("#score .sheet") ?? document.querySelector("#score svg"), r = sheet.getBoundingClientRect(); return { x: r.left + (L.pageX?.left ?? 0) + (s.x1 ?? 600) - 30, y: r.top + s.staffTop + 2 * L.sp }; }); await p.mouse.click(pt.x, pt.y); };
+const typeAtEnd = async (p, keys) => { await clickStaff(p); await p.keyboard.press("End"); for (const k of keys) await p.keyboard.press(k); };
 const push = (p) => p.evaluate(() => window.__moonsinger.es().forceSaveAndPush());
 // 推、但不许被冲突面卡死：面弹出来了 = 这次推不是零冲突 → 返回 false（按「取消」让流程走完），否则 true
 // 缺口态收尾：再推一次、在冲突面上选「本地覆盖云端」（库 weakOverride → markSynced 重捕 base），让后面的场景继续
