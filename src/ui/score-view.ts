@@ -73,9 +73,10 @@ export interface ScoreViewHost {
   onPart?(paper: string, part: string, at?: { left: number; top: number; right: number; bottom: number }): void;
   /** 点了名字下面那四颗小钮之一（静 / 独 / 隐 / 只；v0.16.17 搬家 B）。听模式也接（本来就是播放控制）。 */
   onPartToggle?(part: string, kind: import("../render/engrave.ts").PartToggle): void;   // at = 歌手牌在屏幕上的框（轨的小卡挨着它开）
-  /** 纸顶「⋯」点了（纸的菜单）；扳手旁的「＋」点了（新的纸）；歌名左边「‹ ›」点了（上一张 / 下一张纸）。 */
+  /** 纸顶「⋯」点了（纸的菜单）；歌名左边「‹ ›」点了（上一张 / 下一张纸）。 */
   onPaperMenu?(paper: string): void;
-  onAddPaper?(): void;
+  /** 纸底下的虚线框点了（v0.16.19 搬家 D）：part = 这一段加歌手，paper = 在这一段下面插一张新曲段；at = 框的上沿中点（屏幕坐标，小菜单开在这儿）。 */
+  onPaperAdd?(paper: string, kind: "part" | "paper", at: { x: number; y: number }): void;
   onNav?(dir: -1 | 1): void;
   /** 「‹ 2/3 ›」旁边的「本段」开关点了（视图范围：本段 ⇄ 全部）。 */
   onScopeToggle?(): void;
@@ -310,7 +311,7 @@ export class ScoreView {
     // 排版缓存（W-17 第 1 刀）：谱没变（引用）、排版的选项没变 = 不重排。光标 / 选区 / 写字头的蓝 / 强调色不在这个键里——它们在下面的 ink 层和 class 上做；字体还在装 = 装好再排一次
     const geoKey = JSON.stringify([width, sp, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, hscroll, autoBars, inC, chordTags, paperLabel, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v: unknown) => (v instanceof Set ? [...v] : v));
-    const opts: Omit<EngraveOpts, "measureLyric"> = { width, sp, at: st.at, parts: partsNow, titlePlaceholder: true, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
+    const opts: Omit<EngraveOpts, "measureLyric"> = { width, sp, at: st.at, parts: partsNow, titlePlaceholder: true, ...(this.rules.edit ? { addBoxes: true } : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
       ...(lyricRaise ? { lyricRaise } : {}), autoBars, ...(inC ? { inC: true } : {}), ...(chordTags ? { chordTags: true } : {}), keyHint: true, paperLabel, ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}) };
     return { frame: { sp, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp };
   }
@@ -1289,9 +1290,9 @@ export class ScoreView {
     // 0⁻. 和弦级数（v0.16.11）：点了 = 候选（听模式也认，只是看）
     const ct = this.host.onChordTag ? L.chordTags.find((c) => this.inBox(c, x, y)) : undefined;
     if (ct) { const b = this.clientBox(ct); this.host.onChordTag!(ct.read, { x: (b.left + b.right) / 2, y: b.bottom }); return true; }
-    // 0. 纸右上角的小钮（纸张）、旁边的「＋」、歌名左边的「‹ ›」——都在歌名那一条里，先于歌名判
+    // 0. 纸右上角的小钮（纸张）、歌名左边的「‹ ›」——都在歌名那一条里，先于歌名判；每张纸底下的虚线框「＋ 歌手」「＋ 新曲段」（v0.16.19 搬家 D）
     if (this.inBox(L.paperChip, x, y)) { this.host.onPaper?.(); return true; }
-    if (!view && this.inBox(L.addPaper, x, y)) { this.host.onAddPaper?.(); return true; }
+    if (!view) { const a = L.paperAdds.find((b) => this.inBox(b, x, y)); if (a) { const b = this.clientBox(a); this.host.onPaperAdd?.(a.paper, a.kind, { x: (b.left + b.right) / 2, y: b.top }); return true; } }
     if (this.inBox(L.nav?.prev, x, y)) { this.host.onNav?.(-1); return true; }
     if (this.inBox(L.nav?.next, x, y)) { this.host.onNav?.(1); return true; }
     if (this.inBox(L.nav?.scope, x, y)) { this.host.onScopeToggle?.(); return true; }

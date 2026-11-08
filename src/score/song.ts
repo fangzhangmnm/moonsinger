@@ -1601,15 +1601,18 @@ export function removeTrack(st: EditorState, paperId: string, partId: string): E
   if (st.at.paper !== paperId || st.at.part !== partId) return { ...st, song };
   return setFocus({ ...st, song }, paperId, st.song.parts.find((x) => tracks[x.id])!.id);
 }
-/** 新的一张纸（接在 after 后面；没给 = 最后）：每个声部一条只有谱头的 track，谱头照抄上一张纸那个声部结尾时的调号 / 拍号 / 速度
- *  （契约 §6¾：速度每张纸开头明确写一个，新建时照抄上一张纸结尾的）。光标跳到新纸上当前声部。 */
-export function addPaper(st: EditorState, after?: string): EditorState {
-  const papers = st.song.papers, k = after ? papers.findIndex((p) => p.id === after) : papers.length - 1;
-  const prev = papers[k] ?? papers[papers.length - 1], id = nextKey(papers.map((p) => p.id), "p");
+/** 新的一张纸（接在 after 后面；没给 = 最后；before = 插在 at 前面，v0.16.19 纸 ⋯「在上面插一段」）：每个声部一条只有谱头的 track，谱头照抄上一张纸那个声部结尾时的调号 / 拍号 / 速度
+ *  （契约 §6¾：速度每张纸开头明确写一个，新建时照抄上一张纸结尾的；插在第一张前面 = 照抄第一张开头的谱头）。光标跳到新纸上当前声部。 */
+export function addPaper(st: EditorState, after?: string, before?: string): EditorState {
+  const papers = st.song.papers, b = before ? papers.findIndex((p) => p.id === before) : -1;
+  const k = b >= 0 ? b - 1 : after ? papers.findIndex((p) => p.id === after) : papers.length - 1;
+  const first = b === 0 ? papers[0] : null;   // 插在最前面：没有上一张，照抄原来第一张开头的谱头
+  const prev = first ? null : papers[k] ?? papers[papers.length - 1], id = nextKey(papers.map((p) => p.id), "p");
   let nid = st.nextId;
   const tracks: Record<string, Token[]> = {};
   const bpmEnd = prev ? sheetEndBpm(st.song, prev) : null;   // 速度 = 上一张纸结尾真正生效的（最上面那位那一行），不是各行自己谱头里没人看见的旧数
   for (const part of st.song.parts) {
+    if (first) { const t = first.tracks[part.id] ?? st.song.parts.map((x) => first.tracks[x.id]).find((x) => x) ?? []; tracks[part.id] = headTokens(endMarks(t.slice(0, headLen(t))), nid); nid += 3; continue; }
     const src = prev?.tracks[part.id] ?? st.song.parts.map((x) => prev?.tracks[x.id]).find((x) => x) ?? [];
     tracks[part.id] = headTokens({ ...endMarks(src), ...(bpmEnd !== null ? { bpm: bpmEnd } : {}) }, nid); nid += 3;
   }
