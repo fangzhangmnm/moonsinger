@@ -26,6 +26,7 @@ import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
 import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
 import type { ChordRead } from "../score/chord-name.ts";
+import { textStyleCss } from "../render/text-style.ts";
 import { engrave, attachLayoutFns, LYRIC_EM, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg, toSvgParts } from "../render/svg.ts";
 import { lyricFont, measurerOn } from "../render/lyric-font.ts";
@@ -173,6 +174,7 @@ export class ScoreView {
 
   constructor(private el: HTMLElement, private host: ScoreViewHost) {
     this.sheet = document.createElement("div"); this.sheet.className = "sheet";
+    if (!document.getElementById("ms-text-styles")) { const css = document.createElement("style"); css.id = "ms-text-styles"; css.textContent = textStyleCss(); document.head.appendChild(css); }   // 谱上字的字体 / 粗细 / 斜体 = 样式表生成的（src/render/text-style.ts；2026-11-09）
     this.boxEl = document.createElement("div"); this.boxEl.className = "marquee"; this.boxEl.hidden = true;
     el.replaceChildren(this.sheet);
     // 谱下面永远留一大截空白（user 2026-10-08「做一个护栏：滚动的时候页面下面还是留一整页白」→ 后来「…3/4左右？」= ¾ 屏）：最后一行也能滚到上面来，

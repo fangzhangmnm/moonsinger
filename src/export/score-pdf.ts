@@ -10,6 +10,7 @@
 //     唱不出的歌词）印成黑的——那是给写谱的人看的披露，不是谱面内容。
 // 萌神拼音的字高：字体自报的上伸把拼音带算进去了（hhea 1300），不能拿来定汉字位置；按字形墨迹（ttf.ts inkOf）量「国」——拼音画在汉字上方，
 //   歌词行在谱下面，所以歌词行往下让出「拼音字体的墨迹顶 − 黑体的墨迹顶」那一截（engrave lyricRaise）。同 WXHW v2.3.13 的结论。
+import { textStyleOf } from "../render/text-style.ts";
 import { engrave, LYRIC_EM, type Prim, type PartView, type EngraveOpts } from "../render/engrave.ts";
 import type { Song } from "../score/song.ts";
 import { paperOf, DEFAULT_PAPER, spMm, lineSp, pageGeoOf, textScaleOf } from "../score/paper.ts";
@@ -31,7 +32,6 @@ export const isPrinted = (cls: string | undefined): boolean => !skipped((cls ?? 
 export const LYRIC_RAISE: Record<PdfFontId, number> = { sans: 0, pinyin: ((1184 - 795) / 1000) * LYRIC_EM };
 /** 描边的路径（其余路径都是填充）：屏幕上的线宽是固定 px（谱间距 ~10 px 时），这里按谱间距等比换。 */
 const STROKE: Record<string, { w: number; dash?: number[]; round?: boolean }> = { arpeggio: { w: 1.1, round: true }, tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 } };
-const BOLD = new Set(["song-title", "tempo-word", "paper-name", "groove-mark", "part-name"]), ITALIC = new Set(["groove-mark", "dyn-word", "nav-word"]);
 
 /** 一串字在这款字体里多宽（em；按 shape 出来的字形——注音字体按词换的字形宽度一样）。 */
 export function textEm(font: TtfFont, s: string): number { return font.shape(s).reduce((a, g) => a + font.advance(g), 0) / font.unitsPerEm; }
@@ -117,9 +117,9 @@ export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; s
           for (const code of serif) { out.push({ op: "glyph", code, x, y: p.y - top, size, color: INK }); x += (a.music.glyphs[code]!.adv / em) * size; }
           return out;
         }
-        const size = p.size ?? lyricPx, w = textEm(a.font, p.s) * size * (p.sx ?? 1), anchor = p.anchor ?? "middle";
+        const size = p.size ?? lyricPx, w = textEm(a.font, p.s) * size * (p.sx ?? 1), anchor = p.anchor ?? "middle", style = textStyleOf(p.cls);
         const x = p.x + ox - (anchor === "middle" ? w / 2 : anchor === "end" ? w : 0);
-        return [{ op: "text", x, y: p.y - top, text: p.s, size, color: INK, ...(p.sx && p.sx !== 1 ? { sx: p.sx } : {}), ...(cls.some((c) => BOLD.has(c)) ? { bold: true } : {}), ...(cls.some((c) => ITALIC.has(c)) ? { italic: true } : {}) }];
+        return [{ op: "text", x, y: p.y - top, text: p.s, size, color: INK, ...(p.sx && p.sx !== 1 ? { sx: p.sx } : {}), ...(style.weight >= 600 ? { bold: true } : {}), ...(style.italic ? { italic: true } : {}) }];   // 粗 / 斜查样式表（和屏幕同一张；2026-11-09 起不在这里另列名单）
       }
       default: return [];
     }

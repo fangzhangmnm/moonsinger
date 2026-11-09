@@ -10,6 +10,23 @@
 //     这里只判：没动（≤ 10 px，同谱面的「手指抖一点也算轻点」）就松手 = 点；按住不动到点 = 长按；动了 / 又落下一根手指 = 不算。谱面把这根手指捕获走了（滚动要用），
 //     所以手指的 move / up 在 window 上听（捕获阶段）。edited by Claude Fable 5.1 2026-11-08（审刀 1：v0.16.25 手指落在钮 / 虚线框上滚不动、捏不了；E2E overlay-touch 守）
 import { _t } from "../i18n/index.ts";
+import { TEXT_FACES, textFont, textStyleOf, type TextStyle } from "../render/text-style.ts";
+
+const metricCache = new Map<string, { a: number; d: number }>();
+let mctx: CanvasRenderingContext2D | null | undefined;
+/** 这款字的上沿 / 下沿（字号的倍数）= canvas 的 fontBoundingBox（浏览器排一行字用的那一对数）。量不到 = 0.8 / 0.2（= 原来按「基线约在 0.8 字号」估的那个位置）。 */
+function faceMetrics(st: TextStyle): { a: number; d: number } {
+  const key = `${st.face}|${st.weight}|${st.italic}`;
+  let m = metricCache.get(key);
+  if (m) return m;
+  m = { a: 0.8, d: 0.2 };
+  try {
+    mctx ??= typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
+    if (mctx) { mctx.font = textFont(st, 100); const t = mctx.measureText("1=C"); if (t.fontBoundingBoxAscent > 0) m = { a: t.fontBoundingBoxAscent / 100, d: t.fontBoundingBoxDescent / 100 }; }
+  } catch { /* 量不到就用估的 */ }
+  metricCache.set(key, m);
+  return m;
+}
 import type { Layout, PartToggle, PartToggles } from "../render/engrave.ts";
 import type { Song } from "../score/song.ts";
 
@@ -70,8 +87,11 @@ export class ScoreOverlay {
   layout(L: Layout, v: OverlayView): void {
     const items: Item[] = [], sp = L.tp ?? L.sp, px = (n: number) => `${Math.round(n * 100) / 100}px`;   // 钮 / 提示字 / 虚线框的字 = 字的尺子（刀 2：紧凑档不跟着谱缩；位置照排版给的锚点）
     const box = (x: number, y: number, w: number, h: number) => `left:${px(x)};top:${px(y)};width:${px(w)};height:${px(h)}`;
-    const text = (x: number, base: number, size: number, anchor: "start" | "middle" | "end" = "start") =>   // 把 svg 的「起点 + 基线」换成 div：行高 = 字号，基线约在 0.8 字号
-      `left:${px(x)};top:${px(base - size * 0.8)};font-size:${px(size)};line-height:${px(size)};${anchor === "middle" ? "transform:translateX(-50%);" : anchor === "end" ? "transform:translateX(-100%);" : ""}`;
+    // 把 svg 的「起点 + 基线」换成 div：行高 = 字号，基线按这款字真实的上下沿算（CSS 行内排版：基线离盒顶 = (行高 + 上沿 − 下沿) / 2）；字体 / 粗细 / 斜体查样式表（2026-11-09，user「这些字体也应该对齐吧」）
+    const text = (x: number, base: number, size: number, anchor: "start" | "middle" | "end" = "start", st: TextStyle = textStyleOf(undefined)) => {
+      const m = faceMetrics(st);
+      return `left:${px(x)};top:${px(base - (size * (1 + m.a - m.d)) / 2)};font-size:${px(size)};line-height:${px(size)};font-family:${TEXT_FACES[st.face].replace(/"/g, "'")};font-weight:${st.weight};font-style:${st.italic ? "italic" : "normal"};${anchor === "middle" ? "transform:translateX(-50%);" : anchor === "end" ? "transform:translateX(-100%);" : ""}`;
+    };
     const add = (key: string, tag: Item["tag"], cls: string, style: string, html = "", attrs: Record<string, string> = {}) => items.push({ key, tag, cls, style, html, attrs });
     const icon = (id: string, size: number) => `<svg class="ov-icon" style="width:${px(size)};height:${px(size)}" aria-hidden="true"><use href="#${id}"/></svg>`;
     const song = v.song, papers = song.papers, multi = papers.length > 1, nameOf = (id: string) => papers.find((p) => p.id === id);
@@ -147,7 +167,7 @@ export class ScoreOverlay {
     // ⑥ 「1=C」淡提示（专业模式 C 调；点 = 谱头面板）
     for (const kh of L.keyHints) {
       const sys = L.systems[kh.system]; if (!sys) continue;
-      add(`kh:${kh.system}:${kh.index}`, v.marks ? "button" : "div", `${v.marks ? "ov-i " : ""}ov-key-hint`, text(kh.x, kh.y, kh.size), "1=C",
+      add(`kh:${kh.system}:${kh.index}`, v.marks ? "button" : "div", `${v.marks ? "ov-i " : ""}ov-key-hint`, text(kh.x, kh.y, kh.size, "start", textStyleOf("key-hint")), "1=C",
         v.marks ? { "data-ov": "keyhint", "data-paper": sys.paper, "data-part": sys.part.replace(/~.*$/, ""), "data-index": String(kh.index), title: _t("这里是 C 调（没有升降号）：点 = 谱号 / 调号 / 拍号 / 速度") } : {});
     }
     // ⑦ 合租展开着的一家：括号（点 = 光标挪出这一家，叠回去）

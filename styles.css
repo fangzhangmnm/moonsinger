@@ -76,8 +76,8 @@ button, input, select { font: inherit; color: inherit; }
    2026-10-21 底座贴底后谱那一块变矮、toast 落在屏幕中间 = 正好压住居中的卡片，E2E final / issues 点不到「mp3」） */
 body:has(.offer:not([hidden])) .notice-stack { top: calc(var(--safe-top) + 54px); bottom: auto; left: 50%; }
 /* 歌手牌：第一行谱号左边的声部名 */
-.staff-svg .part-name { fill: var(--ink); font-weight: 600; cursor: pointer; }
-.staff-svg .part-name.empty { fill: var(--muted); font-weight: 400; }
+.staff-svg .part-name { fill: var(--ink); cursor: pointer; }   /* 字体 / 粗细 / 斜体 / 字号一律在 src/render/text-style.ts（屏幕上 score-view 装它生成的样式表；2026-11-09） */
+.staff-svg .part-name.empty { fill: var(--muted); }
 .bar .title { font-weight: 600; letter-spacing: .02em; }
 .bar .ver { color: var(--muted); font-size: 12px; }
 .bar .spacer { flex: 1; }
@@ -124,8 +124,7 @@ body:has(.offer:not([hidden])) .notice-stack { top: calc(var(--safe-top) + 54px)
 .staff-svg path.hairpin { fill: none; stroke: var(--ink); stroke-width: 1.1; }   /* 渐强渐弱（2026-10-08） */
 .staff-svg path.hairpin.art-mute { stroke: var(--muted); opacity: .5; }
 .staff-svg text.note.in-span { fill: var(--accent); }   /* 点开的记号管的那几个音 */   /* 渐到：虚线发夹（从上一个力度字起；手写的是实线）——2026-10-08 Opus 5.5 */
-.staff-svg text.tempo-change { fill: var(--accent); font-weight: 700; }   /* 这一段开头的速度和上一段不一样：↑ 快了 / ↓ 慢了（2026-10-08 Opus 5.5；user「不要grey out，而是有变化的时候会标一个东西提示用户」） */
-.staff-svg text.dyn-word { font-style: italic; font-family: "Times New Roman", Georgia, serif; }   /* 太长的渐强渐弱写成「cresc. - - -」（2026-10-08 Opus 5.5） */
+.staff-svg text.tempo-change { fill: var(--accent); }   /* 这一段开头的速度和上一段不一样：↑ 快了 / ↓ 慢了（2026-10-08 Opus 5.5；user「不要grey out，而是有变化的时候会标一个东西提示用户」） */
 .staff-svg path.slur.art-mute { fill: none; stroke: var(--muted); opacity: .5; }
 .staff-svg .ghost { fill: var(--ghost); stroke: var(--ghost); }
 .staff-svg path.tie.ghost { fill: none; }
@@ -139,7 +138,6 @@ body.listen-mode .ink-caret { display: none; }
 .selbox { position: absolute; background: var(--accent-soft); opacity: .8; mix-blend-mode: multiply; pointer-events: none; }
 .staff-svg line.playhead { stroke: var(--accent); stroke-width: 2px; opacity: 0.55; pointer-events: none; }   /* 播放头（实时试听的「谱上跟着亮」；src/ui/score-view.ts setPlayhead） */
 .staff-svg rect.warn { fill: #d9a23a; }
-.staff-svg text.lyric { font-family: system-ui, "Hiragino Sans", "PingFang SC", "Noto Sans CJK JP", sans-serif; }
 /* 选中 = 底下那条淡蓝带子（rect.selbox）就够了，音不涂蓝（user 2026-10-08「选区画成一条淡蓝的带子盖住那几个音（不是把音涂蓝）」） */
 .staff-svg .sel { }
 .staff-svg rect.selbox { fill: var(--accent-soft); opacity: .8; }
@@ -226,8 +224,6 @@ body.listen-mode .ink-caret { display: none; }
 .mark-cands.tempo .btn small { font-size: 11px; color: var(--muted); }
 .mark-cands .btn.is-on { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
 .mark-cands .btn.danger { color: #b0412b; }
-.staff-svg text.tempo-word { font-weight: 600; font-family: system-ui, sans-serif; }
-.staff-svg text.tempo-num, .staff-svg text.key-label { font-family: system-ui, sans-serif; }
 /* 名字下面四颗小钮（v0.16.17 搬家 B：静 / 独 / 隐 / 只）：亮着 = 涂底；编辑器里的控件，不印 */
 
 /* 框选（笔 / 鼠标在谱面空白处拖） */
@@ -275,17 +271,17 @@ body.listen-mode .ink-caret { display: none; }
 .file-row .btn { display: inline-flex; align-items: center; gap: 6px; }
 #docTitle { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 纸面最上面的歌名（不填也行；点了就地改） */
-.staff-svg .song-title { fill: var(--ink); font-weight: 600; }
+.staff-svg .song-title { fill: var(--ink); }
 .staff-svg .part-name.focus { fill: var(--accent); }                 /* 光标所在的声部 */
-.staff-svg .paper-name { fill: var(--ink); font-weight: 600; }        /* 曲段名（纸顶一条） */
-.staff-svg .part-badge { fill: var(--accent); font-weight: 600; }       /* 名字下面的角标：静音 / 独奏 / 只看它 */
+.staff-svg .paper-name { fill: var(--ink); }        /* 曲段名（纸顶一条） */
+.staff-svg .part-badge { fill: var(--accent); }       /* 名字下面的角标：静音 / 独奏 / 只看它 */
 .staff-svg path.brace { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }   /* 大谱表花括号 */
 .paper-row { align-items: center; justify-content: space-between; }
 .paper-row-name { font-size: 14px; }
 .title-input.paper { text-align: left; font-weight: 600; }
 .title-input.arr { text-align: left; font-weight: 400; }   /* 编排那一行（2026-10-08 深夜） */
 .staff-svg text.arr-label { fill: var(--muted); }
-.staff-svg text.arr-issue { fill: var(--muted); font-style: italic; }
+.staff-svg text.arr-issue { fill: var(--muted); }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
 /* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
 .pad-tools.knobs { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--knob) var(--knob) var(--knob) var(--knob); }   /* v0.10.37 又加「符 / 音」切换键 = 再加一列（同一个坑：漏加 = 「⋯」掉到第二排） */   /* 1= / 长短 / 音域 分宽度；弹、收起、⋯ = 方块（2026-10-08 Opus：加「弹」时漏加一列，「⋯」被挤到第二排） */
@@ -414,7 +410,7 @@ body.listen-mode .ink-caret { display: none; }
 .ov-ph-credits { background: none; border: 0; padding: 0; color: var(--muted); opacity: .7; font: inherit; font-size: inherit; }
 .ov-ph-arr { overflow: hidden; text-overflow: ellipsis; }
 .ov-arr-empty { color: var(--muted); opacity: .6; }
-.ov-key-hint { background: none; border: 0; padding: 0; color: var(--muted); opacity: .6; font-family: system-ui, sans-serif; }   /* 专业模式 C 调的「1=C」 */
+.ov-key-hint { background: none; border: 0; padding: 0; color: var(--muted); opacity: .6; }   /* 专业模式 C 调的「1=C」 */
 .finder.is-playing .prov-b [data-v="play"] { display: none; }   /* 放着歌的时候不给「听开头」（v0.16.35；user 11-09） */
 .ctx-menu.hidden-papers .hidp-row { display: flex; align-items: center; gap: .3em; }   /* 「隐藏 N 段」点开的一行：名字 + 去看 + 放出来（v0.16.34） */
 .ctx-menu.hidden-papers .hidp-name { flex: 1; padding: 0 .6em; font-weight: 600; white-space: nowrap; }
@@ -953,14 +949,11 @@ span.smufl { pointer-events: none; }
 .ctx-menu .ctx-dyn .ctx-chip { min-width: 34px; padding: 0 4px; }
 .ctx-menu .ctx-dyn .ctx-chip .smufl { font-family: "Bravura"; font-size: 24px; line-height: 1; position: relative; top: 5px; }
 /* 风格记号（拍子轻重；2026-10-08 深夜 Opus 5.5）：谱上一行斜体字；不认识的预设 = 灰；小菜单宽一点、说明可以折行 */
-.staff-svg text.groove-mark { font-style: italic; font-weight: 600; font-family: system-ui, sans-serif; }
 .staff-svg text.groove-mark.groove-unknown { fill: var(--muted); }
 .staff-svg text.groove-mark.sel { fill: var(--accent); }
 /* 谱内反复 / 跳转（2026-10-09）：房子括号、Segno / Coda、D.C. / Fine…；不起作用的画灰（.art-mute，通用规则） */
 .staff-svg path.volta { fill: none; stroke: var(--ink); stroke-width: 1.1; }
 .staff-svg path.volta.art-mute { stroke: var(--muted); opacity: .5; }
-.staff-svg text.nav-mark { font-family: system-ui, sans-serif; font-weight: 600; }
-.staff-svg text.nav-word { font-style: italic; }
 .staff-svg .nav-mark.sel, .staff-svg .nav-sign.sel, .staff-svg .repeat-bar.sel, .staff-svg .nav-sign.hot { fill: var(--accent); }
 .ctx-menu.groove-menu { max-width: min(360px, calc(100vw - 16px)); }
 /* 整段 / 整首移调转调（v0.9.33） */
@@ -982,7 +975,7 @@ span.smufl { pointer-events: none; }
 .ip-marks th { text-align: left; font-weight: 500; padding: 3px 12px 3px 0; white-space: nowrap; color: var(--ink); vertical-align: top; }
 .ip-marks td { padding: 3px 0; color: var(--ink); }
 .ip-marks tr.ign th, .ip-marks tr.ign td { color: var(--muted); }
-.staff-svg .dyn-implied { fill: var(--muted); font-style: italic; font-weight: 600; }   /* 渐强渐弱没写终点：走一档推定的终点（灰字披露） */
+.staff-svg .dyn-implied { fill: var(--muted); }   /* 渐强渐弱没写终点：走一档推定的终点（灰字披露） */
 
 /* 走带（2026-10-10 Opus 5.5）：播放线 / 正在响的音 / 起点 / 听模式 */
 .playhead { position: absolute; width: 2px; background: var(--play); opacity: .75; pointer-events: none; border-radius: 1px; }
@@ -1010,7 +1003,7 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 /* 「弹」的鬼音符（v0.10.6）：盖在谱上的一层，不接点击、不影响排版 */
 .ghost-preview { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; opacity: .5; }
 /* 和弦标级数（v0.16.13 起进排版 = 谱上的字，跟着设置印进 PDF）；点击在 score-view tap 里按 Layout.chordTags 的框判 */
-.staff-svg text.chord-tag { fill: var(--accent); font-family: "Noto Serif", "Times New Roman", Times, Georgia, serif; font-weight: 600; }   /* v0.16.34：谱上分析和声那种衬线字（PDF = vendor/fonts/serif 的轮廓） */
+.staff-svg text.chord-tag { fill: var(--accent); }   /* v0.16.34：谱上分析和声那种衬线字（PDF = vendor/fonts/serif 的轮廓） */
 .ctx-menu.chord-info { min-width: 220px; }
 .chord-cand { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 5px 10px; align-items: baseline; }
 .chord-cand b { font-size: 15px; }
