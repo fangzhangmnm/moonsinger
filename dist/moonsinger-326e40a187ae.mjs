@@ -5051,7 +5051,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.57-2026-11-09";
+var APP_VERSION = "v0.16.58-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10976,6 +10976,7 @@ var BAR_W = 1.6;
 var TITLE_H = 5.4;
 var PAPER_H = 3.4;
 var PAPER_GAP = 1.6;
+var CTL_H = 3;
 var SPACING = {
   cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },
   // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
@@ -11224,6 +11225,40 @@ function unitsOf(tokens, o10) {
   if (o10.tail) pushHead();
   return { units, head, shortBars, pickup };
 }
+var NO_LINE_START = /* @__PURE__ */ new Set([..."\u3001\u3002\uFF0C\uFF0E\u30FB\uFF1A\uFF1B\uFF1F\uFF01\uFF09\u300D\u300F\u3011\u3015\u3009\u300B\u30FC\uFF5E\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6,.;:!?)]}"]);
+function wrapTitle(s10, w2, max2) {
+  if (w2(s10) <= max2) return [s10];
+  const lines = [];
+  let cur = "";
+  const push = () => {
+    if (cur.trim()) lines.push(cur.trim());
+    cur = "";
+  };
+  for (const word of s10.match(/\S+\s*/g) ?? [s10]) {
+    if (w2((cur + word).trimEnd()) <= max2) {
+      cur += word;
+      continue;
+    }
+    if (cur.trim()) push();
+    if (w2(word.trimEnd()) <= max2) {
+      cur = word;
+      continue;
+    }
+    for (const ch2 of word) {
+      if (cur && w2((cur + ch2).trimEnd()) > max2) {
+        if (NO_LINE_START.has(ch2) && [...cur].length > 1) {
+          const cs2 = [...cur], last = cs2.pop();
+          cur = cs2.join("");
+          push();
+          cur = last;
+        } else push();
+      }
+      cur += ch2;
+    }
+  }
+  push();
+  return lines.length ? lines : [s10];
+}
 function engrave(song, o10) {
   const clefStarts = resolveSongClefs(song);
   if (o10.inC) {
@@ -11295,11 +11330,13 @@ function engrave(song, o10) {
     return out;
   };
   const titleSize = tx2("song-title"), titleBase = TOP2 + T2(TITLE_H * 0.62);
-  if (song.title) prims.push({ t: "text", x: o10.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
-  const title = { x: P2(MARGIN), y: TOP2 + T2(0.3), w: o10.width - P2(2 * MARGIN), h: T2(TITLE_H), baseline: titleBase, size: titleSize };
+  const titleLines = song.title ? wrapTitle(song.title, (t10) => o10.measureLyric(t10) * titleSize * 1.08 / (LYRIC_EM * sp2 * ts2), o10.width - P2(2 * (MARGIN + CTL_H + 1))) : [];
+  const titleLH = titleSize * 1.2, titleExtra = Math.max(0, titleLines.length - 1) * titleLH;
+  titleLines.forEach((t10, k2) => prims.push({ t: "text", x: o10.width / 2, y: titleBase + k2 * titleLH, s: t10, cls: "song-title", size: titleSize, anchor: "middle" }));
+  const title = { x: P2(MARGIN), y: TOP2 + T2(0.3), w: o10.width - P2(2 * MARGIN), h: T2(TITLE_H) + titleExtra, baseline: titleBase, size: titleSize };
   const lines = song.credits ? song.credits.split("\n") : [];
   let credits = null;
-  const cs2 = tx2("credits"), rx2 = o10.width - P2(MARGIN), y0 = TOP2 + T2(TITLE_H + 1);
+  const cs2 = tx2("credits"), rx2 = o10.width - P2(MARGIN), y0 = TOP2 + T2(TITLE_H + 1) + titleExtra;
   if (lines.length) {
     lines.forEach((s10, k2) => prims.push({ t: "text", x: rx2, y: y0 + k2 * cs2 * 1.35, s: s10, cls: "credits", size: cs2, anchor: "end" }));
     const w2 = Math.max(...lines.map((s10) => o10.measureLyric(s10) * 1.25 / LYRIC_EM)) + T2(0.6);
@@ -11322,7 +11359,7 @@ function engrave(song, o10) {
     }
     arrangement = { x: x0 - T2(0.3), y: base2 - as2 * 1.15, w: avail2 + T2(0.3), h: as2 * 1.6, baseline: base2, size: as2 };
   }
-  let yCur = Math.max(TOP2 + T2(TITLE_H + 0.5), credits && lines.length ? credits.y + credits.h + T2(0.3) : 0, arrangement ? arrLast + T2(0.8) : 0);
+  let yCur = Math.max(TOP2 + T2(TITLE_H + 0.5) + titleExtra, credits && lines.length ? credits.y + credits.h + T2(0.3) : 0, arrangement ? arrLast + T2(0.8) : 0);
   const ensure = (h2) => {
     if (PG && yCur + h2 > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) {
       pageNo++;
@@ -15856,7 +15893,7 @@ function faceMetrics(st2) {
 }
 var TG_BTN = 3;
 var TG_GAP = 0.4;
-var CTL_H = 3;
+var CTL_H2 = 3;
 var CTL_GLYPH = 2;
 var CTL_TEXT = 1.4;
 var LONG_MS = 420;
@@ -15938,17 +15975,17 @@ var ScoreOverlay = class {
       btn("muted", 1, ear, t10.solo ? "tg-solo" : t10.muted ? "tg-muted" : "", _t("\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F"));
     }
     {
-      const s10 = CTL_H * sp2, x2 = L2.content.right - s10, y2 = L2.title.y + 0.5 * sp2;
+      const s10 = CTL_H2 * sp2, x2 = L2.content.right - s10, y2 = L2.title.y + 0.5 * sp2;
       add("chip", "button", "ov-i ov-chip ov-paper-chip", box(x2, y2, s10, s10), icon("file", CTL_GLYPH * sp2), { "data-ov": "chip", title: _t("\u7EB8\uFF1A{paperLabel}", { paperLabel: v.paperLabel }) });
     }
-    if (!multi && v.edit) add(`menu:${papers[0].id}`, "button", "ov-i ov-chip ov-menu", `${box(L2.content.left, L2.title.y + 0.5 * sp2, (CTL_H + 0.6) * sp2, CTL_H * sp2)};font-size:${px(CTL_GLYPH * sp2)}`, "\u22EF", { "data-ov": "menu", "data-paper": papers[0].id, title: _t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355") });
+    if (!multi && v.edit) add(`menu:${papers[0].id}`, "button", "ov-i ov-chip ov-menu", `${box(L2.content.left, L2.title.y + 0.5 * sp2, (CTL_H2 + 0.6) * sp2, CTL_H2 * sp2)};font-size:${px(CTL_GLYPH * sp2)}`, "\u22EF", { "data-ov": "menu", "data-paper": papers[0].id, title: _t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355") });
     const hiddenChip = (paperId, ids, style) => {
       add(`hid:${paperId}`, "button", "ov-i ov-chip ov-hidden", style, esc2(_t("\u9690\u85CF {n}", { n: ids.length })), { "data-ov": "hidden", "data-paper": paperId, title: _t("\u8FD9\u4E00\u6BB5\u6709 {n} \u4F4D\u9690\u85CF\u7740\uFF08\u4E0D\u6392\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u770B\u662F\u8C01\u3001\u653E\u51FA\u6765", { n: ids.length }) });
     };
     for (const pp of L2.papers) {
       const paper = nameOf2(pp.id);
       if (!paper) continue;
-      const k2 = papers.indexOf(paper), h2 = CTL_H * sp2, y2 = pp.title.y + (pp.title.h - h2) / 2, pid = esc2(pp.id);
+      const k2 = papers.indexOf(paper), h2 = CTL_H2 * sp2, y2 = pp.title.y + (pp.title.h - h2) / 2, pid = esc2(pp.id);
       if (pp.title.shown && multi) {
         const segOn = v.onlyPaper === pp.id;
         const kids2 = [
@@ -15961,8 +15998,8 @@ var ScoreOverlay = class {
         ];
         add(`nav:${pp.id}:${k2}:${papers.length}:${segOn}:${v.edit}:${pp.hiddenParts.join(",")}`, "div", "ov-nav", `right:${px(-L2.content.right)};top:${px(y2)};height:${px(h2)};--ctl:${px(h2)};--ctl-glyph:${px(CTL_GLYPH * sp2)};--ctl-text:${px(CTL_TEXT * sp2)}`, kids2.join(""));
       } else if (pp.hiddenParts.length) {
-        if (pp.title.shown) hiddenChip(pp.id, pp.hiddenParts, `right:${px(-(L2.content.right - (CTL_H + 0.6) * sp2))};top:${px(y2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`);
-        else hiddenChip(pp.id, pp.hiddenParts, `left:${px(L2.content.left + (v.edit ? (CTL_H + 1.2) * sp2 : 0))};top:${px(L2.title.y + 0.5 * sp2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`);
+        if (pp.title.shown) hiddenChip(pp.id, pp.hiddenParts, `right:${px(-(L2.content.right - (CTL_H2 + 0.6) * sp2))};top:${px(y2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`);
+        else hiddenChip(pp.id, pp.hiddenParts, `left:${px(L2.content.left + (v.edit ? (CTL_H2 + 1.2) * sp2 : 0))};top:${px(L2.title.y + 0.5 * sp2)};height:${px(h2)};font-size:${px(CTL_TEXT * sp2)}`);
       }
       if (pp.title.shown && !paper.name && !pp.hidden) add(`ph-paper:${pp.id}`, "div", "ov-placeholder ov-ph-paper", text2(pp.title.x, pp.title.baseline, pp.title.size), esc2(_t("\u66F2\u6BB5\u540D")));
       if (pp.note) add(`hp-note:${pp.id}`, "div", "ov-stub ov-note", `${box(pp.note.x, pp.note.y, pp.note.w, pp.note.h)};font-size:${px(1.1 * sp2)}`, `<span>${esc2(_t("\u8FD9\u4E00\u6BB5\u9690\u85CF\u7740\uFF1A\u4E0D\u653E\u3001\u4E0D\u5370\uFF08\u300C\u22EF\u300D\u91CC\u80FD\u653E\u51FA\u6765\uFF09"))}</span>`);
@@ -15977,7 +16014,7 @@ var ScoreOverlay = class {
     }
     const hidPapers = L2.papers.filter((pp) => pp.hidden).map((pp) => pp.id);
     if (hidPapers.length && !v.onlyPaper) {
-      const h2 = CTL_H * sp2, x2 = L2.content.left + (!multi && v.edit ? (CTL_H + 1.2) * sp2 : 0);
+      const h2 = CTL_H2 * sp2, x2 = L2.content.left + (!multi && v.edit ? (CTL_H2 + 1.2) * sp2 : 0);
       add(
         `hidp:${hidPapers.join(",")}`,
         "button",
@@ -29373,9 +29410,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-bbb19f4dc99d.mjs");
+      return pick(() => "layout-worker-a11261770c37.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-245830170b0a.mjs");
+      return pick(() => "encode-worker-96e8feab64f8.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -57205,4 +57242,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c9cb40ef8448.mjs.map
+//# sourceMappingURL=moonsinger-326e40a187ae.mjs.map

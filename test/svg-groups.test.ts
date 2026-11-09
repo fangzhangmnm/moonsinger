@@ -1,7 +1,7 @@
 // svg-groups.test.ts —— toSvgParts 的分组（W-17 智能重画第一刀）：每个图元恰好进一组、组内先后不变、歌名在杂项组、一行谱一组；toSvg = 开 + 组 + 收。created 2026-10-14 by Claude Fable 5.1
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, setNote, tr, type EditorState } from "../src/score/song.ts";
-import { engrave, LYRIC_EM } from "../src/render/engrave.ts";
+import { engrave, LYRIC_EM, wrapTitle } from "../src/render/engrave.ts";
 import { toSvg, toSvgParts, primSvg } from "../src/render/svg.ts";
 
 const song = (n: number) => { let st = initState(); st = { ...st, song: { ...st.song, title: "月亮" } }; for (let i = 0; i < n; i++) st = writeDegree(st, (i % 7) + 1, "near"); return st; };
@@ -49,5 +49,28 @@ describe("SVG 按行谱分组（W-17）", () => {
     assert(!changed.includes(0), "杂项组没变");
     const c = toSvgParts(lay({ ...st, caret: 4 }));
     eq(c.groups.join(""), a.groups.join(""), "挪光标：一组都不变（光标在 ink 层）");
+  });
+});
+
+describe("歌名折行（v0.16.58，user 11-09「曲名应该能换行」）", () => {
+  const W = (t: string) => [...t].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 20 : 10), 0);   // 方块字 20、拉丁 10
+  it("放得下 = 一行；有空格先在空格断；一个词太长按字断；行首不放标点 / 小写假名", () => {
+    eq(wrapTitle("月亮", W, 100).join("|"), "月亮");
+    eq(wrapTitle("陽だまり道とれんちょん 简单笛子版", W, 240).join("|"), "陽だまり道とれんちょん|简单笛子版");
+    eq(wrapTitle("一二三四五六七八九十", W, 100).join("|"), "一二三四五|六七八九十");
+    const r = wrapTitle("あいうえおっかきく", W, 100);
+    assert(r.every((l) => !/^[っゃゅょ、。]/.test(l)), `行首有小写假名：${r.join("|")}`);
+    assert(r.every((l) => W(l) <= 100), `每行放得下：${r.join("|")}`);
+  });
+  it("排版：太长的歌名折成几行、都在纸里；作者栏 / 谱跟着往下让", () => {
+    const mk = (title: string) => { let st = initState(); st = { ...st, song: { ...st.song, title, credits: "词：某人" } }; for (let i = 0; i < 8; i++) st = writeDegree(st, (i % 7) + 1, "near"); return lay(st, 300); };
+    const a = mk("短"), b = mk("这是一个非常非常非常非常非常非常长的歌名需要折行才放得下");
+    const ts = (l: ReturnType<typeof lay>) => l.prims.filter((p) => p.t === "text" && p.cls === "song-title") as { x: number; y: number; s: string; size: number }[];
+    eq(ts(a).length, 1);
+    assert(ts(b).length >= 2, `折成了 ${ts(b).length} 行`);
+    for (const t of ts(b)) { const w = (t.s.length * 20 * t.size * 1.08) / (LYRIC_EM * 10); assert(t.x - w / 2 >= 0 && t.x + w / 2 <= 300, `「${t.s}」伸出纸`); }
+    const cy = (l: ReturnType<typeof lay>) => (l.prims.find((p) => p.t === "text" && p.cls === "credits") as { y: number }).y;
+    assert(cy(b) > cy(a) + 1, `作者栏往下让了（${cy(a)} → ${cy(b)}）`);
+    assert(b.systems[0]!.staffTop > a.systems[0]!.staffTop + 1, "第一行谱往下让了");
   });
 });

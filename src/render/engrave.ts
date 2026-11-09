@@ -494,6 +494,28 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
 /** 一列：同一 tick、同一种东西（小节线 / 记号 / 音）各声部对齐在一起；宽 = 最宽的那个。 */
 interface Col { tick: number; slot: number; n: number; w: number; x: number; system: number; units: Unit[]; bar: boolean; chunk: boolean; phrase: boolean }
 
+/** 歌名折行（v0.16.58，user 11-09「曲名应该能换行」）：放得下 = 一行；放不下 = 先在空格处断（「陽だまり道とれんちょん 简单笛子版」= 两行），
+ *  一个词本身比一行还宽（中文 / 日文整串没有空格）= 按字断；行首不放标点和小写假名（把上一行最后一个字带下来）。w = 量宽（px），max = 一行最宽（px）。 */
+const NO_LINE_START = new Set([..."、。，．・：；？！）」』】〕〉》ー～ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ,.;:!?)]}"]);
+export function wrapTitle(s: string, w: (t: string) => number, max: number): string[] {
+  if (w(s) <= max) return [s];
+  const lines: string[] = []; let cur = "";
+  const push = () => { if (cur.trim()) lines.push(cur.trim()); cur = ""; };
+  for (const word of s.match(/\S+\s*/g) ?? [s]) {
+    if (w((cur + word).trimEnd()) <= max) { cur += word; continue; }
+    if (cur.trim()) push();
+    if (w(word.trimEnd()) <= max) { cur = word; continue; }
+    for (const ch of word) {
+      if (cur && w((cur + ch).trimEnd()) > max) {
+        if (NO_LINE_START.has(ch) && [...cur].length > 1) { const cs = [...cur], last = cs.pop()!; cur = cs.join(""); push(); cur = last; }
+        else push();
+      }
+      cur += ch;
+    }
+  }
+  push();
+  return lines.length ? lines : [s];
+}
 export function engrave(song: Song, o: EngraveOpts): Layout {
   const clefStarts = resolveSongClefs(song);   // 每张纸每个声部开头的谱号（自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳
   if (o.inC) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
@@ -547,12 +569,16 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   // 纸面最上面：歌名 + 作者栏 + 纸的小钮
   // 歌名 2.8 个谱线间距（原来 1.9 ≈ 曲段名 1.6，看不出谁大；出版总谱的歌名比谱上别的字大一大截；user「歌曲标题字体大小不合理」）
   const titleSize = tx("song-title"), titleBase = TOP + T(TITLE_H * 0.62);
-  if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
-  const title: TitleHit = { x: P(MARGIN), y: TOP + T(0.3), w: o.width - P(2 * MARGIN), h: T(TITLE_H), baseline: titleBase, size: titleSize };
+  // 歌名太长 = 折行（v0.16.58，user 11-09「曲名应该能换行」）：两边让出覆盖层的「⋯」/ 纸钮（各 ≈ CTL_H + 0.6），按量过的宽折、每行居中；下面的作者栏 / 编排 / 谱跟着往下让
+  //   量字的尺子量的是歌词字（LYRIC_EM × sp × ts 那么大）；歌名是加粗的无衬线 = 多算 8%
+  const titleLines = song.title ? wrapTitle(song.title, (t) => (o.measureLyric(t) * titleSize * 1.08) / (LYRIC_EM * sp * ts), o.width - P(2 * (MARGIN + CTL_H + 1))) : [];
+  const titleLH = titleSize * 1.2, titleExtra = Math.max(0, titleLines.length - 1) * titleLH;
+  titleLines.forEach((t, k) => prims.push({ t: "text", x: o.width / 2, y: titleBase + k * titleLH, s: t, cls: "song-title", size: titleSize, anchor: "middle" }));
+  const title: TitleHit = { x: P(MARGIN), y: TOP + T(0.3), w: o.width - P(2 * MARGIN), h: T(TITLE_H) + titleExtra, baseline: titleBase, size: titleSize };
   // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）；空着 = 什么都不画（覆盖层写浅色提示）
   const lines = song.credits ? song.credits.split("\n") : [];
   let credits: Box | null = null;
-  const cs = tx("credits"), rx = o.width - P(MARGIN), y0 = TOP + T(TITLE_H + 1.0);
+  const cs = tx("credits"), rx = o.width - P(MARGIN), y0 = TOP + T(TITLE_H + 1.0) + titleExtra;
   if (lines.length) {
     lines.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: "credits", size: cs, anchor: "end" }));
     const w = Math.max(...lines.map((s) => (o.measureLyric(s) * 1.25) / LYRIC_EM)) + T(0.6);
@@ -579,7 +605,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   }
   // 作者栏有几行：第一张纸从它下面开始（v0.10.23：原来只给第三行起让位，本段视图没有编排那一行垫着 = 两行作者就压在曲段控件上；user「词曲的输入和本段显示的控件撞车了」）；
   //   编排那一行靠左，会和速度记号撞 = 五线谱从它下面开始
-  let yCur = Math.max(TOP + T(TITLE_H + 0.5), credits && lines.length ? credits.y + credits.h + T(0.3) : 0, arrangement ? arrLast + T(0.8) : 0);   // px，往下排的游标
+  let yCur = Math.max(TOP + T(TITLE_H + 0.5) + titleExtra, credits && lines.length ? credits.y + credits.h + T(0.3) : 0, arrangement ? arrLast + T(0.8) : 0);   // px，往下排的游标
   /** 分页：这一块（高 h px）在这页放不下 = 翻页（页顶上什么都还没放时不翻）。 */
   const ensure = (h: number) => { if (PG && yCur + h > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) { pageNo++; yCur = contentTop(pageNo); } };
 
