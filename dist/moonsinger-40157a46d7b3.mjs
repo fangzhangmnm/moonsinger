@@ -4788,14 +4788,8 @@ var S = {
   "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Keys are late: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms \xB7 slowest step {slow} (tap to hide this time)" },
   "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms (tap to hide this time)" },
   "\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u5E73\u65F6\u53EA\u5728\u6309\u952E\u665A\u4E86\u7684\u65F6\u5019\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\uFF1B\u6253\u5F00 = \u6BCF\u6B21\u6309\u952E\u90FD\u9732\uFF0C\u4E0D\u665A\u4E5F\u9732": { en: "Key-feel numbers (for chasing latency): normally a line appears above the keys only when keys are late; on = shown on every key press, late or not" },
-  "\u58F0\u97F3\u6392\u961F\u81EA\u52A8\u6E05\u6389\uFF08\u58F0\u97F3\u8BBE\u5907\u521A\u8D77\u6765\u65F6\u4F1A\u4E00\u53E3\u6C14\u591A\u7B97\u51E0\u767E\u6BEB\u79D2\u7684\u58F0\u97F3\uFF0C\u4E4B\u540E\u6BCF\u4E2A\u97F3\u90FD\u6392\u5728\u540E\u9762 = \u542C\u5230\u7684\u665A\uFF1B\u5F00 = \u91CF\u5230\u5C31\u6E05\u6389\u91CD\u65B0\u8D77\u3002\u5173 = \u4EE5\u524D\u7684\u6837\u5B50\uFF0C\u53EA\u91CF\u3001\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF0C\u7528\u6765\u5BF9\u7167\uFF09": { en: "Clear backed-up audio automatically (when the audio device starts it renders a few hundred ms of sound in one burst, and every note after that waits behind it = you hear it late; on = clear it and restart as soon as it is measured. Off = the old behaviour: measure and log only, for comparison)" },
-  "\u81EA\u52A8\u6E05\u6389\uFF1A\u5F00": { en: "Auto-clear: on" },
-  "\u81EA\u52A8\u6E05\u6389\uFF1A\u5173\uFF08\u4EE5\u524D\u7684\u6837\u5B50\uFF09": { en: "Auto-clear: off (old behaviour)" },
   "\u4E00\u76F4\u663E\u793A\uFF1A\u5F00": { en: "Always show: on" },
   "\u4E00\u76F4\u663E\u793A\uFF1A\u5173": { en: "Always show: off" },
-  "\u8BD5\u9A8C\uFF1A\u58F0\u97F3\u4FDD\u6301\u9192\u7740\uFF08\u653E\u4E00\u4E2A\u542C\u4E0D\u89C1\u7684\u6781\u8F7B\u4FE1\u53F7\uFF0C\u770B\u7CFB\u7EDF\u8FD8\u4F1A\u4E0D\u4F1A\u628A\u58F0\u97F3\u8BBE\u5907\u505C\u6389\uFF1B\u6CA1\u8BC1\u5B9E\u6709\u7528\uFF0C\u9ED8\u8BA4\u5173\uFF0C\u591A\u8D39\u4E00\u70B9\u7535\uFF09": { en: "Experiment: keep audio awake (plays an inaudible, extremely quiet signal to see whether the system still stops the audio device; not proven to help, off by default, uses a little more battery)" },
-  "\u4FDD\u6301\u9192\u7740\uFF1A\u5F00": { en: "Keep awake: on" },
-  "\u4FDD\u6301\u9192\u7740\uFF1A\u5173": { en: "Keep awake: off" },
   "\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355": { en: "This section's menu" },
   "\u9690\u85CF {n}": { en: "{n} hidden" },
   "\u8FD9\u4E00\u6BB5\u6709 {n} \u4F4D\u9690\u85CF\u7740\uFF08\u4E0D\u6392\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u770B\u662F\u8C01\u3001\u653E\u51FA\u6765": { en: "{n} {n|part is|parts are} hidden in this section (not laid out, no space taken): tap to see who and show them" },
@@ -5025,7 +5019,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.29-2026-11-08";
+var APP_VERSION = "v0.16.30-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28302,15 +28296,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-16261b431f6c.mjs");
+      return pick(() => "singer-worker-214b4e513df9.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-69f8ac20971a.mjs");
+      return pick(() => "layout-worker-99ea680b79bb.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-790f4a9b00af.mjs");
+      return pick(() => "encode-worker-145abf912b01.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -28390,8 +28384,8 @@ function onAudioNote(f2) {
   noteFn = f2;
 }
 var pageHidden = () => typeof document !== "undefined" && document.visibilityState === "hidden";
-var rejectNoted = "";
 var asleep = (c10) => c10.state === "suspended" || c10.state === "interrupted";
+var rejectNoted = "";
 function resumeOnce(c10) {
   c10.resume().catch((e10) => {
     const m2 = String(e10?.message ?? e10);
@@ -28404,8 +28398,7 @@ function resumeOnce(c10) {
 var retryTimer;
 var retryUntil = 0;
 function wake(c10) {
-  if (pageHidden()) return;
-  if (!asleep(c10)) return;
+  if (pageHidden() || !asleep(c10)) return;
   resumeOnce(c10);
   retryUntil = performance.now() + 1e4;
   if (retryTimer === void 0) retryTimer = setInterval(() => {
@@ -28421,7 +28414,6 @@ function audioCtx() {
   if (!ctx) {
     ctx = new AudioContext();
     attach(ctx);
-    if (awakeOn) startKeepAwake(ctx);
     armQueue("created");
   }
   wake(ctx);
@@ -28448,6 +28440,31 @@ function attach(c10) {
       armQueue(mine ? "flush" : "running");
     }
   });
+}
+var asleepNotedAt = -1e9;
+var keyCt = -1;
+var keyCtAt = 0;
+function noteKeyAsleep(now2) {
+  const c10 = ctx;
+  if (!c10) return;
+  if (c10.state !== "running") {
+    keyCt = -1;
+    if (now2 - asleepNotedAt >= 1e3) {
+      asleepNotedAt = now2;
+      noteFn(`key pressed while ctx ${c10.state} (t=${c10.currentTime.toFixed(2)})`);
+    }
+    return;
+  }
+  const t10 = c10.currentTime;
+  if (t10 !== keyCt) {
+    keyCt = t10;
+    keyCtAt = now2;
+    return;
+  }
+  if (now2 - keyCtAt > 400 && now2 - asleepNotedAt >= 1e3) {
+    asleepNotedAt = now2;
+    noteFn(`key pressed while clock frozen \u2265 ${Math.round(now2 - keyCtAt)} ms (ctx running, t=${t10.toFixed(2)})`);
+  }
 }
 function createQueueMeter() {
   let pending = true, last = null, anchor = null, slack = 0, burstMs = null;
@@ -28484,18 +28501,13 @@ function createQueueMeter() {
   };
 }
 var BURST_SETTLE_MS = 600;
-var AUTO_FLUSH_MS = 120;
-function shouldAutoFlush(burstMs, on2, doneInARow) {
-  return on2 && burstMs > AUTO_FLUSH_MS && doneInARow < 2;
+var AUTO_FLUSH_MS = 30;
+function shouldAutoFlush(burstMs, doneInARow) {
+  return burstMs > AUTO_FLUSH_MS && doneInARow < 2;
 }
-var autoFlush = true;
 var autoCount = 0;
 var flushAt = -1e9;
-function setAutoFlush(on2) {
-  autoFlush = on2;
-  noteFn(`auto-flush ${on2 ? "on" : "off (old behaviour: measure only)"}`);
-}
-var autoFlushOn = () => autoFlush;
+var flushBroken = false;
 var queue = createQueueMeter();
 var queueTimer;
 var queueUntil = 0;
@@ -28507,7 +28519,7 @@ function armQueue(why2) {
   armAt = performance.now();
   queue.arm();
   burstNoted = false;
-  queueUntil = performance.now() + 2e4;
+  queueUntil = armAt + 2e4;
   if (queueTimer !== void 0) return;
   queueTimer = setInterval(() => {
     const c10 = ctx, now2 = performance.now();
@@ -28521,15 +28533,14 @@ function armQueue(why2) {
     const b3 = queue.burst();
     if (b3 !== null && !burstNoted) {
       burstNoted = true;
-      const go = shouldAutoFlush(b3, autoFlush, autoCount);
-      const took = queue.anchorAt();
-      noteFn(`start burst (${queueWhy}): device start took \u2248 ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead \u2248 ${b3} ms${go ? " \u2192 auto-flush" : b3 > AUTO_FLUSH_MS ? autoFlush ? ` (auto-flush gave up after ${autoCount})` : " (auto-flush off)" : ""}`);
+      const go = !flushBroken && shouldAutoFlush(b3, autoCount), took = queue.anchorAt();
+      noteFn(`start burst (${queueWhy}): device start took \u2248 ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead \u2248 ${b3} ms${go ? " \u2192 flush" : b3 > AUTO_FLUSH_MS ? flushBroken ? " (auto flush off this session)" : ` (gave up after ${autoCount} flushes)` : ""}`);
       if (go) {
         autoCount++;
         flushAudio("auto");
       } else if (b3 <= AUTO_FLUSH_MS) autoCount = 0;
     }
-  }, 40);
+  }, 10);
 }
 function audioQueuedMs() {
   const c10 = ctx;
@@ -28541,83 +28552,32 @@ function audioQueuedMs() {
 function flushAudio(who = "tap") {
   const c10 = ctx;
   if (!c10 || c10.state !== "running") return;
-  noteFn(`flush requested (${who}; queued \u2248 ${audioQueuedMs() ?? "?"} ms)`);
+  noteFn(`flush (${who}; queued \u2248 ${audioQueuedMs() ?? "?"} ms)`);
   flushAt = performance.now();
-  if (who === "tap") autoCount = 0;
-  void c10.suspend().then(() => c10.resume()).catch((e10) => noteFn(`flush failed: ${String(e10?.message ?? e10)}`));
+  if (who !== "auto") autoCount = 0;
+  void c10.suspend().then(() => {
+    setTimeout(() => {
+      if (ctx !== c10 || !asleep(c10) || pageHidden()) return;
+      flushBroken = true;
+      noteFn(`flush left ctx ${c10.state} for 1 s \u2192 waking; auto flush off this session`);
+      wake(c10);
+    }, 1e3);
+    return c10.resume();
+  }).catch((e10) => noteFn(`flush failed: ${String(e10?.message ?? e10)}`));
 }
-var asleepNotedAt = -1e9;
-function noteKeyAsleep(now2) {
+function audioShown() {
   const c10 = ctx;
-  if (!c10 || c10.state === "running" || now2 - asleepNotedAt < 1e3) return;
-  asleepNotedAt = now2;
-  noteFn(`key pressed while ctx ${c10.state} (t=${c10.currentTime.toFixed(2)})`);
+  if (!c10 || c10.state !== "running") return;
+  const t02 = c10.currentTime;
+  setTimeout(() => {
+    if (ctx === c10 && c10.state === "running" && c10.currentTime === t02 && !pageHidden() && performance.now() - armAt > 500) armQueue("visible");
+  }, 60);
 }
-var awakeOn = false;
-var awakeNodes = null;
-function startKeepAwake(c10) {
-  if (awakeNodes) return;
-  const osc = c10.createOscillator(), gain = c10.createGain();
-  osc.frequency.value = 40;
-  gain.gain.value = 5e-5;
-  osc.connect(gain);
-  gain.connect(c10.destination);
-  osc.start();
-  awakeNodes = { osc, gain };
-  noteFn("keep-awake on");
+function idleFlushAudio() {
+  if (flushBroken || !burstNoted || performance.now() - flushAt < 1e4 || pageHidden()) return;
+  const q2 = audioQueuedMs();
+  if (q2 !== null && q2 > AUTO_FLUSH_MS) flushAudio("idle");
 }
-function setKeepAwake(on2) {
-  awakeOn = on2;
-  if (on2) {
-    if (ctx) startKeepAwake(ctx);
-    return;
-  }
-  const n10 = awakeNodes;
-  awakeNodes = null;
-  if (!n10) return;
-  try {
-    n10.osc.stop();
-  } catch {
-  }
-  n10.osc.disconnect();
-  n10.gain.disconnect();
-  noteFn("keep-awake off");
-}
-var keepAwakeOn = () => awakeOn;
-var STUCK_MS = 2500;
-function createAudioWatch(d3) {
-  let seenT = -1, seenAt = 0, frozenNoted = false;
-  return {
-    arm(now2) {
-      const c10 = d3.ctx();
-      seenT = c10 ? c10.currentTime : -1;
-      seenAt = now2;
-      frozenNoted = false;
-    },
-    check(now2) {
-      const c10 = d3.ctx();
-      if (!c10 || d3.hidden()) return "none";
-      if (c10.currentTime !== seenT) {
-        if (frozenNoted) d3.note(`clock running again after ${Math.round(now2 - seenAt)} ms frozen`);
-        seenT = c10.currentTime;
-        seenAt = now2;
-        frozenNoted = false;
-        return "ok";
-      }
-      if (c10.state !== "running") {
-        seenAt = now2;
-        return "wait";
-      }
-      if (now2 - seenAt < STUCK_MS) return "wait";
-      if (!frozenNoted) {
-        frozenNoted = true;
-        d3.note(`clock frozen ${Math.round(now2 - seenAt)} ms while state=running (t=${c10.currentTime.toFixed(2)})`);
-      }
-      return "frozen";
-    }
-  };
-}
-var audioWatch = createAudioWatch({ ctx: () => ctx, hidden: pageHidden, note: (m2) => noteFn(m2) });
 var keep = null;
 function holdAudio() {
   if (keep) return;
@@ -37071,7 +37031,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "97c16afbf9e5b453" : "dev";
+var CORE_HASH = true ? "e51297056a47a292" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -50111,9 +50071,7 @@ feelChip.addEventListener("click", () => {
   feelMuted = true;
   feelChip.hidden = true;
 });
-var KV_AUTO_FLUSH = "audio-auto-flush";
 var KV_FEEL_ALWAYS = "feel-always";
-var KV_KEEP_AWAKE = "audio-keep-awake";
 var feelAlways = false;
 var slowestStep = () => {
   const rows = Object.entries(perfReport()).filter(([, v]) => v.n > 0).sort((a10, b3) => b3[1].last - a10[1].last).slice(0, 2);
@@ -50156,6 +50114,8 @@ var feel = createFeelProbe({
     return late ? _t("\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep, qd, slow: slowestStep() }) : _t("\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep, qd });
   }
 });
+var soundsHeld = /* @__PURE__ */ new Set();
+var soundAt = 0;
 var sound = {
   down: (p2, id2 = "main") => {
     const t10 = auditionTarget();
@@ -50168,18 +50128,23 @@ var sound = {
     singer.unlock();
     engine.auditionOn(id2, t10.inst, t10.key(midiOf(p2)), t10.vel, t10.gainDb, t10.pan);
     feel.sound();
+    soundsHeld.add(id2);
+    soundAt = performance.now();
   },
   glide: (p2, id2 = "main") => {
     const t10 = auditionTarget();
     if (t10) engine.auditionGlide(id2, t10.key(midiOf(p2)));
   },
   up: (id2 = "main") => {
+    soundsHeld.delete(id2);
+    soundAt = performance.now();
     engine.auditionOff(id2);
     const n10 = chordVoices.get(id2) ?? 0;
     for (let k2 = 1; k2 <= n10; k2++) engine.auditionOff(`${id2}~${k2}`);
     chordVoices.delete(id2);
   },
   allOff: () => {
+    soundsHeld.clear();
     chordVoices.clear();
     engine.auditionAllOff();
   }
@@ -51060,7 +51025,7 @@ ${esc10(CREDIT.attribution.join("\n"))}</pre>` + (lang() === "zh" ? `<div class=
 
 ${esc10(CREDIT_TRANSLATIONS.zh.terms)}</pre>` : "") + `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc10(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div><details class="set-credit set-dev"><summary>${_t("\u5F00\u53D1\u8005")}</summary><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc10(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u58F0\u97F3\u6392\u961F\u81EA\u52A8\u6E05\u6389\uFF08\u58F0\u97F3\u8BBE\u5907\u521A\u8D77\u6765\u65F6\u4F1A\u4E00\u53E3\u6C14\u591A\u7B97\u51E0\u767E\u6BEB\u79D2\u7684\u58F0\u97F3\uFF0C\u4E4B\u540E\u6BCF\u4E2A\u97F3\u90FD\u6392\u5728\u540E\u9762 = \u542C\u5230\u7684\u665A\uFF1B\u5F00 = \u91CF\u5230\u5C31\u6E05\u6389\u91CD\u65B0\u8D77\u3002\u5173 = \u4EE5\u524D\u7684\u6837\u5B50\uFF0C\u53EA\u91CF\u3001\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF0C\u7528\u6765\u5BF9\u7167\uFF09")}<div class="set-row"><button class="btn" data-v="audio:autoflush">${autoFlushOn() ? _t("\u81EA\u52A8\u6E05\u6389\uFF1A\u5F00") : _t("\u81EA\u52A8\u6E05\u6389\uFF1A\u5173\uFF08\u4EE5\u524D\u7684\u6837\u5B50\uFF09")}</button></div></div><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u5E73\u65F6\u53EA\u5728\u6309\u952E\u665A\u4E86\u7684\u65F6\u5019\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\uFF1B\u6253\u5F00 = \u6BCF\u6B21\u6309\u952E\u90FD\u9732\uFF0C\u4E0D\u665A\u4E5F\u9732")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5F00") : _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8BD5\u9A8C\uFF1A\u58F0\u97F3\u4FDD\u6301\u9192\u7740\uFF08\u653E\u4E00\u4E2A\u542C\u4E0D\u89C1\u7684\u6781\u8F7B\u4FE1\u53F7\uFF0C\u770B\u7CFB\u7EDF\u8FD8\u4F1A\u4E0D\u4F1A\u628A\u58F0\u97F3\u8BBE\u5907\u505C\u6389\uFF1B\u6CA1\u8BC1\u5B9E\u6709\u7528\uFF0C\u9ED8\u8BA4\u5173\uFF0C\u591A\u8D39\u4E00\u70B9\u7535\uFF09")}<div class="set-row"><button class="btn" data-v="audio:awake">${keepAwakeOn() ? _t("\u4FDD\u6301\u9192\u7740\uFF1A\u5F00") : _t("\u4FDD\u6301\u9192\u7740\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div><details class="set-credit set-dev"><summary>${_t("\u5F00\u53D1\u8005")}</summary><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc10(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u5E73\u65F6\u53EA\u5728\u6309\u952E\u665A\u4E86\u7684\u65F6\u5019\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\uFF1B\u6253\u5F00 = \u6BCF\u6B21\u6309\u952E\u90FD\u9732\uFF0C\u4E0D\u665A\u4E5F\u9732")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5F00") : _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -51141,16 +51106,6 @@ ${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_
       deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null);
       diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`);
       e10.target.closest("button").textContent = feelAlways ? _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5F00") : _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5173");
-    } else if (v === "audio:autoflush") {
-      const on2 = !autoFlushOn();
-      setAutoFlush(on2);
-      deviceKvSet(KV_AUTO_FLUSH, on2 ? null : "0");
-      e10.target.closest("button").textContent = on2 ? _t("\u81EA\u52A8\u6E05\u6389\uFF1A\u5F00") : _t("\u81EA\u52A8\u6E05\u6389\uFF1A\u5173\uFF08\u4EE5\u524D\u7684\u6837\u5B50\uFF09");
-    } else if (v === "audio:awake") {
-      const on2 = !keepAwakeOn();
-      setKeepAwake(on2);
-      deviceKvSet(KV_KEEP_AWAKE, on2 ? "1" : null);
-      e10.target.closest("button").textContent = on2 ? _t("\u4FDD\u6301\u9192\u7740\uFF1A\u5F00") : _t("\u4FDD\u6301\u9192\u7740\uFF1A\u5173");
     } else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
@@ -55306,51 +55261,29 @@ function midiStatusHtml(s10) {
   if (s10.k === "off") return _t("\u7434\u7528 USB \u63D2\u4E0A\u7535\u8111\uFF0C\u70B9\u300C\u8FDE\u63A5\u300D\uFF08\u6D4F\u89C8\u5668\u4F1A\u95EE\u4E00\u6B21\uFF0C\u4EE5\u540E\u5F00 app \u81EA\u5DF1\u63A5\u4E0A\uFF09");
   return s10.inputs.length ? _t("\u63A5\u7740\uFF1A{p}\u3002\u5F39\u7684\u97F3\u6309\u5149\u6807\u5904\u7684\u957F\u77ED\u5199\u8FDB\u8C31\uFF1B\u300C\u5F39\u300D\u5F00\u7740 / \u8BCD / \u542C\u91CC\u53EA\u51FA\u58F0", { p: esc10(s10.inputs.join("\u3001")) }) : _t("\u5F00\u7740\uFF0C\u8FD8\u6CA1\u63D2\u7434\uFF08\u63D2\u4E0A\u5C31\u8BA4\uFF09");
 }
-var audioWatchTimer = 0;
-function watchAudioFor(ms) {
-  clearInterval(audioWatchTimer);
-  const until = performance.now() + ms;
-  audioWatchTimer = window.setInterval(() => {
-    const t10 = performance.now();
-    audioWatch.check(t10);
-    if (t10 > until) clearInterval(audioWatchTimer);
-  }, 250);
-}
 onAudioNote((m2) => diagNote("audio", m2));
 {
-  let armed = false;
   const warm = () => {
     const c10 = audioCtxIfAny();
     if (c10 && c10.state === "running") return;
     warmAudio();
-    if (!armed) {
-      armed = true;
-      audioWatch.arm(performance.now());
-      watchAudioFor(4e3);
-    }
   };
   for (const e10 of ["pointerdown", "pointerup", "touchend", "click", "keydown"]) window.addEventListener(e10, warm, true);
 }
-window.setInterval(() => {
-  if (document.visibilityState === "visible" && audioCtxIfAny()) audioWatch.check(performance.now());
-}, 1e3);
-if (deviceKvGet(KV_AUTO_FLUSH) === "0") setAutoFlush(false);
 feelAlways = deviceKvGet(KV_FEEL_ALWAYS) === "1";
-setKeepAwake(deviceKvGet(KV_KEEP_AWAKE) === "1");
+window.setInterval(() => {
+  if (document.visibilityState === "visible" && !soundsHeld.size && performance.now() - soundAt > 600 && !engine.playing && !perfApi.preparing) idleFlushAudio();
+}, 1e3);
 document.addEventListener("visibilitychange", () => {
   if (studio.isOpen) {
     engine.meter(document.visibilityState === "visible");
     syncSpectrum();
   }
-  if (document.visibilityState !== "visible") {
-    clearInterval(audioWatchTimer);
-    return;
-  }
+  if (document.visibilityState !== "visible") return;
   if (!audioCtxIfAny()) return;
   const c10 = singer.unlock();
+  audioShown();
   resetLatencyLog();
-  audioWatch.arm(performance.now());
-  watchAudioFor(3e3);
   const ts2 = typeof c10.getOutputTimestamp === "function" ? c10.getOutputTimestamp() : null;
   diagNote("audio", `visible again: ctx ${c10.state}, playing ${engine.playing}, currentTime ${c10.currentTime.toFixed(3)}, ts ${ts2 ? `${ts2.contextTime?.toFixed(3)} @ ${ts2.performanceTime?.toFixed(0)}` : "none"}, now ${performance.now().toFixed(0)}`);
 });
@@ -55430,4 +55363,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d173c72b1bc4.mjs.map
+//# sourceMappingURL=moonsinger-40157a46d7b3.mjs.map

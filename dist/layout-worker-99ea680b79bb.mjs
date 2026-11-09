@@ -2068,14 +2068,8 @@ var S = {
   "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Keys are late: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms \xB7 slowest step {slow} (tap to hide this time)" },
   "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms (tap to hide this time)" },
   "\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u5E73\u65F6\u53EA\u5728\u6309\u952E\u665A\u4E86\u7684\u65F6\u5019\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\uFF1B\u6253\u5F00 = \u6BCF\u6B21\u6309\u952E\u90FD\u9732\uFF0C\u4E0D\u665A\u4E5F\u9732": { en: "Key-feel numbers (for chasing latency): normally a line appears above the keys only when keys are late; on = shown on every key press, late or not" },
-  "\u58F0\u97F3\u6392\u961F\u81EA\u52A8\u6E05\u6389\uFF08\u58F0\u97F3\u8BBE\u5907\u521A\u8D77\u6765\u65F6\u4F1A\u4E00\u53E3\u6C14\u591A\u7B97\u51E0\u767E\u6BEB\u79D2\u7684\u58F0\u97F3\uFF0C\u4E4B\u540E\u6BCF\u4E2A\u97F3\u90FD\u6392\u5728\u540E\u9762 = \u542C\u5230\u7684\u665A\uFF1B\u5F00 = \u91CF\u5230\u5C31\u6E05\u6389\u91CD\u65B0\u8D77\u3002\u5173 = \u4EE5\u524D\u7684\u6837\u5B50\uFF0C\u53EA\u91CF\u3001\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF0C\u7528\u6765\u5BF9\u7167\uFF09": { en: "Clear backed-up audio automatically (when the audio device starts it renders a few hundred ms of sound in one burst, and every note after that waits behind it = you hear it late; on = clear it and restart as soon as it is measured. Off = the old behaviour: measure and log only, for comparison)" },
-  "\u81EA\u52A8\u6E05\u6389\uFF1A\u5F00": { en: "Auto-clear: on" },
-  "\u81EA\u52A8\u6E05\u6389\uFF1A\u5173\uFF08\u4EE5\u524D\u7684\u6837\u5B50\uFF09": { en: "Auto-clear: off (old behaviour)" },
   "\u4E00\u76F4\u663E\u793A\uFF1A\u5F00": { en: "Always show: on" },
   "\u4E00\u76F4\u663E\u793A\uFF1A\u5173": { en: "Always show: off" },
-  "\u8BD5\u9A8C\uFF1A\u58F0\u97F3\u4FDD\u6301\u9192\u7740\uFF08\u653E\u4E00\u4E2A\u542C\u4E0D\u89C1\u7684\u6781\u8F7B\u4FE1\u53F7\uFF0C\u770B\u7CFB\u7EDF\u8FD8\u4F1A\u4E0D\u4F1A\u628A\u58F0\u97F3\u8BBE\u5907\u505C\u6389\uFF1B\u6CA1\u8BC1\u5B9E\u6709\u7528\uFF0C\u9ED8\u8BA4\u5173\uFF0C\u591A\u8D39\u4E00\u70B9\u7535\uFF09": { en: "Experiment: keep audio awake (plays an inaudible, extremely quiet signal to see whether the system still stops the audio device; not proven to help, off by default, uses a little more battery)" },
-  "\u4FDD\u6301\u9192\u7740\uFF1A\u5F00": { en: "Keep awake: on" },
-  "\u4FDD\u6301\u9192\u7740\uFF1A\u5173": { en: "Keep awake: off" },
   "\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355": { en: "This section's menu" },
   "\u9690\u85CF {n}": { en: "{n} hidden" },
   "\u8FD9\u4E00\u6BB5\u6709 {n} \u4F4D\u9690\u85CF\u7740\uFF08\u4E0D\u6392\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u770B\u662F\u8C01\u3001\u653E\u51FA\u6765": { en: "{n} {n|part is|parts are} hidden in this section (not laid out, no space taken): tap to see who and show them" },
@@ -5689,4 +5683,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-69f8ac20971a.mjs.map
+//# sourceMappingURL=layout-worker-99ea680b79bb.mjs.map

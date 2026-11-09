@@ -2,7 +2,6 @@
 // 加新测试文件：在下面 import 一行即可。
 import "./smoke.test.ts";
 import "./feel-probe.test.ts";
-import "./audio-watch.test.ts";
 import "./audio-queue.test.ts";
 import "./engrave-printable.test.ts";
 import "./catalog-i18n.test.mjs";

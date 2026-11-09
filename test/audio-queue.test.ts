@@ -41,10 +41,10 @@ describe("排着的声音：时钟比墙上的钟多走了多少", () => {
     m.feed(120, 0.58); m.feed(160, 0.62); m.feed(200, 0.66);
     assert(m.queued(200, 0.66)! <= 5);
   });
-  it("自动清：多算了才清；关了不清；连着清 2 次还是多 = 不再清（不来回重启）", () => {
-    eq(shouldAutoFlush(550, true, 0), true); eq(shouldAutoFlush(550, true, 1), true); eq(shouldAutoFlush(550, true, 2), false);
-    eq(shouldAutoFlush(550, false, 0), false, "开关关着 = 以前的样子");
-    eq(shouldAutoFlush(AUTO_FLUSH_MS, true, 0), false); eq(shouldAutoFlush(30, true, 0), false);
+  it("起来之后：多算了才清；连着清 2 次还是多 = 这一次不再清（不来回重起）；线划在「好的 1–2 ms」和「不好的四十多」中间", () => {
+    eq(shouldAutoFlush(224, 0), true); eq(shouldAutoFlush(45, 0), true, "四十多 = 清（user 11-08：手感不好的时候显示四十多毫秒）"); eq(shouldAutoFlush(45, 1), true); eq(shouldAutoFlush(45, 2), false);
+    eq(shouldAutoFlush(2, 0), false); eq(shouldAutoFlush(AUTO_FLUSH_MS, 0), false);
+    assert(AUTO_FLUSH_MS >= 15 && AUTO_FLUSH_MS < 40, "线在「干净的读数 + 量的误差」和「四十多」之间");
     assert(BURST_SETTLE_MS >= 300 && BURST_SETTLE_MS <= 1500);
   });
 });
