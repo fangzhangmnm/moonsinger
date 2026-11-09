@@ -4784,9 +4784,13 @@ var S = {
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
   "\u72EC": { en: "S" },
-  "\u6309\u952E\u665A\u4E86\uFF1A\u6392\u961F {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Keys are late: queued {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 slowest step {slow} (tap to hide this time)" },
-  "\u624B\u611F\uFF1A\u6392\u961F {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: queued {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms (tap to hide this time)" },
+  "\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u5927\u7EA6 {qd} ms\uFF08\u542C\u5230\u7684\u6BD4\u6309\u4E0B\u665A\u8FD9\u4E48\u591A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms": { en: "Audio is backed up: about {qd} ms (what you hear is this late) \xB7 TAP HERE to clear it | main-thread wait {q} ms \xB7 to sound {s} ms \xB7 audio block usual {t} ms / longest {a} ms" },
+  "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Keys are late: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms \xB7 slowest step {slow} (tap to hide this time)" },
+  "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms (tap to hide this time)" },
   "\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u5E73\u65F6\u53EA\u5728\u6309\u952E\u665A\u4E86\u7684\u65F6\u5019\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\uFF1B\u6253\u5F00 = \u6BCF\u6B21\u6309\u952E\u90FD\u9732\uFF0C\u4E0D\u665A\u4E5F\u9732": { en: "Key-feel numbers (for chasing latency): normally a line appears above the keys only when keys are late; on = shown on every key press, late or not" },
+  "\u58F0\u97F3\u6392\u961F\u81EA\u52A8\u6E05\u6389\uFF08\u58F0\u97F3\u8BBE\u5907\u521A\u8D77\u6765\u65F6\u4F1A\u4E00\u53E3\u6C14\u591A\u7B97\u51E0\u767E\u6BEB\u79D2\u7684\u58F0\u97F3\uFF0C\u4E4B\u540E\u6BCF\u4E2A\u97F3\u90FD\u6392\u5728\u540E\u9762 = \u542C\u5230\u7684\u665A\uFF1B\u5F00 = \u91CF\u5230\u5C31\u6E05\u6389\u91CD\u65B0\u8D77\u3002\u5173 = \u4EE5\u524D\u7684\u6837\u5B50\uFF0C\u53EA\u91CF\u3001\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF0C\u7528\u6765\u5BF9\u7167\uFF09": { en: "Clear backed-up audio automatically (when the audio device starts it renders a few hundred ms of sound in one burst, and every note after that waits behind it = you hear it late; on = clear it and restart as soon as it is measured. Off = the old behaviour: measure and log only, for comparison)" },
+  "\u81EA\u52A8\u6E05\u6389\uFF1A\u5F00": { en: "Auto-clear: on" },
+  "\u81EA\u52A8\u6E05\u6389\uFF1A\u5173\uFF08\u4EE5\u524D\u7684\u6837\u5B50\uFF09": { en: "Auto-clear: off (old behaviour)" },
   "\u4E00\u76F4\u663E\u793A\uFF1A\u5F00": { en: "Always show: on" },
   "\u4E00\u76F4\u663E\u793A\uFF1A\u5173": { en: "Always show: off" },
   "\u8BD5\u9A8C\uFF1A\u58F0\u97F3\u4FDD\u6301\u9192\u7740\uFF08\u653E\u4E00\u4E2A\u542C\u4E0D\u89C1\u7684\u6781\u8F7B\u4FE1\u53F7\uFF0C\u770B\u7CFB\u7EDF\u8FD8\u4F1A\u4E0D\u4F1A\u628A\u58F0\u97F3\u8BBE\u5907\u505C\u6389\uFF1B\u6CA1\u8BC1\u5B9E\u6709\u7528\uFF0C\u9ED8\u8BA4\u5173\uFF0C\u591A\u8D39\u4E00\u70B9\u7535\uFF09": { en: "Experiment: keep audio awake (plays an inaudible, extremely quiet signal to see whether the system still stops the audio device; not proven to help, off by default, uses a little more battery)" },
@@ -5021,7 +5025,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.27-2026-11-08";
+var APP_VERSION = "v0.16.28-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28298,15 +28302,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-2102d7875904.mjs");
+      return pick(() => "singer-worker-16261b431f6c.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-a16266caf801.mjs");
+      return pick(() => "layout-worker-69f8ac20971a.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-90a9c8fdf024.mjs");
+      return pick(() => "encode-worker-47e0cb827ae1.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -28387,23 +28391,38 @@ function onAudioNote(f2) {
 }
 var pageHidden = () => typeof document !== "undefined" && document.visibilityState === "hidden";
 var rejectNoted = "";
+var asleep = (c10) => c10.state === "suspended" || c10.state === "interrupted";
+function resumeOnce(c10) {
+  c10.resume().catch((e10) => {
+    const m2 = String(e10?.message ?? e10);
+    if (m2 !== rejectNoted) {
+      rejectNoted = m2;
+      noteFn(`resume rejected: ${m2}`);
+    }
+  });
+}
+var retryTimer;
+var retryUntil = 0;
 function wake(c10) {
   if (pageHidden()) return;
-  if (c10.state === "suspended" || c10.state === "interrupted") {
-    c10.resume().catch((e10) => {
-      const m2 = String(e10?.message ?? e10);
-      if (m2 !== rejectNoted) {
-        rejectNoted = m2;
-        noteFn(`resume rejected: ${m2}`);
-      }
-    });
-  }
+  if (!asleep(c10)) return;
+  resumeOnce(c10);
+  retryUntil = performance.now() + 1e4;
+  if (retryTimer === void 0) retryTimer = setInterval(() => {
+    if (!asleep(c10) || pageHidden() || performance.now() > retryUntil) {
+      clearInterval(retryTimer);
+      retryTimer = void 0;
+      return;
+    }
+    resumeOnce(c10);
+  }, 300);
 }
 function audioCtx() {
   if (!ctx) {
     ctx = new AudioContext();
     attach(ctx);
     if (awakeOn) startKeepAwake(ctx);
+    armQueue("created");
   }
   wake(ctx);
   return ctx;
@@ -28423,7 +28442,104 @@ function attach(c10) {
     if (s10 === prev) return;
     noteFn(`state ${prev} \u2192 ${s10} (page ${pageHidden() ? "hidden" : "visible"}, t=${c10.currentTime.toFixed(2)})`);
     prev = s10;
+    if (s10 === "running") {
+      const mine = performance.now() - flushAt < 5e3;
+      if (!mine) autoCount = 0;
+      armQueue(mine ? "flush" : "running");
+    }
   });
+}
+function createQueueMeter() {
+  let pending = true, last = null, anchor = null, slack = 0, burstMs = null;
+  const raw = (now2, ct2) => (ct2 - anchor.ct) * 1e3 - (now2 - anchor.at);
+  return {
+    arm() {
+      pending = true;
+      anchor = null;
+      last = null;
+      slack = 0;
+      burstMs = null;
+    },
+    feed(now2, ct2) {
+      if (pending) {
+        if (last && ct2 !== last.ct) {
+          anchor = last;
+          pending = false;
+        } else {
+          last = { at: now2, ct: ct2 };
+          return;
+        }
+      }
+      if (!anchor) return;
+      const q2 = raw(now2, ct2);
+      if (q2 < slack) slack = q2;
+      if (burstMs === null && now2 - anchor.at >= BURST_SETTLE_MS) burstMs = Math.round(q2 - slack);
+    },
+    queued(now2, ct2) {
+      return anchor ? Math.max(0, Math.round(raw(now2, ct2) - slack)) : null;
+    },
+    burst: () => burstMs
+  };
+}
+var BURST_SETTLE_MS = 600;
+var AUTO_FLUSH_MS = 120;
+function shouldAutoFlush(burstMs, on2, doneInARow) {
+  return on2 && burstMs > AUTO_FLUSH_MS && doneInARow < 2;
+}
+var autoFlush = true;
+var autoCount = 0;
+var flushAt = -1e9;
+function setAutoFlush(on2) {
+  autoFlush = on2;
+  noteFn(`auto-flush ${on2 ? "on" : "off (old behaviour: measure only)"}`);
+}
+var autoFlushOn = () => autoFlush;
+var queue = createQueueMeter();
+var queueTimer;
+var queueUntil = 0;
+var burstNoted = true;
+var queueWhy = "";
+function armQueue(why2) {
+  queueWhy = why2;
+  queue.arm();
+  burstNoted = false;
+  queueUntil = performance.now() + 2e4;
+  if (queueTimer !== void 0) return;
+  queueTimer = setInterval(() => {
+    const c10 = ctx, now2 = performance.now();
+    if (!c10 || now2 > queueUntil) {
+      clearInterval(queueTimer);
+      queueTimer = void 0;
+      return;
+    }
+    if (pageHidden()) return;
+    queue.feed(now2, c10.currentTime);
+    const b3 = queue.burst();
+    if (b3 !== null && !burstNoted) {
+      burstNoted = true;
+      const go = shouldAutoFlush(b3, autoFlush, autoCount);
+      noteFn(`start burst (${queueWhy}): rendered ahead \u2248 ${b3} ms${go ? " \u2192 auto-flush" : b3 > AUTO_FLUSH_MS ? autoFlush ? ` (auto-flush gave up after ${autoCount})` : " (auto-flush off)" : ""}`);
+      if (go) {
+        autoCount++;
+        flushAudio("auto");
+      } else if (b3 <= AUTO_FLUSH_MS) autoCount = 0;
+    }
+  }, 40);
+}
+function audioQueuedMs() {
+  const c10 = ctx;
+  if (!c10 || c10.state !== "running") return null;
+  const now2 = performance.now();
+  queue.feed(now2, c10.currentTime);
+  return queue.queued(now2, c10.currentTime);
+}
+function flushAudio(who = "tap") {
+  const c10 = ctx;
+  if (!c10 || c10.state !== "running") return;
+  noteFn(`flush requested (${who}; queued \u2248 ${audioQueuedMs() ?? "?"} ms)`);
+  flushAt = performance.now();
+  if (who === "tap") autoCount = 0;
+  void c10.suspend().then(() => c10.resume()).catch((e10) => noteFn(`flush failed: ${String(e10?.message ?? e10)}`));
 }
 var asleepNotedAt = -1e9;
 function noteKeyAsleep(now2) {
@@ -28802,7 +28918,7 @@ function describe(s10, b3) {
 }
 
 // src/app/feel-probe.ts
-var FEEL_LIMITS = { queue: 80, toSound: 80, stall: 150, audioStep: 150, audioTypical: 60 };
+var FEEL_LIMITS = { queue: 80, toSound: 80, stall: 150, audioStep: 150, audioTypical: 60, queued: 100 };
 var AWAKE_MS = 2e4;
 var CALM_MS = 5e3;
 var WINDOW_MS = 5e3;
@@ -28829,10 +28945,10 @@ function createFeelProbe(host2, now2 = () => performance.now(), raf = (cb2) => {
     return a10[a10.length >> 1];
   };
   function read() {
-    return { queue: Math.round(med(q2)), toSound: Math.round(med(s10)), stall: Math.round(maxOf(gaps)), audioStep: Math.round(maxOf(steps)), audioTypical: Math.round(med(adv.map((x2) => x2.v))) };
+    return { queue: Math.round(med(q2)), toSound: Math.round(med(s10)), stall: Math.round(maxOf(gaps)), audioStep: Math.round(maxOf(steps)), audioTypical: Math.round(med(adv.map((x2) => x2.v))), queued: host2.audioNow()?.queued ?? null };
   }
   function over(r10) {
-    return r10.queue > FEEL_LIMITS.queue || r10.toSound > FEEL_LIMITS.toSound || r10.stall > FEEL_LIMITS.stall || r10.audioStep > FEEL_LIMITS.audioStep || r10.audioTypical > FEEL_LIMITS.audioTypical;
+    return r10.queue > FEEL_LIMITS.queue || r10.toSound > FEEL_LIMITS.toSound || r10.stall > FEEL_LIMITS.stall || r10.audioStep > FEEL_LIMITS.audioStep || r10.audioTypical > FEEL_LIMITS.audioTypical || (r10.queued ?? 0) > FEEL_LIMITS.queued;
   }
   let sess = { keys: 0, stall: 0, step: 0 };
   function judge(t10) {
@@ -28850,12 +28966,12 @@ function createFeelProbe(host2, now2 = () => performance.now(), raf = (cb2) => {
       calmSince = 0;
       shown2 = true;
       host2.report(host2.text(r10, true));
-      const a10 = host2.audioNow(), key = `${r10.queue}|${r10.toSound}|${r10.stall}|${r10.audioStep}|${r10.audioTypical}`;
+      const a10 = host2.audioNow(), key = `${r10.queue}|${r10.toSound}|${r10.stall}|${r10.audioStep}|${r10.audioTypical}|${Math.round((r10.queued ?? 0) / 50)}`;
       if (!worst || r10.audioStep > worst.audioStep || r10.stall > worst.stall || r10.queue > worst.queue || r10.toSound > worst.toSound) worst = r10;
       if (key !== lastNoted && t10 - lastNoteAt >= 500) {
         lastNoted = key;
         lastNoteAt = t10;
-        host2.note(`key queue ${r10.queue} ms, to sound ${r10.toSound} ms, max stall ${r10.stall} ms, audio step typical ${r10.audioTypical} ms / max ${r10.audioStep} ms${a10 ? ` (ctx ${a10.state}, sr ${a10.sr}${a10.info ? `, ${a10.info}` : ""})` : ""}`);
+        host2.note(`key queue ${r10.queue} ms, to sound ${r10.toSound} ms, max stall ${r10.stall} ms, audio step typical ${r10.audioTypical} ms / max ${r10.audioStep} ms, queued ${r10.queued ?? "?"} ms${a10 ? ` (ctx ${a10.state}, sr ${a10.sr}${a10.info ? `, ${a10.info}` : ""})` : ""}`);
       }
     } else if (shown2) {
       if (!calmSince) calmSince = t10;
@@ -28904,7 +29020,7 @@ function createFeelProbe(host2, now2 = () => performance.now(), raf = (cb2) => {
         host2.report(null);
       }
       const r10 = read(), a11 = host2.audioNow();
-      if (sess.keys) host2.note(`session: ${sess.keys} keys, queue ${r10.queue} ms, to sound ${r10.toSound} ms, max stall ${sess.stall} ms, audio step typical ${r10.audioTypical} ms / max ${sess.step} ms${a11 ? ` (ctx ${a11.state}, sr ${a11.sr}${a11.info ? `, ${a11.info}` : ""})` : ""}`);
+      if (sess.keys) host2.note(`session: ${sess.keys} keys, queue ${r10.queue} ms, to sound ${r10.toSound} ms, max stall ${sess.stall} ms, audio step typical ${r10.audioTypical} ms / max ${sess.step} ms, queued ${r10.queued ?? "?"} ms${a11 ? ` (ctx ${a11.state}, sr ${a11.sr}${a11.info ? `, ${a11.info}` : ""})` : ""}`);
       sess = { keys: 0, stall: 0, step: 0 };
       worst = null;
       return;
@@ -36944,7 +37060,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "36b586588a13084c" : "dev";
+var CORE_HASH = true ? "c10943dd750af2e4" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -38404,13 +38520,13 @@ function createGateUi(o10) {
 // src/app/export-all.ts
 async function exportAll(p2) {
   const ids = [], failed = [];
-  const queue = [""];
-  while (queue.length) {
-    const dir = queue.shift();
+  const queue2 = [""];
+  while (queue2.length) {
+    const dir = queue2.shift();
     try {
       const f2 = await p2.listFolder(dir);
       ids.push(...f2.identifiers);
-      queue.push(...f2.folders);
+      queue2.push(...f2.folders);
     } catch {
       failed.push(dir ? _t("{dir}/\uFF08\u6574\u4E2A\u6587\u4EF6\u5939\uFF09", { dir }) : _t("\uFF08\u6839\u6587\u4EF6\u5939\uFF09"));
     }
@@ -49974,10 +50090,17 @@ feelChip.hidden = true;
 document.body.appendChild(feelChip);
 var feelMuted = false;
 var feelText = "";
+var feelFlush = false;
 feelChip.addEventListener("click", () => {
+  if (feelFlush) {
+    flushAudio("tap");
+    feelText = "";
+    return;
+  }
   feelMuted = true;
   feelChip.hidden = true;
 });
+var KV_AUTO_FLUSH = "audio-auto-flush";
 var KV_FEEL_ALWAYS = "feel-always";
 var KV_KEEP_AWAKE = "audio-keep-awake";
 var feelAlways = false;
@@ -49988,7 +50111,7 @@ var slowestStep = () => {
 var feel = createFeelProbe({
   audioNow: () => {
     const c10 = audioCtxIfAny();
-    return c10 ? { t: c10.currentTime, state: c10.state, sr: c10.sampleRate, info: `baseLatency ${Math.round((c10.baseLatency ?? 0) * 1e3)} ms, outputLatency ${Math.round((c10.outputLatency ?? 0) * 1e3)} ms, ${navigator.standalone || matchMedia("(display-mode: standalone)").matches ? "standalone" : "tab"}, media elements ${document.querySelectorAll("audio, video").length}` } : null;
+    return c10 ? { t: c10.currentTime, state: c10.state, sr: c10.sampleRate, queued: audioQueuedMs(), info: `baseLatency ${Math.round((c10.baseLatency ?? 0) * 1e3)} ms, outputLatency ${Math.round((c10.outputLatency ?? 0) * 1e3)} ms, ${navigator.standalone || matchMedia("(display-mode: standalone)").matches ? "standalone" : "tab"}, media elements ${document.querySelectorAll("audio, video").length}` } : null;
   },
   always: () => feelAlways,
   report: (text2) => {
@@ -50015,7 +50138,12 @@ var feel = createFeelProbe({
     }
   },
   note: (msg) => diagNote("feel", `${msg}; slowest ${slowestStep()}`),
-  text: (r10, late) => late ? _t("\u6309\u952E\u665A\u4E86\uFF1A\u6392\u961F {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep, slow: slowestStep() }) : _t("\u624B\u611F\uFF1A\u6392\u961F {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep })
+  text: (r10, late) => {
+    feelFlush = (r10.queued ?? 0) > 100;
+    const qd = r10.queued === null ? "?" : String(r10.queued);
+    if (feelFlush) return _t("\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u5927\u7EA6 {qd} ms\uFF08\u542C\u5230\u7684\u6BD4\u6309\u4E0B\u665A\u8FD9\u4E48\u591A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms", { qd, q: r10.queue, s: r10.toSound, t: r10.audioTypical, a: r10.audioStep });
+    return late ? _t("\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep, qd, slow: slowestStep() }) : _t("\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09", { q: r10.queue, s: r10.toSound, st: r10.stall, t: r10.audioTypical, a: r10.audioStep, qd });
+  }
 });
 var sound = {
   down: (p2, id2 = "main") => {
@@ -50921,7 +51049,7 @@ ${esc10(CREDIT.attribution.join("\n"))}</pre>` + (lang() === "zh" ? `<div class=
 
 ${esc10(CREDIT_TRANSLATIONS.zh.terms)}</pre>` : "") + `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc10(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div><details class="set-credit set-dev"><summary>${_t("\u5F00\u53D1\u8005")}</summary><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc10(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u5E73\u65F6\u53EA\u5728\u6309\u952E\u665A\u4E86\u7684\u65F6\u5019\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\uFF1B\u6253\u5F00 = \u6BCF\u6B21\u6309\u952E\u90FD\u9732\uFF0C\u4E0D\u665A\u4E5F\u9732")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5F00") : _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8BD5\u9A8C\uFF1A\u58F0\u97F3\u4FDD\u6301\u9192\u7740\uFF08\u653E\u4E00\u4E2A\u542C\u4E0D\u89C1\u7684\u6781\u8F7B\u4FE1\u53F7\uFF0C\u770B\u7CFB\u7EDF\u8FD8\u4F1A\u4E0D\u4F1A\u628A\u58F0\u97F3\u8BBE\u5907\u505C\u6389\uFF1B\u6CA1\u8BC1\u5B9E\u6709\u7528\uFF0C\u9ED8\u8BA4\u5173\uFF0C\u591A\u8D39\u4E00\u70B9\u7535\uFF09")}<div class="set-row"><button class="btn" data-v="audio:awake">${keepAwakeOn() ? _t("\u4FDD\u6301\u9192\u7740\uFF1A\u5F00") : _t("\u4FDD\u6301\u9192\u7740\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div><details class="set-credit set-dev"><summary>${_t("\u5F00\u53D1\u8005")}</summary><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc10(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u58F0\u97F3\u6392\u961F\u81EA\u52A8\u6E05\u6389\uFF08\u58F0\u97F3\u8BBE\u5907\u521A\u8D77\u6765\u65F6\u4F1A\u4E00\u53E3\u6C14\u591A\u7B97\u51E0\u767E\u6BEB\u79D2\u7684\u58F0\u97F3\uFF0C\u4E4B\u540E\u6BCF\u4E2A\u97F3\u90FD\u6392\u5728\u540E\u9762 = \u542C\u5230\u7684\u665A\uFF1B\u5F00 = \u91CF\u5230\u5C31\u6E05\u6389\u91CD\u65B0\u8D77\u3002\u5173 = \u4EE5\u524D\u7684\u6837\u5B50\uFF0C\u53EA\u91CF\u3001\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF0C\u7528\u6765\u5BF9\u7167\uFF09")}<div class="set-row"><button class="btn" data-v="audio:autoflush">${autoFlushOn() ? _t("\u81EA\u52A8\u6E05\u6389\uFF1A\u5F00") : _t("\u81EA\u52A8\u6E05\u6389\uFF1A\u5173\uFF08\u4EE5\u524D\u7684\u6837\u5B50\uFF09")}</button></div></div><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u5E73\u65F6\u53EA\u5728\u6309\u952E\u665A\u4E86\u7684\u65F6\u5019\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\uFF1B\u6253\u5F00 = \u6BCF\u6B21\u6309\u952E\u90FD\u9732\uFF0C\u4E0D\u665A\u4E5F\u9732")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5F00") : _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8BD5\u9A8C\uFF1A\u58F0\u97F3\u4FDD\u6301\u9192\u7740\uFF08\u653E\u4E00\u4E2A\u542C\u4E0D\u89C1\u7684\u6781\u8F7B\u4FE1\u53F7\uFF0C\u770B\u7CFB\u7EDF\u8FD8\u4F1A\u4E0D\u4F1A\u628A\u58F0\u97F3\u8BBE\u5907\u505C\u6389\uFF1B\u6CA1\u8BC1\u5B9E\u6709\u7528\uFF0C\u9ED8\u8BA4\u5173\uFF0C\u591A\u8D39\u4E00\u70B9\u7535\uFF09")}<div class="set-row"><button class="btn" data-v="audio:awake">${keepAwakeOn() ? _t("\u4FDD\u6301\u9192\u7740\uFF1A\u5F00") : _t("\u4FDD\u6301\u9192\u7740\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -51002,6 +51130,11 @@ ${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_
       deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null);
       diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`);
       e10.target.closest("button").textContent = feelAlways ? _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5F00") : _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5173");
+    } else if (v === "audio:autoflush") {
+      const on2 = !autoFlushOn();
+      setAutoFlush(on2);
+      deviceKvSet(KV_AUTO_FLUSH, on2 ? null : "0");
+      e10.target.closest("button").textContent = on2 ? _t("\u81EA\u52A8\u6E05\u6389\uFF1A\u5F00") : _t("\u81EA\u52A8\u6E05\u6389\uFF1A\u5173\uFF08\u4EE5\u524D\u7684\u6837\u5B50\uFF09");
     } else if (v === "audio:awake") {
       const on2 = !keepAwakeOn();
       setKeepAwake(on2);
@@ -55189,6 +55322,7 @@ onAudioNote((m2) => diagNote("audio", m2));
 window.setInterval(() => {
   if (document.visibilityState === "visible" && audioCtxIfAny()) audioWatch.check(performance.now());
 }, 1e3);
+if (deviceKvGet(KV_AUTO_FLUSH) === "0") setAutoFlush(false);
 feelAlways = deviceKvGet(KV_FEEL_ALWAYS) === "1";
 setKeepAwake(deviceKvGet(KV_KEEP_AWAKE) === "1");
 document.addEventListener("visibilitychange", () => {
@@ -55284,4 +55418,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2bfc07beb040.mjs.map
+//# sourceMappingURL=moonsinger-547f3e00db13.mjs.map

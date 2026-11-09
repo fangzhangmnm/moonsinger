@@ -15,7 +15,7 @@
 
 export interface FeelHost {
   /** 音频时钟（没建 = null，不为了量而建）。 */
-  audioNow(): { t: number; state: string; sr: number; info?: string } | null;   // info = 黑匣子里多带的一句（浏览器报的延迟、是不是独立窗…），探针不读
+  audioNow(): { t: number; state: string; sr: number; info?: string; /** 排着的声音大约多少毫秒（宿主算，src/singer/audio.ts ⑤；量不出 = null）。 */ queued?: number | null } | null;   // info = 黑匣子里多带的一句（浏览器报的延迟、是不是独立窗…），探针不读
   /** 露 / 收（text = null 收起）。 */
   report(text: string | null): void;
   /** 黑匣子一条（已经节流过了）。 */
@@ -25,7 +25,7 @@ export interface FeelHost {
   /** 「一直显示」开着（查延迟时：不超门槛也露数字）。 */
   always?(): boolean;
 }
-export interface FeelReading { queue: number; toSound: number; stall: number; audioStep: number; audioTypical: number }
+export interface FeelReading { queue: number; toSound: number; stall: number; audioStep: number; audioTypical: number; /** 排着的声音（ms；量不出 = null）：听到的比按下晚这么多，而别的几项都看不出来。 */ queued: number | null }
 export interface FeelProbe {
   /** pad 音键 pointerdown 那一刻叫：ts = 事件的 timeStamp。 */
   touch(ts: number): void;
@@ -37,7 +37,7 @@ export interface FeelProbe {
 
 /** 门槛（ms）：超过 = 人能感觉到、该说出来。queue / toSound 80 = 两个动画帧还多；stall 150 = 一下明显的卡；audioStep 150 = 系统给的声音块比正常（iPad ≈ 3–12 ms）大了一个量级。 */
 //   audioTypical 60（2026-11-08 加）：每帧看一次时钟，正常读数 ≈ 一帧（16–17 ms）；平常一步就六十多 = 系统一次要三千个采样上下，按键已经拖手，但到不了 audioStep 的 150。
-export const FEEL_LIMITS = { queue: 80, toSound: 80, stall: 150, audioStep: 150, audioTypical: 60 } as const;
+export const FEEL_LIMITS = { queue: 80, toSound: 80, stall: 150, audioStep: 150, audioTypical: 60, queued: 100 } as const;
 const AWAKE_MS = 20_000, CALM_MS = 5_000, WINDOW_MS = 5_000;
 /** 事件 timeStamp 和 performance.now() 同一条时间轴才能相减（老 WebKit 给的是 epoch 毫秒 = 差出十几亿）：不合理 = 不算这一项。 */
 export function queueDelay(now: number, ts: number): number | null { const d = now - ts; return d >= 0 && d < 60_000 ? d : null; }
@@ -52,8 +52,8 @@ export function createFeelProbe(host: FeelHost, now: () => number = () => perfor
   const trim = (xs: { at: number; v: number }[], t: number) => { while (xs.length && xs[0].at < t - WINDOW_MS) xs.shift(); };
   const maxOf = (xs: { at: number; v: number }[]) => xs.reduce((m, x) => Math.max(m, x.v), 0);
   const med = (xs: number[]) => { if (!xs.length) return 0; const a = [...xs].sort((x, y) => x - y); return a[a.length >> 1]; };
-  function read(): FeelReading { return { queue: Math.round(med(q)), toSound: Math.round(med(s)), stall: Math.round(maxOf(gaps)), audioStep: Math.round(maxOf(steps)), audioTypical: Math.round(med(adv.map((x) => x.v))) }; }
-  function over(r: FeelReading): boolean { return r.queue > FEEL_LIMITS.queue || r.toSound > FEEL_LIMITS.toSound || r.stall > FEEL_LIMITS.stall || r.audioStep > FEEL_LIMITS.audioStep || r.audioTypical > FEEL_LIMITS.audioTypical; }
+  function read(): FeelReading { return { queue: Math.round(med(q)), toSound: Math.round(med(s)), stall: Math.round(maxOf(gaps)), audioStep: Math.round(maxOf(steps)), audioTypical: Math.round(med(adv.map((x) => x.v))), queued: host.audioNow()?.queued ?? null }; }
+  function over(r: FeelReading): boolean { return r.queue > FEEL_LIMITS.queue || r.toSound > FEEL_LIMITS.toSound || r.stall > FEEL_LIMITS.stall || r.audioStep > FEEL_LIMITS.audioStep || r.audioTypical > FEEL_LIMITS.audioTypical || (r.queued ?? 0) > FEEL_LIMITS.queued; }
   let sess = { keys: 0, stall: 0, step: 0 };   // 这一段按键（醒着的这一回）：按了几下、最坏到多少——睡的时候记一条，不管超没超（黑匣子里每段都有数）
   function judge(t: number): void {
     const r = read(); last = r;
@@ -61,10 +61,10 @@ export function createFeelProbe(host: FeelHost, now: () => number = () => perfor
     if (!over(r) && host.always?.()) { shown = true; calmSince = 0; host.report(host.text(r, false)); return; }
     if (over(r)) {
       calmSince = 0; shown = true; host.report(host.text(r, true));
-      const a = host.audioNow(), key = `${r.queue}|${r.toSound}|${r.stall}|${r.audioStep}|${r.audioTypical}`;
+      const a = host.audioNow(), key = `${r.queue}|${r.toSound}|${r.stall}|${r.audioStep}|${r.audioTypical}|${Math.round((r.queued ?? 0) / 50)}`;
       if (!worst || r.audioStep > worst.audioStep || r.stall > worst.stall || r.queue > worst.queue || r.toSound > worst.toSound) worst = r;
       // 黑匣子最多半秒一条（v0.16.25 一次停一秒 = 每帧一条、五十条数数；收起时另记一条「最坏到多少」）
-      if (key !== lastNoted && t - lastNoteAt >= 500) { lastNoted = key; lastNoteAt = t; host.note(`key queue ${r.queue} ms, to sound ${r.toSound} ms, max stall ${r.stall} ms, audio step typical ${r.audioTypical} ms / max ${r.audioStep} ms${a ? ` (ctx ${a.state}, sr ${a.sr}${a.info ? `, ${a.info}` : ""})` : ""}`); }
+      if (key !== lastNoted && t - lastNoteAt >= 500) { lastNoted = key; lastNoteAt = t; host.note(`key queue ${r.queue} ms, to sound ${r.toSound} ms, max stall ${r.stall} ms, audio step typical ${r.audioTypical} ms / max ${r.audioStep} ms, queued ${r.queued ?? "?"} ms${a ? ` (ctx ${a.state}, sr ${a.sr}${a.info ? `, ${a.info}` : ""})` : ""}`); }
     } else if (shown) { if (!calmSince) calmSince = t; if (t - calmSince > CALM_MS) { shown = false; calmSince = 0; host.report(null);
       if (worst) { host.note(`calm again; worst: key queue ${worst.queue} ms, to sound ${worst.toSound} ms, max stall ${worst.stall} ms, audio step max ${worst.audioStep} ms`); worst = null; } } }
   }
@@ -83,7 +83,7 @@ export function createFeelProbe(host: FeelHost, now: () => number = () => perfor
     if (t - lastTouchAt > AWAKE_MS) {
       awake = false; prevFrame = 0; prevAudio = null; prevAudioAt = 0; if (shown) { shown = false; host.report(null); }
       const r = read(), a = host.audioNow();
-      if (sess.keys) host.note(`session: ${sess.keys} keys, queue ${r.queue} ms, to sound ${r.toSound} ms, max stall ${sess.stall} ms, audio step typical ${r.audioTypical} ms / max ${sess.step} ms${a ? ` (ctx ${a.state}, sr ${a.sr}${a.info ? `, ${a.info}` : ""})` : ""}`);
+      if (sess.keys) host.note(`session: ${sess.keys} keys, queue ${r.queue} ms, to sound ${r.toSound} ms, max stall ${sess.stall} ms, audio step typical ${r.audioTypical} ms / max ${sess.step} ms, queued ${r.queued ?? "?"} ms${a ? ` (ctx ${a.state}, sr ${a.sr}${a.info ? `, ${a.info}` : ""})` : ""}`);
       sess = { keys: 0, stall: 0, step: 0 }; worst = null;
       return;
     }

@@ -7,8 +7,17 @@
 //   ① warmAudio()：第一次点屏幕 / 按键盘就建 + 叫醒（main.ts 常驻挂着；之后每次手势发现不在跑也顺手叫），设备尽量在按琴键之前起好。
 //   ② 看不见的时候不叫醒；resume 被拒 = 接住、记黑匣子一条。
 //   ③ 只记账、不动手：上下文每次换状态记一条；按键那一刻不在跑记一条；state 写着 running 而时钟超过 STUCK_MS 没走记一条、又走了再记一条（createAudioWatch）。
-// **撤掉的**（v0.16.26 出过货，v0.16.27 拿掉）：时钟停 1.5 秒就 suspend + resume「踢一脚」。真机上设备本来就要一秒多才起，踢一脚 = 把正在起的设备打断重来，
-//   第一个音从等 1 秒变成等 6.7 秒（user 11-08 截图「audio block usual 0 ms / longest 6711 ms」）。没在真机上证实有用的「修法」不许再往这里加。
+// **撤掉的**（v0.16.26 出过货，v0.16.27 拿掉）：时钟停 1.5 秒就 suspend + resume「踢一脚」——没在真机上证实有用就出了货。
+//   更正（v0.16.28）：当时把 user 截图里的「longest 6711 ms」算在它头上，是错的——那份黑匣子里那十秒上下文一直是 interrupted，踢一脚只在 running 时动手，没碰过它。
+//   真实情况 = 第一次按键 resume 了、系统没理，十秒后第二次按键才醒。所以 ④：手势里叫醒之后没醒 = 接着每 300 ms 再叫，叫 10 秒（只 resume，不 suspend）。
+// ⑤ 排队（v0.16.28；user 11-08「截屏上显示的延迟不算太高，但是我听到的很慢，就至少有三百到七百毫秒」）：
+//   设备刚起来时音频时钟先停一会儿、再一口气跳几百毫秒（第一份黑匣子：停 1 秒，跳 344 + 243）。一口气跳 = 一瞬间多算了半秒声音，它们排着队播，之后每个音都排在后面
+//   = 听到的晚半秒，而时钟、主线程、每一步看起来都正常（WebKit 的 getOutputTimestamp / outputLatency 也不报这一段）。「切后台回来声音比高亮慢一拍」同理。
+//   量法：时钟开始走的那一刻记一个锚点，之后「时钟走了多少 − 墙上过了多少」= 多算出来、还排着的量（audioQueuedMs）。
+//   清法：flushAudio() = suspend 完了再 resume（把排着的扔掉重新起）。
+//   默认自动清（user 11-08「除了验证之外，你也顺便修…给我一个开关，就是恢复旧的错误的模式，然后…我能直接用新的就可以写了，然后我顺便用旧的错误模式加 log 也帮你测一下」）：
+//     起来之后量到多算了 AUTO_FLUSH_MS 以上 = 清一次、重新量；连着清 2 次还是多 = 不再清（免得来回重启），记一条。设置 → 开发者能关（= 以前的样子，只量、只记）。
+//     这仍然是没在真机上证实过的修法——所以每一步都进黑匣子：start burst（多算了多少）、flush requested、清完之后的 start burst。
 // 试验开关（默认关，设置 → 开发者）：setKeepAwake = 一个听不见的极轻信号（40 Hz、−86 dB）一直接着扬声器，看能不能让系统不把设备停掉。没证实，所以不默认开。
 let ctx: AudioContext | null = null;
 let noteFn: (msg: string) => void = () => {};
@@ -16,14 +25,24 @@ let noteFn: (msg: string) => void = () => {};
 export function onAudioNote(f: (msg: string) => void): void { noteFn = f; }
 const pageHidden = (): boolean => typeof document !== "undefined" && document.visibilityState === "hidden";
 let rejectNoted = "";
+const asleep = (c: AudioContext): boolean => c.state === "suspended" || (c.state as string) === "interrupted";   // iPad 切后台回来 = interrupted（Safari 的非标准状态）
+function resumeOnce(c: AudioContext): void {
+  c.resume().catch((e) => { const m = String((e as Error)?.message ?? e); if (m !== rejectNoted) { rejectNoted = m; noteFn(`resume rejected: ${m}`); } });
+}
+let retryTimer: ReturnType<typeof setInterval> | undefined, retryUntil = 0;
 function wake(c: AudioContext): void {
   if (pageHidden()) return;   // ②
-  if (c.state === "suspended" || (c.state as string) === "interrupted") {   // iPad 切后台回来 = interrupted（Safari 的非标准状态）
-    c.resume().catch((e) => { const m = String((e as Error)?.message ?? e); if (m !== rejectNoted) { rejectNoted = m; noteFn(`resume rejected: ${m}`); } });
-  }
+  if (!asleep(c)) return;
+  resumeOnce(c);
+  // ④ 这一下没醒（真机上见过 interrupted 十秒不理）= 接着叫，不等下一次按键
+  retryUntil = performance.now() + 10_000;
+  if (retryTimer === undefined) retryTimer = setInterval(() => {
+    if (!asleep(c) || pageHidden() || performance.now() > retryUntil) { clearInterval(retryTimer); retryTimer = undefined; return; }
+    resumeOnce(c);
+  }, 300);
 }
 export function audioCtx(): AudioContext {
-  if (!ctx) { ctx = new AudioContext(); attach(ctx); if (awakeOn) startKeepAwake(ctx); }
+  if (!ctx) { ctx = new AudioContext(); attach(ctx); if (awakeOn) startKeepAwake(ctx); armQueue("created"); }
   wake(ctx);
   return ctx;
 }
@@ -37,7 +56,71 @@ function attach(c: AudioContext): void {
   c.addEventListener("statechange", () => {
     const s = c.state as string; if (s === prev) return;
     noteFn(`state ${prev} → ${s} (page ${pageHidden() ? "hidden" : "visible"}, t=${c.currentTime.toFixed(2)})`); prev = s;
+    if (s === "running") { const mine = performance.now() - flushAt < 5000; if (!mine) autoCount = 0; armQueue(mine ? "flush" : "running"); }   // 重新起了一次 = 重新量这一次多算了多少；不是我们自己清出来的 = 自动清的次数从头算
   });
+}
+
+// ── ⑤ 排队：时钟比墙上的钟多走了多少 ──────────────────────────────────────────────
+/** 纯逻辑（test/audio-queue.test.ts）：一下一下喂（墙上的毫秒，音频时钟的秒）。arm = 等时钟下一次动，动之前最后一下当锚点；
+ *  queued = 从锚点起 时钟走的 − 墙上过的（ms）。时钟停过、没追回来 = 那一段是断音不是排队，记进 slack 抵掉，不让它把后来的排队盖住。 */
+export function createQueueMeter(): { arm(): void; feed(now: number, ct: number): void; queued(now: number, ct: number): number | null; burst(): number | null } {
+  let pending = true, last: { at: number; ct: number } | null = null, anchor: { at: number; ct: number } | null = null, slack = 0, burstMs: number | null = null;
+  const raw = (now: number, ct: number): number => (ct - anchor!.ct) * 1000 - (now - anchor!.at);
+  return {
+    arm() { pending = true; anchor = null; last = null; slack = 0; burstMs = null; },
+    feed(now, ct) {
+      if (pending) { if (last && ct !== last.ct) { anchor = last; pending = false; } else { last = { at: now, ct }; return; } }
+      if (!anchor) return;
+      const q = raw(now, ct); if (q < slack) slack = q;   // 落到锚点后面 = 断过音
+      if (burstMs === null && now - anchor.at >= BURST_SETTLE_MS) burstMs = Math.round(q - slack);   // 起来一小会儿后定下「这一次多算了多少」（真机上那一口气在几十毫秒里跳完）
+    },
+    queued(now, ct) { return anchor ? Math.max(0, Math.round(raw(now, ct) - slack)) : null; },
+    burst: () => burstMs,
+  };
+}
+/** 时钟开始走之后过这么久，定下这一次多算了多少。 */
+export const BURST_SETTLE_MS = 600;
+/** 多算了这么多以上 = 清。 */
+export const AUTO_FLUSH_MS = 120;
+/** 自动清：量到多算了就清不清（纯逻辑）。连着 2 次清完还是多 = 不再清。 */
+export function shouldAutoFlush(burstMs: number, on: boolean, doneInARow: number): boolean { return on && burstMs > AUTO_FLUSH_MS && doneInARow < 2; }
+let autoFlush = true, autoCount = 0, flushAt = -1e9;
+export function setAutoFlush(on: boolean): void { autoFlush = on; noteFn(`auto-flush ${on ? "on" : "off (old behaviour: measure only)"}`); }
+export const autoFlushOn = (): boolean => autoFlush;
+const queue = createQueueMeter();
+let queueTimer: ReturnType<typeof setInterval> | undefined, queueUntil = 0, burstNoted = true;
+/** 起了一次 / 清了一次之后盯 20 秒：等时钟动、量这一次多算了多少，记一条。之后 audioQueuedMs 随问随算（不用一直开着定时器）。 */
+let queueWhy = "";
+function armQueue(why: string): void {
+  queueWhy = why;
+  queue.arm(); burstNoted = false; queueUntil = performance.now() + 20_000;
+  if (queueTimer !== undefined) return;
+  queueTimer = setInterval(() => {
+    const c = ctx, now = performance.now();
+    if (!c || now > queueUntil) { clearInterval(queueTimer); queueTimer = undefined; return; }
+    if (pageHidden()) return;
+    queue.feed(now, c.currentTime);
+    const b = queue.burst();
+    if (b !== null && !burstNoted) {
+      burstNoted = true;
+      const go = shouldAutoFlush(b, autoFlush, autoCount);
+      noteFn(`start burst (${queueWhy}): rendered ahead ≈ ${b} ms${go ? " → auto-flush" : b > AUTO_FLUSH_MS ? (autoFlush ? ` (auto-flush gave up after ${autoCount})` : " (auto-flush off)") : ""}`);
+      if (go) { autoCount++; flushAudio("auto"); } else if (b <= AUTO_FLUSH_MS) autoCount = 0;
+    }
+  }, 40);
+}
+/** 现在大约排着多少毫秒（还没量出来 / 没在跑 = null）。 */
+export function audioQueuedMs(): number | null {
+  const c = ctx; if (!c || (c.state as string) !== "running") return null;
+  const now = performance.now(); queue.feed(now, c.currentTime);
+  return queue.queued(now, c.currentTime);
+}
+/** 清掉排着的：suspend 完了再 resume；重新起来时（statechange → running）重新量。who = 谁要清的（auto / tap）。 */
+export function flushAudio(who: "auto" | "tap" = "tap"): void {
+  const c = ctx; if (!c || (c.state as string) !== "running") return;
+  noteFn(`flush requested (${who}; queued ≈ ${audioQueuedMs() ?? "?"} ms)`);
+  flushAt = performance.now(); if (who === "tap") autoCount = 0;
+  void c.suspend().then(() => c.resume()).catch((e) => noteFn(`flush failed: ${String((e as Error)?.message ?? e)}`));
 }
 /** ③ 按键那一刻上下文不在跑（这个键多半要晚）——记一条，最多一秒一条。 */
 let asleepNotedAt = -1e9;
