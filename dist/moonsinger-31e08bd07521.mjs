@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.47-2026-11-09";
+var APP_VERSION = "v0.16.48-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -9491,18 +9491,19 @@ var TEXT_STYLES = {
   "paper-name": s("sans", 1.6, "text", 600),
   "part-name": s("sans", LYRIC_EM * 0.85, "text", 600),
   "part-badge": s("sans", 1, "text", 600),
-  "tempo-word": s("sans", TEMPO_EM, "text", 600),
-  "tempo-num": s("sans", TEMPO_EM, "text"),
-  "tempo-change": s("sans", TEMPO_EM, "text", 700),
-  "key-label": s("sans", TEMPO_EM, "text"),
-  /** 专业模式 C 调的淡「1=C」（覆盖层写、不印）：跟谱（紧凑档不放大，不然挨上第一个音的力度字；刀 2）。 */
+  // 谱上的记号字（速度、1=X、风格、和弦级数、反复的字、小节号）跟谱（v0.16.48；user 11-09「M F 它跟着走没问题，关键是它这个速度的那一串字号，是不是也应该跟着走？…速度啊，音高啊，那一串」）；歌名 / 曲段名 / 歌手名这些标签照旧跟字
+  "tempo-word": s("sans", TEMPO_EM, "staff", 600),
+  "tempo-num": s("sans", TEMPO_EM, "staff"),
+  "tempo-change": s("sans", TEMPO_EM, "staff", 700),
+  "key-label": s("sans", TEMPO_EM, "staff"),
+  /** 专业模式 C 调的淡「1=C」（覆盖层写、不印）：和「1=F」一样跟谱。 */
   "key-hint": s("sans", TEMPO_EM, "staff"),
-  "groove-mark": s("sans", TEMPO_EM, "text", 600, true),
-  "chord-tag": s("serif", TEMPO_EM, "text", 600),
-  "nav-word": s("sans", TEMPO_EM * 1.05, "text", 600, true),
-  "nav-mark": s("sans", TEMPO_EM * 1.05, "text", 600),
+  "groove-mark": s("sans", TEMPO_EM, "staff", 600, true),
+  "chord-tag": s("serif", TEMPO_EM, "staff", 600),
+  "nav-word": s("sans", TEMPO_EM * 1.05, "staff", 600, true),
+  "nav-mark": s("sans", TEMPO_EM * 1.05, "staff", 600),
   // 反复的字（房子「1.」、×3、D.C.…）：屏幕一直是粗的，PDF 原来印细的——统一成粗的
-  "bar-no": s("sans", 1.05, "text"),
+  "bar-no": s("sans", 1.05, "staff"),
   "page-no": s("sans", 1.2, "text"),
   lyric: s("lyric", LYRIC_EM, "staff"),
   "phrase-mark": s("sans", 1.3, "staff"),
@@ -10753,9 +10754,12 @@ function mergeTracks(tracks, opt = {}) {
 
 // src/render/engrave.ts
 var lyricLook = (ts2) => ts2 > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
-var baseGap = (a10, b3) => a10.block && b3.block ? 0.25 : 0.5;
-var hyphenRoom = (em2) => 0.35 * em2 + 0.2;
-function solveLyrics(items, blockSx, minSx, hyW) {
+var LYRIC_SPACE = 0.6;
+var HYPHEN_SX = 0.8;
+var GAP_MIN = 0.5;
+var GAP_FLOOR = 0.2;
+var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
+function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
   const n10 = items.length, f2 = items.map((it2) => it2.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
   if (!n10) return { pos: [], f: f2, tight };
   const c10 = items.map((it2) => it2.cx);
@@ -10765,7 +10769,8 @@ function solveLyrics(items, blockSx, minSx, hyW) {
     return Math.max(0.2, Math.min(items[i10].w * f2[i10] / 2 - 0.15, half2));
   };
   const lo2 = (i10) => c10[i10] - reach(i10, -1), hi = (i10) => c10[i10] + reach(i10, 1);
-  const d3 = (i10) => (items[i10].w * f2[i10] + items[i10 + 1].w * f2[i10 + 1]) / 2 + baseGap(items[i10], items[i10 + 1]) * Math.min(f2[i10], f2[i10 + 1]) + (items[i10].hy ? hyW : 0);
+  const G2 = new Array(Math.max(0, n10 - 1)).fill(1);
+  const d3 = (i10) => (items[i10].w * f2[i10] + items[i10 + 1].w * f2[i10 + 1]) / 2 + Math.max(GAP_FLOOR, (gaps.space + (items[i10].hy && !(items[i10].block || items[i10 + 1].block) ? gaps.hyphen : 0)) * Math.min(f2[i10], f2[i10 + 1]) * G2[i10]);
   const L2 = new Array(n10), start = new Array(n10);
   const step = (i10) => {
     const a10 = i10 > 0 ? L2[i10 - 1] + d3(i10 - 1) : -Infinity, b3 = lo2(i10);
@@ -10787,6 +10792,24 @@ function solveLyrics(items, blockSx, minSx, hyW) {
     step(i10);
     if (L2[i10] <= hi(i10) + 1e-9) continue;
     const s10 = start[i10], keep2 = f2.slice(s10, i10 + 1), can = (j2) => !items[j2].block;
+    {
+      const keepG = G2.slice(s10, i10), fitsG = (t10) => {
+        for (let j2 = s10; j2 < i10; j2++) G2[j2] = Math.min(keepG[j2 - s10], t10);
+        pushFrom(s10, i10);
+        for (let j2 = s10; j2 <= i10; j2++) if (L2[j2] > hi(j2) + 1e-9) return false;
+        return true;
+      };
+      if (fitsG(GAP_MIN)) {
+        let a11 = GAP_MIN, b5 = 1;
+        for (let k2 = 0; k2 < 16; k2++) {
+          const m2 = (a11 + b5) / 2;
+          if (fitsG(m2)) a11 = m2;
+          else b5 = m2;
+        }
+        fitsG(Math.max(GAP_MIN, Math.floor(a11 * 100) / 100));
+        continue;
+      }
+    }
     const fits = (t10) => {
       for (let j2 = s10; j2 <= i10; j2++) if (can(j2)) f2[j2] = Math.min(keep2[j2 - s10], t10);
       pushFrom(s10, i10);
@@ -10809,6 +10832,78 @@ function solveLyrics(items, blockSx, minSx, hyW) {
     }
     fits(Math.max(minSx, Math.floor(a10 * 100) / 100));
   }
+  const clashes = (mark) => {
+    let k2 = 0;
+    for (let i10 = 0; i10 < n10; i10++) {
+      step(i10);
+      if (L2[i10] > hi(i10) + 1e-9) {
+        k2 += L2[i10] - hi(i10);
+        mark?.add(i10 - 1);
+        mark?.add(i10);
+        L2[i10] = hi(i10);
+      }
+    }
+    return k2;
+  };
+  if (widen) {
+    const over = new Array(n10).fill(0);
+    for (let i10 = 0; i10 < n10; i10++) {
+      step(i10);
+      over[i10] = Math.max(0, L2[i10] - hi(i10));
+      if (over[i10] > 0) L2[i10] = hi(i10);
+    }
+    const tryAt = (from, set, undo3) => {
+      const sL2 = [], sO2 = [], sS2 = [];
+      set();
+      let delta = 0, j2 = Math.max(0, from);
+      for (; j2 < n10; j2++) {
+        const oldL = L2[j2];
+        sL2.push(oldL);
+        sO2.push(over[j2]);
+        sS2.push(start[j2]);
+        step(j2);
+        let o10 = 0;
+        if (L2[j2] > hi(j2) + 1e-9) {
+          o10 = L2[j2] - hi(j2);
+          L2[j2] = hi(j2);
+        }
+        delta += o10 - over[j2];
+        over[j2] = o10;
+        if (j2 > from + 1 && Math.abs(L2[j2] - oldL) < 1e-12) {
+          j2++;
+          break;
+        }
+      }
+      if (delta <= 1e-6) return true;
+      undo3();
+      for (let k2 = 0; k2 < sL2.length; k2++) {
+        L2[from + k2] = sL2[k2];
+        over[from + k2] = sO2[k2];
+        start[from + k2] = sS2[k2];
+      }
+      return false;
+    };
+    const relax = (arr, skip, fromOf) => {
+      for (let round = 0; round < 14; round++) {
+        let moved = false;
+        for (let i10 = 0; i10 < arr.length; i10++) {
+          if (skip(i10) || arr[i10] >= 1) continue;
+          const was = arr[i10], next2 = Math.min(1, Math.round((was + 0.05) * 100) / 100);
+          if (tryAt(fromOf(i10), () => {
+            arr[i10] = next2;
+          }, () => {
+            arr[i10] = was;
+          })) moved = true;
+        }
+        if (!moved) break;
+      }
+    };
+    if (f2.some((v, i10) => v < 1 && !items[i10].block)) relax(f2, (i10) => !!items[i10].block, (i10) => Math.max(0, i10 - 1));
+    if (G2.some((v) => v < 1)) relax(G2, () => false, (i10) => i10 + 1);
+  }
+  tight.clear();
+  clashes(tight);
+  tight.delete(-1);
   const R2 = new Array(n10);
   R2[n10 - 1] = hi(n10 - 1);
   for (let i10 = n10 - 2; i10 >= 0; i10--) R2[i10] = Math.min(hi(i10), R2[i10 + 1] - d3(i10));
@@ -10833,10 +10928,10 @@ function solveLyrics(items, blockSx, minSx, hyW) {
   for (let i10 = 1; i10 < n10; i10++) if (!tight.has(i10) && pos[i10] < pos[i10 - 1] + d3(i10 - 1) - 1e-6) pos[i10] = pos[i10 - 1] + d3(i10 - 1);
   return { pos, f: f2, tight };
 }
-function lyricBlockSx(items, minSx = LYRIC_MIN_SX, hyW = hyphenRoom(1.6)) {
+function lyricBlockSx(items, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS) {
   if (!items.some((it2) => it2.block)) return 1;
   const badBlocks = (t10) => {
-    const r10 = solveLyrics(items, t10, minSx, hyW);
+    const r10 = solveLyrics(items, t10, minSx, gaps, false);
     let k2 = 0;
     for (const i10 of r10.tight) if (items[i10].block) k2++;
     return k2;
@@ -10851,8 +10946,8 @@ function lyricBlockSx(items, minSx = LYRIC_MIN_SX, hyW = hyphenRoom(1.6)) {
   }
   return best;
 }
-function fitLyrics(items, blockSx = 1, minSx = LYRIC_MIN_SX, hyW = hyphenRoom(1.6)) {
-  const r10 = solveLyrics(items, blockSx, minSx, hyW);
+function fitLyrics(items, blockSx = 1, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS) {
+  const r10 = solveLyrics(items, blockSx, minSx, gaps);
   return items.map((it2, i10) => ({ dx: r10.pos[i10] - it2.cx, sx: r10.f[i10], tight: r10.tight.has(i10) }));
 }
 var SCROLL_TAIL = 6;
@@ -10981,7 +11076,7 @@ function unitsOf(tokens, o10) {
     if (t10.kind === "key") {
       flushFull();
       const rf2 = realFifthsOf(t10), inC = rf2 !== t10.fifths || "realFifths" in t10;
-      units.push({ kind: "key", index: i10, fifths: t10.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W * (o10.ts ?? 1), keyWidth(t10.fifths, fifths)) : keyWidth(t10.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf2 });
+      units.push({ kind: "key", index: i10, fifths: t10.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? o10.ts ?? 1 : 1), keyWidth(t10.fifths, fifths)) : keyWidth(t10.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf2 });
       fifths = t10.fifths;
       accState = /* @__PURE__ */ new Map();
       return;
@@ -11142,6 +11237,8 @@ function engrave(song, o10) {
   const baseRight = o10.width / sp2 - MARGIN;
   let right = baseRight, sheetRight = baseRight;
   const PART_EM = TEXT_STYLES["part-name"].em, tx2 = (role) => textPx(role, sp2, ts2);
+  const RS = (role) => TEXT_STYLES[role].ruler === "text" ? ts2 : 1, TR = (role, v) => v * sp2 * RS(role);
+  const mw = (role, str2) => o10.measureLyric(str2) * TEXT_STYLES[role].em / LYRIC_EM / sp2 / ts2 * RS(role);
   const nameW = (s10) => o10.measureLyric(s10) * PART_EM / LYRIC_EM / sp2;
   const NMAX = NAME_MAX * ts2;
   const nameLines = (name, staves) => {
@@ -11244,14 +11341,14 @@ function engrave(song, o10) {
     return cw2;
   };
   const drawTempoAt = (r10, x0, v, cls, index, change, y2) => {
-    const fs = tx2("tempo-word"), word = tempoWord(v).it;
+    const fs = tx2("tempo-word"), word = tempoWord(v).it, k2 = RS("tempo-word");
     if (change) prims.push({ t: "text", x: P2(x0 - 0.3), y: y2, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change ann", size: fs, anchor: "end" });
-    const ww = o10.measureLyric(word) * TEMPO_EM / LYRIC_EM / sp2, num2 = `= ${v}`, nw2 = o10.measureLyric(num2) * TEMPO_EM / LYRIC_EM / sp2;
+    const ww = mw("tempo-word", word), num2 = `= ${v}`, nw2 = mw("tempo-num", num2);
     prims.push({ t: "text", x: P2(x0), y: y2, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
-    const gx = x0 + ww + 0.7 * ts2;
-    prims.push({ t: "glyph", x: P2(gx), y: y2 - T2(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
-    prims.push({ t: "text", x: P2(gx + 1.3 * ts2), y: y2, s: num2, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
-    marks.push({ index, kind: "tempo", system: r10, x: P2(x0 - 0.3), y: y2 - T2(TEMPO_EM * 1.1), w: P2(gx + 1.3 * ts2 + nw2 + 0.6 * ts2 - x0), h: T2(TEMPO_EM * 1.5) });
+    const gx = x0 + ww + 0.7 * k2;
+    prims.push({ t: "glyph", x: P2(gx), y: y2 - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
+    prims.push({ t: "text", x: P2(gx + 1.3 * k2), y: y2, s: num2, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+    marks.push({ index, kind: "tempo", system: r10, x: P2(x0 - 0.3), y: y2 - TR("tempo-word", TEMPO_EM * 1.1), w: P2(gx + 1.3 * k2 + nw2 + 0.6 * k2 - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
   };
   const keyLabel2 = (r10, x0, f2, hint2, index) => {
     const y2 = staffTop(r10) - P2(0.8);
@@ -11260,7 +11357,7 @@ function engrave(song, o10) {
       return;
     }
     prims.push({ t: "text", x: P2(x0), y: y2, s: `1=${KEY_LABEL[f2] ?? "?"}`, cls: "keysig key-label", size: tx2("key-label"), anchor: "start" });
-    marks.push({ index, kind: "key", system: r10, x: P2(x0 - 0.2), y: y2 - T2(TEMPO_EM * 0.95), w: T2(KEY_LABEL_W), h: T2(TEMPO_EM * 1.2) });
+    marks.push({ index, kind: "key", system: r10, x: P2(x0 - 0.2), y: y2 - TR("key-label", TEMPO_EM * 0.95), w: TR("key-label", KEY_LABEL_W), h: TR("key-label", TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r10, x0, f2, cls, clef = "G") => {
     const pos = f2 > 0 ? SHARP_POS : FLAT_POS, ch2 = f2 > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
@@ -11672,6 +11769,9 @@ function engrave(song, o10) {
     const lyricsOf = per.map((q2) => q2.tokens.some((t10) => t10.kind === "note" && t10.lyric));
     const lyrPlan = /* @__PURE__ */ new Map();
     const look = lyricLook(ts2);
+    const lyrUnit = (str2) => o10.measureLyric(str2) / sp2 / ts2 * look.k * look.sx;
+    const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
+    const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace };
     if (song.lyricFit !== "lyrics") per.forEach((q2, r10) => {
       if (!lyricsOf[r10]) return;
       const bySys = /* @__PURE__ */ new Map();
@@ -11681,9 +11781,8 @@ function engrave(song, o10) {
         arr.push({ index: u2.index, cx: u2.x + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2 / ts2 * look.k * look.sx, hy: u2.hyph, block: isBlockScript(u2.lyric) });
       }
       for (const items of bySys.values()) items.sort((a10, b3) => a10.cx - b3.cx);
-      const hyW = hyphenRoom(LYRIC_EM * look.k * look.sx);
-      const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, hyW)));
-      for (const items of bySys.values()) fitLyrics(items, blockSx, LYRIC_MIN_SX, hyW).forEach((f2, k2) => lyrPlan.set(`${r10}:${items[k2].index}`, { ...f2, hw: items[k2].w * f2.sx / 2 }));
+      const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
+      for (const items of bySys.values()) fitLyrics(items, blockSx, LYRIC_MIN_SX, lyrGaps).forEach((f2, k2) => lyrPlan.set(`${r10}:${items[k2].index}`, { ...f2, hw: items[k2].w * f2.sx / 2 }));
     });
     const BIG = 8192;
     const skies = [];
@@ -11937,13 +12036,13 @@ function engrave(song, o10) {
             if (v.kind === "bar" && sawNote && !fallback) fallback = v;
           }
           if (!end) end = fallback;
-          const h2 = T2(1.6);
+          const h2 = TR("nav-mark", 1.6);
           const endX = (v, sys) => v && v.system === sys ? v.kind === "bar" ? P2(v.x + (v.repeat ? 0.4 + (v.repeat === "both" ? 1.2 : 1.47) : 0.7)) : P2(v.x) - P2(0.3) : P2(right);
           const seg = (sys, xa, openL, xb, hookR, first) => placeAbove(rowOf(sys, r10, 0), 0.6, (yy) => {
             prims.push({ t: "path", d: `${openL ? `M${xa},${yy}` : `M${xa},${yy + h2}L${xa},${yy}`}L${xb},${yy}${hookR ? `L${xb},${yy + h2}` : ""}`, cls: "volta" + navMute(u2.index) });
             if (!first) return;
-            prims.push({ tok, t: "text", x: x2 + T2(0.3), y: yy + T2(1.25), s: endingLabel(t10.nums), cls, size: fs, anchor: "start" });
-            dyns.push({ index: u2.index, kind: "nav", system: row0, x: x2 - P2(0.4), y: yy - T2(0.4), w: T2(3), h: h2 + T2(0.8) });
+            prims.push({ tok, t: "text", x: x2 + TR("nav-mark", 0.3), y: yy + TR("nav-mark", 1.25), s: endingLabel(t10.nums), cls, size: fs, anchor: "start" });
+            dyns.push({ index: u2.index, kind: "nav", system: row0, x: x2 - P2(0.4), y: yy - TR("nav-mark", 0.4), w: TR("nav-mark", 3), h: h2 + TR("nav-mark", 0.8) });
           });
           const endSys = end ? end.system : u2.system;
           seg(u2.system, x2 - P2(0.2), false, endX(endSys === u2.system ? end : null, u2.system), closed && endSys === u2.system, true);
@@ -11961,10 +12060,10 @@ function engrave(song, o10) {
           });
           return;
         }
-        const label = NAV_LABEL[t10.what], tw2 = o10.measureLyric(label) * TEMPO_EM * 1.05 / LYRIC_EM, atEnd = x2 - tw2 > P2(MARGIN + 6);
+        const label = NAV_LABEL[t10.what], tw2 = P2(mw("nav-word", label)), atEnd = x2 - tw2 > P2(MARGIN + 6);
         placeAbove(row0, 0.6, (y2) => {
           prims.push({ tok, t: "text", x: atEnd ? x2 : x2 - P2(0.2), y: y2, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
-          dyns.push({ index: u2.index, kind: "nav", system: row0, x: atEnd ? x2 - tw2 - P2(0.3) : x2 - P2(0.5), y: y2 - T2(TEMPO_EM * 1.1), w: tw2 + T2(0.8), h: T2(TEMPO_EM * 1.5) });
+          dyns.push({ index: u2.index, kind: "nav", system: row0, x: atEnd ? x2 - tw2 - P2(0.3) : x2 - P2(0.5), y: y2 - TR("nav-word", TEMPO_EM * 1.1), w: tw2 + TR("nav-word", 0.8), h: TR("nav-word", TEMPO_EM * 1.5) });
         });
       };
       const nhX = (c10) => P2(c10.x + 0.35);
@@ -12073,10 +12172,10 @@ function engrave(song, o10) {
         }
         if (u2.kind === "groove") {
           const gt = tokens[u2.index], gr = rowOf(u2.system, r10, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
-          const fs = tx2("groove-mark"), gw = o10.measureLyric(label) * TEMPO_EM / LYRIC_EM, gx = P2(u2.x + 0.3);
+          const fs = tx2("groove-mark"), gw = P2(mw("groove-mark", label)), gx = P2(u2.x + 0.3);
           later[8].push(() => placeAbove(gr, 0.5, (gy) => {
             prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
-            dyns.push({ index: u2.index, kind: "groove", system: gr, x: P2(u2.x), y: gy - T2(TEMPO_EM * 1.1), w: gw + T2(0.6), h: T2(TEMPO_EM * 1.5) });
+            dyns.push({ index: u2.index, kind: "groove", system: gr, x: P2(u2.x), y: gy - TR("groove-mark", TEMPO_EM * 1.1), w: gw + TR("groove-mark", 0.6), h: TR("groove-mark", TEMPO_EM * 1.5) });
           }));
           continue;
         }
@@ -12429,10 +12528,10 @@ function engrave(song, o10) {
           const rd2 = readChord([t10.pitch, ...t10.chord], keyAt(tokens, c10.index));
           if (!rd2) continue;
           const ds = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff, c10.index)), second = ds.some((dd, k2) => k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1);
-          const label = chordLabel(rd2), tx3 = nhX(c10) + nhW(c10) * (second ? 1.95 : 1) + P2(0.3), w2 = [...label].length * fs * 0.6 + T2(0.6);
+          const label = chordLabel(rd2), tx3 = nhX(c10) + nhW(c10) * (second ? 1.95 : 1) + P2(0.3), w2 = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
           placeBelow(RW(c10), 0.3, (y2) => {
             prims.push({ t: "text", x: tx3, y: y2, s: label, cls: "chord-tag", size: fs, anchor: "start" });
-            chordTagsOut.push({ x: tx3 - T2(0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2 });
+            chordTagsOut.push({ x: tx3 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2 });
           });
         }
       });
@@ -12458,14 +12557,15 @@ function engrave(song, o10) {
               const L2 = partLyrics[n11], tok = tokens[L2.index];
               if (!tok.hyph) continue;
               const R2 = partLyrics[n11 + 1], same = !!R2 && R2.system === L2.system;
-              const hl = lyrPlan.get(`${r10}:${L2.index}`)?.hw, hr = same ? lyrPlan.get(`${r10}:${R2.index}`)?.hw : void 0;
-              let xx = same ? (L2.x + R2.x) / 2 : L2.x + P2(1.6);
-              if (same && hl !== void 0 && hr !== void 0) {
-                const a10 = L2.x + P2(hl), b3 = R2.x - P2(hr);
-                if (b3 - a10 < P2(0.35 * LYRIC_EM * look.k * look.sx)) continue;
+              const pl = lyrPlan.get(`${r10}:${L2.index}`), pr = same ? lyrPlan.get(`${r10}:${R2.index}`) : void 0;
+              let xx = same ? (L2.x + R2.x) / 2 : L2.x + P2(1.6), hf = 1;
+              if (same && pl && pr) {
+                hf = Math.min(pl.sx, pr.sx);
+                const a10 = L2.x + P2(pl.hw), b3 = R2.x - P2(pr.hw), cjk = isBlockScript(lyricShow(tokens[L2.index].lyric ?? "")) || isBlockScript(lyricShow(tokens[R2.index].lyric ?? ""));
+                if (!cjk && b3 - a10 < P2(lyrHyphen * hf) - 1e-6) continue;
                 xx = (a10 + b3) / 2;
               }
-              prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, ...look.sx !== 1 ? { sx: look.sx } : {} });
+              prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, sx: look.sx * hf * HYPHEN_SX });
             }
             lyrics.push(...partLyrics.slice(from));
           }, { min: 0, count: false, step: ROW_STEP });
@@ -29216,9 +29316,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-e5c0810e3718.mjs");
+      return pick(() => "layout-worker-f93aa780c395.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-5658784a1ef0.mjs");
+      return pick(() => "encode-worker-958413cec7a6.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -56870,4 +56970,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-cab3cf359b0e.mjs.map
+//# sourceMappingURL=moonsinger-31e08bd07521.mjs.map

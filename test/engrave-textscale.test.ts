@@ -9,7 +9,7 @@ import { textScaleOf, paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { VIEWS, loadSong, measure } from "./fixtures/layout/cases.ts";
 
 /** 「跟字」的类（施工单 §3.2 那张表；歌词 v0.16.43 起改回跟谱）；其余的字（歌词、cresc. / 8va / 吸 / 推定的灰字）跟谱。 */
-const FOLLOW_TEXT = /^(song-title|credits|arr|arr-label|arr-issue|paper-name|part-name|part-badge|tempo|tempo-change|groove-mark|nav-mark|keysig key-label|bar-no|chord-tag|page-no)\b/;   // 歌词 v0.16.43 起跟谱（紧凑 = 配器，user「紧凑的话其实那个小字就够了」）
+const FOLLOW_TEXT = /^(song-title|credits|arr|arr-label|arr-issue|paper-name|part-name|part-badge|page-no)\b/;   // v0.16.48 起速度、1=X、风格、和弦级数、反复的字、小节号跟谱（user「速度那一串字号…也应该跟着走」）   // 歌词 v0.16.43 起跟谱（紧凑 = 配器，user「紧凑的话其实那个小字就够了」）
 const sizeOf = (p: Prim, sp: number) => (p.t === "text" ? p.size ?? LYRIC_EM * sp : p.t === "glyph" ? p.size ?? 4 * sp : 0);
 const compact = (key: string) => { const { song, labels } = loadSong(key), paper = song.paper ?? paperOf(DEFAULT_PAPER); return { song: { ...song, paper: { ...paper, density: "compact" as const, staffMm: undefined } }, labels }; };
 /** 同一首紧凑档的歌排两遍：字的尺子 = 谱（1）/ 字照舒适档（1.4）。量字跟着字号。 */
@@ -28,7 +28,7 @@ describe("刀 2：紧凑档的字照舒适档那么大（textScale = 7 / 5）", 
     let text = 0, staff = 0;
     for (const [k, sa] of a) {
       const sb = b.get(k); if (!sb) continue;   // 折行不一样时某个字可能只在一边（比如行首的小节号）
-      const [t, cls] = k.split("|"), follow = (t === "text" && FOLLOW_TEXT.test(cls!)) || (t === "glyph" && /^tempo\b/.test(cls!));   // 速度里的小音符跟速度字
+      const [t, cls] = k.split("|"), follow = t === "text" && FOLLOW_TEXT.test(cls!);
       const want = [...sa].map((x) => Math.round(x * (follow ? ts : 1) * 1000) / 1000).sort().join(), got = [...sb].sort().join();
       // 歌词跟谱的尺子：字高 = 这一档固定的那个（舒适 1 倍、紧凑 LYRIC_LOOK.compact.k 倍；v0.16.44 起挤了只收宽度、字高不动）
       const lyricOk = cls!.startsWith("lyric") && [...sb].every((x) => Math.abs(x - LYRIC_EM * sp * LYRIC_LOOK.compact.k) < 1e-3);

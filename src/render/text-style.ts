@@ -38,14 +38,15 @@ export const TEXT_STYLES = {
   arr: s("sans", 1.25, "text"), "arr-label": s("sans", 1.25, "text"), "arr-issue": s("sans", 1.1, "text", 400, true),
   "paper-name": s("sans", 1.6, "text", 600),
   "part-name": s("sans", LYRIC_EM * 0.85, "text", 600), "part-badge": s("sans", 1.0, "text", 600),
-  "tempo-word": s("sans", TEMPO_EM, "text", 600), "tempo-num": s("sans", TEMPO_EM, "text"), "tempo-change": s("sans", TEMPO_EM, "text", 700),
-  "key-label": s("sans", TEMPO_EM, "text"),
-  /** 专业模式 C 调的淡「1=C」（覆盖层写、不印）：跟谱（紧凑档不放大，不然挨上第一个音的力度字；刀 2）。 */
+  // 谱上的记号字（速度、1=X、风格、和弦级数、反复的字、小节号）跟谱（v0.16.48；user 11-09「M F 它跟着走没问题，关键是它这个速度的那一串字号，是不是也应该跟着走？…速度啊，音高啊，那一串」）；歌名 / 曲段名 / 歌手名这些标签照旧跟字
+  "tempo-word": s("sans", TEMPO_EM, "staff", 600), "tempo-num": s("sans", TEMPO_EM, "staff"), "tempo-change": s("sans", TEMPO_EM, "staff", 700),
+  "key-label": s("sans", TEMPO_EM, "staff"),
+  /** 专业模式 C 调的淡「1=C」（覆盖层写、不印）：和「1=F」一样跟谱。 */
   "key-hint": s("sans", TEMPO_EM, "staff"),
-  "groove-mark": s("sans", TEMPO_EM, "text", 600, true),
-  "chord-tag": s("serif", TEMPO_EM, "text", 600),
-  "nav-word": s("sans", TEMPO_EM * 1.05, "text", 600, true), "nav-mark": s("sans", TEMPO_EM * 1.05, "text", 600),   // 反复的字（房子「1.」、×3、D.C.…）：屏幕一直是粗的，PDF 原来印细的——统一成粗的
-  "bar-no": s("sans", 1.05, "text"), "page-no": s("sans", 1.2, "text"),
+  "groove-mark": s("sans", TEMPO_EM, "staff", 600, true),
+  "chord-tag": s("serif", TEMPO_EM, "staff", 600),
+  "nav-word": s("sans", TEMPO_EM * 1.05, "staff", 600, true), "nav-mark": s("sans", TEMPO_EM * 1.05, "staff", 600),   // 反复的字（房子「1.」、×3、D.C.…）：屏幕一直是粗的，PDF 原来印细的——统一成粗的
+  "bar-no": s("sans", 1.05, "staff"), "page-no": s("sans", 1.2, "text"),
   lyric: s("lyric", LYRIC_EM, "staff"),
   "phrase-mark": s("sans", 1.3, "staff"), ottava: s("sans", 1.3, "staff"), "breath-label": s("sans", 1.15, "staff"),
   "dyn-word": s("serif", 2.0, "staff", 400, true), "dyn-implied": s("sans", 1.3, "staff", 600, true),
