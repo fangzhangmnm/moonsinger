@@ -2444,7 +2444,7 @@ function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extr
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);
   onSongSwitch(); sound.allOff(); void prepareBank(); refreshIssues();   // 开歌那一刻清单重算：有事 = 一条 toast + 角标（§2.2½ 出口 ③）   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
-  view.render(); pad.render(); renderTitle(); updateChrome();   // 挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
+  view.forgetPin(); view.render(); pad.render(); renderTitle(); updateChrome();   // 换歌不钉正在写的那一行（防抖只管同一首歌里写）；挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
   if (D.st.song.parts.some((p) => performerOf(activeInstrument(D.extras, p.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
   if (D.extras.final) info(_t("这首歌定稿了（第 {rev} 版，mp3 {bytes}）：只能听。要改，三条杠里「改稿」。", { rev: D.extras.final.rev, bytes: mp3SizeText(D.extras.final.mp3.bytes) }));
   if (startDyns) info(_t("每张纸开头补了 {startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）", { startDyns }));   // v0.10.39（user「每张纸（曲段）开头，对」）

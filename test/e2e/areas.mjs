@@ -8,7 +8,7 @@
 /** 区 → E2E 文件名（不带 .mjs）。 */
 export const AREAS = {
   // 谱面：手势（点 / 长按 / 拖 / 框选 / 把手）、排版、显示、谱上记号
-  score: ["header-hit", "header-panel", "select", "finger", "rest", "lift", "sel-tweak", "top-sels", "undo", "caret-end", "clef", "auto-ottava", "shared-staff", "hscroll", "only1",
+  score: ["header-hit", "header-panel", "select", "finger", "rest", "row-pin", "lift", "sel-tweak", "top-sels", "undo", "caret-end", "clef", "auto-ottava", "shared-staff", "hscroll", "only1",
     "zoom", "ctrl-zoom", "dock-zoom", "scroll", "swell-art", "phrase", "repeat", "transpose", "arrange", "pad-ghost", "listen-ghost", "start-dyn",
     "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys", "overlay-touch"],
   // 键盘（pad）：音键 / 符号格 / 几种锁 / 歌词框 / 记号菜单

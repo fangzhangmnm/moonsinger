@@ -5052,7 +5052,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.41-2026-11-09";
+var APP_VERSION = "v0.16.42-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10762,6 +10762,7 @@ function attachLayoutFns(d3) {
   return { ...d3, yOf, dOf: (r10, y2) => Math.round(TOP_LINE2 - (y2 - d3.systems[r10].staffTop) / half2), lyricY: (r10) => d3.lyricYs[r10] };
 }
 var SQUEEZE = 0.15;
+var ROW_STEP = 1;
 var MARGIN = 1.2;
 var BAR_W = 1.6;
 var TITLE_H = 5.4;
@@ -11643,7 +11644,8 @@ function engrave(song, o10) {
         const b3 = sk2.bottom(pieces[i10], pieces[i10 + 1]);
         if (b3 > -Infinity) need = Math.max(need, b3 + gap - pieces[i10 + 2]);
       }
-      const dy = Math.max(need === -Infinity ? 0 : need, o22.min ?? -Infinity);
+      let dy = Math.max(need === -Infinity ? 0 : need, o22.min ?? -Infinity);
+      if (o22.step && o22.min !== void 0 && dy > o22.min + 1e-9) dy = o22.min + Math.ceil((dy - o22.min) / o22.step - 1e-9) * o22.step;
       shiftSince(m2, P2(dy));
       commit(sk2, dy, o22.count !== false);
       return dy;
@@ -12353,7 +12355,7 @@ function engrave(song, o10) {
               prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen", ...ts2 !== 1 ? { size: T2(LYRIC_EM) } : {}, ...lyricSx(ts2) !== 1 ? { sx: lyricSx(ts2) } : {} });
             }
             lyrics.push(...partLyrics.slice(from));
-          }, { min: 0, count: false });
+          }, { min: 0, count: false, step: ROW_STEP });
           lyricOff.set(row2, base2 + dy);
         }
       });
@@ -12472,13 +12474,15 @@ function engrave(song, o10) {
     }
     const pEnd = mark();
     const PAD = 0.8, lyricTail = (SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow) * ts2, fin = (v, d3) => Number.isFinite(v) ? v : d3;
+    const stepUp = (min, need) => need <= min + 1e-9 ? min : min + Math.ceil((need - min) / ROW_STEP - 1e-9) * ROW_STEP;
     const geo = (s10, r10, k2) => {
       const q2 = per[r10], row2 = rowOf(s10, r10, k2), sk2 = sky(row2), hUp = fin(sk2.hUp, 0), hDn = fin(sk2.hDn, 4);
       const minBelow = q2.staves === 2 && k2 === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r10] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
       const lyr = lyricsOf[r10] && k2 === q2.staves - 1 ? lyricOff.get(row2) : void 0, row22 = lyr2.has(`${r10}:${s10}`) ? LYRIC_ROW2 * ts2 : 0;
-      let below = Math.max(minBelow, hDn - 4 + PAD);
-      if (lyr !== void 0) below = Math.max(below, lyr + lyricTail + row22);
-      return { above: Math.max(STAFF_ABOVE, -hUp + PAD), below, inkAbove: Math.max(0, -fin(upToNav[row2 - rowBase] ?? Infinity, 0)), inkBelow: Math.max(0, hDn - 4, lyr !== void 0 ? lyr + 0.5 + row22 : 0) };
+      let need = hDn - 4 + PAD;
+      if (lyr !== void 0) need = Math.max(need, lyr + lyricTail + row22);
+      const below = stepUp(minBelow, need);
+      return { above: stepUp(STAFF_ABOVE, -hUp + PAD), below, inkAbove: Math.max(0, -fin(upToNav[row2 - rowBase] ?? Infinity, 0)), inkBelow: Math.max(0, hDn - 4, lyr !== void 0 ? lyr + 0.5 + row22 : 0) };
     };
     const G2 = Array.from({ length: nSys }, (_2, s10) => per.map((_q, r10) => Array.from({ length: effStaves(r10) }, (_3, k2) => geo(s10, r10, k2))));
     const sysH = (s10) => P2(G2[s10].reduce((n11, gs) => n11 + gs.reduce((m2, g3) => m2 + g3.above + 4 + g3.below, 0), 0) + SYS_GAP);
@@ -13911,6 +13915,7 @@ var ScoreView = class {
     });
     this.svgParts = parts;
     if (swapped) this.tokEls = null;
+    this.pinRow(st2);
     const tDecor = performance.now();
     this.decorate();
     this.drawCaret();
@@ -14312,6 +14317,27 @@ var ScoreView = class {
   followKey = "";
   caretSeen = true;
   // 光标那行现在在不在视野里（滚动 / 重画时记；窗口变了要不要跟就看它）
+  /** 上一次画的时候每一行（纸 | 声部 | 第几行 | 第几张谱表）的第五线 y（px）：钉住正在写的那一行用（防抖，user 11-09「屏幕上把你正在写的那一行钉住不动 同意」）。 */
+  pinPrev = null;
+  /** 换歌这类重画不钉（main.ts loadDoc 叫）：下一次画只记、不补。 */
+  forgetPin() {
+    this.pinPrev = null;
+  }
+  /** 光标所在的那一行在新的排版里挪了多少，滚动就跟着补多少，它在屏幕上不动——上面的行长高 / 这一行自己上面长高，眼前都不跳。
+   *  只在能写的模式、光标那一行本来就看得见、挪动不到半屏时补；没有光标（有选区）/ 新排版里找不到同一行 = 不补。纯视图：不碰排版。 */
+  pinRow(st2) {
+    const L2 = this.layout, f2 = this.frameNow, key = (r10) => `${r10.paper}|${r10.part}|${r10.sys}|${r10.staff}`, prev = this.pinPrev;
+    const view2 = `${f2.width}|${f2.sp}|${!!f2.page}|${f2.hscroll}|${this.host.scope?.() ?? "segment"}|${st2.at.paper}`;
+    this.pinPrev = { tops: new Map(L2.systems.map((r10) => [key(r10), r10.staffTop])), song: st2.song, view: view2 };
+    if (!prev || prev.view !== view2 || prev.song === st2.song || !this.rules.edit || !this.caretSeen) return;
+    const h2 = this.head();
+    const row2 = h2 ? L2.systems[h2.system] : void 0;
+    if (!row2) return;
+    const was = prev.tops.get(key(row2));
+    if (was === void 0) return;
+    const d3 = (row2.staffTop - was) * this.zoom;
+    if (Math.abs(d3) > 0.5 && Math.abs(d3) < this.el.clientHeight * 0.5) this.el.scrollTop += d3;
+  }
   holdView = false;
   // 正在点声部名（这一次重画不跟光标）
   heldBase = null;
@@ -29052,9 +29078,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-e1786ac37e0e.mjs");
+      return pick(() => "layout-worker-c5e46f1bfc47.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-62e1eb841b8f.mjs");
+      return pick(() => "encode-worker-838ab671e36b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -54613,6 +54639,7 @@ function loadDoc(song, o10) {
   sound.allOff();
   void prepareBank();
   refreshIssues();
+  view.forgetPin();
   view.render();
   pad3.render();
   renderTitle();
@@ -56710,4 +56737,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-28e0e2a6dcdc.mjs.map
+//# sourceMappingURL=moonsinger-99c39d3b2414.mjs.map

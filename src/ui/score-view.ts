@@ -412,6 +412,7 @@ export class ScoreView {
     });
     this.svgParts = parts;
     if (swapped) this.tokEls = null;
+    this.pinRow(st);   // 正在写的那一行钉在屏幕上（防抖）
     const tDecor = performance.now();
     this.decorate();   // 写字头的蓝 / 选中 / 强调色（class）
     this.drawCaret();  // 光标（ink 层）
@@ -680,6 +681,22 @@ export class ScoreView {
   }
   private followKey = "";
   private caretSeen = true;               // 光标那行现在在不在视野里（滚动 / 重画时记；窗口变了要不要跟就看它）
+  /** 上一次画的时候每一行（纸 | 声部 | 第几行 | 第几张谱表）的第五线 y（px）：钉住正在写的那一行用（防抖，user 11-09「屏幕上把你正在写的那一行钉住不动 同意」）。 */
+  private pinPrev: { tops: Map<string, number>; song: EditorState["song"]; view: string } | null = null;
+  /** 换歌这类重画不钉（main.ts loadDoc 叫）：下一次画只记、不补。 */
+  forgetPin(): void { this.pinPrev = null; }
+  /** 光标所在的那一行在新的排版里挪了多少，滚动就跟着补多少，它在屏幕上不动——上面的行长高 / 这一行自己上面长高，眼前都不跳。
+   *  只在能写的模式、光标那一行本来就看得见、挪动不到半屏时补；没有光标（有选区）/ 新排版里找不到同一行 = 不补。纯视图：不碰排版。 */
+  private pinRow(st: EditorState): void {
+    const L = this.layout!, f = this.frameNow!, key = (r: SystemBox) => `${r.paper}|${r.part}|${r.sys}|${r.staff}`, prev = this.pinPrev;
+    const view = `${f.width}|${f.sp}|${!!f.page}|${f.hscroll}|${this.host.scope?.() ?? "segment"}|${st.at.paper}`;   // 视图没变 + 谱变了 = 是在写（切本段 / 全部、换纸、换纸宽这些不钉，照旧不动滚动）
+    this.pinPrev = { tops: new Map(L.systems.map((r) => [key(r), r.staffTop])), song: st.song, view };
+    if (!prev || prev.view !== view || prev.song === st.song || !this.rules.edit || !this.caretSeen) return;
+    const h = this.head(); const row = h ? L.systems[h.system] : undefined; if (!row) return;
+    const was = prev.tops.get(key(row)); if (was === undefined) return;
+    const d = (row.staffTop - was) * this.zoom;
+    if (Math.abs(d) > 0.5 && Math.abs(d) < this.el.clientHeight * 0.5) this.el.scrollTop += d;
+  }
   private holdView = false;               // 正在点声部名（这一次重画不跟光标）
   private heldBase: string | null = null; // 点声部名之后的光标位置：没挪之前（含 pad 弹出的窗口变化）都不跟
   /** 光标画在上一行末尾（点在上一行行末放的）：记着是哪个光标位置（纸|声部|下标），光标一挪就失效；不进文件、不进 undo（2026-10-10 user「然后我希望光标能同时支持一行的末尾和下一行的开头两个位置取决于点在哪里」）。 */

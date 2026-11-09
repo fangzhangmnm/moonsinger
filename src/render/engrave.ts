@@ -215,7 +215,9 @@ export function attachLayoutFns(d: LayoutData): Layout {
 }
 
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
-const SQUEEZE = 0.15;   // 一行最多压紧多少（音符总宽的比例）
+const SQUEEZE = 0.15;
+/** 防抖：行的上下留白、歌词基线往下让，超出版式最小值的那一截按这么多线间距一格往上取（刀 4b 之后，user 11-09）。 */
+const ROW_STEP = 1;   // 一行最多压紧多少（音符总宽的比例）
 const MARGIN = 1.2, BAR_W = 1.6, TITLE_H = 5.4;   // TITLE_H = 纸面最上面歌名那一条（v0.10.23：歌名放大了，这一条跟着高）
 const PAPER_H = 3.4, PAPER_GAP = 1.6;
 /** 纸上的小控件（不印）：在自己那一条里尽量大（2026-10-10 user「纸张上的小控件既然打印的时候不显示。在不影响点击和排版的时候为什么不做大一点，好点」）——
@@ -921,11 +923,13 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       return dy;
     };
     /** 谱下方贴一样东西（同上，往下挪到离上面的天际线 gap）；min = 最少挪到哪（局部 y 往下挪的下限，歌词的版式最小值用）；count = 算不算进行高。 */
-    const placeBelow = (row: number, gap: number, draw: (y: number) => void, o2: { min?: number; count?: boolean } = {}): number => {
+    const placeBelow = (row: number, gap: number, draw: (y: number) => void, o2: { min?: number; count?: boolean; step?: number } = {}): number => {
       const m = mark(); draw(staffTop(row)); collect(m, row);
       let need = -Infinity; const sk = sky(row);
       for (let i = 0; i < pieces.length; i += 4) { const b = sk.bottom(pieces[i]!, pieces[i + 1]!); if (b > -Infinity) need = Math.max(need, b + gap - pieces[i + 2]!); }
-      const dy = Math.max(need === -Infinity ? 0 : need, o2.min ?? -Infinity); shiftSince(m, P(dy));
+      let dy = Math.max(need === -Infinity ? 0 : need, o2.min ?? -Infinity);
+      if (o2.step && o2.min !== undefined && dy > o2.min + 1e-9) dy = o2.min + Math.ceil((dy - o2.min) / o2.step - 1e-9) * o2.step;   // 防抖：往下让按整格
+      shiftSince(m, P(dy));
       commit(sk, dy, o2.count !== false);
       return dy;
     };
@@ -1545,7 +1549,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
               prims.push({ t: "text", x: xx, y: L.y, s: "-", cls: "lyric hyphen", ...(ts !== 1 ? { size: T(LYRIC_EM) } : {}), ...(lyricSx(ts) !== 1 ? { sx: lyricSx(ts) } : {}) });
             }
             lyrics.push(...partLyrics.slice(from));
-          }, { min: 0, count: false });
+          }, { min: 0, count: false, step: ROW_STEP });   // 歌词基线往下让也按整格（防抖）
           lyricOff.set(row, base + dy);
         }
       });
@@ -1629,13 +1633,17 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const pEnd = mark();
     //   ③ 每一行的上下留白 = 版式的最小值和天际线（+ 0.8）取大；有歌词的那一条另按歌词的规矩（歌词基线 + 版式里歌词下面那一截，挤到第二行的再加一行）。上下两行不咬合
     const PAD = 0.8, lyricTail = (SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow) * ts, fin = (v: number, d: number) => (Number.isFinite(v) ? v : d);
+    // 防抖（user 11-09「行的上下留白按整格往上取 同意，quantize防抖」）：超出版式最小值的那一截按整格（ROW_STEP 个线间距）往上取——
+    //   写音 / 加记号时墨长了一点点，这一行的高不动；跨过一格才长一格。纯排版规则（打印一样），不看编辑状态
+    const stepUp = (min: number, need: number) => (need <= min + 1e-9 ? min : min + Math.ceil((need - min) / ROW_STEP - 1e-9) * ROW_STEP);
     const geo = (s: number, r: number, k: number) => {
       const q = per[r], row = rowOf(s, r, k), sk = sky(row), hUp = fin(sk.hUp, 0), hDn = fin(sk.hDn, 4);
       const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
       const lyr = lyricsOf[r] && k === q.staves - 1 ? lyricOff.get(row) : undefined, row2 = lyr2.has(`${r}:${s}`) ? LYRIC_ROW2 * ts : 0;
-      let below = Math.max(minBelow, hDn - 4 + PAD);
-      if (lyr !== undefined) below = Math.max(below, lyr + lyricTail + row2);
-      return { above: Math.max(STAFF_ABOVE, -hUp + PAD), below, inkAbove: Math.max(0, -fin(upToNav[row - rowBase] ?? Infinity, 0)), inkBelow: Math.max(0, hDn - 4, lyr !== undefined ? lyr + 0.5 + row2 : 0) };
+      let need = hDn - 4 + PAD;
+      if (lyr !== undefined) need = Math.max(need, lyr + lyricTail + row2);
+      const below = stepUp(minBelow, need);
+      return { above: stepUp(STAFF_ABOVE, -hUp + PAD), below, inkAbove: Math.max(0, -fin(upToNav[row - rowBase] ?? Infinity, 0)), inkBelow: Math.max(0, hDn - 4, lyr !== undefined ? lyr + 0.5 + row2 : 0) };
     };
     const G = Array.from({ length: nSys }, (_, s) => per.map((_q, r) => Array.from({ length: effStaves(r) }, (_, k) => geo(s, r, k))));
     const sysH = (s: number) => P(G[s].reduce((n, gs) => n + gs.reduce((m, g) => m + g.above + 4 + g.below, 0), 0) + SYS_GAP);
