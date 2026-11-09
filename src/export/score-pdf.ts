@@ -109,6 +109,14 @@ export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; s
         return out;
       }
       case "text": {
+        // 和弦级数 = 衬线字（v0.16.34；user 11-08「也用同样的这种音乐的字体」）：轮廓画成路径（vendor/fonts/serif/chord-outlines.json，键 T + 码位），缺字才退回正文字体
+        const serif = cls.includes("chord-tag") ? [...p.s].map((ch) => `T${ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`) : null;
+        if (serif && serif.every((c) => a.music.glyphs[c])) {
+          const size = p.size ?? lyricPx, w = serif.reduce((s, c) => s + (a.music.glyphs[c]!.adv / em) * size, 0), anchor = p.anchor ?? "middle", out: PdfOp[] = [];
+          let x = p.x + ox - (anchor === "middle" ? w / 2 : anchor === "end" ? w : 0);
+          for (const code of serif) { out.push({ op: "glyph", code, x, y: p.y - top, size, color: INK }); x += (a.music.glyphs[code]!.adv / em) * size; }
+          return out;
+        }
         const size = p.size ?? lyricPx, w = textEm(a.font, p.s) * size, anchor = p.anchor ?? "middle";
         const x = p.x + ox - (anchor === "middle" ? w / 2 : anchor === "end" ? w : 0);
         return [{ op: "text", x, y: p.y - top, text: p.s, size, color: INK, ...(cls.some((c) => BOLD.has(c)) ? { bold: true } : {}), ...(cls.some((c) => ITALIC.has(c)) ? { italic: true } : {}) }];

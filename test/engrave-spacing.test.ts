@@ -1,6 +1,6 @@
 // engrave-spacing.test.ts —— 刀 3 接进排版器之后的样子（用真的 engrave()）。created 2026-11-09 by Claude Opus 5.5
 // 施工单 ai-docs/20261109-work-order-display-cuts-2-4.md §1.5：§0 那张表的每一行一条。单位 = 线间距（sp = 10）。
-import { describe, it, assert } from "./runner.mjs";
+import { describe, it, assert, eq } from "./runner.mjs";
 import { engrave, type Layout } from "../src/render/engrave.ts";
 import { TPQ, headTokens, type Token, type Song } from "../src/score/song.ts";
 
@@ -73,9 +73,11 @@ describe("刀 3：整小节休止 + 空小节", () => {
 });
 
 describe("刀 3：短音符压紧的开关", () => {
-  it("默认压紧：十六分 1.9；denseShort off：2.2", () => {
-    for (const g of gaps(xsOf(lay({ a: sixteen() }), "a"))) assert(near(g, 1.9), `默认 ${g}`);
-    for (const g of gaps(xsOf(lay({ a: sixteen() }, { denseShort: "off" }), "a"))) assert(near(g, 2.2), `松 ${g}`);
+  it("音距两档：正常（默认）十六分 1.9、四分 3.6；紧 1.7、3.0（user 11-09「可以再紧一点…加一个紧凑的」「松可能不要」）", () => {
+    for (const g of gaps(xsOf(lay({ a: sixteen() }), "a"))) assert(near(g, 1.9), `正常 ${g}`);
+    for (const g of gaps(xsOf(lay({ a: sixteen() }, { spacing: "tight" }), "a"))) assert(near(g, 1.7), `紧 ${g}`);
+    const q = (sp?: "tight") => gaps(xsOf(lay({ a: [...head(), N(TPQ), N(TPQ), N(TPQ), N(TPQ)] }, sp ? { spacing: sp } : {}), "a"))[0]!;
+    assert(near(q(), 3.6) && near(q("tight"), 3.0), `四分：正常 ${q()} / 紧 ${q("tight")}`);
   });
 });
 
@@ -100,5 +102,25 @@ describe("刀 3：三首样张 × 六种视图，同一行的符头不叠", () =
         for (let i = 1; i < u.length; i++) assert(u[i]! - u[i - 1]! >= 1.18 * L.sp - 1e-6, `${key} · ${v.name} 行 ${sys}：${(u[i - 1]! / L.sp).toFixed(2)} 和 ${(u[i]! / L.sp).toFixed(2)} 叠了`);
       }
     }
+  });
+});
+
+describe("刀 3：音距存进文件", () => {
+  it("紧写进 score.json、读回来一样；正常不写；v0.16.33 写过的 denseShort: \"off\" 读成正常、存的时候丢掉", async () => {
+    const { saveMxl, openBytes, emptyExtras } = await import("../src/format/project.ts");
+    const { emptySong } = await import("../src/score/song.ts");
+    const { unzipSync, zipSync, strFromU8, strToU8 } = await import("../vendor/fflate/fflate.esm.js" as string) as typeof import("../vendor/fflate/fflate.esm.js");
+    const save = (song: Song) => saveMxl({ song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-11-09" });
+    for (const sp of ["tight", undefined] as const) {
+      const bytes = save({ ...emptySong(), ...(sp ? { spacing: sp } : {}) } as Song), files = unzipSync(bytes), score = JSON.parse(strFromU8(files[".moonsinger/score.json"]!));
+      assert(score.spacing === sp && !("denseShort" in score), `写：${sp} → ${JSON.stringify(score.spacing)}`);
+      assert(openBytes("x.mxl", bytes).song.spacing === sp, `读：${sp}`);
+    }
+    const files = unzipSync(save(emptySong())), score = JSON.parse(strFromU8(files[".moonsinger/score.json"]!));
+    files[".moonsinger/score.json"] = strToU8(JSON.stringify({ ...score, denseShort: "off" }));
+    const old = openBytes("x.mxl", zipSync(files));
+    eq(old.song.spacing, undefined, "旧字段读成正常");
+    const again = JSON.parse(strFromU8(unzipSync(saveMxl({ song: old.song, hum: "n", extras: old.extras, app: "test", date: "2026-11-09" }))[".moonsinger/score.json"]!));
+    assert(!("denseShort" in again), "再存一次旧字段就没了（认识的键，不当成不认识的原样带回）");
   });
 });

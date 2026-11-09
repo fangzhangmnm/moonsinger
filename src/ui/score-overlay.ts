@@ -30,6 +30,8 @@ export interface OverlayHost {
   onKeyHint(paper: string, part: string, index: number, at: { x: number; y: number }): void;
   onLeaveFamily(paper: string, host: string): void;
   onHidden(paper: string, parts: string[], at: { x: number; y: number }): void;
+  /** 「隐藏 N 段」（v0.16.34）：全部视图里隐藏的整张纸不排、不占地方，提醒 = 歌名那一条上一颗不占位的小标；点开一列（去看 / 放出来）。 */
+  onHiddenPapers(papers: string[], at: { x: number; y: number }): void;
 }
 /** 这一帧要知道的谱面状态（排版器不知道的那些）。 */
 export interface OverlayView {
@@ -44,6 +46,7 @@ type Item = { key: string; tag: "div" | "button"; cls: string; style: string; ht
 
 export class ScoreOverlay {
   private els = new Map<string, HTMLElement>();
+  private hiddenPapers: string[] = [];   // 全部视图里隐藏着的整张纸（「隐藏 N 段」点开时用；同上，不走 DOM 属性）
   private hiddenOf = new Map<string, string[]>();   // 纸 → 这张纸上隐藏着的声部（「隐藏 N」点开时用；不走 DOM 属性——编号是文件里读进来的，不保证没有空格 / 引号）
   private press: { el: HTMLElement; pid: number; timer: number; fired: boolean; touch: boolean; x: number; y: number } | null = null;
   constructor(private root: HTMLElement, private host: OverlayHost) {
@@ -112,9 +115,7 @@ export class ScoreOverlay {
       }
       // 空着的曲段名 / 折叠的隐藏纸（名字 + 说明）/ 本段视图里隐藏纸的说明 / 没有声部的纸
       if (pp.title.shown && !paper.name && !pp.hidden) add(`ph-paper:${pp.id}`, "div", "ov-placeholder ov-ph-paper", text(pp.title.x, pp.title.baseline, pp.title.size), esc(_t("曲段名")));
-      if (pp.hidden && paper.name) add(`hp-name:${pp.id}`, "div", "ov-hidden-paper-name", text(pp.title.x, pp.title.baseline, pp.title.size), esc(paper.name));
-      if (pp.stub) add(`hp-stub:${pp.id}`, "div", "ov-stub", `${box(pp.stub.x, pp.stub.y, pp.stub.w, pp.stub.h)};font-size:${px(1.1 * sp)}`, `<span>${esc(_t("隐藏 · 不放（点曲段名进去）"))}</span><i></i>`);
-      if (pp.note) add(`hp-note:${pp.id}`, "div", "ov-stub ov-note", `${box(pp.note.x, pp.note.y, pp.note.w, pp.note.h)};font-size:${px(1.1 * sp)}`, `<span>${esc(_t("这张纸隐藏着：不放、不进压平件（「⋯」里显示）"))}</span>`);
+      if (pp.note) add(`hp-note:${pp.id}`, "div", "ov-stub ov-note", `${box(pp.note.x, pp.note.y, pp.note.w, pp.note.h)};font-size:${px(1.1 * sp)}`, `<span>${esc(_t("这一段隐藏着：不放、不印（「⋯」里能放出来）"))}</span>`);
       if (pp.empty) add(`empty:${pp.id}`, "div", "ov-placeholder ov-ph-empty", text(pp.empty.x, pp.empty.y + 2.2 * sp, 1.3 * sp), esc(_t("（这张纸上没有声部）")));
       // ④ 每张纸底下的虚线框：本段 = 「＋ 声部」「＋ 新曲段」并排；全部 = 一个整宽「＋ 声部」
       if (pp.under && v.edit) {
@@ -125,6 +126,14 @@ export class ScoreOverlay {
         } else add(`add:${pp.id}:part`, "button", "ov-i ov-add", `${box(u.x, u.y, u.w, u.h)};${fs}`, esc(_t("＋ 声部")), { "data-ov": "add", "data-paper": pp.id, "data-kind": "part" });
       }
     }
+    // ③½ 「隐藏 N 段」（v0.16.34）：全部视图里隐藏的整张纸不排、不占地方（屏幕 = 印出来），提醒挂在歌名那一条左边、不占位
+    const hidPapers = L.papers.filter((pp) => pp.hidden).map((pp) => pp.id);
+    if (hidPapers.length && !v.onlyPaper) {
+      const h = CTL_H * sp, x = L.content.left + (!multi && v.edit ? (CTL_H + 1.2) * sp : 0);
+      add(`hidp:${hidPapers.join(",")}`, "button", "ov-i ov-chip ov-hidden ov-hidden-papers", `left:${px(x)};top:${px(L.title.y + 0.5 * sp)};height:${px(h)};font-size:${px(CTL_TEXT * sp)}`, esc(_t("隐藏 {n} 段", { n: hidPapers.length })),
+        { "data-ov": "hidpapers", title: _t("有 {n} 段隐藏着（不放、不印、不占地方）：点开去看或放出来", { n: hidPapers.length }) });
+    }
+    this.hiddenPapers = hidPapers;
     if (L.tail && v.edit) add("add:tail", "button", "ov-i ov-add", `${box(L.tail.x, L.tail.y, L.tail.w, L.tail.h)};font-size:${px(1.15 * sp)}`, esc(_t("＋ 新曲段")), { "data-ov": "add", "data-paper": L.tail.paper, "data-kind": "paper" });
     // ⑤ 空着的歌名 / 作者栏 / 编排（歌名、编排点了照旧是谱面的就地改——这几个字不接点；作者栏空着没有点击框 = 字本身接）
     if (!song.title) add("ph-title", "div", "ov-placeholder ov-ph-title", text((L.content.left + L.content.right) / 2, L.title.baseline, L.title.size * 0.8, "middle"), esc(_t("歌名")));
@@ -204,6 +213,7 @@ export class ScoreOverlay {
       case "keyhint": this.host.onKeyHint(d.paper!, d.part!, Number(d.index), mid); break;
       case "family": this.host.onLeaveFamily(d.paper!, d.host!); break;
       case "hidden": this.host.onHidden(d.paper!, this.hiddenOf.get(d.paper!) ?? [], mid); break;
+      case "hidpapers": this.host.onHiddenPapers(this.hiddenPapers, mid); break;
     }
   }
 }

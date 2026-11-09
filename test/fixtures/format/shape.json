@@ -64,7 +64,6 @@
     "score": {
       "arrangement": "string",
       "barNumbers": "string",
-      "denseShort": "string",
       "lyricFit": "string",
       "minor": "number",
       "papers": [
@@ -107,6 +106,7 @@
         }
       ],
       "patch": "number",
+      "spacing": "string",
       "version": "number",
       "view": {
         "finder": {

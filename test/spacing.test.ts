@@ -32,7 +32,7 @@ describe("横向间距：时值 → 宽", () => {
     assert(near(w(S), 1.9) && near(w(T32), 1.6) && near(w(E), 2.85) && near(w(Q), 3.6), `${w(S)} ${w(T32)} ${w(E)} ${w(Q)}`);
   });
   it("越长越宽（不许倒挂）；连音 / 附点落在两档之间", () => {
-    for (const dense of [false, true]) { const w = curveOf(dense); let prev = 0; for (let d = T32 / 2; d <= W * 2; d += 35) { assert(w(d) >= prev - 1e-9, `倒挂 @${d}`); prev = w(d); }
+    for (const dense of [false, true, "tight"] as const) { const w = curveOf(dense); let prev = 0; for (let d = T32 / 2; d <= W * 2; d += 35) { assert(w(d) >= prev - 1e-9, `倒挂 @${d}`); prev = w(d); }
       assert(w(T8) > w(S) && w(T8) < w(E), "八分三连音在十六分和八分之间"); assert(w(Q * 1.5) > w(Q) && w(Q * 1.5) < w(Q * 2), "附点四分在四分和二分之间"); }
   });
 });

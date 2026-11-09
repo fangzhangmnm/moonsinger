@@ -179,9 +179,9 @@ export interface Layout {
   bars: { system: number; x: number }[];
   parts: (Box & { paper: string; part: string })[];   // 歌手牌（每张纸第一行各条谱左边的声部名）的点击区域
   /** 每张纸：曲段名那一条（shown = 画了）、占的竖直范围。刀 1 起曲段控件（‹ k/n › 只看本段 ⋯）归覆盖层，这里只给锚点：
-   *  under = 纸底下留的那一条（chrome.underPaper，虚线框）；hidden = 这张纸隐藏着（全部视图里折叠）、stub = 折叠后的那一条；note = 本段视图里隐藏纸顶上那一条说明；
+   *  under = 纸底下留的那一条（chrome.underPaper，虚线框）；hidden = 这张纸隐藏着（全部视图里不排、不占地方：top = bottom，v0.16.34 起；原来折叠成一条）；note = 本段视图里隐藏纸顶上那一条说明；
    *  empty = 这张纸上没有声部时空着的那一条；hiddenParts = 这张纸上有、但隐藏着（不排、不占地方）的声部（覆盖层的「隐藏 N」）。 */
-  papers: { id: string; title: (TitleHit & { shown: boolean }); top: number; bottom: number; under?: Box; hidden?: boolean; stub?: Box; note?: Box; empty?: Box; hiddenParts: string[] }[];
+  papers: { id: string; title: (TitleHit & { shown: boolean }); top: number; bottom: number; under?: Box; hidden?: boolean; note?: Box; empty?: Box; hiddenParts: string[] }[];
   pageX: { left: number; right: number };        // 分页时版心左右的边距（px；svg 的 viewBox 往左扩这么多，页框画在负 x）；连续 = 0
   pages: { top: number; h: number }[];           // 分页时每页占的竖直范围（px）；连续 = []
   shortBars: number;   // 拍数和拍号对不上的小节有几个（状态行用；第一小节当弱起不算）
@@ -204,7 +204,7 @@ export function attachLayoutFns(d: LayoutData): Layout {
 // ── 尺寸（单位 sp） ─────────────────────────────────────────────────────
 const SQUEEZE = 0.15;   // 一行最多压紧多少（音符总宽的比例）
 const MARGIN = 1.2, BAR_W = 1.6, TITLE_H = 5.4;   // TITLE_H = 纸面最上面歌名那一条（v0.10.23：歌名放大了，这一条跟着高）
-const PAPER_H = 3.4, PAPER_GAP = 1.6, STUB_H = 2.4;
+const PAPER_H = 3.4, PAPER_GAP = 1.6;
 /** 纸上的小控件（不印）：在自己那一条里尽量大（2026-10-10 user「纸张上的小控件既然打印的时候不显示。在不影响点击和排版的时候为什么不做大一点，好点」）——
  *  高 = 曲段名那一条（3.4）减上下各 0.2；字放大；那一条本身不变高（排版 / 分页 / PDF 都不动）。 */
 const CTL_H = 3.0, CTL_GLYPH = 2.0, CTL_TEXT = 1.4;   // 曲段名那一条；纸与纸之间多空的；隐藏声部的细行
@@ -305,7 +305,7 @@ const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, nav: 0.5, clef:
 const CLEF_CUE = 0.72, CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
 const CLEF_GLYPH: Record<ClefName, string> = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
 /** 「1=F♯」这几个字大约多宽（sp，TEMPO_EM × 0.85 的字号）：按 C 调看时中途换调那一处至少留这么宽。 */
-const KEY_LABEL_W = 3.0;
+const KEY_LABEL_W = 3.5;   // v0.16.34：「1=」和速度字一样大（原来 0.85 倍、宽 3.0）
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
 const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
@@ -526,8 +526,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
   /** 调号位置上方的「1=X」（v0.16.10）：hint = 专业模式没有升降号的地方（刀 1 起不画，只记锚点 keyHints，覆盖层写淡的「1=C」）。字也算这个调号的点击区（谱头面板）。 */
   const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number) => {
     const y = staffTop(r) - P(0.8);
-    if (hint) { keyHints.push({ system: r, index, x: P(x0), y, size: TEMPO_EM * sp * 0.85 }); return; }
-    prims.push({ t: "text", x: P(x0), y, s: `1=${KEY_LABEL[f] ?? "?"}`, cls: "keysig key-label", size: TEMPO_EM * sp * 0.85, anchor: "start" });
+    if (hint) { keyHints.push({ system: r, index, x: P(x0), y, size: TEMPO_EM * sp }); return; }
+    prims.push({ t: "text", x: P(x0), y, s: `1=${KEY_LABEL[f] ?? "?"}`, cls: "keysig key-label", size: TEMPO_EM * sp, anchor: "start" });   // 和速度字一样大（v0.16.34；user 11-08「1=F 这些符号也不要字体刻意的小」）
     marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - P(TEMPO_EM * 0.95), w: P(KEY_LABEL_W), h: P(TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r: number, x0: number, f: number, cls: string, clef: "G" | "F" = "G") => {   // 低音谱号的升降号比高音低两级
@@ -559,6 +559,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
   function drawPaper(paper: PaperSeg, paperK: number): void {
     right = baseRight;
     if (o.onlyPaper && paper.id !== o.onlyPaper) return;   // 一次只看一张纸（曲段）
+    // 隐藏的纸（不放）：全部视图里不排、不占地方，屏幕和印出来一样（v0.16.34；user 11-09「隐藏整张曲段，打印的时候不留。但是你显示的时候要和打印时的排版一样，
+    //   就相当于它这个按钮可能要占用上面的空间」）——提醒归覆盖层：歌名那一条上一颗不占位的「隐藏 N 段」。原来折叠成曲段名 + 一条细行（预览和 PDF 都留着那一截）。
+    if (paper.hidden && !o.onlyPaper) { papersHit.push({ id: paper.id, title: { x: 0, y: yCur, w: 0, h: 0, baseline: yCur, size: 0, shown: false }, top: yCur, bottom: yCur, hidden: true, hiddenParts: [] }); return; }
     if (drawn++ > 0) yCur += P(PAPER_GAP);
     // 速度记号画在这张纸最上面那位在场的歌手那一行（它的速度才算数；2026-10-08 user「第四章sheet只有第二个声部的时候速度记号失踪了」——原来只画全曲第一个声部的）。
     //   开头的速度和上一段（前面最近一张不隐藏的纸）结尾不一样 = 前面标 ↑ / ↓（user「然后如果速度和上一段一样和不一样的话应该也有ui上的差别」→「不要grey out，而是有变化的时候会标一个东西提示用户」）
@@ -572,19 +575,10 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       ensure(P(PAPER_H) + firstBlock);
       const pBase = yCur + P(PAPER_H * 0.68);
       pTitle.y = yCur; pTitle.baseline = pBase;
-      if (paper.name && !(paper.hidden && !o.onlyPaper)) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });   // 折叠的隐藏纸的名字 = 不印（覆盖层写，刀 1）
+      if (paper.name) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });   // 折叠的隐藏纸的名字 = 不印（覆盖层写，刀 1）
       // 曲段控件组「‹ k/n › 只看本段 ⋯」（2026-10-08 user「…能不能放在和曲段导航在一起」「多曲段模式下面应该每个曲段都有对应的小控件组」）：刀 1 起归覆盖层，按 pTitle 右端摆
       yCur += P(PAPER_H);
     };
-    // 隐藏的纸（不放）：全部视图里折叠成曲段名 + 一条细行（点曲段名进去）；本段视图里照常画、顶上一行说明（user 2026-10-08「要明白的明白这是隐藏的」）
-    if (paper.hidden && !o.onlyPaper) {
-      drawPaperTitle(P(STUB_H));
-      ensure(P(STUB_H));
-      const stub = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: P(STUB_H) };   // 折叠后的那一条：说明字归覆盖层（刀 1），位置照留
-      yCur += P(STUB_H);
-      papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hidden: true, stub, hiddenParts: [] });
-      return;
-    }
     const present = o.parts.filter((p) => paper.tracks[p.id]), visible = present.filter((p) => !p.hidden), hiddenParts = present.filter((p) => p.hidden);
     // 合租（v0.10.28 改；设计账 ai-docs/20261010-shared-staff-percussion-design.md §1）：一家（主人 + 这张纸上看得见的房客）叠起来 = 一条虚拟的多声部 track
     //   （src/score/merge.ts：各人的音按时间并成和弦），当成主人那一位交给下面普通的排谱流程——自己挑谱号、太宽 = 双手谱、自动八度线、全是鼓 = 五线鼓谱；房客不再自己画。
@@ -773,7 +767,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       return out;
     };
     const spCols: SpCol[] = cols.map((c) => (c.chunk ? { tick: c.tick, items: c.units.flatMap((u) => (u.kind === "chunk" ? spItems(u, unitPart.get(u)!) : [])) } : { tick: c.tick, fixed: c.w, items: [] }));
-    const spO = { curve: curveOf(song.denseShort !== "off"), ...SP_DEFAULTS };
+    const spO = { curve: curveOf(song.spacing ?? "normal"), ...SP_DEFAULTS };
     const gaps = idealGaps(spCols, paperLen, spO), rodIx = indexRods(rodsOf(spCols, spO), spCols.length);
     // 折行：只在没有音跨过的小节线后折（一个小节自己一行都放不下 = 那个小节里逐列切开）；整张纸一起挑折点（像排书的 Knuth–Plass）：
     //   每行的代价 = 拉松多少（比例的平方）/ 挤紧多少（同上，挤比拉贵 4 倍；挤一挤 = 弹簧最多压 SQUEEZE，user「「稍微超出一点的小节」压进当前行 这个就是我想要的」）+ 每行 2；
@@ -909,7 +903,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const sysHOf = (G: ReturnType<typeof geoOf>) => P(G.reduce((n, x, r) => n + (rowHost[r] >= 0 ? 0 : x.g.reduce((m, y) => m + y.above + 4 + y.below, 0)), 0) + SYS_GAP);
     const geos = Array.from({ length: nSys }, (_, s) => geoOf(s));
     drawPaperTitle(geos.length ? sysHOf(geos[0]) : P(SPC.rowH));
-    let note: Box | undefined; if (paper.hidden) { ensure(P(STUB_H)); note = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: P(STUB_H) }; yCur += P(STUB_H); }   // 本段视图里的隐藏纸：顶上一条说明（字归覆盖层，刀 1）
+    let note: Box | undefined; if (paper.hidden) { const nx = P(MARGIN) + (paper.name ? o.measureLyric(paper.name) : 0) + P(1.0); note = { x: nx, y: pTitle.y, w: Math.max(P(4), pTitle.x + pTitle.w - nx), h: P(PAPER_H) }; }   // 本段视图里的隐藏纸：说明挂在曲段名后面（字归覆盖层），不占地方——和印出来一样（v0.16.34）
     for (let s = 0; s < nSys; s++) {
       const G = geos[s];
       ensure(sysHOf(G));   // 分页：一行谱整块放不下就翻页
@@ -1625,7 +1619,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
   //   合租叠起来的虚拟行不标（只看个大概的）。
   const chordTagsOut: Layout["chordTags"] = [];
   if (o.chordTags) {
-    const seen = new Set<string>(), fs = 1.25 * sp;
+    const seen = new Set<string>(), fs = TEMPO_EM * sp;   // 和速度字一样大（v0.16.34；原来 1.25）
     for (const h of notes) {
       if (h.part) continue;
       const sys = rows[h.system]; if (!sys) continue;

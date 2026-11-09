@@ -52,11 +52,14 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
       assert(print.systems.every((r) => r.paper === paper.id), "只有这一张纸的谱行");
     }
   });
-  it("隐藏的声部：不排、不占地方（刀 1，施工单 §4 第 5 条：预览的版面 = PDF）；隐藏的纸：折叠成曲段名那一条 + 一条（说明字归覆盖层），PDF 不印", () => {
+  it("隐藏的声部：不排、不占地方（刀 1，施工单 §4 第 5 条：预览的版面 = PDF）；隐藏的整张纸也不排、不占地方（v0.16.34，user 11-09「打印的时候不留…显示的时候要和打印时的排版一样」）", () => {
     const Lt = engrave(st.song, printOpts(st.song, 10, parts(st), measure, true, 0));
     assert(!Lt.prims.some((p) => /part-stub|hidden-paper|hidden-note/.test((p as { cls?: string }).cls ?? "")), "排版器不画细行 / 隐藏纸的名字 / 说明（覆盖层）");
     assert(Lt.systems.every((r) => r.part !== "P2"), "隐藏的声部没有谱行");
-    const hp = Lt.papers.find((p) => p.hidden); assert(!!hp && !!hp.stub, "隐藏的纸折叠：留着那一条（位置照留）");
+    const hp = Lt.papers.find((p) => p.hidden); assert(!!hp && hp.top === hp.bottom && !hp.title.shown, "隐藏的纸：一点地方都不占（top = bottom、没有曲段名那一条）");
+    assert(Lt.systems.every((r) => r.paper !== hp!.id) && !Lt.prims.some((p) => p.t === "text" && (p.cls ?? "").includes("paper-name") && p.s === st.song.papers.find((x) => x.id === hp!.id)!.name), "隐藏的纸：没有谱行、名字也不印");
+    const unhid = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, hidden: false })) };
+    assert(engrave(unhid, printOpts(unhid, 10, parts(st), measure, true, 0)).systems.length > Lt.systems.length, "放出来 = 多排几行");
     assert(Lt.papers.filter((p) => !p.hidden).every((p) => p.hiddenParts.includes("P2") || !st.song.papers.find((x) => x.id === p.id)!.tracks.P2), "锚点里记着哪几位隐藏着（覆盖层的「隐藏 N」）");
     const shown = engrave(st.song, printOpts(st.song, 10, parts(st).map((p) => ({ ...p, hidden: false })), measure, true, 0));
     assert(shown.height > Lt.height || shown.pages.length > Lt.pages.length || shown.systems.length > Lt.systems.length, "放出来 = 多排几行（隐藏时真的不占地方）");

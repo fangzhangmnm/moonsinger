@@ -151,9 +151,10 @@ export interface Song {
   lyricFit?: "lyrics";
   /** 小节号（v0.9.42；user「小节号要，可以页面设置toggle，默认是每行开头有」）：没有 = 每行开头印；off = 不印。存档 = score.json 可选字段 barNumbers（只写 "off"）。 */
   barNumbers?: "off";
-  /** 短音符压紧（v0.16.33，刀 3；user 11-08「正常人都会画密」→ 单独开关、默认开）：没有 = 压紧（十六分 1.9、三十二分 1.6 个线间距）；off = 松（十六分及更短一律 2.2，原来的样子）。
-   *  存档 = score.json 可选字段 denseShort（只写 "off"）。 */
-  denseShort?: "off";
+  /** 音距（v0.16.34，刀 3；src/render/spacing.ts）：没有 = 正常（短音符压紧：十六分 1.9、三十二分 1.6 个线间距）；tight = 紧（整条再收一截）。
+   *  user 11-08「正常人都会画密」→ 11-09「可以再紧一点，你这个新版本算正常，然后加一个紧凑的」「松可能不要」。存档 = score.json 可选字段 spacing（只写 "tight"；
+   *  v0.16.33 那一小时写的 denseShort: "off" 读成正常）。 */
+  spacing?: "tight";
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表
@@ -1656,10 +1657,10 @@ export function setBarNumbers(st: EditorState, on: boolean): EditorState {
   const song = { ...st.song }; if (on) delete song.barNumbers; else song.barNumbers = "off";
   return { ...st, song };
 }
-/** 短音符压紧（v0.16.33；默认开）。 */
-export function setDenseShort(st: EditorState, on: boolean): EditorState {
-  if ((st.song.denseShort !== "off") === on) return st;
-  const song = { ...st.song }; if (on) delete song.denseShort; else song.denseShort = "off";
+/** 音距两档（v0.16.34；默认正常）。 */
+export function setSpacing(st: EditorState, m: "normal" | "tight"): EditorState {
+  if ((st.song.spacing ?? "normal") === m) return st;
+  const song = { ...st.song }; if (m === "normal") delete song.spacing; else song.spacing = m;
   return { ...st, song };
 }
 /** 歌词怎么排（v0.9.40）：按节奏（默认）/ 按歌词。 */

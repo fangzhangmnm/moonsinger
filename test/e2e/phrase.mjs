@@ -63,12 +63,21 @@ try {
   await p.evaluate(() => window.__moonsinger.addPaper()); await p.waitForTimeout(100);
   const p2 = await p.evaluate(() => window.__moonsinger.state().song.papers[1].id);
   await p.evaluate((id) => window.__moonsinger.setPaperHidden(id, true), p2); await p.waitForTimeout(100);
-  check(/这张纸隐藏着/.test(await p.textContent("#score")), "本段视图进了隐藏的纸：顶上一行说明");
+  check(/这一段隐藏着/.test(await p.textContent("#score")), "本段视图进了隐藏的纸：曲段名后面一行说明");
+  const segH = await p.evaluate(() => window.__moonsinger.layout().height);
+  await p.evaluate((id) => window.__moonsinger.setPaperHidden(id, false), p2); await p.waitForTimeout(150);
+  check(await p.evaluate(() => window.__moonsinger.layout().height) === segH, "本段视图里那行说明不占地方（v0.16.34：放出来前后一样高）");
+  await p.evaluate((id) => window.__moonsinger.setPaperHidden(id, true), p2); await p.waitForTimeout(100);
   await p.evaluate(() => window.__moonsinger.setScope("all")); await p.waitForTimeout(150);
-  const txt = await p.textContent("#score");
-  check(/隐藏 · 不放/.test(txt), "全部视图：隐藏的纸折叠成一条", "");
-  const nSys = await p.evaluate(() => window.__moonsinger.layout().systems.filter((s) => s.paper === window.__moonsinger.state().song.papers[1].id).length);
-  check(nSys === 0, "折叠的纸不画谱行", String(nSys));
+  const L1 = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), id = m.state().song.papers[1].id, pp = L.papers.find((x) => x.id === id); return { sys: L.systems.filter((s) => s.paper === id).length, top: pp.top, bottom: pp.bottom }; });
+  check(L1.sys === 0 && L1.top === L1.bottom, "全部视图：隐藏的纸不排、不占地方（v0.16.34，屏幕 = 打印）", JSON.stringify(L1));
+  const chip = await p.$("#score .score-overlay .ov-hidden-papers");
+  check(!!chip && /隐藏 1 段/.test(await chip.textContent()), "歌名那一条上一颗「隐藏 1 段」");
+  await chip.click(); await p.waitForTimeout(150);
+  check(!!(await p.$('.ctx-menu.hidden-papers [data-v^="go:"]')) && !!(await p.$('.ctx-menu.hidden-papers [data-v^="show:"]')), "点开 = 一行：去看 / 放出来");
+  await p.click('.ctx-menu.hidden-papers [data-v^="show:"]'); await p.waitForTimeout(150);
+  check(!(await p.evaluate((id) => window.__moonsinger.state().song.papers.find((x) => x.id === id).hidden, p2)) && !(await p.$("#score .score-overlay .ov-hidden-papers")), "「放出来」= 不隐藏了，小标也没了");
+  await p.evaluate((id) => window.__moonsinger.setPaperHidden(id, true), p2); await p.waitForTimeout(100);
   // 压平（播放 / 压平件）跳过隐藏的纸
   const flatLen = await p.evaluate(() => { const m = window.__moonsinger; return m.flatten().tokens.length; });
   const p1Len = await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.length);

@@ -32,6 +32,14 @@ describe("PDF：资产", () => {
     const miss = [...need].map((c) => c.toString(16).toUpperCase()).filter((h) => !out.glyphs[h]);
     eq(miss.join(" "), "", "缺的码位");
   });
+  it("和弦级数会用到的每个字符在衬线字轮廓里都有（v0.16.34；缺了就跑 scripts/gen-chord-outlines.py）", () => {
+    const out = JSON.parse(fs.readFileSync(new URL("vendor/fonts/serif/chord-outlines.json", root), "utf8") as string) as { unitsPerEm: number; glyphs: Record<string, unknown> };
+    eq(out.unitsPerEm, 1000, "和 Bravura 一样 1000 单位一个 em（PDF 里同一个 em 换算）");
+    const src = fs.readFileSync(new URL("src/score/chord-name.ts", root), "utf8") as string;
+    const chars = new Set([...[...src.matchAll(/rs: "([^"]*)"/g)].map((m) => m[1]!).join(""), ..."IVXivx0123456789/() ♭♯"]);
+    const miss = [...chars].filter((c) => !out.glyphs[`T${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`]);
+    eq(miss.join(""), "", "缺的字");
+  });
   it("两款字体 = 从 WXHW 拷来的那份（逐字节）", () => {
     const sha = (p: string) => createHash("sha256").update(fs.readFileSync(new URL(p, root))).digest("hex");
     eq(sha("vendor/fonts/sans.ttf.gz"), "e29b80bf17ad17bbd07b59642a817b04075b5a9001c53f4783e42c82188d575a");

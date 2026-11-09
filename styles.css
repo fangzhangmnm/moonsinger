@@ -415,7 +415,8 @@ body.listen-mode .ink-caret { display: none; }
 .ov-ph-arr { overflow: hidden; text-overflow: ellipsis; }
 .ov-arr-empty { color: var(--muted); opacity: .6; }
 .ov-key-hint { background: none; border: 0; padding: 0; color: var(--muted); opacity: .6; font-family: system-ui, sans-serif; }   /* 专业模式 C 调的「1=C」 */
-.ov-hidden-paper-name { color: #b9b2a5; font-weight: 600; }               /* 折叠着的隐藏纸的名字 */
+.ctx-menu.hidden-papers .hidp-row { display: flex; align-items: center; gap: .3em; }   /* 「隐藏 N 段」点开的一行：名字 + 去看 + 放出来（v0.16.34） */
+.ctx-menu.hidden-papers .hidp-name { flex: 1; padding: 0 .6em; font-weight: 600; white-space: nowrap; }
 .ov-stub { display: flex; align-items: center; gap: .8em; color: #b9b2a5; }
 .ov-stub > i { flex: 1; border-top: 1px solid #ddd6c8; }
 .ov-note { color: var(--muted); }
@@ -984,7 +985,7 @@ body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不
 /* 「弹」的鬼音符（v0.10.6）：盖在谱上的一层，不接点击、不影响排版 */
 .ghost-preview { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; opacity: .5; }
 /* 和弦标级数（v0.16.13 起进排版 = 谱上的字，跟着设置印进 PDF）；点击在 score-view tap 里按 Layout.chordTags 的框判 */
-.staff-svg text.chord-tag { fill: var(--accent); font-family: system-ui, sans-serif; font-weight: 600; }
+.staff-svg text.chord-tag { fill: var(--accent); font-family: "Noto Serif", "Times New Roman", Times, Georgia, serif; font-weight: 600; }   /* v0.16.34：谱上分析和声那种衬线字（PDF = vendor/fonts/serif 的轮廓） */
 .ctx-menu.chord-info { min-width: 220px; }
 .chord-cand { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 5px 10px; align-items: baseline; }
 .chord-cand b { font-size: 15px; }

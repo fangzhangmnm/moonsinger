@@ -22,7 +22,11 @@ export async function loadPdfFont(id: PdfFontId): Promise<TtfFont> {
   return parseTtf(b[0] === 0x1f && b[1] === 0x8b ? await gunzip(b) : b);   // 有的主机替 .gz 加 Content-Encoding 先解掉：看魔数，别解两次
 }
 export async function loadMusicOutlines(): Promise<MusicOutlines> {
-  return getJson<MusicOutlines>("vendor/fonts/bravura/outlines.json").catch((e) => { throw new Error(_t("音乐字形下不来（{Error}）", { Error: (e as Error).message })); });
+  const [music, serif] = await Promise.all([
+    getJson<MusicOutlines>("vendor/fonts/bravura/outlines.json"),
+    getJson<MusicOutlines>("vendor/fonts/serif/chord-outlines.json"),   // 和弦级数的衬线字（v0.16.34；键 T + 码位，同一套 Form XObject；两份都是 1000 单位一个 em）
+  ]).catch((e) => { throw new Error(_t("音乐字形下不来（{Error}）", { Error: (e as Error).message })); });
+  return { unitsPerEm: music.unitsPerEm, glyphs: { ...music.glyphs, ...serif.glyphs } };
 }
 /** 第一次要下多少（给人看的估计）。 */
 export const PDF_FONT_MB: Record<PdfFontId, number> = { sans: 6.3, pinyin: 12.2 };
