@@ -14,7 +14,8 @@ import { TPQ } from "../score/song.ts";
 
 /** 一列里某一行的一样东西。left / right = 从对齐线往左 / 往右占多宽（sp）。dur = 时值（tick）；没有 = 不算「正在响的音」（整小节休止：画在小节正中，不参加间距）。 */
 export interface SpItem { row: number; left: number; right: number; dur?: number }
-/** fixed = 固定宽的列（小节线 / 调号 / 拍号 / 行中谱号 / 句号；不占宽的记号列 = 0）：到下一列正好这么宽，所有行都被它隔开。没有 fixed = 音列。 */
+/** fixed = 固定宽的列（小节线 / 调号 / 拍号 / 行中谱号 / 句号）：到下一列正好这么宽，所有行都被它隔开。没有 fixed = 音列。
+ *  fixed = 0（力度 / 渐强 / 风格 / 八度线 / 反复跳转 / 写字头这些不占宽的）= 透明：不顶任何东西、不隔开任何行，位置 = 后面那一列（和后面那个音对齐）。 */
 export interface SpCol { tick: number; fixed?: number; items: SpItem[] }
 export interface SpOpts {
   /** 时值（tick）→ 这么长的一个音独占一列时该多宽（sp）。 */
@@ -25,6 +26,14 @@ export interface SpOpts {
   emptyBar: number;
 }
 export interface Rod { from: number; to: number; min: number }
+/** 顶杆按「顶到哪一列」分好（摆一行要反复用；rodsOf 的结果整串算一次、分一次）。 */
+export interface RodIndex { into: Rod[][] }
+export function indexRods(rods: readonly Rod[], n: number): RodIndex {
+  const into: Rod[][] = Array.from({ length: n }, () => []);
+  for (const r of rods) into[r.to]?.push(r);
+  return { into };
+}
+const isZero = (c: SpCol) => c.fixed !== undefined && c.fixed <= EPS;
 const EPS = 1e-6;
 
 // ── 时值 → 宽 ────────────────────────────────────────────────────────────────
@@ -68,6 +77,7 @@ export function rodsOf(cols: readonly SpCol[], o: SpOpts): Rod[] {
   const rods: Rod[] = [], last = new Map<number, { col: number; right: number }>();
   let wall: { col: number; right: number } | null = null;   // 最近一个固定列：它隔开所有行
   cols.forEach((c, k) => {
+    if (isZero(c)) return;   // 不占宽的记号列：透明
     if (c.fixed !== undefined) {
       for (const l of last.values()) rods.push({ from: l.col, to: k, min: l.right + o.pad });
       if (wall && !last.size) rods.push({ from: wall.col, to: k, min: wall.right });
@@ -88,22 +98,23 @@ const leftOf = (c: SpCol): number => (c.fixed !== undefined ? 0 : c.items.reduce
 const rightOf = (c: SpCol): number => (c.fixed !== undefined ? c.fixed : c.items.reduce((m, it) => Math.max(m, it.right), 0));
 /** 这一行的列（cols[from..to)）按拉伸量 s 摆：弹簧 ×(1 + s)，顶杆是下限。xs[i] = 第 from + i 列的对齐线离行首多远；end = 这一行内容的右端。
  *  gaps / rods 是整串算好的（idealGaps / rodsOf），这里只用落在这一行里的那几条。 */
-export function placeLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[], from: number, to: number, s: number): { xs: number[]; end: number } {
+export function placeLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[] | RodIndex, from: number, to: number, s: number): { xs: number[]; end: number } {
   const n = to - from, xs = new Array<number>(n).fill(0); if (n <= 0) return { xs, end: 0 };
+  const ix = "into" in rods ? rods : indexRods(rods, cols.length);
   const gap = (k: number) => (cols[k]!.fixed !== undefined ? gaps[k]! : gaps[k]! * (1 + s));
-  const into = new Map<number, Rod[]>(); for (const r of rods) if (r.from >= from && r.to < to) { const a = into.get(r.to) ?? []; a.push(r); into.set(r.to, a); }
-  xs[0] = leftOf(cols[from]!);   // 行首：第一列的临时记号往右让出来
-  for (let k = from + 1; k < to; k++) {
-    let x = xs[k - 1 - from]! + gap(k - 1);
-    for (const r of into.get(k) ?? []) x = Math.max(x, xs[r.from - from]! + r.min);
+  for (let k = from; k < to; k++) {
+    let x = k === from ? 0 : xs[k - 1 - from]! + gap(k - 1);
+    x = Math.max(x, leftOf(cols[k]!));   // 行首：前面的临时记号往右让出来（前面只有不占宽的列时也算）
+    for (const r of ix.into[k] ?? []) if (r.from >= from) x = Math.max(x, xs[r.from - from]! + r.min);
     xs[k - from] = x;
   }
+  for (let k = to - 2; k >= from; k--) if (isZero(cols[k]!)) xs[k - from] = xs[k + 1 - from]!;   // 不占宽的列 = 后面那一列的位置
   const lastK = to - 1;
   return { xs, end: xs[n - 1]! + Math.max(gap(lastK), rightOf(cols[lastK]!)) };
 }
 /** 把这一行排进 width 宽：放得下 = 原样（justify 时拉到正好满）；超了 = 压，最多压 squeeze（弹簧的比例），还超 = over（调用方换行）。 */
-export function fitLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[], from: number, to: number, width: number, opt: { squeeze: number; justify: boolean }): { xs: number[]; end: number; stretch: number; over: boolean } {
-  const at = (s: number) => placeLine(cols, gaps, rods, from, to, s), nat = at(0);
+export function fitLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[] | RodIndex, from: number, to: number, width: number, opt: { squeeze: number; justify: boolean }): { xs: number[]; end: number; stretch: number; over: boolean } {
+  const ix = "into" in rods ? rods : indexRods(rods, cols.length), at = (s: number) => placeLine(cols, gaps, ix, from, to, s), nat = at(0);
   const solve = (lo: number, hi: number) => { for (let i = 0; i < 48; i++) { const mid = (lo + hi) / 2; if (at(mid).end > width) hi = mid; else lo = mid; } return lo; };
   if (nat.end > width + EPS) {
     const tight = at(-opt.squeeze);

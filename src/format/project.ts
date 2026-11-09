@@ -85,7 +85,7 @@ const stampOf = (k: FormatFile): Json => ({ version: FORMAT[k], minor: FORMAT_MI
 /** 指纹用的 JSON 文本 = 去掉 minor / patch 再按写文件同一个样子串化（拍子不是内容：定稿时记的指纹里没有它们，升了 minor 的 app 再存不能把定稿的歌判成「内容变了」；
  *  老文件的原文本来就是这么串出来的，去掉两个不存在的键 = 原文）。读写两边都走这一把。 */
 const fpTextOf = (o: Json): string => { const { minor: _m, patch: _p, ...rest } = o; return JSON.stringify(rest, null, 2) + "\n"; };
-const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers"]);
+const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "denseShort"]);
 export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; date: string; view?: Record<string, unknown> | null; references?: Record<string, Uint8Array>;
   /** 渲染核心的版本 + 哈希（src/core/version.ts；每次保存都记——user 2026-10-13「核心的版本号和hash反而是每次保存的时候都要记的。ui壳无所谓」）。不给 = 不写（测试 / 旧调用方）。 */
   core?: { version: string; hash: string } }   // references = 参考窗目录（路径都在 REFERENCES_DIR 下）   // 歌名 = song.title（可不填）；hum = 编辑器里的哼的字（写进月读候选的乐器配置）
@@ -167,7 +167,8 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
     ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}),   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
     ...(song.arrangement?.trim() ? { arrangement: song.arrangement } : {}),   // 编排那一行（可选，2026-10-08 深夜）
     ...(song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}),
-    ...(song.barNumbers === "off" ? { barNumbers: "off" } : {}) };   // 小节号不印（可选，v0.9.42）   // 歌词按歌词排（可选，v0.9.40；没写 = 按节奏，默认）
+    ...(song.barNumbers === "off" ? { barNumbers: "off" } : {}),
+    ...(song.denseShort === "off" ? { denseShort: "off" } : {}) };   // 短音符不压紧（可选，v0.16.33）   // 小节号不印（可选，v0.9.42）   // 歌词按歌词排（可选，v0.9.40；没写 = 按节奏，默认）
   // 嵌的音源：只写还有候选引用着的（换了音源 = 旧块从歌里丢掉；§10.2）
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => (x < y ? -1 : 1));
@@ -733,5 +734,5 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;   // 编排那一行（只有我们自己的文件有）
-  return { song: { ...song0, hum, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}), ...(extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" as const } : {}), ...(extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" as const } : {}) }, stem, hum, extras, ours, notices, view: (extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null, references: {}, advice: [] };
+  return { song: { ...song0, hum, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}), ...(extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" as const } : {}), ...(extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" as const } : {}), ...(extras.scoreExt?.denseShort === "off" ? { denseShort: "off" as const } : {}) }, stem, hum, extras, ours, notices, view: (extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null, references: {}, advice: [] };
 }

@@ -16,6 +16,8 @@ await p.evaluate(([seg, pages]) => { const m = window.__moonsinger; m.setScope?.
 const hide = opt("hide", "");   // --hide=2 = 隐藏第 2 位（从 1 数；看「隐藏 N」小标，2026-11-08 刀 1）
 if (hide) await p.evaluate((k) => { const m = window.__moonsinger, id = m.state().song.parts[k - 1]?.id; if (id) m.partView(id, { hidden: true }); }, Number(hide));
 await p.waitForTimeout(900);
+await p.evaluate(() => { for (const el of [document.scrollingElement, document.querySelector("#score")]) el?.scrollTo?.(0, 0); });   // 先滚回顶（开歌时跟随光标可能滚下去了，前后两版截出来对不齐；2026-11-09 Opus 5.5）
+await p.waitForTimeout(300);
 const sheet = await p.$("#score .sheet") ?? await p.$("#score svg");
 await sheet.screenshot({ path: out });
 const L = await p.evaluate(() => { const l = window.__moonsinger.layout(); return { systems: l.systems.length, w: Math.round(l.width), h: Math.round(l.height), sp: l.sp }; });

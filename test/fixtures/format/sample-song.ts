@@ -57,7 +57,7 @@ export function sampleSong(): Song {
     t({ kind: "rest", dur: Q * 2 }),
   ];
   // 2026-10-13 加（都是可选字段，只为了形状快照盖到）：P2 合租挂在 P1 上 + 不要自动八度线；歌词按歌词排；不印小节号；第二张纸隐藏；这首歌的许可。
-  return { title: "冻结样本", credits: "词曲：样本\n演唱：月读", arrangement: "1 (2)×2", hum: "u", paper: paperOf("A5"), rights: "CC0", lyricFit: "lyrics", barNumbers: "off",
+  return { title: "冻结样本", credits: "词曲：样本\n演唱：月读", arrangement: "1 (2)×2", hum: "u", paper: paperOf("A5"), rights: "CC0", lyricFit: "lyrics", barNumbers: "off", denseShort: "off",
     parts: [{ id: "P1", role: "r1", mic: "m1" }, { id: "P2", role: "r2", mic: "m2", host: "P1", autoOttava: false }],
     papers: [{ id: "p1", name: "", tracks: { P1: p1P1, P2: p1P2 } }, { id: "p2", name: "副歌", tracks: { P1: p2P1 }, hidden: true }] };
 }

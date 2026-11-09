@@ -64,6 +64,7 @@
     "score": {
       "arrangement": "string",
       "barNumbers": "string",
+      "denseShort": "string",
       "lyricFit": "string",
       "minor": "number",
       "papers": [

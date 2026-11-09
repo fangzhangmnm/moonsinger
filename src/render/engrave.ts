@@ -23,6 +23,7 @@ import { dynOverridden } from "../score/perform.ts";
 import { navWhy } from "../score/repeats.ts";
 import { parseArrangement } from "../score/arrange.ts";
 import { densityOf, type Density } from "../score/paper.ts";
+import { curveOf, SP_DEFAULTS, idealGaps, rodsOf, indexRods, placeLine, fitLine, type SpCol, type SpItem } from "./spacing.ts";
 import { type Pitch, diatonicIndex, keyAlter, midiOf, spellMidi } from "../score/pitch.ts";
 import { percOf, type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
@@ -134,8 +135,8 @@ export interface LyricHit { index: number; system: number; x: number; y: number;
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export type PartToggle = "muted" | "solo" | "hidden" | "only";
 export type PartToggles = Record<PartToggle, boolean>;
-/** 名字那一栏至少多宽（sp）：屏幕上覆盖层在名字上面放两颗 3.2 的大钮（src/ui/score-overlay.ts TG_BTN）；PDF 照样这么宽 = 预览的版面 = PDF（屏幕和 PDF 同一条规矩；刀 1 起这只是一个几何常数，排版器不画钮）。 */
-const NAME_MIN = 3.2 * 2 + 0.4;
+/** 名字那一栏至少多宽（sp）：屏幕上覆盖层在名字上面放两颗 3.0 的大钮（src/ui/score-overlay.ts TG_BTN）；PDF 照样这么宽 = 预览的版面 = PDF（屏幕和 PDF 同一条规矩；刀 1 起这只是一个几何常数，排版器不画钮）。 */
+const NAME_MIN = 3.0 * 2 + 0.4;   // 两颗钮 3.0（v0.16.33 起；改钮的大小要两处一起改）
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
 /** 谱号 / 八度线的点击区域（v0.9.28）：start = 每行开头的谱号（index = 管着它的谱号记号，−1 = 声部自己的谱号）；mid = 行中间的谱号记号；ottava = 八度线开头的字。 */
 export interface ClefHit { kind: "start" | "mid" | "ottava"; paper: string; part: string; index: number; system: number; x: number; y: number; w: number; h: number; /** 自动画的八度线（v0.9.37）：index = −1，这一段的起止下标和几度。 */ run?: { from: number; to: number; shift: 1 | 2 | -1 } }
@@ -281,6 +282,9 @@ interface Chunk {
   art: Art[]; breath: boolean;                 // 修：第一段画跳音 / 重音 / 保持，最后一段后面画呼吸（2026-10-08）
   inhale?: "soft" | "big";                     // 呼吸出声：逗号后面写「吸」/「深吸」（2026-10-10）
   whisper?: boolean;                           // 气声：这个音（拆开的每一段）画 × 符头（2026-10-10）
+  lyW?: number;                                // 按歌词排时这个字多宽（sp）：横向间距里当这一位歌词那一行的一样东西（刀 3）
+  mrest?: "draw" | "skip";                     // 整小节休止（真写的休止正好占满一个小节、从小节头起）：不参加横向间距，画一个全休止在这个小节正中（只画 draw 那一段；刀 3）
+  inkL?: number;                               // 这个音的墨往对齐线左边伸多远（sp；临时记号 / 括号 / 琶音线）：光标画在它左边（刀 3）
   x: number; system: number; tick: number; staff: Staff;   // staff = 大谱表里在上还是下（单谱表 = 1）
 }
 interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean; repeat?: Repeat; times?: number; style?: "double" | "final" }   // repeat = 反复小节线（Bravura 的反复记号字形，比细线宽）   // auto = 按拍号自动画的（index = -1，不是 token）
@@ -368,6 +372,7 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
       flushFull();
       const piece = o.autoBars ? Math.min(left, len - inBar) : left;
       const { ratio, chunks } = notate(piece);
+      const mrest = !isNote && inBar < 1e-6 && Math.abs(piece - len) < 1e-6;   // 整小节休止（刀 3）：这一段正好一个小节、从小节头起
       let off = 0;
       for (const c of chunks) {
         const accs: (number | null)[] = pitches.map((pp) => {
@@ -380,10 +385,11 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
         const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
         const accW = accs.some((a) => a !== null) ? 1.3 : 0;
         let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
-        if (lyric && lyric !== MELISMA_MARK && !o.rhythm) w = Math.max(w, accW + o.measureLyric(lyricShow(lyric)) / o.sp + (nt.hyph ? 1.4 : 0.7));   // 按歌词排：字把音推开；按节奏排（v0.9.40）= 音只看时值
+        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? o.measureLyric(lyricShow(lyric)) / o.sp : undefined;
+        if (lyW !== undefined) w = Math.max(w, accW + lyW + (nt.hyph ? 1.4 : 0.7));   // 按歌词排：字把音推开；按节奏排（v0.9.40）= 音只看时值
         const u: Chunk = { kind: "chunk", index: i, j, last: false, m: measureNo, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
           ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs,
-          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [], breath: false, ...(isNote && nt.art?.includes("whisper") ? { whisper: true } : {}), ...(o.padFrom !== undefined && i >= o.padFrom ? { pad: true as const } : {}) };
+          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [], breath: false, ...(isNote && nt.art?.includes("whisper") ? { whisper: true } : {}), ...(lyW !== undefined ? { lyW } : {}), ...(mrest ? { mrest: off < 1e-6 ? "draw" as const : "skip" as const } : {}), ...(o.padFrom !== undefined && i >= o.padFrom ? { pad: true as const } : {}) };
         units.push(u); lastChunk = u;
         off += c.ticks; j++;
       }
@@ -735,42 +741,97 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const f = keyNow.get(q.p.id)!;
       return (first ? ind0 : indN) + MARGIN + 0.6 + clefW(q) + 1.0 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
     }));
-    let system = 0, x = headerOf(true);
-    const sysStarts: number[] = [x], sysKeys: Map<string, number>[] = [new Map(keyNow)];
-    const newline = () => { system++; x = headerOf(false); sysStarts.push(x); sysKeys.push(new Map(keyNow)); };
-    const placedCols: Col[] = [];
-    const place = (c: Col) => { c.x = x; c.system = system; x += c.w; placedCols.push(c); for (const u of c.units) { u.x = c.x; u.system = system; if (u.kind === "key") keyNow.set(per.find((q) => q.units.includes(u))!.p.id, u.fifths); } };
-    const chunkW = (cs: Col[]) => cs.reduce((a, c) => a + (c.chunk ? c.w : 0), 0);
-    let seg: Col[] = [];
-    // 挤一挤（user「「稍微超出一点的小节」压进当前行 这个就是我想要的」）：下一个小节只超出这一行音符总宽的 SQUEEZE 以内 = 留在这一行、整行压紧一点（下面右端对齐那一步压）。
-    const brk = o.scroll ? Infinity : right;   // 横卷 = 不折行
-    const flush = () => {
-      const segW = seg.reduce((s, c) => s + c.w, 0), closed = seg.length > 0 && seg[seg.length - 1].bar;
-      const over = x + segW + (closed ? 0 : BAR_W) - brk;
-      if (over > 0 && x > sysStarts[system] + 0.01) {
-        const lineChunks = chunkW(placedCols.filter((c) => c.system === system)) + chunkW(seg);
-        if (over <= lineChunks * SQUEEZE) { for (const c of seg) place(c); seg = []; return; }
-        newline();
+    // 3. 横向间距（刀 3，2026-11-09 Claude Opus 5.5；施工单 ai-docs/20261109-work-order-display-cuts-2-4.md §1；算法 = src/render/spacing.ts）：
+    //   一列到下一列多远 = 这一刻正在响的音里最短的那个该占的宽（别的声部的长音只是跨过好几列，不再把这一列撑大）；同一行前后两样东西真会撞才顶开；
+    //   一行排满只拉 / 压弹簧（小节线、调号这些固定宽的不拉）。原来一列的宽 = 这一刻各声部刚开始的音里最长的那个（十六分对全音符：第一个 5.1、其余 2.2）。
+    //   对齐线 = 列的 x；符头画在 x + 0.35（同原来），临时记号挂在左边、进前一列的空。
+    const unitPart = new Map<Unit, number>(); per.forEach((q, pi) => { for (const u of q.units) unitPart.set(u, pi); });
+    const spRow = (pi: number, staff: Staff) => (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 + (staff - 1) * 2;   // 同一条谱表上的才会撞；声部 2 画在主人那一行
+    const restW = (base: number) => (base >= WHOLE ? W.restWhole : base >= TPQ * 2 ? W.restHalf : base >= TPQ ? W.restQuarter : base >= TPQ / 2 ? W.rest8th : base >= TPQ / 4 ? W.rest16th : W.rest32nd);
+    const spItems = (u: Chunk, pi: number): SpItem[] => {
+      const q = per[pi], v2 = rowHost[pi] >= 0, row = spRow(pi, u.staff), out: SpItem[] = [];
+      if (!u.note) {
+        if (u.pad || v2 || u.mrest) return out;   // 补齐的 / 声部 2 的空不画；整小节休止画在小节正中，都不参加间距
+        out.push({ row, left: -0.35, right: 0.35 + (u.dotted ? 1.5 + 0.45 : restW(u.base)), dur: u.ticks });
+        return out;
       }
-      for (const c of seg) { if (x + c.w > brk && x > sysStarts[system] + 0.01) newline(); place(c); }
-      seg = [];
+      const nhw = u.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack, perc = !!pmode[pi] && !!q.p.perc;
+      const ds = (u.pitches.length ? u.pitches : u.pitch ? [u.pitch] : []).map((pp) => posD(q, pp, u.staff, u.index));
+      const second = ds.some((d, k) => k > 0 && Math.abs(ds[k - 1] - d) === 1);
+      let right = 0.35 + nhw * (second ? 1.95 : 1), left = -0.35;
+      if (u.dotted) right = Math.max(right, 0.35 + nhw + 0.3 + 0.45);
+      const nAcc = perc ? [] : u.accs.map((a, k) => (a === null ? -1 : k)).filter((k) => k >= 0);
+      if (nAcc.length) left = 1.1 + (nAcc.some((k, i) => i > 0 && Math.abs(ds[nAcc[i - 1]] - ds[k]) < 3) ? 1.1 : 0);
+      const ghost = u.art.includes("ghost");
+      if (ghost) { left = nAcc.length ? left + 0.6 : Math.max(left, 0.15); right += 0.45; }   // 括号（符头左 0.6 / 右 0.25 起，各约 0.3 宽）很细：两个音的括号允许几乎贴上（密的幽灵音滚奏不至于一个小节一行）
+      if (u.art.includes("arpeggio")) left = Math.max(left, (nAcc.length ? 1.3 : 0) + 0.83);
+      if (u.breath) right = Math.max(right, 0.35 + nhw + 0.55 + 0.85);
+      if (u.breath && u.inhale) right = Math.max(right, 0.35 + nhw + 1.35 + (u.inhale === "big" ? 2.3 : 1.15));
+      u.inkL = Math.max(0, left);
+      out.push({ row, left, right, dur: u.ticks });
+      if (u.lyW !== undefined && !v2) out.push({ row: spRow(pi, q.staves as Staff) + 1, left: u.lyW / 2 - 0.94, right: 0.94 + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });   // 按歌词排：字和字之间不撞（同一套顶杆）
+      return out;
     };
-    // 句不换行（user 2026-10-08「不应该按照句换行，打谱软件没这么干的」）：只是换气记号 + 「合」的边界；折行照旧只在小节线后
-    for (const c of cols) { seg.push(c); if (c.bar && breakableAt(c.tick)) flush(); }
-    flush();
-    const nSys = system + 1;
-    // 右端对齐：多出来的地方按宽度分给这一行的音 / 休止（小节线、记号不拉宽）；挤进来超出的行（最后一行也算）同样按宽度压回来
-    for (let s = 0; s < nSys; s++) {
-      const row = cols.filter((c) => c.system === s);
-      const end = row.reduce((m, c) => Math.max(m, c.x + c.w), sysStarts[s]), avail = brk - sysStarts[s], used = end - sysStarts[s];
-      if (used <= avail + 1e-6 && (s === nSys - 1 || used < avail * 0.6)) continue;
-      const gw = chunkW(row);
-      if (!gw) continue;
-      const k = (avail - used) / gw;
-      let xx = sysStarts[s];
-      for (const c of row) { c.x = xx; if (c.chunk) c.w *= 1 + k; xx += c.w; for (const u of c.units) { u.x = c.x; if (u.kind === "chunk") u.w = c.w; } }
+    const spCols: SpCol[] = cols.map((c) => (c.chunk ? { tick: c.tick, items: c.units.flatMap((u) => (u.kind === "chunk" ? spItems(u, unitPart.get(u)!) : [])) } : { tick: c.tick, fixed: c.w, items: [] }));
+    const spO = { curve: curveOf(song.denseShort !== "off"), ...SP_DEFAULTS };
+    const gaps = idealGaps(spCols, paperLen, spO), rodIx = indexRods(rodsOf(spCols, spO), spCols.length);
+    // 折行：只在没有音跨过的小节线后折（一个小节自己一行都放不下 = 那个小节里逐列切开）；整张纸一起挑折点（像排书的 Knuth–Plass）：
+    //   每行的代价 = 拉松多少（比例的平方）/ 挤紧多少（同上，挤比拉贵 4 倍；挤一挤 = 弹簧最多压 SQUEEZE，user「「稍微超出一点的小节」压进当前行 这个就是我想要的」）+ 每行 2；
+    //   最后一行不算拉松。原来是从前往后一行行塞满：小节窄了以后会出现「前面挤满、最后一行孤零零一个小节」（刀 3 样张歌第二、三段就是这样）。
+    const brk = o.scroll ? Infinity : right;   // 横卷 = 不折行
+    const n = cols.length, lineFrom: number[] = [], sysStarts: number[] = [], sysKeys: Map<string, number>[] = [];
+    const keyAtCol: Map<string, number>[] = [];   // 第 k 列之前生效的调号（每行开头画哪个调号、行首多宽）
+    for (let k = 0; k <= n; k++) { keyAtCol.push(new Map(keyNow)); if (k < n) for (const u of cols[k].units) if (u.kind === "key") keyNow.set(per[unitPart.get(u)!].p.id, u.fifths); }
+    const headAt = (k: number, first: boolean) => { const keep = new Map(keyNow); keyNow.clear(); for (const [a, b] of keyAtCol[k]) keyNow.set(a, b); const h = headerOf(first); keyNow.clear(); for (const [a, b] of keep) keyNow.set(a, b); return h; };
+    const tail = (to: number) => (cols[to - 1].bar ? 0 : BAR_W);
+    const lineW = (from: number, to: number, s: number) => placeLine(spCols, gaps, rodIx, from, to, s).end + tail(to);
+    // 段 = 能折的地方之间的一串列
+    const segs: number[] = [];   // 每一段的结尾（不含）
+    for (let k = 0; k < n; k++) if (k === n - 1 || (cols[k].bar && breakableAt(cols[k].tick))) segs.push(k + 1);
+    if (brk !== Infinity) {   // 一段自己一行都放不下（按非首行的宽量）：逐列切开（原来的规矩）
+      const fine: number[] = []; let from = 0;
+      for (const end of segs) {
+        let a = from;
+        while (a < end && lineW(a, end, -SQUEEZE) > brk - headAt(a, a === 0)) { let k = a; while (k + 1 < end && lineW(a, k + 2, -SQUEEZE) <= brk - headAt(a, a === 0)) k++; fine.push(k + 1); a = k + 1; }
+        if (a < end) fine.push(end);
+        from = end;
+      }
+      segs.splice(0, segs.length, ...fine);
     }
-    // 横卷：这张纸的右端 = 内容的右端 + 尾巴（光标停在最后那儿照旧画到右边、能点着接着写）
+    const segStart = (i: number) => (i === 0 ? 0 : segs[i - 1]);
+    if (brk === Infinity || segs.length <= 1) lineFrom.push(0);
+    else {
+      const S = segs.length, best = new Array<number>(S + 1).fill(Infinity), prev = new Array<number>(S + 1).fill(-1);
+      best[0] = 0;
+      for (let i = 0; i < S; i++) {
+        if (best[i] === Infinity) continue;
+        const from = segStart(i), avail = brk - headAt(from, i === 0);
+        for (let j = i + 1; j <= S; j++) {
+          const to = segs[j - 1], tight = lineW(from, to, -SQUEEZE);
+          if (tight > avail + 1e-6 && j > i + 1) break;   // 放不下了（只有一段时照放：上面已经切到放得下）
+          const nat = lineW(from, to, 0), last = j === S;
+          const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last ? 0 : 100 * ((avail - nat) / avail) ** 2;
+          if (best[i] + cost + 2 < best[j]) { best[j] = best[i] + cost + 2; prev[j] = i; }
+        }
+      }
+      const starts: number[] = []; for (let j = S; j > 0; j = prev[j]) starts.push(segStart(prev[j]));
+      lineFrom.push(...starts.reverse());
+    }
+    for (const k of lineFrom) { sysStarts.push(headAt(k, k === 0)); sysKeys.push(new Map(keyAtCol[k])); }
+    for (const [a, b] of keyAtCol[n]) keyNow.set(a, b);
+    const nSys = lineFrom.length;
+    // 摆：不是最后一行、用了六成以上 = 拉满；超了（挤一挤进来的）= 压回来；别的照自然宽
+    for (let s = 0; s < nSys; s++) {
+      const from = lineFrom[s], to = s + 1 < nSys ? lineFrom[s + 1] : n; if (from >= to) continue;
+      const avail = brk - sysStarts[s], nat = placeLine(spCols, gaps, rodIx, from, to, 0);
+      const f = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true }) : nat;
+      for (let k = from; k < to; k++) {
+        const c = cols[k], x0 = sysStarts[s] + f.xs[k - from], x1 = sysStarts[s] + (k + 1 < to ? f.xs[k + 1 - from] : f.end);
+        c.x = x0; c.system = s; c.w = Math.max(0, x1 - x0);
+        for (const u of c.units) { u.x = c.x; u.system = s; if (u.kind === "chunk") u.w = c.w; }
+      }
+    }
+    const placedCols = cols;
     if (o.scroll) { right = Math.max(baseRight, ...cols.map((c) => c.x + c.w)) + SCROLL_TAIL; sheetRight = Math.max(sheetRight, right); }
     // 4. 行号与坐标：这张纸第 s 行第 r 个声部的第 k 张谱表 = 一条谱行（大谱表两条；紧凑版式里这张纸上没写歌词的声部那条更矮）
     const rowBase = rows.length, nR = parts.length;
@@ -790,7 +851,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const bySys = new Map<number, { index: number; cx: number; w: number; hy?: boolean }[]>();
       for (const u of q.units) if (u.kind === "chunk" && u.lyric && u.lyric !== MELISMA_MARK) {
         const arr = bySys.get(u.system) ?? []; bySys.set(u.system, arr);
-        arr.push({ index: u.index, cx: u.x + u.accW + 0.6, w: o.measureLyric(lyricShow(u.lyric)) / sp, hy: u.hyph });
+        arr.push({ index: u.index, cx: u.x + 0.6, w: o.measureLyric(lyricShow(u.lyric)) / sp, hy: u.hyph });
       }
       for (const [sy, items] of bySys) {
         items.sort((a, b) => a.cx - b.cx);
@@ -1044,7 +1105,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         prims.push({ tok, t: "text", x: atEnd ? x : x - P(0.2), y, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
         dyns.push({ index: u.index, kind: "nav", system: rowOf(u.system, r, 0), x: atEnd ? x - tw - P(0.3) : x - P(0.5), y: y - P(TEMPO_EM * 1.1), w: tw + P(0.8), h: P(TEMPO_EM * 1.5) });
       };
-      const nhX = (c: Chunk) => P(c.x + c.accW + 0.35);
+      const nhX = (c: Chunk) => P(c.x + 0.35);   // 刀 3：对齐线 = 列的 x，临时记号挂在左边（原来 + accW）
       // × 符头：这个声部台上那位固定敲一个键（鼓件 / 音效固定原速）——谱上写的音高照留、只是不拿来出声，画成 × 让人一眼看出来（user 2026-10-08「披露就用x」）
       const pm = pmode[r], percHere = !!pm && !!q.p.perc;   // 鼓谱：符头按仓鼠的表（每个音各自的）、不画升降号
       const xHead = !!q.p.xHead && !percHere;
@@ -1061,7 +1122,17 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const drawChunk = (c: Chunk) => {
         const cls = clsOf(c), row = RW(c);
         if (!c.note) {
-          if (c.pad || v2) return;   // 补齐的空小节不画休止；声部 2 的空也不画（隔得远的音才在这儿）（v0.10.19；user「remove the ghost mute idea」「dont display them. once you insert a note later in a new section, all the previous mute materialized」）：位置和落点照留，在那儿写 = 前面的空落成真休止
+          if (c.pad || v2 || c.mrest === "skip") return;   // 整小节休止只画第一段（刀 3）；补齐的空小节不画休止；声部 2 的空也不画（隔得远的音才在这儿）（v0.10.19；user「remove the ghost mute idea」「dont display them. once you insert a note later in a new section, all the previous mute materialized」）：位置和落点照留，在那儿写 = 前面的空落成真休止
+          if (c.mrest === "draw") {   // 整小节休止（刀 3）：不管什么拍号一律全休止、画在这个小节两条小节线的正中、不画附点（user 截图：6/8 画成附点二分且靠左）
+            const k = units.indexOf(c);
+            let L = sysStarts[c.system] ?? c.x, R = staffEnd[c.system] ?? right;
+            for (let i = k - 1; i >= 0; i--) { const v = units[i]; if (v.system !== c.system) break; if (v.kind === "chunk" || v.w <= 1e-6) continue; L = v.kind === "bar" ? v.x + (v.repeat ? v.w - 0.4 : 0.7) : v.x + v.w; break; }
+            for (let i = k + 1; i < units.length; i++) { const v = units[i]; if (v.system !== c.system) break; if (v.kind === "bar") { R = v.x + 0.7; break; } }
+            const rx = P((L + R) / 2 - W.restWhole / 2), ry = pm !== "one" ? yOf(row, 36) : yOf(row, MID_LINE);
+            prims.push({ tok: tokOf(c), t: "glyph", x: rx, y: ry, ch: GLYPH.restWhole, cls: cls ? `rest ${cls}` : "rest" });
+            if (c.j === 0 && c.index >= 0) rests.push({ index: c.index, system: row, x: rx, y: yOf(row, MID_LINE), w: P(1.2) });
+            return;
+          }
           const g = c.base >= WHOLE ? GLYPH.restWhole : c.base >= TPQ * 2 ? GLYPH.restHalf : c.base >= TPQ ? GLYPH.restQuarter
             : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
           const ry = c.base >= WHOLE && pm !== "one" ? yOf(row, 36) : yOf(row, MID_LINE);   // 全休止挂在第四线下；一线谱 = 挂在那条线下
@@ -1076,7 +1147,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
           if (a === null || percHere) return;
           const ag = a === 1 ? GLYPH.accidentalSharp : a === -1 ? GLYPH.accidentalFlat : a === 2 ? GLYPH.accidentalDoubleSharp : a === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
           const near = c.accs.slice(0, k).some((b, kk) => b !== null && Math.abs(ds[kk] - ds[k]) < 3);   // 挨得近的两个临时记号错开一列
-          prims.push({ tok: tokOf(c), t: "glyph", x: P(c.x + 0.2) - (near ? P(1.1) : 0) - (c.art.includes("ghost") ? P(0.6) : 0), y: yOf(row, ds[k]), ch: ag, cls });   // 幽灵音：给左括号让位
+          prims.push({ tok: tokOf(c), t: "glyph", x: P(c.x - 1.1) - (near ? P(1.1) : 0) - (c.art.includes("ghost") ? P(0.6) : 0), y: yOf(row, ds[k]), ch: ag, cls });   // 幽灵音：给左括号让位
         });
         const ledgers = new Set<number>();
         for (const dd of ds) { for (let L = 28; L >= dd; L -= 2) ledgers.add(L); for (let L = 40; L <= dd; L += 2) ledgers.add(L); }
@@ -1493,13 +1564,14 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       closeRun();
       // 11. 光标落点（点在哪个空隙）——每条 track 都有（点到别的声部 = 换到那条）
       const H = headLen(tokens);
+      const cx = (u: Unit) => P(u.x - (u.kind === "chunk" && u.inkL ? u.inkL + 0.2 : 0));   // 刀 3：临时记号挂在对齐线左边，光标画在它左边
       const firstUnitOf = new Map<number, Unit>();
       for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
       const realLen = q.realLen;
       for (let c = H; c <= realLen; c++) {   // 大谱表：两条谱表上都放落点（点哪条都是这个声部）；补齐的那段另放（下面）
         const u = c < tokens.length ? firstUnitOf.get(c) : undefined;
         const last = u ? null : [...units].reverse().find((v) => v.kind !== "head");
-        const sys = u ? u.system : last ? last.system : 0, x = u ? P(u.x) : last ? P(last.x + last.w) : P(sysStarts[0]);
+        const sys = u ? u.system : last ? last.system : 0, x = u ? cx(u) : last ? P(last.x + last.w) : P(sysStarts[0]);
         for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(sys, r, k), x });
       }
       // 11½. 写字头画在哪（W-17 第 1 刀，2026-10-15）：排版不认光标，只给每个 caret 位置该画的地方。老规矩（原来零宽 head 单元的 SLOT = 4）：
@@ -1510,10 +1582,10 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         const u0 = c < tokens.length ? firstUnitOf.get(c) : undefined;
         let sys: number, x: number;
         if (!u0) { const last = [...units].reverse().find((v) => v.kind !== "head"); sys = last ? last.system : 0; x = last ? P(last.x + last.w) : P(sysStarts[0]); }
-        else if (u0.kind === "chunk") { sys = u0.system; x = P(u0.x); }
+        else if (u0.kind === "chunk") { sys = u0.system; x = cx(u0); }
         else {
           const T = u0.tick, ch = units.find((v) => v.kind === "chunk" && v.index >= c && Math.abs(v.tick - T) < 1e-6);
-          if (ch) { sys = ch.system; x = P(ch.x); }
+          if (ch) { sys = ch.system; x = cx(ch); }
           else { const same = units.filter((v) => v.kind !== "head" && v.index >= c && Math.abs(v.tick - T) < 1e-6), lastT = same[same.length - 1] ?? u0; sys = lastT.system; x = P(lastT.x + lastT.w); }
         }
         const sh = shiftAt(c);

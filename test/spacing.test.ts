@@ -84,6 +84,22 @@ describe("横向间距：撞了才撑（顶杆）", () => {
   });
 });
 
+describe("横向间距：不占宽的记号列（力度 / 渐强 / 风格…）", () => {
+  it("插一个不占宽的列：所有音的位置一点不变（v0.7.29 的老规矩），它自己的位置 = 后面那个音", () => {
+    const run = Array.from({ length: 8 }, () => T32), { cols, end } = colsOf([run]), o = opts(true);
+    const plain = placeLine(cols, idealGaps(cols, end, o), rodsOf(cols, o), 0, cols.length, 0).xs;
+    const withDyn: SpCol[] = [...cols.slice(0, 3), { tick: cols[3]!.tick, fixed: 0, items: [] }, ...cols.slice(3)];
+    const xs = placeLine(withDyn, idealGaps(withDyn, end, o), rodsOf(withDyn, o), 0, withDyn.length, 0).xs, notes = xs.filter((_, k) => k !== 3);
+    for (let i = 0; i < plain.length; i++) assert(near(plain[i]!, notes[i]!), `第 ${i} 个音挪了：${plain[i]} → ${notes[i]}`);
+    assert(near(xs[3]!, xs[4]!), `记号列 ${xs[3]}，后面的音 ${xs[4]}`);
+  });
+  it("行首是不占宽的列、后面的音带临时记号：照样往右让", () => {
+    const cols: SpCol[] = [{ tick: 0, fixed: 0, items: [] }, { tick: 0, items: [{ row: 0, left: 1.3, right: HEAD, dur: Q }] }], o = opts();
+    const { xs } = placeLine(cols, idealGaps(cols, Q, o), rodsOf(cols, o), 0, 2, 0);
+    assert(near(xs[1]!, 1.3) && near(xs[0]!, 1.3), `${xs}`);
+  });
+});
+
 describe("横向间距：空小节窄", () => {
   it("各行都是整小节休止：这一段最宽 emptyBar，不按全音符算", () => {
     const { cols, end } = colsOf([[W], [W]], { "0:0": { whole: true }, "1:0": { whole: true } }), o = opts();

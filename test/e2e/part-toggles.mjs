@@ -25,7 +25,7 @@ const P1 = await p.evaluate(() => window.__moonsinger.state().song.parts[0].id);
 await p.evaluate(() => { const e = window.__moonsinger.engine; window.__ch = []; const ch = e.channel.bind(e); e.channel = (id, prm) => { window.__ch.push([id, !!prm.mute, !!prm.solo]); return ch(id, prm); }; });
 const kinds = await p.evaluate(() => [...document.querySelectorAll("#score .score-overlay .ov-tg")].map((t) => `${t.dataset.part}:${t.dataset.kind}`).join(","));
 check(kinds === `${P1}:hidden,${P1}:muted,P9:hidden,P9:muted`, "每个声部两颗钮：眼睛 + 喇叭", kinds);
-{ const bx = await tgBox(P1, "muted"); check(bx.w / bx.sp >= 3.1, "钮比纸角的控件（3 个谱线间距）大", `${(bx.w / bx.sp).toFixed(2)} 间距`); }
+{ const bx = await tgBox(P1, "muted"); check(bx.w / bx.sp >= 2.95, "钮不比纸角的控件（3 个谱线间距）小（v0.16.33 起 3.0，图标比纸角钮的大）", `${(bx.w / bx.sp).toFixed(2)} 间距`); }
 let bx = await tgBox(P1, "muted"); await tap(bx);
 check((await pv(P1)).muted && (await p.evaluate(() => window.__ch.some(([, m]) => m))) && /volume-mute/.test(await icons()), "点喇叭 = 静音、录音房马上收到、图标换成静音的喇叭");
 check(!(await p.$(".track-card")), "点钮不开小卡");

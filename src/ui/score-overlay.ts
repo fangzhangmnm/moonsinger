@@ -14,7 +14,7 @@ import type { Layout, PartToggle, PartToggles } from "../render/engrave.ts";
 import type { Song } from "../score/song.ts";
 
 /** 两颗钮（眼睛 / 喇叭）多大（sp）：比纸角的小控件（3.0）大（user 11-08「至少要比那些小扳手、本段这些东西大」「要粗的手指也能点」；E2E part-toggles 守 ≥ 3.1）。 */
-export const TG_BTN = 3.2;
+export const TG_BTN = 3.0;   // v0.16.33：3.2 → 3.0（user 11-09「眼睛和喇叭稍微再小一点」）；框和纸角钮（CTL_H 3.0）一样大，图标 2.16 仍比纸角钮的 2.0 大（user 11-08「至少要比那些小扳手大」）
 const TG_GAP = 0.4, CTL_H = 3.0, CTL_GLYPH = 2.0, CTL_TEXT = 1.4, LONG_MS = 420, TOUCH_SLOP = 10;
 const TG_LONG: Record<"hidden" | "muted", PartToggle> = { hidden: "only", muted: "solo" };
 
