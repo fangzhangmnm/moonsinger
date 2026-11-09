@@ -1,0 +1,5121 @@
+// src/i18n/strings.ts
+var S = {
+  "\u6B63\u5728\u6838\u5BF9\u7F51\u76D8\u4E0A\u7684\u7248\u672C\u2026": { en: "Checking the version on OneDrive\u2026" },
+  "\u5148\u79BB\u7EBF\u7528": { en: "Work offline for now" },
+  "\u7F51\u76D8\u6CA1\u8FDE\u4E0A": { en: "OneDrive isn't connected" },
+  "\u767B\u5F55\u8FC7\u671F\u4E86": { en: "Sign-in expired" },
+  "\u73B0\u5728\u6CA1\u6709\u7F51\u7EDC": { en: "No network right now" },
+  "\u7F51\u76D8\u6CA1\u6709\u56DE\u5E94": { en: "OneDrive isn't responding" },
+  "\u91CD\u65B0\u767B\u5F55": { en: "Sign in again" },
+  "\u79BB\u7EBF\u7EE7\u7EED": { en: "Continue offline" },
+  "\u79BB\u7EBF \xB7 \u8FD8\u6709 {n} \u4EFD\u6CA1\u4F20\u4E0A\u53BB": { en: "Offline \xB7 {n} not uploaded yet" },
+  "\u79BB\u7EBF": { en: "Offline" },
+  "\u5DF2\u8FDE\u4E0A\u7F51\u76D8\uFF0C\u6B63\u5728\u540C\u6B65\u2026": { en: "Connected to OneDrive, syncing\u2026" },
+  "\u770B\u5217\u8868": { en: "See the list" },
+  "\u91CD\u65B0\u8FDE\u63A5": { en: "Reconnect" },
+  "\u590D\u5236\u4E86 {n} \u6761": { en: "Copied {n} {n|entry|entries}" },
+  "\u590D\u5236\u4E0D\u4E86\uFF08\u6D4F\u89C8\u5668\u4E0D\u7ED9\u526A\u8D34\u677F\uFF09\uFF1A\u5DF2\u9009\u4E2D\uFF0C\u957F\u6309\u590D\u5236": { en: "Can't copy (the browser won't allow clipboard access): text selected, long-press to copy" },
+  "\u4E0B\u8F7D\u4E86 {name}": { en: "Downloaded {name}" },
+  "MoonSinger \u8BCA\u65AD\u65E5\u5FD7": { en: "MoonSinger diagnostic log" },
+  "\u5206\u4EAB\u6CA1\u6210": { en: "Sharing didn't work" },
+  "\uFF08\u7A7A\uFF09": { en: "(empty)" },
+  "\u6E05\u7A7A\u4E86": { en: "Cleared" },
+  "MusicXML \u4E50\u8C31\uFF08MoonSinger \u5B58\u6210 .mxl\uFF09": { en: "MusicXML score (MoonSinger saves as .mxl)" },
+  "\u8C31 / \u6B4C\u540D / \u4F5C\u8005\u680F": { en: "The score / title / credits" },
+  "\u7EB8": { en: "Sheets" },
+  "\u6B4C\u624B / \u4E50\u5668": { en: "Parts / instruments" },
+  "\u6DF7\u97F3": { en: "The mix" },
+  "\u5C01\u9762": { en: "The cover" },
+  "\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF09": { en: "Finalized (version {rev})" },
+  "{p}\uFF1A{what}\u6539\u4E0D\u4E86": { en: "{p}: {what} can't be changed" },
+  "\u64A4\u9500": { en: "Undo" },
+  "\u91CD\u505A": { en: "Redo" },
+  "{dir}/\uFF08\u6574\u4E2A\u6587\u4EF6\u5939\uFF09": { en: "{dir}/ (whole folder)" },
+  "\uFF08\u6839\u6587\u4EF6\u5939\uFF09": { en: "(root folder)" },
+  "\u6B4C\u5E93\u91CC\u8FD8\u6CA1\u6709\u6B4C": { en: "No songs in the library yet" },
+  "\u5DF2\u5BFC\u51FA {count} \u9996\u5230 {fileName}": { en: "Exported {count} {count|song|songs} to {fileName}" },
+  " \u7B49 {n} \u9879": { en: " and {n} more" },
+  "\u53EA\u5BFC\u51FA\u4E86 {count} \u9996\u5230 {fileName}\u3002\u8FD9\u4E9B\u6CA1\u62FF\u5230\uFF1A{names}": { en: "Only exported {count} {count|song|songs} to {fileName}. Couldn't get: {names}" },
+  "\u6CA1\u80FD\u5BFC\u51FA\uFF1A{names}": { en: "Couldn't export: {names}" },
+  "\u5220\u9664\u5168\u90E8\u672C\u5730\u6570\u636E": { en: "Delete all local data" },
+  "\u5220\u9664\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\uFF1A\u6B4C\u5E93\u91CC\u7684\u6B4C\uFF08\u672C\u673A\u526F\u672C\uFF09\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\uFF1B\u79BB\u7EBF\u58F3\u4E5F\u91CD\u88C5\u3002\u4E91\u7AEF\uFF08OneDrive\uFF09\u4E0A\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u53D7\u5F71\u54CD\u3002": { en: "Deletes all of MoonSinger's local data on this device: songs in the library (local copies), speech cache, cover cache, settings and the diagnostic log; the offline shell is reinstalled too. Songs on OneDrive and files on this device aren't affected." },
+  "\u6709 {dirtyN} \u9996\u8FD8\u6CA1\u4F20\u4E0A\u53BB\uFF0C\u4F1A\u4E00\u8D77\u5220\u6389\uFF08\u4E0D\u9020\u9003\u751F\u526F\u672C\uFF09\u3002": { en: "{dirtyN} {dirtyN|song hasn't|songs haven't} been uploaded and will be deleted too (no rescue copy is made)." },
+  "\u6B4C\u5E93\u91CC\u7684\u6B4C\u90FD\u4F20\u4E0A\u53BB\u4E86\u3002": { en: "All songs in the library have been uploaded." },
+  "\u8FD9\u53F0\u8BBE\u5907\u6CA1\u8FDB\u8FC7\u6B4C\u5E93\u3002": { en: "This device has never opened the library." },
+  "\u624B\u91CC\u8FD9\u9996\u6539\u8FC7\u8FD8\u6CA1\u5B58\uFF0C\u4E5F\u4F1A\u4E22\u3002": { en: "The song you have open has unsaved changes, and those will be lost too." },
+  "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E": { en: "Factory reset" },
+  "\u7EE7\u7EED": { en: "Continue" },
+  "\u9010\u5B57\u8F93\u5165\u300C{CONSENT_PHRASE}\u300D\u786E\u8BA4\u3002\u8FD9\u4E00\u6B65\u505A\u5B8C app \u4F1A\u91CD\u5F00\u6210\u65B0\u88C5\u7684\u6837\u5B50\u3002": { en: "Type \u201C{CONSENT_PHRASE}\u201D exactly to confirm. When this finishes the app reopens as if newly installed." },
+  "\u5220\u9664": { en: "Delete" },
+  "\u8F93\u5165\u7684\u4E0D\u4E00\u6837\uFF0C\u4EC0\u4E48\u90FD\u6CA1\u52A8\u3002": { en: "That doesn't match. Nothing was changed." },
+  "\u8FD8\u6CA1\u5220\u5E72\u51C0": { en: "Not fully deleted yet" },
+  "\u6709 {blocked} \u4E2A\u5E93\u88AB\u522B\u7684\u6807\u7B7E\u9875\u5360\u7740\uFF0C\u5220\u4E0D\u6389\u3002\u5173\u6389\u5176\u4ED6 MoonSinger \u6807\u7B7E\u9875\uFF08\u6216\u522B\u7684\u7A97\u53E3\uFF09\u518D\u6765\u4E00\u6B21\u2014\u2014\u518D\u505A\u4E00\u904D\u662F\u5B89\u5168\u7684\u3002": { en: "{blocked} databases are held by another tab and can't be deleted. Close other MoonSinger tabs (or windows) and try again \u2014 doing it again is safe." },
+  "\u597D": { en: "OK" },
+  "\u5173\u95ED": { en: "Close" },
+  "\u5220\u4E86 {db} \u4E2A\u5E93\u3001{ls} \u4E2A\u952E\uFF0C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u6CA1\u6709\u6B8B\u7559\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002": { en: "Deleted {db} databases and {ls} keys; nothing is left on this device. Tap OK to reopen." },
+  "\u5220\u4E86 {db} \u4E2A\u5E93\u3001{ls} \u4E2A\u952E\uFF1B\u8FD8\u5269 {residue} \u5904\u6B8B\u7559\uFF08\u679A\u4E3E\u4E0D\u5230\u7684\u5E73\u53F0 / \u521A\u88AB\u91CD\u5EFA\uFF09\uFF0C\u91CD\u5F00\u540E\u518D\u505A\u4E00\u904D\u5C31\u6CA1\u4E86\u3002\u70B9\u300C\u597D\u300D\u91CD\u5F00\u3002": { en: "Deleted {db} databases and {ls} keys; {residue} leftovers remain (platforms that can't be enumerated / just recreated). Do it once more after reopening and they'll be gone. Tap OK to reopen." },
+  "\u6CA1\u6709\u5347\u964D\u53F7": { en: "no sharps or flats" },
+  "{n} \u4E2A\u5347\u53F7": { en: "{n} {n|sharp|sharps}" },
+  "{n} \u4E2A\u964D\u53F7": { en: "{n} {n|flat|flats}" },
+  "\u8DDF\u58F0\u90E8\uFF08{p}\uFF09": { en: "Follow the part ({p})" },
+  "\u4E0D\u53D8": { en: "unchanged" },
+  "\u4E0D\u53D8\uFF081={k}\uFF09": { en: "No change (1={k})" },
+  "\u4E0D\u53D8\uFF08{t}\uFF09": { en: "No change ({t})" },
+  "\u5176\u4ED6\u2026\uFF08\u81EA\u5DF1\u5199\uFF09": { en: "Other\u2026 (type it)" },
+  "\u8FD9\u5F20\u7EB8\u5F00\u5934\uFF1A\u4ECE\u5934\u5F00\u59CB\u7684\u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3002\u53EA\u7BA1\u8FD9\u4E00\u4F4D\u6B4C\u624B\u8FD9\u4E00\u5F20\u7EB8\uFF08\u5F00\u5934\u7684\u901F\u5EA6\u6574\u5F20\u7EB8\u4E00\u8D77\uFF09\u3002": { en: "Start of this sheet: clef / key / time / tempo from the beginning. For this singer on this sheet only (the opening tempo applies to the whole sheet)." },
+  "\u4ECE\u8FD9\u91CC\u8D77\u7684\u53D8\u5316\uFF08\u300C\u4E0D\u53D8\u300D= \u8DDF\u524D\u9762\u4E00\u6837\uFF09\u3002": { en: "Changes from here on (\u201CNo change\u201D = same as before)." },
+  "\u8C31\u53F7": { en: "Clef" },
+  "\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8": { en: "Display only; pitches don\u2019t change" },
+  "\u8C03\u53F7": { en: "Key" },
+  "\u6539\u8C03\u53F7 = \u5B83\u7BA1\u7684\u97F3\u6309\u65B0\u8C03\u53F7\u62FC\u5199\uFF0C\u97F3\u9AD8\u4E0D\u53D8": { en: "Changing the key respells the notes it governs; pitches don\u2019t change" },
+  "\u62CD\u53F7": { en: "Time" },
+  "\u901F\u5EA6": { en: "Speed" },
+  "\u6253\u5F00\u901F\u5EA6\u6846\uFF1A\u62E8\u901F\u5EA6\u3001\u9009\u901F\u5EA6\u8BCD\u3001\u770B\u5C0F\u8282\u62CD\u5668\uFF0C\u6309\u300C\u786E\u5B9A\u300D\u624D\u5199\u8FDB\u8C31": { en: "Open the tempo box: dial the tempo, pick a tempo word, watch the metronome; nothing is written until you press OK" },
+  "\u4E0D\u53D8\uFF08\u2669={n}\uFF09\xB7 \u5728\u8FD9\u91CC\u6362\u2026": { en: "No change (\u2669={n}) \xB7 change it here\u2026" },
+  "\u5220\u6389\u8FD9\u91CC\u7684\u53D8\u5316": { en: "Remove the changes here" },
+  "\u4E50\u8C31": { en: "Score" },
+  "\u300C{name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7": { en: "\u201C{name}\u201D was changed elsewhere" },
+  "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002": { en: "Another program changed this file since it was opened or last saved. Overwriting will lose those changes." },
+  "\u8986\u76D6": { en: "Overwrite" },
+  "\u5B58\u6210 .mxl": { en: "Save as .mxl" },
+  "{name} \xB7 {size}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002": { en: "{name} \xB7 {size}. Download it or share it to Files; open it later from the menu." },
+  "\u8FDE\u7EBF": { en: "Slur" },
+  "\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77": { en: "Swell up / swell" },
+  "\u97F3\u5185\u6E10\u5F31": { en: "Swell down" },
+  "\u51FA\u58F0\u7684\u6362\u6C14": { en: "Audible breath" },
+  "\u53F0\u4E0A\u8FD9\u4F4D": { en: "The performer on stage" },
+  "{who}\u7684\u97F3\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF0C{p}\u505A\u4E0D\u5230\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u97F3\u5185\u6E10\u5F31\u7167\u505A": { en: "{who}'s notes decay on their own, so {p} isn't possible: it's written on the score (grayed out) and the sound doesn't change. Swell down still works" },
+  "{who}\u672C\u6765\u5C31\u8FDE\u7740\u5531\uFF1A{p}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u8981\u65AD\u53E5\u7528\u547C\u5438": { en: "{who} already sings legato: {p} is written on the score (grayed out) and the sound doesn't change. Use a breath to separate phrases" },
+  "{who}\u672C\u6765\u5C31\u4E0D\u7559\u7F1D\uFF08\u4E50\u5668\u9875\u300C\u97F3\u548C\u97F3\u4E4B\u95F4\u300D= 0\uFF09\uFF1A{p}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8": { en: "{who} already leaves no gap (\u201CBetween notes\u201D on the instrument page = 0): {p} is written on the score (grayed out) and the sound doesn't change" },
+  "{who}\u4E0D\u8BA4{p}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD": { en: "{who} ignores {p}: it's written on the score (grayed out) and doesn't affect the sound" },
+  "\u8FD9\u4E2A {p} \u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\uFF0C\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p": { en: "This {p} has no effect (grayed out): the next note is forte-piano (fp), which attacks at f and then falls to p" },
+  "\u529B\u5EA6\u8BB0\u53F7": { en: "Dynamic marks" },
+  "PNG 256 \u8272\u3001\u957F\u8FB9\u6700\u591A 2048": { en: "PNG, 256 colors, long side up to 2048" },
+  "\u5B58\u8FDB\u6B4C\u91CC\uFF08{bytes}\uFF09": { en: "Save in the song ({bytes})" },
+  "\u538B\u4E00\u4E0B\u518D\u5B58\uFF08{what}\uFF09": { en: "Compress, then save ({what})" },
+  "\u538B\u4E00\u4E0B\u518D\u5B58\uFF08\u7EA6 {estimate}\uFF09": { en: "Compress, then save (about {estimate})" },
+  "\u53EA\u653E\u5185\u5B58\uFF08\u63A8\u8350\uFF09": { en: "Memory only (recommended)" },
+  "\u53EA\u653E\u5185\u5B58\uFF08\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF09": { en: "Memory only (not saved in the song)" },
+  "\u300C{name}\u300D{bytes}\u3002\u53C2\u8003\u7A97\u91CC\u7684\u4E1C\u897F\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58\u3001\u4E00\u8D77\u540C\u6B65\u3002{smaller}\u53EA\u653E\u5185\u5B58 = \u8FD9\u6B21\u6253\u5F00\u80FD{p}\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E0B\u6B21\u6253\u5F00\u662F\u4E2A\u7A7A\u4F4D\uFF0C\u628A\u540C\u4E00\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\u5C31\u8865\u4E0A\u3002{suggestRam}": { en: "\u201C{name}\u201D is {bytes}. What's in the reference window is saved and synced with the song. {smaller}Memory only = you can {p} it this session, but it isn't saved in the song; next time it's an empty slot, and dragging the same file in fills it again. {suggestRam}" },
+  "\u538B\u4E86\u4E5F\u4E0D\u4F1A\u66F4\u5C0F\uFF0C\u5C31\u4E0D\u5217\u4E86\u3002": { en: "Compressing wouldn't make it smaller, so that option isn't listed." },
+  "\u538B\u4E00\u4E0B = {what}\u3002": { en: "Compress = {what}." },
+  "\u542C##\u52A8\u8BCD": { en: "listen to" },
+  "\u770B##\u52A8\u8BCD": { en: "view" },
+  "\u8D85\u8FC7 4 MB \u7684\uFF0C\u5B58\u8FDB\u53BB\u8FD9\u9996\u6B4C\u4F1A\u5927\u8FD9\u4E48\u591A\u3001\u540C\u6B65\u4E5F\u6162\uFF0C\u6240\u4EE5\u5148\u63A8\u8350\u53EA\u653E\u5185\u5B58\u3002": { en: "Over 4 MB: saving it makes this song that much bigger and syncing slower, so memory only is recommended first." },
+  "\u97F3\u9891 / \u89C6\u9891\u9ED8\u8BA4\u53EA\u653E\u5185\u5B58\uFF08\u8FD9\u6B21\u6253\u5F00\u6709\u6548\uFF09\uFF1B\u8981\u8DDF\u7740\u6B4C\u8D70\u5C31\u9009\u300C\u5B58\u8FDB\u6B4C\u91CC\u300D\u3002": { en: "Audio / video goes to memory only by default (this session); choose \u201CSave in the song\u201D to keep it with the song." },
+  "\u8FD9\u6BB5\u97F3\u9891\u6709\u70B9\u5927": { en: "This audio is rather large" },
+  "\u8FD9\u6BB5\u89C6\u9891\u6709\u70B9\u5927": { en: "This video is rather large" },
+  "\u8FD9\u5F20\u56FE\u6709\u70B9\u5927": { en: "This image is rather large" },
+  "\u6709\u65B0\u7248\u672C": { en: "New version available" },
+  "\u5237\u65B0": { en: "Refresh" },
+  "\u5F85\u4F1A\u513F": { en: "Later" },
+  "\u4ECE\u8D77\u70B9\u653E / \u505C\uFF08\u7A7A\u683C\uFF09\uFF1B\u8FDE\u6309\u4E24\u4E0B = \u4ECE\u5934\u653E\u3002\u957F\u6309 / \u53F3\u952E = \u63A5\u7740\u653E / \u81EA\u52A8\u7FFB / \u5FAA\u73AF / \u4ECE\u5934\u653E / \u63A5\u7F1D\u3002\u8D77\u70B9 = \u957F\u6309 / \u53F3\u952E\u8C31\u9762\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A": { en: "Play from the start point / stop (Space); double-press = from the top. Long-press / right-click = resume / auto-follow / loop / from the top / seam. To move the start point, long-press / right-click the score: \u201CPlay from here\u201D" },
+  "\u6B4C\u5E93\uFF1A\u6B4C\u653E\u5728\u7F51\u76D8\uFF08OneDrive\uFF09\u6216\u4F60\u9009\u7684\u6587\u4EF6\u5939\u91CC": { en: "Library: songs live on OneDrive or in a folder you choose" },
+  "\u6B4C\u5E93\uFF1A\u6B4C\u653E\u5728\u4F60\u9009\u7684\u6587\u4EF6\u5939\u91CC": { en: "Library: songs live in a folder you choose" },
+  "\u6587\u4EF6\u540D \xB7 \u70B9\u4E86\u6539\u540D": { en: "File name \xB7 tap to rename" },
+  "\u672A\u547D\u540D": { en: "Untitled" },
+  "\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\uFF08MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF09": { en: "This song isn't encrypted (this version of MoonSinger doesn't encrypt yet)" },
+  "\u5B58": { en: "Save" },
+  "\u83DC\u5355\uFF1A\u65B0\u5EFA / \u6253\u5F00 / \u5BFC\u51FA / \u5C01\u9762 / \u58F0\u97F3\u4E0E\u7F72\u540D / \u8BBE\u7F6E": { en: "Menu: new / open / export / cover / sounds and credits / settings" },
+  "\u952E\u76D8\uFF08pad\uFF09": { en: "Keyboard (pad)" },
+  "\u952E\u76D8": { en: "Keys" },
+  "\u64A4\u9500\uFF08Ctrl / \u2318+Z\uFF09": { en: "Undo (Ctrl / \u2318+Z)" },
+  "\u91CD\u505A\uFF08Ctrl / \u2318+Shift+Z\uFF09": { en: "Redo (Ctrl / \u2318+Shift+Z)" },
+  "\u6A21\u5F0F\uFF1A\u8FD9\u4E00\u4E0B\u70B9\u7684\u662F\u54EA\u4E00\u5C42": { en: "Mode: which layer a tap edits" },
+  "\u770B\u54EA\u4E00\u6BB5\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u6BB5": { en: "Which section to view: all / just this one" },
+  "\u770B\u54EA\u4F4D\u6B4C\u624B\uFF1A\u5168\u90E8 / \u53EA\u770B\u8FD9\u4E00\u4F4D": { en: "Which part to view: all / just this one" },
+  "\u5168\u90E8\u66F2\u6BB5": { en: "All sections" },
+  "\u7B2C {p} \u6BB5": { en: "Section {p}" },
+  "\uFF08\u9690\u85CF\uFF09": { en: "(hidden)" },
+  "\u5168\u90E8\u6B4C\u624B": { en: "All parts" },
+  "\u6DF7\u97F3\u53F0": { en: "Mixer" },
+  "\u70B9 = \u6536\u8D77": { en: "Tap = hide" },
+  "\u70B9 = \u6253\u5F00": { en: "Tap = open" },
+  "\u526A\u8D34\u677F\u91CC\u7684\u4E0D\u662F\u7B80\u8C31\uFF08\u50CF 1 2 3 | 5 - - \u8FD9\u6837\u7684\u624D\u8BA4\uFF09": { en: "The clipboard isn't jianpu (only things like 1 2 3 | 5 - - are recognized)" },
+  "\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u4E1C\u897F": { en: "The clipboard is empty" },
+  "\u8D34\u4E86 {n} \u4E2A": { en: "Pasted {n}" },
+  "\u590D\u5236\u4E86 {n} \u4E2A": { en: "Copied {n}" },
+  "\u526A\u5207\u4E86 {n} \u4E2A": { en: "Cut {n}" },
+  "\u518D\u77ED\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86": { en: "No shorter note value exists" },
+  "\u518D\u957F\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86": { en: "No longer note value exists" },
+  "\u9009\u4E2D\u7684\u91CC\u9762\u6CA1\u6709\u80FD\u52A0\u9644\u70B9\u7684\u65F6\u503C": { en: "Nothing selected can take a dot" },
+  "\u65B0\u7684\u4E00\u5F20\u7EB8": { en: "New sheet" },
+  "\u300C{extras}\u300D\u662F\u5355\u58F0\u4E50\u5668\uFF0C\u8FD9\u4E2A\u58F0\u90E8\u53E0\u4E0D\u4E86\u97F3": { en: "\u201C{extras}\u201D is a monophonic instrument, so this part can't stack notes" },
+  "\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3": { en: "No note before the cursor yet" },
+  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C{what}\u6539\u4E0D\u4E86\uFF1A\u5148\u5728\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F1A\u4F5C\u5E9F\uFF09\uFF0C\u518D\u6539\u3002": { en: "This song is finalized, so {what} can't be changed: first choose \u201CRevise\u201D in the \u2630 menu (the final mp3 is discarded), then edit." },
+  "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
+  "\u6CA1\u6709\u53EF\u91CD\u505A\u7684": { en: "Nothing to redo" },
+  "\u4F11\u606F\u5BA4": { en: "Green room" },
+  "{issueCount} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF1A\u70B9\u5F00\u770B\u6E05\u5355": { en: "{issueCount} {issueCount|track is|tracks are} silent: tap for the list" },
+  "\u603B\u8F68": { en: "Master" },
+  "\u6A21\u5F0F": { en: "Mode" },
+  "\u4ECE\u8FD9\u513F\u653E": { en: "Play from here" },
+  "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E": { en: "Moves the start point to the head of this bar and plays from here" },
+  "\u63A5\u7740\u653E": { en: "Resume" },
+  "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E": { en: "Continue from where it last stopped" },
+  "\u4ECE\u5934\u653E": { en: "Play from the top" },
+  "\u8D77\u70B9\u56DE\u5230\u5F00\u5934\uFF0C\u4ECE\u5934\u653E\uFF08\u4E5F\u53EF\u4EE5\u8FDE\u6309\u4E24\u4E0B |\u25B6 / \u7A7A\u683C\uFF09": { en: "Moves the start point back to the top and plays (or double-press |\u25B6 / Space)" },
+  "\u4ECE\u4E0A\u6B21\u505C\u4E0B\u7684\u5730\u65B9\u63A5\u7740\u653E\uFF08\u8D77\u70B9\u4E0D\u52A8\uFF09": { en: "Continue from where it last stopped (start point stays)" },
+  "\u8DF3\u5230\u6B63\u5728\u653E\u7684\u5730\u65B9": { en: "Jump to the playing spot" },
+  "\u8C31\u6EDA\u5230\u6B63\u5728\u653E\uFF08\u505C\u7740 = \u505C\u4E0B\uFF09\u7684\u90A3\u4E00\u884C\uFF1B\u521A\u624D\u81EA\u5DF1\u6EDA\u8FC7\u4E5F\u7167\u6837\u8FC7\u53BB\u3001\u63A5\u7740\u8DDF": { en: "Scrolls the score to the line now playing (or where it stopped), even if you just scrolled, and keeps following" },
+  "\u7FFB\u8C31\u63D0\u524D\u591A\u5C11\uFF1A\u5FEB\u5230\u884C\u5C3E\uFF08\u6216\u7F16\u6392\u8DF3\u56DE\u53BB\u4E4B\u524D\uFF09\u8FD9\u4E48\u4E45\u5C31\u5148\u7FFB\u8FC7\u53BB\uFF0C\u6700\u540E\u4E00\u5C0F\u622A\u9760\u8BB0\u2014\u2014\u50CF\u94A2\u7434\u5BB6\u7FFB\u8C31\u30020 = \u6362\u4E86\u884C\u624D\u7FFB": { en: "How early to turn the page: this long before the end of a line (or before the arrangement jumps back), turn first and read the last bit from memory \u2014 like a pianist. 0 = turn only after the line changes" },
+  "\u63D0\u524D\u7FFB": { en: "Turn early" },
+  "\u4E0D": { en: "Off" },
+  "{autoFollow}\u81EA\u52A8\u7FFB": { en: "{autoFollow}Auto-follow" },
+  "\u653E\u7740\u7684\u65F6\u5019\u8C31\u8DDF\u7740\u6B63\u5728\u653E\u7684\u90A3\u4E00\u884C\u6EDA\uFF08\u51FA\u4E86\u5C4F\u5E55\u8212\u670D\u7684\u90A3\u4E00\u6BB5\u624D\u6EDA\uFF1B\u4F60\u81EA\u5DF1\u6EDA\u8FC7 4 \u79D2\u5185\u4E0D\u8DDF\uFF09": { en: "While playing, the score follows the line being played (only when it leaves the comfortable part of the screen; not within 4 s of you scrolling)" },
+  "{loopOn}\u5FAA\u73AF": { en: "{loopOn}Loop" },
+  "\u653E\u5230\u5934\u63A5\u7740\u4ECE\u5934\u653E\uFF1B\u7F16\u6392\u5199\u4E86 [\u5FAA\u73AF\u6BB5] = \u524D\u9762\u653E\u4E00\u904D\u3001\u62EC\u4F4F\u7684\u4E00\u76F4\u5FAA\u73AF": { en: "Restart from the top at the end; if the arrangement has [a loop section], play what's before it once, then loop the bracketed part" },
+  "\u542C\u63A5\u7F1D": { en: "Hear the seam" },
+  "\u4ECE\u5FAA\u73AF\u6BB5\u7ED3\u5C3E\u524D\u51E0\u79D2\u653E\u8D77\uFF0C\u8DF3\u56DE\u5F00\u5934\u518D\u653E\u51E0\u79D2\u5C31\u505C": { en: "Plays the last few seconds of the loop, jumps back to its start, plays a few more seconds, then stops" },
+  "\u7FFB\u8C31\u63D0\u524D {turnLead} \u79D2": { en: "Page turns {turnLead} s early" },
+  "\u7FFB\u8C31\u4E0D\u63D0\u524D\uFF08\u6362\u4E86\u884C\u624D\u7FFB\uFF09": { en: "Page turns aren't early (only after the line changes)" },
+  "\u73B0\u5728\u6CA1\u6709\u5728\u653E\u7684\u5730\u65B9": { en: "Nothing is playing right now" },
+  "\u81EA\u52A8\u7FFB\uFF1A\u5F00": { en: "Auto-follow: on" },
+  "\u81EA\u52A8\u7FFB\uFF1A\u5173": { en: "Auto-follow: off" },
+  "\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0": { en: "All parts can sound now" },
+  "\u4E0D\u51FA\u58F0\u7684\u58F0\u90E8": { en: "Silent parts" },
+  "\u6362\u4EBA / \u627E\u58F0\u97F3\u2026": { en: "Change performer / find sound\u2026" },
+  "\u653E\u548C\u5BFC\u51FA\u7684 mp3 \u91CC\u90FD\u6CA1\u6709\u8FD9{p}\u7684\u58F0\u97F3\uFF0C\u5176\u4F59\u7167\u653E\u3002\u6362\u8C01\u7531\u4F60\u5B9A\uFF0C\u4E0D\u66FF\u8865\u3002": { en: "Neither playback nor the exported mp3 will have the sound of {p}; the rest plays as usual. Who replaces it is up to you \u2014 no automatic substitutes." },
+  "{n} \u6761\u8F68": { en: "{n} {n|track|tracks}" },
+  "\u6761\u8F68": { en: "this track" },
+  "\u77E5\u9053\u4E86": { en: "Got it" },
+  "\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09": { en: "Export vocals & mix (mp3)" },
+  "\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD\uFF08\u7B2C {rev} \u7248 \xB7 {stereo} {kbps}k \xB7 {bytes}\uFF09\u76F4\u63A5\u5BFC\u51FA\uFF0C\u4E0D\u91CD\u6E32\uFF1B\u8981\u522B\u7684\u97F3\u8D28\u5148\u300C\u6539\u7A3F\u300D\u3002": { en: "The finalized copy (version {rev} \xB7 {stereo} {kbps}k \xB7 {bytes}) is exported directly without re-rendering; for another quality, \u201CRevise\u201D first." },
+  "\u7ACB\u4F53\u58F0": { en: "Stereo" },
+  "\u5355\u58F0\u9053": { en: "Mono" },
+  "\u97F3\u8D28": { en: "Quality" },
+  "\u8303\u56F4": { en: "Range" },
+  "\u6574\u9996": { en: "Whole song" },
+  "\u9690\u85CF\u7684\u7EB8\u4E0D\u653E": { en: "Hidden sheets aren't played" },
+  "\u8FD9\u4E00\u5F20\u7EB8": { en: "This sheet" },
+  "\u7B2C {p} \u5F20": { en: "Sheet {p}" },
+  "\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002": { en: "License: {fellBack}. Written into the mp3 tags along with the credits." },
+  "\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09": { en: "This copy is written as \u201Cnot stated\u201D \u2014 the license you chose allows adaptation, which may conflict with Tsukuyomi-chan's terms (your choice in the credits is unchanged)" },
+  "{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002": { en: "{n} {n|track is|tracks are} silent and won't be in the mp3: {is}. Change the performer from the part name at the front of the score." },
+  "\u7167\u6837\u5BFC\u51FA": { en: "Export anyway" },
+  "\u5BFC\u51FA": { en: "Export" },
+  "\u7B97\u4E86": { en: "Never mind" },
+  "\u2713 \u5728\u6587\u4EF6\u5939\u91CC": { en: "\u2713 In the folder" },
+  "\xB7 \u6587\u4EF6\u5939\u91CC\u6CA1\u6709": { en: "\xB7 Not in the folder" },
+  "\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09": { en: "Inversion (the lowest note is not the root)" },
+  "\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199": { en: "No third: major or minor can\u2019t be told apart, so it follows this key" },
+  "\u7701\u4E86 {n} \u4E2A\u97F3": { en: "{n|note|notes} left out" },
+  "\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002": { en: "How it is read: chords that are complete (nothing left out) win \u2192 the lowest note as root wins \u2192 a root inside this key wins \u2192 simpler chords win. When two tie, both are written on the score." },
+  "\u5173": { en: "Off" },
+  "\u5F00": { en: "On" },
+  "\u4E13\u4E1A": { en: "Standard" },
+  "\u6309 C \u8C03\u770B\uFF081=X\uFF09": { en: "Read in C (1=X)" },
+  "\u8DDF\u7CFB\u7EDF": { en: "System" },
+  "\u8BBE\u7F6E": { en: "Settings" },
+  "\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F": { en: "Accessibility \xB7 How to read the score" },
+  "\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002": { en: "Standard = the score is drawn in its real key; the keys show note names large. Read in C = the score is drawn in C, with \u201C1=original key\u201D above each key signature; the keys show scale degrees large. Key positions never move; exported PDFs are printed in the real key. Applies to this device only." },
+  "\u8F85\u52A9 \xB7 \u548C\u5F26\u6807\u7EA7\u6570": { en: "Accessibility \xB7 Chord degrees" },
+  "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009\u3002\u53EA\u662F\u663E\u793A\uFF0C\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u5370\u3002": { en: "Writes above each stacked chord which degree it is in this key (V7, ii, \u266DVII, I/3\u2026); tap it to see all candidates. Display only: not saved in the song, not printed." },
+  "\u6A21\u578B\u6765\u6E90": { en: "Model source" },
+  "\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09": { en: "Sound library source (instrument banks, drum kits, sound effects; not AI models)" },
+  "\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09": { en: "Sound library cache (kept on this device, works offline; songs carry their own sound, this is only the shelf)" },
+  "MIDI \u952E\u76D8": { en: "MIDI keyboard" },
+  "\u8FDE\u63A5": { en: "Connect" },
+  "\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002": { en: "Looks first for <code>pwa-models/</code> on this site (if you host your own server, copy the model repo there), then uses what's entered here. Only for this session." },
+  "\u6062\u590D\u9ED8\u8BA4": { en: "Reset to default" },
+  "\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305": { en: "Import a model pack from a local file" },
+  "\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6": { en: "Choose the pack's chunk files (chunk-000 \u2026, names don't matter), or one file with the whole pack joined" },
+  "\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C{n} \u4E2A\uFF09": { en: "Instrument catalog icons (third-party, {n})" },
+  "\n    \u6539\u52A8\uFF1A{modified}": { en: "\n    Modified: {modified}" },
+  "\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E": { en: "Tsukuyomi-chan (\u3064\u304F\u3088\u307F\u3061\u3083\u3093) credits and terms of use" },
+  "\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09": { en: "Original text (authoritative)" },
+  "\u4E2D\u6587\u8BD1\u6587\uFF08\u4EC5\u4F9B\u9605\u8BFB\uFF0C\u4EE5\u65E5\u6587\u539F\u6587\u4E3A\u51C6\uFF09": { en: "Chinese translation (for reference only; the Japanese original governs)" },
+  "\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09": { en: "Tsukuyomi-chan's speech cache (a global pool on this device: spoken lines are shared across songs and survive restarts; regenerable \u2014 clearing only means re-speaking)" },
+  "\u6E05\u7A7A\u5FF5\u7F13\u5B58": { en: "Clear speech cache" },
+  "\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09": { en: "Engine load and memory (the parts we can measure; over budget it drops chunks first, then reduces parallelism, then restarts the engine when idle, and says so here / in the status bar)" },
+  "\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5": { en: "Tsukuyomi-chan's engine WASM memory only grows; only a restart returns it. Spoken lines will need re-speaking" },
+  "\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE": { en: "Restart Tsukuyomi-chan's engine" },
+  "\u5F00\u53D1\u8005": { en: "Developer" },
+  "\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09": { en: "Diagnostic log (black box: send this to the developer if something breaks; never uploaded, it only leaves the device when you tap Copy / Share)" },
+  "\u590D\u5236": { en: "Copy" },
+  "\u4E0B\u8F7D .txt": { en: "Download .txt" },
+  "\u5206\u4EAB\u2026": { en: "Share\u2026" },
+  "\u6E05\u7A7A": { en: "Clear" },
+  "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09": { en: "Factory reset (wipes all of MoonSinger's local data on this device back to a fresh install: local library copies, speech cache, cover cache, settings, diagnostic log and offline shell; songs in the cloud and local files aren't touched; Tsukuyomi-chan's model pack is a shared family cache and isn't touched \u2014 delete packs individually under \u201CModel packs\u201D above)" },
+  "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026": { en: "Factory reset\u2026" },
+  "\u68C0\u67E5\u66F4\u65B0": { en: "Check for updates" },
+  "\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220": { en: "For when you're stuck on an old version: unregisters this app's offline cache and reopens. Downloaded Tsukuyomi-chan model packs stay" },
+  "\u6E05\u7F13\u5B58\u91CD\u542F": { en: "Clear cache and restart" },
+  "{BUDGET} \u5C0F\u6708\u76F8 {parallelism} \u6761\u9053\uFF08\u8BBE\u5907\u9884\u7B97 {lanes}\uFF09\u3002{p}": { en: "{BUDGET} Tsukuyomi-chan {parallelism} lanes (device budget {lanes}). {p}" },
+  "\u58F0\u97F3\u7684\u8F93\u51FA\u5EF6\u8FDF\uFF08\u6D4F\u89C8\u5668\u62A5\u7684\uFF09{lat} ms\u3002": { en: "Audio output latency (as reported by the browser): {lat} ms." },
+  "{bytes} / \u9884\u7B97 {budget}\uFF0C{entries} \u6761": { en: "{bytes} / budget {budget}, {entries} entries" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6CA1\u6709 IndexedDB\uFF1A\u53EA\u7528\u5185\u5B58": { en: "This browser has no IndexedDB: memory only" },
+  "\u8BFB\u4E0D\u5230\uFF1A{Error}": { en: "Can't read: {Error}" },
+  "\uFF1B\u8FD9\u4E2A\u7AD9\u70B9\u5171\u7528\u4E86 {usage} / \u914D\u989D {quota}": { en: "; this site is using {usage} / quota {quota}" },
+  "\u8BBE\u5907\u4E0A\u7559\u7740 {total}{quota}\uFF1B\u5185\u5B58\u91CC\u73B0\u5728 {mem}": { en: "{total} kept on this device{quota}; {mem} in memory now" },
+  "\u653E\u6389\u5185\u5B58\u91CC\u7684\u6574\u5305\uFF08\u8BBE\u5907\u4E0A\u7559\u7740\u7684\u4E0D\u52A8\uFF0C\u4E0B\u6B21\u7528\u518D\u4ECE\u8BBE\u5907\u8BFB\uFF09": { en: "Release whole banks from memory (what's on the device stays; it's read from the device next time)" },
+  "\u653E\u6389\u5185\u5B58": { en: "Release memory" },
+  "\u5DF2\u7559\u5728\u8BBE\u5907\u4E0A": { en: "Kept on this device" },
+  "\u6CA1\u4E0B\u8F7D": { en: "Not downloaded" },
+  "\u5220\u6389": { en: "Remove" },
+  "\u4E0B\u8F7D\u7559\u7740": { en: "Download and keep" },
+  "\u300C{p}\u300D\u7684\u58F0\u97F3\uFF08\u8FD9\u9996\u6B4C{packed}\uFF09": { en: "Sound of \u201C{p}\u201D (in this song{packed})" },
+  "\u4E5F\u6253\u5305\u7740": { en: ", also packed" },
+  "\u5F15\u7528\u7740\uFF1B\u5220\u4E86\u8981\u4ECE\u300C{name}\u300D\u627E": { en: "Referenced; if removed it must be found from \u201C{name}\u201D" },
+  "\u522B\u7684\u6B4C / \u522B\u7684\u7248\u672C / \u522B\u7684 app \u7559\u7684\uFF08{p}\u2026\uFF09": { en: "Left by other songs / versions / apps ({p}\u2026)" },
+  "\uFF08\u6CA1\u6709\uFF09": { en: "(none)" },
+  "\u4E0B\u8F7D {name} {bytes}%": { en: "Downloading {name} {bytes}%" },
+  "{name} \u7559\u5728\u8BBE\u5907\u4E0A\u4E86": { en: "{name} is kept on this device" },
+  "\u5DF2\u7ECF\u662F\u6700\u65B0\u7248": { en: "Already up to date" },
+  "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0": { en: "No offline shell here (local dev / unsupported browser), nothing to update" },
+  "\u5FF5\u7F13\u5B58\u6E05\u7A7A\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5\uFF09": { en: "Speech cache cleared (spoken lines will need re-speaking)" },
+  "\u5C0F\u6708\u76F8\u5F15\u64CE\u91CD\u5F00\u4E86\uFF0C\u5185\u5B58\u8FD8\u56DE\u53BB\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u4E0D\u7528\u91CD\u5FF5\uFF09": { en: "Tsukuyomi-chan's engine restarted and memory returned (spoken lines are stored on this device, no re-speaking needed)" },
+  "\u5BFC\u5165\u4E2D\u2026": { en: "Importing\u2026" },
+  "\u5BFC\u5165\u4E2D\u2026 {total}%": { en: "Importing\u2026 {total}%" },
+  "\u5BFC\u5165\u6CA1\u6210\uFF1A{Error}": { en: "Import failed: {Error}" },
+  "\u8FD9\u4E9B\u6587\u4EF6\u4E0D\u662F\u5C0F\u6708\u76F8\u8981\u7684\u6A21\u578B\u5305\u5206\u7247": { en: "These files aren't the model pack chunks Tsukuyomi-chan needs" },
+  "\u5206\u4EAB": { en: "Share" },
+  "\u4E0B\u8F7D": { en: "Download" },
+  "\u5173##\u5173\u7A97": { en: "Close" },
+  "\u5DF2\u4E0B\u8F7D {name}": { en: "Downloaded {name}" },
+  "\u5DF2\u5206\u4EAB": { en: "Shared" },
+  "\u5206\u4EAB\u5931\u8D25\uFF1A{Error}": { en: "Sharing failed: {Error}" },
+  "\u8F68\u300C{id}\u300D": { en: "Track \u201C{id}\u201D" },
+  "\u603B\u7EBF": { en: "Bus" },
+  "\u52A0\u603B\u7EBF\u300C{name}\u300D": { en: "Add bus \u201C{name}\u201D" },
+  "\u5220\u603B\u7EBF\u300C{id}\u300D": { en: "Delete bus \u201C{id}\u201D" },
+  "\u5206\u6BB5\u5531\uFF1A{v}": { en: "Sing in segments: {v}" },
+  "\u5B9A\u7A3F {rev}": { en: "Final {rev}" },
+  "\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF0C{p}\uFF09\uFF1A\u53EA\u80FD\u542C\uFF0C\u6539\u4E0D\u4E86\uFF1B\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501": { en: "Finalized (version {rev}, {p}): listen only, can't be edited; \u201CRevise\u201D in the \u2630 menu unlocks it" },
+  "\u6587\u4EF6\u540D\uFF08{p}\uFF09\xB7 {p2}": { en: "File name ({p}) \xB7 {p2}" },
+  "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539": { en: "Rename local files in your file manager" },
+  "\u70B9\u4E86\u6539\u540D": { en: "Tap to rename" },
+  "\u6539\u4E86\uFF0C\u9A6C\u4E0A\u81EA\u52A8\u5B58\u5230\u8FD9\u53F0\u8BBE\u5907\uFF08\u70B9 = \u73B0\u5728\u5B58 + \u63A8\uFF09": { en: "Changed; saving to this device shortly (tap = save and upload now)" },
+  "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u6CA1\u767B\u5F55 OneDrive\uFF0C\u4E0D\u4E0A\u4E91\uFF1B\u70B9 = \u5B58 + \u53BB\u767B\u5F55\uFF09": { en: "Saved on this device (not signed in to OneDrive, so not in the cloud; tap = save and sign in)" },
+  "\u5B58\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\uFF08{cloudOffTitle}\uFF09": { en: "Saved in this browser ({cloudOffTitle})" },
+  "\u79BB\u7EBF\uFF1A\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u56DE\u7EBF\u518D\u63A8\u4E0A\u4E91": { en: "Offline: saved on this device, uploads when back online" },
+  "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u63A8\u4E0A\u4E91\uFF08\u70B9 = \u73B0\u5728\u63A8\uFF09": { en: "Saved on this device, not uploaded yet (tap = upload now)" },
+  "\u4E91\u7AEF\u4E5F\u662F\u6700\u65B0\u7684\uFF08\u70B9 = \u590D\u67E5\u4E91\u7AEF\uFF09": { en: "The cloud is up to date too (tap = recheck the cloud)" },
+  "\u6539\u8FC7\u8FD8\u6CA1\u5B58\u56DE\u6587\u4EF6\uFF08\u70B9 = \u5B58\uFF09": { en: "Changed, not saved back to the file (tap = save)" },
+  "\u5B58\u5728\u672C\u5730\u6587\u4EF6\u91CC\u4E86": { en: "Saved in the local file" },
+  "\u8FD8\u6CA1\u5B58\uFF08\u70B9 = \u5B58\uFF09": { en: "Not saved yet (tap = save)" },
+  "\u65B0\u7684\u4E00\u9996\uFF0C\u8FD8\u6CA1\u5B58": { en: "New song, not saved yet" },
+  "\u6539\u4E86\uFF0C\u9A6C\u4E0A\u81EA\u52A8\u5B58\u5230\u8FD9\u53F0\u8BBE\u5907\uFF08\u70B9 = \u73B0\u5728\u5B58 + \u5199\u8FDB\u6587\u4EF6\u5939\uFF09": { en: "Changed; saving to this device shortly (tap = save and write to the folder now)" },
+  "\u6587\u4EF6\u5939\u7684\u6743\u9650\u6389\u4E86\uFF1A\u6539\u52A8\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u70B9 = \u91CD\u65B0\u6388\u6743\uFF09": { en: "Folder permission lost: changes are saved on this device (tap = re-authorize)" },
+  "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939\uFF08\u70B9 = \u73B0\u5728\u5199\uFF09": { en: "Saved on this device, not written to the folder yet (tap = write now)" },
+  "\u6587\u4EF6\u5939\u91CC\u4E5F\u662F\u6700\u65B0\u7684\uFF08\u70B9 = \u590D\u67E5\uFF09": { en: "The folder is up to date too (tap = recheck)" },
+  "\u300C{extras}\u300D\u8FD9\u4E2A\u89D2\u8272\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u539F\u6765\u7684\u4E50\u5668\u8FD9\u4E00\u7248\u6CA1\u6709\uFF09\uFF0C\u6240\u4EE5\u6CA1\u6709{what}\u3002\u8981\u5C0F\u6708\u76F8\u6765\u5531\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C{extras2}\u300D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u9009\u5C0F\u6708\u76F8\u3002": { en: "Nobody is performing \u201C{extras}\u201D yet (this version doesn't have the original instrument), so there's no {what}. To have Tsukuyomi-chan sing it, tap \u201C{extras2}\u201D at the front of the score and choose her under \u201CWho performs\u201D." },
+  "\u5199\u8FD9\u4E2A\u97F3 = \u539F\u901F\uFF08\u97F3\u9AD8\u5BF9\u9F50\uFF1A\u5199\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF09": { en: "Writing this note = original speed (pitch aligned: the written note \u2248 what you hear)" },
+  "\u539F\u901F\u952E\uFF1A\u6309\u8FD9\u4E2A\u952E\uFF0C\u91C7\u6837\u4E0D\u62C9\u4F38\u4E0D\u538B\u7F29": { en: "Original-speed key: press this key and the sample isn't stretched or compressed" },
+  "\u8BD5\u542C\u4E0D\u4E86\uFF1A{Error}": { en: "Can't audition: {Error}" },
+  "{p}\u524D\u300C{mark}\u300D{p2}": { en: "\u201C{mark}\u201D before {p}{p2}" },
+  "\u4E0B\u4E00\u4E2A\u5B57": { en: "the next syllable" },
+  "\u8FD9\u4E2A\u5B57": { en: "this syllable" },
+  "\uFF08\u987F\u4E00\u4E0B\uFF0C\u4E0D\u6362\u6C14\uFF09": { en: " (a brief stop, no breath)" },
+  "\uFF08\u6362\u6C14\uFF09": { en: " (a breath)" },
+  "\uFF08\u5927\u53E3\u6362\u6C14\uFF09": { en: " (a big breath)" },
+  "\u4E0D\u53D8\u6210\u5531\u6CD5\u8BB0\u53F7": { en: "Doesn't become a singing mark" },
+  "\u6309\u4E0B\u90A3\u4E00\u4E0B\u7684\u8F7B\u91CD\uFF08MIDI \u529B\u5EA6\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31 = \u6BCF\u4E2A\u65B0\u97F3\u4E00\u4E2A\u53F0\u9636\uFF0C\u6309\u4F4F\u7684\u97F3\u4E2D\u95F4\u4E0D\u53D8\uFF1B\u4E00\u4E2A\u97F3\u91CC\u9762\u8981\u53D8\uFF0C\u7528\u97F3\u5185\u8D77\u4F0F{canSwell}": { en: "How hard the key is struck (MIDI velocity): crescendo / diminuendo = one step per new note, held notes don't change; to change within a note, use a swell{canSwell}" },
+  "\uFF08\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF1A\u97F3\u5185\u53EA\u80FD\u53D8\u5F31\uFF09": { en: " (this instrument decays on its own: within a note it can only get softer)" },
+  "\u4E00\u6761\u8FDE\u7EED\u7684\u97F3\u91CF\u66F2\u7EBF\uFF08\u4E58\u5728{sung}\u51FA\u6765\u7684\u58F0\u97F3\u4E0A\uFF09\uFF1A\u6E10\u5F3A\u6E10\u5F31\u5728\u4E00\u4E2A\u957F\u97F3\u4E2D\u95F4\u4E5F\u4E00\u76F4\u5728\u53D8\uFF0C\u548C\u97F3\u5185\u8D77\u4F0F\u662F\u540C\u4E00\u79CD\u53D8\u6CD5\uFF1B\u53EA\u53D8\u54CD\u5EA6\u3001\u4E0D\u53D8\u97F3\u8272{sung2}": { en: "A continuous volume curve (multiplied onto the {sung} sound): crescendo / diminuendo keep changing through a long note, the same way a swell does; only loudness changes, not timbre{sung2}" },
+  "\u5531##\u51FA\u58F0": { en: "sung" },
+  "\u5F39##\u51FA\u58F0": { en: "played" },
+  "\uFF08\u771F\u4EBA\u6E10\u5F31\u4F1A\u53D8\u865A\u3001\u53D8\u6697\uFF0C\u8FD9\u4E2A\u8FD8\u6CA1\u6709\uFF09": { en: " (a real singer's diminuendo gets airier and darker; not modeled yet)" },
+  "\u529B\u5EA6\u600E\u4E48\u53D8": { en: "How dynamics change" },
+  "\u529B\u5EA6\u8868\uFF1A{string}": { en: "Dynamics table: {string}" },
+  "\u97F3\u91CF\uFF1A{dynamicsDb}": { en: "Volume: {dynamicsDb}" },
+  "\u6E10\u5F3A\u6E10\u5F31\u6CA1\u5199\u7EC8\u70B9": { en: "Crescendo / diminuendo with no endpoint" },
+  "\u8D70\u4E00\u6863 = \u529B\u5EA6 {wedgeStepVel}": { en: "One step = velocity {wedgeStepVel}" },
+  "\u8D70\u4E00\u6863 = {wedgeStepDb}": { en: "One step = {wedgeStepDb}" },
+  "\u5E7D\u7075\u97F3": { en: "Ghost note" },
+  "\u529B\u5EA6 {ghostVel}": { en: "Velocity {ghostVel}" },
+  "\u6574\u4E2A\u97F3 {ghostDb}": { en: "Whole note {ghostDb}" },
+  "\u5F31\u5316": { en: "Unstressed" },
+  "\u529B\u5EA6 {unstressVel}": { en: "Velocity {unstressVel}" },
+  "\u6574\u4E2A\u97F3 {unstressDb}": { en: "Whole note {unstressDb}" },
+  "\u6B21\u91CD\u97F3": { en: "Stress" },
+  "\u529B\u5EA6 +{stressVel}": { en: "Velocity +{stressVel}" },
+  "\u97F3\u5934 {accentSec} {stressDb}": { en: "Attack {accentSec} {stressDb}" },
+  "\u91CD\u97F3": { en: "Accent" },
+  "\u529B\u5EA6 +{accentVel}": { en: "Velocity +{accentVel}" },
+  "\u97F3\u5934 {accentSec} {accentDb}{sung}": { en: "Attack {accentSec} {accentDb}{sung}" },
+  "\u5F3A\u97F3": { en: "Marcato" },
+  "\u529B\u5EA6 +{marcatoVel}": { en: "Velocity +{marcatoVel}" },
+  "\u97F3\u5934 {accentSec} {marcatoDb}{sung}": { en: "Attack {accentSec} {marcatoDb}{sung}" },
+  "\u7A81\u5F3A sfz": { en: "Sforzando sfz" },
+  "\u529B\u5EA6 +{sfzVel}": { en: "Velocity +{sfzVel}" },
+  "\u97F3\u5934 {sfzDb}\uFF0C{sfzSec} \u91CC\u843D\u56DE\u6765{sung}": { en: "Attack {sfzDb}, falls back within {sfzSec}{sung}" },
+  "\u5F3A\u540E\u5373\u5F31 fp": { en: "Forte-piano fp" },
+  "\u97F3\u5934\u6309 f\uFF0C{fpSec} \u91CC\u843D\u5230 p\uFF0C\u4E4B\u540E\u90FD\u662F p{sung}": { en: "Attacks at f, falls to p within {fpSec}, then stays p{sung}" },
+  "\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF1A< \u4ECE \u2212{swellDb} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\uFF1B<> \u4E24\u5934 \u2212{swellDb2} dB\u3001\u4E2D\u95F4\u56DE\u5230\u5199\u7684\u529B\u5EA6\uFF08\u5F3A\u540E\u5373\u5F31\u4E4B\u540E\u7684 < \u957F\u56DE\u97F3\u5934\u7684 f\uFF09": { en: "The written dynamic is the peak: < grows from \u2212{swellDb} dB to it; <> starts and ends at \u2212{swellDb2} dB, returning to it in the middle (a < after fp grows back to the attack's f)" },
+  "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF": { en: "Not possible: this instrument decays on its own" },
+  "\u4E00\u8DEF\u5F80\u4E0B\u5230 \u2212{swellDb} dB": { en: "Falls all the way to \u2212{swellDb} dB" },
+  "\u8DF3\u97F3": { en: "Staccato" },
+  "\u5531 / \u5F39 {staccatoGate} \u7684\u957F\u5EA6": { en: "Sung / played at {staccatoGate} of its length" },
+  "\u4FDD\u6301": { en: "Tenuto" },
+  "\u8FD9\u4E2A\u97F3\u4E0D\u7559\u7F1D": { en: "No gap after this note" },
+  "\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\u3001\u4E0D\u7559\u7F1D": { en: "Connects to the next note with no gap" },
+  "\u547C\u5438": { en: "Breath" },
+  "\u524D\u4E00\u4E2A\u97F3\u6536\u77ED {breathSec}\uFF08\u6700\u591A {breathShare}\uFF09": { en: "Shortens the previous note by {breathSec} (at most {breathShare})" },
+  "\u51FA\u58F0\u7684\u6362\u6C14\uFF08\u8F7B\u5438 / \u6DF1\u5438\uFF09": { en: "Audible breath (soft / deep)" },
+  "\u6362\u6C14\u7684\u7A7A\u5F53\u91CC\u4E00\u58F0\u5438\u6C14\uFF08\u6309\u4E0B\u4E00\u4E2A\u5B57\u7684\u5143\u97F3\u5851\u5F62\uFF0C\u6BD4\u5B83\u8F7B\u7EA6 28 dB\uFF1B\u6DF1\u5438 = \u7A7A\u5F53\u957F\u4E00\u70B9\u3001\u54CD 4 dB\uFF09": { en: "An inhale in the breath gap (shaped by the next syllable's vowel, about 28 dB softer; deep = a longer gap and 4 dB louder)" },
+  "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4F4D\u53EA\u65AD\u5F00\uFF0C\u4E0D\u51FA\u5438\u6C14\u58F0": { en: "Not possible: this performer only separates, with no inhale sound" },
+  "\u6C14\u58F0\uFF08\xD7 \u7B26\u5934\uFF09": { en: "Whisper (\xD7 notehead)" },
+  "\u8FD9\u4E2A\u5B57\u4E0D\u5531\u97F3\u9AD8\uFF1A\u7528\u5FF5\u7684\u65F6\u5019\u7684\u6C14\u58F0\uFF08\u8C31\u5305\u7EDC\u7167\u65E7\u3001\u58F0\u5E26\u4E0D\u632F\uFF09\uFF0C\u518D\u8F7B 6 dB": { en: "This syllable has no sung pitch: uses the breathy spoken voice (same spectral envelope, no vocal-fold vibration), 6 dB softer" },
+  "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4F4D\u53EA\u6309\u97F3\u9AD8\u51FA\u58F0": { en: "Not possible: this performer only sounds by pitch" },
+  "\u97F3\u548C\u97F3\u4E4B\u95F4": { en: "Between notes" },
+  "\u8FDE\u7740\u5531": { en: "Legato" },
+  "{gapSec}\uFF08\u6700\u591A {gapShare}\uFF09": { en: "{gapSec} (at most {gapShare})" },
+  "\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09": { en: "How marks are performed (this performer's own settings, saved in the song with them)" },
+  "\u4E0D\u8BA4": { en: "Ignored" },
+  "\u4EBA\u58F0\uFF08\u8FDE\u7740\u5531\uFF09": { en: "Voice (legato)" },
+  "\u81EA\u5DF1\u7684 .sf2\uFF08\u76EE\u5F55\u91CC\u6CA1\u6709\u8FD9\u4E2A\u97F3\u8272\u7684\u8FDE\u65AD\u6570\u636E\uFF09": { en: "Own .sf2 (the catalog has no legato data for this sound)" },
+  "\u4E00\u4E0B\u5C31\u5B8C / \u97F3\u6548\uFF08\u4E0D\u7559\u7F1D\uFF09": { en: "One-shot / sound effect (no gap)" },
+  "\u8C31\u4E0A\u8FD8\u6CA1\u6709\u97F3": { en: "No notes on the score yet" },
+  "\u5C0F\u6708\u76F8\uFF08\u54FC\uFF09": { en: "Tsukuyomi-chan (hum)" },
+  "\u300C{c}\u300D\u6539\u6210\u8FD9\u4E2A\u4E50\u5668": { en: "Change \u201C{c}\u201D to this instrument" },
+  "\u300C{c}\u300D\u4E0A\u573A\uFF1A{gmName}": { en: "\u201C{c}\u201D on stage: {gmName}" },
+  "\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}": { en: "\u201C{c}\u201D replaced by: {gmName}" },
+  "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09": { en: "(nobody on stage)" },
+  "{id} \u589E\u76CA {p}{p2} dB": { en: "{id} gain {p}{p2} dB" },
+  "{id} \u58F0\u50CF {pan}": { en: "{id} pan {pan}" },
+  "\u4E2D": { en: "C" },
+  "\u5DE6 {p}": { en: "L {p}" },
+  "\u53F3 {p}": { en: "R {p}" },
+  "\u603B\u8F68\u589E\u76CA {p}{p2} dB": { en: "Master gain {p}{p2} dB" },
+  "\u6BCD\u7EBF\u9650\u5E45{on}": { en: "Bus limiter{on}" },
+  "\u65C1\u901A": { en: "Bypass" },
+  "\u53D6\u6D88\u65C1\u901A": { en: "Un-bypass" },
+  "\u6DF7\u97F3\u8F68 {n}": { en: "Bus {n}" },
+  "\u52A0{name}": { en: "Add {name}" },
+  "\u5220{name}": { en: "Delete {name}" },
+  "\u6539\u540D\u300C{name}\u300D": { en: "Rename \u201C{name}\u201D" },
+  "{extras} \u5F80{p}\u632A": { en: "Move {extras} {p}" },
+  "\u524D": { en: "earlier" },
+  "\u540E": { en: "later" },
+  "{extras} \u589E\u76CA {p}{p2} dB": { en: "{extras} gain {p}{p2} dB" },
+  "{extras} \u58F0\u50CF": { en: "{extras} pan" },
+  "{track} \u51FA\u5230 {to}": { en: "{track} output to {to}" },
+  "\u5220\u6389\u6B4C\u624B\u300C{name}\u300D": { en: "Delete part \u201C{name}\u201D" },
+  "\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Deleted \u201C{name}\u201D (undo brings it back)" },
+  "\u300C{next}\u300D\u6362\u4EBA\uFF1A{next2}": { en: "\u201C{next}\u201D performer change: {next2}" },
+  "\u4F5C\u8005\u680F": { en: "Credits" },
+  "\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09": { en: "Any number of lines, shown as written on the sheet (right-aligned under the title)" },
+  "\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002": { en: "Optional. Saved as MusicXML page text, so other score software shows it too." },
+  "\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09": { en: "License (optional; for your part: lyrics / music / arrangement)" },
+  "\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09": { en: "Not written: the legal default = all rights reserved (others must ask you first)" },
+  "\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09": { en: "Not stated (default)" },
+  "\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199": { en: "Empty = not stated (the legal default is all rights reserved); or write your own" },
+  "\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002": { en: "Listed strictest to loosest; once published under a CC license, published copies can't be taken back. Saved in MusicXML &lt;rights&gt;; written into the file tags with the credits when exporting mp3." },
+  "\u5176\u4ED6": { en: "Other" },
+  "\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002": { en: "One paper size for the whole song. Bigger paper fits more bars per line; if the screen fits, it's laid out as on paper. No page breaks unless printing." },
+  "\u7248\u5F0F": { en: "Layout" },
+  "\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002": { en: "Compact = smaller staves, tighter line and staff spacing, no lyric space for parts without lyrics. Saved in MusicXML scaling and spacing, so other software matches." },
+  "\u7EB8\uFF08\u66F2\u6BB5\uFF09": { en: "Sheets (sections)" },
+  "\uFF08\u6CA1\u540D\u5B57\uFF09": { en: "(no name)" },
+  "\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09": { en: "(hidden \xB7 not played)" },
+  "\u8FD9\u5F20\u7EB8\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u632A / \u52A0\u58F0\u90E8 / \u5220": { en: "This sheet's menu: rename / move / add part / delete" },
+  "\uFF0B \u65B0\u7684\u7EB8\uFF08\u63A5\u5728\u6700\u540E\uFF09": { en: "\uFF0B New sheet (at the end)" },
+  "\u663E\u793A": { en: "Show" },
+  "\u53EA\u770B\u4E00\u53F7\u8F68": { en: "First track only" },
+  "\u53EA\u770B\u300C{song}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B": { en: "Show only \u201C{song}\u201D (tempo, style and repeats are written on the top part); tap again = show all" },
+  "\u6392\u6CD5": { en: "Layout mode" },
+  "\u8FDE\u7EED": { en: "Continuous" },
+  "\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837": { en: "No page breaks; every line matches paged layout" },
+  "\u5206\u9875": { en: "Paged" },
+  "\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370": { en: "Breaks at the paper's real height (A4 / A5), for print preview" },
+  "\u6A2A\u5377": { en: "Horizontal scroll" },
+  "\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u6B4C\u624B\u540D\u9489\u5728\u5DE6\u8FB9": { en: "One line per sheet, running right and scrolled sideways; part names stay pinned at the left" },
+  "\u5C0F\u8282\u53F7": { en: "Bar numbers" },
+  "\u6BCF\u884C\u5F00\u5934": { en: "Start of each line" },
+  "\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0": { en: "Small, top-left of each line's top staff; each sheet counts from 1, a pickup counts as 0" },
+  "\u4E0D\u5370": { en: "Don't print" },
+  "\u6B4C\u8BCD": { en: "Lyrics" },
+  "\u6309\u8282\u594F": { en: "By rhythm" },
+  "\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u5C0F\u4E00\u53F7 \u2192 \u4E0A\u4E0B\u9519\u5F00 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070": { en: "Note positions depend only on duration, so notes don't move as you type; lyrics make way: borrow nearby space \u2192 smaller \u2192 staggered \u2192 grayed out if it still doesn't fit" },
+  "\u6309\u6B4C\u8BCD": { en: "By lyrics" },
+  "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": { en: "Long words push notes apart (the traditional engraving rule)" },
+  "\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019": { en: "When the screen can't fit the sheet" },
+  "\u4E0D\u6298\u884C": { en: "Don't wrap" },
+  "\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837": { en: "Shrink the whole sheet; lines match the paper" },
+  "\u6298\u884C": { en: "Wrap" },
+  "\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9": { en: "Lay out to screen width, with larger staves" },
+  "\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002": { en: "Image insertion will live here later too." },
+  "\u3093 / \u55EF": { en: "\u3093 (hum)" },
+  "\u3042 / \u554A": { en: "\u3042 (ah)" },
+  "\u304A / \u54E6": { en: "\u304A (oh)" },
+  "\u3046 / \u545C": { en: "\u3046 (oo)" },
+  "\u3089 / \u5566": { en: "\u3089 (la)" },
+  "\u5C0F\u6708\u76F8\u5FF5\u51FA\u6765 {n} \u4E2A\u97F3\u8282\u3001\u8C31\u4E0A {n2} \u4E2A\uFF0C\u5BF9\u4E0D\u4E0A\uFF08\u5531\u7684\u65F6\u5019\u4F1A\u62A5\u9519\uFF09\uFF1A": { en: "Tsukuyomi-chan says {n} syllables but the score has {n2}, so they don't match (singing will report an error):" },
+  "\u5C0F\u6708\u76F8\u5FF5\u6210\uFF08\u97F3\u7D20 + \u58F0\u8C03\uFF09\uFF1A": { en: "Tsukuyomi-chan reads it as (phonemes + tones):" },
+  "\u5C0F\u6708\u76F8\u5FF5\u6210\uFF1A": { en: "Tsukuyomi-chan reads it as:" },
+  "\u8FD9\u4EF6\u4E50\u5668\uFF1A{what}": { en: "Instrument: {what}" },
+  "\u7B2C\u4E8C\u884C\u8D77\u5199 {ab}": { en: "from the 2nd system: {ab}" },
+  "\u9759\u97F3": { en: "Mute" },
+  "\u72EC\u594F": { en: "Solo" },
+  "\u53EA\u770B\u5B83": { en: "Show only" },
+  "\u4E0D\u51FA\u58F0": { en: "Silent" },
+  "{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220": { en: "{p}{p2}: empty lyric slots don't open a box; lyrics already written can still be tapped to edit or delete" },
+  "\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC": { en: " (vowel version) only hums" },
+  "\u4E0D\u5531\u6B4C\u8BCD": { en: " doesn't sing lyrics" },
+  "\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u65B0\u6B4C\u624B": { en: "This line went to a new part" },
+  "\u52A0\u4E86\u4E00\u4F4D\u6B4C\u624B": { en: "Added a part" },
+  "\u7B2C {p} \u5F20\u7EB8": { en: "Sheet {p}" },
+  "\u6539\u66F2\u6BB5\u540D\u2026": { en: "Rename section\u2026" },
+  "\u4E0A\u79FB": { en: "Move up" },
+  "\u4E0B\u79FB": { en: "Move down" },
+  "\u5728\u5B83\u540E\u9762\u52A0\u4E00\u5F20\u7EB8": { en: "Add a sheet after it" },
+  "\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u79FB\u8C03\u3001\u8F6C\u8C03\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09": { en: "Transpose / change key for all parts on this sheet or the whole song (key signature moves too)" },
+  "\u79FB\u8C03 / \u8F6C\u8C03\u2026": { en: "Transpose / change key\u2026" },
+  "\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB": { en: "Hidden = not played and not in the flattened copy; collapsed on the score, reachable by paging" },
+  "\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09": { en: "Show (hidden now)" },
+  "\u9690\u85CF\uFF08\u4E0D\u653E\uFF09": { en: "Hide (don't play)" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u52A0\u6B4C\u624B": { en: "Add a part to this sheet" },
+  "\u65B0\u7684\u4E00\u4F4D\u6B4C\u624B\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u5F20\u7EB8\u4E0A": { en: "A new part, only on this sheet" },
+  "\uFF0B \u65B0\u6B4C\u624B\u2026": { en: "\uFF0B New part\u2026" },
+  "\u5220\u8FD9\u5F20\u7EB8\u2026": { en: "Delete this sheet\u2026" },
+  "\u7EB8 = \u66F2\u6BB5\uFF1A\u6BCF\u5F20\u7EB8\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u5F20\u7EB8\u4E0A\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\u3002": { en: "Sheet = section: each sheet is a fresh start where all parts realign; each sheet has whichever parts it wants." },
+  "\u8FD9\u5F20\u7EB8\u663E\u793A\u4E86\uFF08\u4F1A\u653E\uFF09": { en: "This sheet is shown (will play)" },
+  "\u8FD9\u5F20\u7EB8\u9690\u85CF\u4E86\uFF08\u4E0D\u653E\uFF09": { en: "This sheet is hidden (won't play)" },
+  "\u5220\u6389\u300C{p}\u300D\uFF1F": { en: "Delete \u201C{p}\u201D?" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u58F0\u90E8\u5199\u7684\u4E1C\u897F\u4E00\u8D77\u5220\u6389\uFF08\u80FD\u64A4\u9500\uFF1A\u64A4\u9500 / Ctrl+Z\uFF09\u3002": { en: "Everything written in all parts on this sheet is deleted (can be undone: Undo / Ctrl+Z)." },
+  "\u5220": { en: "Delete" },
+  "\u300C{label}\u300D\u8FD9\u4E00\u884C\u4EA4\u7ED9\u2026": { en: "Hand the \u201C{label}\u201D line to\u2026" },
+  "\uFF08\u5BF9\u8C03\uFF09": { en: " (swap)" },
+  "\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1A\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u90FD\u4E0D\u52A8\uFF0C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF1B\u8DE8\u7EB8\u6309\u6B4C\u624B\u63A5\u8D77\u6765\u3002\u5BF9\u65B9\u5728\u8FD9\u5F20\u7EB8\u4E0A\u5DF2\u7ECF\u6709\u4E00\u884C = \u4E24\u884C\u5BF9\u8C03\u3002": { en: "Changes this sheet only: notes, lyrics and marks stay, a different part performs them; across sheets, parts connect by identity. If that part already has a line here, the two lines swap." },
+  "\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09\u3002": { en: "Added to this sheet only (other sheets stay the same)." },
+  "\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48\u3001\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\uFF08\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF09": { en: "What this part is, who performs it and how (full page; try it on the keys on the right)" },
+  "{who} \u5728\u6F14": { en: "{who} performing" },
+  "\u6CA1\u4EBA\u4E0A\u573A": { en: "Nobody on stage" },
+  "\u4E50\u5668 \u203A": { en: "Instrument \u203A" },
+  "\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}": { en: "{n} {n|syllable|syllables} can't be sung (grayed out on the score): {first}{x}" },
+  " \u7B49": { en: " etc." },
+  "\u9690\u85CF": { en: "Hide" },
+  "\u8C31\u4E0A\u7F29\u6210\u4E00\u6761\u7EC6\u884C\uFF08\u70B9\u7EC6\u884C\u518D\u653E\u51FA\u6765\uFF09\uFF1B\u7167\u6837\u51FA\u58F0": { en: "Collapses to a thin line on the score (tap it to bring it back); still sounds" },
+  "\u5176\u4F59\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4E2A\u4E00\u8D77\u300C\u53EA\u770B\u300D\uFF09": { en: "All other parts collapse to thin lines (several can be \u201Cshow only\u201D together)" },
+  "\u51FA\u58F0": { en: "Sound" },
+  "\u64AD\u653E\u65F6\u4E0D\u51FA\u58F0\uFF1B\u8C31\u4E0A\u7167\u753B": { en: "Silent in playback; still drawn on the score" },
+  "\u64AD\u653E\u65F6\u53EA\u51FA\u6709\u72EC\u594F\u7684\u58F0\u90E8": { en: "Playback only sounds the parts on solo" },
+  "\u8C31\u8868": { en: "Staves" },
+  "\u4E00\u5F20": { en: "Single" },
+  "\u5927\u8C31\u8868": { en: "Grand staff" },
+  "\u4E0A\u9AD8\u97F3\u4E0B\u4F4E\u97F3\uFF08\u94A2\u7434\uFF09\uFF1A\u4E2D\u592E C \u4EE5\u4E0B\u81EA\u52A8\u843D\u4E0B\u9762\uFF0Cpad\u300C\u22EF \u2192 \u6362\u8C31\u8868\u300D\u80FD\u624B\u52A8\u632A": { en: "Treble above, bass below (piano): notes below middle C drop to the lower staff automatically; pad \u201C\u22EF \u2192 Change staff\u201D moves them by hand" },
+  "\u81EA\u52A8": { en: "Auto" },
+  "\u6309\u6BCF\u5F20\u7EB8\u7684\u97F3\u6311\u52A0\u7EBF\u6700\u7701\u7684\u8C31\u53F7\uFF08\u5F88\u9AD8\u7684\u4F1A\u6311 15ma / 8va\uFF0C\u5F88\u4F4E\u7684\u6311\u4F4E\u97F3 / \u4F4E\u97F3 8vb\uFF09\uFF1B\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002\u8FD8\u4E0D\u770B\u4E50\u5668\u7684\u4E60\u60EF\uFF08\u6BD4\u5982\u5409\u4ED6\u5199 8vb\uFF09\uFF0C\u8981\u7684\u8BDD\u624B\u52A8\u9009": { en: "Picks the clef with the fewest ledger lines for each sheet (15ma / 8va when very high, bass / bass 8vb when very low); display only, pitch doesn't change. Doesn't know instrument conventions yet (e.g. guitar written 8vb) \u2014 choose by hand if needed" },
+  "\u81EA\u52A8\u516B\u5EA6\u7EBF": { en: "Auto 8va lines" },
+  "\u4E00\u4E32\u5F88\u9AD8 / \u5F88\u4F4E\u7684\u97F3\uFF08\u6BCF\u4E2A\u90FD\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF09\u81EA\u52A8\u753B 8va / 15ma / 8vb\uFF1B\u624B\u5199\u7684\u8BF4\u4E86\u7B97\uFF0C\u4E0D\u5B58\u8FDB\u8C31": { en: "A run of very high / low notes (each needing 3+ ledger lines) gets an automatic 8va / 15ma / 8vb; hand-written ones win; not saved in the score" },
+  "\u5408\u79DF": { en: "Shared staff" },
+  "\u6709\u522B\u7684\u6B4C\u624B\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA": { en: "Other parts are attached to this line (it's the host), so it can't attach to another" },
+  "\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09": { en: "Draw on another part's staff (shared: just an overview, colliding notes collide; only notes are drawn, no rests / lyrics / dynamics; tap the name to split it out and write)" },
+  "\u81EA\u5DF1\u4E00\u884C": { en: "Own line" },
+  "\u6302\u5728\u300C{p}\u300D\u4E0A": { en: "Attached to \u201C{p}\u201D" },
+  "\u987A\u5E8F": { en: "Order" },
+  "\u5F80\u4E0A\u632A\u4E00\u683C\uFF08\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u7684\u901F\u5EA6\u8BB0\u53F7\u8BF4\u4E86\u7B97\uFF09": { en: "Move up one (the top part's tempo mark is the one that counts)" },
+  "\u2191 \u5F80\u4E0A": { en: "\u2191 Up" },
+  "\u5F80\u4E0B\u632A\u4E00\u683C": { en: "Move down one" },
+  "\u2193 \u5F80\u4E0B": { en: "\u2193 Down" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u6362\u4E00\u4F4D\u6B4C\u624B\u5531\uFF08\u53EA\u6539\u8FD9\u5F20\u7EB8\uFF1B\u97F3\u548C\u6B4C\u8BCD\u4E0D\u52A8\uFF09": { en: "A different part performs this line on this sheet (this sheet only; notes and lyrics stay)" },
+  "\u4EA4\u7ED9\u2026": { en: "Hand to\u2026" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u518D\u52A0\u4E00\u4F4D\u6B4C\u624B\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u5F20\u7EB8\u4E0A\uFF09": { en: "Add another part to this sheet (existing or new; on this sheet only)" },
+  "\uFF0B \u52A0\u6B4C\u624B\u2026": { en: "\uFF0B Add part\u2026" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u4E0D\u8981\u8FD9\u4E2A\u58F0\u90E8\uFF08\u522B\u7684\u7EB8\u7167\u65E7\uFF09": { en: "Remove this part from this sheet (other sheets stay the same)" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u53BB\u6389": { en: "Remove from this sheet" },
+  "\u6DF7\u97F3\u53F0\uFF08= \u542C\u7684\u5E95\u5EA7\uFF09\uFF1A\u6BCF\u4F4D\u6B4C\u624B\u4E00\u6761\uFF08\u589E\u76CA / \u58F0\u50CF / \u9759\u97F3 / \u72EC\u594F\uFF09\uFF1B\u4E00\u5F20\u7EB8\u90FD\u4E0D\u5728\u7684\u6B4C\u624B\u5728\u90A3\u91CC\u5220": { en: "Mixer (= the Listen dock): one strip per part (gain / pan / mute / solo); parts on no sheet are deleted there" },
+  "\u6B4C\u624B\u7BA1\u7406\uFF08\u6DF7\u97F3\u53F0\uFF09\u2026": { en: "Manage parts (mixer)\u2026" },
+  "\u6302\u4E0A\u4E86\uFF1A\u5728\u522B\u7684\u6B4C\u624B\u90A3\u513F\u5199\u7684\u65F6\u5019\uFF0C\u8FD9\u4E00\u5BB6\u53E0\u5728\u4E00\u884C\u4E0A\u770B\uFF08\u53EA\u8BFB\uFF09\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199": { en: "Attached: while writing in another part, this family stacks on one line (read-only); tap a name to split it out and write" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u300C{name}\u300D": { en: "This sheet's line went to \u201C{name}\u201D" },
+  "MIDI \u529B\u5EA6": { en: "MIDI velocity" },
+  "\u97F3\u91CF dB": { en: "Volume dB" },
+  "GS \u529B\u5EA6\u5C42": { en: "GS velocity layer" },
+  "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09": { en: "Moves the start point to the head of this bar and plays from here (later |\u25B6 replays from here; editing or moving the cursor doesn't move it)" },
+  "\u7C98\u8D34": { en: "Paste" },
+  "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09": { en: "Paste here: copied in the app, or jianpu text on the system clipboard (1 2 3 | 5 - -)" },
+  "\u5C0F\u8282\u7EBF |": { en: "Barline |" },
+  "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09": { en: "Recount bars from here (pickup)" },
+  "\u53E5\u53F7": { en: "Phrase end" },
+  "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09": { en: "This phrase ends here (a boundary for \u201CJoin\u201D; no line break, no breath)" },
+  "\u8C31\u53F7 \xB7 \u8C03\u53F7 \xB7 \u62CD\u53F7 \xB7 \u901F\u5EA6\u2026": { en: "Clef \xB7 Key \xB7 Time \xB7 Tempo\u2026" },
+  "\u4ECE\u8FD9\u513F\u8D77\u6362\uFF08\u540C\u4E00\u4E2A\u9762\u677F\uFF09": { en: "Change from here (one panel)" },
+  "\u516B\u5EA6\u7EBF\u2026": { en: "Ottava line\u2026" },
+  "8va / 15ma / 8vb\uFF08\u53EA\u7BA1\u753B\uFF09": { en: "8va / 15ma / 8vb (display only)" },
+  "\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09\uFF1B\u53EA\u632A\u4E00\u6BB5 = \u9009\u4E2D\u5B83\uFF0C\u7528\u9009\u533A\u83DC\u5355": { en: "Moves all parts on this sheet or in the whole song (key signature too); to move just a passage, select it and use the selection menu" },
+  "\u529B\u5EA6 {d}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77": { en: "Dynamic {d}: from the note before here" },
+  "\u5168\u9009": { en: "Select all" },
+  "\u98CE\u683C\u8BB0\u53F7\u8981\u653E\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u8FD9\u5F20\u7EB8\u91CC\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A style mark goes on a note (this sheet has no notes yet)" },
+  "\u53CD\u590D / \u8DF3\u8F6C\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4F4D\uFF08{extras}\uFF09\u90A3\u4E00\u884C\uFF1A\u8FD9\u4E00\u884C\u5199\u7684\u753B\u7070\u3001\u4E0D\u8D77\u4F5C\u7528": { en: "Repeats / jumps only count on the top part's line ({extras}): written on this line they're grayed out and have no effect" },
+  "\u8FD9\u4E00\u6BB5\u300C{paperId}\u300D": { en: "This section \u201C{paperId}\u201D" },
+  "\u79FB\u8C03": { en: "Transpose" },
+  "\u2191 \u534A\u97F3": { en: "\u2191 Semitone" },
+  "\u2193 \u534A\u97F3": { en: "\u2193 Semitone" },
+  "\u2191 \u5168\u97F3": { en: "\u2191 Whole tone" },
+  "\u2193 \u5168\u97F3": { en: "\u2193 Whole tone" },
+  "\u516B\u5EA6": { en: "Octave" },
+  "\u2191 \u516B\u5EA6": { en: "\u2191 Octave" },
+  "\u2193 \u516B\u5EA6": { en: "\u2193 Octave" },
+  "\u8F6C\u8C03\u5230\uFF08\u73B0\u5728 1={now}\uFF09\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A": { en: "Change key to (now 1={now}): notes move by the interval between the two tonics" },
+  "{whole}\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u632A\uFF08\u53D6\u5347\u964D\u53F7\u5C11\u7684\u5199\u6CD5\uFF1B\u632A\u516B\u5EA6\u8C03\u53F7\u4E0D\u53D8\uFF09\u3002\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u8C31\u53F7\u4E0D\u52A8\uFF1B\u9F13 / \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\u7684\u58F0\u90E8\uFF08\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\uFF09\u4E0D\u52A8\uFF1Bpad \u7684\u300C1=\u300D\u4E0D\u8DDF\u3002": { en: "{whole}all parts move together, and the key signature follows (spelled with fewer accidentals; octave moves leave it unchanged). Lyrics, marks and clefs stay; drums / single-key parts (written pitch = which one to hit) stay; the pad's \u201C1=\u201D doesn't follow." },
+  "\u8FD9\u5F20\u7EB8\u4E0A": { en: "On this sheet," },
+  "\u5DF2\u7ECF\u662F\u8FD9\u4E2A\u8C03": { en: "Already in this key" },
+  "\u6CA1\u6709\u53EF\u4EE5\u632A\u7684\u97F3": { en: "No notes to move" },
+  "{held} \u662F\u9F13 / \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\uFF08\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\uFF09\uFF0C\u6CA1\u632A": { en: "{held} is drums / single-key (written pitch = which one to hit), so it wasn't moved" },
+  "\u8C31\u5185\u53CD\u590D\uFF1A\u63D2\u5728\u5149\u6807\u5904\uFF1B\u5149\u6807\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\u3002\u653E\u7684\u65F6\u5019\u6309\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4F4D\u6B4C\u624B\u90A3\u4E00\u884C\u5C55\u5F00\uFF0C\u522B\u7684\u58F0\u90E8\u8DDF\u7740\uFF1B\u4E0D\u8DE8\u7EB8\u3002\u8DF3\u56DE\u6765\uFF08D.C. / D.S.\uFF09\u4E4B\u540E\u53CD\u590D\u4E0D\u518D\u53CD\u590D\u3002": { en: "Score repeats: inserted at the cursor; next to a barline = turns that barline into a repeat. Playback expands them from this sheet's top part, other parts follow; they don't cross sheets. After a jump back (D.C. / D.S.), repeats don't repeat again." },
+  "\u53CD\u590D\u5F00\u59CB": { en: "Repeat start" },
+  "\u53CD\u590D\u7ED3\u675F\uFF1A\u56DE\u5230 |:\uFF08\u6CA1\u6709 = \u8FD9\u5F20\u7EB8\u5F00\u5934\uFF09\u518D\u653E\u4E00\u904D": { en: "Repeat end: back to |: (or this sheet's start if none) and play again" },
+  "\u524D\u4E00\u6BB5\u53CD\u590D\u7ED3\u675F\u3001\u540E\u4E00\u6BB5\u53CD\u590D\u5F00\u59CB": { en: "End one repeat, start another" },
+  "\u4E00\u5171\u653E\u4E09\u904D": { en: "Play three times in total" },
+  "\u4E00\u5171\u653E\u56DB\u904D": { en: "Play four times in total" },
+  "\u6539\u56DE\u666E\u901A\u5C0F\u8282\u7EBF": { en: "Back to a normal barline" },
+  "\u2016 \u6BB5\u843D\u7EBF": { en: "\u2016 Double bar" },
+  "\u6BB5\u843D\u7EBF\uFF08\u4E24\u6839\u7EC6\u7EBF\uFF09\uFF1A\u5206\u6BB5\u7684\u8BB0\u53F7\uFF0C\u4E0D\u662F\u4E24\u6839\u5C0F\u8282\u7EBF\uFF1B\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u6BB5\u843D\u7EBF": { en: "Double bar (two thin lines): a section marker, not two barlines; next to a barline = turns that one into a double bar" },
+  "\u7EC8\u6B62\u7EBF": { en: "Final bar" },
+  "\u7EC8\u6B62\u7EBF\uFF08\u7EC6 + \u7C97\uFF09\uFF1A\u66F2\u5B50 / \u8FD9\u4E00\u6BB5\u5230\u8FD9\u513F\u7ED3\u675F": { en: "Final bar (thin + thick): the piece / this section ends here" },
+  "\u623F\u5B50\uFF1A\u7B2C {p} \u904D\u8D70\u8FD9\u91CC": { en: "Ending: take this on pass {p}" },
+  "8va\uFF1A\u8C31\u4E0A\u753B\u4F4E\u4E00\u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645\u7167\u5199\u7684\u9AD8\u516B\u5EA6\u54CD\uFF09": { en: "8va: drawn an octave lower (sounds an octave higher, as written)" },
+  "15ma\uFF1A\u8C31\u4E0A\u753B\u4F4E\u4E24\u4E2A\u516B\u5EA6": { en: "15ma: drawn two octaves lower" },
+  "8vb\uFF1A\u8C31\u4E0A\u753B\u9AD8\u4E00\u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645\u7167\u5199\u7684\u4F4E\u516B\u5EA6\u54CD\uFF09": { en: "8vb: drawn an octave higher (sounds an octave lower, as written)" },
+  "\u5230\u8FD9\u513F\u7ED3\u675F\u516B\u5EA6\u7EBF": { en: "End the ottava line here" },
+  "\u516B\u5EA6\u7EBF\uFF1A\u4ECE\u5149\u6807\u5904\u8D77{sel}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002": { en: "Ottava line: from the cursor{sel}. Display only, pitch doesn't change." },
+  "\uFF08\u6709\u9009\u533A = \u53EA\u753B\u8FD9\u4E00\u6BB5\uFF09": { en: " (with a selection = just this passage)" },
+  "\uFF0C\u5230\u4E0B\u4E00\u4E2A\u516B\u5EA6\u7EBF\u8BB0\u53F7\u4E3A\u6B62": { en: ", up to the next ottava mark" },
+  "\u81EA\u52A8\uFF1A\u8FD9\u5F20\u7EB8\u6311\u4E86\u300C{p}\u300D": { en: "Auto: this sheet picked \u201C{p}\u201D" },
+  "\u81EA\u52A8\u516B\u5EA6\u7EBF\uFF1A\u8FD9\u4E00\u4E32\u97F3\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF0C\u81EA\u52A8\u753B\u4E86 {lab}\u3002\u53EA\u7BA1\u753B\u3001\u4E0D\u5B58\u8FDB\u8C31\uFF0C\u97F3\u9AD8\u4E0D\u53D8\uFF1B\u6539\u4E86\u97F3\u4F1A\u8DDF\u7740\u91CD\u7B97\u3002\u624B\u5199\u7684\u516B\u5EA6\u7EBF\u8BF4\u4E86\u7B97\u3002": { en: "Auto ottava: this run needs three or more ledger lines, so {lab} was drawn automatically. Display only, not saved in the score; pitch doesn't change, and it recalculates as notes change. Handwritten ottava lines win." },
+  "\u56FA\u5B9A\u6210\u624B\u5199\u7684 {lab}\uFF08\u4E4B\u540E\u81EA\u5DF1\u6539\uFF09": { en: "Make it a handwritten {lab} (edit it yourself afterward)" },
+  "\u8FD9\u4F4D\u6B4C\u624B\u4E0D\u8981\u81EA\u52A8\u516B\u5EA6\u7EBF": { en: "No auto ottava for this part" },
+  "\u8FD9\u4F4D\u6B4C\u624B\u7684\u81EA\u52A8\u516B\u5EA6\u7EBF\u5173\u4E86\uFF08\u70B9\u6B4C\u624B\u540D\u3001\u5C0F\u5361\u91CC\u80FD\u518D\u5F00\uFF09": { en: "Auto 8va lines are off for this singer (tap the singer name to turn them back on in the card)" },
+  "\u516B\u5EA6\u7EBF\uFF1A{p}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002": { en: "Ottava line: {p}. Display only, pitch doesn't change." },
+  "\u5220\u6389\u8FD9\u6761\u516B\u5EA6\u7EBF": { en: "Delete this ottava line" },
+  "Segno\uFF1AD.S. \u8DF3\u56DE\u5230\u8FD9\u513F": { en: "Segno: D.S. jumps back here" },
+  "Coda\uFF1ATo Coda \u8DF3\u5230\u8FD9\u513F": { en: "Coda: To Coda jumps here" },
+  "Fine\uFF1A\u8DF3\u56DE\u6765\uFF08al Fine\uFF09\u4E4B\u540E\u5728\u8FD9\u513F\u505C": { en: "Fine: after jumping back (al Fine), stop here" },
+  "To Coda\uFF1A\u8DF3\u56DE\u6765\uFF08al Coda\uFF09\u4E4B\u540E\u4ECE\u8FD9\u513F\u53BB Coda": { en: "To Coda: after jumping back (al Coda), go to the Coda from here" },
+  "D.C.\uFF1A\u8DF3\u56DE\u8FD9\u5F20\u7EB8\u5F00\u5934\uFF0C\u653E\u5230\u7EB8\u5C3E": { en: "D.C.: back to the start of this sheet, play to the end" },
+  "D.C. al Fine\uFF1A\u8DF3\u56DE\u5F00\u5934\uFF0C\u653E\u5230 Fine": { en: "D.C. al Fine: back to the start, play to Fine" },
+  "D.C. al Coda\uFF1A\u8DF3\u56DE\u5F00\u5934\uFF0C\u5230 To Coda \u53BB Coda": { en: "D.C. al Coda: back to the start, at To Coda go to the Coda" },
+  "D.S.\uFF1A\u8DF3\u56DE Segno\uFF0C\u653E\u5230\u7EB8\u5C3E": { en: "D.S.: back to the Segno, play to the end" },
+  "D.S. al Fine\uFF1A\u8DF3\u56DE Segno\uFF0C\u653E\u5230 Fine": { en: "D.S. al Fine: back to the Segno, play to Fine" },
+  "D.S. al Coda\uFF1A\u8DF3\u56DE Segno\uFF0C\u5230 To Coda \u53BB Coda": { en: "D.S. al Coda: back to the Segno, at To Coda go to the Coda" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A{why}": { en: "No effect (grayed out): {why}" },
+  "\u623F\u5B50\uFF1A\u7B2C {nums} \u904D\u8D70\u8FD9\u4E2A\u62EC\u53F7\uFF0C\u522B\u7684\u904D\u8DF3\u8FC7": { en: "Ending: pass {nums} takes this bracket, other passes skip it" },
+  "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u300C{style}\u300D\uFF1A\u4E0D\u52A0\u8F7B\u91CD\uFF08\u6362\u4E00\u4E2A\u98CE\u683C\u5C31\u597D\uFF09": { en: "This version doesn't know \u201C{style}\u201D: no beat weighting (pick another style)" },
+  "{p} \u8FD9\u4E2A\u9884\u8BBE\u6CA1\u5217\uFF1A\u6309\u53E4\u5178\u7684\u5F3A\u5F31\u63A8{m}": { en: "This preset doesn't list {p}: inferred from classical strong and weak beats{m}" },
+  "\uFF08\u51E0\u4E2A\u516B\u5206\u4E00\u7EC4\u8C31\u4E0A\u6CA1\u8BB0\uFF0C\u6309 2 + 2 + \u2026 + 3 \u63A8\uFF09": { en: " (eighth-note grouping isn't written, assumed 2 + 2 + \u2026 + 3)" },
+  "{p}\uFF1A\u8FD9\u4E2A\u9884\u8BBE\u4E0D\u52A0\u8F7B\u91CD": { en: "{p}: this preset adds no beat weighting" },
+  "\u6447\u6446\uFF1A\u4E00\u62CD\u91CC\u524D\u4E00\u4E2A\u516B\u5206\u5360 {p}%\uFF08\u76F4 = 50%\uFF0C\u4E09\u8FDE\u97F3\u611F \u2248 67%\uFF1B\u5E45\u5EA6\u53EA\u653E\u5927 / \u7F29\u5C0F\u6BD4\u76F4\u7684\u591A\u51FA\u6765\u7684\u90A3\u4E00\u622A\uFF0C\u5939\u5728 {p2}\u2013{p3}%\uFF09\u3002\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u6B4C\u624B\u4E00\u8D77\u6447\uFF08\u5C0F\u6708\u76F8\u4E5F\u662F\uFF0C\u4E0D\u5206\u8DDF\u591A\u5C11\uFF09\uFF1B\u5199\u6210\u8FDE\u97F3\u7684\u97F3\u30016/8 \u8FD9\u7C7B\u62CD\u53F7\u4E0D\u6447": { en: "Swing: the first eighth takes {p}% of each beat (straight = 50%, triplet feel \u2248 67%; amount only scales the part above straight, clamped to {p2}\u2013{p3}%). All parts on this sheet swing together (Tsukuyomi-chan too, regardless of how much they follow); tuplets and meters like 6/8 don't swing" },
+  "\u8DDF {p}%": { en: "Follows {p}%" },
+  "\u4E0D\u8DDF": { en: "Doesn't follow" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\uFF1A{p}\uFF08\u6309\u4E50\u5668\u7C7B\u522B\uFF0C\u9884\u8BBE\u7ED9\u7684\uFF09": { en: "On this sheet: {p} (by instrument family, from the preset)" },
+  "\u4E5F\u53EB {p}": { en: "Also called {p}" },
+  "\u4ECE\u8FD9\u513F\u8D77\u4E0D\u52A0\u62CD\u5B50\u8F7B\u91CD": { en: "No beat weighting from here" },
+  "\u4E0D\u52A0\u8F7B\u91CD": { en: "No weighting" },
+  "\u5E45\u5EA6\uFF1A\u9884\u8BBE\u7684 {a} \u500D": { en: "Amount: {a} \xD7 preset" },
+  "\u98CE\u683C = \u62CD\u5B50\u8F7B\u91CD\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u843D\u5728\u5C0F\u8282\u91CC\u7684\u54EA\u4E00\u62CD\u8F7B\u4E00\u70B9\u6216\u91CD\u4E00\u70B9\uFF08\u50CF\u9F13\u624B\u7684\u5F8B\u52A8\uFF09\uFF1B\u5199\u4E86\u91CD\u97F3 / \u5F31\u5316\u7684\u97F3\u7167\u5199\u7684\u6765\u3002": { en: "Style = beat weighting: from this note to the end of the sheet, each note gets slightly lighter or heavier depending on where it falls in the bar (like a drummer's groove); notes with written accents / unstress follow what's written." },
+  "\u4E00\u8F6E\u7684\u7B2C\u4E00\u5C0F\u8282\u662F\u4E09\u51FB\u90A3\u8FB9\uFF08\u524D\u53E5\uFF09\uFF0C\u4ECE\u8FD9\u4E2A\u8BB0\u53F7\u90A3\u4E00\u5C0F\u8282\u8D77\u6570": { en: "The first bar of the cycle is the three-hit side (first phrase), counted from this mark's bar" },
+  "\u9519\u5F00\u4E00\u5C0F\u8282\uFF1A\u4E24\u5C0F\u8282\u5BF9\u8C03\uFF0C\u7B2C\u4E00\u5C0F\u8282\u662F\u4E24\u51FB\u90A3\u8FB9": { en: "Offset by a bar: the two bars swap, the first bar is the two-hit side" },
+  "2-3\uFF08\u9519\u5F00\u4E00\u5C0F\u8282\uFF09": { en: "2-3 (offset by a bar)" },
+  "\u53BB\u6389\u8FD9\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF08\u8FD9\u513F\u8D77\u56DE\u5230\u524D\u4E00\u4E2A\u98CE\u683C\uFF1B\u8FD9\u5F20\u7EB8\u5F00\u5934 = \u4E0D\u52A0\uFF09": { en: "Remove this style mark (from here it returns to the previous style; at the start of a sheet = none)" },
+  "\u53EA\u7BA1\u8FD9\u5F20\u7EB8\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF08\u6216\u4E0B\u4E00\u4E2A\u98CE\u683C\u8BB0\u53F7\uFF09\u3002\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A": { en: "This sheet only: from this note to the end of the sheet (or the next style mark). Long-press and drag = move to another note" },
+  "\u6539\u6210 {d}": { en: "Change to {d}" },
+  "\u6E10\u5F3A": { en: "Crescendo" },
+  "\u6E10\u5F31": { en: "Diminuendo" },
+  "\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765": { en: "No dynamic earlier on this sheet, so there's nothing to ramp from" },
+  "\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70": { en: "There's a handwritten crescendo / diminuendo in between; that wins" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A {value} \u7BA1\u4E0D\u5230": { en: "No effect (grayed out): the next note is forte-piano (fp) \u2014 it attacks at f, falls to p and stays p, out of reach of this {value}" },
+  "\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8": { en: "Ramp: changes gradually from the previous dynamic on this sheet to here (dashed hairpin on the score); off = changes suddenly here" },
+  "{ramp}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09": { en: "{ramp}Ramp (gradually from the previous dynamic)" },
+  "\u4E0D\u8D77\u4F5C\u7528\uFF1A": { en: "No effect:" },
+  "\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09": { en: "Remove this dynamic (later notes return to the previous one)" },
+  "\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31": { en: "Remove this crescendo / diminuendo" },
+  "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A": { en: "Long-press and drag = move to another note" },
+  "\u2039 \u8F6C\u8C03\u5230\u2026": { en: "\u2039 Change key to\u2026" },
+  "\u73B0\u5728\u7684\u8C03": { en: "Current key" },
+  "\u8F6C\u8C03\u2026": { en: "Change key\u2026" },
+  "\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362": { en: "Move the whole passage to another key: notes move by the interval between the two tonics, and the key signature changes" },
+  "\u6309\u8C03\u53F7\u62FC\u5199": { en: "Spell by key signature" },
+  "\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8": { en: "Pitch stays: in-key notes use the key's spelling (A\u266D in a five-sharp key = G\u266F), out-of-key notes stay" },
+  "\u65F6\u503C": { en: "Duration" },
+  "\u90FD\u6539\u6210": { en: "Change all to" },
+  "\u90FD\u6539\u6210\u957F\u77ED\u65CB\u94AE\u73B0\u5728\u90A3\u4E00\u6863": { en: "Change all to the current length setting" },
+  "\u6E05\u6389\u8BB0\u53F7": { en: "Clear marks" },
+  "\u66F2\u7EA7": { en: "Passage level" },
+  "\u529B\u5EA6\u5B57\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6E10\u5230\u3001\u98CE\u683C\uFF08\u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\u524D\u9762\u6302\u7740\u7684\u4E5F\u7B97\uFF09": { en: "Dynamics, crescendo / diminuendo, ramps, style (including those just before the first selected note)" },
+  "\u97F3\u7EA7": { en: "Note level" },
+  "\u6F14\u594F\u6CD5\u3001\u97F3\u5934\uFF08\u91CD\u97F3 / \u7A81\u5F3A\u2026\uFF09\u3001\u97F3\u5185\u8D77\u4F0F\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u6C14\u58F0": { en: "Articulations, attacks (accent / sforzando\u2026), swells, slurs, breaths, whispers" },
+  "\u90FD\u6E05": { en: "Clear all" },
+  "\u66F2\u7EA7 + \u97F3\u7EA7\uFF1B\u97F3\u3001\u6B4C\u8BCD\u3001\u8C03\u53F7\u62CD\u53F7\u901F\u5EA6\u3001\u53CD\u590D\u4E0D\u52A8": { en: "Passage + note level; notes, lyrics, key / time / tempo and repeats stay" },
+  "\u526A\u5207": { en: "Cut" },
+  "\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09": { en: "Paste (replaces selection)" },
+  "\u9009\u4E2D\u7684\u8FD9\u4E00\u6BB5\u6CA1\u6709\u8FD9\u7C7B\u8BB0\u53F7": { en: "This selection has no marks of that kind" },
+  "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09": { en: "This version can't sound it (the other software's original instrument)" },
+  "\u89D2\u8272\u6539\u540D\uFF1A{n}": { en: "Role renamed: {n}" },
+  "\u91CC\u9762\u6CA1\u6709\u4E50\u5668": { en: "No instruments inside" },
+  "\u8BFB\u4E0D\u4E86\u300C{name}\u300D\uFF1A{Error}": { en: "Can't read \u201C{name}\u201D: {Error}" },
+  "\u300C{name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C{name2}\u300D\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09": { en: "\u201C{name}\u201D isn't the \u201C{name2}\u201D recorded in the song (sha256 {p}\u2026 \u2260 {p2}\u2026)" },
+  "\u627E\u5230\u4E86\uFF1A\u300C{name}\u300D\u80FD\u54CD\u4E86": { en: "Found: \u201C{name}\u201D can sound now" },
+  "\u300C{extras}\u300D\u6362\u6210\uFF1A{name}": { en: "\u201C{extras}\u201D replaced by: {name}" },
+  "\u300C{name}\u300D\u7684\u58F0\u97F3\u6CA1\u80FD\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u91CC\u80FD\u54CD\uFF1B\u4E0B\u6B21\u8981\u4ECE\u300C{name2}\u300D\u6587\u4EF6\u627E\u3002\u60F3\u8BA9\u6B4C\u81EA\u5DF1\u5E26\u7740\u5B83\uFF1A\u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\u3002": { en: "The sound of \u201C{name}\u201D couldn't be kept on this device (out of space, or the browser doesn't allow it): it works this session; next time, find it from the \u201C{name2}\u201D file. To have the song carry it: menu \u201CPack everything into the song\u201D." },
+  "\u52A0\u4E0D\u8FDB\u6765\uFF1A{Error}": { en: "Couldn't add it: {Error}" },
+  "\u9F13\u7EC4": { en: "Drum kits" },
+  "\u4E50\u5668": { en: "Instruments" },
+  "\u53D8\u4F53\uFF08bank {b}\uFF09": { en: "Variations (bank {b})" },
+  "{name}\uFF08{n} \u4EF6\uFF09": { en: "{name} ({n} items)" },
+  "\u53EB": { en: "Named" },
+  "\u52A0\u8FDB\u6765\u3001\u9009\u5B83": { en: "Add and select" },
+  "SoundFont {bank}:{program}\uFF0C\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08{n}\uFF09": { en: "SoundFont {bank}:{program}, sound embedded in the song ({n})" },
+  "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765": { en: "The sound didn't come with this song" },
+  "\u5F31\u5F15\u7528\uFF1A\u58F0\u97F3\u4E0D\u5728\u6B4C\u91CC\uFF0C\u7528\u65F6\u4ECE\u300C{name}\u300D\u627E": { en: "Weak reference: the sound isn't in the song; found from \u201C{name}\u201D when used" },
+  "\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08{n}\uFF09{library}": { en: "Sound embedded in the song ({n}){library}" },
+  "\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 {name}": { en: ", from {name} in the family sound library" },
+  "\uFF0C\u6765\u81EA {name}": { en: ", from {name}" },
+  "\u58F0\u97F3\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u2014\u2014\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D": { en: "The sound didn't come with this song, so nobody is on stage \u2014 pick another \u201CWho performs\u201D" },
+  "\u5F31\u5F15\u7528\uFF1A\u6B4C\u91CC\u4E0D\u5E26\u58F0\u97F3\uFF0C\u7528\u65F6\u4ECE\u300C{name}\u300D\u627E\uFF08{found}\uFF09": { en: "Weak reference: the song carries no sound; found from \u201C{name}\u201D when used ({found})" },
+  "\u672C\u6B21\u5DF2\u627E\u5230": { en: "found this session" },
+  "\u5BB6\u65CF\u97F3\u6E90\u5E93 / \u8BBE\u5907\u7F13\u5B58 / \u4F60\u7684\u6587\u4EF6": { en: "family sound library / device cache / your files" },
+  "\u627E\u6587\u4EF6\u2026": { en: "Find file\u2026" },
+  "\u54CD\u5EA6": { en: "Loudness" },
+  "\u8FD9\u4F4D\u6F14\u594F\u8005\u5C0F\u58F0 1 dB": { en: "This performer 1 dB softer" },
+  "\u5927\u58F0 1 dB": { en: "1 dB louder" },
+  "\u56DE\u5230\u9ED8\u8BA4 {DEFAULT_CALIBRATION_DB}": { en: "Back to default {DEFAULT_CALIBRATION_DB}" },
+  "\u9ED8\u8BA4": { en: "Default" },
+  "\u8FD9\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u7684\u97F3\u91CF\uFF1A\u9ED8\u8BA4\u90FD\u662F {DEFAULT_CALIBRATION_DB}\uFF08\u5C0F\u6708\u76F8\u4E5F\u662F\uFF09\uFF0C\u51E0\u4E2A\u58F0\u90E8\u53E0\u5728\u4E00\u8D77\u624D\u4E0D\u9876\u5230\u5929\u82B1\u677F\u3001\u4E0D\u628A\u58F0\u97F3\u538B\u53D8\u6837\uFF1B\u6DF7\u97F3\u53F0\u7684\u63A8\u5B50\u53E6\u7B97": { en: "This performer's own volume: the default is {DEFAULT_CALIBRATION_DB} for everyone (Tsukuyomi-chan too), so stacked parts don't hit the ceiling and get squashed; the mixer fader is separate" },
+  "\u7F1D\u5C0F 10 ms\uFF08\u66F4\u8FDE\uFF09": { en: "Gap 10 ms smaller (more legato)" },
+  "\u7F1D\u5927 10 ms\uFF08\u66F4\u65AD\uFF09": { en: "Gap 10 ms larger (more detached)" },
+  "\u56DE\u5230\u9ED8\u8BA4 {p} ms": { en: "Back to default {p} ms" },
+  "\u4E0D\u5199\u8BB0\u53F7\u7684\u97F3\u548C\u4E0B\u4E00\u4E2A\u97F3\u4E4B\u95F4\u7559\u7684\u7F1D\uFF1A0 = \u8FDE\u7740\u3002{d}\u8FDE\u7EBF\uFF08\u8FDE\u594F\uFF09\u3001\u4FDD\u6301\u7684\u97F3\u4E0D\u7559\u7F1D\uFF1B\u547C\u5438 = \u8FD9\u91CC\u65AD\u5F00\uFF1B\u8DF3\u97F3\u53E6\u7B97": { en: "Gap left between unmarked notes and the next note: 0 = connected. {d}Slurred (legato) and tenuto notes leave no gap; a breath separates here; staccato is separate" },
+  "{label}\uFF1A\u9ED8\u8BA4 {p} ms\uFF08\u97F3\u4E50\u76EE\u5F55\u7ED9\u7684\uFF0C\u6309\u97F3\u8272\u9010\u4E2A\uFF09\u3002": { en: "{label}: default {p} ms (from the music catalog, per sound)." },
+  "\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A{extras}": { en: "Dynamics = volume (relative to mf, dB); one step of 6 dB \u2248 double / half the amplitude. Dynamics have no standard dB value: they're relative, and each performer carries a table. This performer's: {extras}" },
+  "\u54FC\u7684\u5B57": { en: "Hum syllable" },
+  "\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09": { en: "What notes without lyrics sing (one for the whole song)" },
+  "\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE": { en: "Advanced: singing core knobs" },
+  "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D": { en: "This version can't sound it (the other software's original instrument): pick another \u201CWho performs\u201D" },
+  "\u56DE\u5230\u8C31\uFF08Esc\uFF09": { en: "Back to the score (Esc)" },
+  "\u2190 \u8C31": { en: "\u2190 Score" },
+  "\u6362\u4E00\u4E2A\u58F0\u90E8": { en: "Switch part" },
+  "\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173": { en: "Audition keys: on / off" },
+  "\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48": { en: "What this part is" },
+  "\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57": { en: "Its name on the score" },
+  "{rn}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09": { en: "{rn} (custom)" },
+  "\u8C31\u4E0A\u5199": { en: "On the score" },
+  "\u8C01\u6765\u6F14": { en: "Who performs" },
+  "\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31": { en: "The performer and the instrument they hold; this name isn't on the score" },
+  "{name}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09": { en: "{name} (nobody can perform it)" },
+  "\u4ECE\u4F11\u606F\u5BA4\u5220\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF09": { en: "Remove from the green room (its sound embedded in the song goes too)" },
+  "\u6362\u4EBA": { en: "Change performer" },
+  "\u5168\u5C4F\u7684\u4E50\u5668\u76EE\u5F55\uFF1A\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF / \u53D1\u58F0\u65B9\u5F0F\u6D4F\u89C8\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u4E0A\u573A": { en: "Full-page instrument catalog: browse by genre / era / family / sound source, try on the keys at the right, put on stage" },
+  "\u6253\u5F00\u4E50\u5668\u76EE\u5F55\u2026": { en: "Open instrument catalog\u2026" },
+  "{description}\uFF08{bytes}\uFF1B\u5BB6\u65CF\u97F3\u6E90\u5E93\uFF0C\u7B2C\u4E00\u6B21\u70B9\u624D\u4E0B\u8F7D\u3001\u4E4B\u540E\u7559\u5728\u8BBE\u5907\u4E0A\uFF1B{name}\uFF09": { en: "{description} ({bytes}; family sound library, downloaded on first tap and then kept on the device; {name})" },
+  "\u4ECE {name} \u9009\u2026": { en: "Choose from {name}\u2026" },
+  "\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559": { en: "Your own .sf2 file: the chosen item is cut out and kept on this device (a few MB); the song only records its source; the whole file isn't kept" },
+  "\u4ECE .sf2 \u6587\u4EF6\u9009\u2026": { en: "Choose from an .sf2 file\u2026" },
+  "\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002": { en: "The song only records where the chosen instrument comes from (small song): the sound is found on this device / in the family sound library / in your files. To have the song carry the sound: menu \u201CPack everything into the song\u201D, or export a \u201Cpacked sounds\u201D copy." },
+  "{who} \u600E\u4E48\u6F14": { en: "How {who} performs" },
+  "\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5": { en: "The keys at the right play whoever's on stage; changes can be tried right away" },
+  "\u300C{rn}\u300D\u9000\u6389\u4E00\u4F4D\u5019\u9009": { en: "\u201C{rn}\u201D dropped a candidate" },
+  "\u300C{rn}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 {p} ms": { en: "\u201C{rn}\u201D between notes {p} ms" },
+  "\u300C{rn}\u300D\u54CD\u5EA6\u6821\u51C6 {next} dB": { en: "\u201C{rn}\u201D loudness calibration {next} dB" },
+  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF0Cmp3 {bytes}\uFF09\uFF1A\u53EA\u80FD\u542C\u3002\u8981\u6539\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u3002": { en: "This song is finalized (version {rev}, mp3 {bytes}): listen only. To edit, choose \u201CRevise\u201D in the \u2630 menu." },
+  "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": { en: "Added {startDyns} dynamics at sheet starts (the ones already in effect there, so it sounds the same; written to the file on the next save)" },
+  "\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58": { en: "\u201C{p}\u201D has unsaved changes" },
+  "{what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002": { en: "{what} will discard these changes." },
+  "\u5148\u5B58": { en: "Save first" },
+  "\u4E22\u6389\uFF0C\u7EE7\u7EED": { en: "Discard and continue" },
+  "\u65B0\u5EFA": { en: "New" },
+  "\u65B0\u7684\u4E00\u9996": { en: "New song" },
+  "\u6253\u5F00\u522B\u7684\u6B4C": { en: "Opening another song" },
+  "\u6CA1\u6253\u5F00\uFF1A{Error}": { en: "Not opened: {Error}" },
+  "\u6253\u5F00\u4E86 {name}": { en: "Opened {name}" },
+  "\u6253\u4E0D\u5F00 {name}\uFF1A{Error}": { en: "Can't open {name}: {Error}" },
+  "\u8FD8\u662F\u7A7A\u7684\uFF0C\u6CA1\u4EC0\u4E48\u53EF\u5B58": { en: "Still empty, nothing to save" },
+  "\u5B58\u597D\u4E86\uFF1A{name}": { en: "Saved: {name}" },
+  "\u6CA1\u5B58": { en: "Not saved" },
+  "\u6CA1\u5B58\uFF08\u53D6\u6D88\u4E86\uFF09": { en: "Not saved (canceled)" },
+  "\u6CA1\u5B58\u4E0A\uFF1A{Error}": { en: "Couldn't save: {Error}" },
+  "\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u526F\u672C\u91CC\u6CA1\u5E26\uFF1A{p}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u518D\u5BFC\u51FA\u4E00\u6B21\u3002": { en: "No sound found for these, so the copy doesn't include them: {p}. Tap the part name at the front of the score, \u201CFind file\u2026\u201D under \u201CWho performs\u201D, and export again." },
+  "\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002": { en: "This copy's license was written as \u201Cnot stated\u201D (your chosen license may conflict with Tsukuyomi-chan's terms; your choice in the credits is unchanged)." },
+  "\u7F72\u540D": { en: "Credits" },
+  "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u8FD9\u4EFD\u526F\u672C\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09": { en: "Licenses for packed distribution (this copy carries these source files)" },
+  "\u5B58\u4E86\u4E00\u4EFD\uFF1A{name}{fellBack}": { en: "Saved a copy: {name}{fellBack}" },
+  "\uFF08\u8BB8\u53EF\u6309\u672A\u58F0\u660E\u5199\uFF09": { en: " (license written as not stated)" },
+  "\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09": { en: "Save an .mxl copy (packed sounds)" },
+  "\u5B58\u4E00\u4EFD .mxl \u526F\u672C": { en: "Save an .mxl copy" },
+  "{name} \xB7 {size}\u3002\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF1B\u8FD9\u91CC\u518D\u6539\uFF0C\u5B83\u4E0D\u4F1A\u8DDF\u7740\u53D8\u3002{credits}": { en: "{name} \xB7 {size}. A copy of the song as it is now; later edits here won't change it. {credits}" },
+  "\u6253\u5305\u4E86 {n} \u4EF6\u58F0\u97F3": { en: "Packed {n} {n|sound|sounds}" },
+  "\u6253\u5305\u4E86 {n} \u4EF6\u58F0\u97F3\u8FDB\u6B4C\uFF1A\u73B0\u5728\u6B4C\u91CC\u5E26\u7740 {size}{embedSoftLimit}\uFF0C\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD": { en: "Packed {n} {n|sound|sounds} into the song: it now carries {size}{embedSoftLimit}, and works when sent to others" },
+  "\uFF08\u8D85\u8FC7 {embedSoftLimit}\uFF1A\u5B58 / \u540C\u6B65\u4F1A\u6162\u4E00\u70B9\uFF09": { en: " (over {embedSoftLimit}: saving / syncing gets a bit slower)" },
+  "\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u6CA1\u6253\u5305\uFF1A{p}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\u3002": { en: "No sound found for these, so they weren't packed: {p}. Tap the part name at the front of the score, \u201CFind file\u2026\u201D under \u201CWho performs\u201D." },
+  "\u6CA1\u6709\u8981\u6253\u5305\u7684\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u4E0D\u6253\u5305\uFF1A\u5B83\u4EEC\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09": { en: "Nothing to pack (Tsukuyomi-chan / vowel versions aren't packed: they're model packs, the song only pins a hash)" },
+  "\u6B4C\u91CC\u6CA1\u6709\u6253\u5305\u7740\u7684\u58F0\u97F3": { en: "The song has no packed sounds" },
+  "\u89E3\u5305\u4E86 {size} \u4EF6\u58F0\u97F3": { en: "Unpacked {size} {size|sound|sounds}" },
+  "\u89E3\u5305\u4E86 {size} \u4EF6\uFF1A\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u5C0F\u4E86 {n}\uFF09\uFF1B\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u7740\uFF0C\u7167\u6837\u80FD\u54CD\u3002\u522B\u7684\u8BBE\u5907\u4E0A\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u539F\u6587\u4EF6\u627E": { en: "Unpacked {size}: the song only records sources now ({n} smaller); kept on this device, so it still sounds. Other devices find it from the family sound library or the original file" },
+  "\u8FD9\u51E0\u4EF6\u6CA1\u89E3\u5305\uFF1A{p}\u2014\u2014\u8FD9\u53F0\u8BBE\u5907\u7559\u4E0D\u4F4F\u5B83\u7684\u58F0\u97F3\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF0C\u5BB6\u65CF\u97F3\u6E90\u5E93\u91CC\u4E5F\u6CA1\u6709\uFF0C\u89E3\u4E86\u5C31\u627E\u4E0D\u56DE\u6765\u3002": { en: "These weren't unpacked: {p} \u2014 this device can't keep the sound (out of space, or the browser doesn't allow it) and it's not in the family sound library, so it couldn't be recovered." },
+  "\u590D\u5236\u4E0B\u6765\u8D34\u8FDB\u4F5C\u54C1\u8BF4\u660E": { en: "Copy this and paste it into your work's description" },
+  "\u590D\u5236\u7F72\u540D": { en: "Copy credits" },
+  "\u7F72\u540D\u590D\u5236\u597D\u4E86": { en: "Credits copied" },
+  "\u590D\u5236\u4E0D\u4E86\uFF08\u6D4F\u89C8\u5668\u4E0D\u8BA9\uFF09\uFF1A\u957F\u6309\u4E0A\u9762\u7684\u5B57\u81EA\u5DF1\u9009": { en: "Can't copy (the browser won't allow it): long-press the text above to select it" },
+  "\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD mp3\uFF0C\u76F4\u63A5\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF08\u4E0D\u91CD\u6E32\uFF09": { en: "The finalized mp3, shared or downloaded directly (no re-render)" },
+  "\u5C0F\u6708\u76F8\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D": { en: "Tsukuyomi-chan sings it through, encoded as mp3, to share or download" },
+  "\u6B4C\u58F0\uFF08mp3{p}\uFF09\u2026": { en: "Vocals & mix (mp3{p})\u2026" },
+  "\uFF0C\u5B9A\u7A3F\u7684\u90A3\u4EFD": { en: ", the finalized copy" },
+  "\u5370\u51FA\u6765\u7684\u8C31\uFF08\u6309\u8FD9\u9996\u6B4C\u7684\u7EB8\u5F20\u5206\u9875\uFF1B\u6B4C\u8BCD\u7528\u5D4C\u8FDB\u53BB\u7684\u5B57\u4F53\uFF0C\u80FD\u9009\u4E2D\u590D\u5236\uFF09": { en: "A printed score (paged by this song's paper; lyrics use an embedded font and can be selected and copied)" },
+  "\u4E50\u8C31\uFF08PDF\uFF09\u2026": { en: "Score (PDF)\u2026" },
+  "\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6": { en: "A copy of the song as it is now (timestamped file name); the song here stays in its home" },
+  "\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026": { en: "Save an .mxl copy\u2026" },
+  "\u526F\u672C\u91CC\u628A\u4E50\u5668\u7684\u58F0\u97F3\u4E5F\u88C5\u8FDB\u53BB\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u7167\u65E7\u53EA\u8BB0\u6765\u6E90": { en: "The copy also carries the instruments' sounds (works when sent to others); the song here still only records sources" },
+  "\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026": { en: "Save an .mxl copy (packed sounds)\u2026" },
+  "\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002": { en: "Export = send out a copy; the song here keeps its home, and \u201CSave\u201D is what saves back." },
+  "\u4E50\u8C31\uFF08PDF\uFF09": { en: "Score (PDF)" },
+  "\u5370\u54EA\u4E9B": { en: "What to print" },
+  "\u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u63A5\u7740\u6392\uFF08= \u5206\u9875 + \u300C\u5168\u90E8\u300D\uFF09": { en: "Each sheet in order (= paged + \u201CAll\u201D)" },
+  "\u8FD9\u4E00\u6BB5\u300C{p}\u300D": { en: "This section \u201C{p}\u201D" },
+  "\u8FD9\u5F20\u7EB8": { en: "This sheet" },
+  "\u53EA\u5370\u5149\u6807\u6240\u5728\u7684\u8FD9\u5F20\u7EB8\uFF08= \u5206\u9875 + \u300C\u672C\u6BB5\u300D\uFF09": { en: "Print only the sheet with the cursor (= paged + \u201CThis section\u201D)" },
+  "\u58F0\u90E8": { en: "Parts" },
+  "\u7167\u5206\u9875\u9884\u89C8": { en: "As in the paged preview" },
+  "\u9690\u85CF\u7684\u58F0\u90E8\u4E0D\u5370\uFF0C\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF08\u548C\u9884\u89C8\u4E00\u6837\uFF09": { en: "Hidden parts aren't printed; their thin line's spot stays blank (same as the preview)" },
+  "\u53EA\u6392\u770B\u5F97\u89C1\u7684\uFF1A{p}": { en: "Only visible parts: {p}" },
+  "\u9690\u85CF\u7684\u58F0\u90E8\u6574\u4E2A\u62FF\u6389\u3001\u91CD\u65B0\u6392\uFF0C\u4E0D\u7559\u7A7A\u4F4D\uFF08\u50CF\u62BD\u51FA\u6765\u7684\u5206\u8C31\uFF1B\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\uFF09": { en: "Hidden parts are removed and it's re-laid out with no gaps (like an extracted part; differs from the paged preview)" },
+  "\u6B4C\u8BCD\u7684\u5B57\u4F53": { en: "Lyrics font" },
+  "\u9ED1\u4F53": { en: "Sans" },
+  "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587 / \u65E5\u6587 / \u82F1\u6587\u90FD\u6709": { en: "Source Han Sans: has Chinese / Japanese / English" },
+  "\u62FC\u97F3": { en: "Pinyin" },
+  "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF08\u53EF\u7231\uFF09\uFF1B\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3": { en: "Moe handwriting: Mandarin pinyin above Chinese characters (cute); kanji in Japanese songs also get Mandarin pinyin" },
+  "{p}\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7EA6 {p2} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u7EB8\u7684\u6273\u624B\u91CC\u6539\uFF09\u3002": { en: "{p}The font downloads the first time (about {p2} MB), then works offline. Paper = this song's paper (change it with the sheet's wrench)." },
+  "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF0C\u6B4C\u8BCD\u90A3\u4E00\u884C\u4F1A\u5F80\u4E0B\u8BA9\u51FA\u62FC\u97F3\u7684\u5730\u65B9\u3002\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3\u3002": { en: "Moe handwriting: Mandarin pinyin above Chinese characters; the lyric line moves down to make room. Kanji in Japanese songs also get Mandarin pinyin." },
+  "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587\u3001\u65E5\u6587\u3001\u82F1\u6587\u90FD\u6709\u3002": { en: "Source Han Sans: has Chinese, Japanese and English." },
+  "\u53EA\u6392\u770B\u5F97\u89C1\u7684\u58F0\u90E8\uFF08{p}\uFF09\uFF1A\u91CD\u65B0\u6392\u3001\u4E0D\u7559\u7A7A\u4F4D\u2014\u2014\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\u3002": { en: "Only visible parts ({p}): re-laid out with no gaps \u2014 differs from the paged preview." },
+  "\u5370\u51FA\u6765\u7684 = \u6273\u624B\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C{p}\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684{p2}\u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002": { en: "Printed = what you see with \u201CPaged\u201D on the wrench + \u201C{p}\u201D on the section control, minus buttons and hints; hidden {p2}parts aren't printed (their thin line's spot stays blank)." },
+  "\u672C\u6BB5": { en: "This section" },
+  "\u5168\u90E8": { en: "All" },
+  "\u7EB8 / ": { en: "sheets /" },
+  "\u7167\u4F60\u73B0\u5728\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u8BBE\u7F6E\u300C\u8F85\u52A9\u300D\u91CC\u6539\uFF09\u3002": { en: "Printed the way you are reading now: {w} (change it under Accessibility in Settings)." },
+  "\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09": { en: "read in C (\u201C1=original key\u201D above each key signature)" },
+  "\u548C\u5F26\u7EA7\u6570": { en: "chord degrees" },
+  "\u3001": { en: ", " },
+  "\u751F\u6210 PDF": { en: "Create PDF" },
+  "\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7B2C\u4E00\u6B21\u7EA6 {p} MB\uFF09\u2026": { en: "Downloading font (about {p} MB the first time)\u2026" },
+  "\u6392\u7248\u2026": { en: "Laying out\u2026" },
+  "\u8FD9\u4E00\u6BB5": { en: "This section" },
+  "\u8FD9\u4E9B\u5B57\u8FD9\u6B3E\u5B57\u4F53\u91CC\u6CA1\u6709\uFF0CPDF \u91CC\u662F\u7A7A\u767D\uFF1A{p}{p2}": { en: "This font doesn't have these characters, so they're blank in the PDF: {p}{p2}" },
+  "\u6709 {n} \u79CD\u8BB0\u8C31\u7B26\u53F7\u6CA1\u753B\u51FA\u6765\uFF08{p}\uFF09\u2014\u2014\u8FD9\u662F app \u7684\u6BDB\u75C5\uFF0C\u8BF7\u544A\u8BC9\u6211\u4EEC\u3002": { en: "{n} notation symbols weren't drawn ({p}) \u2014 that's a bug in the app, please tell us." },
+  "\u4E50\u8C31 PDF \u597D\u4E86": { en: "Score PDF is ready" },
+  "{pages} \u9875 \xB7 {p} \xB7 {e6}{miss}{missM}": { en: "{pages} {pages|page|pages} \xB7 {p} \xB7 {e6}{miss}{missM}" },
+  "\u62FC\u97F3\u5B57\u4F53": { en: "Pinyin font" },
+  "PDF \u751F\u6210\u5931\u8D25\uFF1A{Error}": { en: "PDF creation failed: {Error}" },
+  "\u4E50\u5668\u7684\u58F0\u97F3": { en: "Instrument sounds" },
+  "{n} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC {n2} \u4EF6{length}\uFF0C\u53EA\u8BB0\u6765\u6E90 {n3} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u5C0F\u6708\u76F8\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002": { en: "{n} items: {n2} packed in the song{length}, {n3} source-only. Packed = the sound travels with the song (works when sent to others, bigger file); source-only = small song, the sound is found on this device / in the family sound library / in your files. Tsukuyomi-chan isn't packed (she's a model pack, the song only pins a hash)." },
+  "\u5168\u90E8\u6253\u5305\u8FDB\u6B4C": { en: "Pack everything into the song" },
+  "\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09": { en: "Unpack everything (source only)" },
+  "\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u6587\u4EF6\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09": { en: "Licenses for packed distribution (the file carries these source files)" },
+  "\u5728\u6B4C\u5E93\u91CC\uFF08\u6587\u4EF6\u5939\u300C{label}\u300D\uFF09\uFF0C\u81EA\u52A8\u5B58\uFF1B\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u65F6\u5199\u8FDB\u6587\u4EF6\u5939": { en: "In the library (folder \u201C{label}\u201D), autosaved; written to the folder when switching songs / leaving / pressing Save" },
+  "\u5728\u6B4C\u5E93\u91CC\uFF0C\u81EA\u52A8\u5B58{p}": { en: "In the library, autosaved{p}" },
+  "\uFF1B\u6362\u6B4C / \u9000\u51FA / \u6309\u300C\u5B58\u300D\u65F6\u63A8\u4E0A OneDrive": { en: "; uploaded to OneDrive when switching songs / leaving / pressing Save" },
+  "\uFF08\u6CA1\u767B\u5F55\uFF0C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09": { en: " (not signed in, only on this device)" },
+  "\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09": { en: " (only in this browser; OneDrive is on the official site)" },
+  "\u5B58\u5728\u672C\u673A\u6587\u4EF6 {name}\uFF0C\u300C\u5B58\u300D= \u5B58\u56DE\u53BB": { en: "Stored in local file {name}; \u201CSave\u201D saves back to it" },
+  "\u65B0\u7684\u4E00\u9996\uFF1A\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93": { en: "New song: joins the library with the first thing you write" },
+  "\u8FD8\u6CA1\u5B58\u8FC7\uFF1A\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA": { en: "Not saved yet: \u201CSave\u201D will ask where" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6216\u5206\u4EAB\u4E00\u4E2A .mxl": { en: "On this device \u201CSave\u201D = download or share an .mxl" },
+  "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539\uFF08\u73B0\u5728\u662F {name}\uFF09": { en: "Rename local files in your file manager (currently {name})" },
+  "\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026": { en: "Open local file\u2026" },
+  "\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09": { en: "Open .mxl / .musicxml (or drag it in; Ctrl / \u2318+O)" },
+  "\u5BFC\u51FA\u2026": { en: "Export\u2026" },
+  "mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09": { en: "mp3, .mxl copy (packed sounds)\u2026 (Ctrl / \u2318+Shift+S)" },
+  "\u5B58\u8FDB\u6B4C\u5E93": { en: "Save to library" },
+  "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09": { en: "Put this song in the library (a copy stays on this device; syncs to OneDrive after signing in)" },
+  "\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09": { en: "Put this song in the library (a copy stays only in this browser; OneDrive is on the official site)" },
+  "\u6539\u6587\u4EF6\u540D\u2026": { en: "Rename file\u2026" },
+  "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09": { en: "Only the file name changes, not the title on the sheet (same as tapping the file name at the top)" },
+  "\u5C01\u9762\u56FE\u2026": { en: "Cover image\u2026" },
+  "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE": { en: "The picture on the library card" },
+  "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026": { en: "Sounds and credits\u2026" },
+  "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3": { en: "Pack / unpack instrument sounds; whose sounds this song uses" },
+  "\u6539\u7A3F\u2026\uFF08\u7B2C {rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF09": { en: "Revise\u2026 (version {rev} final is discarded)" },
+  "\u89E3\u9501\uFF1A\u8C31 / \u6B4C\u624B / \u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u5B9A\u7A3F\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u6CA1\u4E86\uFF09": { en: "Unlocks the score / parts / mix; the final mp3 is discarded (gone on next save)" },
+  "\u5B9A\u7A3F\u2026": { en: "Finalize\u2026" },
+  "\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF0C\u4E4B\u540E\u53EA\u80FD\u542C\u3001\u4E0D\u80FD\u6539\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002\u6539\u7A3F\u968F\u65F6\u89E3\u9501": { en: "Done writing: renders the whole song to an mp3 stored in the song; after that it's listen-only; playable right on the library cover. \u201CRevise\u201D unlocks it anytime" },
+  "\u6536\u8D77\u53C2\u8003\u7A97": { en: "Hide reference window" },
+  "\u53C2\u8003\u7A97{p}": { en: "Reference window{p}" },
+  "\uFF08{p} \u5F20\uFF09": { en: " ({p} {p|item|items})" },
+  "\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58": { en: "Keep screenshots / text beside you to refer to: open it, then paste (Ctrl / \u2318+V), drag in, or import with \u201C\uFF0B\u201D; saved with the song" },
+  "\u8BBE\u7F6E\u2026": { en: "Settings\u2026" },
+  "\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C": { en: "Model / sound library sources, cache, credits and terms, diagnostic log, version" },
+  "\u5DF2\u7ECF\u5B9A\u7A3F\u4E86\u3002\u8981\u6539\u5148\u300C\u6539\u7A3F\u300D\u3002": { en: "Already finalized. \u201CRevise\u201D first to edit." },
+  "\u5B9A\u7A3F{finalRev}": { en: "Finalize{finalRev}" },
+  "\uFF08\u7B2C {p} \u7248\uFF09": { en: " (version {p})" },
+  "\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3\uFF08\u5E26\u6B4C\u540D / \u4F5C\u8005\u680F / \u8BB8\u53EF\u7684\u6807\u7B7E\u548C\u5C01\u9762\u56FE\uFF09\u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E4B\u540E<b>\u53EA\u80FD\u542C</b>\u2014\u2014\u8C31\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u8BB8\u53EF\u3001\u5C01\u9762\u3001\u6B4C\u624B\u3001\u6DF7\u97F3\u5168\u9501\u4F4F\uFF0C\u80FD\u6539\u7684\u53EA\u6709\u6587\u4EF6\u540D\u3002\u968F\u65F6\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF08\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF09\u3002\u6B4C\u5E93\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002": { en: "Done writing: renders the whole song to an mp3 (tagged with title / credits / license and cover) stored in the song; after that it's <b>listen-only</b> \u2014 score, title, credits, license, cover, parts and mix are all locked, and only the file name can change. \u201CRevise\u201D unlocks it anytime (the mp3 is discarded). Playable right on the library cover." },
+  "\u8FDB mp3 \u7684\uFF1A{length}{length2}\u3002": { en: "In the mp3: {length}{length2}." },
+  "\uFF08\u6CA1\u6709\u51FA\u58F0\u7684\u58F0\u90E8\uFF09": { en: "(no sounding parts)" },
+  "\uFF08\u9759\u97F3 / \u72EC\u594F\u6309\u73B0\u5728\u7684\uFF1B\u8981\u90FD\u8FDB\u6765\u5148\u53D6\u6D88\u9759\u97F3\uFF09": { en: " (mute / solo as they are now; unmute first to include everyone)" },
+  "\u7167\u6837\u5B9A\u7A3F": { en: "Finalize anyway" },
+  "\u5B9A\u7A3F": { en: "Finalize" },
+  "\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF09\uFF1Amp3 {n}\u3001{p} \u79D2\uFF0C\u5B58\u8FDB\u4E86\u6B4C\u91CC\uFF1B{p2}\u53EA\u80FD\u542C\u4E86\u2014\u2014\u8981\u6539\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u3002": { en: "Finalized (version {rev}): mp3 {n}, {p} s, stored in the song; {p2}now listen-only \u2014 to edit, choose \u201CRevise\u201D in the \u2630 menu." },
+  "\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002": { en: "playable right on the library cover." },
+  "\u6309\u300C\u5B58\u300D\u5199\u8FDB\u6587\u4EF6\u3002": { en: "Press \u201CSave\u201D to write it to the file." },
+  "\u6CA1\u5B9A\u7A3F\uFF1A{Error}": { en: "Not finalized: {Error}" },
+  "\u6539\u7A3F": { en: "Revise" },
+  "\u89E3\u9501\u540E\u8C31\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u5C01\u9762\u3001\u6B4C\u624B\u3001\u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u7B2C {rev} \u7248\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u4ECE\u6B4C\u91CC\u53BB\u6389\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u4E5F\u542C\u4E0D\u4E86\uFF0C\u8981\u518D\u5B9A\u7A3F\u4E00\u6B21\uFF09\u3002": { en: "Unlocks the score, title, credits, cover, parts and mix; the mp3 of final version {rev} is discarded (removed from the song on next save; no longer playable on the library cover until finalized again)." },
+  "\u6539\u7A3F\u4E86\uFF1A\u7B2C {rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u80FD\u6539\u4E86\u3002": { en: "Revising: final version {rev} is discarded, you can edit now." },
+  "\u5C01\u9762\u56FE": { en: "Cover image" },
+  "\u6CA1\u6709\u5C01\u9762\u56FE": { en: "No cover image" },
+  "\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09": { en: "Choose an image as the cover (shrunk to 256\xB2 and stored in the song; the library card prints the title over it)" },
+  "\u6362\u4E00\u5F20\u2026": { en: "Replace\u2026" },
+  "\u9009\u4E00\u5F20\u56FE\u2026": { en: "Choose an image\u2026" },
+  "\u53BB\u6389\u5C01\u9762\u56FE": { en: "Remove cover image" },
+  "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\u3002": { en: "The picture on the library card; title and date still print over it. Shrunk to 256\xB2 and stored in the song." },
+  "\u53BB\u6389\u4E86\u5C01\u9762\u56FE": { en: "Cover image removed" },
+  "\u58F0\u97F3\u4E0E\u7F72\u540D": { en: "Sounds and credits" },
+  "\u8FD9\u9996\u6B4C\u6CA1\u7528\u4E50\u5668\u7684\u58F0\u97F3\u6587\u4EF6\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248\u7684\u58F0\u97F3\u968F app \u8D70\uFF0C\u4E0D\u8FDB\u6B4C\uFF09\u3002": { en: "This song uses no instrument sound files (Tsukuyomi-chan / vowel versions come with the app, not the song)." },
+  "\u6539\u6587\u4EF6\u540D": { en: "Rename file" },
+  "\u6587\u4EF6\u540D": { en: "File name" },
+  "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002\u4E0B\u6B21\u5B58\u7684\u65F6\u5019\u7528\u8FD9\u4E2A\u540D\u5B57\u3002": { en: "Only the file name changes, not the title on the sheet. The next save uses this name." },
+  "\u6539": { en: "Rename" },
+  "\u6587\u4EF6\u540D\u6539\u6210 {stem}{SONG_SUFFIX}": { en: "File renamed to {stem}{SONG_SUFFIX}" },
+  "\u6253\u5F00\u300C{name}\u300D": { en: "Opened \u201C{name}\u201D" },
+  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u6CA1\u6709\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\u3002\u5148\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF09\u518D\u5B58\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002": { en: "This song is finalized but its content changed: not saved and won't be uploaded. \u201CRevise\u201D first (the final mp3 is discarded) and then save, or undo that change." },
+  "\u5B58\u4E0D\u4E86\uFF1A{Error}": { en: "Can't save: {Error}" },
+  "\u6253\u5F00\u300C{id}\u300D": { en: "Opening \u201C{id}\u201D" },
+  "\u6253\u4E0D\u5F00\u300C{id}\u300D\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u6CA1\u6709\u5B83\u7684\u5B57\u8282\uFF08\u79BB\u7EBF\u3001\u6216\u8FD8\u6CA1\u4ECE\u4E91\u7AEF\u62C9\u4E0B\u6765\uFF09": { en: "Can't open \u201C{id}\u201D: its bytes aren't on this device (offline, or not pulled from the cloud yet)" },
+  "\u65B0\u7684\u4E00\u9996\uFF08\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93\uFF09": { en: "New song (joins the library with the first thing you write)" },
+  "\u8FD8\u662F\u7A7A\u7684\uFF1A\u5199\u4E0B\u7B2C\u4E00\u7B14\u5C31\u81EA\u52A8\u8FDB\u6B4C\u5E93": { en: "Still empty: joins the library automatically with the first thing you write" },
+  "\u8FDB\u6B4C\u5E93\u4E86\uFF1A{stem}{SONG_SUFFIX}": { en: "In the library: {stem}{SONG_SUFFIX}" },
+  "\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\u3002": { en: "Only the file name changes, not the title on the sheet." },
+  "\u300C{v}\u300D\u5DF2\u7ECF\u6709\u4E86\uFF08{p}\uFF09\uFF0C\u6CA1\u6539": { en: "\u201C{v}\u201D already exists ({p}), not renamed" },
+  "\u4E91\u7AEF": { en: "in the cloud" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A": { en: "on this device" },
+  "\u8FD9\u6B21\u6CA1\u52A8": { en: "Nothing changed this time" },
+  "\u6587\u4EF6\u540D\u6539\u6210 {stem}{SONG_SUFFIX}\uFF1B\u7167\u4F60\u7684\u610F\u601D\uFF0C\u4E91\u7AEF\u65E7\u540D\u90A3\u4EFD\u7559\u7740\u6CA1\u52A8": { en: "File renamed to {stem}{SONG_SUFFIX}; as you chose, the copy under the old name in the cloud stays untouched" },
+  "\u6587\u4EF6\u540D\u6539\u6210 {stem}{SONG_SUFFIX}\uFF08\u65E7\u540D\u7684\u90A3\u4EFD\u8C31\u7CFB\u4E0D\u660E\uFF0C\u4E91\u7AEF\u539F\u5730\u7559\u7740\u4E86\u2014\u2014\u6B4C\u5E93\u91CC\u8FD8\u770B\u5F97\u89C1\uFF09": { en: "File renamed to {stem}{SONG_SUFFIX} (the copy under the old name has an unknown history, so it stays in the cloud \u2014 still visible in the library)" },
+  "\u8FD9\u4E2A\u90E8\u7F72\u65B9\u5F0F\u6CA1\u6709\u6B4C\u5E93\uFF08itch\uFF1A\u6B4C\u53EA\u7528\u6587\u4EF6\u5B58\uFF09": { en: "This deployment has no library (itch: songs only use files)" },
+  "\u8FD9\u4E2A\u90E8\u7F72\u65B9\u5F0F\u6CA1\u6709\u7F51\u76D8\uFF08\u5907\u7528\u7248\uFF1A\u6B4C\u5E93\u7684\u5BB6\u53EA\u80FD\u662F\u6587\u4EF6\u5939\uFF09": { en: "This deployment has no OneDrive (standalone version: the library's home can only be a folder)" },
+  "\u300C{stem}\u300D\u5DF2\u7ECF\u8FDB\u4E86\u56DE\u6536\u7AD9\uFF1B\u624B\u91CC\u8FD9\u4EFD\u73B0\u5728\u6CA1\u6709\u5BB6\u4E86\uFF08\u300C\u5B58\u300D\u4F1A\u95EE\u5B58\u5230\u54EA\uFF0C\u6216\u300C\u5B58\u8FDB\u6B4C\u5E93\u300D\uFF09\u3002": { en: "\u201C{stem}\u201D is now in the trash; the copy in hand has no home now (\u201CSave\u201D will ask where, or \u201CSave to library\u201D)." },
+  "\u8FDB\u6B4C\u5E93": { en: "Save to library" },
+  "\u6B4C\u5E93\u8981\u5148\u6709\u4E2A\u5BB6": { en: "The library needs a home first" },
+  "\u6B4C\u653E\u5728\u6D4F\u89C8\u5668\u5916\u9762\u3001\u4F60\u81EA\u5DF1\u591F\u5F97\u7740\u7684\u5730\u65B9\uFF0C\u624D\u4E0D\u6015\u6D4F\u89C8\u5668\u6E05\u7F13\u5B58\u3002{cloud}{folder}\u4E0D\u60F3\u9009\u4E5F\u884C\uFF1A\u300C\u5B58\u300D= \u5B58\u6210\u6587\u4EF6\uFF0C\u300C\u6253\u5F00\u300D= \u9009\u6587\u4EF6\u3002": { en: "Keep songs outside the browser, somewhere you can reach, so clearing browser data can't hurt them. {cloud}{folder}You can skip this too: \u201CSave\u201D = save as a file, \u201COpen\u201D = choose a file." },
+  "\u7F51\u76D8\u5728\u5B98\u7F51\u7248\u91CC\uFF08{SITE_HOST}\uFF09\u3002": { en: "OneDrive is on the official site ({SITE_HOST})." },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u9009\u4E0D\u4E86\u6587\u4EF6\u5939\uFF08\u684C\u9762\u7248 Chrome / Edge \u53EF\u4EE5\uFF09\u3002": { en: "This browser can't choose folders (desktop Chrome / Edge can)." },
+  "\u8FDE\u63A5\u7F51\u76D8\uFF08OneDrive\uFF09": { en: "Connect OneDrive" },
+  "\u9009\u4E00\u4E2A\u6587\u4EF6\u5939": { en: "Choose a folder" },
+  "\u6362\u5230\u6587\u4EF6\u5939": { en: "Switch to a folder" },
+  "\u6CA1\u62FF\u5230\u300C{label}\u300D\u7684\u6743\u9650\uFF1A\u6539\u52A8\u8FD8\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u4E00\u9996\u6CA1\u4E22\u3002": { en: "Didn't get permission for \u201C{label}\u201D: changes are still on this device, no songs lost." },
+  "\u6587\u4EF6\u5939\u300C{label}\u300D\u7684\u6743\u9650\u6389\u4E86\uFF1A\u6539\u52A8\u5148\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u4E00\u9996\u6CA1\u4E22": { en: "Permission for folder \u201C{label}\u201D was lost: changes are saved on this device for now, no songs lost" },
+  "\u91CD\u65B0\u6388\u6743": { en: "Re-authorize" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u8FD8\u6709 {legacyLeft} \u9996\u65E7\u6B4C\uFF0C\u6CA1\u642C\u8FDB\u300C{label}\u300D": { en: "This browser still has {legacyLeft} old {legacyLeft|song|songs} not moved into \u201C{label}\u201D" },
+  "\u642C\u8FDB\u6765": { en: "Move them in" },
+  "\u5168\u90E8\u5BFC\u51FA": { en: "Export all" },
+  "\u8FD9\u4E9B\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u7684\u6D4F\u89C8\u5668\u91CC\uFF0C\u6CA1\u6709\u5907\u4EFD": { en: "These songs exist only in this device's browser, with no backup" },
+  "\u642C\u8FDB\u4E00\u4E2A\u6587\u4EF6\u5939": { en: "Move into a folder" },
+  "\u8FDE\u63A5\u7F51\u76D8": { en: "Connect OneDrive" },
+  "\u6B4C\u5E93\u5728\u6587\u4EF6\u5939\u300C{label}\u300D": { en: "Library is in folder \u201C{label}\u201D" },
+  "\u6B4C\u5C31\u662F\u8FD9\u4E2A\u6587\u4EF6\u5939\u91CC\u7684 .mxl\uFF0C\u8D44\u6E90\u7BA1\u7406\u5668\u91CC\u4E5F\u770B\u5F97\u5230\uFF1B\u56DE\u6536\u7AD9 / \u5907\u4EFD\u7BB1\u662F\u91CC\u9762\u7684 .trash / .backup\u3002{lost}": { en: "Songs are the .mxl files in this folder, visible in your file manager too; the trash / backup are .trash / .backup inside it. {lost}" },
+  "\n\u73B0\u5728\u6743\u9650\u6389\u4E86\uFF1A\u6539\u52A8\u5148\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002": { en: "\nPermission is lost now: changes are saved on this device for now." },
+  "\u4E0D\u7528\u8FD9\u4E2A\u6587\u4EF6\u5939\u4E86\u2026": { en: "Stop using this folder\u2026" },
+  "\u5939\u91CC\u7684\u6B4C\u4E00\u9996\u4E0D\u52A8\uFF1B\u4E4B\u540E\u53EF\u4EE5\u518D\u9009\u4E00\u4E2A\u5BB6": { en: "Songs in the folder stay untouched; you can choose another home later" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u6709 {n} \u9996\u6B4C": { en: "This browser has {n} {n|song|songs}" },
+  "\u5B83\u4EEC\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\uFF0C\u6E05\u7F13\u5B58\u5C31\u6CA1\u4E86\u3002{f}\u7A0D\u540E\u4E5F\u884C\uFF1A\u6B4C\u5E93\u9876\u4E0A\u90A3\u6761\u8FD8\u5728\u3002": { en: "They exist only in this browser and vanish if it's cleared. {f}Later is fine too: the bar at the top of the library stays." },
+  "\u642C\u8FDB\u300C{label}\u300D\uFF1A\u9010\u9996\u6838\u5BF9\u5B57\u8282\uFF0C\u4E00\u6A21\u4E00\u6837\u624D\u4ECE\u6D4F\u89C8\u5668\u79FB\u8D70\u3002": { en: "Move into \u201C{label}\u201D: bytes are checked song by song, and removed from the browser only if identical." },
+  "\u9009\u4E00\u4E2A\u5BB6\u642C\u8FC7\u53BB\uFF1B\u6216\u8005\u5148\u5168\u90E8\u5BFC\u51FA\u6210\u6587\u4EF6\u3002": { en: "Choose a home to move them to, or export everything as files first." },
+  "\u642C\u8FDB\u300C{label}\u300D": { en: "Move into \u201C{label}\u201D" },
+  "\u9009\u4E00\u4E2A\u6587\u4EF6\u5939\uFF0C\u642C\u8FDB\u53BB": { en: "Choose a folder and move in" },
+  "\u7A0D\u540E": { en: "Later" },
+  "\u6B63\u5728\u628A\u6B4C\u642C\u8FDB\u300C{label}\u300D\u2026": { en: "Moving songs into \u201C{label}\u201D\u2026" },
+  "\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939": { en: "Not written to the folder" },
+  "\u65E7\u5E93\u6CA1\u79FB\u8D70\uFF08{status}\uFF09": { en: "Old library copy not removed ({status})" },
+  "\u6B63\u5728\u642C\u6B4C {done} / {total}\u2026": { en: "Moving songs {done} / {total}\u2026" },
+  "\u642C\u5BB6\u6CA1\u6210\uFF1A{Error}\u3002\u6D4F\u89C8\u5668\u91CC\u7684\u6B4C\u4E00\u9996\u6CA1\u52A8\u3002": { en: "Move failed: {Error}. No songs in the browser were touched." },
+  "\u4E91\u7AEF\uFF08OneDrive\uFF09": { en: "Cloud (OneDrive)" },
+  "\u5DF2\u767B\u5F55{who}\u3002\u6B4C\u5E93\u540C\u6B65\u5230 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF08\u8FD9\u4E2A app \u53EA\u80FD\u770B\u81EA\u5DF1\u7684\u90A3\u4E2A\u5939\uFF0C\u770B\u4E0D\u5230\u4F60\u522B\u7684\u6587\u4EF6\uFF09\u3002": { en: "Signed in{who}. The library syncs to OneDrive's Apps folder (this app can only see its own folder, none of your other files)." },
+  "\u767B\u5F55\u5FAE\u8F6F\u4E2A\u4EBA\u8D26\u53F7\u540E\uFF0C\u6B4C\u5E93\u540C\u6B65\u5230 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF08\u8FD9\u4E2A app \u53EA\u80FD\u770B\u81EA\u5DF1\u7684\u90A3\u4E2A\u5939\uFF0C\u770B\u4E0D\u5230\u4F60\u522B\u7684\u6587\u4EF6\uFF09\u3002\u4E0D\u767B\u5F55\u4E5F\u80FD\u7528\uFF0C\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002": { en: "After signing in with a personal Microsoft account, the library syncs to OneDrive's Apps folder (this app can only see its own folder, none of your other files). It works without signing in, with songs only on this device." },
+  "\u5237\u65B0\u4E91\u7AEF": { en: "Refresh cloud" },
+  "\u9000\u51FA\u767B\u5F55": { en: "Sign out" },
+  "\u6B4C\u8FD8\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A": { en: "Songs stay on this device" },
+  "\u767B\u5F55\u5FAE\u8F6F\u8D26\u53F7": { en: "Sign in with Microsoft" },
+  "MoonSinger-\u6B4C\u5E93-{p}{p2}{p3}-{p4}{p5}.zip": { en: "MoonSinger-library-{p}{p2}{p3}-{p4}{p5}.zip" },
+  "\u6B63\u5728\u6253\u5305\u6B4C\u5E93\u2026": { en: "Packing the library\u2026" },
+  "\u6B4C\u5E93\u6253\u5305\u597D\u4E86": { en: "Library packed" },
+  "\u5BFC\u51FA\u6CA1\u6210\uFF1A{Error}": { en: "Export failed: {Error}" },
+  "\u8FD8\u6709 {n} \u9996\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939": { en: "{n} {n|song|songs} not written to the folder yet" },
+  "\u8FD8\u6709 {n} \u9996\u6CA1\u4E0A\u4E91": { en: "{n} {n|song|songs} not in the cloud yet" },
+  "\u9000\u51FA\u540E\u8FD9\u4E9B\u6539\u52A8\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3002\u53EF\u4EE5\u5148\u63A8\u4E0A\u53BB\uFF08\u63A8\u4E0D\u4E0A\u53BB\u7684\u9010\u9996\u4E0B\u8F7D\u5907\u4EFD\uFF09\uFF0C\u6216\u8005\u7167\u6837\u9000\u51FA\u3002": { en: "After signing out these changes exist only on this device. You can upload them first (what can't be uploaded is downloaded song by song as backup), or sign out anyway." },
+  "\u5148\u63A8\u4E0A\u53BB / \u4E0B\u8F7D\u5907\u4EFD": { en: "Upload first / download backup" },
+  "\u7167\u6837\u9000\u51FA": { en: "Sign out anyway" },
+  "\u4E0D\u7528\u300C{label}\u300D\u4E86\uFF1A\u5939\u91CC\u7684\u6B4C\u4E00\u9996\u6CA1\u52A8\uFF0C\u518D\u8FDB\u6B4C\u5E93\u53EF\u4EE5\u9009\u5BB6": { en: "Stopped using \u201C{label}\u201D: no songs in the folder were touched; choose a home next time you open the library" },
+  "\u9000\u51FA\u4E86\uFF1A\u6B4C\u90FD\u8FD8\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u518D\u8FDE\u4E0A\u7F51\u76D8\u5C31\u80FD\u63A5\u7740\u7528": { en: "Signed out: all songs are still on this device; reconnect OneDrive to carry on" },
+  "\u63A8\u4E0D\u4E0A\u53BB\u7684 {n} \u9996\u5DF2\u4E0B\u8F7D\u5907\u4EFD": { en: "{n} {n|song that couldn't upload was|songs that couldn't upload were} downloaded as backup" },
+  "\u90FD\u63A8\u4E0A\u53BB\u4E86": { en: "Everything uploaded" },
+  "\u53BB\u5FAE\u8F6F\u767B\u5F55": { en: "Sign in with Microsoft" },
+  "\u9875\u9762\u4F1A\u8DF3\u5230\u5FAE\u8F6F\u7684\u767B\u5F55\u9875\uFF08\u53EA\u8BA4\u4E2A\u4EBA\u8D26\u53F7\uFF09\uFF0C\u767B\u5F55\u5B8C\u81EA\u52A8\u56DE\u5230\u8FD9\u91CC\u3002{inGallery}": { en: "The page will go to Microsoft's sign-in (personal accounts only) and come back here afterward. {inGallery}" },
+  "\u624B\u91CC\u7684\u6B4C\u5DF2\u7ECF\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\u3002": { en: "The song in hand is already saved on this device." },
+  "\u624B\u91CC\u8FD9\u9996\u65E0\u5730\u7684\u6B4C\u6539\u8FC7\u8FD8\u6CA1\u5B58\u2014\u2014\u8DF3\u8D70\u4F1A\u4E22\uFF0C\u5148\u5B58\u4E00\u4E0B\u518D\u6765\u3002": { en: "The homeless song in hand has unsaved changes \u2014 leaving would lose them, so save first." },
+  "\u53BB\u767B\u5F55": { en: "Sign in" },
+  "\u4E91\u7AEF\u6709\u65B0\u7248\u672C": { en: "Newer version in the cloud" },
+  "\u300C{id}\u300D\u5728\u522B\u7684\u8BBE\u5907\u4E0A\u6539\u8FC7\u4E86\uFF0C\u6B63\u5728\u6362\u6210\u6700\u65B0\u7684\u2026\u2026\u5148\u522B\u6253\u5B57\u3002": { en: "\u201C{id}\u201D was changed on another device, switching to the latest\u2026 hold off on typing." },
+  "\u6362\u6210\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u4E86": { en: "Switched to the newer cloud version" },
+  "\u300C{id}\u300D\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u62C9\u4E0B\u6765\u4E86\uFF0C\u4F46\u91CD\u5F00\u5931\u8D25\u2014\u2014\u8BF7\u4ECE\u6B4C\u5E93\u518D\u6253\u5F00\u4E00\u6B21": { en: "The newer cloud version of \u201C{id}\u201D was pulled, but reopening failed \u2014 please open it again from the library" },
+  "{n} \u9996\u6539\u8FC7\u7684\u8FD8\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A{named}": { en: "{n} edited {n|song is|songs are} still only on this device{named}" },
+  "\uFF1B\u4F20\u7684\u8BDD\u8FDE\u6B63\u5728\u5199\u7684\u8FD9\u9996\u4E00\u8D77": { en: "; uploading also includes the song you're writing" },
+  "\u5199\u8FDB\u300C{label}\u300D": { en: "Write into \u201C{label}\u201D" },
+  "\u4F20\u4E0A\u53BB": { en: "Upload" },
+  "\u4EE5\u540E\u518D\u8BF4": { en: "Not now" },
+  "{r} \u9996\u90FD\u4F20\u4E0A\u53BB\u4E86": { en: "{r} {r|song|songs} uploaded" },
+  "\u4F20\u4E0A\u53BB {r} \u9996\uFF0C\u8FD8\u6709 {left} \u9996\u6CA1\u4F20\u6210{named}\uFF1A\u522B\u7684\u8BBE\u5907\u6539\u8FC7\u7684\u8981\u4F60\u9009\uFF0C\u7F51\u7EDC\u95EE\u9898\u7684\u4E4B\u540E\u518D\u8BD5\u3002": { en: "Uploaded {r} {r|song|songs}, {left} not done{named}: changes from other devices need your choice, network problems will retry later." },
+  "\u53BB\u5904\u7406": { en: "Handle them" },
+  "\u6709 {neverUploaded} \u9996\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\uFF0C\u8FD8\u6709 {others} \u9996\u6539\u8FC7\u6CA1\u4F20\u3002\u73B0\u5728\u5168\u4F20\uFF1F": { en: "{neverUploaded} {neverUploaded|song exists|songs exist} only on this device, and {others} more {others|has|have} changes not uploaded. Upload everything now?" },
+  "\u6709 {neverUploaded} \u9996\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\uFF0C\u73B0\u5728{f}\uFF1F": { en: "{neverUploaded} {neverUploaded|song exists|songs exist} only on this device. {f} now?" },
+  "\u522B\u7684\u8BBE\u5907\u6539\u8FC7\u7684\u4E0D\u4F1A\u88AB\u76D6\u6389\uFF0C\u4F1A\u7559\u7ED9\u4F60\u9009\u3002\u7A0D\u540E = \u5B83\u4EEC\u8FDB\u6B4C\u5E93\u300C\u8981\u5904\u7406\u300D\u7684\u5217\u8868\uFF0C\u4EC0\u4E48\u90FD\u4E0D\u4F20\u3002": { en: "Changes made on other devices won't be overwritten; you'll get to choose. Later = they go on the library's \u201CNeeds attention\u201D list and nothing is uploaded." },
+  "\u73B0\u5728\u4F20": { en: "Upload now" },
+  "{n} \u9996\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u300C\u8981\u5904\u7406\u300D\u91CC\u770B\u5F97\u89C1": { en: "{n} {n|song stays|songs stay} on this device, in the library's \u201CNeeds attention\u201D list" },
+  "\u6362\u5C01\u9762\u56FE": { en: "Change cover image" },
+  "\u5C01\u9762\u56FE\u6362\u597D\u4E86\uFF08{n}\uFF09": { en: "Cover image changed ({n})" },
+  "\u8FD9\u5F20\u56FE\u7528\u4E0D\u4E86\uFF1A{Error}": { en: "This image can't be used: {Error}" },
+  "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86": { en: "Saved on this device" },
+  "\u8981\u540C\u6B65\u5230 OneDrive \u5417\uFF1F\u767B\u5F55\u5FAE\u8F6F\u4E2A\u4EBA\u8D26\u53F7\u540E\uFF0C\u6B4C\u5E93\u540C\u6B65\u5230\u4F60 OneDrive \u7684\u300C\u5E94\u7528\u300D\u6587\u4EF6\u5939\uFF08\u8FD9\u4E2A app \u53EA\u80FD\u770B\u81EA\u5DF1\u7684\u90A3\u4E2A\u5939\uFF09\u3002": { en: "Sync to OneDrive? After signing in with a personal Microsoft account, the library syncs to your OneDrive's Apps folder (this app can only see its own folder)." },
+  "\u6682\u4E0D": { en: "Not now" },
+  "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u8FD8\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939": { en: "Saved on this device, not written to the folder yet" },
+  "\u5B58\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF0C\u4E91\u7AEF\u7A0D\u540E\u518D\u63A8": { en: "Saved on this device, uploading to the cloud later" },
+  "\u5DF2\u5B58 \u2713": { en: "Saved \u2713" },
+  "\u8FD9\u9996\u6B4C\u6CA1\u52A0\u5BC6\u3002MoonSinger \u8FD9\u4E00\u7248\u8FD8\u4E0D\u52A0\u5BC6\uFF08\u8981\u7684\u8BDD\u544A\u8BC9\u5F00\u53D1\u8005\uFF1A\u7167 WXHW \u63A5 zip.js + 7z \u5C31\u80FD\u5F00\uFF09\u3002": { en: "This song isn't encrypted. This version of MoonSinger doesn't encrypt yet." },
+  "\u300C{p}\u300D\u91CC\u952E\u76D8\u4E0D\u5199\u97F3\uFF08\u5207\u5230\u300C\u97F3\u300D\u518D\u5199\uFF09": { en: "In \u201C{p}\u201D the keys don't write notes (switch to \u201CNotes\u201D to write)" },
+  "\u8FD9\u6761\u58F0\u90E8\u53F0\u4E0A\u662F\u5355\u58F0\u7684\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248 / \u6CA1\u4EBA\uFF09\uFF1A\u53E0\u4E0D\u4E86\u3002\u6362\u6210\u80FD\u53E0\u97F3\u7684\u4E50\u5668\u518D\u53E0": { en: "This part's performer is monophonic (Tsukuyomi-chan / vowel version / nobody): it can't stack. Switch to an instrument that can" },
+  "MIDI \u952E\u76D8\u63A5\u4E0A\u4E86\uFF1A{name}": { en: "MIDI keyboard connected: {name}" },
+  "MIDI \u952E\u76D8\u62D4\u6389\u4E86\uFF1A{name}": { en: "MIDI keyboard unplugged: {name}" },
+  "MIDI \u952E\u76D8\uFF1A\u8FD8\u6CA1\u8FDE\uFF08\u70B9\u4E00\u4E0B\u770B\u600E\u4E48\u8FDE\uFF09": { en: "MIDI keyboard: not connected (tap to see how)" },
+  "MIDI \u952E\u76D8\uFF1A\u7B49\u6D4F\u89C8\u5668\u7684\u8BB8\u53EF\u2026": { en: "MIDI keyboard: waiting for browser permission\u2026" },
+  "MIDI \u952E\u76D8\uFF1A\u6D4F\u89C8\u5668\u6CA1\u7ED9\uFF08\u70B9\u4E00\u4E0B\u770B\u600E\u4E48\u529E\uFF09": { en: "MIDI keyboard: browser denied it (tap to see what to do)" },
+  "MIDI \u952E\u76D8\uFF1A\u5F00\u7740\uFF0C\u8FD8\u6CA1\u63D2\u7434\uFF08\u63D2\u4E0A\u5C31\u8BA4\uFF09": { en: "MIDI keyboard: on, nothing plugged in (recognized when plugged in)" },
+  "MIDI \u952E\u76D8\uFF1A\u63A5\u7740 {p}\uFF08\u5F39\u4E00\u4E0B\u8FD9\u4E2A\u70B9\u4F1A\u95EA\uFF09": { en: "MIDI keyboard: connected to {p} (this dot flashes when you play)" },
+  "\u95EE\u6D4F\u89C8\u5668\u8981 MIDI \u7684\u8BB8\u53EF\uFF08\u6D4F\u89C8\u5668\u4F1A\u5F39\u5B83\u81EA\u5DF1\u7684\u6846\uFF09\uFF1B\u7ED9\u8FC7\u4E00\u6B21\u4EE5\u540E\u5F00 app \u81EA\u5DF1\u63A5\u4E0A": { en: "Asks the browser for MIDI permission (it shows its own prompt); after that, the app connects by itself" },
+  "\u6211\u6CA1\u6709 MIDI \u952E\u76D8": { en: "I don't have a MIDI keyboard" },
+  "\u9876\u680F\u4E0D\u518D\u9732\u300CMIDI\u300D\uFF1B\u4EE5\u540E\u8981\u8FDE\uFF1A\u83DC\u5355 \u2192 \u8BBE\u7F6E \u2192 MIDI \u952E\u76D8": { en: "\u201CMIDI\u201D no longer shows in the top bar; to connect later: Menu \u2192 Settings \u2192 MIDI keyboard" },
+  "\u9876\u680F\u4E0D\u9732\u300CMIDI\u300D\u4E86\uFF1B\u4EE5\u540E\u8981\u8FDE\uFF1A\u83DC\u5355 \u2192 \u8BBE\u7F6E \u2192 MIDI \u952E\u76D8": { en: "\u201CMIDI\u201D is hidden from the top bar; to connect later: Menu \u2192 Settings \u2192 MIDI keyboard" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u8BFB\u4E0D\u4E86 MIDI \u952E\u76D8\uFF08iPad / iPhone \u4E0A\u7684\u6D4F\u89C8\u5668\u90FD\u6CA1\u6709 Web MIDI\uFF09\uFF1B\u7535\u8111\u4E0A\u7684 Chrome / Edge / Firefox \u53EF\u4EE5": { en: "This browser can't read MIDI keyboards (no browser on iPad / iPhone has Web MIDI); Chrome / Edge / Firefox on a computer can" },
+  "\u7B49\u6D4F\u89C8\u5668\u7684\u8BB8\u53EF\u2026": { en: "Waiting for browser permission\u2026" },
+  "\u6D4F\u89C8\u5668\u6CA1\u7ED9\uFF08{why}\uFF09\u3002\u5728\u5730\u5740\u680F\u5DE6\u8FB9\u7684\u7AD9\u70B9\u8BBE\u7F6E\u91CC\u5141\u8BB8 MIDI\uFF0C\u518D\u70B9\u8FDE\u63A5": { en: "The browser denied it ({why}). Allow MIDI in the site settings left of the address bar, then tap Connect" },
+  "\u7434\u7528 USB \u63D2\u4E0A\u7535\u8111\uFF0C\u70B9\u300C\u8FDE\u63A5\u300D\uFF08\u6D4F\u89C8\u5668\u4F1A\u95EE\u4E00\u6B21\uFF0C\u4EE5\u540E\u5F00 app \u81EA\u5DF1\u63A5\u4E0A\uFF09": { en: "Plug the keyboard into the computer via USB and tap \u201CConnect\u201D (the browser asks once, then the app connects by itself)" },
+  "\u63A5\u7740\uFF1A{p}\u3002\u5F39\u7684\u97F3\u6309\u5149\u6807\u5904\u7684\u957F\u77ED\u5199\u8FDB\u8C31\uFF1B\u300C\u5F39\u300D\u5F00\u7740 / \u8BCD / \u542C\u91CC\u53EA\u51FA\u58F0": { en: "Connected: {p}. Notes you play are written with the length at the cursor; with \u201CJam\u201D on, or in Lyrics / Listen, they only sound" },
+  "\u5F00\u7740\uFF0C\u8FD8\u6CA1\u63D2\u7434\uFF08\u63D2\u4E0A\u5C31\u8BA4\uFF09": { en: "On, nothing plugged in (recognized when plugged in)" },
+  "\u5FF5\u7F13\u5B58\u548C\u5C01\u9762\u7F13\u5B58\u6362\u4E86\u65B0\u540D\u5B57\uFF0C\u4F1A\u91CD\u65B0\u751F\u6210\u4E00\u6B21\uFF08\u6B4C\u4E0D\u53D7\u5F71\u54CD\uFF09": { en: "The speech and cover caches got new names and will regenerate once (songs aren't affected)" },
+  "\u8BD5\u542C\u5143\u97F3\u8868\u6CA1\u4E0B\u8F7D\u4E0B\u6765\uFF1A{Error}": { en: "Couldn't download the audition vowel table: {Error}" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BFB\u4E0D\u5230\u5B83\u7684\u5B57\u8282": { en: "Its bytes can't be read on this device" },
+  "\u5199\u5B8C\u5728\u65B0\u5BB6\u91CC\u627E\u4E0D\u5230": { en: "Not found in the new home after writing" },
+  "\u5199\u8FDB\u53BB\u7684\u5B57\u8282\u548C\u539F\u6765\u7684\u5BF9\u4E0D\u4E0A": { en: "Written bytes don't match the original" },
+  " \u7B49 {n} \u9996": { en: " and {n} more {n|song|songs}" },
+  "\u642C\u597D\u4E86 {n} \u9996\u5230\u300C{home}\u300D": { en: "Moved {n} {n|song|songs} into \u201C{home}\u201D" },
+  "{n} \u9996\u8FDE\u7740\u7F51\u76D8\u7684\u62F7\u4E86\u4E00\u4EFD\u8FC7\u53BB\uFF0C\u6D4F\u89C8\u5668\u91CC\u90A3\u4EFD\u7559\u7740\uFF08\u767B\u5F55\u540E\u7167\u5E38\u540C\u6B65\uFF09": { en: "{n} OneDrive-linked {n|song was|songs were} copied over; the browser's {n|copy stays|copies stay} (sync as usual after signing in)" },
+  "{n} \u9996\u5DF2\u7ECF\u5728\u300C{home}\u300D\u91CC\u4E86\uFF0C\u4F46\u6D4F\u89C8\u5668\u91CC\u7684\u65E7\u7684\u6CA1\u79FB\u8D70\uFF1A{stuck}": { en: "{n} {n|song is|songs are} already in \u201C{home}\u201D, but the old browser copies weren't removed: {stuck}" },
+  "{n} \u9996\u6CA1\u642C\u6210\uFF0C\u8FD8\u5728\u6D4F\u89C8\u5668\u91CC\uFF0C\u4E00\u4E2A\u5B57\u8282\u6CA1\u52A8\uFF1A{failed}": { en: "{n} {n|song wasn't|songs weren't} moved and {n|remains|remain} in the browser, not a byte changed: {failed}" },
+  "\u6CA1\u6709\u8981\u642C\u7684\u6B4C": { en: "No songs to move" },
+  "\u9009\u533A\u5199\u6EE1\u4E86\uFF1A\u5199\u4E0D\u51FA\u9009\u533A\u3002\u8981\u5F80\u540E\u5199\uFF0C\u5148\u70B9\u522B\u5904\u9000\u51FA\u9009\u533A": { en: "The selection is full: can't write past it. To keep writing, tap elsewhere to leave the selection" },
+  "\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u662F\u5355\u97F3": { en: "Arpeggios only go on chords: the note before the cursor (or the selection) is a single note" },
+  "{p}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} must go on a note (before the cursor is a rest, or no note yet)" },
+  "\u8FDE\u7EBF\u4ECE\u4E00\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A slur goes from one note to the next (before the cursor is a rest, or no note yet)" },
+  "\u51FA\u58F0\u7684\u6362\u6C14\u6302\u5728\u4E00\u4E2A\u97F3\u540E\u9762\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "An audible breath goes after a note (before the cursor is a rest, or no note yet)" },
+  "\u97F3\u5185\u7684\u8D77\u4F0F\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "A swell must go on a note (before the cursor is a rest, or no note yet)" },
+  "{p}\u4ECE\u4E00\u4E2A\u97F3\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09": { en: "{p} goes from one note to the next (before the cursor is a rest, or no note yet)" },
+  "\u987A\u624B\u53BB\u6389\u4E86 {gone} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {gone} dynamics / hairpins that no longer govern any note (undo brings them back)" },
+  "\u8DDF\u8C31": { en: "Follow score" },
+  "\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7": { en: "Uses the key signature here" },
+  "\u624B\u52A8": { en: "Manual" },
+  "\u624B\u52A8\uFF1A\u952E\u76D8\u6309 {pad} \u6392\uFF0C\u548C\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF081={k}\uFF09\u4E0D\u4E00\u6837\u3002\u70B9\u5F00\u300C1=\u300D\uFF0C\u8C03\u5F0F\u90A3\u4E00\u5217\u6700\u4E0A\u9762\u7684\u300C\u8DDF\u8C31\u300D= \u56DE\u5230\u8DDF\u7740\u8C31\u8D70": { en: "Manual: the keyboard is laid out in {pad}, which differs from the key signature here (1={k}). Open \u201C1=\u201D and pick \u201CFollow score\u201D at the top of the mode column to follow the score again" },
+  "{name}\uFF08\u8DDF\u7740\u8C31\u4E0A\u8FD9\u91CC\u7684\u8C03\u53F7\uFF09": { en: "{name} (follows the key signature here)" },
+  "{name}\uFF08\u624B\u52A8\uFF09": { en: "{name} (manual)" },
+  "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF0C\u8FD9\u4E00\u7248\u8BA4\u4E0D\u51FA\uFF09": { en: "Nobody on stage yet (the other software's original instrument isn't recognized by this version)" },
+  "{next}\u3002\u8FD9{p}\u653E\u548C\u5BFC\u51FA\u90FD\u4E0D\u51FA\u58F0\uFF0C\u5176\u4F59\u7167\u653E\uFF1B\u70B9 |\u25B6 \u89D2\u4E0A\u7684\u6570\u5B57\u770B\u6E05\u5355\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "{next}. {p} silent in both playback and export, the rest plays as usual; tap the number on the corner of |\u25B6 for the list, and tap the part name at the front of the score to change \u201CWho performs\u201D." },
+  "\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0\u4E86": { en: "All parts can sound now" },
+  "\u300C{who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A{failed}": { en: "\u201C{who}\u201D can't sing this line: {failed}" },
+  "{who}\uFF1A{pumpQuiet} {left} \u53E5\u2026": { en: "{who}: {pumpQuiet} {left} lines\u2026" },
+  "\u5148\u5531\u7740": { en: "singing ahead" },
+  "\u8FD8\u6709": { en: "still" },
+  "\u300C{who}\u300D\u5531\u4E0D\u4E86\u8FD9\u4E00\u53E5\uFF1A{msg}": { en: "\u201C{who}\u201D can't sing this line: {msg}" },
+  "\u5185\u5B58 / \u8D1F\u8F7D\u5403\u7D27\uFF1A\u5C0F\u6708\u76F8\u6539\u6210\u4E00\u6761\u9053\u5531\uFF08\u6162\u4E00\u70B9\uFF0C\u58F0\u97F3\u4E0D\u53D8\uFF09": { en: "Memory / load is tight: Tsukuyomi-chan now sings on one lane (slower, same sound)" },
+  "\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 {p}%\uFF1A\u53EF\u80FD\u7206\u97F3\u3002\u6548\u679C\u94FE / \u58F0\u90E8\u662F\u4F60\u7684\u6DF7\u97F3\uFF0C\u4E0D\u66FF\u4F60\u52A8\uFF1B\u53EF\u4EE5\u5148\u628A\u6CA1\u5728\u542C\u7684\u58F0\u90E8\u9759\u97F3": { en: "The audio thread was {p}% busy in the last 1 s: it may crackle. Effects and parts are your mix, so nothing changes automatically; you could mute parts you aren't listening to" },
+  "\u6CA1\u6709\u51FA\u58F0\uFF1A{issues}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "Nothing sounded: {issues}. Tap the part name at the front of the score to change \u201CWho performs\u201D." },
+  "\u6CA1\u6709\u4F1A\u51FA\u58F0\u7684\u58F0\u90E8": { en: "No parts that can sound" },
+  "\u5FAA\u73AF {loopFrom} \u79D2": { en: "Loop {loopFrom} s" },
+  "{atNow} \u79D2": { en: "{atNow} s" },
+  "\u653E\u4E0D\u4E86\uFF1A{Error}": { en: "Can't play: {Error}" },
+  "\u64AD\u653E\u51FA\u9519\u4E86\uFF0C\u5DF2\u7ECF\u505C\u4E0B\uFF08\u9519\u8BEF\u8BB0\u8FDB\u4E86\u8BCA\u65AD\u65E5\u5FD7\uFF09\uFF1A{p}": { en: "Playback error, stopped (recorded in the diagnostic log): {p}" },
+  "\u7B49\u5C0F\u6708\u76F8\u5531\u597D\u8FD9\u4E00\u53E5\u2026": { en: "Waiting for Tsukuyomi-chan to finish this line\u2026" },
+  "\u300C{name}\u300D\u54CD\u4E0D\u4E86\uFF1A{Error}": { en: "\u201C{name}\u201D can't sound: {Error}" },
+  "\u51C6\u5907\u2026": { en: "Preparing\u2026" },
+  "\u7F16 mp3\u2026": { en: "Encoding mp3\u2026" },
+  "\u8FD9\u4E00\u5F20": { en: "This sheet" },
+  "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86": { en: "Vocals & mix exported" },
+  "{p} \u79D2 \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}": { en: "{p} s \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}" },
+  "\uFF08\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD\uFF0C\u6CA1\u6709\u91CD\u6E32\uFF09": { en: " (the finalized copy, not re-rendered)" },
+  "\u8FD9\u51E0\u6761\u8F68\u6CA1\u51FA\u58F0\uFF0Cmp3 \u91CC\u6CA1\u6709\u5B83\u4EEC\uFF1A": { en: "These tracks were silent and aren't in the mp3:" },
+  "\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E": { en: "Credits \xB7 written into the mp3 tags" },
+  "\u5BFC\u51FA\u5931\u8D25\uFF1A{Error}": { en: "Export failed: {Error}" },
+  "{label} \xB7 \u5F00\u5934 {p} \u79D2": { en: "{label} \xB7 first {p} s" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u89E3\u4E0D\u4E86\u97F3\u9891": { en: "This browser can't decode the audio" },
+  "PNG {REF_IMAGE_COLORS} \u8272\u3001{w} \xD7 {h}\uFF08\u957F\u8FB9\u6700\u591A {REF_IMAGE_EDGE}\uFF09": { en: "PNG {REF_IMAGE_COLORS} colors, {w} \xD7 {h} (long side up to {REF_IMAGE_EDGE})" },
+  "mp3 {REF_MP3_KBPS}k{right}\u3001{p} \u5206\u949F": { en: "mp3 {REF_MP3_KBPS}k{right}, {p} min" },
+  " \u5355\u58F0\u9053": { en: " mono" },
+  "\u4E0D\u4F1A\u538B\u8FD9\u79CD\uFF1A{kind}": { en: "Can't compress this kind: {kind}" },
+  "\u539F\u5C3A\u5BF8": { en: "Original size" },
+  "\u5220\u6389\u8FD9\u5F20": { en: "Delete this one" },
+  "\u518D\u70B9\u4E00\u6B21\u5220\u6389": { en: "Tap again to delete" },
+  "\u4E0A\u4E00\u5F20": { en: "Previous" },
+  "\u4E0B\u4E00\u5F20": { en: "Next" },
+  "\u53C2\u8003\u7A97\u83DC\u5355": { en: "Reference window menu" },
+  "\u70B9\u4E00\u4E0B\u7F29\u6210\u5C0F\u56FE\u6807\uFF0C\u6309\u4F4F\u62D6\u52A8\u632A\u4F4D\u7F6E": { en: "Tap to shrink to an icon, hold and drag to move" },
+  "\u6539\u5927\u5C0F": { en: "Resize" },
+  "\u5F80\u524D\u632A": { en: "Move earlier" },
+  "\u5F80\u540E\u632A": { en: "Move later" },
+  "\u8DF3\u5230\u2026": { en: "Jump to\u2026" },
+  "\u56FE\u7247": { en: "Image" },
+  "\u6587\u5B57": { en: "Text" },
+  "\u97F3\u9891": { en: "Audio" },
+  "\u89C6\u9891": { en: "Video" },
+  "\u5185\u5BB9\u4E0D\u5728\u4E86": { en: "Content is gone" },
+  "\u5BFC\u5165\u56FE\u7247 / \u97F3\u9891 / \u89C6\u9891 / \u6587\u5B57\u2026": { en: "Import image / audio / video / text\u2026" },
+  "\u64AD\u653E": { en: "Play" },
+  "\u6682\u505C": { en: "Pause" },
+  "\u5FAA\u73AF": { en: "Loop" },
+  "\u4E0A\u4E00\u5E27": { en: "Previous frame" },
+  "\u4E0B\u4E00\u5E27": { en: "Next frame" },
+  "\u53EA\u5728\u5185\u5B58\u91CC\uFF0C\u6CA1\u5B58\u8FDB\u6B4C\u91CC\u2014\u2014\u628A\u8FD9\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u70B9 \uFF0B \u91CD\u65B0\u5BFC\u5165\uFF0C\u5C31\u8865\u56DE\u8FD9\u91CC": { en: "Only in memory, not saved in the song \u2014 drag this file in, or re-import with \uFF0B, to fill this spot" },
+  "\u7F29\u6210\u5C0F\u56FE\u6807": { en: "Shrink to an icon" },
+  "\u70B9\u4E00\u4E0B\u6062\u590D\uFF0C\u6309\u4F4F\u62D6\u52A8\u632A\u4F4D\u7F6E": { en: "Tap to restore, hold and drag to move" },
+  "\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u56FE\u7247\u6216\u6587\u5B57": { en: "No image or text on the clipboard" },
+  "\u8FD9\u5F20\u56FE\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6253\u4E0D\u5F00{name}": { en: "This browser can't open this image{name}" },
+  "\u53C2\u8003\u7A97\uFF1A{message}": { en: "Reference window: {message}" },
+  "\u8BA4\u4E0D\u51FA\uFF1A{name}\uFF08\u53C2\u8003\u7A97\u6536\u56FE\u7247\u3001\u97F3\u9891\u548C\u6587\u5B57\uFF09": { en: "Not recognized: {name} (the reference window takes images, audio and text)" },
+  "\u6CA1\u52A0\u4E0A\uFF1A{name}\uFF08{message}\uFF09": { en: "Not added: {name} ({message})" },
+  "\u51FA\u9519\u4E86": { en: "Something went wrong" },
+  "\u52A0\u4E86 {n} \u5F20": { en: "Added {n}" },
+  "\u8865\u56DE {n} \u5F20\uFF08\u53EA\u653E\u5185\u5B58\u7684\u7A7A\u4F4D\uFF09": { en: "Filled {n} (memory-only empty slots)" },
+  "\u53C2\u8003\u7A97\uFF1A{p}": { en: "Reference window: {p}" },
+  "\u7C98\u8D34.{p}": { en: "pasted.{p}" },
+  "\u8BFB\u4E0D\u4E86\u526A\u8D34\u677F\uFF1A\u70B9\u4E00\u4E0B\u53C2\u8003\u7A97\uFF0C\u518D\u6309 Ctrl / \u2318+V": { en: "Can't read the clipboard: tap the reference window, then press Ctrl / \u2318+V" },
+  "\u8FD9\u9996\u6B4C\u7684\u53C2\u8003\u7A97\u662F\u66F4\u65B0\u7248\u672C\u7684 app \u5B58\u7684\uFF1A\u8FD9\u7248\u6CA1\u6709\u7684\u529F\u80FD\u4FDD\u5B58\u65F6\u4E0D\u4E22\uFF0C\u53EA\u662F\u770B\u4E0D\u5230": { en: "This song's reference window was saved by a newer app: features this version lacks aren't lost on save, they're just not visible" },
+  "\u8FD9\u9996\u6B4C\u7684\u53C2\u8003\u7A97\u662F\u66F4\u65B0\u7248\u672C\u7684 app \u5B58\u7684\uFF08\u53C2\u8003\u6E05\u5355\u7B2C {fileVersion} \u7248\uFF0C\u8FD9\u4E00\u7248\u8BA4\u5230\u7B2C {libVersion} \u7248\uFF09\uFF1A\u539F\u6837\u7559\u7740\u3001\u5B58\u7684\u65F6\u5019\u539F\u6837\u5199\u56DE\uFF0C\u8FD9\u91CC\u5148\u4E0D\u663E\u793A": { en: "This song's reference window was saved by a newer app (reference list version {fileVersion}, this version knows up to {libVersion}): kept as is and written back as is, not shown here for now" },
+  "\u53C2\u8003\u7A97\u8BFB\u4E0D\u51FA\u6765\uFF1A{Error}\uFF08\u5B57\u8282\u539F\u6837\u7559\u7740\u3001\u5B58\u7684\u65F6\u5019\u539F\u6837\u5199\u56DE\uFF09": { en: "Can't read the reference window: {Error} (bytes stay untouched and are written back as is)" },
+  "\u8FD9\u9996\u6B4C\u7684\u53C2\u8003\u7A97\u662F\u66F4\u65B0\u7248\u672C\u7684 app \u5B58\u7684\uFF0C\u8FD9\u4E00\u7248\u5148\u4E0D\u663E\u793A\uFF08\u539F\u6837\u7559\u7740\uFF09": { en: "This song's reference window was saved by a newer app; this version doesn't show it for now (kept as is)" },
+  "\u9053 {p}\uFF1A\u5806 {wasm}{p2} + \u5FF5\u7F13\u5B58 {cache}": { en: "Lane {p}: heap {wasm}{p2} + speech cache {cache}" },
+  "\uFF08\u521A\u8D77\u6765 {base}\uFF09": { en: " (at startup {base})" },
+  "\u5C0F\u6708\u76F8\u5F15\u64CE\u6CA1\u8D77": { en: "Tsukuyomi-chan's engine isn't running" },
+  "\u97F3\u9891\u7EBF\u7A0B\uFF1A\u6CA1\u5728\u62A5": { en: "Audio thread: not reporting" },
+  "\u97F3\u9891\u7EBF\u7A0B\u6700\u8FD1 1 s \u5FD9 {p}%{AUDIO_HOT}": { en: "Audio thread {p}% busy in the last 1 s{AUDIO_HOT}" },
+  "\uFF08\u70ED\uFF1A\u53EF\u80FD\u7206\u97F3\uFF09": { en: " (hot: may crackle)" },
+  "\u80FD\u7B97\u5230\u7684\u5360\u7528 {s} / \u9884\u7B97 {total}\uFF08{lanes}\uFF1B\u5F55\u97F3\u623F\u91CC {chunks} \u5757 {chunkBytes}\uFF1B\u97F3\u6E90\u5185\u5B58 {soundMem}\uFF09\u3002{audio}\u3002": { en: "Measured usage {s} / budget {total} ({lanes}; {chunks} chunks {chunkBytes} in the studio; sound memory {soundMem}). {audio}." },
+  "\u8FD9\u662F itch \u4E0A\u7684\u8BD5\u73A9\u7248\uFF1A\u9664\u4E86\u7F51\u76D8\u540C\u6B65\uFF0C\u522B\u7684\u90FD\u6709\u3002\u5B8C\u6574\u7248\u5728 {SITE_HOST}": { en: "This is the itch demo: everything except OneDrive sync. The full version is at {SITE_HOST}" },
+  "\u8FD9\u662F\u4E0B\u8F7D\u4E0B\u6765\u7684\u5907\u7528\u7248\uFF1A\u9664\u4E86\u7F51\u76D8\u540C\u6B65\uFF0C\u522B\u7684\u90FD\u6709\u3002\u5B8C\u6574\u7248\u5728 {SITE_HOST}": { en: "This is the downloaded standalone version: everything except OneDrive sync. The full version is at {SITE_HOST}" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u6253\u5F00\u5907\u7528\u7248\u6CA1\u6D4B\u8FC7\uFF1A\u8BBE\u7F6E\u548C\u7F13\u5B58\u5B58\u4E0D\u4F4F\uFF08\u5173\u4E86\u5C31\u5FD8\uFF09\uFF0C\u6B4C\u8BF7\u8BB0\u5F97\u300C\u5B58\u300D\u4E0B\u6765\u3002\u9047\u5230\u95EE\u9898\u8BF7\u5230 {REPORT_URL} \u544A\u8BC9\u6211\u4EEC": { en: "This browser hasn't been tested with the standalone version: settings and caches don't persist (forgotten when closed), so remember to \u201CSave\u201D your songs. For problems, tell us at {REPORT_URL}" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u5199\u4E0D\u8FDB\u5B58\u50A8\u4E86\uFF1A\u8FD9\u6B21\u6253\u5F00\u4E4B\u540E\u6539\u7684\u8BBE\u7F6E\u53EA\u7559\u5728\u5185\u5B58\u91CC\uFF0C\u5173\u4E86\u5C31\u5FD8": { en: "This browser can't write to storage: settings changed from now on stay in memory and are forgotten when closed" },
+  "\u7F51\u76D8\u5728\u5B98\u7F51": { en: "OneDrive is on the official site" },
+  "\u7F51\u76D8\uFF08OneDrive\uFF09\u540C\u6B65\u53EA\u5728\u5B98\u7F51\u7248\u91CC\u6709\uFF1A{SITE_HOST}": { en: "OneDrive sync is only on the official site: {SITE_HOST}" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u5B58\u4E0D\u4F4F\u6B4C\u5E93\uFF08\u5173\u4E86\u5C31\u5FD8\uFF09\uFF1A\u6B4C\u8BF7\u7528\u300C\u5B58\u300D\u4E0B\u8F7D\u6210\u6587\u4EF6\uFF1B\u6B4C\u5E93\u5728\u5B98\u7F51\u7248\u91CC\uFF1A{SITE_HOST}": { en: "This browser can't keep a library (forgotten when closed): use \u201CSave\u201D to download songs as files; the library is on the official site: {SITE_HOST}" },
+  "\u6B4C\u5E93\u53EA\u5728\u5B98\u7F51\u7248\u91CC\u6709\uFF08{SITE_HOST}\uFF09\uFF1A\u8FD9\u91CC\u7684\u6B4C\u6CA1\u6709\u6D4F\u89C8\u5668\u5916\u7684\u5BB6\u2014\u2014\u300C\u5B58\u300D= \u4E0B\u8F7D\u6210 .mxl \u6587\u4EF6\uFF0C\u300C\u6253\u5F00\u300D= \u9009\u6587\u4EF6": { en: "The library is only on the official site ({SITE_HOST}): songs here have no home outside the browser \u2014 \u201CSave\u201D = download an .mxl file, \u201COpen\u201D = choose a file" },
+  "itch \u7248\u8DDF\u7740 itch \u4E0A\u7684\u7248\u672C\u8D70\uFF1A\u4F5C\u8005\u63A8\u4E86\u65B0\u7248\uFF0C\u5237\u65B0\u8FD9\u4E00\u9875\u5C31\u662F\u65B0\u7684": { en: "The itch version follows what's on itch: when a new version is pushed, refresh this page to get it" },
+  "\u5907\u7528\u7248\u4E0D\u4F1A\u81EA\u5DF1\u66F4\u65B0\uFF1A\u8981\u65B0\u7248\u5C31\u91CD\u65B0\u4E0B\u8F7D\u8FD9\u4E2A\u6587\u4EF6\u5939\uFF0C\u6216\u53BB\u5B98\u7F51 {SITE_HOST}": { en: "The standalone version doesn't update itself: for a new version, download this folder again or go to the official site {SITE_HOST}" },
+  "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF0C\u4E0D\u7528\u66F4\u65B0": { en: "No offline shell here, nothing to update" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u9009\u4E0D\u4E86\u6587\u4EF6\u5939\uFF08\u684C\u9762\u7248 Chrome / Edge \u53EF\u4EE5\uFF09\uFF0C\u6240\u4EE5\u5907\u7528\u7248\u5728\u8FD9\u91CC\u6CA1\u6709\u6B4C\u5E93\uFF1A\u300C\u5B58\u300D= \u4E0B\u8F7D\u6210 .mxl \u6587\u4EF6\uFF0C\u300C\u6253\u5F00\u300D= \u9009\u6587\u4EF6\uFF1B\u6B4C\u5E93\u4E5F\u5728\u5B98\u7F51\u7248\u91CC\uFF1A{SITE_HOST}": { en: "This browser can't choose folders (desktop Chrome / Edge can), so the standalone version has no library here: \u201CSave\u201D = download an .mxl file, \u201COpen\u201D = choose a file; the library is also on the official site: {SITE_HOST}" },
+  "\u53BB\u5B98\u7F51": { en: "Official site" },
+  "\u62A5\u544A\u95EE\u9898": { en: "Report a problem" },
+  "\u5907\u7528\u7248\uFF1A\u5C0F\u6708\u76F8\u7684\u6A21\u578B\u5305\u5C31\u5728\u8FD9\u4E2A\u6587\u4EF6\u5939\u7684 pwa-models/ \u91CC\uFF0C\u7528\u5230\u624D\u8BFB\u3001\u8BFB\u7684\u65F6\u5019\u6838\u54C8\u5E0C\uFF1B\u4E0D\u7528\u4E0B\u8F7D\u3001\u4E5F\u4E0D\u7528\u5BFC\u5165": { en: "Standalone: Tsukuyomi-chan's model pack is in this folder's pwa-models/, read when needed and hash-checked as it's read; no download or import needed" },
+  "\u5907\u7528\u7248\uFF1A\u97F3\u6E90\u5C31\u5728\u8FD9\u4E2A\u6587\u4EF6\u5939\u7684 pwa-sounds/ \u91CC\uFF0C\u7528\u5230\u624D\u8BFB\uFF1B\u6D4F\u89C8\u5668\u7F13\u5B58\u5728\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u91CC\u7528\u4E0D\u4E86\uFF0C\u8FD9\u91CC\u6CA1\u6709\u300C\u7559\u5728\u8BBE\u5907\u4E0A\u300D\u8FD9\u56DE\u4E8B": { en: "Standalone: sounds are in this folder's pwa-sounds/, read when needed; browser cache doesn't work on pages opened by double-click, so nothing is \u201Ckept on the device\u201D here" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u7684\u540E\u53F0\u7EBF\u7A0B\u5B58\u4E1C\u897F\uFF1A\u5FF5\u7F13\u5B58\u53EA\u5728\u5185\u5B58\u91CC\uFF08\u6BCF\u6B21\u6253\u5F00\u7B2C\u4E00\u904D\u8981\u91CD\u5FF5\uFF09": { en: "This browser doesn't let background threads store data on pages opened by double-click: the speech cache is memory-only (the first pass of each session re-speaks)" },
+  "\u8FD9\u4EFD mp3 \u653E\u4E0D\u4E86\uFF08\u6587\u4EF6\u574F\u4E86\uFF1F\uFF09": { en: "This mp3 can't be played (damaged file?)" },
+  "\u97F3": { en: "Notes" },
+  "\u8BCD": { en: "Lyrics" },
+  "\u7B26": { en: "Symbols" },
+  "\u542C": { en: "Listen" },
+  "\u97F3\uFF1A\u5199\u97F3\u548C\u8BB0\u53F7\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539\uFF08\u70B9\u97F3 = \u5149\u6807\uFF0C\u7B14 / \u9F20\u6807\u62D6\u97F3 = \u6539\u97F3\u9AD8 / \u65F6\u503C\uFF1B\u70B9\u8BB0\u53F7 = \u5B83\u7684\u83DC\u5355\u3001\u6309\u4F4F\u62D6 = \u632A\uFF09\uFF1B\u5C0F\u952E\u76D8\u9876\u4E0A\u300C\u7B26 / \u97F3\u300D\u5207\u97F3\u952E / \u7B26\u53F7\u683C\uFF0C\u9000\u683C\u5220\u4EC0\u4E48\u8DDF\u7740\u952E\u76D8": { en: "Notes: write notes and marks \u2014 both can be edited on the score (tap a note = cursor, drag with pen / mouse = change pitch / length; tap a mark = its menu, hold and drag = move); the switch above the keys toggles note keys / symbol grid, and Backspace follows the keys" },
+  "\u8BCD\uFF1A\u70B9\u97F3\u6216\u5B83\u4E0B\u9762 = \u5199\u8FD9\u4E2A\u97F3\u7684\u6B4C\u8BCD\uFF1B\u6309\u4F4F\u5B57\u62D6 = \u632A / \u5408\uFF1B\u9000\u683C = \u5220\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u7684\u5B57": { en: "Lyrics: tap a note or below it = write its lyric; hold a syllable and drag = move / join; Backspace = delete the syllable of the note before the cursor" },
+  "\u7B26\uFF1A\u952E\u76D8 = \u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7\uFF09\u3002\u8C31\u4E0A\u548C\u300C\u97F3\u300D\u4E00\u6837\uFF1A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539": { en: "Symbols: keys = symbol grid (dynamics, hairpins, articulations, key / time / tempo, repeats, style, phrase end; Backspace = delete marks). On the score it's the same as \u201CNotes\u201D: notes and marks can both be edited" },
+  "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u6B4C\u624B\u724C / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\uFF08Esc \u56DE\u5230\u5199\uFF09": { en: "Listen: the score locks to prevent accidental edits \u2014 taps only do viewing things (part labels / page turns / this section) and never jump playback; long-press / right-click the score = play from here / resume / from the top; Space = play / stop; the mixer sits below (Esc returns to writing)" },
+  "\u6CA1\u6709\u51FA\u58F0\uFF1A{e}": { en: "Nothing sounded: {e}" },
+  "\u6DF7\u97F3\u2026": { en: "Mixing\u2026" },
+  "\u5747\u8861": { en: "EQ" },
+  "\u6BCF\u6BB5\u4E00\u4E2A\u53CC\u4E8C\u9636 H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2)\uFF0C\u7CFB\u6570\u6309 RBJ Audio EQ Cookbook\uFF08hp / lp Q = 0.707\uFF1B\u67B6\u5B50 Q = 0.707\uFF1B\u5CF0 Q \u53EF\u8C03\uFF09\u3002hpHz / lpHz = 0 \u5173\u3002": { en: "One biquad per band H(z) = (b0 + b1 z^-1 + b2 z^-2) / (1 + a1 z^-1 + a2 z^-2), coefficients from the RBJ Audio EQ Cookbook (hp / lp Q = 0.707; shelves Q = 0.707; peak Q adjustable). hpHz / lpHz = 0 is off." },
+  "\u4F4E\u5207": { en: "Low cut" },
+  "\u9AD8\u5207": { en: "High cut" },
+  "\u4F4E\u67B6": { en: "Low shelf" },
+  "\u4F4E\u67B6\u9891\u7387": { en: "Low shelf freq" },
+  "\u4E2D\u5CF0": { en: "Mid peak" },
+  "\u4E2D\u5CF0\u9891\u7387": { en: "Mid peak freq" },
+  "\u4E2D\u5CF0\u5BBD": { en: "Mid peak width" },
+  "\u9AD8\u67B6": { en: "High shelf" },
+  "\u9AD8\u67B6\u9891\u7387": { en: "High shelf freq" },
+  "\u538B\u7F29": { en: "Compressor" },
+  "\u5305\u7EDC e[n] = max(|x|, e[n-1]\xB7r) \u8D77\uFF08attack\uFF09\u843D\uFF08release\uFF09\u5404\u4E00\u4E2A\u65F6\u95F4\u5E38\u6570\uFF1B\u8D85\u8FC7 threshold \u7684\u90E8\u5206\u6309 ratio \u538B\uFF08kneeDb \u5185\u8F6F\u62D0\u70B9\uFF1Ag = -(x - T + K/2)^2 \xB7 (1 - 1/R) / (2K)\uFF09\uFF1B\u589E\u76CA = 10^(g/20) \xD7 10^(makeup/20)\u3002key \u7ED9\u4E86 = \u542C\u522B\u7684\u8F68\uFF08\u4FA7\u94FE\uFF09\uFF0C\u4E0D\u7ED9 = \u542C\u81EA\u5DF1\u3002": { en: "Envelope e[n] = max(|x|, e[n-1]\xB7r) with one time constant each for attack and release; above the threshold, compressed by ratio (soft knee within kneeDb: g = -(x - T + K/2)^2 \xB7 (1 - 1/R) / (2K)); gain = 10^(g/20) \xD7 10^(makeup/20). With a key = listens to another track (sidechain); without = listens to itself." },
+  "\u9608\u503C": { en: "Threshold" },
+  "\u6BD4\u4F8B": { en: "Ratio" },
+  "\u8D77": { en: "Attack" },
+  "\u843D": { en: "Release" },
+  "\u62D0\u70B9": { en: "Knee" },
+  "\u8865\u507F": { en: "Makeup" },
+  "\u5EF6\u8FDF": { en: "Delay" },
+  "y[n] = x[n]\xB7dry + d[n]\xB7mix\uFF08dry \u6CA1\u5199 = 1 \u2212 mix\uFF0Cv0.10.10 \u524D\u7684\u5199\u6CD5\uFF09\uFF0Cd[n] = x[n - D] + fb \xB7 LP(d[n - D])\uFF0CLP = \u4E00\u9636\u4F4E\u901A dampHz\u3002D = timeMs\uFF08\u6700\u957F 2 s\uFF09\u3002": { en: "y[n] = x[n]\xB7dry + d[n]\xB7mix (no dry = 1 \u2212 mix, the pre-v0.10.10 form), d[n] = x[n - D] + fb \xB7 LP(d[n - D]), LP = one-pole low-pass dampHz. D = timeMs (up to 2 s)." },
+  "\u65F6\u95F4": { en: "Time" },
+  "\u53CD\u9988": { en: "Feedback" },
+  "\u6E7F": { en: "Wet" },
+  "\u539F\u58F0": { en: "Dry" },
+  "\u53CD\u9988\u9AD8\u5207": { en: "Feedback high cut" },
+  "\u6DF7\u54CD": { en: "Reverb" },
+  "Freeverb\uFF1A8 \u6761\u4F4E\u901A\u53CD\u9988\u68B3\u72B6\uFF08\u957F\u5EA6 1116\u20261617 @44.1k\uFF0C\u6309\u91C7\u6837\u7387\u7F29\u653E\uFF1B\u53CD\u9988 = 0.7 + 0.28\xB7room\uFF0C\u4F4E\u901A = damp\uFF09\u5E76\u8054\uFF0C\u518D\u4E32 4 \u6761\u5168\u901A\uFF08g = 0.5\uFF09\uFF1B\u53F3\u8FB9\u5404\u957F 23 \u4E2A\u91C7\u6837\uFF1B\u524D\u9762\u4E00\u6BB5 preDelayMs \u7EAF\u5EF6\u8FDF\uFF1By = x\xB7(1-mix) + wet\xB7mix\u3002": { en: "Freeverb: 8 low-pass feedback combs in parallel (lengths 1116\u20261617 @44.1k, scaled by sample rate; feedback = 0.7 + 0.28\xB7room, low-pass = damp), then 4 all-pass in series (g = 0.5); the right side is 23 samples longer each; a preDelayMs pure delay in front; y = x\xB7(1-mix) + wet\xB7mix." },
+  "\u623F\u95F4\u5927\u5C0F": { en: "Room size" },
+  "\u9AD8\u9891\u5438\u6536": { en: "Damping" },
+  "\u9884\u5EF6\u8FDF": { en: "Pre-delay" },
+  "\u5BBD\u5EA6": { en: "Width" },
+  "\u5408\u5531": { en: "Chorus" },
+  "v \u6761\u5EF6\u8FDF d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v)\uFF08\u7EBF\u6027\u63D2\u503C\u8BFB\uFF09\uFF0C\u7B2C k \u6761\u6446\u5728 pan_k = spread \xB7 (2k/(v-1) - 1)\uFF1By = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v\u3002": { en: "v delays d_k(t) = delayMs + depthMs \xB7 sin(2\u03C0 \xB7 rateHz \xB7 t + 2\u03C0k/v) (read with linear interpolation), voice k placed at pan_k = spread \xB7 (2k/(v-1) - 1); y = x\xB7(1-mix) + mix \xB7 \u03A3_k d_k / v." },
+  "\u51E0\u6761": { en: "Voices" },
+  "\u6296\u52A8\u6DF1\u5EA6": { en: "Depth" },
+  "\u6296\u52A8\u5FEB\u6162": { en: "Rate" },
+  "\u5DE6\u53F3\u94FA\u5F00": { en: "Spread" },
+  "\u589E\u76CA": { en: "Gain" },
+  "{kind}\uFF1A\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6": { en: "{kind}: not recognized by this version" },
+  "\u8FD8\u6CA1\u6709\u4EBA\u4E0A\u573A": { en: "Nobody on stage yet" },
+  "\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0": { en: "\u201C{label}\u201D can't sound from a note list" },
+  "\u8BD5\u542C\u5143\u97F3\u8868\uFF1A{Error}\uFF08\u5148\u8DD1 node scripts/gen-preview-vowels.mjs\uFF1F\uFF09": { en: "Audition vowel table: {Error} (run node scripts/gen-preview-vowels.mjs first?)" },
+  "\u6807\u51C6": { en: "Standard" },
+  "\u7ACB\u4F53\u58F0 192k\uFF0C\u7EA6 1.4 MB / \u5206\u949F": { en: "Stereo 192k, about 1.4 MB / min" },
+  "\u5C0F\u6587\u4EF6": { en: "Small file" },
+  "\u5355\u58F0\u9053 64k\uFF0C\u7EA6 0.5 MB / \u5206\u949F": { en: "Mono 64k, about 0.5 MB / min" },
+  "mp3 \u7F16\u7801 worker \u51FA\u9519": { en: "mp3 encoder worker error" },
+  "\u5B57\u4F53\u4E0B\u4E0D\u6765\uFF08{Error}\uFF09": { en: "Couldn't download the font ({Error})" },
+  "\u97F3\u4E50\u5B57\u5F62\u4E0B\u4E0D\u6765\uFF08{Error}\uFF09": { en: "Couldn't download the music glyphs ({Error})" },
+  "\u8FD9\u9996\u6B4C": { en: "This song" },
+  "\uFF08\u6CA1\u58F0\u660E\u8BB8\u53EF\uFF09": { en: "(no license stated)" },
+  "\u4FDD\u7559\u6240\u6709\u6743\u5229": { en: "All rights reserved" },
+  "\u4EC0\u4E48\u90FD\u8981\u5148\u95EE\u4F60\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u8FD9\u6837\uFF0C\u8FD9\u91CC\u53EA\u662F\u5199\u660E\uFF09": { en: "Everyone must ask you first for anything (that's the legal default; this just says so)" },
+  "\xA9 {y} \u4FDD\u7559\u6240\u6709\u6743\u5229": { en: "\xA9 {y} All rights reserved" },
+  "\u4EC5\u4F9B\u6B23\u8D4F": { en: "For listening only" },
+  "\u542C\u53EF\u4EE5\uFF1B\u8F6C\u8F7D\u3001\u6539\u7F16\u3001\u5546\u7528\u90FD\u8981\u5148\u95EE\u4F60": { en: "Listening is fine; reposting, adapting and commercial use must ask you first" },
+  "\xA9 {y} \u4FDD\u7559\u6240\u6709\u6743\u5229\u3002\u4EC5\u4F9B\u4E2A\u4EBA\u6B23\u8D4F\uFF0C\u7981\u6B62\u8F6C\u8F7D\u3001\u6539\u7F16\u3001\u5546\u7528\u3002": { en: "\xA9 {y} All rights reserved. For personal listening only; no reposting, adaptation or commercial use." },
+  "\u5546\u7528\u8BF7\u8054\u7CFB": { en: "Contact for commercial use" },
+  "\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF0C\u5E76\u544A\u8BC9\u522B\u4EBA\u5546\u7528\u600E\u4E48\u627E\u4F60": { en: "All rights reserved, plus telling people how to reach you for commercial use" },
+  "\xA9 {y} \u4FDD\u7559\u6240\u6709\u6743\u5229\u3002\u5546\u7528\u8BF7\u8054\u7CFB\u4F5C\u8005\u3002": { en: "\xA9 {y} All rights reserved. Contact the author for commercial use." },
+  "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u539F\u6837\u8F6C\u53D1\uFF1B\u4E0D\u8BB8\u6539\u3001\u4E0D\u8BB8\u5546\u7528\uFF08\u6700\u7D27\u7684 CC\uFF09": { en: "Can be reshared unchanged with credit; no changes, no commercial use (the strictest CC)" },
+  "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u6539\uFF1B\u4E0D\u8BB8\u5546\u7528": { en: "Can be changed with credit; no commercial use" },
+  "\u6CE8\u660E\u51FA\u5904\u53EF\u4EE5\u6539\u3001\u53EF\u4EE5\u5546\u7528\uFF1B\u6539\u4E86\u7684\u8981\u7528\u540C\u6837\u7684\u8BB8\u53EF": { en: "Can be changed and used commercially with credit; changes must use the same license" },
+  "\u6CE8\u660E\u51FA\u5904\u968F\u4FBF\u7528": { en: "Free to use with credit" },
+  "\u653E\u5F03\u6743\u5229\uFF0C\u8C01\u90FD\u80FD\u968F\u4FBF\u7528\uFF08\u53D1\u51FA\u53BB\u6536\u4E0D\u56DE\uFF09": { en: "Rights waived, anyone can use it freely (can't be taken back once published)" },
+  "\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16 / \u5F53\u7D20\u6750\u518D\u7528\uFF0C\u53EF\u91CC\u9762\u6709\u5C0F\u6708\u76F8\u7684\u58F0\u97F3\uFF0C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u4E0D\u8BB8\u8FD9\u6837\u516C\u5F00\uFF08\u8BBE\u7F6E\u91CC\u6709\u539F\u6587\u548C\u8BD1\u6587\uFF09\uFF0C\u6240\u4EE5\u5BFC\u51FA\u65F6\u8BB8\u53EF\u90A3\u4E00\u9879\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\uFF1B\u4F60\u5728\u8FD9\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\u3002": { en: "The license you chose lets others adapt or reuse this as material, but it contains Tsukuyomi-chan's voice, and her terms don't allow that publicly (original and translation are in Settings), so exports write the license as \u201Cnot stated\u201D; your choice here is unchanged." },
+  "\u8BB8\u53EF\u8BC1\u4E0D\u660E": { en: "License unknown" },
+  "\uFF08\u6CA1\u6709\u7F72\u540D\u4FE1\u606F\uFF09": { en: "(no credit information)" },
+  "{ly} \u8BCD\u66F2": { en: "Lyrics & music: {ly}" },
+  "{ly} \u8BCD": { en: "Lyrics: {ly}" },
+  "{co} \u66F2": { en: "Music: {co}" },
+  "{a} \u7F16\u66F2": { en: "Arranged by {a}" },
+  "\u8FD9\u4EFD MusicXML \u662F timewise \u6392\u6CD5\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BFB partwise": { en: "This MusicXML is timewise; this version only reads partwise" },
+  "\u8FD9\u4E0D\u662F MusicXML \u4E50\u8C31\uFF08\u6839\u5143\u7D20\u662F <{name}>\uFF09": { en: "This isn't a MusicXML score (root element is <{name}>)" },
+  "\u8FD9\u4EFD MusicXML \u91CC\u6CA1\u6709\u58F0\u90E8": { en: "This MusicXML has no parts" },
+  "\u6F14\u594F\u6CD5\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF09": { en: "Articulation marks (not recognized by this version)" },
+  "\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09": { en: "Dynamic marks (not recognized by this version, such as sfz)" },
+  "\u88C5\u9970\u97F3": { en: "Grace notes" },
+  "\u63D0\u793A\u97F3\u7B26": { en: "Cue notes" },
+  "\u540C\u4E00\u58F0\u90E8\u91CC\u7684\u7B2C\u4E8C\u6761\u65CB\u5F8B": { en: "A second melody within one part" },
+  "\u53E0\u97F3\uFF08\u524D\u9762\u6CA1\u6709\u80FD\u53E0\u7684\u97F3\uFF09": { en: "Stacked notes (with nothing before to stack on)" },
+  "\u6CA1\u6709\u97F3\u9AD8\u7684\u97F3\uFF08\u6253\u51FB\u4E50\uFF09": { en: "Unpitched notes (percussion)" },
+  "\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD": { en: "Lyrics beyond the first verse" },
+  "\u548C\u5F26\u8BB0\u53F7": { en: "Chord symbols" },
+  "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09": { en: "Tsukuyomi-chan Corpus Terms of Use (derived model)" },
+  "\u5C0F\u6708\u76F8": { en: "Tsukuyomi-chan" },
+  "\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09": { en: "Tsukuyomi-chan (vowels)" },
+  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u5B9A\u7A3F\u7740\u4E0D\u80FD\u8FD9\u6837\u5B58\u3002\u5148\u300C\u6539\u7A3F\u300D\u518D\u6539\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002": { en: "This song is finalized but its content changed: it can't be saved like this while finalized. \u201CRevise\u201D first and then edit, or undo that change." },
+  "\u9EA6\u514B\u98CE {t}": { en: "Mic {t}" },
+  "\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 {REFERENCES_DIR} \u4E0B\uFF1A{path}": { en: "A reference window file isn't under {REFERENCES_DIR}: {path}" },
+  "\u9EA6\u514B\u98CE {x}": { en: "Mic {x}" },
+  "\u4E0A\u573A\u7684\u5019\u9009\u4E0D\u80FD\u5220\uFF0C\u5148\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D": { en: "The candidate on stage can't be deleted; change \u201CWho performs\u201D first" },
+  "\u8FD9\u4E2A\u6587\u4EF6\u89E3\u4E0D\u5F00\uFF08\u4E0D\u662F\u5B8C\u6574\u7684 .mxl\uFF1F\uFF09\uFF1A{Error}": { en: "This file can't be unpacked (not a complete .mxl?): {Error}" },
+  "\u8FD9\u4E2A\u538B\u7F29\u5305\u91CC\u6CA1\u6709 META-INF/container.xml\uFF0C\u4E0D\u662F .mxl": { en: "This archive has no META-INF/container.xml, so it's not an .mxl" },
+  "container.xml \u6307\u7684\u4E3B\u4E50\u8C31\u5728\u5305\u91CC\u627E\u4E0D\u5230": { en: "The main score named in container.xml isn't in the archive" },
+  "{p} \u8BFB\u4E0D\u61C2\uFF08\u6587\u4EF6\u574F\u4E86\uFF1F\uFF09": { en: "{p} can't be read (damaged file?)" },
+  "\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{what} \u7B2C {major} \u7248\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BA4\u5230\u7B2C {p} \u7248\uFF09\uFF0C\u6253\u5F00\u518D\u5B58\u4F1A\u4E22\u4E1C\u897F\uFF0C\u6240\u4EE5\u6CA1\u6709\u6253\u5F00\u3002\u8BF7\u5148\u66F4\u65B0 app\u3002": { en: "This song was saved by a newer MoonSinger ({what} version {major}, this version knows up to {p}); opening and saving would lose data, so it wasn't opened. Please update the app first." },
+  "\u603B\u76EE\u5F55": { en: "The manifest" },
+  "\u8C31\u7684\u6269\u5C55": { en: "The score extension" },
+  "\u4F11\u606F\u5BA4\u300C{name}\u300D": { en: "Green room \u201C{name}\u201D" },
+  "\u5F55\u97F3\u623F": { en: "The studio" },
+  "\u8FD9\u9996\u6B4C\u7684\u5B9A\u7A3F\u8BB0\u5F55\u8BFB\u4E0D\u61C2\uFF08\u522B\u7684\u7248\u672C\u5199\u7684\uFF1F\uFF09\uFF1A\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002": { en: "This song's final record can't be read (from another version?): opened as not finalized." },
+  "\u5B9A\u7A3F\u7684 mp3 \u4E0D\u5728\u6B4C\u91CC\u6216\u5927\u5C0F\u4E0D\u5BF9\uFF08\u8BB0\u5F55 {bytes} \u5B57\u8282\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002": { en: "The final mp3 is missing or the wrong size (record says {bytes} bytes): final discarded, opened as not finalized." },
+  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u540E\u88AB\u6539\u8FC7\uFF08\u53EF\u80FD\u662F\u65E7\u7248 app \u6216\u522B\u7684\u8F6F\u4EF6\u6539\u7684\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u90A3\u4EFD mp3 \u4E0D\u7B97\u6570\u4E86\u3002\u8981\u7684\u8BDD\u6539\u5B8C\u518D\u5B9A\u7A3F\u4E00\u6B21\u3002": { en: "This song was changed after finalizing (perhaps by an old app version or other software): final discarded, that mp3 no longer counts. Finalize again after editing if you want." },
+  "\u7EB8\u300C{id}\u300D\u7684\u8C31\uFF08{file}\uFF09\u5728\u5305\u91CC\u627E\u4E0D\u5230": { en: "Score of sheet \u201C{id}\u201D ({file}) isn't in the archive" },
+  "\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u90A3\u4E9B\u4E1C\u897F\u4FDD\u5B58\u65F6\u4E0D\u4F1A\u4E22\uFF0C\u53EA\u662F\u5728\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\u3002": { en: "This song was saved by a newer MoonSinger ({p} has things this version doesn't): you can still open, edit and save it, and those things aren't lost on save, they're just not visible in this version." },
+  "\u58F0\u90E8\u300C{name}\u300D\u548C\u522B\u7684\u58F0\u90E8\u5171\u7528\u4E00\u4F4D\u6B4C\u624B\uFF1B\u4E00\u4E2A\u58F0\u90E8\u5C31\u662F\u4E00\u4F4D\u6B4C\u624B\uFF0C\u6240\u4EE5\u62C6\u6210\u4E86\u4E24\u4F4D\uFF08\u8C01\u6765\u6F14\u3001\u600E\u4E48\u6F14\u90FD\u7167\u6284\uFF09\u3002": { en: "Part \u201C{name}\u201D shares a performer with another part; one part is one performer, so it was split in two (who performs it and how are copied)." },
+  "\u8FD9\u4EFD\u8C31\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u4E0D\u652F\u6301\u7684\u4E1C\u897F\uFF0C\u6CA1\u6709\u8BFB\u8FDB\u6765\uFF1A{k}\u3002\u5B58\u7684\u65F6\u5019\u5B83\u4EEC\u4E0D\u4F1A\u5728\u65B0\u6587\u4EF6\u91CC\u2014\u2014\u8981\u7559\u539F\u6837\uFF0C\u8BF7\u300C\u53E6\u5B58\u4E3A\u300D\u65B0\u6587\u4EF6\u3002": { en: "This score has things this version doesn't support, which weren't read: {k}. They won't be in a new file when saving \u2014 to keep them, save as a new file." },
+  "{k} {n} \u5904": { en: "{k} at {n} places" },
+  "\u539F\u6765\u7684\u4E50\u5668": { en: "The original instrument" },
+  "\u58F0\u90E8\u300C{name}\u300D\u539F\u6765\u662F{was}{gm}\uFF1B\u8FD9\u4E00\u7248\u6CA1\u6709\u8FD9\u4EF6\u4E50\u5668\uFF0C\u6240\u4EE5\u8FD8\u6CA1\u4EBA\u4E0A\u573A\u3002\u8981\u5C0F\u6708\u76F8\u6765\u5531\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u300C{name2}\u300D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u9009\u5C0F\u6708\u76F8\u3002": { en: "Part \u201C{name}\u201D used to be {was}{gm}; this version doesn't have that instrument, so nobody is on stage yet. To have Tsukuyomi-chan sing it, tap \u201C{name2}\u201D at the front of the score and choose her under \u201CWho performs\u201D." },
+  "\uFF08GM {gm} \u53F7\uFF09": { en: " (GM {gm})" },
+  "\u300C{name}\u300D\u7684\u58F0\u97F3\uFF08{path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u4E00\u8D77\u5E26\u6765\uFF0C\u6240\u4EE5\u6CA1\u4EBA\u4E0A\u573A\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C{name2}\u300D\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D\u3002": { en: "The sound of \u201C{name}\u201D ({path}) didn't come with this song, so nobody is on stage. Tap \u201C{name2}\u201D at the front of the score to change \u201CWho performs\u201D." },
+  "XML \u8BFB\u4E0D\u61C2\uFF08\u7B2C {i} \u884C\uFF09\uFF1A{what}": { en: "Can't read the XML (line {i}): {what}" },
+  "\u6CE8\u91CA\u6CA1\u6536\u5C3E": { en: "Unterminated comment" },
+  "CDATA \u6CA1\u6536\u5C3E": { en: "Unterminated CDATA" },
+  "\u5904\u7406\u6307\u4EE4\u6CA1\u6536\u5C3E": { en: "Unterminated processing instruction" },
+  "\u7ED3\u675F\u6807\u7B7E\u6CA1\u6536\u5C3E": { en: "Unterminated end tag" },
+  "\u7ED3\u675F\u6807\u7B7E </{name}> \u5BF9\u4E0D\u4E0A <{top}>": { en: "End tag </{name}> doesn't match <{top}>" },
+  "\u6807\u7B7E\u540D": { en: "Tag name" },
+  "<{name}> \u91CC\u6709\u8BFB\u4E0D\u61C2\u7684\u4E1C\u897F": { en: "Something unreadable inside <{name}>" },
+  "<{name}> \u6CA1\u6709\u7ED3\u675F": { en: "<{name}> has no end" },
+  "\u6CA1\u6709\u6839\u5143\u7D20": { en: "No root element" },
+  "\u8FD8\u6CA1\u6709\u6B4C\u3002\u70B9\u300C\u65B0\u5EFA\u300D\u5199\u4E00\u9996\uFF0C\u6216\u628A .mxl \u62D6\u8FDB\u6765\u3002": { en: "No songs yet. Tap \u201CNew\u201D to write one, or drag in an .mxl." },
+  "\u8FD9\u4E2A\u5939\u91CC\u8FD8\u6CA1\u6709\u6B4C\u3002": { en: "No songs in this folder yet." },
+  "\u56DE\u6536\u7AD9\u662F\u7A7A\u7684\u3002": { en: "The trash is empty." },
+  "\u6253\u5F00\u4E2D": { en: "Open now" },
+  "\u6B4C\u5E93": { en: "Library" },
+  "\u4E91\u7AEF\uFF1A\u767B\u5F55 / \u9000\u51FA": { en: "Cloud: sign in / out" },
+  "\u5373\u5174\uFF1A\u6311\u4E50\u5668\u3001\u7528\u952E\u76D8\u5F39\u7740\u73A9\uFF08\u4E0D\u5199\u8FDB\u54EA\u9996\u6B4C\uFF09": { en: "Jam: pick an instrument and play on the keys for fun (not written into any song)" },
+  "\u5373\u5174": { en: "Jam" },
+  "\u65B0\u5EFA\uFF1A\u4E00\u9996\u6B4C / \u4E00\u4E2A\u6587\u4EF6\u5939": { en: "New: a song / a folder" },
+  "\u56DE\u6536\u7AD9\u548C\u5907\u4EFD\u7BB1": { en: "Trash and backups" },
+  "\u56DE\u5230\u6B4C": { en: "Back to the song" },
+  "\u56DE\u6536\u7AD9": { en: "Trash" },
+  "\u5907\u4EFD\u7BB1": { en: "Backups" },
+  "\u6539\u4E8E {lastModified}": { en: "Changed {lastModified}" },
+  "\u6682\u505C\uFF08\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u4E5F\u80FD\u63A7\uFF09": { en: "Pause (also on the bottom player bar)" },
+  "\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C {rev} \u7248\uFF0C{p} \u79D2\uFF09": { en: "Listen to the final mp3 (version {rev}, {p} s)" },
+  "\u4ECE\u5934\u653E\uFF08\u9501\u5C4F / \u8033\u673A\u7684\u300C\u4E0A\u4E00\u9996\u300D\u4E5F\u662F\uFF09": { en: "From the top (\u201Cprevious track\u201D on the lock screen / headphones too)" },
+  "\u653E / \u6682\u505C": { en: "Play / pause" },
+  "\u505C": { en: "Stop" },
+  "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5F00\u7740\uFF08\u653E\u5B8C\u4ECE\u5934\u518D\u653E\uFF0C\u9501\u5C4F\u4E5F\u4E00\u6837\uFF09": { en: "Loop song: on (restarts at the end, on the lock screen too)" },
+  "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5173\u7740\uFF08\u653E\u5B8C\u5C31\u505C\uFF09": { en: "Loop song: off (stops at the end)" },
+  "\u8FD9\u9996\u8FD8\u6CA1\u5B9A\u7A3F\uFF1A\u6253\u5F00\u5B83\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u5B9A\u7A3F\u2026\u300D\u2014\u2014\u5B9A\u7A3F\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002": { en: "This song isn't finalized yet: open it and choose \u201CFinalize\u2026\u201D in the \u2630 menu \u2014 then it's playable right on the cover." },
+  "\u53D6\u300C{stem}\u300D\u7684 mp3\u2026": { en: "Fetching the mp3 of \u201C{stem}\u201D\u2026" },
+  "mp3 \u6CA1\u53D6\u5230\uFF08{blob}\uFF09": { en: "Couldn't get the mp3 ({blob})" },
+  "\u7A7A": { en: "empty" },
+  "{stem} \xB7 \u5B9A\u7A3F {rev}": { en: "{stem} \xB7 Final {rev}" },
+  "\u5B9A\u7A3F \u7B2C {rev} \u7248": { en: "Final version {rev}" },
+  "\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6": { en: "Couldn't start playing by itself: tap \u25B6 on the bottom player bar" },
+  "\u6B4C\u5E93\u8FD8\u6CA1\u63A5\u4E0A\uFF0C\u5EFA\u4E0D\u4E86\u6587\u4EF6\u5939": { en: "The library isn't connected yet, so folders can't be created" },
+  "\u65B0\u5EFA\u6587\u4EF6\u5939": { en: "New folder" },
+  "\u65B0\u6587\u4EF6\u5939": { en: "New folder" },
+  "\u6587\u4EF6\u5939\u540D": { en: "Folder name" },
+  "\u6587\u4EF6\u5939\u540D\u4E0D\u80FD\u7A7A\u7740": { en: "Folder name can't be empty" },
+  '\u6587\u4EF6\u5939\u540D\u91CC\u4E0D\u80FD\u6709 / \\ : * ? " < > |\uFF0C\u4E5F\u4E0D\u80FD\u7528\u70B9\u6216\u7A7A\u683C\u5F00\u5934 / \u7ED3\u5C3E\uFF08OneDrive \u4E0D\u6536\uFF09': { en: `Folder names can't contain / \\ : * ? " < > |, or start / end with a dot or space (OneDrive rejects them)` },
+  "\u65B0\u5EFA\u6587\u4EF6\u5939\u300C{n}\u300D\u2026": { en: "Creating folder \u201C{n}\u201D\u2026" },
+  "\u300C{n}\u300D\u8FD9\u4E2A\u540D\u5B57\u5DF2\u7ECF\u6709\u4E86\uFF08\u540C\u540D\u7684\u6B4C\u6216\u6587\u4EF6\u5939\uFF09": { en: "\u201C{n}\u201D already exists (a song or folder with that name)" },
+  "\u5EFA\u597D\u4E86\u6587\u4EF6\u5939\u300C{n}\u300D": { en: "Created folder \u201C{n}\u201D" },
+  "\u65B0\u5EFA\u6587\u4EF6\u5939\u6CA1\u6210\u529F\uFF1A{Error}": { en: "Couldn't create folder: {Error}" },
+  "\u65B0\u5EFA\u6B4C": { en: "New song" },
+  "\u5728\u73B0\u5728\u8FD9\u4E2A\u5939\u91CC": { en: "In this folder" },
+  "\u65B0\u5EFA\u6587\u4EF6\u5939\u2026": { en: "New folder\u2026" },
+  "\u6B4C\u5E93\u5728\u6587\u4EF6\u5939\u300C{folder}\u300D": { en: "Library is in folder \u201C{folder}\u201D" },
+  "\u4E91\u7AEF\uFF1A\u5DF2\u767B\u5F55{p}": { en: "Cloud: signed in{p}" },
+  "\u4E91\u7AEF\uFF1A\u6CA1\u767B\u5F55\uFF08\u6B4C\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09": { en: "Cloud: not signed in (songs only on this device)" },
+  "{file} \u548C app \u5185\u5D4C\u7684\u4E0D\u4E00\u6837\uFF08\u88AB\u6539\u8FC7\uFF1F\uFF09": { en: "{file} differs from the copy built into the app (modified?)" },
+  "\u9F13\u4EF6 {note}": { en: "Drum piece {note}" },
+  "{zh}\u7684\u5E38\u7528\u97F3\u57DF{basis}": { en: "Common range of {zh}{basis}" },
+  "\uFF08\u4F9D\u636E\uFF1A{basis}\uFF09": { en: " (basis: {basis})" },
+  "\u539F\u901F\u952E\uFF1A\u6309\u8FD9\u4E2A\u952E\uFF0C\u91C7\u6837\u4E0D\u62C9\u4F38\u4E0D\u538B\u7F29{recommendedBasis}": { en: "Original-speed key: press this key and the sample isn't stretched or compressed{recommendedBasis}" },
+  "\u8C31\u4E0A\u5199\u7684\u5C31\u662F\u5B9E\u9645\u97F3\u9AD8\uFF08MoonSinger \u4E0D\u6309\u4E50\u5668\u79FB\u8C03\uFF09\uFF0C\u53D1\u7ED9\u97F3\u6E90\u7684\u4E5F\u662F\u8FD9\u4E2A\u97F3\u3002": { en: "What's written is the actual pitch (MoonSinger doesn't transpose by instrument), and that's what's sent to the sound source." },
+  "\u8FD9\u4EF6\u4E50\u5668\u7684\u8C31\u4E60\u60EF\u5199{p} {octave} \u4E2A\u516B\u5EA6\uFF08\u5B9E\u9645{p2}\uFF09\uFF1B\u60F3\u8981\u8C31\u9762\u597D\u8BFB\uFF0C\u7528\u8C31\u53F7\uFF08\u8FD9\u4EF6\u4E50\u5668\u6309\u5B9E\u9645\u97F3\u9AD8\u65F6\u5E38\u7528\u300C{concertClef}\u300D\uFF0C\u8C31\u53F7\u300C\u81EA\u52A8\u300D\u4E5F\u4F1A\u6311\uFF09\u6216 8va \u7EBF\uFF0C\u51FA\u58F0\u4E0D\u53D8\u3002": { en: "This instrument is customarily written {p} {octave} octaves (sounding {p2}); for an easier-to-read score, use a clef (at concert pitch it commonly uses \u201C{concertClef}\u201D, which \u201CAuto\u201D also picks) or an 8va line; the sound doesn't change." },
+  "\u4F4E": { en: "lower" },
+  "\u9AD8": { en: "higher" },
+  "GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u5224\u4E0D\u51C6\u2014\u2014\u6BCF\u4E2A\u952E\u6700\u5F3A\u7684\u90A3\u4E2A\u5206\u97F3\u6BD4\u952E\u540D\u9AD8 {measured} \u534A\u97F3\uFF0C\u542C\u8D77\u6765\u591A\u534A\u8DDF\u7740\u5B83\u3002": { en: "Measured on this GS sound: unclear \u2014 the strongest partial of each key is {measured} semitones above the key name, and it likely sounds like that." },
+  "GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u6309\u54EA\u4E2A\u952E\uFF0C\u8033\u6735\u542C\u5230\u7684\u5C31\u662F\u90A3\u4E2A\u97F3\u3002": { en: "Measured on this GS sound: whichever key you press is the note you hear." },
+  "GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u6700\u5F3A\u7684\u5206\u97F3\u6BD4\u952E\u540D\u9AD8 {measured} \u534A\u97F3\uFF08{measuredOctave} \u4E2A\u516B\u5EA6\uFF09\uFF0C\u4F46\u8033\u6735\u542C\u5230\u7684\u97F3\u540D\u8FD8\u662F\u952E\u540D\uFF08\u949F\u7684\u6253\u51FB\u97F3\uFF09\u2014\u2014\u542C\u7740\u89C9\u5F97\u9AD8\u4E86\u662F\u8FD9\u4E2A\u539F\u56E0\u3002": { en: "Measured on this GS sound: the strongest partial is {measured} semitones above the key name ({measuredOctave} octaves), but the perceived note is still the key name (a bell's strike tone) \u2014 that's why it can sound high." },
+  "GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u8033\u6735\u542C\u5230\u7684\u6BD4\u952E\u540D{p} {perceived} \u534A\u97F3\u3002": { en: "Measured on this GS sound: it sounds {p} than the key name by {perceived} semitones." },
+  "\u6309\u5E74\u4EE3": { en: "By era" },
+  "\u6309\u66F2\u98CE": { en: "By genre" },
+  "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09": { en: "By family (GM order)" },
+  "\u6309\u53D1\u58F0\u65B9\u5F0F": { en: "By sound source" },
+  "\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09": { en: "Idiophones (struck itself)" },
+  "\u819C\u9E23\uFF08\u6572\u76AE\uFF09": { en: "Membranophones (struck skin)" },
+  "\u5F26\u9E23\uFF08\u5F26\uFF09": { en: "Chordophones (strings)" },
+  "\u6C14\u9E23\uFF08\u6C14\uFF09": { en: "Aerophones (air)" },
+  "\u7535\u9E23\uFF08\u7535\uFF09": { en: "Electrophones (electric)" },
+  "\u4EBA\u58F0": { en: "Voice" },
+  "\u97F3\u6548": { en: "Sound effects" },
+  "\uFF08{from} \u8D77\uFF09": { en: " (from {from})" },
+  "\u5E74\u4EE3\u4E0D\u8BE6": { en: "Era unknown" },
+  "\u5206\u7C7B\u4E0D\u8BE6": { en: "Family unknown" },
+  "\u6CA1\u8D34\u98CE\u683C": { en: "No style tag" },
+  "\u516C\u5143\u524D {y}": { en: "{y} BC" },
+  "\u5B9A\u7A3F\u4E86\uFF1A\u6DF7\u97F3\u9501\u7740\uFF08\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF09": { en: "Finalized: the mix is locked (\u201CRevise\u201D in the \u2630 menu unlocks it)" },
+  "\u5B9A\u7A3F\u4E86\uFF1A\u9501\u7740\uFF08\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF09": { en: "Finalized: locked (\u201CRevise\u201D in the \u2630 menu unlocks it)" },
+  "\u5199\u97F3": { en: "Write notes" },
+  "1\u20137\uFF08\u5C0F\u952E\u76D8\u4E5F\u884C\uFF09": { en: "1\u20137 (numpad too)" },
+  "\u5199\u4E00\u4E2A\u97F3\uFF1A\u8C03\u91CC\u7B2C\u51E0\u7EA7\uFF0C\u843D\u5728\u79BB\u4E0A\u4E00\u4E2A\u97F3\u6700\u8FD1\u5904": { en: "Write a note: this scale degree, nearest the previous note" },
+  "\u628A\u9009\u4E2D\u7684\u7B2C\u4E00\u4E2A\u97F3\u6539\u6210\u8FD9\u4E00\u7EA7\uFF0C\u9009\u4E2D\u8DF3\u5230\u4E0B\u4E00\u4E2A\u97F3": { en: "Change the first selected note to this degree, and move the selection to the next note" },
+  "\u53EA\u5531\u4E0D\u5199": { en: "Sound only, don't write" },
+  "\u53E0\uFF1A\u8FD9\u4E00\u7EA7\u53E0\u5230\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u4E0A\uFF08\u548C\u5F26\uFF0C\u843D\u5728\u79BB\u5B83\u73B0\u6709\u7684\u97F3\u6700\u8FD1\u5904\uFF1B\u5DF2\u7ECF\u6709 = \u53BB\u6389\uFF09\u3002\u540C pad\u300C\u53E0\u300D": { en: "Stack: add this degree to the note before the cursor (a chord, placed nearest its existing notes; already there = removed). Same as the pad's stack key" },
+  "\u53E0\u5230\u521A\u5199\u7684\u90A3\u4E2A / \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\u4E0A": { en: "Stack on the note just written / the selection's first note" },
+  "\u540C\u4E0A\uFF0C\u5F80\u4E0B\u627E\uFF08\u6570\u5B57\u6B63\u4E0B\u65B9\u90A3\u4E00\u6392\uFF09": { en: "Same, searching downward (the row right below the digits)" },
+  "\u540C\u4E0A\uFF0C\u5F80\u4E0B\u627E": { en: "Same, searching downward" },
+  "\u53EA\u5531\u4E0D\u5199\uFF08\u5F80\u4E0B\u627E\uFF09": { en: "Sound only, don't write (searching downward)" },
+  "\u4F11\u6B62": { en: "Rest" },
+  "\u9009\u533A\u91CC\u5199\u4E00\u4E2A\u4F11\u6B62\uFF08\u66FF\u6362\u6A21\u5F0F\uFF1A\u6309\u957F\u77ED\u6863\u5403\u6389\u9009\u533A\u91CC\u7684\u97F3\uFF0C\u4E0D\u5199\u51FA\u9009\u533A\uFF09": { en: "Write a rest in the selection (replace mode: eats selected notes at the current length, never past the selection)" },
+  "\u5C0F\u8282\u7EBF": { en: "Barline" },
+  "\u5728\u9009\u4E2D\u540E\u9762\u63D2\u5C0F\u8282\u7EBF": { en: "Insert a barline after the selection" },
+  "\u53E5\u53F7\uFF08\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF1A\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u6CA1\u6709\u8BED\u4E49\uFF1A\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\uFF09": { en: "Phrase end (this phrase ends here: a boundary for \u201CJoin\u201D; no meaning otherwise: no breath, no line break, not a barline)" },
+  "\u5728\u9009\u4E2D\u540E\u9762\u63D2\u53E5\u53F7": { en: "Insert a phrase end after the selection" },
+  "\u77ED\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u51CF\u534A\uFF08\u5230\u4E09\u5341\u4E8C\u5206\u4E3A\u6B62\uFF09": { en: "Shorter: halve the next note's length (down to a thirty-second)" },
+  "\u77ED\uFF1A\u63A5\u4E0B\u6765\u5199\u7684\u51CF\u534A\uFF08\u9009\u533A\u91CC\u5199 = \u6309\u8FD9\u4E00\u6863\u66FF\u6362\uFF1B\u6574\u7EC4\u6539\u65F6\u503C\u8D70\u9009\u533A\u83DC\u5355\uFF09": { en: "Shorter: halve what's written next (in a selection = replaces at this length; to change a whole group, use the selection menu)" },
+  "\u957F\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u52A0\u500D\uFF08\u5230\u5168\u97F3\u7B26\u4E3A\u6B62\uFF09": { en: "Longer: double the next note's length (up to a whole note)" },
+  "\u957F\uFF1A\u63A5\u4E0B\u6765\u5199\u7684\u52A0\u500D\uFF08\u9009\u533A\u91CC\u5199 = \u6309\u8FD9\u4E00\u6863\u66FF\u6362\uFF1B\u6574\u7EC4\u6539\u65F6\u503C\u8D70\u9009\u533A\u83DC\u5355\uFF09": { en: "Longer: double what's written next (in a selection = replaces at this length; to change a whole group, use the selection menu)" },
+  "\u4E09\u8FDE\u97F3\u5F00 / \u5173\uFF08\u4E0B\u4E00\u4E2A\u97F3\u8D77\uFF09": { en: "Triplets on / off (from the next note)" },
+  "\u521A\u5199\u7684\u97F3\u52A0\u4E00\u4EFD\uFF08\u7B80\u8C31\u7684\u6A2A\u7EBF\uFF09\uFF1B\u9694\u7740\u5C0F\u8282\u7EBF = \u65B0\u5F00\u4E00\u4E2A\u8FDE\u7740\u7684\u540C\u97F3": { en: "Add one unit to the note just written (the jianpu dash); across a barline = starts a tied note of the same pitch" },
+  "\u9009\u4E2D\u7684\u97F3\u5404\u52A0\u4E00\u4EFD": { en: "Add one unit to each selected note" },
+  "\u97F3\u9AD8": { en: "Pitch" },
+  "\u266F\uFF1A\u70B9\u4E00\u4E0B\u7BA1\u4E0B\u4E00\u4E2A\u97F3\uFF0C\u8FDE\u70B9\u4E24\u4E0B\u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00": { en: "\u266F: tap = next note, double-tap = lock, tap again = unlock" },
+  "\u9009\u4E2D\u7684\u97F3\u5347\u534A\u97F3": { en: "Raise selected notes a semitone" },
+  "\u266D\uFF1A\u540C\u4E0A": { en: "\u266D: same" },
+  "\u9009\u4E2D\u7684\u97F3\u964D\u534A\u97F3": { en: "Lower selected notes a semitone" },
+  "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u9AD8\u516B\u5EA6": { en: "Note before the cursor up an octave" },
+  "\u9009\u4E2D\u7684\u97F3\u9AD8\u516B\u5EA6": { en: "Selected notes up an octave" },
+  "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u4F4E\u516B\u5EA6": { en: "Note before the cursor down an octave" },
+  "\u9009\u4E2D\u7684\u97F3\u4F4E\u516B\u5EA6": { en: "Selected notes down an octave" },
+  "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u5F80\u4E0A\u4E00\u7EA7": { en: "Note before the cursor up a scale step" },
+  "\u9009\u4E2D\u7684\u97F3\u5F80\u4E0A\u4E00\u7EA7": { en: "Selected notes up a scale step" },
+  "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u5F80\u4E0B\u4E00\u7EA7": { en: "Note before the cursor down a scale step" },
+  "\u9009\u4E2D\u7684\u97F3\u5F80\u4E0B\u4E00\u7EA7": { en: "Selected notes down a scale step" },
+  "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u5347\u534A\u97F3\uFF08\u6309\u8C03\u62FC\u5199\uFF1AC \u5927\u8C03 E \u2192 F\uFF09": { en: "Note before the cursor up a semitone (spelled by key: in C major, E \u2192 F)" },
+  "\u9009\u4E2D\u7684\u97F3\u6574\u4F53\u5347\u534A\u97F3\uFF08\u6309\u8C03\u62FC\u5199\uFF09": { en: "Selected notes up a semitone (spelled by key)" },
+  "\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u964D\u534A\u97F3\uFF08\u6309\u8C03\u62FC\u5199\uFF09": { en: "Note before the cursor down a semitone (spelled by key)" },
+  "\u9009\u4E2D\u7684\u97F3\u6574\u4F53\u964D\u534A\u97F3\uFF08\u6309\u8C03\u62FC\u5199\uFF09": { en: "Selected notes down a semitone (spelled by key)" },
+  "\u5149\u6807\u4E0E\u9009\u4E2D": { en: "Cursor and selection" },
+  "\u5149\u6807\u5DE6\u79FB": { en: "Cursor left" },
+  "\u6536\u6210\u9009\u4E2D\u5DE6\u8FB9\u7684\u5149\u6807\uFF08\u56DE\u5230\u5199\uFF09": { en: "Collapse to a cursor left of the selection (back to writing)" },
+  "\u5149\u6807\u53F3\u79FB": { en: "Cursor right" },
+  "\u6536\u6210\u9009\u4E2D\u53F3\u8FB9\u7684\u5149\u6807\uFF08\u56DE\u5230\u5199\uFF09": { en: "Collapse to a cursor right of the selection (back to writing)" },
+  "\u9009\u4E2D\u5149\u6807\u524D\u90A3\u4E2A\uFF08\u5199 \u2192 \u6539\uFF09": { en: "Select the item before the cursor (write \u2192 edit)" },
+  "\u9009\u4E2D\u5F80\u5DE6\u6269\u4E00\u4E2A": { en: "Extend selection left by one" },
+  "\u9009\u4E2D\u5149\u6807\u540E\u90A3\u4E2A\uFF08\u5199 \u2192 \u6539\uFF09": { en: "Select the item after the cursor (write \u2192 edit)" },
+  "\u9009\u4E2D\u5F80\u53F3\u6269\u4E00\u4E2A": { en: "Extend selection right by one" },
+  "\u4ECE\u5149\u6807\u9009\u5230\u5F00\u5934\uFF08\u5199 \u2192 \u6539\uFF09": { en: "Select from the cursor to the start (write \u2192 edit)" },
+  "\u9009\u5230\u5F00\u5934": { en: "Select to the start" },
+  "\u4ECE\u5149\u6807\u9009\u5230\u672B\u5C3E\uFF08Home \u518D Shift+End = \u5168\u9009\uFF09": { en: "Select from the cursor to the end (Home, then Shift+End = select all)" },
+  "\u9009\u5230\u672B\u5C3E": { en: "Select to the end" },
+  "\u5149\u6807\u5230\u5F00\u5934": { en: "Cursor to the start" },
+  "\u5149\u6807\u5230\u672B\u5C3E": { en: "Cursor to the end" },
+  "\u6536\u8D77\uFF0C\u4E0D\u8D34\u6846\u91CC\u7684\u5B57": { en: "Close without pasting the box's text" },
+  "\u6536\u8D77\uFF0C\u4E0D\u6539\uFF08\u521A\u63D2\u7684\u8BB0\u53F7 = \u64A4\u6389\uFF09": { en: "Close without changing (a mark just inserted = removed)" },
+  "\u5173\u6389\u9762\u677F": { en: "Close the panel" },
+  "\u64A4\u56DE\u672C\u6B21\u8F93\u5165\u7684\u6700\u540E\u4E00\u7B14\uFF08\u300C\u2212\u300D\u3001\u97F3\uFF09\uFF1B\u632A\u8FC7\u5149\u6807\u540E = \u5220\u5149\u6807\u524D\u4E00\u4E2A": { en: "Take back the last stroke of this input (\u201C\u2212\u201D, a note); after moving the cursor = delete the item before it" },
+  "\u5220\u6389\u9009\u4E2D": { en: "Delete the selection" },
+  "\u6846\u662F\u7A7A\u7684\uFF1A\u56DE\u5230\u4E0A\u4E00\u4E2A\u97F3\uFF0C\u628A\u5B83\u7684\u5B57\u62FF\u51FA\u6765\u63A5\u7740\u5220": { en: "Empty box: back to the previous note, its text comes out to keep deleting" },
+  "\u5220\u5149\u6807\u540E\u4E00\u4E2A": { en: "Delete the item after the cursor" },
+  "\u5C0F\u6708\u76F8\u5531 / \u505C": { en: "Tsukuyomi-chan sing / stop" },
+  "\u300C\u5F39\u300D\u5F00 / \u5173\uFF08\u97F3\u7B26\u952E\u53EA\u5531\u4E0D\u5199\uFF09": { en: "\u201CJam\u201D on / off (note keys sound without writing)" },
+  "\u300C\u5F39\u300D\u5F00 / \u5173": { en: "\u201CJam\u201D on / off" },
+  "\u300C\u5F39\u300D\u5173": { en: "\u201CJam\u201D off" },
+  "\u6587\u4EF6": { en: "File" },
+  "\u5B58\uFF08\u5B58\u56DE\u6253\u5F00\u7684\u90A3\u4E2A\u6587\u4EF6\uFF1B\u8FD8\u6CA1\u6709\u5BB6 = \u95EE\u5B58\u5230\u54EA / iPad \u4E0B\u8F7D\uFF09": { en: "Save (back to the opened file; no home yet = asks where / downloads on iPad)" },
+  "\u5BFC\u51FA\u2026\uFF08\u6B4C\u58F0 mp3 / \u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF1B\u539F\u6765\u7684\u300C\u53E6\u5B58\u4E3A\u300D\u4F4F\u8FD9\u91CC\uFF09": { en: "Export\u2026 (vocals mp3 / an .mxl copy; what used to be \u201CSave as\u201D)" },
+  "\u6253\u5F00\u2026\uFF08.mxl / .musicxml\uFF09": { en: "Open\u2026 (.mxl / .musicxml)" },
+  "\u6253\u5F00\u2026": { en: "Open\u2026" },
+  "\u9009\u533A": { en: "Selection" },
+  "\u590D\u5236\u9009\u4E2D\uFF08app \u5185\u539F\u6837 + \u7CFB\u7EDF\u526A\u8D34\u677F\u4E00\u884C\u7B80\u8C31\uFF09": { en: "Copy selection (as is in the app + one line of jianpu on the system clipboard)" },
+  "\u526A\u5207\u9009\u4E2D": { en: "Cut selection" },
+  "\u8D34\u5728\u5149\u6807\u5904\uFF08app \u5185\u590D\u5236\u8FC7\u7684\uFF1B\u6CA1\u6709\u5C31\u8BD5\u7740\u8BFB\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF09": { en: "Paste at the cursor (copied in the app; otherwise tries jianpu text on the system clipboard)" },
+  "\u8D34 = \u66FF\u6362\u9009\u4E2D": { en: "Paste = replace selection" },
+  "\u5168\u9009\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u8FD9\u4E2A\u58F0\u90E8\uFF09": { en: "Select all (this part on this sheet)" },
+  "\u64A4\u9500\u4E0A\u4E00\u6B65\uFF08\u62D6 / \u8FDE\u6253\u6B4C\u8BCD\u7B97\u4E00\u6B65\uFF09": { en: "Undo the last step (a drag / a run of lyric typing counts as one)" },
+  "\u6B4C\u8BCD\u6846": { en: "Lyric box" },
+  "\u7A7A\u683C / Tab": { en: "Space / Tab" },
+  "\u8FD9\u4E2A\u8BCD\u5B8C\u4E86\uFF1A\u8D34\u4E0A\u3001\u8DF3\u4E0B\u4E00\u4E2A\u97F3\uFF08\u6846\u662F\u7A7A\u7684 = \u53EA\u8DF3\uFF09": { en: "This word is done: paste and jump to the next note (empty box = just jump)" },
+  "\u56DE\u4E0A\u4E00\u4E2A\u97F3": { en: "Back to the previous note" },
+  "\u8DDF\u5728\u5B57\u6BCD\u540E\u9762\uFF1A\u97F3\u8282\u5B8C\u4E86\u3001\u8BCD\u6CA1\u5B8C\uFF08\u8C31\u4E0A\u753B\u8FDE\u5B57\u7B26\uFF09\uFF0C\u8DF3\u4E0B\u4E00\u4E2A\u97F3": { en: "After a letter: syllable done, word not done (a hyphen on the score), jump to the next note" },
+  "\u8D34\u4E0A\u3001\u6536\u8D77": { en: "Paste and close" },
+  "\u8BB0\u53F7\u6846": { en: "Mark box" },
+  "\u6309\u6846\u91CC\u7684\u5B57\u6539\uFF081=D / Bb / 2# \xB7 3/4 \xB7 90 \u6216 Andante\uFF09\u3001\u6536\u8D77": { en: "Apply the box's text (1=D / Bb / 2# \xB7 3/4 \xB7 90 or Andante) and close" },
+  "\u7A7A\u683C": { en: "Space" },
+  "\u5C0F\u952E\u76D8 Enter": { en: "Numpad Enter" },
+  "\u9000\u683C": { en: "Backspace" },
+  "\u5C0F\u952E\u76D8 -": { en: "Numpad -" },
+  "\u5C0F\u952E\u76D8 *": { en: "Numpad *" },
+  "\u5C0F\u952E\u76D8 /": { en: "Numpad /" },
+  "\u9762\u677F\uFF08\u5BFC\u51FA\u597D\u4E86\uFF09": { en: "Panel (export done)" },
+  "\u6F14\u594F\u6CD5##\u9875\u7B7E": { en: "Artic." },
+  "\u529B\u5EA6##\u9875\u7B7E": { en: "Dyn." },
+  "\u8BB0\u53F7": { en: "Marks" },
+  "\u5F3A\u5EA6\uFF08\u5E7D\u7075\u97F3 / \u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\uFF09\u3001\u4FDD\u6301 / \u8DF3\u97F3 / \u8FDE\u7EBF / \u547C\u5438\uFF08\u9759\u9ED8 / \u8F7B\u5438 / \u6DF1\u5438\uFF09\u3001\u6C14\u58F0": { en: "Strength (ghost / unstressed / stress / accent / marcato / sfz / fp), tenuto / staccato / slur / breath (silent / soft / deep), whisper" },
+  "ppp\u2026fff\u3001\u6E10\u5F3A / \u6E10\u5F31\u3001\u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F": { en: "ppp\u2026fff, crescendo / diminuendo, ramp, swells" },
+  "\u53E5\u53F7\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u8C31\u53F7 / \u516B\u5EA6\u7EBF / \u901F\u5EA6\u3001\u98CE\u683C\uFF08\u62CD\u5B50\u8F7B\u91CD\uFF09": { en: "Phrase end, key / time / clef / ottava / tempo, style (beat weighting)" },
+  "\u4E09\u5341\u4E8C\u5206": { en: "Thirty-second" },
+  "\u5341\u516D\u5206": { en: "Sixteenth" },
+  "\u516B\u5206": { en: "Eighth" },
+  "\u56DB\u5206": { en: "Quarter" },
+  "\u4E8C\u5206": { en: "Half" },
+  "\u5168\u97F3\u7B26": { en: "Whole" },
+  "{n} \u8FDE\u97F3": { en: "{n}-tuplet" },
+  "\u5149\u6807\u5DE6\u79FB\uFF08{p}\uFF09": { en: "Cursor left ({p})" },
+  "\u5149\u6807\u53F3\u79FB\uFF08{p}\uFF09": { en: "Cursor right ({p})" },
+  "\u4F11\u6B62\uFF08{p}\uFF09": { en: "Rest ({p})" },
+  "\u5C0F\u8282\u7EBF\uFF08{p}\uFF09": { en: "Barline ({p})" },
+  "\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u5C0F\u6708\u76F8\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09": { en: "Breath: a breath after the note before the cursor (Tsukuyomi-chan breathes here; instruments separate slightly; it separates even under a slur; tap again to remove)" },
+  "\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}": { en: "Accidental (like Shift): tap = next note; double-tap = lock, tap again = unlock; hold while writing = while held. Slide up / down on the key to change \u{1D12A} / \u266F / \u266D / \u{1D12B}" },
+  "\u5347\u964D": { en: "Acc." },
+  "\u53E0\uFF08\u50CF Caps Lock\uFF09\uFF1A\u6309\u4E00\u4E0B = \u9009\u4E2D\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u6765\u6539\u2014\u2014\u6309\u97F3\u952E\u53E0\u4E0A / \u62FF\u6389\uFF08\u6700\u540E\u4E00\u4E2A\u62FF\u6389 = \u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF0C\u4F11\u6B62\u4E0A\u6309 = \u53D8\u56DE\u97F3\uFF09\u3001\u2014 \u957F\u4E00\u6B65\u3001\u232B \u77ED\u4E00\u6B65\u3001\u2190 \u2192 \u6362\u524D\u540E\u7684\u97F3\uFF1B\u518D\u6309\u4E00\u4E0B = \u56DE\u5230\u5B83\u540E\u9762\u63A5\u7740\u5199\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86": { en: "Stack (like Caps Lock): press = select the note before the cursor to edit it \u2014 note keys add / remove (removing the last = a rest of the same length; on a rest = back to a note), \u2014 one step longer, \u232B one step shorter, \u2190 \u2192 to neighbors; press again = back after it to keep writing. Monophonic parts can't stack" },
+  "\u53E0\u97F3": { en: "Stack" },
+  "\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199": { en: "Halve (one notch shorter): tap = next note; double-tap = lock, tap again = unlock; or hold while writing" },
+  "\u51CF\u534A": { en: "Halve" },
+  "\u62C9\u957F\u4E00\u4EFD\uFF08{p}\uFF09": { en: "Extend by one unit ({p})" },
+  "\u62C9\u957F": { en: "Extend" },
+  "\u9000\u683C\uFF08{p}\uFF09": { en: "Backspace ({p})" },
+  "\u8FD4\u56DE": { en: "Back" },
+  "\u81EA\u52A8\u5C0F\u8282\u7EBF": { en: "Auto barlines" },
+  "\u6309\u62CD\u53F7\u81EA\u52A8\u753B\u5C0F\u8282\u7EBF\uFF08\u53EA\u753B\u3001\u4E0D\u8FDB\u6570\u636E\uFF09\uFF1B\u624B\u63D2\u7684\u300C|\u300D= \u4ECE\u90A3\u91CC\u91CD\u65B0\u6570\uFF0C\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\u300C|\u300D": { en: "Draws barlines from the time signature (display only, not in the data); a hand-inserted \u201C|\u201D recounts from there; for a pickup, write its notes and press \u201C|\u201D" },
+  "\u6362\u8C31\u8868": { en: "Change staff" },
+  "\u5927\u8C31\u8868\uFF1A\u521A\u5199\u7684\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u632A\u5230\u53E6\u4E00\u5F20\u8C31\u8868\uFF1B\u518D\u6309\u4E00\u6B21\u56DE\u5230\u6309\u97F3\u9AD8\u81EA\u52A8\u5206": { en: "Grand staff: moves the note just written (or the selection) to the other staff; press again = back to auto by pitch" },
+  "\u5E03\u5C40\u2026": { en: "Layout\u2026" },
+  "\u51E0\u884C\u51E0\u5217\u3001\u9996\u8C03 / \u7EDD\u5BF9": { en: "Rows and columns, movable / fixed do" },
+  "\u6E10\u5230": { en: "Ramp" },
+  "\u6362\u56DE\u97F3\u952E\uFF08\u5199\u97F3 / \u4F11\u6B62 / \u5C0F\u8282\u7EBF\uFF09": { en: "Back to note keys (notes / rests / barlines)" },
+  "\u5F39\uFF1A\u97F3\u952E\u53EA\u54CD\u4E0D\u5199\uFF08\u5FEB\u6377\u952E `\uFF09\uFF1B\u518D\u70B9\u56DE\u5230\u5199": { en: "Jam: note keys sound without writing (shortcut `); tap again to return to writing" },
+  "\u5F39": { en: "Jam" },
+  "\u6536\u8D77\u952E\u76D8\uFF08\u70B9\u4E94\u7EBF\u8C31\u518D\u5F39\u51FA\u6765\uFF09": { en: "Hide the keys (tap the staff to bring them back)" },
+  "\u6536\u8D77": { en: "Hide" },
+  "\u66F4\u591A\uFF1A\u5E03\u5C40\u3001\u63D2\u8BB0\u53F7": { en: "More: layout, insert marks" },
+  "\u97F3\u57DF\uFF08\u8FD9\u5757 pad \u4ECE\u54EA\u4E2A\u97F3\u5230\u54EA\u4E2A\u97F3\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684": { en: "Range (the pad's lowest to highest note): hold and slide up / down, or tap to choose \u2014 like pushing a sheet of paper: pushing up shows lower notes" },
+  "\u957F\u77ED\u57FA\u7EBF\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u542B\u8FDE\u97F3\uFF09": { en: "Note length: hold and slide up / down, or tap to choose (tuplets included)" },
+  "1=\uFF08pad \u81EA\u5DF1\u7684\u8C03\uFF09\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\uFF08\u4E94\u5EA6\u5708\uFF09": { en: "1= (the pad's own key): hold and slide up / down, or tap to choose (circle of fifths)" },
+  "\u6362\u6210\u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF09\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u672C\u6765\u5C31\u4E00\u8D77\u6539\uFF0C\u8FD9\u91CC\u53EA\u6362\u952E\u76D8": { en: "Switch to the symbol grid (dynamics, hairpins, articulations, key / time / tempo, repeats, style, phrase end) \u2014 notes and marks are edited together on the score anyway; this only switches the keys" },
+  "\u5C11\u4E00{name}": { en: "One fewer {name}" },
+  "\u591A\u4E00{name}": { en: "One more {name}" },
+  "\u884C": { en: "Rows" },
+  "\u6309\u5C4F\u5E55\u9AD8\u5EA6\u81EA\u52A8\u5B9A\u51E0\u884C": { en: "Sets the row count from the screen height" },
+  "\u952E\u76D8\u51E0\u884C\uFF08\u9AD8\u5EA6\uFF09": { en: "Key rows (height)" },
+  "\u5217": { en: "Columns" },
+  "\u952E\u76D8\u51E0\u5217": { en: "Key columns" },
+  "\u952E\u4F4D": { en: "Key layout" },
+  "\u9996\u8C03": { en: "Movable do" },
+  "\u6BCF\u884C\u4ECE 1 \u8D77\uFF0C\u8DDF\u7740\u300C1=\u300D\u8D70": { en: "Each row starts at 1, following \u201C1=\u201D" },
+  "\u7EDD\u5BF9": { en: "Fixed" },
+  "\u6BCF\u884C\u4ECE C \u8D77\uFF08\u4E0D\u8DDF\u7740\u300C1=\u300D\u632A\uFF09": { en: "Each row starts at C (doesn't follow \u201C1=\u201D)" },
+  "\u6ED1": { en: "Slide" },
+  "\u6EDA\u952E\u76D8": { en: "Glide" },
+  "\u624B\u6307\u6309\u7740\u6ED1\u5230\u4E0B\u4E00\u4E2A\u952E = \u54CD\u4E0B\u4E00\u4E2A\uFF08\u5199\u7684\u65F6\u5019\u4E00\u8DEF\u5199\uFF09": { en: "Sliding your finger to the next key sounds that key (writes along the way while writing)" },
+  "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09": { en: "Sliding up / down on a note key bends just this note up / down (sticky)" },
+  "\u952E\u76D8\u5E03\u5C40": { en: "Keyboard layout" },
+  "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09": { en: " (the performer on stage ignores this: drawn gray on the score, sound unaffected)" },
+  "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09": { en: "Phrase end: this phrase ends here (only a boundary for \u201CJoin\u201D; no breath, no line break, not a barline, not in MusicXML)" },
+  "\u7436\u97F3": { en: "Arpeggio" },
+  "\u7436\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u548C\u5F26\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u594F\u51FA\uFF08\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u6CE2\u6D6A\u7EBF\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Arpeggio: rolls the chord before the cursor (or the selection) low to high (a wavy line left of the chord); tap again to remove" },
+  "\u8DF3\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u5F97\u77ED\u4FC3\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Staccato: the note before the cursor (or the selection) sung / played short; tap again to remove" },
+  "\u5E7D\u7075\u97F3\uFF08\u62EC\u53F7\u7B26\u5934\uFF09\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5F88\u8F7B\u3001\u51E0\u4E4E\u542C\u4E0D\u89C1\uFF1B\u97F3\u7684\u5F3A\u5EA6\u53EA\u6709\u4E00\u79CD\uFF1A\u548C\u5F31\u5316 / \u6B21\u91CD\u97F3 / \u91CD\u97F3 / \u5F3A\u97F3 / \u7A81\u5F3A / \u5F3A\u540E\u5373\u5F31\u4E92\u65A5": { en: "Ghost note (parenthesized notehead): the note before the cursor (or the selection) is very soft, almost inaudible; a note has one strength: excludes unstressed / stress / accent / marcato / sfz / fp" },
+  "\u5F31\u5316\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u8F7B\u4E00\u70B9\uFF1B\u548C\u522B\u7684\u5F3A\u5EA6\u4E92\u65A5": { en: "Unstressed: the note before the cursor (or the selection) a little lighter; excludes other strengths" },
+  "\u6B21\u91CD\u97F3\uFF1A\u6BD4\u91CD\u97F3\u8F7B\u7684\u91CD\u97F3\uFF08\u56DB\u62CD\u5B50\u300C\u5F3A\u5F31\u6B21\u5F3A\u5F31\u300D\u7684\u6B21\u5F3A\uFF09\uFF1B\u548C\u522B\u7684\u5F3A\u5EA6\u4E92\u65A5": { en: "Stress: lighter than an accent (the secondary beat in 4/4's strong-weak-medium-weak); excludes other strengths" },
+  "\u91CD\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u52A0\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Accent: the note before the cursor (or the selection) heavier; tap again to remove" },
+  "\u5F3A\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6BD4\u91CD\u97F3\u66F4\u91CD\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Marcato: the note before the cursor (or the selection) heavier than an accent; tap again to remove" },
+  "\u7A81\u5F3A": { en: "Sforzando" },
+  "\u7A81\u5F3A sfz\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u97F3\u5934\u731B\u5730\u51B2\u4E00\u4E0B\u518D\u843D\u56DE\u6765\uFF1B\u548C\u91CD\u97F3 / \u5F3A\u97F3 / fp \u4E92\u65A5": { en: "Sforzando sfz: the note before the cursor (or the selection) jolts at the attack and falls back; excludes accent / marcato / fp" },
+  "\u5F3A\u540E\u5373\u5F31": { en: "Forte-piano" },
+  "\u5F3A\u540E\u5373\u5F31 fp\uFF1A\u97F3\u5934 f\uFF0C\u9A6C\u4E0A\u843D\u5230 p\uFF0C\u4E4B\u540E\u7684\u97F3\u90FD\u662F p\uFF1B\u548C\u91CD\u97F3 / \u5F3A\u97F3 / sfz \u4E92\u65A5": { en: "Forte-piano fp: attacks at f, falls right to p, and later notes stay p; excludes accent / marcato / sfz" },
+  "\u4FDD\u6301\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u5531 / \u5F39\u6EE1\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Tenuto: the note before the cursor (or the selection) sung / played in full; tap again to remove" },
+  "\u6E10\u5F3A <\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F3A\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Crescendo <: from the note before the cursor (or the selection's first note), grows up to the next dynamic on this sheet; none = one step (the inferred endpoint shows in gray on the score); tap again to remove" },
+  "\u6E10\u5F31 >\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\uFF09\u8D77\uFF0C\u4E00\u8DEF\u6E10\u5F31\u5230\u8FD9\u5F20\u7EB8\u91CC\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u6CA1\u5199 = \u8D70\u4E00\u6863\uFF08\u8C31\u4E0A\u7070\u5B57\u6807\u51FA\u63A8\u5B9A\u7684\u7EC8\u70B9\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Diminuendo >: from the note before the cursor (or the selection's first note), falls to the next dynamic on this sheet; none = one step (the inferred endpoint shows in gray on the score); tap again to remove" },
+  "\u529B\u5EA6": { en: "Dynamics" },
+  "\u529B\u5EA6 {d}\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\uFF08\u6709\u9009\u533A = \u9009\u533A\u5F00\u5934\uFF09\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF1B\u90A3\u513F\u5DF2\u7ECF\u662F\u5B83 = \u53BB\u6389": { en: "Dynamic {d}: from the note before the cursor (or the selection's start) until the next dynamic; already that = removed" },
+  "\u6E10\u5230\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u529B\u5EA6\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u8FC7\u6765\uFF08\u8C31\u4E0A\u753B\u865A\u7EBF\u53D1\u5939\uFF1B\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u5B9E\u7EBF\uFF09\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u4E4B\u540E\u5199\u7684\u529B\u5EA6\u90FD\u662F\u6E10\u5230\uFF1B\u518D\u70B9 = \u5173\u3002\u4E0D\u5F00 = \u5230\u90A3\u513F\u7A81\u53D8": { en: "Ramp: tap = the next dynamic ramps from the previous one on this sheet (dashed hairpin on the score; handwritten hairpins are solid); double-tap = lock, every dynamic written is a ramp; tap again = off. Off = changes suddenly there" },
+  "\u97F3\u5185\u6E10\u5F3A": { en: "Swell up" },
+  "\u97F3\u5185\u9F13\u8D77": { en: "Swell" },
+  "{p}\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u81EA\u5DF1\u91CC\u9762\u7684\u8D77\u4F0F\uFF1B\u548C\u6BB5\u843D\u7684\u6E10\u5F3A\u6E10\u5F31\u662F\u4E24\u5C42\uFF0C\u53EF\u4EE5\u53E0\uFF1B\u518D\u70B9 = \u53BB\u6389": { en: "{p}: a swell inside the note before the cursor (or the selection); a separate layer from phrase hairpins, they can stack; tap again = remove" },
+  "\u97F3\u5185\u6E10\u5F31\uFF08\u952F\u9F7F\uFF09": { en: "Swell down (sawtooth)" },
+  "\u97F3\u5185\u9F13\u8D77\uFF08messa di voce\uFF09": { en: "Swell (messa di voce)" },
+  "\u8FDE\u7EBF\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8FDE\u5230\u4E0B\u4E00\u4E2A\u97F3\uFF08\u8FDE\u594F\u3001\u4E0D\u7559\u7F1D\uFF1B\u6709\u9009\u533A = \u9009\u4E2D\u7684\u8FDE\u8D77\u6765\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09\u3002\u540C\u4E00\u4E2A\u97F3\u4E0A\u53C8\u6709\u547C\u5438 = \u547C\u5438\u7B97\u6570\uFF1A\u90A3\u91CC\u7167\u6837\u65AD\u5F00\u6362\u6C14\uFF0C\u8FDE\u7EBF\u7167\u753B": { en: "Slur: connects the note before the cursor to the next (legato, no gap; with a selection = connects it; tap again to remove). A breath on the same note wins: it still separates and breathes there, and the slur is still drawn" },
+  "\u5438##\u8BB0\u53F7": { en: "in" },
+  "\u8F7B\u5438": { en: "Soft inhale" },
+  "\u51FA\u58F0\u7684\u6362\u6C14\uFF08\u8F7B\u5438\uFF09\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u6C14\u3001\u542C\u5F97\u89C1\u5438\u6C14\u58F0\uFF08\u6CA1\u6709\u547C\u5438\u8BB0\u53F7\u5C31\u8FDE\u9017\u53F7\u4E00\u8D77\u52A0\u4E0A\uFF1B\u518D\u70B9\u4E00\u6B21 = \u6574\u4E2A\u53BB\u6389\uFF09\u3002\u53EA\u6709\u70B9\u4E86\u7684\u5730\u65B9\u624D\u51FA\u58F0\uFF0C\u666E\u901A\u7684\u547C\u5438\u8BB0\u53F7\u7167\u65E7\u9759\u9ED8": { en: "Audible breath (soft): breathes after the note before the cursor with an audible inhale (adds the comma if there's no breath mark; tap again = removes it all). Only tapped spots make a sound; plain breath marks stay silent" },
+  "\u6DF1\u5438##\u8BB0\u53F7": { en: "deep in" },
+  "\u6DF1\u5438": { en: "Deep inhale" },
+  "\u51FA\u58F0\u7684\u6362\u6C14\uFF08\u6DF1\u5438\uFF09\uFF1A\u5927\u53E3\u5438\u6C14\u3001\u6362\u6C14\u7684\u7A7A\u5F53\u4E5F\u957F\u4E00\u70B9\uFF08\u4ECE\u524D\u4E00\u4E2A\u97F3\u672B\u5C3E\u501F\u65F6\u95F4\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21 = \u6574\u4E2A\u53BB\u6389": { en: "Audible breath (deep): a big inhale with a slightly longer gap (borrowed from the end of the previous note); tap again = removes it all" },
+  "\u6C14\u58F0": { en: "Whisper" },
+  "\u6C14\u58F0\uFF08\xD7 \u7B26\u5934\uFF09\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5531\u8FD9\u4E2A\u5B57\uFF08\u5FF5\u767D / \u8033\u8BED\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\u3002\u53EA\u6709\u5C0F\u6708\u76F8\u505A\u5F97\u5230\uFF0C\u4E50\u5668\u4E0A\u753B\u7070": { en: "Whisper (\xD7 notehead): the note before the cursor (or the selection) has no sung pitch, breathing this syllable (speech / whisper); tap again to remove. Only Tsukuyomi-chan can do it; grayed out on instruments" },
+  "\u63D2\u8C03\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF1B\u5148\u586B\u73B0\u5728\u7684\uFF0C\u63D2\u4E86\u518D\u6539\uFF09": { en: "Insert key signature (at the cursor; starts with the current one, edit after inserting)" },
+  "\u63D2\u62CD\u53F7\uFF08\u5728\u5149\u6807\u5904\uFF09": { en: "Insert time signature (at the cursor)" },
+  "\u901F\u5EA6##\u8C31": { en: "Tempo" },
+  "\u63D2\u901F\u5EA6\uFF08\u5728\u5149\u6807\u5904\uFF09": { en: "Insert tempo (at the cursor)" },
+  "\u8C31\u53F7\uFF1A\u4ECE\u5149\u6807\u5904\u8D77\u6362\u8C31\u53F7\uFF08\u9AD8\u97F3 / \u4F4E\u97F3 / \u4E0B\u52A0 8 / \u4E0A\u52A0 8 / \u4E0A\u52A0 15\uFF09\uFF1B\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002\u6BCF\u884C\u5F00\u5934\u7684\u8C31\u53F7\u4E5F\u80FD\u76F4\u63A5\u70B9": { en: "Clef: changes the clef from the cursor (treble / bass / 8 below / 8 above / 15 above); display only, pitch doesn't change. The clef at the start of each line can be tapped too" },
+  "\u516B\u5EA6\u7EBF": { en: "Ottava" },
+  "\u516B\u5EA6\u7EBF\uFF1A\u4ECE\u5149\u6807\u5904\u8D77\u8C31\u4E0A\u753B\u4F4E\uFF088va / 15ma\uFF09\u6216\u753B\u9AD8\uFF088vb\uFF09\uFF1B\u6709\u9009\u533A = \u8FD9\u4E00\u6BB5\uFF1B\u300C\u7ED3\u675F\u300D= \u5230\u8FD9\u513F\u6536\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8": { en: "Ottava line: from the cursor, drawn lower (8va / 15ma) or higher (8vb); with a selection = this passage; \u201CEnd\u201D = stops here. Display only, pitch doesn't change" },
+  "\u98CE\u683C": { en: "Style" },
+  "\u62CD\u5B50\u8F7B\u91CD": { en: "Beat weighting" },
+  "\u98CE\u683C\u8BB0\u53F7\uFF1A\u4ECE\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u8D77\u5230\u8FD9\u5F20\u7EB8\u7ED3\u5C3E\uFF0C\u6BCF\u4E2A\u97F3\u6309\u5B83\u5728\u5C0F\u8282\u91CC\u7684\u4F4D\u7F6E\u8F7B\u4E00\u70B9 / \u91CD\u4E00\u70B9\uFF08\u53E4\u5178 / \u6D41\u884C / \u534E\u5C14\u5179 / \u8FDB\u884C\u66F2\u2026\u70B9\u5F00\u9009\uFF09\uFF1B\u6574\u5F20\u7EB8\u7684\u6B4C\u624B\u4E00\u8D77\u542C\uFF0C\u5404\u4EBA\u8DDF\u591A\u5C11\u6309\u4E50\u5668": { en: "Style mark: from the note before the cursor to the end of the sheet, each note gets lighter / heavier by its place in the bar (classical / pop / waltz / march\u2026 tap to choose); all parts on the sheet follow, each by instrument" },
+  "\u53CD\u590D": { en: "Repeat" },
+  "\u8C31\u5185\u53CD\u590D / \u8DF3\u8F6C\uFF1A|: :|\u3001\u623F\u5B50 1. 2.\u3001Segno / Coda / D.C. / D.S. / Fine\u2026\uFF08\u70B9\u5F00\u9009\uFF1B\u63D2\u5728\u5149\u6807\u5904\uFF0C\u6328\u7740\u5C0F\u8282\u7EBF = \u628A\u90A3\u6761\u6539\u6210\u53CD\u590D\u7684\uFF09\u3002\u4E0D\u8DE8\u7EB8\uFF1B\u653E\u7684\u65F6\u5019\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4F4D\u6B4C\u624B\u90A3\u4E00\u884C": { en: "Score repeats / jumps: |: :|, endings 1. 2., Segno / Coda / D.C. / D.S. / Fine\u2026 (tap to choose; inserted at the cursor, next to a barline = turns it into a repeat). Doesn't cross sheets; playback only looks at this sheet's top part" },
+  "\u5927\u8C31\u8868\uFF1A\u8FD9\u4E2A\u97F3\u6362\u5230\u53E6\u4E00\u5F20\u8C31\u8868": { en: "Grand staff: move this note to the other staff" },
+  "{who}\u7684\u97F3\u57DF\u91CC": { en: "Within {who}'s range" },
+  "\u77ED\u4E00\u6B65": { en: "Shorter" },
+  "\u77ED\u4E00\u6B65\uFF08\u9000\u683C\uFF09\uFF1A\u9009\u4E2D\u7684\u8FD9\u4E2A\u97F3\u77ED\u4E00\u6863\uFF0C\u7A7A\u51FA\u6765\u7684\u53D8\u6210\u4F11\u6B62": { en: "One step shorter (backspace): the selected note gets one notch shorter, and the freed space becomes a rest" },
+  "\u957F\u4E00\u6B65": { en: "Longer" },
+  "{name}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1\u6362\u8C03 / \u70B9\u5F00\u9009\u8C03\u548C\u8C03\u5F0F": { en: "{name}: hold and slide up or down to change key / tap to pick key and mode" },
+  "\u957F\u77ED\u57FA\u7EBF\uFF1A{p}{tuplet}\u2014\u2014\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009": { en: "Note length: {p}{tuplet} \u2014 hold and slide up / down, or tap to choose" },
+  "\uFF08{tuplet} \u8FDE\u97F3\uFF09": { en: " ({tuplet}-tuplet)" },
+  "\u97F3\u57DF {rowShift}\uFF1A\u6309\u4F4F\u4E0A\u4E0B\u6ED1 / \u70B9\u5F00\u9009\u2014\u2014\u50CF\u63A8\u4E00\u5F20\u7EB8\uFF0C\u5F80\u4E0A\u63A8 = \u770B\u4E0B\u9762\u66F4\u4F4E\u7684": { en: "Range {rowShift}: hold and slide up / down, or tap to choose \u2014 like pushing a sheet of paper: pushing up shows lower notes" },
+  "pad \u7684\u8C03\uFF08\u4E94\u5EA6\u5708\uFF09": { en: "The pad's key (circle of fifths)" },
+  "\u957F\u77ED\u57FA\u7EBF": { en: "Note length" },
+  "\u97F3\u57DF\u7A97\u53E3": { en: "Range window" },
+  "\u4E0D\u8FDE": { en: "No tuplet" },
+  "\u8FDE\u97F3": { en: "Tuplets" },
+  "\u8C03\u5F0F\uFF1Apad \u4E0A\u6392\u54EA\u4E9B\u97F3": { en: "Mode: which notes the pad lays out" },
+  "\u8FD9\u662F\u4EC0\u4E48": { en: "What's this" },
+  ' data-def="{def}" title="\u53CC\u51FB\u56DE {defText}"': { en: ' data-def="{def}" title="Double-click: back to {defText}"' },
+  "SoundFont \u4E50\u5668": { en: "SoundFont instrument" },
+  "SoundFont \u4E50\u5668\uFF08TinySoundFont \u51FA\u58F0\uFF09": { en: "SoundFont instrument (sounds via TinySoundFont)" },
+  "\u53F0\u4E0A\u7684\u4E0D\u662F SoundFont \u4E50\u5668": { en: "The performer on stage isn't a SoundFont instrument" },
+  "\u529B\u5EA6##MIDI": { en: "Velocity" },
+  "\u8F7B\u4E00\u70B9\uFF08MIDI \u529B\u5EA6 \u22128\uFF09": { en: "A little softer (MIDI velocity \u22128)" },
+  "\u91CD\u4E00\u70B9\uFF08+8\uFF09": { en: "A little harder (+8)" },
+  "\u56DE\u5230 {def}": { en: "Back to {def}" },
+  "\u6CA1\u5199\u529B\u5EA6\u8BB0\u53F7\u7684\u97F3\u6309\u8FD9\u4E2A\u529B\u5EA6\uFF08MIDI 1\u2013127\uFF09\u3002{dynamicsVel}{L}": { en: "Notes without a dynamic use this velocity (MIDI 1\u2013127). {dynamicsVel}{L}" },
+  "\u529B\u5EA6\u8BB0\u53F7\u6309\u8FD9\u4F4D\u7684\u529B\u5EA6\u8868\uFF08\u91CD\u97F3 +{accentVel}\u3001\u5F3A\u97F3 +{marcatoVel}\uFF1B\u522B\u7684\u8BB0\u53F7\u89C1\u4E0B\u9762\u300C\u8BB0\u53F7\u600E\u4E48\u6F14\u300D\uFF09\uFF1A{L}": { en: "Dynamics follow this performer's velocity table (accent +{accentVel}, marcato +{marcatoVel}; for other marks see \u201CHow marks are performed\u201D below): {L}" },
+  "\u8FD9\u4F4D\u662F\u4E4B\u524D\u4E0A\u573A\u7684\uFF1A\u529B\u5EA6\u8BB0\u53F7\u8FD8\u662F\u53EA\u6539\u97F3\u91CF\uFF1A{p}": { en: "This performer came on stage earlier: dynamics still only change volume: {p}" },
+  "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u6709 {count} \u4E2A\u529B\u5EA6\u5C42{p}\uFF1A\u8DE8\u5C42 = \u6362\u4E00\u4EFD\u5F55\u97F3\uFF0C\u97F3\u8272\u4F1A\u53D8\uFF0C\u4E0D\u53EA\u662F\u54CD\u5EA6\u3002": { en: "This GS sound has {count} velocity layers{p}: crossing a layer = a different recording, so timbre changes, not just loudness." },
+  "\uFF0C\u73B0\u5728\u5728\u7B2C {p} \u5C42\uFF08{p2}\u2013{p3}\uFF09": { en: ", now on layer {p} ({p2}\u2013{p3})" },
+  "GS \u91CC\u8FD9\u4E2A\u97F3\u8272\u53EA\u6709\u4E00\u4E2A\u529B\u5EA6\u5C42\uFF1A\u529B\u5EA6\u53EA\u6539\u54CD\u5EA6\u3002": { en: "This GS sound has one velocity layer: velocity only changes loudness." },
+  "\u56FA\u5B9A\u539F\u901F": { en: "Fixed speed" },
+  "\u6BCF\u4E2A\u97F3\u90FD\u6572\u539F\u901F\u952E\uFF1A\u5199\u8C31\u6309\u952E\u3001\u64AD\u653E\u90FD\u662F\u539F\u6765\u7684\u6837\u5B50\uFF1B\u8C31\u4E0A\u5199\u7684\u97F3\u9AD8\u7167\u7559\uFF0C\u53EA\u662F\u4E0D\u62FF\u6765\u51FA\u58F0": { en: "Every note strikes the original-speed key: writing, keys and playback all sound original; the written pitch stays on the score, it's just not used for sound" },
+  "\u97F3\u9AD8\u5BF9\u9F50": { en: "Pitch align" },
+  "\u6309\u539F\u901F\u65F6\u6700\u5F3A\u7684\u90A3\u4E2A\u9891\u7387\u5927\u81F4\u5BF9\u9F50\uFF0C\u8C31\u4E0A\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF1B\u4E0D\u4E00\u5B9A\u662F\u8033\u6735\u542C\u5230\u7684\u4E3B\u97F3": { en: "Aligns the strongest frequency at original speed, so the written note \u2248 what you hear; not always the perceived main pitch" },
+  "\u8C31\u4E0A\u5199\u4E0D\u540C\u7684\u97F3\u4E5F\u90FD\u54CD\u539F\u6765\u7684\u6837\u5B50\uFF08\u97F3\u9AD8\u7559\u5728\u8C31\u4E0A\uFF0C\u5173\u6389\u5C31\u6309\u5B83\u53D8\u8C03\uFF09": { en: "Different written notes all sound original (pitch stays on the score; turn this off to transpose by it)" },
+  "\u5199\u7684\u97F3 \u2248 \u542C\u5230\u7684\u97F3\uFF08\u5927\u81F4\uFF09": { en: "Written note \u2248 what you hear (roughly)" },
+  "\u6309\u5199\u7684\u97F3\u53D8\u8C03\u53D8\u901F\uFF1A\u8D8A\u9AD8\u8D8A\u5C16\u8D8A\u5FEB\uFF0C\u8D8A\u4F4E\u8D8A\u6C89\u8D8A\u6162{sfx}": { en: "Varies pitch and speed by the written note: higher is shriller and faster, lower is deeper and slower{sfx}" },
+  "\uFF1B\u8FD9\u4E2A\u97F3\u6548\u539F\u901F\u65F6\u542C\u4E0D\u51FA\u97F3\u9AD8\uFF0C\u6CA1\u6CD5\u5BF9\u9F50": { en: "; this sound effect has no audible pitch at original speed, so it can't align" },
+  "\u4FEE\u516B\u5EA6": { en: "Octave fix" },
+  "{p}{tr} \u534A\u97F3": { en: "{p}{tr} semitones" },
+  "\u4F4E\u4E00\u4E2A\u516B\u5EA6": { en: "Down an octave" },
+  "\u4F4E\u534A\u97F3": { en: "Down a semitone" },
+  "\u9AD8\u534A\u97F3": { en: "Up a semitone" },
+  "\u9AD8\u4E00\u4E2A\u516B\u5EA6": { en: "Up an octave" },
+  "\u56DE\u5230 0": { en: "Back to 0" },
+  "\u5F52\u96F6": { en: "Reset" },
+  "\u5927\u90E8\u5206\u60C5\u51B5\u4E0D\u7528\u52A8\uFF1A\u67D0\u4E9B\u97F3\u8272\u672C\u8EAB\u5C31\u5DEE\u516B\u5EA6\uFF08\u6BD4\u5982 GS \u7684 Guitar Harmonics \u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF09\u65F6\u515C\u5E95\uFF0C\u8C03\u597D\u540E\u5199\u4EC0\u4E48\u97F3\u5C31\u54CD\u4EC0\u4E48\u97F3": { en: "Rarely needed: a fallback when a sound is itself off by octaves (e.g. GS Guitar Harmonics is two octaves high); once fixed, what you write is what sounds" },
+  "\u4E0D\u56FA\u5B9A\u539F\u901F\uFF08\u6309\u5199\u7684\u97F3\u53D8\u8C03\uFF09": { en: "Not fixed speed (transposes by the written note)" },
+  "\u300C{rn}\u300D\u97F3\u9AD8\u5BF9\u9F50{on}": { en: "\u201C{rn}\u201D pitch align{on}" },
+  "\u300C{rn}\u300D\u4FEE\u516B\u5EA6 / \u79FB\u8C03 {next} \u534A\u97F3": { en: "\u201C{rn}\u201D octave fix / transpose {next} semitones" },
+  "\u300C{rn}\u300D\u529B\u5EA6 {p}": { en: "\u201C{rn}\u201D velocity {p}" },
+  "\u9F50\u5E73": { en: "Leveling" },
+  "\u6BCF\u4E2A\u5B57\u7684\u54CD\u5EA6\u5F80\u6574\u53E5\u7684\u4E2D\u4F4D\u6570\u62C9\u51E0\u6210\uFF1A\u5173 = \u7167\u5FF5\u7684\u65F6\u5019\u81EA\u5DF1\u7684\u8F7B\u91CD\uFF08\u5B57\u548C\u5B57\u4E4B\u95F4\u54CD\u5EA6\u4E0D\u53EF\u63A7\uFF09\uFF1B0.8 = \u62C9\u516B\u6210\uFF08\u9ED8\u8BA4\uFF1B2026-10-14 \u5230 10-17 \u9ED8\u8BA4\u5173\u8FC7\uFF09\u3002\u56E2\u5B50 C \u6BB5\u7B2C 10 \u5C0F\u8282\u300C\u305D\u300D\u7684\u7834\u97F3\u662F\u9F50\u5E73\u300C\u6BCF\u5B57\u91CD\u8D77\u300D\u5728\u5B57\u7684\u8FB9\u754C\u4E0A\u8DF3\u51FA\u6765\u7684\u53F0\u9636\uFF0C\u300C\u8FDE\u7EED\u300D\u4E0D\u8DF3": { en: "How far each syllable's loudness is pulled toward the line's median: off = as spoken (loudness between syllables is uncontrolled); 0.8 = 80% (default). Restarting per syllable can step at syllable boundaries and crackle; \u201CContinuous\u201D doesn't step" },
+  "\u9F50\u5E73\u8FC7\u6E21": { en: "Leveling transition" },
+  "\u6BCF\u5B57\u91CD\u8D77": { en: "Per syllable" },
+  "\u9F50\u5E73\u5F00\u7740\u65F6\u589E\u76CA\u600E\u4E48\u4ECE\u4E00\u4E2A\u5B57\u6362\u5230\u4E0B\u4E00\u4E2A\u5B57\uFF1A\u6BCF\u5B57\u91CD\u8D77 = \u5728\u6BCF\u4E2A\u5B57\u7684\u5143\u97F3\u8D77\u70B9\u4ECE 0 \u8D77\u300130 ms \u5185\u722C\u5230\u8FD9\u4E2A\u5B57\u7684\u76EE\u6807\uFF0C\u8F85\u97F3\u4E0D\u52A0\uFF1B\u8FDE\u7EED = \u4ECE\u524D\u4E00\u4E2A\u5B57\u7684\u589E\u76CA\u8D77\uFF0C\u7ECF\u8FC7\u8F85\u97F3\u5230\u5143\u97F3\u8D77\u70B9\u540E 30 ms \u5E73\u6ED1\u8FC7\u6E21\u5230\u8FD9\u4E2A\u5B57\u7684": { en: "How gain moves between syllables while leveling: per syllable = starts from 0 at each syllable's vowel onset and climbs to its target within 30 ms, consonants not boosted; continuous = smoothly from the previous syllable's gain, through the consonant, to this one's within 30 ms of the vowel onset" },
+  "\u9F50\u5E73\u4E0A\u9650": { en: "Leveling limit" },
+  "\u9F50\u5E73\u6700\u591A\u628A\u4E00\u4E2A\u5B57\u62C9\u51E0 dB": { en: "The most dB leveling can pull a syllable" },
+  "\u501F\u5143\u97F3\u95E8\u69DB": { en: "Vowel-borrow threshold" },
+  "\u4E00\u4E2A\u5B57\u81EA\u5DF1\u6700\u5E72\u51C0\u90A3\u4E09\u5206\u4E4B\u4E00\u5E27\u7684\u6742\u5EA6\u8D85\u8FC7\u8FD9\u4E2A\u6570 = \u5F53\u5B83\u662F\u6C14\u58F0\u5FF5\u7684\uFF0C\u62FF\u540C\u4E00\u53E5\u91CC\u522B\u7684\u5E72\u51C0\u7684\u540C\u5143\u97F3\u6765\u5531\uFF08\u300C\u305D\u300D\u662F 0.34\uFF09": { en: "If the noisiness of a syllable's cleanest third of frames exceeds this, it's treated as spoken breathily, and a clean same-vowel syllable from the line is sung instead" },
+  "\u6C14\u606F": { en: "Breathiness" },
+  "\u5B9E\u58F0": { en: "Clear" },
+  "\u7167\u5FF5\u7684": { en: "As spoken" },
+  "\u5408\u6210\u524D\u628A\u6BCF\u5E27\u6BCF\u4E2A\u9891\u6BB5\u7684\u6742\u5EA6\u538B\u5230\u8FD9\u4E2A\u5143\u97F3\u6700\u5E72\u51C0\u90A3\u51E0\u5E27\u7684\u7A0B\u5EA6\uFF1A0 = \u5168\u538B\u6210\u5B9E\u58F0\uFF0C1 = \u7167 piper \u5FF5\u51FA\u6765\u7684\u7559\u7740": { en: "Before synthesis, presses each frame's band noisiness down to the level of this vowel's cleanest frames: 0 = fully clear voice, 1 = keep what piper spoke" },
+  "\u5C0F\u6708\u76F8\u672C\u4EBA\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF1B\u7B2C\u4E00\u6B21\u8981\u52A0\u8F7D\u7EA6 65 MB\uFF09": { en: "Tsukuyomi-chan herself (\u3064\u304F\u3088\u307F\u3061\u3083\u3093; loads about 65 MB the first time)" },
+  "\uFF08\u9ED8\u8BA4\uFF09": { en: " (default)" },
+  "\u6539\u4E86\u7528\u5230\u7684\u53E5\u5B50\u4F1A\u91CD\u5531\uFF1B\u5B58\u8FDB\u6B4C\u91CC\u3001\u80FD\u64A4\u9500": { en: "Changing it re-sings the lines that use it; saved in the song, can be undone" },
+  "\u5206\u6BB5\u5531": { en: "Sing in segments" },
+  "\u6BCF\u53E5": { en: "Per line" },
+  "\u5728\u4F11\u6B62\u5904\u5207\uFF08\u4F11\u6B62 \u2265 0.25 \u79D2\uFF09\uFF1A\u5185\u5B58\u6700\u7701\uFF0C\u6539\u4E00\u53E5\u53EA\u91CD\u5531\u90A3\u4E00\u53E5": { en: "Cut at rests (rests \u2265 0.25 s): least memory; editing a line only re-sings that line" },
+  "\u6BCF\u5F20\u7EB8": { en: "Per sheet" },
+  "\u4E00\u5F20\u7EB8\u4E00\u6BB5": { en: "One segment per sheet" },
+  "\u4E00\u6574\u9996": { en: "Whole song" },
+  "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF08\u4EE5\u524D\u7684\u5531\u6CD5\uFF1B\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F\uFF09": { en: "Sing it all at once (the old way; long songs may run out of memory on iPad)" },
+  "\u4E00\u53E3\u6C14\u5531\u5B8C\uFF1A\u53E5\u548C\u53E5\u4E4B\u95F4\u5531\u6CD5\u6700\u8FDE\u8D2F\uFF0C\u4F46\u957F\u6B4C\u5728 iPad \u4E0A\u53EF\u80FD\u5185\u5B58\u4E0D\u591F": { en: "Sing it all at once: smoothest between lines, but long songs may run out of memory on iPad" },
+  "\u5206\u6BB5\u5531\uFF1A\u4E00\u6BB5\u5531\u5B8C\u5C31\u653E\u6389\uFF0C\u91CD\u590D\u7684\u6BB5 / \u6CA1\u6539\u7684\u53E5\u5B50\u76F4\u63A5\u62FF\u4E0A\u6B21\u7684\uFF1B\u6BB5\u548C\u6BB5\u4E4B\u95F4\u5207\u5728\u4F11\u6B62 / \u7EB8\u754C\uFF0C\u6574\u9996\u6700\u540E\u7EDF\u4E00\u97F3\u91CF": { en: "Sing in segments: each is released after singing, repeated segments / unchanged lines reuse last time's; cuts fall at rests / sheet boundaries, with one volume for the whole song at the end" },
+  "\u300C{rn}\u300D\u5206\u6BB5\u5531\uFF1A{p}": { en: "\u201C{rn}\u201D sing in segments: {p}" },
+  "\u5C0F\u6708\u76F8\u7684\u5143\u97F3\u91C7\u6837\uFF1A\u6309\u4E0B\u5373\u54CD\u3001\u4EFB\u4F55\u8BBE\u5907\u90FD\u80FD\u8DD1": { en: "Tsukuyomi-chan's vowel samples: instant response, runs on any device" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u7528\u5B58\u50A8": { en: "This browser doesn't let pages opened by double-click use storage" },
+  "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u73B0\u5728\u4E0D\u8BA9\u8FD9\u4E00\u9875\u7528\u5B58\u50A8": { en: "This browser doesn't let this page use storage right now" },
+  "\u548C itch \u4E0A\u522B\u7684\u6E38\u620F\u5171\u7528\u4E00\u4E2A\u5B58\u50A8\u6876": { en: "Shares one storage bucket with other games on itch" },
+  "\u548C\u8FD9\u53F0\u7535\u8111\u4E0A\u522B\u7684\u53CC\u51FB\u6253\u5F00\u7684\u7F51\u9875\u5171\u7528\u4E00\u4E2A\u5B58\u50A8\u6876": { en: "Shares one storage bucket with other double-clicked pages on this computer" },
+  "\u5199\u4E0D\u8FDB\u5B58\u50A8\u4E86\uFF08{why}\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u4E4B\u540E\u7684\u8BBE\u7F6E\u53EA\u7559\u5728\u5185\u5B58\u91CC": { en: "Can't write to storage ({why}): settings from now on stay in memory only" },
+  "\u6B4C\u540D": { en: "Title" },
+  "\u7EB8\uFF1A{paperLabel}": { en: "Paper: {paperLabel}" },
+  "\u4F5C\u8005": { en: "Author" },
+  "\u7F16\u6392\u3000": { en: "Arrangement\u2002" },
+  " \u7B49 {n} \u5904": { en: " at {n} places" },
+  "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)\xD73 A A2 [Chorus])" },
+  "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D": { en: "Empty = each sheet plays once in order" },
+  "\u66F2\u6BB5\u540D": { en: "Section name" },
+  "\u9690\u85CF \xB7 \u4E0D\u653E\uFF08\u70B9\u66F2\u6BB5\u540D\u8FDB\u53BB\uFF09": { en: "Hidden \xB7 not played (tap the section name to enter)" },
+  "{name} \xB7 \u9690\u85CF": { en: "{name} \xB7 hidden" },
+  "\uFF08\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709\u58F0\u90E8\uFF09": { en: "(no parts on this sheet)" },
+  "\u8FD9\u5F20\u7EB8\u9690\u85CF\u7740\uFF1A\u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF08\u300C\u22EF\u300D\u91CC\u663E\u793A\uFF09": { en: "This sheet is hidden: not played, not in the flattened copy (show it from \u201C\u22EF\u201D)" },
+  "{src} \u8F7D\u8FDB\u6765\u4E86\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u300C{key}\u300D": { en: "{src} loaded, but \u201C{key}\u201D isn't in it" },
+  "\u5907\u7528\u7248\u6587\u4EF6\u5939\u91CC\u5C11\u4E86 {src}\uFF08\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u8BFB\uFF09": { en: "{src} is missing from the standalone folder (or the browser won't let it be read)" },
+  "\u5907\u7528\u7248\u91CC\u6CA1\u6709 {path}": { en: "{path} isn't in the standalone version" },
+  "{path}\uFF1A\u5907\u7528\u7248\u6587\u4EF6\u5939\u91CC\u7684\u8FD9\u4E2A\u6587\u4EF6\u548C app \u91CC\u9489\u7684\u54C8\u5E0C\u5BF9\u4E0D\u4E0A\uFF08\u88AB\u6539\u8FC7\u6216\u574F\u4E86\uFF09": { en: "{path}: this file in the standalone folder doesn't match the hash pinned in the app (modified or damaged)" },
+  "{path}\uFF1A\u548C app \u91CC\u9489\u7684\u54C8\u5E0C\u5BF9\u4E0D\u4E0A\uFF08\u88AB\u6539\u8FC7\u6216\u574F\u4E86\uFF09": { en: "{path}: doesn't match the hash pinned in the app (modified or damaged)" },
+  "\u5C11\u4E86\u300C{close}\u300D": { en: "Missing \u201C{close}\u201D" },
+  "\u591A\u4E86\u300C{c}\u300D": { en: "Extra \u201C{c}\u201D" },
+  "\u770B\u4E0D\u61C2\u300C{p}\u300D": { en: "Can't understand \u201C{p}\u201D" },
+  "\u6CA1\u6709\u53EB\u300C{name}\u300D\u7684\u7EB8\uFF08\u5199\u66F2\u6BB5\u540D\uFF0C\u6216\u8005\u7B2C\u51E0\u5F20\u7EB8\u7684\u5E8F\u53F7\uFF09": { en: "No sheet named \u201C{name}\u201D (write a section name, or a sheet number)" },
+  "\u91CD\u590D\u6B21\u6570\u8981\u5728 1 \u5230 99 \u4E4B\u95F4": { en: "Repeat counts must be 1 to 99" },
+  "\u5FAA\u73AF\u6BB5\u662F\u7A7A\u7684": { en: "The loop section is empty" },
+  "\u5FAA\u73AF\u6BB5\u53EA\u80FD\u653E\u5728\u6700\u540E\uFF1A\u540E\u9762\u7684\u6C38\u8FDC\u653E\u4E0D\u5230": { en: "The loop section can only be last: anything after it would never play" },
+  "\u9AD8\u97F3": { en: "Treble" },
+  "\u9AD8\u97F3 8vb": { en: "Treble 8vb" },
+  "\u9AD8\u97F3 8va": { en: "Treble 8va" },
+  "\u9AD8\u97F3 15ma": { en: "Treble 15ma" },
+  "\u4F4E\u97F3": { en: "Bass" },
+  "\u4F4E\u97F3 8vb": { en: "Bass 8vb" },
+  "\u9AD8\u97F3\u8C31\u53F7": { en: "Treble clef" },
+  "\u9AD8\u97F3\u8C31\u53F7\u4E0B\u9762\u6302 8\uFF1A\u8C31\u4E0A\u5199\u7684\u97F3\u5B9E\u9645\u4F4E\u4E00\u4E2A\u516B\u5EA6\u54CD\uFF08\u5409\u4ED6\u3001\u7537\u9AD8\u97F3\uFF09": { en: "Treble clef with 8 below: written notes sound an octave lower (guitar, tenor)" },
+  "\u9AD8\u97F3\u8C31\u53F7\u4E0A\u9762\u6302 8\uFF1A\u5B9E\u9645\u9AD8\u4E00\u4E2A\u516B\u5EA6\uFF08\u77ED\u7B1B\uFF09": { en: "Treble clef with 8 above: sounds an octave higher (piccolo)" },
+  "\u9AD8\u97F3\u8C31\u53F7\u4E0A\u9762\u6302 15\uFF1A\u5B9E\u9645\u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF08\u949F\u7434\u3001\u94C3\uFF09": { en: "Treble clef with 15 above: sounds two octaves higher (glockenspiel, bells)" },
+  "\u4F4E\u97F3\u8C31\u53F7": { en: "Bass clef" },
+  "\u4F4E\u97F3\u8C31\u53F7\u4E0B\u9762\u6302 8\uFF1A\u5B9E\u9645\u4F4E\u4E00\u4E2A\u516B\u5EA6\uFF08\u4F4E\u97F3\u63D0\u7434\u3001\u8D1D\u65AF\uFF09": { en: "Bass clef with 8 below: sounds an octave lower (double bass, bass guitar)" },
+  "\u7ED3\u675F\u516B\u5EA6\u7EBF": { en: "End ottava line" },
+  "\u6700\u91CD": { en: "strongest" },
+  "\u5F88\u91CD": { en: "very strong" },
+  "\u91CD": { en: "strong" },
+  "\u7A0D\u91CD": { en: "slightly strong" },
+  "\u7A0D\u8F7B": { en: "slightly light" },
+  "\u8F7B": { en: "light" },
+  "\u4E00": { en: "1" },
+  "\u4E8C": { en: "2" },
+  "\u4E09": { en: "3" },
+  "\u56DB": { en: "4" },
+  "\u4E94": { en: "5" },
+  "\u516D": { en: "6" },
+  "\u4E03": { en: "7" },
+  "\u516B": { en: "8" },
+  "\u4E5D": { en: "9" },
+  "\u5341": { en: "10" },
+  "\u5341\u4E00": { en: "11" },
+  "\u5341\u4E8C": { en: "12" },
+  "{p}\u62CD {p2}": { en: "Beat {p} {p2}" },
+  "\u4E24\u5C0F\u8282\u4E00\u8F6E\uFF1A\u7B2C\u4E00\u5C0F\u8282 {p}\uFF1B\u7B2C\u4E8C\u5C0F\u8282 {p2}\uFF1B\u91CD\u7684\u683C\u5B50\uFF08\u5C0F\u8282-\u7B2C\u51E0\u4E2A\u5341\u516D\u5206\uFF09{p3}": { en: "Two-bar cycle: first bar {p}; second bar {p2}; strong slots (bar-sixteenth) {p3}" },
+  "\u62CD\u91CC\u7684\u516B\u5206": { en: "Eighths within the beat" },
+  "\u534A\u62CD": { en: "Half-beat" },
+  "\uFF1B\u66F4\u7EC6\u7684 {finer}": { en: "; finer {finer}" },
+  "\u52A0\u4E86\u4E00\u5F20\u7EB8": { en: "Added a sheet" },
+  "\u5220\u4E86\u4E00\u5F20\u7EB8": { en: "Deleted a sheet" },
+  "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8": { en: "Added a part" },
+  "\u5220\u4E86\u4E00\u4E2A\u58F0\u90E8": { en: "Deleted a part" },
+  "\u632A\u4E86\u58F0\u90E8\u987A\u5E8F": { en: "Reordered parts" },
+  "\u5199\u4E86 {d} \u4E2A": { en: "Wrote {d}" },
+  "\u5220\u4E86 {d} \u4E2A": { en: "Deleted {d}" },
+  "\u6539\u6B4C\u540D": { en: "Changed title" },
+  "\u6539\u4F5C\u8005\u680F": { en: "Changed credits" },
+  "\u9690\u85CF\u4E86\u8FD9\u5F20\u7EB8": { en: "Hid this sheet" },
+  "\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8": { en: "Unhid this sheet" },
+  "\u6539\u66F2\u6BB5\u540D": { en: "Renamed section" },
+  "\u6539##\u8C31": { en: "Edited" },
+  "{engineName}\u4E0D\u5531\u6B4C\u8BCD\uFF08\u53EA\u54FC / \u53EA\u5F39\uFF09\uFF1B\u6B4C\u8BCD\u7167\u5199\u7167\u5B58": { en: "{engineName} doesn't sing lyrics (only hums / plays); lyrics are still written and saved" },
+  "\u8FD9\u4E00\u6BB5\u6709\u5047\u540D\u3001\u6309\u65E5\u8BED\u5531\uFF1A\u6C49\u5B57\u5C0F\u6708\u76F8\u6309\u8BFB\u97F3\u6570\u62CD\uFF0C\u4E00\u4E2A\u5B57\u53EF\u80FD\u597D\u51E0\u62CD\u3001\u5BF9\u4E0D\u4E0A\u97F3\u2014\u2014\u5199\u6210\u5047\u540D\uFF08\u4E00\u6BB5\u90FD\u662F\u6C49\u5B57\u624D\u6309\u4E2D\u6587\u5531\uFF1B\u6BB5 = \u6B4C\u624B\u724C\u91CC\u7684\u300C\u5206\u6BB5\u5531\u300D\uFF09": { en: "This segment has kana and is sung in Japanese: Tsukuyomi-chan counts kanji by reading, so one character may take several beats and miss the notes \u2014 write it in kana (a segment is sung in Chinese only if it's all kanji; segment = \u201CSing in segments\u201D on the part card)" },
+  "\u4E00\u4E2A\u97F3\u4E0A {beats} \u62CD\uFF1A\u5C0F\u6708\u76F8\u4E00\u4E2A\u97F3\u5531\u4E00\u62CD\u2014\u2014\u62C6\u6210 {beats2} \u4E2A\u97F3\uFF0C\u6216\u8005\u7528\u300C+\u300D\u8FDE\u7740\u5199": { en: "{beats} beats on one note: Tsukuyomi-chan sings one beat per note \u2014 split into {beats2} notes, or join with \u201C+\u201D" },
+  "\u8FD9\u4E00\u6BB5\u6309\u65E5\u8BED\u5531\uFF1A\u5B57\u6BCD / \u6570\u5B57 / \u7B26\u53F7\u5FF5\u4E0D\u51C6\u2014\u2014\u5199\u6210\u5047\u540D": { en: "This segment is sung in Japanese: letters / digits / symbols aren't read reliably \u2014 write them in kana" },
+  "\u8FD9\u4E00\u6BB5\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57": { en: "This segment is sung in Chinese: one character per note" },
+  "\u8FD9\u4E00\u6BB5\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD": { en: "This segment is sung in English: use Latin letters" },
+  "\u8212\u9002": { en: "Comfortable" },
+  "\u8C31\u5927": { en: "Large staves" },
+  "\u7D27\u51D1": { en: "Compact" },
+  "\u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1B\u603B\u8C31\u58F0\u90E8\u591A\u7528\u8FD9\u4E2A": { en: "Smaller staves, tighter spacing; for scores with many parts" },
+  "\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F": { en: "Landscape: scores / large screens" },
+  "\u6B63\u7ECF\u7EB8": { en: "Standard paper" },
+  "\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09": { en: "Booklet (A4 folded)" },
+  "\u53E3\u888B\u672C": { en: "Pocket" },
+  "A3 \u6A2A": { en: "A3 landscape" },
+  "\u53CD\u590D / \u8DF3\u8F6C\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4F4D\u6B4C\u624B\u90A3\u4E00\u884C": { en: "Repeats / jumps only count on this sheet's top part" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709 Segno\uFF0CD.S. \u8DF3\u4E0D\u4E86": { en: "No Segno on this sheet, so D.S. can't jump" },
+  "\u6CA1\u6709 To Coda\uFF1A\u8DF3\u56DE\u6765\u4E4B\u540E\u4E00\u8DEF\u653E\u5230\u7EB8\u5C3E": { en: "No To Coda: after jumping back it plays to the end of the sheet" },
+  "\u4E3B\u5531": { en: "Lead vocal" },
+  "\u548C\u58F0": { en: "Harmony" },
+  "\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": { en: "Soprano (choir)" },
+  "\u5973\u4F4E\u97F3\uFF08\u5408\u5531\uFF09": { en: "Alto (choir)" },
+  "\u7537\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": { en: "Tenor (choir)" },
+  "\u7537\u4F4E\u97F3\uFF08\u5408\u5531\uFF09": { en: "Bass (choir)" },
+  "\u4E50\u961F": { en: "Band" },
+  "\u94A2\u7434 / \u952E\u76D8": { en: "Piano / keys" },
+  "\u5409\u4ED6": { en: "Guitar" },
+  "\u8D1D\u65AF": { en: "Bass" },
+  "\u9F13": { en: "Drums" },
+  "\u5F26\u4E50": { en: "Strings" },
+  "\u5408\u6210\u94FA\u5E95": { en: "Synth pad" },
+  "\u5408\u6210\u4E3B\u97F3": { en: "Synth lead" },
+  "\u5927\u8C03": { en: "Major" },
+  "\u5927\u5C0F\u8C03": { en: "Major / minor" },
+  "\u5C0F\u8C03": { en: "Minor" },
+  "\u548C\u58F0\u5C0F\u8C03": { en: "Harmonic minor" },
+  "\u65CB\u5F8B\u5C0F\u8C03": { en: "Melodic minor" },
+  "\u5BAB\u8C03\u5F0F": { en: "Gong mode" },
+  "\u4E94\u58F0": { en: "Pentatonic" },
+  "\u5546\u8C03\u5F0F": { en: "Shang mode" },
+  "\u89D2\u8C03\u5F0F": { en: "Jue mode" },
+  "\u5FB5\u8C03\u5F0F": { en: "Zhi mode" },
+  "\u7FBD\u8C03\u5F0F": { en: "Yu mode" },
+  "\u516D\u58F0\u52A0\u6E05\u89D2": { en: "Hexatonic + qingjue" },
+  "\u6C11\u65CF": { en: "Chinese" },
+  "\u516D\u58F0\u52A0\u53D8\u5BAB": { en: "Hexatonic + biangong" },
+  "\u96C5\u4E50": { en: "Yayue" },
+  "\u71D5\u4E50": { en: "Yanyue" },
+  "\u90FD\u8282": { en: "Miyako-bushi" },
+  "\u65E5\u672C": { en: "Japanese" },
+  "\u7409\u7403": { en: "Ryukyu" },
+  "\u5E03\u9C81\u65AF": { en: "Blues" },
+  "\u591A\u5229\u4E9A": { en: "Dorian" },
+  "\u6559\u4F1A\u8C03\u5F0F": { en: "Church modes" },
+  "\u5F17\u91CC\u51E0\u4E9A": { en: "Phrygian" },
+  "\u5229\u5E95\u4E9A": { en: "Lydian" },
+  "\u6DF7\u5408\u5229\u5E95\u4E9A": { en: "Mixolydian" },
+  "\u6D1B\u514B\u5229\u4E9A": { en: "Locrian" },
+  "\u897F\u73ED\u7259": { en: "Spanish" },
+  "\u963F\u62C9\u4F2F": { en: "Arabic" },
+  "\u5308\u7259\u5229\u5C0F\u8C03": { en: "Hungarian minor" },
+  "\u5168\u97F3\u9636": { en: "Whole tone" },
+  "\u534A\u97F3\u9636": { en: "Chromatic" },
+  "\u5E7F\u677F": { en: "Largo" },
+  "\u5C0F\u5E7F\u677F": { en: "Larghetto" },
+  "\u67D4\u677F": { en: "Adagio" },
+  "\u884C\u677F": { en: "Andante" },
+  "\u4E2D\u677F": { en: "Moderato" },
+  "\u5C0F\u5FEB\u677F": { en: "Allegretto" },
+  "\u5FEB\u677F": { en: "Allegro" },
+  "\u6D3B\u677F": { en: "Vivace" },
+  "\u6025\u677F": { en: "Presto" },
+  "\u6700\u6025\u677F": { en: "Prestissimo" },
+  "\u5C0F\u6708\u76F8\u7684 worker \u51FA\u9519": { en: "Tsukuyomi-chan's worker failed" },
+  "\u5C0F\u6708\u76F8\u7684 worker \u91CD\u5F00\u4E86": { en: "Tsukuyomi-chan's worker restarted" },
+  "\u5185\u5B58\u4E0D\u591F\uFF1A\u91CD\u5F00\u5C0F\u6708\u76F8\u7684\u5F15\u64CE\u518D\u8BD5\u4E00\u6B21": { en: "Out of memory: restarting Tsukuyomi-chan's engine to try again" },
+  "\u8FD9\u53F0\u8BBE\u5907\u7684\u5185\u5B58\u4E0D\u591F\uFF0C\u5C0F\u6708\u76F8\u7684\u5F15\u64CE\u8D77\u4E0D\u6765\uFF08\u5DF2\u7ECF\u91CD\u5F00\u8FC7\u4E00\u6B21\u5F15\u64CE\uFF09\u3002\u53EF\u4EE5\u628A\u522B\u7684\u4E50\u5668\u58F0\u90E8\u9759\u97F3\u518D\u653E\uFF0C\u6216\u8005\u5173\u6389 app \u91CD\u65B0\u6253\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u300C\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09\u300D": { en: "This device doesn't have enough memory to start Tsukuyomi-chan's engine (already restarted once). You can mute other instrument parts and play again, or close and reopen the app; or switch this part to \u201CTsukuyomi-chan (vowels)\u201D" },
+  "\u4ECE\u6587\u4EF6\u5939\u8BFB{what}": { en: "Reading {what} from the folder" },
+  "\u4E0B\u8F7D{what}\uFF08{e6} MB\uFF0C\u53EA\u4E0B\u8FD9\u4E00\u6B21\uFF09{total}%": { en: "Downloading {what} ({e6} MB, only this once) {total}%" },
+  "{what}\u4E0B\u8F7D\u4E0D\u4E0B\u6765\uFF08\u8BD5\u8FC7 {p}\uFF09\uFF1A{Error}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u6A21\u578B\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165": { en: "{what} couldn't be downloaded (tried {p}): {Error}. You can change the model source in Settings, or import from a local file" },
+  "\u7F13\u5B58\u91CC\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u548C\u6E05\u5355\u5BF9\u4E0D\u4E0A\uFF08\u88AB\u6539\u8FC7\u6216\u574F\u4E86\uFF09\uFF0C\u574F\u7684\u90A3\u4E00\u7247\u5DF2\u7ECF\u4E22\u6389\uFF1A\u518D\u5531\u4E00\u6B21\u4F1A\u91CD\u65B0\u4E0B\u8F7D\uFF08{Error}\uFF09": { en: "The cached Tsukuyomi-chan model doesn't match its manifest (modified or damaged); the bad chunk was discarded: singing again will re-download it ({Error})" },
+  "{slug}: \u5305\u91CC\u6CA1\u6709 {path}": { en: "{slug}: {path} isn't in the pack" },
+  "\u52A0\u8F7D piper \u5F15\u64CE": { en: "Loading the piper engine" },
+  "\u52A0\u8F7D\u5C0F\u6708\u76F8\u7684\u6A21\u578B": { en: "Loading Tsukuyomi-chan's model" },
+  "\u52A0\u8F7D\u65E5\u8BED\u524D\u7AEF": { en: "Loading the Japanese front end" },
+  "\u4E2D\u6587\u524D\u7AEF": { en: "Chinese front end" },
+  "\u82F1\u6587\u8BCD\u5178": { en: "English dictionary" },
+  "\u52A0\u8F7D WORLD": { en: "Loading WORLD" },
+  "\u4E3B\u7EBF\u7A0B\u6CA1\u8BFB\u5230\u8FD9\u4E2A\u6587\u4EF6": { en: "The main thread couldn't read this file" },
+  "\u5C0F\u6708\u76F8\u5728\u5531": { en: "Tsukuyomi-chan is singing" },
+  "\u5FF5\uFF081/2\uFF09": { en: "Speaking (1/2)" },
+  "\u5FF5\uFF082/2\uFF09": { en: "Speaking (2/2)" },
+  "\u5206\u6790\uFF081/3 \u97F3\u9AD8\uFF09": { en: "Analyzing (1/3 pitch)" },
+  "\u5206\u6790\uFF082/3 \u8C31\u5305\u7EDC\uFF09": { en: "Analyzing (2/3 spectral envelope)" },
+  "\u5206\u6790\uFF083/3 \u6C14\u58F0\uFF09": { en: "Analyzing (3/3 breathiness)" },
+  "\u5206\u6790\uFF08\u7F13\u5B58\uFF09": { en: "Analyzing (cached)" },
+  "\u5408\u6210": { en: "Synthesizing" },
+  "\u5927\u5C0F\u4E0D\u5BF9\uFF08{n} \u2260 {bytes}\uFF09": { en: "Wrong size ({n} \u2260 {bytes})" },
+  "\u6BD4\u76EE\u5F55\u91CC\u8BF4\u7684\u5927": { en: "Larger than the catalog says" },
+  "\u5927\u5C0F\u4E0D\u5BF9\uFF08{o} \u2260 {bytes}\uFF09": { en: "Wrong size ({o} \u2260 {bytes})" },
+  "\u5185\u5BB9\u548C\u76EE\u5F55\u91CC\u9489\u7684\u4E0D\u4E00\u6837\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83": { en: "Content differs from the hash pinned in the catalog (sha256 {p}\u2026 \u2260 {p2}\u2026), so it wasn't used" },
+  "\u300C{name}\u300D\u62FF\u4E0D\u5230\uFF08\u8BD5\u8FC7 {p}\uFF09\u3002\u6700\u540E\u4E00\u6B21\uFF1A{last}\u3002\u53EF\u4EE5\u5728\u8BBE\u7F6E\u91CC\u6362\u97F3\u6E90\u5E93\u6765\u6E90\uFF0C\u6216\u4ECE\u672C\u673A .sf2 \u6587\u4EF6\u9009\u3002": { en: "Couldn't get \u201C{name}\u201D (tried {p}). Last attempt: {last}. You can change the sound library source in Settings, or choose from a local .sf2 file." },
+  "\u300C{name}\u300D\u7684\u58F0\u97F3\uFF08{path}\uFF09\u6CA1\u968F\u8FD9\u9996\u6B4C\u5E26\u6765": { en: "The sound of \u201C{name}\u201D ({path}) didn't come with this song" },
+  "\u627E\u300C{name}\u300D\u7684\u58F0\u97F3\uFF1A\u4E0B\u8F7D {name2} {bytes}%": { en: "Finding the sound of \u201C{name}\u201D: downloading {name2} {bytes}%" },
+  "\u300C{name}\u300D\u7684\u58F0\u97F3\u6CA1\u968F\u6B4C\u5E26\uFF08\u5F31\u5F15\u7528\uFF09\uFF0C\u8FD9\u53F0\u8BBE\u5907\u548C\u5BB6\u65CF\u97F3\u6E90\u5E93\u91CC\u4E5F\u6CA1\u6709\u5B83\u6765\u81EA\u7684\u300C{name2}\u300D\uFF08sha256 {p}\u2026\uFF09\u3002\u70B9\u8C31\u524D\u9762\u7684\u300C{p2}\u300D\uFF0C\u7ED9\u5B83\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u6216\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D": { en: "The sound of \u201C{name}\u201D didn't come with the song (weak reference), and \u201C{name2}\u201D (sha256 {p}\u2026) isn't on this device or in the family sound library either. Tap \u201C{p2}\u201D at the front of the score, \u201CFind file\u2026\u201D, or change \u201CWho performs\u201D" },
+  "\u4ECE\u300C{name}\u300D\u5207\u51FA\u6765\u7684\u300C{name2}\u300D\u548C\u6B4C\u91CC\u8BB0\u7684\u4E0D\u4E00\u6837\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83": { en: "\u201C{name2}\u201D cut from \u201C{name}\u201D differs from what the song records (sha256 {p}\u2026 \u2260 {p2}\u2026), so it wasn't used" },
+  "\u300C{n}\u300D\u4E91\u7AEF\u5DF2\u7ECF\u6709\u540C\u540D\u7684\u4E86\uFF0C\u79BB\u7EBF\u65F6\u5B58\u7684\u8FD9\u4EFD\u6CA1\u63A8\u4E0A\u53BB\uFF08\u5728\u6B4C\u5E93\u91CC\u6539\u4E2A\u540D\u518D\u63A8\uFF09": { en: "\u201C{n}\u201D already exists in the cloud, so the copy saved offline wasn't uploaded (rename it in the library and upload again)" },
+  "\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u4E86\uFF08{done} / {total}\uFF09": { en: "Songs saved offline were uploaded ({done} / {total})" },
+  "\u6B63\u5728\u628A\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u2026 {done} / {total}": { en: "Uploading songs saved offline\u2026 {done} / {total}" },
+  "\u6CA1\u6709\u53EF\u7528\u7684\u8D77\u6CD5\uFF08\u6253\u5305\u65F6\u6CA1\u5E26\u8FD9\u4E2A\u7EBF\u7A0B\uFF09": { en: "No way to start it (this thread wasn't bundled)" },
+  "\u540E\u53F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}": { en: "Background thread \u201C{name}\u201D can't start: {Error}" },
+  "\u51FA\u58F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}": { en: "Audio thread \u201C{name}\u201D can't start: {Error}" },
+  "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u9009\u8FD9\u4E2A\u300D\uFF08\u56DE\u5230\u4E50\u5668\u9875\uFF09\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002": { en: "Tap an instrument \u2192 choose who performs \u2192 try it on the keys at the right \u2192 \u201CChoose this\u201D (back to the instrument page). The role becomes that instrument (its name goes on the score); only the performer enters the green room." },
+  "\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09": { en: "Search instruments (zh / en / ja)" },
+  "\u8DF3\u5230": { en: "Jump to" },
+  "\u5217\u8868\u6EDA\u5230\u8FD9\u4E00\u7EC4": { en: "Scroll the list to this group" },
+  "\u52A0\u8F7D\u76EE\u5F55\u2026": { en: "Loading the catalog\u2026" },
+  "\u4E50\u5668\u76EE\u5F55\uFF08\u5F39\u7740\u73A9\uFF09": { en: "Instrument catalog (just for fun)" },
+  "\u627E\u4EBA\u7ED9\u300C{p}\u300D": { en: "Finding someone for \u201C{p}\u201D" },
+  "\u2190 \u6B4C\u5E93": { en: "\u2190 Library" },
+  "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u952E\u76D8\u5F39\u7740\u73A9\u3002\u8981\u7ED9\u6B4C\u91CC\u7684\u58F0\u90E8\u9009\u4E50\u5668\uFF1A\u5F00\u4E00\u9996\u6B4C\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u3002": { en: "Tap an instrument \u2192 choose who performs \u2192 play on the keys for fun. To choose an instrument for a part: open a song and tap the part name at the front of the score." },
+  "\u76EE\u5F55\u52A0\u8F7D\u4E0D\u4E86\uFF1A{Error}": { en: "Can't load the catalog: {Error}" },
+  "{label} \xB7 {n} \u4EF6": { en: "{label} \xB7 {n}" },
+  "\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684": { en: "Nothing named \u201C{q}\u201D" },
+  "\u6536\u8D77\u8FD9\u4E00\u7EC4": { en: "Collapse this group" },
+  "\u5C55\u5F00\u8FD9\u4E00\u7EC4\uFF08\u522B\u7684\u6536\u8D77\uFF09": { en: "Expand this group (others collapse)" },
+  "\u5728\u8FD9\u79CD\u98CE\u91CC\u9876\u66FF\u300C{asName}\u300D": { en: "Substitutes for \u201C{asName}\u201D in this style" },
+  "\u9876 {asName}": { en: "Subs for {asName}" },
+  "\u7EA6 ": { en: "c. " },
+  "\u9876\u66FF": { en: "Substitute" },
+  "\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934": { en: "Plays the start of this part with it" },
+  "\u25B6 \u542C\u5F00\u5934": { en: "\u25B6 Hear the start" },
+  "\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF0C\u56DE\u5230\u4E50\u5668\u9875": { en: "Chooses it to perform this part, back to the instrument page" },
+  "\u9009\u8FD9\u4E2A": { en: "Choose this" },
+  "\u9F13\u4EF6 \xB7 {gmName}\uFF08Standard \u9F13\u7EC4\u7684 {note} \u53F7\u952E\uFF09": { en: "Drum piece \xB7 {gmName} (key {note} of the Standard kit)" },
+  "\u9F13\u7EC4 \xB7 {gmName}": { en: "Drum kit \xB7 {gmName}" },
+  "\u9876\u66FF{p}{reason}": { en: "Substitute{p}{reason}" },
+  "\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09": { en: " (GM original accepts it)" },
+  "\uFF08\u524D\u8EAB\uFF09": { en: " (predecessor)" },
+  "\uFF08\u4EFF\u58F0\uFF09": { en: " (imitation)" },
+  "\uFF08\u540C\u7C7B\uFF09": { en: " (same type)" },
+  "\uFF08\u53EA\u662F\u540C\u540D\uFF09": { en: " (same name only)" },
+  "\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531": { en: "Sings lyrics; notes without lyrics use the \u201CHum syllable\u201D" },
+  "\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83": { en: "Nobody in the catalog can perform it yet" },
+  "\u5408": { en: "Join" },
+  "\u8FD9\u4E2A\u5B57\u5E76\u8FDB\u524D\u4E00\u4E2A\u97F3\uFF08\u4E00\u4E2A\u97F3\u4E0A\u51E0\u4E2A\u5B57\uFF09\uFF1B\u8FD9\u4E00\u53E5\u540E\u9762\u7684\u5B57\u5F80\u524D\u632A\u4E00\u4E2A\u97F3": { en: "Merges this syllable into the previous note (several syllables on one note); later syllables in this phrase shift forward one note" },
+  "\u6324\u4E86\uFF1A\u6309\u8282\u594F\u6392\uFF0C\u8FD9\u4E2A\u5B57\u653E\u4E0D\u4E0B\uFF08\u7EB8\u7684\u8BBE\u7F6E\u91CC\u6362\u6210\u300C\u6309\u6B4C\u8BCD\u300D= \u628A\u97F3\u63A8\u5F00\uFF09": { en: "Crowded: laid out by rhythm, this syllable doesn't fit (in sheet settings, \u201CBy lyrics\u201D pushes notes apart)" },
+  "\u65E0\u5347\u964D": { en: "No accidentals" },
+  "\u6309\u8FD9\u4E2A\u901F\u5EA6\u6446\uFF1A\u6446\u5230\u4E00\u5934 = \u4E00\u62CD": { en: "Swinging at this tempo: one end of the swing = one beat" },
+  "\u786E\u5B9A": { en: "OK" },
+  "\u62E8\u901F\u5EA6\uFF1A\u4E00\u683C = 1\uFF0C\u4E00\u7529\u6ED1\u4E00\u5927\u6BB5": { en: "Dial the tempo: one notch = 1, a flick covers more" },
+  "{from} \u8D77": { en: "from {from}" },
+  "\u94DC\u7BA1": { en: "Brass" },
+  "\u6728\u7BA1": { en: "Woodwinds" },
+  "\u5F39\u62E8": { en: "Plucked" },
+  "\u6253\u51FB": { en: "Percussion" },
+  "\u6709\u97F3\u9AD8\u6253\u51FB / \u94C3": { en: "Pitched percussion / bells" },
+  "\u97F3\u6548 / \u5176\u4ED6": { en: "Sound effects / other" },
+  "\u81EA\u52A8\u4F4E\u5207": { en: "Auto low cut" },
+  "\u8DDF\u901F\u5EA6\uFF08\u51E0\u62CD\u4E00\u6B21\uFF1B0 = \u7528\u4E0A\u9762\u7684\u6BEB\u79D2\uFF09": { en: "Follow tempo (beats per echo; 0 = use the ms above)" },
+  "\u81EA\u52A8\u4F4E\u5207\uFF1A\u6309\u8FD9\u4E2A\u58F0\u90E8\u6700\u4F4E\u7684\u97F3\u653E\u4F4E\u5207\uFF08\u5F80\u4E0B\u5927\u4E09\u5EA6\uFF09\uFF0C\u5207\u6389\u5B83\u7528\u4E0D\u7740\u7684\u4F4E\u9891\u2014\u2014\u9686\u9686\u58F0\u3001\u548C\u522B\u7684\u8F68\u7CCA\u5728\u4E00\u8D77\u7684\u4F4E\u9891": { en: "Auto low cut: sets the low cut from this part's lowest note (a major third below), removing lows it doesn't use \u2014 rumble and lows that muddy other tracks" },
+  "\u4F4E\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0B\u7684\u90FD\u5207\u6389\u3002\u4EBA\u58F0\u5E38\u5728 80\u2013120 Hz\uFF0C\u94C3\u8FD9\u7C7B\u9AD8\u7684\u4E50\u5668\u53EF\u4EE5\u66F4\u9AD8\uFF1B\u6700\u5DE6 = \u5173": { en: "Low cut: removes everything below this frequency. Voices are often 80\u2013120 Hz; high instruments like bells can go higher; far left = off" },
+  "\u9AD8\u5207\uFF1A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u90FD\u5207\u6389\uFF0C\u53BB\u523A\u8033\u3001\u5636\u5636\u58F0\uFF1B\u6700\u5DE6 = \u5173": { en: "High cut: removes everything above this frequency, for harshness and hiss; far left = off" },
+  "\u4F4E\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0B\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u51CF = \u53BB\u95F7\u3001\u7ED9\u522B\u7684\u8F68\u8BA9\u51FA\u4F4E\u9891\uFF1B\u52A0 = \u52A0\u539A": { en: "Low shelf: boosts / cuts everything below the corner. Cut = less muddy, leaves lows for other tracks; boost = thicker" },
+  "\u4F4E\u67B6\u7684\u8F6C\u6298\u9891\u7387\uFF1A\u4ECE\u8FD9\u91CC\u5F80\u4E0B\u7B97\u300C\u4F4E\u300D": { en: "Low shelf corner: \u201Clow\u201D counts down from here" },
+  "\u4E2D\u5CF0\uFF1A\u5728\u4E00\u4E2A\u9891\u6BB5\u4E0A\u63A8 / \u6316\u591A\u5C11\u3002\u4E24\u6837\u4E1C\u897F\u7CCA\u5728\u4E00\u8D77\u65F6\uFF0C\u5728\u5176\u4E2D\u4E00\u4E2A\u4E0A\u6316\u4E00\u5200\u7ED9\u53E6\u4E00\u4E2A\u8BA9\u4F4D": { en: "Mid peak: boosts / cuts one band. When two things blur together, cut one to make room for the other" },
+  "\u4E2D\u5CF0\u7684\u4E2D\u5FC3\u9891\u7387\uFF1A\u63A8 / \u6316\u7684\u662F\u54EA\u4E00\u6BB5": { en: "Mid peak center: which band is boosted / cut" },
+  "\u4E2D\u5CF0\u7684\u5BBD\u7A84\uFF1AQ \u8D8A\u5927\u8D8A\u7A84\uFF081 \u2248 \u4E00\u4E2A\u591A\u516B\u5EA6\u5BBD\uFF0C4 \u2248 \u5C0F\u534A\u4E2A\u516B\u5EA6\uFF09": { en: "Mid peak width: higher Q is narrower (1 \u2248 a bit over an octave, 4 \u2248 under half an octave)" },
+  "\u9AD8\u67B6\uFF1A\u8F6C\u6298\u9891\u7387\u4EE5\u4E0A\u6574\u4F53\u52A0 / \u51CF\u591A\u5C11\u3002\u52A0 = \u4EAE\u3001\u51CF = \u6697": { en: "High shelf: boosts / cuts everything above the corner. Boost = brighter, cut = darker" },
+  "\u9AD8\u67B6\u7684\u8F6C\u6298\u9891\u7387\uFF1A\u4ECE\u8FD9\u91CC\u5F80\u4E0A\u7B97\u300C\u9AD8\u300D": { en: "High shelf corner: \u201Chigh\u201D counts up from here" },
+  "\u9608\u503C\uFF1A\u58F0\u97F3\u8D85\u8FC7\u8FD9\u4E2A\u7535\u5E73\u624D\u5F00\u59CB\u538B\uFF1B\u8D8A\u4F4E\uFF0C\u538B\u5230\u7684\u8D8A\u591A": { en: "Threshold: compression starts above this level; lower compresses more" },
+  "\u6BD4\u4F8B\uFF1A\u8D85\u8FC7\u9608\u503C\u7684\u90E8\u5206\u538B\u6210\u51E0\u5206\u4E4B\u4E00\uFF084:1 = \u8D85\u51FA 4 dB \u7684\u53EA\u5269 1 dB\uFF09": { en: "Ratio: how much the part above the threshold is reduced (4:1 = 4 dB over becomes 1 dB)" },
+  "\u8D77\u538B\uFF1A\u8D85\u8FC7\u9608\u503C\u4E4B\u540E\u591A\u5FEB\u538B\u4E0B\u53BB\u3002\u77ED = \u8FDE\u5B57\u5934\u4E00\u8D77\u538B\u5E73\uFF1B\u957F = \u8BA9\u5B57\u5934\u5148\u51B2\u51FA\u6765\u3001\u66F4\u6709\u52B2": { en: "Attack: how fast it compresses after crossing the threshold. Short = flattens word onsets too; long = lets onsets punch through" },
+  "\u653E\u5F00\uFF1A\u58F0\u97F3\u843D\u56DE\u9608\u503C\u4EE5\u4E0B\u4E4B\u540E\u591A\u5FEB\u677E\u5F00\u3002\u592A\u77ED\u4F1A\u4E00\u62BD\u4E00\u62BD\u7684\uFF0C\u592A\u957F\u4E0B\u4E00\u4E2A\u5B57\u4E5F\u88AB\u538B\u7740": { en: "Release: how fast it lets go after falling below the threshold. Too short pumps; too long keeps the next word compressed too" },
+  "\u62D0\u70B9\uFF1A\u9608\u503C\u9644\u8FD1\u8FD9\u4E48\u5BBD\u7684\u4E00\u6BB5\u91CC\u6162\u6162\u5F00\u59CB\u538B\uFF08\u8F6F\uFF09\uFF1B0 = \u4E00\u5230\u9608\u503C\u5C31\u538B\uFF08\u786C\uFF09": { en: "Knee: compression eases in over this width around the threshold (soft); 0 = kicks in right at the threshold (hard)" },
+  "\u8865\u507F\uFF1A\u538B\u5B8C\u6574\u4F53\u52A0\u56DE\u6765\u591A\u5C11\uFF08\u538B\u7F29\u4F1A\u8BA9\u6574\u4F53\u53D8\u8F7B\uFF09": { en: "Makeup: how much to add back after compressing (compression makes things quieter overall)" },
+  "\u6DF7\u54CD\u65F6\u95F4\uFF08RT60\uFF09\uFF1A\u58F0\u97F3\u505C\u4E86\u4E4B\u540E\uFF0C\u5C3E\u5DF4\u8870\u51CF 60 dB \u8981\u591A\u4E45\u3002\u5C0F\u623F\u95F4\u4E0D\u5230 1 \u79D2\uFF0C\u5927\u5385 2\u20133 \u79D2\uFF0C\u6559\u5802\u66F4\u957F": { en: "Reverb time (RT60): how long the tail takes to fall 60 dB after the sound stops. Small rooms under 1 s, halls 2\u20133 s, churches longer" },
+  "\u9AD8\u9891\u4ECE\u8FD9\u91CC\u5F00\u59CB\u8870\u51CF\uFF1A\u771F\u5B9E\u7684\u623F\u95F4\u91CC\u9AD8\u9891\u88AB\u5438\u6536\u5F97\u5FEB\uFF0C\u5C3E\u5DF4\u8D8A\u5F80\u540E\u8D8A\u6697\uFF1B\u6570\u8D8A\u4F4E\u8D8A\u6697": { en: "Highs start fading from here: real rooms absorb highs fast, so the tail gets darker; lower is darker" },
+  "\u6E7F\uFF1A\u6DF7\u54CD\u7684\u58F0\u97F3\u6709\u591A\u54CD": { en: "Wet: how loud the reverb is" },
+  "\u539F\u58F0\uFF1A\u539F\u6765\u7684\u58F0\u97F3\u7559\u591A\u5C11\u3002\u63D2\u5728\u6B4C\u624B\u8F68\u4E0A\u4E00\u822C 0 dB\uFF08\u4E0D\u52A8\uFF09\uFF1B\u5F53\u53D1\u9001\u7684\u8FD4\u56DE\u8F68\u7528 = \u5173": { en: "Dry: how much of the original to keep. Usually 0 dB (untouched) on a part's track; off on a send's return track" },
+  "\u9884\u5EF6\u8FDF\uFF1A\u539F\u58F0\u4E4B\u540E\u8FC7\u591A\u4E45\u6DF7\u54CD\u624D\u8FDB\u6765\u3002\u62C9\u5F00\u4E00\u70B9\uFF0C\u4EBA\u58F0\u66F4\u6E05\u695A\u3001\u4E0D\u88AB\u7CCA\u4F4F": { en: "Pre-delay: how long after the dry sound the reverb comes in. A little keeps voices clear and not smeared" },
+  "\u5BBD\u5EA6\uFF1A\u6DF7\u54CD\u5728\u5DE6\u53F3\u94FA\u591A\u5F00": { en: "Width: how far the reverb spreads left and right" },
+  "\u8DDF\u901F\u5EA6\uFF1A\u56DE\u58F0\u9694\u51E0\u62CD\uFF0C\u6309\u6B4C\u7684\u901F\u5EA6\u7B97\u65F6\u95F4\uFF1B0 = \u7528\u4E0B\u9762\u7684\u6BEB\u79D2": { en: "Follow tempo: beats between echoes, timed from the song's tempo; 0 = use the ms below" },
+  "\u65F6\u95F4\uFF1A\u6BCF\u6B21\u56DE\u58F0\u9694\u591A\u4E45": { en: "Time: the gap between echoes" },
+  "\u6BCF\u6B21\u56DE\u58F0\uFF1A\u6BCF\u91CD\u590D\u4E00\u6B21\u8F7B\u591A\u5C11 dB\uFF1B\u8D8A\u63A5\u8FD1 0\uFF0C\u56DE\u58F0\u8D8A\u4E45": { en: "Each echo: how many dB softer per repeat; closer to 0 lasts longer" },
+  "\u6E7F\uFF1A\u56DE\u58F0\u6709\u591A\u54CD": { en: "Wet: how loud the echoes are" },
+  "\u53CD\u9988\u9AD8\u5207\uFF1A\u6BCF\u6B21\u56DE\u58F0\u90FD\u628A\u8FD9\u4E2A\u9891\u7387\u4EE5\u4E0A\u7684\u524A\u6389\u4E00\u70B9\uFF0C\u8D8A\u5F80\u540E\u8D8A\u6697\uFF08\u50CF\u771F\u7684\u56DE\u58F0\uFF09": { en: "Feedback high cut: each echo loses a bit above this frequency, getting darker over time (like real echoes)" },
+  "\u51E0\u6761\uFF1A\u540C\u65F6\u6709\u51E0\u4E2A\u7A0D\u5FAE\u9519\u5F00\u7684\u526F\u672C": { en: "Voices: how many slightly offset copies at once" },
+  "\u5EF6\u8FDF\uFF1A\u526F\u672C\u6BD4\u539F\u58F0\u665A\u591A\u5C11": { en: "Delay: how much later the copies are than the dry sound" },
+  "\u6296\u52A8\u6DF1\u5EA6\uFF1A\u526F\u672C\u7684\u5EF6\u8FDF\u6765\u56DE\u6643\u591A\u5927\u2014\u2014\u6643 = \u97F3\u9AD8\u8F7B\u5FAE\u8D77\u4F0F\uFF0C\u50CF\u597D\u51E0\u4E2A\u4EBA\u5531\u4E0D\u9F50": { en: "Depth: how far each copy's delay wobbles \u2014 wobble = slight pitch movement, like several people not quite together" },
+  "\u6296\u52A8\u5FEB\u6162\uFF1A\u6BCF\u79D2\u6643\u51E0\u6B21": { en: "Rate: wobbles per second" },
+  "\u5DE6\u53F3\u94FA\u5F00\uFF1A\u526F\u672C\u6446\u5F97\u591A\u5F00": { en: "Spread: how wide the copies are placed" },
+  "\u6E7F\uFF1A\u526F\u672C\u6709\u591A\u54CD": { en: "Wet: how loud the copies are" },
+  "\u589E\u76CA\uFF1A\u5355\u7EAF\u8C03\u5927\u8C03\u5C0F\uFF08\u524D\u9762\u7684\u63D2\u4EF6\u628A\u97F3\u91CF\u6539\u4E86\uFF0C\u7528\u5B83\u8865\u56DE\u6765\uFF09": { en: "Gain: plain louder / softer (to make up for level changed by earlier plugins)" },
+  "\u6DF7\u54CD\u65F6\u95F4\uFF08RT60\uFF09": { en: "Reverb time (RT60)" },
+  "\u9AD8\u9891\u4ECE\u8FD9\u91CC\u5F00\u59CB\u8870\u51CF": { en: "Highs fade from here" },
+  "\u4E0D\u8870\u51CF\uFF0820 kHz \u4EE5\u4E0A\uFF09": { en: "No fade (above 20 kHz)" },
+  "\u6E7F\uFF08\u6548\u679C\uFF09": { en: "Wet (effect)" },
+  "\u6BCF\u6B21\u56DE\u58F0": { en: "Each echo" },
+  "{v} dB / \u6B21": { en: "{v} dB / echo" },
+  "\u5BBD\u5EA6\uFF080 = \u5355\u58F0\u9053\uFF0C100% = \u5DE6\u53F3\u94FA\u6EE1\uFF09": { en: "Width (0 = mono, 100% = full stereo)" },
+  "\u5DE6\u53F3\u94FA\u5F00\uFF080 = \u90FD\u5728\u4E2D\u95F4\uFF0C100% = \u94FA\u5230\u4E24\u8FB9\uFF09": { en: "Spread (0 = all center, 100% = full width)" },
+  "{v} \u6761": { en: "{v} {v|voice|voices}" },
+  "\u5207\u6389\u8FD9\u4E2A\u58F0\u90E8\u7528\u4E0D\u7740\u7684\u4F4E\u9891\uFF1A\u4F4E\u5207\u653E\u5728\u5B83\u6700\u4F4E\u7684\u97F3\u5F80\u4E0B\u4E00\u70B9": { en: "Removes lows this part doesn't use: the low cut sits a bit below its lowest note" },
+  "\u539A \u2194 \u4EAE": { en: "Warm \u2194 Bright" },
+  "\u5F80\u5DE6 = \u539A\uFF08\u4F4E\u7684\u591A\u4E00\u70B9\u3001\u9AD8\u7684\u5C11\u4E00\u70B9\uFF09\uFF0C\u5F80\u53F3 = \u4EAE\uFF1B\u4E2D\u95F4 = \u4E0D\u52A8": { en: "Left = warmer (more lows, fewer highs), right = brighter; center = unchanged" },
+  "\u5E73": { en: "Flat" },
+  "\u539A {p} dB": { en: "Warm {p} dB" },
+  "\u4EAE {p} dB": { en: "Bright {p} dB" },
+  "\u8BA9\u591A\u5C11": { en: "Duck by" },
+  "\u538B\u591A\u5C11": { en: "Compress by" },
+  "\u88AB\u90A3\u6761\u8F68\u538B\uFF1A\u5B83\u4E00\u54CD\uFF0C\u8FD9\u6761\u5C31\u8BA9\u51FA\u6765\uFF1B\u5F80\u53F3 = \u8BA9\u5F97\u8D8A\u591A\uFF08\u4E0D\u8865\u507F\uFF1A\u5B83\u4E0D\u54CD\u7684\u65F6\u5019\u8FD9\u6761\u7167\u63A8\u5B50\u7684\u97F3\u91CF\uFF09": { en: "Compressed by that track: when it sounds, this one makes way; right = makes way more (no makeup: when it's silent this one sits at the fader level)" },
+  "\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73\uFF1A\u5F80\u53F3 = \u538B\u5F97\u8D8A\u72E0\uFF08\u54CD\u7684\u5B57\u538B\u4E0B\u6765\u3001\u8F7B\u7684\u76F8\u5BF9\u663E\u51FA\u6765\uFF09": { en: "Evens out loud and soft: right = harder (loud syllables come down, soft ones stand out more)" },
+  "{thresholdDb} dB \u8D77\u538B \xB7 {ratio}:1": { en: "Compresses from {thresholdDb} dB \xB7 {ratio}:1" },
+  "\u8FDC\u8FD1": { en: "Distance" },
+  "\u5F80\u53F3 = \u8D8A\u8FDC\u3001\u8D8A\u5927\u7684\u623F\u95F4\uFF08\u94C3\u53EF\u4EE5\u8FDC\u4E00\u70B9\uFF0C\u8D34\u8033\u7684\u4EBA\u58F0\u8FD1\u4E00\u70B9\uFF09\uFF1B\u539F\u58F0\u4E0D\u52A8\uFF0C\u53EA\u5F80\u4E0A\u52A0\u6DF7\u54CD": { en: "Right = farther, in a bigger room (bells can be distant, close vocals near); the dry sound stays, reverb is only added on top" },
+  "\u6E7F {mix} \xB7 {room} s": { en: "Wet {mix} \xB7 {room} s" },
+  "\u56DE\u58F0\u591A\u5C11": { en: "Echo amount" },
+  "\u5F80\u53F3 = \u56DE\u58F0\u8D8A\u54CD\u3001\u8D8A\u4E45\uFF1B\u539F\u58F0\u4E0D\u52A8": { en: "Right = louder, longer echoes; the dry sound stays" },
+  "\u6E7F {mix} \xB7 \u6BCF\u6B21 {feedback} dB": { en: "Wet {mix} \xB7 each {feedback} dB" },
+  "\u51E0\u62CD\u4E00\u6B21": { en: "Beats per echo" },
+  "\u56DE\u58F0\u548C\u62CD\u5B50\u5BF9\u9F50\uFF08\u8DDF\u7740\u6B4C\u7684\u901F\u5EA6\uFF09": { en: "Aligns echoes with the beat (follows the song's tempo)" },
+  "\u9644\u70B9\u516B\u5206": { en: "Dotted eighth" },
+  "\u5BBD": { en: "Wide" },
+  "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF1B\u539F\u58F0\u4E0D\u52A8": { en: "Right = wider, more like several people; the dry sound stays" },
+  "\u6E7F {mix} \xB7 \u6296\u52A8 {depthMs} ms": { en: "Wet {mix} \xB7 depth {depthMs} ms" },
+  "\u63D2\u4EF6\u94FE\u4E2D\u95F4\u5355\u7EAF\u8C03\u5927\u8C03\u5C0F\uFF08\u524D\u9762\u7684\u63D2\u4EF6\u628A\u97F3\u91CF\u6539\u4E86\uFF0C\u7528\u5B83\u8865\u56DE\u6765\uFF09": { en: "Plain louder / softer inside the plugin chain (to make up for level changed by earlier plugins)" },
+  "\u6DF7\u54CD\u65F6\u95F4": { en: "Reverb time" },
+  "\u5C3E\u5DF4\u8870\u51CF 60 dB \u8981\u591A\u4E45\uFF08RT60\uFF09\uFF1A\u5F80\u53F3 = \u8D8A\u5927\u7684\u623F\u95F4\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09": { en: "How long the tail takes to fall 60 dB (RT60): right = bigger room (how much is sent is set on the send knob)" },
+  "\u56DE\u58F0\u591A\u957F": { en: "Echo length" },
+  "\u5F80\u53F3 = \u56DE\u58F0\u91CD\u590D\u5F97\u8D8A\u4E45\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09": { en: "Right = echoes repeat longer (how much is sent is set on the send knob)" },
+  "\u6BCF\u6B21 {e} dB": { en: "Each {e} dB" },
+  "\u5F80\u53F3 = \u8D8A\u5BBD\u3001\u8D8A\u50CF\u597D\u51E0\u4E2A\u4EBA\uFF08\u53D1\u591A\u5C11\u7531\u53D1\u9001\u90A3\u8FB9\u7684\u65CB\u94AE\u7BA1\uFF09": { en: "Right = wider, more like several people (how much is sent is set on the send knob)" },
+  "\u6296\u52A8 {w} ms": { en: "Depth {w} ms" },
+  "{name}\uFF08\u5173\uFF09": { en: "{name} (off)" },
+  "{name}\uFF08\u5168\u91CF\uFF09": { en: "{name} (full)" },
+  " \u4F4E\u5207": { en: " low cut" },
+  "\uFF08\u5E73\uFF09": { en: " (flat)" },
+  " \u539A": { en: " warm" },
+  " \u4EAE": { en: " bright" },
+  "\u73B0\u5728\u7684\u7F29\u653E\uFF08100% = \u7EB8\u7684\u5B9E\u9645\u5C3A\u5BF8\uFF09\uFF1B\u70B9 = \u56DE\u5230\u81EA\u52A8\u5927\u5C0F\uFF08Ctrl / \u2318 + 0\uFF09\u3002Ctrl / \u2318 + \u6EDA\u8F6E\u3001\u634F\u5408 = \u7F29\u653E\uFF1BCtrl / \u2318 + = / \u2212 = \u4E00\u6863\u4E00\u6863": { en: "Current zoom (100% = the paper's real size); tap = back to auto size (Ctrl / \u2318 + 0). Ctrl / \u2318 + wheel or pinch = zoom; Ctrl / \u2318 + = / \u2212 = step by step" },
+  "\u5176\u4ED6\u7EB8": { en: "Other sheets" },
+  "\u8D77\u70B9\uFF1A|\u25B6 \u4ECE\u8FD9\u513F\u653E\uFF08\u957F\u6309 / \u53F3\u952E\u7A7A\u767D\u5904\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\u5B83\uFF1B\u7F16\u8F91\u4E0D\u52A8\u5B83\uFF09": { en: "Start point: |\u25B6 plays from here (long-press / right-click blank space, \u201CPlay from here\u201D, to move it; editing doesn't move it)" },
+  "\u8FD9\u5F20\u7EB8\u4E0A\u53EA\u6709\u8FD9\u4E00\u5BB6\uFF1A\u6CA1\u6709\u522B\u7684\u6B4C\u624B\u53EF\u4EE5\u632A\u8FC7\u53BB\uFF08\u5207\u5230\u300C\u542C\u300D\u5C31\u90FD\u53E0\u8D77\u6765\uFF09": { en: "This sheet only has this family: no other part to move to (switch to \u201CListen\u201D and they all stack)" },
+  "\u8FD9\u4E00\u53E5\u540E\u9762\u6CA1\u6709\u7A7A\u7740\u7684\u97F3\u4E86\uFF08\u53E5\u53F7\u662F\u8FB9\u754C\uFF09\uFF0C\u5B57\u53EA\u80FD\u632A\u5230\u8FD9\u513F": { en: "No empty notes later in this phrase (phrase ends are boundaries), so the syllable can only move this far" },
+  "\u524D\u9762\u9694\u7740\u53E5\u53F7\uFF08\u6216\u8005\u6CA1\u6709\u97F3\u4E86\uFF09\uFF0C\u5B57\u632A\u4E0D\u8FC7\u53BB": { en: "A phrase end is in the way (or no more notes), so the syllable can't move there" },
+  "\u987A\u624B\u53BB\u6389\u4E86 {removed} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {removed} dynamics / hairpins that no longer govern any note (undo brings them back)" },
+  "\u5F3A\u540E\u5F31": { en: "fp" },
+  "\u5F80\u4E0A\u4E00\u7EA7\uFF08\u8C03\u5185\uFF09": { en: "Up a scale step" },
+  "\u5F80\u4E0B\u4E00\u7EA7\uFF08\u8C03\u5185\uFF09": { en: "Down a scale step" },
+  "\u5347\u534A\u97F3": { en: "Up a semitone" },
+  "\u964D\u534A\u97F3": { en: "Down a semitone" },
+  "\u9AD8\u516B\u5EA6": { en: "Up an octave" },
+  "\u4F4E\u516B\u5EA6": { en: "Down an octave" },
+  "\u65F6\u503C\u51CF\u534A": { en: "Halve durations" },
+  "\u65F6\u503C\u52A0\u500D": { en: "Double durations" },
+  "\u9644\u70B9": { en: "Dot" },
+  "\u52A0\u9644\u70B9\uFF08\u90FD\u6709\u9644\u70B9 = \u53BB\u6389\uFF09": { en: "Add a dot (all dotted = removes them)" },
+  "{sel} \u4E2A": { en: "{sel} selected" },
+  "\u64CD\u4F5C\u2026": { en: "Actions\u2026" },
+  "\u7C98\u8D34\u5230\u5149\u6807\u5904": { en: "Paste at the cursor" },
+  "\u5B9A\u7A3F {finalRev}": { en: "Final {finalRev}" },
+  "\u57FA\u7840": { en: "Basics" },
+  "\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\uFF1A\u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73\u3001\u5DE6\u53F3\u6446\u5F00\uFF08\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65\uFF09": { en: "Gain, pan, mute / solo: first balance the tracks' levels and spread them left and right (step one of mixing)" },
+  "\u6BCF\u6761\u8F68\u7684\u9ED8\u8BA4 EQ\uFF1A\u4E24\u6837\u4E1C\u897F\u7CCA\u5728\u4E00\u8D77\u3001\u592A\u95F7 / \u592A\u523A": { en: "Each track's default EQ: for two things blurring together, too muddy / too harsh" },
+  "\u6BCF\u6761\u8F68\u4E0A\u7684\u7B2C\u4E00\u4E2A\u538B\u7F29\uFF1A\u628A\u5FFD\u5927\u5FFD\u5C0F\u62C9\u5E73": { en: "The first compressor on each track: evens out loud and soft" },
+  "\u53D1\u9001": { en: "Sends" },
+  "\u51FA\u5230\u54EA\u3001\u63A8\u5B50\u540E\u53D1\u7ED9\u54EA\u51E0\u6761\u6DF7\u97F3\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u653E\u5728\u6DF7\u97F3\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09": { en: "Where it outputs, and which buses it sends to post-fader (reverb / delay live on a bus, shared by several tracks)" },
+  "\u94FE": { en: "Chain" },
+  "\u6BCF\u6761\u8F68\u4E0A\u7684\u5168\u90E8\u63D2\u4EF6\u683C\uFF1A\u968F\u4FBF\u63D2\u3001\u5F00\u5173\u3001\u62FF\u6389": { en: "All plugin slots on each track: insert anything, toggle, remove" },
+  "\u589E\u76CA\uFF08\u63A8\u5B50\uFF09\uFF1A\u8FD9\u6761\u8F68\u6574\u4F53\u7684\u97F3\u91CF\u3002\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65 = \u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73": { en: "Gain (fader): this track's overall volume. Step one of mixing = balance the tracks' levels first" },
+  "\u58F0\u50CF\uFF1A\u5728\u5DE6\u53F3\u54EA\u4E2A\u4F4D\u7F6E\u3002\u51E0\u6761\u8F68\u5DE6\u53F3\u9519\u5F00\u4E00\u70B9\uFF0C\u5C31\u4E0D\u4F1A\u90FD\u6324\u5728\u6B63\u4E2D\u95F4\u3002\u6570\u5B57 = \u5F80\u4E00\u8FB9\u63A8\u4E86\u591A\u5C11\uFF08\u7B49\u529F\u7387\uFF1A\u600E\u4E48\u6446\u603B\u54CD\u5EA6\u4E0D\u53D8\uFF09\uFF1A\u4E2D = \u4E24\u4E2A\u5587\u53ED\u5404 \u22123 dB\uFF1B50 = \u8FD9\u8FB9 \u22120.7 dB\u3001\u90A3\u8FB9 \u22128.3 dB\uFF08\u5DEE 7.7 dB\uFF09\uFF1B100 = \u5168\u5728\u8FD9\u8FB9\uFF0C\u53E6\u4E00\u8FB9\u6CA1\u58F0": { en: "Pan: where it sits between left and right. Spread tracks a little so they don't all crowd the center. The number = how far it's pushed to one side (equal power: total loudness stays the same): center = \u22123 dB on each speaker; 50 = this side \u22120.7 dB, that side \u22128.3 dB (7.7 dB apart); 100 = all on this side, nothing on the other" },
+  "\u603B\u8F68\u589E\u76CA\uFF1A\u6240\u6709\u8F68\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E\u6574\u4F53\u518D\u8C03\u5927\u8C03\u5C0F": { en: "Master gain: overall louder / softer after all tracks are mixed" },
+  "\u51FA\u5230\uFF1A\u8FD9\u6761\u8F68\u7684\u58F0\u97F3\u6700\u540E\u53BB\u54EA\u2014\u2014\u76F4\u63A5\u53BB\u603B\u8F68\uFF0C\u6216\u8005\u5148\u8FDB\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u5728\u90A3\u91CC\u4E00\u8D77\u8FC7\u6548\u679C\uFF09": { en: "Output to: where this track's sound finally goes \u2014 straight to master, or into a bus first (to share effects there)" },
+  "\u53D1\u9001\uFF1A\u63A8\u5B50\u4E4B\u540E\u518D\u590D\u5236\u4E00\u4EFD\u7ED9\u8FD9\u6761\u6DF7\u97F3\u8F68\u2014\u2014\u8DDF\u7740\u8FD9\u6761\u8F68\u7684\u589E\u76CA\u548C\u58F0\u50CF\u8D70\uFF1A\u63A8\u5B50\u62C9\u4F4E 3 dB\uFF0C\u53D1\u8FC7\u53BB\u7684\u4E5F\u4F4E 3 dB\uFF08\u539F\u58F0\u548C\u6548\u679C\u7684\u6BD4\u4F8B\u4E0D\u53D8\uFF09\uFF1B\u9759\u97F3\u4E86\u5C31\u4E0D\u53D1\u3002\u8FD9\u91CC\u7684\u6570 = \u8FD9\u4E00\u4F4D\u8FDB\u90A3\u8FB9\u7684\u91CF\uFF0C\u8D8A\u5927\u90A3\u8FB9\u7684\u6548\u679C\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\uFF09\u8D8A\u591A\uFF1B\u539F\u58F0\u7167\u65E7\u8D70\u300C\u51FA\u5230\u300D": { en: "Send: a post-fader copy goes to this bus \u2014 it follows this track's gain and pan: pull the fader down 3 dB and the send drops 3 dB too (dry-to-effect ratio stays); muted means no send. The number = how much enters that bus; higher means more of its effect (reverb / delay); the dry sound still goes to \u201COutput to\u201D" },
+  "\u6DF7\u97F3\u8F68\u589E\u76CA\uFF1A\u4ECE\u8FD9\u6761\u6DF7\u97F3\u8F68\u51FA\u6765\u7684\u603B\u91CF\u3002\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u5168\u6E7F\u7684\u6DF7\u97F3\u8F68 = \u90A3\u8FB9\u7684\u6548\u679C\u6709\u591A\u5927\uFF0C\u53D1\u7ED9\u5B83\u7684\u51E0\u4F4D\u4E00\u8D77\u53D8\uFF08\u6BCF\u4F4D\u5355\u72EC\u591A\u5C11\u770B\u5404\u81EA\u7684\u300C\u53D1\u9001\u300D\uFF09\u3002\u8981\u662F\u6709\u51E0\u4F4D\u662F\u300C\u51FA\u5230\u300D\u5B83\uFF08\u539F\u58F0\u4E5F\u8FDB\u6765\uFF09\uFF0C\u90A3\u8FD9\u4E2A\u63A8\u5B50\u8FDE\u539F\u58F0\u4E00\u8D77\u8C03": { en: "Bus gain: the total coming out of this bus. For fully wet buses (reverb / delay) = how big the effect is, for everyone sending to it (each one's amount is on their own \u201CSend\u201D). If some parts \u201COutput to\u201D it (dry sound too), this fader moves the dry sound as well" },
+  "\u9650\u5E45\uFF08\u603B\u8F68\u6700\u540E\u4E00\u9053\uFF09\uFF1A\u8D85\u8FC7\u5929\u82B1\u677F\uFF08\u22120.18 dBFS\uFF09\u7684\u90A3\u4E00\u5C0F\u6BB5\u5F88\u5FEB\u538B\u4E0B\u6765\uFF0C\u4E0D\u8D85\u7684\u5730\u65B9\u4E00\u4E2A\u91C7\u6837\u90FD\u4E0D\u52A8\uFF0C\u4E0D\u6539\u97F3\u8272\u3002\u5173\u6389 = \u8D85\u4E86\u5C31\u524A\u6CE2\uFF08\u7206\u97F3\u3001\u5BFC\u51FA\u7684\u6587\u4EF6\u91CC\u4E5F\u662F\uFF09\u3002\u4E00\u822C\u4E00\u76F4\u5F00\u7740\uFF1B\u60F3\u770B\u81EA\u5DF1\u7684\u6DF7\u97F3\u5230\u5E95\u591A\u54CD\uFF0C\u53EF\u4EE5\u5148\u5173\u4E86\u770B\u5CF0\u503C": { en: "Limiter (the final stage on master): quickly brings down the bit that exceeds the ceiling (\u22120.18 dBFS); everywhere else not one sample changes, and timbre is untouched. Off = clipping when over (crackle, in exported files too). Usually left on; to see how loud your mix really is, turn it off and watch the peak" },
+  "\u5CF0\u503C\uFF1A\u6700\u8FD1\u8FD9\u4E00\u4E0B\u6700\u54CD\u7684\u90A3\u4E2A\u91C7\u6837\uFF08dBFS\uFF09\u30020 dB = \u6EE1\u683C\uFF0C\u518D\u5927\u5C31\u524A\u6CE2\uFF1B\u9650\u5E45\u5F00\u7740\u65F6\u6700\u591A\u5230 \u22120.18 dB\u3002\u9876\u4E0A\u7684\u7EC6\u7EBF\u662F\u540C\u4E00\u4E2A\u6570": { en: "Peak: the loudest sample just now (dBFS). 0 dB = full scale, above that clips; with the limiter on it tops out at \u22120.18 dB. The thin line on top shows the same number" },
+  "\u5E73\u5747\u7535\u5E73\uFF08RMS\uFF0C\u6700\u8FD1 0.3 \u79D2\uFF0C\u63A8\u5B50\u4E4B\u540E\uFF0CdBFS\uFF09\uFF1A\u6BD4\u5CF0\u503C\u66F4\u63A5\u8FD1\u8033\u6735\u89C9\u5F97\u7684\u54CD\u3002\u51E0\u6761\u8F68\u6446\u5E73\u97F3\u91CF\u770B\u8FD9\u4E2A\uFF1B\u9876\u4E0A\u7684\u7EC6\u7EBF\uFF08\u5CF0\u503C\uFF09\u770B\u4F1A\u4E0D\u4F1A\u7206": { en: "Average level (RMS, last 0.3 s, post-fader, dBFS): closer to perceived loudness than peak. Use this to balance tracks; use the thin line on top (peak) to watch for clipping" },
+  "\u5DE6\u53F3\u76F8\u5173\uFF08\u22121 \u5230 +1\uFF09\uFF1A+1 = \u5DE6\u53F3\u4E00\u6837\uFF08\u5355\u58F0\u9053\uFF09\uFF1B0 \u9644\u8FD1 = \u5F88\u5BBD\uFF1B\u5C0F\u4E8E 0 = \u5DE6\u53F3\u53CD\u76F8\uFF0C\u624B\u673A\u5916\u653E / \u5355\u58F0\u9053\u4E00\u5408\u5C31\u4F1A\u53D8\u5C0F\u3001\u53D8\u7A7A\u3002\u80CC\u666F\u7684\u56FE\uFF1A\u7AD6\u7EBF = \u5355\u58F0\u9053\uFF0C\u8D8A\u5706\u8D8A\u5BBD\uFF0C\u6A2A\u7740 = \u53CD\u76F8\uFF1B\u5F80\u5DE6\u4E0A\u659C = \u504F\u5DE6\u58F0\u9053\u3001\u5F80\u53F3\u4E0A\u659C = \u504F\u53F3": { en: "Stereo correlation (\u22121 to +1): +1 = left and right identical (mono); around 0 = very wide; below 0 = out of phase, which gets thin and quiet on phone speakers / mono. The background figure: vertical line = mono, rounder = wider, horizontal = out of phase; tilting up-left = left-heavy, up-right = right-heavy" },
+  "\u538B\u4E86\u591A\u5C11\uFF1A\u8FD9\u6761\u8F68\u4E0A\u7B2C\u4E00\u53F0\u538B\u7F29\u6B64\u523B\u628A\u58F0\u97F3\u538B\u4F4E\u4E86\u51E0 dB\uFF08\u4E0B\u9762\u644A\u5F00\u7684\u5C31\u662F\u5B83\uFF09\u3002\u4E00\u76F4\u538B\u5F88\u591A = \u9608\u503C\u592A\u4F4E\u6216\u6BD4\u4F8B\u592A\u5927": { en: "Gain reduction: how many dB the first compressor on this track is reducing right now (it's the one shown below). Constantly a lot = threshold too low or ratio too high" },
+  "\u88AB\u8C01\u538B\uFF08\u4FA7\u94FE\uFF09\uFF1A\u538B\u7F29\u5668\u4E0D\u770B\u81EA\u5DF1\uFF0C\u800C\u770B\u53E6\u4E00\u6761\u8F68\u6709\u591A\u54CD\u2014\u2014\u6BD4\u5982\u5C0F\u6708\u76F8\u4E00\u5531\uFF0C\u4F34\u594F\u81EA\u5DF1\u8BA9\u4E00\u70B9": { en: "Compressed by (sidechain): the compressor listens to another track instead of itself \u2014 say, the backing ducks a bit when Tsukuyomi-chan sings" },
+  "\u5E73\u5747": { en: "Average" },
+  "\u5DE6\u53F3\u76F8\u5173": { en: "Stereo correlation" },
+  "\u62F7\u8FD9\u4E00\u683C\u7684\u53C2\u6570\uFF08\u79CD\u7C7B + \u5168\u90E8\u53C2\u6570\uFF1B\u4E0D\u62F7\u5F00\u5173\u3001\u4E0D\u62F7\u88AB\u8C01\u538B\uFF09": { en: "Copy this slot's parameters (kind + all parameters; not on/off, not \u201Ccompressed by\u201D)" },
+  "\u62F7\u53C2\u6570": { en: "Copy params" },
+  "\u628A\u62F7\u7684\u53C2\u6570\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u76D6\u5230\u8FD9\u4E00\u683C\u4E0A\uFF1B\u5F00\u5173 / \u88AB\u8C01\u538B\u7167\u65E7\uFF1B\u80FD\u64A4\u9500": { en: "Applies the copied parameters (from \u201C{from}\u201D) to this slot; on/off and \u201Ccompressed by\u201D stay; can be undone" },
+  "\u7C98\u53C2\u6570": { en: "Paste params" },
+  "\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09": { en: "Collapses the mixer: frees the dock, still in \u201CListen\u201D (Esc = back to writing)" },
+  "\u64AD\u653E\uFF08\u7A7A\u683C\uFF09": { en: "Play (Space)" },
+  "\u6DF7\u97F3\u53F0\u94FA\u6EE1\uFF08\u63A8\u5230\u6700\u4E0A\u9762\uFF0C\u5361\u7247\u6392\u6210\u597D\u51E0\u5217\uFF0C\u4E00\u773C\u770B\u5168\uFF09\uFF1B\u518D\u70B9 = \u56DE\u5230\u5E95\u5EA7": { en: "Fills the screen with the mixer (cards in several columns, all in view); tap again = back to the dock" },
+  "\u5168\u5C4F": { en: "Full screen" },
+  "\u6548\u679C\u5168\u5173\u7740\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF0C\u53EA\u5269\u63A8\u5B50\u3001\u58F0\u50CF\u3001\u51FA\u5230\u548C\u603B\u8F68\u9650\u5E45\u2014\u2014\u542C\u8C31\u5B50\u672C\u8EAB / \u542C\u5DEE\u522B\u7528\uFF1B\u518D\u70B9\u4E00\u4E0B\u56DE\u6765\u3002\u5BFC\u51FA\u7167\u5E38\u5E26\u6548\u679C\u3002": { en: "All effects off: plugins and sends are silent, leaving only faders, pan, outputs and the master limiter \u2014 for hearing the score itself / comparing; tap again to return. Exports still include effects." },
+  "\u4E0D\u518D\u53D1\u7ED9 {to}": { en: "Stop sending to {to}" },
+  "\u5F00 / \u5173": { en: "On / off" },
+  "{strip} \u7C98\u6210\u65B0\u7684\u4E00\u683C\uFF1A{kind}": { en: "{strip} pasted as a new slot: {kind}" },
+  "\u6539\u6210\u6700\u63A5\u8FD1\u7684\u4E00\u952E": { en: "Switch to the nearest Simple" },
+  "\u53D1\u7ED9 {to} {v}": { en: "Send to {to} {v}" },
+  "\u53D1\u7ED9 {value}": { en: "Send to {value}" },
+  "\u88AB\u8C01\u538B": { en: "Compressed by" },
+  "\u51E0\u4E2A\u5927\u65CB\u94AE\uFF0C\u6309\u516C\u5F0F\u8C03\u4E0B\u9762\u5168\u91CF\u7684\u53C2\u6570\uFF08\u53EA\u6362\u8FD9\u4E00\u683C\uFF09": { en: "A few big knobs that set the full parameters below by formula (this slot only)" },
+  "\u4E00\u952E": { en: "Simple" },
+  "\u6BCF\u4E00\u4E2A\u53C2\u6570\u90FD\u644A\u5F00\uFF08\u53EA\u6362\u8FD9\u4E00\u683C\uFF09": { en: "Every parameter laid out (this slot only)" },
+  "\u5168\u91CF": { en: "Full" },
+  "{track} \u63D2\u4E0A{kind}": { en: "{track} inserted {kind}" },
+  "{track} \u62FF\u6389{gone}": { en: "{track} removed {gone}" },
+  "\u4E0D\u7528\uFF08\u81EA\u5DF1\u538B\u81EA\u5DF1\uFF09": { en: "None (compresses itself)" },
+  "\u5728\u5168\u91CF\u91CC\u8C03\u8FC7\uFF0C\u4E00\u952E\u8868\u8FBE\u4E0D\u4E86\uFF1A\u4E00\u952E\u5148\u9501\u7740\uFF0C\u514D\u5F97\u4E00\u78B0\u5C31\u76D6\u6389\u3002": { en: "Adjusted in Full in a way Simple can't express: Simple stays locked so a touch can't overwrite it." },
+  "\u6309\u6700\u63A5\u8FD1\u7684\u4E00\u952E\u6570\u503C\u6539\u5199\u2014\u2014\u5168\u91CF\u91CC\u591A\u8C03\u7684\u4F1A\u4E22\u6389\uFF08\u6BD4\u5982\u4E2D\u9891\u90A3\u4E00\u5200\uFF09\uFF1B\u80FD\u64A4\u9500": { en: "Rewrites to the nearest Simple values \u2014 extra adjustments in Full are lost (like that mid-band cut); can be undone" },
+  "\u6DF7\u97F3\u8F68 / \u603B\u8F68\u4E0A\u6CA1\u6709\u97F3\uFF0C\u7528\u4E0D\u4E0A{v}": { en: "Buses / master have no notes, so {v} isn't usable" },
+  "\uFF08\u5F00\u7740\u4E5F\u4E0D\u5207\uFF09": { en: " (no cut even when on)" },
+  "\u81EA\u52A8\uFF1A{hz} Hz\uFF08\u8FD9\u4F4D\u6700\u4F4E\u7684\u97F3\u5F80\u4E0B\u56DB\u4E2A\u534A\u97F3\uFF09": { en: "Auto: {hz} Hz (four semitones below this part's lowest note)" },
+  "\u81EA\u52A8\uFF08\u8FD9\u6761\u8F68\u6CA1\u6709\u97F3 = \u4E0D\u5207\uFF09": { en: "Auto (no notes on this track = no cut)" },
+  "\u5F80\u8FD9\u6761\u8F68\u4E0A\u63D2\u4E00\u4E2A{kind}": { en: "Insert a {kind} on this track" },
+  "\u5173 = \u8FD9\u4E00\u683C\u8DF3\u8FC7\uFF08\u53C2\u6570\u7559\u7740\uFF09": { en: "Off = this slot is skipped (parameters stay)" },
+  "\u5173\u7740": { en: "Off" },
+  "\u5F00\u7740": { en: "On" },
+  "\u8FD8\u6709 {p} \u4E2A{kind}\u5728\u300C\u94FE\u300D\u91CC": { en: "{p} more {kind} in \u201CChain\u201D" },
+  "\u538B\u4E86": { en: "Reduced" },
+  "\u51FA\u5230": { en: "Output to" },
+  "{out}\uFF08\u63A5\u4E0D\u4E0A\uFF09": { en: "{out} (can't connect)" },
+  "\u53D1\u7ED9 {to}": { en: "Send to {to}" },
+  "\u4E0D\u518D\u53D1\u7ED9\u5B83": { en: "Stop sending to it" },
+  "\u63A8\u5B50\u4E4B\u540E\u53D1\u4E00\u4EFD\u5230\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u653E\u5728\u6DF7\u97F3\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09": { en: "Sends a post-fader copy to a bus (reverb / delay live on buses, shared by several tracks)" },
+  "\uFF0B \u53D1\u9001\u5230\u2026": { en: "\uFF0B Send to\u2026" },
+  "\u8FD8\u6CA1\u6709\u6DF7\u97F3\u8F68\uFF08\u300C\u22EF\u300D\u91CC\u52A0\uFF09": { en: "No buses yet (add one in \u201C\u22EF\u201D)" },
+  "\u300C{out}\u300D\u4E0A\u7684{kind}\u662F\u5168\u6E7F\u7684\uFF1A\u51FA\u5230\u5B83 = \u539F\u58F0\u6CA1\u4E86\uFF0C\u53EA\u5269{kind2}\u3002\u8981\u539F\u58F0\u52A0{kind3}\uFF1A\u51FA\u5230\u603B\u8F68\uFF0C\u7528\u4E0B\u9762\u7684\u300C\u53D1\u9001\u300D\u3002": { en: "The {kind} on \u201C{out}\u201D is fully wet: outputting there = no dry sound, only {kind2}. For dry plus {kind3}: output to master and use \u201CSend\u201D below." },
+  "\u51FA\u5230\u300C{out}\u300D= \u6574\u6761\u58F0\u97F3\u90FD\u8FC7\u5B83\u7684{kind}\uFF1A\u51FA\u5230\u5B83\u7684\u51E0\u6761\u8F68{kind2}\u4E00\u6837\u591A{dryDb}\u3002\u60F3\u6BCF\u6761\u8F68\u5404\u81EA\u591A\u5C11\uFF1A\u51FA\u5230\u603B\u8F68\u3001\u7528\u4E0B\u9762\u7684\u300C\u53D1\u9001\u300D\uFF0C\u90A3\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684{kind3}\u6539\u6210\u5168\u6E7F\u3002": { en: "Outputting to \u201C{out}\u201D = the whole sound passes through its {kind}: tracks output there all get the same {kind2}{dryDb}. For a different amount per track: output to master, use \u201CSend\u201D below, and make the {kind3} on that bus fully wet." },
+  "\uFF0C\u539F\u58F0\u4E5F\u88AB\u5B83\u5173\u5C0F {dryDb}\uFF08\u63A8\u5B50\u4E0A\u770B\u4E0D\u51FA\u6765\uFF09": { en: ", and it also reduces the dry sound by {dryDb} (not visible on the fader)" },
+  "{kind}\uFF1A\u70B9\u5F00\u8C03{DEFAULT_EQ_ID}": { en: "{kind}: tap to adjust{DEFAULT_EQ_ID}" },
+  "\uFF08\u9ED8\u8BA4\u90A3\u4E00\u683C\uFF1A\u80FD\u5173\u3001\u80FD\u6362\u9762\u677F\uFF0C\u4E0D\u80FD\u5220\uFF09": { en: " (the default slot: can be toggled and its panel switched, not deleted)" },
+  "\u94FE\u5C3E\u52A0\u4E00\u683C\uFF1A\u62F7\u7684\u90A3\u4E00\u683C\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u7684\u79CD\u7C7B\u548C\u53C2\u6570": { en: "Adds a slot at the end of the chain: the kind and parameters of the copied slot (from \u201C{from}\u201D)" },
+  "\u7C98\u6210\u65B0\u7684\u4E00\u683C\uFF1A{kind}": { en: "Paste as a new slot: {kind}" },
+  "\u63D2\u4E00\u4E2A\u63D2\u4EF6\uFF08\u4EFB\u4F55\u63D2\u4EF6\u90FD\u80FD\u63D2\u5728\u4EFB\u4F55\u8F68\u4E0A\uFF09": { en: "Insert a plugin (any plugin works on any track)" },
+  "\u4ECE\u8FD9\u6761\u8F68\u4E0A\u62FF\u6389\uFF08\u80FD\u64A4\u9500\uFF09": { en: "Remove from this track (can be undone)" },
+  "\u62FF\u6389": { en: "Remove" },
+  "\u66F4\u591A\uFF1A\u52A0\u6DF7\u97F3\u8F68\u2026": { en: "More: add bus\u2026" },
+  "\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD": { en: "Add a bus (routing track): several tracks send here to share effects, such as one reverb" },
+  "\uFF0B \u6DF7\u97F3\u8F68": { en: "\uFF0B Bus" },
+  "\u8D34\u5728\u5E95\u4E0B\u65F6\u663E\u793A\u51E0\u6392\u5361\u7247\uFF08\u540C\u5C0F\u952E\u76D8\u7684\u300C\u884C\u300D\uFF09\uFF1A\u81EA\u52A8 = \u534A\u5C4F\u653E\u5F97\u4E0B\u7684\u6700\u591A\u6392\uFF1B\u624B\u52A8\u6700\u591A\u5230\u5C4F\u5E55\u653E\u5F97\u4E0B\u3001\u8C31\u8FD8\u9732\u4E00\u6761\u4E3A\u6B62\u3002\u6A2A\u7740\u653E / \u5168\u5C4F\u65F6\u4E0D\u7BA1": { en: "How many rows of cards to show when docked at the bottom (like the keypad rows): Auto = as many as fit in half the screen; manual goes up to what the screen can hold while a strip of the score stays visible. Ignored when docked at the side or full screen" },
+  "\u6392\u6570": { en: "Rows" },
+  "\u5C11\u4E00\u6392": { en: "One row fewer" },
+  "\u591A\u4E00\u6392": { en: "One row more" },
+  "\u6548\u679C\u5168\u5173": { en: "All FX off" },
+  "\u6548\u679C\u5F00\u7740": { en: "FX on" },
+  "\u73B0\u5728\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF08\u63A8\u5B50 / \u58F0\u50CF\u7559\u7740\uFF09\u3002\u70B9 = \u6548\u679C\u56DE\u6765": { en: "Now: plugins and sends are silent (faders / pan stay). Tap = effects back" },
+  "\u70B9 = \u6682\u65F6\u5173\u6389\u5168\u90E8\u6548\u679C\uFF08\u63D2\u4EF6 + \u53D1\u9001\uFF09\uFF0C\u542C\u8C31\u5B50\u672C\u8EAB / \u542C\u5DEE\u522B\uFF1B\u63A8\u5B50\u3001\u58F0\u50CF\u7559\u7740": { en: "Tap = temporarily turn off all effects (plugins + sends), to hear the score itself / compare; faders and pan stay" },
+  "\u8FD8\u539F": { en: "Restore" },
+  "\u9650\u5E45": { en: "Limiter" },
+  "\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09": { en: "Off (may clip)" },
+  "\u5CF0\u503C": { en: "Peak" },
+  "\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904": { en: "Master is the output; it doesn't send anywhere else" },
+  "\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E": { en: "After all parts are mixed" },
+  "\u58F0\u50CF": { en: "Pan" },
+  "\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765": { en: "Bypass: all plugins on this bus are skipped (fader / pan / output / sends stay); tap again = back" },
+  "\u65C1\u901A\u4E2D": { en: "Bypassed" },
+  "\u5F80\u524D\u632A\u4E00\u4F4D": { en: "Move earlier" },
+  "\u5F80\u540E\u632A\u4E00\u4F4D": { en: "Move later" },
+  "\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Delete this bus (tracks sending or outputting to it go back to master; can be undone)" },
+  "\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09": { en: "Name (tap to change)" },
+  "\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09": { en: "Mute: this bus is silent and sends nothing onward (the dry sound of parts sending to it is unaffected)" },
+  "\u9759": { en: "M" },
+  "\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09": { en: "Bus \xB7 bypassed (all plugins skipped)" },
+  "\u6DF7\u97F3\u8F68": { en: "Bus" },
+  "\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09": { en: "Move earlier (this part also moves up on the score)" },
+  "\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09": { en: "Move later (this part also moves down on the score)" },
+  "\u5728 {refs} \u5F20\u7EB8\u4E0A": { en: "On {refs} {refs|sheet|sheets}" },
+  "\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709": { en: "Not on any sheet" },
+  "\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B\uFF08\u4F11\u606F\u5BA4\u91CC\u5B83\u7684\u914D\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Delete this part (its settings in the green room go too; can be undone)" },
+  "\u5220\u6389\u8FD9\u4F4D\u6B4C\u624B": { en: "Delete this part" },
+  "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u6B4C\u624B\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
+  "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
+  "\u72EC": { en: "S" }
+};
+
+// src/device-kv.ts
+var PREFIX = "moonsinger-5b1e7c0a92d34f6e:";
+var _mem = /* @__PURE__ */ new Map();
+function _ls() {
+  try {
+    const ls = globalThis.localStorage;
+    ls.getItem(PREFIX + "__probe");
+    return ls;
+  } catch {
+    return null;
+  }
+}
+function deviceKvGet(key) {
+  const k = PREFIX + key;
+  const ls = _ls();
+  if (ls) {
+    try {
+      return ls.getItem(k);
+    } catch {
+    }
+  }
+  return _mem.get(k) ?? null;
+}
+
+// src/i18n/index.ts
+var LANGS = ["zh", "en"];
+var valid = (v) => LANGS.includes(v) ? v : null;
+function detect() {
+  const g = globalThis;
+  if (g.process?.versions?.node) return "zh";
+  if (typeof g.document === "undefined") {
+    const m = typeof g.name === "string" ? /^lang=(\w+)/.exec(g.name) : null;
+    return valid(m?.[1]) ?? "zh";
+  }
+  const saved = valid(deviceKvGet("lang"));
+  if (saved) return saved;
+  return (g.navigator?.language ?? "en").toLowerCase().startsWith("zh") ? "zh" : "en";
+}
+var _lang = null;
+function lang() {
+  return _lang ??= detect();
+}
+function fill(raw, params) {
+  if (!params) return raw;
+  return raw.replace(/\{(\w+)(?:\|([^|}]*)\|([^}]*))?\}/g, (m, k, one, many) => {
+    if (!(k in params)) return m;
+    return one !== void 0 ? Number(params[k]) === 1 ? one : many ?? "" : String(params[k]);
+  });
+}
+var TABLE = typeof __I18N_OFF__ !== "undefined" && __I18N_OFF__ ? {} : S;
+function lookup(key) {
+  if (lang() === "zh") {
+    const i = key.indexOf("##");
+    return i < 0 ? key : key.slice(0, i);
+  }
+  const e = TABLE[key];
+  return e?.en || key;
+}
+function _t(key, params) {
+  return fill(lookup(key), params);
+}
+
+// src/score/roles.ts
+var ROLE_GROUPS = [
+  { group: _t("\u4EBA\u58F0"), items: [
+    { sound: "voice.vocals", name: "Vocals", zh: _t("\u4E3B\u5531") },
+    { sound: "voice.vocals", name: "Backing Vocals", zh: _t("\u548C\u58F0") },
+    { sound: "voice.soprano", name: "Soprano", zh: _t("\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09") },
+    { sound: "voice.alto", name: "Alto", zh: _t("\u5973\u4F4E\u97F3\uFF08\u5408\u5531\uFF09") },
+    { sound: "voice.tenor", name: "Tenor", zh: _t("\u7537\u9AD8\u97F3\uFF08\u5408\u5531\uFF09") },
+    { sound: "voice.bass", name: "Bass", zh: _t("\u7537\u4F4E\u97F3\uFF08\u5408\u5531\uFF09") }
+  ] },
+  { group: _t("\u4E50\u961F"), items: [
+    { sound: "keyboard.piano", name: "Piano", zh: _t("\u94A2\u7434 / \u952E\u76D8") },
+    { sound: "pluck.guitar", name: "Guitar", zh: _t("\u5409\u4ED6") },
+    { sound: "pluck.bass", name: "Bass", zh: _t("\u8D1D\u65AF") },
+    { sound: "drum.group.set", name: "Drums", zh: _t("\u9F13") },
+    { sound: "strings.group", name: "Strings", zh: _t("\u5F26\u4E50") },
+    { sound: "synth.pad", name: "Synth Pad", zh: _t("\u5408\u6210\u94FA\u5E95") },
+    { sound: "synth.tone.sawtooth", name: "Synth Lead", zh: _t("\u5408\u6210\u4E3B\u97F3") }
+  ] }
+];
+var ROLE_PRESETS = ROLE_GROUPS.flatMap((g) => g.items);
+var DEFAULT_ROLE = ROLE_PRESETS[0];
+function numberParts(parts) {
+  const key = (p) => `${p.name}\0${p.sound}`;
+  const total = /* @__PURE__ */ new Map();
+  for (const p of parts) total.set(key(p), (total.get(key(p)) ?? 0) + 1);
+  const seen = /* @__PURE__ */ new Map();
+  return parts.map((p) => {
+    const k = key(p);
+    if ((total.get(k) ?? 0) < 2) return p.name;
+    const n = (seen.get(k) ?? 0) + 1;
+    seen.set(k, n);
+    return `${p.name} ${n}`;
+  });
+}
+
+// vendor/fflate/fflate.esm.js
+var u8 = Uint8Array;
+var u16 = Uint16Array;
+var i32 = Int32Array;
+var fleb = new u8([
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  1,
+  1,
+  1,
+  1,
+  2,
+  2,
+  2,
+  2,
+  3,
+  3,
+  3,
+  3,
+  4,
+  4,
+  4,
+  4,
+  5,
+  5,
+  5,
+  5,
+  0,
+  /* unused */
+  0,
+  0,
+  /* impossible */
+  0
+]);
+var fdeb = new u8([
+  0,
+  0,
+  0,
+  0,
+  1,
+  1,
+  2,
+  2,
+  3,
+  3,
+  4,
+  4,
+  5,
+  5,
+  6,
+  6,
+  7,
+  7,
+  8,
+  8,
+  9,
+  9,
+  10,
+  10,
+  11,
+  11,
+  12,
+  12,
+  13,
+  13,
+  /* unused */
+  0,
+  0
+]);
+var clim = new u8([16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2, 14, 1, 15]);
+var freb = function(eb, start) {
+  var b = new u16(31);
+  for (var i = 0; i < 31; ++i) {
+    b[i] = start += 1 << eb[i - 1];
+  }
+  var r = new i32(b[30]);
+  for (var i = 1; i < 30; ++i) {
+    for (var j = b[i]; j < b[i + 1]; ++j) {
+      r[j] = j - b[i] << 5 | i;
+    }
+  }
+  return { b, r };
+};
+var _a = freb(fleb, 2);
+var fl = _a.b;
+var revfl = _a.r;
+fl[28] = 258, revfl[258] = 28;
+var _b = freb(fdeb, 0);
+var fd = _b.b;
+var revfd = _b.r;
+var rev = new u16(32768);
+for (i = 0; i < 32768; ++i) {
+  x = (i & 43690) >> 1 | (i & 21845) << 1;
+  x = (x & 52428) >> 2 | (x & 13107) << 2;
+  x = (x & 61680) >> 4 | (x & 3855) << 4;
+  rev[i] = ((x & 65280) >> 8 | (x & 255) << 8) >> 1;
+}
+var x;
+var i;
+var hMap = function(cd, mb, r) {
+  var s = cd.length;
+  var i = 0;
+  var l = new u16(mb);
+  for (; i < s; ++i) {
+    if (cd[i])
+      ++l[cd[i] - 1];
+  }
+  var le = new u16(mb);
+  for (i = 1; i < mb; ++i) {
+    le[i] = le[i - 1] + l[i - 1] << 1;
+  }
+  var co;
+  if (r) {
+    co = new u16(1 << mb);
+    var rvb = 15 - mb;
+    for (i = 0; i < s; ++i) {
+      if (cd[i]) {
+        var sv = i << 4 | cd[i];
+        var r_1 = mb - cd[i];
+        var v = le[cd[i] - 1]++ << r_1;
+        for (var m = v | (1 << r_1) - 1; v <= m; ++v) {
+          co[rev[v] >> rvb] = sv;
+        }
+      }
+    }
+  } else {
+    co = new u16(s);
+    for (i = 0; i < s; ++i) {
+      if (cd[i]) {
+        co[i] = rev[le[cd[i] - 1]++] >> 15 - cd[i];
+      }
+    }
+  }
+  return co;
+};
+var flt = new u8(288);
+for (i = 0; i < 144; ++i)
+  flt[i] = 8;
+var i;
+for (i = 144; i < 256; ++i)
+  flt[i] = 9;
+var i;
+for (i = 256; i < 280; ++i)
+  flt[i] = 7;
+var i;
+for (i = 280; i < 288; ++i)
+  flt[i] = 8;
+var i;
+var fdt = new u8(32);
+for (i = 0; i < 32; ++i)
+  fdt[i] = 5;
+var i;
+var flm = /* @__PURE__ */ hMap(flt, 9, 0);
+var fdm = /* @__PURE__ */ hMap(fdt, 5, 0);
+var shft = function(p) {
+  return (p + 7) / 8 | 0;
+};
+var slc = function(v, s, e) {
+  if (s == null || s < 0)
+    s = 0;
+  if (e == null || e > v.length)
+    e = v.length;
+  return new u8(v.subarray(s, e));
+};
+var ec = [
+  "unexpected EOF",
+  "invalid block type",
+  "invalid length/literal",
+  "invalid distance",
+  "stream finished",
+  "no stream handler",
+  ,
+  "no callback",
+  "invalid UTF-8 data",
+  "extra field too long",
+  "date not in range 1980-2099",
+  "filename too long",
+  "stream finishing",
+  "invalid zip data"
+  // determined by unknown compression method
+];
+var err = function(ind, msg, nt) {
+  var e = new Error(msg || ec[ind]);
+  e.code = ind;
+  if (Error.captureStackTrace)
+    Error.captureStackTrace(e, err);
+  if (!nt)
+    throw e;
+  return e;
+};
+var wbits = function(d, p, v) {
+  v <<= p & 7;
+  var o = p / 8 | 0;
+  d[o] |= v;
+  d[o + 1] |= v >> 8;
+};
+var wbits16 = function(d, p, v) {
+  v <<= p & 7;
+  var o = p / 8 | 0;
+  d[o] |= v;
+  d[o + 1] |= v >> 8;
+  d[o + 2] |= v >> 16;
+};
+var hTree = function(d, mb) {
+  var t = [];
+  for (var i = 0; i < d.length; ++i) {
+    if (d[i])
+      t.push({ s: i, f: d[i] });
+  }
+  var s = t.length;
+  var t2 = t.slice();
+  if (!s)
+    return { t: et, l: 0 };
+  if (s == 1) {
+    var v = new u8(t[0].s + 1);
+    v[t[0].s] = 1;
+    return { t: v, l: 1 };
+  }
+  t.sort(function(a, b) {
+    return a.f - b.f;
+  });
+  t.push({ s: -1, f: 25001 });
+  var l = t[0], r = t[1], i0 = 0, i1 = 1, i2 = 2;
+  t[0] = { s: -1, f: l.f + r.f, l, r };
+  while (i1 != s - 1) {
+    l = t[t[i0].f < t[i2].f ? i0++ : i2++];
+    r = t[i0 != i1 && t[i0].f < t[i2].f ? i0++ : i2++];
+    t[i1++] = { s: -1, f: l.f + r.f, l, r };
+  }
+  var maxSym = t2[0].s;
+  for (var i = 1; i < s; ++i) {
+    if (t2[i].s > maxSym)
+      maxSym = t2[i].s;
+  }
+  var tr2 = new u16(maxSym + 1);
+  var mbt = ln(t[i1 - 1], tr2, 0);
+  if (mbt > mb) {
+    var i = 0, dt = 0;
+    var lft = mbt - mb, cst = 1 << lft;
+    t2.sort(function(a, b) {
+      return tr2[b.s] - tr2[a.s] || a.f - b.f;
+    });
+    for (; i < s; ++i) {
+      var i2_1 = t2[i].s;
+      if (tr2[i2_1] > mb) {
+        dt += cst - (1 << mbt - tr2[i2_1]);
+        tr2[i2_1] = mb;
+      } else
+        break;
+    }
+    dt >>= lft;
+    while (dt > 0) {
+      var i2_2 = t2[i].s;
+      if (tr2[i2_2] < mb)
+        dt -= 1 << mb - tr2[i2_2]++ - 1;
+      else
+        ++i;
+    }
+    for (; i >= 0 && dt; --i) {
+      var i2_3 = t2[i].s;
+      if (tr2[i2_3] == mb) {
+        --tr2[i2_3];
+        ++dt;
+      }
+    }
+    mbt = mb;
+  }
+  return { t: new u8(tr2), l: mbt };
+};
+var ln = function(n, l, d) {
+  return n.s == -1 ? Math.max(ln(n.l, l, d + 1), ln(n.r, l, d + 1)) : l[n.s] = d;
+};
+var lc = function(c) {
+  var s = c.length;
+  while (s && !c[--s])
+    ;
+  var cl = new u16(++s);
+  var cli = 0, cln = c[0], cls = 1;
+  var w = function(v) {
+    cl[cli++] = v;
+  };
+  for (var i = 1; i <= s; ++i) {
+    if (c[i] == cln && i != s)
+      ++cls;
+    else {
+      if (!cln && cls > 2) {
+        for (; cls > 138; cls -= 138)
+          w(32754);
+        if (cls > 2) {
+          w(cls > 10 ? cls - 11 << 5 | 28690 : cls - 3 << 5 | 12305);
+          cls = 0;
+        }
+      } else if (cls > 3) {
+        w(cln), --cls;
+        for (; cls > 6; cls -= 6)
+          w(8304);
+        if (cls > 2)
+          w(cls - 3 << 5 | 8208), cls = 0;
+      }
+      while (cls--)
+        w(cln);
+      cls = 1;
+      cln = c[i];
+    }
+  }
+  return { c: cl.subarray(0, cli), n: s };
+};
+var clen = function(cf, cl) {
+  var l = 0;
+  for (var i = 0; i < cl.length; ++i)
+    l += cf[i] * cl[i];
+  return l;
+};
+var wfblk = function(out, pos, dat) {
+  var s = dat.length;
+  var o = shft(pos + 2);
+  out[o] = s & 255;
+  out[o + 1] = s >> 8;
+  out[o + 2] = out[o] ^ 255;
+  out[o + 3] = out[o + 1] ^ 255;
+  for (var i = 0; i < s; ++i)
+    out[o + i + 4] = dat[i];
+  return (o + 4 + s) * 8;
+};
+var wblk = function(dat, out, final, syms, lf, df, eb, li, bs, bl, p) {
+  wbits(out, p++, final);
+  ++lf[256];
+  var _a2 = hTree(lf, 15), dlt = _a2.t, mlb = _a2.l;
+  var _b2 = hTree(df, 15), ddt = _b2.t, mdb = _b2.l;
+  var _c = lc(dlt), lclt = _c.c, nlc = _c.n;
+  var _d = lc(ddt), lcdt = _d.c, ndc = _d.n;
+  var lcfreq = new u16(19);
+  for (var i = 0; i < lclt.length; ++i)
+    ++lcfreq[lclt[i] & 31];
+  for (var i = 0; i < lcdt.length; ++i)
+    ++lcfreq[lcdt[i] & 31];
+  var _e = hTree(lcfreq, 7), lct = _e.t, mlcb = _e.l;
+  var nlcc = 19;
+  for (; nlcc > 4 && !lct[clim[nlcc - 1]]; --nlcc)
+    ;
+  var flen = bl + 5 << 3;
+  var ftlen = clen(lf, flt) + clen(df, fdt) + eb;
+  var dtlen = clen(lf, dlt) + clen(df, ddt) + eb + 14 + 3 * nlcc + clen(lcfreq, lct) + 2 * lcfreq[16] + 3 * lcfreq[17] + 7 * lcfreq[18];
+  if (bs >= 0 && flen <= ftlen && flen <= dtlen)
+    return wfblk(out, p, dat.subarray(bs, bs + bl));
+  var lm, ll, dm, dl;
+  wbits(out, p, 1 + (dtlen < ftlen)), p += 2;
+  if (dtlen < ftlen) {
+    lm = hMap(dlt, mlb, 0), ll = dlt, dm = hMap(ddt, mdb, 0), dl = ddt;
+    var llm = hMap(lct, mlcb, 0);
+    wbits(out, p, nlc - 257);
+    wbits(out, p + 5, ndc - 1);
+    wbits(out, p + 10, nlcc - 4);
+    p += 14;
+    for (var i = 0; i < nlcc; ++i)
+      wbits(out, p + 3 * i, lct[clim[i]]);
+    p += 3 * nlcc;
+    var lcts = [lclt, lcdt];
+    for (var it = 0; it < 2; ++it) {
+      var clct = lcts[it];
+      for (var i = 0; i < clct.length; ++i) {
+        var len = clct[i] & 31;
+        wbits(out, p, llm[len]), p += lct[len];
+        if (len > 15)
+          wbits(out, p, clct[i] >> 5 & 127), p += clct[i] >> 12;
+      }
+    }
+  } else {
+    lm = flm, ll = flt, dm = fdm, dl = fdt;
+  }
+  for (var i = 0; i < li; ++i) {
+    var sym = syms[i];
+    if (sym > 255) {
+      var len = sym >> 18 & 31;
+      wbits16(out, p, lm[len + 257]), p += ll[len + 257];
+      if (len > 7)
+        wbits(out, p, sym >> 23 & 31), p += fleb[len];
+      var dst = sym & 31;
+      wbits16(out, p, dm[dst]), p += dl[dst];
+      if (dst > 3)
+        wbits16(out, p, sym >> 5 & 8191), p += fdeb[dst];
+    } else {
+      wbits16(out, p, lm[sym]), p += ll[sym];
+    }
+  }
+  wbits16(out, p, lm[256]);
+  return p + ll[256];
+};
+var deo = /* @__PURE__ */ new i32([65540, 131080, 131088, 131104, 262176, 1048704, 1048832, 2114560, 2117632]);
+var et = /* @__PURE__ */ new u8(0);
+var dflt = function(dat, lvl, plvl, pre, post, st) {
+  var s = st.z || dat.length;
+  var o = new u8(pre + s + 5 * (1 + Math.ceil(s / 7e3)) + post);
+  var w = o.subarray(pre, o.length - post);
+  var lst = st.l;
+  var pos = (st.r || 0) & 7;
+  if (lvl) {
+    if (pos)
+      w[0] = st.r >> 3;
+    var opt = deo[lvl - 1];
+    var n = opt >> 13, c = opt & 8191;
+    var msk_1 = (1 << plvl) - 1;
+    var prev = st.p || new u16(32768), head = st.h || new u16(msk_1 + 1);
+    var bs1_1 = Math.ceil(plvl / 3), bs2_1 = 2 * bs1_1;
+    var hsh = function(i2) {
+      return (dat[i2] ^ dat[i2 + 1] << bs1_1 ^ dat[i2 + 2] << bs2_1) & msk_1;
+    };
+    var syms = new i32(25e3);
+    var lf = new u16(288), df = new u16(32);
+    var lc_1 = 0, eb = 0, i = st.i || 0, li = 0, wi = st.w || 0, bs = 0;
+    for (; i + 2 < s; ++i) {
+      var hv = hsh(i);
+      var imod = i & 32767, pimod = head[hv];
+      prev[imod] = pimod;
+      head[hv] = imod;
+      if (wi <= i) {
+        var rem = s - i;
+        if ((lc_1 > 7e3 || li > 24576) && (rem > 423 || !lst)) {
+          pos = wblk(dat, w, 0, syms, lf, df, eb, li, bs, i - bs, pos);
+          li = lc_1 = eb = 0, bs = i;
+          for (var j = 0; j < 286; ++j)
+            lf[j] = 0;
+          for (var j = 0; j < 30; ++j)
+            df[j] = 0;
+        }
+        var l = 2, d = 0, ch_1 = c, dif = imod - pimod & 32767;
+        if (rem > 2 && hv == hsh(i - dif)) {
+          var maxn = Math.min(n, rem) - 1;
+          var maxd = Math.min(32767, i);
+          var ml = Math.min(258, rem);
+          while (dif <= maxd && --ch_1 && imod != pimod) {
+            if (dat[i + l] == dat[i + l - dif]) {
+              var nl = 0;
+              for (; nl < ml && dat[i + nl] == dat[i + nl - dif]; ++nl)
+                ;
+              if (nl > l) {
+                l = nl, d = dif;
+                if (nl > maxn)
+                  break;
+                var mmd = Math.min(dif, nl - 2);
+                var md = 0;
+                for (var j = 0; j < mmd; ++j) {
+                  var ti = i - dif + j & 32767;
+                  var pti = prev[ti];
+                  var cd = ti - pti & 32767;
+                  if (cd > md)
+                    md = cd, pimod = ti;
+                }
+              }
+            }
+            imod = pimod, pimod = prev[imod];
+            dif += imod - pimod & 32767;
+          }
+        }
+        if (d) {
+          syms[li++] = 268435456 | revfl[l] << 18 | revfd[d];
+          var lin = revfl[l] & 31, din = revfd[d] & 31;
+          eb += fleb[lin] + fdeb[din];
+          ++lf[257 + lin];
+          ++df[din];
+          wi = i + l;
+          ++lc_1;
+        } else {
+          syms[li++] = dat[i];
+          ++lf[dat[i]];
+        }
+      }
+    }
+    for (i = Math.max(i, wi); i < s; ++i) {
+      syms[li++] = dat[i];
+      ++lf[dat[i]];
+    }
+    pos = wblk(dat, w, lst, syms, lf, df, eb, li, bs, i - bs, pos);
+    if (!lst) {
+      st.r = pos & 7 | w[pos / 8 | 0] << 3;
+      pos -= 7;
+      st.h = head, st.p = prev, st.i = i, st.w = wi;
+    }
+  } else {
+    for (var i = st.w || 0; i < s + lst; i += 65535) {
+      var e = i + 65535;
+      if (e >= s) {
+        w[pos / 8 | 0] = lst;
+        e = s;
+      }
+      pos = wfblk(w, pos + 1, dat.subarray(i, e));
+    }
+    st.i = s;
+  }
+  return slc(o, 0, pre + shft(pos) + post);
+};
+var crct = /* @__PURE__ */ function() {
+  var t = new Int32Array(256);
+  for (var i = 0; i < 256; ++i) {
+    var c = i, k = 9;
+    while (--k)
+      c = (c & 1 && -306674912) ^ c >>> 1;
+    t[i] = c;
+  }
+  return t;
+}();
+var crc = function() {
+  var c = -1;
+  return {
+    p: function(d) {
+      var cr = c;
+      for (var i = 0; i < d.length; ++i)
+        cr = crct[cr & 255 ^ d[i]] ^ cr >>> 8;
+      c = cr;
+    },
+    d: function() {
+      return ~c;
+    }
+  };
+};
+var dopt = function(dat, opt, pre, post, st) {
+  if (!st) {
+    st = { l: 1 };
+    if (opt.dictionary) {
+      var dict = opt.dictionary.subarray(-32768);
+      var newDat = new u8(dict.length + dat.length);
+      newDat.set(dict);
+      newDat.set(dat, dict.length);
+      dat = newDat;
+      st.w = dict.length;
+    }
+  }
+  return dflt(dat, opt.level == null ? 6 : opt.level, opt.mem == null ? st.l ? Math.ceil(Math.max(8, Math.min(13, Math.log(dat.length))) * 1.5) : 20 : 12 + opt.mem, pre, post, st);
+};
+var mrg = function(a, b) {
+  var o = {};
+  for (var k in a)
+    o[k] = a[k];
+  for (var k in b)
+    o[k] = b[k];
+  return o;
+};
+var wbytes = function(d, b, v) {
+  for (; v; ++b)
+    d[b] = v, v >>>= 8;
+};
+function deflateSync(data, opts) {
+  return dopt(data, opts || {}, 0, 0);
+}
+var fltn = function(d, p, t, o) {
+  for (var k in d) {
+    var val = d[k], n = p + k, op = o;
+    if (Array.isArray(val))
+      op = mrg(o, val[1]), val = val[0];
+    if (val instanceof u8)
+      t[n] = [val, op];
+    else {
+      t[n += "/"] = [new u8(0), op];
+      fltn(val, n, t, o);
+    }
+  }
+};
+var te = typeof TextEncoder != "undefined" && /* @__PURE__ */ new TextEncoder();
+var td = typeof TextDecoder != "undefined" && /* @__PURE__ */ new TextDecoder();
+var tds = 0;
+try {
+  td.decode(et, { stream: true });
+  tds = 1;
+} catch (e) {
+}
+var dutf8 = function(d) {
+  for (var r = "", i = 0; ; ) {
+    var c = d[i++];
+    var eb = (c > 127) + (c > 223) + (c > 239);
+    if (i + eb > d.length)
+      return { s: r, r: slc(d, i - 1) };
+    if (!eb)
+      r += String.fromCharCode(c);
+    else if (eb == 3) {
+      c = ((c & 15) << 18 | (d[i++] & 63) << 12 | (d[i++] & 63) << 6 | d[i++] & 63) - 65536, r += String.fromCharCode(55296 | c >> 10, 56320 | c & 1023);
+    } else if (eb & 1)
+      r += String.fromCharCode((c & 31) << 6 | d[i++] & 63);
+    else
+      r += String.fromCharCode((c & 15) << 12 | (d[i++] & 63) << 6 | d[i++] & 63);
+  }
+};
+function strToU8(str, latin1) {
+  if (latin1) {
+    var ar_1 = new u8(str.length);
+    for (var i = 0; i < str.length; ++i)
+      ar_1[i] = str.charCodeAt(i);
+    return ar_1;
+  }
+  if (te)
+    return te.encode(str);
+  var l = str.length;
+  var ar = new u8(str.length + (str.length >> 1));
+  var ai = 0;
+  var w = function(v) {
+    ar[ai++] = v;
+  };
+  for (var i = 0; i < l; ++i) {
+    if (ai + 5 > ar.length) {
+      var n = new u8(ai + 8 + (l - i << 1));
+      n.set(ar);
+      ar = n;
+    }
+    var c = str.charCodeAt(i);
+    if (c < 128 || latin1)
+      w(c);
+    else if (c < 2048)
+      w(192 | c >> 6), w(128 | c & 63);
+    else if (c > 55295 && c < 57344)
+      c = 65536 + (c & 1023 << 10) | str.charCodeAt(++i) & 1023, w(240 | c >> 18), w(128 | c >> 12 & 63), w(128 | c >> 6 & 63), w(128 | c & 63);
+    else
+      w(224 | c >> 12), w(128 | c >> 6 & 63), w(128 | c & 63);
+  }
+  return slc(ar, 0, ai);
+}
+function strFromU8(dat, latin1) {
+  if (latin1) {
+    var r = "";
+    for (var i = 0; i < dat.length; i += 16384)
+      r += String.fromCharCode.apply(null, dat.subarray(i, i + 16384));
+    return r;
+  } else if (td) {
+    return td.decode(dat);
+  } else {
+    var _a2 = dutf8(dat), s = _a2.s, r = _a2.r;
+    if (r.length)
+      err(8);
+    return s;
+  }
+}
+var exfl = function(ex) {
+  var le = 0;
+  if (ex) {
+    for (var k in ex) {
+      var l = ex[k].length;
+      if (l > 65535)
+        err(9);
+      le += l + 4;
+    }
+  }
+  return le;
+};
+var wzh = function(d, b, f, fn, u, c, ce, co) {
+  var fl2 = fn.length, ex = f.extra, col = co && co.length;
+  var exl = exfl(ex);
+  wbytes(d, b, ce != null ? 33639248 : 67324752), b += 4;
+  if (ce != null)
+    d[b++] = 20, d[b++] = f.os;
+  d[b] = 20, b += 2;
+  d[b++] = f.flag << 1 | (c < 0 && 8), d[b++] = u && 8;
+  d[b++] = f.compression & 255, d[b++] = f.compression >> 8;
+  var dt = new Date(f.mtime == null ? Date.now() : f.mtime), y = dt.getFullYear() - 1980;
+  if (y < 0 || y > 119)
+    err(10);
+  wbytes(d, b, y << 25 | dt.getMonth() + 1 << 21 | dt.getDate() << 16 | dt.getHours() << 11 | dt.getMinutes() << 5 | dt.getSeconds() >> 1), b += 4;
+  if (c != -1) {
+    wbytes(d, b, f.crc);
+    wbytes(d, b + 4, c < 0 ? -c - 2 : c);
+    wbytes(d, b + 8, f.size);
+  }
+  wbytes(d, b + 12, fl2);
+  wbytes(d, b + 14, exl), b += 16;
+  if (ce != null) {
+    wbytes(d, b, col);
+    wbytes(d, b + 6, f.attrs);
+    wbytes(d, b + 10, ce), b += 14;
+  }
+  d.set(fn, b);
+  b += fl2;
+  if (exl) {
+    for (var k in ex) {
+      var exf = ex[k], l = exf.length;
+      wbytes(d, b, +k);
+      wbytes(d, b + 2, l);
+      d.set(exf, b + 4), b += 4 + l;
+    }
+  }
+  if (col)
+    d.set(co, b), b += col;
+  return b;
+};
+var wzf = function(o, b, c, d, e) {
+  wbytes(o, b, 101010256);
+  wbytes(o, b + 8, c);
+  wbytes(o, b + 10, c);
+  wbytes(o, b + 12, d);
+  wbytes(o, b + 16, e);
+};
+function zipSync(data, opts) {
+  if (!opts)
+    opts = {};
+  var r = {};
+  var files = [];
+  fltn(data, "", r, opts);
+  var o = 0;
+  var tot = 0;
+  for (var fn in r) {
+    var _a2 = r[fn], file = _a2[0], p = _a2[1];
+    var compression = p.level == 0 ? 0 : 8;
+    var f = strToU8(fn), s = f.length;
+    var com = p.comment, m = com && strToU8(com), ms = m && m.length;
+    var exl = exfl(p.extra);
+    if (s > 65535)
+      err(11);
+    var d = compression ? deflateSync(file, p) : file, l = d.length;
+    var c = crc();
+    c.p(file);
+    files.push(mrg(p, {
+      size: file.length,
+      crc: c.d(),
+      c: d,
+      f,
+      m,
+      u: s != fn.length || m && com.length != ms,
+      o,
+      compression
+    }));
+    o += 30 + s + exl + l;
+    tot += 76 + 2 * (s + exl) + (ms || 0) + l;
+  }
+  var out = new u8(tot + 22), oe = o, cdl = tot - o;
+  for (var i = 0; i < files.length; ++i) {
+    var f = files[i];
+    wzh(out, f.o, f, f.f, f.u, f.c.length);
+    var badd = 30 + f.f.length + exfl(f.extra);
+    out.set(f.c, f.o + badd);
+    wzh(out, o, f, f.f, f.u, f.c.length, f.o, f.m), o += 16 + badd + (f.m ? f.m.length : 0);
+  }
+  wzf(out, o, files.length, cdl, oe);
+  return out;
+}
+
+// src/score/paper.ts
+var STAFF_MM = 7;
+var STAFF_MM_COMPACT = 5;
+var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u8C31\u5927") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1B\u603B\u8C31\u58F0\u90E8\u591A\u7528\u8FD9\u4E2A") }];
+var densityOf = (p) => p.density ?? "cozy";
+var staffMmOf = (p) => p.staffMm ?? (densityOf(p) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
+var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
+var DEFAULT_PAPER = "A5";
+var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09"), A6: _t("\u53E3\u888B\u672C") };
+var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
+function paperOf(kind, density = "cozy") {
+  const s = SIZES[kind];
+  return { kind, widthMm: s.w, heightMm: s.h, marginMm: { l: s.m, r: s.m, t: s.m, b: s.m }, ...density === "compact" ? { density } : {} };
+}
+
+// src/score/pitch.ts
+var STEPS = ["C", "D", "E", "F", "G", "A", "B"];
+var STEP_SEMI = [0, 2, 4, 5, 7, 9, 11];
+var HOME = { step: "D", alter: 0, octave: 4 };
+var stepIndex = (s) => STEPS.indexOf(s);
+function midiOf(p) {
+  return (p.octave + 1) * 12 + STEP_SEMI[stepIndex(p.step)] + p.alter;
+}
+function diatonicIndex(p) {
+  return p.octave * 7 + stepIndex(p.step);
+}
+
+// src/score/repeats.ts
+function tickOf(tokens) {
+  const out = [];
+  let t = 0;
+  for (const x of tokens) {
+    out.push(t);
+    if (isTimed(x)) t += x.dur;
+  }
+  return out;
+}
+var hasRepeats = (tokens) => tokens.some((t) => t.kind === "nav" || t.kind === "bar" && !!t.repeat);
+function playSegments(tokens, len) {
+  if (!hasRepeats(tokens)) return null;
+  const ticks = tickOf(tokens), ev = [];
+  tokens.forEach((t, i) => {
+    if (t.kind === "bar" && t.repeat) {
+      if (t.repeat === "end" || t.repeat === "both") ev.push({ i, tick: ticks[i], k: "end", times: Math.max(2, t.times ?? 2) });
+      if (t.repeat === "start" || t.repeat === "both") ev.push({ i, tick: ticks[i], k: "start" });
+    } else if (t.kind === "nav") ev.push({ i, tick: ticks[i], k: "nav", what: t.what, nums: t.nums ?? [1] });
+  });
+  const segs = [];
+  const emit = (a, b) => {
+    if (b > a) segs.push({ t0: a, t1: Math.min(b, len) });
+  };
+  const find = (pred, from = 0) => {
+    for (let k = from; k < ev.length; k++) if (pred(ev[k])) return k;
+    return -1;
+  };
+  const segno = find((e) => e.k === "nav" && e.what === "segno");
+  let p = 0, segStart = 0, secStart = 0, secP = 0, pass = 1, jumped = false, mode = null, landed = -1, guard = 0;
+  const count = /* @__PURE__ */ new Map();
+  while (p < ev.length && guard++ < 512 && segs.length < 256) {
+    const e = ev[p];
+    if (e.k === "start") {
+      if (p !== landed) {
+        secStart = e.tick;
+        secP = p;
+        pass = 1;
+      }
+      p++;
+      continue;
+    }
+    if (e.k === "end") {
+      const n = count.get(p) ?? 0;
+      if (!jumped && n < (e.times ?? 2) - 1) {
+        count.set(p, n + 1);
+        emit(segStart, e.tick);
+        segStart = secStart;
+        pass++;
+        p = secP;
+        landed = ev[secP]?.k === "start" && ev[secP].tick === secStart ? secP : -1;
+        continue;
+      }
+      secStart = e.tick;
+      secP = p + 1;
+      pass = 1;
+      p++;
+      continue;
+    }
+    const w = e.what;
+    if (w === "ending") {
+      if ((e.nums ?? [1]).includes(pass)) {
+        p++;
+        continue;
+      }
+      const close = find((x) => x.k === "end" || x.k === "start" || x.k === "nav" && x.what === "ending", p + 1);
+      let to, np;
+      if (close >= 0) {
+        to = ev[close].tick;
+        np = ev[close].k === "end" ? close + 1 : close;
+      } else {
+        const bi = tokens.findIndex((t, i) => i > e.i && t.kind === "bar");
+        to = bi >= 0 ? ticks[bi] : len;
+        np = find((x) => x.tick >= to, p + 1);
+        if (np < 0) np = ev.length;
+      }
+      emit(segStart, e.tick);
+      segStart = to;
+      p = np;
+      continue;
+    }
+    if ((w === "dc" || w === "dcFine" || w === "dcCoda" || w === "ds" || w === "dsFine" || w === "dsCoda") && !jumped) {
+      const toSegno = w.startsWith("ds");
+      if (toSegno && segno < 0) {
+        p++;
+        continue;
+      }
+      emit(segStart, e.tick);
+      jumped = true;
+      mode = w.endsWith("Fine") ? "fine" : w.endsWith("Coda") ? "coda" : null;
+      p = toSegno ? segno : 0;
+      segStart = toSegno ? ev[segno].tick : 0;
+      secStart = segStart;
+      secP = p;
+      pass = 1;
+      landed = -1;
+      continue;
+    }
+    if (w === "fine" && jumped && mode === "fine") {
+      emit(segStart, e.tick);
+      return segs;
+    }
+    if (w === "toCoda" && jumped && mode === "coda") {
+      let c = find((x) => x.k === "nav" && x.what === "coda", p + 1);
+      if (c < 0) c = find((x) => x.k === "nav" && x.what === "coda");
+      if (c >= 0) {
+        emit(segStart, e.tick);
+        segStart = ev[c].tick;
+        p = c + 1;
+        mode = null;
+        continue;
+      }
+    }
+    p++;
+  }
+  emit(segStart, len);
+  return segs;
+}
+var STATE_KINDS = /* @__PURE__ */ new Set(["key", "time", "tempo", "dyn", "groove", "clef", "ottava"]);
+function sliceBySegments(tokens, segs, newId) {
+  const ticks = tickOf(tokens), out = [], used = /* @__PURE__ */ new Set();
+  const copy = (t) => {
+    if (used.has(t.id)) return { ...t, id: newId() };
+    used.add(t.id);
+    return t;
+  };
+  const total = tokens.reduce((a, t) => a + (isTimed(t) ? t.dur : 0), 0);
+  let prevEnd = 0;
+  segs.forEach((s, k) => {
+    let cur = s.t0, first = true;
+    const jump = k > 0 && s.t0 !== prevEnd;
+    if (jump) {
+      const last = /* @__PURE__ */ new Map();
+      tokens.forEach((t, i) => {
+        if (STATE_KINDS.has(t.kind) && ticks[i] < s.t0) last.set(t.kind, t);
+      });
+      for (const kind of ["key", "time", "tempo", "groove", "dyn", "clef", "ottava"]) {
+        const t = last.get(kind);
+        if (t) out.push({ ...t, id: newId() });
+      }
+    }
+    tokens.forEach((t, i) => {
+      const at = ticks[i];
+      if (t.kind === "nav") return;
+      if (t.kind === "bar") {
+        if (at < s.t0 || at > s.t1 || at === s.t0 && (k > 0 || !!t.repeat)) return;
+        const b = copy(t);
+        const { repeat: _r, times: _t2, ...plain } = b;
+        out.push(plain);
+        return;
+      }
+      const inside = at >= s.t0 && (at < s.t1 || k === segs.length - 1 && s.t1 >= total && at === s.t1 && !isTimed(t));
+      if (!inside) return;
+      if (!isTimed(t)) {
+        out.push(copy(t));
+        return;
+      }
+      if (at > cur) out.push({ kind: "rest", id: newId(), dur: at - cur });
+      let x = copy(t);
+      const room = s.t1 - at;
+      if (x.dur > room) x = { ...x, dur: room };
+      if (first && jump && x.kind === "note" && x.tie) {
+        const { tie: _t2, ...rest } = x;
+        x = rest;
+      }
+      out.push(x);
+      cur = at + x.dur;
+      first = false;
+    });
+    if (s.t1 > cur) out.push({ kind: "rest", id: newId(), dur: s.t1 - cur });
+    prevEnd = s.t1;
+  });
+  return out;
+}
+function expandPaper(song, paper, newId) {
+  const owner = tempoOwner(song, paper);
+  if (!owner) return paper;
+  const segs = playSegments(paper.tracks[owner], paperTicks(paper));
+  if (!segs) {
+    if (!Object.values(paper.tracks).some(hasRepeats)) return paper;
+    return { ...paper, tracks: Object.fromEntries(Object.entries(paper.tracks).map(([k, t]) => [k, t.filter((x) => x.kind !== "nav").map((x) => x.kind === "bar" && x.repeat ? { kind: "bar", id: x.id } : x)])) };
+  }
+  return { ...paper, tracks: Object.fromEntries(Object.entries(paper.tracks).map(([k, t]) => [k, sliceBySegments(t, segs, newId)])) };
+}
+
+// src/score/song.ts
+var TPQ = 1680;
+var WHOLE = TPQ * 4;
+var LADDER = [TPQ / 8, TPQ / 4, TPQ / 2, TPQ, TPQ * 2, WHOLE];
+var MIN_DUR = TPQ / 8 * 4 / 7;
+var MAX_DUR = WHOLE * 4;
+var NAV_LABEL = { segno: "Segno", coda: "Coda", fine: "Fine", toCoda: "To Coda", dc: "D.C.", dcFine: "D.C. al Fine", dcCoda: "D.C. al Coda", ds: "D.S.", dsFine: "D.S. al Fine", dsCoda: "D.S. al Coda" };
+var endingLabel = (nums) => nums && nums.length ? nums.map((n) => `${n}.`).join(" ") : "1.";
+var SWELL_NAME = { "<": _t("\u97F3\u5185\u6E10\u5F3A"), ">": _t("\u97F3\u5185\u6E10\u5F31"), "<>": _t("\u97F3\u5185\u9F13\u8D77") };
+var ART_NAME = { staccato: _t("\u8DF3\u97F3"), accent: _t("\u91CD\u97F3"), marcato: _t("\u5F3A\u97F3"), sfz: _t("\u7A81\u5F3A"), fp: _t("\u5F3A\u540E\u5373\u5F31"), tenuto: _t("\u4FDD\u6301"), breath: _t("\u547C\u5438"), stress: _t("\u6B21\u91CD\u97F3"), unstress: _t("\u5F31\u5316"), ghost: _t("\u5E7D\u7075\u97F3"), whisper: _t("\u6C14\u58F0"), swellUp: _t("\u97F3\u5185\u6E10\u5F3A"), swellDown: _t("\u97F3\u5185\u6E10\u5F31"), swellBoth: _t("\u97F3\u5185\u9F13\u8D77"), arpeggio: _t("\u7436\u97F3") };
+function swellOf(t) {
+  if (t?.kind !== "note" || !t.art) return void 0;
+  return t.art.includes("swellUp") ? "<" : t.art.includes("swellDown") ? ">" : t.art.includes("swellBoth") ? "<>" : void 0;
+}
+var DYNS = ["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"];
+var CLEFS = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
+var SPLIT_MIDI = 60;
+var DEFAULT_KEY = 0;
+var DEFAULT_TIME = { beats: 4, beatType: 4 };
+var DEFAULT_BPM = 90;
+var isTimed = (t) => t.kind === "note" || t.kind === "rest";
+var isMark = (t) => t.kind === "key" || t.kind === "time" || t.kind === "tempo";
+function headLen(tokens) {
+  let n = 0;
+  while (n < tokens.length && isMark(tokens[n])) n++;
+  return n;
+}
+function prevPitch(tokens, i) {
+  for (let j = i - 1; j >= 0; j--) {
+    const t = tokens[j];
+    if (t.kind === "note" && t.pitch) return t.pitch;
+  }
+  return null;
+}
+function effectivePitch(tokens, i) {
+  const t = tokens[i];
+  if (t.kind === "note" && t.pitch) return t.pitch;
+  return prevPitch(tokens, i) ?? HOME;
+}
+var TEMPO_WORDS = [
+  { from: 0, it: "Largo", zh: _t("\u5E7F\u677F"), typical: 50 },
+  { from: 60, it: "Larghetto", zh: _t("\u5C0F\u5E7F\u677F"), typical: 63 },
+  { from: 66, it: "Adagio", zh: _t("\u67D4\u677F"), typical: 70 },
+  { from: 76, it: "Andante", zh: _t("\u884C\u677F"), typical: 88 },
+  { from: 100, it: "Moderato", zh: _t("\u4E2D\u677F"), typical: 108 },
+  { from: 112, it: "Allegretto", zh: _t("\u5C0F\u5FEB\u677F"), typical: 116 },
+  { from: 120, it: "Allegro", zh: _t("\u5FEB\u677F"), typical: 132 },
+  { from: 156, it: "Vivace", zh: _t("\u6D3B\u677F"), typical: 160 },
+  { from: 176, it: "Presto", zh: _t("\u6025\u677F"), typical: 184 },
+  { from: 200, it: "Prestissimo", zh: _t("\u6700\u6025\u677F"), typical: 208 }
+];
+function rampTarget(tokens, i, end = tokens.length) {
+  for (let j = i + 1; j < end; j++) {
+    const t = tokens[j];
+    if (t.kind === "hairpin") return -1;
+    if (t.kind === "dyn") return t.ramp ? j : -1;
+  }
+  return -1;
+}
+function tempoOwner(song, paper) {
+  return song.parts.find((p) => paper.tracks[p.id])?.id ?? null;
+}
+function autoStaffs(tokens, staves) {
+  let last = 1;
+  return tokens.map((t, i) => {
+    if (staves !== 2) return 1;
+    if (t.kind === "note") last = midiOf(effectivePitch(tokens, i)) < SPLIT_MIDI ? 2 : 1;
+    return last;
+  });
+}
+function staffOfTokens(tokens, staves) {
+  const auto = autoStaffs(tokens, staves);
+  let last = 1;
+  return tokens.map((t, i) => {
+    if (staves !== 2) return 1;
+    const s = (t.kind === "note" || t.kind === "rest") && t.staff ? t.staff : t.kind === "note" ? auto[i] : last;
+    last = s;
+    return s;
+  });
+}
+var SWING_GRID = TPQ / 16;
+var trackTicks = (tokens) => tokens.reduce((a, t) => a + (isTimed(t) ? t.dur : 0), 0);
+var paperTicks = (p) => Math.max(0, ...Object.values(p.tracks).map(trackTicks));
+function flattenPart(song, partId, opts = {}) {
+  const out = [], starts = [];
+  let id = -1;
+  let k = -1;
+  const seq = opts.order ? opts.order.flatMap((pid) => song.papers.filter((p) => p.id === pid)) : song.papers.filter((p) => !p.hidden);
+  const seen = /* @__PURE__ */ new Set();
+  seq.forEach((p00) => {
+    const again = seen.has(p00.id);
+    seen.add(p00.id);
+    const p0 = expandPaper(song, p00, () => id--);
+    const p = again ? { ...p0, tracks: Object.fromEntries(Object.entries(p0.tracks).map(([k2, t]) => [k2, t.map((x) => ({ ...x, id: id-- }))])) } : p0;
+    k++;
+    const have = p.tracks[partId], len = paperTicks(p);
+    starts.push({ index: out.length, paper: p });
+    let toks;
+    if (have) toks = have;
+    else {
+      const src = song.parts.map((x) => p.tracks[x.id]).find((x) => x) ?? [];
+      toks = src.slice(0, headLen(src)).map((t) => ({ ...t, id: id-- }));
+      if (opts.tempo) {
+        let t = 0, at = 0;
+        for (const u of src.slice(headLen(src))) {
+          if (u.kind === "tempo") {
+            if (t > at) toks.push({ kind: "rest", id: id--, dur: t - at });
+            toks.push({ ...u, id: id-- });
+            at = t;
+          } else if (isTimed(u)) t += u.dur;
+        }
+        if (at > 0 && len > at) {
+          toks.push({ kind: "rest", id: id--, dur: len - at });
+        }
+      }
+    }
+    if (k === 0) out.push(...toks);
+    else {
+      const h = headLen(toks);
+      out.push(...toks.slice(0, h).map((t) => ({ ...t, id: id-- })), ...toks.slice(h));
+    }
+    const pad = len - trackTicks(toks);
+    if (pad > 0) out.push({ kind: "rest", id: id--, dur: pad });
+  });
+  return { tokens: out, starts };
+}
+
+// src/score/clef.ts
+var CLEF_SHIFT = { G: 0, G8vb: 7, G8va: -7, G15ma: -14, F: 12, F8vb: 19 };
+var ottavaShift = (s) => -7 * s;
+var CLEF_LABEL = { G: _t("\u9AD8\u97F3"), G8vb: _t("\u9AD8\u97F3 8vb"), G8va: _t("\u9AD8\u97F3 8va"), G15ma: _t("\u9AD8\u97F3 15ma"), F: _t("\u4F4E\u97F3"), F8vb: _t("\u4F4E\u97F3 8vb") };
+var CLEF_TITLE = {
+  G: _t("\u9AD8\u97F3\u8C31\u53F7"),
+  G8vb: _t("\u9AD8\u97F3\u8C31\u53F7\u4E0B\u9762\u6302 8\uFF1A\u8C31\u4E0A\u5199\u7684\u97F3\u5B9E\u9645\u4F4E\u4E00\u4E2A\u516B\u5EA6\u54CD\uFF08\u5409\u4ED6\u3001\u7537\u9AD8\u97F3\uFF09"),
+  G8va: _t("\u9AD8\u97F3\u8C31\u53F7\u4E0A\u9762\u6302 8\uFF1A\u5B9E\u9645\u9AD8\u4E00\u4E2A\u516B\u5EA6\uFF08\u77ED\u7B1B\uFF09"),
+  G15ma: _t("\u9AD8\u97F3\u8C31\u53F7\u4E0A\u9762\u6302 15\uFF1A\u5B9E\u9645\u9AD8\u4E24\u4E2A\u516B\u5EA6\uFF08\u949F\u7434\u3001\u94C3\uFF09"),
+  F: _t("\u4F4E\u97F3\u8C31\u53F7"),
+  F8vb: _t("\u4F4E\u97F3\u8C31\u53F7\u4E0B\u9762\u6302 8\uFF1A\u5B9E\u9645\u4F4E\u4E00\u4E2A\u516B\u5EA6\uFF08\u4F4E\u97F3\u63D0\u7434\u3001\u8D1D\u65AF\uFF09")
+};
+var OTTAVA_LABEL = { 1: "8va", 2: "15ma", [-1]: "8vb", 0: _t("\u7ED3\u675F\u516B\u5EA6\u7EBF") };
+var BOTTOM = 30;
+var TOP = 38;
+var ledgerLines = (pos) => pos > TOP ? Math.floor((pos - TOP) / 2) : pos < BOTTOM ? Math.floor((BOTTOM - pos) / 2) : 0;
+var ledgerCost = (pos) => {
+  const l = ledgerLines(pos);
+  return l * (l + 1) / 2;
+};
+var BIAS = { G: 0, F: 0.1, G8vb: 1, G8va: 1, G15ma: 1.5, F8vb: 1.5 };
+function autoClef(positions, prev = null) {
+  if (!positions.length) return prev ?? "G";
+  return pickClef((c) => positions.reduce((a, x) => a + ledgerCost(x + CLEF_SHIFT[c]) + BIAS[c], 0), positions.length, prev);
+}
+function pickClef(cost, n, prev) {
+  let best = "G", bc = Infinity;
+  for (const c of CLEFS) {
+    const v = cost(c);
+    if (v < bc - 1e-9) {
+      bc = v;
+      best = c;
+    }
+  }
+  if (prev && cost(prev) <= bc + Math.max(1, 0.1 * n)) return prev;
+  return best;
+}
+var RUN_COST = 3;
+function startClef(tokens, partClef, prev, autoOtt = false) {
+  if (partClef) return partClef;
+  if (autoOtt) {
+    const cut = tokens.findIndex((t) => t.kind === "clef"), seg = cut < 0 ? tokens : tokens.slice(0, cut);
+    let n = 0;
+    for (const t of seg) if (t.kind === "note" && t.pitch) n += 1 + (t.chord?.length ?? 0);
+    if (!n) return prev ?? "G";
+    return pickClef((c) => {
+      const ao = autoOttava(seg, displayStates(seg, c));
+      let v = ao.runs.length * RUN_COST;
+      seg.forEach((t, i) => {
+        if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...t.chord ?? []]) v += ledgerCost(diatonicIndex(p) + CLEF_SHIFT[c] + ottavaShift(ao.ott[i] ?? 0)) + BIAS[c];
+      });
+      return v;
+    }, n, prev);
+  }
+  const pos = [];
+  let o = 0;
+  for (const t of tokens) {
+    if (t.kind === "clef") break;
+    if (t.kind === "ottava") {
+      o = t.shift;
+      continue;
+    }
+    if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...t.chord ?? []]) pos.push(diatonicIndex(p) + ottavaShift(o));
+  }
+  return autoClef(pos, prev);
+}
+function displayStates(tokens, start) {
+  const clef = new Array(tokens.length), ott = new Array(tokens.length);
+  let c = start, o = 0;
+  tokens.forEach((t, i) => {
+    if (t.kind === "clef") c = t.clef;
+    else if (t.kind === "ottava") o = t.shift;
+    clef[i] = c;
+    ott[i] = o;
+  });
+  return { clef, ott };
+}
+function autoOttava(tokens, ds) {
+  const ott = ds.ott.slice(), auto = new Array(tokens.length).fill(false), runs = [];
+  const items = [];
+  tokens.forEach((t, i) => {
+    if (!isTimed(t)) return;
+    const manual = (ds.ott[i] ?? 0) !== 0;
+    if (t.kind !== "note" || !t.pitch) {
+      items.push({ i, note: false, hi: NaN, lo: NaN, dir: 0, manual });
+      return;
+    }
+    const pos = [t.pitch, ...t.chord ?? []].map((p) => diatonicIndex(p) + CLEF_SHIFT[ds.clef[i]]);
+    const hi = Math.max(...pos), lo = Math.min(...pos);
+    const up = hi > TOP && ledgerLines(hi) >= 3, down = lo < BOTTOM && ledgerLines(lo) >= 3;
+    items.push({ i, note: true, hi, lo, dir: up && !down ? 1 : down && !up ? -1 : 0, manual });
+  });
+  const notes = items.filter((x) => x.note).length, cands2 = items.filter((x) => x.dir && !x.manual).length;
+  if (cands2 < 2 || cands2 * 3 > notes) return { ott, auto, runs };
+  const okGap = (x, dir) => !x.manual && (!x.note || (dir === 1 ? !(x.lo - 7 < BOTTOM && ledgerLines(x.lo - 7) >= 3) : !(x.hi + 7 > TOP && ledgerLines(x.hi + 7) >= 3)));
+  for (let k = 0; k < items.length; ) {
+    const it = items[k];
+    if (!it.dir || it.manual) {
+      k++;
+      continue;
+    }
+    const dir = it.dir;
+    let e = k, n = 1;
+    for (; ; ) {
+      const a = items[e + 1], b = items[e + 2];
+      if (a && a.dir === dir && !a.manual) {
+        e += 1;
+        n++;
+        continue;
+      }
+      if (a && b && b.dir === dir && !b.manual && okGap(a, dir)) {
+        e += 2;
+        n++;
+        continue;
+      }
+      break;
+    }
+    if (n >= 2) {
+      const span = items.slice(k, e + 1).filter((x) => x.note);
+      const shift = dir === -1 ? -1 : span.some((x) => x.hi - 7 > TOP && ledgerLines(x.hi - 7) >= 3) ? 2 : 1;
+      const from = items[k].i, to = items[e].i;
+      for (let j = from; j <= to; j++) {
+        ott[j] = shift;
+        auto[j] = true;
+      }
+      runs.push({ from, to, shift });
+    }
+    k = e + 1;
+  }
+  return { ott, auto, runs };
+}
+function withAutoOttava(tokens, start) {
+  const { runs } = autoOttava(tokens, displayStates(tokens, start));
+  if (!runs.length) return tokens;
+  const out = tokens.slice();
+  for (const r of [...runs].reverse()) {
+    if (tokens.slice(r.to + 1).some((t) => isTimed(t))) out.splice(r.to + 1, 0, { kind: "ottava", id: 0, shift: 0, auto: true });
+    out.splice(r.from, 0, { kind: "ottava", id: 0, shift: r.shift, auto: true });
+  }
+  return out;
+}
+function resolveSongClefs(song) {
+  const out = /* @__PURE__ */ new Map(), last = /* @__PURE__ */ new Map();
+  for (const paper of song.papers) {
+    const m = /* @__PURE__ */ new Map();
+    out.set(paper.id, m);
+    for (const part of song.parts) {
+      const toks = paper.tracks[part.id];
+      if (!toks || part.staves === 2) continue;
+      const c = startClef(toks, part.clef, last.get(part.id) ?? null, part.autoOttava !== false);
+      m.set(part.id, c);
+      const ds = displayStates(toks, c);
+      last.set(part.id, ds.clef.length ? ds.clef[ds.clef.length - 1] : c);
+    }
+  }
+  return out;
+}
+
+// src/score/arrange.ts
+var REP = /^(?:[×xX*])(\d+)/;
+function parseArrangement(text2, papers) {
+  const src = (text2 ?? "").trim();
+  if (!src) return { order: papers.filter((p) => !p.hidden).map((p) => p.id), loop: null, issues: [], explicit: false };
+  const issues = [];
+  let i = 0;
+  const ws = () => {
+    while (i < src.length && /[\s、,，→]/.test(src[i])) i++;
+  };
+  const findPaper = (name) => {
+    const byName = papers.find((p) => p.name.trim() === name);
+    if (byName) return byName.id;
+    if (/^\d+$/.test(name)) {
+      const k = Number(name);
+      if (k >= 1 && k <= papers.length) return papers[k - 1].id;
+    }
+    return null;
+  };
+  const rep = () => {
+    const save = i;
+    while (src[i] === " ") i++;
+    const m = REP.exec(src.slice(i));
+    if (!m) {
+      i = save;
+      return null;
+    }
+    i += m[0].length;
+    return Number(m[1]);
+  };
+  const seq = (close) => {
+    const out = [];
+    for (; ; ) {
+      ws();
+      if (i >= src.length) {
+        if (close) issues.push({ at: src.length, len: 0, why: _t("\u5C11\u4E86\u300C{close}\u300D", { close }) });
+        return out;
+      }
+      const c = src[i];
+      if (close && c === close) {
+        i++;
+        return out;
+      }
+      if (c === ")" || c === "]") {
+        issues.push({ at: i, len: 1, why: _t("\u591A\u4E86\u300C{c}\u300D", { c }) });
+        i++;
+        continue;
+      }
+      if (c === "[") return out;
+      let node;
+      const at = i;
+      if (c === "(") {
+        i++;
+        node = { kind: "rep", body: seq(")"), n: 1 };
+      } else {
+        let name = "";
+        while (i < src.length && !/[\s、,，→()[\]×*]/.test(src[i]) && !(/[xX]/.test(src[i]) && /\d/.test(src[i + 1] ?? "") && name)) name += src[i++];
+        if (!name) {
+          issues.push({ at: i, len: 1, why: _t("\u770B\u4E0D\u61C2\u300C{p}\u300D", { p: src[i] }) });
+          i++;
+          continue;
+        }
+        const paper = findPaper(name);
+        if (!paper) {
+          issues.push({ at, len: name.length, why: _t("\u6CA1\u6709\u53EB\u300C{name}\u300D\u7684\u7EB8\uFF08\u5199\u66F2\u6BB5\u540D\uFF0C\u6216\u8005\u7B2C\u51E0\u5F20\u7EB8\u7684\u5E8F\u53F7\uFF09", { name }) });
+          node = { kind: "rep", body: [], n: 1 };
+        } else node = { kind: "ref", paper, text: name, at };
+      }
+      const n = rep();
+      if (n !== null) {
+        if (n < 1 || n > 99) issues.push({ at, len: i - at, why: _t("\u91CD\u590D\u6B21\u6570\u8981\u5728 1 \u5230 99 \u4E4B\u95F4") });
+        if (n >= 1) node = { kind: "rep", body: [node], n: Math.min(99, n) };
+      }
+      out.push(node);
+    }
+  };
+  const main = seq(null);
+  let loopNodes = null;
+  ws();
+  if (i < src.length && src[i] === "[") {
+    const at = i;
+    i++;
+    loopNodes = seq("]");
+    if (!loopNodes.length) issues.push({ at, len: i - at, why: _t("\u5FAA\u73AF\u6BB5\u662F\u7A7A\u7684") });
+    ws();
+    if (i < src.length) {
+      issues.push({ at: i, len: src.length - i, why: _t("\u5FAA\u73AF\u6BB5\u53EA\u80FD\u653E\u5728\u6700\u540E\uFF1A\u540E\u9762\u7684\u6C38\u8FDC\u653E\u4E0D\u5230") });
+    }
+  }
+  const expand = (ns) => ns.flatMap((n) => n.kind === "ref" ? [n.paper] : Array.from({ length: n.n }, () => expand(n.body)).flat());
+  const loop = loopNodes ? expand(loopNodes) : null;
+  return { order: expand(main), loop: loop && loop.length ? loop : null, issues, explicit: true };
+}
+var playOrder = (a) => [...a.order, ...a.loop ?? []];
+var songPlayOrder = (song) => playOrder(parseArrangement(song.arrangement, song.papers));
+
+// src/score/lyrics.ts
+var MELISMA_MARK = "\u30FC";
+var ELISION = "\u203F";
+var SMALL = /* @__PURE__ */ new Set([..."\u3083\u3085\u3087\u3041\u3043\u3045\u3047\u3049\u308E\u3095\u3096\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9\u30EE\u30F5\u30F6", "\u3063", "\u30C3"]);
+
+// src/score/lang.ts
+var KANA = /[぀-ヿㇰ-ㇿｦ-ﾟ]/;
+var HAN = /\p{Script=Han}/u;
+var LATIN = /[A-Za-z]/;
+function partDefaultLang(tokens) {
+  const ls = tokens.flatMap((t) => t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? [t.lyric] : []).join("");
+  if (KANA.test(ls)) return "ja";
+  if (HAN.test(ls)) return "zh";
+  if (LATIN.test(ls)) return "en";
+  return "ja";
+}
+function syllableLangs(tokens, override = true) {
+  const def = partDefaultLang(tokens);
+  let prev = def;
+  return tokens.map((t) => {
+    if (t.kind !== "note" || !t.lyric || t.lyric === MELISMA_MARK) return null;
+    let l = KANA.test(t.lyric) ? "ja" : HAN.test(t.lyric) ? prev : LATIN.test(t.lyric) ? "en" : prev;
+    if (override && t.lang) l = t.lang;
+    prev = l;
+    return l;
+  });
+}
+
+// src/format/xml.ts
+var esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+// src/score/grooves.gen.ts
+var GROOVE_STYLES = [
+  {
+    "id": "none",
+    "name": {
+      "zh": "\u65E0",
+      "en": "None",
+      "ja": "\u306A\u3057"
+    },
+    "aliases": [
+      "\u65E0\u98CE\u683C",
+      "Off"
+    ],
+    "meters": {},
+    "phase": null,
+    "fallback": "none",
+    "follow": {
+      "piano": 0,
+      "chromatic-percussion": 0,
+      "organ": 0,
+      "guitar": 0,
+      "bass": 0,
+      "strings": 0,
+      "ensemble": 0,
+      "brass": 0,
+      "reed": 0,
+      "pipe": 0,
+      "synth-lead": 0,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0,
+      "percussive": 0,
+      "sound-effects": 0,
+      "percussion": 0,
+      "voice": 0
+    },
+    "swing": null
+  },
+  {
+    "id": "classical",
+    "name": {
+      "zh": "\u53E4\u5178",
+      "en": "Classical",
+      "ja": "\u30AF\u30E9\u30B7\u30C3\u30AF"
+    },
+    "aliases": [
+      "Classic",
+      "\u53E4\u5178\u6D3E"
+    ],
+    "meters": {
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "3/4": {
+        "grid": 12,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "2/4": {
+        "grid": 8,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "2/2": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5,
+          0,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5
+        ]
+      },
+      "6/8": {
+        "grid": 12,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "12/8": {
+        "grid": 24,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      }
+    },
+    "phase": null,
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.5,
+      "chromatic-percussion": 0.6,
+      "organ": 0.2,
+      "guitar": 0.6,
+      "bass": 0.6,
+      "strings": 0.5,
+      "ensemble": 0.3,
+      "brass": 0.5,
+      "reed": 0.4,
+      "pipe": 0.4,
+      "synth-lead": 0.4,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 1,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.3
+    },
+    "swing": null
+  },
+  {
+    "id": "pop",
+    "name": {
+      "zh": "\u6D41\u884C",
+      "en": "Pop",
+      "ja": "\u30DD\u30C3\u30D7\u30B9"
+    },
+    "aliases": [
+      "Rock",
+      "\u6447\u6EDA",
+      "\u30ED\u30C3\u30AF",
+      "R&B",
+      "Backbeat",
+      "\u53CD\u62CD"
+    ],
+    "meters": {
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          0.5,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25,
+          0.5,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25
+        ]
+      },
+      "12/8": {
+        "grid": 24,
+        "weights": [
+          0.5,
+          -0.25,
+          0,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25,
+          0,
+          -0.25,
+          0.5,
+          -0.25,
+          0,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25,
+          0,
+          -0.25
+        ]
+      }
+    },
+    "phase": null,
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.6,
+      "chromatic-percussion": 0.5,
+      "organ": 0.3,
+      "guitar": 0.8,
+      "bass": 1,
+      "strings": 0.2,
+      "ensemble": 0.1,
+      "brass": 0.6,
+      "reed": 0.3,
+      "pipe": 0.2,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 0.8,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.3
+    },
+    "swing": null
+  },
+  {
+    "id": "waltz",
+    "name": {
+      "zh": "\u534E\u5C14\u5179",
+      "en": "Waltz",
+      "ja": "\u30EF\u30EB\u30C4"
+    },
+    "aliases": [
+      "\u5706\u821E\u66F2",
+      "Valse",
+      "Walzer"
+    ],
+    "meters": {
+      "3/4": {
+        "grid": 12,
+        "weights": [
+          1,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5
+        ]
+      }
+    },
+    "phase": null,
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.8,
+      "chromatic-percussion": 0.6,
+      "organ": 0.3,
+      "guitar": 0.8,
+      "bass": 1,
+      "strings": 0.5,
+      "ensemble": 0.3,
+      "brass": 0.5,
+      "reed": 0.3,
+      "pipe": 0.3,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 0.8,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.3
+    },
+    "swing": null
+  },
+  {
+    "id": "march",
+    "name": {
+      "zh": "\u8FDB\u884C\u66F2",
+      "en": "March",
+      "ja": "\u30DE\u30FC\u30C1"
+    },
+    "aliases": [
+      "\u884C\u8FDB\u66F2",
+      "Marcia",
+      "\u884C\u9032\u66F2"
+    ],
+    "meters": {
+      "2/4": {
+        "grid": 8,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "2/2": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.5,
+          -0.5
+        ]
+      },
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      },
+      "6/8": {
+        "grid": 12,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ]
+      }
+    },
+    "phase": null,
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.6,
+      "chromatic-percussion": 0.6,
+      "organ": 0.3,
+      "guitar": 0.6,
+      "bass": 1,
+      "strings": 0.5,
+      "ensemble": 0.3,
+      "brass": 0.8,
+      "reed": 0.6,
+      "pipe": 0.6,
+      "synth-lead": 0.4,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 1,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.4
+    },
+    "swing": null
+  },
+  {
+    "id": "swing",
+    "name": {
+      "zh": "Swing",
+      "en": "Swing",
+      "ja": "\u30B9\u30A6\u30A3\u30F3\u30B0"
+    },
+    "aliases": [
+      "\u6447\u6446",
+      "\u7235\u58EB",
+      "Jazz",
+      "\u30B8\u30E3\u30BA"
+    ],
+    "meters": {
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          0.25,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25,
+          0.25,
+          -0.25,
+          0,
+          -0.25,
+          1,
+          -0.25,
+          0,
+          -0.25
+        ]
+      }
+    },
+    "phase": null,
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.5,
+      "chromatic-percussion": 0.4,
+      "organ": 0.3,
+      "guitar": 0.6,
+      "bass": 0.4,
+      "strings": 0.2,
+      "ensemble": 0.1,
+      "brass": 0.5,
+      "reed": 0.5,
+      "pipe": 0.3,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.4,
+      "percussive": 0.6,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.2
+    },
+    "swing": {
+      "unit": "8th",
+      "ratio": 0.667,
+      "range": [
+        0.5,
+        0.75
+      ]
+    }
+  },
+  {
+    "id": "four-on-the-floor",
+    "name": {
+      "zh": "\u56DB\u62CD\u5E95\u9F13",
+      "en": "Four on the floor",
+      "ja": "4\u3064\u6253\u3061"
+    },
+    "aliases": [
+      "\u7535\u5B50",
+      "\u8FEA\u65AF\u79D1",
+      "Disco",
+      "EDM",
+      "House",
+      "\u30C7\u30A3\u30B9\u30B3"
+    ],
+    "meters": {
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          0,
+          0.5,
+          0,
+          1,
+          0,
+          0.5,
+          0,
+          1,
+          0,
+          0.5,
+          0,
+          1,
+          0,
+          0.5,
+          0
+        ]
+      }
+    },
+    "phase": null,
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.6,
+      "chromatic-percussion": 0.4,
+      "organ": 0.3,
+      "guitar": 0.6,
+      "bass": 0.8,
+      "strings": 0.2,
+      "ensemble": 0.1,
+      "brass": 0.5,
+      "reed": 0.3,
+      "pipe": 0.2,
+      "synth-lead": 0.5,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.4,
+      "percussive": 0.8,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.2
+    },
+    "swing": null
+  },
+  {
+    "id": "bossa-nova",
+    "name": {
+      "zh": "\u6CE2\u8428",
+      "en": "Bossa nova",
+      "ja": "\u30DC\u30B5\u30CE\u30F4\u30A1"
+    },
+    "aliases": [
+      "Bossa",
+      "\u5DF4\u8428\u8BFA\u74E6",
+      "\u30DC\u30B5\u30CE\u30D0",
+      "Samba-reggae"
+    ],
+    "meters": {
+      "2/4": {
+        "grid": 8,
+        "weights": [
+          1,
+          -0.25,
+          -0.25,
+          0.75,
+          0.5,
+          -0.25,
+          0.75,
+          0.25,
+          0.5,
+          -0.25,
+          0.75,
+          0.25,
+          0.5,
+          0.75,
+          -0.25,
+          0.25
+        ],
+        "bars": 2
+      },
+      "2/2": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.25,
+          -0.5
+        ],
+        "bars": 2
+      },
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0.25,
+          -0.5,
+          0.5,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.25,
+          -0.5
+        ],
+        "bars": 2
+      }
+    },
+    "phase": "3-2",
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.6,
+      "chromatic-percussion": 0.4,
+      "organ": 0.3,
+      "guitar": 1,
+      "bass": 0.6,
+      "strings": 0.1,
+      "ensemble": 0.1,
+      "brass": 0.3,
+      "reed": 0.3,
+      "pipe": 0.3,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.5,
+      "percussive": 1,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.1
+    },
+    "swing": null
+  },
+  {
+    "id": "latin",
+    "name": {
+      "zh": "\u62C9\u4E01\uFF08\u514B\u62C9\u7EF4\uFF09",
+      "en": "Latin (son clave)",
+      "ja": "\u30E9\u30C6\u30F3\uFF08\u30BD\u30F3\u30FB\u30AF\u30E9\u30FC\u30D9\uFF09"
+    },
+    "aliases": [
+      "\u62C9\u4E01",
+      "Latin",
+      "Son",
+      "Salsa",
+      "\u8428\u5C14\u8428",
+      "Mambo",
+      "\u66FC\u6CE2",
+      "\u30B5\u30EB\u30B5",
+      "\u30E9\u30C6\u30F3",
+      "Clave",
+      "\u514B\u62C9\u7EF4"
+    ],
+    "meters": {
+      "2/4": {
+        "grid": 8,
+        "weights": [
+          1,
+          -0.25,
+          -0.25,
+          0.75,
+          0,
+          -0.25,
+          0.75,
+          -0.25,
+          0.25,
+          -0.25,
+          0.75,
+          -0.25,
+          0.75,
+          -0.25,
+          -0.25,
+          -0.25
+        ],
+        "bars": 2
+      },
+      "2/2": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ],
+        "bars": 2
+      },
+      "4/4": {
+        "grid": 16,
+        "weights": [
+          1,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          0,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          0.75,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5,
+          -0.25,
+          -0.5
+        ],
+        "bars": 2
+      }
+    },
+    "phase": "3-2",
+    "fallback": "classical",
+    "follow": {
+      "piano": 0.8,
+      "chromatic-percussion": 0.5,
+      "organ": 0.3,
+      "guitar": 0.6,
+      "bass": 0.8,
+      "strings": 0.3,
+      "ensemble": 0.1,
+      "brass": 0.6,
+      "reed": 0.4,
+      "pipe": 0.4,
+      "synth-lead": 0.3,
+      "synth-pad": 0,
+      "synth-effects": 0,
+      "ethnic": 0.6,
+      "percussive": 1,
+      "sound-effects": 0,
+      "percussion": 1,
+      "voice": 0.3
+    },
+    "swing": null
+  }
+];
+
+// src/score/groove.ts
+var grooveStyle = (id) => GROOVE_STYLES.find((s) => s.id === id) ?? null;
+var grooveNameEn = (style) => {
+  const s = grooveStyle(style);
+  return style === "none" ? "none" : s ? s.name.en : style;
+};
+var grooveLabel = (t) => `Style: ${grooveNameEn(t.style)}${t.shift && grooveHasPhase(grooveStyle(t.style)) ? " 2-3" : ""}${t.amount !== void 0 && t.amount !== 1 && t.style !== "none" ? ` \xD7${t.amount}` : ""}`;
+var grooveHasPhase = (s) => !!s && Object.values(s.meters).some((m) => (m.bars ?? 1) > 1);
+var BEAT_NO = [_t("\u4E00"), _t("\u4E8C"), _t("\u4E09"), _t("\u56DB"), _t("\u4E94"), _t("\u516D"), _t("\u4E03"), _t("\u516B"), _t("\u4E5D"), _t("\u5341"), _t("\u5341\u4E00"), _t("\u5341\u4E8C")];
+
+// src/format/musicxml.ts
+var measureLen = (beats, beatType) => beats * WHOLE / beatType;
+var TYPES = [["whole", WHOLE], ["half", WHOLE / 2], ["quarter", TPQ], ["eighth", TPQ / 2], ["16th", TPQ / 4], ["32nd", TPQ / 8], ["64th", TPQ / 16]];
+var TUPLETS = [[1, 1], [3, 2], [5, 4], [6, 4], [7, 4]];
+function noteType(dur) {
+  for (const [act, norm] of TUPLETS) for (const [type, base] of TYPES) for (let dots = 0; dots <= 2; dots++) {
+    if (Math.abs(base * (2 - 1 / 2 ** dots) * (norm / act) - dur) < 0.5) return { type, dots, tuplet: act === 1 ? null : [act, norm] };
+  }
+  return null;
+}
+var pitchXml = (p) => `<pitch><step>${p.step}</step>${p.alter ? `<alter>${p.alter}</alter>` : ""}<octave>${p.octave}</octave></pitch>`;
+var LAYOUT_TENTHS = { cozy: { system: 110, staff: 80 }, compact: { system: 60, staff: 50 } };
+var tenthsPerMm = (p) => 40 / staffMmOf(p);
+function defaultsXml(p) {
+  const t = (mm) => +(mm * tenthsPerMm(p)).toFixed(2), m = p.marginMm;
+  const compact = densityOf(p) === "compact";
+  return `<defaults><scaling><millimeters>${staffMmOf(p)}</millimeters><tenths>40</tenths></scaling><page-layout><page-height>${t(p.heightMm)}</page-height><page-width>${t(p.widthMm)}</page-width><page-margins type="both"><left-margin>${t(m.l)}</left-margin><right-margin>${t(m.r)}</right-margin><top-margin>${t(m.t)}</top-margin><bottom-margin>${t(m.b)}</bottom-margin></page-margins></page-layout><system-layout><system-distance>${compact ? LAYOUT_TENTHS.compact.system : LAYOUT_TENTHS.cozy.system}</system-distance></system-layout><staff-layout><staff-distance>${compact ? LAYOUT_TENTHS.compact.staff : LAYOUT_TENTHS.cozy.staff}</staff-distance></staff-layout></defaults>`;
+}
+function creditXml(text2, p) {
+  const t = (mm) => +(mm * tenthsPerMm(p)).toFixed(1);
+  return `<credit page="1"><credit-words default-x="${t(p.widthMm - p.marginMm.r)}" default-y="${t(p.heightMm - p.marginMm.t - 12)}" justify="right" valign="top">${esc(text2)}</credit-words></credit>`;
+}
+var dynXml = (v) => `<direction placement="above"><direction-type><dynamics><${v}/></dynamics></direction-type></direction>`;
+var wedgeXml = (type, extra = "") => `<direction placement="above"><direction-type><wedge type="${type}" number="1"${extra}/></direction-type></direction>`;
+var RAMP_ID = "ramp-";
+var DYN_ORDER = DYNS;
+var ART_XML = { accent: "accent", marcato: "strong-accent", sfz: "sfz", fp: "fp", staccato: "staccato", tenuto: "tenuto", breath: "breath-mark", stress: "stress", unstress: "unstress", ghost: "", whisper: "", swellUp: "", swellDown: "", swellBoth: "", arpeggio: "" };
+var NOTE_DYN = ["sfz", "fp"];
+var GROOVE_ID = "groove.";
+var grooveXml = (t) => `<direction placement="above"><direction-type><words font-style="italic" id="${GROOVE_ID}${t.style}.${Math.round((t.amount ?? 1) * 100)}.${t.id}${t.shift ? ".2-3" : ""}">${esc(grooveLabel(t))}</words></direction-type></direction>`;
+var NAV_ID = "nav.";
+var navXml = (t) => {
+  const id = `${NAV_ID}${t.what}.${t.id}`;
+  if (t.what === "segno") return `<direction placement="above"><direction-type><segno id="${id}"/></direction-type><sound segno="segno"/></direction>`;
+  if (t.what === "coda") return `<direction placement="above"><direction-type><coda id="${id}"/></direction-type><sound coda="coda"/></direction>`;
+  if (t.what === "ending") return "";
+  const snd = t.what === "fine" ? `fine="yes"` : t.what === "toCoda" ? `tocoda="coda"` : t.what.startsWith("dc") ? `dacapo="yes"` : `dalsegno="segno"`;
+  return `<direction placement="above"><direction-type><words id="${id}" font-style="italic">${esc(NAV_LABEL[t.what])}</words></direction-type><sound ${snd}/></direction>`;
+};
+var tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
+var CLEF_OC = { G: 0, G8vb: -1, G8va: 1, G15ma: 2, F: 0, F8vb: -1 };
+var clefXml = (c) => {
+  const F = c === "F" || c === "F8vb", oc = CLEF_OC[c];
+  return `<clef><sign>${F ? "F" : "G"}</sign><line>${F ? 4 : 2}</line>${oc ? `<clef-octave-change>${oc}</clef-octave-change>` : ""}</clef>`;
+};
+var autoSeq = 0;
+var ottavaXml = (shift, open, auto = false) => {
+  const id = () => auto ? ` id="ms-auto-${++autoSeq}"` : "";
+  const stop = open ? `<direction><direction-type><octave-shift type="stop" size="${open === 2 ? 15 : 8}"${id()}/></direction-type></direction>` : "";
+  if (!shift) return stop;
+  return stop + `<direction placement="${shift > 0 ? "above" : "below"}"><direction-type><octave-shift type="${shift > 0 ? "down" : "up"}" size="${shift === 2 ? 15 : 8}"${id()}/></direction-type></direction>`;
+};
+function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
+  const staffs = staffOfTokens(toks, staves);
+  const head = headLen(toks);
+  const H = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
+  for (let i = 0; i < head; i++) {
+    const t = toks[i];
+    if (t.kind === "key") H.fifths = t.fifths;
+    else if (t.kind === "time") {
+      H.beats = t.beats;
+      H.beatType = t.beatType;
+    } else if (t.kind === "tempo") H.bpm = t.bpm;
+  }
+  const langs = syllableLangs(toks);
+  const measures = [];
+  let cur = [], ticks = 0, len = measureLen(H.beats, H.beatType);
+  let ending = null;
+  const endingCloses = (i) => {
+    for (let j = i + 1; j < toks.length; j++) {
+      const u = toks[j];
+      if (u.kind === "bar" && (u.repeat === "end" || u.repeat === "both")) return true;
+      if (u.kind === "nav" && u.what === "ending" || u.kind === "bar" && u.repeat === "start") return false;
+    }
+    return false;
+  };
+  const close = (manual, right = "") => {
+    if (ending && !ending.closedByRepeat && !right) {
+      cur.push(`<barline location="right"><ending number="${ending.num}" type="discontinue"/></barline>`);
+      ending = null;
+    }
+    if (right) cur.push(right);
+    measures.push({ body: cur, manual });
+    cur = [];
+    ticks = 0;
+  };
+  const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : clefXml(clef);
+  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H.fifths}</fifths></key><time><beats>${H.beats}</beats><beat-type>${H.beatType}</beat-type></time>${clefs}</attributes>`);
+  if (first) cur.push(tempoXml(H.bpm));
+  let prevHyph = false;
+  const syllabic = (t) => {
+    const s = t.hyph ? prevHyph ? "middle" : "begin" : prevHyph ? "end" : "single";
+    prevHyph = !!t.hyph;
+    return s;
+  };
+  const unwritten = [];
+  const nextTimed = (i) => {
+    for (let j = i + 1; j < toks.length; j++) {
+      const t = toks[j];
+      if (t.kind === "note" || t.kind === "rest") return t;
+    }
+    return null;
+  };
+  const noteAt = (i, d) => {
+    for (let j = i + d; j >= 0 && j < toks.length; j += d) if (toks[j].kind === "note") return toks[j];
+    return null;
+  };
+  let ottOpen = 0, wedgeOpen = false;
+  const slurs = (i, t) => {
+    const pv = noteAt(i, -1), nx = noteAt(i, 1), out = !!t.slur && !!nx, into = !!pv?.slur;
+    return `${into && !out ? `<slur type="stop" number="1"/>` : ""}${out && !into ? `<slur type="start" number="1"/>` : ""}`;
+  };
+  for (let i = head; i < toks.length; i++) {
+    const t = toks[i];
+    const br = breaks?.get(i);
+    if (br !== void 0) {
+      if (wedgeOpen) {
+        cur.push(wedgeXml("stop"));
+        wedgeOpen = false;
+      }
+      if (ticks > 0) close(false);
+      cur.push(`<print new-page="yes"/>`);
+      if (first && br) cur.push(`<direction placement="above"><direction-type><rehearsal>${esc(br)}</rehearsal></direction-type></direction>`);
+    }
+    if (t.kind === "bar" && t.repeat) {
+      const fwd = `<barline location="left"><bar-style>heavy-light</bar-style><repeat direction="forward"/></barline>`;
+      const noteIn = cur.some((x) => x.startsWith("<note"));
+      if (t.repeat === "start" && ticks === 0 && !noteIn) {
+        cur.push(fwd);
+        continue;
+      }
+      let right = "";
+      if (t.repeat === "end" || t.repeat === "both") {
+        const stop = ending && ending.closedByRepeat ? `<ending number="${ending.num}" type="stop"/>` : "";
+        right = `<barline location="right"><bar-style>light-heavy</bar-style>${stop}<repeat direction="backward"${t.times && t.times > 2 ? ` times="${t.times}"` : ""}/></barline>`;
+        if (stop) ending = null;
+      }
+      close(true, right);
+      if (t.repeat === "start" || t.repeat === "both") cur.push(fwd);
+      continue;
+    }
+    if (t.kind === "bar") {
+      close(true, t.style ? `<barline location="right"><bar-style>${t.style === "double" ? "light-light" : "light-heavy"}</bar-style></barline>` : "");
+      continue;
+    }
+    if (t.kind === "nav") {
+      if (t.what === "ending") {
+        if (ticks >= len) close(false);
+        const num = (t.nums ?? [1]).join(", ");
+        cur.push(`<barline location="left"><ending number="${num}" type="start">${esc(endingLabel(t.nums))}</ending></barline>`);
+        ending = { num, closedByRepeat: endingCloses(i) };
+      } else {
+        if ((t.what === "segno" || t.what === "coda") && ticks >= len) close(false);
+        cur.push(navXml(t));
+      }
+      continue;
+    }
+    if (t.kind === "phrase") continue;
+    if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") {
+      if (ticks >= len || t.kind === "time" && ticks > 0) close(false);
+      if (t.kind === "key") cur.push(`<attributes><key><fifths>${t.fifths}</fifths></key></attributes>`);
+      else if (t.kind === "time") {
+        cur.push(`<attributes><time><beats>${t.beats}</beats><beat-type>${t.beatType}</beat-type></time></attributes>`);
+        len = measureLen(t.beats, t.beatType);
+      } else if (first) cur.push(tempoXml(t.bpm));
+      continue;
+    }
+    if (t.kind === "dyn") {
+      if (ticks >= len) close(false);
+      if (wedgeOpen) {
+        cur.push(wedgeXml("stop"));
+        wedgeOpen = false;
+      }
+      cur.push(dynXml(t.value));
+      let end = toks.length;
+      for (const b of breaks?.keys() ?? []) if (b > i && b < end) end = b;
+      const j = rampTarget(toks, i, end);
+      if (j >= 0) {
+        const a = DYN_ORDER.indexOf(t.value), b = DYN_ORDER.indexOf(toks[j].value);
+        if (a !== b) {
+          cur.push(wedgeXml(b > a ? "crescendo" : "diminuendo", ` line-type="dashed" id="${RAMP_ID}${toks[j].id}"`));
+          wedgeOpen = true;
+        }
+      }
+      continue;
+    }
+    if (t.kind === "hairpin") {
+      if (ticks >= len) close(false);
+      if (wedgeOpen) cur.push(wedgeXml("stop"));
+      cur.push(wedgeXml(t.dir === "cresc" ? "crescendo" : "diminuendo"));
+      wedgeOpen = true;
+      continue;
+    }
+    if (t.kind === "groove") {
+      if (ticks >= len) close(false);
+      cur.push(grooveXml(t));
+      continue;
+    }
+    if (t.kind === "clef") {
+      if (staves === 1) {
+        if (ticks >= len) close(false);
+        cur.push(`<attributes>${clefXml(t.clef)}</attributes>`);
+      }
+      continue;
+    }
+    if (t.kind === "ottava") {
+      if (ticks >= len) close(false);
+      const x = ottavaXml(t.shift, ottOpen, !!t.auto);
+      if (x) cur.push(x);
+      ottOpen = t.shift;
+      continue;
+    }
+    if (t.kind !== "note" && t.kind !== "rest") continue;
+    let left = t.dur, k = 0;
+    const tieOut = t.kind === "note" && nextTimed(i)?.kind === "note" && nextTimed(i).tie;
+    let lyricDone = false;
+    while (left > 0.5) {
+      if (ticks >= len) close(false);
+      const piece = Math.min(left, len - ticks), firstPiece = k === 0, last = left - piece <= 0.5;
+      const ty = noteType(piece);
+      const id = `${t.kind === "note" ? "n" : "r"}${t.id}${firstPiece ? "" : `-${k + 1}`}`;
+      let x = `<note id="${id}">`;
+      if (t.kind === "rest") x += `<rest/><duration>${Math.round(piece)}</duration>`;
+      else {
+        const tieIn = firstPiece ? !!t.tie : true, tieOn = last ? tieOut : true;
+        x += pitchXml(effectivePitch(toks, i)) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "");
+      }
+      x += `<voice>1</voice>`;
+      const typeXml = ty ? `<type>${ty.type}</type>` + "<dot/>".repeat(ty.dots) + (ty.tuplet ? `<time-modification><actual-notes>${ty.tuplet[0]}</actual-notes><normal-notes>${ty.tuplet[1]}</normal-notes></time-modification>` : "") : "";
+      const staffXml = staves === 2 ? `<staff>${staffs[i]}</staff>` : "";
+      const ghostH = t.kind === "note" && (t.art ?? []).includes("ghost"), whisperH = t.kind === "note" && (t.art ?? []).includes("whisper");
+      const headXml = ghostH || whisperH ? `<notehead${ghostH ? ` parentheses="yes"` : ""}>${whisperH ? "x" : "normal"}</notehead>` : "";
+      x += typeXml + headXml + staffXml;
+      const chordXml = [];
+      if (t.kind === "note") {
+        const tieIn = firstPiece ? !!t.tie : true, tieOn = last ? tieOut : true;
+        const arts = (t.art ?? []).filter((a) => !!ART_XML[a] && (a === "breath" ? last : firstPiece)), noteDyn = arts.filter((a) => NOTE_DYN.includes(a)), artic = arts.filter((a) => !NOTE_DYN.includes(a));
+        const inhaleXml = (a) => a === "breath" && t.inhale ? `<other-articulation>${t.inhale === "big" ? "inhale-big" : "inhale"}</other-articulation>` : "";
+        const artXml = (artic.length ? `<articulations>${artic.map((a) => `<${ART_XML[a]}/>` + inhaleXml(a)).join("")}</articulations>` : "") + (noteDyn.length ? `<dynamics>${noteDyn.map((a) => `<${ART_XML[a]}/>`).join("")}</dynamics>` : "");
+        const slurXml = firstPiece ? slurs(i, t) : "";
+        const arpXml = firstPiece && (t.art ?? []).includes("arpeggio") ? "<arpeggiate/>" : "";
+        if (tieIn || tieOn || artXml || slurXml || arpXml) x += `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${slurXml}${artXml}${arpXml}</notations>`;
+        for (const [ci, cp] of (t.chord ?? []).entries()) {
+          chordXml.push(`<note id="${id}c${ci + 1}"><chord/>` + pitchXml(cp) + `<duration>${Math.round(piece)}</duration>` + (tieIn ? `<tie type="stop"/>` : "") + (tieOn ? `<tie type="start"/>` : "") + `<voice>1</voice>` + typeXml + headXml + staffXml + (tieIn || tieOn || arpXml ? `<notations>${tieIn ? `<tied type="stop"/>` : ""}${tieOn ? `<tied type="start"/>` : ""}${arpXml}</notations>` : "") + `</note>`);
+        }
+        if (!lyricDone && t.lyric) {
+          if (t.lyric === MELISMA_MARK) x += `<lyric number="1"><extend/></lyric>`;
+          else {
+            const lang2 = esc(langs[i] ?? "ja"), parts = t.lyric.split(ELISION);
+            x += `<lyric number="1"><syllabic>${syllabic(t)}</syllabic><text xml:lang="${lang2}">${esc(parts[0])}</text>` + parts.slice(1).map((p) => `<elision/><syllabic>single</syllabic><text xml:lang="${lang2}">${esc(p)}</text>`).join("") + `</lyric>`;
+          }
+        }
+        lyricDone = true;
+      }
+      x += `</note>`;
+      cur.push(x);
+      for (const cx of chordXml) cur.push(cx);
+      ticks += piece;
+      left -= piece;
+      k++;
+    }
+    if (t.kind === "note" && !t.pitch) unwritten.push(`n${t.id}`);
+  }
+  if (wedgeOpen) cur.push(wedgeXml("stop"));
+  if (cur.length || !measures.length) close(false);
+  return { measures, unwritten, lastLen: len };
+}
+function writeMusicXml(doc, meta) {
+  const paper = doc.paper ?? paperOf(DEFAULT_PAPER);
+  autoSeq = 0;
+  const built = doc.parts.map((p, k) => ({ p, ...partMeasures(p.tokens, p.breaks, k === 0, p.info.clef ?? "G", p.info.staves === 2 ? 2 : 1) }));
+  const nMeas = Math.max(0, ...built.map((b) => b.measures.length));
+  const manualBars = {}, unwritten = [];
+  const bodies = built.map((b) => {
+    const mb = [];
+    const ms = b.measures.map((m, n) => {
+      if (m.manual) mb.push(n + 1);
+      return `<measure number="${n + 1}">${m.body.join("")}</measure>`;
+    });
+    if (doc.padMeasures) for (let n = b.measures.length; n < nMeas; n++) ms.push(`<measure number="${n + 1}"><note><rest measure="yes"/><duration>${Math.round(b.lastLen)}</duration><voice>1</voice></note></measure>`);
+    manualBars[b.p.info.id] = mb;
+    unwritten.push(...b.unwritten);
+    return `<part id="${b.p.info.id}">
+${ms.join("\n")}
+</part>`;
+  });
+  const partList = doc.parts.map(({ info: P }) => `<score-part id="${P.id}"><part-name>${esc(P.name)}</part-name><score-instrument id="${P.id}-I1"><instrument-name>${esc(P.instrumentName)}</instrument-name><instrument-sound>${esc(P.sound)}</instrument-sound>${P.variant ? `<virtual-instrument><virtual-library>${esc(P.variant.library)}</virtual-library><virtual-name>${esc(P.variant.name)}</virtual-name></virtual-instrument>` : ""}</score-instrument><midi-instrument id="${P.id}-I1"><midi-program>${P.program}</midi-program>${P.volume !== void 0 ? `<volume>${P.volume}</volume>` : ""}${P.pan !== void 0 ? `<pan>${P.pan}</pan>` : ""}</midi-instrument></score-part>`).join("");
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE score-partwise PUBLIC "-//Recordare//DTD MusicXML 4.0 Partwise//EN" "http://www.musicxml.org/dtds/partwise.dtd">
+<score-partwise version="4.0">
+${doc.title ? `<work><work-title>${esc(doc.title)}</work-title></work>
+` : ""}${doc.movementTitle ? `<movement-title>${esc(doc.movementTitle)}</movement-title>
+` : ""}<identification>${doc.rights ? `<rights>${esc(doc.rights)}</rights>` : ""}<encoding><software>${esc(meta.software)}</software><encoding-date>${esc(meta.date)}</encoding-date></encoding></identification>
+${defaultsXml(paper)}
+${doc.credits ? creditXml(doc.credits, paper) + "\n" : ""}<part-list>${partList}</part-list>
+${bodies.join("\n")}
+</score-partwise>
+`;
+  return { xml, manualBars, unwritten };
+}
+
+// src/format/contract.ts
+var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
+var FORMAT_MINOR = { manifest: 1, score: 1, lounge: 1, studio: 1 };
+var FORMAT_PATCH = { manifest: 0, score: 0, lounge: 0, studio: 0 };
+
+// src/format/sha256-sync.ts
+var K = new Uint32Array([
+  1116352408,
+  1899447441,
+  3049323471,
+  3921009573,
+  961987163,
+  1508970993,
+  2453635748,
+  2870763221,
+  3624381080,
+  310598401,
+  607225278,
+  1426881987,
+  1925078388,
+  2162078206,
+  2614888103,
+  3248222580,
+  3835390401,
+  4022224774,
+  264347078,
+  604807628,
+  770255983,
+  1249150122,
+  1555081692,
+  1996064986,
+  2554220882,
+  2821834349,
+  2952996808,
+  3210313671,
+  3336571891,
+  3584528711,
+  113926993,
+  338241895,
+  666307205,
+  773529912,
+  1294757372,
+  1396182291,
+  1695183700,
+  1986661051,
+  2177026350,
+  2456956037,
+  2730485921,
+  2820302411,
+  3259730800,
+  3345764771,
+  3516065817,
+  3600352804,
+  4094571909,
+  275423344,
+  430227734,
+  506948616,
+  659060556,
+  883997877,
+  958139571,
+  1322822218,
+  1537002063,
+  1747873779,
+  1955562222,
+  2024104815,
+  2227730452,
+  2361852424,
+  2428436474,
+  2756734187,
+  3204031479,
+  3329325298
+]);
+var rotr = (x, n) => x >>> n | x << 32 - n;
+function sha256HexSync(data) {
+  const len = data.length, bitLen = len * 8;
+  const padded = new Uint8Array(len + 9 + 63 >> 6 << 6);
+  padded.set(data);
+  padded[len] = 128;
+  const dv = new DataView(padded.buffer);
+  dv.setUint32(padded.length - 8, Math.floor(bitLen / 4294967296));
+  dv.setUint32(padded.length - 4, bitLen >>> 0);
+  const H = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
+  const W = new Uint32Array(64);
+  for (let o = 0; o < padded.length; o += 64) {
+    for (let i = 0; i < 16; i++) W[i] = dv.getUint32(o + i * 4);
+    for (let i = 16; i < 64; i++) {
+      const s0 = rotr(W[i - 15], 7) ^ rotr(W[i - 15], 18) ^ W[i - 15] >>> 3, s1 = rotr(W[i - 2], 17) ^ rotr(W[i - 2], 19) ^ W[i - 2] >>> 10;
+      W[i] = W[i - 16] + s0 + W[i - 7] + s1 >>> 0;
+    }
+    let a = H[0], b = H[1], c = H[2], d = H[3], e = H[4], f = H[5], g = H[6], h = H[7];
+    for (let i = 0; i < 64; i++) {
+      const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25), ch = e & f ^ ~e & g, t1 = h + S1 + ch + K[i] + W[i] >>> 0;
+      const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22), maj = a & b ^ a & c ^ b & c, t2 = S0 + maj >>> 0;
+      h = g;
+      g = f;
+      f = e;
+      e = d + t1 >>> 0;
+      d = c;
+      c = b;
+      b = a;
+      a = t1 + t2 >>> 0;
+    }
+    H[0] = H[0] + a >>> 0;
+    H[1] = H[1] + b >>> 0;
+    H[2] = H[2] + c >>> 0;
+    H[3] = H[3] + d >>> 0;
+    H[4] = H[4] + e >>> 0;
+    H[5] = H[5] + f >>> 0;
+    H[6] = H[6] + g >>> 0;
+    H[7] = H[7] + h >>> 0;
+  }
+  let out = "";
+  for (let i = 0; i < 8; i++) out += H[i].toString(16).padStart(8, "0");
+  return out;
+}
+var sha256TextSync = (s) => sha256HexSync(new TextEncoder().encode(s));
+
+// src/format/final.ts
+var FINAL_MP3_ENTRY = ".moonsinger/final.mp3";
+var ENCODING = /<encoding>[\s\S]*?<\/encoding>\s*/g;
+function strippedXml(xml) {
+  return xml.replace(ENCODING, "");
+}
+function scoreExtNoView(text2) {
+  const o = JSON.parse(text2);
+  if ("view" in o) delete o.view;
+  return JSON.stringify(o);
+}
+function contentFingerprint(p) {
+  const papers = Object.keys(p.papers).sort().map((id) => [id, strippedXml(p.papers[id])]);
+  const lounge = Object.keys(p.lounge).sort().map((id) => [id, JSON.stringify(JSON.parse(p.lounge[id]))]);
+  const studio = JSON.stringify(JSON.parse(p.studio));
+  const thumbnail = p.thumbnail ? sha256HexSync(p.thumbnail) : null;
+  return sha256TextSync(JSON.stringify({ v: 2, papers, scoreExt: scoreExtNoView(p.scoreExt), lounge, studio, sounds: [...p.sounds].sort(), thumbnail }));
+}
+
+// src/singer/packs.gen.ts
+var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
+var PACKS = {
+  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
+  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
+  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
+  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
+  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
+};
+var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
+
+// src/version.ts
+var APP_VERSION = "v0.16.14-2026-11-07";
+
+// src/format/performance.ts
+var DYNAMICS_DB = { ppp: -24, pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12, fff: 18 };
+var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
+var MARK_DEFAULTS = {
+  accentSec: 0.12,
+  // 重音 / 强音：音头加重持续多久（秒；月读 / 元音版 / 旧乐器的 dB 那一路）
+  breathSec: 0.16,
+  breathShare: 0.25,
+  // 呼吸：前一个音收短多少（秒），最多占这个音的几分之几（元音版 / 乐器）
+  gapShare: 0.25,
+  // 连断底色的缝最多吃掉这个音的几分之几
+  wedgeStepDb: 6,
+  wedgeStepVel: 16,
+  // 渐强渐弱后面没写力度记号 = 走一档：dB 那一路 / 力度那一路各走多少
+  sfzDb: 9,
+  sfzVel: 32,
+  sfzSec: 0.2,
+  // 突强：音头比当下高多少（dB 那一路，sfzSec 里落回来）/ 力度那一路加多少
+  fpSec: 0.2,
+  // 强后即弱：音头按这位的 f，这么久落到 p（之后的音都是 p）
+  arpeggioSec: 0.035,
+  // 琶音（v0.9.45 / v0.9.48）：旋律（最上面）准时落拍，下面的从低到高每个提早这么多秒（最多摊到这个音一半长）；35 ms = user 定的
+  swellDb: 6,
+  // 音内起伏：< 走到 +swellDb、> 走到 −swellDb、<> 中间到 +swellDb 再回来
+  // 强度的其余几级（2026-10-08 深夜 Opus 5.5）：次重音 = 重音的一半（音头 accentSec 那一段 / 力度）；弱化 / 幽灵音 = 整个音轻下去（幽灵音 ≈ 强音反过来）
+  stressDb: 2,
+  stressVel: 8,
+  unstressDb: -3,
+  unstressVel: -10,
+  ghostDb: -9,
+  ghostVel: -28
+};
+var SING_MARKS = {
+  staccato: { mark: "^", at: "next" },
+  accent: { mark: "^", at: "this" },
+  marcato: { mark: "^", at: "this" },
+  breath: { mark: "v", at: "next" },
+  sfz: { mark: "^", at: "this" },
+  fp: { mark: "^", at: "this" }
+  // 音头那一组都顿一下（同重音，user「嗯重音也顿」）
+};
+var MARCATO_DB = 7;
+var DEFAULT_CALIBRATION_DB = -6;
+var TSUKUYOMI_DEFAULTS = { level: 0.8, levelMaxDb: 6, cleanMax: 0.4, breath: 0, levelContinuous: 1 };
+var REPO = "https://github.com/fangzhangmnm/moonsinger";
+var TSUKUYOMI_CREDIT = {
+  attribution: [CREDIT.credit, ...CREDIT.attribution],
+  license: { name: _t("\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09"), url: CREDIT.termsUrl, text: CREDIT.terms }
+};
+var TSUKUYOMI_SPEC = { kind: "ours", doc: "#tsukuyomi", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sing-core.mjs" } };
+var VOWEL_SAMPLER_SPEC = { kind: "ours", doc: "#vowel-sampler", source: { repo: REPO, ref: APP_VERSION, path: "src/singer/sampler.ts" } };
+var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
+
+// src/format/project.ts
+var MIMETYPE = "application/vnd.recordare.musicxml";
+var DIR = ".moonsinger/";
+var SOUNDS = `${DIR}sounds/`;
+var REFERENCES_DIR = `${DIR}references/`;
+var PAPERS = `${DIR}papers/`;
+var paperFile = (id) => `${PAPERS}${id}.musicxml`;
+var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
+var CANDIDATE_ID = { full: "c1", light: "c2" };
+var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
+function defaultRole(hum, id) {
+  return { version: FORMAT.lounge, id, name: DEFAULT_ROLE.name, sound: DEFAULT_ROLE.sound, active: CANDIDATE_ID.full, candidates: [
+    { id: CANDIDATE_ID.full, name: _t("\u5C0F\u6708\u76F8"), instrument: { engine: "tsukuyomi", model: { ...TSUKUYOMI_MODEL }, hum }, gm: { program: 55, variant: "tsukuyomi" }, ...common(), sing: structuredClone(SING_MARKS), defaults: { ...TSUKUYOMI_DEFAULTS }, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(TSUKUYOMI_SPEC) },
+    { id: CANDIDATE_ID.light, name: _t("\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09"), instrument: { engine: "vowel-sampler", table: "builtin", hum }, gm: { program: 55, variant: "tsukuyomi-vowels" }, ...common(), defaults: {}, credit: structuredClone(TSUKUYOMI_CREDIT), spec: structuredClone(VOWEL_SAMPLER_SPEC) }
+  ] };
+}
+var cands = (role) => role?.candidates ?? [];
+var instrumentOf = (c) => c && c.instrument && typeof c.instrument === "object" ? c.instrument : null;
+var isVoice = (i) => !!i && (i.engine === "tsukuyomi" || i.engine === "vowel-sampler");
+var roleOf = (extras, role, hum) => structuredClone(extras.lounge[role] ?? defaultRole(hum, role));
+var stampOf = (k) => ({ version: FORMAT[k], minor: FORMAT_MINOR[k], patch: FORMAT_PATCH[k] });
+var fpTextOf = (o) => {
+  const { minor: _m, patch: _p, ...rest } = o;
+  return JSON.stringify(rest, null, 2) + "\n";
+};
+var KNOWN_SCORE_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers"]);
+function saveMxl(a) {
+  const { out, fingerprint } = buildEntries(a);
+  if (a.extras.final && a.extras.final.fingerprint !== fingerprint) throw new Error(_t("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u5B9A\u7A3F\u7740\u4E0D\u80FD\u8FD9\u6837\u5B58\u3002\u5148\u300C\u6539\u7A3F\u300D\u518D\u6539\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002"));
+  const entries = {};
+  for (const [path, bytes] of Object.entries(out)) entries[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY || path === FINAL_MP3_ENTRY ? 0 : path.startsWith(SOUNDS) ? 1 : path.startsWith(REFERENCES_DIR) && !path.endsWith(".json") ? 0 : 6 }];
+  return zipSync(entries);
+}
+function buildEntries(a) {
+  const song = a.song;
+  const lounge = { ...a.extras.lounge };
+  for (const part of song.parts) {
+    const role = roleOf(a.extras, part.role, a.hum);
+    for (const c of cands(role)) {
+      const i = instrumentOf(c);
+      if (isVoice(i)) i.hum = a.hum;
+    }
+    lounge[part.role] = role;
+  }
+  const studio = structuredClone(a.extras.studio ?? emptyStudio());
+  const tracks = (studio.tracks ?? []).slice();
+  for (const part of song.parts) if (!tracks.some((m) => m.id === part.mic)) tracks.push(micTrack(part.mic, _t("\u9EA6\u514B\u98CE {t}", { t: tracks.filter((t) => t.kind === "mic").length + 1 })));
+  studio.tracks = tracks;
+  if (!studio.master) studio.master = { gainDb: 0, limiter: true, chain: [] };
+  const mics = tracks.filter((t) => t.kind === "mic");
+  const labels = partLabels(song, { ...a.extras, lounge });
+  const infoOf = (part, k) => {
+    const role = lounge[part.role], active = cands(role).find((c) => c.id === role.active), mic = mics.find((m) => m.id === part.mic);
+    return {
+      id: part.id,
+      name: labels[k],
+      ...part.staves === 2 ? { staves: 2 } : {},
+      instrumentName: String(active?.name ?? _t("\u5C0F\u6708\u76F8")),
+      sound: String(role.sound ?? DEFAULT_ROLE.sound),
+      program: Number(active?.gm?.program ?? 55),
+      variant: typeof active?.gm?.variant === "string" ? { library: "MoonSinger", name: String(active.gm.variant) } : void 0,
+      pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : void 0
+    };
+  };
+  const infos = song.parts.map(infoOf), meta = { software: `MoonSinger ${a.app}`, date: a.date };
+  const files = {};
+  const clefStarts = resolveSongClefs(song);
+  const autoOtt = (part) => part.staves !== 2 && part.autoOttava !== false;
+  const clefInfo = (paperId, part) => {
+    const c = part.staves === 2 ? void 0 : clefStarts.get(paperId)?.get(part.id);
+    return c && c !== "G" ? { clef: c } : {};
+  };
+  const papers = song.papers.map((p) => {
+    const parts = song.parts.flatMap((part, k) => p.tracks[part.id] ? [{ info: { ...infos[k], ...clefInfo(p.id, part) }, tokens: autoOtt(part) ? withAutoOttava(p.tracks[part.id], clefStarts.get(p.id)?.get(part.id) ?? "G") : p.tracks[part.id] }] : []);
+    const w = writeMusicXml({ title: song.title, movementTitle: p.name || void 0, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
+    files[paperFile(p.id)] = strToU8(w.xml);
+    const phrases = {};
+    for (const [pid, toks] of Object.entries(p.tracks)) {
+      const ids = toks.flatMap((t, k) => t.kind === "phrase" && k > 0 ? [toks[k - 1].id] : []);
+      if (ids.length) phrases[pid] = ids;
+    }
+    const swells = {};
+    for (const [pid, toks] of Object.entries(p.tracks)) for (const t of toks) {
+      const sw = swellOf(t);
+      if (sw) (swells[pid] ??= {})[String(t.id)] = sw;
+    }
+    return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...Object.keys(phrases).length ? { phrases } : {}, ...Object.keys(swells).length ? { swells } : {}, ...p.hidden ? { hidden: true } : {} };
+  });
+  const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k) => {
+    const f = flattenPart(song, part.id, { tempo: k === 0, order: songPlayOrder(song) });
+    let toks = f.tokens.slice(), starts = f.starts.map((x) => ({ ...x }));
+    if (autoOtt(part) && starts.length) {
+      const out2 = toks.slice(0, starts[0].index), ns = starts.map((x) => ({ ...x }));
+      starts.forEach((s0, j) => {
+        ns[j].index = out2.length;
+        out2.push(...withAutoOttava(toks.slice(s0.index, starts[j + 1]?.index ?? toks.length), clefStarts.get(s0.paper.id)?.get(part.id) ?? "G"));
+      });
+      toks = out2;
+      starts = ns;
+    }
+    const first = part.staves === 2 ? void 0 : clefStarts.get(starts[0]?.paper.id ?? "")?.get(part.id);
+    if (first) {
+      let off = 0;
+      for (let j = 1; j < starts.length; j++) {
+        const at = starts[j].index + off, want = clefStarts.get(starts[j].paper.id)?.get(part.id);
+        starts[j].index = at;
+        if (!want) continue;
+        const ds = displayStates(toks.slice(0, at), first), now = at > 0 ? ds.clef[at - 1] : first;
+        if (now !== want) {
+          toks.splice(at, 0, { kind: "clef", id: 0, clef: want });
+          off++;
+        }
+      }
+    }
+    return { info: { ...infos[k], ...first && first !== "G" ? { clef: first } : {} }, tokens: toks, breaks: new Map(starts.slice(1).map((s) => [s.index, s.paper.name])) };
+  }) }, meta);
+  const scoreRest = Object.fromEntries(Object.entries(a.extras.scoreExt ?? {}).filter(([k]) => !KNOWN_SCORE_KEYS.has(k)));
+  const scoreExt = {
+    ...scoreRest,
+    ...stampOf("score"),
+    papers,
+    parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched", ...p.staves === 2 ? {} : { clef: p.clef ?? "auto" }, ...p.autoOttava === false ? { autoOttava: false } : {}, ...p.host ? { host: p.host } : {} })),
+    // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
+    ...a.view && Object.keys(a.view).length ? { view: a.view } : {},
+    // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
+    ...song.arrangement?.trim() ? { arrangement: song.arrangement } : {},
+    // 编排那一行（可选，2026-10-08 深夜）
+    ...song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {},
+    ...song.barNumbers === "off" ? { barNumbers: "off" } : {}
+  };
+  const referenced = referencedSounds(lounge);
+  const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => x < y ? -1 : 1);
+  const json = (o) => strToU8(JSON.stringify(o, null, 2) + "\n");
+  const jsonText = (o) => JSON.stringify(o, null, 2) + "\n";
+  const fpParts = {
+    papers: Object.fromEntries(papers.map((p) => [p.id, strFromU8(files[p.file])])),
+    scoreExt: fpTextOf(scoreExt),
+    lounge: Object.fromEntries(Object.entries(lounge).map(([id, r]) => [id, fpTextOf(r)])),
+    studio: fpTextOf(studio),
+    sounds: sounds.map(([p]) => p),
+    thumbnail: a.extras.thumbnail
+  };
+  const fingerprint = contentFingerprint(fpParts);
+  const { final: _f, finalRev: _r, core: _c, ...manifestRest } = a.extras.manifest ?? {};
+  const manifest = {
+    ...manifestRest,
+    format: "moonsinger",
+    ...stampOf("manifest"),
+    app: a.app,
+    saved: a.date,
+    files: {
+      "score.json": FORMAT.score,
+      "studio.json": FORMAT.studio,
+      ...Object.fromEntries(Object.entries(lounge).map(([id, r]) => [`lounge/${id}.json`, Number(r.version ?? 1)])),
+      ...Object.fromEntries(papers.map((p) => [`papers/${p.id}.musicxml`, 0]))
+    },
+    // 0 = 标准件（MusicXML），不是我们的版本号
+    derived: ["score.musicxml"],
+    sounds: sounds.map(([path, b]) => ({ path, sha256: path.slice(SOUNDS.length).replace(/\.sf2$/, ""), bytes: b.length })),
+    ...a.core ? { core: { version: a.core.version, hash: a.core.hash } } : {},
+    // 渲染核心的版本 + 哈希（每次存都记）
+    ...a.extras.finalRev > 0 ? { finalRev: a.extras.finalRev } : {},
+    ...a.extras.final && a.extras.finalMp3 ? { final: a.extras.final } : {}
+  };
+  const rootfiles = [
+    `<rootfile full-path="score.musicxml" media-type="application/vnd.recordare.musicxml+xml"/>`,
+    ...a.extras.rootfiles.map((r) => `<rootfile full-path="${r.path}" media-type="${r.mediaType}"/>`)
+  ].join("\n    ");
+  const out = {};
+  out["mimetype"] = strToU8(MIMETYPE);
+  out["META-INF/container.xml"] = strToU8(`<?xml version="1.0" encoding="UTF-8"?>
+<container>
+  <rootfiles>
+    ${rootfiles}
+  </rootfiles>
+</container>
+`);
+  out["score.musicxml"] = strToU8(flat.xml);
+  out[`${DIR}score.json`] = json(scoreExt);
+  for (const [path, bytes] of Object.entries(files)) out[path] = bytes;
+  for (const [id, r] of Object.entries(lounge)) out[`${DIR}lounge/${id}.json`] = json({ ...r, ...stampOf("lounge") });
+  out[`${DIR}studio.json`] = json({ ...studio, ...stampOf("studio") });
+  for (const [path, bytes] of sounds) out[path] = bytes;
+  for (const [path, bytes] of Object.entries(a.references ?? {})) {
+    if (!path.startsWith(REFERENCES_DIR)) throw new Error(_t("\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 {REFERENCES_DIR} \u4E0B\uFF1A{path}", { REFERENCES_DIR, path }));
+    out[path] = bytes;
+  }
+  if (a.extras.final && a.extras.finalMp3) out[FINAL_MP3_ENTRY] = a.extras.finalMp3;
+  for (const [path, bytes] of Object.entries(a.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY && path !== FINAL_MP3_ENTRY) out[path] = bytes;
+  out[`${DIR}manifest.json`] = json(manifest);
+  if (a.extras.thumbnail) out[THUMBNAIL_ENTRY] = a.extras.thumbnail;
+  return { out, fingerprint };
+}
+function roleName(extras, role) {
+  return String(extras.lounge[role]?.name ?? DEFAULT_ROLE.name);
+}
+function roleSound(extras, role) {
+  return String(extras.lounge[role]?.sound ?? DEFAULT_ROLE.sound);
+}
+function partLabels(song, extras) {
+  return numberParts(song.parts.map((p) => ({ name: roleName(extras, p.role), sound: roleSound(extras, p.role) })));
+}
+var emptyStudio = () => ({ version: FORMAT.studio, tracks: [], master: { gainDb: 0, limiter: true, chain: [] } });
+var micTrack = (id, name) => ({ id, kind: "mic", name, gainDb: 0, pan: 0, chain: [], sends: [], to: "master" });
+function referencedSounds(lounge) {
+  const refs = /* @__PURE__ */ new Set();
+  for (const r of Object.values(lounge)) for (const c of cands(r)) {
+    const i = instrumentOf(c);
+    if (i?.engine === "soundfont" && typeof i.source?.embedded === "string") refs.add(i.source.embedded);
+  }
+  return refs;
+}
+
+// src/format/encode-worker.ts
+function runEncodeJob(job, now = () => performance.now()) {
+  const t0 = now();
+  try {
+    return { seq: job.seq, bytes: saveMxl(job.args), ms: now() - t0 };
+  } catch (e) {
+    return { seq: job.seq, error: e?.message ?? String(e) };
+  }
+}
+if (typeof document === "undefined" && typeof self !== "undefined" && typeof self.postMessage === "function") {
+  const ws = self;
+  ws.onmessage = (e) => {
+    const r = runEncodeJob(e.data);
+    if ("bytes" in r) ws.postMessage(r, [r.bytes.buffer]);
+    else ws.postMessage(r);
+  };
+}
+export {
+  runEncodeJob
+};
+//# sourceMappingURL=encode-worker-cf3df35748ee.mjs.map

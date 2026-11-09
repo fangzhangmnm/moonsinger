@@ -228,7 +228,7 @@ body.listen-mode .ink-caret { display: none; }
 .mark-cands .btn.danger { color: #b0412b; }
 .staff-svg text.tempo-word { font-weight: 600; font-family: system-ui, sans-serif; }
 .staff-svg text.tempo-num, .staff-svg text.key-label { font-family: system-ui, sans-serif; }
-/* 名字下面四颗小钮（v0.16.17 搬家 B：静 / 独 / 隐 / 只）：亮着 = 涂底；编辑器里的控件，不印 */
+.staff-svg text.key-hint { fill: var(--muted); opacity: .6; }   /* 专业模式 C 调的「1=C」：编辑器里的提示，不印（v0.16.10） */
 
 /* 框选（笔 / 鼠标在谱面空白处拖） */
 .marquee { position: absolute; z-index: 4; border: 1px dashed var(--accent); background: rgba(43, 108, 176, .08); border-radius: 3px; pointer-events: none; }
@@ -276,16 +276,29 @@ body.listen-mode .ink-caret { display: none; }
 #docTitle { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 纸面最上面的歌名（不填也行；点了就地改） */
 .staff-svg .song-title { fill: var(--ink); font-weight: 600; }
+.staff-svg .song-title.empty { fill: #b9b2a5; font-weight: 400; }   /* 歌名 / 作者空着：浅色短提示（只在编辑器里画） */
 .staff-svg .part-name.focus { fill: var(--accent); }                 /* 光标所在的声部 */
 .staff-svg .paper-name { fill: var(--ink); font-weight: 600; }        /* 曲段名（纸顶一条） */
+.staff-svg .paper-name.empty { fill: #b9b2a5; font-weight: 400; }
+.staff-svg .paper-chip-text { fill: var(--muted); font-weight: 600; }
 .staff-svg .part-badge { fill: var(--accent); font-weight: 600; }       /* 名字下面的角标：静音 / 独奏 / 只看它 */
+.staff-svg .part-stub { fill: #b9b2a5; }                                   /* 隐藏的声部缩成的细行 */
+.staff-svg .part-stub-line { stroke: #ddd6c8; }
 .staff-svg path.brace { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }   /* 大谱表花括号 */
+.staff-svg path.family-bracket { fill: none; stroke: var(--muted); stroke-width: 2.4; stroke-linejoin: miter; cursor: pointer; }   /* 合租展开着的一家（v0.10.29）：括在一起；点它 = 叠回去。灰一点（是编辑器的提示，不印——导出不画，见 svg.ts） */
+.staff-svg rect.paper-chip.off { opacity: .35; }                           /* ‹ › 到头了 */
+.staff-svg rect.paper-chip.on { fill: var(--accent-soft); stroke: var(--accent); }   /* 「本段 | 全部」亮的那个 */
+.staff-svg .nav-text.on { fill: var(--accent); font-weight: 600; }
+.staff-svg .nav-text { cursor: pointer; }
+.staff-svg .nav-text { fill: var(--muted); font-variant-numeric: tabular-nums; }
 .paper-row { align-items: center; justify-content: space-between; }
 .paper-row-name { font-size: 14px; }
 .title-input.paper { text-align: left; font-weight: 600; }
 .title-input.arr { text-align: left; font-weight: 400; }   /* 编排那一行（2026-10-08 深夜） */
 .staff-svg text.arr-label { fill: var(--muted); }
+.staff-svg text.arr-empty { fill: var(--muted); opacity: .6; }
 .staff-svg text.arr-issue { fill: var(--muted); font-style: italic; }
+.staff-svg .credits.empty { fill: var(--muted); opacity: .7; }
 .title-input { position: absolute; z-index: 5; box-sizing: border-box; text-align: center; font-weight: 600; border: 1px solid var(--accent); border-radius: 7px; background: #fff; color: var(--ink); padding: 0 8px; }
 /* pad = 独立的 MEDO 式输入设备（2026-10-07 晚）：最上面 1= / 长短 / 音域分宽度 +「⋯」方块（按住原地滚、点开滚轮）；写字键 ← → 同样大小的方块，0 | — ⌫ 分剩下的宽；音键占满整宽 */
 .pad-tools.knobs { grid-template-columns: repeat(3, minmax(0, 1fr)) var(--knob) var(--knob) var(--knob) var(--knob); }   /* v0.10.37 又加「符 / 音」切换键 = 再加一列（同一个坑：漏加 = 「⋯」掉到第二排） */   /* 1= / 长短 / 音域 分宽度；弹、收起、⋯ = 方块（2026-10-08 Opus：加「弹」时漏加一列，「⋯」被挤到第二排） */
@@ -386,41 +399,8 @@ body.listen-mode .ink-caret { display: none; }
 .score.zoomed.desk .sheet { margin: 0; }            /* 放大超出屏幕时不再居中（居中会让左边滚不到） */
 .btn.zoom-reset { position: fixed; z-index: var(--z-float); height: 30px; padding: 0 8px; font-size: 13px; font-variant-numeric: tabular-nums; }
 .score.desk .sheet { margin: 0 auto; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 2px 10px rgba(0, 0, 0, .08); min-height: 100%; }
-/* 每张纸底下的虚线框「＋ 歌手」「＋ 新曲段」（v0.16.19 搬家 D；编辑器里、不分页时才有，PDF 不印） */
-/* ── 谱面上面那一层（刀 1，2026-11-08 Opus 5.5；src/ui/score-overlay.ts）：编辑器的钮 / 框 / 提示，印出来没有的东西。
- *    容器在 .sheet 里、坐标 = 排版的 px（缩放 / 分页 / 横卷跟着 .sheet 走）；容器不接点，只有 .ov-i 接（谱面的手势跳过它们）。颜色从原来 svg 里那几条搬过来。 */
-.score-overlay { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: visible; pointer-events: none; }
-.score-overlay > * { position: absolute; box-sizing: border-box; margin: 0; white-space: nowrap; }
-.score-overlay .ov-i { pointer-events: auto; cursor: pointer; touch-action: none; -webkit-user-select: none; user-select: none; }
-.score-overlay .ov-icon { display: block; color: inherit; fill: currentColor; pointer-events: none; }
-.ov-tg { display: flex; align-items: center; justify-content: center; padding: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 5px; color: var(--muted); }
-.ov-tg.on { background: var(--accent); border-color: var(--accent); color: #fff; }                    /* 只看 / 独奏 = 主题色实底 */
-.ov-tg.on.tg-muted, .ov-tg.on.tg-hidden { background: #c96a3a; border-color: #c96a3a; }              /* 静音 / 隐藏 = 橙色实底 */
-.ov-chip { display: flex; align-items: center; justify-content: center; padding: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-weight: 600; font-size: var(--ctl-glyph, 20px); line-height: 1; }
-.ov-paper-chip { font-size: 0; }
-.ov-chip.off { opacity: .35; cursor: default; }                                                       /* ‹ › 到头了 */
-.ov-chip.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }    /* 只看本段亮着 */
-.ov-nav { display: flex; align-items: center; gap: 0; }
-.ov-nav > .ov-chip { position: static; width: var(--ctl); height: var(--ctl); flex: none; }
-.ov-nav > .ov-scope, .ov-nav > .ov-menu { width: calc(var(--ctl) * 1.2); }
-.ov-nav > .ov-nav-next { margin-right: calc(var(--ctl) / 3); }
-.ov-nav > .ov-menu { margin-left: calc(var(--ctl) / 5); }
-.ov-nav-text { padding: 0 calc(var(--ctl) / 6); color: var(--muted); font-size: var(--ctl-text, 14px); font-variant-numeric: tabular-nums; }
-.ov-hidden { padding: 0 .6em; width: auto; font-weight: 600; color: var(--muted); border-style: dashed; }   /* 「隐藏 N」：不占位、点开看是谁 */
-.ov-nav > .ov-hidden { position: static; width: auto; height: var(--ctl); margin-right: calc(var(--ctl) / 3); font-size: var(--ctl-text, 14px); }
-.ov-add { background: transparent; border: 1.2px dashed var(--line); border-radius: 7px; color: var(--muted); }
-.ov-add:hover { border-color: var(--accent); background: var(--accent-soft); }
-.ov-placeholder { color: #b9b2a5; font-weight: 400; }                     /* 歌名 / 作者 / 曲段名 / 编排空着：浅色短提示 */
-.ov-ph-credits { background: none; border: 0; padding: 0; color: var(--muted); opacity: .7; font: inherit; font-size: inherit; }
-.ov-ph-arr { overflow: hidden; text-overflow: ellipsis; }
-.ov-arr-empty { color: var(--muted); opacity: .6; }
-.ov-key-hint { background: none; border: 0; padding: 0; color: var(--muted); opacity: .6; font-family: system-ui, sans-serif; }   /* 专业模式 C 调的「1=C」 */
-.ov-hidden-paper-name { color: #b9b2a5; font-weight: 600; }               /* 折叠着的隐藏纸的名字 */
-.ov-stub { display: flex; align-items: center; gap: .8em; color: #b9b2a5; }
-.ov-stub > i { flex: 1; border-top: 1px solid #ddd6c8; }
-.ov-note { color: var(--muted); }
-.ov-family { background: none; border: 0; padding: 0; }                   /* 合租展开着的一家：括号（点 = 叠回去） */
-.ov-family > i { position: absolute; left: 46%; top: 0; bottom: 0; width: 42%; border: 2.4px solid var(--muted); border-right: 0; }
+.staff-svg .paper-chip { fill: var(--panel); stroke: var(--line); rx: 6px; cursor: pointer; }
+.staff-svg .paper-chip-icon { color: var(--muted); cursor: pointer; }
 .settings-card .btn.cand small { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
 .settings-card .btn.cand:has(small) { flex-direction: column; height: auto; padding: 6px 12px; gap: 2px; }
 .pad-tools .btn.lock small { color: rgba(255, 255, 255, .85); }   /* /2 锁住时小字也看得见 */
@@ -447,14 +427,6 @@ body.listen-mode .ink-caret { display: none; }
 body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(--z-overlay) + 1); background: var(--bg); padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
 .finder-pad { flex: none; display: inline-flex; align-items: center; gap: 4px; }   /* 试听键盘开关（收起了也叫得回来） */
 @media (max-width: 560px) { .finder-pad span, .finder-title { display: none; } }
-/* 乐器目录顶上「这首歌里用过的」（v0.16.18 搬家 C）：点一位 = 上场，× = 退掉 */
-.finder-used { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
-.finder-used[hidden] { display: none; }
-.finder-used .fu-k { font-size: 12px; color: var(--muted); margin-right: 2px; }
-.finder-used .fu-c { display: inline-flex; align-items: center; }
-.finder-used .fu-del { min-width: 24px; height: 28px; padding: 0 4px; color: var(--muted); }
-.ip-who .ip-who-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 4px 0 8px; }
-.track-card .tc-row { display: flex; gap: 6px; margin: 4px 0 8px; }
 .finder-hint { flex: none; padding: 6px 12px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }
 /* 类级跳转：一组一项的下拉；滚动时跟着显示现在所在的组 */
 .finder-jump { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); font-size: 13px; color: var(--muted); }   /* 类级跳转 = 下拉（user「category选项能做成下拉而不是滑动吗」） */
@@ -755,6 +727,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 /* 句（换气记号）、隐藏的纸 */
 .staff-svg .phrase-mark { fill: var(--muted); }
 .staff-svg .breath-label { fill: currentColor; }   /* 出声的换气：逗号后面的「吸」/「深吸」（2026-10-10） */
+.staff-svg .part-stub.hidden-note { fill: var(--muted); }   /* 灰字（user「红字：应该用灰字」） */
 
 /* 叠音（polyphony，2026-10-08）：单声乐器的声部里下面的音灰掉 */
 .staff-svg .note.chord-mute { fill: var(--muted); stroke: var(--muted); }
@@ -805,30 +778,6 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .tc-list .btn { height: 34px; padding: 0 12px; font-size: 13px; }
 .tc-list .btn small { font-size: 11px; color: var(--muted); margin-left: 2px; }
 .tc-hint { font-size: 12px; color: var(--muted); padding: 2px 6px 6px; max-width: 280px; line-height: 1.45; }
-/* 轨小卡下半截 = 这一段的事（v0.16.19 搬家 D） */
-.tc-sec { font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); padding: 8px 6px 0; }
-.tc-sec + .tc-foot { border-top: 0; padding-top: 6px; }
-/* 声部管理（v0.16.19 搬家 D）：所有歌手排一列 */
-.parts-mgr .pm-card { width: min(560px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
-.pm-card .offer-title small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; }
-.pm-list { overflow: auto; min-height: 0; flex: 1; margin: 6px -4px 12px; padding: 0 4px; }
-.pm-row { border: 1px solid var(--line); border-radius: 9px; padding: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
-.pm-top, .pm-sub, .pm-papers { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.pm-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
-.pm-name { flex: 1; min-width: 6em; height: 32px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; padding: 0 8px; }
-.pm-top .btn, .pm-sub .btn { height: 32px; min-width: 32px; padding: 0 10px; font-size: 13px; }
-.pm-who { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.pm-k { font-size: 12px; color: var(--muted); margin-right: 2px; }
-.pm-papers .btn.chip { height: 28px; padding: 0 10px; font-size: 13px; }
-/* 从歌手名进来：顶上一条 = 这一段的事（v0.16.21）；四颗钮排成等宽格子，不按字长折行（user 11-08 不要按钮堆） */
-.pm-here { border: 1px solid #b8cde8; background: var(--accent-soft); border-radius: 9px; padding: 8px; margin: 8px 0 4px; display: flex; flex-direction: column; gap: 6px; }
-.pm-here .pm-k { font-size: 13px; color: var(--ink); font-weight: 600; }
-.pm-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
-.pm-acts .btn { height: 34px; font-size: 13px; padding: 0 8px; }
-.pm-here .pm-back { align-self: flex-start; height: 32px; font-size: 13px; border-color: transparent; background: transparent; padding: 0 4px; }
-.pm-here .tc-list { padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
-.pm-here .tc-hint { max-width: none; padding: 0 2px; }
-.pm-row.is-here { border-color: var(--accent); }
 .inst-page { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
 .inst-page[hidden] { display: none; }
 .ip-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
@@ -1098,12 +1047,9 @@ body.doc-final .inst-page .finder-bar::after { content: var(--t-final-lock, "定
 
 /* 谱头面板（v0.16.8，src/app/header-panel.ts）：谱号 / 调号 / 拍号 / 速度同一个面板，左边名字、右边下拉（user 11-07「谱号那里你那一大堆很闪的按钮…搜成一个下拉框」） */
 .ctx-menu.header-panel { width: min(360px, calc(100vw - 16px)); max-width: min(360px, calc(100vw - 16px)); }
-.header-panel .hp-grid { display: grid; grid-template-columns: 5.4em minmax(0, 1fr); gap: 8px 10px; align-items: center; margin: 6px 0 2px; }
+.header-panel .hp-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 10px; align-items: center; margin: 6px 0 2px; }
 .header-panel .hp-k { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .header-panel .hp-v { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .header-panel .hp-sel { min-width: 0; flex: 1; height: 34px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; padding: 0 6px; }
 .header-panel .hp-in { width: 64px; flex: none; height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; font-size: 14px; color: var(--ink); -webkit-user-select: text; user-select: text; }
 .header-panel .hp-in.bad { border-color: var(--danger, #c33); }
-
-/* 手感探针的那一行小字（v0.16.23）：浮在键盘上沿，超标才出现，点一下这次打开不再显示 */
-.feel-chip { position: fixed; z-index: var(--z-menu); font: 12px/1.3 inherit; font-family: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--warn); background: var(--bg); color: var(--ink); text-align: left; white-space: normal; box-shadow: 0 1px 4px rgba(0,0,0,.15); cursor: pointer; }
