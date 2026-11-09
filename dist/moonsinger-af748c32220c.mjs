@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.50-2026-11-09";
+var APP_VERSION = "v0.16.51-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29333,7 +29333,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-e066d1174db6.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-0260a1fd66e2.mjs");
+      return pick(() => "encode-worker-d72ef65dd5af.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -39580,7 +39580,8 @@ function createEncryption(opts = {}) {
 var appEncryption = createEncryption();
 
 // src/app-store.ts
-var od = createOneDriveProvider({ clientId: CLIENT_ID2, scopes: SCOPES2, authority: AUTHORITY2, msalUrl: MSAL_URL2 });
+var GRAPH_TRANSPORT = { timeouts: DEFAULT_GRAPH_TIMEOUTS };
+var od = createOneDriveProvider({ clientId: CLIENT_ID2, scopes: SCOPES2, authority: AUTHORITY2, msalUrl: MSAL_URL2, transport: GRAPH_TRANSPORT });
 var cloudAvailable = () => currentPolicy().cloud;
 function injectedAuth() {
   const g3 = globalThis;
@@ -46567,7 +46568,15 @@ function createEditorSession(config) {
   let _pushPending = false;
   let _pushOwed = false;
   let _refusedEpoch = -1;
-  let _saving = false;
+  let _tail = Promise.resolve();
+  function serial(op2) {
+    const run2 = _tail.then(op2, op2);
+    _tail = run2.then(() => {
+    }, () => {
+    });
+    return run2;
+  }
+  let _gen = 0;
   let _timer = null;
   let _idleTimer = null;
   let _onChangeWired = false;
@@ -46584,9 +46593,16 @@ function createEditorSession(config) {
   }
   const fileOf = (name) => store.file(name, { isZip, mode: "existing" });
   let _createFor = null;
-  async function persist(tryPush, force = false) {
-    const need = force || (tryPush ? _dirty || _pushPending : _dirty);
-    if (!_name || !need || _saving) return;
+  const persist = (tryPush, force = false) => serial(() => persistNow(tryPush, force));
+  async function persistNow(tryPush, force = false) {
+    const need = () => force || (tryPush ? _dirty || _pushPending : _dirty);
+    if (!_name || !need()) return;
+    if (editor.prepare) {
+      const g0 = _gen;
+      await editor.prepare();
+      if (g0 !== _gen) force = false;
+      if (!_name || !need()) return;
+    }
     {
       const why2 = editor.canPersist?.();
       if (why2) {
@@ -46597,39 +46613,42 @@ function createEditorSession(config) {
         return;
       }
     }
-    _saving = true;
+    const name = _name, gen = _gen;
+    const mine = () => gen === _gen;
     let takeCloudReload = false;
     const wasDirty = _dirty, wasPushPending = _pushPending;
     const epochAtFreeze = _editEpoch;
     try {
       const { bytes, peek } = await editor.encode();
+      if (!mine()) return;
       if (_editEpoch === epochAtFreeze) _dirty = false;
-      const mode = _createFor === _name ? "new" : "existing";
-      const res = await store.file(_name, { isZip, mode }).save(bytes, { tryPush, hint: peek != null ? { peek } : void 0 });
-      if (tryPush) {
+      const mode = _createFor === name ? "new" : "existing";
+      const res = await store.file(name, { isZip, mode }).save(bytes, { tryPush, hint: peek != null ? { peek } : void 0 });
+      if (mine() && tryPush) {
         _pushPending = res?.pushed !== true || _editEpoch !== epochAtFreeze;
         if (!_pushPending) _pushOwed = false;
       }
-      takeCloudReload = res?.resolution === "takeCloud";
-      if (_createFor === _name) _createFor = null;
-      if (_name != null) editor.onSaved?.(_name);
+      takeCloudReload = mine() && res?.resolution === "takeCloud";
+      if (_createFor === name) _createFor = null;
+      editor.onSaved?.(name);
     } catch (e10) {
-      _dirty = wasDirty || _editEpoch !== epochAtFreeze;
-      _pushPending = wasPushPending || _editEpoch !== epochAtFreeze;
+      if (mine()) {
+        _dirty = wasDirty || _editEpoch !== epochAtFreeze;
+        _pushPending = wasPushPending || _editEpoch !== epochAtFreeze;
+      }
       throw e10;
-    } finally {
-      _saving = false;
     }
-    if (takeCloudReload && _name) {
-      const ok2 = await openInto(_name);
+    if (takeCloudReload) {
+      const ok2 = await openInto(name);
       if (!ok2) throw new Error("[editor-session] takeCloud reload failed: canvas still shows the pre-override version \u2014 reopen the file");
     }
   }
   async function openInto(name) {
     const blob = await fileOf(name).open();
     if (!blob) return false;
-    await editor.adopt(blob);
+    await editor.adopt(blob, name);
     _name = name;
+    _gen++;
     _dirty = false;
     _pushPending = false;
     _pushOwed = false;
@@ -46654,14 +46673,15 @@ function createEditorSession(config) {
         _pushOwed = false;
       }
     },
-    async open(name) {
-      if (_name && _name !== name) await persist(pushOn.has("exit"));
+    open: (name) => serial(async () => {
+      if (_name && _name !== name) await persistNow(pushOn.has("exit"));
       wireOnChange();
       return openInto(name);
-    },
+    }),
     adopted(name, opts) {
       wireOnChange();
       _name = name;
+      _gen++;
       _dirty = true;
       _pushPending = true;
       _pushOwed = false;
@@ -46675,35 +46695,39 @@ function createEditorSession(config) {
     // app 驱动内容变化（onChange 之外）→ 标脏
     release() {
       _name = null;
+      _gen++;
       _dirty = false;
       _pushPending = false;
       _pushOwed = false;
       _createFor = null;
     },
-    // 放下身份（见接口注释）
+    // 放下身份（见接口注释）；代数 +1 = 正在编码的那一轮作废
     flushLocal: () => persist(false),
     flushAndPush: () => persist(true),
-    forceSaveAndPush: async () => {
-      await persist(true, true);
-      _pushOwed = _name != null && _pushPending && !_dirty;
-    },
-    // 用户显式按 save：无条件 encode+推（v409）；没推成且期间没再改 = 记下欠的这一推
-    async rename(newName) {
+    forceSaveAndPush: () => serial(async () => {
+      const gen = _gen;
+      await persistNow(true, true);
+      if (gen === _gen) _pushOwed = _name != null && _pushPending && !_dirty;
+    }),
+    rename: (newName) => serial(async () => {
       if (!_name) return { ok: true };
-      await persist(false);
-      const r10 = await fileOf(_name).tryMove(newName);
-      if (r10.ok) _name = newName;
+      await persistNow(false);
+      const from = _name;
+      if (!from) return { ok: true };
+      const r10 = await fileOf(from).tryMove(newName);
+      if (r10.ok && _name === from) _name = newName;
       return r10;
-    },
-    async delete() {
+    }),
+    delete: () => serial(async () => {
       if (!_name) return;
       const n10 = _name;
       _name = null;
+      _gen++;
       _dirty = false;
       _pushPending = false;
       _pushOwed = false;
       await fileOf(n10).trash();
-    },
+    }),
     start() {
       wireOnChange();
       if (policy.autosaveMs && policy.autosaveMs > 0) {
@@ -54875,6 +54899,7 @@ function loadDoc(song, o10) {
   H2.load(o10.home, { stem: o10.stem, named: o10.named });
   coverTouched = false;
   const st0 = initState(song), startDyns = ensureStartDyns(st0.song, st0.nextId).added.length;
+  encodedSnap = null;
   D2.load(withStartDyns(st0), o10.extras);
   const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
   applyDesk(d3);
@@ -55505,7 +55530,6 @@ consumeLaunchFiles((h2) => {
 var KV_LAST_DOC = "last-doc";
 var KV_ZOOM = "zoom";
 var gallery = null;
-var pendingOpenId = null;
 var encodedSnap = null;
 var coverTouched = false;
 var es2 = createEditorSession({
@@ -55525,16 +55549,18 @@ var es2 = createEditorSession({
     };
   } },
   editor: {
-    adopt: async (blob) => {
-      const id2 = pendingOpenId ?? H2.identifier();
-      if (!id2) throw new Error("adopt without an identifier");
-      adoptStoreBytes(id2, new Uint8Array(await blob.arrayBuffer()));
+    // 这些字节是谁的 = editor-session 说了算（第二个参数）。以前这里读「正在开的那首 ?? 现在开着的那首」两个全局：排队之后 open(B) 可能正等在 A 的保存后面，
+    //   那一轮保存里选了「云端覆盖本地」→ 重载装的是 A 的字节，全局却已经指着 B（2026-11-09，Claude Fable 5.1）。
+    adopt: async (blob, name) => {
+      adoptStoreBytes(name, new Uint8Array(await blob.arrayBuffer()));
     },
     onChange: () => {
     },
     // 编码在 worker 里（src/format/encode-client.ts；2026-10-21）：主线程只克隆一份歌 + 休息室 + 参考窗的文件；worker 没了就在主线程算（同以前）
+    //   ⚠ 快照 = 这个函数的同步前缀（editor-session 的钉身份靠它）：encoder.encode() 调用的那一下就把歌 + 休息室 + 参考窗的文件克隆走了；它前面不许有 await。
+    //   参考窗里刚加的卡还在编字节 = prepare 里等（editor-session 在记下「存给谁」之前等它）——以前这句 await 在 encode 开头：等的时候换了歌，取到的就是新歌的内容。
+    prepare: () => refHost.settled(),
     encode: async () => {
-      await refHost.settled();
       encodedSnap = D2.savedMark();
       const bytes = await encoder.encode({ ...saveArgs(), references: refHost.files() });
       return { bytes: new Blob([bytes], { type: "application/vnd.recordare.musicxml" }) };
@@ -55553,12 +55579,12 @@ var es2 = createEditorSession({
       showError(why2);
       diagNote("doc", `persist refused: ${why2}`);
     },
+    // 「已存」的基线和封面的账只记给还开着的那一首：写盘的那一下歌被放下 / 换走了（name 不是现在这首）= 这份快照是上一首的，不许记到现在这首头上（会把一张没动过的空谱标成改过 → 自己安家进歌库）。
     onSaved: (name) => {
-      if (encodedSnap) {
-        D2.adoptSaved(encodedSnap);
-        encodedSnap = null;
-      }
-      if (coverTouched) {
+      const cur = H2.identifier() === name;
+      if (cur && encodedSnap) D2.adoptSaved(encodedSnap);
+      encodedSnap = null;
+      if (cur && coverTouched) {
         coverTouched = false;
         gallery?.invalidateThumb(name);
       }
@@ -55586,7 +55612,6 @@ function adoptStoreBytes(id2, bytes) {
 var stemOfId = (id2) => identifiers.parse(id2)?.stem ?? id2;
 async function openStoreDoc(id2) {
   if (!await H2.leave(_t("\u6253\u5F00\u300C{id}\u300D", { id: stemOfId(id2) }), { nextIsGallery: true })) return false;
-  pendingOpenId = id2;
   try {
     const ok2 = await es2.open(id2);
     if (!ok2) {
@@ -55598,8 +55623,6 @@ async function openStoreDoc(id2) {
   } catch (e10) {
     reportError(e10);
     return false;
-  } finally {
-    pendingOpenId = null;
   }
 }
 async function newStoreSong() {
@@ -56235,10 +56258,7 @@ async function refreshOpenDoc(o10 = {}) {
       }
     });
     if (r10?.status === "fast-forwarded" && H2.identifier() === id2) {
-      pendingOpenId = id2;
-      const ok2 = await es2.open(id2).finally(() => {
-        pendingOpenId = null;
-      });
+      const ok2 = await es2.open(id2);
       if (ok2) info(_t("\u6362\u6210\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u4E86"));
       else showError(_t("\u300C{id}\u300D\u4E91\u7AEF\u7684\u65B0\u7248\u672C\u62C9\u4E0B\u6765\u4E86\uFF0C\u4F46\u91CD\u5F00\u5931\u8D25\u2014\u2014\u8BF7\u4ECE\u6B4C\u5E93\u518D\u6253\u5F00\u4E00\u6B21", { id: stemOfId(id2) }));
     } else if (r10?.status === "ff-failed" || r10?.status === "cloud-error") reportError(r10.error ?? new Error(`refresh ${r10.status}: ${r10.reason ?? ""}`), o10.gate && r10.status === "cloud-error" ? "log" : "warning");
@@ -56986,4 +57006,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-18eaac1e640a.mjs.map
+//# sourceMappingURL=moonsinger-af748c32220c.mjs.map

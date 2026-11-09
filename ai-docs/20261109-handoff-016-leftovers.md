@@ -80,14 +80,15 @@
 | 排版性能：每改一下是整个曲段重排还是只重排一行（user 11-09「让fable看一下排版引擎是整个曲段重拍还是修一行，可以优化一下。算法的优化也给fable」）；连同上一条歌词让路的算法优化 | 架构 + 性能 |
 | 写这个仓的「代码流程图」（家规 pipelines ritual：用户动作 → 各层 → 落盘 / 上屏，哪个操作走哪条共用流程，每步碰多少东西 + 实测数字；本仓还没有这份）（user 11-09「是不是应该fable做？」，Opus 答应了；added by Claude Opus 5.5 2026-11-09） | 是把整个 app 的流向理一遍的总图，归做总闸 / 修改锁的那一轮一起理 |
 
-### 3.0 【数据安全 · 第一级 · 归 Fable · 比总闸和修改锁都先落地】自动保存在飞时换歌 = 上一首的内容写到新开那首名下（记账 2026-11-09 by Claude Opus 5.5；和家族周账 F-187「按存被吞」同一段代码）
+### 3.0 【已修 v0.16.51，2026-11-09 Claude Fable 5.1】【数据安全 · 第一级】自动保存在飞时换歌 = 上一首的内容写到新开那首名下（记账 2026-11-09 by Claude Opus 5.5；和家族周账 F-187「按存被吞」同一段代码）
 
 家族根长跑会话（Claude Fable 5.1）11-09 转来；user 原话「顺手修的那个隐患也好好想想」。**Opus 不碰这个模块**（`src/editor-session/editor-session.ts`）。
 
 - **是什么**：`persist()` 开头 `if (!_name || !need || _saving) return;`（有一轮在存，后来的调用直接返回、Promise 照常落地）；同一函数里 `await editor.encode()` **之后**才读 `_name` 去 `store.file(_name, …).save(…)`。叠起来：A 的自动保存在编码 → 开 B（open() 里「先存旧的」撞锁直接返回）→ `_name = B` → A 的编码完成 → **A 的字节存进 B**。A 最后几笔没存进 A；B 本机文件被盖，库的账上成了「有没传的改动」、会被补推。另一个后果 = F-187：人按存撞上在飞的自动保存，什么都没做就返回。MoonSinger 的 encode 在 worker 里、窗口比 WeebPaint 短，但自动保存更勤；`adopted()` / `release()` 同步，也能在窗口里换身份。**没有证据说实际发生过**（WeebPaint 同一段写法已用真模块复现、v0.14.66 修掉）。
 - **修法（两处一起，缺一不可）**：① 排队——保存三个入口 / open / rename / delete / 定时器和监听排成一队，前一个落地才开始下一个，轮到时重新判断要不要做；② 钉身份——一轮保存起跑时记下名字和身份代数，字节只落到那个名字下，收尾改旗标前先对代数。全文和不变量 = 家族根 `ai-docs/20261109-editor-session-serialize.md`；参考实现 + 8 条回归测试 = WeebPaint `src/editor-session/editor-session.ts`（v0.14.66，提交 f854b27）、`test/editor-session-safety.test.mjs` 末尾那一组。
 - **前提**：修之前确认 MoonSinger 的库传输层开了超时（推永远不返回会把队卡住，和以前 `_saving` 放不开同一个前提）。
-- **谁、什么时候**：家族根原计划在修改锁那一轮一起修（那一轮本来要改这段的 `canPersist`）；如果这个会话先切到 Fable 做键盘总闸，由那时的 Fable 判断要不要**提前单独修**——它是第一级数据安全问题。
+- **修了（v0.16.51）**：user 11-09「改保存那段代码。 修」「给传网盘的请求加超时 修」。排队 + 钉身份照 WeebPaint；写歌这边多三处——`prepare()`（等参考窗的卡，放在记名字之前；`encode()` 的同步前缀就是快照）、`release()` 插进一轮编码 = 那一轮作废不写、`adopt(bytes, name)` 带名字（`pendingOpenId` 退场）。传输层超时开了（`src/app-store.ts GRAPH_TRANSPORT`，只开超时这一项）。细节 = `CLAUDE.md` v0.16.51 那条；回归 = `test/editor-session-serialize.test.mjs`。**给修改锁那一轮的接口**：`canPersist` 还在原位（`persistNow` 里记名字之前的那一句，同步）；锁那一轮把它换成修改锁的回答时，别在它和 `editor.encode()` 之间加 await（守卫会红）。
+- **谁、什么时候（原记录）**：家族根原计划在修改锁那一轮一起修（那一轮本来要改这段的 `canPersist`）；如果这个会话先切到 Fable 做键盘总闸，由那时的 Fable 判断要不要**提前单独修**——它是第一级数据安全问题。
 
 ### 3.1 键盘总闸 = 把「拔插头 / 即兴」做完整（记账 2026-11-09 by Claude Opus 5.5；家族周账 F-194 前半；归 Fable，切到 Fable 时做）
 

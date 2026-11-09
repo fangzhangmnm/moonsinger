@@ -5,6 +5,8 @@ import { describe, it, assert } from "./runner.mjs";
 
 const read = (p) => readFileSync(p, "utf8");
 const has = (src, re, why) => assert(re.test(src), why);
+/** 去掉注释（行注释 + 块注释），只看代码。 */
+const code = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
 describe("store-wiring", () => {
   it("src/store-ui.ts：storeUIFor 接了 busy / showNotice / sheets(lockSyncGate + settleSyncGate) / reportError / stemOf", () => {
@@ -49,8 +51,26 @@ describe("store-wiring", () => {
     has(s, /store: \{ file: \(name, o\) => \{ const f = requireStore\(\)\.zip\(name, \{ mode: o\.mode \}\);/, "editor-session 的 StoreLike 必须包 store.zip（0.16.1：zip 种类才有 getPeek / 尾读）");
     has(s, /diagNote\("sync", `push \$\{name\}/, "每次推的结果（pushed / reason / resolution）要进黑匣子");
     has(s, /pushOn: \["exit"/, "policy.pushOn 必须含 exit（退出 / 换歌时推云）");
-    has(s, /adopt: async \(blob\) => \{ const id = pendingOpenId \?\? H\.identifier\(\)/, "adapter.adopt 要能在 takeCloud 重载（没有 pendingOpenId）时用 H.identifier()（2026-10-21 起家在 src/app/home.ts）");
+    // 2026-11-09（保存排队那一刀）：装进来的字节是谁的 = editor-session 给的名字；app 不再自己猜（以前读 pendingOpenId ?? H.identifier() 两个全局）
+    has(s, /adopt: async \(blob, name\) => \{ adoptStoreBytes\(name, /, "adapter.adopt 必须用 editor-session 给的名字（第二个参数）");
+    assert(!/pendingOpenId/.test(s), "pendingOpenId 已经退场：排队之后 open(B) 会等在 A 的保存后面，A 的「云端覆盖本地」重载不能读到 B");
+    // 快照 = encode 的同步前缀；要等的东西放 prepare（editor-session 在记名字之前等）
+    has(s, /prepare: \(\) => refHost\.settled\(\),/, "参考窗的卡还在编 = 在 prepare 里等");
+    has(s, /encode: async \(\) => \{ encodedSnap = D\.savedMark\(\); const bytes = await encoder\.encode\(/, "encode 里 encoder.encode() 之前不许有 await（快照必须在同步前缀里取）");
+    has(s, /onSaved: \(name\) => \{ const cur = H\.identifier\(\) === name; if \(cur && encodedSnap\) D\.adoptSaved\(encodedSnap\); encodedSnap = null;/, "「已存」的基线只记给还开着的那一首");
+    // adapter 的回调里不许 await / 调 editor-session 自己的入口（队里的自己等队尾的自己 = 卡死）
+    { const a = s.indexOf("const es = createEditorSession({"), b = s.indexOf("policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS", a); assert(a > 0 && b > a, "找到 es 的配置块"); assert(!/\bes\./.test(code(s.slice(a + 10, b))), "es 的 adapter 回调里出现了 es.xxx"); }
     has(s, /files\.dirty\.pushAll\(\)/, "登录后必须 pushAll（0.15.1：at-rest 字节直推）");
     has(s, /drainOfflineQueue\(\)/, "登录后必须回放离线队列");
+  });
+  it("保存排队的两个前提：传网盘带超时（不然挂住的那一个堵死整条队）；记名字到取快照之间没有 await", () => {
+    const a = read("src/app-store.ts");
+    has(a, /const GRAPH_TRANSPORT: GraphTransportOptions = \{ timeouts: DEFAULT_GRAPH_TIMEOUTS \};/, "传输层超时用库的推荐值");
+    has(a, /createOneDriveProvider\(\{[^}]*transport: GRAPH_TRANSPORT \}\)/, "OneDrive provider 必须带 transport（超时）");
+    const e = read("src/editor-session/editor-session.ts");
+    const i = e.indexOf("const name = _name, gen = _gen;"), j = e.indexOf("await editor.encode()", i);
+    assert(i > 0 && j > i, "找到记名字和取快照的那两行");
+    assert(!/\bawait\b/.test(code(e.slice(i, j))), "记下「存给谁」和调 encode() 取快照之间出现了 await：这段时间身份可以被换掉");
+    assert(!/_saving\s*=/.test(e), "单飞锁（_saving）不许回来：有人在存 ≠ 我存完了");
   });
 });

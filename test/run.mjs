@@ -140,6 +140,7 @@ import "./deployment.test.mjs";
 import "./namespace.test.mjs";
 import "./cloud-gate.test.mjs";   // 2026-11-03 网盘闸门：状态机 + 结构守卫（家族设计稿 cloud-gate §7 §8）
 import "./cloud-return.test.mjs";   // 2026-11-04 H4 回来时没传的分三种
+import "./editor-session-serialize.test.mjs";   // 2026-11-09 保存排队 + 记住存给谁 + 快照和名字同一刻取（Fable）
 import "./move-songs.test.mjs";   // 2026-11-03 H3 搬家：字节核过才动旧库
 import "./library-home.test.mjs";   // 2026-11-03 H3 歌库必须有家：守卫
 import "./export-all.test.mjs";   // 2026-11-03 歌库全部导出

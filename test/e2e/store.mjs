@@ -134,11 +134,26 @@ try {
   await p.click("#score", { position: { x: 600, y: 200 } }); await p.keyboard.press("Digit2");
   await p.waitForFunction(() => !!window.__moonsinger.identifier()); await p.waitForTimeout(400);
   const id3 = await p.evaluate(() => window.__moonsinger.identifier()); check(id3 !== id2 && /\.mxl$/.test(id3), "第二首：第一笔之后有身份", id3);
+  const toks3 = await tokens();
   await p.click("#libBtn"); await p.waitForTimeout(1200);
   const n2 = await p.$$eval("#galleryFull .gallery-tile", (ts) => ts.length); check(n2 === 2, "两张卡", String(n2));
   await p.click("#galleryFull .gallery-tile:has-text('小星星')"); await p.waitForTimeout(800);
   check((await p.evaluate(() => window.__moonsinger.identifier())) === id2, "点卡片切回小星星");
   check((await tokens()) === toks1, "切回来音符仍相同");
+  // 2026-11-09 保存排队（Claude Fable 5.1；user「改保存那段代码。 修」）：一轮落盘还在路上的时候换开另一首——两首各归各。
+  //   以前（单飞锁）：换歌前的「先存旧的」被吞、身份先换了，旧歌这时才编码完，字节写到了新开那首名下。模块层的回归 = test/editor-session-serialize.test.mjs；这里是真 app + 真库 + 真的编码线程走一遍。
+  {
+    await p.click("#score", { position: { x: 600, y: 200 } }); await p.keyboard.press("Digit3");
+    const toksA = await tokens(); check(toksA !== toks1, "（前提）小星星里多写了一笔");
+    const r = await p.evaluate(async (idB) => { const es = window.__moonsinger.es(); const f = es.flushLocal(); const o = es.open(idB); const mid = es.currentName(); const ok = await o; await f; return { mid, ok, now: es.currentName() }; }, id3);
+    check(r.mid === id2, "落盘在飞时点开另一首：保存落地之前身份不换", JSON.stringify(r));
+    check(r.ok && r.now === id3, "然后开成了", JSON.stringify(r));
+    check((await tokens()) === toks3, "谱上是第二首自己的音");
+    await p.evaluate((id) => window.__moonsinger.es().open(id), id2); check((await tokens()) === toksA, "从库里重开小星星：多写的那一笔存进了它自己");
+    await p.evaluate((id) => window.__moonsinger.es().open(id), id3); check((await tokens()) === toks3, "从库里重开第二首：它的文件没有被小星星的内容盖掉");
+    await p.evaluate((id) => window.__moonsinger.es().open(id), id2);
+    check((await p.evaluate(() => window.__moonsinger.identifier())) === id2 && (await tokens()) === toksA, "回到小星星");
+  }
   // 歌库里把小星星扔进回收站（模拟歌库动词：直接走 store；gallery-first 下它已经不是打开中的）→ 新建再写一笔：绝不把删掉的名字复活
   await p.click("#libBtn"); await p.waitForTimeout(600);
   const del = await p.evaluate(async (id) => (await window.__moonsinger.store().zip(id, { mode: "existing" }).trash()).status, id2);

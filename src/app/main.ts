@@ -2431,6 +2431,7 @@ function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extr
   ui.close(); closeInstPage();
   H.load(o.home, { stem: o.stem, named: o.named }); coverTouched = false;   // 换家（歌库 → 别处 = 放下 es 的身份；指针 / store 的「谁开着」在 onHome 里）
   const st0 = initState(song), startDyns = ensureStartDyns(st0.song, st0.nextId).added.length;
+  encodedSnap = null;   // 换了一份文档：还在路上的那一轮保存取的快照是上一份的，不许落到这份头上（见 es 的 onSaved）
   D.load(withStartDyns(st0), o.extras);   // 换歌 / 云端覆盖重载 = 另一首的历史；基线 = 打开的样子（v0.10.39：老歌每张纸开头没写力度 = 补上，不标脏、不进 undo，下次存时一起写进去）
   const d = o.view ? unserializeDesk(o.view) : freshDesk();
   applyDesk(d);
@@ -2949,7 +2950,6 @@ docFile.consumeLaunchFiles((h) => { void (async () => {
 const KV_LAST_DOC = "last-doc";
 const KV_ZOOM = "zoom";   // 谱面缩放（物理倍数；没有 = 自动）——按设备记、不跟账号（2026-10-21 user「缩放跨会话记住，按设备存」「每台屏幕不同」）
 let gallery: GalleryHost | null = null;
-let pendingOpenId: string | null = null;   // es.open(id) 进行中的那个身份（adapter.adopt 收字节时要知道是谁的）
 let encodedSnap: SavedMark | null = null;   // encode 那一刻的快照：落盘成功才把它记成「已存」（快照之后的改动继续算脏）
 let coverTouched = false;   // 这次打开里换过封面 → 落盘后让歌库丢掉旧缩略图
 const es = createEditorSession({
@@ -2957,14 +2957,20 @@ const es = createEditorSession({
   store: { file: (name, o) => { const f = requireStore().zip(name, { mode: o.mode }); return { open: () => f.open(), tryMove: (to) => f.tryMove(to), trash: () => f.trash(),
     save: async (bytes, opts0) => { const opts = opts0?.tryPush && !homeOnline() ? { ...opts0, tryPush: false } : opts0;   /* 选了离线 = 一条网都不打：库的 save 只看 tryPush、不看 isOnline（2026-11-04 H4 查出来的，按「存」原来照样走网）；这一笔记成欠一推，回来续传 */ const r = await f.save(bytes, opts); if (opts?.tryPush) diagNote("sync", `push ${name}: ${r.pushed ? "pushed" : "not pushed"}${r.reason ? " " + r.reason : ""}${r.resolution ? " → " + r.resolution : ""}`); return r; } }; } },
   editor: {
-    adopt: async (blob) => { const id = pendingOpenId ?? H.identifier(); if (!id) throw new Error("adopt without an identifier"); adoptStoreBytes(id, new Uint8Array(await blob.arrayBuffer())); },
+    // 这些字节是谁的 = editor-session 说了算（第二个参数）。以前这里读「正在开的那首 ?? 现在开着的那首」两个全局：排队之后 open(B) 可能正等在 A 的保存后面，
+    //   那一轮保存里选了「云端覆盖本地」→ 重载装的是 A 的字节，全局却已经指着 B（2026-11-09，Claude Fable 5.1）。
+    adopt: async (blob, name) => { adoptStoreBytes(name, new Uint8Array(await blob.arrayBuffer())); },
     onChange: () => { /* 内容变化走 changed()（update() + 1 s 心跳）→ es.markDirty() */ },
     // 编码在 worker 里（src/format/encode-client.ts；2026-10-21）：主线程只克隆一份歌 + 休息室 + 参考窗的文件；worker 没了就在主线程算（同以前）
-    encode: async () => { await refHost.settled(); encodedSnap = D.savedMark(); const bytes = await encoder.encode({ ...saveArgs(), references: refHost.files() }); return { bytes: new Blob([bytes as unknown as BlobPart], { type: "application/vnd.recordare.musicxml" }) }; },
+    //   ⚠ 快照 = 这个函数的同步前缀（editor-session 的钉身份靠它）：encoder.encode() 调用的那一下就把歌 + 休息室 + 参考窗的文件克隆走了；它前面不许有 await。
+    //   参考窗里刚加的卡还在编字节 = prepare 里等（editor-session 在记下「存给谁」之前等它）——以前这句 await 在 encode 开头：等的时候换了歌，取到的就是新歌的内容。
+    prepare: () => refHost.settled(),
+    encode: async () => { encodedSnap = D.savedMark(); const bytes = await encoder.encode({ ...saveArgs(), references: refHost.files() }); return { bytes: new Blob([bytes as unknown as BlobPart], { type: "application/vnd.recordare.musicxml" }) }; },
     // 第 ④ 层护栏（store 接缝）：定稿着、出声内容的指纹却变了 = 不落盘、不推，脏留着（顶栏「•」照亮 = 诚实），说一句。前面三层都没拦住才会走到这儿。
     canPersist: () => { const f = D.extras.final; if (!f) return null; try { return contentFingerprintOf(saveArgs()) === f.fingerprint ? null : _t("这首歌定稿了，内容却变了：没有存、也不会推上云。先「改稿」（定稿的 mp3 作废）再存，或者撤销刚才的改动。"); } catch (e) { return _t("存不了：{Error}", { Error: (e as Error).message }); } },
     onRefused: (why) => { showError(why); diagNote("doc", `persist refused: ${why}`); },
-    onSaved: (name) => { if (encodedSnap) { D.adoptSaved(encodedSnap); encodedSnap = null; } if (coverTouched) { coverTouched = false; gallery?.invalidateThumb(name); } renderTitle(); },
+    // 「已存」的基线和封面的账只记给还开着的那一首：写盘的那一下歌被放下 / 换走了（name 不是现在这首）= 这份快照是上一首的，不许记到现在这首头上（会把一张没动过的空谱标成改过 → 自己安家进歌库）。
+    onSaved: (name) => { const cur = H.identifier() === name; if (cur && encodedSnap) D.adoptSaved(encodedSnap); encodedSnap = null; if (cur && coverTouched) { coverTouched = false; gallery?.invalidateThumb(name); } renderTitle(); },
   },
   isZip: true,
   policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS, pushOn: ["exit"] },   // consent 制（同 WeebPaint）：推云只在换歌 / 退出 / 按「存」/ 进歌库；失焦只落本机
@@ -2988,14 +2994,12 @@ const stemOfId = (id: string) => identifiers.parse(id)?.stem ?? id;
  *  批量推这个没问过人的动作就撤了（user 10-26「修」；库 pushAll 的 JSDoc 本来就说别接到这种地方）。真分叉照旧由 open 的冲突面问人。 */
 async function openStoreDoc(id: string): Promise<boolean> {
   if (!(await H.leave(_t("打开「{id}」", { id: stemOfId(id) }), { nextIsGallery: true }))) return false;   // 等着安家的有笔先安家；无地 / 本机文件改过没存先问；歌库里的不在这儿推（es.open 切歌前自己先存旧的）
-  pendingOpenId = id;
   try {
-    const ok = await es.open(id);   // 切歌前 es 自己先存旧的（退出语义）；open 里含新鲜度检查 / 冲突面 / 崩溃恢复（store 的 ui）
+    const ok = await es.open(id);   // 排在在飞的保存后面；切歌前 es 自己先存旧的（退出语义）；open 里含新鲜度检查 / 冲突面 / 崩溃恢复（store 的 ui）
     if (!ok) { showError(_t("打不开「{id}」：这台设备上没有它的字节（离线、或还没从云端拉下来）", { id: stemOfId(id) })); return false; }
     diagNote("doc", `open ${id}`);
     return true;
   } catch (e) { reportError(e); return false; }
-  finally { pendingOpenId = null; }
 }
 /** 在歌库里新建一首：一张空谱、**不落盘**（首笔安家，照 WeebPaint lazyblank；user 2026-10-08「首笔安家做」）——第一笔编辑才铸身份进歌库（H.settle；首存 mode:"new" 撞名不覆盖）。
  *  空着离开 = 零损失、歌库里不留空壳；空谱不算「上次开着的歌」（reload 回歌库）。 */
@@ -3424,8 +3428,7 @@ async function refreshOpenDoc(o: { gate?: boolean } = {}): Promise<string | unde
       onReplaceStart: () => { froze = true; diagNote("sync", `replace-start ${stemOfId(id)}: input frozen`); void lockSyncGate({ title: _t("云端有新版本"), message: _t("「{id}」在别的设备上改过了，正在换成最新的……先别打字。", { id: stemOfId(id) }), showSpinner: true, actions: [] }); } });
     if (r?.status === "fast-forwarded" && H.identifier() === id) {
       // 本地字节已换成云端版本（刚 markSynced）→ 内存里的是旧世界线，必须整体重载（同名 es.open = openInto 管线；不重载 = 下次自动存把旧版写回云端，WeebPaint 2026-08-25 案卷）
-      pendingOpenId = id;
-      const ok = await es.open(id).finally(() => { pendingOpenId = null; });
+      const ok = await es.open(id);
       if (ok) info(_t("换成云端的新版本了")); else showError(_t("「{id}」云端的新版本拉下来了，但重开失败——请从歌库再打开一次", { id: stemOfId(id) }));
     } else if (r?.status === "ff-failed" || r?.status === "cloud-error") reportError(r.error ?? new Error(`refresh ${r.status}: ${r.reason ?? ""}`), o.gate && r.status === "cloud-error" ? "log" : "warning");   // 闸门问的：没问成归闸门说，不再上一条横幅
     return r?.status;

@@ -4,8 +4,8 @@
 //   家（H3，规则书第 13 条）：网盘（OneDrive provider）或本地文件夹（folder provider，「folder 就是另一朵云」，照 WeebPaint）；hasHome() 全 app 一处判。
 //   store **懒建**（attachStore）：没进过歌库的设备 = 无地模式（v0.3.0），不开 IDB、不载 MSAL（user 2026-10-01「用户有意图才弄」）；
 //   进过一次（device-kv storeAttached）以后开局就建，且**先建 store 再 initAuth**（CatsUp 2026-09-22 教训：没建 store 时库的报错是 no-op，登录回跳失败人看不到）。
-import { createStore, createOneDriveProvider, createFolderProvider, requestStoragePersistence, isCached, isDirty, withStemTail, wipeAppNamespace, scanAppNamespace, WipeConsentError } from "@internal/store";
-import type { Store, OneDriveAuth, CloudProvider } from "@internal/store";
+import { createStore, createOneDriveProvider, createFolderProvider, requestStoragePersistence, isCached, isDirty, withStemTail, wipeAppNamespace, scanAppNamespace, WipeConsentError, DEFAULT_GRAPH_TIMEOUTS } from "@internal/store";
+import type { Store, OneDriveAuth, CloudProvider, GraphTransportOptions } from "@internal/store";
 import { APP_ID, CLIENT_ID, AUTHORITY, SCOPES, MSAL_URL } from "./config.ts";
 import { DOC_KINDS } from "./identifiers.ts";
 import { storeUI } from "./store-ui.ts";
@@ -15,7 +15,12 @@ import { currentPolicy } from "./deployment-policy.ts";
 import { cloudOnline } from "./cloud-gate.ts";
 import type { GalleryEntry } from "./library-home.ts";
 
-const od = createOneDriveProvider({ clientId: CLIENT_ID, scopes: SCOPES, authority: AUTHORITY, msalUrl: MSAL_URL });
+/** 传网盘的每个请求带超时（user 2026-11-09「给传网盘的请求加超时 修」；库的推荐值，同 WeebPaint / KudsRocket：问一句 30 s / 传一块 2 min / 取一段 1 min / 整份 15 min）。
+ *  以前没有超时：iPad 锁屏后还在路上的请求常常永远挂着，保存就停在那一下，之后的自动存全都悄悄不做，直到刷新页面。
+ *  v0.16.51 起保存排队（src/editor-session），挂住的那一个会把换歌也堵住——所以超时是排队的前提，两样一起上。到点 = 这一次按没传成算，下次再传。
+ *  只开了超时这一项；库的另外两个开关（一块没传成接着传 / 提交最后一块前再核一次）没开，开不开归 user 定。added by Claude Fable 5.1 2026-11-09 */
+const GRAPH_TRANSPORT: GraphTransportOptions = { timeouts: DEFAULT_GRAPH_TIMEOUTS };
+const od = createOneDriveProvider({ clientId: CLIENT_ID, scopes: SCOPES, authority: AUTHORITY, msalUrl: MSAL_URL, transport: GRAPH_TRANSPORT });
 /** 这个部署方式有没有网盘（家族规则书 §2：itch / 备用版没有）。开关的唯一来源 = deployment-policy；宿主的灰入口也读它。 */
 export const cloudAvailable = (): boolean => currentPolicy().cloud;
 /** OneDrive 登录态（initAuth / signIn / signOut / onAuthChanged）。MSAL 脚本在 initAuth 时才载（signIn / retrySilentSignIn 里面也走 initAuth）。

@@ -15,6 +15,7 @@ app  ──建──> store (sync-store)          app 建 store（含 provider/�
 ```
 
 - **editor（app 的引擎）**：`adopt(bytes)` / `encode()→{bytes,peek}` / `onChange(cb)`。**persistence-agnostic**，不知有云。
+  - MoonSinger 2026-11-09（Claude Fable 5.1）：保存**排队**（保存三个入口 / open / rename / delete / 定时器和监听一个做完再做下一个，Promise 落地 = 真的做完了或者抛了）；一轮保存在取快照的那一刻**记住存给谁**，字节只落到那个名字下；`adopt(bytes, name)` 带名字；可选 `prepare()`（取快照之前要等的东西，在记名字之前等）；**`encode()` 的同步前缀必须就是快照**；`release()` 插进一轮编码 = 那一轮作废不写。**adapter 的回调里不许 await 本模块的入口**（会卡死）。推理 = 家族根 `ai-docs/20261109-editor-session-serialize.md`，回归 = `test/editor-session-serialize.test.mjs`。
 - **editor-session（本模块）**：打开 / 存 / 推 / 失焦 flush / 退出推 / 崩溃恢复 的**通用编排**。是 store 的**消费者**，不创建 store。
 - **store（sync-store）**：藏起同步的文件系统。**app 创建**（本模块只调 `file(name).open/save/rename/delete` + `reconcile`）。
 

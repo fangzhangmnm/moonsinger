@@ -3,7 +3,7 @@
 > created 20261109 by Claude Opus 5.5 · as-of v0.16.50 / 2026-11-09
 > user 11-09：「以及我说了很多反馈，我建议你都记账然后系统的修」「嗯对交给fable一起统筹规划」。
 > 读法：一、已经做了的（哪一版、做了什么）；二、交给 Fable 统筹的（还没动，带原话）；三、愿望单；四、没验证 / 有代价的地方。
-> 线上状态：v0.16.47 在开发版上；**v0.16.48–v0.16.50 已提交、已推到 GitHub，但 GitHub Actions 当天大面积故障（githubstatus「Actions major outage」），部署连着失败，没上线**——Actions 恢复后再触发一次部署（`gh workflow run deploy.yml --ref main`），核一下线上包名。
+> 线上状态（2026-11-09 晚更新，Claude Fable 5.1）：**v0.16.50 已上线开发版**（Actions 恢复后部署成功，线上包名核过）；这张账第二节的 4 件排进了总表 `ai-docs/20261109-plan-016-all-in-one.md`。以下是当时的原记录：v0.16.47 在开发版上；**v0.16.48–v0.16.50 已提交、已推到 GitHub，但 GitHub Actions 当天大面积故障（githubstatus「Actions major outage」），部署连着失败，没上线**——Actions 恢复后再触发一次部署（`gh workflow run deploy.yml --ref main`），核一下线上包名。
 
 ## 一、已经做了的
 
