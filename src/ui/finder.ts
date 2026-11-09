@@ -4,7 +4,7 @@
 // 数据 = src/gm/catalog.ts（vendor/instruments/ 的两张表 + 图标 sprite）；音频 / 选角归 host（src/app/main.ts）。
 import { conceptName, conceptAlt, defLabel, zhOnly } from "../gm/catalog-i18n.ts";
 import { freshFinderMemo, type FinderMemo } from "../score/desk.ts";
-import { _t } from "../i18n/index.ts";
+import { _t, lang } from "../i18n/index.ts";
 import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightLabel, SORT_LABEL, type Catalog, type Concept, type Entry, type Provider, type SortMode } from "../gm/catalog.ts";
 
 export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept };
@@ -27,7 +27,21 @@ export interface FinderHost {
   removeCandidate?(id: string): void;
   /** 从自己的 .sf2 文件选（宿主那边的选文件 / 选预设）。 */
   ownSf2?(): void;
+  /** 常用一行（设备设置；没有 = DEFAULT_PINS）/ 改了存回去。 */
+  pins?(): PinTile[];
+  setPins?(p: PinTile[]): void;
 }
+/** 常用一行的一格（v0.16.36；施工单 ai-docs/20261109-work-order-instrument-pick-vs-tune.md §4.1 / §9）：c = 乐器概念的编号，job = 它管哪一层（只有默认那几格写）。
+ *  记在设备上、跟人走，不跟歌走（user 11-09「置顶…跟着用户设置走，就不跟着歌走」）；每一格能换成任何乐器、能拿掉，不按种类拦（「用哪个你别护栏」）。 */
+export interface PinTile { c: string; job?: PinJob }
+export type PinJob = "melody" | "harmony" | "melody2" | "accomp" | "pad" | "rhythm" | "bass";
+/** 默认七格 = 摸每一层最顺手的那件（user 11-09「那几个钦定的乐器，实际上就是摸某个东西最有用的」「合成器就是弦乐…还是用最经典的」）。
+ *  节奏那一格：目录里还没有「整套鼓组」这一条（鼓的设计排在后面），先放小鼓。 */
+export const DEFAULT_PINS: readonly PinTile[] = [
+  { c: "Q7390", job: "melody" }, { c: "Q5994", job: "harmony" }, { c: "Q209554", job: "melody2" }, { c: "Q2563510", job: "accomp" },
+  { c: "Q2997126", job: "pad" }, { c: "Q208421", job: "rhythm" }, { c: "Q46185", job: "bass" },
+];
+const JOB_LABEL = (j: PinJob): string => ({ melody: _t("旋律"), harmony: _t("和弦"), melody2: _t("第二旋律"), accomp: _t("伴奏"), pad: _t("铺底"), rhythm: _t("节奏"), bass: _t("低音") })[j];
 /** 记忆归谁：歌里打开的 = 这首歌（文件里）；歌库「即兴」打开的 = 这台设备（app）。user 11-07「即兴的滚动归 App 记，然后文件内的滚动归文件记」。 */
 export type FinderCtx = "song" | "impro";
 const HINT = _t("点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「选这个」= 换上。目录不关，放着歌也能接着换；回谱点「← 谱」。谱上的名字跟着换成那件乐器。");   // 不叫「上场」：user 2026-10-10「选乐器不要用上场这个词不然让会让人以为直接跳回主界面，但是实际上我们还是回到乐器配置界面」
@@ -48,21 +62,35 @@ export class Finder {
   private ctx: FinderCtx = "song";          // 现在这几个字段（mode / openG / scrollY / opened / selected）是哪一份记忆的（v0.16.6）
   private memos: Record<FinderCtx, FinderMemo> = { song: freshFinderMemo(), impro: freshFinderMemo() };
   private host: FinderHost;
+  private swallow = false;                  // 长按开了小菜单：接下来那一下 click 不算点
+  private replacing: number | null = null;  // 常用一行「换成…」：下一下点列表里的哪件 = 换进第几格
   constructor(parent: HTMLElement, host: FinderHost) {
     this.host = host;
     this.el = document.createElement("div"); this.el.className = "finder"; this.el.hidden = true;
     this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="${_t("回到谱（Esc）")}">${_t("← 谱")}</button><span class="finder-title"></span>` +
       `<input class="finder-q" type="search" placeholder="${_t("搜乐器（中 / 英 / 日）")}" spellcheck="false" autocomplete="off" />` +
       `<select class="finder-sort">${(Object.keys(SORT_LABEL) as SortMode[]).map((m) => `<option value="${m}">${SORT_LABEL[m]}</option>`).join("")}</select>` +
+      `<button class="btn finder-file" data-v="ownsf2" title="${_t("自己的 .sf2 文件：选中的那一件切出来留在这台设备上，歌里只记来源")}" hidden>${_t("打开 .sf2…")}</button>` +   // v0.16.36：从预设那一排挪到顶条（user 11-09「自己的 SF2 的入口感觉不应该放在这儿」）
       `<button class="btn finder-pad" data-v="pad" title="${_t("试听键盘：开 / 关")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("键盘")}</span></button></div>` +
-      `<div class="finder-hint">${HINT}</div><div class="finder-used" hidden></div>` +
+      `<div class="finder-hint">${HINT}</div><div class="finder-pins" hidden></div><div class="finder-used" hidden></div>` +
       `<div class="finder-jump" hidden><span>${_t("跳到")}</span><select class="finder-jump-sel" title="${_t("列表滚到这一组")}"></select></div>` +
       `<div class="finder-list"><div class="finder-empty">${_t("加载目录…")}</div></div>`;
     parent.append(this.el);   // 位置由 #stage 的 grid 命名区域钉死（.finder 占 main、pad 占 pad），和节点顺序无关（user「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）
     this.el.querySelector<HTMLInputElement>(".finder-q")!.addEventListener("input", (e) => { this.q = (e.target as HTMLInputElement).value; this.render(); });
     this.el.querySelector<HTMLSelectElement>(".finder-sort")!.addEventListener("change", (e) => { this.mode = (e.target as HTMLSelectElement).value as SortMode; this.render(); });
     this.el.querySelector<HTMLSelectElement>(".finder-jump-sel")!.addEventListener("change", (e) => this.jumpTo(Number((e.target as HTMLSelectElement).value)));
-    this.el.addEventListener("click", (e) => void this.onClick(e));
+    this.el.addEventListener("click", (e) => { if (this.swallow) { this.swallow = false; e.preventDefault(); e.stopPropagation(); return; } void this.onClick(e); });
+    // 长按（手指 / 笔）或右键：常用一格 = 换成… / 拿掉；列表里一件乐器 = 置顶 / 取消置顶（v0.16.36）
+    this.el.addEventListener("contextmenu", (e) => { const t = this.pinTarget(e.target as HTMLElement); if (!t) return; e.preventDefault(); this.pinMenu(t); });
+    this.el.addEventListener("pointerdown", (e) => {
+      if (e.pointerType === "mouse") return;
+      const t = this.pinTarget(e.target as HTMLElement); if (!t) return;
+      const x0 = e.clientX, y0 = e.clientY, id = e.pointerId;
+      const stop = () => { clearTimeout(timer); removeEventListener("pointermove", mv, true); removeEventListener("pointerup", stop, true); removeEventListener("pointercancel", stop, true); };
+      const mv = (m: PointerEvent) => { if (m.pointerId === id && Math.hypot(m.clientX - x0, m.clientY - y0) > 10) stop(); };
+      const timer = window.setTimeout(() => { stop(); this.swallow = true; this.pinMenu(t); }, 480);
+      addEventListener("pointermove", mv, true); addEventListener("pointerup", stop, true); addEventListener("pointercancel", stop, true);
+    });
     // 滚动时跳转下拉跟着显示「现在在哪一组」（一帧最多算一次）
     let raf = 0;
     this.el.querySelector(".finder-list")!.addEventListener("scroll", () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; this.markJump(); }); }, { passive: true });
@@ -97,6 +125,7 @@ export class Finder {
     this.el.querySelector('[data-v="back"]')!.textContent = this.playOnly ? _t("← 歌库") : _t("← 谱");
     this.el.querySelector(".finder-hint")!.textContent = this.playOnly ? _t("点一件乐器 → 挑谁来演 → 用键盘弹着玩。要给歌里的声部选乐器：开一首歌，点谱前面的声部名。") : HINT;
     this.el.querySelector<HTMLSelectElement>(".finder-sort")!.value = this.mode;
+    this.el.querySelector<HTMLElement>(".finder-file")!.hidden = this.playOnly || !this.host.ownSf2;
     if (!this.cat) {
       this.loading ??= (async () => {
         const [cat, sprite] = await Promise.all([loadCatalog(), loadIconSprite()]);
@@ -133,12 +162,20 @@ export class Finder {
     if (v === "usedel" && btn) { this.host.removeCandidate?.(btn.dataset.cid!); this.renderUsed(); return; }
     if (v === "ownsf2") { this.host.ownSf2?.(); return; }
     if (v === "group" && btn) { this.toggleGroup(btn.closest<HTMLElement>("[data-gid]")!.dataset.gid!); return; }
+    if (v === "pin" && btn) { await this.tapPin(Number(btn.dataset.pin)); return; }
+    if (v === "pinmenu" && btn) { this.pinAct(btn.dataset.act!, btn.dataset.arg!); return; }
+    if (v === "unreplace") { this.replacing = null; this.renderPins(); return; }
     if (v && btn) {
       const key = btn.closest<HTMLElement>("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key); if (!pick) return;
       if (v === "play") { await this.host.playHead(pick); return; }
       if (v === "cast") { await this.host.cast(pick); return; }
     }
     if (prov) { const key = prov.dataset.p!; if (this.selected !== key) { this.selected = key; this.renderAnchored(rowOf(prov)); await this.host.audition(this.pickOf(key)); } return; }
+    if (row && this.replacing !== null && this.host.setPins) {   // 「换成…」：点的这件换进那一格（不按种类拦）
+      const pins = this.pinsNow(), k = this.replacing; this.replacing = null;
+      if (pins[k]) { pins[k] = { ...pins[k], c: row.dataset.c! }; this.host.setPins(pins); }
+      this.renderPins(); return;
+    }
     if (row) {
       const id = row.dataset.c!, o = row.dataset.o!;
       this.openG.set(this.mode, o.split("::")[0]);   // 搜索时点开的那件：清掉搜索后展开的就是它那一组
@@ -147,17 +184,70 @@ export class Finder {
       this.renderAnchored(o);
     }
   }
+  private pinsNow(): PinTile[] { const p = this.host.pins?.(); return (p && p.length ? p : DEFAULT_PINS).map((x) => ({ ...x })); }
+  /** 一格点下去用谁：人声类 = 小月相；别的 = 目录里第一位能演的（本尊在前）；都没有 = null。 */
+  private pinPick(c: Concept): FinderPick | null { if (c.kind === "voice") return { kind: "voice", concept: c }; const p = providersOf(this.cat!, c)[0]; return p ? { kind: "gs", concept: c, provider: p } : null; }
+  private pinKey(c: Concept): string { const p = this.pinPick(c); return !p ? "" : p.kind === "voice" ? `${c.id}|voice` : `${c.id}|${gmKey(p.provider)}`; }
+  /** 常用一行（v0.16.36）：一样大的格子横着排（放不下横着滑；家规：按钮堆看到就改成格子）——图标 + 名字 + 管哪一层。点 = 换上（弹着玩 = 试听）。 */
+  renderPins(): void {
+    const box = this.el.querySelector<HTMLElement>(".finder-pins")!; box.hidden = !this.cat || !this.host.pins; if (box.hidden) return;
+    const cat = this.cat!, pins = this.pinsNow();
+    box.innerHTML = (this.replacing !== null ? `<div class="fp-replacing">${_t("点下面一件乐器，换进这一格")}<button class="btn" data-v="unreplace">${_t("算了")}</button></div>` : "") +
+      `<div class="fp-row">${pins.map((pin, k) => {
+        const c = cat.byId.get(pin.c); if (!c) return "";
+        const name = c.kind === "voice" ? _t("小月相") : lang() === "zh" ? conceptName(c.names) : roleNameOf(c), icon = c.icon?.id, on = this.playOnly && this.selected === this.pinKey(c);   // 英文界面用谱上那种短名字（Flute，不是 Western concert flute）
+        return `<button class="fp-tile${on ? " is-on" : ""}${this.replacing === k ? " is-replacing" : ""}" data-v="pin" data-pin="${k}" title="${esc(_t("点 = 换上「{name}」；长按（右键）= 换成别的 / 拿掉", { name }))}">` +
+          (icon ? `<svg class="fp-ico" aria-hidden="true"><use href="#${esc(icon)}"/></svg>` : `<span class="fp-ico none">${esc(name.slice(0, 1))}</span>`) +
+          `<span class="fp-name">${esc(name)}</span>${pin.job ? `<span class="fp-job">${esc(JOB_LABEL(pin.job))}</span>` : ""}</button>`;
+      }).join("")}</div>`;
+  }
+  private async tapPin(k: number): Promise<void> {
+    if (this.replacing !== null) { this.replacing = null; this.renderPins(); return; }
+    const pin = this.pinsNow()[k], c = pin && this.cat?.byId.get(pin.c); if (!c) return;
+    const pick = this.pinPick(c);
+    if (!pick) { await this.host.audition({ kind: "none", concept: c }); return; }
+    this.selected = this.pinKey(c);
+    if (this.playOnly) { this.renderPins(); this.render(); await this.host.audition(pick); return; }
+    await this.host.cast(pick);
+  }
+  private pinTarget(t: HTMLElement): { kind: "tile"; k: number; el: HTMLElement } | { kind: "row"; c: string; el: HTMLElement } | null {
+    if (!this.host.setPins) return null;
+    const tile = t.closest<HTMLElement>("[data-pin]"); if (tile) return { kind: "tile", k: Number(tile.dataset.pin), el: tile };
+    const row = t.closest<HTMLElement>(".inst-row"); if (row) return { kind: "row", c: row.dataset.c!, el: row };
+    return null;
+  }
+  /** 长按 / 右键的小菜单（浮在那一格 / 那一行下面）。 */
+  private pinMenu(t: NonNullable<ReturnType<Finder["pinTarget"]>>): void {
+    this.el.querySelector(".finder-pinmenu")?.remove();
+    const pins = this.pinsNow(), items: [string, string, string][] = t.kind === "tile"
+      ? [["replace", String(t.k), _t("换成…")], ["unpin", String(t.k), _t("拿掉")]]
+      : pins.some((p) => p.c === t.c) ? [["unpinc", t.c, _t("取消置顶")]] : [["pinc", t.c, _t("置顶到常用")]];
+    const m = document.createElement("div"); m.className = "finder-pinmenu";
+    m.innerHTML = items.map(([act, arg, label]) => `<button class="btn ctx-item" data-v="pinmenu" data-act="${act}" data-arg="${esc(arg)}">${esc(label)}</button>`).join("");
+    const r = t.el.getBoundingClientRect(); m.style.left = `${Math.max(8, Math.min(r.left, innerWidth - 180))}px`; m.style.top = `${Math.min(r.bottom + 4, innerHeight - 90)}px`;
+    this.el.append(m);
+    const off = (e: PointerEvent) => { if (!m.contains(e.target as Node)) { m.remove(); removeEventListener("pointerdown", off, true); } };
+    setTimeout(() => addEventListener("pointerdown", off, true), 0);
+  }
+  private pinAct(act: string, arg: string): void {
+    this.el.querySelector(".finder-pinmenu")?.remove();
+    const pins = this.pinsNow();
+    if (act === "replace") { this.replacing = Number(arg); this.renderPins(); return; }
+    if (act === "unpin") pins.splice(Number(arg), 1);
+    else if (act === "unpinc") { const k = pins.findIndex((p) => p.c === arg); if (k >= 0) pins.splice(k, 1); }
+    else if (act === "pinc") pins.push({ c: arg });
+    this.host.setPins?.(pins); this.renderPins();
+  }
   /** 顶上一排「这首歌里用过的」（歌里打开的才有；弹着玩没有）：点一位 = 上场，× = 退掉；最后一颗 = 自己的 .sf2（v0.16.18 搬家 C）。 */
   renderUsed(): void {
     const box = this.el.querySelector<HTMLElement>(".finder-used")!, used = this.playOnly ? [] : this.host.used?.() ?? [];
     box.hidden = this.playOnly || !this.host.used;
     if (box.hidden) return;
     box.innerHTML = `<span class="fu-k">${_t("这首歌的乐器预设")}</span>` + used.map((u) => `<span class="fu-c"><button class="btn chip${u.on ? " is-on" : ""}" data-v="use" data-cid="${esc(u.id)}" title="${u.on ? _t("正在台上") : _t("点了 = 换成它")}">${esc(u.name)}</button>` +
-      (u.removable && !u.on ? `<button class="btn fu-del" data-v="usedel" data-cid="${esc(u.id)}" title="${_t("退掉（它嵌在歌里的声音一起丢；能撤销）")}">×</button>` : "") + `</span>`).join("") +
-      (this.host.ownSf2 ? `<button class="btn" data-v="ownsf2" title="${_t("自己的 .sf2 文件：选中的那一件切出来留在这台设备上，歌里只记来源")}">${_t("自己的 .sf2…")}</button>` : "");
+      (u.removable && !u.on ? `<button class="btn fu-del" data-v="usedel" data-cid="${esc(u.id)}" title="${_t("退掉（它嵌在歌里的声音一起丢；能撤销）")}">×</button>` : "") + `</span>`).join("");
   }
   render(): void {
-    this.renderUsed();
+    this.renderPins(); this.renderUsed();
     const list = this.el.querySelector(".finder-list")!; if (!this.cat) return;
     const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector<HTMLElement>(".finder-jump")!;
     // 类级跳转（user 2026-10-08「分类能不能有一个类级别的跳转功能，不然一个一个下拉很累」）：一组一项，选了列表滚到那组；只有一组就不出。
@@ -239,8 +329,9 @@ export class Finder {
       const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("顶替")}</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
         `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("用它放这条声部的开头")}">${_t("▶ 听开头")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("选它来演这个声部（目录不关，可以接着换）")}">${_t("选这个")}</button>`}</div></div>`;
       body = `<div class="inst-prov">` +
+        (pitched ? prov(`${c.id}|voice`, _t("小月相"), _t("唱歌词；没写歌词的音按「哼的字」唱"), false) : "") +   // 人声里小月相排第一（v0.16.36；user「小月相的优先级肯定是高于那两个 O 和 A」）
         provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? _t("鼓件 · {gmName}（Standard 鼓组的 {note} 号键）", { gmName: esc(p.gmName), note: p.note }) : p.bank === 128 ? _t("鼓组 · {gmName}", { gmName: esc(p.gmName) }) : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? _t("顶替{p}{reason}", { p: p.basis === "official" ? _t("（GM 原文认可）") : p.basis === "lineage" ? _t("（前身）") : p.basis === "imitation" ? _t("（仿声）") : p.basis === "family" ? _t("（同类）") : _t("（只是同名）"), reason: p.reason && zhOnly(p.reason) ? `：${esc(p.reason)}` : "" }) : "", true, p.kind === "substitute")).join("") +
-        (pitched ? prov(`${c.id}|voice`, _t("小月相"), _t("唱歌词；没写歌词的音按「哼的字」唱"), false) : "") +
+
         (!provs.length && !pitched ? `<div class="prov-none">${_t("目录里还没有谁能演它")}</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open ? " is-open" : ""}" data-c="${esc(c.id)}" data-o="${esc(o)}"${pk ? ` data-k="${esc(pk)}"` : ""}>` +

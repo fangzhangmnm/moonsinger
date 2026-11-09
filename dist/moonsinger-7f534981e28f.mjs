@@ -4529,7 +4529,7 @@ var S = {
   "\u70B9\u4E86 = \u6362\u6210\u5B83": { en: "Tap = change to this one" },
   "\u9000\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Remove (its sound embedded in the song goes too; can be undone)" },
   "\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90": { en: "Your own .sf2 file: the one you pick is cut out and kept on this device; the song only records where it came from" },
-  "\u81EA\u5DF1\u7684 .sf2\u2026": { en: "Own .sf2\u2026" },
+  "\u6253\u5F00 .sf2\u2026": { en: "Open .sf2\u2026" },
   "{label} \xB7 {n} \u4EF6": { en: "{label} \xB7 {n}" },
   "\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684": { en: "Nothing named \u201C{q}\u201D" },
   "\u6536\u8D77\u8FD9\u4E00\u7EC4": { en: "Collapse this group" },
@@ -4801,6 +4801,17 @@ var S = {
   "\u8FD9\u91CC\u662F C \u8C03\uFF08\u6CA1\u6709\u5347\u964D\u53F7\uFF09\uFF1A\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": { en: "C major here (no sharps or flats): tap = clef / key / time / tempo" },
   "\u8FD9\u4E00\u5BB6\u5C55\u5F00\u7740\uFF1A\u70B9 = \u53E0\u56DE\u53BB\uFF08\u5149\u6807\u632A\u5230\u4E0B\u4E00\u4F4D\uFF09": { en: "This family is spread out: tap = fold it back (the cursor moves to the next part)" },
   "\u9690\u85CF\u7740\u7684\uFF08\u70B9 = \u653E\u51FA\u6765\uFF09": { en: "Hidden (tap = show)" },
+  "\u65CB\u5F8B": { en: "Melody" },
+  "\u548C\u5F26": { en: "Chords" },
+  "\u7B2C\u4E8C\u65CB\u5F8B": { en: "2nd melody" },
+  "\u4F34\u594F": { en: "Accomp." },
+  "\u94FA\u5E95": { en: "Pad" },
+  "\u8282\u594F": { en: "Rhythm" },
+  "\u70B9\u4E0B\u9762\u4E00\u4EF6\u4E50\u5668\uFF0C\u6362\u8FDB\u8FD9\u4E00\u683C": { en: "Tap an instrument below to put it in this slot" },
+  "\u70B9 = \u6362\u4E0A\u300C{name}\u300D\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u6362\u6210\u522B\u7684 / \u62FF\u6389": { en: "Tap = switch to \u201C{name}\u201D; long-press (right-click) = replace / remove" },
+  "\u6362\u6210\u2026": { en: "Replace with\u2026" },
+  "\u53D6\u6D88\u7F6E\u9876": { en: "Unpin" },
+  "\u7F6E\u9876\u5230\u5E38\u7528": { en: "Pin to favorites" },
   "\u8C31\u4E0A\u5199\u300C{rn}\u300D": { en: "Shown on the score as \u201C{rn}\u201D" },
   "\u6539\u540D\u5728\u58F0\u90E8\u7BA1\u7406": { en: "rename it under Parts" },
   "\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668": { en: "\u201C{who}\u201D plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
@@ -5038,7 +5049,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.35-2026-11-09";
+var APP_VERSION = "v0.16.36-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28531,15 +28542,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-24eef23729e5.mjs");
+      return pick(() => "singer-worker-b3a6b5c521b3.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-06dd9c9b7388.mjs");
+      return pick(() => "layout-worker-0737c1a6a348.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-98bff441decf.mjs");
+      return pick(() => "encode-worker-1c82c7c03b26.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35829,6 +35840,16 @@ function unserializeDesk(json) {
 }
 
 // src/ui/finder.ts
+var DEFAULT_PINS = [
+  { c: "Q7390", job: "melody" },
+  { c: "Q5994", job: "harmony" },
+  { c: "Q209554", job: "melody2" },
+  { c: "Q2563510", job: "accomp" },
+  { c: "Q2997126", job: "pad" },
+  { c: "Q208421", job: "rhythm" },
+  { c: "Q46185", job: "bass" }
+];
+var JOB_LABEL = (j2) => ({ melody: _t("\u65CB\u5F8B"), harmony: _t("\u548C\u5F26"), melody2: _t("\u7B2C\u4E8C\u65CB\u5F8B"), accomp: _t("\u4F34\u594F"), pad: _t("\u94FA\u5E95"), rhythm: _t("\u8282\u594F"), bass: _t("\u4F4E\u97F3") })[j2];
 var HINT = _t("\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u9009\u8FD9\u4E2A\u300D= \u6362\u4E0A\u3002\u76EE\u5F55\u4E0D\u5173\uFF0C\u653E\u7740\u6B4C\u4E5F\u80FD\u63A5\u7740\u6362\uFF1B\u56DE\u8C31\u70B9\u300C\u2190 \u8C31\u300D\u3002\u8C31\u4E0A\u7684\u540D\u5B57\u8DDF\u7740\u6362\u6210\u90A3\u4EF6\u4E50\u5668\u3002");
 var esc4 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 var Finder = class {
@@ -35853,12 +35874,16 @@ var Finder = class {
   // 现在这几个字段（mode / openG / scrollY / opened / selected）是哪一份记忆的（v0.16.6）
   memos = { song: freshFinderMemo(), impro: freshFinderMemo() };
   host;
+  swallow = false;
+  // 长按开了小菜单：接下来那一下 click 不算点
+  replacing = null;
+  // 常用一行「换成…」：下一下点列表里的哪件 = 换进第几格
   constructor(parent, host2) {
     this.host = host2;
     this.el = document.createElement("div");
     this.el.className = "finder";
     this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="${_t("\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09")}" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select><button class="btn finder-pad" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="finder-hint">${HINT}</div><div class="finder-used" hidden></div><div class="finder-jump" hidden><span>${_t("\u8DF3\u5230")}</span><select class="finder-jump-sel" title="${_t("\u5217\u8868\u6EDA\u5230\u8FD9\u4E00\u7EC4")}"></select></div><div class="finder-list"><div class="finder-empty">${_t("\u52A0\u8F7D\u76EE\u5F55\u2026")}</div></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="${_t("\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09")}" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select><button class="btn finder-file" data-v="ownsf2" title="${_t("\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90")}" hidden>${_t("\u6253\u5F00 .sf2\u2026")}</button><button class="btn finder-pad" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="finder-hint">${HINT}</div><div class="finder-pins" hidden></div><div class="finder-used" hidden></div><div class="finder-jump" hidden><span>${_t("\u8DF3\u5230")}</span><select class="finder-jump-sel" title="${_t("\u5217\u8868\u6EDA\u5230\u8FD9\u4E00\u7EC4")}"></select></div><div class="finder-list"><div class="finder-empty">${_t("\u52A0\u8F7D\u76EE\u5F55\u2026")}</div></div>`;
     parent.append(this.el);
     this.el.querySelector(".finder-q").addEventListener("input", (e10) => {
       this.q = e10.target.value;
@@ -35869,7 +35894,44 @@ var Finder = class {
       this.render();
     });
     this.el.querySelector(".finder-jump-sel").addEventListener("change", (e10) => this.jumpTo(Number(e10.target.value)));
-    this.el.addEventListener("click", (e10) => void this.onClick(e10));
+    this.el.addEventListener("click", (e10) => {
+      if (this.swallow) {
+        this.swallow = false;
+        e10.preventDefault();
+        e10.stopPropagation();
+        return;
+      }
+      void this.onClick(e10);
+    });
+    this.el.addEventListener("contextmenu", (e10) => {
+      const t10 = this.pinTarget(e10.target);
+      if (!t10) return;
+      e10.preventDefault();
+      this.pinMenu(t10);
+    });
+    this.el.addEventListener("pointerdown", (e10) => {
+      if (e10.pointerType === "mouse") return;
+      const t10 = this.pinTarget(e10.target);
+      if (!t10) return;
+      const x0 = e10.clientX, y0 = e10.clientY, id2 = e10.pointerId;
+      const stop = () => {
+        clearTimeout(timer);
+        removeEventListener("pointermove", mv, true);
+        removeEventListener("pointerup", stop, true);
+        removeEventListener("pointercancel", stop, true);
+      };
+      const mv = (m2) => {
+        if (m2.pointerId === id2 && Math.hypot(m2.clientX - x0, m2.clientY - y0) > 10) stop();
+      };
+      const timer = window.setTimeout(() => {
+        stop();
+        this.swallow = true;
+        this.pinMenu(t10);
+      }, 480);
+      addEventListener("pointermove", mv, true);
+      addEventListener("pointerup", stop, true);
+      addEventListener("pointercancel", stop, true);
+    });
     let raf = 0;
     this.el.querySelector(".finder-list").addEventListener("scroll", () => {
       if (!raf) raf = requestAnimationFrame(() => {
@@ -35928,6 +35990,7 @@ var Finder = class {
     this.el.querySelector('[data-v="back"]').textContent = this.playOnly ? _t("\u2190 \u6B4C\u5E93") : _t("\u2190 \u8C31");
     this.el.querySelector(".finder-hint").textContent = this.playOnly ? _t("\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u952E\u76D8\u5F39\u7740\u73A9\u3002\u8981\u7ED9\u6B4C\u91CC\u7684\u58F0\u90E8\u9009\u4E50\u5668\uFF1A\u5F00\u4E00\u9996\u6B4C\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u3002") : HINT;
     this.el.querySelector(".finder-sort").value = this.mode;
+    this.el.querySelector(".finder-file").hidden = this.playOnly || !this.host.ownSf2;
     if (!this.cat) {
       this.loading ??= (async () => {
         const [cat2, sprite] = await Promise.all([loadCatalog(), loadIconSprite()]);
@@ -36003,6 +36066,19 @@ var Finder = class {
       this.toggleGroup(btn.closest("[data-gid]").dataset.gid);
       return;
     }
+    if (v === "pin" && btn) {
+      await this.tapPin(Number(btn.dataset.pin));
+      return;
+    }
+    if (v === "pinmenu" && btn) {
+      this.pinAct(btn.dataset.act, btn.dataset.arg);
+      return;
+    }
+    if (v === "unreplace") {
+      this.replacing = null;
+      this.renderPins();
+      return;
+    }
     if (v && btn) {
       const key = btn.closest("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key);
       if (!pick) return;
@@ -36024,6 +36100,16 @@ var Finder = class {
       }
       return;
     }
+    if (row2 && this.replacing !== null && this.host.setPins) {
+      const pins = this.pinsNow(), k2 = this.replacing;
+      this.replacing = null;
+      if (pins[k2]) {
+        pins[k2] = { ...pins[k2], c: row2.dataset.c };
+        this.host.setPins(pins);
+      }
+      this.renderPins();
+      return;
+    }
     if (row2) {
       const id2 = row2.dataset.c, o10 = row2.dataset.o;
       this.openG.set(this.mode, o10.split("::")[0]);
@@ -36040,14 +36126,107 @@ var Finder = class {
       this.renderAnchored(o10);
     }
   }
+  pinsNow() {
+    const p2 = this.host.pins?.();
+    return (p2 && p2.length ? p2 : DEFAULT_PINS).map((x2) => ({ ...x2 }));
+  }
+  /** 一格点下去用谁：人声类 = 小月相；别的 = 目录里第一位能演的（本尊在前）；都没有 = null。 */
+  pinPick(c10) {
+    if (c10.kind === "voice") return { kind: "voice", concept: c10 };
+    const p2 = providersOf(this.cat, c10)[0];
+    return p2 ? { kind: "gs", concept: c10, provider: p2 } : null;
+  }
+  pinKey(c10) {
+    const p2 = this.pinPick(c10);
+    return !p2 ? "" : p2.kind === "voice" ? `${c10.id}|voice` : `${c10.id}|${gmKey(p2.provider)}`;
+  }
+  /** 常用一行（v0.16.36）：一样大的格子横着排（放不下横着滑；家规：按钮堆看到就改成格子）——图标 + 名字 + 管哪一层。点 = 换上（弹着玩 = 试听）。 */
+  renderPins() {
+    const box = this.el.querySelector(".finder-pins");
+    box.hidden = !this.cat || !this.host.pins;
+    if (box.hidden) return;
+    const cat2 = this.cat, pins = this.pinsNow();
+    box.innerHTML = (this.replacing !== null ? `<div class="fp-replacing">${_t("\u70B9\u4E0B\u9762\u4E00\u4EF6\u4E50\u5668\uFF0C\u6362\u8FDB\u8FD9\u4E00\u683C")}<button class="btn" data-v="unreplace">${_t("\u7B97\u4E86")}</button></div>` : "") + `<div class="fp-row">${pins.map((pin, k2) => {
+      const c10 = cat2.byId.get(pin.c);
+      if (!c10) return "";
+      const name = c10.kind === "voice" ? _t("\u5C0F\u6708\u76F8") : lang() === "zh" ? conceptName(c10.names) : roleNameOf(c10), icon = c10.icon?.id, on2 = this.playOnly && this.selected === this.pinKey(c10);
+      return `<button class="fp-tile${on2 ? " is-on" : ""}${this.replacing === k2 ? " is-replacing" : ""}" data-v="pin" data-pin="${k2}" title="${esc4(_t("\u70B9 = \u6362\u4E0A\u300C{name}\u300D\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u6362\u6210\u522B\u7684 / \u62FF\u6389", { name }))}">` + (icon ? `<svg class="fp-ico" aria-hidden="true"><use href="#${esc4(icon)}"/></svg>` : `<span class="fp-ico none">${esc4(name.slice(0, 1))}</span>`) + `<span class="fp-name">${esc4(name)}</span>${pin.job ? `<span class="fp-job">${esc4(JOB_LABEL(pin.job))}</span>` : ""}</button>`;
+    }).join("")}</div>`;
+  }
+  async tapPin(k2) {
+    if (this.replacing !== null) {
+      this.replacing = null;
+      this.renderPins();
+      return;
+    }
+    const pin = this.pinsNow()[k2], c10 = pin && this.cat?.byId.get(pin.c);
+    if (!c10) return;
+    const pick = this.pinPick(c10);
+    if (!pick) {
+      await this.host.audition({ kind: "none", concept: c10 });
+      return;
+    }
+    this.selected = this.pinKey(c10);
+    if (this.playOnly) {
+      this.renderPins();
+      this.render();
+      await this.host.audition(pick);
+      return;
+    }
+    await this.host.cast(pick);
+  }
+  pinTarget(t10) {
+    if (!this.host.setPins) return null;
+    const tile = t10.closest("[data-pin]");
+    if (tile) return { kind: "tile", k: Number(tile.dataset.pin), el: tile };
+    const row2 = t10.closest(".inst-row");
+    if (row2) return { kind: "row", c: row2.dataset.c, el: row2 };
+    return null;
+  }
+  /** 长按 / 右键的小菜单（浮在那一格 / 那一行下面）。 */
+  pinMenu(t10) {
+    this.el.querySelector(".finder-pinmenu")?.remove();
+    const pins = this.pinsNow(), items = t10.kind === "tile" ? [["replace", String(t10.k), _t("\u6362\u6210\u2026")], ["unpin", String(t10.k), _t("\u62FF\u6389")]] : pins.some((p2) => p2.c === t10.c) ? [["unpinc", t10.c, _t("\u53D6\u6D88\u7F6E\u9876")]] : [["pinc", t10.c, _t("\u7F6E\u9876\u5230\u5E38\u7528")]];
+    const m2 = document.createElement("div");
+    m2.className = "finder-pinmenu";
+    m2.innerHTML = items.map(([act, arg, label]) => `<button class="btn ctx-item" data-v="pinmenu" data-act="${act}" data-arg="${esc4(arg)}">${esc4(label)}</button>`).join("");
+    const r10 = t10.el.getBoundingClientRect();
+    m2.style.left = `${Math.max(8, Math.min(r10.left, innerWidth - 180))}px`;
+    m2.style.top = `${Math.min(r10.bottom + 4, innerHeight - 90)}px`;
+    this.el.append(m2);
+    const off = (e10) => {
+      if (!m2.contains(e10.target)) {
+        m2.remove();
+        removeEventListener("pointerdown", off, true);
+      }
+    };
+    setTimeout(() => addEventListener("pointerdown", off, true), 0);
+  }
+  pinAct(act, arg) {
+    this.el.querySelector(".finder-pinmenu")?.remove();
+    const pins = this.pinsNow();
+    if (act === "replace") {
+      this.replacing = Number(arg);
+      this.renderPins();
+      return;
+    }
+    if (act === "unpin") pins.splice(Number(arg), 1);
+    else if (act === "unpinc") {
+      const k2 = pins.findIndex((p2) => p2.c === arg);
+      if (k2 >= 0) pins.splice(k2, 1);
+    } else if (act === "pinc") pins.push({ c: arg });
+    this.host.setPins?.(pins);
+    this.renderPins();
+  }
   /** 顶上一排「这首歌里用过的」（歌里打开的才有；弹着玩没有）：点一位 = 上场，× = 退掉；最后一颗 = 自己的 .sf2（v0.16.18 搬家 C）。 */
   renderUsed() {
     const box = this.el.querySelector(".finder-used"), used = this.playOnly ? [] : this.host.used?.() ?? [];
     box.hidden = this.playOnly || !this.host.used;
     if (box.hidden) return;
-    box.innerHTML = `<span class="fu-k">${_t("\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE")}</span>` + used.map((u2) => `<span class="fu-c"><button class="btn chip${u2.on ? " is-on" : ""}" data-v="use" data-cid="${esc4(u2.id)}" title="${u2.on ? _t("\u6B63\u5728\u53F0\u4E0A") : _t("\u70B9\u4E86 = \u6362\u6210\u5B83")}">${esc4(u2.name)}</button>` + (u2.removable && !u2.on ? `<button class="btn fu-del" data-v="usedel" data-cid="${esc4(u2.id)}" title="${_t("\u9000\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF1B\u80FD\u64A4\u9500\uFF09")}">\xD7</button>` : "") + `</span>`).join("") + (this.host.ownSf2 ? `<button class="btn" data-v="ownsf2" title="${_t("\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90")}">${_t("\u81EA\u5DF1\u7684 .sf2\u2026")}</button>` : "");
+    box.innerHTML = `<span class="fu-k">${_t("\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE")}</span>` + used.map((u2) => `<span class="fu-c"><button class="btn chip${u2.on ? " is-on" : ""}" data-v="use" data-cid="${esc4(u2.id)}" title="${u2.on ? _t("\u6B63\u5728\u53F0\u4E0A") : _t("\u70B9\u4E86 = \u6362\u6210\u5B83")}">${esc4(u2.name)}</button>` + (u2.removable && !u2.on ? `<button class="btn fu-del" data-v="usedel" data-cid="${esc4(u2.id)}" title="${_t("\u9000\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF1B\u80FD\u64A4\u9500\uFF09")}">\xD7</button>` : "") + `</span>`).join("");
   }
   render() {
+    this.renderPins();
     this.renderUsed();
     const list = this.el.querySelector(".finder-list");
     if (!this.cat) return;
@@ -36132,7 +36311,8 @@ var Finder = class {
     if (open2) {
       const provs = providersOf(cat2, c10).filter((x2) => !pk || gmKey(x2) === pk), pitched = c10.kind === "voice";
       const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc4(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("\u9876\u66FF")}</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934")}">${_t("\u25B6 \u542C\u5F00\u5934")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF08\u76EE\u5F55\u4E0D\u5173\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09")}">${_t("\u9009\u8FD9\u4E2A")}</button>`}</div></div>`;
-      body2 = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? _t("\u9F13\u4EF6 \xB7 {gmName}\uFF08Standard \u9F13\u7EC4\u7684 {note} \u53F7\u952E\uFF09", { gmName: esc4(p2.gmName), note: p2.note }) : p2.bank === 128 ? _t("\u9F13\u7EC4 \xB7 {gmName}", { gmName: esc4(p2.gmName) }) : `GeneralUser GS \xB7 ${esc4(p2.gmName)}`}`, p2.kind === "substitute" ? _t("\u9876\u66FF{p}{reason}", { p: p2.basis === "official" ? _t("\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09") : p2.basis === "lineage" ? _t("\uFF08\u524D\u8EAB\uFF09") : p2.basis === "imitation" ? _t("\uFF08\u4EFF\u58F0\uFF09") : p2.basis === "family" ? _t("\uFF08\u540C\u7C7B\uFF09") : _t("\uFF08\u53EA\u662F\u540C\u540D\uFF09"), reason: p2.reason && zhOnly(p2.reason) ? `\uFF1A${esc4(p2.reason)}` : "" }) : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, _t("\u5C0F\u6708\u76F8"), _t("\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531"), false) : "") + (!provs.length && !pitched ? `<div class="prov-none">${_t("\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83")}</div>` : "") + `</div>`;
+      body2 = `<div class="inst-prov">` + (pitched ? prov(`${c10.id}|voice`, _t("\u5C0F\u6708\u76F8"), _t("\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531"), false) : "") + // 人声里小月相排第一（v0.16.36；user「小月相的优先级肯定是高于那两个 O 和 A」）
+      provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? _t("\u9F13\u4EF6 \xB7 {gmName}\uFF08Standard \u9F13\u7EC4\u7684 {note} \u53F7\u952E\uFF09", { gmName: esc4(p2.gmName), note: p2.note }) : p2.bank === 128 ? _t("\u9F13\u7EC4 \xB7 {gmName}", { gmName: esc4(p2.gmName) }) : `GeneralUser GS \xB7 ${esc4(p2.gmName)}`}`, p2.kind === "substitute" ? _t("\u9876\u66FF{p}{reason}", { p: p2.basis === "official" ? _t("\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09") : p2.basis === "lineage" ? _t("\uFF08\u524D\u8EAB\uFF09") : p2.basis === "imitation" ? _t("\uFF08\u4EFF\u58F0\uFF09") : p2.basis === "family" ? _t("\uFF08\u540C\u7C7B\uFF09") : _t("\uFF08\u53EA\u662F\u540C\u540D\uFF09"), reason: p2.reason && zhOnly(p2.reason) ? `\uFF1A${esc4(p2.reason)}` : "" }) : "", true, p2.kind === "substitute")).join("") + (!provs.length && !pitched ? `<div class="prov-none">${_t("\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83")}</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open2 ? " is-open" : ""}" data-c="${esc4(c10.id)}" data-o="${esc4(o10)}"${pk ? ` data-k="${esc4(pk)}"` : ""}>` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc4(icon)}"/></svg>` : `<span class="inst-ico none">${esc4(conceptName(c10.names).slice(0, 1))}</span>`) + `<div class="inst-name"><b><span class="zh">${esc4(conceptName(c10.names))}</span>${e10.preset ? `<span class="inst-preset"> \xB7 ${esc4(e10.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span data-i18n-skip>${esc4(conceptAlt(roleNameOf(c10), c10.names))}</span></div><div class="inst-meta">${esc4(meta)}</div></div>` + body2;
   }
@@ -51729,7 +51909,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "3163a8533854",
+  cssHash: "946bcbd3e2f7",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -52116,6 +52296,7 @@ async function castPick(p2) {
   info(np2 ? _t("\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8\uFF1A{c}\uFF08\u76EE\u5F55\u8FD8\u5F00\u7740\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09", { c: roleNameOf(c10) }) : label);
 }
 var KV_FINDER_IMPRO = "finder-impro";
+var KV_FINDER_PINS = "finder-pins";
 var finder = new Finder($2("stage"), {
   // 目录顶上「这首歌里用过的」（v0.16.18 搬家 C：原来在乐器页「谁来演」；user 11-07「换乐器的时候…点了谱表的乐器名之后，按一个按钮就立刻能换，然后配置是另外一回事」）
   used: () => {
@@ -52155,7 +52336,13 @@ var finder = new Finder($2("stage"), {
   togglePad: () => showPad(padEl.hidden),
   memoChanged: (ctx2, m2) => {
     if (ctx2 === "impro") deviceKvSetJson(KV_FINDER_IMPRO, serializeFinderMemo(m2));
-  }
+  },
+  // 常用一行（v0.16.36）：记在这台设备上（跟人走、不跟歌走；user 11-09「置顶…跟着用户设置走」）；读到的不像样 = 默认那七格
+  pins: () => {
+    const v = deviceKvGetJson(KV_FINDER_PINS, null);
+    return Array.isArray(v) ? v.filter((x2) => !!x2 && typeof x2.c === "string").map((x2) => ({ c: x2.c, ...x2.job ? { job: x2.job } : {} })) : [...DEFAULT_PINS];
+  },
+  setPins: (p2) => deviceKvSetJson(KV_FINDER_PINS, p2)
 });
 finder.restore("impro", unserializeFinderMemo(deviceKvGetJson(KV_FINDER_IMPRO, null)));
 var partLabel = (id2) => {
@@ -55853,4 +56040,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d249a8804a09.mjs.map
+//# sourceMappingURL=moonsinger-7f534981e28f.mjs.map

@@ -70,7 +70,7 @@ import { buildTimeline, lightNotes, songLangOf, sungPlan, LEAD_IN, PRE_ROLL, HUM
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
 import { loadVowelTable } from "../engine/vowel-table.ts";
 import { sfKey, canAlign, type SfxInfo } from "../gm/sf-key.ts";
-import { Finder, type FinderPick, type FinderNobody } from "../ui/finder.ts";
+import { Finder, type FinderPick, type FinderNobody, DEFAULT_PINS, type PinTile } from "../ui/finder.ts";
 import { createHeaderPanel } from "./header-panel.ts";
 import { Studio, MASTER as STUDIO_MASTER } from "../ui/studio.ts";
 import { resolveChain } from "../ui/plugins.ts";
@@ -1473,7 +1473,7 @@ async function castPick(p: FinderPick): Promise<void> {
   info(np ? _t("加了一个声部：{c}（目录还开着，可以接着换）", { c: roleNameOf(c) }) : label);
 }
 // 乐器目录翻到哪（v0.16.6，user 11-07「即兴的滚动归 App 记，然后文件内的滚动归文件记」）：歌里打开的 = 视图态跟着歌存（deskNow / applyDesk）；歌库「即兴」打开的 = 这台设备上的一个键
-const KV_FINDER_IMPRO = "finder-impro";
+const KV_FINDER_IMPRO = "finder-impro", KV_FINDER_PINS = "finder-pins";
 const finder = new Finder($("stage"), {
   // 目录顶上「这首歌里用过的」（v0.16.18 搬家 C：原来在乐器页「谁来演」；user 11-07「换乐器的时候…点了谱表的乐器名之后，按一个按钮就立刻能换，然后配置是另外一回事」）
   used: () => { if (newPartPending) return []; const aid = activeId(D.extras, curRole()); return candidates(D.extras, curRole()).map((c) => ({ id: c.id, name: !performerOf(c.engine) ? _t("{name}（没人能演）", { name: c.name }) : c.name, on: c.id === aid, removable: performerOf(c.engine)?.removable ?? true })); },
@@ -1481,7 +1481,10 @@ const finder = new Finder($("stage"), {
   removeCandidate: (id) => { try { updateExtras(withoutCandidate(D.extras, curRole(), id), { kind: "lounge", label: _t("「{rn}」退掉一位候选", { rn: roleName(D.extras, curRole()) }) }); } catch (err) { showError((err as Error).message); } },
   ownSf2: () => { if (newPartPending) { const b = newPartState(newPartPending); newPartPending = null; updateBoth(b.st, b.extras, { kind: "score", label: _t("加了一个声部") }); } closeFinder(false); openInstPage(); pickFile(); },   // 新声部选自己的 .sf2 = 先建声部（选文件也算选了）
   roleName: () => (newPartPending ? _t("新声部") : roleName(D.extras, curRole())), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden),
-  memoChanged: (ctx, m) => { if (ctx === "impro") deviceKvSetJson(KV_FINDER_IMPRO, serializeFinderMemo(m)); } });
+  memoChanged: (ctx, m) => { if (ctx === "impro") deviceKvSetJson(KV_FINDER_IMPRO, serializeFinderMemo(m)); },
+  // 常用一行（v0.16.36）：记在这台设备上（跟人走、不跟歌走；user 11-09「置顶…跟着用户设置走」）；读到的不像样 = 默认那七格
+  pins: () => { const v = deviceKvGetJson<unknown>(KV_FINDER_PINS, null); return Array.isArray(v) ? v.filter((x): x is PinTile => !!x && typeof (x as PinTile).c === "string").map((x) => ({ c: x.c, ...(x.job ? { job: x.job } : {}) })) : [...DEFAULT_PINS]; },
+  setPins: (p) => deviceKvSetJson(KV_FINDER_PINS, p) });
 finder.restore("impro", unserializeFinderMemo(deviceKvGetJson<unknown>(KV_FINDER_IMPRO, null)));
 // ── 录音室（src/ui/studio.ts）：全屏替掉谱区，一个声部一条推子条；增益 / 声像进录音房（studio.json），静音 / 独奏 = partView ──
 const partLabel = (id: string): string => { const k = D.st.song.parts.findIndex((p) => p.id === id); return k < 0 ? id : partLabels(D.st.song, D.extras)[k]; };

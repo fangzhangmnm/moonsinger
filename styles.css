@@ -449,9 +449,26 @@ body.listen-mode .ink-caret { display: none; }
 .finder-sort { height: 32px; border: 1px solid var(--line); border-radius: 7px; background: #fff; font-size: 13px; max-width: 42%; }
 /* 从歌库进的乐器目录（只弹着玩）：舞台整层盖到歌库上面（歌库 = --z-overlay 的整屏） */
 body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(--z-overlay) + 1); background: var(--bg); padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); }
+.finder-file { flex: none; white-space: nowrap; }
+.finder-bar > [data-v="back"] { flex: none; white-space: nowrap; }   /* 顶条挤的时候返回钮不让（v0.16.36：多了「打开 .sf2…」） */
+@media (max-width: 560px) { .finder-file { padding: 0 6px; font-size: 12px; } }   /* 顶条「打开 .sf2…」（v0.16.36） */
+.finder-file[hidden] { display: none; }
 .finder-pad { flex: none; display: inline-flex; align-items: center; gap: 4px; }   /* 试听键盘开关（收起了也叫得回来） */
 @media (max-width: 560px) { .finder-pad span, .finder-title { display: none; } }
 /* 乐器目录顶上「这首歌里用过的」（v0.16.18 搬家 C）：点一位 = 上场，× = 退掉 */
+.finder-pins { padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }   /* 常用一行（v0.16.36）：一样大的格子横着排，放不下横着滑 */
+.finder-pins[hidden] { display: none; }
+.finder-pins .fp-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(72px, 1fr); gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; }
+.finder-pins .fp-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 4px 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: inherit; font: inherit; cursor: pointer; -webkit-touch-callout: none; user-select: none; }
+.finder-pins .fp-tile.is-on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.finder-pins .fp-tile.is-replacing { border-style: dashed; border-color: var(--accent); }
+.finder-pins .fp-ico { width: 28px; height: 28px; fill: currentColor; }
+.finder-pins .fp-ico.none { display: grid; place-items: center; font-weight: 700; }
+.finder-pins .fp-name { max-width: 100%; font-size: 12px; font-weight: 600; line-height: 1.15; text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }   /* 放不下 = 折两行，不往外撑 */
+.finder-pins .fp-job { font-size: 10px; color: var(--muted); }
+.finder-pins .fp-replacing { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: var(--accent); }
+.finder-pinmenu { position: fixed; z-index: var(--z-menu); display: flex; flex-direction: column; min-width: 140px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 24px rgba(0, 0, 0, .18); }
+.finder-pinmenu .ctx-item { justify-content: flex-start; }
 .finder-used { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
 .finder-used[hidden] { display: none; }
 .finder-used .fu-k { font-size: 12px; color: var(--muted); margin-right: 2px; }
