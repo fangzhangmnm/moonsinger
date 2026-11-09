@@ -3389,13 +3389,10 @@ var S = {
   "\u627E\u5230\u4E86\uFF1A\u300C{name}\u300D\u80FD\u54CD\u4E86": { en: "Found: \u201C{name}\u201D can sound now" },
   "\u300C{extras}\u300D\u6362\u6210\uFF1A{name}": { en: "\u201C{extras}\u201D replaced by: {name}" },
   "\u300C{name}\u300D\u7684\u58F0\u97F3\u6CA1\u80FD\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u91CC\u80FD\u54CD\uFF1B\u4E0B\u6B21\u8981\u4ECE\u300C{name2}\u300D\u6587\u4EF6\u627E\u3002\u60F3\u8BA9\u6B4C\u81EA\u5DF1\u5E26\u7740\u5B83\uFF1A\u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\u3002": { en: "The sound of \u201C{name}\u201D couldn't be kept on this device (out of space, or the browser doesn't allow it): it works this session; next time, find it from the \u201C{name2}\u201D file. To have the song carry it: menu \u201CPack everything into the song\u201D." },
-  "\u52A0\u4E0D\u8FDB\u6765\uFF1A{Error}": { en: "Couldn't add it: {Error}" },
   "\u9F13\u7EC4": { en: "Drum kits" },
   "\u4E50\u5668": { en: "Instruments" },
   "\u53D8\u4F53\uFF08bank {b}\uFF09": { en: "Variations (bank {b})" },
   "{name}\uFF08{n} \u4EF6\uFF09": { en: "{name} ({n} items)" },
-  "\u53EB": { en: "Named" },
-  "\u52A0\u8FDB\u6765\u3001\u9009\u5B83": { en: "Add and select" },
   "\u58F0\u97F3\u5D4C\u5728\u6B4C\u91CC\uFF08{n}\uFF09{library}": { en: "Sound embedded in the song ({n}){library}" },
   "\uFF0C\u6765\u81EA\u5BB6\u65CF\u97F3\u6E90\u5E93\u7684 {name}": { en: ", from {name} in the family sound library" },
   "\uFF0C\u6765\u81EA {name}": { en: ", from {name}" },
@@ -3427,9 +3424,9 @@ var S = {
   "\u53F0\u4E0A": { en: "On stage" },
   "\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31": { en: "The performer and the instrument they hold; this name isn't on the score" },
   "\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A": { en: "Instrument catalog: what this song has used is at the top, browse below by style / era / family; try on the keys at the right, pick one and it\u2019s on" },
-  "\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559": { en: "Your own .sf2 file: the chosen item is cut out and kept on this device (a few MB); the song only records its source; the whole file isn't kept" },
-  "\u4ECE .sf2 \u6587\u4EF6\u9009\u2026": { en: "Choose from an .sf2 file\u2026" },
-  "\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002": { en: "The song only records where the chosen instrument comes from (small song): the sound is found on this device / in the family sound library / in your files. To have the song carry the sound: menu \u201CPack everything into the song\u201D, or export a \u201Cpacked sounds\u201D copy." },
+  "\u6536\u8D77\u8FD9\u4E2A\u6587\u4EF6\uFF08\u5B57\u8282\u653E\u6389\uFF0C\u8981\u518D\u7528\u5C31\u91CD\u65B0\u6253\u5F00\uFF09": { en: "Close this file (its bytes are dropped; open it again to use it)" },
+  "\u6536\u8D77\u8FD9\u4E2A\u6587\u4EF6": { en: "Close this file" },
+  "\u9009\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002": { en: "The one you choose is cut out and kept on this device; the song only records where it came from (keeps the song small). To make the song carry the sound itself: File menu \u2192 \u201CPack everything into the song\u201D, or save an .mxl copy (packed sounds)." },
   "{who} \u600E\u4E48\u6F14": { en: "How {who} performs" },
   "\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5": { en: "The keys at the right play whoever's on stage; changes can be tried right away" },
   "\u300C{rn}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 {p} ms": { en: "\u201C{rn}\u201D between notes {p} ms" },
@@ -5049,7 +5046,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.36-2026-11-09";
+var APP_VERSION = "v0.16.37-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28542,15 +28539,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-b3a6b5c521b3.mjs");
+      return pick(() => "singer-worker-ad1504def10f.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-0737c1a6a348.mjs");
+      return pick(() => "layout-worker-3e3c90fb7bbd.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-1c82c7c03b26.mjs");
+      return pick(() => "encode-worker-8f3dc2b0eccd.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35878,6 +35875,8 @@ var Finder = class {
   // 长按开了小菜单：接下来那一下 click 不算点
   replacing = null;
   // 常用一行「换成…」：下一下点列表里的哪件 = 换进第几格
+  own = null;
+  // 打开的 .sf2（列表最上面一组；关目录 = 没了）
   constructor(parent, host2) {
     this.host = host2;
     this.el = document.createElement("div");
@@ -36025,11 +36024,25 @@ var Finder = class {
   }
   hide() {
     if (this.el.hidden) return;
+    if (this.selected.startsWith("sf2|")) this.selected = "";
+    this.own = null;
     this.stash();
     this.el.hidden = true;
     this.host.memoChanged?.(this.ctx, this.memos[this.ctx]);
   }
+  /** 宿主读好了一个 .sf2（null = 收起这一组）：列表最上面出现「⟨文件名⟩（N 件）」，滚到顶上。 */
+  setOwnFile(f2) {
+    this.own = f2 && f2.presets.length ? f2 : null;
+    if (!this.own && this.selected.startsWith("sf2|")) this.selected = "";
+    if (this.el.hidden) return;
+    this.render();
+    if (this.own) this.el.querySelector(".finder-list").scrollTop = 0;
+  }
   pickOf(key) {
+    if (key.startsWith("sf2|")) {
+      const [b3, pr] = key.slice(4).split(":").map(Number), x2 = this.own?.presets.find((q2) => q2.bank === b3 && q2.program === pr);
+      return x2 ? { kind: "sf2", bank: x2.bank, program: x2.program, name: x2.name } : null;
+    }
     if (!this.cat) return null;
     const [cid, rest] = key.split("|"), c10 = this.cat.byId.get(cid);
     if (!c10) return null;
@@ -36060,6 +36073,11 @@ var Finder = class {
     }
     if (v === "ownsf2") {
       this.host.ownSf2?.();
+      return;
+    }
+    if (v === "owndrop") {
+      this.setOwnFile(null);
+      void this.host.audition(null);
       return;
     }
     if (v === "group" && btn) {
@@ -36095,7 +36113,8 @@ var Finder = class {
       const key = prov.dataset.p;
       if (this.selected !== key) {
         this.selected = key;
-        this.renderAnchored(rowOf(prov));
+        if (key.startsWith("sf2|")) this.renderPinned(`.prov[data-p="${CSS.escape(key)}"]`);
+        else this.renderAnchored(rowOf(prov));
         await this.host.audition(this.pickOf(key));
       }
       return;
@@ -36138,7 +36157,7 @@ var Finder = class {
   }
   pinKey(c10) {
     const p2 = this.pinPick(c10);
-    return !p2 ? "" : p2.kind === "voice" ? `${c10.id}|voice` : `${c10.id}|${gmKey(p2.provider)}`;
+    return !p2 ? "" : p2.kind === "gs" ? `${c10.id}|${gmKey(p2.provider)}` : `${c10.id}|voice`;
   }
   /** 常用一行（v0.16.36）：一样大的格子横着排（放不下横着滑；家规：按钮堆看到就改成格子）——图标 + 名字 + 管哪一层。点 = 换上（弹着玩 = 试听）。 */
   renderPins() {
@@ -36233,15 +36252,39 @@ var Finder = class {
     const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector(".finder-jump");
     jump.hidden = groups.length < 2;
     jump.querySelector("select").innerHTML = groups.map((g3, k2) => `<option value="${k2}">${_t("{label} \xB7 {n} \u4EF6", { label: esc4(g3.label), n: g3.items.length })}</option>`).join("");
+    const own = this.ownHtml();
     if (!groups.length) {
-      list.innerHTML = `<div class="finder-empty">${_t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684", { q: esc4(this.q) })}</div>`;
+      list.innerHTML = own + (own ? "" : `<div class="finder-empty">${_t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684", { q: esc4(this.q) })}</div>`);
       return;
     }
     const acc = !this.q.trim() && groups.length > 1, openId = this.openG.get(this.mode);
-    list.innerHTML = groups.map((g3, k2) => {
+    list.innerHTML = own + groups.map((g3, k2) => {
       const on2 = !acc || g3.id === openId;
       return `<div class="finder-group${acc ? " acc" : ""}${on2 ? " is-open" : ""}" data-g="${k2}" data-gid="${esc4(g3.id)}"><div class="finder-group-h"${acc ? ` data-v="group" role="button" aria-expanded="${on2}" title="${on2 ? _t("\u6536\u8D77\u8FD9\u4E00\u7EC4") : _t("\u5C55\u5F00\u8FD9\u4E00\u7EC4\uFF08\u522B\u7684\u6536\u8D77\uFF09")}"` : ""}>${acc ? `<svg class="ico fg-chev" aria-hidden="true"><use href="#chevron-down"/></svg>` : ""}<span class="fg-label">${esc4(g3.label)}</span><span>${g3.items.length}</span></div>` + (on2 ? `<div class="finder-items">${g3.items.map((e10) => this.rowHtml(e10, g3.id)).join("")}</div>` : "") + `</div>`;
     }).join("");
+    this.markJump();
+  }
+  /** 一位能演的（一行）：名字 + 小字 + 「▶ 听开头」「选这个」。目录里的提供者和自己文件里的那几件共用（v0.16.37）。 */
+  provHtml(key, label, note2, playable, sub = false) {
+    return `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc4(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("\u9876\u66FF")}</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934")}">${_t("\u25B6 \u542C\u5F00\u5934")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF08\u76EE\u5F55\u4E0D\u5173\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09")}">${_t("\u9009\u8FD9\u4E2A")}</button>`}</div></div>`;
+  }
+  /** 打开的 .sf2 那一组（列表最上面；施工单 §4.3）：按 乐器 / 变体 / 鼓组 分小节，一件一行；点一行 = 试听，「选这个」= 换上。
+   *  搜索框里有字 = 只列名字里有它的。组头的 × = 收起这一组（字节一起放掉）。 */
+  ownHtml() {
+    const f2 = this.own;
+    if (!f2) return "";
+    const q2 = this.q.trim().toLowerCase(), ps = q2 ? f2.presets.filter((x2) => x2.name.toLowerCase().includes(q2)) : f2.presets;
+    if (q2 && !ps.length) return "";
+    const banks = [...new Set(ps.map((x2) => x2.bank))].sort((a10, b3) => a10 - b3);
+    const label = (b3) => b3 === 128 ? _t("\u9F13\u7EC4") : b3 === 0 ? _t("\u4E50\u5668") : _t("\u53D8\u4F53\uFF08bank {b}\uFF09", { b: b3 });
+    return `<div class="finder-group finder-own is-open"><div class="finder-group-h"><span class="fg-label">${esc4(_t("{name}\uFF08{n} \u4EF6\uFF09", { name: f2.name, n: f2.presets.length }))}</span><button class="btn fo-drop" data-v="owndrop" title="${_t("\u6536\u8D77\u8FD9\u4E2A\u6587\u4EF6\uFF08\u5B57\u8282\u653E\u6389\uFF0C\u8981\u518D\u7528\u5C31\u91CD\u65B0\u6253\u5F00\uFF09")}" aria-label="${_t("\u6536\u8D77\u8FD9\u4E2A\u6587\u4EF6")}">\xD7</button></div><div class="fo-note">${_t("\u9009\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002")}</div>` + banks.map((b3) => `<div class="fo-sub">${label(b3)}</div><div class="inst-prov fo-list">${ps.filter((x2) => x2.bank === b3).map((x2) => this.provHtml(`sf2|${x2.bank}:${x2.program}`, `${String(x2.program).padStart(3, "0")} ${esc4(x2.name)}`, "", true)).join("")}</div>`).join("") + `</div>`;
+  }
+  /** 重画，把 sel 选中的那个元素钉在屏幕上原来的位置（只滚列表自己）。 */
+  renderPinned(sel) {
+    const list = this.el.querySelector(".finder-list"), before = list.querySelector(sel)?.getBoundingClientRect().top;
+    this.render();
+    const el2 = list.querySelector(sel);
+    if (el2 && before !== void 0) list.scrollTop += el2.getBoundingClientRect().top - before;
     this.markJump();
   }
   /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
@@ -36310,7 +36353,7 @@ var Finder = class {
     let body2 = "";
     if (open2) {
       const provs = providersOf(cat2, c10).filter((x2) => !pk || gmKey(x2) === pk), pitched = c10.kind === "voice";
-      const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc4(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("\u9876\u66FF")}</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934")}">${_t("\u25B6 \u542C\u5F00\u5934")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF08\u76EE\u5F55\u4E0D\u5173\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09")}">${_t("\u9009\u8FD9\u4E2A")}</button>`}</div></div>`;
+      const prov = (key, label, note2, playable, sub = false) => this.provHtml(key, label, note2, playable, sub);
       body2 = `<div class="inst-prov">` + (pitched ? prov(`${c10.id}|voice`, _t("\u5C0F\u6708\u76F8"), _t("\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531"), false) : "") + // 人声里小月相排第一（v0.16.36；user「小月相的优先级肯定是高于那两个 O 和 A」）
       provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? _t("\u9F13\u4EF6 \xB7 {gmName}\uFF08Standard \u9F13\u7EC4\u7684 {note} \u53F7\u952E\uFF09", { gmName: esc4(p2.gmName), note: p2.note }) : p2.bank === 128 ? _t("\u9F13\u7EC4 \xB7 {gmName}", { gmName: esc4(p2.gmName) }) : `GeneralUser GS \xB7 ${esc4(p2.gmName)}`}`, p2.kind === "substitute" ? _t("\u9876\u66FF{p}{reason}", { p: p2.basis === "official" ? _t("\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09") : p2.basis === "lineage" ? _t("\uFF08\u524D\u8EAB\uFF09") : p2.basis === "imitation" ? _t("\uFF08\u4EFF\u58F0\uFF09") : p2.basis === "family" ? _t("\uFF08\u540C\u7C7B\uFF09") : _t("\uFF08\u53EA\u662F\u540C\u540D\uFF09"), reason: p2.reason && zhOnly(p2.reason) ? `\uFF1A${esc4(p2.reason)}` : "" }) : "", true, p2.kind === "substitute")).join("") + (!provs.length && !pitched ? `<div class="prov-none">${_t("\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83")}</div>` : "") + `</div>`;
     }
@@ -51909,7 +51952,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "946bcbd3e2f7",
+  cssHash: "93f3fef318d0",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -52066,6 +52109,8 @@ function renderSaveButton() {
 }
 var fmtDb = (dB) => `${dB > 0 ? "+" : dB < 0 ? "\u2212" : ""}${Math.abs(dB)} dB`;
 var audition = null;
+var pickFrom = (p2) => p2.kind === "gs" ? `gs:${p2.provider.bank}:${p2.provider.program}` : p2.kind === "sf2" ? `own:${p2.bank}:${p2.program}` : "voice";
+var ownFile = null;
 var AUDITION_KEEP = 3;
 var auditionShas = [];
 var shasInUse = () => {
@@ -52134,6 +52179,28 @@ async function setAudition(p2) {
     return;
   }
   auditionMute = false;
+  if (p2?.kind === "sf2") {
+    auditionHint = null;
+    pad3.render();
+    const f2 = ownFile;
+    if (!f2) {
+      audition = null;
+      sound.allOff();
+      return;
+    }
+    try {
+      const subset = subsetSf2(f2.bytes, [{ bank: p2.bank, program: p2.program }]), sha256 = await sha256Hex3(subset);
+      if (gen !== auditionGen) return;
+      audition = { from: pickFrom(p2), bank: p2.bank, program: p2.program, sha256, subset, label: p2.name };
+      sound.allOff();
+      await engine.bank(sha256, subset);
+      noteAuditionBank(sha256);
+    } catch (e10) {
+      audition = null;
+      showError(_t("\u8BD5\u542C\u4E0D\u4E86\uFF1A{Error}", { Error: e10.message }));
+    }
+    return;
+  }
   const cat2 = p2?.kind === "gs" ? catalogNow ??= await loadCatalog() : null;
   const sk2 = cat2 && p2?.kind === "gs" && p2.provider.note === void 0 ? sampleKeyOf(cat2, p2.provider.bank, p2.provider.program) : null;
   auditionHint = !p2 || sk2 ? null : p2.kind === "voice" ? TSUKUYOMI_RANGE : ((r10) => r10 ? { ...r10, who: conceptName(p2.concept.names) } : null)(rangeOf(p2.concept));
@@ -52149,7 +52216,7 @@ async function setAudition(p2) {
     progress("");
     const subset = subsetSf2(bank, [{ bank: p2.provider.bank, program: p2.provider.program }]), sha256 = await sha256Hex3(subset);
     if (gen !== auditionGen) return;
-    audition = { bank: p2.provider.bank, program: p2.provider.program, ...cat2 ? gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note) : {}, sha256, subset, label: p2.provider.gmName };
+    audition = { from: pickFrom(p2), bank: p2.provider.bank, program: p2.provider.program, ...cat2 ? gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note) : {}, sha256, subset, label: p2.provider.gmName };
     sound.allOff();
     await engine.bank(sha256, subset);
     noteAuditionBank(sha256);
@@ -52227,8 +52294,8 @@ async function playHeadWith(p2) {
     track = { id: "audition", kind: "vowel", kana: HUM_KANA[D2.st.song.hum ?? "n"], notes: notes.map((n10) => ({ t0: n10.t0, t1: Math.min(n10.t1, 8), key: n10.midi, vel: 1, preset: 0 })), gain: null };
     label = _t("\u5C0F\u6708\u76F8\uFF08\u54FC\uFF09");
   } else {
-    if (!audition || audition.bank !== p2.provider.bank || audition.program !== p2.provider.program) await setAudition(p2);
-    if (!audition) return;
+    if (audition?.from !== pickFrom(p2)) await setAudition(p2);
+    if (audition?.from !== pickFrom(p2)) return;
     const a10 = audition;
     track = { id: "audition", kind: "sf", sha: a10.sha256, notes: notes.map((n10) => ({ t0: n10.t0, t1: Math.min(n10.t1, 8), key: sfKey(n10.midi, a10), vel: SOUNDFONT_DEFAULTS.velocity, preset: engine.presetIndex(a10.sha256, a10.bank, a10.program) })), gain: null };
     label = a10.label;
@@ -52251,11 +52318,15 @@ function newPartState(np2) {
 }
 async function castPick(p2) {
   if (finderPlayOnly()) return;
+  if (p2.kind === "sf2") {
+    await castOwn(p2);
+    return;
+  }
   const cat2 = await loadCatalog(), c10 = p2.concept, hum = D2.st.song.hum;
   catNow = cat2;
   if (p2.kind === "gs") {
-    if (!audition || audition.bank !== p2.provider.bank || audition.program !== p2.provider.program) await setAudition(p2);
-    if (!audition) {
+    if (audition?.from !== pickFrom(p2)) await setAudition(p2);
+    if (audition?.from !== pickFrom(p2)) {
       view.render();
       renderTitle();
       return;
@@ -52295,6 +52366,49 @@ async function castPick(p2) {
   finder.refresh();
   info(np2 ? _t("\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8\uFF1A{c}\uFF08\u76EE\u5F55\u8FD8\u5F00\u7740\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09", { c: roleNameOf(c10) }) : label);
 }
+async function castOwn(p2) {
+  const f2 = ownFile;
+  if (!f2) return;
+  if (audition?.from !== pickFrom(p2)) await setAudition(p2);
+  if (audition?.from !== pickFrom(p2)) return;
+  const { subset, sha256 } = audition, inf = sf2Info(f2.bytes), hum = D2.st.song.hum;
+  const fileSha256 = f2.fileSha256 ??= await sha256Hex3(f2.bytes);
+  const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D2.st, extras: D2.extras, role: curRole() }, role = base2.role;
+  const next2 = withSf2Candidate(base2.extras, role, {
+    name: p2.name,
+    bank: p2.bank,
+    program: p2.program,
+    subset,
+    sha256,
+    embed: false,
+    origin: { name: f2.name, fileSha256, bytes: f2.bytes.length },
+    credit: { attribution: [inf.name, inf.engineer, inf.copyright].filter((x2) => !!x2), license: { name: "unknown", text: inf.comment } }
+  }, hum);
+  const label = _t("\u300C{extras}\u300D\u6362\u6210\uFF1A{name}", { extras: roleName(base2.extras, role), name: p2.name });
+  if (np2) {
+    newPartPending = null;
+    updateBoth(base2.st, next2, { kind: "score", label: np2.giveFrom ? _t("\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u65B0\u58F0\u90E8\uFF1A{c}", { c: p2.name }) : _t("\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8\uFF1A{c}", { c: p2.name }) });
+  } else updateExtras(next2, { kind: "lounge", label });
+  sources.session.keep(sha256, subset);
+  sound.allOff();
+  void prepareBank();
+  view.render();
+  renderTitle();
+  finder.refresh();
+  info(np2 ? _t("\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8\uFF1A{c}\uFF08\u76EE\u5F55\u8FD8\u5F00\u7740\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09", { c: p2.name }) : label);
+  await rememberSound(sha256, subset, true);
+  if (!await isSoundPersisted(sha256)) showError(_t("\u300C{name}\u300D\u7684\u58F0\u97F3\u6CA1\u80FD\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u91CC\u80FD\u54CD\uFF1B\u4E0B\u6B21\u8981\u4ECE\u300C{name2}\u300D\u6587\u4EF6\u627E\u3002\u60F3\u8BA9\u6B4C\u81EA\u5DF1\u5E26\u7740\u5B83\uFF1A\u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\u3002", { name: p2.name, name2: f2.name }));
+}
+var openOwnSf2 = () => fileInput(".sf2,audio/x-soundfont", async (f2) => {
+  try {
+    const bytes = new Uint8Array(await f2.arrayBuffer()), presets = listSf2Presets(bytes);
+    if (!presets.length) throw new Error(_t("\u91CC\u9762\u6CA1\u6709\u4E50\u5668"));
+    ownFile = { name: f2.name, bytes, presets };
+    finder.setOwnFile({ name: f2.name, presets: presets.map((x2) => ({ bank: x2.bank, program: x2.program, name: x2.name })) });
+  } catch (e10) {
+    showError(_t("\u8BFB\u4E0D\u4E86\u300C{name}\u300D\uFF1A{Error}", { name: f2.name, Error: e10.message }));
+  }
+});
 var KV_FINDER_IMPRO = "finder-impro";
 var KV_FINDER_PINS = "finder-pins";
 var finder = new Finder($2("stage"), {
@@ -52317,17 +52431,8 @@ var finder = new Finder($2("stage"), {
       showError(err2.message);
     }
   },
-  ownSf2: () => {
-    if (newPartPending) {
-      const b3 = newPartState(newPartPending);
-      newPartPending = null;
-      updateBoth(b3.st, b3.extras, { kind: "score", label: _t("\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8") });
-    }
-    closeFinder(false);
-    openInstPage();
-    pickFile();
-  },
-  // 新声部选自己的 .sf2 = 先建声部（选文件也算选了）
+  ownSf2: () => openOwnSf2(),
+  // v0.16.37：在目录里挑（施工单 §4.3），选文件不算选了乐器
   roleName: () => newPartPending ? _t("\u65B0\u58F0\u90E8") : roleName(D2.extras, curRole()),
   audition: setAudition,
   playHead: playHeadWith,
@@ -52501,6 +52606,7 @@ function closeFinder(back = ui2.page.k === "finder" && ui2.page.backToInst) {
   ui2.setPage({ k: "score" });
   if (wasPlayOnly) document.body.classList.remove("finder-over-gallery");
   finder.hide();
+  ownFile = null;
   audition = null;
   trimAuditionBanks(0);
   auditionMute = false;
@@ -53649,7 +53755,6 @@ var instEl = document.createElement("div");
 instEl.className = "inst-page";
 instEl.hidden = true;
 $2("stage").append(instEl);
-var instPicked = null;
 var UNKNOWN_TITLE = _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09");
 var instAdvOpen = false;
 function openInstPage() {
@@ -53657,7 +53762,6 @@ function openInstPage() {
   ui2.close();
   if (finder.isOpen) closeFinder(false);
   ui2.setPage({ k: "inst" });
-  instPicked = null;
   scoreEl.hidden = true;
   instEl.hidden = false;
   ws.tryout = padLocked(ui2.page);
@@ -53673,7 +53777,6 @@ function closeInstPage() {
   if (!instShown()) return;
   commitRoleName();
   ui2.setPage({ k: "score" });
-  instPicked = null;
   instEl.hidden = true;
   ws.tryout = false;
   applyWorkspace();
@@ -53709,30 +53812,6 @@ var fileInput = (accept, onFile) => {
   });
   inp.click();
 };
-async function pickOfficial(id2) {
-  const e10 = SOUNDS[id2];
-  try {
-    const bytes = await sources.fetchSound(e10, (done) => progress(_t("\u4E0B\u8F7D {name} {bytes}%", { name: e10.name, bytes: Math.round(done / e10.bytes * 100) })));
-    progress("");
-    const presets = listSf2Presets(bytes), first = presets.find((p2) => p2.bank === 0) ?? presets[0];
-    instPicked = { name: e10.name, bytes, presets, sel: `${first.bank}:${first.program}`, library: e10 };
-    drawInst();
-  } catch (err2) {
-    progress("");
-    showError(err2.message);
-  }
-}
-var pickFile = () => fileInput(".sf2,audio/x-soundfont", async (f2) => {
-  try {
-    const bytes = new Uint8Array(await f2.arrayBuffer()), presets = listSf2Presets(bytes);
-    if (!presets.length) throw new Error(_t("\u91CC\u9762\u6CA1\u6709\u4E50\u5668"));
-    const first = presets.find((p2) => p2.bank === 0) ?? presets[0];
-    instPicked = { name: f2.name, bytes, presets, sel: `${first.bank}:${first.program}` };
-    drawInst();
-  } catch (e10) {
-    showError(_t("\u8BFB\u4E0D\u4E86\u300C{name}\u300D\uFF1A{Error}", { name: f2.name, Error: e10.message }));
-  }
-});
 var findBankFile = (id2) => {
   const g3 = gmCandidates(D2.extras, curRole()).find((c10) => c10.id === id2);
   if (!g3) return;
@@ -53750,45 +53829,6 @@ var findBankFile = (id2) => {
     }
   });
 };
-async function finishAdd(c10) {
-  updateExtras(withSf2Candidate(D2.extras, curRole(), { ...c10, embed: false }, D2.st.song.hum), { kind: "lounge", label: _t("\u300C{extras}\u300D\u6362\u6210\uFF1A{name}", { extras: roleName(D2.extras, curRole()), name: c10.name }) });
-  sources.session.keep(c10.sha256, c10.subset);
-  instPicked = null;
-  sound.allOff();
-  void prepareBank();
-  view.render();
-  renderTitle();
-  drawInst();
-  if (!c10.origin.library) {
-    await rememberSound(c10.sha256, c10.subset, true);
-    if (!await isSoundPersisted(c10.sha256)) showError(_t("\u300C{name}\u300D\u7684\u58F0\u97F3\u6CA1\u80FD\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u7A7A\u95F4\u4E0D\u591F\uFF0C\u6216\u8FD9\u4E2A\u6D4F\u89C8\u5668\u4E0D\u8BA9\u5B58\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u91CC\u80FD\u54CD\uFF1B\u4E0B\u6B21\u8981\u4ECE\u300C{name2}\u300D\u6587\u4EF6\u627E\u3002\u60F3\u8BA9\u6B4C\u81EA\u5DF1\u5E26\u7740\u5B83\uFF1A\u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\u3002", { name: c10.name, name2: c10.origin.name }));
-  }
-}
-async function addPicked() {
-  const picked = instPicked;
-  if (!picked) return;
-  const [bank, program] = picked.sel.split(":").map(Number), preset = picked.presets.find((p2) => p2.bank === bank && p2.program === program);
-  if (!preset) return;
-  const name = instEl.querySelector("#sfName")?.value.trim() || preset.name;
-  try {
-    const subset = subsetSf2(picked.bytes, [{ bank, program }]), inf = sf2Info(picked.bytes);
-    const [sha256, fileSha256] = await Promise.all([sha256Hex3(subset), sha256Hex3(picked.bytes)]);
-    const lib = picked.library;
-    const credit = lib ? { attribution: [lib.attribution], license: { name: lib.license.name, url: lib.homepage ?? lib.source, text: inf.comment } } : { attribution: [inf.name, inf.engineer, inf.copyright].filter((x2) => !!x2), license: { name: "unknown", text: inf.comment } };
-    const keys = lib?.id === GS_LIBRARY_ID ? gsKeyArgs(catalogNow ??= await loadCatalog(), bank, program) : {};
-    await finishAdd({ name, bank, program, ...keys, subset, sha256, origin: { name: picked.name, fileSha256, bytes: picked.bytes.length, ...lib ? { library: lib.id } : {} }, credit });
-  } catch (e10) {
-    showError(_t("\u52A0\u4E0D\u8FDB\u6765\uFF1A{Error}", { Error: e10.message }));
-  }
-}
-function pickerHtml() {
-  const picked = instPicked;
-  if (!picked) return "";
-  const banks = [...new Set(picked.presets.map((p2) => p2.bank))].sort((a10, b3) => a10 - b3);
-  const label = (b3) => b3 === 128 ? _t("\u9F13\u7EC4") : b3 === 0 ? _t("\u4E50\u5668") : _t("\u53D8\u4F53\uFF08bank {b}\uFF09", { b: b3 });
-  const cur = picked.presets.find((p2) => `${p2.bank}:${p2.program}` === picked.sel);
-  return `<div class="ip-picker"><div class="ip-sub">${_t("{name}\uFF08{n} \u4EF6\uFF09", { name: esc10(picked.name), n: picked.presets.length })}</div><select id="sfSel" class="role-sel">` + banks.map((b3) => `<optgroup label="${label(b3)}">${picked.presets.filter((p2) => p2.bank === b3).map((p2) => `<option value="${p2.bank}:${p2.program}"${`${p2.bank}:${p2.program}` === picked.sel ? " selected" : ""}>${String(p2.program).padStart(3, "0")} ${esc10(p2.name)}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">${_t("\u53EB")}<input id="sfName" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc10(cur?.name ?? "")}" /></label><div class="ip-btns"><button class="btn primary" data-v="sf2:add">${_t("\u52A0\u8FDB\u6765\u3001\u9009\u5B83")}</button><button class="btn" data-v="sf2:cancel">${_t("\u7B97\u4E86")}</button></div></div>`;
-}
 function inspectorCtx(role) {
   return { extras: D2.extras, role, hum: D2.st.song.hum, catalog: catalogNow, esc: esc10, chip, dynTable: (L2) => dynTable(activePerfSpec(D2.extras, role), L2) };
 }
@@ -53817,22 +53857,13 @@ function drawInst() {
   ))(activePerfSpec(D2.extras, role).gapSec, gapDefaultOf(role)) : "") + ownMain.map(rowOf).join("") + // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
   (plug?.dynamics === "gain" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), "", _t("\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A{extras}", { extras: dynTable(activePerfSpec(D2.extras, role), null) })) : "") + ((plug?.lyrics ?? "none") !== "none" ? row2(_t("\u54FC\u7684\u5B57"), HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), _t("\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09")) : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")) : "");
   const keepScroll = instEl.querySelector(".ip-body")?.scrollTop ?? 0;
-  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="ip-title">${_t("\u4E50\u5668")}</span>` + (parts.length > 1 ? `<select class="ip-part" title="${_t("\u6362\u4E00\u4E2A\u58F0\u90E8")}">${parts.map((x2) => `<option value="${esc10(x2.p.id)}"${x2.p.id === D2.st.at.part ? " selected" : ""}>${esc10(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc10(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card ip-who"><h3>${_t("\u53F0\u4E0A")}<small>${_t("\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31")}</small></h3><div class="ip-who-row"><b>${esc10(activeCandidateName(D2.extras, role) ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</b>${status}</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A")}">${_t("\u6362\u4E50\u5668\u2026")}</button><button class="btn" data-v="sf2:pick" title="${_t("\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559")}">${_t("\u4ECE .sf2 \u6587\u4EF6\u9009\u2026")}</button></div>` + pickerHtml() + `<div class="ip-note">${_t("\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002")}</div></section><section class="ip-card ip-how"><h3>${_t("{who} \u600E\u4E48\u6F14", { who: esc10(who) })}<small>${_t("\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5")}</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section><div class="ip-what">${_t("\u8C31\u4E0A\u5199\u300C{rn}\u300D", { rn: esc10(rn2) })} \xB7 MusicXML <code>${esc10(rs2)}</code> \xB7 ${_t("\u6539\u540D\u5728\u58F0\u90E8\u7BA1\u7406")}${roleDetail(role)}</div></div></div>`;
-  instEl.querySelector("#sfSel")?.addEventListener("change", (e10) => {
-    const picked = instPicked;
-    if (!picked) return;
-    picked.sel = e10.target.value;
-    const p2 = picked.presets.find((x2) => `${x2.bank}:${x2.program}` === picked.sel);
-    const n10 = instEl.querySelector("#sfName");
-    if (n10 && p2) n10.value = p2.name;
-  });
+  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="ip-title">${_t("\u4E50\u5668")}</span>` + (parts.length > 1 ? `<select class="ip-part" title="${_t("\u6362\u4E00\u4E2A\u58F0\u90E8")}">${parts.map((x2) => `<option value="${esc10(x2.p.id)}"${x2.p.id === D2.st.at.part ? " selected" : ""}>${esc10(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc10(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card ip-who"><h3>${_t("\u53F0\u4E0A")}<small>${_t("\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31")}</small></h3><div class="ip-who-row"><b>${esc10(activeCandidateName(D2.extras, role) ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</b>${status}</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A")}">${_t("\u6362\u4E50\u5668\u2026")}</button></div></section><section class="ip-card ip-how"><h3>${_t("{who} \u600E\u4E48\u6F14", { who: esc10(who) })}<small>${_t("\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5")}</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section><div class="ip-what">${_t("\u8C31\u4E0A\u5199\u300C{rn}\u300D", { rn: esc10(rn2) })} \xB7 MusicXML <code>${esc10(rs2)}</code> \xB7 ${_t("\u6539\u540D\u5728\u58F0\u90E8\u7BA1\u7406")}${roleDetail(role)}</div></div></div>`;
   if (keepScroll) instEl.querySelector(".ip-body").scrollTop = keepScroll;
   instEl.querySelector("details.ip-adv")?.addEventListener("toggle", (e10) => {
     instAdvOpen = e10.target.open;
   });
   instEl.querySelector(".ip-part")?.addEventListener("change", (e10) => {
     commitRoleName();
-    instPicked = null;
     update(setFocus(D2.st, D2.st.at.paper, e10.target.value));
     sound.allOff();
     void prepareBank();
@@ -53868,17 +53899,7 @@ instEl.addEventListener("click", (e10) => {
   } else if (v.startsWith("find:")) {
     findBankFile(v.slice(5));
     return;
-  } else if (v === "sf2:pick") {
-    pickFile();
-    return;
-  } else if (v.startsWith("sound:")) {
-    void pickOfficial(v.slice(6));
-    return;
-  } else if (v === "sf2:add") {
-    void addPicked();
-    return;
-  } else if (v === "sf2:cancel") instPicked = null;
-  else if (v.startsWith("gap:")) {
+  } else if (v.startsWith("gap:")) {
     const def = gapDefaultOf(role)?.gapSec ?? 0, next2 = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(D2.extras, role).gapSec + Number(v.slice(4))));
     updateExtras(withGapSec(D2.extras, role, next2, D2.st.song.hum), { kind: "lounge", label: _t("\u300C{rn}\u300D\u97F3\u548C\u97F3\u4E4B\u95F4 {p} ms", { rn: rn2, p: Math.round(next2 * 1e3) }) }, "gap");
   } else if (v.startsWith("cal:")) {
@@ -56040,4 +56061,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-7f534981e28f.mjs.map
+//# sourceMappingURL=moonsinger-b076d2012ca2.mjs.map

@@ -18,7 +18,7 @@ export const AREAS = {
   play: ["transport", "loop", "follow", "measure-follow", "playhead", "seg-jump", "metronome", "progress", "sing-chunks", "sing-stale", "sung-preview",
     "listen-ghost", "lyric-mute", "reading", "ramp", "groove", "repeat", "arrange", "issues", "sing-experiments", "audio-revive"],
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
-  studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "parts-manager", "paper-adds", "inst-split", "finder-pins", "landscape-widgets", "modes", "dyn-levels", "sing-experiments"],
+  studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "parts-manager", "paper-adds", "inst-split", "finder-pins", "finder-sf2", "landscape-widgets", "modes", "dyn-levels", "sing-experiments"],
   // 歌库 / 云 / 文件 / 念缓存
   store: ["store", "sync", "gate", "folder-home", "speech-store", "save-keys", "final", "factory-reset", "legacy-dbs"],
   // 导出

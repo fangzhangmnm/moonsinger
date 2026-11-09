@@ -7,7 +7,11 @@ import { freshFinderMemo, type FinderMemo } from "../score/desk.ts";
 import { _t, lang } from "../i18n/index.ts";
 import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightLabel, SORT_LABEL, type Catalog, type Concept, type Entry, type Provider, type SortMode } from "../gm/catalog.ts";
 
-export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept };
+export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept } | OwnPick;
+/** 自己的 .sf2 文件里的一件（v0.16.37，施工单 §4.3）：字节留在宿主，目录只拿预设清单。没有乐器概念（目录不认识这件），谱上的名字不跟着换。 */
+export interface OwnPick { kind: "sf2"; bank: number; program: number; name: string }
+/** 打开的 .sf2 文件：文件名 + 里面的预设（bank 128 = 鼓组）。 */
+export interface OwnFile { name: string; presets: { bank: number; program: number; name: string }[] }
 /** 点开的那件乐器目录里没有谁能演 = 试听键盘静音（不是还弹着上一件的声音；v0.15.7，家族周账 F-210，user 11-07「如果选中的那个类别里面没有合适的音源的时候，我在即兴的时候应该是静音，而不是显示弹在上一个音源」）。 */
 export type FinderNobody = { kind: "none"; concept: Concept };
 export interface FinderHost {
@@ -25,7 +29,7 @@ export interface FinderHost {
   useCandidate?(id: string): void;
   /** 退掉一位用过的（它嵌在歌里的声音一起丢；能撤销）。 */
   removeCandidate?(id: string): void;
-  /** 从自己的 .sf2 文件选（宿主那边的选文件 / 选预设）。 */
+  /** 顶条「打开 .sf2…」：宿主开选文件框；读好了调 setOwnFile 把清单交回来。 */
   ownSf2?(): void;
   /** 常用一行（设备设置；没有 = DEFAULT_PINS）/ 改了存回去。 */
   pins?(): PinTile[];
@@ -64,6 +68,7 @@ export class Finder {
   private host: FinderHost;
   private swallow = false;                  // 长按开了小菜单：接下来那一下 click 不算点
   private replacing: number | null = null;  // 常用一行「换成…」：下一下点列表里的哪件 = 换进第几格
+  private own: OwnFile | null = null;       // 打开的 .sf2（列表最上面一组；关目录 = 没了）
   constructor(parent: HTMLElement, host: FinderHost) {
     this.host = host;
     this.el = document.createElement("div"); this.el.className = "finder"; this.el.hidden = true;
@@ -144,8 +149,21 @@ export class Finder {
   }
   /** 换上一件乐器之后（目录不关，v0.16.35）：顶条的名字和「这首歌里用过的」那一排跟着变。 */
   refresh(): void { if (this.el.hidden) return; if (!this.playOnly) this.el.querySelector(".finder-title")!.textContent = _t("找人给「{p}」", { p: this.host.roleName() }); this.renderUsed(); }
-  hide(): void { if (this.el.hidden) return; this.stash(); this.el.hidden = true; this.host.memoChanged?.(this.ctx, this.memos[this.ctx]); }
+  hide(): void {
+    if (this.el.hidden) return;
+    if (this.selected.startsWith("sf2|")) this.selected = "";   // 自己文件里的那件：关目录 = 字节放掉，下次开不再指着它
+    this.own = null; this.stash(); this.el.hidden = true; this.host.memoChanged?.(this.ctx, this.memos[this.ctx]);
+  }
+  /** 宿主读好了一个 .sf2（null = 收起这一组）：列表最上面出现「⟨文件名⟩（N 件）」，滚到顶上。 */
+  setOwnFile(f: OwnFile | null): void {
+    this.own = f && f.presets.length ? f : null;
+    if (!this.own && this.selected.startsWith("sf2|")) this.selected = "";
+    if (this.el.hidden) return;
+    this.render();
+    if (this.own) this.el.querySelector<HTMLElement>(".finder-list")!.scrollTop = 0;
+  }
   private pickOf(key: string): FinderPick | null {
+    if (key.startsWith("sf2|")) { const [b, pr] = key.slice(4).split(":").map(Number), x = this.own?.presets.find((q) => q.bank === b && q.program === pr); return x ? { kind: "sf2", bank: x.bank, program: x.program, name: x.name } : null; }
     if (!this.cat) return null;
     const [cid, rest] = key.split("|"), c = this.cat.byId.get(cid); if (!c) return null;
     if (rest === "voice") return { kind: "voice", concept: c };
@@ -161,6 +179,7 @@ export class Finder {
     if (v === "use" && btn) { this.host.useCandidate?.(btn.dataset.cid!); return; }
     if (v === "usedel" && btn) { this.host.removeCandidate?.(btn.dataset.cid!); this.renderUsed(); return; }
     if (v === "ownsf2") { this.host.ownSf2?.(); return; }
+    if (v === "owndrop") { this.setOwnFile(null); void this.host.audition(null); return; }
     if (v === "group" && btn) { this.toggleGroup(btn.closest<HTMLElement>("[data-gid]")!.dataset.gid!); return; }
     if (v === "pin" && btn) { await this.tapPin(Number(btn.dataset.pin)); return; }
     if (v === "pinmenu" && btn) { this.pinAct(btn.dataset.act!, btn.dataset.arg!); return; }
@@ -170,7 +189,7 @@ export class Finder {
       if (v === "play") { await this.host.playHead(pick); return; }
       if (v === "cast") { await this.host.cast(pick); return; }
     }
-    if (prov) { const key = prov.dataset.p!; if (this.selected !== key) { this.selected = key; this.renderAnchored(rowOf(prov)); await this.host.audition(this.pickOf(key)); } return; }
+    if (prov) { const key = prov.dataset.p!; if (this.selected !== key) { this.selected = key; if (key.startsWith("sf2|")) this.renderPinned(`.prov[data-p="${CSS.escape(key)}"]`); else this.renderAnchored(rowOf(prov)); await this.host.audition(this.pickOf(key)); } return; }
     if (row && this.replacing !== null && this.host.setPins) {   // 「换成…」：点的这件换进那一格（不按种类拦）
       const pins = this.pinsNow(), k = this.replacing; this.replacing = null;
       if (pins[k]) { pins[k] = { ...pins[k], c: row.dataset.c! }; this.host.setPins(pins); }
@@ -187,7 +206,7 @@ export class Finder {
   private pinsNow(): PinTile[] { const p = this.host.pins?.(); return (p && p.length ? p : DEFAULT_PINS).map((x) => ({ ...x })); }
   /** 一格点下去用谁：人声类 = 小月相；别的 = 目录里第一位能演的（本尊在前）；都没有 = null。 */
   private pinPick(c: Concept): FinderPick | null { if (c.kind === "voice") return { kind: "voice", concept: c }; const p = providersOf(this.cat!, c)[0]; return p ? { kind: "gs", concept: c, provider: p } : null; }
-  private pinKey(c: Concept): string { const p = this.pinPick(c); return !p ? "" : p.kind === "voice" ? `${c.id}|voice` : `${c.id}|${gmKey(p.provider)}`; }
+  private pinKey(c: Concept): string { const p = this.pinPick(c); return !p ? "" : p.kind === "gs" ? `${c.id}|${gmKey(p.provider)}` : `${c.id}|voice`; }
   /** 常用一行（v0.16.36）：一样大的格子横着排（放不下横着滑；家规：按钮堆看到就改成格子）——图标 + 名字 + 管哪一层。点 = 换上（弹着玩 = 试听）。 */
   renderPins(): void {
     const box = this.el.querySelector<HTMLElement>(".finder-pins")!; box.hidden = !this.cat || !this.host.pins; if (box.hidden) return;
@@ -254,18 +273,45 @@ export class Finder {
     //   做成下拉（user 同日「category选项能做成下拉而不是滑动吗」；原来是横着滑的一排粒）
     jump.hidden = groups.length < 2;
     jump.querySelector("select")!.innerHTML = groups.map((g, k) => `<option value="${k}">${_t("{label} · {n} 件", { label: esc(g.label), n: g.items.length })}</option>`).join("");
-    if (!groups.length) { list.innerHTML = `<div class="finder-empty">${_t("没有叫「{q}」的", { q: esc(this.q) })}</div>`; return; }
+    const own = this.ownHtml();
+    if (!groups.length) { list.innerHTML = own + (own ? "" : `<div class="finder-empty">${_t("没有叫「{q}」的", { q: esc(this.q) })}</div>`); return; }
     // 多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）：每组里的行放进自适应网格（styles.css .finder-items：每格至少 320 px，窄屏一列）；
     //   点开的「谁能演」紧跟在行后面（DOM 顺序不变），横跨整行、落在那件乐器所在那一行的下面（grid dense，同一行别的格子不被挤走）
     // 手风琴（v0.16.3，user 11-07「选乐器的每个category自动collapse，而且只能expand一个」）：默认全收着、只露组头（名字 + 件数）；点组头 = 展开它、别的收起，再点 = 收起。
     //   搜索时（框里有字）不收、只有一组也不收；收着的组不画里面的行（DOM 少，大目录也轻）
     const acc = !this.q.trim() && groups.length > 1, openId = this.openG.get(this.mode);
-    list.innerHTML = groups.map((g, k) => {
+    list.innerHTML = own + groups.map((g, k) => {
       const on = !acc || g.id === openId;
       return `<div class="finder-group${acc ? " acc" : ""}${on ? " is-open" : ""}" data-g="${k}" data-gid="${esc(g.id)}"><div class="finder-group-h"${acc ? ` data-v="group" role="button" aria-expanded="${on}" title="${on ? _t("收起这一组") : _t("展开这一组（别的收起）")}"` : ""}>` +
         `${acc ? `<svg class="ico fg-chev" aria-hidden="true"><use href="#chevron-down"/></svg>` : ""}<span class="fg-label">${esc(g.label)}</span><span>${g.items.length}</span></div>` +
         (on ? `<div class="finder-items">${g.items.map((e) => this.rowHtml(e, g.id)).join("")}</div>` : "") + `</div>`;
     }).join("");
+    this.markJump();
+  }
+  /** 一位能演的（一行）：名字 + 小字 + 「▶ 听开头」「选这个」。目录里的提供者和自己文件里的那几件共用（v0.16.37）。 */
+  private provHtml(key: string, label: string, note: string, playable: boolean, sub = false): string {
+    return `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("顶替")}</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
+      `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("用它放这条声部的开头")}">${_t("▶ 听开头")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("选它来演这个声部（目录不关，可以接着换）")}">${_t("选这个")}</button>`}</div></div>`;
+  }
+  /** 打开的 .sf2 那一组（列表最上面；施工单 §4.3）：按 乐器 / 变体 / 鼓组 分小节，一件一行；点一行 = 试听，「选这个」= 换上。
+   *  搜索框里有字 = 只列名字里有它的。组头的 × = 收起这一组（字节一起放掉）。 */
+  private ownHtml(): string {
+    const f = this.own; if (!f) return "";
+    const q = this.q.trim().toLowerCase(), ps = q ? f.presets.filter((x) => x.name.toLowerCase().includes(q)) : f.presets;
+    if (q && !ps.length) return "";
+    const banks = [...new Set(ps.map((x) => x.bank))].sort((a, b) => a - b);
+    const label = (b: number) => (b === 128 ? _t("鼓组") : b === 0 ? _t("乐器") : _t("变体（bank {b}）", { b }));
+    return `<div class="finder-group finder-own is-open"><div class="finder-group-h"><span class="fg-label">${esc(_t("{name}（{n} 件）", { name: f.name, n: f.presets.length }))}</span>` +
+      `<button class="btn fo-drop" data-v="owndrop" title="${_t("收起这个文件（字节放掉，要再用就重新打开）")}" aria-label="${_t("收起这个文件")}">×</button></div>` +
+      `<div class="fo-note">${_t("选的那一件切出来留在这台设备上，歌里只记来源（歌小）。要歌自己带着声音 = 文件菜单「全部打包进歌」，或导出「打包音源」的副本。")}</div>` +
+      banks.map((b) => `<div class="fo-sub">${label(b)}</div><div class="inst-prov fo-list">${ps.filter((x) => x.bank === b).map((x) =>
+        this.provHtml(`sf2|${x.bank}:${x.program}`, `${String(x.program).padStart(3, "0")} ${esc(x.name)}`, "", true)).join("")}</div>`).join("") + `</div>`;
+  }
+  /** 重画，把 sel 选中的那个元素钉在屏幕上原来的位置（只滚列表自己）。 */
+  private renderPinned(sel: string): void {
+    const list = this.el.querySelector<HTMLElement>(".finder-list")!, before = list.querySelector<HTMLElement>(sel)?.getBoundingClientRect().top;
+    this.render();
+    const el = list.querySelector<HTMLElement>(sel); if (el && before !== undefined) list.scrollTop += el.getBoundingClientRect().top - before;
     this.markJump();
   }
   /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
@@ -326,8 +372,7 @@ export class Finder {
       //   「让她哼一下这条线听听」归监听方式（草稿听，契约 §1），不是选角）
       const provs = providersOf(cat, c).filter((x) => !pk || gmKey(x) === pk), pitched = c.kind === "voice";   // 音色行 = 只列它自己
       // 平替弱化显示（user「平替换的ui也需要弄出区别」「也许需要弱化显示」）：虚线框、灰字、「顶替」标
-      const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("顶替")}</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
-        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("用它放这条声部的开头")}">${_t("▶ 听开头")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("选它来演这个声部（目录不关，可以接着换）")}">${_t("选这个")}</button>`}</div></div>`;
+      const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => this.provHtml(key, label, note, playable, sub);
       body = `<div class="inst-prov">` +
         (pitched ? prov(`${c.id}|voice`, _t("小月相"), _t("唱歌词；没写歌词的音按「哼的字」唱"), false) : "") +   // 人声里小月相排第一（v0.16.36；user「小月相的优先级肯定是高于那两个 O 和 A」）
         provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? _t("鼓件 · {gmName}（Standard 鼓组的 {note} 号键）", { gmName: esc(p.gmName), note: p.note }) : p.bank === 128 ? _t("鼓组 · {gmName}", { gmName: esc(p.gmName) }) : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? _t("顶替{p}{reason}", { p: p.basis === "official" ? _t("（GM 原文认可）") : p.basis === "lineage" ? _t("（前身）") : p.basis === "imitation" ? _t("（仿声）") : p.basis === "family" ? _t("（同类）") : _t("（只是同名）"), reason: p.reason && zhOnly(p.reason) ? `：${esc(p.reason)}` : "" }) : "", true, p.kind === "substitute")).join("") +
