@@ -28,7 +28,8 @@ function makeGate(over = {}) {
     check: over.check ?? (async () => { calls.check++; return "in-sync"; }),
     catchUp: async () => { calls.catchUp++; },
     signIn: over.signIn ?? (async () => { calls.signIn++; return null; }),
-    reachable: over.reachable, every: over.every, pageVisible: over.pageVisible, afterPass: over.afterPass,
+    reachable: over.reachable, every: over.every ?? (() => () => {}),   // 没指定 = 假的「每分钟再试」（真的 setInterval 60 s 没人关，单测跑完进程空等 55 s；2026-11-08 Opus 5.5）
+    pageVisible: over.pageVisible, afterPass: over.afterPass,
   });
   return { gate, calls, escape: () => onEscape(), press: () => on, setForeign: (v) => { foreign = v; }, setSigned: (v) => { signed = v; } };
 }

@@ -1,0 +1,74 @@
+// cases.ts —— 刀 1 的版面快照（N1）：三首样张 × 几种视图，排出来的「可印图元 + 锚点」。created 2026-11-08 by Claude Opus 5.5
+// 施工单 ai-docs/20261108-work-order-display-cut1-overlay.md §2 N1：编辑器的控件搬出排版器前后，可印的东西逐个相同、锚点表相同。
+//   scripts/freeze-layout.mjs 写 test/fixtures/layout/<歌>.<视图>.json；test/engrave-printable.test.ts 逐个比。
+//   「可印」= PDF 印的那些（score-pdf.ts isPrinted；图标一律不印）；控件的点击框表（partToggles / paperAdds / nav …）不在快照里——那是要搬走的。
+//   量字宽用一把假尺子（两边同一把就行）；坐标取到 0.001 px（重构时运算顺序变了不该算版面变）。
+import fs from "node:fs";
+import { openBytes, partLabels } from "../../../src/format/project.ts";
+import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../src/render/engrave.ts";
+import { printOpts, isPrinted } from "../../../src/export/score-pdf.ts";
+import { paperOf, DEFAULT_PAPER, lineSp, pageGeoOf } from "../../../src/score/paper.ts";
+import type { Song } from "../../../src/score/song.ts";
+
+const ROOT = new URL("../../../", import.meta.url);
+export const SONGS: Record<string, string> = {
+  once: "test/fixtures/songs/once-upon-a-tale.mxl",
+  "v2-2-2-2": "test/fixtures/format/v2-2-2-2/sample.mxl",
+  "v2-2-2-1": "test/fixtures/format/v2-2-2-1/sample.mxl",
+};
+export function loadSong(key: string): { song: Song; labels: string[] } {
+  const o = openBytes(SONGS[key]!.split("/").pop()!, new Uint8Array(fs.readFileSync(new URL(SONGS[key]!, ROOT))));
+  return { song: o.song, labels: partLabels(o.song, o.extras) };
+}
+export const measure = (s: string): number => [...s].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 16 : 9), 0);
+const SP = 10;
+/** 声部视图：编辑器那份带四颗小钮的状态（刀 1 之后它们不在 PartView 里了——cases 照样给，排版器不认就不认）。hide = 这几位隐藏着。 */
+function views(song: Song, labels: string[], editor: boolean, hide: ReadonlySet<string> = new Set()): PartView[] {
+  return song.parts.map((p, k) => ({
+    id: p.id, name: labels[k] ?? `P${k + 1}`, colorIdx: k % 10, first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}),
+    hidden: hide.has(p.id), badges: [], ...(editor ? { toggles: { muted: false, solo: false, hidden: hide.has(p.id), only: false } } : {}),
+  } as PartView));
+}
+type View = { name: string; opts: (song: Song, labels: string[]) => EngraveOpts };
+const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<string>) => {
+  const paper = song.paper ?? paperOf(DEFAULT_PAPER);
+  return { width: lineSp(paper) * SP, sp: SP, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measureLyric: measure, autoBars: true,
+    titlePlaceholder: true, editable: true, keyHint: true, paperLabel: "A5", margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } } as EngraveOpts;
+};
+export const VIEWS: View[] = [
+  { name: "print", opts: (s, l) => printOpts(s, SP, views(s, l, false), measure, true, 0) },
+  { name: "edit-seg", opts: (s, l) => ({ ...editorBase(s, l), onlyPaper: s.papers[0]!.id }) },
+  { name: "edit-all", opts: (s, l) => editorBase(s, l) },
+  { name: "edit-pages", opts: (s, l) => { const b = editorBase(s, l); const { margins: _m, ...rest } = b; return { ...rest, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },
+  { name: "listen-all", opts: (s, l) => { const { editable: _e, ...b } = editorBase(s, l); return { ...b, foldAll: true } as EngraveOpts; } },
+  { name: "edit-all-hidden", opts: (s, l) => editorBase(s, l, new Set(s.parts.length > 1 ? [s.parts[1]!.id] : [])) },
+];
+
+const r3 = (v: unknown): unknown => typeof v === "number" ? Math.round(v * 1000) / 1000 : Array.isArray(v) ? v.map(r3) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, r3(x)])) : v;
+/** 可印图元（PDF 印的那些）+ 锚点（谱上的东西的位置；控件的点击框表不在里面）。 */
+export function snapshot(L: Layout): unknown {
+  const printed = L.prims.filter((p) => p.t !== "icon" && isPrinted(p.cls)).map((p) => { const { tok: _t, ...q } = p as typeof p & { tok?: number }; return q; });
+  return r3({
+    width: L.width, height: L.height, sp: L.sp, pageX: L.pageX, pages: L.pages, lyricYs: L.lyricYs,
+    systems: L.systems, notes: L.notes, rests: L.rests, chordHeads: L.chordHeads, slots: L.slots, heads: L.heads, lyrics: L.lyrics, marks: L.marks, clefs: L.clefs, dyns: L.dyns,
+    chordTags: L.chordTags.map(({ read: _r, ...b }) => b), bars: L.bars, measures: L.measures, sharedRows: L.sharedRows, shortBars: L.shortBars,
+    title: L.title, arrangement: L.arrangement, credits: L.credits, parts: L.parts, papers: L.papers.map((p) => ({ id: p.id, title: p.title, top: p.top, bottom: p.bottom })),
+    prims: printed,
+  });
+}
+export function caseLayout(songKey: string, view: View): Layout { const { song, labels } = loadSong(songKey); return engrave(song, view.opts(song, labels)); }
+export const fixturePath = (songKey: string, view: string) => new URL(`test/fixtures/layout/${songKey}.${view}.json.gz`, ROOT);
+export const pdfShaPath = new URL("test/fixtures/layout/pdf-sha256.json", ROOT);
+/** PDF 字节的指纹（N2）：真字体（思源黑体）、固定时刻、整首 + 分页，三首歌各一份。刀 1 之后 PDF 的「不印名单」清空，字节不变 = 清空没漏印 / 多印。 */
+export async function pdfSha(songKey: string): Promise<string> {
+  const { gunzipSync } = await import("node:zlib");
+  const { createHash } = await import("node:crypto");
+  const { parseTtf } = await import("../../../src/export/ttf.ts");
+  const { scorePdf } = await import("../../../src/export/score-pdf.ts");
+  font ??= parseTtf(new Uint8Array(gunzipSync(fs.readFileSync(new URL("vendor/fonts/sans.ttf.gz", ROOT)))));
+  music ??= JSON.parse(fs.readFileSync(new URL("vendor/fonts/bravura/outlines.json", ROOT), "utf8"));
+  const { song, labels } = loadSong(songKey);
+  const r = scorePdf({ song, parts: views(song, labels, false), font, fontId: "sans", music: music!, title: songKey, created: new Date(Date.UTC(2026, 10, 8)), measureAt: () => measure, autoBars: true });
+  return createHash("sha256").update(r.bytes).digest("hex");
+}
+let font: import("../../../src/export/ttf.ts").TtfFont | undefined, music: import("../../../src/export/pdf.ts").MusicOutlines | undefined;
