@@ -56,6 +56,11 @@ const re = await info(); check(Math.abs(re.phys - 1.75) < 0.01 && re.saved !== n
 await p.keyboard.press("Control+Digit0"); await p.waitForTimeout(80); await p.reload(); await p.waitForTimeout(800);
 check((await zoom()) === 1 && (await info()).saved === null, "回自动再重开 = 自动", JSON.stringify(await info()));
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
+// 电脑宽屏（≥ 1440 px、鼠标）没设过缩放 = 纸的实际大小 100%，不撑满行宽（v0.16.49，user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）
+{ const w = await (await b.newContext({ viewport: { width: 1700, height: 1000 } })).newPage(); await w.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await w.waitForTimeout(900);
+  const i = await w.evaluate(() => window.__moonsinger.zoomInfo()), btn = await w.evaluate(() => [...document.querySelectorAll("#score button")].some((x) => /^\d+%$/.test(x.textContent ?? "") && !x.hidden));
+  check(Math.abs(i.phys - 1) < 0.01 && i.saved === null && !btn, "宽屏默认 = 100%（实际大小）、读数不露（这就是默认）", JSON.stringify(i));
+  await w.close(); }
 await b.close();
 console.log(`\nctrl-zoom: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

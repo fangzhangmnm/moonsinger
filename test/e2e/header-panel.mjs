@@ -57,6 +57,15 @@ await closeAll();
 await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(100);
 await p.click('.pad-head [data-open="more"], .pad-tools [data-open="more"]').catch(() => {}); await p.waitForTimeout(150);
 check(!(await p.$('.pad-panel [data-mark]')), "「⋯」里没有插记号的钮了");
+// 大谱表的谱号也点得中（v0.16.50，user 11-09「高音谱号为什么点不中」：原来只给单谱表建了点击区）
+await closeAll();
+await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, parts: s.song.parts.map((x) => (x.id === s.at.part ? { ...x, staves: 2 } : x)) } }); }); await p.waitForTimeout(400);
+for (const k of [0, 1]) {
+  const cb = await p.evaluate((k) => { const m = window.__moonsinger, L = m.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), ox = L.pageX?.left ?? 0, cs = L.clefs.filter((c) => c.kind === "start"); const c = cs[k]; return c ? { x: sc.left + ox + c.x + c.w / 2, y: sc.top + c.y + c.h / 2, n: cs.length } : null; }, k);
+  if (cb) { await p.mouse.click(cb.x, cb.y); await p.waitForTimeout(250); }
+  check(!!cb && cb.n >= 2 && (await panel())?.startsWith("clef"), `大谱表${k ? "下面（低音）" : "上面（高音）"}的谱号点得中 = 谱头面板`, JSON.stringify(cb));
+  await closeAll();
+}
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nheader-panel: ${pass} passed, ${fail} failed`);

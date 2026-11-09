@@ -5557,7 +5557,7 @@ function engrave(song, o) {
       for (const u of q.units) if (u.kind === "chunk" && u.lyric && u.lyric !== MELISMA_MARK) {
         const arr = bySys.get(u.system) ?? [];
         bySys.set(u.system, arr);
-        arr.push({ index: u.index, cx: u.x + 0.6, w: o.measureLyric(lyricShow(u.lyric)) / sp / ts * look.k * look.sx, hy: u.hyph, block: isBlockScript(u.lyric) });
+        arr.push({ index: u.index, cx: u.x + 0.6, w: o.measureLyric(lyricShow(u.lyric)) / sp / ts * look.k * look.sx, hy: u.hyph, block: isBlockScript(u.lyric) && [...lyricShow(u.lyric)].length <= 1 });
       }
       for (const items of bySys.values()) items.sort((a, b) => a.cx - b.cx);
       const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
@@ -5669,7 +5669,7 @@ function engrave(song, o) {
           let hx = MARGIN + ind + 0.6;
           if (pm) prims.push({ t: "glyph", x: P(hx), y: yOf(row, MID_LINE2), ch: PERC_CLEF, cls: "clef perc-clef" });
           else prims.push({ t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
-          if (q.staves === 1 && !pm && !q.vrt) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s2), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });
+          if (!pm && !q.vrt) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s2), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });
           hx += clefW(q) + 1;
           const keyX0 = hx;
           const fk = pm ? 0 : f;
@@ -6604,4 +6604,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-f93aa780c395.mjs.map
+//# sourceMappingURL=layout-worker-e066d1174db6.mjs.map

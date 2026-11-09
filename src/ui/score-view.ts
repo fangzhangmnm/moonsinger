@@ -48,6 +48,8 @@ const CONT_MARGIN = { l: 1.5, r: 1.5, t: 1.5, b: 2 } as const;
 const DUR_LADDER = [6, 12, 18, 24, 36, 48, 72, 96, 144, 192].map((v) => (v * TPQ) / 48);
 
 export interface ScoreViewHost {
+  /** 电脑宽屏：没设过缩放时默认按纸的实际大小（100%）显示，不撑满行宽（v0.16.49）。没给 = 自动大小。 */
+  actualSizeByDefault?: () => boolean;
   get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void;   // gesture = 连续动作的名字（拖 = "drag"）：宿主的 undo 把它们并成一步
   /** 唱下标 i 那个音（光标所在那条 track 的）：hold = 按住一直响（等 release），否则响一下。 */
   audition?(i: number, hold?: boolean): void;
@@ -858,6 +860,8 @@ export class ScoreView {
   private mulOf(phys: number): number { return (phys * this.physPx) / this.spAuto; }
   private physOf(mul: number): number { return (mul * this.spAuto) / this.physPx; }
   private clampMul(z: number): number { return Math.max(this.minZoom(), Math.min(this.maxZoom(), z)); }
+  /** 没设过缩放时的大小（乘在 sheet 上的倍数）：电脑宽屏 = 纸的实际大小（100%），放不下原大就按屏宽（v0.16.49，user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；别的 = 自动（1）。 */
+  private defMul(): number { return this.host.actualSizeByDefault?.() ? Math.min(1, this.mulOf(1)) : 1; }
   // ── 缩放的口（2026-10-21，Claude Fable 5.1；user「曲谱的缩放不合理，也理一下。可以对标一下pdf浏览器，然后ctrl wheel好好的帮我全量拦截一下」）：
   //   键盘（Ctrl / ⌘ + = / − / 0，platform-guards 在窗口捕获阶段全拦、路由到这里）一档一档、以谱面板中心为锚；读数按钮 = 现在的百分比、点 = 回自动；
   //   滚轮 / 捏合照旧连续、以指针 / 两指中点为锚；听模式手指双击 = 2 倍 / 回自动。1 = 自动大小（同 PDF 阅读器的「自动缩放」：放得下 = 工作大小，放不下 = 按屏宽）。
@@ -868,7 +872,7 @@ export class ScoreView {
   restoreZoom(phys: number | null): void { this.zoomPhys = phys === null || !Number.isFinite(phys) ? null : Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, phys)); if (this.frameNow) this.syncZoom(); }
   zoomIn(): void { this.zoomStep(1); }
   zoomOut(): void { this.zoomStep(-1); }
-  zoomReset(): void { this.setZoom(1, null); }
+  zoomReset(): void { this.setZoom(this.defMul(), null); }
   private zoomStep(dir: 1 | -1): void {
     const ph = this.physOf(this.zoom), eps = 0.01;   // 档是物理倍数：从自动（不在档里）往上 / 往下 = 最近的那一档
     const next = dir > 0 ? ZOOM_STEPS.find((s) => s > ph + eps) : [...ZOOM_STEPS].reverse().find((s) => s < ph - eps);
@@ -876,15 +880,15 @@ export class ScoreView {
   }
   /** frame 变了（窗口 / 底座 / 纸 / 密度）：记住的物理倍数不变，乘在 sheet 上的倍数跟着重算（自动 = 1）；读数 / 靠左横滚跟着。 */
   private syncZoom(): void {
-    const want = this.zoomPhys === null ? 1 : this.clampMul(this.mulOf(this.zoomPhys));
+    const want = this.zoomPhys === null ? this.defMul() : this.clampMul(this.mulOf(this.zoomPhys));
     if (Math.abs(want - this.zoom) < 1e-3) return;
-    this.zoom = want; this.sheet.style.zoom = want === 1 ? "" : String(want);
+    this.zoom = want; this.sheet.style.zoom = want === 1 ? "" : String(want);   // CSS zoom 照旧以自动大小为 1
     this.paintZoomUi();
   }
   private paintZoomUi(): void {
-    const z = this.zoom;
+    const z = this.zoom, def = this.defMul();
     this.el.classList.toggle("zoomed", z !== 1 && this.paperW * z > this.el.clientWidth + 1);   // 比屏幕宽了才靠左 + 横着滚（窄的照旧居中；v0.10.30 缩小 / 大屏上放大一点也居中）
-    this.zoomBtn.hidden = z === 1;   // 放大 / 缩小了 = 露读数（点 = 回自动）
+    this.zoomBtn.hidden = Math.abs(z - def) < 1e-3;   // 离开默认大小 = 露读数（点 = 回默认）
     this.zoomBtn.textContent = `${Math.round(this.physOf(z) * 100)}%`;
     if (!this.zoomBtn.hidden) { const r = this.el.getBoundingClientRect(); Object.assign(this.zoomBtn.style, { left: `${r.right - 64}px`, top: `${r.top + 8}px` }); }
   }
@@ -925,14 +929,14 @@ export class ScoreView {
   }
   /** 放大 / 缩小到倍数 z（1 = 自动大小；物理倍数 = physOf(z)，记进 zoomPhys、报给宿主按设备存）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 以谱面板中心为锚，同 PDF 阅读器；2026-10-21 之前 null = 跳回左上角）。 */
   private setZoom(z: number, anchor: { x: number; y: number; cx: number; cy: number } | null): void {
-    z = this.clampMul(z); if (Math.abs(z - 1) < 0.02) z = 1;   // 回到自动附近 = 吸到 1
+    const def = this.defMul(); z = this.clampMul(z); if (Math.abs(z - def) < 0.02 * def) z = def;   // 回到默认大小附近 = 吸到默认
     const a = anchor ?? this.centerAnchor();
     const r = this.el.getBoundingClientRect();
     this.zoom = z; this.sheet.style.zoom = z === 1 ? "" : String(z);
     this.el.classList.toggle("zoomed", z !== 1 && this.paperW * z > this.el.clientWidth + 1);   // 比屏幕宽了才靠左 + 横着滚（窄的照旧居中；v0.10.30 缩小 / 大屏上放大一点也居中）
-    this.zoomBtn.hidden = z === 1;   // 放大 / 缩小了 = 露读数（点 = 回自动）
+    this.zoomBtn.hidden = z === def;   // 离开默认大小 = 露读数（点 = 回默认）
     this.zoomBtn.textContent = `${Math.round(this.physOf(z) * 100)}%`;
-    this.zoomPhys = z === 1 ? null : this.physOf(z); this.host.onZoom?.(this.zoomPhys);
+    this.zoomPhys = z === def ? null : this.physOf(z); this.host.onZoom?.(this.zoomPhys);
     // 纸面点 (cx, cy)（纸面坐标）要落在屏幕 (x, y) 下面：滚动到 纸的位置 + 点 × zoom − (x − 滚动区左上)
     const nsr = this.sheet.getBoundingClientRect(), nl = nsr.left - r.left + this.el.scrollLeft, nt = nsr.top - r.top + this.el.scrollTop;
     this.el.scrollLeft = this.el.classList.contains("zoomed") || this.hscroll ? nl + a.cx * z - (a.x - r.left) : 0;   // 没比屏幕宽 = 居中，横向不用对

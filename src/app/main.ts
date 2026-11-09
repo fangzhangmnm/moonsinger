@@ -569,7 +569,8 @@ const view = new ScoreView(scoreEl, {
     if (stageEl.dataset.dock !== "none") { dockedSide = sw - w; return w; }
     return dockedSide > 0 ? Math.max(200, sw - dockedSide) : w;
   },
-  onZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),   // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
+  onZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),
+  actualSizeByDefault: () => matchMedia("(pointer: fine)").matches && window.innerWidth >= 1440,   // 电脑宽屏默认 100%（user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；平板 / 窄窗口照旧自动   // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
   lyricRaise: () => LYRIC_RAISE[pdfFont],   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope,
 });

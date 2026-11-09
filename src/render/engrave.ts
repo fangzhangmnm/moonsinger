@@ -970,7 +970,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const bySys = new Map<number, (LyricItem & { index: number })[]>();
       for (const u of q.units) if (u.kind === "chunk" && u.lyric && u.lyric !== MELISMA_MARK) {
         const arr = bySys.get(u.system) ?? []; bySys.set(u.system, arr);
-        arr.push({ index: u.index, cx: u.x + 0.6, w: (o.measureLyric(lyricShow(u.lyric)) / sp / ts) * look.k * look.sx, hy: u.hyph, block: isBlockScript(u.lyric) });
+        arr.push({ index: u.index, cx: u.x + 0.6, w: (o.measureLyric(lyricShow(u.lyric)) / sp / ts) * look.k * look.sx, hy: u.hyph, block: isBlockScript(u.lyric) && [...lyricShow(u.lyric)].length <= 1 });   // 一个音上两个以上方块字（日文「だん」这类合租）= 自己收，不带着整段一起变窄（user 11-09「日文有时候有双字合租的…这种时候也变窄到能放下？」）
       }
       // 方块字整段统一一个宽度（user 11-09「甚至是整篇曲段统一宽度，算一个最大的允许宽度」）：先每行算要压到多宽，整段（这张纸 × 这位歌手）取最窄的，再按它摆
       for (const items of bySys.values()) items.sort((a, b) => a.cx - b.cx);
@@ -1060,7 +1060,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
           let hx = MARGIN + ind + 0.6;
           if (pm) prims.push({ t: "glyph", x: P(hx), y: yOf(row, MID_LINE), ch: PERC_CLEF, cls: "clef perc-clef" });
           else prims.push({ t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });   // 高音谱号挂 G 线（第 2 线）、低音谱号挂 F 线（第 4 线）；八度谱号的小 8 / 15 在字形里
-          if (q.staves === 1 && !pm && !q.vrt) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });   // 点谱号 = 换谱号（v0.9.28）
+          if (!pm && !q.vrt) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });   // 点谱号 = 谱头面板（v0.9.28；v0.16.50 大谱表上下两个谱号也能点——user「高音谱号为什么点不中」，原来只给单谱表建了点击区）
           hx += clefW(q) + 1.0;
           const keyX0 = hx;
           const fk = pm ? 0 : f;

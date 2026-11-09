@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.49-2026-11-09";
+var APP_VERSION = "v0.16.50-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -11778,7 +11778,7 @@ function engrave(song, o10) {
       for (const u2 of q2.units) if (u2.kind === "chunk" && u2.lyric && u2.lyric !== MELISMA_MARK) {
         const arr = bySys.get(u2.system) ?? [];
         bySys.set(u2.system, arr);
-        arr.push({ index: u2.index, cx: u2.x + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2 / ts2 * look.k * look.sx, hy: u2.hyph, block: isBlockScript(u2.lyric) });
+        arr.push({ index: u2.index, cx: u2.x + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2 / ts2 * look.k * look.sx, hy: u2.hyph, block: isBlockScript(u2.lyric) && [...lyricShow(u2.lyric)].length <= 1 });
       }
       for (const items of bySys.values()) items.sort((a10, b3) => a10.cx - b3.cx);
       const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
@@ -11890,7 +11890,7 @@ function engrave(song, o10) {
           let hx = MARGIN + ind + 0.6;
           if (pm) prims.push({ t: "glyph", x: P2(hx), y: yOf(row2, MID_LINE2), ch: PERC_CLEF, cls: "clef perc-clef" });
           else prims.push({ t: "glyph", x: P2(hx), y: yOf(row2, base2 === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
-          if (q2.staves === 1 && !pm && !q2.vrt) clefs.push({ kind: "start", paper: paper.id, part: q2.p.id, index: clefSrcAtSys(q2, s10), system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(clefW(q2) + 0.6) });
+          if (!pm && !q2.vrt) clefs.push({ kind: "start", paper: paper.id, part: q2.p.id, index: clefSrcAtSys(q2, s10), system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(clefW(q2) + 0.6) });
           hx += clefW(q2) + 1;
           const keyX0 = hx;
           const fk = pm ? 0 : f2;
@@ -14793,6 +14793,10 @@ var ScoreView = class {
   clampMul(z2) {
     return Math.max(this.minZoom(), Math.min(this.maxZoom(), z2));
   }
+  /** 没设过缩放时的大小（乘在 sheet 上的倍数）：电脑宽屏 = 纸的实际大小（100%），放不下原大就按屏宽（v0.16.49，user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；别的 = 自动（1）。 */
+  defMul() {
+    return this.host.actualSizeByDefault?.() ? Math.min(1, this.mulOf(1)) : 1;
+  }
   // ── 缩放的口（2026-10-21，Claude Fable 5.1；user「曲谱的缩放不合理，也理一下。可以对标一下pdf浏览器，然后ctrl wheel好好的帮我全量拦截一下」）：
   //   键盘（Ctrl / ⌘ + = / − / 0，platform-guards 在窗口捕获阶段全拦、路由到这里）一档一档、以谱面板中心为锚；读数按钮 = 现在的百分比、点 = 回自动；
   //   滚轮 / 捏合照旧连续、以指针 / 两指中点为锚；听模式手指双击 = 2 倍 / 回自动。1 = 自动大小（同 PDF 阅读器的「自动缩放」：放得下 = 工作大小，放不下 = 按屏宽）。
@@ -14815,7 +14819,7 @@ var ScoreView = class {
     this.zoomStep(-1);
   }
   zoomReset() {
-    this.setZoom(1, null);
+    this.setZoom(this.defMul(), null);
   }
   zoomStep(dir) {
     const ph = this.physOf(this.zoom), eps = 0.01;
@@ -14824,16 +14828,16 @@ var ScoreView = class {
   }
   /** frame 变了（窗口 / 底座 / 纸 / 密度）：记住的物理倍数不变，乘在 sheet 上的倍数跟着重算（自动 = 1）；读数 / 靠左横滚跟着。 */
   syncZoom() {
-    const want = this.zoomPhys === null ? 1 : this.clampMul(this.mulOf(this.zoomPhys));
+    const want = this.zoomPhys === null ? this.defMul() : this.clampMul(this.mulOf(this.zoomPhys));
     if (Math.abs(want - this.zoom) < 1e-3) return;
     this.zoom = want;
     this.sheet.style.zoom = want === 1 ? "" : String(want);
     this.paintZoomUi();
   }
   paintZoomUi() {
-    const z2 = this.zoom;
+    const z2 = this.zoom, def = this.defMul();
     this.el.classList.toggle("zoomed", z2 !== 1 && this.paperW * z2 > this.el.clientWidth + 1);
-    this.zoomBtn.hidden = z2 === 1;
+    this.zoomBtn.hidden = Math.abs(z2 - def) < 1e-3;
     this.zoomBtn.textContent = `${Math.round(this.physOf(z2) * 100)}%`;
     if (!this.zoomBtn.hidden) {
       const r10 = this.el.getBoundingClientRect();
@@ -14887,16 +14891,17 @@ var ScoreView = class {
   }
   /** 放大 / 缩小到倍数 z（1 = 自动大小；物理倍数 = physOf(z)，记进 zoomPhys、报给宿主按设备存）；anchor = 屏幕上这个点下面的纸面点保持不动（null = 以谱面板中心为锚，同 PDF 阅读器；2026-10-21 之前 null = 跳回左上角）。 */
   setZoom(z2, anchor) {
+    const def = this.defMul();
     z2 = this.clampMul(z2);
-    if (Math.abs(z2 - 1) < 0.02) z2 = 1;
+    if (Math.abs(z2 - def) < 0.02 * def) z2 = def;
     const a10 = anchor ?? this.centerAnchor();
     const r10 = this.el.getBoundingClientRect();
     this.zoom = z2;
     this.sheet.style.zoom = z2 === 1 ? "" : String(z2);
     this.el.classList.toggle("zoomed", z2 !== 1 && this.paperW * z2 > this.el.clientWidth + 1);
-    this.zoomBtn.hidden = z2 === 1;
+    this.zoomBtn.hidden = z2 === def;
     this.zoomBtn.textContent = `${Math.round(this.physOf(z2) * 100)}%`;
-    this.zoomPhys = z2 === 1 ? null : this.physOf(z2);
+    this.zoomPhys = z2 === def ? null : this.physOf(z2);
     this.host.onZoom?.(this.zoomPhys);
     const nsr = this.sheet.getBoundingClientRect(), nl2 = nsr.left - r10.left + this.el.scrollLeft, nt2 = nsr.top - r10.top + this.el.scrollTop;
     this.el.scrollLeft = this.el.classList.contains("zoomed") || this.hscroll ? nl2 + a10.cx * z2 - (a10.x - r10.left) : 0;
@@ -29326,9 +29331,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-f93aa780c395.mjs");
+      return pick(() => "layout-worker-e066d1174db6.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-9b0491ab4858.mjs");
+      return pick(() => "encode-worker-0260a1fd66e2.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -51948,7 +51953,8 @@ var view = new ScoreView(scoreEl, {
     return dockedSide > 0 ? Math.max(200, sw2 - dockedSide) : w2;
   },
   onZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),
-  // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
+  actualSizeByDefault: () => matchMedia("(pointer: fine)").matches && window.innerWidth >= 1440,
+  // 电脑宽屏默认 100%（user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；平板 / 窄窗口照旧自动   // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
   lyricRaise: () => LYRIC_RAISE[pdfFont],
   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope
@@ -56980,4 +56986,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8afffbe55f65.mjs.map
+//# sourceMappingURL=moonsinger-18eaac1e640a.mjs.map
