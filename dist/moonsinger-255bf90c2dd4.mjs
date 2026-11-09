@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.45-2026-11-09";
+var APP_VERSION = "v0.16.46-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10753,21 +10753,21 @@ function mergeTracks(tracks, opt = {}) {
 
 // src/render/engrave.ts
 var lyricLook = (ts2) => ts2 > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
-var lyricGap = (a10, b3) => (a10.block && b3.block ? 0.25 : 0.5) + (a10.hy ? 0.3 : 0);
+var lyricGap = (a10, b3, fa = 1, fb = 1) => (a10.block && b3.block ? 0.25 : 0.5) * ((fa + fb) / 2) + (a10.hy ? 0.3 : 0);
 function placeLyrics(items, f2) {
   const cap2 = items.map((it2) => Math.max(0.8, 0.45 * it2.w)), pos = items.map((it2) => it2.cx), half2 = items.map((it2, i10) => it2.w * f2[i10] / 2);
   for (let pass = 0; pass < 4; pass++) {
     for (let k2 = 1; k2 < items.length; k2++) {
-      const need = pos[k2 - 1] + half2[k2 - 1] + lyricGap(items[k2 - 1], items[k2]) + half2[k2];
+      const need = pos[k2 - 1] + half2[k2 - 1] + lyricGap(items[k2 - 1], items[k2], f2[k2 - 1], f2[k2]) + half2[k2];
       if (pos[k2] < need) pos[k2] = Math.min(need, items[k2].cx + cap2[k2]);
     }
     for (let k2 = items.length - 2; k2 >= 0; k2--) {
-      const need = pos[k2 + 1] - half2[k2 + 1] - lyricGap(items[k2], items[k2 + 1]) - half2[k2];
+      const need = pos[k2 + 1] - half2[k2 + 1] - lyricGap(items[k2], items[k2 + 1], f2[k2], f2[k2 + 1]) - half2[k2];
       if (pos[k2] > need) pos[k2] = Math.max(need, items[k2].cx - cap2[k2]);
     }
   }
   const bad = /* @__PURE__ */ new Set();
-  for (let k2 = 1; k2 < items.length; k2++) if (pos[k2] - half2[k2] < pos[k2 - 1] + half2[k2 - 1] + lyricGap(items[k2 - 1], items[k2]) - 1e-6) {
+  for (let k2 = 1; k2 < items.length; k2++) if (pos[k2] - half2[k2] < pos[k2 - 1] + half2[k2 - 1] + lyricGap(items[k2 - 1], items[k2], f2[k2 - 1], f2[k2]) - 1e-6) {
     bad.add(k2);
     bad.add(k2 - 1);
   }
@@ -29169,9 +29169,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-bff4ba31818b.mjs");
+      return pick(() => "layout-worker-c604c8386f54.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-42074432b22c.mjs");
+      return pick(() => "encode-worker-5bb3f0b54524.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -56823,4 +56823,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-de45aee018a2.mjs.map
+//# sourceMappingURL=moonsinger-255bf90c2dd4.mjs.map

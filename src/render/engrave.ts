@@ -98,17 +98,18 @@ export { LYRIC_EM } from "./text-style.ts";
 const lyricLook = (ts: number) => (ts > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy);
 export interface LyricFit { dx: number; /** 宽度倍数（乘在这一档平常的宽度上；1 = 不收）。 */ sx: number; tight: boolean }
 export interface LyricItem { cx: number; w: number; hy?: boolean; /** 方块字：宽度跟整段统一（不各收各的）。 */ block?: boolean }
-/** 两个字之间至少留多少（sp）：方块字挨方块字 = 0.25（方块字自己带字面空白；user 11-09「字间距有点太保守」），其余 0.5；前一个后面有连字符 = 多留 0.3。 */
-const lyricGap = (a: LyricItem, b: LyricItem) => (a.block && b.block ? 0.25 : 0.5) + (a.hy ? 0.3 : 0);   // 连字符多留 0.3（原 0.9；user 11-09「连字符能不能少占空间」）：一共 0.8 ≥ 一个连字符宽（约 0.53）+ 两边一点
+/** 两个字之间至少留多少（sp）：方块字挨方块字 = 0.25（方块字自己带字面空白；user 11-09「字间距有点太保守」），其余 0.5——**跟着两边的字一起收**（fa / fb = 两边的宽度倍数；
+ *  v0.16.46，user「空格也应该跟着间距缩，这样可以省一点空间」：字压窄了、空格还是原宽 = 稀稀拉拉）；前一个后面有连字符 = 再多留 0.3（连字符自己的地方，不收）。 */
+const lyricGap = (a: LyricItem, b: LyricItem, fa = 1, fb = 1) => (a.block && b.block ? 0.25 : 0.5) * ((fa + fb) / 2) + (a.hy ? 0.3 : 0);   // 连字符多留 0.3（原 0.9；user 11-09「连字符能不能少占空间」）：一共 0.8 ≥ 一个连字符宽（约 0.53）+ 两边一点
 /** 按给定的宽度倍数摆一行：先左右借空（最多挪自己宽的 45% 或 0.8），还压着的那几对 = bad。 */
 function placeLyrics(items: readonly LyricItem[], f: readonly number[]): { pos: number[]; bad: Set<number> } {
   const cap = items.map((it) => Math.max(0.8, 0.45 * it.w)), pos = items.map((it) => it.cx), half = items.map((it, i) => (it.w * f[i]) / 2);
   for (let pass = 0; pass < 4; pass++) {
-    for (let k = 1; k < items.length; k++) { const need = pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k]) + half[k]; if (pos[k] < need) pos[k] = Math.min(need, items[k].cx + cap[k]); }
-    for (let k = items.length - 2; k >= 0; k--) { const need = pos[k + 1] - half[k + 1] - lyricGap(items[k], items[k + 1]) - half[k]; if (pos[k] > need) pos[k] = Math.max(need, items[k].cx - cap[k]); }
+    for (let k = 1; k < items.length; k++) { const need = pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k], f[k - 1], f[k]) + half[k]; if (pos[k] < need) pos[k] = Math.min(need, items[k].cx + cap[k]); }
+    for (let k = items.length - 2; k >= 0; k--) { const need = pos[k + 1] - half[k + 1] - lyricGap(items[k], items[k + 1], f[k], f[k + 1]) - half[k]; if (pos[k] > need) pos[k] = Math.max(need, items[k].cx - cap[k]); }
   }
   const bad = new Set<number>();
-  for (let k = 1; k < items.length; k++) if (pos[k] - half[k] < pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k]) - 1e-6) { bad.add(k); bad.add(k - 1); }
+  for (let k = 1; k < items.length; k++) if (pos[k] - half[k] < pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k], f[k - 1], f[k]) - 1e-6) { bad.add(k); bad.add(k - 1); }
   return { pos, bad };
 }
 /** 方块字定在 blockSx，别的字挤到哪个收哪个（每次 0.05，最窄 minSx）。 */

@@ -4533,21 +4533,21 @@ function mergeTracks(tracks, opt = {}) {
 
 // src/render/engrave.ts
 var lyricLook = (ts) => ts > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
-var lyricGap = (a, b) => (a.block && b.block ? 0.25 : 0.5) + (a.hy ? 0.3 : 0);
+var lyricGap = (a, b, fa = 1, fb = 1) => (a.block && b.block ? 0.25 : 0.5) * ((fa + fb) / 2) + (a.hy ? 0.3 : 0);
 function placeLyrics(items, f) {
   const cap = items.map((it) => Math.max(0.8, 0.45 * it.w)), pos = items.map((it) => it.cx), half = items.map((it, i) => it.w * f[i] / 2);
   for (let pass = 0; pass < 4; pass++) {
     for (let k = 1; k < items.length; k++) {
-      const need = pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k]) + half[k];
+      const need = pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k], f[k - 1], f[k]) + half[k];
       if (pos[k] < need) pos[k] = Math.min(need, items[k].cx + cap[k]);
     }
     for (let k = items.length - 2; k >= 0; k--) {
-      const need = pos[k + 1] - half[k + 1] - lyricGap(items[k], items[k + 1]) - half[k];
+      const need = pos[k + 1] - half[k + 1] - lyricGap(items[k], items[k + 1], f[k], f[k + 1]) - half[k];
       if (pos[k] > need) pos[k] = Math.max(need, items[k].cx - cap[k]);
     }
   }
   const bad = /* @__PURE__ */ new Set();
-  for (let k = 1; k < items.length; k++) if (pos[k] - half[k] < pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k]) - 1e-6) {
+  for (let k = 1; k < items.length; k++) if (pos[k] - half[k] < pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k], f[k - 1], f[k]) - 1e-6) {
     bad.add(k);
     bad.add(k - 1);
   }
@@ -6457,4 +6457,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-bff4ba31818b.mjs.map
+//# sourceMappingURL=layout-worker-c604c8386f54.mjs.map
