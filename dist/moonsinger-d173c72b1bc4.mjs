@@ -5025,7 +5025,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.28-2026-11-08";
+var APP_VERSION = "v0.16.29-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28310,7 +28310,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-69f8ac20971a.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-47e0cb827ae1.mjs");
+      return pick(() => "encode-worker-790f4a9b00af.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -28478,7 +28478,9 @@ function createQueueMeter() {
     queued(now2, ct2) {
       return anchor ? Math.max(0, Math.round(raw(now2, ct2) - slack)) : null;
     },
-    burst: () => burstMs
+    burst: () => burstMs,
+    anchorAt: () => anchor ? anchor.at : null
+    // 时钟开始走的那一刻（墙上的毫秒）
   };
 }
 var BURST_SETTLE_MS = 600;
@@ -28499,8 +28501,10 @@ var queueTimer;
 var queueUntil = 0;
 var burstNoted = true;
 var queueWhy = "";
+var armAt = 0;
 function armQueue(why2) {
   queueWhy = why2;
+  armAt = performance.now();
   queue.arm();
   burstNoted = false;
   queueUntil = performance.now() + 2e4;
@@ -28518,7 +28522,8 @@ function armQueue(why2) {
     if (b3 !== null && !burstNoted) {
       burstNoted = true;
       const go = shouldAutoFlush(b3, autoFlush, autoCount);
-      noteFn(`start burst (${queueWhy}): rendered ahead \u2248 ${b3} ms${go ? " \u2192 auto-flush" : b3 > AUTO_FLUSH_MS ? autoFlush ? ` (auto-flush gave up after ${autoCount})` : " (auto-flush off)" : ""}`);
+      const took = queue.anchorAt();
+      noteFn(`start burst (${queueWhy}): device start took \u2248 ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead \u2248 ${b3} ms${go ? " \u2192 auto-flush" : b3 > AUTO_FLUSH_MS ? autoFlush ? ` (auto-flush gave up after ${autoCount})` : " (auto-flush off)" : ""}`);
       if (go) {
         autoCount++;
         flushAudio("auto");
@@ -29056,7 +29061,13 @@ function createFeelProbe(host2, now2 = () => performance.now(), raf = (cb2) => {
         if (s10.length > 8) s10.shift();
       }
     },
-    reading: () => last
+    reading: () => last,
+    flush() {
+      if (!sess.keys) return;
+      const r10 = read(), a10 = host2.audioNow();
+      host2.note(`session (page leaving): ${sess.keys} keys, queue ${r10.queue} ms, to sound ${r10.toSound} ms, max stall ${sess.stall} ms, audio step typical ${r10.audioTypical} ms / max ${sess.step} ms, queued ${r10.queued ?? "?"} ms${a10 ? ` (ctx ${a10.state}, sr ${a10.sr}${a10.info ? `, ${a10.info}` : ""})` : ""}`);
+      sess = { keys: 0, stall: 0, step: 0 };
+    }
   };
 }
 
@@ -37060,7 +37071,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "c10943dd750af2e4" : "dev";
+var CORE_HASH = true ? "97c16afbf9e5b453" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -55180,6 +55191,7 @@ window.addEventListener("blur", () => {
 });
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
+    feel.flush();
     padHost.reset();
     sound.allOff();
     pad3.clearHeld();
@@ -55418,4 +55430,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-547f3e00db13.mjs.map
+//# sourceMappingURL=moonsinger-d173c72b1bc4.mjs.map

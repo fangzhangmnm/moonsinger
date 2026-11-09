@@ -64,6 +64,13 @@ describe("手感探针：按下 → 接到 → 出声", () => {
     eq(r.reports.at(-1), null, "收起了");
     assert(/calm again; worst: .*audio step max 9\d\d ms/.test(r.notes.at(-1)!), r.notes.at(-1));
   });
+  it("页面要走了 = 这一段的汇总现在就记一条（等不到 20 秒没按键）；没按过不记", () => {
+    const r = rig(); r.probe.flush(); eq(r.notes.length, 0, "没按过 = 不记");
+    r.probe.touch(r.nowAt()); r.tick(2); r.probe.sound(); r.tick(16); r.probe.touch(r.nowAt()); r.tick(16);
+    r.probe.flush();
+    assert(/session \(page leaving\): 2 keys/.test(r.notes.at(-1)!), r.notes.at(-1));
+    r.probe.flush(); eq(r.notes.filter((n) => n.includes("page leaving")).length, 1, "同一段不重复记");
+  });
   it("按键后 20 s 没再按 = 睡（不再排帧、收起小字）", () => {
     const r = rig();
     r.probe.touch(r.nowAt()); r.tick(16); r.tick(300);

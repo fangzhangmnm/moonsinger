@@ -3841,7 +3841,7 @@ window.addEventListener("keydown", (e) => {
 window.addEventListener("keyup", (e) => { padHost.release(`key${e.code}`); if (ghostHeld.delete(`key${e.code}`)) ghostSync(); if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
 // 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）
 window.addEventListener("blur", () => { padHost.reset(); sound.allOff(); pad.clearHeld(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } });
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { padHost.reset(); sound.allOff(); pad.clearHeld(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } } });
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") { feel.flush(); padHost.reset(); sound.allOff(); pad.clearHeld(); if (ghostHeld.size) { ghostHeld.clear(); ghostSync(); } } });
 // MIDI 键盘（src/keyboard/midi.ts；2026-10-16 by Claude Opus 5.5，user「今天把midi键盘做一下吧…可以插电子琴上弄」）：琴键 = 绝对音高，
 //   能写谱的时候走 pad 的同一个翻译层（写 / 改 / 叠音观望 / 单声护栏 / 弹 = 只响）；别的场合（词 / 听 / 歌词框 / 面板开着 / 歌库上的乐器目录）只出声；歌库 = 不接。
 //   拼写 = 光标处的调号（调内用调号的写法，调外按调的方向；落进谱时 writePitch 照样按调号简化）。力度这一版不管（同 pad：响多大听光标处的力度）。

@@ -63,7 +63,7 @@ function attach(c: AudioContext): void {
 // ── ⑤ 排队：时钟比墙上的钟多走了多少 ──────────────────────────────────────────────
 /** 纯逻辑（test/audio-queue.test.ts）：一下一下喂（墙上的毫秒，音频时钟的秒）。arm = 等时钟下一次动，动之前最后一下当锚点；
  *  queued = 从锚点起 时钟走的 − 墙上过的（ms）。时钟停过、没追回来 = 那一段是断音不是排队，记进 slack 抵掉，不让它把后来的排队盖住。 */
-export function createQueueMeter(): { arm(): void; feed(now: number, ct: number): void; queued(now: number, ct: number): number | null; burst(): number | null } {
+export function createQueueMeter(): { arm(): void; feed(now: number, ct: number): void; queued(now: number, ct: number): number | null; burst(): number | null; anchorAt(): number | null } {
   let pending = true, last: { at: number; ct: number } | null = null, anchor: { at: number; ct: number } | null = null, slack = 0, burstMs: number | null = null;
   const raw = (now: number, ct: number): number => (ct - anchor!.ct) * 1000 - (now - anchor!.at);
   return {
@@ -76,6 +76,7 @@ export function createQueueMeter(): { arm(): void; feed(now: number, ct: number)
     },
     queued(now, ct) { return anchor ? Math.max(0, Math.round(raw(now, ct) - slack)) : null; },
     burst: () => burstMs,
+    anchorAt: () => (anchor ? anchor.at : null),   // 时钟开始走的那一刻（墙上的毫秒）
   };
 }
 /** 时钟开始走之后过这么久，定下这一次多算了多少。 */
@@ -90,9 +91,9 @@ export const autoFlushOn = (): boolean => autoFlush;
 const queue = createQueueMeter();
 let queueTimer: ReturnType<typeof setInterval> | undefined, queueUntil = 0, burstNoted = true;
 /** 起了一次 / 清了一次之后盯 20 秒：等时钟动、量这一次多算了多少，记一条。之后 audioQueuedMs 随问随算（不用一直开着定时器）。 */
-let queueWhy = "";
+let queueWhy = "", armAt = 0;
 function armQueue(why: string): void {
-  queueWhy = why;
+  queueWhy = why; armAt = performance.now();
   queue.arm(); burstNoted = false; queueUntil = performance.now() + 20_000;
   if (queueTimer !== undefined) return;
   queueTimer = setInterval(() => {
@@ -104,7 +105,9 @@ function armQueue(why: string): void {
     if (b !== null && !burstNoted) {
       burstNoted = true;
       const go = shouldAutoFlush(b, autoFlush, autoCount);
-      noteFn(`start burst (${queueWhy}): rendered ahead ≈ ${b} ms${go ? " → auto-flush" : b > AUTO_FLUSH_MS ? (autoFlush ? ` (auto-flush gave up after ${autoCount})` : " (auto-flush off)") : ""}`);
+      // 设备起了多久（从上下文说 running / 建好，到时钟真的开始走）和多算了多少记在同一行：v0.16.28 真机三次 = 等 ~0.3 s 多算 224、等几十毫秒多算 1（起得越慢多算得越多）
+      const took = queue.anchorAt(); 
+      noteFn(`start burst (${queueWhy}): device start took ≈ ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead ≈ ${b} ms${go ? " → auto-flush" : b > AUTO_FLUSH_MS ? (autoFlush ? ` (auto-flush gave up after ${autoCount})` : " (auto-flush off)") : ""}`);
       if (go) { autoCount++; flushAudio("auto"); } else if (b <= AUTO_FLUSH_MS) autoCount = 0;
     }
   }, 40);

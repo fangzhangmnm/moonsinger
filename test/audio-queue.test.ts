@@ -14,6 +14,7 @@ describe("排着的声音：时钟比墙上的钟多走了多少", () => {
     for (let k = 0; k < 50; k++) { now += 40; ct += 0.040; m.feed(now, ct); }   // 之后正常走
     const q = m.queued(now, ct)!; assert(q > 480 && q < 600, `排着 ${q}`);
     const b = m.burst()!; assert(b > 480 && b < 600, `这一次多算了 ${b}`);
+    eq(m.anchorAt(), 960, "时钟开始走的那一刻 = 动之前最后一下（设备起了多久从这儿算）");
     for (let k = 0; k < 500; k++) { now += 40; ct += 0.040; m.feed(now, ct); }   // 再过 20 秒：还带着
     assert(Math.abs(m.queued(now, ct)! - q) < 5, "正常走的时候排队的量不变");
   });

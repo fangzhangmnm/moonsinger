@@ -33,6 +33,8 @@ export interface FeelProbe {
   sound(): void;
   /** 现在的读数（设置页 / 测试看；没醒过 = null）。 */
   reading(): FeelReading | null;
+  /** 这一段按键的汇总现在就记一条（页面要走了 / 进后台：等不到 20 秒没按键的那一次）。没按过 = 不记。 */
+  flush(): void;
 }
 
 /** 门槛（ms）：超过 = 人能感觉到、该说出来。queue / toSound 80 = 两个动画帧还多；stall 150 = 一下明显的卡；audioStep 150 = 系统给的声音块比正常（iPad ≈ 3–12 ms）大了一个量级。 */
@@ -101,5 +103,11 @@ export function createFeelProbe(host: FeelHost, now: () => number = () => perfor
       if (d >= 0 && d < 60_000) { s.push(d); if (s.length > 8) s.shift(); }
     },
     reading: () => last,
+    flush() {
+      if (!sess.keys) return;
+      const r = read(), a = host.audioNow();
+      host.note(`session (page leaving): ${sess.keys} keys, queue ${r.queue} ms, to sound ${r.toSound} ms, max stall ${sess.stall} ms, audio step typical ${r.audioTypical} ms / max ${sess.step} ms, queued ${r.queued ?? "?"} ms${a ? ` (ctx ${a.state}, sr ${a.sr}${a.info ? `, ${a.info}` : ""})` : ""}`);
+      sess = { keys: 0, stall: 0, step: 0 };
+    },
   };
 }
