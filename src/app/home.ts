@@ -231,7 +231,12 @@ export function createHome(init: { home: Home; stem: string; named: boolean }, p
     const h = home;
     switch (h.kind) {
       case "gallery":
-        if (!o.nextIsGallery) { try { await ports.gallery.flushAndPush(); } catch (e) { ports.report(e, "warning"); } }   // 自动存的东西没什么可丢：落盘 + 推，不问
+        if (!o.nextIsGallery) {   // 自动存的东西没什么可丢：落盘 + 推，不问
+          try {
+            await ports.gallery.flushAndPush();
+            if (ports.dirty()) await ports.gallery.flushLocal();   // 推的那几秒里又写了一笔（2026-11-09 保存排队那一刀查出来的小口子）：再落一次本机，别丢在换歌的缝里（只补一次；推归下次）
+          } catch (e) { ports.report(e, "warning"); }
+        }
         return true;
       case "file": case "none": return ports.dirty() ? ports.ask.discard(what) : true;
       default: return assertNever(h);

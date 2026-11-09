@@ -5,15 +5,15 @@ import type { FileHandle } from "../src/app/doc-file.ts";
 
 const handleOf = (name: string): FileHandle => ({ name, getFile: async () => new File([], name), createWritable: async () => ({ write: async () => undefined, close: async () => undefined }) });
 
-function make(o: { home?: Home; stem?: string; named?: boolean; dirty?: boolean; title?: string; canPick?: boolean; pick?: FileHandle | null; mtimeNow?: number | null; occupied?: string[]; discard?: boolean; overwrite?: boolean; renameFails?: "cloud" | "local"; flushThrows?: boolean; pushThrows?: boolean } = {}) {
+function make(o: { home?: Home; stem?: string; named?: boolean; dirty?: boolean; editDuringPush?: boolean; title?: string; canPick?: boolean; pick?: FileHandle | null; mtimeNow?: number | null; occupied?: string[]; discard?: boolean; overwrite?: boolean; renameFails?: "cloud" | "local"; flushThrows?: boolean; pushThrows?: boolean } = {}) {
   const log: string[] = [];
   const state = { dirty: o.dirty ?? false, title: o.title ?? "", mtime: o.mtimeNow === undefined ? 100 : o.mtimeNow, occupied: new Set(o.occupied ?? []) };
   let fresh = 0;
   const ports: HomePorts = {
     gallery: {
       save: async () => { log.push("gallery.save"); },
-      flushLocal: async () => { log.push("flushLocal"); if (o.flushThrows) throw new Error("disk full"); },
-      flushAndPush: async () => { log.push("flushAndPush"); if (o.pushThrows) throw new Error("offline"); },
+      flushLocal: async () => { log.push("flushLocal"); if (o.flushThrows) throw new Error("disk full"); state.dirty = false; },
+      flushAndPush: async () => { log.push("flushAndPush"); if (o.pushThrows) throw new Error("offline"); state.dirty = !!o.editDuringPush; },   // editDuringPush = 推的那几秒里又写了一笔
       markDirty: () => { log.push("markDirty"); },
       adopted: (id, a) => { log.push(`adopted:${id}:${a.create}`); },
       release: () => { log.push("release"); },
@@ -170,6 +170,9 @@ describe("家：离开", () => {
     assert(await bad.H.leave("新建")); eq(bad.log.join(","), "flushAndPush,report:warning:offline");
     const sw = make({ home: gallery("a.mxl"), stem: "a", named: true, dirty: true });
     assert(await sw.H.leave("打开「b」", { nextIsGallery: true })); eq(sw.log.length, 0);
+    // 2026-11-09：推的那几秒里又写了一笔 = 再落一次本机（只补一次），不丢在换歌的缝里
+    const late = make({ home: gallery("a.mxl"), stem: "a", named: true, dirty: true, editDuringPush: true });
+    assert(await late.H.leave("新建")); eq(late.log.join(","), "flushAndPush,flushLocal");
   });
   it("本机文件 / 还没家：改过没存先问；干净直接走", async () => {
     const d = make({ home: file("t.mxl"), stem: "t", named: true, dirty: true, discard: false });

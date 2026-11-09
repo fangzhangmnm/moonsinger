@@ -23,6 +23,7 @@ import { chordHead, chordBothAfterMs, chordVerdict, monoClash, type ChordWhy } f
 import { createPadMusic, type PadMusicHost } from "./pad-music.ts";
 import { padKeyAction, markOfKey } from "./pad-keys.ts";
 import { diagNote } from "./report-error.ts";
+import type { InputGate } from "./input-gate.ts";
 
 /** main.ts 给的那一组访问器：谱的状态与写、出声、页 / 模式、鬼音符、锁、披露、符号格要看的、菜单。 */
 export interface PadGlue {
@@ -46,12 +47,10 @@ export interface PadGlue {
   soundTok(s: EditorState, i: number, id: string): void;
   /** 先响后写的补课：按下时已按 sounded 响了，写完成了和弦 = 只补多出来的音；主音变了 = 重响。 */
   soundAfterWrite(s: EditorState, i: number, id: string, sounded: Pitch): void;
-  /** 顶栏「弹」开着。 */
-  impro(): boolean;
+  /** 键盘总闸（src/app/input-gate.ts）：现在键盘能不能往谱上写（歌锁着 / 在选乐器 / 人拔着 = 不能，音键只响）。pad 上每个会写谱的键都先问它。 */
+  gate: Pick<InputGate, "why" | "may" | "mayWrite">;
   /** 找人视图开着（真对象 finder.isOpen；pad 创建时 finder 还没建，所以是访问器）。 */
   finderOpen(): boolean;
-  finderShown(): boolean;
-  instShown(): boolean;
   toggleImpro(): void;
   /** 小键盘顶上「符 / 音」：只换键盘。 */
   kbSwitch(): void;
@@ -144,7 +143,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
 
   const music = createPadMusic(st);   // pad 的音乐知识（src/app/pad-music.ts）：第 k 级是什么音、「1=」的档；键盘只认 k
   /** 「弹」= 音键只响不写：顶栏开关，或找人视图 / 乐器页开着（试听台上那位）。读 finderShown() 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建。 */
-  const padImpro = (): boolean => g.impro() || g.finderShown() || g.instShown();
+  const padImpro = (): boolean => g.gate.why() !== null;   // 2026-11-09 起问总闸（以前 = 「弹」∨ 乐器目录 ∨ 乐器页，各处自己拼）
   /** 写之前问一声：能叠音的声部同时多按都收（80 ms 内 = 叠在一起）；单声乐器几乎同时按下的第二根手指 = false（不写、不响、不亮）。 */
   const padAccept = (id: string): boolean => (g.canStack() ? (monoHeld.add(id), true) : monoAccept(id));
   /** pad 音键写一个音（找人视图开着一律不接：试听台不碰谱——user「试听的时候写入的东西不会不小心输入到乐谱吧…是不是应该disable」）：
@@ -202,8 +201,9 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
     if (g.finderOpen()) return;
     const a = padKeyAction(id, mods);
     if (!a) { diagNote("pad", `unknown pad key ${id}`); return; }   // test/pad-keys.test.ts 守着每个格子都接了；真到这儿 = 键盘加了格子没登记
-    if (a.kind === "cmd") runPadCommand(a.cmd);
-    else if (a.kind === "mark") g.insertMarkHere(a.mark);
+    if (a.kind === "cmd") { runPadCommand(a.cmd); return; }
+    if (!g.gate.mayWrite()) return;   // 下面几样都是开记号框 / 菜单往谱上写：拔着 = 不开（开了也写不进去）
+    if (a.kind === "mark") g.insertMarkHere(a.mark);
     else if (a.menu === "groove") g.insertGrooveHere();
     else if (a.menu === "repeat") g.openRepeatMenu();
     else { const r = padEl.getBoundingClientRect(), at = { x: r.left + r.width / 2, y: r.top - 4 }; if (a.menu === "clef") g.openInsertClefMenu(at); else g.openInsertOttavaMenu(at); }
@@ -212,6 +212,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   function runPadCommand(c: Command): void {
     if (c.k === "caret") g.half.caretMoved();   // 挪光标 = 取消「凑满一份」（锁住的不动）
     const prev = st(), nx = apply(prev, g.half.wrap(c), performance.now());
+    if (!g.gate.may(prev, nx)) return;   // 总闸：这一下会改谱而键盘拔着 = 安静不做（挪光标 / 选中照常）；下面的提示和披露也不说
     if (c.k === "art" && nx === prev) { g.info(c.a === "arpeggio" ? _t("琶音只挂在和弦上：光标前那个音（或选中的）是单音") : _t("{p}要挂在一个音上（光标前面是休止或者还没有音）", { p: ART_NAME[c.a] })); return; }
     if (c.k === "slur" && nx === prev) { g.info(_t("连线从一个音连到下一个音（光标前面是休止或者还没有音）")); return; }
     if (c.k === "inhale" && nx === prev) { g.info(_t("出声的换气挂在一个音后面（光标前面是休止或者还没有音）")); return; }

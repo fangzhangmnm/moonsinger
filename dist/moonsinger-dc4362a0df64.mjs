@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.51-2026-11-09";
+var APP_VERSION = "v0.16.52-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28483,7 +28483,7 @@ function createPadHost(padEl2, g3) {
     chordRoots.delete(id2);
   }
   const music = createPadMusic(st2);
-  const padImpro = () => g3.impro() || g3.finderShown() || g3.instShown();
+  const padImpro = () => g3.gate.why() !== null;
   const padAccept = (id2) => g3.canStack() ? (monoHeld.add(id2), true) : monoAccept(id2);
   function padWrite(p2, id2, raw = false) {
     if (g3.finderOpen()) return;
@@ -28572,8 +28572,12 @@ function createPadHost(padEl2, g3) {
       diagNote("pad", `unknown pad key ${id2}`);
       return;
     }
-    if (a10.kind === "cmd") runPadCommand(a10.cmd);
-    else if (a10.kind === "mark") g3.insertMarkHere(a10.mark);
+    if (a10.kind === "cmd") {
+      runPadCommand(a10.cmd);
+      return;
+    }
+    if (!g3.gate.mayWrite()) return;
+    if (a10.kind === "mark") g3.insertMarkHere(a10.mark);
     else if (a10.menu === "groove") g3.insertGrooveHere();
     else if (a10.menu === "repeat") g3.openRepeatMenu();
     else {
@@ -28585,6 +28589,7 @@ function createPadHost(padEl2, g3) {
   function runPadCommand(c10) {
     if (c10.k === "caret") g3.half.caretMoved();
     const prev = st2(), nx2 = apply(prev, g3.half.wrap(c10), performance.now());
+    if (!g3.gate.may(prev, nx2)) return;
     if (c10.k === "art" && nx2 === prev) {
       g3.info(c10.a === "arpeggio" ? _t("\u7436\u97F3\u53EA\u6302\u5728\u548C\u5F26\u4E0A\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6216\u9009\u4E2D\u7684\uFF09\u662F\u5355\u97F3") : _t("{p}\u8981\u6302\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u5149\u6807\u524D\u9762\u662F\u4F11\u6B62\u6216\u8005\u8FD8\u6CA1\u6709\u97F3\uFF09", { p: ART_NAME[c10.a] }));
       return;
@@ -29333,7 +29338,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-e066d1174db6.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-d72ef65dd5af.mjs");
+      return pick(() => "encode-worker-ee1715996993.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -51185,6 +51190,7 @@ function createHome(init2, ports) {
         if (!o10.nextIsGallery) {
           try {
             await ports.gallery.flushAndPush();
+            if (ports.dirty()) await ports.gallery.flushLocal();
           } catch (e10) {
             ports.report(e10, "warning");
           }
@@ -51242,6 +51248,58 @@ function createHome(init2, ports) {
     release,
     noteChanged
   };
+}
+
+// src/app/input-gate.ts
+function noWrite(f2) {
+  return f2.locked ? "locked" : f2.picking ? "picking" : f2.unplugged ? "unplugged" : null;
+}
+var writesScore = (prev, next2) => next2.song !== prev.song;
+var PLUG_LOCI = /* @__PURE__ */ new Set(["score", "paper"]);
+function stepLocus(h2, dir) {
+  const a10 = dir === "undo" ? h2.past : h2.future;
+  return a10.length ? a10[a10.length - 1].locus.kind : null;
+}
+function createInputGate(p2) {
+  const why2 = () => noWrite({ locked: p2.locked(), picking: p2.picking(), unplugged: p2.unplugged() });
+  const refuse = (w2, kind) => {
+    p2.onBlocked(w2, kind);
+    return false;
+  };
+  const mayWrite = (kind = "score") => {
+    const w2 = why2();
+    return w2 ? refuse(w2, kind) : true;
+  };
+  return {
+    why: why2,
+    may: (prev, next2) => writesScore(prev, next2) ? mayWrite("score") : true,
+    mayWrite,
+    mayStep: (h2, dir) => {
+      const w2 = why2(), kind = stepLocus(h2, dir);
+      if (w2 !== "unplugged" || !kind || !PLUG_LOCI.has(kind)) return true;
+      return refuse(w2, kind);
+    },
+    mayToggle: () => {
+      const f2 = noWrite({ locked: p2.locked(), picking: p2.picking(), unplugged: false });
+      return f2 ? refuse(f2, "score") : true;
+    }
+  };
+}
+function keyOwner(f2) {
+  if (f2.finderShown && f2.galleryOpen) return "galleryFinder";
+  if (f2.galleryOpen) return "gallery";
+  if (f2.fileCombo) return "file";
+  if (f2.composing) return "ime";
+  if (!f2.escape && f2.typing && !f2.ownField) return "field";
+  if (f2.finderOpen) return "finder";
+  if (f2.instShown) return "inst";
+  if (f2.inRef) return "ref";
+  if (f2.studioOpen && f2.escape && f2.escFree) return "studioEsc";
+  if (f2.studioOpen && f2.inStudio) return "studio";
+  if (f2.listen) return "listen";
+  if (!f2.mod && f2.formControl) return "control";
+  if (f2.mod && !f2.ownField && f2.typing) return "field";
+  return "score";
 }
 
 // src/format/encode-client.ts
@@ -52142,10 +52200,37 @@ function insertMarkHere(_kind, at2) {
   headerPanel.open(D2.st.at.paper, D2.st.at.part, D2.st.sel ? D2.st.sel.from : D2.st.caret, at2 ?? { x: r10.left + r10.width / 2, y: r10.top - 4 });
 }
 var monoHinted = false;
+var inputGate = createInputGate({
+  locked: () => D2.locked() !== null,
+  picking: () => finderShown() || instShown(),
+  unplugged: () => impro,
+  onBlocked: (why2) => plugNudge(why2)
+});
+var plugNudgeT = 0;
+var plugNoted = null;
+function plugNudge(why2) {
+  if (plugNoted !== why2) {
+    plugNoted = why2;
+    diagNote("pad", `keys do not write: ${why2}`);
+  }
+  const b3 = padEl.querySelector(".impro-pad");
+  if (!b3) return;
+  b3.classList.remove("nudge");
+  void b3.offsetWidth;
+  b3.classList.add("nudge");
+  clearTimeout(plugNudgeT);
+  plugNudgeT = window.setTimeout(() => padEl.querySelector(".impro-pad")?.classList.remove("nudge"), 450);
+}
 var padHost = createPadHost(padEl, {
+  // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
   state: () => D2.st,
-  update: (n10) => update(n10),
-  writeAndLocate,
+  update: (n10) => {
+    if (inputGate.may(D2.st, n10)) update(n10);
+  },
+  writeAndLocate: (w2) => writeAndLocate((s10) => {
+    const n10 = w2(s10);
+    return inputGate.may(s10, n10) ? n10 : s10;
+  }),
   afterWrite,
   previewEdited,
   info: (m2) => info(m2),
@@ -52160,10 +52245,8 @@ var padHost = createPadHost(padEl, {
   soundTok,
   soundAfterWrite,
   onTouch: (ts2) => feel.touch(ts2),
-  impro: () => impro,
+  gate: inputGate,
   finderOpen: () => finder.isOpen,
-  finderShown,
-  instShown,
   toggleImpro: () => toggleImpro(),
   kbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),
   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
@@ -52205,9 +52288,13 @@ var padHost = createPadHost(padEl, {
 var pad3 = padHost.pad;
 pad3.setBigLabel(viewInC ? "deg" : "abs");
 function toggleImpro() {
-  if (finder.isOpen) return;
-  impro = !impro;
-  if (impro) showPad(true);
+  if (finder.isOpen || !inputGate.mayToggle()) return;
+  setImpro(!impro);
+}
+function setImpro(on2) {
+  impro = on2;
+  padEl.classList.toggle("is-unplugged", on2);
+  if (on2) showPad(true);
   pad3.render();
   ghostHeld.clear();
   ghostSync();
@@ -53009,7 +53096,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "0ec1af82de63",
+  cssHash: "e45fa5f2de7c",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -54893,7 +54980,7 @@ function applyDesk(d3) {
 function loadDoc(song, o10) {
   perfApi.mixBypass = false;
   busMuted.clear();
-  if (impro) toggleImpro();
+  if (impro) setImpro(false);
   ui2.close();
   closeInstPage();
   H2.load(o10.home, { stem: o10.stem, named: o10.named });
@@ -56545,7 +56632,7 @@ function whereNow() {
   if (ui2.overlay || isSheetOpen() || isGateOpen()) return "sheet";
   if (view.marks.open) return "mark";
   if (view.lyrics.open) return "lyric";
-  return impro ? "impro" : D2.st.sel ? "edit" : "write";
+  return inputGate.why() ? "impro" : D2.st.sel ? "edit" : "write";
 }
 var NOTE_EDIT = /* @__PURE__ */ new Set(["degree", "rest", "bar", "shorter", "longer", "tuplet", "extend", "acc", "octave", "step", "alter", "delete", "transpose", "respell", "seldur", "selscale", "modulate", "staff"]);
 var modeHintShown = null;
@@ -56554,7 +56641,8 @@ function lyricBackspace() {
   for (let i10 = D2.st.caret - 1; i10 >= 0; i10--) {
     const t10 = toks[i10];
     if (t10.kind !== "note") continue;
-    update(setCaret(t10.lyric ? setNote(D2.st, i10, { lyric: null }) : D2.st, i10));
+    const n10 = setCaret(t10.lyric ? setNote(D2.st, i10, { lyric: null }) : D2.st, i10);
+    if (inputGate.may(D2.st, n10)) update(n10);
     return;
   }
 }
@@ -56569,7 +56657,8 @@ function run(a10, repeat, code) {
         return true;
       }
       if (a10.cmd.k === "backspace" && ws.mode === "symbols") {
-        update(apply(D2.st, { k: "symBackspace" }, performance.now()));
+        const n10 = apply(D2.st, { k: "symBackspace" }, performance.now());
+        if (inputGate.may(D2.st, n10)) update(n10);
         return true;
       }
       if (a10.cmd.k === "backspace" && ws.mode === "lyrics") {
@@ -56579,7 +56668,7 @@ function run(a10, repeat, code) {
       if (a10.cmd.k === "degree") {
         if (!repeat && padHost.monoAccept(`key${code}`)) {
           const c10 = { ...a10.cmd, mono: !canStack() }, n10 = apply(D2.st, c10, performance.now());
-          if (n10 !== D2.st) {
+          if (n10 !== D2.st && inputGate.may(D2.st, n10)) {
             const t02 = tr(n10)[n10.caret - 1];
             if (t02?.kind === "note" && t02.pitch) {
               sound.down(t02.pitch, `key${code}`);
@@ -56592,7 +56681,11 @@ function run(a10, repeat, code) {
         }
         return true;
       }
-      update(apply(D2.st, withHalf(a10.cmd), performance.now()));
+      {
+        const n10 = apply(D2.st, withHalf(a10.cmd), performance.now());
+        if (!inputGate.may(D2.st, n10)) return true;
+        update(n10);
+      }
       if (a10.cmd.k === "rest" || a10.cmd.k === "extend") afterWrite();
       if (a10.cmd.k === "step" || a10.cmd.k === "alter" || a10.cmd.k === "octave") previewEdited();
       return true;
@@ -56619,6 +56712,7 @@ function run(a10, repeat, code) {
         }
         return true;
       }
+      if (!inputGate.mayWrite()) return true;
       if (!canStack()) {
         info(_t("\u8FD9\u6761\u58F0\u90E8\u53F0\u4E0A\u662F\u5355\u58F0\u7684\uFF08\u5C0F\u6708\u76F8 / \u5143\u97F3\u7248 / \u6CA1\u4EBA\uFF09\uFF1A\u53E0\u4E0D\u4E86\u3002\u6362\u6210\u80FD\u53E0\u97F3\u7684\u4E50\u5668\u518D\u53E0"));
         return true;
@@ -56651,13 +56745,16 @@ function run(a10, repeat, code) {
       else openExportHub();
       return true;
     case "clip":
+      if ((a10.a === "cut" || a10.a === "paste") && !inputGate.mayWrite()) return true;
       void selVerb(a10.a);
       return true;
+    // 复制 / 全选是读，不问
     case "undo":
-      undoNow();
+      if (inputGate.mayStep(D2.history, "undo")) undoNow();
       return true;
+    // 拔着时键盘上的撤销：轮到谱上的那一步就停（乐器 / 混音那几块照常）
     case "redo":
-      redoNow();
+      if (inputGate.mayStep(D2.history, "redo")) redoNow();
       return true;
   }
 }
@@ -56673,84 +56770,97 @@ function finderKey(e10) {
 }
 window.addEventListener("keydown", (e10) => {
   keyTs = e10.timeStamp;
-  if (finderShown() && gallery?.isOpen()) {
-    if (e10.key === "Escape") {
+  const t10 = e10.target, mod = e10.ctrlKey || e10.metaKey, esc12 = e10.key === "Escape";
+  const galleryOpen = !!gallery?.isOpen(), ownField = !!t10?.closest?.(".lyric-input, .mark-ed"), typing = typingIn(t10);
+  const fileAct = !galleryOpen && mod && !e10.altKey && /^[so]$/i.test(e10.key) ? route(e10, whereNow(), "write") : null;
+  const owner = keyOwner({
+    galleryOpen,
+    finderShown: finderShown(),
+    finderOpen: finder.isOpen,
+    fileCombo: fileAct?.k === "file",
+    composing: e10.isComposing || e10.keyCode === 229,
+    escape: esc12,
+    mod,
+    typing,
+    ownField,
+    formControl: !!t10 && (t10.tagName === "SELECT" || t10.tagName === "TEXTAREA" || t10.tagName === "INPUT" && !ownField),
+    instShown: instShown(),
+    inRef: !!t10?.closest?.("wp-reference-window"),
+    studioOpen: studio.isOpen,
+    inStudio: !!t10?.closest?.(".studio"),
+    escFree: !D2.st.sel && !view.lyrics.open && !view.marks.open && !ui2.overlay,
+    listen: listenOn()
+  });
+  switch (owner) {
+    case "galleryFinder":
+    case "finder":
+      if (esc12) {
+        e10.preventDefault();
+        closeFinder();
+      } else finderKey(e10);
+      return;
+    // 乐器目录（歌库上面的 / 歌里的）：Esc 收起；音键只弹不写（pad 的触屏键照常）
+    case "gallery":
+    case "ime":
+    case "field":
+    case "ref":
+    case "control":
+      return;
+    // 歌库没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建；参考窗 Ctrl / ⌘+V 进窗、Esc 它自己交回谱
+    case "file":
       e10.preventDefault();
-      closeFinder();
-    } else finderKey(e10);
-    return;
-  }
-  if (gallery?.isOpen()) return;
-  if ((e10.ctrlKey || e10.metaKey) && !e10.altKey && /^[so]$/i.test(e10.key)) {
-    const a11 = route(e10, whereNow(), "write");
-    if (a11 && a11.k === "file") {
-      e10.preventDefault();
-      run(a11, e10.repeat, e10.code);
+      run(fileAct, e10.repeat, e10.code);
+      return;
+    case "inst": {
+      const inField = t10?.closest("input, select, textarea");
+      if (esc12) {
+        e10.preventDefault();
+        closeInstPage();
+      } else if (!inField && mod && e10.key.toLowerCase() === "z") {
+        e10.preventDefault();
+        if (e10.shiftKey) redoNow();
+        else undoNow();
+      } else if (!inField && mod && e10.key.toLowerCase() === "y") {
+        e10.preventDefault();
+        redoNow();
+      }
       return;
     }
-  }
-  if (e10.isComposing || e10.keyCode === 229) return;
-  {
-    const tg2 = e10.target;
-    if (e10.key !== "Escape" && typingIn(tg2) && !tg2?.closest?.(".lyric-input, .mark-ed")) return;
-  }
-  if (finder.isOpen) {
-    if (e10.key === "Escape") {
-      e10.preventDefault();
-      closeFinder();
-    } else finderKey(e10);
-    return;
-  }
-  if (instShown()) {
-    const inField = e10.target?.closest("input, select, textarea");
-    if (e10.key === "Escape") {
-      e10.preventDefault();
-      closeInstPage();
-    } else if (!inField && (e10.ctrlKey || e10.metaKey) && e10.key.toLowerCase() === "z") {
-      e10.preventDefault();
-      if (e10.shiftKey) redoNow();
-      else undoNow();
-    } else if (!inField && (e10.ctrlKey || e10.metaKey) && e10.key.toLowerCase() === "y") {
-      e10.preventDefault();
-      redoNow();
-    }
-    return;
-  }
-  if (e10.target?.closest?.("wp-reference-window")) return;
-  if (studio.isOpen && e10.key === "Escape" && !D2.st.sel && !view.lyrics.open && !view.marks.open && !ui2.overlay) {
-    e10.preventDefault();
-    setMode(lastEditMode);
-    return;
-  }
-  if (studio.isOpen && e10.target?.closest?.(".studio")) {
-    if (e10.key === "Escape") {
+    case "studioEsc":
       e10.preventDefault();
       setMode(lastEditMode);
-    } else if (e10.key === " " && !typingIn(e10.target)) {
-      e10.preventDefault();
-      playPause(e10.timeStamp);
+      return;
+    // 混音台 = 听：谱上没别的可退 = Esc 回到写
+    case "studio":
+      if (esc12) {
+        e10.preventDefault();
+        setMode(lastEditMode);
+      } else if (e10.key === " " && !typing) {
+        e10.preventDefault();
+        playPause(e10.timeStamp);
+      }
+      return;
+    case "listen":
+      if (e10.key === " ") {
+        e10.preventDefault();
+        playPause(e10.timeStamp);
+      } else if (esc12) {
+        e10.preventDefault();
+        setListen(false);
+      } else if (mod && e10.key.toLowerCase() === "s") {
+        const a10 = route(e10, whereNow(), "write");
+        if (a10 && run(a10, e10.repeat, e10.code)) e10.preventDefault();
+      }
+      return;
+    case "score": {
+      const a10 = route(e10, whereNow(), D2.st.sel ? "edit" : "write");
+      if (a10 && run(a10, e10.repeat, e10.code)) e10.preventDefault();
+      return;
     }
-    return;
+    // 谱：照键表路由；会写谱的在 run() 里问总闸
+    default:
+      return assertNever(owner);
   }
-  if (listenOn()) {
-    if (e10.key === " ") {
-      e10.preventDefault();
-      playPause(e10.timeStamp);
-    } else if (e10.key === "Escape") {
-      e10.preventDefault();
-      setListen(false);
-    } else if ((e10.ctrlKey || e10.metaKey) && e10.key.toLowerCase() === "s") {
-      const a11 = route(e10, whereNow(), "write");
-      if (a11 && run(a11, e10.repeat, e10.code)) e10.preventDefault();
-    }
-    return;
-  }
-  const t10 = e10.target;
-  const ownField = !!t10?.closest?.(".lyric-input, .mark-ed");
-  if (!(e10.ctrlKey || e10.metaKey) && t10 && (t10.tagName === "SELECT" || t10.tagName === "TEXTAREA" || t10.tagName === "INPUT" && !ownField)) return;
-  if ((e10.ctrlKey || e10.metaKey) && !ownField && typingIn(t10)) return;
-  const a10 = route(e10, whereNow(), D2.st.sel ? "edit" : "write");
-  if (a10 && run(a10, e10.repeat, e10.code)) e10.preventDefault();
 });
 window.addEventListener("keyup", (e10) => {
   padHost.release(`key${e10.code}`);
@@ -57006,4 +57116,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-af748c32220c.mjs.map
+//# sourceMappingURL=moonsinger-dc4362a0df64.mjs.map

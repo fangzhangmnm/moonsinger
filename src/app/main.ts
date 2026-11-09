@@ -119,6 +119,7 @@ import { copyTokens, cutTokens, pasteTokens, selectAll, toJianpu, fromJianpu, fi
 import { type Locus, type Restored } from "../score/history.ts";
 import { createDocument, type SavedMark } from "./document.ts";
 import { createHome, assertNever, type Home } from "./home.ts";
+import { createInputGate, keyOwner, type NoWrite } from "./input-gate.ts";
 import { createEncoder } from "../format/encode-client.ts";
 import { runFactoryReset } from "./factory-reset.ts";
 import { freshDesk, freshPartView, serializeDesk, unserializeDesk, serializeFinderMemo, unserializeFinderMemo, PAD_UNITS, type Desk, type PartViewState } from "../score/desk.ts";
@@ -694,12 +695,29 @@ function insertMarkHere(_kind?: string, at?: { x: number; y: number }): void {
 // pad 的宿主 = 翻译层（src/app/pad-host.ts，刀 2 之三）：音键 → 写 / 改 / 叠音观望 / 出声，按键 id → 命令（锁 × 光标 × 选区）/ 插记号 / 菜单，手指与电脑键盘共用的「谁按着」簿记。
 //   这里只给它一组访问器；pad 一创建就画，所以它读的状态（padHint、ui.page、autoBars…）都已在上面声明。
 let monoHinted = false;   // 单音护栏丢键的提示：这次打开说过没有
+/** 键盘总闸（src/app/input-gate.ts；2026-11-09 Claude Fable 5.1）：键盘族的每一下（电脑键盘 run() / 触屏键盘 padHost / MIDI 走 padHost）往谱上写之前都问它。
+ *  三个原因现算：歌锁着（现在 = 定稿；修改锁那一轮只换 locked 这一个函数）/ 在选乐器（乐器目录、乐器页）/ 人自己拔着（「弹」）。这里不存状态。
+ *  被挡下 = 「弹」钮晃一下（plugNudge），不弹字。 */
+const inputGate = createInputGate({
+  locked: () => D.locked() !== null,
+  picking: () => finderShown() || instShown(),
+  unplugged: () => impro,
+  onBlocked: (why) => plugNudge(why),
+});
+let plugNudgeT = 0, plugNoted: NoWrite | null = null;
+function plugNudge(why: NoWrite): void {
+  if (plugNoted !== why) { plugNoted = why; diagNote("pad", `keys do not write: ${why}`); }   // 黑匣子里同一个原因只记一次
+  const b = padEl.querySelector<HTMLElement>(".impro-pad"); if (!b) return;
+  b.classList.remove("nudge"); void b.offsetWidth; b.classList.add("nudge");
+  clearTimeout(plugNudgeT); plugNudgeT = window.setTimeout(() => padEl.querySelector(".impro-pad")?.classList.remove("nudge"), 450);
+}
 const padHost = createPadHost(padEl, {
-  state: () => D.st, update: (n) => update(n), writeAndLocate, afterWrite, previewEdited, info: (m) => info(m), canStack,
+  // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
+  state: () => D.st, update: (n) => { if (inputGate.may(D.st, n)) update(n); }, writeAndLocate: (w) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }), afterWrite, previewEdited, info: (m) => info(m), canStack,
   monoRejected: () => { if (monoHinted) return; monoHinted = true; info(_t("「{who}」一次只出一个音：几乎同时按下的第二个键没写。要写和弦，给这个声部换钢琴这类乐器", { who: activeCandidateName(D.extras, curRole()) ?? roleName(D.extras, curRole()) })); },   // 同一次打开只说一次（v0.16.35）   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok, soundAfterWrite,
   onTouch: (ts) => feel.touch(ts),
-  impro: () => impro, finderOpen: () => finder.isOpen, finderShown, instShown,
+  gate: inputGate, finderOpen: () => finder.isOpen,
   toggleImpro: () => toggleImpro(),
   kbSwitch: () => setMode(ws.mode === "symbols" ? "notes" : "symbols"),   // 小键盘顶上「符 / 音」：只换键盘（v0.10.37；模式条上只剩音 / 词 / 听）
   ghost: { on: () => ghostOn(), set: (id, p) => { ghostHeld.set(id, p); }, delete: (id) => ghostHeld.delete(id), sync: () => ghostSync() },
@@ -720,7 +738,9 @@ pad.setBigLabel(viewInC ? "deg" : "abs");
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
 /** 弹（只响不写）：开关在 pad 第一排「收起」左边（user 2026-10-08「弹这个锁还是放键盘上吧放在第一row，收起键盘的左边」）；快捷键 ` 照旧。找人视图里一直是弹、拨不动。 */
-function toggleImpro(): void { if (finder.isOpen) return; impro = !impro; if (impro) showPad(true); pad.render(); ghostHeld.clear(); ghostSync(); }
+function toggleImpro(): void { if (finder.isOpen || !inputGate.mayToggle()) return; setImpro(!impro); }   // 锁着 / 在选乐器 = 强制拔着，接不回去（钮晃一下）
+/** 直接定（换歌时复位用；人拨的走 toggleImpro）。拔着 = 键盘上会写谱的那一排也灰掉（styles.css .pad-panel.is-unplugged）。 */
+function setImpro(on: boolean): void { impro = on; padEl.classList.toggle("is-unplugged", on); if (on) showPad(true); pad.render(); ghostHeld.clear(); ghostSync(); }
 /** 「弹」时正按着的音 → 谱上光标处（叠亮着 = 那个音上）画鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「鬼音符的时候千万不能动排版！」）：
  *  只是盖在谱上的一层（ScoreView.showGhost），不改谱、不重排。 */
 const ghostHeld = new Map<string, Pitch>();
@@ -2427,7 +2447,7 @@ function applyDesk(d: Desk): void {
 }
 function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array> }): void {
   perfApi.mixBypass = false; busMuted.clear();   // 效果全关 / 混音轨静音是这次听的，换歌复位
-  if (impro) toggleImpro();
+  if (impro) setImpro(false);
   ui.close(); closeInstPage();
   H.load(o.home, { stem: o.stem, named: o.named }); coverTouched = false;   // 换家（歌库 → 别处 = 放下 es 的身份；指针 / store 的「谁开着」在 onHome 里）
   const st0 = initState(song), startDyns = ensureStartDyns(st0.song, st0.nextId).added.length;
@@ -3627,7 +3647,7 @@ function whereNow(): Where {
   if (ui.overlay || isSheetOpen() || isGateOpen()) return "sheet";
   if (view.marks.open) return "mark";
   if (view.lyrics.open) return "lyric";
-  return impro ? "impro" : D.st.sel ? "edit" : "write";
+  return inputGate.why() ? "impro" : D.st.sel ? "edit" : "write";   // 键盘现在不往谱上写（拔着 / 在选乐器 / 锁着）= 按「弹」路由：音键只响
 }
 /** 照做；返回 false = 这一下其实不归我们管（例如歌词框里「-」不跟在字母后面），让浏览器照常打字。 */
 /** 写音的那些命令：只在「音」里（「词 / 符」里键盘不写音——这一层不是音；user「模式！音，歌词，强度和articulation！」）。 */
@@ -3638,7 +3658,8 @@ function lyricBackspace(): void {
   const toks = tr(D.st);
   for (let i = D.st.caret - 1; i >= 0; i--) {
     const t = toks[i]; if (t.kind !== "note") continue;
-    update(setCaret(t.lyric ? setNote(D.st, i, { lyric: null }) : D.st, i));
+    const n = setCaret(t.lyric ? setNote(D.st, i, { lyric: null }) : D.st, i);
+    if (inputGate.may(D.st, n)) update(n);
     return;
   }
 }
@@ -3646,12 +3667,12 @@ function run(a: Action, repeat: boolean, code: string): boolean {
   switch (a.k) {
     case "cmd":
       if (ws.mode === "lyrics" && NOTE_EDIT.has(a.cmd.k)) { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(_t("「{p}」里键盘不写音（切到「音」再写）", { p: MODE_LABEL[ws.mode] })); } return true; }   // 「符」里电脑键盘照样写音（v0.10.36 音符一起编辑）；只有「词」不写
-      if (a.cmd.k === "backspace" && ws.mode === "symbols") { update(apply(D.st, { k: "symBackspace" }, performance.now())); return true; }   // 符：退格删记号（user「我早就想用退格删强度曲线了」）
+      if (a.cmd.k === "backspace" && ws.mode === "symbols") { const n = apply(D.st, { k: "symBackspace" }, performance.now()); if (inputGate.may(D.st, n)) update(n); return true; }   // 符：退格删记号（user「我早就想用退格删强度曲线了」）
       if (a.cmd.k === "backspace" && ws.mode === "lyrics") { lyricBackspace(); return true; }
       if (a.cmd.k === "degree") {
         if (!repeat && padHost.monoAccept(`key${code}`)) {   // 先响后写（2026-10-17 Fable）：响的就是要写进去的那个音（算在没提交的 n 里）；写完按 D.st 定位（normalize 可能在前面补力度，下标会挪）
           const c = { ...a.cmd, mono: !canStack() }, n = apply(D.st, c, performance.now());
-          if (n !== D.st) {
+          if (n !== D.st && inputGate.may(D.st, n)) {
             const t0 = tr(n)[n.caret - 1];
             if (t0?.kind === "note" && t0.pitch) { sound.down(t0.pitch, `key${code}`); pad.showDown(midiOf(t0.pitch), `key${code}`); }
             update(n);
@@ -3661,7 +3682,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
         }
         return true;
       }
-      update(apply(D.st, withHalf(a.cmd), performance.now()));
+      { const n = apply(D.st, withHalf(a.cmd), performance.now()); if (!inputGate.may(D.st, n)) return true; update(n); }   // 总闸：会改谱而键盘拔着 = 安静不做（键照样吃掉，不落到浏览器）；只动光标 / 选中 / 输入状态的照常
       if (a.cmd.k === "rest" || a.cmd.k === "extend") afterWrite();
       if (a.cmd.k === "step" || a.cmd.k === "alter" || a.cmd.k === "octave") previewEdited();   // 改音高 = 响一下（改时长不响；user 2026-10-10）
       return true;
@@ -3676,6 +3697,7 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "stack":   // Shift+1–7 = 叠（同 pad「叠」：XOR；单声乐器的声部叠不了）
       if (repeat) return true;
       if (ws.mode !== "notes") { if (modeHintShown !== ws.mode) { modeHintShown = ws.mode; info(_t("「{p}」里键盘不写音（切到「音」再写）", { p: MODE_LABEL[ws.mode] })); } return true; }
+      if (!inputGate.mayWrite()) return true;
       if (!canStack()) { info(_t("这条声部台上是单声的（小月相 / 元音版 / 没人）：叠不了。换成能叠音的乐器再叠")); return true; }
       { const n = stackDegree(D.st, a.degree); if (n === D.st) return true; update(n); previewEdited(); }
       return true;
@@ -3685,9 +3707,9 @@ function run(a: Action, repeat: boolean, code: string): boolean {
     case "mark": view.marks.act(a.a); return true;
     case "sheet": ui.close(); closeSheet(); return true;
     case "file": if (a.a === "open") void fileOpen(); else if (a.a === "save") void fileSave(); else openExportHub(); return true;
-    case "clip": void selVerb(a.a); return true;
-    case "undo": undoNow(); return true;
-    case "redo": redoNow(); return true;
+    case "clip": if ((a.a === "cut" || a.a === "paste") && !inputGate.mayWrite()) return true; void selVerb(a.a); return true;   // 复制 / 全选是读，不问
+    case "undo": if (inputGate.mayStep(D.history, "undo")) undoNow(); return true;   // 拔着时键盘上的撤销：轮到谱上的那一步就停（乐器 / 混音那几块照常）
+    case "redo": if (inputGate.mayStep(D.history, "redo")) redoNow(); return true;
   }
 }
 let keyTs = 0;   // 这一下按键的时刻（事件的 timeStamp）：空格连按两下 = 从头放，按真的间隔算
@@ -3701,42 +3723,46 @@ function finderKey(e: KeyboardEvent): void {
 }
 window.addEventListener("keydown", (e) => {
   keyTs = e.timeStamp;
-  if (finderShown() && gallery?.isOpen()) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } else finderKey(e); return; }   // 歌库上面的乐器目录（只弹着玩）：Esc 回歌库；音键 = 弹
-  if (gallery?.isOpen()) return;   // 歌库开着：键盘归它。没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建
-  // 存 / 导出 / 打开（Ctrl / ⌘+S、+Shift+S、+O）挂在最外层：不管哪一页开着、焦点在谁身上（录音室 / 乐器页 / 乐器目录 / 参考窗）都是这首歌的事，
-  //   不能落到浏览器的「保存网页」（2026-10-10 user「很多地方save没有拦截」）。各页只决定别的键。
-  if ((e.ctrlKey || e.metaKey) && !e.altKey && /^[so]$/i.test(e.key)) { const a = route(e, whereNow(), "write"); if (a && a.k === "file") { e.preventDefault(); run(a, e.repeat, e.code); return; } }
-  // 打字的框拿着焦点 = 键一律归框（v0.16.14，user 11-07「改名的时候没法输入空格，被播放按钮劫持了。帮我系统性的查一下这反映了什么系统问题」）：
-  //   原来「让不让路」是下面各段自己判断（乐器页、混音台、写谱各写各的），「听」那一段没判断 = 在听模式里改名，空格被拿去放 / 停。
-  //   现在这一条在所有分段之前：不论哪一页、哪个模式，光标在字框里（谱自己的歌词框 / 记号框除外，它们走路由）就不接——
-  //   只留上面的存 / 打开，和 Esc（各页自己的「收起」，原样往下走）。输入法正在拼字（空格是选字）同样不接。
-  if (e.isComposing || e.keyCode === 229) return;
-  { const tg = e.target as HTMLElement | null; if (e.key !== "Escape" && typingIn(tg) && !tg?.closest?.(".lyric-input, .mark-ed")) return; }
-  if (finder.isOpen) { if (e.key === "Escape") { e.preventDefault(); closeFinder(); } else finderKey(e); return; }   // 找人视图开着：Esc + 音键只弹不写（pad 的触屏键照常）
-  if (instShown()) {   // 乐器页：只认 Esc（回谱）和撤销 / 重做；输入框里的照常打字
-    const inField = (e.target as HTMLElement | null)?.closest("input, select, textarea");
-    if (e.key === "Escape") { e.preventDefault(); closeInstPage(); }
-    else if (!inField && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redoNow(); else undoNow(); }
-    else if (!inField && (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "y") { e.preventDefault(); redoNow(); }
-    return;
+  // 这一下归谁 = src/app/input-gate.ts keyOwner（先后顺序就是规矩本身，在那边一条一条测；2026-11-09 从这里的一长串 if 收过去）。这里只按归属去做。
+  //   · 存 / 导出 / 打开（Ctrl / ⌘+S、+Shift+S、+O）排在歌库之后、别的之前：不管哪一页开着、焦点在谁身上（录音室 / 乐器页 / 乐器目录 / 参考窗）都是这首歌的事，
+  //     不能落到浏览器的「保存网页」（2026-10-10 user「很多地方save没有拦截」）。
+  //   · 打字的框拿着焦点 = 键一律归框（v0.16.14，user 11-07「改名的时候没法输入空格，被播放按钮劫持了。帮我系统性的查一下这反映了什么系统问题」）：
+  //     不论哪一页、哪个模式都不接——只留上面的存 / 打开，和 Esc（各页自己的「收起」）。谱自己的歌词框 / 记号框除外（它们走键表）。输入法正在拼字（空格是选字）同样不接。
+  //   · 别的表单控件（下拉框、滑块）拿着焦点：不接，它们自己吃方向键 / 空格。打字的框里 Ctrl / ⌘ 组合（贴 / 全选 / 撤销）归浏览器（W-36；user 2026-10-13「复制进文本框的时候ctrl v误拦截了」）。
+  const t = e.target as HTMLElement | null, mod = e.ctrlKey || e.metaKey, esc = e.key === "Escape";
+  const galleryOpen = !!gallery?.isOpen(), ownField = !!t?.closest?.(".lyric-input, .mark-ed"), typing = typingIn(t);
+  const fileAct = !galleryOpen && mod && !e.altKey && /^[so]$/i.test(e.key) ? route(e, whereNow(), "write") : null;
+  const owner = keyOwner({
+    galleryOpen, finderShown: finderShown(), finderOpen: finder.isOpen, fileCombo: fileAct?.k === "file",
+    composing: e.isComposing || e.keyCode === 229, escape: esc, mod, typing, ownField,
+    formControl: !!t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !ownField)),
+    instShown: instShown(), inRef: !!t?.closest?.("wp-reference-window"),
+    studioOpen: studio.isOpen, inStudio: !!t?.closest?.(".studio"),
+    escFree: !D.st.sel && !view.lyrics.open && !view.marks.open && !ui.overlay, listen: listenOn(),
+  });
+  switch (owner) {
+    case "galleryFinder": case "finder": if (esc) { e.preventDefault(); closeFinder(); } else finderKey(e); return;   // 乐器目录（歌库上面的 / 歌里的）：Esc 收起；音键只弹不写（pad 的触屏键照常）
+    case "gallery": case "ime": case "field": case "ref": case "control": return;   // 歌库没有「回到谱」（gallery-first）：出口 = 打开一首 / 新建；参考窗 Ctrl / ⌘+V 进窗、Esc 它自己交回谱
+    case "file": e.preventDefault(); run(fileAct!, e.repeat, e.code); return;
+    case "inst": {   // 乐器页：只认 Esc（回谱）和撤销 / 重做；输入框里的照常打字
+      const inField = t?.closest("input, select, textarea");
+      if (esc) { e.preventDefault(); closeInstPage(); }
+      else if (!inField && mod && e.key.toLowerCase() === "z") { e.preventDefault(); if (e.shiftKey) redoNow(); else undoNow(); }
+      else if (!inField && mod && e.key.toLowerCase() === "y") { e.preventDefault(); redoNow(); }
+      return;
+    }
+    case "studioEsc": e.preventDefault(); setMode(lastEditMode); return;   // 混音台 = 听：谱上没别的可退 = Esc 回到写
+    case "studio":   // 混音台在底座里：焦点在它里面才归它，谱照样能写；Esc 回谱、空格播放——焦点在推子 / 下拉 / 按钮上也是（v0.10.10）
+      if (esc) { e.preventDefault(); setMode(lastEditMode); } else if (e.key === " " && !typing) { e.preventDefault(); playPause(e.timeStamp); }
+      return;
+    case "listen":   // 听模式：只认 空格（放 / 暂停）、Esc（回到写）和 Ctrl / ⌘+S（存）；别的键不写谱
+      if (e.key === " ") { e.preventDefault(); playPause(e.timeStamp); }
+      else if (esc) { e.preventDefault(); setListen(false); }
+      else if (mod && e.key.toLowerCase() === "s") { const a = route(e, whereNow(), "write"); if (a && run(a, e.repeat, e.code)) e.preventDefault(); }
+      return;
+    case "score": { const a = route(e, whereNow(), D.st.sel ? "edit" : "write"); if (a && run(a, e.repeat, e.code)) e.preventDefault(); return; }   // 谱：照键表路由；会写谱的在 run() 里问总闸
+    default: return assertNever(owner);
   }
-  if ((e.target as HTMLElement | null)?.closest?.("wp-reference-window")) return;   // 参考窗拿着焦点：键盘归它（Ctrl / ⌘+V 进窗；Esc 它自己交回谱）
-  if (studio.isOpen && e.key === "Escape" && !D.st.sel && !view.lyrics.open && !view.marks.open && !ui.overlay) { e.preventDefault(); setMode(lastEditMode); return; }   // 混音台 = 听：Esc = 回到写   // 谱上没别的可退 = Esc 收起录音室
-  if (studio.isOpen && (e.target as HTMLElement | null)?.closest?.(".studio")) { if (e.key === "Escape") { e.preventDefault(); setMode(lastEditMode); } else if (e.key === " " && !typingIn(e.target)) { e.preventDefault(); playPause(e.timeStamp); } return; }   // 混音台在底座里：焦点在它里面才归它，谱照样能写；Esc 回谱、空格播放——焦点在推子 / 下拉 / 按钮上也是（v0.10.10 修：原来焦点在任何 input（推子也是）上都放过 = user「混音台的空格没有捕捉」），只有打字的框（混音轨的名字）不抢
-  if (listenOn()) {   // 听模式：只认 空格（放 / 暂停）、Esc（回到写）和 Ctrl / ⌘+S（存）；别的键不写谱
-    if (e.key === " ") { e.preventDefault(); playPause(e.timeStamp); }
-    else if (e.key === "Escape") { e.preventDefault(); setListen(false); }
-    else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") { const a = route(e, whereNow(), "write"); if (a && run(a, e.repeat, e.code)) e.preventDefault(); }
-    return;
-  }
-  // 别的表单控件（顶栏的下拉框）拿着焦点：不接，它们自己吃方向键 / 空格。歌词框、记号框的输入框照常路由。
-  const t = e.target as HTMLElement | null;
-  const ownField = !!t?.closest?.(".lyric-input, .mark-ed");
-  if (!(e.ctrlKey || e.metaKey) && t && (t.tagName === "SELECT" || t.tagName === "TEXTAREA" || (t.tagName === "INPUT" && !ownField))) return;
-  // 打字的框（歌名 / 曲段名 / 编排那一行、面板里的框）拿着焦点：Ctrl / ⌘ 组合（贴 / 全选 / 撤销 / 复制剪切）归浏览器，不落到谱上（W-36；user 2026-10-13「复制进文本框的时候ctrl v误拦截了」）。存 / 另存 / 打开上面已经接住了
-  if ((e.ctrlKey || e.metaKey) && !ownField && typingIn(t)) return;
-  const a = route(e, whereNow(), D.st.sel ? "edit" : "write");
-  if (a && run(a, e.repeat, e.code)) e.preventDefault();
 });
 window.addEventListener("keyup", (e) => { padHost.release(`key${e.code}`); if (ghostHeld.delete(`key${e.code}`)) ghostSync(); if (isSoundKey(e)) { sound.up(`key${e.code}`); pad.showUp(`key${e.code}`); } });   // 复音：只停这个键的
 // 切走 app / 失焦：抬手的事件可能收不到，全部停掉（同 WeebPaint 的 pointer 自愈）

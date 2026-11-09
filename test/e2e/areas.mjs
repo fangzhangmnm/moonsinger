@@ -12,7 +12,7 @@ export const AREAS = {
     "zoom", "ctrl-zoom", "dock-zoom", "scroll", "swell-art", "phrase", "repeat", "transpose", "arrange", "pad-ghost", "listen-ghost", "start-dyn",
     "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys", "overlay-touch"],
   // 键盘（pad）：音键 / 符号格 / 几种锁 / 歌词框 / 记号菜单
-  pad: ["stack-caps", "pad-key-auto", "view-in-c", "chord-tags", "pad-toggle", "pad-ghost", "dyn-levels", "ramp", "groove", "clef", "repeat", "finder-keys", "modes", "landscape-widgets",
+  pad: ["unplug", "stack-caps", "pad-key-auto", "view-in-c", "chord-tags", "pad-toggle", "pad-ghost", "dyn-levels", "ramp", "groove", "clef", "repeat", "finder-keys", "modes", "landscape-widgets",
     "dock-zoom", "save-keys", "swell-art", "start-dyn", "lyric-dash", "phrase", "sel-tweak", "title-keys", "midi", "dock-side", "finder-width", "finder-memory", "finder-names", "cast-back", "audition-banks", "part-toggles", "finder-accordion", "header-panel", "pad-follow"],
   // 放：走带 / 循环 / 翻谱 / 播放头 / 节拍器 / 月读的块与预听
   play: ["transport", "loop", "follow", "measure-follow", "playhead", "seg-jump", "metronome", "progress", "sing-chunks", "sing-stale", "sung-preview",
@@ -28,7 +28,7 @@ export const AREAS = {
   // 界面语言：英文巡检（剩下的中文、撑爆的控件）
   i18n: ["i18n-en", "finder-width"],
   // 模式与底座（workspace.ts 那张表）
-  modes: ["modes", "typing-keys", "title-modes", "mixer-rows", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys", "final", "midi", "dock-side"],
+  modes: ["unplug", "modes", "typing-keys", "title-modes", "mixer-rows", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys", "final", "midi", "dock-side"],
 };
 
 /** 专项（2026-11-08 Fable；user「如果有些比较复杂的功能，确实要测试那么长也可以，就只是说不应该每次测试的时候都测试…专攻测试这些东西的时候可以全量测试」）：

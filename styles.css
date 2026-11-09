@@ -1126,3 +1126,10 @@ body.doc-final .inst-page .finder-bar::after { content: var(--t-final-lock, "定
 
 /* 手感探针的那一行小字（v0.16.23）：浮在键盘上沿，超标才出现，点一下这次打开不再显示 */
 .feel-chip { position: fixed; z-index: var(--z-menu); font: 12px/1.3 inherit; font-family: inherit; padding: 4px 8px; border-radius: 6px; border: 1px solid var(--warn); background: var(--bg); color: var(--ink); text-align: left; white-space: normal; box-shadow: 0 1px 4px rgba(0,0,0,.15); cursor: pointer; }
+
+/* 键盘总闸（v0.16.52，src/app/input-gate.ts）：人自己拔着（「弹」）= 会往谱上写的那一排灰掉、点不动（升降留着：只改弹出来的音）；和乐器目录里那套 .is-locked 同一个样子，
+   但「弹」钮自己照样能点（再点 = 接回去）。键盘想写而写不了的时候「弹」钮晃一下。 */
+.pad-panel.is-unplugged .pad-tools.writes .btn:not(.accshift), .pad-panel.is-unplugged [data-mark] { opacity: .3; pointer-events: none; }
+@keyframes plug-nudge { 0%, 100% { transform: none; } 25% { transform: translateX(-3px) rotate(-6deg); } 75% { transform: translateX(3px) rotate(6deg); } }
+.pad-tools .btn.impro-pad.nudge { animation: plug-nudge .22s linear 2; }
+@media (prefers-reduced-motion: reduce) { .pad-tools .btn.impro-pad.nudge { animation: none; outline: 2px solid currentColor; } }
