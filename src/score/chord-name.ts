@@ -11,7 +11,7 @@
 // 写法：罗马数字 = 根音在调里是第几级（大写 = 大三度的和弦，小写 = 小三度的；调外的带 ♭ / ♯：B♭ 在 C 调 = ♭VII），后面跟这类和弦的记号（7 / maj7 / ° / ø7 / sus4…）；
 //   转位 = 「/」+ 最低音在调里是第几级（C/E 在 C 调 = I/3，同简谱的想法）。
 import { type Pitch, STEPS, midiOf, stepIndex, tonicStepIndex, keyAlter } from "./pitch.ts";
-import { WHOLE, type Token, type NoteTok } from "./song.ts";
+import { WHOLE, beatTicks, type Token, type NoteTok } from "./song.ts";
 import { meterPositions } from "./groove.ts";
 
 interface Tpl { id: string; iv: number[]; opt?: number[]; /** 缺三度（大小分不出来）：大写小写按调里这个根音上面的三度（v0.16.13，user 11-07 截图：A E G 没标）。 */ no3?: boolean; minor: boolean; /** 罗马数字后面写的（小写的已经说了小三度，不再写 m）。 */ rs: string; /** 和弦名（根音字母后面写的，点开看候选用）。 */ sym: string }
@@ -78,7 +78,7 @@ function diatonicThird(root: Pitch, fifths: number): number {
   return (((midiOf({ step: st, alter: keyAlter(st, fifths), octave: root.octave + up }) - midiOf({ ...root, alter: keyAlter(root.step, fifths) })) % 12) + 12) % 12;
 }
 
-/** 认和弦：几个音（三个不同的音以下 = null）+ 调（1= 那个调，几个升降号）。认不出来（表里没有）= null。 */
+/** 认和弦：几个音（只有一个音 = null；两个音只认五度和三度 / 六度）+ 调（1= 那个调，几个升降号）。认不出来（表里没有）= null。 */
 export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead | null {
   const ps = [...pitches].sort((a, b) => midiOf(a) - midiOf(b));
   const set = new Set(ps.map(pc));
@@ -87,7 +87,7 @@ export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead 
   //   照流行 / 吉他谱一律大写（没有三度，不说大小）；五度在下面 = 转位「I5/5」。别的两个音（三度、六度…）照旧不认
   if (set.size === 2) {
     const [a, b] = [...set], rootPc = (a + 7) % 12 === b ? a : (b + 7) % 12 === a ? b : null;
-    if (rootPc === null) return null;
+    if (rootPc === null) return thirdDyad(ps, fifths);
     const root = ps.find((p) => pc(p) === rootPc)!, r = degreeOf(root, fifths), bd = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(bd.acc)}${bd.deg}`;
     const g: ChordGuess = { root, bass, tpl: "5", roman: ACC(r.acc) + ROMAN[r.deg - 1] + "5" + slash, name: stepName(root) + "5" + (slash ? `/${stepName(bass)}` : ""), cost: (rootPc === bassPc ? 0 : 1) + (r.acc === 0 ? 0 : 0.25), omitted: 1, no3: true };
     return { best: g, ties: [g], all: [g] };
@@ -114,45 +114,66 @@ export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead 
   const best = out[0];
   return { best, ties: out.filter((g) => g.cost - best.cost < 0.1), all: out };
 }
+/** 三度双音（v0.16.65，user 11-10「好，按你的提议来」：大提琴双音 do-mi 原来不标）：两个音隔三度 / 六度 = 少了五音的三和弦——三度里下面那个音当根音，
+ *  五音按调里的补上（放在最高音上面，不动最低音）再认：do-mi = I、re-fa = ii、la-do = vi、si-re = vii°；mi 在下 do 在上 = 转位 I/3。记成省了一个音。
+ *  do-mi 也能读成省了根音的 vi，按习惯只取「省五音」这一种。二度、三全音 = null（照旧不标）。 */
+function thirdDyad(ps: Pitch[], fifths: number): ChordRead | null {
+  const [a, b] = [...new Set(ps.map(pc))], d = (b - a + 12) % 12;
+  const rootPc = d === 3 || d === 4 ? a : d === 8 || d === 9 ? b : null;
+  if (rootPc === null) return null;
+  const root = ps.find((p) => pc(p) === rootPc)!, st = STEPS[(stepIndex(root.step) + 4) % 7];
+  const r = readChord([...ps, { step: st, alter: keyAlter(st, fifths), octave: ps[ps.length - 1].octave + 1 }], fifths);
+  const all = (r?.all ?? []).filter((g) => pc(g.root) === rootPc).map((g) => ({ ...g, omitted: g.omitted + 1, cost: g.cost + 1.2 }));
+  if (!all.length) return null;
+  return { best: all[0], ties: all.filter((g) => g.cost - all[0].cost < 0.1), all };
+}
 /** 标在谱上的那一行字：打平的用「 / 」连起来（最多两个）。 */
 export const chordLabel = (r: ChordRead): string => r.ties.slice(0, 2).map((g) => g.roman).join(" / ");
 
 /** 分解和弦认得出的那几类（完整的三和弦 / 七和弦 / 挂留；加音、省音的不认——旋律里随便几个音凑出来的 add9 之类太多）。 */
 const BROKEN_OK = new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
-/** 分解和弦（v0.16.62，user 11-09「和弦级数认「空五度」和分解和弦。 本次纪元做」；收拢的规矩 AI 定、说给 user，不对再改）：一条 track（一张纸的一个声部）里
- *  ① 按拍号的一拍收拢成一组（6/8、9/8、12/8 这类复拍子 = 附点四分一拍）；一拍里不到三个不同的音 = 并上下一拍，最多到这一小节的尾巴（不跨小节）；
- *  ② 这一组全是单音（有叠音 = 那里本来就按叠音标，这一组不认）、至少三个音、相邻的音全是跳进（≥ 小三度；一步一步走的音阶不算分解和弦）；
- *  ③ 认得出一个完整的基本和弦（BROKEN_OK、没省音）= 级数标在这一组第一个音下面；和前一组是同一个和弦 = 不再标。
+/** 分解和弦（v0.16.62 起；v0.16.65 改成按拍子的轻重一层一层看）。一条 track（一张纸的一个声部）里：
+ *  ① 不跨小节（user 11-10「然后不跨小节」「如果用户没有输入articulation的话那么我们唯一知道的就是小节」）。
+ *  ② 按拍子的轻重从粗到细看（user 11-10「其实不一定最优是正确的，有时候不应该牵强。而是得看节拍重音启发式的看」）：先看整小节是不是一个和弦；
+ *     不是 = 对半切（拍数是双数时切在中间那个次强拍：4/4 第三拍、6/8 第二个大拍、12/8 第三个大拍），再不是 = 一拍一拍看；一拍里面不再往下切。
+ *     切口只在拍上；认不出 = 不标，不挪切口去凑。一拍 = 符尾连杠用的那一拍（`beatTicks`：x/4 = 四分，3/8 6/8 9/8 12/8 = 附点四分），所以最细一层 = 符杠的一组；音归它开头那一拍。
+ *  ③ 叠音的音不算进来（那里按叠音自己标）；一组认得出 = 至少三个不同的音、相邻的音全是跳进（≥ 小三度；同一个音重复不算级进）、
+ *     认得出一个完整的基本和弦（BROKEN_OK、没省音）。没音高的（休止）跳过。
+ *  ④ 级数标在一组第一个音下面；和前一组同一个和弦 = 不再标；中间隔着认不出的音 = 重新标。
  *  keyAt(i) = 第 i 个记号那里的调（几个升降号）。 */
 export function brokenChords(tokens: readonly Token[], keyAt: (index: number) => number): { index: number; read: ChordRead }[] {
-  const mp = meterPositions(tokens);
   type N = { i: number; p: Pitch | null; stacked: boolean };
-  const byBar = new Map<number, { nb: number; beats: N[][] }>();
-  for (const [i, m] of mp) {
-    const t = tokens[i] as NoteTok, compound = m.beatType === 8 && m.beats % 3 === 0 && m.beats > 3;
-    const beatLen = compound ? (3 * WHOLE) / 8 : WHOLE / m.beatType, nb = Math.max(1, Math.round((m.beats * WHOLE) / m.beatType / beatLen));
-    const bar = byBar.get(m.bar) ?? { nb, beats: Array.from({ length: nb }, () => []) }; byBar.set(m.bar, bar);
-    const k = Math.min(bar.beats.length - 1, Math.max(0, Math.floor(m.pos / beatLen + 1e-9)));
-    bar.beats[k].push({ i, p: t.pitch, stacked: !!t.chord?.length });
+  const bars = new Map<number, { nb: number; beats: N[][] }>();
+  for (const [i, m] of meterPositions(tokens)) {
+    const t = tokens[i] as NoteTok, beatLen = beatTicks(m.beats, m.beatType), nb = Math.max(1, Math.round((m.beats * WHOLE) / m.beatType / beatLen));
+    const bar = bars.get(m.bar) ?? { nb, beats: Array.from({ length: nb }, () => []) }; bars.set(m.bar, bar);
+    bar.beats[Math.min(nb - 1, Math.max(0, Math.floor(m.pos / beatLen + 1e-9)))].push({ i, p: t.pitch, stacked: !!t.chord?.length });
   }
   const out: { index: number; read: ChordRead }[] = [];
   let prev = "";
-  for (const bar of [...byBar.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1])) {
-    const hasStack = (k: number) => bar.beats[k].some((n) => n.stacked);
-    for (let b = 0; b < bar.beats.length; ) {
-      if (hasStack(b)) { b++; prev = ""; continue; }   // 有叠音的拍子：那里按叠音标，自己一组、不往后并
-      const win: N[] = [...bar.beats[b]]; let e = b + 1;
-      const pcs = () => new Set(win.filter((n) => n.p).map((n) => pc(n.p!))).size;
-      while (pcs() < 3 && e < bar.beats.length && !hasStack(e)) win.push(...bar.beats[e++]);
-      b = e;
-      if (!win.length) continue;
-      const ns = win.filter((n) => n.p), ok = !win.some((n) => n.stacked) && ns.length >= 3 && ns.every((n, k) => k === 0 || Math.abs(midiOf(n.p!) - midiOf(ns[k - 1].p!)) >= 3);
-      const rd = ok ? readChord(ns.map((n) => n.p!), keyAt(ns[0].i)) : null;
-      if (!rd || rd.best.omitted > 0 || !BROKEN_OK.has(rd.best.tpl)) { prev = ""; continue; }
+  /** 这几个音是不是一组分解和弦（认得出 = 读法，认不出 = null）。 */
+  const groupOf = (ns: N[]): ChordRead | null => {
+    const ps = ns.filter((n) => n.p && !n.stacked).map((n) => n.p!);
+    if (new Set(ps.map(pc)).size < 3) return null;
+    for (let k = 1; k < ps.length; k++) { const d = Math.abs(midiOf(ps[k]) - midiOf(ps[k - 1])); if (d === 1 || d === 2) return null; }
+    const rd = readChord(ps, keyAt(ns.find((n) => n.p && !n.stacked)!.i));
+    return rd && rd.best.omitted === 0 && BROKEN_OK.has(rd.best.tpl) ? rd : null;
+  };
+  /** 看拍 [b0, b1)：整段认得出就标；不然按轻重往下切（双数拍对半、单数拍一拍一拍），一拍认不出就算了。 */
+  const look = (beats: N[][], b0: number, b1: number): void => {
+    const ns = beats.slice(b0, b1).flat();
+    if (!ns.some((n) => n.p && !n.stacked)) return;   // 只有休止 / 叠音：不标、也不打断
+    const rd = groupOf(ns);
+    if (rd) {
       const label = chordLabel(rd);
-      if (label !== prev) out.push({ index: ns[0].i, read: rd });
-      prev = label;
+      if (label !== prev) out.push({ index: ns.find((n) => n.p && !n.stacked)!.i, read: rd });
+      prev = label; return;
     }
-  }
+    const len = b1 - b0;
+    if (len === 1) { prev = ""; return; }
+    if (len % 2 === 0 && len > 2) { const mid = b0 + len / 2; look(beats, b0, mid); look(beats, mid, b1); return; }
+    for (let b = b0; b < b1; b++) look(beats, b, b + 1);
+  };
+  for (const bar of [...bars.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1])) look(bar.beats, 0, bar.nb);
   return out;
 }

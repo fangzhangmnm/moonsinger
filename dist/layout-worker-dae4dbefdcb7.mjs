@@ -4298,7 +4298,7 @@ function readChord(pitches, fifths) {
   const bass = ps[0], bassPc = pc(bass);
   if (set.size === 2) {
     const [a, b] = [...set], rootPc = (a + 7) % 12 === b ? a : (b + 7) % 12 === a ? b : null;
-    if (rootPc === null) return null;
+    if (rootPc === null) return thirdDyad(ps, fifths);
     const root = ps.find((p) => pc(p) === rootPc), r = degreeOf(root, fifths), bd = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(bd.acc)}${bd.deg}`;
     const g = { root, bass, tpl: "5", roman: ACC(r.acc) + ROMAN[r.deg - 1] + "5" + slash, name: stepName(root) + "5" + (slash ? `/${stepName(bass)}` : ""), cost: (rootPc === bassPc ? 0 : 1) + (r.acc === 0 ? 0 : 0.25), omitted: 1, no3: true };
     return { best: g, ties: [g], all: [g] };
@@ -4325,46 +4325,62 @@ function readChord(pitches, fifths) {
   const best = out[0];
   return { best, ties: out.filter((g) => g.cost - best.cost < 0.1), all: out };
 }
+function thirdDyad(ps, fifths) {
+  const [a, b] = [...new Set(ps.map(pc))], d = (b - a + 12) % 12;
+  const rootPc = d === 3 || d === 4 ? a : d === 8 || d === 9 ? b : null;
+  if (rootPc === null) return null;
+  const root = ps.find((p) => pc(p) === rootPc), st = STEPS[(stepIndex(root.step) + 4) % 7];
+  const r = readChord([...ps, { step: st, alter: keyAlter(st, fifths), octave: ps[ps.length - 1].octave + 1 }], fifths);
+  const all = (r?.all ?? []).filter((g) => pc(g.root) === rootPc).map((g) => ({ ...g, omitted: g.omitted + 1, cost: g.cost + 1.2 }));
+  if (!all.length) return null;
+  return { best: all[0], ties: all.filter((g) => g.cost - all[0].cost < 0.1), all };
+}
 var chordLabel = (r) => r.ties.slice(0, 2).map((g) => g.roman).join(" / ");
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
 function brokenChords(tokens, keyAt2) {
-  const mp = meterPositions(tokens);
-  const byBar = /* @__PURE__ */ new Map();
-  for (const [i, m] of mp) {
-    const t = tokens[i], compound = m.beatType === 8 && m.beats % 3 === 0 && m.beats > 3;
-    const beatLen = compound ? 3 * WHOLE / 8 : WHOLE / m.beatType, nb = Math.max(1, Math.round(m.beats * WHOLE / m.beatType / beatLen));
-    const bar = byBar.get(m.bar) ?? { nb, beats: Array.from({ length: nb }, () => []) };
-    byBar.set(m.bar, bar);
-    const k = Math.min(bar.beats.length - 1, Math.max(0, Math.floor(m.pos / beatLen + 1e-9)));
-    bar.beats[k].push({ i, p: t.pitch, stacked: !!t.chord?.length });
+  const bars = /* @__PURE__ */ new Map();
+  for (const [i, m] of meterPositions(tokens)) {
+    const t = tokens[i], beatLen = beatTicks(m.beats, m.beatType), nb = Math.max(1, Math.round(m.beats * WHOLE / m.beatType / beatLen));
+    const bar = bars.get(m.bar) ?? { nb, beats: Array.from({ length: nb }, () => []) };
+    bars.set(m.bar, bar);
+    bar.beats[Math.min(nb - 1, Math.max(0, Math.floor(m.pos / beatLen + 1e-9)))].push({ i, p: t.pitch, stacked: !!t.chord?.length });
   }
   const out = [];
   let prev = "";
-  for (const bar of [...byBar.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1])) {
-    const hasStack = (k) => bar.beats[k].some((n2) => n2.stacked);
-    for (let b = 0; b < bar.beats.length; ) {
-      if (hasStack(b)) {
-        b++;
-        prev = "";
-        continue;
-      }
-      const win = [...bar.beats[b]];
-      let e = b + 1;
-      const pcs = () => new Set(win.filter((n2) => n2.p).map((n2) => pc(n2.p))).size;
-      while (pcs() < 3 && e < bar.beats.length && !hasStack(e)) win.push(...bar.beats[e++]);
-      b = e;
-      if (!win.length) continue;
-      const ns = win.filter((n2) => n2.p), ok = !win.some((n2) => n2.stacked) && ns.length >= 3 && ns.every((n2, k) => k === 0 || Math.abs(midiOf(n2.p) - midiOf(ns[k - 1].p)) >= 3);
-      const rd = ok ? readChord(ns.map((n2) => n2.p), keyAt2(ns[0].i)) : null;
-      if (!rd || rd.best.omitted > 0 || !BROKEN_OK.has(rd.best.tpl)) {
-        prev = "";
-        continue;
-      }
-      const label = chordLabel(rd);
-      if (label !== prev) out.push({ index: ns[0].i, read: rd });
-      prev = label;
+  const groupOf = (ns) => {
+    const ps = ns.filter((n2) => n2.p && !n2.stacked).map((n2) => n2.p);
+    if (new Set(ps.map(pc)).size < 3) return null;
+    for (let k = 1; k < ps.length; k++) {
+      const d = Math.abs(midiOf(ps[k]) - midiOf(ps[k - 1]));
+      if (d === 1 || d === 2) return null;
     }
-  }
+    const rd = readChord(ps, keyAt2(ns.find((n2) => n2.p && !n2.stacked).i));
+    return rd && rd.best.omitted === 0 && BROKEN_OK.has(rd.best.tpl) ? rd : null;
+  };
+  const look = (beats, b0, b1) => {
+    const ns = beats.slice(b0, b1).flat();
+    if (!ns.some((n2) => n2.p && !n2.stacked)) return;
+    const rd = groupOf(ns);
+    if (rd) {
+      const label = chordLabel(rd);
+      if (label !== prev) out.push({ index: ns.find((n2) => n2.p && !n2.stacked).i, read: rd });
+      prev = label;
+      return;
+    }
+    const len = b1 - b0;
+    if (len === 1) {
+      prev = "";
+      return;
+    }
+    if (len % 2 === 0 && len > 2) {
+      const mid = b0 + len / 2;
+      look(beats, b0, mid);
+      look(beats, mid, b1);
+      return;
+    }
+    for (let b = b0; b < b1; b++) look(beats, b, b + 1);
+  };
+  for (const bar of [...bars.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1])) look(bar.beats, 0, bar.nb);
   return out;
 }
 
@@ -6818,4 +6834,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-d5135813433e.mjs.map
+//# sourceMappingURL=layout-worker-dae4dbefdcb7.mjs.map

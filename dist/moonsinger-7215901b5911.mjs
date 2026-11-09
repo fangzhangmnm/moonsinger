@@ -5071,7 +5071,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.64-2026-11-09";
+var APP_VERSION = "v0.16.65-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -8616,7 +8616,7 @@ function readChord(pitches, fifths) {
   const bass = ps[0], bassPc = pc(bass);
   if (set.size === 2) {
     const [a10, b3] = [...set], rootPc = (a10 + 7) % 12 === b3 ? a10 : (b3 + 7) % 12 === a10 ? b3 : null;
-    if (rootPc === null) return null;
+    if (rootPc === null) return thirdDyad(ps, fifths);
     const root = ps.find((p2) => pc(p2) === rootPc), r10 = degreeOf(root, fifths), bd = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(bd.acc)}${bd.deg}`;
     const g3 = { root, bass, tpl: "5", roman: ACC(r10.acc) + ROMAN[r10.deg - 1] + "5" + slash, name: stepName(root) + "5" + (slash ? `/${stepName(bass)}` : ""), cost: (rootPc === bassPc ? 0 : 1) + (r10.acc === 0 ? 0 : 0.25), omitted: 1, no3: true };
     return { best: g3, ties: [g3], all: [g3] };
@@ -8643,46 +8643,62 @@ function readChord(pitches, fifths) {
   const best = out[0];
   return { best, ties: out.filter((g3) => g3.cost - best.cost < 0.1), all: out };
 }
+function thirdDyad(ps, fifths) {
+  const [a10, b3] = [...new Set(ps.map(pc))], d3 = (b3 - a10 + 12) % 12;
+  const rootPc = d3 === 3 || d3 === 4 ? a10 : d3 === 8 || d3 === 9 ? b3 : null;
+  if (rootPc === null) return null;
+  const root = ps.find((p2) => pc(p2) === rootPc), st2 = STEPS[(stepIndex(root.step) + 4) % 7];
+  const r10 = readChord([...ps, { step: st2, alter: keyAlter(st2, fifths), octave: ps[ps.length - 1].octave + 1 }], fifths);
+  const all = (r10?.all ?? []).filter((g3) => pc(g3.root) === rootPc).map((g3) => ({ ...g3, omitted: g3.omitted + 1, cost: g3.cost + 1.2 }));
+  if (!all.length) return null;
+  return { best: all[0], ties: all.filter((g3) => g3.cost - all[0].cost < 0.1), all };
+}
 var chordLabel = (r10) => r10.ties.slice(0, 2).map((g3) => g3.roman).join(" / ");
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
 function brokenChords(tokens, keyAt2) {
-  const mp = meterPositions(tokens);
-  const byBar = /* @__PURE__ */ new Map();
-  for (const [i10, m2] of mp) {
-    const t10 = tokens[i10], compound = m2.beatType === 8 && m2.beats % 3 === 0 && m2.beats > 3;
-    const beatLen = compound ? 3 * WHOLE / 8 : WHOLE / m2.beatType, nb2 = Math.max(1, Math.round(m2.beats * WHOLE / m2.beatType / beatLen));
-    const bar2 = byBar.get(m2.bar) ?? { nb: nb2, beats: Array.from({ length: nb2 }, () => []) };
-    byBar.set(m2.bar, bar2);
-    const k2 = Math.min(bar2.beats.length - 1, Math.max(0, Math.floor(m2.pos / beatLen + 1e-9)));
-    bar2.beats[k2].push({ i: i10, p: t10.pitch, stacked: !!t10.chord?.length });
+  const bars = /* @__PURE__ */ new Map();
+  for (const [i10, m2] of meterPositions(tokens)) {
+    const t10 = tokens[i10], beatLen = beatTicks(m2.beats, m2.beatType), nb2 = Math.max(1, Math.round(m2.beats * WHOLE / m2.beatType / beatLen));
+    const bar2 = bars.get(m2.bar) ?? { nb: nb2, beats: Array.from({ length: nb2 }, () => []) };
+    bars.set(m2.bar, bar2);
+    bar2.beats[Math.min(nb2 - 1, Math.max(0, Math.floor(m2.pos / beatLen + 1e-9)))].push({ i: i10, p: t10.pitch, stacked: !!t10.chord?.length });
   }
   const out = [];
   let prev = "";
-  for (const bar2 of [...byBar.entries()].sort((a10, b3) => a10[0] - b3[0]).map((e10) => e10[1])) {
-    const hasStack = (k2) => bar2.beats[k2].some((n10) => n10.stacked);
-    for (let b3 = 0; b3 < bar2.beats.length; ) {
-      if (hasStack(b3)) {
-        b3++;
-        prev = "";
-        continue;
-      }
-      const win = [...bar2.beats[b3]];
-      let e10 = b3 + 1;
-      const pcs = () => new Set(win.filter((n10) => n10.p).map((n10) => pc(n10.p))).size;
-      while (pcs() < 3 && e10 < bar2.beats.length && !hasStack(e10)) win.push(...bar2.beats[e10++]);
-      b3 = e10;
-      if (!win.length) continue;
-      const ns2 = win.filter((n10) => n10.p), ok2 = !win.some((n10) => n10.stacked) && ns2.length >= 3 && ns2.every((n10, k2) => k2 === 0 || Math.abs(midiOf(n10.p) - midiOf(ns2[k2 - 1].p)) >= 3);
-      const rd2 = ok2 ? readChord(ns2.map((n10) => n10.p), keyAt2(ns2[0].i)) : null;
-      if (!rd2 || rd2.best.omitted > 0 || !BROKEN_OK.has(rd2.best.tpl)) {
-        prev = "";
-        continue;
-      }
-      const label = chordLabel(rd2);
-      if (label !== prev) out.push({ index: ns2[0].i, read: rd2 });
-      prev = label;
+  const groupOf = (ns2) => {
+    const ps = ns2.filter((n10) => n10.p && !n10.stacked).map((n10) => n10.p);
+    if (new Set(ps.map(pc)).size < 3) return null;
+    for (let k2 = 1; k2 < ps.length; k2++) {
+      const d3 = Math.abs(midiOf(ps[k2]) - midiOf(ps[k2 - 1]));
+      if (d3 === 1 || d3 === 2) return null;
     }
-  }
+    const rd2 = readChord(ps, keyAt2(ns2.find((n10) => n10.p && !n10.stacked).i));
+    return rd2 && rd2.best.omitted === 0 && BROKEN_OK.has(rd2.best.tpl) ? rd2 : null;
+  };
+  const look = (beats, b0, b1) => {
+    const ns2 = beats.slice(b0, b1).flat();
+    if (!ns2.some((n10) => n10.p && !n10.stacked)) return;
+    const rd2 = groupOf(ns2);
+    if (rd2) {
+      const label = chordLabel(rd2);
+      if (label !== prev) out.push({ index: ns2.find((n10) => n10.p && !n10.stacked).i, read: rd2 });
+      prev = label;
+      return;
+    }
+    const len = b1 - b0;
+    if (len === 1) {
+      prev = "";
+      return;
+    }
+    if (len % 2 === 0 && len > 2) {
+      const mid = b0 + len / 2;
+      look(beats, b0, mid);
+      look(beats, mid, b1);
+      return;
+    }
+    for (let b3 = b0; b3 < b1; b3++) look(beats, b3, b3 + 1);
+  };
+  for (const bar2 of [...bars.entries()].sort((a10, b3) => a10[0] - b3[0]).map((e10) => e10[1])) look(bar2.beats, 0, bar2.nb);
   return out;
 }
 
@@ -29530,9 +29546,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-1c5a20dddaaf.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-d5135813433e.mjs");
+      return pick(() => "layout-worker-dae4dbefdcb7.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-8c7b504526ce.mjs");
+      return pick(() => "encode-worker-10f3c160a265.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38989,7 +39005,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "be5b1df4e41e409b" : "dev";
+var CORE_HASH = true ? "f819c460919d945e" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -57455,4 +57471,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8a21c5f0a75b.mjs.map
+//# sourceMappingURL=moonsinger-7215901b5911.mjs.map
