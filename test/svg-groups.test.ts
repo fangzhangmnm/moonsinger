@@ -8,6 +8,15 @@ const song = (n: number) => { let st = initState(); st = { ...st, song: { ...st.
 const lay = (st: EditorState, width = 420) => engrave(st.song, { width, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * LYRIC_EM * 10, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
 
 describe("SVG 按行谱分组（W-17）", () => {
+  it("页框一律进杂项组（第 0 组，垫在最底下）：页的中点落在某一行里也一样（v0.16.57，user「paged模式为什么有几行没显示」）", () => {
+    const sys = (top: number, bottom: number, k: number) => ({ top, staffTop: top + 40, bottom, paper: "p", part: "v", sys: k, staff: 1 as const });
+    const l = { width: 300, height: 1200, sp: 10, pageX: { left: 20, right: 20 }, systems: [sys(80, 200, 0), sys(560, 700, 1), sys(720, 860, 2)],
+      prims: [{ t: "rect", x: -20, y: 600, w: 340, h: 300, cls: "page ann" }, { t: "glyph", x: 10, y: 600, ch: "\u{E050}", cls: "clef" }, { t: "glyph", x: 10, y: 640, ch: "\u{E0A4}", cls: "note" }, { t: "glyph", x: 10, y: 780, ch: "\u{E0A4}", cls: "note" }] } as never;
+    const g = toSvgParts(l).groups;   // 页框 600–900，中点 750 落在第 3 行（720–860）里
+    assert(/class="page ann"/.test(g[0]!), "页框在第 0 组");
+    assert(!g.slice(1).some((x) => /class="page/.test(x)), "别的组里没有页框");
+    assert(/class="note/.test(g[2]!) && /class="note/.test(g[3]!), "两行的音各在自己的组（画在页框上面）");
+  });
   it("每个图元恰好进一组、组内先后 = 排版时的先后；组数 = 行数 + 1；toSvg = 开 + 组 + 收", () => {
     const st = song(40), l = lay(st), parts = toSvgParts(l);
     assert(l.systems.length >= 3, `要多于两行（${l.systems.length}）`);

@@ -5051,7 +5051,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.56-2026-11-09";
+var APP_VERSION = "v0.16.57-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -12819,7 +12819,7 @@ function toSvgParts(l10) {
   const boxes = l10.systems.map((s10) => [s10.top, s10.bottom]);
   const buckets = Array.from({ length: boxes.length + 1 }, () => []);
   for (const p2 of l10.prims) {
-    const y2 = yOfPrim(p2);
+    const y2 = p2.t === "rect" && /(^|\s)page(\s|$)/.test(p2.cls ?? "") ? null : yOfPrim(p2);
     let k2 = 0;
     if (y2 !== null) {
       for (let i10 = 0; i10 < boxes.length; i10++) if (y2 >= boxes[i10][0] && y2 < boxes[i10][1]) {
@@ -29373,9 +29373,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-fd2009a1affd.mjs");
+      return pick(() => "layout-worker-bbb19f4dc99d.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-b5955ca4671d.mjs");
+      return pick(() => "encode-worker-245830170b0a.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -57205,4 +57205,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-60ce982fa39c.mjs.map
+//# sourceMappingURL=moonsinger-c9cb40ef8448.mjs.map

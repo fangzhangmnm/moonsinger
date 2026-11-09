@@ -35,7 +35,9 @@ export function toSvgParts(l: Layout): { open: string; groups: string[]; close: 
   const boxes = l.systems.map((s) => [s.top, s.bottom] as const);
   const buckets: string[][] = Array.from({ length: boxes.length + 1 }, () => []);
   for (const p of l.prims) {
-    const y = yOfPrim(p); let k = 0;
+    // 页框（分页时每页的白底，排版时 unshift 到最前 = 压在最底下）一律进杂项组：按中点分的话，一页那么高，页中间碰巧落进哪一行，页框就进那一行的组、
+    //   画在同一页前面几行的后面把它们整个盖住（v0.16.57；user 11-09「paged模式为什么有几行没显示」，A6 舒适、第 2 页中点落在第 24 小节那一行 = 16、20 两行看不见）
+    const y = p.t === "rect" && /(^|\s)page(\s|$)/.test(p.cls ?? "") ? null : yOfPrim(p); let k = 0;
     if (y !== null) for (let i = 0; i < boxes.length; i++) if (y >= boxes[i][0] && y < boxes[i][1]) { k = i + 1; break; }
     buckets[k].push(primSvg(p, fs, lfs, rx));
   }
