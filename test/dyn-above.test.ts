@@ -29,7 +29,7 @@ describe("力度那一行一律在谱上面", () => {
 });
 
 // 力度两道（2026-10-09，user「两道 可以」）：音的修饰（sfz / fp / 音内起伏）在里道、大的强弱线（字 / 发夹 / 渐到）在外道——同一个音上两样都有不再叠在一起。
-describe("力度两道：音的修饰里道、大的强弱线外道", () => {
+describe("力度两道：音的修饰在下、大的强弱线在上（刀 4b 起不是固定的道：挂件第 3 样先贴、第 4 样贴在它上面）", () => {
   const nn = (k: number, extra: Record<string, unknown>): Token => ({ ...(n(k) as object), ...extra }) as unknown as Token;
   const sw = (k: number, swell: string): Token => nn(k, { art: [({ "<": "swellUp", ">": "swellDown", "<>": "swellBoth" } as Record<string, "swellUp" | "swellDown" | "swellBoth">)[swell]] });
   const lay2 = (items: Token[]) => { const st = song(items); return engrave(st.song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], measureLyric: (s: string) => s.length * 10 } as never); };
@@ -46,10 +46,12 @@ describe("力度两道：音的修饰里道、大的强弱线外道", () => {
     const f = g.find((x) => x.ch !== "\u{E539}")!, sfz = g.find((x) => x.ch === "\u{E539}")!;
     assert(sfz && f && sfz.y - f.y >= 20, `sfz 比 f 低两个间距左右（f ${f?.y}，sfz ${sfz?.y}）`);
   });
-  it("这一行只有音的修饰：就在最靠谱的那一道（不白占外道的高度）", () => {
+  it("这一行只有音的修饰：贴着谱（不白占力度字那么高；刀 4b 起没有固定的道，行高按真的墨）", () => {
     const a = lay2([sw(0, "<"), n(1)]), b = lay2([{ kind: "dyn", id: id++, value: "mf" } as Token, n(0), n(1)]);
     const pinY = Math.max(...ys((a.prims.find((p) => p.t === "path" && /\bhairpin\b/.test((p as { cls?: string }).cls ?? "")) as { d: string }).d));
     const mfY = (b.prims.find((p) => p.t === "glyph" && /\bdyn\b/.test((p as { cls?: string }).cls ?? "")) as { y: number }).y;
-    assert(Math.abs(a.systems[0]!.staffTop - b.systems[0]!.staffTop) < 1 && pinY > mfY - 12, `只有修饰 = 同一个高度（谱顶 ${a.systems[0]!.staffTop} vs ${b.systems[0]!.staffTop}）`);
+    const topA = a.systems[0]!.staffTop, topB = b.systems[0]!.staffTop;
+    assert(topA <= topB + 0.5, `只有修饰的行不比有力度字的行高（谱顶 ${topA} vs ${topB}）`);
+    assert(topA - pinY <= 25 && topB - mfY <= 25, `都贴着谱（发夹离第五线 ${(topA - pinY).toFixed(1)}、mf 基线离第五线 ${(topB - mfY).toFixed(1)} px）`);
   });
 });

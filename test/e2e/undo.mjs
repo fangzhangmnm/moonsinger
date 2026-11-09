@@ -74,11 +74,13 @@ try {
   await p.evaluate(() => window.__moonsinger.addPaper()); await p.waitForTimeout(150);
   const paperOf = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers.findIndex((pp) => pp.id === s.at.paper); });
   check((await paperOf()) === 1, "加纸 → 光标在第 2 段");
-  await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("Digit3"); await p.waitForTimeout(100);
+  await p.evaluate(() => document.activeElement?.blur?.());   // 只要焦点不在输入框（按坐标点谱会挪光标：刀 4b 起行变矮，(300, 300) 落到了第 1 段）
+  await p.keyboard.press("Digit3"); await p.waitForTimeout(100);
   const h3 = (await hist()).past;
   await p.evaluate(() => { const ms = window.__moonsinger, s = ms.state(); ms.set({ ...s, at: { paper: s.song.papers[0].id, part: s.at.part } }); }); await p.waitForTimeout(150);
   check((await paperOf()) === 0 && (await hist()).past === h3, "切回第 1 段看（换视图不记 undo）");
-  await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
+  await p.evaluate(() => document.activeElement?.blur?.());   // 只要焦点不在输入框（按坐标点谱会挪光标：刀 4b 起行变矮，(300, 300) 落到了第 1 段）
+  await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
   check((await paperOf()) === 1, "⌘Z：视图跳到被撤的第 2 段");
   const t2 = await p.evaluate(() => window.__moonsinger.undoText()); check(/^撤销 · .+ · 写了 1 个$/.test(t2), "toast 带着纸的名字和改了什么", t2);
   // ── 视图态（desk）顺手捞进文件、改了不标脏、不进 undo

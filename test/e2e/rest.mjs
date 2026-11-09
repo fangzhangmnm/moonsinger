@@ -15,6 +15,7 @@ for (const touch of [false, true]) {
   await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
   await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML);
   await p.waitForTimeout(300);
+  await p.evaluate(() => document.querySelector(".notice-stack")?.replaceChildren());   // 开歌的提示条（补了开头的力度）会盖在谱上、挡住点（刀 4b 起行变矮，谱正好在它底下）：先清掉，这里只测点谱
 if (await p.$eval(".pad-panel", (e) => e.hidden)) { await p.click("#padTab"); await p.waitForTimeout(150); }   // 打开有音的歌 = 键盘先收着（v0.10.21）：这个测试要键盘
   const tag = touch ? "手指" : "鼠标";
   const restIdx = await p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].findIndex((t) => t.kind === "rest"); });
