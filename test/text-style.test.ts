@@ -3,7 +3,7 @@
 //   ② 字号就是表里那一行（歌词另有整行一起缩：八成到原大）——排版器里不再手写字号；③ styles.css 不给谱上的字定字体 / 粗细 / 斜体（只留颜色）。
 import { describe, it, assert } from "./runner.mjs";
 import { engrave } from "../src/render/engrave.ts";
-import { TEXT_STYLES, textPx, textStyleOf, textStyleCss, type TextRole } from "../src/render/text-style.ts";
+import { TEXT_STYLES, LYRIC_LOOK, textPx, textStyleOf, textStyleCss, type TextRole } from "../src/render/text-style.ts";
 import { SONGS, VIEWS, loadSong } from "./fixtures/layout/cases.ts";
 const { readFileSync } = (await import("node:fs" as string)) as { readFileSync(p: URL, e: string): string };
 
@@ -17,7 +17,7 @@ describe("谱上的字：一张样式表", () => {
       const role = roleOf(p.cls);
       if (!role) { bad.push(`没有样式：「${p.s}」cls=${p.cls}`); continue; }
       const want = textPx(role, L.sp, ts), got = p.size ?? want;
-      const ok = role === "lyric" ? got <= want * 1.4 + 1e-6 && got >= want * 0.8 - 1e-6 : Math.abs(got - want) < 1e-6;   // 歌词：整行一起缩（八成到原大）；字号档以后可能放大（user 在挑）
+      const ok = Math.abs(got - (role === "lyric" ? want * (ts > 1 ? LYRIC_LOOK.compact.k : LYRIC_LOOK.cozy.k) : want)) < 1e-6;   // 歌词：字高 = 这一档固定的那个（v0.16.44 起挤了只收宽、字高不动）
       if (!ok) bad.push(`${role}「${p.s}」${got.toFixed(3)} ≠ ${want.toFixed(3)}`);
     }
     assert(bad.length === 0, `${bad.length} 处：${[...new Set(bad)].slice(0, 5).join("；")}`);

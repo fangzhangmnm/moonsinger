@@ -23,6 +23,14 @@ export const TEMPO_EM = 1.35;
 /** 歌词的字号（线间距；跟谱）。 */
 export const LYRIC_EM = 1.6;
 
+/** 歌词在两档里长什么样（v0.16.44；user 11-09「字号可以稍微大一点，窄窄的字好看」→ 紧凑档挑了 B；「舒适版和紧凑版都有一个固定的字高，然后这个字高就永远不要动了。如果挤不下的话，是收宽度，不是收字高」）：
+ *  k = 字号是歌词基准字号（LYRIC_EM，跟谱）的几倍——字高就这么定、永远不动；sx = 平常的宽度（1 = 不压）。挤了只往下收宽度，最窄 LYRIC_MIN_SX。 */
+export const LYRIC_LOOK = { cozy: { k: 1, sx: 1 }, compact: { k: 1.15, sx: 0.85 } } as const;
+/** 挤的时候歌词最窄压到原宽的几成（乘在 LYRIC_LOOK.sx 上）；再挤 = 照写、画灰。 */
+export const LYRIC_MIN_SX = 0.5;
+/** 方块字（中日韩）：宽度跟整段统一（user 11-09「中文和日文本身有方块字的美感…统一宽度…甚至是整篇曲段统一宽度」）；别的（英文…）每个音节各收各的（「宽窄的节奏」）。 */
+export const isBlockScript = (s: string): boolean => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\uff66-\uff9f]/.test(s);
+
 /** 谱上每一种字（键 = 样式类）。改字的样子只改这里。 */
 export const TEXT_STYLES = {
   "song-title": s("sans", 2.8, "text", 600),

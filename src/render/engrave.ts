@@ -16,7 +16,7 @@
 //   小节线、调号、拍号是各声部自己的画法（契约 §7.8）；速度只画在第一个声部上面；歌手牌（声部名）在每张纸第一行各条谱的左边。
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
-import { LYRIC_EM, TEMPO_EM, TEXT_STYLES, textPx, type TextRole } from "./text-style.ts";
+import { LYRIC_EM, TEMPO_EM, TEXT_STYLES, LYRIC_LOOK, LYRIC_MIN_SX, isBlockScript, textPx, type TextRole } from "./text-style.ts";
 import { _t } from "../i18n/index.ts";
 import { DYNS, swellOf, type ClefName, type Song, type PaperSeg, type NoteTok, type Token, type GrooveTok, type BarTok, type NavTok, type Repeat, NAV_LABEL, endingLabel, type Art, type Dyn, type Focus, type Staff, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, isTimed, headLen, beatTicks, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
 import { grooveLabel, grooveStyle } from "../score/groove.ts";
@@ -94,35 +94,50 @@ export interface EngraveOpts {
   __noAnn?: boolean;
 }
 export { LYRIC_EM } from "./text-style.ts";
-/** 紧凑档的歌词横向压到多宽（刀 2；user 11-09「紧凑档的歌词要不要一律压到 85% 宽」→「可以」；v0.16.43 起紧凑档歌词跟谱用小字，照样压窄——「字也可以紧」）。 */
-export const LYRIC_SX_COMPACT = 0.85;
-const lyricSx = (ts: number) => (ts > 1 ? LYRIC_SX_COMPACT : 1);
-/** 按节奏排时错开到第二行的歌词往下挪多少（sp）。 */
-const LYRIC_ROW2 = LYRIC_EM * 1.2;
-export interface LyricFit { dx: number; scale: number; row: 0 | 1; tight: boolean }
-/** 挤的时候整行歌词最多缩到多少（v0.16.43；user 11-09「字号不能太小」「关键是英文」）。 */
-export const LYRIC_MIN_SCALE = 0.8;
-/** 歌词按节奏排的让路（v0.9.40 立；v0.16.43 改：user 11-09「挤的时候整行歌词一起缩（同一行字号统一），不再错开两排…字号不能太小」「我确实不想把音符撑开」）：
- *  一行里的字（中心 cx、宽 w，单位 sp；hy = 后面有连字符 = 多留一点），音的位置不动，字让路：
- *  ① 左右借空（字往旁边挪，最多挪自己宽的 45% 或 0.8，不再死死居中）② 还挤 = **这一行的字一起**缩一档（0.95、0.9…最小 LYRIC_MIN_SCALE），同一行字号统一
- *  ③ 缩到最小还挤 = 照写，挤的那几个标 tight（画灰、歌词框上说「挤了」）。不再错开到第二排（行业里两排 = 两段词，会被当成第二段）。
- *  row 永远是 0（字段留着，旧的调用方不用改）。纯函数。 */
-export function fitLyrics(items: readonly { cx: number; w: number; hy?: boolean }[], gap = 0.5, minScale = LYRIC_MIN_SCALE): LyricFit[] {
-  const g = (i: number) => gap + (items[i].hy ? 0.9 : 0);
-  const cap = items.map((it) => Math.max(0.8, 0.45 * it.w));   // 能挪多远按原来的字宽（缩小了也照样能挪那么远）
-  const place = (s: number): { pos: number[]; bad: Set<number> } => {
-    const pos = items.map((it) => it.cx), half = items.map((it) => (it.w * s) / 2);
-    for (let pass = 0; pass < 4; pass++) {
-      for (let k = 1; k < items.length; k++) { const need = pos[k - 1] + half[k - 1] + g(k - 1) + half[k]; if (pos[k] < need) pos[k] = Math.min(need, items[k].cx + cap[k]); }
-      for (let k = items.length - 2; k >= 0; k--) { const need = pos[k + 1] - half[k + 1] - g(k) - half[k]; if (pos[k] > need) pos[k] = Math.max(need, items[k].cx - cap[k]); }
-    }
-    const bad = new Set<number>();
-    for (let k = 1; k < items.length; k++) if (pos[k] - half[k] < pos[k - 1] + half[k - 1] + g(k - 1) - 1e-6) { bad.add(k); bad.add(k - 1); }
-    return { pos, bad };
-  };
-  let s = 1, r = place(1);
-  for (let t = 0.95; r.bad.size && t >= minScale - 1e-9; t = Math.round((t - 0.05) * 100) / 100) { s = t; r = place(t); }
-  return items.map((it, i) => ({ dx: r.pos[i] - it.cx, scale: s, row: 0 as const, tight: r.bad.has(i) }));
+/** 这一档的歌词：字号倍数 k（字高，永远不动）+ 平常的宽度 sx（v0.16.44；表在 text-style.ts LYRIC_LOOK）。ts > 1 = 紧凑档。 */
+const lyricLook = (ts: number) => (ts > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy);
+export interface LyricFit { dx: number; /** 宽度倍数（乘在这一档平常的宽度上；1 = 不收）。 */ sx: number; tight: boolean }
+export interface LyricItem { cx: number; w: number; hy?: boolean; /** 方块字：宽度跟整段统一（不各收各的）。 */ block?: boolean }
+/** 两个字之间至少留多少（sp）：方块字挨方块字 = 0.25（方块字自己带字面空白；user 11-09「字间距有点太保守」），其余 0.5；前一个后面有连字符 = 多留 0.9。 */
+const lyricGap = (a: LyricItem, b: LyricItem) => (a.block && b.block ? 0.25 : 0.5) + (a.hy ? 0.9 : 0);
+/** 按给定的宽度倍数摆一行：先左右借空（最多挪自己宽的 45% 或 0.8），还压着的那几对 = bad。 */
+function placeLyrics(items: readonly LyricItem[], f: readonly number[]): { pos: number[]; bad: Set<number> } {
+  const cap = items.map((it) => Math.max(0.8, 0.45 * it.w)), pos = items.map((it) => it.cx), half = items.map((it, i) => (it.w * f[i]) / 2);
+  for (let pass = 0; pass < 4; pass++) {
+    for (let k = 1; k < items.length; k++) { const need = pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k]) + half[k]; if (pos[k] < need) pos[k] = Math.min(need, items[k].cx + cap[k]); }
+    for (let k = items.length - 2; k >= 0; k--) { const need = pos[k + 1] - half[k + 1] - lyricGap(items[k], items[k + 1]) - half[k]; if (pos[k] > need) pos[k] = Math.max(need, items[k].cx - cap[k]); }
+  }
+  const bad = new Set<number>();
+  for (let k = 1; k < items.length; k++) if (pos[k] - half[k] < pos[k - 1] + half[k - 1] + lyricGap(items[k - 1], items[k]) - 1e-6) { bad.add(k); bad.add(k - 1); }
+  return { pos, bad };
+}
+/** 方块字定在 blockSx，别的字挤到哪个收哪个（每次 0.05，最窄 minSx）。 */
+function squeezeLyrics(items: readonly LyricItem[], blockSx: number, minSx: number): { pos: number[]; bad: Set<number>; f: number[] } {
+  const f = items.map((it) => (it.block ? blockSx : 1));
+  let r = placeLyrics(items, f);
+  for (let round = 0; r.bad.size && round < 40; round++) {
+    let moved = false;
+    for (const i of r.bad) if (!items[i].block && f[i] > minSx + 1e-9) { f[i] = Math.max(minSx, Math.round((f[i] - 0.05) * 100) / 100); moved = true; }
+    if (!moved) break;
+    r = placeLyrics(items, f);
+  }
+  return { ...r, f };
+}
+/** 这一行的方块字至少要压到多宽才不挤（1、0.95…minSx 里取最宽的那个；压到底也救不了 = 救得最多的那个）。整段取各行里最窄的 = 整段统一的宽度。 */
+export function lyricBlockSx(items: readonly LyricItem[], minSx = LYRIC_MIN_SX): number {
+  if (!items.some((it) => it.block)) return 1;
+  const badBlocks = (t: number) => { const r = squeezeLyrics(items, t, minSx); let n = 0; for (const i of r.bad) if (items[i].block) n++; return n; };
+  let best = 1, bestN = badBlocks(1);
+  for (let t = 0.95; bestN && t >= minSx - 1e-9; t = Math.round((t - 0.05) * 100) / 100) { const n = badBlocks(t); if (n < bestN) { best = t; bestN = n; } }
+  return best;
+}
+/** 歌词按节奏排的让路（v0.9.40 立；v0.16.43 整行一起缩；**v0.16.44 改成字高不动、只收宽度**——user 11-09「字高固定，宽度会收」「挤不下的话，是收宽度，不是收字高」）：
+ *  一行里的字（中心 cx、宽 w，单位 sp；hy = 后面有连字符），音的位置不动，字让路：
+ *  ① 左右借空 ② 还挤 = 收宽度：方块字用整段统一的那个宽度（blockSx，宿主按 lyricBlockSx 对整段取最窄），别的字挤到哪个收哪个（「宽窄的节奏」）
+ *  ③ 收到最窄（minSx）还挤 = 照写、挤的那几个标 tight（画灰、歌词框上说「挤了」）。纯函数。 */
+export function fitLyrics(items: readonly LyricItem[], blockSx = 1, minSx = LYRIC_MIN_SX): LyricFit[] {
+  const r = squeezeLyrics(items, blockSx, minSx);
+  return items.map((it, i) => ({ dx: r.pos[i] - it.cx, sx: r.f[i], tight: r.bad.has(i) }));
 }
 const SCROLL_TAIL = 6;
 /** 谱前简写那一列的宽度参照（7 个半角宽 = part-colors.ts ABBR_W）。 */
@@ -392,7 +407,7 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
         const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
         const accW = accs.some((a) => a !== null) ? 1.3 : 0;
         let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
-        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? (o.measureLyric(lyricShow(lyric)) / o.sp / (o.ts ?? 1)) * lyricSx(o.ts ?? 1) : undefined;   // 歌词跟谱的尺子（量字的尺子是字的字号：除回去）
+        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? (o.measureLyric(lyricShow(lyric)) / o.sp / (o.ts ?? 1)) * lyricLook(o.ts ?? 1).k * lyricLook(o.ts ?? 1).sx : undefined;   // 歌词跟谱的尺子（量字的尺子是字的字号：除回去）
         if (lyW !== undefined) w = Math.max(w, accW + lyW + (nt.hyph ? 1.4 : 0.7));   // 按歌词排：字把音推开；按节奏排（v0.9.40）= 音只看时值
         const u: Chunk = { kind: "chunk", index: i, j, last: false, m: measureNo, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
           ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs,
@@ -842,10 +857,18 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     for (const [a, b] of keyAtCol[n]) keyNow.set(a, b);
     const nSys = lineFrom.length;
     // 摆：不是最后一行、用了六成以上 = 拉满；超了（挤一挤进来的）= 压回来；别的照自然宽
+    //   紧凑档的最后一行（v0.16.44 试）：音距跟上一行一样松（不再挤在左边、右边空一大片——user 11-09「为什么第二行抽风了」= 最后一行十六分音符挤成一团、歌词被压）；
+    //   铺过了整行宽 = 拉满。只看上一行的松紧、不看歌词，打字时前面的音照样不动（上一行折行变了才会变）。
+    let prevStretch = 0;
     for (let s = 0; s < nSys; s++) {
       const from = lineFrom[s], to = s + 1 < nSys ? lineFrom[s + 1] : n; if (from >= to) continue;
       const avail = brk - sysStarts[s], nat = placeLine(spCols, gaps, rodIx, from, to, 0);
-      const f = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true }) : nat;
+      let f: { xs: number[]; end: number; stretch?: number } = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true }) : nat;
+      if (ts > 1 && s === nSys - 1 && s > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
+        const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch);
+        f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true });
+      }
+      prevStretch = f.stretch ?? 0;
       for (let k = from; k < to; k++) {
         const c = cols[k], x0 = sysStarts[s] + f.xs[k - from], x1 = sysStarts[s] + (k + 1 < to ? f.xs[k + 1 - from] : f.end);
         c.x = x0; c.system = s; c.w = Math.max(0, x1 - x0);
@@ -867,18 +890,19 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     //   注解（ann：推定的灰字、速度 ↑↓、句号、角标…）只看不写：不进天际线、不加行高（屏幕画、PDF 不印，不能让预览和 PDF 不一样）。
     const lyricsOf = per.map((q) => q.tokens.some((t) => t.kind === "note" && t.lyric));
     // 歌词按节奏排（v0.9.40；user「先试下你说的两个歌词开关吧，approved」）：音的位置只看时值，歌词让路（fitLyrics）。在算行高之前排好：错开到第二行的那一行要多留一行字
-    const lyrPlan = new Map<string, LyricFit>(), lyr2 = new Set<string>();   // 键 = 声部序号:下标 / 声部序号:行
+    const lyrPlan = new Map<string, LyricFit & { hw: number }>();   // 键 = 声部序号:下标；hw = 收过之后的半宽（sp，连字符摆在缝正中要用）
+    const look = lyricLook(ts);   // 这一档歌词的字高 / 平常宽度（字高永远不动）
     if (song.lyricFit !== "lyrics") per.forEach((q, r) => {
       if (!lyricsOf[r]) return;
-      const bySys = new Map<number, { index: number; cx: number; w: number; hy?: boolean }[]>();
+      const bySys = new Map<number, (LyricItem & { index: number })[]>();
       for (const u of q.units) if (u.kind === "chunk" && u.lyric && u.lyric !== MELISMA_MARK) {
         const arr = bySys.get(u.system) ?? []; bySys.set(u.system, arr);
-        arr.push({ index: u.index, cx: u.x + 0.6, w: (o.measureLyric(lyricShow(u.lyric)) / sp / ts) * lyricSx(ts), hy: u.hyph });
+        arr.push({ index: u.index, cx: u.x + 0.6, w: (o.measureLyric(lyricShow(u.lyric)) / sp / ts) * look.k * look.sx, hy: u.hyph, block: isBlockScript(u.lyric) });
       }
-      for (const [sy, items] of bySys) {
-        items.sort((a, b) => a.cx - b.cx);
-        fitLyrics(items).forEach((f, k) => { lyrPlan.set(`${r}:${items[k].index}`, f); if (f.row) lyr2.add(`${r}:${sy}`); });
-      }
+      // 方块字整段统一一个宽度（user 11-09「甚至是整篇曲段统一宽度，算一个最大的允许宽度」）：先每行算要压到多宽，整段（这张纸 × 这位歌手）取最窄的，再按它摆
+      for (const items of bySys.values()) items.sort((a, b) => a.cx - b.cx);
+      const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items)));
+      for (const items of bySys.values()) fitLyrics(items, blockSx).forEach((f, k) => lyrPlan.set(`${r}:${items[k].index}`, { ...f, hw: (items[k].w * f.sx) / 2 }));
     });
     const BIG = 8192;   // 临时高度：第 row 行的第五线在 row × BIG px（一行的墨上下伸不出 BIG / 2）；画完认行 = round(y / BIG)
     const skies: Skyline[] = [];
@@ -1182,10 +1206,10 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         if (c.j === 0) notes.push({ ...tag, index: c.index, system: row, x: x0, y, w: nhW(c), d: diatonicIndex(c.pitch!) });   // d = 真的音级（拖音高用），不带谱号位移
         if (c.j === 0 && !c.tie) lyricJobs.push({ sys: c.system, run: () => {   // 歌词 = 挂件第 11 样（这一行的天际线量完、歌词的基线定了再画）
           const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lyricRow(c.system)), cx0 = x0 + nhW(c) / 2;   // 按节奏排：让过路的位置
-          const ly = ly0 + (fit?.row ? P(LYRIC_ROW2) : 0), cx = cx0 + (fit ? P(fit.dx) : 0);
+          const ly = ly0, cx = cx0 + (fit ? P(fit.dx) : 0);
           partLyrics.push({ index: c.index, system: row, x: cx, y: ly, ...(fit?.tight ? { tight: true as const } : {}) });
           if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly0, x2: x0 + nhW(c) + P(0.4), y2: ly0, w: P(0.12), cls: "melisma" });
-          else if (c.lyric) prims.push({ tok: tokOf(c), t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(fit && fit.scale < 1 ? { size: P(LYRIC_EM * fit.scale) } : ts !== 1 ? { size: P(LYRIC_EM) } : {}), ...(lyricSx(ts) !== 1 ? { sx: lyricSx(ts) } : {}), cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
+          else if (c.lyric) prims.push({ tok: tokOf(c), t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(look.k !== 1 || ts !== 1 ? { size: P(LYRIC_EM * look.k) } : {}), ...(look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}), cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         } });
       };
       for (const u of units) {
@@ -1540,9 +1564,12 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
             for (let n = from; n < partLyrics.length; n++) {
               const L = partLyrics[n], tok = tokens[L.index] as NoteTok;
               if (!tok.hyph) continue;
-              const R = partLyrics[n + 1];
-              const xx = R && R.system === L.system ? (L.x + R.x) / 2 : L.x + P(1.6);
-              prims.push({ t: "text", x: xx, y: L.y, s: "-", cls: "lyric hyphen", ...(ts !== 1 ? { size: P(LYRIC_EM) } : {}), ...(lyricSx(ts) !== 1 ? { sx: lyricSx(ts) } : {}) });
+              const R = partLyrics[n + 1], same = !!R && R.system === L.system;
+              // 连字符摆在两个音节之间那道缝的正中（原来是两个中心的正中 = 贴着长的那个，user 11-09 看着像虚线）；缝放不下一个连字符 = 不画（常见打谱软件的做法）
+              const hl = lyrPlan.get(`${r}:${L.index}`)?.hw, hr = same ? lyrPlan.get(`${r}:${R!.index}`)?.hw : undefined;
+              let xx = same ? (L.x + R!.x) / 2 : L.x + P(1.6);
+              if (same && hl !== undefined && hr !== undefined) { const a = L.x + P(hl), b = R!.x - P(hr); if (b - a < P(0.7 * look.k * look.sx)) continue; xx = (a + b) / 2; }
+              prims.push({ t: "text", x: xx, y: L.y, s: "-", cls: "lyric hyphen", ...(look.k !== 1 || ts !== 1 ? { size: P(LYRIC_EM * look.k) } : {}), ...(look.sx !== 1 ? { sx: look.sx } : {}) });
             }
             lyrics.push(...partLyrics.slice(from));
           }, { min: 0, count: false, step: ROW_STEP });   // 歌词基线往下让也按整格（防抖）
@@ -1635,7 +1662,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const geo = (s: number, r: number, k: number) => {
       const q = per[r], row = rowOf(s, r, k), sk = sky(row), hUp = fin(sk.hUp, 0), hDn = fin(sk.hDn, 4);
       const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
-      const lyr = lyricsOf[r] && k === q.staves - 1 ? lyricOff.get(row) : undefined, row2 = lyr2.has(`${r}:${s}`) ? LYRIC_ROW2 : 0;
+      const lyr = lyricsOf[r] && k === q.staves - 1 ? lyricOff.get(row) : undefined, row2 = 0;
       let need = hDn - 4 + PAD;
       if (lyr !== undefined) need = Math.max(need, lyr + lyricTail + row2);
       const below = stepUp(minBelow, need);
