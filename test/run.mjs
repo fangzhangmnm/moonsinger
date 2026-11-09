@@ -4,6 +4,7 @@ import "./smoke.test.ts";
 import "./feel-probe.test.ts";
 import "./audio-queue.test.ts";
 import "./engrave-printable.test.ts";
+import "./spacing.test.ts";
 import "./catalog-i18n.test.mjs";
 import "./i18n-guard.test.mjs";
 import "./pitch.test.ts";
