@@ -4,7 +4,8 @@
 //   这里：① 并行跑（默认 8 条，--jobs=N）；② 红了继续，最后一起报；③ 每个文件计时、慢的先跑（上次的时长记在 .e2e-times.json）；
 //        ④ 没人起 8710 就自己起 scripts/serve.sh、跑完关掉；⑤ 能筛：区名 `@pad` / 文件名子串 `rest lift` / `--changed`（按 git 里改了什么推区）。
 //   用法：
-//     node test/e2e/run.mjs                 整套（= npm run e2e）
+//     node test/e2e/run.mjs                 平时的整套（= npm run e2e）：不含「专项」——areas.mjs 的 SLOW：一份就要几分钟的、要连外网的；跳过了哪几份会印出来
+//     node test/e2e/run.mjs --all           真的全部，含专项（推正式版那一档 = npm run test:full；专门查测试的时候）
 //     node test/e2e/run.mjs @pad @modes     只跑这两个区（区在 areas.mjs）
 //     node test/e2e/run.mjs rest lift       文件名含 rest / lift 的
 //     node test/e2e/run.mjs --changed       看 git 改了哪些文件 → 推出该跑哪些区（main.ts / styles.css / index.html = 整套）
@@ -18,7 +19,7 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { AREAS, HELPERS, areasOf } from "./areas.mjs";
+import { AREAS, HELPERS, SLOW, slowFor, areasOf } from "./areas.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
@@ -64,18 +65,23 @@ if (flag("changed")) {
     else why.push(`${p} → （没有 E2E 管）`);
   }
   if (!changed.length) { console.log("git 里没有改动（相对 HEAD）。要跑整套：node test/e2e/run.mjs"); process.exit(0); }
-  picked = everything ? all : [...new Set([...files, ...[...areas].flatMap((a) => AREAS[a])])];
+  // 专项只在改到它自己管的源码（SLOW[x].when）或者改了它自己这个文件时跑；「整套」和按区推出来的都不带它们
+  const slowHit = slowFor(changed);
+  picked = [...new Set([...files, ...slowHit, ...(everything ? all : [...areas].flatMap((a) => AREAS[a])).filter((n) => !(n in SLOW))])];
+  for (const n of slowHit) why.push(`专项 ${n}：改到了它管的源码`);
   console.log("按改动推档：\n  " + why.join("\n  "));
   if (!picked.length) { console.log(smokeHint ? "\n没有要跑的 E2E；改的是壳 → npm run smoke" : "\n没有要跑的 E2E（只跑 npm test 就够）。"); process.exit(0); }
 } else if (words.length) {
   const set = new Set();
   for (const w of words) {
-    if (w === "all") { all.forEach((n) => set.add(n)); continue; }
-    if (w.startsWith("@")) { const a = AREAS[w.slice(1)]; if (!a) { console.error(`没有这个区：${w}（有：${Object.keys(AREAS).map((k) => "@" + k).join(" ")}）`); process.exit(2); } a.forEach((n) => set.add(n)); continue; }
+    if (w === "all") { all.filter((n) => flag("all") || !(n in SLOW)).forEach((n) => set.add(n)); continue; }
+    if (w.startsWith("@")) { const a = AREAS[w.slice(1)]; if (!a) { console.error(`没有这个区：${w}（有：${Object.keys(AREAS).map((k) => "@" + k).join(" ")}）`); process.exit(2); } a.filter((n) => flag("all") || !(n in SLOW)).forEach((n) => set.add(n)); continue; }   // 按区跑也不带专项；点名（文件名子串）才带
     const hits = all.filter((n) => n.includes(w)); if (!hits.length) { console.error(`没有文件名含「${w}」的 E2E`); process.exit(2); } hits.forEach((n) => set.add(n));
   }
   picked = [...set];
-} else picked = all;
+} else picked = flag("all") ? all : all.filter((n) => !(n in SLOW));
+{ const skipped = Object.keys(SLOW).filter((n) => known.has(n) && !picked.includes(n));   // 不静默：跳过了谁、为什么、怎么跑
+  if (skipped.length && !flag("list")) console.log(`没跑的专项 ${skipped.length} 份：${skipped.map((n) => `${n}（${SLOW[n].why}）`).join("、")}。要跑：点名（node test/e2e/run.mjs ${skipped[0]}）或 --all`); }
 
 // 慢的先跑（上次时长；没记过的排在最前面当作未知）
 let times = {}; try { times = JSON.parse(fs.readFileSync(TIMES, "utf8")); } catch { /* 第一次 */ }

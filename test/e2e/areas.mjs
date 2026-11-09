@@ -31,6 +31,22 @@ export const AREAS = {
   modes: ["modes", "typing-keys", "title-modes", "mixer-rows", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys", "final", "midi", "dock-side"],
 };
 
+/** 专项（2026-11-08 Fable；user「如果有些比较复杂的功能，确实要测试那么长也可以，就只是说不应该每次测试的时候都测试…专攻测试这些东西的时候可以全量测试」）：
+ *  单个文件就要一分钟以上、或者要连外网的 E2E。**平时的整套不跑它们**——只在这三种时候跑：改到了它管的源码（下面每条的 when）、点名（`node test/e2e/run.mjs gate`）、`--all`（推正式版那一档，`npm run test:full`）。
+ *  量过（2026-11-08，91 份并行）：gate 2–5 分钟、folder-home 3 分钟、i18n-en 3 分钟——整套 7 分 53 秒里它们三个占了大头；去掉之后整套的下限 = 最慢的普通文件（一分钟出头）。
+ *  audition-banks / cast-back / pad-follow 点「上场」要从外网下 32 MB 的音源（本地 serve 的 pwa-sounds/ 是 404），网慢就红，和代码无关。
+ *  why = 说给人看的（运行器跳过时印出来）；when = 改到这些路径就该跑它。 */
+export const SLOW = {
+  "gate":           { why: "2–5 分钟", when: /^src\/cloud-gate\.ts$|^src\/store-ui\.ts$|^src\/app-store\.ts$|^src\/config\.ts$|^vendor-pkgs\/|^test\/e2e\/cloud-bridge\.mjs$/ },
+  "folder-home":    { why: "3 分钟",   when: /^src\/library-home\.ts$|^src\/app\/move-songs\.ts$|^src\/app-store\.ts$|^vendor-pkgs\/|^test\/e2e\/fake-fsa\.mjs$/ },
+  "i18n-en":        { why: "3 分钟",   when: /^src\/i18n\// },
+  "audition-banks": { why: "要外网下 32 MB 音源", when: /^src\/sources\/|^src\/ui\/finder\.ts$|^src\/gm\/(catalog|sound-cache|sounds\.gen)\.ts$/ },
+  "cast-back":      { why: "要外网下 32 MB 音源", when: /^src\/sources\/|^src\/ui\/finder\.ts$|^src\/gm\/(catalog|sound-cache|sounds\.gen)\.ts$/ },
+  "pad-follow":     { why: "要外网下 32 MB 音源", when: /^src\/keyboard\/pad\.ts$|^src\/app\/pad-host\.ts$|^src\/sources\// },
+};
+/** 改了这些路径，该跑哪些专项。 */
+export function slowFor(paths) { return Object.entries(SLOW).filter(([, v]) => paths.some((p) => v.when.test(p))).map(([k]) => k); }
+
 /** 不是测试的 E2E 目录成员（运行器和分区守卫都跳过）。 */
 export const HELPERS = ["fake-fsa", "pw", "cloud-bridge", "run", "areas"];
 

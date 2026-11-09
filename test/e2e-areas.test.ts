@@ -2,7 +2,7 @@
 //   新加 E2E 没登记分区 = 这里红——分档靠的是「改了哪类东西必须跑哪一档」，漏登记 = 那一档静默漏跑。
 // created 2026-10-13 by Claude Fable 5.1
 import { describe, it, eq, assert } from "./runner.mjs";
-import { AREAS, HELPERS, AREA_OF_PATH, areasOf } from "./e2e/areas.mjs";
+import { AREAS, HELPERS, AREA_OF_PATH, SLOW, slowFor, areasOf } from "./e2e/areas.mjs";
 const fs = (await import("node:fs" as string)) as { readdirSync(u: URL): string[]; readFileSync(u: URL, enc: "utf8"): string };
 
 const files = fs.readdirSync(new URL("./e2e/", import.meta.url)).filter((f) => f.endsWith(".mjs")).map((f) => f.slice(0, -4)).filter((n) => !(HELPERS as string[]).includes(n));
@@ -26,6 +26,12 @@ describe("E2E 分区表", () => {
       fs.readFileSync(new URL(`./e2e/${n}.mjs`, import.meta.url), "utf8").split("\n").forEach((line, k) => { if (/Date\.now\(\)/.test(line) && !/wall-clock-ok/.test(line)) bad.push(`${n}.mjs:${k + 1}`); });
     }
     eq(bad.join(" "), "", `用了 Date.now()：${bad.join(" ")}`);
+  });
+  it("专项（慢 / 要外网的）：列的都是真的 E2E；改到它管的源码才点到它，别的改动不点", () => {
+    for (const n of Object.keys(SLOW as object)) assert(files.includes(n), `SLOW 里的 ${n} 不是 E2E 文件`);
+    eq(slowFor(["src/cloud-gate.ts"]).join(" "), "gate"); eq(slowFor(["src/i18n/strings.ts"]).join(" "), "i18n-en");
+    eq(slowFor(["src/library-home.ts"]).join(" "), "folder-home"); eq(slowFor(["src/app-store.ts"]).join(" "), "gate folder-home");
+    eq(slowFor(["src/ui/score-overlay.ts", "src/app/main.ts", "styles.css"]).join(" "), "", "改谱面 / 中枢文件不带专项");
   });
   it("源码路径表只指向存在的区；几个关键路径落对了档", () => {
     for (const [, a] of AREA_OF_PATH as [RegExp, string | string[]][]) if (Array.isArray(a)) for (const x of a) assert(x in (AREAS as object), `AREA_OF_PATH 指向不存在的区 ${x}`);
