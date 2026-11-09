@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.48-2026-11-09";
+var APP_VERSION = "v0.16.49-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -15870,9 +15870,19 @@ var ScoreOverlay = class {
     const icon = (id2, size) => `<svg class="ov-icon" style="width:${px(size)};height:${px(size)}" aria-hidden="true"><use href="#${id2}"/></svg>`;
     const song = v.song, papers = song.papers, multi = papers.length > 1, nameOf2 = (id2) => papers.find((p2) => p2.id === id2);
     this.hiddenOf = new Map(L2.papers.map((pp) => [pp.id, pp.hiddenParts]));
+    const colRight = /* @__PURE__ */ new Map();
+    for (const n10 of L2.names) {
+      const c10 = colRight.get(n10.paper);
+      colRight.set(n10.paper, c10 === void 0 ? n10.x1 : Math.max(c10, n10.x1));
+    }
+    const colLeft = /* @__PURE__ */ new Map();
+    for (const n10 of L2.names) {
+      const c10 = colLeft.get(n10.paper);
+      colLeft.set(n10.paper, c10 === void 0 ? n10.x0 : Math.min(c10, n10.x0));
+    }
     for (const n10 of L2.names) {
       const gs = L2.sp;
-      const t10 = this.host.toggles(n10.part), s10 = TG_BTN * gs, total = (TG_BTN * 2 + TG_GAP) * gs, cx2 = (n10.x0 + n10.x1) / 2, x0 = Math.max(0.2 * gs, cx2 - total / 2), y2 = n10.top - 0.35 * gs - s10;
+      const t10 = this.host.toggles(n10.part), s10 = TG_BTN * gs, total = (TG_BTN * 2 + TG_GAP) * gs, cx2 = ((colLeft.get(n10.paper) ?? n10.x0) + (colRight.get(n10.paper) ?? n10.x1)) / 2, x0 = Math.max(0.2 * gs, cx2 - total / 2), y2 = n10.top - 0.35 * gs - s10;
       const eye = t10.only ? "visibility-only" : t10.hidden ? "visibility-hide" : "visibility-show", ear = t10.solo ? "volume-solo" : t10.muted ? "volume-mute" : "volume";
       const btn = (kind, k2, ic2, st2, title) => add(
         `tg:${n10.paper}:${n10.part}:${kind}`,
@@ -29318,7 +29328,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-f93aa780c395.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-958413cec7a6.mjs");
+      return pick(() => "encode-worker-9b0491ab4858.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -56970,4 +56980,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-31e08bd07521.mjs.map
+//# sourceMappingURL=moonsinger-8afffbe55f65.mjs.map

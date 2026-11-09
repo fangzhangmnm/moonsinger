@@ -25,6 +25,7 @@ const P1 = await p.evaluate(() => window.__moonsinger.state().song.parts[0].id);
 await p.evaluate(() => { const e = window.__moonsinger.engine; window.__ch = []; const ch = e.channel.bind(e); e.channel = (id, prm) => { window.__ch.push([id, !!prm.mute, !!prm.solo]); return ch(id, prm); }; });
 const kinds = await p.evaluate(() => [...document.querySelectorAll("#score .score-overlay .ov-tg")].map((t) => `${t.dataset.part}:${t.dataset.kind}`).join(","));
 check(kinds === `${P1}:hidden,${P1}:muted,P9:hidden,P9:muted`, "每个声部两颗钮：眼睛 + 喇叭", kinds);
+{ const a = await tgBox(P1, "hidden"), b = await tgBox("P9", "hidden"); check(!!a && !!b && Math.abs(a.x - b.x) < 1, "各位的眼睛钮上下对齐（对整个名字栏的中线；user 11-09「眼睛应该对齐」）", `${a?.x} vs ${b?.x}`); }
 { const bx = await tgBox(P1, "muted"); check(bx.w / bx.sp >= 2.95, "钮不比纸角的控件（3 个谱线间距）小（v0.16.33 起 3.0，图标比纸角钮的大；刀 2 试：跟谱）", `${(bx.w / bx.sp).toFixed(2)}`); }
 // 刀 2：紧凑档的两颗钮跟着谱一起缩（user 11-09「紧凑档里两颗钮跟着谱一起缩小三成。试一下」——跟字放大会和上一位两行的名字挤在一起）
 { const a = await tgBox(P1, "muted"), s0 = await p.evaluate(() => window.__moonsinger.state());

@@ -97,10 +97,14 @@ export class ScoreOverlay {
     const song = v.song, papers = song.papers, multi = papers.length > 1, nameOf = (id: string) => papers.find((p) => p.id === id);
     this.hiddenOf = new Map(L.papers.map((pp) => [pp.id, pp.hiddenParts]));
 
-    // ① 两颗钮：名字块上面、整排对「色点 + 名字」居中，可以超出谱上沿（user 11-08）
+    // ① 两颗钮：名字块上面，可以超出谱上沿（user 11-08）；一张纸上各位的钮对同一条中线 = 整个名字栏的中间（v0.16.49，user 11-09「眼睛应该对齐」：原来各自对自己的名字居中，名字长短不一就一个比一个偏）
+    const colRight = new Map<string, number>();
+    for (const n of L.names) { const c = colRight.get(n.paper); colRight.set(n.paper, c === undefined ? n.x1 : Math.max(c, n.x1)); }
+    const colLeft = new Map<string, number>();
+    for (const n of L.names) { const c = colLeft.get(n.paper); colLeft.set(n.paper, c === undefined ? n.x0 : Math.min(c, n.x0)); }
     for (const n of L.names) {
       const gs = L.sp;   // 两颗钮跟谱的尺子（刀 2 试：user 11-09「紧凑档里两颗钮跟着谱一起缩小三成。试一下」——紧凑档行距小，跟字放大会和上一位的两行名字挤在一起）
-      const t = this.host.toggles(n.part), s = TG_BTN * gs, total = (TG_BTN * 2 + TG_GAP) * gs, cx = (n.x0 + n.x1) / 2, x0 = Math.max(0.2 * gs, cx - total / 2), y = n.top - 0.35 * gs - s;
+      const t = this.host.toggles(n.part), s = TG_BTN * gs, total = (TG_BTN * 2 + TG_GAP) * gs, cx = ((colLeft.get(n.paper) ?? n.x0) + (colRight.get(n.paper) ?? n.x1)) / 2, x0 = Math.max(0.2 * gs, cx - total / 2), y = n.top - 0.35 * gs - s;
       const eye = t.only ? "visibility-only" : t.hidden ? "visibility-hide" : "visibility-show", ear = t.solo ? "volume-solo" : t.muted ? "volume-mute" : "volume";
       const btn = (kind: "hidden" | "muted", k: number, ic: string, st: string, title: string) =>
         add(`tg:${n.paper}:${n.part}:${kind}`, "button", `ov-i ov-tg${st ? ` on ${st}` : ""}`, box(x0 + k * (TG_BTN + TG_GAP) * gs, y, s, s), icon(ic, s * 0.72),
