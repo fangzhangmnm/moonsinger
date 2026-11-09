@@ -1628,6 +1628,17 @@ export function addPaper(st: EditorState, after?: string, before?: string): Edit
   const list = named.slice(); list.splice(k + 1, 0, paper);
   return setFocus({ ...st, song: { ...st.song, papers: list }, nextId: nid }, id, st.at.part);
 }
+/** 复制一张纸（v0.16.61，user 11-09「需要加一个duplicate曲段的功能」）：整张纸（所有声部的轨 + 隐藏与否）照抄一份插在它后面；
+ *  每个记号换新编号（同一首歌里不重号；记号之间没有按编号互相引用的）；名字 = name（调用方给，界面字「X 副本」）；光标跳到新纸、同一个声部。 */
+export function duplicatePaper(st: EditorState, paperId: string, name: string): EditorState {
+  const papers = st.song.papers, k = papers.findIndex((p) => p.id === paperId); if (k < 0) return st;
+  const src = papers[k], id = nextKey(papers.map((p) => p.id), "p");
+  let nid = st.nextId;
+  const tracks: Record<string, Token[]> = {};
+  for (const [pid, t] of Object.entries(src.tracks)) tracks[pid] = t.map((x) => ({ ...x, id: nid++ }) as Token);
+  const list = papers.slice(); list.splice(k + 1, 0, { ...src, id, name, tracks });
+  return setFocus({ ...st, song: { ...st.song, papers: list }, nextId: nid }, id, tracks[st.at.part] ? st.at.part : Object.keys(tracks)[0] ?? st.at.part);
+}
 /** 删一张纸（最后一张不能删）。 */
 export function removePaper(st: EditorState, paperId: string): EditorState {
   const papers = st.song.papers; if (papers.length <= 1) return st;

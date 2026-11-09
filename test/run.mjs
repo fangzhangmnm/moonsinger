@@ -52,6 +52,7 @@ import "./mp3-encoder.test.ts";
 import "./pad-keys.test.ts";
 import "./pad-music.test.ts";
 import "./svg-groups.test.ts";
+import "./duplicate-paper.test.ts";
 import "./sing-core-defaults.test.ts";
 import "./timeline.test.ts";
 import "./scheduler.test.ts";

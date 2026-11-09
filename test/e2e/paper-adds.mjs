@@ -2,7 +2,7 @@
 // created 2026-11-08 by Claude Opus 5.5（user 11-07 搬家清单第五条「管理」：「一二三四五六同意…先按这个做，不舒服我以后再说」）。
 // 守：编辑器里、不分页时每张纸底下两个虚线框；分页 / 听模式没有（分页 = 打印预览）；扳手旁的「＋」没了、扳手面板里也没有「＋ 新的纸」；
 //   「＋ 新曲段」= 在这一段下面插一张；「＋ 歌手」= 小菜单：不在这一段的歌手 / ＋ 新歌手（排在这一段最下面那位后面）/ 声部管理；
-//   纸 ⋯ = 这一段 · 插入（在上面 / 下面插一段）· 编辑，不再有加歌手；在上面插 = 新的一段在它前面。
+//   纸 ⋯ = 这一段 · 插入（在上面 / 下面插一段 / 复制这一段）· 编辑，不再有加歌手；在上面插 = 新的一段在它前面。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/paper-adds.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
@@ -69,6 +69,15 @@ const head = await p.evaluate(() => { const s = window.__moonsinger.state().song
 check(/key/.test(head) && /time/.test(head), "插在最前面：谱头照抄原来第一段开头", head);
 await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
 check((await papers()) === [P0, P1].join(","), "撤销一步 = 插的那段没了");
+// 复制这一段（v0.16.61，user 11-09「需要加一个duplicate曲段的功能」）：接在它后面、内容一样、名字加副本；撤销一步就没了
+const content = (k) => p.evaluate((k) => { const s = window.__moonsinger.state().song; return JSON.stringify(Object.values(s.papers[k].tracks).map((t) => t.map(({ id, ...r }) => r))); }, k);
+const c0 = await content(0);
+await p.evaluate((pid) => window.__moonsinger.overlayHost.onPaperMenu(pid), P0); await p.waitForTimeout(200);
+await p.click('.offer [data-v="dup"]'); await p.waitForTimeout(250);
+const ps3 = (await papers()).split(","), nm = await p.evaluate(() => window.__moonsinger.state().song.papers.map((x) => x.name));
+check(ps3.length === 3 && ps3[0] === P0 && ps3[2] === P1 && (await content(1)) === c0 && /副本/.test(nm[1]), "复制这一段 = 接在它后面、内容一样、名字加副本", `${ps3.join(",")} ${nm.join("|")}`);
+await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
+check((await papers()) === [P0, P1].join(","), "撤销一步 = 复制的那段没了");
 // 扳手面板里没有「＋ 新的纸」
 await p.evaluate(() => window.__moonsinger.overlayHost.onPaper()); await p.waitForTimeout(200);
 check(!(await p.$('[data-v="addpaper"]')), "扳手面板里没有「＋ 新的纸」（插一段 = 纸 ⋯ / 虚线框）");

@@ -4531,6 +4531,11 @@ var S = {
   "{label} \xB7 {n} \u4EF6": { en: "{label} \xB7 {n}" },
   "\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684": { en: "Nothing named \u201C{q}\u201D" },
   "\u9690\u85CF\u627E\u4E0D\u5230\u7684": { en: "Hide unavailable" },
+  "\u6574\u6BB5\uFF08\u6240\u6709\u58F0\u90E8\u7684\u97F3\u3001\u8BB0\u53F7\u3001\u6B4C\u8BCD\uFF09\u7167\u6284\u4E00\u4EFD\uFF0C\u63A5\u5728\u5B83\u540E\u9762": { en: "Copy the whole section (all parts' notes, marks and lyrics) right after it" },
+  "\u590D\u5236\u8FD9\u4E00\u6BB5": { en: "Duplicate section" },
+  "{name} \u526F\u672C": { en: "{name} copy" },
+  "\u66F2\u6BB5": { en: "Section" },
+  "\u590D\u5236\u4E86\u4E00\u6BB5\uFF08\u63A5\u5728\u540E\u9762\uFF09": { en: "Section duplicated (placed right after)" },
   "\u5F00\u7740\uFF1A\u76EE\u5F55\u91CC\u6CA1\u6709\u8C01\u80FD\u6F14\uFF08\u8FDE\u5E73\u66FF\u4E5F\u6CA1\u6709\uFF09\u7684\u4E50\u5668\u4E0D\u5217\u51FA\u6765\uFF08\u8FD9\u4E00\u9875\u85CF\u4E86 {n} \u4EF6\uFF09\u3002\u70B9\u4E00\u4E0B = \u5168\u5217\u51FA\u6765": { en: "On: instruments nobody in the catalog can perform (not even a stand-in) are hidden ({n} hidden here). Tap to list everything" },
   "\u5173\u7740\uFF1A\u6240\u6709\u4E50\u5668\u90FD\u5217\u51FA\u6765\uFF0C\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\u4E5F\u5728\u3002\u70B9\u4E00\u4E0B = \u85CF\u8D77\u6765": { en: "Off: every instrument is listed, including ones nobody can perform. Tap to hide them" },
   "\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684\u80FD\u6F14\u7684\u4E50\u5668\uFF08\u85CF\u7740 {n} \u4EF6\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\uFF1A\u5173\u6389\u300C\u9690\u85CF\u627E\u4E0D\u5230\u7684\u300D\u80FD\u770B\u5230\uFF09": { en: "No playable instrument named \u201C{q}\u201D ({n} with no performer are hidden \u2014 turn off \u201CHide unavailable\u201D to see them)" },
@@ -5051,7 +5056,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.60-2026-11-09";
+var APP_VERSION = "v0.16.61-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -7292,6 +7297,17 @@ function addPaper(st2, after, before) {
   const list = named.slice();
   list.splice(k2 + 1, 0, paper);
   return setFocus({ ...st2, song: { ...st2.song, papers: list }, nextId: nid }, id2, st2.at.part);
+}
+function duplicatePaper(st2, paperId, name) {
+  const papers = st2.song.papers, k2 = papers.findIndex((p2) => p2.id === paperId);
+  if (k2 < 0) return st2;
+  const src = papers[k2], id2 = nextKey(papers.map((p2) => p2.id), "p");
+  let nid = st2.nextId;
+  const tracks = {};
+  for (const [pid, t10] of Object.entries(src.tracks)) tracks[pid] = t10.map((x2) => ({ ...x2, id: nid++ }));
+  const list = papers.slice();
+  list.splice(k2 + 1, 0, { ...src, id: id2, name, tracks });
+  return setFocus({ ...st2, song: { ...st2.song, papers: list }, nextId: nid }, id2, tracks[st2.at.part] ? st2.at.part : Object.keys(tracks)[0] ?? st2.at.part);
 }
 function removePaper(st2, paperId) {
   const papers = st2.song.papers;
@@ -29404,15 +29420,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-8ca338ea5300.mjs");
+      return pick(() => "singer-worker-335702c34f85.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-1c5a20dddaaf.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-a11261770c37.mjs");
+      return pick(() => "layout-worker-c03e7b1c1feb.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-bca96f88d3ea.mjs");
+      return pick(() => "encode-worker-e427cd9bb75f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38820,7 +38836,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "ef2bc2d42cbd1d9d" : "dev";
+var CORE_HASH = true ? "477a4daf55538d3d" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -54328,7 +54344,7 @@ function openPaperMenu(id2) {
   const k2 = D2.st.song.papers.indexOf(paper), n10 = D2.st.song.papers.length;
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc11(paperLabel(id2))}</div><div class="part-sec">${_t("\u8FD9\u4E00\u6BB5")}</div><div class="set-row"><button class="btn" data-v="name">${_t("\u6539\u66F2\u6BB5\u540D\u2026")}</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="${_t("\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB")}">${paper.hidden ? _t("\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09") : _t("\u9690\u85CF\uFF08\u4E0D\u653E\uFF09")}</button>` + (n10 > 1 ? `<button class="btn cand danger" data-v="del">${_t("\u5220\u8FD9\u4E00\u6BB5\u2026")}</button>` : "") + `</div><div class="part-sec">${_t("\u63D2\u5165")}</div><div class="set-row"><button class="btn" data-v="above" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63D2\u5728\u5B83\u524D\u9762\uFF08\u8C31\u5934\u7167\u6284\u524D\u4E00\u6BB5\u7ED3\u5C3E\u7684\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\uFF09")}">${_t("\u5728\u4E0A\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="below" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u5728\u4E0B\u9762\u63D2\u4E00\u6BB5")}</button></div><div class="part-sec">${_t("\u7F16\u8F91")}</div><div class="set-row"><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>${_t("\u4E0A\u79FB")}</button><button class="btn" data-v="down"${k2 === n10 - 1 ? " disabled" : ""}>${_t("\u4E0B\u79FB")}</button><button class="btn" data-v="transpose" title="${_t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u79FB\u8C03\u3001\u8F6C\u8C03\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09")}">${_t("\u79FB\u8C03 / \u8F6C\u8C03\u2026")}</button></div><div class="offer-msg">${_t("\u66F2\u6BB5 = \u4E00\u5F20\u7EB8\uFF1A\u6BCF\u4E00\u6BB5\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u6BB5\u91CC\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\uFF08\u6BCF\u6BB5\u5E95\u4E0B\u300C\uFF0B \u58F0\u90E8\u300D\uFF09\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc11(paperLabel(id2))}</div><div class="part-sec">${_t("\u8FD9\u4E00\u6BB5")}</div><div class="set-row"><button class="btn" data-v="name">${_t("\u6539\u66F2\u6BB5\u540D\u2026")}</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="${_t("\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB")}">${paper.hidden ? _t("\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09") : _t("\u9690\u85CF\uFF08\u4E0D\u653E\uFF09")}</button>` + (n10 > 1 ? `<button class="btn cand danger" data-v="del">${_t("\u5220\u8FD9\u4E00\u6BB5\u2026")}</button>` : "") + `</div><div class="part-sec">${_t("\u63D2\u5165")}</div><div class="set-row"><button class="btn" data-v="above" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63D2\u5728\u5B83\u524D\u9762\uFF08\u8C31\u5934\u7167\u6284\u524D\u4E00\u6BB5\u7ED3\u5C3E\u7684\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\uFF09")}">${_t("\u5728\u4E0A\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="below" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u5728\u4E0B\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="dup" title="${_t("\u6574\u6BB5\uFF08\u6240\u6709\u58F0\u90E8\u7684\u97F3\u3001\u8BB0\u53F7\u3001\u6B4C\u8BCD\uFF09\u7167\u6284\u4E00\u4EFD\uFF0C\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u590D\u5236\u8FD9\u4E00\u6BB5")}</button></div><div class="part-sec">${_t("\u7F16\u8F91")}</div><div class="set-row"><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>${_t("\u4E0A\u79FB")}</button><button class="btn" data-v="down"${k2 === n10 - 1 ? " disabled" : ""}>${_t("\u4E0B\u79FB")}</button><button class="btn" data-v="transpose" title="${_t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u79FB\u8C03\u3001\u8F6C\u8C03\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09")}">${_t("\u79FB\u8C03 / \u8F6C\u8C03\u2026")}</button></div><div class="offer-msg">${_t("\u66F2\u6BB5 = \u4E00\u5F20\u7EB8\uFF1A\u6BCF\u4E00\u6BB5\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u6BB5\u91CC\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\uFF08\u6BCF\u6BB5\u5E95\u4E0B\u300C\uFF0B \u58F0\u90E8\u300D\uFF09\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -54357,6 +54373,12 @@ function openPaperMenu(id2) {
       update(v === "above" ? addPaper(D2.st, void 0, id2) : addPaper(D2.st, id2));
       close();
       info(_t("\u65B0\u7684\u4E00\u6BB5"));
+      return;
+    }
+    if (v === "dup") {
+      update(duplicatePaper(D2.st, id2, _t("{name} \u526F\u672C", { name: paper.name || _t("\u66F2\u6BB5") })));
+      close();
+      info(_t("\u590D\u5236\u4E86\u4E00\u6BB5\uFF08\u63A5\u5728\u540E\u9762\uFF09"));
       return;
     }
     if (v === "transpose") {
@@ -57265,4 +57287,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b7eebe6e41af.mjs.map
+//# sourceMappingURL=moonsinger-d5f60c07b1b2.mjs.map
