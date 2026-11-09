@@ -4789,6 +4789,13 @@ var S = {
   "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms (tap to hide this time)" },
   "\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09": { en: "Key-feel numbers (for chasing latency): on = a line of numbers appears above the keys while you play; off = never shown, even when keys are late (it only goes into the diagnostic log)" },
   "\u663E\u793A\uFF1A\u5F00": { en: "Show: on" },
+  "\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B": { en: "Press this when the sound is off (keys respond late, or there is no sound): it rebuilds the path to the speaker and throws away any audio still waiting to play. Anything sounding right now will cut out for a moment" },
+  "\u91CD\u542F\u58F0\u97F3": { en: "Restart audio" },
+  "\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09\uFF1A\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA": { en: "How audio starts (experiment): on = the first tap starts a silent primer to wake the audio hardware, then the real output starts; off = the old way. Takes effect the next time the app is opened" },
+  "\u57AB\u811A\uFF1A\u5F00": { en: "Primer: on" },
+  "\u57AB\u811A\uFF1A\u5173": { en: "Primer: off" },
+  "\u58F0\u97F3\u91CD\u542F\u4E86": { en: "Audio restarted" },
+  "\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00": { en: "Rebuilt, but the audio device has not come up yet: press again, or close the app and reopen it" },
   "\u663E\u793A\uFF1A\u5173": { en: "Show: off" },
   "\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355": { en: "This section's menu" },
   "\u9690\u85CF {n}": { en: "{n} hidden" },
@@ -5019,7 +5026,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.31-2026-11-08";
+var APP_VERSION = "v0.16.32-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28296,15 +28303,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-5c35b805d2db.mjs");
+      return pick(() => "singer-worker-83a5f8bb37f9.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-1f9db3119593.mjs");
+      return pick(() => "layout-worker-09e0a67efe08.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-063aece1227c.mjs");
+      return pick(() => "encode-worker-478c24309eb1.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -28399,6 +28406,10 @@ var retryTimer;
 var retryUntil = 0;
 function wake(c10) {
   if (pageHidden() || !asleep(c10)) return;
+  if (primerPending()) {
+    startPrimer(c10);
+    return;
+  }
   resumeOnce(c10);
   retryUntil = performance.now() + 1e4;
   if (retryTimer === void 0) retryTimer = setInterval(() => {
@@ -28423,9 +28434,92 @@ function audioCtxIfAny() {
   return ctx;
 }
 function warmAudio() {
+  gestureAt ||= performance.now();
   const fresh = !ctx;
   const c10 = audioCtx();
   if (fresh) noteFn(`warmed on first gesture: ctx ${c10.state}, sr ${c10.sampleRate}`);
+}
+var primerUse = false;
+var everRan = false;
+var gestureAt = 0;
+var primer = null;
+var primerOk = false;
+var primerFailed = false;
+var primerPoll;
+function setPrimer(on2) {
+  if (primerUse !== on2) {
+    primerUse = on2;
+    noteFn(`primer ${on2 ? "on" : "off"}`);
+  }
+  if (on2 && !ctx && typeof AudioContext !== "undefined") audioCtx();
+}
+var primerOn = () => primerUse;
+var primerPending = () => primerUse && !everRan && !primerOk && !primerFailed;
+function startPrimer(real) {
+  if (!primer) {
+    try {
+      primer = new AudioContext();
+    } catch (e10) {
+      primerFailed = true;
+      noteFn(`primer: cannot create (${String(e10?.message ?? e10)}) \u2192 starting the real one directly`);
+      wake(real);
+      return;
+    }
+    const p0 = primer;
+    let prev = p0.state;
+    noteFn(`primer: created (${prev}); the real one is ${real.state}`);
+    p0.addEventListener("statechange", () => {
+      const s10 = p0.state;
+      if (s10 !== prev) {
+        noteFn(`primer: state ${prev} \u2192 ${s10}`);
+        prev = s10;
+      }
+    });
+  }
+  const p2 = primer;
+  if (asleep(p2)) p2.resume().catch(() => {
+  });
+  if (primerPoll !== void 0 || !gestureAt && p2.state !== "running") return;
+  const t02 = p2.currentTime, askedAt = performance.now();
+  let movedAt = 0, lastT = t02, lastAt = askedAt;
+  primerPoll = setInterval(() => {
+    const now2 = performance.now(), stop = () => {
+      clearInterval(primerPoll);
+      primerPoll = void 0;
+    };
+    if (!primerPending() || primer !== p2) {
+      stop();
+      return;
+    }
+    if (pageHidden()) return;
+    const t10 = p2.currentTime;
+    if (t10 !== lastT) {
+      lastT = t10;
+      lastAt = now2;
+      if (!movedAt) movedAt = now2;
+    }
+    if (movedAt && now2 - movedAt >= 150 && now2 - lastAt < 60) {
+      primerOk = true;
+      stop();
+      noteFn(`primer: device up \u2248 ${Math.round(movedAt - (gestureAt || askedAt))} ms after the first gesture (primer rendered ${Math.round((t10 - t02) * 1e3)} ms by now) \u2192 starting the real one`);
+      wake(real);
+      return;
+    }
+    if (!movedAt && now2 - (gestureAt || askedAt) > 4e3) {
+      primerFailed = true;
+      stop();
+      noteFn(`primer: no clock 4 s after the first gesture (primer ${p2.state}) \u2192 starting the real one directly`);
+      wake(real);
+    }
+  }, 10);
+}
+function retirePrimer() {
+  const p2 = primer;
+  primer = null;
+  if (!p2) return;
+  setTimeout(() => {
+    p2.close().then(() => noteFn("primer: closed"), (e10) => noteFn(`primer: close failed (${String(e10?.message ?? e10)})`));
+  }, 2e3);
 }
 function attach(c10) {
   let prev = c10.state;
@@ -28456,15 +28550,24 @@ function noteKeyAsleep(now2) {
     return;
   }
   const t10 = c10.currentTime;
+  if (shownFrozen && shownFrozen.t === t10 && now2 - shownFrozen.at > 500) {
+    noteFn(`key pressed while clock frozen since coming back \u2265 ${Math.round(now2 - shownFrozen.at)} ms (ctx running, t=${t10.toFixed(2)})`);
+    keyCt = t10;
+    keyCtAt = now2;
+    void reviveAudio("frozen-key");
+    return;
+  }
   if (t10 !== keyCt) {
     keyCt = t10;
     keyCtAt = now2;
     return;
   }
-  if (now2 - keyCtAt > 400 && now2 - asleepNotedAt >= 1e3) {
+  if (now2 - keyCtAt <= 400) return;
+  if (now2 - asleepNotedAt >= 1e3) {
     asleepNotedAt = now2;
     noteFn(`key pressed while clock frozen \u2265 ${Math.round(now2 - keyCtAt)} ms (ctx running, t=${t10.toFixed(2)})`);
   }
+  void reviveAudio("frozen-key");
 }
 function createQueueMeter() {
   let pending = true, last = null, anchor = null, slack = 0, burstMs = null;
@@ -28534,9 +28637,19 @@ function armQueue(why2) {
     const b3 = queue.burst();
     if (b3 !== null && !burstNoted) {
       burstNoted = true;
+      if (!everRan) {
+        everRan = true;
+        retirePrimer();
+      }
       const go = !flushBroken && shouldAutoFlush(b3, autoCount), took = queue.anchorAt();
       noteFn(`start burst (${queueWhy}): device start took \u2248 ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead \u2248 ${b3} ms${go ? " \u2192 flush" : flushBroken && b3 > FLUSH_IDLE_MS ? " (auto flush off this session)" : b3 > FLUSH_NOW_MS ? ` (gave up after ${autoCount} flushes)` : b3 > FLUSH_IDLE_MS ? " (will clear when nothing is sounding)" : ""}`);
-      if (go) {
+      if (go && queueWhy === "revive") {
+        autoCount++;
+        const r10 = recreateOutput(c10);
+        noteFn(`revive: start was dirty (${b3} ms) \u2192 ${r10.how}`);
+        flushAt = now2;
+        armQueue("revive");
+      } else if (go) {
         autoCount++;
         flushAudio("auto");
       } else if (b3 <= FLUSH_NOW_MS) autoCount = 0;
@@ -28569,10 +28682,73 @@ function flushAudio(who = "tap") {
 function audioShown() {
   const c10 = ctx;
   if (!c10 || c10.state !== "running") return;
-  const t02 = c10.currentTime;
+  const t02 = c10.currentTime, at2 = performance.now();
+  frozenTries = 0;
+  const still = () => ctx === c10 && c10.state === "running" && c10.currentTime === t02 && !pageHidden();
   setTimeout(() => {
-    if (ctx === c10 && c10.state === "running" && c10.currentTime === t02 && !pageHidden() && performance.now() - armAt > 500) armQueue("visible");
+    if (!still()) return;
+    shownFrozen = { t: t02, at: at2 };
+    if (performance.now() - armAt > 500) armQueue("visible");
   }, 60);
+  setTimeout(() => {
+    if (still()) void reviveAudio("frozen-visible");
+    else if (shownFrozen?.t === t02) shownFrozen = null;
+  }, 1e3);
+}
+var shownFrozen = null;
+var frozenTries = 0;
+var reviveAt = -1e9;
+function recreateOutput(c10) {
+  try {
+    const d3 = c10.destination, n10 = d3.channelCount, s10 = performance.now();
+    d3.channelCount = n10 === 1 ? 2 : 1;
+    d3.channelCount = n10;
+    return { ok: true, how: `output re-created in ${Math.round(performance.now() - s10)} ms (channels ${n10})` };
+  } catch (e10) {
+    return { ok: false, how: `output re-create failed: ${String(e10?.message ?? e10)}` };
+  }
+}
+function reviveAudio(why2) {
+  const c10 = ctx, now2 = performance.now();
+  if (!c10) return Promise.resolve(false);
+  if (now2 - reviveAt < 1500) return Promise.resolve(c10.state === "running");
+  if (why2 !== "manual" && ++frozenTries > 3) return Promise.resolve(false);
+  reviveAt = now2;
+  const t02 = c10.currentTime, q2 = audioQueuedMs();
+  if (asleep(c10) && !everRan) {
+    noteFn(`revive (${why2}): ctx ${c10.state}, never started \u2192 waking`);
+    wake(c10);
+    return new Promise((done) => setTimeout(() => done(ctx === c10 && c10.state === "running" && c10.currentTime !== t02), 2500));
+  }
+  const { ok: ok2, how } = recreateOutput(c10);
+  noteFn(`revive (${why2}): ctx ${c10.state}, t=${t02.toFixed(2)}, queued \u2248 ${q2 ?? "?"} ms; ${how}`);
+  if (asleep(c10)) resumeOnce(c10);
+  shownFrozen = null;
+  flushAt = now2;
+  autoCount = 0;
+  armQueue("revive");
+  const moving = () => ctx === c10 && c10.state === "running" && c10.currentTime !== t02;
+  return new Promise((done) => {
+    setTimeout(() => {
+      if (ctx !== c10 || pageHidden()) {
+        done(false);
+        return;
+      }
+      if (ok2 && moving()) {
+        noteFn(`revive: clock running (t=${c10.currentTime.toFixed(2)})`);
+        done(true);
+        return;
+      }
+      noteFn(`revive: clock not running after 500 ms (ctx ${c10.state}, t=${c10.currentTime.toFixed(2)}) \u2192 suspend + resume`);
+      void c10.suspend().then(() => c10.resume()).catch((e10) => noteFn(`revive: suspend + resume failed: ${String(e10?.message ?? e10)}`));
+      setTimeout(() => {
+        const m2 = moving();
+        noteFn(m2 ? `revive: clock running after suspend + resume (t=${c10.currentTime.toFixed(2)})` : `revive: still not running (ctx ${ctx === c10 ? c10.state : "gone"}) \u2014 the app needs a restart`);
+        if (!m2 && ctx === c10) wake(c10);
+        done(m2);
+      }, 1500);
+    }, 500);
+  });
 }
 function idleFlushAudio() {
   if (flushBroken || !burstNoted || performance.now() - flushAt < 1e4 || pageHidden()) return;
@@ -37032,7 +37208,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "46442ff6c765de91" : "dev";
+var CORE_HASH = true ? "c181f86b65a8ffae" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -50074,6 +50250,10 @@ feelChip.addEventListener("click", () => {
 });
 var KV_FEEL_ALWAYS = "feel-always";
 var feelAlways = false;
+var KV_PRIMER = "audio-primer";
+var IS_IOS = /iPad|iPhone|iPod/.test(navigator.platform) || navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+var PRIMER_URL = new URLSearchParams(location.search).get("primer");
+setPrimer(PRIMER_URL === "1" || PRIMER_URL !== "0" && IS_IOS);
 var slowestStep = () => {
   const rows = Object.entries(perfReport()).filter(([, v]) => v.n > 0).sort((a10, b3) => b3[1].last - a10[1].last).slice(0, 2);
   return rows.length ? rows.map(([k2, v]) => `${k2} ${Math.round(v.last)} ms`).join(" / ") : "\u2014";
@@ -51027,7 +51207,7 @@ ${esc10(CREDIT.attribution.join("\n"))}</pre>` + (lang() === "zh" ? `<div class=
 
 ${esc10(CREDIT_TRANSLATIONS.zh.terms)}</pre>` : "") + `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc10(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div><details class="set-credit set-dev"><summary>${_t("\u5F00\u53D1\u8005")}</summary><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc10(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("\u663E\u793A\uFF1A\u5F00") : _t("\u663E\u793A\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B")}<div class="set-row"><button class="btn" data-v="audio:revive">${_t("\u91CD\u542F\u58F0\u97F3")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div><details class="set-credit set-dev"><summary>${_t("\u5F00\u53D1\u8005")}</summary><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc10(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("\u663E\u793A\uFF1A\u5F00") : _t("\u663E\u793A\uFF1A\u5173")}</button></div></div>` + (IS_IOS ? `<div class="set-field">${_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09\uFF1A\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA")}<div class="set-row"><button class="btn" data-v="audio:primer">${primerOn() ? _t("\u57AB\u811A\uFF1A\u5F00") : _t("\u57AB\u811A\uFF1A\u5173")}</button></div></div>` : "") + `<div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -51103,6 +51283,19 @@ ${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_
       const l10 = v.slice(5);
       saveLang(l10 === "auto" ? null : l10);
       location.reload();
+    } else if (v === "audio:revive") {
+      const b3 = e10.target.closest("button");
+      b3.disabled = true;
+      warmAudio();
+      void reviveAudio("manual").then((ok2) => {
+        b3.disabled = false;
+        info(ok2 ? _t("\u58F0\u97F3\u91CD\u542F\u4E86") : _t("\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00"));
+      });
+    } else if (v === "audio:primer") {
+      const on2 = !primerOn();
+      setPrimer(on2);
+      deviceKvSet(KV_PRIMER, on2 ? null : "0");
+      e10.target.closest("button").textContent = on2 ? _t("\u57AB\u811A\uFF1A\u5F00") : _t("\u57AB\u811A\uFF1A\u5173");
     } else if (v === "feel:always") {
       feelAlways = !feelAlways;
       deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null);
@@ -55273,6 +55466,7 @@ onAudioNote((m2) => diagNote("audio", m2));
   for (const e10 of ["pointerdown", "pointerup", "touchend", "click", "keydown"]) window.addEventListener(e10, warm, true);
 }
 feelAlways = deviceKvGet(KV_FEEL_ALWAYS) === "1";
+if (IS_IOS && PRIMER_URL === null && deviceKvGet(KV_PRIMER) === "0") setPrimer(false);
 {
   let voices = -1, loadAt = 0, busyAt = 0;
   engine.on("load", (i10) => {
@@ -55323,6 +55517,9 @@ onThreadFail((_name, why2) => {
 Object.assign(window.__moonsinger, {
   overlayHost,
   // 谱面上面那一层的回调（刀 1）：测试不点钮直达「这一段的菜单 / 纸的设置」
+  reviveAudio: () => reviveAudio("manual"),
+  audioCtx: () => audioCtxIfAny(),
+  // test/e2e/audio-revive.mjs
   gate,
   cloudOnline,
   noteAuthFailure,
@@ -55379,4 +55576,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-bda3f6f02102.mjs.map
+//# sourceMappingURL=moonsinger-f93a9f99de5b.mjs.map

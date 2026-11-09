@@ -37,7 +37,7 @@ import type { LyricReading } from "../ui/lyric-editor.ts";
 import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
-import { holdAudio, releaseAudio, audioCtxIfAny, warmAudio, onAudioNote, noteKeyAsleep, audioQueuedMs, flushAudio, idleFlushAudio, audioShown } from "../singer/audio.ts";
+import { holdAudio, releaseAudio, audioCtxIfAny, warmAudio, onAudioNote, noteKeyAsleep, audioQueuedMs, flushAudio, idleFlushAudio, audioShown, reviveAudio, setPrimer, primerOn } from "../singer/audio.ts";
 import { createFeelProbe } from "./feel-probe.ts";   // 手感探针（v0.16.23）：按下 → 接到 → 出声三段 + 主线程 / 音频时钟停顿，超标露数字
 import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS } from "../format/performance.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
@@ -449,6 +449,11 @@ let feelMuted = false, feelText = "", feelFlush = false;
 feelChip.addEventListener("click", () => { if (feelFlush) { flushAudio("tap"); feelText = ""; return; } feelMuted = true; feelChip.hidden = true; });
 const KV_FEEL_ALWAYS = "feel-always";   // 设置 → 开发者：显示手感数字（默认关）。关 = 永不显示，晚了也不弹（user 11-08「关掉的时候就是一直不显示，而不是慢了会弹出来」）；黑匣子照记
 let feelAlways = false;
+// 垫脚（src/singer/audio.ts ⑥）：iPad 才用（冷启动多算声音只在那儿量到过；电脑上起得干净）；设置 → 开发者能关着对照。还没证实，证实了再把开关拿掉。
+//   必须在第一次碰声音之前定下来（开机时别的代码一碰声音就会去叫醒它）；网址里 ?primer=1 / ?primer=0 = 强开 / 强关（测试用：电脑上平时不开）。
+const KV_PRIMER = "audio-primer", IS_IOS = /iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const PRIMER_URL = new URLSearchParams(location.search).get("primer");
+setPrimer(PRIMER_URL === "1" || (PRIMER_URL !== "0" && IS_IOS));
 const slowestStep = (): string => { const rows = Object.entries(perfReport()).filter(([, v]) => v.n > 0).sort((a, b) => b[1].last - a[1].last).slice(0, 2); return rows.length ? rows.map(([k, v]) => `${k} ${Math.round(v.last)} ms`).join(" / ") : "—"; };
 const feel = createFeelProbe({
   audioNow: () => { const c = audioCtxIfAny();
@@ -1086,11 +1091,14 @@ function openSettings(): void {
       (lang() === "zh" ? `<div class="part-sec">${_t("中文译文（仅供阅读，以日文原文为准）")}</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` : "") +
       `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc(CREDIT_TRANSLATIONS.en.credit)}\n\n${esc(CREDIT_TRANSLATIONS.en.terms)}</pre></details>` +
     `<div class="set-field">${_t("小月相的念缓存（设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念）")}<div id="spCache" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("清空念缓存")}</button></div></div>` +
+    // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
+    `<div class="set-field">${_t("声音不对劲的时候按一下（按键有延迟、没有声音）：把通向扬声器的那一段换成新的，排着没播完的声音一起丢掉。正在响的声音会断一下")}<div class="set-row"><button class="btn" data-v="audio:revive">${_t("重启声音")}</button></div></div>` +
     `<div class="set-field">${_t("引擎负载与内存（能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说）")}<div id="engRes" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念")}">${_t("重开小月相引擎")}</button></div></div>` +
     // 开发者节（家族规矩 2½，2026-10-21）：诊断日志 + 「还原出厂设置…」住这里；「检查更新 / 清缓存重启」留在普通那一行
     `<details class="set-credit set-dev"><summary>${_t("开发者")}</summary>` +
       `<details class="set-credit"><summary>${_t("诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("复制")}</button><button class="btn" data-v="diag:download">${_t("下载 .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("分享…")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("清空")}</button></div></details>` +
       `<div class="set-field">${_t("按键手感的数字（查延迟用）：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("显示：开") : _t("显示：关")}</button></div></div>` +
+      (IS_IOS ? `<div class="set-field">${_t("声音的起法（试验）：开 = 第一次点屏幕先起一个不出声的垫脚把声音硬件叫醒，再起真正出声的那一个；关 = 以前的起法。改了要重开 app 才看得出")}<div class="set-row"><button class="btn" data-v="audio:primer">${primerOn() ? _t("垫脚：开") : _t("垫脚：关")}</button></div></div>` : "") +
       `<div class="set-field">${_t("还原出厂设置（这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在上面「模型包」里逐个删）")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button></div></div>` +
     `</details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删")}">${_t("清缓存重启")}</button></div>` +
@@ -1128,6 +1136,12 @@ function openSettings(): void {
     else if (v === "chord:off" || v === "chord:on") { setChordTags(v === "chord:on"); box.querySelectorAll<HTMLElement>('[data-v^="chord:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
     else if (v === "view:pro" || v === "view:inc") { setViewInC(v === "view:inc"); box.querySelectorAll<HTMLElement>('[data-v^="view:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
     else if (v?.startsWith("lang:")) { const l = v.slice(5); saveLang(l === "auto" ? null : l as Lang); location.reload(); }
+    else if (v === "audio:revive") {
+      const b = (e.target as HTMLElement).closest("button")!; b.disabled = true;
+      warmAudio();   // 还没出过声 = 先建、先叫醒（这一下在点按的手势里）
+      void reviveAudio("manual").then((ok) => { b.disabled = false; info(ok ? _t("声音重启了") : _t("换过了，但声音设备还没起来：再按一次，或者把 app 关掉重开")); });
+    }
+    else if (v === "audio:primer") { const on = !primerOn(); setPrimer(on); deviceKvSet(KV_PRIMER, on ? null : "0"); (e.target as HTMLElement).closest("button")!.textContent = on ? _t("垫脚：开") : _t("垫脚：关"); }
     else if (v === "feel:always") { feelAlways = !feelAlways; deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null); diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`); (e.target as HTMLElement).closest("button")!.textContent = feelAlways ? _t("显示：开") : _t("显示：关"); }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
@@ -3922,6 +3936,7 @@ onAudioNote((m) => diagNote("audio", m));
   };
   for (const e of ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const) window.addEventListener(e, warm, true); }
 feelAlways = deviceKvGet(KV_FEEL_ALWAYS) === "1";
+if (IS_IOS && PRIMER_URL === null && deviceKvGet(KV_PRIMER) === "0") setPrimer(false);
 // 排着的声音在空当里清（src/singer/audio.ts ②；user 11-08「空闲的时候自动清理，我觉得就可以了」）。清 = suspend + resume，会把正在响的音硬掐一下，
 //   所以「空当」= **确认没有音在响**：没有键按着、离上一次按 / 松 1.5 秒以上、没在放也没在准备（放完之后再等 5 秒：效果器的尾巴）、页面看得见、
 //   录音房最近一次报的在响的声音数 = 0 而且这份报告比最后一次按键晚（它每秒报一次：SoundFont 的收音、元音的收尾都算在里面）。v0.16.30 只看 0.6 秒，尾音长的乐器会被掐到。
@@ -3957,6 +3972,7 @@ onThreadFail((_name, why) => { diagNote("thread", why); showError(why); });   //
 // 测试口子（tools/itch-fixture.mjs / tools/local-smoke.mjs）：资源读口读一个站点文件（核哈希）、线程用的起法、mp3 线程编一小段
 Object.assign((window as unknown as { __moonsinger: Record<string, unknown> }).__moonsinger, {
   overlayHost,   // 谱面上面那一层的回调（刀 1）：测试不点钮直达「这一段的菜单 / 纸的设置」
+  reviveAudio: () => reviveAudio("manual"), audioCtx: () => audioCtxIfAny(),   // test/e2e/audio-revive.mjs
   gate, cloudOnline, noteAuthFailure, updateReload: () => shell.reload(),
   readSite: (path: string, sha256?: string) => getBytes(path, sha256 ? { sha256 } : {}).then((b) => b.length),
   threadKinds: () => Object.fromEntries((["singer-worker", "mp3-worker", "studio-worklet", "layout-worker", "encode-worker"] as const).map((n) => [n, threadUrls(n).map((u) => u.slice(0, u.indexOf(":")))])),
