@@ -34,7 +34,7 @@ import { Skyline, primInk, shiftPrim, primY } from "./skyline.ts";
 import { GLYPH_BOX } from "./glyph-box.gen.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { songInC, realFifthsOf } from "../score/view-in-c.ts";
-import { readChord, chordLabel, type ChordRead } from "../score/chord-name.ts";
+import { readChord, chordLabel, brokenChords, type ChordRead } from "../score/chord-name.ts";
 import { keyAt as keyAtTok } from "../score/song.ts";
 import { resolveSongClefs, displayStates, autoOttava, CLEF_SHIFT, baseClef, isFClef, ottavaShift, startClef, wantsGrand } from "../score/clef.ts";
 import { mergeTracks, planHands, type MergeOpts } from "../score/merge.ts";
@@ -1426,10 +1426,11 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const stems = layoutStems(stemIn.seq, stemIn.dir, { u: sp, y: (d, n) => yOf(RW(n.key), d) });
       const upOf = new Map<Chunk, boolean>();   // 符干朝上？（演奏法画在另一侧）
       const tipOf = new Map<Chunk, number>();
+      const stemXOf = new Map<Chunk, number>();   // 符干那条线的 x（px）：和弦级数跟着它摆（v0.16.62）
       for (const g of stems.groups) {
         for (const c of g.keys) {
           const st = stems.notes.get(c)!;
-          upOf.set(c, st.up); tipOf.set(c, st.tip);
+          upOf.set(c, st.up); tipOf.set(c, st.tip); stemXOf.set(c, st.x);
           prims.push({ tok: tokOf(c), t: "line", x1: st.x, y1: st.y0, x2: st.x, y2: st.tip, w: P(ENGRAVE.stem), cls: clsOf(c) });
           if (st.flag) prims.push({ tok: tokOf(c), t: "glyph", x: st.flag.x, y: st.flag.y, ch: (st.up ? [GLYPH.flag8thUp, GLYPH.flag16thUp, GLYPH.flag32ndUp] : [GLYPH.flag8thDown, GLYPH.flag16thDown, GLYPH.flag32ndDown])[st.flag.level - 1], cls: clsOf(c) });
         }
@@ -1653,12 +1654,18 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       //   按 C 调看时认的是换到 C 的谱 + C 调——级数一样。合租叠起来的虚拟行、声部 2 不标（只看个大概的）。印（跟着设置进 PDF）
       if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
         const fs = tx("chord-tag");   // 和速度字一样大（v0.16.34）；字的尺子（刀 2）
+        // 分解和弦（v0.16.62，src/score/chord-name.ts brokenChords）：一拍一拍拆开弹的，标在那一组第一个音下面
+        const broken = new Map(brokenChords(tokens, (i) => keyAtTok(tokens, i)).map((x) => [x.index, x.read] as const));
         for (const c of units) {
           if (c.kind !== "chunk" || !c.note || c.j !== 0 || c.index < 0 || c.pad) continue;
-          const t = tokens[c.index]; if (t?.kind !== "note" || !t.pitch || !t.chord?.length) continue;
-          const rd = readChord([t.pitch, ...t.chord], keyAtTok(tokens, c.index)); if (!rd) continue;
+          const t = tokens[c.index]; if (t?.kind !== "note" || !t.pitch) continue;
+          const rd = t.chord?.length ? readChord([t.pitch, ...t.chord], keyAtTok(tokens, c.index)) : broken.get(c.index) ?? null; if (!rd) continue;
           const ds = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff, c.index)), second = ds.some((dd, k) => k > 0 && Math.abs(ds[k - 1] - dd) === 1);
-          const label = chordLabel(rd), tx = nhX(c) + nhW(c) * (second ? 1.95 : 1) + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+          // 跟着符干（v0.16.62，user 11-09「其实可以试着跟着符柄定位，只有和符头位置撞了才退避」）：字的左边对齐符干那条线；
+          //   这样会压到这个和弦挂在谱下面的符头（符干朝下 = 符头在符干右边、二度挤开的那个也在右边）= 退回符头右边 + 0.3（原来的位置）。没有符干（全音符）= 符头右边
+          const headR = nhX(c) + nhW(c) * (second ? 1.95 : 1), sx = stemXOf.get(c), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
+          const atStem = sx !== undefined && !(low && headR > sx + P(0.1));
+          const label = chordLabel(rd), tx = atStem ? sx! - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
           placeBelow(RW(c), 0.3, (y) => {
             prims.push({ t: "text", x: tx, y, s: label, cls: "chord-tag", size: fs, anchor: "start" });
             chordTagsOut.push({ x: tx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd });

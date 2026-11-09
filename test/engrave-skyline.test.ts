@@ -49,18 +49,23 @@ describe("刀 4b：挂件贴着天际线（user 11-08 截图里点名的几样�
     const above = (r2.staffTop - r2.top) / SP;
     assert(Math.abs(above - 4.6) < 1e-6, `第二位那一行谱上面留 ${above}（舒适档最小值 4.6）`);
   });
-  it("和弦级数在和弦右下角（符头右边、谱下面），不压歌词", () => {
+  it("和弦级数在谱下面、字的左边对齐符干那条线（撞了挂在谱下面的符头才退回符头右边 + 0.3），不压歌词（v0.16.62，user「其实可以试着跟着符柄定位，只有和符头位置撞了才退避」）", () => {
     const ch = (k: number, lyric: string) => n(k, 4, { chord: [{ step: S[(k + 4) % 7], alter: 0, octave: k + 4 >= 7 ? 5 : 4 }, { step: S[(k + 2) % 7], alter: 0, octave: k + 2 >= 7 ? 5 : 4 }].sort(() => 0), lyric });
-    const L = lay([ch(0, "あ"), ch(3, "い"), ch(4, "う"), ch(0, "え")], { chordTags: true });
+    const hi = n(5, 4, { chord: [{ step: "C", alter: 0, octave: 5 }, { step: "E", alter: 0, octave: 5 }], lyric: "お" });   // A4 C5 E5：符干朝下（符干在符头左边）
+    const L = lay([ch(0, "あ"), ch(3, "い"), ch(4, "う"), hi], { chordTags: true });
     const tags = L.prims.filter((p) => p.t === "text" && /\bchord-tag\b/.test(cls(p))), lys = L.prims.filter((p) => p.t === "text" && /^lyric\b/.test(cls(p)));
-    assert(tags.length >= 3, `标了 ${tags.length} 个`);
+    const stems = L.prims.filter((p) => p.t === "line" && (!p.cls || p.cls === "ghost") && Math.abs(p.w - 0.12 * SP) < 1e-6) as { x1: number }[];
+    assert(tags.length >= 4, `标了 ${tags.length} 个`);
     const bottom = L.systems[0]!.staffTop + 4 * SP;
     for (const t of tags) {
-      const b = bbox(t), head = L.notes.find((x) => Math.abs(x.x + x.w + 0.3 * SP - (t as { x: number }).x) < 1)!;
-      assert(!!head, `级数靠左对齐在某个符头右缘 + 0.3（x ${(t as { x: number }).x}）`);
+      const b = bbox(t), x = (t as { x: number }).x;
+      const atStem = stems.some((l) => Math.abs(l.x1 - 0.06 * SP - x) < 0.5), atHead = L.notes.some((h) => Math.abs(h.x + h.w + 0.3 * SP - x) < 1);
+      assert(atStem || atHead, `级数对齐符干、或退回符头右边（x ${x}）`);
       assert(b[2] > bottom, `在谱下面（字顶 ${b[2]} > 第一线 ${bottom}）`);
       for (const l of lys) { const c = bbox(l); assert(b[1] <= c[0] || c[1] <= b[0] || b[3] <= c[2] || c[3] <= b[2], `级数 ${(t as { s: string }).s} 不压歌词 ${(l as { s: string }).s}`); }
     }
+    const last = tags[tags.length - 1] as { x: number }, head = L.notes.filter((h) => h.index === L.notes[L.notes.length - 1]!.index)[0]!;
+    assert(last.x < head.x + 0.2 * SP, `符干朝下的高音和弦：级数在符干那条线（符头左边），不再挂到右边（x ${last.x}，符头 ${head.x}）`);
   });
 });
 

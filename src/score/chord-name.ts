@@ -11,6 +11,8 @@
 // 写法：罗马数字 = 根音在调里是第几级（大写 = 大三度的和弦，小写 = 小三度的；调外的带 ♭ / ♯：B♭ 在 C 调 = ♭VII），后面跟这类和弦的记号（7 / maj7 / ° / ø7 / sus4…）；
 //   转位 = 「/」+ 最低音在调里是第几级（C/E 在 C 调 = I/3，同简谱的想法）。
 import { type Pitch, STEPS, midiOf, stepIndex, tonicStepIndex, keyAlter } from "./pitch.ts";
+import { WHOLE, type Token, type NoteTok } from "./song.ts";
+import { meterPositions } from "./groove.ts";
 
 interface Tpl { id: string; iv: number[]; opt?: number[]; /** 缺三度（大小分不出来）：大写小写按调里这个根音上面的三度（v0.16.13，user 11-07 截图：A E G 没标）。 */ no3?: boolean; minor: boolean; /** 罗马数字后面写的（小写的已经说了小三度，不再写 m）。 */ rs: string; /** 和弦名（根音字母后面写的，点开看候选用）。 */ sym: string }
 /** 和弦表（半音，从根音数；opt = 可以省的音，一般是五度 / 九度）。顺序 = 简单的在前（同分时排前面的赢）。 */
@@ -80,8 +82,17 @@ function diatonicThird(root: Pitch, fifths: number): number {
 export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead | null {
   const ps = [...pitches].sort((a, b) => midiOf(a) - midiOf(b));
   const set = new Set(ps.map(pc));
-  if (set.size < 3) return null;
   const bass = ps[0], bassPc = pc(bass);
+  // 空五度（v0.16.62，user 11-09「和弦级数认「空五度」…本次纪元做」；W-50「大部分写歌的时候都会空三」）：只有两个音、隔五度（带八度重复也算）= 「I5 / V5」，
+  //   照流行 / 吉他谱一律大写（没有三度，不说大小）；五度在下面 = 转位「I5/5」。别的两个音（三度、六度…）照旧不认
+  if (set.size === 2) {
+    const [a, b] = [...set], rootPc = (a + 7) % 12 === b ? a : (b + 7) % 12 === a ? b : null;
+    if (rootPc === null) return null;
+    const root = ps.find((p) => pc(p) === rootPc)!, r = degreeOf(root, fifths), bd = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(bd.acc)}${bd.deg}`;
+    const g: ChordGuess = { root, bass, tpl: "5", roman: ACC(r.acc) + ROMAN[r.deg - 1] + "5" + slash, name: stepName(root) + "5" + (slash ? `/${stepName(bass)}` : ""), cost: (rootPc === bassPc ? 0 : 1) + (r.acc === 0 ? 0 : 0.25), omitted: 1, no3: true };
+    return { best: g, ties: [g], all: [g] };
+  }
+  if (set.size < 3) return null;
   const out: ChordGuess[] = [];
   for (const rootPc of set) {
     const root = ps.find((p) => pc(p) === rootPc)!;
@@ -105,3 +116,43 @@ export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead 
 }
 /** 标在谱上的那一行字：打平的用「 / 」连起来（最多两个）。 */
 export const chordLabel = (r: ChordRead): string => r.ties.slice(0, 2).map((g) => g.roman).join(" / ");
+
+/** 分解和弦认得出的那几类（完整的三和弦 / 七和弦 / 挂留；加音、省音的不认——旋律里随便几个音凑出来的 add9 之类太多）。 */
+const BROKEN_OK = new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
+/** 分解和弦（v0.16.62，user 11-09「和弦级数认「空五度」和分解和弦。 本次纪元做」；收拢的规矩 AI 定、说给 user，不对再改）：一条 track（一张纸的一个声部）里
+ *  ① 按拍号的一拍收拢成一组（6/8、9/8、12/8 这类复拍子 = 附点四分一拍）；一拍里不到三个不同的音 = 并上下一拍，最多到这一小节的尾巴（不跨小节）；
+ *  ② 这一组全是单音（有叠音 = 那里本来就按叠音标，这一组不认）、至少三个音、相邻的音全是跳进（≥ 小三度；一步一步走的音阶不算分解和弦）；
+ *  ③ 认得出一个完整的基本和弦（BROKEN_OK、没省音）= 级数标在这一组第一个音下面；和前一组是同一个和弦 = 不再标。
+ *  keyAt(i) = 第 i 个记号那里的调（几个升降号）。 */
+export function brokenChords(tokens: readonly Token[], keyAt: (index: number) => number): { index: number; read: ChordRead }[] {
+  const mp = meterPositions(tokens);
+  type N = { i: number; p: Pitch | null; stacked: boolean };
+  const byBar = new Map<number, { nb: number; beats: N[][] }>();
+  for (const [i, m] of mp) {
+    const t = tokens[i] as NoteTok, compound = m.beatType === 8 && m.beats % 3 === 0 && m.beats > 3;
+    const beatLen = compound ? (3 * WHOLE) / 8 : WHOLE / m.beatType, nb = Math.max(1, Math.round((m.beats * WHOLE) / m.beatType / beatLen));
+    const bar = byBar.get(m.bar) ?? { nb, beats: Array.from({ length: nb }, () => []) }; byBar.set(m.bar, bar);
+    const k = Math.min(bar.beats.length - 1, Math.max(0, Math.floor(m.pos / beatLen + 1e-9)));
+    bar.beats[k].push({ i, p: t.pitch, stacked: !!t.chord?.length });
+  }
+  const out: { index: number; read: ChordRead }[] = [];
+  let prev = "";
+  for (const bar of [...byBar.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1])) {
+    const hasStack = (k: number) => bar.beats[k].some((n) => n.stacked);
+    for (let b = 0; b < bar.beats.length; ) {
+      if (hasStack(b)) { b++; prev = ""; continue; }   // 有叠音的拍子：那里按叠音标，自己一组、不往后并
+      const win: N[] = [...bar.beats[b]]; let e = b + 1;
+      const pcs = () => new Set(win.filter((n) => n.p).map((n) => pc(n.p!))).size;
+      while (pcs() < 3 && e < bar.beats.length && !hasStack(e)) win.push(...bar.beats[e++]);
+      b = e;
+      if (!win.length) continue;
+      const ns = win.filter((n) => n.p), ok = !win.some((n) => n.stacked) && ns.length >= 3 && ns.every((n, k) => k === 0 || Math.abs(midiOf(n.p!) - midiOf(ns[k - 1].p!)) >= 3);
+      const rd = ok ? readChord(ns.map((n) => n.p!), keyAt(ns[0].i)) : null;
+      if (!rd || rd.best.omitted > 0 || !BROKEN_OK.has(rd.best.tpl)) { prev = ""; continue; }
+      const label = chordLabel(rd);
+      if (label !== prev) out.push({ index: ns[0].i, read: rd });
+      prev = label;
+    }
+  }
+  return out;
+}
