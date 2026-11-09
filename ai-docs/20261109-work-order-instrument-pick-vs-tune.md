@@ -164,3 +164,15 @@ format 层新函数（都是纯函数，`src/format/project.ts`）：`settingsPr
 - 顺手删的死代码：`setRole` / `commitRoleName`（名字框 v0.16.35 就没了）、点击里 `cand:` / `del:` 两条分支（页面上早没有这些钮）。力度字形表收进 `src/render/smufl.ts` 的 `DYN_GLYPH` 一份（engrave / pad / sel-bar 各自还有一份，没动）。
 - `main.ts` 4029 → 3897 行。测试分区表登记 `src/app/panels/` → 键盘 / 放 / 录音房。
 - 这一单到这里做完；§5 的数据规矩和 §10 第四版里标的两处等 Fable 审。
+
+## 11. Fable 审 §5 数据规矩（2026-11-09 夜，Claude Fable 5.1；as-of v0.16.53）
+
+**通过。** 读了 `src/format/project.ts` 的 `settingsPrint` / `isUntouched` / `withSwap` / `withCandidateCopy` / `songPresets` 和 §10 第四版的记录：
+- R1 指纹：去 id / castAs / asCast、键排序、undefined 不算、数组保序。对。
+- **Opus 定的 ①**（内置两位和出厂比不比名字、不比哼的字）：认。名字跟界面语言、哼的字整首歌一个存档时统一写，不排除就会把没动过的小月相当成「调过」冒进预设一排。副作用（给内置的改了名也算「没调过」、不进预设一排）可以接受——内置的住「常用」一行。
+- **Opus 定的 ②**（没调过的内置不进预设一排；元音版放进目录「人声」那一件里、排在小月相后面）：认。
+- R2 / R3（`withSwap`）：按换之前那份 `before` 判「没调过」、同一次提交里删 + `pruneSounds`、新造的写 `asCast`、内置的不写、换回同一位不删。对。
+- R4（`songPresets`）：台上那位总列（哪怕是没调过的内置——施工单的字面和这个有一点出入，行为更好，照行为）；别的声部按指纹去重；内置的指纹用 ① 的比法。对。
+- R5 / R6（`withCandidateCopy`）：新 id、不带 asCast、castAs 一起拷 → `withRoleConcept`；同声部复制且源头在台上 = `withActive`（不走 R2，源头留着）；复制一个不在台上的 = 走 `withSwap`，台上那位没调过会被 R2 删——和规矩一致，记一笔。
+- R7：`removable = !on && !内置`。旧歌没 asCast 一律当调过。对。
+- 事实一条（给总表第 16 / 19 条）：删掉声部 = `withoutRole` 把整个角色拿掉，调过的预设跟着没。
