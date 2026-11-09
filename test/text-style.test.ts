@@ -3,7 +3,7 @@
 //   ② 字号就是表里那一行（歌词另有整行一起缩：八成到原大）——排版器里不再手写字号；③ styles.css 不给谱上的字定字体 / 粗细 / 斜体（只留颜色）。
 import { describe, it, assert } from "./runner.mjs";
 import { engrave } from "../src/render/engrave.ts";
-import { TEXT_STYLES, LYRIC_LOOK, textPx, textStyleOf, textStyleCss, type TextRole } from "../src/render/text-style.ts";
+import { TEXT_STYLES, LYRIC_LOOK, textPx, textStyleOf, textStyleCss, type TextRole } from "../src/render/text/index.ts";
 import { SONGS, VIEWS, loadSong } from "./fixtures/layout/cases.ts";
 const { readFileSync } = (await import("node:fs" as string)) as { readFileSync(p: URL, e: string): string };
 

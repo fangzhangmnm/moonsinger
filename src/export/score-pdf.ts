@@ -10,7 +10,7 @@
 //     唱不出的歌词）印成黑的——那是给写谱的人看的披露，不是谱面内容。
 // 萌神拼音的字高：字体自报的上伸把拼音带算进去了（hhea 1300），不能拿来定汉字位置；按字形墨迹（ttf.ts inkOf）量「国」——拼音画在汉字上方，
 //   歌词行在谱下面，所以歌词行往下让出「拼音字体的墨迹顶 − 黑体的墨迹顶」那一截（engrave lyricRaise）。同 WXHW v2.3.13 的结论。
-import { textStyleOf } from "../render/text-style.ts";
+import { textStyleOf } from "../render/text/index.ts";
 import { engrave, LYRIC_EM, type Prim, type PartView, type EngraveOpts } from "../render/engrave.ts";
 import type { Song } from "../score/song.ts";
 import { paperOf, DEFAULT_PAPER, spMm, lineSp, pageGeoOf, textScaleOf } from "../score/paper.ts";

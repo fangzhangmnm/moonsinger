@@ -26,7 +26,7 @@ import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
 import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
 import type { ChordRead } from "../score/chord-name.ts";
-import { textStyleCss } from "../render/text-style.ts";
+import { textStyleCss } from "../render/text/index.ts";
 import { engrave, attachLayoutFns, LYRIC_EM, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg, toSvgParts } from "../render/svg.ts";
 import { lyricFont, measurerOn } from "../render/lyric-font.ts";

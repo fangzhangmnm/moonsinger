@@ -3,7 +3,7 @@
 //   字（歌名 / 曲段名 / 声部名 / 歌词）不压五线谱、不互相压。舒适档版面逐个相同由版面快照守（print-cozy + 两首小样张）。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave, LYRIC_EM, type Layout, type Prim } from "../src/render/engrave.ts";
-import { LYRIC_LOOK, LYRIC_MIN_SX } from "../src/render/text-style.ts";
+import { LYRIC_LOOK, LYRIC_MIN_SX } from "../src/render/text/index.ts";
 import { primInk } from "../src/render/skyline.ts";
 import { textScaleOf, paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { VIEWS, loadSong, measure } from "./fixtures/layout/cases.ts";

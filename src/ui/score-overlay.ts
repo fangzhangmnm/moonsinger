@@ -10,7 +10,7 @@
 //     这里只判：没动（≤ 10 px，同谱面的「手指抖一点也算轻点」）就松手 = 点；按住不动到点 = 长按；动了 / 又落下一根手指 = 不算。谱面把这根手指捕获走了（滚动要用），
 //     所以手指的 move / up 在 window 上听（捕获阶段）。edited by Claude Fable 5.1 2026-11-08（审刀 1：v0.16.25 手指落在钮 / 虚线框上滚不动、捏不了；E2E overlay-touch 守）
 import { _t } from "../i18n/index.ts";
-import { TEXT_FACES, textFont, textStyleOf, type TextStyle } from "../render/text-style.ts";
+import { TEXT_FACES, textFont, textStyleOf, type TextStyle } from "../render/text/index.ts";
 
 const metricCache = new Map<string, { a: number; d: number }>();
 let mctx: CanvasRenderingContext2D | null | undefined;

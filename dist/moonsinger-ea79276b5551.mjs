@@ -5071,7 +5071,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.65-2026-11-10";
+var APP_VERSION = "v0.16.66-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -9569,7 +9569,7 @@ function songInC(song, skip) {
   return { ...song, papers: song.papers.map((p2) => ({ ...p2, tracks: Object.fromEntries(Object.entries(p2.tracks).map(([id2, toks]) => [id2, skip(id2) ? toks : trackInC(toks)])) })) };
 }
 
-// src/render/text-style.ts
+// src/render/text/style.ts
 var TEXT_FACES = {
   sans: `system-ui, -apple-system, "PingFang SC", "Hiragino Sans", "Noto Sans CJK SC", sans-serif`,
   serif: `"Noto Serif", "Times New Roman", Times, Georgia, serif`,
@@ -9633,6 +9633,215 @@ function textStyleCss(scope = ".staff-svg") {
     ...Object.entries(TEXT_STYLES).map(([k2, st2]) => rule(k2, st2)),
     ...VARIANTS.map((v) => rule(`${v.role}.${v.when}`, { ...TEXT_STYLES[v.role], weight: v.weight }))
   ].join("\n");
+}
+
+// src/render/text/lyric-fit.ts
+var LYRIC_SPACE = 0.6;
+var HYPHEN_SX = 0.8;
+var GAP_MIN = 0.5;
+var GAP_FLOOR = 0.2;
+var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
+function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
+  const n10 = items.length, f2 = items.map((it2) => it2.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
+  if (!n10) return { pos: [], f: f2, tight };
+  const c10 = items.map((it2) => it2.cx);
+  const reach = (i10, side) => {
+    const nb2 = items[i10 + side];
+    const half2 = nb2 ? Math.abs(nb2.cx - c10[i10]) / 2 : Infinity;
+    return Math.max(0.2, Math.min(items[i10].w * f2[i10] / 2 - 0.15, half2));
+  };
+  const lo2 = (i10) => c10[i10] - reach(i10, -1), hi = (i10) => c10[i10] + reach(i10, 1);
+  const G2 = new Array(Math.max(0, n10 - 1)).fill(1);
+  const d3 = (i10) => (items[i10].w * f2[i10] + items[i10 + 1].w * f2[i10 + 1]) / 2 + Math.max(GAP_FLOOR, (gaps.space + (items[i10].hy && !(items[i10].block || items[i10 + 1].block) ? gaps.hyphen : 0)) * Math.min(f2[i10], f2[i10 + 1]) * G2[i10]);
+  const L2 = new Array(n10), start = new Array(n10);
+  const step = (i10) => {
+    const a10 = i10 > 0 ? L2[i10 - 1] + d3(i10 - 1) : -Infinity, b3 = lo2(i10);
+    if (a10 > b3) {
+      L2[i10] = a10;
+      start[i10] = start[i10 - 1];
+    } else {
+      L2[i10] = b3;
+      start[i10] = i10;
+    }
+  };
+  const pushFrom = (s10, to2) => {
+    L2[s10] = lo2(s10);
+    start[s10] = s10;
+    for (let i10 = s10 + 1; i10 <= to2; i10++) step(i10);
+  };
+  step(0);
+  for (let i10 = 1; i10 < n10; i10++) {
+    step(i10);
+    if (L2[i10] <= hi(i10) + 1e-9) continue;
+    const s10 = start[i10], keep2 = f2.slice(s10, i10 + 1), can = (j2) => !items[j2].block;
+    {
+      const keepG = G2.slice(s10, i10), fitsG = (t10) => {
+        for (let j2 = s10; j2 < i10; j2++) G2[j2] = Math.min(keepG[j2 - s10], t10);
+        pushFrom(s10, i10);
+        for (let j2 = s10; j2 <= i10; j2++) if (L2[j2] > hi(j2) + 1e-9) return false;
+        return true;
+      };
+      if (fitsG(GAP_MIN)) {
+        let a11 = GAP_MIN, b5 = 1;
+        for (let k2 = 0; k2 < 16; k2++) {
+          const m2 = (a11 + b5) / 2;
+          if (fitsG(m2)) a11 = m2;
+          else b5 = m2;
+        }
+        fitsG(Math.max(GAP_MIN, Math.floor(a11 * 100) / 100));
+        continue;
+      }
+    }
+    const fits = (t10) => {
+      for (let j2 = s10; j2 <= i10; j2++) if (can(j2)) f2[j2] = Math.min(keep2[j2 - s10], t10);
+      pushFrom(s10, i10);
+      for (let j2 = s10; j2 <= i10; j2++) if (L2[j2] > hi(j2) + 1e-9) return false;
+      return true;
+    };
+    const top = Math.max(...keep2);
+    if (!items.slice(s10, i10 + 1).some((_2, k2) => can(s10 + k2)) || !fits(minSx)) {
+      fits(minSx);
+      tight.add(i10 - 1);
+      tight.add(i10);
+      L2[i10] = Math.min(L2[i10], hi(i10));
+      continue;
+    }
+    let a10 = minSx, b3 = top;
+    for (let k2 = 0; k2 < 20; k2++) {
+      const m2 = (a10 + b3) / 2;
+      if (fits(m2)) a10 = m2;
+      else b3 = m2;
+    }
+    fits(Math.max(minSx, Math.floor(a10 * 100) / 100));
+  }
+  const clashes = (mark) => {
+    let k2 = 0;
+    for (let i10 = 0; i10 < n10; i10++) {
+      step(i10);
+      if (L2[i10] > hi(i10) + 1e-9) {
+        k2 += L2[i10] - hi(i10);
+        mark?.add(i10 - 1);
+        mark?.add(i10);
+        L2[i10] = hi(i10);
+      }
+    }
+    return k2;
+  };
+  if (widen) {
+    const over = new Array(n10).fill(0);
+    for (let i10 = 0; i10 < n10; i10++) {
+      step(i10);
+      over[i10] = Math.max(0, L2[i10] - hi(i10));
+      if (over[i10] > 0) L2[i10] = hi(i10);
+    }
+    const tryAt = (from, set, undo3) => {
+      const sL2 = [], sO2 = [], sS2 = [];
+      set();
+      let delta = 0, j2 = Math.max(0, from);
+      for (; j2 < n10; j2++) {
+        const oldL = L2[j2];
+        sL2.push(oldL);
+        sO2.push(over[j2]);
+        sS2.push(start[j2]);
+        step(j2);
+        let o10 = 0;
+        if (L2[j2] > hi(j2) + 1e-9) {
+          o10 = L2[j2] - hi(j2);
+          L2[j2] = hi(j2);
+        }
+        delta += o10 - over[j2];
+        over[j2] = o10;
+        if (j2 > from + 1 && Math.abs(L2[j2] - oldL) < 1e-12) {
+          j2++;
+          break;
+        }
+      }
+      if (delta <= 1e-6) return true;
+      undo3();
+      for (let k2 = 0; k2 < sL2.length; k2++) {
+        L2[from + k2] = sL2[k2];
+        over[from + k2] = sO2[k2];
+        start[from + k2] = sS2[k2];
+      }
+      return false;
+    };
+    const relax = (arr, skip, fromOf) => {
+      for (let round = 0; round < 14; round++) {
+        let moved = false;
+        for (let i10 = 0; i10 < arr.length; i10++) {
+          if (skip(i10) || arr[i10] >= 1) continue;
+          const was = arr[i10], next2 = Math.min(1, Math.round((was + 0.05) * 100) / 100);
+          if (tryAt(fromOf(i10), () => {
+            arr[i10] = next2;
+          }, () => {
+            arr[i10] = was;
+          })) moved = true;
+        }
+        if (!moved) break;
+      }
+    };
+    if (f2.some((v, i10) => v < 1 && !items[i10].block)) relax(f2, (i10) => !!items[i10].block, (i10) => Math.max(0, i10 - 1));
+    if (G2.some((v) => v < 1)) relax(G2, () => false, (i10) => i10 + 1);
+  }
+  tight.clear();
+  clashes(tight);
+  tight.delete(-1);
+  const R2 = new Array(n10);
+  R2[n10 - 1] = hi(n10 - 1);
+  for (let i10 = n10 - 2; i10 >= 0; i10--) R2[i10] = Math.min(hi(i10), R2[i10 + 1] - d3(i10));
+  const D3 = new Array(n10);
+  D3[0] = 0;
+  for (let i10 = 1; i10 < n10; i10++) D3[i10] = D3[i10 - 1] + d3(i10 - 1);
+  const blocks = [];
+  for (let i10 = 0; i10 < n10; i10++) {
+    blocks.push({ sum: c10[i10] - D3[i10], cnt: 1 });
+    while (blocks.length > 1 && blocks[blocks.length - 2].sum / blocks[blocks.length - 2].cnt > blocks[blocks.length - 1].sum / blocks[blocks.length - 1].cnt) {
+      const t10 = blocks.pop();
+      blocks[blocks.length - 1].sum += t10.sum;
+      blocks[blocks.length - 1].cnt += t10.cnt;
+    }
+  }
+  const y2 = [];
+  for (const b3 of blocks) for (let k2 = 0; k2 < b3.cnt; k2++) y2.push(b3.sum / b3.cnt);
+  const pos = y2.map((v, i10) => {
+    const l10 = L2[i10] - D3[i10], r10 = Math.max(L2[i10], R2[i10]) - D3[i10];
+    return Math.min(Math.max(v, l10), r10) + D3[i10];
+  });
+  for (let i10 = 1; i10 < n10; i10++) if (!tight.has(i10) && pos[i10] < pos[i10 - 1] + d3(i10 - 1) - 1e-6) pos[i10] = pos[i10 - 1] + d3(i10 - 1);
+  return { pos, f: f2, tight };
+}
+function lyricBlockSx(items, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS) {
+  if (!items.some((it2) => it2.block)) return 1;
+  const badBlocks = (t10) => {
+    const r10 = solveLyrics(items, t10, minSx, gaps, false);
+    let k2 = 0;
+    for (const i10 of r10.tight) if (items[i10].block) k2++;
+    return k2;
+  };
+  let best = 1, bestN = badBlocks(1);
+  for (let t10 = 0.95; bestN && t10 >= minSx - 1e-9; t10 = Math.round((t10 - 0.05) * 100) / 100) {
+    const k2 = badBlocks(t10);
+    if (k2 < bestN) {
+      best = t10;
+      bestN = k2;
+    }
+  }
+  return best;
+}
+function fitLyrics(items, blockSx = 1, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS) {
+  const r10 = solveLyrics(items, blockSx, minSx, gaps);
+  return items.map((it2, i10) => ({ dx: r10.pos[i10] - it2.cx, sx: r10.f[i10], tight: r10.tight.has(i10) }));
+}
+function hyphens(syls, hyphenW, lonely) {
+  return syls.map((l10, n10) => {
+    if (!l10.hy) return null;
+    const r10 = syls[n10 + 1], same = !!r10 && r10.row === l10.row;
+    if (!same) return { x: l10.x + lonely, hf: 1 };
+    if (l10.hw === void 0 || r10.hw === void 0) return { x: (l10.x + r10.x) / 2, hf: 1 };
+    const hf = Math.min(l10.sx ?? 1, r10.sx ?? 1), a10 = l10.x + l10.hw, b3 = r10.x - r10.hw;
+    if (!(l10.cjk || r10.cjk) && b3 - a10 < hyphenW * hf - 1e-6) return null;
+    return { x: (a10 + b3) / 2, hf };
+  });
 }
 
 // src/singer/packs.gen.ts
@@ -10872,202 +11081,6 @@ function mergeTracks(tracks, opt = {}) {
 
 // src/render/engrave.ts
 var lyricLook = (ts2) => ts2 > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
-var LYRIC_SPACE = 0.6;
-var HYPHEN_SX = 0.8;
-var GAP_MIN = 0.5;
-var GAP_FLOOR = 0.2;
-var DEFAULT_GAPS = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
-function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
-  const n10 = items.length, f2 = items.map((it2) => it2.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
-  if (!n10) return { pos: [], f: f2, tight };
-  const c10 = items.map((it2) => it2.cx);
-  const reach = (i10, side) => {
-    const nb2 = items[i10 + side];
-    const half2 = nb2 ? Math.abs(nb2.cx - c10[i10]) / 2 : Infinity;
-    return Math.max(0.2, Math.min(items[i10].w * f2[i10] / 2 - 0.15, half2));
-  };
-  const lo2 = (i10) => c10[i10] - reach(i10, -1), hi = (i10) => c10[i10] + reach(i10, 1);
-  const G2 = new Array(Math.max(0, n10 - 1)).fill(1);
-  const d3 = (i10) => (items[i10].w * f2[i10] + items[i10 + 1].w * f2[i10 + 1]) / 2 + Math.max(GAP_FLOOR, (gaps.space + (items[i10].hy && !(items[i10].block || items[i10 + 1].block) ? gaps.hyphen : 0)) * Math.min(f2[i10], f2[i10 + 1]) * G2[i10]);
-  const L2 = new Array(n10), start = new Array(n10);
-  const step = (i10) => {
-    const a10 = i10 > 0 ? L2[i10 - 1] + d3(i10 - 1) : -Infinity, b3 = lo2(i10);
-    if (a10 > b3) {
-      L2[i10] = a10;
-      start[i10] = start[i10 - 1];
-    } else {
-      L2[i10] = b3;
-      start[i10] = i10;
-    }
-  };
-  const pushFrom = (s10, to2) => {
-    L2[s10] = lo2(s10);
-    start[s10] = s10;
-    for (let i10 = s10 + 1; i10 <= to2; i10++) step(i10);
-  };
-  step(0);
-  for (let i10 = 1; i10 < n10; i10++) {
-    step(i10);
-    if (L2[i10] <= hi(i10) + 1e-9) continue;
-    const s10 = start[i10], keep2 = f2.slice(s10, i10 + 1), can = (j2) => !items[j2].block;
-    {
-      const keepG = G2.slice(s10, i10), fitsG = (t10) => {
-        for (let j2 = s10; j2 < i10; j2++) G2[j2] = Math.min(keepG[j2 - s10], t10);
-        pushFrom(s10, i10);
-        for (let j2 = s10; j2 <= i10; j2++) if (L2[j2] > hi(j2) + 1e-9) return false;
-        return true;
-      };
-      if (fitsG(GAP_MIN)) {
-        let a11 = GAP_MIN, b5 = 1;
-        for (let k2 = 0; k2 < 16; k2++) {
-          const m2 = (a11 + b5) / 2;
-          if (fitsG(m2)) a11 = m2;
-          else b5 = m2;
-        }
-        fitsG(Math.max(GAP_MIN, Math.floor(a11 * 100) / 100));
-        continue;
-      }
-    }
-    const fits = (t10) => {
-      for (let j2 = s10; j2 <= i10; j2++) if (can(j2)) f2[j2] = Math.min(keep2[j2 - s10], t10);
-      pushFrom(s10, i10);
-      for (let j2 = s10; j2 <= i10; j2++) if (L2[j2] > hi(j2) + 1e-9) return false;
-      return true;
-    };
-    const top = Math.max(...keep2);
-    if (!items.slice(s10, i10 + 1).some((_2, k2) => can(s10 + k2)) || !fits(minSx)) {
-      fits(minSx);
-      tight.add(i10 - 1);
-      tight.add(i10);
-      L2[i10] = Math.min(L2[i10], hi(i10));
-      continue;
-    }
-    let a10 = minSx, b3 = top;
-    for (let k2 = 0; k2 < 20; k2++) {
-      const m2 = (a10 + b3) / 2;
-      if (fits(m2)) a10 = m2;
-      else b3 = m2;
-    }
-    fits(Math.max(minSx, Math.floor(a10 * 100) / 100));
-  }
-  const clashes = (mark) => {
-    let k2 = 0;
-    for (let i10 = 0; i10 < n10; i10++) {
-      step(i10);
-      if (L2[i10] > hi(i10) + 1e-9) {
-        k2 += L2[i10] - hi(i10);
-        mark?.add(i10 - 1);
-        mark?.add(i10);
-        L2[i10] = hi(i10);
-      }
-    }
-    return k2;
-  };
-  if (widen) {
-    const over = new Array(n10).fill(0);
-    for (let i10 = 0; i10 < n10; i10++) {
-      step(i10);
-      over[i10] = Math.max(0, L2[i10] - hi(i10));
-      if (over[i10] > 0) L2[i10] = hi(i10);
-    }
-    const tryAt = (from, set, undo3) => {
-      const sL2 = [], sO2 = [], sS2 = [];
-      set();
-      let delta = 0, j2 = Math.max(0, from);
-      for (; j2 < n10; j2++) {
-        const oldL = L2[j2];
-        sL2.push(oldL);
-        sO2.push(over[j2]);
-        sS2.push(start[j2]);
-        step(j2);
-        let o10 = 0;
-        if (L2[j2] > hi(j2) + 1e-9) {
-          o10 = L2[j2] - hi(j2);
-          L2[j2] = hi(j2);
-        }
-        delta += o10 - over[j2];
-        over[j2] = o10;
-        if (j2 > from + 1 && Math.abs(L2[j2] - oldL) < 1e-12) {
-          j2++;
-          break;
-        }
-      }
-      if (delta <= 1e-6) return true;
-      undo3();
-      for (let k2 = 0; k2 < sL2.length; k2++) {
-        L2[from + k2] = sL2[k2];
-        over[from + k2] = sO2[k2];
-        start[from + k2] = sS2[k2];
-      }
-      return false;
-    };
-    const relax = (arr, skip, fromOf) => {
-      for (let round = 0; round < 14; round++) {
-        let moved = false;
-        for (let i10 = 0; i10 < arr.length; i10++) {
-          if (skip(i10) || arr[i10] >= 1) continue;
-          const was = arr[i10], next2 = Math.min(1, Math.round((was + 0.05) * 100) / 100);
-          if (tryAt(fromOf(i10), () => {
-            arr[i10] = next2;
-          }, () => {
-            arr[i10] = was;
-          })) moved = true;
-        }
-        if (!moved) break;
-      }
-    };
-    if (f2.some((v, i10) => v < 1 && !items[i10].block)) relax(f2, (i10) => !!items[i10].block, (i10) => Math.max(0, i10 - 1));
-    if (G2.some((v) => v < 1)) relax(G2, () => false, (i10) => i10 + 1);
-  }
-  tight.clear();
-  clashes(tight);
-  tight.delete(-1);
-  const R2 = new Array(n10);
-  R2[n10 - 1] = hi(n10 - 1);
-  for (let i10 = n10 - 2; i10 >= 0; i10--) R2[i10] = Math.min(hi(i10), R2[i10 + 1] - d3(i10));
-  const D3 = new Array(n10);
-  D3[0] = 0;
-  for (let i10 = 1; i10 < n10; i10++) D3[i10] = D3[i10 - 1] + d3(i10 - 1);
-  const blocks = [];
-  for (let i10 = 0; i10 < n10; i10++) {
-    blocks.push({ sum: c10[i10] - D3[i10], cnt: 1 });
-    while (blocks.length > 1 && blocks[blocks.length - 2].sum / blocks[blocks.length - 2].cnt > blocks[blocks.length - 1].sum / blocks[blocks.length - 1].cnt) {
-      const t10 = blocks.pop();
-      blocks[blocks.length - 1].sum += t10.sum;
-      blocks[blocks.length - 1].cnt += t10.cnt;
-    }
-  }
-  const y2 = [];
-  for (const b3 of blocks) for (let k2 = 0; k2 < b3.cnt; k2++) y2.push(b3.sum / b3.cnt);
-  const pos = y2.map((v, i10) => {
-    const l10 = L2[i10] - D3[i10], r10 = Math.max(L2[i10], R2[i10]) - D3[i10];
-    return Math.min(Math.max(v, l10), r10) + D3[i10];
-  });
-  for (let i10 = 1; i10 < n10; i10++) if (!tight.has(i10) && pos[i10] < pos[i10 - 1] + d3(i10 - 1) - 1e-6) pos[i10] = pos[i10 - 1] + d3(i10 - 1);
-  return { pos, f: f2, tight };
-}
-function lyricBlockSx(items, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS) {
-  if (!items.some((it2) => it2.block)) return 1;
-  const badBlocks = (t10) => {
-    const r10 = solveLyrics(items, t10, minSx, gaps, false);
-    let k2 = 0;
-    for (const i10 of r10.tight) if (items[i10].block) k2++;
-    return k2;
-  };
-  let best = 1, bestN = badBlocks(1);
-  for (let t10 = 0.95; bestN && t10 >= minSx - 1e-9; t10 = Math.round((t10 - 0.05) * 100) / 100) {
-    const k2 = badBlocks(t10);
-    if (k2 < bestN) {
-      best = t10;
-      bestN = k2;
-    }
-  }
-  return best;
-}
-function fitLyrics(items, blockSx = 1, minSx = LYRIC_MIN_SX, gaps = DEFAULT_GAPS) {
-  const r10 = solveLyrics(items, blockSx, minSx, gaps);
-  return items.map((it2, i10) => ({ dx: r10.pos[i10] - it2.cx, sx: r10.f[i10], tight: r10.tight.has(i10) }));
-}
 var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
@@ -12761,20 +12774,13 @@ function engrave(song, o10) {
           const dy = placeBelow(row2, 0.5, () => {
             const from = partLyrics.length;
             for (const j2 of jobs) j2.run();
-            for (let n11 = from; n11 < partLyrics.length; n11++) {
-              const L2 = partLyrics[n11], tok = tokens[L2.index];
-              if (!tok.hyph) continue;
-              const R2 = partLyrics[n11 + 1], same = !!R2 && R2.system === L2.system;
-              const pl = lyrPlan.get(`${r10}:${L2.index}`), pr = same ? lyrPlan.get(`${r10}:${R2.index}`) : void 0;
-              let xx = same ? (L2.x + R2.x) / 2 : L2.x + P2(1.6), hf = 1;
-              if (same && pl && pr) {
-                hf = Math.min(pl.sx, pr.sx);
-                const a10 = L2.x + P2(pl.hw), b3 = R2.x - P2(pr.hw), cjk = isBlockScript(lyricShow(tokens[L2.index].lyric ?? "")) || isBlockScript(lyricShow(tokens[R2.index].lyric ?? ""));
-                if (!cjk && b3 - a10 < P2(lyrHyphen * hf) - 1e-6) continue;
-                xx = (a10 + b3) / 2;
-              }
-              prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, sx: look.sx * hf * HYPHEN_SX });
-            }
+            const mine = partLyrics.slice(from), syls = mine.map((L2) => {
+              const pl = lyrPlan.get(`${r10}:${L2.index}`), tok = tokens[L2.index];
+              return { x: L2.x, hy: !!tok.hyph, hw: pl ? P2(pl.hw) : void 0, sx: pl?.sx, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L2.system };
+            });
+            hyphens(syls, P2(lyrHyphen), P2(1.6)).forEach((h2, n11) => {
+              if (h2) prims.push({ t: "text", x: h2.x, y: mine[n11].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, sx: look.sx * h2.hf * HYPHEN_SX });
+            });
             lyrics.push(...partLyrics.slice(from));
           }, { min: 0, count: false, step: ROW_STEP });
           lyricOff.set(row2, base2 + dy);
@@ -29546,9 +29552,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-1c5a20dddaaf.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-dae4dbefdcb7.mjs");
+      return pick(() => "layout-worker-3fa1a36e638c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-10f3c160a265.mjs");
+      return pick(() => "encode-worker-ec0e69ee64ee.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -57471,4 +57477,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-7215901b5911.mjs.map
+//# sourceMappingURL=moonsinger-ea79276b5551.mjs.map

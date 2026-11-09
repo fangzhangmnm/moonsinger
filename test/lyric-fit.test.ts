@@ -1,8 +1,8 @@
 // 歌词按节奏排（v0.9.40；user 2026-10-10「先试下你说的两个歌词开关吧，approved」；设计 = ai-docs/20261010-design-answers.md「歌词不想影响音符的位置」）。created 2026-10-10 by Claude Opus 5.5
 import { describe, it, eq, assert } from "./runner.mjs";
-import { engrave, fitLyrics, lyricBlockSx } from "../src/render/engrave.ts";
-import { LYRIC_MIN_SX } from "../src/render/text-style.ts";
-import { DEFAULT_GAPS, GAP_MIN } from "../src/render/engrave.ts";
+import { engrave } from "../src/render/engrave.ts";
+import { fitLyrics, lyricBlockSx, hyphens, DEFAULT_GAPS, GAP_MIN } from "../src/render/text/index.ts";
+import { LYRIC_MIN_SX } from "../src/render/text/index.ts";
 import { initState, tr, TPQ, type Token, type EditorState } from "../src/score/song.ts";
 
 describe("歌词让路（fitLyrics）：字高不动、只收宽度（v0.16.44；user 11-09「字高固定，宽度会收」）", () => {
@@ -83,4 +83,19 @@ describe("按节奏排：音的位置只看时值", () => {
   const short = ["a", "b", "c", "d", "e", "f", "g", "h"], long = ["Greensleeves", "was", "all", "my", "joy", "and", "who", "but"];
   it("按节奏排（默认）：短字换成长字，每个音的位置一点不动", () => { eq(xs(stOf(long, true)), xs(stOf(short, true))); });
   it("按歌词排：长字把音推开", () => { assert(xs(stOf(long, false)) !== xs(stOf(short, false)), "应该不一样"); });
+});
+
+const J = (v: unknown) => JSON.stringify(v);
+describe("连字符摆哪（hyphens，2026-11-10 从排版器抽出来：src/render/text/lyric-fit.ts）", () => {
+  it("同一行：摆在两个字之间那道缝的正中、跟着更窄的字压；缝放不下 = 不画；方块字旁边照画", () => {
+    const r = hyphens([{ x: 0, hy: true, hw: 1, sx: 0.8, cjk: false, row: 0 }, { x: 4, hw: 1, sx: 0.6, cjk: false, row: 0 }], 1, 2);
+    eq(J(r[0]), J({ x: 2, hf: 0.6 })); eq(J(r[1]), J(null));
+    eq(J(hyphens([{ x: 0, hy: true, hw: 1, sx: 1, cjk: false, row: 0 }, { x: 2.5, hw: 1, sx: 1, cjk: false, row: 0 }], 1, 2)[0]), J(null), "缝 0.5 < 一个连字符 1");
+    eq(J(hyphens([{ x: 0, hy: true, hw: 1, sx: 1, cjk: true, row: 0 }, { x: 2.5, hw: 1, sx: 1, cjk: false, row: 0 }], 1, 2)[0]), J({ x: 1.25, hf: 1 }), "方块字旁边不占地方");
+  });
+  it("没走让路 = 两个中心的正中；下一个在别的行 / 没有下一个 = 挂在左边那个字后面", () => {
+    eq(J(hyphens([{ x: 0, hy: true, cjk: false, row: 0 }, { x: 4, cjk: false, row: 0 }], 1, 2)[0]), J({ x: 2, hf: 1 }));
+    eq(J(hyphens([{ x: 0, hy: true, hw: 1, sx: 1, cjk: false, row: 0 }, { x: 4, hw: 1, sx: 1, cjk: false, row: 1 }], 1, 2)[0]), J({ x: 2, hf: 1 }));
+    eq(J(hyphens([{ x: 5, hy: true, cjk: false, row: 0 }], 1, 3)[0]), J({ x: 8, hf: 1 }));
+  });
 });
