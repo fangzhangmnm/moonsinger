@@ -17,8 +17,11 @@ const HEAD_ARTS: readonly Art[] = ["ghost", "whisper"];
  *  · 歌词 = 主人在这一刻起的那个音的；
  *  · keyOf：把某一位的音换成别的音高（一家全是鼓：固定敲一件的 = 那一件的鼓键，好画在五线鼓谱上它那一线）；
  *  · pick：只要第几位、从哪一刻起的那些音（双手谱上 / 下那张、声部 1 / 2 各并一条——见 planHands）；marks = "bars"：只留小节线 / 调号 / 拍号（力度、歌词归最上面那条）。
+ *  · hits（一家全是鼓，v0.16.54）：一个鼓音只在它敲下去那一刻出现——有人新敲的那一段只画新敲的（还「响着」的长音不再并进来）；
+ *    没人新敲、只剩长音在响的那一截：和上一段完全是同一批音 = 连着（被记号切开的），不是 = 休止。user 11-09「kick drum是一个长音，每小节一下，但是现在显示成三个音了」
+ *    （附点四分的底鼓叠着邦哥的八分 = 三个和弦里都有它；鼓不画连音线，看着就是敲了三下）。
  *  新造的音 / 休止 id 是负数（不和真 token 撞）。 */
-export interface MergeOpts { keyOf?: (member: number, p: Pitch) => Pitch; pick?: (member: number, t0: number) => boolean; marks?: "all" | "bars" }
+export interface MergeOpts { keyOf?: (member: number, p: Pitch) => Pitch; pick?: (member: number, t0: number) => boolean; marks?: "all" | "bars"; hits?: boolean }
 
 /** 合租叠起来怎么分手 / 分声部（v0.10.31；user「我现在觉得合租的时候还是智能分左右手和声部的对应关系比较好」「以及你也可以选择合租的时候不用双手谱」
  *  「双手谱线的分工能不能更智能一点，比如如果月读几乎都是高音谱号，另外一个几乎都是低音谱号，那么几个outlier不要乱认领。你觉得小节的粒度算？」「piano3…确实会高低声部乱跑」）：
@@ -65,7 +68,7 @@ export function planHands(tracks: Token[][], wantsGrand: (merged: Token[]) => bo
   return { grand, pick: (staff, voice) => (m, t) => staffOf(m, meas(t)) === staff && voiceOf(m, meas(t)) === voice };
 }
 export function mergeTracks(tracks: Token[][], opt: MergeOpts = {}): Token[] {
-  const { keyOf, pick } = opt, barsOnly = opt.marks === "bars";
+  const { keyOf, pick, hits } = opt, barsOnly = opt.marks === "bars";
   const host = tracks[0] ?? [], head = host.slice(0, headLen(host));
   const evs: Ev[] = [], marks: { t: number; tok: Token }[] = [];
   let end = 0;
@@ -85,17 +88,21 @@ export function mergeTracks(tracks: Token[][], opt: MergeOpts = {}): Token[] {
   });
   const cuts = [...new Set([0, end, ...evs.flatMap((e) => [e.t0, e.t1]), ...marks.map((x) => x.t)])].filter((x) => x <= end).sort((a, b) => a - b);
   const out: Token[] = [...head];
-  let id = -1000, prevChord = false;
+  let id = -1000, prevChord = false, prevOn: Ev[] = [];
   for (let i = 0; i < cuts.length; i++) {
     const a = cuts[i], b = cuts[i + 1];
     for (const x of marks) if (x.t === a) out.push(x.tok);
     if (b === undefined) break;
-    const on = evs.filter((e) => e.t0 <= a && e.t1 > a);
+    let on = evs.filter((e) => e.t0 <= a && e.t1 > a);
+    if (hits && on.length) {   // 鼓：只画敲下去的那一刻（见 MergeOpts.hits）
+      const struck = on.filter((e) => e.t0 === a);
+      on = struck.length ? struck : prevChord && on.length === prevOn.length && on.every((e) => prevOn.includes(e)) ? on : [];
+    }
     if (!on.length) {
       const last = out[out.length - 1];
       if (last && last.kind === "rest" && last.id <= -1000) out[out.length - 1] = { ...last, dur: last.dur + (b - a) };   // 连着的空并成一个休止
       else out.push({ kind: "rest", id: id--, dur: b - a } as Token);
-      prevChord = false; continue;
+      prevChord = false; prevOn = []; continue;
     }
     const freshK = new Set<number>(), seen = new Set<number>();
     for (const e of on) if (e.t0 === a) for (const p of e.ps) freshK.add(midiOf(p));
@@ -104,7 +111,7 @@ export function mergeTracks(tracks: Token[][], opt: MergeOpts = {}): Token[] {
     const fresh = ps.some((p) => freshK.has(midiOf(p))), h = on.find((e) => e.host && e.t0 === a)?.host ?? null;
     const src = on.filter((e) => e.t0 === a).length ? on.filter((e) => e.t0 === a) : on, art = HEAD_ARTS.filter((x) => src.every((e) => e.heads.includes(x)));   // 新起的那几个都有才算（连着的段跟着起头那几个）
     out.push({ kind: "note", id: id--, pitch: ps[0], ...(ps.length > 1 ? { chord: ps.slice(1) } : {}), dur: b - a, lyric: h?.lyric ?? null, ...(h?.hyph ? { hyph: true } : {}), ...(!fresh && prevChord ? { tie: true } : {}), ...(art.length ? { art } : {}) } as Token);
-    prevChord = true;
+    prevChord = true; prevOn = on;
   }
   return out;
 }

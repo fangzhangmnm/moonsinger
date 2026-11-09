@@ -716,7 +716,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         if (v2.some((t) => t.kind === "note")) { const vid = `${sid}~v2`; virt.set(vid, v2); virtualOut[`${paper.id}:${vid}`] = v2; voice2Of.set(sid, vid); shareWith.set(vid, sid); startFor.set(vid, startFor.get(sid)!); }
       };
       if (drums) {   // 一家全是鼓 = 并成一套鼓（五线鼓谱、每件在自己那一线；不分声部，符干按鼓谱表）
-        const whole = mergeTracks(tracksM, { keyOf }); virt.set(hp.id, whole); virtualOut[`${paper.id}:${hp.id}`] = whole; startFor.set(hp.id, "G");
+        const whole = mergeTracks(tracksM, { keyOf, hits: true }); virt.set(hp.id, whole); virtualOut[`${paper.id}:${hp.id}`] = whole; startFor.set(hp.id, "G");
       } else {
         // 分手 / 分声部按人（merge.ts planHands；user「我现在觉得合租的时候还是智能分左右手和声部的对应关系比较好」「以及你也可以选择合租的时候不用双手谱」）：
         //   每位一张家谱、按小节换、几个出格的音不乱认领；一张谱读得下 = 不用双手谱；同一张谱上两组人 = 两个声部（上面朝上、下面朝下）
@@ -1413,6 +1413,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       //   强度那一组（重音 / 强音 / 次重音 / 弱化）**一律画在谱上方**（2026-10-08 深夜 Opus 5.5，user「强度记号统一放上面吧，不然容易misleading」）：
       //   刀 4b 起是挂件（第 2 样，贴天际线），音内起伏和突强 / 强后即弱是第 3 样；跳音 / 保持、琶音、换气照旧画在音符层（天际线从它们量起）
       const ign = new Set(q.p.ignores ?? []);   // 台上那位不认的记号：照画、画灰（user「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）
+      const artEdge = new Map<Chunk, { below: boolean; y: number }>();   // 跳音 / 保持画到哪了（最外那个字的外沿，px）：连线从它们外面过（8½，v0.16.54）
       for (const c of units) {
         if (c.kind !== "chunk" || !c.note || (!c.art.length && !c.breath)) continue;
         const row = RW(c), cls = clsOf(c), cx = nhX(c) + nhW(c) / 2;
@@ -1424,7 +1425,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         for (const a of (["staccato", "tenuto"] as const).filter((x) => c.art.includes(x))) {   // 跳音 / 保持：符头外一格，跟着符干的另一侧
           if (inStaff(d) && d % 2 === 0) d += sgn;                                                   // 谱内落在间里
           const m = ART_GLYPH[a], g = below ? m.below : m.above;
-          prims.push({ tok: tokOf(c), t: "glyph", x: cx - P(m.w / 2), y: yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2)), ch: g, cls: artCls(a) });
+          const gy = yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2));
+          prims.push({ tok: tokOf(c), t: "glyph", x: cx - P(m.w / 2), y: gy, ch: g, cls: artCls(a) });
+          artEdge.set(c, { below, y: below ? gy + P(m.h) : gy - P(m.h) });   // Above 的从基线往上长、Below 的往下长
           d += sgn * 2;
         }
         // 强度那一组：一律上面（user「强度记号统一放上面吧，不然容易misleading」）。挂件第 2 样（刀 4b）：对着符头中心，这个音自己那一段天际线往上 0.4，几个就一个叠一个
@@ -1483,6 +1486,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       for (const c of realChunks) if (c.note && c.j === 0 && !headOf.has(c.index)) headOf.set(c.index, c);
       const noteIdx = [...headOf.keys()].sort((x, y) => x - y), slurOf = (k: number) => !!(tokens[noteIdx[k]] as NoteTok).slur;
       const ext = (c: Chunk, below: boolean) => { const ds = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff, c.index)); return yOf(RW(c), below ? Math.min(...ds) : Math.max(...ds)); };
+      // 跳音 / 保持在连线这一侧 = 连线从它们外面过（v0.16.54；user 11-09「跳音和slur撞一起了」）：符头外 head 个线间距，或者这些记号的外沿再出去 ART_CLR，取更远的
+      const ART_CLR = 0.5;
+      const reach = (c: Chunk, below: boolean, head: number) => { const sgn = below ? 1 : -1, h = ext(c, below) + sgn * P(head), a = artEdge.get(c); return a && a.below === below ? (below ? Math.max(h, a.y + P(ART_CLR)) : Math.min(h, a.y - P(ART_CLR))) : h; };
       for (let k = 0; k < noteIdx.length; k++) {
         if (!slurOf(k) || (k > 0 && slurOf(k - 1))) continue;   // 一串的头
         let e = k; while (e < noteIdx.length - 1 && slurOf(e)) e++;
@@ -1494,8 +1500,19 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
           const f = g[0], l = g[g.length - 1], openL = gi > 0, openR = gi < groups.length - 1;
           const xa = openL ? nhX(f) - P(2) : nhX(f) + nhW(f) / 2, xb = openR ? nhX(l) + nhW(l) + P(2) : nhX(l) + nhW(l) / 2;
           if (xb - xa < P(1)) return;
-          const ya = ext(f, below) + sgn * P(1.2), yb = ext(l, below) + sgn * P(1.2);
-          const peak = g.map((c) => ext(c, below) + sgn * P(2.2)), cy = below ? Math.max(ya, yb, ...peak) + P(0.6) : Math.min(ya, yb, ...peak) - P(0.6);
+          const ya = reach(f, below, 1.2), yb = reach(l, below, 1.2);
+          const peak = g.map((c) => ext(c, below) + sgn * P(2.2));
+          let cy = below ? Math.max(ya, yb, ...peak) + P(0.6) : Math.min(ya, yb, ...peak) - P(0.6);
+          // 中间的音带跳音 / 保持：按真的弧线在这个音的横坐标处算——弧线 y(t) = A(t) + B(t)·cy（两个控制点同高），要越过这个音的记号外沿 + ART_CLR
+          const k1 = xa + (xb - xa) * 0.2, k2 = xb - (xb - xa) * 0.2;
+          const bez = (t: number, p0: number, p1: number, p2: number, p3: number) => { const u = 1 - t; return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3; };
+          for (const c of g.slice(1, -1)) {
+            const a = artEdge.get(c); if (!a || a.below !== below) continue;
+            const x = nhX(c) + nhW(c) / 2; let lo = 0, hi = 1;
+            for (let it = 0; it < 30; it++) { const m = (lo + hi) / 2; if (bez(m, xa, k1, k2, xb) < x) lo = m; else hi = m; }
+            const t = (lo + hi) / 2, B = 3 * t * (1 - t), A = (1 - t) ** 3 * ya + t ** 3 * yb, need = reach(c, below, 0);
+            if (B > 1e-6) cy = below ? Math.max(cy, (need - A) / B) : Math.min(cy, (need - A) / B);
+          }
           prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy} ${xb - (xb - xa) * 0.2},${cy} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
         });
       }

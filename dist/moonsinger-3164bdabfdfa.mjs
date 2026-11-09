@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.53-2026-11-09";
+var APP_VERSION = "v0.16.54-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10702,7 +10702,7 @@ function planHands(tracks, wantsGrand2, homes, force = false) {
   return { grand, pick: (staff, voice) => (m2, t10) => staffOf(m2, meas(t10)) === staff && voiceOf(m2, meas(t10)) === voice };
 }
 function mergeTracks(tracks, opt = {}) {
-  const { keyOf: keyOf2, pick } = opt, barsOnly = opt.marks === "bars";
+  const { keyOf: keyOf2, pick, hits } = opt, barsOnly = opt.marks === "bars";
   const host2 = tracks[0] ?? [], head = host2.slice(0, headLen(host2));
   const evs = [], marks = [];
   let end = 0;
@@ -10722,17 +10722,22 @@ function mergeTracks(tracks, opt = {}) {
   });
   const cuts = [.../* @__PURE__ */ new Set([0, end, ...evs.flatMap((e10) => [e10.t0, e10.t1]), ...marks.map((x2) => x2.t)])].filter((x2) => x2 <= end).sort((a10, b3) => a10 - b3);
   const out = [...head];
-  let id2 = -1e3, prevChord = false;
+  let id2 = -1e3, prevChord = false, prevOn = [];
   for (let i10 = 0; i10 < cuts.length; i10++) {
     const a10 = cuts[i10], b3 = cuts[i10 + 1];
     for (const x2 of marks) if (x2.t === a10) out.push(x2.tok);
     if (b3 === void 0) break;
-    const on2 = evs.filter((e10) => e10.t0 <= a10 && e10.t1 > a10);
+    let on2 = evs.filter((e10) => e10.t0 <= a10 && e10.t1 > a10);
+    if (hits && on2.length) {
+      const struck = on2.filter((e10) => e10.t0 === a10);
+      on2 = struck.length ? struck : prevChord && on2.length === prevOn.length && on2.every((e10) => prevOn.includes(e10)) ? on2 : [];
+    }
     if (!on2.length) {
       const last = out[out.length - 1];
       if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b3 - a10) };
       else out.push({ kind: "rest", id: id2--, dur: b3 - a10 });
       prevChord = false;
+      prevOn = [];
       continue;
     }
     const freshK = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set();
@@ -10748,6 +10753,7 @@ function mergeTracks(tracks, opt = {}) {
     const src = on2.filter((e10) => e10.t0 === a10).length ? on2.filter((e10) => e10.t0 === a10) : on2, art = HEAD_ARTS.filter((x2) => src.every((e10) => e10.heads.includes(x2)));
     out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art.length ? { art } : {} });
     prevChord = true;
+    prevOn = on2;
   }
   return out;
 }
@@ -11466,7 +11472,7 @@ function engrave(song, o10) {
         }
       };
       if (drums) {
-        const whole = mergeTracks(tracksM, { keyOf: keyOf2 });
+        const whole = mergeTracks(tracksM, { keyOf: keyOf2, hits: true });
         virt.set(hp.id, whole);
         virtualOut[`${paper.id}:${hp.id}`] = whole;
         startFor.set(hp.id, "G");
@@ -12304,6 +12310,7 @@ function engrave(song, o10) {
         for (const bm of g3.beams) prims.push({ t: "path", d: `M${bm.xL},${bm.yL}L${bm.xR},${bm.yR}L${bm.xR},${bm.yR + bm.th}L${bm.xL},${bm.yL + bm.th}Z`, cls: ["beam", bm.ghost ? "ghost" : ""].filter(Boolean).join(" ") });
       }
       const ign = new Set(q2.p.ignores ?? []);
+      const artEdge = /* @__PURE__ */ new Map();
       for (const c10 of units) {
         if (c10.kind !== "chunk" || !c10.note || !c10.art.length && !c10.breath) continue;
         const row2 = RW(c10), cls = clsOf(c10), cx3 = nhX(c10) + nhW(c10) / 2;
@@ -12315,7 +12322,9 @@ function engrave(song, o10) {
         for (const a10 of ["staccato", "tenuto"].filter((x2) => c10.art.includes(x2))) {
           if (inStaff(d3) && d3 % 2 === 0) d3 += sgn;
           const m2 = ART_GLYPH[a10], g3 = below ? m2.below : m2.above;
-          prims.push({ tok: tokOf(c10), t: "glyph", x: cx3 - P2(m2.w / 2), y: yOf(row2, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2)), ch: g3, cls: artCls(a10) });
+          const gy = yOf(row2, d3) + (below ? -P2(m2.h / 2) : P2(m2.h / 2));
+          prims.push({ tok: tokOf(c10), t: "glyph", x: cx3 - P2(m2.w / 2), y: gy, ch: g3, cls: artCls(a10) });
+          artEdge.set(c10, { below, y: below ? gy + P2(m2.h) : gy - P2(m2.h) });
           d3 += sgn * 2;
         }
         const strong = ["accent", "marcato", "stress", "unstress"].filter((x2) => c10.art.includes(x2));
@@ -12376,6 +12385,11 @@ function engrave(song, o10) {
         const ds = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff, c10.index));
         return yOf(RW(c10), below ? Math.min(...ds) : Math.max(...ds));
       };
+      const ART_CLR = 0.5;
+      const reach = (c10, below, head) => {
+        const sgn = below ? 1 : -1, h2 = ext(c10, below) + sgn * P2(head), a10 = artEdge.get(c10);
+        return a10 && a10.below === below ? below ? Math.max(h2, a10.y + P2(ART_CLR)) : Math.min(h2, a10.y - P2(ART_CLR)) : h2;
+      };
       for (let k2 = 0; k2 < noteIdx.length; k2++) {
         if (!slurOf(k2) || k2 > 0 && slurOf(k2 - 1)) continue;
         let e10 = k2;
@@ -12392,8 +12406,27 @@ function engrave(song, o10) {
           const f2 = g3[0], l10 = g3[g3.length - 1], openL = gi > 0, openR = gi < groups.length - 1;
           const xa = openL ? nhX(f2) - P2(2) : nhX(f2) + nhW(f2) / 2, xb = openR ? nhX(l10) + nhW(l10) + P2(2) : nhX(l10) + nhW(l10) / 2;
           if (xb - xa < P2(1)) return;
-          const ya = ext(f2, below) + sgn * P2(1.2), yb = ext(l10, below) + sgn * P2(1.2);
-          const peak = g3.map((c10) => ext(c10, below) + sgn * P2(2.2)), cy2 = below ? Math.max(ya, yb, ...peak) + P2(0.6) : Math.min(ya, yb, ...peak) - P2(0.6);
+          const ya = reach(f2, below, 1.2), yb = reach(l10, below, 1.2);
+          const peak = g3.map((c10) => ext(c10, below) + sgn * P2(2.2));
+          let cy2 = below ? Math.max(ya, yb, ...peak) + P2(0.6) : Math.min(ya, yb, ...peak) - P2(0.6);
+          const k1 = xa + (xb - xa) * 0.2, k22 = xb - (xb - xa) * 0.2;
+          const bez = (t10, p02, p1, p2, p3) => {
+            const u2 = 1 - t10;
+            return u2 * u2 * u2 * p02 + 3 * u2 * u2 * t10 * p1 + 3 * u2 * t10 * t10 * p2 + t10 * t10 * t10 * p3;
+          };
+          for (const c10 of g3.slice(1, -1)) {
+            const a10 = artEdge.get(c10);
+            if (!a10 || a10.below !== below) continue;
+            const x2 = nhX(c10) + nhW(c10) / 2;
+            let lo2 = 0, hi = 1;
+            for (let it2 = 0; it2 < 30; it2++) {
+              const m2 = (lo2 + hi) / 2;
+              if (bez(m2, xa, k1, k22, xb) < x2) lo2 = m2;
+              else hi = m2;
+            }
+            const t10 = (lo2 + hi) / 2, B2 = 3 * t10 * (1 - t10), A2 = (1 - t10) ** 3 * ya + t10 ** 3 * yb, need = reach(c10, below, 0);
+            if (B2 > 1e-6) cy2 = below ? Math.max(cy2, (need - A2) / B2) : Math.min(cy2, (need - A2) / B2);
+          }
           prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy2} ${xb - (xb - xa) * 0.2},${cy2} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
         });
       }
@@ -29336,9 +29369,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-e066d1174db6.mjs");
+      return pick(() => "layout-worker-9bf87d70b526.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-eaec2f67e00b.mjs");
+      return pick(() => "encode-worker-63005de5ff0e.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38704,7 +38737,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "76b29b38418a8a72" : "dev";
+var CORE_HASH = true ? "3ef6d6a83d9f5ea1" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -57143,4 +57176,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3c4e36917aec.mjs.map
+//# sourceMappingURL=moonsinger-3164bdabfdfa.mjs.map

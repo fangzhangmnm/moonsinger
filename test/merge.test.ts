@@ -24,6 +24,14 @@ describe("合租并成一条", () => {
     eq(show(mergeTracks([[...head(), n(72, 2 * TPQ)], [...head(), n(64), n(67)]])), "72+64/1 72+67/1", "二分音符 + 两个四分");
     eq(show(mergeTracks([[...head(), n(72, 4 * TPQ)], [...head(), n(64), r(3 * TPQ)]])), "72+64/1 72/3~", "别人停了：长音接着、连起来");
   });
+  it("鼓（hits）：一个鼓音只在敲下去那一刻出现；只剩它在响 = 和上一下同一批音才连着，不然记休止（v0.16.54，user「kick drum…显示成三个音了」）", () => {
+    const E = TPQ / 2, kick = (d = 3 * E) => n(36, d), bongo = () => n(60, E);
+    eq(show(mergeTracks([[...head(), kick(), r(3 * E)], [...head(), bongo(), bongo(), bongo(), bongo(), bongo(), bongo()]], { hits: true })), "60+36/0.5 60/0.5 60/0.5 60/0.5 60/0.5 60/0.5", "6/8：附点四分的底鼓 + 六个八分 = 底鼓只在第一下");
+    eq(show(mergeTracks([[...head(), kick(), r(3 * E)], [...head(), bongo(), bongo(), bongo(), bongo(), bongo(), bongo()]])), "60+36/0.5 60+36/0.5 60+36/0.5 60/0.5 60/0.5 60/0.5", "有音高的合租照旧（长音并进每个和弦）");
+    eq(show(mergeTracks([[...head(), kick(), r(3 * E)], [...head(), bongo(), r(E), r(E), r(3 * E)]], { hits: true })), "60+36/0.5 r/2.5", "别人停了、只剩底鼓在响：和上一下不是同一批 = 休止（连着的空并成一个）");
+    eq(show(mergeTracks([[...head(), kick(), r(3 * E)], [...head(), n(60, 3 * E), r(3 * E)]], { hits: true })), "60+36/1.5 r/1.5", "一起敲、一起停 = 一个和弦");
+    eq(show(mergeTracks([[...head(), n(36, E), n(36, 2 * E)], [...head(), n(60, 3 * E)]], { hits: true })), "60+36/0.5 36/1", "别人的长音在响时我又敲 = 只画我这一下");
+  });
   it("没人响 = 休止（连着的空并成一个）；比较长的那位定长度", () => {
     eq(show(mergeTracks([[...head(), r(), n(60)], [...head(), r(), r(), r(), n(62)]])), "r/1 60/1 r/1 62/1");
   });

@@ -95,3 +95,23 @@ describe("刀 4b 性质：三首样张 × 六种视图，挂件互不相交、�
     assert(bad.length === 0, `${bad.length} 处：${[...new Set(bad)].slice(0, 6).join("；")}`);
   });
 });
+
+describe("连线从跳音 / 保持外面过（v0.16.54；user 11-09「跳音和slur撞一起了」「跳音在连线的末尾，你看不见，因为合起来了」）", () => {
+  const S = { slur: true }, E = TPQ / 2;
+  const cases: [string, Token[]][] = [
+    ["连线最后一个音带跳音（高音、符干朝下 = 跳音和连线都在上面）", [n(1, 5, S, 2 * TPQ), n(2, 5, S, E), n(3, 5, S, E), n(6, 5, S, E), n(5, 5, S, E), n(4, 5, { art: ["staccato"] }, 3 * E), n(3, 5, {}, E)]],
+    ["第一个、中间的音带跳音", [n(0, 5, { ...S, art: ["staccato"] }), n(1, 5, { ...S, art: ["staccato"] }), n(2, 5, S), n(3, 5, { art: ["staccato"] })]],
+    ["跳音 + 保持叠着", [n(3, 5, { ...S, art: ["staccato"] }), n(4, 5, { ...S, art: ["tenuto", "staccato"] }, E), n(5, 5, { ...S, art: ["staccato"] }, E), n(4, 5, { art: ["tenuto"] })]],
+    ["低音区（符干朝上 = 都在下面）", [n(1, 4, { ...S, art: ["staccato"] }, E), n(2, 4, { ...S, art: ["staccato"] }, E), n(3, 4, { ...S, art: ["tenuto"] }), n(2, 4, { art: ["staccato"] })]],
+  ];
+  for (const [name, items] of cases) it(name, () => {
+    const L = lay(items), slur = L.prims.find((p) => /^slur\b/.test(cls(p)))!, arts = L.prims.filter((p) => /^art\b/.test(cls(p)));
+    assert(!!slur && arts.length >= 1, "有连线、有记号");
+    const sb = boxes(slur, SP, (s, size) => measure(s) * size / (1.6 * SP));
+    for (const a of arts) {
+      const ab = boxes(a, SP, (s, size) => measure(s) * size / (1.6 * SP));
+      const hit = ab.some((x) => sb.some((y) => x[0] < y[1] && y[0] < x[1] && x[2] - 0.2 * SP < y[3] && y[2] < x[3] + 0.2 * SP));   // 至少留 0.2 个线间距
+      assert(!hit, `${(a as { ch: string }).ch.codePointAt(0)!.toString(16)} 压着连线`);
+    }
+  });
+});
