@@ -61,3 +61,5 @@ export const STEM_DOWN_NW: [number, number] = [0, -0.168];
 /** 符尾接点（符尾原点为 0,0）：上符尾 stemUpNW，下符尾 stemDownSW。 */
 export const FLAG_ANCHOR_UP: Record<number, number> = { 1: -0.04, 2: -0.088, 3: 0.376 };
 export const FLAG_ANCHOR_DOWN: Record<number, number> = { 1: 0.132, 2: 0.128, 3: -0.448 };
+/** 符尾的墨宽（sp，从字形原点往右；按 1 / 2 / 3 层）：vendor/fonts/bravura/outlines.json 的轮廓量的（2026-11-09 Opus 5.5，刀 4a 补横向间距的右伸）。 */
+export const FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] } as const;

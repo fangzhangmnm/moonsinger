@@ -124,3 +124,16 @@ describe("刀 3：音距存进文件", () => {
     assert(!("denseShort" in again), "再存一次旧字段就没了（认识的键，不当成不认识的原样带回）");
   });
 });
+
+describe("刀 4a：没连杠的符尾往右伸（刀 3 留的）", () => {
+  const E4 = { step: "E" as const, octave: 4, alter: 0 }, A5 = { step: "A" as const, octave: 5, alter: 0 };
+  /** 一串「十六分音 + 十六分休止」：休止打断符杠 = 每个音单独、带符尾。回音到后面那个休止的距离（线间距）。 */
+  const noteToRest = (pitch: typeof E4) => {
+    const toks: Token[] = [...head()]; for (let k = 0; k < 8; k++) toks.push(N(S16, { pitch }), R(S16));
+    const L = lay({ a: toks }, { spacing: "tight" } as Partial<Song>), row = L.systems.findIndex((s) => s.part === "a");
+    const xs = L.notes.filter((n) => n.system === row).map((n) => n.x / L.sp), rs = L.rests.filter((r) => r.system === row).map((r) => r.x / L.sp);
+    return xs.map((x) => Math.min(...rs.filter((r) => r > x + 1e-6)) - x);
+  };
+  it("符干朝上（低音）：符尾的墨（到对齐线右 ≈ 2.47）+ 0.3 的缝 = 后面的休止至少隔 2.42", () => { for (const g of noteToRest(E4)) assert(g >= 2.42 - 1e-6, `${g.toFixed(3)}`); });
+  it("符干朝下（高音）：符尾在符干左边、不比符头宽 = 不多占（紧档十六分 1.7）", () => { for (const g of noteToRest(A5)) assert(near(g, 1.7, 1e-6), `${g.toFixed(3)}`); });
+});

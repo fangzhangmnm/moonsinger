@@ -5,6 +5,7 @@ import "./feel-probe.test.ts";
 import "./audio-queue.test.ts";
 import "./engrave-printable.test.ts";
 import "./spacing.test.ts";
+import "./stems.test.ts";
 import "./engrave-spacing.test.ts";
 import "./catalog-i18n.test.mjs";
 import "./i18n-guard.test.mjs";

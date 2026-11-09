@@ -27,7 +27,8 @@ import { curveOf, SP_DEFAULTS, idealGaps, rodsOf, indexRods, placeLine, fitLine,
 import { type Pitch, diatonicIndex, keyAlter, midiOf, spellMidi } from "../score/pitch.ts";
 import { percOf, type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
-import { GLYPH, W, ENGRAVE, STEM_UP_SE, STEM_DOWN_NW, FLAG_ANCHOR_UP, FLAG_ANCHOR_DOWN, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } from "./smufl.ts";
+import { GLYPH, W, ENGRAVE, FLAG_W, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } from "./smufl.ts";
+import { layoutStems, type StemNote, type StemDir } from "./stems.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { songInC, realFifthsOf } from "../score/view-in-c.ts";
 import { readChord, chordLabel, type ChordRead } from "../score/chord-name.ts";
@@ -269,7 +270,6 @@ export function notate(dur: number): { ratio: [number, number] | null; chunks: {
   }
   return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
 }
-const flagLevel = (base: number) => (base >= TPQ ? 0 : Math.round(Math.log2(TPQ / base)));
 const baseWidth = (base: number) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base / TPQ));   // 四分 3.6，每翻倍 +0.75（2026-10-07 收紧一点：原 4.0 / +0.8，SE2 一行放不下一小节八分）
 
 // ── 排版单元 ────────────────────────────────────────────────────────────
@@ -706,6 +706,19 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const u = q.units.find((x) => x.system === s && x.index >= 0), upto = u ? u.index : q.tokens.length - 1;
       for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === "clef") return i; return -1;
     };
+    /** 刀 4a：一条 track 交给 stems.ts 的那一串（null = 打断符杠）+ 朝向的规矩。x = 符头左缘，单位由调用方定（横向间距那一步还不知道 x，给 0.35 = 相对对齐线）。 */
+    const stemInput = (pi: number, xOf: (u: Chunk) => number): { seq: (StemNote<Chunk> | null)[]; dir: StemDir } => {
+      const q = per[pi], pm = pmode[pi], percHere = !!pm && !!q.p.perc, seq: (StemNote<Chunk> | null)[] = [];
+      for (const u of q.units) {
+        if (u.kind === "bar" || u.kind === "key" || u.kind === "time") { seq.push(null); continue; }
+        if (u.kind !== "chunk") continue;
+        if (!u.note || u.base >= WHOLE) { seq.push(null); continue; }
+        const ps = u.pitches.length ? u.pitches : [u.pitch!], ds = ps.map((pp) => posD(q, pp, u.staff, u.index));
+        seq.push({ key: u, x: xOf(u), dHi: ds[0], dLo: ds[ds.length - 1], base: u.base, beat: Math.floor(u.inBar / u.beat), system: u.system, staff: u.staff, ghost: u.ghost,
+          ...(percHere && pm !== "one" && ps.some((p) => percAt(q, p)?.stem !== "down") ? { handUp: true } : {}) });   // 鼓谱：手打朝上、脚踩朝下（一组里有手打的 = 朝上）
+      }
+      return { seq, dir: rowHost[pi] >= 0 ? "down" : hasV2[pi] ? "up" : percHere ? (pm === "one" ? "up" : "kit") : "auto" };   // 声部 2 朝下、有声部 2 的朝上、一线谱一律朝上
+    };
     // 2. 合成列：同 tick 同种东西对齐（一条 track 里同一 tick 同一种的第 n 个 = 第 n 列）
     const colMap = new Map<string, Col>();
     for (const q of per) {
@@ -742,6 +755,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const unitPart = new Map<Unit, number>(); per.forEach((q, pi) => { for (const u of q.units) unitPart.set(u, pi); });
     const spRow = (pi: number, staff: Staff) => (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 + (staff - 1) * 2;   // 同一条谱表上的才会撞；声部 2 画在主人那一行
     const restW = (base: number) => (base >= WHOLE ? W.restWhole : base >= TPQ * 2 ? W.restHalf : base >= TPQ ? W.restQuarter : base >= TPQ / 2 ? W.rest8th : base >= TPQ / 4 ? W.rest16th : W.rest32nd);
+    // 没连杠的符尾往右伸（刀 3 留的、刀 4a 补）：符干朝上的八分 / 十六分，墨从对齐线往右到约 2.5（符头才到 1.53）。行还没折，连杠按「不换行」算（一拍里折行只在一个小节一行都放不下时才有）
+    const flagRight = new Map<Chunk, number>();
+    per.forEach((_q, pi) => { const si = stemInput(pi, () => 0.35); for (const [c, st] of layoutStems(si.seq, si.dir).notes) if (st.flag) flagRight.set(c, st.flag.x + FLAG_W[st.up ? "up" : "down"][st.flag.level - 1]); });
     const spItems = (u: Chunk, pi: number): SpItem[] => {
       const q = per[pi], v2 = rowHost[pi] >= 0, row = spRow(pi, u.staff), out: SpItem[] = [];
       if (!u.note) {
@@ -754,6 +770,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const second = ds.some((d, k) => k > 0 && Math.abs(ds[k - 1] - d) === 1);
       let right = 0.35 + nhw * (second ? 1.95 : 1), left = -0.35;
       if (u.dotted) right = Math.max(right, 0.35 + nhw + 0.3 + 0.45);
+      const fr = flagRight.get(u); if (fr !== undefined) right = Math.max(right, fr);
       const nAcc = perc ? [] : u.accs.map((a, k) => (a === null ? -1 : k)).filter((k) => k >= 0);
       if (nAcc.length) left = 1.1 + (nAcc.some((k, i) => i > 0 && Math.abs(ds[nAcc[i - 1]] - ds[k]) < 3) ? 1.1 : 0);
       const ghost = u.art.includes("ghost");
@@ -1282,75 +1299,20 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
           }
         }
       }
-      // 7. 符干、符杠、符尾（按拍分组：同一拍里连着的八分及更短的音符共用符杠）
-      type Stemmed = { c: Chunk; x0: number; y: number; d: number; yLow: number; dLow: number };   // y / d = 最高的符头；yLow / dLow = 最低的（叠音的符干连着两头）
-      const stemmed: Stemmed[][] = [];
-      let group: Stemmed[] = [], groupBeat = -1, groupSys = -1;
-      const endGroup = () => { if (group.length) stemmed.push(group); group = []; groupBeat = -1; };
-      const chunksInOrder: (Chunk | null)[] = [];
-      // 打断符杠的只有小节线和中途的调号 / 拍号；光标、力度记号、渐强渐弱、句号、速度都不打断（2026-10-08 Opus 5.5，user「为什么…力度标识会破坏八分音符尾巴的连音？」）
-      for (const u of units) { if (u.kind === "chunk") chunksInOrder.push(u); else if (u.kind === "bar" || u.kind === "key" || u.kind === "time") chunksInOrder.push(null); }
-      for (const u of chunksInOrder) {
-        if (!u || !u.note || u.base >= WHOLE) { endGroup(); continue; }
-        const dsU = (u.pitches.length ? u.pitches : [u.pitch!]).map((pp) => dIdx(pp, u.staff, u.index));
-        const s: Stemmed = { c: u, x0: nhX(u), y: yOf(RW(u), dsU[0]), d: dsU[0], yLow: yOf(RW(u), dsU[dsU.length - 1]), dLow: dsU[dsU.length - 1] };
-        if (u.base > TPQ / 2) { endGroup(); stemmed.push([s]); continue; }
-        const beat = Math.floor(u.inBar / u.beat);
-        if (group.length && (beat !== groupBeat || u.system !== groupSys || u.staff !== group[0].c.staff)) endGroup();   // 换谱表 = 符杠断开（跨谱表符杠下一轮）
-        group.push(s); groupBeat = beat; groupSys = u.system;
-      }
-      endGroup();
-      const stemCls = (s: Stemmed) => clsOf(s.c);
+      // 7. 符干、符杠、符尾（按拍分组：同一拍里连着的八分及更短的音符共用符杠）：几何 = src/render/stems.ts（刀 4a 抽出来的纯函数），这里只画
+      //   打断符杠的只有小节线和中途的调号 / 拍号；光标、力度记号、渐强渐弱、句号、速度都不打断（2026-10-08 Opus 5.5，user「为什么…力度标识会破坏八分音符尾巴的连音？」）
+      const stemIn = stemInput(r, nhX);
+      const stems = layoutStems(stemIn.seq, stemIn.dir, { u: sp, y: (d, n) => yOf(RW(n.key), d) });
       const upOf = new Map<Chunk, boolean>();   // 符干朝上？（演奏法画在另一侧）
       const tipOf = new Map<Chunk, number>();
-      for (const g of stemmed) {
-        const row = RW(g[0].c), mid = yOf(row, MID_LINE);
-        const up = v2 ? false : hasV2[r] ? true : percHere ? pm === "one" || g.some((s) => (s.c.pitches.length ? s.c.pitches : [s.c.pitch!]).some((p) => percAt(q, p)?.stem !== "down"))   // 鼓谱：手打朝上、脚踩朝下（一组里有手打的 = 朝上）；一线谱一律朝上
-          : g.reduce((a, s) => a + (s.d + s.dLow) / 2, 0) / g.length < MID_LINE;
-        for (const s of g) upOf.set(s.c, up);
-        const sx = (s: Stemmed) => (up ? s.x0 + P(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s.x0 + P(STEM_DOWN_NW[0] + ENGRAVE.stem / 2));
-        const sy0 = (s: Stemmed) => (up ? s.yLow - P(STEM_UP_SE[1]) : s.y - P(STEM_DOWN_NW[1]));   // 符干从远端的那个符头起
-        if (g.length === 1) {
-          const s = g[0];
-          let tip = up ? s.y - P(3.5) : s.yLow + P(3.5);
-          if (up && s.d < 27) tip = Math.min(tip, mid); if (!up && s.dLow > 41) tip = Math.max(tip, mid);
-          tipOf.set(s.c, tip); topAt.set(`${RW(s.c)}|${s.c.index}`, up ? tip : s.y);
-          prims.push({ tok: tokOf(s.c), t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: tip, w: P(ENGRAVE.stem), cls: stemCls(s) });
-          const lv = flagLevel(s.c.base);
-          if (lv > 0) {
-            const fx = sx(s) - P(ENGRAVE.stem / 2);
-            const fg = up ? [GLYPH.flag8thUp, GLYPH.flag16thUp, GLYPH.flag32ndUp][lv - 1] : [GLYPH.flag8thDown, GLYPH.flag16thDown, GLYPH.flag32ndDown][lv - 1];
-            prims.push({ tok: tokOf(s.c), t: "glyph", x: fx, y: up ? tip + P(FLAG_ANCHOR_UP[lv]) : tip + P(FLAG_ANCHOR_DOWN[lv]), ch: fg, cls: stemCls(s) });
-          }
-          continue;
+      for (const g of stems.groups) {
+        for (const c of g.keys) {
+          const st = stems.notes.get(c)!;
+          upOf.set(c, st.up); tipOf.set(c, st.tip); topAt.set(`${RW(c)}|${c.index}`, st.top);
+          prims.push({ tok: tokOf(c), t: "line", x1: st.x, y1: st.y0, x2: st.x, y2: st.tip, w: P(ENGRAVE.stem), cls: clsOf(c) });
+          if (st.flag) prims.push({ tok: tokOf(c), t: "glyph", x: st.flag.x, y: st.flag.y, ch: (st.up ? [GLYPH.flag8thUp, GLYPH.flag16thUp, GLYPH.flag32ndUp] : [GLYPH.flag8thDown, GLYPH.flag16thDown, GLYPH.flag32ndDown])[st.flag.level - 1], cls: clsOf(c) });
         }
-        const xa = sx(g[0]), xb = sx(g[g.length - 1]);
-        const k = Math.max(-0.2, Math.min(0.2, ((g[g.length - 1].y - g[0].y) / (xb - xa)) * 0.5));
-        const at = (xx: number, yy0: number) => yy0 + k * (xx - xa);
-        const yb0 = up ? Math.min(...g.map((s) => s.y - P(3.5) - k * (sx(s) - xa))) : Math.max(...g.map((s) => s.yLow + P(3.5) - k * (sx(s) - xa)));
-        for (const s of g) { tipOf.set(s.c, at(sx(s), yb0)); topAt.set(`${RW(s.c)}|${s.c.index}`, up ? Math.min(at(sx(s), yb0) - P(ENGRAVE.beam), s.y) : s.y); prims.push({ tok: tokOf(s.c), t: "line", x1: sx(s), y1: sy0(s), x2: sx(s), y2: at(sx(s), yb0), w: P(ENGRAVE.stem), cls: stemCls(s) }); }
-        const step = P(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th = P(ENGRAVE.beam) * (up ? 1 : -1);
-        const beamPath = (xL: number, xR: number, lvl: number) => {
-          const of = step * lvl; const a = at(xL, yb0) + of, b = at(xR, yb0) + of;
-          return `M${xL - P(ENGRAVE.stem / 2)},${a}L${xR + P(ENGRAVE.stem / 2)},${b}L${xR + P(ENGRAVE.stem / 2)},${b + th}L${xL - P(ENGRAVE.stem / 2)},${a + th}Z`;
-        };
-        const gcls = ["beam", g.every((s) => s.c.ghost) ? "ghost" : ""].filter(Boolean).join(" ");
-        prims.push({ t: "path", d: beamPath(xa, xb, 0), cls: gcls });
-        const maxLv = Math.max(...g.map((s) => flagLevel(s.c.base)));
-        for (let lvl = 2; lvl <= maxLv; lvl++) {
-          let runStart = -1;
-          for (let n = 0; n <= g.length; n++) {
-            const has = n < g.length && flagLevel(g[n].c.base) >= lvl;
-            if (has && runStart < 0) runStart = n;
-            if (!has && runStart >= 0) {
-              const L = runStart, R = n - 1;
-              if (L === R) { const stub = P(1.1), toRight = L < g.length - 1;   // 单独一个更短的音：半截杠，组里最后一个朝左，其余朝右
-                prims.push({ t: "path", d: beamPath(toRight ? sx(g[L]) : sx(g[L]) - stub, toRight ? sx(g[L]) + stub : sx(g[L]), lvl - 1), cls: gcls }); }
-              else prims.push({ t: "path", d: beamPath(sx(g[L]), sx(g[R]), lvl - 1), cls: gcls });
-              runStart = -1;
-            }
-          }
-        }
+        for (const bm of g.beams) prims.push({ t: "path", d: `M${bm.xL},${bm.yL}L${bm.xR},${bm.yR}L${bm.xR},${bm.yR + bm.th}L${bm.xL},${bm.yL + bm.th}Z`, cls: ["beam", bm.ghost ? "ghost" : ""].filter(Boolean).join(" ") });
       }
       // 7½. 修（2026-10-08）：跳音 / 保持在符头外一格（谱内落在间里）；符干朝上 = 画在下面，朝下 / 没有符干 = 上面。呼吸 = 音后面、谱线上方一个逗号。
       //   强度那一组（重音 / 强音 / 次重音 / 弱化）**一律画在谱上方**（2026-10-08 深夜 Opus 5.5，user「强度记号统一放上面吧，不然容易misleading」）：
