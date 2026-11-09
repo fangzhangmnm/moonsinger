@@ -20,6 +20,18 @@ export const CEILING = 0.98;
 const LIM_ATTACK = 0.003, LIM_RELEASE = 0.15, LIM_LOOK_TAUS = 3;
 /** 范围尾最多等尾巴响多久（秒）；块淡出 / 起放淡入（秒）；表情曲线的一阶平滑 τ（同原 applyGain）。 */
 const TAIL_MAX = 2, CLIP_FADE_OUT = 0.03, CLIP_FADE_IN = 0.01, GAIN_TAU = 0.004;
+/** 范围尾（放到歌尾 / 导出）什么时候收：演奏者都没声了 **而且** 总轨出来的声连着 QUIET_HOLD 秒低于 QUIET（−80 dBFS）。
+ *  只看演奏者（原来的 TAIL_MAX / silent）会把混响 / 延迟的尾巴切掉——它们住在总线和链上（2026-11-09 user「结束的时候硬截断了」，导出的 mp3 同样）。
+ *  上限 TAIL_FX_MAX 秒（反馈很大的回声可能永远到不了 −80）。实时放的时候 ended 之后总线照样自己响完（render 每块都处理总线）；
+ *  离线导出在 ended 那一刻停录，所以到上限还有声 = 最后 TAIL_FADE 秒淡出（fadeTail，不硬切）。离线导出按上限留够长度。2026-11-09 Claude Opus 5.5 */
+export const TAIL_FX_MAX = 12, TAIL_FADE = 0.5; const QUIET = 1e-4, QUIET_HOLD = 0.3;
+/** 离线导出录完：末尾还有声（> −80 dBFS）= 最后 TAIL_FADE 秒余弦淡出（就地改）。两条离线导出（core/offline-studio、engine/studio-client）共用。 */
+export function fadeTail(L: Float32Array, R: Float32Array, sr: number): void {
+  const n = L.length, m = Math.min(n, Math.round(TAIL_FADE * sr)); let pk = 0;
+  for (let i = Math.max(0, n - Math.round(0.01 * sr)); i < n; i++) pk = Math.max(pk, Math.abs(L[i]), Math.abs(R[i]));
+  if (pk < QUIET) return;
+  for (let j = 0; j < m; j++) { const i = n - m + j, k = 0.5 + 0.5 * Math.cos(Math.PI * (j + 1) / m); L[i] *= k; R[i] *= k; }
+}
 /** 位置报告的间隔（采样）：8 块 ≈ 21 ms @48k（主线程按扬声器的时钟在报告之间往前推，跳 / 循环 / 起放时另外立刻报）。 */
 const POS_EVERY = 8 * BLOCK;
 /** 元音采样器：一池最多几声；包络（秒）同原 src/singer/sampler.ts。 */
@@ -161,6 +173,7 @@ export class Studio {
   private loopTo: number | null = null;     // 循环在哪儿跳回（谱上的末尾）；null = 范围尾
   private looped = false;                   // 这一趟放是不是已经绕回来过（绕回来之后，开头那一小段要接上上一圈最后一句的尾音）
   private tail = -1;                       // ≥0 = 范围尾：已经等了几秒
+  private quietSecs = 0;                   // 范围尾里总轨出声连着多久低于 QUIET（秒）
   private draining = false; private drainPos = 0; private drainSecs = 0;   // 停了之后：释放中的尾巴照响到静（不渲染 = 冻住，下次放才漏出来；user「每次点play的时候会漏上次的最后一个音」）
   private forgetLater = new Set<string>();   // 主线程要放掉、但正被 hold 着的块：响完再删
   private waiting: string | null = null;   // 块没到：等它（走带冻住）
@@ -354,7 +367,7 @@ export class Studio {
     if (at !== undefined) this.pos = at;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
     this.looped = false;
-    this.playing = true; this.draining = false; this.tail = -1; this.waiting = null; this.posFrames = POS_EVERY;   // 起放那一块就报（主线程的对照表从这儿开始）
+    this.playing = true; this.draining = false; this.tail = -1; this.quietSecs = 0; this.waiting = null; this.posFrames = POS_EVERY;   // 起放那一块就报（主线程的对照表从这儿开始）
     for (const t of this.tracks.values()) { this.killAll(t); this.endHold(t); }   // 上次停下来还没响完的尾巴快速收掉，别漏进这一次
     this.resetCursors(true);
     this.checkMissing();
@@ -483,6 +496,7 @@ export class Studio {
     const g = this.masterLin;
     if (this.master.limiter) this.limit(n, g);
     else for (let i = 0; i < n; i++) { this.busL[i] *= g; this.busR[i] *= g; }
+    if (this.tail >= 0) { let pk = 0; for (let i = 0; i < n; i++) { const a = Math.abs(this.busL[i]), b = Math.abs(this.busR[i]); if (a > pk) pk = a; if (b > pk) pk = b; } this.quietSecs = pk < QUIET ? this.quietSecs + n / this.sr : 0; }   // 下一块判收不收用
     for (let i = 0; i < n; i++) { outL[i] = this.busL[i] + this.audL[i] * g; outR[i] = this.busR[i] + this.audR[i] * g; }
     if (this.specOn) {
       this.specPush("__master", outL, outR, n); this.specFrames += n;
@@ -532,7 +546,7 @@ export class Studio {
       if (this.tail >= 0 && this.loop) { this.loopBack(); continue; }   // 尾巴还在响的时候开了循环 = 这一轮照样跳回去（2026-10-10 user「中途toggle循环对本轮播放应该生效」）
       if (this.tail >= 0) {   // 范围尾：不排新音，块淡出，响完就停
         this.renderTracks(done, left, false, true); this.pos += left / sr; this.tail += left / sr; done = n;
-        if (this.tail >= TAIL_MAX || this.silent()) { this.stop(); this.post({ type: "ended", gen: this.gen }); }
+        if ((this.silent() && this.quietSecs >= QUIET_HOLD) || this.tail >= TAIL_FX_MAX) { this.stop(); this.post({ type: "ended", gen: this.gen }); }
         break;
       }
       const blockEnd = this.pos + left / sr;

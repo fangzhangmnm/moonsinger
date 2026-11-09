@@ -46,7 +46,9 @@ await p.goto(base); await p.waitForTimeout(800);
 const bytes = fs.readFileSync(file);
 await p.evaluate(([name, arr]) => { const m = window.__moonsinger; m.load(m.open(name, new Uint8Array(arr))); }, [path.basename(file), Array.from(bytes)]);
 await p.waitForTimeout(600);
-await p.evaluate(() => { const m = window.__moonsinger; m.setMode("listen"); m.setScope?.("all"); m.setPages?.(false); m.setScroll?.(false); });
+await p.evaluate(() => { const m = window.__moonsinger; m.setMode("listen"); m.setScope?.("all"); m.setPages?.(false); m.setScroll?.(false);
+  const st = m.state(); m.set({ ...st, caret: 0, sel: null, lead: undefined });   // 光标挪回开头：存档时光标停在全曲末尾 = 最后一行五线延到右边（给写的人留地方，印出来没有）
+});
 // 谱面占满画面 = 印出来的谱 + 播放线：
 //   顶栏藏掉；覆盖层（编辑器的钮 / 曲段切换 / 空着的占位提示，src/ui/score-overlay.ts）藏掉；缩放读数钮藏掉；
 //   排版器打了 ann 的「只给写谱人看的披露」藏掉——和 PDF 不印的是同一张名单（src/export/score-pdf.ts SKIP）；
@@ -112,7 +114,8 @@ shots.forEach((s, i) => { const k1 = i + 1 < shots.length ? shots[i + 1].k : n; 
 lines.push(`file '${shots[shots.length - 1].f.replace(/'/g, "'\\''")}'`);   // concat 的老规矩：最后一张再写一次，不然最后的 duration 不算
 fs.writeFileSync(list, lines.join("\n") + "\n");
 const ff = spawnSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", list, "-i", wav,
-  "-map", "0:v", "-map", "1:a", "-r", String(fps), "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-tune", "stillimage", "-pix_fmt", "yuv420p",
+  "-map", "0:v", "-map", "1:a", "-r", String(fps), "-vf", "scale=out_color_matrix=bt709:out_range=tv,format=yuv420p", "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-tune", "stillimage",
+  "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",   // PNG 是 RGB：显式按 bt709 转、打标记（不写 = ffmpeg 拿 bt601 矩阵转，颜色偏）
   "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", out], { stdio: "inherit" });
 if (ff.status !== 0) { say("ffmpeg 失败"); process.exit(1); }
 if (!keep) fs.rmSync(work, { recursive: true, force: true });

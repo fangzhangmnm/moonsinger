@@ -2,7 +2,7 @@
 // 收位置 / 结束 / 缺块。离线导出 = 同一个 Studio 类在这边的循环里跑（同一份数学；提案 §5）。created 2026-10-09 by Claude Fable 5.1
 // 一个 app 一个实例；AudioContext 全 app 共用（src/singer/audio.ts）。装 worklet 第一次用才做（家规：重资源要等用户有意图才加载）。
 import { instantiateTsf } from "../gm/tsf-standalone.ts";
-import { Studio, BLOCK, packInt16, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
+import { Studio, BLOCK, TAIL_FX_MAX, fadeTail, packInt16, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
 
 export interface VowelTableMsg { sr: number; entries: VowelEntry[]; pcm: Int16Array }
 export interface LoadInfo { busy: number; chunkBytes: number; chunks: number; voices: number }
@@ -205,7 +205,7 @@ export class StudioClient {
     s.handle({ type: "timeline", tl: { ...tl, loop: false } });
     const keys = tl.tracks.flatMap((t) => (t.kind === "clips" ? t.clips.map((c) => c.key) : [])).filter((k) => this.chunkKeys.has(k));
     if (keys.length) { await this.ensure(); for (const c of await this.fetchChunks([...new Set(keys)])) s.handle({ type: "chunk", key: c.key, sr: c.sr, samples: c.samples, ...(c.k ? { k: c.k } : {}) }); }   // 倍数跟着走（离线导出）
-    const lat = s.latency, total = Math.ceil((tl.range.to - tl.range.from) * sr) + lat + Math.ceil(2.5 * sr);   // + 尾巴上限
+    const lat = s.latency, total = Math.ceil((tl.range.to - tl.range.from) * sr) + lat + Math.ceil((TAIL_FX_MAX + 0.5) * sr);   // + 尾巴上限（混响 / 延迟的尾巴，见 studio.ts TAIL_FX_MAX）
     const L = new Float32Array(total), R = new Float32Array(total), bl = new Float32Array(BLOCK), br = new Float32Array(BLOCK);
     s.handle({ type: "play", at: tl.range.from });
     let n = 0, k = 0;
@@ -216,7 +216,8 @@ export class StudioClient {
       if (++k % 400 === 0) { o.progress?.(Math.min(1, n / total)); await new Promise<void>((r) => setTimeout(r, 0)); }
     }
     o.progress?.(1);
-    const len = Math.max(0, n - lat);
-    return { left: L.slice(lat, lat + len), right: R.slice(lat, lat + len), sr, start: tl.range.from };
+    const len = Math.max(0, n - lat), left = L.slice(lat, lat + len), right = R.slice(lat, lat + len);
+    fadeTail(left, right, sr);   // 到了尾巴上限还有声 = 最后半秒淡出（不硬切；studio.ts TAIL_FX_MAX）
+    return { left, right, sr, start: tl.range.from };
   }
 }

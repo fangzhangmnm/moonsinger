@@ -2,7 +2,7 @@
 //   created 2026-10-16 by Claude Fable 5.1（W-38 ⑤ 无头渲染核心的 node 后端；RenderEngine 的第二个实现，第一个 = src/engine/studio-client.ts）。
 //   做法和 StudioClient.renderOffline 一样：平时只记状态（库字节 / 元音表 / 块 / 通道 / 总线 / 总轨），renderOffline 那一刻新开一个 Studio 把状态灌进去、从头跑到尾。
 import { instantiateTsf, type Tsf } from "../gm/tsf-standalone.ts";
-import { Studio, BLOCK, packInt16, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec } from "../engine/studio.ts";
+import { Studio, BLOCK, TAIL_FX_MAX, fadeTail, packInt16, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec } from "../engine/studio.ts";
 import type { VowelTableMsg } from "../engine/studio-client.ts";
 import type { RenderEngine } from "./render.ts";
 
@@ -52,7 +52,7 @@ export class OfflineStudio implements RenderEngine {
     s.handle({ type: "master", p: this.masterP });
     s.handle({ type: "timeline", tl: { ...tl, loop: false } });
     for (const t of tl.tracks) if (t.kind === "clips") for (const c of t.clips) { const ch = this.chunks.get(c.key); if (ch) s.handle({ type: "chunk", key: c.key, sr: ch.sr, samples: ch.samples, ...(ch.k ? { k: ch.k } : {}) }); }
-    const lat = s.latency, total = Math.ceil((tl.range.to - tl.range.from) * sr) + lat + Math.ceil(2.5 * sr);   // + 尾巴上限
+    const lat = s.latency, total = Math.ceil((tl.range.to - tl.range.from) * sr) + lat + Math.ceil((TAIL_FX_MAX + 0.5) * sr);   // + 尾巴上限（混响 / 延迟的尾巴，见 studio.ts TAIL_FX_MAX）
     const L = new Float32Array(total), R = new Float32Array(total), bl = new Float32Array(BLOCK), br = new Float32Array(BLOCK);
     s.handle({ type: "play", at: tl.range.from });
     let n = 0, k = 0;
@@ -63,7 +63,8 @@ export class OfflineStudio implements RenderEngine {
       if (++k % 400 === 0) { o.progress?.(Math.min(1, n / total)); await new Promise<void>((r) => setTimeout(r, 0)); }
     }
     o.progress?.(1);
-    const len = Math.max(0, n - lat);
-    return { left: L.slice(lat, lat + len), right: R.slice(lat, lat + len), sr, start: tl.range.from };
+    const len = Math.max(0, n - lat), left = L.slice(lat, lat + len), right = R.slice(lat, lat + len);
+    fadeTail(left, right, sr);   // 到了尾巴上限还有声 = 最后半秒淡出（不硬切；studio.ts TAIL_FX_MAX）
+    return { left, right, sr, start: tl.range.from };
   }
 }

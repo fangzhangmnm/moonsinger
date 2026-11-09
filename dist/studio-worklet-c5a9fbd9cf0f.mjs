@@ -655,6 +655,9 @@ var TAIL_MAX = 2;
 var CLIP_FADE_OUT = 0.03;
 var CLIP_FADE_IN = 0.01;
 var GAIN_TAU = 4e-3;
+var TAIL_FX_MAX = 12;
+var QUIET = 1e-4;
+var QUIET_HOLD = 0.3;
 var POS_EVERY = 8 * BLOCK;
 var MAX_VOWEL_VOICES = 24;
 var V_ATTACK = 0.01;
@@ -720,6 +723,8 @@ var Studio = class {
   // 这一趟放是不是已经绕回来过（绕回来之后，开头那一小段要接上上一圈最后一句的尾音）
   tail = -1;
   // ≥0 = 范围尾：已经等了几秒
+  quietSecs = 0;
+  // 范围尾里总轨出声连着多久低于 QUIET（秒）
   draining = false;
   drainPos = 0;
   drainSecs = 0;
@@ -1082,6 +1087,7 @@ var Studio = class {
     this.playing = true;
     this.draining = false;
     this.tail = -1;
+    this.quietSecs = 0;
     this.waiting = null;
     this.posFrames = POS_EVERY;
     for (const t of this.tracks.values()) {
@@ -1310,6 +1316,15 @@ var Studio = class {
       this.busL[i] *= g;
       this.busR[i] *= g;
     }
+    if (this.tail >= 0) {
+      let pk = 0;
+      for (let i = 0; i < n; i++) {
+        const a = Math.abs(this.busL[i]), b = Math.abs(this.busR[i]);
+        if (a > pk) pk = a;
+        if (b > pk) pk = b;
+      }
+      this.quietSecs = pk < QUIET ? this.quietSecs + n / this.sr : 0;
+    }
     for (let i = 0; i < n; i++) {
       outL[i] = this.busL[i] + this.audL[i] * g;
       outR[i] = this.busR[i] + this.audR[i] * g;
@@ -1412,7 +1427,7 @@ var Studio = class {
         this.pos += left / sr;
         this.tail += left / sr;
         done = n;
-        if (this.tail >= TAIL_MAX || this.silent()) {
+        if (this.silent() && this.quietSecs >= QUIET_HOLD || this.tail >= TAIL_FX_MAX) {
           this.stop();
           this.post({ type: "ended", gen: this.gen });
         }
@@ -1901,4 +1916,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-1c5a20dddaaf.mjs.map
+//# sourceMappingURL=studio-worklet-c5a9fbd9cf0f.mjs.map

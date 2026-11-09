@@ -3,7 +3,7 @@
 //   通道（推子 / 声像 / 静音 / 独奏）和表情曲线播放时才乘；母线绝不超天花板、不超的地方不动；试听绕过限幅。听感归 user，这里只管数学。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { instantiateTsf } from "../src/gm/tsf-standalone.ts";
-import { Studio, BLOCK, CEILING, type StudioOut, type TimelineMsg, type TrackSpec } from "../src/engine/studio.ts";
+import { Studio, BLOCK, CEILING, TAIL_FX_MAX, fadeTail, type StudioOut, type TimelineMsg, type TrackSpec } from "../src/engine/studio.ts";
 import { audibleAt, outputClock } from "../src/engine/studio-client.ts";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL | string): Uint8Array };
 
@@ -389,6 +389,34 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     };
     const ducked = await mk("B"), plain = await mk(undefined);
     assert(Math.abs(plain - 0.05 * PAN0) < 1e-3, `不侧链 = 原样（${plain}）`); assert(ducked < plain * 0.3, `侧链压下去（${ducked} vs ${plain}）`);
+  });
+  it("范围尾等混响的尾巴：总线上还在响 = 不报 ended，总轨安静了才报；永远不安静 = 到 TAIL_FX_MAX 收（2026-11-09 user「结束的时候硬截断了」）", async () => {
+    const mk = async (room: number) => {
+      const { s, out } = await studio();
+      s.handle({ type: "timeline", tl: tl([sfTrack("p", [{ t0: 0, t1: 0.4, key: 60 }])], { from: 0, to: 0.5 }) });
+      s.handle({ type: "buses", buses: [{ id: "b1", gainDb: 0, pan: 0, chain: [{ id: "r", kind: "reverb", params: { room, damp: 0.1, mix: 1, preDelayMs: 0 } }] }] });
+      s.handle({ type: "channel", id: "p", p: { sends: [{ to: "b1", gainDb: 0 }] } });
+      s.handle({ type: "play" });
+      // 一块一块放到 ended（或 20 s），记下每块的峰值和 ended 在第几秒
+      const bl = new Float32Array(BLOCK), br = new Float32Array(BLOCK), peaks: number[] = []; let endedAt = -1;
+      for (let i = 0; i < sec(20) && endedAt < 0; i += BLOCK) { s.render(bl, br, BLOCK); peaks.push(Math.max(peak(bl), peak(br))); if (out.some((m) => m.type === "ended")) endedAt = (i + BLOCK) / SR; }
+      return { peaks, endedAt, at: (t: number) => peaks[Math.floor(sec(t) / BLOCK)] ?? 0 };
+    };
+    const long = await mk(0.9);
+    assert(long.at(2.6) > 1e-4, `旧规矩（尾巴 2 s）收的那一刻混响还在响（${long.at(2.6)}）——不然这条测不出东西`);
+    assert(long.endedAt > 2.6, `混响没响完不报 ended（${long.endedAt} s）`);
+    const tailEnd = Math.floor(sec(long.endedAt) / BLOCK);
+    assert(long.peaks.slice(tailEnd - Math.ceil(sec(0.3) / BLOCK), tailEnd).every((p) => p < 1e-4), "报 ended 之前那 0.3 s 总轨低于 −80 dBFS");
+    const endless = await mk(0.9999);
+    assert(endless.endedAt > 0 && endless.endedAt <= 0.5 + TAIL_FX_MAX + 0.05, `永远不安静的回声 = 到上限收（${endless.endedAt} s）`);
+  });
+  it("离线导出末尾：还有声 = 最后半秒余弦淡到 0；本来就静 = 一个采样都不动", () => {
+    const L = flat(1, 0.5), R = flat(1, -0.5);
+    fadeTail(L, R, SR);
+    assert(Math.abs(L[L.length - 1]) < 1e-6 && Math.abs(R[R.length - 1]) < 1e-6, "最后一个采样 = 0");
+    eq(L[sec(0.4)], 0.5); assert(L[sec(0.75)] < 0.5 && L[sec(0.75)] > 0, "淡出只在最后半秒");
+    const q = flat(1, 0), q2 = flat(1, 0); q[100] = 0.3;
+    fadeTail(q, q2, SR); eq(q[100], Math.fround(0.3));
   });
   it("发送到混响总线：块停了之后总线上还有尾巴；总线增益 / 删了总线 = 发送落空不出声", async () => {
     const { s } = await clipS([{ id: "A", v: 0.3 }]);
