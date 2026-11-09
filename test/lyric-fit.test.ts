@@ -13,10 +13,10 @@ describe("歌词让路（fitLyrics）：字高不动、只收宽度（v0.16.44�
     const f = fitLyrics([{ cx: 0, w: 1.5 }, { cx: 2.4, w: 3 }, { cx: 6, w: 1.5 }]);
     assert(f.some((x) => x.dx !== 0) && f.every((x) => x.sx === 1 && !x.tight), JSON.stringify(f));
   });
-  it("借不够 = 英文各收各的：挤的那几个收窄，不挤的照原宽（「宽窄的节奏」）", () => {
-    const f = fitLyrics([{ cx: 0, w: 3 }, { cx: 0.5, w: 3 }, { cx: 8, w: 1 }]);
-    assert(f[2].sx === 1, "不挤的不收");
-    assert((f[0].sx < 1 || f[1].sx < 1) && f.every((x) => x.sx >= LYRIC_MIN_SX && !x.tight), JSON.stringify(f));
+  it("借不够 = 挤的那一串一起收到刚好放得下，不挤的照原宽", () => {
+    const f = fitLyrics([{ cx: 0, w: 3 }, { cx: 1.6, w: 3 }, { cx: 3.2, w: 3 }, { cx: 4.8, w: 3 }, { cx: 12, w: 1 }]);   // 中间两个两边都有邻居：最多各挪到中点
+    assert(f[4].sx === 1, "不挤的不收");
+    assert(f.slice(0, 4).some((x) => x.sx < 1) && f.every((x) => x.sx >= LYRIC_MIN_SX && !x.tight), JSON.stringify(f));
   });
   it("收到最窄还挤 = 照写、标 tight（画灰）", () => {
     const g = fitLyrics([{ cx: 0, w: 9 }, { cx: 1, w: 9 }, { cx: 2, w: 9 }, { cx: 3, w: 9 }]);
@@ -31,6 +31,20 @@ describe("歌词让路（fitLyrics）：字高不动、只收宽度（v0.16.44�
     const f = fitLyrics(loose, t);
     assert(f.every((x) => x.sx === t && !x.tight), "不挤的那一行也跟整段同一个宽度");
     assert(fitLyrics(row, t).every((x) => !x.tight), "按这个宽度挤的那一行放得下");
+  });
+  it("对齐（user「怎么样算跑到外面没对齐」）：挪了也还盖着自己的音、没越过和邻居音的中点", () => {
+    const items = [{ cx: 0, w: 4 }, { cx: 2, w: 4 }, { cx: 4, w: 4 }, { cx: 6, w: 1 }], f = fitLyrics(items);
+    f.forEach((x, i) => {
+      const it = items[i], half = (it.w * x.sx) / 2, nb = items[i + (x.dx < 0 ? -1 : 1)], toward = nb ? Math.abs(nb.cx - it.cx) / 2 : Infinity;   // 往哪边挪就看哪边的邻居
+      if (!x.tight) assert(Math.abs(x.dx) <= Math.max(0.2, Math.min(half - 0.15, toward)) + 1e-6, `第 ${i} 个挪了 ${x.dx.toFixed(2)}`);
+    });
+  });
+  it("空格跟着左右更窄的那个字收（user「空格和最窄的邻居宽度对齐」）：放得下就不叠", () => {
+    const items = [{ cx: 0, w: 3 }, { cx: 2.2, w: 3 }, { cx: 4.4, w: 3 }], f = fitLyrics(items);
+    for (let i = 1; i < items.length; i++) {
+      const gap = items[i].cx + f[i].dx - (items[i].w * f[i].sx) / 2 - (items[i - 1].cx + f[i - 1].dx + (items[i - 1].w * f[i - 1].sx) / 2);
+      if (!f[i].tight) assert(gap >= 0.5 * Math.min(f[i].sx, f[i - 1].sx) - 1e-6, `第 ${i} 道缝 ${gap.toFixed(3)}`);
+    }
   });
   it("方块字挨方块字的缝比英文小（0.25 vs 0.5）", () => {
     const zh = fitLyrics([{ cx: 0, w: 1.6, block: true }, { cx: 1.9, w: 1.6, block: true }]), en = fitLyrics([{ cx: 0, w: 1.6 }, { cx: 1.9, w: 1.6 }]);

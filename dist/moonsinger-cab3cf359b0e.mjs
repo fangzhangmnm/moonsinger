@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.46-2026-11-09";
+var APP_VERSION = "v0.16.47-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10753,61 +10753,107 @@ function mergeTracks(tracks, opt = {}) {
 
 // src/render/engrave.ts
 var lyricLook = (ts2) => ts2 > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
-var lyricGap = (a10, b3, fa = 1, fb = 1) => (a10.block && b3.block ? 0.25 : 0.5) * ((fa + fb) / 2) + (a10.hy ? 0.3 : 0);
-function placeLyrics(items, f2) {
-  const cap2 = items.map((it2) => Math.max(0.8, 0.45 * it2.w)), pos = items.map((it2) => it2.cx), half2 = items.map((it2, i10) => it2.w * f2[i10] / 2);
-  for (let pass = 0; pass < 4; pass++) {
-    for (let k2 = 1; k2 < items.length; k2++) {
-      const need = pos[k2 - 1] + half2[k2 - 1] + lyricGap(items[k2 - 1], items[k2], f2[k2 - 1], f2[k2]) + half2[k2];
-      if (pos[k2] < need) pos[k2] = Math.min(need, items[k2].cx + cap2[k2]);
+var baseGap = (a10, b3) => a10.block && b3.block ? 0.25 : 0.5;
+var hyphenRoom = (em2) => 0.35 * em2 + 0.2;
+function solveLyrics(items, blockSx, minSx, hyW) {
+  const n10 = items.length, f2 = items.map((it2) => it2.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
+  if (!n10) return { pos: [], f: f2, tight };
+  const c10 = items.map((it2) => it2.cx);
+  const reach = (i10, side) => {
+    const nb2 = items[i10 + side];
+    const half2 = nb2 ? Math.abs(nb2.cx - c10[i10]) / 2 : Infinity;
+    return Math.max(0.2, Math.min(items[i10].w * f2[i10] / 2 - 0.15, half2));
+  };
+  const lo2 = (i10) => c10[i10] - reach(i10, -1), hi = (i10) => c10[i10] + reach(i10, 1);
+  const d3 = (i10) => (items[i10].w * f2[i10] + items[i10 + 1].w * f2[i10 + 1]) / 2 + baseGap(items[i10], items[i10 + 1]) * Math.min(f2[i10], f2[i10 + 1]) + (items[i10].hy ? hyW : 0);
+  const L2 = new Array(n10), start = new Array(n10);
+  const step = (i10) => {
+    const a10 = i10 > 0 ? L2[i10 - 1] + d3(i10 - 1) : -Infinity, b3 = lo2(i10);
+    if (a10 > b3) {
+      L2[i10] = a10;
+      start[i10] = start[i10 - 1];
+    } else {
+      L2[i10] = b3;
+      start[i10] = i10;
     }
-    for (let k2 = items.length - 2; k2 >= 0; k2--) {
-      const need = pos[k2 + 1] - half2[k2 + 1] - lyricGap(items[k2], items[k2 + 1], f2[k2], f2[k2 + 1]) - half2[k2];
-      if (pos[k2] > need) pos[k2] = Math.max(need, items[k2].cx - cap2[k2]);
+  };
+  const pushFrom = (s10, to2) => {
+    L2[s10] = lo2(s10);
+    start[s10] = s10;
+    for (let i10 = s10 + 1; i10 <= to2; i10++) step(i10);
+  };
+  step(0);
+  for (let i10 = 1; i10 < n10; i10++) {
+    step(i10);
+    if (L2[i10] <= hi(i10) + 1e-9) continue;
+    const s10 = start[i10], keep2 = f2.slice(s10, i10 + 1), can = (j2) => !items[j2].block;
+    const fits = (t10) => {
+      for (let j2 = s10; j2 <= i10; j2++) if (can(j2)) f2[j2] = Math.min(keep2[j2 - s10], t10);
+      pushFrom(s10, i10);
+      for (let j2 = s10; j2 <= i10; j2++) if (L2[j2] > hi(j2) + 1e-9) return false;
+      return true;
+    };
+    const top = Math.max(...keep2);
+    if (!items.slice(s10, i10 + 1).some((_2, k2) => can(s10 + k2)) || !fits(minSx)) {
+      fits(minSx);
+      tight.add(i10 - 1);
+      tight.add(i10);
+      L2[i10] = Math.min(L2[i10], hi(i10));
+      continue;
+    }
+    let a10 = minSx, b3 = top;
+    for (let k2 = 0; k2 < 20; k2++) {
+      const m2 = (a10 + b3) / 2;
+      if (fits(m2)) a10 = m2;
+      else b3 = m2;
+    }
+    fits(Math.max(minSx, Math.floor(a10 * 100) / 100));
+  }
+  const R2 = new Array(n10);
+  R2[n10 - 1] = hi(n10 - 1);
+  for (let i10 = n10 - 2; i10 >= 0; i10--) R2[i10] = Math.min(hi(i10), R2[i10 + 1] - d3(i10));
+  const D3 = new Array(n10);
+  D3[0] = 0;
+  for (let i10 = 1; i10 < n10; i10++) D3[i10] = D3[i10 - 1] + d3(i10 - 1);
+  const blocks = [];
+  for (let i10 = 0; i10 < n10; i10++) {
+    blocks.push({ sum: c10[i10] - D3[i10], cnt: 1 });
+    while (blocks.length > 1 && blocks[blocks.length - 2].sum / blocks[blocks.length - 2].cnt > blocks[blocks.length - 1].sum / blocks[blocks.length - 1].cnt) {
+      const t10 = blocks.pop();
+      blocks[blocks.length - 1].sum += t10.sum;
+      blocks[blocks.length - 1].cnt += t10.cnt;
     }
   }
-  const bad = /* @__PURE__ */ new Set();
-  for (let k2 = 1; k2 < items.length; k2++) if (pos[k2] - half2[k2] < pos[k2 - 1] + half2[k2 - 1] + lyricGap(items[k2 - 1], items[k2], f2[k2 - 1], f2[k2]) - 1e-6) {
-    bad.add(k2);
-    bad.add(k2 - 1);
-  }
-  return { pos, bad };
+  const y2 = [];
+  for (const b3 of blocks) for (let k2 = 0; k2 < b3.cnt; k2++) y2.push(b3.sum / b3.cnt);
+  const pos = y2.map((v, i10) => {
+    const l10 = L2[i10] - D3[i10], r10 = Math.max(L2[i10], R2[i10]) - D3[i10];
+    return Math.min(Math.max(v, l10), r10) + D3[i10];
+  });
+  for (let i10 = 1; i10 < n10; i10++) if (!tight.has(i10) && pos[i10] < pos[i10 - 1] + d3(i10 - 1) - 1e-6) pos[i10] = pos[i10 - 1] + d3(i10 - 1);
+  return { pos, f: f2, tight };
 }
-function squeezeLyrics(items, blockSx, minSx) {
-  const f2 = items.map((it2) => it2.block ? blockSx : 1);
-  let r10 = placeLyrics(items, f2);
-  for (let round = 0; r10.bad.size && round < 40; round++) {
-    let moved = false;
-    for (const i10 of r10.bad) if (!items[i10].block && f2[i10] > minSx + 1e-9) {
-      f2[i10] = Math.max(minSx, Math.round((f2[i10] - 0.05) * 100) / 100);
-      moved = true;
-    }
-    if (!moved) break;
-    r10 = placeLyrics(items, f2);
-  }
-  return { ...r10, f: f2 };
-}
-function lyricBlockSx(items, minSx = LYRIC_MIN_SX) {
+function lyricBlockSx(items, minSx = LYRIC_MIN_SX, hyW = hyphenRoom(1.6)) {
   if (!items.some((it2) => it2.block)) return 1;
   const badBlocks = (t10) => {
-    const r10 = squeezeLyrics(items, t10, minSx);
-    let n10 = 0;
-    for (const i10 of r10.bad) if (items[i10].block) n10++;
-    return n10;
+    const r10 = solveLyrics(items, t10, minSx, hyW);
+    let k2 = 0;
+    for (const i10 of r10.tight) if (items[i10].block) k2++;
+    return k2;
   };
   let best = 1, bestN = badBlocks(1);
   for (let t10 = 0.95; bestN && t10 >= minSx - 1e-9; t10 = Math.round((t10 - 0.05) * 100) / 100) {
-    const n10 = badBlocks(t10);
-    if (n10 < bestN) {
+    const k2 = badBlocks(t10);
+    if (k2 < bestN) {
       best = t10;
-      bestN = n10;
+      bestN = k2;
     }
   }
   return best;
 }
-function fitLyrics(items, blockSx = 1, minSx = LYRIC_MIN_SX) {
-  const r10 = squeezeLyrics(items, blockSx, minSx);
-  return items.map((it2, i10) => ({ dx: r10.pos[i10] - it2.cx, sx: r10.f[i10], tight: r10.bad.has(i10) }));
+function fitLyrics(items, blockSx = 1, minSx = LYRIC_MIN_SX, hyW = hyphenRoom(1.6)) {
+  const r10 = solveLyrics(items, blockSx, minSx, hyW);
+  return items.map((it2, i10) => ({ dx: r10.pos[i10] - it2.cx, sx: r10.f[i10], tight: r10.tight.has(i10) }));
 }
 var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
@@ -11635,8 +11681,9 @@ function engrave(song, o10) {
         arr.push({ index: u2.index, cx: u2.x + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2 / ts2 * look.k * look.sx, hy: u2.hyph, block: isBlockScript(u2.lyric) });
       }
       for (const items of bySys.values()) items.sort((a10, b3) => a10.cx - b3.cx);
-      const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items)));
-      for (const items of bySys.values()) fitLyrics(items, blockSx).forEach((f2, k2) => lyrPlan.set(`${r10}:${items[k2].index}`, { ...f2, hw: items[k2].w * f2.sx / 2 }));
+      const hyW = hyphenRoom(LYRIC_EM * look.k * look.sx);
+      const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, hyW)));
+      for (const items of bySys.values()) fitLyrics(items, blockSx, LYRIC_MIN_SX, hyW).forEach((f2, k2) => lyrPlan.set(`${r10}:${items[k2].index}`, { ...f2, hw: items[k2].w * f2.sx / 2 }));
     });
     const BIG = 8192;
     const skies = [];
@@ -12415,7 +12462,7 @@ function engrave(song, o10) {
               let xx = same ? (L2.x + R2.x) / 2 : L2.x + P2(1.6);
               if (same && hl !== void 0 && hr !== void 0) {
                 const a10 = L2.x + P2(hl), b3 = R2.x - P2(hr);
-                if (b3 - a10 < P2(0.33 * LYRIC_EM * look.k * look.sx + 0.1)) continue;
+                if (b3 - a10 < P2(0.35 * LYRIC_EM * look.k * look.sx)) continue;
                 xx = (a10 + b3) / 2;
               }
               prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, ...look.sx !== 1 ? { sx: look.sx } : {} });
@@ -29169,9 +29216,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-c604c8386f54.mjs");
+      return pick(() => "layout-worker-e5c0810e3718.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-5bb3f0b54524.mjs");
+      return pick(() => "encode-worker-5658784a1ef0.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -56823,4 +56870,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-255bf90c2dd4.mjs.map
+//# sourceMappingURL=moonsinger-cab3cf359b0e.mjs.map
