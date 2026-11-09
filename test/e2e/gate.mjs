@@ -207,9 +207,9 @@ scenario("③c 重新登录：取消回到闸；去登录 → 放行", async (w)
 
 scenario("④ 没网：直接进闸，不等超时、不续签；网回来自己放行", async (w) => {
   const { p } = await seed(w, { account: true, signedIn: false, renew: "ok", net: false });
-  const t0 = Date.now();
+  const t0 = Math.round(performance.now());
   await p.waitPhase("blocked", 4000);
-  console.log(`  开页到进闸 ${Date.now() - t0} ms`);
+  console.log(`  开页到进闸 ${Math.round(performance.now()) - t0} ms`);
   let v = await p.view();
   check(v.message === "现在没有网络", "正文 = 现在没有网络", String(v.message));
   check(v.authCalls === 0, "没去续签", String(v.authCalls));
@@ -231,10 +231,10 @@ scenario("⑤ 云端慢：先离线用 立刻放行；不点 8 s 进闸；云端
   await p.waitPhase("checking", 5000);
   let v = await p.view();
   check(v.up && v.title === "正在核对网盘上的版本…" && v.buttons.join("|") === "先离线用", "罩从一开始就有逃生钮", JSON.stringify(v));
-  const t1 = Date.now();
+  const t1 = Math.round(performance.now());
   await p.clickGate("先离线用");
   await p.waitPhase("open", 1000);
-  console.log(`  点到放行 ${Date.now() - t1} ms`);
+  console.log(`  点到放行 ${Math.round(performance.now()) - t1} ms`);
   v = await p.view();
   check(!v.up && v.bar != null && !v.online, "放行 + 条", JSON.stringify(v));
   const before = w.log.length;
@@ -248,9 +248,9 @@ scenario("⑤ 云端慢：先离线用 立刻放行；不点 8 s 进闸；云端
   // 不点：8 s 自动进闸
   await p.reopen();
   await p.waitPhase("checking", 5000);
-  const t0 = Date.now();
+  const t0 = Math.round(performance.now());
   await p.waitPhase("blocked", 12000);
-  check(Date.now() - t0 < 10000, "不超过 10 s 进闸", String(Date.now() - t0));
+  check(Math.round(performance.now()) - t0 < 10000, "不超过 10 s 进闸", String(Math.round(performance.now()) - t0));
   v = await p.view();
   check(v.message === "网盘没有回应", "正文 = 网盘没有回应", String(v.message));
   release(); w.hold = null;
@@ -368,11 +368,11 @@ scenario("F-147 B：点「刷新」先推手里这首；云端挂着最多等 5 
   // 云端挂着：5 s 到点照样刷，字节在本机
   await typeNote(p, ["1"]); await p.waitForTimeout(150);
   let release; w.holdUpload = new Promise((r) => { release = r; });
-  const t0 = Date.now();
+  const t0 = Math.round(performance.now());
   const nav2 = p.waitForEvent("load", { timeout: 9000 });
   await p.evaluate(() => { void window.__moonsinger.updateReload(); });
   await nav2;
-  const dt = Date.now() - t0;
+  const dt = Math.round(performance.now()) - t0;
   console.log(`  云端挂着：${dt} ms 后刷了`);
   check(dt < 7000, "最多等 5 s 左右", String(dt));
   release(); w.holdUpload = null;
@@ -720,7 +720,7 @@ scenario("闸门 §3：续签成了、云端不答 = 不清离线、不弹；云
   await p.clickGate("离线继续"); await p.waitForTimeout(300);
   await p.patchAuth({ renew: "ok" });
   let release; w.hold = new Promise((r) => { release = r; });
-  const t0 = Date.now();
+  const t0 = Math.round(performance.now());
   const logAt = w.log.length;
   const going = p.evaluate(() => window.__moonsinger.gate.reconnect());
   await p.waitForTimeout(2000);
@@ -728,7 +728,7 @@ scenario("闸门 §3：续签成了、云端不答 = 不清离线、不弹；云
   check(mid === false, "等云端答话期间：离线没被清（store 不出网）", String(mid));
   check(w.log.slice(logAt).join() === "getItemByPath", "这期间只有一次探路（不经 store）", w.log.slice(logAt).join(","));
   await going;
-  const dt = Date.now() - t0;
+  const dt = Math.round(performance.now()) - t0;
   let v = await p.view();
   console.log(`  云端不答：${dt} ms 后放弃`);
   check(dt >= 7500 && dt < 12000, "硬超时 8 s 左右", String(dt));

@@ -87,7 +87,6 @@ export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; s
   const scaleW = sp / 10;   // 屏幕上的固定线宽（px，谱间距 ~10 px）→ 按谱间距等比
   const em = a.music.unitsPerEm;
   for (const p of L.prims) {
-    if (p.t === "icon") continue;
     const cls = (p.cls ?? "").split(/\s+/).filter(Boolean);
     if (skipped(cls)) continue;
     const y0 = p.t === "line" ? Math.min(p.y1, p.y2) : p.t === "path" ? Number(/M\s*-?[\d.]+[ ,]+(-?[\d.]+)/.exec(p.d)?.[1] ?? NaN) : p.y;

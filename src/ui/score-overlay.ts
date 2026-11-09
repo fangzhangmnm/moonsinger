@@ -5,14 +5,17 @@
 // 位置：容器是谱面 .sheet 里的一个 div（score-view 给的 overlayRoot，和 ink 层一样挪到版心），坐标就是排版的 px——缩放（CSS zoom / transform）、分页、横卷都跟着 .sheet 走，不用另算屏幕坐标。
 // 每帧一次 layout(L, view)：先把所有元素的位置和样子算成一张表，再一次性写 DOM（按 key 复用元素，不重建；不读布局）。
 // 手势：谱面上有一条「单指 touchstart 一律拦」的守卫（platform-guards，防 iPad 放大镜）→ click 不可靠，这里一律走 pointer 事件自己判（同歌词框的「合」）：
-//   按下 = 拿住（谱面不接：score-view 的 down 跳过 .ov-i）；松手没到长按 = 点；两颗钮长按 420 ms / 右键 = 只看 / 独奏。
+//   笔 / 鼠标：按下 = 拿住（谱面不接：score-view 的 down 跳过 .ov-i）；松手还在钮上 = 点；两颗钮长按 420 ms / 右键 = 只看 / 独奏。
+//   手指：**不拦**——拖 = 滚动、第二根手指 = 捏合照旧归谱面（score-view 的 down 对 .ov-i 上的手指只管滚 / 捏、不算它自己的轻点；刀 1 之前钮画在谱里就是这个手感）。
+//     这里只判：没动（≤ 10 px，同谱面的「手指抖一点也算轻点」）就松手 = 点；按住不动到点 = 长按；动了 / 又落下一根手指 = 不算。谱面把这根手指捕获走了（滚动要用），
+//     所以手指的 move / up 在 window 上听（捕获阶段）。edited by Claude Fable 5.1 2026-11-08（审刀 1：v0.16.25 手指落在钮 / 虚线框上滚不动、捏不了；E2E overlay-touch 守）
 import { _t } from "../i18n/index.ts";
 import type { Layout, PartToggle, PartToggles } from "../render/engrave.ts";
 import type { Song } from "../score/song.ts";
 
 /** 两颗钮（眼睛 / 喇叭）多大（sp）：比纸角的小控件（3.0）大（user 11-08「至少要比那些小扳手、本段这些东西大」「要粗的手指也能点」；E2E part-toggles 守 ≥ 3.1）。 */
 export const TG_BTN = 3.2;
-const TG_GAP = 0.4, CTL_H = 3.0, CTL_GLYPH = 2.0, CTL_TEXT = 1.4, LONG_MS = 420;
+const TG_GAP = 0.4, CTL_H = 3.0, CTL_GLYPH = 2.0, CTL_TEXT = 1.4, LONG_MS = 420, TOUCH_SLOP = 10;
 const TG_LONG: Record<"hidden" | "muted", PartToggle> = { hidden: "only", muted: "solo" };
 
 export interface OverlayHost {
@@ -41,15 +44,23 @@ type Item = { key: string; tag: "div" | "button"; cls: string; style: string; ht
 
 export class ScoreOverlay {
   private els = new Map<string, HTMLElement>();
-  private press: { el: HTMLElement; pid: number; timer: number; fired: boolean } | null = null;
+  private hiddenOf = new Map<string, string[]>();   // 纸 → 这张纸上隐藏着的声部（「隐藏 N」点开时用；不走 DOM 属性——编号是文件里读进来的，不保证没有空格 / 引号）
+  private press: { el: HTMLElement; pid: number; timer: number; fired: boolean; touch: boolean; x: number; y: number } | null = null;
   constructor(private root: HTMLElement, private host: OverlayHost) {
     root.addEventListener("pointerdown", (e) => this.down(e));
     root.addEventListener("pointerup", (e) => this.up(e));
     root.addEventListener("pointercancel", () => this.cancel());
+    // 手指的后半程在 window 上听（谱面为了滚动把这根手指捕获走了，事件不再经过这里）；笔 / 鼠标照旧走上面两条
+    const touching = (e: PointerEvent) => (this.press?.touch ? this.press : null);
+    window.addEventListener("pointerdown", (e) => { const p = touching(e); if (p && e.pointerId !== p.pid) this.cancel(); }, true);   // 又落下一根手指 = 捏合，不算点
+    window.addEventListener("pointermove", (e) => { const p = touching(e); if (p && e.pointerId === p.pid && Math.hypot(e.clientX - p.x, e.clientY - p.y) > TOUCH_SLOP) this.cancel(); }, true);   // 动了 = 滚动，不算点 / 长按
+    window.addEventListener("pointerup", (e) => { if (touching(e)) this.up(e); }, true);
+    window.addEventListener("pointercancel", (e) => { const p = touching(e); if (p && e.pointerId === p.pid) this.cancel(); }, true);
     root.addEventListener("contextmenu", (e) => {
       const el = (e.target as HTMLElement).closest<HTMLElement>(".ov-i"); if (!el) return;
+      const fired = !!this.press?.fired;   // 安卓：长按到点已经算过一次，系统随后又发 contextmenu——不算第二次（不然「只看」开了又关）
       e.preventDefault(); e.stopPropagation(); this.cancel();
-      if (el.dataset.ov === "tg") this.host.onPartToggle(el.dataset.part!, TG_LONG[el.dataset.kind as "hidden" | "muted"]);   // 右键 = 长按（只看 / 独奏）
+      if (!fired && el.dataset.ov === "tg") this.host.onPartToggle(el.dataset.part!, TG_LONG[el.dataset.kind as "hidden" | "muted"]);   // 右键 = 长按（只看 / 独奏）
     });
   }
 
@@ -61,6 +72,7 @@ export class ScoreOverlay {
     const add = (key: string, tag: Item["tag"], cls: string, style: string, html = "", attrs: Record<string, string> = {}) => items.push({ key, tag, cls, style, html, attrs });
     const icon = (id: string, size: number) => `<svg class="ov-icon" style="width:${px(size)};height:${px(size)}" aria-hidden="true"><use href="#${id}"/></svg>`;
     const song = v.song, papers = song.papers, multi = papers.length > 1, nameOf = (id: string) => papers.find((p) => p.id === id);
+    this.hiddenOf = new Map(L.papers.map((pp) => [pp.id, pp.hiddenParts]));
 
     // ① 两颗钮：名字块上面、整排对「色点 + 名字」居中，可以超出谱上沿（user 11-08）
     for (const n of L.names) {
@@ -78,20 +90,20 @@ export class ScoreOverlay {
     if (!multi && v.edit) add(`menu:${papers[0]!.id}`, "button", "ov-i ov-chip ov-menu", `${box(L.content.left, L.title.y + 0.5 * sp, (CTL_H + 0.6) * sp, CTL_H * sp)};font-size:${px(CTL_GLYPH * sp)}`, "⋯", { "data-ov": "menu", "data-paper": papers[0]!.id, title: _t("这一段的菜单") });
     // ③ 每张纸曲段名那一条：曲段控件组「（隐藏 N）‹ k/n › 只看本段 ⋯」靠右；单纸 = 「隐藏 N」挂在曲段名 / 歌名那一条
     const hiddenChip = (paperId: string, ids: string[], style: string) => {
-      add(`hid:${paperId}`, "button", "ov-i ov-chip ov-hidden", style, _t("隐藏 {n}", { n: ids.length }), { "data-ov": "hidden", "data-paper": paperId, "data-parts": ids.join(" "), title: _t("这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来", { n: ids.length }) });
+      add(`hid:${paperId}`, "button", "ov-i ov-chip ov-hidden", style, esc(_t("隐藏 {n}", { n: ids.length })), { "data-ov": "hidden", "data-paper": paperId, title: _t("这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来", { n: ids.length }) });
     };
     for (const pp of L.papers) {
       const paper = nameOf(pp.id); if (!paper) continue;
-      const k = papers.indexOf(paper), h = CTL_H * sp, y = pp.title.y + (pp.title.h - h) / 2;
+      const k = papers.indexOf(paper), h = CTL_H * sp, y = pp.title.y + (pp.title.h - h) / 2, pid = esc(pp.id);   // 下面拼成 HTML 的地方一律用 pid：纸的编号是文件里读进来的（别家 / 手改过的文件不保证干净）
       if (pp.title.shown && multi) {
         const segOn = v.onlyPaper === pp.id;
         const kids = [
-          ...(pp.hiddenParts.length ? [`<button class="ov-i ov-chip ov-hidden" data-ov="hidden" data-paper="${pp.id}" data-parts="${pp.hiddenParts.join(" ")}" title="${_t("这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来", { n: pp.hiddenParts.length })}">${_t("隐藏 {n}", { n: pp.hiddenParts.length })}</button>`] : []),
-          `<button class="ov-i ov-chip ov-nav-prev${k > 0 ? "" : " off"}" data-ov="prev" data-paper="${pp.id}" title="${_t("上一段")}">‹</button>`,
+          ...(pp.hiddenParts.length ? [`<button class="ov-i ov-chip ov-hidden" data-ov="hidden" data-paper="${pid}" title="${esc(_t("这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来", { n: pp.hiddenParts.length }))}">${esc(_t("隐藏 {n}", { n: pp.hiddenParts.length }))}</button>`] : []),
+          `<button class="ov-i ov-chip ov-nav-prev${k > 0 ? "" : " off"}" data-ov="prev" data-paper="${pid}" title="${esc(_t("上一段"))}">‹</button>`,
           `<span class="ov-nav-text">${k + 1}/${papers.length}</span>`,
-          `<button class="ov-i ov-chip ov-nav-next${k < papers.length - 1 ? "" : " off"}" data-ov="next" data-paper="${pp.id}" title="${_t("下一段")}">›</button>`,
-          `<button class="ov-i ov-chip ov-scope${segOn ? " on" : ""}" data-ov="scope" data-paper="${pp.id}" title="${segOn ? _t("只看本段（再点 = 看全部曲段）") : _t("只看本段")}">${icon("visibility-only", CTL_GLYPH * sp)}</button>`,
-          ...(v.edit ? [`<button class="ov-i ov-chip ov-menu" data-ov="menu" data-paper="${pp.id}" title="${_t("这一段的菜单")}">⋯</button>`] : []),
+          `<button class="ov-i ov-chip ov-nav-next${k < papers.length - 1 ? "" : " off"}" data-ov="next" data-paper="${pid}" title="${esc(_t("下一段"))}">›</button>`,
+          `<button class="ov-i ov-chip ov-scope${segOn ? " on" : ""}" data-ov="scope" data-paper="${pid}" title="${esc(segOn ? _t("只看本段（再点 = 看全部曲段）") : _t("只看本段"))}">${icon("visibility-only", CTL_GLYPH * sp)}</button>`,
+          ...(v.edit ? [`<button class="ov-i ov-chip ov-menu" data-ov="menu" data-paper="${pid}" title="${esc(_t("这一段的菜单"))}">⋯</button>`] : []),
         ];
         add(`nav:${pp.id}:${k}:${papers.length}:${segOn}:${v.edit}:${pp.hiddenParts.join(",")}`, "div", "ov-nav", `right:${px(-L.content.right)};top:${px(y)};height:${px(h)};--ctl:${px(h)};--ctl-glyph:${px(CTL_GLYPH * sp)};--ctl-text:${px(CTL_TEXT * sp)}`, kids.join(""));
       } else if (pp.hiddenParts.length) {   // 单纸：曲段名那一条（画了）右边 / 歌名那一条左边（「⋯」后面）
@@ -99,28 +111,28 @@ export class ScoreOverlay {
         else hiddenChip(pp.id, pp.hiddenParts, `left:${px(L.content.left + (v.edit ? (CTL_H + 1.2) * sp : 0))};top:${px(L.title.y + 0.5 * sp)};height:${px(h)};font-size:${px(CTL_TEXT * sp)}`);
       }
       // 空着的曲段名 / 折叠的隐藏纸（名字 + 说明）/ 本段视图里隐藏纸的说明 / 没有声部的纸
-      if (pp.title.shown && !paper.name && !pp.hidden) add(`ph-paper:${pp.id}`, "div", "ov-placeholder ov-ph-paper", text(pp.title.x, pp.title.baseline, pp.title.size), _t("曲段名"));
+      if (pp.title.shown && !paper.name && !pp.hidden) add(`ph-paper:${pp.id}`, "div", "ov-placeholder ov-ph-paper", text(pp.title.x, pp.title.baseline, pp.title.size), esc(_t("曲段名")));
       if (pp.hidden && paper.name) add(`hp-name:${pp.id}`, "div", "ov-hidden-paper-name", text(pp.title.x, pp.title.baseline, pp.title.size), esc(paper.name));
-      if (pp.stub) add(`hp-stub:${pp.id}`, "div", "ov-stub", `${box(pp.stub.x, pp.stub.y, pp.stub.w, pp.stub.h)};font-size:${px(1.1 * sp)}`, `<span>${_t("隐藏 · 不放（点曲段名进去）")}</span><i></i>`);
-      if (pp.note) add(`hp-note:${pp.id}`, "div", "ov-stub ov-note", `${box(pp.note.x, pp.note.y, pp.note.w, pp.note.h)};font-size:${px(1.1 * sp)}`, `<span>${_t("这张纸隐藏着：不放、不进压平件（「⋯」里显示）")}</span>`);
-      if (pp.empty) add(`empty:${pp.id}`, "div", "ov-placeholder ov-ph-empty", text(pp.empty.x, pp.empty.y + 2.2 * sp, 1.3 * sp), _t("（这张纸上没有声部）"));
+      if (pp.stub) add(`hp-stub:${pp.id}`, "div", "ov-stub", `${box(pp.stub.x, pp.stub.y, pp.stub.w, pp.stub.h)};font-size:${px(1.1 * sp)}`, `<span>${esc(_t("隐藏 · 不放（点曲段名进去）"))}</span><i></i>`);
+      if (pp.note) add(`hp-note:${pp.id}`, "div", "ov-stub ov-note", `${box(pp.note.x, pp.note.y, pp.note.w, pp.note.h)};font-size:${px(1.1 * sp)}`, `<span>${esc(_t("这张纸隐藏着：不放、不进压平件（「⋯」里显示）"))}</span>`);
+      if (pp.empty) add(`empty:${pp.id}`, "div", "ov-placeholder ov-ph-empty", text(pp.empty.x, pp.empty.y + 2.2 * sp, 1.3 * sp), esc(_t("（这张纸上没有声部）")));
       // ④ 每张纸底下的虚线框：本段 = 「＋ 声部」「＋ 新曲段」并排；全部 = 一个整宽「＋ 声部」
       if (pp.under && v.edit) {
         const u = pp.under, gap = 0.8 * sp, w2 = (u.w - gap) / 2, fs = `font-size:${px(1.15 * sp)}`;
         if (v.onlyPaper) {
-          add(`add:${pp.id}:part`, "button", "ov-i ov-add", `${box(u.x, u.y, w2, u.h)};${fs}`, _t("＋ 声部"), { "data-ov": "add", "data-paper": pp.id, "data-kind": "part" });
-          add(`add:${pp.id}:paper`, "button", "ov-i ov-add", `${box(u.x + w2 + gap, u.y, w2, u.h)};${fs}`, _t("＋ 新曲段"), { "data-ov": "add", "data-paper": pp.id, "data-kind": "paper" });
-        } else add(`add:${pp.id}:part`, "button", "ov-i ov-add", `${box(u.x, u.y, u.w, u.h)};${fs}`, _t("＋ 声部"), { "data-ov": "add", "data-paper": pp.id, "data-kind": "part" });
+          add(`add:${pp.id}:part`, "button", "ov-i ov-add", `${box(u.x, u.y, w2, u.h)};${fs}`, esc(_t("＋ 声部")), { "data-ov": "add", "data-paper": pp.id, "data-kind": "part" });
+          add(`add:${pp.id}:paper`, "button", "ov-i ov-add", `${box(u.x + w2 + gap, u.y, w2, u.h)};${fs}`, esc(_t("＋ 新曲段")), { "data-ov": "add", "data-paper": pp.id, "data-kind": "paper" });
+        } else add(`add:${pp.id}:part`, "button", "ov-i ov-add", `${box(u.x, u.y, u.w, u.h)};${fs}`, esc(_t("＋ 声部")), { "data-ov": "add", "data-paper": pp.id, "data-kind": "part" });
       }
     }
-    if (L.tail && v.edit) add("add:tail", "button", "ov-i ov-add", `${box(L.tail.x, L.tail.y, L.tail.w, L.tail.h)};font-size:${px(1.15 * sp)}`, _t("＋ 新曲段"), { "data-ov": "add", "data-paper": L.tail.paper, "data-kind": "paper" });
+    if (L.tail && v.edit) add("add:tail", "button", "ov-i ov-add", `${box(L.tail.x, L.tail.y, L.tail.w, L.tail.h)};font-size:${px(1.15 * sp)}`, esc(_t("＋ 新曲段")), { "data-ov": "add", "data-paper": L.tail.paper, "data-kind": "paper" });
     // ⑤ 空着的歌名 / 作者栏 / 编排（歌名、编排点了照旧是谱面的就地改——这几个字不接点；作者栏空着没有点击框 = 字本身接）
-    if (!song.title) add("ph-title", "div", "ov-placeholder ov-ph-title", text((L.content.left + L.content.right) / 2, L.title.baseline, L.title.size * 0.8, "middle"), _t("歌名"));
-    if (!song.credits) add("ph-credits", v.edit ? "button" : "div", `${v.edit ? "ov-i " : ""}ov-placeholder ov-ph-credits`, text(L.creditsLine.x, L.creditsLine.y, L.creditsLine.size, "end"), _t("作者"), v.edit ? { "data-ov": "credits" } : {});
+    if (!song.title) add("ph-title", "div", "ov-placeholder ov-ph-title", text((L.content.left + L.content.right) / 2, L.title.baseline, L.title.size * 0.8, "middle"), esc(_t("歌名")));
+    if (!song.credits) add("ph-credits", v.edit ? "button" : "div", `${v.edit ? "ov-i " : ""}ov-placeholder ov-ph-credits`, text(L.creditsLine.x, L.creditsLine.y, L.creditsLine.size, "end"), esc(_t("作者")), v.edit ? { "data-ov": "credits" } : {});
     if (L.arrangement && !song.arrangement?.trim()) {
       const a = L.arrangement;
       add("ph-arr", "div", "ov-placeholder ov-ph-arr", `${text(L.content.left, a.baseline, a.size)};max-width:${px(L.content.right - L.content.left)}`,
-        `<span class="ov-arr-label">${_t("编排　")}</span><span class="ov-arr-empty">${_t("不写 = 每张纸按顺序各放一遍（例：前奏 (A A1)×3 A A2 [副歌]）")}</span>`);
+        `<span class="ov-arr-label">${esc(_t("编排　"))}</span><span class="ov-arr-empty">${esc(_t("不写 = 每张纸按顺序各放一遍（例：前奏 (A A1)×3 A A2 [副歌]）"))}</span>`);
     }
     // ⑥ 「1=C」淡提示（专业模式 C 调；点 = 谱头面板）
     for (const kh of L.keyHints) {
@@ -160,20 +172,22 @@ export class ScoreOverlay {
 
   private down(e: PointerEvent): void {
     const el = (e.target as HTMLElement).closest<HTMLElement>(".ov-i"); if (!el || e.button === 2) return;
-    e.preventDefault(); e.stopPropagation();
+    const touch = e.pointerType === "touch";
     this.cancel();
-    try { el.setPointerCapture(e.pointerId); } catch { /* ignore */ }
-    const p = { el, pid: e.pointerId, timer: 0, fired: false };
+    if (!touch) { e.preventDefault(); e.stopPropagation(); try { el.setPointerCapture(e.pointerId); } catch { /* ignore */ } }   // 手指不拦：谱面接着收到这一下（滚动 / 捏合）
+    const p = { el, pid: e.pointerId, timer: 0, fired: false, touch, x: e.clientX, y: e.clientY };
     if (el.dataset.ov === "tg") p.timer = window.setTimeout(() => { p.fired = true; this.host.onPartToggle(el.dataset.part!, TG_LONG[el.dataset.kind as "hidden" | "muted"]); }, LONG_MS);   // 长按 = 只看 / 独奏
     this.press = p;
   }
   private up(e: PointerEvent): void {
     const p = this.press; if (!p || p.pid !== e.pointerId) return;
-    e.stopPropagation();
+    if (!p.touch) e.stopPropagation();   // 手指的 up 谱面也要收（它那边的滚动 / 捏合要收尾）
     this.cancel();
-    if (p.fired) return;
-    const r = p.el.getBoundingClientRect(), inside = e.clientX >= r.left - 4 && e.clientX <= r.right + 4 && e.clientY >= r.top - 4 && e.clientY <= r.bottom + 4;
-    if (inside) this.fire(p.el, r);   // 拖出钮外再松手 = 不算
+    if (p.fired || !p.el.isConnected) return;   // 长按已经算过 / 钮在按着的时候被重排拿掉了
+    const r = p.el.getBoundingClientRect();
+    const inside = p.touch ? Math.hypot(e.clientX - p.x, e.clientY - p.y) <= TOUCH_SLOP
+      : e.clientX >= r.left - 4 && e.clientX <= r.right + 4 && e.clientY >= r.top - 4 && e.clientY <= r.bottom + 4;
+    if (inside) this.fire(p.el, r);   // 笔 / 鼠标拖出钮外再松手 = 不算；手指动过 = 不算（那是滚动）
   }
   private cancel(): void { if (this.press) { clearTimeout(this.press.timer); this.press = null; } }
   private fire(el: HTMLElement, r: DOMRect): void {
@@ -189,7 +203,7 @@ export class ScoreOverlay {
       case "credits": this.host.onCredits(); break;
       case "keyhint": this.host.onKeyHint(d.paper!, d.part!, Number(d.index), mid); break;
       case "family": this.host.onLeaveFamily(d.paper!, d.host!); break;
-      case "hidden": this.host.onHidden(d.paper!, (d.parts ?? "").split(" ").filter(Boolean), mid); break;
+      case "hidden": this.host.onHidden(d.paper!, this.hiddenOf.get(d.paper!) ?? [], mid); break;
     }
   }
 }

@@ -40,8 +40,8 @@ export type Prim =
   | { t: "glyph"; x: number; y: number; ch: string; cls?: string; size?: number /* px，默认 4 sp */; tok?: number }
   | { t: "text"; x: number; y: number; s: string; cls?: string; size?: number /* px，默认歌词字号 */; anchor?: "start" | "middle" | "end"; tok?: number }
   | { t: "path"; d: string; cls?: string; tok?: number }
-  | { t: "rect"; x: number; y: number; w: number; h: number; cls?: string; tok?: number }
-  | { t: "icon"; id: string; x: number; y: number; size: number; cls?: string; title?: string; tok?: number };   // 家族图标库的一个图标（页面里内联的 sprite，<use href="#id">）
+  | { t: "rect"; x: number; y: number; w: number; h: number; cls?: string; tok?: number };
+// 图元里原来还有一种「icon」（界面图标库的图标）：只有两颗钮和纸角钮用，刀 1 搬去覆盖层之后没人画了，2026-11-08 Fable 审刀 1 时删掉——排版器在类型上就画不出界面图标。
 
 /** 要画的一个声部（顺序 = 总谱从上到下；隐藏的不在这里）。 */
 export interface PartView { id: string; name: string; abbr?: string; colorIdx?: number; empty?: boolean; first?: boolean; clef?: ClefName; staves?: 2; hidden?: boolean; badges?: string[];

@@ -9,7 +9,7 @@ const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 /** 点主键：离上一下至少 500 ms（> 连按窗口 350 ms；连按两下 = 从头放，v0.9.25）。 */
 let lastPlayTap = 0;
-const tapPlay = async () => { const w = 500 - (Date.now() - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Date.now(); };
+const tapPlay = async () => { const w = 500 - (Math.round(performance.now()) - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Math.round(performance.now()); };
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 for (let i = 0; i < 8; i++) { await p.click(`.pad-key[data-k] >> nth=${i % 5}`); await p.waitForTimeout(30); }
 await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 6), sr: 22050 }); });   // 月读不唱（静音块），只看走带

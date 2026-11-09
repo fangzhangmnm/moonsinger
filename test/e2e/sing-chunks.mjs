@@ -8,7 +8,7 @@ const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 /** 点主键：离上一下至少 500 ms（> 连按窗口 350 ms；连按两下 = 从头放，v0.9.25）。 */
 let lastPlayTap = 0;
-const tapPlay = async () => { const w = 500 - (Date.now() - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Date.now(); };
+const tapPlay = async () => { const w = 500 - (Math.round(performance.now()) - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Math.round(performance.now()); };
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 // 两张纸：A = 两句（中间一拍休止），B = 一句；编排 A B A。
 // 2026-10-09（实时试听刀 1）句只在休止处切、**不在纸界切**（user「曲段的边界算句子吧…也许还是同意可以跨曲段句子…听你的试试」）：
@@ -52,7 +52,7 @@ await p.waitForTimeout(900);   // 预唱会先唱光标附近（quiet）；等�
 await p.evaluate(() => { window.__sings = []; window.__sungAt = []; });
 await tapPlay();   // 主键 |▶ = 从起点（开头）放
 let startedAt = -1, sungWhenStarted = -1;
-for (let i = 0; i < 80; i++) { if (await p.evaluate(() => window.__moonsinger.engine.playing)) { startedAt = Date.now(); sungWhenStarted = await p.evaluate(() => window.__sings.length); break; } await p.waitForTimeout(50); }
+for (let i = 0; i < 80; i++) { if (await p.evaluate(() => window.__moonsinger.engine.playing)) { startedAt = Math.round(performance.now()); sungWhenStarted = await p.evaluate(() => window.__sings.length); break; } await p.waitForTimeout(50); }
 check(startedAt > 0, "放起来了");
 const total = await p.evaluate(() => { const tl = window.__moonsinger.engine.timeline; return tl.tracks.filter((t) => t.kind === "clips").reduce((n, t) => n + t.clips.length, 0); });
 check(total >= 3 && sungWhenStarted < total, `开播时还没全唱完（开播时 ${sungWhenStarted} / ${total} 句，边放边唱）`);

@@ -10,7 +10,7 @@ const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.l
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 let lastPlayTap = 0;
-const tapPlay = async () => { const w = 500 - (Date.now() - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Date.now(); };
+const tapPlay = async () => { const w = 500 - (Math.round(performance.now()) - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Math.round(performance.now()); };
 const toasts = () => p.$$eval(".notice-stack .toast, .notice, [role=alert]", (es) => es.map((e) => e.textContent ?? "").join(" | "));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 // A 歌：新歌默认月读上场；写两个字「かな」。假唱：含「かな」的那一句挂着（把 reject 交给 window.__staleReject），别的句子马上回静音。

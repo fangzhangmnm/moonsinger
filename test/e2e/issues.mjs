@@ -9,7 +9,7 @@ const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.l
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 let lastPlayTap = 0;
-const tapPlay = async () => { const w = 500 - (Date.now() - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Date.now(); };
+const tapPlay = async () => { const w = 500 - (Math.round(performance.now()) - lastPlayTap); if (w > 0) await p.waitForTimeout(w); await p.click("#playBtn"); lastPlayTap = Math.round(performance.now()); };
 const toasts = () => p.$$eval(".notice-stack .toast, .notice, [role=alert]", (es) => es.map((e) => e.textContent ?? ""));
 const badge = () => p.$eval("#playBtn", (e) => e.querySelector(".issues-badge")?.textContent ?? "");
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);

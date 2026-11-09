@@ -137,7 +137,7 @@ export class ScoreView {
   private ctx = document.createElement("canvas").getContext("2d")!;
   /** wait = 鼠标：长按到点之前不拖（v0.9.39；user 2026-10-10「这样吧，还是普通拖动，音也是，但是鼠标的时候也需要长按」——拖动太容易误触）。 */
   private drag: null | { index: number; d0: number; dur0: number; x0: number; y0: number; axis: "" | "x" | "y"; pid: number; heard: number; wait?: boolean } = null;
-  private finger: null | { pid: number; y0: number; top0: number; x: number; y: number; moved: boolean; shift: boolean; x0: number; left0: number } = null;
+  private finger: null | { pid: number; y0: number; top0: number; x: number; y: number; moved: boolean; shift: boolean; x0: number; left0: number; ov?: boolean } = null;   // ov = 这根手指按在覆盖层的钮上（点 / 长按归覆盖层，这里只管滚）
   /** 框选 = 鼠标短按就拖（v0.9.39；user「不，框选是普通短按拖动，这样才能有差别」「不然我框选会误触拖动」）：从空白、音、记号、字上短按拖都是框选；长按之后拖才是拿起来挪。
    *  last = 上一次框出来的结果（没变就不重设 = 不重排；user「鼠标框选有点卡」）；raf = 合并到每帧一次。 */
   private box: null | { pid: number; x0: number; y0: number; moved: boolean; st0: EditorState; row: number; last?: string; raf?: number; px?: number; py?: number } = null;
@@ -438,7 +438,7 @@ export class ScoreView {
       if (base !== this.heldBase && (moved || this.caretSeen)) { this.heldBase = null; span("follow", () => this.follow()); }
     }
     this.caretSeen = this.caretVisible();
-    this.host.onAnchors?.(this.layout!);   // 谱面上面那一层照着这份排版摆（同一帧；先读完锚点再写 DOM，见 score-overlay.ts）
+    span("overlay", () => this.host.onAnchors?.(this.layout!));   // 谱面上面那一层照着这份排版摆（同一帧；先读完锚点再写 DOM，见 score-overlay.ts）；单独记账（探针 scripts/probe-input-latency.mjs 的「overlay」）
   }
   // ── 「弹」的鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「特别是前面有一个音的时候…如果是叠的话会在前面一个音上面加东西，但是不能动排版！！！，
   //   如果是非叠的话就是在要插入的地方加东西」「鬼音符的时候千万不能动排版！」）：盖在谱上的一层（ink 里一个不接点击的 svg），只借排版现成的位置——
@@ -938,7 +938,19 @@ export class ScoreView {
   }
 
   private down(e: PointerEvent): void {
-    if ((e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle, .score-overlay .ov-i")) return;   // 在歌词框 / 记号框 / 把手上点：交给它们
+    if ((e.target as HTMLElement).closest(".lyric-input, .lyric-merge, .mark-ed, .title-input, .sel-handle")) return;   // 在歌词框 / 记号框 / 把手上点：交给它们
+    if ((e.target as HTMLElement).closest(".score-overlay .ov-i")) {   // 覆盖层的钮（score-overlay.ts）：点 / 长按归它自己
+      // 手指例外：拖 = 滚动、第二根手指 = 捏合照旧归谱面（刀 1 之前这些钮画在谱里就是这样；v0.16.25 整个让给覆盖层 = 手指落在钮 / 虚线框上滚不动、捏不了，Fable 审出来的，
+      //   E2E overlay-touch 守）。这一下不算谱面的轻点 / 长按（finger.ov）；覆盖层那边手指一动过 10 px / 落下第二根手指就不算点。
+      if (e.pointerType !== "touch" || !this.layout) return;
+      this.roGesture = false;
+      this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY }); this.el.setPointerCapture(e.pointerId);
+      if (this.touches.size === 2) { this.finger = null; this.cancelPress(); this.pinchStart(); return; }
+      if (this.touches.size > 2) return;
+      const q = this.local(e);
+      this.finger = { pid: e.pointerId, y0: e.clientY, top0: this.el.scrollTop, x: q.x, y: q.y, moved: false, shift: false, x0: e.clientX, left0: this.el.scrollLeft, ov: true };
+      return;
+    }
     const L = this.layout; if (!L || e.button === 2) return;   // 右键归 contextmenu
     const p = this.local(e);
     // 合租叠起来的那一行 = 只读（v0.10.25，user「host也应该只读，只有展开时才能编辑」）：这一下按「听」的规矩走（滚 / 捏合 / 看谱的轻点 / 长按小菜单），名字照样能点（点名字 = 拆开来写）
@@ -1449,7 +1461,7 @@ export class ScoreView {
         if (e.pointerType === "touch" && !handled) this.lastTap = { t: performance.now(), x, y };
       };
       if (lt && e.pointerId === lt.pid) { this.lockTap = null; if (!lt.moved && !fired) viewTap(lt.x, lt.y, e.pointerId); return; }
-      if (f && e.pointerId === f.pid) { this.finger = null; if (!f.moved && !fired) viewTap(f.x, f.y, null); return; }
+      if (f && e.pointerId === f.pid) { this.finger = null; if (!f.moved && !fired && !f.ov) viewTap(f.x, f.y, null); return; }
       return;
     }
     if (this.lift && e.pointerId === this.lift.pid) { this.cancelPress(); this.finger = null; this.endLift(); return; }
@@ -1471,7 +1483,7 @@ export class ScoreView {
     }
     if (this.finger && e.pointerId === this.finger.pid) {
       const f = this.finger; this.finger = null;
-      if (!f.moved && this.layout && !this.tap(f.x, f.y, f.shift, null)) { this.placeCaretAt(f.x, f.y); this.host.focus?.("staff"); }
+      if (!f.moved && !f.ov && this.layout && !this.tap(f.x, f.y, f.shift, null)) { this.placeCaretAt(f.x, f.y); this.host.focus?.("staff"); }   // ov = 按在覆盖层的钮上：点归它
       return;
     }
     if (this.box && e.pointerId === this.box.pid) {

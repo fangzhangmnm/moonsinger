@@ -13,7 +13,6 @@ export function primSvg(p: Layout["prims"][number], fs: string, lfs: string, rx:
     case "text": return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${p.size ? n(p.size) : lfs}" text-anchor="${p.anchor ?? "middle"}">${esc(p.s)}</text>`;
     case "path": return `<path${c} d="${p.d}"/>`;
     case "rect": return `<rect${c} x="${n(p.x)}" y="${n(p.y)}" width="${n(p.w)}" height="${n(p.h)}" rx="${rx}"/>`;
-    case "icon": return `<use${c} href="#${p.id}" x="${n(p.x)}" y="${n(p.y)}" width="${n(p.size)}" height="${n(p.size)}">${p.title ? `<title>${esc(p.title)}</title>` : ""}</use>`;
   }
 }
 /** 一个图元大概在哪个 y（分组用）：线取中点、矩形取中心、路径取第一个点；拿不到 = null（进杂项组）。 */
@@ -22,7 +21,6 @@ function yOfPrim(p: Layout["prims"][number]): number | null {
     case "line": return (p.y1 + p.y2) / 2;
     case "glyph": case "text": return p.y;
     case "rect": return p.y + p.h / 2;
-    case "icon": return p.y + p.size / 2;
     case "path": { const m = /^\s*M\s*-?[\d.]+[\s,]+(-?[\d.]+)/.exec(p.d); return m ? Number(m[1]) : null; }
   }
 }

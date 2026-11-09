@@ -10,7 +10,7 @@ export const AREAS = {
   // 谱面：手势（点 / 长按 / 拖 / 框选 / 把手）、排版、显示、谱上记号
   score: ["header-hit", "header-panel", "select", "finger", "rest", "lift", "sel-tweak", "top-sels", "undo", "caret-end", "clef", "auto-ottava", "shared-staff", "hscroll", "only1",
     "zoom", "ctrl-zoom", "dock-zoom", "scroll", "swell-art", "phrase", "repeat", "transpose", "arrange", "pad-ghost", "listen-ghost", "start-dyn",
-    "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys"],
+    "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys", "overlay-touch"],
   // 键盘（pad）：音键 / 符号格 / 几种锁 / 歌词框 / 记号菜单
   pad: ["stack-caps", "pad-key-auto", "view-in-c", "chord-tags", "pad-toggle", "pad-ghost", "dyn-levels", "ramp", "groove", "clef", "repeat", "finder-keys", "modes", "landscape-widgets",
     "dock-zoom", "save-keys", "swell-art", "start-dyn", "lyric-dash", "phrase", "sel-tweak", "title-keys", "midi", "dock-side", "finder-width", "finder-memory", "finder-names", "cast-back", "audition-banks", "part-toggles", "finder-accordion", "header-panel", "pad-follow"],
@@ -48,6 +48,8 @@ export const AREA_OF_PATH = [
   [/^service-worker\.js$|^manifest\.webmanifest$|^src\/app\/pwa-shell\.ts$|^icon.*\.(svg|png)$|^apple-touch-icon.*\.png$/, "smoke"],
   // 谱面 / 排版 / 乐谱数据
   [/^src\/ui\/score-view\.ts$|^src\/render\//, ["score"]],
+  // 谱面上面那一层（覆盖层，刀 1 = 2026-11-08）：两颗钮 / 虚线框 / 曲段控件 / 「隐藏 N」/ 提示——它的 E2E 散在谱面、键盘、录音房三个区
+  [/^src\/ui\/score-overlay\.ts$/, ["score", "pad", "studio"]],
   [/^src\/score\/(perform|groove|grooves\.gen|repeats|lab-score|arrange)\.ts$/, ["score", "play"]],
   [/^src\/score\//, ["score", "pad"]],
   // 键盘模块（src/keyboard/，刀 2 = 2026-10-15）：pad / 键位表 / 锁；滚轮 / 参数行是 W-5 原语，混音台也用

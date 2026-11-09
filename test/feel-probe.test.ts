@@ -42,6 +42,28 @@ describe("手感探针：按下 → 接到 → 出声", () => {
     r.tick(16); t += 1.0; r.tick(16);   // 一下跳了 1 s
     assert(r.reports.at(-1)?.includes("a1000"), `${r.reports.at(-1)}`);
   });
+  it("平常一步 / 最长：设备起得慢（停 1 秒再走）≠ 每块都大——两个数分开报（user 真机第一张截图分不清的就是这个）", () => {
+    // 设备起得慢：时钟先停 1 秒，之后每帧正常走 16 ms
+    let t = 0; const r = rig(() => ({ t, state: "running", sr: 48000 }));
+    r.probe.touch(r.nowAt());
+    for (let i = 0; i < 62; i++) r.tick(16);            // 停着 ~1 s
+    for (let i = 0; i < 60; i++) { t += 0.016; r.tick(16); }   // 之后正常
+    const a = r.probe.reading()!; assert(a.audioStep > 900, `最长 ${a.audioStep}`); assert(a.audioTypical >= 15 && a.audioTypical <= 17, `平常 ${a.audioTypical}`);
+    // 每块都大：每 15 帧跳 240 ms
+    let t2 = 0; const r2 = rig(() => ({ t: t2, state: "running", sr: 48000 }));
+    r2.probe.touch(r2.nowAt());
+    for (let i = 0; i < 150; i++) { if (i % 15 === 14) t2 += 0.24; r2.tick(16); }
+    const b = r2.probe.reading()!; assert(b.audioTypical >= 230 && b.audioTypical <= 250, `平常 ${b.audioTypical}`);
+  });
+  it("黑匣子不刷屏：停一秒（每帧数字都在涨）最多半秒记一条；收起时补一条「最坏到多少」", () => {
+    let t = 0; const r = rig(() => ({ t, state: "running", sr: 48000 }));
+    r.probe.touch(r.nowAt());
+    for (let i = 0; i < 62; i++) r.tick(16);   // 停 ~1 s：原来每帧一条 = 五十条
+    assert(r.notes.length >= 1 && r.notes.length <= 3, `记了 ${r.notes.length} 条`);
+    for (let i = 0; i < 12_000 / 16; i++) { t += 0.016; r.tick(16); if (r.nowAt() % 3000 < 16) r.probe.touch(r.nowAt()); }   // 之后正常；滑出 5 s 窗 + 再安静 5 s
+    eq(r.reports.at(-1), null, "收起了");
+    assert(/calm again; worst: .*audio step max 9\d\d ms/.test(r.notes.at(-1)!), r.notes.at(-1));
+  });
   it("按键后 20 s 没再按 = 睡（不再排帧、收起小字）", () => {
     const r = rig();
     r.probe.touch(r.nowAt()); r.tick(16); r.tick(300);

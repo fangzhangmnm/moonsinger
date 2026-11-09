@@ -37,7 +37,7 @@ import type { LyricReading } from "../ui/lyric-editor.ts";
 import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
-import { holdAudio, releaseAudio, audioCtxIfAny } from "../singer/audio.ts";
+import { holdAudio, releaseAudio, audioCtxIfAny, warmAudio, audioWatch, onAudioNote } from "../singer/audio.ts";
 import { createFeelProbe } from "./feel-probe.ts";   // 手感探针（v0.16.23）：按下 → 接到 → 出声三段 + 主线程 / 音频时钟停顿，超标露数字
 import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS } from "../format/performance.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
@@ -446,7 +446,8 @@ let feelMuted = false;
 feelChip.addEventListener("click", () => { feelMuted = true; feelChip.hidden = true; });
 const slowestStep = (): string => { const rows = Object.entries(perfReport()).filter(([, v]) => v.n > 0).sort((a, b) => b[1].last - a[1].last).slice(0, 2); return rows.length ? rows.map(([k, v]) => `${k} ${Math.round(v.last)} ms`).join(" / ") : "—"; };
 const feel = createFeelProbe({
-  audioNow: () => { const c = audioCtxIfAny(); return c ? { t: c.currentTime, state: c.state, sr: c.sampleRate } : null; },
+  audioNow: () => { const c = audioCtxIfAny(); if (c) audioWatch.check(performance.now());   // 探针醒着（最近 20 秒按过键）= 每帧顺手盯一下时钟：说在跑、其实停着 = 踢一脚（src/singer/audio.ts ③）
+    return c ? { t: c.currentTime, state: c.state, sr: c.sampleRate, info: `baseLatency ${Math.round((c.baseLatency ?? 0) * 1000)} ms, outputLatency ${Math.round(((c as { outputLatency?: number }).outputLatency ?? 0) * 1000)} ms, ${(navigator as { standalone?: boolean }).standalone || matchMedia("(display-mode: standalone)").matches ? "standalone" : "tab"}, media elements ${document.querySelectorAll("audio, video").length}` } : null; },
   report: (text) => {
     if (!text || feelMuted) { feelChip.hidden = true; return; }
     feelChip.textContent = text; feelChip.hidden = false;
@@ -455,7 +456,7 @@ const feel = createFeelProbe({
     else { feelChip.style.left = "8px"; feelChip.style.top = ""; feelChip.style.bottom = "8px"; feelChip.style.maxWidth = "calc(100vw - 16px)"; }
   },
   note: (msg) => diagNote("feel", `${msg}; slowest ${slowestStep()}`),
-  text: (r) => _t("按键晚了：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 {a} ms · 最慢一步 {slow}（点一下不再显示）", { q: r.queue, s: r.toSound, st: r.stall, a: r.audioStep, slow: slowestStep() }),
+  text: (r) => _t("按键晚了：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 平常 {t} ms / 最长 {a} ms · 最慢一步 {slow}（点一下不再显示）", { q: r.queue, s: r.toSound, st: r.stall, t: r.audioTypical, a: r.audioStep, slow: slowestStep() }),
 });
 const sound = {
   down: (p: Pitch, id = "main") => {
@@ -3891,10 +3892,26 @@ function midiStatusHtml(s: MidiStatus): string {
   return s.inputs.length ? _t("接着：{p}。弹的音按光标处的长短写进谱；「弹」开着 / 词 / 听里只出声", { p: esc(s.inputs.join("、")) }) : _t("开着，还没插琴（插上就认）");
 }
 // 切后台回来：声音被系统收起来了（iPad = interrupted）就叫醒；记一笔延迟（回来后系统可能换了缓冲大小——播放头按扬声器的时钟走，会自己跟上）
+// 2026-11-08 Fable：只在已经有上下文时叫醒（原来这里会顺手新建一个）；叫醒之后盯 3 秒时钟——state 写着 running、时钟却不走 = 踢一脚（src/singer/audio.ts ③，user 真机黑匣子）
+let audioWatchTimer = 0;
+function watchAudioFor(ms: number): void {
+  clearInterval(audioWatchTimer); const until = performance.now() + ms;
+  audioWatchTimer = window.setInterval(() => { const t = performance.now(); audioWatch.check(t); if (t > until) clearInterval(audioWatchTimer); }, 250);
+}
+onAudioNote((m) => diagNote("audio", m));
+// 第一次点屏幕 / 按键盘 = 把声音设备提前起好（iPad 主屏独立窗里设备要起 ~1 s；原来等到第一个键才起 = 第一个音晚一秒）。只一次。
+//   挂在好几种事件上、挂到上下文真的 running 为止：iPad 上哪一种算「用户手势」各版本不一样（按下不一定算，抬手 / click 一定算）。
+{ const evs = ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const; let armed = false;
+  const warm = () => {
+    warmAudio(); if (!armed) { armed = true; audioWatch.arm(performance.now()); watchAudioFor(4000); }
+    if (audioCtxIfAny()?.state === "running") for (const e of evs) window.removeEventListener(e, warm, true);
+  };
+  for (const e of evs) window.addEventListener(e, warm, true); }
 document.addEventListener("visibilitychange", () => {
   if (studio.isOpen) { engine.meter(document.visibilityState === "visible"); syncSpectrum(); }   // 看不见就不统计（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）
-  if (document.visibilityState !== "visible") return;
-  const c = singer.unlock(); resetLatencyLog();
+  if (document.visibilityState !== "visible") { clearInterval(audioWatchTimer); return; }
+  if (!audioCtxIfAny()) return;
+  const c = singer.unlock(); resetLatencyLog(); audioWatch.arm(performance.now()); watchAudioFor(3000);
   const ts = typeof c.getOutputTimestamp === "function" ? c.getOutputTimestamp() : null;   // 原始的一对时钟也记下来：错位再报时能看出是哪个时钟跳了
   diagNote("audio", `visible again: ctx ${c.state}, playing ${engine.playing}, currentTime ${c.currentTime.toFixed(3)}, ts ${ts ? `${ts.contextTime?.toFixed(3)} @ ${ts.performanceTime?.toFixed(0)}` : "none"}, now ${performance.now().toFixed(0)}`);
 });

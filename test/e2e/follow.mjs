@@ -21,7 +21,7 @@ for (let i = 0; i < 300; i++) {
   await p.waitForTimeout(50);
   const g = await p.evaluate(() => { const h = document.querySelector(".play-hl"), el = document.querySelector("#score"), sc = el.getBoundingClientRect(); if (!h) return null; const r = h.getBoundingClientRect(); return { y: r.top - sc.top + el.scrollTop, st: el.scrollTop, top: r.top - sc.top, bottom: r.bottom - sc.top, vh: sc.height }; });
   if (!g) { if (tl.length > 20 && !(await p.evaluate(() => window.__moonsinger.engine.playing))) break; continue; }
-  tl.push({ t: Date.now(), ...g });
+  tl.push({ t: Math.round(performance.now()), ...g });
 }
 const changes = []; for (let k = 1; k < tl.length; k++) if (Math.abs(tl[k].y - tl[k - 1].y) > 40) changes.push(k);
 if (process.env.DBG) console.log("    DBG", JSON.stringify(changes.map((k) => ({ k, from: Math.round(tl[k - 1].y), to: Math.round(tl[k].y), st0: Math.round(tl[k].st), st1: Math.round((tl.find((x) => x.t >= tl[k].t + 450) ?? tl[k]).st), top: Math.round(tl[k].top) }))));
@@ -47,7 +47,7 @@ await p.click("#playBtn");
     await p.waitForTimeout(50);
     const g = await p.evaluate(() => { const h = document.querySelector(".play-hl"), el = document.querySelector("#score"), sc = el.getBoundingClientRect(); if (!h) return null; const r = h.getBoundingClientRect(); return { y: r.top - sc.top + el.scrollTop, x: Math.round(r.left), st: el.scrollTop, top: r.top - sc.top, bottom: r.bottom - sc.top, vh: sc.height }; });
     if (!g) { if (tl2.length > 20 && !(await p.evaluate(() => window.__moonsinger.engine.playing))) break; continue; }
-    tl2.push({ t: Date.now(), ...g });
+    tl2.push({ t: Math.round(performance.now()), ...g });
   }
   const ch = []; for (let k = 1; k < tl2.length; k++) if (Math.abs(tl2[k].y - tl2[k - 1].y) > 40) ch.push(k);
   // 小屏的规矩（user「至少不要把每行最后一个音丢了。当然如果是一堆小快音的话人类会precache」）：换行前最后那个音一直在屏幕里（没被提前翻没）；换行后一小会儿新的一行在屏幕里

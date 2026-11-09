@@ -2064,7 +2064,7 @@ var S = {
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
   "\u72EC": { en: "S" },
-  "\u6309\u952E\u665A\u4E86\uFF1A\u6392\u961F {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u4E0D\u518D\u663E\u793A\uFF09": { en: "Keys are late: queued {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block {a} ms \xB7 slowest step {slow} (tap to dismiss)" },
+  "\u6309\u952E\u665A\u4E86\uFF1A\u6392\u961F {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u4E0D\u518D\u663E\u793A\uFF09": { en: "Keys are late: queued {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 slowest step {slow} (tap to dismiss)" },
   "\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355": { en: "This section's menu" },
   "\u9690\u85CF {n}": { en: "{n} hidden" },
   "\u8FD9\u4E00\u6BB5\u6709 {n} \u4F4D\u9690\u85CF\u7740\uFF08\u4E0D\u6392\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u770B\u662F\u8C01\u3001\u653E\u51FA\u6765": { en: "{n} {n|part is|parts are} hidden in this section (not laid out, no space taken): tap to see who and show them" },
@@ -5611,8 +5611,6 @@ function primSvg(p, fs, lfs, rx) {
       return `<path${c} d="${p.d}"/>`;
     case "rect":
       return `<rect${c} x="${n(p.x)}" y="${n(p.y)}" width="${n(p.w)}" height="${n(p.h)}" rx="${rx}"/>`;
-    case "icon":
-      return `<use${c} href="#${p.id}" x="${n(p.x)}" y="${n(p.y)}" width="${n(p.size)}" height="${n(p.size)}">${p.title ? `<title>${esc(p.title)}</title>` : ""}</use>`;
   }
 }
 function yOfPrim(p) {
@@ -5624,8 +5622,6 @@ function yOfPrim(p) {
       return p.y;
     case "rect":
       return p.y + p.h / 2;
-    case "icon":
-      return p.y + p.size / 2;
     case "path": {
       const m = /^\s*M\s*-?[\d.]+[\s,]+(-?[\d.]+)/.exec(p.d);
       return m ? Number(m[1]) : null;
@@ -5682,4 +5678,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-63fb84e61c07.mjs.map
+//# sourceMappingURL=layout-worker-b96f821db1d2.mjs.map

@@ -2070,7 +2070,7 @@ export const S = {
   "静音（这位不出声；和谱上声部名下面的「静」是同一个）": { en: "Mute (this part is silent; same as “M” under the part name on the score)" },
   "独奏（只听独奏的几位；和谱上的「独」是同一个）": { en: "Solo (only hear the parts on solo; same as “S” on the score)" },
   "独": { en: "S" },
-  "按键晚了：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 {a} ms · 最慢一步 {slow}（点一下不再显示）": { en: "Keys are late: queued {q} ms · to sound {s} ms · longest main-thread stall {st} ms · audio block {a} ms · slowest step {slow} (tap to dismiss)" },
+  "按键晚了：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 平常 {t} ms / 最长 {a} ms · 最慢一步 {slow}（点一下不再显示）": { en: "Keys are late: queued {q} ms · to sound {s} ms · longest main-thread stall {st} ms · audio block usual {t} ms / longest {a} ms · slowest step {slow} (tap to dismiss)" },
   "这一段的菜单": { en: "This section's menu" },
   "隐藏 {n}": { en: "{n} hidden" },
   "这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来": { en: "{n} {n|part is|parts are} hidden in this section (not laid out, no space taken): tap to see who and show them" },
