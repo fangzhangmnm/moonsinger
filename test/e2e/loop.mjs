@@ -19,7 +19,7 @@ for (let i = 0; i < 2; i++) { await p.click(`.pad-key[data-k] >> nth=${i + 4}`);
 const [t1, t2] = await p.evaluate(() => window.__moonsinger.state().song.papers.map((x) => Object.values(x.tracks)[0].reduce((a, t) => a + (t.dur ?? 0), 0)));
 const secOf = (ticks) => (ticks / 1680) * (60 / 90), LEAD = 0.5;   // ♩ = 90；月读的提前量
 await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 2), sr: 22050 }); });
-const tl = () => p.evaluate(() => { const t = window.__moonsinger.engine.timeline; return t && { from: t.range.from, to: t.range.to, loop: t.loop, loopFrom: t.loopFrom ?? null }; });
+const tl = () => p.evaluate(() => { const t = window.__moonsinger.engine.timeline; return t && { from: t.range.from, to: t.range.to, loop: t.loop, loopFrom: t.loopFrom ?? null, loopTo: t.loopTo ?? null }; });
 const playing = () => p.evaluate(() => window.__moonsinger.engine.playing);
 const pos = () => p.evaluate(() => window.__moonsinger.engine.position);
 // v0.9.18：循环 / 从头放 / 接缝收进走带的「⋯」菜单；▶ = 续播 / 暂停、⟲ = 回起点重放
@@ -58,7 +58,7 @@ await tapPlay(); await p.waitForTimeout(400);   // > 连按窗口（350 ms），
 await p.evaluate(() => window.__moonsinger.setScope("segment")); await p.waitForTimeout(150);
 await tapPlay(); check(await waitPlaying(), "本段：放起来");
 const g = await tl();
-check(!!g && g.loop === true && Math.abs(g.loopFrom - g.from) < 1e-6, "本段：这一张自己循环（从范围头跳回）", JSON.stringify(g));
+check(!!g && g.loop === true && Math.abs(g.loopFrom) < 1e-6 && g.loopTo !== null && g.loopTo > g.loopFrom && g.loopTo <= g.to + 1e-9, "本段：这一张自己循环（谱头跳回、谱尾绕；不按唱段提前的辅音 / 尾音，v0.16.59）", JSON.stringify(g));
 check(!!g && g.to < a.to - 1e-6, "本段：范围只有这一张（比全部短）", JSON.stringify(g));
 await tapPlay(); await p.waitForTimeout(400);   // > 连按窗口（350 ms），不然下一下算「连按两下 = 从头放」
 await menuClick("loop");

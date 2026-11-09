@@ -285,11 +285,14 @@ export function createPerformance(host: PerfHost) {
   /** 范围 + 循环起点：本段 / 全部（视图）；循环 = 编排的 [循环段]（前面放一遍、再从循环段头跳回；只在全部视图）或整个范围。
    *  选区**不再**当播放区间（v0.9.13 sunset；user 2026-10-10「播放过程中的选区操作不应该改变播放区间，这样，先不用选区当播放区间了，sunset这个设定，以后慢慢想办法。其实这个功能没啥实用性」——
    *  放着的时候选 / 扩 / 清选区曾把范围一起换掉）。从光标放照旧（有选区 = 选区头）。 */
-  function playRange(tl: Timeline): { from: number; to: number; loopFrom: number } {
-    const from = tl.range.from, to = tl.range.to; let loopFrom = from;
+  /** from / to = 声音的头尾（唱的那几句提前起的辅音、最后一句的尾音都在里面）；loopFrom / loopTo = 循环按谱绕的那一圈（v0.16.59：原来循环也按声音的头尾绕，
+   *  每圈接缝多出约 1.1 s 空——user 11-09「弱起的时候我最后一个小节会少一拍。播放的时候不应跟自动补全。不如我循环会很麻烦」；接缝两边的唱段由引擎接上）。 */
+  function playRange(tl: Timeline): { from: number; to: number; loopFrom: number; loopTo: number } {
+    const from = tl.range.from, to = tl.range.to; let loopFrom = tl.papers[0]?.t0 ?? 0;
     const song = playSong(), a = parseArrangement(song.arrangement, song.papers);
     if (host.viewScope() === "all" && a.loop && tl.papers[a.order.length]) loopFrom = tl.papers[a.order.length].t0;
-    return { from, to, loopFrom };
+    const loopTo = tl.total > loopFrom ? tl.total : to;
+    return { from, to, loopFrom, loopTo };
   }
   /** 从光标放：光标（选区 = 选区头）那个音的时刻，提前一点（辅音在元音前）。
    *  光标在纸尾 / 不在放的范围里 = null = 从头放（v0.9.2；user「没有光标的时候点开始就不放了哈哈哈」——写完谱光标停在最后，原来从纸尾放 = 什么都听不到）。 */
@@ -346,7 +349,7 @@ export function createPerformance(host: PerfHost) {
       const tl = await prepare("view", { chunks: false }); if (!tl) { progress(""); return; }
       const r = playRange(tl); playTl = tl;
       const loop = loopOn || how === "seam";
-      engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop, loopFrom: r.loopFrom });
+      engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop, loopFrom: r.loopFrom, loopTo: r.loopTo });
       const at = how === "seam" ? Math.max(r.from, r.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl, r) : how === "head" ? r.from : startSeconds(tl, r);
       playMute = how === "start" ? startMute(tl, r) : undefined;
       // 边算边放：从 at 起按距离排队唱，前几块到齐就开播，后面的边放边唱（到了没唱好的那句走带会等）
@@ -356,12 +359,12 @@ export function createPerformance(host: PerfHost) {
       const loopNow = loopOn || how === "seam";   // 准备的这几秒里切了循环 = 这一轮就按新的（user 2026-10-10「中途toggle循环对本轮播放应该生效」）
       const atNow = how === "start" ? startSeconds(tl, r) : at;   // 准备的这几秒里起点挪了（连按两下 = 从头放 / 从这儿放）= 从新的起点放
       playMute = how === "start" ? startMute(tl, r) : undefined;
-      if (loopNow !== loop) engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopNow, loopFrom: r.loopFrom });
+      if (loopNow !== loop) engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopNow, loopFrom: r.loopFrom, loopTo: r.loopTo });
       if (loopNow !== loop || atNow !== at) setChunkOrder(tl, atNow, loopNow ? { from: r.loopFrom, to: r.to } : null);
       await engine.play(atNow, playMute);
       paused = null;
       playIcon(true);
-      progress(loopOn ? _t("循环 {loopFrom} 秒", { loopFrom: (r.to - r.loopFrom).toFixed(1) }) : _t("{atNow} 秒", { atNow: (r.to - atNow).toFixed(1) }));
+      progress(loopOn ? _t("循环 {loopFrom} 秒", { loopFrom: (r.loopTo - r.loopFrom).toFixed(1) }) : _t("{atNow} 秒", { atNow: (r.to - atNow).toFixed(1) }));
     } catch (e) { showError(_t("放不了：{Error}", { Error: (e as Error).message })); progress(""); playIcon(false); }
     finally { releaseAudio(); preparing = false; if (!engine.playing) for (const b of playBtns()) b.classList.remove("is-on"); }
   }
@@ -411,7 +414,7 @@ export function createPerformance(host: PerfHost) {
   function setLoop(on: boolean): void {
     loopOn = on; for (const b of playBtns()) b.classList.toggle("looping", on);   // |▶ 上一个小「循环」角标（原来写在 ⋯ 钮上）
     // 放着的时候切 = 这一轮就按新的来：到尾（尾巴还在响也算）跳回去 / 不跳；开了循环 = 循环头那几句也排进去先唱（不然跳回去要冻着等月读）
-    if (engine.playing && playTl) { const r = playRange(playTl); engine.setTimeline({ tracks: playTl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom }); setChunkOrder(playTl, engine.position, loopOn ? { from: r.loopFrom, to: r.to } : null); }
+    if (engine.playing && playTl) { const r = playRange(playTl); engine.setTimeline({ tracks: playTl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom, loopTo: r.loopTo }); setChunkOrder(playTl, engine.position, loopOn ? { from: r.loopFrom, to: r.to } : null); }
   }
   let lastReorder = 0;
   // 播放头 = 现在**听到的**地方（2026-10-10 Opus 5.5；user「ipad后台唤起后音频和动画错位。以及你有没有办法实际测音频播到哪里了来好好对齐？」）：
@@ -432,7 +435,7 @@ export function createPerformance(host: PerfHost) {
     if (!engine.playing || !playTl) return;
     const sec = engine.audibleSec() ?? engine.position, loc = playTl.locate(sec), k = loc ? `${loc.paperId}:${loc.tick}` : "";
     // 接下来 TURN_LEAD 秒放到哪（按播放的顺序：编排 / 反复照算；开着循环、快到尾了 = 循环头）
-    const r = playRange(playTl); let aSec = sec + turnLead; if (aSec >= r.to) aSec = loopOn ? r.loopFrom + (aSec - r.to) : r.to - 1e-3;
+    const r = playRange(playTl), end = loopOn ? r.loopTo : r.to; let aSec = sec + turnLead; if (aSec >= end) aSec = loopOn ? r.loopFrom + (aSec - end) : r.to - 1e-3;
     const ahead = turnLead > 0 ? playTl.locate(aSec) : null, ak = ahead ? `${ahead.paperId}:${ahead.tick}` : "";
     if (k !== phKey || ak !== phAheadKey) { phKey = k; phAheadKey = ak; view.setPlayhead(loc, ahead); }
     const now = performance.now();
@@ -461,7 +464,7 @@ export function createPerformance(host: PerfHost) {
       const tl = await prepare("view", { chunks: false }); if (!tl) { stopPlay(); return; }
       const r = playRange(tl); playTl = tl;
       const sec = loc ? tl.secondsAt(loc.paperId, loc.tick, at) : null, shift = sec !== null && Math.abs(sec - at) > 0.005 ? sec - at : 0;
-      engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom, ...(shift ? { shift } : {}) });
+      engine.setTimeline({ tracks: tl.tracks, range: { from: r.from, to: r.to }, loop: loopOn, loopFrom: r.loopFrom, loopTo: r.loopTo, ...(shift ? { shift } : {}) });
       setChunkOrder(tl, engine.position, loopOn ? { from: r.loopFrom, to: r.to } : null);
     })(); }, 300);
   }

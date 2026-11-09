@@ -407,3 +407,33 @@ describe("录音房：路由（刀 4：每轨链 / 侧链 / 发送 / 总线 / �
     assert(Math.abs(peak(a, sec(0.5), sec(0.9)) - 0.4 * PAN0 * 0.5) < 1e-3, "演奏者链 −6 dB"); assert(same(a, b), "确定性");
   });
 });
+
+describe("循环按谱的长度绕、接缝两边的唱段接上（v0.16.59，user 11-09「弱起的时候我最后一个小节会少一拍。播放的时候不应跟自动补全。不如我循环会很麻烦」）", () => {
+  // 谱 0 → 2 s；第一句提前 0.5 s 起辅音（−0.5 → 0.6）、最后一句多留 0.6 s 尾音（1.5 → 2.6）。声音的范围 −0.5 → 2.6，循环 0 → 2
+  const setup = async (loopTo?: number) => {
+    const { s } = await studio();
+    s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(1.1, 0.5) });
+    s.handle({ type: "chunk", key: "Z", sr: SR, samples: flat(1.1, 0.25) });
+    s.handle({ type: "timeline", tl: { tracks: [{ id: "v", kind: "clips", clips: [{ key: "A", t0: -0.5, dur: 1.1, gain: 1, end: 0.4 }, { key: "Z", t0: 1.5, dur: 1.1, gain: 1, end: 2.0 }], gain: null }], range: { from: -0.5, to: 2.6 }, loop: true, loopFrom: 0, ...(loopTo !== undefined ? { loopTo } : {}) } });
+    s.handle({ type: "play", at: -0.5 });   // 从声音的头起（第一句的辅音）
+    return s;
+  };
+  it("一圈 = 谱的长度：放到 2 s 就绕回 0（不再放到尾音完的 2.6 s、再从 −0.5 起）", async () => {
+    const s = await setup(2);
+    run(s, 0.5 + 2.0 + 0.3);   // −0.5 → 2.0，绕回，再 0.3
+    assert(Math.abs(s.position - 0.3) < 0.01, `绕回后在 0.3（${s.position}）`);
+    const old = await setup();   // 不给 loopTo = 原来的行为：按声音的范围绕
+    run(old, 0.5 + 2.0 + 0.3);
+    assert(old.position > 2.0, `原来：还没绕（${old.position}）`);
+  });
+  it("接缝两边：快到 2 s 时第一句的辅音提前响、绕回来后最后一句的尾音接着响（两段叠在一起）", async () => {
+    const at = (a: { L: Float32Array }, t: number) => { const i = Math.round(t * SR); let m = 0; for (let k = i - 200; k < i + 200; k++) m = Math.max(m, Math.abs(a.L[k])); return m; };   // t = 从开放起过了几秒
+    const a = run(await setup(2), 0.5 + 2.0 + 0.9), b = run(await setup(), 0.5 + 2.0 + 0.9);   // b = 原来的行为（按声音的范围绕）
+    // 放了 2.3 s = 谱上 1.8 s：只有 Z（原来）/ Z + 下一圈 A 提前起的辅音（现在）
+    assert(at(a, 2.3) > at(b, 2.3) * 1.4, `接缝前叠上了下一圈的辅音（${at(a, 2.3)} vs ${at(b, 2.3)}）`);
+    // 放了 2.7 s = 第二圈谱上 0.2 s：A + 上一圈 Z 的尾音；对照第一圈谱上 0.2 s（放了 0.7 s）只有 A
+    assert(at(a, 2.7) > at(a, 0.7) * 1.3, `接缝后叠上了上一圈的尾音（${at(a, 2.7)} vs 第一圈 ${at(a, 0.7)}）`);
+    // 放了 3.3 s = 第二圈谱上 0.8 s：A（到 0.6）和 Z 的尾音（到 2.6 − 2 = 0.6）都响完了
+    assert(at(a, 3.3) < 1e-3, `接缝的尾巴响完就没了（${at(a, 3.3)}）`);
+  });
+});

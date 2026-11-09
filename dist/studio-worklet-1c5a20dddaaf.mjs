@@ -662,6 +662,7 @@ var V_RELEASE = 0.04;
 var V_CUT = 6e-3;
 var V_GLIDE = 0.012;
 var LOOKAHEAD = 30;
+var WRAP_MAX = 1.5;
 var dbToLin2 = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
 var now = typeof performance !== "undefined" && typeof performance.now === "function" ? () => performance.now() : () => Date.now();
 var I16 = 1 / 32768;
@@ -713,6 +714,10 @@ var Studio = class {
   range = { from: 0, to: 0 };
   loop = false;
   loopFrom = null;
+  loopTo = null;
+  // 循环在哪儿跳回（谱上的末尾）；null = 范围尾
+  looped = false;
+  // 这一趟放是不是已经绕回来过（绕回来之后，开头那一小段要接上上一圈最后一句的尾音）
   tail = -1;
   // ≥0 = 范围尾：已经等了几秒
   draining = false;
@@ -1019,6 +1024,7 @@ var Studio = class {
     this.range = { ...tl.range };
     this.loop = tl.loop;
     this.loopFrom = tl.loopFrom ?? null;
+    this.loopTo = tl.loopTo ?? null;
     if (this.playing) {
       if (shift) {
         this.pos = Math.max(this.range.from, Math.min(this.range.to, pos0 + shift));
@@ -1072,6 +1078,7 @@ var Studio = class {
     this.quiet = quiet ?? -Infinity;
     if (at !== void 0) this.pos = at;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
+    this.looped = false;
     this.playing = true;
     this.draining = false;
     this.tail = -1;
@@ -1104,6 +1111,7 @@ var Studio = class {
     this.quiet = quiet ?? -Infinity;
     this.pos = at;
     this.posFrames = POS_EVERY;
+    this.looped = false;
     if (this.playing) {
       this.tail = -1;
       this.waiting = null;
@@ -1411,7 +1419,7 @@ var Studio = class {
         break;
       }
       const blockEnd = this.pos + left / sr;
-      const { stop, wait } = this.clipBarrier(Math.min(blockEnd, this.range.to));
+      const { stop, wait } = this.clipBarrier(Math.min(blockEnd, this.endAt()));
       if (wait) {
         this.freeze(wait);
         continue;
@@ -1422,7 +1430,7 @@ var Studio = class {
         this.pos += cnt / sr;
         done += cnt;
       }
-      if (this.pos >= this.range.to - 0.5 / sr) {
+      if (this.pos >= this.endAt() - 0.5 / sr) {
         if (this.loop) this.loopBack();
         else {
           this.tail = 0;
@@ -1462,10 +1470,15 @@ var Studio = class {
     this.tail = -1;
     this.posFrames = POS_EVERY;
     this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
+    this.looped = true;
     for (const t of this.tracks.values()) this.endHold(t);
     this.resetCursors(false);
     this.chaseAtLoop();
     this.checkMissing();
+  }
+  /** 这一圈放到哪儿为止：循环 = 谱的末尾（loopTo），不循环 = 范围尾（最后一句的尾音也放完）。 */
+  endAt() {
+    return this.loop && this.loopTo !== null ? Math.min(this.range.to, Math.max(this.loopTo, (this.loopFrom ?? this.range.from) + 1e-3)) : this.range.to;
   }
   chaseAtLoop() {
     for (const t of this.tracks.values()) {
@@ -1570,6 +1583,15 @@ var Studio = class {
     for (const c of t.spec.clips) {
       if (t.hold && c.t0 < t.hold.until || this.mutedClip(c)) continue;
       this.renderClip(c, mono, cnt, t0);
+    }
+    if (!this.loop || this.loopTo === null || !this.playing) return;
+    const A = this.loopFrom ?? this.range.from, B = this.endAt(), L = B - A, tEnd = t0 + cnt / this.sr;
+    if (L <= 0) return;
+    if (tEnd > B - WRAP_MAX && tEnd <= B + 1e-9) for (const c of t.spec.clips) {
+      if (c.t0 < A && (c.end ?? c.t0 + c.dur) > A && !this.mutedClip(c)) this.renderClip(c, mono, cnt, t0 - L);
+    }
+    if (this.looped && t0 >= A - 1e-9 && t0 < A + WRAP_MAX) for (const c of t.spec.clips) {
+      if (c.t0 < B && c.t0 + c.dur > B && (c.end ?? c.t0) <= B + 1e-6) this.renderClip(c, mono, cnt, t0 + L);
     }
   }
   renderClip(c, mono, cnt, t0) {
@@ -1879,4 +1901,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-3c7ad4d8664e.mjs.map
+//# sourceMappingURL=studio-worklet-1c5a20dddaaf.mjs.map

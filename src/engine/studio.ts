@@ -38,7 +38,12 @@ export type TrackSpec =
   | { id: string; kind: "sf"; sha: string; notes: NoteEv[]; gain: GainSeg[] | null; chain?: FxV2[] }
   | { id: string; kind: "vowel"; kana: string; notes: NoteEv[]; gain: GainSeg[] | null; chain?: FxV2[] }
   | { id: string; kind: "clips"; clips: ClipRef[]; gain: GainSeg[] | null; chain?: FxV2[] };
+/** 循环接缝两边最多接多长（秒）：唱段提前起的辅音（LEAD_IN 0.5）/ 留的尾音（SUNG_TAIL 0.6）都在这里面。 */
+const WRAP_MAX = 1.5;
 export interface TimelineMsg { tracks: TrackSpec[]; range: { from: number; to: number }; loop: boolean; /** 循环从哪儿跳回（不给 = 范围头）：编排「前面放一遍、括住的一直循环」。 */ loopFrom?: number;
+  /** 循环在哪儿跳回（谱上的末尾；不给 = 范围尾）。v0.16.59：范围 = 声音的头尾（唱的那几句提前 0.5 s 起辅音、最后多留 0.6 s 尾音），循环要按谱的长度绕——
+   *  user 11-09「弱起的时候我最后一个小节会少一拍。播放的时候不应跟自动补全。不如我循环会很麻烦」：原来每圈接缝多出约 1.1 s。接缝两边的唱段照样接上（renderClips 的接缝那一段）。 */
+  loopTo?: number;
   /** 放着的时候换时间线：播放头挪这么多秒（主线程按谱位置算的：改了播放头前面的东西 / 反复结构，秒数不变会跳到别的音上）。 */ shift?: number }
 /** 一条通道（轨 ≠ 乐手：乐手的通道、总线、以后的素材轨都是这个形状；user 2026-10-10「轨还是和乐手是两个概念」）：
  *  chain = 通道条上的效果（EQ / 压缩（可侧链 key = 别的轨 id）…）；sends = 推子之后发到总线多少；to = 去哪（"master" / 总线 id）。 */
@@ -153,6 +158,8 @@ export class Studio {
   private range = { from: 0, to: 0 };
   private loop = false;
   private loopFrom: number | null = null;
+  private loopTo: number | null = null;     // 循环在哪儿跳回（谱上的末尾）；null = 范围尾
+  private looped = false;                   // 这一趟放是不是已经绕回来过（绕回来之后，开头那一小段要接上上一圈最后一句的尾音）
   private tail = -1;                       // ≥0 = 范围尾：已经等了几秒
   private draining = false; private drainPos = 0; private drainSecs = 0;   // 停了之后：释放中的尾巴照响到静（不渲染 = 冻住，下次放才漏出来；user「每次点play的时候会漏上次的最后一个音」）
   private forgetLater = new Set<string>();   // 主线程要放掉、但正被 hold 着的块：响完再删
@@ -308,7 +315,7 @@ export class Studio {
       old.delete(spec.id);
     }
     for (const t of old.values()) { if (t.sf) this.tsf.close(t.sf.player); this.endHold(t); }   // 没了的声部
-    this.range = { ...tl.range }; this.loop = tl.loop; this.loopFrom = tl.loopFrom ?? null;
+    this.range = { ...tl.range }; this.loop = tl.loop; this.loopFrom = tl.loopFrom ?? null; this.loopTo = tl.loopTo ?? null;
     // 正在放：时间线换了（改谱 / 换范围）= 游标按现在的位置重算，已经在响的音不动（user「正在响的那句不换、响完换新」）
     if (this.playing) {
       if (shift) {   // 改了播放头前面的东西：按谱位置挪（主线程算好的秒差），等着松开的音和 hold 一起挪
@@ -346,6 +353,7 @@ export class Studio {
     this.quiet = quiet ?? -Infinity;
     if (at !== undefined) this.pos = at;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
+    this.looped = false;
     this.playing = true; this.draining = false; this.tail = -1; this.waiting = null; this.posFrames = POS_EVERY;   // 起放那一块就报（主线程的对照表从这儿开始）
     for (const t of this.tracks.values()) { this.killAll(t); this.endHold(t); }   // 上次停下来还没响完的尾巴快速收掉，别漏进这一次
     this.resetCursors(true);
@@ -361,7 +369,7 @@ export class Studio {
   }
   private seek(at: number, quiet?: number): void {
     this.quiet = quiet ?? -Infinity;
-    this.pos = at; this.posFrames = POS_EVERY;   // 跳了 = 这一块就报（对照表别拿跳之前的位置往后推）
+    this.pos = at; this.posFrames = POS_EVERY; this.looped = false;   // 跳了 = 这一块就报（对照表别拿跳之前的位置往后推）
     if (this.playing) { this.tail = -1; this.waiting = null; for (const t of this.tracks.values()) this.endHold(t); this.resetCursors(true); this.checkMissing(); }
   }
   /** 旧块响完 / 不要了：撤 hold；主线程早就说要放掉的这时才真删。 */
@@ -528,11 +536,11 @@ export class Studio {
         break;
       }
       const blockEnd = this.pos + left / sr;
-      const { stop, wait } = this.clipBarrier(Math.min(blockEnd, this.range.to));
+      const { stop, wait } = this.clipBarrier(Math.min(blockEnd, this.endAt()));
       if (wait) { this.freeze(wait); continue; }
       const cnt = Math.min(left, Math.max(0, Math.round((stop - this.pos) * sr)));
       if (cnt > 0) { this.renderTracks(done, cnt, true, true); this.pos += cnt / sr; done += cnt; }
-      if (this.pos >= this.range.to - 0.5 / sr) {   // 到范围尾
+      if (this.pos >= this.endAt() - 0.5 / sr) {   // 到范围尾（循环 = 谱的末尾）
         if (this.loop) this.loopBack();   // 跳回去：正在响的照响，不松
         else { this.tail = 0; for (const t of this.tracks.values()) { this.releaseAll(t); t.envTarget = 0; } }
         continue;
@@ -555,10 +563,12 @@ export class Studio {
   /** 循环跳回循环头（到范围尾时；或尾巴还在响时开了循环）。 */
   private loopBack(): void {
     this.quiet = -Infinity;
-    this.tail = -1; this.posFrames = POS_EVERY; this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
+    this.tail = -1; this.posFrames = POS_EVERY; this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to)); this.looped = true;
     for (const t of this.tracks.values()) this.endHold(t);
     this.resetCursors(false); this.chaseAtLoop(); this.checkMissing();
   }
+  /** 这一圈放到哪儿为止：循环 = 谱的末尾（loopTo），不循环 = 范围尾（最后一句的尾音也放完）。 */
+  private endAt(): number { return this.loop && this.loopTo !== null ? Math.min(this.range.to, Math.max(this.loopTo, (this.loopFrom ?? this.range.from) + 1e-3)) : this.range.to; }
   private chaseAtLoop(): void { for (const t of this.tracks.values()) { if (t.spec.kind === "clips") continue; for (const nte of t.spec.notes) if (nte.t0 < this.pos && nte.t1 > this.pos) this.noteOn(t, nte); } }
   private silent(): boolean {
     for (const t of this.tracks.values()) { if (t.sf && this.tsf.active(t.sf.player) > 0) return false; if (t.vowels.length) return false; if (t.spec.kind === "clips" && t.env > 1e-4) return false; }
@@ -618,6 +628,14 @@ export class Studio {
     if (t.spec.kind !== "clips") return;
     if (t.hold) this.renderClip(t.hold, mono, cnt, t0);
     for (const c of t.spec.clips) { if ((t.hold && c.t0 < t.hold.until) || this.mutedClip(c)) continue; this.renderClip(c, mono, cnt, t0); }
+    // 循环的接缝（v0.16.59）：一圈 = 谱上 A → B（L = B − A）。唱段按绝对时间画，接缝两边的那一点也按「另一圈」的时间混进来——
+    //   快到 B：下一圈第一句提前起的辅音（跨过 A、句子主体在 A 之后的块，A 之前那一截）照 t − L 画；
+    //   绕回来之后的开头：上一圈最后一句的尾音（跨过 B、句子主体在 B 之前的块，B 之后那一截）照 t + L 画。窗口本身就把画的范围卡在接缝的另一边，不会重画。
+    if (!this.loop || this.loopTo === null || !this.playing) return;
+    const A = this.loopFrom ?? this.range.from, B = this.endAt(), L = B - A, tEnd = t0 + cnt / this.sr;
+    if (L <= 0) return;
+    if (tEnd > B - WRAP_MAX && tEnd <= B + 1e-9) for (const c of t.spec.clips) { if (c.t0 < A && (c.end ?? c.t0 + c.dur) > A && !this.mutedClip(c)) this.renderClip(c, mono, cnt, t0 - L); }
+    if (this.looped && t0 >= A - 1e-9 && t0 < A + WRAP_MAX) for (const c of t.spec.clips) { if (c.t0 < B && c.t0 + c.dur > B && (c.end ?? c.t0) <= B + 1e-6) this.renderClip(c, mono, cnt, t0 + L); }
   }
   private renderClip(c: { key: string; t0: number; gain: number }, mono: Float32Array, cnt: number, t0: number): void {
     const sr = this.sr, tEnd = t0 + cnt / sr;

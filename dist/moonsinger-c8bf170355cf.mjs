@@ -5051,7 +5051,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.58-2026-11-09";
+var APP_VERSION = "v0.16.59-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29408,11 +29408,11 @@ function siteFile(name) {
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
-      return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
+      return pick(() => "studio-worklet-1c5a20dddaaf.mjs");
     case "layout-worker":
       return pick(() => "layout-worker-a11261770c37.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-96e8feab64f8.mjs");
+      return pick(() => "encode-worker-33073b1e8501.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -33424,6 +33424,7 @@ var V_RELEASE = 0.04;
 var V_CUT = 6e-3;
 var V_GLIDE = 0.012;
 var LOOKAHEAD = 30;
+var WRAP_MAX = 1.5;
 var dbToLin2 = (dB) => dB === -Infinity ? 0 : 10 ** (dB / 20);
 var now = typeof performance !== "undefined" && typeof performance.now === "function" ? () => performance.now() : () => Date.now();
 var I16 = 1 / 32768;
@@ -33475,6 +33476,10 @@ var Studio = class {
   range = { from: 0, to: 0 };
   loop = false;
   loopFrom = null;
+  loopTo = null;
+  // 循环在哪儿跳回（谱上的末尾）；null = 范围尾
+  looped = false;
+  // 这一趟放是不是已经绕回来过（绕回来之后，开头那一小段要接上上一圈最后一句的尾音）
   tail = -1;
   // ≥0 = 范围尾：已经等了几秒
   draining = false;
@@ -33781,6 +33786,7 @@ var Studio = class {
     this.range = { ...tl2.range };
     this.loop = tl2.loop;
     this.loopFrom = tl2.loopFrom ?? null;
+    this.loopTo = tl2.loopTo ?? null;
     if (this.playing) {
       if (shift) {
         this.pos = Math.max(this.range.from, Math.min(this.range.to, pos0 + shift));
@@ -33834,6 +33840,7 @@ var Studio = class {
     this.quiet = quiet ?? -Infinity;
     if (at2 !== void 0) this.pos = at2;
     if (this.pos < this.range.from || this.pos >= this.range.to) this.pos = this.range.from;
+    this.looped = false;
     this.playing = true;
     this.draining = false;
     this.tail = -1;
@@ -33866,6 +33873,7 @@ var Studio = class {
     this.quiet = quiet ?? -Infinity;
     this.pos = at2;
     this.posFrames = POS_EVERY;
+    this.looped = false;
     if (this.playing) {
       this.tail = -1;
       this.waiting = null;
@@ -34173,7 +34181,7 @@ var Studio = class {
         break;
       }
       const blockEnd = this.pos + left / sr2;
-      const { stop, wait } = this.clipBarrier(Math.min(blockEnd, this.range.to));
+      const { stop, wait } = this.clipBarrier(Math.min(blockEnd, this.endAt()));
       if (wait) {
         this.freeze(wait);
         continue;
@@ -34184,7 +34192,7 @@ var Studio = class {
         this.pos += cnt / sr2;
         done += cnt;
       }
-      if (this.pos >= this.range.to - 0.5 / sr2) {
+      if (this.pos >= this.endAt() - 0.5 / sr2) {
         if (this.loop) this.loopBack();
         else {
           this.tail = 0;
@@ -34224,10 +34232,15 @@ var Studio = class {
     this.tail = -1;
     this.posFrames = POS_EVERY;
     this.pos = Math.max(this.range.from, Math.min(this.loopFrom ?? this.range.from, this.range.to));
+    this.looped = true;
     for (const t10 of this.tracks.values()) this.endHold(t10);
     this.resetCursors(false);
     this.chaseAtLoop();
     this.checkMissing();
+  }
+  /** 这一圈放到哪儿为止：循环 = 谱的末尾（loopTo），不循环 = 范围尾（最后一句的尾音也放完）。 */
+  endAt() {
+    return this.loop && this.loopTo !== null ? Math.min(this.range.to, Math.max(this.loopTo, (this.loopFrom ?? this.range.from) + 1e-3)) : this.range.to;
   }
   chaseAtLoop() {
     for (const t10 of this.tracks.values()) {
@@ -34332,6 +34345,15 @@ var Studio = class {
     for (const c10 of t10.spec.clips) {
       if (t10.hold && c10.t0 < t10.hold.until || this.mutedClip(c10)) continue;
       this.renderClip(c10, mono, cnt, t02);
+    }
+    if (!this.loop || this.loopTo === null || !this.playing) return;
+    const A2 = this.loopFrom ?? this.range.from, B2 = this.endAt(), L2 = B2 - A2, tEnd = t02 + cnt / this.sr;
+    if (L2 <= 0) return;
+    if (tEnd > B2 - WRAP_MAX && tEnd <= B2 + 1e-9) for (const c10 of t10.spec.clips) {
+      if (c10.t0 < A2 && (c10.end ?? c10.t0 + c10.dur) > A2 && !this.mutedClip(c10)) this.renderClip(c10, mono, cnt, t02 - L2);
+    }
+    if (this.looped && t02 >= A2 - 1e-9 && t02 < A2 + WRAP_MAX) for (const c10 of t10.spec.clips) {
+      if (c10.t0 < B2 && c10.t0 + c10.dur > B2 && (c10.end ?? c10.t0) <= B2 + 1e-6) this.renderClip(c10, mono, cnt, t02 + L2);
     }
   }
   renderClip(c10, mono, cnt, t02) {
@@ -36114,10 +36136,11 @@ function createPerformance(host2) {
   const SEAM_LEAD = 4;
   function playRange(tl2) {
     const from = tl2.range.from, to2 = tl2.range.to;
-    let loopFrom = from;
+    let loopFrom = tl2.papers[0]?.t0 ?? 0;
     const song = playSong2(), a10 = parseArrangement(song.arrangement, song.papers);
     if (host2.viewScope() === "all" && a10.loop && tl2.papers[a10.order.length]) loopFrom = tl2.papers[a10.order.length].t0;
-    return { from, to: to2, loopFrom };
+    const loopTo = tl2.total > loopFrom ? tl2.total : to2;
+    return { from, to: to2, loopFrom, loopTo };
   }
   let startMark = null;
   let paused = null;
@@ -36201,7 +36224,7 @@ function createPerformance(host2) {
       const r10 = playRange(tl2);
       playTl = tl2;
       const loop = loopOn || how === "seam";
-      engine2.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop, loopFrom: r10.loopFrom });
+      engine2.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop, loopFrom: r10.loopFrom, loopTo: r10.loopTo });
       const at2 = how === "seam" ? Math.max(r10.from, r10.to - SEAM_LEAD) : how === "resume" ? resumeSeconds(tl2, r10) : how === "head" ? r10.from : startSeconds(tl2, r10);
       playMute = how === "start" ? startMute(tl2, r10) : void 0;
       setChunkOrder(tl2, at2, loop ? { from: r10.loopFrom, to: r10.to } : null);
@@ -36213,12 +36236,12 @@ function createPerformance(host2) {
       const loopNow = loopOn || how === "seam";
       const atNow = how === "start" ? startSeconds(tl2, r10) : at2;
       playMute = how === "start" ? startMute(tl2, r10) : void 0;
-      if (loopNow !== loop) engine2.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopNow, loopFrom: r10.loopFrom });
+      if (loopNow !== loop) engine2.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopNow, loopFrom: r10.loopFrom, loopTo: r10.loopTo });
       if (loopNow !== loop || atNow !== at2) setChunkOrder(tl2, atNow, loopNow ? { from: r10.loopFrom, to: r10.to } : null);
       await engine2.play(atNow, playMute);
       paused = null;
       playIcon2(true);
-      progress2(loopOn ? _t("\u5FAA\u73AF {loopFrom} \u79D2", { loopFrom: (r10.to - r10.loopFrom).toFixed(1) }) : _t("{atNow} \u79D2", { atNow: (r10.to - atNow).toFixed(1) }));
+      progress2(loopOn ? _t("\u5FAA\u73AF {loopFrom} \u79D2", { loopFrom: (r10.loopTo - r10.loopFrom).toFixed(1) }) : _t("{atNow} \u79D2", { atNow: (r10.to - atNow).toFixed(1) }));
     } catch (e10) {
       showError2(_t("\u653E\u4E0D\u4E86\uFF1A{Error}", { Error: e10.message }));
       progress2("");
@@ -36314,7 +36337,7 @@ function createPerformance(host2) {
     for (const b3 of playBtns2()) b3.classList.toggle("looping", on2);
     if (engine2.playing && playTl) {
       const r10 = playRange(playTl);
-      engine2.setTimeline({ tracks: playTl.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom });
+      engine2.setTimeline({ tracks: playTl.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom, loopTo: r10.loopTo });
       setChunkOrder(playTl, engine2.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
     }
   }
@@ -36331,9 +36354,9 @@ function createPerformance(host2) {
     phRaf = 0;
     if (!engine2.playing || !playTl) return;
     const sec = engine2.audibleSec() ?? engine2.position, loc = playTl.locate(sec), k2 = loc ? `${loc.paperId}:${loc.tick}` : "";
-    const r10 = playRange(playTl);
+    const r10 = playRange(playTl), end = loopOn ? r10.loopTo : r10.to;
     let aSec = sec + turnLead;
-    if (aSec >= r10.to) aSec = loopOn ? r10.loopFrom + (aSec - r10.to) : r10.to - 1e-3;
+    if (aSec >= end) aSec = loopOn ? r10.loopFrom + (aSec - end) : r10.to - 1e-3;
     const ahead = turnLead > 0 ? playTl.locate(aSec) : null, ak2 = ahead ? `${ahead.paperId}:${ahead.tick}` : "";
     if (k2 !== phKey || ak2 !== phAheadKey) {
       phKey = k2;
@@ -36385,7 +36408,7 @@ function createPerformance(host2) {
         const r10 = playRange(tl2);
         playTl = tl2;
         const sec = loc ? tl2.secondsAt(loc.paperId, loc.tick, at2) : null, shift = sec !== null && Math.abs(sec - at2) > 5e-3 ? sec - at2 : 0;
-        engine2.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom, ...shift ? { shift } : {} });
+        engine2.setTimeline({ tracks: tl2.tracks, range: { from: r10.from, to: r10.to }, loop: loopOn, loopFrom: r10.loopFrom, loopTo: r10.loopTo, ...shift ? { shift } : {} });
         setChunkOrder(tl2, engine2.position, loopOn ? { from: r10.loopFrom, to: r10.to } : null);
       })();
     }, 300);
@@ -38797,7 +38820,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "3ef6d6a83d9f5ea1" : "dev";
+var CORE_HASH = true ? "ef2bc2d42cbd1d9d" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -57242,4 +57265,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-326e40a187ae.mjs.map
+//# sourceMappingURL=moonsinger-c8bf170355cf.mjs.map
