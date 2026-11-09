@@ -53,7 +53,7 @@ import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
 import { withCastAs, candidateJson } from "../format/project.ts";
 import type { CandidateV2 } from "../format/contract.ts";
-import { withFinal, withoutFinal, contentFingerprintOf, type FinalRecord, moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, activePerfSpec, activeTranspose, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
+import { withFinal, withoutFinal, contentFingerprintOf, type FinalRecord, moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeCalibrationDb, withCalibration, withGapSec, GAP_MAX_SEC, activeVelocity, activePerfSpec, activeTranspose, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
@@ -1471,14 +1471,15 @@ async function castPick(p: FinderPick): Promise<void> {
   }
   const np = newPartPending, base = np ? newPartState(np) : { st: D.st, extras: D.extras, role: curRole() }, role = base.role;
   const ca = castArgs(cat, c, p.kind === "gs" ? p.provider.sound : null);   // 角色改成这件乐器；候选里也记一份（castAs），点回它时套回去
+  const prev = activeId(base.extras, role);   // 换之前台上的是谁：没调过就跟着这次换乐器一起删（施工单 §5 R2，v0.16.38）
   let next = withRoleConcept(base.extras, role, ca, hum), keep: [string, Uint8Array] | null = null;
-  if (p.kind === "voice") next = withActive(withCastAs(next, role, CANDIDATE_ID.full, ca, hum), role, CANDIDATE_ID.full, hum);
+  if (p.kind === "voice") { const vid = p.light ? CANDIDATE_ID.light : CANDIDATE_ID.full; next = withSwap(withCastAs(next, role, vid, ca, hum), role, vid, hum, { prev, before: base.extras }); }
   else {
     const { subset, sha256 } = audition!, inf = sf2Info(subset);
     next = withSf2Candidate(next, role, { name: p.provider.gmName, bank: p.provider.bank, program: p.provider.program, ...gsKeyArgs(cat, p.provider.bank, p.provider.program, p.provider.note), subset, sha256, embed: false,
       origin: { name: GS.name, fileSha256: GS.sha256, bytes: GS.bytes, library: GS.id }, credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } } }, hum);
     const id = activeId(next, role);
-    next = withActive(withCastAs(next, role, id, ca, hum), role, id, hum);   // 新上场的这位记下「作为这件乐器」，并且就是台上那位
+    next = withSwap(withCastAs(next, role, id, ca, hum), role, id, hum, { prev, fresh: true, before: base.extras });   // 新上场的这位记下「作为这件乐器」+ 换上台那一刻的设置指纹（R3），下台那位没调过 = 删（R2）
     keep = [sha256, subset];
   }
   const who = p.kind === "voice" ? activeCandidateName(next, role) ?? "" : p.provider.gmName, label = _t("「{c}」换成：{gmName}", { c: roleNameOf(c), gmName: who });
@@ -1496,10 +1497,11 @@ async function castOwn(p: OwnPick): Promise<void> {
   if (audition?.from !== pickFrom(p)) return;
   const { subset, sha256 } = audition!, inf = sf2Info(f.bytes), hum = D.st.song.hum;
   const fileSha256 = (f.fileSha256 ??= await sha256Hex(f.bytes));
-  const np = newPartPending, base = np ? newPartState(np) : { st: D.st, extras: D.extras, role: curRole() }, role = base.role;
-  const next = withSf2Candidate(base.extras, role, { name: p.name, bank: p.bank, program: p.program, subset, sha256, embed: false,
+  const np = newPartPending, base = np ? newPartState(np) : { st: D.st, extras: D.extras, role: curRole() }, role = base.role, prev = activeId(base.extras, role);
+  const made = withSf2Candidate(base.extras, role, { name: p.name, bank: p.bank, program: p.program, subset, sha256, embed: false,
     origin: { name: f.name, fileSha256, bytes: f.bytes.length },
     credit: { attribution: [inf.name, inf.engineer, inf.copyright].filter((x): x is string => !!x), license: { name: "unknown", text: inf.comment } } }, hum);   // 自己拖进来的只有 INFO 块里的字、许可证 unknown
+  const next = withSwap(made, role, activeId(made, role), hum, { prev, fresh: true, before: base.extras });   // R2 / R3 同 castPick
   const label = _t("「{extras}」换成：{name}", { extras: roleName(base.extras, role), name: p.name });
   if (np) { newPartPending = null; updateBoth(base.st, next, { kind: "score", label: np.giveFrom ? _t("这一行交给了新声部：{c}", { c: p.name }) : _t("加了一个声部：{c}", { c: p.name }) }); }
   else updateExtras(next, { kind: "lounge", label });
@@ -1522,7 +1524,22 @@ const openOwnSf2 = () => fileInput(".sf2,audio/x-soundfont", async (f) => {
 const KV_FINDER_IMPRO = "finder-impro", KV_FINDER_PINS = "finder-pins";
 const finder = new Finder($("stage"), {
   // 目录顶上「这首歌里用过的」（v0.16.18 搬家 C：原来在乐器页「谁来演」；user 11-07「换乐器的时候…点了谱表的乐器名之后，按一个按钮就立刻能换，然后配置是另外一回事」）
-  used: () => { if (newPartPending) return []; const aid = activeId(D.extras, curRole()); return candidates(D.extras, curRole()).map((c) => ({ id: c.id, name: !performerOf(c.engine) ? _t("{name}（没人能演）", { name: c.name }) : c.name, on: c.id === aid, removable: performerOf(c.engine)?.removable ?? true })); },
+  // 「这首歌的乐器预设」（v0.16.38，施工单 §5 R4）：本声部台上那位 + 调过的，别的声部调过的（同一套设置只一格）；图标 = 当初作为哪件乐器上场（castAs）的那件
+  used: () => {
+    if (newPartPending) return [];
+    const labels = partLabels(D.st.song, D.extras), parts = D.st.song.parts.map((p, k) => ({ role: p.role, label: labels[k] })), cat = catalogNow ?? catNow;
+    return songPresets(D.extras, parts, curRole(), D.st.song.hum).map((e) => {
+      const c = candidateJson(D.extras, e.role, e.id), eng = performerOf(String((c?.instrument as { engine?: string } | undefined)?.engine ?? "unknown"));
+      const wd = (c?.castAs as { concept?: { ids?: { wikidata?: string | null } } } | undefined)?.concept?.ids?.wikidata, icon = wd && cat ? cat.byId.get(wd)?.icon?.id : undefined;
+      return { ...e, name: !eng ? _t("{name}（没人能演）", { name: e.name }) : e.name, removable: e.removable && (eng?.removable ?? true), ...(icon ? { icon } : {}) };
+    });
+  },
+  copyPreset: (role, id) => {
+    const to = curRole(), next = withCandidateCopy(D.extras, role, id, to, D.st.song.hum); if (next === D.extras) return;
+    const who = activeCandidateName(next, to) ?? id, from = partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.role === role)] ?? "";
+    const label = role === to ? _t("「{rn}」复制了一份：{who}", { rn: roleName(next, to), who }) : _t("「{rn}」拷来了「{from}」的：{who}", { rn: roleName(next, to), from, who });
+    updateExtras(next, { kind: "lounge", label }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); finder.refresh(); info(label);
+  },
   useCandidate: (id) => { setActive(id); finder.refresh(); info(_t("换成「{who}」", { who: activeCandidateName(D.extras, curRole()) ?? id })); },   // 选完不关目录（v0.16.35）
   removeCandidate: (id) => { try { updateExtras(withoutCandidate(D.extras, curRole(), id), { kind: "lounge", label: _t("「{rn}」退掉一位候选", { rn: roleName(D.extras, curRole()) }) }); } catch (err) { showError((err as Error).message); } },
   ownSf2: () => openOwnSf2(),   // v0.16.37：在目录里挑（施工单 §4.3），选文件不算选了乐器
@@ -1618,7 +1635,7 @@ function castAsOf(extras: typeof D.extras, role: string, id: string): NonNullabl
   return concept ? castArgs(cat, concept) : null;
 }
 function setActive(id: string): void {
-  let next = withActive(D.extras, curRole(), id, D.st.song.hum);
+  let next = withSwap(D.extras, curRole(), id, D.st.song.hum);   // 下台那位没调过 = 删（施工单 §5 R2）
   const ca = castAsOf(next, curRole(), id); if (ca) next = withRoleConcept(next, curRole(), ca, D.st.song.hum);   // 点回旧候选 = 角色名 / 乐器跟着换回（user 11-07：先选长笛再选人声，点回长笛谱上还写 Voice）
   updateExtras(next, { kind: "lounge", label: _t("「{next}」换人：{next2}", { next: roleName(next, curRole()), next2: activeCandidateName(next, curRole()) ?? id }) }); sound.allOff(); void prepareBank(); view.render(); renderTitle(); }
 /** 作者栏（标题下面靠右那一块点开）：一块纯文本，纸上照写的显示（不认「作词：」这类格式，所见即所得）。

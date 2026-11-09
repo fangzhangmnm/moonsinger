@@ -7,7 +7,7 @@ import { freshFinderMemo, type FinderMemo } from "../score/desk.ts";
 import { _t, lang } from "../i18n/index.ts";
 import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightLabel, SORT_LABEL, type Catalog, type Concept, type Entry, type Provider, type SortMode } from "../gm/catalog.ts";
 
-export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept } | OwnPick;
+export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept; light?: true } | OwnPick;   // light = 小月相（元音）
 /** 自己的 .sf2 文件里的一件（v0.16.37，施工单 §4.3）：字节留在宿主，目录只拿预设清单。没有乐器概念（目录不认识这件），谱上的名字不跟着换。 */
 export interface OwnPick { kind: "sf2"; bank: number; program: number; name: string }
 /** 打开的 .sf2 文件：文件名 + 里面的预设（bank 128 = 鼓组）。 */
@@ -23,11 +23,14 @@ export interface FinderHost {
   togglePad(): void;                                                 // 顶条「键盘」：开 / 关试听键盘（user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）
   /** 关目录时：这一份记忆（翻到哪）变了。即兴 = 宿主存到设备上；歌里的 = 宿主存歌时顺手带（v0.16.6）。 */
   memoChanged?(ctx: FinderCtx, m: FinderMemo): void;
-  /** 这首歌这个声部用过的演奏者（目录顶上一排；v0.16.18 搬家 C：原来在乐器页「谁来演」）。on = 正在台上；removable = 能退掉。 */
-  used?(): { id: string; name: string; on: boolean; removable: boolean }[];
-  /** 点了一位用过的 = 上场（角色名 / 乐器跟着换回，同 v0.16.15）。 */
+  /** 这首歌的乐器预设（目录顶上第二排；v0.16.38 = 施工单 §5 R4：本声部台上那位 + 调过的，别的声部调过的）。on = 正在台上；here = 本声部的；
+   *  from = 在哪个声部上（别的声部的格子角上写）；removable = 能删；icon = 乐器图标的编号（目录 sprite 里的，没有 = 首字）。 */
+  used?(): PresetTile[];
+  /** 点了本声部的一位 = 换上（角色名 / 乐器跟着换回，同 v0.16.15）。 */
   useCandidate?(id: string): void;
-  /** 退掉一位用过的（它嵌在歌里的声音一起丢；能撤销）。 */
+  /** 拷一份到本声部、换上（别的声部的 = R5；本声部的「复制一份」= R6）。 */
+  copyPreset?(role: string, id: string): void;
+  /** 删本声部的一位（R7：台上的、内置的不能删；它嵌在歌里的声音一起丢；能撤销）。 */
   removeCandidate?(id: string): void;
   /** 顶条「打开 .sf2…」：宿主开选文件框；读好了调 setOwnFile 把清单交回来。 */
   ownSf2?(): void;
@@ -38,6 +41,8 @@ export interface FinderHost {
 /** 常用一行的一格（v0.16.36；施工单 ai-docs/20261109-work-order-instrument-pick-vs-tune.md §4.1 / §9）：c = 乐器概念的编号，job = 它管哪一层（只有默认那几格写）。
  *  记在设备上、跟人走，不跟歌走（user 11-09「置顶…跟着用户设置走，就不跟着歌走」）；每一格能换成任何乐器、能拿掉，不按种类拦（「用哪个你别护栏」）。 */
 export interface PinTile { c: string; job?: PinJob }
+/** 「这首歌的乐器预设」一格。 */
+export interface PresetTile { role: string; id: string; name: string; on: boolean; here: boolean; from: string; removable: boolean; icon?: string }
 export type PinJob = "melody" | "harmony" | "melody2" | "accomp" | "pad" | "rhythm" | "bass";
 /** 默认七格 = 摸每一层最顺手的那件（user 11-09「那几个钦定的乐器，实际上就是摸某个东西最有用的」「合成器就是弦乐…还是用最经典的」）。
  *  节奏那一格：目录里还没有「整套鼓组」这一条（鼓的设计排在后面），先放小鼓。 */
@@ -167,6 +172,7 @@ export class Finder {
     if (!this.cat) return null;
     const [cid, rest] = key.split("|"), c = this.cat.byId.get(cid); if (!c) return null;
     if (rest === "voice") return { kind: "voice", concept: c };
+    if (rest === "vowel") return { kind: "voice", concept: c, light: true };
     const p = providersOf(this.cat, c).find((x) => gmKey(x) === rest);
     return p ? { kind: "gs", concept: c, provider: p } : null;
   }
@@ -176,8 +182,7 @@ export class Finder {
     const v = btn?.dataset.v;
     if (v === "back") { this.host.close(); return; }
     if (v === "pad") { this.host.togglePad(); return; }
-    if (v === "use" && btn) { this.host.useCandidate?.(btn.dataset.cid!); return; }
-    if (v === "usedel" && btn) { this.host.removeCandidate?.(btn.dataset.cid!); this.renderUsed(); return; }
+    if (v === "use" && btn) { const t = this.presetOf(btn); if (!t) return; if (t.here) { if (!t.on) this.host.useCandidate?.(t.id); } else this.host.copyPreset?.(t.role, t.id); this.renderUsed(); return; }
     if (v === "ownsf2") { this.host.ownSf2?.(); return; }
     if (v === "owndrop") { this.setOwnFile(null); void this.host.audition(null); return; }
     if (v === "group" && btn) { this.toggleGroup(btn.closest<HTMLElement>("[data-gid]")!.dataset.gid!); return; }
@@ -229,7 +234,10 @@ export class Finder {
     if (this.playOnly) { this.renderPins(); this.render(); await this.host.audition(pick); return; }
     await this.host.cast(pick);
   }
-  private pinTarget(t: HTMLElement): { kind: "tile"; k: number; el: HTMLElement } | { kind: "row"; c: string; el: HTMLElement } | null {
+  private presetOf(el: HTMLElement): PresetTile | null { const k = Number(el.closest<HTMLElement>("[data-preset]")?.dataset.preset ?? -1); return this.presets[k] ?? null; }
+  private presets: PresetTile[] = [];
+  private pinTarget(t: HTMLElement): { kind: "tile"; k: number; el: HTMLElement } | { kind: "row"; c: string; el: HTMLElement } | { kind: "preset"; t: PresetTile; el: HTMLElement } | null {
+    const pre = t.closest<HTMLElement>("[data-preset]"); if (pre) { const x = this.presetOf(pre); return x ? { kind: "preset", t: x, el: pre } : null; }
     if (!this.host.setPins) return null;
     const tile = t.closest<HTMLElement>("[data-pin]"); if (tile) return { kind: "tile", k: Number(tile.dataset.pin), el: tile };
     const row = t.closest<HTMLElement>(".inst-row"); if (row) return { kind: "row", c: row.dataset.c!, el: row };
@@ -238,7 +246,9 @@ export class Finder {
   /** 长按 / 右键的小菜单（浮在那一格 / 那一行下面）。 */
   private pinMenu(t: NonNullable<ReturnType<Finder["pinTarget"]>>): void {
     this.el.querySelector(".finder-pinmenu")?.remove();
-    const pins = this.pinsNow(), items: [string, string, string][] = t.kind === "tile"
+    const pins = this.pinsNow(), items: [string, string, string][] = t.kind === "preset"
+      ? [["pcopy", String(this.presets.indexOf(t.t)), t.t.here ? _t("复制一份") : _t("拷到这个声部")], ...(t.t.removable ? [["pdel", String(this.presets.indexOf(t.t)), _t("删掉")] as [string, string, string]] : [])]
+      : t.kind === "tile"
       ? [["replace", String(t.k), _t("换成…")], ["unpin", String(t.k), _t("拿掉")]]
       : pins.some((p) => p.c === t.c) ? [["unpinc", t.c, _t("取消置顶")]] : [["pinc", t.c, _t("置顶到常用")]];
     const m = document.createElement("div"); m.className = "finder-pinmenu";
@@ -250,6 +260,11 @@ export class Finder {
   }
   private pinAct(act: string, arg: string): void {
     this.el.querySelector(".finder-pinmenu")?.remove();
+    if (act === "pcopy" || act === "pdel") {
+      const x = this.presets[Number(arg)]; if (!x) return;
+      if (act === "pcopy") this.host.copyPreset?.(x.role, x.id); else this.host.removeCandidate?.(x.id);
+      this.renderUsed(); return;
+    }
     const pins = this.pinsNow();
     if (act === "replace") { this.replacing = Number(arg); this.renderPins(); return; }
     if (act === "unpin") pins.splice(Number(arg), 1);
@@ -257,13 +272,19 @@ export class Finder {
     else if (act === "pinc") pins.push({ c: arg });
     this.host.setPins?.(pins); this.renderPins();
   }
-  /** 顶上一排「这首歌里用过的」（歌里打开的才有；弹着玩没有）：点一位 = 上场，× = 退掉；最后一颗 = 自己的 .sf2（v0.16.18 搬家 C）。 */
+  /** 顶上第二排「这首歌的乐器预设」（歌里打开的才有；弹着玩没有）：和常用一行一样大的格子（图标 + 名字）。
+   *  点本声部的一格 = 换上；点别的声部的（角上写「在 ⟨声部⟩ 上」）= 拷一份过来换上，那边不动；长按 / 右键 = 复制一份 / 删掉（v0.16.38，施工单 §4.1 / §5）。 */
   renderUsed(): void {
-    const box = this.el.querySelector<HTMLElement>(".finder-used")!, used = this.playOnly ? [] : this.host.used?.() ?? [];
+    const box = this.el.querySelector<HTMLElement>(".finder-used")!;
     box.hidden = this.playOnly || !this.host.used;
-    if (box.hidden) return;
-    box.innerHTML = `<span class="fu-k">${_t("这首歌的乐器预设")}</span>` + used.map((u) => `<span class="fu-c"><button class="btn chip${u.on ? " is-on" : ""}" data-v="use" data-cid="${esc(u.id)}" title="${u.on ? _t("正在台上") : _t("点了 = 换成它")}">${esc(u.name)}</button>` +
-      (u.removable && !u.on ? `<button class="btn fu-del" data-v="usedel" data-cid="${esc(u.id)}" title="${_t("退掉（它嵌在歌里的声音一起丢；能撤销）")}">×</button>` : "") + `</span>`).join("");
+    if (box.hidden) { this.presets = []; return; }
+    const used = (this.presets = this.host.used?.() ?? []);
+    box.innerHTML = `<div class="fu-k">${_t("这首歌的乐器预设")}</div><div class="fp-row">${used.map((u, k) => {
+      const tip = u.on ? _t("正在台上；长按（右键）= 复制一份") : u.here ? _t("点 = 换上；长按（右键）= 复制一份 / 删掉") : _t("点 = 拷一份到这个声部、换上（「{from}」那边不动）", { from: u.from });
+      return `<button class="fp-tile${u.on ? " is-on" : ""}${u.here ? "" : " is-other"}" data-v="use" data-preset="${k}" title="${esc(tip)}">` +
+        (u.icon ? `<svg class="fp-ico" aria-hidden="true"><use href="#${esc(u.icon)}"/></svg>` : `<span class="fp-ico none">${esc(u.name.slice(0, 1))}</span>`) +
+        `<span class="fp-name">${esc(u.name)}</span>${u.here ? "" : `<span class="fp-job">${esc(_t("在 {from} 上", { from: u.from }))}</span>`}</button>`;
+    }).join("")}</div>`;
   }
   render(): void {
     this.renderPins(); this.renderUsed();
@@ -375,6 +396,8 @@ export class Finder {
       const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => this.provHtml(key, label, note, playable, sub);
       body = `<div class="inst-prov">` +
         (pitched ? prov(`${c.id}|voice`, _t("小月相"), _t("唱歌词；没写歌词的音按「哼的字」唱"), false) : "") +   // 人声里小月相排第一（v0.16.36；user「小月相的优先级肯定是高于那两个 O 和 A」）
+        // 元音版紧跟着（v0.16.38）：没调过的内置两位不进「这首歌的乐器预设」（施工单 §5 R4），常用一行只有完整版——元音版（破设备兜底）放在这里才点得到
+        (pitched ? prov(`${c.id}|vowel`, _t("小月相（元音）"), _t("只哼「哼的字」、不唱歌词；轻，破设备也带得动"), false) : "") +
         provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? _t("鼓件 · {gmName}（Standard 鼓组的 {note} 号键）", { gmName: esc(p.gmName), note: p.note }) : p.bank === 128 ? _t("鼓组 · {gmName}", { gmName: esc(p.gmName) }) : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? _t("顶替{p}{reason}", { p: p.basis === "official" ? _t("（GM 原文认可）") : p.basis === "lineage" ? _t("（前身）") : p.basis === "imitation" ? _t("（仿声）") : p.basis === "family" ? _t("（同类）") : _t("（只是同名）"), reason: p.reason && zhOnly(p.reason) ? `：${esc(p.reason)}` : "" }) : "", true, p.kind === "substitute")).join("") +
 
         (!provs.length && !pitched ? `<div class="prov-none">${_t("目录里还没有谁能演它")}</div>` : "") + `</div>`;

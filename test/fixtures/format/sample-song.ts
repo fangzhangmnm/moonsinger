@@ -4,7 +4,7 @@
 // 2026-10-13（Claude Fable 5.1；家族周账 F-18）：样本要把**每个可选字段都用上**，形状指纹 shapeOf 对数组取**所有元素的并集**（原来只照第一项）——
 //   不然 parts[].host / 轨的 bypass / 效果 / 发送 / 嵌的音源这些只在第二项、或样本没写的键，快照看不见，加了删了都不红。sampleExtras() 同理把休息室 / 录音房的可选项都摆上。
 import { TPQ, type Song, type Token, firstTrack } from "../../../src/score/song.ts";
-import { emptyExtras, withActive, withCastAs, activeId, withSf2Candidate, withTrack, withMaster, newBusId, withTranspose, withSingChunk, withGapSec, withRoleConcept, withCalibration, withFinal, contentFingerprintOf, FINAL_MP3_ENTRY, type Extras } from "../../../src/format/project.ts";
+import { emptyExtras, withActive, withCastAs, activeId, withSwap, withSf2Candidate, withTrack, withMaster, newBusId, withTranspose, withSingChunk, withGapSec, withRoleConcept, withCalibration, withFinal, contentFingerprintOf, FINAL_MP3_ENTRY, type Extras } from "../../../src/format/project.ts";
 import type { FxV2, CandidateV2 } from "../../../src/format/contract.ts";
 // 仓里不装 @types/node（同 test/format-guard.test.ts）：node:fs / node:crypto 走动态 import。
 const nodeFs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
@@ -76,7 +76,8 @@ export function sampleExtras(song: Song): Extras {
     origin: { name: "gu-square-castanets.sf2", fileSha256: sha256, bytes: subset.length, library: "test-fixture" },
     credit: { attribution: ["样本"], license: { name: "样本许可", url: "https://example.invalid/license", text: "样本", textSha256: "0".repeat(64) } }, calibrationDb: -6, gapSec: 0.02 }, hum);
   { const r2 = ex.lounge.r2 as unknown as { name: string; sound: string; concept: NonNullable<CandidateV2["castAs"]>["concept"] };   // 候选记着「作为哪件乐器上场」（castAs，2026-11-08）
-    ex = withCastAs(ex, "r2", activeId(ex, "r2"), { name: r2.name, sound: r2.sound, concept: r2.concept }, hum); }
+    ex = withCastAs(ex, "r2", activeId(ex, "r2"), { name: r2.name, sound: r2.sound, concept: r2.concept }, hum);
+    ex = withSwap(ex, "r2", activeId(ex, "r2"), hum, { fresh: true }); }   // 换上台那一刻的设置指纹（asCast，2026-11-09；施工单 §5 R3）
   const reverb: FxV2 = { id: "f1", kind: "reverb", on: true, params: { room: 0.8, damp: 0.4, wet: -12, dry: -120, predelayMs: 20 }, note: "样本" };
   const comp: FxV2 = { id: "f2", kind: "comp", on: false, params: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120, makeupDb: 0 }, key: "m2" };
   const gain: FxV2 = { id: "f3", kind: "gain", params: { dB: -3 } };

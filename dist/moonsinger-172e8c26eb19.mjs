@@ -3426,6 +3426,15 @@ var S = {
   "\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A": { en: "Instrument catalog: what this song has used is at the top, browse below by style / era / family; try on the keys at the right, pick one and it\u2019s on" },
   "\u6536\u8D77\u8FD9\u4E2A\u6587\u4EF6\uFF08\u5B57\u8282\u653E\u6389\uFF0C\u8981\u518D\u7528\u5C31\u91CD\u65B0\u6253\u5F00\uFF09": { en: "Close this file (its bytes are dropped; open it again to use it)" },
   "\u6536\u8D77\u8FD9\u4E2A\u6587\u4EF6": { en: "Close this file" },
+  "\u590D\u5236\u4E00\u4EFD": { en: "Duplicate" },
+  "\u53EA\u54FC\u300C\u54FC\u7684\u5B57\u300D\u3001\u4E0D\u5531\u6B4C\u8BCD\uFF1B\u8F7B\uFF0C\u7834\u8BBE\u5907\u4E5F\u5E26\u5F97\u52A8": { en: "Only hums the hum syllable, no lyrics; light enough for older devices" },
+  "\u62F7\u5230\u8FD9\u4E2A\u58F0\u90E8": { en: "Copy to this part" },
+  "\u6B63\u5728\u53F0\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD": { en: "On stage now; long-press (right-click) = duplicate" },
+  "\u70B9 = \u6362\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD / \u5220\u6389": { en: "Tap = use it; long-press (right-click) = duplicate / delete" },
+  "\u70B9 = \u62F7\u4E00\u4EFD\u5230\u8FD9\u4E2A\u58F0\u90E8\u3001\u6362\u4E0A\uFF08\u300C{from}\u300D\u90A3\u8FB9\u4E0D\u52A8\uFF09": { en: "Tap = copy it to this part and use it (the one on \u201C{from}\u201D stays as it is)" },
+  "\u5728 {from} \u4E0A": { en: "on {from}" },
+  "\u300C{rn}\u300D\u590D\u5236\u4E86\u4E00\u4EFD\uFF1A{who}": { en: "\u201C{rn}\u201D: duplicated {who}" },
+  "\u300C{rn}\u300D\u62F7\u6765\u4E86\u300C{from}\u300D\u7684\uFF1A{who}": { en: "\u201C{rn}\u201D: copied {who} from \u201C{from}\u201D" },
   "\u9009\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002": { en: "The one you choose is cut out and kept on this device; the song only records where it came from (keeps the song small). To make the song carry the sound itself: File menu \u2192 \u201CPack everything into the song\u201D, or save an .mxl copy (packed sounds)." },
   "{who} \u600E\u4E48\u6F14": { en: "How {who} performs" },
   "\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5": { en: "The keys at the right play whoever's on stage; changes can be tried right away" },
@@ -4522,9 +4531,6 @@ var S = {
   "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u952E\u76D8\u5F39\u7740\u73A9\u3002\u8981\u7ED9\u6B4C\u91CC\u7684\u58F0\u90E8\u9009\u4E50\u5668\uFF1A\u5F00\u4E00\u9996\u6B4C\uFF0C\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u3002": { en: "Tap an instrument \u2192 choose who performs \u2192 play on the keys for fun. To choose an instrument for a part: open a song and tap the part name at the front of the score." },
   "\u76EE\u5F55\u52A0\u8F7D\u4E0D\u4E86\uFF1A{Error}": { en: "Can't load the catalog: {Error}" },
   "\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE": { en: "Instrument presets in this song" },
-  "\u6B63\u5728\u53F0\u4E0A": { en: "On stage now" },
-  "\u70B9\u4E86 = \u6362\u6210\u5B83": { en: "Tap = change to this one" },
-  "\u9000\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF1B\u80FD\u64A4\u9500\uFF09": { en: "Remove (its sound embedded in the song goes too; can be undone)" },
   "\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90": { en: "Your own .sf2 file: the one you pick is cut out and kept on this device; the song only records where it came from" },
   "\u6253\u5F00 .sf2\u2026": { en: "Open .sf2\u2026" },
   "{label} \xB7 {n} \u4EF6": { en: "{label} \xB7 {n}" },
@@ -5046,7 +5052,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.37-2026-11-09";
+var APP_VERSION = "v0.16.38-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28539,15 +28545,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-ad1504def10f.mjs");
+      return pick(() => "singer-worker-7f9ae2d96b39.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-3e3c90fb7bbd.mjs");
+      return pick(() => "layout-worker-6273dd5c1a59.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-8f3dc2b0eccd.mjs");
+      return pick(() => "encode-worker-49f4ad4c0dec.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -31315,9 +31321,6 @@ function withoutRole(extras, role) {
 function withMic(extras, micId, patch) {
   return withTrack2(extras, micId, patch);
 }
-function candidates(extras, role) {
-  return cands(extras.lounge[role] ?? defaultRole("n", role)).map((c10) => ({ id: String(c10.id), name: String(c10.name ?? ""), engine: instrumentOf(c10)?.engine ?? "unknown" }));
-}
 function candidateJson(extras, role, id2) {
   return cands(extras.lounge[role] ?? defaultRole("n", role)).find((x2) => x2.id === id2) ?? null;
 }
@@ -31352,6 +31355,83 @@ function withActive(extras, role, id2, hum) {
   const r10 = roleOf(extras, role, hum);
   r10.active = id2;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
+}
+var isBuiltinId = (id2) => id2 === CANDIDATE_ID.full || id2 === CANDIDATE_ID.light;
+var stableJson = (v) => {
+  if (Array.isArray(v)) return `[${v.map((x2) => x2 === void 0 ? "null" : stableJson(x2)).join(",")}]`;
+  if (v && typeof v === "object") return `{${Object.keys(v).sort().filter((k2) => v[k2] !== void 0).map((k2) => `${JSON.stringify(k2)}:${stableJson(v[k2])}`).join(",")}}`;
+  return JSON.stringify(v) ?? "null";
+};
+function settingsPrint(c10) {
+  const { id: _i, castAs: _c, asCast: _a2, ...rest } = c10;
+  return sha256HexSync(new TextEncoder().encode(stableJson(rest))).slice(0, 16);
+}
+var builtinPrint = (c10) => {
+  const i10 = instrumentOf(c10);
+  return settingsPrint({ ...c10, name: null, ...isVoice(i10) ? { instrument: { ...i10, hum: null } } : {} });
+};
+function isUntouched(extras, role, id2, hum) {
+  const c10 = candidateJson(extras, role, id2);
+  if (!c10) return false;
+  if (isBuiltinId(id2)) {
+    const f2 = cands(defaultRole(hum, role)).find((x2) => x2.id === id2);
+    return !!f2 && builtinPrint(c10) === builtinPrint(f2);
+  }
+  return typeof c10.asCast === "string" && c10.asCast === settingsPrint(c10);
+}
+function withSwap(extras, role, nextActive, hum, o10 = {}) {
+  const prev = o10.prev ?? activeId(extras, role), judge = o10.before ?? extras;
+  let next2 = withActive(extras, role, nextActive, hum);
+  if (o10.fresh && !isBuiltinId(nextActive)) {
+    const r10 = roleOf(next2, role, hum);
+    r10.candidates = cands(r10).map((c10) => c10.id === nextActive ? { ...c10, asCast: settingsPrint(c10) } : c10);
+    next2 = { ...next2, lounge: { ...next2.lounge, [role]: r10 } };
+  }
+  if (prev !== nextActive && !isBuiltinId(prev) && isUntouched(judge, role, prev, hum)) {
+    const r10 = roleOf(next2, role, hum);
+    r10.candidates = cands(r10).filter((c10) => c10.id !== prev);
+    next2 = pruneSounds({ ...next2, lounge: { ...next2.lounge, [role]: r10 } });
+  }
+  return next2;
+}
+function withCandidateCopy(extras, fromRole, fromId, toRole, hum) {
+  const src = candidateJson(extras, fromRole, fromId);
+  if (!src) return extras;
+  const r10 = roleOf(extras, toRole, hum), list = cands(r10), id2 = nextKey2(list.map((c10) => String(c10.id)), "c");
+  const { asCast: _a2, ...copy } = structuredClone(src);
+  const same = fromRole === toRole;
+  if (same) copy.name = `${String(copy.name ?? "")} 2`;
+  r10.candidates = [...list, { ...copy, id: id2 }];
+  const prev = activeId(extras, toRole);
+  let next2 = { ...extras, lounge: { ...extras.lounge, [toRole]: r10 } };
+  const ca2 = copy.castAs;
+  if (ca2 && typeof ca2 === "object") next2 = withRoleConcept(next2, toRole, ca2, hum);
+  return same && prev === fromId ? withActive(next2, toRole, id2, hum) : withSwap(next2, toRole, id2, hum, { prev, before: extras });
+}
+function songPresets(extras, parts, role, hum) {
+  const out = [], seen = /* @__PURE__ */ new Set(), act = activeId(extras, role);
+  const printOf = (c10) => isBuiltinId(String(c10.id)) ? `b:${builtinPrint(c10)}` : settingsPrint(c10);
+  const here = parts.find((x2) => x2.role === role)?.label ?? "";
+  for (const c10 of cands(extras.lounge[role] ?? defaultRole(hum, role))) {
+    const id2 = String(c10.id), on2 = id2 === act;
+    if (!on2 && isUntouched(extras, role, id2, hum)) continue;
+    seen.add(printOf(c10));
+    out.push({ role, id: id2, name: String(c10.name ?? ""), on: on2, here: true, from: here, removable: !on2 && !isBuiltinId(id2) });
+  }
+  const done = /* @__PURE__ */ new Set([role]);
+  for (const p2 of parts) {
+    if (done.has(p2.role)) continue;
+    done.add(p2.role);
+    for (const c10 of cands(extras.lounge[p2.role])) {
+      const id2 = String(c10.id);
+      if (isUntouched(extras, p2.role, id2, hum)) continue;
+      const k2 = printOf(c10);
+      if (seen.has(k2)) continue;
+      seen.add(k2);
+      out.push({ role: p2.role, id: id2, name: String(c10.name ?? ""), on: false, here: false, from: p2.label, removable: false });
+    }
+  }
+  return out;
 }
 function gmCandidates(extras, role) {
   return cands(extras.lounge[role]).flatMap((c10) => {
@@ -36047,6 +36127,7 @@ var Finder = class {
     const [cid, rest] = key.split("|"), c10 = this.cat.byId.get(cid);
     if (!c10) return null;
     if (rest === "voice") return { kind: "voice", concept: c10 };
+    if (rest === "vowel") return { kind: "voice", concept: c10, light: true };
     const p2 = providersOf(this.cat, c10).find((x2) => gmKey(x2) === rest);
     return p2 ? { kind: "gs", concept: c10, provider: p2 } : null;
   }
@@ -36063,11 +36144,11 @@ var Finder = class {
       return;
     }
     if (v === "use" && btn) {
-      this.host.useCandidate?.(btn.dataset.cid);
-      return;
-    }
-    if (v === "usedel" && btn) {
-      this.host.removeCandidate?.(btn.dataset.cid);
+      const t11 = this.presetOf(btn);
+      if (!t11) return;
+      if (t11.here) {
+        if (!t11.on) this.host.useCandidate?.(t11.id);
+      } else this.host.copyPreset?.(t11.role, t11.id);
       this.renderUsed();
       return;
     }
@@ -36194,7 +36275,17 @@ var Finder = class {
     }
     await this.host.cast(pick);
   }
+  presetOf(el2) {
+    const k2 = Number(el2.closest("[data-preset]")?.dataset.preset ?? -1);
+    return this.presets[k2] ?? null;
+  }
+  presets = [];
   pinTarget(t10) {
+    const pre = t10.closest("[data-preset]");
+    if (pre) {
+      const x2 = this.presetOf(pre);
+      return x2 ? { kind: "preset", t: x2, el: pre } : null;
+    }
     if (!this.host.setPins) return null;
     const tile = t10.closest("[data-pin]");
     if (tile) return { kind: "tile", k: Number(tile.dataset.pin), el: tile };
@@ -36205,7 +36296,7 @@ var Finder = class {
   /** 长按 / 右键的小菜单（浮在那一格 / 那一行下面）。 */
   pinMenu(t10) {
     this.el.querySelector(".finder-pinmenu")?.remove();
-    const pins = this.pinsNow(), items = t10.kind === "tile" ? [["replace", String(t10.k), _t("\u6362\u6210\u2026")], ["unpin", String(t10.k), _t("\u62FF\u6389")]] : pins.some((p2) => p2.c === t10.c) ? [["unpinc", t10.c, _t("\u53D6\u6D88\u7F6E\u9876")]] : [["pinc", t10.c, _t("\u7F6E\u9876\u5230\u5E38\u7528")]];
+    const pins = this.pinsNow(), items = t10.kind === "preset" ? [["pcopy", String(this.presets.indexOf(t10.t)), t10.t.here ? _t("\u590D\u5236\u4E00\u4EFD") : _t("\u62F7\u5230\u8FD9\u4E2A\u58F0\u90E8")], ...t10.t.removable ? [["pdel", String(this.presets.indexOf(t10.t)), _t("\u5220\u6389")]] : []] : t10.kind === "tile" ? [["replace", String(t10.k), _t("\u6362\u6210\u2026")], ["unpin", String(t10.k), _t("\u62FF\u6389")]] : pins.some((p2) => p2.c === t10.c) ? [["unpinc", t10.c, _t("\u53D6\u6D88\u7F6E\u9876")]] : [["pinc", t10.c, _t("\u7F6E\u9876\u5230\u5E38\u7528")]];
     const m2 = document.createElement("div");
     m2.className = "finder-pinmenu";
     m2.innerHTML = items.map(([act, arg, label]) => `<button class="btn ctx-item" data-v="pinmenu" data-act="${act}" data-arg="${esc4(arg)}">${esc4(label)}</button>`).join("");
@@ -36223,6 +36314,14 @@ var Finder = class {
   }
   pinAct(act, arg) {
     this.el.querySelector(".finder-pinmenu")?.remove();
+    if (act === "pcopy" || act === "pdel") {
+      const x2 = this.presets[Number(arg)];
+      if (!x2) return;
+      if (act === "pcopy") this.host.copyPreset?.(x2.role, x2.id);
+      else this.host.removeCandidate?.(x2.id);
+      this.renderUsed();
+      return;
+    }
     const pins = this.pinsNow();
     if (act === "replace") {
       this.replacing = Number(arg);
@@ -36237,12 +36336,20 @@ var Finder = class {
     this.host.setPins?.(pins);
     this.renderPins();
   }
-  /** 顶上一排「这首歌里用过的」（歌里打开的才有；弹着玩没有）：点一位 = 上场，× = 退掉；最后一颗 = 自己的 .sf2（v0.16.18 搬家 C）。 */
+  /** 顶上第二排「这首歌的乐器预设」（歌里打开的才有；弹着玩没有）：和常用一行一样大的格子（图标 + 名字）。
+   *  点本声部的一格 = 换上；点别的声部的（角上写「在 ⟨声部⟩ 上」）= 拷一份过来换上，那边不动；长按 / 右键 = 复制一份 / 删掉（v0.16.38，施工单 §4.1 / §5）。 */
   renderUsed() {
-    const box = this.el.querySelector(".finder-used"), used = this.playOnly ? [] : this.host.used?.() ?? [];
+    const box = this.el.querySelector(".finder-used");
     box.hidden = this.playOnly || !this.host.used;
-    if (box.hidden) return;
-    box.innerHTML = `<span class="fu-k">${_t("\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE")}</span>` + used.map((u2) => `<span class="fu-c"><button class="btn chip${u2.on ? " is-on" : ""}" data-v="use" data-cid="${esc4(u2.id)}" title="${u2.on ? _t("\u6B63\u5728\u53F0\u4E0A") : _t("\u70B9\u4E86 = \u6362\u6210\u5B83")}">${esc4(u2.name)}</button>` + (u2.removable && !u2.on ? `<button class="btn fu-del" data-v="usedel" data-cid="${esc4(u2.id)}" title="${_t("\u9000\u6389\uFF08\u5B83\u5D4C\u5728\u6B4C\u91CC\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\uFF1B\u80FD\u64A4\u9500\uFF09")}">\xD7</button>` : "") + `</span>`).join("");
+    if (box.hidden) {
+      this.presets = [];
+      return;
+    }
+    const used = this.presets = this.host.used?.() ?? [];
+    box.innerHTML = `<div class="fu-k">${_t("\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE")}</div><div class="fp-row">${used.map((u2, k2) => {
+      const tip = u2.on ? _t("\u6B63\u5728\u53F0\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD") : u2.here ? _t("\u70B9 = \u6362\u4E0A\uFF1B\u957F\u6309\uFF08\u53F3\u952E\uFF09= \u590D\u5236\u4E00\u4EFD / \u5220\u6389") : _t("\u70B9 = \u62F7\u4E00\u4EFD\u5230\u8FD9\u4E2A\u58F0\u90E8\u3001\u6362\u4E0A\uFF08\u300C{from}\u300D\u90A3\u8FB9\u4E0D\u52A8\uFF09", { from: u2.from });
+      return `<button class="fp-tile${u2.on ? " is-on" : ""}${u2.here ? "" : " is-other"}" data-v="use" data-preset="${k2}" title="${esc4(tip)}">` + (u2.icon ? `<svg class="fp-ico" aria-hidden="true"><use href="#${esc4(u2.icon)}"/></svg>` : `<span class="fp-ico none">${esc4(u2.name.slice(0, 1))}</span>`) + `<span class="fp-name">${esc4(u2.name)}</span>${u2.here ? "" : `<span class="fp-job">${esc4(_t("\u5728 {from} \u4E0A", { from: u2.from }))}</span>`}</button>`;
+    }).join("")}</div>`;
   }
   render() {
     this.renderPins();
@@ -36355,7 +36462,8 @@ var Finder = class {
       const provs = providersOf(cat2, c10).filter((x2) => !pk || gmKey(x2) === pk), pitched = c10.kind === "voice";
       const prov = (key, label, note2, playable, sub = false) => this.provHtml(key, label, note2, playable, sub);
       body2 = `<div class="inst-prov">` + (pitched ? prov(`${c10.id}|voice`, _t("\u5C0F\u6708\u76F8"), _t("\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531"), false) : "") + // 人声里小月相排第一（v0.16.36；user「小月相的优先级肯定是高于那两个 O 和 A」）
-      provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? _t("\u9F13\u4EF6 \xB7 {gmName}\uFF08Standard \u9F13\u7EC4\u7684 {note} \u53F7\u952E\uFF09", { gmName: esc4(p2.gmName), note: p2.note }) : p2.bank === 128 ? _t("\u9F13\u7EC4 \xB7 {gmName}", { gmName: esc4(p2.gmName) }) : `GeneralUser GS \xB7 ${esc4(p2.gmName)}`}`, p2.kind === "substitute" ? _t("\u9876\u66FF{p}{reason}", { p: p2.basis === "official" ? _t("\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09") : p2.basis === "lineage" ? _t("\uFF08\u524D\u8EAB\uFF09") : p2.basis === "imitation" ? _t("\uFF08\u4EFF\u58F0\uFF09") : p2.basis === "family" ? _t("\uFF08\u540C\u7C7B\uFF09") : _t("\uFF08\u53EA\u662F\u540C\u540D\uFF09"), reason: p2.reason && zhOnly(p2.reason) ? `\uFF1A${esc4(p2.reason)}` : "" }) : "", true, p2.kind === "substitute")).join("") + (!provs.length && !pitched ? `<div class="prov-none">${_t("\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83")}</div>` : "") + `</div>`;
+      // 元音版紧跟着（v0.16.38）：没调过的内置两位不进「这首歌的乐器预设」（施工单 §5 R4），常用一行只有完整版——元音版（破设备兜底）放在这里才点得到
+      (pitched ? prov(`${c10.id}|vowel`, _t("\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09"), _t("\u53EA\u54FC\u300C\u54FC\u7684\u5B57\u300D\u3001\u4E0D\u5531\u6B4C\u8BCD\uFF1B\u8F7B\uFF0C\u7834\u8BBE\u5907\u4E5F\u5E26\u5F97\u52A8"), false) : "") + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? _t("\u9F13\u4EF6 \xB7 {gmName}\uFF08Standard \u9F13\u7EC4\u7684 {note} \u53F7\u952E\uFF09", { gmName: esc4(p2.gmName), note: p2.note }) : p2.bank === 128 ? _t("\u9F13\u7EC4 \xB7 {gmName}", { gmName: esc4(p2.gmName) }) : `GeneralUser GS \xB7 ${esc4(p2.gmName)}`}`, p2.kind === "substitute" ? _t("\u9876\u66FF{p}{reason}", { p: p2.basis === "official" ? _t("\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09") : p2.basis === "lineage" ? _t("\uFF08\u524D\u8EAB\uFF09") : p2.basis === "imitation" ? _t("\uFF08\u4EFF\u58F0\uFF09") : p2.basis === "family" ? _t("\uFF08\u540C\u7C7B\uFF09") : _t("\uFF08\u53EA\u662F\u540C\u540D\uFF09"), reason: p2.reason && zhOnly(p2.reason) ? `\uFF1A${esc4(p2.reason)}` : "" }) : "", true, p2.kind === "substitute")).join("") + (!provs.length && !pitched ? `<div class="prov-none">${_t("\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83")}</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open2 ? " is-open" : ""}" data-c="${esc4(c10.id)}" data-o="${esc4(o10)}"${pk ? ` data-k="${esc4(pk)}"` : ""}>` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc4(icon)}"/></svg>` : `<span class="inst-ico none">${esc4(conceptName(c10.names).slice(0, 1))}</span>`) + `<div class="inst-name"><b><span class="zh">${esc4(conceptName(c10.names))}</span>${e10.preset ? `<span class="inst-preset"> \xB7 ${esc4(e10.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span data-i18n-skip>${esc4(conceptAlt(roleNameOf(c10), c10.names))}</span></div><div class="inst-meta">${esc4(meta)}</div></div>` + body2;
   }
@@ -37666,7 +37774,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "33a26740b3c47a74" : "dev";
+var CORE_HASH = true ? "ed1b7b577baf4bdd" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -51952,7 +52060,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "93f3fef318d0",
+  cssHash: "1c1a16e17c46",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -52334,9 +52442,12 @@ async function castPick(p2) {
   }
   const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D2.st, extras: D2.extras, role: curRole() }, role = base2.role;
   const ca2 = castArgs(cat2, c10, p2.kind === "gs" ? p2.provider.sound : null);
+  const prev = activeId(base2.extras, role);
   let next2 = withRoleConcept(base2.extras, role, ca2, hum), keep2 = null;
-  if (p2.kind === "voice") next2 = withActive(withCastAs(next2, role, CANDIDATE_ID.full, ca2, hum), role, CANDIDATE_ID.full, hum);
-  else {
+  if (p2.kind === "voice") {
+    const vid = p2.light ? CANDIDATE_ID.light : CANDIDATE_ID.full;
+    next2 = withSwap(withCastAs(next2, role, vid, ca2, hum), role, vid, hum, { prev, before: base2.extras });
+  } else {
     const { subset, sha256 } = audition, inf = sf2Info(subset);
     next2 = withSf2Candidate(next2, role, {
       name: p2.provider.gmName,
@@ -52350,7 +52461,7 @@ async function castPick(p2) {
       credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } }
     }, hum);
     const id2 = activeId(next2, role);
-    next2 = withActive(withCastAs(next2, role, id2, ca2, hum), role, id2, hum);
+    next2 = withSwap(withCastAs(next2, role, id2, ca2, hum), role, id2, hum, { prev, fresh: true, before: base2.extras });
     keep2 = [sha256, subset];
   }
   const who = p2.kind === "voice" ? activeCandidateName(next2, role) ?? "" : p2.provider.gmName, label = _t("\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}", { c: roleNameOf(c10), gmName: who });
@@ -52373,8 +52484,8 @@ async function castOwn(p2) {
   if (audition?.from !== pickFrom(p2)) return;
   const { subset, sha256 } = audition, inf = sf2Info(f2.bytes), hum = D2.st.song.hum;
   const fileSha256 = f2.fileSha256 ??= await sha256Hex3(f2.bytes);
-  const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D2.st, extras: D2.extras, role: curRole() }, role = base2.role;
-  const next2 = withSf2Candidate(base2.extras, role, {
+  const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D2.st, extras: D2.extras, role: curRole() }, role = base2.role, prev = activeId(base2.extras, role);
+  const made = withSf2Candidate(base2.extras, role, {
     name: p2.name,
     bank: p2.bank,
     program: p2.program,
@@ -52384,6 +52495,7 @@ async function castOwn(p2) {
     origin: { name: f2.name, fileSha256, bytes: f2.bytes.length },
     credit: { attribution: [inf.name, inf.engineer, inf.copyright].filter((x2) => !!x2), license: { name: "unknown", text: inf.comment } }
   }, hum);
+  const next2 = withSwap(made, role, activeId(made, role), hum, { prev, fresh: true, before: base2.extras });
   const label = _t("\u300C{extras}\u300D\u6362\u6210\uFF1A{name}", { extras: roleName(base2.extras, role), name: p2.name });
   if (np2) {
     newPartPending = null;
@@ -52413,10 +52525,28 @@ var KV_FINDER_IMPRO = "finder-impro";
 var KV_FINDER_PINS = "finder-pins";
 var finder = new Finder($2("stage"), {
   // 目录顶上「这首歌里用过的」（v0.16.18 搬家 C：原来在乐器页「谁来演」；user 11-07「换乐器的时候…点了谱表的乐器名之后，按一个按钮就立刻能换，然后配置是另外一回事」）
+  // 「这首歌的乐器预设」（v0.16.38，施工单 §5 R4）：本声部台上那位 + 调过的，别的声部调过的（同一套设置只一格）；图标 = 当初作为哪件乐器上场（castAs）的那件
   used: () => {
     if (newPartPending) return [];
-    const aid = activeId(D2.extras, curRole());
-    return candidates(D2.extras, curRole()).map((c10) => ({ id: c10.id, name: !performerOf(c10.engine) ? _t("{name}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09", { name: c10.name }) : c10.name, on: c10.id === aid, removable: performerOf(c10.engine)?.removable ?? true }));
+    const labels = partLabels(D2.st.song, D2.extras), parts = D2.st.song.parts.map((p2, k2) => ({ role: p2.role, label: labels[k2] })), cat2 = catalogNow ?? catNow;
+    return songPresets(D2.extras, parts, curRole(), D2.st.song.hum).map((e10) => {
+      const c10 = candidateJson(D2.extras, e10.role, e10.id), eng = performerOf(String(c10?.instrument?.engine ?? "unknown"));
+      const wd = c10?.castAs?.concept?.ids?.wikidata, icon = wd && cat2 ? cat2.byId.get(wd)?.icon?.id : void 0;
+      return { ...e10, name: !eng ? _t("{name}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09", { name: e10.name }) : e10.name, removable: e10.removable && (eng?.removable ?? true), ...icon ? { icon } : {} };
+    });
+  },
+  copyPreset: (role, id2) => {
+    const to2 = curRole(), next2 = withCandidateCopy(D2.extras, role, id2, to2, D2.st.song.hum);
+    if (next2 === D2.extras) return;
+    const who = activeCandidateName(next2, to2) ?? id2, from = partLabels(D2.st.song, D2.extras)[D2.st.song.parts.findIndex((p2) => p2.role === role)] ?? "";
+    const label = role === to2 ? _t("\u300C{rn}\u300D\u590D\u5236\u4E86\u4E00\u4EFD\uFF1A{who}", { rn: roleName(next2, to2), who }) : _t("\u300C{rn}\u300D\u62F7\u6765\u4E86\u300C{from}\u300D\u7684\uFF1A{who}", { rn: roleName(next2, to2), from, who });
+    updateExtras(next2, { kind: "lounge", label });
+    sound.allOff();
+    void prepareBank();
+    view.render();
+    renderTitle();
+    finder.refresh();
+    info(label);
   },
   useCandidate: (id2) => {
     setActive(id2);
@@ -52650,7 +52780,7 @@ function castAsOf(extras, role, id2) {
   return concept ? castArgs(cat2, concept) : null;
 }
 function setActive(id2) {
-  let next2 = withActive(D2.extras, curRole(), id2, D2.st.song.hum);
+  let next2 = withSwap(D2.extras, curRole(), id2, D2.st.song.hum);
   const ca2 = castAsOf(next2, curRole(), id2);
   if (ca2) next2 = withRoleConcept(next2, curRole(), ca2, D2.st.song.hum);
   updateExtras(next2, { kind: "lounge", label: _t("\u300C{next}\u300D\u6362\u4EBA\uFF1A{next2}", { next: roleName(next2, curRole()), next2: activeCandidateName(next2, curRole()) ?? id2 }) });
@@ -56061,4 +56191,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b076d2012ca2.mjs.map
+//# sourceMappingURL=moonsinger-172e8c26eb19.mjs.map

@@ -73,6 +73,7 @@ import "./attack.test.ts";
 import "./caret.test.ts";
 import "./drag.test.ts";
 import "./singer.test.ts";
+import "./presets.test.ts";
 import "./sokuon.test.ts";
 import "./sheet-tempo.test.ts";
 import "./crossline.test.ts";

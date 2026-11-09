@@ -458,22 +458,21 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 /* 乐器目录顶上「这首歌里用过的」（v0.16.18 搬家 C）：点一位 = 上场，× = 退掉 */
 .finder-pins { padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }   /* 常用一行（v0.16.36）：一样大的格子横着排，放不下横着滑 */
 .finder-pins[hidden] { display: none; }
-.finder-pins .fp-row { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(72px, 1fr); gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; }
-.finder-pins .fp-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 4px 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: inherit; font: inherit; cursor: pointer; -webkit-touch-callout: none; user-select: none; }
-.finder-pins .fp-tile.is-on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+:is(.finder-pins, .finder-used) .fp-row { display: grid; grid-auto-flow: column; grid-auto-columns: max(72px, calc((100% - 36px) / 7)); gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; }   /* 两排的格子一样大：一格 = 一排的七分之一（至少 72px），格子少了右边空着、不拉宽 */
+:is(.finder-pins, .finder-used) .fp-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; padding: 6px 4px 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: inherit; font: inherit; cursor: pointer; -webkit-touch-callout: none; user-select: none; }
+:is(.finder-pins, .finder-used) .fp-tile.is-on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
 .finder-pins .fp-tile.is-replacing { border-style: dashed; border-color: var(--accent); }
-.finder-pins .fp-ico { width: 28px; height: 28px; fill: currentColor; }
-.finder-pins .fp-ico.none { display: grid; place-items: center; font-weight: 700; }
-.finder-pins .fp-name { max-width: 100%; font-size: 12px; font-weight: 600; line-height: 1.15; text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }   /* 放不下 = 折两行，不往外撑 */
-.finder-pins .fp-job { font-size: 10px; color: var(--muted); }
+:is(.finder-pins, .finder-used) .fp-ico { width: 28px; height: 28px; fill: currentColor; }
+:is(.finder-pins, .finder-used) .fp-ico.none { display: grid; place-items: center; font-weight: 700; }
+:is(.finder-pins, .finder-used) .fp-name { max-width: 100%; font-size: 12px; font-weight: 600; line-height: 1.15; text-align: center; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }   /* 放不下 = 折两行，不往外撑 */
+:is(.finder-pins, .finder-used) .fp-job { font-size: 10px; color: var(--muted); }
 .finder-pins .fp-replacing { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 12px; color: var(--accent); }
 .finder-pinmenu { position: fixed; z-index: var(--z-menu); display: flex; flex-direction: column; min-width: 140px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); box-shadow: 0 6px 24px rgba(0, 0, 0, .18); }
 .finder-pinmenu .ctx-item { justify-content: flex-start; }
-.finder-used { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px 12px; border-bottom: 1px solid var(--line); background: var(--bg); }
+.finder-used { padding: 4px 12px 6px; border-bottom: 1px solid var(--line); background: var(--bg); }   /* 这首歌的乐器预设（v0.16.38）：和常用一行一样的格子 */
 .finder-used[hidden] { display: none; }
-.finder-used .fu-k { font-size: 12px; color: var(--muted); margin-right: 2px; }
-.finder-used .fu-c { display: inline-flex; align-items: center; }
-.finder-used .fu-del { min-width: 24px; height: 28px; padding: 0 4px; color: var(--muted); }
+.finder-used .fu-k { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.finder-used .fp-tile.is-other { border-style: dashed; }   /* 别的声部的：拷一份过来 */
 .ip-who .ip-who-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 4px 0 8px; }
 .track-card .tc-row { display: flex; gap: 6px; margin: 4px 0 8px; }
 .finder-hint { flex: none; padding: 6px 12px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--line); }

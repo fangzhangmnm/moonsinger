@@ -32,10 +32,14 @@ await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), toks = s.song.papers[0].tracks[s.at.part].slice(); const i = toks.findIndex((t) => t.kind === "note" && t.lyric === "よ"); toks[i] = { ...toks[i], lyric: null }; m.set({ ...s, song: { ...s.song, papers: s.song.papers.map((pp, k) => (k === 0 ? { ...pp, tracks: { ...pp.tracks, [s.at.part]: toks } } : pp)) } }); });
 await p.waitForTimeout(150);
 await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="swap"]'); await p.waitForTimeout(400);   // v0.16.18：换乐器 = 目录，顶上「这首歌里用过的」
-const vs = await p.$$eval('.finder-used [data-v="use"]', (es) => es.map((e) => ({ v: e.dataset.cid, t: e.textContent })));
-const vowel = vs.find((x) => /元音/.test(x.t));
-check(!!vowel, "目录顶上「用过的」里有元音版", JSON.stringify(vs));
-if (vowel) await p.click(`.finder-used [data-cid="${vowel.v}"]`);
+// v0.16.38：元音版从目录「人声」那一件里选（没调过的内置两位不进预设那一排）
+await p.waitForSelector(".finder-list .finder-group-h");
+{ const n = await p.$$eval(".finder-group", (gs) => gs.length);
+  for (let k = 0; k < n && !(await p.$('.inst-row[data-c="Q7390"]')); k++) if (!(await p.$eval(`.finder-group[data-g="${k}"]`, (g) => g.classList.contains("is-open")))) { await p.click(`.finder-group[data-g="${k}"] > .finder-group-h`); await p.waitForTimeout(60); } }
+await p.click('.inst-row[data-c="Q7390"]'); await p.waitForTimeout(300);
+const vowel = await p.$('.prov[data-p="Q7390|vowel"] [data-v="cast"]');
+check(!!vowel, "目录「人声」里有元音版");
+if (vowel) await vowel.click();
 await p.waitForTimeout(300); if (await p.$(".finder:not([hidden])")) { await p.keyboard.press("Escape"); await p.waitForTimeout(250); }
 await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTimeout(100);
 const slot = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = m.state(), toks = s.song.papers[0].tracks[s.at.part], i = toks.findIndex((t) => t.kind === "note" && t.lyric === null), n = L.notes.find((q) => q.index === i), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return n ? { x: sc.left + L.pageX.left + n.x + n.w / 2, y: sc.top + L.lyricY(n.system) } : null; });

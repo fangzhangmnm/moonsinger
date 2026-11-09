@@ -182,6 +182,7 @@
             "wedgeStepDb": "number",
             "wedgeStepVel": "number"
           },
+          "asCast": "string",
           "calibrationDb": "number",
           "castAs": {
             "concept": {

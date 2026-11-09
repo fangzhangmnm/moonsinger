@@ -20,6 +20,7 @@ import { FORMAT, FORMAT_MINOR, FORMAT_PATCH, type FormatFile, type Dynamic, type
 import { FINAL_MP3_ENTRY, contentFingerprint, parseFinalRecord, type FinalRecord, type FingerprintParts } from "./final.ts";
 export { FINAL_MP3_ENTRY, type FinalRecord };
 import { migrate } from "./migrate/index.ts";
+import { sha256HexSync } from "./sha256-sync.ts";
 import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
 export type { Hum, InstrumentV2 };
@@ -344,6 +345,86 @@ export function withActive(extras: Extras, role: string, id: string, hum: Hum): 
   const r = roleOf(extras, role, hum);
   r.active = id;
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
+
+// ── 乐器预设的规矩（v0.16.38，2026-11-09 Claude Opus 5.5；施工单 ai-docs/20261109-work-order-instrument-pick-vs-tune.md §5，Fable 写的 R1–R7）──────────
+//   界面上的「乐器预设」= 角色里的一位候选。「调过没有」是算出来的（设置指纹），不是到处记得去标一个布尔：
+//   旧版 app（或别的设备上没更新的）打开、调了响度、原样写回不认识的字段——布尔会说谎（调过的被当成没调过、换乐器时删掉），指纹不会（设置变了就对不上 = 当作调过 = 留着）。
+const isBuiltinId = (id: string): boolean => id === CANDIDATE_ID.full || id === CANDIDATE_ID.light;
+/** 键名排好序的 JSON（值是 undefined 的键跳过，同 JSON.stringify）。指纹和键的先后无关。 */
+const stableJson = (v: unknown): string => {
+  if (Array.isArray(v)) return `[${v.map((x) => (x === undefined ? "null" : stableJson(x))).join(",")}]`;
+  if (v && typeof v === "object") return `{${Object.keys(v).sort().filter((k) => (v as Record<string, unknown>)[k] !== undefined).map((k) => `${JSON.stringify(k)}:${stableJson((v as Record<string, unknown>)[k])}`).join(",")}}`;
+  return JSON.stringify(v) ?? "null";
+};
+/** R1：设置指纹 = 去掉 id / castAs / asCast 三个键之后的 sha256 前 16 位。名字、出声的那一件、响度、移调、每一张表、效果链、署名，连同以后才有的不认识的键，全在里面。 */
+export function settingsPrint(c: Json): string {
+  const { id: _i, castAs: _c, asCast: _a, ...rest } = c;
+  return sha256HexSync(new TextEncoder().encode(stableJson(rest))).slice(0, 16);
+}
+/** 内置两位的比较：名字（跟界面语言走，app 起的）和哼的字（整首歌一个，存的时候统一写）不算这一位的设置——换界面语言、换哼的字不把它变成「调过」。
+ *  （施工单 R1 只说「指纹等于出厂那一位」；这两个键是 Opus 加的例外，等 Fable 审。） */
+const builtinPrint = (c: Json): string => { const i = instrumentOf(c); return settingsPrint({ ...c, name: null, ...(isVoice(i) ? { instrument: { ...i, hum: null } } : {}) }); };
+/** 这一位换上台以后没调过？内置两位 = 和出厂那一位一样；别的 = asCast 还等于现在的指纹（没有 asCast = 旧歌 / 旧版 app 造的 = 当作调过）。没有这一位 = false。 */
+export function isUntouched(extras: Extras, role: string, id: string, hum: Hum): boolean {
+  const c = candidateJson(extras, role, id); if (!c) return false;
+  if (isBuiltinId(id)) { const f = cands(defaultRole(hum, role)).find((x) => x.id === id); return !!f && builtinPrint(c) === builtinPrint(f); }
+  return typeof c.asCast === "string" && c.asCast === settingsPrint(c);
+}
+/** R2 + R3：换上台。下台的那位没调过、又不是内置的 = 同一次提交里删掉（连同没别人引用的嵌入字节）；fresh = 新造的这位记下 asCast（内置的不记）。
+ *  prev = 换之前台上的是谁（新造候选的函数会顺手把台上换掉，所以由调用方在造之前记下）；默认 = 现在台上的。三条换上台的路（目录选 / 点预设 / 自己的 .sf2）都走这里。 */
+export function withSwap(extras: Extras, role: string, nextActive: string, hum: Hum, o: { prev?: string; fresh?: boolean; before?: Extras } = {}): Extras {
+  const prev = o.prev ?? activeId(extras, role), judge = o.before ?? extras;
+  let next = withActive(extras, role, nextActive, hum);
+  if (o.fresh && !isBuiltinId(nextActive)) {
+    const r = roleOf(next, role, hum);
+    r.candidates = cands(r).map((c) => (c.id === nextActive ? { ...c, asCast: settingsPrint(c) } : c));
+    next = { ...next, lounge: { ...next.lounge, [role]: r } };
+  }
+  if (prev !== nextActive && !isBuiltinId(prev) && isUntouched(judge, role, prev, hum)) {
+    const r = roleOf(next, role, hum); r.candidates = cands(r).filter((c) => c.id !== prev);
+    next = pruneSounds({ ...next, lounge: { ...next.lounge, [role]: r } });
+  }
+  return next;
+}
+/** R5 / R6：把 fromRole 里的 fromId 拷一份到 toRole、换上台。新 id、不带 asCast（拷来的是调过的，留着）、castAs 一起拷（声部的名字 / 乐器概念跟着换）；
+ *  嵌入的字节按 sha256 本来就共用一份。原来那一位一个字节不动；永远是新加一位，不覆盖已有的任何候选。同一个声部里 = 「复制一份」：名字后面加「 2」，原来那位留着。 */
+export function withCandidateCopy(extras: Extras, fromRole: string, fromId: string, toRole: string, hum: Hum): Extras {
+  const src = candidateJson(extras, fromRole, fromId); if (!src) return extras;
+  const r = roleOf(extras, toRole, hum), list = cands(r), id = nextKey(list.map((c) => String(c.id)), "c");
+  const { asCast: _a, ...copy } = structuredClone(src);
+  const same = fromRole === toRole;
+  if (same) copy.name = `${String(copy.name ?? "")} 2`;
+  r.candidates = [...list, { ...copy, id }];
+  const prev = activeId(extras, toRole);
+  let next: Extras = { ...extras, lounge: { ...extras.lounge, [toRole]: r } };
+  const ca = copy.castAs as import("./contract.ts").CandidateV2["castAs"];
+  if (ca && typeof ca === "object") next = withRoleConcept(next, toRole, ca, hum);
+  return same && prev === fromId ? withActive(next, toRole, id, hum) : withSwap(next, toRole, id, hum, { prev, before: extras });
+}
+/** R4：目录顶上「这首歌的乐器预设」一行列谁。本声部：台上那位 + 所有调过的；别的声部：调过的，指纹和已经列出来的一样的不再列；内置两位没调过 = 不列（它们在「常用」一行）。
+ *  parts = 歌里声部的顺序（角色 id + 谱上叫什么）。 */
+export interface PresetEntry { role: string; id: string; name: string; on: boolean; here: boolean; from: string; removable: boolean }
+export function songPresets(extras: Extras, parts: { role: string; label: string }[], role: string, hum: Hum): PresetEntry[] {
+  const out: PresetEntry[] = [], seen = new Set<string>(), act = activeId(extras, role);
+  const printOf = (c: Json) => (isBuiltinId(String(c.id)) ? `b:${builtinPrint(c)}` : settingsPrint(c));
+  const here = parts.find((x) => x.role === role)?.label ?? "";
+  for (const c of cands(extras.lounge[role] ?? defaultRole(hum, role))) {
+    const id = String(c.id), on = id === act;
+    if (!on && isUntouched(extras, role, id, hum)) continue;
+    seen.add(printOf(c));
+    out.push({ role, id, name: String(c.name ?? ""), on, here: true, from: here, removable: !on && !isBuiltinId(id) });
+  }
+  const done = new Set([role]);
+  for (const p of parts) {
+    if (done.has(p.role)) continue; done.add(p.role);
+    for (const c of cands(extras.lounge[p.role])) {
+      const id = String(c.id); if (isUntouched(extras, p.role, id, hum)) continue;
+      const k = printOf(c); if (seen.has(k)) continue; seen.add(k);
+      out.push({ role: p.role, id, name: String(c.name ?? ""), on: false, here: false, from: p.label, removable: false });
+    }
+  }
+  return out;
 }
 
 // ── SoundFont 候选（契约 §10.2：子集 by value 嵌进歌；弱引用 = 只记来源）────────────────────
