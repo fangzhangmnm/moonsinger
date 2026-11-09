@@ -949,7 +949,7 @@ span.smufl { pointer-events: none; }
 .sym-tab .ramp-tag { margin-left: 3px; font-size: 9px; padding: 0 3px; border-radius: 3px; border: 1px solid var(--accent); color: var(--accent); vertical-align: 1px; }
 .sym-tab .ramp-tag.lock { background: var(--accent); color: #fff; }
 .ctx-menu .ctx-ver { font-size: 11px; color: var(--muted); padding: 2px 12px 0; font-variant-numeric: tabular-nums; }   /* 三条杠菜单：设置上面的版本号 */
-.ctx-menu .ctx-dyn { flex-wrap: nowrap; }
+.ctx-menu .ctx-row.ctx-dyn { display: grid; grid-template-columns: repeat(4, minmax(34px, 1fr)); }   /* ppp…fff 八格 = 两行四格（上弱下强）；原来一行不折、菜单 220 宽放不下八格，跑出弹窗（v0.16.60，user 11-09「ppp - fff跑到了弹出窗口的外面，没有好好排版罢了」） */
 .ctx-menu .ctx-dyn .ctx-chip { min-width: 34px; padding: 0 4px; }
 .ctx-menu .ctx-dyn .ctx-chip .smufl { font-family: "Bravura"; font-size: 24px; line-height: 1; position: relative; top: 5px; }
 /* 风格记号（拍子轻重；2026-10-08 深夜 Opus 5.5）：谱上一行斜体字；不认识的预设 = 灰；小菜单宽一点、说明可以折行 */
