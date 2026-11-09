@@ -4533,7 +4533,7 @@ function mergeTracks(tracks, opt = {}) {
 
 // src/render/engrave.ts
 var lyricLook = (ts) => ts > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
-var lyricGap = (a, b) => (a.block && b.block ? 0.25 : 0.5) + (a.hy ? 0.9 : 0);
+var lyricGap = (a, b) => (a.block && b.block ? 0.25 : 0.5) + (a.hy ? 0.3 : 0);
 function placeLyrics(items, f) {
   const cap = items.map((it) => Math.max(0.8, 0.45 * it.w)), pos = items.map((it) => it.cx), half = items.map((it, i) => it.w * f[i] / 2);
   for (let pass = 0; pass < 4; pass++) {
@@ -5376,7 +5376,7 @@ function engrave(song, o) {
       if (from >= to) continue;
       const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, to, 0);
       let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true }) : nat;
-      if (ts > 1 && s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
+      if (s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
         const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch);
         f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true });
       }
@@ -5784,7 +5784,7 @@ function engrave(song, o) {
           const ly = ly0, cx2 = cx0 + (fit ? P(fit.dx) : 0);
           partLyrics.push({ index: c.index, system: row, x: cx2, y: ly, ...fit?.tight ? { tight: true } : {} });
           if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly0, x2: x0 + nhW(c) + P(0.4), y2: ly0, w: P(0.12), cls: "melisma" });
-          else if (c.lyric) prims.push({ tok: tokOf(c), t: "text", x: cx2, y: ly, s: lyricShow(c.lyric), ...look.k !== 1 || ts !== 1 ? { size: P(LYRIC_EM * look.k) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
+          else if (c.lyric) prims.push({ tok: tokOf(c), t: "text", x: cx2, y: ly, s: lyricShow(c.lyric), ...look.k !== 1 || ts !== 1 ? { size: P(LYRIC_EM * look.k) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         } });
       };
       for (const u of units) {
@@ -6194,7 +6194,7 @@ function engrave(song, o) {
               let xx = same ? (L.x + R.x) / 2 : L.x + P(1.6);
               if (same && hl !== void 0 && hr !== void 0) {
                 const a = L.x + P(hl), b = R.x - P(hr);
-                if (b - a < P(0.7 * look.k * look.sx)) continue;
+                if (b - a < P(0.33 * LYRIC_EM * look.k * look.sx + 0.1)) continue;
                 xx = (a + b) / 2;
               }
               prims.push({ t: "text", x: xx, y: L.y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts !== 1 ? { size: P(LYRIC_EM * look.k) } : {}, ...look.sx !== 1 ? { sx: look.sx } : {} });
@@ -6457,4 +6457,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-cadb171ac9fd.mjs.map
+//# sourceMappingURL=layout-worker-bff4ba31818b.mjs.map

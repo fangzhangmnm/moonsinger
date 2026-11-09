@@ -98,8 +98,8 @@ export { LYRIC_EM } from "./text-style.ts";
 const lyricLook = (ts: number) => (ts > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy);
 export interface LyricFit { dx: number; /** 宽度倍数（乘在这一档平常的宽度上；1 = 不收）。 */ sx: number; tight: boolean }
 export interface LyricItem { cx: number; w: number; hy?: boolean; /** 方块字：宽度跟整段统一（不各收各的）。 */ block?: boolean }
-/** 两个字之间至少留多少（sp）：方块字挨方块字 = 0.25（方块字自己带字面空白；user 11-09「字间距有点太保守」），其余 0.5；前一个后面有连字符 = 多留 0.9。 */
-const lyricGap = (a: LyricItem, b: LyricItem) => (a.block && b.block ? 0.25 : 0.5) + (a.hy ? 0.9 : 0);
+/** 两个字之间至少留多少（sp）：方块字挨方块字 = 0.25（方块字自己带字面空白；user 11-09「字间距有点太保守」），其余 0.5；前一个后面有连字符 = 多留 0.3。 */
+const lyricGap = (a: LyricItem, b: LyricItem) => (a.block && b.block ? 0.25 : 0.5) + (a.hy ? 0.3 : 0);   // 连字符多留 0.3（原 0.9；user 11-09「连字符能不能少占空间」）：一共 0.8 ≥ 一个连字符宽（约 0.53）+ 两边一点
 /** 按给定的宽度倍数摆一行：先左右借空（最多挪自己宽的 45% 或 0.8），还压着的那几对 = bad。 */
 function placeLyrics(items: readonly LyricItem[], f: readonly number[]): { pos: number[]; bad: Set<number> } {
   const cap = items.map((it) => Math.max(0.8, 0.45 * it.w)), pos = items.map((it) => it.cx), half = items.map((it, i) => (it.w * f[i]) / 2);
@@ -134,7 +134,7 @@ export function lyricBlockSx(items: readonly LyricItem[], minSx = LYRIC_MIN_SX):
 /** 歌词按节奏排的让路（v0.9.40 立；v0.16.43 整行一起缩；**v0.16.44 改成字高不动、只收宽度**——user 11-09「字高固定，宽度会收」「挤不下的话，是收宽度，不是收字高」）：
  *  一行里的字（中心 cx、宽 w，单位 sp；hy = 后面有连字符），音的位置不动，字让路：
  *  ① 左右借空 ② 还挤 = 收宽度：方块字用整段统一的那个宽度（blockSx，宿主按 lyricBlockSx 对整段取最窄），别的字挤到哪个收哪个（「宽窄的节奏」）
- *  ③ 收到最窄（minSx）还挤 = 照写、挤的那几个标 tight（画灰、歌词框上说「挤了」）。纯函数。 */
+ *  ③ 收到最窄（minSx）还挤 = 照写、挤的那几个标 tight（歌词框上说「挤了」；v0.16.45 起不画灰——灰是「唱不出来 / 不认」）。纯函数。 */
 export function fitLyrics(items: readonly LyricItem[], blockSx = 1, minSx = LYRIC_MIN_SX): LyricFit[] {
   const r = squeezeLyrics(items, blockSx, minSx);
   return items.map((it, i) => ({ dx: r.pos[i] - it.cx, sx: r.f[i], tight: r.bad.has(i) }));
@@ -857,14 +857,14 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     for (const [a, b] of keyAtCol[n]) keyNow.set(a, b);
     const nSys = lineFrom.length;
     // 摆：不是最后一行、用了六成以上 = 拉满；超了（挤一挤进来的）= 压回来；别的照自然宽
-    //   紧凑档的最后一行（v0.16.44 试）：音距跟上一行一样松（不再挤在左边、右边空一大片——user 11-09「为什么第二行抽风了」= 最后一行十六分音符挤成一团、歌词被压）；
-    //   铺过了整行宽 = 拉满。只看上一行的松紧、不看歌词，打字时前面的音照样不动（上一行折行变了才会变）。
+    //   最后一行（v0.16.44 紧凑档试，v0.16.45 舒适档也用——user「舒适档应该也会挤」）：音距跟上一行一样松（不再挤在左边、右边空一大片——user 11-09「为什么第二行抽风了」= 最后一行十六分音符挤成一团、歌词被压）；
+    //   铺过了整行宽 = 拉满。只看上一行的松紧、不看歌词，打字时前面的音照样不动（上一行折行变了才会变）。两档一样。
     let prevStretch = 0;
     for (let s = 0; s < nSys; s++) {
       const from = lineFrom[s], to = s + 1 < nSys ? lineFrom[s + 1] : n; if (from >= to) continue;
       const avail = brk - sysStarts[s], nat = placeLine(spCols, gaps, rodIx, from, to, 0);
       let f: { xs: number[]; end: number; stretch?: number } = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true }) : nat;
-      if (ts > 1 && s === nSys - 1 && s > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
+      if (s === nSys - 1 && s > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
         const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch);
         f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true });
       }
@@ -1209,7 +1209,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
           const ly = ly0, cx = cx0 + (fit ? P(fit.dx) : 0);
           partLyrics.push({ index: c.index, system: row, x: cx, y: ly, ...(fit?.tight ? { tight: true as const } : {}) });
           if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly0, x2: x0 + nhW(c) + P(0.4), y2: ly0, w: P(0.12), cls: "melisma" });
-          else if (c.lyric) prims.push({ tok: tokOf(c), t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(look.k !== 1 || ts !== 1 ? { size: P(LYRIC_EM * look.k) } : {}), ...(look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}), cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
+          else if (c.lyric) prims.push({ tok: tokOf(c), t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(look.k !== 1 || ts !== 1 ? { size: P(LYRIC_EM * look.k) } : {}), ...(look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}), cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""]   /* 挤了不画灰（v0.16.45；user「挤了能不能不画灰」「灰是有别的语义的」= 唱不出来 / 不认）：只留 lyric-tight 给歌词框说「挤了」 */.filter(Boolean).join(" ") });
         } });
       };
       for (const u of units) {
@@ -1568,7 +1568,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
               // 连字符摆在两个音节之间那道缝的正中（原来是两个中心的正中 = 贴着长的那个，user 11-09 看着像虚线）；缝放不下一个连字符 = 不画（常见打谱软件的做法）
               const hl = lyrPlan.get(`${r}:${L.index}`)?.hw, hr = same ? lyrPlan.get(`${r}:${R!.index}`)?.hw : undefined;
               let xx = same ? (L.x + R!.x) / 2 : L.x + P(1.6);
-              if (same && hl !== undefined && hr !== undefined) { const a = L.x + P(hl), b = R!.x - P(hr); if (b - a < P(0.7 * look.k * look.sx)) continue; xx = (a + b) / 2; }
+              if (same && hl !== undefined && hr !== undefined) { const a = L.x + P(hl), b = R!.x - P(hr); if (b - a < P(0.33 * LYRIC_EM * look.k * look.sx + 0.1)) continue; xx = (a + b) / 2; }   // 放不下一个连字符（约 0.33 字宽）+ 一点 = 不画
               prims.push({ t: "text", x: xx, y: L.y, s: "-", cls: "lyric hyphen", ...(look.k !== 1 || ts !== 1 ? { size: P(LYRIC_EM * look.k) } : {}), ...(look.sx !== 1 ? { sx: look.sx } : {}) });
             }
             lyrics.push(...partLyrics.slice(from));

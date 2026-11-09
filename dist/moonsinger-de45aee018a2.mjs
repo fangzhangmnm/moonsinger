@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.44-2026-11-09";
+var APP_VERSION = "v0.16.45-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10753,7 +10753,7 @@ function mergeTracks(tracks, opt = {}) {
 
 // src/render/engrave.ts
 var lyricLook = (ts2) => ts2 > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
-var lyricGap = (a10, b3) => (a10.block && b3.block ? 0.25 : 0.5) + (a10.hy ? 0.9 : 0);
+var lyricGap = (a10, b3) => (a10.block && b3.block ? 0.25 : 0.5) + (a10.hy ? 0.3 : 0);
 function placeLyrics(items, f2) {
   const cap2 = items.map((it2) => Math.max(0.8, 0.45 * it2.w)), pos = items.map((it2) => it2.cx), half2 = items.map((it2, i10) => it2.w * f2[i10] / 2);
   for (let pass = 0; pass < 4; pass++) {
@@ -11597,7 +11597,7 @@ function engrave(song, o10) {
       if (from >= to2) continue;
       const avail2 = brk - sysStarts[s10], nat2 = placeLine(spCols, gaps, rodIx, from, to2, 0);
       let f2 = brk !== Infinity && (nat2.end > avail2 + 1e-6 || s10 !== nSys - 1 && nat2.end >= avail2 * 0.6) ? fitLine(spCols, gaps, rodIx, from, to2, avail2, { squeeze: SQUEEZE, justify: true }) : nat2;
-      if (ts2 > 1 && s10 === nSys - 1 && s10 > 0 && f2 === nat2 && prevStretch > 0 && brk !== Infinity) {
+      if (s10 === nSys - 1 && s10 > 0 && f2 === nat2 && prevStretch > 0 && brk !== Infinity) {
         const g3 = placeLine(spCols, gaps, rodIx, from, to2, prevStretch);
         f2 = g3.end <= avail2 + 1e-6 ? { ...g3, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to2, avail2, { squeeze: SQUEEZE, justify: true });
       }
@@ -12005,7 +12005,7 @@ function engrave(song, o10) {
           const ly2 = ly0, cx3 = cx0 + (fit ? P2(fit.dx) : 0);
           partLyrics.push({ index: c10.index, system: row2, x: cx3, y: ly2, ...fit?.tight ? { tight: true } : {} });
           if (c10.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P2(0.6), y1: ly0, x2: x0 + nhW(c10) + P2(0.4), y2: ly0, w: P2(0.12), cls: "melisma" });
-          else if (c10.lyric) prims.push({ tok: tokOf(c10), t: "text", x: cx3, y: ly2, s: lyricShow(c10.lyric), ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
+          else if (c10.lyric) prims.push({ tok: tokOf(c10), t: "text", x: cx3, y: ly2, s: lyricShow(c10.lyric), ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         } });
       };
       for (const u2 of units) {
@@ -12415,7 +12415,7 @@ function engrave(song, o10) {
               let xx = same ? (L2.x + R2.x) / 2 : L2.x + P2(1.6);
               if (same && hl !== void 0 && hr !== void 0) {
                 const a10 = L2.x + P2(hl), b3 = R2.x - P2(hr);
-                if (b3 - a10 < P2(0.7 * look.k * look.sx)) continue;
+                if (b3 - a10 < P2(0.33 * LYRIC_EM * look.k * look.sx + 0.1)) continue;
                 xx = (a10 + b3) / 2;
               }
               prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, ...look.sx !== 1 ? { sx: look.sx } : {} });
@@ -29169,9 +29169,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-cadb171ac9fd.mjs");
+      return pick(() => "layout-worker-bff4ba31818b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-57b3161794f8.mjs");
+      return pick(() => "encode-worker-42074432b22c.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -56823,4 +56823,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-dd6c59878b0b.mjs.map
+//# sourceMappingURL=moonsinger-de45aee018a2.mjs.map

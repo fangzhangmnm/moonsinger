@@ -44,7 +44,7 @@ describe("排出来：歌词字高一律一样，方块字整段一个宽度", (
     let id = 7100; const st = initState();
     const toks = [...tr(st).slice(0, 3), ...zh.map((ch): Token => ({ kind: "note", id: id++, pitch: { step: "E", alter: 0, octave: 5 }, dur: TPQ / 4, lyric: ch }) as Token)];
     const song = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) };
-    const L = engrave(song, { width: 700, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 22 } as never);   // 一个字 2.2 个线间距宽：十六分音符放不下
+    const L = engrave(song, { width: 700, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 30 } as never);   // 一个字 3 个线间距宽：十六分音符放不下（最后一行 v0.16.45 起跟上一行一样松，要更宽的字才挤）
     const ly = L.prims.filter((p) => p.t === "text" && /^lyric\b/.test(p.cls ?? "") && !/hyphen/.test(p.cls ?? "")) as { size?: number; sx?: number }[];
     assert(ly.length === zh.length, `${ly.length} 个字`);
     eq(new Set(ly.map((p) => p.size ?? 0)).size, 1, "字高一样");
