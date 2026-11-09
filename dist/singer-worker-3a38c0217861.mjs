@@ -449,14 +449,9 @@ var S = {
   "\u6BCF\u884C\u5F00\u5934": { en: "Start of each line" },
   "\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0": { en: "Small, top-left of each line's top staff; each sheet counts from 1, a pickup counts as 0" },
   "\u4E0D\u5370": { en: "Don't print" },
-  "\u5341\u516D\u5206\u3001\u4E09\u5341\u4E8C\u5206\u6392\u5F97\u5BC6\u4E00\u70B9\uFF08\u51FA\u7248\u8C31\u7684\u4E60\u60EF\uFF09": { en: "16ths and 32nds set closer together (as in published scores)" },
-  "\u97F3\u8DDD": { en: "Note spacing" },
-  "\u6B63\u5E38##\u97F3\u8DDD": { en: "Normal" },
-  "\u7D27##\u97F3\u8DDD": { en: "Tight" },
-  "\u6574\u4F53\u518D\u6536\u4E00\u622A\uFF0C\u4E00\u884C\u653E\u66F4\u591A\u5C0F\u8282": { en: "Everything a bit closer; more bars per line" },
   "\u6B4C\u8BCD": { en: "Lyrics" },
   "\u6309\u8282\u594F": { en: "By rhythm" },
-  "\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u5C0F\u4E00\u53F7 \u2192 \u4E0A\u4E0B\u9519\u5F00 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070": { en: "Note positions depend only on duration, so notes don't move as you type; lyrics make way: borrow nearby space \u2192 smaller \u2192 staggered \u2192 grayed out if it still doesn't fit" },
+  "\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070": { en: "Note positions depend only on duration, so notes stay put while you type; lyrics make room: borrow space nearby \u2192 shrink the whole line a little \u2192 grey out if it still doesn't fit" },
   "\u6309\u6B4C\u8BCD": { en: "By lyrics" },
   "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": { en: "Long words push notes apart (the traditional engraving rule)" },
   "\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019": { en: "When the screen can't fit the sheet" },
@@ -1708,9 +1703,9 @@ var S = {
   "\u8FD9\u4E00\u6BB5\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57": { en: "This segment is sung in Chinese: one character per note" },
   "\u8FD9\u4E00\u6BB5\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD": { en: "This segment is sung in English: use Latin letters" },
   "\u8212\u9002": { en: "Comfortable" },
-  "\u8C31\u5927": { en: "Large staves" },
+  "\u8C31\u5927\u3001\u97F3\u8DDD\u6B63\u5E38\uFF1A\u6478\u4E3B\u65CB\u5F8B\u3001\u5199\u6B4C\u8BCD": { en: "Large staves, normal note spacing: for sketching the melody and lyrics" },
   "\u7D27\u51D1": { en: "Compact" },
-  "\u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1B\u603B\u8C31\u58F0\u90E8\u591A\u7528\u8FD9\u4E2A": { en: "Smaller staves, tighter spacing; for scores with many parts" },
+  "\u8C31\u5C0F\u3001\u97F3\u8DDD\u7D27\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1A\u914D\u5668\uFF1B\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57": { en: "Small staves, tight note spacing and rows: for arranging; titles and part names stay large, lyrics are small" },
   "\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F": { en: "Landscape: scores / large screens" },
   "\u6B63\u7ECF\u7EB8": { en: "Standard paper" },
   "\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09": { en: "Booklet (A4 folded)" },
@@ -10446,4 +10441,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-7f9ae2d96b39.mjs.map
+//# sourceMappingURL=singer-worker-3a38c0217861.mjs.map

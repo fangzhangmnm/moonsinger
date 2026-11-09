@@ -7,8 +7,8 @@ import { primInk } from "../src/render/skyline.ts";
 import { textScaleOf, paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { VIEWS, loadSong, measure } from "./fixtures/layout/cases.ts";
 
-/** 「跟字」的类（施工单 §3.2 那张表）；其余的字（cresc. / 8va / 吸 / 推定的灰字）跟谱。 */
-const FOLLOW_TEXT = /^(song-title|credits|arr|arr-label|arr-issue|paper-name|part-name|part-badge|lyric|phrase-mark|tempo|tempo-change|groove-mark|nav-mark|keysig key-label|bar-no|chord-tag|page-no)\b/;
+/** 「跟字」的类（施工单 §3.2 那张表；歌词 v0.16.43 起改回跟谱）；其余的字（歌词、cresc. / 8va / 吸 / 推定的灰字）跟谱。 */
+const FOLLOW_TEXT = /^(song-title|credits|arr|arr-label|arr-issue|paper-name|part-name|part-badge|tempo|tempo-change|groove-mark|nav-mark|keysig key-label|bar-no|chord-tag|page-no)\b/;   // 歌词 v0.16.43 起跟谱（紧凑 = 配器，user「紧凑的话其实那个小字就够了」）
 const sizeOf = (p: Prim, sp: number) => (p.t === "text" ? p.size ?? LYRIC_EM * sp : p.t === "glyph" ? p.size ?? 4 * sp : 0);
 const compact = (key: string) => { const { song, labels } = loadSong(key), paper = song.paper ?? paperOf(DEFAULT_PAPER); return { song: { ...song, paper: { ...paper, density: "compact" as const, staffMm: undefined } }, labels }; };
 /** 同一首紧凑档的歌排两遍：字的尺子 = 谱（1）/ 字照舒适档（1.4）。量字跟着字号。 */
@@ -29,8 +29,9 @@ describe("刀 2：紧凑档的字照舒适档那么大（textScale = 7 / 5）", 
       const sb = b.get(k); if (!sb) continue;   // 折行不一样时某个字可能只在一边（比如行首的小节号）
       const [t, cls] = k.split("|"), follow = (t === "text" && FOLLOW_TEXT.test(cls!)) || (t === "glyph" && /^tempo\b/.test(cls!));   // 速度里的小音符跟速度字
       const want = [...sa].map((x) => Math.round(x * (follow ? ts : 1) * 1000) / 1000).sort().join(), got = [...sb].sort().join();
-      const squeezed = cls!.startsWith("lyric") && [...sb].every((x) => [...sa].some((y) => Math.abs(x - Math.round(y * ts * 0.8 * 1000) / 1000) < 1e-3 || Math.abs(x - Math.round(y * ts * 1000) / 1000) < 1e-3));   // 歌词放大后挤了 = 按节奏排的让路缩到八成（fitLyrics 第 ② 步，原有规矩）
-      if (want !== got && !squeezed) bad.push(`${k.slice(0, 40)}：${[...sa].join("/")} → ${got}（要 ${want}）`);
+      // 歌词跟谱的尺子：字号 = 歌词字号 × 这一行的让路缩放（八成到原大；两边压窄不一样，挤不挤、缩多少可以不同）
+      const lyricOk = cls!.startsWith("lyric") && [...sb].every((x) => x >= LYRIC_EM * sp * 0.8 - 1e-3 && x <= LYRIC_EM * sp + 1e-3);
+      if (want !== got && !lyricOk) bad.push(`${k.slice(0, 40)}：${[...sa].join("/")} → ${got}（要 ${want}）`);
       if (follow) text++; else staff++;
     }
     assert(text > 3 && staff > 10, `两类都有（跟字 ${text}、跟谱 ${staff}）`);

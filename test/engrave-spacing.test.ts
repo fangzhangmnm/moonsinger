@@ -1,6 +1,7 @@
 // engrave-spacing.test.ts —— 刀 3 接进排版器之后的样子（用真的 engrave()）。created 2026-11-09 by Claude Opus 5.5
 // 施工单 ai-docs/20261109-work-order-display-cuts-2-4.md §1.5：§0 那张表的每一行一条。单位 = 线间距（sp = 10）。
 import { describe, it, assert, eq } from "./runner.mjs";
+import { paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { engrave, type Layout } from "../src/render/engrave.ts";
 import { TPQ, headTokens, type Token, type Song } from "../src/score/song.ts";
 
@@ -72,11 +73,12 @@ describe("刀 3：整小节休止 + 空小节", () => {
   });
 });
 
-describe("刀 3：短音符压紧的开关", () => {
-  it("音距两档：正常（默认）十六分 1.9、四分 3.6；紧 1.7、3.0（user 11-09「可以再紧一点…加一个紧凑的」「松可能不要」）", () => {
+const COMPACT = { paper: { ...paperOf(DEFAULT_PAPER), density: "compact" as const } } as Partial<Song>;
+describe("刀 3：音距跟版式（v0.16.43；user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」）", () => {
+  it("舒适 = 正常：十六分 1.9、四分 3.6；紧凑 = 紧：1.7、3.0", () => {
     for (const g of gaps(xsOf(lay({ a: sixteen() }), "a"))) assert(near(g, 1.9), `正常 ${g}`);
-    for (const g of gaps(xsOf(lay({ a: sixteen() }, { spacing: "tight" }), "a"))) assert(near(g, 1.7), `紧 ${g}`);
-    const q = (sp?: "tight") => gaps(xsOf(lay({ a: [...head(), N(TPQ), N(TPQ), N(TPQ), N(TPQ)] }, sp ? { spacing: sp } : {}), "a"))[0]!;
+    for (const g of gaps(xsOf(lay({ a: sixteen() }, COMPACT), "a"))) assert(near(g, 1.7), `紧 ${g}`);
+    const q = (sp?: "tight") => gaps(xsOf(lay({ a: [...head(), N(TPQ), N(TPQ), N(TPQ), N(TPQ)] }, sp ? COMPACT : {}), "a"))[0]!;
     assert(near(q(), 3.6) && near(q("tight"), 3.0), `四分：正常 ${q()} / 紧 ${q("tight")}`);
   });
 });
@@ -105,7 +107,7 @@ describe("刀 3：三首样张 × 六种视图，同一行的符头不叠", () =
   });
 });
 
-describe("刀 3：音距存进文件", () => {
+describe("刀 3：音距字段（v0.16.43 起不再起作用、音距跟版式；文件里有就原样带着）", () => {
   it("紧写进 score.json、读回来一样；正常不写；v0.16.33 写过的 denseShort: \"off\" 读成正常、存的时候丢掉", async () => {
     const { saveMxl, openBytes, emptyExtras } = await import("../src/format/project.ts");
     const { emptySong } = await import("../src/score/song.ts");
@@ -130,7 +132,7 @@ describe("刀 4a：没连杠的符尾往右伸（刀 3 留的）", () => {
   /** 一串「十六分音 + 十六分休止」：休止打断符杠 = 每个音单独、带符尾。回音到后面那个休止的距离（线间距）。 */
   const noteToRest = (pitch: { step: "E" | "A"; octave: number; alter: number }) => {
     const toks: Token[] = [...head()]; for (let k = 0; k < 8; k++) toks.push(N(S16, { pitch }), R(S16));
-    const L = lay({ a: toks }, { spacing: "tight" } as Partial<Song>), row = L.systems.findIndex((s) => s.part === "a");
+    const L = lay({ a: toks }, COMPACT), row = L.systems.findIndex((s) => s.part === "a");
     const xs = L.notes.filter((n) => n.system === row).map((n) => n.x / L.sp), rs = L.rests.filter((r) => r.system === row).map((r) => r.x / L.sp);
     return xs.map((x) => Math.min(...rs.filter((r) => r > x + 1e-6)) - x);
   };

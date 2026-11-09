@@ -14,7 +14,7 @@ import { _t, lang, langChosen, saveLang, applyDocumentLang, LANG_NAME, type Lang
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { type ChordRead, type ChordGuess } from "../score/chord-name.ts";
-import { singleSel, currentIndex, ensureStartDyns, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, setSpacing, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { singleSel, currentIndex, ensureStartDyns, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, spellMidi, KEY_LABEL } from "../score/pitch.ts";
@@ -1648,11 +1648,8 @@ function openPaperSheet(): void {
       `<div class="part-sec">${_t("小节号")}</div><div class="set-row">` +
       `<button class="btn cand${D.st.song.barNumbers === "off" ? "" : " is-on"}" data-v="bn:on">${_t("每行开头")}<small>${_t("每行最上面那条谱的左上角，小字；每张纸从 1 数，弱起算 0")}</small></button>` +
       `<button class="btn cand${D.st.song.barNumbers === "off" ? " is-on" : ""}" data-v="bn:off">${_t("不印")}</button></div>` +
-      `<div class="part-sec">${_t("音距")}</div><div class="set-row">` +
-      `<button class="btn cand${D.st.song.spacing ? "" : " is-on"}" data-v="sp:normal">${_t("正常##音距")}<small>${_t("十六分、三十二分排得密一点（出版谱的习惯）")}</small></button>` +
-      `<button class="btn cand${D.st.song.spacing === "tight" ? " is-on" : ""}" data-v="sp:tight">${_t("紧##音距")}<small>${_t("整体再收一截，一行放更多小节")}</small></button></div>` +
       `<div class="part-sec">${_t("歌词")}</div><div class="set-row">` +
-      `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">${_t("按节奏")}<small>${_t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 小一号 → 上下错开 → 还放不下画灰")}</small></button>` +
+      `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">${_t("按节奏")}<small>${_t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 这一行一起缩一点 → 还放不下画灰")}</small></button>` +
       `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("按歌词")}<small>${_t("长的字把音推开（出版谱的老规矩）")}</small></button></div>` +
       `<div class="part-sec">${_t("屏幕放不下纸的时候")}</div><div class="set-row">` +
       `<button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("不折行")}<small>${_t("整张纸缩小，行和纸上一样")}</small></button>` +
@@ -1672,7 +1669,6 @@ function openPaperSheet(): void {
     else if (v?.startsWith("pm:")) { close(); openPaperMenu(v.slice(3)); }
     else if (v === "fit" || v === "reflow") { reflow = v === "reflow"; view.render(); draw(); }
     else if (v === "bn:on" || v === "bn:off") { update(setBarNumbers(D.st, v === "bn:on")); draw(); }
-    else if (v?.startsWith("sp:")) { update(setSpacing(D.st, v!.slice(3) === "tight" ? "tight" : "normal")); draw(); }   // 音距三档（v0.16.34，刀 3；user「可以再紧一点…加一个紧凑的」）：进歌里、能撤销；PDF 跟着   // 小节号（v0.9.42）：进歌里、能撤销；PDF 跟着
     else if (v === "lyr:lyrics" || v === "lyr:rhythm") { update(setLyricFit(D.st, v === "lyr:rhythm" ? "rhythm" : "lyrics")); draw(); }   // 歌词怎么排（v0.9.40）：进歌里、能撤销；PDF 跟着
     else if (v === "flow:cont" || v === "flow:pages" || v === "flow:scroll") { pageFlow = v === "flow:pages"; scrollFlow = v === "flow:scroll"; view.render(); view.followNow(); draw(); }
     else if (v === "scope:all" || v === "scope:segment") { viewScope = v === "scope:all" ? "all" : "segment"; view.render(); draw(); }

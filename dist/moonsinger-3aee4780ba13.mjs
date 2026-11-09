@@ -3157,14 +3157,9 @@ var S = {
   "\u6BCF\u884C\u5F00\u5934": { en: "Start of each line" },
   "\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0": { en: "Small, top-left of each line's top staff; each sheet counts from 1, a pickup counts as 0" },
   "\u4E0D\u5370": { en: "Don't print" },
-  "\u5341\u516D\u5206\u3001\u4E09\u5341\u4E8C\u5206\u6392\u5F97\u5BC6\u4E00\u70B9\uFF08\u51FA\u7248\u8C31\u7684\u4E60\u60EF\uFF09": { en: "16ths and 32nds set closer together (as in published scores)" },
-  "\u97F3\u8DDD": { en: "Note spacing" },
-  "\u6B63\u5E38##\u97F3\u8DDD": { en: "Normal" },
-  "\u7D27##\u97F3\u8DDD": { en: "Tight" },
-  "\u6574\u4F53\u518D\u6536\u4E00\u622A\uFF0C\u4E00\u884C\u653E\u66F4\u591A\u5C0F\u8282": { en: "Everything a bit closer; more bars per line" },
   "\u6B4C\u8BCD": { en: "Lyrics" },
   "\u6309\u8282\u594F": { en: "By rhythm" },
-  "\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u5C0F\u4E00\u53F7 \u2192 \u4E0A\u4E0B\u9519\u5F00 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070": { en: "Note positions depend only on duration, so notes don't move as you type; lyrics make way: borrow nearby space \u2192 smaller \u2192 staggered \u2192 grayed out if it still doesn't fit" },
+  "\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070": { en: "Note positions depend only on duration, so notes stay put while you type; lyrics make room: borrow space nearby \u2192 shrink the whole line a little \u2192 grey out if it still doesn't fit" },
   "\u6309\u6B4C\u8BCD": { en: "By lyrics" },
   "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": { en: "Long words push notes apart (the traditional engraving rule)" },
   "\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019": { en: "When the screen can't fit the sheet" },
@@ -4416,9 +4411,9 @@ var S = {
   "\u8FD9\u4E00\u6BB5\u6309\u4E2D\u6587\u5531\uFF1A\u4E00\u4E2A\u97F3\u5199\u4E00\u4E2A\u6C49\u5B57": { en: "This segment is sung in Chinese: one character per note" },
   "\u8FD9\u4E00\u6BB5\u6309\u82F1\u6587\u5531\uFF1A\u5199\u62C9\u4E01\u5B57\u6BCD": { en: "This segment is sung in English: use Latin letters" },
   "\u8212\u9002": { en: "Comfortable" },
-  "\u8C31\u5927": { en: "Large staves" },
+  "\u8C31\u5927\u3001\u97F3\u8DDD\u6B63\u5E38\uFF1A\u6478\u4E3B\u65CB\u5F8B\u3001\u5199\u6B4C\u8BCD": { en: "Large staves, normal note spacing: for sketching the melody and lyrics" },
   "\u7D27\u51D1": { en: "Compact" },
-  "\u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1B\u603B\u8C31\u58F0\u90E8\u591A\u7528\u8FD9\u4E2A": { en: "Smaller staves, tighter spacing; for scores with many parts" },
+  "\u8C31\u5C0F\u3001\u97F3\u8DDD\u7D27\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1A\u914D\u5668\uFF1B\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57": { en: "Small staves, tight note spacing and rows: for arranging; titles and part names stay large, lyrics are small" },
   "\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F": { en: "Landscape: scores / large screens" },
   "\u6B63\u7ECF\u7EB8": { en: "Standard paper" },
   "\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09": { en: "Booklet (A4 folded)" },
@@ -5052,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.42-2026-11-09";
+var APP_VERSION = "v0.16.43-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5353,7 +5348,7 @@ var chordLabel = (r10) => r10.ties.slice(0, 2).map((g3) => g3.roman).join(" / ")
 // src/score/paper.ts
 var STAFF_MM = 7;
 var STAFF_MM_COMPACT = 5;
-var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u8C31\u5927") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1B\u603B\u8C31\u58F0\u90E8\u591A\u7528\u8FD9\u4E2A") }];
+var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u8C31\u5927\u3001\u97F3\u8DDD\u6B63\u5E38\uFF1A\u6478\u4E3B\u65CB\u5F8B\u3001\u5199\u6B4C\u8BCD") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u8C31\u5C0F\u3001\u97F3\u8DDD\u7D27\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1A\u914D\u5668\uFF1B\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57") }];
 var densityOf = (p2) => p2.density ?? "cozy";
 var staffMmOf = (p2) => p2.staffMm ?? (densityOf(p2) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
 var spMm = (p2) => staffMmOf(p2) / 4;
@@ -7323,13 +7318,6 @@ function setBarNumbers(st2, on2) {
   const song = { ...st2.song };
   if (on2) delete song.barNumbers;
   else song.barNumbers = "off";
-  return { ...st2, song };
-}
-function setSpacing(st2, m2) {
-  if ((st2.song.spacing ?? "normal") === m2) return st2;
-  const song = { ...st2.song };
-  if (m2 === "normal") delete song.spacing;
-  else song.spacing = m2;
   return { ...st2, song };
 }
 function setLyricFit(st2, v) {
@@ -10703,53 +10691,35 @@ var LYRIC_EM = 1.6;
 var LYRIC_SX_COMPACT = 0.85;
 var lyricSx = (ts2) => ts2 > 1 ? LYRIC_SX_COMPACT : 1;
 var LYRIC_ROW2 = LYRIC_EM * 1.2;
-function fitLyrics(items, gap = 0.5) {
-  const out = items.map(() => ({ dx: 0, scale: 1, row: 0, tight: false })), scale = items.map(() => 1);
+var LYRIC_MIN_SCALE = 0.8;
+function fitLyrics(items, gap = 0.5, minScale = LYRIC_MIN_SCALE) {
   const g3 = (i10) => gap + (items[i10].hy ? 0.9 : 0);
-  const place = (idx) => {
-    const pos = idx.map((i10) => items[i10].cx), half2 = idx.map((i10) => items[i10].w * scale[i10] / 2), cap2 = idx.map((i10) => Math.max(0.8, 0.45 * items[i10].w));
+  const cap2 = items.map((it2) => Math.max(0.8, 0.45 * it2.w));
+  const place = (s11) => {
+    const pos = items.map((it2) => it2.cx), half2 = items.map((it2) => it2.w * s11 / 2);
     for (let pass = 0; pass < 4; pass++) {
-      for (let k2 = 1; k2 < idx.length; k2++) {
-        const need = pos[k2 - 1] + half2[k2 - 1] + g3(idx[k2 - 1]) + half2[k2];
-        if (pos[k2] < need) pos[k2] = Math.min(need, items[idx[k2]].cx + cap2[k2]);
+      for (let k2 = 1; k2 < items.length; k2++) {
+        const need = pos[k2 - 1] + half2[k2 - 1] + g3(k2 - 1) + half2[k2];
+        if (pos[k2] < need) pos[k2] = Math.min(need, items[k2].cx + cap2[k2]);
       }
-      for (let k2 = idx.length - 2; k2 >= 0; k2--) {
-        const need = pos[k2 + 1] - half2[k2 + 1] - g3(idx[k2]) - half2[k2];
-        if (pos[k2] > need) pos[k2] = Math.max(need, items[idx[k2]].cx - cap2[k2]);
+      for (let k2 = items.length - 2; k2 >= 0; k2--) {
+        const need = pos[k2 + 1] - half2[k2 + 1] - g3(k2) - half2[k2];
+        if (pos[k2] > need) pos[k2] = Math.max(need, items[k2].cx - cap2[k2]);
       }
     }
     const bad = /* @__PURE__ */ new Set();
-    for (let k2 = 1; k2 < idx.length; k2++) if (pos[k2] - half2[k2] < pos[k2 - 1] + half2[k2 - 1] + g3(idx[k2 - 1]) - 1e-6) {
-      bad.add(idx[k2]);
-      bad.add(idx[k2 - 1]);
+    for (let k2 = 1; k2 < items.length; k2++) if (pos[k2] - half2[k2] < pos[k2 - 1] + half2[k2 - 1] + g3(k2 - 1) - 1e-6) {
+      bad.add(k2);
+      bad.add(k2 - 1);
     }
     return { pos, bad };
   };
-  const all = items.map((_2, i10) => i10);
-  let r10 = place(all);
-  if (r10.bad.size) {
-    for (const i10 of r10.bad) scale[i10] = 0.8;
-    r10 = place(all);
+  let s10 = 1, r10 = place(1);
+  for (let t10 = 0.95; r10.bad.size && t10 >= minScale - 1e-9; t10 = Math.round((t10 - 0.05) * 100) / 100) {
+    s10 = t10;
+    r10 = place(t10);
   }
-  if (!r10.bad.size) {
-    all.forEach((i10, k2) => {
-      out[i10] = { dx: r10.pos[k2] - items[i10].cx, scale: scale[i10], row: 0, tight: false };
-    });
-    return out;
-  }
-  const row2 = items.map(() => 0);
-  let flip = 0;
-  for (let i10 = 0; i10 < items.length; i10++) {
-    if (r10.bad.has(i10)) row2[i10] = flip++ % 2;
-    else flip = 0;
-  }
-  for (const rr2 of [0, 1]) {
-    const idx = all.filter((i10) => row2[i10] === rr2), res = place(idx);
-    idx.forEach((i10, k2) => {
-      out[i10] = { dx: res.pos[k2] - items[i10].cx, scale: scale[i10], row: rr2, tight: res.bad.has(i10) };
-    });
-  }
-  return out;
+  return items.map((it2, i10) => ({ dx: r10.pos[i10] - it2.cx, scale: s10, row: 0, tight: r10.bad.has(i10) }));
 }
 var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
@@ -10955,7 +10925,7 @@ function unitsOf(tokens, o10) {
         const lyric = isNote && j2 === 0 && !nt2.tie ? nt2.lyric : null;
         const accW = accs.some((a10) => a10 !== null) ? 1.3 : 0;
         let w2 = accW + baseWidth(c10.base) + (c10.dotted ? 0.6 : 0);
-        const lyW = lyric && lyric !== MELISMA_MARK && !o10.rhythm ? o10.measureLyric(lyricShow(lyric)) / o10.sp * lyricSx(o10.ts ?? 1) : void 0;
+        const lyW = lyric && lyric !== MELISMA_MARK && !o10.rhythm ? o10.measureLyric(lyricShow(lyric)) / o10.sp / (o10.ts ?? 1) * lyricSx(o10.ts ?? 1) : void 0;
         if (lyW !== void 0) w2 = Math.max(w2, accW + lyW + (nt2.hyph ? 1.4 : 0.7));
         const u2 = {
           kind: "chunk",
@@ -11029,7 +10999,7 @@ function engrave(song, o10) {
   const contentTop = (k2) => pageTopY(k2) + P2(PG?.t ?? 0), contentBottom = (k2) => pageTopY(k2) + P2((PG?.h ?? 0) - (PG?.b ?? 0));
   let pageNo = 0;
   const TOP2 = P2(MX.t);
-  const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow * ts2, SYS_GAP = SPC.sysGap;
+  const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow, SYS_GAP = SPC.sysGap;
   const prims = [];
   if (o10.__noAnn) {
     const push = prims.push.bind(prims);
@@ -11465,7 +11435,7 @@ function engrave(song, o10) {
       return out;
     };
     const spCols = cols.map((c10) => c10.chunk ? { tick: c10.tick, items: c10.units.flatMap((u2) => u2.kind === "chunk" ? spItems(u2, unitPart.get(u2)) : []) } : { tick: c10.tick, fixed: c10.w, items: [] });
-    const spO = { curve: curveOf(song.spacing ?? "normal"), ...SP_DEFAULTS };
+    const spO = { curve: curveOf(densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } }) === "compact" ? "tight" : "normal"), ...SP_DEFAULTS };
     const gaps = idealGaps(spCols, paperLen, spO), rodIx = indexRods(rodsOf(spCols, spO), spCols.length);
     const brk = o10.scroll ? Infinity : right;
     const n10 = cols.length, lineFrom = [], sysStarts = [], sysKeys = [];
@@ -11568,11 +11538,11 @@ function engrave(song, o10) {
       for (const u2 of q2.units) if (u2.kind === "chunk" && u2.lyric && u2.lyric !== MELISMA_MARK) {
         const arr = bySys.get(u2.system) ?? [];
         bySys.set(u2.system, arr);
-        arr.push({ index: u2.index, cx: u2.x + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2 * lyricSx(ts2), hy: u2.hyph });
+        arr.push({ index: u2.index, cx: u2.x + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2 / ts2 * lyricSx(ts2), hy: u2.hyph });
       }
       for (const [sy2, items] of bySys) {
         items.sort((a10, b3) => a10.cx - b3.cx);
-        fitLyrics(items, 0.5 * ts2).forEach((f2, k2) => {
+        fitLyrics(items).forEach((f2, k2) => {
           lyrPlan.set(`${r10}:${items[k2].index}`, f2);
           if (f2.row) lyr2.add(`${r10}:${sy2}`);
         });
@@ -11942,17 +11912,17 @@ function engrave(song, o10) {
         if (c10.j === 0) notes.push({ ...tag2, index: c10.index, system: row2, x: x0, y: y2, w: nhW(c10), d: diatonicIndex(c10.pitch) });
         if (c10.j === 0 && !c10.tie) lyricJobs.push({ sys: c10.system, run: () => {
           const fit = lyrPlan.get(`${r10}:${c10.index}`), ly0 = lyricY(lyricRow(c10.system)), cx0 = x0 + nhW(c10) / 2;
-          const ly2 = ly0 + (fit?.row ? T2(LYRIC_ROW2) : 0), cx3 = cx0 + (fit ? P2(fit.dx) : 0);
+          const ly2 = ly0 + (fit?.row ? P2(LYRIC_ROW2) : 0), cx3 = cx0 + (fit ? P2(fit.dx) : 0);
           partLyrics.push({ index: c10.index, system: row2, x: cx3, y: ly2, ...fit?.tight ? { tight: true } : {} });
           if (c10.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P2(0.6), y1: ly0, x2: x0 + nhW(c10) + P2(0.4), y2: ly0, w: P2(0.12), cls: "melisma" });
-          else if (c10.lyric) prims.push({ tok: tokOf(c10), t: "text", x: cx3, y: ly2, s: lyricShow(c10.lyric), ...fit && fit.scale < 1 ? { size: T2(LYRIC_EM * fit.scale) } : ts2 !== 1 ? { size: T2(LYRIC_EM) } : {}, ...lyricSx(ts2) !== 1 ? { sx: lyricSx(ts2) } : {}, cls: ["lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
+          else if (c10.lyric) prims.push({ tok: tokOf(c10), t: "text", x: cx3, y: ly2, s: lyricShow(c10.lyric), ...fit && fit.scale < 1 ? { size: P2(LYRIC_EM * fit.scale) } : ts2 !== 1 ? { size: P2(LYRIC_EM) } : {}, ...lyricSx(ts2) !== 1 ? { sx: lyricSx(ts2) } : {}, cls: ["lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         } });
       };
       for (const u2 of units) {
         const row2 = RW(u2);
         if (u2.kind === "phrase") {
           lyricJobs.push({ sys: u2.system, run: () => {
-            prims.push({ t: "text", x: P2(u2.x + 0.1), y: lyricY(lyricRow(u2.system)), s: "\u3002", cls: "phrase-mark ann", size: T2(1.3), anchor: "start" });
+            prims.push({ t: "text", x: P2(u2.x + 0.1), y: lyricY(lyricRow(u2.system)), s: "\u3002", cls: "phrase-mark ann", size: P2(1.3), anchor: "start" });
           } });
           continue;
         }
@@ -12335,7 +12305,7 @@ function engrave(song, o10) {
           lyrics.push(...partLyrics);
           return;
         }
-        const base2 = LYRIC_BELOW + (o10.lyricRaise ?? 0) * ts2, bySys = /* @__PURE__ */ new Map();
+        const base2 = LYRIC_BELOW + (o10.lyricRaise ?? 0), bySys = /* @__PURE__ */ new Map();
         for (const j2 of lyricJobs) {
           const l10 = bySys.get(j2.sys);
           if (l10) l10.push(j2);
@@ -12351,8 +12321,8 @@ function engrave(song, o10) {
               const L2 = partLyrics[n11], tok = tokens[L2.index];
               if (!tok.hyph) continue;
               const R2 = partLyrics[n11 + 1];
-              const xx = R2 && R2.system === L2.system ? (L2.x + R2.x) / 2 : L2.x + T2(1.6);
-              prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen", ...ts2 !== 1 ? { size: T2(LYRIC_EM) } : {}, ...lyricSx(ts2) !== 1 ? { sx: lyricSx(ts2) } : {} });
+              const xx = R2 && R2.system === L2.system ? (L2.x + R2.x) / 2 : L2.x + P2(1.6);
+              prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen", ...ts2 !== 1 ? { size: P2(LYRIC_EM) } : {}, ...lyricSx(ts2) !== 1 ? { sx: lyricSx(ts2) } : {} });
             }
             lyrics.push(...partLyrics.slice(from));
           }, { min: 0, count: false, step: ROW_STEP });
@@ -12473,12 +12443,12 @@ function engrave(song, o10) {
       });
     }
     const pEnd = mark();
-    const PAD = 0.8, lyricTail = (SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow) * ts2, fin = (v, d3) => Number.isFinite(v) ? v : d3;
+    const PAD = 0.8, lyricTail = SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow, fin = (v, d3) => Number.isFinite(v) ? v : d3;
     const stepUp = (min, need) => need <= min + 1e-9 ? min : min + Math.ceil((need - min) / ROW_STEP - 1e-9) * ROW_STEP;
     const geo = (s10, r10, k2) => {
       const q2 = per[r10], row2 = rowOf(s10, r10, k2), sk2 = sky(row2), hUp = fin(sk2.hUp, 0), hDn = fin(sk2.hDn, 4);
       const minBelow = q2.staves === 2 && k2 === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r10] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
-      const lyr = lyricsOf[r10] && k2 === q2.staves - 1 ? lyricOff.get(row2) : void 0, row22 = lyr2.has(`${r10}:${s10}`) ? LYRIC_ROW2 * ts2 : 0;
+      const lyr = lyricsOf[r10] && k2 === q2.staves - 1 ? lyricOff.get(row2) : void 0, row22 = lyr2.has(`${r10}:${s10}`) ? LYRIC_ROW2 : 0;
       let need = hDn - 4 + PAD;
       if (lyr !== void 0) need = Math.max(need, lyr + lyricTail + row22);
       const below = stepUp(minBelow, need);
@@ -29072,15 +29042,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-7f9ae2d96b39.mjs");
+      return pick(() => "singer-worker-3a38c0217861.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-c5e46f1bfc47.mjs");
+      return pick(() => "layout-worker-0cf54713e543.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-838ab671e36b.mjs");
+      return pick(() => "encode-worker-feb263a7b635.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38446,7 +38416,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "c59e812b9273d3a4" : "dev";
+var CORE_HASH = true ? "76b29b38418a8a72" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -53449,7 +53419,7 @@ function openPaperSheet() {
   const draw = () => {
     const p2 = D2.st.song.paper ?? paperOf(DEFAULT_PAPER);
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u7EB8")}</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("\u5176\u4ED6")}<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">${_t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002")}</div><div class="part-sec">${_t("\u7248\u5F0F")}</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">${_t("\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002")}</div><div class="part-sec">${_t("\u7EB8\uFF08\u66F2\u6BB5\uFF09")}</div>` + D2.st.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc11(pp.name || _t("\uFF08\u6CA1\u540D\u5B57\uFF09"))}${pp.hidden ? _t("\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09") : ""}${pp.id === D2.st.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc11(pp.id)}" title="${_t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u9690\u85CF / \u5220\u3001\u5728\u4E0A\u9762 / \u4E0B\u9762\u63D2\u4E00\u6BB5\u3001\u632A\u3001\u79FB\u8C03")}">\u22EF</button></div>`).join("") + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
-    ((one) => `<div class="part-sec">${_t("\u663E\u793A")}</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && D2.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">${_t("\u53EA\u770B\u4E00\u53F7\u8F68")}<small>${_t("\u53EA\u770B\u300C{song}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B", { song: esc11(partLabels(D2.st.song, D2.extras)[0] ?? "") })}</small></button></div>`)(D2.st.song.parts[0]) + `<div class="part-sec">${_t("\u6392\u6CD5")}</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">${_t("\u8FDE\u7EED")}<small>${_t("\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837")}</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">${_t("\u5206\u9875")}<small>${_t("\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370")}</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">${_t("\u6A2A\u5377")}<small>${_t("\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9")}</small></button></div><div class="part-sec">${_t("\u5C0F\u8282\u53F7")}</div><div class="set-row"><button class="btn cand${D2.st.song.barNumbers === "off" ? "" : " is-on"}" data-v="bn:on">${_t("\u6BCF\u884C\u5F00\u5934")}<small>${_t("\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0")}</small></button><button class="btn cand${D2.st.song.barNumbers === "off" ? " is-on" : ""}" data-v="bn:off">${_t("\u4E0D\u5370")}</button></div><div class="part-sec">${_t("\u97F3\u8DDD")}</div><div class="set-row"><button class="btn cand${D2.st.song.spacing ? "" : " is-on"}" data-v="sp:normal">${_t("\u6B63\u5E38##\u97F3\u8DDD")}<small>${_t("\u5341\u516D\u5206\u3001\u4E09\u5341\u4E8C\u5206\u6392\u5F97\u5BC6\u4E00\u70B9\uFF08\u51FA\u7248\u8C31\u7684\u4E60\u60EF\uFF09")}</small></button><button class="btn cand${D2.st.song.spacing === "tight" ? " is-on" : ""}" data-v="sp:tight">${_t("\u7D27##\u97F3\u8DDD")}<small>${_t("\u6574\u4F53\u518D\u6536\u4E00\u622A\uFF0C\u4E00\u884C\u653E\u66F4\u591A\u5C0F\u8282")}</small></button></div><div class="part-sec">${_t("\u6B4C\u8BCD")}</div><div class="set-row"><button class="btn cand${D2.st.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">${_t("\u6309\u8282\u594F")}<small>${_t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u5C0F\u4E00\u53F7 \u2192 \u4E0A\u4E0B\u9519\u5F00 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")}</small></button><button class="btn cand${D2.st.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("\u6309\u6B4C\u8BCD")}<small>${_t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")}</small></button></div><div class="part-sec">${_t("\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019")}</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("\u4E0D\u6298\u884C")}<small>${_t("\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837")}</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">${_t("\u6298\u884C")}<small>${_t("\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9")}</small></button></div><div class="offer-msg">${_t("\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+    ((one) => `<div class="part-sec">${_t("\u663E\u793A")}</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && D2.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">${_t("\u53EA\u770B\u4E00\u53F7\u8F68")}<small>${_t("\u53EA\u770B\u300C{song}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B", { song: esc11(partLabels(D2.st.song, D2.extras)[0] ?? "") })}</small></button></div>`)(D2.st.song.parts[0]) + `<div class="part-sec">${_t("\u6392\u6CD5")}</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">${_t("\u8FDE\u7EED")}<small>${_t("\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837")}</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">${_t("\u5206\u9875")}<small>${_t("\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370")}</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">${_t("\u6A2A\u5377")}<small>${_t("\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9")}</small></button></div><div class="part-sec">${_t("\u5C0F\u8282\u53F7")}</div><div class="set-row"><button class="btn cand${D2.st.song.barNumbers === "off" ? "" : " is-on"}" data-v="bn:on">${_t("\u6BCF\u884C\u5F00\u5934")}<small>${_t("\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0")}</small></button><button class="btn cand${D2.st.song.barNumbers === "off" ? " is-on" : ""}" data-v="bn:off">${_t("\u4E0D\u5370")}</button></div><div class="part-sec">${_t("\u6B4C\u8BCD")}</div><div class="set-row"><button class="btn cand${D2.st.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">${_t("\u6309\u8282\u594F")}<small>${_t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")}</small></button><button class="btn cand${D2.st.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("\u6309\u6B4C\u8BCD")}<small>${_t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")}</small></button></div><div class="part-sec">${_t("\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019")}</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("\u4E0D\u6298\u884C")}<small>${_t("\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837")}</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">${_t("\u6298\u884C")}<small>${_t("\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9")}</small></button></div><div class="offer-msg">${_t("\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -53480,9 +53450,6 @@ function openPaperSheet() {
       draw();
     } else if (v === "bn:on" || v === "bn:off") {
       update(setBarNumbers(D2.st, v === "bn:on"));
-      draw();
-    } else if (v?.startsWith("sp:")) {
-      update(setSpacing(D2.st, v.slice(3) === "tight" ? "tight" : "normal"));
       draw();
     } else if (v === "lyr:lyrics" || v === "lyr:rhythm") {
       update(setLyricFit(D2.st, v === "lyr:rhythm" ? "rhythm" : "lyrics"));
@@ -56737,4 +56704,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-99c39d3b2414.mjs.map
+//# sourceMappingURL=moonsinger-3aee4780ba13.mjs.map
