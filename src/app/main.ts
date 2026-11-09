@@ -1240,6 +1240,8 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
 (window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, auditionSha: () => audition?.sha256 ?? null, renderMix: () => renderMixForTest(),
+  playheadAt: (p: { paperId: string; tick: number } | null, ahead: { paperId: string; tick: number } | null = null) => view.setPlayhead(p, ahead),   // 播放线摆到这儿（不出声；scripts/render-video.mjs 逐格出带谱视频用）
+  zoomTo: (phys: number | null) => view.restoreZoom(phys),   // 谱面缩放到几倍（物理倍数，null = 自动；不记进设备；scripts/render-video.mjs 让谱占满画面用）
   transport: () => ({ startMark: perfApi.startMark, paused: perfApi.paused, listen: listenOn(), loop: perfApi.loopOn, turnLead: perfApi.turnLead }),   // 走带的状态（E2E 用）
   navPaper: (d: -1 | 1) => navPaper(d), paperSpans: () => perfApi.playTl?.papers.map((x) => ({ id: x.paper.id, t0: x.t0 })) ?? null,   // 换段 / 现在放的时间线里每段从几秒起（E2E 用）
   workspace: () => ({ ...ws, dock: dockOf(ws) }), setMode: (m: Mode) => setMode(m),   // 模式 / 底座（E2E 用）

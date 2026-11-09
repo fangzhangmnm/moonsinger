@@ -9,6 +9,7 @@
 //   --piper=<piper-node.mjs 的路径>   歌里有小月相（完整版）上场才要；没给 = 试 $MOONSINGER_PIPER，再试 ~/jupyter/third-party/piper-plus/dur-override-exp/piper-node.mjs；都没有 = 那些声部不出声、报出来
 //   --sounds=<地址>                   弱引用的 SoundFont 从哪下（默认 = app 出厂的家族音源库；下到临时目录按 sha256 留着）；歌里嵌的不用下
 //   --check                           只开文件、报核心版本 / 哈希 / 定稿记录，不渲
+//   --frames=x.json [--fps=30] [--lead=0.6]   另写一份逐格的播放线位置（带谱视频用，scripts/render-video.mjs）
 // 核心哈希：这首歌上次保存 / 定稿时记的核心（manifest.core / final.core）和现在源码的（scripts/core-hash.mjs）对一下，不一样就说一声（想复现定稿那份 = 换到那一版代码）。
 import fs from "node:fs"; import os from "node:os"; import path from "node:path"; import { fileURLToPath, pathToFileURL } from "node:url"; import { createHash } from "node:crypto";
 import { openBytes } from "../src/format/project.ts";
@@ -128,3 +129,18 @@ if (/\.wav$/i.test(out)) {
   fs.writeFileSync(out, Buffer.from(bytes.buffer, bytes.byteOffset, bytes.length));
 }
 say(`写好了：${out}（${(fs.statSync(out).size / 1e3).toFixed(0)} KB）`);
+// ── 带谱视频的逐格位置（--frames=x.json；scripts/render-video.mjs 用；2026-11-09 Claude Opus 5.5）──
+//   第 k 格 = 上面写出的声音的第 k/fps 秒 = 时间线的 range.from + k/fps 秒（离线渲染的输出从 range.from 起，见 src/core/offline-studio.ts）。
+//   每格记两样，和 app 播放时每帧交给谱面的一样（src/app/performance.ts playheadFrame）：p = 正在放哪张纸第几拍；a = 再过 lead 秒放到哪（提前翻谱看它；app 默认 0.6 s）。
+//   过了 range.to（尾音还在响）= null = 播放线收起（同 app 放完）。
+const framesOut = opt("frames");
+if (framesOut) {
+  const fps = Number(opt("fps", "30")), lead = Number(opt("lead", "0.6")), tl = r.timeline, { from, to } = tl.range, n = Math.ceil(r.secs * fps), frames = [];
+  for (let k = 0; k < n; k++) {
+    const sec = from + k / fps; if (sec >= to) { frames.push(null); continue; }
+    let a = sec + lead; if (a >= to) a = to - 1e-3;
+    frames.push({ p: tl.locate(sec), a: lead > 0 ? tl.locate(a) : null });
+  }
+  fs.writeFileSync(framesOut, JSON.stringify({ fps, secs: r.secs, from, to, lead, frames }));
+  say(`逐格位置：${framesOut}（${n} 格 · ${fps} fps · 提前翻 ${lead} s）`);
+}

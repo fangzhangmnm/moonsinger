@@ -13,6 +13,7 @@
     "smoke": "node test/shell-smoke.mjs && node test/file-smoke.mjs",
     "e2e": "npm run build && node test/e2e/run.mjs",
     "render": "node scripts/render-song.mjs",
+    "video": "node scripts/render-video.mjs",
     "e2e:changed": "npm run build && node test/e2e/run.mjs --changed",
     "test:full": "npm run check && node test/e2e/run.mjs --all --smoke && npm run fixture:itch && npm run smoke:local",
     "pack:itch": "node scripts/pack-itch.mjs",
