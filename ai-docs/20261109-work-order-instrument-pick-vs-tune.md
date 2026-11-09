@@ -159,4 +159,8 @@ format 层新函数（都是纯函数，`src/format/project.ts`）：`settingsPr
 - 目录顶上第二排「这首歌的乐器预设」= 和常用一行一样大的格子（两排一格都 = 一排的七分之一，格子少了右边空着、不拉宽）；别的声部的格子虚线框、角上写「在 ⟨声部⟩ 上」。点本声部的 = 换上；点别的声部的 = 拷一份过来换上。长按 / 右键 = 复制一份 / 删掉（台上的、内置的不能删；别的声部的只有「拷到这个声部」）。原来的小圆钮 + × 退场。§4.1 写的「先听再确认」两步没做：和常用一行一样点了直接换（user §9「快速切」那句；不对再改）。
 - 测试：单元 `test/presets.test.ts` 27 条（§8 那一串 + §7 第 3 条：一个声部里两位小月相、出声用台上那位的设置）；E2E 新 `test/e2e/finder-presets.mjs` 18 条（仓里的 sf2，不靠外网）；`cast-back` / `lyric-mute` 改成从「人声」里选元音版、点调过的预设格子。
 
-**下一版（还没做）**：§6 乐器设置页搬出 main.ts（`src/app/panels/inst-settings.ts`）。
+**第五版 = v0.16.39（§6 设置页搬出 main.ts）做了**：
+- 新 `src/app/panels/inst-settings.ts`：`createInstSettings(el, host)` → `{ draw }`，照 `header-panel.ts` 的形状（宿主给访问器 + 动作，页面自己管画和点击）。搬过去的：`drawInst` 本体、点击处理、`marksTableHtml` / `gapDefaultOf` / `dynTable` / `roleDetail` / `inspectorCtx`、哼的字表、「高级」折叠的状态。代码原样，只把直接读主程序变量的地方换成 `h.*`。`main.ts` 只留开 / 关 + 一段接线，`drawInst()` 变成一行转发（九处调用不动）。
+- 顺手删的死代码：`setRole` / `commitRoleName`（名字框 v0.16.35 就没了）、点击里 `cand:` / `del:` 两条分支（页面上早没有这些钮）。力度字形表收进 `src/render/smufl.ts` 的 `DYN_GLYPH` 一份（engrave / pad / sel-bar 各自还有一份，没动）。
+- `main.ts` 4029 → 3897 行。测试分区表登记 `src/app/panels/` → 键盘 / 放 / 录音房。
+- 这一单到这里做完；§5 的数据规矩和 §10 第四版里标的两处等 Fable 审。

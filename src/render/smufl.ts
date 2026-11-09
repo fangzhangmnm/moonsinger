@@ -19,6 +19,8 @@ export const timeSigDigits = (n: number): string => [...String(n)].map((d) => St
 
 /** 鼓谱（2026-10-10 v0.10.27，Claude Opus 5.5）：打击乐谱号 + 音乐仓鼠 v13 的符头名 → SMuFL 码位 [黑, 二分, 全] 和宽（sp = Bravura advance / 250）。
  *  码位在浏览器里渲了一遍对过形状（不盲画）：la = 方块、ti = 圆底倒三角（MuseScore 的形状音符）；custom 按 smufl 名查 PERC_SMUFL。 */
+/** 力度记号的 Bravura 字形（ppp…fff）。2026-11-09 Opus 收到这里一份（乐器设置页 / 主程序的菜单用；engrave / pad / sel-bar 各自还有一份同样的，碰到再收）。 */
+export const DYN_GLYPH = { ppp: "\u{E52A}", pp: "\u{E52B}", p: "\u{E520}", mp: "\u{E52C}", mf: "\u{E52D}", f: "\u{E522}", ff: "\u{E52F}", fff: "\u{E530}" } as const;
 export const PERC_CLEF = "\u{E069}";   // unpitchedPercussionClef1（两竖杠）
 export const PERC_HEAD: Record<string, { ch: [string, string, string]; w: [number, number, number] }> = {
   normal: { ch: ["\u{E0A4}", "\u{E0A3}", "\u{E0A2}"], w: [1.18, 1.18, 1.688] },
