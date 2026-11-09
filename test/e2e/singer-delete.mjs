@@ -12,7 +12,7 @@ for (let i = 0; i < 2; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); awa
 await p.click("#score text.part-name >> nth=0"); await p.waitForTimeout(200);
 check(!(await p.$('.track-card [data-v="delpart"]')), "谱上的歌手牌里没有「删掉」");
 await p.click('.track-card [data-v="parts"]'); await p.waitForTimeout(200);   // v0.16.21：下面加 在声部管理顶上那条
-await p.click(".parts-mgr [data-v=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(300);
+await p.click(".parts-mgr [data-v=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(300); await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(300);
 const parts = () => p.evaluate(() => window.__moonsinger.state().song.parts.map((x) => x.id).join(","));
 check((await parts()).split(",").length === 2, "两位歌手", await parts());
 await p.keyboard.press("Escape"); await p.waitForTimeout(100);

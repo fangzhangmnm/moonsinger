@@ -35,6 +35,8 @@ export interface PadGlue {
   /** 改了音高之后响一下。 */
   previewEdited(): void;
   info(msg: string): void;
+  /** 单音护栏丢了一个几乎同时按下的键（v0.16.35；user 11-09 小月相两个键同时按有一个不认 → 规矩不改，丢的时候说一声）。宿主决定说不说、说几次。 */
+  monoRejected?(): void;
   /** 光标所在声部的乐器能叠音吗。 */
   canStack(): boolean;
   sound: { down(p: Pitch, id: string): void; up(id: string): void };
@@ -98,7 +100,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   let monoAt = -Infinity;
   function monoAccept(id: string): boolean {
     const now = performance.now();
-    if (monoClash(monoHeld.size, monoAt, now)) return false;
+    if (monoClash(monoHeld.size, monoAt, now)) { g.monoRejected?.(); return false; }
     monoHeld.add(id); monoAt = now; return true;
   }
   const chordRoots = new Map<string, { tokId: number; t: number }>();   // 按着的键 → 它写进谱的那个音（根音候选）

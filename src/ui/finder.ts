@@ -30,7 +30,7 @@ export interface FinderHost {
 }
 /** 记忆归谁：歌里打开的 = 这首歌（文件里）；歌库「即兴」打开的 = 这台设备（app）。user 11-07「即兴的滚动归 App 记，然后文件内的滚动归文件记」。 */
 export type FinderCtx = "song" | "impro";
-const HINT = _t("点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「选这个」= 换上（从谱上来的回到谱，从乐器页来的回到乐器页）。角色会改成那件乐器（谱上写它的名字）；谁来演才进休息室。");   // 不叫「上场」：user 2026-10-10「选乐器不要用上场这个词不然让会让人以为直接跳回主界面，但是实际上我们还是回到乐器配置界面」
+const HINT = _t("点一件乐器 → 挑谁来演 → 用右边的键盘试 → 「选这个」= 换上。目录不关，放着歌也能接着换；回谱点「← 谱」。谱上的名字跟着换成那件乐器。");   // 不叫「上场」：user 2026-10-10「选乐器不要用上场这个词不然让会让人以为直接跳回主界面，但是实际上我们还是回到乐器配置界面」
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export class Finder {
@@ -113,6 +113,8 @@ export class Finder {
     if (this.selected) void this.host.audition(this.pickOf(this.selected));
     else if (openedC) void this.host.audition({ kind: "none", concept: openedC });
   }
+  /** 换上一件乐器之后（目录不关，v0.16.35）：顶条的名字和「这首歌里用过的」那一排跟着变。 */
+  refresh(): void { if (this.el.hidden) return; if (!this.playOnly) this.el.querySelector(".finder-title")!.textContent = _t("找人给「{p}」", { p: this.host.roleName() }); this.renderUsed(); }
   hide(): void { if (this.el.hidden) return; this.stash(); this.el.hidden = true; this.host.memoChanged?.(this.ctx, this.memos[this.ctx]); }
   private pickOf(key: string): FinderPick | null {
     if (!this.cat) return null;
@@ -235,7 +237,7 @@ export class Finder {
       const provs = providersOf(cat, c).filter((x) => !pk || gmKey(x) === pk), pitched = c.kind === "voice";   // 音色行 = 只列它自己
       // 平替弱化显示（user「平替换的ui也需要弄出区别」「也许需要弱化显示」）：虚线框、灰字、「顶替」标
       const prov = (key: string, label: string, note: string, playable: boolean, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("顶替")}</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
-        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("用它放这条声部的开头")}">${_t("▶ 听开头")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("选它来演这个声部，回到乐器页")}">${_t("选这个")}</button>`}</div></div>`;
+        `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("用它放这条声部的开头")}">${_t("▶ 听开头")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("选它来演这个声部（目录不关，可以接着换）")}">${_t("选这个")}</button>`}</div></div>`;
       body = `<div class="inst-prov">` +
         provs.map((p) => prov(`${c.id}|${gmKey(p)}`, `${p.note !== undefined ? _t("鼓件 · {gmName}（Standard 鼓组的 {note} 号键）", { gmName: esc(p.gmName), note: p.note }) : p.bank === 128 ? _t("鼓组 · {gmName}", { gmName: esc(p.gmName) }) : `GeneralUser GS · ${esc(p.gmName)}`}`, p.kind === "substitute" ? _t("顶替{p}{reason}", { p: p.basis === "official" ? _t("（GM 原文认可）") : p.basis === "lineage" ? _t("（前身）") : p.basis === "imitation" ? _t("（仿声）") : p.basis === "family" ? _t("（同类）") : _t("（只是同名）"), reason: p.reason && zhOnly(p.reason) ? `：${esc(p.reason)}` : "" }) : "", true, p.kind === "substitute")).join("") +
         (pitched ? prov(`${c.id}|voice`, _t("小月相"), _t("唱歌词；没写歌词的音按「哼的字」唱"), false) : "") +

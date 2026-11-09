@@ -21,7 +21,7 @@ check(await p.$(".parts-mgr [data-v=give]") != null, "声部管理顶上那条�
 await p.click(".parts-mgr [data-v=give]"); await p.waitForTimeout(150);
 const giveList = await p.$$eval(".parts-mgr .tc-list .btn", (bs) => bs.map((x) => x.textContent));
 check(giveList.join(",") === "＋ 新声部…", "只有一位歌手：交给… 只有「新声部」", giveList.join(","));
-await p.click(".parts-mgr [data-v=givenew]"); await p.waitForTimeout(300);
+await p.click(".parts-mgr [data-v=givenew]"); await p.waitForTimeout(300); await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(300);
 check(await who() === "P1 | P2", "交给新歌手：第二张纸那一行归 P2，第一张照旧 P1", await who());
 check(await notes() === "P1:3 | P2:2", "音原样（第二张两个音跟着走）", await notes());
 check(await p.evaluate(() => window.__moonsinger.state().song.parts.length) === 2, "全曲两位歌手");

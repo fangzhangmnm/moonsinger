@@ -24,7 +24,7 @@ check((await p.$$eval(".track-card [data-v]", (bs) => bs.map((b) => b.dataset.v)
 await p.click('.track-card [data-v="parts"]'); await p.waitForTimeout(220);
 check(/ · /.test(await p.$eval(".parts-mgr .pm-here", (e) => e.textContent)) && !!(await p.$('.parts-mgr .pm-here [data-v="addabove"]')) && !!(await p.$('.parts-mgr .pm-here [data-v="give"]')) && !(await p.$('.parts-mgr .pm-here [data-v="drop"]')), "从名字进声部管理：顶上一条 = 这一段的事（上面加 / 下面加 / 交给；这一段只有它 = 没有「从这一段删掉」）");
 // 下面加一位新的
-await p.click('.parts-mgr [data-v="addbelow"]'); await p.waitForTimeout(150); await p.click('.parts-mgr [data-v="addnew"]'); await p.waitForTimeout(350);
+await p.click('.parts-mgr [data-v="addbelow"]'); await p.waitForTimeout(150); await p.click('.parts-mgr [data-v="addnew"]'); await p.waitForTimeout(350); await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(300);
 const o1 = (await order()).split(",");
 check(o1.length === 2 && o1[0] === P1, "下面加 = 新歌手排在它后面", o1.join(","));
 const P2 = o1[1];
@@ -32,7 +32,7 @@ await p.keyboard.press("Escape"); await p.waitForTimeout(150);
 // 上面加一位新的（对着 P1）
 await p.evaluate((id) => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { ...s.at, part: id } }); }, P1); await p.waitForTimeout(120);
 await mgr(0);
-await p.click('.parts-mgr [data-v="addabove"]'); await p.waitForTimeout(150); await p.click('.parts-mgr [data-v="addnew"]'); await p.waitForTimeout(350);
+await p.click('.parts-mgr [data-v="addabove"]'); await p.waitForTimeout(150); await p.click('.parts-mgr [data-v="addnew"]'); await p.waitForTimeout(350); await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(300);
 const o2 = (await order()).split(",");
 check(o2.length === 3 && o2[1] === P1 && o2[2] === P2, "上面加 = 新歌手排在它前面", o2.join(","));
 const P3 = o2[0];

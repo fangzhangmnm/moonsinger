@@ -45,6 +45,8 @@ await tap(P0, "part");
 const menu = await p.$$eval(".ctx-menu [data-v]", (bs) => bs.map((x) => x.dataset.v).join(","));
 check(menu === "new,parts", "「＋ 歌手」= 小菜单：＋ 新歌手 / 声部管理（都在这一段了，没有可加的已有歌手）", menu);
 await p.click('.ctx-menu [data-v="new"]'); await p.waitForTimeout(400);
+check(await p.evaluate(() => window.__moonsinger.state().song.parts.length) === 1 && await p.$eval(".finder", (e) => !e.hidden), "＋ 新声部 = 先开乐器目录，还没建（v0.16.35：选了才建）");
+await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(300);
 const parts = await p.evaluate(() => window.__moonsinger.state().song.parts.map((x) => x.id));
 const onP = (pid) => p.evaluate((pid) => Object.keys(window.__moonsinger.state().song.papers.find((x) => x.id === pid).tracks).join(","), pid);
 check(parts.length === 2, "加了一位新歌手", parts.join(","));

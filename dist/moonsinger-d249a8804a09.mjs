@@ -3187,7 +3187,6 @@ var S = {
   "{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220": { en: "{p}{p2}: empty lyric slots don't open a box; lyrics already written can still be tapped to edit or delete" },
   "\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC": { en: " (vowel version) only hums" },
   "\u4E0D\u5531\u6B4C\u8BCD": { en: " doesn't sing lyrics" },
-  "\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u65B0\u58F0\u90E8": { en: "This line went to a new part" },
   "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8": { en: "Added a part" },
   "\u5220\u6389\u58F0\u90E8\u300C{name}\u300D": { en: "Delete part \u201C{name}\u201D" },
   "\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Deleted \u201C{name}\u201D (undo brings it back)" },
@@ -3425,10 +3424,6 @@ var S = {
   "\u2190 \u8C31": { en: "\u2190 Score" },
   "\u6362\u4E00\u4E2A\u58F0\u90E8": { en: "Switch part" },
   "\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173": { en: "Audition keys: on / off" },
-  "\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48": { en: "What this part is" },
-  "\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57": { en: "Its name on the score" },
-  "{rn}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09": { en: "{rn} (custom)" },
-  "\u8C31\u4E0A\u5199": { en: "On the score" },
   "\u53F0\u4E0A": { en: "On stage" },
   "\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31": { en: "The performer and the instrument they hold; this name isn't on the score" },
   "\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A": { en: "Instrument catalog: what this song has used is at the top, browse below by style / era / family; try on the keys at the right, pick one and it\u2019s on" },
@@ -4520,7 +4515,6 @@ var S = {
   "\u6CA1\u6709\u53EF\u7528\u7684\u8D77\u6CD5\uFF08\u6253\u5305\u65F6\u6CA1\u5E26\u8FD9\u4E2A\u7EBF\u7A0B\uFF09": { en: "No way to start it (this thread wasn't bundled)" },
   "\u540E\u53F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}": { en: "Background thread \u201C{name}\u201D can't start: {Error}" },
   "\u51FA\u58F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}": { en: "Audio thread \u201C{name}\u201D can't start: {Error}" },
-  "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u9009\u8FD9\u4E2A\u300D= \u6362\u4E0A\uFF08\u4ECE\u8C31\u4E0A\u6765\u7684\u56DE\u5230\u8C31\uFF0C\u4ECE\u4E50\u5668\u9875\u6765\u7684\u56DE\u5230\u4E50\u5668\u9875\uFF09\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002": { en: "Tap an instrument \u2192 choose who performs \u2192 try it on the keys at the right \u2192 \u201CChoose this\u201D = it\u2019s on (from the score you go back to the score, from the instrument page back to that page). The role becomes that instrument (its name goes on the score); only the performer enters the green room." },
   "\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09": { en: "Search instruments (zh / en / ja)" },
   "\u8DF3\u5230": { en: "Jump to" },
   "\u5217\u8868\u6EDA\u5230\u8FD9\u4E00\u7EC4": { en: "Scroll the list to this group" },
@@ -4546,7 +4540,6 @@ var S = {
   "\u9876\u66FF": { en: "Substitute" },
   "\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934": { en: "Plays the start of this part with it" },
   "\u25B6 \u542C\u5F00\u5934": { en: "\u25B6 Hear the start" },
-  "\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF0C\u56DE\u5230\u4E50\u5668\u9875": { en: "Chooses it to perform this part, back to the instrument page" },
   "\u9009\u8FD9\u4E2A": { en: "Choose this" },
   "\u9F13\u4EF6 \xB7 {gmName}\uFF08Standard \u9F13\u7EC4\u7684 {note} \u53F7\u952E\uFF09": { en: "Drum piece \xB7 {gmName} (key {note} of the Standard kit)" },
   "\u9F13\u7EC4 \xB7 {gmName}": { en: "Drum kit \xB7 {gmName}" },
@@ -4808,6 +4801,15 @@ var S = {
   "\u8FD9\u91CC\u662F C \u8C03\uFF08\u6CA1\u6709\u5347\u964D\u53F7\uFF09\uFF1A\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": { en: "C major here (no sharps or flats): tap = clef / key / time / tempo" },
   "\u8FD9\u4E00\u5BB6\u5C55\u5F00\u7740\uFF1A\u70B9 = \u53E0\u56DE\u53BB\uFF08\u5149\u6807\u632A\u5230\u4E0B\u4E00\u4F4D\uFF09": { en: "This family is spread out: tap = fold it back (the cursor moves to the next part)" },
   "\u9690\u85CF\u7740\u7684\uFF08\u70B9 = \u653E\u51FA\u6765\uFF09": { en: "Hidden (tap = show)" },
+  "\u8C31\u4E0A\u5199\u300C{rn}\u300D": { en: "Shown on the score as \u201C{rn}\u201D" },
+  "\u6539\u540D\u5728\u58F0\u90E8\u7BA1\u7406": { en: "rename it under Parts" },
+  "\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668": { en: "\u201C{who}\u201D plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
+  "\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u65B0\u58F0\u90E8\uFF1A{c}": { en: "This line now belongs to a new part: {c}" },
+  "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8\uFF1A{c}": { en: "Added a part: {c}" },
+  "\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8\uFF1A{c}\uFF08\u76EE\u5F55\u8FD8\u5F00\u7740\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09": { en: "Added a part: {c} (the catalog stays open \u2014 keep switching if you like)" },
+  "\u65B0\u58F0\u90E8": { en: "new part" },
+  "\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u9009\u8FD9\u4E2A\u300D= \u6362\u4E0A\u3002\u76EE\u5F55\u4E0D\u5173\uFF0C\u653E\u7740\u6B4C\u4E5F\u80FD\u63A5\u7740\u6362\uFF1B\u56DE\u8C31\u70B9\u300C\u2190 \u8C31\u300D\u3002\u8C31\u4E0A\u7684\u540D\u5B57\u8DDF\u7740\u6362\u6210\u90A3\u4EF6\u4E50\u5668\u3002": { en: "Tap an instrument \u2192 pick who plays it \u2192 try it on the keyboard \u2192 \u201CUse this\u201D switches to it. The catalog stays open, so you can keep switching even while the song plays; tap \u201C\u2190 Score\u201D to go back. The name on the score follows the instrument." },
+  "\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF08\u76EE\u5F55\u4E0D\u5173\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09": { en: "Use it for this part (the catalog stays open)" },
   "\u53BB\u770B": { en: "Go to it" },
   "\u653E\u51FA\u6765": { en: "Unhide" },
   "\u9690\u85CF\u7740\u7684\u66F2\u6BB5\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\uFF09": { en: "Hidden sections (not played, not printed)" },
@@ -5036,7 +5038,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.34-2026-11-09";
+var APP_VERSION = "v0.16.35-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -27632,7 +27634,10 @@ function createPadHost(padEl2, g3) {
   let monoAt = -Infinity;
   function monoAccept(id2) {
     const now2 = performance.now();
-    if (monoClash(monoHeld.size, monoAt, now2)) return false;
+    if (monoClash(monoHeld.size, monoAt, now2)) {
+      g3.monoRejected?.();
+      return false;
+    }
     monoHeld.add(id2);
     monoAt = now2;
     return true;
@@ -28526,15 +28531,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-24c10a62ade7.mjs");
+      return pick(() => "singer-worker-24eef23729e5.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-83cc74772e0c.mjs");
+      return pick(() => "layout-worker-06dd9c9b7388.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-dd5451e8f193.mjs");
+      return pick(() => "encode-worker-98bff441decf.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35824,7 +35829,7 @@ function unserializeDesk(json) {
 }
 
 // src/ui/finder.ts
-var HINT = _t("\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u9009\u8FD9\u4E2A\u300D= \u6362\u4E0A\uFF08\u4ECE\u8C31\u4E0A\u6765\u7684\u56DE\u5230\u8C31\uFF0C\u4ECE\u4E50\u5668\u9875\u6765\u7684\u56DE\u5230\u4E50\u5668\u9875\uFF09\u3002\u89D2\u8272\u4F1A\u6539\u6210\u90A3\u4EF6\u4E50\u5668\uFF08\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57\uFF09\uFF1B\u8C01\u6765\u6F14\u624D\u8FDB\u4F11\u606F\u5BA4\u3002");
+var HINT = _t("\u70B9\u4E00\u4EF6\u4E50\u5668 \u2192 \u6311\u8C01\u6765\u6F14 \u2192 \u7528\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5 \u2192 \u300C\u9009\u8FD9\u4E2A\u300D= \u6362\u4E0A\u3002\u76EE\u5F55\u4E0D\u5173\uFF0C\u653E\u7740\u6B4C\u4E5F\u80FD\u63A5\u7740\u6362\uFF1B\u56DE\u8C31\u70B9\u300C\u2190 \u8C31\u300D\u3002\u8C31\u4E0A\u7684\u540D\u5B57\u8DDF\u7740\u6362\u6210\u90A3\u4EF6\u4E50\u5668\u3002");
 var esc4 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 var Finder = class {
   el;
@@ -35948,6 +35953,12 @@ var Finder = class {
     const openedC = this.opened ? this.cat.byId.get(this.opened.split("::")[1]) : void 0;
     if (this.selected) void this.host.audition(this.pickOf(this.selected));
     else if (openedC) void this.host.audition({ kind: "none", concept: openedC });
+  }
+  /** 换上一件乐器之后（目录不关，v0.16.35）：顶条的名字和「这首歌里用过的」那一排跟着变。 */
+  refresh() {
+    if (this.el.hidden) return;
+    if (!this.playOnly) this.el.querySelector(".finder-title").textContent = _t("\u627E\u4EBA\u7ED9\u300C{p}\u300D", { p: this.host.roleName() });
+    this.renderUsed();
   }
   hide() {
     if (this.el.hidden) return;
@@ -36120,7 +36131,7 @@ var Finder = class {
     let body2 = "";
     if (open2) {
       const provs = providersOf(cat2, c10).filter((x2) => !pk || gmKey(x2) === pk), pitched = c10.kind === "voice";
-      const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc4(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("\u9876\u66FF")}</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934")}">${_t("\u25B6 \u542C\u5F00\u5934")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF0C\u56DE\u5230\u4E50\u5668\u9875")}">${_t("\u9009\u8FD9\u4E2A")}</button>`}</div></div>`;
+      const prov = (key, label, note2, playable, sub = false) => `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc4(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("\u9876\u66FF")}</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934")}">${_t("\u25B6 \u542C\u5F00\u5934")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF08\u76EE\u5F55\u4E0D\u5173\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09")}">${_t("\u9009\u8FD9\u4E2A")}</button>`}</div></div>`;
       body2 = `<div class="inst-prov">` + provs.map((p2) => prov(`${c10.id}|${gmKey(p2)}`, `${p2.note !== void 0 ? _t("\u9F13\u4EF6 \xB7 {gmName}\uFF08Standard \u9F13\u7EC4\u7684 {note} \u53F7\u952E\uFF09", { gmName: esc4(p2.gmName), note: p2.note }) : p2.bank === 128 ? _t("\u9F13\u7EC4 \xB7 {gmName}", { gmName: esc4(p2.gmName) }) : `GeneralUser GS \xB7 ${esc4(p2.gmName)}`}`, p2.kind === "substitute" ? _t("\u9876\u66FF{p}{reason}", { p: p2.basis === "official" ? _t("\uFF08GM \u539F\u6587\u8BA4\u53EF\uFF09") : p2.basis === "lineage" ? _t("\uFF08\u524D\u8EAB\uFF09") : p2.basis === "imitation" ? _t("\uFF08\u4EFF\u58F0\uFF09") : p2.basis === "family" ? _t("\uFF08\u540C\u7C7B\uFF09") : _t("\uFF08\u53EA\u662F\u540C\u540D\uFF09"), reason: p2.reason && zhOnly(p2.reason) ? `\uFF1A${esc4(p2.reason)}` : "" }) : "", true, p2.kind === "substitute")).join("") + (pitched ? prov(`${c10.id}|voice`, _t("\u5C0F\u6708\u76F8"), _t("\u5531\u6B4C\u8BCD\uFF1B\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u6309\u300C\u54FC\u7684\u5B57\u300D\u5531"), false) : "") + (!provs.length && !pitched ? `<div class="prov-none">${_t("\u76EE\u5F55\u91CC\u8FD8\u6CA1\u6709\u8C01\u80FD\u6F14\u5B83")}</div>` : "") + `</div>`;
     }
     return `<div class="inst-row${open2 ? " is-open" : ""}" data-c="${esc4(c10.id)}" data-o="${esc4(o10)}"${pk ? ` data-k="${esc4(pk)}"` : ""}>` + (icon ? `<svg class="inst-ico" aria-hidden="true"><use href="#${esc4(icon)}"/></svg>` : `<span class="inst-ico none">${esc4(conceptName(c10.names).slice(0, 1))}</span>`) + `<div class="inst-name"><b><span class="zh">${esc4(conceptName(c10.names))}</span>${e10.preset ? `<span class="inst-preset"> \xB7 ${esc4(e10.preset.gmName)}</span>` : ""}${asTag}</b>${stars}<span data-i18n-skip>${esc4(conceptAlt(roleNameOf(c10), c10.names))}</span></div><div class="inst-meta">${esc4(meta)}</div></div>` + body2;
@@ -50850,6 +50861,7 @@ function insertMarkHere(_kind, at2) {
   const r10 = padEl.getBoundingClientRect();
   headerPanel.open(D2.st.at.paper, D2.st.at.part, D2.st.sel ? D2.st.sel.from : D2.st.caret, at2 ?? { x: r10.left + r10.width / 2, y: r10.top - 4 });
 }
+var monoHinted = false;
 var padHost = createPadHost(padEl, {
   state: () => D2.st,
   update: (n10) => update(n10),
@@ -50858,7 +50870,12 @@ var padHost = createPadHost(padEl, {
   previewEdited,
   info: (m2) => info(m2),
   canStack,
-  // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
+  monoRejected: () => {
+    if (monoHinted) return;
+    monoHinted = true;
+    info(_t("\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668", { who: activeCandidateName(D2.extras, curRole()) ?? roleName(D2.extras, curRole()) }));
+  },
+  // 同一次打开只说一次（v0.16.35）   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p2, id2) => sound.down(p2, id2), up: (id2) => sound.up(id2) },
   soundTok,
   soundAfterWrite,
@@ -51093,6 +51110,7 @@ function showError(text2) {
 }
 var playBtns = () => [$2("playBtn"), $2("dockPlay")].filter((x2) => !!x2);
 var playIcon = (playing) => {
+  document.querySelector(".finder")?.classList.toggle("is-playing", playing);
   for (const b3 of playBtns()) {
     b3.innerHTML = `<svg class="ico"><use href="#${playing ? "stop" : "play-from-start"}"/></svg>`;
     b3.classList.toggle("is-on", playing);
@@ -51711,7 +51729,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "26d9c332caf7",
+  cssHash: "3163a8533854",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -51737,6 +51755,11 @@ window.__moonsinger = {
   },
   openHeader: (part) => headerPanel.open(D2.st.at.paper, part, 0, { x: innerWidth / 2, y: 120 }),
   // 谱头面板（E2E；v0.16.21 起小卡里没有「谱怎么画」，点谱号开）
+  finderCastVoice: async () => {
+    const c10 = conceptOfIds(await loadCatalog(), { wikidata: "Q7390" });
+    if (c10) await castPick({ kind: "voice", concept: c10 });
+  },
+  // E2E：目录里选小月相（= 人声那一行「选这个」；新声部要先选乐器，v0.16.35）
   set: (n10) => update(n10),
   addPaper: () => update(addPaper(D2.st)),
   toggleChord: (i10, p2) => update(toggleChordPitch(D2.st, i10, p2)),
@@ -52033,65 +52056,79 @@ async function playHeadWith(p2) {
   const to2 = Math.min(8, Math.max(...notes.map((n10) => n10.t1)));
   await previewTrack(track, to2, label);
 }
+var newPartPending = null;
+function newPartState(np2) {
+  const role = newRoleId(D2.extras, D2.st.song), mic = newMicId(D2.extras, D2.st.song);
+  const id2 = `P${Math.max(0, ...D2.st.song.parts.map((p2) => Number(/^P(\d+)$/.exec(p2.id)?.[1] ?? 0))) + 1}`;
+  let st2 = addPart(D2.st, { id: id2, role, mic }, np2.giveFrom ? null : np2.paper, np2.place?.anchor ?? D2.st.at.part);
+  if (np2.place) st2 = placePart(st2, id2, np2.place.anchor, np2.place.above);
+  if (np2.giveFrom) st2 = rebindTrack(st2, np2.paper, np2.giveFrom, id2);
+  if (st2.at.part !== id2) {
+    const pp = st2.song.papers.find((x2) => x2.id === np2.paper && x2.tracks[id2]) ?? st2.song.papers.find((x2) => x2.tracks[id2]);
+    if (pp) st2 = setFocus(st2, pp.id, id2);
+  }
+  return { st: st2, extras: withNewRole(D2.extras, role, D2.st.song.hum), role };
+}
 async function castPick(p2) {
   if (finderPlayOnly()) return;
-  const cat2 = await loadCatalog(), c10 = p2.concept, role = curRole(), hum = D2.st.song.hum;
+  const cat2 = await loadCatalog(), c10 = p2.concept, hum = D2.st.song.hum;
   catNow = cat2;
+  if (p2.kind === "gs") {
+    if (!audition || audition.bank !== p2.provider.bank || audition.program !== p2.provider.program) await setAudition(p2);
+    if (!audition) {
+      view.render();
+      renderTitle();
+      return;
+    }
+  }
+  const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D2.st, extras: D2.extras, role: curRole() }, role = base2.role;
   const ca2 = castArgs(cat2, c10, p2.kind === "gs" ? p2.provider.sound : null);
-  if (p2.kind === "voice") {
-    let next3 = withRoleConcept(D2.extras, role, ca2, hum);
-    next3 = withActive(withCastAs(next3, role, CANDIDATE_ID.full, ca2, hum), role, CANDIDATE_ID.full, hum);
-    updateExtras(next3, { kind: "lounge", label: _t("\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}", { c: roleNameOf(c10), gmName: activeCandidateName(next3, role) ?? "" }) });
-    sound.allOff();
-    void prepareBank();
-    view.render();
-    renderTitle();
-    closeFinder();
-    return;
+  let next2 = withRoleConcept(base2.extras, role, ca2, hum), keep2 = null;
+  if (p2.kind === "voice") next2 = withActive(withCastAs(next2, role, CANDIDATE_ID.full, ca2, hum), role, CANDIDATE_ID.full, hum);
+  else {
+    const { subset, sha256 } = audition, inf = sf2Info(subset);
+    next2 = withSf2Candidate(next2, role, {
+      name: p2.provider.gmName,
+      bank: p2.provider.bank,
+      program: p2.provider.program,
+      ...gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note),
+      subset,
+      sha256,
+      embed: false,
+      origin: { name: GS.name, fileSha256: GS.sha256, bytes: GS.bytes, library: GS.id },
+      credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } }
+    }, hum);
+    const id2 = activeId(next2, role);
+    next2 = withActive(withCastAs(next2, role, id2, ca2, hum), role, id2, hum);
+    keep2 = [sha256, subset];
   }
-  if (!audition || audition.bank !== p2.provider.bank || audition.program !== p2.provider.program) await setAudition(p2);
-  if (!audition) {
-    view.render();
-    renderTitle();
-    return;
-  }
-  const { subset, sha256 } = audition, inf = sf2Info(subset);
-  const fileSha256 = GS.sha256;
-  let next2 = withRoleConcept(D2.extras, role, ca2, hum);
-  next2 = withSf2Candidate(next2, role, {
-    name: p2.provider.gmName,
-    bank: p2.provider.bank,
-    program: p2.provider.program,
-    ...gsKeyArgs(cat2, p2.provider.bank, p2.provider.program, p2.provider.note),
-    subset,
-    sha256,
-    embed: false,
-    origin: { name: GS.name, fileSha256, bytes: GS.bytes, library: GS.id },
-    credit: { attribution: [GS.attribution], license: { name: GS.license.name, url: GS.homepage ?? GS.source, text: inf.comment } }
-  }, hum);
-  const id2 = activeId(next2, role);
-  next2 = withActive(withCastAs(next2, role, id2, ca2, hum), role, id2, hum);
-  updateExtras(next2, { kind: "lounge", label: _t("\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}", { c: roleNameOf(c10), gmName: p2.provider.gmName }) });
-  sources.session.keep(sha256, subset);
+  const who = p2.kind === "voice" ? activeCandidateName(next2, role) ?? "" : p2.provider.gmName, label = _t("\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}", { c: roleNameOf(c10), gmName: who });
+  if (np2) {
+    newPartPending = null;
+    updateBoth(base2.st, next2, { kind: "score", label: np2.giveFrom ? _t("\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u65B0\u58F0\u90E8\uFF1A{c}", { c: roleNameOf(c10) }) : _t("\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8\uFF1A{c}", { c: roleNameOf(c10) }) });
+  } else updateExtras(next2, { kind: "lounge", label });
+  if (keep2) sources.session.keep(keep2[0], keep2[1]);
   sound.allOff();
   void prepareBank();
   view.render();
   renderTitle();
-  closeFinder();
-  info(_t("\u300C{c}\u300D\u6362\u6210\uFF1A{gmName}", { c: roleNameOf(c10), gmName: p2.provider.gmName }));
+  finder.refresh();
+  info(np2 ? _t("\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8\uFF1A{c}\uFF08\u76EE\u5F55\u8FD8\u5F00\u7740\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09", { c: roleNameOf(c10) }) : label);
 }
 var KV_FINDER_IMPRO = "finder-impro";
 var finder = new Finder($2("stage"), {
   // 目录顶上「这首歌里用过的」（v0.16.18 搬家 C：原来在乐器页「谁来演」；user 11-07「换乐器的时候…点了谱表的乐器名之后，按一个按钮就立刻能换，然后配置是另外一回事」）
   used: () => {
+    if (newPartPending) return [];
     const aid = activeId(D2.extras, curRole());
     return candidates(D2.extras, curRole()).map((c10) => ({ id: c10.id, name: !performerOf(c10.engine) ? _t("{name}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09", { name: c10.name }) : c10.name, on: c10.id === aid, removable: performerOf(c10.engine)?.removable ?? true }));
   },
   useCandidate: (id2) => {
     setActive(id2);
-    closeFinder();
+    finder.refresh();
     info(_t("\u6362\u6210\u300C{who}\u300D", { who: activeCandidateName(D2.extras, curRole()) ?? id2 }));
   },
+  // 选完不关目录（v0.16.35）
   removeCandidate: (id2) => {
     try {
       updateExtras(withoutCandidate(D2.extras, curRole(), id2), { kind: "lounge", label: _t("\u300C{rn}\u300D\u9000\u6389\u4E00\u4F4D\u5019\u9009", { rn: roleName(D2.extras, curRole()) }) });
@@ -52100,11 +52137,17 @@ var finder = new Finder($2("stage"), {
     }
   },
   ownSf2: () => {
+    if (newPartPending) {
+      const b3 = newPartState(newPartPending);
+      newPartPending = null;
+      updateBoth(b3.st, b3.extras, { kind: "score", label: _t("\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8") });
+    }
     closeFinder(false);
     openInstPage();
     pickFile();
   },
-  roleName: () => roleName(D2.extras, curRole()),
+  // 新声部选自己的 .sf2 = 先建声部（选文件也算选了）
+  roleName: () => newPartPending ? _t("\u65B0\u58F0\u90E8") : roleName(D2.extras, curRole()),
   audition: setAudition,
   playHead: playHeadWith,
   cast: castPick,
@@ -52265,6 +52308,7 @@ function openFinder() {
   updateChrome();
 }
 function closeFinder(back = ui2.page.k === "finder" && ui2.page.backToInst) {
+  newPartPending = null;
   if (!finder.isOpen) return;
   const wasPlayOnly = finderPlayOnly();
   ui2.setPage({ k: "score" });
@@ -52537,14 +52581,8 @@ function navPaperTo(id2) {
   jumpPlaybackToPaper(id2);
 }
 function addNewPart(paper = D2.st.at.paper, giveFrom, place) {
-  const role = newRoleId(D2.extras, D2.st.song), mic = newMicId(D2.extras, D2.st.song);
-  const id2 = `P${Math.max(0, ...D2.st.song.parts.map((p2) => Number(/^P(\d+)$/.exec(p2.id)?.[1] ?? 0))) + 1}`;
-  let next2 = addPart(D2.st, { id: id2, role, mic }, giveFrom ? null : paper, place?.anchor ?? D2.st.at.part);
-  if (place) next2 = placePart(next2, id2, place.anchor, place.above);
-  if (giveFrom) next2 = rebindTrack(next2, paper, giveFrom, id2);
-  updateBoth(next2, withNewRole(D2.extras, role, D2.st.song.hum), { kind: "score", label: giveFrom ? _t("\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u65B0\u58F0\u90E8") : _t("\u52A0\u4E86\u4E00\u4E2A\u58F0\u90E8") });
-  renderTitle();
-  openInstPage();
+  newPartPending = { paper, ...giveFrom ? { giveFrom } : {}, ...place ? { place } : {} };
+  openFinder();
 }
 function deleteSinger(id2) {
   const p2 = D2.st.song.parts.find((x2) => x2.id === id2);
@@ -53592,25 +53630,7 @@ function drawInst() {
   ))(activePerfSpec(D2.extras, role).gapSec, gapDefaultOf(role)) : "") + ownMain.map(rowOf).join("") + // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
   (plug?.dynamics === "gain" ? row2(_t("\u529B\u5EA6\u8BB0\u53F7"), "", _t("\u529B\u5EA6\u8BB0\u53F7 = \u97F3\u91CF\uFF08\u76F8\u5BF9 mf\uFF0CdB\uFF09\uFF1B\u4E00\u6863 6 dB \u2248 \u632F\u5E45\u7FFB\u500D / \u51CF\u534A\u3002\u529B\u5EA6\u8BB0\u53F7\u6CA1\u6709\u6807\u51C6\u7684 dB\uFF0C\u662F\u76F8\u5BF9\u7684\uFF1A\u6BCF\u4F4D\u6F14\u594F\u8005\u81EA\u5DF1\u5E26\u4E00\u5F20\u8868\uFF0C\u8FD9\u662F\u8FD9\u4F4D\u7684\uFF1A{extras}", { extras: dynTable(activePerfSpec(D2.extras, role), null) })) : "") + ((plug?.lyrics ?? "none") !== "none" ? row2(_t("\u54FC\u7684\u5B57"), HUMS2.map(([v, l10]) => chip(`hum:${v}`, l10, h2 === v)).join(""), _t("\u6CA1\u5199\u6B4C\u8BCD\u7684\u97F3\u5531\u4EC0\u4E48\uFF08\u6574\u9996\u6B4C\u4E00\u4E2A\uFF09")) : "") + (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("\u9AD8\u7EA7\uFF1A\u5531\u6CD5\u6838\u5FC3\u7684\u65CB\u94AE")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") + ownTail.map(rowOf).join("") + (!plug ? row2("", "", _t("\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09\uFF1A\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D")) : "");
   const keepScroll = instEl.querySelector(".ip-body")?.scrollTop ?? 0;
-  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="ip-title">${_t("\u4E50\u5668")}</span>` + (parts.length > 1 ? `<select class="ip-part" title="${_t("\u6362\u4E00\u4E2A\u58F0\u90E8")}">${parts.map((x2) => `<option value="${esc10(x2.p.id)}"${x2.p.id === D2.st.at.part ? " selected" : ""}>${esc10(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc10(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card"><h3>${_t("\u8FD9\u4E2A\u58F0\u90E8\u662F\u4EC0\u4E48")}<small>${_t("\u8C31\u4E0A\u5199\u5B83\u7684\u540D\u5B57")}</small></h3><select id="roleSel" class="role-sel">` + (ROLE_PRESETS.some((r10) => r10.name === rn2 && r10.sound === rs2) ? "" : `<option value="" selected>${_t("{rn}\uFF08\u81EA\u5DF1\u5199\u7684\uFF09", { rn: esc10(rn2) })}</option>`) + ROLE_GROUPS.map((g3) => `<optgroup label="${g3.group}">${g3.items.map((r10) => `<option value="${esc10(`${r10.sound}|${r10.name}`)}"${r10.name === rn2 && r10.sound === rs2 ? " selected" : ""}>${esc10(r10.name)} \u2014 ${r10.zh}</option>`).join("")}</optgroup>`).join("") + `</select><label class="role-name">${_t("\u8C31\u4E0A\u5199")}<input id="roleIn" class="role-in" type="text" spellcheck="false" autocomplete="off" value="${esc10(rn2)}" /></label>${roleDetail(role)}<div class="role-sound">MusicXML\uFF1A<code>${esc10(rs2)}</code></div></section><section class="ip-card ip-who"><h3>${_t("\u53F0\u4E0A")}<small>${_t("\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31")}</small></h3><div class="ip-who-row"><b>${esc10(activeCandidateName(D2.extras, role) ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</b>${status}</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A")}">${_t("\u6362\u4E50\u5668\u2026")}</button><button class="btn" data-v="sf2:pick" title="${_t("\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559")}">${_t("\u4ECE .sf2 \u6587\u4EF6\u9009\u2026")}</button></div>` + pickerHtml() + `<div class="ip-note">${_t("\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002")}</div></section><section class="ip-card ip-how"><h3>${_t("{who} \u600E\u4E48\u6F14", { who: esc10(who) })}<small>${_t("\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5")}</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section></div></div>`;
-  const inp = instEl.querySelector("#roleIn"), sel = instEl.querySelector("#roleSel");
-  sel.addEventListener("change", () => {
-    const [snd, ...nm2] = sel.value.split("|");
-    if (snd) {
-      setRole(nm2.join("|"), snd);
-      drawInst();
-    }
-  });
-  inp.addEventListener("change", () => setRole(inp.value));
-  inp.addEventListener("keydown", (e10) => {
-    if (e10.isComposing) return;
-    if (e10.key === "Enter") {
-      e10.preventDefault();
-      e10.stopPropagation();
-      setRole(inp.value);
-      drawInst();
-    }
-  });
+  instEl.innerHTML = `<div class="ip-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="ip-title">${_t("\u4E50\u5668")}</span>` + (parts.length > 1 ? `<select class="ip-part" title="${_t("\u6362\u4E00\u4E2A\u58F0\u90E8")}">${parts.map((x2) => `<option value="${esc10(x2.p.id)}"${x2.p.id === D2.st.at.part ? " selected" : ""}>${esc10(x2.label)}</option>`).join("")}</select>` : `<span class="ip-part-one">${esc10(parts[0]?.label ?? rn2)}</span>`) + `<span class="ip-gap"></span><button class="btn finder-pad ip-pad${padEl.hidden ? "" : " is-on"}" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="ip-body"><div class="ip-cols"><section class="ip-card ip-who"><h3>${_t("\u53F0\u4E0A")}<small>${_t("\u6F14\u594F\u8005\u548C\u4ED6\u624B\u91CC\u7684\u7434\uFF1B\u540D\u5B57\u4E0D\u4E0A\u8C31")}</small></h3><div class="ip-who-row"><b>${esc10(activeCandidateName(D2.extras, role) ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</b>${status}</div><div class="ip-btns"><button class="btn primary" data-v="finder" title="${_t("\u4E50\u5668\u76EE\u5F55\uFF1A\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u91CC\u7528\u8FC7\u7684\uFF0C\u4E0B\u9762\u6309\u66F2\u98CE / \u5E74\u4EE3 / \u65CF\u6D4F\u89C8\uFF1B\u53F3\u8FB9\u7684\u952E\u76D8\u8BD5\u542C\uFF0C\u9009\u597D\u5C31\u6362\u4E0A")}">${_t("\u6362\u4E50\u5668\u2026")}</button><button class="btn" data-v="sf2:pick" title="${_t("\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF08\u51E0 MB\uFF09\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF1B\u6574\u4E2A\u6587\u4EF6\u4E0D\u7559")}">${_t("\u4ECE .sf2 \u6587\u4EF6\u9009\u2026")}</button></div>` + pickerHtml() + `<div class="ip-note">${_t("\u9009\u7684\u7434\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u6B4C\u5C0F\uFF09\uFF1A\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u8981\u6B4C\u81EA\u5DF1\u5E26\u7740\u58F0\u97F3 = \u6587\u4EF6\u83DC\u5355\u300C\u5168\u90E8\u6253\u5305\u8FDB\u6B4C\u300D\uFF0C\u6216\u5BFC\u51FA\u300C\u6253\u5305\u97F3\u6E90\u300D\u7684\u526F\u672C\u3002")}</div></section><section class="ip-card ip-how"><h3>${_t("{who} \u600E\u4E48\u6F14", { who: esc10(who) })}<small>${_t("\u53F3\u8FB9\u7684\u952E\u76D8\u5F39\u7684\u5C31\u662F\u53F0\u4E0A\u8FD9\u4F4D\uFF0C\u6539\u4E86\u9A6C\u4E0A\u80FD\u8BD5")}</small></h3><div class="ip-grid">${how}</div>${eng !== "unknown" ? marksTableHtml(role, eng) : ""}</section><div class="ip-what">${_t("\u8C31\u4E0A\u5199\u300C{rn}\u300D", { rn: esc10(rn2) })} \xB7 MusicXML <code>${esc10(rs2)}</code> \xB7 ${_t("\u6539\u540D\u5728\u58F0\u90E8\u7BA1\u7406")}${roleDetail(role)}</div></div></div>`;
   instEl.querySelector("#sfSel")?.addEventListener("change", (e10) => {
     const picked = instPicked;
     if (!picked) return;
@@ -55833,4 +55853,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-65a4b5e95599.mjs.map
+//# sourceMappingURL=moonsinger-d249a8804a09.mjs.map

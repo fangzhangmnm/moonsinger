@@ -31,9 +31,11 @@ check(synth.startsWith("Electric Guitar · Solid-body electric guitar (Fender St
 
 await reveal(p, "Q7390"); await p.click('.inst-row[data-c="Q7390"]'); await p.waitForTimeout(300);
 await p.click('.prov[data-p="Q7390|voice"] [data-v="cast"]'); await p.waitForTimeout(500);
-check(await p.$eval(".inst-page", (e) => !e.hidden), "选了 = 回到乐器页");
-const rn = await p.$eval("#roleIn", (e) => e.value);
-check(rn === "Voice", "谱上写 Voice（原来是整个百科名 Human voice）", rn);
+check(await p.$eval(".finder", (e) => !e.hidden), "选了 = 目录还开着（v0.16.35：选完不关，可以接着换）");
+await p.click('.finder [data-v="back"]'); await p.waitForTimeout(300);
+check(await p.$eval(".inst-page", (e) => !e.hidden), "关目录 = 回到乐器页（从乐器页开的）");
+const rn = await p.$eval(".inst-page .ip-what", (e) => e.textContent);
+check(rn.includes("「Voice」"), "谱上写 Voice（原来是整个百科名 Human voice）", rn);
 const det = await p.$eval(".role-detail", (e) => e.textContent);
 check(det.includes("人声 · Human voice") && /第二行起写 \S+/.test(det), "乐器页写出详细说明和简写", det);
 await p.keyboard.press("Escape"); await p.waitForTimeout(300);

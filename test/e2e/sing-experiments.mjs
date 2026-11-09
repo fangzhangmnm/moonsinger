@@ -29,7 +29,7 @@ check(await p.$eval('.inst-page [data-v="core:levelContinuous:1"]', (e) => e.cla
 // 切「每字重起」→ 存进候选 + 重唱带新旋钮；先滚到底（「高级」在最下面）——调一下页面不许弹回顶端（user 2026-10-17「我调歌手设置的时候每调一下页面都会弹回顶端」）
 await p.evaluate(() => { window.__opts = []; });
 const sc0 = await p.$eval(".inst-page .ip-body", (e) => { e.scrollTop = e.scrollHeight; return e.scrollTop; });
-await p.click('.inst-page [data-v="core:levelContinuous:0"]'); await p.waitForTimeout(150);
+await p.$eval('.inst-page [data-v="core:levelContinuous:0"]', (e) => e.click()); await p.waitForTimeout(150);   // 直接点（测试工具的点法会先把挡着的钮滚出来，滚动位置在重画之前就变了）
 const sc1 = await p.$eval(".inst-page .ip-body", (e) => e.scrollTop);
 check(sc0 > 50 && Math.abs(sc1 - sc0) <= 2, "调一下 = 页面停在原地（不弹回顶端）", `${sc0} → ${sc1}`);
 check(await p.$eval('.inst-page [data-v="core:levelContinuous:0"]', (e) => e.classList.contains("is-on")), "点了 = 那一格亮（重画后还开着折叠）");
