@@ -41,6 +41,24 @@ check(await p.isVisible(".studio"), "点「听」= 混音台");
 await p.click("#padTab"); await p.waitForTimeout(250); check(!(await p.isVisible(".studio")), "收起混音台");
 await p.click('.mode-seg [data-mode="listen"]'); await p.waitForTimeout(300);
 check(await p.isVisible(".studio"), "「听」亮着时再点 = 混音台弹出来");
+// 键盘只手动开合（v0.16.55；user 11-09「选中音符的时候不应该自动弹键盘…只手动toggle」「鼠标点空白不应该出键盘，不然电脑上很难受」）
+await p.click('.mode-seg [data-mode="notes"]'); await p.waitForTimeout(300);
+if (await padShown()) await togglePad();
+check(!(await padShown()), "回到「音」、键盘收着");
+const spot = await p.evaluate(() => {
+  const r = document.getElementById("score").getBoundingClientRect(), n = document.querySelector("#score .staff-svg [data-tok]")?.getBoundingClientRect();
+  const bar = document.getElementById("bar")?.getBoundingClientRect(); let bx = -1, by = -1;
+  if (bar) for (let x = bar.left + 4; x < bar.right - 4; x += 6) { const el = document.elementFromPoint(x, bar.top + bar.height / 2); if (el && el.closest("#bar") && !el.closest("button, select, label, input, a")) { bx = x; by = bar.top + bar.height / 2; break; } }
+  return { nx: n ? n.left + n.width / 2 : r.left + r.width / 2, ny: n ? n.top + n.height / 2 : r.top + 120, ex: r.left + 8, ey: r.top + r.height * 0.6, bx, by };
+});
+await p.mouse.click(spot.nx, spot.ny); await p.waitForTimeout(300);
+check(!(await padShown()), "键盘收着时用鼠标点音符 = 不弹");
+await p.mouse.click(spot.ex, spot.ey); await p.waitForTimeout(300);
+check(!(await padShown()), "点谱上空白 = 不弹");
+await togglePad(); check(await padShown(), "底下的「键盘」钮 = 弹出");
+await p.mouse.click(spot.nx, spot.ny); await p.waitForTimeout(300); await p.mouse.click(spot.ex, spot.ey); await p.waitForTimeout(300);
+check(await padShown(), "开着时点音符、点空白 = 不收");
+if (spot.bx >= 0) { await p.mouse.click(spot.bx, spot.by); await p.waitForTimeout(300); check(await padShown(), "点顶栏空白处 = 不收（以前会收）"); } else check(false, "顶栏找不到空白处");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`pad-toggle: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

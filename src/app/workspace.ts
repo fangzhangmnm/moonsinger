@@ -50,8 +50,11 @@ export const RULES: Record<Mode, ModeRules> = {
 export type Dock = "keys" | "symbols" | "studio" | "none";
 export interface WorkspaceState {
   mode: Mode;
-  /** 键盘收起了（pad 的「收起」；点谱 / 底下的「键盘」再弹出来）。 */
+  /** 键盘收起了：只由手动的钮改（pad 的「收起」、底下的「键盘」、点亮着的模式钮、「弹」、进模式）；点谱 / 点空白不改（v0.16.55，user 11-09
+   *  「选中音符的时候不应该自动弹键盘，键盘是不是应该只手动toggle比较好？」「鼠标点空白不应该出键盘，不然电脑上很难受」）。 */
   collapsed: boolean;
+  /** 打字中（歌词 / 歌名 / 作者栏的框开着，系统键盘要上来）：键盘暂时让开，不动 collapsed；点回谱上 = 回到手动设的样子（user 早先「键盘输入歌词的时候音乐键盘应该hide」）。 */
+  aside?: boolean;
   /** 试音中（乐器目录 / 乐器页开着：底座放音键，只弹不写）。 */
   tryout: boolean;
 }
@@ -59,7 +62,7 @@ export interface WorkspaceState {
  *  音 = 音键、符 = 符号格、听 = 混音台、词 = 空（用系统键盘）。 */
 export function dockOf(s: WorkspaceState): Dock {
   if (s.tryout) return "keys";
-  if (s.collapsed) return "none";
+  if (s.collapsed || s.aside) return "none";
   return s.mode === "notes" ? "keys" : s.mode === "symbols" ? "symbols" : s.mode === "listen" ? "studio" : "none";
 }
 /** 这个模式底下有东西可收起 / 弹出吗（底下那粒 tab 露不露；听 = 混音台）。 */

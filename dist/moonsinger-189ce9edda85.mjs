@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.54-2026-11-09";
+var APP_VERSION = "v0.16.55-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -13624,7 +13624,7 @@ var RULES = {
 };
 function dockOf(s10) {
   if (s10.tryout) return "keys";
-  if (s10.collapsed) return "none";
+  if (s10.collapsed || s10.aside) return "none";
   return s10.mode === "notes" ? "keys" : s10.mode === "symbols" ? "symbols" : s10.mode === "listen" ? "studio" : "none";
 }
 var hasKeys = (m2) => m2 === "notes" || m2 === "symbols" || m2 === "listen";
@@ -29371,7 +29371,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-9bf87d70b526.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-63005de5ff0e.mjs");
+      return pick(() => "encode-worker-e65ca51e3022.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -52052,8 +52052,14 @@ var view = new ScoreView(scoreEl, {
     clearTimeout(upTimer);
     sound.up("score");
   },
-  focus: (where) => showPad(where === "staff"),
-  // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
+  focus: (where) => {
+    const aside = where === "text";
+    if (ws.aside !== aside) {
+      ws.aside = aside;
+      applyWorkspace();
+    }
+  },
+  // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
   autoBars: () => autoBars,
   inC: () => viewInC,
   chordTags: () => chordTagsOn,
@@ -52644,6 +52650,7 @@ function setMode(m2) {
   view.marks.commitAndClose();
   if (m2 !== "listen") lastEditMode = m2;
   ws.mode = m2;
+  ws.aside = false;
   if (hasKeys(m2)) ws.collapsed = false;
   applyWorkspace();
 }
@@ -53243,11 +53250,9 @@ window.__moonsinger = {
 };
 function showPad(on2) {
   ws.collapsed = !on2;
+  if (on2) ws.aside = false;
   applyWorkspace();
 }
-bar.addEventListener("pointerdown", (e10) => {
-  if (!e10.target.closest("button, select, label, input, a")) showPad(false);
-});
 function engineNow() {
   return activeInstrument(D2.extras, curRole())?.engine ?? "unknown";
 }
@@ -55053,6 +55058,7 @@ function loadDoc(song, o10) {
   ws.mode = finalOn() ? "listen" : d3.mode;
   if (d3.mode !== "listen") lastEditMode = d3.mode;
   ws.collapsed = D2.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
+  ws.aside = false;
   applyWorkspace();
   void refHost.apply(o10.references ?? {}, d3.ref);
   pad3.setRangeLow(d3.pad.low);
@@ -57176,4 +57182,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3164bdabfdfa.mjs.map
+//# sourceMappingURL=moonsinger-189ce9edda85.mjs.map

@@ -552,7 +552,7 @@ const view = new ScoreView(scoreEl, {
   audition: (i, hold) => { clearTimeout(upTimer); soundTok(D.st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
   glide: (i) => { clearTimeout(upTimer); const t = tr(D.st)[i]; if (t?.kind === "note" && t.pitch) sound.glide(t.pitch, "score"); },
   release: () => { clearTimeout(upTimer); sound.up("score"); },
-  focus: (where) => showPad(where === "staff"),   // 纸宽固定以后，横屏收起旁边的 pad 也不会让谱重排（user「固定行宽之后横屏的键盘也可以开关了吧」）
+  focus: (where) => { const aside = where === "text"; if (ws.aside !== aside) { ws.aside = aside; applyWorkspace(); } },   // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
   autoBars: () => autoBars,
   inC: () => viewInC,
   chordTags: () => chordTagsOn,
@@ -923,7 +923,7 @@ function setMode(m: Mode): void {
   if (finalOn() && m !== "listen") { lockedSay(_t("模式")); return; }   // 第 ① 层：定稿着只有「听」
   ui.close(); view.lyrics.commitAndClose(); view.marks.commitAndClose();
   if (m !== "listen") lastEditMode = m;
-  ws.mode = m; if (hasKeys(m)) ws.collapsed = false;
+  ws.mode = m; ws.aside = false; if (hasKeys(m)) ws.collapsed = false;   // 换模式 = 手动的一下：打字让开的那一下不算了
   applyWorkspace();
   // 进出「听」不弹提示（v0.10.10，user「然后听的时候会弹一个nudge chip，我觉得那个info是废话，不用说」）：说明在「听」钮的悬停提示里
 }
@@ -1260,15 +1260,15 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), wake: async (awayMs: number) => { const lock = lockOnWake(awayMs); if (hasCloudHome()) await gate.wake(lock); return lock; }, gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(D.st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), hasHome: () => hasHome(), folderHome: () => folderHome()?.label ?? null, legacySongs: () => legacySongs(), offerMove: () => offerMove(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => H.identifier(), home: () => H.home.kind, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
-/** pad 像软键盘、五线谱像文本框（user「键盘输入歌词的时候音乐键盘应该hide」「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」）：
- *  点谱 = 弹出；打开歌词 / 歌名框（系统键盘要上来）= 收起；点顶栏空白处 = 收起。开局是弹出的（光标就在谱上）。
- *  横屏 / 桌面也一样（纸宽固定了，收起旁边的 pad 不会让谱重排）。顶栏的 pad 钮照旧手动开关；开「弹」= 弹出。 */
+/** 键盘只手动开合（v0.16.55；user 11-09「选中音符的时候不应该自动弹键盘，键盘是不是应该只手动toggle比较好？」「鼠标点空白不应该出键盘，不然电脑上很难受」）：
+ *  开 / 收 = 底下的「键盘」钮、pad 的「收起」、点亮着的模式钮（只弹）、进「音 / 符」、开「弹」；点谱 / 点空白 / 选中音符 / 点顶栏空白都不动它。
+ *  打字（歌词 / 歌名框开着，系统键盘要上来）= 暂时让开（ws.aside，不改手动设的样子），点回谱上就回来（user 早先「键盘输入歌词的时候音乐键盘应该hide」）。
+ *  以前（v0.10.x 起）是「五线谱像文本框、点了弹键盘、点别处收」（user 当时「可以想象五线谱是文本框，你touch点了会弹键盘。然后点别的地方会隐藏」），11-09 改成上面这样。 */
 /** 键盘收起 / 弹出（pad 的「收起」、底下的「键盘」tab、点谱弹出、点顶栏空白收起）。底座里放什么最终由模式定（applyWorkspace）：「词 / 听」本来就没有键盘。 */
 function showPad(on: boolean): void {
-  ws.collapsed = !on;
+  ws.collapsed = !on; if (on) ws.aside = false;   // 手动弹出 = 打字让开的那一下也不算了
   applyWorkspace();
 }
-bar.addEventListener("pointerdown", (e) => { if (!(e.target as HTMLElement).closest("button, select, label, input, a")) showPad(false); });
 
 // ── 文件（无地逃生口）：一首歌 = 一个 .mxl；家 = 打开的那个文件（桌面 Chromium 能存回去）或没有家（iPad：存 = 下载 / 分享） ──────
 /** 台上那位的引擎（= 谁来演、怎么出声）；unknown = 没人能出声（别家谱原来的乐器 / 这一版不认识）。SSoT = 休息室快照（D.extras），不另存状态。 */
@@ -2467,7 +2467,7 @@ function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extr
   applyDesk(d);
   // 打开 = 上次存时的模式；谱里已经有音 = 键盘先收着，点一下才开（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」「或者默认键盘是关的，点一下才会开。」）。空的新歌照旧开着键盘
   ws.mode = finalOn() ? "listen" : d.mode; if (d.mode !== "listen") lastEditMode = d.mode;   // 定稿着 = 只能听（存的模式不看）
-  ws.collapsed = D.st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));
+  ws.collapsed = D.st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));  ws.aside = false;
   applyWorkspace();
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);
