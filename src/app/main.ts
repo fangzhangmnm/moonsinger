@@ -120,6 +120,7 @@ import { type Locus, type Restored } from "../score/history.ts";
 import { createDocument, type SavedMark } from "./document.ts";
 import { createHome, assertNever, type Home } from "./home.ts";
 import { createInputGate, keyOwner, type NoWrite } from "./input-gate.ts";
+import { monoDown, monoUp, type MonoHeld } from "./mono-voice.ts";
 import { createEncoder } from "../format/encode-client.ts";
 import { runFactoryReset } from "./factory-reset.ts";
 import { freshDesk, freshPartView, serializeDesk, unserializeDesk, serializeFinderMemo, unserializeFinderMemo, PAD_UNITS, type Desk, type PartViewState } from "../score/desk.ts";
@@ -481,15 +482,24 @@ const feel = createFeelProbe({
   },
 });
 const soundsHeld = new Set<string>(); let soundAt = 0;   // 按键试听：哪些来源还按着、最后一次按 / 松是什么时候（空当里清排队要看）
+// 单声乐器（小月相 / 元音版 = inst.kind "vowel"）的试听像单音合成器：后按的顶掉前面的，松开后按的、前面那个还按着就回到它（v0.16.53，src/app/mono-voice.ts；
+//   user 11-09「两个键同时按有一个不认 即兴 小月相…很难受」→「可以」）。以前引擎多声：两个键一起按 = 两个元音叠着响。写谱那层的 50 ms 护栏（pad-host monoAccept）没动。
+let monoStack: MonoHeld<Pitch>[] = [];
+const isMonoInst = (t: { inst: AuditionInst }): boolean => t.inst.kind === "vowel";
 const sound = {
   down: (p: Pitch, id = "main") => {
     const t = auditionTarget(); if (!t) return; if (t.inst.kind === "vowel" && !vowelsReady) { void ensureVowels(); return; }
+    if (isMonoInst(t)) { const r = monoDown(monoStack, id, p); monoStack = r.stack; for (const sid of r.silence) engine.auditionOff(sid); }   // 前面在响的停（只停声，不算松手）
     noteKeyAsleep(performance.now()); singer.unlock(); engine.auditionOn(id, t.inst, t.key(midiOf(p)), t.vel, t.gainDb, t.pan); feel.sound();
     soundsHeld.add(id); soundAt = performance.now();
   },
   glide: (p: Pitch, id = "main") => { const t = auditionTarget(); if (t) engine.auditionGlide(id, t.key(midiOf(p))); },
-  up: (id = "main") => { soundsHeld.delete(id); soundAt = performance.now(); engine.auditionOff(id); const n = chordVoices.get(id) ?? 0; for (let k = 1; k <= n; k++) engine.auditionOff(`${id}~${k}`); chordVoices.delete(id); },
-  allOff: () => { soundsHeld.clear(); chordVoices.clear(); engine.auditionAllOff(); },
+  up: (id = "main") => {
+    soundsHeld.delete(id); soundAt = performance.now(); engine.auditionOff(id); const n = chordVoices.get(id) ?? 0; for (let k = 1; k <= n; k++) engine.auditionOff(`${id}~${k}`); chordVoices.delete(id);
+    const r = monoUp(monoStack, id); monoStack = r.stack;
+    if (r.back) { const t = auditionTarget(); if (t && isMonoInst(t)) engine.auditionOn(r.back.id, t.inst, t.key(midiOf(r.back.p)), t.vel, t.gainDb, t.pan); }   // 松开的是正在响的、前面还有按着的 = 回到它
+  },
+  allOff: () => { soundsHeld.clear(); chordVoices.clear(); monoStack = []; engine.auditionAllOff(); },
 };
 /** 唱下标 i 的音；id = 声音的来源（哪根手指 / 哪个键 / 谱面），复音：不同来源同时响，同一来源新的顶掉旧的。 */
 /** 响下标 i 的音：和弦 = 整个和弦一起响（v0.10.18；user「叠音的时候预览的是chord还是之前的旧音啊？」——原来只响 t.pitch 那一个）。

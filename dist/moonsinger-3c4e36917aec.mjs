@@ -5047,7 +5047,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.52-2026-11-09";
+var APP_VERSION = "v0.16.53-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29338,7 +29338,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-e066d1174db6.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-ee1715996993.mjs");
+      return pick(() => "encode-worker-eaec2f67e00b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -39585,7 +39585,7 @@ function createEncryption(opts = {}) {
 var appEncryption = createEncryption();
 
 // src/app-store.ts
-var GRAPH_TRANSPORT = { timeouts: DEFAULT_GRAPH_TIMEOUTS };
+var GRAPH_TRANSPORT = { timeouts: DEFAULT_GRAPH_TIMEOUTS, chunkResume: true, verifyChunkedCommit: true };
 var od = createOneDriveProvider({ clientId: CLIENT_ID2, scopes: SCOPES2, authority: AUTHORITY2, msalUrl: MSAL_URL2, transport: GRAPH_TRANSPORT });
 var cloudAvailable = () => currentPolicy().cloud;
 function injectedAuth() {
@@ -51302,6 +51302,19 @@ function keyOwner(f2) {
   return "score";
 }
 
+// src/app/mono-voice.ts
+function monoDown(stack, id2, p2) {
+  const rest = stack.filter((h2) => h2.id !== id2);
+  return { stack: [...rest, { id: id2, p: p2 }], silence: rest.map((h2) => h2.id) };
+}
+function monoUp(stack, id2) {
+  const i10 = stack.findIndex((h2) => h2.id === id2);
+  if (i10 < 0) return { stack: [...stack], back: null };
+  const next2 = stack.filter((h2) => h2.id !== id2);
+  const wasTop = i10 === stack.length - 1;
+  return { stack: next2, back: wasTop && next2.length ? next2[next2.length - 1] : null };
+}
+
 // src/format/encode-client.ts
 function createEncoder(workerUrl, onFallback) {
   let worker;
@@ -51885,6 +51898,8 @@ var feel = createFeelProbe({
 });
 var soundsHeld = /* @__PURE__ */ new Set();
 var soundAt = 0;
+var monoStack = [];
+var isMonoInst = (t10) => t10.inst.kind === "vowel";
 var sound = {
   down: (p2, id2 = "main") => {
     const t10 = auditionTarget();
@@ -51892,6 +51907,11 @@ var sound = {
     if (t10.inst.kind === "vowel" && !vowelsReady) {
       void ensureVowels();
       return;
+    }
+    if (isMonoInst(t10)) {
+      const r10 = monoDown(monoStack, id2, p2);
+      monoStack = r10.stack;
+      for (const sid of r10.silence) engine.auditionOff(sid);
     }
     noteKeyAsleep(performance.now());
     singer.unlock();
@@ -51911,10 +51931,17 @@ var sound = {
     const n10 = chordVoices.get(id2) ?? 0;
     for (let k2 = 1; k2 <= n10; k2++) engine.auditionOff(`${id2}~${k2}`);
     chordVoices.delete(id2);
+    const r10 = monoUp(monoStack, id2);
+    monoStack = r10.stack;
+    if (r10.back) {
+      const t10 = auditionTarget();
+      if (t10 && isMonoInst(t10)) engine.auditionOn(r10.back.id, t10.inst, t10.key(midiOf(r10.back.p)), t10.vel, t10.gainDb, t10.pan);
+    }
   },
   allOff: () => {
     soundsHeld.clear();
     chordVoices.clear();
+    monoStack = [];
     engine.auditionAllOff();
   }
 };
@@ -57116,4 +57143,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-dc4362a0df64.mjs.map
+//# sourceMappingURL=moonsinger-3c4e36917aec.mjs.map

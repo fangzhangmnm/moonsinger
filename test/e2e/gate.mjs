@@ -414,8 +414,10 @@ scenario("H2：冲突面开着 5 s 到点不刷；选了 / 取消之后才刷", 
   await p.clickGate("本地覆盖云端");
   await nav; await p.waitForFunction(() => !!window.__moonsinger?.gate);
   check((await cloudHex()) !== forked, "选了本地覆盖云端：推完才刷（云端变了）");
-  await p.waitPhase("open"); await p.waitForTimeout(600);
-  check((await p.evaluate(() => window.__moonsinger.store().files.dirty.count())) === 0, "推完没有脏");
+  await p.waitPhase("open");
+  // 2026-11-09：原来固定等 600 ms 再数——机器忙时刷新后的对账还没走完，v0.16.51 的构建直接跑也会红、经运行器重跑又绿（纯时间窗口）；改成最多等 3 s 到脏为 0
+  let dirtyLeft = -1; for (let i = 0; i < 30; i++) { dirtyLeft = await p.evaluate(() => window.__moonsinger.store().files.dirty.count()); if (dirtyLeft === 0) break; await p.waitForTimeout(100); }
+  check(dirtyLeft === 0, "推完没有脏", `脏 ${dirtyLeft}`);
   check((await noteCount(p)) === mineNotes, "刷完还是自己这一版", String(await noteCount(p)));
 
   // ② 取消 = 刷新继续，云端不动、脏留本地

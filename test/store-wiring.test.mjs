@@ -65,7 +65,7 @@ describe("store-wiring", () => {
   });
   it("保存排队的两个前提：传网盘带超时（不然挂住的那一个堵死整条队）；记名字到取快照之间没有 await", () => {
     const a = read("src/app-store.ts");
-    has(a, /const GRAPH_TRANSPORT: GraphTransportOptions = \{ timeouts: DEFAULT_GRAPH_TIMEOUTS \};/, "传输层超时用库的推荐值");
+    has(a, /const GRAPH_TRANSPORT: GraphTransportOptions = \{ timeouts: DEFAULT_GRAPH_TIMEOUTS, chunkResume: true, verifyChunkedCommit: true \};/, "传输层：超时（库的推荐值）+ 一块没传成接着传 + 提交前再核一次（user 11-09「两个都开 好」；和 WeebPaint / KudsRocket 同一套）");
     has(a, /createOneDriveProvider\(\{[^}]*transport: GRAPH_TRANSPORT \}\)/, "OneDrive provider 必须带 transport（超时）");
     const e = read("src/editor-session/editor-session.ts");
     const i = e.indexOf("const name = _name, gen = _gen;"), j = e.indexOf("await editor.encode()", i);

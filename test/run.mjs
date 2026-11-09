@@ -143,6 +143,7 @@ import "./cloud-return.test.mjs";   // 2026-11-04 H4 回来时没传的分三种
 import "./editor-session-serialize.test.mjs";   // 2026-11-09 保存排队 + 记住存给谁 + 快照和名字同一刻取（Fable）
 import "./input-gate.test.ts";   // 2026-11-09 键盘总闸：能不能写 / 键表明文表 / 这一下归谁（Fable）
 import "./input-gate-guard.test.mjs";   // 总闸以外没有别的路从按键写谱
+import "./mono-voice.test.ts";   // 2026-11-09 单声试听：后按的顶掉前面的、松开回到前一个
 import "./move-songs.test.mjs";   // 2026-11-03 H3 搬家：字节核过才动旧库
 import "./library-home.test.mjs";   // 2026-11-03 H3 歌库必须有家：守卫
 import "./export-all.test.mjs";   // 2026-11-03 歌库全部导出

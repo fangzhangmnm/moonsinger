@@ -18,8 +18,10 @@ import type { GalleryEntry } from "./library-home.ts";
 /** 传网盘的每个请求带超时（user 2026-11-09「给传网盘的请求加超时 修」；库的推荐值，同 WeebPaint / KudsRocket：问一句 30 s / 传一块 2 min / 取一段 1 min / 整份 15 min）。
  *  以前没有超时：iPad 锁屏后还在路上的请求常常永远挂着，保存就停在那一下，之后的自动存全都悄悄不做，直到刷新页面。
  *  v0.16.51 起保存排队（src/editor-session），挂住的那一个会把换歌也堵住——所以超时是排队的前提，两样一起上。到点 = 这一次按没传成算，下次再传。
- *  只开了超时这一项；库的另外两个开关（一块没传成接着传 / 提交最后一块前再核一次）没开，开不开归 user 定。added by Claude Fable 5.1 2026-11-09 */
-const GRAPH_TRANSPORT: GraphTransportOptions = { timeouts: DEFAULT_GRAPH_TIMEOUTS };
+ *  v0.16.53 起另外两个开关也开了（user 11-09「两个都开 好」；画画 / 火箭同一套）：chunkResume = 分块上传一块没传成（含超时）问会话传到哪了、退避、接着传，不整份重来——
+ *  歌带着音源子集和定稿的 mp3，几兆到几十兆，正是分块那一档；verifyChunkedCommit = 提交最后一块前再核一次云端版本（多一个 GET，只在分块上传时），
+ *  防上传这几十秒里另一台设备改了云端那份、被这次上传盖掉（云端不丢歌那一级的护栏）。added by Claude Fable 5.1 2026-11-09 */
+const GRAPH_TRANSPORT: GraphTransportOptions = { timeouts: DEFAULT_GRAPH_TIMEOUTS, chunkResume: true, verifyChunkedCommit: true };
 const od = createOneDriveProvider({ clientId: CLIENT_ID, scopes: SCOPES, authority: AUTHORITY, msalUrl: MSAL_URL, transport: GRAPH_TRANSPORT });
 /** 这个部署方式有没有网盘（家族规则书 §2：itch / 备用版没有）。开关的唯一来源 = deployment-policy；宿主的灰入口也读它。 */
 export const cloudAvailable = (): boolean => currentPolicy().cloud;
