@@ -32,14 +32,14 @@ const heard = (eng: string, gap: number) => (st: EditorState) => {
   if (eng === "tsukuyomi") return JSON.stringify([toLabScore(tr(st), "n"), gainSegments(tr(st), undefined, sp)]);   // 和 main.ts 一样：跳音进唱谱
   const f = first(st);
   if (eng === "soundfont") { const sv = sfSpec(gap), i = tr(st).indexOf(f);
-    return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sv), !!f.slur), gainSegments(tr(st), undefined, sv), noteVelocity(tr(st), i, f.art ?? [], sv, 80 / 127), lightNotes(tr(st), [], true, lightMarks(sv)).map((n) => [n.midi, n.t0])]); }   // 起点（琶音改的是它；v0.9.45）
+    return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sv), !!f.slur), gainSegments(tr(st), undefined, sv), noteVelocity(tr(st), i, f.art ?? [], sv, 80 / 127), lightNotes(tr(st), [], true, { ...lightMarks(sv), rollHz: () => 16 }).map((n) => [n.midi, n.t0])]); }   // 起点（琶音改的是它；v0.9.45）；滚奏 = 敲几下（v0.16.64：和 timeline.ts buildTimeline 一样，认滚奏的这位才带 rollHz）
   return JSON.stringify([noteEnd(0, 1, f.art ?? [], lightMarks(sp), !!f.slur), gainSegments(tr(st), undefined, sp)]);
 };
 
 describe("谁认哪些记号（不认 = 画灰 + 明说）", () => {
   it("表：月读不认保持 / 连线（唱法核心还没接）；元音版 / 乐器底色不留缝时连线 / 保持也算不认；没人上场 = 不逐个画灰", () => {
-    deq(ignoredArts(performerOf("tsukuyomi")), ["tenuto", "slur", "arpeggio"]); deq(ignoredArts(performerOf("tsukuyomi"), 0.04), ["tenuto", "slur", "arpeggio"]);   // 琶音：单声的唱不了和弦（v0.9.45）
-    deq(ignoredArts(performerOf("vowel-sampler")), ["tenuto", "slur", "whisper", "inhale", "arpeggio"]); deq(ignoredArts(performerOf("vowel-sampler"), 0.04), ["whisper", "inhale", "arpeggio"]);   // 气声 / 出声的换气只有月读做得到（2026-10-10）
+    deq(ignoredArts(performerOf("tsukuyomi")), ["tenuto", "slur", "arpeggio", "roll"]); deq(ignoredArts(performerOf("tsukuyomi"), 0.04), ["tenuto", "slur", "arpeggio", "roll"]);   // 滚奏（v0.16.64）：只有乐器那一路敲得出来   // 琶音：单声的唱不了和弦（v0.9.45）
+    deq(ignoredArts(performerOf("vowel-sampler")), ["tenuto", "slur", "whisper", "inhale", "arpeggio", "roll"]); deq(ignoredArts(performerOf("vowel-sampler"), 0.04), ["whisper", "inhale", "arpeggio", "roll"]);   // 气声 / 出声的换气只有月读做得到（2026-10-10）
     deq(ignoredArts(performerOf("soundfont")), ["tenuto", "slur", "whisper", "inhale"]); deq(ignoredArts(performerOf("soundfont"), 0.02), ["whisper", "inhale"]);
     deq(ignoredArts(performerOf("unknown")), []); deq(ignoredArts(null), []);
   });

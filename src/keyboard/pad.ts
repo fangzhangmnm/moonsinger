@@ -397,6 +397,7 @@ export class Pad {
     const items = [
       cell("phrase", `<span class="big">。</span>`, _t("句号"), _t("句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）")),
       cell("art:arpeggio", `<span class="smufl">\uEAA9\uEAA9</span>`, _t("琶音"), _t("琶音：光标前那个和弦（有选区 = 选中的）从低到高依次奏出（和弦左边一条波浪线）；再点一次去掉")),
+      cell("art:roll", `<span class="smufl">\uE222</span>`, _t("滚奏"), _t("滚奏：光标前那个音（有选区 = 选中的）整个音敲满（符干上三道斜线）；多密在乐器页调；再点一次去掉")),   // v0.16.64
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, _t("跳音"), _t("跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉")),
       cell("art:ghost", `<span class="smufl">\uE0F5\uE0A4\uE0F6</span>`, _t("幽灵音"), _t("幽灵音（括号符头）：光标前那个音（有选区 = 选中的）很轻、几乎听不见；音的强度只有一种：和弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱互斥")),
       cell("art:unstress", `<span class="smufl">\uE4B8</span>`, _t("弱化"), _t("弱化：光标前那个音（有选区 = 选中的）轻一点；和别的强度互斥")),

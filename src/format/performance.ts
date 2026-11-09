@@ -13,6 +13,8 @@ export const DYNAMICS_DB: Record<Dynamic, number> = { ppp: -24, pp: -18, p: -12,
 export const ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1.0, accentDb: 4 } as const;
 /** 记号怎么解读的其余的数（2026-10-08 Claude Opus 5.5；user「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」「先看看记号承重能走多远」）：
  *  新建演奏者时 by value 抄进 articulation；旧演奏者没写的键 = 这里的值（= 这一版之前写死在代码里的数，旧歌逐样本不变）。好不好听归 user 耳朵。 */
+/** 滚奏每秒几下能调到的范围（v0.16.64；乐器页 ±2 一档）。 */
+export const ROLL_HZ_MIN = 4, ROLL_HZ_MAX = 40;
 export const MARK_DEFAULTS = {
   accentSec: 0.12,                  // 重音 / 强音：音头加重持续多久（秒；月读 / 元音版 / 旧乐器的 dB 那一路）
   breathSec: 0.16, breathShare: 0.25,   // 呼吸：前一个音收短多少（秒），最多占这个音的几分之几（元音版 / 乐器）

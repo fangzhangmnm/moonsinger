@@ -1856,6 +1856,19 @@ var S = {
   "\u9690\u85CF\u627E\u4E0D\u5230\u7684": { en: "Hide unavailable" },
   "\u6574\u6BB5\uFF08\u6240\u6709\u58F0\u90E8\u7684\u97F3\u3001\u8BB0\u53F7\u3001\u6B4C\u8BCD\uFF09\u7167\u6284\u4E00\u4EFD\uFF0C\u63A5\u5728\u5B83\u540E\u9762": { en: "Copy the whole section (all parts' notes, marks and lyrics) right after it" },
   "\u590D\u5236\u8FD9\u4E00\u6BB5": { en: "Duplicate section" },
+  "\u6EDA\u594F\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6574\u4E2A\u97F3\u6572\u6EE1\uFF08\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF\uFF09\uFF1B\u591A\u5BC6\u5728\u4E50\u5668\u9875\u8C03\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Roll: the note before the cursor (or the selection) is filled with rapid hits (three slashes on the stem); set how fast on the instrument page; tap again to remove" },
+  "\u6574\u4E2A\u97F3\u6572\u6EE1\uFF0C\u6BCF\u79D2 {hz} \u4E0B\uFF1B\u529B\u5EA6\u8DDF\u7740\u5F53\u65F6\u7684\u529B\u5EA6\u548C\u6E10\u5F3A\u6E10\u5F31\u8D70": { en: "Fills the whole note, {hz} hits per second; loudness follows the current dynamic and hairpins" },
+  "\u6309\u9F13\u4EF6\uFF08\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\uFF09": { en: "Per drum (snare 20, cymbals 14, kick 12, other drums 16)" },
+  "\u6BCF\u79D2 {n} \u4E0B": { en: "{n} per second" },
+  "\u6309\u9F13\u4EF6": { en: "Per drum" },
+  "\u6EDA\u594F\u7A00\u4E00\u70B9\uFF08\u6BCF\u79D2\u5C11 2 \u4E0B\uFF09": { en: "Slower roll (2 fewer hits per second)" },
+  "\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09": { en: "Faster roll (2 more hits per second)" },
+  "\u56DE\u5230\u8FD9\u4EF6\u4E50\u5668\u7684\u9ED8\u8BA4": { en: "Back to this instrument's default" },
+  "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF0C\u529B\u5EA6\u8DDF\u7740\u5F53\u65F6\u7684\u529B\u5EA6\u548C\u6E10\u5F3A\u6E10\u5F31\u8D70\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": { en: "A note with three slashes on its stem is a roll: the whole note is filled at this rate, following the current dynamic and hairpins. Defaults (per second): snare 20, cymbals 14, kick 12, other drums 16, pitched 14." },
+  "\u300C{rn}\u300D\u6EDA\u594F\u56DE\u5230\u9ED8\u8BA4": { en: "\u201C{rn}\u201D roll back to default" },
+  "\u300C{rn}\u300D\u6EDA\u594F\u6BCF\u79D2 {n} \u4E0B": { en: "\u201C{rn}\u201D roll: {n} per second" },
+  "\u6EDA\u594F": { en: "Roll" },
+  "\u6309\u62CD\u5B50\u91CD\u590D\u7684\u98A4\u97F3\uFF08\u4E00\u4E24\u9053\u659C\u7EBF\uFF09": { en: "Measured tremolo (one or two slashes)" },
   "\u5148\u4E0D\u6362\uFF1A\u52A0\u4E00\u4E2A\u65B0\u58F0\u90E8\u653E\u5B83\uFF0C\u5F00\u300C\u5F39\u300D\u770B\u7740\u8C31\u5F39\u7740\u8BD5\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u52A8\uFF09": { en: "Don't swap yet: add a new part with it and turn on Play to try it along with the score (the current performer stays)" },
   "\u52A0\u6210\u65B0\u58F0\u90E8\u8BD5\u8BD5": { en: "Try as a new part" },
   "{name} \u526F\u672C": { en: "{name} copy" },
@@ -2291,7 +2304,7 @@ var MAX_DUR = WHOLE * 4;
 var NAV_LABEL = { segno: "Segno", coda: "Coda", fine: "Fine", toCoda: "To Coda", dc: "D.C.", dcFine: "D.C. al Fine", dcCoda: "D.C. al Coda", ds: "D.S.", dsFine: "D.S. al Fine", dsCoda: "D.S. al Coda" };
 var endingLabel = (nums) => nums && nums.length ? nums.map((n2) => `${n2}.`).join(" ") : "1.";
 var SWELL_NAME = { "<": _t("\u97F3\u5185\u6E10\u5F3A"), ">": _t("\u97F3\u5185\u6E10\u5F31"), "<>": _t("\u97F3\u5185\u9F13\u8D77") };
-var ART_NAME = { staccato: _t("\u8DF3\u97F3"), accent: _t("\u91CD\u97F3"), marcato: _t("\u5F3A\u97F3"), sfz: _t("\u7A81\u5F3A"), fp: _t("\u5F3A\u540E\u5373\u5F31"), tenuto: _t("\u4FDD\u6301"), breath: _t("\u547C\u5438"), stress: _t("\u6B21\u91CD\u97F3"), unstress: _t("\u5F31\u5316"), ghost: _t("\u5E7D\u7075\u97F3"), whisper: _t("\u6C14\u58F0"), swellUp: _t("\u97F3\u5185\u6E10\u5F3A"), swellDown: _t("\u97F3\u5185\u6E10\u5F31"), swellBoth: _t("\u97F3\u5185\u9F13\u8D77"), arpeggio: _t("\u7436\u97F3") };
+var ART_NAME = { staccato: _t("\u8DF3\u97F3"), accent: _t("\u91CD\u97F3"), marcato: _t("\u5F3A\u97F3"), sfz: _t("\u7A81\u5F3A"), fp: _t("\u5F3A\u540E\u5373\u5F31"), tenuto: _t("\u4FDD\u6301"), breath: _t("\u547C\u5438"), stress: _t("\u6B21\u91CD\u97F3"), unstress: _t("\u5F31\u5316"), ghost: _t("\u5E7D\u7075\u97F3"), whisper: _t("\u6C14\u58F0"), swellUp: _t("\u97F3\u5185\u6E10\u5F3A"), swellDown: _t("\u97F3\u5185\u6E10\u5F31"), swellBoth: _t("\u97F3\u5185\u9F13\u8D77"), arpeggio: _t("\u7436\u97F3"), roll: _t("\u6EDA\u594F") };
 function swellOf(t) {
   if (t?.kind !== "note" || !t.art) return void 0;
   return t.art.includes("swellUp") ? "<" : t.art.includes("swellDown") ? ">" : t.art.includes("swellBoth") ? "<>" : void 0;
@@ -6232,6 +6245,27 @@ function engrave(song, o) {
         }
         for (const bm of g.beams) prims.push({ t: "path", d: `M${bm.xL},${bm.yL}L${bm.xR},${bm.yR}L${bm.xR},${bm.yR + bm.th}L${bm.xL},${bm.yL + bm.th}Z`, cls: ["beam", bm.ghost ? "ghost" : ""].filter(Boolean).join(" ") });
       }
+      const rollMute = (q.p.ignores ?? []).includes("roll");
+      for (const c of units) {
+        if (c.kind !== "chunk" || !c.note || c.index < 0) continue;
+        const t = tokens[c.index];
+        if (t?.kind !== "note" || !(t.art ?? []).includes("roll")) continue;
+        const st = stems.notes.get(c), sx = stemXOf.get(c);
+        let cx2, cy;
+        if (st && sx !== void 0) {
+          cx2 = sx;
+          cy = st.y0 + (st.tip - st.y0) * 0.55;
+        } else {
+          const ds = (c.pitches.length ? c.pitches : [c.pitch]).map((pp) => dIdx(pp, c.staff, c.index));
+          cx2 = nhX(c) + nhW(c) / 2;
+          cy = yOf(RW(c), Math.max(...ds)) - P(1.7);
+        }
+        const W2 = P(1.2), T2 = P(0.24), R = P(0.36), G2 = P(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c) ?? ""].filter(Boolean).join(" ");
+        for (const k of [-1, 0, 1]) {
+          const y = cy + k * G2;
+          prims.push({ tok: tokOf(c), t: "path", d: `M${cx2 - W2 / 2},${y + R / 2}L${cx2 + W2 / 2},${y - R / 2}L${cx2 + W2 / 2},${y - R / 2 + T2}L${cx2 - W2 / 2},${y + R / 2 + T2}Z`, cls });
+        }
+      }
       const ign = new Set(q.p.ignores ?? []);
       const artEdge = /* @__PURE__ */ new Map();
       for (const c of units) {
@@ -6784,4 +6818,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-40a6fe4b24b5.mjs.map
+//# sourceMappingURL=layout-worker-d5135813433e.mjs.map
