@@ -9,6 +9,7 @@ import "./stems.test.ts";
 import "./glyph-box.test.ts";
 import "./engrave-spacing.test.ts";
 import "./engrave-skyline.test.ts";
+import "./engrave-textscale.test.ts";
 import "./catalog-i18n.test.mjs";
 import "./i18n-guard.test.mjs";
 import "./pitch.test.ts";

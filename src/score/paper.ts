@@ -20,6 +20,10 @@ export const densityOf = (p: Paper): Density => p.density ?? "cozy";
 export const staffMmOf = (p: Paper): number => p.staffMm ?? (densityOf(p) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
 /** 一个线间距 mm（按这张纸的谱大小）。 */
 export const spMm = (p: Paper): number => staffMmOf(p) / 4;
+/** 字的尺子比谱的尺子大多少（刀 2，2026-11-09 Claude Opus 5.5；施工单 ai-docs/20261109-work-order-display-cuts-2-4.md §3）：舒适 = 1，紧凑 = 7 / 5 = 1.4——
+ *  紧凑只把五线谱缩小，字（歌名、声部名、歌词、速度字…）和编辑器的钮还是舒适档那么大（user 11-08「舒适和紧凑，能不能只改变谱的大小…文字的大小，还是原来那么大」）。
+ *  屏幕（score-view geo）、PDF（score-pdf printOpts）、排版 worker 量字都用它，三处一起改，不然断行不一样。 */
+export const textScaleOf = (p: Paper): number => STAFF_MM / staffMmOf(p);
 /** 宽、高、四边边距（mm）。A5 的边距让版心正好放得进 iPad mini 竖屏（触屏 11 px 一格 ≈ 729 px）。A3 横 = 交响总谱 / 大电视（user 2026-10-08「加一个A3横版」）。 */
 const SIZES: Record<PaperKind, { w: number; h: number; m: number }> = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
 export const PAPER_KINDS: PaperKind[] = ["A3L", "A4", "A5", "A6"];

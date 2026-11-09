@@ -10,7 +10,7 @@ export function primSvg(p: Layout["prims"][number], fs: string, lfs: string, rx:
   switch (p.t) {
     case "line": return `<line${c} x1="${n(p.x1)}" y1="${n(p.y1)}" x2="${n(p.x2)}" y2="${n(p.y2)}" stroke-width="${n(p.w)}"/>`;
     case "glyph": return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${p.size ? n(p.size) : fs}">${p.ch}</text>`;
-    case "text": return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${p.size ? n(p.size) : lfs}" text-anchor="${p.anchor ?? "middle"}">${esc(p.s)}</text>`;
+    case "text": return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${p.size ? n(p.size) : lfs}" text-anchor="${p.anchor ?? "middle"}"${p.sx && p.sx !== 1 ? ` transform="matrix(${n(p.sx)} 0 0 1 ${n(p.x * (1 - p.sx))} 0)"` : ""}>${esc(p.s)}</text>`;   // sx = 以 x 为中心横向压窄（紧凑档的歌词）
     case "path": return `<path${c} d="${p.d}"/>`;
     case "rect": return `<rect${c} x="${n(p.x)}" y="${n(p.y)}" width="${n(p.w)}" height="${n(p.h)}" rx="${rx}"/>`;
   }

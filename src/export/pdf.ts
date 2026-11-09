@@ -17,7 +17,7 @@ export type PdfOp =
   | { op: "line"; x1: number; y1: number; x2: number; y2: number; color: Rgb; width: number; dash?: number[]; round?: boolean }
   | { op: "path"; segs: Seg[]; color: Rgb; fill: boolean; width?: number; dash?: number[]; round?: boolean }
   | { op: "glyph"; code: string; x: number; y: number; size: number; color: Rgb }   // code = SMuFL 码位的十六进制（"E050"）；y = 基线；size = 字号（pt，一个 em）
-  | { op: "text"; x: number; y: number; text: string; size: number; color: Rgb; bold?: boolean; italic?: boolean };
+  | { op: "text"; x: number; y: number; text: string; size: number; color: Rgb; bold?: boolean; italic?: boolean; /** 横向压窄（1 = 不压）。 */ sx?: number };
 export interface PdfPage { w: number; h: number; ops: PdfOp[] }
 export interface PdfDoc { title: string; pages: PdfPage[]; producer?: string; created?: Date }
 /** 音乐字形的轮廓：outlines.json 的形状（字体单位、y 向上；d = SVG 路径）。 */
@@ -89,7 +89,7 @@ export function writePdf(doc: PdfDoc, font: TtfFont, music: MusicOutlines, opts:
         const chars = [...o.text], shaped = font.shape(o.text);
         chars.forEach((ch, k) => { const cp = ch.codePointAt(0)!, g = shaped[k] ?? 0; if (g === 0 && ch.trim()) missing.add(ch); if (!used.has(g)) used.set(g, cp); hex += hex4(g); });
         if (!hex) continue;
-        const tm = o.italic ? `1 0 0.2 1 ${num(o.x)} ${num(H - o.y)} Tm` : `1 0 0 1 ${num(o.x)} ${num(H - o.y)} Tm`;
+        const sx = num(o.sx ?? 1), tm = o.italic ? `${sx} 0 0.2 1 ${num(o.x)} ${num(H - o.y)} Tm` : `${sx} 0 0 1 ${num(o.x)} ${num(H - o.y)} Tm`;   // 文字矩阵第一个数 = 横向缩放
         const bold = o.bold ? ` 2 Tr ${num(o.size * 0.035)} w ${rgb(o.color, true)}` : " 0 Tr";
         c += `BT /F1 ${num(o.size)} Tf ${rgb(o.color, false)}${bold} ${tm} <${hex}> Tj ET\n`;
       }

@@ -12,7 +12,7 @@
 //   歌词行在谱下面，所以歌词行往下让出「拼音字体的墨迹顶 − 黑体的墨迹顶」那一截（engrave lyricRaise）。同 WXHW v2.3.13 的结论。
 import { engrave, LYRIC_EM, type Prim, type PartView, type EngraveOpts } from "../render/engrave.ts";
 import type { Song } from "../score/song.ts";
-import { paperOf, DEFAULT_PAPER, spMm, lineSp, pageGeoOf } from "../score/paper.ts";
+import { paperOf, DEFAULT_PAPER, spMm, lineSp, pageGeoOf, textScaleOf } from "../score/paper.ts";
 import { writePdf, type PdfOp, type PdfPage, type Seg, type MusicOutlines, type PdfStats, type Rgb } from "./pdf.ts";
 import type { TtfFont } from "./ttf.ts";
 
@@ -73,13 +73,13 @@ export interface ScorePdfArgs { song: Song; parts: PartView[]; font: TtfFont; fo
 export interface PrintView { inC?: boolean; chordTags?: boolean }
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
 export function printOpts(song: Song, sp: number, parts: PartView[], measureLyric: (s: string) => number, autoBars: boolean, lyricRaise: number, onlyPaper?: string, view: PrintView = {}): EngraveOpts {
-  const paper = song.paper ?? paperOf(DEFAULT_PAPER);
-  return { width: lineSp(paper) * sp, sp, at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measureLyric, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}),
+  const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
+  return { width: lineSp(paper) * sp, sp, ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measureLyric, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}),
     ...(view.inC ? { inC: true } : {}), ...(view.chordTags ? { chordTags: true } : {}) };   // 看谱方式 = 屏幕上那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
 }
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */
 export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; stats: PdfStats } {
-  const paper = a.song.paper ?? paperOf(DEFAULT_PAPER), sp = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp;
+  const paper = a.song.paper ?? paperOf(DEFAULT_PAPER), sp = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp * textScaleOf(paper);   // 量字 = 字的字号（刀 2）
   const L = engrave(a.song, printOpts(a.song, sp, a.parts, a.measureAt ? a.measureAt(lyricPx) : (s) => textEm(a.font, s) * lyricPx, a.autoBars ?? true, LYRIC_RAISE[a.fontId], a.onlyPaper, a.view));
   const W = paper.widthMm * PT_PER_MM, H = paper.heightMm * PT_PER_MM, dx = L.pageX.left;
   const pages: PdfPage[] = L.pages.map(() => ({ w: W, h: H, ops: [] }));
@@ -117,9 +117,9 @@ export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; s
           for (const code of serif) { out.push({ op: "glyph", code, x, y: p.y - top, size, color: INK }); x += (a.music.glyphs[code]!.adv / em) * size; }
           return out;
         }
-        const size = p.size ?? lyricPx, w = textEm(a.font, p.s) * size, anchor = p.anchor ?? "middle";
+        const size = p.size ?? lyricPx, w = textEm(a.font, p.s) * size * (p.sx ?? 1), anchor = p.anchor ?? "middle";
         const x = p.x + ox - (anchor === "middle" ? w / 2 : anchor === "end" ? w : 0);
-        return [{ op: "text", x, y: p.y - top, text: p.s, size, color: INK, ...(cls.some((c) => BOLD.has(c)) ? { bold: true } : {}), ...(cls.some((c) => ITALIC.has(c)) ? { italic: true } : {}) }];
+        return [{ op: "text", x, y: p.y - top, text: p.s, size, color: INK, ...(p.sx && p.sx !== 1 ? { sx: p.sx } : {}), ...(cls.some((c) => BOLD.has(c)) ? { bold: true } : {}), ...(cls.some((c) => ITALIC.has(c)) ? { italic: true } : {}) }];
       }
       default: return [];
     }

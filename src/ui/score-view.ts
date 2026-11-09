@@ -20,7 +20,7 @@
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
 import { _t, workerOptions } from "../i18n/index.ts";
-import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL, pageGeoOf } from "../score/paper.ts";
+import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL, pageGeoOf, textScaleOf } from "../score/paper.ts";
 import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
@@ -296,19 +296,19 @@ export class ScoreView {
   /** 排版的几何与选项（layoutNow 的同步路和 renderAsync 的 worker 路共用一份）：frame（谱大小 / 纸宽 / 分页）+ 缓存键 + engrave 的选项（不含量字宽的闭包，worker 自己配）。 */
   private geo(st: EditorState): { frame: FrameNow; geoKey: string; opts: Omit<EngraveOpts, "measureLyric">; lyricPx: number } {
     const { sp, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
-    const paper = st.song.paper ?? paperOf(DEFAULT_PAPER);
+    const paper = st.song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);   // 字的尺子（刀 2：紧凑只缩谱，字照舒适档）
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
     const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars = this.host.autoBars?.() ?? true, inC = this.host.inC?.() ?? false, chordTags = this.host.chordTags?.() ?? false;
     const lyricRaise = page && this.host.lyricRaise?.() ? this.host.lyricRaise() : 0;
     const tailOpen = !st.sel && st.caret >= tr(st).length;   // 写字头在尾巴后面（含补齐的小节里）：最后一行五线画到右边
     // 排版缓存（W-17 第 1 刀）：谱没变（引用）、排版的选项没变 = 不重排。光标 / 选区 / 写字头的蓝 / 强调色不在这个键里——它们在下面的 ink 层和 class 上做；字体还在装 = 装好再排一次
-    const geoKey = JSON.stringify([width, sp, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, hscroll, autoBars, inC, chordTags, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
+    const geoKey = JSON.stringify([width, sp, ts, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, hscroll, autoBars, inC, chordTags, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v: unknown) => (v instanceof Set ? [...v] : v));
     // 编辑器要排版留的地方（刀 1）：每张纸底下的虚线框那一截（能写、不分页）、整首最下面「＋ 新曲段」那一截（能写）、合租括号、曲段控件——画归覆盖层
     const chrome: EngraveOpts["chrome"] = { ...(this.rules.edit && !page ? { underPaper: 2.6 } : {}), ...(this.rules.edit ? { tail: 2.6 } : {}), famGap: 0.8, navRoom: 16 };
     const opts: Omit<EngraveOpts, "measureLyric"> = { width, sp, at: st.at, parts: partsNow, chrome, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
-      ...(lyricRaise ? { lyricRaise } : {}), autoBars, ...(inC ? { inC: true } : {}), ...(chordTags ? { chordTags: true } : {}), ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}) };
-    return { frame: { sp, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp };
+      ...(lyricRaise ? { lyricRaise } : {}), autoBars, ...(inC ? { inC: true } : {}), ...(chordTags ? { chordTags: true } : {}), ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}), ...(ts !== 1 ? { textScale: ts } : {}) };
+    return { frame: { sp, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp * ts };   // 量字的尺子 = 字的字号（PDF / worker 同一个）
   }
   // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
   //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），

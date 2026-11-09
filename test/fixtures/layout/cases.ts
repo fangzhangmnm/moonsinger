@@ -8,7 +8,7 @@ const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e?: str
 import { openBytes, partLabels } from "../../../src/format/project.ts";
 import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../src/render/engrave.ts";
 import { printOpts, isPrinted } from "../../../src/export/score-pdf.ts";
-import { paperOf, DEFAULT_PAPER, lineSp, pageGeoOf } from "../../../src/score/paper.ts";
+import { paperOf, DEFAULT_PAPER, lineSp, pageGeoOf, textScaleOf } from "../../../src/score/paper.ts";
 import type { Song } from "../../../src/score/song.ts";
 
 const ROOT = new URL("../../../", import.meta.url);
@@ -30,15 +30,20 @@ function views(song: Song, labels: string[], editor: boolean, hide: ReadonlySet<
     hidden: hide.has(p.id), badges: [], ...(editor ? { toggles: { muted: false, solo: false, hidden: hide.has(p.id), only: false } } : {}),
   } as PartView));
 }
-type View = { name: string; opts: (song: Song, labels: string[]) => EngraveOpts };
+/** song = 排之前先换一下这首歌（比如把纸换成舒适档）；没有 = 原样。 */
+type View = { name: string; opts: (song: Song, labels: string[]) => EngraveOpts; song?: (s: Song) => Song };
+/** 量字的尺子跟着字的字号（刀 2：紧凑档 ts = 1.4，屏幕 / PDF 量字都按 LYRIC_EM × sp × ts）。 */
+const measureFor = (song: Song) => { const k = textScaleOf(song.paper ?? paperOf(DEFAULT_PAPER)); return (s: string) => measure(s) * k; };
 const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<string>) => {
-  const paper = song.paper ?? paperOf(DEFAULT_PAPER);
-  return { width: lineSp(paper) * SP, sp: SP, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measureLyric: measure, autoBars: true,
+  const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
+  return { width: lineSp(paper) * SP, sp: SP, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measureLyric: measureFor(song), autoBars: true, ...(ts !== 1 ? { textScale: ts } : {}),
     // 刀 1 前的四个旗（titlePlaceholder / editable / keyHint / paperLabel）和刀 1 后的几何参数 chrome 一起给：新旧两版排版器各认各的，同一份样张两边都能排
     titlePlaceholder: true, editable: true, keyHint: true, paperLabel: "A5", chrome: { underPaper: 2.6, tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } } as unknown as EngraveOpts;
 };
 export const VIEWS: View[] = [
-  { name: "print", opts: (s, l) => printOpts(s, SP, views(s, l, false), measure, true, 0) },
+  { name: "print", opts: (s, l) => printOpts(s, SP, views(s, l, false), measureFor(s), true, 0) },
+  // 刀 2：同一首歌换成舒适档的纸再印（大样张本来是紧凑档）——舒适档版面的基线（字和谱一把尺子，刀 2 前后逐个相同）
+  { name: "print-cozy", song: (s) => ({ ...s, paper: { ...(s.paper ?? paperOf(DEFAULT_PAPER)), density: "cozy" as const, staffMm: undefined } }), opts: (s, l) => printOpts(s, SP, views(s, l, false), measureFor(s), true, 0) },
   { name: "edit-seg", opts: (s, l) => ({ ...editorBase(s, l), onlyPaper: s.papers[0]!.id }) },
   { name: "edit-all", opts: (s, l) => editorBase(s, l) },
   { name: "edit-pages", opts: (s, l) => { const b = editorBase(s, l); const { margins: _m, ...rest } = b; return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },   // 分页 = 每段底下不留虚线框
@@ -58,7 +63,7 @@ export function snapshot(L: Layout): unknown {
     prims: printed,
   });
 }
-export function caseLayout(songKey: string, view: View): Layout { const { song, labels } = loadSong(songKey); return engrave(song, view.opts(song, labels)); }
+export function caseLayout(songKey: string, view: View): Layout { const { song: s0, labels } = loadSong(songKey), song = view.song ? view.song(s0) : s0; return engrave(song, view.opts(song, labels)); }
 export const fixturePath = (songKey: string, view: string) => new URL(`test/fixtures/layout/${songKey}.${view}.json.gz`, ROOT);
 export const pdfShaPath = new URL("test/fixtures/layout/pdf-sha256.json", ROOT);
 /** PDF 字节的指纹（N2）：真字体（思源黑体）、固定时刻、整首 + 分页，三首歌各一份。刀 1 之后 PDF 的「不印名单」清空，字节不变 = 清空没漏印 / 多印。 */

@@ -15,7 +15,7 @@ for (let i = 0; i < 4; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); awa
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), paper = s.song.papers[0], t = paper.tracks[s.at.part];   // 第二个声部（同一张纸上）
   m.set({ ...s, song: { ...s.song, parts: [...s.song.parts, { id: "P9", role: "r9", mic: "m9" }], papers: [{ ...paper, tracks: { ...paper.tracks, P9: t.map((x) => ({ ...x })) } }, ...s.song.papers.slice(1)] } }); });
 await p.waitForTimeout(300);
-const tgBox = (part, kind) => p.evaluate(([part, kind]) => { const L = window.__moonsinger.layout(), b = document.querySelector(`#score .score-overlay .ov-tg[data-part="${part}"][data-kind="${kind}"]`), r = b?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: parseFloat(b.style.width), sp: L.sp } : null; }, [part, kind]);
+const tgBox = (part, kind) => p.evaluate(([part, kind]) => { const L = window.__moonsinger.layout(), b = document.querySelector(`#score .score-overlay .ov-tg[data-part="${part}"][data-kind="${kind}"]`), r = b?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: parseFloat(b.style.width), sp: L.sp, tp: L.tp ?? L.sp, pw: r.width } : null; }, [part, kind]);
 const pv = (part) => p.evaluate((part) => window.__moonsinger.desk().parts?.[part] ?? {}, part);
 const shown = () => p.evaluate(() => [...new Set(window.__moonsinger.layout().systems.map((r) => r.part))].join(","));
 const icons = () => p.evaluate(() => [...document.querySelectorAll("#score .score-overlay .ov-tg use")].map((u) => u.getAttribute("href") ?? "").join(","));
@@ -25,7 +25,13 @@ const P1 = await p.evaluate(() => window.__moonsinger.state().song.parts[0].id);
 await p.evaluate(() => { const e = window.__moonsinger.engine; window.__ch = []; const ch = e.channel.bind(e); e.channel = (id, prm) => { window.__ch.push([id, !!prm.mute, !!prm.solo]); return ch(id, prm); }; });
 const kinds = await p.evaluate(() => [...document.querySelectorAll("#score .score-overlay .ov-tg")].map((t) => `${t.dataset.part}:${t.dataset.kind}`).join(","));
 check(kinds === `${P1}:hidden,${P1}:muted,P9:hidden,P9:muted`, "每个声部两颗钮：眼睛 + 喇叭", kinds);
-{ const bx = await tgBox(P1, "muted"); check(bx.w / bx.sp >= 2.95, "钮不比纸角的控件（3 个谱线间距）小（v0.16.33 起 3.0，图标比纸角钮的大）", `${(bx.w / bx.sp).toFixed(2)} 间距`); }
+{ const bx = await tgBox(P1, "muted"); check(bx.w / bx.sp >= 2.95, "钮不比纸角的控件（3 个谱线间距）小（v0.16.33 起 3.0，图标比纸角钮的大；刀 2 试：跟谱）", `${(bx.w / bx.sp).toFixed(2)}`); }
+// 刀 2：紧凑档的两颗钮跟着谱一起缩（user 11-09「紧凑档里两颗钮跟着谱一起缩小三成。试一下」——跟字放大会和上一位两行的名字挤在一起）
+{ const a = await tgBox(P1, "muted"), s0 = await p.evaluate(() => window.__moonsinger.state());
+  await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, paper: { ...(s.song.paper ?? { kind: "A5", widthMm: 148, heightMm: 210, marginMm: { l: 16, r: 16, t: 16, b: 16 } }), density: "compact" } } }); }); await p.waitForTimeout(400);
+  const b = await tgBox(P1, "muted");
+  check(!!b && b.sp < a.sp * 0.9 && Math.abs(b.pw - a.pw * (b.sp / a.sp)) < 1, "紧凑档：谱变小了、两颗钮跟着谱一起小", JSON.stringify({ cozy: [a.sp, a.pw], compact: [b?.sp, b?.pw] }));
+  await p.evaluate((st) => window.__moonsinger.set(st), s0); await p.waitForTimeout(300); }
 let bx = await tgBox(P1, "muted"); await tap(bx);
 check((await pv(P1)).muted && (await p.evaluate(() => window.__ch.some(([, m]) => m))) && /volume-mute/.test(await icons()), "点喇叭 = 静音、录音房马上收到、图标换成静音的喇叭");
 check(!(await p.$(".track-card")), "点钮不开小卡");

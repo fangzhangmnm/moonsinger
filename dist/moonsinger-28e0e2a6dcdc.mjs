@@ -5052,7 +5052,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.40-2026-11-09";
+var APP_VERSION = "v0.16.41-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5357,6 +5357,7 @@ var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u8C31\u5927
 var densityOf = (p2) => p2.density ?? "cozy";
 var staffMmOf = (p2) => p2.staffMm ?? (densityOf(p2) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
 var spMm = (p2) => staffMmOf(p2) / 4;
+var textScaleOf = (p2) => STAFF_MM / staffMmOf(p2);
 var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
 var PAPER_KINDS = ["A3L", "A4", "A5", "A6"];
 var DEFAULT_PAPER = "A5";
@@ -10252,7 +10253,7 @@ function primInk(p2, sp2, measure, emit) {
       return;
     }
     case "text": {
-      const size = p2.size ?? 1.6 * sp2, w2 = measure(p2.s, size), x0 = p2.anchor === "middle" ? p2.x - w2 / 2 : p2.anchor === "end" ? p2.x - w2 : p2.x;
+      const size = p2.size ?? 1.6 * sp2, w2 = measure(p2.s, size) * (p2.sx ?? 1), x0 = p2.anchor === "middle" ? p2.x - w2 / 2 : p2.anchor === "end" ? p2.x - w2 : p2.x;
       emit(x0, x0 + w2, p2.y - size * 0.8, p2.y + size * 0.22);
       return;
     }
@@ -10699,6 +10700,8 @@ function mergeTracks(tracks, opt = {}) {
 
 // src/render/engrave.ts
 var LYRIC_EM = 1.6;
+var LYRIC_SX_COMPACT = 0.85;
+var lyricSx = (ts2) => ts2 > 1 ? LYRIC_SX_COMPACT : 1;
 var LYRIC_ROW2 = LYRIC_EM * 1.2;
 function fitLyrics(items, gap = 0.5) {
   const out = items.map(() => ({ dx: 0, scale: 1, row: 0, tight: false })), scale = items.map(() => 1);
@@ -10874,7 +10877,7 @@ function unitsOf(tokens, o10) {
     if (t10.kind === "key") {
       flushFull();
       const rf2 = realFifthsOf(t10), inC = rf2 !== t10.fifths || "realFifths" in t10;
-      units.push({ kind: "key", index: i10, fifths: t10.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W, keyWidth(t10.fifths, fifths)) : keyWidth(t10.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf2 });
+      units.push({ kind: "key", index: i10, fifths: t10.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W * (o10.ts ?? 1), keyWidth(t10.fifths, fifths)) : keyWidth(t10.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf2 });
       fifths = t10.fifths;
       accState = /* @__PURE__ */ new Map();
       return;
@@ -10951,7 +10954,7 @@ function unitsOf(tokens, o10) {
         const lyric = isNote && j2 === 0 && !nt2.tie ? nt2.lyric : null;
         const accW = accs.some((a10) => a10 !== null) ? 1.3 : 0;
         let w2 = accW + baseWidth(c10.base) + (c10.dotted ? 0.6 : 0);
-        const lyW = lyric && lyric !== MELISMA_MARK && !o10.rhythm ? o10.measureLyric(lyricShow(lyric)) / o10.sp : void 0;
+        const lyW = lyric && lyric !== MELISMA_MARK && !o10.rhythm ? o10.measureLyric(lyricShow(lyric)) / o10.sp * lyricSx(o10.ts ?? 1) : void 0;
         if (lyW !== void 0) w2 = Math.max(w2, accW + lyW + (nt2.hyph ? 1.4 : 0.7));
         const u2 = {
           kind: "chunk",
@@ -11018,14 +11021,14 @@ function engrave(song, o10) {
     const perc = new Set(o10.parts.filter((p2) => p2.perc).map((p2) => p2.id));
     song = songInC(song, (id2) => perc.has(id2));
   }
-  const sp2 = o10.sp, P2 = (v) => v * sp2;
+  const sp2 = o10.sp, P2 = (v) => v * sp2, ts2 = o10.textScale ?? 1, T2 = (v) => v * sp2 * ts2;
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
   const PG = o10.page ?? null, PAGE_GAP = 3, MX = o10.page ?? o10.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };
   const pageTopY = (k2) => P2(k2 * ((PG?.h ?? 0) + PAGE_GAP));
   const contentTop = (k2) => pageTopY(k2) + P2(PG?.t ?? 0), contentBottom = (k2) => pageTopY(k2) + P2((PG?.h ?? 0) - (PG?.b ?? 0));
   let pageNo = 0;
   const TOP2 = P2(MX.t);
-  const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow, SYS_GAP = SPC.sysGap;
+  const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow * ts2, SYS_GAP = SPC.sysGap;
   const prims = [];
   if (o10.__noAnn) {
     const push = prims.push.bind(prims);
@@ -11036,12 +11039,13 @@ function engrave(song, o10) {
   let right = baseRight, sheetRight = baseRight;
   const PART_EM = LYRIC_EM * 0.85;
   const nameW = (s10) => o10.measureLyric(s10) * PART_EM / LYRIC_EM / sp2;
+  const NMAX = NAME_MAX * ts2;
   const nameLines = (name, staves) => {
-    if (nameW(name) <= NAME_MAX) return [name];
+    if (nameW(name) <= NMAX) return [name];
     const toks = name.match(/[A-Za-z0-9'’.\-()&]+\s*|\s+|./gu) ?? [name], lines2 = [];
     let cur = "";
     for (const t10 of toks) {
-      if (!cur.trim() || nameW((cur + t10).trimEnd()) <= NAME_MAX) cur += t10;
+      if (!cur.trim() || nameW((cur + t10).trimEnd()) <= NMAX) cur += t10;
       else {
         lines2.push(cur.trimEnd());
         cur = t10.trimStart();
@@ -11049,12 +11053,12 @@ function engrave(song, o10) {
     }
     if (cur.trim()) lines2.push(cur.trimEnd());
     const out = lines2.flatMap((l10) => {
-      if (nameW(l10) <= NAME_MAX) return [l10];
+      if (nameW(l10) <= NMAX) return [l10];
       const latin = /^[A-Za-z0-9'’.\-()&]+$/.test(l10), hy = latin ? "-" : "";
       const ps = [];
       let c10 = "";
       for (const ch2 of [...l10]) {
-        if (c10 && nameW(c10 + ch2 + hy) > NAME_MAX) {
+        if (c10 && nameW(c10 + ch2 + hy) > NMAX) {
           ps.push(c10);
           c10 = ch2;
         } else c10 += ch2;
@@ -11074,25 +11078,25 @@ function engrave(song, o10) {
     if (out.length > max2) {
       out.length = max2;
       let last = out[max2 - 1];
-      while (last && nameW(`${last}\u2026`) > NAME_MAX) last = [...last].slice(0, -1).join("");
+      while (last && nameW(`${last}\u2026`) > NMAX) last = [...last].slice(0, -1).join("");
       out[max2 - 1] = `${last}\u2026`;
     }
     return out;
   };
-  const titleSize = P2(2.8), titleBase = TOP2 + P2(TITLE_H * 0.62);
+  const titleSize = T2(2.8), titleBase = TOP2 + T2(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o10.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
-  const title = { x: P2(MARGIN), y: TOP2 + P2(0.3), w: o10.width - P2(2 * MARGIN), h: P2(TITLE_H), baseline: titleBase, size: titleSize };
+  const title = { x: P2(MARGIN), y: TOP2 + T2(0.3), w: o10.width - P2(2 * MARGIN), h: T2(TITLE_H), baseline: titleBase, size: titleSize };
   const lines = song.credits ? song.credits.split("\n") : [];
   let credits = null;
-  const cs2 = P2(1.25), rx2 = o10.width - P2(MARGIN), y0 = TOP2 + P2(TITLE_H + 1);
+  const cs2 = T2(1.25), rx2 = o10.width - P2(MARGIN), y0 = TOP2 + T2(TITLE_H + 1);
   if (lines.length) {
     lines.forEach((s10, k2) => prims.push({ t: "text", x: rx2, y: y0 + k2 * cs2 * 1.35, s: s10, cls: "credits", size: cs2, anchor: "end" }));
-    const w2 = Math.max(...lines.map((s10) => o10.measureLyric(s10) * 1.25 / LYRIC_EM)) + P2(0.6);
-    credits = { x: rx2 - w2, y: y0 - cs2 * 1.1, w: w2 + P2(0.3), h: cs2 * 1.35 * lines.length + cs2 * 0.4 };
+    const w2 = Math.max(...lines.map((s10) => o10.measureLyric(s10) * 1.25 / LYRIC_EM)) + T2(0.6);
+    credits = { x: rx2 - w2, y: y0 - cs2 * 1.1, w: w2 + T2(0.3), h: cs2 * 1.35 * lines.length + cs2 * 0.4 };
   }
   let arrangement = null, arrLast = 0;
   if (!o10.onlyPaper) {
-    const as2 = P2(1.25), wOf = (t10, size) => o10.measureLyric(t10) * size / LYRIC_EM, row2 = Math.max(lines.length, 1), base2 = y0 + row2 * cs2 * 1.35;
+    const as2 = T2(1.25), wOf = (t10, size) => o10.measureLyric(t10) * size / LYRIC_EM, row2 = Math.max(lines.length, 1), base2 = y0 + row2 * cs2 * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
     const label = _t("\u7F16\u6392\u3000"), lw2 = wOf(label, 1.25), x0 = P2(MARGIN) + lw2, avail2 = o10.width - P2(2 * MARGIN) - lw2;
     if (txt) prims.push({ t: "text", x: P2(MARGIN), y: base2, s: label, cls: "arr-label", size: as2, anchor: "start" });
@@ -11100,14 +11104,14 @@ function engrave(song, o10) {
     if (txt) {
       prims.push({ t: "text", x: x0, y: base2, s: txt, cls: "arr", size: as2, anchor: "start" });
       if (arr.issues.length) {
-        const why2 = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? _t(" \u7B49 {n} \u5904", { n: arr.issues.length }) : ""}`, tw2 = wOf(txt, 1.25) + P2(0.8), fits = tw2 + wOf(why2, 1.1) <= avail2;
-        prims.push({ t: "text", x: fits ? x0 + tw2 : x0, y: fits ? base2 : base2 + cs2 * 1.35, s: why2, cls: "arr-issue ann", size: P2(1.1), anchor: "start" });
+        const why2 = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? _t(" \u7B49 {n} \u5904", { n: arr.issues.length }) : ""}`, tw2 = wOf(txt, 1.25) + T2(0.8), fits = tw2 + wOf(why2, 1.1) <= avail2;
+        prims.push({ t: "text", x: fits ? x0 + tw2 : x0, y: fits ? base2 : base2 + cs2 * 1.35, s: why2, cls: "arr-issue ann", size: T2(1.1), anchor: "start" });
         if (!fits) arrLast = base2 + cs2 * 1.35;
       }
     }
-    arrangement = { x: x0 - P2(0.3), y: base2 - as2 * 1.15, w: avail2 + P2(0.3), h: as2 * 1.6, baseline: base2, size: as2 };
+    arrangement = { x: x0 - T2(0.3), y: base2 - as2 * 1.15, w: avail2 + T2(0.3), h: as2 * 1.6, baseline: base2, size: as2 };
   }
-  let yCur = Math.max(TOP2 + P2(TITLE_H + 0.5), credits && lines.length ? credits.y + credits.h + P2(0.3) : 0, arrangement ? arrLast + P2(0.8) : 0);
+  let yCur = Math.max(TOP2 + T2(TITLE_H + 0.5), credits && lines.length ? credits.y + credits.h + T2(0.3) : 0, arrangement ? arrLast + T2(0.8) : 0);
   const ensure = (h2) => {
     if (PG && yCur + h2 > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) {
       pageNo++;
@@ -11136,14 +11140,14 @@ function engrave(song, o10) {
     return cw2;
   };
   const drawTempoAt = (r10, x0, v, cls, index, change, y2) => {
-    const fs = TEMPO_EM * sp2, word = tempoWord(v).it;
+    const fs = TEMPO_EM * sp2 * ts2, word = tempoWord(v).it;
     if (change) prims.push({ t: "text", x: P2(x0 - 0.3), y: y2, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change ann", size: fs, anchor: "end" });
     const ww = o10.measureLyric(word) * TEMPO_EM / LYRIC_EM / sp2, num2 = `= ${v}`, nw2 = o10.measureLyric(num2) * TEMPO_EM / LYRIC_EM / sp2;
     prims.push({ t: "text", x: P2(x0), y: y2, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
-    const gx = x0 + ww + 0.7;
-    prims.push({ t: "glyph", x: P2(gx), y: y2 - P2(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
-    prims.push({ t: "text", x: P2(gx + 1.3), y: y2, s: num2, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
-    marks.push({ index, kind: "tempo", system: r10, x: P2(x0 - 0.3), y: y2 - P2(TEMPO_EM * 1.1), w: P2(gx + 1.3 + nw2 + 0.6 - x0), h: P2(TEMPO_EM * 1.5) });
+    const gx = x0 + ww + 0.7 * ts2;
+    prims.push({ t: "glyph", x: P2(gx), y: y2 - T2(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
+    prims.push({ t: "text", x: P2(gx + 1.3 * ts2), y: y2, s: num2, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+    marks.push({ index, kind: "tempo", system: r10, x: P2(x0 - 0.3), y: y2 - T2(TEMPO_EM * 1.1), w: P2(gx + 1.3 * ts2 + nw2 + 0.6 * ts2 - x0), h: T2(TEMPO_EM * 1.5) });
   };
   const keyLabel2 = (r10, x0, f2, hint2, index) => {
     const y2 = staffTop(r10) - P2(0.8);
@@ -11151,8 +11155,8 @@ function engrave(song, o10) {
       keyHints.push({ system: r10, index, x: P2(x0), y: y2, size: TEMPO_EM * sp2 });
       return;
     }
-    prims.push({ t: "text", x: P2(x0), y: y2, s: `1=${KEY_LABEL[f2] ?? "?"}`, cls: "keysig key-label", size: TEMPO_EM * sp2, anchor: "start" });
-    marks.push({ index, kind: "key", system: r10, x: P2(x0 - 0.2), y: y2 - P2(TEMPO_EM * 0.95), w: P2(KEY_LABEL_W), h: P2(TEMPO_EM * 1.2) });
+    prims.push({ t: "text", x: P2(x0), y: y2, s: `1=${KEY_LABEL[f2] ?? "?"}`, cls: "keysig key-label", size: TEMPO_EM * sp2 * ts2, anchor: "start" });
+    marks.push({ index, kind: "key", system: r10, x: P2(x0 - 0.2), y: y2 - T2(TEMPO_EM * 0.95), w: T2(KEY_LABEL_W), h: T2(TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r10, x0, f2, cls, clef = "G") => {
     const pos = f2 > 0 ? SHARP_POS : FLAT_POS, ch2 = f2 > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
@@ -11165,10 +11169,10 @@ function engrave(song, o10) {
     if (!h2 || PG || paper.hidden && !o10.onlyPaper) return void 0;
     let low = yCur;
     rows.forEach((r10, k2) => {
-      if (r10.paper === paper.id) low = Math.max(low, lyricY(k2) + P2(1.2));
+      if (r10.paper === paper.id) low = Math.max(low, lyricY(k2) + T2(1.2));
     });
-    const box = { x: P2(MARGIN), y: low + P2(1), w: P2(right) - P2(MARGIN), h: P2(h2) };
-    yCur = box.y + box.h + P2(0.4);
+    const box = { x: P2(MARGIN), y: low + T2(1), w: P2(right) - P2(MARGIN), h: T2(h2) };
+    yCur = box.y + box.h + T2(0.4);
     return box;
   };
   song.papers.forEach((paper, paperK) => {
@@ -11182,7 +11186,7 @@ function engrave(song, o10) {
   let tailBottom = 0, tail = null;
   const lastPaper = song.papers.at(-1);
   if (o10.chrome?.tail && lastPaper && !(o10.onlyPaper && !PG)) {
-    const h2 = P2(o10.chrome.tail), paperId = o10.onlyPaper ?? lastPaper.id;
+    const h2 = T2(o10.chrome.tail), paperId = o10.onlyPaper ?? lastPaper.id;
     if (PG) {
       tail = { paper: paperId, x: P2(MARGIN), y: pageTopY(pageNo) + P2(PG.h) + P2(1.2), w: P2(baseRight - MARGIN), h: h2 };
       tailBottom = tail.y + h2 + P2(1);
@@ -11201,16 +11205,16 @@ function engrave(song, o10) {
     if (drawn++ > 0) yCur += P2(PAPER_GAP);
     const owner = tempoOwner(song, paper), prevPaper = song.papers.slice(0, paperK).reverse().find((x2) => !x2.hidden), prevBpm = prevPaper ? sheetEndBpm(song, prevPaper) : null;
     const paperTop = yCur;
-    const pSize = P2(1.6);
-    const pTitle = { x: P2(MARGIN), y: yCur, w: o10.width - P2(2 * MARGIN) - P2(o10.chrome?.navRoom && song.papers.length > 1 ? o10.chrome.navRoom : 4), h: P2(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };
+    const pSize = T2(1.6);
+    const pTitle = { x: P2(MARGIN), y: yCur, w: o10.width - P2(2 * MARGIN) - T2(o10.chrome?.navRoom && song.papers.length > 1 ? o10.chrome.navRoom : 4), h: T2(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };
     const drawPaperTitle = (firstBlock) => {
       if (!showPaperLine) return;
-      ensure(P2(PAPER_H) + firstBlock);
-      const pBase = yCur + P2(PAPER_H * 0.68);
+      ensure(T2(PAPER_H) + firstBlock);
+      const pBase = yCur + T2(PAPER_H * 0.68);
       pTitle.y = yCur;
       pTitle.baseline = pBase;
       if (paper.name) prims.push({ t: "text", x: P2(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });
-      yCur += P2(PAPER_H);
+      yCur += T2(PAPER_H);
     };
     const present = o10.parts.filter((p2) => paper.tracks[p2.id]), visible = present.filter((p2) => !p2.hidden), hiddenParts = present.filter((p2) => p2.hidden);
     const hostOf = (id2) => song.parts.find((x2) => x2.id === id2)?.host;
@@ -11293,11 +11297,11 @@ function engrave(song, o10) {
     const loIds = new Set(lowOf.values());
     const trackOf2 = (id2) => virt.get(id2) ?? paper.tracks[id2];
     if (!parts.length) {
-      drawPaperTitle(P2(hiddenParts.length ? 0 : 3.2));
+      drawPaperTitle(T2(hiddenParts.length ? 0 : 3.2));
       let emptyBox;
       if (!hiddenParts.length) {
-        emptyBox = { x: P2(MARGIN), y: yCur, w: P2(right - MARGIN), h: P2(3.2) };
-        yCur += P2(3.2);
+        emptyBox = { x: P2(MARGIN), y: yCur, w: P2(right - MARGIN), h: T2(3.2) };
+        yCur += T2(3.2);
       }
       papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p2) => p2.id), ...emptyBox ? { empty: emptyBox } : {} });
       return;
@@ -11309,7 +11313,7 @@ function engrave(song, o10) {
       const gap = paperLen - lens[pi];
       const padT = (dur, id2) => ({ kind: "rest", id: id2, dur });
       const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;
-      const u2 = unitsOf(tokens, { tail: focused && !!o10.tailOpen, autoBars: autoBars2, measureLyric: o10.measureLyric, sp: sp2, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
+      const u2 = unitsOf(tokens, { tail: focused && !!o10.tailOpen, autoBars: autoBars2, measureLyric: o10.measureLyric, sp: sp2, ts: ts2, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
       shortBars += u2.shortBars;
       if (staves === 2) {
         const stf = staffOfTokens(tokens, 2);
@@ -11410,9 +11414,9 @@ function engrave(song, o10) {
     const cols = [...colMap.values()].sort((a10, b3) => a10.tick - b3.tick || a10.slot - b3.slot || a10.n - b3.n);
     const spans2 = per.flatMap((q2) => q2.units.filter((u2) => u2.kind === "chunk").map((u2) => [u2.tick, u2.tick + u2.ticks]));
     const breakableAt = (tick) => !spans2.some(([a10, b3]) => a10 < tick - 1e-6 && b3 > tick + 1e-6);
-    const FAM_W = openFams.length ? o10.chrome?.famGap ?? 0 : 0;
-    const ind0 = Math.max(NAME_MIN, ...parts.map((p2) => Math.max(...nameLines(p2.name, p2.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;
-    const indN = parts.some((p2) => p2.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p2) => nameW(p2.abbr ?? ""))) + 1.4 + FAM_W : 0;
+    const FAM_W = openFams.length ? (o10.chrome?.famGap ?? 0) * ts2 : 0;
+    const ind0 = Math.max(NAME_MIN, ...parts.map((p2) => Math.max(...nameLines(p2.name, p2.staves ?? 1).map(nameW)))) + 1.4 * ts2 + FAM_W;
+    const indN = parts.some((p2) => p2.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p2) => nameW(p2.abbr ?? ""))) + 1.4 * ts2 + FAM_W : 0;
     const keyNow = new Map(per.map((q2) => [q2.p.id, q2.head.key]));
     const clefW = (q2) => q2.fFam ? W.fClef : W.gClef;
     const headerOf = (first) => Math.max(...per.map((q2) => {
@@ -11563,11 +11567,11 @@ function engrave(song, o10) {
       for (const u2 of q2.units) if (u2.kind === "chunk" && u2.lyric && u2.lyric !== MELISMA_MARK) {
         const arr = bySys.get(u2.system) ?? [];
         bySys.set(u2.system, arr);
-        arr.push({ index: u2.index, cx: u2.x + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2, hy: u2.hyph });
+        arr.push({ index: u2.index, cx: u2.x + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2 * lyricSx(ts2), hy: u2.hyph });
       }
       for (const [sy2, items] of bySys) {
         items.sort((a10, b3) => a10.cx - b3.cx);
-        fitLyrics(items).forEach((f2, k2) => {
+        fitLyrics(items, 0.5 * ts2).forEach((f2, k2) => {
           lyrPlan.set(`${r10}:${items[k2].index}`, f2);
           if (f2.row) lyr2.add(`${r10}:${sy2}`);
         });
@@ -11585,7 +11589,7 @@ function engrave(song, o10) {
     }
     const sky = (row2) => skies[row2 - rowBase];
     const loc = (row2, y2) => (y2 - staffTop(row2)) / sp2;
-    const textW = (s10, size) => o10.measureLyric(s10) * size / (LYRIC_EM * sp2);
+    const textW = (s10, size) => o10.measureLyric(s10) * size / (LYRIC_EM * sp2 * ts2);
     const isAnn = (p2) => /(^|\s)ann(\s|$)/.test(p2.cls ?? "");
     const hitLists = () => [notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut];
     const mark = () => ({ p: prims.length, h: hitLists().map((l10) => l10.length) });
@@ -11661,7 +11665,7 @@ function engrave(song, o10) {
         const q0 = per.find((q2) => q2.units.some((u2) => u2.kind === "chunk" && u2.system === s10)) ?? per[0];
         const c02 = q0.units.find((u2) => u2.kind === "chunk" && u2.system === s10);
         const num2 = c02 ? (c02.m ?? 0) + (q0.pickup ? 0 : 1) : null;
-        if (num2 !== null && !(s10 === 0 && num2 <= 1)) later[9].push(() => placeAbove(rowOf(s10, 0, 0), 0.3, (y2) => prims.push({ t: "text", x: P2(MARGIN + ind), y: y2, s: String(num2), cls: "bar-no", size: P2(1.05), anchor: "start" })));
+        if (num2 !== null && !(s10 === 0 && num2 <= 1)) later[9].push(() => placeAbove(rowOf(s10, 0, 0), 0.3, (y2) => prims.push({ t: "text", x: P2(MARGIN + ind), y: y2, s: String(num2), cls: "bar-no", size: T2(1.05), anchor: "start" })));
       }
       per.forEach((q2, r10) => {
         if (rowHost[r10] >= 0) return;
@@ -11708,51 +11712,51 @@ function engrave(song, o10) {
           const pr = lowOf.has(q2.p.id) ? per.findIndex((x2) => x2.p.id === lowOf.get(q2.p.id)) : r10, rEnd = (sy2) => rowOf(sy2, pr, per[pr].staves - 1);
           if (loIds.has(q2.p.id)) return;
           if (s10 === 0) {
-            const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), lines2 = nameLines(q2.p.name, pr !== r10 ? 2 : q2.staves), LH = PART_EM * 1.15;
+            const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), lines2 = nameLines(q2.p.name, pr !== r10 ? 2 : q2.staves), LH = PART_EM * 1.15 * ts2;
             const tl2 = ten.map((t10) => nameLines(t10.name, 1)[0] ?? ""), nAll = lines2.length + tl2.length;
-            const ny2 = (yOf(r02, MID_LINE2) + yOf(r14, MID_LINE2)) / 2 + P2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2);
-            const nameBlock = (wid) => names.push({ paper: paper.id, part: q2.p.id, x0: P2(MARGIN - 0.95), x1: P2(MARGIN) + P2(wid), top: ny2 - P2(PART_EM * 0.95) });
+            const ny2 = (yOf(r02, MID_LINE2) + yOf(r14, MID_LINE2)) / 2 + T2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2);
+            const nameBlock = (wid) => names.push({ paper: paper.id, part: q2.p.id, x0: P2(MARGIN - 0.95), x1: P2(MARGIN) + P2(wid), top: ny2 - T2(PART_EM * 0.95) });
             const ncls = q2.p.empty ? "part-name empty" : q2.focused ? "part-name focus" : "part-name";
             const dn = drumNames.get(q2.p.id);
             if (dn) {
               const at2 = (k2) => ny2 + P2(LH * k2), hk = Math.max(0, dn.findIndex((m2) => m2.id === q2.p.id));
               dn.forEach((m2, k2) => {
-                prims.push({ t: "text", x: P2(MARGIN), y: at2(k2), s: nameLines(m2.name, 1)[0] ?? "", cls: m2.id === q2.p.id ? ncls : "part-name tenant", size: PART_EM * sp2, anchor: "start" });
-                partsHit.push({ paper: paper.id, part: m2.id, x: P2(MARGIN - 0.4), y: at2(k2) - P2(PART_EM * 0.95), w: P2(ind0 + 0.2), h: P2(LH) });
+                prims.push({ t: "text", x: P2(MARGIN), y: at2(k2), s: nameLines(m2.name, 1)[0] ?? "", cls: m2.id === q2.p.id ? ncls : "part-name tenant", size: PART_EM * sp2 * ts2, anchor: "start" });
+                partsHit.push({ paper: paper.id, part: m2.id, x: P2(MARGIN - 0.4), y: at2(k2) - T2(PART_EM * 0.95), w: P2(ind0 + 0.2), h: P2(LH) });
               });
               nameBlock(Math.max(...dn.map((m2) => nameW(nameLines(m2.name, 1)[0] ?? ""))));
-              if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: at2(dn.length - 1) + P2(LH), s: q2.p.badges.join(" "), cls: "part-badge ann", size: P2(1), anchor: "start" });
-              if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: at2(hk) - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot ann cat-${q2.p.colorIdx}` });
+              if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: at2(dn.length - 1) + P2(LH), s: q2.p.badges.join(" "), cls: "part-badge ann", size: T2(1), anchor: "start" });
+              if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: at2(hk) - T2(PART_EM * 0.62), w: T2(0.6), h: T2(0.6), cls: `cat-dot ann cat-${q2.p.colorIdx}` });
             } else {
-              lines2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: ln3, cls: ncls, size: PART_EM * sp2, anchor: "start" }));
-              tl2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (lines2.length + k2)), s: ln3, cls: "part-name tenant", size: PART_EM * sp2, anchor: "start" }));
+              lines2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: ln3, cls: ncls, size: PART_EM * sp2 * ts2, anchor: "start" }));
+              tl2.forEach((ln3, k2) => prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (lines2.length + k2)), s: ln3, cls: "part-name tenant", size: PART_EM * sp2 * ts2, anchor: "start" }));
               if (ten.length) {
-                const lineTop = (i10) => ny2 + P2(LH * i10) - P2(PART_EM * 0.95);
+                const lineTop = (i10) => ny2 + P2(LH * i10) - T2(PART_EM * 0.95);
                 ten.forEach((t10, k2) => partsHit.push({ paper: paper.id, part: t10.id, x: P2(MARGIN - 0.4), y: lineTop(lines2.length + k2), w: P2(ind0 + 0.2), h: P2(LH) }));
               }
               nameBlock(Math.max(...[...lines2, ...tl2].map(nameW)));
               {
-                if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (nAll - 1)) + P2(1.4), s: q2.p.badges.join(" "), cls: "part-badge ann", size: P2(1), anchor: "start" });
+                if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (nAll - 1)) + T2(1.4), s: q2.p.badges.join(" "), cls: "part-badge ann", size: T2(1), anchor: "start" });
               }
               {
-                const y02 = yOf(r02, TOP_LINE2) - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - P2(PART_EM * 0.95) : yOf(r14, BOTTOM_LINE) + P2(1.2);
+                const y02 = yOf(r02, TOP_LINE2) - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - T2(PART_EM * 0.95) : yOf(r14, BOTTOM_LINE) + P2(1.2);
                 partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: y02, w: P2(ind0 + 0.2), h: yEnd - y02 });
               }
-              if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot ann cat-${q2.p.colorIdx}` });
+              if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - T2(PART_EM * 0.62), w: T2(0.6), h: T2(0.6), cls: `cat-dot ann cat-${q2.p.colorIdx}` });
             }
           } else if (q2.p.abbr) {
-            const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), LH = PART_EM * 1.15;
+            const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), LH = PART_EM * 1.15 * ts2;
             const order = drumNames.get(q2.p.id) ?? [q2.p, ...ten], hk = Math.max(0, order.findIndex((m2) => m2.id === q2.p.id));
-            const ny2 = (yOf(r02, MID_LINE2) + yOf(r14, MID_LINE2)) / 2 + P2(0.55 * PART_EM) - P2(LH * (order.length - 1) / 2);
+            const ny2 = (yOf(r02, MID_LINE2) + yOf(r14, MID_LINE2)) / 2 + T2(0.55 * PART_EM) - P2(LH * (order.length - 1) / 2);
             order.forEach((m2, k2) => {
               if (m2.id === q2.p.id) {
-                prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: q2.p.abbr, cls: q2.p.empty ? "part-name abbr empty" : q2.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp2, anchor: "start" });
+                prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: q2.p.abbr, cls: q2.p.empty ? "part-name abbr empty" : q2.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp2 * ts2, anchor: "start" });
                 return;
               }
-              prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: m2.abbr ?? "", cls: "part-name abbr tenant", size: PART_EM * sp2, anchor: "start" });
-              partsHit.push({ paper: paper.id, part: m2.id, x: P2(MARGIN - 0.4), y: ny2 + P2(LH * k2) - P2(PART_EM * 0.95), w: P2(indN + 0.2), h: P2(LH) });
+              prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: m2.abbr ?? "", cls: "part-name abbr tenant", size: PART_EM * sp2 * ts2, anchor: "start" });
+              partsHit.push({ paper: paper.id, part: m2.id, x: P2(MARGIN - 0.4), y: ny2 + P2(LH * k2) - T2(PART_EM * 0.95), w: P2(indN + 0.2), h: P2(LH) });
             });
-            if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 + P2(LH * hk) - P2(PART_EM * 0.62), w: P2(0.6), h: P2(0.6), cls: `cat-dot ann cat-${q2.p.colorIdx}` });
+            if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 + P2(LH * hk) - T2(PART_EM * 0.62), w: T2(0.6), h: T2(0.6), cls: `cat-dot ann cat-${q2.p.colorIdx}` });
             partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: yOf(r02, TOP_LINE2) - P2(1.2), w: P2(indN + 0.2), h: yOf(r14, BOTTOM_LINE) - yOf(r02, TOP_LINE2) + P2(2.4) });
           }
           if (q2.p.colorIdx !== void 0) {
@@ -11800,7 +11804,7 @@ function engrave(song, o10) {
       const navMute = (i10) => navWhy(song, paper, q2.p.id, tokens[i10]) ? " art-mute" : "";
       const drawNav = (u2) => {
         const t10 = tokens[u2.index], cls = "nav-mark" + navMute(u2.index), tok = t10.id, row0 = rowOf(u2.system, r10, 0);
-        const fs = P2(TEMPO_EM * 1.05), x2 = P2(u2.x + 0.4);
+        const fs = T2(TEMPO_EM * 1.05), x2 = P2(u2.x + 0.4);
         if (t10.what === "ending") {
           const ui3 = units.indexOf(u2);
           let end = null, closed = false, fallback = null, sawNote = false;
@@ -11824,13 +11828,13 @@ function engrave(song, o10) {
             if (v.kind === "bar" && sawNote && !fallback) fallback = v;
           }
           if (!end) end = fallback;
-          const h2 = P2(1.6);
+          const h2 = T2(1.6);
           const endX = (v, sys) => v && v.system === sys ? v.kind === "bar" ? P2(v.x + (v.repeat ? 0.4 + (v.repeat === "both" ? 1.2 : 1.47) : 0.7)) : P2(v.x) - P2(0.3) : P2(right);
           const seg = (sys, xa, openL, xb, hookR, first) => placeAbove(rowOf(sys, r10, 0), 0.6, (yy) => {
             prims.push({ t: "path", d: `${openL ? `M${xa},${yy}` : `M${xa},${yy + h2}L${xa},${yy}`}L${xb},${yy}${hookR ? `L${xb},${yy + h2}` : ""}`, cls: "volta" + navMute(u2.index) });
             if (!first) return;
-            prims.push({ tok, t: "text", x: x2 + P2(0.3), y: yy + P2(1.25), s: endingLabel(t10.nums), cls, size: fs, anchor: "start" });
-            dyns.push({ index: u2.index, kind: "nav", system: row0, x: x2 - P2(0.4), y: yy - P2(0.4), w: P2(3), h: h2 + P2(0.8) });
+            prims.push({ tok, t: "text", x: x2 + T2(0.3), y: yy + T2(1.25), s: endingLabel(t10.nums), cls, size: fs, anchor: "start" });
+            dyns.push({ index: u2.index, kind: "nav", system: row0, x: x2 - P2(0.4), y: yy - T2(0.4), w: T2(3), h: h2 + T2(0.8) });
           });
           const endSys = end ? end.system : u2.system;
           seg(u2.system, x2 - P2(0.2), false, endX(endSys === u2.system ? end : null, u2.system), closed && endSys === u2.system, true);
@@ -11851,7 +11855,7 @@ function engrave(song, o10) {
         const label = NAV_LABEL[t10.what], tw2 = o10.measureLyric(label) * TEMPO_EM * 1.05 / LYRIC_EM, atEnd = x2 - tw2 > P2(MARGIN + 6);
         placeAbove(row0, 0.6, (y2) => {
           prims.push({ tok, t: "text", x: atEnd ? x2 : x2 - P2(0.2), y: y2, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
-          dyns.push({ index: u2.index, kind: "nav", system: row0, x: atEnd ? x2 - tw2 - P2(0.3) : x2 - P2(0.5), y: y2 - P2(TEMPO_EM * 1.1), w: tw2 + P2(0.8), h: P2(TEMPO_EM * 1.5) });
+          dyns.push({ index: u2.index, kind: "nav", system: row0, x: atEnd ? x2 - tw2 - P2(0.3) : x2 - P2(0.5), y: y2 - T2(TEMPO_EM * 1.1), w: tw2 + T2(0.8), h: T2(TEMPO_EM * 1.5) });
         });
       };
       const nhX = (c10) => P2(c10.x + 0.35);
@@ -11936,17 +11940,17 @@ function engrave(song, o10) {
         if (c10.j === 0) notes.push({ ...tag2, index: c10.index, system: row2, x: x0, y: y2, w: nhW(c10), d: diatonicIndex(c10.pitch) });
         if (c10.j === 0 && !c10.tie) lyricJobs.push({ sys: c10.system, run: () => {
           const fit = lyrPlan.get(`${r10}:${c10.index}`), ly0 = lyricY(lyricRow(c10.system)), cx0 = x0 + nhW(c10) / 2;
-          const ly2 = ly0 + (fit?.row ? P2(LYRIC_ROW2) : 0), cx3 = cx0 + (fit ? P2(fit.dx) : 0);
+          const ly2 = ly0 + (fit?.row ? T2(LYRIC_ROW2) : 0), cx3 = cx0 + (fit ? P2(fit.dx) : 0);
           partLyrics.push({ index: c10.index, system: row2, x: cx3, y: ly2, ...fit?.tight ? { tight: true } : {} });
           if (c10.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P2(0.6), y1: ly0, x2: x0 + nhW(c10) + P2(0.4), y2: ly0, w: P2(0.12), cls: "melisma" });
-          else if (c10.lyric) prims.push({ tok: tokOf(c10), t: "text", x: cx3, y: ly2, s: lyricShow(c10.lyric), ...fit && fit.scale < 1 ? { size: P2(LYRIC_EM * fit.scale) } : {}, cls: ["lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
+          else if (c10.lyric) prims.push({ tok: tokOf(c10), t: "text", x: cx3, y: ly2, s: lyricShow(c10.lyric), ...fit && fit.scale < 1 ? { size: T2(LYRIC_EM * fit.scale) } : ts2 !== 1 ? { size: T2(LYRIC_EM) } : {}, ...lyricSx(ts2) !== 1 ? { sx: lyricSx(ts2) } : {}, cls: ["lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         } });
       };
       for (const u2 of units) {
         const row2 = RW(u2);
         if (u2.kind === "phrase") {
           lyricJobs.push({ sys: u2.system, run: () => {
-            prims.push({ t: "text", x: P2(u2.x + 0.1), y: lyricY(lyricRow(u2.system)), s: "\u3002", cls: "phrase-mark ann", size: P2(1.3), anchor: "start" });
+            prims.push({ t: "text", x: P2(u2.x + 0.1), y: lyricY(lyricRow(u2.system)), s: "\u3002", cls: "phrase-mark ann", size: T2(1.3), anchor: "start" });
           } });
           continue;
         }
@@ -11960,10 +11964,10 @@ function engrave(song, o10) {
         }
         if (u2.kind === "groove") {
           const gt = tokens[u2.index], gr = rowOf(u2.system, r10, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
-          const fs = TEMPO_EM * sp2, gw = o10.measureLyric(label) * TEMPO_EM / LYRIC_EM, gx = P2(u2.x + 0.3);
+          const fs = TEMPO_EM * sp2 * ts2, gw = o10.measureLyric(label) * TEMPO_EM / LYRIC_EM, gx = P2(u2.x + 0.3);
           later[8].push(() => placeAbove(gr, 0.5, (gy) => {
             prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
-            dyns.push({ index: u2.index, kind: "groove", system: gr, x: P2(u2.x), y: gy - P2(TEMPO_EM * 1.1), w: gw + P2(0.6), h: P2(TEMPO_EM * 1.5) });
+            dyns.push({ index: u2.index, kind: "groove", system: gr, x: P2(u2.x), y: gy - T2(TEMPO_EM * 1.1), w: gw + T2(0.6), h: T2(TEMPO_EM * 1.5) });
           }));
           continue;
         }
@@ -11977,7 +11981,7 @@ function engrave(song, o10) {
               prims.push({ t: "glyph", x: P2(u2.x + 0.4), y: yOf(rr2, BOTTOM_LINE), ch: u2.repeat === "start" ? "\uE040" : u2.repeat === "end" ? "\uE041" : "\uE042", cls: "repeat-bar" + navMute(u2.index), tok: tokens[u2.index].id });
               if (u2.times && u2.times > 2 && k2 === 0) {
                 const times = u2.times, bx = P2(u2.x + 0.4 + (u2.repeat === "both" ? 1.2 : 1.47)), cl2 = "nav-mark" + navMute(u2.index);
-                later[6].push(() => placeAbove(rr2, 0.6, (y2) => prims.push({ t: "text", x: bx, y: y2, s: `\xD7${times}`, cls: cl2, size: P2(TEMPO_EM * 1.05), anchor: "end" })));
+                later[6].push(() => placeAbove(rr2, 0.6, (y2) => prims.push({ t: "text", x: bx, y: y2, s: `\xD7${times}`, cls: cl2, size: T2(TEMPO_EM * 1.05), anchor: "end" })));
               }
             } else if (u2.kind === "bar") {
               const bx = P2(u2.x + 0.7), bcls = u2.auto ? "bar auto" : "bar";
@@ -12308,7 +12312,7 @@ function engrave(song, o10) {
         });
       });
       if (o10.chordTags && !v2 && !q2.vrt) later[10].push(() => {
-        const fs = TEMPO_EM * sp2;
+        const fs = TEMPO_EM * sp2 * ts2;
         for (const c10 of units) {
           if (c10.kind !== "chunk" || !c10.note || c10.j !== 0 || c10.index < 0 || c10.pad) continue;
           const t10 = tokens[c10.index];
@@ -12316,10 +12320,10 @@ function engrave(song, o10) {
           const rd2 = readChord([t10.pitch, ...t10.chord], keyAt(tokens, c10.index));
           if (!rd2) continue;
           const ds = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff, c10.index)), second = ds.some((dd, k2) => k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1);
-          const label = chordLabel(rd2), tx2 = nhX(c10) + nhW(c10) * (second ? 1.95 : 1) + P2(0.3), w2 = [...label].length * fs * 0.6 + P2(0.6);
+          const label = chordLabel(rd2), tx2 = nhX(c10) + nhW(c10) * (second ? 1.95 : 1) + P2(0.3), w2 = [...label].length * fs * 0.6 + T2(0.6);
           placeBelow(RW(c10), 0.3, (y2) => {
             prims.push({ t: "text", x: tx2, y: y2, s: label, cls: "chord-tag", size: fs, anchor: "start" });
-            chordTagsOut.push({ x: tx2 - P2(0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2 });
+            chordTagsOut.push({ x: tx2 - T2(0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2 });
           });
         }
       });
@@ -12329,7 +12333,7 @@ function engrave(song, o10) {
           lyrics.push(...partLyrics);
           return;
         }
-        const base2 = LYRIC_BELOW + (o10.lyricRaise ?? 0), bySys = /* @__PURE__ */ new Map();
+        const base2 = LYRIC_BELOW + (o10.lyricRaise ?? 0) * ts2, bySys = /* @__PURE__ */ new Map();
         for (const j2 of lyricJobs) {
           const l10 = bySys.get(j2.sys);
           if (l10) l10.push(j2);
@@ -12345,8 +12349,8 @@ function engrave(song, o10) {
               const L2 = partLyrics[n11], tok = tokens[L2.index];
               if (!tok.hyph) continue;
               const R2 = partLyrics[n11 + 1];
-              const xx = R2 && R2.system === L2.system ? (L2.x + R2.x) / 2 : L2.x + P2(1.6);
-              prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen" });
+              const xx = R2 && R2.system === L2.system ? (L2.x + R2.x) / 2 : L2.x + T2(1.6);
+              prims.push({ t: "text", x: xx, y: L2.y, s: "-", cls: "lyric hyphen", ...ts2 !== 1 ? { size: T2(LYRIC_EM) } : {}, ...lyricSx(ts2) !== 1 ? { sx: lyricSx(ts2) } : {} });
             }
             lyrics.push(...partLyrics.slice(from));
           }, { min: 0, count: false });
@@ -12414,12 +12418,12 @@ function engrave(song, o10) {
           sys = u0.system;
           x2 = cx2(u0);
         } else {
-          const T2 = u0.tick, ch2 = units.find((v) => v.kind === "chunk" && v.index >= c10 && Math.abs(v.tick - T2) < 1e-6);
+          const T3 = u0.tick, ch2 = units.find((v) => v.kind === "chunk" && v.index >= c10 && Math.abs(v.tick - T3) < 1e-6);
           if (ch2) {
             sys = ch2.system;
             x2 = cx2(ch2);
           } else {
-            const same = units.filter((v) => v.kind !== "head" && v.index >= c10 && Math.abs(v.tick - T2) < 1e-6), lastT = same[same.length - 1] ?? u0;
+            const same = units.filter((v) => v.kind !== "head" && v.index >= c10 && Math.abs(v.tick - T3) < 1e-6), lastT = same[same.length - 1] ?? u0;
             sys = lastT.system;
             x2 = P2(lastT.x + lastT.w);
           }
@@ -12467,11 +12471,11 @@ function engrave(song, o10) {
       });
     }
     const pEnd = mark();
-    const PAD = 0.8, lyricTail = SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW, fin = (v, d3) => Number.isFinite(v) ? v : d3;
+    const PAD = 0.8, lyricTail = (SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow) * ts2, fin = (v, d3) => Number.isFinite(v) ? v : d3;
     const geo = (s10, r10, k2) => {
       const q2 = per[r10], row2 = rowOf(s10, r10, k2), sk2 = sky(row2), hUp = fin(sk2.hUp, 0), hDn = fin(sk2.hDn, 4);
       const minBelow = q2.staves === 2 && k2 === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r10] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
-      const lyr = lyricsOf[r10] && k2 === q2.staves - 1 ? lyricOff.get(row2) : void 0, row22 = lyr2.has(`${r10}:${s10}`) ? LYRIC_ROW2 : 0;
+      const lyr = lyricsOf[r10] && k2 === q2.staves - 1 ? lyricOff.get(row2) : void 0, row22 = lyr2.has(`${r10}:${s10}`) ? LYRIC_ROW2 * ts2 : 0;
       let below = Math.max(minBelow, hDn - 4 + PAD);
       if (lyr !== void 0) below = Math.max(below, lyr + lyricTail + row22);
       return { above: Math.max(STAFF_ABOVE, -hUp + PAD), below, inkAbove: Math.max(0, -fin(upToNav[row2 - rowBase] ?? Infinity, 0)), inkBelow: Math.max(0, hDn - 4, lyr !== void 0 ? lyr + 0.5 + row22 : 0) };
@@ -12481,8 +12485,8 @@ function engrave(song, o10) {
     drawPaperTitle(nSys ? sysH(0) : P2(SPC.rowH));
     let note2;
     if (paper.hidden) {
-      const nx2 = P2(MARGIN) + (paper.name ? o10.measureLyric(paper.name) : 0) + P2(1);
-      note2 = { x: nx2, y: pTitle.y, w: Math.max(P2(4), pTitle.x + pTitle.w - nx2), h: P2(PAPER_H) };
+      const nx2 = P2(MARGIN) + (paper.name ? o10.measureLyric(paper.name) * 1.6 / LYRIC_EM : 0) + T2(1);
+      note2 = { x: nx2, y: pTitle.y, w: Math.max(T2(4), pTitle.x + pTitle.w - nx2), h: T2(PAPER_H) };
     }
     const delta = /* @__PURE__ */ new Map();
     for (let s10 = 0; s10 < nSys; s10++) {
@@ -12511,13 +12515,13 @@ function engrave(song, o10) {
     for (let k2 = 0; k2 <= pageNo; k2++) {
       const top = pageTopY(k2);
       frames.push({ t: "rect", x: -P2(PG.l), y: top, w: o10.width + P2(PG.l + PG.r), h: P2(PG.h), cls: "page ann" });
-      prims.push({ t: "text", x: o10.width / 2, y: top + P2(PG.h - PG.b / 2), s: String(k2 + 1), cls: "page-no", size: P2(1.2), anchor: "middle" });
+      prims.push({ t: "text", x: o10.width / 2, y: top + P2(PG.h - PG.b / 2), s: String(k2 + 1), cls: "page-no", size: T2(1.2), anchor: "middle" });
       pages.push({ top, h: P2(PG.h) });
     }
     prims.unshift(...frames);
   }
   const height = PG ? Math.max(pageTopY(pageNo) + P2(PG.h), tailBottom) : yCur + P2(MX.b);
-  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx2, y: y0, size: cs2 }, content: { left: P2(MARGIN), right: o10.width - P2(MARGIN) }, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, shortBars, lyricYs: rows.map((_2, r10) => lyricY(r10)), lyricY, yOf, dOf };
+  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, tp: sp2 * ts2, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx2, y: y0, size: cs2 }, content: { left: P2(MARGIN), right: o10.width - P2(MARGIN) }, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, shortBars, lyricYs: rows.map((_2, r10) => lyricY(r10)), lyricY, yOf, dOf };
 }
 
 // src/render/svg.ts
@@ -12531,7 +12535,8 @@ function primSvg(p2, fs, lfs, rx2) {
     case "glyph":
       return `<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-family="Bravura" font-size="${p2.size ? n(p2.size) : fs}">${p2.ch}</text>`;
     case "text":
-      return `<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-size="${p2.size ? n(p2.size) : lfs}" text-anchor="${p2.anchor ?? "middle"}">${esc(p2.s)}</text>`;
+      return `<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-size="${p2.size ? n(p2.size) : lfs}" text-anchor="${p2.anchor ?? "middle"}"${p2.sx && p2.sx !== 1 ? ` transform="matrix(${n(p2.sx)} 0 0 1 ${n(p2.x * (1 - p2.sx))} 0)"` : ""}>${esc(p2.s)}</text>`;
+    // sx = 以 x 为中心横向压窄（紧凑档的歌词）
     case "path":
       return `<path${c10} d="${p2.d}"/>`;
     case "rect":
@@ -13728,13 +13733,13 @@ var ScoreView = class {
   /** 排版的几何与选项（layoutNow 的同步路和 renderAsync 的 worker 路共用一份）：frame（谱大小 / 纸宽 / 分页）+ 缓存键 + engrave 的选项（不含量字宽的闭包，worker 自己配）。 */
   geo(st2) {
     const { sp: sp2, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
-    const paper = st2.song.paper ?? paperOf(DEFAULT_PAPER);
+    const paper = st2.song.paper ?? paperOf(DEFAULT_PAPER), ts2 = textScaleOf(paper);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st2) || st2.sel)) this.caretEnd = null;
     const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars2 = this.host.autoBars?.() ?? true, inC = this.host.inC?.() ?? false, chordTags = this.host.chordTags?.() ?? false;
     const lyricRaise = page && this.host.lyricRaise?.() ? this.host.lyricRaise() : 0;
     const tailOpen = !st2.sel && st2.caret >= tr(st2).length;
     const geoKey = JSON.stringify(
-      [width, sp2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, hscroll, autoBars2, inC, chordTags, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
+      [width, sp2, ts2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, hscroll, autoBars2, inC, chordTags, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v) => v instanceof Set ? [...v] : v
     );
     const chrome = { ...this.rules.edit && !page ? { underPaper: 2.6 } : {}, ...this.rules.edit ? { tail: 2.6 } : {}, famGap: 0.8, navRoom: 16 };
@@ -13752,9 +13757,10 @@ var ScoreView = class {
       ...chordTags ? { chordTags: true } : {},
       ...page ? { page } : { margins },
       ...scopeSeg ? { onlyPaper: st2.at.paper } : {},
-      ...hscroll ? { scroll: true } : {}
+      ...hscroll ? { scroll: true } : {},
+      ...ts2 !== 1 ? { textScale: ts2 } : {}
     };
-    return { frame: { sp: sp2, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp2 };
+    return { frame: { sp: sp2, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp2 * ts2 };
   }
   // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
   //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），
@@ -15590,7 +15596,7 @@ var ScoreOverlay = class {
   // 纸 → 这张纸上隐藏着的声部（「隐藏 N」点开时用；不走 DOM 属性——编号是文件里读进来的，不保证没有空格 / 引号）
   press = null;
   layout(L2, v) {
-    const items = [], sp2 = L2.sp, px = (n10) => `${Math.round(n10 * 100) / 100}px`;
+    const items = [], sp2 = L2.tp ?? L2.sp, px = (n10) => `${Math.round(n10 * 100) / 100}px`;
     const box = (x2, y2, w2, h2) => `left:${px(x2)};top:${px(y2)};width:${px(w2)};height:${px(h2)}`;
     const text2 = (x2, base2, size, anchor = "start") => (
       // 把 svg 的「起点 + 基线」换成 div：行高 = 字号，基线约在 0.8 字号
@@ -15601,13 +15607,14 @@ var ScoreOverlay = class {
     const song = v.song, papers = song.papers, multi = papers.length > 1, nameOf2 = (id2) => papers.find((p2) => p2.id === id2);
     this.hiddenOf = new Map(L2.papers.map((pp) => [pp.id, pp.hiddenParts]));
     for (const n10 of L2.names) {
-      const t10 = this.host.toggles(n10.part), s10 = TG_BTN * sp2, total = (TG_BTN * 2 + TG_GAP) * sp2, cx2 = (n10.x0 + n10.x1) / 2, x0 = Math.max(0.2 * sp2, cx2 - total / 2), y2 = n10.top - 0.35 * sp2 - s10;
+      const gs = L2.sp;
+      const t10 = this.host.toggles(n10.part), s10 = TG_BTN * gs, total = (TG_BTN * 2 + TG_GAP) * gs, cx2 = (n10.x0 + n10.x1) / 2, x0 = Math.max(0.2 * gs, cx2 - total / 2), y2 = n10.top - 0.35 * gs - s10;
       const eye = t10.only ? "visibility-only" : t10.hidden ? "visibility-hide" : "visibility-show", ear = t10.solo ? "volume-solo" : t10.muted ? "volume-mute" : "volume";
       const btn = (kind, k2, ic2, st2, title) => add(
         `tg:${n10.paper}:${n10.part}:${kind}`,
         "button",
         `ov-i ov-tg${st2 ? ` on ${st2}` : ""}`,
-        box(x0 + k2 * (TG_BTN + TG_GAP) * sp2, y2, s10, s10),
+        box(x0 + k2 * (TG_BTN + TG_GAP) * gs, y2, s10, s10),
         icon(ic2, s10 * 0.72),
         { "data-ov": "tg", "data-part": n10.part, "data-kind": kind, title, "aria-label": title }
       );
@@ -29045,9 +29052,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-bd8d6f27a831.mjs");
+      return pick(() => "layout-worker-e1786ac37e0e.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-1429d1cb57ba.mjs");
+      return pick(() => "encode-worker-62e1eb841b8f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38413,7 +38420,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "ed1b7b577baf4bdd" : "dev";
+var CORE_HASH = true ? "c59e812b9273d3a4" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -49653,7 +49660,7 @@ stream
           hex += hex4(g3);
         });
         if (!hex) continue;
-        const tm2 = o10.italic ? `1 0 0.2 1 ${num(o10.x)} ${num(H3 - o10.y)} Tm` : `1 0 0 1 ${num(o10.x)} ${num(H3 - o10.y)} Tm`;
+        const sx2 = num(o10.sx ?? 1), tm2 = o10.italic ? `${sx2} 0 0.2 1 ${num(o10.x)} ${num(H3 - o10.y)} Tm` : `${sx2} 0 0 1 ${num(o10.x)} ${num(H3 - o10.y)} Tm`;
         const bold = o10.bold ? ` 2 Tr ${num(o10.size * 0.035)} w ${rgb(o10.color, true)}` : " 0 Tr";
         c10 += `BT /F1 ${num(o10.size)} Tf ${rgb(o10.color, false)}${bold} ${tm2} <${hex}> Tj ET
 `;
@@ -49798,10 +49805,11 @@ function segsOf(d3, dx, dy) {
   return out;
 }
 function printOpts(song, sp2, parts, measureLyric, autoBars2, lyricRaise, onlyPaper, view2 = {}) {
-  const paper = song.paper ?? paperOf(DEFAULT_PAPER);
+  const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts2 = textScaleOf(paper);
   return {
     width: lineSp(paper) * sp2,
     sp: sp2,
+    ...ts2 !== 1 ? { textScale: ts2 } : {},
     at: { paper: onlyPaper ?? song.papers[0].id, part: song.parts[0].id },
     parts,
     measureLyric,
@@ -49814,7 +49822,7 @@ function printOpts(song, sp2, parts, measureLyric, autoBars2, lyricRaise, onlyPa
   };
 }
 function scorePdf(a10) {
-  const paper = a10.song.paper ?? paperOf(DEFAULT_PAPER), sp2 = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp2;
+  const paper = a10.song.paper ?? paperOf(DEFAULT_PAPER), sp2 = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp2 * textScaleOf(paper);
   const L2 = engrave(a10.song, printOpts(a10.song, sp2, a10.parts, a10.measureAt ? a10.measureAt(lyricPx) : (s10) => textEm(a10.font, s10) * lyricPx, a10.autoBars ?? true, LYRIC_RAISE[a10.fontId], a10.onlyPaper, a10.view));
   const W3 = paper.widthMm * PT_PER_MM, H3 = paper.heightMm * PT_PER_MM, dx = L2.pageX.left;
   const pages = L2.pages.map(() => ({ w: W3, h: H3, ops: [] }));
@@ -49864,9 +49872,9 @@ function scorePdf(a10) {
           }
           return out;
         }
-        const size = p2.size ?? lyricPx, w2 = textEm(a10.font, p2.s) * size, anchor = p2.anchor ?? "middle";
+        const size = p2.size ?? lyricPx, w2 = textEm(a10.font, p2.s) * size * (p2.sx ?? 1), anchor = p2.anchor ?? "middle";
         const x2 = p2.x + ox2 - (anchor === "middle" ? w2 / 2 : anchor === "end" ? w2 : 0);
-        return [{ op: "text", x: x2, y: p2.y - top, text: p2.s, size, color: INK, ...cls.some((c10) => BOLD.has(c10)) ? { bold: true } : {}, ...cls.some((c10) => ITALIC.has(c10)) ? { italic: true } : {} }];
+        return [{ op: "text", x: x2, y: p2.y - top, text: p2.s, size, color: INK, ...p2.sx && p2.sx !== 1 ? { sx: p2.sx } : {}, ...cls.some((c10) => BOLD.has(c10)) ? { bold: true } : {}, ...cls.some((c10) => ITALIC.has(c10)) ? { italic: true } : {} }];
       }
       default:
         return [];
@@ -56702,4 +56710,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0e4a6a158f69.mjs.map
+//# sourceMappingURL=moonsinger-28e0e2a6dcdc.mjs.map

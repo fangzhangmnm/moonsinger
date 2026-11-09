@@ -68,7 +68,7 @@ export class ScoreOverlay {
   }
 
   layout(L: Layout, v: OverlayView): void {
-    const items: Item[] = [], sp = L.sp, px = (n: number) => `${Math.round(n * 100) / 100}px`;
+    const items: Item[] = [], sp = L.tp ?? L.sp, px = (n: number) => `${Math.round(n * 100) / 100}px`;   // 钮 / 提示字 / 虚线框的字 = 字的尺子（刀 2：紧凑档不跟着谱缩；位置照排版给的锚点）
     const box = (x: number, y: number, w: number, h: number) => `left:${px(x)};top:${px(y)};width:${px(w)};height:${px(h)}`;
     const text = (x: number, base: number, size: number, anchor: "start" | "middle" | "end" = "start") =>   // 把 svg 的「起点 + 基线」换成 div：行高 = 字号，基线约在 0.8 字号
       `left:${px(x)};top:${px(base - size * 0.8)};font-size:${px(size)};line-height:${px(size)};${anchor === "middle" ? "transform:translateX(-50%);" : anchor === "end" ? "transform:translateX(-100%);" : ""}`;
@@ -79,10 +79,11 @@ export class ScoreOverlay {
 
     // ① 两颗钮：名字块上面、整排对「色点 + 名字」居中，可以超出谱上沿（user 11-08）
     for (const n of L.names) {
-      const t = this.host.toggles(n.part), s = TG_BTN * sp, total = (TG_BTN * 2 + TG_GAP) * sp, cx = (n.x0 + n.x1) / 2, x0 = Math.max(0.2 * sp, cx - total / 2), y = n.top - 0.35 * sp - s;
+      const gs = L.sp;   // 两颗钮跟谱的尺子（刀 2 试：user 11-09「紧凑档里两颗钮跟着谱一起缩小三成。试一下」——紧凑档行距小，跟字放大会和上一位的两行名字挤在一起）
+      const t = this.host.toggles(n.part), s = TG_BTN * gs, total = (TG_BTN * 2 + TG_GAP) * gs, cx = (n.x0 + n.x1) / 2, x0 = Math.max(0.2 * gs, cx - total / 2), y = n.top - 0.35 * gs - s;
       const eye = t.only ? "visibility-only" : t.hidden ? "visibility-hide" : "visibility-show", ear = t.solo ? "volume-solo" : t.muted ? "volume-mute" : "volume";
       const btn = (kind: "hidden" | "muted", k: number, ic: string, st: string, title: string) =>
-        add(`tg:${n.paper}:${n.part}:${kind}`, "button", `ov-i ov-tg${st ? ` on ${st}` : ""}`, box(x0 + k * (TG_BTN + TG_GAP) * sp, y, s, s), icon(ic, s * 0.72),
+        add(`tg:${n.paper}:${n.part}:${kind}`, "button", `ov-i ov-tg${st ? ` on ${st}` : ""}`, box(x0 + k * (TG_BTN + TG_GAP) * gs, y, s, s), icon(ic, s * 0.72),
           { "data-ov": "tg", "data-part": n.part, "data-kind": kind, title, "aria-label": title });
       btn("hidden", 0, eye, t.only ? "tg-only" : t.hidden ? "tg-hidden" : "", _t("点 = 隐藏 / 显示；长按（电脑右键）= 只看它"));
       btn("muted", 1, ear, t.solo ? "tg-solo" : t.muted ? "tg-muted" : "", _t("点 = 静音 / 出声；长按（电脑右键）= 独奏"));

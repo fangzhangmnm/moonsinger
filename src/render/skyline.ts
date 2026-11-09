@@ -42,7 +42,7 @@ export function primInk(p: Prim, sp: number, measure: (s: string, size: number) 
       return;
     }
     case "text": {
-      const size = p.size ?? 1.6 * sp, w = measure(p.s, size), x0 = p.anchor === "middle" ? p.x - w / 2 : p.anchor === "end" ? p.x - w : p.x;
+      const size = p.size ?? 1.6 * sp, w = measure(p.s, size) * (p.sx ?? 1), x0 = p.anchor === "middle" ? p.x - w / 2 : p.anchor === "end" ? p.x - w : p.x;
       emit(x0, x0 + w, p.y - size * 0.8, p.y + size * 0.22); return;
     }
     case "line": { const h = p.w / 2; flatten([[p.x1, p.y1], [p.x2, p.y2]], sp, h, emit); return; }

@@ -42,7 +42,7 @@ import { mergeTracks, planHands, type MergeOpts } from "../score/merge.ts";
 export type Prim =
   | { t: "line"; x1: number; y1: number; x2: number; y2: number; w: number; cls?: string; tok?: number }
   | { t: "glyph"; x: number; y: number; ch: string; cls?: string; size?: number /* px，默认 4 sp */; tok?: number }
-  | { t: "text"; x: number; y: number; s: string; cls?: string; size?: number /* px，默认歌词字号 */; anchor?: "start" | "middle" | "end"; tok?: number }
+  | { t: "text"; x: number; y: number; s: string; cls?: string; size?: number /* px，默认歌词字号 */; anchor?: "start" | "middle" | "end"; tok?: number; /** 横向压窄（以 x 为中心；1 = 不压）：紧凑档的歌词 0.85（刀 2，user 11-09「可以」）。 */ sx?: number }
   | { t: "path"; d: string; cls?: string; tok?: number }
   | { t: "rect"; x: number; y: number; w: number; h: number; cls?: string; tok?: number };
 // 图元里原来还有一种「icon」（界面图标库的图标）：只有两颗钮和纸角钮用，刀 1 搬去覆盖层之后没人画了，2026-11-08 Fable 审刀 1 时删掉——排版器在类型上就画不出界面图标。
@@ -86,10 +86,16 @@ export interface EngraveOpts {
   inC?: boolean;
   /** 和弦标级数（v0.16.13；src/score/chord-name.ts）：叠音的和弦写它在这个调里是几级——刀 4b 起在和弦右下角、贴着下天际线（挂件，会让歌词往下让）；跟着设置印进 PDF（user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）。 */
   chordTags?: boolean;
+  /** 字的尺子比谱的尺子大多少（刀 2；src/score/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
+   *  「1=F」、小节号、和弦级数、页码，连同它们周围留的地方，都按 sp × textScale 量；字形、线、cresc. / 8va / 「吸」/ 推定的灰字照旧跟谱。measureLyric 要按 LYRIC_EM × sp × textScale 的字号量。没给 = 1。 */
+  textScale?: number;
   /** 只给测试用（刀 4b 守卫「注解不改版面」）：注解（ann）一个都不画。开关两边可印的图元必须逐个相同——注解只看天际线、不写。 */
   __noAnn?: boolean;
 }
 export const LYRIC_EM = 1.6;
+/** 紧凑档的歌词横向压到多宽（刀 2；user 11-09「紧凑档的歌词要不要一律压到 85% 宽」→「可以」）：字高照舒适档、只压宽度（长体）——稍微挤的地方能回到一排。 */
+export const LYRIC_SX_COMPACT = 0.85;
+const lyricSx = (ts: number) => (ts > 1 ? LYRIC_SX_COMPACT : 1);
 /** 按节奏排时错开到第二行的歌词往下挪多少（sp）。 */
 const LYRIC_ROW2 = LYRIC_EM * 1.2;
 export interface LyricFit { dx: number; scale: number; row: 0 | 1; tight: boolean }
@@ -154,6 +160,8 @@ export interface TitleHit { x: number; y: number; w: number; h: number; baseline
 export interface Box { x: number; y: number; w: number; h: number }
 export interface Layout {
   prims: Prim[]; width: number; height: number; sp: number;
+  /** 字的尺子（px）= sp × textScale（刀 2）：覆盖层的钮、提示字、虚线框的字按它，紧凑档不跟着谱缩。 */
+  tp: number;
   /** 和弦里主音以外的那几个符头（播放时一起亮；不进 notes——点 / 拖还是按整个音；v0.10.23，user「音符高亮忘了做和弦的其他音的高亮」）。 */
   chordHeads: { index: number; system: number; x: number; y: number; w: number; part?: string }[];
   /** 和弦级数的点击框 + 认出来的候选（o.chordTags 开着才有；点了 = 候选小菜单）。 */
@@ -312,7 +320,7 @@ const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats
 
 interface Head { key: number; /** 按 C 调看时原来的调。 */ real: number; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
 /** 一条 track → 排版单元（第 1 步：切时值、临时记号、自动小节线；tick = 从这条的开头数）。tail = 写字头在这条的尾巴后面（排一个零宽的 head 单元：五线画到右边）。 */
-function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measureLyric: (s: string) => number; sp: number; rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */ padFrom?: number }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
+function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measureLyric: (s: string) => number; sp: number; ts?: number; rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */ padFrom?: number }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
   const H = headLen(tokens);
   let fifths = DEFAULT_KEY, real = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx: Head["idx"] = {};
@@ -346,7 +354,7 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
     if (t.kind === "key") {
       flushFull();
       const rf = realFifthsOf(t), inC = rf !== t.fifths || "realFifths" in t;   // 按 C 调看：这一处要写「1=X」，给字留宽（KEY_LABEL_W）
-      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W, keyWidth(t.fifths, fifths)) : keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf });
+      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W * (o.ts ?? 1), keyWidth(t.fifths, fifths)) : keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf });
       fifths = t.fifths; accState = new Map(); return;
     }
     if (t.kind === "time") {
@@ -386,7 +394,7 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
         const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
         const accW = accs.some((a) => a !== null) ? 1.3 : 0;
         let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
-        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? o.measureLyric(lyricShow(lyric)) / o.sp : undefined;
+        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? (o.measureLyric(lyricShow(lyric)) / o.sp) * lyricSx(o.ts ?? 1) : undefined;
         if (lyW !== undefined) w = Math.max(w, accW + lyW + (nt.hyph ? 1.4 : 0.7));   // 按歌词排：字把音推开；按节奏排（v0.9.40）= 音只看时值
         const u: Chunk = { kind: "chunk", index: i, j, last: false, m: measureNo, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
           ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs,
@@ -409,7 +417,7 @@ interface Col { tick: number; slot: number; n: number; w: number; x: number; sys
 export function engrave(song: Song, o: EngraveOpts): Layout {
   const clefStarts = resolveSongClefs(song);   // 每张纸每个声部开头的谱号（自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳
   if (o.inC) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
-  const sp = o.sp, P = (v: number) => v * sp;
+  const sp = o.sp, P = (v: number) => v * sp, ts = o.textScale ?? 1, T = (v: number) => v * sp * ts;   // P = 谱的尺子；T = 字的尺子（刀 2：紧凑档 ts = 1.4，字和它周围留的地方照舒适档）
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
   // 分页：第 k 页从 pageTopY(k) 起、高 PG.h；内容只放在上下边距之间；放不下的整块（一行谱 / 曲段名 + 第一行 / 细行）挪到下一页
   const PG = o.page ?? null, PAGE_GAP = 3, MX = o.page ?? o.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };   // MX = 纸的边距（连续 / 分页同一套）
@@ -417,28 +425,29 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const contentTop = (k: number) => pageTopY(k) + P(PG?.t ?? 0), contentBottom = (k: number) => pageTopY(k) + P((PG?.h ?? 0) - (PG?.b ?? 0));
   let pageNo = 0;
   const TOP = P(MX.t);
-  const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow, SYS_GAP = SPC.sysGap;
+  const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow * ts, SYS_GAP = SPC.sysGap;   // 歌词离第一线的最小值跟字（刀 2）
   const prims: Prim[] = [];
   if (o.__noAnn) { const push = prims.push.bind(prims); prims.push = (...ps: Prim[]) => push(...ps.filter((p) => !/(^|\s)ann(\s|$)/.test(p.cls ?? ""))); }
   const autoBars = o.autoBars !== false;
   const baseRight = o.width / sp - MARGIN;
   let right = baseRight, sheetRight = baseRight;   // 横卷：每张纸排完 right = 这张纸内容的右端 + SCROLL_TAIL；sheetRight = 最长那张
   const PART_EM = LYRIC_EM * 0.85;
-  const nameW = (s: string) => (o.measureLyric(s) * PART_EM) / LYRIC_EM / sp;
+  const nameW = (s: string) => (o.measureLyric(s) * PART_EM) / LYRIC_EM / sp;   // sp（量字的尺子已经按字的字号：紧凑档同一个名字占的 sp 多 1.4 倍）
+  const NMAX = NAME_MAX * ts;   // 名字一栏最宽（字的尺子）
   /** 声部名一列最宽 NAME_MAX（sp），再长就折行，不占五线谱的地方（user 2026-10-08「谱子前面的乐器名字如果很长的话应该换行而不是占用五线谱的空间」）。
    *  英文按词折、汉字按字折、一个词本身太长再按字母折；单谱表最多 3 行、大谱表 5 行，再多末尾「…」（全名在歌手牌里）。 */
   const nameLines = (name: string, staves: number): string[] => {
-    if (nameW(name) <= NAME_MAX) return [name];
+    if (nameW(name) <= NMAX) return [name];
     const toks = name.match(/[A-Za-z0-9'’.\-()&]+\s*|\s+|./gu) ?? [name], lines: string[] = [];
     let cur = "";
-    for (const t of toks) { if (!cur.trim() || nameW((cur + t).trimEnd()) <= NAME_MAX) cur += t; else { lines.push(cur.trimEnd()); cur = t.trimStart(); } }
+    for (const t of toks) { if (!cur.trim() || nameW((cur + t).trimEnd()) <= NMAX) cur += t; else { lines.push(cur.trimEnd()); cur = t.trimStart(); } }
     if (cur.trim()) lines.push(cur.trimEnd());
     const out = lines.flatMap((l) => {
-      if (nameW(l) <= NAME_MAX) return [l];
+      if (nameW(l) <= NMAX) return [l];
       // 一个词自己就放不下：拉丁字母断开处加连字符、最后一截至少三个字母（F-207，user 11-06：iPad 上 Synthesizer 被折成「Synthesiz / er」断在词中间）；汉字照旧按字折
       const latin = /^[A-Za-z0-9'’.\-()&]+$/.test(l), hy = latin ? "-" : "";
       const ps: string[] = []; let c = "";
-      for (const ch of [...l]) { if (c && nameW(c + ch + hy) > NAME_MAX) { ps.push(c); c = ch; } else c += ch; }
+      for (const ch of [...l]) { if (c && nameW(c + ch + hy) > NMAX) { ps.push(c); c = ch; } else c += ch; }
       if (c) ps.push(c);
       if (latin && ps.length > 1) {
         const last = ps.length - 1, need = 3 - [...ps[last]].length, prev = [...ps[last - 1]];
@@ -448,29 +457,29 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       return ps;
     });
     const max = staves === 2 ? 5 : 3;
-    if (out.length > max) { out.length = max; let last = out[max - 1]; while (last && nameW(`${last}…`) > NAME_MAX) last = [...last].slice(0, -1).join(""); out[max - 1] = `${last}…`; }
+    if (out.length > max) { out.length = max; let last = out[max - 1]; while (last && nameW(`${last}…`) > NMAX) last = [...last].slice(0, -1).join(""); out[max - 1] = `${last}…`; }
     return out;
   };
 
   // 纸面最上面：歌名 + 作者栏 + 纸的小钮
   // 歌名 2.8 个谱线间距（原来 1.9 ≈ 曲段名 1.6，看不出谁大；出版总谱的歌名比谱上别的字大一大截；user「歌曲标题字体大小不合理」）
-  const titleSize = P(2.8), titleBase = TOP + P(TITLE_H * 0.62);
+  const titleSize = T(2.8), titleBase = TOP + T(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
-  const title: TitleHit = { x: P(MARGIN), y: TOP + P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
+  const title: TitleHit = { x: P(MARGIN), y: TOP + T(0.3), w: o.width - P(2 * MARGIN), h: T(TITLE_H), baseline: titleBase, size: titleSize };
   // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）；空着 = 什么都不画（覆盖层写浅色提示）
   const lines = song.credits ? song.credits.split("\n") : [];
   let credits: Box | null = null;
-  const cs = P(1.25), rx = o.width - P(MARGIN), y0 = TOP + P(TITLE_H + 1.0);
+  const cs = T(1.25), rx = o.width - P(MARGIN), y0 = TOP + T(TITLE_H + 1.0);
   if (lines.length) {
     lines.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: "credits", size: cs, anchor: "end" }));
-    const w = Math.max(...lines.map((s) => (o.measureLyric(s) * 1.25) / LYRIC_EM)) + P(0.6);
-    credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.35 * lines.length + cs * 0.4 };
+    const w = Math.max(...lines.map((s) => (o.measureLyric(s) * 1.25) / LYRIC_EM)) + T(0.6);
+    credits = { x: rx - w, y: y0 - cs * 1.1, w: w + T(0.3), h: cs * 1.35 * lines.length + cs * 0.4 };
   }
   // 编排（2026-10-08 深夜 Opus 5.5；user「编排我建议就是总paper的顶上说一下，然后只有全部paper的时候可见，就是一行，对吧，就和title一样」）：
   //   作者栏下面单独一行、靠左；写错的（找不到的纸、循环段不在最后…）灰字说为什么（放不下 = 下一行），放的时候跳过（纪律）
   let arrangement: TitleHit | null = null, arrLast = 0;   // arrLast = 编排那一块最后一行的基线（px；五线谱从它下面开始）
   if (!o.onlyPaper) {
-    const as = P(1.25), wOf = (t: string, size: number) => (o.measureLyric(t) * size) / LYRIC_EM, row = Math.max(lines.length, 1), base = y0 + row * cs * 1.35;
+    const as = T(1.25), wOf = (t: string, size: number) => (o.measureLyric(t) * size) / LYRIC_EM, row = Math.max(lines.length, 1), base = y0 + row * cs * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
     const label = _t("编排　"), lw = wOf(label, 1.25), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
     if (txt) prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: "arr-label", size: as, anchor: "start" });   // 没写编排 = 标签只是入口（提示）= 覆盖层写
@@ -478,16 +487,16 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     if (txt) {
       prims.push({ t: "text", x: x0, y: base, s: txt, cls: "arr", size: as, anchor: "start" });
       if (arr.issues.length) {
-        const why = `· ${arr.issues[0].why}${arr.issues.length > 1 ? _t(" 等 {n} 处", { n: arr.issues.length }) : ""}`, tw = wOf(txt, 1.25) + P(0.8), fits = tw + wOf(why, 1.1) <= avail;
-        prims.push({ t: "text", x: fits ? x0 + tw : x0, y: fits ? base : base + cs * 1.35, s: why, cls: "arr-issue ann", size: P(1.1), anchor: "start" });
+        const why = `· ${arr.issues[0].why}${arr.issues.length > 1 ? _t(" 等 {n} 处", { n: arr.issues.length }) : ""}`, tw = wOf(txt, 1.25) + T(0.8), fits = tw + wOf(why, 1.1) <= avail;
+        prims.push({ t: "text", x: fits ? x0 + tw : x0, y: fits ? base : base + cs * 1.35, s: why, cls: "arr-issue ann", size: T(1.1), anchor: "start" });
         if (!fits) arrLast = base + cs * 1.35;
       }
     }
-    arrangement = { x: x0 - P(0.3), y: base - as * 1.15, w: avail + P(0.3), h: as * 1.6, baseline: base, size: as };
+    arrangement = { x: x0 - T(0.3), y: base - as * 1.15, w: avail + T(0.3), h: as * 1.6, baseline: base, size: as };
   }
   // 作者栏有几行：第一张纸从它下面开始（v0.10.23：原来只给第三行起让位，本段视图没有编排那一行垫着 = 两行作者就压在曲段控件上；user「词曲的输入和本段显示的控件撞车了」）；
   //   编排那一行靠左，会和速度记号撞 = 五线谱从它下面开始
-  let yCur = Math.max(TOP + P(TITLE_H + 0.5), credits && lines.length ? credits.y + credits.h + P(0.3) : 0, arrangement ? arrLast + P(0.8) : 0);   // px，往下排的游标
+  let yCur = Math.max(TOP + T(TITLE_H + 0.5), credits && lines.length ? credits.y + credits.h + T(0.3) : 0, arrangement ? arrLast + T(0.8) : 0);   // px，往下排的游标
   /** 分页：这一块（高 h px）在这页放不下 = 翻页（页顶上什么都还没放时不翻）。 */
   const ensure = (h: number) => { if (PG && yCur + h > contentBottom(pageNo) && yCur > contentTop(pageNo) + 1) { pageNo++; yCur = contentTop(pageNo); } };
 
@@ -516,22 +525,22 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
   /** 「Andante ♩ = 88」：词 + 四分音符 + 数（user「速度记号可以用语义+数字吗」）。 */
   /** 速度记号画在基线 y（刀 4b：y 由宿主按天际线定——挂件第 7 样，这一段天际线往上 0.5）。 */
   const drawTempoAt = (r: number, x0: number, v: number, cls: string, index: number, change: "up" | "down" | undefined, y: number) => {
-    const fs = TEMPO_EM * sp, word = tempoWord(v).it;
+    const fs = TEMPO_EM * sp * ts, word = tempoWord(v).it;   // 字的尺子（刀 2）
     // 这一段开头的速度和上一段不一样 = 前面标一个强调色的 ↑（快了）/ ↓（慢了）提示（user 2026-10-08「不要grey out，而是有变化的时候会标一个东西提示用户」；一样 = 照常画，不标）
     if (change) prims.push({ t: "text", x: P(x0 - 0.3), y, s: change === "up" ? "↑" : "↓", cls: "tempo-change ann", size: fs, anchor: "end" });
     const ww = (o.measureLyric(word) * TEMPO_EM) / LYRIC_EM / sp, num = `= ${v}`, nw = (o.measureLyric(num) * TEMPO_EM) / LYRIC_EM / sp;
     prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
-    const gx = x0 + ww + 0.7;
-    prims.push({ t: "glyph", x: P(gx), y: y - P(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
-    prims.push({ t: "text", x: P(gx + 1.3), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
-    marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - P(TEMPO_EM * 1.1), w: P(gx + 1.3 + nw + 0.6 - x0), h: P(TEMPO_EM * 1.5) });
+    const gx = x0 + ww + 0.7 * ts;
+    prims.push({ t: "glyph", x: P(gx), y: y - T(0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
+    prims.push({ t: "text", x: P(gx + 1.3 * ts), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+    marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - T(TEMPO_EM * 1.1), w: P(gx + 1.3 * ts + nw + 0.6 * ts - x0), h: T(TEMPO_EM * 1.5) });
   };
   /** 调号位置上方的「1=X」（v0.16.10）：hint = 专业模式没有升降号的地方（刀 1 起不画，只记锚点 keyHints，覆盖层写淡的「1=C」）。字也算这个调号的点击区（谱头面板）。 */
   const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number) => {
     const y = staffTop(r) - P(0.8);
-    if (hint) { keyHints.push({ system: r, index, x: P(x0), y, size: TEMPO_EM * sp }); return; }
-    prims.push({ t: "text", x: P(x0), y, s: `1=${KEY_LABEL[f] ?? "?"}`, cls: "keysig key-label", size: TEMPO_EM * sp, anchor: "start" });   // 和速度字一样大（v0.16.34；user 11-08「1=F 这些符号也不要字体刻意的小」）
-    marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - P(TEMPO_EM * 0.95), w: P(KEY_LABEL_W), h: P(TEMPO_EM * 1.2) });
+    if (hint) { keyHints.push({ system: r, index, x: P(x0), y, size: TEMPO_EM * sp }); return; }   // 淡的「1=C」只在编辑器里、不印：跟谱（紧凑档不放大，不然挨上第一个音的力度字；刀 2）
+    prims.push({ t: "text", x: P(x0), y, s: `1=${KEY_LABEL[f] ?? "?"}`, cls: "keysig key-label", size: TEMPO_EM * sp * ts, anchor: "start" });   // 和速度字一样大（v0.16.34；user 11-08「1=F 这些符号也不要字体刻意的小」）
+    marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - T(TEMPO_EM * 0.95), w: T(KEY_LABEL_W), h: T(TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r: number, x0: number, f: number, cls: string, clef: "G" | "F" = "G") => {   // 低音谱号的升降号比高音低两级
     const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
@@ -546,16 +555,16 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
   const underOf = (paper: PaperSeg): Box | undefined => {
     const h = o.chrome?.underPaper; if (!h || PG || (paper.hidden && !o.onlyPaper)) return undefined;
     // 歌词那一行画在行的底边下面（行高不含空着的歌词位）：框放在这张纸最低那一行歌词位的下面，不然盖住「词」模式里点歌词位
-    let low = yCur; rows.forEach((r, k) => { if (r.paper === paper.id) low = Math.max(low, lyricY(k) + P(1.2)); });
-    const box = { x: P(MARGIN), y: low + P(1.0), w: P(right) - P(MARGIN), h: P(h) };
-    yCur = box.y + box.h + P(0.4);
+    let low = yCur; rows.forEach((r, k) => { if (r.paper === paper.id) low = Math.max(low, lyricY(k) + T(1.2)); });
+    const box = { x: P(MARGIN), y: low + T(1.0), w: P(right) - P(MARGIN), h: T(h) };   // 框和里面的字跟字的尺子（刀 2）
+    yCur = box.y + box.h + T(0.4);
     return box;
   };
   song.papers.forEach((paper, paperK) => { const before = drawn; drawPaper(paper, paperK); if (drawn > before) { const u = underOf(paper); if (u) papersHit[papersHit.length - 1]!.under = u; } });
   let tailBottom = 0, tail: Layout["tail"] = null;   // 分页时「＋ 新曲段」在最后一页外面：只撑高画布，不动页
   const lastPaper = song.papers.at(-1);
   if (o.chrome?.tail && lastPaper && !(o.onlyPaper && !PG)) {
-    const h = P(o.chrome.tail), paperId = o.onlyPaper ?? lastPaper.id;
+    const h = T(o.chrome.tail), paperId = o.onlyPaper ?? lastPaper.id;
     if (PG) { tail = { paper: paperId, x: P(MARGIN), y: pageTopY(pageNo) + P(PG.h) + P(1.2), w: P(baseRight - MARGIN), h }; tailBottom = tail.y + h + P(1.0); }
     else { tail = { paper: lastPaper.id, x: P(MARGIN), y: yCur + P(0.6), w: P(baseRight - MARGIN), h }; yCur = tail.y + h + P(0.4); }
   }
@@ -571,16 +580,16 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const owner = tempoOwner(song, paper), prevPaper = song.papers.slice(0, paperK).reverse().find((x) => !x.hidden), prevBpm = prevPaper ? sheetEndBpm(song, prevPaper) : null;
     const paperTop = yCur;
     // 曲段名那一条（多于一张纸或填了名字才画；空着画浅色提示；右边「⋯」= 纸的菜单）。分页时和第一行谱一起挪，所以等算完行高再画
-    const pSize = P(1.6);
-    const pTitle: TitleHit & { shown: boolean } = { x: P(MARGIN), y: yCur, w: o.width - P(2 * MARGIN) - P(o.chrome?.navRoom && song.papers.length > 1 ? o.chrome.navRoom : 4), h: P(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };   // 右边让出曲段控件组
+    const pSize = T(1.6);
+    const pTitle: TitleHit & { shown: boolean } = { x: P(MARGIN), y: yCur, w: o.width - P(2 * MARGIN) - T(o.chrome?.navRoom && song.papers.length > 1 ? o.chrome.navRoom : 4), h: T(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };   // 右边让出曲段控件组
     const drawPaperTitle = (firstBlock: number) => {
       if (!showPaperLine) return;
-      ensure(P(PAPER_H) + firstBlock);
-      const pBase = yCur + P(PAPER_H * 0.68);
+      ensure(T(PAPER_H) + firstBlock);
+      const pBase = yCur + T(PAPER_H * 0.68);
       pTitle.y = yCur; pTitle.baseline = pBase;
       if (paper.name) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });   // 折叠的隐藏纸的名字 = 不印（覆盖层写，刀 1）
       // 曲段控件组「‹ k/n › 只看本段 ⋯」（2026-10-08 user「…能不能放在和曲段导航在一起」「多曲段模式下面应该每个曲段都有对应的小控件组」）：刀 1 起归覆盖层，按 pTitle 右端摆
-      yCur += P(PAPER_H);
+      yCur += T(PAPER_H);
     };
     const present = o.parts.filter((p) => paper.tracks[p.id]), visible = present.filter((p) => !p.hidden), hiddenParts = present.filter((p) => p.hidden);
     // 合租（v0.10.28 改；设计账 ai-docs/20261010-shared-staff-percussion-design.md §1）：一家（主人 + 这张纸上看得见的房客）叠起来 = 一条虚拟的多声部 track
@@ -652,8 +661,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     // 隐藏的声部（刀 1，施工单 §4 第 5 条；user 11-08「我建议不留空 可以，但是如果是页面模式的话wysiwyg，排版要对齐，要不你换一个UI？」）：
     //   当它不存在——不排行、不留高度，连续和分页一样，预览的版面 = PDF 的版面。提醒归覆盖层：曲段名那一条上一颗不占位的「隐藏 N」（hiddenParts 锚点）。
     if (!parts.length) {   // 这张纸上没有显示的声部：都隐藏了 = 只有曲段名那一条（「隐藏 N」在上面）；压根没声部 = 空一行（覆盖层写「这张纸上没有声部」）
-      drawPaperTitle(P(hiddenParts.length ? 0 : 3.2));
-      let emptyBox: Box | undefined; if (!hiddenParts.length) { emptyBox = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: P(3.2) }; yCur += P(3.2); }
+      drawPaperTitle(T(hiddenParts.length ? 0 : 3.2));
+      let emptyBox: Box | undefined; if (!hiddenParts.length) { emptyBox = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: T(3.2) }; yCur += T(3.2); }
       papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(emptyBox ? { empty: emptyBox } : {}) });
       return;
     }
@@ -667,7 +676,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const gap = paperLen - lens[pi];
       const padT = (dur: number, id: number): Token => ({ kind: "rest", id, dur }) as Token;
       const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;   // 补齐的一段 = 一个长休止（按小节切开画；光标在里面的位置 = 落点 Slot.lead，不进排版）
-      const u = unitsOf(tokens, { tail: focused && !!o.tailOpen, autoBars, measureLyric: o.measureLyric, sp, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
+      const u = unitsOf(tokens, { tail: focused && !!o.tailOpen, autoBars, measureLyric: o.measureLyric, sp, ts, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
       shortBars += u.shortBars;
       if (staves === 2) {   // 大谱表：每个音在上还是下（按音高自动 / 手动指定）；光标跟着前一个音
         const stf = staffOfTokens(tokens, 2); let last: Staff = 1;
@@ -739,12 +748,12 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const spans = per.flatMap((q) => q.units.filter((u): u is Chunk => u.kind === "chunk").map((u) => [u.tick, u.tick + u.ticks] as const));
     const breakableAt = (tick: number) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
     // 3. 折行（像文字：优先在小节线后折；一个小节都放不下就逐列折）。每行开头的调号 = 各声部那里生效的调号；行首宽 = 最宽的那个声部
-    const FAM_W = openFams.length ? o.chrome?.famGap ?? 0 : 0;   // 有展开着的一家：名字和谱之间多让一点给括号
-    const ind0 = Math.max(NAME_MIN, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;   // 名字一栏 = 两颗大钮的宽和名字（最长 NAME_MAX，再长折行）里大的那个；屏幕和 PDF 同一条规矩（预览 = PDF）   // 至少放得下名字下面那四颗小钮（v0.16.17；屏幕和 PDF 同一条规矩）   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
+    const FAM_W = openFams.length ? (o.chrome?.famGap ?? 0) * ts : 0;   // 有展开着的一家：名字和谱之间多让一点给括号
+    const ind0 = Math.max(NAME_MIN, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 * ts + FAM_W;   // 名字一栏 = 两颗大钮的宽和名字（最长 NAME_MAX，再长折行）里大的那个；屏幕和 PDF 同一条规矩（预览 = PDF）   // 至少放得下名字下面那四颗小钮（v0.16.17；屏幕和 PDF 同一条规矩）   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
     // 第二行起每行写简写（v0.9.31；user「todo 总谱的每一行都放乐器名的省空间简写」→「乐手名和颜色同意」）：缩进 = 最宽的那个简写；没给简写（测试 / 老调用）= 0，照旧
     //   v0.9.41：定宽（user 经仓鼠转达「没简写的能不能想办法也按定宽裁一下，不然有一个没查到简写就beat the propose了」）——简写已按 ABBR_W 裁好（part-colors.ts fitAbbr），
     //   列宽 = 一个 ABBR_W 宽的参照（Vln.Vc.），不随谁最长变；字形特别宽、量出来超了参照的那个才撑一点（不叠到谱上）
-    const indN = parts.some((p) => p.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 + FAM_W : 0;
+    const indN = parts.some((p) => p.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 * ts + FAM_W : 0;
     const keyNow = new Map<string, number>(per.map((q) => [q.p.id, q.head.key]));
     const clefW = (q: { fFam: boolean }) => (q.fFam ? W.fClef : W.gClef);
     const headerOf = (first: boolean) => Math.max(...per.map((q) => {
@@ -866,11 +875,11 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const bySys = new Map<number, { index: number; cx: number; w: number; hy?: boolean }[]>();
       for (const u of q.units) if (u.kind === "chunk" && u.lyric && u.lyric !== MELISMA_MARK) {
         const arr = bySys.get(u.system) ?? []; bySys.set(u.system, arr);
-        arr.push({ index: u.index, cx: u.x + 0.6, w: o.measureLyric(lyricShow(u.lyric)) / sp, hy: u.hyph });
+        arr.push({ index: u.index, cx: u.x + 0.6, w: (o.measureLyric(lyricShow(u.lyric)) / sp) * lyricSx(ts), hy: u.hyph });
       }
       for (const [sy, items] of bySys) {
         items.sort((a, b) => a.cx - b.cx);
-        fitLyrics(items).forEach((f, k) => { lyrPlan.set(`${r}:${items[k].index}`, f); if (f.row) lyr2.add(`${r}:${sy}`); });
+        fitLyrics(items, 0.5 * ts).forEach((f, k) => { lyrPlan.set(`${r}:${items[k].index}`, f); if (f.row) lyr2.add(`${r}:${sy}`); });
       }
     });
     const BIG = 8192;   // 临时高度：第 row 行的第五线在 row × BIG px（一行的墨上下伸不出 BIG / 2）；画完认行 = round(y / BIG)
@@ -884,7 +893,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     }
     const sky = (row: number) => skies[row - rowBase]!;
     const loc = (row: number, y: number) => (y - staffTop(row)) / sp;   // px → 这一行的局部（线间距，第五线 = 0）
-    const textW = (s: string, size: number) => (o.measureLyric(s) * size) / (LYRIC_EM * sp);
+    const textW = (s: string, size: number) => (o.measureLyric(s) * size) / (LYRIC_EM * sp * ts);   // measureLyric 量的是 LYRIC_EM × sp × ts 那么大的字（刀 2）
     const isAnn = (p: Prim) => /(^|\s)ann(\s|$)/.test(p.cls ?? "");
     /** 记一段时间里新加的图元和点击区（贴挂件时整块挪、最后整行挪）。 */
     const hitLists = (): { y: number }[][] => [notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut];
@@ -941,7 +950,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         const q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s)) ?? per[0];
         const c0 = q0.units.find((u): u is Chunk => u.kind === "chunk" && u.system === s);
         const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null;
-        if (num !== null && !(s === 0 && num <= 1)) later[9].push(() => placeAbove(rowOf(s, 0, 0), 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: P(1.05), anchor: "start" })));
+        if (num !== null && !(s === 0 && num <= 1)) later[9].push(() => placeAbove(rowOf(s, 0, 0), 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: T(1.05), anchor: "start" })));
       }
       per.forEach((q, r) => {
         if (rowHost[r] >= 0) return;   // 声部 2：谱表 / 谱号 / 名字都是声部 1 那一行的
@@ -983,44 +992,44 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         if (loIds.has(q.p.id)) return;   // 双手谱下面那张：只有谱表本身（名字 / 色条 / 花括号归上面那张）
         if (s === 0) {
           // 歌手牌：声部名在第一行谱号左边、竖着居中（大谱表 = 两条谱表之间）（user「歌手牌同意，和打谱软件对齐」「乐器名可以选择一大堆乐器，然后下面可以in place改」）
-          const r0 = rowOf(s, r, 0), r1 = rEnd(s), lines = nameLines(q.p.name, pr !== r ? 2 : q.staves), LH = PART_EM * 1.15;
+          const r0 = rowOf(s, r, 0), r1 = rEnd(s), lines = nameLines(q.p.name, pr !== r ? 2 : q.staves), LH = PART_EM * 1.15 * ts;
           // 合租：主人的名字下面接着写房客的名字（user「谱号左边放歌手名的时候在folded的模式下会同时显示所有歌手的名字」）；每个名字各自能点（点房客 = 去写它，它就拆开）
           const tl = ten.map((t) => nameLines(t.name, 1)[0] ?? ""), nAll = lines.length + tl.length;
-          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (nAll - 1)) / 2);   // 几行一起竖着居中（屏幕和 PDF 一样；两颗钮在覆盖层、放名字上面，可以超出谱上沿——user 11-08「歌手还是纵向居中对齐…这两个按钮是放它上面」）
-          const nameBlock = (wid: number) => names.push({ paper: paper.id, part: q.p.id, x0: P(MARGIN - 0.95), x1: P(MARGIN) + P(wid), top: ny - P(PART_EM * 0.95) });   // 名字块锚点（覆盖层的两颗钮对它居中）
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + T(0.55 * PART_EM) - P((LH * (nAll - 1)) / 2);   // 几行一起竖着居中（屏幕和 PDF 一样；两颗钮在覆盖层、放名字上面，可以超出谱上沿——user 11-08「歌手还是纵向居中对齐…这两个按钮是放它上面」）
+          const nameBlock = (wid: number) => names.push({ paper: paper.id, part: q.p.id, x0: P(MARGIN - 0.95), x1: P(MARGIN) + P(wid), top: ny - T(PART_EM * 0.95) });   // 名字块锚点（覆盖层的两颗钮对它居中）
           const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
           const dn = drumNames.get(q.p.id);
           if (dn) {   // 一家全是鼓：名字按各位的音在鼓谱上的高低排（主人不一定在最上面），每个名字一行、各自能点
             const at = (k: number) => ny + P(LH * k), hk = Math.max(0, dn.findIndex((m) => m.id === q.p.id));
             dn.forEach((m, k) => {
-              prims.push({ t: "text", x: P(MARGIN), y: at(k), s: nameLines(m.name, 1)[0] ?? "", cls: m.id === q.p.id ? ncls : "part-name tenant", size: PART_EM * sp, anchor: "start" });
-              partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: at(k) - P(PART_EM * 0.95), w: P(ind0 + 0.2), h: P(LH) });
+              prims.push({ t: "text", x: P(MARGIN), y: at(k), s: nameLines(m.name, 1)[0] ?? "", cls: m.id === q.p.id ? ncls : "part-name tenant", size: PART_EM * sp * ts, anchor: "start" });
+              partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: at(k) - T(PART_EM * 0.95), w: P(ind0 + 0.2), h: P(LH) });
             });
             nameBlock(Math.max(...dn.map((m) => nameW(nameLines(m.name, 1)[0] ?? ""))));   // 钮在这一家名字的上面
-            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at(dn.length - 1) + P(LH), s: q.p.badges.join(" "), cls: "part-badge ann", size: P(1.0), anchor: "start" });
-            if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at(hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
+            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at(dn.length - 1) + P(LH), s: q.p.badges.join(" "), cls: "part-badge ann", size: T(1.0), anchor: "start" });
+            if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at(hk) - T(PART_EM * 0.62), w: T(0.6), h: T(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
           } else {
-          lines.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
-          tl.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines.length + k)), s: ln, cls: "part-name tenant", size: PART_EM * sp, anchor: "start" }));
+          lines.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp * ts, anchor: "start" }));
+          tl.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines.length + k)), s: ln, cls: "part-name tenant", size: PART_EM * sp * ts, anchor: "start" }));
           if (ten.length) {
-            const lineTop = (i: number) => ny + P(LH * i) - P(PART_EM * 0.95);
+            const lineTop = (i: number) => ny + P(LH * i) - T(PART_EM * 0.95);
             ten.forEach((t, k) => partsHit.push({ paper: paper.id, part: t.id, x: P(MARGIN - 0.4), y: lineTop(lines.length + k), w: P(ind0 + 0.2), h: P(LH) }));
           }
           nameBlock(Math.max(...[...lines, ...tl].map(nameW)));   // 名字上面两颗大钮（覆盖层），对「色点 + 名字」居中（v0.16.22；user 11-08「放到歌手名的上面」）
-          { if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + P(1.4), s: q.p.badges.join(" "), cls: "part-badge ann", size: P(1.0), anchor: "start" }); }   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
-          { const y0 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines.length) - P(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);   // 有房客 = 主人的点击区只到它自己的名字
+          { if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + T(1.4), s: q.p.badges.join(" "), cls: "part-badge ann", size: T(1.0), anchor: "start" }); }   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
+          { const y0 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines.length) - T(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);   // 有房客 = 主人的点击区只到它自己的名字
             partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y0, w: P(ind0 + 0.2), h: yEnd - y0 }); }
-          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });   // 名字前一个小色点（不印）
+          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - T(PART_EM * 0.62), w: T(0.6), h: T(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });   // 名字前一个小色点（不印）
           }
         } else if (q.p.abbr) {   // 第二行起：简写（一行，竖着居中），点它同样开歌手牌
-          const r0 = rowOf(s, r, 0), r1 = rEnd(s), LH = PART_EM * 1.15;
+          const r0 = rowOf(s, r, 0), r1 = rEnd(s), LH = PART_EM * 1.15 * ts;
           const order = drumNames.get(q.p.id) ?? [q.p, ...ten], hk = Math.max(0, order.findIndex((m) => m.id === q.p.id));   // 鼓：简写也按音的高低排（同第一行的名字）；别的合租 = 主人在上、房客跟在下面
-          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (order.length - 1)) / 2);
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + T(0.55 * PART_EM) - P((LH * (order.length - 1)) / 2);
           order.forEach((m, k) => {
-            if (m.id === q.p.id) { prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: q.p.abbr!, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp, anchor: "start" }); return; }
-            prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: m.abbr ?? "", cls: "part-name abbr tenant", size: PART_EM * sp, anchor: "start" }); partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: ny + P(LH * k) - P(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) });
+            if (m.id === q.p.id) { prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: q.p.abbr!, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp * ts, anchor: "start" }); return; }
+            prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: m.abbr ?? "", cls: "part-name abbr tenant", size: PART_EM * sp * ts, anchor: "start" }); partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: ny + P(LH * k) - T(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) });
           });
-          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny + P(LH * hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
+          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny + P(LH * hk) - T(PART_EM * 0.62), w: T(0.6), h: T(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
           partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(indN + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
         }
         if (q.p.colorIdx !== undefined) {   // 每行左边一条细色条（类别色；不印）：谱号左边、从第一线到最后一线
@@ -1063,7 +1072,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const navMute = (i: number) => (navWhy(song, paper, q.p.id, tokens[i]) ? " art-mute" : "");
       const drawNav = (u: NavU) => {
         const t = tokens[u.index] as NavTok, cls = "nav-mark" + navMute(u.index), tok = t.id, row0 = rowOf(u.system, r, 0);
-        const fs = P(TEMPO_EM * 1.05), x = P(u.x + 0.4);
+        const fs = T(TEMPO_EM * 1.05), x = P(u.x + 0.4);
         if (t.what === "ending") {   // 房子：左边一道竖钩 + 横线 + 「1.」；到它的尽头——下一条 :|（右边也钩下来）/ 下一个房子 / 最后一个房子到下一条小节线（右边开口）
           const ui = units.indexOf(u);
           let end: Unit | null = null, closed = false, fallback: Unit | null = null, sawNote = false;
@@ -1076,14 +1085,14 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
             if (v.kind === "bar" && sawNote && !fallback) fallback = v;   // 最后一个房子：到它后面第一条小节线
           }
           if (!end) end = fallback;
-          const h = P(1.6);
+          const h = T(1.6);   // 房子的钩跟着字高（里面写「1.」）
           const endX = (v: Unit | null, sys: number) => (v && v.system === sys ? (v.kind === "bar" ? P(v.x + (v.repeat ? 0.4 + (v.repeat === "both" ? 1.2 : 1.47) : 0.7)) : P(v.x) - P(0.3)) : P(right));
           // 每一行一段，各自贴着自己那一段天际线（跨行的房子每行高度可以不一样）
           const seg = (sys: number, xa: number, openL: boolean, xb: number, hookR: boolean, first: boolean) => placeAbove(rowOf(sys, r, 0), 0.6, (yy) => {
             prims.push({ t: "path", d: `${openL ? `M${xa},${yy}` : `M${xa},${yy + h}L${xa},${yy}`}L${xb},${yy}${hookR ? `L${xb},${yy + h}` : ""}`, cls: "volta" + navMute(u.index) });
             if (!first) return;
-            prims.push({ tok, t: "text", x: x + P(0.3), y: yy + P(1.25), s: endingLabel(t.nums), cls, size: fs, anchor: "start" });
-            dyns.push({ index: u.index, kind: "nav", system: row0, x: x - P(0.4), y: yy - P(0.4), w: P(3), h: h + P(0.8) });
+            prims.push({ tok, t: "text", x: x + T(0.3), y: yy + T(1.25), s: endingLabel(t.nums), cls, size: fs, anchor: "start" });
+            dyns.push({ index: u.index, kind: "nav", system: row0, x: x - P(0.4), y: yy - T(0.4), w: T(3), h: h + T(0.8) });
           });
           const endSys = end ? end.system : u.system;
           seg(u.system, x - P(0.2), false, endX(endSys === u.system ? end : null, u.system), closed && endSys === u.system, true);
@@ -1101,7 +1110,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         const label = NAV_LABEL[t.what], tw = (o.measureLyric(label) * TEMPO_EM * 1.05) / LYRIC_EM, atEnd = x - tw > P(MARGIN + 6);   // 它排在小节线前面：x ≈ 小节线   // D.C. / Fine / To Coda…：斜体字，靠右对齐在它的位置（小节尾）；前面放不下就靠左
         placeAbove(row0, 0.6, (y) => {
           prims.push({ tok, t: "text", x: atEnd ? x : x - P(0.2), y, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
-          dyns.push({ index: u.index, kind: "nav", system: row0, x: atEnd ? x - tw - P(0.3) : x - P(0.5), y: y - P(TEMPO_EM * 1.1), w: tw + P(0.8), h: P(TEMPO_EM * 1.5) });
+          dyns.push({ index: u.index, kind: "nav", system: row0, x: atEnd ? x - tw - P(0.3) : x - P(0.5), y: y - T(TEMPO_EM * 1.1), w: tw + T(0.8), h: T(TEMPO_EM * 1.5) });
         });
       };
       const nhX = (c: Chunk) => P(c.x + 0.35);   // 刀 3：对齐线 = 列的 x，临时记号挂在左边（原来 + accW）
@@ -1173,16 +1182,16 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         if (c.j === 0) notes.push({ ...tag, index: c.index, system: row, x: x0, y, w: nhW(c), d: diatonicIndex(c.pitch!) });   // d = 真的音级（拖音高用），不带谱号位移
         if (c.j === 0 && !c.tie) lyricJobs.push({ sys: c.system, run: () => {   // 歌词 = 挂件第 11 样（这一行的天际线量完、歌词的基线定了再画）
           const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lyricRow(c.system)), cx0 = x0 + nhW(c) / 2;   // 按节奏排：让过路的位置
-          const ly = ly0 + (fit?.row ? P(LYRIC_ROW2) : 0), cx = cx0 + (fit ? P(fit.dx) : 0);
+          const ly = ly0 + (fit?.row ? T(LYRIC_ROW2) : 0), cx = cx0 + (fit ? P(fit.dx) : 0);
           partLyrics.push({ index: c.index, system: row, x: cx, y: ly, ...(fit?.tight ? { tight: true as const } : {}) });
           if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly0, x2: x0 + nhW(c) + P(0.4), y2: ly0, w: P(0.12), cls: "melisma" });
-          else if (c.lyric) prims.push({ tok: tokOf(c), t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(fit && fit.scale < 1 ? { size: P(LYRIC_EM * fit.scale) } : {}), cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
+          else if (c.lyric) prims.push({ tok: tokOf(c), t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(fit && fit.scale < 1 ? { size: T(LYRIC_EM * fit.scale) } : ts !== 1 ? { size: T(LYRIC_EM) } : {}), ...(lyricSx(ts) !== 1 ? { sx: lyricSx(ts) } : {}), cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) || fit?.tight ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         } });
       };
       for (const u of units) {
         const row = RW(u);
         if (u.kind === "phrase") {   // 句号（没有语义，只给「合」当边界）：歌词行上一个小灰「。」，跟在上一个音后面（注解：歌词那一样里画，只看不占）
-          lyricJobs.push({ sys: u.system, run: () => { prims.push({ t: "text", x: P(u.x + 0.1), y: lyricY(lyricRow(u.system)), s: "。", cls: "phrase-mark ann", size: P(1.3), anchor: "start" }); } });
+          lyricJobs.push({ sys: u.system, run: () => { prims.push({ t: "text", x: P(u.x + 0.1), y: lyricY(lyricRow(u.system)), s: "。", cls: "phrase-mark ann", size: T(1.3), anchor: "start" }); } });
           continue;
         }
         if (u.kind === "dyn") {   // 力度：谱上方、和后面那个音左对齐；挂件第 4 样（刀 4b：和用发夹连着的一串共用一条基线，贴它们自己那几段天际线往上 0.4；挨得近的两个 = 后摆的那个自然叠上去）
@@ -1195,10 +1204,10 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         }
         if (u.kind === "groove") {   // 风格记号（拍子轻重）：斜体字、和后面那个音左对齐；不认识的预设（以后的版本写的）= 灰字 + 说明（纪律）。挂件第 8 样：速度之后、贴天际线往上 0.5（挤了自然叠上去）
           const gt = tokens[u.index] as GrooveTok, gr = rowOf(u.system, r, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
-          const fs = TEMPO_EM * sp, gw = (o.measureLyric(label) * TEMPO_EM) / LYRIC_EM, gx = P(u.x + 0.3);
+          const fs = TEMPO_EM * sp * ts, gw = (o.measureLyric(label) * TEMPO_EM) / LYRIC_EM, gx = P(u.x + 0.3);
           later[8].push(() => placeAbove(gr, 0.5, (gy) => {
             prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
-            dyns.push({ index: u.index, kind: "groove", system: gr, x: P(u.x), y: gy - P(TEMPO_EM * 1.1), w: gw + P(0.6), h: P(TEMPO_EM * 1.5) });
+            dyns.push({ index: u.index, kind: "groove", system: gr, x: P(u.x), y: gy - T(TEMPO_EM * 1.1), w: gw + T(0.6), h: T(TEMPO_EM * 1.5) });
           }));
           continue;
         }
@@ -1210,7 +1219,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
             if (u.kind === "bar") bars.push({ system: rr, x: P(u.x + 0.7) });
             if (u.kind === "bar" && u.repeat) {   // 反复小节线：Bravura 字形（|: = E040、:| = E041、:|: = E042；一条谱高）；:| 一共放几遍 > 2 = 上面写「×3」
               prims.push({ t: "glyph", x: P(u.x + 0.4), y: yOf(rr, BOTTOM_LINE), ch: u.repeat === "start" ? "\u{E040}" : u.repeat === "end" ? "\u{E041}" : "\u{E042}", cls: "repeat-bar" + navMute(u.index), tok: tokens[u.index].id });
-              if (u.times && u.times > 2 && k === 0) { const times = u.times, bx = P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), cl = "nav-mark" + navMute(u.index); later[6].push(() => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `×${times}`, cls: cl, size: P(TEMPO_EM * 1.05), anchor: "end" }))); }   // ×3 = 反复那一样（挂件第 6 样）
+              if (u.times && u.times > 2 && k === 0) { const times = u.times, bx = P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), cl = "nav-mark" + navMute(u.index); later[6].push(() => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `×${times}`, cls: cl, size: T(TEMPO_EM * 1.05), anchor: "end" }))); }   // ×3 = 反复那一样（挂件第 6 样）
             } else if (u.kind === "bar") {
               const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar";
               const [bt, bb] = pmode[r] === "one" ? [MID_LINE + 2, MID_LINE - 2] : [TOP_LINE, BOTTOM_LINE];   // 一线谱：小节线上下各出一格
@@ -1503,16 +1512,16 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       // 和弦级数（v0.16.13；src/score/chord-name.ts）= 挂件第 10 样（刀 4b，user 11-08 拍：放到和弦的右下角）：x = 符头右缘 + 0.3、靠左对齐；y = 这一段下天际线再往下 0.3。
       //   按 C 调看时认的是换到 C 的谱 + C 调——级数一样。合租叠起来的虚拟行、声部 2 不标（只看个大概的）。印（跟着设置进 PDF）
       if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
-        const fs = TEMPO_EM * sp;   // 和速度字一样大（v0.16.34）
+        const fs = TEMPO_EM * sp * ts;   // 和速度字一样大（v0.16.34）；字的尺子（刀 2）
         for (const c of units) {
           if (c.kind !== "chunk" || !c.note || c.j !== 0 || c.index < 0 || c.pad) continue;
           const t = tokens[c.index]; if (t?.kind !== "note" || !t.pitch || !t.chord?.length) continue;
           const rd = readChord([t.pitch, ...t.chord], keyAtTok(tokens, c.index)); if (!rd) continue;
           const ds = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff, c.index)), second = ds.some((dd, k) => k > 0 && Math.abs(ds[k - 1] - dd) === 1);
-          const label = chordLabel(rd), tx = nhX(c) + nhW(c) * (second ? 1.95 : 1) + P(0.3), w = [...label].length * fs * 0.6 + P(0.6);
+          const label = chordLabel(rd), tx = nhX(c) + nhW(c) * (second ? 1.95 : 1) + P(0.3), w = [...label].length * fs * 0.6 + T(0.6);
           placeBelow(RW(c), 0.3, (y) => {
             prims.push({ t: "text", x: tx, y, s: label, cls: "chord-tag", size: fs, anchor: "start" });
-            chordTagsOut.push({ x: tx - P(0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd });
+            chordTagsOut.push({ x: tx - T(0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd });
           });
         }
       });
@@ -1520,7 +1529,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       //   歌词连字符（英文断开的音节）画在两个歌词中间；拖腔线、句号（注解）一起。歌词的墨进天际线（后面的 8vb 贴在它下面），行高另按歌词的规矩算（第 12 步之后）
       later[11].push(() => {
         if (!lyricsOf[r]) { for (const j of lyricJobs) j.run(); lyrics.push(...partLyrics); return; }   // 没写歌词的声部：空着的歌词位（点了开歌词框）+ 句号（注解），都在默认的歌词位
-        const base = LYRIC_BELOW + (o.lyricRaise ?? 0), bySys = new Map<number, typeof lyricJobs>();
+        const base = LYRIC_BELOW + (o.lyricRaise ?? 0) * ts, bySys = new Map<number, typeof lyricJobs>();
         for (const j of lyricJobs) { const l = bySys.get(j.sys); if (l) l.push(j); else bySys.set(j.sys, [j]); }
         for (let sy = 0; sy < nSys; sy++) lyricOff.set(lyricRow(sy), base);   // 这一行没有字也留歌词位（空着的歌词位能点）
         for (const [sy, jobs] of bySys) {
@@ -1532,8 +1541,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
               const L = partLyrics[n], tok = tokens[L.index] as NoteTok;
               if (!tok.hyph) continue;
               const R = partLyrics[n + 1];
-              const xx = R && R.system === L.system ? (L.x + R.x) / 2 : L.x + P(1.6);
-              prims.push({ t: "text", x: xx, y: L.y, s: "-", cls: "lyric hyphen" });
+              const xx = R && R.system === L.system ? (L.x + R.x) / 2 : L.x + T(1.6);
+              prims.push({ t: "text", x: xx, y: L.y, s: "-", cls: "lyric hyphen", ...(ts !== 1 ? { size: T(LYRIC_EM) } : {}), ...(lyricSx(ts) !== 1 ? { sx: lyricSx(ts) } : {}) });
             }
             lyrics.push(...partLyrics.slice(from));
           }, { min: 0, count: false });
@@ -1619,11 +1628,11 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     for (let k = 0; k < later.length; k++) { for (const f of later[k]) f(); if (k === 6) skies.forEach((sk, i) => { upToNav[i] = sk.hUp; }); }
     const pEnd = mark();
     //   ③ 每一行的上下留白 = 版式的最小值和天际线（+ 0.8）取大；有歌词的那一条另按歌词的规矩（歌词基线 + 版式里歌词下面那一截，挤到第二行的再加一行）。上下两行不咬合
-    const PAD = 0.8, lyricTail = SPC.rowH - STAFF_ABOVE - 4 - LYRIC_BELOW, fin = (v: number, d: number) => (Number.isFinite(v) ? v : d);
+    const PAD = 0.8, lyricTail = (SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow) * ts, fin = (v: number, d: number) => (Number.isFinite(v) ? v : d);
     const geo = (s: number, r: number, k: number) => {
       const q = per[r], row = rowOf(s, r, k), sk = sky(row), hUp = fin(sk.hUp, 0), hDn = fin(sk.hDn, 4);
       const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
-      const lyr = lyricsOf[r] && k === q.staves - 1 ? lyricOff.get(row) : undefined, row2 = lyr2.has(`${r}:${s}`) ? LYRIC_ROW2 : 0;
+      const lyr = lyricsOf[r] && k === q.staves - 1 ? lyricOff.get(row) : undefined, row2 = lyr2.has(`${r}:${s}`) ? LYRIC_ROW2 * ts : 0;
       let below = Math.max(minBelow, hDn - 4 + PAD);
       if (lyr !== undefined) below = Math.max(below, lyr + lyricTail + row2);
       return { above: Math.max(STAFF_ABOVE, -hUp + PAD), below, inkAbove: Math.max(0, -fin(upToNav[row - rowBase] ?? Infinity, 0)), inkBelow: Math.max(0, hDn - 4, lyr !== undefined ? lyr + 0.5 + row2 : 0) };
@@ -1631,7 +1640,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const G = Array.from({ length: nSys }, (_, s) => per.map((_q, r) => Array.from({ length: effStaves(r) }, (_, k) => geo(s, r, k))));
     const sysH = (s: number) => P(G[s].reduce((n, gs) => n + gs.reduce((m, g) => m + g.above + 4 + g.below, 0), 0) + SYS_GAP);
     drawPaperTitle(nSys ? sysH(0) : P(SPC.rowH));
-    let note: Box | undefined; if (paper.hidden) { const nx = P(MARGIN) + (paper.name ? o.measureLyric(paper.name) : 0) + P(1.0); note = { x: nx, y: pTitle.y, w: Math.max(P(4), pTitle.x + pTitle.w - nx), h: P(PAPER_H) }; }   // 本段视图里的隐藏纸：说明挂在曲段名后面（字归覆盖层），不占地方——和印出来一样（v0.16.34）
+    let note: Box | undefined; if (paper.hidden) { const nx = P(MARGIN) + (paper.name ? (o.measureLyric(paper.name) * 1.6) / LYRIC_EM : 0) + T(1.0); note = { x: nx, y: pTitle.y, w: Math.max(T(4), pTitle.x + pTitle.w - nx), h: T(PAPER_H) }; }   // 本段视图里的隐藏纸：说明挂在曲段名后面（字归覆盖层），不占地方——和印出来一样（v0.16.34）
     //   ④ 翻页（一行谱整块放不下就翻页）+ 每一行定位
     const delta = new Map<number, number>();   // 行号 → 从临时高度挪到位要挪多少（px）
     for (let s = 0; s < nSys; s++) {
@@ -1659,13 +1668,13 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     for (let k = 0; k <= pageNo; k++) {
       const top = pageTopY(k);
       frames.push({ t: "rect", x: -P(PG.l), y: top, w: o.width + P(PG.l + PG.r), h: P(PG.h), cls: "page ann" });
-      prims.push({ t: "text", x: o.width / 2, y: top + P(PG.h - PG.b / 2), s: String(k + 1), cls: "page-no", size: P(1.2), anchor: "middle" });
+      prims.push({ t: "text", x: o.width / 2, y: top + P(PG.h - PG.b / 2), s: String(k + 1), cls: "page-no", size: T(1.2), anchor: "middle" });
       pages.push({ top, h: P(PG.h) });
     }
     prims.unshift(...frames);
   }
   const height = PG ? Math.max(pageTopY(pageNo) + P(PG.h), tailBottom) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
 }
 
 export type { Token };
