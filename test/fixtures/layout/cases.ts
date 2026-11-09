@@ -3,7 +3,8 @@
 //   scripts/freeze-layout.mjs 写 test/fixtures/layout/<歌>.<视图>.json；test/engrave-printable.test.ts 逐个比。
 //   「可印」= PDF 印的那些（score-pdf.ts isPrinted；图标一律不印）；控件的点击框表（partToggles / paperAdds / nav …）不在快照里——那是要搬走的。
 //   量字宽用一把假尺子（两边同一把就行）；坐标取到 0.001 px（重构时运算顺序变了不该算版面变）。
-import fs from "node:fs";
+// 仓里不装 @types/node：node:* 走动态 import（同 test/keys.test.ts）
+const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e?: string): Uint8Array & string };
 import { openBytes, partLabels } from "../../../src/format/project.ts";
 import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../src/render/engrave.ts";
 import { printOpts, isPrinted } from "../../../src/export/score-pdf.ts";
@@ -61,8 +62,8 @@ export const fixturePath = (songKey: string, view: string) => new URL(`test/fixt
 export const pdfShaPath = new URL("test/fixtures/layout/pdf-sha256.json", ROOT);
 /** PDF 字节的指纹（N2）：真字体（思源黑体）、固定时刻、整首 + 分页，三首歌各一份。刀 1 之后 PDF 的「不印名单」清空，字节不变 = 清空没漏印 / 多印。 */
 export async function pdfSha(songKey: string): Promise<string> {
-  const { gunzipSync } = await import("node:zlib");
-  const { createHash } = await import("node:crypto");
+  const { gunzipSync } = (await import("node:zlib" as string)) as { gunzipSync(b: Uint8Array): Uint8Array };
+  const { createHash } = (await import("node:crypto" as string)) as { createHash(a: string): { update(b: Uint8Array): { digest(e: string): string } } };
   const { parseTtf } = await import("../../../src/export/ttf.ts");
   const { scorePdf } = await import("../../../src/export/score-pdf.ts");
   font ??= parseTtf(new Uint8Array(gunzipSync(fs.readFileSync(new URL("vendor/fonts/sans.ttf.gz", ROOT)))));
