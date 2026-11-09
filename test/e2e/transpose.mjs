@@ -18,7 +18,7 @@ const s0 = await snap();
 check(/^0:\d+(,\d+){3} \| 0:\d+(,\d+){3}$/.test(s0), "两张纸各写了四个音", s0);
 const shift = (s, d, which) => s.split(" | ").map((x, i) => { if (!which.includes(i)) return x; const [k, ns] = x.split(":"); return `${k}:${ns.split(",").map((v) => Number(v) + d).join(",")}`; });
 // 1. 纸的「⋯」（光标在第二张纸）→ 移调 / 转调…
-const menuAt = await p.evaluate(() => { const L = window.__moonsinger.layout(), at = window.__moonsinger.state().at.paper, m = L.papers?.find((x) => x.id === at)?.menu ?? L.paperMenu, sc = document.querySelector("#score .sheet").getBoundingClientRect(); return m ? { x: sc.left + L.pageX.left + m.x + m.w / 2, y: sc.top + m.y + m.h / 2 } : null; });
+const menuAt = await p.evaluate(() => { const at = window.__moonsinger.state().at.paper, m = document.querySelector(`#score .score-overlay .ov-menu[data-paper="${at}"]`), r = m?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });   // 这一段的「⋯」在谱面上面那一层（刀 1）
 check(!!menuAt, "曲段控件的「⋯」有点击区域");
 await p.mouse.click(menuAt.x, menuAt.y); await p.waitForTimeout(200);
 check(!!(await p.$('.offer [data-v="transpose"]')), "纸的菜单里有「移调 / 转调…」");

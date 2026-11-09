@@ -12,7 +12,8 @@ const ctx = await b.newContext({ viewport: { width: 1100, height: 900 } });
 const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 const BASE = process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/";
 await p.goto(BASE); await p.waitForTimeout(800);
-const labels = () => p.$$eval("#score text.key-label", (ts) => ts.map((t) => `${t.textContent}${t.classList.contains("key-hint") ? "~" : ""}`).join(" "));
+// 「1=X」：印的在 svg（text.key-label）；专业模式 C 调的淡「1=C」在谱面上面那一层（.ov-key-hint，刀 1）——两样合起来比，提示带「~」
+const labels = () => p.evaluate(() => [...[...document.querySelectorAll("#score text.key-label")].map((t) => t.textContent), ...[...document.querySelectorAll("#score .score-overlay .ov-key-hint")].map((t) => `${t.textContent}~`)].join(" "));
 const firstNote = () => p.evaluate(() => { const m = window.__moonsinger, s = m.state(), n = s.song.papers[0].tracks[s.at.part].find((t) => t.kind === "note"), h = m.layout().notes[0]; return { real: n ? `${n.pitch.step}${n.pitch.alter < 0 ? "b" : n.pitch.alter > 0 ? "#" : ""}${n.pitch.octave}` : null, d: h?.d }; });
 const bigAbs = () => p.evaluate(() => document.querySelector(".pad-panel")?.classList.contains("big-abs"));
 const closeAll = async () => { await p.keyboard.press("Escape"); await p.waitForTimeout(120); await p.mouse.click(5, 300); await p.waitForTimeout(120); };
@@ -22,7 +23,7 @@ const setView = async (v) => { await p.click("#setBtn"); await p.waitForTimeout(
 // ① 专业（默认）：C 调 = 淡「1=C」；键上大字音名
 check((await labels()) === "1=C~", "专业 + C 调：调号上方淡「1=C」", await labels());
 check((await bigAbs()) === true, "专业：键上大字写音名");
-const hint = await p.evaluate(() => { const r = document.querySelector("#score text.key-hint")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
+const hint = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-key-hint")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
 await p.mouse.click(hint.x, hint.y); await p.waitForTimeout(250);
 check(await p.evaluate(() => !!document.querySelector(".ctx-menu.header-panel")), "点「1=C」= 谱头面板");
 await p.selectOption('.header-panel [data-hp="key"]', "-1"); await p.waitForTimeout(150); await closeAll();

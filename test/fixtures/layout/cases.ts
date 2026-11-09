@@ -34,14 +34,15 @@ type View = { name: string; opts: (song: Song, labels: string[]) => EngraveOpts 
 const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<string>) => {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER);
   return { width: lineSp(paper) * SP, sp: SP, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measureLyric: measure, autoBars: true,
-    titlePlaceholder: true, editable: true, keyHint: true, paperLabel: "A5", margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } } as EngraveOpts;
+    // 刀 1 前的四个旗（titlePlaceholder / editable / keyHint / paperLabel）和刀 1 后的几何参数 chrome 一起给：新旧两版排版器各认各的，同一份样张两边都能排
+    titlePlaceholder: true, editable: true, keyHint: true, paperLabel: "A5", chrome: { underPaper: 2.6, tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } } as unknown as EngraveOpts;
 };
 export const VIEWS: View[] = [
   { name: "print", opts: (s, l) => printOpts(s, SP, views(s, l, false), measure, true, 0) },
   { name: "edit-seg", opts: (s, l) => ({ ...editorBase(s, l), onlyPaper: s.papers[0]!.id }) },
   { name: "edit-all", opts: (s, l) => editorBase(s, l) },
-  { name: "edit-pages", opts: (s, l) => { const b = editorBase(s, l); const { margins: _m, ...rest } = b; return { ...rest, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },
-  { name: "listen-all", opts: (s, l) => { const { editable: _e, ...b } = editorBase(s, l); return { ...b, foldAll: true } as EngraveOpts; } },
+  { name: "edit-pages", opts: (s, l) => { const b = editorBase(s, l); const { margins: _m, ...rest } = b; return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },   // 分页 = 每段底下不留虚线框
+  { name: "listen-all", opts: (s, l) => { const { editable: _e, ...b } = editorBase(s, l) as EngraveOpts & { editable?: boolean }; return { ...b, chrome: { famGap: 0.8, navRoom: 16 }, foldAll: true } as EngraveOpts; } },   // 听 = 不留虚线框
   { name: "edit-all-hidden", opts: (s, l) => editorBase(s, l, new Set(s.parts.length > 1 ? [s.parts[1]!.id] : [])) },
 ];
 

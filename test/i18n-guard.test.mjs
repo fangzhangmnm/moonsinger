@@ -57,4 +57,13 @@ describe("i18n 守卫", () => {
     const bad = css.split("\n").filter((l) => /content:\s*"[^"]*[一-鿿]/.test(l));
     assert(bad.length === 0, bad.join("\n").slice(0, 200));
   });
+  // 刀 1 的 N4（2026-11-08 Opus 5.5；施工单 ai-docs/20261108-work-order-display-cut1-overlay.md §2）：排版器只排可印的谱，它的 _t 只剩印出来的字（「编排」「吸」「等 n 处」这类）；
+  //   提示 / 钮上的字（点 / 长按 / 右键 / 菜单 / ＋ …）归谱面上面那一层（src/ui/score-overlay.ts）。出现了 = 又有编辑器的东西长回排版器里了。
+  it("排版器里没有编辑器的字（N4）", () => {
+    const src = fs.readFileSync(path.join(ROOT, "src/render/engrave.ts"), "utf8");
+    const words = ["点", "长按", "右键", "菜单", "＋", "隐藏 ·", "曲段名", "作者", "歌名"];
+    const keys = [...src.matchAll(/_t\("([^"]*)"/g)].map((m) => m[1]);
+    const bad = keys.filter((k) => words.some((w) => k.includes(w)));
+    assert(bad.length === 0, `排版器的 _t 里有编辑器的字：${bad.join(" / ")}`);
+  });
 });

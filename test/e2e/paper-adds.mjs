@@ -12,20 +12,22 @@ const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } }))
 await p.route(/\.sf2(\?|$)/, (r) => r.abort());
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 for (let i = 0; i < 2; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
-const adds = () => p.evaluate(() => window.__moonsinger.layout().paperAdds.map((a) => `${a.paper}:${a.kind}`).join(","));
+// 刀 1（2026-11-08）：虚线框在谱面上面那一层（DOM .ov-add，src/ui/score-overlay.ts），不再是排版器画的
+const adds = () => p.evaluate(() => [...document.querySelectorAll("#score .score-overlay .ov-add")].map((a) => `${a.dataset.paper}:${a.dataset.kind}`).join(","));
+const addBox = (paper, kind) => p.evaluate(([paper, kind]) => { const a = document.querySelector(`#score .score-overlay .ov-add[data-paper="${paper}"][data-kind="${kind}"]`), r = a?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }, [paper, kind]);
 const papers = () => p.evaluate(() => window.__moonsinger.state().song.papers.map((x) => x.id).join(","));
 const tap = async (paper, kind) => {
-  const pt = await p.evaluate(([paper, kind]) => { const L = window.__moonsinger.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), a = L.paperAdds.find((x) => x.paper === paper && x.kind === kind); return a ? { x: sc.left + L.pageX.left + a.x + a.w / 2, y: sc.top + a.y + a.h / 2 } : null; }, [paper, kind]);
+  const pt = await addBox(paper, kind);
   if (!pt) return false;
   await p.evaluate((y) => { const s = document.querySelector("#score"); s.scrollTop += y - s.getBoundingClientRect().top - 200; }, pt.y); await p.waitForTimeout(150);
-  const pt2 = await p.evaluate(([paper, kind]) => { const L = window.__moonsinger.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), a = L.paperAdds.find((x) => x.paper === paper && x.kind === kind); return { x: sc.left + L.pageX.left + a.x + a.w / 2, y: sc.top + a.y + a.h / 2 }; }, [paper, kind]);
+  const pt2 = await addBox(paper, kind);
   await p.mouse.click(pt2.x, pt2.y); await p.waitForTimeout(300); return true;
 };
 const P0 = (await papers()).split(",")[0];
-check((await adds()) === `${P0}:part,${P0}:paper` && (await p.$$("#score rect.add-box")).length === 2, "本段：这一段底下两个虚线框「＋ 声部」「＋ 新曲段」", await adds());
+check((await adds()) === `${P0}:part,${P0}:paper` && (await p.$$("#score .score-overlay .ov-add")).length === 2 && (await p.$$("#score svg .add-box")).length === 0, "本段：这一段底下两个虚线框「＋ 声部」「＋ 新曲段」", await adds());
 check(!(await p.evaluate(() => "addPaper" in window.__moonsinger.layout())), "扳手旁的「＋」没了");
 await p.evaluate(() => window.__moonsinger.setPages(true)); await p.waitForTimeout(250);
-const pg = await p.evaluate(() => { const L = window.__moonsinger.layout(), last = L.pages.at(-1); return { adds: L.paperAdds.map((a) => `${a.paper}:${a.kind}`).join(","), below: L.paperAdds.every((a) => a.y >= last.top + last.h), pages: L.pages.length }; });
+const pg = await p.evaluate(() => { const L = window.__moonsinger.layout(), last = L.pages.at(-1); return { adds: [...document.querySelectorAll("#score .score-overlay .ov-add")].map((a) => `${a.dataset.paper}:${a.dataset.kind}`).join(","), below: !!L.tail && L.tail.y >= last.top + last.h && L.papers.every((pp) => !pp.under), pages: L.pages.length }; });
 check(pg.adds === `${P0}:paper` && pg.below && pg.pages === 1, "分页（= 打印预览）：每段不画，「＋ 新曲段」在最后一页纸外面、不多出一页", JSON.stringify(pg));
 await p.evaluate(() => window.__moonsinger.setPages(false)); await p.waitForTimeout(200);
 await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTimeout(250);
@@ -55,7 +57,7 @@ check(!!(await p.$(`.ctx-menu [data-v="add:${NEW}"]`)), "别的段里「＋ 歌�
 await p.click(`.ctx-menu [data-v="add:${NEW}"]`); await p.waitForTimeout(250);
 check((await onP(P1)).split(",").includes(NEW) && !before.split(",").includes(NEW), "点了 = 加进那一段", `${before} → ${await onP(P1)}`);
 // 纸 ⋯：三块，没有加歌手；在上面插一段
-await p.evaluate((pid) => window.__moonsinger.view.host.onPaperMenu(pid), P0); await p.waitForTimeout(200);
+await p.evaluate((pid) => window.__moonsinger.overlayHost.onPaperMenu(pid), P0); await p.waitForTimeout(200);
 const secs = await p.$$eval(".offer .part-sec", (e) => e.map((x) => x.textContent).join(","));
 check(secs === "这一段,插入,编辑" && !(await p.$('.offer [data-v="newpart"], .offer [data-v^="track:"], .offer [data-v="add"]')), "纸 ⋯ = 这一段 · 插入 · 编辑，不再有加歌手", secs);
 await p.click('.offer [data-v="above"]'); await p.waitForTimeout(250);
@@ -66,7 +68,7 @@ check(/key/.test(head) && /time/.test(head), "插在最前面：谱头照抄原�
 await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
 check((await papers()) === [P0, P1].join(","), "撤销一步 = 插的那段没了");
 // 扳手面板里没有「＋ 新的纸」
-await p.evaluate(() => window.__moonsinger.view.host.onPaper()); await p.waitForTimeout(200);
+await p.evaluate(() => window.__moonsinger.overlayHost.onPaper()); await p.waitForTimeout(200);
 check(!(await p.$('[data-v="addpaper"]')), "扳手面板里没有「＋ 新的纸」（插一段 = 纸 ⋯ / 虚线框）");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();

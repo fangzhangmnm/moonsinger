@@ -13,7 +13,7 @@ await p.waitForTimeout(200);
 const rows = () => p.evaluate(() => new Set(window.__moonsinger.layout().systems.map((s) => s.sys)).size);
 check((await rows()) > 1, "连续：48 个音折成好几行", String(await rows()));
 // 扳手 → 排法 → 横卷
-const openSheet = async () => { const c = await p.evaluate(() => { const L = window.__moonsinger.layout(), b = L.paperChip, sc = document.querySelector("#score .sheet").getBoundingClientRect(); return b ? { x: sc.left + L.pageX.left + b.x + b.w / 2, y: sc.top + b.y + b.h / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForTimeout(200); };
+const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForTimeout(200); };
 await p.evaluate(() => { document.querySelector("#score").scrollLeft = 0; document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(100);
 await openSheet();
 check(!!(await p.$('[data-v="flow:scroll"]')), "纸的设置里排法有「横卷」");

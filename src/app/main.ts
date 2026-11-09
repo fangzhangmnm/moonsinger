@@ -25,6 +25,7 @@ import { span, perfReport, perfReset } from "../ui/perf-trace.ts";   // 热路�
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { lyricIssues, lyricWhyText, prettyReading, type LyricIssue } from "../score/lyric-check.ts";
 import { ScoreView } from "../ui/score-view.ts";
+import { ScoreOverlay } from "../ui/score-overlay.ts";
 import type { PartView } from "../render/engrave.ts";
 import { installPlatformGuards } from "../ui/platform-guards.ts";
 import { type HintRange } from "../keyboard/pad.ts";
@@ -523,7 +524,7 @@ const view = new ScoreView(scoreEl, {
   onChordTag: (r, at) => openChordInfo(r, at),
   parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, part, at) => { if (stubbed(part)) { showPart(part); return; } openTrackCard(at); },   // 缩成细线的（隐藏 / 别人在「只看」）：点它 = 放出来（小卡里不再有「显示」，v0.16.17）
-  onPartToggle: (part, kind) => { setPv(part, { [kind]: !pv(part)[kind] }); afterViewChange(); },   // 名字下面四颗小钮（v0.16.17 搬家 B）
+  onAnchors: (L) => overlay?.layout(L, overlayView()),   // 谱面上面那一层（编辑器的钮 / 框 / 提示；刀 1）照着这份排版摆
   onBlankPress: (at, row) => openScoreMenu(at, row),
   onListenMenu: (at, a) => openListenMenu(at, a),   // 听模式：长按 / 右键 = 从这儿放 / 接着放 / 从头放
   onSelPress: (at) => openSelMenu(at),
@@ -533,13 +534,6 @@ const view = new ScoreView(scoreEl, {
   notice: (s) => info(s),
   onClef: (hit, at) => openClefMenu(hit, at),
   onHeader: (paper, part, index, at) => headerPanel.open(paper, part, index, at),
-  onPaperMenu: (id) => openPaperMenu(id),
-  onPaperAdd: (paper, kind, at) => { if (kind === "paper") { update(addPaper(D.st, paper)); info(_t("新的一段")); } else openAddPartMenu(paper, at); },   // 纸底下的虚线框（v0.16.19 搬家 D）
-  onNav: (dir) => navPaper(dir),
-  onNavFrom: (paper, dir) => navPaperFrom(paper, dir),
-  onScopeOf: (paper) => { if (viewScope === "segment" && D.st.at.paper === paper) viewScope = "all"; else { viewScope = "segment"; if (D.st.at.paper !== paper) navPaperTo(paper); } view.render(); },
-  onScopeToggle: () => { viewScope = viewScope === "segment" ? "all" : "segment"; view.render(); },   // 「本段」开关在曲段导航旁边（user「…放在和曲段导航在一起」「就一个按钮toggle」「类似solo toggle」）
-  onPaper: () => openPaperSheet(),
   onCredits: () => openCreditsSheet(),
   reflow: () => reflow,
   pages: () => pageFlow && !scrollFlow,
@@ -555,6 +549,33 @@ const view = new ScoreView(scoreEl, {
   lyricRaise: () => LYRIC_RAISE[pdfFont],   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
   scope: () => viewScope,
 });
+/** 谱面上面那一层（刀 1，2026-11-08；src/ui/score-overlay.ts）：两颗钮、虚线框、曲段控件、纸角钮、「1=C」、空着的提示、合租括号、「隐藏 N」。
+ *  原来是排版器画、谱面手势里一条条判的；现在是 DOM，回调都在这一处（施工单 ai-docs/20261108-work-order-display-cut1-overlay.md §3.5：不新加面板）。 */
+let overlay: ScoreOverlay | null = null;
+function overlayView(): import("../ui/score-overlay.ts").OverlayView {
+  const paper = D.st.song.paper ?? paperOf(DEFAULT_PAPER);
+  return { song: D.st.song, edit: view.rules.edit, marks: view.rules.symbols, onlyPaper: viewScope === "segment" ? D.st.at.paper : null, paperLabel: paper.kind === "other" ? _t("其他纸") : PAPER_LABEL[paper.kind] };
+}
+const overlayHost: import("../ui/score-overlay.ts").OverlayHost = {
+  toggles: (part) => { const v = pv(part); return { muted: v.muted, solo: v.solo, hidden: v.hidden, only: v.only }; },
+  onPartToggle: (part, kind) => { setPv(part, { [kind]: !pv(part)[kind] }); afterViewChange(); },   // 名字上面两颗大钮（点 = 隐藏 / 静音；长按 / 右键 = 只看 / 独奏）
+  onPaperMenu: (id) => openPaperMenu(id),
+  onPaperAdd: (paper, kind, at) => { if (kind === "paper") { update(addPaper(D.st, paper)); info(_t("新的一段")); } else openAddPartMenu(paper, at); },   // 纸底下的虚线框（v0.16.19 搬家 D）
+  onNavFrom: (paper, dir) => navPaperFrom(paper, dir),
+  onScopeOf: (paper) => { if (viewScope === "segment" && D.st.at.paper === paper) viewScope = "all"; else { viewScope = "segment"; if (D.st.at.paper !== paper) navPaperTo(paper); } view.render(); },
+  onPaper: () => openPaperSheet(),
+  onCredits: () => { showPad(false); openCreditsSheet(); },   // 作者栏空着时的提示字（有字的作者栏照旧是谱面上点）
+  onKeyHint: (paper, part, index, at) => headerPanel.open(paper, part, index, at),
+  onLeaveFamily: (paper, host) => view.leaveFamily(paper, host),
+  onHidden: (paper, ids, at) => {   // 「隐藏 N」（施工单 §4 第 5 条：隐藏的声部不留空，提醒换成这颗不占位的小标）：点开一列，点谁放出谁（= showPart：有人在「只看」就加进只看）
+    const labels = partLabels(D.st.song, D.extras), looks = partLooks();
+    const rows = ids.map((id) => { const k = D.st.song.parts.findIndex((p) => p.id === id); return k < 0 ? "" : `<button class="btn ctx-item hid-row" data-v="${esc(id)}"><span class="pm-dot" style="background:${TAB20[looks.colors[k] ?? 0]}"></span>${esc(labels[k] ?? id)}</button>`; }).join("");
+    void paper;
+    ctxMenu("hidden-list", `<div class="tc-sec">${_t("隐藏着的（点 = 放出来）")}</div>${rows}`, at, (v) => { showPart(v); });
+  },
+};
+overlay = new ScoreOverlay(view.overlayRoot, overlayHost);
+
 /** 视图范围（这次打开里有效）：本段 = 一次只看光标所在的纸，‹ › 翻（默认；user「不同曲段应该是不同页，而不是一起显示」）；全部 = 整首（隐藏的纸折叠着）。 */
 let viewScope: "all" | "segment" = "segment";
 let pdfFont: PdfFontId = "sans";   // 乐谱 PDF 的字体（desk；同 mp3 音质：跟这首歌走、不标脏）
@@ -1667,7 +1688,7 @@ function partViews(): PartView[] {
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
     const ly = plug?.lyrics, noLyrics = ly === "hum" || ly === "none" ? _t("{p}{p2}：空着的歌词位不开框；已经写了的字点开能改、能删", { p: labels[k], p2: ly === "hum" ? _t("（元音版）只哼") : _t("不唱歌词") }) : "";
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, toggles: { muted: v.muted, solo: v.solo, hidden: v.hidden, only: v.only }, mono: !plug?.poly, ...(plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: !plug?.poly, ...(plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -3890,6 +3911,7 @@ showSiteHint(); watchStorageHealth();
 onThreadFail((_name, why) => { diagNote("thread", why); showError(why); });   // 线程试过所有起法都起不来（备用版 data: / blob:）：说一声，不静默
 // 测试口子（tools/itch-fixture.mjs / tools/local-smoke.mjs）：资源读口读一个站点文件（核哈希）、线程用的起法、mp3 线程编一小段
 Object.assign((window as unknown as { __moonsinger: Record<string, unknown> }).__moonsinger, {
+  overlayHost,   // 谱面上面那一层的回调（刀 1）：测试不点钮直达「这一段的菜单 / 纸的设置」
   gate, cloudOnline, noteAuthFailure, updateReload: () => shell.reload(),
   readSite: (path: string, sha256?: string) => getBytes(path, sha256 ? { sha256 } : {}).then((b) => b.length),
   threadKinds: () => Object.fromEntries((["singer-worker", "mp3-worker", "studio-worklet", "layout-worker", "encode-worker"] as const).map((n) => [n, threadUrls(n).map((u) => u.slice(0, u.indexOf(":")))])),

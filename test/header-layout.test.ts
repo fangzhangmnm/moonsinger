@@ -13,7 +13,7 @@ function song(credits: string): EditorState {
   return setCredits(st, credits);
 }
 const parts = (st: EditorState) => st.song.parts.map((p, k) => ({ id: p.id, name: `V${k}`, empty: false, first: k === 0, hidden: false, badges: [], mono: false }));
-const lay = (st: EditorState, onlyPaper?: string) => engrave(st.song, { width: 700, sp: 10, at: st.at, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true, titlePlaceholder: true, paperLabel: "A4", ...(onlyPaper ? { onlyPaper } : {}) });
+const lay = (st: EditorState, onlyPaper?: string) => engrave(st.song, { width: 700, sp: 10, at: st.at, parts: parts(st), measureLyric: (s: string) => s.length * 10, autoBars: true, chrome: { underPaper: 2.6, tail: 2.6, famGap: 0.8, navRoom: 16 }, ...(onlyPaper ? { onlyPaper } : {}) });
 
 describe("纸面顶上", () => {
   it("歌名明显比曲段名大", () => {
@@ -24,9 +24,9 @@ describe("纸面顶上", () => {
   for (const n of [1, 2, 4]) it(`本段视图：作者栏 ${n} 行 = 曲段那一行（和右边的控件）在它下面，不撞`, () => {
     const st = song(Array.from({ length: n }, (_, k) => `作词作曲 ${k + 1}`).join("\n")), L = lay(st, st.song.papers[0].id);
     const c = L.credits!, pp = L.papers.find((x) => x.id === st.song.papers[0].id)!;
-    const ctl = [pp.prev, pp.next, pp.scope, pp.menu].filter((b): b is NonNullable<typeof b> => !!b);
-    assert(ctl.length > 0, "有曲段控件");
-    for (const b of ctl) assert(b.y >= c.y + c.h - 0.5, `控件 y ${b.y.toFixed(1)} 在作者栏底 ${(c.y + c.h).toFixed(1)} 下面`);
+    // 刀 1 起曲段控件在覆盖层、摆在曲段名那一条里（src/ui/score-overlay.ts）：那一条在作者栏下面 = 控件不撞
+    assert(pp.title.shown, "画了曲段名那一条（曲段控件挂在它上面）");
+    assert(pp.title.y >= c.y + c.h - 0.5, `曲段名那一条 y ${pp.title.y.toFixed(1)} 在作者栏底 ${(c.y + c.h).toFixed(1)} 下面`);
   });
 });
 

@@ -30,7 +30,7 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
     it(`${font}：预览多的只有控件开关（光标、占位提示、曲段控件、刚写过），版面一模一样`, () => {
       const base = printOpts(st.song, sp, parts(st), measure, true, LYRIC_RAISE[font]);
       const print = engrave(st.song, base);
-      for (const ctl of [{ titlePlaceholder: true }, { at: { paper: st.song.papers[2]!.id, part: st.song.parts[0]!.id } }, { paperLabel: "A5" }]) {   // 光标 / 选区 / 刚写过已不进排版（W-17 第 1 刀）
+      for (const ctl of [{ chrome: { famGap: 0.8, navRoom: 16 } }, { at: { paper: st.song.papers[2]!.id, part: st.song.parts[0]!.id } }]) {   // 刀 1：编辑器的控件 / 提示不在排版器里了，只剩几何参数 chrome（分页 = 不留虚线框）   // 光标 / 选区 / 刚写过已不进排版（W-17 第 1 刀）
         const prev = engrave(st.song, { ...base, ...ctl } as never);
         eq(geo(prev), geo(print), `开关 ${JSON.stringify(ctl)} 不改版面`);
       }
@@ -39,29 +39,31 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
   }
   it("按 C 调看 + 和弦级数（v0.16.13，user「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：印的带上它们，控件开关照样不改版面；专业模式 C 调的淡「1=C」不印", () => {
     const view = { inC: true, chordTags: true }, base = printOpts(st.song, sp, parts(st), measure, true, 0, undefined, view), print = engrave(st.song, base);
-    eq(base.inC, true); eq(base.chordTags, true); eq(base.keyHint, undefined);
-    eq(geo(engrave(st.song, { ...base, titlePlaceholder: true, paperLabel: "A5", keyHint: true } as never)), geo(print), "控件 + 提示开关不改版面");
+    eq(base.inC, true); eq(base.chordTags, true); eq(base.chrome, undefined, "印 = 不给编辑器留地方");
+    eq(geo(engrave(st.song, { ...base, chrome: { famGap: 0.8, navRoom: 16 } })), geo(print), "编辑器的几何参数（分页时）不改版面");
     assert(print.prims.some((p) => (p as { cls?: string }).cls?.includes("key-label") && isPrinted((p as { cls?: string }).cls)), "「1=原来的调」印");
-    assert(!isPrinted("keysig key-label key-hint"), "淡「1=C」不印");
+    assert(!print.prims.some((p) => ((p as { cls?: string }).cls ?? "").includes("key-hint")), "淡「1=C」不是排版器画的（覆盖层，刀 1）");
     eq(geo(engrave(st.song, { ...base, chordTags: false })), geo(print), "和弦级数不占地方（开关不改版面）");
   });
   it("只印这一张纸 = 分页预览的「本段」：控件开关同样不改版面（2026-10-09，user「只印一段或一个声部…和wxhw差不多」）", () => {
     for (const paper of st.song.papers) {
       const base = printOpts(st.song, sp, parts(st), measure, true, 0, paper.id), print = engrave(st.song, base);
-      eq(geo(engrave(st.song, { ...base, titlePlaceholder: true, paperLabel: "A5" } as never)), geo(print), `纸 ${paper.name || paper.id}`);
+      eq(geo(engrave(st.song, { ...base, chrome: { famGap: 0.8, navRoom: 16 } })), geo(print), `纸 ${paper.name || paper.id}`);
       assert(print.systems.every((r) => r.paper === paper.id), "只有这一张纸的谱行");
     }
   });
-  it("隐藏的声部：预览里一条细行（控件），PDF 不印；隐藏的纸：折叠的曲段名 + 细行，PDF 也不印", () => {
+  it("隐藏的声部：不排、不占地方（刀 1，施工单 §4 第 5 条：预览的版面 = PDF）；隐藏的纸：折叠成曲段名那一条 + 一条（说明字归覆盖层），PDF 不印", () => {
     const Lt = engrave(st.song, printOpts(st.song, 10, parts(st), measure, true, 0));
-    const stub = Lt.prims.filter((p) => (p as { cls?: string }).cls?.includes("part-stub"));
-    const hiddenName = Lt.prims.filter((p) => (p as { cls?: string }).cls?.includes("hidden-paper"));
-    assert(stub.length >= 2, `预览里有细行（${stub.length}）`);
-    assert(stub.every((p) => !isPrinted((p as { cls?: string }).cls)), "细行不印");
-    eq(hiddenName.length, 1, "折叠的隐藏纸画了曲段名"); assert(!isPrinted((hiddenName[0] as { cls?: string }).cls), "隐藏纸的曲段名不印");
+    assert(!Lt.prims.some((p) => /part-stub|hidden-paper|hidden-note/.test((p as { cls?: string }).cls ?? "")), "排版器不画细行 / 隐藏纸的名字 / 说明（覆盖层）");
     assert(Lt.systems.every((r) => r.part !== "P2"), "隐藏的声部没有谱行");
+    const hp = Lt.papers.find((p) => p.hidden); assert(!!hp && !!hp.stub, "隐藏的纸折叠：留着那一条（位置照留）");
+    assert(Lt.papers.filter((p) => !p.hidden).every((p) => p.hiddenParts.includes("P2") || !st.song.papers.find((x) => x.id === p.id)!.tracks.P2), "锚点里记着哪几位隐藏着（覆盖层的「隐藏 N」）");
+    const shown = engrave(st.song, printOpts(st.song, 10, parts(st).map((p) => ({ ...p, hidden: false })), measure, true, 0));
+    assert(shown.height > Lt.height || shown.pages.length > Lt.pages.length || shown.systems.length > Lt.systems.length, "放出来 = 多排几行（隐藏时真的不占地方）");
   });
-  it("声部名：还没人上场（屏幕上画淡，part-name empty）照印；占位提示（歌名 / 作者 / 曲段名的 empty）不印", () => {
-    assert(isPrinted("part-name empty"), "声部名照印"); assert(!isPrinted("song-title empty") && !isPrinted("credits empty") && !isPrinted("paper-name empty"), "占位提示不印");
+  it("声部名：还没人上场（屏幕上画淡，part-name empty）照印；排版器里没有占位提示；只给写谱的人看的披露（ann）不印", () => {
+    assert(isPrinted("part-name empty"), "声部名照印"); assert(!isPrinted("tempo-change ann") && !isPrinted("dyn-implied ann"), "披露不印");
+    const Lt = engrave(st.song, printOpts(st.song, 10, parts(st), measure, true, 0));
+    assert(!Lt.prims.some((p) => / empty|^empty/.test((p as { cls?: string }).cls ?? "") && !/part-name/.test((p as { cls?: string }).cls ?? "")), "没有占位提示（覆盖层画）");
   });
 });

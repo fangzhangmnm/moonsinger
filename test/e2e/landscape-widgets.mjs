@@ -14,7 +14,7 @@ await p.click(".pad-key[data-k] >> nth=0"); await p.waitForTimeout(100);
 await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTimeout(400);
 const top = await p.$eval('.strip [data-v="mute"]', (b) => b.getBoundingClientRect().top - b.closest(".strip").getBoundingClientRect().top);
 check(top < 40, "「静」钉在歌手卡顶上（不用在卡片里滚）", String(Math.round(top)));
-const badge = () => p.evaluate(() => [...document.querySelectorAll("#score rect.part-tg.on")].map((r) => [...r.classList].find((c) => c.startsWith("tg-"))).join("|"));   // v0.16.17：名字下面四颗小钮亮着的
+const badge = () => p.evaluate(() => [...document.querySelectorAll("#score .score-overlay .ov-tg.on")].map((r) => [...r.classList].find((c) => c.startsWith("tg-"))).join("|"));   // v0.16.17：名字下面四颗小钮亮着的
 await p.evaluate(() => { const e = window.__moonsinger.engine; window.__ch = []; const ch = e.channel.bind(e); e.channel = (id, prm) => { window.__ch.push([id, !!prm.mute, !!prm.solo]); return ch(id, prm); }; });
 await p.click('.strip [data-v="mute"]'); await p.waitForTimeout(250);
 check(await p.evaluate(() => window.__ch.some(([, m]) => m)), "点「静」= 录音房马上收到这位静音（推子到底、发送一起停；v0.10.38）", JSON.stringify(await p.evaluate(() => window.__ch)));

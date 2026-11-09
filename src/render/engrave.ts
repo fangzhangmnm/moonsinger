@@ -45,8 +45,8 @@ export type Prim =
 
 /** 要画的一个声部（顺序 = 总谱从上到下；隐藏的不在这里）。 */
 export interface PartView { id: string; name: string; abbr?: string; colorIdx?: number; empty?: boolean; first?: boolean; clef?: ClefName; staves?: 2; hidden?: boolean; badges?: string[];
-  /** 名字下面露出来的四颗小钮（v0.16.17 搬家 B：静 / 独 / 隐 / 只，一按就切；user 11-07「播放控制，这些东西反而应该是独立的按钮，不应该藏在里面」）。编辑器里的控件，PDF 不印（part-tg）。 */
-  toggles?: PartToggles; mono?: boolean; xHead?: boolean; perc?: PartPerc; ignores?: readonly string[]; lyricMute?: ReadonlySet<number>; noLyrics?: string }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
+  
+  mono?: boolean; xHead?: boolean; perc?: PartPerc; ignores?: readonly string[]; lyricMute?: ReadonlySet<number>; noLyrics?: string }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
 //   empty = 还没人上场（名字画淡色）；first = 歌里第一个声部（速度画在它上面）；clef = 谱号；hidden = 隐藏的：不画谱、缩成一条细行（点它开歌手牌）；badges = 名字下面的角标（静 / 独 / 只看它）
 /** 台上那位是鼓 / 音效（v0.10.27；src/gm/percussion.ts percKindOf）：kit = 整套鼓（写的音高 = 敲哪个鼓，五线鼓谱）；one = 固定敲一件（一线谱）。 */
 export type PartPerc = { kind: "kit" } | { kind: "one"; info: PercInfo; key: number };   // key = 固定敲的那个键（合租全是鼓时并成一套鼓用）
@@ -59,9 +59,10 @@ export interface EngraveOpts {
   tailOpen?: boolean;
   parts: PartView[];                     // 显示的声部
   measureLyric: (s: string) => number;   // px，歌词字号 = LYRIC_EM × sp
-  titlePlaceholder?: boolean;            // 歌名 / 词曲 / 曲段名空着时画浅色提示（编辑器里；导出 / 打印不画）
-  /** 编辑器里能写（不是听模式）：每张纸底下两个虚线框「＋ 歌手」「＋ 新曲段」（v0.16.19 搬家 D；不分页时才画——分页 = 打印预览，PDF 不印）+ 曲段的「⋯」（v0.16.21：听模式里点不了的就不画，user 11-08「本段右边的那个小省略号我好像点不了」）。 */
-  editable?: boolean;
+  /** 编辑器要排版留的地方（刀 1，2026-11-08 Opus 5.5；施工单 ai-docs/20261108-work-order-display-cut1-overlay.md §3.1）：只是尺寸，画什么归覆盖层（src/ui/score-overlay.ts）。
+   *  印 / PDF = 不给。underPaper = 每张纸底下留一条多高（sp；虚线框「＋ 声部」那一截，分页时不留）；tail = 整首最下面留一条多高（「＋ 新曲段」；分页 = 最后一页纸外面、只撑高画布）；
+   *  famGap = 合租展开着的一家，名字和谱之间多让多少（括号）；navRoom = 多张纸时曲段名那一条右边给曲段控件让多宽（只缩曲段名的点击框）。 */
+  chrome?: { underPaper?: number; tail?: number; famGap?: number; navRoom?: number };
   /** 合租的每一家都叠起来、不看光标在哪（v0.10.29：听模式；user「每一家点开收拢的ux怎么算」→ AI 提「听模式里所有家一律叠起来 / 写的模式光标在哪家哪家展开」→「12 同意」）。 */
   foldAll?: boolean;
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
@@ -79,13 +80,8 @@ export interface EngraveOpts {
   /** 按 C 调看（辅助模式，v0.16.10；src/score/view-in-c.ts）：每个音从它所在的调转到 C 再排，每个调号位置上方写「1=原来的调」（中途换调那一处给字多留一点宽）。
    *  只是看法：PDF / 导出不传（按实际的调印）。 */
   inC?: boolean;
-  /** 调号没有升降号的地方（纸开头那处、中途换成 C 的地方）上方画淡的「1=C」（v0.16.10，user 11-07「专业模式下面C调的时候，最好也能有一个显示调号的方案，
-   *  这个样子我就不会像这次一样忘了点了」）：编辑器里的提示，不占宽、不改排版，点它 = 谱头面板；PDF 不传。 */
-  keyHint?: boolean;
   /** 和弦标级数（v0.16.13；src/score/chord-name.ts）：叠音的和弦上方写它在这个调里是几级。不占地方、不改排版；跟着设置印进 PDF（user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）。 */
   chordTags?: boolean;
-  paperLabel?: string;                   // 纸右上角的小钮（扳手；这里的字只进悬停提示「纸：A5」）；点了 = 纸的设置（user「这种应该是纸的右上角有一个可以设置纸的属性吧。加图片的入口以后也可以放那里」；
-                                         //   2026-10-07「然后那个A5改成扳手，是对纸的配置」——家族里扳手 = 配置这一样东西，同 WeebPaint 套索 / 导出图片的配置钮）
 }
 export const LYRIC_EM = 1.6;
 /** 按节奏排时错开到第二行的歌词往下挪多少（sp）。 */
@@ -138,9 +134,8 @@ export interface LyricHit { index: number; system: number; x: number; y: number;
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export type PartToggle = "muted" | "solo" | "hidden" | "only";
 export type PartToggles = Record<PartToggle, boolean>;
-/** 名字下面那四颗小钮的格子（sp）：两列两排；名字那一栏至少这么宽（屏幕和 PDF 同一条规矩 = 不改版面）。 */
-// 名字下面两颗大钮（v0.16.22；user 11-08「至少要比那些小扳手、本段这些东西大」「要粗的手指也能点」）：比纸角上的控件（CTL_H 3.0）大
-const TG_BTN = 3.2, TG_GAP = 0.4, TG_W = TG_BTN * 2 + TG_GAP;
+/** 名字那一栏至少多宽（sp）：屏幕上覆盖层在名字上面放两颗 3.2 的大钮（src/ui/score-overlay.ts TG_BTN）；PDF 照样这么宽 = 预览的版面 = PDF（屏幕和 PDF 同一条规矩；刀 1 起这只是一个几何常数，排版器不画钮）。 */
+const NAME_MIN = 3.2 * 2 + 0.4;
 export interface MarkHit { index: number; kind: "key" | "time" | "tempo"; system: number; x: number; y: number; w: number; h: number }
 /** 谱号 / 八度线的点击区域（v0.9.28）：start = 每行开头的谱号（index = 管着它的谱号记号，−1 = 声部自己的谱号）；mid = 行中间的谱号记号；ottava = 八度线开头的字。 */
 export interface ClefHit { kind: "start" | "mid" | "ottava"; paper: string; part: string; index: number; system: number; x: number; y: number; w: number; h: number; /** 自动画的八度线（v0.9.37）：index = −1，这一段的起止下标和几度。 */ run?: { from: number; to: number; shift: 1 | 2 | -1 } }
@@ -157,8 +152,8 @@ export interface Layout {
   chordHeads: { index: number; system: number; x: number; y: number; w: number; part?: string }[];
   /** 和弦级数的点击框 + 认出来的候选（o.chordTags 开着才有；点了 = 候选小菜单）。 */
   chordTags: { x: number; y: number; w: number; h: number; read: ChordRead }[];
-  /** 名字下面四颗小钮的点击框（PartView.toggles 给了才有）。 */
-  partToggles: { paper: string; part: string; kind: PartToggle; x: number; y: number; w: number; h: number }[];
+  /** 每张纸第一行各位的名字块（刀 1 锚点）：x0 = 色点左边、x1 = 最长那行名字的右边、top = 第一行名字的上沿（px）。覆盖层把两颗大钮摆在它上面、整排对它居中。 */
+  names: { paper: string; part: string; x0: number; x1: number; top: number }[];
   /** 合租叠起来的谱行（下标 = systems 里的）：只读——点了不写、不放光标，点名字拆开（v0.10.25，user「host也应该只读，只有展开时才能编辑」）。 */
   sharedRows: number[];
   /** 合租叠起来的那一行画的是哪条虚拟 track（键 = "纸 id:主人 id"；v0.10.28，src/score/merge.ts）：这一行点击区的下标指的是它，不是主人自己的 track。 */
@@ -166,22 +161,28 @@ export interface Layout {
   /** 每个小节在哪（v0.10.28）：这张纸上的 tick 区间 + 画在哪一行（systems 下标）、小节里第一个东西的 x（px）。播放的小节底色按播放的 tick 查这个——
    *  不再按「最晚开始的那个音」找（跨小节的长音 / 连音线后半截没有自己的点击区，小节底色就停在上一小节；user「小节高亮也算错了…碰到跨小节的音小节高亮没有update」）。 */
   measures: { paper: string; t0: number; t1: number; row: number; x: number }[];
-  /** 合租展开着的那一家（v0.10.29）：每行左边一条括号把这一家的几行括在一起；点它 = 光标挪出这一家（叠回去）。user「把这一家的几行括在一起…点这条括号等于「光标挪到这一家后面紧挨着的那位」…可以」。 */
+  /** 合租展开着的那一家（v0.10.29；刀 1 起只是锚点 = chrome.famGap 给了才有）：这一家的几行在哪（括号由覆盖层画，点它 = 光标挪出这一家）。user「把这一家的几行括在一起…点这条括号等于「光标挪到这一家后面紧挨着的那位」…可以」。 */
   families: { paper: string; host: string; x: number; y: number; w: number; h: number }[];
   systems: SystemBox[]; notes: HitNote[]; slots: Slot[]; heads: CaretHead[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; rests: RestHit[]; title: TitleHit; clefs: ClefHit[];
   arrangement: TitleHit | null;                 // 编排那一行（只在「全部」视图里有；点了就地改）
-  credits: Box | null;                           // 作者栏那一块的点击区域（px；空着时是浅色提示）
+  credits: Box | null;                           // 作者栏那一块的点击区域（px；空着 = null）
+  /** 作者栏第一行在哪（刀 1 锚点）：x = 右端（靠右写）、y = 基线、size = 字号（px）。空着时覆盖层在这里写浅色提示「作者」、点它 = 改作者栏。 */
+  creditsLine: { x: number; y: number; size: number };
+  /** 版心的左右（px；刀 1 锚点）：纸角的小钮、曲段控件靠它右端摆。 */
+  content: { left: number; right: number };
+  /** 调号位置上没有升降号的那几处（刀 1 锚点；专业模式，按 C 调看时没有）：覆盖层在这里写淡的「1=C」，点它 = 谱头面板。x / y = 字的起点和基线（px）。 */
+  keyHints: { system: number; index: number; x: number; y: number; size: number }[];
+  /** 整首最下面留的那一条（chrome.tail 给了才有）：覆盖层在里面画「＋ 新曲段」。 */
+  tail: (Box & { paper: string }) | null;
   /** 每行每根小节线的 x（px；播放时的小节底色用，v0.10.12；只是多带的数据，不改任何位置）。 */
   bars: { system: number; x: number }[];
   parts: (Box & { paper: string; part: string })[];   // 歌手牌（每张纸第一行各条谱左边的声部名）的点击区域
-  papers: { id: string; title: (TitleHit & { shown: boolean }); menu: Box | null; top: number; bottom: number; prev?: Box | null; next?: Box | null; scope?: Box }[];   // 多张纸：每张纸曲段名那一行右边一组「‹ k/n › 本段 ⋯」   // 每张纸：曲段名那一条（shown = 画了）、「⋯」、占的竖直范围
-  /** 每张纸底下的虚线框（v0.16.19 搬家 D，取代扳手旁边的小「＋」）：part = 这一段加歌手，paper = 在这一段下面插一张新曲段。 */
-  paperAdds: { paper: string; kind: "part" | "paper"; x: number; y: number; w: number; h: number }[];
-  nav: { prev: Box | null; next: Box | null; scope: Box } | null;   // 歌名左边的「‹ 2/3 ›」+ 紧跟着「本段」开关（多于一张纸才画）
-  paperMenu: Box | null;   // 曲段控件最后的「⋯」= 光标所在那张纸的菜单（编辑器里总画；只有一张纸时曲段控件就只有它）
+  /** 每张纸：曲段名那一条（shown = 画了）、占的竖直范围。刀 1 起曲段控件（‹ k/n › 只看本段 ⋯）归覆盖层，这里只给锚点：
+   *  under = 纸底下留的那一条（chrome.underPaper，虚线框）；hidden = 这张纸隐藏着（全部视图里折叠）、stub = 折叠后的那一条；note = 本段视图里隐藏纸顶上那一条说明；
+   *  empty = 这张纸上没有声部时空着的那一条；hiddenParts = 这张纸上有、但隐藏着（不排、不占地方）的声部（覆盖层的「隐藏 N」）。 */
+  papers: { id: string; title: (TitleHit & { shown: boolean }); top: number; bottom: number; under?: Box; hidden?: boolean; stub?: Box; note?: Box; empty?: Box; hiddenParts: string[] }[];
   pageX: { left: number; right: number };        // 分页时版心左右的边距（px；svg 的 viewBox 往左扩这么多，页框画在负 x）；连续 = 0
   pages: { top: number; h: number }[];           // 分页时每页占的竖直范围（px）；连续 = []
-  paperChip: Box | null;                         // 纸右上角小钮的点击区域（px）
   shortBars: number;   // 拍数和拍号对不上的小节有几个（状态行用；第一小节当弱起不算）
   /** 每行歌词的基线 y（px；= lyricY(system) 的平数据，排版进 worker 后主线程靠它重建 lyricY；2026-10-21）。 */
   lyricYs: number[];
@@ -447,22 +448,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   // 歌名 2.8 个谱线间距（原来 1.9 ≈ 曲段名 1.6，看不出谁大；出版总谱的歌名比谱上别的字大一大截；user「歌曲标题字体大小不合理」）
   const titleSize = P(2.8), titleBase = TOP + P(TITLE_H * 0.62);
   if (song.title) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: song.title, cls: "song-title", size: titleSize, anchor: "middle" });
-  else if (o.titlePlaceholder) prims.push({ t: "text", x: o.width / 2, y: titleBase, s: _t("歌名"), cls: "song-title empty", size: titleSize * 0.8, anchor: "middle" });   // user「虚框更不舒服，换回字提示（不过简短一点）」
-  let paperChip: Box | null = null, nav: Layout["nav"] = null, paperMenu: Box | null = null;
-  if (o.paperLabel) {   // 纸右上角：一个扳手小钮（纸的设置）；旁边原来的「＋」（新的纸）v0.16.19 起换成每张纸底下的虚线框
-    const ch = P(CTL_H), cw = ch, cx = o.width - P(MARGIN) - cw, cy = TOP + P(0.8), is = P(CTL_GLYPH);
-    prims.push({ t: "rect", x: cx, y: cy, w: cw, h: ch, cls: "paper-chip" });
-    prims.push({ t: "icon", id: "file", x: cx + (cw - is) / 2, y: cy + (ch - is) / 2, size: is, cls: "paper-chip-icon", title: _t("纸：{paperLabel}", { paperLabel: o.paperLabel }) });
-    paperChip = { x: cx - P(0.5), y: cy - P(0.5), w: cw + P(1), h: ch + P(1) };
-  }
-  if (o.titlePlaceholder && o.editable && song.papers.length === 1) {   // 只有一张纸（没有曲段名那一行）：纸的「⋯」在歌名左边；多张纸 = 每张纸自己那一行上一组曲段控件（下面 drawPaperTitle）
-    const ch = P(CTL_H), cw = P(CTL_H + 0.6), cy = TOP + P(0.8), mx = P(MARGIN);
-    prims.push({ t: "rect", x: mx, y: cy, w: cw, h: ch, cls: "paper-chip" });
-    prims.push({ t: "text", x: mx + cw / 2, y: cy + ch * 0.72, s: "⋯", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
-    paperMenu = { x: mx - P(0.3), y: cy - P(0.4), w: cw + P(0.6), h: ch + P(0.8) };
-  }
   const title: TitleHit = { x: P(MARGIN), y: TOP + P(0.3), w: o.width - P(2 * MARGIN), h: P(TITLE_H), baseline: titleBase, size: titleSize };
-  // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）；空着时编辑器里画浅色短提示「作者」
+  // 作者栏：标题下面靠右，照写的一行一行显示（纯文本，不认格式；user「嗯所见即所得」）；空着 = 什么都不画（覆盖层写浅色提示）
   const lines = song.credits ? song.credits.split("\n") : [];
   let credits: Box | null = null;
   const cs = P(1.25), rx = o.width - P(MARGIN), y0 = TOP + P(TITLE_H + 1.0);
@@ -470,10 +457,6 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     lines.forEach((s, k) => prims.push({ t: "text", x: rx, y: y0 + k * cs * 1.35, s, cls: "credits", size: cs, anchor: "end" }));
     const w = Math.max(...lines.map((s) => (o.measureLyric(s) * 1.25) / LYRIC_EM)) + P(0.6);
     credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.35 * lines.length + cs * 0.4 };
-  } else if (o.titlePlaceholder) {
-    prims.push({ t: "text", x: rx, y: y0, s: _t("作者"), cls: "credits empty", size: cs, anchor: "end" });
-    const w = (o.measureLyric(_t("作者")) * 1.25) / LYRIC_EM + P(0.6);
-    credits = { x: rx - w, y: y0 - cs * 1.1, w: w + P(0.3), h: cs * 1.75 };
   }
   // 编排（2026-10-08 深夜 Opus 5.5；user「编排我建议就是总paper的顶上说一下，然后只有全部paper的时候可见，就是一行，对吧，就和title一样」）：
   //   作者栏下面单独一行、靠左；写错的（找不到的纸、循环段不在最后…）灰字说为什么（放不下 = 下一行），放的时候跳过（纪律）
@@ -482,18 +465,15 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const as = P(1.25), wOf = (t: string, size: number) => (o.measureLyric(t) * size) / LYRIC_EM, row = Math.max(lines.length, 1), base = y0 + row * cs * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
     const label = _t("编排　"), lw = wOf(label, 1.25), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
-    prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: txt ? "arr-label" : "arr-label empty", size: as, anchor: "start" });   // 没写编排 = 这个标签只是入口（提示），PDF 不印
+    if (txt) prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: "arr-label", size: as, anchor: "start" });   // 没写编排 = 标签只是入口（提示）= 覆盖层写
     arrLast = base;
     if (txt) {
       prims.push({ t: "text", x: x0, y: base, s: txt, cls: "arr", size: as, anchor: "start" });
       if (arr.issues.length) {
         const why = `· ${arr.issues[0].why}${arr.issues.length > 1 ? _t(" 等 {n} 处", { n: arr.issues.length }) : ""}`, tw = wOf(txt, 1.25) + P(0.8), fits = tw + wOf(why, 1.1) <= avail;
-        prims.push({ t: "text", x: fits ? x0 + tw : x0, y: fits ? base : base + cs * 1.35, s: why, cls: "arr-issue", size: P(1.1), anchor: "start" });
+        prims.push({ t: "text", x: fits ? x0 + tw : x0, y: fits ? base : base + cs * 1.35, s: why, cls: "arr-issue ann", size: P(1.1), anchor: "start" });
         if (!fits) arrLast = base + cs * 1.35;
       }
-    } else if (o.titlePlaceholder) {
-      const full = _t("不写 = 每张纸按顺序各放一遍（例：前奏 (A A1)×3 A A2 [副歌]）"), short = _t("不写 = 每张纸按顺序各放一遍");
-      prims.push({ t: "text", x: x0, y: base, s: wOf(full, 1.25) <= avail ? full : short, cls: "arr-empty", size: as, anchor: "start" });
     }
     arrangement = { x: x0 - P(0.3), y: base - as * 1.15, w: avail + P(0.3), h: as * 1.6, baseline: base, size: as };
   }
@@ -509,24 +489,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const topAt = new Map<string, number>();
   const sharedRows: number[] = [], virtualOut: Record<string, Token[]> = {}, measures: Layout["measures"] = [], families: Layout["families"] = [];   // 合租叠起来的那几行（只读：点了不写、不放光标；v0.10.25）
   const rows: SystemBox[] = [], notes: HitNote[] = [], slots: Slot[] = [], heads: CaretHead[] = [], lyrics: LyricHit[] = [], marks: MarkHit[] = [], dyns: DynHit[] = [], rests: RestHit[] = [], clefs: ClefHit[] = [];
-  const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], partTgHit: Layout["partToggles"] = [];
-  /** 名字下面两颗大钮（v0.16.22；user 11-08「做两个这样的符号，他们得大，非常好点」「按是静音，长按或者双击是独奏」→ AI 提「点 = 静音 / 隐藏，长按（电脑右键）= 独奏 / 只看」→ user「按你说的做」）：
-   *  左 = 眼睛（看：开 / 隐藏 / 只看），右 = 喇叭（听：开 / 静音 / 独奏）；图标跟着状态换（图标库 visibility-* / volume-*）。点击框的 kind = 点一下切的那个（hidden / muted），长按换成 only / solo（score-view）。
-   *  top = 钮的上沿（px）；编辑器里的控件（part-tg 不印）。 */
-  const drawToggles = (paperId: string, pv: PartView, top: number, cx: number): number => {
-    const t = pv.toggles; if (!t) return top;
-    const btns: [PartToggle, string, string, string][] = [
-      ["hidden", t.only ? "visibility-only" : t.hidden ? "visibility-hide" : "visibility-show", t.only ? "tg-only" : t.hidden ? "tg-hidden" : "", _t("点 = 隐藏 / 显示；长按（电脑右键）= 只看它")],
-      ["muted", t.solo ? "volume-solo" : t.muted ? "volume-mute" : "volume", t.solo ? "tg-solo" : t.muted ? "tg-muted" : "", _t("点 = 静音 / 出声；长按（电脑右键）= 独奏")],
-    ];
-    btns.forEach(([k, icon, st], i) => {
-      const x = Math.max(P(0.2), cx - P(TG_W) / 2) + P(i * (TG_BTN + TG_GAP)), y = top, s = P(TG_BTN), is = P(TG_BTN * 0.72);   // 名字上面：眼睛、喇叭
-      prims.push({ t: "rect", x, y, w: s, h: s, cls: `part-tg${st ? ` on ${st}` : ""}` });
-      prims.push({ t: "icon", id: icon, x: x + (s - is) / 2, y: y + (s - is) / 2, size: is, cls: `part-tg part-tg-i${st ? ` on ${st}` : ""}`, title: btns[i][3] });
-      partTgHit.push({ paper: paperId, part: pv.id, kind: k, x, y, w: s, h: s });
-    });
-    return top + P(TG_BTN);
-  };
+const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: Layout["names"] = [], keyHints: Layout["keyHints"] = [];
   let shortBars = 0;
   const rowTop = new Map<number, number>();   // 行号 → top（px）
   const rowAbove = new Map<number, number>(), lyricOff = new Map<number, number>(), dynYAt = new Map<number, number>(), noteDynYAt = new Map<number, number>(), navYAt = new Map<number, number>(), ottYAt = new Map<number, number>(), ottDownYAt = new Map<number, number>(), tempoYAt = new Map<number, number>(), grooveYAt = new Map<number, number>();   // + 速度记号的基线（px；第一个声部）   // 行号 → 谱上面留多少（sp）/ 歌词基线在第一线下多少（sp）；声部第一条谱行号 → 力度字基线（px）
@@ -546,7 +509,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const drawTempo = (r: number, x0: number, v: number, cls: string, index: number, change?: "up" | "down") => {
     const fs = TEMPO_EM * sp, word = tempoWord(v).it, y = tempoYAt.get(r) ?? staffTop(r) - P(2.4);   // 速度记号在最上面：高音、力度字（写上面的时候）都在它下面
     // 这一段开头的速度和上一段不一样 = 前面标一个强调色的 ↑（快了）/ ↓（慢了）提示（user 2026-10-08「不要grey out，而是有变化的时候会标一个东西提示用户」；一样 = 照常画，不标）
-    if (change) prims.push({ t: "text", x: P(x0 - 0.3), y, s: change === "up" ? "↑" : "↓", cls: "tempo-change", size: fs, anchor: "end" });
+    if (change) prims.push({ t: "text", x: P(x0 - 0.3), y, s: change === "up" ? "↑" : "↓", cls: "tempo-change ann", size: fs, anchor: "end" });
     const ww = (o.measureLyric(word) * TEMPO_EM) / LYRIC_EM / sp, num = `= ${v}`, nw = (o.measureLyric(num) * TEMPO_EM) / LYRIC_EM / sp;
     prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
     const gx = x0 + ww + 0.7;
@@ -554,10 +517,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     prims.push({ t: "text", x: P(gx + 1.3), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
     marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - P(TEMPO_EM * 1.1), w: P(gx + 1.3 + nw + 0.6 - x0), h: P(TEMPO_EM * 1.5) });
   };
-  /** 调号位置上方的「1=X」（v0.16.10）：hint = 编辑器里的淡提示（不印、不占宽）。字也算这个调号的点击区（谱头面板）。 */
+  /** 调号位置上方的「1=X」（v0.16.10）：hint = 专业模式没有升降号的地方（刀 1 起不画，只记锚点 keyHints，覆盖层写淡的「1=C」）。字也算这个调号的点击区（谱头面板）。 */
   const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number) => {
     const y = staffTop(r) - P(0.8);
-    prims.push({ t: "text", x: P(x0), y, s: `1=${KEY_LABEL[f] ?? "?"}`, cls: `keysig key-label${hint ? " key-hint" : ""}`, size: TEMPO_EM * sp * 0.85, anchor: "start" });
+    if (hint) { keyHints.push({ system: r, index, x: P(x0), y, size: TEMPO_EM * sp * 0.85 }); return; }
+    prims.push({ t: "text", x: P(x0), y, s: `1=${KEY_LABEL[f] ?? "?"}`, cls: "keysig key-label", size: TEMPO_EM * sp * 0.85, anchor: "start" });
     marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - P(TEMPO_EM * 0.95), w: P(KEY_LABEL_W), h: P(TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r: number, x0: number, f: number, cls: string, clef: "G" | "F" = "G") => {   // 低音谱号的升降号比高音低两级
@@ -567,32 +531,24 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
 
   const showPaperLine = song.papers.length > 1 || song.papers.some((p) => p.name);
   let drawn = 0;
-  const paperAdds: Layout["paperAdds"] = [];
-  // 每张纸底下两个虚线框（v0.16.19 搬家 D；user 11-07 拍的搬家清单第五条「管理」）：「＋ 歌手」= 这一段加歌手（已有的 / 新的），「＋ 新曲段」= 在这一段下面插一张。
-  //   只在编辑器能写、不分页时画（分页 = 打印预览，和 PDF 一样）；折叠着的隐藏纸不画。占的高度只在这种视图里有，分页 / PDF 的版面一点不动。
-  // 全部曲段（user 11-08「每段底下已经有大大的加歌手」「在显示所有曲段的模式最下面有一个大的加曲段」）：每段底下一个整宽「＋ 歌手」，整首最下面一个整宽「＋ 新曲段」；
-  //   本段：这一段底下两个并排；分页（= 打印预览，框塞进页里就挪了分页）：每段不画，「＋ 新曲段」放在最后一页纸外面。
-  const addBox = (paperId: string, kind: "part" | "paper", label: string, x: number, y: number, w: number) => {
-    const h = P(2.6);
-    prims.push({ t: "rect", x, y, w, h, cls: "add-box" });
-    prims.push({ t: "text", x: x + w / 2, y: y + h * 0.66, s: label, cls: "add-box-text", size: P(1.15), anchor: "middle" });
-    paperAdds.push({ paper: paperId, kind, x, y, w, h });
-    return y + h;
-  };
-  const addBoxesUnder = (paper: PaperSeg) => {
-    if (!o.editable || PG || (paper.hidden && !o.onlyPaper)) return;
+  // 每张纸底下留一条（v0.16.19 搬家 D 的虚线框「＋ 声部」「＋ 新曲段」；刀 1 起框本身归覆盖层，这里只留地方 = chrome.underPaper / tail）。
+  //   只在编辑器能写、不分页时留（分页 = 打印预览，和 PDF 一样）；折叠着的隐藏纸不留。占的高度只在这种视图里有，分页 / PDF 的版面一点不动。
+  //   本段：这一条里两个框并排；全部：每段一个整宽「＋ 声部」、整首最下面一个「＋ 新曲段」；分页：每段不留，「＋ 新曲段」在最后一页纸外面（只撑高画布，不动页）。
+  const underOf = (paper: PaperSeg): Box | undefined => {
+    const h = o.chrome?.underPaper; if (!h || PG || (paper.hidden && !o.onlyPaper)) return undefined;
     // 歌词那一行画在行的底边下面（行高不含空着的歌词位）：框放在这张纸最低那一行歌词位的下面，不然盖住「词」模式里点歌词位
     let low = yCur; rows.forEach((r, k) => { if (r.paper === paper.id) low = Math.max(low, lyricY(k) + P(1.2)); });
-    const gap = P(0.8), y = low + P(1.0), x0 = P(MARGIN), x1 = P(right);
-    if (o.onlyPaper) { const w = (x1 - x0 - gap) / 2; addBox(paper.id, "part", _t("＋ 声部"), x0, y, w); yCur = addBox(paper.id, "paper", _t("＋ 新曲段"), x0 + w + gap, y, w) + P(0.4); }
-    else yCur = addBox(paper.id, "part", _t("＋ 声部"), x0, y, x1 - x0) + P(0.4);
+    const box = { x: P(MARGIN), y: low + P(1.0), w: P(right) - P(MARGIN), h: P(h) };
+    yCur = box.y + box.h + P(0.4);
+    return box;
   };
-  song.papers.forEach((paper, paperK) => { const before = drawn; drawPaper(paper, paperK); if (drawn > before) addBoxesUnder(paper); });
-  let tailBottom = 0;   // 分页时「＋ 新曲段」在最后一页外面：只撑高画布，不动页
+  song.papers.forEach((paper, paperK) => { const before = drawn; drawPaper(paper, paperK); if (drawn > before) { const u = underOf(paper); if (u) papersHit[papersHit.length - 1]!.under = u; } });
+  let tailBottom = 0, tail: Layout["tail"] = null;   // 分页时「＋ 新曲段」在最后一页外面：只撑高画布，不动页
   const lastPaper = song.papers.at(-1);
-  if (o.editable && lastPaper && !(o.onlyPaper && !PG)) {
-    if (PG) tailBottom = addBox(o.onlyPaper ?? lastPaper.id, "paper", _t("＋ 新曲段"), P(MARGIN), pageTopY(pageNo) + P(PG.h) + P(1.2), P(baseRight - MARGIN)) + P(1.0);
-    else yCur = addBox(lastPaper.id, "paper", _t("＋ 新曲段"), P(MARGIN), yCur + P(0.6), P(baseRight - MARGIN)) + P(0.4);
+  if (o.chrome?.tail && lastPaper && !(o.onlyPaper && !PG)) {
+    const h = P(o.chrome.tail), paperId = o.onlyPaper ?? lastPaper.id;
+    if (PG) { tail = { paper: paperId, x: P(MARGIN), y: pageTopY(pageNo) + P(PG.h) + P(1.2), w: P(baseRight - MARGIN), h }; tailBottom = tail.y + h + P(1.0); }
+    else { tail = { paper: lastPaper.id, x: P(MARGIN), y: yCur + P(0.6), w: P(baseRight - MARGIN), h }; yCur = tail.y + h + P(0.4); }
   }
   function drawPaper(paper: PaperSeg, paperK: number): void {
     right = baseRight;
@@ -604,51 +560,23 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const paperTop = yCur;
     // 曲段名那一条（多于一张纸或填了名字才画；空着画浅色提示；右边「⋯」= 纸的菜单）。分页时和第一行谱一起挪，所以等算完行高再画
     const pSize = P(1.6);
-    let menu: Box | null = null;
-    const paperNav: { prev?: Box | null; next?: Box | null; scope?: Box } = {};
-    const pTitle: TitleHit & { shown: boolean } = { x: P(MARGIN), y: yCur, w: o.width - P(2 * MARGIN) - P(o.titlePlaceholder && song.papers.length > 1 ? 16 : 4), h: P(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };   // 右边让出曲段控件组
+    const pTitle: TitleHit & { shown: boolean } = { x: P(MARGIN), y: yCur, w: o.width - P(2 * MARGIN) - P(o.chrome?.navRoom && song.papers.length > 1 ? o.chrome.navRoom : 4), h: P(PAPER_H), baseline: 0, size: pSize, shown: showPaperLine };   // 右边让出曲段控件组
     const drawPaperTitle = (firstBlock: number) => {
       if (!showPaperLine) return;
       ensure(P(PAPER_H) + firstBlock);
       const pBase = yCur + P(PAPER_H * 0.68);
       pTitle.y = yCur; pTitle.baseline = pBase;
-      if (paper.name) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: paper.hidden && !o.onlyPaper ? "paper-name hidden-paper" : "paper-name", size: pSize, anchor: "start" });   // 折叠的隐藏纸 = 控件（点了进去），PDF 不印
-      else if (o.titlePlaceholder) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: _t("曲段名"), cls: "paper-name empty", size: pSize, anchor: "start" });
-      // 曲段控件组（2026-10-08 user「…能不能放在和曲段导航在一起」「就一个按钮toggle」「类似solo toggle」「然后曲段的...也放在曲段控件那里」
-      //   「多曲段模式下面应该每个曲段都有对应的小控件组」）：每张纸自己那一行右边「‹ k/n › 本段 ⋯」——‹ › 从这张跳；本段 = 只看这张（亮）/ 回到全部；⋯ = 这张纸的菜单
-      if (o.titlePlaceholder && song.papers.length > 1) {
-        const k = song.papers.findIndex((p) => p.id === paper.id), n = song.papers.length, ch = P(CTL_H), cw = P(CTL_H), cy = yCur + P((PAPER_H - CTL_H) / 2);
-        const lab = `${k + 1}/${n}`, lw = (o.measureLyric(lab) * CTL_TEXT) / LYRIC_EM + P(1.0), sw = P(CTL_H + 0.6), mw = P(CTL_H + 0.6);   // 「只看本段」= 只看的眼睛（v0.16.22；user 11-08「本段，这个也比较谜语的，应该是只看本段…做个眼睛」）
-        const segOn = o.onlyPaper === paper.id, withMenu = !!o.editable, total = cw + lw + cw + P(1.0) + sw + (withMenu ? P(0.6) + mw : 0);
-        let x = o.width - P(MARGIN) - total;
-        const hit = (bx: number, w: number): Box => ({ x: bx - P(0.3), y: cy - P(0.2), w: w + P(0.6), h: ch + P(0.4) });   // 上下只多 0.2：不出曲段名那一条，不抢下面谱的点
-        prims.push({ t: "rect", x, y: cy, w: cw, h: ch, cls: k > 0 ? "paper-chip" : "paper-chip off" });
-        prims.push({ t: "text", x: x + cw / 2, y: cy + ch * 0.72, s: "‹", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
-        const prev = k > 0 ? hit(x, cw) : null; x += cw;
-        prims.push({ t: "text", x: x + lw / 2, y: cy + ch * 0.7, s: lab, cls: "nav-text", size: P(CTL_TEXT), anchor: "middle" }); x += lw;
-        prims.push({ t: "rect", x, y: cy, w: cw, h: ch, cls: k < n - 1 ? "paper-chip" : "paper-chip off" });
-        prims.push({ t: "text", x: x + cw / 2, y: cy + ch * 0.72, s: "›", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
-        const next = k < n - 1 ? hit(x, cw) : null; x += cw + P(1.0);
-        prims.push({ t: "rect", x, y: cy, w: sw, h: ch, cls: segOn ? "paper-chip on" : "paper-chip" });
-        { const is = P(CTL_GLYPH); prims.push({ t: "icon", id: "visibility-only", x: x + (sw - is) / 2, y: cy + (ch - is) / 2, size: is, cls: segOn ? "paper-chip-icon on" : "paper-chip-icon", title: segOn ? _t("只看本段（再点 = 看全部曲段）") : _t("只看本段") }); }
-        const scope = hit(x, sw); x += sw + P(0.6);
-        if (withMenu) {
-          prims.push({ t: "rect", x, y: cy, w: mw, h: ch, cls: "paper-chip" });
-          prims.push({ t: "text", x: x + mw / 2, y: cy + ch * 0.72, s: "⋯", cls: "paper-chip-text", size: P(CTL_GLYPH), anchor: "middle" });
-          menu = hit(x, mw);
-        }
-        Object.assign(paperNav, { prev, next, scope });
-      }
+      if (paper.name && !(paper.hidden && !o.onlyPaper)) prims.push({ t: "text", x: P(MARGIN), y: pBase, s: paper.name, cls: "paper-name", size: pSize, anchor: "start" });   // 折叠的隐藏纸的名字 = 不印（覆盖层写，刀 1）
+      // 曲段控件组「‹ k/n › 只看本段 ⋯」（2026-10-08 user「…能不能放在和曲段导航在一起」「多曲段模式下面应该每个曲段都有对应的小控件组」）：刀 1 起归覆盖层，按 pTitle 右端摆
       yCur += P(PAPER_H);
     };
     // 隐藏的纸（不放）：全部视图里折叠成曲段名 + 一条细行（点曲段名进去）；本段视图里照常画、顶上一行说明（user 2026-10-08「要明白的明白这是隐藏的」）
     if (paper.hidden && !o.onlyPaper) {
       drawPaperTitle(P(STUB_H));
       ensure(P(STUB_H));
-      prims.push({ t: "text", x: P(MARGIN), y: yCur + P(STUB_H * 0.7), s: _t("隐藏 · 不放（点曲段名进去）"), cls: "part-stub", size: P(1.1), anchor: "start" });
-      prims.push({ t: "line", x1: P(MARGIN + 0.2) + (o.measureLyric(_t("隐藏 · 不放（点曲段名进去）")) * 1.1) / LYRIC_EM + P(0.8), y1: yCur + P(STUB_H * 0.5), x2: P(right), y2: yCur + P(STUB_H * 0.5), w: P(0.08), cls: "part-stub-line" });
+      const stub = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: P(STUB_H) };   // 折叠后的那一条：说明字归覆盖层（刀 1），位置照留
       yCur += P(STUB_H);
-      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
+      papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hidden: true, stub, hiddenParts: [] });
       return;
     }
     const present = o.parts.filter((p) => paper.tracks[p.id]), visible = present.filter((p) => !p.hidden), hiddenParts = present.filter((p) => p.hidden);
@@ -718,21 +646,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     });
     const loIds = new Set(lowOf.values());
     const trackOf = (id: string): Token[] => virt.get(id) ?? paper.tracks[id];
-    // 隐藏的声部不消失：缩成一条细行（灰名字 + 「隐藏」），点它开歌手牌（user「hide的track怎么看见」）
-    const stubs = () => {
-      for (const p of hiddenParts) {
-        ensure(P(STUB_H));
-        prims.push({ t: "text", x: P(MARGIN), y: yCur + P(STUB_H * 0.7), s: _t("{name} · 隐藏", { name: p.name }), cls: "part-stub", size: P(1.1), anchor: "start" });
-        prims.push({ t: "line", x1: P(MARGIN + 0.2) + (o.measureLyric(_t("{name} · 隐藏", { name: p.name })) * 1.1) / LYRIC_EM + P(0.8), y1: yCur + P(STUB_H * 0.5), x2: P(right), y2: yCur + P(STUB_H * 0.5), w: P(0.08), cls: "part-stub-line" });
-        partsHit.push({ paper: paper.id, part: p.id, x: P(MARGIN - 0.4), y: yCur, w: P(right - MARGIN + 0.4), h: P(STUB_H) });
-        yCur += P(STUB_H);
-      }
-    };
-    if (!parts.length) {   // 这张纸上没有显示的声部：只有细行（都隐藏了）或一行字（压根没声部）
-      drawPaperTitle(P(hiddenParts.length ? STUB_H : 3.2));
-      if (!hiddenParts.length) { prims.push({ t: "text", x: P(MARGIN), y: yCur + P(2.2), s: _t("（这张纸上没有声部）"), cls: "paper-name empty", size: P(1.3), anchor: "start" }); yCur += P(3.2); }
-      stubs();
-      papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
+    // 隐藏的声部（刀 1，施工单 §4 第 5 条；user 11-08「我建议不留空 可以，但是如果是页面模式的话wysiwyg，排版要对齐，要不你换一个UI？」）：
+    //   当它不存在——不排行、不留高度，连续和分页一样，预览的版面 = PDF 的版面。提醒归覆盖层：曲段名那一条上一颗不占位的「隐藏 N」（hiddenParts 锚点）。
+    if (!parts.length) {   // 这张纸上没有显示的声部：都隐藏了 = 只有曲段名那一条（「隐藏 N」在上面）；压根没声部 = 空一行（覆盖层写「这张纸上没有声部」）
+      drawPaperTitle(P(hiddenParts.length ? 0 : 3.2));
+      let emptyBox: Box | undefined; if (!hiddenParts.length) { emptyBox = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: P(3.2) }; yCur += P(3.2); }
+      papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(emptyBox ? { empty: emptyBox } : {}) });
       return;
     }
     // 1. 每个声部的排版单元
@@ -804,8 +723,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const spans = per.flatMap((q) => q.units.filter((u): u is Chunk => u.kind === "chunk").map((u) => [u.tick, u.tick + u.ticks] as const));
     const breakableAt = (tick: number) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
     // 3. 折行（像文字：优先在小节线后折；一个小节都放不下就逐列折）。每行开头的调号 = 各声部那里生效的调号；行首宽 = 最宽的那个声部
-    const FAM_W = openFams.length && o.titlePlaceholder ? 0.8 : 0;   // 有展开着的一家：名字和谱之间多让一点给括号
-    const ind0 = Math.max(TG_W, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;   // 名字一栏 = 两颗大钮的宽和名字（最长 NAME_MAX，再长折行）里大的那个；屏幕和 PDF 同一条规矩（预览 = PDF）   // 至少放得下名字下面那四颗小钮（v0.16.17；屏幕和 PDF 同一条规矩）   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
+    const FAM_W = openFams.length ? o.chrome?.famGap ?? 0 : 0;   // 有展开着的一家：名字和谱之间多让一点给括号
+    const ind0 = Math.max(NAME_MIN, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves ?? 1).map(nameW)))) + 1.4 + FAM_W;   // 名字一栏 = 两颗大钮的宽和名字（最长 NAME_MAX，再长折行）里大的那个；屏幕和 PDF 同一条规矩（预览 = PDF）   // 至少放得下名字下面那四颗小钮（v0.16.17；屏幕和 PDF 同一条规矩）   // 第一行让给声部名的缩进（sp；名字折行后最宽的那一行）
     // 第二行起每行写简写（v0.9.31；user「todo 总谱的每一行都放乐器名的省空间简写」→「乐手名和颜色同意」）：缩进 = 最宽的那个简写；没给简写（测试 / 老调用）= 0，照旧
     //   v0.9.41：定宽（user 经仓鼠转达「没简写的能不能想办法也按定宽裁一下，不然有一个没查到简写就beat the propose了」）——简写已按 ABBR_W 裁好（part-colors.ts fitAbbr），
     //   列宽 = 一个 ABBR_W 宽的参照（Vln.Vc.），不随谁最长变；字形特别宽、量出来超了参照的那个才撑一点（不叠到谱上）
@@ -929,7 +848,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const sysHOf = (G: ReturnType<typeof geoOf>) => P(G.reduce((n, x, r) => n + (rowHost[r] >= 0 ? 0 : x.g.reduce((m, y) => m + y.above + 4 + y.below, 0)), 0) + SYS_GAP);
     const geos = Array.from({ length: nSys }, (_, s) => geoOf(s));
     drawPaperTitle(geos.length ? sysHOf(geos[0]) : P(SPC.rowH));
-    if (paper.hidden) { ensure(P(STUB_H)); prims.push({ t: "text", x: P(MARGIN), y: yCur + P(STUB_H * 0.7), s: _t("这张纸隐藏着：不放、不进压平件（「⋯」里显示）"), cls: "part-stub hidden-note", size: P(1.1), anchor: "start" }); yCur += P(STUB_H); }
+    let note: Box | undefined; if (paper.hidden) { ensure(P(STUB_H)); note = { x: P(MARGIN), y: yCur, w: P(right - MARGIN), h: P(STUB_H) }; yCur += P(STUB_H); }   // 本段视图里的隐藏纸：顶上一条说明（字归覆盖层，刀 1）
     for (let s = 0; s < nSys; s++) {
       const G = geos[s];
       ensure(sysHOf(G));   // 分页：一行谱整块放不下就翻页
@@ -995,7 +914,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             // 谱头记号的点击区域：谱号 + 调号一块（改调号）、拍号（改拍号）、上方速度（改速度）
             if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });   // 调号（谱号那一块归谱号，v0.9.28）
             // 「1=X」（v0.16.10）：按 C 调看 = 写原来的调；专业模式没有升降号 = 淡的「1=C」提示（不占宽）。字也能点（同调号）
-            const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (o.inC ? q.head.real : o.keyHint && fk === 0 ? 0 : null) : null;
+            const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (o.inC ? q.head.real : fk === 0 ? 0 : null) : null;
             if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !o.inC, q.head.idx.key!);
             if (fk) hx += 0.8;
             const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
@@ -1009,9 +928,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
           const r0 = rowOf(s, r, 0), r1 = rEnd(s), lines = nameLines(q.p.name, pr !== r ? 2 : q.staves), LH = PART_EM * 1.15;
           // 合租：主人的名字下面接着写房客的名字（user「谱号左边放歌手名的时候在folded的模式下会同时显示所有歌手的名字」）；每个名字各自能点（点房客 = 去写它，它就拆开）
           const tl = ten.map((t) => nameLines(t.name, 1)[0] ?? ""), nAll = lines.length + tl.length;
-          const TGH = q.p.toggles ? TG_BTN + 0.5 : 0;   // 名字上面两颗大钮那一截（v0.16.22）：钮 + 名字一起竖着居中；打印没有钮 = 名字照旧居中
-          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (nAll - 1)) / 2) + P(TGH / 2);   // 几行一起竖着居中
-          const tgTop = ny - P(PART_EM * 0.95) - P(TGH), tgCx = (wid: number) => (P(MARGIN - 0.95) + P(MARGIN) + P(wid)) / 2;   // 钮整排对「色点 + 名字」居中
+          const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + P(0.55 * PART_EM) - P((LH * (nAll - 1)) / 2);   // 几行一起竖着居中（屏幕和 PDF 一样；两颗钮在覆盖层、放名字上面，可以超出谱上沿——user 11-08「歌手还是纵向居中对齐…这两个按钮是放它上面」）
+          const nameBlock = (wid: number) => names.push({ paper: paper.id, part: q.p.id, x0: P(MARGIN - 0.95), x1: P(MARGIN) + P(wid), top: ny - P(PART_EM * 0.95) });   // 名字块锚点（覆盖层的两颗钮对它居中）
           const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
           const dn = drumNames.get(q.p.id);
           if (dn) {   // 一家全是鼓：名字按各位的音在鼓谱上的高低排（主人不一定在最上面），每个名字一行、各自能点
@@ -1020,9 +938,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
               prims.push({ t: "text", x: P(MARGIN), y: at(k), s: nameLines(m.name, 1)[0] ?? "", cls: m.id === q.p.id ? ncls : "part-name tenant", size: PART_EM * sp, anchor: "start" });
               partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: at(k) - P(PART_EM * 0.95), w: P(ind0 + 0.2), h: P(LH) });
             });
-            drawToggles(paper.id, q.p, tgTop, tgCx(Math.max(...dn.map((m) => nameW(nameLines(m.name, 1)[0] ?? "")))));   // 钮在这一家名字的上面
-            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at(dn.length - 1) + P(LH), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" });
-            if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at(hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
+            nameBlock(Math.max(...dn.map((m) => nameW(nameLines(m.name, 1)[0] ?? ""))));   // 钮在这一家名字的上面
+            if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: at(dn.length - 1) + P(LH), s: q.p.badges.join(" "), cls: "part-badge ann", size: P(1.0), anchor: "start" });
+            if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: at(hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
           } else {
           lines.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: ln, cls: ncls, size: PART_EM * sp, anchor: "start" }));
           tl.forEach((ln, k) => prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (lines.length + k)), s: ln, cls: "part-name tenant", size: PART_EM * sp, anchor: "start" }));
@@ -1030,11 +948,11 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             const lineTop = (i: number) => ny + P(LH * i) - P(PART_EM * 0.95);
             ten.forEach((t, k) => partsHit.push({ paper: paper.id, part: t.id, x: P(MARGIN - 0.4), y: lineTop(lines.length + k), w: P(ind0 + 0.2), h: P(LH) }));
           }
-          drawToggles(paper.id, q.p, tgTop, tgCx(Math.max(...[...lines, ...tl].map(nameW))));   // 名字上面两颗大钮，对「色点 + 名字」居中（v0.16.22；user 11-08「放到歌手名的上面」）
-          { if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + P(1.4), s: q.p.badges.join(" "), cls: "part-badge", size: P(1.0), anchor: "start" }); }   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
+          nameBlock(Math.max(...[...lines, ...tl].map(nameW)));   // 名字上面两颗大钮（覆盖层），对「色点 + 名字」居中（v0.16.22；user 11-08「放到歌手名的上面」）
+          { if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + P(1.4), s: q.p.badges.join(" "), cls: "part-badge ann", size: P(1.0), anchor: "start" }); }   // 出声 / 显示状态的角标（user「hide, mute solo这些视图层的东西应该是在谱子上能看到」）
           { const y0 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines.length) - P(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);   // 有房客 = 主人的点击区只到它自己的名字
             partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y0, w: P(ind0 + 0.2), h: yEnd - y0 }); }
-          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });   // 名字前一个小色点（不印）
+          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });   // 名字前一个小色点（不印）
           }
         } else if (q.p.abbr) {   // 第二行起：简写（一行，竖着居中），点它同样开歌手牌
           const r0 = rowOf(s, r, 0), r1 = rEnd(s), LH = PART_EM * 1.15;
@@ -1044,12 +962,12 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
             if (m.id === q.p.id) { prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: q.p.abbr!, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: PART_EM * sp, anchor: "start" }); return; }
             prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: m.abbr ?? "", cls: "part-name abbr tenant", size: PART_EM * sp, anchor: "start" }); partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: ny + P(LH * k) - P(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) });
           });
-          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny + P(LH * hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot cat-${q.p.colorIdx}` });
+          if (q.p.colorIdx !== undefined) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny + P(LH * hk) - P(PART_EM * 0.62), w: P(0.6), h: P(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
           partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(indN + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
         }
         if (q.p.colorIdx !== undefined) {   // 每行左边一条细色条（类别色；不印）：谱号左边、从第一线到最后一线
           const r0 = rowOf(s, r, 0), r1 = rEnd(s);
-          prims.push({ t: "rect", x: P(MARGIN + ind - 0.8), y: yOf(r0, TOP_LINE), w: P(0.3), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE), cls: `cat-bar cat-${q.p.colorIdx}` });
+          prims.push({ t: "rect", x: P(MARGIN + ind - 0.8), y: yOf(r0, TOP_LINE), w: P(0.3), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE), cls: `cat-bar ann cat-${q.p.colorIdx}` });
         }
         if (q.staves === 2 || pr !== r) {   // 大谱表（或合租的双手谱）的花括号：两条谱表左边一根粗线 + 两头小钩
           const bx = P(MARGIN + ind - 0.7), y0 = yOf(rowOf(s, r, 0), TOP_LINE), y1 = yOf(rEnd(s), BOTTOM_LINE);
@@ -1057,10 +975,9 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         }
       });
       // 展开着的一家：一条括号（粗竖线 + 两头往右的小钩），在名字和谱之间；点它 = 光标挪出这一家（score-view）
-      if (ind > 0 && o.titlePlaceholder) for (const fam of openFams) {   // 编辑器的提示（导出 / 打印不画）
+      if (ind > 0 && o.chrome?.famGap) for (const fam of openFams) {   // 编辑器才要（锚点；括号归覆盖层）
         const rs = fam.ids.map((id) => per.findIndex((q) => q.p.id === id)).filter((i) => i >= 0); if (rs.length < 2) continue;
         const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 1.55), y0 = yOf(rowOf(s, r0, 0), TOP_LINE) - P(0.6), y1 = yOf(rowOf(s, r1, per[r1].staves - 1), BOTTOM_LINE) + P(0.6);
-        prims.push({ t: "path", d: `M${x + P(0.55)},${y0}L${x},${y0}L${x},${y1}L${x + P(0.55)},${y1}`, cls: "family-bracket" });
         families.push({ paper: paper.id, host: fam.host, x: x - P(0.6), y: y0, w: P(1.3), h: y1 - y0 });
       }
       if (nRowsSys > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: yOf(rowOf(s, 0, 0), TOP_LINE), x2: P(MARGIN + ind), y2: yOf(rowOf(s, nR - 1, per[nR - 1].staves - 1), BOTTOM_LINE), w: P(ENGRAVE.thinBar * 1.4), cls: "bar" });
@@ -1191,7 +1108,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       for (const u of units) {
         const row = RW(u);
         if (u.kind === "phrase") {   // 句号（没有语义，只给「合」当边界）：歌词行上一个小灰「。」，跟在上一个音后面
-          prims.push({ t: "text", x: P(u.x + 0.1), y: lyricY(lyricRow(u.system)), s: "。", cls: "phrase-mark", size: P(1.3), anchor: "start" });
+          prims.push({ t: "text", x: P(u.x + 0.1), y: lyricY(lyricRow(u.system)), s: "。", cls: "phrase-mark ann", size: P(1.3), anchor: "start" });
           continue;
         }
         if (u.kind === "dyn") {   // 力度：谱上方（声乐谱的下面是歌词），和后面那个音左对齐；基线在第五线上方 1.2 个间距——再高就撞开头的速度记号（它的基线约 2.9）
@@ -1232,7 +1149,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
               prims.push({ t: "line", x1: bx, y1: yOf(rr, bt), x2: bx, y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
               if (u.style === "double") prims.push({ t: "line", x1: bx + P(0.45), y1: yOf(rr, bt), x2: bx + P(0.45), y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });   // 段落线 ‖
               if (u.style === "final") prims.push({ t: "line", x1: bx + P(0.6), y1: yOf(rr, bt), x2: bx + P(0.6), y2: yOf(rr, bb), w: P(0.5), cls: bcls });   // 终止线：细 + 粗
-              if (u.warn && k === 0) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn" });
+              if (u.warn && k === 0) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn ann" });
             } else if (u.kind === "key") {
               if (pmode[r]) { marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) }); continue; }   // 鼓谱没有调号（记号照留、能点）
               const cls = "keysig";
@@ -1243,7 +1160,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
               if (k === 0) {
                 if (o.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index);
                 else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index);
-                else if (u.fifths === 0 && o.keyHint) keyLabel(rr, u.x + 0.2, 0, true, u.index);
+                else if (u.fifths === 0) keyLabel(rr, u.x + 0.2, 0, true, u.index);
               }
               marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
             } else {
@@ -1526,7 +1443,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         drawWedge(h.index, h.dir, s0, startX, s1, endXd, false);
         if (!endU || against) {   // 推定的终点：现在的力度往上 / 往下一档（没有终点 / 终点和方向反着）
           const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
-          prims.push({ t: "text", x: labelAbove ? endXd - P(1.2) : endXd + P(0.4), y: (dynYAt.get(rowOf(s1, r, 0)) ?? yOf(rowOf(s1, r, 0), TOP_LINE + 2.4)) + P(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied", size: P(1.3), anchor: "start" });
+          prims.push({ t: "text", x: labelAbove ? endXd - P(1.2) : endXd + P(0.4), y: (dynYAt.get(rowOf(s1, r, 0)) ?? yOf(rowOf(s1, r, 0), TOP_LINE + 2.4)) + P(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: P(1.3), anchor: "start" });
         }
       });
       // 8⅞. 渐到：写着「从上一个渐变过来」的力度记号 = 从上一个力度字后面画一条虚线发夹到它前面（方向按两个力度的高低；一样高 = 不画，渐到不起作用）。
@@ -1617,8 +1534,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
         for (let k = 0; k < q.staves; k++) { slots.push({ caret: c, system: rowOf(u.system - 1, r, k), x, end: true }); heads.push({ caret: c, system: rowOf(u.system - 1, r, k), x, shift: sh[k], end: true }); }
       }
     });
-    stubs();
-    papersHit.push({ id: paper.id, title: pTitle, menu, top: paperTop, bottom: yCur, ...paperNav });
+    papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(note ? { note } : {}) });
   }
   // 分页：页框（压在最底下）+ 页码；高 = 最后一页的底
   const pages: Layout["pages"] = [];
@@ -1626,7 +1542,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
     const frames: Prim[] = [];
     for (let k = 0; k <= pageNo; k++) {
       const top = pageTopY(k);
-      frames.push({ t: "rect", x: -P(PG.l), y: top, w: o.width + P(PG.l + PG.r), h: P(PG.h), cls: "page" });
+      frames.push({ t: "rect", x: -P(PG.l), y: top, w: o.width + P(PG.l + PG.r), h: P(PG.h), cls: "page ann" });
       prims.push({ t: "text", x: o.width / 2, y: top + P(PG.h - PG.b / 2), s: String(k + 1), cls: "page-no", size: P(1.2), anchor: "middle" });
       pages.push({ top, h: P(PG.h) });
     }
@@ -1650,7 +1566,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
       chordTagsOut.push({ x: cx - w / 2, y: y - fs * 1.05, w, h: fs * 1.4, read: r });
     }
   }
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, partToggles: partTgHit, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, paperAdds, nav, paperMenu, pageX: { left: P(MX.l), right: P(MX.r) }, pages, paperChip, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
 }
 
 export type { Token };

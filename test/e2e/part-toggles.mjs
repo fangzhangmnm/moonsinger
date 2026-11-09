@@ -1,8 +1,9 @@
 // test/e2e/part-toggles.mjs —— 真浏览器 E2E：声部名下面的两颗大钮（眼睛 / 喇叭；v0.16.22，取代 v0.16.17 的四颗小钮）。
 // created 2026-11-08 by Claude Opus 5.5（user 11-07「你说的第三类就是一个播放控制，这些东西反而应该是独立的按钮，不应该藏在里面」；
 //   11-08「首先它们非常的小，没法按…至少要比那些小扳手、本段这些东西大」「按是静音，长按或者双击是独奏」→ AI 提「点 = 静音 / 隐藏，长按（电脑右键）= 独奏 / 只看」→「按你说的做」）。
-// 守：每个声部两颗钮、比纸角的控件大；点喇叭 = 静音（录音房马上收到）、再点 = 出声；点眼睛 = 隐藏（缩成细线）、点细线 = 放回来；
-//   长按眼睛 = 只看它（别人缩成细线）、点别人的细线 = 它也加进「只看」；听模式里长按喇叭 = 独奏、右键 = 再切；图标跟着状态换；小卡里没有这几样；不开小卡。
+// 守：每个声部两颗钮、比纸角的控件大；点喇叭 = 静音（录音房马上收到）、再点 = 出声；点眼睛 = 隐藏（不排、不占地方，曲段名那一条上冒出「隐藏 N」）、点「隐藏 N」挑它 = 放回来；
+//   长按眼睛 = 只看它（别人隐藏）、从「隐藏 N」放出别人 = 它也加进「只看」；听模式里长按喇叭 = 独奏、右键 = 再切；图标跟着状态换；小卡里没有这几样；不开小卡。
+//   刀 1（2026-11-08）：钮在谱面上面那一层（DOM .ov-tg，src/ui/score-overlay.ts）；隐藏的声部不再缩成细线（施工单 §4 第 5 条）。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/part-toggles.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
@@ -14,15 +15,15 @@ for (let i = 0; i < 4; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); awa
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), paper = s.song.papers[0], t = paper.tracks[s.at.part];   // 第二个声部（同一张纸上）
   m.set({ ...s, song: { ...s.song, parts: [...s.song.parts, { id: "P9", role: "r9", mic: "m9" }], papers: [{ ...paper, tracks: { ...paper.tracks, P9: t.map((x) => ({ ...x })) } }, ...s.song.papers.slice(1)] } }); });
 await p.waitForTimeout(300);
-const tgBox = (part, kind) => p.evaluate(([part, kind]) => { const L = window.__moonsinger.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), t = L.partToggles.find((x) => x.part === part && x.kind === kind); return t ? { x: sc.left + L.pageX.left + t.x + t.w / 2, y: sc.top + t.y + t.h / 2, w: t.w, sp: L.sp } : null; }, [part, kind]);
+const tgBox = (part, kind) => p.evaluate(([part, kind]) => { const L = window.__moonsinger.layout(), b = document.querySelector(`#score .score-overlay .ov-tg[data-part="${part}"][data-kind="${kind}"]`), r = b?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2, w: parseFloat(b.style.width), sp: L.sp } : null; }, [part, kind]);
 const pv = (part) => p.evaluate((part) => window.__moonsinger.desk().parts?.[part] ?? {}, part);
 const shown = () => p.evaluate(() => [...new Set(window.__moonsinger.layout().systems.map((r) => r.part))].join(","));
-const icons = () => p.evaluate(() => [...document.querySelectorAll("#score .part-tg-i")].map((u) => (u.querySelector("use")?.getAttribute("href") ?? u.getAttribute("href") ?? "")).join(","));
+const icons = () => p.evaluate(() => [...document.querySelectorAll("#score .score-overlay .ov-tg use")].map((u) => u.getAttribute("href") ?? "").join(","));
 const tap = async (bx) => { await p.mouse.click(bx.x, bx.y); await p.waitForTimeout(250); };
 const hold = async (bx) => { await p.mouse.move(bx.x, bx.y); await p.mouse.down(); await p.waitForTimeout(600); await p.mouse.up(); await p.waitForTimeout(250); };
 const P1 = await p.evaluate(() => window.__moonsinger.state().song.parts[0].id);
 await p.evaluate(() => { const e = window.__moonsinger.engine; window.__ch = []; const ch = e.channel.bind(e); e.channel = (id, prm) => { window.__ch.push([id, !!prm.mute, !!prm.solo]); return ch(id, prm); }; });
-const kinds = await p.evaluate(() => window.__moonsinger.layout().partToggles.map((t) => `${t.part}:${t.kind}`).join(","));
+const kinds = await p.evaluate(() => [...document.querySelectorAll("#score .score-overlay .ov-tg")].map((t) => `${t.dataset.part}:${t.dataset.kind}`).join(","));
 check(kinds === `${P1}:hidden,${P1}:muted,P9:hidden,P9:muted`, "每个声部两颗钮：眼睛 + 喇叭", kinds);
 { const bx = await tgBox(P1, "muted"); check(bx.w / bx.sp >= 3.1, "钮比纸角的控件（3 个谱线间距）大", `${(bx.w / bx.sp).toFixed(2)} 间距`); }
 let bx = await tgBox(P1, "muted"); await tap(bx);
@@ -33,17 +34,18 @@ check(!(await pv(P1)).muted, "再点 = 出声");
 // 眼睛：点 = 隐藏（缩成细线）；点细线 = 放回来
 const s0 = await shown();
 bx = await tgBox("P9", "hidden"); await tap(bx);
-check(!(await shown()).includes("P9"), "点眼睛 = 这位缩成细线（谱行没了）", `${s0} → ${await shown()}`);
-const stubAt = (id) => p.evaluate((id) => { const L = window.__moonsinger.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), h = L.parts.find((x) => x.part === id); return h ? { x: sc.left + L.pageX.left + h.x + h.w / 2, y: sc.top + h.y + h.h / 2 } : null; }, id);
-let stub = await stubAt("P9");
-if (stub) await tap(stub);
-check((await shown()).includes("P9") && !(await p.$(".track-card")), "点细线 = 放回来（不开小卡）", await shown());
+check(!(await shown()).includes("P9") && !!(await p.$("#score .score-overlay .ov-hidden")), "点眼睛 = 这位不排、不占地方（谱行没了），曲段那一条上冒出「隐藏 N」", `${s0} → ${await shown()}`);
+check(!(await p.$("#score svg .part-stub")), "不再有细行");
+const fromHidden = async (id) => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-hidden")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });   // 点「隐藏 N」→ 小菜单里点这位
+  if (!c) return false; await tap(c); const it = await p.$(`.ctx-menu.hidden-list [data-v="${id}"]`); if (!it) return false; await it.click(); await p.waitForTimeout(250); return true; };
+const ok1 = await fromHidden("P9");
+check(ok1 && (await shown()).includes("P9") && !(await p.$(".track-card")), "「隐藏 N」里点它 = 放回来（不开小卡）", await shown());
 // 长按眼睛 = 只看它；点别人的细线 = 它也加进「只看」
 bx = await tgBox(P1, "hidden"); await hold(bx);
-check((await pv(P1)).only && !(await shown()).includes("P9") && /visibility-only/.test(await icons()), "长按眼睛 = 只看它（别人缩成细线、图标换成只看的眼睛）", await shown());
+check((await pv(P1)).only && !(await shown()).includes("P9") && /visibility-only/.test(await icons()), "长按眼睛 = 只看它（别人隐藏、图标换成只看的眼睛）", await shown());
 check(!(await p.$(".ctx-menu")), "长按钮不开空白处的小菜单");
-stub = await stubAt("P9"); if (stub) await tap(stub);
-check((await shown()).includes("P9") && (await shown()).includes(P1), "点别人的细线 = 它也加进「只看」", await shown());
+const ok2 = await fromHidden("P9");
+check(ok2 && (await shown()).includes("P9") && (await shown()).includes(P1), "「隐藏 N」里放出别人 = 它也加进「只看」", await shown());
 // 听模式：长按喇叭 = 独奏；右键 = 再切回去
 await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTimeout(300);
 bx = await tgBox(P1, "muted"); await hold(bx);

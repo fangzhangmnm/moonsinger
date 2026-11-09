@@ -1621,7 +1621,6 @@ export const S = {
   "编排　": { en: "Arrangement " },
   " 等 {n} 处": { en: " at {n} places" },
   "不写 = 每张纸按顺序各放一遍（例：前奏 (A A1)×3 A A2 [副歌]）": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)×3 A A2 [Chorus])" },
-  "不写 = 每张纸按顺序各放一遍": { en: "Empty = each sheet plays once in order" },
   "点 = 隐藏 / 显示；长按（电脑右键）= 只看它": { en: "Tap = hide / show; long-press (right-click on a computer) = show only this part" },
   "点 = 静音 / 出声；长按（电脑右键）= 独奏": { en: "Tap = mute / unmute; long-press (right-click on a computer) = solo" },
   "＋ 声部": { en: "＋ Part" },
@@ -1630,7 +1629,6 @@ export const S = {
   "只看本段（再点 = 看全部曲段）": { en: "Show only this section (tap again = all sections)" },
   "只看本段": { en: "Show only this section" },
   "隐藏 · 不放（点曲段名进去）": { en: "Hidden · not played (tap the section name to enter)" },
-  "{name} · 隐藏": { en: "{name} · hidden" },
   "（这张纸上没有声部）": { en: "(no parts on this sheet)" },
   "这张纸隐藏着：不放、不进压平件（「⋯」里显示）": { en: "This sheet is hidden: not played, not in the flattened copy (show it from “⋯”)" },
   "{src} 载进来了，但里面没有「{key}」": { en: "{src} loaded, but “{key}” isn't in it" },
@@ -2073,6 +2071,14 @@ export const S = {
   "独奏（只听独奏的几位；和谱上的「独」是同一个）": { en: "Solo (only hear the parts on solo; same as “S” on the score)" },
   "独": { en: "S" },
   "按键晚了：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 {a} ms · 最慢一步 {slow}（点一下不再显示）": { en: "Keys are late: queued {q} ms · to sound {s} ms · longest main-thread stall {st} ms · audio block {a} ms · slowest step {slow} (tap to dismiss)" },
+  "这一段的菜单": { en: "This section's menu" },
+  "隐藏 {n}": { en: "{n} hidden" },
+  "这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来": { en: "{n} {n|part is|parts are} hidden in this section (not laid out, no space taken): tap to see who and show them" },
+  "上一段": { en: "Previous section" },
+  "下一段": { en: "Next section" },
+  "这里是 C 调（没有升降号）：点 = 谱号 / 调号 / 拍号 / 速度": { en: "C major here (no sharps or flats): tap = clef / key / time / tempo" },
+  "这一家展开着：点 = 叠回去（光标挪到下一位）": { en: "This family is spread out: tap = fold it back (the cursor moves to the next part)" },
+  "隐藏着的（点 = 放出来）": { en: "Hidden (tap = show)" },
 } as const satisfies Record<string, Entry>;
 
 export type Key = keyof typeof S;

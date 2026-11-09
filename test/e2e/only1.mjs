@@ -14,7 +14,7 @@ await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musi
 await p.waitForTimeout(300);
 const shownParts = () => p.evaluate(() => [...new Set(window.__moonsinger.layout().systems.map((s) => s.part))].join(","));
 check((await shownParts()) === "P1,P2", "两位歌手都画着", await shownParts());
-const openSheet = async () => { const c = await p.evaluate(() => { const L = window.__moonsinger.layout(), b = L.paperChip, sc = document.querySelector("#score .sheet").getBoundingClientRect(); return b ? { x: sc.left + L.pageX.left + b.x + b.w / 2, y: sc.top + b.y + b.h / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForTimeout(200); };
+const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForTimeout(200); };
 await openSheet();
 check(!!(await p.$('[data-v="only1"]')), "纸的设置里有「只看一号轨」");
 await p.click('[data-v="only1"]'); await p.waitForTimeout(200);

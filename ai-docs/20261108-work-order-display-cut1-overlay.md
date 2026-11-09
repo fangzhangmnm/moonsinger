@@ -113,3 +113,36 @@ main.ts：`new ScoreOverlay(...)` 接到 `view` 的 `onAnchors`；原来给 scor
 ## 6. 量级
 
 预计 3 个版本、一天以内的施工；改动集中在 `engrave.ts`（删）、`score-view.ts`（删）、新 `score-overlay.ts`（+300 行）、`main.ts`（接线）、`styles.css`、`score-pdf.ts`（删）、十来个 E2E 的选择器。
+
+## 7. 施工记录（edited by Claude Opus 5.5 2026-11-08 · v0.16.24 / v0.16.25）
+
+> 给 Fable 审：照单做了什么、哪几处我改了做法（每处写为什么）、还剩什么。§3.1 / §3.3 里提到的 `stubs` 锚点和 `.ov-stub`（细行上的「点我」）按 §4 第 5 条作废，没做。
+
+**§0 收尾 = v0.16.24（24a782f）**：main.ts castPick 一次提交 + padHint 带 key、pad.ts hintKey / shiftFor / `data-midi`、strings 删两条——照原样提交；engrave.ts 的 TG_BTN 3.2 → 2.8 那处没进仓（不用 `git checkout`：先存成补丁再反向打回，补丁在 job tmp）；pad-follow 登记进 pad 区；@pad 33/33。
+
+**§3.6 第 1 步 = 守卫（530441b、ea0fecb）**：`scripts/freeze-layout.mjs` + `test/fixtures/layout/cases.ts` + `test/engrave-printable.test.ts`。三首歌（Once upon a Tale + 冻结样本 v2-2-2-2 / v2-2-2-1）× 六种视图（印 / 本段 / 全部 / 分页 / 听 / 全部 + 隐藏一位）；快照存 `.json.gz`（不压一份 400 KB，一次冻 2.4 MB 进史）；PDF 字节指纹（N2）放同一个脚本、同一个测试文件（没加到 pdf-wysiwyg.test.ts：冻结逻辑只有一份）。顺手：单测里闸门的「每分钟再试」是真 setInterval、没人关，整套单测墙钟 60 s → 换成假的，7.7 s。
+
+**第 2–5 步合成一笔**（不是一步一提交）：排版器的锚点形状要一次定下来，分三次提交就得把锚点改三遍、E2E 改三遍。守卫照样每样都过了一遍，差别清单见下。
+
+做了：
+- 排版器：`EngraveOpts` 去掉 `editable / keyHint / titlePlaceholder / paperLabel`，加 `chrome { underPaper, tail, famGap, navRoom }`（sp）；`PartView.toggles` 去掉（钮的状态不再进排版 = 点静音不重排）；`Layout` 去掉 `partToggles / paperAdds / nav / paperMenu / paperChip / papers[].menu|prev|next|scope`，加锚点 `names`（名字块：色点左边 / 名字右边 / 第一行上沿）、`keyHints`、`tail`、`creditsLine`、`content`、`papers[].under|hidden|stub|note|empty|hiddenParts`。行数 1656 → 1572。
+- 覆盖层 `src/ui/score-overlay.ts`（196 行）：容器在 `.sheet` 里（score-view 的 `overlayRoot`，和 ink 一样挪到版心），**坐标直接用排版的 px**——缩放 / 分页 / 横卷都跟着 `.sheet` 走，所以没做 §3.2 说的 `anchors()` + `toClient()`，score-view 只多一个 `onAnchors(L)` 回调（render 末尾）。一帧一次：先把全部元素算成一张表，再按 key 写 DOM（变了才写），不读布局。手势一律 pointer 事件自己判（谱面有「单指 touchstart 一律拦」的守卫，click 在 iPad 上不可靠；同歌词框的「合」）。class 照 §3.3 的表；E2E 都按它们找。
+- score-view：`tap()` 删了纸角钮 / 虚线框 / 全局 nav / `paperMenu` / 两颗钮 / 合租括号 / 每张纸 menu·prev·next·scope 那些支；`tgDown / toggleAt / TG_LONG` 三处删掉；`leaveFamilyAt` 改成公开的 `leaveFamily(paper, host)`（覆盖层的括号调它）。行数 1512 → 1486。host 接口少了 8 个回调。
+- main.ts：建覆盖层、回调表 `overlayHost`（也挂在 `__moonsinger.overlayHost`，测试直达「这一段的菜单 / 纸的设置」）；「隐藏 N」点开用现成的 `ctxMenu` 壳，**没新加面板**（§3.5）。
+- PDF：`SKIP` = `ann / selbox / caret / in-span` 四项（≤ 5）。
+- 守卫：N1 / N2（见上）；N4 = `test/i18n-guard.test.mjs` 新一条（排版器的 `_t` 里不许有 点 / 长按 / 右键 / 菜单 / ＋ / 隐藏 · / 曲段名 / 作者 / 歌名；拿改之前的排版器套会抓出 9 句）。
+
+**我改了做法的几处（请审）**：
+1. **名字栏最小宽没做成「印的时候不给」**（§3.1 的 `nameColMin`）：印的时候不给 = PDF 的名字栏变窄 = 版面变 = 和 N2「PDF 一字节不变」、和「预览 = PDF」都冲突。改成排版器里一个写明的常数 `NAME_MIN`（= 两颗钮的宽），屏幕和 PDF 同宽。
+2. **八种「只给写谱的人看的披露」这一刀没搬**：推定的灰字 `dyn-implied`、速度变化 ↑↓、句号、类别色条 / 色点、角标、编排写错的说明、拍数不对的红点、分页的页框。它们没有点击框、没有手势，位置是排版内部算的（推定灰字挂在发夹末端、句号挂在歌词行），搬到 DOM 要给每一种再造锚点。这一刀在源头给它们加一个类 `ann`，PDF 只认这一个类，不再记名单。要不要也搬 = Fable 定（§1 那句话字面上包括它们）。
+3. **「隐藏 N」挂在右边的曲段控件组里**（多张纸：组的最前面；单纸：曲段名那一条右边 / 没有那一条 = 歌名那一条左边、「⋯」后面），不是 §4 第 5 条写的「曲段名那一条的左边」：左边是曲段名本身，挂那儿要量名字的宽，也会和名字挤；放在控件组里 = 和「只看本段」这些看法开关在一起。
+4. **空着的歌名 / 曲段名 / 编排提示字不接点**（`pointer-events: none`），点下去落到谱面原来的文本框点击区（就地改照旧，E2E title-keys / arrange 不用动）；只有作者栏空着时没有点击区，那个提示字本身接点。
+5. **隐藏的纸（纸级）照旧在 PDF 里留着折叠的那一条**：§4 第 5 条只改声部级，纸级没动（预览和 PDF 仍然一致，只是 PDF 里有一段空）。
+6. **两颗钮还是 3.2 个间距**（照 §0 第 3 条）：user 11-08 说过「稍微适当的小一点」，现在只是 `score-overlay.ts` 的一个常数 `TG_BTN`，但 E2E part-toggles 守着 ≥ 3.1（user 同日「至少要比那些小扳手大」= 纸角控件 3.0）——两句话之间留的余地只有 0.2，改不改归 user。
+
+**版面差别（重冻前逐份核过，全是该变的）**：印的三份（= PDF）一个图元都没变、PDF 字节没变；编辑器视图里变了三类——声部名竖着回到居中（原来被钮往下推了半截钮高，user 11-08「歌手还是纵向居中对齐」）、虚线框不再是图元、「1=C」不再占点击框；带隐藏声部的两份，后面的谱整体上移（细行不占位置了）。
+
+**测试**：单测 1041（新增 N1 18 + N2 3 + N4 1；改 header-layout / shared-staff / svg-groups / pdf-wysiwyg / sheet-tempo 的断言）；E2E 改了 part-toggles（细行 → 「隐藏 N」）、paper-adds、only1、hscroll、transpose、shared-staff、view-in-c、arrange、landscape-widgets、singer-delete。整套第一轮 88/90：i18n-en 一条真红（手机宽度单纸那颗「⋯」字号没跟谱的大小走、被字撑爆）= 修了；pad-follow 单跑也红过——改后单跑 14 次红 1 次、改前 4 次全过，红的样子都是「点上场后 30 s 内没换成」，正常一次 4 s；第二轮整套里它并行也过了（89/90），之后单跑又连过 10 次；红的那一次没抓到现场，记着。第二轮剩的一条 = gate「硬超时 8 s 左右」实测 6.6 s：这一刀没碰闸门 / 网盘 / 存储；改之前的构建（v0.16.24）跑同一条也红过（4 次里 1 次）= 原来就有的时间赛跑（闸门自己的 8 s 和另一个更早到的超时，哪个是那「另一个」没查到），另记待查。
+
+**N5 量了**（`scripts/probe-input-latency.mjs`，无头 Chromium，改前 v0.16.24 端在 8714 对照）：到出声中位数 空歌 0.1 → 0.2 ms、大歌写音 0.6 → 0.5 ms、大歌「弹」0.5 → 0.2 ms；四键快弹排队 0–6 ms 两边一样——噪声以内，没变。写音的路一行没动；重画多了覆盖层一次 `layout`（几十个元素、按 key 比较）。
+

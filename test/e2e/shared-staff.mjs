@@ -45,10 +45,10 @@ check((await focus()) === "P2" && (await rowsOf("P2")) === 0, "听模式：光�
 await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(250);
 check((await rowsOf("P2")) > 0, "回到「音」：光标在的那一家又拆开");
 // 展开着的那一家左边一条括号；点它 = 光标挪到这一家后面紧挨着的那位（Violin）→ 叠回去（v0.10.29）
-{ const pt = await p.evaluate(() => { const L = window.__moonsinger.layout(), sh = document.querySelector("#score .sheet").getBoundingClientRect(), z = sh.width / L.width, f = L.families[0]; return f ? { x: sh.left + (L.pageX.left + f.x + f.w / 2) * z, y: sh.top + (f.y + f.h / 2) * z } : null; });
-  check(!!pt && !!(await p.$("#score path.family-bracket")), "展开着的一家左边有括号");
+{ const pt = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-family")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });   // 括号在谱面上面那一层（刀 1）
+  check(!!pt && !(await p.$("#score svg .family-bracket")), "展开着的一家左边有括号（覆盖层，不在 svg 里）");
   if (pt) { await p.mouse.click(pt.x, pt.y); await p.waitForTimeout(250); }
-  check((await focus()) === "P3" && (await rowsOf("P2")) === 0 && !(await p.$("#score path.family-bracket")), "点括号 = 光标去 Violin、这一家叠回去", await focus()); }
+  check((await focus()) === "P3" && (await rowsOf("P2")) === 0 && !(await p.$("#score .score-overlay .ov-family")), "点括号 = 光标去 Violin、这一家叠回去", await focus()); }
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nshared-staff: ${pass} passed, ${fail} failed`);

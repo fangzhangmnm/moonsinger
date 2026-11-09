@@ -46,7 +46,7 @@ check((await parts()).split(",").length === 2, "撤销能找回来", await parts
   await p.click(".pad-key[data-k] >> nth=0").catch(() => {}); await p.waitForTimeout(100);
   const papers = () => p.evaluate(() => window.__moonsinger.state().song.papers.map((x) => `${x.id}:${Object.values(x.tracks).reduce((n, t) => n + t.filter((k) => k.kind === "note").length, 0)}`).join(","));
   const before = await papers(), pid = await p.evaluate(() => window.__moonsinger.state().song.papers.at(-1).id);
-  await p.evaluate((pid) => window.__moonsinger.view.host.onPaperMenu(pid), pid); await p.waitForTimeout(200);
+  await p.evaluate((pid) => window.__moonsinger.overlayHost.onPaperMenu(pid), pid); await p.waitForTimeout(200);
   await p.click('.ctx-menu [data-v="del"], [data-v="del"]'); await p.waitForTimeout(250);
   const txt = await p.evaluate(() => document.body.innerText);
   check(/能撤销/.test(txt) && !/没有撤销/.test(txt), "确认框写着能撤销");

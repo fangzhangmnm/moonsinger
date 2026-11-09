@@ -13,7 +13,7 @@ check((await box()) === null, "本段视图：没有编排那一行");
 await p.evaluate(() => window.__moonsinger.setScope("all")); await p.waitForTimeout(150);
 const at = await box();
 check(!!at, "全部视图：有编排那一行");
-check(await p.$$eval("#score text.arr-empty", (e) => e.length) === 1, "没写 = 灰字说怎么写");
+check(await p.$$eval("#score .score-overlay .ov-arr-empty", (e) => e.length) === 1, "没写 = 灰字说怎么写（谱面上面那一层）");
 await p.mouse.click(at.x, at.y); await p.waitForTimeout(150);
 check(await p.$eval(".title-input", (e) => !e.hidden && e.classList.contains("arr")), "点了 = 就地开框");
 await p.keyboard.type("1 x2"); await p.keyboard.press("Enter"); await p.waitForTimeout(200);

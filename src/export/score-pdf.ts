@@ -19,11 +19,11 @@ import type { TtfFont } from "./ttf.ts";
 export type PdfFontId = "sans" | "pinyin";
 const PT_PER_MM = 72 / 25.4;
 const INK: Rgb = [0.1, 0.1, 0.1];
-/** 编辑器专用、不印的样式类（任一个命中就不印）。 */
-const SKIP = new Set(["cat-bar", "cat-dot", "paper-chip", "paper-chip-text", "paper-chip-icon", "part-stub", "part-stub-line", "hidden-note", "hidden-paper", "warn", "selbox", "caret", "nav-text", "part-badge",
-  "tempo-change", "dyn-implied", "arr-issue", "arr-empty", "empty", "phrase-mark", "page", "in-span", "key-hint", "part-tg"]);   // part-tg = 名字下面四颗小钮（静 / 独 / 隐 / 只，v0.16.17）   // key-hint = 专业模式 C 调的淡「1=C」（提示，v0.16.10）
-/** 「empty」在占位提示上 = 不印；在声部名上 = 还没人上场（屏幕上画淡），名字照印。 */
-const skipped = (cls: string[]) => cls.some((c) => SKIP.has(c) && !(c === "empty" && cls.includes("part-name")));
+/** 不印的（任一个类命中就不印）。刀 1（2026-11-08，施工单 ai-docs/20261108-work-order-display-cut1-overlay.md §3.4）起编辑器的钮 / 框 / 提示都不在排版器里（覆盖层画），
+ *  这里不再记一长串名字：排版器在源头给「只给写谱的人看的披露」（推定的灰字、速度变化的 ↑↓、句号、类别色条 / 色点、角标、编排写错的说明、拍数不对的红点、页框）打 ann；
+ *  selbox / caret / in-span 是 ink 层的东西（本来就不进图元），留着防御。 */
+const SKIP = new Set(["ann", "selbox", "caret", "in-span"]);
+const skipped = (cls: string[]) => cls.some((c) => SKIP.has(c));
 /** 这个图元印不印（按样式类；测试用）。 */
 export const isPrinted = (cls: string | undefined): boolean => !skipped((cls ?? "").split(/\s+/).filter(Boolean));
 /** 歌词行往下让多少（sp）：拼音字体 = 「国」的墨迹顶比黑体高出的那一截（萌神 1184 vs 思源黑体 795，unitsPerEm 都是 1000；test/pdf.test.ts 拿真字体核）。
@@ -74,8 +74,8 @@ export interface PrintView { inC?: boolean; chordTags?: boolean }
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
 export function printOpts(song: Song, sp: number, parts: PartView[], measureLyric: (s: string) => number, autoBars: boolean, lyricRaise: number, onlyPaper?: string, view: PrintView = {}): EngraveOpts {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER);
-  return { width: lineSp(paper) * sp, sp, at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measureLyric, titlePlaceholder: false, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}),
-    ...(view.inC ? { inC: true } : {}), ...(view.chordTags ? { chordTags: true } : {}) };   // 看谱方式 = 屏幕上那一套（预览 = PDF）；专业模式 C 调的淡「1=C」是提示，不印
+  return { width: lineSp(paper) * sp, sp, at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measureLyric, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}),
+    ...(view.inC ? { inC: true } : {}), ...(view.chordTags ? { chordTags: true } : {}) };   // 看谱方式 = 屏幕上那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
 }
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */
 export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; stats: PdfStats } {

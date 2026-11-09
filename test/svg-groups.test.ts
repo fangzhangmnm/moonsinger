@@ -5,7 +5,7 @@ import { engrave, LYRIC_EM } from "../src/render/engrave.ts";
 import { toSvg, toSvgParts, primSvg } from "../src/render/svg.ts";
 
 const song = (n: number) => { let st = initState(); st = { ...st, song: { ...st.song, title: "月亮" } }; for (let i = 0; i < n; i++) st = writeDegree(st, (i % 7) + 1, "near"); return st; };
-const lay = (st: EditorState, width = 420) => engrave(st.song, { width, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * LYRIC_EM * 10, titlePlaceholder: true, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
+const lay = (st: EditorState, width = 420) => engrave(st.song, { width, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * LYRIC_EM * 10, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
 
 describe("SVG 按行谱分组（W-17）", () => {
   it("每个图元恰好进一组、组内先后 = 排版时的先后；组数 = 行数 + 1；toSvg = 开 + 组 + 收", () => {

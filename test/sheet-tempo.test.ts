@@ -48,7 +48,7 @@ describe("速度记号画在哪、画淡不画淡", () => {
   });
   it("和上一段一样 = 照常画、不标；不一样 = 前面标 ↑ / ↓（user「不要grey out，而是有变化的时候会标一个东西提示用户」）", () => {
     let st = addPaper(base()); const p2 = st.song.papers[1];
-    const mark = () => (prims(st, p2.id).find((x) => x.t === "text" && (x as { cls?: string }).cls === "tempo-change") as { s: string } | undefined)?.s ?? null;
+    const mark = () => (prims(st, p2.id).find((x) => x.t === "text" && ((x as { cls?: string }).cls ?? "").split(" ").includes("tempo-change")) as { s: string } | undefined)?.s ?? null;
     eq(mark(), null, "120 → 120 = 不标");
     const i = st.song.papers[1].tracks.P1.findIndex((t) => t.kind === "tempo");
     st = setMark({ ...st, at: { paper: p2.id, part: "P1" } }, i, { kind: "tempo", bpm: 96 });

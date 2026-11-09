@@ -1,0 +1,196 @@
+// score-overlay.ts —— 谱面上面那一层：编辑器的钮、框、提示（印出来没有的东西）。created 2026-11-08 by Claude Opus 5.5
+// 五线谱显示刀 1（施工单 ai-docs/20261108-work-order-display-cut1-overlay.md；设计稿 ai-docs/20261108-staff-display-design.md §2 ③ / §3）：
+//   「印出来没有的东西，一样都不许留在排版器里。」排版器（src/render/engrave.ts）只排可印的谱，吐图元 + 锚点；这里按锚点在谱上面摆 DOM。
+//   PDF 不再「减掉名单」——这一层本来就不进 PDF。
+// 位置：容器是谱面 .sheet 里的一个 div（score-view 给的 overlayRoot，和 ink 层一样挪到版心），坐标就是排版的 px——缩放（CSS zoom / transform）、分页、横卷都跟着 .sheet 走，不用另算屏幕坐标。
+// 每帧一次 layout(L, view)：先把所有元素的位置和样子算成一张表，再一次性写 DOM（按 key 复用元素，不重建；不读布局）。
+// 手势：谱面上有一条「单指 touchstart 一律拦」的守卫（platform-guards，防 iPad 放大镜）→ click 不可靠，这里一律走 pointer 事件自己判（同歌词框的「合」）：
+//   按下 = 拿住（谱面不接：score-view 的 down 跳过 .ov-i）；松手没到长按 = 点；两颗钮长按 420 ms / 右键 = 只看 / 独奏。
+import { _t } from "../i18n/index.ts";
+import type { Layout, PartToggle, PartToggles } from "../render/engrave.ts";
+import type { Song } from "../score/song.ts";
+
+/** 两颗钮（眼睛 / 喇叭）多大（sp）：比纸角的小控件（3.0）大（user 11-08「至少要比那些小扳手、本段这些东西大」「要粗的手指也能点」；E2E part-toggles 守 ≥ 3.1）。 */
+export const TG_BTN = 3.2;
+const TG_GAP = 0.4, CTL_H = 3.0, CTL_GLYPH = 2.0, CTL_TEXT = 1.4, LONG_MS = 420;
+const TG_LONG: Record<"hidden" | "muted", PartToggle> = { hidden: "only", muted: "solo" };
+
+export interface OverlayHost {
+  toggles(part: string): PartToggles;
+  onPartToggle(part: string, kind: PartToggle): void;
+  onPaperAdd(paper: string, kind: "part" | "paper", at: { x: number; y: number }): void;
+  onPaperMenu(paper: string): void;
+  onNavFrom(paper: string, dir: -1 | 1): void;
+  onScopeOf(paper: string): void;
+  onPaper(): void;
+  onCredits(): void;
+  onKeyHint(paper: string, part: string, index: number, at: { x: number; y: number }): void;
+  onLeaveFamily(paper: string, host: string): void;
+  onHidden(paper: string, parts: string[], at: { x: number; y: number }): void;
+}
+/** 这一帧要知道的谱面状态（排版器不知道的那些）。 */
+export interface OverlayView {
+  song: Song;
+  edit: boolean;          // 能写（不是听 / 定稿）：虚线框、「⋯」、作者栏的提示能点
+  marks: boolean;         // 谱上的记号能点（「1=C」= 谱头面板）
+  onlyPaper: string | null;   // 本段视图看的那张
+  paperLabel: string;     // 纸角小钮的悬停提示「纸：A5」
+}
+
+type Item = { key: string; tag: "div" | "button"; cls: string; style: string; html: string; attrs: Record<string, string> };
+
+export class ScoreOverlay {
+  private els = new Map<string, HTMLElement>();
+  private press: { el: HTMLElement; pid: number; timer: number; fired: boolean } | null = null;
+  constructor(private root: HTMLElement, private host: OverlayHost) {
+    root.addEventListener("pointerdown", (e) => this.down(e));
+    root.addEventListener("pointerup", (e) => this.up(e));
+    root.addEventListener("pointercancel", () => this.cancel());
+    root.addEventListener("contextmenu", (e) => {
+      const el = (e.target as HTMLElement).closest<HTMLElement>(".ov-i"); if (!el) return;
+      e.preventDefault(); e.stopPropagation(); this.cancel();
+      if (el.dataset.ov === "tg") this.host.onPartToggle(el.dataset.part!, TG_LONG[el.dataset.kind as "hidden" | "muted"]);   // 右键 = 长按（只看 / 独奏）
+    });
+  }
+
+  layout(L: Layout, v: OverlayView): void {
+    const items: Item[] = [], sp = L.sp, px = (n: number) => `${Math.round(n * 100) / 100}px`;
+    const box = (x: number, y: number, w: number, h: number) => `left:${px(x)};top:${px(y)};width:${px(w)};height:${px(h)}`;
+    const text = (x: number, base: number, size: number, anchor: "start" | "middle" | "end" = "start") =>   // 把 svg 的「起点 + 基线」换成 div：行高 = 字号，基线约在 0.8 字号
+      `left:${px(x)};top:${px(base - size * 0.8)};font-size:${px(size)};line-height:${px(size)};${anchor === "middle" ? "transform:translateX(-50%);" : anchor === "end" ? "transform:translateX(-100%);" : ""}`;
+    const add = (key: string, tag: Item["tag"], cls: string, style: string, html = "", attrs: Record<string, string> = {}) => items.push({ key, tag, cls, style, html, attrs });
+    const icon = (id: string, size: number) => `<svg class="ov-icon" style="width:${px(size)};height:${px(size)}" aria-hidden="true"><use href="#${id}"/></svg>`;
+    const song = v.song, papers = song.papers, multi = papers.length > 1, nameOf = (id: string) => papers.find((p) => p.id === id);
+
+    // ① 两颗钮：名字块上面、整排对「色点 + 名字」居中，可以超出谱上沿（user 11-08）
+    for (const n of L.names) {
+      const t = this.host.toggles(n.part), s = TG_BTN * sp, total = (TG_BTN * 2 + TG_GAP) * sp, cx = (n.x0 + n.x1) / 2, x0 = Math.max(0.2 * sp, cx - total / 2), y = n.top - 0.35 * sp - s;
+      const eye = t.only ? "visibility-only" : t.hidden ? "visibility-hide" : "visibility-show", ear = t.solo ? "volume-solo" : t.muted ? "volume-mute" : "volume";
+      const btn = (kind: "hidden" | "muted", k: number, ic: string, st: string, title: string) =>
+        add(`tg:${n.paper}:${n.part}:${kind}`, "button", `ov-i ov-tg${st ? ` on ${st}` : ""}`, box(x0 + k * (TG_BTN + TG_GAP) * sp, y, s, s), icon(ic, s * 0.72),
+          { "data-ov": "tg", "data-part": n.part, "data-kind": kind, title, "aria-label": title });
+      btn("hidden", 0, eye, t.only ? "tg-only" : t.hidden ? "tg-hidden" : "", _t("点 = 隐藏 / 显示；长按（电脑右键）= 只看它"));
+      btn("muted", 1, ear, t.solo ? "tg-solo" : t.muted ? "tg-muted" : "", _t("点 = 静音 / 出声；长按（电脑右键）= 独奏"));
+    }
+    // ② 纸角的小钮（纸的设置）+ 只有一张纸时歌名左边的「⋯」
+    { const s = CTL_H * sp, x = L.content.right - s, y = L.title.y + 0.5 * sp;
+      add("chip", "button", "ov-i ov-chip ov-paper-chip", box(x, y, s, s), icon("file", CTL_GLYPH * sp), { "data-ov": "chip", title: _t("纸：{paperLabel}", { paperLabel: v.paperLabel }) }); }
+    if (!multi && v.edit) add(`menu:${papers[0]!.id}`, "button", "ov-i ov-chip ov-menu", `${box(L.content.left, L.title.y + 0.5 * sp, (CTL_H + 0.6) * sp, CTL_H * sp)};font-size:${px(CTL_GLYPH * sp)}`, "⋯", { "data-ov": "menu", "data-paper": papers[0]!.id, title: _t("这一段的菜单") });
+    // ③ 每张纸曲段名那一条：曲段控件组「（隐藏 N）‹ k/n › 只看本段 ⋯」靠右；单纸 = 「隐藏 N」挂在曲段名 / 歌名那一条
+    const hiddenChip = (paperId: string, ids: string[], style: string) => {
+      add(`hid:${paperId}`, "button", "ov-i ov-chip ov-hidden", style, _t("隐藏 {n}", { n: ids.length }), { "data-ov": "hidden", "data-paper": paperId, "data-parts": ids.join(" "), title: _t("这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来", { n: ids.length }) });
+    };
+    for (const pp of L.papers) {
+      const paper = nameOf(pp.id); if (!paper) continue;
+      const k = papers.indexOf(paper), h = CTL_H * sp, y = pp.title.y + (pp.title.h - h) / 2;
+      if (pp.title.shown && multi) {
+        const segOn = v.onlyPaper === pp.id;
+        const kids = [
+          ...(pp.hiddenParts.length ? [`<button class="ov-i ov-chip ov-hidden" data-ov="hidden" data-paper="${pp.id}" data-parts="${pp.hiddenParts.join(" ")}" title="${_t("这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来", { n: pp.hiddenParts.length })}">${_t("隐藏 {n}", { n: pp.hiddenParts.length })}</button>`] : []),
+          `<button class="ov-i ov-chip ov-nav-prev${k > 0 ? "" : " off"}" data-ov="prev" data-paper="${pp.id}" title="${_t("上一段")}">‹</button>`,
+          `<span class="ov-nav-text">${k + 1}/${papers.length}</span>`,
+          `<button class="ov-i ov-chip ov-nav-next${k < papers.length - 1 ? "" : " off"}" data-ov="next" data-paper="${pp.id}" title="${_t("下一段")}">›</button>`,
+          `<button class="ov-i ov-chip ov-scope${segOn ? " on" : ""}" data-ov="scope" data-paper="${pp.id}" title="${segOn ? _t("只看本段（再点 = 看全部曲段）") : _t("只看本段")}">${icon("visibility-only", CTL_GLYPH * sp)}</button>`,
+          ...(v.edit ? [`<button class="ov-i ov-chip ov-menu" data-ov="menu" data-paper="${pp.id}" title="${_t("这一段的菜单")}">⋯</button>`] : []),
+        ];
+        add(`nav:${pp.id}:${k}:${papers.length}:${segOn}:${v.edit}:${pp.hiddenParts.join(",")}`, "div", "ov-nav", `right:${px(-L.content.right)};top:${px(y)};height:${px(h)};--ctl:${px(h)};--ctl-glyph:${px(CTL_GLYPH * sp)};--ctl-text:${px(CTL_TEXT * sp)}`, kids.join(""));
+      } else if (pp.hiddenParts.length) {   // 单纸：曲段名那一条（画了）右边 / 歌名那一条左边（「⋯」后面）
+        if (pp.title.shown) hiddenChip(pp.id, pp.hiddenParts, `right:${px(-(L.content.right - (CTL_H + 0.6) * sp))};top:${px(y)};height:${px(h)};font-size:${px(CTL_TEXT * sp)}`);
+        else hiddenChip(pp.id, pp.hiddenParts, `left:${px(L.content.left + (v.edit ? (CTL_H + 1.2) * sp : 0))};top:${px(L.title.y + 0.5 * sp)};height:${px(h)};font-size:${px(CTL_TEXT * sp)}`);
+      }
+      // 空着的曲段名 / 折叠的隐藏纸（名字 + 说明）/ 本段视图里隐藏纸的说明 / 没有声部的纸
+      if (pp.title.shown && !paper.name && !pp.hidden) add(`ph-paper:${pp.id}`, "div", "ov-placeholder ov-ph-paper", text(pp.title.x, pp.title.baseline, pp.title.size), _t("曲段名"));
+      if (pp.hidden && paper.name) add(`hp-name:${pp.id}`, "div", "ov-hidden-paper-name", text(pp.title.x, pp.title.baseline, pp.title.size), esc(paper.name));
+      if (pp.stub) add(`hp-stub:${pp.id}`, "div", "ov-stub", `${box(pp.stub.x, pp.stub.y, pp.stub.w, pp.stub.h)};font-size:${px(1.1 * sp)}`, `<span>${_t("隐藏 · 不放（点曲段名进去）")}</span><i></i>`);
+      if (pp.note) add(`hp-note:${pp.id}`, "div", "ov-stub ov-note", `${box(pp.note.x, pp.note.y, pp.note.w, pp.note.h)};font-size:${px(1.1 * sp)}`, `<span>${_t("这张纸隐藏着：不放、不进压平件（「⋯」里显示）")}</span>`);
+      if (pp.empty) add(`empty:${pp.id}`, "div", "ov-placeholder ov-ph-empty", text(pp.empty.x, pp.empty.y + 2.2 * sp, 1.3 * sp), _t("（这张纸上没有声部）"));
+      // ④ 每张纸底下的虚线框：本段 = 「＋ 声部」「＋ 新曲段」并排；全部 = 一个整宽「＋ 声部」
+      if (pp.under && v.edit) {
+        const u = pp.under, gap = 0.8 * sp, w2 = (u.w - gap) / 2, fs = `font-size:${px(1.15 * sp)}`;
+        if (v.onlyPaper) {
+          add(`add:${pp.id}:part`, "button", "ov-i ov-add", `${box(u.x, u.y, w2, u.h)};${fs}`, _t("＋ 声部"), { "data-ov": "add", "data-paper": pp.id, "data-kind": "part" });
+          add(`add:${pp.id}:paper`, "button", "ov-i ov-add", `${box(u.x + w2 + gap, u.y, w2, u.h)};${fs}`, _t("＋ 新曲段"), { "data-ov": "add", "data-paper": pp.id, "data-kind": "paper" });
+        } else add(`add:${pp.id}:part`, "button", "ov-i ov-add", `${box(u.x, u.y, u.w, u.h)};${fs}`, _t("＋ 声部"), { "data-ov": "add", "data-paper": pp.id, "data-kind": "part" });
+      }
+    }
+    if (L.tail && v.edit) add("add:tail", "button", "ov-i ov-add", `${box(L.tail.x, L.tail.y, L.tail.w, L.tail.h)};font-size:${px(1.15 * sp)}`, _t("＋ 新曲段"), { "data-ov": "add", "data-paper": L.tail.paper, "data-kind": "paper" });
+    // ⑤ 空着的歌名 / 作者栏 / 编排（歌名、编排点了照旧是谱面的就地改——这几个字不接点；作者栏空着没有点击框 = 字本身接）
+    if (!song.title) add("ph-title", "div", "ov-placeholder ov-ph-title", text((L.content.left + L.content.right) / 2, L.title.baseline, L.title.size * 0.8, "middle"), _t("歌名"));
+    if (!song.credits) add("ph-credits", v.edit ? "button" : "div", `${v.edit ? "ov-i " : ""}ov-placeholder ov-ph-credits`, text(L.creditsLine.x, L.creditsLine.y, L.creditsLine.size, "end"), _t("作者"), v.edit ? { "data-ov": "credits" } : {});
+    if (L.arrangement && !song.arrangement?.trim()) {
+      const a = L.arrangement;
+      add("ph-arr", "div", "ov-placeholder ov-ph-arr", `${text(L.content.left, a.baseline, a.size)};max-width:${px(L.content.right - L.content.left)}`,
+        `<span class="ov-arr-label">${_t("编排　")}</span><span class="ov-arr-empty">${_t("不写 = 每张纸按顺序各放一遍（例：前奏 (A A1)×3 A A2 [副歌]）")}</span>`);
+    }
+    // ⑥ 「1=C」淡提示（专业模式 C 调；点 = 谱头面板）
+    for (const kh of L.keyHints) {
+      const sys = L.systems[kh.system]; if (!sys) continue;
+      add(`kh:${kh.system}:${kh.index}`, v.marks ? "button" : "div", `${v.marks ? "ov-i " : ""}ov-key-hint`, text(kh.x, kh.y, kh.size), "1=C",
+        v.marks ? { "data-ov": "keyhint", "data-paper": sys.paper, "data-part": sys.part.replace(/~.*$/, ""), "data-index": String(kh.index), title: _t("这里是 C 调（没有升降号）：点 = 谱号 / 调号 / 拍号 / 速度") } : {});
+    }
+    // ⑦ 合租展开着的一家：括号（点 = 光标挪出这一家，叠回去）
+    for (const f of L.families) add(`fam:${f.paper}:${f.host}`, "button", "ov-i ov-family", box(f.x, f.y, f.w, f.h), "<i></i>", { "data-ov": "family", "data-paper": f.paper, "data-host": f.host, title: _t("这一家展开着：点 = 叠回去（光标挪到下一位）") });
+
+    this.commit(items);
+  }
+
+  /** 一次写 DOM：按 key 复用，变了才写。 */
+  private commit(items: Item[]): void {
+    const keep = new Set<string>();
+    let prev: HTMLElement | null = null;
+    for (const it of items) {
+      keep.add(it.key);
+      let el = this.els.get(it.key);
+      if (!el || el.tagName.toLowerCase() !== it.tag) {
+        el?.remove();
+        el = document.createElement(it.tag); if (it.tag === "button") (el as HTMLButtonElement).type = "button";
+        this.els.set(it.key, el);
+      }
+      if (el.className !== it.cls) el.className = it.cls;
+      if (el.getAttribute("style") !== it.style) el.setAttribute("style", it.style);
+      if (el.dataset.html !== it.html) { el.innerHTML = it.html; el.dataset.html = it.html; }
+      for (const [k, val] of Object.entries(it.attrs)) if (el.getAttribute(k) !== val) el.setAttribute(k, val);
+      // 顺序 = 表里的顺序（后来的盖在上面）；已经在对的位置就不动
+      const want: ChildNode | null = prev ? prev.nextSibling : this.root.firstChild;
+      if (want !== el) this.root.insertBefore(el, want);
+      prev = el;
+    }
+    for (const [k, el] of this.els) if (!keep.has(k)) { el.remove(); this.els.delete(k); }
+  }
+
+  private down(e: PointerEvent): void {
+    const el = (e.target as HTMLElement).closest<HTMLElement>(".ov-i"); if (!el || e.button === 2) return;
+    e.preventDefault(); e.stopPropagation();
+    this.cancel();
+    try { el.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+    const p = { el, pid: e.pointerId, timer: 0, fired: false };
+    if (el.dataset.ov === "tg") p.timer = window.setTimeout(() => { p.fired = true; this.host.onPartToggle(el.dataset.part!, TG_LONG[el.dataset.kind as "hidden" | "muted"]); }, LONG_MS);   // 长按 = 只看 / 独奏
+    this.press = p;
+  }
+  private up(e: PointerEvent): void {
+    const p = this.press; if (!p || p.pid !== e.pointerId) return;
+    e.stopPropagation();
+    this.cancel();
+    if (p.fired) return;
+    const r = p.el.getBoundingClientRect(), inside = e.clientX >= r.left - 4 && e.clientX <= r.right + 4 && e.clientY >= r.top - 4 && e.clientY <= r.bottom + 4;
+    if (inside) this.fire(p.el, r);   // 拖出钮外再松手 = 不算
+  }
+  private cancel(): void { if (this.press) { clearTimeout(this.press.timer); this.press = null; } }
+  private fire(el: HTMLElement, r: DOMRect): void {
+    const d = el.dataset, mid = { x: (r.left + r.right) / 2, y: r.bottom }, top = { x: (r.left + r.right) / 2, y: r.top };
+    switch (d.ov) {
+      case "tg": this.host.onPartToggle(d.part!, d.kind as PartToggle); break;
+      case "chip": this.host.onPaper(); break;
+      case "menu": this.host.onPaperMenu(d.paper!); break;
+      case "prev": if (!el.classList.contains("off")) this.host.onNavFrom(d.paper!, -1); break;
+      case "next": if (!el.classList.contains("off")) this.host.onNavFrom(d.paper!, 1); break;
+      case "scope": this.host.onScopeOf(d.paper!); break;
+      case "add": this.host.onPaperAdd(d.paper!, d.kind as "part" | "paper", top); break;
+      case "credits": this.host.onCredits(); break;
+      case "keyhint": this.host.onKeyHint(d.paper!, d.part!, Number(d.index), mid); break;
+      case "family": this.host.onLeaveFamily(d.paper!, d.host!); break;
+      case "hidden": this.host.onHidden(d.paper!, (d.parts ?? "").split(" ").filter(Boolean), mid); break;
+    }
+  }
+}
+const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
