@@ -5,6 +5,7 @@
 import { conceptName, conceptAlt, defLabel, zhOnly } from "../gm/catalog-i18n.ts";
 import { freshFinderMemo, type FinderMemo } from "../score/desk.ts";
 import { _t, lang } from "../i18n/index.ts";
+import { deviceKvGet, deviceKvSet } from "../device-kv.ts";
 import { loadCatalog, loadIconSprite, groupConcepts, providersOf, roleNameOf, eraLabel, fmtYear, gmKey, weightLabel, SORT_LABEL, type Catalog, type Concept, type Entry, type Provider, type SortMode } from "../gm/catalog.ts";
 
 export type FinderPick = { kind: "gs"; concept: Concept; provider: Provider } | { kind: "voice"; concept: Concept; light?: true } | OwnPick;   // light = 小月相（元音）
@@ -74,6 +75,8 @@ export class Finder {
   private swallow = false;                  // 长按开了小菜单：接下来那一下 click 不算点
   private replacing: number | null = null;  // 常用一行「换成…」：下一下点列表里的哪件 = 换进第几格
   private own: OwnFile | null = null;       // 打开的 .sf2（列表最上面一组；关目录 = 没了）
+  /** 隐藏找不到的乐器（目录里没有谁能演它、平替也没有 = 不列）；记在这台设备上，默认开（v0.16.56，user 11-09「选乐器的时候加一个隐藏找不到（包括平替）的乐器的选项。然后默认开」「免得一开始几个都是not avaliable now」）。 */
+  private hideNone = deviceKvGet("finder-hide-none") !== "0";
   constructor(parent: HTMLElement, host: FinderHost) {
     this.host = host;
     this.el = document.createElement("div"); this.el.className = "finder"; this.el.hidden = true;
@@ -83,11 +86,13 @@ export class Finder {
       `<button class="btn finder-file" data-v="ownsf2" title="${_t("自己的 .sf2 文件：选中的那一件切出来留在这台设备上，歌里只记来源")}" hidden>${_t("打开 .sf2…")}</button>` +   // v0.16.36：从预设那一排挪到顶条（user 11-09「自己的 SF2 的入口感觉不应该放在这儿」）
       `<button class="btn finder-pad" data-v="pad" title="${_t("试听键盘：开 / 关")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("键盘")}</span></button></div>` +
       `<div class="finder-hint">${HINT}</div><div class="finder-pins" hidden></div><div class="finder-used" hidden></div>` +
-      `<div class="finder-jump" hidden><span>${_t("跳到")}</span><select class="finder-jump-sel" title="${_t("列表滚到这一组")}"></select></div>` +
+      `<div class="finder-jump" hidden><span class="finder-jump-go"><span>${_t("跳到")}</span><select class="finder-jump-sel" title="${_t("列表滚到这一组")}"></select></span>` +
+      `<button class="btn finder-hide" aria-pressed="false">${_t("隐藏找不到的")}</button></div>` +   // 开关放第二排右端（v0.16.56）：顶条在窄屏 / 英文已经满了
       `<div class="finder-list"><div class="finder-empty">${_t("加载目录…")}</div></div>`;
     parent.append(this.el);   // 位置由 #stage 的 grid 命名区域钉死（.finder 占 main、pad 占 pad），和节点顺序无关（user「keyboard不应该用flex，这是一个很固定的有着很严密逻辑的东西」）
     this.el.querySelector<HTMLInputElement>(".finder-q")!.addEventListener("input", (e) => { this.q = (e.target as HTMLInputElement).value; this.render(); });
     this.el.querySelector<HTMLSelectElement>(".finder-sort")!.addEventListener("change", (e) => { this.mode = (e.target as HTMLSelectElement).value as SortMode; this.render(); });
+    this.el.querySelector<HTMLElement>(".finder-hide")!.addEventListener("click", (e) => { e.stopPropagation(); this.hideNone = !this.hideNone; deviceKvSet("finder-hide-none", this.hideNone ? null : "0"); this.render(); });
     this.el.querySelector<HTMLSelectElement>(".finder-jump-sel")!.addEventListener("change", (e) => this.jumpTo(Number((e.target as HTMLSelectElement).value)));
     this.el.addEventListener("click", (e) => { if (this.swallow) { this.swallow = false; e.preventDefault(); e.stopPropagation(); return; } void this.onClick(e); });
     // 长按（手指 / 笔）或右键：常用一格 = 换成… / 拿掉；列表里一件乐器 = 置顶 / 取消置顶（v0.16.36）
@@ -289,13 +294,23 @@ export class Finder {
   render(): void {
     this.renderPins(); this.renderUsed();
     const list = this.el.querySelector(".finder-list")!; if (!this.cat) return;
-    const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector<HTMLElement>(".finder-jump")!;
+    // 隐藏找不到的（开关在顶条）：没有谁能演它（目录里的提供者连平替都没有、也不是人声）= 不列；音色行本来就有人演。同一件在几个组里都有 = 只算一件
+    const cat = this.cat, hiddenIds = new Set<string>();
+    const playable = (e: Entry) => !!e.preset || e.concept.kind === "voice" || providersOf(cat, e.concept).length > 0;
+    const groups = groupConcepts(cat, this.mode, this.q).map((g) => {
+      if (!this.hideNone) return g;
+      const items = g.items.filter((e) => playable(e) || (hiddenIds.add(e.concept.id), false));
+      return items.length === g.items.length ? g : { ...g, items };
+    }).filter((g) => g.items.length), jump = this.el.querySelector<HTMLElement>(".finder-jump")!;
+    const hb = this.el.querySelector<HTMLElement>(".finder-hide")!;
+    hb.classList.toggle("is-on", this.hideNone); hb.setAttribute("aria-pressed", String(this.hideNone));
+    hb.title = this.hideNone ? _t("开着：目录里没有谁能演（连平替也没有）的乐器不列出来（这一页藏了 {n} 件）。点一下 = 全列出来", { n: hiddenIds.size }) : _t("关着：所有乐器都列出来，没有谁能演的也在。点一下 = 藏起来");
     // 类级跳转（user 2026-10-08「分类能不能有一个类级别的跳转功能，不然一个一个下拉很累」）：一组一项，选了列表滚到那组；只有一组就不出。
     //   做成下拉（user 同日「category选项能做成下拉而不是滑动吗」；原来是横着滑的一排粒）
-    jump.hidden = groups.length < 2;
+    jump.hidden = false; jump.querySelector<HTMLElement>(".finder-jump-go")!.hidden = groups.length < 2;   // 这一排一直在（右端是「隐藏找不到的」）；只有一组 / 搜索时只藏「跳到」
     jump.querySelector("select")!.innerHTML = groups.map((g, k) => `<option value="${k}">${_t("{label} · {n} 件", { label: esc(g.label), n: g.items.length })}</option>`).join("");
     const own = this.ownHtml();
-    if (!groups.length) { list.innerHTML = own + (own ? "" : `<div class="finder-empty">${_t("没有叫「{q}」的", { q: esc(this.q) })}</div>`); return; }
+    if (!groups.length) { list.innerHTML = own + (own ? "" : `<div class="finder-empty">${hiddenIds.size ? _t("没有叫「{q}」的能演的乐器（藏着 {n} 件没有谁能演的：关掉「隐藏找不到的」能看到）", { q: esc(this.q), n: hiddenIds.size }) : _t("没有叫「{q}」的", { q: esc(this.q) })}</div>`); return; }
     // 多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」）：每组里的行放进自适应网格（styles.css .finder-items：每格至少 320 px，窄屏一列）；
     //   点开的「谁能演」紧跟在行后面（DOM 顺序不变），横跨整行、落在那件乐器所在那一行的下面（grid dense，同一行别的格子不被挤走）
     // 手风琴（v0.16.3，user 11-07「选乐器的每个category自动collapse，而且只能expand一个」）：默认全收着、只露组头（名字 + 件数）；点组头 = 展开它、别的收起，再点 = 收起。
@@ -372,7 +387,7 @@ export class Finder {
   }
   /** 跳转下拉显示「现在在哪一组」（组头顶到列表顶的最后一组）。滚到底时：最后几组短、组头顶不到列表顶——人刚选的那组比算出来的靠后就留着它，不往回弹。 */
   private markJump(): void {
-    const list = this.el.querySelector<HTMLElement>(".finder-list")!, jump = this.el.querySelector<HTMLElement>(".finder-jump")!; if (jump.hidden) return;
+    const list = this.el.querySelector<HTMLElement>(".finder-list")!, jump = this.el.querySelector<HTMLElement>(".finder-jump")!; if (jump.hidden || jump.querySelector<HTMLElement>(".finder-jump-go")!.hidden) return;
     const sel = jump.querySelector("select")!, top = list.getBoundingClientRect().top + 1;
     let cur = 0;
     for (const g of list.querySelectorAll<HTMLElement>("[data-g]")) { if (g.getBoundingClientRect().top <= top) cur = Number(g.dataset.g); else break; }

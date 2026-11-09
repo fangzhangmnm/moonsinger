@@ -53,9 +53,9 @@
     <!-- 标签页 = user 手画的 32 像素档（原样 1:1）；icon.svg 不挂这里，免得浏览器拿矢量缩到 16 px 盖掉它。详 ai-docs/20261011-icon-tiers.md -->
     <link rel="icon" href="./icon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-180.png" />
-    <link rel="stylesheet" href="./vendor/internal-css/workbench-elements.css?v=e45fa5f2de7c" />
-    <link rel="stylesheet" href="./vendor/internal-css/gallery.css?v=e45fa5f2de7c" />
-    <link rel="stylesheet" href="./styles.css?v=e45fa5f2de7c" />
+    <link rel="stylesheet" href="./vendor/internal-css/workbench-elements.css?v=ace174a62a80" />
+    <link rel="stylesheet" href="./vendor/internal-css/gallery.css?v=ace174a62a80" />
+    <link rel="stylesheet" href="./styles.css?v=ace174a62a80" />
     <script>
       // bundle 加载前的兜底：任何脚本错误糊一张红条（iPad 无 devtools）。抄 CatsUp。
       (function () {
@@ -73,7 +73,9 @@
           try { (window.__msEarlyErrors = window.__msEarlyErrors || []).push({ t: Date.now(), m: text }); } catch (e) {}   // 进黑匣子（bundle 起来后 src/app/report-error.ts 收走）
         }
         window.__msShowError = show;   // 主 bundle 加载失败（<script onerror>）也走这条红条：刚发了新版本 / 网络不通时页面不再是纯白（2026-10-08 iPad 清缓存撞上部署窗口）
-        window.addEventListener("error", function (e) { show((zh ? "脚本错误：" : "Script error: ") + (e.message || e.error || e)); });
+        // 「ResizeObserver loop completed with undelivered notifications」= 浏览器按规范发的提示（一帧里有个看大小的回调又改了大小，剩下的通知推到下一帧），不是脚本出错、不丢东西：
+        //   不弹红条（user 11-09「开的时候经常出这个error可以看一下」，v0.16.56）；黑匣子照记（src/app/report-error.ts 的 window error 那一路）
+        window.addEventListener("error", function (e) { if (/^ResizeObserver loop/.test(String(e.message || ""))) return; show((zh ? "脚本错误：" : "Script error: ") + (e.message || e.error || e)); });
         window.addEventListener("unhandledrejection", function (e) { show((zh ? "未处理的 Promise 错误：" : "Unhandled promise error: ") + (e.reason && (e.reason.message || e.reason))); });
       })();
     </script>
@@ -245,6 +247,6 @@
         <aside id="padPanel" class="pad-panel"></aside>
       </main>
     </div>
-    <script type="module" src="./dist/moonsinger-189ce9edda85.mjs" onerror="window.__msShowError && window.__msShowError(\'主程序没加载下来（刚发了新版本还没到、或网络不通）：等几秒再刷新一次\')"></script>
+    <script type="module" src="./dist/moonsinger-60ce982fa39c.mjs" onerror="window.__msShowError && window.__msShowError(\'主程序没加载下来（刚发了新版本还没到、或网络不通）：等几秒再刷新一次\')"></script>
   </body>
 </html>

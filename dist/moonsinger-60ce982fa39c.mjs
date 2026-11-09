@@ -4530,6 +4530,10 @@ var S = {
   "\u6253\u5F00 .sf2\u2026": { en: "Open .sf2\u2026" },
   "{label} \xB7 {n} \u4EF6": { en: "{label} \xB7 {n}" },
   "\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684": { en: "Nothing named \u201C{q}\u201D" },
+  "\u9690\u85CF\u627E\u4E0D\u5230\u7684": { en: "Hide unavailable" },
+  "\u5F00\u7740\uFF1A\u76EE\u5F55\u91CC\u6CA1\u6709\u8C01\u80FD\u6F14\uFF08\u8FDE\u5E73\u66FF\u4E5F\u6CA1\u6709\uFF09\u7684\u4E50\u5668\u4E0D\u5217\u51FA\u6765\uFF08\u8FD9\u4E00\u9875\u85CF\u4E86 {n} \u4EF6\uFF09\u3002\u70B9\u4E00\u4E0B = \u5168\u5217\u51FA\u6765": { en: "On: instruments nobody in the catalog can perform (not even a stand-in) are hidden ({n} hidden here). Tap to list everything" },
+  "\u5173\u7740\uFF1A\u6240\u6709\u4E50\u5668\u90FD\u5217\u51FA\u6765\uFF0C\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\u4E5F\u5728\u3002\u70B9\u4E00\u4E0B = \u85CF\u8D77\u6765": { en: "Off: every instrument is listed, including ones nobody can perform. Tap to hide them" },
+  "\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684\u80FD\u6F14\u7684\u4E50\u5668\uFF08\u85CF\u7740 {n} \u4EF6\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\uFF1A\u5173\u6389\u300C\u9690\u85CF\u627E\u4E0D\u5230\u7684\u300D\u80FD\u770B\u5230\uFF09": { en: "No playable instrument named \u201C{q}\u201D ({n} with no performer are hidden \u2014 turn off \u201CHide unavailable\u201D to see them)" },
   "\u6536\u8D77\u8FD9\u4E00\u7EC4": { en: "Collapse this group" },
   "\u5C55\u5F00\u8FD9\u4E00\u7EC4\uFF08\u522B\u7684\u6536\u8D77\uFF09": { en: "Expand this group (others collapse)" },
   "\u5728\u8FD9\u79CD\u98CE\u91CC\u9876\u66FF\u300C{asName}\u300D": { en: "Substitutes for \u201C{asName}\u201D in this style" },
@@ -5047,7 +5051,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.55-2026-11-09";
+var APP_VERSION = "v0.16.56-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29363,15 +29367,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-3a38c0217861.mjs");
+      return pick(() => "singer-worker-8ca338ea5300.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-9bf87d70b526.mjs");
+      return pick(() => "layout-worker-fd2009a1affd.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-e65ca51e3022.mjs");
+      return pick(() => "encode-worker-b5955ca4671d.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36775,12 +36779,14 @@ var Finder = class {
   // 常用一行「换成…」：下一下点列表里的哪件 = 换进第几格
   own = null;
   // 打开的 .sf2（列表最上面一组；关目录 = 没了）
+  /** 隐藏找不到的乐器（目录里没有谁能演它、平替也没有 = 不列）；记在这台设备上，默认开（v0.16.56，user 11-09「选乐器的时候加一个隐藏找不到（包括平替）的乐器的选项。然后默认开」「免得一开始几个都是not avaliable now」）。 */
+  hideNone = deviceKvGet("finder-hide-none") !== "0";
   constructor(parent, host2) {
     this.host = host2;
     this.el = document.createElement("div");
     this.el.className = "finder";
     this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="${_t("\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09")}" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select><button class="btn finder-file" data-v="ownsf2" title="${_t("\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90")}" hidden>${_t("\u6253\u5F00 .sf2\u2026")}</button><button class="btn finder-pad" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="finder-hint">${HINT}</div><div class="finder-pins" hidden></div><div class="finder-used" hidden></div><div class="finder-jump" hidden><span>${_t("\u8DF3\u5230")}</span><select class="finder-jump-sel" title="${_t("\u5217\u8868\u6EDA\u5230\u8FD9\u4E00\u7EC4")}"></select></div><div class="finder-list"><div class="finder-empty">${_t("\u52A0\u8F7D\u76EE\u5F55\u2026")}</div></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><button class="btn" data-v="back" title="${_t("\u56DE\u5230\u8C31\uFF08Esc\uFF09")}">${_t("\u2190 \u8C31")}</button><span class="finder-title"></span><input class="finder-q" type="search" placeholder="${_t("\u641C\u4E50\u5668\uFF08\u4E2D / \u82F1 / \u65E5\uFF09")}" spellcheck="false" autocomplete="off" /><select class="finder-sort">${Object.keys(SORT_LABEL).map((m2) => `<option value="${m2}">${SORT_LABEL[m2]}</option>`).join("")}</select><button class="btn finder-file" data-v="ownsf2" title="${_t("\u81EA\u5DF1\u7684 .sf2 \u6587\u4EF6\uFF1A\u9009\u4E2D\u7684\u90A3\u4E00\u4EF6\u5207\u51FA\u6765\u7559\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90")}" hidden>${_t("\u6253\u5F00 .sf2\u2026")}</button><button class="btn finder-pad" data-v="pad" title="${_t("\u8BD5\u542C\u952E\u76D8\uFF1A\u5F00 / \u5173")}"><svg class="ico"><use href="#piano-keys"/></svg><span>${_t("\u952E\u76D8")}</span></button></div><div class="finder-hint">${HINT}</div><div class="finder-pins" hidden></div><div class="finder-used" hidden></div><div class="finder-jump" hidden><span class="finder-jump-go"><span>${_t("\u8DF3\u5230")}</span><select class="finder-jump-sel" title="${_t("\u5217\u8868\u6EDA\u5230\u8FD9\u4E00\u7EC4")}"></select></span><button class="btn finder-hide" aria-pressed="false">${_t("\u9690\u85CF\u627E\u4E0D\u5230\u7684")}</button></div><div class="finder-list"><div class="finder-empty">${_t("\u52A0\u8F7D\u76EE\u5F55\u2026")}</div></div>`;
     parent.append(this.el);
     this.el.querySelector(".finder-q").addEventListener("input", (e10) => {
       this.q = e10.target.value;
@@ -36788,6 +36794,12 @@ var Finder = class {
     });
     this.el.querySelector(".finder-sort").addEventListener("change", (e10) => {
       this.mode = e10.target.value;
+      this.render();
+    });
+    this.el.querySelector(".finder-hide").addEventListener("click", (e10) => {
+      e10.stopPropagation();
+      this.hideNone = !this.hideNone;
+      deviceKvSet("finder-hide-none", this.hideNone ? null : "0");
       this.render();
     });
     this.el.querySelector(".finder-jump-sel").addEventListener("change", (e10) => this.jumpTo(Number(e10.target.value)));
@@ -37174,12 +37186,23 @@ var Finder = class {
     this.renderUsed();
     const list = this.el.querySelector(".finder-list");
     if (!this.cat) return;
-    const groups = groupConcepts(this.cat, this.mode, this.q), jump = this.el.querySelector(".finder-jump");
-    jump.hidden = groups.length < 2;
+    const cat2 = this.cat, hiddenIds = /* @__PURE__ */ new Set();
+    const playable = (e10) => !!e10.preset || e10.concept.kind === "voice" || providersOf(cat2, e10.concept).length > 0;
+    const groups = groupConcepts(cat2, this.mode, this.q).map((g3) => {
+      if (!this.hideNone) return g3;
+      const items = g3.items.filter((e10) => playable(e10) || (hiddenIds.add(e10.concept.id), false));
+      return items.length === g3.items.length ? g3 : { ...g3, items };
+    }).filter((g3) => g3.items.length), jump = this.el.querySelector(".finder-jump");
+    const hb = this.el.querySelector(".finder-hide");
+    hb.classList.toggle("is-on", this.hideNone);
+    hb.setAttribute("aria-pressed", String(this.hideNone));
+    hb.title = this.hideNone ? _t("\u5F00\u7740\uFF1A\u76EE\u5F55\u91CC\u6CA1\u6709\u8C01\u80FD\u6F14\uFF08\u8FDE\u5E73\u66FF\u4E5F\u6CA1\u6709\uFF09\u7684\u4E50\u5668\u4E0D\u5217\u51FA\u6765\uFF08\u8FD9\u4E00\u9875\u85CF\u4E86 {n} \u4EF6\uFF09\u3002\u70B9\u4E00\u4E0B = \u5168\u5217\u51FA\u6765", { n: hiddenIds.size }) : _t("\u5173\u7740\uFF1A\u6240\u6709\u4E50\u5668\u90FD\u5217\u51FA\u6765\uFF0C\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\u4E5F\u5728\u3002\u70B9\u4E00\u4E0B = \u85CF\u8D77\u6765");
+    jump.hidden = false;
+    jump.querySelector(".finder-jump-go").hidden = groups.length < 2;
     jump.querySelector("select").innerHTML = groups.map((g3, k2) => `<option value="${k2}">${_t("{label} \xB7 {n} \u4EF6", { label: esc4(g3.label), n: g3.items.length })}</option>`).join("");
     const own = this.ownHtml();
     if (!groups.length) {
-      list.innerHTML = own + (own ? "" : `<div class="finder-empty">${_t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684", { q: esc4(this.q) })}</div>`);
+      list.innerHTML = own + (own ? "" : `<div class="finder-empty">${hiddenIds.size ? _t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684\u80FD\u6F14\u7684\u4E50\u5668\uFF08\u85CF\u7740 {n} \u4EF6\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\uFF1A\u5173\u6389\u300C\u9690\u85CF\u627E\u4E0D\u5230\u7684\u300D\u80FD\u770B\u5230\uFF09", { q: esc4(this.q), n: hiddenIds.size }) : _t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684", { q: esc4(this.q) })}</div>`);
       return;
     }
     const acc = !this.q.trim() && groups.length > 1, openId = this.openG.get(this.mode);
@@ -37258,7 +37281,7 @@ var Finder = class {
   /** 跳转下拉显示「现在在哪一组」（组头顶到列表顶的最后一组）。滚到底时：最后几组短、组头顶不到列表顶——人刚选的那组比算出来的靠后就留着它，不往回弹。 */
   markJump() {
     const list = this.el.querySelector(".finder-list"), jump = this.el.querySelector(".finder-jump");
-    if (jump.hidden) return;
+    if (jump.hidden || jump.querySelector(".finder-jump-go").hidden) return;
     const sel = jump.querySelector("select"), top = list.getBoundingClientRect().top + 1;
     let cur = 0;
     for (const g3 of list.querySelectorAll("[data-g]")) {
@@ -53163,7 +53186,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "e45fa5f2de7c",
+  cssHash: "ace174a62a80",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -57182,4 +57205,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-189ce9edda85.mjs.map
+//# sourceMappingURL=moonsinger-60ce982fa39c.mjs.map

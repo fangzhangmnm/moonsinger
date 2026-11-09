@@ -449,6 +449,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .finder-bar > [data-v="back"] { flex: none; white-space: nowrap; }   /* 顶条挤的时候返回钮不让（v0.16.36：多了「打开 .sf2…」） */
 @media (max-width: 560px) { .finder-file { padding: 0 6px; font-size: 12px; } }   /* 顶条「打开 .sf2…」（v0.16.36） */
 .finder-file[hidden] { display: none; }
+.finder-hide { flex: none; white-space: nowrap; }   /* 隐藏找不到的（v0.16.56）：亮着 = 开 */
 .finder-pad { flex: none; display: inline-flex; align-items: center; gap: 4px; }   /* 试听键盘开关（收起了也叫得回来） */
 @media (max-width: 560px) { .finder-pad span, .finder-title { display: none; } }
 /* 乐器目录顶上「这首歌里用过的」（v0.16.18 搬家 C）：点一位 = 上场，× = 退掉 */
@@ -475,6 +476,9 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 /* 类级跳转：一组一项的下拉；滚动时跟着显示现在所在的组 */
 .finder-jump { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); font-size: 13px; color: var(--muted); }   /* 类级跳转 = 下拉（user「category选项能做成下拉而不是滑动吗」） */
 .finder-jump[hidden] { display: none; }
+.finder-jump-go { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }   /* 「跳到 [组]」（只有一组 / 搜索时藏，右端的开关留着） */
+.finder-jump-go[hidden] { display: none; }
+.finder-jump .finder-hide { margin-left: auto; height: 32px; font-size: 13px; }
 .finder-jump-sel { flex: 1; min-width: 0; max-width: 420px; height: 32px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: var(--ink); font: inherit; font-size: 14px; }
 .finder-list { flex: 1; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 0 0 24px; }   /* 顶上不留内边距：组标题粘在顶上时和边对齐，不留一条透字的缝（user 2026-10-08「category条没对齐，有缝隙」）。
    只许竖着滚（v0.15.6，user 11-07「找乐器的时候往下拉的时候页面总是左右摆」= 英文长名字撑宽了列表、手指一斜就横着动）：overflow-x hidden + pan-y 是兜底，根治在下面名字能换行 */
@@ -499,7 +503,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .inst-name span { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .inst-name .inst-w { font-size: 11px; color: var(--accent); margin-left: 6px; letter-spacing: 1px; }   /* 〇〇风里的承重 ★ */
 .inst-name b .inst-preset { font-size: 13px; font-weight: 400; color: var(--ink); white-space: normal; overflow-wrap: break-word; }   /* 按曲风：音色行的 GM 名（星级 / 入选按音色） */
-.inst-name b .inst-as { display: inline-block; font-size: 10px; font-weight: 400; line-height: 1.5; border: 1px dashed var(--line); border-radius: 4px; padding: 0 4px; margin-left: 6px; color: var(--muted); vertical-align: 1px; }   /* 在这种风里顶替某个概念 */
+.inst-name b .inst-as { display: inline-block; max-width: 100%; white-space: normal; overflow-wrap: anywhere; font-size: 10px; font-weight: 400; line-height: 1.5; border: 1px dashed var(--line); border-radius: 4px; padding: 0 4px; margin-left: 6px; color: var(--muted); vertical-align: 1px; }   /* 在这种风里顶替某个概念 */
 .inst-meta { font-size: 11px; color: var(--muted); white-space: nowrap; }
 /* 乐器目录多列（2026-10-09，user「挑乐曲界面到时候屏幕空间够的话做成多列的，好挑一点」→「我觉得可以三列」）：每格至少 260 px（手机一列、iPad 竖 / 横（右边有键盘）三列）；
    点开的「谁能演」横跨整行、落在那件乐器那一行下面（dense：同一行别的格子留在原地） */

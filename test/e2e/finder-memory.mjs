@@ -35,6 +35,8 @@ check(sort.v === "year" && sort.first === "year", "默认按年代（下拉第�
 
 // ② 什么都没点 = 默认的哼（出声）；点开没人能演的那件 = 静音
 check((await press("Digit1")) === 1, "什么都没点：键盘出声（默认的哼）");
+// 特雷门琴没有谁能演：v0.16.56 起「隐藏找不到的」默认开着会把它藏起来——这份测的是「点开没人演的乐器时键盘静音 / 记住」，先把开关关掉（记在设备上，后面重开也关着）
+if (await p.evaluate(() => document.querySelector(".finder-hide")?.classList.contains("is-on"))) { await p.click(".finder-hide"); await p.waitForTimeout(150); }
 await reveal(p, NOBODY); await p.click(`.inst-row[data-c="${NOBODY}"]`); await p.waitForTimeout(300);
 check(await p.$(`.inst-row.is-open[data-c="${NOBODY}"] + .inst-prov .prov-none`) !== null, "点开特雷门琴：写着「目录里还没有谁能演它」");
 check((await press("Digit2")) === 0, "点开没人能演的那件：键盘不出声（不是还弹着上一个）");

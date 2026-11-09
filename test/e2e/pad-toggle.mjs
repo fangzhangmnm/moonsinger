@@ -59,6 +59,13 @@ await togglePad(); check(await padShown(), "底下的「键盘」钮 = 弹出");
 await p.mouse.click(spot.nx, spot.ny); await p.waitForTimeout(300); await p.mouse.click(spot.ex, spot.ey); await p.waitForTimeout(300);
 check(await padShown(), "开着时点音符、点空白 = 不收");
 if (spot.bx >= 0) { await p.mouse.click(spot.bx, spot.by); await p.waitForTimeout(300); check(await padShown(), "点顶栏空白处 = 不收（以前会收）"); } else check(false, "顶栏找不到空白处");
+// 红条：浏览器的 ResizeObserver 提示不弹（v0.16.56，user 11-09「开的时候经常出这个error可以看一下」）；别的脚本错误照弹
+const bannerText = () => p.evaluate(() => { const e = document.getElementById("errBanner"); return e && !e.hidden ? e.textContent : null; });
+await p.evaluate(() => window.dispatchEvent(new ErrorEvent("error", { message: "ResizeObserver loop completed with undelivered notifications." }))); await p.waitForTimeout(100);
+check((await bannerText()) === null, "ResizeObserver 的提示 = 不弹红条");
+await p.evaluate(() => window.dispatchEvent(new ErrorEvent("error", { message: "e2e-boom" }))); await p.waitForTimeout(100);
+check(/e2e-boom/.test((await bannerText()) ?? ""), "别的脚本错误照样弹红条", String(await bannerText()));
+await p.evaluate(() => { const e = document.getElementById("errBanner"); if (e) e.hidden = true; });
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`pad-toggle: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
