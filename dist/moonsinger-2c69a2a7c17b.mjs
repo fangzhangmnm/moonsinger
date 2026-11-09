@@ -4533,6 +4533,8 @@ var S = {
   "\u9690\u85CF\u627E\u4E0D\u5230\u7684": { en: "Hide unavailable" },
   "\u6574\u6BB5\uFF08\u6240\u6709\u58F0\u90E8\u7684\u97F3\u3001\u8BB0\u53F7\u3001\u6B4C\u8BCD\uFF09\u7167\u6284\u4E00\u4EFD\uFF0C\u63A5\u5728\u5B83\u540E\u9762": { en: "Copy the whole section (all parts' notes, marks and lyrics) right after it" },
   "\u590D\u5236\u8FD9\u4E00\u6BB5": { en: "Duplicate section" },
+  "\u5148\u4E0D\u6362\uFF1A\u52A0\u4E00\u4E2A\u65B0\u58F0\u90E8\u653E\u5B83\uFF0C\u5F00\u300C\u5F39\u300D\u770B\u7740\u8C31\u5F39\u7740\u8BD5\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u52A8\uFF09": { en: "Don't swap yet: add a new part with it and turn on Play to try it along with the score (the current performer stays)" },
+  "\u52A0\u6210\u65B0\u58F0\u90E8\u8BD5\u8BD5": { en: "Try as a new part" },
   "{name} \u526F\u672C": { en: "{name} copy" },
   "\u66F2\u6BB5": { en: "Section" },
   "\u590D\u5236\u4E86\u4E00\u6BB5\uFF08\u63A5\u5728\u540E\u9762\uFF09": { en: "Section duplicated (placed right after)" },
@@ -5056,7 +5058,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.62-2026-11-09";
+var APP_VERSION = "v0.16.63-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10509,6 +10511,10 @@ function shiftPrim(p2, dy) {
       }
       p2.d = out + d3.slice(i10);
       return;
+    }
+    default: {
+      const never2 = p2;
+      throw new Error(`shiftPrim: unknown prim ${JSON.stringify(never2)}`);
     }
   }
 }
@@ -29473,15 +29479,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-335702c34f85.mjs");
+      return pick(() => "singer-worker-9462a2e11fd6.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-1c5a20dddaaf.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ab2a7b9f5d31.mjs");
+      return pick(() => "layout-worker-40a6fe4b24b5.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-02df77c36647.mjs");
+      return pick(() => "encode-worker-1badd19dfcd4.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -37148,6 +37154,10 @@ var Finder = class {
         await this.host.cast(pick);
         return;
       }
+      if (v === "trynew") {
+        await this.host.tryNew?.(pick);
+        return;
+      }
     }
     if (prov) {
       const key = prov.dataset.p;
@@ -37343,7 +37353,7 @@ var Finder = class {
   }
   /** 一位能演的（一行）：名字 + 小字 + 「▶ 听开头」「选这个」。目录里的提供者和自己文件里的那几件共用（v0.16.37）。 */
   provHtml(key, label, note2, playable, sub = false) {
-    return `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc4(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("\u9876\u66FF")}</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934")}">${_t("\u25B6 \u542C\u5F00\u5934")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF08\u76EE\u5F55\u4E0D\u5173\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09")}">${_t("\u9009\u8FD9\u4E2A")}</button>`}</div></div>`;
+    return `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc4(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("\u9876\u66FF")}</span>` : ""}${label}</b>${note2 ? `<small>${note2}</small>` : ""}</div><div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("\u7528\u5B83\u653E\u8FD9\u6761\u58F0\u90E8\u7684\u5F00\u5934")}">${_t("\u25B6 \u542C\u5F00\u5934")}</button>` : ""}${this.playOnly || !this.host.tryNew || !this.host.canTryNew?.() ? "" : `<button class="btn prov-try" data-v="trynew" title="${_t("\u5148\u4E0D\u6362\uFF1A\u52A0\u4E00\u4E2A\u65B0\u58F0\u90E8\u653E\u5B83\uFF0C\u5F00\u300C\u5F39\u300D\u770B\u7740\u8C31\u5F39\u7740\u8BD5\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u52A8\uFF09")}" aria-label="${_t("\u52A0\u6210\u65B0\u58F0\u90E8\u8BD5\u8BD5")}">${_t("\uFF0B \u58F0\u90E8")}</button>`}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("\u9009\u5B83\u6765\u6F14\u8FD9\u4E2A\u58F0\u90E8\uFF08\u76EE\u5F55\u4E0D\u5173\uFF0C\u53EF\u4EE5\u63A5\u7740\u6362\uFF09")}">${_t("\u9009\u8FD9\u4E2A")}</button>`}</div></div>`;
   }
   /** 打开的 .sf2 那一组（列表最上面；施工单 §4.3）：按 乐器 / 变体 / 鼓组 分小节，一件一行；点一行 = 试听，「选这个」= 换上。
    *  搜索框里有字 = 只列名字里有它的。组头的 × = 收起这一组（字节一起放掉）。 */
@@ -53315,7 +53325,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "4a3a4f985cb9",
+  cssHash: "7f8f42137dfb",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -53774,6 +53784,21 @@ var finder = new Finder($2("stage"), {
   playHead: playHeadWith,
   cast: castPick,
   close: () => closeFinder(),
+  // 「＋ 声部」= 先不换，加成新声部试试（v0.16.63，总表第 16 条；user 11-09「加新声部都没必要…可能还是需要的，因为你想看着谱子弹着玩。不过不要占UI太多」）：
+  //   走「＋ 新声部」同一条路（选了才建、建 + 换上一步撤销），新声部放在台上这位下面、只在这一段；成了 = 关目录、开「弹」。声音没到 = 什么都不建。
+  //   注意（Fable 11-09）：以后删这个临时声部 = 它调过的预设跟着没；要「比一比再换」先把预设给台上那位再删
+  canTryNew: () => !newPartPending && !finderPlayOnly(),
+  tryNew: async (p2) => {
+    if (newPartPending || finderPlayOnly()) return;
+    newPartPending = { paper: D2.st.at.paper, place: { anchor: D2.st.at.part, above: false } };
+    await castPick(p2);
+    if (newPartPending) {
+      newPartPending = null;
+      return;
+    }
+    closeFinder(false);
+    if (!impro) setImpro(true);
+  },
   togglePad: () => showPad(padEl.hidden),
   memoChanged: (ctx2, m2) => {
     if (ctx2 === "impro") deviceKvSetJson(KV_FINDER_IMPRO, serializeFinderMemo(m2));
@@ -57340,4 +57365,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6c0b0c714432.mjs.map
+//# sourceMappingURL=moonsinger-2c69a2a7c17b.mjs.map

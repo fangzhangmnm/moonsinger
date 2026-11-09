@@ -104,6 +104,7 @@ export function shiftPrim(p: Prim, dy: number): void {
       }
       p.d = out + d.slice(i); return;
     }
+    default: { const never: never = p; throw new Error(`shiftPrim: unknown prim ${JSON.stringify(never)}`); }   // 穷举守卫（Fable 11-09 审三刀留的小尾巴）：加了新图元没在这里挪 = 类型检查红
   }
 }
 /** 图元的一个代表 y（px）：认它是哪一行的。 */

@@ -1532,7 +1532,18 @@ const finder = new Finder($("stage"), {
   removeCandidate: (id) => { try { updateExtras(withoutCandidate(D.extras, curRole(), id), { kind: "lounge", label: _t("「{rn}」退掉一位候选", { rn: roleName(D.extras, curRole()) }) }); } catch (err) { showError((err as Error).message); } },
   ownSf2: () => openOwnSf2(),   // v0.16.37：在目录里挑（施工单 §4.3），选文件不算选了乐器
   
-  roleName: () => (newPartPending ? _t("新声部") : roleName(D.extras, curRole())), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(), togglePad: () => showPad(padEl.hidden),
+  roleName: () => (newPartPending ? _t("新声部") : roleName(D.extras, curRole())), audition: setAudition, playHead: playHeadWith, cast: castPick, close: () => closeFinder(),
+  // 「＋ 声部」= 先不换，加成新声部试试（v0.16.63，总表第 16 条；user 11-09「加新声部都没必要…可能还是需要的，因为你想看着谱子弹着玩。不过不要占UI太多」）：
+  //   走「＋ 新声部」同一条路（选了才建、建 + 换上一步撤销），新声部放在台上这位下面、只在这一段；成了 = 关目录、开「弹」。声音没到 = 什么都不建。
+  //   注意（Fable 11-09）：以后删这个临时声部 = 它调过的预设跟着没；要「比一比再换」先把预设给台上那位再删
+  canTryNew: () => !newPartPending && !finderPlayOnly(),
+  tryNew: async (p: FinderPick) => {
+    if (newPartPending || finderPlayOnly()) return;
+    newPartPending = { paper: D.st.at.paper, place: { anchor: D.st.at.part, above: false } };
+    await castPick(p);
+    if (newPartPending) { newPartPending = null; return; }   // 没建成（声音没到）
+    closeFinder(false); if (!impro) setImpro(true);
+  }, togglePad: () => showPad(padEl.hidden),
   memoChanged: (ctx, m) => { if (ctx === "impro") deviceKvSetJson(KV_FINDER_IMPRO, serializeFinderMemo(m)); },
   // 常用一行（v0.16.36）：记在这台设备上（跟人走、不跟歌走；user 11-09「置顶…跟着用户设置走」）；读到的不像样 = 默认那七格
   pins: () => { const v = deviceKvGetJson<unknown>(KV_FINDER_PINS, null); return Array.isArray(v) ? v.filter((x): x is PinTile => !!x && typeof (x as PinTile).c === "string").map((x) => ({ c: x.c, ...(x.job ? { job: x.job } : {}) })) : [...DEFAULT_PINS]; },

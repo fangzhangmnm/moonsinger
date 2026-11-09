@@ -20,6 +20,9 @@ export interface FinderHost {
   audition(p: FinderPick | FinderNobody | null): Promise<void>;     // 试听台：载进实时合成器（pad 弹它）；none = 静音；null = 停（回到默认的哼）
   playHead(p: FinderPick): Promise<void>;                            // 用它放本声部开头
   cast(p: FinderPick): Promise<void>;                                // 上场（声音默认弱引用：歌里只记来源，要带着走 = 文件菜单「全部打包进歌」）
+  /** 先不换，加成新声部试试（v0.16.63，user 11-09 定的：「台下」不做，只补这颗小钮）：加一个声部放它、开「弹」。没有 = 不出这颗钮（「＋ 新声部」那一路本来就是新的）。 */
+  tryNew?(p: FinderPick): Promise<void>;
+  canTryNew?(): boolean;
   close(): void;
   togglePad(): void;                                                 // 顶条「键盘」：开 / 关试听键盘（user 2026-10-08「音色预览也应该能toggle键盘，免得没弹出来」）
   /** 关目录时：这一份记忆（翻到哪）变了。即兴 = 宿主存到设备上；歌里的 = 宿主存歌时顺手带（v0.16.6）。 */
@@ -198,6 +201,7 @@ export class Finder {
       const key = btn.closest<HTMLElement>("[data-p]")?.dataset.p ?? "", pick = this.pickOf(key); if (!pick) return;
       if (v === "play") { await this.host.playHead(pick); return; }
       if (v === "cast") { await this.host.cast(pick); return; }
+      if (v === "trynew") { await this.host.tryNew?.(pick); return; }
     }
     if (prov) { const key = prov.dataset.p!; if (this.selected !== key) { this.selected = key; if (key.startsWith("sf2|")) this.renderPinned(`.prov[data-p="${CSS.escape(key)}"]`); else this.renderAnchored(rowOf(prov)); await this.host.audition(this.pickOf(key)); } return; }
     if (row && this.replacing !== null && this.host.setPins) {   // 「换成…」：点的这件换进那一格（不按种类拦）
@@ -327,7 +331,7 @@ export class Finder {
   /** 一位能演的（一行）：名字 + 小字 + 「▶ 听开头」「选这个」。目录里的提供者和自己文件里的那几件共用（v0.16.37）。 */
   private provHtml(key: string, label: string, note: string, playable: boolean, sub = false): string {
     return `<div class="prov${this.selected === key ? " is-on" : ""}${sub ? " sub" : ""}" data-p="${esc(key)}"><div class="prov-l"><b>${sub ? `<span class="prov-tag">${_t("顶替")}</span>` : ""}${label}</b>${note ? `<small>${note}</small>` : ""}</div>` +
-      `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("用它放这条声部的开头")}">${_t("▶ 听开头")}</button>` : ""}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("选它来演这个声部（目录不关，可以接着换）")}">${_t("选这个")}</button>`}</div></div>`;
+      `<div class="prov-b">${playable ? `<button class="btn" data-v="play" title="${_t("用它放这条声部的开头")}">${_t("▶ 听开头")}</button>` : ""}${this.playOnly || !this.host.tryNew || !this.host.canTryNew?.() ? "" : `<button class="btn prov-try" data-v="trynew" title="${_t("先不换：加一个新声部放它，开「弹」看着谱弹着试（台上这位不动）")}" aria-label="${_t("加成新声部试试")}">${_t("＋ 声部")}</button>`}${this.playOnly ? "" : `<button class="btn primary" data-v="cast" title="${_t("选它来演这个声部（目录不关，可以接着换）")}">${_t("选这个")}</button>`}</div></div>`;
   }
   /** 打开的 .sf2 那一组（列表最上面；施工单 §4.3）：按 乐器 / 变体 / 鼓组 分小节，一件一行；点一行 = 试听，「选这个」= 换上。
    *  搜索框里有字 = 只列名字里有它的。组头的 × = 收起这一组（字节一起放掉）。 */

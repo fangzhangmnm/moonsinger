@@ -1819,6 +1819,8 @@ export const S = {
   "隐藏找不到的": { en: "Hide unavailable" },
   "整段（所有声部的音、记号、歌词）照抄一份，接在它后面": { en: "Copy the whole section (all parts' notes, marks and lyrics) right after it" },
   "复制这一段": { en: "Duplicate section" },
+  "先不换：加一个新声部放它，开「弹」看着谱弹着试（台上这位不动）": { en: "Don't swap yet: add a new part with it and turn on Play to try it along with the score (the current performer stays)" },
+  "加成新声部试试": { en: "Try as a new part" },
   "{name} 副本": { en: "{name} copy" },
   "曲段": { en: "Section" },
   "复制了一段（接在后面）": { en: "Section duplicated (placed right after)" },
