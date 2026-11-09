@@ -60,12 +60,12 @@ await p.addStyleTag({ content: `
 ` });
 await p.evaluate(() => window.dispatchEvent(new Event("resize")));
 await p.waitForTimeout(900);
-// 缩放：纸宽撑满画面宽，但最高的那一行谱（一行所有声部）要整个放得下（留一成给翻谱时上下露一点）；--zoom 再乘在上面
+// 缩放：纸宽撑满画面宽，但最高的那一行谱（一行所有声部）放在翻谱的落点也要整行看得见；--zoom 再乘在上面
 const Z = await p.evaluate((userZoom) => {
   const m = window.__moonsinger, sheet = document.querySelector("#score .sheet"), mul0 = Number(sheet.style.zoom || 1), rw = sheet.getBoundingClientRect().width;
   const L = m.layout(), g = new Map();
   for (const r of L.systems) { const k = `${r.paper}:${r.sys}`, v = g.get(k) ?? [Infinity, -Infinity]; v[0] = Math.min(v[0], r.inkTop ?? r.top); v[1] = Math.max(v[1], r.inkBottom ?? r.bottom); g.set(k, v); }
-  const maxH = Math.max(...[...g.values()].map(([a, b]) => b - a)) * mul0, byW = (innerWidth * 0.985) / rw, byH = (innerHeight * 0.9) / maxH;
+  const maxH = Math.max(...[...g.values()].map(([a, b]) => b - a)) * mul0, byW = (innerWidth * 0.985) / rw, byH = (innerHeight * 0.75) / maxH;   // 0.75 = app 翻谱把正在放的那一行放在上沿 20%（score-view followPlay）、下沿要在 95% 以内——最高的一行在那个落点也要整行看得见（v1 用 0.9：1080 高刚好够，接了品牌条只剩 968 高就切掉最下面那条谱；user 11-09「滚动错了，被banner遮住了」）
   const r = Math.min(byW, byH) * userZoom, phys = m.zoomInfo().phys * r;
   m.zoomTo(phys);
   document.querySelector("#score").style.background = getComputedStyle(sheet).backgroundColor;   // 纸两边露出来的那一窄条也是纸色（不露 app 的桌面色）
