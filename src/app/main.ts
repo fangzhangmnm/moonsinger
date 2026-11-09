@@ -37,7 +37,7 @@ import type { LyricReading } from "../ui/lyric-editor.ts";
 import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
-import { holdAudio, releaseAudio, audioCtxIfAny, warmAudio, audioWatch, onAudioNote } from "../singer/audio.ts";
+import { holdAudio, releaseAudio, audioCtxIfAny, warmAudio, audioWatch, onAudioNote, noteKeyAsleep, setKeepAwake, keepAwakeOn } from "../singer/audio.ts";
 import { createFeelProbe } from "./feel-probe.ts";   // 手感探针（v0.16.23）：按下 → 接到 → 出声三段 + 主线程 / 音频时钟停顿，超标露数字
 import { DEFAULT_CALIBRATION_DB, SOUNDFONT_DEFAULTS, TSUKUYOMI_DEFAULTS } from "../format/performance.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
@@ -442,26 +442,34 @@ function auditionTarget(): { inst: AuditionInst; key: (midi: number) => number; 
 /** 手感探针（v0.16.23，Claude Fable 5.1；来龙去脉在 src/app/feel-probe.ts 头注释）：超标 = 键盘上沿一行小字 + 黑匣子一条；点那行字 = 这次打开不再显示。
  *  「最慢一步」= 分账秒表（perf-trace）里上一次花得最久的那个 span：是键盘重画、谱重画还是顶栏，一眼看出主线程在忙什么。 */
 const feelChip = document.createElement("button"); feelChip.type = "button"; feelChip.className = "feel-chip"; feelChip.hidden = true; document.body.appendChild(feelChip);
-let feelMuted = false;
+// 点一下 = 收起这一次（user 11-08「我把那个点掉之后，后面我按键它就不弹出了」「每次慢都能看到它…因为我们现在是 debug」）：原来是「这次打开都不再显示」。
+//   下一次再晚（探针先收起过一回：数字回到门槛下 5 秒、或 20 秒没按键）照样露。
+let feelMuted = false, feelText = "";
 feelChip.addEventListener("click", () => { feelMuted = true; feelChip.hidden = true; });
+const KV_FEEL_ALWAYS = "feel-always", KV_KEEP_AWAKE = "audio-keep-awake";   // 设置 → 开发者：手感数字一直显示（默认关）/ 声音保持醒着（试验，默认关，存 "1" = 开）
+let feelAlways = false;
 const slowestStep = (): string => { const rows = Object.entries(perfReport()).filter(([, v]) => v.n > 0).sort((a, b) => b[1].last - a[1].last).slice(0, 2); return rows.length ? rows.map(([k, v]) => `${k} ${Math.round(v.last)} ms`).join(" / ") : "—"; };
 const feel = createFeelProbe({
-  audioNow: () => { const c = audioCtxIfAny(); if (c) audioWatch.check(performance.now());   // 探针醒着（最近 20 秒按过键）= 每帧顺手盯一下时钟：说在跑、其实停着 = 踢一脚（src/singer/audio.ts ③）
+  audioNow: () => { const c = audioCtxIfAny();
     return c ? { t: c.currentTime, state: c.state, sr: c.sampleRate, info: `baseLatency ${Math.round((c.baseLatency ?? 0) * 1000)} ms, outputLatency ${Math.round(((c as { outputLatency?: number }).outputLatency ?? 0) * 1000)} ms, ${(navigator as { standalone?: boolean }).standalone || matchMedia("(display-mode: standalone)").matches ? "standalone" : "tab"}, media elements ${document.querySelectorAll("audio, video").length}` } : null; },
+  always: () => feelAlways,
   report: (text) => {
-    if (!text || feelMuted) { feelChip.hidden = true; return; }
-    feelChip.textContent = text; feelChip.hidden = false;
+    if (!text) { feelMuted = false; feelText = ""; feelChip.hidden = true; return; }
+    if (feelMuted || (text === feelText && !feelChip.hidden)) return;   // 字没变 = 不碰 DOM（探针每帧都报；别让量手感的东西自己拖手）
+    feelText = text; feelChip.textContent = text; feelChip.hidden = false;
     const r = padEl.getBoundingClientRect();
     if (r.height > 0) { feelChip.style.left = `${Math.round(r.left + 8)}px`; feelChip.style.top = `${Math.max(0, Math.round(r.top - feelChip.offsetHeight - 4))}px`; feelChip.style.maxWidth = `${Math.max(160, Math.round(r.width - 16))}px`; }
     else { feelChip.style.left = "8px"; feelChip.style.top = ""; feelChip.style.bottom = "8px"; feelChip.style.maxWidth = "calc(100vw - 16px)"; }
   },
   note: (msg) => diagNote("feel", `${msg}; slowest ${slowestStep()}`),
-  text: (r) => _t("按键晚了：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 平常 {t} ms / 最长 {a} ms · 最慢一步 {slow}（点一下不再显示）", { q: r.queue, s: r.toSound, st: r.stall, t: r.audioTypical, a: r.audioStep, slow: slowestStep() }),
+  text: (r, late) => late
+    ? _t("按键晚了：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 平常 {t} ms / 最长 {a} ms · 最慢一步 {slow}（点一下收起这一次）", { q: r.queue, s: r.toSound, st: r.stall, t: r.audioTypical, a: r.audioStep, slow: slowestStep() })
+    : _t("手感：排队 {q} ms · 到出声 {s} ms · 主线程最长停 {st} ms · 声音块 平常 {t} ms / 最长 {a} ms（点一下收起这一次）", { q: r.queue, s: r.toSound, st: r.stall, t: r.audioTypical, a: r.audioStep }),
 });
 const sound = {
   down: (p: Pitch, id = "main") => {
     const t = auditionTarget(); if (!t) return; if (t.inst.kind === "vowel" && !vowelsReady) { void ensureVowels(); return; }
-    singer.unlock(); engine.auditionOn(id, t.inst, t.key(midiOf(p)), t.vel, t.gainDb, t.pan); feel.sound();
+    noteKeyAsleep(performance.now()); singer.unlock(); engine.auditionOn(id, t.inst, t.key(midiOf(p)), t.vel, t.gainDb, t.pan); feel.sound();
   },
   glide: (p: Pitch, id = "main") => { const t = auditionTarget(); if (t) engine.auditionGlide(id, t.key(midiOf(p))); },
   up: (id = "main") => { engine.auditionOff(id); const n = chordVoices.get(id) ?? 0; for (let k = 1; k <= n; k++) engine.auditionOff(`${id}~${k}`); chordVoices.delete(id); },
@@ -1073,6 +1081,8 @@ function openSettings(): void {
     // 开发者节（家族规矩 2½，2026-10-21）：诊断日志 + 「还原出厂设置…」住这里；「检查更新 / 清缓存重启」留在普通那一行
     `<details class="set-credit set-dev"><summary>${_t("开发者")}</summary>` +
       `<details class="set-credit"><summary>${_t("诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("复制")}</button><button class="btn" data-v="diag:download">${_t("下载 .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("分享…")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("清空")}</button></div></details>` +
+      `<div class="set-field">${_t("按键手感的数字（查延迟用）：平时只在按键晚了的时候在键盘上面露一行；打开 = 每次按键都露，不晚也露")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("一直显示：开") : _t("一直显示：关")}</button></div></div>` +
+      `<div class="set-field">${_t("试验：声音保持醒着（放一个听不见的极轻信号，看系统还会不会把声音设备停掉；没证实有用，默认关，多费一点电）")}<div class="set-row"><button class="btn" data-v="audio:awake">${keepAwakeOn() ? _t("保持醒着：开") : _t("保持醒着：关")}</button></div></div>` +
       `<div class="set-field">${_t("还原出厂设置（这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在上面「模型包」里逐个删）")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button></div></div>` +
     `</details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删")}">${_t("清缓存重启")}</button></div>` +
@@ -1110,6 +1120,8 @@ function openSettings(): void {
     else if (v === "chord:off" || v === "chord:on") { setChordTags(v === "chord:on"); box.querySelectorAll<HTMLElement>('[data-v^="chord:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
     else if (v === "view:pro" || v === "view:inc") { setViewInC(v === "view:inc"); box.querySelectorAll<HTMLElement>('[data-v^="view:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
     else if (v?.startsWith("lang:")) { const l = v.slice(5); saveLang(l === "auto" ? null : l as Lang); location.reload(); }
+    else if (v === "feel:always") { feelAlways = !feelAlways; deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null); diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`); (e.target as HTMLElement).closest("button")!.textContent = feelAlways ? _t("一直显示：开") : _t("一直显示：关"); }
+    else if (v === "audio:awake") { const on = !keepAwakeOn(); setKeepAwake(on); deviceKvSet(KV_KEEP_AWAKE, on ? "1" : null); (e.target as HTMLElement).closest("button")!.textContent = on ? _t("保持醒着：开") : _t("保持醒着：关"); }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
@@ -1170,7 +1182,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   final: () => D.extras.final, finalize: (q?: Mp3Quality) => finalizeNow(q), unfinalize: () => unfinalizeNow(false), finalMp3: () => D.extras.finalMp3,   // 定稿 / 改稿（E2E 用）
   run: (c: Command) => D.run(c), commit: (next: { st?: EditorState; extras?: Extras }, o?: Parameters<typeof D.commit>[1]) => D.commit(next, o), locked: () => D.locked(),   // 指令式唯一入口（E2E / 以后的 MCP 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describeResources(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
-  perf: () => perfReport(), perfReset: () => perfReset(),   // 热路径秒表（scripts/probe-input-latency.mjs 读）
+  perf: () => perfReport(), perfReset: () => perfReset(), diag: () => diagText(),   // 热路径秒表（scripts/probe-input-latency.mjs 读）
   speechCache: (op: "info" | "clear") => singer.cache(op, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
   setTrack: (id: string, patch: Record<string, unknown>) => { updateExtras(withTrack(D.extras, id, patch as never), { kind: "studio", label: _t("轨「{id}」", { id }) }); },
@@ -3892,7 +3904,7 @@ function midiStatusHtml(s: MidiStatus): string {
   return s.inputs.length ? _t("接着：{p}。弹的音按光标处的长短写进谱；「弹」开着 / 词 / 听里只出声", { p: esc(s.inputs.join("、")) }) : _t("开着，还没插琴（插上就认）");
 }
 // 切后台回来：声音被系统收起来了（iPad = interrupted）就叫醒；记一笔延迟（回来后系统可能换了缓冲大小——播放头按扬声器的时钟走，会自己跟上）
-// 2026-11-08 Fable：只在已经有上下文时叫醒（原来这里会顺手新建一个）；叫醒之后盯 3 秒时钟——state 写着 running、时钟却不走 = 踢一脚（src/singer/audio.ts ③，user 真机黑匣子）
+// 2026-11-08 Fable：只在已经有上下文时叫醒（原来这里会顺手新建一个）；叫醒之后盯几秒时钟——state 写着 running、时钟却不走 = 黑匣子记一条（只记，src/singer/audio.ts ③）
 let audioWatchTimer = 0;
 function watchAudioFor(ms: number): void {
   clearInterval(audioWatchTimer); const until = performance.now() + ms;
@@ -3900,13 +3912,17 @@ function watchAudioFor(ms: number): void {
 }
 onAudioNote((m) => diagNote("audio", m));
 // 第一次点屏幕 / 按键盘 = 把声音设备提前起好（iPad 主屏独立窗里设备要起 ~1 s；原来等到第一个键才起 = 第一个音晚一秒）。只一次。
-//   挂在好几种事件上、挂到上下文真的 running 为止：iPad 上哪一种算「用户手势」各版本不一样（按下不一定算，抬手 / click 一定算）。
-{ const evs = ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const; let armed = false;
+//   挂在好几种事件上：iPad 上哪一种算「用户手势」各版本不一样（按下不一定算，抬手 / click 一定算）。
+//   常驻（v0.16.27）：之后每一次点屏幕 / 按键盘也顺手叫一下——声音被系统停了（interrupted / suspended），不等到按琴键才叫（那一个键要晚一秒）。上下文在跑 = 只是一次状态比较，不花钱。
+{ let armed = false;
   const warm = () => {
+    const c = audioCtxIfAny(); if (c && c.state === "running") return;
     warmAudio(); if (!armed) { armed = true; audioWatch.arm(performance.now()); watchAudioFor(4000); }
-    if (audioCtxIfAny()?.state === "running") for (const e of evs) window.removeEventListener(e, warm, true);
   };
-  for (const e of evs) window.addEventListener(e, warm, true); }
+  for (const e of ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const) window.addEventListener(e, warm, true); }
+// 看得见的时候每秒看一次时钟：state 写着 running 而时钟停了 = 黑匣子记一条（只记，不动上下文——v0.16.26 的「踢一脚」在真机上帮了倒忙）
+window.setInterval(() => { if (document.visibilityState === "visible" && audioCtxIfAny()) audioWatch.check(performance.now()); }, 1000);
+feelAlways = deviceKvGet(KV_FEEL_ALWAYS) === "1"; setKeepAwake(deviceKvGet(KV_KEEP_AWAKE) === "1");   // 保持醒着 = 试验，默认关
 document.addEventListener("visibilitychange", () => {
   if (studio.isOpen) { engine.meter(document.visibilityState === "visible"); syncSpectrum(); }   // 看不见就不统计（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）
   if (document.visibilityState !== "visible") { clearInterval(audioWatchTimer); return; }

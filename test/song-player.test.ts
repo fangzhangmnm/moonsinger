@@ -38,6 +38,30 @@ function setup(opts: { fallback?: boolean } = {}) {
   return { audio, ms, player, errors };
 }
 const mp3 = () => new Blob([new Uint8Array([0xff, 0xfb, 0x90, 0x00])], { type: "audio/mpeg" });
+
+describe("歌库播放器：没点过 ▶ = 不存在", () => {
+  // 2026-11-08 Fable：原来歌库一建就 new Audio()、离开歌库每次 stop() → load() 复位（哪怕从没放过）。歌库只有登录了才有 = 登录了才多出来的唯一一处碰声音的代码。
+  it("建播放器不建 <audio>；没装东西时 stop 不建、不碰；第一次 arm / play 才建", async () => {
+    const made: FakeAudio[] = [], G = globalThis as unknown as { Audio?: unknown }, old = G.Audio;
+    G.Audio = function () { const a = new FakeAudio(); made.push(a); return a; };
+    try {
+      const ms = new FakeSession();
+      const player = createSongPlayer({ mediaSession: ms as unknown as MediaSession, makeMetadata: (init) => ({ ...init }) as unknown as MediaMetadata });
+      eq(made.length, 0, "建播放器 = 不建元素"); eq(player.hasElement(), false);
+      player.stop(); player.stop(); eq(made.length, 0, "空着 stop = 不建");
+      eq(player.state().key, null); eq(player.playing(), null); eq(made.length, 0, "读状态 = 不建");
+      player.arm(); eq(made.length, 1, "第一次 arm 才建"); eq(player.hasElement(), true);
+      await tick();
+    } finally { G.Audio = old; }
+  });
+  it("给了元素（测试 / 以后的宿主）：没装东西时 stop 不 load、不动系统控件", () => {
+    const { audio, ms, player } = setup();
+    let loads = 0; (audio as unknown as { load: () => void }).load = () => { loads++; };
+    let sets = 0; const set0 = ms.setActionHandler.bind(ms); ms.setActionHandler = (a, f) => { sets++; set0(a, f); };
+    player.stop(); player.stop();
+    eq(loads, 0, "空着的元素不复位"); eq(sets, 0, "没登记过锁屏 = 不去动它"); eq(audio.srcs.length, 0);
+  });
+});
 const track = (key = "a.mxl", cover: Blob | null = null) => ({ key, blob: mp3(), title: "団子", artist: "MoonSinger", album: "定稿 第 1 版", cover });
 const meta = (ms: FakeSession) => ms.metadata as { title?: string; artwork?: { src: string; sizes?: string }[] } | null;
 

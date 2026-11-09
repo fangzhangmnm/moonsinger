@@ -20,8 +20,10 @@ export interface FeelHost {
   report(text: string | null): void;
   /** 黑匣子一条（已经节流过了）。 */
   note(msg: string): void;
-  /** 人话一行：数字已经取整、单位 ms。 */
-  text(r: FeelReading): string;
+  /** 人话一行：数字已经取整、单位 ms。late = 有一项超了门槛（没超、只是「一直显示」开着 = false）。 */
+  text(r: FeelReading, late: boolean): string;
+  /** 「一直显示」开着（查延迟时：不超门槛也露数字）。 */
+  always?(): boolean;
 }
 export interface FeelReading { queue: number; toSound: number; stall: number; audioStep: number; audioTypical: number }
 export interface FeelProbe {
@@ -34,7 +36,8 @@ export interface FeelProbe {
 }
 
 /** 门槛（ms）：超过 = 人能感觉到、该说出来。queue / toSound 80 = 两个动画帧还多；stall 150 = 一下明显的卡；audioStep 150 = 系统给的声音块比正常（iPad ≈ 3–12 ms）大了一个量级。 */
-export const FEEL_LIMITS = { queue: 80, toSound: 80, stall: 150, audioStep: 150 } as const;
+//   audioTypical 60（2026-11-08 加）：每帧看一次时钟，正常读数 ≈ 一帧（16–17 ms）；平常一步就六十多 = 系统一次要三千个采样上下，按键已经拖手，但到不了 audioStep 的 150。
+export const FEEL_LIMITS = { queue: 80, toSound: 80, stall: 150, audioStep: 150, audioTypical: 60 } as const;
 const AWAKE_MS = 20_000, CALM_MS = 5_000, WINDOW_MS = 5_000;
 /** 事件 timeStamp 和 performance.now() 同一条时间轴才能相减（老 WebKit 给的是 epoch 毫秒 = 差出十几亿）：不合理 = 不算这一项。 */
 export function queueDelay(now: number, ts: number): number | null { const d = now - ts; return d >= 0 && d < 60_000 ? d : null; }
@@ -50,11 +53,14 @@ export function createFeelProbe(host: FeelHost, now: () => number = () => perfor
   const maxOf = (xs: { at: number; v: number }[]) => xs.reduce((m, x) => Math.max(m, x.v), 0);
   const med = (xs: number[]) => { if (!xs.length) return 0; const a = [...xs].sort((x, y) => x - y); return a[a.length >> 1]; };
   function read(): FeelReading { return { queue: Math.round(med(q)), toSound: Math.round(med(s)), stall: Math.round(maxOf(gaps)), audioStep: Math.round(maxOf(steps)), audioTypical: Math.round(med(adv.map((x) => x.v))) }; }
-  function over(r: FeelReading): boolean { return r.queue > FEEL_LIMITS.queue || r.toSound > FEEL_LIMITS.toSound || r.stall > FEEL_LIMITS.stall || r.audioStep > FEEL_LIMITS.audioStep; }
+  function over(r: FeelReading): boolean { return r.queue > FEEL_LIMITS.queue || r.toSound > FEEL_LIMITS.toSound || r.stall > FEEL_LIMITS.stall || r.audioStep > FEEL_LIMITS.audioStep || r.audioTypical > FEEL_LIMITS.audioTypical; }
+  let sess = { keys: 0, stall: 0, step: 0 };   // 这一段按键（醒着的这一回）：按了几下、最坏到多少——睡的时候记一条，不管超没超（黑匣子里每段都有数）
   function judge(t: number): void {
     const r = read(); last = r;
+    sess.stall = Math.max(sess.stall, r.stall); sess.step = Math.max(sess.step, r.audioStep);
+    if (!over(r) && host.always?.()) { shown = true; calmSince = 0; host.report(host.text(r, false)); return; }
     if (over(r)) {
-      calmSince = 0; shown = true; host.report(host.text(r));
+      calmSince = 0; shown = true; host.report(host.text(r, true));
       const a = host.audioNow(), key = `${r.queue}|${r.toSound}|${r.stall}|${r.audioStep}|${r.audioTypical}`;
       if (!worst || r.audioStep > worst.audioStep || r.stall > worst.stall || r.queue > worst.queue || r.toSound > worst.toSound) worst = r;
       // 黑匣子最多半秒一条（v0.16.25 一次停一秒 = 每帧一条、五十条数数；收起时另记一条「最坏到多少」）
@@ -74,13 +80,19 @@ export function createFeelProbe(host: FeelHost, now: () => number = () => perfor
       prevAudio = a.t; if (!prevAudioAt) prevAudioAt = t;
     }
     trim(gaps, t); trim(steps, t); trim(adv, t);
-    if (t - lastTouchAt > AWAKE_MS) { awake = false; prevFrame = 0; prevAudio = null; prevAudioAt = 0; if (shown) { shown = false; host.report(null); } return; }
+    if (t - lastTouchAt > AWAKE_MS) {
+      awake = false; prevFrame = 0; prevAudio = null; prevAudioAt = 0; if (shown) { shown = false; host.report(null); }
+      const r = read(), a = host.audioNow();
+      if (sess.keys) host.note(`session: ${sess.keys} keys, queue ${r.queue} ms, to sound ${r.toSound} ms, max stall ${sess.stall} ms, audio step typical ${r.audioTypical} ms / max ${sess.step} ms${a ? ` (ctx ${a.state}, sr ${a.sr}${a.info ? `, ${a.info}` : ""})` : ""}`);
+      sess = { keys: 0, stall: 0, step: 0 }; worst = null;
+      return;
+    }
     judge(t);
     raf(frame);
   }
   return {
     touch(ts) {
-      const t = now(); lastTouchAt = t; pending = { at: t };
+      const t = now(); lastTouchAt = t; pending = { at: t }; sess.keys++;
       const d = queueDelay(t, ts); if (d !== null) { q.push(d); if (q.length > 8) q.shift(); }
       if (!awake) { awake = true; prevFrame = 0; prevAudio = null; prevAudioAt = 0; raf(frame); }
     },

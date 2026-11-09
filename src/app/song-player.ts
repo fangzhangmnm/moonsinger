@@ -48,8 +48,13 @@ export interface SongPlayerDeps {
 const SEEK_STEP_SECS = 10;
 
 export function createSongPlayer(deps: SongPlayerDeps = {}) {
-  const audio = deps.audio ?? new Audio();
-  audio.preload = "auto";
+  // <audio> 第一次要放（arm / play）才建（2026-11-08 Claude Fable 5.1）：原来歌库一建就 new Audio()，离开歌库又每次 stop() → load() 复位它，哪怕从没点过 ▶。
+  //   歌库只有登录了网盘 / 选了文件夹才有 = 这是「登录了才多出来」的唯一一处碰声音的代码；user 11-08 报「登录着按键有时候又慢一秒、不登录只有第一个音慢」。
+  //   iPad 上页面里多一个媒体元素、反复复位它，会不会把键盘用的实时声音设备弄停——没证实；但没点过 ▶ 就不该有它，这一点不用等证实。
+  let el: HTMLAudioElement | null = deps.audio ?? null;
+  let wired = false;
+  let loaded = false;   // 元素上装着东西（真的那首，或 arm 的那段静音）：只有这时 unload 才去复位它
+  const A = (): HTMLAudioElement => { if (!el) el = new Audio(); if (!wired) { wired = true; el.preload = "auto"; wire(el); } return el; };
   const ms: MediaSession | null = deps.mediaSession !== undefined ? deps.mediaSession
     : (typeof navigator !== "undefined" && "mediaSession" in navigator ? navigator.mediaSession : null);
   const makeMetadata = deps.makeMetadata ?? ((init: MediaMetadataInit) => new MediaMetadata(init));
@@ -72,14 +77,14 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
   }
   function pushPosition(): void {
     if (!ms || !track) return;
-    const d = audio.duration;
+    const d = A().duration;
     if (!Number.isFinite(d) || d <= 0) return;   // 系统要 duration > 0、position ≤ duration，不然抛
-    try { ms.setPositionState?.({ duration: d, position: Math.min(Math.max(0, audio.currentTime), d), playbackRate: audio.playbackRate || 1 }); } catch { /* 老 Safari 没有 */ }
+    try { ms.setPositionState?.({ duration: d, position: Math.min(Math.max(0, A().currentTime), d), playbackRate: A().playbackRate || 1 }); } catch { /* 老 Safari 没有 */ }
   }
   function seek(to: number): void {
     if (!track) return;
-    const d = audio.duration;
-    audio.currentTime = Math.max(0, Number.isFinite(d) ? Math.min(to, d) : to);
+    const d = A().duration;
+    A().currentTime = Math.max(0, Number.isFinite(d) ? Math.min(to, d) : to);
   }
   /** 第一次 playing 时登记锁屏（太早 iPad 不认）。只有一首：「上一首」= 从头放（同音乐 app 的 ⏮）、不画下一首；给快退 / 快进 / 拖进度。
    *  iPad 锁屏登记了「上一首」左边那颗会从快退换成 ⏮（进度条照样能拖）。 */
@@ -87,11 +92,11 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
     if (!ms || !track) return;
     setMetadata();
     setAction("play", () => resume());
-    setAction("pause", () => audio.pause());
+    setAction("pause", () => A().pause());
     setAction("stop", () => stop());
     setAction("seekto", (e) => { if (e.seekTime != null) seek(e.seekTime); });
-    setAction("seekbackward", (e) => seek(audio.currentTime - (e.seekOffset || SEEK_STEP_SECS)));
-    setAction("seekforward", (e) => seek(audio.currentTime + (e.seekOffset || SEEK_STEP_SECS)));
+    setAction("seekbackward", (e) => seek(A().currentTime - (e.seekOffset || SEEK_STEP_SECS)));
+    setAction("seekforward", (e) => seek(A().currentTime + (e.seekOffset || SEEK_STEP_SECS)));
     setAction("previoustrack", () => restart()); setAction("nexttrack", null);
     announced = true;
   }
@@ -104,37 +109,39 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
   /** 卸下装着的那首（先清 track：元素复位时冒出来的事件不认）。 */
   function unload(): void {
     track = null; announced = false; artwork = null; lastTime = 0;
-    audio.pause(); audio.removeAttribute("src"); audio.load();
+    if (loaded && el) { loaded = false; el.pause(); el.removeAttribute("src"); el.load(); }   // 装着东西才复位；空着的元素不碰（更不为了复位去建一个）
     if (url) { URL.revokeObjectURL(url); url = null; }
   }
 
-  audio.addEventListener("playing", () => { if (!track) return; if (!announced) announce(); setPlaybackState("playing"); pushPosition(); emit(); });
-  audio.addEventListener("pause", () => { if (!track) return; setPlaybackState("paused"); pushPosition(); emit(); });
-  audio.addEventListener("loadedmetadata", () => { if (track) { pushPosition(); emit(); } });
-  audio.addEventListener("seeked", () => { if (track) { lastTime = audio.currentTime; pushPosition(); emit(); } });
-  // 循环绕回开头不一定有 seeked：时间往回跳了就重报一次进度（锁屏的进度条是系统按上次报的自己往前推的）
-  audio.addEventListener("timeupdate", () => { if (!track) return; const t = audio.currentTime; if (t + 1 < lastTime) pushPosition(); lastTime = t; emit(); });
-  audio.addEventListener("ended", () => { if (track) emit(); });   // 没开循环：放完停在结尾，再点 ▶ 从头放
-  audio.addEventListener("error", () => { if (!track) return; stop(); deps.onError?.(_t("这份 mp3 放不了（文件坏了？）")); });
+  function wire(audio: HTMLAudioElement): void {
+    audio.addEventListener("playing", () => { if (!track) return; if (!announced) announce(); setPlaybackState("playing"); pushPosition(); emit(); });
+    audio.addEventListener("pause", () => { if (!track) return; setPlaybackState("paused"); pushPosition(); emit(); });
+    audio.addEventListener("loadedmetadata", () => { if (track) { pushPosition(); emit(); } });
+    audio.addEventListener("seeked", () => { if (track) { lastTime = audio.currentTime; pushPosition(); emit(); } });
+    // 循环绕回开头不一定有 seeked：时间往回跳了就重报一次进度（锁屏的进度条是系统按上次报的自己往前推的）
+    audio.addEventListener("timeupdate", () => { if (!track) return; const t = audio.currentTime; if (t + 1 < lastTime) pushPosition(); lastTime = t; emit(); });
+    audio.addEventListener("ended", () => { if (track) emit(); });   // 没开循环：放完停在结尾，再点 ▶ 从头放
+    audio.addEventListener("error", () => { if (!track) return; stop(); deps.onError?.(_t("这份 mp3 放不了（文件坏了？）")); });
+  }
 
   /** 在点击里同步调（取 mp3 之前）：空放一小段静音，让 iPad 给这个元素放的许可。拿到过就不再做。 */
   function arm(): void {
     if (blessed) return;
     if (track) stop();   // 装着却没拿到许可的那首（blocked）：换成静音去拿
     silentUrl ??= URL.createObjectURL(silentWav());
-    audio.loop = false;
-    audio.src = silentUrl;
-    void audio.play()?.then(() => { blessed = true; }, () => { /* 没拿到：play() 时再说 */ });
+    A().loop = false;
+    A().src = silentUrl; loaded = true;
+    void A().play()?.then(() => { blessed = true; }, () => { /* 没拿到：play() 时再说 */ });
   }
   /** 换上这首并开始放。 */
   async function play(t: SongTrack): Promise<PlayResult> {
     unload();
     track = t;
     url = URL.createObjectURL(t.blob);
-    audio.src = url; audio.loop = loop;
+    A().src = url; A().loop = loop; loaded = true;
     if (t.cover) void artworkOf(t.cover).then((a) => { if (track !== t || !a) return; artwork = a; if (announced) setMetadata(); }, () => { /* 封面读不了 = 用 app 图标 */ });
     emit();
-    try { await audio.play(); blessed = true; return "playing"; }
+    try { await A().play(); blessed = true; return "playing"; }
     catch (e) {
       if (track !== t) return "replaced";
       if ((e as { name?: string })?.name === "NotAllowedError") { emit(); return "blocked"; }
@@ -143,18 +150,20 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
   }
   function resume(): void {
     if (!track) return;
-    void audio.play().then(() => { blessed = true; }, () => emit());
+    void A().play().then(() => { blessed = true; }, () => emit());
   }
-  function toggle(): void { if (!track) return; if (audio.paused) resume(); else audio.pause(); }
+  function toggle(): void { if (!track) return; if (A().paused) resume(); else A().pause(); }
   /** 从头放：回到开头、放着 / 停着 / 放完了都接着放。 */
   function restart(): void { if (!track) return; seek(0); resume(); }
-  function stop(): void { const had = track != null; unload(); unannounce(); if (had) emit(); }
-  function setLoop(on: boolean): void { loop = on; if (track) audio.loop = on; emit(); }
-  const state = (): SongPlayerState => ({ key: track?.key ?? null, paused: !track || audio.paused, time: track ? audio.currentTime : 0, duration: track ? audio.duration : NaN, loop });
+  function stop(): void { const had = track != null, ann = announced; unload(); if (had || ann) unannounce(); if (had) emit(); }   // 什么都没装 = 什么都不碰（离开歌库每次都会叫到这里）
+  function setLoop(on: boolean): void { loop = on; if (track) A().loop = on; emit(); }
+  const state = (): SongPlayerState => ({ key: track?.key ?? null, paused: !track || !el || el.paused, time: track && el ? el.currentTime : 0, duration: track && el ? el.duration : NaN, loop });
   return {
     arm, play, toggle, restart, stop, setLoop, state,
     /** 在放的那首（暂停 / 没装 = null）。 */
-    playing: (): string | null => (track && !audio.paused ? track.key : null),
+    playing: (): string | null => (track && el && !el.paused ? track.key : null),
+    /** 元素建了没有（测试 / 诊断看：没点过 ▶ = false）。 */
+    hasElement: (): boolean => el != null && wired,
     onChange(fn: () => void): () => void { listeners.add(fn); return () => listeners.delete(fn); },
   };
 }
