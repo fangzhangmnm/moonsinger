@@ -2,7 +2,7 @@
 //   user 11-08 真机：探针上每一段都正常，听到的却晚 300–700 ms。第一份黑匣子里设备起来时时钟停 1 秒、然后一口气跳 344 + 243 ms——
 //   一口气多算的声音排着队播，之后每个音都排在后面。量法 = 时钟走的 − 墙上过的；这里拿那份黑匣子的数当样本。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { createQueueMeter, shouldAutoFlush, AUTO_FLUSH_MS, BURST_SETTLE_MS } from "../src/singer/audio.ts";
+import { createQueueMeter, shouldAutoFlush, FLUSH_NOW_MS, FLUSH_IDLE_MS, BURST_SETTLE_MS } from "../src/singer/audio.ts";
 
 describe("排着的声音：时钟比墙上的钟多走了多少", () => {
   it("真机那一次：停 1 秒，40 ms 里跳 344 + 243 → 排着 ~550 ms，之后一直带着", () => {
@@ -41,10 +41,11 @@ describe("排着的声音：时钟比墙上的钟多走了多少", () => {
     m.feed(120, 0.58); m.feed(160, 0.62); m.feed(200, 0.66);
     assert(m.queued(200, 0.66)! <= 5);
   });
-  it("起来之后：多算了才清；连着清 2 次还是多 = 这一次不再清（不来回重起）；线划在「好的 1–2 ms」和「不好的四十多」中间", () => {
-    eq(shouldAutoFlush(224, 0), true); eq(shouldAutoFlush(45, 0), true, "四十多 = 清（user 11-08：手感不好的时候显示四十多毫秒）"); eq(shouldAutoFlush(45, 1), true); eq(shouldAutoFlush(45, 2), false);
-    eq(shouldAutoFlush(2, 0), false); eq(shouldAutoFlush(AUTO_FLUSH_MS, 0), false);
-    assert(AUTO_FLUSH_MS >= 15 && AUTO_FLUSH_MS < 40, "线在「干净的读数 + 量的误差」和「四十多」之间");
+  it("起来之后：多算得多（真机证实过的那一档）才当场清；连着清 2 次还是多 = 这一次不再清；小的不当场清，留给没有音在响的空当", () => {
+    eq(shouldAutoFlush(224, 0), true); eq(shouldAutoFlush(587, 1), true); eq(shouldAutoFlush(224, 2), false, "不来回重起");
+    eq(shouldAutoFlush(45, 0), false, "四十多 = 不当场清（会掐到正在响的音），空当里清"); eq(shouldAutoFlush(2, 0), false); eq(shouldAutoFlush(FLUSH_NOW_MS, 0), false);
+    assert(FLUSH_IDLE_MS >= 15 && FLUSH_IDLE_MS < 40, "空当里清的线在「干净的读数 + 量的误差」和「四十多」之间");
+    assert(FLUSH_NOW_MS > FLUSH_IDLE_MS && FLUSH_NOW_MS <= 224, "当场清的线不高过真机上量到的最小的一次脏起");
     assert(BURST_SETTLE_MS >= 300 && BURST_SETTLE_MS <= 1500);
   });
 });

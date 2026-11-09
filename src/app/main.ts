@@ -407,7 +407,7 @@ configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
 // ── 录音房（src/engine/：音频线程里的走带 / 通道 / TinySoundFont / 元音采样器 / 块回放；按键试听也走它的通道）──────────────────
 //   替代原来的元音采样器（主线程 WebAudio）和实时合成器（gm-synth worklet）——2026-10-09 Claude Fable 5.1，实时试听刀 1。
 //   试听走通道的增益 / 声像、绕过静音 / 独奏和总轨限幅（user「按键不管solomute同意」「限幅嗯」）；光标处的力度归刀 3。
-const engine = new StudioClient(() => singer.unlock(), (ctx) => addWorklet(ctx, "studio-worklet"), () => getBytes("vendor/tsf/tsf-standalone.wasm"));   // 起法 / 读口 = threads.ts / resources.ts（备用版 data: 起、老实脚本读；2026-11-03）
+const engine = new StudioClient(() => singer.unlock(), (ctx) => addWorklet(ctx, "studio-worklet"), () => getBytes("vendor/tsf/tsf-standalone.wasm", { revalidate: true }));   // 起法 / 读口 = threads.ts / resources.ts（备用版 data: 起、老实脚本读；2026-11-03）
 let vowelsReady = false, vowelLoading: Promise<void> | null = null;
 /** 元音表进录音房（只下载一次；失败了下次重试）。user「选这个乐器就是意图，然后第一下就响」。 */
 function ensureVowels(): Promise<void> { return (vowelLoading ??= loadVowelTable().then((t) => { engine.vowels(t); vowelsReady = true; }, (e) => { vowelLoading = null; throw e; })); }
@@ -447,7 +447,7 @@ const feelChip = document.createElement("button"); feelChip.type = "button"; fee
 //   排着的声音多（听到的晚、别的数都正常）= 这行字变成「点这里清掉」：点 = flushAudio（要在点按里做），不收起，接着看排队的数掉没掉（v0.16.28）。
 let feelMuted = false, feelText = "", feelFlush = false;
 feelChip.addEventListener("click", () => { if (feelFlush) { flushAudio("tap"); feelText = ""; return; } feelMuted = true; feelChip.hidden = true; });
-const KV_FEEL_ALWAYS = "feel-always";   // 设置 → 开发者：手感数字一直显示（默认关）
+const KV_FEEL_ALWAYS = "feel-always";   // 设置 → 开发者：显示手感数字（默认关）。关 = 永不显示，晚了也不弹（user 11-08「关掉的时候就是一直不显示，而不是慢了会弹出来」）；黑匣子照记
 let feelAlways = false;
 const slowestStep = (): string => { const rows = Object.entries(perfReport()).filter(([, v]) => v.n > 0).sort((a, b) => b[1].last - a[1].last).slice(0, 2); return rows.length ? rows.map(([k, v]) => `${k} ${Math.round(v.last)} ms`).join(" / ") : "—"; };
 const feel = createFeelProbe({
@@ -455,7 +455,7 @@ const feel = createFeelProbe({
     return c ? { t: c.currentTime, state: c.state, sr: c.sampleRate, queued: audioQueuedMs(), info: `baseLatency ${Math.round((c.baseLatency ?? 0) * 1000)} ms, outputLatency ${Math.round(((c as { outputLatency?: number }).outputLatency ?? 0) * 1000)} ms, ${(navigator as { standalone?: boolean }).standalone || matchMedia("(display-mode: standalone)").matches ? "standalone" : "tab"}, media elements ${document.querySelectorAll("audio, video").length}` } : null; },
   always: () => feelAlways,
   report: (text) => {
-    if (!text) { feelMuted = false; feelText = ""; feelChip.hidden = true; return; }
+    if (!text || !feelAlways) { feelMuted = false; feelText = ""; feelChip.hidden = true; return; }   // 开关关着 = 永不显示（探针照量、黑匣子照记）
     if (feelMuted || (text === feelText && !feelChip.hidden)) return;   // 字没变 = 不碰 DOM（探针每帧都报；别让量手感的东西自己拖手）
     feelText = text; feelChip.textContent = text; feelChip.hidden = false;
     const r = padEl.getBoundingClientRect();
@@ -464,6 +464,7 @@ const feel = createFeelProbe({
   },
   note: (msg) => diagNote("feel", `${msg}; slowest ${slowestStep()}`),
   text: (r, late) => {
+    if (!feelAlways) return "";   // 关着 = 不显示，也不白拼这行字（探针超标时每帧都来问）
     feelFlush = (r.queued ?? 0) > 100;   // 平时空当里会自己清（audio.ts ②）；到了横幅会自己露出来的量（FEEL_LIMITS.queued）还没清掉 = 点这一行手动清
     const qd = r.queued === null ? "?" : String(r.queued);
     if (feelFlush) return _t("声音排着队：大约 {qd} ms（听到的比按下晚这么多）· 点这里清掉 ｜ 等主线程 {q} ms · 到出声 {s} ms · 声音块 平常 {t} ms / 最长 {a} ms", { qd, q: r.queue, s: r.toSound, t: r.audioTypical, a: r.audioStep });
@@ -1089,7 +1090,7 @@ function openSettings(): void {
     // 开发者节（家族规矩 2½，2026-10-21）：诊断日志 + 「还原出厂设置…」住这里；「检查更新 / 清缓存重启」留在普通那一行
     `<details class="set-credit set-dev"><summary>${_t("开发者")}</summary>` +
       `<details class="set-credit"><summary>${_t("诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("复制")}</button><button class="btn" data-v="diag:download">${_t("下载 .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("分享…")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("清空")}</button></div></details>` +
-      `<div class="set-field">${_t("按键手感的数字（查延迟用）：平时只在按键晚了的时候在键盘上面露一行；打开 = 每次按键都露，不晚也露")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("一直显示：开") : _t("一直显示：关")}</button></div></div>` +
+      `<div class="set-field">${_t("按键手感的数字（查延迟用）：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("显示：开") : _t("显示：关")}</button></div></div>` +
       `<div class="set-field">${_t("还原出厂设置（这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在上面「模型包」里逐个删）")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button></div></div>` +
     `</details>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删")}">${_t("清缓存重启")}</button></div>` +
@@ -1127,7 +1128,7 @@ function openSettings(): void {
     else if (v === "chord:off" || v === "chord:on") { setChordTags(v === "chord:on"); box.querySelectorAll<HTMLElement>('[data-v^="chord:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
     else if (v === "view:pro" || v === "view:inc") { setViewInC(v === "view:inc"); box.querySelectorAll<HTMLElement>('[data-v^="view:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
     else if (v?.startsWith("lang:")) { const l = v.slice(5); saveLang(l === "auto" ? null : l as Lang); location.reload(); }
-    else if (v === "feel:always") { feelAlways = !feelAlways; deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null); diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`); (e.target as HTMLElement).closest("button")!.textContent = feelAlways ? _t("一直显示：开") : _t("一直显示：关"); }
+    else if (v === "feel:always") { feelAlways = !feelAlways; deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null); diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`); (e.target as HTMLElement).closest("button")!.textContent = feelAlways ? _t("显示：开") : _t("显示：关"); }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
@@ -3921,9 +3922,19 @@ onAudioNote((m) => diagNote("audio", m));
   };
   for (const e of ["pointerdown", "pointerup", "touchend", "click", "keydown"] as const) window.addEventListener(e, warm, true); }
 feelAlways = deviceKvGet(KV_FEEL_ALWAYS) === "1";
-// 排着的声音在空当里清（src/singer/audio.ts ②；user 11-08「空闲的时候自动清理，我觉得就可以了」）：没有键按着、离上一次按 / 松超过 0.6 秒、没在放、没在准备、页面看得见
-//   ——这时清（suspend + resume：真机上量到 suspend 要半秒上下才落地，之后二十毫秒起来）不打断任何声音。每秒看一次，真动手最多 10 秒一次。
-window.setInterval(() => { if (document.visibilityState === "visible" && !soundsHeld.size && performance.now() - soundAt > 600 && !engine.playing && !perfApi.preparing) idleFlushAudio(); }, 1000);
+// 排着的声音在空当里清（src/singer/audio.ts ②；user 11-08「空闲的时候自动清理，我觉得就可以了」）。清 = suspend + resume，会把正在响的音硬掐一下，
+//   所以「空当」= **确认没有音在响**：没有键按着、离上一次按 / 松 1.5 秒以上、没在放也没在准备（放完之后再等 5 秒：效果器的尾巴）、页面看得见、
+//   录音房最近一次报的在响的声音数 = 0 而且这份报告比最后一次按键晚（它每秒报一次：SoundFont 的收音、元音的收尾都算在里面）。v0.16.30 只看 0.6 秒，尾音长的乐器会被掐到。
+//   每秒看一次，真动手最多 10 秒一次（audio.ts）。
+{ let voices = -1, loadAt = 0, busyAt = 0;
+  engine.on("load", (i) => { voices = i.voices; loadAt = performance.now(); });
+  window.setInterval(() => {
+    const now = performance.now();
+    if (engine.playing || perfApi.preparing) { busyAt = now; return; }
+    if (document.visibilityState !== "visible" || soundsHeld.size || now - soundAt < 1500 || now - busyAt < 5000) return;
+    if (voices !== 0 || loadAt <= soundAt) return;
+    idleFlushAudio();
+  }, 1000); }
 document.addEventListener("visibilitychange", () => {
   if (studio.isOpen) { engine.meter(document.visibilityState === "visible"); syncSpectrum(); }   // 看不见就不统计（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）
   if (document.visibilityState !== "visible") return;

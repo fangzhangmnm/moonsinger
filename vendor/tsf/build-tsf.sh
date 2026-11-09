@@ -3,8 +3,11 @@
 # Source: github.com/schellingb/TinySoundFont（MIT，见 LICENSE.txt），默认在 $TSF_SRC（家族检疫桶 third-party/TinySoundFont）。Output: 本目录（vendor/tsf/）。
 # 同 vendor/world/build-world.sh 的做法（emscripten、-O3、ES module、web / worker / node 都能载）。
 set -euo pipefail
-HERE="$(cd "$(dirname "$0")" && pwd)"; SRC="${TSF_SRC:-$HOME/jupyter/third-party/TinySoundFont}"; OUT="$HERE"
+HERE="$(cd "$(dirname "$0")" && pwd)"; ORIG="${TSF_SRC:-$HOME/jupyter/third-party/TinySoundFont}"; OUT="$HERE"
 source "${EMSDK_ENV:-$HOME/jupyter/third-party/piper-plus/emsdk/emsdk_env.sh}" >/dev/null 2>&1
+# 2026-11-08 起带补丁（patch-tsf.py：音量在一块里线性过渡）：原件不动，拷一份到临时目录、打上补丁、从那儿编。edited by Claude Fable 5.1
+SRC="$(mktemp -d)"; trap 'rm -rf "$SRC"' EXIT
+cp "$ORIG/tsf.h" "$SRC/tsf.h"; python3 "$HERE/patch-tsf.py" "$SRC/tsf.h"
 emcc -O3 -I"$SRC" "$HERE/tsf-glue.c" \
   -sMODULARIZE=1 -sEXPORT_ES6=1 -sENVIRONMENT=web,worker,node -sALLOW_MEMORY_GROWTH=1 -sEXPORT_NAME=createTsf \
   -sEXPORTED_FUNCTIONS=_malloc,_free,_sf_load,_sf_copy,_sf_close,_sf_reset,_sf_preset_count,_sf_preset_name,_sf_preset_bank,_sf_preset_num,_sf_preset_index,_sf_set_max_voices,_sf_set_volume,_sf_note_on,_sf_note_off,_sf_note_off_all,_sf_active,_sf_render \

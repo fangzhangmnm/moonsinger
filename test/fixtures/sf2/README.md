@@ -10,3 +10,6 @@
   「You may use GeneralUser GS without restriction … Please feel free to use it in your software projects, and to modify the SoundFont bank or its packaging to suit your needs.」
 - 用途：`test/sf2.test.ts` 的 hermetic 部分（TinySoundFont 能载、预设列表、确定性渲染、子集化幂等）。整包不进仓；检疫桶里有整包时另跑「子集 ≡ 整包」的比对。
 - 重生成：`node --experimental-strip-types` 跑 `subsetSf2(整包, [{bank:0,program:80},{bank:8,program:115}])`，字节必须和这里的一样（测试守着）。
+- `gu-sine-wave.sf2`（8492 字节，sha256 `6d823b7cd5d7f2a40e896beafb5e47084691fb750495d6bffc267bce7af6b1bc`；added 2026-11-08 by Claude Fable 5.1）：同一个整包切出来的一个预设 `8:80 Sine Wave`
+  （一个周期循环的正弦波，收音 100 ms）。用途：`test/synth-wasm.test.ts`「音量包络不出台阶」——正弦波自己没有棱角，音量一跳一跳就是二阶差分上的尖峰，
+  量得最干净（没打补丁的合成器 = 按住时的 17 倍，打了 = 0.9 倍；补丁见 `vendor/tsf/patch-tsf.py`）。重生成：`subsetSf2(整包, [{bank:8,program:80}])`。

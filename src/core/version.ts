@@ -4,6 +4,7 @@
 //     只是搬家 / 改注释不 bump（哈希会变、版本不变 = 「代码动了但声音应该没变」，读的人能分辨）。
 //   · CORE_HASH：构建时 scripts/core-hash.mjs 按核心源码算（scripts/build.sh --define 进来；node 直跑源码时 = "dev"，CLI 自己现算）。
 //   记进每首歌的 manifest.core（每次保存）和定稿记录 final.core（定稿那一刻）：以后想复现一份 mp3，就拿这一版核心。
-export const CORE_VERSION = "0.1.0";
+//   0.1.1（2026-11-08，Claude Fable 5.1）：TinySoundFont 的音量包络从每 64 个采样一级台阶改成块内线性过渡（vendor/tsf/patch-tsf.py）——所有 SoundFont 的音的采样值细微变化。
+export const CORE_VERSION = "0.1.1";
 export const CORE_HASH: string = typeof __CORE_HASH__ === "string" ? __CORE_HASH__ : "dev";
 export const coreInfo = (): { version: string; hash: string } => ({ version: CORE_VERSION, hash: CORE_HASH });

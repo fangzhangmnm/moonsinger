@@ -29,7 +29,10 @@ export function siteUrl(path: string): URL { return new URL(path, typeof documen
  *  界面上「下载 / 导入模型包」「下载留着」这些动作在这里没有意义（设置页按它画灰）。 */
 export function resourcesInFolder(): boolean { return fromFolder(); }
 
-export interface GetOpts { sha256?: string; onProgress?: (done: number, total: number) => void }
+export interface GetOpts { sha256?: string; onProgress?: (done: number, total: number) => void;
+  /** 每次都向站点核一遍这个文件变了没有（HTTP 条件请求，没变 = 304 不重下）。给「名字不带哈希、内容却会随版本变」的 app 自带文件用：
+   *  不然更新之后浏览器的 HTTP 缓存还能把旧的那份再交出来几分钟（GitHub Pages 给 10 分钟）。2026-11-08 Fable：合成器 wasm 打了补丁、文件名没变。 */
+  revalidate?: boolean }
 
 async function sha256Hex(b: Uint8Array): Promise<string> {
   const subtle = globalThis.crypto?.subtle;
@@ -74,7 +77,7 @@ async function readFolder(path: string, opts: GetOpts): Promise<Uint8Array> {
   return out;
 }
 async function readSite(path: string, opts: GetOpts): Promise<Uint8Array> {
-  const r = await fetch(siteUrl(path));
+  const r = await fetch(siteUrl(path), opts.revalidate ? { cache: "no-cache" } : undefined);
   if (!r.ok) throw new Error(`${path}：HTTP ${r.status}`);
   let out: Uint8Array;
   if (opts.onProgress && r.body) {

@@ -4787,9 +4787,9 @@ var S = {
   "\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u5927\u7EA6 {qd} ms\uFF08\u542C\u5230\u7684\u6BD4\u6309\u4E0B\u665A\u8FD9\u4E48\u591A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms": { en: "Audio is backed up: about {qd} ms (what you hear is this late) \xB7 TAP HERE to clear it | main-thread wait {q} ms \xB7 to sound {s} ms \xB7 audio block usual {t} ms / longest {a} ms" },
   "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Keys are late: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms \xB7 slowest step {slow} (tap to hide this time)" },
   "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms (tap to hide this time)" },
-  "\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u5E73\u65F6\u53EA\u5728\u6309\u952E\u665A\u4E86\u7684\u65F6\u5019\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\uFF1B\u6253\u5F00 = \u6BCF\u6B21\u6309\u952E\u90FD\u9732\uFF0C\u4E0D\u665A\u4E5F\u9732": { en: "Key-feel numbers (for chasing latency): normally a line appears above the keys only when keys are late; on = shown on every key press, late or not" },
-  "\u4E00\u76F4\u663E\u793A\uFF1A\u5F00": { en: "Always show: on" },
-  "\u4E00\u76F4\u663E\u793A\uFF1A\u5173": { en: "Always show: off" },
+  "\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09": { en: "Key-feel numbers (for chasing latency): on = a line of numbers appears above the keys while you play; off = never shown, even when keys are late (it only goes into the diagnostic log)" },
+  "\u663E\u793A\uFF1A\u5F00": { en: "Show: on" },
+  "\u663E\u793A\uFF1A\u5173": { en: "Show: off" },
   "\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355": { en: "This section's menu" },
   "\u9690\u85CF {n}": { en: "{n} hidden" },
   "\u8FD9\u4E00\u6BB5\u6709 {n} \u4F4D\u9690\u85CF\u7740\uFF08\u4E0D\u6392\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u770B\u662F\u8C01\u3001\u653E\u51FA\u6765": { en: "{n} {n|part is|parts are} hidden in this section (not laid out, no space taken): tap to see who and show them" },
@@ -5019,7 +5019,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.30-2026-11-08";
+var APP_VERSION = "v0.16.31-2026-11-08";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28245,7 +28245,7 @@ async function readFolder(path, opts) {
   return out;
 }
 async function readSite(path, opts) {
-  const r10 = await fetch(siteUrl(path));
+  const r10 = await fetch(siteUrl(path), opts.revalidate ? { cache: "no-cache" } : void 0);
   if (!r10.ok) throw new Error(`${path}\uFF1AHTTP ${r10.status}`);
   let out;
   if (opts.onProgress && r10.body) {
@@ -28296,15 +28296,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-214b4e513df9.mjs");
+      return pick(() => "singer-worker-5c35b805d2db.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-3c7ad4d8664e.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-99ea680b79bb.mjs");
+      return pick(() => "layout-worker-1f9db3119593.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-145abf912b01.mjs");
+      return pick(() => "encode-worker-063aece1227c.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -28501,9 +28501,10 @@ function createQueueMeter() {
   };
 }
 var BURST_SETTLE_MS = 600;
-var AUTO_FLUSH_MS = 30;
+var FLUSH_NOW_MS = 120;
+var FLUSH_IDLE_MS = 30;
 function shouldAutoFlush(burstMs, doneInARow) {
-  return burstMs > AUTO_FLUSH_MS && doneInARow < 2;
+  return burstMs > FLUSH_NOW_MS && doneInARow < 2;
 }
 var autoCount = 0;
 var flushAt = -1e9;
@@ -28534,11 +28535,11 @@ function armQueue(why2) {
     if (b3 !== null && !burstNoted) {
       burstNoted = true;
       const go = !flushBroken && shouldAutoFlush(b3, autoCount), took = queue.anchorAt();
-      noteFn(`start burst (${queueWhy}): device start took \u2248 ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead \u2248 ${b3} ms${go ? " \u2192 flush" : b3 > AUTO_FLUSH_MS ? flushBroken ? " (auto flush off this session)" : ` (gave up after ${autoCount} flushes)` : ""}`);
+      noteFn(`start burst (${queueWhy}): device start took \u2248 ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead \u2248 ${b3} ms${go ? " \u2192 flush" : flushBroken && b3 > FLUSH_IDLE_MS ? " (auto flush off this session)" : b3 > FLUSH_NOW_MS ? ` (gave up after ${autoCount} flushes)` : b3 > FLUSH_IDLE_MS ? " (will clear when nothing is sounding)" : ""}`);
       if (go) {
         autoCount++;
         flushAudio("auto");
-      } else if (b3 <= AUTO_FLUSH_MS) autoCount = 0;
+      } else if (b3 <= FLUSH_NOW_MS) autoCount = 0;
     }
   }, 10);
 }
@@ -28576,7 +28577,7 @@ function audioShown() {
 function idleFlushAudio() {
   if (flushBroken || !burstNoted || performance.now() - flushAt < 1e4 || pageHidden()) return;
   const q2 = audioQueuedMs();
-  if (q2 !== null && q2 > AUTO_FLUSH_MS) flushAudio("idle");
+  if (q2 !== null && q2 > FLUSH_IDLE_MS) flushAudio("idle");
 }
 var keep = null;
 function holdAudio() {
@@ -37030,8 +37031,8 @@ ${tg2.fx}`);
 };
 
 // src/core/version.ts
-var CORE_VERSION = "0.1.0";
-var CORE_HASH = true ? "e51297056a47a292" : "dev";
+var CORE_VERSION = "0.1.1";
+var CORE_HASH = true ? "46442ff6c765de91" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -50011,7 +50012,7 @@ async function selVerb(v) {
   if (v !== "transpose") scoreEl.focus();
 }
 configureFloors({ toolbarBottom: () => bar.getBoundingClientRect().bottom });
-var engine = new StudioClient(() => singer.unlock(), (ctx2) => addWorklet(ctx2, "studio-worklet"), () => getBytes("vendor/tsf/tsf-standalone.wasm"));
+var engine = new StudioClient(() => singer.unlock(), (ctx2) => addWorklet(ctx2, "studio-worklet"), () => getBytes("vendor/tsf/tsf-standalone.wasm", { revalidate: true }));
 var vowelsReady = false;
 var vowelLoading = null;
 function ensureVowels() {
@@ -50084,7 +50085,7 @@ var feel = createFeelProbe({
   },
   always: () => feelAlways,
   report: (text2) => {
-    if (!text2) {
+    if (!text2 || !feelAlways) {
       feelMuted = false;
       feelText = "";
       feelChip.hidden = true;
@@ -50108,6 +50109,7 @@ var feel = createFeelProbe({
   },
   note: (msg) => diagNote("feel", `${msg}; slowest ${slowestStep()}`),
   text: (r10, late) => {
+    if (!feelAlways) return "";
     feelFlush = (r10.queued ?? 0) > 100;
     const qd = r10.queued === null ? "?" : String(r10.queued);
     if (feelFlush) return _t("\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u5927\u7EA6 {qd} ms\uFF08\u542C\u5230\u7684\u6BD4\u6309\u4E0B\u665A\u8FD9\u4E48\u591A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms", { qd, q: r10.queue, s: r10.toSound, t: r10.audioTypical, a: r10.audioStep });
@@ -51025,7 +51027,7 @@ ${esc10(CREDIT.attribution.join("\n"))}</pre>` + (lang() === "zh" ? `<div class=
 
 ${esc10(CREDIT_TRANSLATIONS.zh.terms)}</pre>` : "") + `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc10(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div><details class="set-credit set-dev"><summary>${_t("\u5F00\u53D1\u8005")}</summary><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc10(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u5E73\u65F6\u53EA\u5728\u6309\u952E\u665A\u4E86\u7684\u65F6\u5019\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\uFF1B\u6253\u5F00 = \u6BCF\u6B21\u6309\u952E\u90FD\u9732\uFF0C\u4E0D\u665A\u4E5F\u9732")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5F00") : _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div><details class="set-credit set-dev"><summary>${_t("\u5F00\u53D1\u8005")}</summary><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc10(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("\u663E\u793A\uFF1A\u5F00") : _t("\u663E\u793A\uFF1A\u5173")}</button></div></div><div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
@@ -51105,7 +51107,7 @@ ${esc10(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_
       feelAlways = !feelAlways;
       deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null);
       diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`);
-      e10.target.closest("button").textContent = feelAlways ? _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5F00") : _t("\u4E00\u76F4\u663E\u793A\uFF1A\u5173");
+      e10.target.closest("button").textContent = feelAlways ? _t("\u663E\u793A\uFF1A\u5F00") : _t("\u663E\u793A\uFF1A\u5173");
     } else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
@@ -55271,9 +55273,23 @@ onAudioNote((m2) => diagNote("audio", m2));
   for (const e10 of ["pointerdown", "pointerup", "touchend", "click", "keydown"]) window.addEventListener(e10, warm, true);
 }
 feelAlways = deviceKvGet(KV_FEEL_ALWAYS) === "1";
-window.setInterval(() => {
-  if (document.visibilityState === "visible" && !soundsHeld.size && performance.now() - soundAt > 600 && !engine.playing && !perfApi.preparing) idleFlushAudio();
-}, 1e3);
+{
+  let voices = -1, loadAt = 0, busyAt = 0;
+  engine.on("load", (i10) => {
+    voices = i10.voices;
+    loadAt = performance.now();
+  });
+  window.setInterval(() => {
+    const now2 = performance.now();
+    if (engine.playing || perfApi.preparing) {
+      busyAt = now2;
+      return;
+    }
+    if (document.visibilityState !== "visible" || soundsHeld.size || now2 - soundAt < 1500 || now2 - busyAt < 5e3) return;
+    if (voices !== 0 || loadAt <= soundAt) return;
+    idleFlushAudio();
+  }, 1e3);
+}
 document.addEventListener("visibilitychange", () => {
   if (studio.isOpen) {
     engine.meter(document.visibilityState === "visible");
@@ -55363,4 +55379,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-40157a46d7b3.mjs.map
+//# sourceMappingURL=moonsinger-bda3f6f02102.mjs.map

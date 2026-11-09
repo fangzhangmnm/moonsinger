@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 export const CORE_DIRS = ["src/core", "src/engine", "src/singer", "src/performers", "src/score", "src/gm", "src/format", "vendor/world", "vendor/tsf", "assets/preview"];
-const SKIP = /\.(d\.ts|d\.mts|md|sh|txt|cpp|c)$|\/LICENSE|\/SOURCE\.md$|\/build-[^/]*\.sh$/;   // 类型 / 文档 / 构建脚本 / 许可证不进（它们不出声）
+const SKIP = /\.(d\.ts|d\.mts|md|sh|py|txt|cpp|c)$|\/LICENSE|\/SOURCE\.md$|\/build-[^/]*\.sh$/;   // 类型 / 文档 / 构建脚本 / 许可证不进（它们不出声）
 
 export function coreFiles(root = ROOT()) {
   const out = [];

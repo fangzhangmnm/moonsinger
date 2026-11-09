@@ -7,6 +7,26 @@ import createTsf from "../vendor/tsf/tsf.mjs";
 
 const fixture = fs.readFileSync(new URL("./fixtures/sf2/gu-square-castanets.sf2", import.meta.url));
 const SR = 48000;
+const sine = fs.readFileSync(new URL("./fixtures/sf2/gu-sine-wave.sf2", import.meta.url));
+describe("合成器的音量包络不出台阶（vendor/tsf/patch-tsf.py 补丁 1）", () => {
+  // user 2026-11-08（真机，GS 的 Ocarina 顶埙）：「松手的一瞬间就杂音了」「就是那种静电噪音似的那种」。上游每 64 个采样取一次音量、整块不变，
+  // 收音快的音色出来是一级一级的台阶。正弦波自己没有棱角：台阶 = 二阶差分上的尖峰。没打补丁 = 按住时的 17 倍（2026-11-08 拿旧二进制量的），打了 = 0.9 倍。
+  it("正弦波按住 0.4 秒再松手：收音那一段的二阶差分不比按住时大多少", async () => {
+    const tsf = await instantiateTsf(fs.readFileSync(new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url)) as unknown as BufferSource);
+    const bank = tsf.load(sine, SR)!; assert(bank, "载不进");
+    const off = 128 * 150, total = off + SR / 2, out = new Float32Array(total);
+    tsf.noteOn(bank, 0, 72, 0.8);
+    for (let pos = 0; pos < total; pos += 128) { if (pos === off) tsf.noteOff(bank, 0, 72); tsf.render(bank, out, pos, Math.min(128, total - pos)); }
+    tsf.close(bank);
+    const dd = (i: number) => Math.abs(out[i] - 2 * out[i - 1] + out[i - 2]);
+    let held = 0, peak = 0; for (let i = off - 4800; i < off; i++) { held = Math.max(held, dd(i)); peak = Math.max(peak, Math.abs(out[i])); }
+    let last = off; for (let i = total - 1; i >= off; i--) if (out[i] !== 0) { last = i; break; }
+    let rel = 0; for (let i = off + 2; i <= last; i++) rel = Math.max(rel, dd(i));
+    assert(peak > 0.05, "没声"); assert(last - off > SR * 0.05 && last - off < SR * 0.3, `收音长度不像这个预设：${((last - off) / SR * 1000).toFixed(0)} ms`);
+    assert(rel < held * 2, `收音时有台阶：二阶差分是按住时的 ${(rel / held).toFixed(1)} 倍（没打补丁 = 17 倍）`);
+  });
+});
+
 describe("实时合成器的 WASM", () => {
   it("独立版载得进、预设对得上、按 128 帧渲染 == 胶水版一次渲染", async () => {
     const tsf = await instantiateTsf(fs.readFileSync(new URL("../vendor/tsf/tsf-standalone.wasm", import.meta.url)) as unknown as BufferSource);

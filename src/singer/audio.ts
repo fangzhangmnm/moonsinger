@@ -5,8 +5,10 @@
 //   「切后台回来声音比高亮慢一拍」同一个病。真机证实：量到多算 224 ms → suspend + resume → 重新量 1 ms，user「延迟好了很多」；起得干净的那几次（1 ms）user「完全好了」。
 // 治：
 //   ① 量：createQueueMeter——时钟开始走那一刻记锚点，之后「时钟走的 − 墙上过的」= 排着多少。起来 BURST_SETTLE_MS 后定下这一次多算了多少，黑匣子记一条。
-//   ② 清：多算了 AUTO_FLUSH_MS 以上 = flushAudio（suspend 完了再 resume）再量；连着 2 次清完还是多 = 这一次不再清（不来回重起）。**永远开着，没有开关**（user 11-08）。
-//      弹着的中途排队又涨上去（渲染线程卡一下再追）= 宿主在手离开键盘、没在放的空当叫 idleFlushAudio（最多 10 秒一次），不打断正在响的音。
+//   ② 清 = flushAudio（suspend 完了再 resume）再量。**永远开着，没有开关**（user 11-08）。两条线（v0.16.31）：
+//      · 起来时多算了 FLUSH_NOW_MS（120）以上 = 当场清（真机证实过的做法；连着 2 次清完还是多 = 这一次不再清，不来回重起）。
+//      · 排着 FLUSH_IDLE_MS（30）以上、不到 120 = 不当场清（suspend 会把正在响的音硬掐一下），留给空当：宿主在**确认没有音在响**的时候叫 idleFlushAudio
+//        （没有键按着、离上次按 / 松 1.5 秒以上、没在放、录音房报的在响的声音数 = 0；最多 10 秒一次）。弹着的中途排队涨上去也走这条。
 //      自查（v0.16.30；user 11-08「现在这个版本，我切后台再回来之后，它是直接没有声音了」——原因没从代码里读出来，清是嫌疑之一）：resume 叫出去 1 秒后上下文还没在跑
 //      = 走 ③ 接着叫，并且这次打开不再自动清（flushBroken，黑匣子记一条）。回前台时状态没变而时钟不走（设备其实停过）= 再量一次这次起来（audioShown）。
 //   ③ 叫醒：第一次点屏幕 / 按键盘就建 + resume（warmAudio；main.ts 常驻挂着，之后每次手势发现不在跑也顺手叫）；看不见的时候不叫（iPad 一定拒，还留下一条报错）；
@@ -83,12 +85,14 @@ export function createQueueMeter(): { arm(): void; feed(now: number, ct: number)
 }
 /** 时钟开始走之后过这么久，定下这一次多算了多少。 */
 export const BURST_SETTLE_MS = 600;
-/** 多算 / 排着这么多以上 = 清。真机上量到的：起得干净 = 1 ms（PC 3–7 ms），起得脏 = 224 / 587 ms；中间没有数据。
- *  user 11-08「手感好的时候它显示都是一毫秒、两毫秒，然后那是手感不好的时候它显示是四十多毫秒」（哪一个数他自己也不确定；干净时排队读数正好是 1 ms，所以多半是这一项）
- *  → 线划在 30：比干净的读数加上量的误差（锚点最多差一个 10 ms 的定时器间隔）高，比四十多低。v0.16.28 / 29 是 120。 */
-export const AUTO_FLUSH_MS = 30;
-/** 起来之后量到多算了：清不清（纯逻辑）。连着 2 次清完还是多 = 这一次不再清。 */
-export function shouldAutoFlush(burstMs: number, doneInARow: number): boolean { return burstMs > AUTO_FLUSH_MS && doneInARow < 2; }
+/** 起来时多算了这么多以上 = 当场清（不等空当）。真机上量到的：起得干净 = 1 ms（PC 2–7 ms），起得脏 = 224 / 587 ms；v0.16.28 / 29 就是这条线，清完 user「延迟好了很多」。 */
+export const FLUSH_NOW_MS = 120;
+/** 排着这么多以上 = 等没有音在响的空当清。user 11-08「手感好的时候它显示都是一毫秒、两毫秒，然后那是手感不好的时候它显示是四十多毫秒」
+ *  （哪一个数他自己也不确定；干净时排队读数正好是 1 ms，所以多半是这一项——**没证实**）→ 线划在 30：比干净的读数加量的误差（锚点最多差一个 10 ms 的定时器间隔）高，比四十多低。
+ *  v0.16.30 这条线也管当场清；user 用下来「响应延迟非常的顺手，非常的快」。v0.16.31 把 30–120 这一档改成只在空当清：当场清会掐到正在响的音。 */
+export const FLUSH_IDLE_MS = 30;
+/** 起来之后量到多算了：当场清不清（纯逻辑）。连着 2 次清完还是多 = 这一次不再清。 */
+export function shouldAutoFlush(burstMs: number, doneInARow: number): boolean { return burstMs > FLUSH_NOW_MS && doneInARow < 2; }
 let autoCount = 0, flushAt = -1e9, flushBroken = false;   // flushBroken = 这次打开里有一次清完没起来：之后不再自动清（点横幅那一行手动清照旧）
 const queue = createQueueMeter();
 let queueTimer: ReturnType<typeof setInterval> | undefined, queueUntil = 0, burstNoted = true, queueWhy = "", armAt = 0;
@@ -106,8 +110,8 @@ function armQueue(why: string): void {
     if (b !== null && !burstNoted) {
       burstNoted = true;
       const go = !flushBroken && shouldAutoFlush(b, autoCount), took = queue.anchorAt();
-      noteFn(`start burst (${queueWhy}): device start took ≈ ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead ≈ ${b} ms${go ? " → flush" : b > AUTO_FLUSH_MS ? (flushBroken ? " (auto flush off this session)" : ` (gave up after ${autoCount} flushes)`) : ""}`);
-      if (go) { autoCount++; flushAudio("auto"); } else if (b <= AUTO_FLUSH_MS) autoCount = 0;
+      noteFn(`start burst (${queueWhy}): device start took ≈ ${took === null ? "?" : Math.max(0, Math.round(took - armAt))} ms, rendered ahead ≈ ${b} ms${go ? " → flush" : flushBroken && b > FLUSH_IDLE_MS ? " (auto flush off this session)" : b > FLUSH_NOW_MS ? ` (gave up after ${autoCount} flushes)` : b > FLUSH_IDLE_MS ? " (will clear when nothing is sounding)" : ""}`);
+      if (go) { autoCount++; flushAudio("auto"); } else if (b <= FLUSH_NOW_MS) autoCount = 0;
     }
   }, 10);
 }
@@ -135,10 +139,10 @@ export function audioShown(): void {
   const t0 = c.currentTime;
   setTimeout(() => { if (ctx === c && (c.state as string) === "running" && c.currentTime === t0 && !pageHidden() && performance.now() - armAt > 500) armQueue("visible"); }, 60);
 }
-/** ② 空当里清：宿主在「手离开键盘、没在放」的时候叫（每秒一次就够）。排着的超过线、这一次起来已经量完、离上次清超过 10 秒才动手。 */
+/** ② 空当里清：宿主在**确认没有音在响**的时候叫（每秒一次就够；怎么算「没有音在响」是宿主的事，见 main.ts）。排着的超过线、这一次起来已经量完、离上次清超过 10 秒才动手。 */
 export function idleFlushAudio(): void {
   if (flushBroken || !burstNoted || performance.now() - flushAt < 10_000 || pageHidden()) return;
-  const q = audioQueuedMs(); if (q !== null && q > AUTO_FLUSH_MS) flushAudio("idle");
+  const q = audioQueuedMs(); if (q !== null && q > FLUSH_IDLE_MS) flushAudio("idle");
 }
 
 // 准备期间让声音一直醒着（2026-10-08 by Claude Opus 5.5；user「月读第一次渲染好了没有声音，需要重新点一次play」）：
