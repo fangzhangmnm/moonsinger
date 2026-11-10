@@ -25,7 +25,7 @@ import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setF
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitch.ts";
 import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
-import type { ChordRead } from "../score/chord-name.ts";
+import type { HarmonyRead } from "../theory/index.ts";
 import { textStyleCss } from "../render/text/index.ts";
 import { engrave, attachLayoutFns, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg, toSvgParts } from "../render/svg.ts";
@@ -66,10 +66,10 @@ export interface ScoreViewHost {
   autoBars?(): boolean;
   /** 按 C 调看（辅助模式，v0.16.10；设备上的设置）：排版先把谱换到 C（src/score/view-in-c.ts）；拖音高 / 鬼音符按显示的换回实际的。 */
   inC?(): boolean;
-  /** 和弦标级数（辅助，v0.16.11；设备上的设置）：叠音的和弦上方写级数（src/score/chord-name.ts）。v0.16.13 起进排版（不占地方），跟着设置印进 PDF。 */
+  /** 和弦标级数（辅助，v0.16.11；设备上的设置）：叠音的和弦上方写级数（乐理模块 src/theory/）。v0.16.13 起进排版（不占地方），跟着设置印进 PDF。 */
   chordTags?(): boolean;
   /** 点了谱上的和弦级数：宿主开一个小菜单列候选（at = 标的下沿中点，屏幕坐标）。 */
-  onChordTag?(read: ChordRead, at: { x: number; y: number }): void;
+  onChordTag?(read: HarmonyRead, at: { x: number; y: number }): void;
   /** 要画的声部（隐藏的不在里面；顺序 = 总谱从上到下）。 */
   parts(): PartView[];
   /** 歌手牌：某张纸第一行某条谱左边的声部名点了（那条已经成了光标所在的 track）。 */

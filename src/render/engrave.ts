@@ -34,7 +34,7 @@ import { Skyline, primInk, shiftPrim, primY } from "./skyline.ts";
 import { GLYPH_BOX } from "./glyph-box.gen.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 import { songInC, realFifthsOf } from "../score/view-in-c.ts";
-import { readChord, chordLabel, brokenChords, type ChordRead } from "../score/chord-name.ts";
+import { harmonyTheory, type HarmonyRead } from "../theory/index.ts";
 import { keyAt as keyAtTok } from "../score/song.ts";
 import { resolveSongClefs, displayStates, autoOttava, CLEF_SHIFT, baseClef, isFClef, ottavaShift, startClef, wantsGrand } from "../score/clef.ts";
 import { mergeTracks, planHands, type MergeOpts } from "../score/merge.ts";
@@ -86,7 +86,7 @@ export interface EngraveOpts {
   /** 按 C 调看（辅助模式，v0.16.10；src/score/view-in-c.ts）：每个音从它所在的调转到 C 再排，每个调号位置上方写「1=原来的调」（中途换调那一处给字多留一点宽）。
    *  只是看法：PDF / 导出不传（按实际的调印）。 */
   inC?: boolean;
-  /** 和弦标级数（v0.16.13；src/score/chord-name.ts）：叠音的和弦写它在这个调里是几级——刀 4b 起在和弦右下角、贴着下天际线（挂件，会让歌词往下让）；跟着设置印进 PDF（user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）。 */
+  /** 和弦标级数（v0.16.13；乐理模块 src/theory/）：叠音的和弦写它在这个调里是几级——刀 4b 起在和弦右下角、贴着下天际线（挂件，会让歌词往下让）；跟着设置印进 PDF（user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）。 */
   chordTags?: boolean;
   /** 字的尺子比谱的尺子大多少（刀 2；src/score/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
    *  「1=F」、小节号、和弦级数、页码，连同它们周围留的地方，都按 sp × textScale 量；字形、线、cresc. / 8va / 「吸」/ 推定的灰字照旧跟谱。量字的换算在文字模块里（measure.width）。没给 = 1。 */
@@ -131,7 +131,7 @@ export interface Layout {
   /** 和弦里主音以外的那几个符头（播放时一起亮；不进 notes——点 / 拖还是按整个音；v0.10.23，user「音符高亮忘了做和弦的其他音的高亮」）。 */
   chordHeads: { index: number; system: number; x: number; y: number; w: number; part?: string }[];
   /** 和弦级数的点击框 + 认出来的候选（o.chordTags 开着才有；点了 = 候选小菜单）。 */
-  chordTags: { x: number; y: number; w: number; h: number; read: ChordRead }[];
+  chordTags: { x: number; y: number; w: number; h: number; read: HarmonyRead }[];
   /** 每张纸第一行各位的名字块（刀 1 锚点）：x0 = 色点左边、x1 = 最长那行名字的右边、top = 第一行名字的上沿（px）。覆盖层把两颗大钮摆在它上面、整排对它居中。 */
   names: { paper: string; part: string; x0: number; x1: number; top: number }[];
   /** 合租叠起来的谱行（下标 = systems 里的）：只读——点了不写、不放光标，点名字拆开（v0.10.25，user「host也应该只读，只有展开时才能编辑」）。 */
@@ -1551,22 +1551,22 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         const minX = (ch: number[]) => Math.min(...ch.map((i) => dynItems[i].x0));
         for (const ch of [...chains.values()].sort((a, b) => minX(a) - minX(b))) placeAbove(dynItems[ch[0]].row, 0.4, (y) => { for (const i of ch) dynItems[i].draw(y); });
       });
-      // 和弦级数（v0.16.13；src/score/chord-name.ts）= 挂件第 10 样（刀 4b，user 11-08 拍：放到和弦的右下角）：x = 符头右缘 + 0.3、靠左对齐；y = 这一段下天际线再往下 0.3。
+      // 和弦级数（v0.16.13；乐理模块 src/theory/）= 挂件第 10 样（刀 4b，user 11-08 拍：放到和弦的右下角）：x = 符头右缘 + 0.3、靠左对齐；y = 这一段下天际线再往下 0.3。
       //   按 C 调看时认的是换到 C 的谱 + C 调——级数一样。合租叠起来的虚拟行、声部 2 不标（只看个大概的）。印（跟着设置进 PDF）
       if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
         const fs = tx("chord-tag");   // 和速度字一样大（v0.16.34）；字的尺子（刀 2）
-        // 分解和弦（v0.16.62，src/score/chord-name.ts brokenChords）：一拍一拍拆开弹的，标在那一组第一个音下面
-        const broken = new Map(brokenChords(tokens, (i) => keyAtTok(tokens, i)).map((x) => [x.index, x.read] as const));
+        // 标哪几个音、标什么 = 乐理模块（src/theory/：叠音的和弦 + 分解和弦，2026-11-10 起能整块换理论）；这里只管摆
+        const theory = harmonyTheory(), tagged = new Map(theory.tagsOf({ tokens, keyAt: (i) => keyAtTok(tokens, i) }).map((x) => [x.index, x.read] as const));
         for (const c of units) {
           if (c.kind !== "chunk" || !c.note || c.j !== 0 || c.index < 0 || c.pad) continue;
           const t = tokens[c.index]; if (t?.kind !== "note" || !t.pitch) continue;
-          const rd = t.chord?.length ? readChord([t.pitch, ...t.chord], keyAtTok(tokens, c.index)) : broken.get(c.index) ?? null; if (!rd) continue;
+          const rd = tagged.get(c.index); if (!rd) continue;
           const ds = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff, c.index)), second = ds.some((dd, k) => k > 0 && Math.abs(ds[k - 1] - dd) === 1);
           // 跟着符干（v0.16.62，user 11-09「其实可以试着跟着符柄定位，只有和符头位置撞了才退避」）：字的左边对齐符干那条线；
           //   这样会压到这个和弦挂在谱下面的符头（符干朝下 = 符头在符干右边、二度挤开的那个也在右边）= 退回符头右边 + 0.3（原来的位置）。没有符干（全音符）= 符头右边
           const headR = nhX(c) + nhW(c) * (second ? 1.95 : 1), sx = stemXOf.get(c), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
           const atStem = sx !== undefined && !(low && headR > sx + P(0.1));
-          const label = chordLabel(rd), tx = atStem ? sx! - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+          const label = theory.label(rd), tx = atStem ? sx! - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
           placeBelow(RW(c), 0.3, (y) => {
             prims.push({ t: "text", x: tx, y, s: label, cls: "chord-tag", size: fs, anchor: "start" });
             chordTagsOut.push({ x: tx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd });

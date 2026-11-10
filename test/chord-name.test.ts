@@ -1,7 +1,7 @@
-// chord-name.test.ts —— 认和弦 + 写成级数（src/score/chord-name.ts）。created 2026-11-07 by Claude Opus 5.5
+// chord-name.test.ts —— 认和弦 + 写成级数（乐理模块里的西方功能和声：src/theory/western.ts；2026-11-10 前叫 src/score/chord-name.ts）。created 2026-11-07 by Claude Opus 5.5
 // 钉住 user 11-07 问的那几种歧义：换根音（转位）、挂二 / 挂四、六和弦 vs 七和弦转位、十三；调号只管第几级。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { readChord, chordLabel, degreeOf, brokenChords } from "../src/score/chord-name.ts";
+import { readChord, chordLabel, degreeOf, brokenChords } from "../src/theory/western.ts";
 import { initState, tr, headLen, TPQ, type Token } from "../src/score/song.ts";
 import { spellMidi } from "../src/score/pitch.ts";
 import type { Pitch } from "../src/score/pitch.ts";
@@ -98,5 +98,22 @@ describe("分解和弦（v0.16.62，user 11-09「和弦级数认「空五度」�
     const body = [nn(60), nn(64), nn(67), nn(65), nn(69), nn(72)];
     const all = [...h, ...body], out = brokenChords(all, () => 0);
     eq(out.map((x) => chordLabel(x.read)).join(" "), "I IV"); eq(out[0]!.index, h.length); eq(out[1]!.index, h.length + 3);
+  });
+});
+
+// 乐理模块（src/theory/，2026-11-10，user「乐理引擎可以拆出一个单独的可热插拔的模块」）：外面只认门面
+describe("乐理模块：能整块换", () => {
+  it("src 里模块外只从 theory/index.ts 进；门面认得出这一种理论、不认识的 id 回默认", async () => {
+    const fs = (await import("node:fs" as string)) as { readdirSync(p: URL, o: { recursive: true }): string[]; readFileSync(p: URL, e: string): string };
+    const bad: string[] = [];
+    for (const f of fs.readdirSync(new URL("../src/", import.meta.url), { recursive: true })) {
+      if (!f.endsWith(".ts") || f.replace(/\\/g, "/").startsWith("theory/")) continue;
+      const s = fs.readFileSync(new URL(`../src/${f}`, import.meta.url), "utf8");
+      for (const m of s.matchAll(/from "([^"]*\/theory\/[^"]+)"/g)) if (!m[1].endsWith("/theory/index.ts")) bad.push(`${f} → ${m[1]}`);
+      if (/score\/chord-name/.test(s)) bad.push(`${f} 还引旧路径`);
+    }
+    assert(!bad.length, bad.join("；"));
+    const { harmonyTheory, DEFAULT_THEORY } = await import("../src/theory/index.ts");
+    eq(harmonyTheory().id, DEFAULT_THEORY); eq(harmonyTheory("没有这种").id, DEFAULT_THEORY);
   });
 });

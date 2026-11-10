@@ -13,7 +13,7 @@ import { conceptName, zhOnly } from "../gm/catalog-i18n.ts";
 import { _t, lang, langChosen, saveLang, applyDocumentLang, LANG_NAME, type Lang } from "../i18n/index.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
-import { type ChordRead, type ChordGuess } from "../score/chord-name.ts";
+import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
 import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
@@ -540,7 +540,7 @@ let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消�
  *  「设计里面专门开一个就是 Accessibility 辅助模式的框，这是第一个可选项」「这个是跟着系统的设置走的」「键盘的键位不能动」。PDF / 导出照实际的调。 */
 const KV_VIEW_IN_C = "view-in-c";
 let viewInC = deviceKvGet(KV_VIEW_IN_C) === "1";
-/** 和弦标级数（v0.16.11；这台设备上的设置，device-kv「chord-tags」，v0.16.12 起默认开——user 11-07「和弦标级数默认开？」；关过的 = "0" 照旧关）：叠音的和弦上方写级数（src/score/chord-name.ts），点了看候选。
+/** 和弦标级数（v0.16.11；这台设备上的设置，device-kv「chord-tags」，v0.16.12 起默认开——user 11-07「和弦标级数默认开？」；关过的 = "0" 照旧关）：叠音的和弦上方写级数（src/theory/（乐理模块）），点了看候选。
  *  user 11-07「我根本看不懂我自己摸的和弦，摸出来是几级和弦，我脑袋根本转不过来」「和弦上标级数…写个深模块…就你自己写」。 */
 const KV_CHORD_TAGS = "chord-tags";
 let chordTagsOn = deviceKvGet(KV_CHORD_TAGS) !== "0";
@@ -1088,12 +1088,11 @@ async function packStatusText(): Promise<string> {
 }
 /** 语言这一行：两种语言的字都写，走错语言的人也认得出。切换 = 存 + 重载（语言锁死在这一页，不要半译状态；没存的改动由挽留框 / 退出落盘那一套管）。 */
 const LANG_LABEL = "语言 · Language";   // i18n-keep
-/** 点了谱上的和弦级数：全部候选 + 怎么排的（不是选择题，只是看；认法 = src/score/chord-name.ts 头注释）。 */
-function openChordInfo(r: ChordRead, at: { x: number; y: number }): void {
-  const row = (g: ChordGuess, i: number) => `<div class="chord-cand${i === 0 ? " is-best" : ""}"><b>${esc(g.roman)}</b><span>${esc(g.name)}</span>` +
-    `<small>${[g.root.step !== g.bass.step || g.root.alter !== g.bass.alter ? _t("转位（最低音不是根音）") : "", g.no3 ? _t("没有三度：大三和弦还是小三和弦分不出来，按这个调里的写") : "", g.omitted - (g.no3 ? 1 : 0) > 0 ? _t("省了 {n} 个音", { n: g.omitted - (g.no3 ? 1 : 0) }) : ""].filter(Boolean).join(" · ")}</small></div>`;
-  ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${_t("怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。")}</div>` +
-    r.all.slice(0, 6).map(row).join(""), at, () => true);
+/** 点了谱上的和弦级数：全部候选 + 怎么排的（不是选择题，只是看）。说明的字归读它的那种理论（乐理模块 src/theory/）。 */
+function openChordInfo(r: HarmonyRead, at: { x: number; y: number }): void {
+  const th = harmonyTheory(r.theory);
+  const row = (g: HarmonyGuess, i: number) => `<div class="chord-cand${i === 0 ? " is-best" : ""}"><b>${esc(g.label)}</b><span>${esc(g.name)}</span><small>${th.explain(g).map(esc).join(" · ")}</small></div>`;
+  ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${esc(th.howTo())}</div>` + r.all.slice(0, 6).map(row).join(""), at, () => true);
 }
 function setChordTags(on: boolean): void { chordTagsOn = on; deviceKvSet(KV_CHORD_TAGS, on ? "1" : "0"); view.render(); }
 const chordChips = (): string => [["off", _t("关"), !chordTagsOn], ["on", _t("开"), chordTagsOn]].map(([v, label, on]) => `<button class="btn chip${on ? " is-on" : ""}" data-v="chord:${v}">${esc(label as string)}</button>`).join("");

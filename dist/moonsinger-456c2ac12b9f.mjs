@@ -5071,7 +5071,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.70-2026-11-10";
+var APP_VERSION = "v0.16.71-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -8563,7 +8563,7 @@ function timeMapOf(song, order) {
   return out.sort((a10, b3) => a10.tick - b3.tick || (a10.swing === void 0 ? 0 : 1) - (b3.swing === void 0 ? 0 : 1));
 }
 
-// src/score/chord-name.ts
+// src/theory/western.ts
 var TPLS = [
   { id: "maj", iv: [0, 4, 7], minor: false, rs: "", sym: "" },
   { id: "min", iv: [0, 3, 7], minor: true, rs: "", sym: "m" },
@@ -8601,6 +8601,7 @@ var TPLS = [
 var ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
 var ACC = (a10) => a10 === 0 ? "" : a10 > 0 ? "\u266F".repeat(a10) : "\u266D".repeat(-a10);
 var pc = (p2) => (midiOf(p2) % 12 + 12) % 12;
+var ID = "western";
 function degreeOf(p2, fifths) {
   const deg = ((stepIndex(p2.step) - tonicStepIndex(fifths)) % 7 + 7) % 7;
   return { deg: deg + 1, acc: p2.alter - keyAlter(p2.step, fifths) };
@@ -8618,8 +8619,8 @@ function readChord(pitches, fifths) {
     const [a10, b3] = [...set], rootPc = (a10 + 7) % 12 === b3 ? a10 : (b3 + 7) % 12 === a10 ? b3 : null;
     if (rootPc === null) return thirdDyad(ps, fifths);
     const root = ps.find((p2) => pc(p2) === rootPc), r10 = degreeOf(root, fifths), bd = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(bd.acc)}${bd.deg}`;
-    const g3 = { root, bass, tpl: "5", roman: ACC(r10.acc) + ROMAN[r10.deg - 1] + "5" + slash, name: stepName(root) + "5" + (slash ? `/${stepName(bass)}` : ""), cost: (rootPc === bassPc ? 0 : 1) + (r10.acc === 0 ? 0 : 0.25), omitted: 1, no3: true };
-    return { best: g3, ties: [g3], all: [g3] };
+    const g3 = { root, bass, tpl: "5", label: ACC(r10.acc) + ROMAN[r10.deg - 1] + "5" + slash, name: stepName(root) + "5" + (slash ? `/${stepName(bass)}` : ""), cost: (rootPc === bassPc ? 0 : 1) + (r10.acc === 0 ? 0 : 0.25), omitted: 1, no3: true };
+    return { theory: ID, best: g3, ties: [g3], all: [g3] };
   }
   if (set.size < 3) return null;
   const out = [];
@@ -8635,13 +8636,13 @@ function readChord(pitches, fifths) {
       const cost = (rootPc === bassPc ? 0 : 1) + omitted * 1.2 + (inKey ? 0 : 0.25) + ti2 * 0.01;
       const numeral = ACC(r10.acc) + (minor ? ROMAN[r10.deg - 1].toLowerCase() : ROMAN[r10.deg - 1]) + t10.rs;
       const b3 = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(b3.acc)}${b3.deg}`;
-      out.push({ root, bass, tpl: t10.id, roman: numeral + slash, name: stepName(root) + (t10.no3 && minor ? "m" : "") + t10.sym + (slash ? `/${stepName(bass)}` : ""), cost, omitted, no3: !!t10.no3 });
+      out.push({ root, bass, tpl: t10.id, label: numeral + slash, name: stepName(root) + (t10.no3 && minor ? "m" : "") + t10.sym + (slash ? `/${stepName(bass)}` : ""), cost, omitted, no3: !!t10.no3 });
     });
   }
   if (!out.length) return null;
   out.sort((a10, b3) => a10.cost - b3.cost);
   const best = out[0];
-  return { best, ties: out.filter((g3) => g3.cost - best.cost < 0.1), all: out };
+  return { theory: ID, best, ties: out.filter((g3) => g3.cost - best.cost < 0.1), all: out };
 }
 function thirdDyad(ps, fifths) {
   const [a10, b3] = [...new Set(ps.map(pc))], d3 = (b3 - a10 + 12) % 12;
@@ -8651,9 +8652,9 @@ function thirdDyad(ps, fifths) {
   const r10 = readChord([...ps, { step: st2, alter: keyAlter(st2, fifths), octave: ps[ps.length - 1].octave + 1 }], fifths);
   const all = (r10?.all ?? []).filter((g3) => pc(g3.root) === rootPc).map((g3) => ({ ...g3, omitted: g3.omitted + 1, cost: g3.cost + 1.2 }));
   if (!all.length) return null;
-  return { best: all[0], ties: all.filter((g3) => g3.cost - all[0].cost < 0.1), all };
+  return { theory: ID, best: all[0], ties: all.filter((g3) => g3.cost - all[0].cost < 0.1), all };
 }
-var chordLabel = (r10) => r10.ties.slice(0, 2).map((g3) => g3.roman).join(" / ");
+var chordLabel = (r10) => r10.ties.slice(0, 2).map((g3) => g3.label).join(" / ");
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
 function brokenChords(tokens, keyAt2) {
   const bars = /* @__PURE__ */ new Map();
@@ -8701,6 +8702,31 @@ function brokenChords(tokens, keyAt2) {
   for (const bar2 of [...bars.entries()].sort((a10, b3) => a10[0] - b3[0]).map((e10) => e10[1])) look(bar2.beats, 0, bar2.nb);
   return out;
 }
+function tagsOf(track) {
+  const { tokens, keyAt: keyAt2 } = track, out = [];
+  tokens.forEach((t10, i10) => {
+    if (t10.kind === "note" && t10.pitch && t10.chord?.length) {
+      const rd2 = readChord([t10.pitch, ...t10.chord], keyAt2(i10));
+      if (rd2) out.push({ index: i10, read: rd2 });
+    }
+  });
+  return [...out, ...brokenChords(tokens, keyAt2)];
+}
+var western = {
+  id: ID,
+  tagsOf,
+  label: chordLabel,
+  howTo: () => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002"),
+  explain: (guess) => {
+    const g3 = guess;
+    return [g3.root.step !== g3.bass.step || g3.root.alter !== g3.bass.alter ? _t("\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09") : "", g3.no3 ? _t("\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199") : "", g3.omitted - (g3.no3 ? 1 : 0) > 0 ? _t("\u7701\u4E86 {n} \u4E2A\u97F3", { n: g3.omitted - (g3.no3 ? 1 : 0) }) : ""].filter(Boolean);
+  }
+};
+
+// src/theory/index.ts
+var THEORIES = { [western.id]: western };
+var DEFAULT_THEORY = western.id;
+var harmonyTheory = (id2 = DEFAULT_THEORY) => THEORIES[id2] ?? THEORIES[DEFAULT_THEORY];
 
 // src/score/arrange.ts
 var REP = /^(?:[×xX*])(\d+)/;
@@ -12791,17 +12817,17 @@ function engrave(song, o10) {
       });
       if (o10.chordTags && !v2 && !q2.vrt) later[10].push(() => {
         const fs = tx2("chord-tag");
-        const broken = new Map(brokenChords(tokens, (i10) => keyAt(tokens, i10)).map((x2) => [x2.index, x2.read]));
+        const theory = harmonyTheory(), tagged = new Map(theory.tagsOf({ tokens, keyAt: (i10) => keyAt(tokens, i10) }).map((x2) => [x2.index, x2.read]));
         for (const c10 of units) {
           if (c10.kind !== "chunk" || !c10.note || c10.j !== 0 || c10.index < 0 || c10.pad) continue;
           const t10 = tokens[c10.index];
           if (t10?.kind !== "note" || !t10.pitch) continue;
-          const rd2 = t10.chord?.length ? readChord([t10.pitch, ...t10.chord], keyAt(tokens, c10.index)) : broken.get(c10.index) ?? null;
+          const rd2 = tagged.get(c10.index);
           if (!rd2) continue;
           const ds = (c10.pitches.length ? c10.pitches : [c10.pitch]).map((pp) => dIdx(pp, c10.staff, c10.index)), second = ds.some((dd, k2) => k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1);
           const headR = nhX(c10) + nhW(c10) * (second ? 1.95 : 1), sx2 = stemXOf.get(c10), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
           const atStem = sx2 !== void 0 && !(low && headR > sx2 + P2(0.1));
-          const label = chordLabel(rd2), tx3 = atStem ? sx2 - P2(ENGRAVE.stem / 2) : headR + P2(0.3), w2 = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+          const label = theory.label(rd2), tx3 = atStem ? sx2 - P2(ENGRAVE.stem / 2) : headR + P2(0.3), w2 = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
           placeBelow(RW(c10), 0.3, (y2) => {
             prims.push({ t: "text", x: tx3, y: y2, s: label, cls: "chord-tag", size: fs, anchor: "start" });
             chordTagsOut.push({ x: tx3 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2 });
@@ -29575,9 +29601,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-e166463f1b41.mjs");
+      return pick(() => "layout-worker-8d44f5ac6954.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-791784db2a22.mjs");
+      return pick(() => "encode-worker-1b21e321fadb.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -39062,7 +39088,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "a04022518b629a71" : "dev";
+var CORE_HASH = true ? "2a3eff11abef6c4d" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -53202,8 +53228,9 @@ async function packStatusText() {
 }
 var LANG_LABEL = "\u8BED\u8A00 \xB7 Language";
 function openChordInfo(r10, at2) {
-  const row2 = (g3, i10) => `<div class="chord-cand${i10 === 0 ? " is-best" : ""}"><b>${esc11(g3.roman)}</b><span>${esc11(g3.name)}</span><small>${[g3.root.step !== g3.bass.step || g3.root.alter !== g3.bass.alter ? _t("\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09") : "", g3.no3 ? _t("\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199") : "", g3.omitted - (g3.no3 ? 1 : 0) > 0 ? _t("\u7701\u4E86 {n} \u4E2A\u97F3", { n: g3.omitted - (g3.no3 ? 1 : 0) }) : ""].filter(Boolean).join(" \xB7 ")}</small></div>`;
-  ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${_t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002")}</div>` + r10.all.slice(0, 6).map(row2).join(""), at2, () => true);
+  const th2 = harmonyTheory(r10.theory);
+  const row2 = (g3, i10) => `<div class="chord-cand${i10 === 0 ? " is-best" : ""}"><b>${esc11(g3.label)}</b><span>${esc11(g3.name)}</span><small>${th2.explain(g3).map(esc11).join(" \xB7 ")}</small></div>`;
+  ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${esc11(th2.howTo())}</div>` + r10.all.slice(0, 6).map(row2).join(""), at2, () => true);
 }
 function setChordTags(on2) {
   chordTagsOn = on2;
@@ -57532,4 +57559,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1d9d1755e9e3.mjs.map
+//# sourceMappingURL=moonsinger-456c2ac12b9f.mjs.map

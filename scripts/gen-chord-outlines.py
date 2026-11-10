@@ -3,7 +3,7 @@
 
 created 2026-11-09 by Claude Opus 5.5（user 11-08「和弦级数能不能也用英文，也用同样的这种音乐的字体」→ 11-09「和弦级数的字体做」）。
 字 = Noto Serif SemiBold（SIL OFL 1.1，没有保留名；本机 /usr/share/fonts/truetype/noto/，可传别的路径）：只取级数会用到的字符
-（src/score/chord-name.ts 的 rs 记号 + 罗马数字 + 数字 + 「/ ( ) 空格」）。Noto Serif 没有 ♭ ♯：借仓里 Bravura 的 accidentalFlat / accidentalSharp 轮廓
+（src/theory/western.ts 的 rs 记号 + 罗马数字 + 数字 + 「/ ( ) 空格」）。Noto Serif 没有 ♭ ♯：借仓里 Bravura 的 accidentalFlat / accidentalSharp 轮廓
 （vendor/fonts/bravura/outlines.json，OFL），缩放到和大写字母差不多高。键 = "T" + 码位（和 Bravura 的码位分开，PDF 里同一套 Form XObject）。
 跑：python3 scripts/gen-chord-outlines.py [字体.ttf]（只要 fontTools）。生成物勿手改。test/pdf.test.ts 守着「级数会用到的每个字符都有轮廓」。
 """
@@ -14,7 +14,7 @@ from fontTools.pens.transformPen import TransformPen
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = sys.argv[1] if len(sys.argv) > 1 else "/usr/share/fonts/truetype/noto/NotoSerif-SemiBold.ttf"
-src = (ROOT / "src/score/chord-name.ts").read_text(encoding="utf-8")
+src = (ROOT / "src/theory/western.ts").read_text(encoding="utf-8")
 chars = (set("".join(re.findall(r'rs: "([^"]*)"', src))) | set("IVXivx0123456789/() ")) - {"♭", "♯"}   # ♭ ♯ 下面从 Bravura 借
 font = TTFont(SRC); cmap, gs, hmtx = font.getBestCmap(), font.getGlyphSet(), font["hmtx"]
 k = 1000 / font["head"].unitsPerEm
