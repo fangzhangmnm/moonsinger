@@ -3,6 +3,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave } from "../src/render/engrave.ts";
 import { GLYPH } from "../src/render/smufl.ts";
 import { TPQ, type Song, type Token, songOf } from "../src/score/song.ts";
+import { createTextMeasure } from "../src/render/text/index.ts";
 
 /** 全音 / 二分 / 四分各一个（全音占满第一小节，不跨小节线被切），音高各不同（写什么都照留）。 */
 function song(): Song {
@@ -11,7 +12,7 @@ function song(): Song {
   for (const [step, dur] of [["G", TPQ * 4], ["E", TPQ * 2], ["C", TPQ]] as const) toks.push({ kind: "note", pitch: { step, alter: 0, octave: 5 }, dur, lyric: null, id: id++ } as Token);
   return songOf(toks, { title: "" });
 }
-const heads = (xHead: boolean) => engrave(song(), { width: 4000, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Ringtone", first: true, ...(xHead ? { xHead } : {}) }], measureLyric: () => 10 })
+const heads = (xHead: boolean) => engrave(song(), { width: 4000, sp: 10, at: { paper: "p1", part: "P1" }, parts: [{ id: "P1", name: "Ringtone", first: true, ...(xHead ? { xHead } : {}) }], measure: createTextMeasure(() => 10) })
   .prims.filter((x) => x.t === "glyph" && x.cls?.split(" ").includes("note"));
 
 describe("× 符头（演奏者固定敲一个键）", () => {

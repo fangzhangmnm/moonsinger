@@ -10,6 +10,7 @@ import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../
 import { printOpts, isPrinted } from "../../../src/export/score-pdf.ts";
 import { paperOf, DEFAULT_PAPER, lineSp, pageGeoOf, textScaleOf } from "../../../src/score/paper.ts";
 import type { Song } from "../../../src/score/song.ts";
+import { createTextMeasure } from "../../../src/render/text/index.ts";
 
 const ROOT = new URL("../../../", import.meta.url);
 export const SONGS: Record<string, string> = {
@@ -36,14 +37,14 @@ type View = { name: string; opts: (song: Song, labels: string[]) => EngraveOpts;
 const measureFor = (song: Song) => { const k = textScaleOf(song.paper ?? paperOf(DEFAULT_PAPER)); return (s: string) => measure(s) * k; };
 const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<string>) => {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
-  return { width: lineSp(paper) * SP, sp: SP, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measureLyric: measureFor(song), autoBars: true, ...(ts !== 1 ? { textScale: ts } : {}),
+  return { width: lineSp(paper) * SP, sp: SP, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measure: createTextMeasure(measureFor(song)), autoBars: true, ...(ts !== 1 ? { textScale: ts } : {}),
     // 刀 1 前的四个旗（titlePlaceholder / editable / keyHint / paperLabel）和刀 1 后的几何参数 chrome 一起给：新旧两版排版器各认各的，同一份样张两边都能排
     titlePlaceholder: true, editable: true, keyHint: true, paperLabel: "A5", chrome: { underPaper: 2.6, tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } } as unknown as EngraveOpts;
 };
 export const VIEWS: View[] = [
-  { name: "print", opts: (s, l) => printOpts(s, SP, views(s, l, false), measureFor(s), true, 0) },
+  { name: "print", opts: (s, l) => printOpts(s, SP, views(s, l, false), createTextMeasure(measureFor(s)), true, 0) },
   // 刀 2：同一首歌换成舒适档的纸再印（大样张本来是紧凑档）——舒适档版面的基线（字和谱一把尺子，刀 2 前后逐个相同）
-  { name: "print-cozy", song: (s) => ({ ...s, paper: { ...(s.paper ?? paperOf(DEFAULT_PAPER)), density: "cozy" as const, staffMm: undefined } }), opts: (s, l) => printOpts(s, SP, views(s, l, false), measureFor(s), true, 0) },
+  { name: "print-cozy", song: (s) => ({ ...s, paper: { ...(s.paper ?? paperOf(DEFAULT_PAPER)), density: "cozy" as const, staffMm: undefined } }), opts: (s, l) => printOpts(s, SP, views(s, l, false), createTextMeasure(measureFor(s)), true, 0) },
   { name: "edit-seg", opts: (s, l) => ({ ...editorBase(s, l), onlyPaper: s.papers[0]!.id }) },
   { name: "edit-all", opts: (s, l) => editorBase(s, l) },
   { name: "edit-pages", opts: (s, l) => { const b = editorBase(s, l); const { margins: _m, ...rest } = b; return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },   // 分页 = 每段底下不留虚线框
@@ -75,7 +76,7 @@ export async function pdfSha(songKey: string): Promise<string> {
   font ??= parseTtf(new Uint8Array(gunzipSync(fs.readFileSync(new URL("vendor/fonts/sans.ttf.gz", ROOT)))));
   music ??= JSON.parse(fs.readFileSync(new URL("vendor/fonts/bravura/outlines.json", ROOT), "utf8"));
   const { song, labels } = loadSong(songKey);
-  const r = scorePdf({ song, parts: views(song, labels, false), font, fontId: "sans", music: music!, title: songKey, created: new Date(Date.UTC(2026, 10, 8)), measureAt: () => measure, autoBars: true });
+  const r = scorePdf({ song, parts: views(song, labels, false), font, fontId: "sans", music: music!, title: songKey, created: new Date(Date.UTC(2026, 10, 8)), measure: (s: string) => measure(s), autoBars: true });
   return createHash("sha256").update(r.bytes).digest("hex");
 }
 let font: import("../../../src/export/ttf.ts").TtfFont | undefined, music: import("../../../src/export/pdf.ts").MusicOutlines | undefined;

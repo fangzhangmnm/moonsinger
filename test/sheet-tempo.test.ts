@@ -3,6 +3,7 @@
 import { describe, it, eq } from "./runner.mjs";
 import { initState, addPart, addPaper, removeTrack, rebindTrack, movePart, setMark, tempoMapOf, withTrack, tempoOwner, sheetStartBpm, TPQ, type EditorState, type Token } from "../src/score/song.ts";
 import { engrave } from "../src/render/engrave.ts";
+import { createTextMeasure } from "../src/render/text/index.ts";
 
 const note = (id: number): Token => ({ kind: "note", id, pitch: { step: "C", alter: 0, octave: 4 }, dur: TPQ, lyric: null });
 /** P1（最上面）谱头速度改成 120，P2 还是 90（没人看见的旧数）；第一张纸 P1 一个音。 */
@@ -40,7 +41,7 @@ describe("每张纸的速度", () => {
 });
 
 describe("速度记号画在哪、画淡不画淡", () => {
-  const prims = (st: EditorState, paper: string) => engrave(st.song, { width: 600, sp: 10, at: st.at, parts: st.song.parts.map((p, k) => ({ id: p.id, name: p.id, empty: false, first: k === 0, clef: "G" as const, hidden: false, badges: [], mono: true })), measureLyric: (s: string) => s.length * 10, onlyPaper: paper } as never).prims;
+  const prims = (st: EditorState, paper: string) => engrave(st.song, { width: 600, sp: 10, at: st.at, parts: st.song.parts.map((p, k) => ({ id: p.id, name: p.id, empty: false, first: k === 0, clef: "G" as const, hidden: false, badges: [], mono: true })), measure: createTextMeasure((s: string) => s.length * 10), onlyPaper: paper } as never).prims;
   it("只有第二个声部的纸：速度记号照样画（画在它那一行）", () => {
     let st = addPaper(base()); const p2 = st.song.papers[1].id;
     st = removeTrack(st, p2, "P1");

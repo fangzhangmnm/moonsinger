@@ -6,6 +6,7 @@
 
 import { GLYPH_BOX } from "./glyph-box.gen.ts";
 import type { Prim } from "./engrave.ts";
+import { INK_EST, LYRIC_EM } from "./text/index.ts";
 
 export const STEP = 0.25;
 
@@ -42,8 +43,8 @@ export function primInk(p: Prim, sp: number, measure: (s: string, size: number) 
       return;
     }
     case "text": {
-      const size = p.size ?? 1.6 * sp, w = measure(p.s, size) * (p.sx ?? 1), x0 = p.anchor === "middle" ? p.x - w / 2 : p.anchor === "end" ? p.x - w : p.x;
-      emit(x0, x0 + w, p.y - size * 0.8, p.y + size * 0.22); return;
+      const size = p.size ?? LYRIC_EM * sp, w = measure(p.s, size) * (p.sx ?? 1), x0 = p.anchor === "middle" ? p.x - w / 2 : p.anchor === "end" ? p.x - w : p.x;
+      emit(x0, x0 + w, p.y - size * INK_EST.a, p.y + size * INK_EST.d); return;   // 估的上下沿（文字模块 src/render/text/baseline.ts）
     }
     case "line": { const h = p.w / 2; flatten([[p.x1, p.y1], [p.x2, p.y2]], sp, h, emit); return; }
     case "rect": emit(p.x, p.x + p.w, p.y, p.y + p.h); return;
@@ -104,6 +105,7 @@ export function shiftPrim(p: Prim, dy: number): void {
       }
       p.d = out + d.slice(i); return;
     }
+    default: { const never: never = p; throw new Error(`shiftPrim: unknown prim ${JSON.stringify(never)}`); }   // 穷举守卫（Fable 11-09 审三刀留的小尾巴）：加了新图元没在这里挪 = 类型检查红
   }
 }
 /** 图元的一个代表 y（px）：认它是哪一行的。 */

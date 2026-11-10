@@ -8,7 +8,7 @@ import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type
 import { midiOf } from "../score/pitch.ts";
 import { MELISMA_MARK } from "../score/lyrics.ts";
 import { scriptLang } from "../score/lang.ts";
-import { gainSegments, noteEnd, noteVelocities, lightMarks, type PerfSpec } from "../score/perform.ts";
+import { gainSegments, noteEnd, noteVelocities, lightMarks, rollDefaultHz, ROLL_HZ_MIN, ROLL_HZ_MAX, type PerfSpec } from "../score/perform.ts";
 import { grooveWeights, grooveMapOf, followOf, timeMapOf, type GrooveStyle } from "../score/groove.ts";
 import { toLabScore, singChunks, type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
 import { playSegments } from "../score/repeats.ts";
@@ -109,13 +109,13 @@ export function songLangOf(tokens: readonly Token[], hum: Hum): SingLang {
 }
 
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。marks = 修的记号怎么落到这一路上（跳音截短、呼吸处收短一口气）；不给 = 照谱满长。 */
-export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean; gapSec: number; arpeggioSec?: number }, velOf?: (index: number, art: readonly string[]) => number): { midi: number; t0: number; t1: number; vel?: number }[] {
-  const notes: { midi: number; t0: number; t1: number; vel?: number }[] = [];
-  let open = new Map<number, { midi: number; t0: number; t1: number; vel?: number }>();   // 上一个音正在响的各音高（连音线按音高接；力度跟第一段）
+export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, marks?: { staccatoGate: number; breath: boolean; gapSec: number; arpeggioSec?: number; /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */ rollHz?: (midi: number) => number }, velOf?: (index: number, art: readonly string[]) => number): { midi: number; t0: number; t1: number; vel?: number }[] {
+  const notes: { midi: number; t0: number; t1: number; vel?: number; roll?: true }[] = [];
+  let open = new Map<number, { midi: number; t0: number; t1: number; vel?: number; roll?: true }>();   // 上一个音正在响的各音高（连音线按音高接；力度跟第一段）
   for (const { index, tok, t0, t1 } of timeline(tokens, tempoMap)) {
     if (tok.kind !== "note") continue;
     const ps = poly && tok.pitch ? allPitches(tok as NoteTok) : [effectivePitch(tokens, index)];   // 单声引擎只拿最上面那条线
-    const nextOpen = new Map<number, { midi: number; t0: number; t1: number; vel?: number }>();
+    const nextOpen = new Map<number, { midi: number; t0: number; t1: number; vel?: number; roll?: true }>();
     // 琶音（v0.9.45；v0.9.48 改：user「建议改为旋律音准时落拍、低音提前滚奏，错开间隔35ms」）：最上面的（旋律）准时落拍，下面的从低到高依次提早 arpeggioSec
     //   （最多摊到这个音一半长；连过来的那段不再错开）。歌开头那个和弦 = 低音在 0 之前滚上来（v0.16.1，user 11-07 选 A「允许在 0 之前开始滚」；原来钳在 0 = 第一个和弦合成一下，
     //   那是 v0.9.48 AI 顺手定的、不是 user 拍的）：时间线从最早的音起（同月读的辅音、鼓的着力点），第一拍照旧在 0
@@ -123,12 +123,21 @@ export function lightNotes(tokens: Token[], tempoMap: TempoMap, poly = false, ma
     const rank = arp ? new Map([...ps].map((q) => midiOf(q)).sort((a, b) => a - b).map((m, k) => [m, k] as const)) : null;
     for (const p of ps) {
       const midi = midiOf(p), prev = tok.tie ? open.get(midi) : undefined;
-      if (prev) { prev.t1 = marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1; nextOpen.set(midi, prev); continue; }
-      const n = { midi, t0: rank ? t0 - (ps.length - 1 - (rank.get(midi) ?? 0)) * arp : t0, t1: marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}) }; notes.push(n); nextOpen.set(midi, n);
+      if (prev) { prev.t1 = prev.roll ? t1 : marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1; nextOpen.set(midi, prev); continue; }
+      const roll = !!marks?.rollHz && (tok.art ?? []).includes("roll");   // 滚奏：整个音（连音线连过去的也算）敲满，见下面
+      const n = { midi, t0: rank ? t0 - (ps.length - 1 - (rank.get(midi) ?? 0)) * arp : t0, t1: roll ? t1 : marks ? noteEnd(t0, t1, tok.art ?? [], marks, !!tok.slur) : t1, ...(velOf ? { vel: velOf(index, tok.art ?? []) } : {}), ...(roll ? { roll: true as const } : {}) }; notes.push(n); nextOpen.set(midi, n);
     }
     open = nextOpen;
   }
-  return notes.sort((a, b) => a.t0 - b.t0);   // 琶音提早的低音可能比前一个音还早一点：按起点排（稳定排序：没琶音的歌顺序原样）
+  // 滚奏（v0.16.64；user 11-07「标准滚奏记号 可以，但是要可以调整密度」）：这个音的整段切成一串等长的敲击，每秒 rollHz 下（演奏者的设置 / 乐器默认），
+  //   每一下的力度 = 这个音的力度；渐强渐弱 / 渐到由音量曲线（gainSegments，按时间走）管——起点 = 当时生效的力度，不从无声起（11-07 那一问的默认）
+  const out: typeof notes = [];
+  for (const n of notes) {
+    if (!n.roll || !marks?.rollHz) { out.push(n); continue; }
+    const hz = Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, marks.rollHz(n.midi))), len = n.t1 - n.t0, k = Math.max(1, Math.round(len * hz)), d = len / k;
+    for (let i = 0; i < k; i++) out.push({ midi: n.midi, t0: n.t0 + i * d, t1: n.t0 + (i + 1) * d, ...(n.vel !== undefined ? { vel: n.vel } : {}) });
+  }
+  return out.sort((a, b) => a.t0 - b.t0);   // 琶音提早的低音可能比前一个音还早一点：按起点排（稳定排序：没琶音的歌顺序原样）
 }
 
 export const HUM_KANA: Record<Hum, string> = { la: "ら", n: "ん", u: "う", o: "お", a: "あ" };
@@ -166,7 +175,10 @@ export function buildTimeline(inp: TimelineInput): Timeline {
       continue;
     }
     const vels = noteVelocities(tokens, map, info.spec, info.velocity, bounds, groove);
-    const notes = lightNotes(tokens, map, info.plugin.poly, lightMarks(info.spec), (i) => vels.get(i) ?? info.velocity);
+    // 滚奏的密度（v0.16.64）：演奏者写了 = 它；没写 = 按乐器（固定敲一件 = 那一件的键、整套鼓 = 写的音、有音高的 = null）。这位不认滚奏（honors 里没有）= 照一个长音放
+    const percKey = (m: number): number | null => (info.gm?.note !== undefined ? info.gm.note : info.hitSec ? m : null);
+    const rollHz = info.plugin.honors.includes("roll") ? (m: number) => info.spec.rollHz ?? rollDefaultHz(percKey(m)) : undefined;
+    const notes = lightNotes(tokens, map, info.plugin.poly, { ...lightMarks(info.spec), ...(rollHz ? { rollHz } : {}) }, (i) => vels.get(i) ?? info.velocity);
     // 快引擎：音符表 → 这位的轨，怎么拼归插件（元音版 / SoundFont 的键 / 着力点都在它自己那里；ADR-0004）
     const built = info.plugin.track?.({ id: part.id, notes, gain, ...(info.chain?.length ? { chain: info.chain } : {}), hum, info });
     if (!built) { unplayable.push({ part: part.id, why: _t("「{label}」不会按音符表出声", { label: info.plugin.label }) }); continue; }

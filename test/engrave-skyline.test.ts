@@ -6,6 +6,7 @@ import { engrave, type Layout, type Prim } from "../src/render/engrave.ts";
 import { primInk } from "../src/render/skyline.ts";
 import { isPrinted } from "../src/export/score-pdf.ts";
 import { SONGS, VIEWS, loadSong, snapshot } from "./fixtures/layout/cases.ts";
+import { createTextMeasure } from "../src/render/text/index.ts";
 
 let id = 9000;
 const S = "CDEFGAB";
@@ -15,7 +16,7 @@ const dyn = (value: string): Token => ({ kind: "dyn", id: id++, value }) as Toke
 const pin = (dir: "cresc" | "dim"): Token => ({ kind: "hairpin", id: id++, dir }) as Token;
 const SP = 10, measure = (s: string) => s.length * SP;
 function song(items: Token[]): EditorState { const st = initState(); return { ...st, song: withTrack(st.song, st.at.paper, st.at.part, [...tr(st).slice(0, 3), ...items]) }; }
-const lay = (items: Token[], extra: Extra = {}): Layout => { const st = song(items); return engrave(st.song, { width: 900, sp: SP, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], measureLyric: measure, ...extra } as never); };
+const lay = (items: Token[], extra: Extra = {}): Layout => { const st = song(items); return engrave(st.song, { width: 900, sp: SP, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], measure: createTextMeasure(measure), ...extra } as never); };
 const cls = (p: Prim) => p.cls ?? "";
 /** 一个图元的墨，切成小块（px）。 */
 const boxes = (p: Prim, sp: number, m: (s: string, size: number) => number) => { const out: [number, number, number, number][] = []; primInk(p, sp, m, (x0, x1, y0, y1) => out.push([x0, x1, y0, y1])); return out; };
@@ -44,23 +45,28 @@ describe("刀 4b：挂件贴着天际线（user 11-08 截图里点名的几样�
   it("没有挂件的行：谱上面只留版式的最小值", () => {
     const st = song([n(0, 5), n(1, 5), n(2, 5), n(3, 5)]), id2 = "p2";
     const s2 = { ...st.song, parts: [...st.song.parts, { ...st.song.parts[0]!, id: id2, role: "r9", mic: "m9" }], papers: st.song.papers.map((pp) => ({ ...pp, tracks: { ...pp.tracks, [id2]: [...tr(st).slice(0, 3), n(6, 4), n(5, 4), n(4, 4), n(3, 4)] } })) };
-    const L = engrave(s2, { width: 900, sp: SP, at: st.at, parts: [st.at.part, id2].map((pid, k) => ({ id: pid, name: `V${k}`, empty: false, first: k === 0, clef: "G" as const, hidden: false, badges: [], mono: false })), measureLyric: measure } as never);
+    const L = engrave(s2, { width: 900, sp: SP, at: st.at, parts: [st.at.part, id2].map((pid, k) => ({ id: pid, name: `V${k}`, empty: false, first: k === 0, clef: "G" as const, hidden: false, badges: [], mono: false })), measure: createTextMeasure(measure) } as never);
     const r2 = L.systems.find((r) => r.part === id2)!;
     const above = (r2.staffTop - r2.top) / SP;
     assert(Math.abs(above - 4.6) < 1e-6, `第二位那一行谱上面留 ${above}（舒适档最小值 4.6）`);
   });
-  it("和弦级数在和弦右下角（符头右边、谱下面），不压歌词", () => {
+  it("和弦级数在谱下面、字的左边对齐符干那条线（撞了挂在谱下面的符头才退回符头右边 + 0.3），不压歌词（v0.16.62，user「其实可以试着跟着符柄定位，只有和符头位置撞了才退避」）", () => {
     const ch = (k: number, lyric: string) => n(k, 4, { chord: [{ step: S[(k + 4) % 7], alter: 0, octave: k + 4 >= 7 ? 5 : 4 }, { step: S[(k + 2) % 7], alter: 0, octave: k + 2 >= 7 ? 5 : 4 }].sort(() => 0), lyric });
-    const L = lay([ch(0, "あ"), ch(3, "い"), ch(4, "う"), ch(0, "え")], { chordTags: true });
+    const hi = n(5, 4, { chord: [{ step: "C", alter: 0, octave: 5 }, { step: "E", alter: 0, octave: 5 }], lyric: "お" });   // A4 C5 E5：符干朝下（符干在符头左边）
+    const L = lay([ch(0, "あ"), ch(3, "い"), ch(4, "う"), hi], { chordTags: true });
     const tags = L.prims.filter((p) => p.t === "text" && /\bchord-tag\b/.test(cls(p))), lys = L.prims.filter((p) => p.t === "text" && /^lyric\b/.test(cls(p)));
-    assert(tags.length >= 3, `标了 ${tags.length} 个`);
+    const stems = L.prims.filter((p) => p.t === "line" && (!p.cls || p.cls === "ghost") && Math.abs(p.w - 0.12 * SP) < 1e-6) as { x1: number }[];
+    assert(tags.length >= 4, `标了 ${tags.length} 个`);
     const bottom = L.systems[0]!.staffTop + 4 * SP;
     for (const t of tags) {
-      const b = bbox(t), head = L.notes.find((x) => Math.abs(x.x + x.w + 0.3 * SP - (t as { x: number }).x) < 1)!;
-      assert(!!head, `级数靠左对齐在某个符头右缘 + 0.3（x ${(t as { x: number }).x}）`);
+      const b = bbox(t), x = (t as { x: number }).x;
+      const atStem = stems.some((l) => Math.abs(l.x1 - 0.06 * SP - x) < 0.5), atHead = L.notes.some((h) => Math.abs(h.x + h.w + 0.3 * SP - x) < 1);
+      assert(atStem || atHead, `级数对齐符干、或退回符头右边（x ${x}）`);
       assert(b[2] > bottom, `在谱下面（字顶 ${b[2]} > 第一线 ${bottom}）`);
       for (const l of lys) { const c = bbox(l); assert(b[1] <= c[0] || c[1] <= b[0] || b[3] <= c[2] || c[3] <= b[2], `级数 ${(t as { s: string }).s} 不压歌词 ${(l as { s: string }).s}`); }
     }
+    const last = tags[tags.length - 1] as { x: number }, head = L.notes.filter((h) => h.index === L.notes[L.notes.length - 1]!.index)[0]!;
+    assert(last.x < head.x + 0.2 * SP, `符干朝下的高音和弦：级数在符干那条线（符头左边），不再挂到右边（x ${last.x}，符头 ${head.x}）`);
   });
 });
 
@@ -79,7 +85,7 @@ const isNoteInk = (p: Prim, sp: number) => (p.t === "glyph" && /^note\b/.test(cl
 describe("刀 4b 性质：三首样张 × 六种视图，挂件互不相交、不压音符 / 符干 / 符杠", () => {
   for (const key of Object.keys(SONGS)) for (const v of VIEWS) it(`${key} · ${v.name}`, () => {
     const { song: s0, labels } = loadSong(key), sg = v.song ? v.song(s0) : s0, o = v.opts(sg, labels), L = engrave(sg, o), sp = L.sp, tol = 0.05 * sp;
-    const m = (s: string, size: number) => (o.measureLyric(s) * size) / (1.6 * sp * (o.textScale ?? 1));   // 量字的尺子按字的字号（刀 2）
+    const m = (s: string, size: number) => o.measure.widthPx(s, size, sp, o.textScale ?? 1);   // 有字号的字多宽（文字模块）
     const att = L.prims.filter((p) => isPrinted(p.cls) && (ATTACH.test(cls(p)) || isStrongArt(p))).map((p) => ({ p, b: boxes(p, sp, m) }));
     const ink = L.prims.filter((p) => isNoteInk(p, sp)).map((p) => ({ p, b: boxes(p, sp, m) }));
     const hit = (a: number[][], b: number[][]) => a.some((x) => b.some((y) => x[0] + tol < y[1] && y[0] + tol < x[1] && x[2] + tol < y[3] && y[2] + tol < x[3]));

@@ -1,5 +1,6 @@
 // svg.ts —— 排版结果 → SVG 字符串（浏览器 innerHTML 用；Node 里也能直接写文件看图）。created 2026-10-06 by Claude Opus 5.5
-import { type Layout, LYRIC_EM } from "./engrave.ts";
+import { type Layout } from "./engrave.ts";
+import { LYRIC_EM } from "./text/index.ts";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 const n = (v: number) => (Math.round(v * 100) / 100).toString();

@@ -4,6 +4,7 @@ import { describe, it, assert, eq } from "./runner.mjs";
 import { paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { engrave, type Layout } from "../src/render/engrave.ts";
 import { TPQ, headTokens, type Token, type Song } from "../src/score/song.ts";
+import { createTextMeasure } from "../src/render/text/index.ts";
 
 let id = 100;
 const C5 = { step: "C" as const, octave: 5, alter: 0 };
@@ -14,7 +15,7 @@ const S16 = TPQ / 4, T8 = TPQ / 3, W = TPQ * 4;
 function lay(tracks: Record<string, Token[]>, extra: Partial<Song> = {}, width = 900): Layout {
   const parts = Object.keys(tracks).map((pid, k) => ({ id: pid, role: `r${k}`, mic: `m${k}` }));
   const song = { hum: "n", parts, papers: [{ id: "A", name: "", tracks }], ...extra } as Song;
-  return engrave(song, { width, sp: 10, at: { paper: "A", part: parts[0].id }, parts: parts.map((p, k) => ({ id: p.id, name: `P${k}`, first: k === 0, clef: "G" as const, hidden: false, badges: [] })), measureLyric: (s) => s.length * 10, autoBars: true });
+  return engrave(song, { width, sp: 10, at: { paper: "A", part: parts[0].id }, parts: parts.map((p, k) => ({ id: p.id, name: `P${k}`, first: k === 0, clef: "G" as const, hidden: false, badges: [] })), measure: createTextMeasure((s) => s.length * 10), autoBars: true });
 }
 /** 第 k 个声部第一行谱上每个音的 x（线间距）。 */
 const xsOf = (L: Layout, part: string) => { const row = L.systems.findIndex((s) => s.part === part); return L.notes.filter((n) => n.system === row).map((n) => n.x / L.sp).sort((a, b) => a - b); };

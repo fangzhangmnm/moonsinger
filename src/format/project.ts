@@ -21,7 +21,7 @@ import { FINAL_MP3_ENTRY, contentFingerprint, parseFinalRecord, type FinalRecord
 export { FINAL_MP3_ENTRY, type FinalRecord };
 import { migrate } from "./migrate/index.ts";
 import { sha256HexSync } from "./sha256-sync.ts";
-import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
+import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, ROLL_HZ_MIN, ROLL_HZ_MAX, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
 export type { Hum, InstrumentV2 };
 const MIMETYPE = "application/vnd.recordare.musicxml";
@@ -544,7 +544,7 @@ export function withUnpacked(extras: Extras, only?: (subsetSha256: string) => bo
 export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Record<Dynamic, number>; staccatoGate: number; accentDb: number; gapSec: number;
   marcatoDb: number; dynamicsVel: Record<Dynamic, number> | null; accentVel: number; marcatoVel: number;
   stressDb: number; stressVel: number; unstressDb: number; unstressVel: number; ghostDb: number; ghostVel: number;
-  accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepDb: number; wedgeStepVel: number; sfzDb: number; sfzVel: number; sfzSec: number; fpSec: number; swellDb: number; canSwell: boolean; sing: Record<string, SingMark | null> } {
+  accentSec: number; breathSec: number; breathShare: number; gapShare: number; wedgeStepDb: number; wedgeStepVel: number; sfzDb: number; sfzVel: number; sfzSec: number; fpSec: number; swellDb: number; canSwell: boolean; sing: Record<string, SingMark | null>; rollHz: number | null } {
   const c = activeCandidate(extras, role), d = (c?.dynamicsDb ?? {}) as Partial<Record<string, number>>, a = (c?.articulation ?? {}) as Partial<Record<string, number>>;
   const num = (v: unknown, dflt: number) => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
   // 力度表：pp…ff 没写 = 默认；ppp / fff 没写（v0.9.23 之前的演奏者）= 按这位自己 pp→p / f→ff 的间隔往外推一档（不是拿默认表硬塞，免得和它自己的表不成比例）
@@ -564,10 +564,18 @@ export function activePerfSpec(extras: Extras, role: string): { dynamicsDb: Reco
     stressDb: num(a.stressDb, MARK_DEFAULTS.stressDb), stressVel: num(a.stressVel, MARK_DEFAULTS.stressVel), unstressDb: num(a.unstressDb, MARK_DEFAULTS.unstressDb),
     unstressVel: num(a.unstressVel, MARK_DEFAULTS.unstressVel), ghostDb: num(a.ghostDb, MARK_DEFAULTS.ghostDb), ghostVel: num(a.ghostVel, MARK_DEFAULTS.ghostVel),
     sing: { ...SING_MARKS, ...((c?.sing ?? {}) as Record<string, SingMark | null>) },
+    rollHz: typeof a.rollHz === "number" && Number.isFinite(a.rollHz) ? Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, a.rollHz)) : null,   // 滚奏每秒几下（v0.16.64）；没写 = 按乐器默认
     dynamicsVel: c?.dynamicsVel ? ladder(c.dynamicsVel as Partial<Record<string, number>>, DYNAMICS_VEL, (v) => Math.max(1, Math.min(127, v))) : null };
 }
 /** 连断底色能调到多大（秒）。 */
 export const GAP_MAX_SEC = 0.2;
+/** 改上场那位的滚奏密度（乐器页；每秒几下，ROLL_HZ_MIN … ROLL_HZ_MAX；null = 去掉、回到乐器默认）。没人上场 = 原样。v0.16.64 */
+export function withRollHz(extras: Extras, role: string, hz: number | null, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
+  const { rollHz: _old, ...rest } = (c.articulation ?? {}) as Json;
+  c.articulation = hz === null ? rest : { ...rest, rollHz: Math.round(Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, hz))) };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
 /** 改上场那位的连断底色（乐器页；秒，0 … GAP_MAX_SEC，记到毫秒）。没人上场 = 原样。 */
 export function withGapSec(extras: Extras, role: string, sec: number, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;

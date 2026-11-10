@@ -25,7 +25,7 @@ export const soundfont = registerPerformer({
   description: _t("SoundFont 乐器（TinySoundFont 出声）"),
   sound: "notes", poly: true, lyrics: "none", hintRange: null,
   // lightMarks 那一路；琶音只有能叠音的认（v0.9.45）；气声 / 出声的换气乐器本来就不认
-  honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio"],
+  honors: ["staccato", "accent", "marcato", "sfz", "fp", "breath", "tenuto", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "arpeggio", "roll"],
   connected: false, dynamics: "velocity", grooveCategory: "gm", removable: true,
   info: ({ extras, role, presetIndex }) => {
     const g = activeGm(extras, role);

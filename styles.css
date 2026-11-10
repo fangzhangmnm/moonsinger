@@ -449,7 +449,8 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .finder-bar > [data-v="back"] { flex: none; white-space: nowrap; }   /* 顶条挤的时候返回钮不让（v0.16.36：多了「打开 .sf2…」） */
 @media (max-width: 560px) { .finder-file { padding: 0 6px; font-size: 12px; } }   /* 顶条「打开 .sf2…」（v0.16.36） */
 .finder-file[hidden] { display: none; }
-.finder-hide { flex: none; white-space: nowrap; }   /* 隐藏找不到的（v0.16.56）：亮着 = 开 */
+.finder-hide { flex: none; white-space: nowrap; }
+.prov-b .prov-try { padding: 0 8px; font-size: 12px; color: var(--muted); }   /* 「＋ 声部」= 先不换，加成新声部试试（v0.16.63）：小、淡，不抢「选这个」 */   /* 隐藏找不到的（v0.16.56）：亮着 = 开 */
 .finder-pad { flex: none; display: inline-flex; align-items: center; gap: 4px; }   /* 试听键盘开关（收起了也叫得回来） */
 @media (max-width: 560px) { .finder-pad span, .finder-title { display: none; } }
 /* 乐器目录顶上「这首歌里用过的」（v0.16.18 搬家 C）：点一位 = 上场，× = 退掉 */

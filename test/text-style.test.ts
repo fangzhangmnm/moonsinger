@@ -3,7 +3,7 @@
 //   ② 字号就是表里那一行（歌词另有整行一起缩：八成到原大）——排版器里不再手写字号；③ styles.css 不给谱上的字定字体 / 粗细 / 斜体（只留颜色）。
 import { describe, it, assert } from "./runner.mjs";
 import { engrave } from "../src/render/engrave.ts";
-import { TEXT_STYLES, LYRIC_LOOK, textPx, textStyleOf, textStyleCss, type TextRole } from "../src/render/text-style.ts";
+import { TEXT_STYLES, LYRIC_LOOK, textPx, textStyleOf, textStyleCss, type TextRole } from "../src/render/text/index.ts";
 import { SONGS, VIEWS, loadSong } from "./fixtures/layout/cases.ts";
 const { readFileSync } = (await import("node:fs" as string)) as { readFileSync(p: URL, e: string): string };
 
@@ -39,5 +39,24 @@ describe("谱上的字：一张样式表", () => {
     const gen = textStyleCss();
     assert(/text\.tempo-word:not\(\[font-family\]\)\{[^}]*font-weight:600/.test(gen), "生成的样式表里有速度字的粗细");
     assert(!/text(\.[\w-]+)?\{/.test(gen), "每条规则都带 :not([font-family])——不许盖掉乐谱字形（字形的 <text> 带 font-family 属性）");
+  });
+});
+
+// 文字模块（src/render/text/，计划书 ai-docs/20261109-plan-text-engine.md 第 2 步，2026-11-10 by Claude Opus 5.5）：量字的换算只在模块里
+const { readdirSync } = (await import("node:fs" as string)) as { readdirSync(p: URL, o: { recursive: true }): string[] };
+describe("文字模块：一个入口、量字一把尺子", () => {
+  it("排版器里不再手写量字的换算（不调宿主的量宽函数、不拿歌词字号做乘除）", () => {
+    const src = readFileSync(new URL("../src/render/engrave.ts", import.meta.url), "utf8");
+    assert(!/measureLyric/.test(src), "engrave.ts 里还有 measureLyric");
+    assert(!/LYRIC_EM\s*[*/]|[*/]\s*LYRIC_EM\b/.test(src), "engrave.ts 里还有拿 LYRIC_EM 乘除的换算（换算归 src/render/text/measure.ts）");
+  });
+  it("模块外面只从 text/index.ts 进（里面的文件名不是接口）", () => {
+    const bad: string[] = [];
+    for (const f of readdirSync(new URL("../src/", import.meta.url), { recursive: true })) {
+      if (!f.endsWith(".ts") || f.replace(/\\/g, "/").startsWith("render/text/")) continue;
+      const s = readFileSync(new URL(`../src/${f}`, import.meta.url), "utf8");
+      for (const m of s.matchAll(/from "([^"]*\/text\/[^"]+)"/g)) if (!m[1].endsWith("/text/index.ts")) bad.push(`${f} → ${m[1]}`);
+    }
+    assert(!bad.length, bad.join("；"));
   });
 });

@@ -7,7 +7,7 @@
 //   呼吸：月读 = 下一个字前「v」（lab-score.ts）；元音版和乐器 = 前一个音收短一点（lightNotes；乐器上的逗号 = 稍微断开再进下一个音，管乐 / 人声就是换气；
 //   2026-10-08 user「breath是否应该对大量GS乐器也生效。毕竟不断气一直拖着也不对，fl你还得手动调一下时长」）。
 import { type Token, type NoteTok, type TempoMap, type Dyn, timeline, artOf, swellOf, DEFAULT_DYN, rampTarget, isTimed } from "./song.ts";
-import { MARK_DEFAULTS } from "../format/performance.ts";
+import { MARK_DEFAULTS, ROLL_HZ_MIN, ROLL_HZ_MAX } from "../format/performance.ts";
 const DEFAULT_DYN_KEY: Dyn = DEFAULT_DYN;
 
 export interface PerfSpec { dynamicsDb: Record<Dyn, number>; staccatoGate: number; accentDb: number; marcatoDb?: number;
@@ -16,7 +16,9 @@ export interface PerfSpec { dynamicsDb: Record<Dyn, number>; staccatoGate: numbe
   sfzDb?: number; sfzVel?: number; sfzSec?: number; fpSec?: number; swellDb?: number; canSwell?: boolean;
   stressDb?: number; stressVel?: number; unstressDb?: number; unstressVel?: number; ghostDb?: number; ghostVel?: number;
   /** 有 = 力度记号 / 重音 / 强音走 MIDI 力度（SoundFont 新候选），音量曲线就不再管它们；没有 = 走 dB（月读 / 元音版 / 旧候选）。 */
-  dynamicsVel?: Record<Dyn, number> | null; accentVel?: number; marcatoVel?: number }
+  dynamicsVel?: Record<Dyn, number> | null; accentVel?: number; marcatoVel?: number;
+  /** 滚奏每秒敲几下（v0.16.64；演奏者自己的，没写 = 按乐器的默认，rollDefaultHz）。 */
+  rollHz?: number | null }
 const M = MARK_DEFAULTS;   // 演奏者没写的键用它（= 这一版之前写死的数）
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */
 export interface GainSeg { t0: number; t1: number; dB: number }
@@ -180,7 +182,7 @@ const noteVel = (v: number, art: readonly string[], spec: PerfSpec, gw = 0) => {
 export interface HonorsOf { readonly honors: readonly string[]; readonly connected: boolean }
 /** 连线 / 保持只改「留不留缝」：这位底色本来就不留缝（gapSec = 0）= 写了也不变 → 一样画灰、明说。 */
 const GAP_ONLY = ["tenuto", "slur"];
-export const ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale", "arpeggio"] as const;   // inhale = 呼吸出声（NoteTok.inhale，只跟着 breath）   // swellGrow = 音内 < / <>，swellFade = 音内 >
+export const ALL_MARKS = ["staccato", "accent", "marcato", "sfz", "fp", "tenuto", "breath", "slur", "swellGrow", "swellFade", "stress", "unstress", "ghost", "whisper", "inhale", "arpeggio", "roll"] as const;   // inhale = 呼吸出声（NoteTok.inhale，只跟着 breath）   // swellGrow = 音内 < / <>，swellFade = 音内 >
 export type Mark = (typeof ALL_MARKS)[number];
 /** 这位不认的记号（写在谱上照画、画灰，出声不受影响）：引擎没实现的 + 底色不留缝时的连线 / 保持。 */
 export function ignoredArts(p: HonorsOf | null | undefined, gapSec = 0, canSwell = true): Mark[] {
@@ -199,3 +201,14 @@ export function whyIgnored(p: HonorsOf | null | undefined, m: Mark): "engine" | 
 export function lightMarks(spec: { staccatoGate: number; gapSec?: number; gapShare?: number; breathSec?: number; breathShare?: number; arpeggioSec?: number }): { staccatoGate: number; breath: boolean; gapSec: number; arpeggioSec: number; gapShare: number; breathSec: number; breathShare: number } {
   return { staccatoGate: spec.staccatoGate, breath: true, gapSec: spec.gapSec ?? 0, arpeggioSec: spec.arpeggioSec ?? M.arpeggioSec, gapShare: spec.gapShare ?? M.gapShare, breathSec: spec.breathSec ?? M.breathSec, breathShare: spec.breathShare ?? M.breathShare };
 }
+
+/** 滚奏默认每秒几下（v0.16.64；演奏者没写 rollHz 时用；好不好听归 user 耳朵，能在乐器页调）：key = 敲的是哪个鼓键（整套鼓 = 写的音、固定敲一件 = 那一件的键），
+ *  null = 有音高的乐器（定音鼓 / 弦乐的颤音）。军鼓 20、镲 14、底鼓 12、别的鼓 16、有音高的 14。 */
+export function rollDefaultHz(key: number | null): number {
+  if (key === null) return 14;
+  if (key === 38 || key === 40 || key === 37) return 20;
+  if ([49, 51, 52, 53, 55, 57, 59].includes(key)) return 14;
+  if (key === 35 || key === 36) return 12;
+  return 16;
+}
+export { ROLL_HZ_MIN, ROLL_HZ_MAX };

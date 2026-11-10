@@ -4,9 +4,10 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, tr, type EditorState } from "../src/score/song.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { primSvg, toSvg } from "../src/render/svg.ts";
+import { createTextMeasure } from "../src/render/text/index.ts";
 
 const song = (n: number) => { let st = initState(); for (let i = 0; i < n; i++) st = writeDegree(st, (i % 7) + 1, "near"); return st; };
-const lay = (st: EditorState, tailOpen = false) => engrave(st.song, { width: 420, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s) => s.length * 10, autoBars: true, ...(tailOpen ? { tailOpen: true } : {}) });
+const lay = (st: EditorState, tailOpen = false) => engrave(st.song, { width: 420, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measure: createTextMeasure((s) => s.length * 10), autoBars: true, ...(tailOpen ? { tailOpen: true } : {}) });
 
 describe("排版不认光标（W-17 第 1 刀）", () => {
   it("每个符头 / 符干带 data-tok = 它的 token id；svg 里写成 data-tok 属性", () => {
