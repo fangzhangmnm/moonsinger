@@ -17,8 +17,8 @@ check(await who() === "P1 | P1", "两张纸都是 P1", await who());
 // v0.16.21：交给 / 上面加 / 下面加 搬进声部管理（从歌手名小卡「声部管理…」进，顶上一条 = 这一段的事）
 const openCard = async () => { if (await p.$(".parts-mgr")) { await p.click('.parts-mgr [data-v="close"]'); await p.waitForTimeout(120); } await p.click("#score text.part-name.focus, #score text.part-name >> nth=0"); await p.waitForTimeout(200); await p.click('.track-card [data-v="parts"]'); await p.waitForTimeout(200); };
 await openCard();
-check(await p.$(".parts-mgr [data-v=give]") != null, "声部管理顶上那条有「交给…」");
-await p.click(".parts-mgr [data-v=give]"); await p.waitForTimeout(150);
+check(await p.$(".parts-mgr [data-v^=giveof]") != null, "声部管理顶上那条有「交给…」");
+await p.click(".parts-mgr [data-v^=giveof]"); await p.waitForTimeout(150);
 const giveList = await p.$$eval(".parts-mgr .tc-list .btn", (bs) => bs.map((x) => x.textContent));
 check(giveList.join(",") === "＋ 新声部…", "只有一位歌手：交给… 只有「新声部」", giveList.join(","));
 await p.click(".parts-mgr [data-v=givenew]"); await p.waitForTimeout(300); await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(300);
@@ -30,13 +30,13 @@ const flatP1 = await p.evaluate(() => window.__moonsinger.state() && window.__mo
 await p.locator('[data-v="back"]:visible').first().click(); await p.waitForTimeout(250);
 // 第二张纸：P2 → 交给 P1（P1 不在这张纸上 = 挪回去）
 await openCard();
-await p.click(".parts-mgr [data-v=give]"); await p.waitForTimeout(150);
+await p.click(".parts-mgr [data-v^=giveof]"); await p.waitForTimeout(150);
 await p.click('.parts-mgr [data-v="give:P1"]'); await p.waitForTimeout(200);
 check(await who() === "P1 | P1", "交给 P1：第二张又归 P1", await who());
 check(await notes() === "P1:3 | P1:2", "音还在", await notes());
 // ＋ 加歌手：P2 加到第二张（只这张）
 await openCard();
-await p.click(".parts-mgr [data-v=addbelow]"); await p.waitForTimeout(150);
+await p.click(".parts-mgr [data-v^=addbelow]"); await p.waitForTimeout(150);
 const addList = await p.$$eval(".parts-mgr .tc-list .btn", (bs) => bs.map((x) => x.textContent));
 check(addList.length === 2 && addList[1] === "＋ 新声部…", "加歌手：列出不在这张纸上的那位 + 新声部", addList.join(","));
 await p.click(".parts-mgr .tc-list .btn >> nth=0"); await p.waitForTimeout(200);
@@ -44,7 +44,7 @@ check(await who() === "P1 | P1+P2", "P2 只加在第二张", await who());
 // 第二张：P1 交给 P2（P2 在这张纸上）= 对调
 await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { paper: s.at.paper, part: "P1" } }); }); await p.waitForTimeout(150);
 await openCard();
-await p.click(".parts-mgr [data-v=give]"); await p.waitForTimeout(150);
+await p.click(".parts-mgr [data-v^=giveof]"); await p.waitForTimeout(150);
 const swapLabel = await p.$eval('.parts-mgr [data-v="give:P2"]', (e) => e.textContent);
 check(/对调/.test(swapLabel), "对方在这张纸上：标着「对调」", swapLabel);
 await p.click('.parts-mgr [data-v="give:P2"]'); await p.waitForTimeout(200);

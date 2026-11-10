@@ -1865,12 +1865,22 @@ function addNewPart(paper = D.st.at.paper, giveFrom?: string, place?: { anchor: 
   newPartPending = { paper, ...(giveFrom ? { giveFrom } : {}), ...(place ? { place } : {}) };   // v0.16.35：先选乐器，选了才建（castPick）；不选关掉 = 什么都不建
   openFinder();
 }
-/** 删一位歌手：只删一张纸都不在的（没引用 = 没有音会丢）；休息室里它的角色一起删；能撤销（混音台 / 声部管理共用）。 */
-function deleteSinger(id: string): void {
-  const p = D.st.song.parts.find((x) => x.id === id); if (!p || D.st.song.papers.some((pp) => pp.tracks[id])) return;
+/** 删掉一整个声部（v0.16.84 声部管理重做；user 11-09「这里应该加delete的选项，记得护栏」，11-10 选乙）：
+ *  它是某一段唯一的声部 = 不删，说清是哪几段、怎么办（每段至少一行是全代码的前提；user 11-10「二选乙」）；歌里最后一个声部删不了。
+ *  写了东西 = 红色确认框，写明在哪几段、各几个音；什么都没写 = 直接删并说一句。连同歌词、记号、它的乐器设置（休息室里的角色）一起删，一步撤销全回来。
+ *  混音台 / 声部管理 / 名字小卡共用。done = 删完（或问完、没删）之后接着干什么。 */
+function deleteSinger(id: string, done: () => void = () => {}): void {
+  const song = D.st.song, p = song.parts.find((x) => x.id === id); if (!p) { done(); return; }
   const name = partLabel(id);
-  updateBoth(removePart(D.st, id), withoutRole(D.extras, p.role), { kind: "studio", label: _t("删掉声部「{name}」", { name }) });
-  studio.render(); renderTitle(); info(_t("删掉了「{name}」（撤销能找回来）", { name }));
+  if (song.parts.length <= 1) { info(_t("歌里只剩这一个声部，删不了")); done(); return; }
+  const alone = song.papers.filter((pp) => pp.tracks[id] && Object.keys(pp.tracks).length === 1);
+  if (alone.length) { info(_t("「{name}」是{secs}里唯一的声部，删不了：先给这几段放进别的声部，或者把这几段整段删掉", { name, secs: alone.map((pp) => `「${paperLabel(pp.id)}」`).join("") })); done(); return; }
+  const go = () => { updateBoth(removePart(D.st, id), withoutRole(D.extras, p.role), { kind: "studio", label: _t("删掉声部「{name}」", { name }) }); studio.render(); renderTitle(); };
+  const wrote = song.papers.filter((pp) => { const t = pp.tracks[id]; return t && t.length > headLen(t); });
+  if (!wrote.length) { go(); info(_t("删掉了「{name}」（它没写东西；撤销能找回来）", { name })); done(); return; }
+  const list = wrote.map((pp) => { const n = pp.tracks[id]!.filter((x) => x.kind === "note").length; return n ? _t("「{p}」{n} 个音", { p: paperLabel(pp.id), n }) : _t("「{p}」（没有音，只有休止 / 记号）", { p: paperLabel(pp.id) }); }).join(_t("、"));
+  void askSheet(_t("删掉声部「{name}」？", { name }), _t("它写过的：{list}。连同歌词、记号、它的乐器设置一起删掉（能撤销，一步全找回）。", { list }), _t("删掉"), true)
+    .then((ok) => { if (ok) { go(); info(_t("删掉了「{name}」（撤销能找回来）", { name })); } done(); });
 }
 /** 把歌手 id 挪到 anchor 紧挨着的上面 / 下面（全曲顺序；一步一步 movePart，合租的一家照它的规矩跟着走，挪不动就停）。 */
 function placePart(st: EditorState, id: string, anchor: string, above: boolean): EditorState {
@@ -1883,59 +1893,77 @@ function placePart(st: EditorState, id: string, anchor: string, above: boolean):
 }
 /** 曲段的叫法：起过名 = 名字，没起 = 「第 n 段」。 */
 function paperLabel(id: string): string { const k = D.st.song.papers.findIndex((p) => p.id === id); return D.st.song.papers[k]?.name || _t("第 {n} 段", { n: k + 1 }); }
-/** 从一段里删掉一个声部那一行（v0.16.21；user 11-08「这一段不要它…非常误导，我不知道它是删除，你能用明显的 delete 吗？而且是红色，而且要确认要有护栏」）：
- *  那一行写了东西 = 先问（写几个音、能撤销）；只有谱头 = 不丢东西，直接删；那一段只剩它 = 删不了、说一声。done = 删完（或问完）之后接着干什么。 */
+/** 从一段里删掉一个声部那一行（v0.16.21；user 11-08「这一段不要它…非常误导，我不知道它是删除，你能用明显的 delete 吗？而且是红色，而且要确认要有护栏」；
+ *  11-10「拿掉应该也是删除吧？…你必须得讲明白它是删除」）：那一行谱头之外写了任何东西 = 先问（写几个音、再放回来是空的、能撤销）；只有谱头 = 直接删并说一句；
+ *  那一段只剩它 = 删不了、说清出路。done = 删完（或问完）之后接着干什么。 */
 function dropFromSection(paperId: string, partId: string, done: () => void): void {
   const paper = D.st.song.papers.find((p) => p.id === paperId), t = paper?.tracks[partId]; if (!paper || !t) return;
-  if (Object.keys(paper.tracks).length <= 1) { info(_t("这一段只剩它了，删不了")); done(); return; }
-  const go = () => { update(removeTrack(D.st, paperId, partId)); renderTitle(); };
-  const notes = t.filter((x) => x.kind === "note").length, wrote = t.some((x) => x.kind === "note" || x.kind === "rest");
-  if (!wrote) { go(); done(); return; }
   const name = partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.id === partId)] ?? "", p = paperLabel(paperId);
-  void askSheet(_t("从「{p}」删掉「{name}」？", { p, name }), notes ? _t("它在这一段写的 {n} 个音，连同歌词、记号一起删掉（能撤销）。", { n: notes }) : _t("它在这一段写的东西一起删掉（能撤销）。"), _t("删掉"), true)
+  if (Object.keys(paper.tracks).length <= 1) { info(_t("「{p}」只有「{name}」这一个声部，删不了：这一段整段不要 = 纸顶「⋯」里删这一段", { p, name })); done(); return; }
+  const go = () => { update(removeTrack(D.st, paperId, partId)); renderTitle(); };
+  const notes = t.filter((x) => x.kind === "note").length;
+  if (t.length <= headLen(t)) { go(); info(_t("已从「{p}」删掉「{name}」（它在这一段没写东西）", { p, name })); done(); return; }
+  void askSheet(_t("从「{p}」删掉「{name}」？", { p, name }), (notes ? _t("它在这一段写的 {n} 个音，连同歌词、记号一起删掉。", { n: notes }) : _t("它在这一段写的东西一起删掉。")) + _t("再把它放进这一段是一行空的；要找回只能撤销。"), _t("删掉"), true)
     .then((ok) => { if (ok) go(); done(); });
 }
-/** 声部管理（v0.16.19 搬家 D；user 11-07「第四类就是上移下移管理，然后他们也能系统的弄一下」「单独一页其实也是我比较想要的，先按这个做，不舒服我以后再说」）：
- *  所有声部排一列——改名（谱上写的）、上下挪、在哪几段（点一段 = 放进；拿出 = 删掉那一段写的，先问）、选择歌手、一段都不在的能删（能撤销）、＋ 新声部。
- *  从歌手名进来（ctx = 哪一段的哪个声部；v0.16.21，user 11-08「这一段上面加，下面加。交给和这一段不要它，能不能全都收到声部管理里面去？」）：顶上一条「「B」段 · 名字」= 上面加 / 下面加 / 交给… / 从这一段删掉（红）。 */
+/** 声部管理（v0.16.19 搬家 D；v0.16.84 重做，user 11-09「parts应该比现状要compact很多，这样有十几个乐器一屏就能管理看完」「parts也很乱，没法选其他的，然后delete也不对」）：
+ *  一个声部一行 = 色点 · 名字（点了就能改）· 乐器（点 = 换乐器）· 每一段一个小格（亮 = 这一段有它；点暗的 = 放进、点亮的 = 从那一段删掉，先问）· ⋯。
+ *  ⋯ = 这一行下面展开一排：上移 / 下移 / 在上面加… / 在下面加… / 「B」段交给… / 乐器设置… / 从「B」段删掉 / 删掉声部…（「B」= 光标在的那一段）。
+ *  挂在别人谱线上的（合租）缩进排在主人下面。ctx = 从哪一段的哪个声部进来的：那一行亮着、滚到看得见。设计稿 ai-docs/20261110-wave2-four-designs.md 第三节。 */
 function openPartsManager(ctx?: { paper: string; part: string }): void {
   ui.close();
   const box = document.createElement("div"); box.className = "offer parts-mgr";
-  let page: "main" | "give" | "add" = "main", above = false;
+  let page: "main" | "give" | "add" = "main", above = false, subject = ctx?.part ?? "", openRow: string | null = ctx?.part ?? null, scrolled = false;   // 从某个声部进来 = 它那一行的 ⋯ 先展开
+  const secId = (): string => { const want = ctx?.paper ?? D.st.at.paper; return D.st.song.papers.some((p) => p.id === want) ? want : D.st.song.papers[0].id; };
+  const chipLabel = (id: string, k: number): string => D.st.song.papers[k]?.name || String(k + 1);
   const draw = () => {
     const song = D.st.song, labels = partLabels(song, D.extras), cols = partColorIndices(song.parts.map((p) => roleSound(D.extras, p.role)));
-    const c = ctx, paper = c ? song.papers.find((pp) => pp.id === c.paper) : undefined, me = c && paper?.tracks[c.part] ? song.parts.find((p) => p.id === c.part) : undefined;
+    const sec = secId(), secName = esc(paperLabel(sec)), here = song.papers.find((pp) => pp.id === sec)!.tracks;
     const lab = (id: string) => esc(labels[song.parts.findIndex((p) => p.id === id)] ?? id);
-    let strip = "";
-    if (paper && me) {
-      const here = paper.tracks, label = lab(me.id), where = _t("「{p}」 · {label}", { p: esc(paperLabel(paper.id)), label });
-      if (page === "main") strip = `<div class="pm-here"><div class="pm-k">${where}</div><div class="pm-acts">` +
-        `<button class="btn" data-v="addabove" title="${_t("在这一行上面加一个声部（已有的或新的；只加在这一段）")}">${_t("＋ 上面加")}</button><button class="btn" data-v="addbelow" title="${_t("在这一行下面加一个声部（已有的或新的；只加在这一段）")}">${_t("＋ 下面加")}</button>` +
-        `<button class="btn" data-v="give" title="${_t("只有这一段：这一行的音、歌词、记号原样交给另一个声部演（用它的乐器和混音台那一条）")}">${_t("交给…")}</button>` +
-        (Object.keys(here).length > 1 ? `<button class="btn danger" data-v="drop" title="${_t("这一段里它写的东西一起删掉（先问；能撤销）。别的段照旧")}">${_t("从这一段删掉")}</button>` : "") + `</div></div>`;
-      else {
-        const list = page === "give" ? song.parts.filter((p) => p.id !== me.id) : song.parts.filter((p) => !here[p.id]);
-        strip = `<div class="pm-here"><button class="btn pm-back" data-v="back">‹ ${page === "give" ? _t("「{label}」这一段交给…", { label }) : above ? _t("在「{label}」上面加", { label }) : _t("在「{label}」下面加", { label })}</button>` +
-          `<div class="tc-list">${list.map((p) => `<button class="btn cand" data-v="${page}:${esc(p.id)}">${lab(p.id)}${page === "give" && here[p.id] ? `<small>${_t("（对调）")}</small>` : ""}</button>`).join("")}` +
-          `<button class="btn cand" data-v="${page}new">${_t("＋ 新声部…")}</button></div>` +
-          `<div class="tc-hint">${page === "give" ? _t("只改这一段：音、歌词、记号都不动，换一个声部唱；跨段按声部接起来。对方在这一段已经有一行 = 两行对调。") : _t("只加在这一段（别的段照旧）。")}</div></div>`;
-      }
+    if (page !== "main") {
+      const me = song.parts.find((p) => p.id === subject); if (!me || !here[me.id]) page = "main";
     }
-    box.innerHTML = `<div class="offer-card pm-card"><div class="offer-title">${_t("声部管理")}<small>${_t("每个声部一行：改名、上下挪、在哪几段；一段都不在的能删")}</small></div>${strip}<div class="pm-list">` +
-      song.parts.map((p, k) => {
-        const on = song.papers.some((pp) => pp.tracks[p.id]), who = activeCandidateName(D.extras, p.role);
-        return `<div class="pm-row${me?.id === p.id ? " is-here" : ""}" data-pid="${esc(p.id)}"><div class="pm-top"><span class="pm-dot" style="background:${TAB20[cols[k]]}"></span>` +
-          `<input class="pm-name" data-pid="${esc(p.id)}" value="${esc(labels[k] ?? p.id)}" spellcheck="false" autocomplete="off" title="${_t("谱上写的名字")}" />` +
-          `<button class="btn" data-v="up:${esc(p.id)}"${k === 0 ? " disabled" : ""} title="${_t("往上挪")}">↑</button><button class="btn" data-v="down:${esc(p.id)}"${k === song.parts.length - 1 ? " disabled" : ""} title="${_t("往下挪")}">↓</button></div>` +
-          `<div class="pm-sub"><span class="pm-who">${esc(who ?? _t("没人上场"))}</span>` +
-          (on ? `<button class="btn" data-v="swap:${esc(p.id)}">${_t("换乐器…")}</button>` : `<button class="btn danger" data-v="del:${esc(p.id)}" title="${_t("一段都不在：删掉这个声部（能撤销）")}">${_t("删掉")}</button>`) + `</div>` +
-          `<div class="pm-papers"><span class="pm-k">${_t("在哪几段")}</span>${song.papers.map((pp) => `<button class="btn chip${pp.tracks[p.id] ? " is-on" : ""}" data-v="pp:${esc(pp.id)}:${esc(p.id)}" title="${pp.tracks[p.id] ? _t("点 = 从这一段删掉（写了东西先问）") : _t("点 = 放进这一段")}">${esc(paperLabel(pp.id))}</button>`).join("")}</div></div>`;
-      }).join("") + `</div><div class="offer-btns"><button class="btn" data-v="new" title="${_t("新声部只加在光标这一段（别的段照旧），加完挑乐器")}">${_t("＋ 新声部")}</button><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
+    if (page !== "main") {
+      const label = lab(subject), list = page === "give" ? song.parts.filter((p) => p.id !== subject) : song.parts.filter((p) => !here[p.id]);
+      box.innerHTML = `<div class="offer-card pm-card"><div class="pm-here"><button class="btn pm-back" data-v="back">‹ ${page === "give" ? _t("「{p}」段的「{label}」交给…", { p: secName, label }) : above ? _t("在「{label}」上面加", { label }) : _t("在「{label}」下面加", { label })}</button>` +
+        `<div class="tc-list">${list.map((p) => `<button class="btn cand" data-v="${page}:${esc(p.id)}">${lab(p.id)}${page === "give" && here[p.id] ? `<small>${_t("（对调）")}</small>` : ""}</button>`).join("")}` +
+        `<button class="btn cand" data-v="${page}new">${_t("＋ 新声部…")}</button></div>` +
+        `<div class="tc-hint">${page === "give" ? _t("只改这一段：音、歌词、记号都不动，换一个声部唱；跨段按声部接起来。对方在这一段已经有一行 = 两行对调。") : _t("只加在这一段（别的段照旧）。")}</div></div></div>`;
+      return;
+    }
+    const row = (p: (typeof song.parts)[number], k: number): string => {
+      const who = activeCandidateName(D.extras, p.role), isOpen = openRow === p.id, inSec = !!here[p.id];
+      const chips = song.papers.map((pp, j) => { const on = !!pp.tracks[p.id], full = esc(paperLabel(pp.id));
+        return `<button class="btn chip${on ? " is-on" : ""}${pp.id === sec ? " is-cur" : ""}" data-v="pp:${esc(pp.id)}:${esc(p.id)}" title="${on ? _t("从「{p}」删掉（它在这一段写的一起删，先问）", { p: full }) : _t("放进「{p}」（一行空的）", { p: full })}">${esc(chipLabel(pp.id, j))}</button>`; }).join("");
+      const main = `<div class="pm-row${(ctx?.part ?? D.st.at.part) === p.id ? " is-here" : ""}${p.host ? " is-tenant" : ""}${isOpen ? " is-open" : ""}" data-pid="${esc(p.id)}">` +
+        `<span class="pm-dot" style="background:${TAB20[cols[k]]}"></span>` +
+        `<input class="pm-name" data-pid="${esc(p.id)}" value="${esc(labels[k] ?? p.id)}" spellcheck="false" autocomplete="off" title="${_t("谱上写的名字（点了就能改）")}" />` +
+        `<button class="btn pm-inst" data-v="swap:${esc(p.id)}" title="${_t("换乐器（进乐器目录）")}"><span>${esc(who ?? _t("没人上场"))}</span></button>` +
+        `<div class="pm-chips">${chips}</div>` +
+        `<button class="btn pm-more${isOpen ? " is-on" : ""}" data-v="more:${esc(p.id)}" title="${_t("这一行的更多：上下挪、加、交给、乐器设置、删除")}" aria-label="${_t("更多")}">⋯</button></div>`;
+      if (!isOpen) return main;
+      const id = esc(p.id);
+      const acts = `<button class="btn" data-v="up:${id}"${k === 0 ? " disabled" : ""}>${_t("上移")}</button><button class="btn" data-v="down:${id}"${k === song.parts.length - 1 ? " disabled" : ""}>${_t("下移")}</button>` +
+        (inSec ? `<button class="btn" data-v="addabove:${id}" title="${_t("在这一行上面加一个声部（已有的或新的；只加在这一段）")}">${_t("在上面加…")}</button><button class="btn" data-v="addbelow:${id}" title="${_t("在这一行下面加一个声部（已有的或新的；只加在这一段）")}">${_t("在下面加…")}</button>` +
+          `<button class="btn" data-v="giveof:${id}" title="${_t("只有这一段：这一行的音、歌词、记号原样交给另一个声部演（用它的乐器和混音台那一条）")}">${_t("「{p}」段交给…", { p: secName })}</button>`
+          : `<button class="btn" data-v="pp:${esc(sec)}:${id}">${_t("放进「{p}」", { p: secName })}</button>`) +
+        `<button class="btn" data-v="inst:${id}">${_t("乐器设置…")}</button>` +
+        (inSec ? `<button class="btn danger" data-v="pp:${esc(sec)}:${id}" title="${_t("它在这一段写的一起删掉（先问；能撤销）。别的段照旧")}">${_t("从「{p}」删掉", { p: secName })}</button>` : "") +
+        `<button class="btn danger" data-v="delpart:${id}" title="${_t("整个声部删掉：每一段里它写的、它的乐器设置一起删（先问；能撤销）")}">${_t("删掉声部…")}</button>`;
+      return main + `<div class="pm-acts">${acts}</div>`;
+    };
+    // 合租的房客排在主人下面（只是显示顺序；真正的顺序还是 Song.parts）
+    const order: number[] = []; song.parts.forEach((p, k) => { if (!p.host || !song.parts.some((h) => h.id === p.host)) { order.push(k); song.parts.forEach((q, j) => { if (q.host === p.id) order.push(j); }); } });
+    box.innerHTML = `<div class="offer-card pm-card"><div class="offer-title">${_t("声部管理")}<small>${_t("小格 = 在哪几段（亮 = 有；圈着的 = 光标这一段）；⋯ = 上下挪、加、交给、删除")}</small></div>` +
+      `<div class="pm-list">${order.map((k) => row(song.parts[k], k)).join("")}</div>` +
+      `<div class="offer-btns"><button class="btn" data-v="new" title="${_t("新声部只加在光标这一段（别的段照旧），加完挑乐器")}">${_t("＋ 新声部")}</button><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
+    if (!scrolled) { scrolled = true; requestAnimationFrame(() => box.querySelector(".pm-row.is-here")?.scrollIntoView({ block: "nearest" })); }
   };
   draw(); document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); };
   ui.open({ k: "sheet", close, redraw: draw });
-  const reopen = () => openPartsManager(ctx);   // 问完（askSheet 会先收起这一页）回来接着管
+  const reopen = () => openPartsManager({ paper: secId(), part: subject || D.st.at.part });   // 问完（askSheet 会先收起这一页）回来接着管
+  const focusOn = (id: string): boolean => { const pp = D.st.song.papers.find((x) => x.id === secId() && x.tracks[id]) ?? D.st.song.papers.find((x) => x.tracks[id]); if (!pp) return false; update(setFocus(D.st, pp.id, id)); return true; };
   box.addEventListener("change", (e) => {   // 改名 = 角色名（谱上写的）
     const t = e.target as HTMLInputElement, pid = t.dataset.pid; if (!pid || !t.classList.contains("pm-name")) return;
     const p = D.st.song.parts.find((x) => x.id === pid), n = t.value.trim();
@@ -1948,26 +1976,26 @@ function openPartsManager(ctx?: { paper: string; part: string }): void {
     if (e.target === box || v === "close") { close(); return; }
     if (!v) return;
     if (v === "new") { close(); addNewPart(D.st.at.paper); return; }
-    // 顶上那一条（这一段的事）
-    if (ctx) {
-      const { paper, part } = ctx;
-      if (v === "give" || v === "addabove" || v === "addbelow") { page = v === "give" ? "give" : "add"; above = v === "addabove"; draw(); return; }
-      if (v === "back") { page = "main"; draw(); return; }
-      if (v === "drop") { close(); dropFromSection(paper, part, reopen); return; }
-      if (v.startsWith("give:")) { const to = v.slice(5), name = partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.id === to)] ?? ""; update(rebindTrack(D.st, paper, part, to)); renderTitle(); info(_t("这一段的这一行交给了「{name}」", { name })); ctx = { paper, part: to }; page = "main"; draw(); return; }
-      if (v === "givenew") { close(); addNewPart(paper, part); return; }
-      if (v.startsWith("add:")) { const id = v.slice(4); update(placePart(addTrack(D.st, paper, id), id, part, above)); renderTitle(); page = "main"; draw(); return; }   // 已有的声部放进这一段，挨着这一行的上 / 下（全曲顺序跟着挪）
-      if (v === "addnew") { close(); addNewPart(paper, undefined, { anchor: part, above }); return; }
-    }
+    const sec = secId();
+    // 子页：交给 / 加（对象 = subject，这一段 = sec）
+    if (v === "back") { page = "main"; draw(); return; }
+    if (v.startsWith("give:") && page === "give") { const to = v.slice(5), name = partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.id === to)] ?? ""; update(rebindTrack(D.st, sec, subject, to)); renderTitle(); info(_t("这一段的这一行交给了「{name}」", { name })); subject = to; openRow = to; page = "main"; draw(); return; }
+    if (v === "givenew") { close(); addNewPart(sec, subject); return; }
+    if (v.startsWith("add:") && page === "add") { const id = v.slice(4); update(placePart(addTrack(D.st, sec, id), id, subject, above)); renderTitle(); page = "main"; draw(); return; }   // 已有的声部放进这一段，挨着这一行的上 / 下（全曲顺序跟着挪）
+    if (v === "addnew") { close(); addNewPart(sec, undefined, { anchor: subject, above }); return; }
     const [k, a, b] = v.split(":");
+    if (k === "more") { openRow = openRow === a ? null : a; subject = a; draw(); return; }
+    if (k === "giveof" || k === "addabove" || k === "addbelow") { subject = a; page = k === "giveof" ? "give" : "add"; above = k === "addabove"; draw(); return; }
     if (k === "up" || k === "down") { update(movePart(D.st, a, k === "up" ? -1 : 1)); renderTitle(); draw(); return; }
     if (k === "pp") {
       const paper = D.st.song.papers.find((pp) => pp.id === a); if (!paper) return;
+      subject = b;
       if (paper.tracks[b]) { close(); dropFromSection(a, b, reopen); return; }
       update(addTrack(D.st, a, b)); renderTitle(); draw(); return;
     }
-    if (k === "swap") { const pp = D.st.song.papers.find((x) => x.id === D.st.at.paper && x.tracks[a]) ?? D.st.song.papers.find((x) => x.tracks[a]); if (!pp) return; close(); update(setFocus(D.st, pp.id, a)); openFinder(); return; }
-    if (k === "del") { deleteSinger(a); draw(); return; }
+    if (k === "swap") { if (!focusOn(a)) return; close(); openFinder(); return; }
+    if (k === "inst") { if (!focusOn(a)) return; close(); openInstPage(); return; }
+    if (k === "delpart") { subject = ""; close(); deleteSinger(a, reopen); return; }
   });
 }
 /** 纸的菜单（纸顶「⋯」）：改曲段名、挪、在后面加一张、这张纸上加 / 不加某个声部、删这张纸。 */
@@ -2051,7 +2079,8 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     box.innerHTML =
       `<button class="tc-inst" data-v="swap" title="${_t("换乐器：进乐器目录（右边的键盘能试；顶上是这首歌的乐器预设），选好就换上、回到谱")}"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? _t("{who} 在演", { who: esc(who) }) : _t("没人上场")))(activeCandidateName(D.extras, me.role))}</small></span><span class="tc-go">${_t("换乐器 ›")}</span></button>` +
       `<div class="tc-row"><button class="btn" data-v="inst" title="${_t("这位怎么演（响度、力度、唱法…）和谱上写什么名字：全屏一页，右边的键盘能试")}">${_t("乐器设置…")}</button>` +
-      `<button class="btn" data-v="parts" title="${_t("所有声部排一列：改名、上下挪、在哪几段；这一段上面 / 下面加、交给别的声部、从这一段删掉")}">${_t("声部管理…")}</button></div>` +
+      `<button class="btn" data-v="parts" title="${_t("所有声部排一列：改名、上下挪、在哪几段；这一段上面 / 下面加、交给别的声部、从这一段删掉")}">${_t("声部管理…")}</button>` +
+      `<button class="btn danger" data-v="delpart" title="${_t("整个声部删掉：每一段里它写的、它的乐器设置一起删（先问；能撤销）")}">${_t("删掉声部…")}</button></div>` +
       ((m) => { if (!m || !m.size) return ""; const xs = [...m.values()], first = xs[0];   // 唱不出来的歌词：几个、为什么（纪律：画灰 + 明说）
         return `<div class="tc-warn">${first.why === "notSung" ? esc(lyricWhyText(first, roleName(D.extras, me.role))) : _t("有 {n} 个字唱不出来（谱上画灰）：{first}{x}", { n: xs.length, first: esc(lyricWhyText(first, roleName(D.extras, me.role))), x: xs.some((x) => x.why !== first.why) ? _t(" 等") : "" })}</div>`; })(lyricMutes().get(me.id));
   };
@@ -2076,6 +2105,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     if (v === "inst") { close(); openInstPage(); return; }
     if (v === "swap") { close(); openFinder(); return; }   // 从谱上开的：选好 / 关了回谱
     if (v === "parts") { close(); openPartsManager({ paper: D.st.at.paper, part: me.id }); return; }
+    if (v === "delpart") { close(); deleteSinger(me.id); return; }
   });
 }
 

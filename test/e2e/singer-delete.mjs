@@ -10,9 +10,9 @@ await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitF
 for (let i = 0; i < 2; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
 // 加一位新歌手（只在这张纸上）
 await p.click("#score text.part-name >> nth=0"); await p.waitForTimeout(200);
-check(!(await p.$('.track-card [data-v="delpart"]')), "谱上的歌手牌里没有「删掉」");
+check(!!(await p.$('.track-card [data-v="delpart"].danger')), "谱上的歌手牌里有红色的「删掉声部…」（v0.16.84；user 11-09「这里应该加delete的选项，记得护栏」）");
 await p.click('.track-card [data-v="parts"]'); await p.waitForTimeout(200);   // v0.16.21：下面加 在声部管理顶上那条
-await p.click(".parts-mgr [data-v=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(300); await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(300);
+await p.click(".parts-mgr [data-v^=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(300); await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(300);
 const parts = () => p.evaluate(() => window.__moonsinger.state().song.parts.map((x) => x.id).join(","));
 check((await parts()).split(",").length === 2, "两位歌手", await parts());
 await p.keyboard.press("Escape"); await p.waitForTimeout(100);
@@ -27,7 +27,7 @@ await p.evaluate(() => { const m = window.__moonsinger, st = m.state(), p2 = st.
 await p.waitForTimeout(150);
 await p.click("#score text.part-name >> nth=1"); await p.waitForTimeout(200);
 await p.click('.track-card [data-v="parts"]'); await p.waitForTimeout(200);
-await p.click('.parts-mgr [data-v="drop"]'); await p.waitForTimeout(250);   // 只有谱头 = 不丢东西，不问
+await p.click('.parts-mgr .pm-acts .btn.danger[data-v^="pp:"]'); await p.waitForTimeout(250);   // 从这一段删掉：只有谱头 = 不丢东西，不问（v0.16.84：在这一行的 ⋯ 里，从名字进来先展开）
 if (await p.$(".parts-mgr")) { await p.click('.parts-mgr [data-v="close"]'); await p.waitForTimeout(150); }
 // 从纸上去掉一位 = 能撤销（v0.10.30；user「为什么删纸不能undo，然后删track也是希望删track删纸可以undo」）
 { const trk = () => p.evaluate(() => { const st = window.__moonsinger.state(); return Object.keys(st.song.papers[0].tracks).length; });

@@ -50,7 +50,7 @@ check((await tiles()).join("|") === "Square Lead 2*", "删掉 = 那一位没了"
 await p.keyboard.press("Escape"); await p.waitForTimeout(250);
 // 另一个声部：看得见「在 X 上」，点了 = 拷一份过来，原声部不动
 await p.click("#score text.part-name >> nth=0"); await p.waitForTimeout(200); await p.click('.track-card [data-v="parts"]'); await p.waitForTimeout(200);
-await p.click(".parts-mgr [data-v=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(400);
+await p.click(".parts-mgr [data-v^=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(400);
 await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(400);   // 新声部先选小月相
 const nParts = await p.evaluate(() => window.__moonsinger.state().song.parts.length);
 check(nParts === 2, "第二个声部建好了", String(nParts));

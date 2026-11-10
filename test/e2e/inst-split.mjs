@@ -13,7 +13,7 @@ const nParts = () => p.evaluate(() => window.__moonsinger.state().song.parts.len
 const finderOpen = () => p.$eval(".finder", (e) => !e.hidden);
 const toasts = () => p.$$eval(".notice-stack .toast, .notice, [role=alert]", (es) => es.map((e) => e.textContent ?? ""));
 const openNew = async () => { await p.click("#score text.part-name >> nth=0"); await p.waitForTimeout(200); await p.click('.track-card [data-v="parts"]'); await p.waitForTimeout(200);
-  await p.click(".parts-mgr [data-v=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(400); };
+  await p.click(".parts-mgr [data-v^=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(400); };
 
 // ① 新声部 = 先开目录，不选退出 = 什么都不建
 await openNew();
@@ -55,7 +55,7 @@ await p.evaluate(() => { const a = document.querySelectorAll(".pad-key[data-k]")
 await p.waitForTimeout(200);
 const after = await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").length);
 check(after === before + 1, "几乎同时按两个键：只写了一个", `${before} → ${after}`);
-check((await toasts()).some((t) => /一次只出一个音/.test(t)), "说了一句为什么（换钢琴这类乐器能写和弦）", (await toasts()).join(" | "));
+check(!(await toasts()).some((t) => /第二个键没写/.test(t)), "后按的算数（v0.16.77 起，user 11-09 同意）= 第二个键顶掉第一个，不再说「没写」", (await toasts()).join(" | "));   // 2026-11-10 Opus 5.5：原来查的那句提示随「后按的算数」不再出现
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\ninst-split: ${pass} passed, ${fail} failed`);

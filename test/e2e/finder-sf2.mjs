@@ -66,7 +66,7 @@ await p.keyboard.press("Escape"); await p.waitForTimeout(250);
 // 新声部：选 .sf2 里的一件 = 选了才建
 const n0 = await nParts();
 await p.click("#score text.part-name >> nth=0"); await p.waitForTimeout(200); await p.click('.track-card [data-v="parts"]'); await p.waitForTimeout(200);
-await p.click(".parts-mgr [data-v=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(400);
+await p.click(".parts-mgr [data-v^=addbelow]"); await p.waitForTimeout(150); await p.click(".parts-mgr [data-v=addnew]"); await p.waitForTimeout(400);
 await openFile();
 check(await nParts() === n0, "新声部：打开文件不算选了乐器（还没建）", String(await nParts()));
 await p.click('.finder-own .prov[data-p="sf2|0:80"] [data-v="cast"]'); await p.waitForTimeout(500);

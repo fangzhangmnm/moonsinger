@@ -850,23 +850,28 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .parts-mgr .pm-card { width: min(560px, 100%); max-height: calc(100vh - 32px); display: flex; flex-direction: column; }
 .pm-card .offer-title small { display: block; font-weight: 400; font-size: 12px; color: var(--muted); margin-top: 2px; }
 .pm-list { overflow: auto; min-height: 0; flex: 1; margin: 6px -4px 12px; padding: 0 4px; }
-.pm-row { border: 1px solid var(--line); border-radius: 9px; padding: 8px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px; }
-.pm-top, .pm-sub, .pm-papers { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.pm-row { display: grid; grid-template-columns: 10px minmax(4.5em, 8em) minmax(4.5em, 9em) minmax(0, 1fr) 34px; align-items: center; gap: 6px; height: 40px; padding: 0 6px; border: 1px solid transparent; border-bottom-color: var(--line); }
+/* v0.16.84 声部管理重做（user 11-09「parts应该比现状要compact很多，这样有十几个乐器一屏就能管理看完」）：一个声部一行 */
+.pm-row.is-tenant { padding-left: 22px; }
+.pm-row.is-open { background: var(--panel); border-bottom-color: transparent; }
 .pm-dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
-.pm-name { flex: 1; min-width: 6em; height: 32px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; padding: 0 8px; }
-.pm-top .btn, .pm-sub .btn { height: 32px; min-width: 32px; padding: 0 10px; font-size: 13px; }
-.pm-who { flex: 1; min-width: 0; font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pm-name { min-width: 0; height: 30px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--ink); font: inherit; font-size: 14px; padding: 0 6px; text-overflow: ellipsis; }
+.pm-name:hover, .pm-name:focus { border-color: var(--line); background: var(--panel); }
+.pm-inst { min-width: 0; height: 30px; padding: 0 8px; font-size: 13px; justify-content: flex-start; }
+.pm-inst span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pm-chips { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; min-width: 0; }
+.pm-chips .btn.chip { flex: none; height: 28px; min-width: 28px; padding: 0 8px; font-size: 13px; }
+.pm-chips .btn.chip.is-cur { box-shadow: 0 0 0 2px var(--accent); }
+.pm-more { height: 30px; width: 34px; padding: 0; font-size: 16px; }
+.pm-acts { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; padding: 6px 6px 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.pm-acts .btn { height: 34px; font-size: 13px; padding: 0 8px; }
 .pm-k { font-size: 12px; color: var(--muted); margin-right: 2px; }
-.pm-papers .btn.chip { height: 28px; padding: 0 10px; font-size: 13px; }
-/* 从歌手名进来：顶上一条 = 这一段的事（v0.16.21）；四颗钮排成等宽格子，不按字长折行（user 11-08 不要按钮堆） */
 .pm-here { border: 1px solid #b8cde8; background: var(--accent-soft); border-radius: 9px; padding: 8px; margin: 8px 0 4px; display: flex; flex-direction: column; gap: 6px; }
 .pm-here .pm-k { font-size: 13px; color: var(--ink); font-weight: 600; }
-.pm-acts { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; }
-.pm-acts .btn { height: 34px; font-size: 13px; padding: 0 8px; }
 .pm-here .pm-back { align-self: flex-start; height: 32px; font-size: 13px; border-color: transparent; background: transparent; padding: 0 4px; }
 .pm-here .tc-list { padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
 .pm-here .tc-hint { max-width: none; padding: 0 2px; }
-.pm-row.is-here { border-color: var(--accent); }
+.pm-row.is-here { border-color: var(--accent); border-radius: 8px; }
 .inst-page { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--bg); }
 .inst-page[hidden] { display: none; }
 .ip-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--panel); min-width: 0; }
