@@ -177,6 +177,7 @@ export const S = {
   "「{p}」放出来了（撤销能再藏起来）": { en: "“{p}” is back (undo hides it again)" },
   "「{extras}」是单声乐器，这个声部叠不了音": { en: "“{extras}” is a monophonic instrument, so this part can't stack notes" },
   "光标前面还没有音": { en: "No note before the cursor yet" },
+  "▾ 还有 {n} 个": { en: "▾ {n} more" },
   "「{who}」一次只出一个音：几乎同时按下的第二个键没写。要写和弦，给这个声部换钢琴这类乐器": { en: "“{who}” plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
   "这首歌定稿了，{what}改不了：先在三条杠里「改稿」（定稿的 mp3 会作废），再改。": { en: "This song is finalized, so {what} can't be changed: first choose “Revise” in the ☰ menu (the final mp3 is discarded), then edit." },
   "没有可撤销的": { en: "Nothing to undo" },

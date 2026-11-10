@@ -2891,6 +2891,7 @@ var S = {
   "\u300C{p}\u300D\u653E\u51FA\u6765\u4E86\uFF08\u64A4\u9500\u80FD\u518D\u85CF\u8D77\u6765\uFF09": { en: "\u201C{p}\u201D is back (undo hides it again)" },
   "\u300C{extras}\u300D\u662F\u5355\u58F0\u4E50\u5668\uFF0C\u8FD9\u4E2A\u58F0\u90E8\u53E0\u4E0D\u4E86\u97F3": { en: "\u201C{extras}\u201D is a monophonic instrument, so this part can't stack notes" },
   "\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3": { en: "No note before the cursor yet" },
+  "\u25BE \u8FD8\u6709 {n} \u4E2A": { en: "\u25BE {n} more" },
   "\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668": { en: "\u201C{who}\u201D plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
   "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C{what}\u6539\u4E0D\u4E86\uFF1A\u5148\u5728\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F1A\u4F5C\u5E9F\uFF09\uFF0C\u518D\u6539\u3002": { en: "This song is finalized, so {what} can't be changed: first choose \u201CRevise\u201D in the \u2630 menu (the final mp3 is discarded), then edit." },
   "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
@@ -5074,7 +5075,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.78-2026-11-09";
+var APP_VERSION = "v0.16.79-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -16607,10 +16608,14 @@ var Pad = class {
     this.el.style.setProperty("--cols", String(this.cols));
     this.el.style.setProperty("--rows", String(rows));
     if (!this.el.querySelector(".pad-grid")) {
-      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="${_t("\u5149\u6807\u5DE6\u79FB\uFF08{p}\uFF09", { p: hint("left") })}">\u2190</button><button class="btn" data-caret="1" title="${_t("\u5149\u6807\u53F3\u79FB\uFF08{p}\uFF09", { p: hint("right") })}">\u2192</button><button class="btn wk" data-cmd="rest" title="${_t("\u4F11\u6B62\uFF08{p}\uFF09", { p: hint("rest") })}"><span>0</span><small>${_t("\u4F11\u6B62")}</small></button><button class="btn wk" data-cmd="bar" title="${_t("\u5C0F\u8282\u7EBF\uFF08{p}\uFF09", { p: hint("bar") })}"><span>|</span><small>${_t("\u5C0F\u8282\u7EBF")}</small></button><button class="btn wk breath" data-breath="1" title="${_t("\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u5C0F\u6708\u76F8\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09")}"><span class="smufl">\uE4CE</span><small>${_t("\u547C\u5438")}</small></button><button class="btn wk accshift" data-accshift="1" title="${_t("\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}")}"><span class="ag"></span><small>${_t("\u5347\u964D")}</small></button><button class="btn wk stack" data-stack="1" title="${_t("\u53E0\uFF08\u50CF Caps Lock\uFF09\uFF1A\u6309\u4E00\u4E0B = \u9009\u4E2D\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u6765\u6539\u2014\u2014\u6309\u97F3\u952E\u53E0\u4E0A / \u62FF\u6389\uFF08\u6700\u540E\u4E00\u4E2A\u62FF\u6389 = \u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF0C\u4F11\u6B62\u4E0A\u6309 = \u53D8\u56DE\u97F3\uFF09\u3001\u2014 \u957F\u4E00\u6B65\u3001\u232B \u77ED\u4E00\u6B65\u3001\u2190 \u2192 \u6362\u524D\u540E\u7684\u97F3\uFF1B\u518D\u6309\u4E00\u4E0B = \u56DE\u5230\u5B83\u540E\u9762\u63A5\u7740\u5199\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86")}"><span>${iconHtml("note-stack")}</span><small>${_t("\u53E0\u97F3")}</small></button><button class="btn wk half" data-half="1" title="${_t("\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199")}"><span>/2</span><small>${_t("\u51CF\u534A")}</small></button><button class="btn wk" data-cmd="extend" title="${_t("\u62C9\u957F\u4E00\u4EFD\uFF08{p}\uFF09", { p: hint("extend") })}"><span>\u2014</span><small>${_t("\u62C9\u957F")}</small></button><button class="btn" data-cmd="backspace" title="${_t("\u9000\u683C\uFF08{p}\uFF09", { p: hint("backspace") })}"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div>`;
+      this.el.innerHTML = `<div class="pad-head"></div><div class="pad-tools writes"><button class="btn" data-caret="-1" title="${_t("\u5149\u6807\u5DE6\u79FB\uFF08{p}\uFF09", { p: hint("left") })}">\u2190</button><button class="btn" data-caret="1" title="${_t("\u5149\u6807\u53F3\u79FB\uFF08{p}\uFF09", { p: hint("right") })}">\u2192</button><button class="btn wk" data-cmd="rest" title="${_t("\u4F11\u6B62\uFF08{p}\uFF09", { p: hint("rest") })}"><span>0</span><small>${_t("\u4F11\u6B62")}</small></button><button class="btn wk" data-cmd="bar" title="${_t("\u5C0F\u8282\u7EBF\uFF08{p}\uFF09", { p: hint("bar") })}"><span>|</span><small>${_t("\u5C0F\u8282\u7EBF")}</small></button><button class="btn wk breath" data-breath="1" title="${_t("\u547C\u5438\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u540E\u9762\u6362\u4E00\u53E3\u6C14\uFF08\u5C0F\u6708\u76F8\u5531\u5230\u8FD9\u513F\u6362\u6C14\uFF1B\u4E50\u5668\u5728\u8FD9\u513F\u7A0D\u5FAE\u65AD\u5F00\uFF1B\u8FDE\u7EBF\u8FDE\u7740\u4E5F\u7167\u6837\u65AD\u5F00\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389\uFF09")}"><span class="smufl">\uE4CE</span><small>${_t("\u547C\u5438")}</small></button><button class="btn wk accshift" data-accshift="1" title="${_t("\u5347\u964D\uFF08\u548C Shift \u4E00\u6837\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u6309\u4F4F\u5199 = \u6309\u4F4F\u671F\u95F4\u3002\u5728\u952E\u4E0A\u4E0A\u4E0B\u6ED1\u6362 \u{1D12A} / \u266F / \u266D / \u{1D12B}")}"><span class="ag"></span><small>${_t("\u5347\u964D")}</small></button><button class="btn wk stack" data-stack="1" title="${_t("\u53E0\uFF08\u50CF Caps Lock\uFF09\uFF1A\u6309\u4E00\u4E0B = \u9009\u4E2D\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u6765\u6539\u2014\u2014\u6309\u97F3\u952E\u53E0\u4E0A / \u62FF\u6389\uFF08\u6700\u540E\u4E00\u4E2A\u62FF\u6389 = \u4E00\u6837\u957F\u7684\u4F11\u6B62\uFF0C\u4F11\u6B62\u4E0A\u6309 = \u53D8\u56DE\u97F3\uFF09\u3001\u2014 \u957F\u4E00\u6B65\u3001\u232B \u77ED\u4E00\u6B65\u3001\u2190 \u2192 \u6362\u524D\u540E\u7684\u97F3\uFF1B\u518D\u6309\u4E00\u4E0B = \u56DE\u5230\u5B83\u540E\u9762\u63A5\u7740\u5199\u3002\u5355\u58F0\u4E50\u5668\u7684\u58F0\u90E8\u53E0\u4E0D\u4E86")}"><span>${iconHtml("note-stack")}</span><small>${_t("\u53E0\u97F3")}</small></button><button class="btn wk half" data-half="1" title="${_t("\u51CF\u534A\uFF08\u957F\u77ED\u57FA\u7EBF\u77ED\u4E00\u6863\uFF09\uFF1A\u70B9\u4E00\u4E0B = \u4E0B\u4E00\u4E2A\u97F3\uFF1B\u8FDE\u70B9\u4E24\u4E0B = \u9501\u4F4F\uFF0C\u518D\u70B9\u89E3\u5F00\uFF1B\u4E5F\u53EF\u4EE5\u6309\u4F4F\u5199")}"><span>/2</span><small>${_t("\u51CF\u534A")}</small></button><button class="btn wk" data-cmd="extend" title="${_t("\u62C9\u957F\u4E00\u4EFD\uFF08{p}\uFF09", { p: hint("extend") })}"><span>\u2014</span><small>${_t("\u62C9\u957F")}</small></button><button class="btn" data-cmd="backspace" title="${_t("\u9000\u683C\uFF08{p}\uFF09", { p: hint("backspace") })}"><svg class="ico"><use href="#backspace"/></svg></button></div><div class="pad-grid"></div><button class="btn pad-more" hidden></button>`;
       {
         const g3 = this.el.querySelector(".pad-grid");
         g3.addEventListener("wheel", (e10) => this.gridWheel(g3, e10), { passive: false });
+        g3.addEventListener("scroll", () => this.syncMore(), { passive: true });
+        const more = this.el.querySelector(".pad-more");
+        more.addEventListener("pointerdown", (e10) => e10.preventDefault());
+        more.addEventListener("click", () => g3.scrollBy({ top: Math.max(40, g3.clientHeight - 24), behavior: "smooth" }));
       }
       const w2 = this.el.querySelector(".writes");
       this.on(w2, "[data-caret]", (b3) => this.key(`caret:${b3.dataset.caret}`));
@@ -16701,6 +16706,23 @@ var Pad = class {
       this.toolsFor = toolSig;
     }
     this.refresh(v);
+    this.syncMore();
+  }
+  /** 符号格下面还有几个键没露出来（一半以上在可见区下面的算）：有 = 底边渐隐 + 底下正中一颗「▾ 还有 N 个」；没有 / 不在符号层 = 都收起。 */
+  syncMore() {
+    const grid = this.el.querySelector(".pad-grid"), more = this.el.querySelector(".pad-more");
+    if (!grid || !more) return;
+    const bottom = grid.getBoundingClientRect().bottom;
+    const n10 = this.symbols === "off" ? 0 : [...grid.children].filter((b3) => {
+      const r10 = b3.getBoundingClientRect();
+      return r10.top + r10.height / 2 > bottom + 0.5;
+    }).length;
+    grid.classList.toggle("has-more", n10 > 0);
+    more.hidden = n10 === 0;
+    if (!n10) return;
+    more.textContent = _t("\u25BE \u8FD8\u6709 {n} \u4E2A", { n: n10 });
+    more.style.top = `${grid.offsetTop + grid.offsetHeight - 4}px`;
+    more.style.left = `${grid.offsetLeft + grid.offsetWidth / 2}px`;
   }
   /** 这一页符号格的状态签名（谁不认 / 谁亮着）：变了就重建格子。 */
   symStates() {
@@ -29651,15 +29673,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-b2b99a90e0a8.mjs");
+      return pick(() => "singer-worker-a2747d349da9.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-d15869ebd59c.mjs");
+      return pick(() => "layout-worker-1cef2e10f310.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-cfe671d05a9b.mjs");
+      return pick(() => "encode-worker-e1ef1909ffa4.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -53581,7 +53603,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "165a2b333ce7",
+  cssHash: "f1ffee1873d5",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -57627,4 +57649,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-dc08b6f78a36.mjs.map
+//# sourceMappingURL=moonsinger-a598ee088eab.mjs.map

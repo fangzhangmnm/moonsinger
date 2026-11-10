@@ -799,7 +799,11 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 /* pad 符号层（像 iOS 键盘的 .?123 翻过去那一页；user 2026-10-08「软键盘里面后面有一个符号模式」「row col 超了可以拖动滚」） */
 .pad-grid.symbols { overflow-y: auto; touch-action: pan-y; align-content: start; grid-auto-rows: var(--key-h); -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   height: calc(var(--rows, 4) * var(--key-h) + (var(--rows, 4) - 1) * var(--kgv)); }   /* 高 = 音键那几排（几何不变），多了的格子在里面滚 */
-.pad-grid.symbols .pad-key { touch-action: pan-y; overflow: hidden; }   /* 放大的演奏法字形别撑出滚动量 */
+.pad-grid.symbols .pad-key { touch-action: pan-y; overflow: hidden; }
+/* 符号格下面还有键（v0.16.79）：底边渐隐 + 底下正中一颗「▾ 还有 N 个」（位置由 pad.ts syncMore 按格子摆） */
+.pad-grid.symbols.has-more { -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 30px), transparent); mask-image: linear-gradient(to bottom, #000 calc(100% - 30px), transparent); }
+.pad-more { position: absolute; transform: translate(-50%, -100%); z-index: 3; min-height: 0; height: 22px; padding: 0 10px; font-size: 12px; line-height: 20px; border-radius: 11px; white-space: nowrap; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18); }
+.pad-more[hidden] { display: none; }   /* 放大的演奏法字形别撑出滚动量 */
 .pad-key.sym .big { font-size: 20px; font-weight: 600; line-height: 1; }
 .pad-key.sym .smufl { font-family: "Bravura"; font-size: 26px; line-height: 1; display: inline-block; height: 22px; }
 .pad-key.sym small { font-size: 10px; color: var(--muted); }

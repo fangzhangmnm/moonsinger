@@ -239,8 +239,13 @@ export class Pad {
         `<button class="btn wk half" data-half="1" title="${_t("减半（长短基线短一档）：点一下 = 下一个音；连点两下 = 锁住，再点解开；也可以按住写")}"><span>/2</span><small>${_t("减半")}</small></button>` +
         `<button class="btn wk" data-cmd="extend" title="${_t("拉长一份（{p}）", { p: hint("extend") })}"><span>—</span><small>${_t("拉长")}</small></button>` +
         `<button class="btn" data-cmd="backspace" title="${_t("退格（{p}）", { p: hint("backspace") })}"><svg class="ico"><use href="#backspace"/></svg></button></div>` +
-        `<div class="pad-grid"></div>`;
-      { const g = this.el.querySelector<HTMLElement>(".pad-grid")!; g.addEventListener("wheel", (e) => this.gridWheel(g, e), { passive: false }); }
+        `<div class="pad-grid"></div><button class="btn pad-more" hidden></button>`;
+      { const g = this.el.querySelector<HTMLElement>(".pad-grid")!; g.addEventListener("wheel", (e) => this.gridWheel(g, e), { passive: false });
+        // 符号格下面还有键（v0.16.79，总表第 8 条）：底边渐隐 +「▾ 还有 N 个」；点它 = 往下翻一页（焦点不离开谱）
+        g.addEventListener("scroll", () => this.syncMore(), { passive: true });
+        const more = this.el.querySelector<HTMLElement>(".pad-more")!;
+        more.addEventListener("pointerdown", (e) => e.preventDefault());
+        more.addEventListener("click", () => g.scrollBy({ top: Math.max(40, g.clientHeight - 24), behavior: "smooth" })); }
       const w = this.el.querySelector<HTMLElement>(".writes")!;
       this.on(w, "[data-caret]", (b) => this.key(`caret:${b.dataset.caret}`));
       this.on(w, "[data-cmd]:not([data-cmd=backspace])", (b) => this.key(b.dataset.cmd!));
@@ -296,6 +301,17 @@ export class Pad {
     const toolSig = this.mode === "normal" ? `normal|${v.hasSel}|${this.symbols !== "off" ? `${this.symPage}|${this.ramp.mode}` : ""}` : `${this.mode}|${v.hasSel}|${rows}|${this.cols}|${this.rowsSetting}|${this.layoutMode}|${this.mode === "more" ? JSON.stringify(this.host.music.marksHere()) : ""}`;
     if (toolSig !== this.toolsFor) { this.buildHead(rows); this.toolsFor = toolSig; }
     this.refresh(v);
+    this.syncMore();
+  }
+  /** 符号格下面还有几个键没露出来（一半以上在可见区下面的算）：有 = 底边渐隐 + 底下正中一颗「▾ 还有 N 个」；没有 / 不在符号层 = 都收起。 */
+  private syncMore(): void {
+    const grid = this.el.querySelector<HTMLElement>(".pad-grid"), more = this.el.querySelector<HTMLElement>(".pad-more"); if (!grid || !more) return;
+    const bottom = grid.getBoundingClientRect().bottom;
+    const n = this.symbols === "off" ? 0 : [...grid.children].filter((b) => { const r = b.getBoundingClientRect(); return r.top + r.height / 2 > bottom + 0.5; }).length;
+    grid.classList.toggle("has-more", n > 0); more.hidden = n === 0;
+    if (!n) return;
+    more.textContent = _t("▾ 还有 {n} 个", { n });
+    more.style.top = `${grid.offsetTop + grid.offsetHeight - 4}px`; more.style.left = `${grid.offsetLeft + grid.offsetWidth / 2}px`;
   }
 
   /** 这一页符号格的状态签名（谁不认 / 谁亮着）：变了就重建格子。 */
