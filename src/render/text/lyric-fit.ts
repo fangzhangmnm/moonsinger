@@ -26,10 +26,12 @@ function solveLyrics(items: readonly LyricItem[], blockSx: number, minSx: number
   const n = items.length, f = items.map((it) => (it.block ? blockSx : 1)), tight = new Set<number>();
   if (!n) return { pos: [], f, tight };
   const c = items.map((it) => it.cx);
-  const reach = (i: number, side: -1 | 1) => { const nb = items[i + side]; const half = nb ? Math.abs(nb.cx - c[i]) / 2 : Infinity; return Math.max(0.2, Math.min((items[i].w * f[i]) / 2 - 0.15, half)); };
-  const lo = (i: number) => c[i] - reach(i, -1), hi = (i: number) => c[i] + reach(i, 1);
+  // 不随宽度变的先算好（性能，v0.16.69；算式和原来逐项相同 = 结果逐位相同）：字宽、到左右邻居音的一半、每道缝的底宽（空格 + 有连字符时连字符的地方）
+  const w = items.map((it) => it.w), halfL = c.map((x, i) => (i > 0 ? Math.abs(c[i - 1] - x) / 2 : Infinity)), halfR = c.map((x, i) => (i < n - 1 ? Math.abs(c[i + 1] - x) / 2 : Infinity));
+  const gb = items.slice(0, -1).map((it, i) => gaps.space + (it.hy && !(it.block || items[i + 1].block) ? gaps.hyphen : 0));
+  const lo = (i: number) => c[i] - Math.max(0.2, Math.min((w[i] * f[i]) / 2 - 0.15, halfL[i])), hi = (i: number) => c[i] + Math.max(0.2, Math.min((w[i] * f[i]) / 2 - 0.15, halfR[i]));
   const G = new Array<number>(Math.max(0, n - 1)).fill(1);   // 每道缝压到几成（挤了先压它）
-  const d = (i: number) => (items[i].w * f[i] + items[i + 1].w * f[i + 1]) / 2 + Math.max(GAP_FLOOR, (gaps.space + (items[i].hy && !(items[i].block || items[i + 1].block) ? gaps.hyphen : 0)) * Math.min(f[i], f[i + 1]) * G[i]);
+  const d = (i: number) => (w[i] * f[i] + w[i + 1] * f[i + 1]) / 2 + Math.max(GAP_FLOOR, gb[i] * Math.min(f[i], f[i + 1]) * G[i]);
   const L = new Array<number>(n), start = new Array<number>(n);   // L = 从左推过来最靠左能放哪；start = 这一串被推着走的从哪个字开始
   const step = (i: number) => { const a = i > 0 ? L[i - 1] + d(i - 1) : -Infinity, b = lo(i); if (a > b) { L[i] = a; start[i] = start[i - 1]; } else { L[i] = b; start[i] = i; } };
   const pushFrom = (s: number, to: number) => { L[s] = lo(s); start[s] = s; for (let i = s + 1; i <= to; i++) step(i); };   // 串头 s 不被前面推（收窄只会让它更不被推）
@@ -41,7 +43,7 @@ function solveLyrics(items: readonly LyricItem[], blockSx: number, minSx: number
     const s = start[i], keep = f.slice(s, i + 1), can = (j: number) => !items[j].block;
     { // 先压缝（缝最没意义，可读性最先牺牲）：这一串里的缝一起压到刚好放得下，最多压到 GAP_MIN
       const keepG = G.slice(s, i), fitsG = (t: number) => { for (let j = s; j < i; j++) G[j] = Math.min(keepG[j - s], t); pushFrom(s, i); for (let j = s; j <= i; j++) if (L[j] > hi(j) + 1e-9) return false; return true; };
-      if (fitsG(GAP_MIN)) { let a = GAP_MIN, b = 1; for (let k = 0; k < 16; k++) { const m = (a + b) / 2; if (fitsG(m)) a = m; else b = m; } fitsG(Math.max(GAP_MIN, Math.floor(a * 100) / 100)); continue; }
+      if (fitsG(GAP_MIN)) { let a = GAP_MIN, b = 1; for (let k = 0; k < 16 && Math.floor(a * 100) !== Math.floor(b * 100); k++) { const m = (a + b) / 2; if (fitsG(m)) a = m; else b = m; } fitsG(Math.max(GAP_MIN, Math.floor(a * 100) / 100)); continue; }
     }
     const fits = (t: number) => { for (let j = s; j <= i; j++) if (can(j)) f[j] = Math.min(keep[j - s], t); pushFrom(s, i); for (let j = s; j <= i; j++) if (L[j] > hi(j) + 1e-9) return false; return true; };
     const top = Math.max(...keep);
@@ -49,7 +51,8 @@ function solveLyrics(items: readonly LyricItem[], blockSx: number, minSx: number
       fits(minSx); tight.add(i - 1); tight.add(i);
       L[i] = Math.min(L[i], hi(i)); continue;
     }
-    let a = minSx, b = top; for (let k = 0; k < 20; k++) { const m = (a + b) / 2; if (fits(m)) a = m; else b = m; }
+    // 二分到上下界落在同一个百分位就停（性能，v0.16.69）：最后取的是 a 的百分位往下取整，a ≤ 最后的 a < b，两头同一个百分位 = 结果已经定了，和跑满 20 次逐位相同
+    let a = minSx, b = top; for (let k = 0; k < 20 && Math.floor(a * 100) !== Math.floor(b * 100); k++) { const m = (a + b) / 2; if (fits(m)) a = m; else b = m; }
     fits(Math.max(minSx, Math.floor(a * 100) / 100));   // 取到百分位（字宽数稳定，快照不随浮点抖）
   }
   // 放宽（v0.16.48；user「这里明显有空间没有用上」）：上面是整串一起收的，瓶颈外面本来有空的字也被压窄了——每一轮每个压着的字试着放宽 0.05，不多出新的叠就留着，直到谁都放不宽

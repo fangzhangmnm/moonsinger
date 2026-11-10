@@ -56,14 +56,11 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
   const n2 = items.length, f = items.map((it) => it.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
   if (!n2) return { pos: [], f, tight };
   const c = items.map((it) => it.cx);
-  const reach = (i, side) => {
-    const nb = items[i + side];
-    const half = nb ? Math.abs(nb.cx - c[i]) / 2 : Infinity;
-    return Math.max(0.2, Math.min(items[i].w * f[i] / 2 - 0.15, half));
-  };
-  const lo = (i) => c[i] - reach(i, -1), hi = (i) => c[i] + reach(i, 1);
+  const w = items.map((it) => it.w), halfL = c.map((x, i) => i > 0 ? Math.abs(c[i - 1] - x) / 2 : Infinity), halfR = c.map((x, i) => i < n2 - 1 ? Math.abs(c[i + 1] - x) / 2 : Infinity);
+  const gb = items.slice(0, -1).map((it, i) => gaps.space + (it.hy && !(it.block || items[i + 1].block) ? gaps.hyphen : 0));
+  const lo = (i) => c[i] - Math.max(0.2, Math.min(w[i] * f[i] / 2 - 0.15, halfL[i])), hi = (i) => c[i] + Math.max(0.2, Math.min(w[i] * f[i] / 2 - 0.15, halfR[i]));
   const G = new Array(Math.max(0, n2 - 1)).fill(1);
-  const d = (i) => (items[i].w * f[i] + items[i + 1].w * f[i + 1]) / 2 + Math.max(GAP_FLOOR, (gaps.space + (items[i].hy && !(items[i].block || items[i + 1].block) ? gaps.hyphen : 0)) * Math.min(f[i], f[i + 1]) * G[i]);
+  const d = (i) => (w[i] * f[i] + w[i + 1] * f[i + 1]) / 2 + Math.max(GAP_FLOOR, gb[i] * Math.min(f[i], f[i + 1]) * G[i]);
   const L = new Array(n2), start = new Array(n2);
   const step = (i) => {
     const a = i > 0 ? L[i - 1] + d(i - 1) : -Infinity, b = lo(i);
@@ -94,7 +91,7 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
       };
       if (fitsG(GAP_MIN)) {
         let a2 = GAP_MIN, b2 = 1;
-        for (let k = 0; k < 16; k++) {
+        for (let k = 0; k < 16 && Math.floor(a2 * 100) !== Math.floor(b2 * 100); k++) {
           const m = (a2 + b2) / 2;
           if (fitsG(m)) a2 = m;
           else b2 = m;
@@ -118,7 +115,7 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
       continue;
     }
     let a = minSx, b = top;
-    for (let k = 0; k < 20; k++) {
+    for (let k = 0; k < 20 && Math.floor(a * 100) !== Math.floor(b * 100); k++) {
       const m = (a + b) / 2;
       if (fits(m)) a = m;
       else b = m;
@@ -6872,4 +6869,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-3bf664367a00.mjs.map
+//# sourceMappingURL=layout-worker-eb8bf5317299.mjs.map

@@ -9645,14 +9645,11 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
   const n10 = items.length, f2 = items.map((it2) => it2.block ? blockSx : 1), tight = /* @__PURE__ */ new Set();
   if (!n10) return { pos: [], f: f2, tight };
   const c10 = items.map((it2) => it2.cx);
-  const reach = (i10, side) => {
-    const nb2 = items[i10 + side];
-    const half2 = nb2 ? Math.abs(nb2.cx - c10[i10]) / 2 : Infinity;
-    return Math.max(0.2, Math.min(items[i10].w * f2[i10] / 2 - 0.15, half2));
-  };
-  const lo2 = (i10) => c10[i10] - reach(i10, -1), hi = (i10) => c10[i10] + reach(i10, 1);
+  const w2 = items.map((it2) => it2.w), halfL = c10.map((x2, i10) => i10 > 0 ? Math.abs(c10[i10 - 1] - x2) / 2 : Infinity), halfR = c10.map((x2, i10) => i10 < n10 - 1 ? Math.abs(c10[i10 + 1] - x2) / 2 : Infinity);
+  const gb = items.slice(0, -1).map((it2, i10) => gaps.space + (it2.hy && !(it2.block || items[i10 + 1].block) ? gaps.hyphen : 0));
+  const lo2 = (i10) => c10[i10] - Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfL[i10])), hi = (i10) => c10[i10] + Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfR[i10]));
   const G2 = new Array(Math.max(0, n10 - 1)).fill(1);
-  const d3 = (i10) => (items[i10].w * f2[i10] + items[i10 + 1].w * f2[i10 + 1]) / 2 + Math.max(GAP_FLOOR, (gaps.space + (items[i10].hy && !(items[i10].block || items[i10 + 1].block) ? gaps.hyphen : 0)) * Math.min(f2[i10], f2[i10 + 1]) * G2[i10]);
+  const d3 = (i10) => (w2[i10] * f2[i10] + w2[i10 + 1] * f2[i10 + 1]) / 2 + Math.max(GAP_FLOOR, gb[i10] * Math.min(f2[i10], f2[i10 + 1]) * G2[i10]);
   const L2 = new Array(n10), start = new Array(n10);
   const step = (i10) => {
     const a10 = i10 > 0 ? L2[i10 - 1] + d3(i10 - 1) : -Infinity, b3 = lo2(i10);
@@ -9683,7 +9680,7 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
       };
       if (fitsG(GAP_MIN)) {
         let a11 = GAP_MIN, b5 = 1;
-        for (let k2 = 0; k2 < 16; k2++) {
+        for (let k2 = 0; k2 < 16 && Math.floor(a11 * 100) !== Math.floor(b5 * 100); k2++) {
           const m2 = (a11 + b5) / 2;
           if (fitsG(m2)) a11 = m2;
           else b5 = m2;
@@ -9707,7 +9704,7 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
       continue;
     }
     let a10 = minSx, b3 = top;
-    for (let k2 = 0; k2 < 20; k2++) {
+    for (let k2 = 0; k2 < 20 && Math.floor(a10 * 100) !== Math.floor(b3 * 100); k2++) {
       const m2 = (a10 + b3) / 2;
       if (fits(m2)) a10 = m2;
       else b3 = m2;
@@ -17352,7 +17349,7 @@ function markOfKey(id2) {
   return null;
 }
 
-// ../../../node_modules/@internal/workbench-elements/dist/host-floors.js
+// node_modules/@internal/workbench-elements/dist/host-floors.js
 function safeAreaTop() {
   const probe = document.createElement("div");
   probe.style.cssText = "position:fixed;top:0;left:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;";
@@ -17372,7 +17369,7 @@ function configureFloors(f2) {
     _f.floatingTop = () => Math.max(safeAreaTop(), f2.toolbarBottom());
 }
 
-// ../../../node_modules/@internal/workbench-elements/dist/anchored-popup.js
+// node_modules/@internal/workbench-elements/dist/anchored-popup.js
 function topToolbarBottom() {
   return floors.toolbarBottom();
 }
@@ -17421,7 +17418,7 @@ function positionPopup(popupEl, opts = {}) {
   popupEl.style.top = top + "px";
 }
 
-// ../../../node_modules/@internal/workbench-elements/dist/icon.js
+// node_modules/@internal/workbench-elements/dist/icon.js
 function iconHtml2(name, opts = {}) {
   const { size, cls } = opts;
   const attrs = [
@@ -17433,7 +17430,7 @@ function iconHtml2(name, opts = {}) {
   return `<svg ${attrs}><use href="#${name}"/></svg>`;
 }
 
-// ../../../node_modules/@internal/workbench-elements/dist/popup-menu.js
+// node_modules/@internal/workbench-elements/dist/popup-menu.js
 var _open = [];
 function currentPopupMenu() {
   return _open[_open.length - 1] ?? null;
@@ -17637,7 +17634,7 @@ function escapeHtml(s10) {
   return s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
 }
 
-// ../../../node_modules/@internal/workbench-elements/dist/notice.js
+// node_modules/@internal/workbench-elements/dist/notice.js
 var _stack = null;
 var _live = /* @__PURE__ */ new Map();
 var _seq = 0;
@@ -17755,7 +17752,7 @@ function closeNotice(id2) {
   _live.get(id2)?.close();
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/text.js
+// node_modules/@internal/gallery/dist/core/text.js
 var GALLERY_TEXT = {
   "bk.andMore": { zh: "\u2026\u2026\u7B49 {n} \u4EF6\uFF08\u5168\u91CF\u540D\u5355\u5728\u5305\u5185 backup-manifest.txt\uFF09", en: "\u2026and {n} more (full list in backup-manifest.txt inside the zip)", ja: "\u2026\u307B\u304B {n} \u4EF6\uFF08\u5168\u30EA\u30B9\u30C8\u306F zip \u5185\u306E backup-manifest.txt\uFF09" },
   "bk.done": { zh: "\u5DF2\u4E0B\u8F7D\u5907\u4EFD {name}\uFF08{n} \u4EF6\uFF09", en: "Backup downloaded: {name} ({n} files)", ja: "\u30D0\u30C3\u30AF\u30A2\u30C3\u30D7\u3092\u30C0\u30A6\u30F3\u30ED\u30FC\u30C9\u3057\u307E\u3057\u305F\uFF1A{name}\uFF08{n} \u4EF6\uFF09" },
@@ -18108,7 +18105,7 @@ function configureText(opts) {
 }
 var t = (key, params) => (_host ?? defaultT)(key, params);
 
-// ../../../node_modules/@internal/gallery/dist/core/device-kv.js
+// node_modules/@internal/gallery/dist/core/device-kv.js
 var _mem2 = /* @__PURE__ */ new Map();
 var _kv = { get: (k2) => _mem2.get(k2) ?? null, set: (k2, v) => {
   if (v == null)
@@ -18146,7 +18143,7 @@ function deviceKvSetJson2(key, v) {
   deviceKvSet2(key, v === void 0 ? null : JSON.stringify(v));
 }
 
-// ../../../node_modules/@internal/store/dist/base/substrate.js
+// node_modules/@internal/store/dist/base/substrate.js
 async function toU8(x2) {
   if (x2 == null)
     return new Uint8Array(0);
@@ -18259,7 +18256,7 @@ function createSubstrate() {
   return { edits, session, serialize, serialize2, drain };
 }
 
-// ../../../node_modules/@internal/store/dist/works/local-head.js
+// node_modules/@internal/store/dist/works/local-head.js
 var BypassError = class extends Error {
   code = "BYPASS";
   constructor(name) {
@@ -18344,7 +18341,7 @@ function createLocalHead({ kv, getCloudEtag, setCloudEtag, keyPrefix = "head" })
   return { ifMatchFor, seenBase, isDirtyThisTab, isDirtyAnywhere, recordEdit, markSeen, markSynced, onPushed, forget, editCount: (name) => _edits.get(name) ?? 0 };
 }
 
-// ../../../node_modules/@internal/store/dist/base/error-handling.js
+// node_modules/@internal/store/dist/base/error-handling.js
 var reporter = null;
 function setStoreErrorReporter(fn) {
   reporter = fn;
@@ -18355,7 +18352,7 @@ function reportStoreError(err2, level = "error") {
   reporter?.(err2, level);
 }
 
-// ../../../node_modules/@internal/store/dist/works/seal.js
+// node_modules/@internal/store/dist/works/seal.js
 var LockedError = class extends Error {
   code = "LOCKED";
   constructor(name) {
@@ -18417,7 +18414,7 @@ function createSeal(cfg) {
   return { isContainer, sealForWrite, unsealForRead, withPassword };
 }
 
-// ../../../node_modules/@internal/store/dist/base/identifiers.js
+// node_modules/@internal/store/dist/base/identifiers.js
 var SEAL_SUFFIX = ".zip";
 function validateDocKinds(docKinds) {
   if (!Array.isArray(docKinds))
@@ -18526,7 +18523,7 @@ function withStemTail(identifier, tail, ids) {
   return `${slash < 0 ? "" : identifier.slice(0, slash + 1)}${stem}${tail}${rest}`;
 }
 
-// ../../../node_modules/@internal/store/dist/works/safe-resolve.js
+// node_modules/@internal/store/dist/works/safe-resolve.js
 function createSafeResolve(cfg) {
   const { cloud, local, head, localDirty = () => false, validateAdopt, unseal = (_n, blob) => Promise.resolve(blob), onReplacing = () => {
   }, looksEncrypted = () => Promise.resolve(false), serialize = (_n, fn) => fn() } = cfg;
@@ -18618,7 +18615,7 @@ function createSafeResolve(cfg) {
   return { safePull, tryHeal, weakOverride, resolveConflict };
 }
 
-// ../../../node_modules/@internal/store/dist/works/push.js
+// node_modules/@internal/store/dist/works/push.js
 var passBusy = (_l, fn) => fn();
 var isConflict = (e10) => !!e10 && (e10.name === "CloudConflictError" || e10.status === 412);
 var pushRetryDefaults = { maxAttempts: 4, backoffMs: 200, exponential: false };
@@ -18701,7 +18698,7 @@ function createPush(cfg) {
   return { push, doPush };
 }
 
-// ../../../node_modules/@internal/store/dist/works/freshness.js
+// node_modules/@internal/store/dist/works/freshness.js
 var passBusy2 = (_l, fn) => fn();
 function createFreshness(cfg) {
   const { cloud, head, safeResolve, busy: _busy = passBusy2, hints, lineageFromDurable = true } = cfg;
@@ -18847,7 +18844,7 @@ function createFreshness(cfg) {
   return { open: open2, refresh };
 }
 
-// ../../../node_modules/@internal/store/dist/works/fresh-hints.js
+// node_modules/@internal/store/dist/works/fresh-hints.js
 function createFreshHints(opts = {}) {
   const ttl = opts.ttlMs ?? 3e4;
   const now2 = opts.now ?? (() => Date.now());
@@ -18872,7 +18869,7 @@ function createFreshHints(opts = {}) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/base/move-aside.js
+// node_modules/@internal/store/dist/base/move-aside.js
 function pad(n10, w2 = 2) {
   return String(n10).padStart(w2, "0");
 }
@@ -18917,7 +18914,7 @@ async function restoreTargetName(orig, occupied, stamp14, fallbackMs, ids) {
   return target;
 }
 
-// ../../../node_modules/@internal/store/dist/works/delete.js
+// node_modules/@internal/store/dist/works/delete.js
 var passBusy3 = (_l, fn) => fn();
 var DELQ_KEY = "internal.pending_deletions";
 function createDelete(cfg) {
@@ -19048,7 +19045,7 @@ function createDelete(cfg) {
   return { del, replayDelete, drainDeleteQueue };
 }
 
-// ../../../node_modules/@internal/store/dist/base/is-hidden.js
+// node_modules/@internal/store/dist/base/is-hidden.js
 function isHidden(name) {
   if (!name)
     return false;
@@ -19069,7 +19066,7 @@ function assertValidCollectionName(name) {
   }
 }
 
-// ../../../node_modules/@internal/store/dist/base/errors.js
+// node_modules/@internal/store/dist/base/errors.js
 var CloudNetworkError = class extends Error {
   cause;
   constructor(message, cause) {
@@ -19090,7 +19087,7 @@ var CloudStaleRefError = class extends Error {
   }
 };
 
-// ../../../node_modules/@internal/store/dist/works/cloud-sync.js
+// node_modules/@internal/store/dist/works/cloud-sync.js
 var CloudConflictError = class extends Error {
   sessionName;
   constructor(message, sessionName) {
@@ -19520,7 +19517,7 @@ function createCloudSync(cfg) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/works/identity.js
+// node_modules/@internal/store/dist/works/identity.js
 var passBusy4 = (_l, fn) => fn();
 function createIdentity(cfg) {
   const { cloud, local, head, doPush, serialize, serialize2, seal, busy: _busy = passBusy4, isOnline, deleteOffline, queueUpload, nameOccupied, askKeepOld } = cfg;
@@ -19652,7 +19649,7 @@ function createIdentity(cfg) {
   return { rename, acquire };
 }
 
-// ../../../node_modules/@internal/store/dist/works/trash.js
+// node_modules/@internal/store/dist/works/trash.js
 var passBusy5 = (_l, fn) => fn();
 function createTrash(cfg) {
   const { cloud, local, head, busy: _busy = passBusy5 } = cfg;
@@ -19777,7 +19774,7 @@ function createTrash(cfg) {
   return { restore, purge, emptyTrash, emptyBackup };
 }
 
-// ../../../node_modules/@internal/store/dist/works/offload.js
+// node_modules/@internal/store/dist/works/offload.js
 var OffloadIllegalError = class extends Error {
   code = "OFFLOAD_ILLEGAL";
   reason;
@@ -19817,7 +19814,7 @@ function createOffload(cfg) {
   return { offload };
 }
 
-// ../../../node_modules/@internal/store/dist/works/reconcile.js
+// node_modules/@internal/store/dist/works/reconcile.js
 function classifyCloudGone(localNames, cloudNameSet, opts) {
   const demote = [];
   if (!opts.authoritative)
@@ -19905,7 +19902,7 @@ function createReconcile(cfg) {
   return { reconcile, reconcileFolder };
 }
 
-// ../../../node_modules/@internal/store/dist/works/pending-gone.js
+// node_modules/@internal/store/dist/works/pending-gone.js
 var KEY = "internal.pending_gone";
 function createPendingGone(kv, graceMs) {
   function read() {
@@ -19952,7 +19949,7 @@ function createPendingGone(kv, graceMs) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/works/folder-merge.js
+// node_modules/@internal/store/dist/works/folder-merge.js
 var lastWinResolve = (x2, y2) => defaultResolve(x2, y2);
 function resolverForPolicy(policy) {
   switch (policy) {
@@ -20009,7 +20006,7 @@ function normalizeFolder(f2) {
   });
 }
 
-// ../../../node_modules/@internal/store/dist/works/folder-flow.js
+// node_modules/@internal/store/dist/works/folder-flow.js
 function withTimeout(p2, ms) {
   if (!ms)
     return p2;
@@ -20071,7 +20068,7 @@ function createFolderFlow(cfg) {
   return { sync };
 }
 
-// ../../../node_modules/@internal/store/dist/works/collection.js
+// node_modules/@internal/store/dist/works/collection.js
 function collectionLocalKey(name) {
   return `collections/${name}`;
 }
@@ -20322,7 +20319,7 @@ function createCollection(cfg) {
   return { init: init2, reconcileWithRemote, setItem, deleteItem, getItem, getEntry, entries: entries2, keys, onChange, flushLocal, isDirty: isDirty2 };
 }
 
-// ../../../node_modules/@internal/store/dist/works/listing.js
+// node_modules/@internal/store/dist/works/listing.js
 function isCached(s10) {
   return s10 !== "cloud-only";
 }
@@ -20501,7 +20498,7 @@ function createListing(cfg) {
   return { listAllItems, listFolder };
 }
 
-// ../../../node_modules/@internal/store/dist/works/upload-queue.js
+// node_modules/@internal/store/dist/works/upload-queue.js
 var UPQ_KEY = "internal.pending_uploads";
 function createUploadReplay(cfg) {
   const { kv, local, head, isOnline, serialize, pushLocal, policy, confirm, onStatus } = cfg;
@@ -20577,7 +20574,7 @@ function createUploadReplay(cfg) {
   return { enqueue, remove, drain, pending: readQueue };
 }
 
-// ../../../node_modules/@internal/store/dist/works/trash-merge.js
+// node_modules/@internal/store/dist/works/trash-merge.js
 var STAMP_RE = /^(.*) \[((\d{14})-[0-9a-fA-F-]+)\](\.zip)?$/;
 var baseNameOf = (n10) => n10.includes("/") ? n10.slice(n10.lastIndexOf("/") + 1) : n10;
 function parseCloudTrashName(cloudName, toName) {
@@ -20644,7 +20641,7 @@ function mergeTrash(localEntries, cloudEntries, liveCloudNames = /* @__PURE__ */
   return out;
 }
 
-// ../../../node_modules/@internal/store/dist/base/idb-store.js
+// node_modules/@internal/store/dist/base/idb-store.js
 var STORE = "blobs";
 var _idbOpTimeoutMs = 3e3;
 var IdbTimeoutError = class extends Error {
@@ -20900,7 +20897,7 @@ function createIdbCache(dbName) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/base/blob-partition.js
+// node_modules/@internal/store/dist/base/blob-partition.js
 function createPartitionedBlobStore(dbName) {
   const idb = createIdbCache(dbName);
   const key = (p2, name) => `${p2}/${name}`;
@@ -20919,7 +20916,7 @@ function createPartitionedBlobStore(dbName) {
   return { partition: view2, close: () => idb.close() };
 }
 
-// ../../../node_modules/@internal/store/dist/base/local-cache.js
+// node_modules/@internal/store/dist/base/local-cache.js
 var NO_KINDS2 = createIdentifiers([]);
 var stripStamp = (inner) => inner.replace(/^[^:]*:/, "");
 var stamp = () => asideStamp(Date.now());
@@ -21080,7 +21077,7 @@ function createCollectionCache(dbName) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/stream/chunk-scheduler.js
+// node_modules/@internal/store/dist/stream/chunk-scheduler.js
 var StreamStallError = class extends Error {
   constructor(key) {
     super(`chunk stalled (no bytes within the stall window): ${key}`);
@@ -21353,7 +21350,7 @@ function createChunkScheduler(cfg = {}) {
   return { request, status, stats, lanes, stallMs };
 }
 
-// ../../../node_modules/@internal/store/dist/stream/download-session.js
+// node_modules/@internal/store/dist/stream/download-session.js
 var EtagChangedError = class extends Error {
   constructor(name) {
     super(`\u4E91\u7AEF\u6587\u4EF6\u5DF2\u66F4\u65B0\uFF0C\u4E0B\u8F7D\u4F1A\u8BDD\u5931\u6548\uFF1A${name}`);
@@ -21910,7 +21907,7 @@ function createDownloadSessions(cfg) {
   return { open: open2, coverage, promoteFromStaging, purgeName, _enforceCap: enforceCap, _scheduler: scheduler };
 }
 
-// ../../../node_modules/@internal/store/dist/base/kv-namespace.js
+// node_modules/@internal/store/dist/base/kv-namespace.js
 function namespacedKv(kv, ns2) {
   if (!ns2)
     throw new Error("namespacedKv: ns \u5FC5\u586B\uFF08${appId}.${databaseId}\uFF09");
@@ -21923,7 +21920,7 @@ function namespacedKv(kv, ns2) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/works/migration.js
+// node_modules/@internal/store/dist/works/migration.js
 function parseSchemaVersion(v) {
   const m2 = /^v(\d{3,})-(\d{8})$/.exec(v);
   if (!m2)
@@ -21996,7 +21993,7 @@ async function runStoreMigrations(appId, databaseId, log, blobs) {
   await runMigrations({ kv, ns: ns2, log, blobs });
 }
 
-// ../../../node_modules/@internal/store/dist/works/zip-peek.js
+// node_modules/@internal/store/dist/works/zip-peek.js
 var SIG_EOCD = 101010256;
 var SIG_CD = 33639248;
 var SIG_LOCAL = 67324752;
@@ -22094,7 +22091,7 @@ async function readEntryBytes(src, entry) {
   return await inflate(raw, entry.method);
 }
 
-// ../../../node_modules/@internal/store/dist/base/persistence.js
+// node_modules/@internal/store/dist/base/persistence.js
 var globalStorage = () => globalThis.navigator?.storage ?? null;
 async function queryStoragePersistence(sm2 = globalStorage()) {
   if (typeof sm2?.persisted !== "function")
@@ -22117,7 +22114,7 @@ async function requestStoragePersistence(sm2 = globalStorage()) {
   }
 }
 
-// ../../../node_modules/@internal/store/dist/base/ui-text.js
+// node_modules/@internal/store/dist/base/ui-text.js
 var STORE_TEXT_EN = {
   "sync.pushing": "Syncing\u2026",
   "file.renaming": "Renaming\u2026",
@@ -22149,7 +22146,7 @@ function resolveStoreText(custom, key, params) {
   return base2 != null ? interpolate2(base2, params) : String(key);
 }
 
-// ../../../node_modules/@internal/store/dist/create-store.js
+// node_modules/@internal/store/dist/create-store.js
 var ReadOnlyFilesError = class extends Error {
   /** resource 给了 = 2.1.0 三等资源那一种文档只读（docKinds 行 tier:"resource"）；没给 = readOnlyFiles:true 的整面只读。 */
   constructor(op2, resource) {
@@ -23533,7 +23530,7 @@ function createStore(config) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/works/maintenance.js
+// node_modules/@internal/store/dist/works/maintenance.js
 var WipeConsentError = class extends Error {
   code = "WIPE_CONSENT";
   constructor(msg) {
@@ -23633,7 +23630,7 @@ async function wipeAppNamespace(opts) {
   return report;
 }
 
-// ../../../node_modules/@internal/store/dist/base/providers/range-body.js
+// node_modules/@internal/store/dist/base/providers/range-body.js
 async function readBody(r10, onProgress) {
   const body2 = r10.body;
   if (!onProgress || !body2 || typeof body2.getReader !== "function")
@@ -23678,7 +23675,7 @@ function anySignal(signals) {
   return ctrl.signal;
 }
 
-// ../../../node_modules/@internal/store/dist/base/providers/graph.js
+// node_modules/@internal/store/dist/base/providers/graph.js
 var DEFAULT_GRAPH_TIMEOUTS = { meta: 3e4, chunk: 12e4, range: 6e4, blob: 15 * 6e4 };
 var graphTimeouts = null;
 var graphChunkResume = false;
@@ -24120,7 +24117,7 @@ function createGraph(tokenSource, opts = {}) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/base/providers/auth.js
+// node_modules/@internal/store/dist/base/providers/auth.js
 var CLIENT_ID = "";
 var AUTHORITY = "https://login.microsoftonline.com/consumers";
 var SCOPES = ["Files.ReadWrite.AppFolder", "offline_access"];
@@ -24520,7 +24517,7 @@ async function retrySilentSignIn() {
   }
 }
 
-// ../../../node_modules/@internal/store/dist/base/folder-delete.js
+// node_modules/@internal/store/dist/base/folder-delete.js
 async function deleteEmptyFolderVia(getItemByPath, list, deleteById, path) {
   const item = await getItemByPath(path);
   if (!item)
@@ -24539,7 +24536,7 @@ async function deleteEmptyFolderVia(getItemByPath, list, deleteById, path) {
   return { status: "deleted" };
 }
 
-// ../../../node_modules/@internal/store/dist/base/onedrive-provider.js
+// node_modules/@internal/store/dist/base/onedrive-provider.js
 function toItem(it2) {
   if (!it2)
     return null;
@@ -24590,7 +24587,7 @@ function graphToCloudProvider(graph) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/base/providers/index.js
+// node_modules/@internal/store/dist/base/providers/index.js
 function createOneDriveProvider(config = {}) {
   configureOneDriveAuth(config);
   const hid = config.homeAccountId;
@@ -24605,7 +24602,7 @@ function createOneDriveProvider(config = {}) {
   };
 }
 
-// ../../../node_modules/@internal/store/dist/base/providers/folder.js
+// node_modules/@internal/store/dist/base/providers/folder.js
 function statusError(status, message) {
   const e10 = new Error(message);
   e10.status = status;
@@ -24913,7 +24910,7 @@ function createFolderProvider(root) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/model/gallery-model.js
+// node_modules/@internal/gallery/dist/core/model/gallery-model.js
 function copyTargetName(source, taken, ids) {
   const SUF = t("name.copySuffix");
   let candidate = withStemTail(source, ` ${SUF}`, ids);
@@ -24927,7 +24924,7 @@ function copyTargetName(source, taken, ids) {
   return withStemTail(source, ` ${SUF}${Date.now()}`, ids);
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/model/gallery-path.js
+// node_modules/@internal/gallery/dist/core/model/gallery-path.js
 function pathFolder(name) {
   const i10 = name.lastIndexOf("/");
   return i10 < 0 ? "" : name.slice(0, i10);
@@ -24940,13 +24937,13 @@ function pathJoin(folder, name) {
   return `${folder}/${name}`;
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/model/natural-order.js
+// node_modules/@internal/gallery/dist/core/model/natural-order.js
 var _collator = new Intl.Collator(void 0, { numeric: true, sensitivity: "base" });
 function naturalCompare(a10, b3) {
   return _collator.compare(a10, b3);
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/model/gallery-view-model.js
+// node_modules/@internal/gallery/dist/core/model/gallery-view-model.js
 var hasLocalCopy = (s10) => isCached(s10);
 var hasCloudCopy = (s10) => s10 === "cloud-only" || s10 === "synced" || s10 === "unpushed" || s10 === "newer-on-cloud" || s10 === "conflict";
 var hasUnpushed = (s10) => isDirty(s10);
@@ -25036,7 +25033,7 @@ function fullTime(ts2) {
   return ts2 ? new Date(ts2).toLocaleString() : t("gv.time.unknown");
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/model/cloud-image-model.js
+// node_modules/@internal/gallery/dist/core/model/cloud-image-model.js
 var IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|avif)$/i;
 var isImagePath = (p2) => IMAGE_EXT_RE.test(p2);
 var imageTwinIdentifier = (folder, basename2, docSuffix) => {
@@ -25051,7 +25048,7 @@ function imageThumbToken(it2) {
   return it2.lastModified != null ? `m:${it2.lastModified}` : `s:${it2.size ?? 0}`;
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/guards/frame-gate.js
+// node_modules/@internal/gallery/dist/core/guards/frame-gate.js
 var REAL_TIMERS = {
   set: (fn, ms) => setTimeout(fn, ms),
   clear: (h2) => clearTimeout(h2)
@@ -25121,7 +25118,7 @@ function createFrameGate(apply2, opts) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/guards/first-frame-watchdog.js
+// node_modules/@internal/gallery/dist/core/guards/first-frame-watchdog.js
 var REAL_TIMERS2 = {
   set: (fn, ms) => setTimeout(fn, ms),
   clear: (h2) => clearTimeout(h2)
@@ -25164,7 +25161,7 @@ function createFirstFrameWatchdog(onStall, opts) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/guards/diag-log.js
+// node_modules/@internal/gallery/dist/core/guards/diag-log.js
 var diag_log_exports = {};
 __export(diag_log_exports, {
   clear: () => clear,
@@ -25271,7 +25268,7 @@ function initDiagLog(opts = {}) {
   g3.addEventListener("offline", () => note("net", "offline"));
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/library/gallery-registry.js
+// node_modules/@internal/gallery/dist/core/library/gallery-registry.js
 var mintId = () => "g" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 var oneDriveLabel = (username) => "OneDrive \xB7 " + (username || "\u8D26\u53F7");
 var LEGACY_ID = "default";
@@ -25436,10 +25433,10 @@ function idbRegistryKV() {
 }
 var galleryRegistry = createGalleryRegistry(idbRegistryKV());
 
-// ../../../node_modules/@internal/gallery/dist/core/backup/library-backup.js
+// node_modules/@internal/gallery/dist/core/backup/library-backup.js
 var BACKUP_BUDGET_BYTES = 512 * 1024 * 1024;
 
-// ../../../node_modules/@internal/gallery/dist/core/model/aside.js
+// node_modules/@internal/gallery/dist/core/model/aside.js
 var ASIDE = deepFreeze({
   trash: {
     list: (f2) => f2.listTrash(),
@@ -25513,7 +25510,7 @@ function sortAside(items, compareName) {
   return [...items].sort((a10, b3) => b3.at - a10.at || compareName(a10.identifier, b3.identifier) || a10.key.localeCompare(b3.key));
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/data-face.js
+// node_modules/@internal/gallery/dist/core/data-face.js
 var basename = (p2) => p2.slice(p2.lastIndexOf("/") + 1);
 function galleryItemFromStoreItem(it2, ids) {
   const d3 = ids.parse(it2.identifier);
@@ -25566,7 +25563,7 @@ function createGalleryDataFace(deps) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/verbs.js
+// node_modules/@internal/gallery/dist/core/verbs.js
 var errMsg = (e10) => String(e10?.message || e10);
 function createGalleryVerbs(d3) {
   const docFile = (identifier, mode = "existing") => d3.store().file(identifier, { mode });
@@ -25940,7 +25937,7 @@ function createGalleryVerbs(d3) {
   return { rename, move, moveTargets, copy, resolve, unload, keepOffline, del, deleteImage, folderDelete, asideRestore, asidePurge, emptyAside, encryptItem, decryptItem, unlock, whereLabel };
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/thumbs/thumb-store.js
+// node_modules/@internal/gallery/dist/core/thumbs/thumb-store.js
 function memoryThumbStore() {
   const m2 = /* @__PURE__ */ new Map();
   return { async get(k2) {
@@ -26017,7 +26014,7 @@ function idbThumbStore(opts) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/thumbs/thumb-cache.js
+// node_modules/@internal/gallery/dist/core/thumbs/thumb-cache.js
 var thumbKeyFor = (galleryId, fullName) => galleryId === "default" ? fullName : `${galleryId}:${fullName}`;
 function createThumbCache(deps) {
   const now2 = deps.now ?? (() => Date.now());
@@ -26095,7 +26092,7 @@ function createThumbCache(deps) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/thumbs/png-text.js
+// node_modules/@internal/gallery/dist/core/thumbs/png-text.js
 var PNG_BLURB_KEYWORD = "Description";
 var SIG = [137, 80, 78, 71, 13, 10, 26, 10];
 function isPng(bytes) {
@@ -26241,7 +26238,7 @@ function withPngText(png, keyword, text2) {
   return out;
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/thumbs/make-thumb.js
+// node_modules/@internal/gallery/dist/core/thumbs/make-thumb.js
 var THUMB_MAX_BYTES = 70 * 1024;
 var THUMB_LADDER = [256, 192, 128];
 var THUMB_PALETTE_COLORS = 256;
@@ -26321,7 +26318,7 @@ function makeThumbAdaptive(src, opts) {
   return last;
 }
 
-// ../../../node_modules/@internal/gallery/dist/core/facts/facts-cache.js
+// node_modules/@internal/gallery/dist/core/facts/facts-cache.js
 var factsKeyFor = (galleryId, identifier) => galleryId === "default" ? identifier : `${galleryId}:${identifier}`;
 function createFactsCache(deps) {
   const now2 = deps.now ?? (() => Date.now());
@@ -26391,7 +26388,7 @@ function createFactsCache(deps) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/ui/store-ui.js
+// node_modules/@internal/gallery/dist/ui/store-ui.js
 var STORE_TEXT_KEYS = {
   "sync.pushing": "st.syncPushing",
   "file.renaming": "st.fileRenaming",
@@ -26488,7 +26485,7 @@ function storeUIFor(d3) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/ui/templates.js
+// node_modules/@internal/gallery/dist/ui/templates.js
 var THUMB_CELL_TEMPLATE = `
     <img v-if="url" class="gallery-tile-thumb" :class="{ pixelated }" :src="url" :alt="alt" :title="blurb || null" loading="lazy" @load="onThumbLoad" />
     <div v-else-if="locked" class="gallery-tile-thumb placeholder locked" :title="lockedTitle" @click.stop="$emit('unlock', encName || alt)">
@@ -26638,7 +26635,7 @@ var GALLERY_TEMPLATE = `
       <div class="gallery-empty" v-show="isEmpty && !loading">{{ emptyText }}</div>
 `;
 
-// ../../../node_modules/@internal/gallery/dist/ui/templates.compiled.js
+// node_modules/@internal/gallery/dist/ui/templates.compiled.js
 var HELPERS = ["Fragment", "Teleport", "createBlock", "createCommentVNode", "createElementBlock", "createElementVNode", "createTextVNode", "createVNode", "normalizeClass", "normalizeStyle", "openBlock", "renderList", "resolveComponent", "toDisplayString", "vShow", "withDirectives", "withModifiers"];
 function thumbCellRender(Vue) {
   const { normalizeClass: _normalizeClass, openBlock: _openBlock, createElementBlock: _createElementBlock, createCommentVNode: _createCommentVNode, createElementVNode: _createElementVNode, withModifiers: _withModifiers, toDisplayString: _toDisplayString, createTextVNode: _createTextVNode, Fragment: _Fragment } = Vue;
@@ -27810,7 +27807,7 @@ function galleryRender(Vue) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/ui/gallery-screen.js
+// node_modules/@internal/gallery/dist/ui/gallery-screen.js
 var PIXELATED_THUMB_MAX_EDGE = 128;
 function thumbLoadPixelated(e10) {
   const img = e10.target;
@@ -28568,7 +28565,7 @@ function mountGalleryScreen(el2, d3) {
   };
 }
 
-// ../../../node_modules/@internal/gallery/dist/create-gallery.js
+// node_modules/@internal/gallery/dist/create-gallery.js
 function createGallery(el2, deps) {
   if (deps.text)
     configureText(deps.text);
@@ -29055,7 +29052,7 @@ function singChunks(tokens, tempoMap, bounds, mode) {
   return starts.map((a10, k2) => [a10, starts[k2 + 1] ?? tokens.length]).filter(([a10, b3]) => tokens.slice(a10, b3).some((t10) => t10.kind === "note"));
 }
 
-// ../../../node_modules/@internal/model-packs/dist/sha256.js
+// node_modules/@internal/model-packs/dist/sha256.js
 var K = new Uint32Array([
   1116352408,
   1899447441,
@@ -29211,7 +29208,7 @@ var Sha256 = class {
   }
 };
 
-// ../../../node_modules/@internal/model-packs/dist/pack-store.js
+// node_modules/@internal/model-packs/dist/pack-store.js
 var SLICE = 1 << 20;
 function createPackStore(deps) {
   const cacheName = deps.cacheName ?? "pwa-models";
@@ -29572,13 +29569,13 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-e2da7d8e63c7.mjs");
+      return pick(() => "singer-worker-144139f477cd.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-3bf664367a00.mjs");
+      return pick(() => "layout-worker-eb8bf5317299.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-bc43708104ab.mjs");
   }
@@ -39745,7 +39742,7 @@ var storeUI = {
   }
 };
 
-// ../../../node_modules/@internal/encryption/dist/encryption.js
+// node_modules/@internal/encryption/dist/encryption.js
 var SEVENZ_MAGIC = [55, 122, 188, 175, 39, 28];
 var ZIP_MAGIC = [80, 75, 3, 4];
 function _startsWith(u82, sig) {
@@ -47127,7 +47124,7 @@ function createEditorSession(config) {
   };
 }
 
-// ../../../node_modules/@internal/reference-window/dist/pointer-gesture.js
+// node_modules/@internal/reference-window/dist/pointer-gesture.js
 function pinchScaleRot(start, dist, angle, minScale, maxScale) {
   const scale = Math.max(minScale, Math.min(maxScale, start.vp.scale * (dist / start.dist)));
   let dRot = angle - start.angle;
@@ -47145,7 +47142,7 @@ function solveAnchorTranslation(modelPt, scale, rot, screenX, screenY) {
   };
 }
 
-// ../../../node_modules/@internal/reference-window/dist/deck/deck.js
+// node_modules/@internal/reference-window/dist/deck/deck.js
 function cloneView(v) {
   if (!v)
     return null;
@@ -47353,7 +47350,7 @@ function createDeck() {
   return deck;
 }
 
-// ../../../node_modules/@internal/reference-window/dist/deck/import.js
+// node_modules/@internal/reference-window/dist/deck/import.js
 var DEFAULT_RAM = { image: false, text: false, audio: true, video: true };
 function sniffKind(f2) {
   const t10 = (f2.type || "").toLowerCase(), n10 = (f2.name || "").toLowerCase();
@@ -47421,7 +47418,7 @@ async function importIntoDeck(deck, files, o10) {
   return out;
 }
 
-// ../../../node_modules/@internal/reference-window/dist/reference-window.js
+// node_modules/@internal/reference-window/dist/reference-window.js
 function fmtBytes(n10) {
   return n10 >= 1048576 ? `${(n10 / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n10 / 1024))} KB`;
 }
@@ -49564,7 +49561,7 @@ if (!customElements.get(WP_REFERENCE_WINDOW_TAG)) {
   customElements.define(WP_REFERENCE_WINDOW_TAG, WpReferenceWindow);
 }
 
-// ../../../node_modules/@internal/reference-window/dist/deck/manifest.js
+// node_modules/@internal/reference-window/dist/deck/manifest.js
 var DECK_MANIFEST_STAMP = { major: 1, minor: 1, patch: 0 };
 var DECK_MANIFEST_VERSION = DECK_MANIFEST_STAMP.major;
 var DECK_MANIFEST_NAME = "manifest.json";
@@ -57535,4 +57532,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a3e9e5cc2a9c.mjs.map
+//# sourceMappingURL=moonsinger-f035efab9c92.mjs.map
