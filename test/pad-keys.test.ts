@@ -18,7 +18,6 @@ describe("pad 按键 → 动作（翻译层）", () => {
     eq(J(padKeyAction("rest")), J({ kind: "cmd", cmd: { k: "rest" } }));
     eq(J(padKeyAction("symBackspace")), J({ kind: "cmd", cmd: { k: "symBackspace" } }));
     eq(J(padKeyAction("staff")), J({ kind: "cmd", cmd: { k: "staff" } }));
-    eq(J(padKeyAction("phrase")), J({ kind: "cmd", cmd: { k: "phrase" } }));
     eq(J(padKeyAction("art:breath")), J({ kind: "cmd", cmd: { k: "art", a: "breath" } }));
     eq(J(padKeyAction("inhale:big")), J({ kind: "cmd", cmd: { k: "inhale", v: "big" } }));
     eq(J(padKeyAction("swell:<>")), J({ kind: "cmd", cmd: { k: "swell", w: "<>" } }));

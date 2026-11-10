@@ -15,7 +15,7 @@ const cmd = (c: Command): PadKeyAction => ({ kind: "cmd", cmd: c });
 export function padKeyAction(id: string, mods: { ramp: boolean } = { ramp: false }): PadKeyAction | null {
   const m = /^caret:(-?1)$/.exec(id); if (m) return cmd({ k: "caret", d: Number(m[1]) });
   switch (id) {
-    case "rest": case "bar": case "extend": case "backspace": case "symBackspace": case "staff": case "phrase": case "slur": return cmd({ k: id } as Command);
+    case "rest": case "bar": case "extend": case "backspace": case "symBackspace": case "staff": case "slur": return cmd({ k: id } as Command);
     case "key": case "time": case "tempo": return { kind: "mark", mark: id };
     case "groove": case "repeat": case "clef": case "ottava": return { kind: "menu", menu: id };
     case "wedge:cresc": return cmd({ k: "wedge", w: "cresc" });

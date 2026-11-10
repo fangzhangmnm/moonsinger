@@ -26,7 +26,6 @@ export function sampleSong(): Song {
     t({ kind: "note", pitch: p("A"), dur: E, lyric: "さ", art: ["swellUp", "staccato"], slur: true }),   // 2026-10-13：演奏法（含音内起伏 → score.json swells）+ 连线
     t({ kind: "note", pitch: p("A"), dur: E, lyric: null, tie: true }),
     t({ kind: "note", pitch: p("B"), dur: Q, lyric: MELISMA_MARK, art: ["breath"], inhale: "soft" }),   // 2026-10-13：出声的换气
-    t({ kind: "phrase" }),   // 2026-10-13：句号 → score.json phrases
     t({ kind: "bar" }),
     t({ kind: "note", pitch: p("D", 5), dur: T3, lyric: "hap", hyph: true }),
     t({ kind: "note", pitch: p("C", 5, 1), dur: T3, lyric: "py" }),

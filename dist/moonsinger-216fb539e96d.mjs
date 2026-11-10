@@ -3238,8 +3238,6 @@ var S = {
   "\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09": { en: "Paste here: copied in the app, or jianpu text on the system clipboard (1 2 3 | 5 - -)" },
   "\u5C0F\u8282\u7EBF |": { en: "Barline |" },
   "\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09": { en: "Recount bars from here (pickup)" },
-  "\u53E5\u53F7": { en: "Phrase end" },
-  "\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09": { en: "This phrase ends here (a boundary for \u201CJoin\u201D; no line break, no breath)" },
   "\u8C31\u53F7 \xB7 \u8C03\u53F7 \xB7 \u62CD\u53F7 \xB7 \u901F\u5EA6\u2026": { en: "Clef \xB7 Key \xB7 Time \xB7 Tempo\u2026" },
   "\u4ECE\u8FD9\u513F\u8D77\u6362\uFF08\u540C\u4E00\u4E2A\u9762\u677F\uFF09": { en: "Change from here (one panel)" },
   "\u516B\u5EA6\u7EBF\u2026": { en: "Ottava line\u2026" },
@@ -3884,7 +3882,7 @@ var S = {
   "\u542C": { en: "Listen" },
   "\u97F3\uFF1A\u5199\u97F3\u548C\u8BB0\u53F7\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539\uFF08\u70B9\u97F3 = \u5149\u6807\uFF0C\u7B14 / \u9F20\u6807\u62D6\u97F3 = \u6539\u97F3\u9AD8 / \u65F6\u503C\uFF1B\u70B9\u8BB0\u53F7 = \u5B83\u7684\u83DC\u5355\u3001\u6309\u4F4F\u62D6 = \u632A\uFF09\uFF1B\u5C0F\u952E\u76D8\u9876\u4E0A\u300C\u7B26 / \u97F3\u300D\u5207\u97F3\u952E / \u7B26\u53F7\u683C\uFF0C\u9000\u683C\u5220\u4EC0\u4E48\u8DDF\u7740\u952E\u76D8": { en: "Notes: write notes and marks \u2014 both can be edited on the score (tap a note = cursor, drag with pen / mouse = change pitch / length; tap a mark = its menu, hold and drag = move); the switch above the keys toggles note keys / symbol grid, and Backspace follows the keys" },
   "\u8BCD\uFF1A\u70B9\u97F3\u6216\u5B83\u4E0B\u9762 = \u5199\u8FD9\u4E2A\u97F3\u7684\u6B4C\u8BCD\uFF1B\u6309\u4F4F\u5B57\u62D6 = \u632A / \u5408\uFF1B\u9000\u683C = \u5220\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u7684\u5B57": { en: "Lyrics: tap a note or below it = write its lyric; hold a syllable and drag = move / join; Backspace = delete the syllable of the note before the cursor" },
-  "\u7B26\uFF1A\u952E\u76D8 = \u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7\uFF09\u3002\u8C31\u4E0A\u548C\u300C\u97F3\u300D\u4E00\u6837\uFF1A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539": { en: "Symbols: keys = symbol grid (dynamics, hairpins, articulations, key / time / tempo, repeats, style, phrase end; Backspace = delete marks). On the score it's the same as \u201CNotes\u201D: notes and marks can both be edited" },
+  "\u7B26\uFF1A\u952E\u76D8 = \u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7\uFF09\u3002\u8C31\u4E0A\u548C\u300C\u97F3\u300D\u4E00\u6837\uFF1A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539": { en: "Symbols: keys = symbol grid (dynamics, hairpins, articulations, key / time / tempo, repeats, style; Backspace = delete marks). On the score it's the same as \u201CNotes\u201D: notes and marks can both be edited" },
   "\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u58F0\u90E8\u540D / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\uFF08Esc \u56DE\u5230\u5199\uFF09": { en: "Listen: the score locks to prevent accidental edits \u2014 taps only do viewing things (part names / page turns / this section) and never jump playback; long-press / right-click the score = play from here / resume / from the top; Space = play / stop; the mixer sits below (Esc returns to writing)" },
   "\u6CA1\u6709\u51FA\u58F0\uFF1A{e}": { en: "Nothing sounded: {e}" },
   "\u6DF7\u97F3\u2026": { en: "Mixing\u2026" },
@@ -4106,8 +4104,6 @@ var S = {
   "\u9009\u533A\u91CC\u5199\u4E00\u4E2A\u4F11\u6B62\uFF08\u66FF\u6362\u6A21\u5F0F\uFF1A\u6309\u957F\u77ED\u6863\u5403\u6389\u9009\u533A\u91CC\u7684\u97F3\uFF0C\u4E0D\u5199\u51FA\u9009\u533A\uFF09": { en: "Write a rest in the selection (replace mode: eats selected notes at the current length, never past the selection)" },
   "\u5C0F\u8282\u7EBF": { en: "Barline" },
   "\u5728\u9009\u4E2D\u540E\u9762\u63D2\u5C0F\u8282\u7EBF": { en: "Insert a barline after the selection" },
-  "\u53E5\u53F7\uFF08\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF1A\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u6CA1\u6709\u8BED\u4E49\uFF1A\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\uFF09": { en: "Phrase end (this phrase ends here: a boundary for \u201CJoin\u201D; no meaning otherwise: no breath, no line break, not a barline)" },
-  "\u5728\u9009\u4E2D\u540E\u9762\u63D2\u53E5\u53F7": { en: "Insert a phrase end after the selection" },
   "\u77ED\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u51CF\u534A\uFF08\u5230\u4E09\u5341\u4E8C\u5206\u4E3A\u6B62\uFF09": { en: "Shorter: halve the next note's length (down to a thirty-second)" },
   "\u77ED\uFF1A\u63A5\u4E0B\u6765\u5199\u7684\u51CF\u534A\uFF08\u9009\u533A\u91CC\u5199 = \u6309\u8FD9\u4E00\u6863\u66FF\u6362\uFF1B\u6574\u7EC4\u6539\u65F6\u503C\u8D70\u9009\u533A\u83DC\u5355\uFF09": { en: "Shorter: halve what's written next (in a selection = replaces at this length; to change a whole group, use the selection menu)" },
   "\u957F\uFF1A\u4E0B\u4E00\u4E2A\u97F3\u7684\u65F6\u503C\u52A0\u500D\uFF08\u5230\u5168\u97F3\u7B26\u4E3A\u6B62\uFF09": { en: "Longer: double the next note's length (up to a whole note)" },
@@ -4249,7 +4245,6 @@ var S = {
   "\u5728\u97F3\u952E\u4E0A\u4E0A\u4E0B\u6ED1 = \u8FD9\u4E00\u4E2A\u97F3\u5347 / \u964D\uFF08\u9ECF\u7740\uFF09": { en: "Sliding up / down on a note key bends just this note up / down (sticky)" },
   "\u952E\u76D8\u5E03\u5C40": { en: "Keyboard layout" },
   "\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09": { en: " (the performer on stage ignores this: drawn gray on the score, sound unaffected)" },
-  "\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09": { en: "Phrase end: this phrase ends here (only a boundary for \u201CJoin\u201D; no breath, no line break, not a barline, not in MusicXML)" },
   "\u7436\u97F3": { en: "Arpeggio" },
   "\u7436\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u548C\u5F26\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u594F\u51FA\uFF08\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u6CE2\u6D6A\u7EBF\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Arpeggio: rolls the chord before the cursor (or the selection) low to high (a wavy line left of the chord); tap again to remove" },
   "\u6EDA\u594F\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6574\u4E2A\u97F3\u6572\u6EE1\uFF08\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF\uFF09\uFF1B\u591A\u5BC6\u5728\u4E50\u5668\u9875\u8C03\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389": { en: "Roll: the note before the cursor (or the selection) is filled with rapid hits (three slashes on the stem); set how fast on the instrument page; tap again to remove" },
@@ -4745,7 +4740,7 @@ var S = {
   "\u73B0\u5728\u7684\u7F29\u653E\uFF08100% = \u7EB8\u7684\u5B9E\u9645\u5C3A\u5BF8\uFF09\uFF1B\u70B9 = \u56DE\u5230\u81EA\u52A8\u5927\u5C0F\uFF08Ctrl / \u2318 + 0\uFF09\u3002Ctrl / \u2318 + \u6EDA\u8F6E\u3001\u634F\u5408 = \u7F29\u653E\uFF1BCtrl / \u2318 + = / \u2212 = \u4E00\u6863\u4E00\u6863": { en: "Current zoom (100% = the paper's real size); tap = back to auto size (Ctrl / \u2318 + 0). Ctrl / \u2318 + wheel or pinch = zoom; Ctrl / \u2318 + = / \u2212 = step by step" },
   "\u8D77\u70B9\uFF1A|\u25B6 \u4ECE\u8FD9\u513F\u653E\uFF08\u957F\u6309 / \u53F3\u952E\u7A7A\u767D\u5904\u300C\u4ECE\u8FD9\u513F\u653E\u300D\u632A\u5B83\uFF1B\u7F16\u8F91\u4E0D\u52A8\u5B83\uFF09": { en: "Start point: |\u25B6 plays from here (long-press / right-click blank space, \u201CPlay from here\u201D, to move it; editing doesn't move it)" },
   "\u8FD9\u5F20\u7EB8\u4E0A\u53EA\u6709\u8FD9\u4E00\u5BB6\uFF1A\u6CA1\u6709\u522B\u7684\u58F0\u90E8\u53EF\u4EE5\u632A\u8FC7\u53BB\uFF08\u5207\u5230\u300C\u542C\u300D\u5C31\u90FD\u53E0\u8D77\u6765\uFF09": { en: "This sheet only has this family: no other part to move to (switch to \u201CListen\u201D and they all stack)" },
-  "\u8FD9\u4E00\u53E5\u540E\u9762\u6CA1\u6709\u7A7A\u7740\u7684\u97F3\u4E86\uFF08\u53E5\u53F7\u662F\u8FB9\u754C\uFF09\uFF0C\u5B57\u53EA\u80FD\u632A\u5230\u8FD9\u513F": { en: "No empty notes later in this phrase (phrase ends are boundaries), so the syllable can only move this far" },
+  "\u540E\u9762\u6CA1\u6709\u7A7A\u7740\u7684\u97F3\u4E86\uFF0C\u5B57\u53EA\u80FD\u632A\u5230\u8FD9\u513F": { en: "No empty notes after this one, so the syllable can only move this far" },
   "\u524D\u9762\u9694\u7740\u53E5\u53F7\uFF08\u6216\u8005\u6CA1\u6709\u97F3\u4E86\uFF09\uFF0C\u5B57\u632A\u4E0D\u8FC7\u53BB": { en: "A phrase end is in the way (or no more notes), so the syllable can't move there" },
   "\u987A\u624B\u53BB\u6389\u4E86 {removed} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Also removed {removed} dynamics / hairpins that no longer govern any note (undo brings them back)" },
   "\u5F3A\u540E\u5F31": { en: "fp" },
@@ -5095,7 +5090,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.85-2026-11-10";
+var APP_VERSION = "v0.16.86-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5795,7 +5790,7 @@ function applyAcc(p2, input) {
 function fillTarget(st2) {
   for (let i10 = st2.caret; i10 < tr(st2).length; i10++) {
     const t10 = tr(st2)[i10];
-    if (t10.kind === "bar" || t10.kind === "phrase" || t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove" || t10.kind === "nav" || t10.kind === "clef" || t10.kind === "ottava" || isMark(t10)) continue;
+    if (t10.kind === "bar" || t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove" || t10.kind === "nav" || t10.kind === "clef" || t10.kind === "ottava" || isMark(t10)) continue;
     return t10.kind === "note" && t10.pitch === null ? i10 : -1;
   }
   return -1;
@@ -6069,21 +6064,6 @@ function writeBar(st2) {
   }
   tokens.splice(at2, 0, { kind: "bar", id: id2 });
   return next(st2, tokens, { caret: at2 + 1, sel: null, nextId: id2 + 1, log: [] });
-}
-function writePhrase(st2) {
-  const at2 = st2.sel ? st2.sel.to : st2.caret, tokens = tr(st2).slice();
-  if (tokens[at2 - 1]?.kind === "phrase" || at2 <= headLen(tokens)) return st2;
-  const id2 = st2.nextId;
-  tokens.splice(at2, 0, { kind: "phrase", id: id2 });
-  return next(st2, tokens, { caret: at2 + 1, sel: null, nextId: id2 + 1, log: [] });
-}
-function insertPhraseAfter(st2, i10) {
-  const tokens = tr(st2).slice();
-  if (!tokens[i10] || tokens[i10 + 1]?.kind === "phrase") return st2;
-  const id2 = st2.nextId;
-  tokens.splice(i10 + 1, 0, { kind: "phrase", id: id2 });
-  const sel = st2.sel ? { from: st2.sel.from > i10 ? st2.sel.from + 1 : st2.sel.from, to: st2.sel.to > i10 ? st2.sel.to + 1 : st2.sel.to } : null;
-  return next({ ...st2, nextId: id2 + 1 }, tokens, { caret: st2.caret > i10 ? st2.caret + 1 : st2.caret, sel });
 }
 var artOf = (t10) => t10.art ?? [];
 function withArt(t10, a10, on2) {
@@ -8934,8 +8914,6 @@ function apply(st2, c10, now2 = Date.now()) {
       return writeRest(st2);
     case "bar":
       return writeBar(st2);
-    case "phrase":
-      return writePhrase(st2);
     case "art":
       return toggleArtBefore(st2, c10.a) ?? st2;
     case "inhale":
@@ -9054,14 +9032,6 @@ var BINDINGS = [
     show: "Enter / |",
     act: cmd({ k: "bar" }),
     does: { write: _t("\u5C0F\u8282\u7EBF"), edit: _t("\u5728\u9009\u4E2D\u540E\u9762\u63D2\u5C0F\u8282\u7EBF") }
-  },
-  {
-    id: "phrase",
-    group: _t("\u5199\u97F3"),
-    keys: [{ code: "Enter", shift: true }, { code: "NumpadEnter", shift: true }],
-    show: "Shift+Enter",
-    act: cmd({ k: "phrase" }),
-    does: { write: _t("\u53E5\u53F7\uFF08\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF1A\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u6CA1\u6709\u8BED\u4E49\uFF1A\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\uFF09"), edit: _t("\u5728\u9009\u4E2D\u540E\u9762\u63D2\u53E5\u53F7") }
   },
   // ── 时值 ──
   {
@@ -9505,7 +9475,6 @@ function mergeIntoPrev(st2, i10) {
   const slots = [i10];
   for (let j2 = i10 + 1; j2 < toks.length; j2++) {
     const t10 = toks[j2];
-    if (t10.kind === "phrase") break;
     if (lyricSlot(t10)) slots.push(j2);
   }
   const tokens = toks.slice();
@@ -9536,14 +9505,12 @@ var hasText = (t10) => !!t10 && t10.kind === "note" && !!t10.lyric && t10.lyric 
 function slotsAfter(toks, i10) {
   const out = [];
   for (let j2 = i10 + 1; j2 < toks.length; j2++) {
-    if (toks[j2].kind === "phrase") break;
     if (lyricSlot(toks[j2])) out.push(j2);
   }
   return out;
 }
 function slotBefore(toks, i10) {
   for (let j2 = i10 - 1; j2 >= 0; j2--) {
-    if (toks[j2].kind === "phrase") return -1;
     if (lyricSlot(toks[j2])) return j2;
   }
   return -1;
@@ -9732,7 +9699,6 @@ var TEXT_STYLES = {
   "bar-no": s("sans", 1.05, "staff"),
   "page-no": s("sans", 1.2, "text"),
   lyric: s("lyric", LYRIC_EM, "staff"),
-  "phrase-mark": s("sans", 1.3, "staff"),
   ottava: s("sans", 1.3, "staff"),
   "breath-label": s("sans", 1.15, "staff"),
   "dyn-word": s("serif", 2, "staff", 400, true),
@@ -11336,7 +11302,7 @@ function notate(dur) {
   return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
 }
 var baseWidth = (base2) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base2 / TPQ));
-var SLOT = { phrase: -1, bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, head: 4, chunk: 5 };
+var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, head: 4, chunk: 5 };
 var CLEF_CUE = 0.72;
 var CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
 var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
@@ -11403,11 +11369,6 @@ function unitsOf(tokens, o10) {
     if (t10.kind === "tempo") {
       flushFull();
       units.push({ kind: "tempo", index: i10, bpm: t10.bpm, w: 0.3, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t10.kind === "phrase") {
-      flushFull();
-      units.push({ kind: "phrase", index: i10, w: 1, x: 0, system: 0, tick, staff: 1 });
       return;
     }
     if (t10.kind === "dyn") {
@@ -11950,14 +11911,13 @@ function engrave(song, o10) {
         const key = `${base2}:${n11}`;
         let c10 = colMap.get(key);
         if (!c10) {
-          c10 = { tick: u2.tick, slot: sl2, n: n11, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false, phrase: false };
+          c10 = { tick: u2.tick, slot: sl2, n: n11, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false };
           colMap.set(key, c10);
         }
         c10.units.push(u2);
         c10.w = Math.max(c10.w, u2.w);
         if (u2.kind === "bar") c10.bar = true;
         if (u2.kind === "chunk") c10.chunk = true;
-        if (u2.kind === "phrase") c10.phrase = true;
       }
     }
     const cols = [...colMap.values()].sort((a10, b3) => a10.tick - b3.tick || a10.slot - b3.slot || a10.n - b3.n);
@@ -12504,12 +12464,6 @@ function engrave(song, o10) {
       };
       for (const u2 of units) {
         const row2 = RW(u2);
-        if (u2.kind === "phrase") {
-          lyricJobs.push({ sys: u2.system, run: () => {
-            prims.push({ t: "text", x: P2(u2.x + 0.1), y: lyricY(lyricRow(u2.system)), s: "\u3002", cls: "phrase-mark ann", size: tx2("phrase-mark"), anchor: "start" });
-          } });
-          continue;
-        }
         if (u2.kind === "dyn") {
           const dr = rowOf(u2.system, r10, 0), ui3 = units.indexOf(u2), [il2, ir2, iu2, id2] = DYN_INK[u2.value];
           dynItems.push({ row: dr, x0: P2(u2.x + 0.3 + il2), keys: [`${dr}|d${ui3}`], draw: (dy) => {
@@ -13319,10 +13273,7 @@ var LyricEditor = class {
   /** 把框里的字贴到当前这个音（可能一次贴好几个音节，往后挪），并跳到下一个空位。 */
   place(text2, hyphEnd, phraseEnd = false) {
     let syl = splitSyllables(text2);
-    if (!syl.length) {
-      if (phraseEnd) this.endPhraseHere();
-      return;
-    }
+    if (!syl.length) return;
     if (hyphEnd) syl = syl.map((s10, k2) => k2 === syl.length - 1 ? { ...s10, hyph: true } : s10);
     if (syl[0].joinPrev) {
       this.host.set(joinIntoPrev(this.host.get(), this.index, syl[0].text));
@@ -13334,7 +13285,7 @@ var LyricEditor = class {
         return;
       }
     }
-    const r10 = distributeFrom(this.host.get(), this.index, syl), st2 = phraseEnd ? insertPhraseAfter(r10.st, r10.last) : r10.st, last = r10.last;
+    const r10 = distributeFrom(this.host.get(), this.index, syl), st2 = r10.st, last = r10.last;
     this.host.set(st2, { gesture: "lyric" });
     const nx2 = nextLyricSlot(tr(st2), last);
     this.input.value = "";
@@ -13349,16 +13300,6 @@ var LyricEditor = class {
       this.merge.hidden = true;
       this.rerender();
     }
-  }
-  /** 框是空的、打了个句号：句插在前一个有字位的音后面（框留在原来的音上）。 */
-  endPhraseHere() {
-    const st2 = this.host.get(), p2 = prevLyricSlot(tr(st2), this.index);
-    if (p2 < 0) return;
-    const st22 = insertPhraseAfter(st2, p2);
-    if (st22 === st2) return;
-    this.index++;
-    this.host.set(st22);
-    this.rerender();
   }
   slotText(i10) {
     const t10 = tr(this.host.get())[i10];
@@ -13439,7 +13380,6 @@ var LyricEditor = class {
     if (!cur) return;
     if (sp2.phrase) {
       if (v) this.host.set(distributeFrom(st2, this.index, splitSyllables(v)).st);
-      this.host.set(insertPhraseAfter(this.host.get(), this.index));
       return;
     }
     if (!v) {
@@ -13969,7 +13909,7 @@ var MODE_ICON = { notes: "music-note", lyrics: "lyrics-bubble", symbols: "music-
 var MODE_TITLE = {
   notes: _t("\u97F3\uFF1A\u5199\u97F3\u548C\u8BB0\u53F7\u2014\u2014\u8C31\u4E0A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539\uFF08\u70B9\u97F3 = \u5149\u6807\uFF0C\u7B14 / \u9F20\u6807\u62D6\u97F3 = \u6539\u97F3\u9AD8 / \u65F6\u503C\uFF1B\u70B9\u8BB0\u53F7 = \u5B83\u7684\u83DC\u5355\u3001\u6309\u4F4F\u62D6 = \u632A\uFF09\uFF1B\u5C0F\u952E\u76D8\u9876\u4E0A\u300C\u7B26 / \u97F3\u300D\u5207\u97F3\u952E / \u7B26\u53F7\u683C\uFF0C\u9000\u683C\u5220\u4EC0\u4E48\u8DDF\u7740\u952E\u76D8"),
   lyrics: _t("\u8BCD\uFF1A\u70B9\u97F3\u6216\u5B83\u4E0B\u9762 = \u5199\u8FD9\u4E2A\u97F3\u7684\u6B4C\u8BCD\uFF1B\u6309\u4F4F\u5B57\u62D6 = \u632A / \u5408\uFF1B\u9000\u683C = \u5220\u5149\u6807\u524D\u90A3\u4E2A\u97F3\u7684\u5B57"),
-  symbols: _t("\u7B26\uFF1A\u952E\u76D8 = \u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\u3001\u53E5\u53F7\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7\uFF09\u3002\u8C31\u4E0A\u548C\u300C\u97F3\u300D\u4E00\u6837\uFF1A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539"),
+  symbols: _t("\u7B26\uFF1A\u952E\u76D8 = \u7B26\u53F7\u683C\uFF08\u529B\u5EA6\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6F14\u594F\u6CD5\u3001\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3001\u53CD\u590D\u3001\u98CE\u683C\uFF1B\u9000\u683C = \u5220\u8BB0\u53F7\uFF09\u3002\u8C31\u4E0A\u548C\u300C\u97F3\u300D\u4E00\u6837\uFF1A\u97F3\u548C\u8BB0\u53F7\u90FD\u80FD\u6539"),
   listen: _t("\u542C\uFF1A\u8C31\u9501\u4F4F\u9632\u8BEF\u89E6\u2014\u2014\u8F7B\u70B9\u53EA\u8BA4\u770B\u8C31\u7684\uFF08\u58F0\u90E8\u540D / \u7FFB\u7EB8 / \u672C\u6BB5\uFF09\uFF0C\u4E0D\u8DF3\u64AD\uFF1B\u957F\u6309 / \u53F3\u952E\u8C31\u9762 = \u4ECE\u8FD9\u513F\u653E / \u63A5\u7740\u653E / \u4ECE\u5934\u653E\uFF1B\u7A7A\u683C = \u653E / \u505C\uFF1B\u5E95\u4E0B\u662F\u6DF7\u97F3\u53F0\uFF08Esc \u56DE\u5230\u5199\uFF09")
 };
 var RULES = {
@@ -15725,7 +15665,7 @@ var ScoreView = class {
       else this.host.onMarkPress?.(f2.grab.index, { x: f2.cx, y: f2.cy });
       return;
     }
-    if (f2.grab.kind === "lyric" && f2.short) this.host.notice?.(f2.cur > f2.src ? _t("\u8FD9\u4E00\u53E5\u540E\u9762\u6CA1\u6709\u7A7A\u7740\u7684\u97F3\u4E86\uFF08\u53E5\u53F7\u662F\u8FB9\u754C\uFF09\uFF0C\u5B57\u53EA\u80FD\u632A\u5230\u8FD9\u513F") : _t("\u524D\u9762\u9694\u7740\u53E5\u53F7\uFF08\u6216\u8005\u6CA1\u6709\u97F3\u4E86\uFF09\uFF0C\u5B57\u632A\u4E0D\u8FC7\u53BB"));
+    if (f2.grab.kind === "lyric" && f2.short) this.host.notice?.(f2.cur > f2.src ? _t("\u540E\u9762\u6CA1\u6709\u7A7A\u7740\u7684\u97F3\u4E86\uFF0C\u5B57\u53EA\u80FD\u632A\u5230\u8FD9\u513F") : _t("\u524D\u9762\u9694\u7740\u53E5\u53F7\uFF08\u6216\u8005\u6CA1\u6709\u97F3\u4E86\uFF09\uFF0C\u5B57\u632A\u4E0D\u8FC7\u53BB"));
     if (f2.grab.kind === "mark" && f2.removed) this.host.notice?.(_t("\u987A\u624B\u53BB\u6389\u4E86 {removed} \u4E2A\u4E0D\u518D\u7BA1\u4EFB\u4F55\u97F3\u7684\u529B\u5EA6\u8BB0\u53F7 / \u6E10\u5F3A\u6E10\u5F31\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { removed: f2.removed }));
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */
@@ -16513,7 +16453,7 @@ var SYM_PAGES = {
   // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:ppp", "dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "dyn:fff", "wedge:cresc", "wedge:dim", "dyn:ramp"],
   // 音内渐强 / 渐弱 / 鼓起搬到「演奏法」（v0.9.44；user「…应该属于演奏法…因为是跟着音符的」）   // ppp…fff 两整排（v0.9.23）
-  mark: ["phrase", "key", "time", "tempo", "clef", "ottava", "groove", "repeat", "staff"]
+  mark: ["key", "time", "tempo", "clef", "ottava", "groove", "repeat", "staff"]
   // 谱号 / 八度线（v0.9.28）
 };
 var SYM_PAGE_NAME = { art: _t("\u6F14\u594F\u6CD5##\u9875\u7B7E"), dyn: _t("\u529B\u5EA6##\u9875\u7B7E"), mark: _t("\u8BB0\u53F7") };
@@ -16907,7 +16847,6 @@ var Pad = class {
       return `<button class="pad-key sym${art ? " art" : ""}${off ? " ignored" : ""}${on2 ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id2}" title="${title}${off ? _t("\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09") : ""}">${big}<small>${label}${off ? `<span class="ign-tag">${_t("\u4E0D\u8BA4")}</span>` : ""}</small></button>`;
     };
     const items = [
-      cell("phrase", `<span class="big">\u3002</span>`, _t("\u53E5\u53F7"), _t("\u53E5\u53F7\uFF1A\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u53EA\u7ED9\u300C\u5408\u300D\u632A\u5B57\u5F53\u8FB9\u754C\uFF1B\u4E0D\u6362\u6C14\u3001\u4E0D\u6362\u884C\u3001\u4E0D\u662F\u5C0F\u8282\u7EBF\u3001\u4E0D\u8FDB MusicXML\uFF09")),
       cell("art:arpeggio", `<span class="smufl">\uEAA9\uEAA9</span>`, _t("\u7436\u97F3"), _t("\u7436\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u548C\u5F26\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u594F\u51FA\uFF08\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u6CE2\u6D6A\u7EBF\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389")),
       cell("art:roll", `<span class="smufl">\uE222</span>`, _t("\u6EDA\u594F"), _t("\u6EDA\u594F\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u97F3\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u6574\u4E2A\u97F3\u6572\u6EE1\uFF08\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF\uFF09\uFF1B\u591A\u5BC6\u5728\u4E50\u5668\u9875\u8C03\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389")),
       // v0.16.64
@@ -17470,7 +17409,6 @@ function padKeyAction(id2, mods = { ramp: false }) {
     case "backspace":
     case "symBackspace":
     case "staff":
-    case "phrase":
     case "slur":
       return cmd2({ k: id2 });
     case "key":
@@ -29738,15 +29676,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-2be10cf29a4f.mjs");
+      return pick(() => "singer-worker-551ad6cb70e2.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-c70d2d6c12b6.mjs");
+      return pick(() => "layout-worker-ae07840aeb67.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-444ba998d8df.mjs");
+      return pick(() => "encode-worker-b5e53d296d60.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -31550,7 +31488,6 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       }
       continue;
     }
-    if (t10.kind === "phrase") continue;
     if (t10.kind === "key" || t10.kind === "time" || t10.kind === "tempo") {
       if (ticks >= len || t10.kind === "time" && ticks > 0) close(false);
       if (t10.kind === "key") cur.push(`<attributes>${keyXml(t10.fifths, t10.mode === "minor")}</attributes>`);
@@ -32291,17 +32228,12 @@ function buildEntries(a10) {
     const parts = song.parts.flatMap((part, k2) => p2.tracks[part.id] ? [{ info: { ...infos[k2], ...clefInfo(p2.id, part) }, tokens: autoOtt(part) ? withAutoOttava(p2.tracks[part.id], clefStarts.get(p2.id)?.get(part.id) ?? "G") : p2.tracks[part.id] }] : []);
     const w2 = writeMusicXml({ title: song.title, movementTitle: p2.name || void 0, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
     files[paperFile(p2.id)] = strToU8(w2.xml);
-    const phrases = {};
-    for (const [pid, toks] of Object.entries(p2.tracks)) {
-      const ids = toks.flatMap((t10, k2) => t10.kind === "phrase" && k2 > 0 ? [toks[k2 - 1].id] : []);
-      if (ids.length) phrases[pid] = ids;
-    }
     const swells = {};
     for (const [pid, toks] of Object.entries(p2.tracks)) for (const t10 of toks) {
       const sw2 = swellOf(t10);
       if (sw2) (swells[pid] ??= {})[String(t10.id)] = sw2;
     }
-    return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, ...Object.keys(phrases).length ? { phrases } : {}, ...Object.keys(swells).length ? { swells } : {}, ...p2.hidden ? { hidden: true } : {} };
+    return { id: p2.id, file: paperFile(p2.id), manualBars: w2.manualBars, unwritten: w2.unwritten, ...Object.keys(swells).length ? { swells } : {}, ...p2.hidden ? { hidden: true } : {} };
   });
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k2) => {
     const f2 = flattenPart(song, part.id, { tempo: k2 === 0, order: songPlayOrder(song) });
@@ -32982,15 +32914,6 @@ function openBytes(name, bytes) {
     reads.push(r10);
     const seg = paperOfRead(String(p2.id), r10);
     if (p2.hidden === true) seg.hidden = true;
-    const ph = p2.phrases;
-    if (ph) for (const [pid, ids] of Object.entries(ph)) {
-      const toks = seg.tracks[pid];
-      if (!toks) continue;
-      for (const id2 of ids) {
-        const k3 = toks.findIndex((t10) => t10.id === id2);
-        if (k3 >= 0 && toks[k3 + 1]?.kind !== "phrase") toks.splice(k3 + 1, 0, { kind: "phrase", id: 0 });
-      }
-    }
     const sw2 = p2.swells;
     if (sw2) for (const [pid, m2] of Object.entries(sw2)) {
       const toks = seg.tracks[pid];
@@ -39282,7 +39205,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "bdfdd3b0c9dfd55a" : "dev";
+var CORE_HASH = true ? "8f422d3a6cd1dfff" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -51402,10 +51325,6 @@ function toJianpu(toks, fifths) {
       continue;
     }
     if (t10.kind === "clef" || t10.kind === "ottava") continue;
-    if (t10.kind === "phrase") {
-      out.push(",");
-      continue;
-    }
     if (t10.kind === "dyn") {
       out.push(`[${t10.value}]`);
       continue;
@@ -51480,10 +51399,7 @@ function fromJianpu(text2, fifths) {
       t11.dur += TPQ;
       continue;
     }
-    if (w2 === ",") {
-      out.push({ kind: "phrase", id: id2++ });
-      continue;
-    }
+    if (w2 === ",") continue;
     let m2 = /^\[1=([A-G][b#]?)\]$/.exec(w2);
     if (m2) {
       const k2 = KEY_BY_LABEL[m2[1]];
@@ -55084,7 +55000,7 @@ function openScoreMenu(at2, _row) {
   box.className = "track-card ctx-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc11(title)}"` : ""}>${label}</button>`;
-  box.innerHTML = item("play", _t("\u4ECE\u8FD9\u513F\u653E"), _t("\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09")) + `<div class="ctx-sep"></div>` + item("paste", _t("\u7C98\u8D34"), _t("\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09")) + `<div class="ctx-sep"></div>` + item("bar", _t("\u5C0F\u8282\u7EBF |"), _t("\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09")) + item("phrase", _t("\u53E5\u53F7"), _t("\u8FD9\u4E00\u53E5\u5230\u8FD9\u513F\uFF08\u300C\u5408\u300D\u632A\u5B57\u7684\u8FB9\u754C\uFF1B\u4E0D\u6362\u884C\u4E0D\u6362\u6C14\uFF09")) + item("header", _t("\u8C31\u53F7 \xB7 \u8C03\u53F7 \xB7 \u62CD\u53F7 \xB7 \u901F\u5EA6\u2026"), _t("\u4ECE\u8FD9\u513F\u8D77\u6362\uFF08\u540C\u4E00\u4E2A\u9762\u677F\uFF09")) + item("ottava", _t("\u516B\u5EA6\u7EBF\u2026"), _t("8va / 15ma / 8vb\uFF08\u53EA\u7BA1\u753B\uFF09")) + item("transpose", _t("\u79FB\u8C03 / \u8F6C\u8C03\u2026"), _t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09\uFF1B\u53EA\u632A\u4E00\u6BB5 = \u9009\u4E2D\u5B83\uFF0C\u7528\u9009\u533A\u83DC\u5355")) + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
+  box.innerHTML = item("play", _t("\u4ECE\u8FD9\u513F\u653E"), _t("\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09")) + `<div class="ctx-sep"></div>` + item("paste", _t("\u7C98\u8D34"), _t("\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09")) + `<div class="ctx-sep"></div>` + item("bar", _t("\u5C0F\u8282\u7EBF |"), _t("\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09")) + item("header", _t("\u8C31\u53F7 \xB7 \u8C03\u53F7 \xB7 \u62CD\u53F7 \xB7 \u901F\u5EA6\u2026"), _t("\u4ECE\u8FD9\u513F\u8D77\u6362\uFF08\u540C\u4E00\u4E2A\u9762\u677F\uFF09")) + item("ottava", _t("\u516B\u5EA6\u7EBF\u2026"), _t("8va / 15ma / 8vb\uFF08\u53EA\u7BA1\u753B\uFF09")) + item("transpose", _t("\u79FB\u8C03 / \u8F6C\u8C03\u2026"), _t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09\uFF1B\u53EA\u632A\u4E00\u6BB5 = \u9009\u4E2D\u5B83\uFF0C\u7528\u9009\u533A\u83DC\u5355")) + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
   `<div class="ctx-row ctx-dyn">${["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(D2.st), D2.st.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="${_t("\u529B\u5EA6 {d}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77", { d: d3 })}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("all", _t("\u5168\u9009"));
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -55114,7 +55030,6 @@ function openScoreMenu(at2, _row) {
     }
     if (v === "paste") void pasteNow();
     else if (v === "bar") update(apply(D2.st, { k: "bar" }, performance.now()));
-    else if (v === "phrase") update(apply(D2.st, { k: "phrase" }, performance.now()));
     else if (v === "header") {
       insertMarkHere(void 0, at2);
       return;
@@ -57861,4 +57776,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-01fca198a855.mjs.map
+//# sourceMappingURL=moonsinger-216fb539e96d.mjs.map

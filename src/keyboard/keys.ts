@@ -68,8 +68,6 @@ export const BINDINGS: Binding[] = [
     does: { write: _t("休止"), edit: _t("选区里写一个休止（替换模式：按长短档吃掉选区里的音，不写出选区）") } },
   { id: "bar", group: _t("写音"), keys: [{ code: "Enter" }, { code: "NumpadEnter" }, { code: "Backslash", shift: true }], show: "Enter / |", act: cmd({ k: "bar" }),
     does: { write: _t("小节线"), edit: _t("在选中后面插小节线") } },
-  { id: "phrase", group: _t("写音"), keys: [{ code: "Enter", shift: true }, { code: "NumpadEnter", shift: true }], show: "Shift+Enter", act: cmd({ k: "phrase" }),
-    does: { write: _t("句号（这一句到这儿：「合」挪字的边界；没有语义：不换气、不换行、不是小节线）"), edit: _t("在选中后面插句号") } },
   // ── 时值 ──
   { id: "shorter", group: _t("时值"), keys: [{ code: "Digit8" }, { code: "Numpad8" }], act: cmd({ k: "shorter" }),
     does: { write: _t("短：下一个音的时值减半（到三十二分为止）"), edit: _t("短：接下来写的减半（选区里写 = 按这一档替换；整组改时值走选区菜单）") } },

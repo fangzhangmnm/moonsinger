@@ -1,4 +1,5 @@
 // 叠音（polyphony，2026-10-08）：XOR 叠 / 拿掉、最后一个留着、最高的当旋律线、移调带着叠音走、.mxl 来回、简谱文字。created 2026-10-08 by Claude Fable 5.1
+import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, toggleChordPitch, stackPitch, allPitches, withPitches, transposeSel, select, tr, firstTrack, type NoteTok } from "../src/score/song.ts";
 import type { Pitch } from "../src/score/pitch.ts";
@@ -28,14 +29,17 @@ describe("叠音", () => {
     st = toggleChordPitch(st, i, P("E", 4)); st = select(st, i, i + 1); st = transposeSel(st, 2);
     deq(allPitches(tr(st)[i] as NoteTok).map((p) => p.step + (p.alter ? "#" : "") + p.octave), ["F#4", "D4"]);
   });
-  it(".mxl 来回：<chord/> 写出去读回来一样；句号在 score.json 里来回", () => {
+  it(".mxl 来回：<chord/> 写出去读回来一样；老歌 score.json 里的句号读的时候丢掉（v0.16.86 句号整个去掉）", () => {
     let st = initState(); st = writeDegree(st, 1, "near"); st = writeDegree(st, 5, "near");
     st = toggleChordPitch(st, 3, P("E", 4)); st = toggleChordPitch(st, 3, P("G", 4));
-    const toks = tr(st).slice(); toks.splice(4, 0, { kind: "phrase", id: 99 });
+    const toks = tr(st).slice();
     const song = { ...st.song, papers: [{ ...st.song.papers[0], tracks: { P1: toks } }] };
-    const bytes = saveMxl({ song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08T00:00:00Z" });
-    const o = openBytes("x.mxl", bytes), back = firstTrack(o.song);
-    deq(back.map((t) => t.kind), ["key", "time", "tempo", "note", "phrase", "note"]);
+    const bytes0 = saveMxl({ song, hum: "n", extras: emptyExtras(), app: "test", date: "2026-10-08T00:00:00Z" });
+    // 老版本存的：score.json papers[0].phrases = 第一个音后面一个句号
+    const z = unzipSync(bytes0), sj = JSON.parse(strFromU8(z[".moonsinger/score.json"])); sj.papers[0].phrases = { P1: [toks[3].id] };
+    z[".moonsinger/score.json"] = strToU8(JSON.stringify(sj));
+    const o = openBytes("x.mxl", zipSync(z)), back = firstTrack(o.song);
+    deq(back.map((t) => t.kind), ["key", "time", "tempo", "note", "note"]);
     deq(allPitches(back[3] as NoteTok).map((p) => p.step + p.octave), ["G4", "E4", "C4"]);
     assert(!o.notices.length, "零提示");
   });

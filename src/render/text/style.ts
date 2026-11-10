@@ -49,7 +49,7 @@ export const TEXT_STYLES = {
   "nav-word": s("sans", TEMPO_EM * 1.05, "staff", 600, true), "nav-mark": s("sans", TEMPO_EM * 1.05, "staff", 600),   // 反复的字（房子「1.」、×3、D.C.…）：屏幕一直是粗的，PDF 原来印细的——统一成粗的
   "bar-no": s("sans", 1.05, "staff"), "page-no": s("sans", 1.2, "text"),
   lyric: s("lyric", LYRIC_EM, "staff"),
-  "phrase-mark": s("sans", 1.3, "staff"), ottava: s("sans", 1.3, "staff"), "breath-label": s("sans", 1.15, "staff"),
+  ottava: s("sans", 1.3, "staff"), "breath-label": s("sans", 1.15, "staff"),
   "dyn-word": s("serif", 2.0, "staff", 400, true), "dyn-implied": s("sans", 1.3, "staff", 600, true),
 } satisfies Record<string, TextStyle>;
 export type TextRole = keyof typeof TEXT_STYLES;

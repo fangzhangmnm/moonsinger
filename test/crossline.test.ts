@@ -45,7 +45,7 @@ describe("符杠：力度记号 / 渐强渐弱 / 句号夹在中间不打断（2
     const beams = (items: Token[]) => lay(song(items), 600).prims.filter((p) => p.t === "path" && /\bbeam\b/.test((p as { cls?: string }).cls ?? "")).length;
     const plain = beams(eight());
     const e = eight();
-    const marked: Token[] = [e[0], e[1], { kind: "dyn", id: id++, value: "f" } as Token, { kind: "hairpin", id: id++, dir: "cresc" } as Token, e[2], { kind: "phrase", id: id++ } as Token, e[3]];
+    const marked: Token[] = [e[0], e[1], { kind: "dyn", id: id++, value: "f" } as Token, { kind: "hairpin", id: id++, dir: "cresc" } as Token, e[2], e[3]];
     assert(plain > 0, "有符杠");
     eq(beams(marked), plain);
   });

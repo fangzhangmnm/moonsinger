@@ -10,7 +10,7 @@ let nid = 8000;
 const head = () => tr(initState()).slice(0, 3);   // ♩ = 90：一拍休止 0.67 s ≥ 0.25 s = 段界（每句）
 const n = (lyric: string | null, dur = TPQ): Token => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 4 }, dur, lyric });
 const r = (dur = TPQ): Token => ({ kind: "rest", id: nid++, dur });
-const ph = (): Token => ({ kind: "phrase", id: nid++ });
+const ph = (): Token => ({ kind: "bar", id: nid++ });   // 不占时值的 token（原来是句号，v0.16.86 去掉了）
 const plan = (toks: Token[], mode: SingChunkMode = "phrase", bounds: number[] = []) => sungPlan(toks, undefined, bounds, mode, "n");
 const langsOf = (toks: Token[], mode: SingChunkMode = "phrase", bounds: number[] = []) => plan(toks, mode, bounds).at.map((l, i) => (toks[i].kind === "note" ? l : "·")).join(" ");
 const segs = (toks: Token[], mode: SingChunkMode = "phrase", bounds: number[] = []) => { const p = plan(toks, mode, bounds); return p.ranges.map(([a, b], k) => `${p.langs[k]}:${toks.slice(a, b).flatMap((t) => (t.kind === "note" ? [(t as { lyric: string | null }).lyric ?? "_"] : [])).join("")}`).join(" "); };

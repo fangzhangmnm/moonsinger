@@ -57,10 +57,8 @@ export interface NavTok { kind: "nav"; id: number; what: NavWhat; nums?: number[
 export const NAV_LABEL: Record<Exclude<NavWhat, "ending">, string> = { segno: "Segno", coda: "Coda", fine: "Fine", toCoda: "To Coda", dc: "D.C.", dcFine: "D.C. al Fine", dcCoda: "D.C. al Coda", ds: "D.S.", dsFine: "D.S. al Fine", dsCoda: "D.S. al Coda" };
 /** 房子上写的字：[1] → 「1.」，[1, 2] → 「1. 2.」。 */
 export const endingLabel = (nums: readonly number[] | undefined): string => (nums && nums.length ? nums.map((n) => `${n}.`).join(" ") : "1.");
-/** 句号（2026-10-08，Claude Fable 5.1；user「现在 || 没有这个我碰到稍微长一点的曲子都快疯了」「歌词的句号可能需要这个」「呼吸就是呼吸，然后句号另外算，不自动呼吸，没有语义，或者只提示月读，不算打谱符号」）：
- *  这一句到这儿。**没有语义**：不换行（「不应该按照句换行，打谱软件没这么干的」）、不换气、不是小节线（不数拍、弱起照旧）；只给「合」挪字当边界，画成歌词行上一个小「。」。
- *  pad 符号层的「句号」键 / Shift+Enter / 歌词里打句读插入。**不进 MusicXML**（不算打谱符号），存 .moonsinger/score.json（papers[].phrases）。 */
-export interface PhraseTok { kind: "phrase"; id: number }
+/* 句号（2026-10-08 起的 PhraseTok，歌词行上的小灰「。」）v0.16.86 整个去掉：user 11-10「至少小灰符号存在于否不应该影响排版。以及这些符号我完全没办法删
+ *  我建议是都不要？」「好，整个去掉」。它唯一的用处是给歌词往后填字当边界；老歌 score.json 里的 papers[].phrases 读的时候丢掉（project.ts），不再写。 */
 /** mode = 小调（v0.16.83，user 11-09「在选调号的时候强制一起选。不过关系大小调对齐」）：只管和弦级数从 la 数；音、升降号、播放都不变。
  *  没有 = 大调（老歌全是）。MusicXML 原生 <key><mode>minor</mode>。凡是照抄调号的地方（新纸 / 新声部 / 移调 / 复制）一起带。 */
 export interface KeyTok { kind: "key"; id: number; fifths: number; mode?: "minor" }
@@ -114,7 +112,7 @@ export interface ClefTok { kind: "clef"; id: number; clef: ClefName }
 /** 八度线（v0.9.28；user「铃铛会很高。8va可以做了吗」）：从这儿起谱上画低（8va / 15ma）/ 高（8vb）几个八度，直到下一个八度线记号（shift 0 = 结束）；只管画。
  *  shift：1 = 8va（实际高八度）、2 = 15ma、−1 = 8vb、0 = 结束。MusicXML 原生 <octave-shift>。 */
 export interface OttavaTok { kind: "ottava"; id: number; shift: -1 | 0 | 1 | 2; /** 自动画的（v0.9.37）：只在导出 MusicXML 时临时插进去（带 ms-auto id），谱里永远没有。 */ auto?: true }
-export type Token = NoteTok | RestTok | BarTok | PhraseTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok | ClefTok | OttavaTok;
+export type Token = NoteTok | RestTok | BarTok | MarkTok | DynTok | HairpinTok | GrooveTok | NavTok | ClefTok | OttavaTok;
 export type Timed = NoteTok | RestTok;
 /** 一个记号的值（不带 id）。 */
 export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, "id">;
@@ -414,7 +412,7 @@ function applyAcc(p: Pitch, input: InputState): Pitch { return input.acc ? alter
 function fillTarget(st: EditorState): number {
   for (let i = st.caret; i < tr(st).length; i++) {
     const t = tr(st)[i];
-    if (t.kind === "bar" || t.kind === "phrase" || t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove" || t.kind === "nav" || t.kind === "clef" || t.kind === "ottava" || isMark(t)) continue;
+    if (t.kind === "bar" || t.kind === "dyn" || t.kind === "hairpin" || t.kind === "groove" || t.kind === "nav" || t.kind === "clef" || t.kind === "ottava" || isMark(t)) continue;
     return t.kind === "note" && t.pitch === null ? i : -1;
   }
   return -1;
@@ -630,23 +628,6 @@ export function writeBar(st: EditorState): EditorState {
   if (!st.sel && at - 1 >= headLen(tokens) && prev?.kind === "bar" && !prev.repeat && !prev.style) { tokens.splice(at - 1, 1); return next(st, tokens, { caret: at - 1, sel: null, log: [] }); }
   tokens.splice(at, 0, { kind: "bar", id });
   return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
-}
-/** 句（pad 符号层 / Shift+Enter）：插在光标处（有选中 = 选中后面）；前面已经是句 = 原样。断句常在小节中间，所以不绑小节线（user 2026-10-08「断句可能在非小节线处，建议不要用小节线」）。 */
-export function writePhrase(st: EditorState): EditorState {
-  const at = st.sel ? st.sel.to : st.caret, tokens = tr(st).slice();
-  if (tokens[at - 1]?.kind === "phrase" || at <= headLen(tokens)) return st;
-  const id = st.nextId;
-  tokens.splice(at, 0, { kind: "phrase", id });
-  return next(st, tokens, { caret: at + 1, sel: null, nextId: id + 1, log: [] });
-}
-/** 在下标 i 的 token 后面插一个句（歌词里打了句号）；后面已经是句 = 原样。光标 / 选中在它后面的往后挪一格。 */
-export function insertPhraseAfter(st: EditorState, i: number): EditorState {
-  const tokens = tr(st).slice();
-  if (!tokens[i] || tokens[i + 1]?.kind === "phrase") return st;
-  const id = st.nextId;
-  tokens.splice(i + 1, 0, { kind: "phrase", id });
-  const sel = st.sel ? { from: st.sel.from > i ? st.sel.from + 1 : st.sel.from, to: st.sel.to > i ? st.sel.to + 1 : st.sel.to } : null;
-  return next({ ...st, nextId: id + 1 }, tokens, { caret: st.caret > i ? st.caret + 1 : st.caret, sel });
 }
 // ── 修：演奏法 / 力度 / 呼吸（2026-10-08 by Claude Opus 5.5）────────────────────────────
 /** 一个音的演奏法（按 ARTS 的顺序）。 */

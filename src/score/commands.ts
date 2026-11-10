@@ -1,11 +1,11 @@
 // commands.ts —— 键盘 / pad / 按钮条发来的命令 → 编辑器状态。created 2026-10-06 by Claude Opus 5.5；2026-10-07 UX-2 改
 // 键盘怎么变成命令 = src/keyboard/keys.ts（一张表）；这里只管命令做什么。
 import type { Dir } from "./pitch.ts";
-import { type EditorState, type Art, type Dyn, setDynSel, dynMarkSel, toggleSlurBefore, toggleHairpin, toggleSwell, symBackspace, writeDegree, writeRest, writeBar, writePhrase, shorter, longer, setTuplet, extend, tapAcc, octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward, transposeSel, respellSel, modulateSel, selectToEdge, tr, toggleStaff, toggleArtBefore, toggleInhaleBefore, setSelDur, scaleSelDur } from "./song.ts";
+import { type EditorState, type Art, type Dyn, setDynSel, dynMarkSel, toggleSlurBefore, toggleHairpin, toggleSwell, symBackspace, writeDegree, writeRest, writeBar, shorter, longer, setTuplet, extend, tapAcc, octaveTarget, stepTarget, alterTarget, moveCaret, extendSelection, setCaret, escape, backspace, deleteForward, transposeSel, respellSel, modulateSel, selectToEdge, tr, toggleStaff, toggleArtBefore, toggleInhaleBefore, setSelDur, scaleSelDur } from "./song.ts";
 
 export type Command =
   | { k: "degree"; degree: number; dir: Dir; /** 单声乐器的声部：改一个音时换音高、不叠（v0.10.5）。 */ mono?: boolean }
-  | { k: "rest" } | { k: "bar" } | { k: "phrase" } | { k: "art"; a: Art } | { k: "inhale"; v: "soft" | "big" } | { k: "slur" } | { k: "wedge"; w: "cresc" | "dim" } | { k: "dyn"; v: Dyn; ramp?: boolean } | { k: "swell"; w: "<" | ">" | "<>" }   // art = 光标前那个音（有选区 = 选中的）切演奏法（pad 符号层；前面不是音 = 原样）
+  | { k: "rest" } | { k: "bar" } | { k: "art"; a: Art } | { k: "inhale"; v: "soft" | "big" } | { k: "slur" } | { k: "wedge"; w: "cresc" | "dim" } | { k: "dyn"; v: Dyn; ramp?: boolean } | { k: "swell"; w: "<" | ">" | "<>" }   // art = 光标前那个音（有选区 = 选中的）切演奏法（pad 符号层；前面不是音 = 原样）
   | { k: "shorter" } | { k: "longer" } | { k: "tuplet" } | { k: "extend"; half?: boolean }   // half = pad 的「/2」开着：拉长半份（= 附点）
   | { k: "acc"; acc: 1 | -1 }
   | { k: "octave"; d: number } | { k: "step"; d: number } | { k: "alter"; d: number }
@@ -20,7 +20,6 @@ export function apply(st: EditorState, c: Command, now = Date.now()): EditorStat
     case "degree": return writeDegree(st, c.degree, c.dir, !!c.mono);
     case "rest": return writeRest(st);
     case "bar": return writeBar(st);
-    case "phrase": return writePhrase(st);
     case "art": return toggleArtBefore(st, c.a) ?? st;
     case "inhale": return toggleInhaleBefore(st, c.v) ?? st;
     case "slur": return toggleSlurBefore(st) ?? st;

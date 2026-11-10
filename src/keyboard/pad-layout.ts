@@ -8,7 +8,7 @@ export type SymPage = "art" | "dyn" | "mark";
 export const SYM_PAGES: Record<SymPage, readonly string[]> = {
   art: ["art:ghost", "art:unstress", "art:stress", "art:accent", "art:marcato", "art:sfz", "art:fp", "art:tenuto", "art:staccato", "slur", "art:breath", "inhale:soft", "inhale:big", "art:whisper", "swell:<", "swell:>", "swell:<>", "art:arpeggio", "art:roll"],   // 2026-10-10：出声的换气（轻吸 / 深吸）、气声（× 符头）   // 从轻到重一路排下来（强度的阶梯），再是长短 / 连断
   dyn: ["dyn:ppp", "dyn:pp", "dyn:p", "dyn:mp", "dyn:mf", "dyn:f", "dyn:ff", "dyn:fff", "wedge:cresc", "wedge:dim", "dyn:ramp"],   // 音内渐强 / 渐弱 / 鼓起搬到「演奏法」（v0.9.44；user「…应该属于演奏法…因为是跟着音符的」）   // ppp…fff 两整排（v0.9.23）
-  mark: ["phrase", "key", "time", "tempo", "clef", "ottava", "groove", "repeat", "staff"],   // 谱号 / 八度线（v0.9.28）
+  mark: ["key", "time", "tempo", "clef", "ottava", "groove", "repeat", "staff"],   // 谱号 / 八度线（v0.9.28）
 };
 export const SYM_PAGE_NAME: Record<SymPage, string> = { art: _t("演奏法##页签"), dyn: _t("力度##页签"), mark: _t("记号") };
 export const SYM_PAGE_TITLE: Record<SymPage, string> = { art: _t("强度（幽灵音 / 弱化 / 次重音 / 重音 / 强音 / 突强 / 强后即弱）、保持 / 跳音 / 连线 / 呼吸（静默 / 轻吸 / 深吸）、气声"), dyn: _t("ppp…fff、渐强 / 渐弱、渐到、音内起伏"), mark: _t("句号、调号 / 拍号 / 谱号 / 八度线 / 速度、风格（拍子轻重）") };

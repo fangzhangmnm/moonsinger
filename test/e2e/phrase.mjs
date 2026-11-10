@@ -1,5 +1,5 @@
 // test/e2e/phrase.mjs —— 真浏览器 E2E（先 npm run build，再 npm run serve（8710），再 node test/e2e/phrase.mjs；借 WeebPaint 的 playwright，同 shell-smoke）。created 2026-10-08 by Claude Fable 5.1
-// 句 / 隐藏的纸 / 范围 / 走带回顶栏 / 写字头 E2E。
+// 句号去掉了（v0.16.86）/ 隐藏的纸 / 范围 / 走带回顶栏 / 写字头 E2E。
 import { chromium } from "./pw.mjs";
 import os from "node:os"; import path from "node:path";
 const OUT = path.join(os.tmpdir(), "moonsinger-e2e"); import { mkdirSync } from "node:fs"; mkdirSync(OUT, { recursive: true });
@@ -20,43 +20,33 @@ try {
   await p.mouse.click(ns[0].x, ns[0].y); await p.waitForTimeout(100);
   check(await p.$("svg .note.cur") == null, "轻点放的光标：前一个音不发蓝");
   await p.keyboard.press("End");
-  // Shift+Enter = 句号（pad 符号层里那个键同一条命令）
+  // 句号 v0.16.86 整个去掉（user 11-10「至少小灰符号存在于否不应该影响排版。以及这些符号我完全没办法删」「好，整个去掉」）：Shift+Enter 什么都不插、谱上没有「。」
   await p.keyboard.press("Shift+Enter"); await p.waitForTimeout(150);
-  check((await kinds()) === "dyn n n n n ,", "Shift+Enter = 句号", await kinds());
+  check((await kinds()) === "dyn n n n n", "Shift+Enter 不再插句号", await kinds());
   for (const k of ["Digit6", "Digit5", "Digit3"]) await p.keyboard.press(k);
   await p.waitForTimeout(150);
-  check((await systems()) === 1, "句不换行（还是一行谱）", String(await systems()));
-  check(await p.$("svg .phrase-mark") != null, "画了小「。」");
+  check((await systems()) === 1, "还是一行谱", String(await systems()));
+  check(await p.$("svg .phrase-mark") == null, "谱上没有小「。」");
   // 「|」是自己的（句号不绑小节线）；再按一下 = 去掉（v0.9.22 小节线 XOR，user「小节线应该也是xor，有时候误加的小节线一直删不掉」）
   await p.keyboard.press("Enter"); await p.waitForTimeout(150);
   check((await kinds()).endsWith("n |"), "按一下「|」= 一根小节线", await kinds());
   await p.keyboard.press("Enter"); await p.waitForTimeout(150);
   check((await kinds()).endsWith("n n n") && !(await kinds()).includes("|"), "紧挨着再按一下 = 去掉（XOR）", await kinds());
-  // 歌词里打句号 = 句
-  const ns2 = await p.$$eval("#score text.note", (ts) => ts.map((t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
+  // 歌词里打「。」= 字不进歌词、跳下一个音，不插任何东西
   await p.evaluate(() => window.__moonsinger.setMode("lyrics"));   // v0.9.19：歌词框只在「词」模式里点得开
   const ly = await p.evaluate(() => { const L = window.__moonsinger.layout(), sh = document.querySelector("#score .sheet").getBoundingClientRect(); const h = L.lyrics[0]; return { x: sh.left + L.pageX.left + h.x, y: sh.top + h.y - L.sp * 0.5 }; });
   await p.mouse.click(ly.x, ly.y); await p.waitForTimeout(150);
-  console.log("    [dbg] lyric open:", await p.evaluate(() => window.__moonsinger.view.lyrics.open), "click", JSON.stringify(ly), "kinds", await kinds());
+  const k1 = await kinds();
   for (const ch of ["さ", "く", "ら", "。"]) { await p.keyboard.type(ch); await p.waitForTimeout(80); }
   await p.waitForTimeout(200);
-  const k2 = await kinds(); check(k2.startsWith("dyn n n n ,"), "歌词「さくら。」：第三个音后面插了句", k2);
+  const lyr = await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.lyric ?? "_").join(""));
+  check((await kinds()) === k1 && lyr.startsWith("さくら") && !lyr.includes("。"), "歌词「さくら。」：字照写、「。」不进歌词、什么都没插", `${await kinds()} / ${lyr}`);
   await p.keyboard.press("Escape"); await p.evaluate(() => window.__moonsinger.setMode("notes"));
-  // 存 → 开：句来回（breath-mark）
-  const bytes = await p.evaluate(() => Array.from(window.__moonsinger.bytes()));
-  const back = await p.evaluate((arr) => { const o = window.__moonsinger.open("x.mxl", new Uint8Array(arr)); return o.song.papers[0].tracks.P1.slice(3).map((t) => t.kind === "phrase" ? "," : t.kind === "note" ? "n" : t.kind === "bar" ? "|" : t.kind).join(" "); }, bytes);
-  check(back === (await kinds()), "存成 .mxl 再读：句号还在", `${back} vs ${await kinds()}`);
-  const xml = await p.evaluate((arr) => window.__moonsinger.zipText(new Uint8Array(arr), ".moonsinger/papers/p1.musicxml"), bytes);
-  const sj = await p.evaluate((arr) => window.__moonsinger.zipText(new Uint8Array(arr), ".moonsinger/score.json"), bytes);
-  check(!/breath-mark/.test(xml) && /"phrases"/.test(sj), "句号不进 MusicXML，在 score.json 里");
-  // pad 符号层：点「符」翻页、点「句号」插一个；符号层留着，再点一下回音键
-  await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("End"); await p.waitForTimeout(100);   // 点谱 = pad 弹出来（歌词框收起时 pad 是藏着的）
-  await p.click('.pad-head [data-kbswitch]'); await p.waitForTimeout(100);   // v0.9.19：符号层 = 顶栏「符」模式（pad 上的「符」键摘掉了）
-  await p.click('.pad-head [data-sympage="mark"]'); await p.waitForTimeout(100);   // 句号在「记号」那一页（2026-10-08 符号层分页）
-  check(await p.$(".pad-grid.symbols [data-sym=\"phrase\"]") != null, "pad 翻到符号层");
-  await p.click(".pad-grid.symbols [data-sym=\"phrase\"]"); await p.waitForTimeout(150);
-  check((await kinds()).endsWith(","), "符号层点「句号」= 插了一个", await kinds());
-  check(await p.$(".pad-grid.symbols") != null, "插完符号层还开着（只有 caps；user「符号键盘应该只有caps模式没有shift模式」）");
+  // 符号层「记号」那一页没有「句号」键了
+  await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("End"); await p.waitForTimeout(100);
+  await p.click('.pad-head [data-kbswitch]'); await p.waitForTimeout(100);
+  await p.click('.pad-head [data-sympage="mark"]'); await p.waitForTimeout(100);
+  check(await p.$(".pad-grid.symbols") != null && await p.$('.pad-grid.symbols [data-sym="phrase"]') == null, "符号层「记号」页：没有「句号」键了");
   await p.click(".pad-head [data-kbswitch]"); await p.waitForTimeout(100);
   check(await p.$(".pad-grid.symbols") == null, "小键盘顶上点「音」= 回音键（v0.10.37：「符」不是模式，是另一面键盘）");
   // 纸：加第二张，隐藏它；本段视图默认 → 翻到它有说明；全部视图折叠

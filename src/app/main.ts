@@ -2121,7 +2121,7 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
     item("play", _t("从这儿放"), _t("起点挪到这个小节的头，从这儿放（之后 |▶ 回到这儿重放；编辑、挪光标都不动起点）")) + `<div class="ctx-sep"></div>` +
     item("paste", _t("粘贴"), _t("贴在这里：app 里复制的，或系统剪贴板里的简谱文字（1 2 3 | 5 - -）")) +
     `<div class="ctx-sep"></div>` +
-    item("bar", _t("小节线 |"), _t("从这里重新数小节（弱起）")) + item("phrase", _t("句号"), _t("这一句到这儿（「合」挪字的边界；不换行不换气）")) +
+    item("bar", _t("小节线 |"), _t("从这里重新数小节（弱起）")) +
     item("header", _t("谱号 · 调号 · 拍号 · 速度…"), _t("从这儿起换（同一个面板）")) + item("ottava", _t("八度线…"), _t("8va / 15ma / 8vb（只管画）")) + item("transpose", _t("移调 / 转调…"), _t("这张纸 / 整首所有声部一起挪（调号跟着挪）；只挪一段 = 选中它，用选区菜单")) +
     // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
     `<div class="ctx-row ctx-dyn">${(["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"] as const).map((d) => `<button class="btn ctx-chip${dynMarkAt(tr(D.st), D.st.caret) === d ? " is-on" : ""}" data-v="dyn:${d}" title="${_t("力度 {d}：从这儿前面那个音起", { d })}"><span class="smufl">${DYN_MENU[d]}</span></button>`).join("")}</div>` +
@@ -2142,7 +2142,6 @@ function openScoreMenu(at: { x: number; y: number }, _row: { from: number; to: n
     if (v === "play") { playFromHere(D.st.at.paper, D.st.at.part, tickOfCaret(D.st.at.paper, D.st.at.part, D.st.caret) + (D.st.lead ?? 0)); return; }   // 光标在后面补齐的空小节里：加上 lead
     if (v === "paste") void pasteNow();
     else if (v === "bar") update(apply(D.st, { k: "bar" }, performance.now()));
-    else if (v === "phrase") update(apply(D.st, { k: "phrase" }, performance.now()));
     else if (v === "header") { insertMarkHere(undefined, at); return; }
     else if (v === "ottava") { openInsertOttavaMenu(at); return; }
     else if (v === "transpose") { openTransposeMenu(D.st.at.paper, at); return; }

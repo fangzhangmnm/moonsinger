@@ -6,7 +6,6 @@ import { moveSyllable, MELISMA_MARK, ELISION } from "../src/score/lyrics.ts";
 
 let nid = 500;
 const n = (lyric: string | null): Token => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 4 }, dur: TPQ, lyric });
-const phrase = (): Token => ({ kind: "phrase", id: nid++ }) as Token;
 const dyn = (v: "p" | "mp" | "f"): Token => ({ kind: "dyn", id: nid++, value: v }) as Token;
 const pin = (dir: "cresc" | "dim"): Token => ({ kind: "hairpin", id: nid++, dir }) as Token;
 /** 谱头（调 / 拍 / 速度）+ items。 */
@@ -14,8 +13,8 @@ function song(items: Token[]): EditorState {
   const st = initState(), head = tr(st).slice(0, 3);
   return { ...st, song: withTrack(st.song, st.at.paper, st.at.part, [...head, ...items]), caret: 3 + items.length };
 }
-/** 歌词那一行（拖腔 = ー、没字 = _、句 = 。）。 */
-const lyr = (st: EditorState) => tr(st).slice(3).map((t) => (t.kind === "phrase" ? "。" : t.kind === "note" ? (t.lyric === null ? "_" : t.lyric) : `[${t.kind}]`)).join(" ");
+/** 歌词那一行（拖腔 = ー、没字 = _）。 */
+const lyr = (st: EditorState) => tr(st).slice(3).map((t) => (t.kind === "note" ? (t.lyric === null ? "_" : t.lyric) : `[${t.kind}]`)).join(" ");
 const at = (st: EditorState, k: number) => 3 + k;   // 第 k 个 item 的下标
 const L = MELISMA_MARK;
 
@@ -38,8 +37,6 @@ describe("拖歌词：往后（分）", () => {
     const st = song([n("我"), n("爱"), n("你")]);
     const r = moveSyllable(st, at(st, 1), 1);
     eq(r.st, st); eq(r.done, 0);
-    const st2 = song([n("我"), n("爱"), phrase(), n(null)]);
-    eq(moveSyllable(st2, at(st2, 1), 1).done, 0, "句号是边界");
   });
   it("一个音上几个字（合过的）= 只拿最后一个字往后挪（合的反操作）", () => {
     const st = song([n(`我${ELISION}爱`), n("你"), n(null)]);
@@ -68,10 +65,6 @@ describe("拖歌词：往前（合 / 早一个音起）", () => {
     const st = song([n("我"), n(L), n("爱")]);
     const r = moveSyllable(st, at(st, 2), -3);
     eq(lyr(r.st), `我${ELISION}爱 ${L} _`); eq(r.done, 2);
-  });
-  it("隔着句号 = 不动", () => {
-    const st = song([n("我"), phrase(), n("爱")]);
-    eq(moveSyllable(st, at(st, 2), -1).done, 0);
   });
   it("往后再往前 = 回到能读的样子（字回到原来那个音起）", () => {
     const st = song([n("我"), n("爱"), n(null)]);

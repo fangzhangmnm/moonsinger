@@ -1249,7 +1249,7 @@ export class ScoreView {
       else this.host.onMarkPress?.(f.grab.index, { x: f.cx, y: f.cy });
       return;
     }
-    if (f.grab.kind === "lyric" && f.short) this.host.notice?.(f.cur > f.src ? _t("这一句后面没有空着的音了（句号是边界），字只能挪到这儿") : _t("前面隔着句号（或者没有音了），字挪不过去"));
+    if (f.grab.kind === "lyric" && f.short) this.host.notice?.(f.cur > f.src ? _t("后面没有空着的音了，字只能挪到这儿") : _t("前面隔着句号（或者没有音了），字挪不过去"));
     if (f.grab.kind === "mark" && f.removed) this.host.notice?.(_t("顺手去掉了 {removed} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）", { removed: f.removed }));
   }
   /** 点中了哪个音（光标所在 track 或别的 track 都算；别的 track 的音 = 先把焦点换过去）。 */

@@ -207,7 +207,6 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
       }
       continue;
     }
-    if (t.kind === "phrase") continue;   // 句号不算打谱符号（user 2026-10-08）：不进 MusicXML，存 .moonsinger/score.json（project.ts）
     if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") {
       if (ticks >= len || (t.kind === "time" && ticks > 0)) close(false);   // 满了的小节先断开；拍号变了从新小节开始
       if (t.kind === "key") cur.push(`<attributes>${keyXml(t.fifths, t.mode === "minor")}</attributes>`);

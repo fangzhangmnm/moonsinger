@@ -11,8 +11,7 @@
 import { _t } from "../i18n/index.ts";
 import { type EditorState, type NoteTok, tr, withTrack } from "../score/song.ts";
 import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl, joinIntoPrev, lyricEdit, mergeIntoPrev } from "../score/lyrics.ts";
-import { insertPhraseAfter } from "../score/song.ts";
-/** 歌词里的句读 = 这一句到这儿（插「句」：换行 / 换气 / 「合」的边界；user 2026-10-08「歌词的句号可能需要这个」）。字不进歌词。 */
+/** 歌词里打的句读（。，、,.!? …）：字不进歌词，当「这个音写完了、跳下一个」。v0.16.86 起不再插句号（句号整个去掉，user 11-10「好，整个去掉」）。 */
 const PUNCT = /[。．，、,.!！?？;；:：]+$/;
 const splitPunct = (v: string): { text: string; phrase: boolean } => { const m = PUNCT.exec(v); return m ? { text: v.slice(0, m.index), phrase: true } : { text: v, phrase: false }; };
 import type { Layout } from "../render/engrave.ts";
@@ -105,28 +104,20 @@ export class LyricEditor {
   /** 把框里的字贴到当前这个音（可能一次贴好几个音节，往后挪），并跳到下一个空位。 */
   private place(text: string, hyphEnd: boolean, phraseEnd = false): void {
     let syl: Syl[] = splitSyllables(text);
-    if (!syl.length) { if (phraseEnd) this.endPhraseHere(); return; }
+    if (!syl.length) return;
     if (hyphEnd) syl = syl.map((s, k) => (k === syl.length - 1 ? { ...s, hyph: true } : s));
     if (syl[0].joinPrev) {   // 「+」开头：第一个字并进前一个音（框已经跳到这个音了）；剩下的照常从这个音往后贴
       this.host.set(joinIntoPrev(this.host.get(), this.index, syl[0].text));
       syl = syl.slice(1);
       if (!syl.length) { this.input.value = this.slotText(this.index); this.rerender(); this.input.select(); return; }
     }
-    const r = distributeFrom(this.host.get(), this.index, syl), st = phraseEnd ? insertPhraseAfter(r.st, r.last) : r.st, last = r.last;
+    void phraseEnd;
+    const r = distributeFrom(this.host.get(), this.index, syl), st = r.st, last = r.last;
     this.host.set(st, { gesture: "lyric" });
     const nx = nextLyricSlot(tr(st), last);
     this.input.value = "";
     if (nx >= 0) { this.index = nx; this.input.value = this.slotText(nx); this.rerender(); this.input.select(); }
     else { this.index = -1; this.input.hidden = true; this.merge.hidden = true; this.rerender(); }   // 没有下一个音了：收起（多出来的字已经补成新音）
-  }
-  /** 框是空的、打了个句号：句插在前一个有字位的音后面（框留在原来的音上）。 */
-  private endPhraseHere(): void {
-    const st = this.host.get(), p = prevLyricSlot(tr(st), this.index);
-    if (p < 0) return;
-    const st2 = insertPhraseAfter(st, p);
-    if (st2 === st) return;
-    this.index++;   // 先挪下标再 set：set 会同步重画 → reposition 按下标找框的位置，旧下标现在是「句」那个 token（找不到 = 框会被收掉）
-    this.host.set(st2); this.rerender();
   }
   private slotText(i: number): string {
     const t = tr(this.host.get())[i] as NoteTok;
@@ -140,7 +131,7 @@ export class LyricEditor {
     if (!v) return;
     if (/^[~～_＿ー]$/.test(v)) { this.place(v, false); return; }
     const { text, phrase } = splitPunct(v);
-    if (phrase) { this.input.value = ""; this.place(text, false, true); return; }   // 句读：贴字 + 插「句」（英文的「love,」也在这儿收）
+    if (phrase) { this.input.value = ""; this.place(text, false, true); return; }   // 句读：贴字、跳下一个（英文的「love,」也在这儿收）
     if (CJK.test(v) && !/[A-Za-z]/.test(v)) { this.place(v, false); return; }
     this.reposition();
   }
@@ -177,7 +168,7 @@ export class LyricEditor {
     if (!this.open) return;
     const st = this.host.get(), cur = tr(st)[this.index] as NoteTok, sp = splitPunct(this.input.value.trim()), v = sp.text;
     if (!cur) return;
-    if (sp.phrase) { if (v) this.host.set(distributeFrom(st, this.index, splitSyllables(v)).st); this.host.set(insertPhraseAfter(this.host.get(), this.index)); return; }
+    if (sp.phrase) { if (v) this.host.set(distributeFrom(st, this.index, splitSyllables(v)).st); return; }
     if (!v) { if (cur.lyric) this.host.set({ ...st, song: withTrack(st.song, st.at.paper, st.at.part, tr(st).map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t))) }); return; }
     if (v === this.slotText(this.index)) return;
     // 字母后面的「-」= 词没完（同「-」键）；别的「-」（中日文后面、单独一个）交给 splitSyllables = 拖腔，和空格那条路一样

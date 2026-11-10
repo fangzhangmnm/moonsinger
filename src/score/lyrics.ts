@@ -107,7 +107,7 @@ export function mergeIntoPrev(st: EditorState, i: number): EditorState {
   const toks = tr(st), cur = toks[i], p = prevLyricSlot(toks, i), prev = toks[p];
   if (!cur || !lyricSlot(cur) || !cur.lyric || cur.lyric === MELISMA_MARK || !prev || !lyricSlot(prev) || !prev.lyric || prev.lyric === MELISMA_MARK) return st;
   const slots = [i];   // 这一句后面的歌词位：从 i 往后、到下一个「句」为止（跨休止符；user 2026-10-08「应该跨休止符」；此前到休止为止）
-  for (let j = i + 1; j < toks.length; j++) { const t = toks[j]; if (t.kind === "phrase") break; if (lyricSlot(t)) slots.push(j); }
+  for (let j = i + 1; j < toks.length; j++) { const t = toks[j]; if (lyricSlot(t)) slots.push(j); }
   const tokens = toks.slice();
   const merged: NoteTok = { ...prev, lyric: prev.lyric + ELISION + cur.lyric };
   if (cur.hyph) merged.hyph = true; else delete merged.hyph;
@@ -131,8 +131,8 @@ function put(t: NoteTok, b: Bead): NoteTok {
 }
 const hasText = (t: Token | undefined): boolean => !!t && t.kind === "note" && !!t.lyric && t.lyric !== MELISMA_MARK;
 /** 这一句里 i 后面的歌词位（到「句」为止）/ i 前面最近的那个（隔着「句」= -1）。 */
-function slotsAfter(toks: Token[], i: number): number[] { const out: number[] = []; for (let j = i + 1; j < toks.length; j++) { if (toks[j].kind === "phrase") break; if (lyricSlot(toks[j])) out.push(j); } return out; }
-function slotBefore(toks: Token[], i: number): number { for (let j = i - 1; j >= 0; j--) { if (toks[j].kind === "phrase") return -1; if (lyricSlot(toks[j])) return j; } return -1; }
+function slotsAfter(toks: Token[], i: number): number[] { const out: number[] = []; for (let j = i + 1; j < toks.length; j++) { if (lyricSlot(toks[j])) out.push(j); } return out; }
+function slotBefore(toks: Token[], i: number): number { for (let j = i - 1; j >= 0; j--) { if (lyricSlot(toks[j])) return j; } return -1; }
 /** 往后一个音：这个字晚一个音起。后面的字被推着走，推到第一个空着的音（没字 / 拖腔）为止，那个空位被吃掉；
  *  空出来的音 = 拖腔（前面这一句里有字可拖），否则空着。一个音上几个字（合过的）= 只拿最后一个字往后挪（「合」的反操作）。推不动（后面没空位 / 是句尾）= null。 */
 function stepRight(st: EditorState, i: number): { st: EditorState; at: number } | null {

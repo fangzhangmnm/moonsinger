@@ -1,7 +1,7 @@
 // created 2026-10-06 by Claude Opus 5.5
 import { describe, it, eq } from "./runner.mjs";
 import { splitSyllables, applyLyricLine } from "../src/score/lyrics.ts";
-import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok, tr, firstTrack, insertPhraseAfter } from "../src/score/song.ts";
+import { initState, writeDegree, setCaret, writeBar, extend, TPQ, type NoteTok, tr, firstTrack } from "../src/score/song.ts";
 import { pitchName } from "../src/score/pitch.ts";
 import { toLabScore } from "../src/score/lab-score.ts";
 import { setHum } from "../src/score/song.ts";
@@ -103,12 +103,6 @@ describe("合（并进前一个音，这一句后面的往前挪）", () => {
     const st = { ..._init(), song: song(["だ", "ん", "ご", "だ", "ん", "ご", "|rest", "や", "さ"]) };
     const out = mergeIntoPrev(st, 3 + 4).song;
     eq(lyrics(out), `だ ん ご だ${ELISION}ん ご や | さ ·`);
-  });
-  it("合：到「句」为止，句后面的字不动", () => {
-    const st0 = { ..._init(), song: song(["だ", "ん", "ご", "だ", "ん", "ご", "|rest", "や", "さ"]) };
-    const st = insertPhraseAfter(st0, 3 + 5);   // ご 后面一个句
-    const out = mergeIntoPrev(st, 3 + 4).song;
-    eq(lyrics(out), `だ ん ご だ${ELISION}ん ご · | や さ`);
   });
   it("前一个音没字 / 这个音没字 / 拖腔 = 不动", () => {
     const st = { ..._init(), song: song([null, "ん", "ご", "ー"]) };

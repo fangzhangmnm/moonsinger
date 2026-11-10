@@ -269,15 +269,14 @@ interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: nu
 interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface HeadU { kind: "head"; index: -1; w: 0; x: number; system: number; tick: number; staff: Staff }   // 光标：零宽
-interface PhraseU { kind: "phrase"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 句号：歌词行上一个小「。」（不换行、不换气）
 interface DynU { kind: "dyn"; index: number; value: Dyn; w: number; x: number; system: number; tick: number; staff: Staff }   // 力度：谱上方一个字（不占地方，和后面那个音对齐）
 interface HairpinU { kind: "hairpin"; index: number; dir: "cresc" | "dim"; w: number; x: number; system: number; tick: number; staff: Staff }   // 渐强渐弱：力度那一行，从这儿画到终点（不占地方）
 interface GrooveU { kind: "groove"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 风格记号：谱上方一行斜体字（不占地方，和后面那个音对齐）
 interface NavU { kind: "nav"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; slot: number }   // slot：D.C. / D.S. / Fine / To Coda 在小节线前（这小节尾），房子 / Segno / Coda 在后（下一小节头）   // 房子 / 跳转记号（谱内反复）：画在谱上方的反复那一道，不占地方
 interface ClefU { kind: "clef"; index: number; clef: ClefName; w: number; x: number; system: number; tick: number; staff: Staff }   // 行中间换谱号：画一个小一号的谱号（v0.9.28）
 interface OttavaU { kind: "ottava"; index: number; w: number; x: number; system: number; tick: number; staff: Staff }   // 八度线：不占地方（线在谱上 / 下，按音的范围画）
-type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | PhraseU | DynU | HairpinU | GrooveU | NavU | ClefU | OttavaU;
-const SLOT: Record<Unit["kind"], number> = { phrase: -1, bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, head: 4, chunk: 5 };
+type Unit = Chunk | BarU | KeyU | TimeU | TempoU | HeadU | DynU | HairpinU | GrooveU | NavU | ClefU | OttavaU;
+const SLOT: Record<Unit["kind"], number> = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, head: 4, chunk: 5 };
 /** 行中间换谱号：小一号的谱号（谱号的 0.72）占多宽（sp）。 */
 const CLEF_CUE = 0.72, CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
 const CLEF_GLYPH: Record<ClefName, string> = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };   // 同一 tick 上的先后（句在小节线前：换气画在上一个音后面）
@@ -331,7 +330,6 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
       beat = beatTicks(t.beats, t.beatType); len = measureLen(t.beats, t.beatType); return;
     }
     if (t.kind === "tempo") { flushFull(); units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0, tick, staff: 1 }); return; }
-    if (t.kind === "phrase") { flushFull(); units.push({ kind: "phrase", index: i, w: 1.0, x: 0, system: 0, tick, staff: 1 }); return; }
     // 力度记号 / 渐强渐弱不占横向的地方（画在谱上下，不在音和音之间）：插 / 挪 / 删它们，音的位置、间距、折行一点都不变
     //   （2026-10-08 Opus 5.5，user「移动力度标识的时候最好音符的渲染布局一点也不改…尤其是间隔之类的，不要被力度标识的插入影响」；以前各占 0.3 个间距）
     if (t.kind === "dyn") { flushFull(); units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 }); return; }
@@ -380,7 +378,7 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
 }
 
 /** 一列：同一 tick、同一种东西（小节线 / 记号 / 音）各声部对齐在一起；宽 = 最宽的那个。 */
-interface Col { tick: number; slot: number; n: number; w: number; x: number; system: number; units: Unit[]; bar: boolean; chunk: boolean; phrase: boolean }
+interface Col { tick: number; slot: number; n: number; w: number; x: number; system: number; units: Unit[]; bar: boolean; chunk: boolean }
 
 /** 歌名折行（v0.16.58，user 11-09「曲名应该能换行」）：放得下 = 一行；放不下 = 先在空格处断（「陽だまり道とれんちょん 简单笛子版」= 两行），
  *  一个词本身比一行还宽（中文 / 日文整串没有空格）= 按字断；行首不放标点和小写假名（把上一行最后一个字带下来）。w = 量宽（px），max = 一行最宽（px）。 */
@@ -736,8 +734,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         const sl = u.kind === "nav" ? u.slot : SLOT[u.kind], base = `${u.tick}:${sl}`, n = seen.get(base) ?? 0; seen.set(base, n + 1);
         const key = `${base}:${n}`;
         let c = colMap.get(key);
-        if (!c) { c = { tick: u.tick, slot: sl, n, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false, phrase: false }; colMap.set(key, c); }
-        c.units.push(u); c.w = Math.max(c.w, u.w); if (u.kind === "bar") c.bar = true; if (u.kind === "chunk") c.chunk = true; if (u.kind === "phrase") c.phrase = true;
+        if (!c) { c = { tick: u.tick, slot: sl, n, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false }; colMap.set(key, c); }
+        c.units.push(u); c.w = Math.max(c.w, u.w); if (u.kind === "bar") c.bar = true; if (u.kind === "chunk") c.chunk = true;
       }
     }
     const cols = [...colMap.values()].sort((a, b) => a.tick - b.tick || a.slot - b.slot || a.n - b.n);
@@ -1202,10 +1200,6 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       };
       for (const u of units) {
         const row = RW(u);
-        if (u.kind === "phrase") {   // 句号（没有语义，只给「合」当边界）：歌词行上一个小灰「。」，跟在上一个音后面（注解：歌词那一样里画，只看不占）
-          lyricJobs.push({ sys: u.system, run: () => { prims.push({ t: "text", x: P(u.x + 0.1), y: lyricY(lyricRow(u.system)), s: "。", cls: "phrase-mark ann", size: tx("phrase-mark"), anchor: "start" }); } });
-          continue;
-        }
         if (u.kind === "dyn") {   // 力度：谱上方、和后面那个音左对齐；挂件第 4 样（刀 4b：和用发夹连着的一串共用一条基线，贴它们自己那几段天际线往上 0.4；挨得近的两个 = 后摆的那个自然叠上去）
           const dr = rowOf(u.system, r, 0), ui = units.indexOf(u), [il, ir, iu, id] = DYN_INK[u.value];
           dynItems.push({ row: dr, x0: P(u.x + 0.3 + il), keys: [`${dr}|d${ui}`], draw: (dy) => {

@@ -411,7 +411,6 @@ export class Pad {
       return `<button class="pad-key sym${art ? " art" : ""}${off ? " ignored" : ""}${on ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id}" title="${title}${off ? _t("（台上这位不认：写在谱上画灰，出声不受影响）") : ""}">${big}<small>${label}${off ? `<span class="ign-tag">${_t("不认")}</span>` : ""}</small></button>`;
     };
     const items = [
-      cell("phrase", `<span class="big">。</span>`, _t("句号"), _t("句号：这一句到这儿（只给「合」挪字当边界；不换气、不换行、不是小节线、不进 MusicXML）")),
       cell("art:arpeggio", `<span class="smufl">\uEAA9\uEAA9</span>`, _t("琶音"), _t("琶音：光标前那个和弦（有选区 = 选中的）从低到高依次奏出（和弦左边一条波浪线）；再点一次去掉")),
       cell("art:roll", `<span class="smufl">\uE222</span>`, _t("滚奏"), _t("滚奏：光标前那个音（有选区 = 选中的）整个音敲满（符干上三道斜线）；多密在乐器页调；再点一次去掉")),   // v0.16.64
       cell("art:staccato", `<span class="smufl">\uE4A2</span>`, _t("跳音"), _t("跳音：光标前那个音（有选区 = 选中的）唱 / 弹得短促；再点一次去掉")),

@@ -72,7 +72,6 @@ stack|stack|stack
 degree.down|写谱|写谱
 rest|写谱|写谱
 bar|写谱|写谱
-phrase|写谱|写谱
 shorter|读|读
 longer|读|读
 tuplet|读|读
