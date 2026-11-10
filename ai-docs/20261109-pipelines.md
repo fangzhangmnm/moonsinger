@@ -1,6 +1,6 @@
 # 写歌的代码流程图（pipelines）
 
-> created 20261109 by Claude Fable 5.1 · as-of v0.16.52 / 2026-11-09
+> created 20261109 by Claude Fable 5.1 · as-of v0.16.52 / 2026-11-09 · A8 文字那一层 as-of v0.16.70 / 2026-11-10（Claude Opus 5.5）
 > 家规「代码流程图 ritual」（家族根 CLAUDE.md，2026-10-26 立；参考 CatsUp `ai-docs/20261026-pipelines.md`）：用户动作 → 各层 → 落盘 / 上屏；哪个操作走哪条共用流程；每步碰多少东西、实测数字；改流程同一个 commit 更新这份。
 > **这一版只理了两条线**（11-09 保存排队 + 键盘总闸这两刀碰过的）：A 按一下 → 改谱 → 上屏 + 自动存；B 开一首歌 / 换歌。播放、唱、渲染、导出 PDF 只画了总图上的位置和入口文件，步骤和数字**没理**——谁改到那几条谁补（user 11-09「让fable看一下排版引擎是整个曲段重拍还是修一行」= 总表第 3 条，补 A 的排版那一步时一起量）。
 > 数字来源都标了；没量的写「没量」，不编。
@@ -46,7 +46,8 @@
 | A5 出声 | 音键先响后写：`sound.down` 走引擎（pad-host noteDown / run() degree） | 常数 | 先响后写省 30–80 ms（大歌；`ai-docs/20261017-input-latency-probe.md`） |
 | A6 写入口 | `D.commit`：锁 → normalize（`withStartDyns`，纸头补力度）→ 记撤销快照（引用，不拷贝）→ hooks | normalize **随整首涨**（遍历每张纸的每条轨） | 没量（小歌忽略不计） |
 | A7 之后 | `afterState`：`changed()` → `H.noteChanged` → `es.markDirty`；放着 = `schedulePlaybackRefresh`；停下 700 ms = 预热唱；`queuePaint` | 常数 | — |
-| A8 画 | 下一帧 `paintNow` → `view.renderAsync`：song 结构化克隆发给排版 worker；worker 里 `engrave`（排版）+ `toSvgParts`（串化）；回来换 DOM + 装饰。谱没变 = 用缓存不重排；在途又改了 = 记最新的，回来再发一次 | **随整张纸 / 整首涨**（本段视图排整张纸，全部视图排整首；没有「只重排一行」——总表第 3 条） | 克隆 ≈ 0.5 ms（score-view.ts 注释）；主线程换 DOM 几 ms；排版本身没量；歌词让路：800 个十六分音符全带英文 engrave ≈ 40 ms，不让路 ≈ 20 ms（node，粗估量字，v0.16.48） |
+| A8 画 | 下一帧 `paintNow` → `view.renderAsync`：song 结构化克隆发给排版 worker；worker 里 `engrave`（排版）+ `toSvgParts`（串化）；回来换 DOM + 装饰。谱没变 = 用缓存不重排；在途又改了 = 记最新的，回来再发一次 | **随整张纸 / 整首涨**（本段视图排整张纸，全部视图排整首；没有「只重排一行」——总表第 3 条） | 克隆 ≈ 0.5 ms（score-view.ts 注释）；主线程换 DOM 几 ms；排版本身没量；歌词让路：800 个十六分音符全带英文，让路比不让路多 14–16 ms（v0.16.68）→ 约 9 ms（v0.16.69），普通样张 16–18 ms（node，粗估量字，`scripts/bench-lyrics.mjs`） |
+| A8½ 文字（在 engrave 里） | 谱上的字全走文字模块 `src/render/text/`（一个入口 `index.ts`）：① 样式表 `style.ts`（每种字的字体 / 粗细 / 字号 / 跟哪把尺子；屏幕 CSS、PDF 粗斜、覆盖层都查它）；② 量字 `measure.ts`：宿主只给原始尺子（屏幕 / worker = canvas，PDF = 字体字宽），每次排版 `createTextMeasure` 一把、同样的字只量一次，排版器只问「这种字写这串多宽（sp）」；③ 歌词让路 + 连字符 `lyric-fit.ts`（纯函数）；④ 基线 `baseline.ts`（字图元 y = 基线；只有覆盖层要换成盒顶） | 量字随不同的字数涨（缓存只活一次排版）；让路随每行歌词数涨，挤的那一串二分到百分位就停 | 见上一行 |
 | A9 自动存 | 2 s（`LOCAL_SAVE_DEBOUNCE_MS`）→ 流程 C | — | — |
 
 ## 四、C：存（editor-session → encode worker → store → 推）
@@ -75,7 +76,7 @@
 ## 六、还随整个模型涨的点（优化时先看这里）
 
 - A6 normalize（`withStartDyns`）每次 commit 遍历整首。
-- A8 排版：每改一下整张纸（本段视图）/ 整首（全部视图）重排、重串化；没有「只重排一行」。歌词让路在挤的那一串上二分。→ 总表第 3 条（Fable 看完给 Opus 计划书）。
+- A8 排版：每改一下整张纸（本段视图）/ 整首（全部视图）重排、重串化；没有「只重排一行」。歌词让路在挤的那一串上二分（v0.16.69 起二分到百分位就停）。→ 总表第 3 条；文字排版计划书 `ai-docs/20261109-plan-text-engine.md` §4 判断这一轮不做「只重排一行」，什么时候再谈也写在那里。
 - C3 / C4 编码：整首 + 嵌的音源每次自动存都克隆、都编一遍（2 s 一次，脏才动）。
 - B5 装歌：整首解析。
 
