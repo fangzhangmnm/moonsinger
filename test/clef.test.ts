@@ -2,7 +2,7 @@
 // user 2026-10-10「谱号的显示模式跟着谱号而不是乐器，然后先不要双谱线模式，然后加一个可以移八度显示的功能（或者其实这个就是用标准的音乐记号，然后系统自己判断？能不能这样？」
 //   →「默认自动同意」「加格式同意」「中音这个冷门没人用吧，即使做，自动也不会选」「铃铛会很高。8va可以做了吗」。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { initState, insertClef, insertOttava, setPartClef, setDisplayMark, tr, TPQ, type Token, type EditorState, type Song } from "../src/score/song.ts";
+import { initState, insertClef, insertOttava, setClefChoice, clefChoiceOf, setDisplayMark, tr, TPQ, type Token, type EditorState, type Song } from "../src/score/song.ts";
 import { autoClef, startClef, displayStates, resolveSongClefs, CLEF_SHIFT, ledgerLines } from "../src/score/clef.ts";
 import { diatonicIndex, type Pitch } from "../src/score/pitch.ts";
 import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
@@ -59,18 +59,21 @@ describe("每个下标处的谱号 / 八度线", () => {
     ] };
     const r = resolveSongClefs(song);
     eq(["a", "b", "c"].map((p) => r.get(p)?.get(part)).join(" "), "G15ma G F");
-    const fixed = resolveSongClefs({ ...song, parts: song.parts.map((p) => ({ ...p, clef: "F" as const })) });
+    // 这一段手选了谱号（v0.16.88 按段 = 纸头的谱号记号；原来是声部上的谱号）= 每张纸都是它
+    const fixed = resolveSongClefs({ ...song, papers: song.papers.map((p) => ({ ...p, tracks: { [part]: [...head(), { kind: "clef", id: 900, clef: "F" } as Token, ...p.tracks[part].slice(3)] } })) });
     eq(["a", "b", "c"].map((p) => fixed.get(p)?.get(part)).join(" "), "F F F");
   });
 });
 
 describe("编辑：插 / 改 / 删", () => {
-  it("插谱号在光标处；紧挨着再插 = 改它；声部谱号 null = 自动", () => {
+  it("插谱号在光标处；紧挨着再插 = 改它；这一段选谱号 / 自动 / 大谱表（v0.16.88 按段）", () => {
     let st = stOf([...head(), n("C", 5), n("D", 5)]);
     st = insertClef(st, "F"); eq(tr(st).filter((t) => t.kind === "clef").length, 1);
     st = insertClef(st, "G8vb"); const c = tr(st).filter((t) => t.kind === "clef"); eq(c.length, 1); eq((c[0] as { clef: string }).clef, "G8vb");
-    st = setPartClef(st, st.at.part, "F"); eq(st.song.parts[0].clef, "F");
-    st = setPartClef(st, st.at.part, null); eq(st.song.parts[0].clef, undefined);
+    const pp = () => st.song.papers.find((x) => x.id === st.at.paper)!;
+    st = setClefChoice(st, st.at.paper, st.at.part, "F"); eq(clefChoiceOf(pp(), st.at.part), "F");
+    st = setClefChoice(st, st.at.paper, st.at.part, "grand"); eq(clefChoiceOf(pp(), st.at.part), "grand");
+    st = setClefChoice(st, st.at.paper, st.at.part, "auto"); eq(clefChoiceOf(pp(), st.at.part), "auto"); eq(pp().looks, undefined, "自动 = 什么都不存");
   });
   it("八度线：有选区 = 这一段（开头 + 结束）；改 / 删", () => {
     let st = stOf([...head(), n("C", 6), n("D", 6), n("E", 6), n("C", 5)]);
@@ -85,7 +88,7 @@ describe("编辑：插 / 改 / 删", () => {
 
 describe("画：同一个实际音高按谱号 / 八度线挪位置（音高数据不动）", () => {
   const ys = (toks: Token[], partClef?: "F" | "G8vb" | "G") => {
-    const st = stOf(toks), song = { ...st.song, parts: st.song.parts.map((p) => (partClef ? { ...p, clef: partClef } : p)) };
+    const st = stOf(partClef ? [...toks.slice(0, 3), { kind: "clef", id: 990, clef: partClef } as Token, ...toks.slice(3)] : toks), song = st.song;   // 写明谱号 = 这一段纸头的谱号记号（v0.16.88）
     const L = engrave(song, { width: 800, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V" }], measure: createTextMeasure((s) => s.length * 10) });
     return { L, y: L.notes.map((q) => q.y - L.systems[q.system].staffTop) };   // 相对谱顶（八度线那一道会让整条谱往下挪）
   };
@@ -118,13 +121,13 @@ describe("MusicXML 往返", () => {
 });
 
 describe(".mxl 往返：自动 / 写明的谱号", () => {
-  const song = (clef?: "F" | "G") => { const st = stOf([...head(), n("E", 2), n("G", 2), n("C", 3)]); return { ...st.song, parts: st.song.parts.map((p) => (clef ? { ...p, clef } : p)) }; };
+  const song = (clef?: "F" | "G") => { const st = stOf([...head(), n("E", 2), n("G", 2), n("C", 3)]); return (clef ? setClefChoice(st, st.at.paper, st.at.part, clef) : st).song; };
   it("自动挑成低音的声部：存 → 开还是自动（MusicXML 里写的是挑好的低音，score.json 记着 auto）", () => {
     const s = song(), o = openBytes("x.mxl", saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" }));
-    eq(o.song.parts[0].clef, undefined);
+    eq(clefChoiceOf(o.song.papers[0], o.song.parts[0].id), "auto");
     eq(resolveSongClefs(o.song).get(o.song.papers[0].id)?.get(o.song.parts[0].id), "F");
   });
   it("写明高音 / 低音：存 → 开原样", () => {
-    for (const c of ["G", "F"] as const) { const s = song(c), o = openBytes("x.mxl", saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" })); eq(o.song.parts[0].clef, c); }
+    for (const c of ["G", "F"] as const) { const s = song(c), o = openBytes("x.mxl", saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" })); eq(clefChoiceOf(o.song.papers[0], o.song.parts[0].id), c); }
   });
 });

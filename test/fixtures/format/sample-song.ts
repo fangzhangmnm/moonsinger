@@ -57,8 +57,8 @@ export function sampleSong(): Song {
   ];
   // 2026-10-13 加（都是可选字段，只为了形状快照盖到）：P2 合租挂在 P1 上 + 不要自动八度线；歌词按歌词排；不印小节号；第二张纸隐藏；这首歌的许可。
   return { title: "冻结样本", credits: "词曲：样本\n演唱：月读", arrangement: "1 (2)×2", hum: "u", paper: paperOf("A5"), rights: "CC0", lyricFit: "lyrics", barNumbers: "off", spacing: "tight",
-    parts: [{ id: "P1", role: "r1", mic: "m1" }, { id: "P2", role: "r2", mic: "m2", host: "P1", autoOttava: false }],
-    papers: [{ id: "p1", name: "", tracks: { P1: p1P1, P2: p1P2 } }, { id: "p2", name: "副歌", tracks: { P1: p2P1 }, hidden: true }] };
+    parts: [{ id: "P1", role: "r1", mic: "m1" }, { id: "P2", role: "r2", mic: "m2", host: "P1" }],
+    papers: [{ id: "p1", name: "", tracks: { P1: p1P1, P2: p1P2 }, looks: { P2: { autoOttava: false } } }, { id: "p2", name: "副歌", tracks: { P1: p2P1 }, hidden: true }] };   // v0.16.88：不要自动八度线按段
 }
 /** 冻结样本的休息室 + 录音房（2026-10-13）：把契约里每个可选字段都摆上一份——月读元音版上场（同 v1 样本的 quality light）+ 移调 / 分段唱 / 底色缝 / 校准；
  *  第二位 = 乐器概念 by value + 一位 SoundFont 演奏者（嵌进歌的子集 = test/fixtures/sf2 那份小 sf2 → manifest.sounds 有一条；音效固定原速 sfx）；

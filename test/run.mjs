@@ -38,6 +38,7 @@ import "./view-in-c.test.ts";
 import "./chord-name.test.ts";
 import "./minor-key.test.ts";
 import "./chord-pin.test.ts";
+import "./clef-per-section.test.ts";
 import "./clipboard.test.ts";
 import "./chord.test.ts";
 import "./history.test.ts";

@@ -141,7 +141,8 @@ export type MarkVal = Omit<KeyTok, "id"> | Omit<TimeTok, "id"> | Omit<TempoTok, 
 export type Hum = "la" | "n" | "u" | "o" | "a";
 
 /** 歌级的一个声部（谱上的一行；顺序 = 总谱从上到下）：role = 休息室角色 id（谁来演、叫什么），mic = 录音房麦克风 id。 */
-export interface PartDef { id: string; role: string; mic: string; clef?: Clef; staves?: 2; /** 自动八度线（v0.9.37）：没写 = 开；false = 这位不自动（score.json parts[].autoOttava）。 */ autoOttava?: false;
+/** 谱号 / 大谱表 / 自动八度线不在声部上了（v0.16.88，每一段自己选：PaperSeg.looks + 纸头的谱号记号；user 11-09「收到前面的per sheet而不是跟着歌手。只有shared staves有」）。 */
+export interface PartDef { id: string; role: string; mic: string;
   /** 合租（v0.10.24）：挂在哪位（主人）的谱线上画（主人自己不能再是房客）。只管画：轨 / 乐器 / 混音台照旧各是各的（ai-docs/20261010-shared-staff-percussion-design.md §1）。 */
   host?: string;
   /** 认不认分解和弦（v0.16.73，user 11-09「给声部加一个开关，默认开同意」）：没写 = 认（照样标）；false = 这位不认（叠音照旧标）。score.json parts[].brokenChords。 */
@@ -154,7 +155,14 @@ export type Staff = 1 | 2;
 /** 大谱表的分界：中央 C 以下自动落到下谱表（音可以手动指定 staff 覆盖；user 2026-10-08「钢琴这种左右手要两个谱号」「musicxml原生支持那就不纠结了直接上」）。 */
 export const SPLIT_MIDI = 60;
 /** 一张纸 = 一个曲段：name = 曲段名（纸顶那一条，可空）；tracks = 声部 id → 这张纸上这个声部的 token 串（开头三个谱头记号）。 */
-export interface PaperSeg { id: string; name: string; tracks: Record<string, Token[]>; hidden?: boolean }   // hidden = 不放（压平 / 播放 / 导出的压平件都跳过）；全部视图里折叠着、翻页能进去（user 2026-10-08）
+/** hidden = 不放（压平 / 播放 / 导出的压平件都跳过）；全部视图里折叠着、翻页能进去（user 2026-10-08）。 */
+export interface PaperSeg { id: string; name: string; tracks: Record<string, Token[]>; hidden?: boolean;
+  /** 这一段里各声部怎么画（v0.16.88；只存不是默认的）：grand = 手选了大谱表；autoOttava: false = 这一段不画自动八度线。手选的单个谱号 = 纸头的谱号记号（不在这里）。 */
+  looks?: Record<string, PartLook> }
+/** 一段 × 一个声部的画法（只存不是默认的；空 = 自动谱号 + 自动八度线开）。 */
+export interface PartLook { grand?: true; autoOttava?: false }
+/** 谱头面板里谱号那一格（v0.16.88）：自动 / 手选的一个谱号 / 大谱表。 */
+export type ClefChoice = "auto" | "grand" | ClefName   // hidden = 不放（压平 / 播放 / 导出的压平件都跳过）；全部视图里折叠着、翻页能进去（user 2026-10-08）
 export interface Song {
   /** 歌名（可不填；纸面最上面那一行，存档 = MusicXML <work-title>；user 2026-10-07「纸张的最上面加一个可选的歌名吧，未来也是文件名」）。 */
   title?: string;
@@ -962,6 +970,39 @@ export function setPaperHeadMinor(st: EditorState, paperId: string, partId: stri
   }
   return { st: cur, n };
 }
+/** 这一段这个声部纸头手选的谱号（纸开头那一处的谱号记号；没有 = null = 自动 / 大谱表）。 */
+export function headClefOf(tokens: Token[] | undefined): ClefName | null {
+  if (!tokens) return null;
+  const spot = headerSpot(tokens, 0);
+  for (let i = spot.a; i < spot.b; i++) { const t = tokens[i]; if (t.kind === "clef") return t.clef; }
+  return null;
+}
+/** 换掉一张纸的 looks（空的条目、空的表都不留）。 */
+export function withLooks(p: PaperSeg, looks: Record<string, PartLook>): PaperSeg {
+  const clean = Object.fromEntries(Object.entries(looks).filter(([, v]) => v && (v.grand || v.autoOttava === false)));
+  const { looks: _l, ...rest } = p;
+  return Object.keys(clean).length ? { ...rest, looks: clean } : rest;
+}
+/** 这一段这个声部怎么画：grand / autoOttava（true = 默认 = 不存）。没变 = 原样（不多记一步撤销）。 */
+export function setPaperLook(st: EditorState, paperId: string, partId: string, patch: { grand?: boolean; autoOttava?: boolean }): EditorState {
+  const paper = st.song.papers.find((p) => p.id === paperId); if (!paper || !paper.tracks[partId]) return st;
+  const cur = paper.looks?.[partId] ?? {}, nx: PartLook = { ...cur };
+  if (patch.grand !== undefined) { if (patch.grand) nx.grand = true; else delete nx.grand; }
+  if (patch.autoOttava !== undefined) { if (patch.autoOttava) delete nx.autoOttava; else nx.autoOttava = false; }
+  if (!!nx.grand === !!cur.grand && (nx.autoOttava === false) === (cur.autoOttava === false)) return st;
+  return { ...st, song: { ...st.song, papers: st.song.papers.map((p) => (p.id === paperId ? withLooks(p, { ...(p.looks ?? {}), [partId]: nx }) : p)) } };
+}
+/** 谱头面板谱号那一格现在是什么。 */
+export function clefChoiceOf(paper: PaperSeg, partId: string): ClefChoice {
+  if (paper.looks?.[partId]?.grand) return "grand";
+  return headClefOf(paper.tracks[partId]) ?? "auto";
+}
+/** 选谱号（v0.16.88，user 11-09「可以高音低音grand用户每个sheet选」「一开始是auto」）：一个谱号 = 纸头写一个谱号记号；自动 / 大谱表 = 纸头不写谱号记号。一步撤销。 */
+export function setClefChoice(st: EditorState, paperId: string, partId: string, choice: ClefChoice): EditorState {
+  const paper = st.song.papers.find((p) => p.id === paperId), toks = paper?.tracks[partId]; if (!paper || !toks) return st;
+  const s1 = setHeaderAt(st, paperId, partId, headerSpot(toks, 0), { clef: choice === "auto" || choice === "grand" ? null : choice });
+  return setPaperLook(s1, paperId, partId, { grand: choice === "grand" });
+}
 
 /** 删一个中途的记号（谱头的删不掉）。 */
 export function deleteMark(st: EditorState, i: number): EditorState {
@@ -1555,14 +1596,15 @@ export function rebindTrack(st: EditorState, paperId: string, from: string, to: 
   if (!p || from === to || !p.tracks[from] || !st.song.parts.some((x) => x.id === to)) return st;
   const tracks = { ...p.tracks }, mine = tracks[from], theirs = tracks[to];
   if (theirs) { tracks[from] = theirs; tracks[to] = mine; } else { delete tracks[from]; tracks[to] = mine; }
-  const song = keepSheetTempos(st.song, { ...st.song, papers: st.song.papers.map((x) => (x.id === paperId ? { ...x, tracks } : x)) });
+  const lk = { ...(p.looks ?? {}) }, lf = lk[from], lt = lk[to]; delete lk[from]; delete lk[to]; if (lf) lk[to] = lf; if (lt && theirs) lk[from] = lt;   // 这一行怎么画跟着这一行走（v0.16.88）
+  const song = keepSheetTempos(st.song, { ...st.song, papers: st.song.papers.map((x) => (x.id === paperId ? withLooks({ ...x, tracks }, lk) : x)) });
   const followMe = st.at.paper === paperId && st.at.part === from;
   return followMe ? setFocus({ ...st, song }, paperId, to, st.caret) : { ...st, song };
 }
 /** 删一个声部（最后一个不能删）：所有纸上它那条一起没了。 */
 export function removePart(st: EditorState, partId: string): EditorState {
   if (st.song.parts.length <= 1 || !st.song.parts.some((p) => p.id === partId)) return st;
-  const papers = st.song.papers.map((p) => { const tracks = { ...p.tracks }; delete tracks[partId]; return { ...p, tracks }; });
+  const papers = st.song.papers.map((p) => { const tracks = { ...p.tracks }; delete tracks[partId]; const lk = { ...(p.looks ?? {}) }; delete lk[partId]; return withLooks({ ...p, tracks }, lk); });
   const song = { ...st.song, parts: st.song.parts.filter((p) => p.id !== partId).map((p) => (p.host === partId ? (({ host: _h, ...rest }) => rest)(p) : p)), papers };   // 删了主人 = 房客搬出来自己一行
   const at = st.at.part === partId ? { paper: st.at.paper, part: song.parts[0].id } : st.at;
   return setFocus({ ...st, song }, at.paper, at.part, st.at.part === partId ? undefined : st.caret);
@@ -1630,7 +1672,12 @@ export function addTrack(st: EditorState, paperId: string, partId: string): Edit
   const src = st.song.parts.map((x) => p.tracks[x.id]).find((x) => x) ?? [], h = src.slice(0, headLen(src));
   let id = st.nextId;
   const toks = h.length ? h.map((t) => ({ ...t, id: id++ })) : headTokens({}, (id += 3) - 3);
-  return setFocus({ ...st, song: keepSheetTempos(st.song, withTrack(st.song, paperId, partId, toks)), nextId: id }, paperId, partId);
+  // 谱号 / 大谱表 / 自动八度线照这个声部前面最近出现的那一段（没有 = 后面最近的；都没有 = 自动）：吉他一直用低八度的高音谱号不用每段重选（v0.16.88）
+  const k = st.song.papers.findIndex((x) => x.id === paperId), others = st.song.papers.filter((x, j) => j !== k && x.tracks[partId]);
+  const near = [...others.filter((x) => st.song.papers.indexOf(x) < k)].pop() ?? others.find((x) => st.song.papers.indexOf(x) > k);
+  let song = keepSheetTempos(st.song, withTrack(st.song, paperId, partId, toks));
+  if (near) { const look = near.looks?.[partId], hc = headClefOf(near.tracks[partId]); song = { ...song, papers: song.papers.map((x) => (x.id !== paperId ? x : withLooks({ ...x, tracks: hc ? { ...x.tracks, [partId]: [...toks, { kind: "clef", id: id++, clef: hc }] } : x.tracks }, look ? { ...(x.looks ?? {}), [partId]: look } : x.looks ?? {}))) }; }
+  return setFocus({ ...st, song, nextId: id }, paperId, partId);
 }
 /** 这张纸上去掉某个声部的那条 track（纸上最后一条不能去）。声部本身还在歌里（别的纸照旧）。 */
 export function removeTrack(st: EditorState, paperId: string, partId: string): EditorState {
@@ -1653,14 +1700,16 @@ export function addPaper(st: EditorState, after?: string, before?: string): Edit
   const bpmEnd = prev ? sheetEndBpm(st.song, prev) : null;   // 速度 = 上一张纸结尾真正生效的（最上面那位那一行），不是各行自己谱头里没人看见的旧数
   for (const part of st.song.parts) {
     if (first) { const t = first.tracks[part.id] ?? st.song.parts.map((x) => first.tracks[x.id]).find((x) => x) ?? []; tracks[part.id] = headTokens(endMarks(t.slice(0, headLen(t))), nid); nid += 3; continue; }
-    const src = prev?.tracks[part.id] ?? st.song.parts.map((x) => prev?.tracks[x.id]).find((x) => x) ?? [];
+    const own = prev?.tracks[part.id], src = own ?? st.song.parts.map((x) => prev?.tracks[x.id]).find((x) => x) ?? [];
     tracks[part.id] = headTokens({ ...endMarks(src), ...(bpmEnd !== null ? { bpm: bpmEnd } : {}) }, nid); nid += 3;
+    // 上一段手选了谱号 = 新段也手选，选上一段结尾时用着的那个（v0.16.88）；自动 / 大谱表照抄（looks 在下面）
+    if (own && headClefOf(own)) { let c: ClefName = headClefOf(own)!; for (const t of own) if (t.kind === "clef") c = t.clef; tracks[part.id].push({ kind: "clef", id: nid++, clef: c }); }
   }
   // 曲段名自动起 A B C D（2026-10-08 深夜 Opus 5.5，user「曲段名自动命名ABCD」）：没名字的纸（多半是第一张）先按顺序补上，新纸取下一个没用过的；起过名的不动
   const used = new Set(papers.map((p) => p.name.trim()).filter(Boolean));
   const nextName = () => { for (let r = 1; ; r++) for (let c = 0; c < 26; c++) { const n = String.fromCharCode(65 + c) + (r > 1 ? r : ""); if (!used.has(n)) { used.add(n); return n; } } };
   const named = papers.map((p) => (p.name.trim() ? p : { ...p, name: nextName() }));
-  const paper: PaperSeg = { id, name: nextName(), tracks };
+  const paper: PaperSeg = withLooks({ id, name: nextName(), tracks }, (first ?? prev)?.looks ?? {});
   const list = named.slice(); list.splice(k + 1, 0, paper);
   return setFocus({ ...st, song: { ...st.song, papers: list }, nextId: nid }, id, st.at.part);
 }
@@ -1691,13 +1740,6 @@ export function movePaper(st: EditorState, paperId: string, d: -1 | 1): EditorSt
   [list[k], list[j]] = [list[j], list[k]];
   return { ...st, song: { ...st.song, papers: list } };
 }
-/** 改一个声部的谱号（高音 = 默认，存成「没有」）。 */
-/** 声部自己的谱号（每张纸开头用它）：null = 自动（v0.9.28 起没写 = 自动；user「默认自动同意」）。 */
-export function setPartClef(st: EditorState, partId: string, clef: ClefName | null): EditorState {
-  const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.clef ?? null) === clef) return st;
-  const np: PartDef = { ...p }; if (clef === null) delete np.clef; else np.clef = clef;
-  return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
-}
 /** 小节号印不印（v0.9.42；默认每行开头印）。 */
 export function setBarNumbers(st: EditorState, on: boolean): EditorState {
   if ((st.song.barNumbers !== "off") === on) return st;
@@ -1715,12 +1757,6 @@ export function setLyricFit(st: EditorState, v: "lyrics" | "rhythm"): EditorStat
   if ((st.song.lyricFit ?? "rhythm") === v) return st;
   const song = { ...st.song }; if (v === "lyrics") song.lyricFit = "lyrics"; else delete song.lyricFit;
   return { ...st, song };
-}
-/** 这位歌手的自动八度线开 / 关（v0.9.37；默认开）。 */
-export function setPartAutoOttava(st: EditorState, partId: string, on: boolean): EditorState {
-  const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.autoOttava !== false) === on) return st;
-  const np: PartDef = { ...p }; if (on) delete np.autoOttava; else np.autoOttava = false;
-  return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
 }
 /** 这位歌手认不认分解和弦（v0.16.73；默认认）。和自动八度线同一个写法：开 = 不写，关 = false。 */
 export function setPartBrokenChords(st: EditorState, partId: string, on: boolean): EditorState {
@@ -1778,12 +1814,6 @@ export function staffOfTokens(tokens: Token[], staves: 1 | 2): Staff[] {
     last = s; return s;
   });
 }
-/** 单谱表 ↔ 大谱表。 */
-export function setPartStaves(st: EditorState, partId: string, n: 1 | 2): EditorState {
-  const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.staves ?? 1) === n) return st;
-  const np: PartDef = { ...p }; if (n === 1) delete np.staves; else np.staves = 2;
-  return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
-}
 /** 「换谱表」：选中的音 / 刚写的音挪到另一张谱表（手动指定）；已经手动指定的 = 取消指定（回到按音高自动）。 */
 export function toggleStaff(st: EditorState, staves: 1 | 2): EditorState {
   if (staves !== 2) return st;
@@ -1797,7 +1827,9 @@ export function toggleStaff(st: EditorState, staves: 1 | 2): EditorState {
     if (t.staff) { const c = { ...t }; delete c.staff; nt[i] = c; }
     else nt[i] = { ...t, staff: auto[i] === 1 ? 2 : 1 };
   }
-  return next(st, nt);
+  // 手分的上下行只有手选的大谱表存得下（v0.16.88）：自动变出来的大谱表上挪了 = 这一段定成大谱表
+  const n2 = next(st, nt);
+  return setPaperLook(n2, st.at.paper, st.at.part, { grand: true });
 }
 /** 改曲段名（纸顶那一条；空 = 不填）。 */
 export function setPaperName(st: EditorState, paperId: string, name: string): EditorState {

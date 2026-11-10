@@ -68,6 +68,9 @@
       "minor": "number",
       "papers": [
         {
+          "autoOttava": {
+            "P2": "boolean"
+          },
           "file": "string",
           "hidden": "boolean",
           "id": "string",
@@ -91,7 +94,6 @@
       ],
       "parts": [
         {
-          "autoOttava": "boolean",
           "clef": "string",
           "host": "string",
           "id": "string",

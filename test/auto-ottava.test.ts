@@ -35,7 +35,7 @@ describe("自动八度线", () => {
   });
 });
 
-const song1 = (toks: Token[], off = false): Song => { const s = initState().song; return { ...s, parts: s.parts.map((p) => (off ? { ...p, autoOttava: false as const } : p)), papers: [{ ...s.papers[0], tracks: { [s.parts[0].id]: toks } }] }; };
+const song1 = (toks: Token[], off = false): Song => { const s = initState().song; return { ...s, papers: [{ ...s.papers[0], tracks: { [s.parts[0].id]: toks }, ...(off ? { looks: { [s.parts[0].id]: { autoOttava: false as const } } } : {}) }] }; };   // v0.16.88：关自动八度线按段
 const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-10-10T00:00:00.000Z" });
 describe("自动八度线：存", () => {
   it("写出去带 ms-auto id（别的软件照样画）；读回来不变成手写记号", () => {
@@ -44,16 +44,16 @@ describe("自动八度线：存", () => {
     assert(xmls.length >= 2 && xmls.every((x) => /<octave-shift type="down" size="8" id="ms-auto-\d+"\/>/.test(x) && /<octave-shift type="stop" size="8" id="ms-auto-\d+"\/>/.test(x)), "正本和压平件都写了");
     const o = openBytes("x.mxl", save(s));
     eq(o.song.papers[0].tracks[o.song.parts[0].id].filter((t) => t.kind === "ottava").length, 0, "读回来没有八度线记号");
-    eq(o.song.parts[0].autoOttava, undefined, "开着 = 不写");
+    eq(o.song.papers[0].looks?.[o.song.parts[0].id]?.autoOttava, undefined, "开着 = 不写");
   });
   it("这一段结束在最后一个音上 = 不插「结束」（不多出空小节）", () => {
     const toks = [...head(), ...pad(6), n("A6"), n("B6")];
     const w = withAutoOttava(toks, "G");
     eq(w.filter((t) => t.kind === "ottava").length, 1);
   });
-  it("关掉 = score.json parts[].autoOttava false，读回来还是关；不写自动的八度线", () => {
+  it("这一段关掉 = score.json papers[].autoOttava 里这个声部 false，读回来还是关；不写自动的八度线（v0.16.88 按段）", () => {
     const s = song1([...head(), ...pad(6), n("A6"), n("B6"), n("C7"), n("E5")], true), bytes = save(s), files = unzipSync(bytes);
     assert(!Object.values(files).some((v) => strFromU8(v).includes("ms-auto")), "没写自动的");
-    eq(openBytes("x.mxl", bytes).song.parts[0].autoOttava, false);
+    const o = openBytes("x.mxl", bytes); eq(o.song.papers[0].looks?.[o.song.parts[0].id]?.autoOttava, false);
   });
 });

@@ -27,7 +27,7 @@ const SP = 10;
 /** 声部视图：编辑器那份带四颗小钮的状态（刀 1 之后它们不在 PartView 里了——cases 照样给，排版器不认就不认）。hide = 这几位隐藏着。 */
 function views(song: Song, labels: string[], editor: boolean, hide: ReadonlySet<string> = new Set()): PartView[] {
   return song.parts.map((p, k) => ({
-    id: p.id, name: labels[k] ?? `P${k + 1}`, colorIdx: k % 10, first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}),
+    id: p.id, name: labels[k] ?? `P${k + 1}`, colorIdx: k % 10, first: k === 0,
     hidden: hide.has(p.id), badges: [], ...(editor ? { toggles: { muted: false, solo: false, hidden: hide.has(p.id), only: false } } : {}),
   } as PartView));
 }

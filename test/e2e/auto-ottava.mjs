@@ -35,7 +35,7 @@ await p.evaluate(() => window.__moonsinger.openHeader(window.__moonsinger.state(
 check((await p.$eval('.header-panel [data-hp="ao"]', (s) => s.value).catch(() => null)) === "on", "谱头面板「这位的谱」：自动八度线默认开");
 await p.selectOption('.header-panel [data-hp="ao"]', "off"); await p.waitForTimeout(250);
 check((await autos()) === 0, "关了 = 不画自动的");
-check((await p.evaluate(() => window.__moonsinger.state().song.parts[0].autoOttava)) === false, "记在声部上（存进 score.json）");
+check((await p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers.find((x) => x.id === s.at.paper).looks?.[s.at.part]?.autoOttava; })) === false, "记在这一段上（存进 score.json 的 papers[]，v0.16.88 按段）");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nauto-ottava: ${pass} passed, ${fail} failed`);

@@ -14,7 +14,7 @@ import { _t, lang, langChosen, saveLang, applyDocumentLang, LANG_NAME, type Lang
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
-import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, spellMidi, KEY_LABEL } from "../score/pitch.ts";
@@ -125,7 +125,7 @@ import { createEncoder } from "../format/encode-client.ts";
 import { runFactoryReset } from "./factory-reset.ts";
 import { freshDesk, freshPartView, serializeDesk, unserializeDesk, serializeFinderMemo, unserializeFinderMemo, PAD_UNITS, type Desk, type PartViewState } from "../score/desk.ts";
 import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
-import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongClefs } from "../score/clef.ts";
+import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongLooks, type ResolvedLook } from "../score/clef.ts";
 import type { ClefHit } from "../render/engrave.ts";
 import { TAB20, partColorIndices, partAbbr } from "../ui/part-colors.ts";
 
@@ -737,7 +737,7 @@ const padHost = createPadHost(padEl, {
     key: (down) => halfKey(down), wrap: (c) => withHalf(c),
   },
   accKey, stackKey, discloseArt, discloseDynOverride, ignoredHere,
-  hintRange: () => padHint(), staves: () => curPart().staves ?? 1,
+  hintRange: () => padHint(), staves: () => lookNow(D.st.at.paper, D.st.at.part)?.staves ?? 1,
   autoBars: { get: () => autoBars, set: (on) => { autoBars = on; view.render(); } },
   insertMarkHere, insertGrooveHere: () => insertGrooveHere(), openRepeatMenu: () => openRepeatMenu(),
   openInsertClefMenu: (at) => openInsertClefMenu(at), openInsertOttavaMenu: (at) => openInsertOttavaMenu(at),
@@ -761,6 +761,12 @@ function ghostSync(): void { view.showGhost(ghostOn() ? [...ghostHeld.values()] 
 // ── 改状态的唯一入口 = D.commit（src/app/document.ts）。下面三个名字只是薄壳（九十多处调用不用改）；锁 / 撤销栈 / 脏都在 D 里一处 ──
 // ── 定稿（W-38；src/format/final.ts 头注释 = 四层护栏）：第 ② 层 = D.commit 里那一判（整首锁住：谱 / 歌名 / 作者栏 / 许可 / 封面 / 歌手 / 混音，user 10-16「都冻同意，封面当然进」）。
 const finalOn = (): boolean => D.locked() !== null;
+/** 这一段这个声部现在怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段算；按歌缓存——同一首歌的状态只算一次）。鼓 / 固定敲一个键的不自动变大谱表（和排版同一条规矩）。 */
+let lookCache: { song: Song; map: Map<string, Map<string, ResolvedLook>> } | null = null;
+function lookNow(paperId: string, partId: string): ResolvedLook | undefined {
+  if (lookCache?.song !== D.st.song) lookCache = { song: D.st.song, map: resolveSongLooks(D.st.song, new Set(partViews().filter((x) => x.perc || x.xHead).map((x) => x.id))) };
+  return lookCache.map.get(paperId)?.get(partId);
+}
 let lockSaidAt = 0;
 /** 定稿着被拒的那一下：说一句（同一句 3 s 内不重复）。 */
 function lockedSay(what: string): void { const t = performance.now(); if (t - lockSaidAt < 3000) return; lockSaidAt = t; showError(_t("这首歌定稿了，{what}改不了：先在三条杠里「改稿」（定稿的 mp3 会作废），再改。", { what })); }
@@ -1847,7 +1853,7 @@ function partViews(): PartView[] {
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
     const ly = plug?.lyrics, noLyrics = ly === "hum" || ly === "none" ? _t("{p}{p2}：空着的歌词位不开框；已经写了的字点开能改、能删", { p: labels[k], p2: ly === "hum" ? _t("（元音版）只哼") : _t("不唱歌词") }) : "";
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, ...(p.clef ? { clef: p.clef } : {}), ...(p.staves === 2 ? { staves: 2 as const } : {}), hidden: !isShown(p.id), badges, mono: !plug?.poly, ...(plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...(plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
@@ -2271,7 +2277,8 @@ const headerPanel = createHeaderPanel({
   state: () => D.st, update: (n) => update(n), menu: (cls, html, at, pick) => ctxMenu(cls, html, at, pick),
   openTempo: (paperId, partId, index, fresh) => view.openMarkEditor(paperId, partId, index, fresh),
   partName: (id) => partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.id === id)] ?? id,
-  partClef: (paperId, partId) => { const part = D.st.song.parts.find((p) => p.id === partId), now = part?.clef ?? resolveSongClefs(D.st.song).get(paperId)?.get(partId) ?? "G"; return part?.clef ? CLEF_LABEL[now] : _t("自动：这张纸挑了「{p}」", { p: CLEF_LABEL[now] }); },
+  autoNow: (paperId, partId) => { const l = lookNow(paperId, partId); return l?.staves === 2 ? _t("大谱表") : CLEF_LABEL[l?.clef ?? "G"]; },
+  look: (paperId, partId) => lookNow(paperId, partId),
 });
 function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {
   if (hit.kind !== "ottava") { headerPanel.open(hit.paper, hit.part, hit.index >= 0 ? hit.index : 0, at); return; }   // 谱号（行首的 / 中途的）= 谱头面板；八度线照旧小菜单
@@ -2280,10 +2287,10 @@ function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {
   if (hit.kind === "ottava" && hit.run) {   // 自动画的八度线（v0.9.37；user「自动加」）：不存进谱；可以固定成手写的，或者这位不要自动
     const r = hit.run, lab = OTTAVA_LABEL[r.shift];
     ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">${_t("自动八度线：这一串音要三条以上加线，自动画了 {lab}。只管画、不存进谱，音高不变；改了音会跟着重算。手写的八度线说了算。", { lab: esc(lab) })}</div>` +
-      `<button class="btn ctx-item" data-v="pin">${_t("固定成手写的 {lab}（之后自己改）", { lab: esc(lab) })}</button><button class="btn ctx-item" data-v="off">${_t("这个声部不要自动八度线")}</button>`, at,
+      `<button class="btn ctx-item" data-v="pin">${_t("固定成手写的 {lab}（之后自己改）", { lab: esc(lab) })}</button><button class="btn ctx-item" data-v="off">${_t("这一段不要自动八度线")}</button>`, at,
       (v) => {
         if (v === "pin") update(insertOttava({ ...setFocus(D.st, hit.paper, hit.part, r.from), sel: { from: r.from, to: r.to + 1 } }, r.shift));
-        else if (v === "off") { update(setPartAutoOttava(D.st, hit.part, false)); info(_t("这个声部的自动八度线关了（点谱号、谱头面板里能再开）")); }
+        else if (v === "off") { update(setPaperLook(D.st, hit.paper, hit.part, { autoOttava: false })); info(_t("这一段这个声部的自动八度线关了（点谱号、谱头面板里能再开）")); }
       });
     return;
   }

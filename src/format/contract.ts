@@ -26,7 +26,11 @@ export type FormatFile = keyof typeof FORMAT;
 /** score minor 2（v0.16.73，2026-11-09 Claude Opus 5.5）：parts[].brokenChords（可选，只写 false = 这位不认分解和弦）——老版本读进来会丢掉它（parts 按歌重建），所以照纪律 +1、让老版本提示一次。 */
 /** score minor 3（v0.16.83，2026-11-10 Claude Opus 5.5；user 11-10 同意往歌里加）：调号上的「小调」= 每张纸 MusicXML 里 <key><mode>minor</mode>（大调照旧不写）。
  *  老版本读进来当大调、存一次就没了（音不丢），所以 +1、让老版本提示一次。这一轮后面几样（挑过的和弦名、每段的谱号 / 大谱表）也算在 minor 3 里。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 3, lounge: 1, studio: 1 };
+/** score minor 4（v0.16.88，2026-11-10 Claude Opus 5.5；user 11-10「一同意」）：谱号 / 大谱表 / 自动八度线从声部搬到每一段——
+ *  手选的大谱表 = 那张纸自己的 <staves>2（以前每张纸都写）、这一段关了自动八度线 = papers[].autoOttava（声部 id → false）、手选的谱号 = 纸头谱号记号；
+ *  parts[].clef 照旧写 "auto"（给旧版本看），parts[].autoOttava 不再写。读：minor < 4 = 老写法，搬到每一段（project.ts songFromReads）。
+ *  旧版本打开：手选了大谱表的声部整首成大谱表、每段关的自动八度线回到开着，音不丢，提示一次。 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 4, lounge: 1, studio: 1 };
 export const FORMAT_PATCH: Readonly<Record<FormatFile, number>> = { manifest: 0, score: 0, lounge: 0, studio: 0 };
 
 // ═══ 现役（project.ts 写的就是这些）═══════════════════════════════════════════════════════
@@ -66,7 +70,7 @@ export interface ScoreExtV2 {
    *  气声 / 出声的换气（2026-10-10 Opus 5.5；不升版本：MusicXML 原生）：气声 = <notehead>x</notehead>（和幽灵音一起 = <notehead parentheses="yes">x</notehead>；
    *  别家谱的 × 符头读进来也是气声——乐器不认、画灰，不影响出声）；出声的换气 = <breath-mark/> 后面紧跟 <other-articulation>inhale | inhale-big</other-articulation>
    *  （别的软件照样认得是换气；老版本的 app 读到 = 「不认的演奏法」数出来报，呼吸照旧）。 */
-  papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[]; hidden?: boolean; /** 退役（v0.16.86，句号整个去掉）：老歌里有，读的时候丢掉，不再写。 */ phrases?: Record<string, number[]>;
+  papers: { id: string; file: string; manualBars: Record<string, number[]>; unwritten: string[]; hidden?: boolean; /** 退役（v0.16.86，句号整个去掉）：老歌里有，读的时候丢掉，不再写。 */ phrases?: Record<string, number[]>; /** v0.16.88（score minor 4，可选）：这一段关了自动八度线的声部（声部 id → false）。 */ autoOttava?: Record<string, false>;
     /** 音内的力度起伏（2026-10-08 加，可选；MusicXML 里表达不了音内的发夹）：声部 id → 音的 id → "<" / ">" / "<>"。 */
     swells?: Record<string, Record<string, "<" | ">" | "<>">> }[];   // swells：v0.9.44 起编辑器里是演奏法（Art swellUp / swellDown / swellBoth），存的时候照旧从演奏法取成这张表、读的时候挂回去——文件形状没变   // hidden（2026-10-08 加，可选）= 这张纸不放、不进压平件；phrases（同日加，可选）= 声部 id → 句号跟在哪些 token（id）后面（句号不算打谱符号，不进 MusicXML）
   /** 视图态（2026-10-08 加，可选；src/score/desk.ts）：怎么看 / 怎么听这首——范围 / 排法 / 在哪张纸 / 每个声部的隐藏·只看·静音·独奏。**存时顺手捞进来、改了不标脏、不进 undo**（照 WeebPaint desk）。只写非默认值；没有 = 全默认。 */
@@ -84,7 +88,8 @@ export interface ScoreExtV2 {
   /** 歌级声部并集（总谱从上到下）：声部 → 角色 id → 麦克风 id；某张纸没有某声部 = 那张纸的 MusicXML 里没那个 part。kind 留给打击乐记谱（现在都是 pitched）。
    *  **声部就是歌手**（2026-10-08 Opus 5.5，user「嗯声部就是歌手」）：role 在 parts 里唯一（读到共用的 = 后面那个拆成一位新歌手，见 project.ts finish）；
    *  一张纸上一位歌手最多一行（tracks 按声部 id 记，天然如此）；跨纸按声部 id 接；mic 可以几位歌手共用（歌手认领麦克风）。不改形状、不升版本。 */
-  /** clef（v0.9.28，可选）：声部自己的谱号，"auto" = 自动（MusicXML 里写的是挑好的那个）。autoOttava（v0.9.37，可选，只写 false）：这位不要自动八度线（没写 = 开）。都不升版本。 */
+  /** clef（v0.9.28，可选）：声部自己的谱号，"auto" = 自动（MusicXML 里写的是挑好的那个）。autoOttava（v0.9.37，可选，只写 false）：这位不要自动八度线（没写 = 开）。都不升版本。
+   *  v0.16.88（score minor 4）起这两个只是老写法：clef 一律写 "auto"、autoOttava 不写，按段的在 papers[] 和每段的谱里；minor < 4 的文件读的时候搬到每一段。 */
   parts: { id: string; role: string; mic: string; kind: "pitched" | "percussion"; clef?: string; autoOttava?: false;
     /** 2026-10-10 加（可选，不升版本；Opus 5.5）：合租——画在哪位（主人）的谱线上；主人自己不能是房客（读的时候不合规矩 = 丢掉这个字段）。user「合租还是有主人吧」。 */
     host?: string;

@@ -97,7 +97,7 @@ describe("合租：排版（看个大概）", () => {
     const L = lay(st);
     eq(L.systems.filter((r) => (r.part === a || r.part === `${a}~lo`) && r.sys === 0).length, 2, "主人那一位两张谱表（中央 C 以上 / 以下各并一条）");
     assert(L.prims.some((p) => p.t === "path" && p.cls === "brace"), "左边一个花括号");
-    eq(st.song.parts.find((p) => p.id === a)!.staves, undefined, "歌里没改");
+    eq(st.song.papers[0].looks?.[a]?.grand, undefined, "歌里没改");
   });
   it("光标在主人上 = 整家拆开（v0.10.25，user「host也应该只读，只有展开时才能编辑」）", () => {
     let st = trio(); const [a, , c] = st.song.parts.map((p) => p.id); st = setPartHost(st, c, a);

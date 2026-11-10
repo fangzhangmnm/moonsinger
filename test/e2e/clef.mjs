@@ -10,7 +10,8 @@ const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } }))
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 for (let i = 0; i < 4; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
 const track = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].slice(3).map((t) => (t.kind === "clef" ? `clef:${t.clef}` : t.kind === "ottava" ? `o${t.shift}` : t.kind[0])).join(" "); });
-const partClef = () => p.evaluate(() => window.__moonsinger.state().song.parts[0].clef ?? "auto");
+// 这一段谱号那一格（v0.16.88 按段）：手选的大谱表 / 纸头的谱号记号 / 自动
+const partClef = () => p.evaluate(() => { const s = window.__moonsinger.state(), pp = s.song.papers.find((x) => x.id === s.at.paper), t = pp.tracks[s.at.part]; if (pp.looks?.[s.at.part]?.grand) return "grand"; let i = 0; while (i < t.length && ["key", "time", "tempo"].includes(t[i].kind)) i++; return t[i]?.kind === "clef" ? t[i].clef : "auto"; });
 const pitches = () => p.evaluate(() => { const s = window.__moonsinger.state(); return JSON.stringify(s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "note").map((t) => t.pitch)); });
 const before = await pitches();
 // 1. pad 符号层「记号」页有「谱号」「八度线」
@@ -38,17 +39,17 @@ let c0 = await clefAt();
 check(!!c0 && c0.index === -1, "行首谱号有点击区域，管它的是声部自己的谱号");
 await p.mouse.click(c0.x, c0.y); await p.waitForTimeout(200);
 const first = await p.$eval('.header-panel [data-hp="clef"]', (s) => ({ v: s.value, t: s.options[0].textContent })).catch(() => null);
-check(!!first && first.v === "" && first.t.startsWith("跟声部（自动"), "点行首谱号 = 谱头面板，谱号停在「跟声部（自动…）」", JSON.stringify(first));
+check(!!first && first.v === "auto" && first.t.startsWith("自动（现在："), "点行首谱号 = 谱头面板，谱号停在「自动（现在：…）」（v0.16.88 按段）", JSON.stringify(first));
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 // v0.16.16 搬家 A：「这位的谱」（默认谱号 / 自动八度线…）从歌手名小卡搬进谱头面板（点行首谱号）
 await p.mouse.click(c0.x, c0.y); await p.waitForTimeout(250);
-check((await p.$eval('.header-panel [data-hp="pclef"]', (s) => s.value).catch(() => null)) === "", "谱头面板「这位的谱」：默认谱号「自动」（默认）");
-check((await p.$eval('.header-panel [data-hp="ao"]', (s) => s.value).catch(() => null)) === "on", "谱头面板「这位的谱」：自动八度线「开」");
-await p.selectOption('.header-panel [data-hp="pclef"]', "F8vb"); await p.waitForTimeout(200);
-check((await partClef()) === "F8vb", "选「低音 8vb」= 声部的谱号改了", await partClef());
+check(!(await p.$('.header-panel [data-hp="pclef"]')) && !(await p.$('.header-panel [data-hp="staves"]')), "「整首都算」那里没有默认谱号 / 谱表了（搬到上面按段选，v0.16.88）");
+check((await p.$eval('.header-panel [data-hp="ao"]', (s) => s.value).catch(() => null)) === "on", "谱头面板：这一段的自动八度线「开」");
+await p.selectOption('.header-panel [data-hp="clef"]', "F8vb"); await p.waitForTimeout(200);
+check((await partClef()) === "F8vb", "选「低音 8vb」= 这一段的谱号改了", await partClef());
 check(await p.$$eval("#score svg .clef", (es) => es.some((e) => e.textContent === "\u{E064}")), "谱上画成低音 8vb 的字形");
-if (!(await p.$('.header-panel [data-hp="pclef"]'))) { const c1 = await clefAt(); await p.mouse.click(c1.x, c1.y); await p.waitForTimeout(250); }
-await p.selectOption('.header-panel [data-hp="pclef"]', ""); await p.waitForTimeout(200);
+if (!(await p.$('.header-panel [data-hp="clef"]'))) { const c1 = await clefAt(); await p.mouse.click(c1.x, c1.y); await p.waitForTimeout(250); }
+await p.selectOption('.header-panel [data-hp="clef"]', "auto"); await p.waitForTimeout(200);
 check(!(await p.$('.track-card [data-v="clef:auto"]')), "歌手名小卡里不再有谱号（搬走了）");
 await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 check((await partClef()) === "auto", "再点选「自动」= 回到自动");

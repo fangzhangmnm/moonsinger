@@ -3,7 +3,7 @@
 //   →「默认自动同意」「加格式同意」「中音这个冷门没人用吧，即使做，自动也不会选」「铃铛会很高。8va可以做了吗」。
 // 位置的单位 = diatonicIndex（C0 = 0，一级 = 一个线或间）：高音谱号第一线 E4 = 30、第五线 F5 = 38。
 import { _t } from "../i18n/index.ts";
-import { type ClefName, type Token, type Song, CLEFS, isTimed } from "./song.ts";
+import { type ClefName, type Token, type Song, CLEFS, isTimed, staffOfTokens, headClefOf } from "./song.ts";
 import { type Pitch, diatonicIndex } from "./pitch.ts";
 
 /** 这个谱号下，同一个实际音高在谱上要往上挪几级（高音谱号 = 0）。下加 8 = 谱上写高一个八度（实际低八度）= +7。 */
@@ -148,18 +148,50 @@ export function withAutoOttava(tokens: readonly Token[], start: ClefName): Token
   return out;
 }
 
-/** 整首：每张纸每个声部开头的谱号（按纸的顺序一路接：自动的滞后看这个声部在上一张纸结尾的谱号）。和视图无关——本段 / 全部 / PDF 挑的一样。
- *  大谱表的声部不在里面（上高音下低音，照旧；user「先不要双谱线模式」）。 */
-export function resolveSongClefs(song: Song): Map<string, Map<string, ClefName>> {
-  const out = new Map<string, Map<string, ClefName>>(), last = new Map<string, ClefName>();
+/** 「自动」什么时候自己变成大谱表（v0.16.88；user 11-09「一开始是auto，auto也会自动变成grand，你看一下是什么规则」）。四条都满足才变：
+ *  ① 这一段没有手写的谱号（开头或中途；手写了 = 人在管谱号）② 至少 GRAND_MIN 个音 ③ 中央 C 上面、下面的音各占 GRAND_SIDE 以上
+ *  ④ 排成两行（照实际会画的上下分法 staffOfTokens）比最好的单谱号（算上自动八度线）平均每个音省 GRAND_GAIN 以上（上一段已经是大谱表 = GRAND_KEEP，不来回跳）。
+ *  数字是起点，验收 = test/clef-per-section.test.ts 那张例子表（唱的旋律、吉他、大提琴不变；两只手的钢琴变）。合租 / 鼓不走这里（调用方不给）。 */
+const GRAND_MIN = 8, GRAND_SIDE = 0.2, GRAND_GAIN = 2.5, GRAND_KEEP = 1.5;
+export function autoGrand(tokens: readonly Token[], single: ClefName, autoOtt: boolean, prevGrand: boolean): boolean {
+  if (tokens.some((t) => t.kind === "clef")) return false;
+  const pos: number[] = []; let o = 0;
+  for (const t of tokens) { if (t.kind === "ottava") o = t.shift; else if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...(t.chord ?? [])]) pos.push(diatonicIndex(p as Pitch) + ottavaShift(o)); }
+  const n = pos.length; if (n < GRAND_MIN) return false;
+  const up = pos.filter((d) => d >= MIDDLE_C).length; if (up < GRAND_SIDE * n || n - up < GRAND_SIDE * n) return false;
+  const ao = autoOtt ? autoOttava(tokens, displayStates(tokens, single)) : null, ds = displayStates(tokens, single);
+  let one = (ao?.runs.length ?? 0) * RUN_COST;
+  tokens.forEach((t, i) => { if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...(t.chord ?? [])]) one += ledgerCost(diatonicIndex(p as Pitch) + CLEF_SHIFT[ds.clef[i] ?? single] + ottavaShift((ao ? ao.ott[i] : ds.ott[i]) ?? 0)); });
+  const stf = staffOfTokens(tokens as Token[], 2);
+  let two = 0;
+  tokens.forEach((t, i) => { if (t.kind === "note" && t.pitch) for (const p of [t.pitch, ...(t.chord ?? [])]) two += ledgerCost(diatonicIndex(p as Pitch) + (stf[i] === 2 ? CLEF_SHIFT.F : 0) + ottavaShift(ds.ott[i] ?? 0)); });
+  return (one - two) / n > (prevGrand ? GRAND_KEEP : GRAND_GAIN);
+}
+/** 一段 × 一个声部最后怎么画（resolveSongLooks）。clef = 单谱表开头挑的谱号（纸头手选的谱号记号另算，画的时候照记号走）；大谱表时 = 退回单谱表会用的那个（写进每段那份谱用）。
+ *  first = 第一个音那里实际用着的谱号（纸头手选的算上；合租分家谱用）。grand：explicit = 手选的、auto = 自动变出来的、null = 一行。 */
+export interface ResolvedLook { staves: 1 | 2; clef: ClefName; first: ClefName; autoOtt: boolean; grand: "explicit" | "auto" | null }
+/** 整首：每张纸每个声部怎么画（按纸的顺序一路接：自动的谱号和大谱表看这个声部在上一张纸的样子，滞后、不来回跳）。和视图无关——本段 / 全部 / PDF 一样。
+ *  noAutoGrand = 不许自动变大谱表的声部（鼓、固定敲一个键的；合租的一家这里自己跳过）。 */
+export function resolveSongLooks(song: Song, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ResolvedLook>> {
+  const out = new Map<string, Map<string, ResolvedLook>>(), last = new Map<string, ClefName>(), lastGrand = new Map<string, boolean>();
+  const shared = new Set(song.parts.flatMap((p) => (p.host ? [p.id, p.host] : [])));
   for (const paper of song.papers) {
-    const m = new Map<string, ClefName>(); out.set(paper.id, m);
+    const m = new Map<string, ResolvedLook>(); out.set(paper.id, m);
     for (const part of song.parts) {
-      const toks = paper.tracks[part.id]; if (!toks || part.staves === 2) continue;
-      const c = startClef(toks, part.clef, last.get(part.id) ?? null, part.autoOttava !== false);
-      m.set(part.id, c);
-      const ds = displayStates(toks, c); last.set(part.id, ds.clef.length ? ds.clef[ds.clef.length - 1] : c);
+      const toks = paper.tracks[part.id]; if (!toks) continue;
+      const look = paper.looks?.[part.id] ?? {}, autoOtt = look.autoOttava !== false;
+      const hc = headClefOf(toks), c = hc ?? startClef(toks, undefined, last.get(part.id) ?? null, autoOtt), ds = displayStates(toks, c);   // 纸头手选了谱号 = 开头就是它（和原来「声部写了谱号」一样画）
+      const grand = look.grand ? "explicit" : !shared.has(part.id) && !noAutoGrand?.has(part.id) && autoGrand(toks, c, autoOtt, lastGrand.get(part.id) ?? false) ? "auto" : null;
+      const fi = toks.findIndex((t) => t.kind === "note"), first = hc ?? (fi >= 0 ? ds.clef[fi] ?? c : c);
+      m.set(part.id, { staves: grand ? 2 : 1, clef: c, first, autoOtt, grand });
+      last.set(part.id, ds.clef.length ? ds.clef[ds.clef.length - 1] : c); lastGrand.set(part.id, !!grand);
     }
   }
+  return out;
+}
+/** 只要单谱表开头的谱号（老接口；大谱表的不在里面）。 */
+export function resolveSongClefs(song: Song, noAutoGrand?: ReadonlySet<string>): Map<string, Map<string, ClefName>> {
+  const out = new Map<string, Map<string, ClefName>>();
+  for (const [pid, m] of resolveSongLooks(song, noAutoGrand)) out.set(pid, new Map([...m].flatMap(([k, v]) => (v.staves === 1 ? [[k, v.clef] as const] : []))));
   return out;
 }

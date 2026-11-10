@@ -15,7 +15,10 @@ await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musi
 await p.waitForTimeout(300);
 // 光标放到第二位（B）那一行中间
 // 两位的谱号定死、不自动八度线（不然很高的音会被自动换成高八度谱号 / 八度线，那一行不长高）
-await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), p2 = s.song.parts[1].id; m.set({ ...s, song: { ...s.song, parts: s.song.parts.map((x) => ({ ...x, clef: "G", autoOttava: false })) }, at: { paper: s.song.papers[0].id, part: p2 }, caret: 8, sel: null }); });
+// v0.16.88 按段：纸头写高音谱号记号 + 这一段关自动八度线
+await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), p2 = s.song.parts[1].id; let k = 0;
+  const papers = s.song.papers.map((pp) => ({ ...pp, looks: Object.fromEntries(Object.keys(pp.tracks).map((id) => [id, { autoOttava: false }])), tracks: Object.fromEntries(Object.entries(pp.tracks).map(([id, t]) => [id, [...t.slice(0, 3), { kind: "clef", id: 90000 + k++, clef: "G" }, ...t.slice(3)]])) }));
+  m.set({ ...s, song: { ...s.song, papers }, at: { paper: s.song.papers[0].id, part: p2 }, caret: 9, sel: null }); });
 await p.waitForTimeout(300);
 // 光标那一行在屏幕上的 y = 谱的图在屏幕上的顶 + 那一行第五线（排版的 px × 缩放）
 const caretY = () => p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = m.state(), svg = document.querySelector("#score svg"), r = L.systems.find((x) => x.part === s.at.part && x.sys === 0); if (!svg || !r) return null; const b = svg.getBoundingClientRect(), z = b.height / L.height; return Math.round((b.top + r.staffTop * z) * 10) / 10; });

@@ -12,8 +12,9 @@
 import { _t } from "../i18n/index.ts";
 import { DEFAULT_ROLE, numberParts } from "../score/roles.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
-import { swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, CLEFS, flattenPart, familyOrder } from "../score/song.ts";
-import { resolveSongClefs, displayStates, withAutoOttava } from "../score/clef.ts";
+import { swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, type PartLook, CLEFS, flattenPart, familyOrder, headClefOf, withLooks, headLen } from "../score/song.ts";
+import { resolveSongLooks, displayStates, withAutoOttava, type ResolvedLook } from "../score/clef.ts";
+import { percKindOf } from "../gm/percussion.ts";
 import { songPlayOrder } from "../score/arrange.ts";
 import { writeMusicXml, readMusicXml, type ReadPart, type ReadScore, type PartInfo } from "./musicxml.ts";
 import { FORMAT, FORMAT_MINOR, FORMAT_PATCH, type FormatFile, type Dynamic, type FxV2, type Hum, type InstrumentV2, type Credit, type Sf2Source } from "./contract.ts";   // 形状 = 契约（人读的 .h）；改格式 = FORMAT +1 + migrate + 冻结样本（守卫测试 test/format-guard.test.ts）
@@ -87,6 +88,15 @@ const stampOf = (k: FormatFile): Json => ({ version: FORMAT[k], minor: FORMAT_MI
  *  老文件的原文本来就是这么串出来的，去掉两个不存在的键 = 原文）。读写两边都走这一把。 */
 const fpTextOf = (o: Json): string => { const { minor: _m, patch: _p, ...rest } = o; return JSON.stringify(rest, null, 2) + "\n"; };
 const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort"]);
+/** papers[] / parts[] 每一条里这一版认得的键（v0.16.88，设计稿第五节）：别的（更新的版本写的）按段 id / 声部 id 原样带回——「保存时不会丢」那句提示从这一版起是真的。
+ *  phrases / parts.autoOttava 是退役的键（这一版读的时候已经处理了），算认得、不带回。规矩（Fable 定）：按音的编号挂的东西不许放进这种原样带回的地方（编号每次读都重编）。 */
+const KNOWN_PAPER_KEYS = new Set(["id", "file", "manualBars", "unwritten", "swells", "hidden", "autoOttava", "phrases"]);
+const KNOWN_PART_KEYS = new Set(["id", "role", "mic", "kind", "clef", "autoOttava", "host", "brokenChords"]);
+const unknownById = (list: unknown, known: ReadonlySet<string>): Map<string, Json> => {
+  const out = new Map<string, Json>();
+  if (Array.isArray(list)) for (const e of list as Json[]) { if (!e || typeof e !== "object") continue; const rest = Object.fromEntries(Object.entries(e).filter(([k]) => !known.has(k))); if (Object.keys(rest).length) out.set(String(e.id), rest); }
+  return out;
+};
 export interface SaveArgs { song: Song; hum: Hum; extras: Extras; app: string; date: string; view?: Record<string, unknown> | null; references?: Record<string, Uint8Array>;
   /** 渲染核心的版本 + 哈希（src/core/version.ts；每次保存都记——user 2026-10-13「核心的版本号和hash反而是每次保存的时候都要记的。ui壳无所谓」）。不给 = 不写（测试 / 旧调用方）。 */
   core?: { version: string; hash: string } }   // references = 参考窗目录（路径都在 REFERENCES_DIR 下）   // 歌名 = song.title（可不填）；hum = 编辑器里的哼的字（写进月读候选的乐器配置）
@@ -117,51 +127,65 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   const labels = partLabels(song, { ...a.extras, lounge });
   const infoOf = (part: PartDef, k: number): PartInfo => {
     const role = lounge[part.role], active = cands(role).find((c) => c.id === role.active), mic = mics.find((m) => m.id === part.mic);
-    return { id: part.id, name: labels[k], ...(part.staves === 2 ? { staves: 2 as const } : {}), instrumentName: String(active?.name ?? _t("小月相")), sound: String(role.sound ?? DEFAULT_ROLE.sound),
+    return { id: part.id, name: labels[k], instrumentName: String(active?.name ?? _t("小月相")), sound: String(role.sound ?? DEFAULT_ROLE.sound),
       program: Number((active?.gm as Json | undefined)?.program ?? 55),
       variant: typeof (active?.gm as Json | undefined)?.variant === "string" ? { library: "MoonSinger", name: String((active!.gm as Json).variant) } : undefined,
       pan: mic ? Math.round(Number(mic.pan ?? 0) * 90) : undefined };
   };
   const infos = song.parts.map(infoOf), meta = { software: `MoonSinger ${a.app}`, date: a.date };
   const files: Record<string, Uint8Array> = {};
-  // 谱号（v0.9.28）：每张纸每个声部开头的谱号（自动的按整首挑好）写进那张纸的第一个 <clef>；自动不自动记在 score.json 的 parts[].clef
-  const clefStarts = resolveSongClefs(song);
-  const autoOtt = (part: PartDef) => part.staves !== 2 && part.autoOttava !== false;
-  const clefInfo = (paperId: string, part: PartDef): { clef?: ClefName } => { const c = part.staves === 2 ? undefined : clefStarts.get(paperId)?.get(part.id); return c && c !== "G" ? { clef: c } : {}; };
+  // 谱号（v0.9.28；v0.16.88 按段）：每张纸每个声部开头挑好的谱号写进那张纸的第一个 <clef>（自动的照整首挑好的）；手选的谱号 = 纸头的谱号记号（照旧写成第二个 <clef>）。
+  //   手选的大谱表 = 那张纸自己的 <staves>2；自动变出来的大谱表不写进每段的正本（那张纸照单谱表写），只在压平件里照着画——旧版本打开不会把整个声部都变成大谱表。
+  const perc = new Set(song.parts.filter((part) => { const role = lounge[part.role], gm = cands(role).find((c) => c.id === role.active)?.gm as Json | undefined;
+    return !!gm && percKindOf({ bank: Number(gm.bank ?? 0), program: Number(gm.program ?? 0), ...(typeof gm.note === "number" ? { note: gm.note } : {}) }) !== null; }).map((p) => p.id));   // 鼓 / 固定敲一件的不自动变大谱表（和排版同一条规矩）
+  const looks = resolveSongLooks(song, perc);
+  const lookAt = (paperId: string, partId: string): ResolvedLook | undefined => looks.get(paperId)?.get(partId);
+  const autoOtt = (paperId: string, part: PartDef) => { const l = lookAt(paperId, part.id); return !!l && l.grand !== "explicit" && l.autoOtt; };
+  const clefInfo = (paperId: string, part: PartDef): { clef?: ClefName; staves?: 2 } => { const l = lookAt(paperId, part.id); if (!l) return {}; if (l.grand === "explicit") return { staves: 2 }; return l.clef !== "G" ? { clef: l.clef } : {}; };
   // 正本：每张纸一份（这张纸上在场的声部）
   const papers = song.papers.map((p) => {
     // 自动八度线（v0.9.37）：临时插成带 ms-auto id 的记号写出去（别的软件照样画；自己读回来跳过、照样自动重算）
-    const parts = song.parts.flatMap((part, k) => (p.tracks[part.id] ? [{ info: { ...infos[k], ...clefInfo(p.id, part) }, tokens: autoOtt(part) ? withAutoOttava(p.tracks[part.id], clefStarts.get(p.id)?.get(part.id) ?? "G") : p.tracks[part.id] }] : []));
+    const parts = song.parts.flatMap((part, k) => (p.tracks[part.id] ? [{ info: { ...infos[k], ...clefInfo(p.id, part) }, tokens: autoOtt(p.id, part) ? withAutoOttava(p.tracks[part.id], lookAt(p.id, part.id)?.clef ?? "G") : p.tracks[part.id] }] : []));
     const w = writeMusicXml({ title: song.title, movementTitle: p.name || undefined, paper: song.paper, credits: song.credits, rights: song.rights, parts }, meta);
     files[paperFile(p.id)] = strToU8(w.xml);
     // 音内的力度起伏（MusicXML 表达不了音内的发夹）：声部 → 音的 id → 哪一种
     const swells: Record<string, Record<string, "<" | ">" | "<>">> = {};
     for (const [pid, toks] of Object.entries(p.tracks)) for (const t of toks) { const sw = swellOf(t); if (sw) (swells[pid] ??= {})[String(t.id)] = sw; }   // 演奏法里的音内起伏（v0.9.44）→ 照旧这张表
-    return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...(Object.keys(swells).length ? { swells } : {}), ...(p.hidden ? { hidden: true } : {}) };
+    // 这一段关了自动八度线的声部（v0.16.88，只写关了的）：声部 id → false
+    const aoOff = Object.entries(p.looks ?? {}).filter(([pid, l]) => l.autoOttava === false && p.tracks[pid]).map(([pid]) => [pid, false] as const);
+    return { id: p.id, file: paperFile(p.id), manualBars: w.manualBars, unwritten: w.unwritten, ...(Object.keys(swells).length ? { swells } : {}), ...(p.hidden ? { hidden: true } : {}), ...(aoOff.length ? { autoOttava: Object.fromEntries(aoOff) } : {}) };
   });
   // 派生的压平件：各声部整首接起来，每张纸起新页（第一个声部写排练记号 = 曲段名）
   const flat = writeMusicXml({ title: song.title, paper: song.paper, credits: song.credits, rights: song.rights, padMeasures: true, parts: song.parts.map((part, k) => {
     const f = flattenPart(song, part.id, { tempo: k === 0, order: songPlayOrder(song) });   // 照编排的顺序（重复的纸再写一遍；循环段写一遍）   // 第一个声部带速度：它不在的纸上照那张纸最上面在场的歌手补变速（新歌手只在当前纸以后常见）
     // 谱号（v0.9.28）：每张纸开头按它自己挑好的谱号；和前面接下来的不一样 = 在纸界插一个谱号记号（压平件给别的软件看，画法要对）
     let toks = f.tokens.slice(), starts = f.starts.map((x) => ({ ...x }));
-    if (autoOtt(part) && starts.length) {   // 自动八度线（v0.9.37）：每张纸各自按它的谱号算，插成带 ms-auto id 的记号
+    // 有一段是大谱表（手选的或自动变的）= 整首两行写；一行的那几段音都放上面一行（标准写法：下面那行空着）
+    const two = starts.some((s0) => lookAt(s0.paper.id, part.id)?.staves === 2);
+    if (starts.length) {   // 自动八度线（v0.9.37）：每张纸各自按它的谱号算，插成带 ms-auto id 的记号；整首两行时一行的那几段钉在上面一行
       const out: Token[] = toks.slice(0, starts[0].index), ns = starts.map((x) => ({ ...x }));
-      starts.forEach((s0, j) => { ns[j].index = out.length; out.push(...withAutoOttava(toks.slice(s0.index, starts[j + 1]?.index ?? toks.length), clefStarts.get(s0.paper.id)?.get(part.id) ?? "G")); });
+      starts.forEach((s0, j) => {
+        ns[j].index = out.length;
+        const l = lookAt(s0.paper.id, part.id), seg = toks.slice(s0.index, starts[j + 1]?.index ?? toks.length);
+        const drawn = !two && l && l.staves === 1 && l.autoOtt ? withAutoOttava(seg, l.clef) : seg;
+        out.push(...(two && l?.staves === 1 ? drawn.map((t): Token => (t.kind === "note" || t.kind === "rest" ? { ...t, staff: 1 } : t)) : drawn));
+      });
       toks = out; starts = ns;
     }
-    const first = part.staves === 2 ? undefined : clefStarts.get(starts[0]?.paper.id ?? "")?.get(part.id);
+    const first = two ? undefined : lookAt(starts[0]?.paper.id ?? "", part.id)?.clef;
     if (first) {
       let off = 0;
       for (let j = 1; j < starts.length; j++) {
-        const at = starts[j].index + off, want = clefStarts.get(starts[j].paper.id)?.get(part.id); starts[j].index = at; if (!want) continue;
+        const at = starts[j].index + off, want = lookAt(starts[j].paper.id, part.id)?.clef; starts[j].index = at; if (!want) continue;
         const ds = displayStates(toks.slice(0, at), first), now = at > 0 ? ds.clef[at - 1] : first;
         if (now !== want) { toks.splice(at, 0, { kind: "clef", id: 0, clef: want }); off++; }
       }
     }
-    return { info: { ...infos[k], ...(first && first !== "G" ? { clef: first } : {}) }, tokens: toks, breaks: new Map(starts.slice(1).map((s) => [s.index, s.paper.name])) };
+    return { info: { ...infos[k], ...(two ? { staves: 2 as const } : first && first !== "G" ? { clef: first } : {}) }, tokens: toks, breaks: new Map(starts.slice(1).map((s) => [s.index, s.paper.name])) };
   }) }, meta);
   const scoreRest = Object.fromEntries(Object.entries((a.extras.scoreExt ?? {}) as Json).filter(([k]) => !KNOWN_SCORE_KEYS.has(k)));   // 不认识的顶层键原样带回（家族纪律「未知键直通」；papers / parts 是从歌重建的）
-  const scoreExt: Json = { ...scoreRest, ...stampOf("score"), papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched", ...(p.staves === 2 ? {} : { clef: p.clef ?? "auto" }), ...(p.autoOttava === false ? { autoOttava: false } : {}), ...(p.host ? { host: p.host } : {}), ...(p.brokenChords === false ? { brokenChords: false } : {}) })),   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
+  const oldExt = (a.extras.scoreExt ?? {}) as Json, paperExtra = unknownById(oldExt.papers, KNOWN_PAPER_KEYS), partExtra = unknownById(oldExt.parts, KNOWN_PART_KEYS);
+  const scoreExt: Json = { ...scoreRest, ...stampOf("score"), papers: papers.map((e) => ({ ...(paperExtra.get(String(e.id)) ?? {}), ...e })), parts: song.parts.map((p) => ({ ...(partExtra.get(p.id) ?? {}), id: p.id, role: p.role, mic: p.mic, kind: "pitched", clef: "auto", ...(p.host ? { host: p.host } : {}), ...(p.brokenChords === false ? { brokenChords: false } : {}) })),   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}),   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
     ...(song.arrangement?.trim() ? { arrangement: song.arrangement } : {}),   // 编排那一行（可选，2026-10-08 深夜）
     ...(song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}),
@@ -733,6 +757,8 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   }
   // 纸：按 score.json 的顺序表逐张读；第 1 版存的（迁移后 papers = [p1]，文件指向 papers/p1.musicxml）包里没那份 = 读 score.musicxml（文件级迁移在这里做，migrate() 只管 JSON）
   const list = ((scoreExt?.papers as Json[] | undefined) ?? [{ id: "p1", file: paperFile("p1"), manualBars: {}, unwritten: [] }]);
+  // score minor < 4 = 谱号 / 大谱表 / 自动八度线还挂在声部上的老写法（v0.16.88 起按段；v0.16.83–87 已经是 minor 3，所以分界在 4）
+  const legacyLooks = Number(scoreExt?.minor ?? 0) < 4;
   const reads: ReadScore[] = [];
   const papers: PaperSeg[] = [];
   list.forEach((p, k) => {
@@ -744,12 +770,15 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     reads.push(r);
     const seg = paperOfRead(String(p.id), r); if (p.hidden === true) seg.hidden = true;
     // papers[].phrases（老歌里的句号，v0.16.86 去掉了）：不读，丢掉——歌词、音一个不动（user 11-10「好，整个去掉」）
+    // 这一段关了自动八度线的声部（v0.16.88 起写；更早的歌在 songFromReads 里从声部上搬过来）
+    const aoOff = p.autoOttava as Record<string, unknown> | undefined;
+    if (!legacyLooks && aoOff && typeof aoOff === "object") seg.looks = Object.fromEntries(Object.entries(aoOff).filter(([pid, v]) => v === false && seg.tracks[pid]).map(([pid]) => [pid, { autoOttava: false as const }]));
     const sw = p.swells as Record<string, Record<string, string>> | undefined;   // 音内的力度起伏：按音的 id 挂回去（认不出的种类不挂）
     if (sw) for (const [pid, m] of Object.entries(sw)) { const toks = seg.tracks[pid]; if (!toks) continue; for (const [id, v] of Object.entries(m)) { if (v !== "<" && v !== ">" && v !== "<>") continue; const k = toks.findIndex((t) => t.kind === "note" && t.id === Number(id)); if (k >= 0) toks[k] = withArt(toks[k] as NoteTok, SWELL_ART[v as Swell], true); } }
     papers.push(seg);
   });
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
-  const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null);
+  const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null, legacyLooks);
   const o = finish(reads, song, pruneSounds(extras), ours, name);
   const advice = newerMinor.length ? [_t("这首歌是更新版本的 MoonSinger 存的（{p}里有这一版还没有的东西）：照样能开能改能存，那些东西保存时不会丢，只是在这一版看不到。", { p: newerMinor.join("、") })] : [];
   return { ...o, notices: [...finalNotices, ...o.notices], references, advice };
@@ -757,22 +786,42 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
 
 /** 读进来的几张纸 → 歌。parts = score.json 的声部并集（没有 = 按纸里出现的声部 P1…）。
  *  token id 统一重编（纸序 × 声部序 × 下标，从 1 起）：全歌唯一、确定；文件里的 id 只在读那份文件时有用（unwritten / 拆段并回）。 */
-function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: Json[] | null = null): Song {
+function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: Json[] | null = null, legacyLooks = true): Song {
   const ps = papers ?? [paperOfRead("p1", reads[0])];
   const seen = new Map<string, PartDef>();
   const clefFromScore = new Set<string>();   // score.json 里写了 clef 的声部（v0.9.28 起都写：auto = 自动）：不再看 MusicXML 的第一个 <clef>
+  const oldClef = new Map<string, ClefName>(), oldAoOff = new Set<string>();   // 老写法（score minor < 4）：声部上的默认谱号 / 关了自动八度线
   for (const p of partList ?? []) {
     const d: PartDef = { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) };
-    if ("clef" in p) { clefFromScore.add(d.id); if ((CLEFS as readonly unknown[]).includes(p.clef)) d.clef = p.clef as ClefName; }
-    if (p.autoOttava === false) d.autoOttava = false;   // 这位不要自动八度线（v0.9.37）
+    if ("clef" in p) { clefFromScore.add(d.id); if (legacyLooks && (CLEFS as readonly unknown[]).includes(p.clef)) oldClef.set(d.id, p.clef as ClefName); }
+    if (legacyLooks && p.autoOttava === false) oldAoOff.add(d.id);   // 这位不要自动八度线（v0.9.37，老写法）
     if (p.brokenChords === false) d.brokenChords = false;   // 这位不认分解和弦（v0.16.73）
     if (typeof p.host === "string" && p.host) d.host = p.host;   // 合租（v0.10.24）：下面核一遍
     seen.set(d.id, d);
   }
   for (const d of seen.values()) { const h = d.host ? seen.get(d.host) : undefined; if (d.host && (!h || h.id === d.id || h.host)) delete d.host; }   // 主人不在 / 挂自己 / 主人也是房客 = 不合租
   for (const p of ps) for (const id of Object.keys(p.tracks)) if (!seen.has(id)) seen.set(id, { id, role: `r${seen.size + 1}`, mic: `m${seen.size + 1}` });
-  // 谱号：score.json 没写的（v0.9.28 以前存的 / 别家的谱）= MusicXML 里这个声部第一个 <clef>：不是普通高音谱号的（低音、八度谱号）算写明了，普通高音谱号 = 自动
-  for (const r of reads) for (const p of r.parts) { const d = seen.get(p.info.id); if (!d) continue; if (p.info.staves === 2) d.staves = 2; if (!clefFromScore.has(d.id) && !d.clef && p.info.clef && p.info.clef !== "G" && d.staves !== 2) d.clef = p.info.clef; }
+  // 谱号 / 大谱表 / 自动八度线按段（v0.16.88，user 11-09「收到前面的per sheet而不是跟着歌手」）。读的时候：
+  //   ① 每张纸自己的 <staves>2 = 那一段大谱表；老写法（minor < 4）每张纸都写了 = 这个声部在的每一段都是（和原来画的一样）
+  //   ② 老写法的声部默认谱号 X = 没写纸头谱号的那几段各补一个纸头谱号 X；score.json 没写 clef 的（v0.9.28 以前 / 别家的谱）= 那张纸第一个 <clef> 不是普通高音谱号的，补成那一段的纸头谱号
+  //   ③ 老写法的「这位不要自动八度线」= 它在的每一段都关
+  const grandAt = new Set<string>();   // "纸 id\n声部 id"
+  ps.forEach((seg, k) => { for (const rp of reads[k]?.parts ?? []) if (rp.info.staves === 2 && seg.tracks[rp.info.id]) grandAt.add(`${seg.id}\n${rp.info.id}`); });
+  if (legacyLooks) for (const id of seen.keys()) if (ps.some((seg) => grandAt.has(`${seg.id}\n${id}`))) for (const seg of ps) if (seg.tracks[id]) grandAt.add(`${seg.id}\n${id}`);
+  ps.forEach((seg, k) => {
+    const lk: Record<string, PartLook> = { ...(seg.looks ?? {}) };
+    for (const id of Object.keys(seg.tracks)) {
+      const grand = grandAt.has(`${seg.id}\n${id}`);
+      if (grand) lk[id] = { ...lk[id], grand: true };
+      if (oldAoOff.has(id)) lk[id] = { ...lk[id], autoOttava: false };
+      if (grand) continue;
+      const fileClef = reads[k]?.parts.find((rp) => rp.info.id === id)?.info.clef;
+      const want = oldClef.get(id) ?? (!clefFromScore.has(id) && fileClef && fileClef !== "G" ? fileClef : undefined);
+      const toks = seg.tracks[id];
+      if (want && !headClefOf(toks)) { const at = headLen(toks); seg.tracks[id] = [...toks.slice(0, at), { kind: "clef", id: 0, clef: want }, ...toks.slice(at)]; }
+    }
+    const clean = withLooks(seg, lk); if (clean.looks) seg.looks = clean.looks; else delete seg.looks;
+  });
   const parts = familyOrder([...seen.values()]);   // 一家挨在一起（v0.10.36：旧文件里房客可能没挨着主人）
   let id = 1;
   const renumbered = ps.map((p) => ({ ...p, tracks: Object.fromEntries(parts.flatMap((part) => (p.tracks[part.id] ? [[part.id, p.tracks[part.id].map((t) => ({ ...t, id: id++ }))]] : []))) }));

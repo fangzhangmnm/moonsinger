@@ -1,7 +1,7 @@
 // 力度那一行一律在谱上面（2026-10-09 Opus 5.5；user「有没有歌词的时候强度符号都统一放谱子上面」）：
 //   没歌词的声部、大谱表也是——以前没歌词写下面、大谱表写两条谱中间。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { initState, withTrack, tr, setPartStaves, TPQ, type Token, type EditorState } from "../src/score/song.ts";
+import { initState, withTrack, tr, setPaperLook, TPQ, type Token, type EditorState } from "../src/score/song.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 
@@ -12,10 +12,10 @@ const f = (): Token => ({ kind: "dyn", id: id++, value: "f" }) as Token;
 const cresc = (): Token => ({ kind: "hairpin", id: id++, dir: "cresc" }) as Token;
 function song(items: Token[], grand = false): EditorState {
   const st = initState(), s1 = { ...st, song: withTrack(st.song, st.at.paper, st.at.part, [...tr(st).slice(0, 3), ...items]) };
-  return grand ? setPartStaves(s1, st.at.part, 2) : s1;
+  return grand ? setPaperLook(s1, st.at.paper, st.at.part, { grand: true }) : s1;
 }
 function check(st: EditorState, what: string) {
-  const L = engrave(st.song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false, ...(st.song.parts[0]!.staves ? { staves: 2 } : {}) }], measure: createTextMeasure((s: string) => s.length * 10) } as never);
+  const L = engrave(st.song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: false }], measure: createTextMeasure((s: string) => s.length * 10) } as never);
   const top = Math.min(...L.systems.map((r) => r.staffTop));
   const dyn = L.prims.filter((p) => p.t === "glyph" && /\bdyn\b/.test((p as { cls?: string }).cls ?? "")) as { y: number }[];
   const pin = L.prims.filter((p) => p.t === "path" && /\bhairpin\b/.test((p as { cls?: string }).cls ?? "")) as { d: string }[];

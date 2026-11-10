@@ -18,7 +18,7 @@ const closeAll = async () => { await p.keyboard.press("Escape"); await p.waitFor
 // ① 点行首的调号 → 面板，四样都在
 const keyBox = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), k = L.marks.find((x) => x.kind === "key" && x.system === 0); return { x: sc.left + L.pageX.left + k.x + k.w / 2, y: sc.top + k.y + k.h / 2 }; });
 await p.mouse.click(keyBox.x, keyBox.y); await p.waitForTimeout(250);
-check((await panel()) === "clef,key,time,staves,pclef,ao,broken" && !!(await p.$('.header-panel [data-v="tempo"]')), "点行首的调号 = 谱头面板：谱号 / 调号 / 拍号 + 速度那一颗钮 + 「这位的谱」（谱表 / 默认谱号 / 自动八度线 / 分解和弦认不认；v0.16.16 搬家 A、v0.16.73）", String(await panel()));
+check((await panel()) === "clef,ao,key,time,broken" && !!(await p.$('.header-panel [data-v="tempo"]')), "点行首的调号 = 谱头面板：谱号（这一段：自动 / 六个谱号 / 大谱表）+ 这一段的自动八度线 / 调号 / 拍号 + 速度那一颗钮 + 整首都算的只剩分解和弦（v0.16.88）", String(await panel()));
 const h0 = await head();
 await p.selectOption('.header-panel [data-hp="key"]', "2"); await p.waitForTimeout(150);
 check((await head()).startsWith("k2 "), "调号改成 1=D（2 个升号）", await head());
@@ -59,7 +59,7 @@ await p.click('.pad-head [data-open="more"], .pad-tools [data-open="more"]').cat
 check(!(await p.$('.pad-panel [data-mark]')), "「⋯」里没有插记号的钮了");
 // 大谱表的谱号也点得中（v0.16.50，user 11-09「高音谱号为什么点不中」：原来只给单谱表建了点击区）
 await closeAll();
-await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, parts: s.song.parts.map((x) => (x.id === s.at.part ? { ...x, staves: 2 } : x)) } }); }); await p.waitForTimeout(400);
+await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, papers: s.song.papers.map((pp) => (pp.id === s.at.paper ? { ...pp, looks: { ...(pp.looks ?? {}), [s.at.part]: { grand: true } } } : pp)) } }); }); await p.waitForTimeout(400);   // 这一段手选大谱表（v0.16.88 按段）
 for (const k of [0, 1]) {
   const cb = await p.evaluate((k) => { const m = window.__moonsinger, L = m.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), ox = L.pageX?.left ?? 0, cs = L.clefs.filter((c) => c.kind === "start"); const c = cs[k]; return c ? { x: sc.left + ox + c.x + c.w / 2, y: sc.top + c.y + c.h / 2, n: cs.length } : null; }, k);
   if (cb) { await p.mouse.click(cb.x, cb.y); await p.waitForTimeout(250); }
