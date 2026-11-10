@@ -521,6 +521,11 @@ var S = {
   "\u7B97\u4E86": { en: "Never mind" },
   "\u2713 \u5728\u6587\u4EF6\u5939\u91CC": { en: "\u2713 In the folder" },
   "\xB7 \u6587\u4EF6\u5939\u91CC\u6CA1\u6709": { en: "\xB7 Not in the folder" },
+  "\u4F60\u6311\u7684\u300C{name}\u300D\u4E0D\u5728\u73B0\u5728\u8FD9\u51E0\u4E2A\u97F3\u7684\u8BFB\u6CD5\u91CC\uFF08\u97F3\u6539\u8FC7\u4E86\uFF09\uFF1A\u6362\u4E00\u4E2A\uFF0C\u6216\u8005\u6539\u56DE\u81EA\u52A8": { en: "The chord you picked, \u201C{name}\u201D, is no longer one of the readings of these notes (the notes changed): pick another, or go back to automatic" },
+  "\u8FD9\u662F\u4F60\u6311\u7684\u300C{name}\u300D": { en: "You picked \u201C{name}\u201D" },
+  "\u6539\u56DE\u81EA\u52A8\uFF08{label}\uFF09": { en: "Back to automatic ({label})" },
+  "\u6539\u56DE\u81EA\u52A8\uFF08\u8FD9\u51E0\u4E2A\u97F3\u8BA4\u4E0D\u51FA\u548C\u5F26 = \u4E0D\u6807\uFF09": { en: "Back to automatic (these notes don't read as a chord = no label)" },
+  "\u70B9\u4E00\u4E2A = \u7528\u5B83\uFF08\u8BB0\u8FDB\u8FD9\u4E2A\u97F3\uFF0C\u80FD\u64A4\u9500\uFF09": { en: "Tap one = use it (stored on this note; undo works)" },
   "\u754C\u9762": { en: "Interface" },
   "\u8F85\u52A9\u529F\u80FD": { en: "Accessibility" },
   "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Sounds" },
@@ -1531,6 +1536,8 @@ var S = {
   "\u8FD9\u4EFD MusicXML \u662F timewise \u6392\u6CD5\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BFB partwise": { en: "This MusicXML is timewise; this version only reads partwise" },
   "\u8FD9\u4E0D\u662F MusicXML \u4E50\u8C31\uFF08\u6839\u5143\u7D20\u662F <{name}>\uFF09": { en: "This isn't a MusicXML score (root element is <{name}>)" },
   "\u8FD9\u4EFD MusicXML \u91CC\u6CA1\u6709\u58F0\u90E8": { en: "This MusicXML has no parts" },
+  "\u548C\u5F26\u8BB0\u53F7\uFF08\u6CA1\u6807\u5728\u4E00\u4E2A\u97F3\u7684\u5F00\u5934\uFF09": { en: "Chord symbols (not at the start of a note)" },
+  "\u548C\u5F26\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\u79CD\u7C7B\uFF09": { en: "Chord symbols (a kind this version doesn't know)" },
   "\u6F14\u594F\u6CD5\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF09": { en: "Articulation marks (not recognized by this version)" },
   "\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09": { en: "Dynamic marks (not recognized by this version, such as sfz)" },
   "\u6309\u62CD\u5B50\u91CD\u590D\u7684\u98A4\u97F3\uFF08\u4E00\u4E24\u9053\u659C\u7EBF\uFF09": { en: "Measured tremolo (one or two slashes)" },
@@ -1540,7 +1547,6 @@ var S = {
   "\u53E0\u97F3\uFF08\u524D\u9762\u6CA1\u6709\u80FD\u53E0\u7684\u97F3\uFF09": { en: "Stacked notes (with nothing before to stack on)" },
   "\u6CA1\u6709\u97F3\u9AD8\u7684\u97F3\uFF08\u6253\u51FB\u4E50\uFF09": { en: "Unpitched notes (percussion)" },
   "\u7B2C\u4E8C\u6BB5\u53CA\u4EE5\u540E\u7684\u6B4C\u8BCD": { en: "Lyrics beyond the first verse" },
-  "\u548C\u5F26\u8BB0\u53F7": { en: "Chord symbols" },
   "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09": { en: "Tsukuyomi-chan Corpus Terms of Use (derived model)" },
   "\u5C0F\u6708\u76F8": { en: "Tsukuyomi-chan" },
   "\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09": { en: "Tsukuyomi-chan (vowels)" },
@@ -4598,12 +4604,72 @@ function thirdDyad(ps, fifths, mode) {
   if (!all.length) return null;
   return { theory: ID, best: all[0], ties: all.filter((g) => g.cost - all[0].cost < 0.1), all, ...mode === "la" ? { mode } : {} };
 }
-var chordLabel = (r) => r.ties.slice(0, 2).map((g) => g.label).join(" / ");
+var chordLabel = (r) => r.ties.slice(0, 2).map((g) => g.label).join(" / ") + (r.stale ? "?" : "");
+function guessOf(root, tplId, bass, fifths, mode) {
+  if (tplId.startsWith(FREE)) {
+    const nm = stepName(root) + tplId.slice(FREE.length) + (pc(root) === pc(bass) ? "" : `/${stepName(bass)}`);
+    return { root, bass, tpl: tplId, label: nm, name: nm, cost: 0, omitted: 0, no3: false };
+  }
+  const r = degreeOf(root, fifths, mode), b = degreeOf(bass, fifths, mode), slash = pc(root) === pc(bass) ? "" : `/${ACC(b.acc)}${b.deg}`, nameSlash = slash ? `/${stepName(bass)}` : "";
+  if (tplId === "5") return { root, bass, tpl: "5", label: ACC(r.acc) + ROMAN[r.deg - 1] + "5" + slash, name: stepName(root) + "5" + nameSlash, cost: 0, omitted: 1, no3: true };
+  const t = TPLS.find((x) => x.id === tplId);
+  if (!t) return null;
+  const minor = t.no3 ? diatonicThird(root, fifths) === 3 : t.minor;
+  return { root, bass, tpl: t.id, label: ACC(r.acc) + (minor ? ROMAN[r.deg - 1].toLowerCase() : ROMAN[r.deg - 1]) + t.rs + slash, name: stepName(root) + (t.no3 && minor ? "m" : "") + t.sym + nameSlash, cost: 0, omitted: 0, no3: !!t.no3 };
+}
+var FREE = "?";
+var XML_KIND = {
+  maj: "major",
+  min: "minor",
+  dim: "diminished",
+  aug: "augmented",
+  sus4: "suspended-fourth",
+  sus2: "suspended-second",
+  "7": "dominant",
+  m7: "minor-seventh",
+  maj7: "major-seventh",
+  "6": "major-sixth",
+  m6: "minor-sixth",
+  m7b5: "half-diminished",
+  dim7: "diminished-seventh",
+  mMaj7: "major-minor",
+  aug7: "augmented-seventh",
+  "9": "dominant-ninth",
+  m9: "minor-ninth",
+  maj9: "major-ninth",
+  "11": "dominant-11th",
+  m11: "minor-11th",
+  "13": "dominant-13th",
+  m13: "minor-13th",
+  maj13: "major-13th",
+  "5": "power"
+};
+var KIND_BY_XML = Object.fromEntries(Object.entries(XML_KIND).map(([k, v]) => [v, k]));
+var samePin = (a, b) => pc(a.root) === pc(b.root) && a.tpl === b.tpl && pc(a.bass) === pc(b.bass);
+function pinRead(pin, at, auto) {
+  const root = { ...pin.root, octave: 4 }, bass = { ...pin.bass ?? pin.root, octave: 3 }, mode = at.minor ? "la" : "do";
+  const g = guessOf(root, pin.kind, bass, at.fifths, mode);
+  if (!g) return null;
+  const others = (auto?.all ?? []).filter((x) => !samePin(x, g));
+  const stale = !!auto && others.length === auto.all.length;
+  return { theory: ID, best: g, ties: [g], all: [g, ...others], pinned: true, ...auto ? { auto } : {}, ...stale ? { stale: true } : {}, ...mode === "la" ? { mode } : {} };
+}
+var pinOf = (guess) => {
+  const g = guess;
+  return { root: { step: g.root.step, alter: g.root.alter }, kind: g.tpl, ...pc(g.bass) !== pc(g.root) ? { bass: { step: g.bass.step, alter: g.bass.alter } } : {} };
+};
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
 function brokenInBar(bar, prev) {
   const beatLen = beatTicks(bar.beats, bar.beatType), nb = Math.max(1, Math.round(bar.beats * WHOLE / bar.beatType / beatLen));
   const beats = Array.from({ length: nb }, () => []);
-  for (const n2 of bar.notes) if (!n2.tie) beats[Math.min(nb - 1, Math.max(0, Math.floor(n2.pos / beatLen + 1e-9)))].push({ i: n2.index, p: n2.tok.pitch, stacked: !!n2.tok.chord?.length, fifths: n2.fifths, mode: modeOf(n2) });
+  for (const n2 of bar.notes) if (!n2.tie) beats[Math.min(nb - 1, Math.max(0, Math.floor(n2.pos / beatLen + 1e-9)))].push({
+    i: n2.index,
+    p: n2.tok.pitch,
+    stacked: !!n2.tok.chord?.length,
+    fifths: n2.fifths,
+    mode: modeOf(n2),
+    pin: n2.tok.harm ? guessOf({ ...n2.tok.harm.root, octave: 4 }, n2.tok.harm.kind, { ...n2.tok.harm.bass ?? n2.tok.harm.root, octave: 3 }, n2.fifths, modeOf(n2))?.label ?? null : null
+  });
   const tags = [];
   const groupOf = (ns) => {
     const us = ns.filter((n2) => n2.p && !n2.stacked), ps = us.map((n2) => n2.p);
@@ -4623,6 +4689,7 @@ function brokenInBar(bar, prev) {
       const label = chordLabel(rd);
       if (label !== prev) tags.push({ index: ns.find((n2) => n2.p && !n2.stacked).i, read: rd });
       prev = label;
+      for (const n2 of ns) if (n2.pin && !n2.stacked) prev = n2.pin;
       return;
     }
     const len = b1 - b0;
@@ -4662,6 +4729,8 @@ var western = {
   id: ID,
   readBar,
   label: chordLabel,
+  pinRead,
+  pinOf,
   howTo: () => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002"),
   explain: (guess) => {
     const g = guess;
@@ -4691,14 +4760,21 @@ function barsOf(tokens) {
   return bars;
 }
 function harmonyTags(theory, track) {
-  const out = [], opts = { broken: track.broken !== false };
+  const out = [], opts = { broken: track.broken !== false }, bars = barsOf(track.tokens);
   let carry;
-  for (const bar of barsOf(track.tokens)) {
+  for (const bar of bars) {
     const r = theory.readBar(bar, carry, opts);
     out.push(...r.tags);
     carry = r.carry;
   }
-  return out;
+  const pins = bars.flatMap((b) => b.notes).filter((n2) => n2.tok.harm);
+  if (!pins.length) return out;
+  const byIndex = new Map(out.map((t) => [t.index, t]));
+  for (const n2 of pins) {
+    const rd = theory.pinRead(n2.tok.harm, { fifths: n2.fifths, minor: !!n2.minor }, byIndex.get(n2.index)?.read);
+    if (rd) byIndex.set(n2.index, { index: n2.index, read: rd });
+  }
+  return [...byIndex.values()].sort((a, b) => a.index - b.index);
 }
 
 // src/score/clef.ts
@@ -6647,9 +6723,10 @@ function engrave(song, o) {
           const headR = nhX(c) + nhW(c) * (second ? 1.95 : 1), sx = stemXOf.get(c), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
           const atStem = sx !== void 0 && !(low && headR > sx + P(0.1));
           const label = theory.label(rd), tx2 = atStem ? sx - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
-          placeBelow(RW(c), 0.3, (y) => {
-            prims.push({ t: "text", x: tx2, y, s: label, cls: "chord-tag", size: fs, anchor: "start" });
-            chordTagsOut.push({ x: tx2 - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd });
+          const row = RW(c), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;
+          placeBelow(row, 0.3, (y) => {
+            prims.push({ t: "text", x: tx2, y, s: label, cls, size: fs, anchor: "start" });
+            chordTagsOut.push({ x: tx2 - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: c.index });
           });
         }
       });
@@ -6928,4 +7005,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-ae07840aeb67.mjs.map
+//# sourceMappingURL=layout-worker-1d7f39297813.mjs.map

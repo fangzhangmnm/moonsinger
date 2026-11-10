@@ -1027,13 +1027,21 @@ body.print-look #bar, body.print-look .zoom-reset, body.print-look .score-overla
 /* 「弹」的鬼音符（v0.10.6）：盖在谱上的一层，不接点击、不影响排版 */
 .ghost-preview { position: absolute; left: 0; top: 0; overflow: visible; pointer-events: none; opacity: .5; }
 /* 和弦标级数（v0.16.13 起进排版 = 谱上的字，跟着设置印进 PDF）；点击在 score-view tap 里按 Layout.chordTags 的框判 */
-.staff-svg text.chord-tag { fill: var(--accent); }   /* v0.16.34：谱上分析和声那种衬线字（PDF = vendor/fonts/serif 的轮廓） */
+.staff-svg text.chord-tag { fill: var(--accent); }
+/* v0.16.87：人挑过的读法 = 墨色（和自动认的分得开）；挑的对不上这几个音了 = 灰（字后面带「?」） */
+.staff-svg text.chord-tag.is-pinned { fill: var(--ink); }
+.staff-svg text.chord-tag.is-stale { fill: var(--muted); }   /* v0.16.34：谱上分析和声那种衬线字（PDF = vendor/fonts/serif 的轮廓） */
 .ctx-menu.chord-info { min-width: 220px; }
 .chord-cand { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 5px 10px; align-items: baseline; }
 .chord-cand b { font-size: 15px; }
 .chord-cand span { color: var(--muted); }
 .chord-cand small { grid-column: 1 / -1; color: var(--muted); font-size: 11px; }
 .chord-cand.is-best { background: var(--accent-soft); border-radius: 6px; }
+/* v0.16.87：能写的模式里每一行是钮（点 = 用这个读法）；亮圈 = 现在用着的是你挑的 */
+button.chord-cand { width: 100%; text-align: left; border: 0; background: none; font: inherit; color: inherit; cursor: pointer; border-radius: 6px; min-height: 40px; }
+button.chord-cand:hover { background: var(--panel); }
+button.chord-cand.is-best { background: var(--accent-soft); }
+button.chord-cand.is-on { box-shadow: 0 0 0 2px var(--accent) inset; }
 .ghost-preview text { fill: var(--accent); }
 .ghost-preview line { stroke: var(--accent); }
 /* 琶音（v0.9.45）：和弦左边的波浪线 */

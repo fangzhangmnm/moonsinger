@@ -18,7 +18,7 @@
 import { _t } from "../i18n/index.ts";
 import { type Paper, type PaperKind, type Density, DEFAULT_PAPER, paperOf, densityOf } from "./paper.ts";
 import { latchDown, latchWrite, LATCH_OFF } from "../keyboard/latch.ts";   // 升降 Shift 的那条规则和 /2、渐到同一份（编辑状态机第 2 期，2026-10-15）
-import { type Dir, type Pitch, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell, keyAlter } from "./pitch.ts";
+import { type Dir, type Pitch, type Step, HOME, placeDegree, stepBy, alterBy, octaveBy, transposeSemis, transposeInterval, keyInterval, midiOf, keySpell, keyAlter } from "./pitch.ts";
 import { expandPaper } from "./repeats.ts";   // 谱内反复（循环 import：repeats.ts 只在函数里用 song.ts 的东西，加载顺序无所谓）
 
 /** 一个四分音符的 tick 数。 */
@@ -36,7 +36,27 @@ export const MIN_DUR = (TPQ / 8) * 4 / 7;
 export const MAX_DUR = WHOLE * 4;
 
 /** lang = 这个音节唱哪种语言，**只在和自动认的不一样时才有**（持久化第 6 题：存档时每个音节都写明，编辑时自动认、认错了才改；规则见 score/lang.ts）。 */
-export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean; inhale?: "soft" | "big" }   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
+export interface NoteTok { kind: "note"; id: number; pitch: Pitch | null; dur: number; lyric: string | null; hyph?: boolean; tie?: boolean; lang?: string; staff?: Staff; chord?: Pitch[]; art?: Art[]; slur?: boolean; inhale?: "soft" | "big"; harm?: ChordPin }
+/** 人写明的和弦（v0.16.87；user 11-09 拍「输入法候选」= 点开挑一个读法，11-10「一同意」往歌里存、「三可以接」别人谱里的和弦记号）：
+ *  根音 + 种类 + 最低音，挂在那个音上（音删了它就没了，撤销一起回来）。kind = 理论里的和弦种类 id（src/theory/western.ts 的表；"5" = 空五度）；
+ *  bass 没有 = 和根音一样。级数不存（按这里的调号现算，换调号跟着变）；移调 / 转调跟着音一起挪。MusicXML 原生 <harmony>（紧挨在那个音前面）。
+ *  音改了、挑的不再是这几个音认得出的读法 = 照样画（灰 + 「?」）、点开说一声，不自动删、不自动换（不替人判断）。 */
+export interface ChordPin { root: { step: Step; alter: number }; kind: string; bass?: { step: Step; alter: number } }
+/** 和弦名跟着音一起挪（移调 / 转调用；改单个音高不算移调，不挪）。 */
+export function movePin(t: NoteTok, f: (p: Pitch) => Pitch): NoteTok {
+  if (!t.harm) return t;
+  const mv = (x: { step: Step; alter: number }) => { const q = f({ ...x, octave: 4 }); return { step: q.step, alter: q.alter }; };
+  const { bass, ...h } = t.harm;
+  return { ...t, harm: { ...h, root: mv(h.root), ...(bass ? { bass: mv(bass) } : {}) } };
+}
+/** 挑一个读法 / 改回自动（null）：那张纸那个声部第 index 个 token（得是音）。一步撤销。 */
+export function setChordPin(st: EditorState, paperId: string, partId: string, index: number, pin: ChordPin | null): EditorState {
+  const toks = st.song.papers.find((p) => p.id === paperId)?.tracks[partId], t = toks?.[index];
+  if (!toks || t?.kind !== "note") return st;
+  if (!pin && !t.harm) return st;
+  const nt = toks.slice(); if (pin) nt[index] = { ...t, harm: pin }; else { const { harm: _h, ...rest } = t; nt[index] = rest; }
+  return { ...st, song: withTrack(st.song, paperId, partId, nt) };
+}   // staff = 大谱表里手动指定的上 / 下（没有 = 按音高自动）
 //   inhale（2026-10-10，Claude Opus 5.5；user「wishlist里面还有吸气声，也一起支持下…但是不应该每个逗号都大喘气」→ AI 提「逗号默认静默、要出声的处处明写」，user「气声同意」）
 //     = 这个音后面的呼吸（art 里的 breath）换气时听得见：soft = 轻吸、big = 深吸。只跟着 breath 有意义（去掉呼吸 = 一起去掉）；MusicXML <other-articulation>inhale / inhale-big。
 //   slur（2026-10-08 连断，Claude Opus 5.5）= 连线：这个音连到下一个音（不留缝）；一串连着的 = 一条连线。MusicXML <slur type="start/stop"> 原生。
@@ -1132,7 +1152,7 @@ export const octaveTarget = (st: EditorState, d: number) => mapTargetPitch(st, (
 export function transposeSel(st: EditorState, semis: number): EditorState {
   if (!st.sel || !semis) return st;
   const nt = tr(st).slice();
-  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note" && t.pitch) nt[i] = withPitches(t, allPitches(t).map((p) => transposeSemis(p, semis, keyAt(tr(st), i)))); }
+  for (let i = st.sel.from; i < st.sel.to; i++) { const t = nt[i]; if (t.kind === "note" && t.pitch) { const k = keyAt(tr(st), i); nt[i] = movePin(withPitches(t, allPitches(t).map((p) => transposeSemis(p, semis, k))), (p) => transposeSemis(p, semis, k)); } }
   return next(st, nt);
 }
 /** 按调号拼写（选中的一段）：调内的音换成调号里的写法，调外的不动；音高不变（已经写下的谱用它收拾，比如五个升号的调里全写成降号的）。 */
@@ -1158,7 +1178,7 @@ export function modulateSel(st: EditorState, toFifths: number): EditorState {
   const nt = old.slice();
   for (let i = from; i < to; i++) {
     const t = nt[i];
-    if (t.kind === "note" && t.pitch) nt[i] = withPitches(t, allPitches(t).map((p) => transposeInterval(p, steps, semis)));
+    if (t.kind === "note" && t.pitch) nt[i] = movePin(withPitches(t, allPitches(t).map((p) => transposeInterval(p, steps, semis))), (p) => transposeInterval(p, steps, semis));
     else if (t.kind === "key") nt[i] = { ...t, fifths: wrap(t.fifths + df) };
   }
   let nextId = st.nextId;
@@ -1226,7 +1246,7 @@ export function transposePapers(st: EditorState, paperIds: readonly string[], ho
       if (skip?.has(pid)) { tracks[pid] = toks; continue; }
       const nt = toks.map((t): Token => {
         if (t.kind === "key") return df ? { ...t, fifths: plainKey(t.fifths + df) } : t;
-        if (t.kind === "note" && t.pitch) return withPitches(t, allPitches(t).map((p) => transposeInterval(p, steps, semis)));
+        if (t.kind === "note" && t.pitch) return movePin(withPitches(t, allPitches(t).map((p) => transposeInterval(p, steps, semis))), (p) => transposeInterval(p, steps, semis));
         return t;
       });
       if (df) for (let i = 0; i < nt.length; i++) {   // 按挪完之后各自的调号简化拼写（挪八度不动拼写）（调号换成了等音调时，按音程挪的拼法可能和它对不上）

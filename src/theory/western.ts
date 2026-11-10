@@ -16,6 +16,7 @@ import { type Pitch, STEPS, midiOf, stepIndex, tonicStepIndex, keyAlter } from "
 import { WHOLE, beatTicks } from "../score/song.ts";
 import { _t } from "../i18n/index.ts";
 import type { HarmonyTheory, HarmonyGuess, HarmonyRead, HarmonyTag, BarInput, ReadOpts } from "./index.ts";
+import type { ChordPin } from "../score/song.ts";
 
 interface Tpl { id: string; iv: number[]; opt?: number[]; /** 缺三度（大小分不出来）：大写小写按调里这个根音上面的三度（v0.16.13，user 11-07 截图：A E G 没标）。 */ no3?: boolean; minor: boolean; /** 罗马数字后面写的（小写的已经说了小三度，不再写 m）。 */ rs: string; /** 和弦名（根音字母后面写的，点开看候选用）。 */ sym: string }
 /** 和弦表（半音，从根音数；opt = 可以省的音，一般是五度 / 九度）。顺序 = 简单的在前（同分时排前面的赢）。 */
@@ -140,7 +141,46 @@ function thirdDyad(ps: Pitch[], fifths: number, mode: Mode): ChordRead | null {
   return { theory: ID, best: all[0], ties: all.filter((g) => g.cost - all[0].cost < 0.1), all, ...(mode === "la" ? { mode } : {}) };
 }
 /** 标在谱上的那一行字：打平的用「 / 」连起来（最多两个）。 */
-export const chordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g) => g.label).join(" / ");
+export const chordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g) => g.label).join(" / ") + (r.stale ? "?" : "");   // 人挑的对不上这几个音了 = 带「?」
+/** 一个和弦（根音 + 种类 + 最低音）在这个调里怎么写（v0.16.87：人挑过的按这个现算；算法和 readChord 里同一套）。种类不认识 = null。 */
+function guessOf(root: Pitch, tplId: string, bass: Pitch, fifths: number, mode: Mode): ChordGuess | null {
+  if (tplId.startsWith(FREE)) { const nm = stepName(root) + tplId.slice(FREE.length) + (pc(root) === pc(bass) ? "" : `/${stepName(bass)}`); return { root, bass, tpl: tplId, label: nm, name: nm, cost: 0, omitted: 0, no3: false }; }   // 这一版不认识的种类：只写和弦名，不算级数
+  const r = degreeOf(root, fifths, mode), b = degreeOf(bass, fifths, mode), slash = pc(root) === pc(bass) ? "" : `/${ACC(b.acc)}${b.deg}`, nameSlash = slash ? `/${stepName(bass)}` : "";
+  if (tplId === "5") return { root, bass, tpl: "5", label: ACC(r.acc) + ROMAN[r.deg - 1] + "5" + slash, name: stepName(root) + "5" + nameSlash, cost: 0, omitted: 1, no3: true };
+  const t = TPLS.find((x) => x.id === tplId); if (!t) return null;
+  const minor = t.no3 ? diatonicThird(root, fifths) === 3 : t.minor;
+  return { root, bass, tpl: t.id, label: ACC(r.acc) + (minor ? ROMAN[r.deg - 1].toLowerCase() : ROMAN[r.deg - 1]) + t.rs + slash, name: stepName(root) + (t.no3 && minor ? "m" : "") + t.sym + nameSlash, cost: 0, omitted: 0, no3: !!t.no3 };
+}
+/** 和弦种类 ↔ MusicXML <kind>（src/format/musicxml.ts 写 / 读 <harmony> 用；表归这种理论）。没有标准名的 = <kind text="7sus4">other</kind>。
+ *  读到 other + 不认识的 text（以后的版本写的 / 别的软件写的）= 种类记成 FREE + text：只写和弦名、不算级数，存的时候原样写回去。 */
+const FREE = "?";
+const XML_KIND: Record<string, string> = { maj: "major", min: "minor", dim: "diminished", aug: "augmented", sus4: "suspended-fourth", sus2: "suspended-second", "7": "dominant", m7: "minor-seventh", maj7: "major-seventh",
+  "6": "major-sixth", m6: "minor-sixth", m7b5: "half-diminished", dim7: "diminished-seventh", mMaj7: "major-minor", aug7: "augmented-seventh", "9": "dominant-ninth", m9: "minor-ninth", maj9: "major-ninth",
+  "11": "dominant-11th", m11: "minor-11th", "13": "dominant-13th", m13: "minor-13th", maj13: "major-13th", "5": "power" };
+const KIND_BY_XML: Record<string, string> = Object.fromEntries(Object.entries(XML_KIND).map(([k, v]) => [v, k]));
+export function pinXmlKind(kind: string): { value: string; text?: string } {
+  if (kind.startsWith(FREE)) return { value: "other", text: kind.slice(FREE.length) };
+  const std = XML_KIND[kind]; if (std) return { value: std };
+  return { value: "other", text: TPLS.find((t) => t.id === kind)?.sym ?? kind };
+}
+/** <kind> 的值 + text 属性 → 和弦种类；认不出 = null（调用方数出来报）。 */
+export function xmlKindToPin(value: string, text: string | undefined): string | null {
+  const std = KIND_BY_XML[value]; if (std) return std;
+  if (value !== "other" || !text) return null;
+  return TPLS.find((t) => t.sym === text && t.sym !== "")?.id ?? FREE + text;
+}
+const samePin = (a: ChordGuess, b: ChordGuess): boolean => pc(a.root) === pc(b.root) && a.tpl === b.tpl && pc(a.bass) === pc(b.bass);
+function pinRead(pin: ChordPin, at: { fifths: number; minor: boolean }, auto: HarmonyRead | undefined): ChordRead | null {
+  const root = { ...pin.root, octave: 4 }, bass = { ...(pin.bass ?? pin.root), octave: 3 }, mode: Mode = at.minor ? "la" : "do";
+  const g = guessOf(root, pin.kind, bass, at.fifths, mode); if (!g) return null;
+  const others = ((auto?.all ?? []) as ChordGuess[]).filter((x) => !samePin(x, g));
+  const stale = !!auto && others.length === (auto.all as ChordGuess[]).length;   // 这几个音认得出、但写着的不在候选里
+  return { theory: ID, best: g, ties: [g], all: [g, ...others], pinned: true, ...(auto ? { auto: auto as ChordRead } : {}), ...(stale ? { stale: true as const } : {}), ...(mode === "la" ? { mode } : {}) };
+}
+const pinOf = (guess: HarmonyGuess): ChordPin => {
+  const g = guess as ChordGuess;
+  return { root: { step: g.root.step, alter: g.root.alter }, kind: g.tpl, ...(pc(g.bass) !== pc(g.root) ? { bass: { step: g.bass.step, alter: g.bass.alter } } : {}) };
+};
 
 /** 分解和弦认得出的那几类（完整的三和弦 / 七和弦 / 挂留；加音、省音的不认——旋律里随便几个音凑出来的 add9 之类太多）。 */
 const BROKEN_OK = new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
@@ -156,10 +196,11 @@ type Tag = HarmonyTag<ChordRead>;
  *     prev = 前一组标的那行字（空 = 没有 / 被打断了）；上一小节的由 readBar 的 carry 带过来、这一小节的交回去。它只记「刚才标过什么」。
  *  这一小节还在写的时候，读法会跟着往里填音而变（整小节 → 半小节 → 一拍）；小节写过去了就不再变。 */
 function brokenInBar(bar: BarInput, prev: string): { tags: Tag[]; prev: string } {
-  type N = { i: number; p: Pitch | null; stacked: boolean; fifths: number; mode: Mode };
+  type N = { i: number; p: Pitch | null; stacked: boolean; fifths: number; mode: Mode; /** 这个音上人写明的和弦怎么写（v0.16.87）。 */ pin: string | null };
   const beatLen = beatTicks(bar.beats, bar.beatType), nb = Math.max(1, Math.round((bar.beats * WHOLE) / bar.beatType / beatLen));
   const beats: N[][] = Array.from({ length: nb }, () => []);
-  for (const n of bar.notes) if (!n.tie) beats[Math.min(nb - 1, Math.max(0, Math.floor(n.pos / beatLen + 1e-9)))].push({ i: n.index, p: n.tok.pitch, stacked: !!n.tok.chord?.length, fifths: n.fifths, mode: modeOf(n) });
+  for (const n of bar.notes) if (!n.tie) beats[Math.min(nb - 1, Math.max(0, Math.floor(n.pos / beatLen + 1e-9)))].push({ i: n.index, p: n.tok.pitch, stacked: !!n.tok.chord?.length, fifths: n.fifths, mode: modeOf(n),
+    pin: n.tok.harm ? guessOf({ ...n.tok.harm.root, octave: 4 }, n.tok.harm.kind, { ...(n.tok.harm.bass ?? n.tok.harm.root), octave: 3 }, n.fifths, modeOf(n))?.label ?? null : null });
   const tags: Tag[] = [];
   /** 这几个音是不是一组分解和弦（认得出 = 读法，认不出 = null）。 */
   const groupOf = (ns: N[]): ChordRead | null => {
@@ -177,7 +218,10 @@ function brokenInBar(bar: BarInput, prev: string): { tags: Tag[]; prev: string }
     if (rd) {
       const label = chordLabel(rd);
       if (label !== prev) tags.push({ index: ns.find((n) => n.p && !n.stacked)!.i, read: rd });
-      prev = label; return;
+      prev = label;
+      // 这一组里有人写明的和弦（harmonyTags 会在那个音上标它）：谱上看得见的最后一个标签是它——后面那一组照它比，不照自动认的比
+      for (const n of ns) if (n.pin && !n.stacked) prev = n.pin;
+      return;
     }
     const len = b1 - b0;
     if (len === 1) { prev = ""; return; }
@@ -203,6 +247,8 @@ export const western: HarmonyTheory = {
   id: ID,
   readBar,
   label: chordLabel,
+  pinRead,
+  pinOf,
   howTo: () => _t("怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。"),
   explain: (guess) => {
     const g = guess as ChordGuess;

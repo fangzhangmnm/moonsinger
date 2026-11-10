@@ -10,6 +10,8 @@ import { _t } from "../i18n/index.ts";
 import { type Paper, DEFAULT_PAPER, paperOf, detectPaper, staffMmOf, densityOf } from "../score/paper.ts";
 import { DYNS, withArt, type ClefName, type NavTok, NAV_LABEL, endingLabel, type NavWhat, type Repeat, type Token, type NoteTok, type GrooveTok, type Art, type Dyn, ARTS, ATTACKS, TPQ, WHOLE, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, headLen, effectivePitch, staffOfTokens, autoStaffs, allPitches, withPitches, rampTarget } from "../score/song.ts";
 import { midiOf } from "../score/pitch.ts";
+import type { ChordPin } from "../score/song.ts";
+import { pinXmlKind, xmlKindToPin } from "../theory/index.ts";
 import type { Pitch } from "../score/pitch.ts";
 import { MELISMA_MARK, ELISION } from "../score/lyrics.ts";
 import { syllableLangs, keepOnlyOverrides } from "../score/lang.ts";
@@ -123,6 +125,12 @@ const tempoXml = (bpm: number) => `<direction placement="above"><direction-type>
 /** 一条声部 → 它的小节们（body = 每小节里的 XML 片段，manual = 这小节后面那条小节线是人插的）+ 还没写音高的音。first = 第一个声部（才写速度 / 排练记号）。 */
 /** 谱号 → MusicXML <clef>（八度谱号 = <clef-octave-change>；v0.9.28）。 */
 const CLEF_OC: Record<ClefName, number> = { G: 0, G8vb: -1, G8va: 1, G15ma: 2, F: 0, F8vb: -1 };
+/** 人写明的和弦 → <harmony>（MusicXML 原生的和弦记号；种类的写法归乐理模块）。 */
+function harmonyXml(h: ChordPin): string {
+  const k = pinXmlKind(h.kind), alt = (tag: string, a: number) => (a ? `<${tag}-alter>${a}</${tag}-alter>` : "");
+  return `<harmony><root><root-step>${h.root.step}</root-step>${alt("root", h.root.alter)}</root><kind${k.text ? ` text="${esc(k.text)}"` : ""}>${k.value}</kind>` +
+    (h.bass ? `<bass><bass-step>${h.bass.step}</bass-step>${alt("bass", h.bass.alter)}</bass>` : "") + `</harmony>`;
+}
 /** <key>：小调多写一个 <mode>minor</mode>（v0.16.83；大调照旧只写 fifths，老歌存出来一个字节不变）。 */
 const keyXml = (fifths: number, minor: boolean): string => `<key><fifths>${fifths}</fifths>${minor ? "<mode>minor</mode>" : ""}</key>`;
 export const clefXml = (c: ClefName): string => { const F = c === "F" || c === "F8vb", oc = CLEF_OC[c]; return `<clef><sign>${F ? "F" : "G"}</sign><line>${F ? 4 : 2}</line>${oc ? `<clef-octave-change>${oc}</clef-octave-change>` : ""}</clef>`; };
@@ -277,6 +285,7 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
         lyricDone = true;
       }
       x += `</note>`;
+      if (firstPiece && t.kind === "note" && t.harm) cur.push(harmonyXml(t.harm));   // 人写明的和弦（v0.16.87）：紧挨在这个音前面一个 <harmony>
       cur.push(x);
       for (const cx of chordXml) cur.push(cx);
       ticks += piece; left -= piece; k++;
@@ -343,7 +352,23 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
   const takeId = (s: string | undefined): number | null => { const m = s ? /^[nr](\d+)$/.exec(s) : null; if (!m) return null; const n = +m[1]; if (usedIds.has(n)) return null; usedIds.add(n); return n; };
   /** <notations><articulations> → 音上的演奏法（这一版认跳音 / 重音 / 保持 / 呼吸；别的数出来报）。 */
   let pendingAttack: Art | null = null;
-  let pendingRamp = false;   // 读到我们写的渐到虚线 wedge（id ramp-…）= 下一个力度记号是渐到
+  let pendingRamp = false;
+  /** 刚读到、还没挂上音的 <harmony>（v0.16.87，user 11-10「三可以接」）：紧跟着的那个音开头 = 挂上去；中间隔了休止 / 别的声部 / 小节尾 = 丢掉并数出来。 */
+  let pendingHarm: ChordPin | null = null;
+  const dropHarm = () => { if (pendingHarm) { drop(_t("和弦记号（没标在一个音的开头）")); pendingHarm = null; } };
+  const readHarmony = (h: El): void => {
+    dropHarm();   // 前一个还没挂上又来一个
+    if (Number(childText(h, "offset") ?? "0")) { drop(_t("和弦记号（没标在一个音的开头）")); return; }   // 标在一个长音中间
+    const root = kid(h, "root"), kd = kid(h, "kind"), step = root ? childText(root, "root-step")?.trim() : undefined;
+    const kind = kd && !kids(h, "degree").length ? xmlKindToPin(text(kd).trim(), kd.attrs.text) : null;   // 带 <degree> 的（7♯11 这类）不认：只读种类会读错
+    if (!step || !/^[A-G]$/.test(step) || !kind) { drop(_t("和弦记号（这一版不认的种类）")); return; }
+    const alterOf = (el: El, tag: string): number => { const a = Math.round(Number(childText(el, `${tag}-alter`) ?? "0")); return a >= -2 && a <= 2 ? a : 0; };
+    const r = { step: step as Pitch["step"], alter: alterOf(root!, "root") };
+    const bs = kid(h, "bass"), bstep = bs ? childText(bs, "bass-step")?.trim() : undefined;
+    const b = bs && bstep && /^[A-G]$/.test(bstep) ? { step: bstep as Pitch["step"], alter: alterOf(bs, "bass") } : null;
+    const same = b && midiOf({ ...b, octave: 4 }) % 12 === midiOf({ ...r, octave: 4 }) % 12;
+    pendingHarm = { root: r, kind, ...(b && !same ? { bass: b } : {}) };
+  };   // 读到我们写的渐到虚线 wedge（id ramp-…）= 下一个力度记号是渐到
   const addArts = (tok: NoteTok, note: El) => {
     const set = new Set(tok.art ?? []);
     for (const nn of kids(note, "notations")) for (const ar of kids(nn, "articulations")) for (const e of kids(ar)) {
@@ -452,6 +477,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           }
         } else if (c.name === "note") {
           if (kid(c, "grace")) { drop(_t("装饰音")); continue; }
+          if (!kid(c, "chord")) { const real = !kid(c, "cue") && !kid(c, "rest") && !!kid(c, "pitch") && (childText(c, "voice") ?? "1") === (voice ?? childText(c, "voice") ?? "1") && !/^[nr]\d+-\d+$/.test(c.attrs.id ?? ""); if (!real) dropHarm(); }   // 和弦记号后面不是一个真的音的开头
           if (kid(c, "cue")) { drop(_t("提示音符")); continue; }
           const v = childText(c, "voice") ?? "1"; if (voice === null) voice = v;
           if (v !== voice) { drop(_t("同一声部里的第二条旋律")); continue; }
@@ -481,6 +507,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           const tok: NoteTok = { kind: "note", id: takeId(idAttr) ?? 0, pitch: unwritten.has(idAttr ?? "") ? null : pitch, dur, lyric: null, ...staffOf };
           if (kids(c, "tie").some((t) => t.attrs.type === "stop")) tok.tie = true;
           addArts(tok, c);
+          if (pendingHarm) { tok.harm = pendingHarm; pendingHarm = null; }
           slurEvents(c, openSlurs); if (openSlurs.size) tok.slur = true;
           const lyrics = kids(c, "lyric"), ly = lyrics.find((l) => (l.attrs.number ?? "1") === "1") ?? lyrics[0];
           if (lyrics.length > 1) drop(_t("第二段及以后的歌词"));
@@ -493,9 +520,10 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
             } else if (kid(ly, "extend")) tok.lyric = MELISMA_MARK;
           }
           mark(tok);
-        } else if (c.name === "backup" || c.name === "forward") { /* 第二条旋律的定位，跟着那些音一起不读 */ }
-        else if (c.name === "harmony") drop(_t("和弦记号"));
+        } else if (c.name === "backup" || c.name === "forward") { dropHarm(); /* 第二条旋律的定位，跟着那些音一起不读 */ }
+        else if (c.name === "harmony") readHarmony(c);
       }
+      dropHarm();   // 小节尾还没挂上音的和弦记号
       const n = Number(m.attrs.number ?? mi + 1);
       if (rightRepeat || rightStyle || (manual ? manual.has(n) : mi < measures.length - 1)) body.push({ kind: "bar", id: 0, ...(rightRepeat ? { repeat: "end" as Repeat, ...(rightRepeat.times > 2 ? { times: rightRepeat.times } : {}) } : rightStyle ? { style: rightStyle } : {}) });
     });

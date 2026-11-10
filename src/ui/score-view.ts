@@ -69,7 +69,7 @@ export interface ScoreViewHost {
   /** 和弦标级数（辅助，v0.16.11；设备上的设置）：叠音的和弦上方写级数（乐理模块 src/theory/）。v0.16.13 起进排版（不占地方），跟着设置印进 PDF。 */
   chordTags?(): boolean;
   /** 点了谱上的和弦级数：宿主开一个小菜单列候选（at = 标的下沿中点，屏幕坐标）。 */
-  onChordTag?(read: HarmonyRead, at: { x: number; y: number }): void;
+  onChordTag?(read: HarmonyRead, at: { x: number; y: number }, where: { paper: string; part: string; index: number } | null): void;
   /** 要画的声部（隐藏的不在里面；顺序 = 总谱从上到下）。 */
   parts(): PartView[];
   /** 歌手牌：某张纸第一行某条谱左边的声部名点了（那条已经成了光标所在的 track）。 */
@@ -1322,7 +1322,7 @@ export class ScoreView {
     const L = this.layout ?? L0, sp = L.sp;
     // 0⁻. 和弦级数（v0.16.11）：点了 = 候选（听模式也认，只是看）
     const ct = this.host.onChordTag ? L.chordTags.find((c) => this.inBox(c, x, y)) : undefined;
-    if (ct) { const b = this.clientBox(ct); this.host.onChordTag!(ct.read, { x: (b.left + b.right) / 2, y: b.bottom }); return true; }
+    if (ct) { const b = this.clientBox(ct), sys = L.systems[ct.system]; this.host.onChordTag!(ct.read, { x: (b.left + b.right) / 2, y: b.bottom }, sys ? { paper: sys.paper, part: sys.part.replace(/~.*$/, ""), index: ct.index } : null); return true; }
     // 0⅙. 作词 / 作曲（标题下面靠右）
     if (this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }   // 听模式也能改（v0.16.85，user 11-10「歌名和作者信息应该三个不同模式都能写」；歌名 v0.16.14 起就能）
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌

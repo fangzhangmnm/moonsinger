@@ -130,7 +130,7 @@ export interface Layout {
   /** 和弦里主音以外的那几个符头（播放时一起亮；不进 notes——点 / 拖还是按整个音；v0.10.23，user「音符高亮忘了做和弦的其他音的高亮」）。 */
   chordHeads: { index: number; system: number; x: number; y: number; w: number; part?: string }[];
   /** 和弦级数的点击框 + 认出来的候选（o.chordTags 开着才有；点了 = 候选小菜单）。 */
-  chordTags: { x: number; y: number; w: number; h: number; read: HarmonyRead }[];
+  chordTags: { x: number; y: number; w: number; h: number; read: HarmonyRead; /** 哪一行（systems[system] 的 paper / part）、那条 track 第几个 token（挑读法写回去用，v0.16.87）。 */ system: number; index: number }[];
   /** 每张纸第一行各位的名字块（刀 1 锚点）：x0 = 色点左边、x1 = 最长那行名字的右边、top = 第一行名字的上沿（px）。覆盖层把两颗大钮摆在它上面、整排对它居中。 */
   names: { paper: string; part: string; x0: number; x1: number; top: number }[];
   /** 合租叠起来的谱行（下标 = systems 里的）：只读——点了不写、不放光标，点名字拆开（v0.10.25，user「host也应该只读，只有展开时才能编辑」）。 */
@@ -1563,9 +1563,10 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
           const headR = nhX(c) + nhW(c) * (second ? 1.95 : 1), sx = stemXOf.get(c), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
           const atStem = sx !== undefined && !(low && headR > sx + P(0.1));
           const label = theory.label(rd), tx = atStem ? sx! - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
-          placeBelow(RW(c), 0.3, (y) => {
-            prims.push({ t: "text", x: tx, y, s: label, cls: "chord-tag", size: fs, anchor: "start" });
-            chordTagsOut.push({ x: tx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd });
+          const row = RW(c), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;   // 人挑的 = 换个颜色；对不上了 = 灰 + 「?」（v0.16.87）
+          placeBelow(row, 0.3, (y) => {
+            prims.push({ t: "text", x: tx, y, s: label, cls, size: fs, anchor: "start" });
+            chordTagsOut.push({ x: tx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: c.index });
           });
         }
       });

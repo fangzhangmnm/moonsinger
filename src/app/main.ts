@@ -14,7 +14,7 @@ import { _t, lang, langChosen, saveLang, applyDocumentLang, LANG_NAME, type Lang
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
-import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
+import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setPartAutoOttava, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, setPartClef, movePart, setPartHost, setPartStaves, type Clef, setSelDur, select } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, spellMidi, KEY_LABEL } from "../score/pitch.ts";
@@ -556,7 +556,7 @@ const view = new ScoreView(scoreEl, {
   autoBars: () => autoBars,
   inC: () => viewInC,
   chordTags: () => chordTagsOn,
-  onChordTag: (r, at) => openChordInfo(r, at),
+  onChordTag: (r, at, where) => openChordInfo(r, at, where),
   parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
   onPart: (_paper, part, at) => { if (stubbed(part)) { showPart(part); return; } openTrackCard(at); },   // 缩成细线的（隐藏 / 别人在「只看」）：点它 = 放出来（小卡里不再有「显示」，v0.16.17）
   onAnchors: (L) => overlay?.layout(L, overlayView()),   // 谱面上面那一层（编辑器的钮 / 框 / 提示；刀 1）照着这份排版摆
@@ -1089,10 +1089,24 @@ async function packStatusText(): Promise<string> {
 /** 语言这一行：两种语言的字都写，走错语言的人也认得出。切换 = 存 + 重载（语言锁死在这一页，不要半译状态；没存的改动由挽留框 / 退出落盘那一套管）。 */
 const LANG_LABEL = "语言 · Language";   // i18n-keep
 /** 点了谱上的和弦级数：全部候选 + 怎么排的（不是选择题，只是看）。说明的字归读它的那种理论（乐理模块 src/theory/）。 */
-function openChordInfo(r: HarmonyRead, at: { x: number; y: number }): void {
-  const th = harmonyTheory(r.theory);
-  const row = (g: HarmonyGuess, i: number) => `<div class="chord-cand${i === 0 ? " is-best" : ""}"><b>${esc(g.label)}</b><span>${esc(g.name)}</span><small>${th.explain(g).map(esc).join(" · ")}</small></div>`;
-  ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${esc(th.howTo(r))}</div>` + r.all.slice(0, 6).map(row).join(""), at, () => true);
+/** 点和弦级数 = 候选小表（v0.16.11）；v0.16.87 起每一行能点 = 用这个（写进那个音：人写明的和弦名，user 11-09「输入法候选」、11-10「一同意」）。
+ *  挑过的：顶上说「这是你挑的」+「改回自动」；挑的对不上这几个音了：顶上明说，由人决定换一个还是改回自动（不替人删）。听模式 / 定稿只看不挑。 */
+function openChordInfo(r: HarmonyRead, at: { x: number; y: number }, where: { paper: string; part: string; index: number } | null): void {
+  const th = harmonyTheory(r.theory), canPick = !!where && view.rules.edit && !finalOn();
+  const row = (g: HarmonyGuess, i: number) => {
+    const on = i === 0 && r.pinned, inner = `<b>${esc(g.label)}</b><span>${esc(g.name)}</span><small>${th.explain(g).map(esc).join(" · ")}</small>`;
+    return canPick ? `<button class="chord-cand${i === 0 ? " is-best" : ""}${on ? " is-on" : ""}" data-v="pick:${i}">${inner}</button>` : `<div class="chord-cand${i === 0 ? " is-best" : ""}">${inner}</div>`;
+  };
+  const head = r.pinned
+    ? `<div class="ctx-hint ctx-what">${esc(r.stale ? _t("你挑的「{name}」不在现在这几个音的读法里（音改过了）：换一个，或者改回自动", { name: r.best.name }) : _t("这是你挑的「{name}」", { name: r.best.name }))}</div>` +
+      (canPick ? `<button class="btn ctx-item" data-v="auto">${esc(r.auto ? _t("改回自动（{label}）", { label: th.label(r.auto) }) : _t("改回自动（这几个音认不出和弦 = 不标）"))}</button>` : "")
+    : `<div class="ctx-hint ctx-what">${esc(th.howTo(r))}${canPick ? esc(_t("点一个 = 用它（记进这个音，能撤销）")) : ""}</div>`;
+  ctxMenu("chord-info", head + r.all.slice(0, 6).map(row).join(""), at, (v) => {
+    if (!where || !canPick) return true;
+    if (v === "auto") { update(setChordPin(D.st, where.paper, where.part, where.index, null)); return false; }
+    if (v.startsWith("pick:")) { const g = r.all[Number(v.slice(5))]; if (g) update(setChordPin(D.st, where.paper, where.part, where.index, th.pinOf(g))); return false; }
+    return true;
+  });
 }
 function setChordTags(on: boolean): void { chordTagsOn = on; deviceKvSet(KV_CHORD_TAGS, on ? "1" : "0"); view.render(); }
 function setViewInC(on: boolean): void {

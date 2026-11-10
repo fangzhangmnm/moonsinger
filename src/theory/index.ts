@@ -19,14 +19,18 @@
 //   每个声部各认各的，不把几个声部合起来读（user 11-09「我还是希望它的局域性好一点，所以说可能还是每个声部单独做吧」）。
 //   现在只有一种：western = 西方功能和声的罗马数字级数（src/theory/western.ts）。以后加别的 = 写一个同样门面的文件、登记进 THEORIES；
 //   挑哪一种的开关（歌里 / 设备上）等真有第二种时再定。
-import { DEFAULT_KEY, type Token, type NoteTok } from "../score/song.ts";
+import { DEFAULT_KEY, type Token, type NoteTok, type ChordPin } from "../score/song.ts";
 import { meterPositions } from "../score/groove.ts";
 import { western } from "./western.ts";
 
 /** 一个读法（候选）。label = 谱上写的短字；name = 点开时写在旁边的全名；cost 越小越像（同分 = 打平）。各理论可以多带自己的字段（纯数据）。 */
 export interface HarmonyGuess { label: string; name: string; cost: number }
 /** 读出来的结果：best = 第一候选；ties = 和它打平的（含它自己）；all = 全部候选（按先后）；theory = 哪种理论读的。 */
-export interface HarmonyRead<G extends HarmonyGuess = HarmonyGuess> { theory: string; best: G; ties: G[]; all: G[] }
+export interface HarmonyRead<G extends HarmonyGuess = HarmonyGuess> { theory: string; best: G; ties: G[]; all: G[];
+  /** 人挑的（音上写着和弦名，v0.16.87）：best = 写着的那个；auto = 这几个音自己认出来的（没有 = 认不出，比如旋律里一个单音）。 */
+  pinned?: true; auto?: HarmonyRead<G>;
+  /** 写着的那个不在 auto 的候选里（音后来改了）：照样画、灰 + 「?」，点开说一声；不自动删、不自动换。 */
+  stale?: true }
 /** 一处标签：index = 那个音在 track 里的下标。 */
 export interface HarmonyTag<R extends HarmonyRead = HarmonyRead> { index: number; read: R }
 /** 一条 track：一张纸（曲段）里一个声部的记号串（调号从里面的调号记号读）。 */
@@ -59,9 +63,15 @@ export interface HarmonyTheory {
   /** 点开候选时：顶上那句「怎么认的」、每个读法后面的小字。界面上跑（可以用 _t）。 */
   howTo(read?: HarmonyRead): string;
   explain(guess: HarmonyGuess): string[];
+  /** 人写明的和弦（音上的 harm）→ 一处读法（级数按这里的调现算）；auto = 这个音自己认出来的。种类不认识 = null（不画）。 */
+  pinRead(pin: ChordPin, at: { fifths: number; minor: boolean }, auto: HarmonyRead | undefined): HarmonyRead | null;
+  /** 候选里的一个 → 存进音里的和弦名。 */
+  pinOf(guess: HarmonyGuess): ChordPin;
 }
 
 export const THEORIES: Record<string, HarmonyTheory> = { [western.id]: western };
+/** 人写明的和弦 ↔ MusicXML <harmony><kind>（v0.16.87）：和弦种类的写法表跟着西方功能和声那一种（存盘用的是和弦名本身，不看是哪种理论在读）。 */
+export { pinXmlKind, xmlKindToPin } from "./western.ts";
 export const DEFAULT_THEORY = western.id;
 /** 按 id 找理论；不认识的 id（别的版本加的）= 默认那一种。 */
 export const harmonyTheory = (id: string = DEFAULT_THEORY): HarmonyTheory => THEORIES[id] ?? THEORIES[DEFAULT_THEORY]!;
@@ -81,8 +91,16 @@ export function barsOf(tokens: readonly Token[]): BarInput[] {
 }
 /** 一条 track 要标的音：从左到右一小节一小节喂给理论，carry 一路往右传（理论拿不到整条 track——文件头「只看前面」）。 */
 export function harmonyTags(theory: HarmonyTheory, track: TrackInput): HarmonyTag[] {
-  const out: HarmonyTag[] = [], opts: ReadOpts = { broken: track.broken !== false };
+  const out: HarmonyTag[] = [], opts: ReadOpts = { broken: track.broken !== false }, bars = barsOf(track.tokens);
   let carry: unknown;
-  for (const bar of barsOf(track.tokens)) { const r = theory.readBar(bar, carry, opts); out.push(...r.tags); carry = r.carry; }
-  return out;
+  for (const bar of bars) { const r = theory.readBar(bar, carry, opts); out.push(...r.tags); carry = r.carry; }
+  // 人挑过的（音上写着和弦名）：那个音一定标、标写着的那个（v0.16.87）；自动认的留在 auto 里给候选和「对不上」用
+  const pins = bars.flatMap((b) => b.notes).filter((n) => n.tok.harm);
+  if (!pins.length) return out;
+  const byIndex = new Map(out.map((t) => [t.index, t] as const));
+  for (const n of pins) {
+    const rd = theory.pinRead(n.tok.harm!, { fifths: n.fifths, minor: !!n.minor }, byIndex.get(n.index)?.read);
+    if (rd) byIndex.set(n.index, { index: n.index, read: rd });
+  }
+  return [...byIndex.values()].sort((a, b) => a.index - b.index);
 }
