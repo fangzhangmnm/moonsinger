@@ -24,8 +24,9 @@ export const TEMPO_EM = 1.35;
 export const LYRIC_EM = 1.6;
 
 /** 歌词在两档里长什么样（v0.16.44；user 11-09「字号可以稍微大一点，窄窄的字好看」→ 紧凑档挑了 B；「舒适版和紧凑版都有一个固定的字高，然后这个字高就永远不要动了。如果挤不下的话，是收宽度，不是收字高」）：
- *  k = 字号是歌词基准字号（LYRIC_EM，跟谱）的几倍——字高就这么定、永远不动；sx = 平常的宽度（1 = 不压）。挤了只往下收宽度，最窄 LYRIC_MIN_SX。 */
-export const LYRIC_LOOK = { cozy: { k: 1, sx: 1 }, compact: { k: 1.15, sx: 0.85 } } as const;
+ *  k = 字号是歌词基准字号（LYRIC_EM，跟谱）的几倍——字高就这么定、永远不动；sx = 平常的宽度（1 = 不压）。挤了只往下收宽度，最窄 LYRIC_MIN_SX。
+ *  gapFloor = 挤到底时词和词之间至少留多宽（线间距；v0.16.48 起 0.2，AI 定的数——v0.16.70 起按档各给一个，等 user 看样张定；计划书 ai-docs/20261109-plan-text-engine.md 第 5 步）。*/
+export const LYRIC_LOOK = { cozy: { k: 1, sx: 1, gapFloor: 0.2 }, compact: { k: 1.15, sx: 0.85, gapFloor: 0.2 } } as const;
 /** 挤的时候歌词最窄压到原宽的几成（乘在 LYRIC_LOOK.sx 上）；再挤 = 照写、画灰。 */
 export const LYRIC_MIN_SX = 0.5;
 /** 方块字（中日韩）：宽度跟整段统一（user 11-09「中文和日文本身有方块字的美感…统一宽度…甚至是整篇曲段统一宽度」）；别的（英文…）每个音节各收各的（「宽窄的节奏」）。 */

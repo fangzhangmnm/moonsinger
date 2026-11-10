@@ -878,7 +878,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const look = lyricLook(ts);   // 这一档歌词的字高 / 平常宽度（字高永远不动）
     const lyrUnit = (str: string) => lyricWidth(o.measure, str, sp, ts);   // 这一档歌词字号 / 平常宽度下这串字的前进宽度（sp）
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
-    const lyrGaps: LyricGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace };   // 定义见 LyricGaps
+    const lyrGaps: LyricGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };   // 定义见 LyricGaps；底线按档（样式表）
     if (song.lyricFit !== "lyrics") per.forEach((q, r) => {
       if (!lyricsOf[r]) return;
       const bySys = new Map<number, (LyricItem & { index: number })[]>();

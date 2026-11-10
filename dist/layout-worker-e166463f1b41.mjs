@@ -7,7 +7,7 @@ var TEXT_FACES = {
 var s = (face, em, ruler, weight = 400, italic = false) => ({ face, weight, italic, em, ruler });
 var TEMPO_EM = 1.35;
 var LYRIC_EM = 1.6;
-var LYRIC_LOOK = { cozy: { k: 1, sx: 1 }, compact: { k: 1.15, sx: 0.85 } };
+var LYRIC_LOOK = { cozy: { k: 1, sx: 1, gapFloor: 0.2 }, compact: { k: 1.15, sx: 0.85, gapFloor: 0.2 } };
 var LYRIC_MIN_SX = 0.5;
 var isBlockScript = (s2) => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\uff66-\uff9f]/.test(s2);
 var TEXT_STYLES = {
@@ -59,8 +59,8 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
   const w = items.map((it) => it.w), halfL = c.map((x, i) => i > 0 ? Math.abs(c[i - 1] - x) / 2 : Infinity), halfR = c.map((x, i) => i < n2 - 1 ? Math.abs(c[i + 1] - x) / 2 : Infinity);
   const gb = items.slice(0, -1).map((it, i) => gaps.space + (it.hy && !(it.block || items[i + 1].block) ? gaps.hyphen : 0));
   const lo = (i) => c[i] - Math.max(0.2, Math.min(w[i] * f[i] / 2 - 0.15, halfL[i])), hi = (i) => c[i] + Math.max(0.2, Math.min(w[i] * f[i] / 2 - 0.15, halfR[i]));
-  const G = new Array(Math.max(0, n2 - 1)).fill(1);
-  const d = (i) => (w[i] * f[i] + w[i + 1] * f[i + 1]) / 2 + Math.max(GAP_FLOOR, gb[i] * Math.min(f[i], f[i + 1]) * G[i]);
+  const G = new Array(Math.max(0, n2 - 1)).fill(1), floor = gaps.floor ?? GAP_FLOOR;
+  const d = (i) => (w[i] * f[i] + w[i + 1] * f[i + 1]) / 2 + Math.max(floor, gb[i] * Math.min(f[i], f[i + 1]) * G[i]);
   const L = new Array(n2), start = new Array(n2);
   const step = (i) => {
     const a = i > 0 ? L[i - 1] + d(i - 1) : -Infinity, b = lo(i);
@@ -5777,7 +5777,7 @@ function engrave(song, o) {
     const look = lyricLook(ts);
     const lyrUnit = (str) => lyricWidth(o.measure, str, sp, ts);
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
-    const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace };
+    const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };
     if (song.lyricFit !== "lyrics") per.forEach((q, r) => {
       if (!lyricsOf[r]) return;
       const bySys = /* @__PURE__ */ new Map();
@@ -6869,4 +6869,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-eb8bf5317299.mjs.map
+//# sourceMappingURL=layout-worker-e166463f1b41.mjs.map

@@ -9,10 +9,10 @@ export interface LyricItem { cx: number; w: number; hy?: boolean; /** 方块字�
  *  · 空格 space = 这款字里空格字符「 」的前进宽度 × 0.6（默认就比正常空格紧；user「连字符和空格都可以默认省一点…只要能勉强看出节奏就行了」），中英文同一个定义；
  *  · 连字符 hyphen = 连字符「-」画出来的宽度（压到 HYPHEN_SX）+ 一个上面那种空格（两边各半个）；方块字挨着的连字符不占地方（挂在两个方块字中间本来就有的那道小缝里，user「方块字的排版最好能忽视连字符」）；
  *  · 缝跟着左右两个字里**更窄的那个**一起收（× min(f)，user「空格和最窄的邻居宽度对齐」），挤的时候**先压缝、再压字**（缝最多压到 GAP_MIN）。单位都是 sp。 */
-export interface LyricGaps { space: number; hyphen: number }
+export interface LyricGaps { space: number; hyphen: number; /** 缝再挤也至少留这么宽（sp）；没给 = GAP_FLOOR。按档的数在样式表 LYRIC_LOOK.gapFloor。 */ floor?: number }
 /** 没量的时候的默认（测试 / 没有量字的宿主）：歌词字号 1.6 sp 的系统无衬线体，空格约 0.27 字宽、连字符约 0.33 字宽。 */
 export const LYRIC_SPACE = 0.6, HYPHEN_SX = 0.8, GAP_MIN = 0.5;
-/** 缝再挤也至少留这么宽（sp）：能看出是两个词（user「只要能勉强看出节奏就行了」；v0.16.48 第一版没有底线 = 英文连成一片「bovetheworld」）。 */
+/** 缝再挤也至少留这么宽（sp）：能看出是两个词（user「只要能勉强看出节奏就行了」；v0.16.48 第一版没有底线 = 英文连成一片「bovetheworld」）。排版器按档传（LyricGaps.floor ← LYRIC_LOOK.gapFloor）；这个是没给时的默认。 */
 export const GAP_FLOOR = 0.2;
 export const DEFAULT_GAPS: LyricGaps = { space: 0.27 * 1.6 * LYRIC_SPACE, hyphen: 0.33 * 1.6 * HYPHEN_SX + 0.27 * 1.6 * LYRIC_SPACE };
 /** 歌词让路 = 一个小优化问题（v0.16.47；user 11-09「你能不能把他formalize成一个数学问题…不用完美最优」「规则很简单。1.位置固定，不能反过来推音符。2. 空格和最窄的邻居宽度对齐 3. 帮我想一下怎么样算跑到外面没对齐」）：
@@ -30,8 +30,8 @@ function solveLyrics(items: readonly LyricItem[], blockSx: number, minSx: number
   const w = items.map((it) => it.w), halfL = c.map((x, i) => (i > 0 ? Math.abs(c[i - 1] - x) / 2 : Infinity)), halfR = c.map((x, i) => (i < n - 1 ? Math.abs(c[i + 1] - x) / 2 : Infinity));
   const gb = items.slice(0, -1).map((it, i) => gaps.space + (it.hy && !(it.block || items[i + 1].block) ? gaps.hyphen : 0));
   const lo = (i: number) => c[i] - Math.max(0.2, Math.min((w[i] * f[i]) / 2 - 0.15, halfL[i])), hi = (i: number) => c[i] + Math.max(0.2, Math.min((w[i] * f[i]) / 2 - 0.15, halfR[i]));
-  const G = new Array<number>(Math.max(0, n - 1)).fill(1);   // 每道缝压到几成（挤了先压它）
-  const d = (i: number) => (w[i] * f[i] + w[i + 1] * f[i + 1]) / 2 + Math.max(GAP_FLOOR, gb[i] * Math.min(f[i], f[i + 1]) * G[i]);
+  const G = new Array<number>(Math.max(0, n - 1)).fill(1), floor = gaps.floor ?? GAP_FLOOR;   // 每道缝压到几成（挤了先压它）；缝的底线
+  const d = (i: number) => (w[i] * f[i] + w[i + 1] * f[i + 1]) / 2 + Math.max(floor, gb[i] * Math.min(f[i], f[i + 1]) * G[i]);
   const L = new Array<number>(n), start = new Array<number>(n);   // L = 从左推过来最靠左能放哪；start = 这一串被推着走的从哪个字开始
   const step = (i: number) => { const a = i > 0 ? L[i - 1] + d(i - 1) : -Infinity, b = lo(i); if (a > b) { L[i] = a; start[i] = start[i - 1]; } else { L[i] = b; start[i] = i; } };
   const pushFrom = (s: number, to: number) => { L[s] = lo(s); start[s] = s; for (let i = s + 1; i <= to; i++) step(i); };   // 串头 s 不被前面推（收窄只会让它更不被推）

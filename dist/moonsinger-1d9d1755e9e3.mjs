@@ -5071,7 +5071,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.69-2026-11-10";
+var APP_VERSION = "v0.16.70-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -9578,7 +9578,7 @@ var TEXT_FACES = {
 var s = (face, em2, ruler, weight = 400, italic = false) => ({ face, weight, italic, em: em2, ruler });
 var TEMPO_EM = 1.35;
 var LYRIC_EM = 1.6;
-var LYRIC_LOOK = { cozy: { k: 1, sx: 1 }, compact: { k: 1.15, sx: 0.85 } };
+var LYRIC_LOOK = { cozy: { k: 1, sx: 1, gapFloor: 0.2 }, compact: { k: 1.15, sx: 0.85, gapFloor: 0.2 } };
 var LYRIC_MIN_SX = 0.5;
 var isBlockScript = (s10) => /[\u3040-\u30ff\u3400-\u9fff\uf900-\ufaff\uac00-\ud7af\uff66-\uff9f]/.test(s10);
 var TEXT_STYLES = {
@@ -9648,8 +9648,8 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
   const w2 = items.map((it2) => it2.w), halfL = c10.map((x2, i10) => i10 > 0 ? Math.abs(c10[i10 - 1] - x2) / 2 : Infinity), halfR = c10.map((x2, i10) => i10 < n10 - 1 ? Math.abs(c10[i10 + 1] - x2) / 2 : Infinity);
   const gb = items.slice(0, -1).map((it2, i10) => gaps.space + (it2.hy && !(it2.block || items[i10 + 1].block) ? gaps.hyphen : 0));
   const lo2 = (i10) => c10[i10] - Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfL[i10])), hi = (i10) => c10[i10] + Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfR[i10]));
-  const G2 = new Array(Math.max(0, n10 - 1)).fill(1);
-  const d3 = (i10) => (w2[i10] * f2[i10] + w2[i10 + 1] * f2[i10 + 1]) / 2 + Math.max(GAP_FLOOR, gb[i10] * Math.min(f2[i10], f2[i10 + 1]) * G2[i10]);
+  const G2 = new Array(Math.max(0, n10 - 1)).fill(1), floor = gaps.floor ?? GAP_FLOOR;
+  const d3 = (i10) => (w2[i10] * f2[i10] + w2[i10 + 1] * f2[i10 + 1]) / 2 + Math.max(floor, gb[i10] * Math.min(f2[i10], f2[i10 + 1]) * G2[i10]);
   const L2 = new Array(n10), start = new Array(n10);
   const step = (i10) => {
     const a10 = i10 > 0 ? L2[i10 - 1] + d3(i10 - 1) : -Infinity, b3 = lo2(i10);
@@ -11991,7 +11991,7 @@ function engrave(song, o10) {
     const look = lyricLook(ts2);
     const lyrUnit = (str2) => lyricWidth(o10.measure, str2, sp2, ts2);
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
-    const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace };
+    const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };
     if (song.lyricFit !== "lyrics") per.forEach((q2, r10) => {
       if (!lyricsOf[r10]) return;
       const bySys = /* @__PURE__ */ new Map();
@@ -29575,9 +29575,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-eb8bf5317299.mjs");
+      return pick(() => "layout-worker-e166463f1b41.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-bc43708104ab.mjs");
+      return pick(() => "encode-worker-791784db2a22.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -57532,4 +57532,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f035efab9c92.mjs.map
+//# sourceMappingURL=moonsinger-1d9d1755e9e3.mjs.map
