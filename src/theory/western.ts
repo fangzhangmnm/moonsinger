@@ -1,5 +1,5 @@
 // theory/western.ts —— 西方功能和声：认和弦 + 写成罗马数字级数（v0.16.11，辅助：和弦标级数）。纯函数，只给显示用：不进文件、不改谱。
-//   2026-11-10 起是乐理模块（src/theory/index.ts）里的一种理论（原 src/score/chord-name.ts，搬家没改认法；user「乐理引擎可以拆出一个单独的可热插拔的模块」）。
+//   2026-11-09 起是乐理模块（src/theory/index.ts）里的一种理论（原 src/score/chord-name.ts，搬家没改认法；user「乐理引擎可以拆出一个单独的可热插拔的模块」）。
 // created 2026-11-07 by Claude Opus 5.5。user 11-07「你大概看得出来，是我根本看不懂我自己摸的和弦，摸出来是几级和弦，我脑袋根本转不过来」
 //   「和弦上标级数…我建议你写个深模块，不用麻烦音乐仓鼠吧，就你自己写，因为这个世界上和弦很多」「你这个和弦判断，你打算怎么判断？因为它很多和弦，它歧义很多的…
 //   换根音，还是挂二、挂四、十七、十三…还是说你其实根据调号判断就会比较准？」。
@@ -76,7 +76,7 @@ const ID = "western";
 export function degreeOf(p: Pitch, fifths: number, mode: Mode = "do"): { deg: number; acc: number } {
   const deg = (((stepIndex(p.step) - tonicStepIndex(fifths)) % 7) + 7) % 7, acc = p.alter - keyAlter(p.step, fifths);
   if (mode === "do") return { deg: deg + 1, acc };
-  // 以 la 为主（v0.16.72，user 11-10「按曲段认乐理同意」）：从 la 数（la = 1、si = 2、do = 3…sol = 7）；升 sol = 小调的导音，算调内（写 vii°、V 里的三音不带 ♯）
+  // 以 la 为主（v0.16.72，user 11-09「按曲段认乐理同意」）：从 la 数（la = 1、si = 2、do = 3…sol = 7）；升 sol = 小调的导音，算调内（写 vii°、V 里的三音不带 ♯）
   const d = ((deg - 5 + 7) % 7) + 1;
   return { deg: d, acc: d === 7 && acc === 1 ? 0 : acc };
 }
@@ -123,7 +123,7 @@ export function readChord(pitches: readonly Pitch[], fifths: number, mode: Mode 
   const best = out[0];
   return { theory: ID, best, ties: out.filter((g) => g.cost - best.cost < 0.1), all: out, ...(mode === "la" ? { mode } : {}) };
 }
-/** 三度双音（v0.16.65，user 11-10「好，按你的提议来」：大提琴双音 do-mi 原来不标）：两个音隔三度 / 六度 = 少了五音的三和弦——三度里下面那个音当根音，
+/** 三度双音（v0.16.65，user 11-09「好，按你的提议来」：大提琴双音 do-mi 原来不标）：两个音隔三度 / 六度 = 少了五音的三和弦——三度里下面那个音当根音，
  *  五音按调里的补上（放在最高音上面，不动最低音）再认：do-mi = I、re-fa = ii、la-do = vi、si-re = vii°；mi 在下 do 在上 = 转位 I/3。记成省了一个音。
  *  do-mi 也能读成省了根音的 vi，按习惯只取「省五音」这一种。二度、三全音 = null（照旧不标）。 */
 function thirdDyad(ps: Pitch[], fifths: number, mode: Mode): ChordRead | null {
@@ -142,8 +142,8 @@ export const chordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g)
 /** 分解和弦认得出的那几类（完整的三和弦 / 七和弦 / 挂留；加音、省音的不认——旋律里随便几个音凑出来的 add9 之类太多）。 */
 const BROKEN_OK = new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
 /** 分解和弦（v0.16.62 起；v0.16.65 改成按拍子的轻重一层一层看）。一条 track（一张纸的一个声部）里：
- *  ① 不跨小节（user 11-10「然后不跨小节」「如果用户没有输入articulation的话那么我们唯一知道的就是小节」）。
- *  ② 按拍子的轻重从粗到细看（user 11-10「其实不一定最优是正确的，有时候不应该牵强。而是得看节拍重音启发式的看」）：先看整小节是不是一个和弦；
+ *  ① 不跨小节（user 11-09「然后不跨小节」「如果用户没有输入articulation的话那么我们唯一知道的就是小节」）。
+ *  ② 按拍子的轻重从粗到细看（user 11-09「其实不一定最优是正确的，有时候不应该牵强。而是得看节拍重音启发式的看」）：先看整小节是不是一个和弦；
  *     不是 = 对半切（拍数是双数时切在中间那个次强拍：4/4 第三拍、6/8 第二个大拍、12/8 第三个大拍），再不是 = 一拍一拍看；一拍里面不再往下切。
  *     切口只在拍上；认不出 = 不标，不挪切口去凑。一拍 = 符尾连杠用的那一拍（`beatTicks`：x/4 = 四分，3/8 6/8 9/8 12/8 = 附点四分），所以最细一层 = 符杠的一组；音归它开头那一拍。
  *  ③ 叠音的音不算进来（那里按叠音自己标）；一组认得出 = 至少三个不同的音、相邻的音全是跳进（≥ 小三度；同一个音重复不算级进）、
@@ -193,7 +193,7 @@ function tagsOf(track: TrackInput): { index: number; read: ChordRead }[] {
   tokens.forEach((t, i) => { if (t.kind === "note" && t.pitch && t.chord?.length) { const rd = readChord([t.pitch, ...t.chord], keyAt(i), mode); if (rd) out.push({ index: i, read: rd }); } });
   return track.broken === false ? out : [...out, ...brokenChords(tokens, keyAt, mode)];   // 声部开关「不认分解和弦」（v0.16.73）：叠音照旧标
 }
-/** 按曲段认大调 / 小调（v0.16.72，user 11-10「按曲段认乐理同意」「我还是希望它的局域性好一点，所以说可能还是每个声部单独做吧」）：
+/** 按曲段认大调 / 小调（v0.16.72，user 11-09「按曲段认乐理同意」「我还是希望它的局域性好一点，所以说可能还是每个声部单独做吧」）：
  *  一条 track（这个曲段里的这个声部）自己判，不看别的声部：最后一个有音高的音（叠音取最低的）是 la = 以 la 为主（小调），不然 = 以 do 为主。
  *  只看这一个音，规矩一句话说得清；判错了（大调停在 la 上）照样能看出来——点开候选顶上写着为什么。 */
 export function modeOf(tokens: readonly Token[], keyAt: (index: number) => number): Mode {

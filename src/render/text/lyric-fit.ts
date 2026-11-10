@@ -1,4 +1,4 @@
-// text/lyric-fit.ts —— 歌词让路 + 连字符摆哪：纯函数，单位一律 sp（连字符那个函数单位随宿主）。2026-11-10 by Claude Opus 5.5 从 src/render/engrave.ts 原样搬来
+// text/lyric-fit.ts —— 歌词让路 + 连字符摆哪：纯函数，单位一律 sp（连字符那个函数单位随宿主）。2026-11-09 by Claude Opus 5.5 从 src/render/engrave.ts 原样搬来
 //   （计划书 ai-docs/20261109-plan-text-engine.md 第 1 步：搬家不改行为；让路的算法 v0.16.47 起，作者和用户原话见下面各段注释）。
 import { LYRIC_MIN_SX } from "./style.ts";
 
@@ -118,7 +118,7 @@ export function fitLyrics(items: readonly LyricItem[], blockSx = 1, minSx = LYRI
 /** 连字符要摆的一个音节（按谱上的先后）。x = 字的中心；hw = 让路之后的半宽、sx = 让路之后的宽度倍数（没走让路 = 都不给）；
  *  cjk = 这个音节是方块字（中日韩：旁边的连字符挂在缝里、不占地方）；row = 在哪一行（跨行的连字符挂在左边那个字后面）。单位随宿主，全用同一个就行。 */
 export interface HyphenSyl { x: number; hy?: boolean; hw?: number; sx?: number; cjk: boolean; row: number }
-/** 连字符摆哪（2026-11-10 从 engrave 抽出来，行为不变）：每个带连字符的音节 → 摆的 x + 跟着压几成（hf）；null = 不画。
+/** 连字符摆哪（2026-11-09 从 engrave 抽出来，行为不变）：每个带连字符的音节 → 摆的 x + 跟着压几成（hf）；null = 不画。
  *  · 和下一个音节在同一行：摆在两个字之间那道缝的正中（原来是两个中心的正中 = 贴着长的那个，user 11-09 看着像虚线）；
  *    缝放不下一个连字符 = 不画（常见打谱软件的做法；挤了才会）；方块字旁边的连字符挂在缝里、不占地方，照画；hf = 左右更窄的那个字压到几成。
  *  · 没走让路（按节奏排以外的排法）：两个中心的正中；· 下一个在别的行 / 没有下一个：左边那个字后面 lonely 那么远。

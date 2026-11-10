@@ -1,4 +1,4 @@
-// chord-name.test.ts —— 认和弦 + 写成级数（乐理模块里的西方功能和声：src/theory/western.ts；2026-11-10 前叫 src/score/chord-name.ts）。created 2026-11-07 by Claude Opus 5.5
+// chord-name.test.ts —— 认和弦 + 写成级数（乐理模块里的西方功能和声：src/theory/western.ts；2026-11-09 前叫 src/score/chord-name.ts）。created 2026-11-07 by Claude Opus 5.5
 // 钉住 user 11-07 问的那几种歧义：换根音（转位）、挂二 / 挂四、六和弦 vs 七和弦转位、十三；调号只管第几级。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { readChord, chordLabel, degreeOf, brokenChords, modeOf, western } from "../src/theory/western.ts";
@@ -46,7 +46,7 @@ describe("认和弦 + 级数", () => {
     eq(L("G3 C4"), "I5/5", "五度在下面 = 转位"); eq(L("B♭3 F4".replace("♭", "b")), "♭VII5");
     eq(L("C4 D4"), "-", "二度不认"); eq(L("F4 B4"), "-", "三全音不认"); eq(L("C4 F4 C5"), "IV5/1", "四度 = 倒过来的五度（转位写最低音在调里的级数，同 C/E = I/3）"); eq(L("C4 C#4 D4"), "-");
   });
-  it("三度 / 六度双音（v0.16.65，user 11-10「好，按你的提议来」）= 省了五音的三和弦：三度下面那个音当根音、五音按调里补；六度 = 转位", () => {
+  it("三度 / 六度双音（v0.16.65，user 11-09「好，按你的提议来」）= 省了五音的三和弦：三度下面那个音当根音、五音按调里补；六度 = 转位", () => {
     eq(L("C4 E4"), "I"); eq(L("D4 F4"), "ii"); eq(L("A3 C4"), "vi"); eq(L("B3 D4"), "vii°"); eq(L("G3 B3"), "V");
     eq(L("E3 C4"), "I/3", "mi 在下 do 在上 = 六度 = 转位"); eq(N("E3 C4"), "C/E"); eq(L("C4 E4 C5"), "I", "带八度重复也算");
     eq(L("F#4 A4", 1), "vii°", "G 调的 fa♯-la"); eq(L("Bb3 D4"), "♭VII", "调外的根音：五音照样按调里的补");
@@ -77,11 +77,11 @@ describe("分解和弦（v0.16.62，user 11-09「和弦级数认「空五度」�
     eq(tags([chord([60, 64, 67]), nn(60), nn(64), nn(67), nn(72)]), "I");
     eq(tags([nn(60), nn(67), nn(60), nn(67), nn(60), nn(67), nn(60), nn(67)]), "");
   });
-  it("v0.16.65 按拍子轻重一层层看（user 11-10「得看节拍重音」）：整小节 → 对半 → 一拍；1 3 5 3 | 1 4 6 4 = I IV（共同音不被吞）；15351535 = 一个 I", () => {
+  it("v0.16.65 按拍子轻重一层层看（user 11-09「得看节拍重音」）：整小节 → 对半 → 一拍；1 3 5 3 | 1 4 6 4 = I IV（共同音不被吞）；15351535 = 一个 I", () => {
     eq(tags([nn(60), nn(64), nn(67), nn(64), nn(60), nn(65), nn(69), nn(65)]), "I IV/1");
     eq(tags([nn(60), nn(67), nn(64), nn(67), nn(60), nn(67), nn(64), nn(67)]), "I");
   });
-  it("切口只在拍上、认不出不硬凑（user 11-10「有时候不应该牵强」）：3+3+2（C E G | F A C | G B）切在拍中间 = 不标", () => {
+  it("切口只在拍上、认不出不硬凑（user 11-09「有时候不应该牵强」）：3+3+2（C E G | F A C | G B）切在拍中间 = 不标", () => {
     eq(tags([nn(60), nn(64), nn(67), nn(65), nn(69), nn(72), nn(67), nn(71)]), "");
   });
   it("三拍子没有中间的次强拍：整小节不是 = 一拍一拍看", () => {
@@ -90,7 +90,7 @@ describe("分解和弦（v0.16.62，user 11-09「和弦级数认「空五度」�
     eq(brokenChords([...h, ...body], () => 0).map((x) => chordLabel(x.read)).join(" "), "I IV V7");
     eq(brokenChords([...h, ...[60, 64, 67].map((m) => nn(m, TPQ))], () => 0).map((x) => chordLabel(x.read)).join(" "), "I", "三个四分 = 整小节一个");
   });
-  it("不跨小节（user 11-10「然后不跨小节」）：二分音符 do mi | sol do 不标；同一个音重复不算级进", () => {
+  it("不跨小节（user 11-09「然后不跨小节」）：二分音符 do mi | sol do 不标；同一个音重复不算级进", () => {
     eq(tags([nn(60, 2 * TPQ), nn(64, 2 * TPQ), nn(67, 2 * TPQ), nn(72, 2 * TPQ)]), "");
     eq(tags([nn(60), nn(60), nn(64), nn(64), nn(67), nn(67), nn(72), nn(72)]), "I");
   });
@@ -102,7 +102,7 @@ describe("分解和弦（v0.16.62，user 11-09「和弦级数认「空五度」�
   });
 });
 
-// 乐理模块（src/theory/，2026-11-10，user「乐理引擎可以拆出一个单独的可热插拔的模块」）：外面只认门面
+// 乐理模块（src/theory/，2026-11-09，user「乐理引擎可以拆出一个单独的可热插拔的模块」）：外面只认门面
 describe("乐理模块：能整块换", () => {
   it("src 里模块外只从 theory/index.ts 进；门面认得出这一种理论、不认识的 id 回默认", async () => {
     const fs = (await import("node:fs" as string)) as { readdirSync(p: URL, o: { recursive: true }): string[]; readFileSync(p: URL, e: string): string };
@@ -119,7 +119,7 @@ describe("乐理模块：能整块换", () => {
   });
 });
 
-// 按曲段认大调 / 小调（v0.16.72，user 11-10「按曲段认乐理同意」）：一条 track 最后一个音是 la = 以 la 为主数级数
+// 按曲段认大调 / 小调（v0.16.72，user 11-09「按曲段认乐理同意」）：一条 track 最后一个音是 la = 以 la 为主数级数
 describe("以 la 为主（小调）：从 la 数级数", () => {
   const M = (notes: string, fifths = 0): string => { const r = readChord(notes.split(" ").map(P), fifths, "la"); return r ? chordLabel(r) : "-"; };
   it("A 小调（不带升降号）：i、iv、V（升 sol 算调内）、III、VI、VII、ii°、vii°", () => {
@@ -143,7 +143,7 @@ describe("以 la 为主（小调）：从 la 数级数", () => {
   });
 });
 
-// 声部开关「不认分解和弦」（v0.16.73，user 11-10「给声部加一个开关，默认开同意」）
+// 声部开关「不认分解和弦」（v0.16.73，user 11-09「给声部加一个开关，默认开同意」）
 describe("声部开关：不认分解和弦", () => {
   let id = 7800;
   const nn = (m: number, chord: number[] = [], d = TPQ / 4): Token => ({ kind: "note", id: id++, pitch: spellMidi(m, 0), ...(chord.length ? { chord: chord.map((x) => spellMidi(x, 0)) } : {}), dur: d, lyric: null }) as Token;
@@ -156,7 +156,7 @@ describe("声部开关：不认分解和弦", () => {
     const st = initState(), off = setPartBrokenChords(st, st.at.part, false);
     eq(setPartBrokenChords(st, st.at.part, true), st, "本来就开 = 不变");
     eq(off.song.parts[0].brokenChords, false); eq(setPartBrokenChords(off, st.at.part, true).song.parts[0].brokenChords, undefined, "再开 = 不写");
-    const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-11-10T00:00:00.000Z" });
+    const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-11-09T00:00:00.000Z" });
     eq(openBytes("x.mxl", save(off.song)).song.parts[0].brokenChords, false);
     eq(openBytes("x.mxl", save(st.song)).song.parts[0].brokenChords, undefined);
   });

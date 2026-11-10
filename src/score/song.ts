@@ -124,7 +124,7 @@ export type Hum = "la" | "n" | "u" | "o" | "a";
 export interface PartDef { id: string; role: string; mic: string; clef?: Clef; staves?: 2; /** 自动八度线（v0.9.37）：没写 = 开；false = 这位不自动（score.json parts[].autoOttava）。 */ autoOttava?: false;
   /** 合租（v0.10.24）：挂在哪位（主人）的谱线上画（主人自己不能再是房客）。只管画：轨 / 乐器 / 混音台照旧各是各的（ai-docs/20261010-shared-staff-percussion-design.md §1）。 */
   host?: string;
-  /** 认不认分解和弦（v0.16.73，user 11-10「给声部加一个开关，默认开同意」）：没写 = 认（照样标）；false = 这位不认（叠音照旧标）。score.json parts[].brokenChords。 */
+  /** 认不认分解和弦（v0.16.73，user 11-09「给声部加一个开关，默认开同意」）：没写 = 认（照样标）；false = 这位不认（叠音照旧标）。score.json parts[].brokenChords。 */
   brokenChords?: false }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
 /** 谱号：高音 / 高音下加 8（吉他、男高音：实际低八度）/ 上加 8 / 上加 15（钟琴）/ 低音 / 低音下加 8（低音提琴、贝斯）。中音谱号不做（user「中音这个冷门没人用吧」）。 */
 export type ClefName = "G" | "G8vb" | "G8va" | "G15ma" | "F" | "F8vb";

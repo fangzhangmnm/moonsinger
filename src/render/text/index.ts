@@ -1,4 +1,4 @@
-// text/index.ts —— 谱上的字：一个模块、一个入口。created 2026-11-10 by Claude Opus 5.5
+// text/index.ts —— 谱上的字：一个模块、一个入口。created 2026-11-09 by Claude Opus 5.5
 //   user 11-09：「到时候让fable把文字排版引擎审核的时候写个计划书让opus做收成一个深模块窄接口」；计划书 = ai-docs/20261109-plan-text-engine.md（Fable 5.1 写）。
 //   样式表（style.ts）+ 歌词让路和连字符摆哪（lyric-fit.ts，第 1 步）+ 量字一把尺子（measure.ts，第 2 步）+ 字的上下沿 / 基线（baseline.ts，第 3 步）。
 //   外面只从这里 import；里面的文件名不是接口。

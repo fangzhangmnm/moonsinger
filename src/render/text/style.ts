@@ -1,4 +1,4 @@
-// text/style.ts —— 谱上的字：一张样式表。created 2026-11-09 by Claude Opus 5.5（原 src/render/text-style.ts；2026-11-10 搬进文字模块 src/render/text/，内容没改）
+// text/style.ts —— 谱上的字：一张样式表。created 2026-11-09 by Claude Opus 5.5（原 src/render/text-style.ts；2026-11-09 搬进文字模块 src/render/text/，内容没改）
 //   user 11-09（截图「Andante ♩ = 90」「1=C mf」）：「这些字体也应该对齐吧，能不能深模块窄接口统一一下风格」。
 //   以前字的样式散在四处：CSS 定字体 / 粗细 / 斜体，排版器各处自己写字号，PDF 另有一份粗体 / 斜体名单，覆盖层（「1=C」）自己估基线——四份对不上。
 //   现在：谱上每一种字一行（按样式类认，= 图元 cls 里的一个词），写明字体 / 粗细 / 斜体 / 几号字 / 跟哪把尺子。
@@ -25,7 +25,7 @@ export const LYRIC_EM = 1.6;
 
 /** 歌词在两档里长什么样（v0.16.44；user 11-09「字号可以稍微大一点，窄窄的字好看」→ 紧凑档挑了 B；「舒适版和紧凑版都有一个固定的字高，然后这个字高就永远不要动了。如果挤不下的话，是收宽度，不是收字高」）：
  *  k = 字号是歌词基准字号（LYRIC_EM，跟谱）的几倍——字高就这么定、永远不动；sx = 平常的宽度（1 = 不压）。挤了只往下收宽度，最窄 LYRIC_MIN_SX。
- *  gapFloor = 挤到底时词和词之间至少留多宽（线间距；v0.16.48 起 0.2，AI 定的数——v0.16.70 起按档各给一个；user 11-10 看了 0.2 / 0.35 / 0.5 的样张：「0.2看着舒服」，两档都 0.2；计划书 ai-docs/20261109-plan-text-engine.md 第 5 步）。*/
+ *  gapFloor = 挤到底时词和词之间至少留多宽（线间距；v0.16.48 起 0.2，AI 定的数——v0.16.70 起按档各给一个；user 11-09 看了 0.2 / 0.35 / 0.5 的样张：「0.2看着舒服」，两档都 0.2；计划书 ai-docs/20261109-plan-text-engine.md 第 5 步）。*/
 export const LYRIC_LOOK = { cozy: { k: 1, sx: 1, gapFloor: 0.2 }, compact: { k: 1.15, sx: 0.85, gapFloor: 0.2 } } as const;
 /** 挤的时候歌词最窄压到原宽的几成（乘在 LYRIC_LOOK.sx 上）；再挤 = 照写、画灰。 */
 export const LYRIC_MIN_SX = 0.5;

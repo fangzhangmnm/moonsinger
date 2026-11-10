@@ -42,7 +42,7 @@ describe("谱上的字：一张样式表", () => {
   });
 });
 
-// 文字模块（src/render/text/，计划书 ai-docs/20261109-plan-text-engine.md 第 2 步，2026-11-10 by Claude Opus 5.5）：量字的换算只在模块里
+// 文字模块（src/render/text/，计划书 ai-docs/20261109-plan-text-engine.md 第 2 步，2026-11-09 by Claude Opus 5.5）：量字的换算只在模块里
 const { readdirSync } = (await import("node:fs" as string)) as { readdirSync(p: URL, o: { recursive: true }): string[] };
 describe("文字模块：一个入口、量字一把尺子", () => {
   it("排版器里不再手写量字的换算（不调宿主的量宽函数、不拿歌词字号做乘除）", () => {

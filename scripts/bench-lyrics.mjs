@@ -1,4 +1,4 @@
-// scripts/bench-lyrics.mjs —— 歌词让路的代价（文字排版计划书 ai-docs/20261109-plan-text-engine.md 第 4 步的尺子）。created 2026-11-10 by Claude Opus 5.5
+// scripts/bench-lyrics.mjs —— 歌词让路的代价（文字排版计划书 ai-docs/20261109-plan-text-engine.md 第 4 步的尺子）。created 2026-11-09 by Claude Opus 5.5
 //   计划书原写「加进 bench-engine.mjs」；那个脚本一开头要装唱歌模型（检疫桶里的 piper），和排版无关——另起这一个，node 直跑、不靠仓外的东西。
 //   样张：800 个十六分音符全带英文（有长有短、一部分带连字符）= 计划书 §4 的极端样张；另排一遍「按歌词排」（字推开音，不走让路）当对照，再排一首普通样张看有没有变慢。
 //   量字 = 粗估（每个字 0.55 字号宽、空格 0.27）——和真字体的绝对数不同，只比前后。

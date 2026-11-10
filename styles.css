@@ -996,7 +996,7 @@ body:not(.print-look) .staff-svg .nav-mark.sel, body:not(.print-look) .staff-svg
 .start-mark { position: absolute; width: 0; border-left: 2px dashed var(--start); pointer-events: none; }
 .start-mark::before { content: ""; position: absolute; left: -2px; top: -2px; width: 10px; height: 8px; background: var(--start); clip-path: polygon(0 0, 100% 50%, 0 100%); }
 body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不画光标 */
-/* 印出来的样子（v0.16.74，`__moonsinger.printLook(on)`；带谱视频工具用，2026-11-10 带谱视频会话提的）：编辑器的东西全藏（覆盖层、缩放读数、上面的条、光标、选区带）、
+/* 印出来的样子（v0.16.74，`__moonsinger.printLook(on)`；带谱视频工具用，2026-11-09 带谱视频会话提的）：编辑器的东西全藏（覆盖层、缩放读数、上面的条、光标、选区带）、
  * 注解藏（和 PDF 的 SKIP 同一张名单：ann / selbox / caret / in-span）、强调色不上（上面那几条强调色规则都带 body:not(.print-look)）。只改看的样子，不改排版。 */
 body.print-look #bar, body.print-look .zoom-reset, body.print-look .score-overlay, body.print-look #score .ann, body.print-look .selbox, body.print-look .staff-svg .caret, body.print-look .ink-caret { display: none !important; }
 /* 模式（2026-10-10）：顶栏的分段钮；「听」亮着用播放色 */

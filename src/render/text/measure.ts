@@ -1,4 +1,4 @@
-// text/measure.ts —— 量字：一把尺子。created 2026-11-10 by Claude Opus 5.5（计划书 ai-docs/20261109-plan-text-engine.md 第 2 步；原 src/render/lyric-font.ts 的字体串 + 量宽搬进来）
+// text/measure.ts —— 量字：一把尺子。created 2026-11-09 by Claude Opus 5.5（计划书 ai-docs/20261109-plan-text-engine.md 第 2 步；原 src/render/lyric-font.ts 的字体串 + 量宽搬进来）
 //   以前：宿主给一个「按歌词字号量」的函数，排版器 13 处各自写换算（÷ 线间距 ÷ 字的尺子 × 这种字的字号），写法互相不一样。
 //   现在：宿主只给原始尺子（这串字、歌词那款字、px 那么大 = 多宽 px），换算全在 width() 里；排版器只问「这种字写这串多宽（sp）」。
 //   现状照旧（行为不变）：每种字都按歌词那款字、歌词字号量，再按字号比例放大缩小——歌名之类加粗的字调用方另外多算一点（歌名 8%）。

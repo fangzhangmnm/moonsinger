@@ -87,7 +87,7 @@ describe("按节奏排：音的位置只看时值", () => {
 });
 
 const J = (v: unknown) => JSON.stringify(v);
-describe("连字符摆哪（hyphens，2026-11-10 从排版器抽出来：src/render/text/lyric-fit.ts）", () => {
+describe("连字符摆哪（hyphens，2026-11-09 从排版器抽出来：src/render/text/lyric-fit.ts）", () => {
   it("同一行：摆在两个字之间那道缝的正中、跟着更窄的字压；缝放不下 = 不画；方块字旁边照画", () => {
     const r = hyphens([{ x: 0, hy: true, hw: 1, sx: 0.8, cjk: false, row: 0 }, { x: 4, hw: 1, sx: 0.6, cjk: false, row: 0 }], 1, 2);
     eq(J(r[0]), J({ x: 2, hf: 0.6 })); eq(J(r[1]), J(null));

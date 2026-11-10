@@ -5075,7 +5075,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.74-2026-11-10";
+var APP_VERSION = "v0.16.75-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29627,7 +29627,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-8354b43b185f.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-fbc7bf9095ed.mjs");
+      return pick(() => "encode-worker-c038c319ae86.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -39114,7 +39114,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "cbdb686b6d12f73a" : "dev";
+var CORE_HASH = true ? "329ff8df3a809c8c" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -53549,7 +53549,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "1f39c4e25324",
+  cssHash: "165a2b333ce7",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -57589,4 +57589,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2f4f45a188bb.mjs.map
+//# sourceMappingURL=moonsinger-20602d2f054e.mjs.map
