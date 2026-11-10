@@ -7,6 +7,7 @@ import { runLayoutJob } from "../src/render/layout-worker.ts";
 import { initState, type EditorState } from "../src/score/song.ts";
 import { apply } from "../src/score/commands.ts";
 import { sampleSong } from "./fixtures/format/sample-song.ts";
+import { createTextMeasure } from "../src/render/text/index.ts";
 
 const measure = (s: string) => s.length * 7.5;   // 假尺子（node 没有 canvas）；worker 和主线程各自配真尺子，这里只核形状和闭包
 function songs(): { name: string; st: EditorState; parts: Parameters<typeof engrave>[1]["parts"] }[] {
@@ -22,7 +23,7 @@ const opts = (parts: Parameters<typeof engrave>[1]["parts"], at: EditorState["at
 describe("排版进 worker", () => {
   it("attachLayoutFns(stripLayoutFns(L))：yOf / dOf / lyricY 每一行、各种 d 都和 engrave 原装的闭包相同；lyricYs 对得上", () => {
     for (const { name, st, parts } of songs()) {
-      const L = engrave(st.song, { ...opts(parts, st.at), measureLyric: measure });
+      const L = engrave(st.song, { ...opts(parts, st.at), measure: createTextMeasure(measure) });
       assert(L.systems.length >= 2, `${name}：至少两行`);
       eq(L.lyricYs.length, L.systems.length, `${name}：每行一个 lyricY`);
       const data = stripLayoutFns(L);
@@ -39,8 +40,8 @@ describe("排版进 worker", () => {
   it("runLayoutJob：同一把尺子 = 和主线程直接 engrave + toSvgParts 的字符串逐组相同；data 里的命中数据和原装相同；seq 原样带回", () => {
     for (const { name, st, parts } of songs()) {
       const o = opts(parts, st.at);
-      const want = engrave(st.song, { ...o, measureLyric: measure }), wantParts = toSvgParts(want);
-      const r = runLayoutJob({ seq: 7, song: st.song, opts: o, font: "16px x" }, measure, () => 0);
+      const want = engrave(st.song, { ...o, measure: createTextMeasure(measure) }), wantParts = toSvgParts(want);
+      const r = runLayoutJob({ seq: 7, song: st.song, opts: o }, measure, () => 0);
       assert(!("error" in r), `${name}：没报错`);
       if ("error" in r) continue;
       eq(r.seq, 7); eq(r.parts.open, wantParts.open); eq(r.parts.groups.length, wantParts.groups.length, `${name}：组数`);

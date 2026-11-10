@@ -2717,7 +2717,7 @@ async function makePdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<{ file: F
       song = { ...song, parts: song.parts.filter((p) => keep.has(p.id)), papers: song.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).filter(([k]) => keep.has(k))) })).filter((p) => Object.keys(p.tracks).length || p.id === pick.paper) };
       parts = parts.filter((v) => keep.has(v.id)).map((v, k) => ({ ...v, hidden: false, first: k === 0 }));
     }
-    const r = scorePdf({ song, parts, font, fontId, music, title, created: new Date(), measureAt: (px) => view.measureAt(px), autoBars, view: { inC: viewInC, chordTags: chordTagsOn }, ...(pick.paper ? { onlyPaper: pick.paper } : {}) });
+    const r = scorePdf({ song, parts, font, fontId, music, title, created: new Date(), measure: view.rawMeasure, autoBars, view: { inC: viewInC, chordTags: chordTagsOn }, ...(pick.paper ? { onlyPaper: pick.paper } : {}) });
     const paperName = pick.paper ? (D.st.song.papers.find((p) => p.id === pick.paper)?.name || _t("这一段")) : "";
     const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x) => fileSafe(x)).join("-");
     return { file: new File([r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${suffix ? `-${suffix}` : ""}`)}.pdf`, { type: "application/pdf" }), r };   // 名[-曲段 / 声部]-YYYYMMDD-HHMM（v0.9.47）

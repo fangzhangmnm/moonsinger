@@ -5071,7 +5071,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.66-2026-11-10";
+var APP_VERSION = "v0.16.67-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -9844,6 +9844,39 @@ function hyphens(syls, hyphenW, lonely) {
   });
 }
 
+// src/render/text/measure.ts
+function createTextMeasure(raw) {
+  const byPx = /* @__PURE__ */ new Map();
+  const at2 = (s10, px) => {
+    let m2 = byPx.get(px);
+    if (!m2) byPx.set(px, m2 = /* @__PURE__ */ new Map());
+    let v = m2.get(s10);
+    if (v === void 0) m2.set(s10, v = raw(s10, px));
+    return v;
+  };
+  return {
+    width(role, s10, sp2, ts2) {
+      const st2 = TEXT_STYLES[role];
+      return at2(s10, LYRIC_EM * sp2 * ts2) * st2.em / LYRIC_EM / sp2 / ts2 * (st2.ruler === "text" ? ts2 : 1);
+    },
+    widthPx(s10, px, sp2, ts2) {
+      const ref = LYRIC_EM * sp2 * ts2;
+      return at2(s10, ref) * px / ref;
+    }
+  };
+}
+var lyricFont = (px) => `${px}px ${TEXT_FACES.lyric}`;
+function canvasMeasure(ctx2) {
+  return (s10, px) => {
+    const f2 = lyricFont(px);
+    if (ctx2.font !== f2) ctx2.font = f2;
+    return ctx2.measureText(s10).width;
+  };
+}
+var lyricLook = (ts2) => ts2 > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
+var lyricWidth = (m2, s10, sp2, ts2) => m2.width("lyric", s10, sp2, ts2) * lyricLook(ts2).k * lyricLook(ts2).sx;
+var lyricSizePx = (sp2, ts2) => LYRIC_EM * lyricLook(ts2).k * sp2;
+
 // src/singer/packs.gen.ts
 var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
 var PACKS = {
@@ -11080,7 +11113,6 @@ function mergeTracks(tracks, opt = {}) {
 }
 
 // src/render/engrave.ts
-var lyricLook = (ts2) => ts2 > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
 var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
@@ -11285,7 +11317,7 @@ function unitsOf(tokens, o10) {
         const lyric = isNote && j2 === 0 && !nt2.tie ? nt2.lyric : null;
         const accW = accs.some((a10) => a10 !== null) ? 1.3 : 0;
         let w2 = accW + baseWidth(c10.base) + (c10.dotted ? 0.6 : 0);
-        const lyW = lyric && lyric !== MELISMA_MARK && !o10.rhythm ? o10.measureLyric(lyricShow(lyric)) / o10.sp / (o10.ts ?? 1) * lyricLook(o10.ts ?? 1).k * lyricLook(o10.ts ?? 1).sx : void 0;
+        const lyW = lyric && lyric !== MELISMA_MARK && !o10.rhythm ? lyricWidth(o10.measure, lyricShow(lyric), o10.sp, o10.ts ?? 1) : void 0;
         if (lyW !== void 0) w2 = Math.max(w2, accW + lyW + (nt2.hyph ? 1.4 : 0.7));
         const u2 = {
           kind: "chunk",
@@ -11404,8 +11436,8 @@ function engrave(song, o10) {
   let right = baseRight, sheetRight = baseRight;
   const PART_EM = TEXT_STYLES["part-name"].em, tx2 = (role) => textPx(role, sp2, ts2);
   const RS = (role) => TEXT_STYLES[role].ruler === "text" ? ts2 : 1, TR = (role, v) => v * sp2 * RS(role);
-  const mw = (role, str2) => o10.measureLyric(str2) * TEXT_STYLES[role].em / LYRIC_EM / sp2 / ts2 * RS(role);
-  const nameW = (s10) => o10.measureLyric(s10) * PART_EM / LYRIC_EM / sp2;
+  const mw = (role, str2) => o10.measure.width(role, str2, sp2, ts2);
+  const nameW = (s10) => mw("part-name", s10);
   const NMAX = NAME_MAX * ts2;
   const nameLines = (name, staves) => {
     if (nameW(name) <= NMAX) return [name];
@@ -11451,7 +11483,7 @@ function engrave(song, o10) {
     return out;
   };
   const titleSize = tx2("song-title"), titleBase = TOP2 + T2(TITLE_H * 0.62);
-  const titleLines = song.title ? wrapTitle(song.title, (t10) => o10.measureLyric(t10) * titleSize * 1.08 / (LYRIC_EM * sp2 * ts2), o10.width - P2(2 * (MARGIN + CTL_H + 1))) : [];
+  const titleLines = song.title ? wrapTitle(song.title, (t10) => P2(mw("song-title", t10)) * 1.08, o10.width - P2(2 * (MARGIN + CTL_H + 1))) : [];
   const titleLH = titleSize * 1.2, titleExtra = Math.max(0, titleLines.length - 1) * titleLH;
   titleLines.forEach((t10, k2) => prims.push({ t: "text", x: o10.width / 2, y: titleBase + k2 * titleLH, s: t10, cls: "song-title", size: titleSize, anchor: "middle" }));
   const title = { x: P2(MARGIN), y: TOP2 + T2(0.3), w: o10.width - P2(2 * MARGIN), h: T2(TITLE_H) + titleExtra, baseline: titleBase, size: titleSize };
@@ -11460,20 +11492,20 @@ function engrave(song, o10) {
   const cs2 = tx2("credits"), rx2 = o10.width - P2(MARGIN), y0 = TOP2 + T2(TITLE_H + 1) + titleExtra;
   if (lines.length) {
     lines.forEach((s10, k2) => prims.push({ t: "text", x: rx2, y: y0 + k2 * cs2 * 1.35, s: s10, cls: "credits", size: cs2, anchor: "end" }));
-    const w2 = Math.max(...lines.map((s10) => o10.measureLyric(s10) * 1.25 / LYRIC_EM)) + T2(0.6);
+    const w2 = Math.max(...lines.map((s10) => P2(mw("credits", s10)))) + T2(0.6);
     credits = { x: rx2 - w2, y: y0 - cs2 * 1.1, w: w2 + T2(0.3), h: cs2 * 1.35 * lines.length + cs2 * 0.4 };
   }
   let arrangement = null, arrLast = 0;
   if (!o10.onlyPaper) {
-    const as2 = tx2("arr"), wOf = (t10, size) => o10.measureLyric(t10) * size / LYRIC_EM, row2 = Math.max(lines.length, 1), base2 = y0 + row2 * cs2 * 1.35;
+    const as2 = tx2("arr"), wOf = (role, t10) => P2(mw(role, t10)), row2 = Math.max(lines.length, 1), base2 = y0 + row2 * cs2 * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
-    const label = _t("\u7F16\u6392\u3000"), lw2 = wOf(label, 1.25), x0 = P2(MARGIN) + lw2, avail2 = o10.width - P2(2 * MARGIN) - lw2;
+    const label = _t("\u7F16\u6392\u3000"), lw2 = wOf("arr-label", label), x0 = P2(MARGIN) + lw2, avail2 = o10.width - P2(2 * MARGIN) - lw2;
     if (txt) prims.push({ t: "text", x: P2(MARGIN), y: base2, s: label, cls: "arr-label", size: as2, anchor: "start" });
     arrLast = base2;
     if (txt) {
       prims.push({ t: "text", x: x0, y: base2, s: txt, cls: "arr", size: as2, anchor: "start" });
       if (arr.issues.length) {
-        const why2 = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? _t(" \u7B49 {n} \u5904", { n: arr.issues.length }) : ""}`, tw2 = wOf(txt, 1.25) + T2(0.8), fits = tw2 + wOf(why2, 1.1) <= avail2;
+        const why2 = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? _t(" \u7B49 {n} \u5904", { n: arr.issues.length }) : ""}`, tw2 = wOf("arr", txt) + T2(0.8), fits = tw2 + wOf("arr-issue", why2) <= avail2;
         prims.push({ t: "text", x: fits ? x0 + tw2 : x0, y: fits ? base2 : base2 + cs2 * 1.35, s: why2, cls: "arr-issue ann", size: tx2("arr-issue"), anchor: "start" });
         if (!fits) arrLast = base2 + cs2 * 1.35;
       }
@@ -11682,7 +11714,7 @@ function engrave(song, o10) {
       const gap = paperLen - lens[pi];
       const padT = (dur, id2) => ({ kind: "rest", id: id2, dur });
       const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;
-      const u2 = unitsOf(tokens, { tail: focused && !!o10.tailOpen, autoBars: autoBars2, measureLyric: o10.measureLyric, sp: sp2, ts: ts2, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
+      const u2 = unitsOf(tokens, { tail: focused && !!o10.tailOpen, autoBars: autoBars2, measure: o10.measure, sp: sp2, ts: ts2, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
       shortBars += u2.shortBars;
       if (staves === 2) {
         const stf = staffOfTokens(tokens, 2);
@@ -11937,7 +11969,7 @@ function engrave(song, o10) {
     const lyricsOf = per.map((q2) => q2.tokens.some((t10) => t10.kind === "note" && t10.lyric));
     const lyrPlan = /* @__PURE__ */ new Map();
     const look = lyricLook(ts2);
-    const lyrUnit = (str2) => o10.measureLyric(str2) / sp2 / ts2 * look.k * look.sx;
+    const lyrUnit = (str2) => lyricWidth(o10.measure, str2, sp2, ts2);
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
     const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace };
     if (song.lyricFit !== "lyrics") per.forEach((q2, r10) => {
@@ -11946,7 +11978,7 @@ function engrave(song, o10) {
       for (const u2 of q2.units) if (u2.kind === "chunk" && u2.lyric && u2.lyric !== MELISMA_MARK) {
         const arr = bySys.get(u2.system) ?? [];
         bySys.set(u2.system, arr);
-        arr.push({ index: u2.index, cx: u2.x + 0.6, w: o10.measureLyric(lyricShow(u2.lyric)) / sp2 / ts2 * look.k * look.sx, hy: u2.hyph, block: isBlockScript(u2.lyric) && [...lyricShow(u2.lyric)].length <= 1 });
+        arr.push({ index: u2.index, cx: u2.x + 0.6, w: lyrUnit(lyricShow(u2.lyric)), hy: u2.hyph, block: isBlockScript(u2.lyric) && [...lyricShow(u2.lyric)].length <= 1 });
       }
       for (const items of bySys.values()) items.sort((a10, b3) => a10.cx - b3.cx);
       const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
@@ -11964,7 +11996,7 @@ function engrave(song, o10) {
     }
     const sky = (row2) => skies[row2 - rowBase];
     const loc = (row2, y2) => (y2 - staffTop(row2)) / sp2;
-    const textW = (s10, size) => o10.measureLyric(s10) * size / (LYRIC_EM * sp2 * ts2);
+    const textW = (str2, size) => o10.measure.widthPx(str2, size, sp2, ts2);
     const isAnn = (p2) => /(^|\s)ann(\s|$)/.test(p2.cls ?? "");
     const hitLists = () => [notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut];
     const mark = () => ({ p: prims.length, h: hitLists().map((l10) => l10.length) });
@@ -12319,7 +12351,7 @@ function engrave(song, o10) {
           const ly2 = ly0, cx3 = cx0 + (fit ? P2(fit.dx) : 0);
           partLyrics.push({ index: c10.index, system: row2, x: cx3, y: ly2, ...fit?.tight ? { tight: true } : {} });
           if (c10.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P2(0.6), y1: ly0, x2: x0 + nhW(c10) + P2(0.4), y2: ly0, w: P2(0.12), cls: "melisma" });
-          else if (c10.lyric) prims.push({ tok: tokOf(c10), t: "text", x: cx3, y: ly2, s: lyricShow(c10.lyric), ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
+          else if (c10.lyric) prims.push({ tok: tokOf(c10), t: "text", x: cx3, y: ly2, s: lyricShow(c10.lyric), ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", q2.p.lyricMute?.has(tokens[c10.index]?.id ?? -1) ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
         } });
       };
       for (const u2 of units) {
@@ -12779,7 +12811,7 @@ function engrave(song, o10) {
               return { x: L2.x, hy: !!tok.hyph, hw: pl ? P2(pl.hw) : void 0, sx: pl?.sx, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L2.system };
             });
             hyphens(syls, P2(lyrHyphen), P2(1.6)).forEach((h2, n11) => {
-              if (h2) prims.push({ t: "text", x: h2.x, y: mine[n11].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: P2(LYRIC_EM * look.k) } : {}, sx: look.sx * h2.hf * HYPHEN_SX });
+              if (h2) prims.push({ t: "text", x: h2.x, y: mine[n11].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, sx: look.sx * h2.hf * HYPHEN_SX });
             });
             lyrics.push(...partLyrics.slice(from));
           }, { min: 0, count: false, step: ROW_STEP });
@@ -12916,7 +12948,7 @@ function engrave(song, o10) {
     drawPaperTitle(nSys ? sysH(0) : P2(SPC.rowH));
     let note2;
     if (paper.hidden) {
-      const nx2 = P2(MARGIN) + (paper.name ? o10.measureLyric(paper.name) * 1.6 / LYRIC_EM : 0) + T2(1);
+      const nx2 = P2(MARGIN) + (paper.name ? P2(mw("paper-name", paper.name)) : 0) + T2(1);
       note2 = { x: nx2, y: pTitle.y, w: Math.max(T2(4), pTitle.x + pTitle.w - nx2), h: T2(PAPER_H) };
     }
     const delta = /* @__PURE__ */ new Map();
@@ -13007,15 +13039,6 @@ function toSvgParts(l10) {
     buckets[k2].push(primSvg(p2, fs, lfs, rx2));
   }
   return { open: open2, groups: buckets.map((b3, k2) => `<g data-sys="${k2 - 1}">${b3.join("")}</g>`), close: "</svg>" };
-}
-
-// src/render/lyric-font.ts
-var lyricFont = (px) => `${px}px ${TEXT_FACES.lyric}`;
-function measurerOn(ctx2, font) {
-  return (s10) => {
-    if (ctx2.font !== font) ctx2.font = font;
-    return ctx2.measureText(s10).width;
-  };
 }
 
 // src/ui/lyric-editor.ts
@@ -14142,11 +14165,11 @@ var ScoreView = class {
     }
     return { sp: avail2 > 0 && avail2 < 420 ? Math.max(8.5 * scale, Math.min(base2, avail2 / 42 * scale)) : base2, width: Math.max(320, avail2), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
   }
-  /** 量文字宽（px，歌词字号 = px）：屏幕和 PDF 共用这一把尺子——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。 */
-  measureAt(px) {
-    return measurerOn(this.ctx, lyricFont(px));
+  /** 量文字宽的原始尺子（这串字、歌词那款字、px 那么大 = 多宽 px）：屏幕和 PDF 共用这一把——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。字体串和换算在文字模块（src/render/text/measure.ts；worker 同一串）。 */
+  get rawMeasure() {
+    return this.raw ??= canvasMeasure(this.ctx);
   }
-  // 字体串在 src/render/lyric-font.ts（worker 同一串）
+  raw = null;
   /** 排版这一半（engrave + 缓存），画是另一半（render）。谁要最新的排版就叫它——歌词框 / 记号框 / head() / E2E 钩子——不用等到下一帧画；
    *  render() 画之前也先叫它。同一份 EditorState 问第二次 = 直接回上次的（不读 DOM、不算键）；谱 / 几何都没变 = 回缓存（W-17 第 1 刀）。
    *  2026-10-17 Fable：画合并到下一帧之后（main.ts queuePaint），状态改了到画之间这一小段，排版照样拿得到最新的。 */
@@ -14155,7 +14178,7 @@ var ScoreView = class {
     if (!force && this.layout && this.layoutSt === st2 && this.frameNow) return this.layout;
     const g3 = this.geo(st2);
     if (!this.layout || this.geoSong !== st2.song || this.geoKey !== g3.geoKey) {
-      this.layout = span("engrave", () => engrave(st2.song, { ...g3.opts, measureLyric: this.measureAt(g3.lyricPx) }));
+      this.layout = span("engrave", () => engrave(st2.song, { ...g3.opts, measure: createTextMeasure(this.rawMeasure) }));
       this.geoSong = st2.song;
       this.geoKey = g3.geoKey;
       this.workerParts = null;
@@ -14197,7 +14220,7 @@ var ScoreView = class {
       ...hscroll ? { scroll: true } : {},
       ...ts2 !== 1 ? { textScale: ts2 } : {}
     };
-    return { frame: { sp: sp2, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp2 * ts2 };
+    return { frame: { sp: sp2, width, strict, page, margins, hscroll }, geoKey, opts };
   }
   // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
   //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），
@@ -14264,7 +14287,7 @@ var ScoreView = class {
     this.pending = { seq, st: st2, song: st2.song, geoKey: g3.geoKey, frame: g3.frame };
     this.queued = null;
     const t02 = performance.now();
-    w2.postMessage({ seq, song: st2.song, opts: g3.opts, font: lyricFont(g3.lyricPx) });
+    w2.postMessage({ seq, song: st2.song, opts: g3.opts });
     record("post", performance.now() - t02);
   }
   onReply(r10) {
@@ -29552,9 +29575,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-1c5a20dddaaf.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-3fa1a36e638c.mjs");
+      return pick(() => "layout-worker-f737b407fd4c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-ec0e69ee64ee.mjs");
+      return pick(() => "encode-worker-163a1d94c76f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -50417,7 +50440,7 @@ function segsOf(d3, dx, dy) {
   }
   return out;
 }
-function printOpts(song, sp2, parts, measureLyric, autoBars2, lyricRaise, onlyPaper, view2 = {}) {
+function printOpts(song, sp2, parts, measure, autoBars2, lyricRaise, onlyPaper, view2 = {}) {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts2 = textScaleOf(paper);
   return {
     width: lineSp(paper) * sp2,
@@ -50425,7 +50448,7 @@ function printOpts(song, sp2, parts, measureLyric, autoBars2, lyricRaise, onlyPa
     ...ts2 !== 1 ? { textScale: ts2 } : {},
     at: { paper: onlyPaper ?? song.papers[0].id, part: song.parts[0].id },
     parts,
-    measureLyric,
+    measure,
     autoBars: autoBars2,
     page: pageGeoOf(paper),
     lyricRaise,
@@ -50436,7 +50459,7 @@ function printOpts(song, sp2, parts, measureLyric, autoBars2, lyricRaise, onlyPa
 }
 function scorePdf(a10) {
   const paper = a10.song.paper ?? paperOf(DEFAULT_PAPER), sp2 = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp2 * textScaleOf(paper);
-  const L2 = engrave(a10.song, printOpts(a10.song, sp2, a10.parts, a10.measureAt ? a10.measureAt(lyricPx) : (s10) => textEm(a10.font, s10) * lyricPx, a10.autoBars ?? true, LYRIC_RAISE[a10.fontId], a10.onlyPaper, a10.view));
+  const L2 = engrave(a10.song, printOpts(a10.song, sp2, a10.parts, createTextMeasure(a10.measure ?? ((s10, px) => textEm(a10.font, s10) * px)), a10.autoBars ?? true, LYRIC_RAISE[a10.fontId], a10.onlyPaper, a10.view));
   const W3 = paper.widthMm * PT_PER_MM, H3 = paper.heightMm * PT_PER_MM, dx = L2.pageX.left;
   const pages = L2.pages.map(() => ({ w: W3, h: H3, ops: [] }));
   const pageOf = (y2) => {
@@ -55631,7 +55654,7 @@ async function makePdf(fontId, pick = {}) {
     song = { ...song, parts: song.parts.filter((p2) => keep2.has(p2.id)), papers: song.papers.map((p2) => ({ ...p2, tracks: Object.fromEntries(Object.entries(p2.tracks).filter(([k2]) => keep2.has(k2))) })).filter((p2) => Object.keys(p2.tracks).length || p2.id === pick.paper) };
     parts = parts.filter((v) => keep2.has(v.id)).map((v, k2) => ({ ...v, hidden: false, first: k2 === 0 }));
   }
-  const r10 = scorePdf({ song, parts, font, fontId, music, title, created: /* @__PURE__ */ new Date(), measureAt: (px) => view.measureAt(px), autoBars, view: { inC: viewInC, chordTags: chordTagsOn }, ...pick.paper ? { onlyPaper: pick.paper } : {} });
+  const r10 = scorePdf({ song, parts, font, fontId, music, title, created: /* @__PURE__ */ new Date(), measure: view.rawMeasure, autoBars, view: { inC: viewInC, chordTags: chordTagsOn }, ...pick.paper ? { onlyPaper: pick.paper } : {} });
   const paperName = pick.paper ? D2.st.song.papers.find((p2) => p2.id === pick.paper)?.name || _t("\u8FD9\u4E00\u6BB5") : "";
   const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x2) => fileSafe(x2)).join("-");
   return { file: new File([r10.bytes], `${stampedCopy(`${docName()}${suffix ? `-${suffix}` : ""}`)}.pdf`, { type: "application/pdf" }), r: r10 };
@@ -57477,4 +57500,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ea79276b5551.mjs.map
+//# sourceMappingURL=moonsinger-a0e7a9daba6d.mjs.map

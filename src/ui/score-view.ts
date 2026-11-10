@@ -27,9 +27,9 @@ import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitc
 import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
 import type { ChordRead } from "../score/chord-name.ts";
 import { textStyleCss } from "../render/text/index.ts";
-import { engrave, attachLayoutFns, LYRIC_EM, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
+import { engrave, attachLayoutFns, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg, toSvgParts } from "../render/svg.ts";
-import { lyricFont, measurerOn } from "../render/lyric-font.ts";
+import { createTextMeasure, canvasMeasure, type RawMeasure } from "../render/text/index.ts";
 import type { LayoutJob, LayoutReply, SvgParts } from "../render/layout-worker.ts";
 /** 这一次排版用的几何（谱大小 / 纸宽 / 严格按纸 / 分页 / 边距 / 横卷）。 */
 type FrameNow = { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null; margins: { l: number; r: number; t: number; b: number }; hscroll: boolean };
@@ -279,8 +279,9 @@ export class ScoreView {
     return { sp: avail > 0 && avail < 420 ? Math.max(8.5 * scale, Math.min(base, (avail / 42) * scale)) : base, width: Math.max(320, avail), strict: false, page: null, margins: { l: 0, r: 0, t: 2.4, b: 1.5 } };
   }
 
-  /** 量文字宽（px，歌词字号 = px）：屏幕和 PDF 共用这一把尺子——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。 */
-  measureAt(px: number): (s: string) => number { return measurerOn(this.ctx, lyricFont(px)); }   // 字体串在 src/render/lyric-font.ts（worker 同一串）
+  /** 量文字宽的原始尺子（这串字、歌词那款字、px 那么大 = 多宽 px）：屏幕和 PDF 共用这一把——PDF 用它排版，和分页预览一模一样（2026-10-09 user「pdf画出来和开分页预览的不一样…做到除了控件和提示外的wysiwyg」）。字体串和换算在文字模块（src/render/text/measure.ts；worker 同一串）。 */
+  get rawMeasure(): RawMeasure { return (this.raw ??= canvasMeasure(this.ctx)); }
+  private raw: RawMeasure | null = null;
   /** 排版这一半（engrave + 缓存），画是另一半（render）。谁要最新的排版就叫它——歌词框 / 记号框 / head() / E2E 钩子——不用等到下一帧画；
    *  render() 画之前也先叫它。同一份 EditorState 问第二次 = 直接回上次的（不读 DOM、不算键）；谱 / 几何都没变 = 回缓存（W-17 第 1 刀）。
    *  2026-10-17 Fable：画合并到下一帧之后（main.ts queuePaint），状态改了到画之间这一小段，排版照样拿得到最新的。 */
@@ -290,7 +291,7 @@ export class ScoreView {
     const g = this.geo(st);
     if (!this.layout || this.geoSong !== st.song || this.geoKey !== g.geoKey) {
       // 主线程自己排（同步退路：谁立刻要排版——歌词框 / 记号框 / E2E 钩子 / PDF，或没有 worker）；在途的 worker 回执作废（按 seq 丢）
-      this.layout = span("engrave", () => engrave(st.song, { ...g.opts, measureLyric: this.measureAt(g.lyricPx) }));
+      this.layout = span("engrave", () => engrave(st.song, { ...g.opts, measure: createTextMeasure(this.rawMeasure) }));
       this.geoSong = st.song; this.geoKey = g.geoKey; this.workerParts = null; this.pending = null; this.queued = null;
     }
     this.layoutSt = st; this.frameNow = g.frame;
@@ -298,7 +299,7 @@ export class ScoreView {
     return this.layout;
   }
   /** 排版的几何与选项（layoutNow 的同步路和 renderAsync 的 worker 路共用一份）：frame（谱大小 / 纸宽 / 分页）+ 缓存键 + engrave 的选项（不含量字宽的闭包，worker 自己配）。 */
-  private geo(st: EditorState): { frame: FrameNow; geoKey: string; opts: Omit<EngraveOpts, "measureLyric">; lyricPx: number } {
+  private geo(st: EditorState): { frame: FrameNow; geoKey: string; opts: Omit<EngraveOpts, "measure"> } {
     const { sp, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);   // 字的尺子（刀 2：紧凑只缩谱，字照舒适档）
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
@@ -310,9 +311,9 @@ export class ScoreView {
       (_k, v: unknown) => (v instanceof Set ? [...v] : v));
     // 编辑器要排版留的地方（刀 1）：每张纸底下的虚线框那一截（能写、不分页）、整首最下面「＋ 新曲段」那一截（能写）、合租括号、曲段控件——画归覆盖层
     const chrome: EngraveOpts["chrome"] = { ...(this.rules.edit && !page ? { underPaper: 2.6 } : {}), ...(this.rules.edit ? { tail: 2.6 } : {}), famGap: 0.8, navRoom: 16 };
-    const opts: Omit<EngraveOpts, "measureLyric"> = { width, sp, at: st.at, parts: partsNow, chrome, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
+    const opts: Omit<EngraveOpts, "measure"> = { width, sp, at: st.at, parts: partsNow, chrome, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
       ...(lyricRaise ? { lyricRaise } : {}), autoBars, ...(inC ? { inC: true } : {}), ...(chordTags ? { chordTags: true } : {}), ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}), ...(ts !== 1 ? { textScale: ts } : {}) };
-    return { frame: { sp, width, strict, page, margins, hscroll }, geoKey, opts, lyricPx: LYRIC_EM * sp * ts };   // 量字的尺子 = 字的字号（PDF / worker 同一个）
+    return { frame: { sp, width, strict, page, margins, hscroll }, geoKey, opts };
   }
   // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
   //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），
@@ -357,7 +358,7 @@ export class ScoreView {
     const seq = ++this.seq;
     this.pending = { seq, st, song: st.song, geoKey: g.geoKey, frame: g.frame }; this.queued = null;
     const t0 = performance.now();
-    w.postMessage({ seq, song: st.song, opts: g.opts, font: lyricFont(g.lyricPx) } satisfies LayoutJob);
+    w.postMessage({ seq, song: st.song, opts: g.opts } satisfies LayoutJob);
     record("post", performance.now() - t0);
   }
   private onReply(r: LayoutReply): void {

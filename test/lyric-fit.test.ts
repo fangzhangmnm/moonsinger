@@ -4,6 +4,7 @@ import { engrave } from "../src/render/engrave.ts";
 import { fitLyrics, lyricBlockSx, hyphens, DEFAULT_GAPS, GAP_MIN } from "../src/render/text/index.ts";
 import { LYRIC_MIN_SX } from "../src/render/text/index.ts";
 import { initState, tr, TPQ, type Token, type EditorState } from "../src/score/song.ts";
+import { createTextMeasure } from "../src/render/text/index.ts";
 
 describe("歌词让路（fitLyrics）：字高不动、只收宽度（v0.16.44；user 11-09「字高固定，宽度会收」）", () => {
   it("放得下 = 不动", () => {
@@ -63,7 +64,7 @@ describe("排出来：歌词字高一律一样，方块字整段一个宽度", (
     let id = 7100; const st = initState();
     const toks = [...tr(st).slice(0, 3), ...zh.map((ch): Token => ({ kind: "note", id: id++, pitch: { step: "E", alter: 0, octave: 5 }, dur: TPQ / 4, lyric: ch }) as Token)];
     const song = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) };
-    const L = engrave(song, { width: 700, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 30 } as never);   // 一个字 3 个线间距宽：十六分音符放不下（最后一行 v0.16.45 起跟上一行一样松，要更宽的字才挤）
+    const L = engrave(song, { width: 700, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: true }], measure: createTextMeasure((s: string) => s.length * 30) } as never);   // 一个字 3 个线间距宽：十六分音符放不下（最后一行 v0.16.45 起跟上一行一样松，要更宽的字才挤）
     const ly = L.prims.filter((p) => p.t === "text" && /^lyric\b/.test(p.cls ?? "") && !/hyphen/.test(p.cls ?? "")) as { size?: number; sx?: number }[];
     assert(ly.length === zh.length, `${ly.length} 个字`);
     eq(new Set(ly.map((p) => p.size ?? 0)).size, 1, "字高一样");
@@ -78,7 +79,7 @@ const stOf = (lyrics: string[], rhythm: boolean): EditorState => {
   const st = initState(), toks = [...tr(st).slice(0, 3), ...lyrics.map(n)];
   return { ...st, song: { ...st.song, ...(rhythm ? {} : { lyricFit: "lyrics" as const }), papers: st.song.papers.map((p) => ({ ...p, tracks: { ...p.tracks, [st.at.part]: toks } })) } };
 };
-const xs = (st: EditorState) => engrave(st.song, { width: 900, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * 10 } as never).notes.map((h) => Math.round(h.x)).join(",");
+const xs = (st: EditorState) => engrave(st.song, { width: 900, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: true }], measure: createTextMeasure((s: string) => s.length * 10) } as never).notes.map((h) => Math.round(h.x)).join(",");
 describe("按节奏排：音的位置只看时值", () => {
   const short = ["a", "b", "c", "d", "e", "f", "g", "h"], long = ["Greensleeves", "was", "all", "my", "joy", "and", "who", "but"];
   it("按节奏排（默认）：短字换成长字，每个音的位置一点不动", () => { eq(xs(stOf(long, true)), xs(stOf(short, true))); });

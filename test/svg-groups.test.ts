@@ -1,11 +1,12 @@
 // svg-groups.test.ts —— toSvgParts 的分组（W-17 智能重画第一刀）：每个图元恰好进一组、组内先后不变、歌名在杂项组、一行谱一组；toSvg = 开 + 组 + 收。created 2026-10-14 by Claude Fable 5.1
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, setNote, tr, type EditorState } from "../src/score/song.ts";
-import { engrave, LYRIC_EM, wrapTitle } from "../src/render/engrave.ts";
+import { engrave, wrapTitle } from "../src/render/engrave.ts";
 import { toSvg, toSvgParts, primSvg } from "../src/render/svg.ts";
+import { createTextMeasure, LYRIC_EM } from "../src/render/text/index.ts";
 
 const song = (n: number) => { let st = initState(); st = { ...st, song: { ...st.song, title: "月亮" } }; for (let i = 0; i < n; i++) st = writeDegree(st, (i % 7) + 1, "near"); return st; };
-const lay = (st: EditorState, width = 420) => engrave(st.song, { width, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measureLyric: (s: string) => s.length * LYRIC_EM * 10, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
+const lay = (st: EditorState, width = 420) => engrave(st.song, { width, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], measure: createTextMeasure((s: string) => s.length * LYRIC_EM * 10), chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
 
 describe("SVG 按行谱分组（W-17）", () => {
   it("页框一律进杂项组（第 0 组，垫在最底下）：页的中点落在某一行里也一样（v0.16.57，user「paged模式为什么有几行没显示」）", () => {

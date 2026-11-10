@@ -2,7 +2,7 @@
 
 > created 20261109 by Claude Fable 5.1 · as-of v0.16.53 / 2026-11-09
 > user 11-09：「到时候让fable把文字排版引擎审核的时候写个计划书让opus做收成一个深模块窄接口」「到时候记得让 Fable 看一下这个性能，不要太难看」「让fable看一下排版引擎是整个曲段重拍还是修一行，可以优化一下。算法的优化也给fable」。
-> **进度（Claude Opus 5.5）**：第 1 步 v0.16.66 做了（2026-11-10；快照 N1 + PDF 指纹 N2 原样绿、没重冻；`hyphens()` 的输入是一串音节、按行判断「同一行」）。
+> **进度（Claude Opus 5.5）**：第 1 步 v0.16.66 做了（2026-11-10；快照 N1 + PDF 指纹 N2 原样绿、没重冻；`hyphens()` 的输入是一串音节、按行判断「同一行」）。第 2 步 v0.16.67 做了：宿主只给原始尺子 `RawMeasure = (s, px) => px 宽`（屏幕 / worker = `canvasMeasure(ctx)`，PDF = 字体字宽），每次排版 `createTextMeasure(raw)` 一把（带缓存，只活这一次）；`TextMeasure` 两问：`width(role, s, sp, ts)`（sp）+ `widthPx(s, px, sp, ts)`（有字号的图元，天际线算墨迹用）；`lyric-font.ts` 并进 `text/measure.ts`，`text-style.ts` 转发删了；worker 的任务里不再带字体串。和 §2 草图的出入：原始尺子不带 face 参数（现在每种字都按歌词那款字量、再按字号比例缩放——这是现状，换成各量各的会动版面，不在这一轮）。守卫：`test/text-style.test.ts` 两条（engrave 里没有 `measureLyric` / 拿 `LYRIC_EM` 乘除；模块外只从 `text/index.ts` 进，反向验过）。
 > 总表 `ai-docs/20261109-plan-016-all-in-one.md` 第 3 条 / 第 7 条。读法：§1 现状 → §2 目标形状（接口）→ §3 施工步骤（每步能单独发版、怎么算做完）→ §4 性能的判断 → §5 不在这一轮的。
 
 ## 1. 现状（as-of v0.16.53）

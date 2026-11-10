@@ -10,6 +10,7 @@ import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { spellMidi } from "../src/score/pitch.ts";
 import { emptyExtras, withNewRole, withRollHz, activePerfSpec } from "../src/format/project.ts";
+import { createTextMeasure } from "../src/render/text/index.ts";
 
 const meta = { software: "test", date: "2026-11-09" };
 const info = { id: "P1", name: "Snare", instrumentName: "军鼓", sound: "drum.snare-drum", program: 0 };
@@ -60,7 +61,7 @@ describe("滚奏：写谱 / MusicXML / 画", () => {
     assert(Object.keys(two.dropped).length > 0, "不认的说出来");
   });
   it("谱上：带滚奏的音画三道斜杠（有符干 = 在符干上；全音符 = 符头上方）；不带的不画", () => {
-    const st = initState(), lay = (items: Token[]) => engrave(withTrack(st.song, st.at.paper, st.at.part, [...head(), ...items]), { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], measureLyric: (s: string) => s.length * 8 } as never);
+    const st = initState(), lay = (items: Token[]) => engrave(withTrack(st.song, st.at.paper, st.at.part, [...head(), ...items]), { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], measure: createTextMeasure((s: string) => s.length * 8) } as never);
     const rolls = (L: ReturnType<typeof lay>) => L.prims.filter((p) => p.t === "path" && /(^|\s)roll(\s|$)/.test(p.cls ?? ""));
     eq(rolls(lay([n(72, 2 * TPQ, { art: ["roll"] }), n(72, 2 * TPQ)])).length, 3, "二分音符：三道");
     eq(rolls(lay([n(72, 4 * TPQ, { art: ["roll"] })])).length, 3, "全音符：三道");

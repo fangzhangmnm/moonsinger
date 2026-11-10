@@ -2,11 +2,12 @@
 // 施工单 ai-docs/20261109-work-order-display-cuts-2-4.md §3.3：同一首歌、同一个谱间距，textScale 1 和 1.4——「跟字」的字号正好 1.4 倍，「跟谱」的字和字形一样大；
 //   字（歌名 / 曲段名 / 声部名 / 歌词）不压五线谱、不互相压。舒适档版面逐个相同由版面快照守（print-cozy + 两首小样张）。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { engrave, LYRIC_EM, type Layout, type Prim } from "../src/render/engrave.ts";
+import { engrave, type Layout, type Prim } from "../src/render/engrave.ts";
 import { LYRIC_LOOK, LYRIC_MIN_SX } from "../src/render/text/index.ts";
 import { primInk } from "../src/render/skyline.ts";
 import { textScaleOf, paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { VIEWS, loadSong, measure } from "./fixtures/layout/cases.ts";
+import { createTextMeasure, LYRIC_EM } from "../src/render/text/index.ts";
 
 /** 「跟字」的类（施工单 §3.2 那张表；歌词 v0.16.43 起改回跟谱）；其余的字（歌词、cresc. / 8va / 吸 / 推定的灰字）跟谱。 */
 const FOLLOW_TEXT = /^(song-title|credits|arr|arr-label|arr-issue|paper-name|part-name|part-badge|page-no)\b/;   // v0.16.48 起速度、1=X、风格、和弦级数、反复的字、小节号跟谱（user「速度那一串字号…也应该跟着走」）   // 歌词 v0.16.43 起跟谱（紧凑 = 配器，user「紧凑的话其实那个小字就够了」）
@@ -15,7 +16,7 @@ const compact = (key: string) => { const { song, labels } = loadSong(key), paper
 /** 同一首紧凑档的歌排两遍：字的尺子 = 谱（1）/ 字照舒适档（1.4）。量字跟着字号。 */
 function pair(key: string, view = "edit-all"): [Layout, Layout, number] {
   const { song, labels } = compact(key), v = VIEWS.find((x) => x.name === view)!, o = v.opts(song, labels), ts = textScaleOf(song.paper);
-  return [engrave(song, { ...o, textScale: 1, measureLyric: measure }), engrave(song, { ...o, textScale: ts, measureLyric: (s) => measure(s) * ts }), ts];
+  return [engrave(song, { ...o, textScale: 1, measure: createTextMeasure(measure) }), engrave(song, { ...o, textScale: ts, measure: createTextMeasure((s) => measure(s) * ts) }), ts];
 }
 
 describe("刀 2：紧凑档的字照舒适档那么大（textScale = 7 / 5）", () => {
