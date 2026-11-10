@@ -3240,7 +3240,7 @@ var S = {
   "\u5DF2\u6709\u7684\u58F0\u90E8\uFF0C\u53EA\u52A0\u8FDB\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09": { en: "An existing part, added to this section only (others unchanged)" },
   "\u65B0\u7684\u4E00\u4E2A\u58F0\u90E8\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u4E00\u6BB5\uFF1B\u52A0\u5B8C\u6311\u4E50\u5668": { en: "A new part, only in this section; then pick an instrument" },
   "\u58F0\u90E8\u7BA1\u7406\u2026": { en: "Parts\u2026" },
-  "\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u56DE\u5230\u8C31": { en: "Change instrument: open the catalog (try with the keyboard on the right; this song\u2019s instrument presets are on top); picking one swaps it in and returns to the score" },
+  "\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765": { en: "Change instrument: open the catalog (try with the keyboard on the right; this song\u2019s instrument presets are on top); picking one swaps it in and keeps the catalog open so you can keep trying; \u201C\u2190 Score\u201D goes back" },
   "{who} \u5728\u6F14": { en: "{who} performing" },
   "\u6362\u4E50\u5668 \u203A": { en: "Change instrument \u203A" },
   "\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5": { en: "How this performer plays (loudness, dynamics, singing\u2026) and the name on the score: a full page, try it on the keys at the right" },
@@ -5112,7 +5112,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.93-2026-11-10";
+var APP_VERSION = "v0.16.94-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29884,15 +29884,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-26869fd4d53d.mjs");
+      return pick(() => "singer-worker-631fcbbf4e59.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-50172ab074bf.mjs");
+      return pick(() => "layout-worker-a13e4dc138f7.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-3db90ce422fb.mjs");
+      return pick(() => "encode-worker-8d08be34b38f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -55646,7 +55646,7 @@ function openTrackCard(at2) {
   box.setAttribute("role", "dialog");
   const draw = () => {
     const me = curPart(), k2 = D2.st.song.parts.indexOf(me), label = partLabels(D2.st.song, D2.extras)[k2] ?? "";
-    box.innerHTML = `<button class="tc-inst" data-v="swap" title="${_t("\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u56DE\u5230\u8C31")}"><span class="tc-l"><b>${esc11(label)}</b><small>${((who) => who ? _t("{who} \u5728\u6F14", { who: esc11(who) }) : _t("\u6CA1\u4EBA\u4E0A\u573A"))(activeCandidateName(D2.extras, me.role))}</small></span><span class="tc-go">${_t("\u6362\u4E50\u5668 \u203A")}</span></button><div class="tc-row"><button class="btn" data-v="inst" title="${_t("\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5")}">${_t("\u4E50\u5668\u8BBE\u7F6E\u2026")}</button><button class="btn" data-v="parts" title="${_t("\u6240\u6709\u58F0\u90E8\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u8FD9\u4E00\u6BB5\u4E0A\u9762 / \u4E0B\u9762\u52A0\u3001\u4EA4\u7ED9\u522B\u7684\u58F0\u90E8\u3001\u4ECE\u8FD9\u4E00\u6BB5\u5220\u6389")}">${_t("\u58F0\u90E8\u7BA1\u7406\u2026")}</button><button class="btn danger" data-v="delpart" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u58F0\u90E8\u2026")}</button></div>` + ((m3) => {
+    box.innerHTML = `<button class="tc-inst" data-v="swap" title="${_t("\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765")}"><span class="tc-l"><b>${esc11(label)}</b><small>${((who) => who ? _t("{who} \u5728\u6F14", { who: esc11(who) }) : _t("\u6CA1\u4EBA\u4E0A\u573A"))(activeCandidateName(D2.extras, me.role))}</small></span><span class="tc-go">${_t("\u6362\u4E50\u5668 \u203A")}</span></button><div class="tc-row"><button class="btn" data-v="inst" title="${_t("\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5")}">${_t("\u4E50\u5668\u8BBE\u7F6E\u2026")}</button><button class="btn" data-v="parts" title="${_t("\u6240\u6709\u58F0\u90E8\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u8FD9\u4E00\u6BB5\u4E0A\u9762 / \u4E0B\u9762\u52A0\u3001\u4EA4\u7ED9\u522B\u7684\u58F0\u90E8\u3001\u4ECE\u8FD9\u4E00\u6BB5\u5220\u6389")}">${_t("\u58F0\u90E8\u7BA1\u7406\u2026")}</button><button class="btn danger" data-v="delpart" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u58F0\u90E8\u2026")}</button></div>` + ((m3) => {
       if (!m3 || !m3.size) return "";
       const xs = [...m3.values()], first = xs[0];
       return `<div class="tc-warn">${first.why === "notSung" ? esc11(lyricWhyText(first, roleName(D2.extras, me.role))) : _t("\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}", { n: xs.length, first: esc11(lyricWhyText(first, roleName(D2.extras, me.role))), x: xs.some((x3) => x3.why !== first.why) ? _t(" \u7B49") : "" })}</div>`;
@@ -58493,4 +58493,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-63ef19b7f621.mjs.map
+//# sourceMappingURL=moonsinger-ae380683ad71.mjs.map

@@ -10,10 +10,15 @@ const XML = `<?xml version="1.0"?><score-partwise version="4.0"><part-list><scor
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
-await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML);
-await p.waitForTimeout(200);
-// 打开有音的歌 = 键盘先收着、小条上「键盘」点一下才开（v0.10.21；user「或者默认键盘是关的，点一下才会开。」「小工具条也有键盘展开的功能」）
-check(await p.$eval(".pad-panel", (e) => e.hidden) && await p.$eval("#padTab", (e) => !e.hidden && !!e.closest(".dock-tab")), "打开有音的歌：键盘收着，小条上有「键盘」");
+const loadXml = async () => { await p.evaluate((xml) => { const m = window.__moonsinger; m.load(m.open("t.musicxml", new TextEncoder().encode(xml))); }, XML); await p.waitForTimeout(200); };
+// 鼠标键盘范式：开歌不动键盘（v0.16.89，user 11-10「我的建议是windows都不自动弹，不然难受。ipad的话应该就是有输入意图的时候弹，空歌弹。取决于操作范式」）
+{ const before = await p.$eval(".pad-panel", (e) => e.hidden); await loadXml();
+  check(await p.$eval(".pad-panel", (e) => e.hidden) === before, "鼠标：打开有音的歌 = 键盘原样不动（只手动开合）"); }
+// 触屏范式：打开有音的歌 = 键盘先收着、小条上「键盘」点一下才开（v0.10.21；user「或者默认键盘是关的，点一下才会开。」「小工具条也有键盘展开的功能」）。
+//   「最近一次是手指按的」用一个 touch 的 pointerdown 记上（app 在 window 上捕获它），不点到任何东西
+await p.evaluate(() => document.body.dispatchEvent(new PointerEvent("pointerdown", { pointerType: "touch", bubbles: true })));
+await loadXml();
+check(await p.$eval(".pad-panel", (e) => e.hidden) && await p.$eval("#padTab", (e) => !e.hidden && !!e.closest(".dock-tab")), "手指：打开有音的歌 = 键盘收着，小条上有「键盘」");
 await p.click("#padTab"); await p.waitForTimeout(150);
 check(!(await p.$eval(".pad-panel", (e) => e.hidden)) && await p.$eval("#padTab", (e) => !e.hidden && e.classList.contains("is-on")), "点「键盘」= 打开；开着时它亮着（再点 = 收起）");
 // 记住模式：存在「听」= 打开还是「听」（user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」）

@@ -2119,7 +2119,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   const draw = () => {
     const me = curPart(), k = D.st.song.parts.indexOf(me), label = partLabels(D.st.song, D.extras)[k] ?? "";
     box.innerHTML =
-      `<button class="tc-inst" data-v="swap" title="${_t("换乐器：进乐器目录（右边的键盘能试；顶上是这首歌的乐器预设），选好就换上、回到谱")}"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? _t("{who} 在演", { who: esc(who) }) : _t("没人上场")))(activeCandidateName(D.extras, me.role))}</small></span><span class="tc-go">${_t("换乐器 ›")}</span></button>` +
+      `<button class="tc-inst" data-v="swap" title="${_t("换乐器：进乐器目录（右边的键盘能试；顶上是这首歌的乐器预设），选好就换上、目录还开着可以接着换，「← 谱」回来")}"><span class="tc-l"><b>${esc(label)}</b><small>${((who) => (who ? _t("{who} 在演", { who: esc(who) }) : _t("没人上场")))(activeCandidateName(D.extras, me.role))}</small></span><span class="tc-go">${_t("换乐器 ›")}</span></button>` +
       `<div class="tc-row"><button class="btn" data-v="inst" title="${_t("这位怎么演（响度、力度、唱法…）和谱上写什么名字：全屏一页，右边的键盘能试")}">${_t("乐器设置…")}</button>` +
       `<button class="btn" data-v="parts" title="${_t("所有声部排一列：改名、上下挪、在哪几段；这一段上面 / 下面加、交给别的声部、从这一段删掉")}">${_t("声部管理…")}</button>` +
       `<button class="btn danger" data-v="delpart" title="${_t("整个声部删掉：每一段里它写的、它的乐器设置一起删（先问；能撤销）")}">${_t("删掉声部…")}</button></div>` +
@@ -2145,7 +2145,7 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     const me = curPart();
     if (v === "inst") { close(); openInstPage(); return; }
-    if (v === "swap") { close(); openFinder(); return; }   // 从谱上开的：选好 / 关了回谱
+    if (v === "swap") { close(); openFinder(); return; }   // 从谱上开的：选好 = 换上、目录不关（v0.16.35），「← 谱」/ Esc 回谱
     if (v === "parts") { close(); openPartsManager({ paper: D.st.at.paper, part: me.id }); return; }
     if (v === "delpart") { close(); deleteSinger(me.id); return; }
   });

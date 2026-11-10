@@ -90,14 +90,22 @@ check((await p.textContent(".notice-error .notice-text")).includes("还没有人
 await p.click(".notice-error .dismiss");
 const pn = await p.$eval("#score text.part-name", (t) => { const r = t.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await p.mouse.click(pn.x, pn.y); await p.waitForSelector(".track-card");
-// 2026-10-08 声部设置分两处：轨 = 歌手牌旁边的非模态小卡（没有遮罩、谱照常看得见）；乐器 = 全屏一页（pad 留着只弹不写）
-check(!(await p.$(".offer")) && !!(await p.$('.track-card [data-v="hide"]')) && !(await p.$('.track-card [data-v^="cand:"]')), "点角色名 = 轨的小卡（非模态，只有显示 / 出声 / 谱表；乐器的东西不在这）");
+// 2026-10-08 声部设置分两处：轨 = 歌手牌旁边的非模态小卡（没有遮罩、谱照常看得见）；乐器 = 全屏一页（pad 留着只弹不写）。
+//   11-08 搬家轮起小卡 = 换乐器 › / 乐器 / 声部管理 / 删声部（显示 / 出声挪到名字下面的小钮），换乐器直接进乐器目录（2026-11-10 Claude Opus 5.5 跟着改）
+check(!(await p.$(".offer")) && !!(await p.$('.track-card [data-v="swap"]')) && !!(await p.$('.track-card [data-v="inst"]')) && !(await p.$('.track-card [data-v^="cand:"]')), "点角色名 = 轨的小卡（非模态；换乐器 / 乐器设置的入口，乐器的东西不在这）");
 await p.click('.track-card [data-v="inst"]'); await p.waitForSelector(".inst-page:not([hidden])");
-check(!(await p.$(".track-card")) && (await p.$eval("#score", (s) => s.closest("[hidden]") !== null || s.hidden)), "小卡里「乐器 ›」= 全屏的乐器页（谱藏起来、小卡收了）");
-await p.click('.inst-page [data-v="cand:c1"]'); await p.selectOption("#roleSel", "voice.soprano|Soprano"); await p.click('.inst-page [data-v="back"]');
+check(!(await p.$(".track-card")) && (await p.$eval("#score", (s) => s.closest("[hidden]") !== null || s.hidden)), "小卡里「乐器」= 全屏的乐器页（谱藏起来、小卡收了）");
+await p.click('.inst-page [data-v="back"]'); await p.waitForTimeout(200);
 check(await p.$eval(".inst-page", (e) => e.hidden), "乐器页「← 谱」回谱");
-check(!(await p.$eval("#score text.part-name", (t) => t.classList.contains("empty"))) && (await p.textContent("#score text.part-name")) === "Soprano" && !!(await p.$("#score text.part-name.empty")),
-  "点角色名：谁来演选月读、角色选 Soprano → 谱前写「Soprano」、不再淡色；第二个声部（Bass）还没人上场、仍淡色（0.5.0 起别家谱的声部都读进来）");
+await p.mouse.click(pn.x, pn.y); await p.waitForSelector(".track-card");
+await p.click('.track-card [data-v="swap"]'); await p.waitForSelector(".finder:not([hidden])");
+check(!(await p.$(".track-card")), "小卡里「换乐器 ›」= 直接进乐器目录");
+await p.evaluate(() => window.__moonsinger.finderCastVoice()); await p.waitForTimeout(400);   // 目录里人声那一行「选这个」（同 singer-delete.mjs）
+check(!(await p.$eval(".finder", (e) => e.hidden)), "选好 = 换上了、目录还开着（v0.16.35：可以接着换）");
+await p.click('.finder [data-v="back"]'); await p.waitForTimeout(300);
+check(await p.$eval(".finder", (e) => e.hidden), "目录「← 谱」回谱");
+check(!(await p.$eval("#score text.part-name", (t) => t.classList.contains("empty"))) && !!(await p.$("#score text.part-name.empty")),
+  "第一个声部选了人声 → 谱前不再淡色；第二个声部（Bass）还没人上场、仍淡色（0.5.0 起别家谱的声部都读进来）", await p.textContent("#score text.part-name"));
 // 拖进来打开（v0.3.0；DataTransfer 里放一个 .musicxml；改过没存先问）
 await p.click(".notice-error .dismiss").catch(() => undefined);
 const b64 = fs.readFileSync(`${DIR}/twinkle.musicxml`).toString("base64");

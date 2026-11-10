@@ -17,7 +17,8 @@ const parts = () => p.evaluate(() => window.__moonsinger.state().song.parts.map(
 check((await parts()).split(",").length === 2, "两位歌手", await parts());
 await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 // 歌手管理 = 录音室（从歌手牌底下进）
-const openStudio = async () => { await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(150); await p.click('.dock-tab [data-mode="listen"]'); await p.waitForTimeout(300); };   // 混音台 = 听的底座（v0.16.19 起小卡里不再有「歌手管理（混音台）」，管理在「声部管理」；混音台照样能删）
+//   鼠标换到「听」不自己弹混音台（v0.16.89：鼠标只手动开合；混音台 = 听的键盘），所以再点一下亮着的「听」= 手动弹出（v0.10.42 只弹不收）
+const openStudio = async () => { await p.evaluate(() => window.__moonsinger.setMode("notes")); await p.waitForTimeout(150); await p.click('.dock-tab [data-mode="listen"]'); await p.waitForTimeout(200); await p.click('.dock-tab [data-mode="listen"]'); await p.waitForTimeout(300); };   // 混音台 = 听的底座（v0.16.19 起小卡里不再有「歌手管理（混音台）」，管理在「声部管理」；混音台照样能删）
 await openStudio();
 check(await p.$$eval(".studio .strip [data-v=delpart]", (e) => e.length) === 0, "都在纸上 = 都不能删");
 check(/在 1 张纸上/.test(await p.$eval(".studio .strip:not(.master):not(.bus):not(.add-bus) >> nth=0", (e) => e.textContent)), "写着在几张纸上");   // 第一位歌手的卡片（v0.10.9 起卡片顺序 = 总轨 → 混音轨 →「＋ 混音轨」→ 歌手）

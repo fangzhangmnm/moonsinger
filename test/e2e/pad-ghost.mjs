@@ -16,6 +16,10 @@ await p.waitForTimeout(300);
 const p2 = () => p.evaluate(() => { const s = window.__moonsinger.state(), pid = s.song.parts[1].id; return s.song.papers[0].tracks[pid].filter((t) => t.kind === "note" || t.kind === "rest").map((t) => t.kind === "rest" ? `r${t.dur}` : `${t.pitch.step}${t.dur}`).join(" "); });
 check(await p.evaluate(() => document.querySelectorAll("#score .rest.pad-rest").length) === 0 && await p.evaluate(() => window.__moonsinger.layout().slots.some((x) => x.lead)), "B 后面空着的小节：不画休止（v0.10.19，user「remove the ghost mute idea」），点那儿的落点还在");
 const before = await p2();
+// 开这首外来谱会冒出提示条（A / B 没写乐器 = 还没有人上场）。v0.16.89 起鼠标开歌不收键盘，提示条被托到键盘上方、正好盖住要点的那个小节：
+//   先像人一样点「×」关掉，再点谱（点不穿提示条，这是对的）
+for (const x of await p.$$(".notice-stack .toast button.dismiss")) await x.click();
+await p.waitForTimeout(100);
 // 点 B 的第 3 小节开头（落点 lead = 离尾巴 7 拍）
 const pt = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = L.slots.filter((x) => x.lead).sort((a, c) => c.lead - a.lead)[0], svg = document.querySelector("#score svg").getBoundingClientRect(); return { x: svg.left + L.pageX.left + s.x + 4, y: svg.top + L.yOf(s.system, 34), lead: s.lead }; });
 await p.mouse.click(pt.x, pt.y); await p.waitForTimeout(200);
