@@ -56,9 +56,12 @@ const mainJs = readFileSync(join(ROOT, "dist", mainSrc[1]), "utf8").replace(/\n\
 if (/\bimport\s*\(\s*["'`]\.\.?\//.test(mainJs)) die("主程序里有 import() 旁边的文件——备用版里载不到（规则书 §3.5：不许 import() 旁边的文件）");
 const safeJs = (js) => js.replace(/<\/script/gi, "<\\/script").replace(/<!--/g, "<\\!--");   // 内联进 <script> 时不许提前收尾
 const bundleJson = JSON.stringify({ files, threads }).replace(/<\//g, "<\\/").replace(/<!--/g, "<\\u0021--");
+if (!/<meta http-equiv="Content-Security-Policy"/.test(html)) die("index.html 里找不到页面安全策略那一行（备用版要去掉它；它没了 = 正式站也没了）");
 html = bakeMarker(html, "local")
+  .replace(/\s*<meta http-equiv="Content-Security-Policy"[^>]*>/, "")   // 备用版的主程序和线程是内联 / blob 起的，页面安全策略（script-src 'self'）放不行；双击打开的文件夹里也没有别人能塞脚本的路——去掉（2026-11-10）
   .replace(/\s*<link rel="manifest"[^>]*>/, "")
   .replace(mainSrc[0], () => `<script type="application/json" id="ms-local">${bundleJson}</script>\n    <script type="module">${safeJs(mainJs)}</script>`);
+if (/Content-Security-Policy"/.test(html.replace(/<!--[\s\S]*?-->/g, ""))) die("备用版的 index.html 里还留着页面安全策略");
 writeFile(join(out, "index.html"), html);
 console.log(`[pack] 主程序内联 ${(mainJs.length / 1e6).toFixed(1)} MB；线程 ${Object.keys(threads).length} 个；老实脚本 ${Object.keys(files).length} 个文件；资源 ${res} 个`);
 

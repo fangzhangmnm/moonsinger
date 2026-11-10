@@ -37,4 +37,5 @@ export function initBlackBox(version: string): void {
   w.__msEarlyErrors = { push: (e: EarlyErr) => { try { diagLog.record("error", `[early] ${e.m}`); } catch { /* ignore */ } } };   // 内联脚本之后还会 push：直接进黑匣子
   window.addEventListener("error", (e) => { try { diagLog.record("error", `[window] ${e.message} @${(e.filename ?? "").split("/").pop()}:${e.lineno}`); } catch { /* ignore */ } });
   window.addEventListener("unhandledrejection", (e) => { try { diagLog.record("error", `[unhandledrejection] ${msgOf(e.reason)}`); } catch { /* ignore */ } });
+  // 被页面安全策略（index.html 的 Content-Security-Policy）拦下的东西：boot-guard.js 也在听、经 __msEarlyErrors 进来（上面那一行接着收），这里不重复挂
 }

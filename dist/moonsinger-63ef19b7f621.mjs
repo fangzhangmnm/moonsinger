@@ -5112,7 +5112,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.92-2026-11-10";
+var APP_VERSION = "v0.16.93-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29892,7 +29892,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-50172ab074bf.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-6a389665ce7b.mjs");
+      return pick(() => "encode-worker-3db90ce422fb.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -41172,6 +41172,180 @@ function exportAllSay(r10, fileName2) {
 init_fflate_esm();
 
 // vendor/vue/vue.esm-browser.prod.js
+var vue_esm_browser_prod_exports = {};
+__export(vue_esm_browser_prod_exports, {
+  BaseTransition: () => nB,
+  BaseTransitionPropsValidators: () => nL,
+  Comment: () => iY,
+  DeprecationTypes: () => lJ,
+  EffectScope: () => eh,
+  ErrorCodes: () => tJ,
+  ErrorTypeStrings: () => lU,
+  Fragment: () => iQ,
+  KeepAlive: () => rc,
+  ReactiveEffect: () => ey,
+  Static: () => i0,
+  Suspense: () => iW,
+  Teleport: () => nR,
+  Text: () => iZ,
+  TrackOpTypes: () => tB,
+  Transition: () => l4,
+  TransitionGroup: () => sU,
+  TriggerOpTypes: () => tj,
+  VueElement: () => sM,
+  assertNumber: () => tz,
+  callWithAsyncErrorHandling: () => tX,
+  callWithErrorHandling: () => tG,
+  camelize: () => L,
+  capitalize: () => B,
+  cloneVNode: () => la,
+  compatUtils: () => lz,
+  compile: () => ul,
+  computed: () => lD,
+  createApp: () => oc,
+  createBlock: () => i7,
+  createCommentVNode: () => ld,
+  createElementBlock: () => i9,
+  createElementVNode: () => ll,
+  createHydrationRenderer: () => iF,
+  createPropsRestProxy: () => r3,
+  createRenderer: () => iD,
+  createSSRApp: () => ou,
+  createSlots: () => rF,
+  createStaticVNode: () => lu,
+  createTextVNode: () => lc2,
+  createVNode: () => ls,
+  customRef: () => tM,
+  defineAsyncComponent: () => rs,
+  defineComponent: () => nz,
+  defineCustomElement: () => sI,
+  defineEmits: () => rK,
+  defineExpose: () => rz,
+  defineModel: () => rX,
+  defineOptions: () => rJ,
+  defineProps: () => rW,
+  defineSSRCustomElement: () => sO,
+  defineSlots: () => rG,
+  devtools: () => lH,
+  effect: () => eN,
+  effectScope: () => ef,
+  getCurrentInstance: () => lS,
+  getCurrentScope: () => eg,
+  getCurrentWatcher: () => tq,
+  getTransitionRawChildren: () => nK,
+  guardReactiveProps: () => lo,
+  h: () => lF,
+  handleError: () => tQ,
+  hasInjectionContext: () => nh,
+  hydrate: () => oa,
+  hydrateOnIdle: () => rt,
+  hydrateOnInteraction: () => ri,
+  hydrateOnMediaQuery: () => rr,
+  hydrateOnVisible: () => rn,
+  initCustomFormatter: () => lL,
+  initDirectivesForSSR: () => of,
+  inject: () => np,
+  isMemoSame: () => lV,
+  isProxy: () => ty,
+  isReactive: () => tg,
+  isReadonly: () => tm,
+  isRef: () => tC,
+  isRuntimeOnly: () => lE,
+  isShallow: () => tv,
+  isVNode: () => le,
+  markRaw: () => t_,
+  mergeDefaults: () => r2,
+  mergeModels: () => r6,
+  mergeProps: () => lg,
+  nextTick: () => t4,
+  nodeOps: () => lY,
+  normalizeClass: () => ee,
+  normalizeProps: () => et2,
+  normalizeStyle: () => G,
+  onActivated: () => rd,
+  onBeforeMount: () => ry,
+  onBeforeUnmount: () => rx,
+  onBeforeUpdate: () => r_,
+  onDeactivated: () => rp,
+  onErrorCaptured: () => rN,
+  onMounted: () => rb,
+  onRenderTracked: () => rw,
+  onRenderTriggered: () => rT,
+  onScopeDispose: () => em,
+  onServerPrefetch: () => rk,
+  onUnmounted: () => rC,
+  onUpdated: () => rS,
+  onWatcherCleanup: () => tW,
+  openBlock: () => i6,
+  patchProp: () => sE,
+  popScopeId: () => ns,
+  provide: () => nd,
+  proxyRefs: () => tO,
+  pushScopeId: () => nl,
+  queuePostFlushCb: () => t9,
+  reactive: () => tu,
+  readonly: () => tp,
+  ref: () => tk,
+  registerRuntimeCompiler: () => lA,
+  render: () => oo,
+  renderList: () => rD,
+  renderSlot: () => rL,
+  resolveComponent: () => rE,
+  resolveDirective: () => rO,
+  resolveDynamicComponent: () => rI,
+  resolveFilter: () => lK,
+  resolveTransitionHooks: () => nU,
+  setBlockTracking: () => i8,
+  setDevtoolsHook: () => lq,
+  setTransitionHooks: () => nW,
+  shallowReactive: () => td2,
+  shallowReadonly: () => th,
+  shallowRef: () => tT,
+  ssrContextKey: () => nf,
+  ssrUtils: () => lW,
+  stop: () => eA,
+  toDisplayString: () => eu,
+  toHandlerKey: () => j,
+  toHandlers: () => rV,
+  toRaw: () => tb,
+  toRef: () => t$,
+  toRefs: () => tD,
+  toValue: () => tR,
+  transformVNodeArgs: () => ln2,
+  triggerRef: () => tA,
+  unref: () => tE,
+  useAttrs: () => rY,
+  useCssModule: () => sL,
+  useCssVars: () => sh,
+  useHost: () => sD,
+  useId: () => nJ,
+  useModel: () => iu,
+  useSSRContext: () => ng,
+  useShadowRoot: () => sF,
+  useSlots: () => rZ,
+  useTemplateRef: () => nX,
+  useTransitionState: () => nD,
+  vModelCheckbox: () => sY,
+  vModelDynamic: () => s8,
+  vModelRadio: () => s1,
+  vModelSelect: () => s22,
+  vModelText: () => sZ,
+  vShow: () => su,
+  version: () => lB,
+  warn: () => lj,
+  watch: () => nb,
+  watchEffect: () => nm,
+  watchPostEffect: () => nv,
+  watchSyncEffect: () => ny,
+  withAsyncContext: () => r4,
+  withCtx: () => na,
+  withDefaults: () => rQ,
+  withDirectives: () => nc,
+  withKeys: () => or,
+  withMemo: () => l$,
+  withModifiers: () => ot,
+  withScopeId: () => no
+});
 var e;
 var t2;
 var n2;
@@ -47143,7 +47317,7 @@ var TEXT = {
   "gal.tile.active": _t("\u6253\u5F00\u4E2D")
 };
 function initGalleryHost(d3) {
-  const vue = { createApp: oc, defineComponent: nz, reactive: tu, ref: tk, computed: lD, watch: nb, onMounted: rb, onUnmounted: rC, nextTick: t4, Teleport: nR };
+  const vue = vue_esm_browser_prod_exports;
   const fullEl = document.createElement("div");
   fullEl.id = "galleryFull";
   fullEl.className = "gallery-full";
@@ -58319,4 +58493,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-7bcbaf7cd79b.mjs.map
+//# sourceMappingURL=moonsinger-63ef19b7f621.mjs.map

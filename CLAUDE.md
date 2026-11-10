@@ -237,6 +237,11 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **空白处小菜单**（2026-10-08 晚，user「空白长按可以黏贴或者类似的右键上下文菜单」「小菜单同意」）：空白处长按（手指 / 笔）或电脑右键 → 光标放到那里 + 非模态小菜单（`openScoreMenu`）：粘贴 / 小节线 / 句号 / 调号… / 拍号… / 速度… / 全选这一行 / 全选；音上右键不接（选区条管）。
 - **月读条款译文**（user「license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）：`src/singer/credit-translations.ts` 中 / 英，按原文 sha256 钉住（`test/credit-translations.test.ts`：上游改原文 = 红 = 重译）；设置里原文在上（以原文为准）。不进 i18n 那套（原文永远要显示、译文要钉原文，i18n 只防漏译）。
 
+## 读文件时的安全（v0.16.92 / 93，2026-11-10，Claude Fable 5.2；READ before touching index.html / 开歌的代码）
+
+- **读入边界** `src/format/ids.ts`：歌文件里当编号用的字段读进来先校验（字母数字和 `_ . -`，最长 64）；自家文件不合规矩 = 拒开，别的软件的谱 = 声部编号换成 `P<n>`。**以后往文件里加任何「编号」字段，都要在 `badIds` 里登记**；界面上拼 HTML 时给人看的字（歌名 / 角色名 / 歌词…）照旧要转义。守卫 `test/ids-guard.test.ts`。
+- **页面安全策略** = index.html 的 `<meta http-equiv="Content-Security-Policy">`（家族同款；`test/csp-guard.test.mjs` 逐条钉死，放宽任何一条先在 ai-docs 写为什么）。由此而来的规矩：index.html 里**不许内联脚本、不许 `onxxx=` 属性**（开机兜底在 `boot-guard.js`，新加根目录文件要进 service-worker 预缓存 / deploy.yml / serve.sh / pack-site.mjs / 两份冒烟）；src 里不许 `eval` / `new Function` / Vue 的 `template:`；**图库要拿整个 Vue 模块**（`gallery-host.ts`，只递一部分 = 歌库打不开）；备用版打包时去掉策略。E2E `test/e2e/csp.mjs`。被拦下的进诊断日志 `[csp]` 行。
+
 ## 格式红线区（`src/format/`；2026-10-07 立，Claude Fable 5.1；user「数据结构你来把关」「碰到格式问题就问你」）
 
 - **契约 = `src/format/contract.ts`**（人读的 .h）：v1 = 这一版真写进 `.mxl` 的 `.moonsinger/*.json` 形状；v2 提案 = 多轨 / 曲线 / by value + 哈希的目标形状（未写入文件）。来龙去脉与 user 原话在 `ai-docs/20261007-data-contract-draft.md`（§3 目录表、§7 未定、§8 谁的字节）。

@@ -146,6 +146,7 @@ import "./namespace.test.mjs";
 import "./cloud-gate.test.mjs";   // 2026-11-03 网盘闸门：状态机 + 结构守卫（家族设计稿 cloud-gate §7 §8）
 import "./cloud-return.test.mjs";   // 2026-11-04 H4 回来时没传的分三种
 import "./editor-session-serialize.test.mjs";   // 2026-11-09 保存排队 + 记住存给谁 + 快照和名字同一刻取（Fable）
+import "./csp-guard.test.mjs";   // 2026-11-10 页面安全策略逐条钉死（Fable）
 import "./ids-guard.test.ts";   // 2026-11-10 读入边界：文件里的编号先校验再用（Fable）
 import "./input-gate.test.ts";   // 2026-11-09 键盘总闸：能不能写 / 键表明文表 / 这一下归谁（Fable）
 import "./input-gate-guard.test.mjs";   // 总闸以外没有别的路从按键写谱

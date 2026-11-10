@@ -4,7 +4,8 @@
 //   封面的字（歌名 / 日期 / 大小）= src/ui/song-cover.ts 排版进包的两个槽；文案 = 包内 zh 默认 + 几条换成歌库口吻。
 //   派生缓存 IDB `moonsinger-thumbs`（user 2026-10-08「没问题」批；CLAUDE.md 持久层白名单表登记）。
 import { _t, lang } from "./i18n/index.ts";
-import { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } from "../vendor/vue/vue.esm-browser.prod.js";
+import * as VueAll from "../vendor/vue/vue.esm-browser.prod.js";
+import { ref } from "../vendor/vue/vue.esm-browser.prod.js";
 import { createGallery, humanSize, type CreateGalleryDeps, type GalleryDocHost, type VueRuntime, type GItem, type TileInfo, type TileAction, type VerbStore, type DataFaceStore, type Gallery, type GalleryView, type AsideKind, type AsideScope } from "@internal/gallery";
 import { CACHE_DBS } from "./config.ts";
 import "./library-home.ts";   // 图库包的名册库名归它配（自家 GUID 前缀）
@@ -71,7 +72,9 @@ const TEXT: Partial<Record<Parameters<NonNullable<NonNullable<CreateGalleryDeps[
 };
 
 export function initGalleryHost(d: GalleryHostDeps) {
-  const vue = { createApp, defineComponent, reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, Teleport } as unknown as VueRuntime;   // Teleport：gallery 0.6.2 卡片 ⋯ 菜单搬出卡片
+  // 整个 Vue 模块递给图库（2026-11-10，Claude Fable 5.2；家族备忘「页面 CSP」坑 1）：图库的界面是预编译好的 render 函数，要从宿主的 Vue 里拿十几个 helper（openBlock / createElementVNode…）；
+  //   只递一部分 = 它退回「运行时编译模板」= 要 eval，被页面安全策略拦下，歌库整个打不开（加策略时无头测试当场抓到）。不许改回只递几样。
+  const vue = VueAll as unknown as VueRuntime;   // Teleport：gallery 0.6.2 卡片 ⋯ 菜单搬出卡片
   // 一屏容器 + chrome（不进 index.html：歌库是懒的，没进过歌库的设备连 DOM 都不长）。没有「回到谱」：进歌库 = 放下手里的歌（gallery-first，同 WeebPaint；user 2026-10-08「7 和weebpaint对齐」），出口 = 打开一首 / 新建
   const fullEl = document.createElement("div");
   fullEl.id = "galleryFull"; fullEl.className = "gallery-full"; fullEl.hidden = true;

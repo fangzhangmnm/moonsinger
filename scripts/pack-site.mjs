@@ -17,7 +17,7 @@ export const sha256 = (buf) => createHash("sha256").update(buf).digest("hex");
 export const die = (msg) => { console.error(`[pack] ✗ ${msg}`); process.exit(1); };
 
 /** 站点本身（同 .github/workflows/deploy.yml 的白名单），去掉 itch / 备用版用不上的：service-worker.js（不注册离线壳）、dist/*.map（8 MB 调试件）、vendor/msal（不登录网盘，不载）。 */
-export const SITE_FILES = ["index.html", "manifest.webmanifest", "styles.css", "icon.svg", "icon-192.png", "icon-512.png", "icon-32.png", "apple-touch-icon-180.png"];
+export const SITE_FILES = ["index.html", "manifest.webmanifest", "styles.css", "boot-guard.js", "icon.svg", "icon-192.png", "icon-512.png", "icon-32.png", "apple-touch-icon-180.png"];
 export const SITE_DIRS = ["vendor", "dist", "assets"];
 const skipSite = (rel) => /\.map$/.test(rel) || rel.startsWith("vendor/msal/") || /(^|\/)\./.test(rel);
 
