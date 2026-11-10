@@ -45,6 +45,9 @@ export const RULES: Record<Mode, ModeRules> = {
   symbols: { edit: true, noteDrag: true, lyrics: false, symbols: true, backspace: "symbols" },
   listen: { edit: false, noteDrag: false, lyrics: false, symbols: false, backspace: null },
 };
+/** 修改锁锁着时的谱面规则（2026-11-10，Claude Fable 5.2；家族修改锁标准第 ① 道）：能放光标、能选中（复制是逃生口）、能看；
+ *  拖音 / 歌词框 / 记号的菜单和挪动 / 退格都不接——手势不许做到一半才在写入口被拒。听模式本来就什么都不接，原样。 */
+export const lockedRules = (r: ModeRules): ModeRules => ({ ...r, noteDrag: false, lyrics: false, symbols: false, backspace: null });
 
 /** 底座（pad 那个位子）：音键 / 符号格 / 录音室 / 空（收起）。录音室不是键盘，但占同一个位子、和键盘互斥。 */
 export type Dock = "keys" | "symbols" | "studio" | "none";

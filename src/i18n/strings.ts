@@ -2177,6 +2177,19 @@ export const S = {
   "静音（这位不出声；和谱上声部名下面的「静」是同一个）": { en: "Mute (this part is silent; same as “M” under the part name on the score)" },
   "独奏（只听独奏的几位；和谱上的「独」是同一个）": { en: "Solo (only hear the parts on solo; same as “S” on the score)" },
   "独": { en: "S" },
+  // ── 修改锁（v0.16.96，2026-11-10，Claude Fable 5.2）──
+  "锁着": { en: "Locked" },
+  "接着改": { en: "Keep editing" },
+  "解锁，接着改这一首。放着一天不动会自己锁上；随时能在三条杠里「锁上」": { en: "Unlock and keep editing this song. It locks itself after a day untouched; you can lock it any time from the ☰ menu" },
+  "存一版再改": { en: "Save a version, then edit" },
+  "先把现在的样子存一版留底（收在歌库里这首歌的卡片下面），再解锁接着改": { en: "Save a version of it as it is now (kept under this song’s card in the library), then unlock and keep editing" },
+  "这首歌锁着，有改动没存、也不会推上云：改动还在，点谱上面的「接着改」之后再存。": { en: "This song is locked, so the changes were not saved or uploaded. They are still here: tap “Keep editing” above the score, then save." },
+  "锁上（先不改了）": { en: "Lock (done editing for now)" },
+  "先把改动存好，再把这首歌锁上：之后打开是只能看、能听的，点「接着改」随时解开": { en: "Saves your changes, then locks this song: it opens view-and-listen only until you tap “Keep editing”" },
+  "没锁上：改动还没存好（再试一次）。": { en: "Not locked: the changes are not saved yet (try again)." },
+  "没锁上：改动没有写回文件。": { en: "Not locked: the changes were not written back to the file." },
+  "锁上了。要改，点谱上面的「接着改」。": { en: "Locked. To edit, tap “Keep editing” above the score." },
+  "没锁上：{Error}": { en: "Not locked: {Error}" },
 } as const satisfies Record<string, Entry>;
 
 export type Key = keyof typeof S;

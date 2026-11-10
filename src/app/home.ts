@@ -46,8 +46,13 @@ export interface HomePorts {
   suffix: string;
   /** 这首歌现在的 .mxl 字节。 */
   bytes(): Uint8Array;
-  /** 改过没存？（文档的脏 = D.dirty()） */
+  /** 有没有要存的改动（文档的脏；修改锁锁着时「只动了看法」的那种脏不算——那时候一个字节都不写，离开也不问）。 */
   dirty(): boolean;
+  /** 修改锁（第 ④ 道，2026-11-10 Claude Fable 5.2）：开着的这首此刻锁着吗（src/app/edit-lock.ts；这里不 import 它，照旧全注入）。
+   *  锁着 = `save()` 一个字节都不写、回 `{ k: "locked" }`（歌库那条路 editor-session 自己还有一道）。还没有家的不归锁管。不给 = 不锁。 */
+  locked?(): boolean;
+  /** 新歌刚存成了一个硬盘文件（人自己那一下保存建出来的）：这个句柄生来解着。在把家换成它之前、同一个同步段里叫。 */
+  onFileBorn?(handle: FileHandle): void;
   /** 纸上的歌名（可空；没存过时文件名跟着它）。 */
   title(): string;
   /** 新的默认名 `yyyymmdd-hex4`（撞名时拿它的 hex4）。 */
@@ -74,6 +79,7 @@ export type SaveOutcome =
   | { k: "blank" }                       // 等着安家的空谱：没什么可存（宿主诚实回话，不塞空壳）
   | { k: "gallery" }                     // 走了歌库那条（gallery.save 自己说话）
   | { k: "written"; name: string }       // 写回 / 安家成了
+  | { k: "locked" }                      // 修改锁锁着：什么都没写（宿主让门闪一下；真有内容改动才响亮说）
   | { k: "declined" }                    // 文件在外面被改过、人没让覆盖
   | { k: "cancelled" }                   // 保存框取消了（AbortError ≠ 环境不支持，不降级弹下载）
   | { k: "offered"; name: string };      // 递出了下载 / 分享面板（点了才算存了）
@@ -177,6 +183,7 @@ export function createHome(init: { home: Home; stem: string; named: boolean }, p
   async function save(): Promise<SaveOutcome> {
     if (pending()) { if (!ports.dirty()) return { k: "blank" }; await settle(); }   // 空谱诚实回话（WeebPaint blankNothingToSave）；有笔先安家再走歌库的存
     const h = home;
+    if (h.kind !== "none" && ports.locked?.()) return { k: "locked" };   // 第 ④ 道：锁着不写回（歌库 / 硬盘文件都是）；没有家的那一种 = 新建，不归锁管
     switch (h.kind) {
       case "gallery": await ports.gallery.save(); return { k: "gallery" };
       case "file": {
@@ -193,7 +200,9 @@ export function createHome(init: { home: Home; stem: string; named: boolean }, p
           const handle = await ports.file.pickSave(name() + ports.suffix);
           if (!handle) return { k: "cancelled" };
           await ports.file.writeTo(handle, ports.bytes());
-          setHome({ kind: "file", handle, mtime: await ports.file.mtime(handle) });
+          const mtime = await ports.file.mtime(handle);
+          ports.onFileBorn?.(handle);   // 新歌存成的文件不锁；紧接着换家（中间没有 await，见 edit-lock.ts keepLocalFileUnlocked）
+          setHome({ kind: "file", handle, mtime });
           setName(stemOfFile(handle.name) || stem, true);
           ports.markSaved();
           return { k: "written", name: handle.name };

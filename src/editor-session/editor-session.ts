@@ -40,6 +40,13 @@ export interface EditorAdapter {
   //   本模块仍 content-blind：为什么不能写归 app 域（MoonSinger：定稿着、出声内容的指纹却变了）。
   canPersist?(): string | null;
   onRefused?(why: string): void;
+  // 可选（MoonSinger 2026-11-10，Claude Fable 5.2；家族「源文件原则上只读」= 修改锁的第 ④ 道，同 WeebPaint 这份的 editLocked）：
+  //   **要存的那个身份**此刻是不是锁着（没有活着的解锁）。返回 null = 没锁；返回一句话 = 锁着：
+  //     · 锁着 ∧（内存脏 ∨ 人按了存）→ 这一轮不 encode、不 save，脏原样留着，经 onRefused 响亮说一次（同一代编辑只说一次）。走到这里说明上面哪层漏了，或者别的标签页把它锁上了。
+  //     · 锁着 ∧ 只欠一推 → 什么都不做、也不说（字节早就在本机了；补推归库的「处理…」/ 回来时的那张面，不走保存）。
+  //   新建还没首存的那份不问（它还不在库里，谈不上锁）。这一层不看分类表：锁着一个字节都不写。
+  //   「锁着时只动了看法」的那种脏（MoonSinger：隐藏了一段）宿主根本不来 markDirty，所以到不了这里。
+  editLocked?(name: string): string | null;
 }
 
 /** editor-session 消费的 store 最小面（结构类型；真 sync-store 天然满足，测试可 mock）。 */
@@ -90,6 +97,8 @@ export interface EditorSession {
   rename(newName: string): Promise<TryMoveResult>;   // 改身份（先 flush 旧内容）→ 走 file.tryMove；占用则返 {ok:false}（不改 _name）
   delete(): Promise<void>;                        // 删当前 doc
   currentName(): string | null;
+  /** 现在这个身份是 adopted({create:true}) 进来的、还没首存成（它还不在库里；修改锁据此不管它）。 */
+  createPending(): boolean;
   // MoonSinger 2026-10-08（Claude Fable 5.1）加：**放下**当前身份——不再指向它、不再为它落盘 / 推。
   //   用在身份已经被别处处置之后（歌库把活动稿挪了夹 / 扔进回收站）：此时再让 open(新名) 顺手 persist(旧名)（pushOn exit 的「切 doc 前先存旧的」）
   //   就是把已经搬走 / 删掉的名字**写回去复活**（WXHW 审计 L7 同类）。调用前 app 自己先 flush 过；未上云的事实由 store 记着（files.dirty.pushAll 兜），不靠本模块的 push-pending。
@@ -191,6 +200,11 @@ export function createEditorSession(config: EditorSessionConfig): EditorSession 
     { const why = editor.canPersist?.(); if (why) { if (_refusedEpoch !== _editEpoch) { _refusedEpoch = _editEpoch; editor.onRefused?.(why); } return; } }   // 第 ④ 层护栏：app 说不能写 = 这一轮什么都不动、脏留着
     const name = _name, gen = _gen;                 // 钉住：这一轮存的是谁
     const mine = (): boolean => gen === _gen;       // 还是起跑时那一场吗
+    // 修改锁（第 ④ 道，2026-11-10）：新建还没首存的不问。锁着 ∧ 有改动 / 人按了存 → 响亮说一次、脏留着；锁着 ∧ 只欠一推 → 不走保存（补推归库）。仍在同步前缀里（没有 await）。
+    if (_createFor !== name) {
+      const lockedWhy = editor.editLocked?.(name) ?? null;
+      if (lockedWhy) { if ((_dirty || force) && _refusedEpoch !== _editEpoch) { _refusedEpoch = _editEpoch; editor.onRefused?.(lockedWhy); } return; }
+    }
     let takeCloudReload = false;   // save 途中用户选了「云端覆盖本地」→ 收尾必须整体重载（见下面）
     // ★ 失败回滚用（v417）：下面会**先**乐观清脏、**再** await save()。save() 抛异常时若不还原，
     //   本次编辑就在内存里被宣布"已落盘"而实际一个字节都没写 —— badge 画干净、autosave 看 need=false
@@ -277,6 +291,7 @@ export function createEditorSession(config: EditorSessionConfig): EditorSession 
 
   return {
     currentName: () => _name,
+    createPending: () => _name != null && _createFor === _name,
     isDirty: () => _dirty,
     isPushPending: () => _pushPending,
     isPushOwed: () => _pushOwed,

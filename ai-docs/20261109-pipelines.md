@@ -88,4 +88,35 @@
 
 - 总闸：`test/input-gate-guard.test.mjs`（听 keydown 的地方白名单、监听不直接写、run() 每次写前有总闸、pad 两条出口带闸）；判断 `test/input-gate.test.ts`。
 - 存：`test/editor-session-serialize.test.mjs`（排队、钉身份、prepare、adopt 带名字）；`test/store-wiring.test.mjs`（adapter 形状、传输层超时、取快照之前没有 await）。
-- 文档只有一个写入口：`test/document.test.ts`；锁那一轮会再加「D.commit 之外不许改 extras / st.song」。
+- 文档只有一个写入口：`test/document.test.ts`（`st` / `extras` 在 `Document` 上是只读的，文档外赋值 tsc 就红）。
+- 修改锁：`test/edit-lock.test.ts`（分类表 / 锁着吗 / 写入口 / 撤销 / 脏分两种 / 家 / 编辑会话）、`test/edit-lock-guard.test.mjs`（解锁的调用点名单、表和写入口对得上、各道接着线）、E2E `test/e2e/edit-lock.mjs`。
+
+## 八、修改锁：每一步在哪道被拦（as-of v0.16.96 / 2026-11-10，Claude Fable 5.2）
+
+> 家族标准 = 家族根 `ai-docs/20261108-edit-lock-standard.md`；写歌的设计稿 = 家族根 `ai-docs/20261109-moonsinger-edit-lock-design.md`（第八节 + 第十四节）。
+> **这一版库的开关（`lockByDefault`）还关着**：歌库里的歌 `lock.state()` 回 none（不管），下面这张图只对硬盘上的单个文件生效；开关打开那一版起歌库里的歌走同一张图。
+
+两个问题各一处回答：「这首锁着吗」= `src/app/edit-lock.ts`（现算，不记状态）；「这个操作锁着能做吗」= `src/app/edit-lock-table.ts`（键 = `locus.kind`，现在只有 `paperHidden`）。
+
+```
+  按键 / 触屏键 / MIDI ─→ ① 键盘总闸 input-gate（locked = D.locked()）─ 锁着 → 只弹不写（同「弹」）；想接回插头 → 门闪
+  谱上的手势 ───────────→ ① 谱面规则 lockedRules（能放光标、能选；拖音 / 歌词框 / 记号不接）
+  面板上的控件 ─────────→ ① body.doc-locked 的样式（乐器页的卡、混音台的推子不接；「静 / 独」、页签留着）
+          │（漏过来的、和没有界面那一层的：声部管理 / 谱头面板 / 小卡 / 菜单里的动词）
+          ▼
+  D.commit(next, { locus }) ─→ ② 类别 = locus.kind（没带 = score）→ 自称看法的先核（只动了那类看法吗）→ lock.writeGate(kind)
+          │                         拒 → onRefused → 界面摆回真相 + 门闪（不弹字）；放行 → 照常记撤销（看法不并格）
+  D.undo / redo ───────────→ ③ 按要翻的那一格的类别问同一个口（翻的是看法就翻，翻到内容那一格就停）
+          ▼
+  「要不要存」owesSave() = D.dirty() ∧ ¬(锁着 ∧ dirtyKind = looks)      ← 锁着时只动了看法：不叫编辑会话、离开不问
+          ├─ 歌库：H.noteChanged → es.markDirty → persistNow ─→ ④ editLocked(name)：锁着 ∧ 脏 / 人按存 → 不编码不存、说一次；只欠一推 → 不走保存
+          ├─ 硬盘文件：H.save() ─→ ④ ports.locked() → { k: "locked" }（一个字节都不写；宿主：门闪，有内容改动才报）
+          └─ 离开：H.leave() 只看 owesSave
+          ▼
+  ⑤ 库 createStore({ lockByDefault })：file.save 改已有的 → LockedError（还没开）
+```
+
+- **解锁**只有两处：门的钮（`src/app/edit-lock-door.ts` → 歌库 = 图库库的 `unlockEdit` / `saveVersionThenUnlock`，硬盘文件 = `lock.unlockLocalFile()`）、歌库卡片的菜单（图库库自己的）。
+- **锁上** = 三条杠「锁上（先不改了）」→ `lockEditNow`：先存（歌库 = 落盘 + 推；硬盘文件 = 写回）→ 存成了才锁。
+- **锁态变了**（`lock.onChange`）→ `applyWorkspace`（规则 / 样式 / 插头的样子）+ 重画 + `changed()`（解锁那一刻锁着时动过的看法开始算「要存」）。装入期间（`loadingDoc`）不动界面，`loadDoc` 收尾一次摆好。
+- **代价**：每次 commit 多一次 `effectiveKind`（只有自称看法的才逐张纸比引用）+ 一次 `lock.state()`（歌库 = 库的 `unlockOf` 查一次内存表）；`dirtyKind()` 只在「脏着 ∧ 锁着」时才算（逐张纸比引用）。没量（比 A6 的整首规整小得多）。

@@ -339,6 +339,11 @@ export function initGalleryHost(d: GalleryHostDeps) {
     currentFolder: () => gallery?.handle.getFolder() ?? (deviceKvGet(KV_FOLDER) ?? ""),
     /** 封面变了（存了新封面）：丢掉这首歌的缩略图缓存，下次露面重取。 */
     invalidateThumb: (id: string) => { void gallery?.thumbs?.invalidate(id); void gallery?.facts?.invalidate(id); },   // 封面 / 定稿变了：缩略图和事实都重取
+    /** 修改锁（gallery 0.9.x 的动词，成没成它自己会说）：解锁 = **只许门的钮调**（src/app/edit-lock-door.ts；歌库卡片的菜单是图库库自己的入口）。 */
+    unlockEdit: (id: string): Promise<boolean> => ensureMounted().handle.unlockEdit(id),
+    saveVersionThenUnlock: (id: string): Promise<boolean> => ensureMounted().handle.saveVersionThenUnlock(id),
+    /** 「锁上」：调用方已经把改动存好了。 */
+    lockEdit: (id: string): Promise<void> => ensureMounted().handle.lockEdit(id),
     /** 封面上在放的那首 / 播放器状态（E2E 用）。 */
     playing: () => player.playing(),
     playerState: () => player.state(),

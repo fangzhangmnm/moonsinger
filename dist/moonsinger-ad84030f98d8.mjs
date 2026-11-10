@@ -4890,7 +4890,20 @@ var S = {
   "\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8": { en: "Delete this part" },
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
-  "\u72EC": { en: "S" }
+  "\u72EC": { en: "S" },
+  // ── 修改锁（v0.16.96，2026-11-10，Claude Fable 5.2）──
+  "\u9501\u7740": { en: "Locked" },
+  "\u63A5\u7740\u6539": { en: "Keep editing" },
+  "\u89E3\u9501\uFF0C\u63A5\u7740\u6539\u8FD9\u4E00\u9996\u3002\u653E\u7740\u4E00\u5929\u4E0D\u52A8\u4F1A\u81EA\u5DF1\u9501\u4E0A\uFF1B\u968F\u65F6\u80FD\u5728\u4E09\u6761\u6760\u91CC\u300C\u9501\u4E0A\u300D": { en: "Unlock and keep editing this song. It locks itself after a day untouched; you can lock it any time from the \u2630 menu" },
+  "\u5B58\u4E00\u7248\u518D\u6539": { en: "Save a version, then edit" },
+  "\u5148\u628A\u73B0\u5728\u7684\u6837\u5B50\u5B58\u4E00\u7248\u7559\u5E95\uFF08\u6536\u5728\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5361\u7247\u4E0B\u9762\uFF09\uFF0C\u518D\u89E3\u9501\u63A5\u7740\u6539": { en: "Save a version of it as it is now (kept under this song\u2019s card in the library), then unlock and keep editing" },
+  "\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u6709\u6539\u52A8\u6CA1\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\uFF1A\u6539\u52A8\u8FD8\u5728\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u4E4B\u540E\u518D\u5B58\u3002": { en: "This song is locked, so the changes were not saved or uploaded. They are still here: tap \u201CKeep editing\u201D above the score, then save." },
+  "\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09": { en: "Lock (done editing for now)" },
+  "\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00": { en: "Saves your changes, then locks this song: it opens view-and-listen only until you tap \u201CKeep editing\u201D" },
+  "\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u8FD8\u6CA1\u5B58\u597D\uFF08\u518D\u8BD5\u4E00\u6B21\uFF09\u3002": { en: "Not locked: the changes are not saved yet (try again)." },
+  "\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u6CA1\u6709\u5199\u56DE\u6587\u4EF6\u3002": { en: "Not locked: the changes were not written back to the file." },
+  "\u9501\u4E0A\u4E86\u3002\u8981\u6539\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u3002": { en: "Locked. To edit, tap \u201CKeep editing\u201D above the score." },
+  "\u6CA1\u9501\u4E0A\uFF1A{Error}": { en: "Not locked: {Error}" }
 };
 
 // src/device-kv.ts
@@ -5112,7 +5125,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.95-2026-11-10";
+var APP_VERSION = "v0.16.96-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5713,10 +5726,10 @@ function noArp(t10) {
 function toggleChordPitch(st2, i10, p2) {
   const t10 = tr(st2)[i10];
   if (!t10 || t10.kind !== "note" || !t10.pitch) return st2;
-  const ps = allPitches(t10), m2 = midiOf(p2), has = ps.some((q2) => midiOf(q2) === m2);
-  if (has && ps.length <= 1) return st2;
+  const ps = allPitches(t10), m2 = midiOf(p2), has2 = ps.some((q2) => midiOf(q2) === m2);
+  if (has2 && ps.length <= 1) return st2;
   const nt2 = tr(st2).slice();
-  nt2[i10] = withPitches(t10, has ? ps.filter((q2) => midiOf(q2) !== m2) : [...ps, p2]);
+  nt2[i10] = withPitches(t10, has2 ? ps.filter((q2) => midiOf(q2) !== m2) : [...ps, p2]);
   return next(st2, nt2);
 }
 function stackDegree(st2, degree2) {
@@ -6002,14 +6015,14 @@ function xorSingle(st2, i10, pitch, input, mono) {
   if (t10.kind === "rest") nt2[i10] = { kind: "note", id: t10.id, pitch, dur: t10.dur, lyric: null };
   else if (t10.kind === "note" && !t10.pitch) nt2[i10] = { ...t10, pitch };
   else if (t10.kind === "note") {
-    const ps = allPitches(t10), m2 = midiOf(pitch), has = ps.some((q2) => midiOf(q2) === m2);
+    const ps = allPitches(t10), m2 = midiOf(pitch), has2 = ps.some((q2) => midiOf(q2) === m2);
     if (mono) {
-      if (has && ps.length === 1) return { ...st2, input };
+      if (has2 && ps.length === 1) return { ...st2, input };
       nt2[i10] = withPitches(t10, [pitch]);
-    } else if (has && ps.length === 1) {
+    } else if (has2 && ps.length === 1) {
       nt2[i10] = { kind: "rest", id: t10.id, dur: t10.dur };
       dropTieAfter(nt2, i10);
-    } else nt2[i10] = withPitches(t10, has ? ps.filter((q2) => midiOf(q2) !== m2) : [...ps, pitch]);
+    } else nt2[i10] = withPitches(t10, has2 ? ps.filter((q2) => midiOf(q2) !== m2) : [...ps, pitch]);
   } else return st2;
   return next({ ...st2, input }, nt2, { sel: { from: i10, to: i10 + 1 }, caret: i10 + 1 });
 }
@@ -7244,11 +7257,11 @@ function ensureStartDyns(song, nextId) {
     for (const part of song.parts) {
       const t10 = tracks[part.id];
       if (!t10) continue;
-      let first = -1, has = false;
+      let first = -1, has2 = false;
       for (let i10 = headLen(t10); i10 < t10.length; i10++) {
         const k2 = t10[i10];
         if (k2.kind === "dyn") {
-          has = true;
+          has2 = true;
           break;
         }
         if (k2.kind === "note") {
@@ -7256,7 +7269,7 @@ function ensureStartDyns(song, nextId) {
           break;
         }
       }
-      if (!has && first >= 0) {
+      if (!has2 && first >= 0) {
         tracks = { ...tracks, [part.id]: [...t10.slice(0, first), { kind: "dyn", id: id2++, value: last.get(part.id) ?? "mf" }, ...t10.slice(first)] };
         changed2 = true;
         added.push({ paper: pp.id, part: part.id, index: first });
@@ -10734,9 +10747,9 @@ function layoutStems(seq, dir, f2 = LOCAL) {
     for (let lvl = 2; lvl <= maxLv; lvl++) {
       let runStart = -1;
       for (let n10 = 0; n10 <= g3.length; n10++) {
-        const has = n10 < g3.length && flagLevel(g3[n10].base) >= lvl;
-        if (has && runStart < 0) runStart = n10;
-        if (!has && runStart >= 0) {
+        const has2 = n10 < g3.length && flagLevel(g3[n10].base) >= lvl;
+        if (has2 && runStart < 0) runStart = n10;
+        if (!has2 && runStart >= 0) {
           const L2 = runStart, R2 = n10 - 1;
           if (L2 === R2) {
             const stub = U2(1.1), toRight = L2 < g3.length - 1;
@@ -14128,6 +14141,7 @@ var RULES = {
   symbols: { edit: true, noteDrag: true, lyrics: false, symbols: true, backspace: "symbols" },
   listen: { edit: false, noteDrag: false, lyrics: false, symbols: false, backspace: null }
 };
+var lockedRules = (r10) => ({ ...r10, noteDrag: false, lyrics: false, symbols: false, backspace: null });
 function dockOf(s10) {
   if (s10.tryout) return "keys";
   if (s10.collapsed || s10.aside) return "none";
@@ -18682,6 +18696,61 @@ function createLocalHead({ kv, getCloudEtag, setCloudEtag, keyPrefix = "head" })
   return { ifMatchFor, seenBase, isDirtyThisTab, isDirtyAnywhere, recordEdit, markSeen, markSynced, onPushed, forget, editCount: (name) => _edits.get(name) ?? 0 };
 }
 
+// node_modules/@internal/store/dist/works/disk-ledger.js
+function createDiskLedger() {
+  let next2 = 0;
+  const onDisk = /* @__PURE__ */ new Map();
+  const inFlight = /* @__PURE__ */ new Map();
+  const flying = (name) => {
+    let s10 = inFlight.get(name);
+    if (!s10) {
+      s10 = /* @__PURE__ */ new Set();
+      inFlight.set(name, s10);
+    }
+    return s10;
+  };
+  const settle = (name, g3) => {
+    const s10 = inFlight.get(name);
+    if (!s10)
+      return;
+    s10.delete(g3);
+    if (s10.size === 0)
+      inFlight.delete(name);
+  };
+  return {
+    issue(name) {
+      const g3 = ++next2;
+      flying(name).add(g3);
+      return g3;
+    },
+    landed(name, g3) {
+      settle(name, g3);
+      onDisk.set(name, g3);
+    },
+    failed(name, g3) {
+      settle(name, g3);
+    },
+    wrote(name) {
+      const g3 = ++next2;
+      onDisk.set(name, g3);
+      return g3;
+    },
+    disk(name) {
+      return onDisk.get(name) ?? 0;
+    },
+    settled(name, g3) {
+      return !inFlight.has(name) && (onDisk.get(name) ?? 0) === g3;
+    },
+    pendingAfter(name, g3) {
+      const d3 = onDisk.get(name) ?? 0;
+      return inFlight.has(name) || d3 !== g3 && d3 >= 0;
+    },
+    forget(name) {
+      onDisk.set(name, -++next2);
+    }
+  };
+}
+
 // node_modules/@internal/store/dist/base/error-handling.js
 var reporter = null;
 function setStoreErrorReporter(fn) {
@@ -18867,12 +18936,20 @@ function withStemTail(identifier, tail, ids) {
 // node_modules/@internal/store/dist/works/safe-resolve.js
 function createSafeResolve(cfg) {
   const { cloud, local, head, localDirty = () => false, validateAdopt, unseal = (_n, blob) => Promise.resolve(blob), onReplacing = () => {
-  }, looksEncrypted = () => Promise.resolve(false), serialize = (_n, fn) => fn() } = cfg;
+  }, looksEncrypted = () => Promise.resolve(false), serialize = (_n, fn) => fn(), ledger } = cfg;
+  const declare = (name, etag, settled) => {
+    if (settled && !settled() && head.onPushed) {
+      head.onPushed(name, etag, true);
+      cloud.setETag?.(name, etag);
+    } else
+      head.markSynced(name, etag);
+  };
   const editCount = (name) => head.editCount?.(name) ?? 0;
   async function safePull(name, { adopt, forceBackup = false, inChain = false } = {}) {
     onReplacing(true);
     try {
       const e02 = editCount(name);
+      const d0 = ledger?.disk(name) ?? 0;
       let backupName;
       if (forceBackup || head.isDirtyAnywhere(name) || localDirty() || head.seenBase(name) == null) {
         try {
@@ -18891,7 +18968,7 @@ function createSafeResolve(cfg) {
         return { ok: false, reason: "invalid-cloud-bytes", backupName };
       const commit = async () => {
         const e12 = editCount(name);
-        if (e12 !== e02) {
+        if (e12 !== e02 || ledger != null && ledger.disk(name) !== d0) {
           if (!forceBackup)
             return { ok: false, reason: "edited-during-pull", backupName };
           try {
@@ -18902,7 +18979,8 @@ function createSafeResolve(cfg) {
           }
         }
         await local.save(name, r10.blob);
-        if (editCount(name) !== e12)
+        const w2 = ledger?.wrote(name);
+        if (editCount(name) !== e12 || ledger != null && !ledger.settled(name, w2))
           return { ok: false, reason: "edited-during-pull", backupName };
         head.markSynced(name, r10.item?.eTag ?? null);
         return { ok: true, backupName };
@@ -18917,7 +18995,7 @@ function createSafeResolve(cfg) {
       onReplacing(false);
     }
   }
-  async function tryHeal(name, bytes) {
+  async function tryHeal(name, bytes, opts = {}) {
     let pulled;
     try {
       pulled = await cloud.pull(name);
@@ -18928,16 +19006,16 @@ function createSafeResolve(cfg) {
     if (!pulled)
       return false;
     if (bytesEqual(await toU8(pulled.blob), bytes)) {
-      head.markSynced(name, pulled.item?.eTag ?? null);
+      declare(name, pulled.item?.eTag ?? null, opts.settled);
       return true;
     }
     return false;
   }
-  async function weakOverride(name, bytes, backup = true) {
+  async function weakOverride(name, bytes, backup = true, settled) {
     const r10 = await cloud.weakOverride(name, bytes, { encrypted: await looksEncrypted(bytes), backup });
     if (!(r10.item && r10.item.eTag))
       return { backedUp: r10.backedUp, deferred: true };
-    head.markSynced(name, r10.item.eTag);
+    declare(name, r10.item.eTag, settled);
     return { backedUp: r10.backedUp, deferred: false };
   }
   async function resolveConflict(name, choice, ctx2 = {}) {
@@ -18946,7 +19024,7 @@ function createSafeResolve(cfg) {
       return r10.ok ? { status: "resolved", resolution: "takeCloud", backupName: r10.backupName } : { status: "unresolved", reason: r10.reason, backupName: r10.backupName };
     }
     if (choice === "keepMine" && ctx2.bytes != null) {
-      const r10 = await weakOverride(name, ctx2.bytes, ctx2.loserBackup !== false);
+      const r10 = await weakOverride(name, ctx2.bytes, ctx2.loserBackup !== false, ctx2.settled);
       if (r10.deferred)
         return { status: "unresolved", reason: "deferred", backedUp: r10.backedUp };
       return { status: "resolved", resolution: "keepMine", backedUp: r10.backedUp };
@@ -18969,11 +19047,13 @@ function retriable(e10) {
 }
 function createPush(cfg) {
   const { cloud, head, seal, safeResolve, serialize, editVersion, recaptureLineage = true, busy = passBusy, maxAttempts = pushRetryDefaults.maxAttempts, backoffMs = pushRetryDefaults.backoffMs, exponential = pushRetryDefaults.exponential, sleep = (ms) => new Promise((r10) => setTimeout(r10, ms)) } = cfg;
-  async function doPush(name, { encode: encode2, getEditVersion = editVersion, onConflict, adopt, surfaceCollision = false, onProgress, loserBackup }) {
+  async function doPush(name, { encode: encode2, gen, getEditVersion = editVersion, onConflict, adopt, surfaceCollision = false, onProgress, loserBackup }) {
     let ifMatch = head.ifMatchFor(name);
     const v0 = getEditVersion();
+    const g3 = gen ?? cfg.ledger?.disk(name) ?? 0;
     const e02 = head.editCount?.(name) ?? 0;
-    const editedSince = () => getEditVersion() !== v0 || (head.editCount?.(name) ?? 0) !== e02;
+    const pending = () => cfg.ledger ? cfg.ledger.pendingAfter(name, g3) : (head.editCount?.(name) ?? 0) !== e02;
+    const editedSince = () => getEditVersion() !== v0 || pending();
     const bytes = await seal.sealForWrite(name, await toU8(await encode2()));
     const isEnc = await seal.isContainer(bytes);
     const session = cfg.sessionFor ? await cfg.sessionFor(name, bytes) : void 0;
@@ -18992,15 +19072,16 @@ function createPush(cfg) {
       } else if (meta)
         staleKnown = true;
     }
+    const unchanged = () => !editedSince();
     const onCloudConflict = async () => {
-      if (await safeResolve.tryHeal(name, bytes)) {
+      if (await safeResolve.tryHeal(name, bytes, { settled: unchanged })) {
         const dirtyAfter = editedSince();
-        if (dirtyAfter)
+        if (dirtyAfter && !cfg.ledger)
           head.recordEdit(name);
         return { status: "healed", dirtyAfter };
       }
       const choice = onConflict ? await onConflict({ name, cloudState: "changed" }) : "cancel";
-      return await safeResolve.resolveConflict(name, choice, { bytes, adopt, inChain: true, loserBackup });
+      return await safeResolve.resolveConflict(name, choice, { bytes, adopt, inChain: true, loserBackup, settled: unchanged });
     };
     return busy("sync.pushing", async () => {
       if (staleKnown)
@@ -19020,7 +19101,7 @@ function createPush(cfg) {
             return onCloudConflict();
           if (surfaceCollision && e10?.name === "CloudNameCollisionError") {
             const choice = onConflict ? await onConflict({ name }) : "cancel";
-            return await safeResolve.resolveConflict(name, choice, { bytes, adopt, inChain: true, loserBackup });
+            return await safeResolve.resolveConflict(name, choice, { bytes, adopt, inChain: true, loserBackup, settled: unchanged });
           }
           if (retriable(e10) && attempt < maxAttempts) {
             lastErr = e10;
@@ -19059,7 +19140,7 @@ function createFreshness(cfg) {
   };
   const pullFailText = (reason) => reason === "invalid-cloud-bytes" ? "\u4E91\u7AEF\u5185\u5BB9\u6CA1\u901A\u8FC7\u6821\u9A8C\uFF0C\u53EF\u80FD\u662F\u516C\u5171 Wi-Fi \u767B\u5F55\u9875\u52AB\u6301\u6216\u6587\u4EF6\u635F\u574F" : reason === "cloud-vanished" ? "\u4E91\u7AEF\u6587\u4EF6\u521A\u521A\u88AB\u79FB\u52A8\u6216\u5220\u9664" : reason === "backup-failed" ? "\u672C\u5730\u7559\u5E95\u5931\u8D25\uFF0C\u4E3A\u4FDD\u6570\u636E\u6CA1\u6709\u8986\u76D6" : reason;
   async function open2(name, opts = {}) {
-    const { isOnline = () => true, probe, onNewer, adopt, localDirty, busy = passBusy2, localBytes } = opts;
+    const { isOnline = () => true, probe, onNewer, adopt, localDirty, busy = passBusy2, localBytes, localSettled } = opts;
     if (!isOnline()) {
       adoptDurableBase(name, localDirty);
       return { source: "local", reason: "offline" };
@@ -19115,7 +19196,7 @@ function createFreshness(cfg) {
         if (mine && (meta.size == null || meta.size === mine.byteLength)) {
           const healing = (async () => {
             try {
-              return await safeResolve.tryHeal(name, mine);
+              return await safeResolve.tryHeal(name, mine, { settled: localSettled });
             } catch (e10) {
               reportStoreError(e10, "log");
               return false;
@@ -19861,7 +19942,7 @@ function createCloudSync(cfg) {
 // node_modules/@internal/store/dist/works/identity.js
 var passBusy4 = (_l, fn) => fn();
 function createIdentity(cfg) {
-  const { cloud, local, head, doPush, serialize, serialize2, seal, busy: _busy = passBusy4, isOnline, deleteOffline, queueUpload, nameOccupied, askKeepOld } = cfg;
+  const { cloud, local, head, doPush, serialize, serialize2, seal, busy: _busy = passBusy4, isOnline, deleteOffline, queueUpload, nameOccupied, askKeepOld, ledger } = cfg;
   const unseal = (name, blob) => seal ? seal.unsealForRead(name, blob) : Promise.resolve(blob);
   async function assertNameFree(newName, doCloud) {
     if (doCloud && nameOccupied) {
@@ -19895,6 +19976,7 @@ function createIdentity(cfg) {
         bytes = await toU8(await local.get(oldName));
       if (doCloud && isOnline && !isOnline() && deleteOffline && hasLocal) {
         await local.save(newName, bytes);
+        ledger?.wrote(newName);
         head.recordEdit(newName);
         queueUpload?.(newName);
         await deleteOffline(oldName);
@@ -19913,8 +19995,10 @@ function createIdentity(cfg) {
           }
         }
       }
+      let wroteNew;
       if (local && hasLocal) {
         await local.save(newName, bytes);
+        wroteNew = ledger?.wrote(newName);
         await local.hardDelete(oldName);
       }
       if (!doCloud) {
@@ -19934,7 +20018,7 @@ function createIdentity(cfg) {
           return { status: "renamed", where: "local", newName };
         }
         const baseAtStart = head.seenBase(oldName);
-        await doPush(newName, { encode: () => bytes, getEditVersion });
+        await doPush(newName, { encode: () => bytes, getEditVersion, gen: wroteNew });
         const after = await probeOld(oldName);
         let oldCloudOrphan = false, oldKept = false, oldUnknown = false, oldKeptByUser = false;
         if (!after.known) {
@@ -19978,7 +20062,9 @@ function createIdentity(cfg) {
         return { status: "absent" };
       if (local)
         await local.save(localName, r10.blob);
-      head.markSynced(localName, r10.item?.eTag ?? null);
+      const w2 = local ? ledger?.wrote(localName) : void 0;
+      if (w2 == null || ledger.settled(localName, w2))
+        head.markSynced(localName, r10.item?.eTag ?? null);
       if (adopt) {
         const plain2 = await unseal(localName, r10.blob);
         if (plain2)
@@ -22898,13 +22984,19 @@ function createStore(config) {
   const cloud = createCloudSync({ provider, kv, fileName: (n10) => n10, encFileName: (n10) => ids.sealed(n10), toName, appKey: "files", manageDirty: false, hidden: config.hidden, identifiers: ids });
   const collectionsCloud = createCloudSync({ provider, kv, fileName: (n10) => `.${appId}/${n10}.json`, appKey: "collections" });
   const sub = createSubstrate();
-  const head = createLocalHead({
+  const headRaw = createLocalHead({
     kv,
     getCloudEtag: (n10) => cloud.getETag(n10),
     setCloudEtag: (n10, e10) => cloud.setETag(n10, e10),
     // 采纳云版时提交 durable etag（见 local-head.markSynced 注释：合 R1，非违规）
     keyPrefix: "files"
   });
+  const ledger = createDiskLedger();
+  const head = { ...headRaw, forget: (n10) => {
+    headRaw.forget(n10);
+    ledger.forget(n10);
+  } };
+  const forgetLineage = (n10) => headRaw.forget(n10);
   const migrationReady = config.skipMigration || !globalThis.localStorage ? Promise.resolve() : (() => {
     const raw = createIdbCache(ns2.dbName);
     return runStoreMigrations(appId, databaseId, void 0, { keys: () => raw.keys(), del: (k2) => raw.del(k2) }).finally(() => {
@@ -22932,7 +23024,9 @@ function createStore(config) {
       if (head.isDirtyAnywhere(name))
         return false;
       await local.save(name, blob);
-      head.markSynced(name, etag);
+      const w2 = ledger.wrote(name);
+      if (ledger.settled(name, w2))
+        head.markSynced(name, etag);
       notifyFolderOf(name);
       return true;
     }),
@@ -23262,7 +23356,9 @@ function createStore(config) {
     // 2.1.0：每种文档可带自己的验真，没带用全局的
     unseal: (n10, blob) => seal.unsealForRead(n10, blob),
     // 返明文；加密但锁定 → null（safePull 退验封套）
-    looksEncrypted: (b3) => enc3.looksEncryptedContainer(b3)
+    looksEncrypted: (b3) => enc3.looksEncryptedContainer(b3),
+    ledger
+    // 2.3.2：覆盖本地前后对号（F-238）
   });
   const busyT = (label, fn) => ui3.busy(resolveStoreText(ui3.text, label), fn, label);
   const busyK = (key, params, fn) => ui3.busy(resolveStoreText(ui3.text, key, params), fn, key);
@@ -23292,7 +23388,7 @@ function createStore(config) {
     };
   } : void 0;
   const recaptureLineage = config.recaptureLineageOnPush ?? true;
-  const pushMod = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: busyT, sessionFor, recaptureLineage, ...config.pushRetry });
+  const pushMod = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, ledger, editVersion: () => sub.edits.version(), busy: busyT, sessionFor, recaptureLineage, ...config.pushRetry });
   const uploadReplayPolicy = config.offlineUploadReplay ?? "manual";
   if (uploadReplayPolicy !== "manual") {
     if (!ui3.onReplayStatus)
@@ -23300,13 +23396,24 @@ function createStore(config) {
     if (uploadReplayPolicy === "ask" && !ui3.confirmReplay)
       throw new Error("createStore: offlineUploadReplay='ask' \u9700 ui.confirmReplay\uFF08\u56DE\u7EBF\u8BE2\u95EE\u7528\u6237\uFF09");
   }
-  const pushBg = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, editVersion: () => sub.edits.version(), busy: (_l, fn) => fn(), sessionFor, recaptureLineage, ...config.pushRetry });
+  const pushBg = createPush({ cloud, head, seal, safeResolve, serialize: sub.serialize, ledger, editVersion: () => sub.edits.version(), busy: (_l, fn) => fn(), sessionFor, recaptureLineage, ...config.pushRetry });
   async function pushLocalBytes(name) {
     const blob = await local.get(name);
     if (!blob)
       return { status: "no-local" };
     const atRest = await toU8(blob instanceof Blob ? blob : new Blob([blob]));
     return pushBg.doPush(name, { encode: () => atRest });
+  }
+  async function readAtRest(name) {
+    const blob = await local.get(name);
+    if (!blob)
+      throw new Error(`local copy of "${name}" vanished before push`);
+    return toU8(blob instanceof Blob ? blob : new Blob([blob]));
+  }
+  async function readForHeal(name) {
+    const g3 = ledger.disk(name);
+    const blob = await local.get(name);
+    return { bytes: blob ? await toU8(blob instanceof Blob ? blob : new Blob([blob])) : null, settled: () => ledger.settled(name, g3) };
   }
   const uploadReplay = createUploadReplay({
     kv,
@@ -23331,6 +23438,7 @@ function createStore(config) {
     serialize2: sub.serialize2,
     seal,
     busy: busyT,
+    ledger,
     // 离线 move = 删+建（决策 1A/2）：在线走 identity 内的服务端原子 move；离线降级，复用 del.del 离线删 + uploadReplay 补推。
     isOnline,
     deleteOffline: (name) => del.del(name, { isOnline }).then(() => {
@@ -23512,6 +23620,7 @@ function createStore(config) {
     if (tracked && !online())
       return { status: "offline" };
     await local.save(name, bytes);
+    const w2 = ledger.wrote(name);
     if (!tracked)
       return { status: "swapped" };
     try {
@@ -23520,7 +23629,7 @@ function createStore(config) {
         head.onPushed(name, prevEtag, true);
         return { status: "cloud-deferred" };
       }
-      head.onPushed(name, item.eTag, false);
+      head.onPushed(name, item.eTag, ledger.pendingAfter(name, w2));
       return { status: "swapped" };
     } catch (e10) {
       head.onPushed(name, prevEtag, true);
@@ -23636,16 +23745,14 @@ function createStore(config) {
         notifyFolderOf(name);
         return trashedOrWhy(d3);
       }
-      const blob = await local.get(name);
-      if (!blob)
+      if (!await local.exists(name))
         return { status: "no-local" };
-      const atRest = await toU8(blob instanceof Blob ? blob : new Blob([blob]));
       pendingGone.clear(name);
-      head.forget(name);
+      forgetLineage(name);
       head.recordEdit(name);
       let r10;
       try {
-        r10 = await pushMod.push(name, { encode: () => atRest, onConflict, surfaceCollision: true, loserBackup: tierOf(name) !== "auto-backup" });
+        r10 = await pushMod.push(name, { encode: () => readAtRest(name), onConflict, surfaceCollision: true, loserBackup: tierOf(name) !== "auto-backup" });
       } catch (e10) {
         ui3.reportError(e10);
         notifyFolderOf(name);
@@ -23671,11 +23778,21 @@ function createStore(config) {
             throw new CloudNameCollisionError(name, where);
         }
         head.recordEdit(name);
+        const g3 = ledger.issue(name);
+        const landing = sub.serialize(name, async () => {
+          try {
+            const sealed2 = await seal.sealForWrite(name, await toU8(bytes));
+            const receipt2 = await local.save(name, sealed2, opts?.hint, "user-save");
+            ledger.landed(name, g3);
+            return { sealed: sealed2, receipt: receipt2 };
+          } catch (e10) {
+            ledger.failed(name, g3);
+            throw e10;
+          }
+        });
         pendingGone.clear(name);
         cancelFolderDeletionForDescendant(name);
-        const plain2 = await toU8(bytes);
-        const sealed = await seal.sealForWrite(name, plain2);
-        const receipt = await sub.serialize(name, () => local.save(name, sealed, opts?.hint, "user-save"));
+        const { sealed, receipt } = await landing;
         if (receipt && typeof receipt === "object" && receipt.foreignOverwrite) {
           reportStoreError(new Error(`local overwrite conflict: "${name}" was written by another tab (rev ${receipt.foreignOverwrite.foreignRev}); their bytes were ${receipt.foreignOverwrite.backedUp ? "backed up before overwrite" : "overwritten (recent copy already in backup)"}`), "warning");
         }
@@ -23700,7 +23817,7 @@ function createStore(config) {
         }
         let pushed = false, reason, resolution;
         try {
-          const r10 = await pushMod.push(name, { encode: () => sealed, onConflict, surfaceCollision: mode !== "new", onProgress: opts?.onProgress, loserBackup: tierOf(name) !== "auto-backup" });
+          const r10 = await pushMod.push(name, { encode: () => sealed, gen: g3, onConflict, surfaceCollision: mode !== "new", onProgress: opts?.onProgress, loserBackup: tierOf(name) !== "auto-backup" });
           pushed = r10.status === "pushed" || r10.status === "healed" || r10.status === "resolved";
           if (!pushed)
             reason = r10.status;
@@ -23719,6 +23836,7 @@ function createStore(config) {
         await migrationReady;
         if (await local.exists(name)) {
           const esc12 = isOnline() ? ui3.offlineEscape?.() : void 0;
+          let healSettled = () => false;
           try {
             await fresh.open(name, {
               isOnline,
@@ -23726,10 +23844,13 @@ function createStore(config) {
               onNewer: onConflictFor("open"),
               localDirty: () => sub.edits.localDirty(),
               localBytes: async () => {
-                const b3 = await local.get(name);
-                return b3 ? await toU8(b3 instanceof Blob ? b3 : new Blob([b3])) : null;
-              }
+                const h2 = await readForHeal(name);
+                healSettled = h2.settled;
+                return h2.bytes;
+              },
               // 2.2.2：回执丢失自愈
+              localSettled: () => healSettled()
+              // 2.3.2 审稿补：认领之前对号（那份字节之后盘上换过 / 有保存在路上 → 不认领，照旧问人）
             }).catch((e10) => ui3.reportError(e10));
           } finally {
             esc12?.settle();
@@ -23801,11 +23922,11 @@ function createStore(config) {
           ui3.reportError(e10, "log");
         }
         if (cloudState === "changed") {
-          const cur = await local.get(name);
-          if (cur) {
+          const mine = await readForHeal(name);
+          if (mine.bytes) {
             const esc12 = ui3.offlineEscape?.();
             try {
-              const healing = safeResolve.tryHeal(name, await toU8(cur instanceof Blob ? cur : new Blob([cur])));
+              const healing = safeResolve.tryHeal(name, mine.bytes, { settled: mine.settled });
               const outcome = esc12 ? await Promise.race([healing.then((h2) => ({ k: "heal", h: h2 })), Promise.resolve(esc12.probe).then(() => ({ k: "skip" }))]) : { k: "heal", h: await healing };
               if (outcome.k === "skip")
                 return { status: "offline" };
@@ -23833,13 +23954,11 @@ function createStore(config) {
           notifyFolderOf(name);
           return r11.status === "resolved" ? { status: "took-cloud", backupName: r11.backupName } : { status: "unresolved", reason: r11.reason };
         }
-        const blob = await local.get(name);
-        if (!blob)
+        if (!await local.exists(name))
           return { status: "no-local" };
-        const atRest = await toU8(blob instanceof Blob ? blob : new Blob([blob]));
         let r10;
         try {
-          r10 = await pushMod.push(name, { encode: () => atRest, onConflict, surfaceCollision: true, loserBackup: tierOf(name) !== "auto-backup" });
+          r10 = await pushMod.push(name, { encode: () => readAtRest(name), onConflict, surfaceCollision: true, loserBackup: tierOf(name) !== "auto-backup" });
         } catch (e10) {
           ui3.reportError(e10);
           notifyFolderOf(name);
@@ -23876,9 +23995,9 @@ function createStore(config) {
           if (!await local.exists(name))
             return { status: "no-local" };
           pendingGone.clear(name);
-          head.forget(name);
+          forgetLineage(name);
           head.recordEdit(name);
-          const r10 = await pushLocalBytes(name);
+          const r10 = await sub.serialize(name, () => pushLocalBytes(name));
           if (!head.isDirtyThisTab(name)) {
             pendingGone.clear(name);
             notifyFolderOf(name);
@@ -24322,9 +24441,12 @@ function createStore(config) {
       /** 备份箱列表（同 listTrash 的两端聚合；备份箱是冲突 loser 留底，无 conflictLive 语义）。 */
       listBackup: () => aggregateBox("backup"),
       /** 从回收站/备份箱恢复一项。 */
-      restoreTrash: singleFlight("\u6062\u590D", (...a10) => {
+      restoreTrash: singleFlight("\u6062\u590D", async (...a10) => {
         roGuard("restoreTrash");
-        return trashMod.restore(...a10);
+        const r10 = await trashMod.restore(...a10);
+        if (r10.local && r10.name)
+          ledger.wrote(r10.name);
+        return r10;
       }),
       /** 彻底删除回收站/备份箱一项。 */
       purgeTrash: singleFlight("\u5F7B\u5E95\u5220\u9664", async (...a10) => {
@@ -31463,15 +31585,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-631fcbbf4e59.mjs");
+      return pick(() => "singer-worker-95fafa392758.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-a13e4dc138f7.mjs");
+      return pick(() => "layout-worker-b356163eb1dd.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-9af88c756380.mjs");
+      return pick(() => "encode-worker-5584d758fde8.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38042,12 +38164,12 @@ function toMono(left, right) {
 
 // src/engine/scheduler.ts
 var mutedAt = (c10, quiet) => c10.end !== void 0 && c10.end <= quiet;
-function chunkOrder(chunks2, pos, loop, has, quiet = -Infinity) {
+function chunkOrder(chunks2, pos, loop, has2, quiet = -Infinity) {
   const seen = /* @__PURE__ */ new Set(), out = [];
   const add = (c10) => {
     if (!seen.has(c10.key)) {
       seen.add(c10.key);
-      if (!has(c10.key)) out.push(c10.key);
+      if (!has2(c10.key)) out.push(c10.key);
     }
   };
   const sorted = [...chunks2].sort((a10, b3) => a10.t0 - b3.t0);
@@ -38059,10 +38181,10 @@ function chunkOrder(chunks2, pos, loop, has, quiet = -Infinity) {
   for (const c10 of sorted) add(c10);
   return out;
 }
-function readyToStart(chunks2, pos, n10, has, quiet = -Infinity) {
+function readyToStart(chunks2, pos, n10, has2, quiet = -Infinity) {
   const sorted = [...chunks2].sort((a10, b3) => a10.t0 - b3.t0), need = [];
   for (const c10 of sorted) if (c10.t0 + c10.dur > pos && !mutedAt(c10, quiet) && need.length < n10 && !need.includes(c10.key)) need.push(c10.key);
-  return need.every(has);
+  return need.every(has2);
 }
 function prerollCount(msPerSongSec) {
   if (msPerSongSec === null) return 2;
@@ -41186,7 +41308,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "79a27bccca1b1ddc" : "dev";
+var CORE_HASH = true ? "c68b778a197174bb" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -41734,13 +41856,13 @@ function createCloudGate(d3) {
     }
     if (went !== true && phase === "blocked") showBlocked();
   }
-  async function run2(trigger, lock) {
+  async function run2(trigger, lock2) {
     if (!d3.hasHome()) return;
     if (_userOffline) {
       if (rawOnline()) await reconnect();
       return;
     }
-    if (phase === "checking" || !lock && quietInFlight) return;
+    if (phase === "checking" || !lock2 && quietInFlight) return;
     if (d3.ui.foreignFaceUp()) return;
     const wasBlocked = phase === "blocked";
     const id2 = ++runId;
@@ -41749,7 +41871,7 @@ function createCloudGate(d3) {
       return;
     }
     const esc12 = armEscape();
-    if (lock) {
+    if (lock2) {
       phase = "checking";
       d3.ui.checking(() => chooseOffline("escape"));
     } else quietInFlight = true;
@@ -41764,7 +41886,7 @@ function createCloudGate(d3) {
     });
     const r10 = await Promise.race([work, timedOut, esc12.then(() => "escaped")]);
     clearTimeout(timer);
-    if (!lock) quietInFlight = false;
+    if (!lock2) quietInFlight = false;
     if (id2 !== runId || r10 === "escaped") return;
     if (r10 === "ok") {
       phase = "open";
@@ -41832,7 +41954,7 @@ function createCloudGate(d3) {
     phase: () => phase,
     locked: () => phase !== "open",
     boot: () => run2("boot", true),
-    wake: (lock) => run2("wake", lock),
+    wake: (lock2) => run2("wake", lock2),
     netBack: () => {
       if (_userOffline) {
         void reconnect();
@@ -49286,6 +49408,11 @@ function initGalleryHost(d3) {
       void gallery2?.facts?.invalidate(id2);
     },
     // 封面 / 定稿变了：缩略图和事实都重取
+    /** 修改锁（gallery 0.9.x 的动词，成没成它自己会说）：解锁 = **只许门的钮调**（src/app/edit-lock-door.ts；歌库卡片的菜单是图库库自己的入口）。 */
+    unlockEdit: (id2) => ensureMounted().handle.unlockEdit(id2),
+    saveVersionThenUnlock: (id2) => ensureMounted().handle.saveVersionThenUnlock(id2),
+    /** 「锁上」：调用方已经把改动存好了。 */
+    lockEdit: (id2) => ensureMounted().handle.lockEdit(id2),
     /** 封面上在放的那首 / 播放器状态（E2E 用）。 */
     playing: () => player.playing(),
     playerState: () => player.state()
@@ -49350,6 +49477,16 @@ function createEditorSession(config) {
     }
     const name = _name, gen = _gen;
     const mine = () => gen === _gen;
+    if (_createFor !== name) {
+      const lockedWhy = editor.editLocked?.(name) ?? null;
+      if (lockedWhy) {
+        if ((_dirty || force) && _refusedEpoch !== _editEpoch) {
+          _refusedEpoch = _editEpoch;
+          editor.onRefused?.(lockedWhy);
+        }
+        return;
+      }
+    }
     let takeCloudReload = false;
     const wasDirty = _dirty, wasPushPending = _pushPending;
     const epochAtFreeze = _editEpoch;
@@ -49399,6 +49536,7 @@ function createEditorSession(config) {
   }
   return {
     currentName: () => _name,
+    createPending: () => _name != null && _createFor === _name,
     isDirty: () => _dirty,
     isPushPending: () => _pushPending,
     isPushOwed: () => _pushOwed,
@@ -52348,6 +52486,13 @@ function createReferenceHost(d3) {
   let applying = false;
   let placed = false;
   let pending = Promise.resolve();
+  const mayEdit = () => {
+    if (d3.canEdit?.() ?? true) return true;
+    d3.onEditRefused?.();
+    return false;
+  };
+  el2.canEdit = () => d3.canEdit?.() ?? true;
+  el2.addEventListener("editrefused", () => d3.onEditRefused?.());
   el2.menuPort = (o10) => togglePopupMenu(o10);
   el2.setAttribute("no-cloud", "");
   el2.labels = {
@@ -52414,6 +52559,7 @@ function createReferenceHost(d3) {
     placed = true;
   });
   el2.addEventListener("requestload", () => {
+    if (!mayEdit()) return;
     fileInput2.value = "";
     fileInput2.click();
   });
@@ -52422,7 +52568,7 @@ function createReferenceHost(d3) {
     if (files.length) void importFiles(files);
   });
   el2.addEventListener("requestpaste", () => {
-    void pasteFromClipboard();
+    if (mayEdit()) void pasteFromClipboard();
   });
   window.addEventListener("paste", (e10) => {
     if (!el2.hasFocus) return;
@@ -52430,6 +52576,7 @@ function createReferenceHost(d3) {
     if (!cd2) return;
     e10.preventDefault();
     e10.stopPropagation();
+    if (!mayEdit()) return;
     const files = [...cd2.files];
     if (files.length) {
       void importFiles(files);
@@ -52455,7 +52602,7 @@ function createReferenceHost(d3) {
     if (!files.length) return;
     e10.preventDefault();
     e10.stopPropagation();
-    void importFiles(files);
+    if (mayEdit()) void importFiles(files);
   });
   el2.addEventListener("notice", (e10) => {
     const n10 = e10.detail;
@@ -53719,28 +53866,72 @@ function fromJianpu(text2, fifths) {
 }
 var fifthsAtSel = (st2) => keyAt(tr(st2), st2.sel ? st2.sel.from : Math.max(0, st2.caret - 1));
 
+// src/app/edit-lock-table.ts
+function sameExceptPaperHidden(a10, b3) {
+  if (a10 === b3) return true;
+  const ka = Object.keys(a10), kb = Object.keys(b3);
+  if (ka.length !== kb.length) return false;
+  for (const k2 of ka) {
+    if (k2 === "papers") continue;
+    if (!(k2 in b3) || a10[k2] !== b3[k2]) return false;
+  }
+  if (a10.papers === b3.papers) return true;
+  if (a10.papers.length !== b3.papers.length) return false;
+  for (let i10 = 0; i10 < a10.papers.length; i10++) {
+    const p2 = a10.papers[i10], q2 = b3.papers[i10];
+    if (p2 === q2) continue;
+    const keys = /* @__PURE__ */ new Set([...Object.keys(p2), ...Object.keys(q2)]);
+    keys.delete("hidden");
+    for (const k2 of keys) if (p2[k2] !== q2[k2]) return false;
+  }
+  return true;
+}
+var LOOK_OPS = Object.freeze({
+  // 曲段的隐藏 / 放出来（user 11-09：「曲段的隐藏和显示锁着的时候当然能解。」）：影响放哪几段、印哪几段，存在歌文件里
+  paperHidden: { inFile: true, verify: sameExceptPaperHidden }
+});
+var has = (kind) => kind != null && Object.prototype.hasOwnProperty.call(LOOK_OPS, kind);
+function isLookOp(kind) {
+  return has(kind);
+}
+function effectiveKind(claimed, fallback, prev, next2, extrasChanged) {
+  if (!has(claimed)) return claimed;
+  return !extrasChanged && LOOK_OPS[claimed].verify(prev, next2) ? claimed : fallback;
+}
+function sameModuloLooks(a10, b3) {
+  return sameExceptPaperHidden(a10, b3);
+}
+
 // src/app/document.ts
-var LOCK_WHAT = { score: _t("\u8C31 / \u6B4C\u540D / \u4F5C\u8005\u680F"), paper: _t("\u7EB8"), lounge: _t("\u58F0\u90E8 / \u4E50\u5668"), studio: _t("\u6DF7\u97F3"), cover: _t("\u5C01\u9762") };
+var LOCK_WHAT = { score: _t("\u8C31 / \u6B4C\u540D / \u4F5C\u8005\u680F"), paper: _t("\u7EB8"), paperHidden: _t("\u7EB8"), lounge: _t("\u58F0\u90E8 / \u4E50\u5668"), studio: _t("\u6DF7\u97F3"), cover: _t("\u5C01\u9762") };
 var extrasKey = (e10) => JSON.stringify([e10.final?.at ?? null, Object.entries(e10.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), e10.studio ?? null]);
 function createDocument(init2, hooks) {
   let st2 = init2.st, extras = init2.extras, history = emptyHistory();
   const mark = () => ({ song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: hooks.extraDirty?.() ?? 0 });
   let saved = { song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: 0 };
-  const locked = () => isFinal(extras) ? _t("\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF09", { rev: extras.final.rev }) : null;
+  const finalWhy = () => isFinal(extras) ? _t("\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF09", { rev: extras.final.rev }) : null;
+  const locked = () => finalWhy() ?? hooks.lockedWhy?.() ?? null;
+  const gate2 = (kind) => kind === "final" ? null : finalWhy() ?? hooks.writeGate?.(kind) ?? null;
   function commit(next2, o10 = {}) {
     const nextSt0 = next2.st ?? st2, nextEx = next2.extras ?? extras;
     const songChanged = nextSt0.song !== st2.song, exChanged = nextEx !== extras, stChanged = nextSt0 !== st2;
     if (!stChanged && !exChanged) return { ok: true, changed: false };
-    if (locked() && (songChanged || exChanged) && o10.locus?.kind !== "final") {
-      const what = o10.locus ? LOCK_WHAT[o10.locus.kind] ?? o10.locus.label : LOCK_WHAT.score;
-      hooks.onRefused(what);
-      return { ok: false, why: _t("{p}\uFF1A{what}\u6539\u4E0D\u4E86", { p: locked(), what }) };
-    }
     const asked = nextSt0;
     const nextSt = songChanged && hooks.normalize ? hooks.normalize(nextSt0) : nextSt0;
+    const claimed = o10.locus?.kind ?? "score";
+    const kind = effectiveKind(claimed, "score", st2.song, nextSt.song, exChanged);
+    if (songChanged || exChanged) {
+      const why2 = gate2(kind);
+      if (why2) {
+        const what = o10.locus ? LOCK_WHAT[kind] ?? o10.locus.label : LOCK_WHAT.score;
+        hooks.onRefused(what, kind);
+        return { ok: false, why: _t("{p}\uFF1A{what}\u6539\u4E0D\u4E86", { p: why2, what }) };
+      }
+    }
     if (o10.undo !== false && (songChanged || exChanged)) {
-      const locus = o10.locus ?? describeSongChange(st2, asked.song !== st2.song ? asked : nextSt);
-      history = record3(history, st2, extras, o10.gesture ?? null, hooks.now(), locus);
+      const locus0 = o10.locus ?? describeSongChange(st2, asked.song !== st2.song ? asked : nextSt);
+      const locus = locus0.kind === kind ? locus0 : { ...locus0, kind };
+      history = record3(history, st2, extras, isLookOp(kind) ? null : o10.gesture ?? null, hooks.now(), locus);
     }
     const prevSt = st2, prevEx = extras;
     st2 = nextSt;
@@ -53760,6 +53951,19 @@ function createDocument(init2, hooks) {
     hooks.onRestored(r10, verb, prev);
     return true;
   }
+  function step(snap, verb, go) {
+    if (!snap) {
+      const why2 = locked();
+      if (why2) hooks.onRefused(verb, "score");
+      return false;
+    }
+    const kind = effectiveKind(snap.locus.kind, "score", st2.song, snap.song, snap.extras !== extras);
+    if (gate2(kind)) {
+      hooks.onRefused(verb, kind);
+      return false;
+    }
+    return restore(go(), verb);
+  }
   return {
     get st() {
       return st2;
@@ -53776,20 +53980,8 @@ function createDocument(init2, hooks) {
     locked,
     commit,
     run: (c10, o10) => commit({ st: apply(st2, c10, hooks.now()) }, o10),
-    undo: () => {
-      if (locked()) {
-        hooks.onRefused(_t("\u64A4\u9500"));
-        return false;
-      }
-      return restore(undo(history, st2, extras), _t("\u64A4\u9500"));
-    },
-    redo: () => {
-      if (locked()) {
-        hooks.onRefused(_t("\u91CD\u505A"));
-        return false;
-      }
-      return restore(redo(history, st2, extras), _t("\u91CD\u505A"));
-    },
+    undo: () => step(history.past[history.past.length - 1], _t("\u64A4\u9500"), () => undo(history, st2, extras)),
+    redo: () => step(history.future[history.future.length - 1], _t("\u91CD\u505A"), () => redo(history, st2, extras)),
     load: (s10, e10) => {
       st2 = s10;
       extras = e10;
@@ -53797,6 +53989,11 @@ function createDocument(init2, hooks) {
       saved = mark();
     },
     dirty: () => st2.song !== saved.song || extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs,
+    dirtyKind: () => {
+      if (extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs) return "content";
+      if (st2.song === saved.song) return "clean";
+      return sameModuloLooks(saved.song, st2.song) ? "looks" : "content";
+    },
     savedMark: mark,
     adoptSaved: (m2) => {
       saved = m2;
@@ -53877,6 +54074,7 @@ function createHome(init2, ports) {
       await settle();
     }
     const h2 = home;
+    if (h2.kind !== "none" && ports.locked?.()) return { k: "locked" };
     switch (h2.kind) {
       case "gallery":
         await ports.gallery.save();
@@ -53897,7 +54095,9 @@ function createHome(init2, ports) {
           const handle = await ports.file.pickSave(name() + ports.suffix);
           if (!handle) return { k: "cancelled" };
           await ports.file.writeTo(handle, ports.bytes());
-          setHome({ kind: "file", handle, mtime: await ports.file.mtime(handle) });
+          const mtime2 = await ports.file.mtime(handle);
+          ports.onFileBorn?.(handle);
+          setHome({ kind: "file", handle, mtime: mtime2 });
           setName(stemOfFile(handle.name) || stem, true);
           ports.markSaved();
           return { k: "written", name: handle.name };
@@ -54004,12 +54204,144 @@ function createHome(init2, ports) {
   };
 }
 
+// src/app/edit-lock.ts
+function createEditLock(d3) {
+  let localUnlocked = null;
+  let watched = null, unwatch = null;
+  let last = "none";
+  const changeFns = /* @__PURE__ */ new Set(), flashFns = /* @__PURE__ */ new Set();
+  function state() {
+    const h2 = d3.home();
+    if (h2.kind === "file") return localUnlocked === h2.handle ? "unlocked" : "locked";
+    if (h2.kind !== "gallery") return "none";
+    const st2 = d3.store();
+    if (!st2 || !st2.lockByDefault || d3.createPending()) return "none";
+    return st2.unlockOf(h2.identifier) ? "unlocked" : "locked";
+  }
+  const locked = () => state() === "locked";
+  function flash() {
+    for (const f2 of flashFns) {
+      try {
+        f2();
+      } catch {
+      }
+    }
+  }
+  function refresh() {
+    const st2 = d3.store();
+    if (st2 !== watched) {
+      unwatch?.();
+      unwatch = null;
+      watched = st2;
+      if (st2?.lockByDefault) unwatch = st2.watchUnlocks(() => refresh());
+    }
+    const h2 = d3.home();
+    if (localUnlocked && !(h2.kind === "file" && h2.handle === localUnlocked)) localUnlocked = null;
+    const now2 = state();
+    if (now2 === last) return;
+    last = now2;
+    for (const f2 of changeFns) {
+      try {
+        f2(now2 === "locked", now2);
+      } catch {
+      }
+    }
+  }
+  return {
+    state,
+    locked,
+    canLockNow: () => state() === "unlocked",
+    isLocalFile: () => d3.home().kind === "file",
+    identifierLocked: (identifier) => {
+      const st2 = d3.store();
+      return !!st2 && st2.lockByDefault && !st2.unlockOf(identifier);
+    },
+    writeGate(kind) {
+      if (d3.loading() || !locked()) return null;
+      if (isLookOp(kind)) return null;
+      flash();
+      return "edit-locked";
+    },
+    unlockLocalFile() {
+      const h2 = d3.home();
+      if (h2.kind !== "file") return false;
+      localUnlocked = h2.handle;
+      refresh();
+      return true;
+    },
+    keepLocalFileUnlocked(handle) {
+      localUnlocked = handle;
+    },
+    // 不在这里 refresh：调用方紧接着（同一个同步段里）把家换成这个文件，那一下的 refresh 才对账；先对账会因为「它还没开着」把这一笔清掉
+    lockLocalFile() {
+      localUnlocked = null;
+      refresh();
+    },
+    flash,
+    onFlash: (fn) => {
+      flashFns.add(fn);
+      return () => flashFns.delete(fn);
+    },
+    onChange: (fn) => {
+      changeFns.add(fn);
+      return () => changeFns.delete(fn);
+    },
+    refresh
+  };
+}
+
+// src/app/edit-lock-door.ts
+function initEditLockDoor(d3) {
+  const el2 = document.createElement("div");
+  el2.id = "lockBar";
+  el2.className = "lock-bar";
+  el2.hidden = true;
+  el2.setAttribute("role", "status");
+  d3.before.parentElement.insertBefore(el2, d3.before);
+  let busy = false, drawnFor = "";
+  function sync() {
+    const locked = d3.lock.locked(), local = d3.lock.isLocalFile();
+    el2.hidden = !locked;
+    const key = `${locked}|${local}`;
+    if (!locked || key === drawnFor) {
+      if (!locked) drawnFor = "";
+      return;
+    }
+    drawnFor = key;
+    el2.innerHTML = `<span class="lock-bar-what">${iconHtml("lock")}<span>${_t("\u9501\u7740")}</span></span><button type="button" class="btn primary" data-v="continue" title="${_t("\u89E3\u9501\uFF0C\u63A5\u7740\u6539\u8FD9\u4E00\u9996\u3002\u653E\u7740\u4E00\u5929\u4E0D\u52A8\u4F1A\u81EA\u5DF1\u9501\u4E0A\uFF1B\u968F\u65F6\u80FD\u5728\u4E09\u6761\u6760\u91CC\u300C\u9501\u4E0A\u300D")}">${_t("\u63A5\u7740\u6539")}</button>` + (local ? "" : `<button type="button" class="btn" data-v="version" title="${_t("\u5148\u628A\u73B0\u5728\u7684\u6837\u5B50\u5B58\u4E00\u7248\u7559\u5E95\uFF08\u6536\u5728\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5361\u7247\u4E0B\u9762\uFF09\uFF0C\u518D\u89E3\u9501\u63A5\u7740\u6539")}">${_t("\u5B58\u4E00\u7248\u518D\u6539")}</button>`);
+  }
+  el2.addEventListener("click", (e10) => {
+    const v = e10.target.closest("[data-v]")?.dataset.v;
+    if (!v || busy) return;
+    if (d3.lock.isLocalFile()) {
+      if (v === "continue") d3.lock.unlockLocalFile();
+      return;
+    }
+    const id2 = d3.activeIdentifier();
+    if (!id2) return;
+    busy = true;
+    void (v === "version" ? d3.saveVersionThenUnlock(id2) : d3.unlock(id2)).catch(() => false).finally(() => {
+      busy = false;
+    });
+  });
+  d3.lock.onChange(() => sync());
+  d3.lock.onFlash(() => {
+    if (!d3.lock.locked()) return;
+    sync();
+    el2.classList.remove("flash");
+    void el2.offsetWidth;
+    el2.classList.add("flash");
+  });
+  sync();
+  return { sync };
+}
+
 // src/app/input-gate.ts
 function noWrite(f2) {
   return f2.locked ? "locked" : f2.picking ? "picking" : f2.unplugged ? "unplugged" : null;
 }
 var writesScore = (prev, next2) => next2.song !== prev.song;
-var PLUG_LOCI = /* @__PURE__ */ new Set(["score", "paper"]);
+var PLUG_LOCI = /* @__PURE__ */ new Set(["score", "paper", "paperHidden"]);
 function stepLocus(h2, dir) {
   const a10 = dir === "undo" ? h2.past : h2.future;
   return a10.length ? a10[a10.length - 1].locus.kind : null;
@@ -54184,7 +54516,10 @@ var D2 = createDocument({ st: initState(), extras: emptyExtras() }, {
   onExtras: (prev, next2, locus) => afterExtras(prev, next2, locus),
   onRefused: (what) => onLockRefused(what),
   onRestored: (r10, verb, prev) => afterRestore(r10, verb, prev),
-  extraDirty: () => refHost.rev()
+  extraDirty: () => refHost.rev(),
+  // 修改锁的第 ②③ 道（2026-11-10）：真要改的那一下带着类别去问 lock（被拒 = 门闪一下，在 lock.writeGate 里）；「现在锁着吗」只问不闪
+  writeGate: (kind) => lock.writeGate(kind),
+  lockedWhy: () => lock.locked() ? _t("\u9501\u7740") : null
 });
 var H2 = createHome({ home: { kind: "none", pendingFolder: null }, stem: defaultStem(), named: false }, {
   gallery: { save: () => smartSaveStore(), flushLocal: () => es2.flushLocal(), flushAndPush: () => es2.flushAndPush(), markDirty: () => es2.markDirty(), adopted: (id2, o10) => es2.adopted(id2, o10), release: () => es2.release(), rename: (to2) => es2.rename(to2), occupied: (id2) => requireStore().files.occupied(id2) },
@@ -54192,9 +54527,12 @@ var H2 = createHome({ home: { kind: "none", pendingFolder: null }, stem: default
   ids: { join: (folder, stem) => identifiers.join({ folder, stem, suffix: SONG_SUFFIX }), parse: (id2) => identifiers.parse(id2) },
   suffix: SONG_SUFFIX,
   bytes: () => bytesNow(),
-  dirty: () => D2.dirty(),
+  dirty: () => owesSave(),
   title: () => D2.st.song.title ?? "",
   freshStem: () => defaultStem(),
+  locked: () => lock.locked(),
+  onFileBorn: (h2) => lock.keepLocalFileUnlocked(h2),
+  // 修改锁第 ④ 道（硬盘文件那条路不经 editor-session）；新歌存成的文件生来解着
   ask: { discard: (what) => confirmDiscard(what), overwriteStale: (name) => askSheet(_t("\u300C{name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7", { name }), _t("\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002"), _t("\u8986\u76D6")) },
   offerDownload: (bytes, name, onSaved) => {
     const file = new File([bytes], name, { type: "application/vnd.recordare.musicxml" });
@@ -54210,10 +54548,19 @@ var H2 = createHome({ home: { kind: "none", pendingFolder: null }, stem: default
     setActiveIdentifier(next2.kind === "gallery" ? next2.identifier : null);
     if (next2.kind === "gallery") deviceKvSet(KV_LAST_DOC, next2.identifier);
     else if (next2.kind === "none" && (prev.kind === "gallery" || next2.pendingFolder != null)) deviceKvSet(KV_LAST_DOC, null);
+    lock.refresh();
     renderTitle();
   },
   onName: () => renderTitle()
 });
+var loadingDoc = false;
+var lock = createEditLock({
+  store: () => hasStore() ? requireStore().files : null,
+  home: () => H2.home.kind === "gallery" ? { kind: "gallery", identifier: H2.home.identifier } : H2.home.kind === "file" ? { kind: "file", handle: H2.home.handle } : { kind: "none" },
+  createPending: () => es2.createPending(),
+  loading: () => loadingDoc
+});
+var owesSave = () => D2.dirty() && !(lock.locked() && D2.dirtyKind() === "looks");
 var curPart = () => D2.st.song.parts.find((p2) => p2.id === D2.st.at.part) ?? D2.st.song.parts[0];
 var ignoredFor = (role) => {
   const sp2 = activePerfSpec(D2.extras, role);
@@ -54223,8 +54570,8 @@ var ignoredHere = () => ignoredFor(curPart().role);
 var MARK_NAME = { ...ART_NAME, slur: _t("\u8FDE\u7EBF"), swellGrow: _t("\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77"), swellFade: _t("\u97F3\u5185\u6E10\u5F31"), inhale: _t("\u51FA\u58F0\u7684\u6362\u6C14") };
 function discloseArt(prev, a10) {
   if (!ignoredHere().includes(a10)) return;
-  const has = (t10) => t10.kind === "note" && (a10 === "slur" ? !!t10.slur : a10 === "inhale" ? !!t10.inhale : a10 === "swellGrow" ? swellOf(t10) === "<" || swellOf(t10) === "<>" : a10 === "swellFade" ? swellOf(t10) === ">" : (t10.art ?? []).includes(a10));
-  const n10 = (s10) => tr(s10).filter(has).length;
+  const has2 = (t10) => t10.kind === "note" && (a10 === "slur" ? !!t10.slur : a10 === "inhale" ? !!t10.inhale : a10 === "swellGrow" ? swellOf(t10) === "<" || swellOf(t10) === "<>" : a10 === "swellFade" ? swellOf(t10) === ">" : (t10.art ?? []).includes(a10));
+  const n10 = (s10) => tr(s10).filter(has2).length;
   if (n10(D2.st) <= n10(prev)) return;
   const role = curPart().role, who = activeCandidateName(D2.extras, role) || _t("\u53F0\u4E0A\u8FD9\u4F4D");
   const why2 = whyIgnored(performerOf(activeInstrument(D2.extras, role)?.engine), a10);
@@ -54284,7 +54631,10 @@ var refHost = createReferenceHost({
   onCards: () => {
     renderTitle();
     changed();
-  }
+  },
+  canEdit: () => !lock.locked(),
+  onEditRefused: () => lock.flash()
+  // 修改锁：参考窗的卡跟着歌存、不进撤销，加 / 删 / 挪也要过同一处；翻页不问
 });
 new ResizeObserver(() => {
   refHost.relayout();
@@ -54888,7 +55238,7 @@ var overlayHost = {
         navPaperTo(id2);
         view.render();
       } else {
-        update(setPaperHidden(D2.st, id2, false));
+        setHidden(id2, false);
         info(_t("\u300C{p}\u300D\u653E\u51FA\u6765\u4E86\uFF08\u64A4\u9500\u80FD\u518D\u85CF\u8D77\u6765\uFF09", { p: paperLabel(id2) }));
       }
     });
@@ -54991,7 +55341,11 @@ var inputGate = createInputGate({
   locked: () => D2.locked() !== null,
   picking: () => finderShown() || instShown(),
   unplugged: () => impro,
-  onBlocked: (why2) => plugNudge(why2)
+  onBlocked: (why2) => {
+    if (why2 === "locked" && !finalOn() && lock.locked()) lock.flash();
+    else plugNudge(why2);
+  }
+  // 修改锁锁着 = 门闪一下；别的原因 = 「弹」钮晃一下
 });
 var plugNudgeT = 0;
 var plugNoted = null;
@@ -55080,18 +55434,22 @@ function toggleImpro() {
 }
 function setImpro(on2) {
   impro = on2;
-  padEl.classList.toggle("is-unplugged", on2);
+  syncPlug();
   if (on2) showPad(true);
   pad3.render();
   ghostHeld.clear();
   ghostSync();
 }
+var plugOut = () => impro || D2.locked() !== null;
+function syncPlug() {
+  padEl.classList.toggle("is-unplugged", plugOut());
+}
 var ghostHeld = /* @__PURE__ */ new Map();
-var ghostOn = () => impro && !finder.isOpen && !instShown();
+var ghostOn = () => plugOut() && !finder.isOpen && !instShown();
 function ghostSync() {
   view.showGhost(ghostOn() ? [...ghostHeld.values()] : []);
 }
-var finalOn = () => D2.locked() !== null;
+var finalOn = () => D2.final != null;
 var lookCache = null;
 function lookNow(paperId, partId) {
   if (lookCache?.song !== D2.st.song) lookCache = { song: D2.st.song, map: resolveSongLooks(D2.st.song, new Set(partViews().filter((x2) => x2.perc || x2.xHead).map((x2) => x2.id))) };
@@ -55105,19 +55463,22 @@ function lockedSay(what) {
   showError(_t("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C{what}\u6539\u4E0D\u4E86\uFF1A\u5148\u5728\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F1A\u4F5C\u5E9F\uFF09\uFF0C\u518D\u6539\u3002", { what }));
 }
 function onLockRefused(what) {
-  lockedSay(what);
+  if (finalOn()) lockedSay(what);
   view.render();
   pad3.render();
   drawInst();
   ui2.redraw();
   if (studio.isOpen) studio.show();
 }
+function setHidden(paperId, hidden) {
+  D2.commit({ st: setPaperHidden(D2.st, paperId, hidden) }, { locus: { kind: "paperHidden", label: hidden ? _t("\u9690\u85CF\u4E86\u8FD9\u5F20\u7EB8") : _t("\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8") } });
+}
 function update(next2, gesture) {
   const pp0 = D2.st.song.papers.find((p2) => p2.id === next2.at.paper), pp1 = next2.song.papers.find((p2) => p2.id === next2.at.paper), part = next2.at.part;
   const staffs = (t10) => (t10 ?? []).map((x2) => x2.kind === "note" || x2.kind === "rest" ? x2.staff ?? 0 : -1).filter((x2) => x2 >= 0).join("");
   const fixed = !!pp0 && !!pp1 && !pp0.looks?.[part]?.grand && !!pp1.looks?.[part]?.grand && staffs(pp0.tracks[part]) !== staffs(pp1.tracks[part]);
-  D2.commit({ st: next2 }, { gesture });
-  if (fixed) info(_t("\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D"));
+  const c10 = D2.commit({ st: next2 }, { gesture });
+  if (fixed && c10.ok) info(_t("\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D"));
 }
 function withStartDyns(s10) {
   const r10 = ensureStartDyns(s10.song, s10.nextId);
@@ -55239,7 +55600,7 @@ function locusText(at2, l10) {
   const k2 = at2.song.papers.findIndex((p2) => p2.id === at2.at.paper), paperName = at2.song.papers[k2]?.name || _t("\u7B2C {p} \u6BB5", { p: k2 + 1 });
   const part = at2.song.parts.find((p2) => p2.id === at2.at.part), partName = part ? roleName(D2.extras, part.role) : "";
   if (l10.kind === "score") return `${at2.song.papers.length > 1 ? paperName + " \xB7 " : ""}${at2.song.parts.length > 1 ? partName + " \xB7 " : ""}${l10.label}`;
-  if (l10.kind === "paper") return `${paperName} \xB7 ${l10.label}`;
+  if (l10.kind === "paper" || l10.kind === "paperHidden") return `${paperName} \xB7 ${l10.label}`;
   return `${l10.kind === "lounge" ? _t("\u4F11\u606F\u5BA4") : l10.kind === "studio" ? _t("\u6DF7\u97F3\u53F0") : _t("\u5C01\u9762")} \xB7 ${l10.label}`;
 }
 function renderUndo() {
@@ -55354,7 +55715,9 @@ var lastEditMode = "notes";
 var listenOn = () => ws.mode === "listen";
 function applyWorkspace() {
   const d3 = dockOf(ws), padOn = d3 === "keys" || d3 === "symbols", wasEdit = view.rules.edit;
-  view.rules = RULES[ws.mode];
+  view.rules = lock.locked() ? lockedRules(RULES[ws.mode]) : RULES[ws.mode];
+  document.body.classList.toggle("doc-locked", lock.locked());
+  syncPlug();
   document.body.dataset.wmode = ws.mode;
   document.body.classList.toggle("listen-mode", ws.mode === "listen");
   document.body.classList.toggle("doc-final", finalOn());
@@ -55922,6 +56285,15 @@ window.__moonsinger = {
   singer,
   engine,
   exportSong,
+  // 修改锁的 E2E 口：按「硬盘上的单个文件」开一首（真 app 里 = 打开框 / 拖进来 / 双击拿到的句柄；无头浏览器点不了系统的文件框，这里递一个 OPFS 的真句柄进来）；读锁态
+  openFileHandle: async (h2) => {
+    if (!await H2.leave(_t("\u6253\u5F00\u522B\u7684\u6B4C"))) return false;
+    openPicked(await readHandle(h2));
+    return true;
+  },
+  editLock: () => ({ state: lock.state(), locked: lock.locked(), canLockNow: lock.canLockNow(), dirtyKind: D2.dirtyKind(), dirty: D2.dirty(), owes: owesSave() }),
+  fileSave: () => fileSave(),
+  lockEditNow: () => lockEditNow(),
   auditionSha: () => audition?.sha256 ?? null,
   renderMix: () => renderMixForTest(),
   playheadAt: (p2, ahead = null) => view.setPlayhead(p2, ahead),
@@ -55972,7 +56344,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "fb24f28976c6",
+  cssHash: "a4737caaa14f",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -56011,9 +56383,9 @@ window.__moonsinger = {
   diagText: () => diagText(),
   refreshOpenDoc: () => refreshOpenDoc(),
   wake: async (awayMs) => {
-    const lock = lockOnWake(awayMs);
-    if (hasCloudHome()) await gate.wake(lock);
-    return lock;
+    const lock2 = lockOnWake(awayMs);
+    if (hasCloudHome()) await gate.wake(lock2);
+    return lock2;
   },
   gateOpen: () => isGateOpen(),
   undo: () => undoNow(),
@@ -56040,7 +56412,7 @@ window.__moonsinger = {
     view.render();
   },
   flatten: () => flattenPart(D2.st.song, D2.st.at.part),
-  setPaperHidden: (id2, h2) => update(setPaperHidden(D2.st, id2, h2)),
+  setPaperHidden: (id2, h2) => setHidden(id2, h2),
   store: () => hasStore() ? requireStore() : null,
   es: () => es2,
   gallery: () => gallery,
@@ -57191,7 +57563,7 @@ function openPaperMenu(id2) {
       return;
     }
     if (v === "hide") {
-      update(setPaperHidden(D2.st, id2, !paper.hidden));
+      setHidden(id2, !paper.hidden);
       close();
       info(paper.hidden ? _t("\u8FD9\u5F20\u7EB8\u663E\u793A\u4E86\uFF08\u4F1A\u653E\uFF09") : _t("\u8FD9\u5F20\u7EB8\u9690\u85CF\u4E86\uFF08\u4E0D\u653E\uFF09"));
       return;
@@ -57958,6 +58330,17 @@ function applyDesk(d3) {
 function loadDoc(song, o10) {
   perfApi.mixBypass = false;
   busMuted.clear();
+  loadingDoc = true;
+  try {
+    loadDocInner(song, o10);
+  } finally {
+    loadingDoc = false;
+  }
+  lock.refresh();
+  lockDoor.sync();
+  applyWorkspace();
+}
+function loadDocInner(song, o10) {
   if (impro) setImpro(false);
   ui2.close();
   closeInstPage();
@@ -58052,6 +58435,7 @@ var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()),
 var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 var mxlFile = (name, extras, song) => new File([bytesNow(extras, song)], name, { type: "application/vnd.recordare.musicxml" });
 var sizeText3 = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
+var LOCKED_DIRTY = () => _t("\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u6709\u6539\u52A8\u6CA1\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\uFF1A\u6539\u52A8\u8FD8\u5728\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u4E4B\u540E\u518D\u5B58\u3002");
 async function fileSave() {
   try {
     const r10 = await H2.save();
@@ -58065,6 +58449,10 @@ async function fileSave() {
         return;
       case "written":
         info(_t("\u5B58\u597D\u4E86\uFF1A{name}", { name: r10.name }));
+        return;
+      case "locked":
+        if (D2.dirtyKind() === "content") showError(LOCKED_DIRTY());
+        else lock.flash();
         return;
       case "declined":
         info(_t("\u6CA1\u5B58"));
@@ -58319,7 +58707,8 @@ function openMainMenu() {
   box.setAttribute("role", "menu");
   const inStore = H2.home.kind === "gallery";
   const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc11(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
-  box.innerHTML = `<div class="ctx-head"><b>${esc11(H2.fileName())}</b><span>${esc11(fileWhere())}</span></div>` + item("new", "new", _t("\u65B0\u5EFA")) + item("open", "folder-open", _t("\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026"), _t("\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09")) + item("export", "export", _t("\u5BFC\u51FA\u2026"), _t("mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09")) + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", _t("\u5B58\u8FDB\u6B4C\u5E93"), cloudAvailable() ? _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09")) : "") + `<div class="ctx-sep"></div>` + (H2.home.kind === "file" ? "" : item("rename", "rename", _t("\u6539\u6587\u4EF6\u540D\u2026"), _t("\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09"))) + item("cover", "image", _t("\u5C01\u9762\u56FE\u2026"), _t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE")) + item("sounds", "volume", _t("\u58F0\u97F3\u4E0E\u7F72\u540D\u2026"), _t("\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3")) + (finalOn() ? item("unfinal", "unlock", _t("\u6539\u7A3F\u2026\uFF08\u7B2C {rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF09", { rev: D2.extras.final.rev }), _t("\u89E3\u9501\uFF1A\u8C31 / \u4E50\u5668 / \u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u5B9A\u7A3F\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u6CA1\u4E86\uFF09")) : item("final", "lock", _t("\u5B9A\u7A3F\u2026"), _t("\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF0C\u4E4B\u540E\u53EA\u80FD\u542C\u3001\u4E0D\u80FD\u6539\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002\u6539\u7A3F\u968F\u65F6\u89E3\u9501"))) + item("ref", "picture-in-picture", refHost.isOpen() ? _t("\u6536\u8D77\u53C2\u8003\u7A97") : _t("\u53C2\u8003\u7A97{p}", { p: refHost.count() ? _t("\uFF08{p} \u5F20\uFF09", { p: refHost.count() }) : "" }), _t("\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58")) + `<div class="ctx-sep"></div><div class="ctx-ver">${esc11(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
+  box.innerHTML = `<div class="ctx-head"><b>${esc11(H2.fileName())}</b><span>${esc11(fileWhere())}</span></div>` + item("new", "new", _t("\u65B0\u5EFA")) + item("open", "folder-open", _t("\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026"), _t("\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09")) + item("export", "export", _t("\u5BFC\u51FA\u2026"), _t("mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09")) + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", _t("\u5B58\u8FDB\u6B4C\u5E93"), cloudAvailable() ? _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09")) : "") + `<div class="ctx-sep"></div>` + (H2.home.kind === "file" ? "" : item("rename", "rename", _t("\u6539\u6587\u4EF6\u540D\u2026"), _t("\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09"))) + item("cover", "image", _t("\u5C01\u9762\u56FE\u2026"), _t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE")) + item("sounds", "volume", _t("\u58F0\u97F3\u4E0E\u7F72\u540D\u2026"), _t("\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3")) + (lock.canLockNow() ? item("lockEdit", "lock", _t("\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09"), _t("\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00")) : "") + // 修改锁：解着才有；解锁在谱上面那一条
+  (finalOn() ? item("unfinal", "unlock", _t("\u6539\u7A3F\u2026\uFF08\u7B2C {rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF09", { rev: D2.extras.final.rev }), _t("\u89E3\u9501\uFF1A\u8C31 / \u4E50\u5668 / \u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u5B9A\u7A3F\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u6CA1\u4E86\uFF09")) : item("final", "lock", _t("\u5B9A\u7A3F\u2026"), _t("\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF0C\u4E4B\u540E\u53EA\u80FD\u542C\u3001\u4E0D\u80FD\u6539\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002\u6539\u7A3F\u968F\u65F6\u89E3\u9501"))) + item("ref", "picture-in-picture", refHost.isOpen() ? _t("\u6536\u8D77\u53C2\u8003\u7A97") : _t("\u53C2\u8003\u7A97{p}", { p: refHost.count() ? _t("\uFF08{p} \u5F20\uFF09", { p: refHost.count() }) : "" }), _t("\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58")) + `<div class="ctx-sep"></div><div class="ctx-ver">${esc11(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
   item("settings", "settings", _t("\u8BBE\u7F6E\u2026"), _t("\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"));
   document.body.append(box);
   const r10 = $2("setBtn").getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -58352,7 +58741,40 @@ function openMainMenu() {
     else if (v === "ref") refHost.toggle();
     else if (v === "final") openFinalPanel();
     else if (v === "unfinal") void unfinalizeNow();
+    else if (v === "lockEdit") void lockEditNow();
   });
+}
+async function lockEditNow() {
+  if (!lock.canLockNow()) return;
+  ui2.close();
+  view.lyrics.commitAndClose();
+  view.marks.commitAndClose();
+  try {
+    const h2 = H2.home;
+    if (h2.kind === "gallery") {
+      await es2.forceSaveAndPush();
+      renderTitle();
+      if (es2.isDirty()) {
+        showError(_t("\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u8FD8\u6CA1\u5B58\u597D\uFF08\u518D\u8BD5\u4E00\u6B21\uFF09\u3002"));
+        return;
+      }
+      if (H2.identifier() !== h2.identifier || !gallery) return;
+      await gallery.lockEdit(h2.identifier);
+    } else if (h2.kind === "file") {
+      if (D2.dirty()) {
+        const r10 = await H2.save();
+        if (r10.k !== "written") {
+          showError(_t("\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u6CA1\u6709\u5199\u56DE\u6587\u4EF6\u3002"));
+          return;
+        }
+      }
+      if (H2.home.kind !== "file" || H2.home.handle !== h2.handle) return;
+      lock.lockLocalFile();
+      info(_t("\u9501\u4E0A\u4E86\u3002\u8981\u6539\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u3002"));
+    }
+  } catch (e10) {
+    showError(_t("\u6CA1\u9501\u4E0A\uFF1A{Error}", { Error: e10.message }));
+  }
 }
 function openFinalPanel() {
   ui2.close();
@@ -58645,6 +59067,8 @@ var es2 = createEditorSession({
       showError(why2);
       diagNote("doc", `persist refused: ${why2}`);
     },
+    // 修改锁第 ④ 道（歌库这条路）：要存的那个身份锁着 = 一个字节都不写。有改动 / 人按了存才经 onRefused 说一次（改动还在内存里）；只欠一推 = 不走保存（补推归库）
+    editLocked: (name) => lock.identifierLocked(name) ? LOCKED_DIRTY() : null,
     // 「已存」的基线和封面的账只记给还开着的那一首：写盘的那一下歌被放下 / 换走了（name 不是现在这首）= 这份快照是上一首的，不许记到现在这首头上（会把一张没动过的空谱标成改过 → 自己安家进歌库）。
     onSaved: (name) => {
       const cur = H2.identifier() === name;
@@ -58664,6 +59088,30 @@ var es2 = createEditorSession({
 function changed() {
   H2.noteChanged();
 }
+var lockDoor = initEditLockDoor({
+  lock,
+  before: stageEl,
+  activeIdentifier: () => H2.identifier(),
+  unlock: (id2) => gallery ? gallery.unlockEdit(id2) : Promise.resolve(false),
+  saveVersionThenUnlock: (id2) => gallery ? gallery.saveVersionThenUnlock(id2) : Promise.resolve(false)
+});
+lock.onChange((locked) => {
+  if (loadingDoc) return;
+  if (locked) {
+    ui2.close();
+    view.lyrics.commitAndClose();
+    view.marks.commitAndClose();
+  }
+  applyWorkspace();
+  view.render();
+  pad3.render();
+  drawInst();
+  ui2.redraw();
+  if (studio.isOpen) studio.show();
+  changed();
+  renderTitle();
+  diagNote("doc", `edit lock \u2192 ${lock.state()}`);
+});
 es2.start();
 setInterval(() => {
   changed();
@@ -60101,4 +60549,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5e0cea0f7ec6.mjs.map
+//# sourceMappingURL=moonsinger-ad84030f98d8.mjs.map

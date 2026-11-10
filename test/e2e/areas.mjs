@@ -20,7 +20,7 @@ export const AREAS = {
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "parts-manager", "paper-adds", "inst-split", "finder-pins", "finder-sf2", "finder-presets", "landscape-widgets", "modes", "dyn-levels", "sing-experiments"],
   // 歌库 / 云 / 文件 / 念缓存
-  store: ["csp", "store", "sync", "gate", "folder-home", "speech-store", "save-keys", "final", "factory-reset", "legacy-dbs", "gallery-marks"],
+  store: ["csp", "store", "sync", "gate", "folder-home", "speech-store", "save-keys", "final", "factory-reset", "legacy-dbs", "gallery-marks", "edit-lock"],
   // 导出
   export: ["pdf", "pdf-wysiwyg", "issues", "final"],
   // 参考窗
@@ -82,6 +82,8 @@ export const AREA_OF_PATH = [
   // 无头渲染核心（2026-10-16）：播放的准备 / 导出 / 定稿都过它；歌库的封面试听在 gallery-host
   [/^src\/core\//, ["play", "studio", "export", "store"]],
   [/^src\/gallery-host\.ts$|^src\/app\/song-player\.ts$|^src\/editor-session\//, ["store"]],
+  // 修改锁（2026-11-10）：那一处回答 / 分类表 / 门——碰了它们 = 歌库那一区（edit-lock / gallery-marks 在里面）+ 谱面和键盘（规则、插头）
+  [/^src\/app\/edit-lock[a-z-]*\.ts$/, ["store", "score", "pad"]],
   [/^src\/(engine|gm|singer)\//, ["studio", "play"]],
   [/^src\/app\/(names)\.ts$/, ["studio"]],
   // 文件 / 云 / 歌库 / 格式

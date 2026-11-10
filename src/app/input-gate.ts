@@ -5,7 +5,7 @@
 //   以前：「弹」只把**音键**换成只响不写（键表里 degree → audition、pad 的 noteDown），休止 / 延长 / 小节线 / 退格 / 符号格里的键照常写谱。
 //
 //   「能不能写」= 三个原因现算出来的一个答案，这里**不存状态**：
-//     · locked    歌锁着（现在接 D.locked() = 定稿；修改锁那一轮换成修改锁的回答，只换注入的那个函数）
+//     · locked    歌锁着（接 D.locked()：定稿着（过渡期）或者修改锁锁着——2026-11-10 起文档的 lockedWhy 接的是 src/app/edit-lock.ts）
 //     · picking   正在选乐器（乐器目录 / 乐器页开着：按键只试音）
 //     · unplugged 人自己拔的（「弹」）
 //   「写」的判据和文档写入口（src/app/document.ts commit）是同一条：**谱（song）变了才算写**；光标、选中、输入状态（时值旋钮、升降锁、1=、调式）不算，
@@ -23,7 +23,7 @@ export function noWrite(f: GateFacts): NoWrite | null { return f.locked ? "locke
 /** 这一下会不会改谱（和 document.ts commit 的 songChanged 同一条判据）。 */
 export const writesScore = (prev: EditorState, next: EditorState): boolean => next.song !== prev.song;
 /** 插头管的块 = 谱和纸（都住在 song 里）。乐器 / 混音 / 封面不归插头：键盘上的撤销撤到这几块照常（锁另算，在文档写入口）。操作类别和 D.commit 的 locus.kind 同一套词。 */
-export const PLUG_LOCI: ReadonlySet<LocusKind> = new Set<LocusKind>(["score", "paper"]);
+export const PLUG_LOCI: ReadonlySet<LocusKind> = new Set<LocusKind>(["score", "paper", "paperHidden"]);   // paperHidden = 2026-11-10 从 paper 里拆出来的（修改锁的「看法」），对插头来说还是纸
 /** 键盘上的撤销 / 重做要动的那一步改的是哪一块（没有可撤的 = null）。 */
 export function stepLocus(h: History, dir: "undo" | "redo"): LocusKind | null { const a = dir === "undo" ? h.past : h.future; return a.length ? a[a.length - 1]!.locus.kind : null; }
 

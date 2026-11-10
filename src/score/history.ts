@@ -14,7 +14,9 @@ import { trackOf } from "./song.ts";
 import type { Extras } from "../format/project.ts";
 
 /** 这一步改在哪一块：score = 谱（纸 / 声部看快照的 at）；lounge = 休息室（选角 / 候选 / 角色名）；studio = 录音室（麦克风）；cover = 封面；paper = 纸（加 / 删 / 隐藏）。 */
-export type LocusKind = "score" | "lounge" | "studio" | "cover" | "paper" | "final";   // final = 定稿 / 改稿（2026-10-16；不进撤销栈，只给锁放行用）
+//   paperHidden = 曲段的隐藏 / 放出来（2026-11-10 从 paper 里拆出来，Claude Fable 5.2）：修改锁的分类表（src/app/edit-lock-table.ts）里唯一的「看法」——锁着也能做。
+//     带这个类别的一步不并格（document.ts commit 里强制 gesture = null）：撤销栈每一格只有一种类别，「按要翻的那一格问锁」才问得准。
+export type LocusKind = "score" | "lounge" | "studio" | "cover" | "paper" | "paperHidden" | "final";   // final = 定稿 / 改稿（2026-10-16；不进撤销栈，只给锁放行用）
 export interface Locus { kind: LocusKind; label: string }
 export interface Snap { song: Song; extras: Extras; at: Focus; caret: number; sel: { from: number; to: number } | null; locus: Locus }
 export interface History { past: Snap[]; future: Snap[]; lastKey: string | null; lastAt: number }

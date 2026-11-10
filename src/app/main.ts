@@ -33,7 +33,7 @@ import { createPadHost } from "./pad-host.ts";   // pad 的宿主 = 翻译层（
 import { toLabScore } from "../score/lab-score.ts";
 import { Singer, type Reading } from "../singer/client.ts";
 import type { LyricReading } from "../ui/lyric-editor.ts";
-import { RULES, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
+import { RULES, lockedRules, MODE_BAR, barMode, MODE_LABEL, MODE_TITLE, MODE_ICON, dockOf, hasKeys, sideDock, sideDocked, type Mode, type WorkspaceState } from "./workspace.ts";
 import { budgetFor, advise, trimOnSongSwitch, describe as describeResources, totalBytes, AUDIO_HOT, type DeviceInfo, type Snapshot } from "./resource-watch.ts";
 import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio, audioCtxIfAny, warmAudio, onAudioNote, noteKeyAsleep, audioQueuedMs, flushAudio, idleFlushAudio, audioShown, reviveAudio, setPrimer, primerOn } from "../singer/audio.ts";
@@ -119,6 +119,8 @@ import { copyTokens, cutTokens, pasteTokens, selectAll, toJianpu, fromJianpu, fi
 import { type Locus, type Restored } from "../score/history.ts";
 import { createDocument, type SavedMark } from "./document.ts";
 import { createHome, assertNever, type Home } from "./home.ts";
+import { createEditLock, type LockStore } from "./edit-lock.ts";
+import { initEditLockDoor } from "./edit-lock-door.ts";
 import { createInputGate, keyOwner, type NoWrite } from "./input-gate.ts";
 import { monoDown, monoUp, type MonoHeld } from "./mono-voice.ts";
 import { createEncoder } from "../format/encode-client.ts";
@@ -139,6 +141,8 @@ const D = createDocument({ st: initState(), extras: emptyExtras() }, {
   now: () => performance.now(), normalize: (next) => withStartDyns(next),
   onState: (prev, next, moved) => afterState(prev, next, moved, true), onExtras: (prev, next, locus) => afterExtras(prev, next, locus),
   onRefused: (what) => onLockRefused(what), onRestored: (r, verb, prev) => afterRestore(r, verb, prev), extraDirty: () => refHost.rev(),
+  // 修改锁的第 ②③ 道（2026-11-10）：真要改的那一下带着类别去问 lock（被拒 = 门闪一下，在 lock.writeGate 里）；「现在锁着吗」只问不闪
+  writeGate: (kind) => lock.writeGate(kind), lockedWhy: () => (lock.locked() ? _t("锁着") : null),
 });
 /** 这首歌的家（src/app/home.ts，2026-10-21 F-49「家」这一刀）：歌库里的一首 / 本机文件（桌面 Chromium 的句柄 + mtime 对表）/ 还没家（等着安家的空谱带 pendingFolder），三种互斥；
  *  存 / 改名 / 离开 / 安家 / 放下身份只经 H 的动词，三种家的分支都在那个模块里（switch + assertNever，漏一种 = tsc 红）。文件名主干 H.stem，歌名在谱里（D.st.song.title，可不填），和文件名分开。
@@ -148,15 +152,30 @@ const H = createHome({ home: { kind: "none", pendingFolder: null }, stem: defaul
   file: { canPickSave: docFile.canPickSave, pickSave: docFile.pickSave, writeTo: docFile.writeTo, mtime: docFile.mtime, isStale: docFile.isStale },
   ids: { join: (folder, stem) => identifiers.join({ folder, stem, suffix: SONG_SUFFIX }), parse: (id) => identifiers.parse(id) },
   suffix: SONG_SUFFIX,
-  bytes: () => bytesNow(), dirty: () => D.dirty(), title: () => D.st.song.title ?? "", freshStem: () => defaultStem(),
+  bytes: () => bytesNow(), dirty: () => owesSave(), title: () => D.st.song.title ?? "", freshStem: () => defaultStem(),
+  locked: () => lock.locked(), onFileBorn: (h) => lock.keepLocalFileUnlocked(h),   // 修改锁第 ④ 道（硬盘文件那条路不经 editor-session）；新歌存成的文件生来解着
   ask: { discard: (what) => confirmDiscard(what), overwriteStale: (name) => askSheet(_t("「{name}」在外面被改过", { name }), _t("打开或上次存之后，这个文件被别的程序改过。覆盖 = 外面改的那些会丢。"), _t("覆盖")) },
   offerDownload: (bytes, name, onSaved) => { const file = new File([bytes as unknown as BlobPart], name, { type: "application/vnd.recordare.musicxml" }); offerFile(file, _t("存成 .mxl"), _t("{name} · {size}。下载或分享到「文件」里；以后从文件菜单「打开」。", { name: esc(file.name), size: sizeText(file.size) }), onSaved); },
   markSaved: () => { D.markSaved(); renderTitle(); },
   report: (e, level) => reportError(e, level === "error" ? "error" : "warning"),
   // 家换了：告诉 store 谁开着（冲突面 / 歌库卡片要知道）、「上次开着哪首」的指针（歌库里 = 它；放下身份 / 新建空谱 = 清掉；开本机文件不动它——reload 回到上一首歌库里的歌，v0.6 起就这样）、重画顶栏
-  onHome: (prev, next) => { setActiveIdentifier(next.kind === "gallery" ? next.identifier : null); if (next.kind === "gallery") deviceKvSet(KV_LAST_DOC, next.identifier); else if (next.kind === "none" && (prev.kind === "gallery" || next.pendingFolder != null)) deviceKvSet(KV_LAST_DOC, null); renderTitle(); },
+  onHome: (prev, next) => { setActiveIdentifier(next.kind === "gallery" ? next.identifier : null); if (next.kind === "gallery") deviceKvSet(KV_LAST_DOC, next.identifier); else if (next.kind === "none" && (prev.kind === "gallery" || next.pendingFolder != null)) deviceKvSet(KV_LAST_DOC, null); lock.refresh(); renderTitle(); },
   onName: () => renderTitle(),
 });
+/** 修改锁（家族「源文件原则上只读：手动解锁才能改」；2026-11-10，Claude Fable 5.2；设计稿 = 家族根 ai-docs/20261109-moonsinger-edit-lock-design.md）：
+ *  「开着的这首锁着吗」只有这一处回答（src/app/edit-lock.ts，现算不记状态）；「这个操作锁着能做吗」只有一张表（src/app/edit-lock-table.ts）。
+ *  五道各自拦、都来问它：① 界面 = 键盘总闸的 locked 口 + 谱面规则 + 面板淡一档（applyWorkspace）② 写入口 ③ 撤销重做 = D 的 writeGate
+ *  ④ 保存 = 歌库走 es 的 editLocked、硬盘文件走 H 的 locked ⑤ 库（createStore 的 lockByDefault，这一版还没开：歌库里的歌暂时不锁，硬盘上的单个文件已经锁）。
+ *  解锁只在人点门上的钮 / 歌库菜单时发生（test/edit-lock-guard.test.mjs）。 */
+let loadingDoc = false;
+const lock = createEditLock({
+  store: () => (hasStore() ? (requireStore().files as unknown as LockStore) : null),
+  home: () => (H.home.kind === "gallery" ? { kind: "gallery", identifier: H.home.identifier } : H.home.kind === "file" ? { kind: "file", handle: H.home.handle } : { kind: "none" }),
+  createPending: () => es.createPending(),
+  loading: () => loadingDoc,
+});
+/** 有没有要存的改动：锁着时「只动了看法」（隐藏了一段）不算——那时候一个字节都不写，离开也不问；解锁那一刻它自然又算（脏是比出来的）。顶栏的「•」照旧看 D.dirty()（老实）。 */
+const owesSave = (): boolean => D.dirty() && !(lock.locked() && D.dirtyKind() === "looks");
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => D.st.song.parts.find((p) => p.id === D.st.at.part) ?? D.st.song.parts[0];
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
@@ -222,6 +241,7 @@ const refHost = createReferenceHost({
   focusScore: () => scoreEl.focus({ preventScroll: true }),
   askImport: (q) => askRefImport(q),
   onCards: () => { renderTitle(); changed(); },
+  canEdit: () => !lock.locked(), onEditRefused: () => lock.flash(),   // 修改锁：参考窗的卡跟着歌存、不进撤销，加 / 删 / 挪也要过同一处；翻页不问
 });
 new ResizeObserver(() => { refHost.relayout(); syncDock(); }).observe(padEl);   // 键盘换了排数 / 开合 = 重判底座贴底还是贴右边
 /** 参考窗导入的问询（库 0.4.0：超过 1 MB 的图片 / 音频 / 视频）：存进歌里 / 压一下（约 X MB）/ 只放内存 / 算了。
@@ -614,7 +634,7 @@ const overlayHost: import("../ui/score-overlay.ts").OverlayHost = {
     ctxMenu("hidden-papers", `<div class="tc-sec">${_t("隐藏着的曲段（不放、不印）")}</div>${rows}`, at, (v) => {
       const id = v.slice(v.indexOf(":") + 1); if (!D.st.song.papers.some((p) => p.id === id)) return;
       if (v.startsWith("go:")) { viewScope = "segment"; navPaperTo(id); view.render(); }
-      else { update(setPaperHidden(D.st, id, false)); info(_t("「{p}」放出来了（撤销能再藏起来）", { p: paperLabel(id) })); }
+      else { setHidden(id, false); info(_t("「{p}」放出来了（撤销能再藏起来）", { p: paperLabel(id) })); }
     });
   },
 };
@@ -712,7 +732,7 @@ const inputGate = createInputGate({
   locked: () => D.locked() !== null,
   picking: () => finderShown() || instShown(),
   unplugged: () => impro,
-  onBlocked: (why) => plugNudge(why),
+  onBlocked: (why) => { if (why === "locked" && !finalOn() && lock.locked()) lock.flash(); else plugNudge(why); },   // 修改锁锁着 = 门闪一下；别的原因 = 「弹」钮晃一下
 });
 let plugNudgeT = 0, plugNoted: NoWrite | null = null;
 function plugNudge(why: NoWrite): void {
@@ -750,17 +770,21 @@ pad.setBigLabel(viewInC ? "deg" : "abs");
 /** 弹（只响不写）：开关在 pad 第一排「收起」左边（user 2026-10-08「弹这个锁还是放键盘上吧放在第一row，收起键盘的左边」）；快捷键 ` 照旧。找人视图里一直是弹、拨不动。 */
 function toggleImpro(): void { if (finder.isOpen || !inputGate.mayToggle()) return; setImpro(!impro); }   // 锁着 / 在选乐器 = 强制拔着，接不回去（钮晃一下）
 /** 直接定（换歌时复位用；人拨的走 toggleImpro）。拔着 = 键盘上会写谱的那一排也灰掉（styles.css .pad-panel.is-unplugged）。 */
-function setImpro(on: boolean): void { impro = on; padEl.classList.toggle("is-unplugged", on); if (on) showPad(true); pad.render(); ghostHeld.clear(); ghostSync(); }
+function setImpro(on: boolean): void { impro = on; syncPlug(); if (on) showPad(true); pad.render(); ghostHeld.clear(); ghostSync(); }
+/** 插头现在是不是拔着的样子：人自己拔的，或者歌锁着（定稿 / 修改锁 = 强制拔着、接不回去；user 11-09「即使你被锁着，你键盘还是可以弹的，就可以跟着弹着玩」）。 */
+const plugOut = (): boolean => impro || D.locked() !== null;
+/** 键盘上会写谱的那一排灰不灰（styles.css .pad-panel.is-unplugged）跟着 plugOut 走。锁态变了也叫（applyWorkspace）。 */
+function syncPlug(): void { padEl.classList.toggle("is-unplugged", plugOut()); }
 /** 「弹」时正按着的音 → 谱上光标处（叠亮着 = 那个音上）画鬼音符（v0.10.6；user「弹模式下面能不能在谱子上面光标对应的那个地方显示鬼音符？」「鬼音符的时候千万不能动排版！」）：
  *  只是盖在谱上的一层（ScoreView.showGhost），不改谱、不重排。 */
 const ghostHeld = new Map<string, Pitch>();
-const ghostOn = (): boolean => impro && !finder.isOpen && !instShown();
+const ghostOn = (): boolean => plugOut() && !finder.isOpen && !instShown();
 function ghostSync(): void { view.showGhost(ghostOn() ? [...ghostHeld.values()] : []); }
 
 // ── 撤销 / 重做（src/score/history.ts）：song 每变一次记一份改之前的快照（引用，不拷贝）；gesture = 连续动作（拖 / 连打歌词）并成一步；换歌清栈 ──
 // ── 改状态的唯一入口 = D.commit（src/app/document.ts）。下面三个名字只是薄壳（九十多处调用不用改）；锁 / 撤销栈 / 脏都在 D 里一处 ──
 // ── 定稿（W-38；src/format/final.ts 头注释 = 四层护栏）：第 ② 层 = D.commit 里那一判（整首锁住：谱 / 歌名 / 作者栏 / 许可 / 封面 / 歌手 / 混音，user 10-16「都冻同意，封面当然进」）。
-const finalOn = (): boolean => D.locked() !== null;
+const finalOn = (): boolean => D.final != null;   // 只说定稿（过渡期）；「现在内容能不能改」= D.locked()（定稿 ∨ 修改锁）
 /** 这一段这个声部现在怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段算；按歌缓存——同一首歌的状态只算一次）。鼓 / 固定敲一个键的不自动变大谱表（和排版同一条规矩）。 */
 let lookCache: { song: Song; map: Map<string, Map<string, ResolvedLook>> } | null = null;
 function lookNow(paperId: string, partId: string): ResolvedLook | undefined {
@@ -770,15 +794,21 @@ function lookNow(paperId: string, partId: string): ResolvedLook | undefined {
 let lockSaidAt = 0;
 /** 定稿着被拒的那一下：说一句（同一句 3 s 内不重复）。 */
 function lockedSay(what: string): void { const t = performance.now(); if (t - lockSaidAt < 3000) return; lockSaidAt = t; showError(_t("这首歌定稿了，{what}改不了：先在三条杠里「改稿」（定稿的 mp3 会作废），再改。", { what })); }
-function onLockRefused(what: string): void { lockedSay(what); view.render(); pad.render(); drawInst(); ui.redraw(); if (studio.isOpen) studio.show(); }
+/** 写入口 / 撤销被锁拒了：定稿着 = 说一句（旧的那套，过渡期）；修改锁 = 门已经闪过了（lock.writeGate 里），不弹字。两种都把界面摆回真相（滑到一半的推子弹回去）。 */
+function onLockRefused(what: string): void { if (finalOn()) lockedSay(what); view.render(); pad.render(); drawInst(); ui.redraw(); if (studio.isOpen) studio.show(); }
+/** 曲段的隐藏 / 放出来：修改锁分类表（src/app/edit-lock-table.ts）里的「看法」——锁着也能点（user 11-09「曲段的隐藏和显示锁着的时候当然能解。」），
+ *  锁着期间文件一个字节都不写，解锁之后它算一处待保存的改动。**隐藏的调用点只许走这里**（带着 paperHidden 这个类别；test/edit-lock-guard.test.mjs 钉）。 */
+function setHidden(paperId: string, hidden: boolean): void {
+  D.commit({ st: setPaperHidden(D.st, paperId, hidden) }, { locus: { kind: "paperHidden", label: hidden ? _t("隐藏了这张纸") : _t("取消隐藏这张纸") } });
+}
 function update(next: EditorState, gesture?: string): void {
   // 自动变出来的大谱表上手动挪了上下行 = 这一段定成手选的大谱表（song.ts toggleStaff，手分的上下行只有手选的存得下）：说一声（v0.16.89）。
   //   谱头面板里直接选大谱表 = 音不动、不说
   const pp0 = D.st.song.papers.find((p) => p.id === next.at.paper), pp1 = next.song.papers.find((p) => p.id === next.at.paper), part = next.at.part;
   const staffs = (t: Token[] | undefined) => (t ?? []).map((x) => (x.kind === "note" || x.kind === "rest" ? x.staff ?? 0 : -1)).filter((x) => x >= 0).join("");
   const fixed = !!pp0 && !!pp1 && !pp0.looks?.[part]?.grand && !!pp1.looks?.[part]?.grand && staffs(pp0.tracks[part]) !== staffs(pp1.tracks[part]);
-  D.commit({ st: next }, { gesture });
-  if (fixed) info(_t("这一段定成了大谱表（手动分的上下行要存得下）；想回到自动，点行首谱号选「自动」"));
+  const c = D.commit({ st: next }, { gesture });
+  if (fixed && c.ok) info(_t("这一段定成了大谱表（手动分的上下行要存得下）；想回到自动，点行首谱号选「自动」"));
 }
 /** 每张纸（曲段）开头没写力度的补上（song.ts ensureStartDyns：补的是那里本来就生效的那个）；补在光标那条、光标前面 = 光标挪到它后面（接着写的音在力度后面）。 */
 function withStartDyns(s: EditorState): EditorState {
@@ -825,6 +855,7 @@ function afterExtras(prev: Extras, next: Extras, locus: Locus): void {
   if (locus.kind === "final") { applyWorkspace(); view.render(); }   // 定稿 / 改稿：锁的样子（body.doc-final / 模式钮）跟着
   drawInst(); ui.redraw(); updateChrome();   // 歌手名在挂签的下拉里
 }
+// 锁着：交给 D（按要翻的那一格问锁：翻的是看法就翻，翻到内容那一格就停、门闪一下；栈空着也由它说）
 function undoNow(): void { if (D.locked()) { D.undo(); return; } if (!D.history.past.length) { info(_t("没有可撤销的")); return; } ui.close(); view.lyrics.commitAndClose(); D.undo(); }
 function redoNow(): void { if (D.locked()) { D.redo(); return; } if (!D.history.future.length) { info(_t("没有可重做的")); return; } ui.close(); view.lyrics.commitAndClose(); D.redo(); }
 let lastUndoText = "";   // 测试钩子看的：最近一次撤销 / 重做的 toast
@@ -854,7 +885,7 @@ function locusText(at: EditorState, l: Locus): string {
   const k = at.song.papers.findIndex((p) => p.id === at.at.paper), paperName = at.song.papers[k]?.name || _t("第 {p} 段", { p: k + 1 });
   const part = at.song.parts.find((p) => p.id === at.at.part), partName = part ? roleName(D.extras, part.role) : "";
   if (l.kind === "score") return `${at.song.papers.length > 1 ? paperName + " · " : ""}${at.song.parts.length > 1 ? partName + " · " : ""}${l.label}`;
-  if (l.kind === "paper") return `${paperName} · ${l.label}`;
+  if (l.kind === "paper" || l.kind === "paperHidden") return `${paperName} · ${l.label}`;
   return `${l.kind === "lounge" ? _t("休息室") : l.kind === "studio" ? _t("混音台") : _t("封面")} · ${l.label}`;
 }
 function renderUndo(): void { $<HTMLButtonElement>("undoBtn").disabled = !D.history.past.length; $<HTMLButtonElement>("redoBtn").disabled = !D.history.future.length; }
@@ -925,7 +956,8 @@ let lastEditMode: Mode = "notes";   // 从「听」回来回到哪
 const listenOn = () => ws.mode === "listen";
 function applyWorkspace(): void {
   const d = dockOf(ws), padOn = d === "keys" || d === "symbols", wasEdit = view.rules.edit;
-  view.rules = RULES[ws.mode];
+  view.rules = lock.locked() ? lockedRules(RULES[ws.mode]) : RULES[ws.mode];   // 修改锁第 ① 道（谱面）：锁着 = 能放光标、能选（复制是逃生口），拖音 / 歌词框 / 记号菜单都不接——手势不许做到一半才被写入口拒
+  document.body.classList.toggle("doc-locked", lock.locked()); syncPlug();
   document.body.dataset.wmode = ws.mode; document.body.classList.toggle("listen-mode", ws.mode === "listen"); document.body.classList.toggle("doc-final", finalOn()); scoreEl.dataset.mode = ws.mode;   // 不用 body[data-mode]：歌库自己用它（gallery）
   dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.classList.toggle("is-on", b.dataset.mode === barMode(ws.mode)));   // 用符号格时「音」亮
   const changed = padEl.hidden === padOn || stageEl.dataset.dock !== d;
@@ -1307,7 +1339,11 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   });
 }
 // 测试用口子（Playwright 逐样本比对浏览器 == Node 时用）
-(window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong, auditionSha: () => audition?.sha256 ?? null, renderMix: () => renderMixForTest(),
+(window as unknown as Record<string, unknown>).__moonsinger = { singer, engine, exportSong,
+  // 修改锁的 E2E 口：按「硬盘上的单个文件」开一首（真 app 里 = 打开框 / 拖进来 / 双击拿到的句柄；无头浏览器点不了系统的文件框，这里递一个 OPFS 的真句柄进来）；读锁态
+  openFileHandle: async (h: docFile.FileHandle) => { if (!(await H.leave(_t("打开别的歌")))) return false; openPicked(await docFile.readHandle(h)); return true; },
+  editLock: () => ({ state: lock.state(), locked: lock.locked(), canLockNow: lock.canLockNow(), dirtyKind: D.dirtyKind(), dirty: D.dirty(), owes: owesSave() }),
+  fileSave: () => fileSave(), lockEditNow: () => lockEditNow(), auditionSha: () => audition?.sha256 ?? null, renderMix: () => renderMixForTest(),
   playheadAt: (p: { paperId: string; tick: number } | null, ahead: { paperId: string; tick: number } | null = null) => view.setPlayhead(p, ahead),   // 播放线摆到这儿（不出声；scripts/render-video.mjs 逐格出带谱视频用）
   printLook: (on: boolean) => { document.body.classList.toggle("print-look", on); },   // 谱面切成「印出来的样子」（v0.16.74；styles.css body.print-look：藏覆盖层 / 缩放读数 / 注解 / 光标，不上强调色；带谱视频用，免得它靠一串界面类名）
   zoomTo: (phys: number | null) => view.restoreZoom(phys),   // 谱面缩放到几倍（物理倍数，null = 自动；不记进设备；scripts/render-video.mjs 让谱占满画面用）
@@ -1328,7 +1364,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   setChunk: (v: "phrase" | "sheet" | "whole") => { const role = D.st.song.parts.find((x) => x.id === D.st.at.part)?.role; if (role) updateExtras(withSingChunk(D.extras, role, v, D.st.song.hum), { kind: "lounge", label: _t("分段唱：{v}", { v }) }); },
   openHeader: (part: string) => headerPanel.open(D.st.at.paper, part, 0, { x: innerWidth / 2, y: 120 }),   // 谱头面板（E2E；v0.16.21 起小卡里没有「谱怎么画」，点谱号开）
   finderCastVoice: async () => { const c = conceptOfIds(await loadCatalog(), { wikidata: "Q7390" }); if (c) await castPick({ kind: "voice", concept: c }); },   // E2E：目录里选小月相（= 人声那一行「选这个」；新声部要先选乐器，v0.16.35）
-  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), wake: async (awayMs: number) => { const lock = lockOnWake(awayMs); if (hasCloudHome()) await gate.wake(lock); return lock; }, gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => update(setPaperHidden(D.st, id, h)), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), hasHome: () => hasHome(), folderHome: () => folderHome()?.label ?? null, legacySongs: () => legacySongs(), offerMove: () => offerMove(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => H.identifier(), home: () => H.home.kind, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
+  set: (n: EditorState) => update(n), addPaper: () => update(addPaper(D.st)), toggleChord: (i: number, p: Pitch) => update(toggleChordPitch(D.st, i, p)), playSong: () => playSong(), afterSignIn: () => afterSignIn(), diagText: () => diagText(), refreshOpenDoc: () => refreshOpenDoc(), wake: async (awayMs: number) => { const lock = lockOnWake(awayMs); if (hasCloudHome()) await gate.wake(lock); return lock; }, gateOpen: () => isGateOpen(), undo: () => undoNow(), redo: () => redoNow(), history: () => ({ past: D.history.past.length, future: D.history.future.length }), undoText: () => lastUndoText, desk: () => deskNow(), setScope: (v: "all" | "segment") => { viewScope = v; view.render(); }, setPages: (v: boolean) => { pageFlow = v; view.render(); }, setScroll: (v: boolean) => { scrollFlow = v; view.render(); view.followNow(); }, partView: (id: string, patch: Partial<PartViewState>) => { setPv(id, patch); afterViewChange(); view.render(); }, flatten: () => flattenPart(D.st.song, D.st.at.part), setPaperHidden: (id: string, h: boolean) => setHidden(id, h), store: () => (hasStore() ? requireStore() : null), es: () => es, gallery: () => gallery, attach: () => ensureAttached(), hasHome: () => hasHome(), folderHome: () => folderHome()?.label ?? null, legacySongs: () => legacySongs(), offerMove: () => offerMove(), openGallery: () => openGallery(), newStoreSong: () => newStoreSong(), openStoreDoc: (id: string) => openStoreDoc(id), identifier: () => H.identifier(), home: () => H.home.kind, dirty: () => dirty(), auth };   // cssHash：样式表版本（见 scripts/build.sh）
 
 // ── 顶栏 ────────────────────────────────────────────────────────────────
 /** 键盘只手动开合（v0.16.55；user 11-09「选中音符的时候不应该自动弹键盘，键盘是不是应该只手动toggle比较好？」「鼠标点空白不应该出键盘，不然电脑上很难受」）：
@@ -2070,7 +2106,7 @@ function openPaperMenu(id: string): void {
     if (v === "above" || v === "below") { update(v === "above" ? addPaper(D.st, undefined, id) : addPaper(D.st, id)); close(); info(_t("新的一段")); return; }
     if (v === "dup") { update(duplicatePaper(D.st, id, _t("{name} 副本", { name: paper.name || _t("曲段") }))); close(); info(_t("复制了一段（接在后面）")); return; }   // v0.16.61，user 11-09「需要加一个duplicate曲段的功能」
     if (v === "transpose") { close(); const r = scoreEl.getBoundingClientRect(); openTransposeMenu(id, { x: r.left + r.width / 2, y: r.top + 60 }); return; }
-    if (v === "hide") { update(setPaperHidden(D.st, id, !paper.hidden)); close(); info(paper.hidden ? _t("这张纸显示了（会放）") : _t("这张纸隐藏了（不放）")); return; }
+    if (v === "hide") { setHidden(id, !paper.hidden); close(); info(paper.hidden ? _t("这张纸显示了（会放）") : _t("这张纸隐藏了（不放）")); return; }
     if (v === "del") {
       close();
       void askSheet(_t("删掉「{p}」？", { p: paperLabel(id) }), _t("这张纸上所有声部写的东西一起删掉（能撤销：撤销 / Ctrl+Z）。"), _t("删")).then((ok) => { if (ok) update(removePaper(D.st, id)); });
@@ -2570,6 +2606,11 @@ function applyDesk(d: Desk): void {
 }
 function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array> }): void {
   perfApi.mixBypass = false; busMuted.clear();   // 效果全关 / 混音轨静音是这次听的，换歌复位
+  loadingDoc = true;   // 整份装入不归修改锁管；装入期间锁态的变化先不动界面（下面 applyWorkspace 一次摆好）
+  try { loadDocInner(song, o); } finally { loadingDoc = false; }
+  lock.refresh(); lockDoor.sync(); applyWorkspace();   // 这首歌的锁态（歌库里的 = 库说了算；硬盘文件 = 这一次打开默认锁着）
+}
+function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array> }): void {
   if (impro) setImpro(false);
   ui.close(); closeInstPage();
   H.load(o.home, { stem: o.stem, named: o.named }); coverTouched = false;   // 换家（歌库 → 别处 = 放下 es 的身份；指针 / store 的「谁开着」在 onHome 里）
@@ -2649,6 +2690,8 @@ const sizeText = (n: number) => (n < 1e6 ? `${Math.max(1, Math.round(n / 1e3))} 
  *  · iPad / Safari 没有句柄这回事 = 下载或分享一个 .mxl 到「文件」里，点了才算存了。这台设备上下载就是存（没有别的家可回；
  *    WeebPaint 的「下载不清 dirty」是因为它 iPad 的家在图库——这里没有，「•」留着只会狼来了，0819 §7.2「有真正会丢的字节才拦」）。
  *  三种家 × 存 的分支在 src/app/home.ts `H.save()`（2026-10-21 起），这里只把结果翻成人话；歌库那条 = smartSaveStore（H 的 gallery.save 口）。等着安家的空谱：有笔先安家再走歌库的存，没笔诚实回话。 */
+/** 锁着却有内容改动要存（不该发生：前面几层都没拦住，或者别的标签页把它锁上了）：响亮说，并且说清改动还在。 */
+const LOCKED_DIRTY = (): string => _t("这首歌锁着，有改动没存、也不会推上云：改动还在，点谱上面的「接着改」之后再存。");
 async function fileSave(): Promise<void> {
   try {
     const r = await H.save();
@@ -2656,6 +2699,7 @@ async function fileSave(): Promise<void> {
       case "blank": info(_t("还是空的，没什么可存")); return;   // WeebPaint blankNothingToSave
       case "gallery": case "offered": return;
       case "written": info(_t("存好了：{name}", { name: r.name })); return;
+      case "locked": if (D.dirtyKind() === "content") showError(LOCKED_DIRTY()); else lock.flash(); return;
       case "declined": info(_t("没存")); return;
       case "cancelled": info(_t("没存（取消了）")); return;
       default: return assertNever(r);
@@ -2896,6 +2940,7 @@ function openMainMenu(): void {
     (H.home.kind === "file" ? "" : item("rename", "rename", _t("改文件名…"), _t("只改文件名，纸上的歌名不变（点顶栏的文件名也一样）"))) +
     item("cover", "image", _t("封面图…"), _t("歌库卡片上的图")) +
     item("sounds", "volume", _t("声音与署名…"), _t("乐器的声音打包 / 解包；这首歌用了谁的声音")) +
+    (lock.canLockNow() ? item("lockEdit", "lock", _t("锁上（先不改了）"), _t("先把改动存好，再把这首歌锁上：之后打开是只能看、能听的，点「接着改」随时解开")) : "") +   // 修改锁：解着才有；解锁在谱上面那一条
     (finalOn() ? item("unfinal", "unlock", _t("改稿…（第 {rev} 版定稿作废）", { rev: D.extras.final!.rev }), _t("解锁：谱 / 乐器 / 混音又能改；定稿那份 mp3 作废（下次存就没了）")) : item("final", "lock", _t("定稿…"), _t("写好了：整首渲染成 mp3 存进歌里，之后只能听、不能改；歌库封面上能直接听。改稿随时解锁"))) +
     item("ref", "picture-in-picture", refHost.isOpen() ? _t("收起参考窗") : _t("参考窗{p}", { p: refHost.count() ? _t("（{p} 张）", { p: refHost.count() }) : "" }), _t("截图 / 文字放在旁边对着看：点开后粘贴（Ctrl / ⌘+V）、拖进来，或者「＋」导入；跟着歌一起存")) +
     `<div class="ctx-sep"></div>` +
@@ -2915,7 +2960,27 @@ function openMainMenu(): void {
     else if (v === "intoLib") void saveIntoGallery(); else if (v === "rename") void renameActive();
     else if (v === "cover") openCoverSheet(); else if (v === "sounds") openSoundsSheet(); else if (v === "settings") openSettings(); else if (v === "ref") refHost.toggle();
     else if (v === "final") openFinalPanel(); else if (v === "unfinal") void unfinalizeNow();
+    else if (v === "lockEdit") void lockEditNow();
   });
+}
+/** 「锁上（先不改了）」（家族修改锁标准：锁上之前先存好，存成了才锁；没存成不锁并说清）。歌库里的歌 = 落盘 + 推（推不上不拦：字节已经在本机，回来再传）→ 图库库的 lockEdit（它自己说「已锁上」）；
+ *  硬盘上的单个文件 = 写回去 → 这一次打开的解锁作废。 */
+async function lockEditNow(): Promise<void> {
+  if (!lock.canLockNow()) return;
+  ui.close(); view.lyrics.commitAndClose(); view.marks.commitAndClose();
+  try {
+    const h = H.home;
+    if (h.kind === "gallery") {
+      await es.forceSaveAndPush(); renderTitle();
+      if (es.isDirty()) { showError(_t("没锁上：改动还没存好（再试一次）。")); return; }
+      if (H.identifier() !== h.identifier || !gallery) return;   // 存的时候歌被换走了
+      await gallery.lockEdit(h.identifier);
+    } else if (h.kind === "file") {
+      if (D.dirty()) { const r = await H.save(); if (r.k !== "written") { showError(_t("没锁上：改动没有写回文件。")); return; } }
+      if (H.home.kind !== "file" || H.home.handle !== h.handle) return;
+      lock.lockLocalFile(); info(_t("锁上了。要改，点谱上面的「接着改」。"));
+    }
+  } catch (e) { showError(_t("没锁上：{Error}", { Error: (e as Error).message })); }
 }
 // ── 定稿 / 改稿（W-38；user 2026-10-13「写好了之后加锁，会渲染mp3，之后只能听，不能修改…gallery可以试听mp3不用开app」「定稿改稿同意」）──────────
 //   定稿 = 走无头渲染核心把整首渲成 mp3（静音 / 独奏按现在；效果照常）→ 记录（时刻 / 第几版 / 核心版本 + 哈希 / 出声内容的指纹 / mp3 参数 / 哪些声部）+ 裸 mp3 进 extras →
@@ -3112,6 +3177,8 @@ const es = createEditorSession({
     // 第 ④ 层护栏（store 接缝）：定稿着、出声内容的指纹却变了 = 不落盘、不推，脏留着（顶栏「•」照亮 = 诚实），说一句。前面三层都没拦住才会走到这儿。
     canPersist: () => { const f = D.extras.final; if (!f) return null; try { return contentFingerprintOf(saveArgs()) === f.fingerprint ? null : _t("这首歌定稿了，内容却变了：没有存、也不会推上云。先「改稿」（定稿的 mp3 作废）再存，或者撤销刚才的改动。"); } catch (e) { return _t("存不了：{Error}", { Error: (e as Error).message }); } },
     onRefused: (why) => { showError(why); diagNote("doc", `persist refused: ${why}`); },
+    // 修改锁第 ④ 道（歌库这条路）：要存的那个身份锁着 = 一个字节都不写。有改动 / 人按了存才经 onRefused 说一次（改动还在内存里）；只欠一推 = 不走保存（补推归库）
+    editLocked: (name) => (lock.identifierLocked(name) ? LOCKED_DIRTY() : null),
     // 「已存」的基线和封面的账只记给还开着的那一首：写盘的那一下歌被放下 / 换走了（name 不是现在这首）= 这份快照是上一首的，不许记到现在这首头上（会把一张没动过的空谱标成改过 → 自己安家进歌库）。
     onSaved: (name) => { const cur = H.identifier() === name; if (cur && encodedSnap) D.adoptSaved(encodedSnap); encodedSnap = null; if (cur && coverTouched) { coverTouched = false; gallery?.invalidateThumb(name); } renderTitle(); },
   },
@@ -3121,6 +3188,20 @@ const es = createEditorSession({
 /** 内容变了（谱 / 休息室 / 麦克风 / 封面）→ 歌库里的歌告诉 editor-session（autosave 节律）；等着安家的空谱有了第一笔 = 首笔安家（H.settle：铸身份 → es 接管 → 落本地）。
  *  幂等；1 s 心跳兜底没经过 update() 的改动（休息室 / 录音室直接改 D.extras 的那些）。 */
 function changed(): void { H.noteChanged(); }
+// ── 修改锁的门 + 锁态变了之后界面跟着（解锁 / 锁上 / 过期 / 别的标签页改的）──
+const lockDoor = initEditLockDoor({
+  lock, before: stageEl,
+  activeIdentifier: () => H.identifier(),
+  unlock: (id) => (gallery ? gallery.unlockEdit(id) : Promise.resolve(false)),
+  saveVersionThenUnlock: (id) => (gallery ? gallery.saveVersionThenUnlock(id) : Promise.resolve(false)),
+});
+lock.onChange((locked) => {
+  if (loadingDoc) return;   // 装入中：loadDoc 收尾时一次摆好
+  if (locked) { ui.close(); view.lyrics.commitAndClose(); view.marks.commitAndClose(); }   // 锁上了（多半是别的标签页锁的；自己点「锁上」之前菜单已经把框收了）：开着的框收掉——里面还没提交的字这时已经提交不进去（写入口会拒、门闪一下）
+  applyWorkspace(); view.render(); pad.render(); drawInst(); ui.redraw(); if (studio.isOpen) studio.show();
+  changed(); renderTitle();   // 解锁那一刻：锁着时动过的看法（隐藏了一段）本来就算脏，现在可以存了
+  diagNote("doc", `edit lock → ${lock.state()}`);
+});
 es.start();   // autosave 定时器 + 页面隐藏 / pagehide 落盘 + 失焦推云（editor-session 的通用触发点；不调就没有自动存）
 setInterval(() => { changed(); if (H.home.kind === "gallery") renderTitle(); }, 1000);
 // （30 s 心跳补推撤了：consent 制，user 2026-10-08「用weebpaint方案」；没上云的在换歌 / 退出 / 按「存」/ 登录后 pushAll 时推）

@@ -43,6 +43,11 @@ export interface ReferenceHostDeps {
   askImport(q: RefImportQuestion): Promise<RefImportChoice>;
   /** 卡片变了、字节已经编好（files() / rev() 已是新的）：宿主标脏、通知存档节律。 */
   onCards(): void;
+  /** 修改锁（2026-11-10，参考窗 0.6.0 的 canEdit 口；家族修改锁标准「跟着文档存、但不进撤销的东西也要过同一处」）：现在让不让加 / 删 / 挪卡。
+   *  翻页、缩放、开关窗不问（纯粹是看）。不给 = 永远让。 */
+  canEdit?(): boolean;
+  /** 被拒了（窗里的挪卡 / 删卡，或者从这头加卡）：宿主让门闪一下。 */
+  onEditRefused?(): void;
 }
 
 export function createReferenceHost(d: ReferenceHostDeps) {
@@ -61,6 +66,10 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   let pending: Promise<void> = Promise.resolve();
 
   // ── 注入 ──
+  // 修改锁：窗里的挪卡 / 删卡由库的 canEdit 口问（不让 = 这一下什么都不做 + 发 editrefused）；从宿主这头加卡（导入 / 粘贴 / 拖放）在下面各个入口问 mayEdit
+  const mayEdit = (): boolean => { if (d.canEdit?.() ?? true) return true; d.onEditRefused?.(); return false; };
+  el.canEdit = () => d.canEdit?.() ?? true;
+  el.addEventListener("editrefused", () => d.onEditRefused?.());
   el.menuPort = ((o) => togglePopupMenu(o)) as RefMenuPort;
   el.setAttribute("no-cloud", "");                     // 不从云盘选图（歌库不是图库；iPad 的「文件」已经能挑相册 / OneDrive）
   el.labels = {
@@ -93,13 +102,14 @@ export function createReferenceHost(d: ReferenceHostDeps) {
   el.addEventListener("rectchange", () => { placed = true; });
 
   // ── ＋ 菜单 / 粘贴 / 拖放 ──
-  el.addEventListener("requestload", () => { fileInput.value = ""; fileInput.click(); });
+  el.addEventListener("requestload", () => { if (!mayEdit()) return; fileInput.value = ""; fileInput.click(); });
   fileInput.addEventListener("change", () => { const files = [...(fileInput.files ?? [])]; if (files.length) void importFiles(files); });
-  el.addEventListener("requestpaste", () => { void pasteFromClipboard(); });
+  el.addEventListener("requestpaste", () => { if (mayEdit()) void pasteFromClipboard(); });
   window.addEventListener("paste", (e) => {   // 粘贴看焦点（库 0.3.1）：窗有焦点 → 文件 / 文字进窗；没有 → 不管，宿主的粘贴照旧
     if (!el.hasFocus) return;
     const cd = e.clipboardData; if (!cd) return;
     e.preventDefault(); e.stopPropagation();
+    if (!mayEdit()) return;
     const files = [...cd.files];
     if (files.length) { void importFiles(files); return; }
     const text = cd.getData("text/plain");
@@ -107,7 +117,7 @@ export function createReferenceHost(d: ReferenceHostDeps) {
     d.error(_t("剪贴板里没有图片或文字"));
   }, true);
   el.addEventListener("dragover", (e) => { if (e.dataTransfer && Array.from(e.dataTransfer.types).includes("Files")) { e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect = "copy"; } });
-  el.addEventListener("drop", (e) => { const files = [...(e.dataTransfer?.files ?? [])]; if (!files.length) return; e.preventDefault(); e.stopPropagation(); void importFiles(files); });
+  el.addEventListener("drop", (e) => { const files = [...(e.dataTransfer?.files ?? [])]; if (!files.length) return; e.preventDefault(); e.stopPropagation(); if (mayEdit()) void importFiles(files); });
   el.addEventListener("notice", (e) => {
     const n = (e as CustomEvent).detail as { level: string; code: string; name?: string; message: string };
     d.error(n.code === "decode-failed" ? _t("这张图这个浏览器打不开{name}", { name: n.name ? `：${n.name}` : "" }) : _t("参考窗：{message}", { message: n.message }));

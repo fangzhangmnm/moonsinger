@@ -158,6 +158,8 @@ import "./sw-cache-scope.test.mjs";   // 2026-11-03 正式版 / 开发版的壳�
 import "./local-files.test.mjs";
 import "./dist-fresh.test.mjs";
 import "./package-icons.test.mjs";   // 2026-11-10 内部库点名的图标页面里都有（歌库卡片的「⋯」空了一个月没人发现）
+import "./edit-lock.test.ts";   // 2026-11-10 修改锁的纯逻辑：分类表 / 锁着吗 / 写入口 / 撤销 / 脏分两种 / 家 / 编辑会话
+import "./edit-lock-guard.test.mjs";   // 2026-11-10 修改锁的结构守卫：解锁的调用点名单 / 表和写入口对得上 / 各道接着线
 import { run } from "./runner.mjs";
 
 await run();
