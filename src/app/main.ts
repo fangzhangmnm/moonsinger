@@ -1092,7 +1092,7 @@ const LANG_LABEL = "语言 · Language";   // i18n-keep
 function openChordInfo(r: HarmonyRead, at: { x: number; y: number }): void {
   const th = harmonyTheory(r.theory);
   const row = (g: HarmonyGuess, i: number) => `<div class="chord-cand${i === 0 ? " is-best" : ""}"><b>${esc(g.label)}</b><span>${esc(g.name)}</span><small>${th.explain(g).map(esc).join(" · ")}</small></div>`;
-  ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${esc(th.howTo())}</div>` + r.all.slice(0, 6).map(row).join(""), at, () => true);
+  ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${esc(th.howTo(r))}</div>` + r.all.slice(0, 6).map(row).join(""), at, () => true);
 }
 function setChordTags(on: boolean): void { chordTagsOn = on; deviceKvSet(KV_CHORD_TAGS, on ? "1" : "0"); view.render(); }
 const chordChips = (): string => [["off", _t("关"), !chordTagsOn], ["on", _t("开"), chordTagsOn]].map(([v, label, on]) => `<button class="btn chip${on ? " is-on" : ""}" data-v="chord:${v}">${esc(label as string)}</button>`).join("");

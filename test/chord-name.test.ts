@@ -1,7 +1,7 @@
 // chord-name.test.ts —— 认和弦 + 写成级数（乐理模块里的西方功能和声：src/theory/western.ts；2026-11-10 前叫 src/score/chord-name.ts）。created 2026-11-07 by Claude Opus 5.5
 // 钉住 user 11-07 问的那几种歧义：换根音（转位）、挂二 / 挂四、六和弦 vs 七和弦转位、十三；调号只管第几级。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { readChord, chordLabel, degreeOf, brokenChords } from "../src/theory/western.ts";
+import { readChord, chordLabel, degreeOf, brokenChords, modeOf, western } from "../src/theory/western.ts";
 import { initState, tr, headLen, TPQ, type Token } from "../src/score/song.ts";
 import { spellMidi } from "../src/score/pitch.ts";
 import type { Pitch } from "../src/score/pitch.ts";
@@ -115,5 +115,29 @@ describe("乐理模块：能整块换", () => {
     assert(!bad.length, bad.join("；"));
     const { harmonyTheory, DEFAULT_THEORY } = await import("../src/theory/index.ts");
     eq(harmonyTheory().id, DEFAULT_THEORY); eq(harmonyTheory("没有这种").id, DEFAULT_THEORY);
+  });
+});
+
+// 按曲段认大调 / 小调（v0.16.72，user 11-10「按曲段认乐理同意」）：一条 track 最后一个音是 la = 以 la 为主数级数
+describe("以 la 为主（小调）：从 la 数级数", () => {
+  const M = (notes: string, fifths = 0): string => { const r = readChord(notes.split(" ").map(P), fifths, "la"); return r ? chordLabel(r) : "-"; };
+  it("A 小调（不带升降号）：i、iv、V（升 sol 算调内）、III、VI、VII、ii°、vii°", () => {
+    eq(M("A3 C4 E4"), "i"); eq(M("D4 F4 A4"), "iv"); eq(M("E3 G#3 B3"), "V"); eq(M("E3 G#3 B3 D4"), "V7");
+    eq(M("C4 E4 G4"), "III"); eq(M("F3 A3 C4"), "VI"); eq(M("G3 B3 D4"), "VII"); eq(M("B3 D4 F4"), "ii°"); eq(M("G#3 B3 D4"), "vii°");
+    eq(M("E3 C4 G4"), "III/5", "转位的最低音也从 la 数"); eq(M("A3 E4"), "I5"); eq(M("A3 C4"), "i", "三度双音");
+  });
+  it("别的调也一样：G 大调的关系小调 e（一个升号）——e 的和弦 = i、升 re 的减三和弦 = vii°", () => {
+    eq(M("E3 G3 B3", 1), "i"); eq(M("B3 D#4 F#4", 1), "V"); eq(M("D#4 F#4 A4", 1), "vii°");
+  });
+  it("大调照旧（没给 = do）", () => { eq(L("A3 C4 E4"), "vi"); eq(L("E3 G#3 B3"), "III"); });
+  it("一条 track 自己判：最后一个音（叠音取最低的）是 la = 小调；别的 = 大调；整条 track 的级数跟着变", () => {
+    let id = 7700;
+    const nn = (m: number, chord: number[] = []): Token => ({ kind: "note", id: id++, pitch: spellMidi(m, 0), ...(chord.length ? { chord: chord.map((x) => spellMidi(x, 0)) } : {}), dur: TPQ, lyric: null }) as Token;
+    const st = initState(), head = tr(st).slice(0, headLen(tr(st)));
+    const minor = [...head, nn(57, [60, 64]), nn(62, [65, 69]), nn(52, [56, 59]), nn(57, [60, 64])], major = [...head, nn(57, [60, 64]), nn(60, [64, 67])];
+    eq(modeOf(minor, () => 0), "la"); eq(modeOf(major, () => 0), "do");
+    eq(western.tagsOf({ tokens: minor, keyAt: () => 0 }).map((x) => western.label(x.read)).join(" "), "i iv V i");
+    eq(western.tagsOf({ tokens: major, keyAt: () => 0 }).map((x) => western.label(x.read)).join(" "), "vi I");
+    assert(western.howTo(western.tagsOf({ tokens: minor, keyAt: () => 0 })[0].read).includes("la"), "点开候选时说为什么按 la 数");
   });
 });

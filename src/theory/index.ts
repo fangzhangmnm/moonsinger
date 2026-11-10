@@ -21,7 +21,7 @@ export interface HarmonyTheory {
   /** 谱上写的那一行字。 */
   label(read: HarmonyRead): string;
   /** 点开候选时：顶上那句「怎么认的」、每个读法后面的小字。界面上跑（可以用 _t）。 */
-  howTo(): string;
+  howTo(read?: HarmonyRead): string;
   explain(guess: HarmonyGuess): string[];
 }
 

@@ -67,13 +67,18 @@ export interface ChordGuess extends HarmonyGuess {
   /** 省掉了几个可省的音（缺三度也算一个）。 */ omitted: number;
   /** 缺三度：大小三和弦分不出来，大小写按调里的。 */ no3: boolean;
 }
-export type ChordRead = HarmonyRead<ChordGuess>;
+export type ChordRead = HarmonyRead<ChordGuess> & { /** 按哪个音为主数级数（按曲段认，v0.16.72）。没有 = do。 */ mode?: Mode };
+/** 以 do 为主（大调）还是以 la 为主（小调）。 */
+export type Mode = "do" | "la";
 const ID = "western";
 
 /** 这个音在 fifths 那个调里是第几级（1–7）+ 比调里那个音高 / 低几个半音（拼法定）。 */
-export function degreeOf(p: Pitch, fifths: number): { deg: number; acc: number } {
-  const deg = (((stepIndex(p.step) - tonicStepIndex(fifths)) % 7) + 7) % 7;
-  return { deg: deg + 1, acc: p.alter - keyAlter(p.step, fifths) };
+export function degreeOf(p: Pitch, fifths: number, mode: Mode = "do"): { deg: number; acc: number } {
+  const deg = (((stepIndex(p.step) - tonicStepIndex(fifths)) % 7) + 7) % 7, acc = p.alter - keyAlter(p.step, fifths);
+  if (mode === "do") return { deg: deg + 1, acc };
+  // 以 la 为主（v0.16.72，user 11-10「按曲段认乐理同意」）：从 la 数（la = 1、si = 2、do = 3…sol = 7）；升 sol = 小调的导音，算调内（写 vii°、V 里的三音不带 ♯）
+  const d = ((deg - 5 + 7) % 7) + 1;
+  return { deg: d, acc: d === 7 && acc === 1 ? 0 : acc };
 }
 const stepName = (p: Pitch): string => `${p.step}${ACC(p.alter)}`;
 /** 调里这个根音上面的三度隔几个半音（3 = 小三度、4 = 大三度）：缺三度的和弦按它定大小写。 */
@@ -83,7 +88,7 @@ function diatonicThird(root: Pitch, fifths: number): number {
 }
 
 /** 认和弦：几个音（只有一个音 = null；两个音只认五度和三度 / 六度）+ 调（1= 那个调，几个升降号）。认不出来（表里没有）= null。 */
-export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead | null {
+export function readChord(pitches: readonly Pitch[], fifths: number, mode: Mode = "do"): ChordRead | null {
   const ps = [...pitches].sort((a, b) => midiOf(a) - midiOf(b));
   const set = new Set(ps.map(pc));
   const bass = ps[0], bassPc = pc(bass);
@@ -91,10 +96,10 @@ export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead 
   //   照流行 / 吉他谱一律大写（没有三度，不说大小）；五度在下面 = 转位「I5/5」。别的两个音（三度、六度…）照旧不认
   if (set.size === 2) {
     const [a, b] = [...set], rootPc = (a + 7) % 12 === b ? a : (b + 7) % 12 === a ? b : null;
-    if (rootPc === null) return thirdDyad(ps, fifths);
-    const root = ps.find((p) => pc(p) === rootPc)!, r = degreeOf(root, fifths), bd = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(bd.acc)}${bd.deg}`;
+    if (rootPc === null) return thirdDyad(ps, fifths, mode);
+    const root = ps.find((p) => pc(p) === rootPc)!, r = degreeOf(root, fifths, mode), bd = degreeOf(bass, fifths, mode), slash = rootPc === bassPc ? "" : `/${ACC(bd.acc)}${bd.deg}`;
     const g: ChordGuess = { root, bass, tpl: "5", label: ACC(r.acc) + ROMAN[r.deg - 1] + "5" + slash, name: stepName(root) + "5" + (slash ? `/${stepName(bass)}` : ""), cost: (rootPc === bassPc ? 0 : 1) + (r.acc === 0 ? 0 : 0.25), omitted: 1, no3: true };
-    return { theory: ID, best: g, ties: [g], all: [g] };
+    return { theory: ID, best: g, ties: [g], all: [g], ...(mode === "la" ? { mode } : {}) };
   }
   if (set.size < 3) return null;
   const out: ChordGuess[] = [];
@@ -105,31 +110,31 @@ export function readChord(pitches: readonly Pitch[], fifths: number): ChordRead 
       for (const x of set) if (!req.has(x) && !opt.has(x)) return;   // 按下的音都得在表里
       for (const x of req) if (!set.has(x)) return;                   // 表里该有的都得有
       const omitted = [...opt].filter((x) => !set.has(x)).length + (t.no3 ? 1 : 0);
-      const r = degreeOf(root, fifths), inKey = r.acc === 0;
+      const r = degreeOf(root, fifths, mode), inKey = r.acc === 0;
       const minor = t.no3 ? diatonicThird(root, fifths) === 3 : t.minor;
       const cost = (rootPc === bassPc ? 0 : 1) + omitted * 1.2 + (inKey ? 0 : 0.25) + ti * 0.01;
       const numeral = ACC(r.acc) + (minor ? ROMAN[r.deg - 1].toLowerCase() : ROMAN[r.deg - 1]) + t.rs;
-      const b = degreeOf(bass, fifths), slash = rootPc === bassPc ? "" : `/${ACC(b.acc)}${b.deg}`;
+      const b = degreeOf(bass, fifths, mode), slash = rootPc === bassPc ? "" : `/${ACC(b.acc)}${b.deg}`;
       out.push({ root, bass, tpl: t.id, label: numeral + slash, name: stepName(root) + (t.no3 && minor ? "m" : "") + t.sym + (slash ? `/${stepName(bass)}` : ""), cost, omitted, no3: !!t.no3 });
     });
   }
   if (!out.length) return null;
   out.sort((a, b) => a.cost - b.cost);
   const best = out[0];
-  return { theory: ID, best, ties: out.filter((g) => g.cost - best.cost < 0.1), all: out };
+  return { theory: ID, best, ties: out.filter((g) => g.cost - best.cost < 0.1), all: out, ...(mode === "la" ? { mode } : {}) };
 }
 /** 三度双音（v0.16.65，user 11-10「好，按你的提议来」：大提琴双音 do-mi 原来不标）：两个音隔三度 / 六度 = 少了五音的三和弦——三度里下面那个音当根音，
  *  五音按调里的补上（放在最高音上面，不动最低音）再认：do-mi = I、re-fa = ii、la-do = vi、si-re = vii°；mi 在下 do 在上 = 转位 I/3。记成省了一个音。
  *  do-mi 也能读成省了根音的 vi，按习惯只取「省五音」这一种。二度、三全音 = null（照旧不标）。 */
-function thirdDyad(ps: Pitch[], fifths: number): ChordRead | null {
+function thirdDyad(ps: Pitch[], fifths: number, mode: Mode): ChordRead | null {
   const [a, b] = [...new Set(ps.map(pc))], d = (b - a + 12) % 12;
   const rootPc = d === 3 || d === 4 ? a : d === 8 || d === 9 ? b : null;
   if (rootPc === null) return null;
   const root = ps.find((p) => pc(p) === rootPc)!, st = STEPS[(stepIndex(root.step) + 4) % 7];
-  const r = readChord([...ps, { step: st, alter: keyAlter(st, fifths), octave: ps[ps.length - 1].octave + 1 }], fifths);
+  const r = readChord([...ps, { step: st, alter: keyAlter(st, fifths), octave: ps[ps.length - 1].octave + 1 }], fifths, mode);
   const all = (r?.all ?? []).filter((g) => pc(g.root) === rootPc).map((g) => ({ ...g, omitted: g.omitted + 1, cost: g.cost + 1.2 }));
   if (!all.length) return null;
-  return { theory: ID, best: all[0], ties: all.filter((g) => g.cost - all[0].cost < 0.1), all };
+  return { theory: ID, best: all[0], ties: all.filter((g) => g.cost - all[0].cost < 0.1), all, ...(mode === "la" ? { mode } : {}) };
 }
 /** 标在谱上的那一行字：打平的用「 / 」连起来（最多两个）。 */
 export const chordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g) => g.label).join(" / ");
@@ -145,7 +150,7 @@ const BROKEN_OK = new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7"
  *     认得出一个完整的基本和弦（BROKEN_OK、没省音）。没音高的（休止）跳过。
  *  ④ 级数标在一组第一个音下面；和前一组同一个和弦 = 不再标；中间隔着认不出的音 = 重新标。
  *  keyAt(i) = 第 i 个记号那里的调（几个升降号）。 */
-export function brokenChords(tokens: readonly Token[], keyAt: (index: number) => number): { index: number; read: ChordRead }[] {
+export function brokenChords(tokens: readonly Token[], keyAt: (index: number) => number, mode: Mode = "do"): { index: number; read: ChordRead }[] {
   type N = { i: number; p: Pitch | null; stacked: boolean };
   const bars = new Map<number, { nb: number; beats: N[][] }>();
   for (const [i, m] of meterPositions(tokens)) {
@@ -160,7 +165,7 @@ export function brokenChords(tokens: readonly Token[], keyAt: (index: number) =>
     const ps = ns.filter((n) => n.p && !n.stacked).map((n) => n.p!);
     if (new Set(ps.map(pc)).size < 3) return null;
     for (let k = 1; k < ps.length; k++) { const d = Math.abs(midiOf(ps[k]) - midiOf(ps[k - 1])); if (d === 1 || d === 2) return null; }
-    const rd = readChord(ps, keyAt(ns.find((n) => n.p && !n.stacked)!.i));
+    const rd = readChord(ps, keyAt(ns.find((n) => n.p && !n.stacked)!.i), mode);
     return rd && rd.best.omitted === 0 && BROKEN_OK.has(rd.best.tpl) ? rd : null;
   };
   /** 看拍 [b0, b1)：整段认得出就标；不然按轻重往下切（双数拍对半、单数拍一拍一拍），一拍认不出就算了。 */
@@ -184,16 +189,29 @@ export function brokenChords(tokens: readonly Token[], keyAt: (index: number) =>
 
 /** 一条 track 要标的音：叠音的和弦（每个叠音各自认）+ 分解和弦（brokenChords）。叠音的音不进分解和弦，两路不会撞在同一个音上。 */
 function tagsOf(track: TrackInput): { index: number; read: ChordRead }[] {
-  const { tokens, keyAt } = track, out: { index: number; read: ChordRead }[] = [];
-  tokens.forEach((t, i) => { if (t.kind === "note" && t.pitch && t.chord?.length) { const rd = readChord([t.pitch, ...t.chord], keyAt(i)); if (rd) out.push({ index: i, read: rd }); } });
-  return [...out, ...brokenChords(tokens, keyAt)];
+  const { tokens, keyAt } = track, mode = modeOf(tokens, keyAt), out: { index: number; read: ChordRead }[] = [];
+  tokens.forEach((t, i) => { if (t.kind === "note" && t.pitch && t.chord?.length) { const rd = readChord([t.pitch, ...t.chord], keyAt(i), mode); if (rd) out.push({ index: i, read: rd }); } });
+  return [...out, ...brokenChords(tokens, keyAt, mode)];
+}
+/** 按曲段认大调 / 小调（v0.16.72，user 11-10「按曲段认乐理同意」「我还是希望它的局域性好一点，所以说可能还是每个声部单独做吧」）：
+ *  一条 track（这个曲段里的这个声部）自己判，不看别的声部：最后一个有音高的音（叠音取最低的）是 la = 以 la 为主（小调），不然 = 以 do 为主。
+ *  只看这一个音，规矩一句话说得清；判错了（大调停在 la 上）照样能看出来——点开候选顶上写着为什么。 */
+export function modeOf(tokens: readonly Token[], keyAt: (index: number) => number): Mode {
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    const t = tokens[i]; if (t.kind !== "note" || !t.pitch) continue;
+    const low = [t.pitch, ...(t.chord ?? [])].reduce((a, b) => (midiOf(b) < midiOf(a) ? b : a));
+    const d = degreeOf(low, keyAt(i));
+    return d.deg === 6 && d.acc === 0 ? "la" : "do";
+  }
+  return "do";
 }
 /** 这一种理论的门面（src/theory/index.ts HarmonyTheory）。 */
 export const western: HarmonyTheory = {
   id: ID,
   tagsOf,
   label: chordLabel,
-  howTo: () => _t("怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。"),
+  howTo: (read) => _t("怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。") +
+    ((read as ChordRead | undefined)?.mode === "la" ? " " + _t("这一段这个声部最后一个音是 la，所以按以 la 为主（小调）数级数：la 的和弦 = i。") : ""),
   explain: (guess) => {
     const g = guess as ChordGuess;
     return [g.root.step !== g.bass.step || g.root.alter !== g.bass.alter ? _t("转位（最低音不是根音）") : "", g.no3 ? _t("没有三度：大三和弦还是小三和弦分不出来，按这个调里的写") : "", g.omitted - (g.no3 ? 1 : 0) > 0 ? _t("省了 {n} 个音", { n: g.omitted - (g.no3 ? 1 : 0) }) : ""].filter(Boolean);
