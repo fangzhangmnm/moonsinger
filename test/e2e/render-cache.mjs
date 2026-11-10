@@ -17,6 +17,8 @@ const title = () => p.textContent("#docTitle");
 const saved = async () => { for (let i = 0; i < 80 && /•/.test((await title()) ?? ""); i++) await p.waitForTimeout(100); };
 const later = async () => { const x = await p.waitForSelector(".offer:not(.gate-sheet) button:has-text('稍后')", { timeout: 600 }).catch(() => null); if (x) { await x.click(); await p.waitForTimeout(150); } };
 const rc = () => p.evaluate(() => window.__moonsinger.renders());
+/** 等到设备上记着的那本账变成想要的样子（挂名 / 摘名是存完之后异步做的：机器忙的时候几百毫秒不够）；到点还不是 = 把最后一次看到的交回去，让断言如实红。 */
+const rcUntil = async (ok, ms = 6000) => { const t0 = Date.now(); for (;;) { const r = await rc(); if (ok(r) || Date.now() - t0 > ms) return r; await p.waitForTimeout(100); } };
 const fakeSinger = () => p.evaluate(() => { window.__sung = 0; window.__moonsinger.singer.sing = async () => { window.__sung++; return { samples: new Float32Array(22050 * 2).fill(0.02), sr: 22050 }; }; });
 const sung = () => p.evaluate(() => window.__sung);
 /** 导出一次整首歌声，回「好了」面板上的字（然后关掉面板）。 */
@@ -29,8 +31,8 @@ const exportOnce = async () => {
 };
 const openGallery = async () => { await p.evaluate(() => window.__moonsinger.openGallery()); await p.waitForTimeout(700); await later(); };
 const tileOf = (name) => `#galleryFull .gallery-tile:has(.gallery-tile-name[title="${name}"])`;
-const hasPlay = async (name) => { for (let i = 0; i < 20; i++) { if (await p.$(`${tileOf(name)} .gallery-tile-action.ready`)) return true; await p.waitForTimeout(100); } return false; };
-const noPlay = async (name) => { for (let i = 0; i < 12; i++) { if (!(await p.$(`${tileOf(name)} .gallery-tile-action`))) return true; await p.waitForTimeout(100); } return false; };
+const hasPlay = async (name) => { for (let i = 0; i < 60; i++) { if (await p.$(`${tileOf(name)} .gallery-tile-action.ready`)) return true; await p.waitForTimeout(100); } return false; };
+const noPlay = async (name) => { for (let i = 0; i < 60; i++) { if (!(await p.$(`${tileOf(name)} .gallery-tile-action`))) return true; await p.waitForTimeout(100); } return false; };
 const entriesOf = async (path) => Object.keys(unzipSync(await folderBytes(p, path)));
 
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(600);
@@ -52,13 +54,14 @@ await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 { const t1 = await exportOnce(), n1 = await sung(), r1 = await rc();
   check(/记在这台设备上了/.test(t1) && n1 >= 1, "第一次导出：现渲（唱了），面板说记在这台设备上了", `${n1} ${t1.slice(0, 80)}`);
   check(r1.stats.count === 1 && r1.stats.bytes > 1000 && !!r1.hit, "设备上记着 1 份", JSON.stringify(r1.stats));
-  check(!!r1.link && r1.link.identifier === id && r1.link.stamp.length === 32, "挂在这首歌名下了（带着这个文件的戳）", JSON.stringify(r1.link && { id: r1.link.identifier, stamp: r1.link.stamp }));
+  const r1b = await rcUntil((r) => !!r.link);
+  check(!!r1b.link && r1b.link.identifier === id && r1b.link.stamp.length === 32, "挂在这首歌名下了（带着这个文件的戳）", JSON.stringify(r1b.link && { id: r1b.link.identifier, stamp: r1b.link.stamp }));
   const t2 = await exportOnce(), n2 = await sung();
   check(/用的是这台设备上记着的/.test(t2) && n2 === n1, "内容没变再导出：直接拿，没有重唱", `${n1} → ${n2}`);
   check((await rc()).stats.count === 1, "还是 1 份");
   const stamp1 = (await rc()).link.stamp;
   await p.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await saved(); await p.waitForTimeout(400);   // 按「存」：写进文件夹（文件戳跟着变：总目录里记着存的时刻）
-  { const l = (await rc()).link; check(!!l && l.stamp !== stamp1 && !!(await rc()).hit, "按了存（内容没变、文件戳变了）：挂名跟着换了戳，还挂着", JSON.stringify(l && l.stamp)); }
+  { const r = await rcUntil((x) => !!x.link && x.link.stamp !== stamp1), l = r.link; check(!!l && l.stamp !== stamp1 && !!r.hit, "按了存（内容没变、文件戳变了）：挂名跟着换了戳，还挂着", JSON.stringify(l && l.stamp)); }
   const names = await entriesOf(id);
   check(!names.includes(".moonsinger/final.mp3") && !/"final"/.test(strFromU8(unzipSync(await folderBytes(p, id))[".moonsinger/manifest.json"])), "文件夹里那首歌的文件里没有 mp3、总目录里没有 final", names.join(" ")); }
 
@@ -80,13 +83,13 @@ check(await p.$eval(".ms-player", (e) => e.hidden), "✕ = 停、播放条收起
 // ── 歌改了 = 摘名；改回去 = 又认得；歌库的 ▶ 跟着 ──
 await p.click(tileOf(id)); await p.waitForTimeout(800); await later(); await fakeSinger();
 check((await p.evaluate(() => window.__moonsinger.editLock().state)) === "unlocked", "这台设备上新建的歌：解着（新建不锁）");
-{ const r = await rc(), n0 = await sung(); check(!!r.hit && !!r.link, "回歌库再打开、没改：还认得那份声音（重开之后音的内部编号重排过，写出来的谱不看它）");
+{ const r = await rcUntil((x) => !!x.hit && !!x.link), n0 = await sung(); check(!!r.hit && !!r.link, "回歌库再打开、没改：还认得那份声音（重开之后音的内部编号重排过，写出来的谱不看它）");
   const t3 = await exportOnce(); check(/用的是这台设备上记着的/.test(t3) && (await sung()) === n0, "重开之后再导出：直接拿，没有重唱"); }
 await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 2, dir: "near" })); await saved(); await p.waitForTimeout(300);
-check((await rc()).link === null && !(await rc()).hit, "写了一个音、存了：这首歌名下不再挂着那份声音（内容变了）");
+{ const r = await rcUntil((x) => x.link === null); check(r.link === null && !r.hit, "写了一个音、存了：这首歌名下不再挂着那份声音（内容变了）", JSON.stringify(r.link)); }
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(100);   // 撤销回去（退格在这儿是「音变成一样长的休止」，回不到原样）
 await p.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await saved(); await p.waitForTimeout(400);
-{ const r = await rc();
+{ const r = await rcUntil((x) => !!x.link && !!x.hit);
   check(!!r.link && !!r.hit, "撤销回去、存了：内容和渲的时候一样 = 又挂上了", JSON.stringify(r.link && r.link.stamp)); }
 await openGallery();
 check(await hasPlay(id), "歌库封面上的 ▶ 还在（文件戳换过几回，挂名都跟上了）");
@@ -115,7 +118,7 @@ check(await hasPlay(OLD), "老文件：封面上照旧有 ▶（文件里还带�
 check(/歌里带着的那份 mp3/.test(await p.$eval(`${tileOf(OLD)} .gallery-tile-action`, (e) => e.getAttribute("title") ?? e.getAttribute("aria-label") ?? "")), "▶ 的提示说的是歌里带着的那份");
 const before = (await rc()).stats.count;
 await p.click(tileOf(OLD)); await p.waitForTimeout(1200); await later();
-{ const r = await rc(), lk = await p.evaluate(() => window.__moonsinger.editLock());
+{ const r = await rcUntil((x) => x.stats.count === before + 1 && !!x.link), lk = await p.evaluate(() => window.__moonsinger.editLock());
   check(r.stats.count === before + 1 && !!r.link && r.link.identifier === OLD, "打开它：那份 mp3 搬进了设备缓存、挂在它名下", JSON.stringify({ n: r.stats.count, link: r.link && r.link.identifier }));
   check(lk.locked && !lk.dirty, "别处来的老歌：打开是锁着的，没有任何改动", JSON.stringify(lk));
   check((await entriesOf(OLD)).includes(".moonsinger/final.mp3"), "锁着、没存过：文件原样（mp3 还在里面）");
@@ -123,11 +126,13 @@ await p.click(tileOf(OLD)); await p.waitForTimeout(1200); await later();
   check(!!d && d.join("|") === "接着改|存一版再改", "歌库里的歌锁着：门上两个钮", JSON.stringify(d)); }
 await p.click('#lockBar [data-v="continue"]'); await p.waitForTimeout(500);
 check((await p.evaluate(() => window.__moonsinger.editLock().state)) === "unlocked", "点「接着改」= 解了");
-await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 4, dir: "near" })); await saved(); await p.waitForTimeout(300);
+await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 4, dir: "near" }));
+// 那句话是存下去的那一下说的、过几秒自己收：先等到它（机器忙的时候后面几步做完它已经收了）
+let said = ""; for (let i = 0; i < 100 && !/不再存进歌里/.test(said); i++) { said = await p.$$eval(".notice-stack [data-notice-id]", (es) => es.map((e) => e.textContent ?? "").join(" | ")); if (!/不再存进歌里/.test(said)) await p.waitForTimeout(100); }
+await saved(); await p.waitForTimeout(300);
 await p.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await saved(); await p.waitForTimeout(400);   // 按「存」：写进文件夹（自动保存只落本机）
 { const names = await entriesOf(OLD), mf = strFromU8(unzipSync(await folderBytes(p, OLD))[".moonsinger/manifest.json"]);
   check(!names.includes(".moonsinger/final.mp3") && !/"final"|"finalRev"/.test(mf), "解锁、改了、存下去：文件里不再有那份 mp3，总目录里没有 final / finalRev", names.join(" "));
-  const said = await p.$$eval(".notice-stack [data-notice-id]", (es) => es.map((e) => e.textContent ?? "").join(" | "));
   check(/不再存进歌里/.test(said), "存掉它的那一下说了一句", said.slice(0, 120));
   check((await rc()).stats.count === before + 1, "设备上那份还在（清了能重来，但没清）"); }
 check(Object.keys(await folderFiles(p)).every((f) => !/\.mp3$/.test(f)), "文件夹里没有多出任何 mp3 文件");
