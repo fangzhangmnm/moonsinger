@@ -3996,6 +3996,13 @@ var S = {
   "\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 {REFERENCES_DIR} \u4E0B\uFF1A{path}": { en: "A reference window file isn't under {REFERENCES_DIR}: {path}" },
   "\u9EA6\u514B\u98CE {x}": { en: "Mic {x}" },
   "\u4E0A\u573A\u7684\u5019\u9009\u4E0D\u80FD\u5220\uFF0C\u5148\u6362\u4E00\u4E2A\u300C\u8C01\u6765\u6F14\u300D": { en: "The candidate on stage can't be deleted; change \u201CWho performs\u201D first" },
+  "\u89D2\u8272": { en: "role" },
+  "\u6DF7\u97F3\u8F68": { en: "Bus" },
+  "\u6F14\u594F\u8005": { en: "performer" },
+  "\u6548\u679C\u683C": { en: "effect slot" },
+  "\u6548\u679C\u7684\u79CD\u7C7B": { en: "effect type" },
+  "\u8FD9\u9996\u6B4C\u7684\u6587\u4EF6\u91CC\u6709\u4E0D\u5408\u89C4\u77E9\u7684\u7F16\u53F7\uFF08{what}\uFF09\uFF1A\u591A\u534A\u662F\u88AB\u522B\u7684\u5DE5\u5177\u6539\u8FC7\u6216\u8005\u6587\u4EF6\u574F\u4E86\uFF0C\u6CA1\u6709\u6253\u5F00\u3002": { en: "This song file contains malformed internal IDs ({what}): it was probably edited by another tool or is damaged, so it was not opened." },
+  "{k} {n} \u4E2A": { en: "{n} \xD7 {k}" },
   "\u8FD9\u4E2A\u6587\u4EF6\u89E3\u4E0D\u5F00\uFF08\u4E0D\u662F\u5B8C\u6574\u7684 .mxl\uFF1F\uFF09\uFF1A{Error}": { en: "This file can't be unpacked (not a complete .mxl?): {Error}" },
   "\u8FD9\u4E2A\u538B\u7F29\u5305\u91CC\u6CA1\u6709 META-INF/container.xml\uFF0C\u4E0D\u662F .mxl": { en: "This archive has no META-INF/container.xml, so it's not an .mxl" },
   "container.xml \u6307\u7684\u4E3B\u4E50\u8C31\u5728\u5305\u91CC\u627E\u4E0D\u5230": { en: "The main score named in container.xml isn't in the archive" },
@@ -4875,7 +4882,6 @@ var S = {
   "\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09": { en: "Mute: this bus is silent and sends nothing onward (the dry sound of parts sending to it is unaffected)" },
   "\u9759": { en: "M" },
   "\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09": { en: "Bus \xB7 bypassed (all plugins skipped)" },
-  "\u6DF7\u97F3\u8F68": { en: "Bus" },
   "\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09": { en: "Move earlier (this part also moves up on the score)" },
   "\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09": { en: "Move later (this part also moves down on the score)" },
   "\u5728 {refs} \u5F20\u7EB8\u4E0A": { en: "On {refs} {refs|sheet|sheets}" },
@@ -5106,7 +5112,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.91-2026-11-10";
+var APP_VERSION = "v0.16.92-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -7373,9 +7379,9 @@ function addPaper(st2, after, before) {
   };
   const named = papers.map((p2) => p2.name.trim() ? p2 : { ...p2, name: nextName() });
   const paper = withLooks({ id: id2, name: nextName(), tracks }, (first ?? prev)?.looks ?? {});
-  const list = named.slice();
-  list.splice(k2 + 1, 0, paper);
-  return setFocus({ ...st2, song: { ...st2.song, papers: list }, nextId: nid }, id2, st2.at.part);
+  const list2 = named.slice();
+  list2.splice(k2 + 1, 0, paper);
+  return setFocus({ ...st2, song: { ...st2.song, papers: list2 }, nextId: nid }, id2, st2.at.part);
 }
 function duplicatePaper(st2, paperId, name) {
   const papers = st2.song.papers, k2 = papers.findIndex((p2) => p2.id === paperId);
@@ -7384,25 +7390,25 @@ function duplicatePaper(st2, paperId, name) {
   let nid = st2.nextId;
   const tracks = {};
   for (const [pid, t10] of Object.entries(src.tracks)) tracks[pid] = t10.map((x2) => ({ ...x2, id: nid++ }));
-  const list = papers.slice();
-  list.splice(k2 + 1, 0, { ...src, id: id2, name, tracks });
-  return setFocus({ ...st2, song: { ...st2.song, papers: list }, nextId: nid }, id2, tracks[st2.at.part] ? st2.at.part : Object.keys(tracks)[0] ?? st2.at.part);
+  const list2 = papers.slice();
+  list2.splice(k2 + 1, 0, { ...src, id: id2, name, tracks });
+  return setFocus({ ...st2, song: { ...st2.song, papers: list2 }, nextId: nid }, id2, tracks[st2.at.part] ? st2.at.part : Object.keys(tracks)[0] ?? st2.at.part);
 }
 function removePaper(st2, paperId) {
   const papers = st2.song.papers;
   if (papers.length <= 1) return st2;
   const k2 = papers.findIndex((p2) => p2.id === paperId);
   if (k2 < 0) return st2;
-  const list = papers.filter((p2) => p2.id !== paperId), song = { ...st2.song, papers: list };
+  const list2 = papers.filter((p2) => p2.id !== paperId), song = { ...st2.song, papers: list2 };
   if (st2.at.paper !== paperId) return { ...st2, song };
-  const to2 = list[Math.min(k2, list.length - 1)];
+  const to2 = list2[Math.min(k2, list2.length - 1)];
   return setFocus({ ...st2, song }, to2.id, st2.at.part);
 }
 function movePaper(st2, paperId, d3) {
-  const list = st2.song.papers.slice(), k2 = list.findIndex((p2) => p2.id === paperId), j2 = k2 + d3;
-  if (k2 < 0 || j2 < 0 || j2 >= list.length) return st2;
-  [list[k2], list[j2]] = [list[j2], list[k2]];
-  return { ...st2, song: { ...st2.song, papers: list } };
+  const list2 = st2.song.papers.slice(), k2 = list2.findIndex((p2) => p2.id === paperId), j2 = k2 + d3;
+  if (k2 < 0 || j2 < 0 || j2 >= list2.length) return st2;
+  [list2[k2], list2[j2]] = [list2[j2], list2[k2]];
+  return { ...st2, song: { ...st2.song, papers: list2 } };
 }
 function setBarNumbers(st2, on2) {
   if (st2.song.barNumbers !== "off" === on2) return st2;
@@ -19700,7 +19706,7 @@ function createCloudSync(cfg) {
         out.push({ ...it2, path: itPath, name: toName(itPath) });
     }
   }
-  async function list() {
+  async function list2() {
     const out = [];
     await _walk("", out, 0, null, { partial: false });
     return out;
@@ -19795,7 +19801,7 @@ function createCloudSync(cfg) {
     trash,
     restore,
     purge,
-    list,
+    list: list2,
     listAll,
     listFolder,
     listFolders,
@@ -22026,10 +22032,10 @@ function createDownloadSessions(cfg) {
     }
     function sourcesFor(i10) {
       const off = chunkOff(i10), len = chunkLen(i10);
-      const list = [];
+      const list2 = [];
       if (mirror && (item === null || mirrorUp(mirror.src))) {
         const m2 = mirror;
-        list.push({
+        list2.push({
           origin: "mirror",
           fetch: async (o10) => {
             try {
@@ -22087,8 +22093,8 @@ function createDownloadSessions(cfg) {
         });
       }
       if (item !== null)
-        list.push({ origin: "cloud", fetch: (o10) => range2(item, off, len, o10) });
-      return list;
+        list2.push({ origin: "cloud", fetch: (o10) => range2(item, off, len, o10) });
+      return list2;
     }
     const fetchChunk = (i10, prio) => scheduler.request({
       key: `${name}:${i10}`,
@@ -24813,7 +24819,7 @@ async function retrySilentSignIn() {
 }
 
 // node_modules/@internal/store/dist/base/folder-delete.js
-async function deleteEmptyFolderVia(getItemByPath, list, deleteById, path) {
+async function deleteEmptyFolderVia(getItemByPath, list2, deleteById, path) {
   const item = await getItemByPath(path);
   if (!item)
     return { status: "already-gone" };
@@ -24821,7 +24827,7 @@ async function deleteEmptyFolderVia(getItemByPath, list, deleteById, path) {
     throw new Error(`\u4E0D\u662F\u6587\u4EF6\u5939\uFF0C\u62D2\u7EDD\u5220\u9664\uFF1A${path}`);
   let children;
   try {
-    children = await list(path);
+    children = await list2(path);
   } catch {
     return { status: "list-failed" };
   }
@@ -24852,10 +24858,10 @@ function toItem(it2) {
 function graphToCloudProvider(graph) {
   if (!graph)
     throw new Error("graphToCloudProvider: graph transport \u5FC5\u4F20");
-  const list = async (folder = "") => (await graph.listChildren(folder)).map(toItem);
+  const list2 = async (folder = "") => (await graph.listChildren(folder)).map(toItem);
   const getItemByPath = async (path) => toItem(await graph.getItemByPath(path));
   return {
-    list,
+    list: list2,
     getItemByPath,
     download: (ref) => graph.downloadItemBlob(ref),
     downloadRange: (ref, offset, length, opts) => graph.downloadItemRange(ref, offset, length, opts),
@@ -24873,7 +24879,7 @@ function graphToCloudProvider(graph) {
     //   （v435 立的硬删守卫）从没到过 Graph，mock 比真机严（mock 校验 If-Match、真机根本没收到）。透传。
     delete: (ref, eTag) => graph.deleteItem(ref, eTag),
     // 删空夹（唯一文件夹删除面）：护栏在 folder-delete 深模块，If-Match folder etag best-effort。
-    deleteEmptyFolder: (path) => deleteEmptyFolderVia(getItemByPath, list, (ref, etag) => graph.deleteItem(ref, etag), path),
+    deleteEmptyFolder: (path) => deleteEmptyFolderVia(getItemByPath, list2, (ref, etag) => graph.deleteItem(ref, etag), path),
     ensureFolder: (path) => graph.ensureSubfolder(path),
     move: (ref, folderRef, opts = {}) => graph.moveItemToFolder(ref, folderRef, opts).then(toItem),
     copy: (ref, folderRef, newName) => graph.copyItemToFolder(ref, folderRef, newName).then(toItem),
@@ -29878,15 +29884,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-b8171c4665c6.mjs");
+      return pick(() => "singer-worker-26869fd4d53d.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-cf121e8f0517.mjs");
+      return pick(() => "layout-worker-50172ab074bf.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-b14202c8dea8.mjs");
+      return pick(() => "encode-worker-6a389665ce7b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -31178,9 +31184,9 @@ function subsetSf2(input, want) {
     r10.set(d3, 8);
     return r10;
   };
-  const list = (kind, parts) => chunk("LIST", concat([Uint8Array.from([...kind].map((c10) => c10.charCodeAt(0))), ...parts]));
-  const sdta = list("sdta", [chunk("smpl", concat(pieces))]);
-  const pdtaOut = list("pdta", Object.keys(REC).map((k2) => chunk(k2, out[k2])));
+  const list2 = (kind, parts) => chunk("LIST", concat([Uint8Array.from([...kind].map((c10) => c10.charCodeAt(0))), ...parts]));
+  const sdta = list2("sdta", [chunk("smpl", concat(pieces))]);
+  const pdtaOut = list2("pdta", Object.keys(REC).map((k2) => chunk(k2, out[k2])));
   const body2 = concat([Uint8Array.from([..."sfbk"].map((c10) => c10.charCodeAt(0))), info2, sdta, pdtaOut]);
   return chunk("RIFF", body2);
 }
@@ -32388,6 +32394,80 @@ function migrate(kind, json) {
   return out;
 }
 
+// src/format/ids.ts
+var SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
+var isSafeId = (x2) => typeof x2 === "string" && SAFE_ID.test(x2);
+var list = (x2) => Array.isArray(x2) ? x2.filter((e10) => e10 && typeof e10 === "object") : [];
+function badIds(scoreExt, lounge, studio2) {
+  const bad = {};
+  const need = (what, v) => {
+    if (!isSafeId(v)) bad[what] = (bad[what] ?? 0) + 1;
+  };
+  const maybe = (what, v) => {
+    if (v !== void 0 && v !== null && v !== "") need(what, v);
+  };
+  const keys = (what, o10) => {
+    if (o10 && typeof o10 === "object" && !Array.isArray(o10)) for (const k2 of Object.keys(o10)) need(what, k2);
+  };
+  const fxs = (chain) => {
+    for (const f2 of list(chain)) {
+      need("fx", f2.id);
+      need("fxKind", f2.kind);
+      maybe("track", f2.key);
+    }
+  };
+  for (const p2 of list(scoreExt?.papers)) {
+    need("paper", p2.id);
+    keys("part", p2.manualBars);
+    keys("part", p2.swells);
+    keys("part", p2.autoOttava);
+  }
+  for (const p2 of list(scoreExt?.parts)) {
+    need("part", p2.id);
+    maybe("role", p2.role);
+    maybe("track", p2.mic);
+    maybe("part", p2.host);
+  }
+  for (const [id2, r10] of Object.entries(lounge)) {
+    need("role", id2);
+    maybe("role", r10.id);
+    maybe("candidate", r10.active);
+    for (const c10 of list(r10.candidates)) {
+      need("candidate", c10.id);
+      fxs(c10.chain);
+    }
+  }
+  for (const t10 of list(studio2?.tracks)) {
+    need("track", t10.id);
+    maybe("track", t10.to);
+    for (const s10 of list(t10.sends)) need("track", s10.to);
+    fxs(t10.chain);
+  }
+  fxs(studio2?.master?.chain);
+  return bad;
+}
+function safePartIds(parts) {
+  if (parts.every((p2) => isSafeId(p2.info.id))) return parts.slice();
+  const used = new Set(parts.map((p2) => p2.info.id).filter(isSafeId));
+  let n10 = 0;
+  return parts.map((p2) => {
+    if (isSafeId(p2.info.id)) return p2;
+    let id2;
+    do {
+      id2 = `P${++n10}`;
+    } while (used.has(id2));
+    used.add(id2);
+    return { ...p2, info: { ...p2.info, id: id2 } };
+  });
+}
+function safeView(view2) {
+  if (!view2) return view2;
+  const out = { ...view2 };
+  if ("paper" in out && !isSafeId(out.paper)) delete out.paper;
+  if (out.parts && typeof out.parts === "object" && !Array.isArray(out.parts)) out.parts = Object.fromEntries(Object.entries(out.parts).filter(([k2]) => isSafeId(k2)));
+  return out;
+}
+
 // src/format/project.ts
 var MIMETYPE = "application/vnd.recordare.musicxml";
 var DIR = ".moonsinger/";
@@ -32422,9 +32502,9 @@ var fpTextOf = (o10) => {
 var KNOWN_SCORE_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort"]);
 var KNOWN_PAPER_KEYS = /* @__PURE__ */ new Set(["id", "file", "manualBars", "unwritten", "swells", "hidden", "autoOttava", "phrases"]);
 var KNOWN_PART_KEYS = /* @__PURE__ */ new Set(["id", "role", "mic", "kind", "clef", "autoOttava", "host", "brokenChords"]);
-var unknownById = (list, known) => {
+var unknownById = (list2, known) => {
   const out = /* @__PURE__ */ new Map();
-  if (Array.isArray(list)) for (const e10 of list) {
+  if (Array.isArray(list2)) for (const e10 of list2) {
     if (!e10 || typeof e10 !== "object") continue;
     const rest = Object.fromEntries(Object.entries(e10).filter(([k2]) => !known.has(k2)));
     if (Object.keys(rest).length) out.set(String(e10.id), rest);
@@ -32806,11 +32886,11 @@ function withSwap(extras, role, nextActive, hum, o10 = {}) {
 function withCandidateCopy(extras, fromRole, fromId, toRole, hum) {
   const src = candidateJson(extras, fromRole, fromId);
   if (!src) return extras;
-  const r10 = roleOf(extras, toRole, hum), list = cands(r10), id2 = nextKey2(list.map((c10) => String(c10.id)), "c");
+  const r10 = roleOf(extras, toRole, hum), list2 = cands(r10), id2 = nextKey2(list2.map((c10) => String(c10.id)), "c");
   const { asCast: _a2, ...copy } = structuredClone(src);
   const same = fromRole === toRole;
   if (same) copy.name = `${String(copy.name ?? "")} 2`;
-  r10.candidates = [...list, { ...copy, id: id2 }];
+  r10.candidates = [...list2, { ...copy, id: id2 }];
   const prev = activeId(extras, toRole);
   let next2 = { ...extras, lounge: { ...extras.lounge, [toRole]: r10 } };
   const ca2 = copy.castAs;
@@ -32856,12 +32936,12 @@ function activeGm(extras, role) {
 }
 function withSf2Candidate(extras, role, c10, hum) {
   const r10 = roleOf(extras, role, hum);
-  const list = cands(r10);
-  const n10 = Math.max(0, ...list.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
+  const list2 = cands(r10);
+  const n10 = Math.max(0, ...list2.map((x2) => Number(/^c(\d+)$/.exec(String(x2.id))?.[1] ?? 0))) + 1, id2 = `c${n10}`;
   const embed = c10.embed !== false, path = embed ? `${SOUNDS2}${c10.sha256}.sf2` : null;
   const instrument = { engine: "soundfont", bank: c10.bank, program: c10.program, ...c10.note !== void 0 ? { note: c10.note } : {}, ...c10.sfx ? { sfx: { ...c10.sfx } } : {}, source: { embedded: path, subsetBytes: c10.subset.length, subsetSha256: c10.sha256, origin: c10.origin } };
-  list.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, ...c10.canSwell === false ? { canSwell: false } : {} }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
-  r10.candidates = list;
+  list2.push({ id: id2, name: c10.name, instrument, gm: { program: c10.bank === 128 ? null : c10.program + 1, variant: null }, ...common(), articulation: { ...ARTICULATION, gapSec: Math.max(0, Math.min(GAP_MAX_SEC, c10.gapSec ?? 0)), marcatoDb: MARCATO_DB, accentVel: ACCENT_VEL, marcatoVel: MARCATO_VEL, ...MARK_DEFAULTS, ...c10.canSwell === false ? { canSwell: false } : {} }, dynamicsVel: { ...DYNAMICS_VEL }, calibrationDb: c10.calibrationDb ?? SOUNDFONT_CALIBRATION_DB, defaults: { ...SOUNDFONT_DEFAULTS, velocity: DYNAMICS_VEL.mf / 127 }, credit: c10.credit, spec: structuredClone(SOUNDFONT_SPEC) });
+  r10.candidates = list2;
   r10.active = id2;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 }, sounds: path ? { ...extras.sounds, [path]: c10.subset } : extras.sounds };
 }
@@ -33068,7 +33148,17 @@ function withTranspose(extras, role, semis, hum) {
   else delete c10.transpose;
   return { ...extras, lounge: { ...extras.lounge, [role]: r10 } };
 }
-var foreign = (r10) => r10.title || !r10.movementTitle ? r10 : { ...r10, title: r10.movementTitle, movementTitle: "" };
+var foreign = (r02) => {
+  const r10 = { ...r02, parts: safePartIds(r02.parts) };
+  return r10.title || !r10.movementTitle ? r10 : { ...r10, title: r10.movementTitle, movementTitle: "" };
+};
+var ID_KIND = () => ({ paper: _t("\u66F2\u6BB5"), part: _t("\u58F0\u90E8"), role: _t("\u89D2\u8272"), track: _t("\u6DF7\u97F3\u8F68"), candidate: _t("\u6F14\u594F\u8005"), fx: _t("\u6548\u679C\u683C"), fxKind: _t("\u6548\u679C\u7684\u79CD\u7C7B") });
+function refuseBadIds(bad) {
+  const l10 = Object.entries(bad);
+  if (!l10.length) return;
+  const names = ID_KIND();
+  throw new Error(_t("\u8FD9\u9996\u6B4C\u7684\u6587\u4EF6\u91CC\u6709\u4E0D\u5408\u89C4\u77E9\u7684\u7F16\u53F7\uFF08{what}\uFF09\uFF1A\u591A\u534A\u662F\u88AB\u522B\u7684\u5DE5\u5177\u6539\u8FC7\u6216\u8005\u6587\u4EF6\u574F\u4E86\uFF0C\u6CA1\u6709\u6253\u5F00\u3002", { what: l10.map(([k2, n10]) => _t("{k} {n} \u4E2A", { k: names[k2], n: n10 })).join(_t("\u3001")) }));
+}
 function paperOfRead(id2, r10) {
   const tracks = {};
   for (const p2 of r10.parts) tracks[p2.info.id] = p2.tokens;
@@ -33157,6 +33247,7 @@ function openBytes(name, bytes) {
     extras.sounds[p2] = files[p2];
     known.add(p2);
   }
+  refuseBadIds(badIds(scoreExt, extras.lounge, extras.studio));
   extras.finalRev = Math.max(0, Math.floor(Number(manifest.finalRev ?? 0))) || 0;
   if (files[FINAL_MP3_ENTRY]) known.add(FINAL_MP3_ENTRY);
   if (manifest.final !== void 0) {
@@ -33177,16 +33268,17 @@ function openBytes(name, bytes) {
       extras.finalMp3 = mp3;
     }
   }
-  const list = scoreExt?.papers ?? [{ id: "p1", file: paperFile("p1"), manualBars: {}, unwritten: [] }];
+  const list2 = scoreExt?.papers ?? [{ id: "p1", file: paperFile("p1"), manualBars: {}, unwritten: [] }];
   const legacyLooks = Number(scoreExt?.minor ?? 0) < 4;
   const reads = [];
   const papers = [];
-  list.forEach((p2, k2) => {
+  list2.forEach((p2, k2) => {
     const file = String(p2.file ?? paperFile(String(p2.id)));
     const b3 = files[file] ?? (k2 === 0 ? files[main] : void 0);
     if (!b3) throw new Error(_t("\u7EB8\u300C{id}\u300D\u7684\u8C31\uFF08{file}\uFF09\u5728\u5305\u91CC\u627E\u4E0D\u5230", { id: p2.id, file }));
     known.add(file);
     const r10 = readMusicXml(strFromU8(b3), { manualBars: p2.manualBars ?? {}, unwritten: p2.unwritten ?? [] });
+    refuseBadIds({ ...r10.parts.some((x2) => !isSafeId(x2.info.id)) ? { part: r10.parts.filter((x2) => !isSafeId(x2.info.id)).length } : {} });
     reads.push(r10);
     const seg = paperOfRead(String(p2.id), r10);
     if (p2.hidden === true) seg.hidden = true;
@@ -33317,7 +33409,7 @@ function finish(reads, song0, extras, ours, name) {
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;
-  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}, ...extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" } : {}, ...extras.scoreExt?.spacing === "tight" ? { spacing: "tight" } : {} }, stem, hum, extras, ours, notices, view: extras.scoreExt?.view ?? null, references: {}, advice: [] };
+  return { song: { ...song0, hum, ...typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}, ...extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}, ...extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" } : {}, ...extras.scoreExt?.spacing === "tight" ? { spacing: "tight" } : {} }, stem, hum, extras, ours, notices, view: safeView(extras.scoreExt?.view ?? null), references: {}, advice: [] };
 }
 
 // src/format/credits.ts
@@ -35954,8 +36046,8 @@ var gmKey = (g3) => `${g3.bank}:${g3.program}${g3.note !== void 0 ? `:${g3.note}
 function loadCatalogFromJson(concepts, gmMap) {
   const rows = gmMap.rows, gmSelf = /* @__PURE__ */ new Map();
   for (const r10 of rows) if (r10.relation === "self" && (r10.primary !== false || !gmSelf.has(gmKey(r10)))) gmSelf.set(gmKey(r10), r10);
-  const list = concepts.concepts;
-  return { version: concepts.v ?? 0, concepts: list, byId: new Map(list.map((c10) => [c10.id, c10])), gmSelf, rows, defs: { ...gmMap.defs ?? {}, ...concepts.defs } };
+  const list2 = concepts.concepts;
+  return { version: concepts.v ?? 0, concepts: list2, byId: new Map(list2.map((c10) => [c10.id, c10])), gmSelf, rows, defs: { ...gmMap.defs ?? {}, ...concepts.defs } };
 }
 var cached = null;
 var sha256Hex4 = async (b3) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b3))].map((x2) => x2.toString(16).padStart(2, "0")).join("");
@@ -36044,7 +36136,7 @@ var HS_CLASS = { "1": _t("\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09"), "2
 function groupConcepts(cat2, mode, query = "") {
   const q2 = query.trim().toLowerCase();
   const hit = (c10) => !q2 || [c10.names.zh, c10.names.en, c10.names.ja ?? ""].some((n10) => n10.toLowerCase().includes(q2));
-  const list = cat2.concepts.filter(hit);
+  const list2 = cat2.concepts.filter(hit);
   const byGm = (a10, b3) => ((a10.ids.gm ?? [])[0]?.program ?? 999) - ((b3.ids.gm ?? [])[0]?.program ?? 999) || a10.names.zh.localeCompare(b3.names.zh, "zh");
   const groups = /* @__PURE__ */ new Map();
   const put2 = (id2, label, c10) => {
@@ -36058,7 +36150,7 @@ function groupConcepts(cat2, mode, query = "") {
   const asItems = (gs) => gs.map((g3) => ({ id: g3.id, label: g3.label, items: g3.concepts.map((concept) => ({ concept })) }));
   if (mode === "family") {
     const order = new Map(cat2.defs.families.map((f2, i10) => [f2.id, i10]));
-    for (const c10 of list) {
+    for (const c10 of list2) {
       const f2 = (c10.family ?? [])[0] ?? "other";
       put2(f2, (lang() === "zh" ? cat2.defs.families.find((x2) => x2.id === f2)?.zh : cat2.defs.families.find((x2) => x2.id === f2)?.en) ?? (c10.kind === "voice" ? _t("\u4EBA\u58F0") : c10.kind === "sound" ? _t("\u97F3\u6548") : _t("\u5176\u4ED6")), c10);
     }
@@ -36066,16 +36158,16 @@ function groupConcepts(cat2, mode, query = "") {
   }
   if (mode === "year") {
     const eras = cat2.defs.eras;
-    for (const c10 of list) {
+    for (const c10 of list2) {
       const e10 = eras.find((x2) => x2.id === c10.era);
       put2(e10?.id ?? "unknown", e10 ? `${defLabel(e10.zh)}${e10.from !== null ? _t("\uFF08{from} \u8D77\uFF09", { from: fmtYear(e10.from) }) : ""}` : _t("\u5E74\u4EE3\u4E0D\u8BE6"), c10);
     }
     const order = new Map(eras.map((e10, i10) => [e10.id, i10]));
     return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.year ?? 1e9) - (b3.year ?? 1e9)) })));
   }
-  if (mode === "kind") return kindGroups(cat2, list, q2, hit);
+  if (mode === "kind") return kindGroups(cat2, list2, q2, hit);
   if (mode === "hs") {
-    for (const c10 of list) {
+    for (const c10 of list2) {
       const k2 = c10.ids.hs?.[0] ?? "?";
       put2(k2, HS_CLASS[k2] ?? _t("\u5206\u7C7B\u4E0D\u8BE6"), c10);
     }
@@ -36083,18 +36175,18 @@ function groupConcepts(cat2, mode, query = "") {
   }
   return styleGroups(cat2, q2, hit);
 }
-function kindGroups(cat2, list, q2, hit) {
+function kindGroups(cat2, list2, q2, hit) {
   const isDrum = (c10) => (c10.family ?? []).some((f2) => f2 === "percussion" || f2 === "percussive");
   const drumKey = (c10) => {
     const g3 = (c10.ids.gm ?? [])[0];
     return !g3 ? 9999 : g3.bank === 128 ? g3.note ?? 0 : 1e3 + g3.program;
   };
-  const drums = list.filter(isDrum).sort((a10, b3) => drumKey(a10) - drumKey(b3) || a10.names.zh.localeCompare(b3.names.zh, "zh"));
+  const drums = list2.filter(isDrum).sort((a10, b3) => drumKey(a10) - drumKey(b3) || a10.names.zh.localeCompare(b3.names.zh, "zh"));
   const pads = [...cat2.gmSelf.values()].filter((r10) => r10.family === "synth-pad" && r10.note === void 0).sort((a10, b3) => a10.program - b3.program).flatMap((r10) => {
     const c10 = cat2.byId.get(r10.concept);
     return c10 && (hit(c10) || !!q2 && r10.gmName.toLowerCase().includes(q2)) ? [{ concept: c10, preset: r10 }] : [];
   });
-  const rest = list.filter((c10) => !isDrum(c10)).sort((a10, b3) => a10.names.zh.localeCompare(b3.names.zh, "zh"));
+  const rest = list2.filter((c10) => !isDrum(c10)).sort((a10, b3) => a10.names.zh.localeCompare(b3.names.zh, "zh"));
   return [
     { id: "drums", label: _t("\u9F13\u548C\u6253\u51FB\u4E50"), items: drums.map((concept) => ({ concept })) },
     { id: "pads", label: _t("Pad\uFF08\u5408\u6210\u5668\u7684\u94FA\u5E95\u97F3\u8272\uFF09"), items: pads },
@@ -36550,7 +36642,7 @@ function createPerformance(host2) {
       return e10 && e10.cand === activeId(extras(), p2.role) ? [{ part: p2.id, role: p2.role, label: labels[k2], kind: e10.kind, why: e10.why }] : [];
     });
   }
-  const issuesText = (list) => list.map((i10) => `\u300C${i10.label}\u300D\uFF1A${i10.why}`).join("\uFF1B");
+  const issuesText = (list2) => list2.map((i10) => `\u300C${i10.label}\u300D\uFF1A${i10.why}`).join("\uFF1B");
   function refreshIssues2() {
     const next2 = computeIssues(), key = JSON.stringify(next2.map((i10) => [i10.part, i10.kind, i10.why]));
     if (key === issuesKey) return;
@@ -37623,8 +37715,8 @@ var Finder = class {
       await this.loading;
     }
     this.render();
-    const list = this.el.querySelector(".finder-list");
-    list.scrollTop = this.scrollY;
+    const list2 = this.el.querySelector(".finder-list");
+    list2.scrollTop = this.scrollY;
     this.markJump();
     const openedC = this.opened ? this.cat.byId.get(this.opened.split("::")[1]) : void 0;
     if (this.selected) void this.host.audition(this.pickOf(this.selected));
@@ -37892,7 +37984,7 @@ var Finder = class {
   render() {
     this.renderPins();
     this.renderUsed();
-    const list = this.el.querySelector(".finder-list");
+    const list2 = this.el.querySelector(".finder-list");
     if (!this.cat) return;
     const cat2 = this.cat, hiddenIds = /* @__PURE__ */ new Set();
     const playable = (e10) => !!e10.preset || e10.concept.kind === "voice" || providersOf(cat2, e10.concept).length > 0;
@@ -37910,11 +38002,11 @@ var Finder = class {
     jump.querySelector("select").innerHTML = groups.map((g3, k2) => `<option value="${k2}">${_t("{label} \xB7 {n} \u4EF6", { label: esc4(g3.label), n: g3.items.length })}</option>`).join("");
     const own = this.ownHtml();
     if (!groups.length) {
-      list.innerHTML = own + (own ? "" : `<div class="finder-empty">${hiddenIds.size ? _t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684\u80FD\u6F14\u7684\u4E50\u5668\uFF08\u85CF\u7740 {n} \u4EF6\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\uFF1A\u5173\u6389\u300C\u9690\u85CF\u627E\u4E0D\u5230\u7684\u300D\u80FD\u770B\u5230\uFF09", { q: esc4(this.q), n: hiddenIds.size }) : _t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684", { q: esc4(this.q) })}</div>`);
+      list2.innerHTML = own + (own ? "" : `<div class="finder-empty">${hiddenIds.size ? _t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684\u80FD\u6F14\u7684\u4E50\u5668\uFF08\u85CF\u7740 {n} \u4EF6\u6CA1\u6709\u8C01\u80FD\u6F14\u7684\uFF1A\u5173\u6389\u300C\u9690\u85CF\u627E\u4E0D\u5230\u7684\u300D\u80FD\u770B\u5230\uFF09", { q: esc4(this.q), n: hiddenIds.size }) : _t("\u6CA1\u6709\u53EB\u300C{q}\u300D\u7684", { q: esc4(this.q) })}</div>`);
       return;
     }
     const acc = !this.q.trim() && groups.length > 1, openId = this.openG.get(this.mode);
-    list.innerHTML = own + groups.map((g3, k2) => {
+    list2.innerHTML = own + groups.map((g3, k2) => {
       const on2 = !acc || g3.id === openId;
       return `<div class="finder-group${acc ? " acc" : ""}${on2 ? " is-open" : ""}" data-g="${k2}" data-gid="${esc4(g3.id)}"><div class="finder-group-h"${acc ? ` data-v="group" role="button" aria-expanded="${on2}" title="${on2 ? _t("\u6536\u8D77\u8FD9\u4E00\u7EC4") : _t("\u5C55\u5F00\u8FD9\u4E00\u7EC4\uFF08\u522B\u7684\u6536\u8D77\uFF09")}"` : ""}>${acc ? `<svg class="ico fg-chev" aria-hidden="true"><use href="#chevron-down"/></svg>` : ""}<span class="fg-label">${esc4(g3.label)}</span><span>${g3.items.length}</span></div>` + (on2 ? `<div class="finder-items">${g3.items.map((e10) => this.rowHtml(e10, g3.id)).join("")}</div>` : "") + `</div>`;
     }).join("");
@@ -37937,66 +38029,66 @@ var Finder = class {
   }
   /** 重画，把 sel 选中的那个元素钉在屏幕上原来的位置（只滚列表自己）。 */
   renderPinned(sel) {
-    const list = this.el.querySelector(".finder-list"), before = list.querySelector(sel)?.getBoundingClientRect().top;
+    const list2 = this.el.querySelector(".finder-list"), before = list2.querySelector(sel)?.getBoundingClientRect().top;
     this.render();
-    const el2 = list.querySelector(sel);
-    if (el2 && before !== void 0) list.scrollTop += el2.getBoundingClientRect().top - before;
+    const el2 = list2.querySelector(sel);
+    if (el2 && before !== void 0) list2.scrollTop += el2.getBoundingClientRect().top - before;
     this.markJump();
   }
   /** 重画，但把 anchor 这件乐器的那一行钉在屏幕上原来的位置（user 2026-10-08「换乐器玩，弹几下，选乐器滚动会跳到别的地方去」：
    *  点另一件 = 上面展开的那件收起，整张列表往上缩，原来又用 scrollIntoView 去追选中项、在 iPad 上还会连外层一起滚——手指底下那行就跑了）。
    *  reveal = 刚展开的：它的「谁能演」露不全就往上挪一点，但这一行不挪到组头底下。只滚列表自己。 */
   renderAnchored(anchor, reveal = false) {
-    const list = this.el.querySelector(".finder-list"), sel = `.inst-row[data-o="${CSS.escape(anchor)}"]`;
-    const before = list.querySelector(sel)?.getBoundingClientRect().top;
+    const list2 = this.el.querySelector(".finder-list"), sel = `.inst-row[data-o="${CSS.escape(anchor)}"]`;
+    const before = list2.querySelector(sel)?.getBoundingClientRect().top;
     this.render();
-    const row2 = list.querySelector(sel);
+    const row2 = list2.querySelector(sel);
     if (!row2 || before === void 0) return;
-    list.scrollTop += row2.getBoundingClientRect().top - before;
+    list2.scrollTop += row2.getBoundingClientRect().top - before;
     if (!reveal) return;
     const body2 = row2.nextElementSibling;
     if (!body2?.classList.contains("inst-prov")) return;
-    const lr2 = list.getBoundingClientRect(), hdr = row2.closest(".finder-group")?.querySelector(".finder-group-h")?.offsetHeight ?? 0;
+    const lr2 = list2.getBoundingClientRect(), hdr = row2.closest(".finder-group")?.querySelector(".finder-group-h")?.offsetHeight ?? 0;
     const over = body2.getBoundingClientRect().bottom - lr2.bottom, room = row2.getBoundingClientRect().top - (lr2.top + hdr);
-    if (over > 0 && room > 0) list.scrollTop += Math.min(over, room);
+    if (over > 0 && room > 0) list2.scrollTop += Math.min(over, room);
     this.markJump();
   }
   /** 手风琴：展开 / 收起一组（只能开一组）。展开 = 那一组的组头滚到列表顶上；收起 = 组头留在屏幕上原来的位置。 */
   toggleGroup(gid) {
-    const list = this.el.querySelector(".finder-list"), sel = `[data-gid="${CSS.escape(gid)}"]`;
-    const closing = this.openG.get(this.mode) === gid, before = list.querySelector(sel)?.getBoundingClientRect().top;
+    const list2 = this.el.querySelector(".finder-list"), sel = `[data-gid="${CSS.escape(gid)}"]`;
+    const closing = this.openG.get(this.mode) === gid, before = list2.querySelector(sel)?.getBoundingClientRect().top;
     if (closing) this.openG.delete(this.mode);
     else this.openG.set(this.mode, gid);
     this.render();
-    const g3 = list.querySelector(sel);
+    const g3 = list2.querySelector(sel);
     if (!g3) return;
-    list.scrollTop += g3.getBoundingClientRect().top - (closing && before !== void 0 ? before : list.getBoundingClientRect().top);
+    list2.scrollTop += g3.getBoundingClientRect().top - (closing && before !== void 0 ? before : list2.getBoundingClientRect().top);
     this.markJump();
   }
   /** 列表滚到第 k 组的组头（只滚列表自己，不用 scrollIntoView——它会连带滚外层）；收着的先展开（手风琴）。 */
   jumpTo(k2) {
-    const list = this.el.querySelector(".finder-list");
-    const g0 = list.querySelector(`[data-g="${k2}"]`);
+    const list2 = this.el.querySelector(".finder-list");
+    const g0 = list2.querySelector(`[data-g="${k2}"]`);
     if (g0?.classList.contains("acc") && !g0.classList.contains("is-open")) {
       this.openG.set(this.mode, g0.dataset.gid);
       this.render();
     }
-    const g3 = list.querySelector(`[data-g="${k2}"]`);
+    const g3 = list2.querySelector(`[data-g="${k2}"]`);
     if (!g3) return;
-    list.scrollTop += g3.getBoundingClientRect().top - list.getBoundingClientRect().top;
+    list2.scrollTop += g3.getBoundingClientRect().top - list2.getBoundingClientRect().top;
     this.markJump();
   }
   /** 跳转下拉显示「现在在哪一组」（组头顶到列表顶的最后一组）。滚到底时：最后几组短、组头顶不到列表顶——人刚选的那组比算出来的靠后就留着它，不往回弹。 */
   markJump() {
-    const list = this.el.querySelector(".finder-list"), jump = this.el.querySelector(".finder-jump");
+    const list2 = this.el.querySelector(".finder-list"), jump = this.el.querySelector(".finder-jump");
     if (jump.hidden || jump.querySelector(".finder-jump-go").hidden) return;
-    const sel = jump.querySelector("select"), top = list.getBoundingClientRect().top + 1;
+    const sel = jump.querySelector("select"), top = list2.getBoundingClientRect().top + 1;
     let cur = 0;
-    for (const g3 of list.querySelectorAll("[data-g]")) {
+    for (const g3 of list2.querySelectorAll("[data-g]")) {
       if (g3.getBoundingClientRect().top <= top) cur = Number(g3.dataset.g);
       else break;
     }
-    const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 2;
+    const atBottom = list2.scrollTop + list2.clientHeight >= list2.scrollHeight - 2;
     if (atBottom && Number(sel.value) > cur) return;
     if (sel.value !== String(cur)) sel.value = String(cur);
   }
@@ -39515,7 +39607,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "e1d626773def088c" : "dev";
+var CORE_HASH = true ? "79a27bccca1b1ddc" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -49594,8 +49686,8 @@ ${this._ramMissingText()}`;
   _liveMenuTargets() {
     if (!this.liveProvider)
       return [];
-    const list = this.liveTargets?.();
-    return list && list.length ? list : [{ target: null, label: this._labels.live ?? "Live mirror" }];
+    const list2 = this.liveTargets?.();
+    return list2 && list2.length ? list2 : [{ target: null, label: this._labels.live ?? "Live mirror" }];
   }
   _liveMenuItems() {
     return this._liveMenuTargets().map((t10) => ({ id: this._liveMenuId(t10.target), label: t10.label, icon: REF_ICON_IDS.pip }));
@@ -51427,7 +51519,7 @@ function buildRclt(b3, t10) {
     }
     if (type === 6 && fmt === 3) {
       let p2 = o10 + 2;
-      const list = () => {
+      const list2 = () => {
         const n10 = u162(b3, p2);
         p2 += 2;
         const out = [];
@@ -51435,7 +51527,7 @@ function buildRclt(b3, t10) {
         p2 += 2 * n10;
         return out;
       };
-      const back = list(), input = list(), ahead = list();
+      const back = list2(), input = list2(), ahead = list2();
       const nRec = u162(b3, p2), rec = p2 + 2;
       if (!input.length) return null;
       return (g3, i10) => {
@@ -52424,8 +52516,8 @@ async function askRefImport(q2) {
   const zip = { label: q2.estimate === null ? _t("\u538B\u4E00\u4E0B\u518D\u5B58\uFF08{what}\uFF09", { what }) : _t("\u538B\u4E00\u4E0B\u518D\u5B58\uFF08\u7EA6 {estimate}\uFF09", { estimate: mb(q2.estimate) }), value: "compress" };
   const ram = { label: q2.suggestRam ? _t("\u53EA\u653E\u5185\u5B58\uFF08\u63A8\u8350\uFF09") : _t("\u53EA\u653E\u5185\u5B58\uFF08\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF09"), value: "ram" };
   const msg = _t("\u300C{name}\u300D{bytes}\u3002\u53C2\u8003\u7A97\u91CC\u7684\u4E1C\u897F\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58\u3001\u4E00\u8D77\u540C\u6B65\u3002{smaller}\u53EA\u653E\u5185\u5B58 = \u8FD9\u6B21\u6253\u5F00\u80FD{p}\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E0B\u6B21\u6253\u5F00\u662F\u4E2A\u7A7A\u4F4D\uFF0C\u628A\u540C\u4E00\u4E2A\u6587\u4EF6\u62D6\u8FDB\u6765\u5C31\u8865\u4E0A\u3002{suggestRam}", { name: q2.name, bytes: mb(q2.bytes), smaller: q2.canCompress && !smaller ? _t("\u538B\u4E86\u4E5F\u4E0D\u4F1A\u66F4\u5C0F\uFF0C\u5C31\u4E0D\u5217\u4E86\u3002") : smaller ? _t("\u538B\u4E00\u4E0B = {what}\u3002", { what }) : "", p: q2.kind === "audio" ? _t("\u542C##\u52A8\u8BCD") : _t("\u770B##\u52A8\u8BCD"), suggestRam: q2.suggestRam ? big ? _t("\u8D85\u8FC7 4 MB \u7684\uFF0C\u5B58\u8FDB\u53BB\u8FD9\u9996\u6B4C\u4F1A\u5927\u8FD9\u4E48\u591A\u3001\u540C\u6B65\u4E5F\u6162\uFF0C\u6240\u4EE5\u5148\u63A8\u8350\u53EA\u653E\u5185\u5B58\u3002") : _t("\u97F3\u9891 / \u89C6\u9891\u9ED8\u8BA4\u53EA\u653E\u5185\u5B58\uFF08\u8FD9\u6B21\u6253\u5F00\u6709\u6548\uFF09\uFF1B\u8981\u8DDF\u7740\u6B4C\u8D70\u5C31\u9009\u300C\u5B58\u8FDB\u6B4C\u91CC\u300D\u3002") : "" });
-  const list = q2.suggestRam ? [{ ...ram, primary: true }, ...smaller ? [zip] : [], keep2] : [{ ...keep2, primary: true }, ...smaller ? [zip] : [], ram];
-  return await openChoiceSheet(q2.kind === "audio" ? _t("\u8FD9\u6BB5\u97F3\u9891\u6709\u70B9\u5927") : q2.kind === "video" ? _t("\u8FD9\u6BB5\u89C6\u9891\u6709\u70B9\u5927") : _t("\u8FD9\u5F20\u56FE\u6709\u70B9\u5927"), msg, list) ?? "cancel";
+  const list2 = q2.suggestRam ? [{ ...ram, primary: true }, ...smaller ? [zip] : [], keep2] : [{ ...keep2, primary: true }, ...smaller ? [zip] : [], ram];
+  return await openChoiceSheet(q2.kind === "audio" ? _t("\u8FD9\u6BB5\u97F3\u9891\u6709\u70B9\u5927") : q2.kind === "video" ? _t("\u8FD9\u6BB5\u89C6\u9891\u6709\u70B9\u5927") : _t("\u8FD9\u5F20\u56FE\u6709\u70B9\u5927"), msg, list2) ?? "cancel";
 }
 new ResizeObserver(() => refHost.relayout()).observe(bar);
 installPlatformGuards([scoreEl, padEl], { zoom: (d3) => d3 === 0 ? view.zoomReset() : d3 > 0 ? view.zoomIn() : view.zoomOut() });
@@ -53409,9 +53501,9 @@ var playIcon = (playing) => {
 };
 var issueParts = /* @__PURE__ */ new Set();
 var issueCount = 0;
-function onIssuesChanged(list) {
-  issueParts = new Set(list.map((i10) => i10.part));
-  issueCount = list.length;
+function onIssuesChanged(list2) {
+  issueParts = new Set(list2.map((i10) => i10.part));
+  issueCount = list2.length;
   drawIssueBadges();
   view.render();
 }
@@ -53438,7 +53530,7 @@ var perfApi = createPerformance({
   engine,
   singer,
   view,
-  ui: { progress, info, showError, renderBar, playBtns, playIcon, offerFile: (f2, t10, m2) => offerFile(f2, t10, m2), onIssues: (list) => onIssuesChanged(list) },
+  ui: { progress, info, showError, renderBar, playBtns, playIcon, offerFile: (f2, t10, m2) => offerFile(f2, t10, m2), onIssues: (list2) => onIssuesChanged(list2) },
   sounds: { resolveGmBytes: (g3) => sources.resolveGmBytes(g3), ensureVowels, soundMemoryBytes, modelBases: () => models.bases() },
   credits: { creditsOf: (roles, rights) => creditsOf(roles, rights), creditsBlock: (lines, title) => creditsBlock(lines, title) },
   final: () => {
@@ -53661,14 +53753,14 @@ var sources = createSoundSources({ progress: (m2) => progress(m2), roleLabel: ()
 var mp3Scope = "all";
 function openIssuesSheet() {
   ui2.close();
-  const list = perfApi.issues();
-  if (!list.length) {
+  const list2 = perfApi.issues();
+  if (!list2.length) {
     info(_t("\u73B0\u5728\u7684\u58F0\u90E8\u90FD\u80FD\u51FA\u58F0"));
     return;
   }
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u4E0D\u51FA\u58F0\u7684\u58F0\u90E8")}</div>` + list.map((i10) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc11(i10.label)}</b><small>${esc11(i10.why)}</small></div><button class="btn primary" data-v="inst:${esc11(i10.part)}">${_t("\u6362\u4EBA / \u627E\u58F0\u97F3\u2026")}</button></div>`).join("") + `<div class="offer-msg">${_t("\u653E\u548C\u5BFC\u51FA\u7684 mp3 \u91CC\u90FD\u6CA1\u6709\u8FD9{p}\u7684\u58F0\u97F3\uFF0C\u5176\u4F59\u7167\u653E\u3002\u6362\u8C01\u7531\u4F60\u5B9A\uFF0C\u4E0D\u66FF\u8865\u3002", { p: list.length > 1 ? _t("{n} \u6761\u8F68", { n: list.length }) : _t("\u6761\u8F68") })}</div><div class="offer-btns"><button class="btn" data-v="close">${_t("\u77E5\u9053\u4E86")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u4E0D\u51FA\u58F0\u7684\u58F0\u90E8")}</div>` + list2.map((i10) => `<div class="set-row issue-row"><div class="issue-text"><b>${esc11(i10.label)}</b><small>${esc11(i10.why)}</small></div><button class="btn primary" data-v="inst:${esc11(i10.part)}">${_t("\u6362\u4EBA / \u627E\u58F0\u97F3\u2026")}</button></div>`).join("") + `<div class="offer-msg">${_t("\u653E\u548C\u5BFC\u51FA\u7684 mp3 \u91CC\u90FD\u6CA1\u6709\u8FD9{p}\u7684\u58F0\u97F3\uFF0C\u5176\u4F59\u7167\u653E\u3002\u6362\u8C01\u7531\u4F60\u5B9A\uFF0C\u4E0D\u66FF\u8865\u3002", { p: list2.length > 1 ? _t("{n} \u6761\u8F68", { n: list2.length }) : _t("\u6761\u8F68") })}</div><div class="offer-btns"><button class="btn" data-v="close">${_t("\u77E5\u9053\u4E86")}</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -55034,11 +55126,11 @@ function deleteSinger(id2, done = () => {
     done();
     return;
   }
-  const list = wrote.map((pp) => {
+  const list2 = wrote.map((pp) => {
     const n10 = pp.tracks[id2].filter((x2) => x2.kind === "note").length;
     return n10 ? _t("\u300C{p}\u300D{n} \u4E2A\u97F3", { p: paperLabel(pp.id), n: n10 }) : _t("\u300C{p}\u300D\uFF08\u6CA1\u6709\u97F3\uFF0C\u53EA\u6709\u4F11\u6B62 / \u8BB0\u53F7\uFF09", { p: paperLabel(pp.id) });
   }).join(_t("\u3001"));
-  void askSheet(_t("\u5220\u6389\u58F0\u90E8\u300C{name}\u300D\uFF1F", { name }), _t("\u5B83\u5199\u8FC7\u7684\uFF1A{list}\u3002\u8FDE\u540C\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\u6389\uFF08\u80FD\u64A4\u9500\uFF0C\u4E00\u6B65\u5168\u627E\u56DE\uFF09\u3002", { list }), _t("\u5220\u6389"), true).then((ok2) => {
+  void askSheet(_t("\u5220\u6389\u58F0\u90E8\u300C{name}\u300D\uFF1F", { name }), _t("\u5B83\u5199\u8FC7\u7684\uFF1A{list}\u3002\u8FDE\u540C\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\u6389\uFF08\u80FD\u64A4\u9500\uFF0C\u4E00\u6B65\u5168\u627E\u56DE\uFF09\u3002", { list: list2 }), _t("\u5220\u6389"), true).then((ok2) => {
     if (ok2) {
       go();
       info(_t("\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { name }));
@@ -55104,8 +55196,8 @@ function openPartsManager(ctx2) {
       if (!me || !here[me.id]) page = "main";
     }
     if (page !== "main") {
-      const label = lab(subject), list = page === "give" ? song.parts.filter((p2) => p2.id !== subject) : song.parts.filter((p2) => !here[p2.id]);
-      box.innerHTML = `<div class="offer-card pm-card"><div class="pm-here"><button class="btn pm-back" data-v="back">\u2039 ${page === "give" ? _t("\u300C{p}\u300D\u6BB5\u7684\u300C{label}\u300D\u4EA4\u7ED9\u2026", { p: secName, label }) : above ? _t("\u5728\u300C{label}\u300D\u4E0A\u9762\u52A0", { label }) : _t("\u5728\u300C{label}\u300D\u4E0B\u9762\u52A0", { label })}</button><div class="tc-list">${list.map((p2) => `<button class="btn cand" data-v="${page}:${esc11(p2.id)}">${lab(p2.id)}${page === "give" && here[p2.id] ? `<small>${_t("\uFF08\u5BF9\u8C03\uFF09")}</small>` : ""}</button>`).join("")}<button class="btn cand" data-v="${page}new">${_t("\uFF0B \u65B0\u58F0\u90E8\u2026")}</button></div><div class="tc-hint">${page === "give" ? _t("\u53EA\u6539\u8FD9\u4E00\u6BB5\uFF1A\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u90FD\u4E0D\u52A8\uFF0C\u6362\u4E00\u4E2A\u58F0\u90E8\u5531\uFF1B\u8DE8\u6BB5\u6309\u58F0\u90E8\u63A5\u8D77\u6765\u3002\u5BF9\u65B9\u5728\u8FD9\u4E00\u6BB5\u5DF2\u7ECF\u6709\u4E00\u884C = \u4E24\u884C\u5BF9\u8C03\u3002") : _t("\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09\u3002")}</div></div></div>`;
+      const label = lab(subject), list2 = page === "give" ? song.parts.filter((p2) => p2.id !== subject) : song.parts.filter((p2) => !here[p2.id]);
+      box.innerHTML = `<div class="offer-card pm-card"><div class="pm-here"><button class="btn pm-back" data-v="back">\u2039 ${page === "give" ? _t("\u300C{p}\u300D\u6BB5\u7684\u300C{label}\u300D\u4EA4\u7ED9\u2026", { p: secName, label }) : above ? _t("\u5728\u300C{label}\u300D\u4E0A\u9762\u52A0", { label }) : _t("\u5728\u300C{label}\u300D\u4E0B\u9762\u52A0", { label })}</button><div class="tc-list">${list2.map((p2) => `<button class="btn cand" data-v="${page}:${esc11(p2.id)}">${lab(p2.id)}${page === "give" && here[p2.id] ? `<small>${_t("\uFF08\u5BF9\u8C03\uFF09")}</small>` : ""}</button>`).join("")}<button class="btn cand" data-v="${page}new">${_t("\uFF0B \u65B0\u58F0\u90E8\u2026")}</button></div><div class="tc-hint">${page === "give" ? _t("\u53EA\u6539\u8FD9\u4E00\u6BB5\uFF1A\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u90FD\u4E0D\u52A8\uFF0C\u6362\u4E00\u4E2A\u58F0\u90E8\u5531\uFF1B\u8DE8\u6BB5\u6309\u58F0\u90E8\u63A5\u8D77\u6765\u3002\u5BF9\u65B9\u5728\u8FD9\u4E00\u6BB5\u5DF2\u7ECF\u6709\u4E00\u884C = \u4E24\u884C\u5BF9\u8C03\u3002") : _t("\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09\u3002")}</div></div></div>`;
       return;
     }
     const row2 = (p2, k2) => {
@@ -58227,4 +58319,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-22016a3f3d36.mjs.map
+//# sourceMappingURL=moonsinger-7bcbaf7cd79b.mjs.map

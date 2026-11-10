@@ -21,6 +21,7 @@ import { FORMAT, FORMAT_MINOR, FORMAT_PATCH, type FormatFile, type Dynamic, type
 import { FINAL_MP3_ENTRY, contentFingerprint, parseFinalRecord, type FinalRecord, type FingerprintParts } from "./final.ts";
 export { FINAL_MP3_ENTRY, type FinalRecord };
 import { migrate } from "./migrate/index.ts";
+import { badIds, isSafeId, safePartIds, safeView, type IdKind } from "./ids.ts";
 import { sha256HexSync } from "./sha256-sync.ts";
 import { DYNAMICS_DB, DYNAMICS_VEL, ACCENT_VEL, MARCATO_VEL, MARCATO_DB, MARK_DEFAULTS, ROLL_HZ_MIN, ROLL_HZ_MAX, SING_MARKS, type SingMark, ARTICULATION, SOUNDFONT_DEFAULTS, SOUNDFONT_CALIBRATION_DB, TSUKUYOMI_DEFAULTS, DEFAULT_CALIBRATION_DB, TSUKUYOMI_CREDIT, TSUKUYOMI_SPEC, VOWEL_SAMPLER_SPEC, SOUNDFONT_SPEC, TSUKUYOMI_MODEL } from "./performance.ts";
 export { FORMAT };
@@ -688,7 +689,14 @@ export function withTranspose(extras: Extras, role: string, semis: number, hum: 
 
 // ── 读 ─────────────────────────────────────────────────────────────────────────────────
 /** 别的软件存的单份谱：没有 <work-title> 就拿 <movement-title> 当歌名（不当曲段名）。 */
-const foreign = (r: ReadScore): ReadScore => (r.title || !r.movementTitle ? r : { ...r, title: r.movementTitle, movementTitle: "" });
+const foreign = (r0: ReadScore): ReadScore => { const r = { ...r0, parts: safePartIds(r0.parts) }; return r.title || !r.movementTitle ? r : { ...r, title: r.movementTitle, movementTitle: "" }; };   // 声部编号先过 ids.ts 那一关（不合规矩的换成 P<n>）
+/** 自家文件里的编号不合规矩 = 拒开、明说哪一类有几个（不把那个编号本身抄出来：它可能就是有人故意写坏的那一串）。 */
+const ID_KIND = (): Record<IdKind, string> => ({ paper: _t("曲段"), part: _t("声部"), role: _t("角色"), track: _t("混音轨"), candidate: _t("演奏者"), fx: _t("效果格"), fxKind: _t("效果的种类") });
+function refuseBadIds(bad: Partial<Record<IdKind, number>>): void {
+  const l = Object.entries(bad) as [IdKind, number][]; if (!l.length) return;
+  const names = ID_KIND();
+  throw new Error(_t("这首歌的文件里有不合规矩的编号（{what}）：多半是被别的工具改过或者文件坏了，没有打开。", { what: l.map(([k, n]) => _t("{k} {n} 个", { k: names[k], n })).join(_t("、")) }));
+}
 /** 一份读进来的 MusicXML → 一张纸（token id 之后在 songFromReads 里统一重编）。 */
 function paperOfRead(id: string, r: ReadScore): PaperSeg {
   const tracks: Record<string, Token[]> = {};
@@ -746,6 +754,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   }
   if (files[`${DIR}studio.json`]) { const s = parse(`${DIR}studio.json`); known.add(`${DIR}studio.json`); newer(_t("录音房"), s, "studio"); extras.studio = migrate("studio", s); }
   for (const p of Object.keys(files)) if (p.startsWith(SOUNDS) && !p.endsWith("/")) { extras.sounds[p] = files[p]; known.add(p); }   // 嵌的音源字节（整份留着；存档只写还引用着的）
+  refuseBadIds(badIds(scoreExt, extras.lounge, extras.studio));   // 读入边界：当编号用的字段都过 ids.ts 那一关，往下的代码（含把编号拼进页面的界面）拿到的都是合规矩的
   // 定稿（src/format/final.ts）：总目录里的记录 + mp3 entry。记录不像样 / entry 不在 / 大小不对 / 指纹对不上（定稿后被旧版 app 或别的软件改过）= 定稿作废、说一声、mp3 不带着走
   extras.finalRev = Math.max(0, Math.floor(Number(manifest.finalRev ?? 0))) || 0;
   if (files[FINAL_MP3_ENTRY]) known.add(FINAL_MP3_ENTRY);
@@ -775,6 +784,7 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
     if (!b) throw new Error(_t("纸「{id}」的谱（{file}）在包里找不到", { id: p.id, file }));
     known.add(file);
     const r = readMusicXml(strFromU8(b), { manualBars: (p.manualBars as Record<string, number[]> | undefined) ?? {}, unwritten: (p.unwritten as string[] | undefined) ?? [] });
+    refuseBadIds({ ...(r.parts.some((x) => !isSafeId(x.info.id)) ? { part: r.parts.filter((x) => !isSafeId(x.info.id)).length } : {}) });   // 每张纸的谱里的声部编号也过一遍
     reads.push(r);
     const seg = paperOfRead(String(p.id), r); if (p.hidden === true) seg.hidden = true;
     // papers[].phrases（老歌里的句号，v0.16.86 去掉了）：不读，丢掉——歌词、音一个不动（user 11-10「好，整个去掉」）
@@ -883,5 +893,5 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;   // 编排那一行（只有我们自己的文件有）
-  return { song: { ...song0, hum, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}), ...(extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" as const } : {}), ...(extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" as const } : {}), ...(extras.scoreExt?.spacing === "tight" ? { spacing: "tight" as const } : {}) }, stem, hum, extras, ours, notices, view: (extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null, references: {}, advice: [] };
+  return { song: { ...song0, hum, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}), ...(extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" as const } : {}), ...(extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" as const } : {}), ...(extras.scoreExt?.spacing === "tight" ? { spacing: "tight" as const } : {}) }, stem, hum, extras, ours, notices, view: safeView((extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null), references: {}, advice: [] };
 }
