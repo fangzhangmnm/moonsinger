@@ -78,7 +78,7 @@ import { resolveChain } from "../ui/plugins.ts";
 import { FINAL_MP3_ENTRY } from "../format/final.ts";
 import { coreInfo } from "../core/version.ts";
 import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, sustainOf, GS_LIBRARY_ID, gmKey, conceptOfIds, type Catalog, type Concept } from "../gm/catalog.ts";
-import { ICON_CREDITS } from "../gm/instruments.gen.ts";
+import { creditsSections, sectionsHtml } from "./credits-doc.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { DEFAULT_ROLE } from "../score/roles.ts";
 import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES, densityOf, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
@@ -1136,61 +1136,66 @@ function setViewInC(on: boolean): void {
 /** 设置分五页（v0.16.80，总表第 10 条：界面 / 辅助功能 / 音源与缓存 / MIDI / 开发者）；记住这次运行里上次看的那页。 */
 type SetPage = "ui" | "a11y" | "sound" | "midi" | "dev";
 let settingsPage: SetPage = "ui";
-const SET_PAGES = (): [SetPage, string][] => [["ui", _t("界面")], ["a11y", _t("辅助功能")], ["sound", _t("音源与缓存")], ["midi", "MIDI"], ["dev", _t("开发者")]];
+const SET_PAGES = (): [SetPage, string][] => [["ui", _t("界面")], ["a11y", _t("乐理助手")], ["sound", _t("音源与缓存")], ["midi", "MIDI"], ["dev", _t("开发者")]];
 /** 设置里的一个下拉框（原来一排小按钮，user 嫌难看 → 下拉框）：data-set = 哪一项，改了走 openSettings 的 change。 */
 const setSel = (k: string, opts: [string, string][], cur: string): string =>
   `<select class="hp-sel set-sel" data-set="${k}">${opts.map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(label)}</option>`).join("")}</select>`;
+/** 长文弹窗（v0.16.90）：盖在设置上面的一层，一个标题 + 能滚的正文 + 「好」；jump = 滚到正文里 id="doc-<jump>" 的那一节。收起 = 回到设置原样。 */
+function openDocLayer(host: HTMLElement, title: string, html: string, jump?: string): void {
+  const layer = document.createElement("div"); layer.className = "doc-layer";
+  layer.innerHTML = `<div class="offer-card doc-card"><div class="offer-title">${esc(title)}</div><div class="doc-body">${html}</div><div class="offer-btns"><button class="btn primary" data-doc-close>${_t("好")}</button></div></div>`;
+  host.append(layer);
+  layer.addEventListener("click", (e) => { e.stopPropagation(); if (e.target === layer || (e.target as HTMLElement).closest("[data-doc-close]")) layer.remove(); });
+  if (jump) requestAnimationFrame(() => layer.querySelector(`#doc-${jump}`)?.scrollIntoView({ block: "start" }));
+}
 /** 设置面板（应用内，不用系统弹窗）：模型来源、从本机文件导入模型包、月读的署名与使用条款（包内 LICENSE [1][2] 要求显示）。 */
 function openSettings(): void {
   ui.close();
   const inFolder = resourcesInFolder();   // 备用版：模型 / 音源都在文件夹里，浏览器缓存用不了——这几行画灰 + 说一句（规则书 §1 第 6 条）
   const box = document.createElement("div");
   box.className = "offer";
+  // 一项一行（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：短名字 + 控件，长说明进「?」（点了这一行下面展开，
+  //   同乐器参数那一套 .row-lab .q / .row-help）；版权署名不放这里，进「版权与署名」那一篇长文（src/app/credits-doc.ts，按需跳到那一节）
+  const q = (help: string) => (help ? `<button class="q" type="button" data-q aria-label="${_t("这是什么")}">?</button>` : "");
+  const item = (label: string, ctl: string, help = "", body = "", attrs = "") =>
+    `<div class="set-item"${attrs}><div class="set-head"><span class="row-lab">${label}${q(help)}</span>${ctl ? `<span class="set-ctl">${ctl}</span>` : ""}</div>${help ? `<div class="row-help">${help}</div>` : ""}${body}</div>`;
+  const look = (v: string, label: string) => `<button class="btn" data-v="${v}">${label}</button>`;
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
     `<div class="set-tabs">${SET_PAGES().map(([k, label]) => `<button class="btn chip" data-tab="${k}">${esc(label)}</button>`).join("")}</div>` +
     `<div class="set-page" data-page="ui">` +
-    `<div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto")}</div></div>` +
+      item(LANG_LABEL, setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", " data-i18n-skip") +
+      item(_t("版权与署名"), look("doc:top", _t("看…")), _t("小月相的署名与使用条款、乐器目录图标的作者与许可，合在一篇里看")) +
     `</div>` +
     `<div class="set-page" data-page="a11y">` +
-    `<div class="set-field">${_t("辅助 · 看谱方式")}<div class="set-row">${setSel("view", [["pro", _t("专业")], ["inc", _t("按 C 调看（1=X）")]], viewInC ? "inc" : "pro")}</div><span class="set-note">${_t("专业 = 按实际的调画谱，键上大字写音名。按 C 调看 = 谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数。键的位置不动；导出的 PDF 照实际的调印。只管这台设备。")}</span></div>` +
-    `<div class="set-field">${_t("辅助 · 和弦标级数")}<div class="set-row">${setSel("chord", [["off", _t("关")], ["on", _t("开")]], chordTagsOn ? "on" : "off")}</div><span class="set-note">${_t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选。只是显示，不进歌、不印。")}</span></div>` +
+      item(_t("看谱方式"), setSel("view", [["pro", _t("专业")], ["inc", _t("按 C 调看（1=X）")]], viewInC ? "inc" : "pro"), _t("专业 = 按实际的调画谱，键上大字写音名。按 C 调看 = 谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数。键的位置不动；导出的 PDF 照实际的调印。只管这台设备。")) +
+      item(_t("和弦标级数"), setSel("chord", [["off", _t("关")], ["on", _t("开")]], chordTagsOn ? "on" : "off"), _t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选。只是显示，不进歌、不印。")) +
     `</div>` +
     `<div class="set-page" data-page="sound">` +
-    (inFolder ? `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" disabled value="${esc(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>`
-      : `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>`) +
-    `<label class="set-field">${_t("音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
-    `<div class="set-field">${_t("音源库缓存（留在设备上，没网也能用；歌自己带声音，这里只是货架）")}<div id="sndCache" class="set-packs">…</div></div>` +
+      item(_t("模型来源"), "", _t("先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。") + (inFolder ? `<br>${FOLDER_TEXT.models}` : ""),
+        inFolder ? `<input id="srcIn" type="url" disabled value="${esc(models.source)}" />` : `<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" />`) +
+      item(_t("音源库来源"), look("default", _t("恢复默认")), _t("乐器音色库、鼓组、音效素材（不是 AI 模型）。「恢复默认」= 模型来源和音源库来源都回到出厂的地址。只在这次打开里有效。"),
+        `<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" />`) +
+      item(_t("小月相的模型包"), inFolder ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入")}</span><input id="impIn" type="file" multiple hidden disabled />`
+          : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入")}<input id="impIn" type="file" multiple hidden /></label>`,
+        _t("选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"), `<pre id="packSt" class="set-packs">…</pre>`) +
+      item(_t("音源库缓存"), "", _t("留在设备上，没网也能用；歌自己带声音，这里只是货架"), `<div id="sndCache" class="set-packs">…</div>`) +
+      item(_t("小月相的念缓存"), look("sp:clear", _t("清空念缓存")), _t("设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念"), `<div id="spCache" class="set-packs">…</div>`) +
+      // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
+      item(_t("重启声音"), look("audio:revive", _t("重启声音")), _t("声音不对劲的时候按一下（按键有延迟、没有声音）：把通向扬声器的那一段换成新的，排着没播完的声音一起丢掉。正在响的声音会断一下")) +
+      item(_t("引擎负载与内存"), `<button class="btn" data-v="eng:restart" title="${_t("小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念")}">${_t("重开小月相引擎")}</button>`,
+        _t("能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说。小月相引擎的内存只涨不落，只有重开才还回去"), `<div id="engRes" class="set-packs">…</div>`) +
+      item(_t("小月相的署名与使用条款"), look("doc:tsukuyomi", _t("看…"))) +
     `</div>` +
     `<div class="set-page" data-page="midi">` +
-    `<div class="set-field">${_t("MIDI 键盘")}<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("连接")}</button>` : ""}</div></div>` +
+      item(_t("MIDI 键盘"), `<span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("连接")}</button>` : ""}`) +
     `</div>` +
-    `<div class="set-page" data-page="sound">` +
-    `<div class="offer-msg">${_t("先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。")}</div>` +
-    `<div class="set-row"><button class="btn" data-v="default">${_t("恢复默认")}</button>` +
-    (inFolder ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入模型包")}</span><input id="impIn" type="file" multiple hidden disabled /></div>`
-      : `<label class="btn" title="${_t("选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件")}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入模型包")}<input id="impIn" type="file" multiple hidden /></label></div>`) +
-    `<pre id="packSt" class="set-packs">…</pre>` +
-    `</div>` +
-    `<div class="set-page" data-page="ui">` +
-    `<details class="set-credit" data-i18n-skip><summary>${_t("乐器目录的图标（第三方，{n} 个）", { n: ICON_CREDITS.length })}</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}${c.modified ? _t("\n    改动：{modified}", { modified: c.modified }) : ""}`).join("\n"))}</pre></details>` +
-    `</div>` +
-    `<div class="set-page" data-page="sound">` +
-    // 原文在上（条款要求的是原文）；中 / 英译文在下、只给人读（user 2026-10-08「月读的license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）
-    `<details class="set-credit" data-i18n-skip><summary>${_t("小月相（つくよみちゃん）的署名与使用条款")}</summary><div class="part-sec">${_t("原文（以此为准）")}</div><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre>` +
-      (lang() === "zh" ? `<div class="part-sec">${_t("中文译文（仅供阅读，以日文原文为准）")}</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` : "") +
-      `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc(CREDIT_TRANSLATIONS.en.credit)}\n\n${esc(CREDIT_TRANSLATIONS.en.terms)}</pre></details>` +
-    `<div class="set-field">${_t("小月相的念缓存（设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念）")}<div id="spCache" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("清空念缓存")}</button></div></div>` +
-    // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
-    `<div class="set-field">${_t("声音不对劲的时候按一下（按键有延迟、没有声音）：把通向扬声器的那一段换成新的，排着没播完的声音一起丢掉。正在响的声音会断一下")}<div class="set-row"><button class="btn" data-v="audio:revive">${_t("重启声音")}</button></div></div>` +
-    `<div class="set-field">${_t("引擎负载与内存（能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说）")}<div id="engRes" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念")}">${_t("重开小月相引擎")}</button></div></div>` +
-    `</div>` +
-    // 开发者节（家族规矩 2½，2026-10-21）：诊断日志 + 「还原出厂设置…」住这里；「检查更新 / 清缓存重启」留在普通那一行
-    // 开发者页（家族规矩 2½：诊断日志 + 「还原出厂设置…」住这里；v0.16.80 起设置分页，原来是折起来的一节）
+    // 开发者页（家族规矩 2½：诊断日志 + 「还原出厂设置…」住这里；「检查更新 / 清缓存重启」留在普通那一行）
     `<div class="set-page" data-page="dev">` +
-      `<details class="set-credit"><summary>${_t("诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("复制")}</button><button class="btn" data-v="diag:download">${_t("下载 .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("分享…")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("清空")}</button></div></details>` +
-      `<div class="set-field">${_t("按键手感的数字（查延迟用）：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）")}<div class="set-row">${setSel("feel", [["off", _t("关")], ["on", _t("开")]], feelAlways ? "on" : "off")}</div></div>` +
-      (IS_IOS ? `<div class="set-field">${_t("声音的起法（试验）：开 = 第一次点屏幕先起一个不出声的垫脚把声音硬件叫醒，再起真正出声的那一个；关 = 以前的起法。改了要重开 app 才看得出")}<div class="set-row">${setSel("primer", [["off", _t("关")], ["on", _t("开")]], primerOn() ? "on" : "off")}</div></div>` : "") +
-      `<div class="set-field">${_t("还原出厂设置（这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在上面「模型包」里逐个删）")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button></div></div>` +
+      item(_t("诊断日志"), look("diag:view", _t("看…")), _t("黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备"),
+        `<pre id="diagTxt" hidden>${esc(diagText())}</pre><div class="set-row">${look("diag:copy", _t("复制"))}${look("diag:download", _t("下载 .txt"))}${canShareDiag() ? look("diag:share", _t("分享…")) : ""}${look("diag:clear", _t("清空"))}</div>`) +
+      item(_t("按键手感的数字"), setSel("feel", [["off", _t("关")], ["on", _t("开")]], feelAlways ? "on" : "off"), _t("查延迟用：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）")) +
+      (IS_IOS ? item(_t("声音的起法（试验）"), setSel("primer", [["off", _t("关")], ["on", _t("开")]], primerOn() ? "on" : "off"), _t("开 = 第一次点屏幕先起一个不出声的垫脚把声音硬件叫醒，再起真正出声的那一个；关 = 以前的起法。改了要重开 app 才看得出")) : "") +
+      item(_t("还原出厂设置"), `<button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button>`, _t("这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在「音源与缓存」的模型包里逐个删")) +
     `</div>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删")}">${_t("清缓存重启")}</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
@@ -1236,8 +1241,12 @@ function openSettings(): void {
   const close = () => { clearInterval(resTimer); midiRowSync = null; models.source = srcIn.value; sources.source = sndIn.value; box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
+    const qb = (e.target as HTMLElement).closest<HTMLElement>("[data-q]");
+    if (qb) { qb.closest(".set-item")?.classList.toggle("show-help"); return; }   // 「?」= 这一行下面展开说明（iPad 没有悬停）
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
+    else if (v === "doc:top" || v === "doc:tsukuyomi") openDocLayer(box, _t("版权与署名"), sectionsHtml(creditsSections(lang())), v === "doc:top" ? undefined : "tsukuyomi");
+    else if (v === "diag:view") openDocLayer(box, _t("诊断日志"), `<pre class="diag-log">${esc(diagText())}</pre>`);
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "midi:connect") void midi.connect();
     else if (v === "audio:revive") {
