@@ -47,14 +47,11 @@ const bytes = fs.readFileSync(file);
 await p.evaluate(([name, arr]) => { const m = window.__moonsinger; m.load(m.open(name, new Uint8Array(arr))); }, [path.basename(file), Array.from(bytes)]);
 await p.waitForTimeout(600);
 await p.evaluate(() => { const m = window.__moonsinger; m.setMode("listen"); m.setScope?.("all"); m.setPages?.(false); m.setScroll?.(false);
-  const st = m.state(); m.set({ ...st, caret: 0, sel: null, lead: undefined });   // 光标挪回开头：存档时光标停在全曲末尾 = 最后一行五线延到右边（给写的人留地方，印出来没有）
+  const st = m.state(); m.set({ ...st, caret: 0, sel: null, lead: undefined });   // 光标挪回开头：存档时光标停在全曲末尾 = 最后一行五线延到右边（排版的事，printLook 管不到）
+  m.printLook(true);   // 印出来的样子（v0.16.74 主线加的插口）：藏顶栏 / 覆盖层 / 缩放读数 / ann 披露 / 光标 / 选区带，编辑器的强调色变回墨色——不再靠一串界面类名
 });
-// 谱面占满画面 = 印出来的谱 + 播放线：
-//   顶栏藏掉；覆盖层（编辑器的钮 / 曲段切换 / 空着的占位提示，src/ui/score-overlay.ts）藏掉；缩放读数钮藏掉；
-//   排版器打了 ann 的「只给写谱人看的披露」藏掉——和 PDF 不印的是同一张名单（src/export/score-pdf.ts SKIP）；
-//   动画关掉（小节底色的「闪一下」是按时间走的，逐格截不到）
+// 谱面占满画面：谱面框铺满视口；动画关掉（小节底色的「闪一下」是按时间走的，逐格截不到）
 await p.addStyleTag({ content: `
-  #bar, .zoom-reset, .ov-i, .ov-nav, .ov-placeholder, .ov-stub, #score .ann { display: none !important; }
   #score { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 2147483000 !important; overflow: hidden !important; }
   *, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }
 ` });
@@ -88,8 +85,6 @@ const ANIM = Math.max(1, Math.round(0.35 * fps));   // 一次平滑翻谱画几�
 const step = (fr) => p.evaluate(([fr, ANIM]) => {
   const m = window.__moonsinger, S = window.__vid, el = document.querySelector("#score");
   m.playheadAt(fr ? fr.p : null, fr ? fr.a : null);
-  // 编辑器标「光标在哪」的颜色摘掉（光标那个音 cur、光标所在声部的名字 focus、点开的记号管的音 in-span、指着的 hot），回到印出来的墨色
-  for (const d of el.querySelectorAll(".staff-svg .cur, .staff-svg .part-name.focus, .staff-svg .in-span, .staff-svg .hot")) d.classList.remove("cur", "focus", "in-span", "hot");
   if (S.anim) {
     const a = S.anim, t = Math.min(1, ++a.k / ANIM), e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     el.scrollTop = a.top0 + (a.top1 - a.top0) * e; el.scrollLeft = a.left0 + (a.left1 - a.left0) * e;
