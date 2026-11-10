@@ -245,7 +245,7 @@ function hyphens(syls, hyphenW, lonely) {
     if (!l.hy) return null;
     const r = syls[n2 + 1], same = !!r && r.row === l.row;
     if (!same) return { x: l.x + lonely, hf: 1 };
-    if (l.hw === void 0 || r.hw === void 0) return { x: (l.x + r.x) / 2, hf: 1 };
+    if (l.hw === void 0 || r.hw === void 0) return { x: (l.x + (l.hw ?? l.nw ?? 0) + r.x - (r.hw ?? r.nw ?? 0)) / 2, hf: 1 };
     const hf = Math.min(l.sx ?? 1, r.sx ?? 1), a = l.x + l.hw, b = r.x - r.hw;
     if (!(l.cjk || r.cjk) && b - a < hyphenW * hf - 1e-6) return null;
     return { x: (a + b) / 2, hf };
@@ -6666,7 +6666,7 @@ function engrave(song, o) {
             for (const j of jobs) j.run();
             const mine = partLyrics.slice(from), syls = mine.map((L) => {
               const pl = lyrPlan.get(`${r}:${L.index}`), tok = tokens[L.index];
-              return { x: L.x, hy: !!tok.hyph, hw: pl ? P(pl.hw) : void 0, sx: pl?.sx, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L.system };
+              return { x: L.x, hy: !!tok.hyph, hw: pl ? P(pl.hw) : void 0, sx: pl?.sx, ...pl ? {} : { nw: P(lyrUnit(lyricShow(tok.lyric ?? ""))) / 2 }, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L.system };
             });
             hyphens(syls, P(lyrHyphen), P(1.6)).forEach((h, n3) => {
               if (h) prims.push({ t: "text", x: h.x, y: mine[n3].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}, sx: look.sx * h.hf * HYPHEN_SX });
@@ -6921,4 +6921,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-53a97c2f48cd.mjs.map
+//# sourceMappingURL=layout-worker-d15869ebd59c.mjs.map

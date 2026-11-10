@@ -5074,7 +5074,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.77-2026-11-09";
+var APP_VERSION = "v0.16.78-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -9902,7 +9902,7 @@ function hyphens(syls, hyphenW, lonely) {
     if (!l10.hy) return null;
     const r10 = syls[n10 + 1], same = !!r10 && r10.row === l10.row;
     if (!same) return { x: l10.x + lonely, hf: 1 };
-    if (l10.hw === void 0 || r10.hw === void 0) return { x: (l10.x + r10.x) / 2, hf: 1 };
+    if (l10.hw === void 0 || r10.hw === void 0) return { x: (l10.x + (l10.hw ?? l10.nw ?? 0) + r10.x - (r10.hw ?? r10.nw ?? 0)) / 2, hf: 1 };
     const hf = Math.min(l10.sx ?? 1, r10.sx ?? 1), a10 = l10.x + l10.hw, b3 = r10.x - r10.hw;
     if (!(l10.cjk || r10.cjk) && b3 - a10 < hyphenW * hf - 1e-6) return null;
     return { x: (a10 + b3) / 2, hf };
@@ -12896,7 +12896,7 @@ function engrave(song, o10) {
             for (const j2 of jobs) j2.run();
             const mine = partLyrics.slice(from), syls = mine.map((L2) => {
               const pl = lyrPlan.get(`${r10}:${L2.index}`), tok = tokens[L2.index];
-              return { x: L2.x, hy: !!tok.hyph, hw: pl ? P2(pl.hw) : void 0, sx: pl?.sx, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L2.system };
+              return { x: L2.x, hy: !!tok.hyph, hw: pl ? P2(pl.hw) : void 0, sx: pl?.sx, ...pl ? {} : { nw: P2(lyrUnit(lyricShow(tok.lyric ?? ""))) / 2 }, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L2.system };
             });
             hyphens(syls, P2(lyrHyphen), P2(1.6)).forEach((h2, n11) => {
               if (h2) prims.push({ t: "text", x: h2.x, y: mine[n11].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, sx: look.sx * h2.hf * HYPHEN_SX });
@@ -29657,9 +29657,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-53a97c2f48cd.mjs");
+      return pick(() => "layout-worker-d15869ebd59c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-2b81e94667b8.mjs");
+      return pick(() => "encode-worker-cfe671d05a9b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -57627,4 +57627,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0d7833da49b7.mjs.map
+//# sourceMappingURL=moonsinger-dc08b6f78a36.mjs.map

@@ -1586,7 +1586,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
             const from = partLyrics.length;
             for (const j of jobs) j.run();
             // 连字符摆哪 = 文字模块的 hyphens()（缝的正中、放不下不画、方块字旁边不占地方；见 src/render/text/lyric-fit.ts）
-            const mine = partLyrics.slice(from), syls = mine.map((L) => { const pl = lyrPlan.get(`${r}:${L.index}`), tok = tokens[L.index] as NoteTok; return { x: L.x, hy: !!tok.hyph, hw: pl ? P(pl.hw) : undefined, sx: pl?.sx, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L.system }; });
+            const mine = partLyrics.slice(from), syls = mine.map((L) => { const pl = lyrPlan.get(`${r}:${L.index}`), tok = tokens[L.index] as NoteTok; return { x: L.x, hy: !!tok.hyph, hw: pl ? P(pl.hw) : undefined, sx: pl?.sx, ...(pl ? {} : { nw: P(lyrUnit(lyricShow(tok.lyric ?? ""))) / 2 }), cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L.system }; });
             hyphens(syls, P(lyrHyphen), P(1.6)).forEach((h, n) => {
               if (h) prims.push({ t: "text", x: h.x, y: mine[n].y, s: "-", cls: "lyric hyphen", ...(look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}), sx: look.sx * h.hf * HYPHEN_SX });
             });

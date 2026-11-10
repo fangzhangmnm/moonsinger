@@ -117,18 +117,19 @@ export function fitLyrics(items: readonly LyricItem[], blockSx = 1, minSx = LYRI
 }
 /** 连字符要摆的一个音节（按谱上的先后）。x = 字的中心；hw = 让路之后的半宽、sx = 让路之后的宽度倍数（没走让路 = 都不给）；
  *  cjk = 这个音节是方块字（中日韩：旁边的连字符挂在缝里、不占地方）；row = 在哪一行（跨行的连字符挂在左边那个字后面）。单位随宿主，全用同一个就行。 */
-export interface HyphenSyl { x: number; hy?: boolean; hw?: number; sx?: number; cjk: boolean; row: number }
+export interface HyphenSyl { x: number; hy?: boolean; hw?: number; sx?: number; /** 没走让路时的半宽（字照原样画多宽）：只拿来找缝的正中，不按它判放不放得下。 */ nw?: number; cjk: boolean; row: number }
 /** 连字符摆哪（2026-11-09 从 engrave 抽出来，行为不变）：每个带连字符的音节 → 摆的 x + 跟着压几成（hf）；null = 不画。
  *  · 和下一个音节在同一行：摆在两个字之间那道缝的正中（原来是两个中心的正中 = 贴着长的那个，user 11-09 看着像虚线）；
  *    缝放不下一个连字符 = 不画（常见打谱软件的做法；挤了才会）；方块字旁边的连字符挂在缝里、不占地方，照画；hf = 左右更窄的那个字压到几成。
- *  · 没走让路（按节奏排以外的排法）：两个中心的正中；· 下一个在别的行 / 没有下一个：左边那个字后面 lonely 那么远。
+ *  · 没走让路（按节奏排以外的排法）：给了 nw = 照样摆在缝的正中、但照画（这一档的音距本来就按歌词留够了）；没给 = 两个中心的正中
+ *    （v0.16.78 起宿主都给：两个中心的正中 = 贴着宽的那个字，user 11-09「un -der」「dar -ling」）；· 下一个在别的行 / 没有下一个：左边那个字后面 lonely 那么远。
  *  hyphenW = 一个连字符（没压）占的宽度。下标和 syls 对齐；不带连字符的 = null。 */
 export function hyphens(syls: readonly HyphenSyl[], hyphenW: number, lonely: number): ({ x: number; hf: number } | null)[] {
   return syls.map((l, n) => {
     if (!l.hy) return null;
     const r = syls[n + 1], same = !!r && r.row === l.row;
     if (!same) return { x: l.x + lonely, hf: 1 };
-    if (l.hw === undefined || r.hw === undefined) return { x: (l.x + r.x) / 2, hf: 1 };
+    if (l.hw === undefined || r.hw === undefined) return { x: (l.x + (l.hw ?? l.nw ?? 0) + r.x - (r.hw ?? r.nw ?? 0)) / 2, hf: 1 };
     const hf = Math.min(l.sx ?? 1, r.sx ?? 1), a = l.x + l.hw, b = r.x - r.hw;
     if (!(l.cjk || r.cjk) && b - a < hyphenW * hf - 1e-6) return null;
     return { x: (a + b) / 2, hf };

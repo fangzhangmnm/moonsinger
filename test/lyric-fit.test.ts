@@ -88,6 +88,11 @@ describe("按节奏排：音的位置只看时值", () => {
 
 const J = (v: unknown) => JSON.stringify(v);
 describe("连字符摆哪（hyphens，2026-11-09 从排版器抽出来：src/render/text/lyric-fit.ts）", () => {
+  it("没走让路（按歌词排）：给了字的半宽 = 摆在缝的正中，不贴宽的那个字；缝窄也照画（v0.16.78，user「un -der」「dar -ling」）", () => {
+    const r = hyphens([{ x: 0, hy: true, nw: 1, cjk: false, row: 0 }, { x: 5, nw: 2, cjk: false, row: 0 }], 1, 1.6);
+    eq(r[0]!.x, (1 + 3) / 2);   // 缝 = [1, 3]：正中 2（两个中心的正中是 2.5）
+    eq(hyphens([{ x: 0, hy: true, nw: 1, cjk: false, row: 0 }, { x: 2.2, nw: 1, cjk: false, row: 0 }], 1, 1.6)[0]!.x, 1.1);   // 缝只有 0.2：照画
+  });
   it("同一行：摆在两个字之间那道缝的正中、跟着更窄的字压；缝放不下 = 不画；方块字旁边照画", () => {
     const r = hyphens([{ x: 0, hy: true, hw: 1, sx: 0.8, cjk: false, row: 0 }, { x: 4, hw: 1, sx: 0.6, cjk: false, row: 0 }], 1, 2);
     eq(J(r[0]), J({ x: 2, hf: 0.6 })); eq(J(r[1]), J(null));
