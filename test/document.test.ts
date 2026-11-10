@@ -2,7 +2,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { createDocument, type DocHooks } from "../src/app/document.ts";
 import { initState, type EditorState } from "../src/score/song.ts";
-import { emptyExtras, withCalibration, withThumbnail, withFinal, withoutFinal, contentFingerprintOf, FINAL_MP3_ENTRY, type FinalRecord } from "../src/format/project.ts";
+import { emptyExtras, withCalibration, withThumbnail } from "../src/format/project.ts";
 
 function make(o: { normalize?: boolean; refs?: () => number } = {}) {
   const log: string[] = [];
@@ -62,21 +62,10 @@ describe("文档的唯一入口", () => {
     D.adoptSaved(m); eq(D.dirty(), true, "adopt 的是 encode 那一刻的基线，之后又改了 = 还脏");
     D.markSaved(); eq(D.dirty(), false); refs = 1; eq(D.dirty(), true, "参考窗加了卡");
   });
-  it("锁（定稿）：谱 / 休息室 / 封面 / 撤销都拒（onRefused 带人话）；光标照常；定稿 / 改稿自己（locus final）放行、不进栈", () => {
-    const { D, log } = make();
-    write(D);
-    const fp = contentFingerprintOf({ song: D.st.song, hum: D.st.song.hum, extras: D.extras, app: "t", date: "t" });
-    const rec: FinalRecord = { at: "t", rev: 1, app: "t", core: { version: "0", hash: "0" }, fingerprint: fp, mp3: { path: FINAL_MP3_ENTRY, bytes: 1, sha256: "0", secs: 1, sr: 44100, kbps: 128, stereo: true }, parts: [] };
-    const past = D.history.past.length;
-    assert(D.commit({ extras: withFinal(D.extras, rec, new Uint8Array([1])) }, { locus: { kind: "final", label: "定稿" }, undo: false }).ok);
-    eq(D.history.past.length, past, "定稿不进栈"); assert(D.final && D.locked());
-    const r1 = write(D, 2); assert(!r1.ok); eq(log.at(-1), "refused:谱 / 歌名 / 作者栏");
-    const r2 = D.commit({ extras: withCalibration(D.extras, "r1", 1, "n") }, { locus: { kind: "studio", label: "" } }); assert(!r2.ok); eq(log.at(-1), "refused:混音");
-    const r3 = D.commit({ extras: withThumbnail(D.extras, new Uint8Array([2])) }, { locus: { kind: "cover", label: "" } }); assert(!r3.ok); eq(log.at(-1), "refused:封面");
-    assert(!D.undo()); eq(log.at(-1), "refused:撤销");
-    assert(D.run({ k: "caret", d: -1 }).ok, "光标照常");
-    assert(D.commit({ extras: withoutFinal(D.extras) }, { locus: { kind: "final", label: "改稿" }, undo: false }).ok);
-    eq(D.locked(), null); assert(write(D, 2).ok, "改稿后能写了");
+  it("锁不在文档里：宿主没注入 writeGate / lockedWhy = 什么都放、locked() = null（注入之后的拦法在 test/edit-lock.test.ts）", () => {
+    const { D } = make();
+    eq(D.locked(), null); assert(write(D).ok && D.undo() && D.redo());
+    eq(D.dirtyKind(), "content");
   });
   it("load：换歌 = 栈清空、基线 = 现在、不叫 hooks", () => {
     const { D, log } = make();

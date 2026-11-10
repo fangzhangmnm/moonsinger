@@ -8,9 +8,9 @@
 //   node scripts/render-song.mjs 歌.mxl --mono --kbps=64 --sr=44100
 //   --piper=<piper-node.mjs 的路径>   歌里有小月相（完整版）上场才要；没给 = 试 $MOONSINGER_PIPER，再试 ~/jupyter/third-party/piper-plus/dur-override-exp/piper-node.mjs；都没有 = 那些声部不出声、报出来
 //   --sounds=<地址>                   弱引用的 SoundFont 从哪下（默认 = app 出厂的家族音源库；下到临时目录按 sha256 留着）；歌里嵌的不用下
-//   --check                           只开文件、报核心版本 / 哈希 / 定稿记录，不渲
+//   --check                           只开文件、报核心版本 / 哈希（老文件里带着 mp3 的也说一声），不渲
 //   --frames=x.json [--fps=30] [--lead=0.6]   另写一份逐格的播放线位置（带谱视频用，scripts/render-video.mjs）
-// 核心哈希：这首歌上次保存 / 定稿时记的核心（manifest.core / final.core）和现在源码的（scripts/core-hash.mjs）对一下，不一样就说一声（想复现定稿那份 = 换到那一版代码）。
+// 核心哈希：这首歌上次保存时记的核心（manifest.core）和现在源码的（scripts/core-hash.mjs）对一下，不一样就说一声。
 import fs from "node:fs"; import os from "node:os"; import path from "node:path"; import { fileURLToPath, pathToFileURL } from "node:url"; import { createHash } from "node:crypto";
 import { openBytes } from "../src/format/project.ts";
 import { renderSong, audibleParts, toMono } from "../src/core/render.ts";
@@ -36,8 +36,7 @@ for (const n of o.notices) say(`提示：${n}`);
 const hashNow = coreHash(ROOT), m = o.extras.manifest ?? {};
 say(`核心 ${CORE_VERSION}@${hashNow}（这台机器的源码）`);
 if (m.core && typeof m.core === "object") { const c = m.core; say(`这首歌上次保存时的核心 = ${c.version}@${c.hash}${c.hash === hashNow ? "（一样）" : "（不一样：出声可能和上次存的时候不同）"}`); }
-if (o.extras.final) { const f = o.extras.final; say(`定稿记录：第 ${f.rev} 版 · ${f.at} · 核心 ${f.core.version}@${f.core.hash}${f.core.hash === hashNow ? "（和现在一样）" : "（和现在不一样：想逐字节复现那份 mp3 = 换到那一版代码）"} · mp3 ${f.mp3.bytes} 字节 ${f.mp3.secs.toFixed(1)} s`); }
-else say("没定稿。");
+if (o.legacyMp3) { const f = o.legacyMp3; say(`这个文件里还带着一份 mp3（旧版本「定稿」存进去的，第 ${f.rev} 版 · 核心 ${f.core.version}@${f.core.hash}${f.core.hash === hashNow ? "，和现在一样" : "，和现在不一样"}）：新版本的 app 再存一次就不带它了`); }
 if (flag("check")) process.exit(0);
 
 // ── 录音房 ──

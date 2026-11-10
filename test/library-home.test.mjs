@@ -54,8 +54,8 @@ describe("搬家 · 接线守卫（Fable 看 diff 这一步）", () => {
   it("旧库实例永远离线：不会把删除排上云", () => {
     assert(/signedIn: \(\) => false, isOnline: \(\) => false/.test(/export function openLegacyLibrary[\s\S]*?\n\}/.exec(store)?.[0] ?? ""));
   });
-  it("写新家 = mode new（撞名不覆盖）+ 必须真写进去", () => {
-    assert(/zip\(id, \{ mode: "new" \}\)\.save\(bytes, \{ tryPush: true \}\)/.test(flow) && /r\?\.pushed !== true\) throw/.test(flow));
+  it("写新家 = mode new（撞名不覆盖）+ 必须真写进去 + 生来锁着（搬过去的是已有的作品，不是在这里新建的；修改锁 v0.16.97）", () => {
+    assert(/zip\(id, \{ mode: "new" \}\)\.save\(bytes, \{ tryPush: true, bornLocked: true \}\)/.test(flow) && /r\?\.pushed !== true\) throw/.test(flow));
   });
   it("只有全部搬成才退役", () => { assert(/if \(finished\) deviceKvSet\(KV_LEGACY_RETIRED, "1"\)/.test(flow)); });
 });

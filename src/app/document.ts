@@ -10,12 +10,12 @@
 //   · 类别 = 这一步的 `locus.kind`；没带的按内容（score）问。自己报「我是看法」的，先用分类表核一遍这一步真的只动了那类看法（src/app/edit-lock-table.ts effectiveKind），核不过 = 当内容问。
 //   · 看法那一步不并格（gesture 作废）：撤销栈每一格只有一种类别；撤销 / 重做按要翻的那一格的类别问同一个口，翻的是看法就能翻，翻到内容那一格就停。
 //   · 脏分两种（dirtyKind）：和上次存的样子只差看法 = looks（锁着时也会有：隐藏了一段），别的 = content。存盘那几层靠它分「静静不写」和「响亮地拒」。
-//   · 过渡期：定稿（W-38）的锁还在这里并着（isFinal → 一律拒，final 这个类别放行）；定稿退役那一版一起拿掉。
+//   · 定稿（W-38）的锁 2026-11-10 退役（v0.16.97）：这里不再认识定稿，锁只有宿主注入的那一把。
 import { _t } from "../i18n/index.ts";
 import { type EditorState, type Song } from "../score/song.ts";
 import { apply, type Command } from "../score/commands.ts";
 import { emptyHistory, record, undo as undoH, redo as redoH, describeSongChange, type History, type Locus, type LocusKind, type Restored, type Snap } from "../score/history.ts";
-import { isFinal, type Extras, type FinalRecord } from "../format/project.ts";
+import type { Extras } from "../format/project.ts";
 import { effectiveKind, isLookOp, sameModuloLooks } from "./edit-lock-table.ts";
 
 /** 宿主接的副作用（全是「之后」；这里先把真相换好再叫）。 */
@@ -23,7 +23,7 @@ export interface DocHooks {
   now(): number;
   /** 谱变了之后（commit 换了 st）：moved = 光标换了纸 / 声部。 */
   onState(prev: EditorState, next: EditorState, moved: boolean): void;
-  /** extras 变了之后（休息室 / 录音房 / 封面 / 定稿）。 */
+  /** extras 变了之后（休息室 / 录音房 / 封面）。 */
   onExtras(prev: Extras, next: Extras, locus: Locus): void;
   /** 被锁拒了：what = 改的是什么（人话）；kind = 按哪个类别问的锁。 */
   onRefused(what: string, kind: LocusKind): void;
@@ -44,7 +44,7 @@ export interface CommitOpts {
   locus?: Locus;
   /** 连续动作并成一步（拖 / 连打 / 推子）。类别是看法的那一步不并（见头注释）。 */
   gesture?: string;
-  /** false = 不进撤销栈（定稿 / 改稿 / 开歌时的规整）。 */
+  /** false = 不进撤销栈（开歌时的规整）。 */
   undo?: boolean;
   /** true = 不叫宿主的 hooks（只换真相；开歌装视图态用）。 */
   silent?: boolean;
@@ -59,9 +59,7 @@ export interface Document {
   readonly st: EditorState;
   readonly extras: Extras;
   readonly history: History;
-  /** 定稿记录（没定稿 = null）。 */
-  readonly final: FinalRecord | null;
-  /** 现在内容为什么不能改（定稿着 / 修改锁锁着）；null = 能。只问，没有副作用。 */
+  /** 现在内容为什么不能改（修改锁锁着）；null = 能。只问，没有副作用。 */
   locked(): string | null;
   /** **唯一入口**：换谱 / 换 extras / 两个一起。拒了（锁着）= ok:false + onRefused；没变 = changed:false。 */
   commit(next: { st?: EditorState; extras?: Extras }, o?: CommitOpts): CommitResult;
@@ -83,17 +81,16 @@ export interface Document {
 }
 
 const LOCK_WHAT: Record<string, string> = { score: _t("谱 / 歌名 / 作者栏"), paper: _t("纸"), paperHidden: _t("纸"), lounge: _t("声部 / 乐器"), studio: _t("混音"), cover: _t("封面") };
-/** 休息室 + 录音房 + 定稿的 JSON 键（脏比较用；字节在 extras.sounds 不在这里，每秒一次 stringify 无所谓）。 */
-const extrasKey = (e: Extras): string => JSON.stringify([e.final?.at ?? null, Object.entries(e.lounge).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)), e.studio ?? null]);
+/** 休息室 + 录音房的 JSON 键（脏比较用；字节在 extras.sounds 不在这里，每秒一次 stringify 无所谓）。 */
+const extrasKey = (e: Extras): string => JSON.stringify([Object.entries(e.lounge).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)), e.studio ?? null]);
 
 export function createDocument(init: { st: EditorState; extras: Extras }, hooks: DocHooks): Document {
   let st = init.st, extras = init.extras, history = emptyHistory();
   const mark = (): SavedMark => ({ song: st.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: hooks.extraDirty?.() ?? 0 });
   let saved: SavedMark = { song: st.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: 0 };   // 出生那一刻不问 extraDirty（宿主的参考窗可能还没建）
-  const finalWhy = (): string | null => (isFinal(extras) ? _t("定稿了（第 {rev} 版）", { rev: extras.final!.rev }) : null);   // 过渡期：定稿的锁并在这里
-  const locked = (): string | null => finalWhy() ?? hooks.lockedWhy?.() ?? null;
-  /** 真要改的那一下问锁：定稿着一律拒（final 这个类别 = 定稿 / 改稿自己，放行）；否则问宿主的修改锁。 */
-  const gate = (kind: LocusKind): string | null => (kind === "final" ? null : finalWhy() ?? hooks.writeGate?.(kind) ?? null);
+  const locked = (): string | null => hooks.lockedWhy?.() ?? null;
+  /** 真要改的那一下问宿主的修改锁。 */
+  const gate = (kind: LocusKind): string | null => hooks.writeGate?.(kind) ?? null;
   function commit(next: { st?: EditorState; extras?: Extras }, o: CommitOpts = {}): CommitResult {
     const nextSt0 = next.st ?? st, nextEx = next.extras ?? extras;
     const songChanged = nextSt0.song !== st.song, exChanged = nextEx !== extras, stChanged = nextSt0 !== st;
@@ -133,13 +130,13 @@ export function createDocument(init: { st: EditorState; extras: Extras }, hooks:
   }
   /** 第 ③ 道：翻一格 = 再做一次那一步的反面，按要翻的那一格的类别问（看法要核：翻回去真的只动了那类看法）。没有可翻的 = 不问。 */
   function step(snap: Snap | undefined, verb: string, go: () => Restored | null): boolean {
-    if (!snap) { const why = locked(); if (why) hooks.onRefused(verb, "score"); return false; }   // 栈空着：锁着照旧说一声（定稿着按撤销 = 告诉人为什么没动）
+    if (!snap) { if (locked()) hooks.onRefused(verb, "score"); return false; }   // 栈空着：锁着 = 让宿主闪一下门（告诉人为什么没动）
     const kind = effectiveKind<LocusKind>(snap.locus.kind, "score", st.song, snap.song, snap.extras !== extras);
     if (gate(kind)) { hooks.onRefused(verb, kind); return false; }
     return restore(go(), verb);
   }
   return {
-    get st() { return st; }, get extras() { return extras; }, get history() { return history; }, get final() { return extras.final; },
+    get st() { return st; }, get extras() { return extras; }, get history() { return history; },
     locked, commit,
     run: (c, o) => commit({ st: apply(st, c, hooks.now()) }, o),
     undo: () => step(history.past[history.past.length - 1], _t("撤销"), () => undoH(history, st, extras)),

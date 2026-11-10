@@ -111,6 +111,10 @@ try {
   const B = await newPage(ctxB);
   await B.evaluate(() => window.__moonsinger.attach()); await signIn(B); await B.evaluate((id) => window.__moonsinger.openStoreDoc(id), id); await B.waitForTimeout(500);
   check((await notes(B)).endsWith("E4 F4 G4"), "B 从云端拉到了 A 的版本", await notes(B));
+  // 修改锁（v0.16.97 起歌库里的歌默认锁着）：解锁跟设备走——A 上新建的歌在 A 生来解着，到了 B 是锁着的，要改先点门上的「接着改」
+  check((await B.evaluate(() => window.__moonsinger.editLock().state)) === "locked", "B 第一次打开别的设备写的歌：锁着（解锁跟设备走）");
+  await B.click('#lockBar [data-v="continue"]'); await B.waitForTimeout(400);
+  check((await B.evaluate(() => window.__moonsinger.editLock().state)) === "unlocked", "B 点「接着改」：解了");
   await typeAtEnd(B, ["Digit5"]); await push(B); await B.waitForTimeout(200);
   check((await gate(B)) === null && (await cloudNotes(B, id)).endsWith("F4 G4 G4"), "B 改了推：零冲突", await cloudNotes(B, id));
   await A.evaluate(() => window.__moonsinger.refreshOpenDoc()); await A.waitForTimeout(500);

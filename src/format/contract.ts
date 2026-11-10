@@ -22,7 +22,7 @@ export type FormatFile = keyof typeof FORMAT;
  *  minor +1 = 加了可选字段 / 新的子表 / 新的默认行为（老读者能开能改能存、未知键原样带回、告诉用户一次）；patch +1 = 写法 / 默认值修正（老读者静默）。
  *  minor 1 = 追认 major 2 之后加过的所有可选字段（2026-10-08 → 10-21：manifest 的 core / final / finalRev / sounds；score 的 view / arrangement / lyricFit / barNumbers / parts.clef / host / autoOttava、
  *  papers 的 phrases / swells / hidden；lounge 的 articulation / chain / defaults 那些；studio v2 的 master.chain / bypass / sends / dry…）——以前写的文件没有这两个键 = 0.0，读起来一样。
- *  指纹（定稿）不看 minor / patch（project.ts fpTextOf）。改 minor / patch 不用迁移、不用冻结样本，只跑 freeze-format-sample 更新形状快照。added 2026-10-21 by Claude Fable 5.1 */
+ *  出声内容的指纹（渲染缓存的钥匙；以前是定稿的记录）不看 minor / patch（project.ts fpTextOf）。改 minor / patch 不用迁移、不用冻结样本，只跑 freeze-format-sample 更新形状快照。added 2026-10-21 by Claude Fable 5.1 */
 /** score minor 2（v0.16.73，2026-11-09 Claude Opus 5.5）：parts[].brokenChords（可选，只写 false = 这位不认分解和弦）——老版本读进来会丢掉它（parts 按歌重建），所以照纪律 +1、让老版本提示一次。 */
 /** score minor 3（v0.16.83，2026-11-10 Claude Opus 5.5；user 11-10 同意往歌里加）：调号上的「小调」= 每张纸 MusicXML 里 <key><mode>minor</mode>（大调照旧不写）。
  *  老版本读进来当大调、存一次就没了（音不丢），所以 +1、让老版本提示一次。这一轮后面几样（挑过的和弦名、每段的谱号 / 大谱表）也算在 minor 3 里。 */
@@ -39,7 +39,10 @@ export type FormatFile = keyof typeof FORMAT;
  *  · 没有标准名的和弦种类（7sus4 / add9 / 6/9 / 7♭9…）在 <kind text="…">other</kind> 里写的字 = 一张冻住的表（theory/western.ts XML_OTHER_TEXT），和谱上显示的字分开。
  *  · 没有改 major，也没有改 minor：补的都是「读得更多 / 不再丢」，v0.16.88–90 那一天存的歌照样开。 */
 export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 4, lounge: 1, studio: 1 };
-export const FORMAT_PATCH: Readonly<Record<FormatFile, number>> = { manifest: 0, score: 0, lounge: 0, studio: 0 };
+/** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
+ *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
+ *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
+export const FORMAT_PATCH: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 0, lounge: 0, studio: 0 };
 
 // ═══ 现役（project.ts 写的就是这些）═══════════════════════════════════════════════════════
 
@@ -56,10 +59,11 @@ export interface ManifestV2 {
   /** 2026-10-16 加（可选，不升版本；Claude Fable 5.1，W-38）：渲染核心的版本 + 哈希，**每次保存都记**（user 2026-10-13「核心的版本号和hash反而是每次保存的时候都要记的。ui壳无所谓」）。
    *  version 人定（src/core/version.ts CORE_VERSION）；hash = 构建时按核心源码（src/core src/engine src/singer src/performers src/score src/gm src/format + vendor/world vendor/tsf + assets/preview）算的 sha256 前 16 位（scripts/core-hash.mjs）。 */
   core?: { version: string; hash: string };
-  /** 2026-10-16 加（可选）：定稿过几次（改稿不减）。 */
+  /** 2026-10-16 加（可选）：定稿过几次。**2026-11-10 起不再写**（定稿退役，manifest patch 1）；老文件里有 = 读的时候不看、再存不带。 */
   finalRev?: number;
-  /** 2026-10-16 加（可选）：定稿记录（src/format/final.ts FinalRecord）——有它 = 这首歌定稿着：`.moonsinger/final.mp3` 是定稿那一刻渲染的 mp3（不压缩；歌库按 entry 名抓来直接听），
-   *  fingerprint = 出声内容的指纹（contentFingerprint）；读的时候对不上 / mp3 不在 = 定稿作废（说一声）。改稿 = 这个键和 entry 一起消失。老版本 app 读到 = 不认的键原样写回、entry 原样写回。 */
+  /** 2026-10-16 加（可选）：定稿记录（src/format/final.ts FinalRecord）+ zip 里的 `.moonsinger/final.mp3`（定稿那一刻渲染的 mp3，不压缩）。
+   *  **2026-11-10 起不再写**（定稿退役，manifest patch 1）。老文件里有：记录像样 ∧ mp3 在 ∧ fingerprint 和文件里的内容对得上 = 那份 mp3 交给宿主搬进设备缓存；
+   *  别的情况当它不存在（不报错、不拒开）。两种情况再存都不带。歌库里还没重新存过的老文件，封面上照旧能按 entry 名尾读那份 mp3 来听。 */
   final?: unknown;
 }
 

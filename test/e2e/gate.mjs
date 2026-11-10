@@ -396,6 +396,8 @@ scenario("H2：冲突面开着 5 s 到点不刷；选了 / 取消之后才刷", 
   await other.evaluate(() => window.__moonsinger.attach()); await other.waitForTimeout(300); await other.waitPhase("open");
   const otherPushes = async (keys) => {
     await other.evaluate((x) => window.__moonsinger.openStoreDoc(x), id); await other.waitForTimeout(400);
+    // 修改锁（v0.16.97 起歌库里的歌默认锁着）：这首是另一台设备写的，到了这台是锁着的——先点门上的「接着改」（解锁跟设备走，解一次就记着）
+    if ((await other.evaluate(() => window.__moonsinger.editLock().state)) === "locked") { await other.click('#lockBar [data-v="continue"]'); await other.waitForTimeout(400); }
     await typeNote(other, keys); await other.waitForTimeout(150);
     await other.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await other.waitForTimeout(300);
   };

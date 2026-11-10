@@ -52,7 +52,7 @@ import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
 import { withCastAs, candidateJson } from "../format/project.ts";
 import type { CandidateV2 } from "../format/contract.ts";
-import { withFinal, withoutFinal, contentFingerprintOf, type FinalRecord, moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, activePerfSpec, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
+import { contentFingerprintOf, type LegacyMp3, moveBus, saveMxl, openBytes, emptyExtras, roleName, roleSound, partLabels, withRoleName, withRoleConcept, activeCandidateName, activeId, activeGm, activeInstrument, candidates, gmCandidates, withActive, withSwap, withCandidateCopy, songPresets, withSf2Candidate, withoutCandidate, newRoleId, newMicId, withNewRole, withoutRole, withMic, withThumbnail, soundUses, withPacked, withUnpacked, activeVelocity, activePerfSpec, activeSingChunk, withSingChunk, withMaster, activeMaster, withTrack, studioTrack, studioTracks, withoutBus, newBusId, activeChain, CANDIDATE_ID, type Extras, type Engine } from "../format/project.ts";
 import { packedLicenses, performerCredits, songCreditLine, licenseHints, RIGHTS_PRESETS, creditsText, type CreditLine } from "../format/credits.ts";
 import { ignoredArts, whyIgnored, dynOverridden, dynLevels, type Mark } from "../score/perform.ts";
 import { MARK_DEFAULTS } from "../format/performance.ts";
@@ -75,7 +75,6 @@ import { createInstSettings } from "./panels/inst-settings.ts";
 import { DYN_GLYPH } from "../render/smufl.ts";
 import { Studio, MASTER as STUDIO_MASTER, STEREO_TABS } from "../ui/studio.ts";
 import { resolveChain } from "../ui/plugins.ts";
-import { FINAL_MP3_ENTRY } from "../format/final.ts";
 import { coreInfo } from "../core/version.ts";
 import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, sustainOf, GS_LIBRARY_ID, gmKey, conceptOfIds, type Catalog, type Concept } from "../gm/catalog.ts";
 import { creditsSections, sectionsHtml } from "./credits-doc.ts";
@@ -121,6 +120,8 @@ import { createDocument, type SavedMark } from "./document.ts";
 import { createHome, assertNever, type Home } from "./home.ts";
 import { createEditLock, type LockStore } from "./edit-lock.ts";
 import { initEditLockDoor } from "./edit-lock-door.ts";
+import { createRenderCache, stampOf, MANIFEST_ENTRY, type RenderMeta } from "./render-cache.ts";
+import { idbRenderStore } from "./render-cache-idb.ts";
 import { createInputGate, keyOwner, type NoWrite } from "./input-gate.ts";
 import { monoDown, monoUp, type MonoHeld } from "./mono-voice.ts";
 import { createEncoder } from "../format/encode-client.ts";
@@ -135,7 +136,7 @@ installTouchTips();
 applyDocumentLang();   // <html lang> + CSS 里写死的几句：第一个做，后面画界面都已经是这个语言
 document.getElementById("score")?.setAttribute("aria-label", _t("乐谱"));
 initBlackBox(APP_VERSION);   // 黑匣子第一个起：之后所有报错 / 面包屑都有地方落（设置里「诊断日志」能分享）
-/** 文档 = 真相 + **改它的唯一入口**（src/app/document.ts，2026-10-16 doc 这一刀）：谱的状态 `D.st`、文件里的其余部分 `D.extras`、撤销栈、「改过没存」的基线、定稿的锁。
+/** 文档 = 真相 + **改它的唯一入口**（src/app/document.ts，2026-10-16 doc 这一刀）：谱的状态 `D.st`、文件里的其余部分 `D.extras`、撤销栈、「改过没存」的基线、修改锁的第 ②③ 道。
  *  改状态一律 `D.commit()`（下面的 update / updateExtras / updateBoth 只是薄壳）；界面的副作用在 afterState / afterExtras / afterRestore 三个 hook 里（函数声明会提升，这里引用没问题）。 */
 const D = createDocument({ st: initState(), extras: emptyExtras() }, {
   now: () => performance.now(), normalize: (next) => withStartDyns(next),
@@ -176,6 +177,71 @@ const lock = createEditLock({
 });
 /** 有没有要存的改动：锁着时「只动了看法」（隐藏了一段）不算——那时候一个字节都不写，离开也不问；解锁那一刻它自然又算（脏是比出来的）。顶栏的「•」照旧看 D.dirty()（老实）。 */
 const owesSave = (): boolean => D.dirty() && !(lock.locked() && D.dirtyKind() === "looks");
+
+// ── 这台设备上记着的渲好的声音（src/app/render-cache.ts；2026-11-10，Claude Fable 5.2）────────────────────────────────────────
+//   定稿退役之后，「内容没变再导出不用等」「歌库封面上直接听 / 锁屏放」都靠它。user 11-09：「完全不应该保管理 MP 三」「软件在设备上记着不就行了？…相当于记着的是缓存同意」；
+//   11-10：「对，以后统一不存mp3，旧的也删掉」「以及本地歌缓存？最好能有锁屏播放？这样我可以听歌」。清了能重来（三等：可再得），不同步，不进歌库的文件列表。
+const RENDER_KEEP = 20;   // 最近用过的 20 首，超了丢最久没用的（user 11-09「同意」）
+const renders = createRenderCache(idbRenderStore(), { max: RENDER_KEEP, now: () => Date.now(), report: (e) => reportError(e, "log") });
+/** 歌库里的歌按家分开记（同名的歌在两个家里不是一回事）。和 src/gallery-host.ts 的 storeKey 是同一个算法（它那边的缩略图 / 事实也这么分）。 */
+const homeKey = (): string => folderHome()?.id ?? "default";
+/** 歌库里这首歌的文件此刻的「戳」（本机那份的总目录文本的哈希，每存一次都变）；拿不到 = null。歌库宿主列卡片时算的是同一个 stampOf。 */
+async function fileStamp(id: string): Promise<string | null> {
+  try { const b = await requireStore().zip(id, { mode: "existing" }).getPeek({ bytesLength: 128 * 1024, zipEntry: MANIFEST_ENTRY, source: "local" }); return b ? stampOf(await b.text()) : null; }
+  catch { return null; }
+}
+const renderKeyNow = (quality: string, parts: readonly string[], title: string): string => renders.keyOf({ fingerprint: contentFingerprintOf(saveArgs()), quality, parts, title });
+/** 现在这首、这个音质、整首：设备上记着同一份吗（而且是这一版渲染核心渲的）。只看索引，同步——导出面板上先说一句用。 */
+function renderHit(quality: Mp3Quality): RenderMeta | null {
+  try { const m = renders.find(renderKeyNow(quality, perfApi.audibleParts().map((p) => p.id), D.st.song.title || docName())); return m && m.core.hash === coreInfo().hash ? m : null; }
+  catch { return null; }
+}
+/** 导出 / 分享要的那一份：内容、音质、声部、歌名都一样，而且是这一版渲染核心渲的（核心变过 = 重渲换掉；歌库里听不挑这个）。 */
+async function takeRender(o: { quality: Mp3Quality; parts: readonly string[]; title: string }): Promise<{ bytes: Uint8Array; secs: number; kbps: number; stereo: boolean; roles: string[] } | null> {
+  await renders.ready();
+  const key = renderKeyNow(o.quality, o.parts, o.title), m = renders.find(key);
+  if (!m || m.core.hash !== coreInfo().hash) return null;
+  const got = await renders.take(key); if (!got) return null;
+  void linkRenderNow(key);
+  return { bytes: got.bytes, secs: m.secs, kbps: m.kbps, stereo: m.stereo, roles: m.roles };
+}
+/** 刚渲好的一份记下来。记不进去（配额 / 隐私模式）= 报进黑匣子、回 false，不拦导出。 */
+async function keepRender(o: { quality: Mp3Quality; parts: readonly string[]; title: string; roles: string[]; secs: number; kbps: number; stereo: boolean }, tagged: Uint8Array): Promise<boolean> {
+  try {
+    const m = await renders.put({ fingerprint: contentFingerprintOf(saveArgs()), quality: o.quality, parts: [...o.parts], roles: o.roles, secs: o.secs, kbps: o.kbps, stereo: o.stereo, title: o.title, app: APP_VERSION, core: coreInfo() }, tagged);
+    void linkRenderNow(m.key);
+    return true;
+  } catch (e) { reportError(e, "log"); diagNote("render-cache", `not kept: ${(e as Error)?.message ?? e}`); return false; }
+}
+/** 歌库里的歌、手里没有没存的改动（文件 = 眼前的内容）：把这条记录挂到这首歌的名下，歌库封面上的 ▶ 才认得它。有没存的改动 = 等下一次存完（relinkAfterSave）。 */
+async function linkRenderNow(key: string): Promise<void> {
+  const h = H.home; if (h.kind !== "gallery" || D.dirty()) return;
+  const stamp = await fileStamp(h.identifier); if (!stamp) return;
+  if (await renders.link(homeKey(), h.identifier, key, stamp)) gallery?.invalidateFacts(h.identifier);
+}
+/** 歌库里的歌存完之后：这次存下去的内容有记着的声音 = 按新的文件戳重新挂名；没有 = 内容变了，摘名（记录留着：改回去还认得）。 */
+async function relinkAfterSave(name: string, fingerprint: string | null): Promise<void> {
+  if (!fingerprint) return;
+  await renders.ready();
+  const m = renders.latestFor(fingerprint), home = homeKey();
+  if (!m) { if (renders.linkOf(home, name)) { await renders.unlink(home, name); gallery?.invalidateFacts(name); } return; }
+  const stamp = await fileStamp(name); if (!stamp) return;
+  if (await renders.link(home, name, m.key, stamp)) gallery?.invalidateFacts(name);
+}
+/** 老文件里带着的那份 mp3（退役的定稿，src/format/project.ts LegacyMp3）→ 搬进这台设备的缓存（歌库里的歌顺手挂名）。这一版起歌文件里不再写它：
+ *  这首歌下一次存下去的时候它就不在文件里了（锁着不存，它自然留着）。存掉它的那一下说一句（legacyMp3Note）。搬不进去 = 报进黑匣子，照常打开。 */
+let legacyMp3Note: string | null = null;
+async function adoptLegacyMp3(l: LegacyMp3, title: string, galleryId: string | null): Promise<void> {
+  try {
+    await renders.ready();
+    const quality = (Object.keys(MP3_QUALITY) as Mp3Quality[]).find((q) => MP3_QUALITY[q].kbps === l.kbps && MP3_QUALITY[q].stereo === l.stereo) ?? `legacy-${l.kbps}${l.stereo ? "s" : "m"}`;
+    const key = renders.keyOf({ fingerprint: l.fingerprint, quality, parts: l.parts, title });
+    const meta = renders.find(key) ?? await renders.put({ fingerprint: l.fingerprint, quality, parts: l.parts, roles: D.st.song.parts.filter((p) => l.parts.includes(p.id)).map((p) => p.role), secs: l.secs, kbps: l.kbps, stereo: l.stereo, title, app: l.app, core: l.core }, l.bytes);
+    if (galleryId) { const stamp = await fileStamp(galleryId); if (stamp && await renders.link(homeKey(), galleryId, meta.key, stamp)) gallery?.invalidateFacts(galleryId); }
+    legacyMp3Note = _t("这首歌里原来带着的那份 mp3（{size}）不再存进歌里了：它已经记在这台设备上，歌库里照样能听、能再导出。", { size: sizeText(l.bytes.length) });
+    diagNote("render-cache", `legacy mp3 adopted (${l.bytes.length} B, rev ${l.rev})`);
+  } catch (e) { reportError(e, "log"); }
+}
 /** 光标所在的声部 / 它的角色 id（歌手牌、找人、试听都对着它）。 */
 const curPart = (): PartDef => D.st.song.parts.find((p) => p.id === D.st.at.part) ?? D.st.song.parts[0];
 /** 光标所在声部台上那位不认的记号（谱上画灰；写的时候说一声；user 2026-10-08 拍「演奏者不认的记号也变灰，不静默失效，而是向用户披露」）。 */
@@ -726,13 +792,13 @@ function insertMarkHere(_kind?: string, at?: { x: number; y: number }): void {
 //   这里只给它一组访问器；pad 一创建就画，所以它读的状态（padHint、ui.page、autoBars…）都已在上面声明。
 let monoHinted = false;   // 单音护栏丢键的提示：这次打开说过没有
 /** 键盘总闸（src/app/input-gate.ts；2026-11-09 Claude Fable 5.1）：键盘族的每一下（电脑键盘 run() / 触屏键盘 padHost / MIDI 走 padHost）往谱上写之前都问它。
- *  三个原因现算：歌锁着（现在 = 定稿；修改锁那一轮只换 locked 这一个函数）/ 在选乐器（乐器目录、乐器页）/ 人自己拔着（「弹」）。这里不存状态。
+ *  三个原因现算：歌锁着（修改锁，src/app/edit-lock.ts）/ 在选乐器（乐器目录、乐器页）/ 人自己拔着（「弹」）。这里不存状态。
  *  被挡下 = 「弹」钮晃一下（plugNudge），不弹字。 */
 const inputGate = createInputGate({
   locked: () => D.locked() !== null,
   picking: () => finderShown() || instShown(),
   unplugged: () => impro,
-  onBlocked: (why) => { if (why === "locked" && !finalOn() && lock.locked()) lock.flash(); else plugNudge(why); },   // 修改锁锁着 = 门闪一下；别的原因 = 「弹」钮晃一下
+  onBlocked: (why) => { if (why === "locked") lock.flash(); else plugNudge(why); },   // 修改锁锁着 = 门闪一下；别的原因 = 「弹」钮晃一下
 });
 let plugNudgeT = 0, plugNoted: NoWrite | null = null;
 function plugNudge(why: NoWrite): void {
@@ -771,7 +837,7 @@ pad.setBigLabel(viewInC ? "deg" : "abs");
 function toggleImpro(): void { if (finder.isOpen || !inputGate.mayToggle()) return; setImpro(!impro); }   // 锁着 / 在选乐器 = 强制拔着，接不回去（钮晃一下）
 /** 直接定（换歌时复位用；人拨的走 toggleImpro）。拔着 = 键盘上会写谱的那一排也灰掉（styles.css .pad-panel.is-unplugged）。 */
 function setImpro(on: boolean): void { impro = on; syncPlug(); if (on) showPad(true); pad.render(); ghostHeld.clear(); ghostSync(); }
-/** 插头现在是不是拔着的样子：人自己拔的，或者歌锁着（定稿 / 修改锁 = 强制拔着、接不回去；user 11-09「即使你被锁着，你键盘还是可以弹的，就可以跟着弹着玩」）。 */
+/** 插头现在是不是拔着的样子：人自己拔的，或者歌锁着（修改锁 = 强制拔着、接不回去；user 11-09「即使你被锁着，你键盘还是可以弹的，就可以跟着弹着玩」）。 */
 const plugOut = (): boolean => impro || D.locked() !== null;
 /** 键盘上会写谱的那一排灰不灰（styles.css .pad-panel.is-unplugged）跟着 plugOut 走。锁态变了也叫（applyWorkspace）。 */
 function syncPlug(): void { padEl.classList.toggle("is-unplugged", plugOut()); }
@@ -783,19 +849,14 @@ function ghostSync(): void { view.showGhost(ghostOn() ? [...ghostHeld.values()] 
 
 // ── 撤销 / 重做（src/score/history.ts）：song 每变一次记一份改之前的快照（引用，不拷贝）；gesture = 连续动作（拖 / 连打歌词）并成一步；换歌清栈 ──
 // ── 改状态的唯一入口 = D.commit（src/app/document.ts）。下面三个名字只是薄壳（九十多处调用不用改）；锁 / 撤销栈 / 脏都在 D 里一处 ──
-// ── 定稿（W-38；src/format/final.ts 头注释 = 四层护栏）：第 ② 层 = D.commit 里那一判（整首锁住：谱 / 歌名 / 作者栏 / 许可 / 封面 / 歌手 / 混音，user 10-16「都冻同意，封面当然进」）。
-const finalOn = (): boolean => D.final != null;   // 只说定稿（过渡期）；「现在内容能不能改」= D.locked()（定稿 ∨ 修改锁）
 /** 这一段这个声部现在怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段算；按歌缓存——同一首歌的状态只算一次）。鼓 / 固定敲一个键的不自动变大谱表（和排版同一条规矩）。 */
 let lookCache: { song: Song; map: Map<string, Map<string, ResolvedLook>> } | null = null;
 function lookNow(paperId: string, partId: string): ResolvedLook | undefined {
   if (lookCache?.song !== D.st.song) lookCache = { song: D.st.song, map: resolveSongLooks(D.st.song, new Set(partViews().filter((x) => x.perc || x.xHead).map((x) => x.id))) };
   return lookCache.map.get(paperId)?.get(partId);
 }
-let lockSaidAt = 0;
-/** 定稿着被拒的那一下：说一句（同一句 3 s 内不重复）。 */
-function lockedSay(what: string): void { const t = performance.now(); if (t - lockSaidAt < 3000) return; lockSaidAt = t; showError(_t("这首歌定稿了，{what}改不了：先在三条杠里「改稿」（定稿的 mp3 会作废），再改。", { what })); }
-/** 写入口 / 撤销被锁拒了：定稿着 = 说一句（旧的那套，过渡期）；修改锁 = 门已经闪过了（lock.writeGate 里），不弹字。两种都把界面摆回真相（滑到一半的推子弹回去）。 */
-function onLockRefused(what: string): void { if (finalOn()) lockedSay(what); view.render(); pad.render(); drawInst(); ui.redraw(); if (studio.isOpen) studio.show(); }
+/** 写入口 / 撤销被修改锁拒了：门已经闪过了（lock.writeGate 里），不弹字；这里把界面摆回真相（滑到一半的推子弹回去）。 */
+function onLockRefused(_what: string): void { view.render(); pad.render(); drawInst(); ui.redraw(); if (studio.isOpen) studio.show(); }
 /** 曲段的隐藏 / 放出来：修改锁分类表（src/app/edit-lock-table.ts）里的「看法」——锁着也能点（user 11-09「曲段的隐藏和显示锁着的时候当然能解。」），
  *  锁着期间文件一个字节都不写，解锁之后它算一处待保存的改动。**隐藏的调用点只许走这里**（带着 paperHidden 这个类别；test/edit-lock-guard.test.mjs 钉）。 */
 function setHidden(paperId: string, hidden: boolean): void {
@@ -852,7 +913,6 @@ function afterExtras(prev: Extras, next: Extras, locus: Locus): void {
   pushChannels(); schedulePlaybackRefresh(); schedulePrewarm();   // 推子 / 校准立刻进录音房（边放边调）；换人 = 时间线重算
   refreshIssues();   // 换人 = 清单重算（换对了角标自己消）
   pad.render();   // 乐器设置有任何变化都重画一次 pad（重画自己比对，没变 = 不动）：提示音域 / 原速键跟着；谁在弹换了 = 窗口跟过去（v0.16.23：原来只认 lounge 这一种改动，从目录换上、撤销走的不是它 = 提示停在旧乐器上）
-  if (locus.kind === "final") { applyWorkspace(); view.render(); }   // 定稿 / 改稿：锁的样子（body.doc-final / 模式钮）跟着
   drawInst(); ui.redraw(); updateChrome();   // 歌手名在挂签的下拉里
 }
 // 锁着：交给 D（按要翻的那一格问锁：翻的是看法就翻，翻到内容那一格就停、门闪一下；栈空着也由它说）
@@ -932,7 +992,7 @@ const perfApi = createPerformance({
   ui: { progress, info, showError, renderBar, playBtns, playIcon, offerFile: (f, t, m) => offerFile(f, t, m), onIssues: (list) => onIssuesChanged(list) },
   sounds: { resolveGmBytes: (g) => sources.resolveGmBytes(g), ensureVowels, soundMemoryBytes, modelBases: () => models.bases() },
   credits: { creditsOf: (roles, rights) => creditsOf(roles, rights), creditsBlock: (lines, title) => creditsBlock(lines, title) },
-  final: () => { const f = D.extras.final, b = D.extras.finalMp3; if (!f || !b) return null; const roles = D.st.song.parts.filter((p) => f.parts.includes(p.id)).map((p) => p.role); return { mp3: b, secs: f.mp3.secs, kbps: f.mp3.kbps, stereo: f.mp3.stereo, roles }; },
+  renders: { take: (o) => takeRender(o), keep: (o, bytes) => keepRender(o, bytes) },   // 这台设备上记着的渲好的声音（内容没变 = 不重渲）
 });
 const { humOpt, resetLatencyLog, refreshIssues, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
 const BUDGET = perfApi.budget, TURN_LEADS = perfApi.TURN_LEADS;
@@ -958,7 +1018,7 @@ function applyWorkspace(): void {
   const d = dockOf(ws), padOn = d === "keys" || d === "symbols", wasEdit = view.rules.edit;
   view.rules = lock.locked() ? lockedRules(RULES[ws.mode]) : RULES[ws.mode];   // 修改锁第 ① 道（谱面）：锁着 = 能放光标、能选（复制是逃生口），拖音 / 歌词框 / 记号菜单都不接——手势不许做到一半才被写入口拒
   document.body.classList.toggle("doc-locked", lock.locked()); syncPlug();
-  document.body.dataset.wmode = ws.mode; document.body.classList.toggle("listen-mode", ws.mode === "listen"); document.body.classList.toggle("doc-final", finalOn()); scoreEl.dataset.mode = ws.mode;   // 不用 body[data-mode]：歌库自己用它（gallery）
+  document.body.dataset.wmode = ws.mode; document.body.classList.toggle("listen-mode", ws.mode === "listen"); scoreEl.dataset.mode = ws.mode;   // 不用 body[data-mode]：歌库自己用它（gallery）
   dockTab.querySelectorAll<HTMLElement>(".mode-seg [data-mode]").forEach((b) => b.classList.toggle("is-on", b.dataset.mode === barMode(ws.mode)));   // 用符号格时「音」亮
   const changed = padEl.hidden === padOn || stageEl.dataset.dock !== d;
   stageEl.dataset.dock = d;
@@ -971,7 +1031,6 @@ function applyWorkspace(): void {
 /** 换模式：收起编辑框；进「音 / 符」= 键盘弹出来；进「听」= 谱锁住、键盘收起（录音室开着的话留着）。 */
 function setMode(m: Mode): void {
   if (m === ws.mode) return;
-  if (finalOn() && m !== "listen") { lockedSay(_t("模式")); return; }   // 第 ① 层：定稿着只有「听」
   ui.close(); view.lyrics.commitAndClose(); view.marks.commitAndClose();
   if (m !== "listen") lastEditMode = m;
   ws.mode = m; ws.aside = false; if (hasKeys(m) && touchLike) ws.collapsed = false;   // 换模式：触屏范式 = 有输入意图、键盘弹出来；鼠标键盘范式 = 不动（v0.16.89）
@@ -1103,11 +1162,10 @@ function openMp3Panel(): void {
   const draw = () => {
     const chip = (v: string, label: string, note: string, on: boolean) => `<button class="btn cand${on ? " is-on" : ""}" data-v="${v}">${esc(label)}<small>${esc(note)}</small></button>`;
     const er = D.st.song.rights ? exportRights(soundingRoles()) : null;
-    const fin = D.extras.final;
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("导出歌声（mp3）")}</div>` +
-      (fin ? `<div class="offer-msg">${_t("定稿的那一份（第 {rev} 版 · {stereo} {kbps}k · {bytes}）直接导出，不重渲；要别的音质先「改稿」。", { rev: fin.rev, stereo: fin.mp3.stereo ? _t("立体声") : _t("单声道"), kbps: fin.mp3.kbps, bytes: mp3SizeText(fin.mp3.bytes) })}</div>` :
-      `<div class="part-sec">${_t("音质")}</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>`) +
-      (D.st.song.papers.length > 1 && !fin ? `<div class="part-sec">${_t("范围")}</div><div class="set-row">${chip("s:all", _t("整首"), _t("隐藏的纸不放"), mp3Scope === "all")}${chip("s:segment", _t("这一张纸"), paper?.name || _t("第 {p} 张", { p: k + 1 }), mp3Scope === "segment")}</div>` : "") +
+      `<div class="part-sec">${_t("音质")}</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>` +
+      (D.st.song.papers.length > 1 ? `<div class="part-sec">${_t("范围")}</div><div class="set-row">${chip("s:all", _t("整首"), _t("隐藏的纸不放"), mp3Scope === "all")}${chip("s:segment", _t("这一张纸"), paper?.name || _t("第 {p} 张", { p: k + 1 }), mp3Scope === "segment")}</div>` : "") +
+      (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("这台设备上记着上次渲好的这一份，内容没变：直接拿，不用等。")}</div>` : "") +
       (er ? `<div class="offer-msg">${_t("许可：{fellBack}。和署名一起写进 mp3 的标签。", { fellBack: er.fellBack ? _t("这份按「未声明」写——你选的许可允许别人改编，和小月相的条款可能冲突（作者栏里的选择没动）") : esc(er.rights!) })}</div>` : "") +
       ((is) => (is.length ? `<div class="offer-msg issue-warn">${_t("{n} 条轨不出声，mp3 里不会有它们：{is}。换人在谱前面的声部名里。", { n: is.length, is: esc(perfApi.issuesText(is)) })}</div>` : ""))(perfApi.issues()) +   // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
       `<div class="offer-btns"><button class="btn primary" data-v="go">${perfApi.issues().length ? _t("照样导出") : _t("导出")}</button><button class="btn" data-v="close">${_t("算了")}</button></div></div>`;
@@ -1141,9 +1199,9 @@ async function packStatusText(): Promise<string> {
 const LANG_LABEL = "语言 · Language";   // i18n-keep
 /** 点了谱上的和弦级数：全部候选 + 怎么排的（不是选择题，只是看）。说明的字归读它的那种理论（乐理模块 src/theory/）。 */
 /** 点和弦级数 = 候选小表（v0.16.11）；v0.16.87 起每一行能点 = 用这个（写进那个音：人写明的和弦名，user 11-09「输入法候选」、11-10「一同意」）。
- *  挑过的：顶上说「这是你挑的」+「改回自动」；挑的对不上这几个音了：顶上明说，由人决定换一个还是改回自动（不替人删）。听模式 / 定稿只看不挑。 */
+ *  挑过的：顶上说「这是你挑的」+「改回自动」；挑的对不上这几个音了：顶上明说，由人决定换一个还是改回自动（不替人删）。听模式 / 锁着只看不挑。 */
 function openChordInfo(r: HarmonyRead, at: { x: number; y: number }, where: { paper: string; part: string; index: number } | null): void {
-  const th = harmonyTheory(r.theory), canPick = !!where && view.rules.edit && !finalOn();
+  const th = harmonyTheory(r.theory), canPick = !!where && view.rules.edit && !lock.locked();
   const row = (g: HarmonyGuess, i: number) => {
     const on = i === 0 && r.pinned, inner = `<b>${esc(g.label)}</b><span>${esc(g.name)}</span><small>${th.explain(g).map(esc).join(" · ")}</small>`;
     return canPick ? `<button class="chord-cand${i === 0 ? " is-best" : ""}${on ? " is-on" : ""}" data-v="pick:${i}">${inner}</button>` : `<div class="chord-cand${i === 0 ? " is-best" : ""}">${inner}</div>`;
@@ -1350,7 +1408,7 @@ function offerFile(file: File, title: string, msg: string, onDone?: () => void):
   transport: () => ({ startMark: perfApi.startMark, paused: perfApi.paused, listen: listenOn(), loop: perfApi.loopOn, turnLead: perfApi.turnLead }),   // 走带的状态（E2E 用）
   navPaper: (d: -1 | 1) => navPaper(d), paperSpans: () => perfApi.playTl?.papers.map((x) => ({ id: x.paper.id, t0: x.t0 })) ?? null,   // 换段 / 现在放的时间线里每段从几秒起（E2E 用）
   workspace: () => ({ ...ws, dock: dockOf(ws) }), setMode: (m: Mode) => setMode(m),   // 模式 / 底座（E2E 用）
-  final: () => D.extras.final, finalize: (q?: Mp3Quality) => finalizeNow(q), unfinalize: () => unfinalizeNow(false), finalMp3: () => D.extras.finalMp3,   // 定稿 / 改稿（E2E 用）
+  renders: () => ({ stats: renders.stats(), link: H.home.kind === "gallery" ? renders.linkOf(homeKey(), H.home.identifier) : null, hit: renderHit(mp3Quality) }), rendersReady: () => renders.ready(), rendersClear: () => renders.clear(),   // 设备上记着的渲好的声音（E2E 用）
   run: (c: Command) => D.run(c), commit: (next: { st?: EditorState; extras?: Extras }, o?: Parameters<typeof D.commit>[1]) => D.commit(next, o), locked: () => D.locked(),   // 指令式唯一入口（E2E / 以后的 MCP 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describeResources(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
   perf: () => perfReport(), perfReset: () => perfReset(), diag: () => diagText(),   // 热路径秒表（scripts/probe-input-latency.mjs 读）
@@ -1380,12 +1438,11 @@ function showPad(on: boolean): void {
 // ── 文件（无地逃生口）：一首歌 = 一个 .mxl；家 = 打开的那个文件（桌面 Chromium 能存回去）或没有家（iPad：存 = 下载 / 分享） ──────
 /** 台上那位的引擎（= 谁来演、怎么出声）；unknown = 没人能出声（别家谱原来的乐器 / 这一版不认识）。SSoT = 休息室快照（D.extras），不另存状态。 */
 function engineNow(): Engine { return activeInstrument(D.extras, curRole())?.engine ?? "unknown"; }
-const dirty = () => D.dirty();   // 改过没存（谱 / 休息室 / 录音房 / 封面 / 定稿 / 参考窗的卡）
+const dirty = () => D.dirty();   // 改过没存（谱 / 休息室 / 录音房 / 封面 / 参考窗的卡）
 /** 顶栏的名字（「•」= 改过还没落盘：无地 = 没存；歌库 = 2 s 内会自动存）+ 右边 smart save 钮的状态（永远可见，user 2026-10-08「数据安全红线」）。 */
 function renderTitle(): void {
-  const d = dirty(), name = docName(), fin = D.extras.final;
+  const d = dirty(), name = docName();
   $("docTitle").textContent = `${name}${d ? " •" : ""}`;
-  { const b = $("fileBtn"); b.classList.toggle("is-final", !!fin); b.querySelector(".final-badge")?.remove(); if (fin) { const t = document.createElement("span"); t.className = "final-badge"; t.textContent = _t("定稿 {rev}", { rev: fin.rev }); t.title = _t("定稿了（第 {rev} 版，{p}）：只能听，改不了；三条杠里「改稿」解锁", { rev: fin.rev, p: fin.at.slice(0, 10) }); b.append(t); } }
   $("fileBtn").title = _t("文件名（{p}）· {p2}", { p: fileWhere(), p2: H.home.kind === "file" ? _t("本机文件的名字在文件管理器里改") : _t("点了改名") });
   // 网页标题不跟歌名（W-22，user 2026-10-11「标题不要显示歌名，不然这样浏览器老是会记错」）：永远是 index.html 那一句（也是 SEO 的门面）；「•」只在顶栏
   renderSaveButton();
@@ -2612,6 +2669,7 @@ function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extr
 }
 function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array> }): void {
   if (impro) setImpro(false);
+  legacyMp3Note = null;   // 上一首的那句话不带到这一首
   ui.close(); closeInstPage();
   H.load(o.home, { stem: o.stem, named: o.named }); coverTouched = false;   // 换家（歌库 → 别处 = 放下 es 的身份；指针 / store 的「谁开着」在 onHome 里）
   const st0 = initState(song), startDyns = ensureStartDyns(st0.song, st0.nextId).added.length;
@@ -2620,7 +2678,7 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   const d = o.view ? unserializeDesk(o.view) : freshDesk();
   applyDesk(d);
   // 打开 = 上次存时的模式；谱里已经有音 = 键盘先收着，点一下才开（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」「或者默认键盘是关的，点一下才会开。」）。空的新歌照旧开着键盘
-  ws.mode = finalOn() ? "listen" : d.mode; if (d.mode !== "listen") lastEditMode = d.mode;   // 定稿着 = 只能听（存的模式不看）
+  ws.mode = d.mode; if (d.mode !== "listen") lastEditMode = d.mode;
   if (touchLike) ws.collapsed = D.st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));  ws.aside = false;   // 鼠标键盘范式：开歌不动键盘（v0.16.89）
   applyWorkspace();
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
@@ -2628,7 +2686,6 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   onSongSwitch(); sound.allOff(); void prepareBank(); refreshIssues();   // 开歌那一刻清单重算：有事 = 一条 toast + 角标（§2.2½ 出口 ③）   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
   view.forgetPin(); view.render(); pad.render(); renderTitle(); updateChrome();   // 换歌不钉正在写的那一行（防抖只管同一首歌里写）；挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
   if (D.st.song.parts.some((p) => performerOf(activeInstrument(D.extras, p.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
-  if (D.extras.final) info(_t("这首歌定稿了（第 {rev} 版，mp3 {bytes}）：只能听。要改，三条杠里「改稿」。", { rev: D.extras.final.rev, bytes: mp3SizeText(D.extras.final.mp3.bytes) }));
   if (startDyns) info(_t("每张纸开头补了 {startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）", { startDyns }));   // v0.10.39（user「每张纸（曲段）开头，对」）
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }
@@ -2669,13 +2726,14 @@ function openPicked(picked: docFile.Picked): void {
   try {
     const o = openBytes(picked.name, picked.bytes), own = o.ours && !o.notices.length;
     loadDoc(o.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references });
+    if (o.legacyMp3) void adoptLegacyMp3(o.legacyMp3, o.song.title || docName(), null);
     if (o.notices.length) showError(o.notices.join(" ")); if (o.advice.length) info(o.advice.join(" "));
     else info(_t("打开了 {name}", { name: picked.name }));
   } catch (e) { showError(_t("打不开 {name}：{Error}", { name: picked.name, Error: (e as Error).message })); }
 }
 /** 封面的腰封 = 作者栏第一行（每次存重写，withPngText 先删旧块）；没有封面图就没有封面 entry。 */
 const extrasForSave = (base: Extras = D.extras): Extras => (base.thumbnail ? withThumbnail(base, coverWithBlurb(base.thumbnail, (D.st.song.credits ?? "").split("\n").map((l) => l.trim()).find(Boolean) ?? null)) : base);
-/** 自动存 / 存的编码口：worker 里 saveMxl（大歌 20–60 ms 不再占主线程；2026-10-21 音游级延迟那一刀）。导出 / PDF / 定稿那些同步要字节的照旧 bytesNow()。 */
+/** 自动存 / 存的编码口：worker 里 saveMxl（大歌 20–60 ms 不再占主线程；2026-10-21 音游级延迟那一刀）。导出 / PDF 那些同步要字节的照旧 bytesNow()。 */
 const encoder = createEncoder(() => threadUrls("encode-worker")[0] ?? null, (why) => diagNote("encode", why));
 /** 这首歌的 .mxl 字节；extras = 换一份休息室 / 音源来存（导出「打包音源」的副本：只改那一份，不改正本）。 */
 const bytesNow = (extras?: Extras, song: Song = D.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
@@ -2698,7 +2756,7 @@ async function fileSave(): Promise<void> {
     switch (r.k) {
       case "blank": info(_t("还是空的，没什么可存")); return;   // WeebPaint blankNothingToSave
       case "gallery": case "offered": return;
-      case "written": info(_t("存好了：{name}", { name: r.name })); return;
+      case "written": info(_t("存好了：{name}", { name: r.name })); if (legacyMp3Note) { info(legacyMp3Note); legacyMp3Note = null; } return;
       case "locked": if (D.dirtyKind() === "content") showError(LOCKED_DIRTY()); else lock.flash(); return;
       case "declined": info(_t("没存")); return;
       case "cancelled": info(_t("没存（取消了）")); return;
@@ -2794,7 +2852,7 @@ function openExportHub(): void {
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("导出")}</div>` +
     `<div class="set-row file-row">` +
-    `<button class="btn" data-v="mp3" title="${finalOn() ? _t("定稿的那一份 mp3，直接分享或下载（不重渲）") : _t("小月相唱一遍，编成 mp3，分享或下载")}"><svg class="ico"><use href="#export"/></svg>${_t("歌声（mp3{p}）…", { p: finalOn() ? _t("，定稿的那份") : "" })}</button>` +
+    `<button class="btn" data-v="mp3" title="${_t("渲一遍，编成 mp3，分享或下载；渲好的那份记在这台设备上，歌库里这首歌的封面上能直接听")}"><svg class="ico"><use href="#export"/></svg>${_t("歌声（mp3）…")}</button>` +
     `<button class="btn" data-v="pdf" title="${_t("印出来的谱（按这首歌的纸张分页；歌词用嵌进去的字体，能选中复制）")}"><svg class="ico"><use href="#export"/></svg>${_t("乐谱（PDF）…")}</button>` +
     `<button class="btn" data-v="mxl" title="${_t("现在这首歌的一份拷贝（文件名带时刻）；这里的歌还住原来的家")}"><svg class="ico"><use href="#save-as"/></svg>${_t("存一份 .mxl 副本…")}</button>` +
     (soundUses(D.extras).some((u) => !u.packed) ? `<button class="btn" data-v="mxlPacked" title="${_t("副本里把乐器的声音也装进去（发给别人也能响）；这里的歌照旧只记来源")}"><svg class="ico"><use href="#save-as"/></svg>${_t("存一份 .mxl 副本（打包音源）…")}</button>` : "") + `</div>` +
@@ -2941,7 +2999,6 @@ function openMainMenu(): void {
     item("cover", "image", _t("封面图…"), _t("歌库卡片上的图")) +
     item("sounds", "volume", _t("声音与署名…"), _t("乐器的声音打包 / 解包；这首歌用了谁的声音")) +
     (lock.canLockNow() ? item("lockEdit", "lock", _t("锁上（先不改了）"), _t("先把改动存好，再把这首歌锁上：之后打开是只能看、能听的，点「接着改」随时解开")) : "") +   // 修改锁：解着才有；解锁在谱上面那一条
-    (finalOn() ? item("unfinal", "unlock", _t("改稿…（第 {rev} 版定稿作废）", { rev: D.extras.final!.rev }), _t("解锁：谱 / 乐器 / 混音又能改；定稿那份 mp3 作废（下次存就没了）")) : item("final", "lock", _t("定稿…"), _t("写好了：整首渲染成 mp3 存进歌里，之后只能听、不能改；歌库封面上能直接听。改稿随时解锁"))) +
     item("ref", "picture-in-picture", refHost.isOpen() ? _t("收起参考窗") : _t("参考窗{p}", { p: refHost.count() ? _t("（{p} 张）", { p: refHost.count() }) : "" }), _t("截图 / 文字放在旁边对着看：点开后粘贴（Ctrl / ⌘+V）、拖进来，或者「＋」导入；跟着歌一起存")) +
     `<div class="ctx-sep"></div>` +
     `<div class="ctx-ver">${esc(APP_VERSION)}</div>` +   // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
@@ -2959,7 +3016,6 @@ function openMainMenu(): void {
     if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "export") openExportHub();
     else if (v === "intoLib") void saveIntoGallery(); else if (v === "rename") void renameActive();
     else if (v === "cover") openCoverSheet(); else if (v === "sounds") openSoundsSheet(); else if (v === "settings") openSettings(); else if (v === "ref") refHost.toggle();
-    else if (v === "final") openFinalPanel(); else if (v === "unfinal") void unfinalizeNow();
     else if (v === "lockEdit") void lockEditNow();
   });
 }
@@ -2981,68 +3037,6 @@ async function lockEditNow(): Promise<void> {
       lock.lockLocalFile(); info(_t("锁上了。要改，点谱上面的「接着改」。"));
     }
   } catch (e) { showError(_t("没锁上：{Error}", { Error: (e as Error).message })); }
-}
-// ── 定稿 / 改稿（W-38；user 2026-10-13「写好了之后加锁，会渲染mp3，之后只能听，不能修改…gallery可以试听mp3不用开app」「定稿改稿同意」）──────────
-//   定稿 = 走无头渲染核心把整首渲成 mp3（静音 / 独奏按现在；效果照常）→ 记录（时刻 / 第几版 / 核心版本 + 哈希 / 出声内容的指纹 / mp3 参数 / 哪些声部）+ 裸 mp3 进 extras →
-//   自动存（歌库）/「•」（本机）。之后四层护栏（final.ts 头注释）。改稿 = 记录和 mp3 一起丢掉。两件都不进 undo（定稿是一次渲染，撤销 = 改稿）。
-function openFinalPanel(): void {
-  ui.close();
-  if (finalOn()) { info(_t("已经定稿了。要改先「改稿」。")); return; }
-  const box = document.createElement("div");
-  box.className = "offer";
-  const draw = () => {
-    const chip = (v: string, label: string, note: string, on: boolean) => `<button class="btn cand${on ? " is-on" : ""}" data-v="${v}">${esc(label)}<small>${esc(note)}</small></button>`;
-    const parts = audibleParts(), labels = partLabels(D.st.song, D.extras), names = D.st.song.parts.map((p, k) => (parts.includes(p) ? labels[k] : null)).filter((x): x is string => !!x);
-    const is = perfApi.issues().filter((i) => parts.some((p) => p.id === i.part));
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("定稿{finalRev}", { finalRev: D.extras.finalRev ? _t("（第 {p} 版）", { p: D.extras.finalRev + 1 }) : "" })}</div>` +
-      `<div class="offer-msg">${_t("写好了：整首渲染成 mp3（带歌名 / 作者栏 / 许可的标签和封面图）存进歌里；之后<b>只能听</b>——谱、歌名、作者栏、许可、封面、乐器、混音全锁住，能改的只有文件名。随时「改稿」解锁（那份 mp3 作废）。歌库的封面上能直接听。")}</div>` +
-      `<div class="part-sec">${_t("音质")}</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>` +
-      `<div class="offer-msg">${_t("进 mp3 的：{length}{length2}。", { length: names.length ? esc(names.join("、")) : _t("（没有出声的声部）"), length2: D.st.song.parts.length !== parts.length ? _t("（静音 / 独奏按现在的；要都进来先取消静音）") : "" })}</div>` +
-      (is.length ? `<div class="offer-msg issue-warn">${_t("{n} 条轨不出声，mp3 里不会有它们：{is}。换人在谱前面的声部名里。", { n: is.length, is: esc(perfApi.issuesText(is)) })}</div>` : "") +
-      `<div class="offer-btns"><button class="btn primary" data-v="go"${names.length ? "" : " disabled"}>${is.length ? _t("照样定稿") : _t("定稿")}</button><button class="btn" data-v="close">${_t("算了")}</button></div></div>`;
-  };
-  draw();
-  document.body.append(box);
-  const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
-  ui.open({ k: "sheet", close });
-  box.addEventListener("click", (e) => {
-    const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
-    if (e.target === box || v === "close") { close(); return; }
-    if (v?.startsWith("q:")) { mp3Quality = v.slice(2) as Mp3Quality; draw(); }
-    else if (v === "go") { close(); void finalizeNow(mp3Quality); }
-  });
-}
-let finalizing = false;
-/** 定稿：渲 → 记录 + mp3 进 extras → 听模式 → 自动存 / 「•」。失败 = 什么都不变（报出来）。返回记录（E2E 用）。 */
-async function finalizeNow(quality: Mp3Quality = mp3Quality): Promise<FinalRecord | null> {
-  if (finalizing || finalOn()) return null;
-  finalizing = true;
-  try {
-    await H.settleIfEdited();   // 等着安家的空谱有笔 = 先安家（定稿要自动存进歌库）
-    const r = await perfApi.renderMp3({ quality, scope: "all" });
-    const is = perfApi.issues();   // 定稿那一刻的清单（mp3 里没有它们）
-    // 存的就是发行的那一份：ID3（歌名 / 作者 / 许可 / 署名 / 软件）+ 封面图（APIC）+ 音频帧，之后原字节导出（user「都冻同意，封面当然进」）
-    const tagged = new Uint8Array(perfApi.mp3Tag(r.roles).tag.length + r.bytes.length); tagged.set(perfApi.mp3Tag(r.roles).tag, 0); tagged.set(r.bytes, tagged.length - r.bytes.length);
-    const rec: FinalRecord = { at: new Date().toISOString(), rev: D.extras.finalRev + 1, app: APP_VERSION, core: coreInfo(), fingerprint: contentFingerprintOf(saveArgs()),
-      mp3: { path: FINAL_MP3_ENTRY, bytes: tagged.length, sha256: await sha256Hex(tagged), secs: r.secs, sr: r.sr, kbps: r.kbps, stereo: r.stereo }, parts: r.parts, ...(is.length ? { issues: is.map((i) => ({ part: i.part, why: i.why })) } : {}) };
-    if (ws.mode !== "listen") { lastEditMode = ws.mode; ws.mode = "listen"; }
-    const c = D.commit({ extras: withFinal(D.extras, rec, tagged) }, { locus: { kind: "final", label: _t("定稿") }, undo: false });   // 同一个入口（不进 undo：撤销 = 改稿）；基线带着 final.at → 标脏 → 歌库自动存 / 本机「•」
-    if (!c.ok) throw new Error(c.why);
-    info(_t("定稿了（第 {rev} 版）：mp3 {n}、{p} 秒，存进了歌里；{p2}只能听了——要改，三条杠里「改稿」。", { rev: rec.rev, n: mp3SizeText(r.bytes.length), p: r.secs.toFixed(1), p2: H.home.kind === "gallery" ? _t("歌库封面上能直接听。") : _t("按「存」写进文件。") }));
-    diagNote("doc", `finalized rev ${rec.rev} core ${rec.core.version}@${rec.core.hash} mp3 ${r.bytes.length}B`);
-    return rec;
-  } catch (e) { showError(_t("没定稿：{Error}", { Error: (e as Error).message })); return null; }
-  finally { finalizing = false; }
-}
-/** 改稿：问一句 → 记录和 mp3 一起丢掉 → 回到写。 */
-async function unfinalizeNow(ask = true): Promise<boolean> {
-  const f = D.extras.final; if (!f) return false;
-  if (ask && !(await askSheet(_t("改稿"), _t("解锁后谱、歌名、作者栏、封面、乐器、混音又能改；第 {rev} 版定稿的 mp3 作废（下次存就从歌里去掉；歌库封面上也听不了，要再定稿一次）。", { rev: f.rev }), _t("改稿")))) return false;
-  D.commit({ extras: withoutFinal(D.extras) }, { locus: { kind: "final", label: _t("改稿") }, undo: false });
-  setMode(lastEditMode === "listen" ? "notes" : lastEditMode);
-  info(_t("改稿了：第 {rev} 版定稿作废，能改了。", { rev: f.rev }));
-  diagNote("doc", `unfinalized rev ${f.rev}`);
-  return true;
 }
 /** 封面图（歌库卡片上的图；缩成 256² 存进歌里）。 */
 function openCoverSheet(): void {
@@ -3158,6 +3152,7 @@ docFile.consumeLaunchFiles((h) => { void (async () => {
 const KV_LAST_DOC = "last-doc";
 const KV_ZOOM = "zoom";   // 谱面缩放（物理倍数；没有 = 自动）——按设备记、不跟账号（2026-10-21 user「缩放跨会话记住，按设备存」「每台屏幕不同」）
 let gallery: GalleryHost | null = null;
+let encodedFp: string | null = null;   // 最近一轮保存编出来的那份字节里出声内容的指纹（编码 worker 顺手带回）
 let encodedSnap: SavedMark | null = null;   // encode 那一刻的快照：落盘成功才把它记成「已存」（快照之后的改动继续算脏）
 let coverTouched = false;   // 这次打开里换过封面 → 落盘后让歌库丢掉旧缩略图
 const es = createEditorSession({
@@ -3173,14 +3168,14 @@ const es = createEditorSession({
     //   ⚠ 快照 = 这个函数的同步前缀（editor-session 的钉身份靠它）：encoder.encode() 调用的那一下就把歌 + 休息室 + 参考窗的文件克隆走了；它前面不许有 await。
     //   参考窗里刚加的卡还在编字节 = prepare 里等（editor-session 在记下「存给谁」之前等它）——以前这句 await 在 encode 开头：等的时候换了歌，取到的就是新歌的内容。
     prepare: () => refHost.settled(),
-    encode: async () => { encodedSnap = D.savedMark(); const bytes = await encoder.encode({ ...saveArgs(), references: refHost.files() }); return { bytes: new Blob([bytes as unknown as BlobPart], { type: "application/vnd.recordare.musicxml" }) }; },
-    // 第 ④ 层护栏（store 接缝）：定稿着、出声内容的指纹却变了 = 不落盘、不推，脏留着（顶栏「•」照亮 = 诚实），说一句。前面三层都没拦住才会走到这儿。
-    canPersist: () => { const f = D.extras.final; if (!f) return null; try { return contentFingerprintOf(saveArgs()) === f.fingerprint ? null : _t("这首歌定稿了，内容却变了：没有存、也不会推上云。先「改稿」（定稿的 mp3 作废）再存，或者撤销刚才的改动。"); } catch (e) { return _t("存不了：{Error}", { Error: (e as Error).message }); } },
+    encode: async () => { encodedSnap = D.savedMark(); const r = await encoder.encode({ ...saveArgs(), references: refHost.files() }); encodedFp = r.fingerprint; return { bytes: new Blob([r.bytes as unknown as BlobPart], { type: "application/vnd.recordare.musicxml" }) }; },
     onRefused: (why) => { showError(why); diagNote("doc", `persist refused: ${why}`); },
     // 修改锁第 ④ 道（歌库这条路）：要存的那个身份锁着 = 一个字节都不写。有改动 / 人按了存才经 onRefused 说一次（改动还在内存里）；只欠一推 = 不走保存（补推归库）
     editLocked: (name) => (lock.identifierLocked(name) ? LOCKED_DIRTY() : null),
     // 「已存」的基线和封面的账只记给还开着的那一首：写盘的那一下歌被放下 / 换走了（name 不是现在这首）= 这份快照是上一首的，不许记到现在这首头上（会把一张没动过的空谱标成改过 → 自己安家进歌库）。
-    onSaved: (name) => { const cur = H.identifier() === name; if (cur && encodedSnap) D.adoptSaved(encodedSnap); encodedSnap = null; if (cur && coverTouched) { coverTouched = false; gallery?.invalidateThumb(name); } renderTitle(); },
+    onSaved: (name) => { const cur = H.identifier() === name; if (cur && encodedSnap) D.adoptSaved(encodedSnap); encodedSnap = null; if (cur && coverTouched) { coverTouched = false; gallery?.invalidateThumb(name); } renderTitle();
+      void relinkAfterSave(name, encodedFp);   // 设备上记着的渲好的声音：这次存下去的内容还是那一份 = 按新的文件戳重新挂名；变了 = 摘名
+      if (cur && legacyMp3Note) { info(legacyMp3Note); legacyMp3Note = null; } },
   },
   isZip: true,
   policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS, pushOn: ["exit"] },   // consent 制（同 WeebPaint）：推云只在换歌 / 退出 / 按「存」/ 进歌库；失焦只落本机
@@ -3209,6 +3204,7 @@ setInterval(() => { changed(); if (H.home.kind === "gallery") renderTitle(); }, 
 function adoptStoreBytes(id: string, bytes: Uint8Array): void {
   const o = openBytes(id, bytes);
   loadDoc(o.song, { home: { kind: "gallery", identifier: id }, stem: identifiers.parse(id)?.stem ?? o.stem, named: true, extras: o.extras, view: o.view, references: o.references });
+  if (o.legacyMp3) void adoptLegacyMp3(o.legacyMp3, o.song.title || docName(), id);
   if (o.notices.length) showError(o.notices.join(" ")); if (o.advice.length) info(o.advice.join(" "));
 }
 const stemOfId = (id: string) => identifiers.parse(id)?.stem ?? id;
@@ -3296,7 +3292,7 @@ function ensureAttached(home: StoreHome = { kind: "cloud" }): void {
   if (fresh) {
     void requestStoragePersistence(); diagNote("boot", "store attached");
     // 按身份记的东西跟着改名走（store 0.14.0 onRenamed：谁发起的改名 / 挪夹都报）——这里只有「上次开着哪首」
-    requireStore().files.onRenamed((from, to) => { if (deviceKvGet(KV_LAST_DOC) === from) deviceKvSet(KV_LAST_DOC, to); });
+    requireStore().files.onRenamed((from, to) => { if (deviceKvGet(KV_LAST_DOC) === from) deviceKvSet(KV_LAST_DOC, to); void renders.renamed(homeKey(), from, to); });   // 设备上记着的声音的挂名也跟着改名走
   }
   ensureGallery();
 }
@@ -3339,6 +3335,7 @@ function ensureGallery(): GalleryHost {
     homeBar: () => homeBarNow(),
     homeAction: (v) => homeAction(v),
     homeLabel: () => folderHome()?.label ?? null,
+    renders,   // 设备上记着的渲好的声音：封面上的 ▶ 认它的挂名
     openHomeMenu: () => { void openHomeMenu(); },
     onOpened: () => { ui.close(); closeFinder(false); if (ws.mode === "listen") { ws.mode = lastEditMode; applyWorkspace(); } closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },   // 进歌库 = 放下手里的歌：混音台（听）也收
     onClosed: () => { void afterGalleryClosed(); showPad(padWas); updateChrome(); scoreEl.focus(); },
@@ -3533,7 +3530,7 @@ async function moveSongsFlow(entry: GalleryEntry): Promise<void> {
     result = await withBusy(_t("正在把歌搬进「{label}」…", { label: entry.label }), () => moveSongs(songs, {
       read: async (id) => { const b = await legacy.zip(id, { mode: "existing" }).open(); return b ? new Uint8Array(await b.arrayBuffer()) : null; },
       readBack: (id) => readFromFolder(entry, id),
-      write: async (id, bytes) => { const r = await requireStore().zip(id, { mode: "new" }).save(bytes, { tryPush: true }); if (r?.pushed !== true) throw new Error(_t("没写进文件夹")); },
+      write: async (id, bytes) => { const r = await requireStore().zip(id, { mode: "new" }).save(bytes, { tryPush: true, bornLocked: true }); if (r?.pushed !== true) throw new Error(_t("没写进文件夹")); },   // bornLocked：搬进新家的是已有的作品，生来锁着（修改锁标准：导入进库的文件生来锁着），不是在这里新建的
       remove: async (id) => { const t = await legacy.zip(id, { mode: "existing" }).trash(); if (t.status !== "trashed") throw new Error(_t("旧库没移走（{status}）", { status: t.status })); },
       altName: (id) => withStemTail(id, defaultStem().slice(-5), identifiers),   // defaultStem = yyyymmdd-hex4：取「-hex4」
       progress: (done, total) => setBusyText(_t("正在搬歌 {done} / {total}…", { done, total })),

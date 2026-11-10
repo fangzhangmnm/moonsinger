@@ -1,9 +1,9 @@
-// final.ts —— 定稿 / 改稿（W-38；user 2026-10-13「记账 moonsinger加一个锁功能，写好了之后加锁，会渲染mp3，之后只能听，不能修改…解锁之后mp3自动cache invalid」
-//   「想一个比锁语义更准确的名字」→「定稿改稿同意」）。created 2026-10-16 by Claude Fable 5.1。
-//   定稿 = 渲染成 mp3（带 ID3 标签 + 封面图）存进歌里（`.moonsinger/final.mp3`，不压缩）+ 总目录里一条 FinalRecord；之后**整首锁住**（谱 / 歌名 / 作者栏 / 许可 / 封面 / 歌手 / 混音；user 2026-10-16「都冻同意，封面当然进」），只能听；改稿 = 记录和 mp3 一起丢掉。
-//   这一层只管**文件里的真相**：记录的形状、出声内容的指纹（定稿后被谁改过一眼能看出）、mp3 entry 的位置。锁本身分四层执法（user 2026-10-16
-//   「定稿的时候得从多个窄接口上护栏住写入，甚至store级别」）：① UI（听模式钉死、钮灰）② 状态入口（main.ts update / updateExtras / undo 拒绝）
-//   ③ 格式（saveMxl：指纹对不上就抛，src/format/project.ts）④ store 接缝（editor-session 落盘前的门）。每层各自承重，不互相托付。
+// final.ts —— 出声内容的指纹 + 老文件里那条「定稿」记录的形状。created 2026-10-16 by Claude Fable 5.1（W-38 定稿 / 改稿）。
+//   **定稿 2026-11-10 退役**（v0.16.97，Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：锁换成家族的修改锁（src/app/edit-lock.ts），
+//   渲好的 mp3 不再存进歌里、只记在设备上（src/app/render-cache.ts）。这个文件留下两样：
+//   · contentFingerprint：出声内容的指纹——现在是渲染缓存的钥匙（内容没变 = 上次渲好的那份还算数）；
+//   · FinalRecord / parseFinalRecord / FINAL_MP3_ENTRY：读老文件用（project.ts 把那份 mp3 交给宿主；歌库封面上尾读老文件里的 mp3）。这一版起不再写。
+//   当年的来历：user 2026-10-13「写好了之后加锁，会渲染mp3，之后只能听，不能修改…解锁之后mp3自动cache invalid」「定稿改稿同意」。
 import { sha256TextSync, sha256HexSync } from "./sha256-sync.ts";
 
 /** 定稿 mp3 在 zip 里的位置（不压缩；歌库靠 store getPeek 按 entry 名抓）。 */

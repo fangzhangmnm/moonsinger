@@ -20,15 +20,15 @@ export const AREAS = {
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "parts-manager", "paper-adds", "inst-split", "finder-pins", "finder-sf2", "finder-presets", "landscape-widgets", "modes", "dyn-levels", "sing-experiments"],
   // 歌库 / 云 / 文件 / 念缓存
-  store: ["csp", "store", "sync", "gate", "folder-home", "speech-store", "save-keys", "final", "factory-reset", "legacy-dbs", "gallery-marks", "edit-lock"],
+  store: ["csp", "store", "sync", "gate", "folder-home", "speech-store", "save-keys", "render-cache", "factory-reset", "legacy-dbs", "gallery-marks", "edit-lock", "edit-lock-gallery"],
   // 导出
-  export: ["pdf", "pdf-wysiwyg", "issues", "final"],
+  export: ["pdf", "pdf-wysiwyg", "issues", "render-cache"],
   // 参考窗
   ref: ["reference"],
   // 界面语言：英文巡检（剩下的中文、撑爆的控件）
   i18n: ["i18n-en", "finder-width"],
   // 模式与底座（workspace.ts 那张表）
-  modes: ["unplug", "modes", "typing-keys", "title-modes", "mixer-rows", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys", "final", "midi", "dock-side"],
+  modes: ["unplug", "modes", "typing-keys", "title-modes", "mixer-rows", "pad-toggle", "dock-zoom", "top-sels", "landscape-widgets", "listen-ghost", "finder-keys", "midi", "dock-side"],
 };
 
 /** 专项（2026-11-08 Fable；user「如果有些比较复杂的功能，确实要测试那么长也可以，就只是说不应该每次测试的时候都测试…专攻测试这些东西的时候可以全量测试」）：
@@ -84,6 +84,8 @@ export const AREA_OF_PATH = [
   [/^src\/gallery-host\.ts$|^src\/app\/song-player\.ts$|^src\/editor-session\//, ["store"]],
   // 修改锁（2026-11-10）：那一处回答 / 分类表 / 门——碰了它们 = 歌库那一区（edit-lock / gallery-marks 在里面）+ 谱面和键盘（规则、插头）
   [/^src\/app\/edit-lock[a-z-]*\.ts$/, ["store", "score", "pad"]],
+  // 这台设备上记着的渲好的声音（2026-11-10，定稿退役之后）：导出直接拿 / 歌库封面上的 ▶ 都靠它 → 歌库 + 导出（render-cache 在这两区）
+  [/^src\/app\/render-cache[a-z-]*\.ts$/, ["store", "export"]],
   [/^src\/(engine|gm|singer)\//, ["studio", "play"]],
   [/^src\/app\/(names)\.ts$/, ["studio"]],
   // 文件 / 云 / 歌库 / 格式

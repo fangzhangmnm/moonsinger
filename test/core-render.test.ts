@@ -4,7 +4,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { renderSong, mixParamsOf, audibleParts, prepareParts, timelineOf, type RenderDeps } from "../src/core/render.ts";
 import { OfflineStudio } from "../src/core/offline-studio.ts";
 import { sampleSong, sampleExtras } from "./fixtures/format/sample-song.ts";
-import { withActive, withoutFinal, type GmCandidate } from "../src/format/project.ts";
+import { withActive, type GmCandidate } from "../src/format/project.ts";
 import type { VowelTableMsg } from "../src/engine/studio-client.ts";
 const fs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array; readFileSync(u: URL, enc: "utf8"): string };
 
@@ -24,7 +24,7 @@ const sum = (a: Float32Array) => { let s = 0; for (let i = 0; i < a.length; i++)
 
 describe("无头渲染核心", () => {
   it("冻结样本在 node 里整首渲出来：元音版 + 嵌进歌的 SoundFont 都出声、两次逐样本相同", async () => {
-    const song = sampleSong(), extras = withoutFinal(sampleExtras(song));
+    const song = sampleSong(), extras = sampleExtras(song);
     const plan = { song, extras, hum: song.hum, parts: audibleParts(song, () => ({ muted: false, solo: false })) };
     const r1 = await renderSong(plan, deps(), { sr: 22050 }), r2 = await renderSong(plan, deps(), { sr: 22050 });
     eq(r1.errors.length, 0, JSON.stringify(r1.errors));
@@ -35,7 +35,7 @@ describe("无头渲染核心", () => {
     eq(r1.left.length, r2.left.length); eq(sum(r1.left), sum(r2.left), "确定性（左）"); eq(sum(r1.right), sum(r2.right), "确定性（右）");
   });
   it("独奏 / 静音筛声部；一个都放不了 = 抛", async () => {
-    const song = sampleSong(), extras = withoutFinal(sampleExtras(song));
+    const song = sampleSong(), extras = sampleExtras(song);
     eq(audibleParts(song, (id) => ({ muted: id === "P1", solo: false })).map((p) => p.id).join(","), "P2");
     eq(audibleParts(song, (id) => ({ muted: false, solo: id === "P1" })).map((p) => p.id).join(","), "P1");
     let threw = "";
@@ -51,7 +51,7 @@ describe("无头渲染核心", () => {
     eq(off.buses[0].chain.length, 0); eq(off.master.chain?.length ?? 0, 0); eq(off.master.limiter, on.master.limiter);
   });
   it("准备：找不到声音 = 那个声部报错、时间线照算其余", async () => {
-    const song = sampleSong(), extras = withoutFinal(sampleExtras(song)), d = deps();
+    const song = sampleSong(), extras = sampleExtras(song), d = deps();
     d.sounds.resolveGmBytes = async () => { throw new Error("找不到"); };
     const ex2 = withActive(extras, "r2", "c3", song.hum);   // r2 上场的 SoundFont（嵌进歌的；resolveGmBytes 先看 g.bytes——这里被我们的假实现挡了）
     const errs = await prepareParts(song.parts, ex2, d);

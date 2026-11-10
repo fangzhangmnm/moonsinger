@@ -74,7 +74,5 @@ export function applyDocumentLang(): void {
   // styles.css 里 ::after 的 content 走变量（CSS 没有 _t）；中文 = CSS 里的默认值，不用设
   if (lang() !== "zh") {
     root.style.setProperty("--t-loop", JSON.stringify(_t("循环")));
-    root.style.setProperty("--t-final-mix", JSON.stringify(_t("定稿了：混音锁着（三条杠里「改稿」解锁）")));
-    root.style.setProperty("--t-final-lock", JSON.stringify(_t("定稿了：锁着（三条杠里「改稿」解锁）")));
   }
 }

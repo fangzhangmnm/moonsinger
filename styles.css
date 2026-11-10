@@ -755,7 +755,6 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 /* 底栏：左 yyyymmdd、右 大小（学 WXHW 书架：很窄的一条贴底、半透明垫底、不描边） */
 .ms-cover-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 17px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 6px; font-size: 9px; line-height: 17px; letter-spacing: .02em; color: var(--cover-ink-soft); background: color-mix(in srgb, var(--cover-paper) 72%, transparent); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ms-cover-left { display: flex; gap: 5px; min-width: 0; }
-.ms-cover-final { font-weight: 700; color: var(--cover-ink); }   /* 定稿 N（user 2026-10-16「印定稿n」）：底栏里唯一加粗的一格 */
 /* 底下是封面图：歌名垫一块半透明的纸（学 WXHW 2026-10-01「标题的字下面还是垫一个半透明吧」），不描边 */
 img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-title { background: color-mix(in srgb, var(--cover-paper) 78%, transparent); padding: .18em; border-radius: .22em; box-sizing: border-box; }
 img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover.v .ms-cover-title { height: fit-content; }
@@ -1122,15 +1121,7 @@ button.chord-cand.is-on { box-shadow: 0 0 0 2px var(--accent) inset; }
 /* 合租（v0.10.24）：歌手牌里「挂在谁上」的下拉 */
 .track-card .tc-sel { height: 30px; max-width: 100%; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; padding: 0 6px; }
 
-/* ═══ 定稿 / 改稿（W-38，2026-10-16 Claude Fable 5.1；user「写好了之后加锁，会渲染mp3，之后只能听…gallery可以试听mp3不用开app」）═══
-   第 ① 层护栏（界面）：顶栏文件名旁一枚「定稿 N」；只有「听」能亮；乐器页的卡、混音台的条都灰着不接；别的层在 src/format/final.ts 头注释。 */
-.final-badge { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 9px; font-size: 11px; font-weight: 600; letter-spacing: .04em; line-height: 16px; vertical-align: 1px; color: #fff; background: var(--accent); white-space: nowrap; }
-body.doc-final .mode-seg [data-mode]:not([data-mode="listen"]) { opacity: .4; }
-body.doc-final .inst-page .ip-card { pointer-events: none; opacity: .72; }
-body.doc-final .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
-body.doc-final .studio .studio-strips, body.doc-final .studio .fx-panel, body.doc-final .studio .mix-menu { pointer-events: none; opacity: .72; }
-body.doc-final .studio .finder-bar::after { content: var(--t-final-mix, "定稿了：混音锁着（三条杠里「改稿」解锁）"); margin-left: 8px; font-size: 12px; color: var(--muted); }
-body.doc-final .inst-page .finder-bar::after { content: var(--t-final-lock, "定稿了：锁着（三条杠里「改稿」解锁）"); margin-left: 8px; font-size: 12px; color: var(--muted); }
+/* （定稿 / 改稿的样式 2026-11-10 随定稿退役删掉：.final-badge、body.doc-final 那六条。锁的样子现在只有下面修改锁这一套。） */
 /* ── 修改锁（v0.16.96，2026-11-10，Claude Fable 5.2；家族标准第 ① 道的面板那一半）──
    那扇门 = #app 里自己的一行（顶栏和谱之间，不盖任何东西）。锁着时会改内容的控件淡一档、不接；歌本身不变灰（看是要看清楚的）。
    这里不是「锁着什么能动」的名单（那张表在 src/app/edit-lock-table.ts）：只是把整块改内容的控件关掉，手不会伸进去；真正的判断在写入口，这里漏了的照样改不了、只是没这么干脆。

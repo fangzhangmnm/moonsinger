@@ -5,7 +5,7 @@
 //   以前：「弹」只把**音键**换成只响不写（键表里 degree → audition、pad 的 noteDown），休止 / 延长 / 小节线 / 退格 / 符号格里的键照常写谱。
 //
 //   「能不能写」= 三个原因现算出来的一个答案，这里**不存状态**：
-//     · locked    歌锁着（接 D.locked()：定稿着（过渡期）或者修改锁锁着——2026-11-10 起文档的 lockedWhy 接的是 src/app/edit-lock.ts）
+//     · locked    歌锁着（接 D.locked() = 修改锁锁着；文档的 lockedWhy 接的是 src/app/edit-lock.ts。定稿 2026-11-10 退役）
 //     · picking   正在选乐器（乐器目录 / 乐器页开着：按键只试音）
 //     · unplugged 人自己拔的（「弹」）
 //   「写」的判据和文档写入口（src/app/document.ts commit）是同一条：**谱（song）变了才算写**；光标、选中、输入状态（时值旋钮、升降锁、1=、调式）不算，
@@ -28,7 +28,7 @@ export const PLUG_LOCI: ReadonlySet<LocusKind> = new Set<LocusKind>(["score", "p
 export function stepLocus(h: History, dir: "undo" | "redo"): LocusKind | null { const a = dir === "undo" ? h.past : h.future; return a.length ? a[a.length - 1]!.locus.kind : null; }
 
 export interface InputGatePorts {
-  /** 歌锁着吗（注入：现在 = 定稿着；修改锁那一轮换成修改锁的回答）。 */
+  /** 歌锁着吗（注入：修改锁的回答）。 */
   locked(): boolean;
   /** 正在选乐器吗（乐器目录 / 乐器页开着）。 */
   picking(): boolean;

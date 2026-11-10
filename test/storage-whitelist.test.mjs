@@ -10,8 +10,9 @@ const ALLOW = {
   "src/app/pwa-shell.ts": "Cache Storage：forceReset 只清自己前缀（moonsinger-）的壳缓存；兄弟 app 的缓存和 pwa-models / pwa-sounds 不碰",
   "src/gm/sound-cache.ts": "Cache Storage `pwa-sounds`（家族共享名）：音源整包按 sha256 留着离线能用（可再生派生缓存，user 2026-10-07 批）",
   "service-worker.js": "Cache Storage `moonsinger-<hash>`：app 壳预缓存 + 运行时缓存",
-  "src/app/factory-reset.ts": "IndexedDB：还原出厂只删——自家派生缓存库（config.ts CACHE_DBS：<app>-<guid>.thumbs / facts / speech；2026-11-03 前的老名字 moonsinger-thumbs / facts / speech 有才删 = dropLegacyCacheDbs）+ 自家 GUID 前缀库（moonsinger-5b1e7c0a92d34f6e.*）；store 的命名空间走库口子 wipeAppNamespace；localStorage 走 device-kv。不建库、不写（家族规矩 2½，2026-10-21）",
+  "src/app/factory-reset.ts": "IndexedDB：还原出厂只删——自家派生缓存库（config.ts CACHE_DBS：<app>-<guid>.thumbs / facts / speech / renders；2026-11-03 前的老名字 moonsinger-thumbs / facts / speech 有才删 = dropLegacyCacheDbs）+ 自家 GUID 前缀库（moonsinger-5b1e7c0a92d34f6e.*）；store 的命名空间走库口子 wipeAppNamespace；localStorage 走 device-kv。不建库、不写（家族规矩 2½，2026-10-21）",
   "src/singer/speech-store.ts": "IDB `moonsinger-5b1e7c0a92d34f6e.speech`（config.ts CACHE_DBS.speech；2026-11-03 前叫 moonsinger-speech）：月读念缓存的全局池（可再生派生缓存，住在 worker；user 2026-10-10「建议一个全局池by key and model config hash」批）",
+  "src/app/render-cache-idb.ts": "IDB `moonsinger-5b1e7c0a92d34f6e.renders`（config.ts CACHE_DBS.renders）：这台设备上记着的渲好的声音（带标签的 mp3 + 一小条记录 + 歌库身份的挂名；最近 20 首；可再生派生缓存，user 2026-11-09 批「软件在设备上记着不就行了？…相当于记着的是缓存同意」；还原出厂一起清）",
   "vendor/msal/msal-browser.min.js": "MSAL token 缓存（IDB / localStorage / sessionStorage）：由 @internal/store 的 auth 配置驱动，app 不直接调",
 };
 const TOKEN = /\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b|\bIDBFS\b|\bcaches\.(open|keys|delete|match)\b|navigator\.storage\b/;

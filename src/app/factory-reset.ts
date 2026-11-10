@@ -15,8 +15,9 @@ import { openConfirmSheet, openInputSheet } from "../ui/sheets.ts";
 
 /** 逐字确认那一句（和 WeebPaint 同一句，全家一个口令）。 */
 export const CONSENT_PHRASE = _t("删除全部本地数据");
-/** 自家派生缓存库（白名单表登记的三个；名字唯一来源 = config.ts CACHE_DBS，gallery-host.ts / singer/worker.ts 引的就是它——test/factory-reset.test.ts 守）。 */
-export const OWN_DBS = [CACHE_DBS.thumbs, CACHE_DBS.facts, CACHE_DBS.speech] as const;
+/** 自家派生缓存库（白名单表登记的四个；名字唯一来源 = config.ts CACHE_DBS，gallery-host.ts / singer/worker.ts / app/render-cache-idb.ts 引的就是它——test/factory-reset.test.ts 守）。
+ *  renders（2026-11-10）= 这台设备上记着的渲好的声音：还原出厂一起清（清了能重来）。 */
+export const OWN_DBS = [CACHE_DBS.thumbs, CACHE_DBS.facts, CACHE_DBS.speech, CACHE_DBS.renders] as const;
 const BLOCKED_TIMEOUT_MS = 2000;
 
 export interface FactoryResetDeps {

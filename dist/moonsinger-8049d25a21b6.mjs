@@ -2751,10 +2751,14 @@ var S = {
   "\u58F0\u90E8 / \u4E50\u5668": { en: "Parts / instruments" },
   "\u6DF7\u97F3": { en: "The mix" },
   "\u5C01\u9762": { en: "The cover" },
-  "\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF09": { en: "Finalized (version {rev})" },
   "{p}\uFF1A{what}\u6539\u4E0D\u4E86": { en: "{p}: {what} can't be changed" },
   "\u64A4\u9500": { en: "Undo" },
   "\u91CD\u505A": { en: "Redo" },
+  "\u9501\u7740": { en: "Locked" },
+  "\u89E3\u9501\uFF0C\u63A5\u7740\u6539\u8FD9\u4E00\u9996\u3002\u653E\u7740\u4E00\u5929\u4E0D\u52A8\u4F1A\u81EA\u5DF1\u9501\u4E0A\uFF1B\u968F\u65F6\u80FD\u5728\u4E09\u6761\u6760\u91CC\u300C\u9501\u4E0A\u300D": { en: "Unlock and keep editing this song. It locks itself after a day untouched; you can lock it any time from the \u2630 menu" },
+  "\u63A5\u7740\u6539": { en: "Keep editing" },
+  "\u5148\u628A\u73B0\u5728\u7684\u6837\u5B50\u5B58\u4E00\u7248\u7559\u5E95\uFF08\u6536\u5728\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5361\u7247\u4E0B\u9762\uFF09\uFF0C\u518D\u89E3\u9501\u63A5\u7740\u6539": { en: "Save a version of it as it is now (kept under this song\u2019s card in the library), then unlock and keep editing" },
+  "\u5B58\u4E00\u7248\u518D\u6539": { en: "Save a version, then edit" },
   "{dir}/\uFF08\u6574\u4E2A\u6587\u4EF6\u5939\uFF09": { en: "{dir}/ (whole folder)" },
   "\uFF08\u6839\u6587\u4EF6\u5939\uFF09": { en: "(root folder)" },
   "\u6B4C\u5E93\u91CC\u8FD8\u6CA1\u6709\u6B4C": { en: "No songs in the library yet" },
@@ -2897,14 +2901,14 @@ var S = {
   "\u300C{extras}\u300D\u662F\u5355\u58F0\u4E50\u5668\uFF0C\u8FD9\u4E2A\u58F0\u90E8\u53E0\u4E0D\u4E86\u97F3": { en: "\u201C{extras}\u201D is a monophonic instrument, so this part can't stack notes" },
   "\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3": { en: "No note before the cursor yet" },
   "\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668": { en: "\u201C{who}\u201D plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
-  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C{what}\u6539\u4E0D\u4E86\uFF1A\u5148\u5728\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F1A\u4F5C\u5E9F\uFF09\uFF0C\u518D\u6539\u3002": { en: "This song is finalized, so {what} can't be changed: first choose \u201CRevise\u201D in the \u2630 menu (the final mp3 is discarded), then edit." },
+  "\u9690\u85CF\u4E86\u8FD9\u5F20\u7EB8": { en: "Hid this sheet" },
+  "\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8": { en: "Unhid this sheet" },
   "\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D": { en: "This section is now fixed as a grand staff (so the notes you moved between staves can be saved); to go back to automatic, tap the clef at the start of the line and pick \u201CAuto\u201D" },
   "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
   "\u6CA1\u6709\u53EF\u91CD\u505A\u7684": { en: "Nothing to redo" },
   "\u4F11\u606F\u5BA4": { en: "Green room" },
   "{issueCount} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF1A\u70B9\u5F00\u770B\u6E05\u5355": { en: "{issueCount} {issueCount|track is|tracks are} silent: tap for the list" },
   "\u603B\u8F68": { en: "Master" },
-  "\u6A21\u5F0F": { en: "Mode" },
   "\u4ECE\u8FD9\u513F\u653E": { en: "Play from here" },
   "\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E": { en: "Moves the start point to the head of this bar and plays from here" },
   "\u63A5\u7740\u653E": { en: "Resume" },
@@ -2936,9 +2940,6 @@ var S = {
   "\u6761\u8F68": { en: "this track" },
   "\u77E5\u9053\u4E86": { en: "Got it" },
   "\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09": { en: "Export vocals & mix (mp3)" },
-  "\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD\uFF08\u7B2C {rev} \u7248 \xB7 {stereo} {kbps}k \xB7 {bytes}\uFF09\u76F4\u63A5\u5BFC\u51FA\uFF0C\u4E0D\u91CD\u6E32\uFF1B\u8981\u522B\u7684\u97F3\u8D28\u5148\u300C\u6539\u7A3F\u300D\u3002": { en: "The finalized copy (version {rev} \xB7 {stereo} {kbps}k \xB7 {bytes}) is exported directly without re-rendering; for another quality, \u201CRevise\u201D first." },
-  "\u7ACB\u4F53\u58F0": { en: "Stereo" },
-  "\u5355\u58F0\u9053": { en: "Mono" },
   "\u97F3\u8D28": { en: "Quality" },
   "\u8303\u56F4": { en: "Range" },
   "\u6574\u9996": { en: "Whole song" },
@@ -3047,13 +3048,12 @@ var S = {
   "\u5DF2\u4E0B\u8F7D {name}": { en: "Downloaded {name}" },
   "\u5DF2\u5206\u4EAB": { en: "Shared" },
   "\u5206\u4EAB\u5931\u8D25\uFF1A{Error}": { en: "Sharing failed: {Error}" },
+  "\u6253\u5F00\u522B\u7684\u6B4C": { en: "Opening another song" },
   "\u8F68\u300C{id}\u300D": { en: "Track \u201C{id}\u201D" },
   "\u603B\u7EBF": { en: "Bus" },
   "\u52A0\u603B\u7EBF\u300C{name}\u300D": { en: "Add bus \u201C{name}\u201D" },
   "\u5220\u603B\u7EBF\u300C{id}\u300D": { en: "Delete bus \u201C{id}\u201D" },
   "\u5206\u6BB5\u5531\uFF1A{v}": { en: "Sing in segments: {v}" },
-  "\u5B9A\u7A3F {rev}": { en: "Final {rev}" },
-  "\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF0C{p}\uFF09\uFF1A\u53EA\u80FD\u542C\uFF0C\u6539\u4E0D\u4E86\uFF1B\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501": { en: "Finalized (version {rev}, {p}): listen only, can't be edited; \u201CRevise\u201D in the \u2630 menu unlocks it" },
   "\u6587\u4EF6\u540D\uFF08{p}\uFF09\xB7 {p2}": { en: "File name ({p}) \xB7 {p2}" },
   "\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539": { en: "Rename local files in your file manager" },
   "\u70B9\u4E86\u6539\u540D": { en: "Tap to rename" },
@@ -3367,7 +3367,6 @@ var S = {
   "\u8FD9\u4E00\u7248\u51FA\u4E0D\u4E86\u58F0\uFF08\u522B\u7684\u8F6F\u4EF6\u539F\u6765\u7684\u4E50\u5668\uFF09": { en: "This version can't sound it (the other software's original instrument)" },
   "\u300C{name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C{name2}\u300D\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09": { en: "\u201C{name}\u201D isn't the \u201C{name2}\u201D recorded in the song (sha256 {p}\u2026 \u2260 {p2}\u2026)" },
   "\u627E\u5230\u4E86\uFF1A\u300C{name}\u300D\u80FD\u54CD\u4E86": { en: "Found: \u201C{name}\u201D can sound now" },
-  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF0Cmp3 {bytes}\uFF09\uFF1A\u53EA\u80FD\u542C\u3002\u8981\u6539\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u3002": { en: "This song is finalized (version {rev}, mp3 {bytes}): listen only. To edit, choose \u201CRevise\u201D in the \u2630 menu." },
   "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": { en: "Added {startDyns} dynamics at sheet starts (the ones already in effect there, so it sounds the same; written to the file on the next save)" },
   "\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58": { en: "\u201C{p}\u201D has unsaved changes" },
   "{what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002": { en: "{what} will discard these changes." },
@@ -3375,10 +3374,10 @@ var S = {
   "\u4E22\u6389\uFF0C\u7EE7\u7EED": { en: "Discard and continue" },
   "\u65B0\u5EFA": { en: "New" },
   "\u65B0\u7684\u4E00\u9996": { en: "New song" },
-  "\u6253\u5F00\u522B\u7684\u6B4C": { en: "Opening another song" },
   "\u6CA1\u6253\u5F00\uFF1A{Error}": { en: "Not opened: {Error}" },
   "\u6253\u5F00\u4E86 {name}": { en: "Opened {name}" },
   "\u6253\u4E0D\u5F00 {name}\uFF1A{Error}": { en: "Can't open {name}: {Error}" },
+  "\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u6709\u6539\u52A8\u6CA1\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\uFF1A\u6539\u52A8\u8FD8\u5728\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u4E4B\u540E\u518D\u5B58\u3002": { en: "This song is locked, so the changes were not saved or uploaded. They are still here: tap \u201CKeep editing\u201D above the score, then save." },
   "\u8FD8\u662F\u7A7A\u7684\uFF0C\u6CA1\u4EC0\u4E48\u53EF\u5B58": { en: "Still empty, nothing to save" },
   "\u5B58\u597D\u4E86\uFF1A{name}": { en: "Saved: {name}" },
   "\u6CA1\u5B58": { en: "Not saved" },
@@ -3406,10 +3405,6 @@ var S = {
   "\u590D\u5236\u7F72\u540D": { en: "Copy credits" },
   "\u7F72\u540D\u590D\u5236\u597D\u4E86": { en: "Credits copied" },
   "\u590D\u5236\u4E0D\u4E86\uFF08\u6D4F\u89C8\u5668\u4E0D\u8BA9\uFF09\uFF1A\u957F\u6309\u4E0A\u9762\u7684\u5B57\u81EA\u5DF1\u9009": { en: "Can't copy (the browser won't allow it): long-press the text above to select it" },
-  "\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD mp3\uFF0C\u76F4\u63A5\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF08\u4E0D\u91CD\u6E32\uFF09": { en: "The finalized mp3, shared or downloaded directly (no re-render)" },
-  "\u5C0F\u6708\u76F8\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D": { en: "Tsukuyomi-chan sings it through, encoded as mp3, to share or download" },
-  "\u6B4C\u58F0\uFF08mp3{p}\uFF09\u2026": { en: "Vocals & mix (mp3{p})\u2026" },
-  "\uFF0C\u5B9A\u7A3F\u7684\u90A3\u4EFD": { en: ", the finalized copy" },
   "\u5370\u51FA\u6765\u7684\u8C31\uFF08\u6309\u8FD9\u9996\u6B4C\u7684\u7EB8\u5F20\u5206\u9875\uFF1B\u6B4C\u8BCD\u7528\u5D4C\u8FDB\u53BB\u7684\u5B57\u4F53\uFF0C\u80FD\u9009\u4E2D\u590D\u5236\uFF09": { en: "A printed score (paged by this song's paper; lyrics use an embedded font and can be selected and copied)" },
   "\u4E50\u8C31\uFF08PDF\uFF09\u2026": { en: "Score (PDF)\u2026" },
   "\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6": { en: "A copy of the song as it is now (timestamped file name); the song here stays in its home" },
@@ -3481,32 +3476,18 @@ var S = {
   "\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE": { en: "The picture on the library card" },
   "\u58F0\u97F3\u4E0E\u7F72\u540D\u2026": { en: "Sounds and credits\u2026" },
   "\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3": { en: "Pack / unpack instrument sounds; whose sounds this song uses" },
-  "\u6539\u7A3F\u2026\uFF08\u7B2C {rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF09": { en: "Revise\u2026 (version {rev} final is discarded)" },
-  "\u89E3\u9501\uFF1A\u8C31 / \u4E50\u5668 / \u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u5B9A\u7A3F\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u6CA1\u4E86\uFF09": { en: "Unlocks the score / instruments / mix; the final mp3 is discarded (gone on next save)" },
-  "\u5B9A\u7A3F\u2026": { en: "Finalize\u2026" },
-  "\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF0C\u4E4B\u540E\u53EA\u80FD\u542C\u3001\u4E0D\u80FD\u6539\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002\u6539\u7A3F\u968F\u65F6\u89E3\u9501": { en: "Done writing: renders the whole song to an mp3 stored in the song; after that it's listen-only; playable right on the library cover. \u201CRevise\u201D unlocks it anytime" },
+  "\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09": { en: "Lock (done editing for now)" },
+  "\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00": { en: "Saves your changes, then locks this song: it opens view-and-listen only until you tap \u201CKeep editing\u201D" },
   "\u6536\u8D77\u53C2\u8003\u7A97": { en: "Hide reference window" },
   "\u53C2\u8003\u7A97{p}": { en: "Reference window{p}" },
   "\uFF08{p} \u5F20\uFF09": { en: " ({p} {p|item|items})" },
   "\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58": { en: "Keep screenshots / text beside you to refer to: open it, then paste (Ctrl / \u2318+V), drag in, or import with \u201C\uFF0B\u201D; saved with the song" },
   "\u8BBE\u7F6E\u2026": { en: "Settings\u2026" },
   "\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C": { en: "Model / sound library sources, cache, credits and terms, diagnostic log, version" },
-  "\u5DF2\u7ECF\u5B9A\u7A3F\u4E86\u3002\u8981\u6539\u5148\u300C\u6539\u7A3F\u300D\u3002": { en: "Already finalized. \u201CRevise\u201D first to edit." },
-  "\u5B9A\u7A3F{finalRev}": { en: "Finalize{finalRev}" },
-  "\uFF08\u7B2C {p} \u7248\uFF09": { en: " (version {p})" },
-  "\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3\uFF08\u5E26\u6B4C\u540D / \u4F5C\u8005\u680F / \u8BB8\u53EF\u7684\u6807\u7B7E\u548C\u5C01\u9762\u56FE\uFF09\u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E4B\u540E<b>\u53EA\u80FD\u542C</b>\u2014\u2014\u8C31\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u8BB8\u53EF\u3001\u5C01\u9762\u3001\u4E50\u5668\u3001\u6DF7\u97F3\u5168\u9501\u4F4F\uFF0C\u80FD\u6539\u7684\u53EA\u6709\u6587\u4EF6\u540D\u3002\u968F\u65F6\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF08\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF09\u3002\u6B4C\u5E93\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002": { en: "Done writing: renders the whole song to an mp3 (tagged with title / credits / license and cover) stored in the song; after that it's <b>listen-only</b> \u2014 score, title, credits, license, cover, instruments and mix are all locked, and only the file name can change. \u201CRevise\u201D unlocks it anytime (the mp3 is discarded). Playable right on the library cover." },
-  "\u8FDB mp3 \u7684\uFF1A{length}{length2}\u3002": { en: "In the mp3: {length}{length2}." },
-  "\uFF08\u6CA1\u6709\u51FA\u58F0\u7684\u58F0\u90E8\uFF09": { en: "(no sounding parts)" },
-  "\uFF08\u9759\u97F3 / \u72EC\u594F\u6309\u73B0\u5728\u7684\uFF1B\u8981\u90FD\u8FDB\u6765\u5148\u53D6\u6D88\u9759\u97F3\uFF09": { en: " (mute / solo as they are now; unmute first to include everyone)" },
-  "\u7167\u6837\u5B9A\u7A3F": { en: "Finalize anyway" },
-  "\u5B9A\u7A3F": { en: "Finalize" },
-  "\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF09\uFF1Amp3 {n}\u3001{p} \u79D2\uFF0C\u5B58\u8FDB\u4E86\u6B4C\u91CC\uFF1B{p2}\u53EA\u80FD\u542C\u4E86\u2014\u2014\u8981\u6539\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u3002": { en: "Finalized (version {rev}): mp3 {n}, {p} s, stored in the song; {p2}now listen-only \u2014 to edit, choose \u201CRevise\u201D in the \u2630 menu." },
-  "\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002": { en: "playable right on the library cover." },
-  "\u6309\u300C\u5B58\u300D\u5199\u8FDB\u6587\u4EF6\u3002": { en: "Press \u201CSave\u201D to write it to the file." },
-  "\u6CA1\u5B9A\u7A3F\uFF1A{Error}": { en: "Not finalized: {Error}" },
-  "\u6539\u7A3F": { en: "Revise" },
-  "\u89E3\u9501\u540E\u8C31\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u5C01\u9762\u3001\u4E50\u5668\u3001\u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u7B2C {rev} \u7248\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u4ECE\u6B4C\u91CC\u53BB\u6389\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u4E5F\u542C\u4E0D\u4E86\uFF0C\u8981\u518D\u5B9A\u7A3F\u4E00\u6B21\uFF09\u3002": { en: "Unlocks the score, title, credits, cover, instruments and mix; the mp3 of final version {rev} is discarded (removed from the song on next save; no longer playable on the library cover until finalized again)." },
-  "\u6539\u7A3F\u4E86\uFF1A\u7B2C {rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u80FD\u6539\u4E86\u3002": { en: "Revising: final version {rev} is discarded, you can edit now." },
+  "\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u8FD8\u6CA1\u5B58\u597D\uFF08\u518D\u8BD5\u4E00\u6B21\uFF09\u3002": { en: "Not locked: the changes are not saved yet (try again)." },
+  "\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u6CA1\u6709\u5199\u56DE\u6587\u4EF6\u3002": { en: "Not locked: the changes were not written back to the file." },
+  "\u9501\u4E0A\u4E86\u3002\u8981\u6539\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u3002": { en: "Locked. To edit, tap \u201CKeep editing\u201D above the score." },
+  "\u6CA1\u9501\u4E0A\uFF1A{Error}": { en: "Not locked: {Error}" },
   "\u5C01\u9762\u56FE": { en: "Cover image" },
   "\u6CA1\u6709\u5C01\u9762\u56FE": { en: "No cover image" },
   "\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09": { en: "Choose an image as the cover (shrunk to 256\xB2 and stored in the song; the library card prints the title over it)" },
@@ -3523,8 +3504,6 @@ var S = {
   "\u6539": { en: "Rename" },
   "\u6587\u4EF6\u540D\u6539\u6210 {stem}{SONG_SUFFIX}": { en: "File renamed to {stem}{SONG_SUFFIX}" },
   "\u6253\u5F00\u300C{name}\u300D": { en: "Opened \u201C{name}\u201D" },
-  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u6CA1\u6709\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\u3002\u5148\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF09\u518D\u5B58\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002": { en: "This song is finalized but its content changed: not saved and won't be uploaded. \u201CRevise\u201D first (the final mp3 is discarded) and then save, or undo that change." },
-  "\u5B58\u4E0D\u4E86\uFF1A{Error}": { en: "Can't save: {Error}" },
   "\u6253\u5F00\u300C{id}\u300D": { en: "Opening \u201C{id}\u201D" },
   "\u6253\u4E0D\u5F00\u300C{id}\u300D\uFF1A\u8FD9\u53F0\u8BBE\u5907\u4E0A\u6CA1\u6709\u5B83\u7684\u5B57\u8282\uFF08\u79BB\u7EBF\u3001\u6216\u8FD8\u6CA1\u4ECE\u4E91\u7AEF\u62C9\u4E0B\u6765\uFF09": { en: "Can't open \u201C{id}\u201D: its bytes aren't on this device (offline, or not pulled from the cloud yet)" },
   "\u65B0\u7684\u4E00\u9996\uFF08\u7B2C\u4E00\u7B14\u5199\u4E0B\u53BB\u5C31\u8FDB\u6B4C\u5E93\uFF09": { en: "New song (joins the library with the first thing you write)" },
@@ -3813,9 +3792,10 @@ var S = {
   "\u51C6\u5907\u2026": { en: "Preparing\u2026" },
   "\u7F16 mp3\u2026": { en: "Encoding mp3\u2026" },
   "\u8FD9\u4E00\u5F20": { en: "This sheet" },
+  "\u7ACB\u4F53\u58F0": { en: "Stereo" },
+  "\u5355\u58F0\u9053": { en: "Mono" },
   "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86": { en: "Vocals & mix exported" },
   "{p} \u79D2 \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}": { en: "{p} s \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}" },
-  "\uFF08\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD\uFF0C\u6CA1\u6709\u91CD\u6E32\uFF09": { en: " (the finalized copy, not re-rendered)" },
   "\u8FD9\u51E0\u6761\u8F68\u6CA1\u51FA\u58F0\uFF0Cmp3 \u91CC\u6CA1\u6709\u5B83\u4EEC\uFF1A": { en: "These tracks were silent and aren't in the mp3:" },
   "\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E": { en: "Credits \xB7 written into the mp3 tags" },
   "\u5BFC\u51FA\u5931\u8D25\uFF1A{Error}": { en: "Export failed: {Error}" },
@@ -3991,7 +3971,6 @@ var S = {
   "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09": { en: "Tsukuyomi-chan Corpus Terms of Use (derived model)" },
   "\u5C0F\u6708\u76F8": { en: "Tsukuyomi-chan" },
   "\u5C0F\u6708\u76F8\uFF08\u5143\u97F3\uFF09": { en: "Tsukuyomi-chan (vowels)" },
-  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u5B9A\u7A3F\u7740\u4E0D\u80FD\u8FD9\u6837\u5B58\u3002\u5148\u300C\u6539\u7A3F\u300D\u518D\u6539\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002": { en: "This song is finalized but its content changed: it can't be saved like this while finalized. \u201CRevise\u201D first and then edit, or undo that change." },
   "\u9EA6\u514B\u98CE {t}": { en: "Mic {t}" },
   "\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 {REFERENCES_DIR} \u4E0B\uFF1A{path}": { en: "A reference window file isn't under {REFERENCES_DIR}: {path}" },
   "\u9EA6\u514B\u98CE {x}": { en: "Mic {x}" },
@@ -4012,9 +3991,6 @@ var S = {
   "\u8C31\u7684\u6269\u5C55": { en: "The score extension" },
   "\u4F11\u606F\u5BA4\u300C{name}\u300D": { en: "Green room \u201C{name}\u201D" },
   "\u5F55\u97F3\u623F": { en: "The studio" },
-  "\u8FD9\u9996\u6B4C\u7684\u5B9A\u7A3F\u8BB0\u5F55\u8BFB\u4E0D\u61C2\uFF08\u522B\u7684\u7248\u672C\u5199\u7684\uFF1F\uFF09\uFF1A\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002": { en: "This song's final record can't be read (from another version?): opened as not finalized." },
-  "\u5B9A\u7A3F\u7684 mp3 \u4E0D\u5728\u6B4C\u91CC\u6216\u5927\u5C0F\u4E0D\u5BF9\uFF08\u8BB0\u5F55 {bytes} \u5B57\u8282\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002": { en: "The final mp3 is missing or the wrong size (record says {bytes} bytes): final discarded, opened as not finalized." },
-  "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u540E\u88AB\u6539\u8FC7\uFF08\u53EF\u80FD\u662F\u65E7\u7248 app \u6216\u522B\u7684\u8F6F\u4EF6\u6539\u7684\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u90A3\u4EFD mp3 \u4E0D\u7B97\u6570\u4E86\u3002\u8981\u7684\u8BDD\u6539\u5B8C\u518D\u5B9A\u7A3F\u4E00\u6B21\u3002": { en: "This song was changed after finalizing (perhaps by an old app version or other software): final discarded, that mp3 no longer counts. Finalize again after editing if you want." },
   "\u7EB8\u300C{id}\u300D\u7684\u8C31\uFF08{file}\uFF09\u5728\u5305\u91CC\u627E\u4E0D\u5230": { en: "Score of sheet \u201C{id}\u201D ({file}) isn't in the archive" },
   "\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u53EA\u662F\u90A3\u4E9B\u4E1C\u897F\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\uFF0C\u5728\u8FD9\u4E00\u7248\u91CC\u5B58\u4E00\u6B21\uFF0C\u5176\u4E2D\u4E00\u90E8\u5206\u4F1A\u4E22\u3002\u60F3\u539F\u6837\u7559\u7740\uFF0C\u5148\u66F4\u65B0 app \u518D\u6539\u3002": { en: "This song was saved by a newer MoonSinger ({p} has things this version doesn\u2019t know): you can still open, edit and save it, but this version can\u2019t show those things, and saving it here will lose some of them. To keep them as they are, update the app before editing." },
   "\u58F0\u90E8\u300C{name}\u300D\u548C\u522B\u7684\u58F0\u90E8\u5171\u7528\u4E00\u4EFD\u4E50\u5668\u8BBE\u7F6E\uFF1B\u6BCF\u4E2A\u58F0\u90E8\u6709\u81EA\u5DF1\u7684\u4E50\u5668\uFF0C\u6240\u4EE5\u62C6\u6210\u4E86\u4E24\u4EFD\uFF08\u4E50\u5668\u548C\u8BBE\u7F6E\u90FD\u7167\u6284\uFF09\u3002": { en: "Part \u201C{name}\u201D shared its instrument settings with another part; every part has its own instrument, so they were split into two copies (instrument and settings copied)." },
@@ -4049,18 +4025,13 @@ var S = {
   "\u5907\u4EFD\u7BB1": { en: "Backups" },
   "\u6539\u4E8E {lastModified}": { en: "Changed {lastModified}" },
   "\u6682\u505C\uFF08\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u4E5F\u80FD\u63A7\uFF09": { en: "Pause (also on the bottom player bar)" },
-  "\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C {rev} \u7248\uFF0C{p} \u79D2\uFF09": { en: "Listen to the final mp3 (version {rev}, {p} s)" },
   "\u4ECE\u5934\u653E\uFF08\u9501\u5C4F / \u8033\u673A\u7684\u300C\u4E0A\u4E00\u9996\u300D\u4E5F\u662F\uFF09": { en: "From the top (\u201Cprevious track\u201D on the lock screen / headphones too)" },
   "\u653E / \u6682\u505C": { en: "Play / pause" },
   "\u505C": { en: "Stop" },
   "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5F00\u7740\uFF08\u653E\u5B8C\u4ECE\u5934\u518D\u653E\uFF0C\u9501\u5C4F\u4E5F\u4E00\u6837\uFF09": { en: "Loop song: on (restarts at the end, on the lock screen too)" },
   "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5173\u7740\uFF08\u653E\u5B8C\u5C31\u505C\uFF09": { en: "Loop song: off (stops at the end)" },
-  "\u8FD9\u9996\u8FD8\u6CA1\u5B9A\u7A3F\uFF1A\u6253\u5F00\u5B83\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u5B9A\u7A3F\u2026\u300D\u2014\u2014\u5B9A\u7A3F\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002": { en: "This song isn't finalized yet: open it and choose \u201CFinalize\u2026\u201D in the \u2630 menu \u2014 then it's playable right on the cover." },
-  "\u53D6\u300C{stem}\u300D\u7684 mp3\u2026": { en: "Fetching the mp3 of \u201C{stem}\u201D\u2026" },
   "mp3 \u6CA1\u53D6\u5230\uFF08{blob}\uFF09": { en: "Couldn't get the mp3 ({blob})" },
   "\u7A7A": { en: "empty" },
-  "{stem} \xB7 \u5B9A\u7A3F {rev}": { en: "{stem} \xB7 Final {rev}" },
-  "\u5B9A\u7A3F \u7B2C {rev} \u7248": { en: "Final version {rev}" },
   "\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6": { en: "Couldn't start playing by itself: tap \u25B6 on the bottom player bar" },
   "\u6B4C\u5E93\u8FD8\u6CA1\u63A5\u4E0A\uFF0C\u5EFA\u4E0D\u4E86\u6587\u4EF6\u5939": { en: "The library isn't connected yet, so folders can't be created" },
   "\u65B0\u5EFA\u6587\u4EF6\u5939": { en: "New folder" },
@@ -4111,8 +4082,6 @@ var S = {
   "\u5176\u4F59\uFF08\u8FD8\u6CA1\u6309\u79CD\u7C7B\u5206\uFF09": { en: "Others (not sorted by kind yet)" },
   "\u6CA1\u8D34\u98CE\u683C": { en: "No style tag" },
   "\u516C\u5143\u524D {y}": { en: "{y} BC" },
-  "\u5B9A\u7A3F\u4E86\uFF1A\u6DF7\u97F3\u9501\u7740\uFF08\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF09": { en: "Finalized: the mix is locked (\u201CRevise\u201D in the \u2630 menu unlocks it)" },
-  "\u5B9A\u7A3F\u4E86\uFF1A\u9501\u7740\uFF08\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF09": { en: "Finalized: locked (\u201CRevise\u201D in the \u2630 menu unlocks it)" },
   "\u5199\u97F3": { en: "Write notes" },
   "1\u20137\uFF08\u5C0F\u952E\u76D8\u4E5F\u884C\uFF09": { en: "1\u20137 (numpad too)" },
   "\u5199\u4E00\u4E2A\u97F3\uFF1A\u8C03\u91CC\u7B2C\u51E0\u7EA7\uFF0C\u843D\u5728\u79BB\u4E0A\u4E00\u4E2A\u97F3\u6700\u8FD1\u5904": { en: "Write a note: this scale degree, nearest the previous note" },
@@ -4455,8 +4424,6 @@ var S = {
   "\u5220\u4E86 {d} \u4E2A": { en: "Deleted {d}" },
   "\u6539\u6B4C\u540D": { en: "Changed title" },
   "\u6539\u4F5C\u8005\u680F": { en: "Changed credits" },
-  "\u9690\u85CF\u4E86\u8FD9\u5F20\u7EB8": { en: "Hid this sheet" },
-  "\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8": { en: "Unhid this sheet" },
   "\u6539\u66F2\u6BB5\u540D": { en: "Renamed section" },
   "\u6539##\u8C31": { en: "Edited" },
   "{engineName}\u4E0D\u5531\u6B4C\u8BCD\uFF08\u53EA\u54FC / \u53EA\u5F39\uFF09\uFF1B\u6B4C\u8BCD\u7167\u5199\u7167\u5B58": { en: "{engineName} doesn't sing lyrics (only hums / plays); lyrics are still written and saved" },
@@ -4780,7 +4747,6 @@ var S = {
   "{sel} \u4E2A": { en: "{sel} selected" },
   "\u64CD\u4F5C\u2026": { en: "Actions\u2026" },
   "\u7C98\u8D34\u5230\u5149\u6807\u5904": { en: "Paste at the cursor" },
-  "\u5B9A\u7A3F {finalRev}": { en: "Final {finalRev}" },
   "\u57FA\u7840": { en: "Basics" },
   "\u589E\u76CA\u3001\u58F0\u50CF\u3001\u9759\u97F3 / \u72EC\u594F\uFF1A\u5148\u628A\u51E0\u6761\u8F68\u7684\u97F3\u91CF\u6446\u5E73\u3001\u5DE6\u53F3\u6446\u5F00\uFF08\u6DF7\u97F3\u7684\u7B2C\u4E00\u6B65\uFF09": { en: "Gain, pan, mute / solo: first balance the tracks' levels and spread them left and right (step one of mixing)" },
   "\u6BCF\u6761\u8F68\u7684\u9ED8\u8BA4 EQ\uFF1A\u4E24\u6837\u4E1C\u897F\u7CCA\u5728\u4E00\u8D77\u3001\u592A\u95F7 / \u592A\u523A": { en: "Each track's default EQ: for two things blurring together, too muddy / too harsh" },
@@ -4891,19 +4857,19 @@ var S = {
   "\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Mute (this part is silent; same as \u201CM\u201D under the part name on the score)" },
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
   "\u72EC": { en: "S" },
-  // ── 修改锁（v0.16.96，2026-11-10，Claude Fable 5.2）──
-  "\u9501\u7740": { en: "Locked" },
-  "\u63A5\u7740\u6539": { en: "Keep editing" },
-  "\u89E3\u9501\uFF0C\u63A5\u7740\u6539\u8FD9\u4E00\u9996\u3002\u653E\u7740\u4E00\u5929\u4E0D\u52A8\u4F1A\u81EA\u5DF1\u9501\u4E0A\uFF1B\u968F\u65F6\u80FD\u5728\u4E09\u6761\u6760\u91CC\u300C\u9501\u4E0A\u300D": { en: "Unlock and keep editing this song. It locks itself after a day untouched; you can lock it any time from the \u2630 menu" },
-  "\u5B58\u4E00\u7248\u518D\u6539": { en: "Save a version, then edit" },
-  "\u5148\u628A\u73B0\u5728\u7684\u6837\u5B50\u5B58\u4E00\u7248\u7559\u5E95\uFF08\u6536\u5728\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5361\u7247\u4E0B\u9762\uFF09\uFF0C\u518D\u89E3\u9501\u63A5\u7740\u6539": { en: "Save a version of it as it is now (kept under this song\u2019s card in the library), then unlock and keep editing" },
-  "\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u6709\u6539\u52A8\u6CA1\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\uFF1A\u6539\u52A8\u8FD8\u5728\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u4E4B\u540E\u518D\u5B58\u3002": { en: "This song is locked, so the changes were not saved or uploaded. They are still here: tap \u201CKeep editing\u201D above the score, then save." },
-  "\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09": { en: "Lock (done editing for now)" },
-  "\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00": { en: "Saves your changes, then locks this song: it opens view-and-listen only until you tap \u201CKeep editing\u201D" },
-  "\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u8FD8\u6CA1\u5B58\u597D\uFF08\u518D\u8BD5\u4E00\u6B21\uFF09\u3002": { en: "Not locked: the changes are not saved yet (try again)." },
-  "\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u6CA1\u6709\u5199\u56DE\u6587\u4EF6\u3002": { en: "Not locked: the changes were not written back to the file." },
-  "\u9501\u4E0A\u4E86\u3002\u8981\u6539\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u3002": { en: "Locked. To edit, tap \u201CKeep editing\u201D above the score." },
-  "\u6CA1\u9501\u4E0A\uFF1A{Error}": { en: "Not locked: {Error}" }
+  // ── 设备上记着的渲好的声音（v0.16.97，2026-11-10，Claude Fable 5.2；定稿退役）──
+  "\u6B4C\u58F0\uFF08mp3\uFF09\u2026": { en: "Vocals (mp3)\u2026" },
+  "\u6E32\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF1B\u6E32\u597D\u7684\u90A3\u4EFD\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C": { en: "Render once into an mp3 to share or download. The render is remembered on this device, so you can play it straight from this song\u2019s cover in the library" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002": { en: "This device remembers the last render of exactly this, and nothing has changed: you get it right away, no waiting." },
+  "\uFF08\u7528\u7684\u662F\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u4E0A\u6B21\u6E32\u597D\u7684\u90A3\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF09": { en: " (the last render remembered on this device; nothing has changed)" },
+  "\uFF08\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF1A\u5185\u5BB9\u4E0D\u53D8\u7684\u8BDD\u4E0B\u6B21\u4E0D\u7528\u518D\u6E32\uFF09": { en: " (remembered on this device: no re-render next time unless the song changes)" },
+  "\u8FD9\u9996\u6B4C\u91CC\u539F\u6765\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{size}\uFF09\u4E0D\u518D\u5B58\u8FDB\u6B4C\u91CC\u4E86\uFF1A\u5B83\u5DF2\u7ECF\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u7167\u6837\u80FD\u542C\u3001\u80FD\u518D\u5BFC\u51FA\u3002": { en: "The mp3 that used to be stored inside this song ({size}) is no longer saved into the song file. It is remembered on this device, so you can still play it from the library and export it again." },
+  "\u542C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D\uFF08{p} \u79D2\uFF09": { en: "Play the render remembered on this device ({p} s)" },
+  "\u542C\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{p} \u79D2\uFF09": { en: "Play the mp3 stored inside the song ({p} s)" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6709\u8FD9\u9996\u6B4C\u6E32\u597D\u7684\u58F0\u97F3\uFF1A\u6253\u5F00\u5B83\uFF0C\u300C\u5BFC\u51FA\u2026\u300D\u91CC\u5BFC\u4E00\u6B21\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u4E4B\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002": { en: "This device has no render of this song yet. Open it and export the vocals (mp3) once from \u201CExport\u2026\u201D; after that you can play it straight from the cover." },
+  "\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026": { en: "Getting the audio for \u201C{stem}\u201D\u2026" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D": { en: "Remembered on this device" },
+  "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": { en: "The mp3 stored inside the song" }
 };
 
 // src/device-kv.ts
@@ -5042,8 +5008,6 @@ function applyDocumentLang() {
   root.dataset.lang = lang();
   if (lang() !== "zh") {
     root.style.setProperty("--t-loop", JSON.stringify(_t("\u5FAA\u73AF")));
-    root.style.setProperty("--t-final-mix", JSON.stringify(_t("\u5B9A\u7A3F\u4E86\uFF1A\u6DF7\u97F3\u9501\u7740\uFF08\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF09")));
-    root.style.setProperty("--t-final-lock", JSON.stringify(_t("\u5B9A\u7A3F\u4E86\uFF1A\u9501\u7740\uFF08\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF09")));
   }
 }
 
@@ -5125,7 +5089,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.96-2026-11-10";
+var APP_VERSION = "v0.16.97-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5175,10 +5139,10 @@ function initPwaShell(opts) {
       location.reload();
       return;
     }
-    let done = false;
+    let done2 = false;
     const doReload = () => {
-      if (done) return;
-      done = true;
+      if (done2) return;
+      done2 = true;
       location.reload();
     };
     navigator.serviceWorker.addEventListener("controllerchange", doReload, { once: true });
@@ -5548,7 +5512,7 @@ function sliceBySegments(tokens, segs, newId) {
       if (t10.kind === "bar") {
         if (at2 < s10.t0 || at2 > s10.t1 || at2 === s10.t0 && (k2 > 0 || !!t10.repeat)) return;
         const b3 = copy(t10);
-        const { repeat: _r, times: _t3, ...plain2 } = b3;
+        const { repeat: _r, times: _t4, ...plain2 } = b3;
         out.push(plain2);
         return;
       }
@@ -5563,7 +5527,7 @@ function sliceBySegments(tokens, segs, newId) {
       const room = s10.t1 - at2;
       if (x2.dur > room) x2 = { ...x2, dur: room };
       if (first && jump && x2.kind === "note" && x2.tie) {
-        const { tie: _t3, ...rest } = x2;
+        const { tie: _t4, ...rest } = x2;
         x2 = rest;
       }
       out.push(x2);
@@ -5918,9 +5882,9 @@ function singleSel(st2) {
   return k2;
 }
 function eatRests(tk2, i10, need) {
-  let got = 0, j2 = i10, end = i10, kept = 0;
+  let got2 = 0, j2 = i10, end = i10, kept = 0;
   const keep2 = [];
-  while (j2 < tk2.length && got < need) {
+  while (j2 < tk2.length && got2 < need) {
     const t10 = tk2[j2];
     if (t10.kind === "bar" || t10.kind === "note") break;
     if (t10.kind !== "rest") {
@@ -5928,21 +5892,21 @@ function eatRests(tk2, i10, need) {
       j2++;
       continue;
     }
-    const left = t10.dur - (need - got);
+    const left = t10.dur - (need - got2);
     if (left > 0) {
       if (!validDur(left)) break;
       keep2.push({ ...t10, dur: left });
-      got = need;
+      got2 = need;
       end = j2 + 1;
       kept = keep2.length;
       break;
     }
-    got += t10.dur;
+    got2 += t10.dur;
     j2++;
     end = j2;
     kept = keep2.length;
   }
-  return { got, end, keep: keep2.slice(0, kept) };
+  return { got: got2, end, keep: keep2.slice(0, kept) };
 }
 var isPhraseMark = (t10) => !!t10 && (t10.kind === "dyn" || t10.kind === "hairpin" || t10.kind === "groove");
 function overwriteInsert(tk2, caret, tok) {
@@ -5962,7 +5926,7 @@ function dropTieAfter(nt2, i10) {
     const t10 = nt2[j2];
     if (!isTimed(t10)) continue;
     if (t10.kind === "note" && t10.tie) {
-      const { tie: _t3, ...rest } = t10;
+      const { tie: _t4, ...rest } = t10;
       nt2[j2] = rest;
     }
     return;
@@ -6049,7 +6013,7 @@ function setRepeatBar(st2, repeat, times) {
   const mk2 = (b3) => {
     let r10 = repeat;
     if (repeat && b3.repeat && b3.repeat !== repeat) r10 = "both";
-    const { repeat: _r, times: _t3, style: _st, ...rest } = b3;
+    const { repeat: _r, times: _t4, style: _st, ...rest } = b3;
     const tm2 = r10 === "end" || r10 === "both" ? times ?? b3.times : void 0;
     return { ...rest, ...r10 ? { repeat: r10 } : {}, ...tm2 && tm2 > 2 ? { times: tm2 } : {} };
   };
@@ -6068,7 +6032,7 @@ function setBarStyle(st2, style) {
   const near2 = toks[at2 - 1]?.kind === "bar" && at2 - 1 >= h2 ? at2 - 1 : toks[at2]?.kind === "bar" ? at2 : -1;
   const nt2 = toks.slice();
   if (near2 >= 0) {
-    const { repeat: _r, times: _t3, style: _s, ...rest } = toks[near2];
+    const { repeat: _r, times: _t4, style: _s, ...rest } = toks[near2];
     nt2[near2] = { ...rest, ...style ? { style } : {} };
     return next(st2, nt2, { sel: null });
   }
@@ -9734,8 +9698,8 @@ function stepLeft(st2, i10) {
   return { st: { ...st2, song: withTrack(st2.song, st2.at.paper, st2.at.part, tokens) }, at: p2, merged: false };
 }
 function moveSyllable(st2, i10, k2) {
-  let cur = st2, at2 = i10, done = 0;
-  for (; done < Math.abs(k2); done++) {
+  let cur = st2, at2 = i10, done2 = 0;
+  for (; done2 < Math.abs(k2); done2++) {
     if (k2 > 0) {
       const r10 = stepRight(cur, at2);
       if (!r10) break;
@@ -9747,12 +9711,12 @@ function moveSyllable(st2, i10, k2) {
       cur = r10.st;
       at2 = r10.at;
       if (r10.merged) {
-        done++;
+        done2++;
         break;
       }
     }
   }
-  return { st: cur, at: at2, done };
+  return { st: cur, at: at2, done: done2 };
 }
 function nextLyricSlot(tokens, i10) {
   for (let j2 = i10 + 1; j2 < tokens.length; j2++) if (lyricSlot(tokens[j2])) return j2;
@@ -14305,11 +14269,11 @@ var ScoreView = class {
         const st2 = this.host.get(), a10 = Math.min(idx, g3.other), b3 = Math.max(idx, g3.other) + 1;
         if (!st2.sel || st2.sel.from !== a10 || st2.sel.to !== b3) this.host.set(select(st2, a10, b3));
       });
-      const done = (e10) => {
+      const done2 = (e10) => {
         if (this.handleDrag && e10.pointerId === this.handleDrag.pid) this.handleDrag = null;
       };
-      h2.addEventListener("pointerup", done);
-      h2.addEventListener("pointercancel", done);
+      h2.addEventListener("pointerup", done2);
+      h2.addEventListener("pointercancel", done2);
       this.ink.appendChild(h2);
       return h2;
     };
@@ -18985,12 +18949,12 @@ function createSafeResolve(cfg) {
         head.markSynced(name, r10.item?.eTag ?? null);
         return { ok: true, backupName };
       };
-      const done = inChain ? await commit() : await serialize(name, commit);
-      if (!done.ok)
-        return done;
+      const done2 = inChain ? await commit() : await serialize(name, commit);
+      if (!done2.ok)
+        return done2;
       if (adopt && plain2 != null)
         await adopt(plain2, name);
-      return done;
+      return done2;
     } finally {
       onReplacing(false);
     }
@@ -21412,7 +21376,7 @@ function createIdbCache(dbName) {
     }).catch(() => {
     });
   }
-  function openDb() {
+  function openDb2() {
     if (_closed)
       return Promise.reject(new Error(`idb cache closed (disposed): ${dbName}`));
     if (_db)
@@ -21477,7 +21441,7 @@ function createIdbCache(dbName) {
     });
   }
   function txOnce(mode, run2, op2) {
-    const conn = openDb();
+    const conn = openDb2();
     return conn.then((db) => new Promise((resolve, reject) => {
       const t10 = db.transaction(STORE, mode);
       const ms = _idbOpTimeoutMs;
@@ -22227,14 +22191,14 @@ function createDownloadSessions(cfg) {
     if (!m2)
       return null;
     const nChunks = Math.max(1, Math.ceil(m2.totalBytes / m2.chunkBytes));
-    const got = new Set(m2.chunks);
+    const got2 = new Set(m2.chunks);
     const sizeOf = (i10) => Math.min(m2.chunkBytes, m2.totalBytes - i10 * m2.chunkBytes);
     let bytes = 0;
-    for (const i10 of got)
+    for (const i10 of got2)
       if (i10 >= 0 && i10 < nChunks)
         bytes += sizeOf(i10);
     let headBytes = 0;
-    for (let i10 = 0; i10 < nChunks && got.has(i10); i10++)
+    for (let i10 = 0; i10 < nChunks && got2.has(i10); i10++)
       headBytes += sizeOf(i10);
     return { totalBytes: m2.totalBytes, bytes, headBytes, complete: headBytes === m2.totalBytes, eTag: m2.eTag };
   }
@@ -22307,7 +22271,7 @@ function createDownloadSessions(cfg) {
     if (prev && prev.eTag !== etag)
       await purgeName(name);
     const meta = prev && prev.eTag === etag ? { ...prev, touchedAt: now2() } : { v: 1, eTag: etag, totalBytes: size, chunkBytes: chunkSize, chunks: [], touchedAt: now2() };
-    const got = new Set(meta.chunks);
+    const got2 = new Set(meta.chunks);
     const mirrored = new Set(meta.mirrored ?? []);
     await writeMeta(name, meta);
     let lastHotFlush = now2();
@@ -22324,7 +22288,7 @@ function createDownloadSessions(cfg) {
       }
     };
     evictHooks.set(name, (i10) => {
-      got.delete(i10);
+      got2.delete(i10);
       mirrored.delete(i10);
       verifiedEvict(i10);
     });
@@ -22378,11 +22342,11 @@ function createDownloadSessions(cfg) {
       mirrorRejected.add(`${name}@${etag}@${src.label}`);
       const bad = [...mirrored];
       for (const i10 of bad) {
-        got.delete(i10);
+        got2.delete(i10);
         mirrored.delete(i10);
         await sDel(cKey(name, i10));
       }
-      meta.chunks = [...got];
+      meta.chunks = [...got2];
       meta.mirrored = [];
       await writeMeta(name, meta);
       reportStoreError(new Error(`mirror "${src.label}" served different bytes for "${name}" (${reason}); dropped it for this version and purged ${bad.length} unverified chunk(s)`), "warning");
@@ -22414,8 +22378,8 @@ function createDownloadSessions(cfg) {
       if (origin === "mirror" && !mirror)
         return;
       let changed2 = false;
-      if (!got.has(i10)) {
-        got.add(i10);
+      if (!got2.has(i10)) {
+        got2.add(i10);
         changed2 = true;
         if (estTotal !== null)
           estTotal += chunkLen(i10);
@@ -22426,7 +22390,7 @@ function createDownloadSessions(cfg) {
         changed2 = true;
       }
       if (changed2) {
-        meta.chunks = [...got];
+        meta.chunks = [...got2];
         meta.mirrored = mirrored.size ? [...mirrored] : void 0;
         meta.touchedAt = now2();
       }
@@ -22523,7 +22487,7 @@ function createDownloadSessions(cfg) {
       const len = Math.max(0, Math.min(length, size - off));
       return { i0: Math.floor(off / chunkSize), i1: len === 0 ? -1 : Math.floor((off + len - 1) / chunkSize), off, len };
     };
-    const havedBytes = () => [...got].reduce((s10, i10) => s10 + chunkLen(i10), 0);
+    const havedBytes = () => [...got2].reduce((s10, i10) => s10 + chunkLen(i10), 0);
     return {
       name,
       totalSize: size,
@@ -22567,7 +22531,7 @@ function createDownloadSessions(cfg) {
       async promote(opts) {
         if (closed)
           throw new Error(`\u4F1A\u8BDD\u5DF2\u5173\u95ED\uFF1A${name}`);
-        const missing = Array.from({ length: nChunks }, (_2, i10) => i10).filter((i10) => !got.has(i10));
+        const missing = Array.from({ length: nChunks }, (_2, i10) => i10).filter((i10) => !got2.has(i10));
         let next2 = 0;
         const worker = async () => {
           while (next2 < missing.length) {
@@ -24546,21 +24510,21 @@ function listNamespaceLsKeys(appId, ls2) {
 function deleteDbOrBlocked(idb, name) {
   return new Promise((resolve) => {
     let settled = false;
-    const done = (r10) => {
+    const done2 = (r10) => {
       if (!settled) {
         settled = true;
         resolve(r10);
       }
     };
-    const timer = setTimeout(() => done("blocked"), BLOCKED_TIMEOUT_MS);
+    const timer = setTimeout(() => done2("blocked"), BLOCKED_TIMEOUT_MS);
     const req = idb.deleteDatabase(name);
     req.onsuccess = () => {
       clearTimeout(timer);
-      done("deleted");
+      done2("deleted");
     };
     req.onerror = () => {
       clearTimeout(timer);
-      done("blocked");
+      done2("blocked");
     };
     req.onblocked = () => {
     };
@@ -24615,8 +24579,8 @@ async function readBody(r10, onProgress) {
   const parts = [];
   let total = 0;
   for (; ; ) {
-    const { done, value } = await reader.read();
-    if (done)
+    const { done: done2, value } = await reader.read();
+    if (done2)
       break;
     if (value && value.byteLength) {
       parts.push(value);
@@ -25264,11 +25228,11 @@ var SCRIPT_LOAD_TIMEOUT_MS = 45e3;
 function loadScript(url) {
   return new Promise((resolve, reject) => {
     const s10 = document.createElement("script");
-    let done = false;
+    let done2 = false;
     const settle = (fn) => {
-      if (done)
+      if (done2)
         return;
-      done = true;
+      done2 = true;
       clearTimeout(timer);
       fn();
     };
@@ -26824,12 +26788,12 @@ function createGalleryVerbs(d3) {
   async function copy(item, currentIdentifiers) {
     await d3.host.busy(t("gal.busy.copy", { base: item.stem }), async () => {
       try {
-        const got = await atRestBytes(item);
-        if (got.why === "sealed-no-local") {
+        const got2 = await atRestBytes(item);
+        if (got2.why === "sealed-no-local") {
           d3.host.status(t("gal.st.sealedNoLocal"), true);
           return;
         }
-        const bytes = got.bytes;
+        const bytes = got2.bytes;
         if (!bytes) {
           d3.host.status(t("gal.st.copyNoBytes"), true);
           return;
@@ -27118,12 +27082,12 @@ function createGalleryVerbs(d3) {
       try {
         if (item.identifier === d3.host.activeIdentifier())
           await d3.doc.flush?.();
-        const got = await atRestBytes(item);
-        if (got.why === "sealed-no-local") {
+        const got2 = await atRestBytes(item);
+        if (got2.why === "sealed-no-local") {
           d3.host.status(t("gal.st.sealedNoLocal"), true);
           return null;
         }
-        if (!got.bytes) {
+        if (!got2.bytes) {
           d3.host.status(t("gal.st.copyNoBytes"), true);
           return null;
         }
@@ -27135,7 +27099,7 @@ function createGalleryVerbs(d3) {
         for (let attempt = 0; ; attempt++) {
           target = versionTargetName(item.identifier, day, (n10) => taken.has(n10), ids());
           try {
-            await docFile(target, "new").save(got.bytes, { tryPush: cloudOn(), bornLocked: true });
+            await docFile(target, "new").save(got2.bytes, { tryPush: cloudOn(), bornLocked: true });
             break;
           } catch (e10) {
             if (e10?.name !== "CloudNameCollisionError" || attempt >= 8)
@@ -31307,8 +31271,8 @@ function createPackStore(deps) {
     const { packId, manifest: m2 } = manifestOf(slug);
     await dropIfStale(slug);
     const sizes = await cachedChunkSizes(slug, m2);
-    let done = sizes.reduce((a10, n10, i10) => a10 + (n10 === m2.chunks[i10].bytes ? n10 : 0), 0);
-    progress2({ done, total: m2.totalBytes });
+    let done2 = sizes.reduce((a10, n10, i10) => a10 + (n10 === m2.chunks[i10].bytes ? n10 : 0), 0);
+    progress2({ done: done2, total: m2.totalBytes });
     const root = base2.replace(/\/+$/, "");
     for (let i10 = 0; i10 < m2.chunks.length; i10++) {
       const c10 = m2.chunks[i10];
@@ -31320,27 +31284,27 @@ function createPackStore(deps) {
       const reader = res.body.getReader();
       const sha = new Sha256();
       const buf = new Uint8Array(c10.bytes);
-      let got = 0, lastReported = 0;
+      let got2 = 0, lastReported = 0;
       for (; ; ) {
         const { value, done: end } = await reader.read();
         if (end)
           break;
-        if (got + value.length > c10.bytes)
+        if (got2 + value.length > c10.bytes)
           throw new Error(`${c10.name}: larger than manifest says`);
         sha.update(value);
-        buf.set(value, got);
-        got += value.length;
-        if (got - lastReported >= 1048576 || got === c10.bytes) {
-          lastReported = got;
-          progress2({ done: done + got, total: m2.totalBytes });
+        buf.set(value, got2);
+        got2 += value.length;
+        if (got2 - lastReported >= 1048576 || got2 === c10.bytes) {
+          lastReported = got2;
+          progress2({ done: done2 + got2, total: m2.totalBytes });
         }
       }
-      if (got !== c10.bytes)
-        throw new Error(`${c10.name}: got ${got} bytes, expected ${c10.bytes}`);
+      if (got2 !== c10.bytes)
+        throw new Error(`${c10.name}: got ${got2} bytes, expected ${c10.bytes}`);
       if (sha.hex() !== c10.sha256)
         throw new Error(`${c10.name}: sha256 mismatch (source tampered or corrupted)`);
       await putChunk(slug, c10.name, buf);
-      done += got;
+      done2 += got2;
     }
     await markVerified(slug, packId);
     return status(slug);
@@ -31351,7 +31315,7 @@ function createPackStore(deps) {
       await dropIfStale(p2.slug);
     const fresh = new Map(packs.map((p2) => [p2.slug, /* @__PURE__ */ new Set()]));
     const total = files.reduce((a10, f2) => a10 + f2.size, 0);
-    let done = 0, matched = 0;
+    let done2 = 0, matched = 0;
     const bad = [];
     for (const f2 of files) {
       const whole = packs.find((p2) => p2.m.chunks.length > 1 && p2.m.totalBytes === f2.size);
@@ -31364,7 +31328,7 @@ function createPackStore(deps) {
           await putChunk(whole.slug, c10.name, piece);
           fresh.get(whole.slug).add(c10.name);
           offset += c10.bytes;
-          progress2({ done: done + offset, total });
+          progress2({ done: done2 + offset, total });
         }
         matched++;
       } else {
@@ -31382,8 +31346,8 @@ function createPackStore(deps) {
             matched++;
         }
       }
-      done += f2.size;
-      progress2({ done, total });
+      done2 += f2.size;
+      progress2({ done: done2, total });
     }
     for (const p2 of packs)
       await sealIfComplete(p2.slug, fresh.get(p2.slug));
@@ -31513,15 +31477,15 @@ async function readFolder(path, opts) {
   const e10 = localBundle()?.files[path];
   if (!e10) throw new Error(_t("\u5907\u7528\u7248\u91CC\u6CA1\u6709 {path}", { path }));
   const parts = [];
-  let done = 0;
+  let done2 = 0;
   for (let k2 = 0; k2 < e10.parts; k2++) {
     const b3 = fromBase64(await loadDataScript(siteUrl(e10.parts === 1 ? `${path}.data.js` : `${path}.${k2}.data.js`).href, e10.parts === 1 ? path : `${path}#${k2}`));
     parts.push(b3);
-    done += b3.length;
-    opts.onProgress?.(done, e10.bytes);
+    done2 += b3.length;
+    opts.onProgress?.(done2, e10.bytes);
   }
   const out = parts.length === 1 ? parts[0] : (() => {
-    const o10 = new Uint8Array(done);
+    const o10 = new Uint8Array(done2);
     let at2 = 0;
     for (const p2 of parts) {
       o10.set(p2, at2);
@@ -31539,15 +31503,15 @@ async function readSite(path, opts) {
   let out;
   if (opts.onProgress && r10.body) {
     const total = Number(r10.headers.get("content-length") ?? 0), reader = r10.body.getReader(), chunks2 = [];
-    let got = 0;
+    let got2 = 0;
     for (; ; ) {
-      const { value, done } = await reader.read();
-      if (done) break;
+      const { value, done: done2 } = await reader.read();
+      if (done2) break;
       chunks2.push(value);
-      got += value.length;
-      opts.onProgress(got, total || got);
+      got2 += value.length;
+      opts.onProgress(got2, total || got2);
     }
-    out = new Uint8Array(got);
+    out = new Uint8Array(got2);
     let at2 = 0;
     for (const c10 of chunks2) {
       out.set(c10, at2);
@@ -31585,15 +31549,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-95fafa392758.mjs");
+      return pick(() => "singer-worker-3662a7459e09.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-b356163eb1dd.mjs");
+      return pick(() => "layout-worker-2e7ccb87f11b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-5584d758fde8.mjs");
+      return pick(() => "encode-worker-3a2576aa336a.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -32000,7 +31964,7 @@ function reviveAudio(why2) {
   if (asleep(c10) && !everRan) {
     noteFn(`revive (${why2}): ctx ${c10.state}, never started \u2192 waking`);
     wake(c10);
-    return new Promise((done) => setTimeout(() => done(ctx === c10 && c10.state === "running" && c10.currentTime !== t02), 2500));
+    return new Promise((done2) => setTimeout(() => done2(ctx === c10 && c10.state === "running" && c10.currentTime !== t02), 2500));
   }
   const { ok: ok2, how } = recreateOutput(c10);
   noteFn(`revive (${why2}): ctx ${c10.state}, t=${t02.toFixed(2)}, queued \u2248 ${q2 ?? "?"} ms; ${how}`);
@@ -32010,15 +31974,15 @@ function reviveAudio(why2) {
   autoCount = 0;
   armQueue("revive");
   const moving = () => ctx === c10 && c10.state === "running" && c10.currentTime !== t02;
-  return new Promise((done) => {
+  return new Promise((done2) => {
     setTimeout(() => {
       if (ctx !== c10 || pageHidden()) {
-        done(false);
+        done2(false);
         return;
       }
       if (ok2 && moving()) {
         noteFn(`revive: clock running (t=${c10.currentTime.toFixed(2)})`);
-        done(true);
+        done2(true);
         return;
       }
       noteFn(`revive: clock not running after 500 ms (ctx ${c10.state}, t=${c10.currentTime.toFixed(2)}) \u2192 suspend + resume`);
@@ -32027,7 +31991,7 @@ function reviveAudio(why2) {
         const m2 = moving();
         noteFn(m2 ? `revive: clock running after suspend + resume (t=${c10.currentTime.toFixed(2)})` : `revive: still not running (ctx ${ctx === c10 ? c10.state : "gone"}) \u2014 the app needs a restart`);
         if (!m2 && ctx === c10) wake(c10);
-        done(m2);
+        done2(m2);
       }, 1500);
     }, 500);
   });
@@ -32947,8 +32911,8 @@ function createSoundSources(o10) {
             out.set(b3);
             o11 = b3.length;
           } else for (; ; ) {
-            const { done, value } = await rd2.read();
-            if (done) break;
+            const { done: done2, value } = await rd2.read();
+            if (done2) break;
             if (o11 + value.length > e10.bytes) throw new Error(_t("\u6BD4\u76EE\u5F55\u91CC\u8BF4\u7684\u5927"));
             out.set(value, o11);
             o11 += value.length;
@@ -32956,8 +32920,8 @@ function createSoundSources(o10) {
           }
         }
         if (o11 !== e10.bytes) throw new Error(_t("\u5927\u5C0F\u4E0D\u5BF9\uFF08{o} \u2260 {bytes}\uFF09", { o: o11, bytes: e10.bytes }));
-        const got = await sha256Hex3(out);
-        if (got !== e10.sha256) throw new Error(_t("\u5185\u5BB9\u548C\u76EE\u5F55\u91CC\u9489\u7684\u4E0D\u4E00\u6837\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83", { p: got.slice(0, 12), p2: e10.sha256.slice(0, 12) }));
+        const got2 = await sha256Hex3(out);
+        if (got2 !== e10.sha256) throw new Error(_t("\u5185\u5BB9\u548C\u76EE\u5F55\u91CC\u9489\u7684\u4E0D\u4E00\u6837\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09\uFF0C\u6CA1\u6709\u7528\u5B83", { p: got2.slice(0, 12), p2: e10.sha256.slice(0, 12) }));
         await rememberSound(e10.sha256, out, true);
         return out;
       } catch (err2) {
@@ -32981,7 +32945,7 @@ function createSoundSources(o10) {
       const e10 = Object.values(SOUNDS).find((x2) => x2.sha256 === g3.origin.fileSha256);
       if (e10) {
         try {
-          bank = await fetchSound(e10, (done) => o10.progress(_t("\u627E\u300C{name}\u300D\u7684\u58F0\u97F3\uFF1A\u4E0B\u8F7D {name2} {bytes}%", { name: g3.name, name2: e10.name, bytes: Math.round(done / e10.bytes * 100) })));
+          bank = await fetchSound(e10, (done2) => o10.progress(_t("\u627E\u300C{name}\u300D\u7684\u58F0\u97F3\uFF1A\u4E0B\u8F7D {name2} {bytes}%", { name: g3.name, name2: e10.name, bytes: Math.round(done2 / e10.bytes * 100) })));
         } finally {
           o10.progress("");
         }
@@ -33094,10 +33058,10 @@ function keepOnlyOverrides(tokens, read) {
   tokens.forEach((t10, i10) => {
     if (t10.kind !== "note" || !t10.lyric || t10.lyric === MELISMA_MARK) return;
     const auto = KANA2.test(t10.lyric) ? "ja" : HAN2.test(t10.lyric) ? prev : LATIN2.test(t10.lyric) ? "en" : prev;
-    const got = read[i10];
-    if (got && got !== auto) t10.lang = got;
+    const got2 = read[i10];
+    if (got2 && got2 !== auto) t10.lang = got2;
     else delete t10.lang;
-    prev = got ?? auto;
+    prev = got2 ?? auto;
   });
 }
 
@@ -33884,7 +33848,7 @@ function readMusicXml(xml, hints) {
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
 var FORMAT_MINOR = { manifest: 1, score: 4, lounge: 1, studio: 1 };
-var FORMAT_PATCH = { manifest: 0, score: 0, lounge: 0, studio: 0 };
+var FORMAT_PATCH = { manifest: 1, score: 0, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
 var K2 = new Uint32Array([
@@ -34176,12 +34140,9 @@ var SOUNDS2 = `${DIR}sounds/`;
 var REFERENCES_DIR = `${DIR}references/`;
 var PAPERS = `${DIR}papers/`;
 var paperFile = (id2) => `${PAPERS}${id2}.musicxml`;
-var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], thumbnail: null, final: null, finalMp3: null, finalRev: 0 });
+var emptyExtras = () => ({ lounge: {}, sounds: {}, unknown: {}, rootfiles: [], thumbnail: null });
 var THUMBNAIL_ENTRY = "Thumbnails/thumbnail.png";
 var withThumbnail = (extras, png) => ({ ...extras, thumbnail: png });
-var withFinal = (extras, rec, mp3) => ({ ...extras, final: rec, finalMp3: mp3, finalRev: Math.max(extras.finalRev, rec.rev) });
-var withoutFinal = (extras) => extras.final || extras.finalMp3 ? { ...extras, final: null, finalMp3: null } : extras;
-var isFinal = (extras) => extras.final != null;
 var CANDIDATE_ID = { full: "c1", light: "c2" };
 var common = () => ({ calibrationDb: DEFAULT_CALIBRATION_DB, chain: [], dynamicsDb: { ...DYNAMICS_DB }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });
 function defaultRole(hum, id2) {
@@ -34213,17 +34174,39 @@ var unknownById = (list2, known) => {
   return out;
 };
 function saveMxl(a10) {
+  return saveMxlWithFingerprint(a10).bytes;
+}
+function saveMxlWithFingerprint(a10) {
   const { out, fingerprint } = buildEntries(a10);
-  if (a10.extras.final && a10.extras.final.fingerprint !== fingerprint) throw new Error(_t("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u5B9A\u7A3F\u7740\u4E0D\u80FD\u8FD9\u6837\u5B58\u3002\u5148\u300C\u6539\u7A3F\u300D\u518D\u6539\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002"));
   const entries2 = {};
   for (const [path, bytes] of Object.entries(out)) entries2[path] = [bytes, { level: path === "mimetype" || path === THUMBNAIL_ENTRY || path === FINAL_MP3_ENTRY ? 0 : path.startsWith(SOUNDS2) ? 1 : path.startsWith(REFERENCES_DIR) && !path.endsWith(".json") ? 0 : 6 }];
-  return zipSync(entries2);
+  return { bytes: zipSync(entries2), fingerprint };
 }
 function contentFingerprintOf(a10) {
   return buildEntries(a10).fingerprint;
 }
+function canonicalIds(song) {
+  let id2 = 1, same = true;
+  const papers = song.papers.map((p2) => {
+    const tracks = {};
+    for (const part of song.parts) {
+      const toks = p2.tracks[part.id];
+      if (!toks) continue;
+      tracks[part.id] = toks.map((t10) => {
+        const n10 = id2++;
+        if (t10.id === n10) return t10;
+        same = false;
+        return { ...t10, id: n10 };
+      });
+    }
+    for (const [pid, toks] of Object.entries(p2.tracks)) if (!(pid in tracks)) tracks[pid] = toks;
+    if (Object.keys(p2.tracks).some((k2, i10) => Object.keys(tracks)[i10] !== k2)) same = false;
+    return { ...p2, tracks };
+  });
+  return same ? song : { ...song, papers };
+}
 function buildEntries(a10) {
-  const song = a10.song;
+  const song = canonicalIds(a10.song);
   const lounge = { ...a10.extras.lounge };
   for (const part of song.parts) {
     const role = roleOf(a10.extras, part.role, a10.hum);
@@ -34363,10 +34346,7 @@ function buildEntries(a10) {
     // 0 = 标准件（MusicXML），不是我们的版本号
     derived: ["score.musicxml"],
     sounds: sounds.map(([path, b3]) => ({ path, sha256: path.slice(SOUNDS2.length).replace(/\.sf2$/, ""), bytes: b3.length })),
-    ...a10.core ? { core: { version: a10.core.version, hash: a10.core.hash } } : {},
-    // 渲染核心的版本 + 哈希（每次存都记）
-    ...a10.extras.finalRev > 0 ? { finalRev: a10.extras.finalRev } : {},
-    ...a10.extras.final && a10.extras.finalMp3 ? { final: a10.extras.final } : {}
+    ...a10.core ? { core: { version: a10.core.version, hash: a10.core.hash } } : {}
   };
   const rootfiles = [
     `<rootfile full-path="score.musicxml" media-type="application/vnd.recordare.musicxml+xml"/>`,
@@ -34391,7 +34371,6 @@ function buildEntries(a10) {
     if (!path.startsWith(REFERENCES_DIR)) throw new Error(_t("\u53C2\u8003\u7A97\u7684\u6587\u4EF6\u4E0D\u5728 {REFERENCES_DIR} \u4E0B\uFF1A{path}", { REFERENCES_DIR, path }));
     out[path] = bytes;
   }
-  if (a10.extras.final && a10.extras.finalMp3) out[FINAL_MP3_ENTRY] = a10.extras.finalMp3;
   for (const [path, bytes] of Object.entries(a10.extras.unknown)) if (!(path in out) && path !== THUMBNAIL_ENTRY && path !== FINAL_MP3_ENTRY) out[path] = bytes;
   out[`${DIR}manifest.json`] = json(manifest);
   if (a10.extras.thumbnail) out[THUMBNAIL_ENTRY] = a10.extras.thumbnail;
@@ -34608,10 +34587,10 @@ function songPresets(extras, parts, role, hum) {
     seen.add(printOf(c10));
     out.push({ role, id: id2, name: String(c10.name ?? ""), on: on2, here: true, from: here, removable: !on2 && !isBuiltinId(id2) });
   }
-  const done = /* @__PURE__ */ new Set([role]);
+  const done2 = /* @__PURE__ */ new Set([role]);
   for (const p2 of parts) {
-    if (done.has(p2.role)) continue;
-    done.add(p2.role);
+    if (done2.has(p2.role)) continue;
+    done2.add(p2.role);
     for (const c10 of cands(extras.lounge[p2.role])) {
       const id2 = String(c10.id);
       if (isUntouched(extras, p2.role, id2, hum)) continue;
@@ -34723,11 +34702,11 @@ function withUnpacked(extras, only) {
 function activePerfSpec(extras, role) {
   const c10 = activeCandidate(extras, role), d3 = c10?.dynamicsDb ?? {}, a10 = c10?.articulation ?? {};
   const num2 = (v, dflt2) => typeof v === "number" && Number.isFinite(v) ? v : dflt2;
-  const ladder = (got, dflt2, clamp3 = (v) => v) => {
+  const ladder = (got2, dflt2, clamp3 = (v) => v) => {
     const o10 = {};
-    for (const k2 of ["pp", "p", "mp", "mf", "f", "ff"]) o10[k2] = clamp3(num2(got[k2], dflt2[k2]));
-    o10.ppp = clamp3(num2(got.ppp, o10.pp - (o10.p - o10.pp)));
-    o10.fff = clamp3(num2(got.fff, o10.ff + (o10.ff - o10.f)));
+    for (const k2 of ["pp", "p", "mp", "mf", "f", "ff"]) o10[k2] = clamp3(num2(got2[k2], dflt2[k2]));
+    o10.ppp = clamp3(num2(got2.ppp, o10.pp - (o10.p - o10.pp)));
+    o10.fff = clamp3(num2(got2.fff, o10.ff + (o10.ff - o10.f)));
     return o10;
   };
   const dynamicsDb = ladder(d3, DYNAMICS_DB);
@@ -34906,7 +34885,6 @@ function openBytes(name, bytes) {
   const manifest = parse2(`${DIR}manifest.json`);
   known.add(`${DIR}manifest.json`);
   const references = {};
-  const finalNotices = [];
   for (const [p2, b3] of Object.entries(files)) if (p2.startsWith(REFERENCES_DIR) && !p2.endsWith("/")) {
     references[p2] = b3;
     known.add(p2);
@@ -34949,7 +34927,7 @@ function openBytes(name, bytes) {
     known.add(p2);
   }
   refuseBadIds(badIds(scoreExt, extras.lounge, extras.studio));
-  extras.finalRev = Math.max(0, Math.floor(Number(manifest.finalRev ?? 0))) || 0;
+  let legacyRec = null, legacyBytes = null;
   if (files[FINAL_MP3_ENTRY]) known.add(FINAL_MP3_ENTRY);
   if (manifest.final !== void 0) {
     const rec = parseFinalRecord(manifest.final), mp3 = rec ? files[rec.mp3.path] : void 0;
@@ -34961,12 +34939,9 @@ function openBytes(name, bytes) {
       if (files[f2]) papersRaw[String(p2.id)] = strFromU8(files[f2]);
     }
     const fp = rec && files[`${DIR}score.json`] && files[`${DIR}studio.json`] ? contentFingerprint({ papers: papersRaw, scoreExt: fpTextOf(parse2(`${DIR}score.json`)), lounge: rawLounge, studio: fpTextOf(parse2(`${DIR}studio.json`)), sounds: Object.keys(extras.sounds), thumbnail: files[THUMBNAIL_ENTRY] ?? null }) : null;
-    if (!rec) finalNotices.push(_t("\u8FD9\u9996\u6B4C\u7684\u5B9A\u7A3F\u8BB0\u5F55\u8BFB\u4E0D\u61C2\uFF08\u522B\u7684\u7248\u672C\u5199\u7684\uFF1F\uFF09\uFF1A\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002"));
-    else if (!mp3 || mp3.length !== rec.mp3.bytes) finalNotices.push(_t("\u5B9A\u7A3F\u7684 mp3 \u4E0D\u5728\u6B4C\u91CC\u6216\u5927\u5C0F\u4E0D\u5BF9\uFF08\u8BB0\u5F55 {bytes} \u5B57\u8282\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002", { bytes: rec.mp3.bytes }));
-    else if (fp !== rec.fingerprint) finalNotices.push(_t("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u540E\u88AB\u6539\u8FC7\uFF08\u53EF\u80FD\u662F\u65E7\u7248 app \u6216\u522B\u7684\u8F6F\u4EF6\u6539\u7684\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u90A3\u4EFD mp3 \u4E0D\u7B97\u6570\u4E86\u3002\u8981\u7684\u8BDD\u6539\u5B8C\u518D\u5B9A\u7A3F\u4E00\u6B21\u3002"));
-    else {
-      extras.final = rec;
-      extras.finalMp3 = mp3;
+    if (rec && mp3 && mp3.length === rec.mp3.bytes && fp === rec.fingerprint) {
+      legacyRec = rec;
+      legacyBytes = mp3;
     }
   }
   const list2 = scoreExt?.papers ?? [{ id: "p1", file: paperFile("p1"), manualBars: {}, unwritten: [] }];
@@ -35000,12 +34975,19 @@ function openBytes(name, bytes) {
   for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
   const song = songFromReads(reads, papers, scoreExt?.parts ?? null, legacyLooks);
   const o10 = finish(reads, song, pruneSounds(extras), ours, name);
-  if (o10.extras.final) {
-    const now2 = buildEntries({ song: o10.song, hum: o10.hum, extras: o10.extras, app: "", date: "" }).fingerprint;
-    if (now2 !== o10.extras.final.fingerprint) o10.extras.final = { ...o10.extras.final, fingerprint: now2 };
-  }
+  const legacyMp3 = legacyRec && legacyBytes ? {
+    bytes: legacyBytes,
+    fingerprint: buildEntries({ song: o10.song, hum: o10.hum, extras: o10.extras, app: "", date: "" }).fingerprint,
+    secs: legacyRec.mp3.secs,
+    kbps: legacyRec.mp3.kbps,
+    stereo: legacyRec.mp3.stereo,
+    parts: legacyRec.parts,
+    app: legacyRec.app,
+    core: legacyRec.core,
+    rev: legacyRec.rev
+  } : void 0;
   const advice = newerMinor.length ? [_t("\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u53EA\u662F\u90A3\u4E9B\u4E1C\u897F\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\uFF0C\u5728\u8FD9\u4E00\u7248\u91CC\u5B58\u4E00\u6B21\uFF0C\u5176\u4E2D\u4E00\u90E8\u5206\u4F1A\u4E22\u3002\u60F3\u539F\u6837\u7559\u7740\uFF0C\u5148\u66F4\u65B0 app \u518D\u6539\u3002", { p: newerMinor.join("\u3001") })] : [];
-  return { ...o10, notices: [...finalNotices, ...o10.notices], references, advice };
+  return { ...o10, references, advice, ...legacyMp3 ? { legacyMp3 } : {} };
 }
 function songFromReads(reads, papers, partList = null, legacyLooks = true) {
   const ps = papers ?? [paperOfRead("p1", reads[0])];
@@ -36557,14 +36539,14 @@ var Studio = class {
   }
   renderTransport(n10) {
     const sr2 = this.sr;
-    let done = 0;
-    while (done < n10) {
-      const left = n10 - done;
+    let done2 = 0;
+    while (done2 < n10) {
+      const left = n10 - done2;
       for (const t10 of this.tracks.values()) if (t10.hold && this.pos >= t10.hold.until) this.endHold(t10);
       if (this.waiting) {
         if (!this.chunks.has(this.waiting)) {
-          this.renderTracks(done, left, false, false);
-          done = n10;
+          this.renderTracks(done2, left, false, false);
+          done2 = n10;
           break;
         }
         this.waiting = null;
@@ -36575,10 +36557,10 @@ var Studio = class {
         continue;
       }
       if (this.tail >= 0) {
-        this.renderTracks(done, left, false, true);
+        this.renderTracks(done2, left, false, true);
         this.pos += left / sr2;
         this.tail += left / sr2;
-        done = n10;
+        done2 = n10;
         if (this.silent() && this.quietSecs >= QUIET_HOLD || this.tail >= TAIL_FX_MAX) {
           this.stop();
           this.post({ type: "ended", gen: this.gen });
@@ -36593,9 +36575,9 @@ var Studio = class {
       }
       const cnt = Math.min(left, Math.max(0, Math.round((stop - this.pos) * sr2)));
       if (cnt > 0) {
-        this.renderTracks(done, cnt, true, true);
+        this.renderTracks(done2, cnt, true, true);
         this.pos += cnt / sr2;
-        done += cnt;
+        done2 += cnt;
       }
       if (this.pos >= this.endAt() - 0.5 / sr2) {
         if (this.loop) this.loopBack();
@@ -36611,8 +36593,8 @@ var Studio = class {
       if (cnt === 0) {
         const key = this.keyStartingAt(stop);
         if (!key) {
-          this.renderTracks(done, left, false, false);
-          done = n10;
+          this.renderTracks(done2, left, false, false);
+          done2 = n10;
           break;
         }
         this.freeze(key);
@@ -37009,13 +36991,13 @@ function busOrder(specs, buses) {
     if (sp2.to && sp2.to !== "master" && link2(sp2.id, sp2.to)) b3.out = buses.get(sp2.to);
     for (const sd2 of sp2.sends ?? []) if (link2(sp2.id, sd2.to)) b3.sends.push({ bus: buses.get(sd2.to), lin: dbToLin2(sd2.gainDb) });
   }
-  const out = [], done = /* @__PURE__ */ new Set(), visiting = /* @__PURE__ */ new Set();
+  const out = [], done2 = /* @__PURE__ */ new Set(), visiting = /* @__PURE__ */ new Set();
   const visit = (id2) => {
-    if (done.has(id2) || visiting.has(id2)) return;
+    if (done2.has(id2) || visiting.has(id2)) return;
     visiting.add(id2);
     for (const sp2 of specs) if ((edges.get(sp2.id) ?? []).includes(id2)) visit(sp2.id);
     visiting.delete(id2);
-    done.add(id2);
+    done2.add(id2);
     out.push(buses.get(id2));
   };
   for (const sp2 of specs) visit(sp2.id);
@@ -38936,17 +38918,26 @@ function createPerformance(host2) {
     const { rights, fellBack } = exportRights2(roles), { lines } = creditsOf2(roles, rights), cover = extras().thumbnail;
     return { tag: id3v2({ title: st2().song.title || docName2(), artist: (st2().song.credits ?? "").split("\n").map((s10) => s10.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || void 0, software: `MoonSinger ${APP_VERSION}`, ...cover ? { picture: { mime: "image/png", bytes: cover } } : {} }), lines, fellBack };
   }
-  const mp3SizeText2 = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
+  const mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
   async function exportSong2(o10 = { quality: "standard", scope: "all" }) {
     if (exporting || preparing) return;
     exporting = true;
     try {
-      const fin = host2.final?.();
-      const r10 = fin && o10.scope === "all" ? { bytes: fin.mp3, secs: fin.secs, kbps: fin.kbps, stereo: fin.stereo, roles: fin.roles, fromFinal: true } : { ...await renderMp3(o10), fromFinal: false };
-      const { tag: tag2, lines, fellBack } = mp3Tag(r10.roles);
-      const file = new File([...r10.fromFinal ? [] : [tag2], r10.bytes], `${stampedCopy(`${docName2()}${o10.scope === "segment" ? `-${fileSafe(st2().song.papers.find((p2) => p2.id === st2().at.paper)?.name || _t("\u8FD9\u4E00\u5F20"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
+      const whole = o10.scope === "all", parts = audibleParts3().map((p2) => p2.id), title = st2().song.title || docName2();
+      const hit = whole ? await host2.renders?.take({ quality: o10.quality, parts, title }).catch(() => null) ?? null : null;
+      let r10, kept = false;
+      if (hit) r10 = { tagged: hit.bytes, secs: hit.secs, kbps: hit.kbps, stereo: hit.stereo, roles: hit.roles, cached: true };
+      else {
+        const m2 = await renderMp3(o10), tag2 = mp3Tag(m2.roles).tag, tagged = new Uint8Array(tag2.length + m2.bytes.length);
+        tagged.set(tag2, 0);
+        tagged.set(m2.bytes, tag2.length);
+        r10 = { tagged, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo, roles: m2.roles, cached: false };
+        if (whole) kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo }, tagged).catch(() => false) ?? false;
+      }
+      const { lines, fellBack } = mp3Tag(r10.roles);
+      const file = new File([r10.tagged], `${stampedCopy(`${docName2()}${o10.scope === "segment" ? `-${fileSafe(st2().song.papers.find((p2) => p2.id === st2().at.paper)?.name || _t("\u8FD9\u4E00\u5F20"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
       const Q2 = r10.stereo ? _t("\u7ACB\u4F53\u58F0") : _t("\u5355\u58F0\u9053");
-      offerFile2(file, _t("\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86"), _t("{p} \u79D2 \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r10.secs.toFixed(1), Q: Q2, kbps: r10.kbps, size: mp3SizeText2(file.size), fromFinal: r10.fromFinal ? _t("\uFF08\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD\uFF0C\u6CA1\u6709\u91CD\u6E32\uFF09") : "", fellBack: fellBack ? `<div class="offer-msg">${_t("\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002")}</div>` : "", length: !r10.fromFinal && issues.length ? `<div class="offer-msg issue-warn">${_t("\u8FD9\u51E0\u6761\u8F68\u6CA1\u51FA\u58F0\uFF0Cmp3 \u91CC\u6CA1\u6709\u5B83\u4EEC\uFF1A")}${escHtml(issuesText(issues))}</div>` : "", lines: creditsBlock2(lines, _t("\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E")) }));
+      offerFile2(file, _t("\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86"), _t("{p} \u79D2 \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r10.secs.toFixed(1), Q: Q2, kbps: r10.kbps, size: mp3SizeText(file.size), fromFinal: r10.cached ? _t("\uFF08\u7528\u7684\u662F\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u4E0A\u6B21\u6E32\u597D\u7684\u90A3\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF09") : kept ? _t("\uFF08\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF1A\u5185\u5BB9\u4E0D\u53D8\u7684\u8BDD\u4E0B\u6B21\u4E0D\u7528\u518D\u6E32\uFF09") : "", fellBack: fellBack ? `<div class="offer-msg">${_t("\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002")}</div>` : "", length: !r10.cached && issues.length ? `<div class="offer-msg issue-warn">${_t("\u8FD9\u51E0\u6761\u8F68\u6CA1\u51FA\u58F0\uFF0Cmp3 \u91CC\u6CA1\u6709\u5B83\u4EEC\uFF1A")}${escHtml(issuesText(issues))}</div>` : "", lines: creditsBlock2(lines, _t("\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E")) }));
     } catch (e10) {
       progress2("");
       showError2(_t("\u5BFC\u51FA\u5931\u8D25\uFF1A{Error}", { Error: e10.message }));
@@ -41308,7 +41299,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "c68b778a197174bb" : "dev";
+var CORE_HASH = true ? "00516b985f4b1944" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -41488,7 +41479,7 @@ var REPORT_URL = "https://github.com/fangzhangmnm/moonsinger/issues";
 var SONG_SUFFIX = ".mxl";
 var APP_NS = "moonsinger-5b1e7c0a92d34f6e";
 var APP_DB_PREFIX = `${APP_NS}.`;
-var CACHE_DBS = { thumbs: `${APP_NS}.thumbs`, facts: `${APP_NS}.facts`, speech: `${APP_NS}.speech` };
+var CACHE_DBS = { thumbs: `${APP_NS}.thumbs`, facts: `${APP_NS}.facts`, speech: `${APP_NS}.speech`, renders: `${APP_NS}.renders` };
 var LEGACY_CACHE_DBS = ["moonsinger-thumbs", "moonsinger-facts", "moonsinger-speech"];
 var LOCAL_SAVE_DEBOUNCE_MS = 2e3;
 var WAKE_CHECK_AFTER_MS = 10 * 6e4;
@@ -41644,19 +41635,19 @@ function mount(html, onCancel, onEnter) {
 function openConfirmSheet(title, message, opts = {}) {
   assertNotBusy("confirm");
   return new Promise((resolve) => {
-    const done = (v) => {
+    const done2 = (v) => {
       m2.close();
       resolve(v);
     };
     const m2 = mount(
       `<div class="offer-title">${esc9(title)}</div><div class="offer-msg">${esc9(message)}</div><div class="offer-btns"><button type="button" class="btn" data-v="no">${esc9(opts.cancelLabel ?? _t("\u7B97\u4E86"))}</button><button type="button" class="btn ${opts.danger ? "danger" : "primary"}" data-v="ok">${esc9(opts.okLabel ?? _t("\u597D"))}</button></div>`,
-      () => done(false),
-      () => done(true)
+      () => done2(false),
+      () => done2(true)
     );
     m2.box.addEventListener("click", (e10) => {
       const v = e10.target.closest("[data-v]")?.dataset.v;
-      if (v === "ok") done(true);
-      else if (v === "no") done(false);
+      if (v === "ok") done2(true);
+      else if (v === "no") done2(false);
     });
     m2.box.querySelector('[data-v="ok"]').focus();
   });
@@ -41664,20 +41655,20 @@ function openConfirmSheet(title, message, opts = {}) {
 function openInputSheet(title, opts = {}) {
   assertNotBusy("input");
   return new Promise((resolve) => {
-    const done = (v) => {
+    const done2 = (v) => {
       m2.close();
       resolve(v);
     };
     const m2 = mount(
       `<div class="offer-title">${esc9(title)}</div>` + (opts.message ? `<div class="offer-msg">${esc9(opts.message)}</div>` : "") + `<label class="set-field"><input class="sheet-input" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" value="${esc9(opts.defaultValue ?? "")}" placeholder="${esc9(opts.placeholder ?? "")}" /></label><div class="offer-btns"><button type="button" class="btn" data-v="no">${_t("\u7B97\u4E86")}</button><button type="button" class="btn primary" data-v="ok">${esc9(opts.okLabel ?? _t("\u597D"))}</button></div>`,
-      () => done(null),
-      () => done(inp.value)
+      () => done2(null),
+      () => done2(inp.value)
     );
     const inp = m2.box.querySelector("input");
     m2.box.addEventListener("click", (e10) => {
       const v = e10.target.closest("[data-v]")?.dataset.v;
-      if (v === "ok") done(inp.value);
-      else if (v === "no") done(null);
+      if (v === "ok") done2(inp.value);
+      else if (v === "no") done2(null);
     });
     inp.focus();
     inp.select();
@@ -41686,21 +41677,21 @@ function openInputSheet(title, opts = {}) {
 function openChoiceSheet(title, message, choices) {
   assertNotBusy("choice");
   return new Promise((resolve) => {
-    const done = (v) => {
+    const done2 = (v) => {
       m2.close();
       resolve(v);
     };
     const m2 = mount(
       `<div class="offer-title">${esc9(title)}</div>` + (message ? `<div class="offer-msg">${esc9(message)}</div>` : "") + `<div class="sheet-choices">${choices.map((c10, i10) => `<button type="button" class="btn${c10.primary ? " primary" : ""}${c10.danger ? " danger" : ""}${c10.off ? " is-off" : ""}" data-i="${i10}" ${c10.off ? "disabled" : ""} ${c10.hint ? `title="${esc9(c10.hint)}"` : ""}>${esc9(c10.label)}</button>`).join("")}</div><div class="offer-btns"><button type="button" class="btn" data-v="no">${_t("\u7B97\u4E86")}</button></div>`,
-      () => done(null)
+      () => done2(null)
     );
     m2.box.addEventListener("click", (e10) => {
       const t10 = e10.target, b3 = t10.closest("[data-i]");
       if (b3) {
         const c10 = choices[Number(b3.dataset.i)];
         c10.onPick?.();
-        done(c10.value);
-      } else if (t10.closest("[data-v]")?.dataset.v === "no") done(null);
+        done2(c10.value);
+      } else if (t10.closest("[data-v]")?.dataset.v === "no") done2(null);
     });
   });
 }
@@ -42047,11 +42038,11 @@ var storeUI = {
     base.reportError(err2, level);
   },
   // ADR-0018：offlineUploadReplay:"auto"（离线新建的歌回线自动补推）的进度 / 撞名 surface——库在 createStore 时强制要有这条线（没有就当场抛）。
-  onReplayStatus: ({ phase, name, done, total }) => {
+  onReplayStatus: ({ phase, name, done: done2, total }) => {
     const n10 = name ? stemOf(name) : "";
     if (phase === "collision") reportError(new Error(_t("\u300C{n}\u300D\u4E91\u7AEF\u5DF2\u7ECF\u6709\u540C\u540D\u7684\u4E86\uFF0C\u79BB\u7EBF\u65F6\u5B58\u7684\u8FD9\u4EFD\u6CA1\u63A8\u4E0A\u53BB\uFF08\u5728\u6B4C\u5E93\u91CC\u6539\u4E2A\u540D\u518D\u63A8\uFF09", { n: n10 })), "warning");
-    else if (phase === "done") reportError(_t("\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u4E86\uFF08{done} / {total}\uFF09", { done, total }), "info");
-    else if (phase === "pushed") reportError(_t("\u6B63\u5728\u628A\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u2026 {done} / {total}", { done, total }), "info");
+    else if (phase === "done") reportError(_t("\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u4E86\uFF08{done} / {total}\uFF09", { done: done2, total }), "info");
+    else if (phase === "pushed") reportError(_t("\u6B63\u5728\u628A\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u2026 {done} / {total}", { done: done2, total }), "info");
   }
 };
 
@@ -42315,8 +42306,12 @@ function buildStore(o10) {
     isOnline: o10.isOnline,
     activeIdentifier: () => _activeIdentifier,
     // store 2.3.x（v0.16.95，2026-11-10，Claude Fable 5.2；家族修改锁标准第七节）：星 / 收起的记号——库自己的一份同步文件 `.<appId>/store.file-marks.json`（持久层白名单表里归 store 那一行）。
-    //   加了星的送不进回收站（file.trash 抛 StarredError，歌库的面自己说）。**`lockByDefault` 还没开**：修改锁五道接好、验过之后才开（设计稿第十节第 9 步）。
-    fileMarks: true
+    //   加了星的送不进回收站（file.trash 抛 StarredError，歌库的面自己说）。
+    fileMarks: true,
+    // 修改锁的第 ⑤ 道（v0.16.97，2026-11-10；家规「源文件原则上只读：手动解锁才能改」）：歌库里的歌默认锁着——没有活着的解锁，`file.save` 改已有的就抛 LockedError。
+    //   新建的首存不拦，存成后库自己发一枚解锁（新歌不锁）；解锁逐首、只在这台设备上、放凉一天过期、还在改就一直往后推。前四道在 app 里（src/app/edit-lock.ts 那一处回答），这一道独立成立。
+    //   和定稿退役同一版打开：分开上的话，中间那一版里以前定稿的歌会没有任何锁。
+    lockByDefault: true
   });
 }
 var _home = null;
@@ -42459,10 +42454,10 @@ var sameBytes = (a10, b3) => {
 var why = (e10) => e10 instanceof Error ? e10.message : String(e10);
 async function moveSongs(songs, p2) {
   const r10 = { moved: [], copied: [], failed: [], stuck: [] };
-  let done = 0;
+  let done2 = 0;
   for (const s10 of songs) {
-    p2.progress?.(done, songs.length, s10.identifier);
-    done++;
+    p2.progress?.(done2, songs.length, s10.identifier);
+    done2++;
     let bytes;
     try {
       bytes = await p2.read(s10.identifier);
@@ -42617,32 +42612,32 @@ function cloudOffHtml() {
 
 // src/app/factory-reset.ts
 var CONSENT_PHRASE = _t("\u5220\u9664\u5168\u90E8\u672C\u5730\u6570\u636E");
-var OWN_DBS = [CACHE_DBS.thumbs, CACHE_DBS.facts, CACHE_DBS.speech];
+var OWN_DBS = [CACHE_DBS.thumbs, CACHE_DBS.facts, CACHE_DBS.speech, CACHE_DBS.renders];
 var BLOCKED_TIMEOUT_MS2 = 2e3;
 var isOurDb = (name) => OWN_DBS.includes(name) || name.startsWith(APP_DB_PREFIX);
 function deleteDbOrBlocked2(name) {
   return new Promise((resolve) => {
     let settled = false;
-    const done = (r10) => {
+    const done2 = (r10) => {
       if (!settled) {
         settled = true;
         resolve(r10);
       }
     };
-    const timer = setTimeout(() => done("blocked"), BLOCKED_TIMEOUT_MS2);
+    const timer = setTimeout(() => done2("blocked"), BLOCKED_TIMEOUT_MS2);
     try {
       const req = indexedDB.deleteDatabase(name);
       req.onsuccess = () => {
         clearTimeout(timer);
-        done("deleted");
+        done2("deleted");
       };
       req.onerror = () => {
         clearTimeout(timer);
-        done("blocked");
+        done2("blocked");
       };
     } catch {
       clearTimeout(timer);
-      done("blocked");
+      done2("blocked");
     }
   });
 }
@@ -48726,8 +48721,7 @@ function coverHtml(stem, extra = {}) {
   const cls = `ms-cover ${p2.vertical ? "v" : "h"} sz-${p2.size}${p2.coded ? " coded" : ""}`;
   const title = p2.vertical ? verticalRuns(p2.title) : esc10(p2.title);
   const artist = extra.artist ? `<span class="ms-cover-artist">${esc10(extra.artist)}</span>` : "";
-  const fin = extra.finalRev != null ? `<span class="ms-cover-final">${_t("\u5B9A\u7A3F {finalRev}", { finalRev: extra.finalRev })}</span>` : "";
-  const left = p2.date || fin ? `<span class="ms-cover-left">${p2.date ? `<span class="ms-cover-date">${esc10(p2.date)}</span>` : ""}${fin}</span>` : "<span></span>";
+  const left = p2.date ? `<span class="ms-cover-left"><span class="ms-cover-date">${esc10(p2.date)}</span></span>` : "<span></span>";
   const bar2 = `<span class="ms-cover-bar">${left}${extra.sizeText ? `<span class="ms-cover-size">${esc10(extra.sizeText)}</span>` : ""}</span>`;
   return `<span class="${cls}"${extra.editedText ? ` title="${esc10(extra.editedText)}"` : ""}><span class="ms-cover-title"${p2.vertical ? "" : ' lang="en"'}>${title}</span>${artist}${bar2}</span>`;
 }
@@ -49003,15 +48997,155 @@ async function artworkOf(cover) {
   return [img];
 }
 
+// src/app/render-cache.ts
+var stampOf2 = (manifestText) => sha256TextSync(manifestText).slice(0, 32);
+var MANIFEST_ENTRY = ".moonsinger/manifest.json";
+var linkId = (home, identifier) => `${home}
+${identifier}`;
+function createRenderCache(store, o10) {
+  const metas = /* @__PURE__ */ new Map(), links = /* @__PURE__ */ new Map();
+  const fns = /* @__PURE__ */ new Set();
+  const changed2 = () => {
+    for (const f2 of fns) {
+      try {
+        f2();
+      } catch {
+      }
+    }
+  };
+  const soft = (p2) => p2.then(() => void 0, (e10) => {
+    o10.report?.(e10);
+  });
+  let loading2 = null;
+  function ready() {
+    loading2 ??= store.load().then((d3) => {
+      for (const m2 of d3.metas) if (!metas.has(m2.key)) metas.set(m2.key, m2);
+      for (const l10 of d3.links) {
+        const id2 = linkId(l10.home, l10.identifier);
+        if (!links.has(id2)) links.set(id2, l10);
+      }
+      changed2();
+    }, (e10) => {
+      o10.report?.(e10);
+    });
+    return loading2;
+  }
+  async function drop(key) {
+    metas.delete(key);
+    for (const [id2, l10] of links) if (l10.key === key) {
+      links.delete(id2);
+      await soft(store.removeLink(l10.home, l10.identifier));
+    }
+    await soft(store.remove(key));
+  }
+  async function evict() {
+    while (metas.size > o10.max) {
+      let oldest = null;
+      for (const m2 of metas.values()) if (!oldest || m2.used < oldest.used) oldest = m2;
+      if (!oldest) return;
+      await drop(oldest.key);
+    }
+  }
+  return {
+    ready,
+    keyOf: (k2) => JSON.stringify([k2.fingerprint, k2.quality, [...k2.parts].sort(), k2.title]),
+    find: (key) => metas.get(key) ?? null,
+    latestFor: (fingerprint) => {
+      let best = null;
+      for (const m2 of metas.values()) if (m2.fingerprint === fingerprint && (!best || m2.used > best.used)) best = m2;
+      return best;
+    },
+    async take(key) {
+      await ready();
+      const meta = metas.get(key);
+      if (!meta) return null;
+      let bytes = null;
+      try {
+        bytes = await store.bytes(key);
+      } catch (e10) {
+        o10.report?.(e10);
+      }
+      if (!bytes || bytes.length !== meta.size) {
+        await drop(key);
+        changed2();
+        return null;
+      }
+      meta.used = o10.now();
+      await soft(store.touch(meta));
+      return { meta, bytes };
+    },
+    async put(m2, bytes) {
+      await ready();
+      const t10 = o10.now();
+      const meta = { ...m2, parts: [...m2.parts].sort(), key: JSON.stringify([m2.fingerprint, m2.quality, [...m2.parts].sort(), m2.title]), size: bytes.length, at: t10, used: t10 };
+      await store.put(meta, bytes);
+      metas.set(meta.key, meta);
+      await evict();
+      changed2();
+      return meta;
+    },
+    linkOf(home, identifier) {
+      const l10 = links.get(linkId(home, identifier));
+      if (!l10) return null;
+      const meta = metas.get(l10.key);
+      return meta ? { ...l10, meta } : null;
+    },
+    async link(home, identifier, key, stamp2) {
+      await ready();
+      if (!metas.has(key)) return false;
+      const l10 = { home, identifier, key, stamp: stamp2 }, cur = links.get(linkId(home, identifier));
+      if (cur && cur.key === key && cur.stamp === stamp2) return true;
+      links.set(linkId(home, identifier), l10);
+      await soft(store.putLink(l10));
+      changed2();
+      return true;
+    },
+    async unlink(home, identifier) {
+      await ready();
+      if (!links.delete(linkId(home, identifier))) return;
+      await soft(store.removeLink(home, identifier));
+      changed2();
+    },
+    async renamed(home, from, to2) {
+      await ready();
+      const l10 = links.get(linkId(home, from));
+      if (!l10) return;
+      links.delete(linkId(home, from));
+      await soft(store.removeLink(home, from));
+      const next2 = { ...l10, identifier: to2 };
+      links.set(linkId(home, to2), next2);
+      await soft(store.putLink(next2));
+      changed2();
+    },
+    stats: () => {
+      let bytes = 0;
+      for (const m2 of metas.values()) bytes += m2.size;
+      return { count: metas.size, bytes, max: o10.max };
+    },
+    async clear() {
+      await ready();
+      metas.clear();
+      links.clear();
+      await store.clear();
+      changed2();
+    },
+    onChange: (fn) => {
+      fns.add(fn);
+      return () => fns.delete(fn);
+    }
+  };
+}
+
 // src/gallery-host.ts
 var KV_FOLDER = "gallery-folder";
 var KV_SCENE = "last-scene";
 var THUMB_PEEK_BYTES = 128 * 1024;
-var MANIFEST_ENTRY = ".moonsinger/manifest.json";
 var FACTS_DB = CACHE_DBS.facts;
 var factsOf = (v) => {
-  const f2 = v?.final;
-  return f2 && typeof f2.rev === "number" ? { final: { rev: f2.rev, secs: Number(f2.secs ?? 0) } } : null;
+  const o10 = v;
+  if (!o10 || typeof o10 !== "object") return null;
+  const f2 = o10.final && typeof o10.final.rev === "number" ? { rev: o10.final.rev, secs: Number(o10.final.secs ?? 0) } : void 0;
+  return { ...typeof o10.stamp === "string" ? { stamp: o10.stamp } : {}, ...f2 ? { final: f2 } : {} };
 };
 var THUMB_DB = CACHE_DBS.thumbs;
 var TEXT = {
@@ -49087,28 +49221,27 @@ function initGalleryHost(d3) {
       tilePlaceholderHtml: (id2) => placeholderHtml(identifiers.parse(id2)?.stem ?? id2),
       tileOverlayHtml: (id2, item, facts) => coverHtml(identifiers.parse(id2)?.stem ?? id2, {
         sizeText: item?.size != null ? humanSize(item.size) : void 0,
-        editedText: item?.lastModified ? _t("\u6539\u4E8E {lastModified}", { lastModified: new Date(item.lastModified).toLocaleString() }) : void 0,
-        finalRev: factsOf(facts ?? null)?.final.rev
-        // 底栏印「定稿 N」（user 2026-10-16「印定稿n」）
+        editedText: item?.lastModified ? _t("\u6539\u4E8E {lastModified}", { lastModified: new Date(item.lastModified).toLocaleString() }) : void 0
       }),
-      // 定稿了的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；没定稿 = 不画。
-      //   跟着播放变：包在 Vue 的 computed 里算这个函数，读了 playTick（同一个 Vue 的 ref）= 包记住这个依赖，播放状态一变 +1 就重算。
-      //   靠的是包「在响应式里调 tileAction」这一点（d.ts：事实到了会重算）；包要是改了，E2E final.mjs「卡片 ▶ 跟着变」会红。
+      // 有声音可听的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；这台设备没记着、文件里也没带 = 不画。
+      //   跟着变：包在 Vue 的 computed 里算这个函数，读了 playTick / renderTick（同一个 Vue 的 ref）= 包记住这两个依赖：在放哪首变了、设备上记着的东西变了，各 +1 就重算。
+      //   靠的是包「在响应式里调 tileAction」这一点（d.ts：事实到了会重算）；包要是改了，E2E render-cache.mjs「卡片 ▶ 跟着变」会红。
       tileAction: (id2, _info, facts) => {
-        const f2 = factsOf(facts);
-        if (!f2) return null;
         void playTick.value;
-        return player.playing() === id2 ? { icon: "pause", title: _t("\u6682\u505C\uFF08\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u4E5F\u80FD\u63A7\uFF09"), state: "ready" } : { icon: "play", title: _t("\u542C\u5B9A\u7A3F\u7684 mp3\uFF08\u7B2C {rev} \u7248\uFF0C{p} \u79D2\uFF09", { rev: f2.final.rev, p: f2.final.secs.toFixed(0) }), state: "ready" };
+        void renderTick.value;
+        const src = soundOf(id2, factsOf(facts));
+        if (!src) return null;
+        return player.playing() === id2 ? { icon: "pause", title: _t("\u6682\u505C\uFF08\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u4E5F\u80FD\u63A7\uFF09"), state: "ready" } : { icon: "play", title: src.k === "device" ? _t("\u542C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D\uFF08{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }) : _t("\u542C\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }), state: "ready" };
       }
     },
     policy: {
       isImage: () => false,
       // 缩略图：fetch = store getPeek 按身份尾读（source 必填：cloud 绝不落回本地）。null = 到达了但没有（进缓存、显示底色）；抛 = 够不着（不缓存）。
       thumbs: { kinds: ["song"], dbName: THUMB_DB, galleryId: storeKey, fetch: (id2, source) => zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: THUMBNAIL_ENTRY, source }) },
-      // 事实（0.8.0）：尾读总目录看有没有定稿记录；null = 确定没定稿（进缓存）；抛 = 够不着（不缓存，下次再问）
+      // 事实（0.8.0）：尾读总目录 → 这个文件的戳 + 里面还带不带 mp3；null = 读到了、但没有总目录（别的软件的谱，进缓存）；抛 = 够不着（不缓存，下次再问）
       facts: { kinds: ["song"], dbName: FACTS_DB, galleryId: storeKey, fetch: async (id2, source) => {
-        const rec = await peekFinal(id2, source);
-        return rec ? { final: { rev: rec.rev, secs: rec.mp3.secs } } : null;
+        const m2 = await peekManifest(id2, source);
+        return m2 ? { stamp: m2.stamp, ...m2.final ? { final: { rev: m2.final.rev, secs: m2.final.mp3.secs } } : {} } : null;
       } }
     },
     tile: { aspect: 1 },
@@ -49120,14 +49253,21 @@ function initGalleryHost(d3) {
     text: { lang: lang(), t: (key) => TEXT[key] }
   };
   let gallery2 = null;
-  async function peekFinal(id2, source = "local") {
+  async function peekManifest(id2, source = "local") {
     const b3 = await zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: MANIFEST_ENTRY, source });
     if (!b3) return null;
+    const text2 = await b3.text();
+    let final = null;
     try {
-      return parseFinalRecord(JSON.parse(await b3.text()).final);
+      final = parseFinalRecord(JSON.parse(text2).final);
     } catch {
-      return null;
     }
+    return { stamp: stampOf2(text2), final };
+  }
+  function soundOf(id2, f2) {
+    const link2 = d3.renders.linkOf(storeKey(), id2);
+    if (link2 && f2?.stamp && link2.stamp === f2.stamp) return { k: "device", key: link2.key, secs: link2.meta.secs };
+    return f2?.final ? { k: "embedded", secs: f2.final.secs } : null;
   }
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player";
@@ -49151,6 +49291,10 @@ function initGalleryHost(d3) {
     loopBtn.title = s10.loop ? _t("\u5355\u66F2\u5FAA\u73AF\uFF1A\u5F00\u7740\uFF08\u653E\u5B8C\u4ECE\u5934\u518D\u653E\uFF0C\u9501\u5C4F\u4E5F\u4E00\u6837\uFF09") : _t("\u5355\u66F2\u5FAA\u73AF\uFF1A\u5173\u7740\uFF08\u653E\u5B8C\u5C31\u505C\uFF09");
   }
   const playTick = tk(0);
+  const renderTick = tk(0);
+  d3.renders.onChange(() => {
+    renderTick.value++;
+  });
   let tickedFor = null;
   player.onChange(() => {
     const k2 = player.playing();
@@ -49160,37 +49304,43 @@ function initGalleryHost(d3) {
     }
     drawPlayer();
   });
+  const NO_SOUND = () => _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6709\u8FD9\u9996\u6B4C\u6E32\u597D\u7684\u58F0\u97F3\uFF1A\u6253\u5F00\u5B83\uFF0C\u300C\u5BFC\u51FA\u2026\u300D\u91CC\u5BFC\u4E00\u6B21\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u4E4B\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002");
   async function playTile(id2, facts) {
     if (player.state().key === id2) {
       player.toggle();
       return;
     }
-    if (!facts) {
-      status(_t("\u8FD9\u9996\u8FD8\u6CA1\u5B9A\u7A3F\uFF1A\u6253\u5F00\u5B83\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u5B9A\u7A3F\u2026\u300D\u2014\u2014\u5B9A\u7A3F\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002"));
+    const src = soundOf(id2, facts);
+    if (!src) {
+      status(NO_SOUND());
       return;
     }
     player.arm();
     const stem = identifiers.parse(id2)?.stem ?? id2;
     try {
-      const b3 = await withBusy(_t("\u53D6\u300C{stem}\u300D\u7684 mp3\u2026", { stem }), async () => {
-        const rec = await peekFinal(id2);
-        if (!rec) {
+      const got2 = await withBusy(_t("\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026", { stem }), async () => {
+        if (src.k === "device") {
+          const r11 = await d3.renders.take(src.key);
+          return r11 ? { blob: new Blob([r11.bytes], { type: "audio/mpeg" }), album: _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D") } : null;
+        }
+        const m2 = await peekManifest(id2);
+        if (!m2?.final) {
           void gallery2?.facts?.invalidate(id2);
           return null;
         }
-        const blob = await zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: rec.mp3.path, source: "local" });
-        if (!blob || blob.size !== rec.mp3.bytes) throw new Error(_t("mp3 \u6CA1\u53D6\u5230\uFF08{blob}\uFF09", { blob: blob ? `${blob.size} \u2260 ${rec.mp3.bytes}` : _t("\u7A7A") }));
-        return { rec, blob };
+        const blob = await zipFile(id2).getPeek({ bytesLength: THUMB_PEEK_BYTES, zipEntry: m2.final.mp3.path, source: "local" });
+        if (!blob || blob.size !== m2.final.mp3.bytes) throw new Error(_t("mp3 \u6CA1\u53D6\u5230\uFF08{blob}\uFF09", { blob: blob ? `${blob.size} \u2260 ${m2.final.mp3.bytes}` : _t("\u7A7A") }));
+        return { blob: new Blob([blob], { type: "audio/mpeg" }), album: _t("\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3") };
       });
-      if (!b3) {
-        status(_t("\u8FD9\u9996\u8FD8\u6CA1\u5B9A\u7A3F\uFF1A\u6253\u5F00\u5B83\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u5B9A\u7A3F\u2026\u300D\u2014\u2014\u5B9A\u7A3F\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002"));
+      if (!got2) {
+        status(NO_SOUND());
         return;
       }
       const cover = (await gallery2?.thumbs?.read(id2).catch(() => null))?.blob ?? null;
-      barTitle = _t("{stem} \xB7 \u5B9A\u7A3F {rev}", { stem, rev: b3.rec.rev });
-      const r10 = await player.play({ key: id2, blob: new Blob([b3.blob], { type: "audio/mpeg" }), title: stem, artist: "MoonSinger", album: _t("\u5B9A\u7A3F \u7B2C {rev} \u7248", { rev: b3.rec.rev }), cover });
+      barTitle = stem;
+      const r10 = await player.play({ key: id2, blob: got2.blob, title: stem, artist: "MoonSinger", album: got2.album, cover });
       if (r10 === "blocked") status(_t("\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6"));
-      diagNote("gallery", `play final ${id2} (${b3.blob.size} B) \u2192 ${r10}`);
+      diagNote("gallery", `play ${src.k} ${id2} (${got2.blob.size} B) \u2192 ${r10}`);
     } catch (e10) {
       reportError(e10, "warning");
       status(_t("\u653E\u4E0D\u4E86\uFF1A{Error}", { Error: e10.message ?? String(e10) }), true);
@@ -49407,7 +49557,11 @@ function initGalleryHost(d3) {
       void gallery2?.thumbs?.invalidate(id2);
       void gallery2?.facts?.invalidate(id2);
     },
-    // 封面 / 定稿变了：缩略图和事实都重取
+    // 封面变了：缩略图和事实都重取
+    /** 这首歌的事实重取（设备上记着的声音挂到它名下了 / 摘了：老缓存里的事实可能没有文件戳）。 */
+    invalidateFacts: (id2) => {
+      void gallery2?.facts?.invalidate(id2);
+    },
     /** 修改锁（gallery 0.9.x 的动词，成没成它自己会说）：解锁 = **只许门的钮调**（src/app/edit-lock-door.ts；歌库卡片的菜单是图库库自己的入口）。 */
     unlockEdit: (id2) => ensureMounted().handle.unlockEdit(id2),
     saveVersionThenUnlock: (id2) => ensureMounted().handle.saveVersionThenUnlock(id2),
@@ -51950,13 +52104,13 @@ ${this._ramMissingText()}`;
     if (!this.liveProvider)
       return false;
     const want = { width: this._canvas.width, height: this._canvas.height };
-    const got = this.liveProvider(want, cur.target ?? null);
-    if (!got)
+    const got2 = this.liveProvider(want, cur.target ?? null);
+    if (!got2)
       return false;
-    const wrapped = "source" in got;
-    const src = wrapped ? got.source : got;
+    const wrapped = "source" in got2;
+    const src = wrapped ? got2.source : got2;
     this._liveSource = src;
-    this._liveSize = wrapped ? { w: got.width, h: got.height } : { w: src.width, h: src.height };
+    this._liveSize = wrapped ? { w: got2.width, h: got2.height } : { w: src.width, h: src.height };
     this._liveOf = cur.id;
     this._lastLiveComposeT = performance.now();
     return true;
@@ -52410,16 +52564,16 @@ var SR = 44100;
 function durationOf(f2) {
   return new Promise((ok2) => {
     const a10 = document.createElement("audio"), url = URL.createObjectURL(f2);
-    const done = (v) => {
+    const done2 = (v) => {
       clearTimeout(t10);
       URL.revokeObjectURL(url);
       a10.removeAttribute("src");
       ok2(v);
     };
-    const t10 = setTimeout(() => done(null), 5e3);
+    const t10 = setTimeout(() => done2(null), 5e3);
     a10.preload = "metadata";
-    a10.onloadedmetadata = () => done(Number.isFinite(a10.duration) && a10.duration > 0 ? a10.duration : null);
-    a10.onerror = () => done(null);
+    a10.onloadedmetadata = () => done2(Number.isFinite(a10.duration) && a10.duration > 0 ? a10.duration : null);
+    a10.onerror = () => done2(null);
     a10.src = url;
   });
 }
@@ -53288,10 +53442,10 @@ function parseTtf(bytes) {
     const chars = [...text2], skipN = [...before].length, g3 = shape(before + text2 + after);
     let out = "";
     chars.forEach((ch2, k2) => {
-      const cp2 = ch2.codePointAt(0), got = g3[skipN + k2];
+      const cp2 = ch2.codePointAt(0), got2 = g3[skipN + k2];
       out += ch2;
-      if (got !== glyphId(cp2)) {
-        const vs = selectorFor(cp2, got);
+      if (got2 !== glyphId(cp2)) {
+        const vs = selectorFor(cp2, got2);
         if (vs) out += String.fromCodePoint(vs);
       }
     });
@@ -53904,14 +54058,13 @@ function sameModuloLooks(a10, b3) {
 
 // src/app/document.ts
 var LOCK_WHAT = { score: _t("\u8C31 / \u6B4C\u540D / \u4F5C\u8005\u680F"), paper: _t("\u7EB8"), paperHidden: _t("\u7EB8"), lounge: _t("\u58F0\u90E8 / \u4E50\u5668"), studio: _t("\u6DF7\u97F3"), cover: _t("\u5C01\u9762") };
-var extrasKey = (e10) => JSON.stringify([e10.final?.at ?? null, Object.entries(e10.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), e10.studio ?? null]);
+var extrasKey = (e10) => JSON.stringify([Object.entries(e10.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), e10.studio ?? null]);
 function createDocument(init2, hooks) {
   let st2 = init2.st, extras = init2.extras, history = emptyHistory();
   const mark = () => ({ song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: hooks.extraDirty?.() ?? 0 });
   let saved = { song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: 0 };
-  const finalWhy = () => isFinal(extras) ? _t("\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF09", { rev: extras.final.rev }) : null;
-  const locked = () => finalWhy() ?? hooks.lockedWhy?.() ?? null;
-  const gate2 = (kind) => kind === "final" ? null : finalWhy() ?? hooks.writeGate?.(kind) ?? null;
+  const locked = () => hooks.lockedWhy?.() ?? null;
+  const gate2 = (kind) => hooks.writeGate?.(kind) ?? null;
   function commit(next2, o10 = {}) {
     const nextSt0 = next2.st ?? st2, nextEx = next2.extras ?? extras;
     const songChanged = nextSt0.song !== st2.song, exChanged = nextEx !== extras, stChanged = nextSt0 !== st2;
@@ -53953,8 +54106,7 @@ function createDocument(init2, hooks) {
   }
   function step(snap, verb, go) {
     if (!snap) {
-      const why2 = locked();
-      if (why2) hooks.onRefused(verb, "score");
+      if (locked()) hooks.onRefused(verb, "score");
       return false;
     }
     const kind = effectiveKind(snap.locus.kind, "score", st2.song, snap.song, snap.extras !== extras);
@@ -53973,9 +54125,6 @@ function createDocument(init2, hooks) {
     },
     get history() {
       return history;
-    },
-    get final() {
-      return extras.final;
     },
     locked,
     commit,
@@ -54336,6 +54485,86 @@ function initEditLockDoor(d3) {
   return { sync };
 }
 
+// src/app/render-cache-idb.ts
+var RENDERS_DB = CACHE_DBS.renders;
+var VERSION = 1;
+var linkId2 = (home, identifier) => `${home}
+${identifier}`;
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(RENDERS_DB, VERSION);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains("meta")) db.createObjectStore("meta", { keyPath: "key" });
+      if (!db.objectStoreNames.contains("bytes")) db.createObjectStore("bytes");
+      if (!db.objectStoreNames.contains("links")) db.createObjectStore("links", { keyPath: "id" });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error ?? new Error("[render-cache] cannot open the device cache"));
+    req.onblocked = () => reject(new Error("[render-cache] the device cache is blocked by another tab"));
+  });
+}
+var done = (tx2) => new Promise((resolve, reject) => {
+  tx2.oncomplete = () => resolve();
+  tx2.onerror = () => reject(tx2.error);
+  tx2.onabort = () => reject(tx2.error ?? new Error("[render-cache] transaction aborted"));
+});
+var got = (req) => new Promise((resolve, reject) => {
+  req.onsuccess = () => resolve(req.result);
+  req.onerror = () => reject(req.error);
+});
+function idbRenderStore() {
+  let dbp = null;
+  const db = () => dbp ??= openDb().catch((e10) => {
+    dbp = null;
+    throw e10;
+  });
+  return {
+    async load() {
+      const d3 = await db(), tx2 = d3.transaction(["meta", "links"], "readonly");
+      const [metas, links] = await Promise.all([got(tx2.objectStore("meta").getAll()), got(tx2.objectStore("links").getAll())]);
+      return { metas, links: links.map(({ id: _id, ...l10 }) => l10) };
+    },
+    async put(meta, bytes) {
+      const d3 = await db(), tx2 = d3.transaction(["meta", "bytes"], "readwrite");
+      tx2.objectStore("meta").put(meta);
+      tx2.objectStore("bytes").put(bytes, meta.key);
+      await done(tx2);
+    },
+    async bytes(key) {
+      const d3 = await db();
+      const v = await got(d3.transaction("bytes", "readonly").objectStore("bytes").get(key));
+      return v ? new Uint8Array(v) : null;
+    },
+    async touch(meta) {
+      const d3 = await db(), tx2 = d3.transaction("meta", "readwrite");
+      tx2.objectStore("meta").put(meta);
+      await done(tx2);
+    },
+    async remove(key) {
+      const d3 = await db(), tx2 = d3.transaction(["meta", "bytes"], "readwrite");
+      tx2.objectStore("meta").delete(key);
+      tx2.objectStore("bytes").delete(key);
+      await done(tx2);
+    },
+    async putLink(link2) {
+      const d3 = await db(), tx2 = d3.transaction("links", "readwrite");
+      tx2.objectStore("links").put({ ...link2, id: linkId2(link2.home, link2.identifier) });
+      await done(tx2);
+    },
+    async removeLink(home, identifier) {
+      const d3 = await db(), tx2 = d3.transaction("links", "readwrite");
+      tx2.objectStore("links").delete(linkId2(home, identifier));
+      await done(tx2);
+    },
+    async clear() {
+      const d3 = await db(), tx2 = d3.transaction(["meta", "bytes", "links"], "readwrite");
+      for (const s10 of ["meta", "bytes", "links"]) tx2.objectStore(s10).clear();
+      await done(tx2);
+    }
+  };
+}
+
 // src/app/input-gate.ts
 function noWrite(f2) {
   return f2.locked ? "locked" : f2.picking ? "picking" : f2.unplugged ? "unplugged" : null;
@@ -54415,7 +54644,7 @@ function createEncoder(workerUrl, onFallback) {
     worker = null;
     for (const [, p2] of pending) {
       try {
-        p2.resolve(saveMxl(p2.args));
+        p2.resolve(saveMxlWithFingerprint(p2.args));
       } catch (e10) {
         p2.reject(e10);
       }
@@ -54435,7 +54664,7 @@ function createEncoder(workerUrl, onFallback) {
         pending.delete(e10.data.seq);
         if ("bytes" in e10.data) {
           record("encode-worker", e10.data.ms);
-          p2.resolve(e10.data.bytes);
+          p2.resolve({ bytes: e10.data.bytes, fingerprint: e10.data.fingerprint });
         } else p2.reject(new Error(e10.data.error));
       };
       w2.onerror = (e10) => drop(`encode worker error: ${e10.message ?? "?"}`);
@@ -54448,7 +54677,7 @@ function createEncoder(workerUrl, onFallback) {
   return {
     encode: (args) => {
       const w2 = get();
-      if (!w2) return Promise.resolve(saveMxl(args));
+      if (!w2) return Promise.resolve(saveMxlWithFingerprint(args));
       return new Promise((resolve, reject) => {
         const id2 = ++seq;
         pending.set(id2, { args, resolve, reject });
@@ -54459,7 +54688,7 @@ function createEncoder(workerUrl, onFallback) {
           pending.delete(id2);
           drop(`encode postMessage failed: ${e10.message}`);
           try {
-            resolve(saveMxl(args));
+            resolve(saveMxlWithFingerprint(args));
           } catch (err2) {
             reject(err2);
           }
@@ -54561,6 +54790,85 @@ var lock = createEditLock({
   loading: () => loadingDoc
 });
 var owesSave = () => D2.dirty() && !(lock.locked() && D2.dirtyKind() === "looks");
+var RENDER_KEEP = 20;
+var renders = createRenderCache(idbRenderStore(), { max: RENDER_KEEP, now: () => Date.now(), report: (e10) => reportError(e10, "log") });
+var homeKey = () => folderHome()?.id ?? "default";
+async function fileStamp(id2) {
+  try {
+    const b3 = await requireStore().zip(id2, { mode: "existing" }).getPeek({ bytesLength: 128 * 1024, zipEntry: MANIFEST_ENTRY, source: "local" });
+    return b3 ? stampOf2(await b3.text()) : null;
+  } catch {
+    return null;
+  }
+}
+var renderKeyNow = (quality, parts, title) => renders.keyOf({ fingerprint: contentFingerprintOf(saveArgs()), quality, parts, title });
+function renderHit(quality) {
+  try {
+    const m2 = renders.find(renderKeyNow(quality, perfApi.audibleParts().map((p2) => p2.id), D2.st.song.title || docName()));
+    return m2 && m2.core.hash === coreInfo().hash ? m2 : null;
+  } catch {
+    return null;
+  }
+}
+async function takeRender(o10) {
+  await renders.ready();
+  const key = renderKeyNow(o10.quality, o10.parts, o10.title), m2 = renders.find(key);
+  if (!m2 || m2.core.hash !== coreInfo().hash) return null;
+  const got2 = await renders.take(key);
+  if (!got2) return null;
+  void linkRenderNow(key);
+  return { bytes: got2.bytes, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo, roles: m2.roles };
+}
+async function keepRender(o10, tagged) {
+  try {
+    const m2 = await renders.put({ fingerprint: contentFingerprintOf(saveArgs()), quality: o10.quality, parts: [...o10.parts], roles: o10.roles, secs: o10.secs, kbps: o10.kbps, stereo: o10.stereo, title: o10.title, app: APP_VERSION, core: coreInfo() }, tagged);
+    void linkRenderNow(m2.key);
+    return true;
+  } catch (e10) {
+    reportError(e10, "log");
+    diagNote("render-cache", `not kept: ${e10?.message ?? e10}`);
+    return false;
+  }
+}
+async function linkRenderNow(key) {
+  const h2 = H2.home;
+  if (h2.kind !== "gallery" || D2.dirty()) return;
+  const stamp2 = await fileStamp(h2.identifier);
+  if (!stamp2) return;
+  if (await renders.link(homeKey(), h2.identifier, key, stamp2)) gallery?.invalidateFacts(h2.identifier);
+}
+async function relinkAfterSave(name, fingerprint) {
+  if (!fingerprint) return;
+  await renders.ready();
+  const m2 = renders.latestFor(fingerprint), home = homeKey();
+  if (!m2) {
+    if (renders.linkOf(home, name)) {
+      await renders.unlink(home, name);
+      gallery?.invalidateFacts(name);
+    }
+    return;
+  }
+  const stamp2 = await fileStamp(name);
+  if (!stamp2) return;
+  if (await renders.link(home, name, m2.key, stamp2)) gallery?.invalidateFacts(name);
+}
+var legacyMp3Note = null;
+async function adoptLegacyMp3(l10, title, galleryId) {
+  try {
+    await renders.ready();
+    const quality = Object.keys(MP3_QUALITY).find((q2) => MP3_QUALITY[q2].kbps === l10.kbps && MP3_QUALITY[q2].stereo === l10.stereo) ?? `legacy-${l10.kbps}${l10.stereo ? "s" : "m"}`;
+    const key = renders.keyOf({ fingerprint: l10.fingerprint, quality, parts: l10.parts, title });
+    const meta = renders.find(key) ?? await renders.put({ fingerprint: l10.fingerprint, quality, parts: l10.parts, roles: D2.st.song.parts.filter((p2) => l10.parts.includes(p2.id)).map((p2) => p2.role), secs: l10.secs, kbps: l10.kbps, stereo: l10.stereo, title, app: l10.app, core: l10.core }, l10.bytes);
+    if (galleryId) {
+      const stamp2 = await fileStamp(galleryId);
+      if (stamp2 && await renders.link(homeKey(), galleryId, meta.key, stamp2)) gallery?.invalidateFacts(galleryId);
+    }
+    legacyMp3Note = _t("\u8FD9\u9996\u6B4C\u91CC\u539F\u6765\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{size}\uFF09\u4E0D\u518D\u5B58\u8FDB\u6B4C\u91CC\u4E86\uFF1A\u5B83\u5DF2\u7ECF\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u7167\u6837\u80FD\u542C\u3001\u80FD\u518D\u5BFC\u51FA\u3002", { size: sizeText3(l10.bytes.length) });
+    diagNote("render-cache", `legacy mp3 adopted (${l10.bytes.length} B, rev ${l10.rev})`);
+  } catch (e10) {
+    reportError(e10, "log");
+  }
+}
 var curPart = () => D2.st.song.parts.find((p2) => p2.id === D2.st.at.part) ?? D2.st.song.parts[0];
 var ignoredFor = (role) => {
   const sp2 = activePerfSpec(D2.extras, role);
@@ -55342,7 +55650,7 @@ var inputGate = createInputGate({
   picking: () => finderShown() || instShown(),
   unplugged: () => impro,
   onBlocked: (why2) => {
-    if (why2 === "locked" && !finalOn() && lock.locked()) lock.flash();
+    if (why2 === "locked") lock.flash();
     else plugNudge(why2);
   }
   // 修改锁锁着 = 门闪一下；别的原因 = 「弹」钮晃一下
@@ -55449,21 +55757,12 @@ var ghostOn = () => plugOut() && !finder.isOpen && !instShown();
 function ghostSync() {
   view.showGhost(ghostOn() ? [...ghostHeld.values()] : []);
 }
-var finalOn = () => D2.final != null;
 var lookCache = null;
 function lookNow(paperId, partId) {
   if (lookCache?.song !== D2.st.song) lookCache = { song: D2.st.song, map: resolveSongLooks(D2.st.song, new Set(partViews().filter((x2) => x2.perc || x2.xHead).map((x2) => x2.id))) };
   return lookCache.map.get(paperId)?.get(partId);
 }
-var lockSaidAt = 0;
-function lockedSay(what) {
-  const t10 = performance.now();
-  if (t10 - lockSaidAt < 3e3) return;
-  lockSaidAt = t10;
-  showError(_t("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C{what}\u6539\u4E0D\u4E86\uFF1A\u5148\u5728\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F1A\u4F5C\u5E9F\uFF09\uFF0C\u518D\u6539\u3002", { what }));
-}
-function onLockRefused(what) {
-  if (finalOn()) lockedSay(what);
+function onLockRefused(_what) {
   view.render();
   pad3.render();
   drawInst();
@@ -55537,10 +55836,6 @@ function afterExtras(prev, next2, locus) {
   schedulePrewarm();
   refreshIssues();
   pad3.render();
-  if (locus.kind === "final") {
-    applyWorkspace();
-    view.render();
-  }
   drawInst();
   ui2.redraw();
   updateChrome();
@@ -55676,12 +55971,8 @@ var perfApi = createPerformance({
   ui: { progress, info, showError, renderBar, playBtns, playIcon, offerFile: (f2, t10, m2) => offerFile(f2, t10, m2), onIssues: (list2) => onIssuesChanged(list2) },
   sounds: { resolveGmBytes: (g3) => sources.resolveGmBytes(g3), ensureVowels, soundMemoryBytes, modelBases: () => models.bases() },
   credits: { creditsOf: (roles, rights) => creditsOf(roles, rights), creditsBlock: (lines, title) => creditsBlock(lines, title) },
-  final: () => {
-    const f2 = D2.extras.final, b3 = D2.extras.finalMp3;
-    if (!f2 || !b3) return null;
-    const roles = D2.st.song.parts.filter((p2) => f2.parts.includes(p2.id)).map((p2) => p2.role);
-    return { mp3: b3, secs: f2.mp3.secs, kbps: f2.mp3.kbps, stereo: f2.mp3.stereo, roles };
-  }
+  renders: { take: (o10) => takeRender(o10), keep: (o10, bytes) => keepRender(o10, bytes) }
+  // 这台设备上记着的渲好的声音（内容没变 = 不重渲）
 });
 var { humOpt: humOpt2, resetLatencyLog, refreshIssues, playSong, curFlat, songIn, audibleParts: audibleParts2, micOf: micOf2, channelOf: channelOf2, pushChannels, lowestMidiOf: lowestMidiOf2, songBpm: songBpm2, performerInfo, renderMixForTest, tickOfCaret, playPause, resumePlay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, resourceSnapshot, onSongSwitch, jumpPlaybackToPaper, previewTrack } = perfApi;
 var BUDGET = perfApi.budget;
@@ -55720,7 +56011,6 @@ function applyWorkspace() {
   syncPlug();
   document.body.dataset.wmode = ws.mode;
   document.body.classList.toggle("listen-mode", ws.mode === "listen");
-  document.body.classList.toggle("doc-final", finalOn());
   scoreEl.dataset.mode = ws.mode;
   dockTab.querySelectorAll(".mode-seg [data-mode]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.mode === barMode(ws.mode)));
   const changed2 = padEl.hidden === padOn || stageEl.dataset.dock !== d3;
@@ -55744,10 +56034,6 @@ function applyWorkspace() {
 }
 function setMode(m2) {
   if (m2 === ws.mode) return;
-  if (finalOn() && m2 !== "listen") {
-    lockedSay(_t("\u6A21\u5F0F"));
-    return;
-  }
   ui2.close();
   view.lyrics.commitAndClose();
   view.marks.commitAndClose();
@@ -55937,8 +56223,7 @@ function openMp3Panel() {
   const draw = () => {
     const chip2 = (v, label, note2, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc11(label)}<small>${esc11(note2)}</small></button>`;
     const er2 = D2.st.song.rights ? exportRights(soundingRoles()) : null;
-    const fin = D2.extras.final;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09")}</div>` + (fin ? `<div class="offer-msg">${_t("\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD\uFF08\u7B2C {rev} \u7248 \xB7 {stereo} {kbps}k \xB7 {bytes}\uFF09\u76F4\u63A5\u5BFC\u51FA\uFF0C\u4E0D\u91CD\u6E32\uFF1B\u8981\u522B\u7684\u97F3\u8D28\u5148\u300C\u6539\u7A3F\u300D\u3002", { rev: fin.rev, stereo: fin.mp3.stereo ? _t("\u7ACB\u4F53\u58F0") : _t("\u5355\u58F0\u9053"), kbps: fin.mp3.kbps, bytes: mp3SizeText(fin.mp3.bytes) })}</div>` : `<div class="part-sec">${_t("\u97F3\u8D28")}</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>`) + (D2.st.song.papers.length > 1 && !fin ? `<div class="part-sec">${_t("\u8303\u56F4")}</div><div class="set-row">${chip2("s:all", _t("\u6574\u9996"), _t("\u9690\u85CF\u7684\u7EB8\u4E0D\u653E"), mp3Scope === "all")}${chip2("s:segment", _t("\u8FD9\u4E00\u5F20\u7EB8"), paper?.name || _t("\u7B2C {p} \u5F20", { p: k2 + 1 }), mp3Scope === "segment")}</div>` : "") + (er2 ? `<div class="offer-msg">${_t("\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002", { fellBack: er2.fellBack ? _t("\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09") : esc11(er2.rights) })}</div>` : "") + ((is2) => is2.length ? `<div class="offer-msg issue-warn">${_t("{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002", { n: is2.length, is: esc11(perfApi.issuesText(is2)) })}</div>` : "")(perfApi.issues()) + // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09")}</div><div class="part-sec">${_t("\u97F3\u8D28")}</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (D2.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u8303\u56F4")}</div><div class="set-row">${chip2("s:all", _t("\u6574\u9996"), _t("\u9690\u85CF\u7684\u7EB8\u4E0D\u653E"), mp3Scope === "all")}${chip2("s:segment", _t("\u8FD9\u4E00\u5F20\u7EB8"), paper?.name || _t("\u7B2C {p} \u5F20", { p: k2 + 1 }), mp3Scope === "segment")}</div>` : "") + (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002")}</div>` : "") + (er2 ? `<div class="offer-msg">${_t("\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002", { fellBack: er2.fellBack ? _t("\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09") : esc11(er2.rights) })}</div>` : "") + ((is2) => is2.length ? `<div class="offer-msg issue-warn">${_t("{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002", { n: is2.length, is: esc11(perfApi.issuesText(is2)) })}</div>` : "")(perfApi.issues()) + // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
     `<div class="offer-btns"><button class="btn primary" data-v="go">${perfApi.issues().length ? _t("\u7167\u6837\u5BFC\u51FA") : _t("\u5BFC\u51FA")}</button><button class="btn" data-v="close">${_t("\u7B97\u4E86")}</button></div></div>`;
   };
   draw();
@@ -55980,7 +56265,7 @@ async function packStatusText() {
 }
 var LANG_LABEL = "\u8BED\u8A00 \xB7 Language";
 function openChordInfo(r10, at2, where) {
-  const th2 = harmonyTheory(r10.theory), canPick = !!where && view.rules.edit && !finalOn();
+  const th2 = harmonyTheory(r10.theory), canPick = !!where && view.rules.edit && !lock.locked();
   const row2 = (g3, i10) => {
     const on2 = i10 === 0 && r10.pinned, inner = `<b>${esc11(g3.label)}</b><span>${esc11(g3.name)}</span><small>${th2.explain(g3).map(esc11).join(" \xB7 ")}</small>`;
     return canPick ? `<button class="chord-cand${i10 === 0 ? " is-best" : ""}${on2 ? " is-on" : ""}" data-v="pick:${i10}">${inner}</button>` : `<div class="chord-cand${i10 === 0 ? " is-best" : ""}">${inner}</div>`;
@@ -56178,7 +56463,7 @@ function openSettings() {
     else if (v?.startsWith("snd:get:")) {
       const e11 = SOUNDS[v.slice(8)];
       sources.source = sndIn.value;
-      void sources.fetchSound(e11, (done) => progress(_t("\u4E0B\u8F7D {name} {bytes}%", { name: e11.name, bytes: Math.round(done / e11.bytes * 100) }))).then(() => {
+      void sources.fetchSound(e11, (done2) => progress(_t("\u4E0B\u8F7D {name} {bytes}%", { name: e11.name, bytes: Math.round(done2 / e11.bytes * 100) }))).then(() => {
         progress("");
         info(_t("{name} \u7559\u5728\u8BBE\u5907\u4E0A\u4E86", { name: e11.name }));
       }).catch((err2) => {
@@ -56312,11 +56597,10 @@ window.__moonsinger = {
   workspace: () => ({ ...ws, dock: dockOf(ws) }),
   setMode: (m2) => setMode(m2),
   // 模式 / 底座（E2E 用）
-  final: () => D2.extras.final,
-  finalize: (q2) => finalizeNow(q2),
-  unfinalize: () => unfinalizeNow(false),
-  finalMp3: () => D2.extras.finalMp3,
-  // 定稿 / 改稿（E2E 用）
+  renders: () => ({ stats: renders.stats(), link: H2.home.kind === "gallery" ? renders.linkOf(homeKey(), H2.home.identifier) : null, hit: renderHit(mp3Quality) }),
+  rendersReady: () => renders.ready(),
+  rendersClear: () => renders.clear(),
+  // 设备上记着的渲好的声音（E2E 用）
   run: (c10) => D2.run(c10),
   commit: (next2, o10) => D2.commit(next2, o10),
   locked: () => D2.locked(),
@@ -56344,7 +56628,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "a4737caaa14f",
+  cssHash: "b8452d94fc58",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -56439,20 +56723,8 @@ function engineNow() {
 }
 var dirty = () => D2.dirty();
 function renderTitle() {
-  const d3 = dirty(), name = docName(), fin = D2.extras.final;
+  const d3 = dirty(), name = docName();
   $2("docTitle").textContent = `${name}${d3 ? " \u2022" : ""}`;
-  {
-    const b3 = $2("fileBtn");
-    b3.classList.toggle("is-final", !!fin);
-    b3.querySelector(".final-badge")?.remove();
-    if (fin) {
-      const t10 = document.createElement("span");
-      t10.className = "final-badge";
-      t10.textContent = _t("\u5B9A\u7A3F {rev}", { rev: fin.rev });
-      t10.title = _t("\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF0C{p}\uFF09\uFF1A\u53EA\u80FD\u542C\uFF0C\u6539\u4E0D\u4E86\uFF1B\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501", { rev: fin.rev, p: fin.at.slice(0, 10) });
-      b3.append(t10);
-    }
-  }
   $2("fileBtn").title = _t("\u6587\u4EF6\u540D\uFF08{p}\uFF09\xB7 {p2}", { p: fileWhere(), p2: H2.home.kind === "file" ? _t("\u672C\u673A\u6587\u4EF6\u7684\u540D\u5B57\u5728\u6587\u4EF6\u7BA1\u7406\u5668\u91CC\u6539") : _t("\u70B9\u4E86\u6539\u540D") });
   renderSaveButton();
   renderUndo();
@@ -56601,7 +56873,7 @@ async function setAudition(p2) {
     return;
   }
   try {
-    const bank = await sources.fetchSound(GS, (done) => progress(_t("\u4E0B\u8F7D {name} {bytes}%", { name: GS.name, bytes: Math.round(done / GS.bytes * 100) })));
+    const bank = await sources.fetchSound(GS, (done2) => progress(_t("\u4E0B\u8F7D {name} {bytes}%", { name: GS.name, bytes: Math.round(done2 / GS.bytes * 100) })));
     progress("");
     const subset = subsetSf2(bank, [{ bank: p2.provider.bank, program: p2.provider.program }]), sha256 = await sha256Hex3(subset);
     if (gen !== auditionGen) return;
@@ -57246,23 +57518,23 @@ function addNewPart(paper = D2.st.at.paper, giveFrom, place) {
   newPartPending = { paper, ...giveFrom ? { giveFrom } : {}, ...place ? { place } : {} };
   openFinder();
 }
-function deleteSinger(id2, done = () => {
+function deleteSinger(id2, done2 = () => {
 }) {
   const song = D2.st.song, p2 = song.parts.find((x2) => x2.id === id2);
   if (!p2) {
-    done();
+    done2();
     return;
   }
   const name = partLabel(id2);
   if (song.parts.length <= 1) {
     info(_t("\u6B4C\u91CC\u53EA\u5269\u8FD9\u4E00\u4E2A\u58F0\u90E8\uFF0C\u5220\u4E0D\u4E86"));
-    done();
+    done2();
     return;
   }
   const alone = song.papers.filter((pp) => pp.tracks[id2] && Object.keys(pp.tracks).length === 1);
   if (alone.length) {
     info(_t("\u300C{name}\u300D\u662F{secs}\u91CC\u552F\u4E00\u7684\u58F0\u90E8\uFF0C\u5220\u4E0D\u4E86\uFF1A\u5148\u7ED9\u8FD9\u51E0\u6BB5\u653E\u8FDB\u522B\u7684\u58F0\u90E8\uFF0C\u6216\u8005\u628A\u8FD9\u51E0\u6BB5\u6574\u6BB5\u5220\u6389", { name, secs: alone.map((pp) => `\u300C${paperLabel(pp.id)}\u300D`).join("") }));
-    done();
+    done2();
     return;
   }
   const go = () => {
@@ -57277,7 +57549,7 @@ function deleteSinger(id2, done = () => {
   if (!wrote.length) {
     go();
     info(_t("\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u5B83\u6CA1\u5199\u4E1C\u897F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { name }));
-    done();
+    done2();
     return;
   }
   const list2 = wrote.map((pp) => {
@@ -57289,7 +57561,7 @@ function deleteSinger(id2, done = () => {
       go();
       info(_t("\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09", { name }));
     }
-    done();
+    done2();
   });
 }
 function placePart(st2, id2, anchor, above) {
@@ -57306,13 +57578,13 @@ function paperLabel(id2) {
   const k2 = D2.st.song.papers.findIndex((p2) => p2.id === id2);
   return D2.st.song.papers[k2]?.name || _t("\u7B2C {n} \u6BB5", { n: k2 + 1 });
 }
-function dropFromSection(paperId, partId, done) {
+function dropFromSection(paperId, partId, done2) {
   const paper = D2.st.song.papers.find((p3) => p3.id === paperId), t10 = paper?.tracks[partId];
   if (!paper || !t10) return;
   const name = partLabels(D2.st.song, D2.extras)[D2.st.song.parts.findIndex((p3) => p3.id === partId)] ?? "", p2 = paperLabel(paperId);
   if (Object.keys(paper.tracks).length <= 1) {
     info(_t("\u300C{p}\u300D\u53EA\u6709\u300C{name}\u300D\u8FD9\u4E00\u4E2A\u58F0\u90E8\uFF0C\u5220\u4E0D\u4E86\uFF1A\u8FD9\u4E00\u6BB5\u6574\u6BB5\u4E0D\u8981 = \u7EB8\u9876\u300C\u22EF\u300D\u91CC\u5220\u8FD9\u4E00\u6BB5", { p: p2, name }));
-    done();
+    done2();
     return;
   }
   const go = () => {
@@ -57323,12 +57595,12 @@ function dropFromSection(paperId, partId, done) {
   if (t10.length <= headLen(t10)) {
     go();
     info(_t("\u5DF2\u4ECE\u300C{p}\u300D\u5220\u6389\u300C{name}\u300D\uFF08\u5B83\u5728\u8FD9\u4E00\u6BB5\u6CA1\u5199\u4E1C\u897F\uFF09", { p: p2, name }));
-    done();
+    done2();
     return;
   }
   void askSheet(_t("\u4ECE\u300C{p}\u300D\u5220\u6389\u300C{name}\u300D\uFF1F", { p: p2, name }), (notes ? _t("\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684 {n} \u4E2A\u97F3\uFF0C\u8FDE\u540C\u6B4C\u8BCD\u3001\u8BB0\u53F7\u4E00\u8D77\u5220\u6389\u3002", { n: notes }) : _t("\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684\u4E1C\u897F\u4E00\u8D77\u5220\u6389\u3002")) + _t("\u518D\u628A\u5B83\u653E\u8FDB\u8FD9\u4E00\u6BB5\u662F\u4E00\u884C\u7A7A\u7684\uFF1B\u8981\u627E\u56DE\u53EA\u80FD\u64A4\u9500\u3002"), _t("\u5220\u6389"), true).then((ok2) => {
     if (ok2) go();
-    done();
+    done2();
   });
 }
 function openPartsManager(ctx2) {
@@ -58342,6 +58614,7 @@ function loadDoc(song, o10) {
 }
 function loadDocInner(song, o10) {
   if (impro) setImpro(false);
+  legacyMp3Note = null;
   ui2.close();
   closeInstPage();
   H2.load(o10.home, { stem: o10.stem, named: o10.named });
@@ -58351,7 +58624,7 @@ function loadDocInner(song, o10) {
   D2.load(withStartDyns(st0), o10.extras);
   const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
   applyDesk(d3);
-  ws.mode = finalOn() ? "listen" : d3.mode;
+  ws.mode = d3.mode;
   if (d3.mode !== "listen") lastEditMode = d3.mode;
   if (touchLike) ws.collapsed = D2.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
   ws.aside = false;
@@ -58368,7 +58641,6 @@ function loadDocInner(song, o10) {
   renderTitle();
   updateChrome();
   if (D2.st.song.parts.some((p2) => performerOf(activeInstrument(D2.extras, p2.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);
-  if (D2.extras.final) info(_t("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF0Cmp3 {bytes}\uFF09\uFF1A\u53EA\u80FD\u542C\u3002\u8981\u6539\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u3002", { rev: D2.extras.final.rev, bytes: mp3SizeText(D2.extras.final.mp3.bytes) }));
   if (startDyns) info(_t("\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09", { startDyns }));
   schedulePrewarm();
 }
@@ -58421,6 +58693,7 @@ function openPicked(picked) {
   try {
     const o10 = openBytes(picked.name, picked.bytes), own = o10.ours && !o10.notices.length;
     loadDoc(o10.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
+    if (o10.legacyMp3) void adoptLegacyMp3(o10.legacyMp3, o10.song.title || docName(), null);
     if (o10.notices.length) showError(o10.notices.join(" "));
     if (o10.advice.length) info(o10.advice.join(" "));
     else info(_t("\u6253\u5F00\u4E86 {name}", { name: picked.name }));
@@ -58432,7 +58705,6 @@ var extrasForSave = (base2 = D2.extras) => base2.thumbnail ? withThumbnail(base2
 var encoder = createEncoder(() => threadUrls("encode-worker")[0] ?? null, (why2) => diagNote("encode", why2));
 var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
 var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
-var mp3SizeText = (n10) => n10 < 1e6 ? `${Math.round(n10 / 1e3)} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 var mxlFile = (name, extras, song) => new File([bytesNow(extras, song)], name, { type: "application/vnd.recordare.musicxml" });
 var sizeText3 = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 var LOCKED_DIRTY = () => _t("\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u6709\u6539\u52A8\u6CA1\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\uFF1A\u6539\u52A8\u8FD8\u5728\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u4E4B\u540E\u518D\u5B58\u3002");
@@ -58449,6 +58721,10 @@ async function fileSave() {
         return;
       case "written":
         info(_t("\u5B58\u597D\u4E86\uFF1A{name}", { name: r10.name }));
+        if (legacyMp3Note) {
+          info(legacyMp3Note);
+          legacyMp3Note = null;
+        }
         return;
       case "locked":
         if (D2.dirtyKind() === "content") showError(LOCKED_DIRTY());
@@ -58472,8 +58748,8 @@ async function exportCopyMxl(packed = false) {
   try {
     let extras = D2.extras;
     if (packed) {
-      const { got, missing } = await gatherSubsets(extras);
-      extras = withPacked(extras, (sha) => got.get(sha)).extras;
+      const { got: got2, missing } = await gatherSubsets(extras);
+      extras = withPacked(extras, (sha) => got2.get(sha)).extras;
       if (missing.length) showError(_t("\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u526F\u672C\u91CC\u6CA1\u5E26\uFF1A{p}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u518D\u5BFC\u51FA\u4E00\u6B21\u3002", { p: missing.join("\u3001") }));
     }
     const roles = soundingRoles(), { rights, fellBack } = exportRights(roles);
@@ -58493,21 +58769,21 @@ async function exportCopyMxl(packed = false) {
   }
 }
 async function gatherSubsets(extras) {
-  const got = /* @__PURE__ */ new Map(), missing = [], seen = /* @__PURE__ */ new Set();
+  const got2 = /* @__PURE__ */ new Map(), missing = [], seen = /* @__PURE__ */ new Set();
   for (const role of Object.keys(extras.lounge)) for (const g3 of gmCandidates(extras, role)) {
     if (g3.bytes || seen.has(g3.subsetSha256)) continue;
     seen.add(g3.subsetSha256);
     try {
-      got.set(g3.subsetSha256, await sources.resolveGmBytes({ ...g3, path: null }));
+      got2.set(g3.subsetSha256, await sources.resolveGmBytes({ ...g3, path: null }));
     } catch {
       missing.push(g3.name);
     }
   }
-  return { got, missing };
+  return { got: got2, missing };
 }
 async function packAll() {
-  const { got, missing } = await gatherSubsets(D2.extras);
-  const r10 = withPacked(D2.extras, (sha) => got.get(sha));
+  const { got: got2, missing } = await gatherSubsets(D2.extras);
+  const r10 = withPacked(D2.extras, (sha) => got2.get(sha));
   if (r10.packed.length) {
     updateExtras(r10.extras, { kind: "lounge", label: _t("\u6253\u5305\u4E86 {n} \u4EF6\u58F0\u97F3", { n: r10.packed.length }) });
     const size = Object.values(D2.extras.sounds).reduce((n10, b3) => n10 + b3.length, 0);
@@ -58554,7 +58830,7 @@ function openExportHub() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA")}</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="${finalOn() ? _t("\u5B9A\u7A3F\u7684\u90A3\u4E00\u4EFD mp3\uFF0C\u76F4\u63A5\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF08\u4E0D\u91CD\u6E32\uFF09") : _t("\u5C0F\u6708\u76F8\u5531\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D")}"><svg class="ico"><use href="#export"/></svg>${_t("\u6B4C\u58F0\uFF08mp3{p}\uFF09\u2026", { p: finalOn() ? _t("\uFF0C\u5B9A\u7A3F\u7684\u90A3\u4EFD") : "" })}</button><button class="btn" data-v="pdf" title="${_t("\u5370\u51FA\u6765\u7684\u8C31\uFF08\u6309\u8FD9\u9996\u6B4C\u7684\u7EB8\u5F20\u5206\u9875\uFF1B\u6B4C\u8BCD\u7528\u5D4C\u8FDB\u53BB\u7684\u5B57\u4F53\uFF0C\u80FD\u9009\u4E2D\u590D\u5236\uFF09")}"><svg class="ico"><use href="#export"/></svg>${_t("\u4E50\u8C31\uFF08PDF\uFF09\u2026")}</button><button class="btn" data-v="mxl" title="${_t("\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6")}"><svg class="ico"><use href="#save-as"/></svg>${_t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026")}</button>` + (soundUses(D2.extras).some((u2) => !u2.packed) ? `<button class="btn" data-v="mxlPacked" title="${_t("\u526F\u672C\u91CC\u628A\u4E50\u5668\u7684\u58F0\u97F3\u4E5F\u88C5\u8FDB\u53BB\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u7167\u65E7\u53EA\u8BB0\u6765\u6E90")}"><svg class="ico"><use href="#save-as"/></svg>${_t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026")}</button>` : "") + `</div><div class="offer-msg">${_t("\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA")}</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="${_t("\u6E32\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF1B\u6E32\u597D\u7684\u90A3\u4EFD\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C")}"><svg class="ico"><use href="#export"/></svg>${_t("\u6B4C\u58F0\uFF08mp3\uFF09\u2026")}</button><button class="btn" data-v="pdf" title="${_t("\u5370\u51FA\u6765\u7684\u8C31\uFF08\u6309\u8FD9\u9996\u6B4C\u7684\u7EB8\u5F20\u5206\u9875\uFF1B\u6B4C\u8BCD\u7528\u5D4C\u8FDB\u53BB\u7684\u5B57\u4F53\uFF0C\u80FD\u9009\u4E2D\u590D\u5236\uFF09")}"><svg class="ico"><use href="#export"/></svg>${_t("\u4E50\u8C31\uFF08PDF\uFF09\u2026")}</button><button class="btn" data-v="mxl" title="${_t("\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6")}"><svg class="ico"><use href="#save-as"/></svg>${_t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026")}</button>` + (soundUses(D2.extras).some((u2) => !u2.packed) ? `<button class="btn" data-v="mxlPacked" title="${_t("\u526F\u672C\u91CC\u628A\u4E50\u5668\u7684\u58F0\u97F3\u4E5F\u88C5\u8FDB\u53BB\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u7167\u65E7\u53EA\u8BB0\u6765\u6E90")}"><svg class="ico"><use href="#save-as"/></svg>${_t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026")}</button>` : "") + `</div><div class="offer-msg">${_t("\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -58708,7 +58984,7 @@ function openMainMenu() {
   const inStore = H2.home.kind === "gallery";
   const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc11(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
   box.innerHTML = `<div class="ctx-head"><b>${esc11(H2.fileName())}</b><span>${esc11(fileWhere())}</span></div>` + item("new", "new", _t("\u65B0\u5EFA")) + item("open", "folder-open", _t("\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026"), _t("\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09")) + item("export", "export", _t("\u5BFC\u51FA\u2026"), _t("mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09")) + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", _t("\u5B58\u8FDB\u6B4C\u5E93"), cloudAvailable() ? _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09")) : "") + `<div class="ctx-sep"></div>` + (H2.home.kind === "file" ? "" : item("rename", "rename", _t("\u6539\u6587\u4EF6\u540D\u2026"), _t("\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09"))) + item("cover", "image", _t("\u5C01\u9762\u56FE\u2026"), _t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE")) + item("sounds", "volume", _t("\u58F0\u97F3\u4E0E\u7F72\u540D\u2026"), _t("\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3")) + (lock.canLockNow() ? item("lockEdit", "lock", _t("\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09"), _t("\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00")) : "") + // 修改锁：解着才有；解锁在谱上面那一条
-  (finalOn() ? item("unfinal", "unlock", _t("\u6539\u7A3F\u2026\uFF08\u7B2C {rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF09", { rev: D2.extras.final.rev }), _t("\u89E3\u9501\uFF1A\u8C31 / \u4E50\u5668 / \u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u5B9A\u7A3F\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u6CA1\u4E86\uFF09")) : item("final", "lock", _t("\u5B9A\u7A3F\u2026"), _t("\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3 \u5B58\u8FDB\u6B4C\u91CC\uFF0C\u4E4B\u540E\u53EA\u80FD\u542C\u3001\u4E0D\u80FD\u6539\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002\u6539\u7A3F\u968F\u65F6\u89E3\u9501"))) + item("ref", "picture-in-picture", refHost.isOpen() ? _t("\u6536\u8D77\u53C2\u8003\u7A97") : _t("\u53C2\u8003\u7A97{p}", { p: refHost.count() ? _t("\uFF08{p} \u5F20\uFF09", { p: refHost.count() }) : "" }), _t("\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58")) + `<div class="ctx-sep"></div><div class="ctx-ver">${esc11(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
+  item("ref", "picture-in-picture", refHost.isOpen() ? _t("\u6536\u8D77\u53C2\u8003\u7A97") : _t("\u53C2\u8003\u7A97{p}", { p: refHost.count() ? _t("\uFF08{p} \u5F20\uFF09", { p: refHost.count() }) : "" }), _t("\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58")) + `<div class="ctx-sep"></div><div class="ctx-ver">${esc11(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
   item("settings", "settings", _t("\u8BBE\u7F6E\u2026"), _t("\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"));
   document.body.append(box);
   const r10 = $2("setBtn").getBoundingClientRect(), w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
@@ -58739,8 +59015,6 @@ function openMainMenu() {
     else if (v === "sounds") openSoundsSheet();
     else if (v === "settings") openSettings();
     else if (v === "ref") refHost.toggle();
-    else if (v === "final") openFinalPanel();
-    else if (v === "unfinal") void unfinalizeNow();
     else if (v === "lockEdit") void lockEditNow();
   });
 }
@@ -58775,90 +59049,6 @@ async function lockEditNow() {
   } catch (e10) {
     showError(_t("\u6CA1\u9501\u4E0A\uFF1A{Error}", { Error: e10.message }));
   }
-}
-function openFinalPanel() {
-  ui2.close();
-  if (finalOn()) {
-    info(_t("\u5DF2\u7ECF\u5B9A\u7A3F\u4E86\u3002\u8981\u6539\u5148\u300C\u6539\u7A3F\u300D\u3002"));
-    return;
-  }
-  const box = document.createElement("div");
-  box.className = "offer";
-  const draw = () => {
-    const chip2 = (v, label, note2, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc11(label)}<small>${esc11(note2)}</small></button>`;
-    const parts = audibleParts2(), labels = partLabels(D2.st.song, D2.extras), names = D2.st.song.parts.map((p2, k2) => parts.includes(p2) ? labels[k2] : null).filter((x2) => !!x2);
-    const is2 = perfApi.issues().filter((i10) => parts.some((p2) => p2.id === i10.part));
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5B9A\u7A3F{finalRev}", { finalRev: D2.extras.finalRev ? _t("\uFF08\u7B2C {p} \u7248\uFF09", { p: D2.extras.finalRev + 1 }) : "" })}</div><div class="offer-msg">${_t("\u5199\u597D\u4E86\uFF1A\u6574\u9996\u6E32\u67D3\u6210 mp3\uFF08\u5E26\u6B4C\u540D / \u4F5C\u8005\u680F / \u8BB8\u53EF\u7684\u6807\u7B7E\u548C\u5C01\u9762\u56FE\uFF09\u5B58\u8FDB\u6B4C\u91CC\uFF1B\u4E4B\u540E<b>\u53EA\u80FD\u542C</b>\u2014\u2014\u8C31\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u8BB8\u53EF\u3001\u5C01\u9762\u3001\u4E50\u5668\u3001\u6DF7\u97F3\u5168\u9501\u4F4F\uFF0C\u80FD\u6539\u7684\u53EA\u6709\u6587\u4EF6\u540D\u3002\u968F\u65F6\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF08\u90A3\u4EFD mp3 \u4F5C\u5E9F\uFF09\u3002\u6B4C\u5E93\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002")}</div><div class="part-sec">${_t("\u97F3\u8D28")}</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div><div class="offer-msg">${_t("\u8FDB mp3 \u7684\uFF1A{length}{length2}\u3002", { length: names.length ? esc11(names.join("\u3001")) : _t("\uFF08\u6CA1\u6709\u51FA\u58F0\u7684\u58F0\u90E8\uFF09"), length2: D2.st.song.parts.length !== parts.length ? _t("\uFF08\u9759\u97F3 / \u72EC\u594F\u6309\u73B0\u5728\u7684\uFF1B\u8981\u90FD\u8FDB\u6765\u5148\u53D6\u6D88\u9759\u97F3\uFF09") : "" })}</div>` + (is2.length ? `<div class="offer-msg issue-warn">${_t("{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002", { n: is2.length, is: esc11(perfApi.issuesText(is2)) })}</div>` : "") + `<div class="offer-btns"><button class="btn primary" data-v="go"${names.length ? "" : " disabled"}>${is2.length ? _t("\u7167\u6837\u5B9A\u7A3F") : _t("\u5B9A\u7A3F")}</button><button class="btn" data-v="close">${_t("\u7B97\u4E86")}</button></div></div>`;
-  };
-  draw();
-  document.body.append(box);
-  const close = () => {
-    box.remove();
-    ui2.closed(close);
-    scoreEl.focus();
-  };
-  ui2.open({ k: "sheet", close });
-  box.addEventListener("click", (e10) => {
-    const v = e10.target.closest("[data-v]")?.dataset.v;
-    if (e10.target === box || v === "close") {
-      close();
-      return;
-    }
-    if (v?.startsWith("q:")) {
-      mp3Quality = v.slice(2);
-      draw();
-    } else if (v === "go") {
-      close();
-      void finalizeNow(mp3Quality);
-    }
-  });
-}
-var finalizing = false;
-async function finalizeNow(quality = mp3Quality) {
-  if (finalizing || finalOn()) return null;
-  finalizing = true;
-  try {
-    await H2.settleIfEdited();
-    const r10 = await perfApi.renderMp3({ quality, scope: "all" });
-    const is2 = perfApi.issues();
-    const tagged = new Uint8Array(perfApi.mp3Tag(r10.roles).tag.length + r10.bytes.length);
-    tagged.set(perfApi.mp3Tag(r10.roles).tag, 0);
-    tagged.set(r10.bytes, tagged.length - r10.bytes.length);
-    const rec = {
-      at: (/* @__PURE__ */ new Date()).toISOString(),
-      rev: D2.extras.finalRev + 1,
-      app: APP_VERSION,
-      core: coreInfo(),
-      fingerprint: contentFingerprintOf(saveArgs()),
-      mp3: { path: FINAL_MP3_ENTRY, bytes: tagged.length, sha256: await sha256Hex3(tagged), secs: r10.secs, sr: r10.sr, kbps: r10.kbps, stereo: r10.stereo },
-      parts: r10.parts,
-      ...is2.length ? { issues: is2.map((i10) => ({ part: i10.part, why: i10.why })) } : {}
-    };
-    if (ws.mode !== "listen") {
-      lastEditMode = ws.mode;
-      ws.mode = "listen";
-    }
-    const c10 = D2.commit({ extras: withFinal(D2.extras, rec, tagged) }, { locus: { kind: "final", label: _t("\u5B9A\u7A3F") }, undo: false });
-    if (!c10.ok) throw new Error(c10.why);
-    info(_t("\u5B9A\u7A3F\u4E86\uFF08\u7B2C {rev} \u7248\uFF09\uFF1Amp3 {n}\u3001{p} \u79D2\uFF0C\u5B58\u8FDB\u4E86\u6B4C\u91CC\uFF1B{p2}\u53EA\u80FD\u542C\u4E86\u2014\u2014\u8981\u6539\uFF0C\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u3002", { rev: rec.rev, n: mp3SizeText(r10.bytes.length), p: r10.secs.toFixed(1), p2: H2.home.kind === "gallery" ? _t("\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\u3002") : _t("\u6309\u300C\u5B58\u300D\u5199\u8FDB\u6587\u4EF6\u3002") }));
-    diagNote("doc", `finalized rev ${rec.rev} core ${rec.core.version}@${rec.core.hash} mp3 ${r10.bytes.length}B`);
-    return rec;
-  } catch (e10) {
-    showError(_t("\u6CA1\u5B9A\u7A3F\uFF1A{Error}", { Error: e10.message }));
-    return null;
-  } finally {
-    finalizing = false;
-  }
-}
-async function unfinalizeNow(ask = true) {
-  const f2 = D2.extras.final;
-  if (!f2) return false;
-  if (ask && !await askSheet(_t("\u6539\u7A3F"), _t("\u89E3\u9501\u540E\u8C31\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u5C01\u9762\u3001\u4E50\u5668\u3001\u6DF7\u97F3\u53C8\u80FD\u6539\uFF1B\u7B2C {rev} \u7248\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF08\u4E0B\u6B21\u5B58\u5C31\u4ECE\u6B4C\u91CC\u53BB\u6389\uFF1B\u6B4C\u5E93\u5C01\u9762\u4E0A\u4E5F\u542C\u4E0D\u4E86\uFF0C\u8981\u518D\u5B9A\u7A3F\u4E00\u6B21\uFF09\u3002", { rev: f2.rev }), _t("\u6539\u7A3F"))) return false;
-  D2.commit({ extras: withoutFinal(D2.extras) }, { locus: { kind: "final", label: _t("\u6539\u7A3F") }, undo: false });
-  setMode(lastEditMode === "listen" ? "notes" : lastEditMode);
-  info(_t("\u6539\u7A3F\u4E86\uFF1A\u7B2C {rev} \u7248\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u80FD\u6539\u4E86\u3002", { rev: f2.rev }));
-  diagNote("doc", `unfinalized rev ${f2.rev}`);
-  return true;
 }
 function openCoverSheet() {
   ui2.close();
@@ -59018,6 +59208,7 @@ consumeLaunchFiles((h2) => {
 var KV_LAST_DOC = "last-doc";
 var KV_ZOOM = "zoom";
 var gallery = null;
+var encodedFp = null;
 var encodedSnap = null;
 var coverTouched = false;
 var es2 = createEditorSession({
@@ -59050,18 +59241,9 @@ var es2 = createEditorSession({
     prepare: () => refHost.settled(),
     encode: async () => {
       encodedSnap = D2.savedMark();
-      const bytes = await encoder.encode({ ...saveArgs(), references: refHost.files() });
-      return { bytes: new Blob([bytes], { type: "application/vnd.recordare.musicxml" }) };
-    },
-    // 第 ④ 层护栏（store 接缝）：定稿着、出声内容的指纹却变了 = 不落盘、不推，脏留着（顶栏「•」照亮 = 诚实），说一句。前面三层都没拦住才会走到这儿。
-    canPersist: () => {
-      const f2 = D2.extras.final;
-      if (!f2) return null;
-      try {
-        return contentFingerprintOf(saveArgs()) === f2.fingerprint ? null : _t("\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C\u5185\u5BB9\u5374\u53D8\u4E86\uFF1A\u6CA1\u6709\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\u3002\u5148\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F5C\u5E9F\uFF09\u518D\u5B58\uFF0C\u6216\u8005\u64A4\u9500\u521A\u624D\u7684\u6539\u52A8\u3002");
-      } catch (e10) {
-        return _t("\u5B58\u4E0D\u4E86\uFF1A{Error}", { Error: e10.message });
-      }
+      const r10 = await encoder.encode({ ...saveArgs(), references: refHost.files() });
+      encodedFp = r10.fingerprint;
+      return { bytes: new Blob([r10.bytes], { type: "application/vnd.recordare.musicxml" }) };
     },
     onRefused: (why2) => {
       showError(why2);
@@ -59079,6 +59261,11 @@ var es2 = createEditorSession({
         gallery?.invalidateThumb(name);
       }
       renderTitle();
+      void relinkAfterSave(name, encodedFp);
+      if (cur && legacyMp3Note) {
+        info(legacyMp3Note);
+        legacyMp3Note = null;
+      }
     }
   },
   isZip: true,
@@ -59120,6 +59307,7 @@ setInterval(() => {
 function adoptStoreBytes(id2, bytes) {
   const o10 = openBytes(id2, bytes);
   loadDoc(o10.song, { home: { kind: "gallery", identifier: id2 }, stem: identifiers.parse(id2)?.stem ?? o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
+  if (o10.legacyMp3) void adoptLegacyMp3(o10.legacyMp3, o10.song.title || docName(), id2);
   if (o10.notices.length) showError(o10.notices.join(" "));
   if (o10.advice.length) info(o10.advice.join(" "));
 }
@@ -59231,6 +59419,7 @@ function ensureAttached(home = { kind: "cloud" }) {
     diagNote("boot", "store attached");
     requireStore().files.onRenamed((from, to2) => {
       if (deviceKvGet(KV_LAST_DOC) === from) deviceKvSet(KV_LAST_DOC, to2);
+      void renders.renamed(homeKey(), from, to2);
     });
   }
   ensureGallery();
@@ -59296,6 +59485,8 @@ function ensureGallery() {
     homeBar: () => homeBarNow(),
     homeAction: (v) => homeAction(v),
     homeLabel: () => folderHome()?.label ?? null,
+    renders,
+    // 设备上记着的渲好的声音：封面上的 ▶ 认它的挂名
     openHomeMenu: () => {
       void openHomeMenu();
     },
@@ -59456,20 +59647,20 @@ var KV_MOVE_ASKED = "moveAsked";
 var KV_LEGACY_RETIRED = "legacyRetired";
 var legacyLeft = 0;
 var firstFrame = (store, folder) => new Promise((resolve, reject) => {
-  let done = false, off = null;
+  let done2 = false, off = null;
   off = store.files.watchFolder(folder, (snap) => {
-    if (done) return;
-    done = true;
+    if (done2) return;
+    done2 = true;
     off?.();
     resolve(snap);
   }, { onError: (e10) => {
-    if (!done) {
-      done = true;
+    if (!done2) {
+      done2 = true;
       off?.();
       reject(e10);
     }
   } });
-  if (done) off();
+  if (done2) off();
 });
 async function localItems(store) {
   const out = [], q2 = [""];
@@ -59570,16 +59761,17 @@ async function moveSongsFlow(entry) {
       },
       readBack: (id2) => readFromFolder(entry, id2),
       write: async (id2, bytes) => {
-        const r10 = await requireStore().zip(id2, { mode: "new" }).save(bytes, { tryPush: true });
+        const r10 = await requireStore().zip(id2, { mode: "new" }).save(bytes, { tryPush: true, bornLocked: true });
         if (r10?.pushed !== true) throw new Error(_t("\u6CA1\u5199\u8FDB\u6587\u4EF6\u5939"));
       },
+      // bornLocked：搬进新家的是已有的作品，生来锁着（修改锁标准：导入进库的文件生来锁着），不是在这里新建的
       remove: async (id2) => {
         const t10 = await legacy.zip(id2, { mode: "existing" }).trash();
         if (t10.status !== "trashed") throw new Error(_t("\u65E7\u5E93\u6CA1\u79FB\u8D70\uFF08{status}\uFF09", { status: t10.status }));
       },
       altName: (id2) => withStemTail(id2, defaultStem().slice(-5), identifiers),
       // defaultStem = yyyymmdd-hex4：取「-hex4」
-      progress: (done, total) => setBusyText(_t("\u6B63\u5728\u642C\u6B4C {done} / {total}\u2026", { done, total }))
+      progress: (done2, total) => setBusyText(_t("\u6B63\u5728\u642C\u6B4C {done} / {total}\u2026", { done: done2, total }))
     }));
   } catch (e10) {
     reportError(e10);
@@ -60549,4 +60741,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ad84030f98d8.mjs.map
+//# sourceMappingURL=moonsinger-8049d25a21b6.mjs.map

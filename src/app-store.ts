@@ -79,8 +79,12 @@ function buildStore(o: { provider: CloudProvider; signedIn: () => boolean; isOnl
     isOnline: o.isOnline,
     activeIdentifier: () => _activeIdentifier,
     // store 2.3.x（v0.16.95，2026-11-10，Claude Fable 5.2；家族修改锁标准第七节）：星 / 收起的记号——库自己的一份同步文件 `.<appId>/store.file-marks.json`（持久层白名单表里归 store 那一行）。
-    //   加了星的送不进回收站（file.trash 抛 StarredError，歌库的面自己说）。**`lockByDefault` 还没开**：修改锁五道接好、验过之后才开（设计稿第十节第 9 步）。
+    //   加了星的送不进回收站（file.trash 抛 StarredError，歌库的面自己说）。
     fileMarks: true,
+    // 修改锁的第 ⑤ 道（v0.16.97，2026-11-10；家规「源文件原则上只读：手动解锁才能改」）：歌库里的歌默认锁着——没有活着的解锁，`file.save` 改已有的就抛 LockedError。
+    //   新建的首存不拦，存成后库自己发一枚解锁（新歌不锁）；解锁逐首、只在这台设备上、放凉一天过期、还在改就一直往后推。前四道在 app 里（src/app/edit-lock.ts 那一处回答），这一道独立成立。
+    //   和定稿退役同一版打开：分开上的话，中间那一版里以前定稿的歌会没有任何锁。
+    lockByDefault: true,
   });
 }
 /** 歌库的家（家族规则书 §1 第 13 条）。没有家不建 store：只有用户选了家（或开机恢复上次的家）才走到 attachStore。 */

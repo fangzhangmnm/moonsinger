@@ -1,6 +1,6 @@
 // test/e2e/gallery-marks.mjs —— 真浏览器 E2E：收 store 2.3.1 + gallery 0.9.2 之后歌库里新到的四样——星（加了星的送不进回收站）/ 收起 / 存一版 / 文件夹和歌排在同一条时间线。
 // created 2026-11-10 by Claude Fable 5.2（修改锁设计稿第十节第 2 步「只收库，不开锁」；家族修改锁标准第七节）。
-//   真 app + 真库 + 真 IndexedDB；家 = 文件夹（假 FSA = OPFS 子目录，同 store.mjs）。修改锁的开关这一版还关着：这里不测锁。
+//   真 app + 真库 + 真 IndexedDB；家 = 文件夹（假 FSA = OPFS 子目录，同 store.mjs）。修改锁的开关 v0.16.97 打开了：锁的行为在 edit-lock-gallery.mjs，这里只看菜单里有没有。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/gallery-marks.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 import { FAKE_FSA, pickFolderFromEntry, folderFiles } from "./fake-fsa.mjs";
@@ -25,7 +25,7 @@ try {
   await p.evaluate(() => window.__moonsinger.openGallery()); await p.waitForTimeout(600); await later();
   const tile = `#galleryFull .gallery-tile:has-text("${stem}")`;
   check(!!(await p.$(tile)), "歌库里有这首歌的卡片", id);
-  check(await p.evaluate(() => window.__moonsinger.store().files.fileMarks === true && window.__moonsinger.store().files.lockByDefault === false), "库：星 / 收起的记号开着，修改锁的开关还关着");
+  check(await p.evaluate(() => window.__moonsinger.store().files.fileMarks === true && window.__moonsinger.store().files.lockByDefault === true), "库：星 / 收起的记号开着，修改锁的开关也开着（v0.16.97 起）");
 
   /** 点开这张卡的「⋯」→ 点菜单里写着这几个字的那一项。 */
   const menu = async (sel, label) => {
@@ -41,7 +41,7 @@ try {
   check((await inked(`${tile} .gallery-tile-menu-btn`)) === "ok", "卡片右上角的「⋯」有图标", await inked(`${tile} .gallery-tile-menu-btn`));
   const labels0 = await menuLabels(tile);
   check(["加星", "收起", "存一版"].every((w) => labels0.some((l) => l.includes(w))), "「⋯」菜单里有 加星 / 收起 / 存一版", labels0.join(" | "));
-  check(!labels0.some((l) => /解锁|锁上/.test(l)), "修改锁没开：菜单里没有解锁 / 锁上", labels0.join(" | "));
+  check(labels0.some((l) => l.includes("锁上")) && !labels0.some((l) => l.includes("解锁")), "这台设备上新建的歌生来解着：菜单里是「锁上（先不改了）」，没有解锁", labels0.join(" | "));
   {
     await p.click(`${tile} .gallery-tile-menu-btn`); await p.waitForTimeout(150);
     const bad = await p.$$eval(".gallery-tile-menu-popup:not(.hidden) button", (bs) => bs.filter((x) => { const u = x.querySelector("use"); if (!u) return false; const sym = document.getElementById((u.getAttribute("href") ?? "").slice(1)); return !sym || !sym.querySelector("path, circle, rect, line, polyline, polygon, ellipse"); }).map((x) => x.textContent.trim()));

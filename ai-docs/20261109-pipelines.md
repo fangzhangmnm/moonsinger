@@ -1,6 +1,6 @@
 # 写歌的代码流程图（pipelines）
 
-> created 20261109 by Claude Fable 5.1 · as-of v0.16.52 / 2026-11-09 · A8 文字那一层 as-of v0.16.70 / 2026-11-09（Claude Opus 5.5） · A8¾ 和弦级数 as-of v0.16.76 / 2026-11-09（Claude Fable 5.2） · A8⅞ 谱号按段 as-of v0.16.88 / 2026-11-10（Claude Opus 5.5）
+> created 20261109 by Claude Fable 5.1 · as-of v0.16.52 / 2026-11-09 · A8 文字那一层 as-of v0.16.70 / 2026-11-09（Claude Opus 5.5） · A8¾ 和弦级数 as-of v0.16.76 / 2026-11-09（Claude Fable 5.2） · A8⅞ 谱号按段 as-of v0.16.88 / 2026-11-10（Claude Opus 5.5） · 八 修改锁 / 九 渲好的声音 as-of v0.16.97 / 2026-11-10（Claude Fable 5.2）
 > 家规「代码流程图 ritual」（家族根 CLAUDE.md，2026-10-26 立；参考 CatsUp `ai-docs/20261026-pipelines.md`）：用户动作 → 各层 → 落盘 / 上屏；哪个操作走哪条共用流程；每步碰多少东西、实测数字；改流程同一个 commit 更新这份。
 > **这一版只理了两条线**（11-09 保存排队 + 键盘总闸这两刀碰过的）：A 按一下 → 改谱 → 上屏 + 自动存；B 开一首歌 / 换歌。播放、唱、渲染、导出 PDF 只画了总图上的位置和入口文件，步骤和数字**没理**——谁改到那几条谁补（user 11-09「让fable看一下排版引擎是整个曲段重拍还是修一行」= 总表第 3 条，补 A 的排版那一步时一起量）。
 > 数字来源都标了；没量的写「没量」，不编。
@@ -18,6 +18,7 @@
   自动存（2 s）/ 按「存」/ 换歌 / 退出 ─→ editor-session（排队、记住存给谁）─→ encode worker（.mxl 字节）─→ store.zip.save（IDB）─→ consent 时推 OneDrive（Graph，带超时）
   歌库点一首 ─→ H.leave（先安家 / 先存旧的）─→ es.open（排在在飞的保存后面）─→ store.open（新鲜度 / 冲突面）─→ adopt → loadDoc → paint
   放 / 唱 / 渲染 / 导出：src/app/transport*、src/engine/（studio-worklet + singer-worker + mp3-worker）、src/core/（无头渲染）、src/export/score-pdf.ts —— 没理
+  导出整首歌声 / 歌库封面上的 ▶ ─→ 这台设备上记着的渲好的声音（src/app/render-cache.ts；第九节）
 ```
 
 ## 二、哪个操作走哪条共用流程（亚种 = 参数）
@@ -34,6 +35,8 @@
 | 换歌 / 新建 / 进歌库 / 退出登录 | B 的前半 + C | `H.leave`：等着安家的先安家；歌库里的 flushAndPush，推完还脏再落一次本机 |
 | 歌库点一首 / 云端快进后重载 | B | `es.open(id)`：先存旧的（退出语义），再读、再装 |
 | 保存途中选了「云端覆盖本地」 | B 的后半 | `persistNow` 里 `takeCloudReload` → `openInto(name)`（排队里，名字是取快照时钉住的） |
+| 导出整首歌声 | R（第九节） | 设备上记着同一份 = 直接拿；没有 = 现渲、记下、挂名 |
+| 歌库封面上点 ▶ | R 的后半 | 卡片的戳 = 挂名时的戳 → 从设备上取；老文件 = 取文件里带着的那份 |
 
 ## 三、A：按一下 → 改谱 → 上屏 + 自动存
 
@@ -58,11 +61,11 @@
 |---|---|---|---|
 | C1 排队 | `persist()` 进队（保存三个入口 / open / rename / delete / 定时器 / 监听同一条队）；轮到才判断要不要存 | 常数 | v0.16.51 |
 | C2 等附件 | `editor.prepare()` = `refHost.settled()`（参考窗刚加的卡还在编字节） | 随刚加的卡涨 | 没量 |
-| C3 钉身份 + 快照 | 同步：`canPersist` 护栏 → 记名字 / 代数 → `encode()` 同步前缀 = `D.savedMark()` + `encoder.encode(saveArgs())`（结构化克隆 歌 + 休息室 + 参考窗文件 → encode worker） | 克隆**随整首 + 附件字节涨** | 没量（`record("encode-post")` 有计时点，黑匣子里能看） |
-| C4 编码 | worker 里 `saveMxl`（MusicXML + zip；音源子集按值嵌） | **随整首 + 嵌的音源涨** | 没量（`record("encode-worker")` 有计时点） |
+| C3 钉身份 + 快照 | 同步：`editLocked` 护栏（修改锁第 ④ 道；通用的 `canPersist` 口还在，现在没人用）→ 记名字 / 代数 → `encode()` 同步前缀 = `D.savedMark()` + `encoder.encode(saveArgs())`（结构化克隆 歌 + 休息室 + 参考窗文件 → encode worker） | 克隆**随整首 + 附件字节涨** | 没量（`record("encode-post")` 有计时点，黑匣子里能看） |
+| C4 编码 | worker 里 `saveMxlWithFingerprint`（先 `canonicalIds` 把音的编号重编成只看内容的那一套 → MusicXML + zip；音源子集按值嵌；顺手带回这份字节里出声内容的指纹） | **随整首 + 嵌的音源涨**（重编 = 每个 token 一次浅拷贝） | 没量（`record("encode-worker")` 有计时点） |
 | C5 落本机 | `store.zip(name).save(bytes, { tryPush })`（IDB） | 随字节涨 | 没量 |
 | C6 推 | tryPush 时推 OneDrive（Graph；分块上传）；超时 问一句 30 s / 一块 2 min / 取一段 1 min / 整份 15 min（v0.16.51 起开） | 随字节 + 网 | 到点按没传成算，下次再推 |
-| C7 收尾 | 对代数：还是同一首才清脏 / 清欠推；`onSaved(name)` 只记给还开着的那首；选了「云端覆盖本地」= 同队里重载 | 常数 | — |
+| C7 收尾 | 对代数：还是同一首才清脏 / 清欠推；`onSaved(name)` 只记给还开着的那首；选了「云端覆盖本地」= 同队里重载；`relinkAfterSave(name, 指纹)`：设备上记着这份内容的声音 = 按新的文件戳重新挂名，没有 = 摘名（一次尾读本机那份的总目录） | 常数 | — |
 
 ## 五、B：开一首歌 / 换歌
 
@@ -89,12 +92,13 @@
 - 总闸：`test/input-gate-guard.test.mjs`（听 keydown 的地方白名单、监听不直接写、run() 每次写前有总闸、pad 两条出口带闸）；判断 `test/input-gate.test.ts`。
 - 存：`test/editor-session-serialize.test.mjs`（排队、钉身份、prepare、adopt 带名字）；`test/store-wiring.test.mjs`（adapter 形状、传输层超时、取快照之前没有 await）。
 - 文档只有一个写入口：`test/document.test.ts`（`st` / `extras` 在 `Document` 上是只读的，文档外赋值 tsc 就红）。
-- 修改锁：`test/edit-lock.test.ts`（分类表 / 锁着吗 / 写入口 / 撤销 / 脏分两种 / 家 / 编辑会话）、`test/edit-lock-guard.test.mjs`（解锁的调用点名单、表和写入口对得上、各道接着线）、E2E `test/e2e/edit-lock.mjs`。
+- 修改锁：`test/edit-lock.test.ts`（分类表 / 锁着吗 / 写入口 / 撤销 / 脏分两种 / 家 / 编辑会话）、`test/edit-lock-guard.test.mjs`（解锁的调用点名单、表和写入口对得上、各道接着线）、E2E `test/e2e/edit-lock.mjs`（硬盘文件）+ `test/e2e/edit-lock-gallery.mjs`（歌库里的歌）。
+- 渲好的声音：`test/render-cache.test.ts`（两层钥匙 / 上限 / 挂名 / 字节没了就作废）、`test/final.test.ts`（指纹只看内容、不看内存里音的编号；老文件里的 mp3）、E2E `test/e2e/render-cache.mjs`。
 
-## 八、修改锁：每一步在哪道被拦（as-of v0.16.96 / 2026-11-10，Claude Fable 5.2）
+## 八、修改锁：每一步在哪道被拦（as-of v0.16.97 / 2026-11-10，Claude Fable 5.2）
 
 > 家族标准 = 家族根 `ai-docs/20261108-edit-lock-standard.md`；写歌的设计稿 = 家族根 `ai-docs/20261109-moonsinger-edit-lock-design.md`（第八节 + 第十四节）。
-> **这一版库的开关（`lockByDefault`）还关着**：歌库里的歌 `lock.state()` 回 none（不管），下面这张图只对硬盘上的单个文件生效；开关打开那一版起歌库里的歌走同一张图。
+> v0.16.97 起库的开关（`lockByDefault: true`）开着：歌库里的歌和硬盘上的单个文件走同一张图（v0.16.96 时开关还关着，只有硬盘文件生效）。定稿的锁同一版退役，文档里只剩这一把。
 
 两个问题各一处回答：「这首锁着吗」= `src/app/edit-lock.ts`（现算，不记状态）；「这个操作锁着能做吗」= `src/app/edit-lock-table.ts`（键 = `locus.kind`，现在只有 `paperHidden`）。
 
@@ -113,10 +117,35 @@
           ├─ 硬盘文件：H.save() ─→ ④ ports.locked() → { k: "locked" }（一个字节都不写；宿主：门闪，有内容改动才报）
           └─ 离开：H.leave() 只看 owesSave
           ▼
-  ⑤ 库 createStore({ lockByDefault })：file.save 改已有的 → LockedError（还没开）
+  ⑤ 库 createStore({ lockByDefault: true })：file.save 改已有的 → LockedError（v0.16.97 开；这台设备上新建的生来解着，解锁记在设备上、一天不动自己锁）
 ```
 
 - **解锁**只有两处：门的钮（`src/app/edit-lock-door.ts` → 歌库 = 图库库的 `unlockEdit` / `saveVersionThenUnlock`，硬盘文件 = `lock.unlockLocalFile()`）、歌库卡片的菜单（图库库自己的）。
 - **锁上** = 三条杠「锁上（先不改了）」→ `lockEditNow`：先存（歌库 = 落盘 + 推；硬盘文件 = 写回）→ 存成了才锁。
 - **锁态变了**（`lock.onChange`）→ `applyWorkspace`（规则 / 样式 / 插头的样子）+ 重画 + `changed()`（解锁那一刻锁着时动过的看法开始算「要存」）。装入期间（`loadingDoc`）不动界面，`loadDoc` 收尾一次摆好。
 - **代价**：每次 commit 多一次 `effectiveKind`（只有自称看法的才逐张纸比引用）+ 一次 `lock.state()`（歌库 = 库的 `unlockOf` 查一次内存表）；`dirtyKind()` 只在「脏着 ∧ 锁着」时才算（逐张纸比引用）。没量（比 A6 的整首规整小得多）。
+
+## 九、R：渲好的声音只记在这台设备上（as-of v0.16.97 / 2026-11-10，Claude Fable 5.2）
+
+> 定稿退役之后，「内容没变再导出不用等」「歌库封面上直接听」都靠这一条。模块 = `src/app/render-cache.ts`（纯逻辑）+ `render-cache-idb.ts`（IDB）；宿主的几个口在 `main.ts`（`takeRender / keepRender / linkRenderNow / relinkAfterSave / adoptLegacyMp3`）。歌文件里不再有 mp3。
+
+```
+  导出整首歌声 ─→ performance.exportSong ─→ renders.take(钥匙 = 内容指纹 + 音质 + 声部 + 歌名；还要是这一版渲染核心渲的)
+        ├─ 有 → 直接给那一份（不唱、不渲）─→「好了」面板：用的是这台设备上记着的
+        └─ 没有 → 现渲（核心）→ 贴标签 → renders.keep（最近 20 首，超了丢最久没用的）─→「好了」面板：记在这台设备上了
+                    └→ 歌库里的歌、手里没有没存的改动 → 挂名（身份 → 这条记录 + 文件此刻的戳）→ 歌库那张卡片重算
+  存了一次（流程 C7）─→ 这次存下去的内容的指纹有记着的声音吗 ─ 有 → 按新的戳重新挂名；没有 → 摘名（记录留着）
+  歌库列卡片 ─→ 尾读总目录 = { 戳, 老文件里带没带 mp3 }（图库库按身份 + 字节版本缓存）─→ 戳 = 挂名时的戳 → ▶
+  点 ▶ ─→ 从设备上取那一份 ─→ song-player（播放条 / 循环 / 从头放 / 锁屏控件）     老文件没挂名的 → 抓文件里带着的那份 mp3
+  打开老文件（里面带着 mp3）─→ 读的时候按文件原文核过是这份内容的 ─→ 搬进设备缓存 + 挂名；下一次存下去文件里就没有它了、说一句
+```
+
+| 步 | 干什么 | 碰多少 | 数字 |
+|---|---|---|---|
+| R1 钥匙 | `contentFingerprintOf(saveArgs())`：和存盘同一条管线把整首写成文本再哈希（不压 zip） | **随整首涨**（一次整首的 MusicXML 串化） | 没量；只在点导出 / 开导出面板时算，不在按键那条路上 |
+| R2 取 / 记 | IDB 读一条 / 写一条（mp3 字节 + 记录） | 随 mp3 大小 | 没量 |
+| R3 挂名 | 尾读本机那份的总目录（128 KB 尾窗）算戳 + 写一条挂名 | 常数 | 没量 |
+| R4 歌库列卡片 | 每张卡片一次尾读（图库库缓存着，文件没变不重读）；挂名表在内存里 | 随卡片数（有缓存） | 没量 |
+
+- 指纹只看内容：写出去之前音的编号一律重编（`project.ts canonicalIds`）；不然同样的内容存两次、中间重开过就是两个指纹（2026-11-10 查出来的）。
+- 不进这条的：只导出一段（每次现渲）、PDF、放着听（实时引擎）。

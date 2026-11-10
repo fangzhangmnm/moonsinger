@@ -44,8 +44,12 @@ export interface PerfHost {
   ui: { progress(s: string): void; info(s: string): void; showError(s: string): void; renderBar: RenderProgress; playBtns(): HTMLElement[]; playIcon(playing: boolean): void; offerFile(file: File, title: string, msg: string): void; onIssues(list: readonly Issue[]): void };
   sounds: { resolveGmBytes(g: GmCandidate): Promise<Uint8Array>; ensureVowels(): Promise<void>; soundMemoryBytes(): number; modelBases(): string[] };
   credits: { creditsOf(roles: readonly string[], rights: string | undefined): { lines: CreditLine[] }; creditsBlock(lines: CreditLine[], title: string): string };
-  /** 定稿着的歌：定稿那份 mp3（裸的，没有 ID3）+ 它的参数 + 当时出了声的声部的角色（署名）；没定稿 = null。导出 mp3 时直接给这一份、不重渲。 */
-  final?(): { mp3: Uint8Array; secs: number; kbps: number; stereo: boolean; roles: string[] } | null;
+  /** 这台设备上记着的渲好的声音（src/app/render-cache.ts；2026-11-10 定稿退役，取代原来的 final 口）。只管「整首」。
+   *  take = 同一份内容、同一个音质、同样的声部、渲染核心也没变的那一份（带标签的 mp3）；没有 = null → 现渲。keep = 刚渲好的记下来，回记没记成（记不进去宿主自己报进黑匣子，不拦导出）。 */
+  renders?: {
+    take(o: { quality: Mp3Quality; parts: readonly string[]; title: string }): Promise<{ bytes: Uint8Array; secs: number; kbps: number; stereo: boolean; roles: string[] } | null>;
+    keep(o: { quality: Mp3Quality; parts: readonly string[]; title: string; roles: string[]; secs: number; kbps: number; stereo: boolean }, tagged: Uint8Array): Promise<boolean>;
+  };
 }
 
 /** 渲染哪一段：view = 跟视图（本段 / 全部，播放用）；all = 整首；segment = 光标所在的这一张纸（导出面板里选）。 */
@@ -504,7 +508,7 @@ export function createPerformance(host: PerfHost) {
     const r = st().song.rights; if (!r) return { rights: undefined, fellBack: false };
     return licenseHints(r, performerCredits(extras(), roles)).length ? { rights: undefined, fellBack: true } : { rights: r, fellBack: false };
   }
-  /** 整首 / 这一张纸渲染成 mp3 字节（**没有 ID3 标签**；导出 / 定稿共用；走无头渲染核心 renderSong：准备 → 时间线 → 块 → 混）。
+  /** 整首 / 这一张纸渲染成 mp3 字节（**没有 ID3 标签**；走无头渲染核心 renderSong：准备 → 时间线 → 块 → 混）。
    *  出不了声的声部照旧进清单（§2.2½）、其余照混；一个都放不了 = 抛。 */
   async function renderMp3(o: { quality: Mp3Quality; scope: "all" | "segment" }): Promise<{ bytes: Uint8Array; secs: number; sr: number; kbps: number; stereo: boolean; roles: string[]; parts: string[] }> {
     if (engine.playing) stopPlay();
@@ -522,26 +526,34 @@ export function createPerformance(host: PerfHost) {
     progress("");
     return { bytes, secs: r.secs, sr: r.sr, kbps: Q.kbps, stereo: Q.stereo, roles, parts: r.timeline.tracks.map((t) => t.id) };
   }
-  /** 这份 mp3 该带的 ID3 标签（歌名 / 作者 / 许可 / 署名 / 软件 + 封面图 APIC）。定稿时贴好一起存（存的 = 发行的那一份，连标签带图，user 10-16「都冻同意，封面当然进」）；没定稿的导出现贴。 */
+  /** 这份 mp3 该带的 ID3 标签（歌名 / 作者 / 许可 / 署名 / 软件 + 封面图 APIC）。导出时贴好；记进设备缓存的也是贴好标签的那一份（= 给出去的那一份）。 */
   function mp3Tag(roles: readonly string[]): { tag: Uint8Array; lines: CreditLine[]; fellBack: boolean } {
     // mp3 标签（user 2026-10-08「mp3能自动生成license吗」）：歌名 / 作者（作者栏第一行，用户自己写的）/ 这首歌的许可（用户选的；未声明或冲突 = 不写）/ 整段署名 / 封面图（歌库卡片那张 PNG）。
     const { rights, fellBack } = exportRights(roles), { lines } = creditsOf(roles, rights), cover = extras().thumbnail;
     return { tag: id3v2({ title: st().song.title || docName(), artist: (st().song.credits ?? "").split("\n").map((s) => s.trim()).find(Boolean), copyright: rights, copyrightUrl: firstUrl(rights), comment: creditsText(lines) || undefined, software: `MoonSinger ${APP_VERSION}`, ...(cover ? { picture: { mime: "image/png", bytes: cover } } : {}) }), lines, fellBack };
   }
   const mp3SizeText = (n: number) => (n < 1e6 ? `${Math.round(n / 1e3)} KB` : `${(n / 1e6).toFixed(1)} MB`);
-  /** 导出歌声（mp3）：定稿着 = 直接给定稿的那一份（原字节，标签和封面都是定稿那一刻的，不重渲不重贴），否则现渲 + 现贴标签。 */
+  /** 导出歌声（mp3）：整首、内容没变、这台设备上记着上次渲好的 = 直接给那一份；否则现渲 + 现贴标签，整首的顺手记在设备上（src/app/render-cache.ts）。 */
   async function exportSong(o: { quality: Mp3Quality; scope: "all" | "segment" } = { quality: "standard", scope: "all" }): Promise<void> {
     if (exporting || preparing) return;
     exporting = true;
     try {
-      const fin = host.final?.();
-      const r = fin && o.scope === "all" ? { bytes: fin.mp3, secs: fin.secs, kbps: fin.kbps, stereo: fin.stereo, roles: fin.roles, fromFinal: true } : { ...(await renderMp3(o)), fromFinal: false };
-      const { tag, lines, fellBack } = mp3Tag(r.roles);
+      const whole = o.scope === "all", parts = audibleParts().map((p) => p.id), title = st().song.title || docName();
+      const hit = whole ? await host.renders?.take({ quality: o.quality, parts, title }).catch(() => null) ?? null : null;
+      let r: { tagged: Uint8Array; secs: number; kbps: number; stereo: boolean; roles: string[]; cached: boolean }, kept = false;
+      if (hit) r = { tagged: hit.bytes, secs: hit.secs, kbps: hit.kbps, stereo: hit.stereo, roles: hit.roles, cached: true };
+      else {
+        const m = await renderMp3(o), tag = mp3Tag(m.roles).tag, tagged = new Uint8Array(tag.length + m.bytes.length);
+        tagged.set(tag, 0); tagged.set(m.bytes, tag.length);
+        r = { tagged, secs: m.secs, kbps: m.kbps, stereo: m.stereo, roles: m.roles, cached: false };
+        if (whole) kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo }, tagged).catch(() => false) ?? false;   // 记不进去 = 宿主报进黑匣子，照常把声音给人
+      }
+      const { lines, fellBack } = mp3Tag(r.roles);
       // 文件名 = 名[-曲段]-YYYYMMDD-HHMM（v0.9.47；user「看一下wxhw还是weebpaint，导出的时候文件名应该还有导出的时间，也许还有防撞」= WeebPaint naming.ts「下载版本 = 名-YYYYMMDD-HHMM」；
       //   同一分钟再导 = 浏览器 / 系统自己补 (1)——WeebPaint 的规矩：撞名后缀只在能查占用的去处（云端）做，本地下载 / 分享查不了，交给系统）
-      const file = new File([...(r.fromFinal ? [] : [tag as unknown as BlobPart]), r.bytes as unknown as BlobPart], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || _t("这一张"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
+      const file = new File([r.tagged as unknown as BlobPart], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || _t("这一张"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
       const Q = r.stereo ? _t("立体声") : _t("单声道");
-      offerFile(file, _t("歌声导出好了"), _t("{p} 秒 · mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r.secs.toFixed(1), Q, kbps: r.kbps, size: mp3SizeText(file.size), fromFinal: r.fromFinal ? _t("（定稿的那一份，没有重渲）") : "", fellBack: (fellBack ? `<div class="offer-msg">${_t("许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。")}</div>` : ""), length: (!r.fromFinal && issues.length ? `<div class="offer-msg issue-warn">${_t("这几条轨没出声，mp3 里没有它们：")}${escHtml(issuesText(issues))}</div>` : ""), lines: creditsBlock(lines, _t("署名 · 已写进 mp3 的标签")) }));
+      offerFile(file, _t("歌声导出好了"), _t("{p} 秒 · mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r.secs.toFixed(1), Q, kbps: r.kbps, size: mp3SizeText(file.size), fromFinal: r.cached ? _t("（用的是这台设备上记着的上次渲好的那份，内容没变）") : kept ? _t("（记在这台设备上了：内容不变的话下次不用再渲）") : "", fellBack: (fellBack ? `<div class="offer-msg">${_t("许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。")}</div>` : ""), length: (!r.cached && issues.length ? `<div class="offer-msg issue-warn">${_t("这几条轨没出声，mp3 里没有它们：")}${escHtml(issuesText(issues))}</div>` : ""), lines: creditsBlock(lines, _t("署名 · 已写进 mp3 的标签")) }));
     } catch (e) {
       progress(""); showError(_t("导出失败：{Error}", { Error: (e as Error).message }));
     } finally { exporting = false; }

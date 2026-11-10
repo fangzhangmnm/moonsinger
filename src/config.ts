@@ -20,7 +20,8 @@ export const SONG_SUFFIX = ".mxl";
 export const APP_NS = "moonsinger-5b1e7c0a92d34f6e";
 export const APP_DB_PREFIX = `${APP_NS}.`;
 /** 自家派生缓存库（全删可再生）。2026-11-03 起按家族规则书 §1 第 3 条的形状 `<app>-<guid>.<用途>`（Fable 裁定，家族工单 A2 ⑤）；建库处（gallery-host / singer worker）和还原出厂都读这一处。 */
-export const CACHE_DBS = { thumbs: `${APP_NS}.thumbs`, facts: `${APP_NS}.facts`, speech: `${APP_NS}.speech` } as const;
+//   renders（2026-11-10）= 这台设备上记着的渲好的声音（src/app/render-cache-idb.ts；user 11-09「软件在设备上记着不就行了？…相当于记着的是缓存同意」）。
+export const CACHE_DBS = { thumbs: `${APP_NS}.thumbs`, facts: `${APP_NS}.facts`, speech: `${APP_NS}.speech`, renders: `${APP_NS}.renders` } as const;
 /** 改名前的老名字：不搬（都是可再生的派生物，搬 = 配额双倍压力），空闲片里探到就删（factory-reset.ts dropLegacyCacheDbs）。 */
 export const LEGACY_CACHE_DBS = ["moonsinger-thumbs", "moonsinger-facts", "moonsinger-speech"] as const;
 

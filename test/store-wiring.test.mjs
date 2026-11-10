@@ -56,7 +56,7 @@ describe("store-wiring", () => {
     assert(!/pendingOpenId/.test(s), "pendingOpenId 已经退场：排队之后 open(B) 会等在 A 的保存后面，A 的「云端覆盖本地」重载不能读到 B");
     // 快照 = encode 的同步前缀；要等的东西放 prepare（editor-session 在记名字之前等）
     has(s, /prepare: \(\) => refHost\.settled\(\),/, "参考窗的卡还在编 = 在 prepare 里等");
-    has(s, /encode: async \(\) => \{ encodedSnap = D\.savedMark\(\); const bytes = await encoder\.encode\(/, "encode 里 encoder.encode() 之前不许有 await（快照必须在同步前缀里取）");
+    has(s, /encode: async \(\) => \{ encodedSnap = D\.savedMark\(\); const r = await encoder\.encode\(/, "encode 里 encoder.encode() 之前不许有 await（快照必须在同步前缀里取）");   // r = { bytes, fingerprint }（2026-11-10 编码 worker 顺手带回内容指纹）
     has(s, /onSaved: \(name\) => \{ const cur = H\.identifier\(\) === name; if \(cur && encodedSnap\) D\.adoptSaved\(encodedSnap\); encodedSnap = null;/, "「已存」的基线只记给还开着的那一首");
     // adapter 的回调里不许 await / 调 editor-session 自己的入口（队里的自己等队尾的自己 = 卡死）
     { const a = s.indexOf("const es = createEditorSession({"), b = s.indexOf("policy: { autosaveMs: LOCAL_SAVE_DEBOUNCE_MS", a); assert(a > 0 && b > a, "找到 es 的配置块"); assert(!/\bes\./.test(code(s.slice(a + 10, b))), "es 的 adapter 回调里出现了 es.xxx"); }
