@@ -113,6 +113,16 @@ await p.waitForTimeout(400);
 const evil = await p.evaluate(() => ({ navs: document.querySelectorAll("#score .score-overlay .ov-nav").length, bad: document.querySelectorAll("[data-evil], [data-evil2]").length }));
 check(evil.navs >= 1, "两张纸 = 有曲段控件组", JSON.stringify(evil));
 check(evil.bad === 0, "编号里带引号 / 尖括号 = 拼不出多余的属性", JSON.stringify(evil));
+// ⑦ 印出来的样子（v0.16.74，带谱视频用）：覆盖层 / 光标藏起来，强调色不上（拿一个字临时挂上 hot 看它的颜色）；关掉还原
+const look = async (on) => p.evaluate((on) => {
+  window.__moonsinger.printLook(on);
+  const vis = (sel) => [...document.querySelectorAll(sel)].some((e) => getComputedStyle(e).display !== "none");
+  const t = document.querySelector(".staff-svg text"); t?.classList.add("hot"); const hot = t ? getComputedStyle(t).fill : null; t?.classList.remove("hot");
+  return { overlay: vis("#score .score-overlay"), caret: vis(".staff-svg .caret"), hot };
+}, on);
+const on = await look(true), off = await look(false), INK = "rgb(42, 42, 42)";
+check(!on.overlay && !on.caret && on.hot === INK, "印出来的样子：覆盖层、光标藏了，强调色不上（墨色）", JSON.stringify(on));
+check(off.overlay && off.hot !== null && off.hot !== INK, "关掉 = 覆盖层回来、强调色照旧", JSON.stringify(off));
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\n${pass} passed, ${fail} failed`);
 await b.close(); process.exit(fail ? 1 : 0);

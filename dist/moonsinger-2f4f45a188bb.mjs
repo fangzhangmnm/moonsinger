@@ -5075,7 +5075,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.73-2026-11-10";
+var APP_VERSION = "v0.16.74-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29627,7 +29627,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-8354b43b185f.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-502490d32269.mjs");
+      return pick(() => "encode-worker-fbc7bf9095ed.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -53503,6 +53503,10 @@ window.__moonsinger = {
   renderMix: () => renderMixForTest(),
   playheadAt: (p2, ahead = null) => view.setPlayhead(p2, ahead),
   // 播放线摆到这儿（不出声；scripts/render-video.mjs 逐格出带谱视频用）
+  printLook: (on2) => {
+    document.body.classList.toggle("print-look", on2);
+  },
+  // 谱面切成「印出来的样子」（v0.16.74；styles.css body.print-look：藏覆盖层 / 缩放读数 / 注解 / 光标，不上强调色；带谱视频用，免得它靠一串界面类名）
   zoomTo: (phys) => view.restoreZoom(phys),
   // 谱面缩放到几倍（物理倍数，null = 自动；不记进设备；scripts/render-video.mjs 让谱占满画面用）
   transport: () => ({ startMark: perfApi.startMark, paused: perfApi.paused, listen: listenOn(), loop: perfApi.loopOn, turnLead: perfApi.turnLead }),
@@ -53545,7 +53549,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "7f8f42137dfb",
+  cssHash: "1f39c4e25324",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -57585,4 +57589,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-04b21f175b93.mjs.map
+//# sourceMappingURL=moonsinger-2f4f45a188bb.mjs.map

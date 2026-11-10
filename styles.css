@@ -123,12 +123,12 @@ body:has(.offer:not([hidden])) .notice-stack { top: calc(var(--safe-top) + 54px)
 .staff-svg path.slur { fill: none; stroke: var(--ink); stroke-width: 1.3; }   /* 连线（2026-10-08 连断） */
 .staff-svg path.hairpin { fill: none; stroke: var(--ink); stroke-width: 1.1; }   /* 渐强渐弱（2026-10-08） */
 .staff-svg path.hairpin.art-mute { stroke: var(--muted); opacity: .5; }
-.staff-svg text.note.in-span { fill: var(--accent); }   /* 点开的记号管的那几个音 */   /* 渐到：虚线发夹（从上一个力度字起；手写的是实线）——2026-10-08 Opus 5.5 */
+body:not(.print-look) .staff-svg text.note.in-span { fill: var(--accent); }   /* 点开的记号管的那几个音 */   /* 渐到：虚线发夹（从上一个力度字起；手写的是实线）——2026-10-08 Opus 5.5 */
 .staff-svg text.tempo-change { fill: var(--accent); }   /* 这一段开头的速度和上一段不一样：↑ 快了 / ↓ 慢了（2026-10-08 Opus 5.5；user「不要grey out，而是有变化的时候会标一个东西提示用户」） */
 .staff-svg path.slur.art-mute { fill: none; stroke: var(--muted); opacity: .5; }
 .staff-svg .ghost { fill: var(--ghost); stroke: var(--ghost); }
 .staff-svg path.tie.ghost { fill: none; }
-.staff-svg .cur { fill: var(--accent); stroke: var(--accent); }
+body:not(.print-look) .staff-svg .cur { fill: var(--accent); stroke: var(--accent); }
 .staff-svg path.tie.cur { fill: none; }
 .staff-svg line.caret { stroke: var(--accent); }
 /* 光标 / 选区带不进排版（W-17 第 1 刀，2026-10-15）：score-view 在 ink 层画；写字头的蓝 / 选中 / 强调色按 data-tok 开关 class */
@@ -272,7 +272,7 @@ body.listen-mode .ink-caret { display: none; }
 #docTitle { max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 纸面最上面的歌名（不填也行；点了就地改） */
 .staff-svg .song-title { fill: var(--ink); }
-.staff-svg .part-name.focus { fill: var(--accent); }                 /* 光标所在的声部 */
+body:not(.print-look) .staff-svg .part-name.focus { fill: var(--accent); }                 /* 光标所在的声部 */
 .staff-svg .paper-name { fill: var(--ink); }        /* 曲段名（纸顶一条） */
 .staff-svg .part-badge { fill: var(--accent); }       /* 名字下面的角标：静音 / 独奏 / 只看它 */
 .staff-svg path.brace { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }   /* 大谱表花括号 */
@@ -907,14 +907,14 @@ span.smufl { pointer-events: none; }
 .ctx-menu .ctx-hint { font-size: 11px; color: var(--muted); padding: 2px 12px 4px; }
 .score.lifting { cursor: grabbing; }
 /* 正拖着的力度记号 / 渐强渐弱 / 字：强调色（2026-10-08 user「然后拖动能不能给一点视觉反馈」） */
-.staff-svg text.hot { fill: var(--accent); }
+body:not(.print-look) .staff-svg text.hot { fill: var(--accent); }
 /* 台上这位唱不出来的歌词：画灰（纪律「做不到的一律画灰 + 明说」；说明在歌手牌小卡 / 歌词框上面的小字） */
 .staff-svg text.lyric.lyric-mute { fill: var(--muted); opacity: .55; }
 .lyric-hint { position: absolute; z-index: 6; width: max-content; max-width: 280px; font-size: 12px; line-height: 1.35; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; pointer-events: none; }
 .lyric-reading { max-width: 360px; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
 .lyric-reading b { color: var(--ink); background: var(--accent-soft); border-radius: 3px; padding: 0 2px; }
 .tc-warn { font-size: 12px; color: var(--muted); padding: 6px 4px 0; line-height: 1.45; max-width: 300px; }
-.staff-svg path.hairpin.hot { stroke: var(--accent); stroke-width: 1.6; }
+body:not(.print-look) .staff-svg path.hairpin.hot { stroke: var(--accent); stroke-width: 1.6; }
 /* pad「⋯ → 布局…」= 对话框（2026-10-08 Opus 5.5；user「…比如变成加减号」「要不键盘layout还是一个模态对话框，不会破坏键盘的尺寸」）：
    行 / 列 = 加减号步进，二选一 = 分段钮；卡片靠上，键盘在下面看得见、点了马上变 */
 .offer.pad-layout { align-items: flex-start; padding-top: 64px; }
@@ -959,7 +959,7 @@ span.smufl { pointer-events: none; }
 /* 谱内反复 / 跳转（2026-10-09）：房子括号、Segno / Coda、D.C. / Fine…；不起作用的画灰（.art-mute，通用规则） */
 .staff-svg path.volta { fill: none; stroke: var(--ink); stroke-width: 1.1; }
 .staff-svg path.volta.art-mute { stroke: var(--muted); opacity: .5; }
-.staff-svg .nav-mark.sel, .staff-svg .nav-sign.sel, .staff-svg .repeat-bar.sel, .staff-svg .nav-sign.hot { fill: var(--accent); }
+body:not(.print-look) .staff-svg .nav-mark.sel, body:not(.print-look) .staff-svg .nav-sign.sel, body:not(.print-look) .staff-svg .repeat-bar.sel, body:not(.print-look) .staff-svg .nav-sign.hot { fill: var(--accent); }
 .ctx-menu.groove-menu { max-width: min(360px, calc(100vw - 16px)); }
 /* 整段 / 整首移调转调（v0.9.33） */
 .ctx-menu.transpose-menu { max-width: min(380px, calc(100vw - 16px)); }
@@ -996,6 +996,9 @@ span.smufl { pointer-events: none; }
 .start-mark { position: absolute; width: 0; border-left: 2px dashed var(--start); pointer-events: none; }
 .start-mark::before { content: ""; position: absolute; left: -2px; top: -2px; width: 10px; height: 8px; background: var(--start); clip-path: polygon(0 0, 100% 50%, 0 100%); }
 body.listen-mode .staff-svg .caret { display: none; }   /* 听：不写谱 = 不画光标 */
+/* 印出来的样子（v0.16.74，`__moonsinger.printLook(on)`；带谱视频工具用，2026-11-10 带谱视频会话提的）：编辑器的东西全藏（覆盖层、缩放读数、上面的条、光标、选区带）、
+ * 注解藏（和 PDF 的 SKIP 同一张名单：ann / selbox / caret / in-span）、强调色不上（上面那几条强调色规则都带 body:not(.print-look)）。只改看的样子，不改排版。 */
+body.print-look #bar, body.print-look .zoom-reset, body.print-look .score-overlay, body.print-look #score .ann, body.print-look .selbox, body.print-look .staff-svg .caret, body.print-look .ink-caret { display: none !important; }
 /* 模式（2026-10-10）：顶栏的分段钮；「听」亮着用播放色 */
 /* 模式不再把别的层调淡（v0.10.38，见下） */
 /* （v0.10.38 拿掉：「词」里记号变淡、「符」里歌词变淡——user「词模式下符号没必要灰色」；音 / 符现在是同一个模式，歌词也不淡） */
