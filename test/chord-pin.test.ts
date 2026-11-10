@@ -2,7 +2,7 @@
 //   存了再开还在（MusicXML 原生 <harmony>）、别人谱里的和弦记号接到音上（标在长音中间 / 休止上的丢掉并数出来）、移调跟着挪、换调号级数重算。
 // created 2026-11-10 by Claude Opus 5.5。user 11-09 拍「输入法候选」、11-10「一同意」「三可以接」；设计稿 ai-docs/20261110-wave2-four-designs.md 第四节。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { harmonyTags, harmonyTheory } from "../src/theory/index.ts";
+import { harmonyTags, harmonyTheory, pinXmlKind, xmlKindToPin, PIN_KIND_IDS } from "../src/theory/index.ts";
 import { initState, tr, headLen, TPQ, setChordPin, transposePapers, setHeaderAt, headerSpot, type Token, type Song, type NoteTok } from "../src/score/song.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { readMusicXml } from "../src/format/musicxml.ts";
@@ -87,5 +87,29 @@ describe("接别人谱里的和弦记号（user 11-10「三可以接」）", () 
   it("带 <degree> 的（只读种类会读错）= 不接、数出来", () => {
     const r = pins(harm("C", "dominant", "<degree><degree-value>11</degree-value><degree-alter>1</degree-alter><degree-type>add</degree-type></degree>") + note("E"));
     eq(r.pins, "-"); assert(Object.keys(r.dropped).some((k) => k.includes("和弦记号")), "数出来了");
+  });
+});
+
+// 2026-11-10 Claude Fable 5.2 复查 v0.16.87：文件里的写法是格式，不跟着谱上显示的字变
+describe("每一种和弦在文件里的写法（冻住：只许加，不许改）", () => {
+  const FROZEN: Record<string, string> = {
+    maj: "major", min: "minor", dim: "diminished", aug: "augmented", sus4: "suspended-fourth", sus2: "suspended-second", "7": "dominant", m7: "minor-seventh", maj7: "major-seventh",
+    "6": "major-sixth", m6: "minor-sixth", m7b5: "half-diminished", dim7: "diminished-seventh", mMaj7: "major-minor", aug7: "augmented-seventh", "9": "dominant-ninth", m9: "minor-ninth", maj9: "major-ninth",
+    "11": "dominant-11th", m11: "minor-11th", "13": "dominant-13th", m13: "minor-13th", maj13: "major-13th", "5": "power",
+    "7sus4": "other|7sus4", add9: "other|add9", madd9: "other|m(add9)", "69": "other|6/9", "7b9": "other|7♭9", "7s9": "other|7♯9", "7no3": "other|7(no3)", maj7no3: "other|maj7(no3)",
+  };
+  it("人能挑的每一种都在这张表里，写出去 = 表里的字，读回来 = 同一种", () => {
+    for (const k of PIN_KIND_IDS) {
+      assert(k in FROZEN, `新加的和弦种类「${k}」还没定文件里怎么写：加进 western.ts 的 XML_KIND / XML_OTHER_TEXT，再加进这张表`);
+      const x = pinXmlKind(k); eq(x.value + (x.text !== undefined ? `|${x.text}` : ""), FROZEN[k], k);
+      eq(xmlKindToPin(x.value, x.text), k, `${k} 读回来`);
+    }
+  });
+  it("表里已经有的一条都不能少（老歌里写着它们）", () => {
+    for (const [k, v] of Object.entries(FROZEN)) { const [value, text] = v.split("|"); eq(xmlKindToPin(value, text), k, v); }
+  });
+  it("别人常见的另一种写法也认（7b9 / 7#9）；不认识的字 = 只留名字、写回去还是那几个字", () => {
+    eq(xmlKindToPin("other", "7b9"), "7b9"); eq(xmlKindToPin("other", "7#9"), "7s9");
+    const free = xmlKindToPin("other", "9sus4♭13")!; eq(JSON.stringify(pinXmlKind(free)), JSON.stringify({ value: "other", text: "9sus4♭13" }));
   });
 });

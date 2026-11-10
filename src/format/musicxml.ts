@@ -233,7 +233,9 @@ function partMeasures(toks: Token[], breaks: Map<number, string> | undefined, fi
     }
     if (t.kind === "hairpin") { if (ticks >= len) close(false); if (wedgeOpen) cur.push(wedgeXml("stop")); cur.push(wedgeXml(t.dir === "cresc" ? "crescendo" : "diminuendo")); wedgeOpen = true; continue; }
     if (t.kind === "groove") { if (ticks >= len) close(false); cur.push(grooveXml(t)); continue; }
-    if (t.kind === "clef") { if (staves === 1) { if (ticks >= len) close(false); cur.push(`<attributes>${clefXml(t.clef)}</attributes>`); } continue; }   // 谱号记号（v0.9.28）：小节中间的 <attributes><clef>
+    // 谱号记号（v0.9.28）：小节中间的 <attributes><clef>。大谱表的那一段里也照写（<clef number="1"> = 上面那一行从这里换谱号）：我们自己画大谱表时不看它（上高音下低音是固定的），
+    //   但它是人放的记号——原来这里跳过不写 = 那一段选过大谱表、存一次，中途的换谱号记号就悄悄没了，再改回一行也找不回来（Claude Fable 5.2 2026-11-10 复查 v0.16.88 时查出）。
+    if (t.kind === "clef") { if (ticks >= len) close(false); cur.push(`<attributes>${staves === 1 ? clefXml(t.clef) : clefXml(t.clef).replace("<clef>", '<clef number="1">')}</attributes>`); continue; }
     if (t.kind === "ottava") { if (ticks >= len) close(false); const x = ottavaXml(t.shift, ottOpen, !!t.auto); if (x) cur.push(x); ottOpen = t.shift; continue; }   // 八度线（v0.9.28；auto = 自动画的，v0.9.37）
     if (t.kind !== "note" && t.kind !== "rest") continue;
     let left = t.dur, k = 0;
@@ -427,9 +429,15 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
         }
         if (c.name === "attributes") {
           const d = childText(c, "divisions"); if (d) divisions = Number(d);
-          // 谱号（v0.9.28）：这份里第一个 <clef> = 开头的谱号（info.clef）；后面的 = 中间换谱号（记号）；八度谱号认 <clef-octave-change>；大谱表的不管
+          // 谱号（v0.9.28）：这份里第一个 <clef> = 开头的谱号（info.clef）；后面的 = 中间换谱号（记号）；八度谱号认 <clef-octave-change>。
+          //   上面那一行（没写 number / number="1"）的都读成记号——大谱表的声部也读（2026-11-10 起：原来大谱表的一律不读 = 悄悄丢）；下面那一行的换谱号这一版没有地方放 = 数出来报。
           const cl = kid(c, "clef");
-          if (cl) { const cn = clefOfXml(childText(cl, "sign"), childText(cl, "clef-octave-change")); if (info.clef === undefined) info.clef = cn ?? "G"; else if (cn && !cl.attrs.number && info.staves !== 2) mark({ kind: "clef", id: 0, clef: cn }); }
+          if (cl) {
+            const cn = clefOfXml(childText(cl, "sign"), childText(cl, "clef-octave-change")), upper = (cl.attrs.number ?? "1") === "1";
+            if (info.clef === undefined) info.clef = cn ?? "G";
+            else if (cn && upper) mark({ kind: "clef", id: 0, clef: cn });
+            else if (!upper) drop(_t("大谱表下面一行的换谱号"));
+          }
           if (Number(childText(c, "staves") ?? "1") >= 2) info.staves = 2;
           const key = kid(c, "key"), time = kid(c, "time");
           if (key && childText(key, "fifths") !== undefined) { const f = Number(childText(key, "fifths")), mi = childText(key, "mode")?.trim() === "minor"; if (headPhase && !H.gotKey) { H.fifths = f; H.minor = mi; H.gotKey = true; } else mark({ kind: "key", id: 0, fifths: f, ...(mi ? { mode: "minor" as const } : {}) }); }   // <mode>minor</mode> = 小调；别的调式（dorian…）当大调

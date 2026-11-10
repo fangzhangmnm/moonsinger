@@ -7,6 +7,7 @@ import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.
 import { initState, tr, TPQ, addPart, addPaper, addTrack, removeTrack, setClefChoice, clefChoiceOf, setPaperLook, toggleStaff, setFocus, headClefOf, type Token, type Song, type EditorState } from "../src/score/song.ts";
 import { resolveSongLooks } from "../src/score/clef.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
+import { readMusicXml } from "../src/format/musicxml.ts";
 import { spellMidi } from "../src/score/pitch.ts";
 
 let id = 9800;
@@ -115,5 +116,46 @@ describe("score.json 每段 / 每个声部条目里不认识的键：按 id 原�
     z[".moonsinger/score.json"] = strToU8(JSON.stringify(sj));
     const o = openBytes("x.mxl", zipSync(z)), again = JSON.parse(strFromU8(unzipSync(saveMxl({ song: o.song, hum: o.song.hum, extras: o.extras, app: "t", date: "2026-11-10T00:00:00.000Z" }))[".moonsinger/score.json"]));
     eq(JSON.stringify(again.papers[0].futureThing), JSON.stringify({ a: 1 })); eq(again.parts[0].futureVoice, "x"); eq(again.papers[0].phrases, undefined);
+  });
+});
+
+// 2026-11-10 Claude Fable 5.2 复查 v0.16.88
+describe("大谱表那一段里的换谱号记号：存了不丢（原来写的时候跳过）", () => {
+  const withMid = (): EditorState => {
+    let st = initState(); const P = st.song.parts[0].id, a = st.song.papers[0].id;
+    st = { ...st, song: { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { [P]: [...p.tracks[P], nn(48), nn(50), { kind: "clef", id: id++, clef: "G" } as Token, nn(72), nn(74)] } })) } };
+    return setClefChoice(st, a, P, "F");
+  };
+  const kinds = (s: Song) => s.papers[0].tracks[s.parts[0].id].map((t) => (t.kind === "clef" ? `clef:${t.clef}` : t.kind)).join(" ");
+  it("手选低音 + 中途换高音 → 改成大谱表 → 存了再开：中途那个记号还在；再改回自动 = 它照样起作用", () => {
+    const st = withMid(), P = st.song.parts[0].id, a = st.song.papers[0].id;
+    const g = setClefChoice(st, a, P, "grand");
+    eq(kinds(g.song), "key time tempo note note clef:G note note", "内存里：纸头的手选谱号去掉，中途的留着");
+    const back = openBytes("x.mxl", save(g.song)).song;
+    eq(clefChoiceOf(back.papers[0], P), "grand"); eq(kinds(back), "key time tempo note note clef:G note note", "存了再开还在");
+    const z = unzipSync(save(g.song));
+    assert(/<clef number="1"><sign>G<\/sign>/.test(strFromU8(z[`.moonsinger/papers/${a}.musicxml`]).split("</attributes>").slice(1).join("")), "正本里写成上面那一行的换谱号");
+    assert(!/<clef number="1"><sign>G<\/sign><line>2<\/line><\/clef><\/attributes><note/.test(strFromU8(z["score.musicxml"])), "压平件整首两行时先不带（和原来一样）");
+    const auto = setClefChoice({ ...st, song: back }, a, P, "auto");
+    eq(kinds(auto.song), "key time tempo note note clef:G note note");
+  });
+  it("别人的钢琴谱：上面一行中途换谱号 = 读成记号；下面一行的 = 数出来报，不悄悄丢", () => {
+    const xml = `<?xml version="1.0"?><score-partwise version="4.0"><part-list><score-part id="P1"><part-name>Piano</part-name></score-part></part-list><part id="P1"><measure number="1">` +
+      `<attributes><divisions>1</divisions><key><fifths>0</fifths></key><time><beats>4</beats><beat-type>4</beat-type></time><staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef></attributes>` +
+      `<note><pitch><step>C</step><octave>5</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>` +
+      `<attributes><clef number="1"><sign>F</sign><line>4</line></clef></attributes>` +
+      `<note><pitch><step>C</step><octave>3</octave></pitch><duration>1</duration><voice>1</voice><type>quarter</type><staff>1</staff></note>` +
+      `<attributes><clef number="2"><sign>G</sign><line>2</line></clef></attributes>` +
+      `<note><pitch><step>E</step><octave>3</octave></pitch><duration>2</duration><voice>1</voice><type>half</type><staff>1</staff></note></measure></part></score-partwise>`;
+    const r = readMusicXml(xml), toks = r.parts[0].tokens;
+    eq(toks.filter((t) => t.kind === "clef").map((t) => (t as { clef: string }).clef).join(" "), "F");
+    eq(Object.entries(r.dropped).map(([k, n]) => `${k}×${n}`).join(" "), "大谱表下面一行的换谱号×1");
+  });
+  it("新写法的歌（minor 4）：就算 score.json 里没有 parts[].clef，文件里第一个 <clef> 也不当成手选的（自动挑了低音谱号的还是自动）", () => {
+    const s = one(rep([36, 43, 48, 52, 55, 57, 50, 45], 2)); eq(lookOf(s).clef, "F");
+    const z = unzipSync(save(s)), sj = JSON.parse(strFromU8(z[".moonsinger/score.json"]));
+    eq(sj.minor, 4); sj.parts = sj.parts.map(({ clef: _c, ...p }: { clef: string }) => p);
+    z[".moonsinger/score.json"] = strToU8(JSON.stringify(sj));
+    eq(clefChoiceOf(openBytes("x.mxl", zipSync(z)).song.papers[0], s.parts[0].id), "auto");
   });
 });

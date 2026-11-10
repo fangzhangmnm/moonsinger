@@ -88,8 +88,13 @@ const stampOf = (k: FormatFile): Json => ({ version: FORMAT[k], minor: FORMAT_MI
  *  老文件的原文本来就是这么串出来的，去掉两个不存在的键 = 原文）。读写两边都走这一把。 */
 const fpTextOf = (o: Json): string => { const { minor: _m, patch: _p, ...rest } = o; return JSON.stringify(rest, null, 2) + "\n"; };
 const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort"]);
-/** papers[] / parts[] 每一条里这一版认得的键（v0.16.88，设计稿第五节）：别的（更新的版本写的）按段 id / 声部 id 原样带回——「保存时不会丢」那句提示从这一版起是真的。
- *  phrases / parts.autoOttava 是退役的键（这一版读的时候已经处理了），算认得、不带回。规矩（Fable 定）：按音的编号挂的东西不许放进这种原样带回的地方（编号每次读都重编）。 */
+/** papers[] / parts[] 每一条里这一版认得的键（v0.16.88，设计稿第五节）：别的（更新的版本写的）按段 id / 声部 id 原样带回。
+ *  phrases / parts.autoOttava 是退役的键（这一版读的时候已经处理了），算认得、不带回。
+ *  规矩（Claude Fable 5.2 2026-11-10 定）：
+ *   ① 能原样带回的只有 score.json / 总目录 / 休息室 / 录音房里的键。写在每段 MusicXML 里的新东西带不回（这一版是把 MusicXML 读成记号再重新写出去的，不认识的元素读不进来）
+ *      ——所以打开更新版本存的歌时那句提示说的是「存一次，其中一部分会丢」，不许说「不会丢」。
+ *   ② 以后的版本往这种原样带回的地方放东西，只许按段 id / 声部 id 挂，不许按音的编号挂（音的编号每次读都重编，旧版本改过谱再带回去就挂错音了）。
+ *   ③ 已知的边角：段 / 声部的 id 是「现有的最大号 + 1」，删掉最后一个再新建会拿到同一个号——这时带回的东西会落到新建的那个上。只在打开了更新版本存的歌、又删又建的时候才碰得到，先记着。 */
 const KNOWN_PAPER_KEYS = new Set(["id", "file", "manualBars", "unwritten", "swells", "hidden", "autoOttava", "phrases"]);
 const KNOWN_PART_KEYS = new Set(["id", "role", "mic", "kind", "clef", "autoOttava", "host", "brokenChords"]);
 const unknownById = (list: unknown, known: ReadonlySet<string>): Map<string, Json> => {
@@ -172,6 +177,9 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
       });
       toks = out; starts = ns;
     }
+    // 整首两行写的时候，谱号记号先不带进压平件（和 2026-11-10 之前一样）：要带得对，得在每一段开头把上面那一行的谱号重新交代一遍（一行的段 = 它的谱号、大谱表的段 = 高音），
+    //   还没做——记在计划书里。每一段自己的正本（papers/*.musicxml）里这些记号是照写的，不丢。
+    if (two) { const keep = toks.map((t) => t.kind !== "clef"), shift = (i: number) => keep.slice(0, i).filter(Boolean).length; starts = starts.map((x) => ({ ...x, index: shift(x.index) })); toks = toks.filter((_, i) => keep[i]); }
     const first = two ? undefined : lookAt(starts[0]?.paper.id ?? "", part.id)?.clef;
     if (first) {
       let off = 0;
@@ -780,7 +788,11 @@ export function openBytes(name: string, bytes: Uint8Array): Opened {
   for (const [p, b] of Object.entries(files)) if (!known.has(p) && !p.endsWith("/")) extras.unknown[p] = b;
   const song = songFromReads(reads, papers, (scoreExt?.parts as Json[] | undefined) ?? null, legacyLooks);
   const o = finish(reads, song, pruneSounds(extras), ours, name);
-  const advice = newerMinor.length ? [_t("这首歌是更新版本的 MoonSinger 存的（{p}里有这一版还没有的东西）：照样能开能改能存，那些东西保存时不会丢，只是在这一版看不到。", { p: newerMinor.join("、") })] : [];
+  // 定稿的记录上面已经按文件原文核过。这一版读进来再写出去的样子可能和原文不一样：音的编号读的时候重编；老写法搬成新写法（句号去掉、声部上的谱号 / 自动八度线搬到每一段）——
+  //   内容没变，只是写法变了。指纹换成「这一版写出来的样子」的：不然定稿着的歌一存（比如导出一份副本）就被 saveMxl 的护栏拦下、报「内容却变了」，还劝人改稿。
+  //   Claude Fable 5.2 2026-11-10 复查时查出（v0.16.82 存得了、v0.16.86 起带句号 / 声部谱号的存不了；编号那一种更早就有）。定稿退役时这一段跟着护栏一起删。
+  if (o.extras.final) { const now = buildEntries({ song: o.song, hum: o.hum, extras: o.extras, app: "", date: "" }).fingerprint; if (now !== o.extras.final.fingerprint) o.extras.final = { ...o.extras.final, fingerprint: now }; }
+  const advice = newerMinor.length ? [_t("这首歌是更新版本的 MoonSinger 存的（{p}里有这一版还没有的东西）：照样能开能改能存，只是那些东西这一版看不到，在这一版里存一次，其中一部分会丢。想原样留着，先更新 app 再改。", { p: newerMinor.join("、") })] : [];
   return { ...o, notices: [...finalNotices, ...o.notices], references, advice };
 }
 
@@ -816,7 +828,9 @@ function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: 
       if (oldAoOff.has(id)) lk[id] = { ...lk[id], autoOttava: false };
       if (grand) continue;
       const fileClef = reads[k]?.parts.find((rp) => rp.info.id === id)?.info.clef;
-      const want = oldClef.get(id) ?? (!clefFromScore.has(id) && fileClef && fileClef !== "G" ? fileClef : undefined);
+      // 第一个 <clef> 当成手选的谱号，只对老写法里 score.json 没写 clef 的声部（v0.9.28 以前 / 别家的谱）；新写法（minor ≥ 4）手选的一律是纸头的谱号记号，
+      //   不看 parts[].clef 这个键在不在（它现在只是写给旧版本看的）。
+      const want = oldClef.get(id) ?? (legacyLooks && !clefFromScore.has(id) && fileClef && fileClef !== "G" ? fileClef : undefined);
       const toks = seg.tracks[id];
       if (want && !headClefOf(toks)) { const at = headLen(toks); seg.tracks[id] = [...toks.slice(0, at), { kind: "clef", id: 0, clef: want }, ...toks.slice(at)]; }
     }

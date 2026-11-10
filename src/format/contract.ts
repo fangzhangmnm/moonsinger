@@ -30,6 +30,14 @@ export type FormatFile = keyof typeof FORMAT;
  *  手选的大谱表 = 那张纸自己的 <staves>2（以前每张纸都写）、这一段关了自动八度线 = papers[].autoOttava（声部 id → false）、手选的谱号 = 纸头谱号记号；
  *  parts[].clef 照旧写 "auto"（给旧版本看），parts[].autoOttava 不再写。读：minor < 4 = 老写法，搬到每一段（project.ts songFromReads）。
  *  旧版本打开：手选了大谱表的声部整首成大谱表、每段关的自动八度线回到开着，音不丢，提示一次。 */
+/** 复查（2026-11-10 Claude Fable 5.2；user「看一下文件格式的设计是否干净，还是乱。吃书是允许的」）——拿正式版 v0.15.5、v0.16.82、v0.16.87 的真代码当读者 / 写者跑过，结论和补的几处：
+ *  · 「一个声部在一段里怎么画」分三处放，各有出处，不合并：手选的谱号 = 纸头的谱号记号（v0.9.28「只改这张纸」起就是这个写法，老歌里已经有）；手选的大谱表 = 那张纸 MusicXML 的 <staves>2（标准写法）；
+ *    关自动八度线 = papers[].autoOttava（MusicXML 说不了「别自动画」）。自动挑出来的（谱号 / 大谱表 / 八度线）一律不算数据：正本里写的是挑好的结果或者不写，读的时候不认。
+ *  · 旧版本开了新歌再存一次，实测会丢的（比上一段写的多）：小调、和弦名（旧版本会说「和弦记号 N 处没读进来」）、每段关的自动八度线；
+ *    哪一段手选了大谱表 → 那个声部每一段都成大谱表，**并且这个声部每一段的谱号记号（纸头手选的、中途换的）都没了**（旧版本写大谱表时不写谱号记号）。音、歌词不丢。这就是 minor 的代价，旧版本改不了。
+ *  · 大谱表那一段里的谱号记号：这一版起照写照读（<clef number="1">，musicxml.ts）——原来写的时候跳过，选过大谱表再存一次就悄悄没了。画大谱表时仍然不看它。
+ *  · 没有标准名的和弦种类（7sus4 / add9 / 6/9 / 7♭9…）在 <kind text="…">other</kind> 里写的字 = 一张冻住的表（theory/western.ts XML_OTHER_TEXT），和谱上显示的字分开。
+ *  · 没有改 major，也没有改 minor：补的都是「读得更多 / 不再丢」，v0.16.88–90 那一天存的歌照样开。 */
 export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 4, lounge: 1, studio: 1 };
 export const FORMAT_PATCH: Readonly<Record<FormatFile, number>> = { manifest: 0, score: 0, lounge: 0, studio: 0 };
 

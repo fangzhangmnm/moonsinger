@@ -158,16 +158,26 @@ const XML_KIND: Record<string, string> = { maj: "major", min: "minor", dim: "dim
   "6": "major-sixth", m6: "minor-sixth", m7b5: "half-diminished", dim7: "diminished-seventh", mMaj7: "major-minor", aug7: "augmented-seventh", "9": "dominant-ninth", m9: "minor-ninth", maj9: "major-ninth",
   "11": "dominant-11th", m11: "minor-11th", "13": "dominant-13th", m13: "minor-13th", maj13: "major-13th", "5": "power" };
 const KIND_BY_XML: Record<string, string> = Object.fromEntries(Object.entries(XML_KIND).map(([k, v]) => [v, k]));
+/** 没有标准名的那几种写进文件的字（<kind text="…">other</kind>）。**这张表是文件格式：只许加，不许改已经有的。**
+ *  和谱上显示的字（TPLS 的 sym）分开放——v0.16.87 写的是 sym 本身，以后谁改了显示的写法，老歌里的和弦名就认不出种类了（Claude Fable 5.2 2026-11-10 复查时改）。
+ *  现在的值 = v0.16.87 当时的 sym，所以那几版存的歌照样认得。守卫 = test/chord-pin.test.ts「每一种和弦在文件里的写法」。 */
+const XML_OTHER_TEXT: Record<string, string> = { "7sus4": "7sus4", add9: "add9", madd9: "m(add9)", "69": "6/9", "7b9": "7♭9", "7s9": "7♯9", "7no3": "7(no3)", maj7no3: "maj7(no3)" };
+/** 读的时候多认几种别人常见的写法（只读不写）。 */
+const OTHER_TEXT_ALIAS: Record<string, string> = { "7b9": "7b9", "7#9": "7s9", "madd9": "madd9", "69": "69", "6add9": "69" };
+const KIND_BY_OTHER_TEXT: Record<string, string> = { ...OTHER_TEXT_ALIAS, ...Object.fromEntries(Object.entries(XML_OTHER_TEXT).map(([k, v]) => [v, k])) };
+/** 人能挑的和弦种类（测试守「每一种在文件里都有写法」用）。 */
+export const PIN_KIND_IDS: readonly string[] = [...TPLS.map((t) => t.id), "5"];
 export function pinXmlKind(kind: string): { value: string; text?: string } {
   if (kind.startsWith(FREE)) return { value: "other", text: kind.slice(FREE.length) };
   const std = XML_KIND[kind]; if (std) return { value: std };
-  return { value: "other", text: TPLS.find((t) => t.id === kind)?.sym ?? kind };
+  return { value: "other", text: XML_OTHER_TEXT[kind] ?? kind };
 }
 /** <kind> 的值 + text 属性 → 和弦种类；认不出 = null（调用方数出来报）。 */
 export function xmlKindToPin(value: string, text: string | undefined): string | null {
   const std = KIND_BY_XML[value]; if (std) return std;
   if (value !== "other" || !text) return null;
-  return TPLS.find((t) => t.sym === text && t.sym !== "")?.id ?? FREE + text;
+  const own = KIND_BY_OTHER_TEXT[text]; if (own) return own;
+  return TPLS.find((t) => t.sym === text && t.sym !== "")?.id ?? FREE + text;   // 别的软件写的字碰巧和我们显示的一样 = 也认（图方便，不算身份）；都不是 = 只留名字
 }
 const samePin = (a: ChordGuess, b: ChordGuess): boolean => pc(a.root) === pc(b.root) && a.tpl === b.tpl && pc(a.bass) === pc(b.bass);
 function pinRead(pin: ChordPin, at: { fifths: number; minor: boolean }, auto: HarmonyRead | undefined): ChordRead | null {

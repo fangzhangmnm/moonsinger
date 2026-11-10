@@ -3,7 +3,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { sha256HexSync, sha256TextSync } from "../src/format/sha256-sync.ts";
 import { contentFingerprint, strippedXml, parseFinalRecord, FINAL_MP3_ENTRY, type FinalRecord } from "../src/format/final.ts";
 import { saveMxl, openBytes, contentFingerprintOf, withFinal, withoutFinal, isFinal, withThumbnail, withCalibration, withRoleName, emptyExtras } from "../src/format/project.ts";
-import { unzipSync, strFromU8, zipSync } from "../vendor/fflate/fflate.esm.js";
+import { unzipSync, strFromU8, strToU8, zipSync } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong, sampleExtras, sampleView } from "./fixtures/format/sample-song.ts";
 const nodeCrypto = (await import("node:crypto" as string)) as { createHash(a: string): { update(b: Uint8Array | string): { digest(e: "hex"): string } } };
 
@@ -108,5 +108,40 @@ describe("定稿记录进出 .mxl", () => {
     const m = JSON.parse(strFromU8(files[".moonsinger/manifest.json"]));
     eq(m.final, undefined); eq(m.finalRev, undefined); eq(files[FINAL_MP3_ENTRY], undefined);
     const ex = emptyExtras(); eq(ex.final, null); eq(ex.finalRev, 0);
+  });
+});
+
+// 2026-11-10 Claude Fable 5.2 复查：这一版读进来再写出去的样子和旧文件原文不一样（老写法搬成新写法 / 音的编号重编）时，定稿着的歌照样存得了
+describe("以前定稿的歌，这一版开了再存（写法变了、内容没变）", () => {
+  /** 把一份刚存出来的歌改成「旧版本定稿过」的样子：score.json 按 edit 改成老写法，再按文件原文算指纹、把定稿记录和 mp3 放进去。 */
+  const oldFinal = (edit: (sj: Record<string, unknown>) => void, editXml: (xml: string) => string = (x) => x): Uint8Array => {
+    const z = unzipSync(saveMxl(ARGS())) as Record<string, Uint8Array>, sjPath = ".moonsinger/score.json", sj = JSON.parse(strFromU8(z[sjPath])) as Record<string, unknown>;
+    edit(sj); z[sjPath] = strToU8(JSON.stringify(sj, null, 2) + "\n");
+    const papers: Record<string, string> = {}, lounge: Record<string, string> = {};
+    for (const p of sj.papers as { id: string; file: string }[]) { z[p.file] = strToU8(editXml(strFromU8(z[p.file]))); papers[p.id] = strFromU8(z[p.file]); }
+    const noStamp = (t: string) => { const { minor: _m, patch: _p, ...rest } = JSON.parse(t) as Record<string, unknown>; return JSON.stringify(rest, null, 2) + "\n"; };
+    for (const k of Object.keys(z)) { const m = /^\.moonsinger\/lounge\/([^/]+)\.json$/.exec(k); if (m) lounge[m[1]] = noStamp(strFromU8(z[k])); }
+    const fp = contentFingerprint({ papers, scoreExt: noStamp(strFromU8(z[sjPath])), lounge, studio: noStamp(strFromU8(z[".moonsinger/studio.json"])), sounds: Object.keys(z).filter((k) => k.startsWith(".moonsinger/sounds/")), thumbnail: z["Thumbnails/thumbnail.png"] ?? null });
+    const mf = JSON.parse(strFromU8(z[".moonsinger/manifest.json"])) as Record<string, unknown>;
+    mf.final = record(fp, MP3); mf.finalRev = 1; z[".moonsinger/manifest.json"] = strToU8(JSON.stringify(mf, null, 2) + "\n"); z[FINAL_MP3_ENTRY] = MP3;
+    return zipSync(z);
+  };
+  const reopenAndSave = (bytes: Uint8Array, what: string) => {
+    const o = openBytes("x.mxl", bytes); assert(isFinal(o.extras), `${what}：打开后定稿还在`);
+    const again = saveMxl({ song: o.song, hum: o.hum, extras: o.extras, app: "test", date: "2026-11-10T00:00:00.000Z", view: o.view ?? undefined });   // 原来这里抛「内容却变了」
+    const o2 = openBytes("x.mxl", again); assert(isFinal(o2.extras), `${what}：存了再开，定稿还在（新文件里的指纹对得上新文件）`); eq(o2.notices.filter((n) => n.includes("定稿")).length, 0);
+    eq(JSON.stringify(o2.extras.finalMp3), JSON.stringify(MP3), "mp3 原样");
+  };
+  it("老写法：带句号、声部上写着默认谱号和「不要自动八度线」（score minor 3）", () => {
+    reopenAndSave(oldFinal((sj) => { sj.minor = 3; const papers = sj.papers as Record<string, unknown>[], parts = sj.parts as Record<string, unknown>[];
+      papers[0].phrases = { [String(parts[0].id)]: [1] }; delete papers[0].autoOttava; parts[0].clef = "F"; parts[0].autoOttava = false; }), "老写法");
+  });
+  it("音的编号不是从头排的（定稿那一刻内存里的编号，开过一次就重编了）", () => {
+    reopenAndSave(oldFinal(() => {}, (xml) => xml.replace(/ id="n(\d+)(-\d+)?"/g, (_m, n: string, tail: string | undefined) => ` id="n${Number(n) + 900}${tail ?? ""}"`)), "编号");
+  });
+  it("定稿之后真被改过内容的照旧作废（没有因为换指纹放过去）", () => {
+    const z = unzipSync(oldFinal(() => {})) as Record<string, Uint8Array>, k = Object.keys(z).find((x) => /papers\/.*\.musicxml$/.test(x))!;
+    z[k] = strToU8(strFromU8(z[k]).replace("<step>C</step>", "<step>D</step>"));
+    const o = openBytes("x.mxl", zipSync(z)); assert(!isFinal(o.extras), "作废"); assert(o.notices.some((n) => n.includes("定稿后被改过")));
   });
 });

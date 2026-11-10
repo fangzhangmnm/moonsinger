@@ -3981,6 +3981,7 @@ var S = {
   "\u6F14\u594F\u6CD5\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF09": { en: "Articulation marks (not recognized by this version)" },
   "\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09": { en: "Dynamic marks (not recognized by this version, such as sfz)" },
   "\u6309\u62CD\u5B50\u91CD\u590D\u7684\u98A4\u97F3\uFF08\u4E00\u4E24\u9053\u659C\u7EBF\uFF09": { en: "Measured tremolo (one or two slashes)" },
+  "\u5927\u8C31\u8868\u4E0B\u9762\u4E00\u884C\u7684\u6362\u8C31\u53F7": { en: "clef changes on the lower staff of a grand staff" },
   "\u88C5\u9970\u97F3": { en: "Grace notes" },
   "\u63D0\u793A\u97F3\u7B26": { en: "Cue notes" },
   "\u540C\u4E00\u58F0\u90E8\u91CC\u7684\u7B2C\u4E8C\u6761\u65CB\u5F8B": { en: "A second melody within one part" },
@@ -4008,7 +4009,7 @@ var S = {
   "\u5B9A\u7A3F\u7684 mp3 \u4E0D\u5728\u6B4C\u91CC\u6216\u5927\u5C0F\u4E0D\u5BF9\uFF08\u8BB0\u5F55 {bytes} \u5B57\u8282\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u6309\u6CA1\u5B9A\u7A3F\u6253\u5F00\u3002": { en: "The final mp3 is missing or the wrong size (record says {bytes} bytes): final discarded, opened as not finalized." },
   "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u540E\u88AB\u6539\u8FC7\uFF08\u53EF\u80FD\u662F\u65E7\u7248 app \u6216\u522B\u7684\u8F6F\u4EF6\u6539\u7684\uFF09\uFF1A\u5B9A\u7A3F\u4F5C\u5E9F\uFF0C\u90A3\u4EFD mp3 \u4E0D\u7B97\u6570\u4E86\u3002\u8981\u7684\u8BDD\u6539\u5B8C\u518D\u5B9A\u7A3F\u4E00\u6B21\u3002": { en: "This song was changed after finalizing (perhaps by an old app version or other software): final discarded, that mp3 no longer counts. Finalize again after editing if you want." },
   "\u7EB8\u300C{id}\u300D\u7684\u8C31\uFF08{file}\uFF09\u5728\u5305\u91CC\u627E\u4E0D\u5230": { en: "Score of sheet \u201C{id}\u201D ({file}) isn't in the archive" },
-  "\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u90A3\u4E9B\u4E1C\u897F\u4FDD\u5B58\u65F6\u4E0D\u4F1A\u4E22\uFF0C\u53EA\u662F\u5728\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\u3002": { en: "This song was saved by a newer MoonSinger ({p} has things this version doesn't): you can still open, edit and save it, and those things aren't lost on save, they're just not visible in this version." },
+  "\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u53EA\u662F\u90A3\u4E9B\u4E1C\u897F\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\uFF0C\u5728\u8FD9\u4E00\u7248\u91CC\u5B58\u4E00\u6B21\uFF0C\u5176\u4E2D\u4E00\u90E8\u5206\u4F1A\u4E22\u3002\u60F3\u539F\u6837\u7559\u7740\uFF0C\u5148\u66F4\u65B0 app \u518D\u6539\u3002": { en: "This song was saved by a newer MoonSinger ({p} has things this version doesn\u2019t know): you can still open, edit and save it, but this version can\u2019t show those things, and saving it here will lose some of them. To keep them as they are, update the app before editing." },
   "\u58F0\u90E8\u300C{name}\u300D\u548C\u522B\u7684\u58F0\u90E8\u5171\u7528\u4E00\u4EFD\u4E50\u5668\u8BBE\u7F6E\uFF1B\u6BCF\u4E2A\u58F0\u90E8\u6709\u81EA\u5DF1\u7684\u4E50\u5668\uFF0C\u6240\u4EE5\u62C6\u6210\u4E86\u4E24\u4EFD\uFF08\u4E50\u5668\u548C\u8BBE\u7F6E\u90FD\u7167\u6284\uFF09\u3002": { en: "Part \u201C{name}\u201D shared its instrument settings with another part; every part has its own instrument, so they were split into two copies (instrument and settings copied)." },
   "\u8FD9\u4EFD\u8C31\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u4E0D\u652F\u6301\u7684\u4E1C\u897F\uFF0C\u6CA1\u6709\u8BFB\u8FDB\u6765\uFF1A{k}\u3002\u5B58\u7684\u65F6\u5019\u5B83\u4EEC\u4E0D\u4F1A\u5728\u65B0\u6587\u4EF6\u91CC\u2014\u2014\u8981\u7559\u539F\u6837\uFF0C\u8BF7\u300C\u53E6\u5B58\u4E3A\u300D\u65B0\u6587\u4EF6\u3002": { en: "This score has things this version doesn't support, which weren't read: {k}. They won't be in a new file when saving \u2014 to keep them, save as a new file." },
   "{k} {n} \u5904": { en: "{k} at {n} places" },
@@ -5105,7 +5106,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.90-2026-11-10";
+var APP_VERSION = "v0.16.91-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -8821,16 +8822,22 @@ var XML_KIND = {
   "5": "power"
 };
 var KIND_BY_XML = Object.fromEntries(Object.entries(XML_KIND).map(([k2, v]) => [v, k2]));
+var XML_OTHER_TEXT = { "7sus4": "7sus4", add9: "add9", madd9: "m(add9)", "69": "6/9", "7b9": "7\u266D9", "7s9": "7\u266F9", "7no3": "7(no3)", maj7no3: "maj7(no3)" };
+var OTHER_TEXT_ALIAS = { "7b9": "7b9", "7#9": "7s9", "madd9": "madd9", "69": "69", "6add9": "69" };
+var KIND_BY_OTHER_TEXT = { ...OTHER_TEXT_ALIAS, ...Object.fromEntries(Object.entries(XML_OTHER_TEXT).map(([k2, v]) => [v, k2])) };
+var PIN_KIND_IDS = [...TPLS.map((t10) => t10.id), "5"];
 function pinXmlKind(kind) {
   if (kind.startsWith(FREE)) return { value: "other", text: kind.slice(FREE.length) };
   const std = XML_KIND[kind];
   if (std) return { value: std };
-  return { value: "other", text: TPLS.find((t10) => t10.id === kind)?.sym ?? kind };
+  return { value: "other", text: XML_OTHER_TEXT[kind] ?? kind };
 }
 function xmlKindToPin(value, text2) {
   const std = KIND_BY_XML[value];
   if (std) return std;
   if (value !== "other" || !text2) return null;
+  const own = KIND_BY_OTHER_TEXT[text2];
+  if (own) return own;
   return TPLS.find((t10) => t10.sym === text2 && t10.sym !== "")?.id ?? FREE + text2;
 }
 var samePin = (a10, b3) => pc(a10.root) === pc(b3.root) && a10.tpl === b3.tpl && pc(a10.bass) === pc(b3.bass);
@@ -29871,15 +29878,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-dd7dd1dc61a4.mjs");
+      return pick(() => "singer-worker-b8171c4665c6.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-a805084753e0.mjs");
+      return pick(() => "layout-worker-cf121e8f0517.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-423e9defbb1a.mjs");
+      return pick(() => "encode-worker-b14202c8dea8.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -31728,10 +31735,8 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
       continue;
     }
     if (t10.kind === "clef") {
-      if (staves === 1) {
-        if (ticks >= len) close(false);
-        cur.push(`<attributes>${clefXml(t10.clef)}</attributes>`);
-      }
+      if (ticks >= len) close(false);
+      cur.push(`<attributes>${staves === 1 ? clefXml(t10.clef) : clefXml(t10.clef).replace("<clef>", '<clef number="1">')}</attributes>`);
       continue;
     }
     if (t10.kind === "ottava") {
@@ -31982,9 +31987,10 @@ function readMusicXml(xml, hints) {
           if (d3) divisions = Number(d3);
           const cl2 = kid(c10, "clef");
           if (cl2) {
-            const cn2 = clefOfXml(childText(cl2, "sign"), childText(cl2, "clef-octave-change"));
+            const cn2 = clefOfXml(childText(cl2, "sign"), childText(cl2, "clef-octave-change")), upper = (cl2.attrs.number ?? "1") === "1";
             if (info2.clef === void 0) info2.clef = cn2 ?? "G";
-            else if (cn2 && !cl2.attrs.number && info2.staves !== 2) mark({ kind: "clef", id: 0, clef: cn2 });
+            else if (cn2 && upper) mark({ kind: "clef", id: 0, clef: cn2 });
+            else if (!upper) drop(_t("\u5927\u8C31\u8868\u4E0B\u9762\u4E00\u884C\u7684\u6362\u8C31\u53F7"));
           }
           if (Number(childText(c10, "staves") ?? "1") >= 2) info2.staves = 2;
           const key = kid(c10, "key"), time = kid(c10, "time");
@@ -32509,6 +32515,11 @@ function buildEntries(a10) {
       });
       toks = out2;
       starts = ns2;
+    }
+    if (two) {
+      const keep2 = toks.map((t10) => t10.kind !== "clef"), shift = (i10) => keep2.slice(0, i10).filter(Boolean).length;
+      starts = starts.map((x2) => ({ ...x2, index: shift(x2.index) }));
+      toks = toks.filter((_2, i10) => keep2[i10]);
     }
     const first = two ? void 0 : lookAt(starts[0]?.paper.id ?? "", part.id)?.clef;
     if (first) {
@@ -33196,7 +33207,11 @@ function openBytes(name, bytes) {
   for (const [p2, b3] of Object.entries(files)) if (!known.has(p2) && !p2.endsWith("/")) extras.unknown[p2] = b3;
   const song = songFromReads(reads, papers, scoreExt?.parts ?? null, legacyLooks);
   const o10 = finish(reads, song, pruneSounds(extras), ours, name);
-  const advice = newerMinor.length ? [_t("\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u90A3\u4E9B\u4E1C\u897F\u4FDD\u5B58\u65F6\u4E0D\u4F1A\u4E22\uFF0C\u53EA\u662F\u5728\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\u3002", { p: newerMinor.join("\u3001") })] : [];
+  if (o10.extras.final) {
+    const now2 = buildEntries({ song: o10.song, hum: o10.hum, extras: o10.extras, app: "", date: "" }).fingerprint;
+    if (now2 !== o10.extras.final.fingerprint) o10.extras.final = { ...o10.extras.final, fingerprint: now2 };
+  }
+  const advice = newerMinor.length ? [_t("\u8FD9\u9996\u6B4C\u662F\u66F4\u65B0\u7248\u672C\u7684 MoonSinger \u5B58\u7684\uFF08{p}\u91CC\u6709\u8FD9\u4E00\u7248\u8FD8\u6CA1\u6709\u7684\u4E1C\u897F\uFF09\uFF1A\u7167\u6837\u80FD\u5F00\u80FD\u6539\u80FD\u5B58\uFF0C\u53EA\u662F\u90A3\u4E9B\u4E1C\u897F\u8FD9\u4E00\u7248\u770B\u4E0D\u5230\uFF0C\u5728\u8FD9\u4E00\u7248\u91CC\u5B58\u4E00\u6B21\uFF0C\u5176\u4E2D\u4E00\u90E8\u5206\u4F1A\u4E22\u3002\u60F3\u539F\u6837\u7559\u7740\uFF0C\u5148\u66F4\u65B0 app \u518D\u6539\u3002", { p: newerMinor.join("\u3001") })] : [];
   return { ...o10, notices: [...finalNotices, ...o10.notices], references, advice };
 }
 function songFromReads(reads, papers, partList = null, legacyLooks = true) {
@@ -33241,7 +33256,7 @@ ${id3}`);
       if (oldAoOff.has(id3)) lk2[id3] = { ...lk2[id3], autoOttava: false };
       if (grand) continue;
       const fileClef = reads[k2]?.parts.find((rp2) => rp2.info.id === id3)?.info.clef;
-      const want = oldClef.get(id3) ?? (!clefFromScore.has(id3) && fileClef && fileClef !== "G" ? fileClef : void 0);
+      const want = oldClef.get(id3) ?? (legacyLooks && !clefFromScore.has(id3) && fileClef && fileClef !== "G" ? fileClef : void 0);
       const toks = seg.tracks[id3];
       if (want && !headClefOf(toks)) {
         const at2 = headLen(toks);
@@ -39500,7 +39515,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "8d41a47d32b70e6c" : "dev";
+var CORE_HASH = true ? "e1d626773def088c" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -58212,4 +58227,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-48ce9fcdb22f.mjs.map
+//# sourceMappingURL=moonsinger-22016a3f3d36.mjs.map

@@ -71,7 +71,7 @@ export interface HarmonyTheory {
 
 export const THEORIES: Record<string, HarmonyTheory> = { [western.id]: western };
 /** 人写明的和弦 ↔ MusicXML <harmony><kind>（v0.16.87）：和弦种类的写法表跟着西方功能和声那一种（存盘用的是和弦名本身，不看是哪种理论在读）。 */
-export { pinXmlKind, xmlKindToPin } from "./western.ts";
+export { pinXmlKind, xmlKindToPin, PIN_KIND_IDS } from "./western.ts";
 export const DEFAULT_THEORY = western.id;
 /** 按 id 找理论；不认识的 id（别的版本加的）= 默认那一种。 */
 export const harmonyTheory = (id: string = DEFAULT_THEORY): HarmonyTheory => THEORIES[id] ?? THEORIES[DEFAULT_THEORY]!;
