@@ -157,6 +157,7 @@ import "./export-all.test.mjs";   // 2026-11-03 歌库全部导出
 import "./sw-cache-scope.test.mjs";   // 2026-11-03 正式版 / 开发版的壳缓存互不相删（F-145）
 import "./local-files.test.mjs";
 import "./dist-fresh.test.mjs";
+import "./package-icons.test.mjs";   // 2026-11-10 内部库点名的图标页面里都有（歌库卡片的「⋯」空了一个月没人发现）
 import { run } from "./runner.mjs";
 
 await run();

@@ -5112,7 +5112,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.94-2026-11-10";
+var APP_VERSION = "v0.16.95-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -6460,9 +6460,9 @@ function headClefOf(tokens) {
   return null;
 }
 function withLooks(p2, looks) {
-  const clean = Object.fromEntries(Object.entries(looks).filter(([, v]) => v && (v.grand || v.autoOttava === false)));
+  const clean2 = Object.fromEntries(Object.entries(looks).filter(([, v]) => v && (v.grand || v.autoOttava === false)));
   const { looks: _l, ...rest } = p2;
-  return Object.keys(clean).length ? { ...rest, looks: clean } : rest;
+  return Object.keys(clean2).length ? { ...rest, looks: clean2 } : rest;
 }
 function setPaperLook(st2, paperId, partId, patch) {
   const paper = st2.song.papers.find((p2) => p2.id === paperId);
@@ -18178,6 +18178,46 @@ var GALLERY_TEXT = {
   "gal.restore": { zh: "\u6062\u590D", en: "Restore", ja: "\u5FA9\u5143" },
   "gal.retry": { zh: "\u91CD\u8BD5", en: "Retry", ja: "\u518D\u8A66\u884C" },
   "gal.resolve": { zh: "\u5904\u7406\u2026", en: "Resolve\u2026", ja: "\u51E6\u7406\u2026" },
+  // ── 0.9.0：锁（作品默认只读，手动解锁才能改）/ 星（删之前先撤星）/ 收起（纯显示）/ 存一版。user 2026-11-08；设计稿 = 家族根 ai-docs/20261108-design-lock-star-versions.md ──
+  "gal.editLock.continue": { zh: "\u89E3\u9501\uFF1A\u63A5\u7740\u6539", en: "Unlock & keep editing", ja: "\u30ED\u30C3\u30AF\u89E3\u9664\u3057\u3066\u7DE8\u96C6\u3092\u7D9A\u3051\u308B" },
+  "gal.editLock.versionThenEdit": { zh: "\u89E3\u9501\uFF1A\u5B58\u4E00\u7248\u518D\u6539", en: "Unlock: save a version first", ja: "\u30ED\u30C3\u30AF\u89E3\u9664\uFF1A\u5148\u306B\u7248\u3092\u4FDD\u5B58" },
+  "gal.editLock.lock": { zh: "\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09", en: "Lock (done editing for now)", ja: "\u30ED\u30C3\u30AF\u3059\u308B\uFF08\u7DE8\u96C6\u3092\u7D42\u3048\u308B\uFF09" },
+  "gal.editLock.unlockedMark": { zh: "\u89E3\u7740\u9501\uFF0C\u53EF\u4EE5\u6539\uFF08\u653E\u7740\u4E00\u5929\u4E0D\u52A8\u4F1A\u81EA\u5DF1\u9501\u4E0A\uFF09", en: "Unlocked for editing (locks itself after a day untouched)", ja: "\u7DE8\u96C6\u30ED\u30C3\u30AF\u89E3\u9664\u4E2D\uFF081 \u65E5\u89E6\u3089\u306A\u3051\u308C\u3070\u81EA\u52D5\u3067\u30ED\u30C3\u30AF\uFF09" },
+  "gal.saveVersion": { zh: "\u5B58\u4E00\u7248", en: "Save a version", ja: "\u7248\u3092\u4FDD\u5B58" },
+  "gal.saveVersionReplace": { zh: "\u5B58\u5230\u4E0A\u4E00\u7248\uFF08\u66FF\u6362\u4E0A\u4E00\u4EFD\uFF09", en: "Save over the last version", ja: "\u524D\u306E\u7248\u306B\u4E0A\u66F8\u304D\u4FDD\u5B58" },
+  "gal.star": { zh: "\u52A0\u661F\uFF08\u9632\u8BEF\u5220\uFF09", en: "Star (protect from deletion)", ja: "\u30B9\u30BF\u30FC\u3092\u4ED8\u3051\u308B\uFF08\u8AA4\u524A\u9664\u9632\u6B62\uFF09" },
+  "gal.unstar": { zh: "\u64A4\u661F", en: "Remove star", ja: "\u30B9\u30BF\u30FC\u3092\u5916\u3059" },
+  "gal.starredMark": { zh: "\u52A0\u4E86\u661F\uFF1A\u9001\u8FDB\u56DE\u6536\u7AD9\u4E4B\u524D\u8981\u5148\u64A4\u661F", en: "Starred: remove the star before moving it to trash", ja: "\u30B9\u30BF\u30FC\u4ED8\u304D\uFF1A\u30B4\u30DF\u7BB1\u306B\u5165\u308C\u308B\u524D\u306B\u30B9\u30BF\u30FC\u3092\u5916\u3057\u3066\u304F\u3060\u3055\u3044" },
+  "gal.fold": { zh: "\u6536\u8D77", en: "Tuck away", ja: "\u3057\u307E\u3046" },
+  "gal.unfold": { zh: "\u53D6\u6D88\u6536\u8D77", en: "Bring back", ja: "\u3057\u307E\u3046\u306E\u3092\u3084\u3081\u308B" },
+  "gal.fold.strip": { zh: "\u6536\u8D77\u4E86 {n} \u4EFD", en: "{n} tucked away", ja: "{n} \u4EF6\u3092\u3057\u307E\u3063\u3066\u3044\u307E\u3059" },
+  "gal.fold.stripOpen": { zh: "\u6536\u8D77\u7684 {n} \u4EFD\uFF08\u70B9\u4E00\u4E0B\u6536\u56DE\uFF09", en: "{n} tucked away (tap to hide)", ja: "\u3057\u307E\u3063\u305F {n} \u4EF6\uFF08\u30BF\u30C3\u30D7\u3067\u9589\u3058\u308B\uFF09" },
+  "gal.fold.versions": { zh: "\u5B58\u4E0B\u6765\u7684 {n} \u7248\uFF08\u70B9\u4E00\u4E0B\u644A\u5F00 / \u6536\u56DE\uFF09", en: "{n} saved version(s) (tap to show / hide)", ja: "\u4FDD\u5B58\u3057\u305F {n} \u7248\uFF08\u30BF\u30C3\u30D7\u3067\u958B\u9589\uFF09" },
+  "gal.fold.bar": { zh: "\u8FD9\u4E00\u5939\u6536\u8D77\u4E86 {n} \u4EFD", en: "{n} tucked away in this folder", ja: "\u3053\u306E\u30D5\u30A9\u30EB\u30C0\u30FC\u3067 {n} \u4EF6\u3092\u3057\u307E\u3063\u3066\u3044\u307E\u3059" },
+  "gal.fold.expandAll": { zh: "\u5168\u90E8\u5C55\u5F00", en: "Show all", ja: "\u3059\u3079\u3066\u958B\u304F" },
+  "gal.fold.collapseAll": { zh: "\u5168\u90E8\u6536\u56DE", en: "Hide again", ja: "\u3059\u3079\u3066\u9589\u3058\u308B" },
+  "gal.star.bar": { zh: "\u52A0\u4E86\u661F\u7684 {n} \u4EFD", en: "{n} starred", ja: "\u30B9\u30BF\u30FC\u4ED8\u304D {n} \u4EF6" },
+  "gal.star.only": { zh: "\u53EA\u770B\u52A0\u661F\u7684", en: "Starred only", ja: "\u30B9\u30BF\u30FC\u4ED8\u304D\u306E\u307F" },
+  "gal.star.all": { zh: "\u770B\u5168\u90E8", en: "Show all", ja: "\u3059\u3079\u3066\u8868\u793A" },
+  "gal.busy.version": { zh: "\u6B63\u5728\u5B58\u4E00\u7248 {base}\u2026", en: "Saving a version of {base}\u2026", ja: "{base} \u306E\u7248\u3092\u4FDD\u5B58\u4E2D\u2026" },
+  "gal.st.editUnlocked": { zh: "\u5DF2\u89E3\u9501\uFF1A{name}\uFF08\u653E\u7740\u4E00\u5929\u4E0D\u52A8\u4F1A\u81EA\u5DF1\u9501\u4E0A\uFF09", en: "Unlocked: {name} (locks itself after a day untouched)", ja: "\u30ED\u30C3\u30AF\u89E3\u9664\uFF1A{name}\uFF081 \u65E5\u89E6\u3089\u306A\u3051\u308C\u3070\u81EA\u52D5\u3067\u30ED\u30C3\u30AF\uFF09" },
+  "gal.st.editLocked": { zh: "\u5DF2\u9501\u4E0A\uFF1A{name}", en: "Locked: {name}", ja: "\u30ED\u30C3\u30AF\u3057\u307E\u3057\u305F\uFF1A{name}" },
+  "gal.st.editLockFail": { zh: "\u6CA1\u6539\u6210\uFF1A{e}", en: "Could not change the lock: {e}", ja: "\u5909\u66F4\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\uFF1A{e}" },
+  "gal.st.versionSaved": { zh: "\u5DF2\u5B58\u4E00\u7248\uFF1A{name}", en: "Version saved: {name}", ja: "\u7248\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\uFF1A{name}" },
+  "gal.st.versionReplaced": { zh: "\u5DF2\u5B58\u5230\u4E0A\u4E00\u7248\uFF1A{name}\uFF08\u65E7\u7684\u90A3\u4EFD\u8FDB\u4E86\u56DE\u6536\u7AD9\uFF09", en: "Saved over the last version: {name} (the old one is in the trash)", ja: "\u524D\u306E\u7248\u306B\u4FDD\u5B58\u3057\u307E\u3057\u305F\uFF1A{name}\uFF08\u53E4\u3044\u7248\u306F\u30B4\u30DF\u7BB1\u3078\uFF09" },
+  "gal.st.versionReplaceKept": { zh: "\u5DF2\u5B58\u4E00\u7248\uFF1A{name}\uFF1B\u4E0A\u4E00\u7248\u6CA1\u6709\u66FF\u6362\u6389\uFF08{e}\uFF09\uFF0C\u7559\u7740\u6CA1\u52A8", en: "Version saved: {name}; the previous version was kept ({e})", ja: "\u7248\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\uFF1A{name}\u3002\u524D\u306E\u7248\u306F\u6B8B\u3057\u3066\u3042\u308A\u307E\u3059\uFF08{e}\uFF09" },
+  "gal.st.versionReplaceStarred": { zh: "\u5DF2\u5B58\u4E00\u7248\uFF1A{name}\uFF1B\u4E0A\u4E00\u7248\u52A0\u4E86\u661F\uFF0C\u7559\u7740\u6CA1\u52A8", en: "Version saved: {name}; the previous version is starred and was kept", ja: "\u7248\u3092\u4FDD\u5B58\u3057\u307E\u3057\u305F\uFF1A{name}\u3002\u524D\u306E\u7248\u306F\u30B9\u30BF\u30FC\u4ED8\u304D\u306E\u305F\u3081\u6B8B\u3057\u3066\u3042\u308A\u307E\u3059" },
+  "gal.st.versionFail": { zh: "\u6CA1\u5B58\u6210\uFF1A{e}", en: "Could not save a version: {e}", ja: "\u4FDD\u5B58\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\uFF1A{e}" },
+  "gal.st.sealedNoLocal": { zh: "\u8FD9\u4EFD\u662F\u52A0\u5BC6\u7684\u3001\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6709\u5B83\u7684\u5B57\u8282\uFF1A\u5148\u7559\u4E00\u4EFD\u5728\u672C\u673A\uFF0C\u518D\u590D\u5236 / \u5B58\u4E00\u7248\uFF08\u4E0D\u89E3\u5BC6\u3001\u4E0D\u843D\u660E\u6587\uFF09", en: "This work is encrypted and not on this device yet: keep it offline first, then duplicate / save a version (nothing is decrypted to disk)", ja: "\u6697\u53F7\u5316\u3055\u308C\u305F\u4F5C\u54C1\u3067\u3001\u3053\u306E\u7AEF\u672B\u306B\u307E\u3060\u3042\u308A\u307E\u305B\u3093\u3002\u5148\u306B\u30AA\u30D5\u30E9\u30A4\u30F3\u4FDD\u5B58\u3057\u3066\u304B\u3089\u8907\u88FD / \u7248\u306E\u4FDD\u5B58\u3092\u3057\u3066\u304F\u3060\u3055\u3044\uFF08\u5E73\u6587\u306F\u4FDD\u5B58\u3057\u307E\u305B\u3093\uFF09" },
+  "gal.st.starred": { zh: "\u5DF2\u52A0\u661F\uFF1A{name}", en: "Starred: {name}", ja: "\u30B9\u30BF\u30FC\u3092\u4ED8\u3051\u307E\u3057\u305F\uFF1A{name}" },
+  "gal.st.unstarred": { zh: "\u5DF2\u64A4\u661F\uFF1A{name}", en: "Star removed: {name}", ja: "\u30B9\u30BF\u30FC\u3092\u5916\u3057\u307E\u3057\u305F\uFF1A{name}" },
+  "gal.st.folded": { zh: "\u5DF2\u6536\u8D77\uFF1A{name}", en: "Tucked away: {name}", ja: "\u3057\u307E\u3044\u307E\u3057\u305F\uFF1A{name}" },
+  "gal.st.unfolded": { zh: "\u5DF2\u53D6\u6D88\u6536\u8D77\uFF1A{name}", en: "Brought back: {name}", ja: "\u3057\u307E\u3046\u306E\u3092\u3084\u3081\u307E\u3057\u305F\uFF1A{name}" },
+  "gal.st.marksFail": { zh: "\u6CA1\u6539\u6210\uFF1A{e}", en: "Could not change it: {e}", ja: "\u5909\u66F4\u3067\u304D\u307E\u305B\u3093\u3067\u3057\u305F\uFF1A{e}" },
+  "gal.st.starredNoDel": { zh: "\u300C{name}\u300D\u52A0\u4E86\u661F\uFF1A\u5148\u64A4\u661F\uFF0C\u624D\u80FD\u9001\u8FDB\u56DE\u6536\u7AD9", en: "\u201C{name}\u201D is starred: remove the star before moving it to trash", ja: "\u300C{name}\u300D\u306F\u30B9\u30BF\u30FC\u4ED8\u304D\u3067\u3059\u3002\u5148\u306B\u30B9\u30BF\u30FC\u3092\u5916\u3057\u3066\u304B\u3089\u30B4\u30DF\u7BB1\u306B\u5165\u308C\u3066\u304F\u3060\u3055\u3044" },
+  "gal.st.starredNoPurge": { zh: "\u300C{name}\u300D\u52A0\u4E86\u661F\uFF0C\u6CA1\u6709\u5F7B\u5E95\u5220\uFF1A\u5148\u8FD8\u539F\u5B83\uFF0C\u6216\u8005\u64A4\u4E86\u661F\u518D\u5220", en: "\u201C{name}\u201D is starred and was not deleted for good: restore it, or remove the star first", ja: "\u300C{name}\u300D\u306F\u30B9\u30BF\u30FC\u4ED8\u304D\u306E\u305F\u3081\u5B8C\u5168\u524A\u9664\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u5FA9\u5143\u3059\u308B\u304B\u3001\u30B9\u30BF\u30FC\u3092\u5916\u3057\u3066\u304B\u3089\u524A\u9664\u3057\u3066\u304F\u3060\u3055\u3044" },
+  "gal.st.emptyKeptStarred": { zh: "\u5DF2\u6E05\u7A7A\uFF08{label}\uFF09\uFF1B\u7559\u4E0B {n} \u4EFD\u52A0\u4E86\u661F\u7684\u6CA1\u6E05\u2014\u2014\u53EF\u4EE5\u8FD8\u539F\uFF0C\u6216\u8005\u64A4\u4E86\u661F\u518D\u6E05", en: "Emptied ({label}); {n} starred item(s) were kept \u2014 restore them, or remove the star first", ja: "\u7A7A\u306B\u3057\u307E\u3057\u305F\uFF08{label}\uFF09\u3002\u30B9\u30BF\u30FC\u4ED8\u304D\u306E {n} \u4EF6\u306F\u6B8B\u3057\u3066\u3042\u308A\u307E\u3059\uFF08\u5FA9\u5143\u3059\u308B\u304B\u3001\u30B9\u30BF\u30FC\u3092\u5916\u3057\u3066\u304F\u3060\u3055\u3044\uFF09" },
+  "gal.st.resolve.starred": { zh: "\u300C{name}\u300D\u52A0\u4E86\u661F\uFF0C\u4E24\u8FB9\u90FD\u6CA1\u52A8\uFF1A\u5148\u64A4\u661F\uFF0C\u624D\u80FD\u9009\u300C\u4E91\u7AEF\u8986\u76D6\u672C\u5730\u300D\u628A\u8FD9\u4EFD\u9001\u8FDB\u56DE\u6536\u7AD9", en: "\u201C{name}\u201D is starred, nothing was changed: remove the star before choosing \u201CCloud overwrites local\u201D (which moves this copy to trash)", ja: "\u300C{name}\u300D\u306F\u30B9\u30BF\u30FC\u4ED8\u304D\u306E\u305F\u3081\u4F55\u3082\u5909\u66F4\u3057\u3066\u3044\u307E\u305B\u3093\u3002\u5148\u306B\u30B9\u30BF\u30FC\u3092\u5916\u3057\u3066\u304F\u3060\u3055\u3044" },
   "gal.attention.banner": { zh: "\u6709 {n} \u4EFD\u6CA1\u540C\u6B65\u597D\uFF0C\u8981\u4F60\u5904\u7406", en: "{n} file(s) need your attention (not in sync)", ja: "{n} \u4EF6\u304C\u672A\u540C\u671F\u30FB\u5BFE\u5FDC\u304C\u5FC5\u8981\u3067\u3059" },
   "gal.attention.showing": { zh: "\u53EA\u770B\u8981\u5904\u7406\u7684\uFF08{n} \u4EFD\uFF09", en: "Showing only the {n} that need attention", ja: "\u5BFE\u5FDC\u304C\u5FC5\u8981\u306A {n} \u4EF6\u306E\u307F\u8868\u793A\u4E2D" },
   "gal.attention.list": { zh: "\u770B\u5217\u8868", en: "Show them", ja: "\u4E00\u89A7\u3092\u898B\u308B" },
@@ -19622,9 +19662,9 @@ function createCloudSync(cfg) {
     return moved;
   }
   async function restore(cloudRef, targetName, opts = {}) {
-    const clean = targetName;
-    const folder = clean.includes("/") ? clean.slice(0, clean.lastIndexOf("/")) : "";
-    const base2 = baseName(clean);
+    const clean2 = targetName;
+    const folder = clean2.includes("/") ? clean2.slice(0, clean2.lastIndexOf("/")) : "";
+    const base2 = baseName(clean2);
     const mkName = opts.encrypted && encFileName ? encFileName : fileName2;
     const folderId = await provider.ensureFolder(folder);
     const disp = restoreStampDisplay(opts.snapshotStamp, now2());
@@ -19995,9 +20035,14 @@ function createTrash(cfg) {
     return busy("trash.emptyTrash", async () => {
       let purged = 0;
       const failed = [];
+      const kept = [];
       const errMsg2 = (e10) => String(e10?.message || e10);
       if (scope !== "cloud" && local && local.listTrash && local.purgeTrash) {
         for (const t10 of await local.listTrash()) {
+          if (opts.keep?.({ name: t10.name, where: "local" })) {
+            kept.push({ name: t10.name, where: "local" });
+            continue;
+          }
           try {
             await local.purgeTrash(t10.trashKey);
             purged++;
@@ -20015,7 +20060,12 @@ function createTrash(cfg) {
           reportStoreError(e10, "warning");
           failed.push({ where: "cloud-list", error: errMsg2(e10) });
         }
-        items = items || [];
+        items = (items || []).filter((it2) => {
+          if (!opts.keep?.({ name: it2.name, where: "cloud" }))
+            return true;
+          kept.push({ name: it2.name, where: "cloud" });
+          return false;
+        });
         for (let i10 = 0; i10 < items.length; i10 += concurrency) {
           await Promise.all(items.slice(i10, i10 + concurrency).map(async (it2) => {
             try {
@@ -20028,7 +20078,7 @@ function createTrash(cfg) {
           }));
         }
       }
-      return { status: "emptied", purged, failed };
+      return kept.length ? { status: "emptied", purged, failed, kept } : { status: "emptied", purged, failed };
     });
   }
   async function emptyBackup(opts = {}) {
@@ -20157,6 +20207,8 @@ function createReconcile(cfg) {
     for (const name of demote) {
       if (!pending.seenGone(name, now2()))
         continue;
+      if (cfg.keep?.(name))
+        continue;
       if (cfg.drop?.(name))
         await local.hardDelete(name);
       else
@@ -20246,6 +20298,248 @@ function createPendingGone(kv, graceMs) {
     },
     names() {
       return Object.keys(read());
+    }
+  };
+}
+
+// node_modules/@internal/store/dist/works/unlocks.js
+var KEY2 = "internal.unlocks";
+function createUnlocks(cfg) {
+  const { kv, ttlMs } = cfg;
+  const now2 = cfg.now ?? (() => Date.now());
+  const setTimer = cfg.setTimer ?? ((fn, ms) => setTimeout(fn, ms));
+  const clearTimer = cfg.clearTimer ?? ((h2) => clearTimeout(h2));
+  const watchers = /* @__PURE__ */ new Set();
+  let timer = null, closed = false, lastSig = "";
+  const ACTIVE_RECHECK_MS = 6e4;
+  function read() {
+    try {
+      const raw = kv.get(KEY2);
+      const m2 = raw ? JSON.parse(raw) : {};
+      return m2 && typeof m2 === "object" && !Array.isArray(m2) ? m2 : {};
+    } catch (e10) {
+      reportStoreError(e10, "log");
+      return {};
+    }
+  }
+  function write(m2) {
+    if (Object.keys(m2).length)
+      kv.set(KEY2, JSON.stringify(m2));
+    else
+      kv.remove(KEY2);
+  }
+  const baseOf = (r10) => Math.max(r10.at, r10.saved ?? 0);
+  const toUnlock = (identifier, r10) => ({ identifier, unlockedAt: r10.at, expiresAt: baseOf(r10) + ttlMs });
+  function sweep() {
+    const m2 = read(), t10 = now2(), active = cfg.activeIdentifier?.() ?? null;
+    let changed2 = false;
+    for (const id2 of Object.keys(m2)) {
+      const r10 = m2[id2];
+      if (typeof r10?.at !== "number") {
+        delete m2[id2];
+        changed2 = true;
+        continue;
+      }
+      if (baseOf(r10) > t10) {
+        m2[id2] = { at: t10 };
+        changed2 = true;
+        continue;
+      }
+      if (t10 >= baseOf(r10) + ttlMs && id2 !== active) {
+        delete m2[id2];
+        changed2 = true;
+      }
+    }
+    if (changed2) {
+      try {
+        write(m2);
+      } catch (e10) {
+        reportStoreError(e10, "log");
+      }
+    }
+    return m2;
+  }
+  const liveOf = (m2) => Object.keys(m2).sort().map((id2) => toUnlock(id2, m2[id2]));
+  function settle(m2) {
+    if (closed)
+      return;
+    if (timer != null) {
+      clearTimer(timer);
+      timer = null;
+    }
+    if (!watchers.size)
+      return;
+    const live = liveOf(m2);
+    const sig = JSON.stringify(live);
+    if (sig !== lastSig) {
+      lastSig = sig;
+      for (const cb2 of [...watchers]) {
+        try {
+          cb2(live);
+        } catch (e10) {
+          reportStoreError(e10, "warning");
+        }
+      }
+    }
+    if (!live.length)
+      return;
+    const t10 = now2();
+    const due = Math.min(...live.map((u2) => u2.expiresAt > t10 ? u2.expiresAt - t10 + 1 : ACTIVE_RECHECK_MS));
+    timer = setTimer(() => {
+      timer = null;
+      settle(sweep());
+    }, Math.max(1, due));
+  }
+  return {
+    unlock(identifier) {
+      const m2 = sweep();
+      const r10 = { at: now2() };
+      m2[identifier] = r10;
+      write(m2);
+      settle(m2);
+      return toUnlock(identifier, r10);
+    },
+    lock(identifier) {
+      const m2 = sweep();
+      if (m2[identifier] == null) {
+        settle(m2);
+        return;
+      }
+      delete m2[identifier];
+      write(m2);
+      settle(m2);
+    },
+    get(identifier) {
+      const m2 = sweep();
+      const r10 = m2[identifier];
+      settle(m2);
+      return r10 ? toUnlock(identifier, r10) : null;
+    },
+    noteSaved(identifier) {
+      const m2 = sweep();
+      const r10 = m2[identifier];
+      if (!r10)
+        return;
+      r10.saved = now2();
+      try {
+        write(m2);
+      } catch (e10) {
+        reportStoreError(e10, "log");
+      }
+      settle(m2);
+    },
+    rename(from, to2) {
+      const m2 = sweep();
+      const r10 = m2[from];
+      if (!r10)
+        return;
+      delete m2[from];
+      m2[to2] = r10;
+      try {
+        write(m2);
+      } catch (e10) {
+        reportStoreError(e10, "log");
+      }
+      settle(m2);
+    },
+    live() {
+      const m2 = sweep();
+      settle(m2);
+      return liveOf(m2);
+    },
+    watch(cb2) {
+      const m2 = sweep(), live = liveOf(m2);
+      settle(m2);
+      watchers.add(cb2);
+      lastSig = JSON.stringify(live);
+      try {
+        cb2(live);
+      } catch (e10) {
+        reportStoreError(e10, "warning");
+      }
+      settle(m2);
+      return () => {
+        watchers.delete(cb2);
+        if (!watchers.size && timer != null) {
+          clearTimer(timer);
+          timer = null;
+        }
+      };
+    },
+    close() {
+      closed = true;
+      watchers.clear();
+      if (timer != null) {
+        clearTimer(timer);
+        timer = null;
+      }
+    }
+  };
+}
+
+// node_modules/@internal/store/dist/works/marks.js
+var MARKS_COLLECTION = "store.file-marks";
+var clean = (v) => {
+  const o10 = v && typeof v === "object" ? v : {};
+  const out = {};
+  if (o10.starred === true)
+    out.starred = true;
+  if (o10.folded === true)
+    out.folded = true;
+  return out;
+};
+function createMarks(cfg) {
+  let coll = null, readyP = null, reconciling = false;
+  const c10 = () => coll ??= cfg.getCollection();
+  const ready = () => readyP ??= c10().init();
+  return {
+    ready,
+    get: (identifier) => coll ? clean(coll.getItem(identifier)) : {},
+    async set(identifier, patch) {
+      await ready();
+      const cur = clean(c10().getItem(identifier));
+      const next2 = { ...cur };
+      if (patch.starred === true)
+        next2.starred = true;
+      else if (patch.starred === false)
+        delete next2.starred;
+      if (patch.folded === true)
+        next2.folded = true;
+      else if (patch.folded === false)
+        delete next2.folded;
+      if (!!next2.starred === !!cur.starred && !!next2.folded === !!cur.folded)
+        return;
+      if (next2.starred || next2.folded)
+        c10().setItem(identifier, next2);
+      else
+        c10().deleteItem(identifier);
+      const r10 = await c10().flushLocal();
+      if (!r10.ok)
+        throw r10.error instanceof Error ? r10.error : new Error(`marks: local write failed for "${identifier}"`);
+    },
+    async rename(from, to2) {
+      await ready();
+      const cur = clean(c10().getItem(from));
+      if (!cur.starred && !cur.folded)
+        return;
+      c10().setItem(to2, cur);
+      c10().deleteItem(from);
+      const r10 = await c10().flushLocal();
+      if (!r10.ok)
+        throw r10.error instanceof Error ? r10.error : new Error(`marks: local write failed moving "${from}" \u2192 "${to2}"`);
+    },
+    starredIdentifiers: () => coll ? coll.entries().filter((e10) => clean(e10.value).starred).map((e10) => e10.id) : [],
+    onChange: (cb2) => c10().onChange((ids) => cb2(ids)),
+    reconcile() {
+      if (reconciling)
+        return;
+      reconciling = true;
+      void ready().then(() => c10().reconcileWithRemote()).then((r10) => {
+        if (r10.status === "error")
+          cfg.onError(r10.error);
+      }, cfg.onError).finally(() => {
+        reconciling = false;
+      });
     }
   };
 }
@@ -20384,10 +20678,12 @@ var shallowCopy = (v) => Array.isArray(v) ? [...v] : v && typeof v === "object" 
 var valueOf = (e10) => e10.value;
 var isTombstone = (e10) => valueOf(e10) === null;
 function createCollection(cfg) {
-  const { cloud, name, isOnline, syncDelayMs = 1500, now: now2 = () => Date.now(), manual = false, local, localWriteDelayMs = 400, getInitData } = cfg;
+  const { cloud, name, isOnline, syncDelayMs = 1500, now: now2 = () => Date.now(), manual = false, local, localWriteDelayMs = 400, getInitData, lifecycle } = cfg;
   const flow = createFolderFlow({ cloud, name, encode, decode, isOnline });
   let env2 = emptyFolder();
   let timer = null;
+  let closed = false;
+  let abandoned = false;
   let ready = false;
   const listeners = /* @__PURE__ */ new Set();
   let _firing = false;
@@ -20472,20 +20768,22 @@ function createCollection(cfg) {
     }
   }
   function scheduleLocalWrite() {
-    if (!local || localTimer != null)
+    if (!local || closed || localTimer != null)
       return;
     localTimer = setTimeout(() => {
       localTimer = null;
       void writeLocalNow();
     }, localWriteDelayMs);
   }
-  function writeLocalNow() {
+  function writeLocalNow(final = false) {
     if (!local)
       return Promise.resolve({ ok: true });
+    if (closed && !final)
+      return Promise.resolve({ ok: false, error: new Error(`collection(${name}) closed`) });
     clearLocalTimer();
     const snap = encode(env2);
     localChain = localChain.then(() => local.save(localKey, snap).then(() => ({ ok: true }))).catch((e10) => {
-      reportStoreError(e10, "warning");
+      reportStoreError(e10, abandoned ? "log" : "warning");
       return { ok: false, error: e10 };
     });
     return localChain;
@@ -20497,6 +20795,8 @@ function createCollection(cfg) {
     }
   }
   function scheduleSync() {
+    if (closed)
+      return;
     scheduleLocalWrite();
     cloud.setDirty(name, true);
     if (manual)
@@ -20561,9 +20861,13 @@ function createCollection(cfg) {
   }
   async function init2() {
     await hydrateLocal();
+    if (closed)
+      return;
     if (!idbHad)
       await seedInit();
     ready = true;
+    if (closed)
+      return;
     void reconcile().catch((e10) => reportStoreError(e10, "log"));
   }
   function setItem(id2, value) {
@@ -20617,6 +20921,22 @@ function createCollection(cfg) {
   function isDirty2() {
     return cloud.isDirty(name);
   }
+  async function close(opts) {
+    if (closed)
+      return;
+    const pending = localTimer != null;
+    closed = true;
+    clearTimer();
+    clearLocalTimer();
+    if (!opts.flush) {
+      abandoned = true;
+      if (pending)
+        reportStoreError(new Error(`collection(${name}): fast dispose dropped a pending local write`), "log");
+      return;
+    }
+    await (pending ? writeLocalNow(true) : localChain);
+  }
+  lifecycle?.({ close });
   return { init: init2, reconcileWithRemote, setItem, deleteItem, getItem, getEntry, entries: entries2, keys, onChange, flushLocal, isDirty: isDirty2 };
 }
 
@@ -20662,7 +20982,9 @@ function createListing(cfg) {
   const { cloud, local, head, pendingFolders, isPendingGone, pendingFolderDeletions } = cfg;
   const describe2 = (n10) => {
     const d3 = cfg.describe?.(n10);
-    return d3 ? d3.kind !== void 0 ? { kind: d3.kind, tier: d3.tier } : { tier: d3.tier } : { tier: "work" };
+    if (!d3)
+      return { tier: "work" };
+    return { ...d3.kind !== void 0 ? { kind: d3.kind } : {}, tier: d3.tier, ...d3.starred ? { starred: true } : {}, ...d3.folded ? { folded: true } : {} };
   };
   function classifyPath(path, cf2, hasLocal, cloudReachable2, absenceAuthoritative, localStat) {
     const hasCloud = cf2 != null;
@@ -20681,7 +21003,7 @@ function createListing(cfg) {
       pendingGone: isPendingGone?.(path)
     });
     const lastModified = dirty2 ? localStat?.updatedAt ?? cf2?.lastModified : cf2?.lastModified ?? localStat?.updatedAt;
-    return { identifier: path, ...describe2(path), syncState, size: cf2?.size ?? localStat?.size, lastModified };
+    return { identifier: path, ...describe2(path), syncState, size: cf2?.size ?? localStat?.size, lastModified, ...cf2?.sealed ? { cloudSealed: true } : {} };
   }
   async function statLocal(keys) {
     const m2 = /* @__PURE__ */ new Map();
@@ -20706,7 +21028,7 @@ function createListing(cfg) {
     for (const c10 of cloudRes?.files ?? []) {
       if (isHiddenAny(c10.name))
         continue;
-      cloudMap.set(c10.name, { eTag: c10.eTag, size: c10.size, lastModified: toMs(c10.lastModifiedDateTime) });
+      cloudMap.set(c10.name, { eTag: c10.eTag, size: c10.size, lastModified: toMs(c10.lastModifiedDateTime), sealed: typeof c10.path === "string" && c10.path !== c10.name });
     }
     const localDirect = /* @__PURE__ */ new Set();
     const subfolders = /* @__PURE__ */ new Set();
@@ -20773,7 +21095,7 @@ function createListing(cfg) {
     for (const c10 of cloudRes?.files ?? []) {
       if (isHiddenAny(c10.name))
         continue;
-      cloudMap.set(c10.name, { eTag: c10.eTag, size: c10.size, lastModified: toMs(c10.lastModifiedDateTime) });
+      cloudMap.set(c10.name, { eTag: c10.eTag, size: c10.size, lastModified: toMs(c10.lastModifiedDateTime), sealed: typeof c10.path === "string" && c10.path !== c10.name });
     }
     const localSet = new Set((await local.appKeys()).filter((k2) => !isHiddenAny(k2)));
     const paths = /* @__PURE__ */ new Set();
@@ -22455,6 +22777,26 @@ var ReadOnlyFilesError = class extends Error {
     this.name = "ReadOnlyFilesError";
   }
 };
+var LockedError2 = class extends Error {
+  identifier;
+  op;
+  constructor(identifier, op2) {
+    super(`\u4F5C\u54C1\u9501\u7740\uFF0C\u4E0D\u80FD\u6539\uFF08${op2}\uFF09\uFF1A${identifier}\u2014\u2014\u5148\u89E3\u9501`);
+    this.name = "LockedError";
+    this.identifier = identifier;
+    this.op = op2;
+  }
+};
+var StarredError = class extends Error {
+  identifier;
+  op;
+  constructor(identifier, op2) {
+    super(`\u52A0\u4E86\u661F\uFF0C\u4E0D\u80FD\u9001\u8FDB\u56DE\u6536\u7AD9\uFF08${op2}\uFF09\uFF1A${identifier}\u2014\u2014\u5148\u64A4\u661F`);
+    this.name = "StarredError";
+    this.identifier = identifier;
+    this.op = op2;
+  }
+};
 var StoreDisposedError = class extends Error {
   constructor(op2) {
     super(`store \u5DF2 dispose${op2 ? `\uFF08${op2}\uFF09` : ""}\uFF0C\u62D2\u7EDD\u540E\u7EED\u8C03\u7528`);
@@ -22504,6 +22846,43 @@ function createStore(config) {
     if (tierOf(name) === "resource")
       throw new ReadOnlyFilesError(op2, name);
   };
+  const unlocks = createUnlocks({ kv, ttlMs: config.unlockTtlMs ?? 24 * 3600 * 1e3, now: config.now, activeIdentifier: config.activeIdentifier });
+  const lockApplies = (name) => config.lockByDefault === true && ids.parse(name)?.tier === "work";
+  const lockGuard = (op2, name) => {
+    if (lockApplies(name) && !unlocks.get(name))
+      throw new LockedError2(name, op2);
+  };
+  const marks = config.fileMarks === true ? createMarks({ getCollection: () => collection(MARKS_COLLECTION), onError: (e10) => reportStoreError(e10, "log") }) : null;
+  let _marksState = marks ? "unloaded" : "off";
+  async function loadMarks() {
+    if (!marks)
+      return false;
+    try {
+      await marks.ready();
+      if (_marksState !== "ready") {
+        _marksState = "ready";
+        marks.onChange((changed2) => {
+          for (const f2 of new Set(changed2.map((n10) => n10.includes("/") ? n10.slice(0, n10.lastIndexOf("/")) : "")))
+            void pushLocalFrame(f2);
+        });
+      }
+      return true;
+    } catch (e10) {
+      _marksState = "broken";
+      reportStoreError(e10, "warning");
+      return false;
+    }
+  }
+  const isStarredNow = (name) => _marksState === "ready" && marks.get(name).starred === true;
+  async function starGuard(op2, name) {
+    if (!marks)
+      return;
+    if (!await loadMarks())
+      throw new Error(`store: cannot read file marks, refusing ${op2} of "${name}" (it may be starred)`);
+    if (isStarredNow(name))
+      throw new StarredError(name, op2);
+  }
+  const keepFromAutoTrash = (name) => _marksState === "off" ? false : _marksState === "ready" ? isStarredNow(name) : true;
   const local = config.local ?? createLocalCache(ns2.dbName, { identifiers: ids });
   const collectionLocal = config.local ?? createCollectionCache(ns2.dbName);
   const rawOnline2 = config.isOnline ?? (() => globalThis.navigator?.onLine !== false);
@@ -22535,7 +22914,7 @@ function createStore(config) {
   const offloadMod = createOffload({ cloud, local, head, isOnline, serialize: sub.serialize });
   const CLOUD_GONE_GRACE_MS = 24 * 3600 * 1e3;
   const pendingGone = createPendingGone(kv, config.cloudGoneGraceMs ?? CLOUD_GONE_GRACE_MS);
-  const reconcileMod = createReconcile({ cloud, local, head, pending: pendingGone, isOnline, activeIdentifier: config.activeIdentifier, hidden: config.hidden, drop: (n10) => tierOf(n10) === "resource" });
+  const reconcileMod = createReconcile({ cloud, local, head, pending: pendingGone, isOnline, activeIdentifier: config.activeIdentifier, hidden: config.hidden, drop: (n10) => tierOf(n10) === "resource", keep: keepFromAutoTrash });
   const stagingStore = config.staging ?? createStagingStore(ns2.stagingDbName);
   const toU8Raw = async (raw) => raw instanceof Uint8Array ? raw : raw instanceof ArrayBuffer ? new Uint8Array(raw) : new Uint8Array(await raw.arrayBuffer());
   const sessions = createDownloadSessions({
@@ -22659,7 +23038,8 @@ function createStore(config) {
     hidden: config.hidden,
     describe: (n10) => {
       const d3 = ids.parse(n10);
-      return { kind: d3?.kind, tier: d3?.tier ?? "work" };
+      const m2 = _marksState === "ready" ? marks.get(n10) : null;
+      return { kind: d3?.kind, tier: d3?.tier ?? "work", starred: m2?.starred, folded: m2?.folded };
     }
   });
   const ctxNow = () => ({ signedIn: signedIn(), online: rawOnline2() });
@@ -22735,16 +23115,24 @@ function createStore(config) {
     }
   }
   async function localFrameSnap(folder) {
+    if (marks)
+      await loadMarks();
     const stale = await readDirIndexCache(folder);
     return listing.listFolder(folder, LOCAL_CTX, stale ? { staleCloud: stale } : void 0);
   }
+  const reportFrame = (e10, level = "error") => {
+    ui3.reportError(e10, _disposed ? "log" : level);
+  };
   async function pushLocalFrame(folder) {
     if (!folderWatchers.has(folder))
       return;
     try {
-      emitFolder(folder, await localFrameSnap(folder));
+      const snap = await localFrameSnap(folder);
+      if (_disposed)
+        return;
+      emitFolder(folder, snap);
     } catch (e10) {
-      ui3.reportError(e10);
+      reportFrame(e10);
       emitFolderError(folder, e10, "local");
     }
   }
@@ -22754,17 +23142,33 @@ function createStore(config) {
     void ensureScaffold();
     const ctx2 = ctxNow();
     const live = ctx2.online && ctx2.signedIn ? await cloud.listFolder(folder).catch((e10) => {
-      ui3.reportError(e10, "log");
+      reportFrame(e10, "log");
       return null;
     }) : null;
-    await reconcileMod.reconcileFolder(folder, { cloudPrefetched: live }).catch((e10) => ui3.reportError(e10));
+    if (_disposed)
+      return;
+    if (marks) {
+      await loadMarks();
+      if (_disposed)
+        return;
+      if (live)
+        marks.reconcile();
+    }
+    await reconcileMod.reconcileFolder(folder, { cloudPrefetched: live }).catch((e10) => reportFrame(e10));
+    if (_disposed)
+      return;
     try {
       const stale = live ? null : await readDirIndexCache(folder);
-      emitFolder(folder, await listing.listFolder(folder, ctx2, stale ? { cloudPrefetched: live, staleCloud: stale } : { cloudPrefetched: live }));
+      const snap = await listing.listFolder(folder, ctx2, stale ? { cloudPrefetched: live, staleCloud: stale } : { cloudPrefetched: live });
+      if (_disposed)
+        return;
+      emitFolder(folder, snap);
     } catch (e10) {
-      ui3.reportError(e10);
+      reportFrame(e10);
       emitFolderError(folder, e10, "remote");
     }
+    if (_disposed)
+      return;
     if (live?.complete) {
       writeDirIndexCache(folder, live);
       for (const f2 of live.files)
@@ -22787,6 +23191,10 @@ function createStore(config) {
     if (opts?.onError)
       watcherOnError.set(cb2, opts.onError);
     const fail = (e10, phase) => {
+      if (_disposed) {
+        ui3.reportError(e10, "log");
+        return;
+      }
       ui3.reportError(e10);
       try {
         opts?.onError?.(e10, phase);
@@ -22801,8 +23209,13 @@ function createStore(config) {
         fail(e10, "local");
         return;
       }
+      if (_disposed)
+        return;
       try {
-        cb2(await localFrameSnap(folder));
+        const snap = await localFrameSnap(folder);
+        if (_disposed)
+          return;
+        cb2(snap);
       } catch (e10) {
         fail(e10, "local");
       }
@@ -22979,6 +23392,19 @@ function createStore(config) {
       return { ok: false, reason: "cancelled" };
     notifyFolderOf(from);
     notifyFolderOf(to2);
+    try {
+      unlocks.rename(from, to2);
+    } catch (e10) {
+      ui3.reportError(e10, "warning");
+    }
+    if (marks) {
+      try {
+        if (await loadMarks())
+          await marks.rename(from, to2);
+      } catch (e10) {
+        ui3.reportError(e10, "warning");
+      }
+    }
     for (const cb2 of renameListeners) {
       try {
         cb2(from, to2);
@@ -23178,6 +23604,11 @@ function createStore(config) {
       const asBlob = blob instanceof Blob ? blob : new Blob([blob]);
       return await seal.unsealForRead(name, asBlob);
     };
+    const starredForResolve = async () => {
+      if (!marks)
+        return false;
+      return !await loadMarks() || isStarredNow(name);
+    };
     const resolveCleanGone = async () => {
       if (head.seenBase(name) == null)
         return { status: "clean" };
@@ -23197,6 +23628,8 @@ function createStore(config) {
       if (choice === "cancel")
         return { status: "cancelled" };
       if (choice === "takeCloud") {
+        if (await starredForResolve())
+          return { status: "unresolved", reason: "starred" };
         const d3 = await delIfCloudAbsentSF(name);
         if (d3.status === "trashed")
           pendingGone.clear(name);
@@ -23228,6 +23661,9 @@ function createStore(config) {
       async save(bytes, opts) {
         tierGuard("save", name);
         await migrationReady;
+        const creating = !_createChecked;
+        if (!creating)
+          lockGuard("save", name);
         if (!_createChecked) {
           _createChecked = true;
           const where = await nameOccupied(name);
@@ -23243,9 +23679,25 @@ function createStore(config) {
         if (receipt && typeof receipt === "object" && receipt.foreignOverwrite) {
           reportStoreError(new Error(`local overwrite conflict: "${name}" was written by another tab (rev ${receipt.foreignOverwrite.foreignRev}); their bytes were ${receipt.foreignOverwrite.backedUp ? "backed up before overwrite" : "overwritten (recent copy already in backup)"}`), "warning");
         }
+        if (lockApplies(name)) {
+          try {
+            if (creating) {
+              if (!opts?.bornLocked)
+                unlocks.unlock(name);
+            } else
+              unlocks.noteSaved(name);
+          } catch (e10) {
+            reportStoreError(e10, "warning");
+          }
+        }
         notifyFolderOf(name);
         if (opts?.tryPush === false)
           return { pushed: false, reason: "not-attempted" };
+        if (!isOnline()) {
+          if (head.isDirtyThisTab(name) && head.seenBase(name) == null)
+            uploadReplay.enqueue(name);
+          return { pushed: false, reason: "offline" };
+        }
         let pushed = false, reason, resolution;
         try {
           const r10 = await pushMod.push(name, { encode: () => sealed, onConflict, surfaceCollision: mode !== "new", onProgress: opts?.onProgress, loserBackup: tierOf(name) !== "auto-backup" });
@@ -23371,6 +23823,8 @@ function createStore(config) {
           return { status: "cancelled" };
         if (choice === "takeCloud") {
           if (cloudState === "absent" || cloudState === "never") {
+            if (await starredForResolve())
+              return { status: "unresolved", reason: "starred" };
             const d3 = await delIfCloudAbsentSF(name);
             notifyFolderOf(name);
             return trashedOrWhy(d3);
@@ -23403,7 +23857,15 @@ function createStore(config) {
       },
       async trash() {
         tierGuard("trash", name);
+        await starGuard("trash", name);
         const r10 = await delSF(name);
+        if (r10.status !== "cancelled") {
+          try {
+            unlocks.lock(name);
+          } catch (e10) {
+            reportStoreError(e10, "log");
+          }
+        }
         notifyFolderOf(name);
         return r10;
       },
@@ -23610,6 +24072,7 @@ function createStore(config) {
     void ensureScaffold();
   }
   const _collections = /* @__PURE__ */ new Map();
+  const _collectionHandles = [];
   function collection(name, opts = {}) {
     if (_disposed)
       throw new StoreDisposedError("collection");
@@ -23617,7 +24080,17 @@ function createStore(config) {
     const cached2 = _collections.get(name);
     if (cached2)
       return cached2;
-    const coll = rejectAfterDispose(createCollection({ cloud: collectionsCloud, name, local: collectionLocal, manual: opts.manual, getInitData: opts.getInitData, isOnline }));
+    const coll = rejectAfterDispose(createCollection({
+      cloud: collectionsCloud,
+      name,
+      local: collectionLocal,
+      manual: opts.manual,
+      getInitData: opts.getInitData,
+      isOnline,
+      lifecycle: (h2) => {
+        _collectionHandles.push(h2);
+      }
+    }));
     registerScaffold(name);
     _collections.set(name, coll);
     return coll;
@@ -23633,6 +24106,43 @@ function createStore(config) {
       reportStoreError(e10, "log");
       return "unknown";
     }
+  }
+  async function starredTrashKeeper(op2) {
+    if (!marks)
+      return null;
+    if (!await loadMarks())
+      throw new Error(`store: cannot read file marks, refusing ${op2} (starred files may be in the trash)`);
+    const starred = marks.starredIdentifiers();
+    if (!starred.length)
+      return null;
+    const exact = new Set(starred), bases = new Set(starred.map(baseNameOf));
+    return (e10) => e10.where === "local" ? exact.has(e10.name) : bases.has(parseCloudTrashName(e10.name, toName).base);
+  }
+  async function starGuardTrashItem(o10) {
+    const keep2 = await starredTrashKeeper("purgeTrash");
+    if (!keep2)
+      return;
+    if (o10.trashKey && local.listTrash) {
+      const hit = (await local.listTrash()).find((t10) => t10.trashKey === o10.trashKey);
+      if (hit && keep2({ name: hit.name, where: "local" }))
+        throw new StarredError(hit.name, "purgeTrash");
+    }
+    if (o10.cloudRef != null) {
+      const hit = (await cloud.listTrash()).find((it2) => it2.ref === o10.cloudRef);
+      if (!hit)
+        throw new Error("store: cannot identify this trash item while starred files exist, refusing purgeTrash (restore it, or try again when the cloud is reachable)");
+      if (keep2({ name: hit.name, where: "cloud" }))
+        throw new StarredError(parseCloudTrashName(hit.name, toName).base, "purgeTrash");
+    }
+  }
+  async function setMarks(op2, identifier, patch) {
+    if (!marks)
+      throw new Error(`store.files.${op2}(): file marks are off \u2014 pass createStore({ fileMarks: true })`);
+    assertValidFileName(identifier, appId);
+    await migrationReady;
+    if (!await loadMarks())
+      throw new Error(`store.files.${op2}("${identifier}"): cannot read file marks`);
+    await marks.set(identifier, patch);
   }
   return {
     // ── file + collection。改身份走 file.tryMove(to)。──
@@ -23700,6 +24210,37 @@ function createStore(config) {
           return { pushed, failed, failures };
         }
       }),
+      // ── 2.3.0 锁（家族「源文件原则上只读」）。这四个不受 lockByDefault 影响（开关只决定 save 拦不拦）；前端看 `lockByDefault` 决定画不画锁。──
+      /** 这个库是不是「作品默认只读」（createStore({ lockByDefault }) 的原值）。图库 / app 据此决定要不要画锁和解锁钮。 */
+      lockByDefault: config.lockByDefault === true,
+      /** 解锁一份作品。**只许由人的手势调用**（app 契约 + 各仓守卫测试）：代码替人解锁 = 这把锁白装。逐件、只记在这台设备、不同步；
+       *  放凉 unlockTtlMs（默认一天）过期，每次成功的 save 往后推；正开着的那份过期不打断。已经解着的 = 重新计时。 */
+      unlock: async (identifier) => {
+        assertValidFileName(identifier, appId);
+        await migrationReady;
+        return unlocks.unlock(identifier);
+      },
+      /** 提前收回解锁（车钥匙那一下）。本来就锁着 = 什么都不做。 */
+      lock: async (identifier) => {
+        assertValidFileName(identifier, appId);
+        await migrationReady;
+        unlocks.lock(identifier);
+      },
+      /** 现在有没有活着的解锁（界面画灰 / 亮）；锁着 → null。同步、现算，零网络。 */
+      unlockOf: (identifier) => unlocks.get(identifier),
+      /** 订阅活着的解锁：订阅当场给一次全表，之后有变化（解 / 锁 / 过期 / 改名）再给。返退订。 */
+      watchUnlocks: (cb2) => unlocks.watch(cb2),
+      // ── 2.3.0 记号：星 / 收起（要 createStore({ fileMarks: true })；没开 → 这四个抛）。──
+      /** 这个库开没开记号（createStore({ fileMarks }) 的原值）。 */
+      fileMarks: marks != null,
+      /** 加星：之后库拒绝把它送进回收站（`file.trash` 抛 StarredError；冲突面里选「这份进回收站」→ unresolved / starred；云端没了过宽限也不自动送）。列举里 `Item.starred`。 */
+      star: (identifier) => setMarks("star", identifier, { starred: true }),
+      /** 撤星。 */
+      unstar: (identifier) => setMarks("unstar", identifier, { starred: false }),
+      /** 收起：纯显示记号（列举里 `Item.folded`）。库照常列出它、不拦任何动作。 */
+      fold: (identifier) => setMarks("fold", identifier, { folded: true }),
+      /** 取消收起。 */
+      unfold: (identifier) => setMarks("unfold", identifier, { folded: false }),
       /** 订阅**一个**文件夹（网盘模型）：立即本地帧 + 云端帧同一 cb 再闪；之后本夹任何本地写即时重推本地帧。返回退订。 */
       watchFolder,
       /** 0.14.0：身份变更事件——任何入口的 `file.tryMove` 成功后同步回调 `(from, to)`（库身份 = 全名；含离线 move 分支；撞名 ok:false 不发）。
@@ -23786,15 +24327,19 @@ function createStore(config) {
         return trashMod.restore(...a10);
       }),
       /** 彻底删除回收站/备份箱一项。 */
-      purgeTrash: singleFlight("\u5F7B\u5E95\u5220\u9664", (...a10) => {
+      purgeTrash: singleFlight("\u5F7B\u5E95\u5220\u9664", async (...a10) => {
         roGuard("purgeTrash");
+        await starGuardTrashItem(a10[0] ?? {});
         return trashMod.purge(...a10);
       }),
+      // 2.3.1：加了星的那一份不许彻底删（StarredError）
       /** 清空回收站。 */
-      emptyTrash: singleFlight("\u6E05\u7A7A\u56DE\u6536\u7AD9", (...a10) => {
+      emptyTrash: singleFlight("\u6E05\u7A7A\u56DE\u6536\u7AD9", async (...a10) => {
         roGuard("emptyTrash");
-        return trashMod.emptyTrash(...a10);
+        const keep2 = await starredTrashKeeper("emptyTrash");
+        return trashMod.emptyTrash(keep2 ? { ...a10[0] ?? {}, keep: keep2 } : a10[0]);
       }),
+      // 2.3.1：加了星的不连坐（结果的 kept 里报）
       /** 清空备份箱。 */
       emptyBackup: singleFlight("\u6E05\u7A7A\u5907\u4EFD\u7BB1", (...a10) => {
         roGuard("emptyBackup");
@@ -23803,7 +24348,12 @@ function createStore(config) {
       //   日常开夹的惰性收敛已在 watchFolder 内走 reconcileFolder（看到夹才收敛，同一 converge SSOT）。
       /** **全库** cloud-gone 收敛（去抖后 send trash）。**仅用户显式指令**（隐藏的「校验完整性」入口），
        *  绝不自动/轮询——全树 listAll 是重活。 */
-      reconcileAll: (opts) => reconcileMod.reconcile({ activeFileName: opts?.activeIdentifier })
+      reconcileAll: async (opts) => {
+        if (marks)
+          await loadMarks();
+        return reconcileMod.reconcile({ activeFileName: opts?.activeIdentifier });
+      }
+      // 2.3.0：先把记号读进来（加了星的不自动送回收站；读不出来 = 一律不动）
     }),
     // （encryption 面已随 @internal/encryption 立户退役 2026-08-28：加密是纯内容操作不属于同步引擎——
     //   app 用自己的 createEncryption 实例（无库模式也活着），store 只经 EncryptionPort 收同一实例。）
@@ -23811,6 +24361,7 @@ function createStore(config) {
     /** 释放本 store 实例（切库/登出/多实例轮换用）。顺序：先拒新调用 + 停 watcher（不再有帧推给订阅者）→
      *  drain（默认 true：等 in-flight 的 push/写链收敛——正在推的字节**推完落账**，绝不半途掐；
      *  {drain:false} = 快速拆除，in-flight 操作会因连接关闭响亮失败、dirty 账还在下次补推）→ 关 IDB 连接。
+     *  2.2.7：drain 之前先关每份 collection：排着的本地写 drain = 先落盘、快速拆除 = 扔掉（进黑匣子）；排着的云推两种都取消，脏账在，下次开库补推。
      *  幂等。之后任何面（含 dispose 前已握着的 file/collection 对象）→ 抛 StoreDisposedError。
      *  ⚠ 不含 provider/auth 的登出（那是 app 侧 auth 的事）；错误上报单例 reporter 不重置（多实例共汇一处）。 */
     async dispose(opts) {
@@ -23818,8 +24369,10 @@ function createStore(config) {
         return;
       _disposed = true;
       renameListeners.clear();
+      unlocks.close();
       unAuth?.();
       folderWatchers.clear();
+      await Promise.all(_collectionHandles.map((h2) => h2.close({ flush: opts?.drain !== false })));
       if (opts?.drain !== false)
         await sub.drain();
       local.close?.();
@@ -25244,6 +25797,140 @@ function naturalCompare(a10, b3) {
   return _collator.compare(a10, b3);
 }
 
+// node_modules/@internal/gallery/dist/core/model/timeline-order.js
+function leadingDate(name) {
+  const m2 = /^([0-9]{8})(?![0-9])/.exec(name);
+  return m2 ? m2[1] : null;
+}
+function timelineCompare(a10, b3) {
+  const da = leadingDate(a10), db = leadingDate(b3);
+  if (da == null && db != null)
+    return -1;
+  if (da != null && db == null)
+    return 1;
+  if (da != null && db != null && da !== db)
+    return da < db ? 1 : -1;
+  return naturalCompare(b3, a10);
+}
+var sortNameOfFile = (label) => {
+  const dot = label.lastIndexOf(".");
+  return dot > 0 ? label.slice(0, dot) : label;
+};
+function mergeTimeline(items, folderNames, images = [], others = []) {
+  const rows = [
+    ...folderNames.map((name) => ({ name, rank: 0, id: name, entry: { type: "folder", name } })),
+    ...items.map((item) => ({ name: item.stem, rank: 1, id: item.identifier, entry: { type: "doc", item } })),
+    ...images.map((file) => ({ name: sortNameOfFile(file.label), rank: 2, id: file.identifier, entry: { type: "image", file } })),
+    ...others.map((file) => ({ name: sortNameOfFile(file.label), rank: 3, id: file.identifier, entry: { type: "other", file } }))
+  ];
+  rows.sort((a10, b3) => timelineCompare(a10.name, b3.name) || a10.rank - b3.rank || naturalCompare(b3.id, a10.id));
+  return rows.map((r10) => r10.entry);
+}
+
+// node_modules/@internal/gallery/dist/core/model/versions.js
+var VERSION_MARK = ".backup-";
+function parseVersionStem(stem) {
+  const m2 = /^(.+)\.backup-([0-9]{8})(?:-([0-9]{1,4}))?$/.exec(stem);
+  if (!m2)
+    return null;
+  return { base: m2[1], date: m2[2], n: m2[3] ? Number(m2[3]) : 1 };
+}
+function dayStamp(now2 = /* @__PURE__ */ new Date()) {
+  const p2 = (n10) => String(n10).padStart(2, "0");
+  return `${now2.getFullYear()}${p2(now2.getMonth() + 1)}${p2(now2.getDate())}`;
+}
+function versionTargetName(source, day, taken, ids) {
+  const d3 = ids.parse(source);
+  const v = d3 ? parseVersionStem(d3.stem) : null;
+  const origin = d3 && v ? ids.join({ folder: d3.folder, stem: v.base, suffix: d3.suffix }) : source;
+  for (let n10 = 1; n10 < 1e4; n10++) {
+    const candidate = withStemTail(origin, `${VERSION_MARK}${day}${n10 === 1 ? "" : `-${n10}`}`, ids);
+    if (!taken(candidate))
+      return candidate;
+  }
+  throw new Error(`versionTargetName: no free version name for "${source}" on ${day}`);
+}
+function versionsOf(original, siblings) {
+  const out = [];
+  for (const it2 of siblings) {
+    if (it2.kind !== original.kind || it2.identifier === original.identifier)
+      continue;
+    const v = parseVersionStem(it2.stem);
+    if (v && v.base === original.stem)
+      out.push({ item: it2, date: v.date, n: v.n });
+  }
+  out.sort((a10, b3) => a10.date === b3.date ? b3.n - a10.n : a10.date < b3.date ? 1 : -1);
+  return out.map((x2) => x2.item);
+}
+
+// node_modules/@internal/gallery/dist/core/model/fold-groups.js
+var stripKey = (firstIdentifier) => `S:${firstIdentifier}`;
+var versionsKey = (originalIdentifier) => `V:${originalIdentifier}`;
+function foldTimeline(timeline4, o10) {
+  const docs = timeline4.filter((e10) => e10.type === "doc").map((e10) => e10.item);
+  const originals = /* @__PURE__ */ new Map();
+  for (const it2 of docs)
+    if (!parseVersionStem(it2.stem))
+      originals.set(`${it2.kind}\0${it2.stem}`, it2);
+  const attached = /* @__PURE__ */ new Set();
+  for (const it2 of docs) {
+    const v = parseVersionStem(it2.stem);
+    if (v && originals.has(`${it2.kind}\0${v.base}`))
+      attached.add(it2.identifier);
+  }
+  const open2 = (key) => o10.expandAll === true || o10.isOpen(key);
+  const rows = [];
+  const pushDoc = (item, dim) => {
+    const versions = parseVersionStem(item.stem) ? [] : versionsOf(item, docs);
+    const versionsOpen = versions.length > 0 && open2(versionsKey(item.identifier));
+    rows.push({ type: "doc", item, versions, versionsOpen, dim, versionOf: null });
+    if (versionsOpen)
+      for (const v of versions)
+        rows.push({ type: "doc", item: v, versions: [], versionsOpen: false, dim: true, versionOf: item.identifier });
+  };
+  let run2 = [];
+  const flush2 = () => {
+    if (!run2.length)
+      return;
+    const key = stripKey(run2[0].identifier), isOpen = open2(key);
+    rows.push({ type: "strip", key, count: run2.length, open: isOpen });
+    if (isOpen)
+      for (const it2 of run2)
+        pushDoc(it2, true);
+    run2 = [];
+  };
+  for (const e10 of timeline4) {
+    if (e10.type === "folder") {
+      flush2();
+      rows.push({ type: "folder", name: e10.name });
+      continue;
+    }
+    if (e10.type === "image" || e10.type === "other") {
+      flush2();
+      rows.push({ type: e10.type, identifier: e10.file.identifier });
+      continue;
+    }
+    const it2 = e10.item;
+    if (attached.has(it2.identifier))
+      continue;
+    if (it2.folded || parseVersionStem(it2.stem)) {
+      run2.push(it2);
+      continue;
+    }
+    flush2();
+    pushDoc(it2, false);
+  }
+  flush2();
+  return rows;
+}
+function foldedCount(timeline4) {
+  let n10 = 0;
+  for (const e10 of timeline4)
+    if (e10.type === "doc" && (e10.item.folded || parseVersionStem(e10.item.stem)))
+      n10++;
+  return n10;
+}
+
 // node_modules/@internal/gallery/dist/core/model/gallery-view-model.js
 var hasLocalCopy = (s10) => isCached(s10);
 var hasCloudCopy = (s10) => s10 === "cloud-only" || s10 === "synced" || s10 === "unpushed" || s10 === "newer-on-cloud" || s10 === "conflict";
@@ -25280,9 +25967,13 @@ function tileFor(item, opts) {
     ghost: s10 === "ghost",
     pendingGone: s10 === "pendingGone",
     isActive: !!opts.activeIdentifier && item.identifier === opts.activeIdentifier,
-    // 加密态由调用方探测后注入（store 的 Item 内容盲、没有 encrypted 轴）。
+    // 加密态由调用方判定后注入（store 的 Item 内容盲、没有 encrypted 轴；判定 = 本地字节 ∨ store 的事实，见 encryption-state.ts）。
     encrypted: !!opts.encrypted,
-    attention: opts.signedIn && ATTENTION_BADGES.has(badge)
+    attention: opts.signedIn && ATTENTION_BADGES.has(badge),
+    starred: item.starred === true,
+    folded: item.folded === true,
+    lockable: !!opts.lockable,
+    unlocked: !!opts.lockable && !!opts.unlocked
   };
 }
 function breadcrumb(folder) {
@@ -25475,7 +26166,7 @@ __export(diag_log_exports, {
 });
 var _app = "app";
 var _version = "0.0.0";
-var KEY2 = "diag-log";
+var KEY3 = "diag-log";
 var MAX_ENTRIES = 500;
 var MAX_MSG = 600;
 var FLUSH_MS = 250;
@@ -25488,7 +26179,7 @@ function isEntry(x2) {
 function load() {
   if (_entries)
     return _entries;
-  const raw = deviceKvGetJson2(KEY2, null);
+  const raw = deviceKvGetJson2(KEY3, null);
   _entries = Array.isArray(raw) ? raw.filter(isEntry).slice(-MAX_ENTRIES) : [];
   return _entries;
 }
@@ -25504,7 +26195,7 @@ function flush() {
   }
   if (_entries) {
     try {
-      deviceKvSetJson2(KEY2, _entries);
+      deviceKvSetJson2(KEY3, _entries);
     } catch {
     }
   }
@@ -25822,6 +26513,13 @@ function galleryItemFromStoreItem(it2, ids) {
     g3.size = it2.size;
   if (it2.lastModified != null)
     g3.lastModified = it2.lastModified;
+  const f2 = it2;
+  if (f2.starred === true)
+    g3.starred = true;
+  if (f2.folded === true)
+    g3.folded = true;
+  if (f2.cloudSealed === true)
+    g3.cloudSealed = true;
   return g3;
 }
 function createGalleryDataFace(deps) {
@@ -25839,16 +26537,16 @@ function createGalleryDataFace(deps) {
     return folders.map((f2) => f2.slice(prefix.length)).filter(Boolean).sort(naturalCompare);
   };
   return {
-    /** 订阅当前夹：立即本地帧、云端到了同一 cb 再闪。文档按主干 natural 倒序；图片按修改时间倒序；杂物显示不打开；子夹自然正序。 */
+    /** 订阅当前夹：立即本地帧、云端到了同一 cb 再闪。作品和子夹合成一列时间线（0.8.12：子夹不再钉在最上面；规则 = core/model/timeline-order.ts）；
+     *  图片按修改时间倒序；杂物显示不打开。 */
     watchFolder(folder, cb2, opts) {
       const st2 = requireStore2(), ids = st2.identifiers;
-      return st2.files.watchFolder(folder, (snap) => cb2({
-        folder: snap.folder,
-        items: snap.items.map((it2) => galleryItemFromStoreItem(it2, ids)).filter((g3) => g3 != null).sort((a10, b3) => naturalCompare(b3.stem, a10.stem) || naturalCompare(b3.identifier, a10.identifier)),
-        images: toImageItems(snap.items, ids),
-        others: toOtherItems(snap.items, ids),
-        folderNames: folderNamesOf(folder, snap.folders)
-      }), opts);
+      return st2.files.watchFolder(folder, (snap) => {
+        const items = snap.items.map((it2) => galleryItemFromStoreItem(it2, ids)).filter((g3) => g3 != null).sort((a10, b3) => timelineCompare(a10.stem, b3.stem) || naturalCompare(b3.identifier, a10.identifier));
+        const folderNames = folderNamesOf(folder, snap.folders);
+        const images = toImageItems(snap.items, ids), others = toOtherItems(snap.items, ids);
+        cb2({ folder: snap.folder, items, images, others, folderNames, timeline: mergeTimeline(items, folderNames, images, others) });
+      }, opts);
     },
     watchFolderImages(folder, cb2) {
       const st2 = requireStore2(), ids = st2.identifiers;
@@ -25988,11 +26686,28 @@ function createGalleryVerbs(d3) {
       }
     });
   }
+  async function atRestBytes(item) {
+    const src = docFile(item.identifier);
+    const sealed = await src.getEncryptedBlob();
+    if (sealed)
+      return { bytes: sealed };
+    const plain2 = await src.open();
+    const sealedAfterPull = await src.getEncryptedBlob();
+    if (sealedAfterPull)
+      return { bytes: sealedAfterPull };
+    if (item.cloudSealed)
+      return { bytes: null, why: "sealed-no-local" };
+    return { bytes: plain2 };
+  }
   async function copy(item, currentIdentifiers) {
     await d3.host.busy(t("gal.busy.copy", { base: item.stem }), async () => {
       try {
-        const src = docFile(item.identifier);
-        const bytes = await src.getEncryptedBlob() ?? await src.open();
+        const got = await atRestBytes(item);
+        if (got.why === "sealed-no-local") {
+          d3.host.status(t("gal.st.sealedNoLocal"), true);
+          return;
+        }
+        const bytes = got.bytes;
         if (!bytes) {
           d3.host.status(t("gal.st.copyNoBytes"), true);
           return;
@@ -26030,7 +26745,10 @@ function createGalleryVerbs(d3) {
       const r10 = await docFile(item.identifier).resolve();
       const key = r10.status === "took-cloud" ? "gal.st.resolve.tookCloud" : r10.status === "pushed" ? "gal.st.resolve.pushed" : r10.status === "trashed" ? "gal.st.resolve.trashed" : r10.status === "cancelled" ? "gal.st.resolve.cancelled" : r10.status === "clean" ? "gal.st.resolve.clean" : r10.status === "offline" ? "gal.st.resolve.offline" : "gal.st.resolve.unresolved";
       const bad = key === "gal.st.resolve.offline" || key === "gal.st.resolve.unresolved";
-      d3.host.status(t(key, { name: item.stem, e: r10.reason ?? r10.status }), bad);
+      if (r10.status === "unresolved" && r10.reason === "starred")
+        d3.host.status(t("gal.st.resolve.starred", { name: item.stem }), true);
+      else
+        d3.host.status(t(key, { name: item.stem, e: r10.reason ?? r10.status }), bad);
       if (isActive && (r10.status === "took-cloud" || r10.status === "trashed") && d3.doc.open)
         await d3.doc.open(item);
     } catch (e10) {
@@ -26044,6 +26762,10 @@ function createGalleryVerbs(d3) {
     const isActive = item.identifier === d3.host.activeIdentifier();
     const isLocal = hasLocalCopy(item.syncState), isCloud = hasCloudCopy(item.syncState);
     const dirty2 = isLocal && isCloud && hasUnpushed(item.syncState);
+    if (item.starred) {
+      d3.host.status(t("gal.st.starredNoDel", { name: item.stem }), true);
+      return;
+    }
     let detail = isLocal && isCloud ? dirty2 ? t("gal.del.dirtyDetail") : t("gal.del.syncedDetail") : isCloud ? t("gal.del.cloudDetail") : t("gal.del.localDetail");
     if (isActive)
       detail += t("gal.del.activeSuffix");
@@ -26061,7 +26783,7 @@ function createGalleryVerbs(d3) {
           await d3.doc.exit();
         d3.host.status(del2.status === "noop" ? t("gal.st.delNothing", { name: item.stem }) : del2.queuedCloudDelete === false ? t("gal.st.delLocalOnly", { name: item.stem }) : t("gal.st.deleted", { name: item.stem }), del2.status === "noop" || del2.queuedCloudDelete === false);
       } catch (e10) {
-        d3.host.status(t("gal.st.delFail", { e: errMsg(e10) }), true);
+        d3.host.status(isStarredError(e10) ? t("gal.st.starredNoDel", { name: item.stem }) : t("gal.st.delFail", { e: errMsg(e10) }), true);
       }
     });
   }
@@ -26114,7 +26836,7 @@ function createGalleryVerbs(d3) {
         await d3.store().files.purgeTrash({ trashKey: item.localKey, cloudRef: item.cloudRef });
         d3.host.status(t("gal.st.purged", { name: item.stem }));
       } catch (e10) {
-        d3.host.status(t("gal.st.purgeFail", { e: errMsg(e10) }), true);
+        d3.host.status(isStarredError(e10) ? t("gal.st.starredNoPurge", { name: item.stem }) : t("gal.st.purgeFail", { e: errMsg(e10) }), true);
       }
     });
   }
@@ -26135,6 +26857,8 @@ function createGalleryVerbs(d3) {
           d3.host.status(t(tx2.emptyCloudFail, { n: cloudFails }), true);
         else if ((res.failed || []).length)
           d3.host.status(t(tx2.emptyPartial), true);
+        else if ((res.kept || []).length)
+          d3.host.status(t("gal.st.emptyKeptStarred", { label, n: (res.kept || []).length }), true);
         else
           d3.host.status(t(tx2.emptyDone, { label }));
       } catch (e10) {
@@ -26229,13 +26953,134 @@ function createGalleryVerbs(d3) {
       d3.host.status(t("gal.st.decryptFail", { e: errMsg(e10) }), true);
     }
   }
+  const isStarredError = (e10) => e10?.name === "StarredError";
+  const filesFace = () => d3.store().files;
+  async function unlockEdit(item) {
+    try {
+      const f2 = filesFace();
+      if (!f2.unlock)
+        throw new Error("this library has no edit lock (needs @internal/store >= 2.3.0)");
+      await f2.unlock(item.identifier);
+      d3.host.status(t("gal.st.editUnlocked", { name: item.stem }));
+      return true;
+    } catch (e10) {
+      d3.host.status(t("gal.st.editLockFail", { e: errMsg(e10) }), true);
+      return false;
+    }
+  }
+  async function lockEdit(item) {
+    try {
+      const f2 = filesFace();
+      if (!f2.lock)
+        throw new Error("this library has no edit lock (needs @internal/store >= 2.3.0)");
+      await f2.lock(item.identifier);
+      d3.host.status(t("gal.st.editLocked", { name: item.stem }));
+    } catch (e10) {
+      d3.host.status(t("gal.st.editLockFail", { e: errMsg(e10) }), true);
+    }
+  }
+  async function setMark2(item, which) {
+    const okKey = { star: "gal.st.starred", unstar: "gal.st.unstarred", fold: "gal.st.folded", unfold: "gal.st.unfolded" }[which];
+    try {
+      const fn = filesFace()[which];
+      if (!fn)
+        throw new Error("this library has no stars / tuck-away (needs @internal/store >= 2.3.0 with fileMarks)");
+      await fn.call(filesFace(), item.identifier);
+      d3.host.status(t(okKey, { name: item.stem }));
+    } catch (e10) {
+      d3.host.status(t("gal.st.marksFail", { e: errMsg(e10) }), true);
+    }
+  }
+  async function saveVersion(item, mode, siblings, opts = {}) {
+    return d3.host.busy(t("gal.busy.version", { base: item.stem }), async () => {
+      try {
+        if (item.identifier === d3.host.activeIdentifier())
+          await d3.doc.flush?.();
+        const got = await atRestBytes(item);
+        if (got.why === "sealed-no-local") {
+          d3.host.status(t("gal.st.sealedNoLocal"), true);
+          return null;
+        }
+        if (!got.bytes) {
+          d3.host.status(t("gal.st.copyNoBytes"), true);
+          return null;
+        }
+        const originStem = parseVersionStem(item.stem)?.base ?? item.stem;
+        const previous = versionsOf({ ...item, stem: originStem, identifier: "\0" }, siblings)[0] ?? null;
+        const taken = new Set(siblings.map((s10) => s10.identifier));
+        const day = dayStamp(opts.now);
+        let target = "";
+        for (let attempt = 0; ; attempt++) {
+          target = versionTargetName(item.identifier, day, (n10) => taken.has(n10), ids());
+          try {
+            await docFile(target, "new").save(got.bytes, { tryPush: cloudOn(), bornLocked: true });
+            break;
+          } catch (e10) {
+            if (e10?.name !== "CloudNameCollisionError" || attempt >= 8)
+              throw e10;
+            taken.add(target);
+          }
+        }
+        const name = stemOf2(target);
+        if (mode === "new" || !previous) {
+          d3.host.status(t("gal.st.versionSaved", { name }));
+          return target;
+        }
+        try {
+          const r10 = await docFile(previous.identifier).trash();
+          if (r10.status === "cancelled" || r10.status === "noop")
+            d3.host.status(t("gal.st.versionReplaceKept", { name, e: r10.status }), true);
+          else
+            d3.host.status(t("gal.st.versionReplaced", { name }));
+        } catch (e10) {
+          d3.host.status(isStarredError(e10) ? t("gal.st.versionReplaceStarred", { name }) : t("gal.st.versionReplaceKept", { name, e: errMsg(e10) }), true);
+        }
+        return target;
+      } catch (e10) {
+        d3.host.status(t("gal.st.versionFail", { e: errMsg(e10) }), true);
+        return null;
+      }
+    });
+  }
+  async function saveVersionThenUnlock(item, siblings, opts = {}) {
+    if (!await saveVersion(item, "new", siblings, opts))
+      return false;
+    return unlockEdit(item);
+  }
   async function unlock(name) {
     const ok2 = !!await d3.encryption?.ensureUnlocked(name);
     if (ok2)
       d3.host.status(t("gal.st.unlocked"));
     return ok2;
   }
-  return { rename, move, moveTargets, copy, resolve, unload, keepOffline, del, deleteImage, folderDelete, asideRestore, asidePurge, emptyAside, encryptItem, decryptItem, unlock, whereLabel };
+  return {
+    rename,
+    move,
+    moveTargets,
+    copy,
+    resolve,
+    unload,
+    keepOffline,
+    del,
+    deleteImage,
+    folderDelete,
+    asideRestore,
+    asidePurge,
+    emptyAside,
+    encryptItem,
+    decryptItem,
+    unlock,
+    whereLabel,
+    unlockEdit,
+    lockEdit,
+    saveVersion,
+    saveVersionThenUnlock,
+    // 0.9.0 锁 / 存一版（unlock = 加密的那把锁，老名字不动；这把叫 unlockEdit）
+    star: (item) => setMark2(item, "star"),
+    unstar: (item) => setMark2(item, "unstar"),
+    fold: (item) => setMark2(item, "fold"),
+    unfold: (item) => setMark2(item, "unfold")
+  };
 }
 
 // node_modules/@internal/gallery/dist/core/thumbs/thumb-store.js
@@ -26786,6 +27631,109 @@ function storeUIFor(d3) {
   };
 }
 
+// node_modules/@internal/gallery/dist/core/model/encryption-state.js
+var encVersionOf = (it2) => `${it2.syncState}|${it2.lastModified ?? ""}|${it2.size ?? ""}`;
+function createEncryptionState(rec = {}) {
+  const entry = (id2) => {
+    if (!rec[id2])
+      rec[id2] = {};
+    return rec[id2];
+  };
+  const localOf = (id2) => rec[id2]?.local === true;
+  return {
+    needsLocalProbe: (id2, v) => rec[id2]?.lv !== v,
+    noteLocal: (id2, v, encrypted) => {
+      const e10 = entry(id2);
+      e10.lv = v;
+      e10.local = encrypted;
+    },
+    notePeek: (id2, v) => {
+      entry(id2).pv = v;
+    },
+    isEncrypted: (id2, v, cloudSealed) => cloudSealed === true || localOf(id2) || rec[id2]?.pv === v,
+    isLocalEncrypted: (id2) => localOf(id2),
+    forget: (id2) => {
+      delete rec[id2];
+    }
+  };
+}
+function encryptionMenu(o10) {
+  return {
+    encrypt: o10.hasEncryption && o10.hasLocal && !o10.encrypted,
+    decrypt: o10.hasEncryption && o10.hasLocal && o10.localEncrypted
+  };
+}
+function admitThumbBlob(blob, o10) {
+  if (o10.isEncryptedPeekBlob?.(blob))
+    return "enc-peek";
+  return o10.sealed ? "refuse" : "show";
+}
+async function dropPlainByproducts(identifier, c10) {
+  let thumb = false, facts = false;
+  if (c10.thumbs) {
+    const e10 = await c10.thumbs.read(identifier);
+    if (e10?.blob && !c10.isEncryptedPeekBlob(e10.blob)) {
+      await c10.thumbs.invalidate(identifier);
+      thumb = true;
+    }
+  }
+  if (c10.facts) {
+    const e10 = await c10.facts.read(identifier);
+    if (e10 && e10.value != null) {
+      await c10.facts.invalidate(identifier);
+      facts = true;
+    }
+  }
+  return { thumb, facts };
+}
+
+// node_modules/@internal/gallery/dist/core/model/sealed-cover.js
+function createSealedCover(p2) {
+  let seq = 0;
+  async function tryDecrypt() {
+    const my = ++seq;
+    if (p2.shown() === "plain")
+      p2.clear();
+    let png = null;
+    try {
+      png = await p2.decrypt();
+    } catch (err2) {
+      png = null;
+      if (my === seq)
+        p2.onError?.(err2);
+    }
+    if (my !== seq)
+      return;
+    if (!p2.isUnlocked()) {
+      if (p2.shown() === "decrypted")
+        p2.clear();
+      p2.setLocked(true);
+      return;
+    }
+    if (png && png.size > 0) {
+      p2.setLocked(false);
+      p2.show(png);
+      return;
+    }
+    if (p2.shown() === "decrypted")
+      p2.clear();
+    p2.setLocked(false);
+  }
+  function onLockChange(unlocked) {
+    if (unlocked) {
+      if (p2.hasSource() || p2.locked())
+        void tryDecrypt();
+      return;
+    }
+    seq++;
+    if (p2.shown() === "decrypted")
+      p2.clear();
+    if (p2.hasSource())
+      p2.setLocked(true);
+  }
+  return { tryDecrypt, onLockChange };
+}
+
 // node_modules/@internal/gallery/dist/ui/templates.js
 var THUMB_CELL_TEMPLATE = `
     <img v-if="url" class="gallery-tile-thumb" :class="{ pixelated }" :src="url" :alt="alt" :title="blurb || null" loading="lazy" @load="onThumbLoad" />
@@ -26814,6 +27762,12 @@ var GALLERY_TEMPLATE = `
         <button type="button" class="gallery-attention-toggle" @click="toggleAttentionOnly">{{ attentionOnly ? L.attentionAll : L.attentionList }}</button>
       </div>
 
+      <!-- 0.9.0\uFF1A\u8FD9\u4E00\u5939\u6709\u52A0\u4E86\u661F\u7684 / \u6536\u8D77\u7684 \u2192 \u9876\u4E0A\u4E00\u6761\uFF1A\u53EA\u770B\u52A0\u661F\u7684\u3001\u5168\u90E8\u5C55\u5F00\u3002\u590D\u7528\u9762\u5305\u5C51\u5BB9\u5668\u6837\u5F0F\uFF0C\u5BBF\u4E3B\u96F6 CSS\u3002 -->
+      <div class="gallery-breadcrumb gallery-marks-bar" v-if="view==='files' && !loading && !attentionOnly && (starredCount>0 || foldedN>0)">
+        <template v-if="starredCount>0"><span class="gallery-marks-text">{{ starBarText }}</span><button type="button" class="gallery-marks-toggle" @click="toggleStarredOnly">{{ starredOnly ? L.starAll : L.starOnly }}</button></template>
+        <template v-if="foldedN>0 && !starredOnly"><span class="gallery-marks-text">{{ foldBarText }}</span><button type="button" class="gallery-marks-toggle" @click="toggleExpandAll">{{ expandAll ? L.collapseAll : L.expandAll }}</button></template>
+      </div>
+
       <!-- 0.8.6\uFF1A\u56DE\u6536\u7AD9 / \u5907\u4EFD\u7BB1\u89C6\u56FE\u9876\u4E0A\u4E00\u6761\u52A8\u4F5C\uFF08store files.emptyTrash / emptyBackup \u4E00\u76F4\u6709\u3001\u56FE\u5E93\u4ECE\u6CA1\u7ED9\u8FC7\u5165\u53E3\u2014\u2014store README\u300C\u6682\u65E0 gallery UI\u300D\uFF09\u3002\u590D\u7528\u9762\u5305\u5C51\u7684\u5BB9\u5668\u4E0E\u6309\u94AE\u6837\u5F0F\uFF0C\u5BBF\u4E3B\u96F6 CSS\u3002 -->
       <div class="gallery-breadcrumb gallery-aside-bar" v-if="view!=='files' && !loading && !isEmpty">
         <button type="button" class="danger" @click="emptyAside(view)">{{ view==='trash' ? L.emptyTrash : L.emptyBackup }}</button>
@@ -26833,29 +27787,63 @@ var GALLERY_TEMPLATE = `
         </div>
 
         <template v-if="view==='files' && !loading">
-          <div v-for="ft in (attentionOnly ? [] : folderTiles)" :key="'F:'+ft.path" class="gallery-tile folder" @click="enterFolder(ft.path)">
+          <!-- 0.8.12\uFF1A\u4F5C\u54C1\u548C\u6587\u4EF6\u5939\u5408\u6210\u4E00\u5217\u65F6\u95F4\u7EBF\uFF08user 2026-11-08\u300C\u6587\u4EF6\u5939\u80AF\u5B9A\u662F\u8981\u8FDB\u6392\u5E8F\u7684\uFF0C\u4E0D\u7136\u6587\u4EF6\u5939\u90FD\u6321\u5728\u4E0A\u9762\u300D\uFF09\u3002\u4E00\u884C\u8981\u4E48\u662F\u6587\u4EF6\u5939\uFF08row.ft\uFF09\uFF0C\u8981\u4E48\u662F\u4F5C\u54C1\u3002 -->
+          <template v-for="row in shownTimeline" :key="row.key">
+          <div v-if="row.ft" class="gallery-tile folder" @click="enterFolder(row.ft.path)">
             <div class="gallery-tile-thumb" v-html="ICON.folder"></div>
             <div class="gallery-tile-name-row">
-              <div class="gallery-tile-name" :title="ft.path">{{ ft.name }}</div>
+              <div class="gallery-tile-name" :title="row.ft.path">{{ row.ft.name }}</div>
               <div class="gallery-tile-meta">{{ L.folder }}</div>
             </div>
-            <button type="button" class="gallery-tile-menu-btn" :aria-label="L.more" @click.stop="toggleMenu('F:'+ft.path, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#more"/></svg></button>
-            <Teleport :to="menuMount"><div class="gallery-tile-menu-popup hidden" :data-menu="'F:'+ft.path" @click.stop>
-              <button type="button" class="danger" @click="folderDelete(ft)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash-can"/></svg><span>{{ L.delEmptyFolder }}</span></button>
+            <button type="button" class="gallery-tile-menu-btn" :aria-label="L.more" @click.stop="toggleMenu(row.key, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#more"/></svg></button>
+            <Teleport :to="menuMount"><div class="gallery-tile-menu-popup hidden" :data-menu="row.key" @click.stop>
+              <button type="button" class="danger" @click="folderDelete(row.ft)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash-can"/></svg><span>{{ L.delEmptyFolder }}</span></button>
             </div></Teleport>
           </div>
 
-          <div v-for="row in shownFileTiles" :key="row.t.identifier" class="gallery-tile" :class="{ active: row.t.isActive, encrypted: row.t.encrypted, attention: row.t.attention }" @click="openTile(row.item)">
-            <ThumbCell :enc-name="row.t.encrypted && row.thumb ? row.t.identifier : null" :fetchable="!row.t.encrypted && (row.t.hasCloud || row.t.hasLocal) && row.thumb" :is-cloud="!row.t.hasLocal && row.t.hasCloud" :cloud-newer="row.t.cloudNewer" :thumb-token="String(row.t.time || row.t.size || 0)" :fallback="row.t.stem.slice(0,1) || '?'" :fallback-html="phHtml(row.t.identifier, row.info)" :alt="row.t.identifier" @unlock="onUnlock" />
+          <!-- 0.9.0 \u6536\u8D77\u7684\u7EC6\u6761\uFF1A\u5C31\u5728\u5B83\u4EEC\u539F\u6765\u7684\u65F6\u95F4\u7EBF\u4F4D\u7F6E\uFF1B\u70B9\u4E00\u4E0B\u539F\u5730\u644A\u5F00\u3001\u518D\u70B9\u6536\u56DE\uFF08\u644A\u5F00\u4E0D\u7B49\u4E8E\u53D6\u6D88\u6536\u8D77\uFF09 -->
+          <button v-else-if="row.strip" type="button" class="gallery-fold-strip" :class="{ open: row.strip.open }" @click="toggleFold(row.key)"><span class="gallery-fold-strip-ico" v-html="ICON.fold"></span><span>{{ row.strip.label }}</span></button>
+
+          <!-- 0.9.2\uFF1A\u56FE\u7247 / \u8BA4\u4E0D\u51FA\u6765\u7684\u6587\u4EF6\u4E5F\u5728\u8FD9\u4E00\u6761\u65F6\u95F4\u7EBF\u91CC\uFF08\u65E5\u671F\u6BD4\u6587\u4EF6\u7C7B\u578B\u4F18\u5148\uFF09 -->
+          <div v-else-if="row.im" class="gallery-tile image-file" @click="openImageTile(row.im.raw)">
+            <ImageThumbCell :identifier="row.im.identifier" :token="row.im.token" :fallback="row.im.label.slice(0,1) || '?'" :alt="row.im.label" />
+            <div class="gallery-tile-name-row">
+              <div class="gallery-tile-name" :title="row.im.identifier">{{ row.im.label }}</div>
+              <div class="gallery-tile-meta">
+                <span class="gallery-tile-state-icon" :title="L.imageFile" v-html="ICON.image"></span>
+                <span>{{ fmtMeta({ time: row.im.time, size: row.im.size }) }}</span>
+              </div>
+            </div>
+            <button type="button" class="gallery-tile-menu-btn" :aria-label="L.more" @click.stop="toggleMenu('I:'+row.im.identifier, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#more"/></svg></button>
+            <Teleport :to="menuMount"><div class="gallery-tile-menu-popup hidden" :data-menu="'I:'+row.im.identifier" @click.stop>
+              <button type="button" class="danger" @click="deleteImage(row.im.raw)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash-can"/></svg><span>{{ L.toTrash }}</span></button>
+            </div></Teleport>
+          </div>
+          <div v-else-if="row.ot" class="gallery-tile other-file">
+            <div class="gallery-tile-thumb" v-html="ICON.file"></div>
+            <div class="gallery-tile-name-row">
+              <div class="gallery-tile-name" :title="row.ot.identifier">{{ row.ot.label }}</div>
+              <div class="gallery-tile-meta">
+                <span class="gallery-tile-state-icon" :title="L.otherFile" v-html="ICON.file"></span>
+                <span>{{ fmtMeta({ time: row.ot.time, size: row.ot.size }) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div v-else class="gallery-tile" :class="{ active: row.t.isActive, encrypted: row.t.encrypted, attention: row.t.attention, starred: row.t.starred, dim: row.dim }" @click="openTile(row.item)">
+            <ThumbCell :enc-name="row.encLocal && row.thumb ? row.t.identifier : null" :fetchable="!row.encLocal && (row.t.hasCloud || row.t.hasLocal) && row.thumb" :sealed="row.t.encrypted" :is-cloud="!row.t.hasLocal && row.t.hasCloud" :cloud-newer="row.t.cloudNewer" :thumb-token="String(row.t.time || row.t.size || 0)" :fallback="row.t.stem.slice(0,1) || '?'" :fallback-html="phHtml(row.t.identifier, row.info)" :alt="row.t.identifier" @unlock="onUnlock" @sealed="notePeekSealed(row.item)" />
             <span v-if="row.ov" class="gallery-tile-overlay" v-html="row.ov"></span>
             <span v-if="row.act" class="gallery-tile-action-slot"><button type="button" class="gallery-tile-action" :class="[row.act.state || 'ready', row.act.verb ? 'verb-' + row.act.verb : '']" :title="row.act.title" :aria-label="row.act.title" @click.stop="tileAction(row)" @pointerdown.stop><span class="gallery-tile-action-ico" v-html="badgeIcon2(row.act.icon)"></span><span v-if="row.act.verb" class="gallery-tile-action-label">{{ row.act.title }}</span></button></span>
             <span v-if="row.t.encrypted" class="gallery-tile-lockmark" :title="L.encrypted" v-html="ICON.lock"></span>
+            <!-- 0.9.0\uFF1A\u8FD9\u4EFD\u539F\u4F5C\u5B58\u4E0B\u6765\u7684\u5404\u7248\u6536\u5728\u5B83\u5E95\u4E0B\uFF1B\u70B9\u300C+N\u300D\u539F\u5730\u644A\u5F00 / \u6536\u56DE -->
+            <span v-if="row.nVersions" class="gallery-tile-versions-slot"><button type="button" class="gallery-tile-versions" :class="{ open: row.versionsOpen }" :title="versionsTitle(row.nVersions)" :aria-label="versionsTitle(row.nVersions)" @click.stop="toggleFold(row.vKey)" @pointerdown.stop>+{{ row.nVersions }}</button></span>
             <div class="gallery-tile-name-row">
               <span v-if="row.t.isActive" class="gallery-tile-active-tag">{{ L.activeTag }}</span>
-              <div class="gallery-tile-name" :title="row.t.identifier"><span v-if="row.marker==='unread'" class="gallery-marker unread" :title="L.unread"></span>{{ row.t.stem }}</div>
+              <div class="gallery-tile-name" :title="row.t.identifier"><span v-if="row.marker==='unread'" class="gallery-marker unread" :title="L.unread"></span><span v-if="row.t.starred" class="gallery-tile-star" :title="L.starredMark" v-html="ICON.star"></span>{{ row.t.stem }}</div>
               <div v-if="row.sub" class="gallery-tile-sub" :title="row.sub">{{ row.sub }}</div>
               <div class="gallery-tile-meta">
                 <span v-if="row.t.encrypted" class="gallery-tile-state-icon enc" :title="L.encrypted" v-html="ICON.lock"></span>
+                <span v-if="row.t.unlocked" class="gallery-tile-state-icon editing" :title="L.unlockedMark" v-html="ICON.pencil"></span>
                 <span :class="'gallery-tile-state-icon b-' + row.t.badge" :title="row.t.badgeTitle" v-html="badgeIcon(row.t.badge)"></span>
                 <span>{{ fmtMeta(row.t) }}</span>
               </div>
@@ -26878,46 +27866,35 @@ var GALLERY_TEMPLATE = `
                 <button type="button" @click="rename(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#rename"/></svg><span>{{ L.rename }}</span></button>
                 <button type="button" @click="move(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#move-to-folder"/></svg><span>{{ L.moveTo }}</span></button>
                 <button type="button" @click="copy(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#copy"/></svg><span>{{ L.copy }}</span></button>
+                <!-- 0.9.0 \u9501\uFF08\u5E93\u5F00\u4E86\u300C\u4F5C\u54C1\u9ED8\u8BA4\u53EA\u8BFB\u300D\u624D\u6709\uFF09\uFF1A\u95E8\u4E0A\u4E24\u4E2A\u94AE + \u9501\u4E0A\u3002\u4E0D\u5F39\u786E\u8BA4\u3002 -->
+                <button v-if="row.t.lockable && !row.t.unlocked" type="button" @click="unlockAndOpen(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#pencil"/></svg><span>{{ L.editContinue }}</span></button>
+                <button v-if="row.t.lockable && !row.t.unlocked" type="button" @click="versionThenEdit(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#layers-stack"/></svg><span>{{ L.editVersionThen }}</span></button>
+                <button v-if="row.t.unlocked" type="button" @click="lockEdit(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#lock"/></svg><span>{{ L.editLock }}</span></button>
+                <!-- 0.9.0 \u5B58\u4E00\u7248 = \u590D\u5236\u4E00\u4EFD\uFF08<\u4E3B\u5E72>.backup-<\u4ECA\u5929>\uFF0C\u751F\u6765\u6536\u8D77\u3001\u751F\u6765\u9501\u7740\uFF09\uFF1B\u6709\u4E0A\u4E00\u7248\u624D\u7ED9\u300C\u5B58\u5230\u4E0A\u4E00\u7248\u300D -->
+                <button type="button" @click="saveVersion(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#layers-stack"/></svg><span>{{ L.saveVersion }}</span></button>
+                <button v-if="row.hasPrevVersion" type="button" @click="saveVersionReplace(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#layers-stack"/></svg><span>{{ L.saveVersionReplace }}</span></button>
+                <!-- 0.9.0 \u661F / \u6536\u8D77\uFF08\u5E93\u5F00\u4E86\u8BB0\u53F7\u624D\u6709\uFF09\u3002\u5B58\u4E0B\u6765\u7684\u4E00\u7248\u6309\u540D\u5B57\u5929\u7136\u6536\u8D77\uFF0C\u4E0D\u7ED9\u300C\u6536\u8D77\u300D -->
+                <button v-if="caps.marks && !row.t.starred" type="button" @click="star(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#star"/></svg><span>{{ L.star }}</span></button>
+                <button v-if="caps.marks && row.t.starred" type="button" @click="unstar(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#star"/></svg><span>{{ L.unstar }}</span></button>
+                <button v-if="caps.marks && !row.t.folded && !row.isVersion" type="button" @click="fold(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#archive-box"/></svg><span>{{ L.fold }}</span></button>
+                <button v-if="caps.marks && row.t.folded" type="button" @click="unfold(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#archive-box"/></svg><span>{{ L.unfold }}</span></button>
                 <button v-if="row.t.badge==='cloudOnly'" type="button" @click="openTile(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#download"/></svg><span>{{ L.pullLocal }}</span></button>
                 <button v-if="row.t.badge==='cloudOnly'" type="button" @click="keepOffline(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#local-cache"/></svg><span>{{ L.keepOffline }}</span></button>
                 <button v-if="row.t.badge==='localOnly' || row.t.badge==='float' || row.t.badge==='dirtyBoth' || row.t.badge==='conflictBoth'" type="button" @click="resolve(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#cloud-pending"/></svg><span>{{ L.resolve }}</span></button>
                 <button v-if="row.t.hasLocal && row.t.hasCloud" type="button" @click="unload(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#unload-local-cache"/></svg><span>{{ L.unloadLocal }}</span></button>
-                <button v-if="hasEncryption && row.t.hasLocal && !row.t.encrypted" type="button" @click="encryptItem(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#lock"/></svg><span>{{ L.encrypt }}</span></button>
-                <button v-if="hasEncryption && row.t.hasLocal && row.t.encrypted" type="button" @click="decryptItem(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#unlock"/></svg><span>{{ L.decrypt }}</span></button>
+                <button v-if="row.encMenu.encrypt" type="button" @click="encryptItem(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#lock"/></svg><span>{{ L.encrypt }}</span></button>
+                <button v-if="row.encMenu.decrypt" type="button" @click="decryptItem(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#unlock"/></svg><span>{{ L.decrypt }}</span></button>
                 <button type="button" class="danger" @click="del(row.item)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash-can"/></svg><span>{{ L.toTrash }}</span></button>
               </template>
             </div></Teleport>
           </div>
+          </template>
 
-          <div v-for="im in (attentionOnly ? [] : imageTiles)" :key="'I:'+im.identifier" class="gallery-tile image-file" @click="openImageTile(im.raw)">
-            <ImageThumbCell :identifier="im.identifier" :token="im.token" :fallback="im.label.slice(0,1) || '?'" :alt="im.label" />
-            <div class="gallery-tile-name-row">
-              <div class="gallery-tile-name" :title="im.identifier">{{ im.label }}</div>
-              <div class="gallery-tile-meta">
-                <span class="gallery-tile-state-icon" :title="L.imageFile" v-html="ICON.image"></span>
-                <span>{{ fmtMeta({ time: im.time, size: im.size }) }}</span>
-              </div>
-            </div>
-            <button type="button" class="gallery-tile-menu-btn" :aria-label="L.more" @click.stop="toggleMenu('I:'+im.identifier, $event)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#more"/></svg></button>
-            <Teleport :to="menuMount"><div class="gallery-tile-menu-popup hidden" :data-menu="'I:'+im.identifier" @click.stop>
-              <button type="button" class="danger" @click="deleteImage(im.raw)"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="#trash-can"/></svg><span>{{ L.toTrash }}</span></button>
-            </div></Teleport>
-          </div>
-          <div v-for="ot in (attentionOnly ? [] : otherTiles)" :key="'O:'+ot.identifier" class="gallery-tile other-file">
-            <div class="gallery-tile-thumb" v-html="ICON.file"></div>
-            <div class="gallery-tile-name-row">
-              <div class="gallery-tile-name" :title="ot.identifier">{{ ot.label }}</div>
-              <div class="gallery-tile-meta">
-                <span class="gallery-tile-state-icon" :title="L.otherFile" v-html="ICON.file"></span>
-                <span>{{ fmtMeta({ time: ot.time, size: ot.size }) }}</span>
-              </div>
-            </div>
-          </div>
         </template>
 
         <template v-if="view!=='files' && !loading">
           <div v-for="row in asideTiles" :key="row.t.key" class="gallery-tile aside" :class="['aside-' + row.item.box, { encrypted: row.item.encrypted }]">
-            <ThumbCell :fetchable="row.fetch" :is-cloud="row.fetch && row.item.side==='cloud'" thumb-token="0" :fallback="row.t.stem.slice(0,1) || '?'" :fallback-html="row.item.kind != null ? phHtml(row.t.identifier, row.info) : ''" :alt="row.t.identifier" />
+            <ThumbCell :fetchable="row.fetch" :sealed="row.item.encrypted" :is-cloud="row.fetch && row.item.side==='cloud'" thumb-token="0" :fallback="row.t.stem.slice(0,1) || '?'" :fallback-html="row.item.kind != null ? phHtml(row.t.identifier, row.info) : ''" :alt="row.t.identifier" />
             <span v-if="row.ov" class="gallery-tile-overlay" v-html="row.ov"></span>
             <span v-if="row.item.encrypted" class="gallery-tile-lockmark" :title="L.encrypted" v-html="ICON.lock"></span>
             <div class="gallery-tile-name-row">
@@ -27038,87 +28015,115 @@ function galleryRender(Vue) {
   const _hoisted_4 = { class: "gallery-attention-text" };
   const _hoisted_5 = {
     key: 2,
+    class: "gallery-breadcrumb gallery-marks-bar"
+  };
+  const _hoisted_6 = { class: "gallery-marks-text" };
+  const _hoisted_7 = { class: "gallery-marks-text" };
+  const _hoisted_8 = {
+    key: 3,
     class: "gallery-breadcrumb gallery-aside-bar"
   };
-  const _hoisted_6 = {
+  const _hoisted_9 = {
     key: 0,
     class: "gallery-loading"
   };
-  const _hoisted_7 = { class: "gallery-stalled" };
-  const _hoisted_8 = { class: "gallery-stalled-actions" };
-  const _hoisted_9 = ["onClick"];
-  const _hoisted_10 = ["innerHTML"];
-  const _hoisted_11 = { class: "gallery-tile-name-row" };
-  const _hoisted_12 = ["title"];
-  const _hoisted_13 = { class: "gallery-tile-meta" };
-  const _hoisted_14 = ["aria-label", "onClick"];
-  const _hoisted_15 = ["data-menu"];
-  const _hoisted_16 = ["onClick"];
-  const _hoisted_17 = ["onClick"];
-  const _hoisted_18 = ["innerHTML"];
-  const _hoisted_19 = {
+  const _hoisted_10 = { class: "gallery-stalled" };
+  const _hoisted_11 = { class: "gallery-stalled-actions" };
+  const _hoisted_12 = ["onClick"];
+  const _hoisted_13 = ["innerHTML"];
+  const _hoisted_14 = { class: "gallery-tile-name-row" };
+  const _hoisted_15 = ["title"];
+  const _hoisted_16 = { class: "gallery-tile-meta" };
+  const _hoisted_17 = ["aria-label", "onClick"];
+  const _hoisted_18 = ["data-menu"];
+  const _hoisted_19 = ["onClick"];
+  const _hoisted_20 = ["onClick"];
+  const _hoisted_21 = ["innerHTML"];
+  const _hoisted_22 = ["onClick"];
+  const _hoisted_23 = { class: "gallery-tile-name-row" };
+  const _hoisted_24 = ["title"];
+  const _hoisted_25 = { class: "gallery-tile-meta" };
+  const _hoisted_26 = ["title", "innerHTML"];
+  const _hoisted_27 = ["aria-label", "onClick"];
+  const _hoisted_28 = ["data-menu"];
+  const _hoisted_29 = ["onClick"];
+  const _hoisted_30 = {
+    key: 3,
+    class: "gallery-tile other-file"
+  };
+  const _hoisted_31 = ["innerHTML"];
+  const _hoisted_32 = { class: "gallery-tile-name-row" };
+  const _hoisted_33 = ["title"];
+  const _hoisted_34 = { class: "gallery-tile-meta" };
+  const _hoisted_35 = ["title", "innerHTML"];
+  const _hoisted_36 = ["onClick"];
+  const _hoisted_37 = ["innerHTML"];
+  const _hoisted_38 = {
     key: 1,
     class: "gallery-tile-action-slot"
   };
-  const _hoisted_20 = ["title", "aria-label", "onClick"];
-  const _hoisted_21 = ["innerHTML"];
-  const _hoisted_22 = {
+  const _hoisted_39 = ["title", "aria-label", "onClick"];
+  const _hoisted_40 = ["innerHTML"];
+  const _hoisted_41 = {
     key: 0,
     class: "gallery-tile-action-label"
   };
-  const _hoisted_23 = ["title", "innerHTML"];
-  const _hoisted_24 = { class: "gallery-tile-name-row" };
-  const _hoisted_25 = {
+  const _hoisted_42 = ["title", "innerHTML"];
+  const _hoisted_43 = {
+    key: 3,
+    class: "gallery-tile-versions-slot"
+  };
+  const _hoisted_44 = ["title", "aria-label", "onClick"];
+  const _hoisted_45 = { class: "gallery-tile-name-row" };
+  const _hoisted_46 = {
     key: 0,
     class: "gallery-tile-active-tag"
   };
-  const _hoisted_26 = ["title"];
-  const _hoisted_27 = ["title"];
-  const _hoisted_28 = ["title"];
-  const _hoisted_29 = { class: "gallery-tile-meta" };
-  const _hoisted_30 = ["title", "innerHTML"];
-  const _hoisted_31 = ["title", "innerHTML"];
-  const _hoisted_32 = ["aria-label", "onClick"];
-  const _hoisted_33 = ["data-menu"];
-  const _hoisted_34 = { class: "gallery-menu-note" };
-  const _hoisted_35 = ["onClick"];
-  const _hoisted_36 = ["onClick"];
-  const _hoisted_37 = ["onClick"];
-  const _hoisted_38 = ["onClick"];
-  const _hoisted_39 = ["onClick"];
-  const _hoisted_40 = ["onClick"];
-  const _hoisted_41 = ["onClick"];
-  const _hoisted_42 = ["onClick"];
-  const _hoisted_43 = ["onClick"];
-  const _hoisted_44 = ["onClick"];
-  const _hoisted_45 = ["onClick"];
-  const _hoisted_46 = ["onClick"];
-  const _hoisted_47 = ["onClick"];
-  const _hoisted_48 = ["onClick"];
-  const _hoisted_49 = { class: "gallery-tile-name-row" };
+  const _hoisted_47 = ["title"];
+  const _hoisted_48 = ["title"];
+  const _hoisted_49 = ["title", "innerHTML"];
   const _hoisted_50 = ["title"];
   const _hoisted_51 = { class: "gallery-tile-meta" };
   const _hoisted_52 = ["title", "innerHTML"];
-  const _hoisted_53 = ["aria-label", "onClick"];
-  const _hoisted_54 = ["data-menu"];
-  const _hoisted_55 = ["onClick"];
-  const _hoisted_56 = ["innerHTML"];
-  const _hoisted_57 = { class: "gallery-tile-name-row" };
-  const _hoisted_58 = ["title"];
-  const _hoisted_59 = { class: "gallery-tile-meta" };
-  const _hoisted_60 = ["title", "innerHTML"];
-  const _hoisted_61 = ["innerHTML"];
-  const _hoisted_62 = ["title", "innerHTML"];
-  const _hoisted_63 = { class: "gallery-tile-name-row" };
-  const _hoisted_64 = ["title"];
-  const _hoisted_65 = ["title"];
-  const _hoisted_66 = ["aria-label", "onClick"];
-  const _hoisted_67 = ["data-menu"];
+  const _hoisted_53 = ["title", "innerHTML"];
+  const _hoisted_54 = ["title", "innerHTML"];
+  const _hoisted_55 = ["aria-label", "onClick"];
+  const _hoisted_56 = ["data-menu"];
+  const _hoisted_57 = { class: "gallery-menu-note" };
+  const _hoisted_58 = ["onClick"];
+  const _hoisted_59 = ["onClick"];
+  const _hoisted_60 = ["onClick"];
+  const _hoisted_61 = ["onClick"];
+  const _hoisted_62 = ["onClick"];
+  const _hoisted_63 = ["onClick"];
+  const _hoisted_64 = ["onClick"];
+  const _hoisted_65 = ["onClick"];
+  const _hoisted_66 = ["onClick"];
+  const _hoisted_67 = ["onClick"];
   const _hoisted_68 = ["onClick"];
   const _hoisted_69 = ["onClick"];
+  const _hoisted_70 = ["onClick"];
+  const _hoisted_71 = ["onClick"];
+  const _hoisted_72 = ["onClick"];
+  const _hoisted_73 = ["onClick"];
+  const _hoisted_74 = ["onClick"];
+  const _hoisted_75 = ["onClick"];
+  const _hoisted_76 = ["onClick"];
+  const _hoisted_77 = ["onClick"];
+  const _hoisted_78 = ["onClick"];
+  const _hoisted_79 = ["onClick"];
+  const _hoisted_80 = ["innerHTML"];
+  const _hoisted_81 = ["title", "innerHTML"];
+  const _hoisted_82 = { class: "gallery-tile-name-row" };
+  const _hoisted_83 = ["title"];
+  const _hoisted_84 = ["title"];
+  const _hoisted_85 = ["aria-label", "onClick"];
+  const _hoisted_86 = ["data-menu"];
+  const _hoisted_87 = ["onClick"];
+  const _hoisted_88 = ["onClick"];
   return function render(_ctx, _cache) {
-    const _component_ThumbCell = _resolveComponent("ThumbCell");
     const _component_ImageThumbCell = _resolveComponent("ImageThumbCell");
+    const _component_ThumbCell = _resolveComponent("ThumbCell");
     return _openBlock(), _createElementBlock(
       _Fragment,
       null,
@@ -27178,13 +28183,67 @@ function galleryRender(Vue) {
             /* TEXT */
           )
         ])) : _createCommentVNode("v-if", true),
-        _ctx.view !== "files" && !_ctx.loading && !_ctx.isEmpty ? (_openBlock(), _createElementBlock("div", _hoisted_5, [
+        _ctx.view === "files" && !_ctx.loading && !_ctx.attentionOnly && (_ctx.starredCount > 0 || _ctx.foldedN > 0) ? (_openBlock(), _createElementBlock("div", _hoisted_5, [
+          _ctx.starredCount > 0 ? (_openBlock(), _createElementBlock(
+            _Fragment,
+            { key: 0 },
+            [
+              _createElementVNode(
+                "span",
+                _hoisted_6,
+                _toDisplayString(_ctx.starBarText),
+                1
+                /* TEXT */
+              ),
+              _createElementVNode(
+                "button",
+                {
+                  type: "button",
+                  class: "gallery-marks-toggle",
+                  onClick: _cache[1] || (_cache[1] = (...args) => _ctx.toggleStarredOnly && _ctx.toggleStarredOnly(...args))
+                },
+                _toDisplayString(_ctx.starredOnly ? _ctx.L.starAll : _ctx.L.starOnly),
+                1
+                /* TEXT */
+              )
+            ],
+            64
+            /* STABLE_FRAGMENT */
+          )) : _createCommentVNode("v-if", true),
+          _ctx.foldedN > 0 && !_ctx.starredOnly ? (_openBlock(), _createElementBlock(
+            _Fragment,
+            { key: 1 },
+            [
+              _createElementVNode(
+                "span",
+                _hoisted_7,
+                _toDisplayString(_ctx.foldBarText),
+                1
+                /* TEXT */
+              ),
+              _createElementVNode(
+                "button",
+                {
+                  type: "button",
+                  class: "gallery-marks-toggle",
+                  onClick: _cache[2] || (_cache[2] = (...args) => _ctx.toggleExpandAll && _ctx.toggleExpandAll(...args))
+                },
+                _toDisplayString(_ctx.expandAll ? _ctx.L.collapseAll : _ctx.L.expandAll),
+                1
+                /* TEXT */
+              )
+            ],
+            64
+            /* STABLE_FRAGMENT */
+          )) : _createCommentVNode("v-if", true)
+        ])) : _createCommentVNode("v-if", true),
+        _ctx.view !== "files" && !_ctx.loading && !_ctx.isEmpty ? (_openBlock(), _createElementBlock("div", _hoisted_8, [
           _createElementVNode(
             "button",
             {
               type: "button",
               class: "danger",
-              onClick: _cache[1] || (_cache[1] = ($event) => _ctx.emptyAside(_ctx.view))
+              onClick: _cache[3] || (_cache[3] = ($event) => _ctx.emptyAside(_ctx.view))
             },
             _toDisplayString(_ctx.view === "trash" ? _ctx.L.emptyTrash : _ctx.L.emptyBackup),
             1
@@ -27198,7 +28257,7 @@ function galleryRender(Vue) {
             style: _normalizeStyle(_ctx.tileStyle)
           },
           [
-            _ctx.loading ? (_openBlock(), _createElementBlock("div", _hoisted_6, [
+            _ctx.loading ? (_openBlock(), _createElementBlock("div", _hoisted_9, [
               !_ctx.stalled ? (_openBlock(), _createElementBlock(
                 _Fragment,
                 { key: 0 },
@@ -27217,18 +28276,18 @@ function galleryRender(Vue) {
                 [
                   _createElementVNode(
                     "div",
-                    _hoisted_7,
+                    _hoisted_10,
                     _toDisplayString(_ctx.stalled),
                     1
                     /* TEXT */
                   ),
-                  _createElementVNode("div", _hoisted_8, [
+                  _createElementVNode("div", _hoisted_11, [
                     _createElementVNode(
                       "button",
                       {
                         type: "button",
                         class: "sheet-action ghost gallery-retry-btn",
-                        onClick: _cache[2] || (_cache[2] = (...args) => _ctx.retry && _ctx.retry(...args))
+                        onClick: _cache[4] || (_cache[4] = (...args) => _ctx.retry && _ctx.retry(...args))
                       },
                       _toDisplayString(_ctx.L.retry),
                       1
@@ -27239,7 +28298,7 @@ function galleryRender(Vue) {
                       {
                         type: "button",
                         class: "sheet-action ghost",
-                        onClick: _cache[3] || (_cache[3] = (...args) => _ctx.openDiag && _ctx.openDiag(...args))
+                        onClick: _cache[5] || (_cache[5] = (...args) => _ctx.openDiag && _ctx.openDiag(...args))
                       },
                       _toDisplayString(_ctx.L.openDiag),
                       1
@@ -27250,7 +28309,7 @@ function galleryRender(Vue) {
                       {
                         type: "button",
                         class: "sheet-action ghost",
-                        onClick: _cache[4] || (_cache[4] = (...args) => _ctx.reloadApp && _ctx.reloadApp(...args))
+                        onClick: _cache[6] || (_cache[6] = (...args) => _ctx.reloadApp && _ctx.reloadApp(...args))
                       },
                       _toDisplayString(_ctx.L.reload),
                       1
@@ -27262,31 +28321,33 @@ function galleryRender(Vue) {
                 /* STABLE_FRAGMENT */
               ))
             ])) : _createCommentVNode("v-if", true),
-            _ctx.view === "files" && !_ctx.loading ? (_openBlock(), _createElementBlock(
+            _ctx.view === "files" && !_ctx.loading ? (_openBlock(true), _createElementBlock(
               _Fragment,
               { key: 1 },
-              [
-                (_openBlock(true), _createElementBlock(
+              _renderList(_ctx.shownTimeline, (row2) => {
+                return _openBlock(), _createElementBlock(
                   _Fragment,
-                  null,
-                  _renderList(_ctx.attentionOnly ? [] : _ctx.folderTiles, (ft) => {
-                    return _openBlock(), _createElementBlock("div", {
-                      key: "F:" + ft.path,
+                  {
+                    key: row2.key
+                  },
+                  [
+                    row2.ft ? (_openBlock(), _createElementBlock("div", {
+                      key: 0,
                       class: "gallery-tile folder",
-                      onClick: ($event) => _ctx.enterFolder(ft.path)
+                      onClick: ($event) => _ctx.enterFolder(row2.ft.path)
                     }, [
                       _createElementVNode("div", {
                         class: "gallery-tile-thumb",
                         innerHTML: _ctx.ICON.folder
-                      }, null, 8, _hoisted_10),
-                      _createElementVNode("div", _hoisted_11, [
+                      }, null, 8, _hoisted_13),
+                      _createElementVNode("div", _hoisted_14, [
                         _createElementVNode("div", {
                           class: "gallery-tile-name",
-                          title: ft.path
-                        }, _toDisplayString(ft.name), 9, _hoisted_12),
+                          title: row2.ft.path
+                        }, _toDisplayString(row2.ft.name), 9, _hoisted_15),
                         _createElementVNode(
                           "div",
-                          _hoisted_13,
+                          _hoisted_16,
                           _toDisplayString(_ctx.L.folder),
                           1
                           /* TEXT */
@@ -27296,8 +28357,8 @@ function galleryRender(Vue) {
                         type: "button",
                         class: "gallery-tile-menu-btn",
                         "aria-label": _ctx.L.more,
-                        onClick: _withModifiers(($event) => _ctx.toggleMenu("F:" + ft.path, $event), ["stop"])
-                      }, [..._cache[10] || (_cache[10] = [
+                        onClick: _withModifiers(($event) => _ctx.toggleMenu(row2.key, $event), ["stop"])
+                      }, [..._cache[13] || (_cache[13] = [
                         _createElementVNode(
                           "svg",
                           {
@@ -27310,20 +28371,20 @@ function galleryRender(Vue) {
                           -1
                           /* CACHED */
                         )
-                      ])], 8, _hoisted_14),
+                      ])], 8, _hoisted_17),
                       (_openBlock(), _createBlock(_Teleport, { to: _ctx.menuMount }, [
                         _createElementVNode("div", {
                           class: "gallery-tile-menu-popup hidden",
-                          "data-menu": "F:" + ft.path,
-                          onClick: _cache[5] || (_cache[5] = _withModifiers(() => {
+                          "data-menu": row2.key,
+                          onClick: _cache[7] || (_cache[7] = _withModifiers(() => {
                           }, ["stop"]))
                         }, [
                           _createElementVNode("button", {
                             type: "button",
                             class: "danger",
-                            onClick: ($event) => _ctx.folderDelete(ft)
+                            onClick: ($event) => _ctx.folderDelete(row2.ft)
                           }, [
-                            _cache[11] || (_cache[11] = _createElementVNode(
+                            _cache[14] || (_cache[14] = _createElementVNode(
                               "svg",
                               {
                                 viewBox: "0 0 24 24",
@@ -27342,521 +28403,52 @@ function galleryRender(Vue) {
                               1
                               /* TEXT */
                             )
-                          ], 8, _hoisted_16)
-                        ], 8, _hoisted_15)
+                          ], 8, _hoisted_19)
+                        ], 8, _hoisted_18)
                       ], 8, ["to"]))
-                    ], 8, _hoisted_9);
-                  }),
-                  128
-                  /* KEYED_FRAGMENT */
-                )),
-                (_openBlock(true), _createElementBlock(
-                  _Fragment,
-                  null,
-                  _renderList(_ctx.shownFileTiles, (row2) => {
-                    return _openBlock(), _createElementBlock("div", {
-                      key: row2.t.identifier,
-                      class: _normalizeClass(["gallery-tile", { active: row2.t.isActive, encrypted: row2.t.encrypted, attention: row2.t.attention }]),
-                      onClick: ($event) => _ctx.openTile(row2.item)
+                    ], 8, _hoisted_12)) : row2.strip ? (_openBlock(), _createElementBlock("button", {
+                      key: 1,
+                      type: "button",
+                      class: _normalizeClass(["gallery-fold-strip", { open: row2.strip.open }]),
+                      onClick: ($event) => _ctx.toggleFold(row2.key)
                     }, [
-                      _createVNode(_component_ThumbCell, {
-                        "enc-name": row2.t.encrypted && row2.thumb ? row2.t.identifier : null,
-                        fetchable: !row2.t.encrypted && (row2.t.hasCloud || row2.t.hasLocal) && row2.thumb,
-                        "is-cloud": !row2.t.hasLocal && row2.t.hasCloud,
-                        "cloud-newer": row2.t.cloudNewer,
-                        "thumb-token": String(row2.t.time || row2.t.size || 0),
-                        fallback: row2.t.stem.slice(0, 1) || "?",
-                        "fallback-html": _ctx.phHtml(row2.t.identifier, row2.info),
-                        alt: row2.t.identifier,
-                        onUnlock: _ctx.onUnlock
-                      }, null, 8, ["enc-name", "fetchable", "is-cloud", "cloud-newer", "thumb-token", "fallback", "fallback-html", "alt", "onUnlock"]),
-                      row2.ov ? (_openBlock(), _createElementBlock("span", {
-                        key: 0,
-                        class: "gallery-tile-overlay",
-                        innerHTML: row2.ov
-                      }, null, 8, _hoisted_18)) : _createCommentVNode("v-if", true),
-                      row2.act ? (_openBlock(), _createElementBlock("span", _hoisted_19, [
-                        _createElementVNode("button", {
-                          type: "button",
-                          class: _normalizeClass(["gallery-tile-action", [row2.act.state || "ready", row2.act.verb ? "verb-" + row2.act.verb : ""]]),
-                          title: row2.act.title,
-                          "aria-label": row2.act.title,
-                          onClick: _withModifiers(($event) => _ctx.tileAction(row2), ["stop"]),
-                          onPointerdown: _cache[6] || (_cache[6] = _withModifiers(() => {
-                          }, ["stop"]))
-                        }, [
-                          _createElementVNode("span", {
-                            class: "gallery-tile-action-ico",
-                            innerHTML: _ctx.badgeIcon2(row2.act.icon)
-                          }, null, 8, _hoisted_21),
-                          row2.act.verb ? (_openBlock(), _createElementBlock(
-                            "span",
-                            _hoisted_22,
-                            _toDisplayString(row2.act.title),
-                            1
-                            /* TEXT */
-                          )) : _createCommentVNode("v-if", true)
-                        ], 42, _hoisted_20)
-                      ])) : _createCommentVNode("v-if", true),
-                      row2.t.encrypted ? (_openBlock(), _createElementBlock("span", {
-                        key: 2,
-                        class: "gallery-tile-lockmark",
-                        title: _ctx.L.encrypted,
-                        innerHTML: _ctx.ICON.lock
-                      }, null, 8, _hoisted_23)) : _createCommentVNode("v-if", true),
-                      _createElementVNode("div", _hoisted_24, [
-                        row2.t.isActive ? (_openBlock(), _createElementBlock(
-                          "span",
-                          _hoisted_25,
-                          _toDisplayString(_ctx.L.activeTag),
-                          1
-                          /* TEXT */
-                        )) : _createCommentVNode("v-if", true),
-                        _createElementVNode("div", {
-                          class: "gallery-tile-name",
-                          title: row2.t.identifier
-                        }, [
-                          row2.marker === "unread" ? (_openBlock(), _createElementBlock("span", {
-                            key: 0,
-                            class: "gallery-marker unread",
-                            title: _ctx.L.unread
-                          }, null, 8, _hoisted_27)) : _createCommentVNode("v-if", true),
-                          _createTextVNode(
-                            _toDisplayString(row2.t.stem),
-                            1
-                            /* TEXT */
-                          )
-                        ], 8, _hoisted_26),
-                        row2.sub ? (_openBlock(), _createElementBlock("div", {
-                          key: 1,
-                          class: "gallery-tile-sub",
-                          title: row2.sub
-                        }, _toDisplayString(row2.sub), 9, _hoisted_28)) : _createCommentVNode("v-if", true),
-                        _createElementVNode("div", _hoisted_29, [
-                          row2.t.encrypted ? (_openBlock(), _createElementBlock("span", {
-                            key: 0,
-                            class: "gallery-tile-state-icon enc",
-                            title: _ctx.L.encrypted,
-                            innerHTML: _ctx.ICON.lock
-                          }, null, 8, _hoisted_30)) : _createCommentVNode("v-if", true),
-                          _createElementVNode("span", {
-                            class: _normalizeClass("gallery-tile-state-icon b-" + row2.t.badge),
-                            title: row2.t.badgeTitle,
-                            innerHTML: _ctx.badgeIcon(row2.t.badge)
-                          }, null, 10, _hoisted_31),
-                          _createElementVNode(
-                            "span",
-                            null,
-                            _toDisplayString(_ctx.fmtMeta(row2.t)),
-                            1
-                            /* TEXT */
-                          )
-                        ])
-                      ]),
-                      _createElementVNode("button", {
-                        type: "button",
-                        class: "gallery-tile-menu-btn",
-                        "aria-label": _ctx.L.more,
-                        onClick: _withModifiers(($event) => _ctx.toggleMenu(row2.t.identifier, $event), ["stop"])
-                      }, [..._cache[12] || (_cache[12] = [
-                        _createElementVNode(
-                          "svg",
-                          {
-                            viewBox: "0 0 24 24",
-                            "aria-hidden": "true"
-                          },
-                          [
-                            _createElementVNode("use", { href: "#more" })
-                          ],
-                          -1
-                          /* CACHED */
-                        )
-                      ])], 8, _hoisted_32),
-                      (_openBlock(), _createBlock(_Teleport, { to: _ctx.menuMount }, [
-                        _createElementVNode("div", {
-                          class: "gallery-tile-menu-popup hidden",
-                          "data-menu": row2.t.identifier,
-                          onClick: _cache[7] || (_cache[7] = _withModifiers(() => {
-                          }, ["stop"]))
-                        }, [
-                          row2.t.ghost ? (_openBlock(), _createElementBlock(
-                            _Fragment,
-                            { key: 0 },
-                            [
-                              _createElementVNode(
-                                "div",
-                                _hoisted_34,
-                                _toDisplayString(_ctx.L.divergedNote),
-                                1
-                                /* TEXT */
-                              ),
-                              _createElementVNode("button", {
-                                type: "button",
-                                onClick: ($event) => _ctx.resolve(row2.item)
-                              }, [
-                                _cache[13] || (_cache[13] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#cloud-pending" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.resolve),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_35),
-                              _createElementVNode("button", {
-                                type: "button",
-                                onClick: ($event) => _ctx.rename(row2.item)
-                              }, [
-                                _cache[14] || (_cache[14] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#rename" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.renameKeep),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_36)
-                            ],
-                            64
-                            /* STABLE_FRAGMENT */
-                          )) : row2.t.pendingGone ? (_openBlock(), _createElementBlock("button", {
-                            key: 1,
-                            type: "button",
-                            onClick: ($event) => _ctx.resolve(row2.item)
-                          }, [
-                            _cache[15] || (_cache[15] = _createElementVNode(
-                              "svg",
-                              {
-                                viewBox: "0 0 24 24",
-                                "aria-hidden": "true"
-                              },
-                              [
-                                _createElementVNode("use", { href: "#cloud-pending" })
-                              ],
-                              -1
-                              /* CACHED */
-                            )),
-                            _createElementVNode(
-                              "span",
-                              null,
-                              _toDisplayString(_ctx.L.resolve),
-                              1
-                              /* TEXT */
-                            )
-                          ], 8, _hoisted_37)) : (_openBlock(), _createElementBlock(
-                            _Fragment,
-                            { key: 2 },
-                            [
-                              _createElementVNode("button", {
-                                type: "button",
-                                onClick: ($event) => _ctx.rename(row2.item)
-                              }, [
-                                _cache[16] || (_cache[16] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#rename" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.rename),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_38),
-                              _createElementVNode("button", {
-                                type: "button",
-                                onClick: ($event) => _ctx.move(row2.item)
-                              }, [
-                                _cache[17] || (_cache[17] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#move-to-folder" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.moveTo),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_39),
-                              _createElementVNode("button", {
-                                type: "button",
-                                onClick: ($event) => _ctx.copy(row2.item)
-                              }, [
-                                _cache[18] || (_cache[18] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#copy" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.copy),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_40),
-                              row2.t.badge === "cloudOnly" ? (_openBlock(), _createElementBlock("button", {
-                                key: 0,
-                                type: "button",
-                                onClick: ($event) => _ctx.openTile(row2.item)
-                              }, [
-                                _cache[19] || (_cache[19] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#download" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.pullLocal),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_41)) : _createCommentVNode("v-if", true),
-                              row2.t.badge === "cloudOnly" ? (_openBlock(), _createElementBlock("button", {
-                                key: 1,
-                                type: "button",
-                                onClick: ($event) => _ctx.keepOffline(row2.item)
-                              }, [
-                                _cache[20] || (_cache[20] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#local-cache" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.keepOffline),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_42)) : _createCommentVNode("v-if", true),
-                              row2.t.badge === "localOnly" || row2.t.badge === "float" || row2.t.badge === "dirtyBoth" || row2.t.badge === "conflictBoth" ? (_openBlock(), _createElementBlock("button", {
-                                key: 2,
-                                type: "button",
-                                onClick: ($event) => _ctx.resolve(row2.item)
-                              }, [
-                                _cache[21] || (_cache[21] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#cloud-pending" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.resolve),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_43)) : _createCommentVNode("v-if", true),
-                              row2.t.hasLocal && row2.t.hasCloud ? (_openBlock(), _createElementBlock("button", {
-                                key: 3,
-                                type: "button",
-                                onClick: ($event) => _ctx.unload(row2.item)
-                              }, [
-                                _cache[22] || (_cache[22] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#unload-local-cache" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.unloadLocal),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_44)) : _createCommentVNode("v-if", true),
-                              _ctx.hasEncryption && row2.t.hasLocal && !row2.t.encrypted ? (_openBlock(), _createElementBlock("button", {
-                                key: 4,
-                                type: "button",
-                                onClick: ($event) => _ctx.encryptItem(row2.item)
-                              }, [
-                                _cache[23] || (_cache[23] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#lock" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.encrypt),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_45)) : _createCommentVNode("v-if", true),
-                              _ctx.hasEncryption && row2.t.hasLocal && row2.t.encrypted ? (_openBlock(), _createElementBlock("button", {
-                                key: 5,
-                                type: "button",
-                                onClick: ($event) => _ctx.decryptItem(row2.item)
-                              }, [
-                                _cache[24] || (_cache[24] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#unlock" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.decrypt),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_46)) : _createCommentVNode("v-if", true),
-                              _createElementVNode("button", {
-                                type: "button",
-                                class: "danger",
-                                onClick: ($event) => _ctx.del(row2.item)
-                              }, [
-                                _cache[25] || (_cache[25] = _createElementVNode(
-                                  "svg",
-                                  {
-                                    viewBox: "0 0 24 24",
-                                    "aria-hidden": "true"
-                                  },
-                                  [
-                                    _createElementVNode("use", { href: "#trash-can" })
-                                  ],
-                                  -1
-                                  /* CACHED */
-                                )),
-                                _createElementVNode(
-                                  "span",
-                                  null,
-                                  _toDisplayString(_ctx.L.toTrash),
-                                  1
-                                  /* TEXT */
-                                )
-                              ], 8, _hoisted_47)
-                            ],
-                            64
-                            /* STABLE_FRAGMENT */
-                          ))
-                        ], 8, _hoisted_33)
-                      ], 8, ["to"]))
-                    ], 10, _hoisted_17);
-                  }),
-                  128
-                  /* KEYED_FRAGMENT */
-                )),
-                (_openBlock(true), _createElementBlock(
-                  _Fragment,
-                  null,
-                  _renderList(_ctx.attentionOnly ? [] : _ctx.imageTiles, (im2) => {
-                    return _openBlock(), _createElementBlock("div", {
-                      key: "I:" + im2.identifier,
+                      _createElementVNode("span", {
+                        class: "gallery-fold-strip-ico",
+                        innerHTML: _ctx.ICON.fold
+                      }, null, 8, _hoisted_21),
+                      _createElementVNode(
+                        "span",
+                        null,
+                        _toDisplayString(row2.strip.label),
+                        1
+                        /* TEXT */
+                      )
+                    ], 10, _hoisted_20)) : row2.im ? (_openBlock(), _createElementBlock("div", {
+                      key: 2,
                       class: "gallery-tile image-file",
-                      onClick: ($event) => _ctx.openImageTile(im2.raw)
+                      onClick: ($event) => _ctx.openImageTile(row2.im.raw)
                     }, [
                       _createVNode(_component_ImageThumbCell, {
-                        identifier: im2.identifier,
-                        token: im2.token,
-                        fallback: im2.label.slice(0, 1) || "?",
-                        alt: im2.label
+                        identifier: row2.im.identifier,
+                        token: row2.im.token,
+                        fallback: row2.im.label.slice(0, 1) || "?",
+                        alt: row2.im.label
                       }, null, 8, ["identifier", "token", "fallback", "alt"]),
-                      _createElementVNode("div", _hoisted_49, [
+                      _createElementVNode("div", _hoisted_23, [
                         _createElementVNode("div", {
                           class: "gallery-tile-name",
-                          title: im2.identifier
-                        }, _toDisplayString(im2.label), 9, _hoisted_50),
-                        _createElementVNode("div", _hoisted_51, [
+                          title: row2.im.identifier
+                        }, _toDisplayString(row2.im.label), 9, _hoisted_24),
+                        _createElementVNode("div", _hoisted_25, [
                           _createElementVNode("span", {
                             class: "gallery-tile-state-icon",
                             title: _ctx.L.imageFile,
                             innerHTML: _ctx.ICON.image
-                          }, null, 8, _hoisted_52),
+                          }, null, 8, _hoisted_26),
                           _createElementVNode(
                             "span",
                             null,
-                            _toDisplayString(_ctx.fmtMeta({ time: im2.time, size: im2.size })),
+                            _toDisplayString(_ctx.fmtMeta({ time: row2.im.time, size: row2.im.size })),
                             1
                             /* TEXT */
                           )
@@ -27866,8 +28458,8 @@ function galleryRender(Vue) {
                         type: "button",
                         class: "gallery-tile-menu-btn",
                         "aria-label": _ctx.L.more,
-                        onClick: _withModifiers(($event) => _ctx.toggleMenu("I:" + im2.identifier, $event), ["stop"])
-                      }, [..._cache[26] || (_cache[26] = [
+                        onClick: _withModifiers(($event) => _ctx.toggleMenu("I:" + row2.im.identifier, $event), ["stop"])
+                      }, [..._cache[15] || (_cache[15] = [
                         _createElementVNode(
                           "svg",
                           {
@@ -27880,20 +28472,20 @@ function galleryRender(Vue) {
                           -1
                           /* CACHED */
                         )
-                      ])], 8, _hoisted_53),
+                      ])], 8, _hoisted_27),
                       (_openBlock(), _createBlock(_Teleport, { to: _ctx.menuMount }, [
                         _createElementVNode("div", {
                           class: "gallery-tile-menu-popup hidden",
-                          "data-menu": "I:" + im2.identifier,
+                          "data-menu": "I:" + row2.im.identifier,
                           onClick: _cache[8] || (_cache[8] = _withModifiers(() => {
                           }, ["stop"]))
                         }, [
                           _createElementVNode("button", {
                             type: "button",
                             class: "danger",
-                            onClick: ($event) => _ctx.deleteImage(im2.raw)
+                            onClick: ($event) => _ctx.deleteImage(row2.im.raw)
                           }, [
-                            _cache[27] || (_cache[27] = _createElementVNode(
+                            _cache[16] || (_cache[16] = _createElementVNode(
                               "svg",
                               {
                                 viewBox: "0 0 24 24",
@@ -27912,54 +28504,759 @@ function galleryRender(Vue) {
                               1
                               /* TEXT */
                             )
-                          ], 8, _hoisted_55)
-                        ], 8, _hoisted_54)
+                          ], 8, _hoisted_29)
+                        ], 8, _hoisted_28)
                       ], 8, ["to"]))
-                    ], 8, _hoisted_48);
-                  }),
-                  128
-                  /* KEYED_FRAGMENT */
-                )),
-                (_openBlock(true), _createElementBlock(
-                  _Fragment,
-                  null,
-                  _renderList(_ctx.attentionOnly ? [] : _ctx.otherTiles, (ot2) => {
-                    return _openBlock(), _createElementBlock("div", {
-                      key: "O:" + ot2.identifier,
-                      class: "gallery-tile other-file"
-                    }, [
+                    ], 8, _hoisted_22)) : row2.ot ? (_openBlock(), _createElementBlock("div", _hoisted_30, [
                       _createElementVNode("div", {
                         class: "gallery-tile-thumb",
                         innerHTML: _ctx.ICON.file
-                      }, null, 8, _hoisted_56),
-                      _createElementVNode("div", _hoisted_57, [
+                      }, null, 8, _hoisted_31),
+                      _createElementVNode("div", _hoisted_32, [
                         _createElementVNode("div", {
                           class: "gallery-tile-name",
-                          title: ot2.identifier
-                        }, _toDisplayString(ot2.label), 9, _hoisted_58),
-                        _createElementVNode("div", _hoisted_59, [
+                          title: row2.ot.identifier
+                        }, _toDisplayString(row2.ot.label), 9, _hoisted_33),
+                        _createElementVNode("div", _hoisted_34, [
                           _createElementVNode("span", {
                             class: "gallery-tile-state-icon",
                             title: _ctx.L.otherFile,
                             innerHTML: _ctx.ICON.file
-                          }, null, 8, _hoisted_60),
+                          }, null, 8, _hoisted_35),
                           _createElementVNode(
                             "span",
                             null,
-                            _toDisplayString(_ctx.fmtMeta({ time: ot2.time, size: ot2.size })),
+                            _toDisplayString(_ctx.fmtMeta({ time: row2.ot.time, size: row2.ot.size })),
                             1
                             /* TEXT */
                           )
                         ])
                       ])
-                    ]);
-                  }),
-                  128
-                  /* KEYED_FRAGMENT */
-                ))
-              ],
-              64
-              /* STABLE_FRAGMENT */
+                    ])) : (_openBlock(), _createElementBlock("div", {
+                      key: 4,
+                      class: _normalizeClass(["gallery-tile", { active: row2.t.isActive, encrypted: row2.t.encrypted, attention: row2.t.attention, starred: row2.t.starred, dim: row2.dim }]),
+                      onClick: ($event) => _ctx.openTile(row2.item)
+                    }, [
+                      _createVNode(_component_ThumbCell, {
+                        "enc-name": row2.encLocal && row2.thumb ? row2.t.identifier : null,
+                        fetchable: !row2.encLocal && (row2.t.hasCloud || row2.t.hasLocal) && row2.thumb,
+                        sealed: row2.t.encrypted,
+                        "is-cloud": !row2.t.hasLocal && row2.t.hasCloud,
+                        "cloud-newer": row2.t.cloudNewer,
+                        "thumb-token": String(row2.t.time || row2.t.size || 0),
+                        fallback: row2.t.stem.slice(0, 1) || "?",
+                        "fallback-html": _ctx.phHtml(row2.t.identifier, row2.info),
+                        alt: row2.t.identifier,
+                        onUnlock: _ctx.onUnlock,
+                        onSealed: ($event) => _ctx.notePeekSealed(row2.item)
+                      }, null, 8, ["enc-name", "fetchable", "sealed", "is-cloud", "cloud-newer", "thumb-token", "fallback", "fallback-html", "alt", "onUnlock", "onSealed"]),
+                      row2.ov ? (_openBlock(), _createElementBlock("span", {
+                        key: 0,
+                        class: "gallery-tile-overlay",
+                        innerHTML: row2.ov
+                      }, null, 8, _hoisted_37)) : _createCommentVNode("v-if", true),
+                      row2.act ? (_openBlock(), _createElementBlock("span", _hoisted_38, [
+                        _createElementVNode("button", {
+                          type: "button",
+                          class: _normalizeClass(["gallery-tile-action", [row2.act.state || "ready", row2.act.verb ? "verb-" + row2.act.verb : ""]]),
+                          title: row2.act.title,
+                          "aria-label": row2.act.title,
+                          onClick: _withModifiers(($event) => _ctx.tileAction(row2), ["stop"]),
+                          onPointerdown: _cache[9] || (_cache[9] = _withModifiers(() => {
+                          }, ["stop"]))
+                        }, [
+                          _createElementVNode("span", {
+                            class: "gallery-tile-action-ico",
+                            innerHTML: _ctx.badgeIcon2(row2.act.icon)
+                          }, null, 8, _hoisted_40),
+                          row2.act.verb ? (_openBlock(), _createElementBlock(
+                            "span",
+                            _hoisted_41,
+                            _toDisplayString(row2.act.title),
+                            1
+                            /* TEXT */
+                          )) : _createCommentVNode("v-if", true)
+                        ], 42, _hoisted_39)
+                      ])) : _createCommentVNode("v-if", true),
+                      row2.t.encrypted ? (_openBlock(), _createElementBlock("span", {
+                        key: 2,
+                        class: "gallery-tile-lockmark",
+                        title: _ctx.L.encrypted,
+                        innerHTML: _ctx.ICON.lock
+                      }, null, 8, _hoisted_42)) : _createCommentVNode("v-if", true),
+                      row2.nVersions ? (_openBlock(), _createElementBlock("span", _hoisted_43, [
+                        _createElementVNode("button", {
+                          type: "button",
+                          class: _normalizeClass(["gallery-tile-versions", { open: row2.versionsOpen }]),
+                          title: _ctx.versionsTitle(row2.nVersions),
+                          "aria-label": _ctx.versionsTitle(row2.nVersions),
+                          onClick: _withModifiers(($event) => _ctx.toggleFold(row2.vKey), ["stop"]),
+                          onPointerdown: _cache[10] || (_cache[10] = _withModifiers(() => {
+                          }, ["stop"]))
+                        }, "+" + _toDisplayString(row2.nVersions), 43, _hoisted_44)
+                      ])) : _createCommentVNode("v-if", true),
+                      _createElementVNode("div", _hoisted_45, [
+                        row2.t.isActive ? (_openBlock(), _createElementBlock(
+                          "span",
+                          _hoisted_46,
+                          _toDisplayString(_ctx.L.activeTag),
+                          1
+                          /* TEXT */
+                        )) : _createCommentVNode("v-if", true),
+                        _createElementVNode("div", {
+                          class: "gallery-tile-name",
+                          title: row2.t.identifier
+                        }, [
+                          row2.marker === "unread" ? (_openBlock(), _createElementBlock("span", {
+                            key: 0,
+                            class: "gallery-marker unread",
+                            title: _ctx.L.unread
+                          }, null, 8, _hoisted_48)) : _createCommentVNode("v-if", true),
+                          row2.t.starred ? (_openBlock(), _createElementBlock("span", {
+                            key: 1,
+                            class: "gallery-tile-star",
+                            title: _ctx.L.starredMark,
+                            innerHTML: _ctx.ICON.star
+                          }, null, 8, _hoisted_49)) : _createCommentVNode("v-if", true),
+                          _createTextVNode(
+                            _toDisplayString(row2.t.stem),
+                            1
+                            /* TEXT */
+                          )
+                        ], 8, _hoisted_47),
+                        row2.sub ? (_openBlock(), _createElementBlock("div", {
+                          key: 1,
+                          class: "gallery-tile-sub",
+                          title: row2.sub
+                        }, _toDisplayString(row2.sub), 9, _hoisted_50)) : _createCommentVNode("v-if", true),
+                        _createElementVNode("div", _hoisted_51, [
+                          row2.t.encrypted ? (_openBlock(), _createElementBlock("span", {
+                            key: 0,
+                            class: "gallery-tile-state-icon enc",
+                            title: _ctx.L.encrypted,
+                            innerHTML: _ctx.ICON.lock
+                          }, null, 8, _hoisted_52)) : _createCommentVNode("v-if", true),
+                          row2.t.unlocked ? (_openBlock(), _createElementBlock("span", {
+                            key: 1,
+                            class: "gallery-tile-state-icon editing",
+                            title: _ctx.L.unlockedMark,
+                            innerHTML: _ctx.ICON.pencil
+                          }, null, 8, _hoisted_53)) : _createCommentVNode("v-if", true),
+                          _createElementVNode("span", {
+                            class: _normalizeClass("gallery-tile-state-icon b-" + row2.t.badge),
+                            title: row2.t.badgeTitle,
+                            innerHTML: _ctx.badgeIcon(row2.t.badge)
+                          }, null, 10, _hoisted_54),
+                          _createElementVNode(
+                            "span",
+                            null,
+                            _toDisplayString(_ctx.fmtMeta(row2.t)),
+                            1
+                            /* TEXT */
+                          )
+                        ])
+                      ]),
+                      _createElementVNode("button", {
+                        type: "button",
+                        class: "gallery-tile-menu-btn",
+                        "aria-label": _ctx.L.more,
+                        onClick: _withModifiers(($event) => _ctx.toggleMenu(row2.t.identifier, $event), ["stop"])
+                      }, [..._cache[17] || (_cache[17] = [
+                        _createElementVNode(
+                          "svg",
+                          {
+                            viewBox: "0 0 24 24",
+                            "aria-hidden": "true"
+                          },
+                          [
+                            _createElementVNode("use", { href: "#more" })
+                          ],
+                          -1
+                          /* CACHED */
+                        )
+                      ])], 8, _hoisted_55),
+                      (_openBlock(), _createBlock(_Teleport, { to: _ctx.menuMount }, [
+                        _createElementVNode("div", {
+                          class: "gallery-tile-menu-popup hidden",
+                          "data-menu": row2.t.identifier,
+                          onClick: _cache[11] || (_cache[11] = _withModifiers(() => {
+                          }, ["stop"]))
+                        }, [
+                          row2.t.ghost ? (_openBlock(), _createElementBlock(
+                            _Fragment,
+                            { key: 0 },
+                            [
+                              _createElementVNode(
+                                "div",
+                                _hoisted_57,
+                                _toDisplayString(_ctx.L.divergedNote),
+                                1
+                                /* TEXT */
+                              ),
+                              _createElementVNode("button", {
+                                type: "button",
+                                onClick: ($event) => _ctx.resolve(row2.item)
+                              }, [
+                                _cache[18] || (_cache[18] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#cloud-pending" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.resolve),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_58),
+                              _createElementVNode("button", {
+                                type: "button",
+                                onClick: ($event) => _ctx.rename(row2.item)
+                              }, [
+                                _cache[19] || (_cache[19] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#rename" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.renameKeep),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_59)
+                            ],
+                            64
+                            /* STABLE_FRAGMENT */
+                          )) : row2.t.pendingGone ? (_openBlock(), _createElementBlock("button", {
+                            key: 1,
+                            type: "button",
+                            onClick: ($event) => _ctx.resolve(row2.item)
+                          }, [
+                            _cache[20] || (_cache[20] = _createElementVNode(
+                              "svg",
+                              {
+                                viewBox: "0 0 24 24",
+                                "aria-hidden": "true"
+                              },
+                              [
+                                _createElementVNode("use", { href: "#cloud-pending" })
+                              ],
+                              -1
+                              /* CACHED */
+                            )),
+                            _createElementVNode(
+                              "span",
+                              null,
+                              _toDisplayString(_ctx.L.resolve),
+                              1
+                              /* TEXT */
+                            )
+                          ], 8, _hoisted_60)) : (_openBlock(), _createElementBlock(
+                            _Fragment,
+                            { key: 2 },
+                            [
+                              _createElementVNode("button", {
+                                type: "button",
+                                onClick: ($event) => _ctx.rename(row2.item)
+                              }, [
+                                _cache[21] || (_cache[21] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#rename" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.rename),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_61),
+                              _createElementVNode("button", {
+                                type: "button",
+                                onClick: ($event) => _ctx.move(row2.item)
+                              }, [
+                                _cache[22] || (_cache[22] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#move-to-folder" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.moveTo),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_62),
+                              _createElementVNode("button", {
+                                type: "button",
+                                onClick: ($event) => _ctx.copy(row2.item)
+                              }, [
+                                _cache[23] || (_cache[23] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#copy" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.copy),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_63),
+                              row2.t.lockable && !row2.t.unlocked ? (_openBlock(), _createElementBlock("button", {
+                                key: 0,
+                                type: "button",
+                                onClick: ($event) => _ctx.unlockAndOpen(row2.item)
+                              }, [
+                                _cache[24] || (_cache[24] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#pencil" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.editContinue),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_64)) : _createCommentVNode("v-if", true),
+                              row2.t.lockable && !row2.t.unlocked ? (_openBlock(), _createElementBlock("button", {
+                                key: 1,
+                                type: "button",
+                                onClick: ($event) => _ctx.versionThenEdit(row2.item)
+                              }, [
+                                _cache[25] || (_cache[25] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#layers-stack" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.editVersionThen),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_65)) : _createCommentVNode("v-if", true),
+                              row2.t.unlocked ? (_openBlock(), _createElementBlock("button", {
+                                key: 2,
+                                type: "button",
+                                onClick: ($event) => _ctx.lockEdit(row2.item)
+                              }, [
+                                _cache[26] || (_cache[26] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#lock" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.editLock),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_66)) : _createCommentVNode("v-if", true),
+                              _createElementVNode("button", {
+                                type: "button",
+                                onClick: ($event) => _ctx.saveVersion(row2.item)
+                              }, [
+                                _cache[27] || (_cache[27] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#layers-stack" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.saveVersion),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_67),
+                              row2.hasPrevVersion ? (_openBlock(), _createElementBlock("button", {
+                                key: 3,
+                                type: "button",
+                                onClick: ($event) => _ctx.saveVersionReplace(row2.item)
+                              }, [
+                                _cache[28] || (_cache[28] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#layers-stack" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.saveVersionReplace),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_68)) : _createCommentVNode("v-if", true),
+                              _ctx.caps.marks && !row2.t.starred ? (_openBlock(), _createElementBlock("button", {
+                                key: 4,
+                                type: "button",
+                                onClick: ($event) => _ctx.star(row2.item)
+                              }, [
+                                _cache[29] || (_cache[29] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#star" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.star),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_69)) : _createCommentVNode("v-if", true),
+                              _ctx.caps.marks && row2.t.starred ? (_openBlock(), _createElementBlock("button", {
+                                key: 5,
+                                type: "button",
+                                onClick: ($event) => _ctx.unstar(row2.item)
+                              }, [
+                                _cache[30] || (_cache[30] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#star" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.unstar),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_70)) : _createCommentVNode("v-if", true),
+                              _ctx.caps.marks && !row2.t.folded && !row2.isVersion ? (_openBlock(), _createElementBlock("button", {
+                                key: 6,
+                                type: "button",
+                                onClick: ($event) => _ctx.fold(row2.item)
+                              }, [
+                                _cache[31] || (_cache[31] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#archive-box" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.fold),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_71)) : _createCommentVNode("v-if", true),
+                              _ctx.caps.marks && row2.t.folded ? (_openBlock(), _createElementBlock("button", {
+                                key: 7,
+                                type: "button",
+                                onClick: ($event) => _ctx.unfold(row2.item)
+                              }, [
+                                _cache[32] || (_cache[32] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#archive-box" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.unfold),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_72)) : _createCommentVNode("v-if", true),
+                              row2.t.badge === "cloudOnly" ? (_openBlock(), _createElementBlock("button", {
+                                key: 8,
+                                type: "button",
+                                onClick: ($event) => _ctx.openTile(row2.item)
+                              }, [
+                                _cache[33] || (_cache[33] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#download" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.pullLocal),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_73)) : _createCommentVNode("v-if", true),
+                              row2.t.badge === "cloudOnly" ? (_openBlock(), _createElementBlock("button", {
+                                key: 9,
+                                type: "button",
+                                onClick: ($event) => _ctx.keepOffline(row2.item)
+                              }, [
+                                _cache[34] || (_cache[34] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#local-cache" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.keepOffline),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_74)) : _createCommentVNode("v-if", true),
+                              row2.t.badge === "localOnly" || row2.t.badge === "float" || row2.t.badge === "dirtyBoth" || row2.t.badge === "conflictBoth" ? (_openBlock(), _createElementBlock("button", {
+                                key: 10,
+                                type: "button",
+                                onClick: ($event) => _ctx.resolve(row2.item)
+                              }, [
+                                _cache[35] || (_cache[35] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#cloud-pending" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.resolve),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_75)) : _createCommentVNode("v-if", true),
+                              row2.t.hasLocal && row2.t.hasCloud ? (_openBlock(), _createElementBlock("button", {
+                                key: 11,
+                                type: "button",
+                                onClick: ($event) => _ctx.unload(row2.item)
+                              }, [
+                                _cache[36] || (_cache[36] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#unload-local-cache" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.unloadLocal),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_76)) : _createCommentVNode("v-if", true),
+                              row2.encMenu.encrypt ? (_openBlock(), _createElementBlock("button", {
+                                key: 12,
+                                type: "button",
+                                onClick: ($event) => _ctx.encryptItem(row2.item)
+                              }, [
+                                _cache[37] || (_cache[37] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#lock" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.encrypt),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_77)) : _createCommentVNode("v-if", true),
+                              row2.encMenu.decrypt ? (_openBlock(), _createElementBlock("button", {
+                                key: 13,
+                                type: "button",
+                                onClick: ($event) => _ctx.decryptItem(row2.item)
+                              }, [
+                                _cache[38] || (_cache[38] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#unlock" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.decrypt),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_78)) : _createCommentVNode("v-if", true),
+                              _createElementVNode("button", {
+                                type: "button",
+                                class: "danger",
+                                onClick: ($event) => _ctx.del(row2.item)
+                              }, [
+                                _cache[39] || (_cache[39] = _createElementVNode(
+                                  "svg",
+                                  {
+                                    viewBox: "0 0 24 24",
+                                    "aria-hidden": "true"
+                                  },
+                                  [
+                                    _createElementVNode("use", { href: "#trash-can" })
+                                  ],
+                                  -1
+                                  /* CACHED */
+                                )),
+                                _createElementVNode(
+                                  "span",
+                                  null,
+                                  _toDisplayString(_ctx.L.toTrash),
+                                  1
+                                  /* TEXT */
+                                )
+                              ], 8, _hoisted_79)
+                            ],
+                            64
+                            /* STABLE_FRAGMENT */
+                          ))
+                        ], 8, _hoisted_56)
+                      ], 8, ["to"]))
+                    ], 10, _hoisted_36))
+                  ],
+                  64
+                  /* STABLE_FRAGMENT */
+                );
+              }),
+              128
+              /* KEYED_FRAGMENT */
             )) : _createCommentVNode("v-if", true),
             _ctx.view !== "files" && !_ctx.loading ? (_openBlock(true), _createElementBlock(
               _Fragment,
@@ -27974,39 +29271,40 @@ function galleryRender(Vue) {
                   [
                     _createVNode(_component_ThumbCell, {
                       fetchable: row2.fetch,
+                      sealed: row2.item.encrypted,
                       "is-cloud": row2.fetch && row2.item.side === "cloud",
                       "thumb-token": "0",
                       fallback: row2.t.stem.slice(0, 1) || "?",
                       "fallback-html": row2.item.kind != null ? _ctx.phHtml(row2.t.identifier, row2.info) : "",
                       alt: row2.t.identifier
-                    }, null, 8, ["fetchable", "is-cloud", "fallback", "fallback-html", "alt"]),
+                    }, null, 8, ["fetchable", "sealed", "is-cloud", "fallback", "fallback-html", "alt"]),
                     row2.ov ? (_openBlock(), _createElementBlock("span", {
                       key: 0,
                       class: "gallery-tile-overlay",
                       innerHTML: row2.ov
-                    }, null, 8, _hoisted_61)) : _createCommentVNode("v-if", true),
+                    }, null, 8, _hoisted_80)) : _createCommentVNode("v-if", true),
                     row2.item.encrypted ? (_openBlock(), _createElementBlock("span", {
                       key: 1,
                       class: "gallery-tile-lockmark",
                       title: _ctx.L.encrypted,
                       innerHTML: _ctx.ICON.lock
-                    }, null, 8, _hoisted_62)) : _createCommentVNode("v-if", true),
-                    _createElementVNode("div", _hoisted_63, [
+                    }, null, 8, _hoisted_81)) : _createCommentVNode("v-if", true),
+                    _createElementVNode("div", _hoisted_82, [
                       _createElementVNode("div", {
                         class: "gallery-tile-name",
                         title: row2.t.identifier
-                      }, _toDisplayString(row2.t.stem), 9, _hoisted_64),
+                      }, _toDisplayString(row2.t.stem), 9, _hoisted_83),
                       _createElementVNode("div", {
                         class: "gallery-tile-meta",
                         title: _ctx.fullTime(row2.t.at)
-                      }, _toDisplayString(row2.t.source) + " \xB7 " + _toDisplayString(_ctx.humanTime(row2.t.at)) + " " + _toDisplayString(row2.atWord), 9, _hoisted_65)
+                      }, _toDisplayString(row2.t.source) + " \xB7 " + _toDisplayString(_ctx.humanTime(row2.t.at)) + " " + _toDisplayString(row2.atWord), 9, _hoisted_84)
                     ]),
                     _createElementVNode("button", {
                       type: "button",
                       class: "gallery-tile-menu-btn",
                       "aria-label": _ctx.L.more,
                       onClick: _withModifiers(($event) => _ctx.toggleMenu("A:" + row2.t.key, $event), ["stop"])
-                    }, [..._cache[28] || (_cache[28] = [
+                    }, [..._cache[40] || (_cache[40] = [
                       _createElementVNode(
                         "svg",
                         {
@@ -28019,19 +29317,19 @@ function galleryRender(Vue) {
                         -1
                         /* CACHED */
                       )
-                    ])], 8, _hoisted_66),
+                    ])], 8, _hoisted_85),
                     (_openBlock(), _createBlock(_Teleport, { to: _ctx.menuMount }, [
                       _createElementVNode("div", {
                         class: "gallery-tile-menu-popup hidden",
                         "data-menu": "A:" + row2.t.key,
-                        onClick: _cache[9] || (_cache[9] = _withModifiers(() => {
+                        onClick: _cache[12] || (_cache[12] = _withModifiers(() => {
                         }, ["stop"]))
                       }, [
                         _createElementVNode("button", {
                           type: "button",
                           onClick: ($event) => _ctx.asideRestore(row2.item)
                         }, [
-                          _cache[29] || (_cache[29] = _createElementVNode(
+                          _cache[41] || (_cache[41] = _createElementVNode(
                             "svg",
                             {
                               viewBox: "0 0 24 24",
@@ -28050,13 +29348,13 @@ function galleryRender(Vue) {
                             1
                             /* TEXT */
                           )
-                        ], 8, _hoisted_68),
+                        ], 8, _hoisted_87),
                         _createElementVNode("button", {
                           type: "button",
                           class: "danger",
                           onClick: ($event) => _ctx.asidePurge(row2.item)
                         }, [
-                          _cache[30] || (_cache[30] = _createElementVNode(
+                          _cache[42] || (_cache[42] = _createElementVNode(
                             "svg",
                             {
                               viewBox: "0 0 24 24",
@@ -28075,8 +29373,8 @@ function galleryRender(Vue) {
                             1
                             /* TEXT */
                           )
-                        ], 8, _hoisted_69)
-                      ], 8, _hoisted_67)
+                        ], 8, _hoisted_88)
+                      ], 8, _hoisted_86)
                     ], 8, ["to"]))
                   ],
                   2
@@ -28158,7 +29456,11 @@ function mountGalleryScreen(el2, d3) {
     conflictBoth: icon("cloud-conflict"),
     lock: icon("lock"),
     image: icon("image"),
-    file: icon("file")
+    file: icon("file"),
+    star: icon("star"),
+    pencil: icon("pencil"),
+    fold: icon("archive-box")
+    // 0.9.0：星 / 解着锁可以改 / 收起的细条
   };
   const enc3 = d3.encryption;
   const _lockState = reactive({ unlocked: enc3?.isUnlocked() ?? true });
@@ -28206,11 +29508,14 @@ function mountGalleryScreen(el2, d3) {
   const factsOf2 = (identifier) => _facts.get(identifier)?.value ?? null;
   const ThumbCell = defineComponent({
     name: "ThumbCell",
-    props: { encName: { type: String, default: null }, fetchable: { type: Boolean, default: false }, isCloud: { type: Boolean, default: false }, cloudNewer: { type: Boolean, default: false }, thumbToken: { type: String, default: "" }, fallback: { type: String, default: "?" }, fallbackHtml: { type: String, default: "" }, alt: { type: String, default: "" } },
-    emits: ["unlock"],
-    setup(props) {
+    // 0.8.11：sealed = 已知这份是加密的（本地字节 ∨ store 的事实，见 core/model/encryption-state.ts）。已知加密 → 明文图一律不显示（现拉的、缓存命中的、拉不到时退回来的旧图都算），
+    //   已经显示着的明文图当场撤掉；拿到密文 peek 就 emit("sealed") 把这个事实报给图库（卡片的锁 / 菜单跟着变）。
+    props: { encName: { type: String, default: null }, fetchable: { type: Boolean, default: false }, isCloud: { type: Boolean, default: false }, cloudNewer: { type: Boolean, default: false }, thumbToken: { type: String, default: "" }, fallback: { type: String, default: "?" }, fallbackHtml: { type: String, default: "" }, alt: { type: String, default: "" }, sealed: { type: Boolean, default: false } },
+    emits: ["unlock", "sealed"],
+    setup(props, ctx2) {
       const url = ref(null), showCloud = ref(false), locked = ref(false), root = ref(null);
       let cloudEncBlob = null, objUrl = null, obs = null;
+      let shown2 = "none";
       const blurb = ref("");
       const readBlurb = (blob) => {
         void blob.arrayBuffer().then((ab2) => {
@@ -28220,30 +29525,42 @@ function mountGalleryScreen(el2, d3) {
           blurb.value = "";
         });
       };
-      const setBlob = (blob) => {
+      const setBlob = (blob, from) => {
         if (objUrl)
           URL.revokeObjectURL(objUrl);
         objUrl = URL.createObjectURL(blob);
         url.value = objUrl;
+        shown2 = from;
         readBlurb(blob);
       };
-      const tryDecrypt = async () => {
-        if (!enc3) {
-          locked.value = true;
-          return;
-        }
-        let png = null;
-        if (props.encName)
-          png = await enc3.localPeekThumb(props.encName);
-        else if (cloudEncBlob)
-          png = await enc3.decryptCloudPeekThumb(props.alt, cloudEncBlob);
-        if (png && png.size > 0) {
-          locked.value = false;
-          setBlob(png);
-        } else if (enc3.isUnlocked())
-          locked.value = false;
-        else
-          locked.value = true;
+      const clearShown = () => {
+        if (objUrl)
+          URL.revokeObjectURL(objUrl);
+        objUrl = null;
+        url.value = null;
+        blurb.value = "";
+        shown2 = "none";
+      };
+      const cover = enc3 ? createSealedCover({
+        isUnlocked: () => enc3.isUnlocked(),
+        hasSource: () => !!props.encName || cloudEncBlob != null,
+        decrypt: async () => props.encName ? enc3.localPeekThumb(props.encName) : cloudEncBlob ? enc3.decryptCloudPeekThumb(props.alt, cloudEncBlob) : null,
+        shown: () => shown2,
+        locked: () => locked.value,
+        show: (png) => setBlob(png, "decrypted"),
+        clear: clearShown,
+        setLocked: (v) => {
+          locked.value = v;
+        },
+        onError: (err2) => d3.reportError(new Error("[gallery] decrypt cover: " + String(err2)), "log")
+      }) : null;
+      const tryDecrypt = () => {
+        if (cover)
+          return cover.tryDecrypt();
+        if (shown2 === "plain")
+          clearShown();
+        locked.value = true;
+        return Promise.resolve();
       };
       let fetchSeq = 0;
       const fetchThumb = () => {
@@ -28256,11 +29573,18 @@ function mountGalleryScreen(el2, d3) {
           showCloud.value = false;
           if (!blob)
             return;
-          if (enc3?.isEncryptedPeekBlob(blob)) {
+          const verdict = admitThumbBlob(blob, { sealed: props.sealed, isEncryptedPeekBlob: enc3 ? (b3) => enc3.isEncryptedPeekBlob(b3) : void 0 });
+          if (verdict === "enc-peek") {
             cloudEncBlob = blob;
+            ctx2.emit("sealed");
             return tryDecrypt();
           }
-          setBlob(blob);
+          if (verdict === "refuse") {
+            if (shown2 === "plain")
+              clearShown();
+            return;
+          }
+          setBlob(blob, "plain");
         }).catch((err2) => d3.reportError(new Error("[gallery] thumb: " + String(err2)), "log"));
       };
       onMounted(() => {
@@ -28287,8 +29611,21 @@ function mountGalleryScreen(el2, d3) {
         }
       });
       watch(() => _lockState.unlocked, () => {
-        if (locked.value || props.encName)
+        cover?.onLockChange(_lockState.unlocked);
+      });
+      watch(() => props.sealed, () => {
+        if (props.sealed && shown2 === "plain")
+          clearShown();
+      });
+      watch(() => props.encName, () => {
+        if (props.encName) {
           void tryDecrypt();
+          return;
+        }
+        cloudEncBlob = null;
+        locked.value = false;
+        if (props.fetchable && !obs)
+          fetchThumb();
       });
       watch(() => [props.thumbToken, props.cloudNewer, _thumbRev.get(thumbKey(props.alt)) ?? 0], () => {
         if (props.encName) {
@@ -28387,7 +29724,7 @@ function mountGalleryScreen(el2, d3) {
       };
       const folder = ref(safeFolder());
       const loading2 = ref(false);
-      const data = reactive({ files: [], images: [], others: [], folderNames: [] });
+      const data = reactive({ files: [], images: [], others: [], folderNames: [], timeline: [] });
       const aside = ref([]);
       const openMenu = ref(null);
       function safeFolder() {
@@ -28405,6 +29742,7 @@ function mountGalleryScreen(el2, d3) {
         data.images = snap.images;
         data.others = snap.others;
         data.folderNames = snap.folderNames;
+        data.timeline = snap.timeline;
         _framedFolder = snap.folder;
         loading2.value = false;
         wd.frame(snap.folder);
@@ -28449,7 +29787,28 @@ function mountGalleryScreen(el2, d3) {
         else
           location.reload();
       }
+      const caps = reactive({ lock: false, marks: false });
+      const _unlocked = reactive(/* @__PURE__ */ new Set());
+      let _capStore = void 0, _unlockUnsub = null;
+      function syncCaps() {
+        const st2 = d3.store();
+        if (st2 === _capStore)
+          return;
+        _capStore = st2;
+        _unlockUnsub?.();
+        _unlockUnsub = null;
+        _unlocked.clear();
+        caps.lock = st2?.files.lockByDefault === true;
+        caps.marks = st2?.files.fileMarks === true;
+        if (caps.lock && st2?.files.watchUnlocks)
+          _unlockUnsub = st2.files.watchUnlocks((live) => {
+            _unlocked.clear();
+            for (const u2 of live)
+              _unlocked.add(u2.identifier);
+          });
+      }
       function subscribe() {
+        syncCaps();
         _unsub?.();
         _unsub = null;
         if (view2.value !== "files")
@@ -28459,6 +29818,7 @@ function mountGalleryScreen(el2, d3) {
           data.images = [];
           data.others = [];
           data.folderNames = [];
+          data.timeline = [];
           loading2.value = false;
           wd.cancel();
           stalled.value = null;
@@ -28491,28 +29851,56 @@ function mountGalleryScreen(el2, d3) {
       document.addEventListener("pointerdown", _onGatePtrDown, true);
       document.addEventListener("pointerup", _onGatePtrUp, true);
       document.addEventListener("pointercancel", _onGatePtrUp, true);
-      const encByName = reactive({});
-      async function probeEncrypted() {
-        if (!enc3)
-          return;
-        for (const nm2 of data.files.filter((it2) => hasLocalCopy(it2.syncState)).map((it2) => it2.identifier)) {
-          if (nm2 in encByName)
+      const encState = createEncryptionState(reactive({}));
+      let _probing = null, _probeAgain = false;
+      async function probeOnce() {
+        for (const it2 of data.files) {
+          const v = encVersionOf(it2);
+          if (!encState.needsLocalProbe(it2.identifier, v))
             continue;
-          try {
-            encByName[nm2] = await enc3.isEncrypted(nm2);
-          } catch {
-            encByName[nm2] = false;
+          if (!hasLocalCopy(it2.syncState)) {
+            encState.noteLocal(it2.identifier, v, false);
+            continue;
           }
+          let r10 = false;
+          try {
+            r10 = await enc3.isEncrypted(it2.identifier);
+          } catch {
+            r10 = false;
+          }
+          encState.noteLocal(it2.identifier, v, r10);
         }
       }
+      function probeEncrypted() {
+        if (!enc3)
+          return Promise.resolve();
+        if (_probing) {
+          _probeAgain = true;
+          return _probing;
+        }
+        _probing = (async () => {
+          try {
+            do {
+              _probeAgain = false;
+              await probeOnce();
+            } while (_probeAgain);
+          } finally {
+            _probing = null;
+          }
+        })();
+        return _probing;
+      }
       function invalidateEncrypted(name) {
-        delete encByName[name];
+        encState.forget(name);
         void probeEncrypted();
+      }
+      function notePeekSealed(item) {
+        encState.notePeek(item.identifier, encVersionOf(item));
       }
       async function requestUnlock() {
         await probeEncrypted();
         for (const it2 of data.files) {
-          if (!hasLocalCopy(it2.syncState) || !encByName[it2.identifier])
+          if (!hasLocalCopy(it2.syncState) || !encState.isLocalEncrypted(it2.identifier, encVersionOf(it2)))
             continue;
           return await verbs.unlock(it2.identifier);
         }
@@ -28577,21 +29965,100 @@ function mountGalleryScreen(el2, d3) {
         _unsub = null;
         wd.cancel();
         gate2.reset();
+        _unlockUnsub?.();
+        _unlockUnsub = null;
         document.removeEventListener("pointerdown", _onGatePtrDown, true);
         document.removeEventListener("pointerup", _onGatePtrUp, true);
         document.removeEventListener("pointercancel", _onGatePtrUp, true);
       });
       const folderTiles = computed(() => data.folderNames.map((fn) => ({ name: fn, path: pathJoin(folder.value, fn) })));
       const attentionAction = (tile) => tile.attention ? { icon: "cloud-pending", title: t("gal.resolve"), state: "ready", verb: "resolve" } : null;
+      const versionCounts = computed(() => {
+        const m2 = /* @__PURE__ */ new Map();
+        for (const it2 of data.files) {
+          const v = parseVersionStem(it2.stem);
+          if (v) {
+            const k2 = `${it2.kind}\0${v.base}`;
+            m2.set(k2, (m2.get(k2) ?? 0) + 1);
+          }
+        }
+        return m2;
+      });
       const fileTiles = computed(() => data.files.map((it2) => {
-        const tile = tileFor(it2, { signedIn: d3.host.signedIn(), activeIdentifier: d3.host.activeIdentifier(), encrypted: !!encByName[it2.identifier] });
-        const info2 = fileInfo(it2), facts = factsOf2(it2.identifier);
-        return { item: it2, t: tile, sub: subtitleOf(it2), marker: markerOf(it2), ov: ovHtml(it2.identifier, info2, facts), thumb: hasThumb(it2.kind), info: info2, facts, act: actionOf(it2.identifier, info2, facts) ?? attentionAction(tile) };
+        const encV = encVersionOf(it2), encrypted = encState.isEncrypted(it2.identifier, encV, it2.cloudSealed === true), encLocal = encState.isLocalEncrypted(it2.identifier, encV);
+        const tile = tileFor(it2, { signedIn: d3.host.signedIn(), activeIdentifier: d3.host.activeIdentifier(), encrypted, lockable: caps.lock, unlocked: _unlocked.has(it2.identifier) });
+        const asVersion = parseVersionStem(it2.stem);
+        const info2 = fileInfo(it2), facts = encrypted ? null : factsOf2(it2.identifier);
+        const encMenu = encryptionMenu({ hasEncryption: !!enc3, hasLocal: tile.hasLocal, encrypted, localEncrypted: encLocal });
+        return {
+          key: it2.identifier,
+          ft: null,
+          strip: null,
+          dim: false,
+          nVersions: 0,
+          versionsOpen: false,
+          vKey: versionsKey(it2.identifier),
+          // 后五个 = 收起那一层的显示状态（timelineRows 里按行覆盖）
+          isVersion: asVersion != null,
+          hasPrevVersion: (versionCounts.value.get(`${it2.kind}\0${asVersion?.base ?? it2.stem}`) ?? 0) > 0,
+          item: it2,
+          t: tile,
+          encV,
+          encLocal,
+          encMenu,
+          sub: subtitleOf(it2),
+          marker: markerOf(it2),
+          ov: ovHtml(it2.identifier, info2, facts),
+          thumb: hasThumb(it2.kind),
+          info: info2,
+          facts,
+          act: actionOf(it2.identifier, info2, facts) ?? attentionAction(tile)
+        };
       }));
+      const imageTiles = computed(() => data.images.map((im2) => ({ raw: im2, identifier: im2.identifier, label: im2.label, size: im2.size || 0, time: im2.lastModified || 0, token: imageThumbToken(im2) })));
+      const otherTiles = computed(() => data.others.map((o10) => ({ identifier: o10.identifier, label: o10.label, size: o10.size || 0, time: o10.lastModified || 0 })));
+      const expanded = reactive(/* @__PURE__ */ new Set());
+      const expandAll = ref(false);
+      const toggleFold = (key) => {
+        if (expanded.has(key))
+          expanded.delete(key);
+        else
+          expanded.add(key);
+      };
+      const foldedN = computed(() => foldedCount(data.timeline));
+      const timelineRows = computed(() => {
+        const byId = new Map(fileTiles.value.map((r10) => [r10.t.identifier, r10]));
+        const imById = new Map(imageTiles.value.map((x2) => [x2.identifier, x2])), otById = new Map(otherTiles.value.map((x2) => [x2.identifier, x2]));
+        const rows = [];
+        for (const e10 of foldTimeline(data.timeline, { isOpen: (k2) => expanded.has(k2), expandAll: expandAll.value })) {
+          if (e10.type === "folder") {
+            const path = pathJoin(folder.value, e10.name);
+            rows.push({ key: "F:" + path, ft: { name: e10.name, path }, strip: null });
+          } else if (e10.type === "strip")
+            rows.push({ key: e10.key, ft: null, strip: { open: e10.open, label: t(e10.open ? "gal.fold.stripOpen" : "gal.fold.strip", { n: e10.count }) } });
+          else if (e10.type === "image") {
+            const im2 = imById.get(e10.identifier);
+            if (im2)
+              rows.push({ key: "I:" + e10.identifier, ft: null, strip: null, im: im2 });
+          } else if (e10.type === "other") {
+            const ot2 = otById.get(e10.identifier);
+            if (ot2)
+              rows.push({ key: "O:" + e10.identifier, ft: null, strip: null, ot: ot2 });
+          } else {
+            const r10 = byId.get(e10.item.identifier);
+            if (r10)
+              rows.push({ ...r10, dim: e10.dim, nVersions: e10.versions.length, versionsOpen: e10.versionsOpen });
+          }
+        }
+        return rows;
+      });
       const attentionWanted = ref(false);
       const attentionCount = computed(() => fileTiles.value.reduce((n10, r10) => n10 + (r10.t.attention ? 1 : 0), 0));
       const attentionOnly = computed(() => attentionWanted.value && attentionCount.value > 0);
-      const shownFileTiles = computed(() => attentionOnly.value ? fileTiles.value.filter((r10) => r10.t.attention) : fileTiles.value);
+      const starredWanted = ref(false);
+      const starredCount = computed(() => fileTiles.value.reduce((n10, r10) => n10 + (r10.t.starred ? 1 : 0), 0));
+      const starredOnly = computed(() => starredWanted.value && starredCount.value > 0);
+      const shownTimeline = computed(() => attentionOnly.value ? fileTiles.value.filter((r10) => r10.t.attention) : starredOnly.value ? fileTiles.value.filter((r10) => r10.t.starred) : timelineRows.value);
       const attentionText = computed(() => t(attentionOnly.value ? "gal.attention.showing" : "gal.attention.banner", { n: attentionCount.value }));
       let _prevAttention = 0;
       watch(() => attentionCount.value, () => {
@@ -28612,9 +30079,29 @@ function mountGalleryScreen(el2, d3) {
       };
       watch(() => fileTiles.value, askFacts);
       askFacts();
+      const _plainDropped = /* @__PURE__ */ new Set();
+      const dropKnownEncryptedPlain = () => {
+        if (!enc3 || !d3.thumbs && !d3.facts)
+          return;
+        for (const r10 of fileTiles.value) {
+          if (!r10.t.encrypted)
+            continue;
+          const k2 = `${r10.t.identifier}\0${r10.encV}`;
+          if (_plainDropped.has(k2))
+            continue;
+          _plainDropped.add(k2);
+          const id2 = r10.t.identifier;
+          void dropPlainByproducts(id2, { thumbs: d3.thumbs, facts: d3.facts, isEncryptedPeekBlob: (b3) => enc3.isEncryptedPeekBlob(b3) }).then((x2) => {
+            if (x2.facts)
+              _facts.delete(id2);
+            if (x2.thumb || x2.facts)
+              note("gallery", `dropped plaintext byproducts of an encrypted file: thumb=${x2.thumb} facts=${x2.facts}`);
+          }).catch((err2) => d3.reportError(new Error("[gallery] drop plaintext byproducts: " + String(err2)), "log"));
+        }
+      };
+      watch(() => fileTiles.value, dropKnownEncryptedPlain);
+      dropKnownEncryptedPlain();
       const asideTiles = computed(() => aside.value.map((it2) => ({ item: it2, t: asideTileFor(it2), fetch: ASIDE[it2.box].thumb === "by-name" && hasThumb(it2.kind), atWord: t(ASIDE[it2.box].text.at), ov: it2.kind != null ? ovHtml(it2.identifier, asideInfo(it2)) : "", info: asideInfo(it2) })));
-      const imageTiles = computed(() => data.images.map((im2) => ({ raw: im2, identifier: im2.identifier, label: im2.label, size: im2.size || 0, time: im2.lastModified || 0, token: imageThumbToken(im2) })));
-      const otherTiles = computed(() => data.others.map((o10) => ({ identifier: o10.identifier, label: o10.label, size: o10.size || 0, time: o10.lastModified || 0 })));
       const crumbs = computed(() => breadcrumb(folder.value));
       const isEmpty = computed(() => view2.value !== "files" ? asideTiles.value.length === 0 : folderTiles.value.length === 0 && fileTiles.value.length === 0 && imageTiles.value.length === 0 && otherTiles.value.length === 0);
       const emptyText = computed(() => view2.value !== "files" ? t(ASIDE[view2.value].text.none) : folder.value ? t("gal.empty.folder", { f: folder.value }) : t("gal.empty.none"));
@@ -28678,6 +30165,31 @@ function mountGalleryScreen(el2, d3) {
         if (await verbs.unlock(name))
           await reload();
       }
+      const act = (fn) => async (...a10) => {
+        closeMenu();
+        await fn(...a10);
+      };
+      const unlockAndOpen = act(async (item) => {
+        if (await verbs.unlockEdit(item))
+          await openTile(item);
+      });
+      const versionThenEdit = act(async (item) => {
+        if (await verbs.saveVersionThenUnlock(item, data.files))
+          await openTile(item);
+      });
+      const lockEdit = act((item) => verbs.lockEdit(item));
+      const saveVersion = act((item) => verbs.saveVersion(item, "new", data.files));
+      const saveVersionReplace = act((item) => verbs.saveVersion(item, "replace-last", data.files));
+      const star = act((item) => verbs.star(item)), unstar = act((item) => verbs.unstar(item));
+      const fold = act((item) => verbs.fold(item)), unfold = act((item) => verbs.unfold(item));
+      const itemOf = (identifier) => data.files.find((it2) => it2.identifier === identifier) ?? (() => {
+        const p2 = d3.store()?.identifiers.parse(identifier);
+        return { identifier, stem: p2?.stem ?? identifier, kind: p2?.kind ?? "", syncState: "synced" };
+      })();
+      const siblingsOf = (identifier) => {
+        const f2 = identifier.includes("/") ? identifier.slice(0, identifier.lastIndexOf("/")) : "";
+        return f2 === folder.value ? data.files : [];
+      };
       function tileAction(row2) {
         if (row2.act?.verb === "resolve") {
           void resolve(row2.item);
@@ -28765,9 +30277,28 @@ function mountGalleryScreen(el2, d3) {
         keepOffline: t("gal.keepOffline"),
         unread: t("gal.marker.unread"),
         attentionList: t("gal.attention.list"),
-        attentionAll: t("gal.attention.all")
+        attentionAll: t("gal.attention.all"),
         // 0.8.8
+        editContinue: t("gal.editLock.continue"),
+        editVersionThen: t("gal.editLock.versionThenEdit"),
+        editLock: t("gal.editLock.lock"),
+        unlockedMark: t("gal.editLock.unlockedMark"),
+        // 0.9.0
+        saveVersion: t("gal.saveVersion"),
+        saveVersionReplace: t("gal.saveVersionReplace"),
+        star: t("gal.star"),
+        unstar: t("gal.unstar"),
+        starredMark: t("gal.starredMark"),
+        fold: t("gal.fold"),
+        unfold: t("gal.unfold"),
+        expandAll: t("gal.fold.expandAll"),
+        collapseAll: t("gal.fold.collapseAll"),
+        starOnly: t("gal.star.only"),
+        starAll: t("gal.star.all")
       };
+      const versionsTitle = (n10) => t("gal.fold.versions", { n: n10 });
+      const starBarText = computed(() => t("gal.star.bar", { n: starredCount.value }));
+      const foldBarText = computed(() => t("gal.fold.bar", { n: foldedN.value }));
       const tileAspect = typeof d3.tile?.aspect === "number" && Number.isFinite(d3.tile.aspect) && d3.tile.aspect > 0 ? d3.tile.aspect : null;
       const tileTall = tileAspect != null && tileAspect < 1;
       const tileStyle = tileAspect != null ? { "--tile-aspect": String(tileAspect) } : null;
@@ -28792,7 +30323,7 @@ function mountGalleryScreen(el2, d3) {
         phHtml,
         folderTiles,
         fileTiles,
-        shownFileTiles,
+        shownTimeline,
         imageTiles,
         otherTiles,
         asideTiles,
@@ -28804,6 +30335,45 @@ function mountGalleryScreen(el2, d3) {
         setAttentionOnly,
         toggleAttentionOnly: () => setAttentionOnly(!attentionWanted.value),
         // 0.8.8
+        caps,
+        toggleFold,
+        expandAll,
+        foldedN,
+        foldBarText,
+        starBarText,
+        versionsTitle,
+        toggleExpandAll: () => {
+          expandAll.value = !expandAll.value;
+          if (!expandAll.value)
+            expanded.clear();
+        },
+        // 0.9.0
+        setExpandAll: (on2) => {
+          expandAll.value = on2;
+          if (!on2)
+            expanded.clear();
+        },
+        starredOnly,
+        starredCount,
+        setStarredOnly: (on2) => {
+          starredWanted.value = on2;
+        },
+        toggleStarredOnly: () => {
+          starredWanted.value = !starredOnly.value;
+        },
+        unlockAndOpen,
+        versionThenEdit,
+        lockEdit,
+        saveVersion,
+        saveVersionReplace,
+        star,
+        unstar,
+        fold,
+        unfold,
+        unlockEditById: (id2) => verbs.unlockEdit(itemOf(id2)),
+        versionThenUnlockById: (id2) => verbs.saveVersionThenUnlock(itemOf(id2), siblingsOf(id2)),
+        saveVersionById: (id2, mode) => verbs.saveVersion(itemOf(id2), mode, siblingsOf(id2)),
+        lockEditById: (id2) => verbs.lockEdit(itemOf(id2)),
         badgeIcon,
         fmtMeta,
         humanTime,
@@ -28835,6 +30405,7 @@ function mountGalleryScreen(el2, d3) {
         onUnlock,
         requestUnlock,
         hasEncryption: !!enc3,
+        notePeekSealed,
         reload,
         setView: (v) => {
           view2.value = v;
@@ -28855,6 +30426,14 @@ function mountGalleryScreen(el2, d3) {
     setAttentionOnly: (on2) => vm.setAttentionOnly(on2),
     getAttentionCount: () => vm.attentionCount,
     // 0.8.8
+    setStarredOnly: (on2) => vm.setStarredOnly(on2),
+    getStarredCount: () => vm.starredCount,
+    setExpandAll: (on2) => vm.setExpandAll(on2),
+    // 0.9.0
+    unlockEdit: (id2) => vm.unlockEditById(id2),
+    saveVersionThenUnlock: (id2) => vm.versionThenUnlockById(id2),
+    saveVersion: (id2, mode) => vm.saveVersionById(id2, mode),
+    lockEdit: (id2) => vm.lockEditById(id2),
     setFolder: (p2) => vm.setFolder(p2),
     hydrateFolder: (p2) => vm.hydrateFolder(p2),
     getFolder: () => vm.folder,
@@ -29892,7 +31471,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-a13e4dc138f7.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-8d08be34b38f.mjs");
+      return pick(() => "encode-worker-9af88c756380.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -33355,8 +34934,8 @@ ${id3}`);
         seg.tracks[id3] = [...toks.slice(0, at2), { kind: "clef", id: 0, clef: want }, ...toks.slice(at2)];
       }
     }
-    const clean = withLooks(seg, lk2);
-    if (clean.looks) seg.looks = clean.looks;
+    const clean2 = withLooks(seg, lk2);
+    if (clean2.looks) seg.looks = clean2.looks;
     else delete seg.looks;
   });
   const parts = familyOrder([...seen.values()]);
@@ -40612,7 +42191,10 @@ function buildStore(o10) {
     // 离线新建的歌回线自动补推（ADR-0018；进度走 storeUI.onReplayStatus）
     signedIn: o10.signedIn,
     isOnline: o10.isOnline,
-    activeIdentifier: () => _activeIdentifier
+    activeIdentifier: () => _activeIdentifier,
+    // store 2.3.x（v0.16.95，2026-11-10，Claude Fable 5.2；家族修改锁标准第七节）：星 / 收起的记号——库自己的一份同步文件 `.<appId>/store.file-marks.json`（持久层白名单表里归 store 那一行）。
+    //   加了星的送不进回收站（file.trash 抛 StarredError，歌库的面自己说）。**`lockByDefault` 还没开**：修改锁五道接好、验过之后才开（设计稿第十节第 9 步）。
+    fileMarks: true
   });
 }
 var _home = null;
@@ -47351,6 +48933,10 @@ function initGalleryHost(d3) {
     exit: async () => {
       await d3.flushLocal();
     },
+    // gallery 0.9.1：「存一版」拿的是存下来的字节，正开着的那份先落本机（不关它、不推云）。不给 = 那一版是上次存下的样子。
+    flush: async () => {
+      await d3.flushLocal();
+    },
     dropCheckpoint: () => {
     },
     tileAction: (item, facts) => playTile(item.identifier, factsOf(facts))
@@ -48471,6 +50057,22 @@ var WpReferenceWindow = class extends HTMLElement {
   linkProvider = null;
   // 宿主端口：＋ 菜单（一次性 set = ui/popup-menu 的 togglePopupMenu）。null = 没菜单（裸挂时 ＋ 无反应）。
   menuPort = null;
+  /** 0.6.0 宿主端口：现在让不让改这副牌——人在窗里挪卡、删卡、从 ＋ 菜单加一张宿主画面的卡之前问它。
+   *  返回 false = 不让：这一下什么都不做，发一个 `editrefused` 事件（宿主拿去提示，比如「这幅画锁着」）。null = 永远让（0.5 行为）。
+   *  **翻页、跳到某一张、缩放平移、播放不问**——那是看，不是改。宿主自己调的 addImage / addText / deck.add 也不问：宿主在调之前自己把关。
+   *  起因 = 家族「源文件原则上只读」（牌组跟着文档保存，文档锁着时不该在窗里改它；user 2026-11-08「参考窗那里也加一个让不让改的口」）。 */
+  canEdit = null;
+  _mayEdit() {
+    let ok2 = true;
+    try {
+      ok2 = !this.canEdit || this.canEdit() !== false;
+    } catch {
+      ok2 = false;
+    }
+    if (!ok2)
+      this._emit("editrefused", {});
+    return ok2;
+  }
   /** 拖把地板（宿主注入 = ui/floating-window 运行时量的「顶栏下缘」；缺省 60 = 旧常数，裸挂可用）。
    *  拖 / 恢复 / 视口钳制三条路都吃它——出血区规则只准一个出处（2026-09-02 C2）。 */
   topFloor = DRAG_TOP_FLOOR;
@@ -49315,6 +50917,8 @@ var WpReferenceWindow = class extends HTMLElement {
     const to2 = this._deck.index + delta;
     if (!cur || to2 < 0 || to2 >= this._deck.size)
       return;
+    if (!this._mayEdit())
+      return;
     this._saveCurrentVp();
     this._mute(() => this._deck.move(cur.id, to2));
     this._afterItemsChanged();
@@ -49341,6 +50945,8 @@ var WpReferenceWindow = class extends HTMLElement {
   _deleteCurrent() {
     const cur = this._deck.current;
     if (!cur)
+      return;
+    if (!this._mayEdit())
       return;
     this._bitmaps.get(cur.id)?.close?.();
     this._bitmaps.delete(cur.id);
@@ -49967,6 +51573,8 @@ ${this._ramMissingText()}`;
         else if (id2 === "cloud")
           this._emit("requestcloudload");
         else if (id2 === "live" || id2.startsWith("live:")) {
+          if (!this._mayEdit())
+            return;
           const t10 = this._liveMenuTargets().find((x2) => this._liveMenuId(x2.target) === id2);
           this.showLive(t10?.target ?? null, t10?.target == null ? "" : t10.label);
           this._emitItems();
@@ -54364,7 +55972,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "9f7537fdc4c4",
+  cssHash: "fb24f28976c6",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -58493,4 +60101,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ae380683ad71.mjs.map
+//# sourceMappingURL=moonsinger-5e0cea0f7ec6.mjs.map

@@ -109,6 +109,8 @@ export function initGalleryHost(d: GalleryHostDeps) {
     push: async () => { await d.pushNow(); },
     unload: async (item: GItem) => { try { await requireStore().file(item.identifier, { mode: "existing" }).offload(); } catch (e) { reportError(e, "warning"); } },
     exit: async () => { await d.flushLocal(); },
+    // gallery 0.9.1：「存一版」拿的是存下来的字节，正开着的那份先落本机（不关它、不推云）。不给 = 那一版是上次存下的样子。
+    flush: async () => { await d.flushLocal(); },
     dropCheckpoint: () => {},
     tileAction: (item, facts) => playTile(item.identifier, factsOf(facts)),   // 封面上的 ▶（0.8.0 包画、包接点击、不开卡）
   };

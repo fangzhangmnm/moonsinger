@@ -78,6 +78,9 @@ function buildStore(o: { provider: CloudProvider; signedIn: () => boolean; isOnl
     signedIn: o.signedIn,
     isOnline: o.isOnline,
     activeIdentifier: () => _activeIdentifier,
+    // store 2.3.x（v0.16.95，2026-11-10，Claude Fable 5.2；家族修改锁标准第七节）：星 / 收起的记号——库自己的一份同步文件 `.<appId>/store.file-marks.json`（持久层白名单表里归 store 那一行）。
+    //   加了星的送不进回收站（file.trash 抛 StarredError，歌库的面自己说）。**`lockByDefault` 还没开**：修改锁五道接好、验过之后才开（设计稿第十节第 9 步）。
+    fileMarks: true,
   });
 }
 /** 歌库的家（家族规则书 §1 第 13 条）。没有家不建 store：只有用户选了家（或开机恢复上次的家）才走到 attachStore。 */

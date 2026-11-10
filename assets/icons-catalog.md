@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-71 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+79 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -9,18 +9,25 @@
 
 ```html
 <!-- 内联 icons.svg -->
-<svg width="24" height="24"><use href="#sliders"/></svg>
+<svg width="24" height="24"><use href="#pencil"/></svg>
 ```
 
 > 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`unplugged`、`visibility-only`、`volume-mute`、`volume-solo`、`keyboard-collapse`、`mixer-collapse`、`album`、`music-library`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
 > 见库 `index.html` 的「待过目」栏；过目后进库/打回归库 session。
 
 
+## drawing-tool
+
+| name | 说明 |
+|------|------|
+| `pencil` | 铅笔 Bootstrap Icons MIT |
+
 ## image-processing
 
 | name | 说明 |
 |------|------|
 | `sliders` | 不写类别 |
+| `layers-stack` | 图层堆叠:菱形顶片 + 下方两条平行折线示意叠层 |
 
 ## selection
 
@@ -79,6 +86,7 @@
 | `album` 👁待过目 | 专辑/唱片:左边一个方形唱片封套(圆角矩形) + 右侧从封套后露出半张唱片(大圆弧 + 中心小孔)；与 bookshelf(书库) / gallery(图库) 分工 = 歌库【MoonSinger 顶栏最左「歌库」钮（回歌库）+ 文件菜单「歌库…」；2026-10-08 Claude Fable 5.1 自画未过目】 |
 | `rename` | 重命名:文字光标+铅笔 |
 | `music-library` 👁待过目 | 歌库(唱片箱):一个木箱(前板 + 中间一道把手孔)里插着两张方封套(后面那张往右上错开,只露出上沿和右边),前面那张上一个八分音符 = 很多首歌收在这里；与 album(一张专辑) / bookshelf(书库) / gallery(图库) 分工【MoonSinger 顶栏最左「歌库」钮（取代 album，user 11-08 说 album 看着像马克杯；唱片箱 / 一叠 / 网格几个方向里先定 D3「两张错开」，再试「D3 + 箱子」，user 11-08 挑 E3「平箱子 + 把手孔」）；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底，遮挡按前后关系只画露出来的线）；user 挑过，未正式过目入库】 |
+| `restore-trash` | 同上但盖只掀 -16° |
 
 ## hierarchy
 
@@ -89,6 +97,7 @@
 | `create-folder` | 加号做成右下角徽标 |
 | `visibility-show` | 可见:撑高眼裂+瞳孔 r4.3(甲方实测原版太小) |
 | `visibility-hide` | 隐藏:同 show 撑高版+斜杠(mask 留 gap) |
+| `move-to-folder` | 移入文件夹(定 2 号):小 folder + 弧箭头, 箭头头部在 folder 内 · 尾巴在外 |
 
 ## common
 
@@ -116,6 +125,9 @@
 | `cloud-conflict` | 云+感叹号(2.4 描边整体收在云内不破轮廓, 点半径=描边半宽; 与 cloud-pending 问号云成对但云为实线); WeebPaint gallery 同步徽章 conflict, 12px 用量 (甲方 20260825 拍板候选 5 号=大号收内) |
 | `cloud-unavailable` | — |
 | `refresh` | 刷新:顺时针 3/4 圆 + 箭头(从 12 点绕到 9 点, 箭头尖在右上) |
+| `download` | 下载 |
+| `local-cache` | 本地缓存副本:database(=本地已缓存, 与 unload-local-cache 同形去掉删除线) |
+| `unload-local-cache` | 卸载本地副本:database(=本地) + 斜删除线(mask 留 gap)【非垃圾桶, 云端仍保留】 |
 
 ## viewport
 
@@ -136,3 +148,4 @@
 | `database` | — |
 | `archive-box` | 归档箱:顶盖条 + 箱体 + 中间把手横线(与 collection 同形, 均出自 lucide:archive) |
 | `settings` 👁待过目 | 设置:齿轮=内圆+外圆+8 根短齿(圆帽)；家族里 sliders 是「调整」别撞【WebXiaoHeiWu 抽屉底栏「设置」入口；fable 自画未过目】 |
+| `more` | 溢出菜单:横向三点(原 ⋯ 字符跨平台字形不一) |

@@ -327,6 +327,13 @@ scenario("歌库披露：没账号 = 顶上常驻一行 + 全部导出（一个 
   const t = await shown();
   check(!!t && t.includes("只在这台设备的浏览器里") && t.includes("没有备份"), "披露条在", String(t));
   check(!!t && t.includes("全部导出") && t.includes("连接网盘"), "两个出口都在", String(t));
+  // 没账号时存的歌一条网都不打（store 2.2.6 起库自己守；以前库照样发一次上传，真环境里因为没有令牌失败，这里的假网盘却照单全收 → 歌被当成「已同步」→ 下面那张面不弹。
+  //   2026-11-10 收 store 2.3.1 时查出来的，Claude Fable 5.2）：它如实算「只在这个浏览器里」→ 进歌库问一次搬不搬（v0.14.17 的设计），答「稍后」= 面收掉、披露条还在
+  check(!w.log.includes("upload") && (await w.cloud.list("")).length === 0, "没账号：存的歌没有往网盘发", JSON.stringify(w.log));
+  const mv = await anySheet(p);
+  check(!!mv && mv.includes("这个浏览器里有 1 首歌"), "只在浏览器里的歌：进歌库问一次搬不搬", String(mv));
+  await p.click(".offer button:has-text('稍后')"); await p.waitForTimeout(300);
+  check((await anySheet(p)) === null && !!(await shown()), "答「稍后」：面收掉、披露条还在", String(await anySheet(p)));
   const [dl] = await Promise.all([p.waitForEvent("download", { timeout: 15000 }), (async () => { await p.click('.gallery-home-bar [data-v="export-all"]'); await p.waitForSelector(".offer button[data-v='download']", { timeout: 10000 }); await p.click(".offer button[data-v='download']"); })()]);
   const name = dl.suggestedFilename();
   check(/^MoonSinger-歌库-\d{8}-\d{4}\.zip$/.test(name), "导出的是一个带时间的 zip", name);
