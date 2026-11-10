@@ -184,6 +184,9 @@ var S = {
   "\u300C{extras}\u300D\u662F\u5355\u58F0\u4E50\u5668\uFF0C\u8FD9\u4E2A\u58F0\u90E8\u53E0\u4E0D\u4E86\u97F3": { en: "\u201C{extras}\u201D is a monophonic instrument, so this part can't stack notes" },
   "\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3": { en: "No note before the cursor yet" },
   "\u25BE \u8FD8\u6709 {n} \u4E2A": { en: "\u25BE {n} more" },
+  "\u754C\u9762": { en: "Interface" },
+  "\u8F85\u52A9\u529F\u80FD": { en: "Accessibility" },
+  "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Sounds" },
   "\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668": { en: "\u201C{who}\u201D plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
   "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C{what}\u6539\u4E0D\u4E86\uFF1A\u5148\u5728\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F1A\u4F5C\u5E9F\uFF09\uFF0C\u518D\u6539\u3002": { en: "This song is finalized, so {what} can't be changed: first choose \u201CRevise\u201D in the \u2630 menu (the final mp3 is discarded), then edit." },
   "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
@@ -276,11 +279,7 @@ var S = {
   "\u5206\u4EAB\u2026": { en: "Share\u2026" },
   "\u6E05\u7A7A": { en: "Clear" },
   "\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09": { en: "Key-feel numbers (for chasing latency): on = a line of numbers appears above the keys while you play; off = never shown, even when keys are late (it only goes into the diagnostic log)" },
-  "\u663E\u793A\uFF1A\u5F00": { en: "Show: on" },
-  "\u663E\u793A\uFF1A\u5173": { en: "Show: off" },
   "\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09\uFF1A\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA": { en: "How audio starts (experiment): on = the first tap starts a silent primer to wake the audio hardware, then the real output starts; off = the old way. Takes effect the next time the app is opened" },
-  "\u57AB\u811A\uFF1A\u5F00": { en: "Primer: on" },
-  "\u57AB\u811A\uFF1A\u5173": { en: "Primer: off" },
   "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09": { en: "Factory reset (wipes all of MoonSinger's local data on this device back to a fresh install: local library copies, speech cache, cover cache, settings, diagnostic log and offline shell; songs in the cloud and local files aren't touched; Tsukuyomi-chan's model pack is a shared family cache and isn't touched \u2014 delete packs individually under \u201CModel packs\u201D above)" },
   "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026": { en: "Factory reset\u2026" },
   "\u68C0\u67E5\u66F4\u65B0": { en: "Check for updates" },
@@ -10469,4 +10468,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-a2747d349da9.mjs.map
+//# sourceMappingURL=singer-worker-3086955feca5.mjs.map

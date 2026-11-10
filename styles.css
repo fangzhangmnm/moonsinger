@@ -247,6 +247,11 @@ body.listen-mode .ink-caret { display: none; }
 
 /* 设置面板：模型来源 / 导入模型包 / 月读的署名与条款 */
 .settings-card { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; }
+/* 设置分五页（v0.16.80）：页签一排五格（窄屏也不折行）；不是这一页的收起；下拉框占一整行宽、最多 320px */
+.set-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 2px 0 12px; }
+.set-tabs .btn { padding: 0 2px; font-size: 11px; letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; justify-content: center; }
+.set-page[hidden] { display: none; }
+.set-sel { width: 100%; max-width: 320px; }
 .set-field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
 .set-field input { height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; font-size: 14px; color: var(--ink); -webkit-user-select: text; user-select: text; }
 .set-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }

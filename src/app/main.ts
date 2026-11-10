@@ -1095,18 +1095,18 @@ function openChordInfo(r: HarmonyRead, at: { x: number; y: number }): void {
   ctxMenu("chord-info", `<div class="ctx-hint ctx-what">${esc(th.howTo(r))}</div>` + r.all.slice(0, 6).map(row).join(""), at, () => true);
 }
 function setChordTags(on: boolean): void { chordTagsOn = on; deviceKvSet(KV_CHORD_TAGS, on ? "1" : "0"); view.render(); }
-const chordChips = (): string => [["off", _t("关"), !chordTagsOn], ["on", _t("开"), chordTagsOn]].map(([v, label, on]) => `<button class="btn chip${on ? " is-on" : ""}" data-v="chord:${v}">${esc(label as string)}</button>`).join("");
 function setViewInC(on: boolean): void {
   viewInC = on; deviceKvSet(KV_VIEW_IN_C, on ? "1" : "0");
   pad.setBigLabel(on ? "deg" : "abs"); view.render(); ghostSync();
 }
-const viewChips = (): string => [["pro", _t("专业"), !viewInC], ["inc", _t("按 C 调看（1=X）"), viewInC]].map(([v, label, on]) => `<button class="btn chip${on ? " is-on" : ""}" data-v="view:${v}">${esc(label as string)}</button>`).join("");
-function langChips(): string {
-  const cur = langChosen();
-  const chip = (v: string, label: string, on: boolean) => `<button class="btn chip${on ? " is-on" : ""}" data-v="lang:${v}">${esc(label)}</button>`;
-  return chip("auto", _t("跟系统"), cur === null) + chip("zh", LANG_NAME.zh, cur === "zh") + chip("en", LANG_NAME.en, cur === "en");
-}
 
+/** 设置分五页（v0.16.80，总表第 10 条：界面 / 辅助功能 / 音源与缓存 / MIDI / 开发者）；记住这次运行里上次看的那页。 */
+type SetPage = "ui" | "a11y" | "sound" | "midi" | "dev";
+let settingsPage: SetPage = "ui";
+const SET_PAGES = (): [SetPage, string][] => [["ui", _t("界面")], ["a11y", _t("辅助功能")], ["sound", _t("音源与缓存")], ["midi", "MIDI"], ["dev", _t("开发者")]];
+/** 设置里的一个下拉框（原来一排小按钮，user 嫌难看 → 下拉框）：data-set = 哪一项，改了走 openSettings 的 change。 */
+const setSel = (k: string, opts: [string, string][], cur: string): string =>
+  `<select class="hp-sel set-sel" data-set="${k}">${opts.map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc(label)}</option>`).join("")}</select>`;
 /** 设置面板（应用内，不用系统弹窗）：模型来源、从本机文件导入模型包、月读的署名与使用条款（包内 LICENSE [1][2] 要求显示）。 */
 function openSettings(): void {
   ui.close();
@@ -1114,20 +1114,34 @@ function openSettings(): void {
   const box = document.createElement("div");
   box.className = "offer";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
-    `<div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${langChips()}</div></div>` +
-    `<div class="set-field">${_t("辅助 · 看谱方式")}<div class="set-row">${viewChips()}</div><span class="set-note">${_t("专业 = 按实际的调画谱，键上大字写音名。按 C 调看 = 谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数。键的位置不动；导出的 PDF 照实际的调印。只管这台设备。")}</span></div>` +
-    `<div class="set-field">${_t("辅助 · 和弦标级数")}<div class="set-row">${chordChips()}</div><span class="set-note">${_t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选。只是显示，不进歌、不印。")}</span></div>` +
+    `<div class="set-tabs">${SET_PAGES().map(([k, label]) => `<button class="btn chip" data-tab="${k}">${esc(label)}</button>`).join("")}</div>` +
+    `<div class="set-page" data-page="ui">` +
+    `<div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto")}</div></div>` +
+    `</div>` +
+    `<div class="set-page" data-page="a11y">` +
+    `<div class="set-field">${_t("辅助 · 看谱方式")}<div class="set-row">${setSel("view", [["pro", _t("专业")], ["inc", _t("按 C 调看（1=X）")]], viewInC ? "inc" : "pro")}</div><span class="set-note">${_t("专业 = 按实际的调画谱，键上大字写音名。按 C 调看 = 谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数。键的位置不动；导出的 PDF 照实际的调印。只管这台设备。")}</span></div>` +
+    `<div class="set-field">${_t("辅助 · 和弦标级数")}<div class="set-row">${setSel("chord", [["off", _t("关")], ["on", _t("开")]], chordTagsOn ? "on" : "off")}</div><span class="set-note">${_t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选。只是显示，不进歌、不印。")}</span></div>` +
+    `</div>` +
+    `<div class="set-page" data-page="sound">` +
     (inFolder ? `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" disabled value="${esc(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>`
       : `<label class="set-field">${_t("模型来源")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc(models.source)}" /></label>`) +
     `<label class="set-field">${_t("音源库来源（乐器音色库、鼓组、音效素材；不是 AI 模型）")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc(sources.source)}" /></label>` +
     `<div class="set-field">${_t("音源库缓存（留在设备上，没网也能用；歌自己带声音，这里只是货架）")}<div id="sndCache" class="set-packs">…</div></div>` +
+    `</div>` +
+    `<div class="set-page" data-page="midi">` +
     `<div class="set-field">${_t("MIDI 键盘")}<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("连接")}</button>` : ""}</div></div>` +
+    `</div>` +
+    `<div class="set-page" data-page="sound">` +
     `<div class="offer-msg">${_t("先找这个网站下的 <code>pwa-models/</code>（自己搭服务器的话，把模型仓拷过去就能用），找不到再用这里填的。只在这次打开里有效。")}</div>` +
     `<div class="set-row"><button class="btn" data-v="default">${_t("恢复默认")}</button>` +
     (inFolder ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入模型包")}</span><input id="impIn" type="file" multiple hidden disabled /></div>`
       : `<label class="btn" title="${_t("选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件")}"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入模型包")}<input id="impIn" type="file" multiple hidden /></label></div>`) +
     `<pre id="packSt" class="set-packs">…</pre>` +
+    `</div>` +
+    `<div class="set-page" data-page="ui">` +
     `<details class="set-credit" data-i18n-skip><summary>${_t("乐器目录的图标（第三方，{n} 个）", { n: ICON_CREDITS.length })}</summary><pre>${esc(ICON_CREDITS.map((c) => `${c.id} — ${c.author} (${c.set}, ${c.license}) ${c.url}${c.modified ? _t("\n    改动：{modified}", { modified: c.modified }) : ""}`).join("\n"))}</pre></details>` +
+    `</div>` +
+    `<div class="set-page" data-page="sound">` +
     // 原文在上（条款要求的是原文）；中 / 英译文在下、只给人读（user 2026-10-08「月读的license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）
     `<details class="set-credit" data-i18n-skip><summary>${_t("小月相（つくよみちゃん）的署名与使用条款")}</summary><div class="part-sec">${_t("原文（以此为准）")}</div><pre>${esc(CREDIT.credit)}\n\n${esc(CREDIT.terms)}\n${esc(CREDIT.termsUrl)}\n\n${esc(CREDIT.attribution.join("\n"))}</pre>` +
       (lang() === "zh" ? `<div class="part-sec">${_t("中文译文（仅供阅读，以日文原文为准）")}</div><pre>${esc(CREDIT_TRANSLATIONS.zh.credit)}\n\n${esc(CREDIT_TRANSLATIONS.zh.terms)}</pre>` : "") +
@@ -1136,16 +1150,34 @@ function openSettings(): void {
     // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
     `<div class="set-field">${_t("声音不对劲的时候按一下（按键有延迟、没有声音）：把通向扬声器的那一段换成新的，排着没播完的声音一起丢掉。正在响的声音会断一下")}<div class="set-row"><button class="btn" data-v="audio:revive">${_t("重启声音")}</button></div></div>` +
     `<div class="set-field">${_t("引擎负载与内存（能算到的部分；超预算会先放块、再减并行、再趁空重开引擎，并在这里 / 状态条明说）")}<div id="engRes" class="set-packs">…</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("小月相引擎的 WASM 内存只涨不落，只有重开才还回去；念过的句子要重念")}">${_t("重开小月相引擎")}</button></div></div>` +
+    `</div>` +
     // 开发者节（家族规矩 2½，2026-10-21）：诊断日志 + 「还原出厂设置…」住这里；「检查更新 / 清缓存重启」留在普通那一行
-    `<details class="set-credit set-dev"><summary>${_t("开发者")}</summary>` +
+    // 开发者页（家族规矩 2½：诊断日志 + 「还原出厂设置…」住这里；v0.16.80 起设置分页，原来是折起来的一节）
+    `<div class="set-page" data-page="dev">` +
       `<details class="set-credit"><summary>${_t("诊断日志（黑匣子：出错了把这个发给开发者；不上传，只有点「复制 / 分享」才离开设备）")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("复制")}</button><button class="btn" data-v="diag:download">${_t("下载 .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("分享…")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("清空")}</button></div></details>` +
-      `<div class="set-field">${_t("按键手感的数字（查延迟用）：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("显示：开") : _t("显示：关")}</button></div></div>` +
-      (IS_IOS ? `<div class="set-field">${_t("声音的起法（试验）：开 = 第一次点屏幕先起一个不出声的垫脚把声音硬件叫醒，再起真正出声的那一个；关 = 以前的起法。改了要重开 app 才看得出")}<div class="set-row"><button class="btn" data-v="audio:primer">${primerOn() ? _t("垫脚：开") : _t("垫脚：关")}</button></div></div>` : "") +
+      `<div class="set-field">${_t("按键手感的数字（查延迟用）：打开 = 按键时在键盘上面露一行数字；关着 = 不显示（晚了也不弹，只记进诊断日志）")}<div class="set-row">${setSel("feel", [["off", _t("关")], ["on", _t("开")]], feelAlways ? "on" : "off")}</div></div>` +
+      (IS_IOS ? `<div class="set-field">${_t("声音的起法（试验）：开 = 第一次点屏幕先起一个不出声的垫脚把声音硬件叫醒，再起真正出声的那一个；关 = 以前的起法。改了要重开 app 才看得出")}<div class="set-row">${setSel("primer", [["off", _t("关")], ["on", _t("开")]], primerOn() ? "on" : "off")}</div></div>` : "") +
       `<div class="set-field">${_t("还原出厂设置（这台设备上 MoonSinger 的全部本地数据清成新装：歌库的本机副本、念缓存、封面缓存、设置、诊断日志、离线壳；云端的歌和本机文件不动；小月相模型包是家族共享缓存，不动——在上面「模型包」里逐个删）")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("还原出厂设置…")}</button></div></div>` +
-    `</details>` +
+    `</div>` +
     `<div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("检查更新")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("检查更新")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("卡在旧版本时用：注销本 app 的离线缓存再重开。下好的小月相模型包不删")}">${_t("清缓存重启")}</button></div>` +
     `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
   document.body.append(box);
+  // 五页：点页签换页（这次运行里记住）；下拉框改了马上生效（语言 = 存 + 重载）
+  const showPage = (pg: SetPage): void => {
+    settingsPage = pg;
+    box.querySelectorAll<HTMLElement>(".set-page").forEach((el) => { el.hidden = el.dataset.page !== pg; });
+    box.querySelectorAll<HTMLElement>("[data-tab]").forEach((b) => b.classList.toggle("is-on", b.dataset.tab === pg));
+  };
+  showPage(settingsPage);
+  box.querySelector(".set-tabs")!.addEventListener("click", (e) => { const t = (e.target as HTMLElement).closest<HTMLElement>("[data-tab]"); if (t) showPage(t.dataset.tab as SetPage); });
+  box.addEventListener("change", (e) => {
+    const el = e.target as HTMLSelectElement, k = el.dataset.set; if (!k) return;
+    if (k === "lang") { saveLang(el.value === "auto" ? null : (el.value as Lang)); location.reload(); }
+    else if (k === "view") setViewInC(el.value === "inc");
+    else if (k === "chord") setChordTags(el.value === "on");
+    else if (k === "feel") { feelAlways = el.value === "on"; deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null); diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`); }
+    else if (k === "primer") { const on = el.value === "on"; setPrimer(on); deviceKvSet(KV_PRIMER, on ? null : "0"); }
+  });
   const srcIn = box.querySelector<HTMLInputElement>("#srcIn")!, packSt = box.querySelector<HTMLElement>("#packSt")!;
   const refresh = () => { void packStatusText().then((t) => (packSt.textContent = t)); };
   refresh();
@@ -1175,16 +1207,11 @@ function openSettings(): void {
     if (e.target === box || v === "close") close();
     else if (v === "default") { srcIn.value = MODEL_SOURCE_DEFAULT; sndIn.value = SOUNDS_SOURCE_DEFAULT; }
     else if (v === "midi:connect") void midi.connect();
-    else if (v === "chord:off" || v === "chord:on") { setChordTags(v === "chord:on"); box.querySelectorAll<HTMLElement>('[data-v^="chord:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
-    else if (v === "view:pro" || v === "view:inc") { setViewInC(v === "view:inc"); box.querySelectorAll<HTMLElement>('[data-v^="view:"]').forEach((b) => b.classList.toggle("is-on", b.dataset.v === v)); }
-    else if (v?.startsWith("lang:")) { const l = v.slice(5); saveLang(l === "auto" ? null : l as Lang); location.reload(); }
     else if (v === "audio:revive") {
       const b = (e.target as HTMLElement).closest("button")!; b.disabled = true;
       warmAudio();   // 还没出过声 = 先建、先叫醒（这一下在点按的手势里）
       void reviveAudio("manual").then((ok) => { b.disabled = false; info(ok ? _t("声音重启了") : _t("换过了，但声音设备还没起来：再按一次，或者把 app 关掉重开")); });
     }
-    else if (v === "audio:primer") { const on = !primerOn(); setPrimer(on); deviceKvSet(KV_PRIMER, on ? null : "0"); (e.target as HTMLElement).closest("button")!.textContent = on ? _t("垫脚：开") : _t("垫脚：关"); }
-    else if (v === "feel:always") { feelAlways = !feelAlways; deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null); diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`); (e.target as HTMLElement).closest("button")!.textContent = feelAlways ? _t("显示：开") : _t("显示：关"); }
     else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);

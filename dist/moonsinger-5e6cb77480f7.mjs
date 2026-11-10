@@ -2892,6 +2892,9 @@ var S = {
   "\u300C{extras}\u300D\u662F\u5355\u58F0\u4E50\u5668\uFF0C\u8FD9\u4E2A\u58F0\u90E8\u53E0\u4E0D\u4E86\u97F3": { en: "\u201C{extras}\u201D is a monophonic instrument, so this part can't stack notes" },
   "\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3": { en: "No note before the cursor yet" },
   "\u25BE \u8FD8\u6709 {n} \u4E2A": { en: "\u25BE {n} more" },
+  "\u754C\u9762": { en: "Interface" },
+  "\u8F85\u52A9\u529F\u80FD": { en: "Accessibility" },
+  "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Sounds" },
   "\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668": { en: "\u201C{who}\u201D plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
   "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C{what}\u6539\u4E0D\u4E86\uFF1A\u5148\u5728\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F1A\u4F5C\u5E9F\uFF09\uFF0C\u518D\u6539\u3002": { en: "This song is finalized, so {what} can't be changed: first choose \u201CRevise\u201D in the \u2630 menu (the final mp3 is discarded), then edit." },
   "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
@@ -2984,11 +2987,7 @@ var S = {
   "\u5206\u4EAB\u2026": { en: "Share\u2026" },
   "\u6E05\u7A7A": { en: "Clear" },
   "\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09": { en: "Key-feel numbers (for chasing latency): on = a line of numbers appears above the keys while you play; off = never shown, even when keys are late (it only goes into the diagnostic log)" },
-  "\u663E\u793A\uFF1A\u5F00": { en: "Show: on" },
-  "\u663E\u793A\uFF1A\u5173": { en: "Show: off" },
   "\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09\uFF1A\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA": { en: "How audio starts (experiment): on = the first tap starts a silent primer to wake the audio hardware, then the real output starts; off = the old way. Takes effect the next time the app is opened" },
-  "\u57AB\u811A\uFF1A\u5F00": { en: "Primer: on" },
-  "\u57AB\u811A\uFF1A\u5173": { en: "Primer: off" },
   "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09": { en: "Factory reset (wipes all of MoonSinger's local data on this device back to a fresh install: local library copies, speech cache, cover cache, settings, diagnostic log and offline shell; songs in the cloud and local files aren't touched; Tsukuyomi-chan's model pack is a shared family cache and isn't touched \u2014 delete packs individually under \u201CModel packs\u201D above)" },
   "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026": { en: "Factory reset\u2026" },
   "\u68C0\u67E5\u66F4\u65B0": { en: "Check for updates" },
@@ -5075,7 +5074,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.79-2026-11-09";
+var APP_VERSION = "v0.16.80-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29673,15 +29672,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-a2747d349da9.mjs");
+      return pick(() => "singer-worker-3086955feca5.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-1cef2e10f310.mjs");
+      return pick(() => "layout-worker-8dea9a24f844.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-e1ef1909ffa4.mjs");
+      return pick(() => "encode-worker-bf57e8df2f3d.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -53317,7 +53316,6 @@ function setChordTags(on2) {
   deviceKvSet(KV_CHORD_TAGS, on2 ? "1" : "0");
   view.render();
 }
-var chordChips = () => [["off", _t("\u5173"), !chordTagsOn], ["on", _t("\u5F00"), chordTagsOn]].map(([v, label, on2]) => `<button class="btn chip${on2 ? " is-on" : ""}" data-v="chord:${v}">${esc11(label)}</button>`).join("");
 function setViewInC(on2) {
   viewInC = on2;
   deviceKvSet(KV_VIEW_IN_C, on2 ? "1" : "0");
@@ -53325,18 +53323,15 @@ function setViewInC(on2) {
   view.render();
   ghostSync();
 }
-var viewChips = () => [["pro", _t("\u4E13\u4E1A"), !viewInC], ["inc", _t("\u6309 C \u8C03\u770B\uFF081=X\uFF09"), viewInC]].map(([v, label, on2]) => `<button class="btn chip${on2 ? " is-on" : ""}" data-v="view:${v}">${esc11(label)}</button>`).join("");
-function langChips() {
-  const cur = langChosen();
-  const chip2 = (v, label, on2) => `<button class="btn chip${on2 ? " is-on" : ""}" data-v="lang:${v}">${esc11(label)}</button>`;
-  return chip2("auto", _t("\u8DDF\u7CFB\u7EDF"), cur === null) + chip2("zh", LANG_NAME.zh, cur === "zh") + chip2("en", LANG_NAME.en, cur === "en");
-}
+var settingsPage = "ui";
+var SET_PAGES = () => [["ui", _t("\u754C\u9762")], ["a11y", _t("\u8F85\u52A9\u529F\u80FD")], ["sound", _t("\u97F3\u6E90\u4E0E\u7F13\u5B58")], ["midi", "MIDI"], ["dev", _t("\u5F00\u53D1\u8005")]];
+var setSel = (k2, opts, cur) => `<select class="hp-sel set-sel" data-set="${k2}">${opts.map(([v, label]) => `<option value="${v}"${v === cur ? " selected" : ""}>${esc11(label)}</option>`).join("")}</select>`;
 function openSettings() {
   ui2.close();
   const inFolder2 = resourcesInFolder();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div><div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${langChips()}</div></div><div class="set-field">${_t("\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F")}<div class="set-row">${viewChips()}</div><span class="set-note">${_t("\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002")}</span></div><div class="set-field">${_t("\u8F85\u52A9 \xB7 \u548C\u5F26\u6807\u7EA7\u6570")}<div class="set-row">${chordChips()}</div><span class="set-note">${_t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009\u3002\u53EA\u662F\u663E\u793A\uFF0C\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u5370\u3002")}</span></div>` + (inFolder2 ? `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" disabled value="${esc11(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>` : `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc11(models.source)}" /></label>`) + `<label class="set-field">${_t("\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc11(sources.source)}" /></label><div class="set-field">${_t("\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09")}<div id="sndCache" class="set-packs">\u2026</div></div><div class="set-field">${_t("MIDI \u952E\u76D8")}<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}</div></div><div class="offer-msg">${_t("\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002")}</div><div class="set-row"><button class="btn" data-v="default">${_t("\u6062\u590D\u9ED8\u8BA4")}</button>` + (inFolder2 ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}</span><input id="impIn" type="file" multiple hidden disabled /></div>` : `<label class="btn" title="${_t("\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6")}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}<input id="impIn" type="file" multiple hidden /></label></div>`) + `<pre id="packSt" class="set-packs">\u2026</pre><details class="set-credit" data-i18n-skip><summary>${_t("\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C{n} \u4E2A\uFF09", { n: ICON_CREDITS.length })}</summary><pre>${esc11(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? _t("\n    \u6539\u52A8\uFF1A{modified}", { modified: c10.modified }) : ""}`).join("\n"))}</pre></details><details class="set-credit" data-i18n-skip><summary>${_t("\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E")}</summary><div class="part-sec">${_t("\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09")}</div><pre>${esc11(CREDIT.credit)}
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div><div class="set-tabs">${SET_PAGES().map(([k2, label]) => `<button class="btn chip" data-tab="${k2}">${esc11(label)}</button>`).join("")}</div><div class="set-page" data-page="ui"><div class="set-field" data-i18n-skip>${LANG_LABEL}<div class="set-row">${setSel("lang", [["auto", _t("\u8DDF\u7CFB\u7EDF")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto")}</div></div></div><div class="set-page" data-page="a11y"><div class="set-field">${_t("\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F")}<div class="set-row">${setSel("view", [["pro", _t("\u4E13\u4E1A")], ["inc", _t("\u6309 C \u8C03\u770B\uFF081=X\uFF09")]], viewInC ? "inc" : "pro")}</div><span class="set-note">${_t("\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002")}</span></div><div class="set-field">${_t("\u8F85\u52A9 \xB7 \u548C\u5F26\u6807\u7EA7\u6570")}<div class="set-row">${setSel("chord", [["off", _t("\u5173")], ["on", _t("\u5F00")]], chordTagsOn ? "on" : "off")}</div><span class="set-note">${_t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009\u3002\u53EA\u662F\u663E\u793A\uFF0C\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u5370\u3002")}</span></div></div><div class="set-page" data-page="sound">` + (inFolder2 ? `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" disabled value="${esc11(models.source)}" /><span class="set-note">${FOLDER_TEXT.models}</span></label>` : `<label class="set-field">${_t("\u6A21\u578B\u6765\u6E90")}<input id="srcIn" type="url" spellcheck="false" autocomplete="off" value="${esc11(models.source)}" /></label>`) + `<label class="set-field">${_t("\u97F3\u6E90\u5E93\u6765\u6E90\uFF08\u4E50\u5668\u97F3\u8272\u5E93\u3001\u9F13\u7EC4\u3001\u97F3\u6548\u7D20\u6750\uFF1B\u4E0D\u662F AI \u6A21\u578B\uFF09")}<input id="sndIn" type="url" spellcheck="false" autocomplete="off" value="${esc11(sources.source)}" /></label><div class="set-field">${_t("\u97F3\u6E90\u5E93\u7F13\u5B58\uFF08\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6\uFF09")}<div id="sndCache" class="set-packs">\u2026</div></div></div><div class="set-page" data-page="midi"><div class="set-field">${_t("MIDI \u952E\u76D8")}<div class="set-row"><span id="midiSt">${midiStatusHtml(midi.status)}</span>${midi.status.k === "off" || midi.status.k === "denied" ? `<button class="btn" data-v="midi:connect">${_t("\u8FDE\u63A5")}</button>` : ""}</div></div></div><div class="set-page" data-page="sound"><div class="offer-msg">${_t("\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002")}</div><div class="set-row"><button class="btn" data-v="default">${_t("\u6062\u590D\u9ED8\u8BA4")}</button>` + (inFolder2 ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}</span><input id="impIn" type="file" multiple hidden disabled /></div>` : `<label class="btn" title="${_t("\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6")}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165\u6A21\u578B\u5305")}<input id="impIn" type="file" multiple hidden /></label></div>`) + `<pre id="packSt" class="set-packs">\u2026</pre></div><div class="set-page" data-page="ui"><details class="set-credit" data-i18n-skip><summary>${_t("\u4E50\u5668\u76EE\u5F55\u7684\u56FE\u6807\uFF08\u7B2C\u4E09\u65B9\uFF0C{n} \u4E2A\uFF09", { n: ICON_CREDITS.length })}</summary><pre>${esc11(ICON_CREDITS.map((c10) => `${c10.id} \u2014 ${c10.author} (${c10.set}, ${c10.license}) ${c10.url}${c10.modified ? _t("\n    \u6539\u52A8\uFF1A{modified}", { modified: c10.modified }) : ""}`).join("\n"))}</pre></details></div><div class="set-page" data-page="sound"><details class="set-credit" data-i18n-skip><summary>${_t("\u5C0F\u6708\u76F8\uFF08\u3064\u304F\u3088\u307F\u3061\u3083\u3093\uFF09\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E")}</summary><div class="part-sec">${_t("\u539F\u6587\uFF08\u4EE5\u6B64\u4E3A\u51C6\uFF09")}</div><pre>${esc11(CREDIT.credit)}
 
 ${esc11(CREDIT.terms)}
 ${esc11(CREDIT.termsUrl)}
@@ -53345,8 +53340,38 @@ ${esc11(CREDIT.attribution.join("\n"))}</pre>` + (lang() === "zh" ? `<div class=
 
 ${esc11(CREDIT_TRANSLATIONS.zh.terms)}</pre>` : "") + `<div class="part-sec">English translation (for reading only; the Japanese original is authoritative)</div><pre>${esc11(CREDIT_TRANSLATIONS.en.credit)}
 
-${esc11(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B")}<div class="set-row"><button class="btn" data-v="audio:revive">${_t("\u91CD\u542F\u58F0\u97F3")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div><details class="set-credit set-dev"><summary>${_t("\u5F00\u53D1\u8005")}</summary><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc11(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")}<div class="set-row"><button class="btn" data-v="feel:always">${feelAlways ? _t("\u663E\u793A\uFF1A\u5F00") : _t("\u663E\u793A\uFF1A\u5173")}</button></div></div>` + (IS_IOS ? `<div class="set-field">${_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09\uFF1A\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA")}<div class="set-row"><button class="btn" data-v="audio:primer">${primerOn() ? _t("\u57AB\u811A\uFF1A\u5F00") : _t("\u57AB\u811A\uFF1A\u5173")}</button></div></div>` : "") + `<div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></details><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+${esc11(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58\uFF08\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5\uFF09")}<div id="spCache" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="sp:clear">${_t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")}</button></div></div><div class="set-field">${_t("\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B")}<div class="set-row"><button class="btn" data-v="audio:revive">${_t("\u91CD\u542F\u58F0\u97F3")}</button></div></div><div class="set-field">${_t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09")}<div id="engRes" class="set-packs">\u2026</div><div class="set-row"><button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button></div></div></div><div class="set-page" data-page="dev"><details class="set-credit"><summary>${_t("\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09")}</summary><pre id="diagTxt" class="set-packs diag-log">${esc11(diagText())}</pre><div class="set-row"><button class="btn" data-v="diag:copy">${_t("\u590D\u5236")}</button><button class="btn" data-v="diag:download">${_t("\u4E0B\u8F7D .txt")}</button>${canShareDiag() ? `<button class="btn" data-v="diag:share">${_t("\u5206\u4EAB\u2026")}</button>` : ""}<button class="btn" data-v="diag:clear">${_t("\u6E05\u7A7A")}</button></div></details><div class="set-field">${_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57\uFF08\u67E5\u5EF6\u8FDF\u7528\uFF09\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")}<div class="set-row">${setSel("feel", [["off", _t("\u5173")], ["on", _t("\u5F00")]], feelAlways ? "on" : "off")}</div></div>` + (IS_IOS ? `<div class="set-field">${_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09\uFF1A\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA")}<div class="set-row">${setSel("primer", [["off", _t("\u5173")], ["on", _t("\u5F00")]], primerOn() ? "on" : "off")}</div></div>` : "") + `<div class="set-field">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u4E0A\u9762\u300C\u6A21\u578B\u5305\u300D\u91CC\u9010\u4E2A\u5220\uFF09")}<div class="set-row"><button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button></div></div></div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
+  const showPage = (pg) => {
+    settingsPage = pg;
+    box.querySelectorAll(".set-page").forEach((el2) => {
+      el2.hidden = el2.dataset.page !== pg;
+    });
+    box.querySelectorAll("[data-tab]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.tab === pg));
+  };
+  showPage(settingsPage);
+  box.querySelector(".set-tabs").addEventListener("click", (e10) => {
+    const t10 = e10.target.closest("[data-tab]");
+    if (t10) showPage(t10.dataset.tab);
+  });
+  box.addEventListener("change", (e10) => {
+    const el2 = e10.target, k2 = el2.dataset.set;
+    if (!k2) return;
+    if (k2 === "lang") {
+      saveLang(el2.value === "auto" ? null : el2.value);
+      location.reload();
+    } else if (k2 === "view") setViewInC(el2.value === "inc");
+    else if (k2 === "chord") setChordTags(el2.value === "on");
+    else if (k2 === "feel") {
+      feelAlways = el2.value === "on";
+      deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null);
+      diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`);
+    } else if (k2 === "primer") {
+      const on2 = el2.value === "on";
+      setPrimer(on2);
+      deviceKvSet(KV_PRIMER, on2 ? null : "0");
+    }
+  });
   const srcIn = box.querySelector("#srcIn"), packSt = box.querySelector("#packSt");
   const refresh = () => {
     void packStatusText().then((t10) => packSt.textContent = t10);
@@ -53411,17 +53436,7 @@ ${esc11(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_
       srcIn.value = MODEL_SOURCE_DEFAULT;
       sndIn.value = SOUNDS_SOURCE_DEFAULT;
     } else if (v === "midi:connect") void midi.connect();
-    else if (v === "chord:off" || v === "chord:on") {
-      setChordTags(v === "chord:on");
-      box.querySelectorAll('[data-v^="chord:"]').forEach((b3) => b3.classList.toggle("is-on", b3.dataset.v === v));
-    } else if (v === "view:pro" || v === "view:inc") {
-      setViewInC(v === "view:inc");
-      box.querySelectorAll('[data-v^="view:"]').forEach((b3) => b3.classList.toggle("is-on", b3.dataset.v === v));
-    } else if (v?.startsWith("lang:")) {
-      const l10 = v.slice(5);
-      saveLang(l10 === "auto" ? null : l10);
-      location.reload();
-    } else if (v === "audio:revive") {
+    else if (v === "audio:revive") {
       const b3 = e10.target.closest("button");
       b3.disabled = true;
       warmAudio();
@@ -53429,16 +53444,6 @@ ${esc11(CREDIT_TRANSLATIONS.en.terms)}</pre></details><div class="set-field">${_
         b3.disabled = false;
         info(ok2 ? _t("\u58F0\u97F3\u91CD\u542F\u4E86") : _t("\u6362\u8FC7\u4E86\uFF0C\u4F46\u58F0\u97F3\u8BBE\u5907\u8FD8\u6CA1\u8D77\u6765\uFF1A\u518D\u6309\u4E00\u6B21\uFF0C\u6216\u8005\u628A app \u5173\u6389\u91CD\u5F00"));
       });
-    } else if (v === "audio:primer") {
-      const on2 = !primerOn();
-      setPrimer(on2);
-      deviceKvSet(KV_PRIMER, on2 ? null : "0");
-      e10.target.closest("button").textContent = on2 ? _t("\u57AB\u811A\uFF1A\u5F00") : _t("\u57AB\u811A\uFF1A\u5173");
-    } else if (v === "feel:always") {
-      feelAlways = !feelAlways;
-      deviceKvSet(KV_FEEL_ALWAYS, feelAlways ? "1" : null);
-      diagNote("feel", `always-show ${feelAlways ? "on" : "off"}`);
-      e10.target.closest("button").textContent = feelAlways ? _t("\u663E\u793A\uFF1A\u5F00") : _t("\u663E\u793A\uFF1A\u5173");
     } else if (v === "diag:copy") void copyDiag(box.querySelector("#diagTxt"), info);
     else if (v === "diag:download") downloadDiag(info);
     else if (v === "diag:share") void shareDiag(info);
@@ -53603,7 +53608,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "f1ffee1873d5",
+  cssHash: "3b82df789426",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -57649,4 +57654,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a598ee088eab.mjs.map
+//# sourceMappingURL=moonsinger-5e6cb77480f7.mjs.map

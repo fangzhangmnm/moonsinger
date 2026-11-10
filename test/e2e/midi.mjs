@@ -51,11 +51,11 @@ let ns = await notes();
 check(ns.length === n0 + 2 && ns.slice(-2).join(" ") === "C4 C#4", "琴键写进谱：中央 C = C4、黑键在 C 大调里写 C♯", ns.join(" "));
 check((await p.evaluate(() => window.__aud.length)) >= 2, "写的时候也响", JSON.stringify(await p.evaluate(() => window.__aud)));
 
-// 单声（新歌默认小月相）：同时按两个 = 只写第一个
+// 单声（新歌默认小月相）：同时按两个 = 后按的算数（v0.16.77；以前是只写第一个）
 await p.evaluate(() => { window.__midi.on(64); window.__midi.on(67); }); await p.waitForTimeout(60);
 await p.evaluate(() => { window.__midi.off(64); window.__midi.off(67); }); await p.waitForTimeout(80);
 ns = await notes();
-check(ns.length === n0 + 3 && ns.at(-1) === "E4", "单声的声部同时按两个键 = 只写第一个（同 pad 的 50 ms 护栏）", ns.join(" "));
+check(ns.length === n0 + 3 && ns.at(-1) === "G4", "单声的声部同时按两个键 = 后按的算数、只写一个（同 pad 的 50 ms 护栏）", ns.join(" "));
 // 按住一个、隔开一会再按下一个（连奏）= 两个都写
 await p.evaluate(() => window.__midi.on(65)); await p.waitForTimeout(150); await p.evaluate(() => window.__midi.on(67)); await p.waitForTimeout(60);
 await p.evaluate(() => { window.__midi.off(65); window.__midi.off(67); }); await p.waitForTimeout(80);

@@ -18,7 +18,7 @@ const firstNote = () => p.evaluate(() => { const m = window.__moonsinger, s = m.
 const bigAbs = () => p.evaluate(() => document.querySelector(".pad-panel")?.classList.contains("big-abs"));
 const closeAll = async () => { await p.keyboard.press("Escape"); await p.waitForTimeout(120); await p.mouse.click(5, 300); await p.waitForTimeout(120); };
 const setView = async (v) => { await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card");
-  await p.click(`[data-v="view:${v}"]`); await p.waitForTimeout(250); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
+  await p.click('[data-tab="a11y"]'); await p.selectOption('[data-set="view"]', v); await p.waitForTimeout(250); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
 
 // ① 专业（默认）：C 调 = 淡「1=C」；键上大字音名
 check((await labels()) === "1=C~", "专业 + C 调：调号上方淡「1=C」", await labels());

@@ -19,7 +19,7 @@ const tags = () => p.$$eval("#score text.chord-tag", (ts) => ts.map((t) => t.tex
 const xs = () => p.evaluate(() => window.__moonsinger.layout().notes.map((n) => Math.round(n.x)).join(","));
 const x0 = await xs();
 const setChord = async (v) => { await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card");
-  await p.click(`[data-v="chord:${v}"]`); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(250); };
+  await p.click('[data-tab="a11y"]'); await p.selectOption('[data-set="chord"]', v); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(250); };
 check((await tags()) === "V7 I", "默认开 = G B D F 写 V7、C E G 写 I", await tags());
 await setChord("off");
 check((await tags()) === "" && (await xs()) === x0, "关 = 没了，音的位置一样（不动排版）", `${x0} / ${await xs()}`);
