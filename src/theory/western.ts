@@ -1,5 +1,6 @@
 // theory/western.ts —— 西方功能和声：认和弦 + 写成罗马数字级数（v0.16.11，辅助：和弦标级数）。纯函数，只给显示用：不进文件、不改谱。
 //   2026-11-09 起是乐理模块（src/theory/index.ts）里的一种理论（原 src/score/chord-name.ts，搬家没改认法；user「乐理引擎可以拆出一个单独的可热插拔的模块」）。
+//   v0.16.76（2026-11-09 Claude Fable 5.2）：只拿得到一小节（readBar）——前提「只看前面」写在 index.ts 文件头；「最后一个音是 la 就从 la 数」撤了（那要看完一段才知道）。
 // created 2026-11-07 by Claude Opus 5.5。user 11-07「你大概看得出来，是我根本看不懂我自己摸的和弦，摸出来是几级和弦，我脑袋根本转不过来」
 //   「和弦上标级数…我建议你写个深模块，不用麻烦音乐仓鼠吧，就你自己写，因为这个世界上和弦很多」「你这个和弦判断，你打算怎么判断？因为它很多和弦，它歧义很多的…
 //   换根音，还是挂二、挂四、十七、十三…还是说你其实根据调号判断就会比较准？」。
@@ -12,10 +13,9 @@
 // 写法：罗马数字 = 根音在调里是第几级（大写 = 大三度的和弦，小写 = 小三度的；调外的带 ♭ / ♯：B♭ 在 C 调 = ♭VII），后面跟这类和弦的记号（7 / maj7 / ° / ø7 / sus4…）；
 //   转位 = 「/」+ 最低音在调里是第几级（C/E 在 C 调 = I/3，同简谱的想法）。
 import { type Pitch, STEPS, midiOf, stepIndex, tonicStepIndex, keyAlter } from "../score/pitch.ts";
-import { WHOLE, beatTicks, type Token, type NoteTok } from "../score/song.ts";
-import { meterPositions } from "../score/groove.ts";
+import { WHOLE, beatTicks } from "../score/song.ts";
 import { _t } from "../i18n/index.ts";
-import type { HarmonyTheory, HarmonyGuess, HarmonyRead, TrackInput } from "./index.ts";
+import type { HarmonyTheory, HarmonyGuess, HarmonyRead, HarmonyTag, BarInput, ReadOpts } from "./index.ts";
 
 interface Tpl { id: string; iv: number[]; opt?: number[]; /** 缺三度（大小分不出来）：大写小写按调里这个根音上面的三度（v0.16.13，user 11-07 截图：A E G 没标）。 */ no3?: boolean; minor: boolean; /** 罗马数字后面写的（小写的已经说了小三度，不再写 m）。 */ rs: string; /** 和弦名（根音字母后面写的，点开看候选用）。 */ sym: string }
 /** 和弦表（半音，从根音数；opt = 可以省的音，一般是五度 / 九度）。顺序 = 简单的在前（同分时排前面的赢）。 */
@@ -67,9 +67,14 @@ export interface ChordGuess extends HarmonyGuess {
   /** 省掉了几个可省的音（缺三度也算一个）。 */ omitted: number;
   /** 缺三度：大小三和弦分不出来，大小写按调里的。 */ no3: boolean;
 }
-export type ChordRead = HarmonyRead<ChordGuess> & { /** 按哪个音为主数级数（按曲段认，v0.16.72）。没有 = do。 */ mode?: Mode };
-/** 以 do 为主（大调）还是以 la 为主（小调）。 */
+export type ChordRead = HarmonyRead<ChordGuess> & { /** 按哪个音为主数级数。没有 = do。 */ mode?: Mode };
+/** 以 do 为主（大调）还是以 la 为主（小调）。从 la 数的算法（degreeOf / readChord 的 mode 参数）留着、有测试；
+ *  但 v0.16.76 起**没有入口**：readBar 一律按 do 数（下面 MODE）。原因 = 「这一段是大调还是小调」要看完一段才知道，分析不猜（index.ts 文件头 ③）；
+ *  v0.16.72 的「最后一个音是 la 就从 la 数」撤了（AI 自己挑的认法；user 11-09「我直觉觉得不妥」）。
+ *  退场条件：等 user 定「以 la 为主由谁写明、写在哪」（愿望单 W-55）——定了，从 BarNote 带进 readBar；否了，这个参数连同测试一起删。 */
 export type Mode = "do" | "la";
+/** 现在一律从 do 数（和简谱的习惯一样：1 = do）。 */
+const MODE: Mode = "do";
 const ID = "western";
 
 /** 这个音在 fifths 那个调里是第几级（1–7）+ 比调里那个音高 / 低几个半音（拼法定）。 */
@@ -141,77 +146,66 @@ export const chordLabel = (r: HarmonyRead): string => r.ties.slice(0, 2).map((g)
 
 /** 分解和弦认得出的那几类（完整的三和弦 / 七和弦 / 挂留；加音、省音的不认——旋律里随便几个音凑出来的 add9 之类太多）。 */
 const BROKEN_OK = new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
-/** 分解和弦（v0.16.62 起；v0.16.65 改成按拍子的轻重一层一层看）。一条 track（一张纸的一个声部）里：
+type Tag = HarmonyTag<ChordRead>;
+/** 一小节里的分解和弦（v0.16.62 起；v0.16.65 改成按拍子的轻重一层一层看；v0.16.76 改成手里只有这一小节——index.ts「只看前面」）：
  *  ① 不跨小节（user 11-09「然后不跨小节」「如果用户没有输入articulation的话那么我们唯一知道的就是小节」）。
  *  ② 按拍子的轻重从粗到细看（user 11-09「其实不一定最优是正确的，有时候不应该牵强。而是得看节拍重音启发式的看」）：先看整小节是不是一个和弦；
  *     不是 = 对半切（拍数是双数时切在中间那个次强拍：4/4 第三拍、6/8 第二个大拍、12/8 第三个大拍），再不是 = 一拍一拍看；一拍里面不再往下切。
  *     切口只在拍上；认不出 = 不标，不挪切口去凑。一拍 = 符尾连杠用的那一拍（`beatTicks`：x/4 = 四分，3/8 6/8 9/8 12/8 = 附点四分），所以最细一层 = 符杠的一组；音归它开头那一拍。
- *  ③ 叠音的音不算进来（那里按叠音自己标）；一组认得出 = 至少三个不同的音、相邻的音全是跳进（≥ 小三度；同一个音重复不算级进）、
- *     认得出一个完整的基本和弦（BROKEN_OK、没省音）。没音高的（休止）跳过。
+ *  ③ 叠音的音不算进来（那里按叠音自己标）；连过来的音（不重新起音）也不算；一组认得出 = 至少三个不同的音、相邻的音全是跳进（≥ 小三度；同一个音重复不算级进）、
+ *     认得出一个完整的基本和弦（BROKEN_OK、没省音）。没音高的（休止）跳过。调 = 这一组第一个音那里的调号。
  *  ④ 级数标在一组第一个音下面；和前一组同一个和弦 = 不再标；中间隔着认不出的音 = 重新标。
- *  keyAt(i) = 第 i 个记号那里的调（几个升降号）。 */
-export function brokenChords(tokens: readonly Token[], keyAt: (index: number) => number, mode: Mode = "do"): { index: number; read: ChordRead }[] {
-  type N = { i: number; p: Pitch | null; stacked: boolean };
-  const bars = new Map<number, { nb: number; beats: N[][] }>();
-  for (const [i, m] of meterPositions(tokens)) {
-    const t = tokens[i] as NoteTok, beatLen = beatTicks(m.beats, m.beatType), nb = Math.max(1, Math.round((m.beats * WHOLE) / m.beatType / beatLen));
-    const bar = bars.get(m.bar) ?? { nb, beats: Array.from({ length: nb }, () => []) }; bars.set(m.bar, bar);
-    bar.beats[Math.min(nb - 1, Math.max(0, Math.floor(m.pos / beatLen + 1e-9)))].push({ i, p: t.pitch, stacked: !!t.chord?.length });
-  }
-  const out: { index: number; read: ChordRead }[] = [];
-  let prev = "";
+ *     prev = 前一组标的那行字（空 = 没有 / 被打断了）；上一小节的由 readBar 的 carry 带过来、这一小节的交回去。它只记「刚才标过什么」。
+ *  这一小节还在写的时候，读法会跟着往里填音而变（整小节 → 半小节 → 一拍）；小节写过去了就不再变。 */
+function brokenInBar(bar: BarInput, prev: string, mode: Mode): { tags: Tag[]; prev: string } {
+  type N = { i: number; p: Pitch | null; stacked: boolean; fifths: number };
+  const beatLen = beatTicks(bar.beats, bar.beatType), nb = Math.max(1, Math.round((bar.beats * WHOLE) / bar.beatType / beatLen));
+  const beats: N[][] = Array.from({ length: nb }, () => []);
+  for (const n of bar.notes) if (!n.tie) beats[Math.min(nb - 1, Math.max(0, Math.floor(n.pos / beatLen + 1e-9)))].push({ i: n.index, p: n.tok.pitch, stacked: !!n.tok.chord?.length, fifths: n.fifths });
+  const tags: Tag[] = [];
   /** 这几个音是不是一组分解和弦（认得出 = 读法，认不出 = null）。 */
   const groupOf = (ns: N[]): ChordRead | null => {
-    const ps = ns.filter((n) => n.p && !n.stacked).map((n) => n.p!);
+    const us = ns.filter((n) => n.p && !n.stacked), ps = us.map((n) => n.p!);
     if (new Set(ps.map(pc)).size < 3) return null;
     for (let k = 1; k < ps.length; k++) { const d = Math.abs(midiOf(ps[k]) - midiOf(ps[k - 1])); if (d === 1 || d === 2) return null; }
-    const rd = readChord(ps, keyAt(ns.find((n) => n.p && !n.stacked)!.i), mode);
+    const rd = readChord(ps, us[0].fifths, mode);
     return rd && rd.best.omitted === 0 && BROKEN_OK.has(rd.best.tpl) ? rd : null;
   };
   /** 看拍 [b0, b1)：整段认得出就标；不然按轻重往下切（双数拍对半、单数拍一拍一拍），一拍认不出就算了。 */
-  const look = (beats: N[][], b0: number, b1: number): void => {
+  const look = (b0: number, b1: number): void => {
     const ns = beats.slice(b0, b1).flat();
     if (!ns.some((n) => n.p && !n.stacked)) return;   // 只有休止 / 叠音：不标、也不打断
     const rd = groupOf(ns);
     if (rd) {
       const label = chordLabel(rd);
-      if (label !== prev) out.push({ index: ns.find((n) => n.p && !n.stacked)!.i, read: rd });
+      if (label !== prev) tags.push({ index: ns.find((n) => n.p && !n.stacked)!.i, read: rd });
       prev = label; return;
     }
     const len = b1 - b0;
     if (len === 1) { prev = ""; return; }
-    if (len % 2 === 0 && len > 2) { const mid = b0 + len / 2; look(beats, b0, mid); look(beats, mid, b1); return; }
-    for (let b = b0; b < b1; b++) look(beats, b, b + 1);
+    if (len % 2 === 0 && len > 2) { const mid = b0 + len / 2; look(b0, mid); look(mid, b1); return; }
+    for (let b = b0; b < b1; b++) look(b, b + 1);
   };
-  for (const bar of [...bars.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1])) look(bar.beats, 0, bar.nb);
-  return out;
+  look(0, nb);
+  return { tags, prev };
 }
 
-/** 一条 track 要标的音：叠音的和弦（每个叠音各自认）+ 分解和弦（brokenChords）。叠音的音不进分解和弦，两路不会撞在同一个音上。 */
-function tagsOf(track: TrackInput): { index: number; read: ChordRead }[] {
-  const { tokens, keyAt } = track, mode = modeOf(tokens, keyAt), out: { index: number; read: ChordRead }[] = [];
-  tokens.forEach((t, i) => { if (t.kind === "note" && t.pitch && t.chord?.length) { const rd = readChord([t.pitch, ...t.chord], keyAt(i), mode); if (rd) out.push({ index: i, read: rd }); } });
-  return track.broken === false ? out : [...out, ...brokenChords(tokens, keyAt, mode)];   // 声部开关「不认分解和弦」（v0.16.73）：叠音照旧标
-}
-/** 按曲段认大调 / 小调（v0.16.72，user 11-09「按曲段认乐理同意」「我还是希望它的局域性好一点，所以说可能还是每个声部单独做吧」）：
- *  一条 track（这个曲段里的这个声部）自己判，不看别的声部：最后一个有音高的音（叠音取最低的）是 la = 以 la 为主（小调），不然 = 以 do 为主。
- *  只看这一个音，规矩一句话说得清；判错了（大调停在 la 上）照样能看出来——点开候选顶上写着为什么。 */
-export function modeOf(tokens: readonly Token[], keyAt: (index: number) => number): Mode {
-  for (let i = tokens.length - 1; i >= 0; i--) {
-    const t = tokens[i]; if (t.kind !== "note" || !t.pitch) continue;
-    const low = [t.pitch, ...(t.chord ?? [])].reduce((a, b) => (midiOf(b) < midiOf(a) ? b : a));
-    const d = degreeOf(low, keyAt(i));
-    return d.deg === 6 && d.acc === 0 ? "la" : "do";
-  }
-  return "do";
+/** 交给下一小节的东西：只有「分解和弦刚才标的那行字」（同一个和弦不重标）。别的不带——尤其不带「这首歌 / 这一段是什么调式」这一类（index.ts 文件头 ③）。 */
+interface Carry { prev: string }
+/** 读一小节：叠音的和弦（每个叠音各自认，连过来的也标）+ 分解和弦（brokenInBar；声部开关「不认」= 不做，v0.16.73）。叠音的音不进分解和弦，两路不会撞在同一个音上。 */
+function readBar(bar: BarInput, carry: unknown, opts: ReadOpts): { tags: Tag[]; carry: Carry } {
+  const tags: Tag[] = [];
+  for (const n of bar.notes) { const t = n.tok; if (t.pitch && t.chord?.length) { const rd = readChord([t.pitch, ...t.chord], n.fifths, MODE); if (rd) tags.push({ index: n.index, read: rd }); } }
+  let prev = (carry as Carry | undefined)?.prev ?? "";
+  if (opts.broken) { const b = brokenInBar(bar, prev, MODE); tags.push(...b.tags); prev = b.prev; }
+  return { tags: tags.sort((a, b) => a.index - b.index), carry: { prev } };
 }
 /** 这一种理论的门面（src/theory/index.ts HarmonyTheory）。 */
 export const western: HarmonyTheory = {
   id: ID,
-  tagsOf,
+  readBar,
   label: chordLabel,
-  howTo: (read) => _t("怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。") +
-    ((read as ChordRead | undefined)?.mode === "la" ? " " + _t("这一段这个声部最后一个音是 la，所以按以 la 为主（小调）数级数：la 的和弦 = i。") : ""),
+  howTo: () => _t("怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。"),
   explain: (guess) => {
     const g = guess as ChordGuess;
     return [g.root.step !== g.bass.step || g.root.alter !== g.bass.alter ? _t("转位（最低音不是根音）") : "", g.no3 ? _t("没有三度：大三和弦还是小三和弦分不出来，按这个调里的写") : "", g.omitted - (g.no3 ? 1 : 0) > 0 ? _t("省了 {n} 个音", { n: g.omitted - (g.no3 ? 1 : 0) }) : ""].filter(Boolean);

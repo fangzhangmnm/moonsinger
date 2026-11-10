@@ -4532,7 +4532,6 @@ var S = {
   "\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u4E86\uFF08{done} / {total}\uFF09": { en: "Songs saved offline were uploaded ({done} / {total})" },
   "\u6B63\u5728\u628A\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u2026 {done} / {total}": { en: "Uploading songs saved offline\u2026 {done} / {total}" },
   "\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002": { en: "How it is read: chords that are complete (nothing left out) win \u2192 the lowest note as root wins \u2192 a root inside this key wins \u2192 simpler chords win. When two tie, both are written on the score." },
-  "\u8FD9\u4E00\u6BB5\u8FD9\u4E2A\u58F0\u90E8\u6700\u540E\u4E00\u4E2A\u97F3\u662F la\uFF0C\u6240\u4EE5\u6309\u4EE5 la \u4E3A\u4E3B\uFF08\u5C0F\u8C03\uFF09\u6570\u7EA7\u6570\uFF1Ala \u7684\u548C\u5F26 = i\u3002": { en: "This part ends on la in this section, so degrees are counted from la (minor): the la chord = i." },
   "\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09": { en: "Inversion (the lowest note is not the root)" },
   "\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199": { en: "No third: major or minor can\u2019t be told apart, so it follows this key" },
   "\u7701\u4E86 {n} \u4E2A\u97F3": { en: "{n|note|notes} left out" },
@@ -5075,7 +5074,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.75-2026-11-09";
+var APP_VERSION = "v0.16.76-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5218,6 +5217,57 @@ function initPwaShell(opts) {
   return { isDevRoute, reload, forceReset, clearOwnShell, checkForUpdate };
 }
 
+// src/score/paper.ts
+var STAFF_MM = 7;
+var STAFF_MM_COMPACT = 5;
+var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u8C31\u5927\u3001\u97F3\u8DDD\u6B63\u5E38\uFF1A\u6478\u4E3B\u65CB\u5F8B\u3001\u5199\u6B4C\u8BCD") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u8C31\u5C0F\u3001\u97F3\u8DDD\u7D27\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1A\u914D\u5668\uFF1B\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57") }];
+var densityOf = (p2) => p2.density ?? "cozy";
+var staffMmOf = (p2) => p2.staffMm ?? (densityOf(p2) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
+var spMm = (p2) => staffMmOf(p2) / 4;
+var textScaleOf = (p2) => STAFF_MM / staffMmOf(p2);
+var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
+var PAPER_KINDS = ["A3L", "A4", "A5", "A6"];
+var DEFAULT_PAPER = "A5";
+var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09"), A6: _t("\u53E3\u888B\u672C") };
+var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
+function paperOf(kind, density = "cozy") {
+  const s10 = SIZES[kind];
+  return { kind, widthMm: s10.w, heightMm: s10.h, marginMm: { l: s10.m, r: s10.m, t: s10.m, b: s10.m }, ...density === "compact" ? { density } : {} };
+}
+var lineSp = (p2) => (p2.widthMm - p2.marginMm.l - p2.marginMm.r) / spMm(p2);
+var pageGeoOf = (p2) => {
+  const mm = spMm(p2), m2 = p2.marginMm;
+  return { h: p2.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm };
+};
+function detectPaper(widthMm, heightMm, marginMm, staffMm = STAFF_MM, density = "cozy") {
+  const near2 = (a10, b3) => Math.abs(a10 - b3) <= 2;
+  const kind = PAPER_KINDS.find((k2) => near2(widthMm, SIZES[k2].w) && near2(heightMm, SIZES[k2].h));
+  const want = density === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
+  const extra = { ...density === "compact" ? { density } : {}, ...Math.abs(staffMm - want) < 0.05 ? {} : { staffMm: +staffMm.toFixed(2) } };
+  return kind ? { ...paperOf(kind), marginMm, ...extra } : { kind: "other", widthMm, heightMm, marginMm, ...extra };
+}
+var paperSizeText = (p2) => `${Math.round(p2.widthMm)} \xD7 ${Math.round(p2.heightMm)} mm`;
+
+// src/keyboard/latch.ts
+var DOUBLE_TAP_MS = 350;
+var LATCH_OFF = { mode: "off", at: 0, held: false, wrote: false, left: 0 };
+function latchDown(l10, now2, uses = 1) {
+  const mode = l10.mode === "off" ? "once" : l10.mode === "once" && now2 - l10.at < DOUBLE_TAP_MS ? "lock" : "off";
+  return { mode, at: now2, held: true, wrote: false, left: mode === "once" ? uses : 0 };
+}
+function latchUp(l10) {
+  if (!l10.held) return l10;
+  return l10.wrote && l10.mode !== "lock" ? { ...LATCH_OFF, at: l10.at } : { ...l10, held: false };
+}
+var latchTap = (l10, now2, uses = 1) => latchUp(latchDown(l10, now2, uses));
+function latchWrite(l10) {
+  if (l10.held) return l10.wrote ? l10 : { ...l10, wrote: true };
+  if (l10.mode === "once") return l10.left <= 1 ? { ...LATCH_OFF, at: l10.at } : { ...l10, left: l10.left - 1 };
+  return l10;
+}
+var latchCancel = (l10) => l10.mode === "once" ? { ...LATCH_OFF, at: l10.at, held: l10.held } : l10;
+var latchOn = (l10) => l10.mode !== "off";
+
 // src/score/pitch.ts
 var STEPS = ["C", "D", "E", "F", "G", "A", "B"];
 var STEP_SEMI = [0, 2, 4, 5, 7, 9, 11];
@@ -5297,57 +5347,6 @@ function pitchName(p2) {
   return `${p2.step}${p2.alter > 0 ? "#".repeat(p2.alter) : "b".repeat(-p2.alter)}${p2.octave}`;
 }
 var KEY_LABEL = { [-7]: "C\u266D", [-6]: "G\u266D", [-5]: "D\u266D", [-4]: "A\u266D", [-3]: "E\u266D", [-2]: "B\u266D", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F\u266F", 7: "C\u266F" };
-
-// src/score/paper.ts
-var STAFF_MM = 7;
-var STAFF_MM_COMPACT = 5;
-var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u8C31\u5927\u3001\u97F3\u8DDD\u6B63\u5E38\uFF1A\u6478\u4E3B\u65CB\u5F8B\u3001\u5199\u6B4C\u8BCD") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u8C31\u5C0F\u3001\u97F3\u8DDD\u7D27\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1A\u914D\u5668\uFF1B\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57") }];
-var densityOf = (p2) => p2.density ?? "cozy";
-var staffMmOf = (p2) => p2.staffMm ?? (densityOf(p2) === "compact" ? STAFF_MM_COMPACT : STAFF_MM);
-var spMm = (p2) => staffMmOf(p2) / 4;
-var textScaleOf = (p2) => STAFF_MM / staffMmOf(p2);
-var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
-var PAPER_KINDS = ["A3L", "A4", "A5", "A6"];
-var DEFAULT_PAPER = "A5";
-var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09"), A6: _t("\u53E3\u888B\u672C") };
-var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
-function paperOf(kind, density = "cozy") {
-  const s10 = SIZES[kind];
-  return { kind, widthMm: s10.w, heightMm: s10.h, marginMm: { l: s10.m, r: s10.m, t: s10.m, b: s10.m }, ...density === "compact" ? { density } : {} };
-}
-var lineSp = (p2) => (p2.widthMm - p2.marginMm.l - p2.marginMm.r) / spMm(p2);
-var pageGeoOf = (p2) => {
-  const mm = spMm(p2), m2 = p2.marginMm;
-  return { h: p2.heightMm / mm, l: m2.l / mm, r: m2.r / mm, t: m2.t / mm, b: m2.b / mm };
-};
-function detectPaper(widthMm, heightMm, marginMm, staffMm = STAFF_MM, density = "cozy") {
-  const near2 = (a10, b3) => Math.abs(a10 - b3) <= 2;
-  const kind = PAPER_KINDS.find((k2) => near2(widthMm, SIZES[k2].w) && near2(heightMm, SIZES[k2].h));
-  const want = density === "compact" ? STAFF_MM_COMPACT : STAFF_MM;
-  const extra = { ...density === "compact" ? { density } : {}, ...Math.abs(staffMm - want) < 0.05 ? {} : { staffMm: +staffMm.toFixed(2) } };
-  return kind ? { ...paperOf(kind), marginMm, ...extra } : { kind: "other", widthMm, heightMm, marginMm, ...extra };
-}
-var paperSizeText = (p2) => `${Math.round(p2.widthMm)} \xD7 ${Math.round(p2.heightMm)} mm`;
-
-// src/keyboard/latch.ts
-var DOUBLE_TAP_MS = 350;
-var LATCH_OFF = { mode: "off", at: 0, held: false, wrote: false, left: 0 };
-function latchDown(l10, now2, uses = 1) {
-  const mode = l10.mode === "off" ? "once" : l10.mode === "once" && now2 - l10.at < DOUBLE_TAP_MS ? "lock" : "off";
-  return { mode, at: now2, held: true, wrote: false, left: mode === "once" ? uses : 0 };
-}
-function latchUp(l10) {
-  if (!l10.held) return l10;
-  return l10.wrote && l10.mode !== "lock" ? { ...LATCH_OFF, at: l10.at } : { ...l10, held: false };
-}
-var latchTap = (l10, now2, uses = 1) => latchUp(latchDown(l10, now2, uses));
-function latchWrite(l10) {
-  if (l10.held) return l10.wrote ? l10 : { ...l10, wrote: true };
-  if (l10.mode === "once") return l10.left <= 1 ? { ...LATCH_OFF, at: l10.at } : { ...l10, left: l10.left - 1 };
-  return l10;
-}
-var latchCancel = (l10) => l10.mode === "once" ? { ...LATCH_OFF, at: l10.at, held: l10.held } : l10;
-var latchOn = (l10) => l10.mode !== "off";
 
 // src/score/repeats.ts
 function tickOf(tokens) {
@@ -8439,7 +8438,7 @@ function grooveTable(s10, beats, beatType) {
   const c10 = s10.fallback === "classical" ? classicalWeights(beats, beatType) : null;
   return c10 ? { ...c10, bars: 1, derived: true } : null;
 }
-function meterPositions(tokens, bounds = [0]) {
+function meterPositions(tokens, bounds = [0], withTies = false) {
   const out = /* @__PURE__ */ new Map(), starts = new Set(bounds);
   let time = { ...DEFAULT_TIME }, len = time.beats * WHOLE / time.beatType, inBar = 0, measureNo = 0, first = [];
   tokens.forEach((t10, i10) => {
@@ -8473,8 +8472,8 @@ function meterPositions(tokens, bounds = [0]) {
       inBar -= len;
       measureNo++;
     }
-    if (t10.kind === "note" && !t10.tie) {
-      out.set(i10, { pos: inBar, ...time, bar: measureNo });
+    if (t10.kind === "note" && (withTies || !t10.tie)) {
+      out.set(i10, { pos: inBar, ...time, bar: measureNo, ...t10.tie ? { tie: true } : {} });
       if (measureNo === 0) first.push(i10);
     }
     inBar += t10.dur;
@@ -8613,6 +8612,7 @@ var TPLS = [
 var ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
 var ACC = (a10) => a10 === 0 ? "" : a10 > 0 ? "\u266F".repeat(a10) : "\u266D".repeat(-a10);
 var pc = (p2) => (midiOf(p2) % 12 + 12) % 12;
+var MODE = "do";
 var ID = "western";
 function degreeOf(p2, fifths, mode = "do") {
   const deg = ((stepIndex(p2.step) - tonicStepIndex(fifths)) % 7 + 7) % 7, acc = p2.alter - keyAlter(p2.step, fifths);
@@ -8670,33 +8670,28 @@ function thirdDyad(ps, fifths, mode) {
 }
 var chordLabel = (r10) => r10.ties.slice(0, 2).map((g3) => g3.label).join(" / ");
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
-function brokenChords(tokens, keyAt2, mode = "do") {
-  const bars = /* @__PURE__ */ new Map();
-  for (const [i10, m2] of meterPositions(tokens)) {
-    const t10 = tokens[i10], beatLen = beatTicks(m2.beats, m2.beatType), nb2 = Math.max(1, Math.round(m2.beats * WHOLE / m2.beatType / beatLen));
-    const bar2 = bars.get(m2.bar) ?? { nb: nb2, beats: Array.from({ length: nb2 }, () => []) };
-    bars.set(m2.bar, bar2);
-    bar2.beats[Math.min(nb2 - 1, Math.max(0, Math.floor(m2.pos / beatLen + 1e-9)))].push({ i: i10, p: t10.pitch, stacked: !!t10.chord?.length });
-  }
-  const out = [];
-  let prev = "";
+function brokenInBar(bar2, prev, mode) {
+  const beatLen = beatTicks(bar2.beats, bar2.beatType), nb2 = Math.max(1, Math.round(bar2.beats * WHOLE / bar2.beatType / beatLen));
+  const beats = Array.from({ length: nb2 }, () => []);
+  for (const n10 of bar2.notes) if (!n10.tie) beats[Math.min(nb2 - 1, Math.max(0, Math.floor(n10.pos / beatLen + 1e-9)))].push({ i: n10.index, p: n10.tok.pitch, stacked: !!n10.tok.chord?.length, fifths: n10.fifths });
+  const tags = [];
   const groupOf = (ns2) => {
-    const ps = ns2.filter((n10) => n10.p && !n10.stacked).map((n10) => n10.p);
+    const us = ns2.filter((n10) => n10.p && !n10.stacked), ps = us.map((n10) => n10.p);
     if (new Set(ps.map(pc)).size < 3) return null;
     for (let k2 = 1; k2 < ps.length; k2++) {
       const d3 = Math.abs(midiOf(ps[k2]) - midiOf(ps[k2 - 1]));
       if (d3 === 1 || d3 === 2) return null;
     }
-    const rd2 = readChord(ps, keyAt2(ns2.find((n10) => n10.p && !n10.stacked).i), mode);
+    const rd2 = readChord(ps, us[0].fifths, mode);
     return rd2 && rd2.best.omitted === 0 && BROKEN_OK.has(rd2.best.tpl) ? rd2 : null;
   };
-  const look = (beats, b0, b1) => {
+  const look = (b0, b1) => {
     const ns2 = beats.slice(b0, b1).flat();
     if (!ns2.some((n10) => n10.p && !n10.stacked)) return;
     const rd2 = groupOf(ns2);
     if (rd2) {
       const label = chordLabel(rd2);
-      if (label !== prev) out.push({ index: ns2.find((n10) => n10.p && !n10.stacked).i, read: rd2 });
+      if (label !== prev) tags.push({ index: ns2.find((n10) => n10.p && !n10.stacked).i, read: rd2 });
       prev = label;
       return;
     }
@@ -8707,40 +8702,37 @@ function brokenChords(tokens, keyAt2, mode = "do") {
     }
     if (len % 2 === 0 && len > 2) {
       const mid = b0 + len / 2;
-      look(beats, b0, mid);
-      look(beats, mid, b1);
+      look(b0, mid);
+      look(mid, b1);
       return;
     }
-    for (let b3 = b0; b3 < b1; b3++) look(beats, b3, b3 + 1);
+    for (let b3 = b0; b3 < b1; b3++) look(b3, b3 + 1);
   };
-  for (const bar2 of [...bars.entries()].sort((a10, b3) => a10[0] - b3[0]).map((e10) => e10[1])) look(bar2.beats, 0, bar2.nb);
-  return out;
+  look(0, nb2);
+  return { tags, prev };
 }
-function tagsOf(track) {
-  const { tokens, keyAt: keyAt2 } = track, mode = modeOf(tokens, keyAt2), out = [];
-  tokens.forEach((t10, i10) => {
-    if (t10.kind === "note" && t10.pitch && t10.chord?.length) {
-      const rd2 = readChord([t10.pitch, ...t10.chord], keyAt2(i10), mode);
-      if (rd2) out.push({ index: i10, read: rd2 });
+function readBar(bar2, carry, opts) {
+  const tags = [];
+  for (const n10 of bar2.notes) {
+    const t10 = n10.tok;
+    if (t10.pitch && t10.chord?.length) {
+      const rd2 = readChord([t10.pitch, ...t10.chord], n10.fifths, MODE);
+      if (rd2) tags.push({ index: n10.index, read: rd2 });
     }
-  });
-  return track.broken === false ? out : [...out, ...brokenChords(tokens, keyAt2, mode)];
-}
-function modeOf(tokens, keyAt2) {
-  for (let i10 = tokens.length - 1; i10 >= 0; i10--) {
-    const t10 = tokens[i10];
-    if (t10.kind !== "note" || !t10.pitch) continue;
-    const low = [t10.pitch, ...t10.chord ?? []].reduce((a10, b3) => midiOf(b3) < midiOf(a10) ? b3 : a10);
-    const d3 = degreeOf(low, keyAt2(i10));
-    return d3.deg === 6 && d3.acc === 0 ? "la" : "do";
   }
-  return "do";
+  let prev = carry?.prev ?? "";
+  if (opts.broken) {
+    const b3 = brokenInBar(bar2, prev, MODE);
+    tags.push(...b3.tags);
+    prev = b3.prev;
+  }
+  return { tags: tags.sort((a10, b3) => a10.index - b3.index), carry: { prev } };
 }
 var western = {
   id: ID,
-  tagsOf,
+  readBar,
   label: chordLabel,
-  howTo: (read) => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002") + (read?.mode === "la" ? " " + _t("\u8FD9\u4E00\u6BB5\u8FD9\u4E2A\u58F0\u90E8\u6700\u540E\u4E00\u4E2A\u97F3\u662F la\uFF0C\u6240\u4EE5\u6309\u4EE5 la \u4E3A\u4E3B\uFF08\u5C0F\u8C03\uFF09\u6570\u7EA7\u6570\uFF1Ala \u7684\u548C\u5F26 = i\u3002") : ""),
+  howTo: () => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002"),
   explain: (guess) => {
     const g3 = guess;
     return [g3.root.step !== g3.bass.step || g3.root.alter !== g3.bass.alter ? _t("\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09") : "", g3.no3 ? _t("\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199") : "", g3.omitted - (g3.no3 ? 1 : 0) > 0 ? _t("\u7701\u4E86 {n} \u4E2A\u97F3", { n: g3.omitted - (g3.no3 ? 1 : 0) }) : ""].filter(Boolean);
@@ -8751,6 +8743,32 @@ var western = {
 var THEORIES = { [western.id]: western };
 var DEFAULT_THEORY = western.id;
 var harmonyTheory = (id2 = DEFAULT_THEORY) => THEORIES[id2] ?? THEORIES[DEFAULT_THEORY];
+function barsOf(tokens) {
+  const at2 = meterPositions(tokens, [0], true), bars = [];
+  let fifths = DEFAULT_KEY;
+  tokens.forEach((t10, i10) => {
+    if (t10.kind === "key") {
+      fifths = t10.fifths;
+      return;
+    }
+    const m2 = at2.get(i10);
+    if (!m2 || t10.kind !== "note") return;
+    let bar2 = bars[bars.length - 1];
+    if (!bar2 || bar2.no !== m2.bar) bars.push(bar2 = { no: m2.bar, beats: m2.beats, beatType: m2.beatType, notes: [] });
+    bar2.notes.push({ index: i10, tok: t10, pos: m2.pos, fifths, ...m2.tie ? { tie: true } : {} });
+  });
+  return bars;
+}
+function harmonyTags(theory, track) {
+  const out = [], opts = { broken: track.broken !== false };
+  let carry;
+  for (const bar2 of barsOf(track.tokens)) {
+    const r10 = theory.readBar(bar2, carry, opts);
+    out.push(...r10.tags);
+    carry = r10.carry;
+  }
+  return out;
+}
 
 // src/score/arrange.ts
 var REP = /^(?:[×xX*])(\d+)/;
@@ -12841,7 +12859,7 @@ function engrave(song, o10) {
       });
       if (o10.chordTags && !v2 && !q2.vrt) later[10].push(() => {
         const fs = tx2("chord-tag");
-        const theory = harmonyTheory(), tagged = new Map(theory.tagsOf({ tokens, keyAt: (i10) => keyAt(tokens, i10), broken: song.parts.find((x2) => x2.id === q2.p.id)?.brokenChords !== false }).map((x2) => [x2.index, x2.read]));
+        const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: song.parts.find((x2) => x2.id === q2.p.id)?.brokenChords !== false }).map((x2) => [x2.index, x2.read]));
         for (const c10 of units) {
           if (c10.kind !== "chunk" || !c10.note || c10.j !== 0 || c10.index < 0 || c10.pad) continue;
           const t10 = tokens[c10.index];
@@ -29619,15 +29637,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-04993f1df9a2.mjs");
+      return pick(() => "singer-worker-b2b99a90e0a8.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-8354b43b185f.mjs");
+      return pick(() => "layout-worker-53a97c2f48cd.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-c038c319ae86.mjs");
+      return pick(() => "encode-worker-6d4222e3d0e0.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -39114,7 +39132,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "329ff8df3a809c8c" : "dev";
+var CORE_HASH = true ? "fcfadaf0150f09c0" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -57589,4 +57607,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-20602d2f054e.mjs.map
+//# sourceMappingURL=moonsinger-ce416e915da3.mjs.map

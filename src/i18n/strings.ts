@@ -1818,7 +1818,6 @@ export const S = {
   "离线时存的歌推上云了（{done} / {total}）": { en: "Songs saved offline were uploaded ({done} / {total})" },
   "正在把离线时存的歌推上云… {done} / {total}": { en: "Uploading songs saved offline… {done} / {total}" },
   "怎么认的：凑得成完整和弦的优先（不省音）→ 最低音当根音的优先 → 根音在这个调里的优先 → 简单的优先。打平的两个都写在谱上。": { en: "How it is read: chords that are complete (nothing left out) win → the lowest note as root wins → a root inside this key wins → simpler chords win. When two tie, both are written on the score." },
-  "这一段这个声部最后一个音是 la，所以按以 la 为主（小调）数级数：la 的和弦 = i。": { en: "This part ends on la in this section, so degrees are counted from la (minor): the la chord = i." },
   "转位（最低音不是根音）": { en: "Inversion (the lowest note is not the root)" },
   "没有三度：大三和弦还是小三和弦分不出来，按这个调里的写": { en: "No third: major or minor can’t be told apart, so it follows this key" },
   "省了 {n} 个音": { en: "{n|note|notes} left out" },

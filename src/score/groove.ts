@@ -78,9 +78,10 @@ export function grooveTable(s: GrooveStyle, beats: number, beatType: number): { 
 
 /** 每个音头（不含连过来的音）在小节里的位置（tick）+ 那里的拍号。bounds = 纸界（每张纸各自从头数，同画谱）。规则同 engrave unitsOf：
  *  人插的「|」/ 拍号变 = 新的一小节；写满一小节 = 自动小节线；每张纸的第一小节还没写满就碰到「|」= 弱起——位置按小节尾对齐（弱起的那一拍是最后一拍）。 */
-export function meterPositions(tokens: readonly Token[], bounds: readonly number[] = [0]): Map<number, { pos: number; beats: number; beatType: number; bar: number; pickup?: true }> {
+/** withTies（v0.16.76）：接着前面连过来的音（不重新起音）也给位置，带 tie 记号——乐理模块按小节读谱时要（叠音的和弦连过小节线照样标）；拍子轻重那边不要（没给 = 不带）。 */
+export function meterPositions(tokens: readonly Token[], bounds: readonly number[] = [0], withTies = false): Map<number, { pos: number; beats: number; beatType: number; bar: number; pickup?: true; tie?: true }> {
   // bar = 这张纸里第几小节（0 起；有弱起时弱起是第 0 小节、第一个整小节是第 1 小节）；pickup = 弱起的音。两小节一轮的风格按 bar 数单双
-  const out = new Map<number, { pos: number; beats: number; beatType: number; bar: number; pickup?: true }>(), starts = new Set(bounds);
+  const out = new Map<number, { pos: number; beats: number; beatType: number; bar: number; pickup?: true; tie?: true }>(), starts = new Set(bounds);
   let time = { ...DEFAULT_TIME }, len = (time.beats * WHOLE) / time.beatType, inBar = 0, measureNo = 0, first: number[] = [];
   tokens.forEach((t, i) => {
     if (starts.has(i)) { inBar = 0; measureNo = 0; first = []; }
@@ -91,7 +92,7 @@ export function meterPositions(tokens: readonly Token[], bounds: readonly number
     if (t.kind === "time") { if (inBar > 0) { inBar = 0; measureNo++; } time = { beats: t.beats, beatType: t.beatType }; len = (t.beats * WHOLE) / t.beatType; return; }
     if (!isTimed(t)) return;
     while (inBar >= len && inBar > 0) { inBar -= len; measureNo++; }
-    if (t.kind === "note" && !t.tie) { out.set(i, { pos: inBar, ...time, bar: measureNo }); if (measureNo === 0) first.push(i); }
+    if (t.kind === "note" && (withTies || !t.tie)) { out.set(i, { pos: inBar, ...time, bar: measureNo, ...(t.tie ? { tie: true as const } : {}) }); if (measureNo === 0) first.push(i); }
     inBar += t.dur;
   });
   return out;

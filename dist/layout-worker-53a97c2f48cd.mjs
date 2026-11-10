@@ -2102,7 +2102,6 @@ var S = {
   "\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u4E86\uFF08{done} / {total}\uFF09": { en: "Songs saved offline were uploaded ({done} / {total})" },
   "\u6B63\u5728\u628A\u79BB\u7EBF\u65F6\u5B58\u7684\u6B4C\u63A8\u4E0A\u4E91\u2026 {done} / {total}": { en: "Uploading songs saved offline\u2026 {done} / {total}" },
   "\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002": { en: "How it is read: chords that are complete (nothing left out) win \u2192 the lowest note as root wins \u2192 a root inside this key wins \u2192 simpler chords win. When two tie, both are written on the score." },
-  "\u8FD9\u4E00\u6BB5\u8FD9\u4E2A\u58F0\u90E8\u6700\u540E\u4E00\u4E2A\u97F3\u662F la\uFF0C\u6240\u4EE5\u6309\u4EE5 la \u4E3A\u4E3B\uFF08\u5C0F\u8C03\uFF09\u6570\u7EA7\u6570\uFF1Ala \u7684\u548C\u5F26 = i\u3002": { en: "This part ends on la in this section, so degrees are counted from la (minor): the la chord = i." },
   "\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09": { en: "Inversion (the lowest note is not the root)" },
   "\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199": { en: "No third: major or minor can\u2019t be told apart, so it follows this key" },
   "\u7701\u4E86 {n} \u4E2A\u97F3": { en: "{n|note|notes} left out" },
@@ -2586,14 +2585,6 @@ function effectivePitch(tokens, i) {
   return prevPitch(tokens, i) ?? HOME;
 }
 var allPitches = (t) => t.pitch ? [t.pitch, ...t.chord ?? []] : [];
-function keyAt(tokens, i) {
-  let f = DEFAULT_KEY;
-  for (let j = 0; j < i && j < tokens.length; j++) {
-    const t = tokens[j];
-    if (t.kind === "key") f = t.fifths;
-  }
-  return f;
-}
 function tempoAt(tokens, i) {
   let v = DEFAULT_BPM;
   for (let j = 0; j < i && j < tokens.length; j++) {
@@ -3580,7 +3571,7 @@ var grooveNameEn = (style) => {
 var grooveLabel = (t) => `Style: ${grooveNameEn(t.style)}${t.shift && grooveHasPhase(grooveStyle(t.style)) ? " 2-3" : ""}${t.amount !== void 0 && t.amount !== 1 && t.style !== "none" ? ` \xD7${t.amount}` : ""}`;
 var grooveHasPhase = (s2) => !!s2 && Object.values(s2.meters).some((m) => (m.bars ?? 1) > 1);
 var BEAT_NO = [_t("\u4E00"), _t("\u4E8C"), _t("\u4E09"), _t("\u56DB"), _t("\u4E94"), _t("\u516D"), _t("\u4E03"), _t("\u516B"), _t("\u4E5D"), _t("\u5341"), _t("\u5341\u4E00"), _t("\u5341\u4E8C")];
-function meterPositions(tokens, bounds = [0]) {
+function meterPositions(tokens, bounds = [0], withTies = false) {
   const out = /* @__PURE__ */ new Map(), starts = new Set(bounds);
   let time = { ...DEFAULT_TIME }, len = time.beats * WHOLE / time.beatType, inBar = 0, measureNo = 0, first = [];
   tokens.forEach((t, i) => {
@@ -3614,8 +3605,8 @@ function meterPositions(tokens, bounds = [0]) {
       inBar -= len;
       measureNo++;
     }
-    if (t.kind === "note" && !t.tie) {
-      out.set(i, { pos: inBar, ...time, bar: measureNo });
+    if (t.kind === "note" && (withTies || !t.tie)) {
+      out.set(i, { pos: inBar, ...time, bar: measureNo, ...t.tie ? { tie: true } : {} });
       if (measureNo === 0) first.push(i);
     }
     inBar += t.dur;
@@ -4534,6 +4525,7 @@ var TPLS = [
 var ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
 var ACC = (a) => a === 0 ? "" : a > 0 ? "\u266F".repeat(a) : "\u266D".repeat(-a);
 var pc = (p) => (midiOf(p) % 12 + 12) % 12;
+var MODE = "do";
 var ID = "western";
 function degreeOf(p, fifths, mode = "do") {
   const deg = ((stepIndex(p.step) - tonicStepIndex(fifths)) % 7 + 7) % 7, acc = p.alter - keyAlter(p.step, fifths);
@@ -4591,33 +4583,28 @@ function thirdDyad(ps, fifths, mode) {
 }
 var chordLabel = (r) => r.ties.slice(0, 2).map((g) => g.label).join(" / ");
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
-function brokenChords(tokens, keyAt2, mode = "do") {
-  const bars = /* @__PURE__ */ new Map();
-  for (const [i, m] of meterPositions(tokens)) {
-    const t = tokens[i], beatLen = beatTicks(m.beats, m.beatType), nb = Math.max(1, Math.round(m.beats * WHOLE / m.beatType / beatLen));
-    const bar = bars.get(m.bar) ?? { nb, beats: Array.from({ length: nb }, () => []) };
-    bars.set(m.bar, bar);
-    bar.beats[Math.min(nb - 1, Math.max(0, Math.floor(m.pos / beatLen + 1e-9)))].push({ i, p: t.pitch, stacked: !!t.chord?.length });
-  }
-  const out = [];
-  let prev = "";
+function brokenInBar(bar, prev, mode) {
+  const beatLen = beatTicks(bar.beats, bar.beatType), nb = Math.max(1, Math.round(bar.beats * WHOLE / bar.beatType / beatLen));
+  const beats = Array.from({ length: nb }, () => []);
+  for (const n2 of bar.notes) if (!n2.tie) beats[Math.min(nb - 1, Math.max(0, Math.floor(n2.pos / beatLen + 1e-9)))].push({ i: n2.index, p: n2.tok.pitch, stacked: !!n2.tok.chord?.length, fifths: n2.fifths });
+  const tags = [];
   const groupOf = (ns) => {
-    const ps = ns.filter((n2) => n2.p && !n2.stacked).map((n2) => n2.p);
+    const us = ns.filter((n2) => n2.p && !n2.stacked), ps = us.map((n2) => n2.p);
     if (new Set(ps.map(pc)).size < 3) return null;
     for (let k = 1; k < ps.length; k++) {
       const d = Math.abs(midiOf(ps[k]) - midiOf(ps[k - 1]));
       if (d === 1 || d === 2) return null;
     }
-    const rd = readChord(ps, keyAt2(ns.find((n2) => n2.p && !n2.stacked).i), mode);
+    const rd = readChord(ps, us[0].fifths, mode);
     return rd && rd.best.omitted === 0 && BROKEN_OK.has(rd.best.tpl) ? rd : null;
   };
-  const look = (beats, b0, b1) => {
+  const look = (b0, b1) => {
     const ns = beats.slice(b0, b1).flat();
     if (!ns.some((n2) => n2.p && !n2.stacked)) return;
     const rd = groupOf(ns);
     if (rd) {
       const label = chordLabel(rd);
-      if (label !== prev) out.push({ index: ns.find((n2) => n2.p && !n2.stacked).i, read: rd });
+      if (label !== prev) tags.push({ index: ns.find((n2) => n2.p && !n2.stacked).i, read: rd });
       prev = label;
       return;
     }
@@ -4628,40 +4615,37 @@ function brokenChords(tokens, keyAt2, mode = "do") {
     }
     if (len % 2 === 0 && len > 2) {
       const mid = b0 + len / 2;
-      look(beats, b0, mid);
-      look(beats, mid, b1);
+      look(b0, mid);
+      look(mid, b1);
       return;
     }
-    for (let b = b0; b < b1; b++) look(beats, b, b + 1);
+    for (let b = b0; b < b1; b++) look(b, b + 1);
   };
-  for (const bar of [...bars.entries()].sort((a, b) => a[0] - b[0]).map((e) => e[1])) look(bar.beats, 0, bar.nb);
-  return out;
+  look(0, nb);
+  return { tags, prev };
 }
-function tagsOf(track) {
-  const { tokens, keyAt: keyAt2 } = track, mode = modeOf(tokens, keyAt2), out = [];
-  tokens.forEach((t, i) => {
-    if (t.kind === "note" && t.pitch && t.chord?.length) {
-      const rd = readChord([t.pitch, ...t.chord], keyAt2(i), mode);
-      if (rd) out.push({ index: i, read: rd });
+function readBar(bar, carry, opts) {
+  const tags = [];
+  for (const n2 of bar.notes) {
+    const t = n2.tok;
+    if (t.pitch && t.chord?.length) {
+      const rd = readChord([t.pitch, ...t.chord], n2.fifths, MODE);
+      if (rd) tags.push({ index: n2.index, read: rd });
     }
-  });
-  return track.broken === false ? out : [...out, ...brokenChords(tokens, keyAt2, mode)];
-}
-function modeOf(tokens, keyAt2) {
-  for (let i = tokens.length - 1; i >= 0; i--) {
-    const t = tokens[i];
-    if (t.kind !== "note" || !t.pitch) continue;
-    const low = [t.pitch, ...t.chord ?? []].reduce((a, b) => midiOf(b) < midiOf(a) ? b : a);
-    const d = degreeOf(low, keyAt2(i));
-    return d.deg === 6 && d.acc === 0 ? "la" : "do";
   }
-  return "do";
+  let prev = carry?.prev ?? "";
+  if (opts.broken) {
+    const b = brokenInBar(bar, prev, MODE);
+    tags.push(...b.tags);
+    prev = b.prev;
+  }
+  return { tags: tags.sort((a, b) => a.index - b.index), carry: { prev } };
 }
 var western = {
   id: ID,
-  tagsOf,
+  readBar,
   label: chordLabel,
-  howTo: (read) => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002") + (read?.mode === "la" ? " " + _t("\u8FD9\u4E00\u6BB5\u8FD9\u4E2A\u58F0\u90E8\u6700\u540E\u4E00\u4E2A\u97F3\u662F la\uFF0C\u6240\u4EE5\u6309\u4EE5 la \u4E3A\u4E3B\uFF08\u5C0F\u8C03\uFF09\u6570\u7EA7\u6570\uFF1Ala \u7684\u548C\u5F26 = i\u3002") : ""),
+  howTo: () => _t("\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002"),
   explain: (guess) => {
     const g = guess;
     return [g.root.step !== g.bass.step || g.root.alter !== g.bass.alter ? _t("\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09") : "", g.no3 ? _t("\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199") : "", g.omitted - (g.no3 ? 1 : 0) > 0 ? _t("\u7701\u4E86 {n} \u4E2A\u97F3", { n: g.omitted - (g.no3 ? 1 : 0) }) : ""].filter(Boolean);
@@ -4672,6 +4656,32 @@ var western = {
 var THEORIES = { [western.id]: western };
 var DEFAULT_THEORY = western.id;
 var harmonyTheory = (id = DEFAULT_THEORY) => THEORIES[id] ?? THEORIES[DEFAULT_THEORY];
+function barsOf(tokens) {
+  const at = meterPositions(tokens, [0], true), bars = [];
+  let fifths = DEFAULT_KEY;
+  tokens.forEach((t, i) => {
+    if (t.kind === "key") {
+      fifths = t.fifths;
+      return;
+    }
+    const m = at.get(i);
+    if (!m || t.kind !== "note") return;
+    let bar = bars[bars.length - 1];
+    if (!bar || bar.no !== m.bar) bars.push(bar = { no: m.bar, beats: m.beats, beatType: m.beatType, notes: [] });
+    bar.notes.push({ index: i, tok: t, pos: m.pos, fifths, ...m.tie ? { tie: true } : {} });
+  });
+  return bars;
+}
+function harmonyTags(theory, track) {
+  const out = [], opts = { broken: track.broken !== false };
+  let carry;
+  for (const bar of barsOf(track.tokens)) {
+    const r = theory.readBar(bar, carry, opts);
+    out.push(...r.tags);
+    carry = r.carry;
+  }
+  return out;
+}
 
 // src/score/clef.ts
 var CLEF_SHIFT = { G: 0, G8vb: 7, G8va: -7, G15ma: -14, F: 12, F8vb: 19 };
@@ -6619,7 +6629,7 @@ function engrave(song, o) {
       });
       if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
         const fs = tx("chord-tag");
-        const theory = harmonyTheory(), tagged = new Map(theory.tagsOf({ tokens, keyAt: (i) => keyAt(tokens, i), broken: song.parts.find((x) => x.id === q.p.id)?.brokenChords !== false }).map((x) => [x.index, x.read]));
+        const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: song.parts.find((x) => x.id === q.p.id)?.brokenChords !== false }).map((x) => [x.index, x.read]));
         for (const c of units) {
           if (c.kind !== "chunk" || !c.note || c.j !== 0 || c.index < 0 || c.pad) continue;
           const t = tokens[c.index];
@@ -6911,4 +6921,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-8354b43b185f.mjs.map
+//# sourceMappingURL=layout-worker-53a97c2f48cd.mjs.map
