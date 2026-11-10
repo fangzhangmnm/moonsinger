@@ -23,7 +23,8 @@ export type FormatFile = keyof typeof FORMAT;
  *  minor 1 = 追认 major 2 之后加过的所有可选字段（2026-10-08 → 10-21：manifest 的 core / final / finalRev / sounds；score 的 view / arrangement / lyricFit / barNumbers / parts.clef / host / autoOttava、
  *  papers 的 phrases / swells / hidden；lounge 的 articulation / chain / defaults 那些；studio v2 的 master.chain / bypass / sends / dry…）——以前写的文件没有这两个键 = 0.0，读起来一样。
  *  指纹（定稿）不看 minor / patch（project.ts fpTextOf）。改 minor / patch 不用迁移、不用冻结样本，只跑 freeze-format-sample 更新形状快照。added 2026-10-21 by Claude Fable 5.1 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 1, lounge: 1, studio: 1 };
+/** score minor 2（v0.16.73，2026-11-10 Claude Opus 5.5）：parts[].brokenChords（可选，只写 false = 这位不认分解和弦）——老版本读进来会丢掉它（parts 按歌重建），所以照纪律 +1、让老版本提示一次。 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 2, lounge: 1, studio: 1 };
 export const FORMAT_PATCH: Readonly<Record<FormatFile, number>> = { manifest: 0, score: 0, lounge: 0, studio: 0 };
 
 // ═══ 现役（project.ts 写的就是这些）═══════════════════════════════════════════════════════
@@ -84,7 +85,9 @@ export interface ScoreExtV2 {
   /** clef（v0.9.28，可选）：声部自己的谱号，"auto" = 自动（MusicXML 里写的是挑好的那个）。autoOttava（v0.9.37，可选，只写 false）：这位不要自动八度线（没写 = 开）。都不升版本。 */
   parts: { id: string; role: string; mic: string; kind: "pitched" | "percussion"; clef?: string; autoOttava?: false;
     /** 2026-10-10 加（可选，不升版本；Opus 5.5）：合租——画在哪位（主人）的谱线上；主人自己不能是房客（读的时候不合规矩 = 丢掉这个字段）。user「合租还是有主人吧」。 */
-    host?: string }[];
+    host?: string;
+    /** v0.16.73 加（可选，只写 false；score minor 2）：这位不认分解和弦（没写 = 认）。 */
+    brokenChords?: false }[];
 }
 
 // ─── 第 1 版（只给迁移对照；migrate/index.ts）────────────────────────────────────────────

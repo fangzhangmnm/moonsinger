@@ -164,7 +164,7 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
     return { info: { ...infos[k], ...(first && first !== "G" ? { clef: first } : {}) }, tokens: toks, breaks: new Map(starts.slice(1).map((s) => [s.index, s.paper.name])) };
   }) }, meta);
   const scoreRest = Object.fromEntries(Object.entries((a.extras.scoreExt ?? {}) as Json).filter(([k]) => !KNOWN_SCORE_KEYS.has(k)));   // 不认识的顶层键原样带回（家族纪律「未知键直通」；papers / parts 是从歌重建的）
-  const scoreExt: Json = { ...scoreRest, ...stampOf("score"), papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched", ...(p.staves === 2 ? {} : { clef: p.clef ?? "auto" }), ...(p.autoOttava === false ? { autoOttava: false } : {}), ...(p.host ? { host: p.host } : {}) })),   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
+  const scoreExt: Json = { ...scoreRest, ...stampOf("score"), papers, parts: song.parts.map((p) => ({ id: p.id, role: p.role, mic: p.mic, kind: "pitched", ...(p.staves === 2 ? {} : { clef: p.clef ?? "auto" }), ...(p.autoOttava === false ? { autoOttava: false } : {}), ...(p.host ? { host: p.host } : {}), ...(p.brokenChords === false ? { brokenChords: false } : {}) })),   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}),   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
     ...(song.arrangement?.trim() ? { arrangement: song.arrangement } : {}),   // 编排那一行（可选，2026-10-08 深夜）
     ...(song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}),
@@ -769,6 +769,7 @@ function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: 
     const d: PartDef = { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) };
     if ("clef" in p) { clefFromScore.add(d.id); if ((CLEFS as readonly unknown[]).includes(p.clef)) d.clef = p.clef as ClefName; }
     if (p.autoOttava === false) d.autoOttava = false;   // 这位不要自动八度线（v0.9.37）
+    if (p.brokenChords === false) d.brokenChords = false;   // 这位不认分解和弦（v0.16.73）
     if (typeof p.host === "string" && p.host) d.host = p.host;   // 合租（v0.10.24）：下面核一遍
     seen.set(d.id, d);
   }

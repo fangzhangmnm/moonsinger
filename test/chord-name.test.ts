@@ -2,7 +2,8 @@
 // 钉住 user 11-07 问的那几种歧义：换根音（转位）、挂二 / 挂四、六和弦 vs 七和弦转位、十三；调号只管第几级。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { readChord, chordLabel, degreeOf, brokenChords, modeOf, western } from "../src/theory/western.ts";
-import { initState, tr, headLen, TPQ, type Token } from "../src/score/song.ts";
+import { initState, tr, headLen, TPQ, setPartBrokenChords, type Token, type Song } from "../src/score/song.ts";
+import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { spellMidi } from "../src/score/pitch.ts";
 import type { Pitch } from "../src/score/pitch.ts";
 
@@ -139,5 +140,24 @@ describe("以 la 为主（小调）：从 la 数级数", () => {
     eq(western.tagsOf({ tokens: minor, keyAt: () => 0 }).map((x) => western.label(x.read)).join(" "), "i iv V i");
     eq(western.tagsOf({ tokens: major, keyAt: () => 0 }).map((x) => western.label(x.read)).join(" "), "vi I");
     assert(western.howTo(western.tagsOf({ tokens: minor, keyAt: () => 0 })[0].read).includes("la"), "点开候选时说为什么按 la 数");
+  });
+});
+
+// 声部开关「不认分解和弦」（v0.16.73，user 11-10「给声部加一个开关，默认开同意」）
+describe("声部开关：不认分解和弦", () => {
+  let id = 7800;
+  const nn = (m: number, chord: number[] = [], d = TPQ / 4): Token => ({ kind: "note", id: id++, pitch: spellMidi(m, 0), ...(chord.length ? { chord: chord.map((x) => spellMidi(x, 0)) } : {}), dur: d, lyric: null }) as Token;
+  it("关掉 = 拆开弹的不标，叠音照旧标；没给 = 认", () => {
+    const st = initState(), t = [...tr(st).slice(0, headLen(tr(st))), nn(60), nn(64), nn(67), nn(72), nn(60, [64, 67], TPQ * 3)];
+    eq(western.tagsOf({ tokens: t, keyAt: () => 0 }).map((x) => western.label(x.read)).join(" "), "I I");
+    eq(western.tagsOf({ tokens: t, keyAt: () => 0, broken: false }).map((x) => western.label(x.read)).join(" "), "I");
+  });
+  it("开 = 不写；关 = score.json parts[].brokenChords false，存了读回来还是关", () => {
+    const st = initState(), off = setPartBrokenChords(st, st.at.part, false);
+    eq(setPartBrokenChords(st, st.at.part, true), st, "本来就开 = 不变");
+    eq(off.song.parts[0].brokenChords, false); eq(setPartBrokenChords(off, st.at.part, true).song.parts[0].brokenChords, undefined, "再开 = 不写");
+    const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-11-10T00:00:00.000Z" });
+    eq(openBytes("x.mxl", save(off.song)).song.parts[0].brokenChords, false);
+    eq(openBytes("x.mxl", save(st.song)).song.parts[0].brokenChords, undefined);
   });
 });

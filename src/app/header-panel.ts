@@ -7,7 +7,7 @@
 //   速度（v0.16.12）：这一行只是一颗钮，写着现在的速度，点了 = 原来那个速度框（拨速度的滚轮 + 速度词 + 小节拍器 + 「确定」才写进谱；src/ui/mark-editor.ts）。
 //   v0.16.8 曾把速度做成这里的数字框 + 下拉、改了马上写，原来的速度框就打不开了——user 11-07「speed没叫你丢之前的窗口啊」（10-07 要的「有一个确认按钮才commit，这样你可以试哪个对」也跟着丢了）。
 import { _t } from "../i18n/index.ts";
-import { type EditorState, type Token, type ClefName, CLEFS, tempoWord, headerSpot, headerVals, setHeaderAt, keyAt, timeAt, tempoAt, setPartStaves, setPartClef, setPartAutoOttava, setPartHost, type HeaderSpot, type HeaderPatch } from "../score/song.ts";
+import { type EditorState, type Token, type ClefName, CLEFS, tempoWord, headerSpot, headerVals, setHeaderAt, keyAt, timeAt, tempoAt, setPartStaves, setPartClef, setPartAutoOttava, setPartBrokenChords, setPartHost, type HeaderSpot, type HeaderPatch } from "../score/song.ts";
 import { CLEF_LABEL } from "../score/clef.ts";
 import { KEY_LABEL } from "../score/pitch.ts";
 
@@ -73,6 +73,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
           `<span class="hp-k">${_t("谱表")}</span><select class="hp-sel" data-hp="staves">${opt("1", _t("一张"), one)}${opt("2", _t("大谱表（上高音下低音）"), !one)}</select>` +
           (one ? `<span class="hp-k">${_t("默认谱号")}</span><select class="hp-sel" data-hp="pclef" title="${_t("每张纸开头「跟声部」用的就是它；自动 = 按每张纸的音挑加线最省的")}">${opt("", _t("自动"), !me.clef)}${CLEFS.map((c) => opt(c, CLEF_LABEL[c], me.clef === c)).join("")}</select>` : "") +
           `<span class="hp-k">${_t("自动八度线")}</span><select class="hp-sel" data-hp="ao" title="${_t("一串很高 / 很低的音（每个都要三条以上加线）自动画 8va / 15ma / 8vb；手写的说了算，不存进谱")}">${opt("on", _t("开"), me.autoOttava !== false)}${opt("off", _t("关"), me.autoOttava === false)}</select>` +
+          `<span class="hp-k">${_t("分解和弦")}</span><select class="hp-sel" data-hp="broken" title="${_t("拆开弹的和弦（一拍 / 半小节 / 一小节里的音凑成一个和弦）要不要标级数；叠在一起的和弦照旧标")}">${opt("on", _t("认"), me.brokenChords !== false)}${opt("off", _t("不认"), me.brokenChords === false)}</select>` +
           (song.parts.length > 1 ? `<span class="hp-k">${_t("合租")}</span>` + (tenants ? `<span class="hp-v hp-note">${_t("有别的声部挂在这一行上（它是主人），不能再去挂别人")}</span>`
             : `<select class="hp-sel" data-hp="host" title="${_t("挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）")}">${opt("", _t("自己一行"), !me.host)}${hosts.map((p) => opt(p.id, _t("挂在「{name}」上", { name: g.partName(p.id) }), me.host === p.id)).join("")}</select>`) : "") +
           `</div>`;
@@ -108,6 +109,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
         else if (k === "staves") commit(setPartStaves(g.state(), partId, el.value === "2" ? 2 : 1));
         else if (k === "pclef") commit(setPartClef(g.state(), partId, el.value ? (el.value as ClefName) : null));
         else if (k === "ao") commit(setPartAutoOttava(g.state(), partId, el.value === "on"));
+        else if (k === "broken") commit(setPartBrokenChords(g.state(), partId, el.value === "on"));
         else if (k === "host") commit(setPartHost(g.state(), partId, el.value || null));
       });
     },

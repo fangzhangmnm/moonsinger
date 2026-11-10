@@ -191,7 +191,7 @@ export function brokenChords(tokens: readonly Token[], keyAt: (index: number) =>
 function tagsOf(track: TrackInput): { index: number; read: ChordRead }[] {
   const { tokens, keyAt } = track, mode = modeOf(tokens, keyAt), out: { index: number; read: ChordRead }[] = [];
   tokens.forEach((t, i) => { if (t.kind === "note" && t.pitch && t.chord?.length) { const rd = readChord([t.pitch, ...t.chord], keyAt(i), mode); if (rd) out.push({ index: i, read: rd }); } });
-  return [...out, ...brokenChords(tokens, keyAt, mode)];
+  return track.broken === false ? out : [...out, ...brokenChords(tokens, keyAt, mode)];   // 声部开关「不认分解和弦」（v0.16.73）：叠音照旧标
 }
 /** 按曲段认大调 / 小调（v0.16.72，user 11-10「按曲段认乐理同意」「我还是希望它的局域性好一点，所以说可能还是每个声部单独做吧」）：
  *  一条 track（这个曲段里的这个声部）自己判，不看别的声部：最后一个有音高的音（叠音取最低的）是 la = 以 la 为主（小调），不然 = 以 do 为主。

@@ -1556,7 +1556,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
         const fs = tx("chord-tag");   // 和速度字一样大（v0.16.34）；字的尺子（刀 2）
         // 标哪几个音、标什么 = 乐理模块（src/theory/：叠音的和弦 + 分解和弦，2026-11-10 起能整块换理论）；这里只管摆
-        const theory = harmonyTheory(), tagged = new Map(theory.tagsOf({ tokens, keyAt: (i) => keyAtTok(tokens, i) }).map((x) => [x.index, x.read] as const));
+        const theory = harmonyTheory(), tagged = new Map(theory.tagsOf({ tokens, keyAt: (i) => keyAtTok(tokens, i), broken: song.parts.find((x) => x.id === q.p.id)?.brokenChords !== false }).map((x) => [x.index, x.read] as const));
         for (const c of units) {
           if (c.kind !== "chunk" || !c.note || c.j !== 0 || c.index < 0 || c.pad) continue;
           const t = tokens[c.index]; if (t?.kind !== "note" || !t.pitch) continue;

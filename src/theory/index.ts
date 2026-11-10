@@ -13,7 +13,7 @@ export interface HarmonyGuess { label: string; name: string; cost: number }
 /** 读出来的结果：best = 第一候选；ties = 和它打平的（含它自己）；all = 全部候选（按先后）；theory = 哪种理论读的。 */
 export interface HarmonyRead<G extends HarmonyGuess = HarmonyGuess> { theory: string; best: G; ties: G[]; all: G[] }
 /** 一条 track：一张纸（曲段）里一个声部的记号串 + 每个位置的调（几个升降号）。 */
-export interface TrackInput { tokens: readonly Token[]; keyAt(index: number): number }
+export interface TrackInput { tokens: readonly Token[]; keyAt(index: number): number; /** 这个声部认不认「拆开弹的和弦」（声部开关，v0.16.73；没给 = 认）。 */ broken?: boolean }
 export interface HarmonyTheory {
   id: string;
   /** 这条 track 里要标的音（记号下标）→ 读法。纯函数（排版 worker 里跑）。 */

@@ -123,7 +123,9 @@ export type Hum = "la" | "n" | "u" | "o" | "a";
 /** 歌级的一个声部（谱上的一行；顺序 = 总谱从上到下）：role = 休息室角色 id（谁来演、叫什么），mic = 录音房麦克风 id。 */
 export interface PartDef { id: string; role: string; mic: string; clef?: Clef; staves?: 2; /** 自动八度线（v0.9.37）：没写 = 开；false = 这位不自动（score.json parts[].autoOttava）。 */ autoOttava?: false;
   /** 合租（v0.10.24）：挂在哪位（主人）的谱线上画（主人自己不能再是房客）。只管画：轨 / 乐器 / 混音台照旧各是各的（ai-docs/20261010-shared-staff-percussion-design.md §1）。 */
-  host?: string }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
+  host?: string;
+  /** 认不认分解和弦（v0.16.73，user 11-10「给声部加一个开关，默认开同意」）：没写 = 认（照样标）；false = 这位不认（叠音照旧标）。score.json parts[].brokenChords。 */
+  brokenChords?: false }   // clef = 这个声部的谱号（没有 = 高音；存 MusicXML <clef>）；staves = 2 → 大谱表（上高音下低音，clef 不看；MusicXML <staves>）
 /** 谱号：高音 / 高音下加 8（吉他、男高音：实际低八度）/ 上加 8 / 上加 15（钟琴）/ 低音 / 低音下加 8（低音提琴、贝斯）。中音谱号不做（user「中音这个冷门没人用吧」）。 */
 export type ClefName = "G" | "G8vb" | "G8va" | "G15ma" | "F" | "F8vb";
 export const CLEFS: readonly ClefName[] = ["G", "G8vb", "G8va", "G15ma", "F", "F8vb"];
@@ -1686,6 +1688,12 @@ export function setLyricFit(st: EditorState, v: "lyrics" | "rhythm"): EditorStat
 export function setPartAutoOttava(st: EditorState, partId: string, on: boolean): EditorState {
   const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.autoOttava !== false) === on) return st;
   const np: PartDef = { ...p }; if (on) delete np.autoOttava; else np.autoOttava = false;
+  return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
+}
+/** 这位歌手认不认分解和弦（v0.16.73；默认认）。和自动八度线同一个写法：开 = 不写，关 = false。 */
+export function setPartBrokenChords(st: EditorState, partId: string, on: boolean): EditorState {
+  const p = st.song.parts.find((x) => x.id === partId); if (!p || (p.brokenChords !== false) === on) return st;
+  const np: PartDef = { ...p }; if (on) delete np.brokenChords; else np.brokenChords = false;
   return { ...st, song: { ...st.song, parts: st.song.parts.map((x) => (x.id === partId ? np : x)) } };
 }
 /** 谱号记号插在光标处（有选区 = 选区开头）；光标前紧挨着就是一个谱号记号 = 改它（v0.9.28）。 */

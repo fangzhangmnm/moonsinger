@@ -374,6 +374,10 @@ var S = {
   "\u4E00\u4E32\u5F88\u9AD8 / \u5F88\u4F4E\u7684\u97F3\uFF08\u6BCF\u4E2A\u90FD\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF09\u81EA\u52A8\u753B 8va / 15ma / 8vb\uFF1B\u624B\u5199\u7684\u8BF4\u4E86\u7B97\uFF0C\u4E0D\u5B58\u8FDB\u8C31": { en: "A run of very high / low notes (each needing 3+ ledger lines) gets an automatic 8va / 15ma / 8vb; hand-written ones win; not saved in the score" },
   "\u5F00": { en: "On" },
   "\u5173": { en: "Off" },
+  "\u5206\u89E3\u548C\u5F26": { en: "Broken chords" },
+  "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807": { en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way" },
+  "\u8BA4": { en: "Read" },
+  "\u4E0D\u8BA4": { en: "Ignored" },
   "\u5408\u79DF": { en: "Shared staff" },
   "\u6709\u522B\u7684\u58F0\u90E8\u6302\u5728\u8FD9\u4E00\u884C\u4E0A\uFF08\u5B83\u662F\u4E3B\u4EBA\uFF09\uFF0C\u4E0D\u80FD\u518D\u53BB\u6302\u522B\u4EBA": { en: "Other parts are attached to this line (it's the host), so it can't attach to another" },
   "\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09": { en: "Draw on another part's staff (shared: just an overview, colliding notes collide; only notes are drawn, no rests / lyrics / dynamics; tap the name to split it out and write)" },
@@ -1277,7 +1281,6 @@ var S = {
   "\u6EDA\u594F": { en: "Roll" },
   "\u6574\u4E2A\u97F3\u6572\u6EE1\uFF0C\u6BCF\u79D2 {hz} \u4E0B\uFF1B\u529B\u5EA6\u8DDF\u7740\u5F53\u65F6\u7684\u529B\u5EA6\u548C\u6E10\u5F3A\u6E10\u5F31\u8D70": { en: "Fills the whole note, {hz} hits per second; loudness follows the current dynamic and hairpins" },
   "\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09": { en: "How marks are performed (this performer's own settings, saved in the song with them)" },
-  "\u4E0D\u8BA4": { en: "Ignored" },
   "\u6309\u9F13\u4EF6\uFF08\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\uFF09": { en: "Per drum (snare 20, cymbals 14, kick 12, other drums 16)" },
   "\u4EBA\u58F0\uFF08\u8FDE\u7740\u5531\uFF09": { en: "Voice (legato)" },
   "\u81EA\u5DF1\u7684 .sf2\uFF08\u76EE\u5F55\u91CC\u6CA1\u6709\u8FD9\u4E2A\u97F3\u8272\u7684\u8FDE\u65AD\u6570\u636E\uFF09": { en: "Own .sf2 (the catalog has no legato data for this sound)" },
@@ -4642,7 +4645,7 @@ function tagsOf(track) {
       if (rd) out.push({ index: i, read: rd });
     }
   });
-  return [...out, ...brokenChords(tokens, keyAt2, mode)];
+  return track.broken === false ? out : [...out, ...brokenChords(tokens, keyAt2, mode)];
 }
 function modeOf(tokens, keyAt2) {
   for (let i = tokens.length - 1; i >= 0; i--) {
@@ -6616,7 +6619,7 @@ function engrave(song, o) {
       });
       if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
         const fs = tx("chord-tag");
-        const theory = harmonyTheory(), tagged = new Map(theory.tagsOf({ tokens, keyAt: (i) => keyAt(tokens, i) }).map((x) => [x.index, x.read]));
+        const theory = harmonyTheory(), tagged = new Map(theory.tagsOf({ tokens, keyAt: (i) => keyAt(tokens, i), broken: song.parts.find((x) => x.id === q.p.id)?.brokenChords !== false }).map((x) => [x.index, x.read]));
         for (const c of units) {
           if (c.kind !== "chunk" || !c.note || c.j !== 0 || c.index < 0 || c.pad) continue;
           const t = tokens[c.index];
@@ -6908,4 +6911,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-a4c7bd69448c.mjs.map
+//# sourceMappingURL=layout-worker-8354b43b185f.mjs.map
