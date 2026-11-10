@@ -5071,7 +5071,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.67-2026-11-10";
+var APP_VERSION = "v0.16.68-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -9877,6 +9877,29 @@ var lyricLook = (ts2) => ts2 > 1 ? LYRIC_LOOK.compact : LYRIC_LOOK.cozy;
 var lyricWidth = (m2, s10, sp2, ts2) => m2.width("lyric", s10, sp2, ts2) * lyricLook(ts2).k * lyricLook(ts2).sx;
 var lyricSizePx = (sp2, ts2) => LYRIC_EM * lyricLook(ts2).k * sp2;
 
+// src/render/text/baseline.ts
+var INK_EST = { a: 0.8, d: 0.22 };
+var metricCache = /* @__PURE__ */ new Map();
+var mctx;
+function faceMetrics(st2) {
+  const key = `${st2.face}|${st2.weight}|${st2.italic}`;
+  let m2 = metricCache.get(key);
+  if (m2) return m2;
+  m2 = { a: 0.8, d: 0.2 };
+  try {
+    mctx ??= typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
+    if (mctx) {
+      mctx.font = textFont(st2, 100);
+      const t10 = mctx.measureText("1=C");
+      if (t10.fontBoundingBoxAscent > 0) m2 = { a: t10.fontBoundingBoxAscent / 100, d: t10.fontBoundingBoxDescent / 100 };
+    }
+  } catch {
+  }
+  metricCache.set(key, m2);
+  return m2;
+}
+var boxTopFor = (base2, px, m2) => base2 - px * (1 + m2.a - m2.d) / 2;
+
 // src/singer/packs.gen.ts
 var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
 var PACKS = {
@@ -10657,8 +10680,8 @@ function primInk(p2, sp2, measure, emit) {
       return;
     }
     case "text": {
-      const size = p2.size ?? 1.6 * sp2, w2 = measure(p2.s, size) * (p2.sx ?? 1), x0 = p2.anchor === "middle" ? p2.x - w2 / 2 : p2.anchor === "end" ? p2.x - w2 : p2.x;
-      emit(x0, x0 + w2, p2.y - size * 0.8, p2.y + size * 0.22);
+      const size = p2.size ?? LYRIC_EM * sp2, w2 = measure(p2.s, size) * (p2.sx ?? 1), x0 = p2.anchor === "middle" ? p2.x - w2 / 2 : p2.anchor === "end" ? p2.x - w2 : p2.x;
+      emit(x0, x0 + w2, p2.y - size * INK_EST.a, p2.y + size * INK_EST.d);
       return;
     }
     case "line": {
@@ -16035,25 +16058,6 @@ var ScoreView = class {
 };
 
 // src/ui/score-overlay.ts
-var metricCache = /* @__PURE__ */ new Map();
-var mctx;
-function faceMetrics(st2) {
-  const key = `${st2.face}|${st2.weight}|${st2.italic}`;
-  let m2 = metricCache.get(key);
-  if (m2) return m2;
-  m2 = { a: 0.8, d: 0.2 };
-  try {
-    mctx ??= typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
-    if (mctx) {
-      mctx.font = textFont(st2, 100);
-      const t10 = mctx.measureText("1=C");
-      if (t10.fontBoundingBoxAscent > 0) m2 = { a: t10.fontBoundingBoxAscent / 100, d: t10.fontBoundingBoxDescent / 100 };
-    }
-  } catch {
-  }
-  metricCache.set(key, m2);
-  return m2;
-}
 var TG_BTN = 3;
 var TG_GAP = 0.4;
 var CTL_H2 = 3;
@@ -16105,8 +16109,7 @@ var ScoreOverlay = class {
     const items = [], sp2 = L2.tp ?? L2.sp, px = (n10) => `${Math.round(n10 * 100) / 100}px`;
     const box = (x2, y2, w2, h2) => `left:${px(x2)};top:${px(y2)};width:${px(w2)};height:${px(h2)}`;
     const text2 = (x2, base2, size, anchor = "start", st2 = textStyleOf(void 0)) => {
-      const m2 = faceMetrics(st2);
-      return `left:${px(x2)};top:${px(base2 - size * (1 + m2.a - m2.d) / 2)};font-size:${px(size)};line-height:${px(size)};font-family:${TEXT_FACES[st2.face].replace(/"/g, "'")};font-weight:${st2.weight};font-style:${st2.italic ? "italic" : "normal"};${anchor === "middle" ? "transform:translateX(-50%);" : anchor === "end" ? "transform:translateX(-100%);" : ""}`;
+      return `left:${px(x2)};top:${px(boxTopFor(base2, size, faceMetrics(st2)))};font-size:${px(size)};line-height:${px(size)};font-family:${TEXT_FACES[st2.face].replace(/"/g, "'")};font-weight:${st2.weight};font-style:${st2.italic ? "italic" : "normal"};${anchor === "middle" ? "transform:translateX(-50%);" : anchor === "end" ? "transform:translateX(-100%);" : ""}`;
     };
     const add = (key, tag2, cls, style, html = "", attrs = {}) => items.push({ key, tag: tag2, cls, style, html, attrs });
     const icon = (id2, size) => `<svg class="ov-icon" style="width:${px(size)};height:${px(size)}" aria-hidden="true"><use href="#${id2}"/></svg>`;
@@ -29575,9 +29578,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-1c5a20dddaaf.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-f737b407fd4c.mjs");
+      return pick(() => "layout-worker-3bf664367a00.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-163a1d94c76f.mjs");
+      return pick(() => "encode-worker-1d9dfc4c3656.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -57500,4 +57503,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a0e7a9daba6d.mjs.map
+//# sourceMappingURL=moonsinger-b1904f6e4c0d.mjs.map
