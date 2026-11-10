@@ -2893,6 +2893,7 @@ var S = {
   "\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3": { en: "No note before the cursor yet" },
   "\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668": { en: "\u201C{who}\u201D plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
   "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C{what}\u6539\u4E0D\u4E86\uFF1A\u5148\u5728\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F1A\u4F5C\u5E9F\uFF09\uFF0C\u518D\u6539\u3002": { en: "This song is finalized, so {what} can't be changed: first choose \u201CRevise\u201D in the \u2630 menu (the final mp3 is discarded), then edit." },
+  "\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D": { en: "This section is now fixed as a grand staff (so the notes you moved between staves can be saved); to go back to automatic, tap the clef at the start of the line and pick \u201CAuto\u201D" },
   "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
   "\u6CA1\u6709\u53EF\u91CD\u505A\u7684": { en: "Nothing to redo" },
   "\u4F11\u606F\u5BA4": { en: "Green room" },
@@ -5092,7 +5093,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.88-2026-11-10";
+var APP_VERSION = "v0.16.89-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29858,15 +29859,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-473d2888456e.mjs");
+      return pick(() => "singer-worker-f08b75635437.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-bf36d1337e70.mjs");
+      return pick(() => "layout-worker-1be65faedf29.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-6c2a6f92e58c.mjs");
+      return pick(() => "encode-worker-0d362ff6da9d.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -52805,13 +52806,13 @@ var view = new ScoreView(scoreEl, {
     sound.up("score");
   },
   focus: (where) => {
-    const aside = where === "text";
+    const aside = touchLike && where === "text";
     if (ws.aside !== aside) {
       ws.aside = aside;
       applyWorkspace();
     }
   },
-  // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
+  // 鼠标键盘范式：打字不让开（没有系统键盘要上来，也就不会「点回谱上又弹出来」，v0.16.89）   // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
   autoBars: () => autoBars,
   inC: () => viewInC,
   chordTags: () => chordTagsOn,
@@ -53144,7 +53145,11 @@ function onLockRefused(what) {
   if (studio.isOpen) studio.show();
 }
 function update(next2, gesture) {
+  const pp0 = D2.st.song.papers.find((p2) => p2.id === next2.at.paper), pp1 = next2.song.papers.find((p2) => p2.id === next2.at.paper), part = next2.at.part;
+  const staffs = (t10) => (t10 ?? []).map((x2) => x2.kind === "note" || x2.kind === "rest" ? x2.staff ?? 0 : -1).filter((x2) => x2 >= 0).join("");
+  const fixed = !!pp0 && !!pp1 && !pp0.looks?.[part]?.grand && !!pp1.looks?.[part]?.grand && staffs(pp0.tracks[part]) !== staffs(pp1.tracks[part]);
   D2.commit({ st: next2 }, { gesture });
+  if (fixed) info(_t("\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D"));
 }
 function withStartDyns(s10) {
   const r10 = ensureStartDyns(s10.song, s10.nextId);
@@ -53367,6 +53372,16 @@ function routeName(track) {
   return k2 >= 0 ? partLabels(D2.st.song, D2.extras)[k2] : studioTrack(D2.extras, track)?.name ?? track;
 }
 var ws = { mode: "notes", collapsed: false, tryout: false };
+var touchLike = (() => {
+  try {
+    return matchMedia("(pointer: coarse)").matches;
+  } catch {
+    return false;
+  }
+})();
+addEventListener("pointerdown", (e10) => {
+  touchLike = e10.pointerType !== "mouse";
+}, { capture: true, passive: true });
 var lastEditMode = "notes";
 var listenOn = () => ws.mode === "listen";
 function applyWorkspace() {
@@ -53408,7 +53423,7 @@ function setMode(m2) {
   if (m2 !== "listen") lastEditMode = m2;
   ws.mode = m2;
   ws.aside = false;
-  if (hasKeys(m2)) ws.collapsed = false;
+  if (hasKeys(m2) && touchLike) ws.collapsed = false;
   applyWorkspace();
 }
 var setListen = (on2) => setMode(on2 ? "listen" : lastEditMode);
@@ -55949,7 +55964,7 @@ function loadDoc(song, o10) {
   applyDesk(d3);
   ws.mode = finalOn() ? "listen" : d3.mode;
   if (d3.mode !== "listen") lastEditMode = d3.mode;
-  ws.collapsed = D2.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
+  if (touchLike) ws.collapsed = D2.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
   ws.aside = false;
   applyWorkspace();
   void refHost.apply(o10.references ?? {}, d3.ref);
@@ -58080,4 +58095,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1fe3e59fec50.mjs.map
+//# sourceMappingURL=moonsinger-be51e6f4989e.mjs.map

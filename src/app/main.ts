@@ -552,7 +552,7 @@ const view = new ScoreView(scoreEl, {
   audition: (i, hold) => { clearTimeout(upTimer); soundTok(D.st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
   glide: (i) => { clearTimeout(upTimer); const t = tr(D.st)[i]; if (t?.kind === "note" && t.pitch) sound.glide(t.pitch, "score"); },
   release: () => { clearTimeout(upTimer); sound.up("score"); },
-  focus: (where) => { const aside = where === "text"; if (ws.aside !== aside) { ws.aside = aside; applyWorkspace(); } },   // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
+  focus: (where) => { const aside = touchLike && where === "text"; if (ws.aside !== aside) { ws.aside = aside; applyWorkspace(); } },   // 鼠标键盘范式：打字不让开（没有系统键盘要上来，也就不会「点回谱上又弹出来」，v0.16.89）   // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
   autoBars: () => autoBars,
   inC: () => viewInC,
   chordTags: () => chordTagsOn,
@@ -771,7 +771,15 @@ let lockSaidAt = 0;
 /** 定稿着被拒的那一下：说一句（同一句 3 s 内不重复）。 */
 function lockedSay(what: string): void { const t = performance.now(); if (t - lockSaidAt < 3000) return; lockSaidAt = t; showError(_t("这首歌定稿了，{what}改不了：先在三条杠里「改稿」（定稿的 mp3 会作废），再改。", { what })); }
 function onLockRefused(what: string): void { lockedSay(what); view.render(); pad.render(); drawInst(); ui.redraw(); if (studio.isOpen) studio.show(); }
-function update(next: EditorState, gesture?: string): void { D.commit({ st: next }, { gesture }); }
+function update(next: EditorState, gesture?: string): void {
+  // 自动变出来的大谱表上手动挪了上下行 = 这一段定成手选的大谱表（song.ts toggleStaff，手分的上下行只有手选的存得下）：说一声（v0.16.89）。
+  //   谱头面板里直接选大谱表 = 音不动、不说
+  const pp0 = D.st.song.papers.find((p) => p.id === next.at.paper), pp1 = next.song.papers.find((p) => p.id === next.at.paper), part = next.at.part;
+  const staffs = (t: Token[] | undefined) => (t ?? []).map((x) => (x.kind === "note" || x.kind === "rest" ? x.staff ?? 0 : -1)).filter((x) => x >= 0).join("");
+  const fixed = !!pp0 && !!pp1 && !pp0.looks?.[part]?.grand && !!pp1.looks?.[part]?.grand && staffs(pp0.tracks[part]) !== staffs(pp1.tracks[part]);
+  D.commit({ st: next }, { gesture });
+  if (fixed) info(_t("这一段定成了大谱表（手动分的上下行要存得下）；想回到自动，点行首谱号选「自动」"));
+}
 /** 每张纸（曲段）开头没写力度的补上（song.ts ensureStartDyns：补的是那里本来就生效的那个）；补在光标那条、光标前面 = 光标挪到它后面（接着写的音在力度后面）。 */
 function withStartDyns(s: EditorState): EditorState {
   const r = ensureStartDyns(s.song, s.nextId); if (!r.added.length) return s;
@@ -908,6 +916,11 @@ function routeName(track: string): string { if (track === "master") return _t("�
 //   user「模式！音，歌词，强度和articulation！…还有一个就是播放模式，锁写谱，但是可以调录音室」「强度和演奏法能不能合并，就是符号编辑，和别的符号也合并」
 //   「录音室的键盘位化，和键盘互相排斥…键盘的模式键是不是能摘下来。好好理一下架构」。applyWorkspace 是唯一把状态落到界面上的地方。
 const ws: WorkspaceState = { mode: "notes", collapsed: false, tryout: false };
+/** 操作范式（v0.16.89，user 11-10「我的建议是windows都不自动弹，不然难受。ipad的话应该就是有输入意图的时候弹，空歌弹。取决于操作范式」）：
+ *  最近一次按下是手指 / 笔 = 触屏范式——有输入意图时键盘自己弹（换到「音 / 符」、打完字点回谱上、打开空歌）；是鼠标 = 鼠标键盘范式——键盘只手动开合，打字也不让开。
+ *  还没按过 = 看主指针是不是粗的（iPad 是、电脑不是）。按设备判断不准（iPad 接触控板、触屏笔记本），所以按「这一下是怎么按的」。 */
+let touchLike = (() => { try { return matchMedia("(pointer: coarse)").matches; } catch { return false; } })();
+addEventListener("pointerdown", (e) => { touchLike = e.pointerType !== "mouse"; }, { capture: true, passive: true });
 let lastEditMode: Mode = "notes";   // 从「听」回来回到哪
 const listenOn = () => ws.mode === "listen";
 function applyWorkspace(): void {
@@ -929,7 +942,7 @@ function setMode(m: Mode): void {
   if (finalOn() && m !== "listen") { lockedSay(_t("模式")); return; }   // 第 ① 层：定稿着只有「听」
   ui.close(); view.lyrics.commitAndClose(); view.marks.commitAndClose();
   if (m !== "listen") lastEditMode = m;
-  ws.mode = m; ws.aside = false; if (hasKeys(m)) ws.collapsed = false;   // 换模式 = 手动的一下：打字让开的那一下不算了
+  ws.mode = m; ws.aside = false; if (hasKeys(m) && touchLike) ws.collapsed = false;   // 换模式：触屏范式 = 有输入意图、键盘弹出来；鼠标键盘范式 = 不动（v0.16.89）
   applyWorkspace();
   // 进出「听」不弹提示（v0.10.10，user「然后听的时候会弹一个nudge chip，我觉得那个info是废话，不用说」）：说明在「听」钮的悬停提示里
 }
@@ -2558,7 +2571,7 @@ function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extr
   applyDesk(d);
   // 打开 = 上次存时的模式；谱里已经有音 = 键盘先收着，点一下才开（v0.10.21；user「打开时记住上次的模式，成品曲不应该老是跳到音符输入，容易误触」「或者默认键盘是关的，点一下才会开。」）。空的新歌照旧开着键盘
   ws.mode = finalOn() ? "listen" : d.mode; if (d.mode !== "listen") lastEditMode = d.mode;   // 定稿着 = 只能听（存的模式不看）
-  ws.collapsed = D.st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));  ws.aside = false;
+  if (touchLike) ws.collapsed = D.st.song.papers.some((pp) => Object.values(pp.tracks).some((t) => t.some((x) => x.kind === "note")));  ws.aside = false;   // 鼠标键盘范式：开歌不动键盘（v0.16.89）
   applyWorkspace();
   void refHost.apply(o.references ?? {}, d.ref);   // 参考窗：歌里的卡 + 窗记在哪（新歌 = 空、收着）   // 视图态 + pad 的状态（1= / 调式 / 时值 / 连音 / 音域）随歌回来（没有 = 默认，同 WeebPaint）；改它们不标脏、不进 undo
   pad.setRangeLow(d.pad.low);

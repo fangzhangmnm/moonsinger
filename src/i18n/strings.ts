@@ -179,6 +179,7 @@ export const S = {
   "光标前面还没有音": { en: "No note before the cursor yet" },
   "「{who}」一次只出一个音：几乎同时按下的第二个键没写。要写和弦，给这个声部换钢琴这类乐器": { en: "“{who}” plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
   "这首歌定稿了，{what}改不了：先在三条杠里「改稿」（定稿的 mp3 会作废），再改。": { en: "This song is finalized, so {what} can't be changed: first choose “Revise” in the ☰ menu (the final mp3 is discarded), then edit." },
+  "这一段定成了大谱表（手动分的上下行要存得下）；想回到自动，点行首谱号选「自动」": { en: "This section is now fixed as a grand staff (so the notes you moved between staves can be saved); to go back to automatic, tap the clef at the start of the line and pick “Auto”" },
   "没有可撤销的": { en: "Nothing to undo" },
   "没有可重做的": { en: "Nothing to redo" },
   "休息室": { en: "Green room" },
