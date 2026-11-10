@@ -1324,7 +1324,7 @@ export class ScoreView {
     const ct = this.host.onChordTag ? L.chordTags.find((c) => this.inBox(c, x, y)) : undefined;
     if (ct) { const b = this.clientBox(ct); this.host.onChordTag!(ct.read, { x: (b.left + b.right) / 2, y: b.bottom }); return true; }
     // 0⅙. 作词 / 作曲（标题下面靠右）
-    if (!view && this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }
+    if (this.inBox(L.credits, x, y)) { this.host.focus?.("text"); this.host.onCredits?.(); return true; }   // 听模式也能改（v0.16.85，user 11-10「歌名和作者信息应该三个不同模式都能写」；歌名 v0.16.14 起就能）
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌
     if (this.openPartAt(x, y)) return true;
     // 0¼. 纸面最上面的歌名（可不填）；歌名下面的编排那一行（全部视图里才有）

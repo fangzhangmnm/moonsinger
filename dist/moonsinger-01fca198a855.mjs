@@ -5095,7 +5095,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.84-2026-11-10";
+var APP_VERSION = "v0.16.85-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -15835,7 +15835,7 @@ var ScoreView = class {
       this.host.onChordTag(ct2.read, { x: (b3.left + b3.right) / 2, y: b3.bottom });
       return true;
     }
-    if (!view2 && this.inBox(L2.credits, x2, y2)) {
+    if (this.inBox(L2.credits, x2, y2)) {
       this.host.focus?.("text");
       this.host.onCredits?.();
       return true;
@@ -16324,7 +16324,7 @@ var ScoreOverlay = class {
     this.hiddenPapers = hidPapers;
     if (L2.tail && v.edit) add("add:tail", "button", "ov-i ov-add", `${box(L2.tail.x, L2.tail.y, L2.tail.w, L2.tail.h)};font-size:${px(1.15 * sp2)}`, esc2(_t("\uFF0B \u65B0\u66F2\u6BB5")), { "data-ov": "add", "data-paper": L2.tail.paper, "data-kind": "paper" });
     if (!song.title) add("ph-title", "div", "ov-placeholder ov-ph-title", text2((L2.content.left + L2.content.right) / 2, L2.title.baseline, L2.title.size * 0.8, "middle"), esc2(_t("\u6B4C\u540D")));
-    if (!song.credits) add("ph-credits", v.edit ? "button" : "div", `${v.edit ? "ov-i " : ""}ov-placeholder ov-ph-credits`, text2(L2.creditsLine.x, L2.creditsLine.y, L2.creditsLine.size, "end"), esc2(_t("\u4F5C\u8005")), v.edit ? { "data-ov": "credits" } : {});
+    if (!song.credits) add("ph-credits", "button", "ov-i ov-placeholder ov-ph-credits", text2(L2.creditsLine.x, L2.creditsLine.y, L2.creditsLine.size, "end"), esc2(_t("\u4F5C\u8005")), { "data-ov": "credits" });
     if (L2.arrangement && !song.arrangement?.trim()) {
       const a10 = L2.arrangement;
       add(
@@ -29746,7 +29746,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-c70d2d6c12b6.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-e01e74c31658.mjs");
+      return pick(() => "encode-worker-444ba998d8df.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -57861,4 +57861,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a6ca128744fb.mjs.map
+//# sourceMappingURL=moonsinger-01fca198a855.mjs.map

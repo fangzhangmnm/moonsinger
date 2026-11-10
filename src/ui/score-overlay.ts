@@ -145,7 +145,7 @@ export class ScoreOverlay {
     if (L.tail && v.edit) add("add:tail", "button", "ov-i ov-add", `${box(L.tail.x, L.tail.y, L.tail.w, L.tail.h)};font-size:${px(1.15 * sp)}`, esc(_t("＋ 新曲段")), { "data-ov": "add", "data-paper": L.tail.paper, "data-kind": "paper" });
     // ⑤ 空着的歌名 / 作者栏 / 编排（歌名、编排点了照旧是谱面的就地改——这几个字不接点；作者栏空着没有点击框 = 字本身接）
     if (!song.title) add("ph-title", "div", "ov-placeholder ov-ph-title", text((L.content.left + L.content.right) / 2, L.title.baseline, L.title.size * 0.8, "middle"), esc(_t("歌名")));
-    if (!song.credits) add("ph-credits", v.edit ? "button" : "div", `${v.edit ? "ov-i " : ""}ov-placeholder ov-ph-credits`, text(L.creditsLine.x, L.creditsLine.y, L.creditsLine.size, "end"), esc(_t("作者")), v.edit ? { "data-ov": "credits" } : {});
+    if (!song.credits) add("ph-credits", "button", "ov-i ov-placeholder ov-ph-credits", text(L.creditsLine.x, L.creditsLine.y, L.creditsLine.size, "end"), esc(_t("作者")), { "data-ov": "credits" });   // 哪个模式都能点（v0.16.85，同歌名）
     if (L.arrangement && !song.arrangement?.trim()) {
       const a = L.arrangement;
       add("ph-arr", "div", "ov-placeholder ov-ph-arr", `${text(L.content.left, a.baseline, a.size)};max-width:${px(L.content.right - L.content.left)}`,
