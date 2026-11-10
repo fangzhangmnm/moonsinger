@@ -73,7 +73,7 @@ import { Finder, type FinderPick, type FinderNobody, type OwnPick, DEFAULT_PINS,
 import { createHeaderPanel } from "./header-panel.ts";
 import { createInstSettings } from "./panels/inst-settings.ts";
 import { DYN_GLYPH } from "../render/smufl.ts";
-import { Studio, MASTER as STUDIO_MASTER } from "../ui/studio.ts";
+import { Studio, MASTER as STUDIO_MASTER, STEREO_TABS } from "../ui/studio.ts";
 import { resolveChain } from "../ui/plugins.ts";
 import { FINAL_MP3_ENTRY } from "../format/final.ts";
 import { coreInfo } from "../core/version.ts";
@@ -1636,7 +1636,7 @@ engine.on("stereo", (tracks) => { if (studio.isOpen) studio.stereo(tracks); }); 
 engine.on("spectrum", (sr, tracks) => studio.spectrum(sr, tracks));   // EQ 页卡片背景的频谱（v0.10.11）
 /** 录音房的频谱只在「混音台开着 + EQ 页 + 页面看得见」时算（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）。 */
 /** 背景的统计只在看得见的那一页开（user「记得我说的省cpu，只有看见的时候才进行统计和绘制」）：EQ 页 = 频谱，基础页 = 李萨如图。 */
-function syncSpectrum(): void { const on = studio.isOpen && document.visibilityState === "visible"; engine.spectrum(on && studio.currentTab === "eq"); engine.stereo(on && studio.currentTab === "basic"); }
+function syncSpectrum(): void { const on = studio.isOpen && document.visibilityState === "visible"; engine.spectrum(on && studio.currentTab === "eq"); engine.stereo(on && STEREO_TABS.has(studio.currentTab)); }
 function openFinder(): void {
   const back = instShown(); if (back) instEl.hidden = true;   // 从乐器页开的：关了回乐器页
   ui.setPage({ k: "finder", playOnly: gallery?.isOpen() ?? false, backToInst: back });

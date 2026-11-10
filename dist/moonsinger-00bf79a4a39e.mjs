@@ -2893,6 +2893,8 @@ var S = {
   "\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3": { en: "No note before the cursor yet" },
   "\u25BE \u8FD8\u6709 {n} \u4E2A": { en: "\u25BE {n} more" },
   "\u754C\u9762": { en: "Interface" },
+  "\u66F4\u591A\uFF1A\u6392\u6570\u2026": { en: "More: rows\u2026" },
+  "\u8FD8\u539F\uFF1A\u56DE\u5230\u5E95\u5EA7": { en: "Restore: back to the dock" },
   "\u6309\u79CD\u7C7B\uFF08\u9F13\u3001Pad\u2026\uFF09": { en: "By kind (drums, pads\u2026)" },
   "\u9F13\u548C\u6253\u51FB\u4E50": { en: "Drums & percussion" },
   "Pad\uFF08\u5408\u6210\u5668\u7684\u94FA\u5E95\u97F3\u8272\uFF09": { en: "Pads (synth pad sounds)" },
@@ -4810,7 +4812,7 @@ var S = {
   "\u4E0D\u518D\u53D1\u7ED9\u5B83": { en: "Stop sending to it" },
   "\u63A8\u5B50\u4E4B\u540E\u53D1\u4E00\u4EFD\u5230\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u653E\u5728\u6DF7\u97F3\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09": { en: "Sends a post-fader copy to a bus (reverb / delay live on buses, shared by several tracks)" },
   "\uFF0B \u53D1\u9001\u5230\u2026": { en: "\uFF0B Send to\u2026" },
-  "\u8FD8\u6CA1\u6709\u6DF7\u97F3\u8F68\uFF08\u300C\u22EF\u300D\u91CC\u52A0\uFF09": { en: "No buses yet (add one in \u201C\u22EF\u201D)" },
+  "\u8FD8\u6CA1\u6709\u6DF7\u97F3\u8F68\uFF08\u9876\u680F\u300C\uFF0B \u6DF7\u97F3\u8F68\u300D\u52A0\uFF09": { en: "No buses yet (add one with \u201C\uFF0B Bus\u201D at the top)" },
   "\u300C{out}\u300D\u4E0A\u7684{kind}\u662F\u5168\u6E7F\u7684\uFF1A\u51FA\u5230\u5B83 = \u539F\u58F0\u6CA1\u4E86\uFF0C\u53EA\u5269{kind2}\u3002\u8981\u539F\u58F0\u52A0{kind3}\uFF1A\u51FA\u5230\u603B\u8F68\uFF0C\u7528\u4E0B\u9762\u7684\u300C\u53D1\u9001\u300D\u3002": { en: "The {kind} on \u201C{out}\u201D is fully wet: outputting there = no dry sound, only {kind2}. For dry plus {kind3}: output to master and use \u201CSend\u201D below." },
   "\u51FA\u5230\u300C{out}\u300D= \u6574\u6761\u58F0\u97F3\u90FD\u8FC7\u5B83\u7684{kind}\uFF1A\u51FA\u5230\u5B83\u7684\u51E0\u6761\u8F68{kind2}\u4E00\u6837\u591A{dryDb}\u3002\u60F3\u6BCF\u6761\u8F68\u5404\u81EA\u591A\u5C11\uFF1A\u51FA\u5230\u603B\u8F68\u3001\u7528\u4E0B\u9762\u7684\u300C\u53D1\u9001\u300D\uFF0C\u90A3\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684{kind3}\u6539\u6210\u5168\u6E7F\u3002": { en: "Outputting to \u201C{out}\u201D = the whole sound passes through its {kind}: tracks output there all get the same {kind2}{dryDb}. For a different amount per track: output to master, use \u201CSend\u201D below, and make the {kind3} on that bus fully wet." },
   "\uFF0C\u539F\u58F0\u4E5F\u88AB\u5B83\u5173\u5C0F {dryDb}\uFF08\u63A8\u5B50\u4E0A\u770B\u4E0D\u51FA\u6765\uFF09": { en: ", and it also reduces the dry sound by {dryDb} (not visible on the fader)" },
@@ -4820,7 +4822,6 @@ var S = {
   "\u7C98\u6210\u65B0\u7684\u4E00\u683C\uFF1A{kind}": { en: "Paste as a new slot: {kind}" },
   "\u63D2\u4E00\u4E2A\u63D2\u4EF6\uFF08\u4EFB\u4F55\u63D2\u4EF6\u90FD\u80FD\u63D2\u5728\u4EFB\u4F55\u8F68\u4E0A\uFF09": { en: "Insert a plugin (any plugin works on any track)" },
   "\u4ECE\u8FD9\u6761\u8F68\u4E0A\u62FF\u6389\uFF08\u80FD\u64A4\u9500\uFF09": { en: "Remove from this track (can be undone)" },
-  "\u66F4\u591A\uFF1A\u52A0\u6DF7\u97F3\u8F68\u2026": { en: "More: add bus\u2026" },
   "\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD": { en: "Add a bus (routing track): several tracks send here to share effects, such as one reverb" },
   "\uFF0B \u6DF7\u97F3\u8F68": { en: "\uFF0B Bus" },
   "\u8D34\u5728\u5E95\u4E0B\u65F6\u663E\u793A\u51E0\u6392\u5361\u7247\uFF08\u540C\u5C0F\u952E\u76D8\u7684\u300C\u884C\u300D\uFF09\uFF1A\u81EA\u52A8 = \u534A\u5C4F\u653E\u5F97\u4E0B\u7684\u6700\u591A\u6392\uFF1B\u624B\u52A8\u6700\u591A\u5230\u5C4F\u5E55\u653E\u5F97\u4E0B\u3001\u8C31\u8FD8\u9732\u4E00\u6761\u4E3A\u6B62\u3002\u6A2A\u7740\u653E / \u5168\u5C4F\u65F6\u4E0D\u7BA1": { en: "How many rows of cards to show when docked at the bottom (like the keypad rows): Auto = as many as fit in half the screen; manual goes up to what the screen can hold while a strip of the score stays visible. Ignored when docked at the side or full screen" },
@@ -5078,7 +5079,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.81-2026-11-09";
+var APP_VERSION = "v0.16.82-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29676,15 +29677,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-1ef07fa49f30.mjs");
+      return pick(() => "singer-worker-2f91288db03b.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ee64e6a9a3d7.mjs");
+      return pick(() => "layout-worker-6def4220ecb4.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-de80acfb52ac.mjs");
+      return pick(() => "encode-worker-0adb8f07ef2a.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38492,6 +38493,7 @@ var HINT2 = {
 var COMP_HIST = 192;
 var RMS_ROW = row(_t("\u5E73\u5747"), HINT2.rms, `<output class="rms-val">\u2014</output>`, "", "strip-row");
 var CORR_ROW = row(_t("\u5DE6\u53F3\u76F8\u5173"), HINT2.corr, `<output class="corr-val">\u2014</output>`, "", "strip-row");
+var STEREO_TABS = /* @__PURE__ */ new Set(["basic", "send", "chain"]);
 var GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="gon-axis" d="M0,-1L0,1M-1,0L1,0"/><path class="gon" d=""/></svg>`;
 var Studio2 = class {
   constructor(parent, host2) {
@@ -38500,7 +38502,7 @@ var Studio2 = class {
     this.el = document.createElement("div");
     this.el.className = "studio";
     this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">${_t("\u6DF7\u97F3\u53F0")}</span><button class="btn" data-v="back" title="${_t("\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09")}">${_t("\u6536\u8D77")}</button><button class="btn" data-v="play" title="${_t("\u64AD\u653E\uFF08\u7A7A\u683C\uFF09")}"><svg class="ico"><use href="#play"/></svg></button><button class="btn mix-ab" data-v="bypass"></button><button class="btn mix-full" data-v="full" title="${_t("\u6DF7\u97F3\u53F0\u94FA\u6EE1\uFF08\u63A8\u5230\u6700\u4E0A\u9762\uFF0C\u5361\u7247\u6392\u6210\u597D\u51E0\u5217\uFF0C\u4E00\u773C\u770B\u5168\uFF09\uFF1B\u518D\u70B9 = \u56DE\u5230\u5E95\u5EA7")}">${_t("\u5168\u5C4F")}</button></div><div class="mix-tabbar"></div><div class="fx-note mix-ab-note" hidden>${_t("\u6548\u679C\u5168\u5173\u7740\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF0C\u53EA\u5269\u63A8\u5B50\u3001\u58F0\u50CF\u3001\u51FA\u5230\u548C\u603B\u8F68\u9650\u5E45\u2014\u2014\u542C\u8C31\u5B50\u672C\u8EAB / \u542C\u5DEE\u522B\u7528\uFF1B\u518D\u70B9\u4E00\u4E0B\u56DE\u6765\u3002\u5BFC\u51FA\u7167\u5E38\u5E26\u6548\u679C\u3002")}</div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">${_t("\u6DF7\u97F3\u53F0")}</span><button class="btn" data-v="play" title="${_t("\u64AD\u653E\uFF08\u7A7A\u683C\uFF09")}"><svg class="ico"><use href="#play"/></svg></button><button class="btn mix-ab" data-v="bypass"></button><span class="mix-right"><button class="btn mix-full" data-v="full"><svg class="ico"><use href="#maximize-viewport"/></svg></button><button class="btn mix-addbus" data-v="addbus" title="${_t("\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD")}">${_t("\uFF0B \u6DF7\u97F3\u8F68")}</button><button class="btn mix-more" data-v="more" title="${_t("\u66F4\u591A\uFF1A\u6392\u6570\u2026")}">\u22EF</button><button class="btn mix-hide" data-v="back" title="${_t("\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09")}" aria-label="${_t("\u6536\u8D77")}"><svg class="ico"><use href="#mixer-collapse"/></svg></button></span></div><div class="mix-tabbar"></div><div class="fx-note mix-ab-note" hidden>${_t("\u6548\u679C\u5168\u5173\u7740\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF0C\u53EA\u5269\u63A8\u5B50\u3001\u58F0\u50CF\u3001\u51FA\u5230\u548C\u603B\u8F68\u9650\u5E45\u2014\u2014\u542C\u8C31\u5B50\u672C\u8EAB / \u542C\u5DEE\u522B\u7528\uFF1B\u518D\u70B9\u4E00\u4E0B\u56DE\u6765\u3002\u5BFC\u51FA\u7167\u5E38\u5E26\u6548\u679C\u3002")}</div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
     parent.append(this.el);
     this.el.addEventListener("click", (e10) => this.onClick(e10));
     this.el.addEventListener("input", (e10) => this.onInput(e10));
@@ -38646,7 +38648,7 @@ var Studio2 = class {
   /** 总轨 / 混音轨推子后的左右采样 → 基础页卡片背景的李萨如图 + 左右相关（v0.10.16；user「声像对应的是莉萨如图吗？」「三个页同意」）。
    *  竖着 = 中 (L+R)/√2、横着 = (R−L)/√2（只有左 = 左上斜线）：竖线 = 单声道、越圆越宽、横着 = 反相。形状看的是左右关系，不看多响：按这一帧最大的那下缩放（太小的不放大）。 */
   stereo(tracks) {
-    if (this.el.hidden || this.tab !== "basic") return;
+    if (this.el.hidden || !STEREO_TABS.has(this.tab)) return;
     this.budgeted(() => this.drawStereo(tracks));
   }
   drawStereo(tracks) {
@@ -39075,7 +39077,7 @@ ${tg2.fx}`);
     const outSel = row(_t("\u51FA\u5230"), HINT2.out, "", `<select data-out>${[{ id: "master", name: _t("\u603B\u8F68") }, ...tg2].map((x2) => `<option value="${esc8(x2.id)}"${out === x2.id ? " selected" : ""}>${esc8(x2.name)}</option>`).join("")}${out !== "master" && !tg2.some((x2) => x2.id === out) ? `<option value="${esc8(out)}" selected>${_t("{out}\uFF08\u63A5\u4E0D\u4E0A\uFF09", { out: name(out) })}</option>` : ""}</select>`, "strip-row");
     const rows = sends.map((sd2) => `<div class="strip-send">${row(_t("\u53D1\u7ED9 {to}", { to: this.trackName(sd2.to) }), HINT2.send, `<output>${dbText(sd2.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd2.gainDb, attrs: `data-send="${esc8(sd2.to)}"`, def: -12, defText: "\u221212 dB" }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc8(sd2.to)}" title="${_t("\u4E0D\u518D\u53D1\u7ED9\u5B83")}">\u2715</button></div>`).join("");
     const free = tg2.filter((x2) => !sends.some((sd2) => sd2.to === x2.id));
-    const add = free.length ? `<select class="send-add" data-sendadd title="${_t("\u63A8\u5B50\u4E4B\u540E\u53D1\u4E00\u4EFD\u5230\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u653E\u5728\u6DF7\u97F3\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09")}"><option value="">${_t("\uFF0B \u53D1\u9001\u5230\u2026")}</option>${free.map((x2) => `<option value="${esc8(x2.id)}">${esc8(x2.name)}</option>`).join("")}</select>` : tg2.length ? "" : `<div class="fx-dim">${_t("\u8FD8\u6CA1\u6709\u6DF7\u97F3\u8F68\uFF08\u300C\u22EF\u300D\u91CC\u52A0\uFF09")}</div>`;
+    const add = free.length ? `<select class="send-add" data-sendadd title="${_t("\u63A8\u5B50\u4E4B\u540E\u53D1\u4E00\u4EFD\u5230\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u6DF7\u54CD / \u5EF6\u8FDF\u8FD9\u7C7B\u653E\u5728\u6DF7\u97F3\u8F68\u4E0A\uFF0C\u51E0\u6761\u8F68\u5171\u7528\uFF09")}"><option value="">${_t("\uFF0B \u53D1\u9001\u5230\u2026")}</option>${free.map((x2) => `<option value="${esc8(x2.id)}">${esc8(x2.name)}</option>`).join("")}</select>` : tg2.length ? "" : `<div class="fx-dim">${_t("\u8FD8\u6CA1\u6709\u6DF7\u97F3\u8F68\uFF08\u9876\u680F\u300C\uFF0B \u6DF7\u97F3\u8F68\u300D\u52A0\uFF09")}</div>`;
     const wet = out !== "master" ? this.host.chain(out).find(fullyWet) : void 0;
     const warn = wet ? `<div class="fx-note">${_t("\u300C{out}\u300D\u4E0A\u7684{kind}\u662F\u5168\u6E7F\u7684\uFF1A\u51FA\u5230\u5B83 = \u539F\u58F0\u6CA1\u4E86\uFF0C\u53EA\u5269{kind2}\u3002\u8981\u539F\u58F0\u52A0{kind3}\uFF1A\u51FA\u5230\u603B\u8F68\uFF0C\u7528\u4E0B\u9762\u7684\u300C\u53D1\u9001\u300D\u3002", { out: name(out), kind: esc8(pluginName(wet.kind)), kind2: esc8(pluginName(wet.kind)), kind3: esc8(pluginName(wet.kind)) })}</div>` : "";
     const shared = !wet && out !== "master" ? this.host.chain(out).find((f2) => (f2.kind === "reverb" || f2.kind === "delay" || f2.kind === "chorus") && f2.on !== false) : void 0;
@@ -39107,10 +39109,11 @@ ${tg2.fx}`);
   }
   renderBar() {
     const bar2 = this.el.querySelector(".mix-tabbar");
-    bar2.innerHTML = `<span class="fx-seg mix-tabs" role="tablist">${TABS.map((x2) => `<button class="btn${this.tab === x2.id ? " is-on" : ""}" data-v="tab" data-tab="${x2.id}" role="tab" title="${esc8(x2.hint)}">${esc8(x2.label)}</button>`).join("")}</span><button class="btn mix-more${this.menuOpen ? " is-on" : ""}" data-v="more" title="${_t("\u66F4\u591A\uFF1A\u52A0\u6DF7\u97F3\u8F68\u2026")}">\u22EF</button>`;
+    bar2.innerHTML = `<span class="fx-seg mix-tabs" role="tablist">${TABS.map((x2) => `<button class="btn${this.tab === x2.id ? " is-on" : ""}" data-v="tab" data-tab="${x2.id}" role="tab" title="${esc8(x2.hint)}">${esc8(x2.label)}</button>`).join("")}</span>`;
+    this.el.querySelector(".mix-more")?.classList.toggle("is-on", this.menuOpen);
     const menu = this.el.querySelector(".mix-menu");
     menu.hidden = !this.menuOpen;
-    menu.innerHTML = this.menuOpen ? `<button class="btn cand" data-v="addbus" title="${_t("\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD")}">${_t("\uFF0B \u6DF7\u97F3\u8F68")}</button><span class="mix-rows" title="${_t("\u8D34\u5728\u5E95\u4E0B\u65F6\u663E\u793A\u51E0\u6392\u5361\u7247\uFF08\u540C\u5C0F\u952E\u76D8\u7684\u300C\u884C\u300D\uFF09\uFF1A\u81EA\u52A8 = \u534A\u5C4F\u653E\u5F97\u4E0B\u7684\u6700\u591A\u6392\uFF1B\u624B\u52A8\u6700\u591A\u5230\u5C4F\u5E55\u653E\u5F97\u4E0B\u3001\u8C31\u8FD8\u9732\u4E00\u6761\u4E3A\u6B62\u3002\u6A2A\u7740\u653E / \u5168\u5C4F\u65F6\u4E0D\u7BA1")}">${_t("\u6392\u6570")}<button class="btn" data-v="rows:-" aria-label="${_t("\u5C11\u4E00\u6392")}">\u2212</button><b class="mix-rows-n"></b><button class="btn" data-v="rows:+" aria-label="${_t("\u591A\u4E00\u6392")}">+</button><button class="btn chip" data-v="rows:auto">${_t("\u81EA\u52A8")}</button></span>` : "";
+    menu.innerHTML = this.menuOpen ? `<span class="mix-rows" title="${_t("\u8D34\u5728\u5E95\u4E0B\u65F6\u663E\u793A\u51E0\u6392\u5361\u7247\uFF08\u540C\u5C0F\u952E\u76D8\u7684\u300C\u884C\u300D\uFF09\uFF1A\u81EA\u52A8 = \u534A\u5C4F\u653E\u5F97\u4E0B\u7684\u6700\u591A\u6392\uFF1B\u624B\u52A8\u6700\u591A\u5230\u5C4F\u5E55\u653E\u5F97\u4E0B\u3001\u8C31\u8FD8\u9732\u4E00\u6761\u4E3A\u6B62\u3002\u6A2A\u7740\u653E / \u5168\u5C4F\u65F6\u4E0D\u7BA1")}">${_t("\u6392\u6570")}<button class="btn" data-v="rows:-" aria-label="${_t("\u5C11\u4E00\u6392")}">\u2212</button><b class="mix-rows-n"></b><button class="btn" data-v="rows:+" aria-label="${_t("\u591A\u4E00\u6392")}">+</button><button class="btn chip" data-v="rows:auto">${_t("\u81EA\u52A8")}</button></span>` : "";
     this.syncRowsCtl();
   }
   /** 「⋯」里排数那一行的字和能不能按（fitHeight 算完 / 菜单画完都调）。 */
@@ -39125,7 +39128,7 @@ ${tg2.fx}`);
   }
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   card(id2, cls, name, who, body2, color) {
-    const spec = this.tab === "eq" ? this.specSvg(id2) : this.tab === "basic" ? GONIO_SVG : this.tab === "comp" ? this.compSvg(id2) : "";
+    const spec = this.tab === "eq" ? this.specSvg(id2) : STEREO_TABS.has(this.tab) ? GONIO_SVG : this.tab === "comp" ? this.compSvg(id2) : "";
     return `<div class="strip${cls}" data-id="${esc8(id2)}"${color ? ` data-color style="--cat:${esc8(color)}"` : ""}>${spec}<div class="strip-meter"><i></i><b></b></div>${name}${who ? `<div class="strip-who">${esc8(who)}</div>` : ""}<div class="strip-body">${body2}</div></div>`;
   }
   /** 贴底（混音台在底下，默认）：高度 = 顶上两条 + 正好 N 排卡片（N = 半屏放得下的最多排，至少一排；卡片不多 = 有几排就几排），不再切在第二排中间。
@@ -39162,22 +39165,24 @@ ${tg2.fx}`);
     this.el.querySelector(".mix-ab-note").hidden = !off;
     this.el.classList.toggle("bypassed", off);
     const fb = this.el.querySelector(".mix-full");
-    fb.textContent = this.full ? _t("\u8FD8\u539F") : _t("\u5168\u5C4F");
     fb.classList.toggle("is-on", this.full);
+    fb.title = this.full ? _t("\u8FD8\u539F\uFF1A\u56DE\u5230\u5E95\u5EA7") : _t("\u6DF7\u97F3\u53F0\u94FA\u6EE1\uFF08\u63A8\u5230\u6700\u4E0A\u9762\uFF0C\u5361\u7247\u6392\u6210\u597D\u51E0\u5217\uFF0C\u4E00\u773C\u770B\u5168\uFF09\uFF1B\u518D\u70B9 = \u56DE\u5230\u5E95\u5EA7");
+    fb.setAttribute("aria-label", this.full ? _t("\u8FD8\u539F") : _t("\u5168\u5C4F"));
     if (this.open && !this.slotOf(this.open)) this.open = null;
     this.renderBar();
     const nameDiv = (s10) => `<div class="strip-name">${esc8(s10)}</div>`;
-    const masterBody = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") + row(_t("\u9650\u5E45"), HINT2.limiter, "", `<button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter">${m2.limiter ? _t("\u5F00\u7740") : _t("\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09")}</button>`, "strip-row") + row(_t("\u5CF0\u503C"), HINT2.peak, `<span class="meter-val">\u2014</span>`, "", "strip-row") + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">${_t("\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904")}</div>` : this.chipsHtml(MASTER);
+    const gainRow = (attrs, hint2, db) => row(_t("\u589E\u76CA"), hint2, `<output>${dbText(db)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: db, attrs, def: 0, defText: "0 dB" }), "strip-row");
+    const masterBody = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.masterGain, `<output>${dbText(m2.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m2.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") + row(_t("\u9650\u5E45"), HINT2.limiter, "", `<button class="btn cand${m2.limiter ? " is-on" : ""}" data-v="limiter">${m2.limiter ? _t("\u5F00\u7740") : _t("\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09")}</button>`, "strip-row") + row(_t("\u5CF0\u503C"), HINT2.peak, `<span class="meter-val">\u2014</span>`, "", "strip-row") + RMS_ROW + CORR_ROW : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? gainRow("data-master", HINT2.masterGain, m2.gainDb) + `<div class="fx-dim">${_t("\u603B\u8F68\u5C31\u662F\u8F93\u51FA\uFF0C\u4E0D\u518D\u53D1\u7ED9\u522B\u5904")}</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv(_t("\u603B\u8F68")), _t("\u6240\u6709\u58F0\u90E8\u6DF7\u5728\u4E00\u8D77\u4E4B\u540E"), masterBody);
     const buses = this.host.buses(), busCards = buses.map((b3, k2) => {
-      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.busGain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: 0, defText: _t("\u4E2D") }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="strip-btns"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765")}">${b3.bypass ? _t("\u65C1\u901A\u4E2D") : _t("\u65C1\u901A")}</button><button class="btn" data-v="busleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D")}"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="${_t("\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389")}</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? this.routeHtml(b3.id) : this.chipsHtml(b3.id);
-      const name = tab === "basic" ? `<input class="bus-name" value="${esc8(b3.name)}" title="${_t("\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09")}" />` : nameDiv(b3.name);
+      const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.busGain, `<output>${dbText(b3.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b3.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(b3.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b3.pan, attrs: "data-buspan", def: 0, defText: _t("\u4E2D") }), "strip-row") + RMS_ROW + CORR_ROW + `<div class="strip-btns"><button class="btn cand${b3.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("\u65C1\u901A\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0A\u7684\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF08\u63A8\u5B50 / \u58F0\u50CF / \u51FA\u5230 / \u53D1\u9001\u7167\u65E7\uFF09\uFF1B\u518D\u70B9 = \u56DE\u6765")}">${b3.bypass ? _t("\u65C1\u901A\u4E2D") : _t("\u65C1\u901A")}</button><button class="btn" data-v="busleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="busright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D")}"${k2 === buses.length - 1 ? " disabled" : ""}>\u203A</button><button class="btn cand danger" data-v="delbus" title="${_t("\u5220\u6389\u8FD9\u6761\u6DF7\u97F3\u8F68\uFF08\u53D1\u7ED9\u5B83\u7684\u3001\u51FA\u5230\u5B83\u7684\u90FD\u6539\u56DE\u603B\u8F68\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389")}</button></div>` : tab === "eq" || tab === "comp" ? this.inlineHtml(b3.id, tab) : tab === "send" ? gainRow("data-busgain", HINT2.busGain, b3.gainDb) + this.routeHtml(b3.id) : this.chipsHtml(b3.id);
+      const name = `<input class="bus-name" value="${esc8(b3.name)}" title="${_t("\u540D\u5B57\uFF08\u70B9\u4E86\u6539\uFF09")}" />`;
       const ms = `<span class="strip-ms"><button class="btn${b3.muted ? " is-on mute" : ""}" data-v="busmute" title="${_t("\u9759\u97F3\uFF1A\u8FD9\u6761\u6DF7\u97F3\u8F68\u4E0D\u51FA\u58F0\u3001\u4E5F\u4E0D\u5F80\u4E0B\u53D1\uFF08\u53D1\u7ED9\u5B83\u7684\u90A3\u51E0\u4F4D\u539F\u58F0\u7167\u65E7\uFF09")}">${_t("\u9759")}</button></span>`;
       return this.card(b3.id, ` bus${b3.bypass ? " bypassed" : ""}`, `<div class="strip-head">${name}${ms}</div>`, b3.bypass ? _t("\u6DF7\u97F3\u8F68 \xB7 \u65C1\u901A\u4E2D\uFF08\u63D2\u4EF6\u5168\u8DF3\u8FC7\uFF09") : _t("\u6DF7\u97F3\u8F68"), body2);
     }).join("");
     const strips = this.host.strips(), singers = strips.map((s10, k2) => {
       const body2 = tab === "basic" ? row(_t("\u589E\u76CA"), HINT2.gain, `<output>${dbText(s10.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s10.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") + row(_t("\u58F0\u50CF"), HINT2.pan, `<output>${panText(s10.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s10.pan, attrs: "data-pan", def: 0, defText: _t("\u4E2D") }), "strip-row") + RMS_ROW + `<div class="strip-btns"><button class="btn" data-v="partleft" title="${_t("\u5F80\u524D\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0A\u632A\uFF09")}"${k2 === 0 ? " disabled" : ""}>\u2039</button><button class="btn" data-v="partright" title="${_t("\u5F80\u540E\u632A\u4E00\u4F4D\uFF08\u8C31\u4E0A\u8FD9\u4E2A\u58F0\u90E8\u4E5F\u5F80\u4E0B\u632A\uFF09")}"${k2 === strips.length - 1 ? " disabled" : ""}>\u203A</button></div>` + // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
-      (s10.refs ? `<div class="strip-refs">${_t("\u5728 {refs} \u5F20\u7EB8\u4E0A", { refs: s10.refs })}</div>` : `<div class="strip-refs">${_t("\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709")} <button class="btn cand danger" data-v="delpart" title="${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8")}</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? this.routeHtml(s10.id) : this.chipsHtml(s10.id);
+      (s10.refs ? `<div class="strip-refs">${_t("\u5728 {refs} \u5F20\u7EB8\u4E0A", { refs: s10.refs })}</div>` : `<div class="strip-refs">${_t("\u54EA\u5F20\u7EB8\u4E0A\u90FD\u6CA1\u6709")} <button class="btn cand danger" data-v="delpart" title="${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8\uFF08\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u8FD9\u4E2A\u58F0\u90E8")}</button></div>`) : tab === "eq" || tab === "comp" ? this.inlineHtml(s10.id, tab) : tab === "send" ? gainRow("data-gain", HINT2.gain, s10.gainDb) + this.routeHtml(s10.id) : this.chipsHtml(s10.id);
       const ms = `<span class="strip-ms"><button class="btn${s10.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("\u9759\u97F3\uFF08\u8FD9\u4F4D\u4E0D\u51FA\u58F0\uFF1B\u548C\u8C31\u4E0A\u58F0\u90E8\u540D\u4E0B\u9762\u7684\u300C\u9759\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u9759")}</button><button class="btn${s10.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09")}">${_t("\u72EC")}</button></span>`;
       return this.card(s10.id, "", `<div class="strip-head">${nameDiv(s10.name)}${ms}</div>`, s10.performer, body2, s10.color);
     }).join("");
@@ -53631,7 +53636,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "3b82df789426",
+  cssHash: "b0cf901968da",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -54249,7 +54254,7 @@ engine.on("spectrum", (sr2, tracks) => studio.spectrum(sr2, tracks));
 function syncSpectrum() {
   const on2 = studio.isOpen && document.visibilityState === "visible";
   engine.spectrum(on2 && studio.currentTab === "eq");
-  engine.stereo(on2 && studio.currentTab === "basic");
+  engine.stereo(on2 && STEREO_TABS.has(studio.currentTab));
 }
 function openFinder() {
   const back = instShown();
@@ -57677,4 +57682,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-306aa5d5bb8e.mjs.map
+//# sourceMappingURL=moonsinger-00bf79a4a39e.mjs.map

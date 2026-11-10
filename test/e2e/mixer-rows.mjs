@@ -10,7 +10,7 @@ const p = await (await b.newContext({ viewport: { width: 820, height: 1180 } }))
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
 await p.evaluate(() => window.__moonsinger.setMode("listen")); await p.waitForTimeout(300);
 const more = async () => { if (!(await p.$(".mix-menu:not([hidden])"))) { await p.click(".studio .mix-more"); await p.waitForTimeout(150); } };
-for (let i = 0; i < 8; i++) { await more(); await p.click('.mix-menu [data-v="addbus"]'); await p.waitForTimeout(120); }   // 卡片多到好几排
+for (let i = 0; i < 8; i++) { await p.click('.studio .mix-right [data-v="addbus"]'); await p.waitForTimeout(120); }   // 卡片多到好几排
 await more();
 const st = () => p.evaluate(() => { const s = document.querySelector(".studio"), st = document.querySelector("#stage"), card = s.querySelector(".strip"); return { h: s.getBoundingClientRect().height, top: s.getBoundingClientRect().top, stageTop: st.getBoundingClientRect().top, card: card.getBoundingClientRect().height, n: s.querySelector(".mix-rows-n")?.textContent, plus: s.querySelector('[data-v="rows:+"]')?.disabled, minus: s.querySelector('[data-v="rows:-"]')?.disabled, auto: s.querySelector('[data-v="rows:auto"]')?.classList.contains("is-on") }; });
 const a0 = await st();

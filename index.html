@@ -53,9 +53,9 @@
     <!-- 标签页 = user 手画的 32 像素档（原样 1:1）；icon.svg 不挂这里，免得浏览器拿矢量缩到 16 px 盖掉它。详 ai-docs/20261011-icon-tiers.md -->
     <link rel="icon" href="./icon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-180.png" />
-    <link rel="stylesheet" href="./vendor/internal-css/workbench-elements.css?v=3b82df789426" />
-    <link rel="stylesheet" href="./vendor/internal-css/gallery.css?v=3b82df789426" />
-    <link rel="stylesheet" href="./styles.css?v=3b82df789426" />
+    <link rel="stylesheet" href="./vendor/internal-css/workbench-elements.css?v=b0cf901968da" />
+    <link rel="stylesheet" href="./vendor/internal-css/gallery.css?v=b0cf901968da" />
+    <link rel="stylesheet" href="./styles.css?v=b0cf901968da" />
     <script>
       // bundle 加载前的兜底：任何脚本错误糊一张红条（iPad 无 devtools）。抄 CatsUp。
       (function () {
@@ -84,7 +84,7 @@
     <!-- ICON-SPRITE:BEGIN — 由 scripts/inline-sprites.py 生成，勿手改 -->
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;pointer-events:none">
 <!--
-  70 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
+  71 icons extracted from the family icon library (../20260708 SVG Icons/icons.svg) by extract-icons.py — do not hand-edit; re-run the script instead.
   Family SVG Icons — MIT License, Copyright (c) 2026 fangzhangmnm.
   Contains work derived from (per-icon provenance in data-src):
     Feather Icons — MIT License, Copyright (c) 2013-2023 Cole Bemis · https://github.com/feathericons/feather
@@ -226,6 +226,8 @@
   <symbol id="picture-in-picture" data-cat="viewport" data-src="own" data-note="画中画:大框(主画布) + 右下角内嵌小窗(参考小窗自己)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><!-- 大框（主画布）+ 内嵌小窗（参考小窗自己）—— picture-in-picture 隐喻 --> <rect x="3" y="4" width="18" height="14" rx="2"/> <rect x="12" y="10" width="7" height="5" rx="1"/></symbol>
   <!-- one-to-one — 1:1 像素:四角括号 + 中心一颗实心像素=「一图像素对一屏像素」(不写 1:1 文字)【WeebPaint 参考窗 ＋ 菜单「1:1 像素」项；fable 自画未过目】 -->
   <symbol id="one-to-one" data-cat="viewport" data-src="own" data-note="1:1 像素:四角括号 + 中心一颗实心像素=「一图像素对一屏像素」(不写 1:1 文字)【WeebPaint 参考窗 ＋ 菜单「1:1 像素」项；fable 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 V3.5 H8"/><path d="M16 3.5 H20.5 V8"/><path d="M20.5 16 V20.5 H16"/><path d="M8 20.5 H3.5 V16"/><rect x="9.6" y="9.6" width="4.8" height="4.8" fill="currentColor" stroke="none"/></symbol>
+  <!-- maximize-viewport — 适配视口:四角向外的箭头(reset-transform=同形别名 id, 改动保持同几何) -->
+  <symbol id="maximize-viewport" data-cat="viewport" data-src="own" data-note="适配视口:四角向外的箭头(reset-transform=同形别名 id, 改动保持同几何)" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><!-- 四角向外的箭头 --> <polyline points="4 9 4 4 9 4"/> <polyline points="20 9 20 4 15 4"/> <polyline points="4 15 4 20 9 20"/> <polyline points="20 15 20 20 15 20"/></symbol>
   <!-- ui -->
   <!-- backspace — 退格 ⌫:左尖五边形 + 内部 ×【WebXiaoHeiWu 话筒左邻浮动「退格」钮；fable 自画未过目】 -->
   <symbol id="backspace" data-cat="ui" data-src="own" data-note="退格 ⌫:左尖五边形 + 内部 ×【WebXiaoHeiWu 话筒左邻浮动「退格」钮；fable 自画未过目】" data-review="pending" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5 H19.5 a1.5 1.5 0 0 1 1.5 1.5 v11 a1.5 1.5 0 0 1 -1.5 1.5 H9 L3 12 Z"/><path d="M11.5 9.5 L17 14.5 M17 9.5 L11.5 14.5"/></symbol>
@@ -247,6 +249,6 @@
         <aside id="padPanel" class="pad-panel"></aside>
       </main>
     </div>
-    <script type="module" src="./dist/moonsinger-306aa5d5bb8e.mjs" onerror="window.__msShowError && window.__msShowError(\'主程序没加载下来（刚发了新版本还没到、或网络不通）：等几秒再刷新一次\')"></script>
+    <script type="module" src="./dist/moonsinger-00bf79a4a39e.mjs" onerror="window.__msShowError && window.__msShowError(\'主程序没加载下来（刚发了新版本还没到、或网络不通）：等几秒再刷新一次\')"></script>
   </body>
 </html>

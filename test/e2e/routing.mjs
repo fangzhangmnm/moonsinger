@@ -20,8 +20,8 @@ const peak = () => p.evaluate(async () => { const m = await window.__moonsinger.
 const strip = (id) => `.strip[data-id="${id}"]`;
 
 const tab = async (t) => { await p.click(`.mix-tabbar [data-tab="${t}"]`); await p.waitForTimeout(120); };
-const addBus = async () => { await p.click('.mix-tabbar [data-v="more"]'); await p.waitForTimeout(80); await p.click('.mix-menu [data-v="addbus"]'); await p.waitForTimeout(150); };
-check(!(await p.$('.studio-strips [data-v="addbus"]')), "加混音轨不占一张空卡片（在「⋯」里；user「混音轨不要用一个单独的空页面」）");
+const addBus = async () => { await p.click('.studio .mix-right [data-v="addbus"]'); await p.waitForTimeout(150); };
+check(!(await p.$('.studio-strips [data-v="addbus"]')), "加混音轨不占一张空卡片（顶栏一颗钮，v0.16.82 起；user「混音轨不要用一个单独的空页面」）");
 await addBus(); await addBus();
 const buses = (await tracks()).filter((t) => t.kind === "bus");
 check(buses.length === 2 && buses[0].name === "混音轨 1" && buses[1].name === "混音轨 2", "＋ 混音轨 两次 = 两条（混音轨 1 / 2）", JSON.stringify(buses.map((x) => x.name)));
@@ -137,6 +137,21 @@ await p.waitForTimeout(300);
   await p.$eval(`.strip[data-id="${last.id}"]`, (el) => el.scrollIntoView()); await p.waitForTimeout(900);
   check(((await p.$eval(`.strip[data-id="${last.id}"] .strip-spec .spec`, (e) => e.getAttribute("d"))) ?? "").length > 0, "滚回来 = 接着画"); }
 if (await p.evaluate(() => window.__moonsinger.engine.playing)) await p.click("#playBtn");
+// 混音台顶栏六样（v0.16.82，总表第 9 条）
+check(JSON.stringify(await p.$$eval(".studio .mix-right > [data-v]", (bs) => bs.map((x) => x.dataset.v))) === JSON.stringify(["full", "addbus", "more", "back"]), "顶栏右边一组：全屏 · ＋ 混音轨 · ⋯ · 收起（收起在最右）");
+check(!!(await p.$(".studio .mix-right .mix-hide use[href='#mixer-collapse']")) && !!(await p.$(".studio .mix-full use[href='#maximize-viewport']")), "收起、全屏都是图标");
+await tab("send");
+check(!!(await p.$(`${strip(ids[0].id)} .strip-gonio`)), "发送页卡片背景也有李萨如图");
+const g0 = (await tr(ids[0].mic))?.gainDb;
+await p.$eval(`${strip(ids[0].id)} input[data-gain]`, (el) => { el.value = "-6"; el.dispatchEvent(new Event("input", { bubbles: true })); el.dispatchEvent(new Event("change", { bubbles: true })); }); await p.waitForTimeout(150);
+check((await tr(ids[0].mic))?.gainDb === -6 && g0 !== -6, "发送页每张卡带自己的增益推子，拧了进歌", `${g0} → ${(await tr(ids[0].mic))?.gainDb}`);
+await tab("chain");
+check(!!(await p.$(`${strip(ids[0].id)} .strip-gonio`)), "链页卡片背景也有李萨如图");
+const busId = await p.$eval(".strip.bus", (el) => el.dataset.id).catch(() => null);
+if (busId) {
+  await p.$eval(`${strip(busId)} input.bus-name`, (el) => { el.value = "链页改的名"; el.dispatchEvent(new Event("change", { bubbles: true })); }); await p.waitForTimeout(150);
+  check(await p.$eval(`${strip(busId)} input.bus-name`, (el) => el.value) === "链页改的名", "链页也能改混音轨的名字");
+} else check(false, "链页也能改混音轨的名字（没找到混音轨）");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nrouting: ${pass} passed, ${fail} failed`);

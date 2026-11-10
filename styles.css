@@ -605,7 +605,9 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .mix-tabbar { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .mix-tabbar .mix-tabs .btn { padding: 0 10px; }
 .mix-tabbar .mix-mode { height: 28px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink); font: inherit; font-size: 13px; }
-.mix-tabbar .mix-more { margin-left: auto; height: 28px; min-width: 32px; }
+.studio .mix-right { margin-left: auto; display: flex; align-items: center; gap: 6px; flex: none; }   /* 混音台顶栏右边一组（v0.16.82）：全屏 · ＋ 混音轨 · ⋯ · 收起（最右，同键盘的收起钮） */
+.studio .mix-right .mix-more { min-width: 32px; }
+.studio .mix-right .mix-addbus { white-space: nowrap; }
 .mix-menu { display: flex; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--line); background: var(--bg); }
 .mix-menu[hidden] { display: none; }
 .mix-menu .mix-rows { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 13px; color: var(--muted); }

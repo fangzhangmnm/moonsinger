@@ -108,6 +108,8 @@ const COMP_HIST = 192;
 const RMS_ROW = row(_t("平均"), HINT.rms, `<output class="rms-val">—</output>`, "", "strip-row");
 const CORR_ROW = row(_t("左右相关"), HINT.corr, `<output class="corr-val">—</output>`, "", "strip-row");
 /** 李萨如图的底：竖线 = 单声道、横线 = 反相；左上 / 右上 = 只有左 / 右声道。 */
+/** 卡片背景画李萨如图的几页（基础 / 发送 / 链；v0.16.82，user「发送」「链」两页也要）。统计照旧只在混音台开着、页面看得见、在这几页时算（main.ts syncSpectrum）。 */
+export const STEREO_TABS: ReadonlySet<string> = new Set(["basic", "send", "chain"]);
 const GONIO_SVG = `<svg class="strip-gonio" viewBox="-1 -1 2 2" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="gon-axis" d="M0,-1L0,1M-1,0L1,0"/><path class="gon" d=""/></svg>`;   // 不写「左 / 右」字（v0.10.21，user「李萨如 左字和ui overlap了」）：方向写在「左右相关」的问号里
 /** 一格的位置：哪条轨的哪一格（插件格的读写、面板和卡片上摊开的控件都按它找）。 */
 interface Target { track: string; fx: string }
@@ -165,7 +167,12 @@ export class Studio {
   constructor(parent: HTMLElement, private host: StudioHost) {
     addEventListener("resize", () => this.fitHeight());   // 转屏 / 窗口变了：重新按整排对齐
     this.el = document.createElement("div"); this.el.className = "studio"; this.el.hidden = true;
-    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">${_t("混音台")}</span><button class="btn" data-v="back" title="${_t("收起混音台：底座让出来、还在「听」（Esc = 回去写）")}">${_t("收起")}</button><button class="btn" data-v="play" title="${_t("播放（空格）")}"><svg class="ico"><use href="#play"/></svg></button><button class="btn mix-ab" data-v="bypass"></button><button class="btn mix-full" data-v="full" title="${_t("混音台铺满（推到最上面，卡片排成好几列，一眼看全）；再点 = 回到底座")}">${_t("全屏")}</button></div>` +
+    this.el.innerHTML = `<div class="finder-bar"><span class="finder-title">${_t("混音台")}</span><button class="btn" data-v="play" title="${_t("播放（空格）")}"><svg class="ico"><use href="#play"/></svg></button><button class="btn mix-ab" data-v="bypass"></button>` +
+      // 右边这一组（v0.16.82，总表第 9 条 ①②③，从右往左）：收起（和键盘的收起钮同一个位置）· ⋯ 设置 ·「＋ 混音轨」· 全屏（图标）
+      `<span class="mix-right"><button class="btn mix-full" data-v="full"><svg class="ico"><use href="#maximize-viewport"/></svg></button>` +
+      `<button class="btn mix-addbus" data-v="addbus" title="${_t("加一条混音轨（路由轨）：几条轨发过来一起过效果，比如共用一个混响")}">${_t("＋ 混音轨")}</button>` +
+      `<button class="btn mix-more" data-v="more" title="${_t("更多：排数…")}">⋯</button>` +
+      `<button class="btn mix-hide" data-v="back" title="${_t("收起混音台：底座让出来、还在「听」（Esc = 回去写）")}" aria-label="${_t("收起")}"><svg class="ico"><use href="#mixer-collapse"/></svg></button></span></div>` +
       `<div class="mix-tabbar"></div><div class="fx-note mix-ab-note" hidden>${_t("效果全关着：插件和发送都不响，只剩推子、声像、出到和总轨限幅——听谱子本身 / 听差别用；再点一下回来。导出照常带效果。")}</div><div class="mix-menu" hidden></div><div class="fx-panel" data-fxwrap hidden></div><div class="studio-strips"></div>`;
     parent.append(this.el);
     this.el.addEventListener("click", (e) => this.onClick(e));
@@ -209,7 +216,7 @@ export class Studio {
   /** 总轨 / 混音轨推子后的左右采样 → 基础页卡片背景的李萨如图 + 左右相关（v0.10.16；user「声像对应的是莉萨如图吗？」「三个页同意」）。
    *  竖着 = 中 (L+R)/√2、横着 = (R−L)/√2（只有左 = 左上斜线）：竖线 = 单声道、越圆越宽、横着 = 反相。形状看的是左右关系，不看多响：按这一帧最大的那下缩放（太小的不放大）。 */
   stereo(tracks: Record<string, { L: Float32Array; R: Float32Array }>): void {
-    if (this.el.hidden || this.tab !== "basic") return;
+    if (this.el.hidden || !STEREO_TABS.has(this.tab)) return;
     this.budgeted(() => this.drawStereo(tracks));
   }
   private drawStereo(tracks: Record<string, { L: Float32Array; R: Float32Array }>): void {
@@ -453,7 +460,7 @@ export class Studio {
     const outSel = row(_t("出到"), HINT.out, "", `<select data-out>${[{ id: "master", name: _t("总轨") }, ...tg].map((x) => `<option value="${esc(x.id)}"${out === x.id ? " selected" : ""}>${esc(x.name)}</option>`).join("")}${out !== "master" && !tg.some((x) => x.id === out) ? `<option value="${esc(out)}" selected>${_t("{out}（接不上）", { out: name(out) })}</option>` : ""}</select>`, "strip-row");
     const rows = sends.map((sd) => `<div class="strip-send">${row(_t("发给 {to}", { to: this.trackName(sd.to) }), HINT.send, `<output>${dbText(sd.gainDb)}</output>`, slider({ min: -40, max: 6, step: 0.5, value: sd.gainDb, attrs: `data-send="${esc(sd.to)}"`, def: -12, defText: "−12 dB" }), "strip-row")}<button class="btn" data-v="sendx" data-to="${esc(sd.to)}" title="${_t("不再发给它")}">✕</button></div>`).join("");
     const free = tg.filter((x) => !sends.some((sd) => sd.to === x.id));
-    const add = free.length ? `<select class="send-add" data-sendadd title="${_t("推子之后发一份到一条混音轨（混响 / 延迟这类放在混音轨上，几条轨共用）")}"><option value="">${_t("＋ 发送到…")}</option>${free.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select>` : (tg.length ? "" : `<div class="fx-dim">${_t("还没有混音轨（「⋯」里加）")}</div>`);
+    const add = free.length ? `<select class="send-add" data-sendadd title="${_t("推子之后发一份到一条混音轨（混响 / 延迟这类放在混音轨上，几条轨共用）")}"><option value="">${_t("＋ 发送到…")}</option>${free.map((x) => `<option value="${esc(x.id)}">${esc(x.name)}</option>`).join("")}</select>` : (tg.length ? "" : `<div class="fx-dim">${_t("还没有混音轨（顶栏「＋ 混音轨」加）")}</div>`);
     // 出到一条带全湿效果的混音轨 = 原声没了：明说（v0.10.10；user「开了混响结果铃声都哑掉了」）
     const wet = out !== "master" ? this.host.chain(out).find(fullyWet) : undefined;
     const warn = wet ? `<div class="fx-note">${_t("「{out}」上的{kind}是全湿的：出到它 = 原声没了，只剩{kind2}。要原声加{kind3}：出到总轨，用下面的「发送」。", { out: name(out), kind: esc(pluginName(wet.kind)), kind2: esc(pluginName(wet.kind)), kind3: esc(pluginName(wet.kind)) })}</div>` : "";
@@ -485,11 +492,11 @@ export class Studio {
   private renderBar(): void {
     const bar = this.el.querySelector<HTMLElement>(".mix-tabbar")!;
     bar.innerHTML = `<span class="fx-seg mix-tabs" role="tablist">${TABS.map((x) => `<button class="btn${this.tab === x.id ? " is-on" : ""}" data-v="tab" data-tab="${x.id}" role="tab" title="${esc(x.hint)}">${esc(x.label)}</button>`).join("")}</span>` +
-      `<button class="btn mix-more${this.menuOpen ? " is-on" : ""}" data-v="more" title="${_t("更多：加混音轨…")}">⋯</button>`;
+      "";
+    this.el.querySelector(".mix-more")?.classList.toggle("is-on", this.menuOpen);
     const menu = this.el.querySelector<HTMLElement>(".mix-menu")!;
     menu.hidden = !this.menuOpen;
-    menu.innerHTML = this.menuOpen ? `<button class="btn cand" data-v="addbus" title="${_t("加一条混音轨（路由轨）：几条轨发过来一起过效果，比如共用一个混响")}">${_t("＋ 混音轨")}</button>` +
-      `<span class="mix-rows" title="${_t("贴在底下时显示几排卡片（同小键盘的「行」）：自动 = 半屏放得下的最多排；手动最多到屏幕放得下、谱还露一条为止。横着放 / 全屏时不管")}">${_t("排数")}` +
+    menu.innerHTML = this.menuOpen ? `<span class="mix-rows" title="${_t("贴在底下时显示几排卡片（同小键盘的「行」）：自动 = 半屏放得下的最多排；手动最多到屏幕放得下、谱还露一条为止。横着放 / 全屏时不管")}">${_t("排数")}` +
         `<button class="btn" data-v="rows:-" aria-label="${_t("少一排")}">−</button><b class="mix-rows-n"></b><button class="btn" data-v="rows:+" aria-label="${_t("多一排")}">+</button>` +
         `<button class="btn chip" data-v="rows:auto">${_t("自动")}</button></span>` : "";
     this.syncRowsCtl();
@@ -505,7 +512,7 @@ export class Studio {
   }
   /** 一张卡片：顶上一条峰值细线 + 名字 + 这一页的内容。 */
   private card(id: string, cls: string, name: string, who: string, body: string, color?: string): string {
-    const spec = this.tab === "eq" ? this.specSvg(id) : this.tab === "basic" ? GONIO_SVG : this.tab === "comp" ? this.compSvg(id) : "";   // EQ 页：卡片背景 = 频谱 + 这一格 EQ 的曲线；基础页 = 每张卡都有李萨如图（单声道轨 = 声像角度的一根线）
+    const spec = this.tab === "eq" ? this.specSvg(id) : STEREO_TABS.has(this.tab) ? GONIO_SVG : this.tab === "comp" ? this.compSvg(id) : "";   // v0.16.82：发送 / 链两页也画李萨如图（总表第 9 条 ④）   // EQ 页：卡片背景 = 频谱 + 这一格 EQ 的曲线；基础页 = 每张卡都有李萨如图（单声道轨 = 声像角度的一根线）
     // 卡片一样高（= 基础页的那么高；v0.10.21，user「混音台能解决卡片太长的问题吗？不方便纵览。能不能约定一个卡片的fixed的大小，然后里面自己想办法」「我比较喜欢基础模式的卡片大小」）：名字钉在上面，下面的放不下 = 卡片里自己滚
     return `<div class="strip${cls}" data-id="${esc(id)}"${color ? ` data-color style="--cat:${esc(color)}"` : ""}>${spec}<div class="strip-meter"><i></i><b></b></div>${name}${who ? `<div class="strip-who">${esc(who)}</div>` : ""}<div class="strip-body">${body}</div></div>`;
   }
@@ -534,23 +541,26 @@ export class Studio {
     ab.textContent = off ? _t("效果全关") : _t("效果开着"); ab.classList.toggle("is-on", !off); ab.classList.toggle("ab-off", off);
     ab.title = off ? _t("现在：插件和发送都不响（推子 / 声像留着）。点 = 效果回来") : _t("点 = 暂时关掉全部效果（插件 + 发送），听谱子本身 / 听差别；推子、声像留着");
     this.el.querySelector<HTMLElement>(".mix-ab-note")!.hidden = !off; this.el.classList.toggle("bypassed", off);
-    const fb = this.el.querySelector<HTMLElement>(".mix-full")!; fb.textContent = this.full ? _t("还原") : _t("全屏"); fb.classList.toggle("is-on", this.full);
+    const fb = this.el.querySelector<HTMLElement>(".mix-full")!; fb.classList.toggle("is-on", this.full);
+    fb.title = this.full ? _t("还原：回到底座") : _t("混音台铺满（推到最上面，卡片排成好几列，一眼看全）；再点 = 回到底座"); fb.setAttribute("aria-label", this.full ? _t("还原") : _t("全屏"));
     if (this.open && !this.slotOf(this.open)) this.open = null;   // 撤销把这一格撤没了
     this.renderBar();
     const nameDiv = (s: string) => `<div class="strip-name">${esc(s)}</div>`;
+    // 发送页每张卡顶上带这条轨自己的增益推子（v0.16.82，总表第 9 条 ⑤：调平衡用；和基础页那根是同一个值）
+    const gainRow = (attrs: string, hint: string, db: number) => row(_t("增益"), hint, `<output>${dbText(db)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: db, attrs, def: 0, defText: "0 dB" }), "strip-row");
     // 总轨
     const masterBody = tab === "basic" ? row(_t("增益"), HINT.masterGain, `<output>${dbText(m.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: m.gainDb, attrs: "data-master", def: 0, defText: "0 dB" }), "strip-row") +
         row(_t("限幅"), HINT.limiter, "", `<button class="btn cand${m.limiter ? " is-on" : ""}" data-v="limiter">${m.limiter ? _t("开着") : _t("关着（可能削波）")}</button>`, "strip-row") +
         row(_t("峰值"), HINT.peak, `<span class="meter-val">—</span>`, "", "strip-row") + RMS_ROW + CORR_ROW
-      : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? `<div class="fx-dim">${_t("总轨就是输出，不再发给别处")}</div>` : this.chipsHtml(MASTER);
+      : tab === "eq" || tab === "comp" ? this.inlineHtml(MASTER, tab) : tab === "send" ? gainRow("data-master", HINT.masterGain, m.gainDb) + `<div class="fx-dim">${_t("总轨就是输出，不再发给别处")}</div>` : this.chipsHtml(MASTER);
     const master = this.card(MASTER, " master", nameDiv(_t("总轨")), _t("所有声部混在一起之后"), masterBody);
     // 混音轨（自己加的路由轨，普通的轨）：排在总轨后面、歌手前面（user「你自己加的中间的路由轨也是普通的轨道，排在总轨后面，歌手前面」）
     const buses = this.host.buses(), busCards = buses.map((b, k) => {
       const body = tab === "basic" ? row(_t("增益"), HINT.busGain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") +
           row(_t("声像"), HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: 0, defText: _t("中") }), "strip-row") + RMS_ROW + CORR_ROW +
           `<div class="strip-btns"><button class="btn cand${b.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("旁通：这条混音轨上的插件全跳过（推子 / 声像 / 出到 / 发送照旧）；再点 = 回来")}">${b.bypass ? _t("旁通中") : _t("旁通")}</button><button class="btn" data-v="busleft" title="${_t("往前挪一位")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="${_t("往后挪一位")}"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="${_t("删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）")}">${_t("删掉")}</button></div>`
-        : tab === "eq" || tab === "comp" ? this.inlineHtml(b.id, tab) : tab === "send" ? this.routeHtml(b.id) : this.chipsHtml(b.id);
-      const name = tab === "basic" ? `<input class="bus-name" value="${esc(b.name)}" title="${_t("名字（点了改）")}" />` : nameDiv(b.name);
+        : tab === "eq" || tab === "comp" ? this.inlineHtml(b.id, tab) : tab === "send" ? gainRow("data-busgain", HINT.busGain, b.gainDb) + this.routeHtml(b.id) : this.chipsHtml(b.id);
+      const name = `<input class="bus-name" value="${esc(b.name)}" title="${_t("名字（点了改）")}" />`;   // 每一页都能改名（v0.16.82，总表第 9 条 ⑥；原来只在基础页）
       // 混音轨也能静音（不能独奏：独奏是挑歌手听；user「哦，混音轨也要mute，（不过可能不能solo了」）——钉在名字右边，同歌手卡
       const ms = `<span class="strip-ms"><button class="btn${b.muted ? " is-on mute" : ""}" data-v="busmute" title="${_t("静音：这条混音轨不出声、也不往下发（发给它的那几位原声照旧）")}">${_t("静")}</button></span>`;
       return this.card(b.id, ` bus${b.bypass ? " bypassed" : ""}`, `<div class="strip-head">${name}${ms}</div>`, b.bypass ? _t("混音轨 · 旁通中（插件全跳过）") : _t("混音轨"), body);
@@ -563,7 +573,7 @@ export class Studio {
             `<button class="btn" data-v="partleft" title="${_t("往前挪一位（谱上这个声部也往上挪）")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="${_t("往后挪一位（谱上这个声部也往下挪）")}"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
           (s.refs ? `<div class="strip-refs">${_t("在 {refs} 张纸上", { refs: s.refs })}</div>` : `<div class="strip-refs">${_t("哪张纸上都没有")} <button class="btn cand danger" data-v="delpart" title="${_t("删掉这个声部（它的乐器设置一起删；能撤销）")}">${_t("删掉这个声部")}</button></div>`)
-        : tab === "eq" || tab === "comp" ? this.inlineHtml(s.id, tab) : tab === "send" ? this.routeHtml(s.id) : this.chipsHtml(s.id);
+        : tab === "eq" || tab === "comp" ? this.inlineHtml(s.id, tab) : tab === "send" ? gainRow("data-gain", HINT.gain, s.gainDb) + this.routeHtml(s.id) : this.chipsHtml(s.id);
       // 静音 / 独奏 钉在名字右边、每一页都在（v0.10.34；原来在基础页卡片最底下，卡片定高 = 要在卡片里滚才看得到；user「混音台基础里面应该有mute和solo，和我们已经有的mute和solo绑定」）——
       //   和谱上歌手名下面的「静 / 独」、歌手牌里的是同一个开关（host.toggleMute / toggleSolo → 视图态）
       const ms = `<span class="strip-ms"><button class="btn${s.muted ? " is-on mute" : ""}" data-v="mute" title="${_t("静音（这位不出声；和谱上声部名下面的「静」是同一个）")}">${_t("静")}</button><button class="btn${s.solo ? " is-on solo" : ""}" data-v="solo" title="${_t("独奏（只听独奏的几位；和谱上的「独」是同一个）")}">${_t("独")}</button></span>`;

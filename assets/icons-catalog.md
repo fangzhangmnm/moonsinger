@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-61 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+71 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -12,7 +12,7 @@
 <svg width="24" height="24"><use href="#sliders"/></svg>
 ```
 
-> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`album`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
+> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`unplugged`、`visibility-only`、`volume-mute`、`volume-solo`、`keyboard-collapse`、`mixer-collapse`、`album`、`music-library`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
 > 见库 `index.html` 的「待过目」栏；过目后进库/打回归库 session。
 
 
@@ -55,6 +55,12 @@
 | `note-stack` 👁待过目 | 叠音(和弦):一根符干上叠三个实心符头；与 music-note(一个音)成对【MoonSinger 小键盘写字排「叠」键；Claude Opus 5.5 画；未过目】 |
 | `notes-symbols` 👁待过目 | 音符 / 记号切换:左上力度字 f(Bravura 轮廓) + 右下八分音符 + 中间一道斜线,同「A/あ」输入法切换键的读法;两面键盘同一颗,不随状态换图【MoonSinger 小键盘顶上切音键 / 符号格的钮;形状 = user 2026-11-04 提的「左上角f右下角音符中间斜线」;Claude Opus 5.5 画;未过目】 |
 | `lyrics-bubble` 👁待过目 | 歌词(对话气泡里写字):圆角气泡 + 左下尾巴,里面并排「文」「あ」= 哪种语言的词都能写;字形烘焙不依赖设备字体(同 translate);与 dialog-box(气泡 + 两行线 = 逐段)分工【MoonSinger 底座小条「词」模式钮;形状 = user 2026-11-04 拍的「用 c,里面放文 + 日文 a」;Claude Opus 5.5 画;未过目】 |
+| `unplugged` 👁待过目 | 拔开的线(只出声、不接到谱上):一根线从中间断开,左半截头上是公头(两根铜片),右半截头上是母头(挖两个孔),斜 45 度对着,空隙外侧三道小火花 = 断开；也带「Unplugged = 随手现场弹」的意思【MoonSinger 小键盘顶上「弹」钮 + 歌库「即兴」；Claude Opus 5.5 画（user 11-07 从 A–F 六版里挑了 D）；无头浏览器渲过 20/24/48 px 和深色底；未过目】 |
+| `visibility-only` 👁待过目 | 只看(只显示这一个):睁开的眼睛(同 visibility-show,缩 0.76)外面套对焦框四个角 = 只看它、别的藏起来；与 visibility-show / visibility-hide 成一组【MoonSinger 谱上声部名下面的「眼睛」大钮长按 = 只看、曲段「只看本段」钮；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
+| `volume-mute` 👁待过目 | 静音:实心喇叭(同 volume)右边一个 ×,没有声波；与 volume / volume-solo 成一组【MoonSinger 谱上声部名下面的「喇叭」大钮点 = 静音；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
+| `volume-solo` 👁待过目 | 独奏(只听这一个):喇叭 + 两道声波(同 volume,缩 0.8)外面套对焦框四个角,和 visibility-only 同一个「只…」记号【MoonSinger 谱上声部名下面的「喇叭」大钮长按 = 独奏；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
+| `keyboard-collapse` 👁待过目 | 收起键盘:琴键(同 piano-keys,压扁到上面)+ 底下一个实心向下三角；与 mixer-collapse 成一对【MoonSinger 小键盘顶上最右边「收起」钮（取代下箭头；user 11-08「不要用一个简单的下箭头，而是说一个键盘的图标下面加一个实心的向下的三角形」）；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
+| `mixer-collapse` 👁待过目 | 收起混音台:推子(同 sliders,压扁到上面)+ 底下一个实心向下三角；与 keyboard-collapse 成一对【MoonSinger 混音台顶上最右边「收起」钮；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
 
 ## file
 
@@ -72,6 +78,7 @@
 | `trash-can` | 垃圾桶:桶身收口(feather 是直筒);与 fluent(圆提手/更低)、heroicons(弧形透视)亦不同 — own |
 | `album` 👁待过目 | 专辑/唱片:左边一个方形唱片封套(圆角矩形) + 右侧从封套后露出半张唱片(大圆弧 + 中心小孔)；与 bookshelf(书库) / gallery(图库) 分工 = 歌库【MoonSinger 顶栏最左「歌库」钮（回歌库）+ 文件菜单「歌库…」；2026-10-08 Claude Fable 5.1 自画未过目】 |
 | `rename` | 重命名:文字光标+铅笔 |
+| `music-library` 👁待过目 | 歌库(唱片箱):一个木箱(前板 + 中间一道把手孔)里插着两张方封套(后面那张往右上错开,只露出上沿和右边),前面那张上一个八分音符 = 很多首歌收在这里；与 album(一张专辑) / bookshelf(书库) / gallery(图库) 分工【MoonSinger 顶栏最左「歌库」钮（取代 album，user 11-08 说 album 看着像马克杯；唱片箱 / 一叠 / 网格几个方向里先定 D3「两张错开」，再试「D3 + 箱子」，user 11-08 挑 E3「平箱子 + 把手孔」）；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底，遮挡按前后关系只画露出来的线）；user 挑过，未正式过目入库】 |
 
 ## hierarchy
 
@@ -80,6 +87,8 @@
 | `lock` | 锁:体 13x11+锁梁抬高(腿3.5),整体居中 |
 | `unlock` | 开锁:同 lock 体型+锁梁弹开 |
 | `create-folder` | 加号做成右下角徽标 |
+| `visibility-show` | 可见:撑高眼裂+瞳孔 r4.3(甲方实测原版太小) |
+| `visibility-hide` | 隐藏:同 show 撑高版+斜杠(mask 留 gap) |
 
 ## common
 
@@ -115,6 +124,7 @@
 | `grid` | 网格:直角外框 1.2 与内网格线同宽(20260725 甲方定稿; 原 rx1.6 圆角粗框版退役), 内部 4x4 细网格 |
 | `picture-in-picture` | 画中画:大框(主画布) + 右下角内嵌小窗(参考小窗自己) |
 | `one-to-one` 👁待过目 | 1:1 像素:四角括号 + 中心一颗实心像素=「一图像素对一屏像素」(不写 1:1 文字)【WeebPaint 参考窗 ＋ 菜单「1:1 像素」项；fable 自画未过目】 |
+| `maximize-viewport` | 适配视口:四角向外的箭头(reset-transform=同形别名 id, 改动保持同几何) |
 
 ## ui
 
