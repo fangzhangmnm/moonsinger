@@ -110,3 +110,7 @@ export const samePitch = (a: Pitch | null, b: Pitch | null): boolean =>
 
 /** 调名（「1=」后面那个字母）：五度数 → 名字（-7 … 7）。pad、谱面、记号编辑框共用。 */
 export const KEY_LABEL: Record<number, string> = { [-7]: "C♭", [-6]: "G♭", [-5]: "D♭", [-4]: "A♭", [-3]: "E♭", [-2]: "B♭", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F♯", 7: "C♯" };
+/** 同一个调号的关系小调（la 是哪个音；v0.16.83）：C 大调 ↔ a 小调。 */
+export const MINOR_LABEL: Record<number, string> = { [-7]: "A♭", [-6]: "E♭", [-5]: "B♭", [-4]: "F", [-3]: "C", [-2]: "G", [-1]: "D", 0: "A", 1: "E", 2: "B", 3: "F♯", 4: "C♯", 5: "G♯", 6: "D♯", 7: "A♯" };
+/** 谱上 / 记号框里写的「1=C」/「6=A」（小调写 la 是哪个音）。 */
+export const keyText = (fifths: number, minor = false): string => (minor ? `6=${MINOR_LABEL[fifths] ?? "?"}` : `1=${KEY_LABEL[fifths] ?? "?"}`);

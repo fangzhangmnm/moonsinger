@@ -151,11 +151,11 @@ export class ScoreOverlay {
       add("ph-arr", "div", "ov-placeholder ov-ph-arr", `${text(L.content.left, a.baseline, a.size)};max-width:${px(L.content.right - L.content.left)}`,
         `<span class="ov-arr-label">${esc(_t("编排　"))}</span><span class="ov-arr-empty">${esc(_t("不写 = 每张纸按顺序各放一遍（例：前奏 (A A1)×3 A A2 [副歌]）"))}</span>`);
     }
-    // ⑥ 「1=C」淡提示（专业模式 C 调；点 = 谱头面板）
+    // ⑥ 「1=C」淡提示（专业模式 C 调；小调每一处写「6=X」，v0.16.83；点 = 谱头面板）
     for (const kh of L.keyHints) {
       const sys = L.systems[kh.system]; if (!sys) continue;
-      add(`kh:${kh.system}:${kh.index}`, v.marks ? "button" : "div", `${v.marks ? "ov-i " : ""}ov-key-hint`, text(kh.x, kh.y, kh.size, "start", textStyleOf("key-hint")), "1=C",
-        v.marks ? { "data-ov": "keyhint", "data-paper": sys.paper, "data-part": sys.part.replace(/~.*$/, ""), "data-index": String(kh.index), title: _t("这里是 C 调（没有升降号）：点 = 谱号 / 调号 / 拍号 / 速度") } : {});
+      add(`kh:${kh.system}:${kh.index}`, v.marks ? "button" : "div", `${v.marks ? "ov-i " : ""}ov-key-hint`, text(kh.x, kh.y, kh.size, "start", textStyleOf("key-hint")), kh.s,
+        v.marks ? { "data-ov": "keyhint", "data-paper": sys.paper, "data-part": sys.part.replace(/~.*$/, ""), "data-index": String(kh.index), title: kh.s.startsWith("6=") ? _t("小调：和弦级数从 la 数。点 = 谱号 / 调号 / 拍号 / 速度") : _t("这里是 C 调（没有升降号）：点 = 谱号 / 调号 / 拍号 / 速度") } : {});
     }
     // ⑦ 合租展开着的一家：括号（点 = 光标挪出这一家，叠回去）
     for (const f of L.families) add(`fam:${f.paper}:${f.host}`, "button", "ov-i ov-family", box(f.x, f.y, f.w, f.h), "<i></i>", { "data-ov": "family", "data-paper": f.paper, "data-host": f.host, title: _t("这一家展开着：点 = 叠回去（光标挪到下一位）") });

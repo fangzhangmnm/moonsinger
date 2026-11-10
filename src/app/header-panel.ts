@@ -7,14 +7,16 @@
 //   速度（v0.16.12）：这一行只是一颗钮，写着现在的速度，点了 = 原来那个速度框（拨速度的滚轮 + 速度词 + 小节拍器 + 「确定」才写进谱；src/ui/mark-editor.ts）。
 //   v0.16.8 曾把速度做成这里的数字框 + 下拉、改了马上写，原来的速度框就打不开了——user 11-07「speed没叫你丢之前的窗口啊」（10-07 要的「有一个确认按钮才commit，这样你可以试哪个对」也跟着丢了）。
 import { _t } from "../i18n/index.ts";
-import { type EditorState, type Token, type ClefName, CLEFS, tempoWord, headerSpot, headerVals, setHeaderAt, keyAt, timeAt, tempoAt, setPartStaves, setPartClef, setPartAutoOttava, setPartBrokenChords, setPartHost, type HeaderSpot, type HeaderPatch } from "../score/song.ts";
+import { type EditorState, type Token, type ClefName, CLEFS, tempoWord, headerSpot, headerVals, setHeaderAt, setPaperHeadMinor, keyAt, keyMinorAt, timeAt, tempoAt, setPartStaves, setPartClef, setPartAutoOttava, setPartBrokenChords, setPartHost, type HeaderSpot, type HeaderPatch } from "../score/song.ts";
 import { CLEF_LABEL } from "../score/clef.ts";
-import { KEY_LABEL } from "../score/pitch.ts";
+import { KEY_LABEL, MINOR_LABEL, keyText } from "../score/pitch.ts";
 
 const KEY_ORDER = [0, 1, 2, 3, 4, 5, 6, 7, -1, -2, -3, -4, -5, -6, -7];
 const TIMES: [number, number][] = [[2, 4], [3, 4], [4, 4], [5, 4], [3, 8], [6, 8], [9, 8], [12, 8], [7, 8], [2, 2]];
 const BEAT_TYPES = new Set([1, 2, 4, 8, 16, 32]);
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+/** 「a 小调」的 a（小写 = 小调的写法）。 */
+const minorName = (f: number) => { const s = MINOR_LABEL[f] ?? "?"; return s.charAt(0).toLowerCase() + s.slice(1); };
 const accText = (f: number) => (f === 0 ? _t("没有升降号") : f > 0 ? _t("{n} 个升号", { n: f }) : _t("{n} 个降号", { n: -f }));
 /** 「6/8」→ 拍号；不像拍号 = null。 */
 export function parseTime(s: string): { beats: number; beatType: number } | null {
@@ -40,15 +42,21 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
   const track = (paperId: string, partId: string): Token[] => g.state().song.papers.find((p) => p.id === paperId)?.tracks[partId] ?? [];
   return {
     open(paperId, partId, index, at) {
-      let spot: HeaderSpot = headerSpot(track(paperId, partId), index), timeText = false;
+      let spot: HeaderSpot = headerSpot(track(paperId, partId), index), timeText = false, modeNote = "";
       const html = (): string => {
         const toks = track(paperId, partId), v = headerVals(toks, spot), head = spot.head;
-        const bk = keyAt(toks, spot.a), bt = timeAt(toks, spot.a), bb = tempoAt(toks, spot.a);
+        const bk = keyAt(toks, spot.a), bm = keyMinorAt(toks, spot.a), bt = timeAt(toks, spot.a), bb = tempoAt(toks, spot.a);
         const opt = (value: string, label: string, on: boolean) => `<option value="${esc(value)}"${on ? " selected" : ""}>${esc(label)}</option>`;
         const clefOpts = (head ? opt("", _t("跟声部（{p}）", { p: g.partClef(paperId, partId) }), v.clef === null) : opt("", _t("不变"), v.clef === null)) +
           CLEFS.map((c) => opt(c, CLEF_LABEL[c], v.clef === c)).join("");
-        const keyOpts = (head ? "" : opt("", _t("不变（1={k}）", { k: KEY_LABEL[bk] }), v.key === null)) +
-          KEY_ORDER.map((f) => opt(String(f), `1=${KEY_LABEL[f]}（${accText(f)}）`, v.key === f)).join("");
+        // 调号一项 = 一对关系大小调（v0.16.83，user 11-09「关系大小调对齐，免得没有乐理常识选错了，然后切换大小调会很方便」）；下面一行两格选大调 / 小调
+        const keyOpts = (head ? "" : opt("", _t("不变（{k}）", { k: keyText(bk, bm) }), v.key === null)) +
+          KEY_ORDER.map((f) => opt(String(f), `1=${KEY_LABEL[f]} · 6=${MINOR_LABEL[f]}（${accText(f)}）`, v.key === f)).join("");
+        const kf = v.key ?? bk, minor = v.minor ?? bm;
+        const modeRow = `<span class="hp-k"></span><span class="hp-v hp-seg">` +
+          `<button class="btn${minor ? "" : " is-on"}" data-v="major" title="${_t("和弦级数从 do 数（1 = do）")}">${_t("{k} 大调", { k: KEY_LABEL[kf] ?? "?" })}</button>` +
+          `<button class="btn${minor ? " is-on" : ""}" data-v="minor" title="${_t("和弦级数从 la 数（a 小调里 Am = i）；音和升降号不变")}">${_t("{k} 小调", { k: minorName(kf) })}</button></span>` +
+          (modeNote ? `<span class="hp-k"></span><span class="hp-v hp-note">${esc(modeNote)}</span>` : "");
         const tv = v.time ? `${v.time.beats}/${v.time.beatType}` : "", inList = !v.time || TIMES.some(([b, t]) => `${b}/${t}` === tv);
         const timeOpts = (head ? "" : opt("", _t("不变（{t}）", { t: `${bt.beats}/${bt.beatType}` }), v.time === null)) +
           TIMES.map(([b, t]) => opt(`${b}/${t}`, `${b}/${t}`, tv === `${b}/${t}`)).join("") + (inList ? "" : opt(tv, tv, true)) + opt("other", _t("其他…（自己写）"), false);
@@ -56,7 +64,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
         return `<div class="ctx-hint ctx-what">${head ? _t("这张纸开头：从头开始的谱号 / 调号 / 拍号 / 速度。只管这一个声部这一张纸（开头的速度整张纸一起）。") : _t("从这里起的变化（「不变」= 跟前面一样）。")}</div>` +
           `<div class="hp-grid">` +
           `<span class="hp-k">${_t("谱号")}</span><select class="hp-sel" data-hp="clef" title="${_t("只管画，音高不变")}">${clefOpts}</select>` +
-          `<span class="hp-k">${_t("调号")}</span><select class="hp-sel" data-hp="key" title="${_t("改调号 = 它管的音按新调号拼写，音高不变")}">${keyOpts}</select>` +
+          `<span class="hp-k">${_t("调号")}</span><select class="hp-sel" data-hp="key" title="${_t("改调号 = 它管的音按新调号拼写，音高不变")}">${keyOpts}</select>` + modeRow +
           `<span class="hp-k">${_t("拍号")}</span><span class="hp-v"><select class="hp-sel" data-hp="time">${timeOpts}</select>` +
             (timeText ? `<input class="hp-in" data-hp="timeText" type="text" inputmode="numeric" placeholder="5/8" value="${esc(tv)}" spellcheck="false" autocomplete="off" />` : "") + `</span>` +
           `<span class="hp-k">${_t("速度")}</span><span class="hp-v"><button class="btn hp-tempo" data-v="tempo" title="${_t("打开速度框：拨速度、选速度词、看小节拍器，按「确定」才写进谱")}">` +
@@ -87,6 +95,17 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
       };
       g.menu("header-panel", html(), at, (v) => {
         if (v === "del") { apply({ clef: null, key: null, time: null, tempo: null }); return false; }
+        if (v === "major" || v === "minor") {   // 纸开头 = 这一段调号一样的声部一起切（照实说碰了几行）；中途的那一处 = 只这一行（没写调号 = 补一个同样的调号）
+          const want = v === "minor", st = g.state(), toks = track(paperId, partId);
+          if (spot.head) {
+            const r = setPaperHeadMinor(st, paperId, partId, want); if (r.n === 0) return true;
+            g.update(r.st); modeNote = r.n > 1 ? _t("这一段调号一样的 {n} 个声部一起改了", { n: r.n }) : "";
+            spot = headerSpot(track(paperId, partId), spot.a); render(); return true;
+          }
+          const cur = headerVals(toks, spot); modeNote = "";
+          apply(cur.key === null ? { key: keyAt(toks, spot.a), minor: want } : { minor: want });
+          return true;
+        }
         if (v === "tempo") {   // 速度 = 原来的速度框（面板先收，下一刻开）；这一处还没有速度 = 先插一个当时的速度，速度框里不改就收起 = 撤掉
           const at0 = (): number => { const t = track(paperId, partId); spot = headerSpot(t, spot.a); const k = t.slice(spot.a, spot.b).findIndex((x) => x.kind === "tempo"); return k < 0 ? -1 : spot.a + k; };
           let i = at0(), fresh = false;

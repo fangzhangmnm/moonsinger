@@ -24,7 +24,9 @@ export type FormatFile = keyof typeof FORMAT;
  *  papers 的 phrases / swells / hidden；lounge 的 articulation / chain / defaults 那些；studio v2 的 master.chain / bypass / sends / dry…）——以前写的文件没有这两个键 = 0.0，读起来一样。
  *  指纹（定稿）不看 minor / patch（project.ts fpTextOf）。改 minor / patch 不用迁移、不用冻结样本，只跑 freeze-format-sample 更新形状快照。added 2026-10-21 by Claude Fable 5.1 */
 /** score minor 2（v0.16.73，2026-11-09 Claude Opus 5.5）：parts[].brokenChords（可选，只写 false = 这位不认分解和弦）——老版本读进来会丢掉它（parts 按歌重建），所以照纪律 +1、让老版本提示一次。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 2, lounge: 1, studio: 1 };
+/** score minor 3（v0.16.83，2026-11-10 Claude Opus 5.5；user 11-10 同意往歌里加）：调号上的「小调」= 每张纸 MusicXML 里 <key><mode>minor</mode>（大调照旧不写）。
+ *  老版本读进来当大调、存一次就没了（音不丢），所以 +1、让老版本提示一次。这一轮后面几样（挑过的和弦名、每段的谱号 / 大谱表）也算在 minor 3 里。 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 3, lounge: 1, studio: 1 };
 export const FORMAT_PATCH: Readonly<Record<FormatFile, number>> = { manifest: 0, score: 0, lounge: 0, studio: 0 };
 
 // ═══ 现役（project.ts 写的就是这些）═══════════════════════════════════════════════════════

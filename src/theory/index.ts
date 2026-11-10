@@ -40,6 +40,8 @@ export interface BarNote {
   pos: number;
   /** 这个音这里的调（几个升降号）= 它前面最近的调号。 */
   fifths: number;
+  /** 那个调号写着「小调」（v0.16.83；user 11-09「在选调号的时候强制一起选」）= 级数从 la 数。人写明的，不是分析猜的（文件头 ③）。 */
+  minor?: true;
   /** 接着前面连过来的（不重新起音）。 */
   tie?: true;
 }
@@ -67,13 +69,13 @@ export const harmonyTheory = (id: string = DEFAULT_THEORY): HarmonyTheory => THE
 /** 把一条 track 切成一小节一小节（从左到右；小节怎么分 = 画谱 / 拍子轻重同一套 meterPositions；调 = 走到这儿之前最近的调号）。 */
 export function barsOf(tokens: readonly Token[]): BarInput[] {
   const at = meterPositions(tokens, [0], true), bars: { no: number; beats: number; beatType: number; notes: BarNote[] }[] = [];
-  let fifths = DEFAULT_KEY;
+  let fifths = DEFAULT_KEY, minor = false;
   tokens.forEach((t, i) => {
-    if (t.kind === "key") { fifths = t.fifths; return; }
+    if (t.kind === "key") { fifths = t.fifths; minor = t.mode === "minor"; return; }
     const m = at.get(i); if (!m || t.kind !== "note") return;
     let bar = bars[bars.length - 1];
     if (!bar || bar.no !== m.bar) bars.push((bar = { no: m.bar, beats: m.beats, beatType: m.beatType, notes: [] }));
-    bar.notes.push({ index: i, tok: t, pos: m.pos, fifths, ...(m.tie ? { tie: true as const } : {}) });
+    bar.notes.push({ index: i, tok: t, pos: m.pos, fifths, ...(minor ? { minor: true as const } : {}), ...(m.tie ? { tie: true as const } : {}) });
   });
   return bars;
 }

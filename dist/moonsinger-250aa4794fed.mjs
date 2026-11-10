@@ -2779,7 +2779,11 @@ var S = {
   "{n} \u4E2A\u964D\u53F7": { en: "{n} {n|flat|flats}" },
   "\u8DDF\u58F0\u90E8\uFF08{p}\uFF09": { en: "Follow the part ({p})" },
   "\u4E0D\u53D8": { en: "unchanged" },
-  "\u4E0D\u53D8\uFF081={k}\uFF09": { en: "No change (1={k})" },
+  "\u4E0D\u53D8\uFF08{k}\uFF09": { en: "No change ({k})" },
+  "\u548C\u5F26\u7EA7\u6570\u4ECE do \u6570\uFF081 = do\uFF09": { en: "Chord degrees count from do (1 = do)" },
+  "{k} \u5927\u8C03": { en: "{k} major" },
+  "\u548C\u5F26\u7EA7\u6570\u4ECE la \u6570\uFF08a \u5C0F\u8C03\u91CC Am = i\uFF09\uFF1B\u97F3\u548C\u5347\u964D\u53F7\u4E0D\u53D8": { en: "Chord degrees count from la (in A minor, Am = i); notes and accidentals stay the same" },
+  "{k} \u5C0F\u8C03": { en: "{k} minor" },
   "\u4E0D\u53D8\uFF08{t}\uFF09": { en: "No change ({t})" },
   "\u5176\u4ED6\u2026\uFF08\u81EA\u5DF1\u5199\uFF09": { en: "Other\u2026 (type it)" },
   "\u8FD9\u5F20\u7EB8\u5F00\u5934\uFF1A\u4ECE\u5934\u5F00\u59CB\u7684\u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3002\u53EA\u7BA1\u8FD9\u4E00\u4E2A\u58F0\u90E8\u8FD9\u4E00\u5F20\u7EB8\uFF08\u5F00\u5934\u7684\u901F\u5EA6\u6574\u5F20\u7EB8\u4E00\u8D77\uFF09\u3002": { en: "Start of this sheet: clef / key / time / tempo from the beginning. For this part on this sheet only (the opening tempo applies to the whole sheet)." },
@@ -2813,6 +2817,7 @@ var S = {
   "\u6302\u5728\u522B\u4EBA\u7684\u8C31\u7EBF\u4E0A\u753B\uFF08\u5408\u79DF\uFF1A\u53EA\u770B\u4E2A\u5927\u6982\uFF0C\u97F3\u649E\u5728\u4E00\u8D77\u5C31\u649E\uFF1B\u53EA\u753B\u97F3\uFF0C\u4E0D\u753B\u4F11\u6B62 / \u6B4C\u8BCD / \u529B\u5EA6\uFF1B\u70B9\u540D\u5B57 = \u62C6\u5F00\u6765\u5199\uFF09": { en: "Draw on another part's staff (shared: just an overview, colliding notes collide; only notes are drawn, no rests / lyrics / dynamics; tap the name to split it out and write)" },
   "\u81EA\u5DF1\u4E00\u884C": { en: "Own line" },
   "\u6302\u5728\u300C{name}\u300D\u4E0A": { en: "On \u201C{name}\u201D" },
+  "\u8FD9\u4E00\u6BB5\u8C03\u53F7\u4E00\u6837\u7684 {n} \u4E2A\u58F0\u90E8\u4E00\u8D77\u6539\u4E86": { en: "Changed {n} parts in this section that share this key signature" },
   "\u4E50\u8C31": { en: "Score" },
   "\u300C{name}\u300D\u5728\u5916\u9762\u88AB\u6539\u8FC7": { en: "\u201C{name}\u201D was changed elsewhere" },
   "\u6253\u5F00\u6216\u4E0A\u6B21\u5B58\u4E4B\u540E\uFF0C\u8FD9\u4E2A\u6587\u4EF6\u88AB\u522B\u7684\u7A0B\u5E8F\u6539\u8FC7\u3002\u8986\u76D6 = \u5916\u9762\u6539\u7684\u90A3\u4E9B\u4F1A\u4E22\u3002": { en: "Another program changed this file since it was opened or last saved. Overwriting will lose those changes." },
@@ -2891,16 +2896,6 @@ var S = {
   "\u300C{p}\u300D\u653E\u51FA\u6765\u4E86\uFF08\u64A4\u9500\u80FD\u518D\u85CF\u8D77\u6765\uFF09": { en: "\u201C{p}\u201D is back (undo hides it again)" },
   "\u300C{extras}\u300D\u662F\u5355\u58F0\u4E50\u5668\uFF0C\u8FD9\u4E2A\u58F0\u90E8\u53E0\u4E0D\u4E86\u97F3": { en: "\u201C{extras}\u201D is a monophonic instrument, so this part can't stack notes" },
   "\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3": { en: "No note before the cursor yet" },
-  "\u25BE \u8FD8\u6709 {n} \u4E2A": { en: "\u25BE {n} more" },
-  "\u754C\u9762": { en: "Interface" },
-  "\u66F4\u591A\uFF1A\u6392\u6570\u2026": { en: "More: rows\u2026" },
-  "\u8FD8\u539F\uFF1A\u56DE\u5230\u5E95\u5EA7": { en: "Restore: back to the dock" },
-  "\u6309\u79CD\u7C7B\uFF08\u9F13\u3001Pad\u2026\uFF09": { en: "By kind (drums, pads\u2026)" },
-  "\u9F13\u548C\u6253\u51FB\u4E50": { en: "Drums & percussion" },
-  "Pad\uFF08\u5408\u6210\u5668\u7684\u94FA\u5E95\u97F3\u8272\uFF09": { en: "Pads (synth pad sounds)" },
-  "\u5176\u4F59\uFF08\u8FD8\u6CA1\u6309\u79CD\u7C7B\u5206\uFF09": { en: "Others (not sorted by kind yet)" },
-  "\u8F85\u52A9\u529F\u80FD": { en: "Accessibility" },
-  "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Sounds" },
   "\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668": { en: "\u201C{who}\u201D plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
   "\u8FD9\u9996\u6B4C\u5B9A\u7A3F\u4E86\uFF0C{what}\u6539\u4E0D\u4E86\uFF1A\u5148\u5728\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\uFF08\u5B9A\u7A3F\u7684 mp3 \u4F1A\u4F5C\u5E9F\uFF09\uFF0C\u518D\u6539\u3002": { en: "This song is finalized, so {what} can't be changed: first choose \u201CRevise\u201D in the \u2630 menu (the final mp3 is discarded), then edit." },
   "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
@@ -2957,11 +2952,15 @@ var S = {
   "\u7B97\u4E86": { en: "Never mind" },
   "\u2713 \u5728\u6587\u4EF6\u5939\u91CC": { en: "\u2713 In the folder" },
   "\xB7 \u6587\u4EF6\u5939\u91CC\u6CA1\u6709": { en: "\xB7 Not in the folder" },
+  "\u754C\u9762": { en: "Interface" },
+  "\u8F85\u52A9\u529F\u80FD": { en: "Accessibility" },
+  "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Sounds" },
+  "\u5F00\u53D1\u8005": { en: "Developer" },
+  "\u8BBE\u7F6E": { en: "Settings" },
+  "\u8DDF\u7CFB\u7EDF": { en: "System" },
+  "\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F": { en: "Accessibility \xB7 How to read the score" },
   "\u4E13\u4E1A": { en: "Standard" },
   "\u6309 C \u8C03\u770B\uFF081=X\uFF09": { en: "Read in C (1=X)" },
-  "\u8DDF\u7CFB\u7EDF": { en: "System" },
-  "\u8BBE\u7F6E": { en: "Settings" },
-  "\u8F85\u52A9 \xB7 \u770B\u8C31\u65B9\u5F0F": { en: "Accessibility \xB7 How to read the score" },
   "\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002": { en: "Standard = the score is drawn in its real key; the keys show note names large. Read in C = the score is drawn in C, with \u201C1=original key\u201D above each key signature; the keys show scale degrees large. Key positions never move; exported PDFs are printed in the real key. Applies to this device only." },
   "\u8F85\u52A9 \xB7 \u548C\u5F26\u6807\u7EA7\u6570": { en: "Accessibility \xB7 Chord degrees" },
   "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009\u3002\u53EA\u662F\u663E\u793A\uFF0C\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u5370\u3002": { en: "Writes above each stacked chord which degree it is in this key (V7, ii, \u266DVII, I/3\u2026); tap it to see all candidates. Display only: not saved in the song, not printed." },
@@ -2986,7 +2985,6 @@ var S = {
   "\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58\uFF08\u80FD\u7B97\u5230\u7684\u90E8\u5206\uFF1B\u8D85\u9884\u7B97\u4F1A\u5148\u653E\u5757\u3001\u518D\u51CF\u5E76\u884C\u3001\u518D\u8D81\u7A7A\u91CD\u5F00\u5F15\u64CE\uFF0C\u5E76\u5728\u8FD9\u91CC / \u72B6\u6001\u6761\u660E\u8BF4\uFF09": { en: "Engine load and memory (the parts we can measure; over budget it drops chunks first, then reduces parallelism, then restarts the engine when idle, and says so here / in the status bar)" },
   "\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5": { en: "Tsukuyomi-chan's engine WASM memory only grows; only a restart returns it. Spoken lines will need re-speaking" },
   "\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE": { en: "Restart Tsukuyomi-chan's engine" },
-  "\u5F00\u53D1\u8005": { en: "Developer" },
   "\u8BCA\u65AD\u65E5\u5FD7\uFF08\u9ED1\u5323\u5B50\uFF1A\u51FA\u9519\u4E86\u628A\u8FD9\u4E2A\u53D1\u7ED9\u5F00\u53D1\u8005\uFF1B\u4E0D\u4E0A\u4F20\uFF0C\u53EA\u6709\u70B9\u300C\u590D\u5236 / \u5206\u4EAB\u300D\u624D\u79BB\u5F00\u8BBE\u5907\uFF09": { en: "Diagnostic log (black box: send this to the developer if something breaks; never uploaded, it only leaves the device when you tap Copy / Share)" },
   "\u590D\u5236": { en: "Copy" },
   "\u4E0B\u8F7D .txt": { en: "Download .txt" },
@@ -4064,6 +4062,7 @@ var S = {
   "GS \u8FD9\u4E2A\u97F3\u8272\u5B9E\u6D4B\uFF1A\u8033\u6735\u542C\u5230\u7684\u6BD4\u952E\u540D{p} {perceived} \u534A\u97F3\u3002": { en: "Measured on this GS sound: it sounds {p} than the key name by {perceived} semitones." },
   "\u6309\u5E74\u4EE3": { en: "By era" },
   "\u6309\u66F2\u98CE": { en: "By genre" },
+  "\u6309\u79CD\u7C7B\uFF08\u9F13\u3001Pad\u2026\uFF09": { en: "By kind (drums, pads\u2026)" },
   "\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09": { en: "By family (GM order)" },
   "\u6309\u53D1\u58F0\u65B9\u5F0F": { en: "By sound source" },
   "\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09": { en: "Idiophones (struck itself)" },
@@ -4076,6 +4075,9 @@ var S = {
   "\uFF08{from} \u8D77\uFF09": { en: " (from {from})" },
   "\u5E74\u4EE3\u4E0D\u8BE6": { en: "Era unknown" },
   "\u5206\u7C7B\u4E0D\u8BE6": { en: "Family unknown" },
+  "\u9F13\u548C\u6253\u51FB\u4E50": { en: "Drums & percussion" },
+  "Pad\uFF08\u5408\u6210\u5668\u7684\u94FA\u5E95\u97F3\u8272\uFF09": { en: "Pads (synth pad sounds)" },
+  "\u5176\u4F59\uFF08\u8FD8\u6CA1\u6309\u79CD\u7C7B\u5206\uFF09": { en: "Others (not sorted by kind yet)" },
   "\u6CA1\u8D34\u98CE\u683C": { en: "No style tag" },
   "\u516C\u5143\u524D {y}": { en: "{y} BC" },
   "\u5B9A\u7A3F\u4E86\uFF1A\u6DF7\u97F3\u9501\u7740\uFF08\u4E09\u6761\u6760\u91CC\u300C\u6539\u7A3F\u300D\u89E3\u9501\uFF09": { en: "Finalized: the mix is locked (\u201CRevise\u201D in the \u2630 menu unlocks it)" },
@@ -4200,6 +4202,7 @@ var S = {
   "\u62C9\u957F\u4E00\u4EFD\uFF08{p}\uFF09": { en: "Extend by one unit ({p})" },
   "\u62C9\u957F": { en: "Extend" },
   "\u9000\u683C\uFF08{p}\uFF09": { en: "Backspace ({p})" },
+  "\u25BE \u8FD8\u6709 {n} \u4E2A": { en: "\u25BE {n} more" },
   "\u8FD4\u56DE": { en: "Back" },
   "\u81EA\u52A8\u5C0F\u8282\u7EBF": { en: "Auto barlines" },
   "\u6309\u62CD\u53F7\u81EA\u52A8\u753B\u5C0F\u8282\u7EBF\uFF08\u53EA\u753B\u3001\u4E0D\u8FDB\u6570\u636E\uFF09\uFF1B\u624B\u63D2\u7684\u300C|\u300D= \u4ECE\u90A3\u91CC\u91CD\u65B0\u6570\uFF0C\u5F31\u8D77 = \u5199\u5B8C\u5F31\u8D77\u7684\u97F3\u6309\u4E00\u4E0B\u300C|\u300D": { en: "Draws barlines from the time signature (display only, not in the data); a hand-inserted \u201C|\u201D recounts from there; for a pickup, write its notes and press \u201C|\u201D" },
@@ -4726,6 +4729,7 @@ var S = {
   "\u6B4C\u540D": { en: "Title" },
   "\u4F5C\u8005": { en: "Author" },
   "\u4E0D\u5199 = \u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u5404\u653E\u4E00\u904D\uFF08\u4F8B\uFF1A\u524D\u594F (A A1)\xD73 A A2 [\u526F\u6B4C]\uFF09": { en: "Empty = each sheet plays once in order (e.g. Intro (A A1)\xD73 A A2 [Chorus])" },
+  "\u5C0F\u8C03\uFF1A\u548C\u5F26\u7EA7\u6570\u4ECE la \u6570\u3002\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": { en: "Minor: chord degrees count from la. Tap = clef / key / time / tempo" },
   "\u8FD9\u91CC\u662F C \u8C03\uFF08\u6CA1\u6709\u5347\u964D\u53F7\uFF09\uFF1A\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": { en: "C major here (no sharps or flats): tap = clef / key / time / tempo" },
   "\u8FD9\u4E00\u5BB6\u5C55\u5F00\u7740\uFF1A\u70B9 = \u53E0\u56DE\u53BB\uFF08\u5149\u6807\u632A\u5230\u4E0B\u4E00\u4F4D\uFF09": { en: "This family is spread out: tap = fold it back (the cursor moves to the next part)" },
   "\u73B0\u5728\u7684\u7F29\u653E\uFF08100% = \u7EB8\u7684\u5B9E\u9645\u5C3A\u5BF8\uFF09\uFF1B\u70B9 = \u56DE\u5230\u81EA\u52A8\u5927\u5C0F\uFF08Ctrl / \u2318 + 0\uFF09\u3002Ctrl / \u2318 + \u6EDA\u8F6E\u3001\u634F\u5408 = \u7F29\u653E\uFF1BCtrl / \u2318 + = / \u2212 = \u4E00\u6863\u4E00\u6863": { en: "Current zoom (100% = the paper's real size); tap = back to auto size (Ctrl / \u2318 + 0). Ctrl / \u2318 + wheel or pinch = zoom; Ctrl / \u2318 + = / \u2212 = step by step" },
@@ -4775,10 +4779,11 @@ var S = {
   "\u62F7\u53C2\u6570": { en: "Copy params" },
   "\u628A\u62F7\u7684\u53C2\u6570\uFF08\u6765\u81EA\u300C{from}\u300D\uFF09\u76D6\u5230\u8FD9\u4E00\u683C\u4E0A\uFF1B\u5F00\u5173 / \u88AB\u8C01\u538B\u7167\u65E7\uFF1B\u80FD\u64A4\u9500": { en: "Applies the copied parameters (from \u201C{from}\u201D) to this slot; on/off and \u201Ccompressed by\u201D stay; can be undone" },
   "\u7C98\u53C2\u6570": { en: "Paste params" },
-  "\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09": { en: "Collapses the mixer: frees the dock, still in \u201CListen\u201D (Esc = back to writing)" },
   "\u64AD\u653E\uFF08\u7A7A\u683C\uFF09": { en: "Play (Space)" },
-  "\u6DF7\u97F3\u53F0\u94FA\u6EE1\uFF08\u63A8\u5230\u6700\u4E0A\u9762\uFF0C\u5361\u7247\u6392\u6210\u597D\u51E0\u5217\uFF0C\u4E00\u773C\u770B\u5168\uFF09\uFF1B\u518D\u70B9 = \u56DE\u5230\u5E95\u5EA7": { en: "Fills the screen with the mixer (cards in several columns, all in view); tap again = back to the dock" },
-  "\u5168\u5C4F": { en: "Full screen" },
+  "\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD": { en: "Add a bus (routing track): several tracks send here to share effects, such as one reverb" },
+  "\uFF0B \u6DF7\u97F3\u8F68": { en: "\uFF0B Bus" },
+  "\u66F4\u591A\uFF1A\u6392\u6570\u2026": { en: "More: rows\u2026" },
+  "\u6536\u8D77\u6DF7\u97F3\u53F0\uFF1A\u5E95\u5EA7\u8BA9\u51FA\u6765\u3001\u8FD8\u5728\u300C\u542C\u300D\uFF08Esc = \u56DE\u53BB\u5199\uFF09": { en: "Collapses the mixer: frees the dock, still in \u201CListen\u201D (Esc = back to writing)" },
   "\u6548\u679C\u5168\u5173\u7740\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF0C\u53EA\u5269\u63A8\u5B50\u3001\u58F0\u50CF\u3001\u51FA\u5230\u548C\u603B\u8F68\u9650\u5E45\u2014\u2014\u542C\u8C31\u5B50\u672C\u8EAB / \u542C\u5DEE\u522B\u7528\uFF1B\u518D\u70B9\u4E00\u4E0B\u56DE\u6765\u3002\u5BFC\u51FA\u7167\u5E38\u5E26\u6548\u679C\u3002": { en: "All effects off: plugins and sends are silent, leaving only faders, pan, outputs and the master limiter \u2014 for hearing the score itself / comparing; tap again to return. Exports still include effects." },
   "\u4E0D\u518D\u53D1\u7ED9 {to}": { en: "Stop sending to {to}" },
   "\u5F00 / \u5173": { en: "On / off" },
@@ -4822,8 +4827,6 @@ var S = {
   "\u7C98\u6210\u65B0\u7684\u4E00\u683C\uFF1A{kind}": { en: "Paste as a new slot: {kind}" },
   "\u63D2\u4E00\u4E2A\u63D2\u4EF6\uFF08\u4EFB\u4F55\u63D2\u4EF6\u90FD\u80FD\u63D2\u5728\u4EFB\u4F55\u8F68\u4E0A\uFF09": { en: "Insert a plugin (any plugin works on any track)" },
   "\u4ECE\u8FD9\u6761\u8F68\u4E0A\u62FF\u6389\uFF08\u80FD\u64A4\u9500\uFF09": { en: "Remove from this track (can be undone)" },
-  "\u52A0\u4E00\u6761\u6DF7\u97F3\u8F68\uFF08\u8DEF\u7531\u8F68\uFF09\uFF1A\u51E0\u6761\u8F68\u53D1\u8FC7\u6765\u4E00\u8D77\u8FC7\u6548\u679C\uFF0C\u6BD4\u5982\u5171\u7528\u4E00\u4E2A\u6DF7\u54CD": { en: "Add a bus (routing track): several tracks send here to share effects, such as one reverb" },
-  "\uFF0B \u6DF7\u97F3\u8F68": { en: "\uFF0B Bus" },
   "\u8D34\u5728\u5E95\u4E0B\u65F6\u663E\u793A\u51E0\u6392\u5361\u7247\uFF08\u540C\u5C0F\u952E\u76D8\u7684\u300C\u884C\u300D\uFF09\uFF1A\u81EA\u52A8 = \u534A\u5C4F\u653E\u5F97\u4E0B\u7684\u6700\u591A\u6392\uFF1B\u624B\u52A8\u6700\u591A\u5230\u5C4F\u5E55\u653E\u5F97\u4E0B\u3001\u8C31\u8FD8\u9732\u4E00\u6761\u4E3A\u6B62\u3002\u6A2A\u7740\u653E / \u5168\u5C4F\u65F6\u4E0D\u7BA1": { en: "How many rows of cards to show when docked at the bottom (like the keypad rows): Auto = as many as fit in half the screen; manual goes up to what the screen can hold while a strip of the score stays visible. Ignored when docked at the side or full screen" },
   "\u6392\u6570": { en: "Rows" },
   "\u5C11\u4E00\u6392": { en: "One row fewer" },
@@ -4832,7 +4835,10 @@ var S = {
   "\u6548\u679C\u5F00\u7740": { en: "FX on" },
   "\u73B0\u5728\uFF1A\u63D2\u4EF6\u548C\u53D1\u9001\u90FD\u4E0D\u54CD\uFF08\u63A8\u5B50 / \u58F0\u50CF\u7559\u7740\uFF09\u3002\u70B9 = \u6548\u679C\u56DE\u6765": { en: "Now: plugins and sends are silent (faders / pan stay). Tap = effects back" },
   "\u70B9 = \u6682\u65F6\u5173\u6389\u5168\u90E8\u6548\u679C\uFF08\u63D2\u4EF6 + \u53D1\u9001\uFF09\uFF0C\u542C\u8C31\u5B50\u672C\u8EAB / \u542C\u5DEE\u522B\uFF1B\u63A8\u5B50\u3001\u58F0\u50CF\u7559\u7740": { en: "Tap = temporarily turn off all effects (plugins + sends), to hear the score itself / compare; faders and pan stay" },
+  "\u8FD8\u539F\uFF1A\u56DE\u5230\u5E95\u5EA7": { en: "Restore: back to the dock" },
+  "\u6DF7\u97F3\u53F0\u94FA\u6EE1\uFF08\u63A8\u5230\u6700\u4E0A\u9762\uFF0C\u5361\u7247\u6392\u6210\u597D\u51E0\u5217\uFF0C\u4E00\u773C\u770B\u5168\uFF09\uFF1B\u518D\u70B9 = \u56DE\u5230\u5E95\u5EA7": { en: "Fills the screen with the mixer (cards in several columns, all in view); tap again = back to the dock" },
   "\u8FD8\u539F": { en: "Restore" },
+  "\u5168\u5C4F": { en: "Full screen" },
   "\u9650\u5E45": { en: "Limiter" },
   "\u5173\u7740\uFF08\u53EF\u80FD\u524A\u6CE2\uFF09": { en: "Off (may clip)" },
   "\u5CF0\u503C": { en: "Peak" },
@@ -5079,7 +5085,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.82-2026-11-10";
+var APP_VERSION = "v0.16.83-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -5352,6 +5358,8 @@ function pitchName(p2) {
   return `${p2.step}${p2.alter > 0 ? "#".repeat(p2.alter) : "b".repeat(-p2.alter)}${p2.octave}`;
 }
 var KEY_LABEL = { [-7]: "C\u266D", [-6]: "G\u266D", [-5]: "D\u266D", [-4]: "A\u266D", [-3]: "E\u266D", [-2]: "B\u266D", [-1]: "F", 0: "C", 1: "G", 2: "D", 3: "A", 4: "E", 5: "B", 6: "F\u266F", 7: "C\u266F" };
+var MINOR_LABEL = { [-7]: "A\u266D", [-6]: "E\u266D", [-5]: "B\u266D", [-4]: "F", [-3]: "C", [-2]: "G", [-1]: "D", 0: "A", 1: "E", 2: "B", 3: "F\u266F", 4: "C\u266F", 5: "G\u266F", 6: "D\u266F", 7: "A\u266F" };
+var keyText = (fifths, minor = false) => minor ? `6=${MINOR_LABEL[fifths] ?? "?"}` : `1=${KEY_LABEL[fifths] ?? "?"}`;
 
 // src/score/repeats.ts
 function tickOf(tokens) {
@@ -5575,7 +5583,7 @@ var DEFAULT_TIME = { beats: 4, beatType: 4 };
 var DEFAULT_BPM = 90;
 function headTokens(m2 = {}, id0 = 1) {
   return [
-    { kind: "key", id: id0, fifths: m2.fifths ?? DEFAULT_KEY },
+    { kind: "key", id: id0, fifths: m2.fifths ?? DEFAULT_KEY, ...m2.minor ? { mode: "minor" } : {} },
     { kind: "time", id: id0 + 1, beats: m2.beats ?? DEFAULT_TIME.beats, beatType: m2.beatType ?? DEFAULT_TIME.beatType },
     { kind: "tempo", id: id0 + 2, bpm: m2.bpm ?? DEFAULT_BPM }
   ];
@@ -5701,6 +5709,14 @@ function keyAt(tokens, i10) {
     if (t10.kind === "key") f2 = t10.fifths;
   }
   return f2;
+}
+function keyMinorAt(tokens, i10) {
+  let m2 = false;
+  for (let j2 = 0; j2 < i10 && j2 < tokens.length; j2++) {
+    const t10 = tokens[j2];
+    if (t10.kind === "key") m2 = t10.mode === "minor";
+  }
+  return m2;
 }
 function timeAt(tokens, i10) {
   let v = DEFAULT_TIME;
@@ -6326,7 +6342,10 @@ function setMark(st2, i10, v) {
   const t10 = tr(st2)[i10];
   if (!t10 || t10.kind !== v.kind) return st2;
   const nt2 = tr(st2).slice();
-  nt2[i10] = { ...v, id: t10.id };
+  if (v.kind === "key" && t10.kind === "key") {
+    const { mode: _m, ...rest } = v, minor = "mode" in v ? v.mode === "minor" : t10.mode === "minor";
+    nt2[i10] = { ...rest, id: t10.id, ...minor ? { mode: "minor" } : {} };
+  } else nt2[i10] = { ...v, id: t10.id };
   if (v.kind === "key") respellFrom(nt2, i10);
   const n23 = next(st2, nt2, {});
   if (v.kind === "tempo" && i10 < headLen(nt2)) {
@@ -6343,12 +6362,14 @@ function headerSpot(tokens, i10) {
   return { a: a10, b: b3, head: a10 === 0 };
 }
 function headerVals(tokens, spot) {
-  const v = { clef: null, key: null, time: null, tempo: null };
+  const v = { clef: null, key: null, minor: null, time: null, tempo: null };
   for (let i10 = spot.a; i10 < spot.b; i10++) {
     const t10 = tokens[i10];
     if (t10.kind === "clef" && v.clef === null) v.clef = t10.clef;
-    else if (t10.kind === "key" && v.key === null) v.key = t10.fifths;
-    else if (t10.kind === "time" && v.time === null) v.time = { beats: t10.beats, beatType: t10.beatType };
+    else if (t10.kind === "key" && v.key === null) {
+      v.key = t10.fifths;
+      v.minor = t10.mode === "minor";
+    } else if (t10.kind === "time" && v.time === null) v.time = { beats: t10.beats, beatType: t10.beatType };
     else if (t10.kind === "tempo" && v.tempo === null) v.tempo = t10.bpm;
   }
   return v;
@@ -6359,10 +6380,13 @@ function setHeaderAt(st2, paperId, partId, spot, patch) {
   const old = toks.slice(spot.a, spot.b), cur = headerVals(toks, spot), pick = (k2) => old.find((t10) => t10.kind === k2);
   const want = { ...cur };
   for (const k2 of ["clef", "key", "time", "tempo"]) if (patch[k2] !== void 0 && !(spot.head && k2 !== "clef" && patch[k2] === null)) want[k2] = patch[k2];
+  if (want.key === null) want.minor = null;
+  else if (patch.minor !== void 0 && patch.minor !== null) want.minor = patch.minor;
+  else if (want.minor === null) want.minor = keyMinorAt(toks, spot.a);
   if (JSON.stringify(want) === JSON.stringify(cur)) return st2;
   let id2 = st2.nextId;
   const build = [];
-  if (want.key !== null) build.push({ ...pick("key") ?? { id: id2++ }, kind: "key", fifths: want.key });
+  if (want.key !== null) build.push({ id: pick("key")?.id ?? id2++, kind: "key", fifths: want.key, ...want.minor ? { mode: "minor" } : {} });
   if (want.time !== null) build.push({ ...pick("time") ?? { id: id2++ }, kind: "time", beats: want.time.beats, beatType: want.time.beatType });
   if (want.tempo !== null) build.push({ ...pick("tempo") ?? { id: id2++ }, kind: "tempo", bpm: want.tempo });
   if (want.clef !== null) build.push({ ...pick("clef") ?? { id: id2++ }, kind: "clef", clef: want.clef });
@@ -6373,6 +6397,25 @@ function setHeaderAt(st2, paperId, partId, spot, patch) {
   const here = st2.at.paper === paperId && st2.at.part === partId, d3 = build.length - old.length;
   const caret = !here ? st2.caret : st2.caret >= spot.b ? st2.caret + d3 : st2.caret > spot.a ? spot.a + build.length : st2.caret;
   return { ...st2, song, caret: Math.max(headLen(nt2), Math.min(nt2.length, caret)), nextId: id2 };
+}
+function setPaperHeadMinor(st2, paperId, partId, minor) {
+  const paper = st2.song.papers.find((p2) => p2.id === paperId), mine = paper?.tracks[partId];
+  if (!paper || !mine) return { st: st2, n: 0 };
+  const f2 = headerVals(mine, headerSpot(mine, 0)).key;
+  if (f2 === null) return { st: st2, n: 0 };
+  let cur = st2, n10 = 0;
+  for (const p2 of st2.song.parts) {
+    const toks = cur.song.papers.find((x2) => x2.id === paperId)?.tracks[p2.id];
+    if (!toks) continue;
+    const spot = headerSpot(toks, 0), v = headerVals(toks, spot);
+    if (v.key !== f2 || v.minor === minor) continue;
+    const nx2 = setHeaderAt(cur, paperId, p2.id, spot, { minor });
+    if (nx2 !== cur) {
+      cur = nx2;
+      n10++;
+    }
+  }
+  return { st: cur, n: n10 };
 }
 function deleteMark(st2, i10) {
   const t10 = tr(st2)[i10];
@@ -6618,8 +6661,8 @@ function modulateSel(st2, toFifths) {
       const t10 = nt2[i10];
       if (t10.kind === "key") after = t10.fifths;
     }
-    const back = keyAt(old, to2);
-    if (!hasKey && back !== after) nt2.splice(to2, 0, { kind: "key", id: nextId++, fifths: back });
+    const back = keyAt(old, to2), backMinor = keyMinorAt(old, to2);
+    if (!hasKey && back !== after) nt2.splice(to2, 0, { kind: "key", id: nextId++, fifths: back, ...backMinor ? { mode: "minor" } : {} });
   }
   let a10 = from;
   while (a10 > 0 && isMark(nt2[a10 - 1])) a10--;
@@ -6629,7 +6672,7 @@ function modulateSel(st2, toFifths) {
   for (let i10 = a10; i10 < b3; i10++) if (nt2[i10].kind === "key") keyIdx = i10;
   if (keyIdx >= 0 && keyIdx < from) nt2[keyIdx] = { ...nt2[keyIdx], fifths: toFifths };
   else if (keyIdx < 0) {
-    nt2.splice(from, 0, { kind: "key", id: nextId++, fifths: toFifths });
+    nt2.splice(from, 0, { kind: "key", id: nextId++, fifths: toFifths, ...keyMinorAt(old, from) ? { mode: "minor" } : {} });
     shift = 1;
   }
   const sel = { from: from + shift, to: to2 + shift };
@@ -7069,7 +7112,7 @@ function keepSheetTempos(before, after) {
   }) };
 }
 var nextKey = (ids, prefix) => `${prefix}${Math.max(0, ...ids.map((x2) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x2)?.[1] ?? 0))) + 1}`;
-var endMarks = (toks) => ({ fifths: keyAt(toks, toks.length), ...timeAt(toks, toks.length), bpm: tempoAt(toks, toks.length) });
+var endMarks = (toks) => ({ fifths: keyAt(toks, toks.length), minor: keyMinorAt(toks, toks.length), ...timeAt(toks, toks.length), bpm: tempoAt(toks, toks.length) });
 function addPart(st2, part, onPaper = st2.at.paper, after = st2.at.part) {
   if (st2.song.parts.some((p2) => p2.id === part.id)) return st2;
   let id2 = st2.nextId;
@@ -8617,7 +8660,7 @@ var TPLS = [
 var ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII"];
 var ACC = (a10) => a10 === 0 ? "" : a10 > 0 ? "\u266F".repeat(a10) : "\u266D".repeat(-a10);
 var pc = (p2) => (midiOf(p2) % 12 + 12) % 12;
-var MODE = "do";
+var modeOf = (n10) => n10.minor ? "la" : "do";
 var ID = "western";
 function degreeOf(p2, fifths, mode = "do") {
   const deg = ((stepIndex(p2.step) - tonicStepIndex(fifths)) % 7 + 7) % 7, acc = p2.alter - keyAlter(p2.step, fifths);
@@ -8675,10 +8718,10 @@ function thirdDyad(ps, fifths, mode) {
 }
 var chordLabel = (r10) => r10.ties.slice(0, 2).map((g3) => g3.label).join(" / ");
 var BROKEN_OK = /* @__PURE__ */ new Set(["maj", "min", "dim", "aug", "sus4", "sus2", "7", "m7", "maj7", "dim7", "m7b5"]);
-function brokenInBar(bar2, prev, mode) {
+function brokenInBar(bar2, prev) {
   const beatLen = beatTicks(bar2.beats, bar2.beatType), nb2 = Math.max(1, Math.round(bar2.beats * WHOLE / bar2.beatType / beatLen));
   const beats = Array.from({ length: nb2 }, () => []);
-  for (const n10 of bar2.notes) if (!n10.tie) beats[Math.min(nb2 - 1, Math.max(0, Math.floor(n10.pos / beatLen + 1e-9)))].push({ i: n10.index, p: n10.tok.pitch, stacked: !!n10.tok.chord?.length, fifths: n10.fifths });
+  for (const n10 of bar2.notes) if (!n10.tie) beats[Math.min(nb2 - 1, Math.max(0, Math.floor(n10.pos / beatLen + 1e-9)))].push({ i: n10.index, p: n10.tok.pitch, stacked: !!n10.tok.chord?.length, fifths: n10.fifths, mode: modeOf(n10) });
   const tags = [];
   const groupOf = (ns2) => {
     const us = ns2.filter((n10) => n10.p && !n10.stacked), ps = us.map((n10) => n10.p);
@@ -8687,7 +8730,7 @@ function brokenInBar(bar2, prev, mode) {
       const d3 = Math.abs(midiOf(ps[k2]) - midiOf(ps[k2 - 1]));
       if (d3 === 1 || d3 === 2) return null;
     }
-    const rd2 = readChord(ps, us[0].fifths, mode);
+    const rd2 = readChord(ps, us[0].fifths, us[0].mode);
     return rd2 && rd2.best.omitted === 0 && BROKEN_OK.has(rd2.best.tpl) ? rd2 : null;
   };
   const look = (b0, b1) => {
@@ -8721,13 +8764,13 @@ function readBar(bar2, carry, opts) {
   for (const n10 of bar2.notes) {
     const t10 = n10.tok;
     if (t10.pitch && t10.chord?.length) {
-      const rd2 = readChord([t10.pitch, ...t10.chord], n10.fifths, MODE);
+      const rd2 = readChord([t10.pitch, ...t10.chord], n10.fifths, modeOf(n10));
       if (rd2) tags.push({ index: n10.index, read: rd2 });
     }
   }
   let prev = carry?.prev ?? "";
   if (opts.broken) {
-    const b3 = brokenInBar(bar2, prev, MODE);
+    const b3 = brokenInBar(bar2, prev);
     tags.push(...b3.tags);
     prev = b3.prev;
   }
@@ -8750,17 +8793,18 @@ var DEFAULT_THEORY = western.id;
 var harmonyTheory = (id2 = DEFAULT_THEORY) => THEORIES[id2] ?? THEORIES[DEFAULT_THEORY];
 function barsOf(tokens) {
   const at2 = meterPositions(tokens, [0], true), bars = [];
-  let fifths = DEFAULT_KEY;
+  let fifths = DEFAULT_KEY, minor = false;
   tokens.forEach((t10, i10) => {
     if (t10.kind === "key") {
       fifths = t10.fifths;
+      minor = t10.mode === "minor";
       return;
     }
     const m2 = at2.get(i10);
     if (!m2 || t10.kind !== "note") return;
     let bar2 = bars[bars.length - 1];
     if (!bar2 || bar2.no !== m2.bar) bars.push(bar2 = { no: m2.bar, beats: m2.beats, beatType: m2.beatType, notes: [] });
-    bar2.notes.push({ index: i10, tok: t10, pos: m2.pos, fifths, ...m2.tie ? { tie: true } : {} });
+    bar2.notes.push({ index: i10, tok: t10, pos: m2.pos, fifths, ...minor ? { minor: true } : {}, ...m2.tie ? { tie: true } : {} });
   });
   return bars;
 }
@@ -11291,18 +11335,19 @@ var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 function unitsOf(tokens, o10) {
   const H3 = headLen(tokens);
-  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
+  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, minor = false, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx = {};
   for (let i10 = 0; i10 < H3; i10++) {
     const t10 = tokens[i10];
     if (t10.kind === "key") {
       fifths = t10.fifths;
       real = realFifthsOf(t10);
+      minor = t10.mode === "minor";
     } else if (t10.kind === "time") time = { beats: t10.beats, beatType: t10.beatType };
     else if (t10.kind === "tempo") bpm = t10.bpm;
     if (t10.kind === "key" || t10.kind === "time" || t10.kind === "tempo") headIdx[t10.kind] = i10;
   }
-  const head = { key: fifths, real, time, bpm, idx: headIdx };
+  const head = { key: fifths, real, minor, time, bpm, idx: headIdx };
   const units = [], measureLen2 = (b3, bt) => b3 * WHOLE / bt;
   let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0, pickup = false;
   let beat = beatTicks(time.beats, time.beatType), len = measureLen2(time.beats, time.beatType);
@@ -11333,7 +11378,7 @@ function unitsOf(tokens, o10) {
     if (t10.kind === "key") {
       flushFull();
       const rf2 = realFifthsOf(t10), inC = rf2 !== t10.fifths || "realFifths" in t10;
-      units.push({ kind: "key", index: i10, fifths: t10.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? o10.ts ?? 1 : 1), keyWidth(t10.fifths, fifths)) : keyWidth(t10.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf2 });
+      units.push({ kind: "key", index: i10, fifths: t10.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? o10.ts ?? 1 : 1), keyWidth(t10.fifths, fifths)) : keyWidth(t10.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf2, minor: t10.mode === "minor" });
       fifths = t10.fifths;
       accState = /* @__PURE__ */ new Map();
       return;
@@ -11643,13 +11688,13 @@ function engrave(song, o10) {
     prims.push({ t: "text", x: P2(gx + 1.3 * k2), y: y2, s: num2, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
     marks.push({ index, kind: "tempo", system: r10, x: P2(x0 - 0.3), y: y2 - TR("tempo-word", TEMPO_EM * 1.1), w: P2(gx + 1.3 * k2 + nw2 + 0.6 * k2 - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
   };
-  const keyLabel2 = (r10, x0, f2, hint2, index) => {
+  const keyLabel2 = (r10, x0, f2, hint2, index, minor = false) => {
     const y2 = staffTop(r10) - P2(0.8);
     if (hint2) {
-      keyHints.push({ system: r10, index, x: P2(x0), y: y2, size: tx2("key-hint") });
+      keyHints.push({ system: r10, index, x: P2(x0), y: y2, size: tx2("key-hint"), s: keyText(f2, minor) });
       return;
     }
-    prims.push({ t: "text", x: P2(x0), y: y2, s: `1=${KEY_LABEL[f2] ?? "?"}`, cls: "keysig key-label", size: tx2("key-label"), anchor: "start" });
+    prims.push({ t: "text", x: P2(x0), y: y2, s: keyText(f2, minor), cls: "keysig key-label", size: tx2("key-label"), anchor: "start" });
     marks.push({ index, kind: "key", system: r10, x: P2(x0 - 0.2), y: y2 - TR("key-label", TEMPO_EM * 0.95), w: TR("key-label", KEY_LABEL_W), h: TR("key-label", TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r10, x0, f2, cls, clef = "G") => {
@@ -12191,8 +12236,8 @@ function engrave(song, o10) {
           hx += Math.abs(fk) * 1.05;
           if (s10 === 0) {
             if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row2, x: P2(keyX0 - 0.3), ...staffHit(row2), w: P2(Math.max(1.2, hx - keyX0 + 0.3)) });
-            const lab = k2 === 0 && !pm && q2.head.idx.key !== void 0 ? o10.inC ? q2.head.real : fk === 0 ? 0 : null : null;
-            if (lab !== null) keyLabel2(row2, keyX0 - 0.1, lab, !o10.inC, q2.head.idx.key);
+            const lab = k2 === 0 && !pm && q2.head.idx.key !== void 0 ? o10.inC ? q2.head.real : fk === 0 || q2.head.minor ? fk : null : null;
+            if (lab !== null) keyLabel2(row2, keyX0 - 0.1, lab, !o10.inC, q2.head.idx.key, q2.head.minor);
             if (fk) hx += 0.8;
             const cw2 = drawTime(row2, hx, q2.head.time.beats, q2.head.time.beatType, "timesig");
             if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(cw2 + 0.6) });
@@ -12502,9 +12547,9 @@ function engrave(song, o10) {
                 for (let j2 = 0; j2 < Math.abs(u2.prev); j2++) prims.push({ t: "glyph", x: P2(u2.x + 0.4 + j2 * 0.8), y: yOf(rr2, pos[j2] - (sh2 ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
               } else drawKeySig(rr2, u2.x + 0.4, u2.fifths, cls, clef);
               if (k2 === 0) {
-                if (o10.inC) keyLabel2(rr2, u2.x + 0.2, u2.real, false, u2.index);
-                else if (u2.fifths === 0 && u2.prev === 0) keyLabel2(rr2, u2.x + 0.2, 0, false, u2.index);
-                else if (u2.fifths === 0) keyLabel2(rr2, u2.x + 0.2, 0, true, u2.index);
+                if (o10.inC) keyLabel2(rr2, u2.x + 0.2, u2.real, false, u2.index, u2.minor);
+                else if (u2.fifths === 0 && u2.prev === 0) keyLabel2(rr2, u2.x + 0.2, 0, false, u2.index, u2.minor);
+                else if (u2.fifths === 0 || u2.minor) keyLabel2(rr2, u2.x + 0.2, u2.fifths, true, u2.index, u2.minor);
               }
               marks.push({ index: u2.index, kind: "key", system: rr2, x: P2(u2.x), ...staffHit(rr2), w: P2(Math.max(u2.w, 1.6)) });
             } else {
@@ -13414,26 +13459,32 @@ var LyricEditor = class {
 
 // src/score/marks.ts
 function markText(t10) {
-  if (t10.kind === "key") return `1=${KEY_LABEL[t10.fifths]}`;
+  if (t10.kind === "key") return keyText(t10.fifths, t10.mode === "minor");
   if (t10.kind === "time") return `${t10.beats}/${t10.beatType}`;
   return String(t10.bpm);
 }
 function parseMark(kind, raw) {
   const s10 = raw.trim().replace(/\s+/g, "").replace(/♯/g, "#").replace(/♭/g, "b");
   if (kind === "key") {
-    const v = s10.replace(/^1=/, "");
+    if (/^6=/.test(s10)) {
+      const name2 = s10.slice(2).charAt(0).toUpperCase() + s10.slice(3).toLowerCase();
+      for (const [f2, label] of Object.entries(MINOR_LABEL)) if (label.replace("\u266F", "#").replace("\u266D", "b") === name2) return { kind, fifths: Number(f2), mode: "minor" };
+      return null;
+    }
+    const major = /^1=/.test(s10), v = s10.replace(/^1=/, "");
+    const out = (f2) => major ? { kind, fifths: f2, mode: void 0 } : { kind, fifths: f2 };
     let m2 = /^([+-]?\d)$/.exec(v);
     if (m2) {
       const f2 = Number(m2[1]);
-      return f2 >= -7 && f2 <= 7 ? { kind, fifths: f2 } : null;
+      return f2 >= -7 && f2 <= 7 ? out(f2) : null;
     }
     m2 = /^(\d)([#b])$/.exec(v);
     if (m2) {
       const f2 = Number(m2[1]) * (m2[2] === "#" ? 1 : -1);
-      return f2 >= -7 && f2 <= 7 ? { kind, fifths: f2 } : null;
+      return f2 >= -7 && f2 <= 7 ? out(f2) : null;
     }
     const name = v.charAt(0).toUpperCase() + v.slice(1).toLowerCase();
-    for (const [f2, label] of Object.entries(KEY_LABEL)) if (label.replace("\u266F", "#").replace("\u266D", "b") === name) return { kind, fifths: Number(f2) };
+    for (const [f2, label] of Object.entries(KEY_LABEL)) if (label.replace("\u266F", "#").replace("\u266D", "b") === name) return out(Number(f2));
     return null;
   }
   if (kind === "time") {
@@ -13709,7 +13760,7 @@ var MarkEditor = class {
   fill(t10, deletable) {
     const chip2 = (v, label, on2, title = "") => `<button class="btn cand${on2 ? " is-on" : ""}" data-v='${JSON.stringify(v)}' title="${title}">${label}</button>`;
     let h2 = "";
-    if (t10.kind === "key") h2 = KEY_ORDER.map((f2) => chip2({ kind: "key", fifths: f2 }, `1=${KEY_LABEL[f2]}`, f2 === t10.fifths, accName(f2))).join("");
+    if (t10.kind === "key") h2 = KEY_ORDER.map((f2) => chip2({ kind: "key", fifths: f2 }, keyText(f2, t10.mode === "minor"), f2 === t10.fifths, accName(f2))).join("");
     else if (t10.kind === "time") h2 = TIMES.map(([b3, bt]) => chip2({ kind: "time", beats: b3, beatType: bt }, `${b3}/${bt}`, b3 === t10.beats && bt === t10.beatType)).join("");
     else {
       const cur = tempoWord(t10.bpm).it;
@@ -16282,8 +16333,8 @@ var ScoreOverlay = class {
         v.marks ? "button" : "div",
         `${v.marks ? "ov-i " : ""}ov-key-hint`,
         text2(kh.x, kh.y, kh.size, "start", textStyleOf("key-hint")),
-        "1=C",
-        v.marks ? { "data-ov": "keyhint", "data-paper": sys.paper, "data-part": sys.part.replace(/~.*$/, ""), "data-index": String(kh.index), title: _t("\u8FD9\u91CC\u662F C \u8C03\uFF08\u6CA1\u6709\u5347\u964D\u53F7\uFF09\uFF1A\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6") } : {}
+        kh.s,
+        v.marks ? { "data-ov": "keyhint", "data-paper": sys.paper, "data-part": sys.part.replace(/~.*$/, ""), "data-index": String(kh.index), title: kh.s.startsWith("6=") ? _t("\u5C0F\u8C03\uFF1A\u548C\u5F26\u7EA7\u6570\u4ECE la \u6570\u3002\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6") : _t("\u8FD9\u91CC\u662F C \u8C03\uFF08\u6CA1\u6709\u5347\u964D\u53F7\uFF09\uFF1A\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6") } : {}
       );
     }
     for (const f2 of L2.families) add(`fam:${f2.paper}:${f2.host}`, "button", "ov-i ov-family", box(f2.x, f2.y, f2.w, f2.h), "<i></i>", { "data-ov": "family", "data-paper": f2.paper, "data-host": f2.host, title: _t("\u8FD9\u4E00\u5BB6\u5C55\u5F00\u7740\uFF1A\u70B9 = \u53E0\u56DE\u53BB\uFF08\u5149\u6807\u632A\u5230\u4E0B\u4E00\u4F4D\uFF09") });
@@ -29677,15 +29728,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-2f91288db03b.mjs");
+      return pick(() => "singer-worker-17506a6b9a17.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-6def4220ecb4.mjs");
+      return pick(() => "layout-worker-7235c7e06948.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-0adb8f07ef2a.mjs");
+      return pick(() => "encode-worker-412a720f3d22.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -31364,6 +31415,7 @@ var navXml = (t10) => {
 };
 var tempoXml = (bpm) => `<direction placement="above"><direction-type><metronome><beat-unit>quarter</beat-unit><per-minute>${bpm}</per-minute></metronome></direction-type><sound tempo="${bpm}"/></direction>`;
 var CLEF_OC = { G: 0, G8vb: -1, G8va: 1, G15ma: 2, F: 0, F8vb: -1 };
+var keyXml = (fifths, minor) => `<key><fifths>${fifths}</fifths>${minor ? "<mode>minor</mode>" : ""}</key>`;
 var clefXml = (c10) => {
   const F2 = c10 === "F" || c10 === "F8vb", oc2 = CLEF_OC[c10];
   return `<clef><sign>${F2 ? "F" : "G"}</sign><line>${F2 ? 4 : 2}</line>${oc2 ? `<clef-octave-change>${oc2}</clef-octave-change>` : ""}</clef>`;
@@ -31384,11 +31436,13 @@ var ottavaXml = (shift, open2, auto = false) => {
 function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
   const staffs = staffOfTokens(toks, staves);
   const head = headLen(toks);
-  const H3 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
+  const H3 = { fifths: DEFAULT_KEY, minor: false, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM };
   for (let i10 = 0; i10 < head; i10++) {
     const t10 = toks[i10];
-    if (t10.kind === "key") H3.fifths = t10.fifths;
-    else if (t10.kind === "time") {
+    if (t10.kind === "key") {
+      H3.fifths = t10.fifths;
+      H3.minor = t10.mode === "minor";
+    } else if (t10.kind === "time") {
       H3.beats = t10.beats;
       H3.beatType = t10.beatType;
     } else if (t10.kind === "tempo") H3.bpm = t10.bpm;
@@ -31416,7 +31470,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
     ticks = 0;
   };
   const clefs = staves === 2 ? `<staves>2</staves><clef number="1"><sign>G</sign><line>2</line></clef><clef number="2"><sign>F</sign><line>4</line></clef>` : clefXml(clef);
-  cur.push(`<attributes><divisions>${TPQ}</divisions><key><fifths>${H3.fifths}</fifths></key><time><beats>${H3.beats}</beats><beat-type>${H3.beatType}</beat-type></time>${clefs}</attributes>`);
+  cur.push(`<attributes><divisions>${TPQ}</divisions>${keyXml(H3.fifths, H3.minor)}<time><beats>${H3.beats}</beats><beat-type>${H3.beatType}</beat-type></time>${clefs}</attributes>`);
   if (first) cur.push(tempoXml(H3.bpm));
   let prevHyph = false;
   const syllabic = (t10) => {
@@ -31489,7 +31543,7 @@ function partMeasures(toks, breaks, first, clef = "G", staves = 1) {
     if (t10.kind === "phrase") continue;
     if (t10.kind === "key" || t10.kind === "time" || t10.kind === "tempo") {
       if (ticks >= len || t10.kind === "time" && ticks > 0) close(false);
-      if (t10.kind === "key") cur.push(`<attributes><key><fifths>${t10.fifths}</fifths></key></attributes>`);
+      if (t10.kind === "key") cur.push(`<attributes>${keyXml(t10.fifths, t10.mode === "minor")}</attributes>`);
       else if (t10.kind === "time") {
         cur.push(`<attributes><time><beats>${t10.beats}</beats><beat-type>${t10.beatType}</beat-type></time></attributes>`);
         len = measureLen(t10.beats, t10.beatType);
@@ -31716,7 +31770,7 @@ function readMusicXml(xml, hints) {
   const parts = partEls.map((pe, pi) => {
     const pid = pe.attrs.id ?? `P${pi + 1}`, info2 = infos.find((x2) => x2.id === pid) ?? { id: pid, name: "" };
     const manual = hints?.manualBars ? new Set(hints.manualBars[pid] ?? []) : null;
-    const H3 = { fifths: DEFAULT_KEY, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
+    const H3 = { fifths: DEFAULT_KEY, minor: false, beats: DEFAULT_TIME.beats, beatType: DEFAULT_TIME.beatType, bpm: DEFAULT_BPM, gotKey: false, gotTime: false, gotTempo: false };
     const body2 = [], langRead = /* @__PURE__ */ new Map();
     let headPhase = true, divisions = TPQ, voice = null;
     const openSlurs = /* @__PURE__ */ new Set();
@@ -31759,11 +31813,12 @@ function readMusicXml(xml, hints) {
           if (Number(childText(c10, "staves") ?? "1") >= 2) info2.staves = 2;
           const key = kid(c10, "key"), time = kid(c10, "time");
           if (key && childText(key, "fifths") !== void 0) {
-            const f2 = Number(childText(key, "fifths"));
+            const f2 = Number(childText(key, "fifths")), mi2 = childText(key, "mode")?.trim() === "minor";
             if (headPhase && !H3.gotKey) {
               H3.fifths = f2;
+              H3.minor = mi2;
               H3.gotKey = true;
-            } else mark({ kind: "key", id: 0, fifths: f2 });
+            } else mark({ kind: "key", id: 0, fifths: f2, ...mi2 ? { mode: "minor" } : {} });
           }
           if (time && childText(time, "beats")) {
             const b3 = Number(childText(time, "beats")), bt = Number(childText(time, "beat-type"));
@@ -31904,7 +31959,7 @@ function readMusicXml(xml, hints) {
       if (rightRepeat || rightStyle || (manual ? manual.has(n10) : mi < measures.length - 1)) body2.push({ kind: "bar", id: 0, ...rightRepeat ? { repeat: "end", ...rightRepeat.times > 2 ? { times: rightRepeat.times } : {} } : rightStyle ? { style: rightStyle } : {} });
     });
     for (const [k2, t10] of body2.entries()) if (t10.kind === "note" && !t10.chord?.length && t10.art?.includes("arpeggio")) body2[k2] = withArt(t10, "arpeggio", false);
-    const tokens = [{ kind: "key", id: 0, fifths: H3.fifths }, { kind: "time", id: 0, beats: H3.beats, beatType: H3.beatType }, { kind: "tempo", id: 0, bpm: H3.bpm }, ...body2];
+    const tokens = [{ kind: "key", id: 0, fifths: H3.fifths, ...H3.minor ? { mode: "minor" } : {} }, { kind: "time", id: 0, beats: H3.beats, beatType: H3.beatType }, { kind: "tempo", id: 0, bpm: H3.bpm }, ...body2];
     keepOnlyOverrides(tokens, tokens.map((t10) => langRead.get(t10) ?? null));
     if (info2.staves === 2) {
       const auto = autoStaffs(tokens, 2);
@@ -31929,7 +31984,7 @@ function readMusicXml(xml, hints) {
 
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
-var FORMAT_MINOR = { manifest: 1, score: 2, lounge: 1, studio: 1 };
+var FORMAT_MINOR = { manifest: 1, score: 3, lounge: 1, studio: 1 };
 var FORMAT_PATCH = { manifest: 0, score: 0, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
@@ -37726,6 +37781,10 @@ var KEY_ORDER2 = [0, 1, 2, 3, 4, 5, 6, 7, -1, -2, -3, -4, -5, -6, -7];
 var TIMES2 = [[2, 4], [3, 4], [4, 4], [5, 4], [3, 8], [6, 8], [9, 8], [12, 8], [7, 8], [2, 2]];
 var BEAT_TYPES = /* @__PURE__ */ new Set([1, 2, 4, 8, 16, 32]);
 var esc5 = (s10) => s10.replace(/[&<>"']/g, (c10) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c10]);
+var minorName = (f2) => {
+  const s10 = MINOR_LABEL[f2] ?? "?";
+  return s10.charAt(0).toLowerCase() + s10.slice(1);
+};
 var accText = (f2) => f2 === 0 ? _t("\u6CA1\u6709\u5347\u964D\u53F7") : f2 > 0 ? _t("{n} \u4E2A\u5347\u53F7", { n: f2 }) : _t("{n} \u4E2A\u964D\u53F7", { n: -f2 });
 function parseTime(s10) {
   const m2 = /^\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*$/.exec(s10);
@@ -37737,17 +37796,19 @@ function createHeaderPanel(g3) {
   const track = (paperId, partId) => g3.state().song.papers.find((p2) => p2.id === paperId)?.tracks[partId] ?? [];
   return {
     open(paperId, partId, index, at2) {
-      let spot = headerSpot(track(paperId, partId), index), timeText = false;
+      let spot = headerSpot(track(paperId, partId), index), timeText = false, modeNote = "";
       const html = () => {
         const toks = track(paperId, partId), v = headerVals(toks, spot), head = spot.head;
-        const bk = keyAt(toks, spot.a), bt = timeAt(toks, spot.a), bb = tempoAt(toks, spot.a);
+        const bk = keyAt(toks, spot.a), bm = keyMinorAt(toks, spot.a), bt = timeAt(toks, spot.a), bb = tempoAt(toks, spot.a);
         const opt = (value, label, on2) => `<option value="${esc5(value)}"${on2 ? " selected" : ""}>${esc5(label)}</option>`;
         const clefOpts = (head ? opt("", _t("\u8DDF\u58F0\u90E8\uFF08{p}\uFF09", { p: g3.partClef(paperId, partId) }), v.clef === null) : opt("", _t("\u4E0D\u53D8"), v.clef === null)) + CLEFS.map((c10) => opt(c10, CLEF_LABEL[c10], v.clef === c10)).join("");
-        const keyOpts = (head ? "" : opt("", _t("\u4E0D\u53D8\uFF081={k}\uFF09", { k: KEY_LABEL[bk] }), v.key === null)) + KEY_ORDER2.map((f2) => opt(String(f2), `1=${KEY_LABEL[f2]}\uFF08${accText(f2)}\uFF09`, v.key === f2)).join("");
+        const keyOpts = (head ? "" : opt("", _t("\u4E0D\u53D8\uFF08{k}\uFF09", { k: keyText(bk, bm) }), v.key === null)) + KEY_ORDER2.map((f2) => opt(String(f2), `1=${KEY_LABEL[f2]} \xB7 6=${MINOR_LABEL[f2]}\uFF08${accText(f2)}\uFF09`, v.key === f2)).join("");
+        const kf = v.key ?? bk, minor = v.minor ?? bm;
+        const modeRow = `<span class="hp-k"></span><span class="hp-v hp-seg"><button class="btn${minor ? "" : " is-on"}" data-v="major" title="${_t("\u548C\u5F26\u7EA7\u6570\u4ECE do \u6570\uFF081 = do\uFF09")}">${_t("{k} \u5927\u8C03", { k: KEY_LABEL[kf] ?? "?" })}</button><button class="btn${minor ? " is-on" : ""}" data-v="minor" title="${_t("\u548C\u5F26\u7EA7\u6570\u4ECE la \u6570\uFF08a \u5C0F\u8C03\u91CC Am = i\uFF09\uFF1B\u97F3\u548C\u5347\u964D\u53F7\u4E0D\u53D8")}">${_t("{k} \u5C0F\u8C03", { k: minorName(kf) })}</button></span>` + (modeNote ? `<span class="hp-k"></span><span class="hp-v hp-note">${esc5(modeNote)}</span>` : "");
         const tv2 = v.time ? `${v.time.beats}/${v.time.beatType}` : "", inList = !v.time || TIMES2.some(([b3, t10]) => `${b3}/${t10}` === tv2);
         const timeOpts = (head ? "" : opt("", _t("\u4E0D\u53D8\uFF08{t}\uFF09", { t: `${bt.beats}/${bt.beatType}` }), v.time === null)) + TIMES2.map(([b3, t10]) => opt(`${b3}/${t10}`, `${b3}/${t10}`, tv2 === `${b3}/${t10}`)).join("") + (inList ? "" : opt(tv2, tv2, true)) + opt("other", _t("\u5176\u4ED6\u2026\uFF08\u81EA\u5DF1\u5199\uFF09"), false);
         const any = v.clef !== null || v.key !== null || v.time !== null || v.tempo !== null;
-        return `<div class="ctx-hint ctx-what">${head ? _t("\u8FD9\u5F20\u7EB8\u5F00\u5934\uFF1A\u4ECE\u5934\u5F00\u59CB\u7684\u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3002\u53EA\u7BA1\u8FD9\u4E00\u4E2A\u58F0\u90E8\u8FD9\u4E00\u5F20\u7EB8\uFF08\u5F00\u5934\u7684\u901F\u5EA6\u6574\u5F20\u7EB8\u4E00\u8D77\uFF09\u3002") : _t("\u4ECE\u8FD9\u91CC\u8D77\u7684\u53D8\u5316\uFF08\u300C\u4E0D\u53D8\u300D= \u8DDF\u524D\u9762\u4E00\u6837\uFF09\u3002")}</div><div class="hp-grid"><span class="hp-k">${_t("\u8C31\u53F7")}</span><select class="hp-sel" data-hp="clef" title="${_t("\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8")}">${clefOpts}</select><span class="hp-k">${_t("\u8C03\u53F7")}</span><select class="hp-sel" data-hp="key" title="${_t("\u6539\u8C03\u53F7 = \u5B83\u7BA1\u7684\u97F3\u6309\u65B0\u8C03\u53F7\u62FC\u5199\uFF0C\u97F3\u9AD8\u4E0D\u53D8")}">${keyOpts}</select><span class="hp-k">${_t("\u62CD\u53F7")}</span><span class="hp-v"><select class="hp-sel" data-hp="time">${timeOpts}</select>` + (timeText ? `<input class="hp-in" data-hp="timeText" type="text" inputmode="numeric" placeholder="5/8" value="${esc5(tv2)}" spellcheck="false" autocomplete="off" />` : "") + `</span><span class="hp-k">${_t("\u901F\u5EA6")}</span><span class="hp-v"><button class="btn hp-tempo" data-v="tempo" title="${_t("\u6253\u5F00\u901F\u5EA6\u6846\uFF1A\u62E8\u901F\u5EA6\u3001\u9009\u901F\u5EA6\u8BCD\u3001\u770B\u5C0F\u8282\u62CD\u5668\uFF0C\u6309\u300C\u786E\u5B9A\u300D\u624D\u5199\u8FDB\u8C31")}">` + (v.tempo !== null ? `\u2669=${v.tempo} ${esc5(tempoWord(v.tempo).it)}` : esc5(_t("\u4E0D\u53D8\uFF08\u2669={n}\uFF09\xB7 \u5728\u8FD9\u91CC\u6362\u2026", { n: bb }))) + `</button></span></div>` + (head ? partHtml() : "") + (!head && any ? `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u91CC\u7684\u53D8\u5316")}</button>` : "");
+        return `<div class="ctx-hint ctx-what">${head ? _t("\u8FD9\u5F20\u7EB8\u5F00\u5934\uFF1A\u4ECE\u5934\u5F00\u59CB\u7684\u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\u3002\u53EA\u7BA1\u8FD9\u4E00\u4E2A\u58F0\u90E8\u8FD9\u4E00\u5F20\u7EB8\uFF08\u5F00\u5934\u7684\u901F\u5EA6\u6574\u5F20\u7EB8\u4E00\u8D77\uFF09\u3002") : _t("\u4ECE\u8FD9\u91CC\u8D77\u7684\u53D8\u5316\uFF08\u300C\u4E0D\u53D8\u300D= \u8DDF\u524D\u9762\u4E00\u6837\uFF09\u3002")}</div><div class="hp-grid"><span class="hp-k">${_t("\u8C31\u53F7")}</span><select class="hp-sel" data-hp="clef" title="${_t("\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8")}">${clefOpts}</select><span class="hp-k">${_t("\u8C03\u53F7")}</span><select class="hp-sel" data-hp="key" title="${_t("\u6539\u8C03\u53F7 = \u5B83\u7BA1\u7684\u97F3\u6309\u65B0\u8C03\u53F7\u62FC\u5199\uFF0C\u97F3\u9AD8\u4E0D\u53D8")}">${keyOpts}</select>` + modeRow + `<span class="hp-k">${_t("\u62CD\u53F7")}</span><span class="hp-v"><select class="hp-sel" data-hp="time">${timeOpts}</select>` + (timeText ? `<input class="hp-in" data-hp="timeText" type="text" inputmode="numeric" placeholder="5/8" value="${esc5(tv2)}" spellcheck="false" autocomplete="off" />` : "") + `</span><span class="hp-k">${_t("\u901F\u5EA6")}</span><span class="hp-v"><button class="btn hp-tempo" data-v="tempo" title="${_t("\u6253\u5F00\u901F\u5EA6\u6846\uFF1A\u62E8\u901F\u5EA6\u3001\u9009\u901F\u5EA6\u8BCD\u3001\u770B\u5C0F\u8282\u62CD\u5668\uFF0C\u6309\u300C\u786E\u5B9A\u300D\u624D\u5199\u8FDB\u8C31")}">` + (v.tempo !== null ? `\u2669=${v.tempo} ${esc5(tempoWord(v.tempo).it)}` : esc5(_t("\u4E0D\u53D8\uFF08\u2669={n}\uFF09\xB7 \u5728\u8FD9\u91CC\u6362\u2026", { n: bb }))) + `</button></span></div>` + (head ? partHtml() : "") + (!head && any ? `<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u91CC\u7684\u53D8\u5316")}</button>` : "");
       };
       const partHtml = () => {
         const song = g3.state().song, me = song.parts.find((p2) => p2.id === partId);
@@ -37773,6 +37834,22 @@ function createHeaderPanel(g3) {
         if (v === "del") {
           apply2({ clef: null, key: null, time: null, tempo: null });
           return false;
+        }
+        if (v === "major" || v === "minor") {
+          const want = v === "minor", st2 = g3.state(), toks = track(paperId, partId);
+          if (spot.head) {
+            const r10 = setPaperHeadMinor(st2, paperId, partId, want);
+            if (r10.n === 0) return true;
+            g3.update(r10.st);
+            modeNote = r10.n > 1 ? _t("\u8FD9\u4E00\u6BB5\u8C03\u53F7\u4E00\u6837\u7684 {n} \u4E2A\u58F0\u90E8\u4E00\u8D77\u6539\u4E86", { n: r10.n }) : "";
+            spot = headerSpot(track(paperId, partId), spot.a);
+            render();
+            return true;
+          }
+          const cur = headerVals(toks, spot);
+          modeNote = "";
+          apply2(cur.key === null ? { key: keyAt(toks, spot.a), minor: want } : { minor: want });
+          return true;
         }
         if (v === "tempo") {
           const at0 = () => {
@@ -39195,7 +39272,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "2504ad0cc588d4e9" : "dev";
+var CORE_HASH = true ? "bdfdd3b0c9dfd55a" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -51303,7 +51380,7 @@ function toJianpu(toks, fifths) {
     }
     if (t10.kind === "key") {
       f2 = t10.fifths;
-      out.push(`[1=${KEY_LABEL[t10.fifths] ?? t10.fifths}]`);
+      out.push(t10.mode === "minor" ? `[6=${MINOR_LABEL[t10.fifths] ?? t10.fifths}]` : `[1=${KEY_LABEL[t10.fifths] ?? t10.fifths}]`);
       continue;
     }
     if (t10.kind === "time") {
@@ -51348,6 +51425,7 @@ function toJianpu(toks, fifths) {
 var NAV_TEXT = Object.fromEntries(Object.entries(NAV_LABEL).map(([k2, v]) => [k2, v.replace(/ /g, "_")]));
 var NAV_BY_TEXT = Object.fromEntries(Object.entries(NAV_TEXT).map(([k2, v]) => [v, k2]));
 var KEY_BY_LABEL = Object.fromEntries(Object.entries(KEY_LABEL).map(([k2, v]) => [v.replace("\u266D", "b").replace("\u266F", "#"), Number(k2)]));
+var MINOR_BY_LABEL = Object.fromEntries(Object.entries(MINOR_LABEL).map(([k2, v]) => [v.replace("\u266D", "b").replace("\u266F", "#"), Number(k2)]));
 function fromJianpu(text2, fifths) {
   const words = text2.trim().split(/\s+/).filter(Boolean);
   if (!words.length) return null;
@@ -51402,6 +51480,14 @@ function fromJianpu(text2, fifths) {
       if (k2 === void 0) return null;
       f2 = k2;
       out.push({ kind: "key", id: id2++, fifths: k2 });
+      continue;
+    }
+    m2 = /^\[6=([A-G][b#]?)\]$/.exec(w2);
+    if (m2) {
+      const k2 = MINOR_BY_LABEL[m2[1]];
+      if (k2 === void 0) return null;
+      f2 = k2;
+      out.push({ kind: "key", id: id2++, fifths: k2, mode: "minor" });
       continue;
     }
     m2 = /^\[(\d+)\/(\d+)\]$/.exec(w2);
@@ -53636,7 +53722,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "b0cf901968da",
+  cssHash: "feabccd8ac1f",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -57682,4 +57768,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-00bf79a4a39e.mjs.map
+//# sourceMappingURL=moonsinger-250aa4794fed.mjs.map

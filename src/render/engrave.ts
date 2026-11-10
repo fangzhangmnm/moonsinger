@@ -32,7 +32,7 @@ import { GLYPH, W, ENGRAVE, FLAG_W, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SM
 import { layoutStems, type StemNote, type StemDir } from "./stems.ts";
 import { Skyline, primInk, shiftPrim, primY } from "./skyline.ts";
 import { GLYPH_BOX } from "./glyph-box.gen.ts";
-import { KEY_LABEL } from "../score/pitch.ts";
+import { keyText } from "../score/pitch.ts";
 import { songInC, realFifthsOf } from "../score/view-in-c.ts";
 import { harmonyTheory, harmonyTags, type HarmonyRead } from "../theory/index.ts";
 import { resolveSongClefs, displayStates, autoOttava, CLEF_SHIFT, baseClef, isFClef, ottavaShift, startClef, wantsGrand } from "../score/clef.ts";
@@ -150,7 +150,8 @@ export interface Layout {
   /** 版心的左右（px；刀 1 锚点）：纸角的小钮、曲段控件靠它右端摆。 */
   content: { left: number; right: number };
   /** 调号位置上没有升降号的那几处（刀 1 锚点；专业模式，按 C 调看时没有）：覆盖层在这里写淡的「1=C」，点它 = 谱头面板。x / y = 字的起点和基线（px）。 */
-  keyHints: { system: number; index: number; x: number; y: number; size: number }[];
+  /** s = 写什么（「1=C」/ 小调「6=A」；v0.16.83）。 */
+  keyHints: { system: number; index: number; x: number; y: number; size: number; s: string }[];
   /** 整首最下面留的那一条（chrome.tail 给了才有）：覆盖层在里面画「＋ 新曲段」。 */
   tail: (Box & { paper: string }) | null;
   /** 每行每根小节线的 x（px；播放时的小节底色用，v0.10.12；只是多带的数据，不改任何位置）。 */
@@ -264,7 +265,7 @@ interface Chunk {
   x: number; system: number; tick: number; staff: Staff;   // staff = 大谱表里在上还是下（单谱表 = 1）
 }
 interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean; repeat?: Repeat; times?: number; style?: "double" | "final" }   // repeat = 反复小节线（Bravura 的反复记号字形，比细线宽）   // auto = 按拍号自动画的（index = -1，不是 token）
-interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: number; x: number; system: number; tick: number; staff: Staff; /** 按 C 调看时原来的调（写「1=」）。 */ real: number }
+interface KeyU { kind: "key"; index: number; fifths: number; prev: number; w: number; x: number; system: number; tick: number; staff: Staff; /** 按 C 调看时原来的调（写「1=」）。 */ real: number; /** 小调（写「6=」）。 */ minor: boolean }
 interface TimeU { kind: "time"; index: number; beats: number; beatType: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface TempoU { kind: "tempo"; index: number; bpm: number; w: number; x: number; system: number; tick: number; staff: Staff }
 interface HeadU { kind: "head"; index: -1; w: 0; x: number; system: number; tick: number; staff: Staff }   // 光标：零宽
@@ -285,18 +286,18 @@ const KEY_LABEL_W = 3.5;   // v0.16.34：「1=」和速度字一样大（原来 
 const keyWidth = (fifths: number, prev: number) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1.0;
 const timeWidth = (beats: number, beatType: number) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
 
-interface Head { key: number; /** 按 C 调看时原来的调。 */ real: number; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
+interface Head { key: number; /** 按 C 调看时原来的调。 */ real: number; minor: boolean; time: { beats: number; beatType: number }; bpm: number; idx: Partial<Record<"key" | "time" | "tempo", number>> }
 /** 一条 track → 排版单元（第 1 步：切时值、临时记号、自动小节线；tick = 从这条的开头数）。tail = 写字头在这条的尾巴后面（排一个零宽的 head 单元：五线画到右边）。 */
 function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure: TextMeasure; sp: number; ts?: number; rhythm?: boolean; /** 从这个下标起是补齐的淡色休止（不在谱里）。 */ padFrom?: number }): { units: Unit[]; head: Head; shortBars: number; pickup: boolean } {
   const H = headLen(tokens);
-  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
+  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, minor = false, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
   const headIdx: Head["idx"] = {};
   for (let i = 0; i < H; i++) {
     const t = tokens[i];
-    if (t.kind === "key") { fifths = t.fifths; real = realFifthsOf(t); } else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType }; else if (t.kind === "tempo") bpm = t.bpm;
+    if (t.kind === "key") { fifths = t.fifths; real = realFifthsOf(t); minor = t.mode === "minor"; } else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType }; else if (t.kind === "tempo") bpm = t.bpm;
     if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") headIdx[t.kind] = i;
   }
-  const head: Head = { key: fifths, real, time, bpm, idx: headIdx };
+  const head: Head = { key: fifths, real, minor, time, bpm, idx: headIdx };
   //   inBar = 这个小节里已经走了多少；满了（= len）不马上画小节线，等下一个音 / 记号 / 写字头 / 曲尾来了再画——
   //   紧跟着的是人插的「|」就用它那一条（不画两条）。拍号中途变了：没写完的这个小节就此结束（同存 MusicXML）。
   const units: Unit[] = [], measureLen = (b: number, bt: number) => (b * WHOLE) / bt;
@@ -321,7 +322,7 @@ function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; measure
     if (t.kind === "key") {
       flushFull();
       const rf = realFifthsOf(t), inC = rf !== t.fifths || "realFifths" in t;   // 按 C 调看：这一处要写「1=X」，给字留宽（KEY_LABEL_W）
-      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? o.ts ?? 1 : 1), keyWidth(t.fifths, fifths)) : keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf });
+      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? o.ts ?? 1 : 1), keyWidth(t.fifths, fifths)) : keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf, minor: t.mode === "minor" });
       fifths = t.fifths; accState = new Map(); return;
     }
     if (t.kind === "time") {
@@ -532,10 +533,10 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - TR("tempo-word", TEMPO_EM * 1.1), w: P(gx + 1.3 * k + nw + 0.6 * k - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
   };
   /** 调号位置上方的「1=X」（v0.16.10）：hint = 专业模式没有升降号的地方（刀 1 起不画，只记锚点 keyHints，覆盖层写淡的「1=C」）。字也算这个调号的点击区（谱头面板）。 */
-  const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number) => {
+  const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number, minor = false) => {
     const y = staffTop(r) - P(0.8);
-    if (hint) { keyHints.push({ system: r, index, x: P(x0), y, size: tx("key-hint") }); return; }   // 淡的「1=C」只在编辑器里、不印：跟谱（紧凑档不放大，不然挨上第一个音的力度字；刀 2）
-    prims.push({ t: "text", x: P(x0), y, s: `1=${KEY_LABEL[f] ?? "?"}`, cls: "keysig key-label", size: tx("key-label"), anchor: "start" });   // 和速度字一样大（v0.16.34；user 11-08「1=F 这些符号也不要字体刻意的小」）
+    if (hint) { keyHints.push({ system: r, index, x: P(x0), y, size: tx("key-hint"), s: keyText(f, minor) }); return; }   // 淡的「1=C」只在编辑器里、不印：跟谱（紧凑档不放大，不然挨上第一个音的力度字；刀 2）
+    prims.push({ t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });   // 和速度字一样大（v0.16.34；user 11-08「1=F 这些符号也不要字体刻意的小」）
     marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - TR("key-label", TEMPO_EM * 0.95), w: TR("key-label", KEY_LABEL_W), h: TR("key-label", TEMPO_EM * 1.2) });
   };
   const drawKeySig = (r: number, x0: number, f: number, cls: string, clef: "G" | "F" = "G") => {   // 低音谱号的升降号比高音低两级
@@ -982,8 +983,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
             // 谱头记号的点击区域：谱号 + 调号一块（改调号）、拍号（改拍号）、上方速度（改速度）
             if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });   // 调号（谱号那一块归谱号，v0.9.28）
             // 「1=X」（v0.16.10）：按 C 调看 = 写原来的调；专业模式没有升降号 = 淡的「1=C」提示（不占宽）。字也能点（同调号）
-            const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (o.inC ? q.head.real : fk === 0 ? 0 : null) : null;
-            if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !o.inC, q.head.idx.key!);
+            //   小调（v0.16.83）= 每一处都写淡的「6=X」（按 C 调看 = 照印），哪里从 la 数一眼看得见
+            const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (o.inC ? q.head.real : fk === 0 || q.head.minor ? fk : null) : null;
+            if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !o.inC, q.head.idx.key!, q.head.minor);
             if (fk) hx += 0.8;
             const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
             if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
@@ -1245,9 +1247,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
               // 换到同一个调、又没有升降号（C → C）：什么都画不出来 → 写个小字，免得成了看不见的记号（印）。按 C 调看 = 每一处写原来的调；
               //   专业模式换成 C（画了还原号）= 淡的「1=C」提示（v0.16.10，不印）
               if (k === 0) {
-                if (o.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index);
-                else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index);
-                else if (u.fifths === 0) keyLabel(rr, u.x + 0.2, 0, true, u.index);
+                if (o.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
+                else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor);
+                else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor);
               }
               marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
             } else {

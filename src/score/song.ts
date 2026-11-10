@@ -61,7 +61,9 @@ export const endingLabel = (nums: readonly number[] | undefined): string => (num
  *  这一句到这儿。**没有语义**：不换行（「不应该按照句换行，打谱软件没这么干的」）、不换气、不是小节线（不数拍、弱起照旧）；只给「合」挪字当边界，画成歌词行上一个小「。」。
  *  pad 符号层的「句号」键 / Shift+Enter / 歌词里打句读插入。**不进 MusicXML**（不算打谱符号），存 .moonsinger/score.json（papers[].phrases）。 */
 export interface PhraseTok { kind: "phrase"; id: number }
-export interface KeyTok { kind: "key"; id: number; fifths: number }
+/** mode = 小调（v0.16.83，user 11-09「在选调号的时候强制一起选。不过关系大小调对齐」）：只管和弦级数从 la 数；音、升降号、播放都不变。
+ *  没有 = 大调（老歌全是）。MusicXML 原生 <key><mode>minor</mode>。凡是照抄调号的地方（新纸 / 新声部 / 移调 / 复制）一起带。 */
+export interface KeyTok { kind: "key"; id: number; fifths: number; mode?: "minor" }
 export interface TimeTok { kind: "time"; id: number; beats: number; beatType: number }
 export interface TempoTok { kind: "tempo"; id: number; bpm: number }   // 每分钟几个四分音符
 export type MarkTok = KeyTok | TimeTok | TempoTok;
@@ -203,9 +205,9 @@ export interface EditorState {
 }
 
 /** 一条 track 开头的三个谱头记号（id 从 id0 起连着编）。 */
-export function headTokens(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}, id0 = 1): Token[] {
+export function headTokens(m: { fifths?: number; minor?: boolean; beats?: number; beatType?: number; bpm?: number } = {}, id0 = 1): Token[] {
   return [
-    { kind: "key", id: id0, fifths: m.fifths ?? DEFAULT_KEY },
+    { kind: "key", id: id0, fifths: m.fifths ?? DEFAULT_KEY, ...(m.minor ? { mode: "minor" as const } : {}) },
     { kind: "time", id: id0 + 1, beats: m.beats ?? DEFAULT_TIME.beats, beatType: m.beatType ?? DEFAULT_TIME.beatType },
     { kind: "tempo", id: id0 + 2, bpm: m.bpm ?? DEFAULT_BPM },
   ];
@@ -332,6 +334,12 @@ export function keyAt(tokens: Token[], i: number): number {
   let f = DEFAULT_KEY;
   for (let j = 0; j < i && j < tokens.length; j++) { const t = tokens[j]; if (t.kind === "key") f = t.fifths; }
   return f;
+}
+/** 下标 i 处生效的调号写不写着「小调」。 */
+export function keyMinorAt(tokens: Token[], i: number): boolean {
+  let m = false;
+  for (let j = 0; j < i && j < tokens.length; j++) { const t = tokens[j]; if (t.kind === "key") m = t.mode === "minor"; }
+  return m;
 }
 export function timeAt(tokens: Token[], i: number): { beats: number; beatType: number } {
   let v = DEFAULT_TIME;
@@ -852,7 +860,8 @@ export function writeMark(st: EditorState, v: MarkVal): { st: EditorState; index
   while (b < tokens.length && isMark(tokens[b])) b++;
   for (let i = a; i < b; i++) if (tokens[i].kind === v.kind) return { st: setMark({ ...leave(st), sel: null }, i, v), index: i, fresh: false };
   const id = st.nextId, nt = tokens.slice();
-  nt.splice(at, 0, { ...v, id } as MarkTok);
+  const ins = (v.kind === "key" && "mode" in v && v.mode !== "minor" ? (({ mode: _m, ...r }) => r)(v) : v);   // 「1=」明写大调：不留 mode: undefined
+  nt.splice(at, 0, { ...ins, id } as MarkTok);
   if (v.kind === "key") respellFrom(nt, at);   // 插调号：它管的音跟着按调号拼写
   return { st: next(st, nt, { caret: at + 1, sel: null, nextId: id + 1, log: [] }), index: at, fresh: true };
 }
@@ -868,12 +877,16 @@ function respellFrom(nt: Token[], i: number): void {
   }
 }
 /** 换调号（插一个调号记号）。 */
-export const writeKey = (st: EditorState, fifths: number): EditorState => writeMark(st, { kind: "key", fifths }).st;
+export const writeKey = (st: EditorState, fifths: number): EditorState => writeMark(st, { kind: "key", fifths, ...(keyMinorAt(tr(st), st.sel ? st.sel.from : st.caret) ? { mode: "minor" as const } : {}) }).st;   // 新插的调号：大调 / 小调跟着这里原来的
 /** 改一个记号的值（种类不变）。输入的「1=」不跟着变（输入设备自己的调）。 */
 export function setMark(st: EditorState, i: number, v: MarkVal): EditorState {
   const t = tr(st)[i];
   if (!t || t.kind !== v.kind) return st;
-  const nt = tr(st).slice(); nt[i] = { ...v, id: t.id } as MarkTok;
+  const nt = tr(st).slice();
+  if (v.kind === "key" && t.kind === "key") {   // 只给了几个升降号（记号框的小格）= 大调 / 小调照原来的；明写了 mode（含 undefined = 大调）才换
+    const { mode: _m, ...rest } = v, minor = "mode" in v ? v.mode === "minor" : t.mode === "minor";
+    nt[i] = { ...rest, id: t.id, ...(minor ? { mode: "minor" as const } : {}) };
+  } else nt[i] = { ...v, id: t.id } as MarkTok;
   if (v.kind === "key") respellFrom(nt, i);   // 改调号：它管的音跟着按调号拼写（同一步，能撤销）
   const n2 = next(st, nt, {});
   if (v.kind === "tempo" && i < headLen(nt)) {   // 改这张纸开头的速度 = 这张纸每一行的谱头都写齐（速度是这张纸的）
@@ -895,13 +908,14 @@ export function headerSpot(tokens: Token[], i: number): HeaderSpot {
   return { a, b, head: a === 0 };
 }
 /** 这一处写着的（没写 = null）。 */
-export interface HeaderVals { clef: ClefName | null; key: number | null; time: { beats: number; beatType: number } | null; tempo: number | null }
+/** minor = 这一处的调号写着「小调」（没有调号 = null）。 */
+export interface HeaderVals { clef: ClefName | null; key: number | null; minor: boolean | null; time: { beats: number; beatType: number } | null; tempo: number | null }
 export function headerVals(tokens: Token[], spot: HeaderSpot): HeaderVals {
-  const v: HeaderVals = { clef: null, key: null, time: null, tempo: null };
+  const v: HeaderVals = { clef: null, key: null, minor: null, time: null, tempo: null };
   for (let i = spot.a; i < spot.b; i++) {
     const t = tokens[i];
     if (t.kind === "clef" && v.clef === null) v.clef = t.clef;
-    else if (t.kind === "key" && v.key === null) v.key = t.fifths;
+    else if (t.kind === "key" && v.key === null) { v.key = t.fifths; v.minor = t.mode === "minor"; }
     else if (t.kind === "time" && v.time === null) v.time = { beats: t.beats, beatType: t.beatType };
     else if (t.kind === "tempo" && v.tempo === null) v.tempo = t.bpm;
   }
@@ -915,10 +929,14 @@ export function setHeaderAt(st: EditorState, paperId: string, partId: string, sp
   const old = toks.slice(spot.a, spot.b), cur = headerVals(toks, spot), pick = <K extends Token["kind"]>(k: K) => old.find((t) => t.kind === k) as Extract<Token, { kind: K }> | undefined;
   const want: HeaderVals = { ...cur };
   for (const k of ["clef", "key", "time", "tempo"] as const) if (patch[k] !== undefined && !(spot.head && k !== "clef" && patch[k] === null)) (want as unknown as Record<string, unknown>)[k] = patch[k];
+  // 大调 / 小调跟着调号走（v0.16.83）：没调号 = 没有；换调号不说 = 照原来的（这一处原来没调号 = 照这里生效的）
+  if (want.key === null) want.minor = null;
+  else if (patch.minor !== undefined && patch.minor !== null) want.minor = patch.minor;
+  else if (want.minor === null) want.minor = keyMinorAt(toks, spot.a);
   if (JSON.stringify(want) === JSON.stringify(cur)) return st;   // 值没变 = 不改（不多记一步撤销；输入框回车又失焦会触发两次）
   let id = st.nextId;
   const build: Token[] = [];
-  if (want.key !== null) build.push({ ...(pick("key") ?? { id: id++ }), kind: "key", fifths: want.key } as KeyTok);
+  if (want.key !== null) build.push({ id: pick("key")?.id ?? id++, kind: "key", fifths: want.key, ...(want.minor ? { mode: "minor" as const } : {}) });
   if (want.time !== null) build.push({ ...(pick("time") ?? { id: id++ }), kind: "time", beats: want.time.beats, beatType: want.time.beatType } as TimeTok);
   if (want.tempo !== null) build.push({ ...(pick("tempo") ?? { id: id++ }), kind: "tempo", bpm: want.tempo } as TempoTok);
   if (want.clef !== null) build.push({ ...(pick("clef") ?? { id: id++ }), kind: "clef", clef: want.clef } as ClefTok);
@@ -929,6 +947,19 @@ export function setHeaderAt(st: EditorState, paperId: string, partId: string, sp
   const here = st.at.paper === paperId && st.at.part === partId, d = build.length - old.length;
   const caret = !here ? st.caret : st.caret >= spot.b ? st.caret + d : st.caret > spot.a ? spot.a + build.length : st.caret;
   return { ...st, song, caret: Math.max(headLen(nt), Math.min(nt.length, caret)), nextId: id };
+}
+/** 纸开头切大调 / 小调（v0.16.83）：这张纸上开头调号和这一行一样的声部一起切（大调小调是这段音乐的事，不是某件乐器的事），
+ *  调号不一样的不动。一步撤销（返回一个新状态）；n = 改了几行（含这一行），面板照实说。 */
+export function setPaperHeadMinor(st: EditorState, paperId: string, partId: string, minor: boolean): { st: EditorState; n: number } {
+  const paper = st.song.papers.find((p) => p.id === paperId), mine = paper?.tracks[partId]; if (!paper || !mine) return { st, n: 0 };
+  const f = headerVals(mine, headerSpot(mine, 0)).key; if (f === null) return { st, n: 0 };
+  let cur = st, n = 0;
+  for (const p of st.song.parts) {
+    const toks = cur.song.papers.find((x) => x.id === paperId)?.tracks[p.id]; if (!toks) continue;
+    const spot = headerSpot(toks, 0), v = headerVals(toks, spot); if (v.key !== f || v.minor === minor) continue;
+    const nx = setHeaderAt(cur, paperId, p.id, spot, { minor }); if (nx !== cur) { cur = nx; n++; }
+  }
+  return { st: cur, n };
 }
 
 /** 删一个中途的记号（谱头的删不掉）。 */
@@ -1154,8 +1185,8 @@ export function modulateSel(st: EditorState, toFifths: number): EditorState {
   if (to < nt.length) {
     let hasKey = false; for (let i = to; i < nt.length && isMark(nt[i]); i++) if (nt[i].kind === "key") hasKey = true;
     let after = toFifths; for (let i = from; i < to; i++) { const t = nt[i]; if (t.kind === "key") after = t.fifths; }   // 选中末尾生效的新调
-    const back = keyAt(old, to);
-    if (!hasKey && back !== after) nt.splice(to, 0, { kind: "key", id: nextId++, fifths: back });
+    const back = keyAt(old, to), backMinor = keyMinorAt(old, to);
+    if (!hasKey && back !== after) nt.splice(to, 0, { kind: "key", id: nextId++, fifths: back, ...(backMinor ? { mode: "minor" as const } : {}) });
   }
   // 开头：旁边连着的记号里有调号 = 改它，否则插一个
   let a = from; while (a > 0 && isMark(nt[a - 1])) a--;
@@ -1163,7 +1194,7 @@ export function modulateSel(st: EditorState, toFifths: number): EditorState {
   let shift = 0, keyIdx = -1;
   for (let i = a; i < b; i++) if (nt[i].kind === "key") keyIdx = i;
   if (keyIdx >= 0 && keyIdx < from) nt[keyIdx] = { ...(nt[keyIdx] as KeyTok), fifths: toFifths };
-  else if (keyIdx < 0) { nt.splice(from, 0, { kind: "key", id: nextId++, fifths: toFifths }); shift = 1; }
+  else if (keyIdx < 0) { nt.splice(from, 0, { kind: "key", id: nextId++, fifths: toFifths, ...(keyMinorAt(old, from) ? { mode: "minor" as const } : {}) }); shift = 1; }   // 转调不换大小调（a 小调转到 b 小调）
   const sel = { from: from + shift, to: to + shift };
   // 收尾：按挪完之后各自所在的调简化拼写（选中里的调号会被换成等音调，按音程挪的拼法可能和它对不上）
   for (let i = sel.from; i < sel.to; i++) {
@@ -1495,7 +1526,7 @@ function keepSheetTempos(before: Song, after: Song): Song {
 }
 const nextKey = (ids: string[], prefix: string) => `${prefix}${Math.max(0, ...ids.map((x) => Number(new RegExp(`^${prefix}(\\d+)$`).exec(x)?.[1] ?? 0))) + 1}`;
 /** 一条 track 末尾生效的调号 / 拍号 / 速度（新纸 / 新声部的谱头照抄它）。 */
-const endMarks = (toks: Token[]) => ({ fifths: keyAt(toks, toks.length), ...timeAt(toks, toks.length), bpm: tempoAt(toks, toks.length) });
+const endMarks = (toks: Token[]) => ({ fifths: keyAt(toks, toks.length), minor: keyMinorAt(toks, toks.length), ...timeAt(toks, toks.length), bpm: tempoAt(toks, toks.length) });
 /** 加一个声部 = 加一位歌手（**声部就是歌手**：一个声部绑一个角色、一个麦克风，跨纸按它连起来；2026-10-08 user「嗯声部就是歌手」）。
  *  只在 onPaper 这张纸上给它一条只有谱头的 track（谱头抄那张纸第一个在场声部的开头；user「新歌手只出现在当前这张纸嗯」——此前是每张纸都给）；
  *  onPaper = null = 哪张纸都还没有它（「交给新歌手」：接着 rebindTrack 把一条交给它）。在全曲的顺序里排最后。光标跳到它那条（有的话）。

@@ -6,7 +6,7 @@
 //   记号：[1=G] 调号、[3/4] 拍号、[T=90] 速度；歌词里的空格 / 斜杠不许（歌词只认到下一个空格）。
 //   写不出的时值（连音 / 奇怪的 tick 数）写成 (tick)：1(560)。
 import { type Dyn, type EditorState, type Token, type NoteTok, type Timed, type Repeat, type NavWhat, NAV_LABEL, tr, withTrack, headLen, keyAt, isMark, TPQ, allPitches, withPitches, materializeLead } from "./song.ts";
-import { type Pitch, STEPS, type Step, stepIndex, diatonicIndex, tonicStepIndex, keyAlter, KEY_LABEL } from "./pitch.ts";
+import { type Pitch, STEPS, type Step, stepIndex, diatonicIndex, tonicStepIndex, keyAlter, KEY_LABEL, MINOR_LABEL } from "./pitch.ts";
 
 /** 选中的那一段（没选中 = null）。原样切片，id 原样（贴的时候重编）。 */
 export function copyTokens(st: EditorState): Token[] | null {
@@ -72,7 +72,7 @@ export function toJianpu(toks: Token[], fifths: number): string {
   for (const t of toks) {
     if (t.kind === "bar") { out.push(t.repeat === "start" ? "|:" : t.repeat === "end" ? `:|${t.times && t.times > 2 ? `x${t.times}` : ""}` : t.repeat === "both" ? `:|:${t.times && t.times > 2 ? `x${t.times}` : ""}` : t.style === "double" ? "||" : t.style === "final" ? "|]" : "|"); continue; }   // 反复小节线 = |: / :| / :|x3 / :|:；段落线 = ||、终止线 = |]（v0.9.32）
     if (t.kind === "nav") { out.push(t.what === "ending" ? `[${(t.nums ?? [1]).join(".")}.]` : `[${NAV_TEXT[t.what]}]`); continue; }   // 房子 = [1.] / [1.2.]；跳转 = [D.C.] [D.S. al Coda] [Segno]…
-    if (t.kind === "key") { f = t.fifths; out.push(`[1=${KEY_LABEL[t.fifths] ?? t.fifths}]`); continue; }
+    if (t.kind === "key") { f = t.fifths; out.push(t.mode === "minor" ? `[6=${MINOR_LABEL[t.fifths] ?? t.fifths}]` : `[1=${KEY_LABEL[t.fifths] ?? t.fifths}]`); continue; }   // 小调写 la 是哪个音
     if (t.kind === "time") { out.push(`[${t.beats}/${t.beatType}]`); continue; }
     if (t.kind === "tempo") { out.push(`[T=${t.bpm}]`); continue; }
     if (t.kind === "clef" || t.kind === "ottava") continue;   // 谱号 / 八度线只管画，不进简谱文字（app 内剪贴板带着原 token）
@@ -92,6 +92,7 @@ export function toJianpu(toks: Token[], fifths: number): string {
 const NAV_TEXT: Record<Exclude<NavWhat, "ending">, string> = Object.fromEntries(Object.entries(NAV_LABEL).map(([k, v]) => [k, v.replace(/ /g, "_")])) as Record<Exclude<NavWhat, "ending">, string>;
 const NAV_BY_TEXT: Record<string, Exclude<NavWhat, "ending">> = Object.fromEntries(Object.entries(NAV_TEXT).map(([k, v]) => [v, k as Exclude<NavWhat, "ending">]));
 const KEY_BY_LABEL: Record<string, number> = Object.fromEntries(Object.entries(KEY_LABEL).map(([k, v]) => [v.replace("♭", "b").replace("♯", "#"), Number(k)]));
+const MINOR_BY_LABEL: Record<string, number> = Object.fromEntries(Object.entries(MINOR_LABEL).map(([k, v]) => [v.replace("♭", "b").replace("♯", "#"), Number(k)]));
 /** 简谱文字 → token（相对 fifths；读不懂的词 = 整段不认，返回 null——别把别人聊天里的话当谱）。id 从 0 起（贴的时候重编）。 */
 export function fromJianpu(text: string, fifths: number): Token[] | null {
   const words = text.trim().split(/\s+/).filter(Boolean);
@@ -112,6 +113,8 @@ export function fromJianpu(text: string, fifths: number): Token[] | null {
     if (w === ",") { out.push({ kind: "phrase", id: id++ }); continue; }
     let m = /^\[1=([A-G][b#]?)\]$/.exec(w);
     if (m) { const k = KEY_BY_LABEL[m[1]]; if (k === undefined) return null; f = k; out.push({ kind: "key", id: id++, fifths: k }); continue; }
+    m = /^\[6=([A-G][b#]?)\]$/.exec(w);
+    if (m) { const k = MINOR_BY_LABEL[m[1]]; if (k === undefined) return null; f = k; out.push({ kind: "key", id: id++, fifths: k, mode: "minor" }); continue; }
     m = /^\[(\d+)\/(\d+)\]$/.exec(w);
     if (m) { out.push({ kind: "time", id: id++, beats: Number(m[1]), beatType: Number(m[2]) }); continue; }
     m = /^\[T=(\d+)\]$/.exec(w);

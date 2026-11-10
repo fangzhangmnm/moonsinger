@@ -14,7 +14,7 @@
 
 import { _t, lang } from "../i18n/index.ts";
 import { type EditorState, type MarkTok, type MarkVal, setMark, deleteMark, headLen, TEMPO_WORDS, tempoWord, TEMPO_MIN, TEMPO_MAX, tr } from "../score/song.ts";
-import { KEY_LABEL } from "../score/pitch.ts";
+import { keyText } from "../score/pitch.ts";
 import { markText, parseMark } from "../score/marks.ts";
 import type { Layout } from "../render/engrave.ts";
 import { mountWheel, type WheelHandle } from "../keyboard/drum.ts";
@@ -115,7 +115,7 @@ export class MarkEditor {
   private fill(t: MarkTok, deletable: boolean): void {
     const chip = (v: MarkVal, label: string, on: boolean, title = "") => `<button class="btn cand${on ? " is-on" : ""}" data-v='${JSON.stringify(v)}' title="${title}">${label}</button>`;
     let h = "";
-    if (t.kind === "key") h = KEY_ORDER.map((f) => chip({ kind: "key", fifths: f }, `1=${KEY_LABEL[f]}`, f === t.fifths, accName(f))).join("");
+    if (t.kind === "key") h = KEY_ORDER.map((f) => chip({ kind: "key", fifths: f }, keyText(f, t.mode === "minor"), f === t.fifths, accName(f))).join("");   // 小调的调号写「6=」（换调号不换大小调）
     else if (t.kind === "time") h = TIMES.map(([b, bt]) => chip({ kind: "time", beats: b, beatType: bt }, `${b}/${bt}`, b === t.beats && bt === t.beatType)).join("");
     else {
       const cur = tempoWord(t.bpm).it;
