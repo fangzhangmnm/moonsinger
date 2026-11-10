@@ -121,7 +121,7 @@ export class Finder {
   }
   private unstash(): void {
     const m = this.memos[this.ctx];
-    this.mode = (["year", "style", "family", "hs"] as const).find((x) => x === m.mode) ?? "year";
+    this.mode = (["year", "style", "kind", "family", "hs"] as const).find((x) => x === m.mode) ?? "year";
     this.openG = new Map(Object.entries(m.open) as [SortMode, string][]); this.scrollY = m.scroll; this.opened = m.row; this.selected = m.pick;
   }
   /** 宿主存歌 / 存设备时取（开着的话先把现在翻到哪收进来）。 */

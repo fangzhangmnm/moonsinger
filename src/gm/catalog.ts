@@ -154,9 +154,9 @@ export const roleNameOf = (c: Concept): string => c.scoreName?.en || c.names.en.
 /** 角色的官方乐器语义 id：概念自己的；没有就用本尊预设的；再没有 = null（角色沿用原来的）。 */
 export const roleSoundOf = (cat: Catalog, c: Concept): string | null => c.ids.musicxml ?? providersOf(cat, c)[0]?.sound ?? null;
 
-export type SortMode = "family" | "year" | "hs" | "style";
+export type SortMode = "family" | "year" | "hs" | "style" | "kind";
 // 「按曲风」= 原「按〇〇风」（user 2026-10-08「按OO风换一个更正式好懂的名字」）；组名（和风 / 中华风 / 贝多风…）照旧用仓鼠表里的
-export const SORT_LABEL: Record<SortMode, string> = { year: _t("按年代"), style: _t("按曲风"), family: _t("按族（GM 的顺序）"), hs: _t("按发声方式") };   // 下拉的顺序 = 这里的顺序（默认的排第一；v0.15.7 起默认按年代，user 11-05「还是默认年代排序的那个order」）
+export const SORT_LABEL: Record<SortMode, string> = { year: _t("按年代"), style: _t("按曲风"), kind: _t("按种类（鼓、Pad…）"), family: _t("按族（GM 的顺序）"), hs: _t("按发声方式") };   // 下拉的顺序 = 这里的顺序（默认的排第一；v0.15.7 起默认按年代，user 11-05「还是默认年代排序的那个order」）
 const HS_CLASS: Record<string, string> = { "1": _t("体鸣（敲它自己）"), "2": _t("膜鸣（敲皮）"), "3": _t("弦鸣（弦）"), "4": _t("气鸣（气）"), "5": _t("电鸣（电）") };
 /** 列表里的一行：一个概念；按曲风时可以是概念名下的**一个音色**（preset = 那一行 GM 映射，星级 / 入选按它自己的，user 2026-10-08「音色为单位而不是家族一把捞」）。 */
 export interface Entry { concept: Concept; preset?: GmRow; weight?: number; as?: string }
@@ -181,11 +181,29 @@ export function groupConcepts(cat: Catalog, mode: SortMode, query = ""): Group[]
     const order = new Map(eras.map((e, i) => [e.id, i]));
     return asItems([...groups.values()].sort((a, b) => (order.get(a.id) ?? 99) - (order.get(b.id) ?? 99)).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.year ?? 1e9) - (b.year ?? 1e9)) })));
   }
+  if (mode === "kind") return kindGroups(cat, list, q, hit);
   if (mode === "hs") {
     for (const c of list) { const k = c.ids.hs?.[0] ?? "?"; put(k, HS_CLASS[k] ?? _t("分类不详"), c); }
     return asItems([...groups.values()].sort((a, b) => (a.id.localeCompare(b.id))).map((g) => ({ ...g, concepts: g.concepts.sort((a, b) => (a.ids.hs ?? "~").localeCompare(b.ids.hs ?? "~")) })));
   }
   return styleGroups(cat, q, hit);
+}
+/** 按种类（v0.16.81，user 11-07「我要找所有的鼓，我要找所有的 pad 这种分类方式，可以先只算鼓和 pad，这个可以要求不全」）：
+ *  · 鼓和打击乐 = 概念的家族里有 GM 的 percussion（第 10 通道的鼓件）或 percussive（太鼓、木鱼、合成鼓…）；鼓件按键号、其余按 GM 号排。
+ *  · Pad = GM 家族 synth-pad 的那几个**音色**（一个音色一行：它们在目录里挂在「合成器」「语音合成」名下，按乐器列就找不到）。
+ *  · 其余 = 还没按种类分的（不藏：这一种排法里也找得到）。分类全用目录快照里现成的家族标记，app 里不另编表；以后要加类 = 给音乐仓鼠开工单。 */
+function kindGroups(cat: Catalog, list: Concept[], q: string, hit: (c: Concept) => boolean): Group[] {
+  const isDrum = (c: Concept) => (c.family ?? []).some((f) => f === "percussion" || f === "percussive");
+  const drumKey = (c: Concept) => { const g = (c.ids.gm ?? [])[0]; return !g ? 9999 : g.bank === 128 ? (g.note ?? 0) : 1000 + g.program; };
+  const drums = list.filter(isDrum).sort((a, b) => drumKey(a) - drumKey(b) || a.names.zh.localeCompare(b.names.zh, "zh"));
+  const pads: Entry[] = [...cat.gmSelf.values()].filter((r) => r.family === "synth-pad" && r.note === undefined).sort((a, b) => a.program - b.program)
+    .flatMap((r) => { const c = cat.byId.get(r.concept); return c && (hit(c) || (!!q && r.gmName.toLowerCase().includes(q))) ? [{ concept: c, preset: r }] : []; });
+  const rest = list.filter((c) => !isDrum(c)).sort((a, b) => a.names.zh.localeCompare(b.names.zh, "zh"));
+  return [
+    { id: "drums", label: _t("鼓和打击乐"), items: drums.map((concept) => ({ concept })) },
+    { id: "pads", label: _t("Pad（合成器的铺底音色）"), items: pads },
+    { id: "rest", label: _t("其余（还没按种类分）"), items: rest.map((concept) => ({ concept })) },
+  ].filter((g) => g.items.length);
 }
 /** 按曲风：**以 GM 音色为单位**（user 2026-10-08「评级和是否入选能不能精确到合成器里面的子音色」「每个不同的音色都单列单评级」「音色为单位而不是家族一把捞」「丢了子音的排序和策展」）。
  *  成员 = 本尊行自己的 styles（仓鼠 v8 起逐个音色判；一个号多重认领只看主本尊）；没有 GM 音色能演的概念（古筝 / 风铃…）照旧按概念、星级用概念的。

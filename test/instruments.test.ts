@@ -86,7 +86,7 @@ describe("每种排序都不漏乐器", () => {
     const unreached = [...cat.gmSelf.values()].filter((r) => cat.byId.has(r.concept) && !reach.has(gmKey(r)));
     eq(unreached.length, 0, `够不着：${unreached.map((r) => r.gmName).join("、")}`);
   });
-  it("排序的种类：年代 / 族 / 发声方式 / 曲风 四种都在", () => eq([...modes].sort().join(","), "family,hs,style,year"));
+  it("排序的种类：年代 / 族 / 发声方式 / 曲风 / 种类 五种都在（种类 = v0.16.81）", () => eq([...modes].sort().join(","), "family,hs,kind,style,year"));
 });
 
 // 连断的底色从目录来（仓鼠 v11 的 joint，按 GM 号逐个；2026-10-08 by Claude Opus 5.5；user「midi的string系乐器是有不同的演奏方法的，你不能按乐器一刀切」

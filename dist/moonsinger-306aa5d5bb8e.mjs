@@ -2893,6 +2893,10 @@ var S = {
   "\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3": { en: "No note before the cursor yet" },
   "\u25BE \u8FD8\u6709 {n} \u4E2A": { en: "\u25BE {n} more" },
   "\u754C\u9762": { en: "Interface" },
+  "\u6309\u79CD\u7C7B\uFF08\u9F13\u3001Pad\u2026\uFF09": { en: "By kind (drums, pads\u2026)" },
+  "\u9F13\u548C\u6253\u51FB\u4E50": { en: "Drums & percussion" },
+  "Pad\uFF08\u5408\u6210\u5668\u7684\u94FA\u5E95\u97F3\u8272\uFF09": { en: "Pads (synth pad sounds)" },
+  "\u5176\u4F59\uFF08\u8FD8\u6CA1\u6309\u79CD\u7C7B\u5206\uFF09": { en: "Others (not sorted by kind yet)" },
   "\u8F85\u52A9\u529F\u80FD": { en: "Accessibility" },
   "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Sounds" },
   "\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668": { en: "\u201C{who}\u201D plays one note at a time: the second key pressed at almost the same moment was not written. For chords, switch this part to something like a piano" },
@@ -5074,7 +5078,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.80-2026-11-09";
+var APP_VERSION = "v0.16.81-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -29672,15 +29676,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-3086955feca5.mjs");
+      return pick(() => "singer-worker-1ef07fa49f30.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-8dea9a24f844.mjs");
+      return pick(() => "layout-worker-ee64e6a9a3d7.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-bf57e8df2f3d.mjs");
+      return pick(() => "encode-worker-de80acfb52ac.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35737,7 +35741,7 @@ function octaveDisclosure(nt2, oc2, clefLabel) {
 var GS_LIBRARY_ID = "generaluser-gs-2.0.3";
 var roleNameOf = (c10) => c10.scoreName?.en || c10.names.en.replace(/\s*\([^)]*\)/g, "").trim().replace(/^./, (ch2) => ch2.toUpperCase());
 var roleSoundOf = (cat2, c10) => c10.ids.musicxml ?? providersOf(cat2, c10)[0]?.sound ?? null;
-var SORT_LABEL = { year: _t("\u6309\u5E74\u4EE3"), style: _t("\u6309\u66F2\u98CE"), family: _t("\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09"), hs: _t("\u6309\u53D1\u58F0\u65B9\u5F0F") };
+var SORT_LABEL = { year: _t("\u6309\u5E74\u4EE3"), style: _t("\u6309\u66F2\u98CE"), kind: _t("\u6309\u79CD\u7C7B\uFF08\u9F13\u3001Pad\u2026\uFF09"), family: _t("\u6309\u65CF\uFF08GM \u7684\u987A\u5E8F\uFF09"), hs: _t("\u6309\u53D1\u58F0\u65B9\u5F0F") };
 var HS_CLASS = { "1": _t("\u4F53\u9E23\uFF08\u6572\u5B83\u81EA\u5DF1\uFF09"), "2": _t("\u819C\u9E23\uFF08\u6572\u76AE\uFF09"), "3": _t("\u5F26\u9E23\uFF08\u5F26\uFF09"), "4": _t("\u6C14\u9E23\uFF08\u6C14\uFF09"), "5": _t("\u7535\u9E23\uFF08\u7535\uFF09") };
 function groupConcepts(cat2, mode, query = "") {
   const q2 = query.trim().toLowerCase();
@@ -35771,6 +35775,7 @@ function groupConcepts(cat2, mode, query = "") {
     const order = new Map(eras.map((e10, i10) => [e10.id, i10]));
     return asItems([...groups.values()].sort((a10, b3) => (order.get(a10.id) ?? 99) - (order.get(b3.id) ?? 99)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.year ?? 1e9) - (b3.year ?? 1e9)) })));
   }
+  if (mode === "kind") return kindGroups(cat2, list, q2, hit);
   if (mode === "hs") {
     for (const c10 of list) {
       const k2 = c10.ids.hs?.[0] ?? "?";
@@ -35779,6 +35784,24 @@ function groupConcepts(cat2, mode, query = "") {
     return asItems([...groups.values()].sort((a10, b3) => a10.id.localeCompare(b3.id)).map((g3) => ({ ...g3, concepts: g3.concepts.sort((a10, b3) => (a10.ids.hs ?? "~").localeCompare(b3.ids.hs ?? "~")) })));
   }
   return styleGroups(cat2, q2, hit);
+}
+function kindGroups(cat2, list, q2, hit) {
+  const isDrum = (c10) => (c10.family ?? []).some((f2) => f2 === "percussion" || f2 === "percussive");
+  const drumKey = (c10) => {
+    const g3 = (c10.ids.gm ?? [])[0];
+    return !g3 ? 9999 : g3.bank === 128 ? g3.note ?? 0 : 1e3 + g3.program;
+  };
+  const drums = list.filter(isDrum).sort((a10, b3) => drumKey(a10) - drumKey(b3) || a10.names.zh.localeCompare(b3.names.zh, "zh"));
+  const pads = [...cat2.gmSelf.values()].filter((r10) => r10.family === "synth-pad" && r10.note === void 0).sort((a10, b3) => a10.program - b3.program).flatMap((r10) => {
+    const c10 = cat2.byId.get(r10.concept);
+    return c10 && (hit(c10) || !!q2 && r10.gmName.toLowerCase().includes(q2)) ? [{ concept: c10, preset: r10 }] : [];
+  });
+  const rest = list.filter((c10) => !isDrum(c10)).sort((a10, b3) => a10.names.zh.localeCompare(b3.names.zh, "zh"));
+  return [
+    { id: "drums", label: _t("\u9F13\u548C\u6253\u51FB\u4E50"), items: drums.map((concept) => ({ concept })) },
+    { id: "pads", label: _t("Pad\uFF08\u5408\u6210\u5668\u7684\u94FA\u5E95\u97F3\u8272\uFF09"), items: pads },
+    { id: "rest", label: _t("\u5176\u4F59\uFF08\u8FD8\u6CA1\u6309\u79CD\u7C7B\u5206\uFF09"), items: rest.map((concept) => ({ concept })) }
+  ].filter((g3) => g3.items.length);
 }
 function styleGroups(cat2, q2, hit) {
   const groups = /* @__PURE__ */ new Map();
@@ -37242,7 +37265,7 @@ var Finder = class {
   }
   unstash() {
     const m2 = this.memos[this.ctx];
-    this.mode = ["year", "style", "family", "hs"].find((x2) => x2 === m2.mode) ?? "year";
+    this.mode = ["year", "style", "kind", "family", "hs"].find((x2) => x2 === m2.mode) ?? "year";
     this.openG = new Map(Object.entries(m2.open));
     this.scrollY = m2.scroll;
     this.opened = m2.row;
@@ -39167,7 +39190,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "fcfadaf0150f09c0" : "dev";
+var CORE_HASH = true ? "2504ad0cc588d4e9" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/app/doc-file.ts
@@ -57654,4 +57677,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5e6cb77480f7.mjs.map
+//# sourceMappingURL=moonsinger-306aa5d5bb8e.mjs.map
