@@ -5074,7 +5074,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.76-2026-11-09";
+var APP_VERSION = "v0.16.77-2026-11-09";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -28733,15 +28733,25 @@ function createPadHost(padEl2, g3) {
   const padNotes = /* @__PURE__ */ new Map();
   const monoHeld = /* @__PURE__ */ new Set();
   let monoAt = -Infinity;
+  let monoLast = null, monoSeq = 0;
   function monoAccept(id2) {
     const now2 = performance.now();
     if (monoClash(monoHeld.size, monoAt, now2)) {
-      g3.monoRejected?.();
-      return false;
+      const m2 = monoLast;
+      if (g3.canStack() || !m2 || m2.keyId === id2 || st2() !== m2.after || !monoHeld.has(m2.keyId)) {
+        g3.monoRejected?.();
+        return null;
+      }
+      monoHeld.add(id2);
+      monoAt = now2;
+      return { base: m2.before, gesture: m2.gesture, replaced: m2.keyId };
     }
     monoHeld.add(id2);
     monoAt = now2;
-    return true;
+    return { base: st2(), gesture: `pad-mono-${++monoSeq}` };
+  }
+  function monoWrote(id2, turn) {
+    monoLast = st2() !== turn.base ? { before: turn.base, after: st2(), keyId: id2, gesture: turn.gesture } : null;
   }
   const chordRoots = /* @__PURE__ */ new Map();
   let chordWaits = [];
@@ -28791,14 +28801,14 @@ function createPadHost(padEl2, g3) {
   }
   const music = createPadMusic(st2);
   const padImpro = () => g3.gate.why() !== null;
-  const padAccept = (id2) => g3.canStack() ? (monoHeld.add(id2), true) : monoAccept(id2);
-  function padWrite(p2, id2, raw = false) {
+  const padAccept = (id2) => g3.canStack() ? (monoHeld.add(id2), { base: st2(), gesture: "" }) : monoAccept(id2);
+  function padWrite(p2, id2, raw = false, turn) {
     if (g3.finderOpen()) return;
-    const now2 = performance.now(), s10 = st2();
+    const now2 = performance.now(), s10 = turn?.base ?? st2(), gesture = turn?.gesture || void 0;
     {
       const one = singleSel(s10);
       if (one >= 0) {
-        g3.update(writePitch(s10, p2, raw, !g3.canStack()));
+        g3.update(writePitch(s10, p2, raw, !g3.canStack()), gesture);
         padNotes.set(id2, { index: one, base: p2 });
         g3.previewEdited();
         return;
@@ -28820,7 +28830,7 @@ function createPadHost(padEl2, g3) {
         return;
       }
     }
-    const i10 = g3.writeAndLocate((x2) => writePitch(x2, p2, raw, !g3.canStack()));
+    const i10 = g3.writeAndLocate((x2) => writePitch(turn?.base ?? x2, p2, raw, !g3.canStack()), gesture);
     if (i10 < 0) {
       padNotes.set(id2, { index: -1, base: p2 });
       return;
@@ -28849,20 +28859,23 @@ function createPadHost(padEl2, g3) {
       padSound(p2, id2, raw);
       return true;
     }
-    if (!padAccept(id2)) return false;
-    const sp2 = raw ? p2 : soundingPitch(st2(), p2).pitch;
-    g3.sound.down(sp2, id2);
-    padWrite(p2, id2, raw);
-    const n10 = padNotes.get(id2);
-    if (!n10) {
-      padNotes.set(id2, { index: -1, base: sp2 });
-      return true;
+    const turn = padAccept(id2);
+    if (!turn) return false;
+    if (turn.replaced) {
+      padNotes.delete(turn.replaced);
+      g3.sound.up(turn.replaced);
     }
-    if (n10.index >= 0) g3.soundAfterWrite(st2(), n10.index, id2, sp2);
+    const sp2 = raw ? p2 : soundingPitch(turn.base, p2).pitch;
+    g3.sound.down(sp2, id2);
+    padWrite(p2, id2, raw, g3.canStack() ? void 0 : turn);
+    const n10 = padNotes.get(id2);
+    if (!n10) padNotes.set(id2, { index: -1, base: sp2 });
+    else if (n10.index >= 0) g3.soundAfterWrite(st2(), n10.index, id2, sp2);
     else if (!raw) {
       const r10 = soundingPitch(st2(), p2);
       if (r10.st !== st2()) g3.update(r10.st);
     }
+    if (!g3.canStack()) monoWrote(id2, turn);
     return true;
   }
   function noteUp(id2) {
@@ -28986,6 +28999,7 @@ function createPadHost(padEl2, g3) {
     pad: pad4,
     music,
     monoAccept,
+    monoWrote,
     release: (id2) => {
       monoHeld.delete(id2);
     },
@@ -29645,7 +29659,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-53a97c2f48cd.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-6d4222e3d0e0.mjs");
+      return pick(() => "encode-worker-2b81e94667b8.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -52416,10 +52430,10 @@ var keyTok = (s10, i10, code) => {
   soundTok(s10, i10, `key${code}`);
   if (t10?.kind === "note" && t10.pitch) pad3.showDown(midiOf(t10.pitch), `key${code}`);
 };
-function writeAndLocate(write) {
+function writeAndLocate(write, gesture) {
   const n10 = write(D2.st);
   if (n10 === D2.st) return -1;
-  update(n10);
+  update(n10, gesture);
   return D2.st.caret - 1;
 }
 var upTimer = 0;
@@ -52685,13 +52699,13 @@ function plugNudge(why2) {
 var padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
   state: () => D2.st,
-  update: (n10) => {
-    if (inputGate.may(D2.st, n10)) update(n10);
+  update: (n10, gesture) => {
+    if (inputGate.may(D2.st, n10)) update(n10, gesture);
   },
-  writeAndLocate: (w2) => writeAndLocate((s10) => {
+  writeAndLocate: (w2, gesture) => writeAndLocate((s10) => {
     const n10 = w2(s10);
     return inputGate.may(s10, n10) ? n10 : s10;
-  }),
+  }, gesture),
   afterWrite,
   previewEdited,
   info: (m2) => info(m2),
@@ -57157,18 +57171,24 @@ function run(a10, repeat, code) {
         return true;
       }
       if (a10.cmd.k === "degree") {
-        if (!repeat && padHost.monoAccept(`key${code}`)) {
-          const c10 = { ...a10.cmd, mono: !canStack() }, n10 = apply(D2.st, c10, performance.now());
-          if (n10 !== D2.st && inputGate.may(D2.st, n10)) {
+        const turn = repeat ? null : padHost.monoAccept(`key${code}`);
+        if (turn) {
+          if (turn.replaced) {
+            sound.up(turn.replaced);
+            pad3.showUp(turn.replaced);
+          }
+          const c10 = { ...a10.cmd, mono: !canStack() }, n10 = apply(turn.base, c10, performance.now());
+          if (n10 !== turn.base && inputGate.may(D2.st, n10)) {
             const t02 = tr(n10)[n10.caret - 1];
             if (t02?.kind === "note" && t02.pitch) {
               sound.down(t02.pitch, `key${code}`);
               pad3.showDown(midiOf(t02.pitch), `key${code}`);
             }
-            update(n10);
+            update(n10, turn.gesture);
             if (t02?.kind === "note" && t02.pitch) soundAfterWrite(D2.st, D2.st.caret - 1, `key${code}`, t02.pitch);
           }
           afterWrite();
+          padHost.monoWrote(`key${code}`, turn);
         }
         return true;
       }
@@ -57607,4 +57627,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ce416e915da3.mjs.map
+//# sourceMappingURL=moonsinger-0d7833da49b7.mjs.map

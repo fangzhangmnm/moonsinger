@@ -528,9 +528,9 @@ function previewEdited(): void {
 /** 电脑键盘按下一个音：响 + pad 上那个音高的键亮着（和手指按 pad 一样，松开键才灭）。 */
 const keyTok = (s: EditorState, i: number, code: string) => { const t = tr(s)[i]; soundTok(s, i, `key${code}`); if (t?.kind === "note" && t.pitch) pad.showDown(midiOf(t.pitch), `key${code}`); };
 /** 写一个音（写 = 光标前那个新音；改 = 被覆盖的那个音 = 旧选中里的第一个音），返回刚写的下标（试听用）。 */
-function writeAndLocate(write: (s: EditorState) => EditorState): number {
+function writeAndLocate(write: (s: EditorState) => EditorState, gesture?: string): number {
   const n = write(D.st); if (n === D.st) return -1;   // 没写成（没有能填的）
-  update(n);
+  update(n, gesture);
   return D.st.caret - 1;   // 插入 / 填 / 替换写完，光标（写字头）都在刚写的那个音后面
 }
 
@@ -723,7 +723,7 @@ function plugNudge(why: NoWrite): void {
 }
 const padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
-  state: () => D.st, update: (n) => { if (inputGate.may(D.st, n)) update(n); }, writeAndLocate: (w) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }), afterWrite, previewEdited, info: (m) => info(m), canStack,
+  state: () => D.st, update: (n, gesture) => { if (inputGate.may(D.st, n)) update(n, gesture); }, writeAndLocate: (w, gesture) => writeAndLocate((s) => { const n = w(s); return inputGate.may(s, n) ? n : s; }, gesture), afterWrite, previewEdited, info: (m) => info(m), canStack,
   monoRejected: () => { if (monoHinted) return; monoHinted = true; info(_t("「{who}」一次只出一个音：几乎同时按下的第二个键没写。要写和弦，给这个声部换钢琴这类乐器", { who: activeCandidateName(D.extras, curRole()) ?? roleName(D.extras, curRole()) })); },   // 同一次打开只说一次（v0.16.35）   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p, id) => sound.down(p, id), up: (id) => sound.up(id) }, soundTok, soundAfterWrite,
   onTouch: (ts) => feel.touch(ts),
@@ -3694,15 +3694,18 @@ function run(a: Action, repeat: boolean, code: string): boolean {
       if (a.cmd.k === "backspace" && ws.mode === "symbols") { const n = apply(D.st, { k: "symBackspace" }, performance.now()); if (inputGate.may(D.st, n)) update(n); return true; }   // 符：退格删记号（user「我早就想用退格删强度曲线了」）
       if (a.cmd.k === "backspace" && ws.mode === "lyrics") { lyricBackspace(); return true; }
       if (a.cmd.k === "degree") {
-        if (!repeat && padHost.monoAccept(`key${code}`)) {   // 先响后写（2026-10-17 Fable）：响的就是要写进去的那个音（算在没提交的 n 里）；写完按 D.st 定位（normalize 可能在前面补力度，下标会挪）
-          const c = { ...a.cmd, mono: !canStack() }, n = apply(D.st, c, performance.now());
-          if (n !== D.st && inputGate.may(D.st, n)) {
+        const turn = repeat ? null : padHost.monoAccept(`key${code}`);
+        if (turn) {   // 先响后写（2026-10-17 Fable）：响的就是要写进去的那个音（算在没提交的 n 里）；写完按 D.st 定位（normalize 可能在前面补力度，下标会挪）
+          if (turn.replaced) { sound.up(turn.replaced); pad.showUp(turn.replaced); }   // 单声乐器几乎同时按下 = 后按的算数（v0.16.77）：从上一下之前那份谱写起（turn.base），两下并成一步撤销
+          const c = { ...a.cmd, mono: !canStack() }, n = apply(turn.base, c, performance.now());
+          if (n !== turn.base && inputGate.may(D.st, n)) {
             const t0 = tr(n)[n.caret - 1];
             if (t0?.kind === "note" && t0.pitch) { sound.down(t0.pitch, `key${code}`); pad.showDown(midiOf(t0.pitch), `key${code}`); }
-            update(n);
+            update(n, turn.gesture);
             if (t0?.kind === "note" && t0.pitch) soundAfterWrite(D.st, D.st.caret - 1, `key${code}`, t0.pitch);   // 成了和弦（叠亮着）= 补响多出来的音；主音变了 = 重响
           }
           afterWrite();
+          padHost.monoWrote(`key${code}`, turn);
         }
         return true;
       }

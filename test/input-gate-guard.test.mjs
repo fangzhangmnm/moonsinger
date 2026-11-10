@@ -56,8 +56,8 @@ describe("键盘总闸守卫", () => {
   });
   it("④ 触屏键盘 / MIDI：两条出口各带一道总闸；pad-host 里「只响不写」、会写的键、符号格的命令都问它", () => {
     const m = code(read("src/app/main.ts"));
-    assert(/update: \(n\) => \{ if \(inputGate\.may\(D\.st, n\)\) update\(n\); \}/.test(m), "pad 的 update 出口");
-    assert(/writeAndLocate: \(w\) => writeAndLocate\(\(s\) => \{ const n = w\(s\); return inputGate\.may\(s, n\) \? n : s; \}\)/.test(m), "pad 的 writeAndLocate 出口");
+    assert(/update: \(n, gesture\) => \{ if \(inputGate\.may\(D\.st, n\)\) update\(n, gesture\); \}/.test(m), "pad 的 update 出口");
+    assert(/writeAndLocate: \(w, gesture\) => writeAndLocate\(\(s\) => \{ const n = w\(s\); return inputGate\.may\(s, n\) \? n : s; \}, gesture\)/.test(m), "pad 的 writeAndLocate 出口");
     assert(/gate: inputGate, finderOpen:/.test(m), "总闸交给 pad 宿主");
     const h = code(read("src/app/pad-host.ts"));
     assert(/const padImpro = \(\): boolean => g\.gate\.why\(\) !== null;/.test(h), "「音键只响不写」看总闸");

@@ -4,7 +4,9 @@
 // created 2026-10-15 by Claude Fable 5.1（键盘模块刀 2 之三：从 src/app/main.ts 原样抽出，行为不变；对应 ai-docs/20261014-editing-mental-model.md §6 的「翻译层」）。
 //   宿主只知道 pad 发什么（PadHost），谱怎么变全问 PadGlue（main.ts 给的一组访问器）；写法同 performance.ts 的 PerfHost。
 // 单音乐器（小月相 / 元音 / 没人）写音：同时多按只写第一个（user「monophonic乐器输入的时候如果你多按只会输第一个。但是做好模糊护栏免得快速输入的时候第二个音被吃掉」）。
-//   模糊护栏：只有「上一个写进去的音还按着，而且才过了不到 50 ms」才算同时按、不写不响不亮；快速连按（前一根手指还没抬，但已经隔开了）照写，抬过手的更不管。
+//   模糊护栏：只有「上一个写进去的音还按着，而且才过了不到 50 ms」才算同时按；快速连按（前一根手指还没抬，但已经隔开了）照写，抬过手的更不管。
+//   同时按 = 后按的算数（v0.16.77，user 11-09 夜「可以」；和「弹」里单声乐器后按的顶掉前面的一样）：从按第一个之前那一刻重写，像没按过第一个，两下并成一步撤销；
+//     第一个的声音停掉。中间谱又变过（别处写了东西）= 照旧挡掉第二个、说一声。能叠音的声部不顶（照旧）。
 //   手指和电脑键盘共用一份；弹（只唱不写）不管，几个音一起响。
 // 叠音的「头 / 尾」判据（2026-10-08 by Claude Opus 5.5；只给能叠音的声部）：
 //   user「之前的判定是ab落的时候相近。现在的判定是b落的时候不在a的尾巴上」「如果ab，b按下去之后a马上松，那么就不应该是和弦」
@@ -28,9 +30,10 @@ import type { InputGate } from "./input-gate.ts";
 /** main.ts 给的那一组访问器：谱的状态与写、出声、页 / 模式、鬼音符、锁、披露、符号格要看的、菜单。 */
 export interface PadGlue {
   state(): EditorState;
-  update(next: EditorState): void;
+  /** gesture = 撤销并步的名字（同一个名字、挨得近的几下并成一步撤销；单声乐器「后按的算数」用）。 */
+  update(next: EditorState, gesture?: string): void;
   /** 写一个音并回刚写的下标（-1 = 没写成）。 */
-  writeAndLocate(write: (s: EditorState) => EditorState): number;
+  writeAndLocate(write: (s: EditorState) => EditorState, gesture?: string): number;
   /** 写了一个音 / 休止 / 拉长之后：锁的「只管下一个」用掉了。 */
   afterWrite(): void;
   /** 改了音高之后响一下。 */
@@ -77,8 +80,10 @@ export interface PadGlue {
 export interface PadHostApi {
   pad: Pad;
   music: PadMusicHost;
-  /** 电脑键盘的音键也走它：单音乐器的 50 ms 护栏（能叠音的声部照旧只记「按着」）。 */
-  monoAccept(id: string): boolean;
+  /** 电脑键盘的音键也走它：50 ms 护栏。null = 挡掉；否则 = 这一下从哪份谱写起（base）、撤销并步的名字（gesture）、被顶掉的键（replaced，单声乐器「后按的算数」）。
+   *  写完叫 monoWrote 记下「写完是哪份谱」（下一下要顶掉它时对得上）。 */
+  monoAccept(id: string): MonoTurn | null;
+  monoWrote(id: string, turn: MonoTurn): void;
   /** 一个键（手指 / 电脑键）松开了：不再按着（叠音的 B / 根音由 pad 的 onNoteUp 自己定；电脑键只记簿）。 */
   release(id: string): void;
   /** 失焦 / 页面隐藏：抬手的事件可能收不到——观望中的都按「键都松了」定下来（写成单个的音）、根音清空、按着的清空。 */
@@ -88,6 +93,8 @@ export interface PadHostApi {
   noteUp(id: string): void;
 }
 
+/** 单声护栏给的这一下的写法（见 PadHostApi.monoAccept）。 */
+export interface MonoTurn { base: EditorState; gesture: string; replaced?: string }
 interface ChordRoot { tokId: number; t: number; keyId?: string }
 interface ChordWait { keyId: string; pitch: Pitch; t: number; root: ChordRoot & { keyId: string }; timer: number; done: boolean }
 
@@ -97,11 +104,20 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   const padNotes = new Map<string, { index: number; base: Pitch }>();
   const monoHeld = new Set<string>();
   let monoAt = -Infinity;
-  function monoAccept(id: string): boolean {
+  /** 上一个写进去的音（单声乐器「后按的算数」要顶掉它）：写之前那份谱、写完那份谱、哪个键、撤销并步的名字。 */
+  let monoLast: { before: EditorState; after: EditorState; keyId: string; gesture: string } | null = null, monoSeq = 0;
+  function monoAccept(id: string): MonoTurn | null {
     const now = performance.now();
-    if (monoClash(monoHeld.size, monoAt, now)) { g.monoRejected?.(); return false; }
-    monoHeld.add(id); monoAt = now; return true;
+    if (monoClash(monoHeld.size, monoAt, now)) {
+      const m = monoLast;
+      if (g.canStack() || !m || m.keyId === id || st() !== m.after || !monoHeld.has(m.keyId)) { g.monoRejected?.(); return null; }
+      monoHeld.add(id); monoAt = now;
+      return { base: m.before, gesture: m.gesture, replaced: m.keyId };
+    }
+    monoHeld.add(id); monoAt = now;
+    return { base: st(), gesture: `pad-mono-${++monoSeq}` };
   }
+  function monoWrote(id: string, turn: MonoTurn): void { monoLast = st() !== turn.base ? { before: turn.base, after: st(), keyId: id, gesture: turn.gesture } : null; }
   const chordRoots = new Map<string, { tokId: number; t: number }>();   // 按着的键 → 它写进谱的那个音（根音候选）
   let chordWaits: ChordWait[] = [];
   const tokIndex = (tokId: number): number => tr(st()).findIndex((t) => t.id === tokId);
@@ -145,14 +161,14 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   /** 「弹」= 音键只响不写：顶栏开关，或找人视图 / 乐器页开着（试听台上那位）。读 finderShown() 不读 finder：pad 一创建就画「弹」钮，那时 finder 还没建。 */
   const padImpro = (): boolean => g.gate.why() !== null;   // 2026-11-09 起问总闸（以前 = 「弹」∨ 乐器目录 ∨ 乐器页，各处自己拼）
   /** 写之前问一声：能叠音的声部同时多按都收（80 ms 内 = 叠在一起）；单声乐器几乎同时按下的第二根手指 = false（不写、不响、不亮）。 */
-  const padAccept = (id: string): boolean => (g.canStack() ? (monoHeld.add(id), true) : monoAccept(id));
+  const padAccept = (id: string): MonoTurn | null => (g.canStack() ? (monoHeld.add(id), { base: st(), gesture: "" }) : monoAccept(id));
   /** pad 音键写一个音（找人视图开着一律不接：试听台不碰谱——user「试听的时候写入的东西不会不小心输入到乐谱吧…是不是应该disable」）：
    *  改这个音（只选了一个 / 叠亮着）/ 叠音观望（能叠音的声部）/ 普通写。 */
-  function padWrite(p: Pitch, id: string, raw = false): void {
+  function padWrite(p: Pitch, id: string, raw = false, turn?: MonoTurn): void {
     if (g.finderOpen()) return;
-    const now = performance.now(), s = st();
+    const now = performance.now(), s = turn?.base ?? st(), gesture = turn?.gesture || undefined;   // 单声乐器顶掉上一下 = 从上一下之前那份谱写起（base）
     { const one = singleSel(s); if (one >= 0) {   // 改这个音（只选了一个 / 叠亮着）：XOR（最后一个拿掉 = 一样长的休止，休止上按 = 变回音）；单声乐器 = 换音高
-      g.update(writePitch(s, p, raw, !g.canStack())); padNotes.set(id, { index: one, base: p }); g.previewEdited(); return;
+      g.update(writePitch(s, p, raw, !g.canStack()), gesture); padNotes.set(id, { index: one, base: p }); g.previewEdited(); return;
     } }
     if (g.canStack()) {
       settleChords("force");   // 又按下一个键：还在观望的先定（根音还按着 = 叠）
@@ -167,7 +183,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
         return;
       }
     }
-    const i = g.writeAndLocate((x) => writePitch(x, p, raw, !g.canStack()));
+    const i = g.writeAndLocate((x) => writePitch(turn?.base ?? x, p, raw, !g.canStack()), gesture);
     if (i < 0) { padNotes.set(id, { index: -1, base: p }); return; }
     const t = tr(st())[i];
     padNotes.set(id, { index: i, base: t?.kind === "note" && t.pitch ? t.pitch : p });
@@ -184,14 +200,16 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
    *  原来先写、整张重排、再响，大歌里出声晚 30–80 ms）。响的就是要写的那个音：升降锁算进去但这里不消耗（写进谱时 writePitch 自己消耗；写进谱只换拼法不换音高）。 */
   function noteDown(p: Pitch, id: string, raw = false): boolean {
     if (padImpro()) { padSound(p, id, raw); return true; }
-    if (!padAccept(id)) return false;
-    const sp = raw ? p : soundingPitch(st(), p).pitch;
+    const turn = padAccept(id); if (!turn) return false;
+    if (turn.replaced) { padNotes.delete(turn.replaced); g.sound.up(turn.replaced); }   // 后按的算数：第一个不响了（它的手指还按着，松开时照常收）
+    const sp = raw ? p : soundingPitch(turn.base, p).pitch;
     g.sound.down(sp, id);
-    padWrite(p, id, raw);
+    padWrite(p, id, raw, g.canStack() ? undefined : turn);
     const n = padNotes.get(id);
-    if (!n) { padNotes.set(id, { index: -1, base: sp }); return true; }
-    if (n.index >= 0) g.soundAfterWrite(st(), n.index, id, sp);   // 成了和弦（只选了一个音时叠上去）= 补响多出来的音；主音变了（XOR 拿掉了按的那个）= 重响
+    if (!n) padNotes.set(id, { index: -1, base: sp });
+    else if (n.index >= 0) g.soundAfterWrite(st(), n.index, id, sp);   // 成了和弦（只选了一个音时叠上去）= 补响多出来的音；主音变了（XOR 拿掉了按的那个）= 重响
     else if (!raw) { const r = soundingPitch(st(), p); if (r.st !== st()) g.update(r.st); }   // 没写进谱（叠音观望 / 写不进）：升降锁照样用掉一次（原来 padSound 做的）
+    if (!g.canStack()) monoWrote(id, turn);
     return true;
   }
   /** 先按松开的顺序定观望中的叠音（要看谁还按着），再放。 */
@@ -272,7 +290,7 @@ export function createPadHost(padEl: HTMLElement, g: PadGlue): PadHostApi {
   });
 
   return {
-    pad, music, monoAccept,
+    pad, music, monoAccept, monoWrote,
     release: (id) => { monoHeld.delete(id); },
     reset: () => { settleChords("lost"); chordRoots.clear(); monoHeld.clear(); },
     noteDown: (p, id) => noteDown(p, id, true),
