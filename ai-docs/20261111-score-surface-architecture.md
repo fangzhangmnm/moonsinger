@@ -128,6 +128,13 @@ UX 稿的画法不重审，只列和架构有关的：
 
 **过渡**：五线谱现有的间距和断行写在 `engrave()` 里面。第一刀先把它整个当成「一张纸的旧排法」留着（框架只接管版面家具、叠行、分页），新的画法走上面的两遍。**退场条件 = 五线谱也接上共用间距的那一刀（第 6 节刀 6）做完，旧排法删掉。** 在那之前，类型上只有五线谱能走旧排法。
 
+〔1b 落地（2026-11-11，Claude Opus 5.5，施工）：五线谱这一种照上面六步切开了，实际和上面的差别——
+- 「画」分两次交：先画音符层（每个图元带行号，`put(行, …)`），再往「道」上登记挂件（`attach(道, 贴法)`）；框架量完音符层的墨、按这种谱的道顺序一件一件贴天际线，贴完才知道这一行多高。道按记号的种类命名（`frame/lanes.ts`：强度、音的修饰、力度、八度线上 / 下、反复跳转、速度、风格、小节号、和弦级数、歌词），先后是谱种的参数（`staff/draw.ts STAFF_LANES`）。
+- 「画」一次吃一条轨在这张纸上的所有行（跨行的连音线、连线、发夹、八度线、连音括号、房子都要前一行的东西），出来仍是每行一张图元表（行内局部坐标，第五线 = 0）。
+- 歌词整段归框架：画法只交每个音的歌词锚点（字的中心、拖腔线两端、点击框归哪一行）和「挂在哪一行」。
+- 合租：「分一家一家 + 这次能不能叠」归框架，「叠成什么样」（并成虚拟轨、分手、鼓并成一套）归五线谱（简谱合租不叠）。
+- 横向：五线谱从 v0.16.33 起就走 `spacing.ts`，没有旧排法；合成列 / 折行 / 摆是框架的 `frame/arrange.ts`。一行最多拉宽约 1.3 倍还没做（第六刀）。〕
+
 ### 3.4 时间尺：横向只算一遍
 
 每一行谱带一把时间尺：一串（时刻，横坐标）的对照，中间按直线插。它是「排」那一步的副产品。
@@ -373,6 +380,51 @@ interface KeyEvent { board: string; key: string; phase: "down" | "up" | "slide";
 interface InputMethod { key(e: KeyEvent): void; reset(): void }    // 出：Command + 试听
 interface Surface { render(): void; playhead(at: TimeRef | null): void; reveal(): void; dispose(): void }
 ```
+
+### 7½. 1b 落地后的实际接口（2026-11-11，Claude Opus 5.5，施工；施工单第一节第 3 条「调完回写第 7 节」）
+
+上面的提案没改，下面是 1b 做完时代码里真的长什么样、哪里和提案不一样、什么时候收。
+
+```ts
+// ── 框架（src/render/frame/、src/render/engrave.ts）──────────────────────
+type LayoutData = Omit<Layout, "yOf" | "dOf" | "lyricY">;               // 平数据：worker 原样过线
+declare function engraveData(song: Song, o: EngraveOpts): LayoutData;  // 排版本体（o.locale 必填：排版不读界面语言）
+declare function engrave(song: Song, o: EngraveOpts): Layout;          // = withStaffGeometry(engraveData(…))
+
+// 排（frame/arrange.ts）：各条轨的列条目 → 合成列 → 弹簧顶杆 → 整张纸挑折点 → 每行摆（结果单独一张表）
+interface ColEntry<R> { tick: number; slot: number; w: number; bar?: boolean; chunk?: { items: SpItem[]; span: number }; ref: R }
+interface ArrangeTrack<R> { entries: ColEntry<R>[]; laneBase: number }   // items 的 row = 这条轨自己的道号，框架加道基数
+declare function mergeColumns<R>(tracks: ArrangeTrack<R>[]): MergedCol<R>[];
+declare function arrangeColumns<R>(cols: MergedCol<R>[], tracks: ArrangeTrack<R>[], o: { paperLen; spacing; width; squeeze; endPad; lineStart: (k: number, first: boolean) => number }): { lineFrom; sysStarts; xs; ws; system };
+type ColumnKind = "bar" | "nav" | "clef" | "key" | "time" | "tempo" | "groove" | "dyn" | "ottava" | "hairpin" | "tail" | "note";   // SLOT 按种类排先后（frame/columns.ts）
+type LaneKind = "strength" | "noteDynamics" | "dynamics" | "ottavaAbove" | "nav" | "tempo" | "groove" | "barNumber" | "chordTag" | "lyrics" | "ottavaBelow";   // frame/lanes.ts
+
+// ── 五线谱这一种（只从 src/render/staff/index.ts 拿；守卫 test/score-surface-guards.test.ts）────
+declare function staffLooks(song, noAutoGrand): (paperId, partId) => ResolvedLook | undefined;
+declare function staffRows(paper, visible: PartView[], fold: FoldFamily[], lookAt): StaffRows;   // 谱种的表：要排的轨 + 合租怎么叠
+declare function staffTracks(rows: StaffRows, c): { per: StaffTrack[]; rowHost: number[]; shortBars: number };
+declare function measureTrack(q: StaffTrack): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> };   // 量 = 一条轨的纯函数
+declare function lineStartWidth(q: StaffTrack, key: number, first: boolean, base: number): number;        // 行首：base = 框架给的缩进 + 边距
+declare function lyricAnchors(q: StaffTrack): { index; system; cx; lyric; hyph }[];                       // 歌词让路要的锚点
+declare function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] };   // 画：c.put(行, 图元…) / c.attach(道, 贴法) / c.hitRow；交回歌词锚点
+declare const STAFF_LANES: readonly LaneKind[];
+// 几何纯函数（staff/geometry.ts；只吃平数据 StaffRowData = { staffTop, staff } + 半个线间距）
+declare function yAt(staffTop: number, d: number, half: number): number;  declare function dAt(staffTop: number, y: number, half: number): number;
+declare function anchors(staffTop: number, half: number): { top: number; mid: number; bottom: number };   // 框架的家具只认这三个
+declare function caretSpan(row: StaffRowData, half: number): { y1: number; y2: number };                 // 光标长什么样
+declare function previewAt(row: StaffRowData, d: number, half: number): { y: number; ledgers: number[] }; // 鬼音符长什么样
+declare const pitchAxis: { stepAt(row, y, half): number; stepsOfDrag(dy, half): number };                 // 纵向 = 音高
+declare function bandTop(row: StaffRowData, half: number): number;                                        // 选区带上沿
+declare function withStaffGeometry<D>(d: D): D & { yOf; dOf; lyricY };                                    // 平数据 → Layout（退场 = 第二刀）
+```
+
+和提案不一样的地方：
+
+1. 还没有 `RowDrawer` 对象和 `NOTATIONS` 表：只有五线谱一种，函数从 `staff/index.ts` 直接拿。第四刀加简谱时，再把两种收成同一个形状、谱种表里各一行（到时按两个实现定形状，不先猜）。
+2. `draw` 吃的是「一条轨在这张纸上的所有行」，不是一行；挂件不在 `RowInk` 里，而是往道上登记（上面第 3.3 节的〔1b 落地〕）。
+3. `measure` 出的是 `ColEntry`（`SpItem` 的道 + 弹簧时值），列的先后用 `ColumnKind`，没有单独的 `Column` 类型；`lineStart` 由框架问「这一刻每条轨生效的调号」，不是 `(track, tick)`。
+4. 行的数据没挪进 `RowBox.data`：`SystemBox.staffTop / staff`、`HitNote.d`、`CaretHead.shift` 原地留着，类型注释标成五线谱这一行的数据；Layout 上的 `yOf / dOf` 由 `withStaffGeometry` 现算。挪走和谱面视图改读几何函数一起做 = 第二刀。
+5. 纵向的版式表（`frame/params.ts SPACING` 里谱上面留多少、大谱表上面那条、没歌词的那条）还在框架的参数文件里，按五线谱的数写着；收进「排版参数表」（按谱种给值）= 第四刀（排版参数表那一项）。
 
 ## 8. 要 user 拍的
 
