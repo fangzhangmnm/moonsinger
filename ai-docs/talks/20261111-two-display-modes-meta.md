@@ -413,6 +413,16 @@ AI 的整理，user 没拍：
 - user：「aha i know why i prefers sheet music. perhaps humans perception of time is log. so it means in piano roll, inexperienced players (like me) cannot properly judge the time interval. however, using sheet music and token based time notation, it is easier to climb the log ladder. also the visual fat-thin also follows a log law instead of linear law. 帮我哲学记账，这是为什么我受不了钢琴格的根因。就是一个8拍可能感觉只比4拍长一点，除非你会数拍子」
 - 记进了以前的哲学笔记：写歌实验室仓 `ai-docs/privacy/20261105-moonsinger-true-value-study.md` 第 2 节「时长是对数的——为什么受不了钢琴格」（user 原话 + AI 补充 + 推论）。（AI 先在本仓单开了一份「哲学账」，user：「哲学应该之前记了很多了，不用单独开新的doc」→ 删了，挪过去。）
 
+## 39. 团子的跳音其实蛮重要（user 11-11，更正 AI 第 33 / 34 节的一条原则）
+
+- user：「团子的跳音其实蛮重要的」
+- AI 认错：第 34 节第 3 条「越常见的修饰越用不显眼的部位」作废——常见不等于不重要。团子的跳音就是这首歌的性格（蹦蹦跳跳的「打糕打糕」，小月相每个字前顿一下）。
+- AI 改成（没拍）：
+  - **显不显眼按「对这首歌多要紧」，不按出现多少次**；要紧不要紧是作者的意思，AI 不替人判断。
+  - **乱的来源是不规则，不是多**：72 双一样蹦着的脚是一种花纹 / 节奏，看着是齐的；乱的是蹦、站、喊、捂嘴毫无规律地掺在一起。所以「安静」= 让重复的东西排得齐、长得一样，而不是把常见的藏起来。
+  - 第 33 节「只画和情绪词推出来的不一样的地方」不能当默认：那样团子满篇跳音会只剩一个词，跳音的分量就没了。最多做成作者自己选的一个开关。简谱标准写法每个字头上一个 ▼，儿歌里本来就常见，照画。
+- 状态：**没拍**。
+
 ## 记账说明
 
 - user 11-11：「讨论得会议纪要你在实时记录对吧」→ 是，就是这一份，每轮写完提交一次；同日发到 user 设备上。
