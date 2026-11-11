@@ -51,6 +51,7 @@ const note = (where, res) => {
 
 const MUST_REACH = ["写音", "词", "听 · 基础", "☰", "导出", "声音与署名", "封面", "设置 ui", "设置 a11y", "设置 sound", "设置 midi", "设置 dev",
   "这一段的菜单", "谱头面板", "声部小卡", "乐器目录", "乐器页", "声部管理", "选区条", "选区菜单", "歌库 / 选家"];
+const cardBad = [];
 for (const [size, w, h] of SIZES) {
   const reached = new Set();
   const ctx = await b.newContext({ viewport: { width: w, height: h }, locale: "en-US" });
@@ -99,6 +100,7 @@ for (const [size, w, h] of SIZES) {
   const card = async () => { if (await tap("#score text.part-name")) { await p.waitForTimeout(150); return true; } return false; };
   if (await card()) {
     await scan("声部小卡");
+    { const bad = await p.evaluate(() => [...document.querySelectorAll(".part-card .tc-row .btn")].filter((x) => x.scrollWidth > x.clientWidth + 1 || x.getBoundingClientRect().height > 40).map((x) => x.textContent)); if (bad.length) cardBad.push(`${size}: ${bad.join(" / ")}`); }   // v0.16.100：撑爆量不出折行，user 截图抓到
     if (await tap('.track-card [data-v="swap"]')) { await p.waitForTimeout(500); await scan("乐器目录"); await esc(); await esc(); }
   }
   if (await card() && await tap('.track-card [data-v="inst"]')) { await p.waitForTimeout(300); await scan("乐器页"); await esc(); await esc(); }
@@ -156,6 +158,7 @@ for (const [size, w, h] of SIZES) {
   await ctx.close();
 }
 
+check(cardBad.length === 0, "声部名小卡三颗钮：不折行、字不被切", cardBad.join("; "));
 check(seenHan.size === 0, `界面上没有剩下的中文（${seenHan.size} 条）`);
 for (const [t, w] of seenHan) console.log(`      中文 ${w}: ${t}`);
 check(seenOver.size === 0, `没有被撑爆的控件（${seenOver.size} 个）`);

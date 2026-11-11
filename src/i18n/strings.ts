@@ -527,7 +527,7 @@ export const S = {
   "新的一个声部，只出现在这一段；加完挑乐器": { en: "A new part, only in this section; then pick an instrument" },
   "声部管理…": { en: "Parts…" },
   "换乐器：进乐器目录（右边的键盘能试；顶上是这首歌的乐器预设），选好就换上、目录还开着可以接着换，「← 谱」回来": { en: "Change instrument: open the catalog (try with the keyboard on the right; this song’s instrument presets are on top); picking one swaps it in and keeps the catalog open so you can keep trying; “← Score” goes back" },
-  "{who} 在演": { en: "{who} performing" },
+  "{who} 在演": { en: "Played by {who}" },
   "换乐器 ›": { en: "Change instrument ›" },
   "这位怎么演（响度、力度、唱法…）和谱上写什么名字：全屏一页，右边的键盘能试": { en: "How this performer plays (loudness, dynamics, singing…) and the name on the score: a full page, try it on the keys at the right" },
   "所有声部排一列：改名、上下挪、在哪几段；这一段上面 / 下面加、交给别的声部、从这一段删掉": { en: "All parts in one list: rename, move, choose sections; add above / below in this section, hand to another part, delete from this section" },
