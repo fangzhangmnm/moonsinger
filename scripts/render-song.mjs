@@ -7,6 +7,7 @@
 //   node scripts/render-song.mjs 歌.mxl --out=x.wav           → 16 位 wav
 //   node scripts/render-song.mjs 歌.mxl --mono --kbps=64 --sr=44100
 //   --piper=<piper-node.mjs 的路径>   歌里有小月相（完整版）上场才要；没给 = 试 $MOONSINGER_PIPER，再试 ~/jupyter/third-party/piper-plus/dur-override-exp/piper-node.mjs；都没有 = 那些声部不出声、报出来
+//   --models=<模型仓目录>             英文歌词要的 CMUdict 词典包从哪读（默认 = $MS_MODELS_DIR，再试兄弟目录 ../20260903 PWA Models）；按包清单逐文件核 sha256
 //   --sounds=<地址>                   弱引用的 SoundFont 从哪下（默认 = app 出厂的家族音源库；下到临时目录按 sha256 留着）；歌里嵌的不用下
 //   --check                           只开文件、报核心版本 / 哈希（老文件里带着 mp3 的也说一声），不渲
 //   --frames=x.json [--fps=30] [--lead=0.6]   另写一份逐格的播放线位置（带谱视频用，scripts/render-video.mjs）
@@ -21,6 +22,11 @@ import { SOUNDS, SOUNDS_SOURCE_DEFAULT } from "../src/gm/sounds.gen.ts";
 import { singCore } from "../src/singer/sing-core.mjs";
 import { wrapWorld } from "../src/singer/world-wrap.mjs";
 import { coreHash } from "./core-hash.mjs";
+import { gunzipSync } from "node:zlib";
+import { SINGER } from "../src/singer/packs.gen.ts";
+import { makeEnglishFront } from "../src/singer/en-front.mjs";
+import { createEnglishG2p } from "@internal/read-aloud/backend/piper-plus/en-g2p.js";
+import { encodeTokens } from "@internal/read-aloud/backend/piper-plus/encode.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const argv = process.argv.slice(2), opt = (k, d = null) => { const a = argv.find((x) => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d; }, flag = (k) => argv.includes(`--${k}`);
@@ -87,12 +93,34 @@ function singer() {
     return { piper, world, presetDefault };
   })());
 }
+// ── 英文前端（2026-11-11，Claude Opus 5.5；带谱视频渲 MoonSingers / 绿袖子时撞上「命令行渲染还不会唱英文」）：和浏览器 worker 同一套——
+//   朗读库的 en-g2p + CMUdict（模型仓 lang-en-cmudict 包：分片接起来、按清单的偏移切出文件、逐文件核 sha256、gunzip）+ src/singer/en-front.mjs。
+//   第一次碰到英文的句子才加载（家规：有意图才加载重资源）。
+let enP = null;
+function englishFront() {
+  return (enP ??= (async () => {
+    const dirs = [opt("models"), process.env.MS_MODELS_DIR, path.join(ROOT, "../20260903 PWA Models")].filter(Boolean);
+    const packDir = dirs.map((d) => path.join(d, "packs", SINGER.lang.en)).find((d) => fs.existsSync(path.join(d, "manifest.json")));
+    if (!packDir) throw new Error(`歌里有英文歌词，但找不到英文词典包 ${SINGER.lang.en}（给 --models=<模型仓目录> 或设 MS_MODELS_DIR）`);
+    const man = JSON.parse(fs.readFileSync(path.join(packDir, "manifest.json"), "utf8"));
+    const blob = Buffer.concat(man.chunks.map((c) => fs.readFileSync(path.join(packDir, c.name))));
+    const file = (p) => {
+      const f = man.files.find((x) => x.path === p); if (!f) throw new Error(`英文词典包里没有 ${p}`);
+      const b = blob.subarray(f.offset, f.offset + f.bytes);
+      if (createHash("sha256").update(b).digest("hex") !== f.sha256) throw new Error(`英文词典包的 ${p} 哈希对不上`);
+      return JSON.parse(gunzipSync(b).toString("utf8"));
+    };
+    const pn = await import(pathToFileURL(piperPath).href);
+    say(`加载英文词典：${packDir}`);
+    return makeEnglishFront({ g2p: createEnglishG2p({ cmudict: file("en/cmudict_data.json.gz"), homographs: file("en/homographs.json.gz") }), encodeTokens, idMap: pn.config.phoneme_id_map });
+  })());
+}
 async function sing(tl, progress) {
   const { piper, world, presetDefault } = await singer();
   let k = 0;
   for (const c of tl.chunks) {
     if (engine.hasChunk(c.key)) continue;
-    if (c.lang === "en") throw new Error("命令行渲染还不会唱英文（浏览器里走朗读库的英文前端）");
+    if (c.lang === "en" && !piper.phonemizeEnWords) { const en = await englishFront(); piper.phonemizeEnWords = (words) => en.phonemizeWords(words); }
     progress(`小月相：第 ${++k} / ${tl.chunks.length} 句（${c.score.SCORE.map((e) => e.kana).join("")}）`);
     const r = await singCore({ score: c.score.SCORE, text: c.score.TEXT, tempo: c.score.TEMPO_QUARTER, lang: c.lang, atlas: "off", breath: false, preset: presetDefault[c.lang] ?? 0, piper, world, loadAtlas: null, opt: c.opt ?? {} });
     engine.chunk(c.key, r.SR, Float32Array.from(r.y));   // raw：和浏览器 worker 的 raw: true 同一份（整首最后不归一化，块乘固定 SUNG_GAIN）
