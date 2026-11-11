@@ -79,6 +79,19 @@ describe("谱面排版：结构和语言", () => {
     const v = FULL_VIEWS.find((x) => x.name === "edit-all")!, song = fullSong(), D = engrave(song, v.opts(song)) as unknown as Record<string, unknown>;
     for (const k of Object.keys(D)) assert(typeof D[k] !== "function", `排版交出去的 ${k} 是函数（worker 原样回它）`);
   });
+  it("结构（守卫 1 谱面这一半，第二刀）：谱面（谱面视图 + 它开的歌词框 / 记号框 / 标题框 + 上面那一层）不碰键盘、不认乐器是谁（设计稿第 3.1 节：谱面「不许知道：键；乐器是谁」）；五线谱只经过 staff/index.ts", () => {
+    const UI = new URL("../src/ui/", import.meta.url), readUi = (f: string) => fs.readFileSync(new URL(f, UI), "utf8") as string;
+    const SURFACE = ["score-view.ts", "lyric-editor.ts", "mark-editor.ts", "title-editor.ts", "score-overlay.ts"];
+    // 待统筹裁定（施工单第五节「小弟问（2-3）」）：记号框借了键盘模块的滚轮小部件。只认这一处，多出别的 = 红；裁定了就从这里拿掉。
+    const PENDING = new Set(["mark-editor.ts → ../keyboard/drum.ts"]);
+    const seen = new Set<string>();
+    for (const f of SURFACE) for (const p of importsOf(readUi(f))) {
+      if (/(^|\/)keyboard\//.test(p)) { const k = `${f} → ${p}`; seen.add(k); assert(PENDING.has(k), `谱面 ${f} import 了键盘模块 ${p}`); }
+      assert(!/(^|\/)(performers|gm|singer)\//.test(p), `谱面 ${f} import 了 ${p}（乐器是谁由宿主告诉它）`);
+      if (p.includes("render/staff/")) assert(p === "../render/staff/index.ts", `谱面 ${f} 绕过五线谱的入口 import 了 ${p}`);
+    }
+    for (const k of PENDING) assert(seen.has(k), `待定的例外「${k}」已经没有了：从 PENDING 拿掉`);
+  });
   it("语言（守卫 8）：同一首歌 locale 换了只换那几个字（编排、吸 / 深吸），别的图元一个不变；没给 locale = 报错", () => {
     const song = fullSong();
     const base = { width: 600, sp: 10, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: song.parts.map((p, k) => ({ id: p.id, name: p.id, first: k === 0 })), measure: createTextMeasure((s: string) => s.length * 8), autoBars: true };
