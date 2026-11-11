@@ -20,7 +20,7 @@ export const AREAS = {
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "parts-manager", "paper-adds", "inst-split", "finder-pins", "finder-sf2", "finder-presets", "landscape-widgets", "modes", "dyn-levels", "sing-experiments"],
   // 歌库 / 云 / 文件 / 念缓存
-  store: ["csp", "store", "sync", "gate", "folder-home", "speech-store", "save-keys", "render-cache", "factory-reset", "legacy-dbs", "gallery-marks", "edit-lock", "edit-lock-gallery"],
+  store: ["csp", "store", "sync", "gate", "folder-home", "speech-store", "save-keys", "render-cache", "factory-reset", "legacy-dbs", "gallery-marks", "edit-lock", "edit-lock-gallery", "link-open"],
   // 导出
   export: ["pdf", "pdf-wysiwyg", "issues", "render-cache"],
   // 参考窗
@@ -89,7 +89,7 @@ export const AREA_OF_PATH = [
   [/^src\/(engine|gm|singer)\//, ["studio", "play"]],
   [/^src\/app\/(names)\.ts$/, ["studio"]],
   // 文件 / 云 / 歌库 / 格式
-  [/^src\/(app-store|library-home|identifiers|encryption)\.ts$|^src\/app\/move-songs\.ts$|^src\/app\/doc-file\.ts$|^src\/ui\/(sheets|song-cover)\.ts$|^src\/editor-session\//, ["store"]],
+  [/^src\/(app-store|library-home|identifiers|encryption)\.ts$|^src\/app\/move-songs\.ts$|^src\/app\/doc-file\.ts$|^src\/sources\/link\.ts$|^src\/ui\/(sheets|song-cover)\.ts$|^src\/editor-session\//, ["store"]],
   [/^src\/format\//, ["store", "export", "score"]],
   // 导出 / 参考窗 / 模式表
   [/^src\/export\//, ["export"]],

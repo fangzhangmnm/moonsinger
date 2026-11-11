@@ -207,7 +207,7 @@ body.listen-mode .ink-caret { display: none; }
 .offer { position: fixed; inset: 0; z-index: var(--z-sheet); display: flex; align-items: center; justify-content: center; background: rgba(40, 38, 34, .28); padding: 16px; }
 .offer-card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; width: min(360px, 100%); box-shadow: 0 8px 28px rgba(0, 0, 0, .14); }
 .offer-title { font-weight: 600; margin-bottom: 6px; }
-.offer-msg { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+.offer-msg { color: var(--muted); font-size: 13px; margin-bottom: 14px; overflow-wrap: anywhere; }
 .offer-btns { display: flex; gap: 8px; justify-content: flex-end; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 

@@ -47,6 +47,7 @@ import { PACKS, CREDIT } from "../singer/packs.gen.ts";
 import { CREDIT_TRANSLATIONS } from "../singer/credit-translations.ts";
 import { SOUNDS, SOUNDS_SOURCE_DEFAULT } from "../gm/sounds.gen.ts";
 import { createSoundSources } from "../sources/sounds.ts";   // 音源来源 + 弱引用解析（刀 4 接缝）
+import { linkParam, withoutLinkParam, planLink, fetchLink, sniff, fileNameFor } from "../sources/link.ts";   // 从链接打开（?file=；黄线区登记）
 import { createModelSources, MODEL_SOURCE_DEFAULT } from "../sources/models.ts";
 import { sha256Hex } from "../sources/sha256.ts";
 import {percOf} from "../gm/percussion.ts";
@@ -2776,14 +2777,37 @@ async function fileOpen(): Promise<void> {
   if (picked) openPicked(picked);
 }
 /** 拿到的文件（选的 / 拖进来的 / 双击打开的）→ 读进来。别的软件存的谱、或有读不进来的东西：不认它的家（存回去会把没读进来的丢掉 → 第一次「存」= 问存到哪）。 */
-function openPicked(picked: docFile.Picked): void {
+function openPicked(picked: docFile.Picked, from?: string): boolean {
   try {
     const o = openBytes(picked.name, picked.bytes), own = o.ours && !o.notices.length;
     loadDoc(o.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o.stem, named: true, extras: o.extras, view: o.view, references: o.references });
     if (o.legacyMp3) void adoptLegacyMp3(o.legacyMp3, o.song.title || docName(), null);
     if (o.notices.length) showError(o.notices.join(" ")); if (o.advice.length) info(o.advice.join(" "));
-    else info(_t("打开了 {name}", { name: picked.name }));
-  } catch (e) { showError(_t("打不开 {name}：{Error}", { name: picked.name, Error: (e as Error).message })); }
+    else info(from ? _t("从 {host} 打开了 {name}：这是一份拷贝，想留下来就按「存」。", { host: from, name: picked.name }) : _t("打开了 {name}", { name: picked.name }));
+    return true;
+  } catch (e) { showError(_t("打不开 {name}：{Error}", { name: picked.name, Error: (e as Error).message })); return false; }
+}
+/** 从链接打开（`?file=<链接>`；src/sources/link.ts；user 11-11「先支持裸链接。能支持几家就几家」，愿望单 W-56）。
+ *  先问一句、人点了「打开」才发请求（读的是别人放在网上的文件）；拿回来的走和「打开别人发来的文件」同一条路（openPicked → openBytes 那几道检查），
+ *  没有家 = 一份拷贝（改了碰不到链接那头的原件；想留 = 按「存」进歌库 / 存到本机）。 */
+async function openFromLink(raw: string): Promise<void> {
+  const plan = planLink(raw);
+  if ("error" in plan) { showError(plan.error); return; }
+  const ok = await askSheet(_t("从链接打开这首歌？"),
+    _t("会从 {host} 下载这个文件：{url}。这是别人放在网上的文件；打开的是一份拷贝，想留下来就按「存」。", { host: plan.host, url: plan.shown }), _t("打开"));
+  if (!ok) return;
+  if (!(await H.leave(_t("打开链接里的歌")))) return;
+  diagNote("link", `open ${plan.via} ${plan.host}`);
+  let bytes: Uint8Array;
+  try {
+    progress(_t("正在从 {host} 下载…", { host: plan.host }));
+    bytes = await fetchLink(plan, { onProgress: (got, total) => { if (total) progress(_t("正在从 {host} 下载… {pc}%", { host: plan.host, pc: String(Math.round((got / total) * 100)) })); } });
+  } catch (e) { showError((e as Error).message); return; }
+  finally { progress(""); }
+  const kind = sniff(bytes);
+  if (kind === "html") { showError(_t("{host} 给的是一个网页，不是歌文件：要用能直接下载的链接（网盘的分享页多半要换成「下载」那个链接）。", { host: plan.host })); return; }
+  if (kind === "other") { showError(_t("从 {host} 拿到的不是歌文件（.mxl / .musicxml）。", { host: plan.host })); return; }
+  if (openPicked({ name: fileNameFor(plan, kind), bytes, handle: null, mtime: null }, plan.host)) gallery?.close();
 }
 /** 封面的腰封 = 作者栏第一行（每次存重写，withPngText 先删旧块）；没有封面图就没有封面 entry。 */
 const extrasForSave = (base: Extras = D.extras): Extras => (base.thumbnail ? withThumbnail(base, coverWithBlurb(base.thumbnail, (D.st.song.credits ?? "").split("\n").map((l) => l.trim()).find(Boolean) ?? null)) : base);
@@ -4180,4 +4204,7 @@ if (bootFolder) {
 // 试听元音表（约 3 MB）在画好之后的空闲时下载：选了月读就是意图，第一下就该响（user「选这个乐器就是意图，然后第一下就响」）
 setTimeout(() => { void ensureVowels().catch((e) => showError(_t("试听元音表没下载下来：{Error}", { Error: (e as Error).message }))); void engine.ensure().catch(() => undefined); }, 300);
 setTimeout(() => schedulePrewarm(), 1200);
+// 从链接打开（`?file=<链接>`）：开机恢复完再问；先把这一段从地址栏拿掉（刷新不再问，问了「算了」也不留着）
+{ const raw = linkParam(location.href);
+  if (raw) { history.replaceState(history.state, "", withoutLinkParam(location.href)); void openFromLink(raw); } }
 void midi.resume();   // 浏览器记住了「允许」= 静默接上 MIDI 键盘（没记住不弹框，等顶栏「MIDI」或设置里点「连接」；W-42）   // 启动时打开的那首歌（歌库 / 上次的）也预热   // 录音房的 worklet 模块也顺手装好（几十 KB），第一下按键就响

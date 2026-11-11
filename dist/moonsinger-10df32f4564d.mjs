@@ -4903,6 +4903,27 @@ var S = {
   "\u6E32\u67D3\u7F13\u5B58\u91CC\u8FD8\u6CA1\u6709\u8FD9\u9996\uFF1A\u70B9 = \u6E32\u67D3\uFF08\u4E4B\u540E\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF09": { en: "Not in the render cache yet: tap to render (then play it from the cover)" },
   "\u64AD\u653E\u6E32\u67D3\u7F13\u5B58\u91CC\u4E0A\u6B21\u6E32\u7684\u90A3\u4E00\u904D\uFF08\u4E4B\u540E\u6539\u8FC7\uFF0C{p} \u79D2\uFF09": { en: "Play the last render from the render cache (outdated: changed since; {p} s)" },
   "\u6309\u73B0\u5728\u7684\u6837\u5B50\u91CD\u65B0\u6E32\u4E00\u904D": { en: "Render again as it is now" },
+  // 从链接打开（v0.16.106，2026-11-11，Claude Opus 5.5）
+  "\u4ECE {host} \u6253\u5F00\u4E86 {name}\uFF1A\u8FD9\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002": { en: "Opened {name} from {host}. This is a copy; press Save to keep it." },
+  "\u4ECE\u94FE\u63A5\u6253\u5F00\u8FD9\u9996\u6B4C\uFF1F": { en: "Open this song from a link?" },
+  "\u4F1A\u4ECE {host} \u4E0B\u8F7D\u8FD9\u4E2A\u6587\u4EF6\uFF1A{url}\u3002\u8FD9\u662F\u522B\u4EBA\u653E\u5728\u7F51\u4E0A\u7684\u6587\u4EF6\uFF1B\u6253\u5F00\u7684\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002": { en: "This downloads the file from {host}: {url}. It is a file someone put online; you get a copy, and pressing Save keeps it." },
+  "\u6253\u5F00": { en: "Open" },
+  "\u6253\u5F00\u94FE\u63A5\u91CC\u7684\u6B4C": { en: "Open the song from the link" },
+  "\u6B63\u5728\u4ECE {host} \u4E0B\u8F7D\u2026": { en: "Downloading from {host}\u2026" },
+  "\u6B63\u5728\u4ECE {host} \u4E0B\u8F7D\u2026 {pc}%": { en: "Downloading from {host}\u2026 {pc}%" },
+  "{host} \u7ED9\u7684\u662F\u4E00\u4E2A\u7F51\u9875\uFF0C\u4E0D\u662F\u6B4C\u6587\u4EF6\uFF1A\u8981\u7528\u80FD\u76F4\u63A5\u4E0B\u8F7D\u7684\u94FE\u63A5\uFF08\u7F51\u76D8\u7684\u5206\u4EAB\u9875\u591A\u534A\u8981\u6362\u6210\u300C\u4E0B\u8F7D\u300D\u90A3\u4E2A\u94FE\u63A5\uFF09\u3002": { en: "{host} sent a web page, not a song file. Use a direct download link (for a cloud drive, usually its \u201Cdownload\u201D link rather than the share page)." },
+  "\u4ECE {host} \u62FF\u5230\u7684\u4E0D\u662F\u6B4C\u6587\u4EF6\uFF08.mxl / .musicxml\uFF09\u3002": { en: "What came from {host} is not a song file (.mxl / .musicxml)." },
+  "\u8FD9\u4E0D\u662F\u4E00\u4E2A\u7F51\u5740\uFF1A{link}": { en: "This is not a web address: {link}" },
+  "\u53EA\u8BA4 https \u5F00\u5934\u7684\u94FE\u63A5\uFF1A{link}": { en: "Only links starting with https work: {link}" },
+  "Google Drive \u4E0D\u8BA9\u522B\u7684\u7F51\u9875\u76F4\u63A5\u8BFB\u91CC\u9762\u7684\u6587\u4EF6\uFF0C\u8FD9\u6761\u94FE\u63A5\u6253\u4E0D\u5F00\u3002\u6362\u6210 Dropbox\u3001OneDrive\u3001GitHub\uFF0C\u6216\u8005\u81EA\u5DF1\u7F51\u7AD9\u4E0A\u7684\u76F4\u94FE\u3002": { en: "Google Drive does not let other web pages read its files, so this link can\u2019t be opened. Use Dropbox, OneDrive, GitHub, or a direct link on your own site." },
+  "\u8FD9\u662F Dropbox \u7684\u6587\u4EF6\u5939\u94FE\u63A5\uFF1A\u8981\u5206\u4EAB\u5355\u4E2A\u6B4C\u6587\u4EF6\u7684\u94FE\u63A5\u3002": { en: "This is a Dropbox folder link. Share the link to a single song file instead." },
+  "\u8FD9\u662F GitHub \u7684\u9875\u9762\uFF0C\u4E0D\u662F\u6587\u4EF6\uFF1A\u8981\u94FE\u5230\u4ED3\u5E93\u91CC\u7684\u90A3\u4E2A\u6B4C\u6587\u4EF6\uFF08\u5730\u5740\u91CC\u6709 /blob/ \u7684\u90A3\u79CD\uFF09\u3002": { en: "This is a GitHub page, not a file. Link to the song file in the repository (an address with /blob/ in it)." },
+  "\u8BA4\u4E0D\u51FA\u8FD9\u4E2A Gist \u94FE\u63A5\uFF1A\u8981\u5E26\u7528\u6237\u540D\u7684\u90A3\u79CD\uFF08gist.github.com/\u540D\u5B57/\u7F16\u53F7\uFF09\u3002": { en: "Can\u2019t read this Gist link. Use the form with the user name (gist.github.com/name/id)." },
+  "\u6CA1\u62FF\u5230\uFF1A{host} \u4E0D\u8BA9\u522B\u7684\u7F51\u9875\u8BFB\u8FD9\u4E2A\u6587\u4EF6\uFF0C\u6216\u8005\u7F51\u65AD\u4E86\u3002": { en: "Couldn\u2019t get it: {host} doesn\u2019t let other web pages read this file, or the network is down." },
+  "{host} \u8BF4\u8FD9\u4E2A\u6587\u4EF6\u4E0D\u5728\u4E86\uFF08{status}\uFF09\uFF1A\u94FE\u63A5\u8FC7\u671F\u4E86\uFF0C\u6216\u8005\u6CA1\u8BBE\u6210\u516C\u5F00\u5206\u4EAB\u3002": { en: "{host} says the file is gone ({status}). The link may have expired or isn\u2019t shared publicly." },
+  "{host} \u4E0D\u8BA9\u8BFB\uFF08{status}\uFF09\uFF1A\u8FD9\u6761\u94FE\u63A5\u6CA1\u8BBE\u6210\u300C\u77E5\u9053\u94FE\u63A5\u7684\u4EBA\u90FD\u80FD\u770B\u300D\u3002": { en: "{host} refused ({status}). The link isn\u2019t set to \u201Canyone with the link can view\u201D." },
+  "{host} \u56DE\u4E86 {status}\uFF0C\u6CA1\u62FF\u5230\u6587\u4EF6\u3002": { en: "{host} answered {status}; no file." },
+  "\u8FD9\u4E2A\u6587\u4EF6\u8D85\u8FC7 {mb} MB\uFF0C\u4E0D\u50CF\u4E00\u9996\u6B4C\uFF0C\u6CA1\u6253\u5F00\u3002": { en: "This file is over {mb} MB, too big for a song, so it wasn\u2019t opened." },
   "\u91CD\u65B0\u6E32\u67D3": { en: "Render again" },
   "{stem} \xB7 \u65E7\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09": { en: "{stem} \xB7 outdated (changed since)" }
 };
@@ -5124,7 +5145,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.105-2026-11-10";
+var APP_VERSION = "v0.16.106-2026-11-11";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -31584,15 +31605,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-890de12449f6.mjs");
+      return pick(() => "singer-worker-51f72105e31a.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-1f2282098df2.mjs");
+      return pick(() => "layout-worker-ecac1ebca6ce.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-ff3dd07eae0e.mjs");
+      return pick(() => "encode-worker-be815f90a62c.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -33008,6 +33029,141 @@ function createSoundSources(o10) {
       session.delete(k2);
     }, has: (k2) => session.has(k2), get: (k2) => session.get(k2) }
   };
+}
+
+// src/sources/link.ts
+var LINK_MAX_BYTES = 100 * 1024 * 1024;
+var SONG_NAME = /\.(mxl|musicxml|xml)$/i;
+function linkParam(href) {
+  let u2;
+  try {
+    u2 = new URL(href);
+  } catch {
+    return null;
+  }
+  const q2 = u2.search;
+  const m2 = /[?&]file=/.exec(q2);
+  if (!m2) return null;
+  let raw = q2.slice(m2.index + m2[0].length);
+  if (/^https?%3a/i.test(raw) || /%2f/i.test(raw.split("&")[0]) && !raw.split("&")[0].includes("/")) {
+    raw = raw.split("&")[0];
+    try {
+      raw = decodeURIComponent(raw);
+    } catch {
+      return null;
+    }
+  }
+  raw = raw.trim();
+  return raw || null;
+}
+function withoutLinkParam(href) {
+  const u2 = new URL(href);
+  const m2 = /[?&]file=/.exec(u2.search);
+  if (!m2) return href;
+  const rest = u2.search.slice(0, m2.index);
+  u2.search = rest.startsWith("?") ? rest : rest ? "?" + rest.replace(/^&/, "") : "";
+  return u2.toString();
+}
+var b64url = (s10) => {
+  const bytes = new TextEncoder().encode(s10);
+  let bin = "";
+  for (const b3 of bytes) bin += String.fromCharCode(b3);
+  return btoa(bin).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+};
+var lastSeg = (path) => {
+  const seg = path.split("/").filter(Boolean).pop();
+  if (!seg) return null;
+  let s10;
+  try {
+    s10 = decodeURIComponent(seg);
+  } catch {
+    s10 = seg;
+  }
+  return SONG_NAME.test(s10) ? s10 : null;
+};
+function planLink(raw) {
+  let s10 = raw.trim();
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(s10)) s10 = s10.startsWith("//") ? "https:" + s10 : "https://" + s10;
+  let u2;
+  try {
+    u2 = new URL(s10);
+  } catch {
+    return { error: _t("\u8FD9\u4E0D\u662F\u4E00\u4E2A\u7F51\u5740\uFF1A{link}", { link: raw }) };
+  }
+  if (u2.protocol !== "https:" && !(u2.protocol === "http:" && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(u2.hostname))) return { error: _t("\u53EA\u8BA4 https \u5F00\u5934\u7684\u94FE\u63A5\uFF1A{link}", { link: raw }) };
+  const shown2 = u2.toString(), host2 = u2.hostname.replace(/^www\./, ""), name = lastSeg(u2.pathname);
+  if (/(^|\.)drive\.google\.com$|(^|\.)docs\.google\.com$|(^|\.)drive\.usercontent\.google\.com$/.test(u2.hostname))
+    return { error: _t("Google Drive \u4E0D\u8BA9\u522B\u7684\u7F51\u9875\u76F4\u63A5\u8BFB\u91CC\u9762\u7684\u6587\u4EF6\uFF0C\u8FD9\u6761\u94FE\u63A5\u6253\u4E0D\u5F00\u3002\u6362\u6210 Dropbox\u3001OneDrive\u3001GitHub\uFF0C\u6216\u8005\u81EA\u5DF1\u7F51\u7AD9\u4E0A\u7684\u76F4\u94FE\u3002") };
+  if (/(^|\.)dropbox\.com$/.test(u2.hostname)) {
+    if (/^\/(sh|scl\/fo)\//.test(u2.pathname)) return { error: _t("\u8FD9\u662F Dropbox \u7684\u6587\u4EF6\u5939\u94FE\u63A5\uFF1A\u8981\u5206\u4EAB\u5355\u4E2A\u6B4C\u6587\u4EF6\u7684\u94FE\u63A5\u3002") };
+    const d3 = new URL(u2.toString());
+    d3.hostname = "dl.dropboxusercontent.com";
+    d3.searchParams.delete("dl");
+    d3.searchParams.delete("raw");
+    return { url: d3.toString(), shown: shown2, host: "Dropbox", via: "dropbox", name };
+  }
+  if (u2.hostname === "dl.dropboxusercontent.com") return { url: shown2, shown: shown2, host: "Dropbox", via: "dropbox", name };
+  if (u2.hostname === "github.com") {
+    const m2 = /^\/([^/]+)\/([^/]+)\/(?:blob|raw)\/(.+)$/.exec(u2.pathname);
+    if (!m2) return { error: _t("\u8FD9\u662F GitHub \u7684\u9875\u9762\uFF0C\u4E0D\u662F\u6587\u4EF6\uFF1A\u8981\u94FE\u5230\u4ED3\u5E93\u91CC\u7684\u90A3\u4E2A\u6B4C\u6587\u4EF6\uFF08\u5730\u5740\u91CC\u6709 /blob/ \u7684\u90A3\u79CD\uFF09\u3002") };
+    return { url: `https://raw.githubusercontent.com/${m2[1]}/${m2[2]}/${m2[3]}`, shown: shown2, host: "GitHub", via: "github", name };
+  }
+  if (u2.hostname === "gist.github.com") {
+    const m2 = /^\/([^/]+)\/([0-9a-f]+)\/?(?:raw(\/.*)?)?$/i.exec(u2.pathname);
+    if (!m2) return { error: _t("\u8BA4\u4E0D\u51FA\u8FD9\u4E2A Gist \u94FE\u63A5\uFF1A\u8981\u5E26\u7528\u6237\u540D\u7684\u90A3\u79CD\uFF08gist.github.com/\u540D\u5B57/\u7F16\u53F7\uFF09\u3002") };
+    return { url: `https://gist.githubusercontent.com/${m2[1]}/${m2[2]}/raw${m2[3] ?? ""}`, shown: shown2, host: "GitHub Gist", via: "gist", name: m2[3] ? lastSeg(m2[3]) : null };
+  }
+  if (u2.hostname === "1drv.ms" || /(^|\.)onedrive\.live\.com$/.test(u2.hostname))
+    return { url: `https://api.onedrive.com/v1.0/shares/u!${b64url(shown2)}/root/content`, shown: shown2, host: "OneDrive", via: "onedrive", name: null };
+  return { url: shown2, shown: shown2, host: u2.hostname, via: "bare", name };
+}
+function sniff(bytes) {
+  if (bytes[0] === 80 && bytes[1] === 75 && bytes[2] === 3 && bytes[3] === 4) return "zip";
+  const head = new TextDecoder().decode(bytes.subarray(0, 1024)).replace(/^﻿/, "").trimStart().toLowerCase();
+  if (!head.startsWith("<")) return "other";
+  if (/^<!doctype html|<html[\s>]/.test(head)) return "html";
+  if (/score-partwise|score-timewise/.test(head) || head.startsWith("<?xml")) return "xml";
+  return "other";
+}
+var fileNameFor = (plan, kind) => plan.name ?? (kind === "zip" ? "link.mxl" : "link.musicxml");
+async function fetchLink(plan, o10 = {}) {
+  const max2 = o10.max ?? LINK_MAX_BYTES, f2 = o10.fetchImpl ?? fetch;
+  let r10;
+  try {
+    r10 = await f2(plan.url, { method: "GET", credentials: "omit", referrerPolicy: "no-referrer", cache: "no-store", redirect: "follow", signal: o10.signal });
+  } catch (e10) {
+    if (e10.name === "AbortError") throw e10;
+    throw new Error(_t("\u6CA1\u62FF\u5230\uFF1A{host} \u4E0D\u8BA9\u522B\u7684\u7F51\u9875\u8BFB\u8FD9\u4E2A\u6587\u4EF6\uFF0C\u6216\u8005\u7F51\u65AD\u4E86\u3002", { host: plan.host }));
+  }
+  if (!r10.ok) throw new Error(r10.status === 404 || r10.status === 410 ? _t("{host} \u8BF4\u8FD9\u4E2A\u6587\u4EF6\u4E0D\u5728\u4E86\uFF08{status}\uFF09\uFF1A\u94FE\u63A5\u8FC7\u671F\u4E86\uFF0C\u6216\u8005\u6CA1\u8BBE\u6210\u516C\u5F00\u5206\u4EAB\u3002", { host: plan.host, status: String(r10.status) }) : r10.status === 401 || r10.status === 403 ? _t("{host} \u4E0D\u8BA9\u8BFB\uFF08{status}\uFF09\uFF1A\u8FD9\u6761\u94FE\u63A5\u6CA1\u8BBE\u6210\u300C\u77E5\u9053\u94FE\u63A5\u7684\u4EBA\u90FD\u80FD\u770B\u300D\u3002", { host: plan.host, status: String(r10.status) }) : _t("{host} \u56DE\u4E86 {status}\uFF0C\u6CA1\u62FF\u5230\u6587\u4EF6\u3002", { host: plan.host, status: String(r10.status) }));
+  const total = Number(r10.headers.get("content-length")) || null;
+  const tooBig = () => new Error(_t("\u8FD9\u4E2A\u6587\u4EF6\u8D85\u8FC7 {mb} MB\uFF0C\u4E0D\u50CF\u4E00\u9996\u6B4C\uFF0C\u6CA1\u6253\u5F00\u3002", { mb: String(Math.round(max2 / 1024 / 1024)) }));
+  if (total != null && total > max2) throw tooBig();
+  if (!r10.body) {
+    const b3 = new Uint8Array(await r10.arrayBuffer());
+    if (b3.length > max2) throw tooBig();
+    return b3;
+  }
+  const reader = r10.body.getReader(), parts = [];
+  let got2 = 0;
+  for (; ; ) {
+    const { done: done2, value } = await reader.read();
+    if (done2) break;
+    got2 += value.length;
+    if (got2 > max2) {
+      void reader.cancel();
+      throw tooBig();
+    }
+    parts.push(value);
+    o10.onProgress?.(got2, total);
+  }
+  const out = new Uint8Array(got2);
+  let at2 = 0;
+  for (const p2 of parts) {
+    out.set(p2, at2);
+    at2 += p2.length;
+  }
+  return out;
 }
 
 // src/sources/models.ts
@@ -54179,7 +54335,7 @@ function sameModuloLooks(a10, b3) {
 var LOCK_WHAT = { score: _t("\u8C31 / \u6B4C\u540D / \u4F5C\u8005\u680F"), paper: _t("\u7EB8"), paperHidden: _t("\u7EB8"), lounge: _t("\u58F0\u90E8 / \u4E50\u5668"), studio: _t("\u6DF7\u97F3"), cover: _t("\u5C01\u9762") };
 var extrasKey = (e10) => JSON.stringify([Object.entries(e10.lounge).sort(([a10], [b3]) => a10 < b3 ? -1 : a10 > b3 ? 1 : 0), e10.studio ?? null]);
 function createDocument(init2, hooks) {
-  let st2 = init2.st, extras = init2.extras, history = emptyHistory();
+  let st2 = init2.st, extras = init2.extras, history2 = emptyHistory();
   const mark = () => ({ song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: hooks.extraDirty?.() ?? 0 });
   let saved = { song: st2.song, thumbnail: extras.thumbnail, key: extrasKey(extras), refs: 0 };
   const locked = () => hooks.lockedWhy?.() ?? null;
@@ -54203,7 +54359,7 @@ function createDocument(init2, hooks) {
     if (o10.undo !== false && (songChanged || exChanged)) {
       const locus0 = o10.locus ?? describeSongChange(st2, asked.song !== st2.song ? asked : nextSt);
       const locus = locus0.kind === kind ? locus0 : { ...locus0, kind };
-      history = record3(history, st2, extras, isLookOp(kind) ? null : o10.gesture ?? null, hooks.now(), locus);
+      history2 = record3(history2, st2, extras, isLookOp(kind) ? null : o10.gesture ?? null, hooks.now(), locus);
     }
     const prevSt = st2, prevEx = extras;
     st2 = nextSt;
@@ -54217,7 +54373,7 @@ function createDocument(init2, hooks) {
   function restore(r10, verb) {
     if (!r10) return false;
     const prev = { st: st2, extras };
-    history = r10.h;
+    history2 = r10.h;
     st2 = r10.st;
     extras = r10.extras;
     hooks.onRestored(r10, verb, prev);
@@ -54243,17 +54399,17 @@ function createDocument(init2, hooks) {
       return extras;
     },
     get history() {
-      return history;
+      return history2;
     },
     locked,
     commit,
     run: (c10, o10) => commit({ st: apply(st2, c10, hooks.now()) }, o10),
-    undo: () => step(history.past[history.past.length - 1], _t("\u64A4\u9500"), () => undo(history, st2, extras)),
-    redo: () => step(history.future[history.future.length - 1], _t("\u91CD\u505A"), () => redo(history, st2, extras)),
+    undo: () => step(history2.past[history2.past.length - 1], _t("\u64A4\u9500"), () => undo(history2, st2, extras)),
+    redo: () => step(history2.future[history2.future.length - 1], _t("\u91CD\u505A"), () => redo(history2, st2, extras)),
     load: (s10, e10) => {
       st2 = s10;
       extras = e10;
-      history = emptyHistory();
+      history2 = emptyHistory();
       saved = mark();
     },
     dirty: () => st2.song !== saved.song || extras.thumbnail !== saved.thumbnail || extrasKey(extras) !== saved.key || (hooks.extraDirty?.() ?? 0) !== saved.refs,
@@ -56816,7 +56972,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "e89029abcc99",
+  cssHash: "fc201077da18",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -58877,17 +59033,56 @@ async function fileOpen() {
   }
   if (picked) openPicked(picked);
 }
-function openPicked(picked) {
+function openPicked(picked, from) {
   try {
     const o10 = openBytes(picked.name, picked.bytes), own = o10.ours && !o10.notices.length;
     loadDoc(o10.song, { home: own && picked.handle ? { kind: "file", handle: picked.handle, mtime: picked.mtime } : { kind: "none", pendingFolder: null }, stem: o10.stem, named: true, extras: o10.extras, view: o10.view, references: o10.references });
     if (o10.legacyMp3) void adoptLegacyMp3(o10.legacyMp3, o10.song.title || docName(), null);
     if (o10.notices.length) showError(o10.notices.join(" "));
     if (o10.advice.length) info(o10.advice.join(" "));
-    else info(_t("\u6253\u5F00\u4E86 {name}", { name: picked.name }));
+    else info(from ? _t("\u4ECE {host} \u6253\u5F00\u4E86 {name}\uFF1A\u8FD9\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002", { host: from, name: picked.name }) : _t("\u6253\u5F00\u4E86 {name}", { name: picked.name }));
+    return true;
   } catch (e10) {
     showError(_t("\u6253\u4E0D\u5F00 {name}\uFF1A{Error}", { name: picked.name, Error: e10.message }));
+    return false;
   }
+}
+async function openFromLink(raw) {
+  const plan = planLink(raw);
+  if ("error" in plan) {
+    showError(plan.error);
+    return;
+  }
+  const ok2 = await askSheet(
+    _t("\u4ECE\u94FE\u63A5\u6253\u5F00\u8FD9\u9996\u6B4C\uFF1F"),
+    _t("\u4F1A\u4ECE {host} \u4E0B\u8F7D\u8FD9\u4E2A\u6587\u4EF6\uFF1A{url}\u3002\u8FD9\u662F\u522B\u4EBA\u653E\u5728\u7F51\u4E0A\u7684\u6587\u4EF6\uFF1B\u6253\u5F00\u7684\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002", { host: plan.host, url: plan.shown }),
+    _t("\u6253\u5F00")
+  );
+  if (!ok2) return;
+  if (!await H2.leave(_t("\u6253\u5F00\u94FE\u63A5\u91CC\u7684\u6B4C"))) return;
+  diagNote("link", `open ${plan.via} ${plan.host}`);
+  let bytes;
+  try {
+    progress(_t("\u6B63\u5728\u4ECE {host} \u4E0B\u8F7D\u2026", { host: plan.host }));
+    bytes = await fetchLink(plan, { onProgress: (got2, total) => {
+      if (total) progress(_t("\u6B63\u5728\u4ECE {host} \u4E0B\u8F7D\u2026 {pc}%", { host: plan.host, pc: String(Math.round(got2 / total * 100)) }));
+    } });
+  } catch (e10) {
+    showError(e10.message);
+    return;
+  } finally {
+    progress("");
+  }
+  const kind = sniff(bytes);
+  if (kind === "html") {
+    showError(_t("{host} \u7ED9\u7684\u662F\u4E00\u4E2A\u7F51\u9875\uFF0C\u4E0D\u662F\u6B4C\u6587\u4EF6\uFF1A\u8981\u7528\u80FD\u76F4\u63A5\u4E0B\u8F7D\u7684\u94FE\u63A5\uFF08\u7F51\u76D8\u7684\u5206\u4EAB\u9875\u591A\u534A\u8981\u6362\u6210\u300C\u4E0B\u8F7D\u300D\u90A3\u4E2A\u94FE\u63A5\uFF09\u3002", { host: plan.host }));
+    return;
+  }
+  if (kind === "other") {
+    showError(_t("\u4ECE {host} \u62FF\u5230\u7684\u4E0D\u662F\u6B4C\u6587\u4EF6\uFF08.mxl / .musicxml\uFF09\u3002", { host: plan.host }));
+    return;
+  }
+  if (openPicked({ name: fileNameFor(plan, kind), bytes, handle: null, mtime: null }, plan.host)) gallery?.close();
 }
 var extrasForSave = (base2 = D2.extras) => base2.thumbnail ? withThumbnail(base2, coverWithBlurb(base2.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base2;
 var encoder = createEncoder(() => threadUrls("encode-worker")[0] ?? null, (why2) => diagNote("encode", why2));
@@ -60925,10 +61120,17 @@ setTimeout(() => {
   void engine.ensure().catch(() => void 0);
 }, 300);
 setTimeout(() => schedulePrewarm(), 1200);
+{
+  const raw = linkParam(location.href);
+  if (raw) {
+    history.replaceState(history.state, "", withoutLinkParam(location.href));
+    void openFromLink(raw);
+  }
+}
 void midi.resume();
 /**
 * vue v3.5.35
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-27bffd24534d.mjs.map
+//# sourceMappingURL=moonsinger-10df32f4564d.mjs.map
