@@ -407,6 +407,11 @@ AI 的整理，user 没拍：
   - 和「串珠」（第 30 节）一起改：珠子的大小管时长，线上的间距照弹簧，不按时间一比一。
 - 状态：方向是 user 说的；**几档、什么曲线都没拍**。
 
+## 38. 根因：时长的感觉是对数的（user 11-11，哲学账）
+
+- user：「aha i know why i prefers sheet music. perhaps humans perception of time is log. so it means in piano roll, inexperienced players (like me) cannot properly judge the time interval. however, using sheet music and token based time notation, it is easier to climb the log ladder. also the visual fat-thin also follows a log law instead of linear law. 帮我哲学记账，这是为什么我受不了钢琴格的根因。就是一个8拍可能感觉只比4拍长一点，除非你会数拍子」
+- 记进了新开的哲学账 `ai-docs/20261111-philosophy-ledger.md` 第 1 条（user 原话 + AI 补充 + 推论），本仓 CLAUDE.md 加了一行指路。
+
 ## 记账说明
 
 - user 11-11：「讨论得会议纪要你在实时记录对吧」→ 是，就是这一份，每轮写完提交一次；同日发到 user 设备上。
