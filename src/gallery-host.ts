@@ -55,6 +55,8 @@ export interface GalleryHostDeps {
   onOpened?: () => void;
   onClosed?: () => void;
 }
+/** 要人处理的同步状态 = 图库库 core/model/gallery-view-model.js 的 ATTENTION_BADGES（float / dirtyBoth / conflictBoth / ghost / pendingGone）对应的 store syncState。 */
+const NEEDS_RESOLVE = new Set(["float", "unpushed", "conflict", "ghost", "pendingGone"]);
 const KV_FOLDER = "gallery-folder";
 /** 上次离开时在哪个场景（WeebPaint 行为：从歌库出 → 回来在歌库；从编辑器出 → 回来在编辑器）。 */
 const KV_SCENE = "last-scene";
@@ -152,8 +154,11 @@ export function initGalleryHost(d: GalleryHostDeps) {
       // 有声音可听的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；这台设备没记着、文件里也没带 = 不画。
       //   跟着变：包在 Vue 的 computed 里算这个函数，读了 playTick / renderTick（同一个 Vue 的 ref）= 包记住这两个依赖：在放哪首变了、设备上记着的东西变了，各 +1 就重算。
       //   靠的是包「在响应式里调 tileAction」这一点（d.ts：事实到了会重算）；包要是改了，E2E render-cache.mjs「卡片 ▶ 跟着变」会红。
-      tileAction: (id: string, _info: TileInfo, facts: unknown): TileAction | null => {
+      tileAction: (id: string, info: TileInfo, facts: unknown): TileAction | null => {
         void playTick.value; void renderTick.value;
+        // 要人处理的卡（登录着、处在这几种同步状态 = 图库库 ATTENTION_BADGES）：宿主不给钮，让库放它自己的「处理…」——库的规矩是宿主的钮优先、
+        //   宿主没给才放「处理…」。v0.16.101 给每张卡都放了「渲染」钮，把「处理…」挤掉了（E2E sync 抓到）；渲过的 ▶ 从 v0.16.97 起也有这个毛病，一并修。
+        if (isSignedIn() && NEEDS_RESOLVE.has(String(info?.syncState))) return null;
         const src = soundOf(id, factsOf(facts));
         if (!src) return { icon: "play", title: _t("这台设备上还没渲过：点 = 在这里渲一遍（之后封面上能直接听）"), state: "unknown" };   // 不能用 "none"：图库库约定 none = 不画这颗钮（gallery-screen.js）   // v0.16.101：卡片说实话（user 11-11「歌库卡片说实话 对，可以渲染」）
         return player.playing() === id ? { icon: "pause", title: _t("暂停（底边播放条上也能控）"), state: "ready" }

@@ -5124,7 +5124,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.101-2026-11-10";
+var APP_VERSION = "v0.16.102-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -31592,7 +31592,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-ccad4418ccf0.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-b2514c8af4b5.mjs");
+      return pick(() => "encode-worker-cd8b272a1cd2.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -49212,6 +49212,7 @@ function createRenderCache(store, o10) {
 }
 
 // src/gallery-host.ts
+var NEEDS_RESOLVE = /* @__PURE__ */ new Set(["float", "unpushed", "conflict", "ghost", "pendingGone"]);
 var KV_FOLDER = "gallery-folder";
 var KV_SCENE = "last-scene";
 var THUMB_PEEK_BYTES = 128 * 1024;
@@ -49302,9 +49303,10 @@ function initGalleryHost(d3) {
       // 有声音可听的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；这台设备没记着、文件里也没带 = 不画。
       //   跟着变：包在 Vue 的 computed 里算这个函数，读了 playTick / renderTick（同一个 Vue 的 ref）= 包记住这两个依赖：在放哪首变了、设备上记着的东西变了，各 +1 就重算。
       //   靠的是包「在响应式里调 tileAction」这一点（d.ts：事实到了会重算）；包要是改了，E2E render-cache.mjs「卡片 ▶ 跟着变」会红。
-      tileAction: (id2, _info, facts) => {
+      tileAction: (id2, info2, facts) => {
         void playTick.value;
         void renderTick.value;
+        if (isSignedIn2() && NEEDS_RESOLVE.has(String(info2?.syncState))) return null;
         const src = soundOf(id2, factsOf(facts));
         if (!src) return { icon: "play", title: _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6E32\u8FC7\uFF1A\u70B9 = \u5728\u8FD9\u91CC\u6E32\u4E00\u904D\uFF08\u4E4B\u540E\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF09"), state: "unknown" };
         return player.playing() === id2 ? { icon: "pause", title: _t("\u6682\u505C\uFF08\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u4E5F\u80FD\u63A7\uFF09"), state: "ready" } : { icon: "play", title: src.k === "device" ? src.stale ? _t("\u542C\u4E0A\u6B21\u6E32\u7684\u90A3\u4E00\u904D\uFF08\u4E4B\u540E\u6539\u8FC7\uFF0C{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }) : _t("\u542C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D\uFF08{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }) : _t("\u542C\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }), state: "ready" };
@@ -60929,4 +60931,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-710ff56a4497.mjs.map
+//# sourceMappingURL=moonsinger-511090ab660f.mjs.map
