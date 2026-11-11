@@ -18,15 +18,15 @@
 
 import { TEMPO_EM, TEXT_STYLES, LYRIC_MIN_SX, isBlockScript, textPx, type TextRole, fitLyrics, lyricBlockSx, hyphens, LYRIC_SPACE, HYPHEN_SX, type LyricFit, type LyricItem, type LyricGaps, type TextMeasure, lyricLook, lyricWidth, lyricSizePx } from "./text/index.ts";
 import { _tIn, type Lang } from "../i18n/index.ts";
-import { DYNS, swellOf, type ClefName, type Song, type PaperSeg, type NoteTok, type Token, type GrooveTok, type NavTok, NAV_LABEL, endingLabel, type Focus, type Staff, TPQ, WHOLE, isTimed, headLen, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
+import { DYNS, swellOf, type ClefName, type Song, type PaperSeg, type NoteTok, type Token, type GrooveTok, type NavTok, NAV_LABEL, endingLabel, type Focus, type Staff, TPQ, WHOLE, isTimed, headLen, tempoWord, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
 import { grooveLabel, grooveStyle } from "../score/groove.ts";
 import { dynOverridden } from "../score/perform.ts";
 import { navWhy } from "../score/repeats.ts";
 import { parseArrangement } from "../score/arrange.ts";
 import { densityOf } from "../score/paper.ts";
 import { curveOf, SP_DEFAULTS } from "./spacing.ts";
-import { type Pitch, diatonicIndex, midiOf, spellMidi } from "../score/pitch.ts";
-import { percOf, type PercInfo } from "../gm/percussion.ts";
+import { type Pitch, diatonicIndex } from "../score/pitch.ts";
+import { type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
 import { GLYPH, W, ENGRAVE, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } from "./smufl.ts";
 import { layoutStems } from "./stems.ts";
@@ -35,13 +35,13 @@ import { GLYPH_BOX } from "./glyph-box.gen.ts";
 import { keyText } from "../score/pitch.ts";
 import { songInC } from "../score/view-in-c.ts";
 import { harmonyTheory, harmonyTags, type HarmonyRead } from "../theory/index.ts";
-import { resolveSongLooks, displayStates, autoOttava, baseClef, isFClef, startClef, wantsGrand } from "../score/clef.ts";
-import { mergeTracks, planHands, type MergeOpts } from "../score/merge.ts";
+import { resolveSongLooks, baseClef } from "../score/clef.ts";
 import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, SQUEEZE, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SPACING } from "./frame/params.ts";
 import { wrapTitle } from "./frame/furniture.ts";
 import { TOP_LINE, MID_LINE, BOTTOM_LINE, ART_GLYPH, GLYPH_BREATH, DYN_GLYPH, DYN_INK, PIN_GAP, PIN_WORD, DASH, RAMP_DASH, SHARP_POS, FLAT_POS, GLYPH_TUPLET } from "./staff/glyphs.ts";
-import { unitsOf, CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W, type Unit, type Chunk, type DynU, type NavU } from "./staff/units.ts";
-import { measureTrack, lineStartWidth, stemInput, posD, shAt, percAt, clefW, type StaffTrack } from "./staff/measure.ts";
+import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W, type Unit, type Chunk, type DynU, type NavU } from "./staff/units.ts";
+import { measureTrack, lineStartWidth, stemInput, posD, shAt, percAt, clefW } from "./staff/measure.ts";
+import { staffRows, staffTracks, type FoldFamily } from "./staff/rows.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
 
 /** tok = 这个图元属于哪个 token（id）：写字头 / 选区 / 强调色不进排版，score-view 按 data-tok 在 DOM 上开关 class（W-17 第 1 刀，2026-10-15）。 */
@@ -191,7 +191,6 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
   const looks = resolveSongLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   const lookAt = (paperId: string, partId: string) => looks.get(paperId)?.get(partId);
-  const clefStarts = { get: (paperId: string) => ({ get: (partId: string) => { const l = lookAt(paperId, partId); return l && l.staves === 1 ? l.clef : undefined; } }) };
   if (o.inC) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
   const sp = o.sp, P = (v: number) => v * sp, ts = o.textScale ?? 1, T = (v: number) => v * sp * ts;   // P = 谱的尺子；T = 字的尺子（刀 2：紧凑档 ts = 1.4，字和它周围留的地方照舒适档）
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
@@ -382,65 +381,18 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     //   一家里有谁是现在在写的 = 整家拆开（各自一行、能写）；都不是 = 叠起来、整行只读（v0.10.25，user「host也应该只读，只有展开时才能编辑」）。
     const hostOf = (id: string) => song.parts.find((x) => x.id === id)?.host;
     const editingHere = !o.foldAll && o.at.paper === paper.id ? o.at.part : null;   // 听模式 = 一律叠起来
-    const absorbed = new Map<string, PartView[]>(), virt = new Map<string, Token[]>(), lowOf = new Map<string, string>();   // 主人 id → 叠进来的房客 / 并好的虚拟 track / 双手谱下面那张的假 id
-    const voice2Of = new Map<string, string>(), shareWith = new Map<string, string>(), startFor = new Map<string, ClefName>();
-    const drumNames = new Map<string, PartView[]>();   // 一家全是鼓：谱前名字的顺序 = 各位的音在鼓谱上的高低（v0.16.4，user 11-07「鼓合租的时候应该是按照代理音符的高低排序前面的名字」）   // 一张谱表 → 它的声部 2 / 声部 2 → 画在哪一位那行 / 虚拟那几条的谱号
     // 按一家收（主人 id）：这张纸上这一家在场的有两位以上就叠——主人不在这张纸上也照样叠，打头的那位在场的当这一行（v0.10.31；user「piano1不在的时候piano2和3没有成功合并」）
     const famOf = (id: string) => hostOf(id) ?? (song.parts.some((x) => x.host === id) ? id : null);
     const famIds = [...new Set(visible.map((p) => famOf(p.id)).filter((x): x is string => !!x))];
     const famHere = (fid: string) => visible.filter((p) => famOf(p.id) === fid);   // 按歌里的顺序（主人在前）
-    for (const fid of famIds) {
-      const ms = famHere(fid); if (ms.length < 2) continue;
-      if (editingHere !== null && famOf(editingHere) === fid) continue;
-      const hp = ms[0], ten = ms.slice(1), drums = ms.every((m) => !!m.perc);
-      // 一家全是鼓：固定敲一件的换成那一件的鼓键（五线鼓谱上它那一线）；音效（不是鼓键）= 一个表里没有的键（画在中间那条线）
-      //   单件乐器（木鱼 / 太鼓…）= 它在一套鼓里的那个键（概念的 mainKey → kitKey）；鼓件 = 它自己的键；都没有（音效）= 一个表里没有的键（画在中间那条线）
-      const kitKeyOf = (m: number): number | null => { const pk = ms[m].perc!; return pk.kind === "one" ? pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0) : null; };
-      const keyOf = drums ? (m: number, p: Pitch): Pitch => { const k = kitKeyOf(m); return k !== null ? spellMidi(k, 0) : p; } : undefined;
-      const tracksM = ms.map((m) => paper.tracks[m.id]);
-      if (drums) {   // 每位的「代表线」：固定敲一件 = 那一键在五线鼓谱上的线；整套鼓 = 这张纸上它的音的中位线；表里没有 = 中间那条线（4）。线小 = 画得高 = 名字在上；一样高按歌里的顺序
-        const lineOfKey = (key: number) => percOf(128, 0, key)?.line ?? 4;
-        const rep = ms.map((_, m) => {
-          const k = kitKeyOf(m); if (k !== null) return lineOfKey(k);
-          const ls = (tracksM[m] ?? []).flatMap((t) => (t.kind === "note" ? allPitches(t as NoteTok) : [])).map((p) => lineOfKey(midiOf(p))).sort((a, b) => a - b);
-          return ls.length ? ls[ls.length >> 1] : 4;
-        });
-        drumNames.set(hp.id, ms.map((_, m) => m).sort((a, b) => rep[a] - rep[b] || a - b).map((m) => ms[m]));
-      }
-      absorbed.set(hp.id, ten);
-      // 一张谱表的一条：谱号按这张谱上所有的音挑；声部 1 = 这一位（符干朝上）、声部 2 = 假的一位 `…~v2`，画在声部 1 那一行上（符干朝下、不画休止 / 小节线 / 名字）
-      const staffOf = (sid: string, mo: (v: 1 | 2) => MergeOpts, all: MergeOpts) => {
-        startFor.set(sid, startClef(mergeTracks(tracksM, all), undefined, null, true));
-        const v1 = mergeTracks(tracksM, mo(1)), v2 = mergeTracks(tracksM, mo(2));
-        virt.set(sid, v1); virtualOut[`${paper.id}:${sid}`] = v1;
-        if (v2.some((t) => t.kind === "note")) { const vid = `${sid}~v2`; virt.set(vid, v2); virtualOut[`${paper.id}:${vid}`] = v2; voice2Of.set(sid, vid); shareWith.set(vid, sid); startFor.set(vid, startFor.get(sid)!); }
-      };
-      if (drums) {   // 一家全是鼓 = 并成一套鼓（五线鼓谱、每件在自己那一线；不分声部，符干按鼓谱表）
-        const whole = mergeTracks(tracksM, { keyOf, hits: true }); virt.set(hp.id, whole); virtualOut[`${paper.id}:${hp.id}`] = whole; startFor.set(hp.id, "G");
-      } else {
-        // 分手 / 分声部按人（merge.ts planHands；user「我现在觉得合租的时候还是智能分左右手和声部的对应关系比较好」「以及你也可以选择合租的时候不用双手谱」）：
-        //   每位一张家谱、按小节换、几个出格的音不乱认领；一张谱读得下 = 不用双手谱；同一张谱上两组人 = 两个声部（上面朝上、下面朝下）
-        // 各位的家谱 = 它拆开来时的谱号（低音谱号 = 下谱；自己是大谱表 = 按音高）
-        // 主人（fid，不管在不在这张纸上）设成大谱表 = 这一行一定双手谱（v0.10.42；user「就是我希望让合租是grand staff调piano1没用需要调2，很奇怪」）
-        const homes = ms.map((m): 0 | 1 | null => { const l = lookAt(paper.id, m.id); if (!l || l.staves === 2) return null; return isFClef(l.first) ? 1 : 0; });   // 这一段它自己的谱号（纸头手选的算上，v0.16.88）
-        const plan = planHands(tracksM, wantsGrand, homes, lookAt(paper.id, fid)?.grand === "explicit"), staffOpts = (S: 0 | 1, top: boolean) => (v: 1 | 2): MergeOpts => ({ pick: plan.pick(S, v), marks: top && v === 1 ? "all" : "bars" });
-        const both = (S: 0 | 1): MergeOpts => ({ pick: (m, t) => plan.pick(S, 1)(m, t) || plan.pick(S, 2)(m, t), marks: "bars" });
-        staffOf(hp.id, staffOpts(0, true), both(0));
-        if (plan.grand) { const lid = `${hp.id}~lo`; lowOf.set(hp.id, lid); staffOf(lid, staffOpts(1, false), both(1)); }   // 下面那张 + 左边一个花括号
-      }
-    }
+    // 这次能叠的那几家（这张纸上看得见的两位以上、没人在写）交给五线谱这一种的「谱种的表」：怎么叠（并成虚拟轨、分手、分声部、鼓并成一套）是五线谱的事（staff/rows.ts）
+    const fold: FoldFamily[] = famIds.filter((fid) => famHere(fid).length >= 2 && !(editingHere !== null && famOf(editingHere) === fid)).map((fid) => ({ host: fid, members: famHere(fid) }));
+    const rowsS = staffRows(paper, visible, fold, lookAt);
+    Object.assign(virtualOut, rowsS.virtualOut);
+    const { absorbed, lowOf, drumNames, loIds, parts } = rowsS;
     // 展开着的那几家（一家里有人在写）：括号画在哪几行（主人 → 这张纸上看得见的最后一位房客）
     const openFams = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p) => p.id) }));
-    const gone = new Set([...absorbed.values()].flat().map((p) => p.id));   // 叠进别人那一行的
-    const parts: PartView[] = visible.filter((p) => !gone.has(p.id)).flatMap((p): PartView[] => {
-      if (!virt.has(p.id)) return [p];
-      const drums = [p, ...absorbed.get(p.id)!].every((m) => !!m.perc), lid = lowOf.get(p.id);   // 虚拟的那一位：谱号自动、不灰任何东西（叠着只是看）
-      const v: PartView = { ...p, staves: undefined, perc: drums ? { kind: "kit" } : undefined, mono: false, xHead: false, ignores: [], lyricMute: undefined };
-      const fake = (id: string): PartView => ({ id, name: "", empty: false, first: false, hidden: false, badges: [] }), v2 = (sid: string) => (voice2Of.has(sid) ? [fake(voice2Of.get(sid)!)] : []);
-      return [v, ...v2(p.id), ...(lid ? [fake(lid), ...v2(lid)] : [])];
-    });
-    const loIds = new Set(lowOf.values());
-    const trackOf = (id: string): Token[] => virt.get(id) ?? paper.tracks[id];
+    const trackOf = (id: string): Token[] => rowsS.virt.get(id) ?? paper.tracks[id];
     // 隐藏的声部（刀 1，施工单 §4 第 5 条；user 11-08「我建议不留空 可以，但是如果是页面模式的话wysiwyg，排版要对齐，要不你换一个UI？」）：
     //   当它不存在——不排行、不留高度，连续和分页一样，预览的版面 = PDF 的版面。提醒归覆盖层：曲段名那一条上一颗不占位的「隐藏 N」（hiddenParts 锚点）。
     if (!parts.length) {   // 这张纸上没有显示的声部：都隐藏了 = 只有曲段名那一条（「隐藏 N」在上面）；压根没声部 = 空一行（覆盖层写「这张纸上没有声部」）
@@ -449,37 +401,15 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(emptyBox ? { empty: emptyBox } : {}) });
       return;
     }
-    // 1. 每个声部的排版单元
-    //   补齐（v0.10.6；user「点小节写这里好」「这样的话要不要做新轨在显示的时候自动补齐小节号。然后自动补的休止也是自动的淡色」「小节号（用小字体）也做一下」）：这张纸上短的声部，后面空着的时值画成淡色休止（按小节切，小节线 / 折行 / 每行开头的小节号都跟着），只画不存；
-    //   点那几个小节 = 光标在尾巴 + lead（写的那一刻才落成休止，song.ts materializeLead）。
+    // 1. 每个声部的排版单元（五线谱：staff/rows.ts staffTracks）。补齐的空小节按这张纸最长那条（框架算长度）
     const lenOf = (t: Token[]) => t.reduce((n, x) => n + (isTimed(x) ? x.dur : 0), 0);
     const lens = parts.map((p) => lenOf(trackOf(p.id) ?? [])), paperLen = Math.max(0, ...lens);
-    const per: StaffTrack[] = parts.map((p, pi): StaffTrack => {
-      const real = trackOf(p.id), vrt = virt.has(p.id), focused = !vrt && o.at.paper === paper.id && o.at.part === p.id, staves: 1 | 2 = p.staves === 2 || (!vrt && lookAt(paper.id, p.id)?.staves === 2) ? 2 : 1;
-      const gap = paperLen - lens[pi];
-      const padT = (dur: number, id: number): Token => ({ kind: "rest", id, dur }) as Token;
-      const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;   // 补齐的一段 = 一个长休止（按小节切开画；光标在里面的位置 = 落点 Slot.lead，不进排版）
-      const u = unitsOf(tokens, { tail: focused && !!o.tailOpen, autoBars, measure: o.measure, sp, ts, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
-      shortBars += u.shortBars;
-      if (staves === 2) {   // 大谱表：每个音在上还是下（按音高自动 / 手动指定）；光标跟着前一个音
-        const stf = staffOfTokens(tokens, 2); let last: Staff = 1;
-        for (const x of u.units) { if (x.kind === "chunk") { x.staff = stf[x.index]; last = x.staff; } else if (x.kind === "head") x.staff = last; }
-      }
-      // 谱号（v0.9.28）：这张纸开头的（声部写了 = 它，没写 = 自动）+ 每个下标处生效的谱号 / 八度线；大谱表照旧上高音下低音
-      const start: ClefName = staves === 2 ? "G" : vrt ? startFor.get(p.id) ?? startClef(tokens, undefined, null, true) : clefStarts.get(paper.id)?.get(p.id) ?? "G";
-      // 自动八度线（v0.9.37；user「自动加」）：在挑好的谱号下，一串很高 / 很低的音画 8va / 15ma / 8vb；手写的说了算；这位关了 / 大谱表 = 不自动。只管画，不存进谱
-      const ds0 = displayStates(tokens, start), ao = staves === 2 || p.perc || shareWith.has(p.id) || (!vrt && lookAt(paper.id, p.id)?.autoOtt === false) ? null : autoOttava(tokens, ds0);   // 声部 2 不另画八度线（和声部 1 同一张谱）
-      const ds = ao ? { clef: ds0.clef, ott: ao.ott, auto: ao.auto as boolean[] | null, runs: ao.runs } : { ...ds0, auto: null as boolean[] | null, runs: [] as { from: number; to: number; shift: 1 | 2 | -1 }[] };
-      const fFam = staves === 2 || isFClef(start) || tokens.some((t) => t.kind === "clef" && isFClef(t.clef));
-      return { p, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, vrt, ...u, pmode: !p.perc ? null : p.perc.kind === "kit" ? "five" : "one", v2: false, hasV2: voice2Of.has(p.id) };
-    });
+    const built = staffTracks(rowsS, { song, paper, lookAt, at: o.at, tailOpen: !!o.tailOpen, autoBars, measure: o.measure, sp, ts, lens, paperLen });
+    const per = built.per, rowHost = built.rowHost; shortBars += built.shortBars;
     // 鼓谱（v0.10.27；user「这个做好之后鼓谱做一下。团子只剩下鼓和音效了」「单乐器一线谱同意」；设计账 §2）：这一行画成几线的鼓谱（StaffTrack.pmode）。
-    //   一位固定敲一件的（鼓件 / 音效）= 一线谱；整套鼓 = 五线鼓谱；一家合租全是鼓 = 并成一套鼓（上面的 keyOf）= 五线鼓谱、每件在自己那一线。
+    //   一位固定敲一件的（鼓件 / 音效）= 一线谱；整套鼓 = 五线鼓谱；一家合租全是鼓 = 并成一套鼓 = 五线鼓谱、每件在自己那一线。
     const pmode = per.map((q) => q.pmode);
-    /** 声部 2 画在哪一位那行（per 里的下标）；-1 = 自己一行。 */
-    const rowHost = per.map((q) => { const h = shareWith.get(q.p.id); return h ? per.findIndex((x) => x.p.id === h) : -1; });
     const hasV2 = per.map((q) => q.hasV2);
-    per.forEach((q, pi) => { q.v2 = rowHost[pi] >= 0; });
     /** 第 s 行开头的谱号（这一行第一个东西那里生效的）。 */
     const clefAtSys = (q: (typeof per)[number], s: number): ClefName => {
       const u = q.units.find((x) => x.system === s && x.index >= 0); if (u) return q.ds.clef[u.index] ?? q.start;

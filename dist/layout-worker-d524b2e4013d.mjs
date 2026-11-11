@@ -5049,130 +5049,6 @@ function resolveSongLooks(song, noAutoGrand) {
   return out;
 }
 
-// src/score/merge.ts
-var HEAD_ARTS = ["ghost", "whisper"];
-var SWITCH = 5;
-function planHands(tracks, wantsGrand2, homes, force = false) {
-  const host = tracks[0] ?? [], time = host.find((t) => t.kind === "time");
-  const bar = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t) => Math.floor(t / bar + 1e-9);
-  const med = (xs) => {
-    const a = [...xs].sort((x, y) => x - y);
-    return a.length ? a[a.length >> 1] : NaN;
-  };
-  const per = tracks.map((toks) => {
-    const notes = [];
-    let t = 0;
-    for (let i = headLen(toks); i < toks.length; i++) {
-      const k = toks[i];
-      if (!isTimed(k)) continue;
-      if (k.kind === "note" && k.pitch) notes.push({ t, m: [k.pitch, ...k.chord ?? []].map(midiOf) });
-      t += k.dur;
-    }
-    return notes;
-  });
-  const mid = per.map((ns) => med(ns.flatMap((n2) => n2.m))), home = mid.map((x, i) => homes?.[i] ?? (Number.isNaN(x) || x >= 60 ? 0 : 1));
-  const present = mid.map((x, i) => Number.isNaN(x) ? -1 : i).filter((i) => i >= 0);
-  if (force && present.length >= 2 && new Set(present.map((i) => home[i])).size < 2) {
-    const order = [...present].sort((x, y) => mid[y] - mid[x]);
-    let cut = 1, g = -1;
-    for (let k = 0; k + 1 < order.length; k++) {
-      const d = mid[order[k]] - mid[order[k + 1]];
-      if (d > g) {
-        g = d;
-        cut = k + 1;
-      }
-    }
-    order.forEach((m, k) => {
-      home[m] = k < cut ? 0 : 1;
-    });
-  }
-  const grand = force || new Set(present.map((i) => home[i])).size > 1 && wantsGrand2(mergeTracks(tracks));
-  const staffCache = /* @__PURE__ */ new Map(), staffOf = (m, ms) => {
-    if (!grand) return 0;
-    const key = `${m}:${ms}`, hit = staffCache.get(key);
-    if (hit !== void 0) return hit;
-    const mm = med(per[m].filter((n2) => meas(n2.t) === ms).flatMap((n2) => n2.m));
-    const st = Number.isNaN(mm) ? home[m] : home[m] === 1 && mm >= 60 + SWITCH ? 0 : home[m] === 0 && mm < 60 - SWITCH ? 1 : home[m];
-    staffCache.set(key, st);
-    return st;
-  };
-  const voiceCache = /* @__PURE__ */ new Map(), voiceOf = (m, ms) => {
-    const key = `${m}:${ms}`, hit = voiceCache.get(key);
-    if (hit !== void 0) return hit;
-    const s2 = staffOf(m, ms), mates = present.filter((j) => staffOf(j, ms) === s2 && per[j].some((n2) => meas(n2.t) === ms)).sort((x, y) => mid[y] - mid[x]);
-    let cut = mates.length;
-    if (mates.length >= 2) {
-      let g = -1;
-      for (let i = 0; i + 1 < mates.length; i++) {
-        const d = mid[mates[i]] - mid[mates[i + 1]];
-        if (d > g) {
-          g = d;
-          cut = i + 1;
-        }
-      }
-    }
-    for (let i = 0; i < mates.length; i++) voiceCache.set(`${mates[i]}:${ms}`, i < cut ? 1 : 2);
-    return voiceCache.get(key) ?? 1;
-  };
-  return { grand, pick: (staff, voice) => (m, t) => staffOf(m, meas(t)) === staff && voiceOf(m, meas(t)) === voice };
-}
-function mergeTracks(tracks, opt = {}) {
-  const { keyOf, pick, hits } = opt, barsOnly = opt.marks === "bars";
-  const host = tracks[0] ?? [], head = host.slice(0, headLen(host));
-  const evs = [], marks = [];
-  let end = 0;
-  tracks.forEach((toks, m) => {
-    let t = 0;
-    for (let i = headLen(toks); i < toks.length; i++) {
-      const k = toks[i];
-      if (isTimed(k)) {
-        if (k.kind === "note" && k.pitch) {
-          const ps = [k.pitch, ...k.chord ?? []].map((p) => keyOf ? keyOf(m, p) : p);
-          if (!pick || pick(m, t)) evs.push({ t0: t, t1: t + k.dur, ps, host: m === 0 && !barsOnly ? k : null, heads: (k.art ?? []).filter((a) => HEAD_ARTS.includes(a)) });
-        }
-        t += k.dur;
-      } else if (m === 0 && k.kind !== "clef" && k.kind !== "ottava" && (!barsOnly || k.kind === "bar" || k.kind === "key" || k.kind === "time")) marks.push({ t, tok: k });
-    }
-    end = Math.max(end, t);
-  });
-  const cuts = [.../* @__PURE__ */ new Set([0, end, ...evs.flatMap((e) => [e.t0, e.t1]), ...marks.map((x) => x.t)])].filter((x) => x <= end).sort((a, b) => a - b);
-  const out = [...head];
-  let id = -1e3, prevChord = false, prevOn = [];
-  for (let i = 0; i < cuts.length; i++) {
-    const a = cuts[i], b = cuts[i + 1];
-    for (const x of marks) if (x.t === a) out.push(x.tok);
-    if (b === void 0) break;
-    let on = evs.filter((e) => e.t0 <= a && e.t1 > a);
-    if (hits && on.length) {
-      const struck = on.filter((e) => e.t0 === a);
-      on = struck.length ? struck : prevChord && on.length === prevOn.length && on.every((e) => prevOn.includes(e)) ? on : [];
-    }
-    if (!on.length) {
-      const last = out[out.length - 1];
-      if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b - a) };
-      else out.push({ kind: "rest", id: id--, dur: b - a });
-      prevChord = false;
-      prevOn = [];
-      continue;
-    }
-    const freshK = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set();
-    for (const e of on) if (e.t0 === a) for (const p of e.ps) freshK.add(midiOf(p));
-    const all = on.flatMap((e) => e.ps).filter((p) => {
-      const k = midiOf(p);
-      if (seen.has(k)) return false;
-      seen.add(k);
-      return true;
-    }).sort((x, y) => midiOf(y) - midiOf(x));
-    const ps = all;
-    const fresh = ps.some((p) => freshK.has(midiOf(p))), h = on.find((e) => e.host && e.t0 === a)?.host ?? null;
-    const src = on.filter((e) => e.t0 === a).length ? on.filter((e) => e.t0 === a) : on, art = HEAD_ARTS.filter((x) => src.every((e) => e.heads.includes(x)));
-    out.push({ kind: "note", id: id--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b - a, lyric: h?.lyric ?? null, ...h?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art.length ? { art } : {} });
-    prevChord = true;
-    prevOn = on;
-  }
-  return out;
-}
-
 // src/render/frame/params.ts
 var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
@@ -5565,6 +5441,243 @@ function measureTrack(q) {
 var clefW = (q) => q.fFam ? W.fClef : W.gClef;
 var lineStartWidth = (q, key, first, base) => base + 0.6 + clefW(q) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
 
+// src/score/merge.ts
+var HEAD_ARTS = ["ghost", "whisper"];
+var SWITCH = 5;
+function planHands(tracks, wantsGrand2, homes, force = false) {
+  const host = tracks[0] ?? [], time = host.find((t) => t.kind === "time");
+  const bar = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t) => Math.floor(t / bar + 1e-9);
+  const med = (xs) => {
+    const a = [...xs].sort((x, y) => x - y);
+    return a.length ? a[a.length >> 1] : NaN;
+  };
+  const per = tracks.map((toks) => {
+    const notes = [];
+    let t = 0;
+    for (let i = headLen(toks); i < toks.length; i++) {
+      const k = toks[i];
+      if (!isTimed(k)) continue;
+      if (k.kind === "note" && k.pitch) notes.push({ t, m: [k.pitch, ...k.chord ?? []].map(midiOf) });
+      t += k.dur;
+    }
+    return notes;
+  });
+  const mid = per.map((ns) => med(ns.flatMap((n2) => n2.m))), home = mid.map((x, i) => homes?.[i] ?? (Number.isNaN(x) || x >= 60 ? 0 : 1));
+  const present = mid.map((x, i) => Number.isNaN(x) ? -1 : i).filter((i) => i >= 0);
+  if (force && present.length >= 2 && new Set(present.map((i) => home[i])).size < 2) {
+    const order = [...present].sort((x, y) => mid[y] - mid[x]);
+    let cut = 1, g = -1;
+    for (let k = 0; k + 1 < order.length; k++) {
+      const d = mid[order[k]] - mid[order[k + 1]];
+      if (d > g) {
+        g = d;
+        cut = k + 1;
+      }
+    }
+    order.forEach((m, k) => {
+      home[m] = k < cut ? 0 : 1;
+    });
+  }
+  const grand = force || new Set(present.map((i) => home[i])).size > 1 && wantsGrand2(mergeTracks(tracks));
+  const staffCache = /* @__PURE__ */ new Map(), staffOf = (m, ms) => {
+    if (!grand) return 0;
+    const key = `${m}:${ms}`, hit = staffCache.get(key);
+    if (hit !== void 0) return hit;
+    const mm = med(per[m].filter((n2) => meas(n2.t) === ms).flatMap((n2) => n2.m));
+    const st = Number.isNaN(mm) ? home[m] : home[m] === 1 && mm >= 60 + SWITCH ? 0 : home[m] === 0 && mm < 60 - SWITCH ? 1 : home[m];
+    staffCache.set(key, st);
+    return st;
+  };
+  const voiceCache = /* @__PURE__ */ new Map(), voiceOf = (m, ms) => {
+    const key = `${m}:${ms}`, hit = voiceCache.get(key);
+    if (hit !== void 0) return hit;
+    const s2 = staffOf(m, ms), mates = present.filter((j) => staffOf(j, ms) === s2 && per[j].some((n2) => meas(n2.t) === ms)).sort((x, y) => mid[y] - mid[x]);
+    let cut = mates.length;
+    if (mates.length >= 2) {
+      let g = -1;
+      for (let i = 0; i + 1 < mates.length; i++) {
+        const d = mid[mates[i]] - mid[mates[i + 1]];
+        if (d > g) {
+          g = d;
+          cut = i + 1;
+        }
+      }
+    }
+    for (let i = 0; i < mates.length; i++) voiceCache.set(`${mates[i]}:${ms}`, i < cut ? 1 : 2);
+    return voiceCache.get(key) ?? 1;
+  };
+  return { grand, pick: (staff, voice) => (m, t) => staffOf(m, meas(t)) === staff && voiceOf(m, meas(t)) === voice };
+}
+function mergeTracks(tracks, opt = {}) {
+  const { keyOf, pick, hits } = opt, barsOnly = opt.marks === "bars";
+  const host = tracks[0] ?? [], head = host.slice(0, headLen(host));
+  const evs = [], marks = [];
+  let end = 0;
+  tracks.forEach((toks, m) => {
+    let t = 0;
+    for (let i = headLen(toks); i < toks.length; i++) {
+      const k = toks[i];
+      if (isTimed(k)) {
+        if (k.kind === "note" && k.pitch) {
+          const ps = [k.pitch, ...k.chord ?? []].map((p) => keyOf ? keyOf(m, p) : p);
+          if (!pick || pick(m, t)) evs.push({ t0: t, t1: t + k.dur, ps, host: m === 0 && !barsOnly ? k : null, heads: (k.art ?? []).filter((a) => HEAD_ARTS.includes(a)) });
+        }
+        t += k.dur;
+      } else if (m === 0 && k.kind !== "clef" && k.kind !== "ottava" && (!barsOnly || k.kind === "bar" || k.kind === "key" || k.kind === "time")) marks.push({ t, tok: k });
+    }
+    end = Math.max(end, t);
+  });
+  const cuts = [.../* @__PURE__ */ new Set([0, end, ...evs.flatMap((e) => [e.t0, e.t1]), ...marks.map((x) => x.t)])].filter((x) => x <= end).sort((a, b) => a - b);
+  const out = [...head];
+  let id = -1e3, prevChord = false, prevOn = [];
+  for (let i = 0; i < cuts.length; i++) {
+    const a = cuts[i], b = cuts[i + 1];
+    for (const x of marks) if (x.t === a) out.push(x.tok);
+    if (b === void 0) break;
+    let on = evs.filter((e) => e.t0 <= a && e.t1 > a);
+    if (hits && on.length) {
+      const struck = on.filter((e) => e.t0 === a);
+      on = struck.length ? struck : prevChord && on.length === prevOn.length && on.every((e) => prevOn.includes(e)) ? on : [];
+    }
+    if (!on.length) {
+      const last = out[out.length - 1];
+      if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b - a) };
+      else out.push({ kind: "rest", id: id--, dur: b - a });
+      prevChord = false;
+      prevOn = [];
+      continue;
+    }
+    const freshK = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set();
+    for (const e of on) if (e.t0 === a) for (const p of e.ps) freshK.add(midiOf(p));
+    const all = on.flatMap((e) => e.ps).filter((p) => {
+      const k = midiOf(p);
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).sort((x, y) => midiOf(y) - midiOf(x));
+    const ps = all;
+    const fresh = ps.some((p) => freshK.has(midiOf(p))), h = on.find((e) => e.host && e.t0 === a)?.host ?? null;
+    const src = on.filter((e) => e.t0 === a).length ? on.filter((e) => e.t0 === a) : on, art = HEAD_ARTS.filter((x) => src.every((e) => e.heads.includes(x)));
+    out.push({ kind: "note", id: id--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b - a, lyric: h?.lyric ?? null, ...h?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art.length ? { art } : {} });
+    prevChord = true;
+    prevOn = on;
+  }
+  return out;
+}
+
+// src/render/staff/rows.ts
+function staffRows(paper, visible, fold, lookAt) {
+  const absorbed = /* @__PURE__ */ new Map(), virt = /* @__PURE__ */ new Map(), lowOf = /* @__PURE__ */ new Map();
+  const voice2Of = /* @__PURE__ */ new Map(), shareWith = /* @__PURE__ */ new Map(), startFor = /* @__PURE__ */ new Map();
+  const drumNames = /* @__PURE__ */ new Map(), virtualOut = {};
+  for (const { host: fid, members: ms } of fold) {
+    const hp = ms[0], ten = ms.slice(1), drums = ms.every((m) => !!m.perc);
+    const kitKeyOf = (m) => {
+      const pk = ms[m].perc;
+      return pk.kind === "one" ? pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0) : null;
+    };
+    const keyOf = drums ? (m, p) => {
+      const k = kitKeyOf(m);
+      return k !== null ? spellMidi(k, 0) : p;
+    } : void 0;
+    const tracksM = ms.map((m) => paper.tracks[m.id]);
+    if (drums) {
+      const lineOfKey = (key) => percOf(128, 0, key)?.line ?? 4;
+      const rep = ms.map((_, m) => {
+        const k = kitKeyOf(m);
+        if (k !== null) return lineOfKey(k);
+        const ls = (tracksM[m] ?? []).flatMap((t) => t.kind === "note" ? allPitches(t) : []).map((p) => lineOfKey(midiOf(p))).sort((a, b) => a - b);
+        return ls.length ? ls[ls.length >> 1] : 4;
+      });
+      drumNames.set(hp.id, ms.map((_, m) => m).sort((a, b) => rep[a] - rep[b] || a - b).map((m) => ms[m]));
+    }
+    absorbed.set(hp.id, ten);
+    const staffOf = (sid, mo, all) => {
+      startFor.set(sid, startClef(mergeTracks(tracksM, all), void 0, null, true));
+      const v1 = mergeTracks(tracksM, mo(1)), v2 = mergeTracks(tracksM, mo(2));
+      virt.set(sid, v1);
+      virtualOut[`${paper.id}:${sid}`] = v1;
+      if (v2.some((t) => t.kind === "note")) {
+        const vid = `${sid}~v2`;
+        virt.set(vid, v2);
+        virtualOut[`${paper.id}:${vid}`] = v2;
+        voice2Of.set(sid, vid);
+        shareWith.set(vid, sid);
+        startFor.set(vid, startFor.get(sid));
+      }
+    };
+    if (drums) {
+      const whole = mergeTracks(tracksM, { keyOf, hits: true });
+      virt.set(hp.id, whole);
+      virtualOut[`${paper.id}:${hp.id}`] = whole;
+      startFor.set(hp.id, "G");
+    } else {
+      const homes = ms.map((m) => {
+        const l = lookAt(paper.id, m.id);
+        if (!l || l.staves === 2) return null;
+        return isFClef(l.first) ? 1 : 0;
+      });
+      const plan = planHands(tracksM, wantsGrand, homes, lookAt(paper.id, fid)?.grand === "explicit"), staffOpts = (S2, top) => (v) => ({ pick: plan.pick(S2, v), marks: top && v === 1 ? "all" : "bars" });
+      const both = (S2) => ({ pick: (m, t) => plan.pick(S2, 1)(m, t) || plan.pick(S2, 2)(m, t), marks: "bars" });
+      staffOf(hp.id, staffOpts(0, true), both(0));
+      if (plan.grand) {
+        const lid = `${hp.id}~lo`;
+        lowOf.set(hp.id, lid);
+        staffOf(lid, staffOpts(1, false), both(1));
+      }
+    }
+  }
+  const gone = new Set([...absorbed.values()].flat().map((p) => p.id));
+  const parts = visible.filter((p) => !gone.has(p.id)).flatMap((p) => {
+    if (!virt.has(p.id)) return [p];
+    const drums = [p, ...absorbed.get(p.id)].every((m) => !!m.perc), lid = lowOf.get(p.id);
+    const v = { ...p, staves: void 0, perc: drums ? { kind: "kit" } : void 0, mono: false, xHead: false, ignores: [], lyricMute: void 0 };
+    const fake = (id) => ({ id, name: "", empty: false, first: false, hidden: false, badges: [] }), v2 = (sid) => voice2Of.has(sid) ? [fake(voice2Of.get(sid))] : [];
+    return [v, ...v2(p.id), ...lid ? [fake(lid), ...v2(lid)] : []];
+  });
+  return { parts, absorbed, virt, lowOf, voice2Of, shareWith, startFor, drumNames, loIds: new Set(lowOf.values()), virtualOut };
+}
+function staffTracks(rows, c) {
+  const { paper, lookAt } = c;
+  const trackOf = (id) => rows.virt.get(id) ?? paper.tracks[id];
+  const clefStart = (partId) => {
+    const l = lookAt(paper.id, partId);
+    return l && l.staves === 1 ? l.clef : void 0;
+  };
+  let shortBars = 0;
+  const per = rows.parts.map((p, pi) => {
+    const real = trackOf(p.id), vrt = rows.virt.has(p.id), focused = !vrt && c.at.paper === paper.id && c.at.part === p.id, staves = p.staves === 2 || !vrt && lookAt(paper.id, p.id)?.staves === 2 ? 2 : 1;
+    const gap = c.paperLen - c.lens[pi];
+    const padT = (dur, id) => ({ kind: "rest", id, dur });
+    const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;
+    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.song.lyricFit !== "lyrics", padFrom: real.length });
+    shortBars += u.shortBars;
+    if (staves === 2) {
+      const stf = staffOfTokens(tokens, 2);
+      let last = 1;
+      for (const x of u.units) {
+        if (x.kind === "chunk") {
+          x.staff = stf[x.index];
+          last = x.staff;
+        } else if (x.kind === "head") x.staff = last;
+      }
+    }
+    const start = staves === 2 ? "G" : vrt ? rows.startFor.get(p.id) ?? startClef(tokens, void 0, null, true) : clefStart(p.id) ?? "G";
+    const ds0 = displayStates(tokens, start), ao = staves === 2 || p.perc || rows.shareWith.has(p.id) || !vrt && lookAt(paper.id, p.id)?.autoOtt === false ? null : autoOttava(tokens, ds0);
+    const ds = ao ? { clef: ds0.clef, ott: ao.ott, auto: ao.auto, runs: ao.runs } : { ...ds0, auto: null, runs: [] };
+    const fFam = staves === 2 || isFClef(start) || tokens.some((t) => t.kind === "clef" && isFClef(t.clef));
+    return { p, tokens, realLen: real.length, realTicks: c.lens[pi], focused, staves, start, ds, fFam, vrt, ...u, pmode: !p.perc ? null : p.perc.kind === "kit" ? "five" : "one", v2: false, hasV2: rows.voice2Of.has(p.id) };
+  });
+  const rowHost = per.map((q) => {
+    const h = rows.shareWith.get(q.p.id);
+    return h ? per.findIndex((x) => x.p.id === h) : -1;
+  });
+  per.forEach((q, pi) => {
+    q.v2 = rowHost[pi] >= 0;
+  });
+  return { per, rowHost, shortBars };
+}
+
 // src/render/frame/arrange.ts
 function mergeColumns(tracks) {
   const map = /* @__PURE__ */ new Map();
@@ -5668,10 +5781,6 @@ function engrave(song, o) {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   const looks = resolveSongLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   const lookAt = (paperId, partId) => looks.get(paperId)?.get(partId);
-  const clefStarts = { get: (paperId) => ({ get: (partId) => {
-    const l = lookAt(paperId, partId);
-    return l && l.staves === 1 ? l.clef : void 0;
-  } }) };
   if (o.inC) {
     const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id));
     song = songInC(song, (id) => perc.has(id));
@@ -5878,83 +5987,15 @@ function engrave(song, o) {
     const present = o.parts.filter((p) => paper.tracks[p.id]), visible = present.filter((p) => !p.hidden), hiddenParts = present.filter((p) => p.hidden);
     const hostOf = (id) => song.parts.find((x) => x.id === id)?.host;
     const editingHere = !o.foldAll && o.at.paper === paper.id ? o.at.part : null;
-    const absorbed = /* @__PURE__ */ new Map(), virt = /* @__PURE__ */ new Map(), lowOf = /* @__PURE__ */ new Map();
-    const voice2Of = /* @__PURE__ */ new Map(), shareWith = /* @__PURE__ */ new Map(), startFor = /* @__PURE__ */ new Map();
-    const drumNames = /* @__PURE__ */ new Map();
     const famOf = (id) => hostOf(id) ?? (song.parts.some((x) => x.host === id) ? id : null);
     const famIds = [...new Set(visible.map((p) => famOf(p.id)).filter((x) => !!x))];
     const famHere = (fid) => visible.filter((p) => famOf(p.id) === fid);
-    for (const fid of famIds) {
-      const ms = famHere(fid);
-      if (ms.length < 2) continue;
-      if (editingHere !== null && famOf(editingHere) === fid) continue;
-      const hp = ms[0], ten = ms.slice(1), drums = ms.every((m) => !!m.perc);
-      const kitKeyOf = (m) => {
-        const pk = ms[m].perc;
-        return pk.kind === "one" ? pk.info.kitKey ?? (pk.info.staff === 5 && !pk.info.from ? pk.key : 0) : null;
-      };
-      const keyOf = drums ? (m, p) => {
-        const k = kitKeyOf(m);
-        return k !== null ? spellMidi(k, 0) : p;
-      } : void 0;
-      const tracksM = ms.map((m) => paper.tracks[m.id]);
-      if (drums) {
-        const lineOfKey = (key) => percOf(128, 0, key)?.line ?? 4;
-        const rep = ms.map((_, m) => {
-          const k = kitKeyOf(m);
-          if (k !== null) return lineOfKey(k);
-          const ls = (tracksM[m] ?? []).flatMap((t) => t.kind === "note" ? allPitches(t) : []).map((p) => lineOfKey(midiOf(p))).sort((a, b) => a - b);
-          return ls.length ? ls[ls.length >> 1] : 4;
-        });
-        drumNames.set(hp.id, ms.map((_, m) => m).sort((a, b) => rep[a] - rep[b] || a - b).map((m) => ms[m]));
-      }
-      absorbed.set(hp.id, ten);
-      const staffOf = (sid, mo, all) => {
-        startFor.set(sid, startClef(mergeTracks(tracksM, all), void 0, null, true));
-        const v1 = mergeTracks(tracksM, mo(1)), v2 = mergeTracks(tracksM, mo(2));
-        virt.set(sid, v1);
-        virtualOut[`${paper.id}:${sid}`] = v1;
-        if (v2.some((t) => t.kind === "note")) {
-          const vid = `${sid}~v2`;
-          virt.set(vid, v2);
-          virtualOut[`${paper.id}:${vid}`] = v2;
-          voice2Of.set(sid, vid);
-          shareWith.set(vid, sid);
-          startFor.set(vid, startFor.get(sid));
-        }
-      };
-      if (drums) {
-        const whole = mergeTracks(tracksM, { keyOf, hits: true });
-        virt.set(hp.id, whole);
-        virtualOut[`${paper.id}:${hp.id}`] = whole;
-        startFor.set(hp.id, "G");
-      } else {
-        const homes = ms.map((m) => {
-          const l = lookAt(paper.id, m.id);
-          if (!l || l.staves === 2) return null;
-          return isFClef(l.first) ? 1 : 0;
-        });
-        const plan = planHands(tracksM, wantsGrand, homes, lookAt(paper.id, fid)?.grand === "explicit"), staffOpts = (S2, top) => (v) => ({ pick: plan.pick(S2, v), marks: top && v === 1 ? "all" : "bars" });
-        const both = (S2) => ({ pick: (m, t) => plan.pick(S2, 1)(m, t) || plan.pick(S2, 2)(m, t), marks: "bars" });
-        staffOf(hp.id, staffOpts(0, true), both(0));
-        if (plan.grand) {
-          const lid = `${hp.id}~lo`;
-          lowOf.set(hp.id, lid);
-          staffOf(lid, staffOpts(1, false), both(1));
-        }
-      }
-    }
+    const fold = famIds.filter((fid) => famHere(fid).length >= 2 && !(editingHere !== null && famOf(editingHere) === fid)).map((fid) => ({ host: fid, members: famHere(fid) }));
+    const rowsS = staffRows(paper, visible, fold, lookAt);
+    Object.assign(virtualOut, rowsS.virtualOut);
+    const { absorbed, lowOf, drumNames, loIds, parts } = rowsS;
     const openFams = famIds.filter((fid) => famHere(fid).length >= 2 && !absorbed.has(famHere(fid)[0].id)).map((fid) => ({ host: fid, ids: famHere(fid).map((p) => p.id) }));
-    const gone = new Set([...absorbed.values()].flat().map((p) => p.id));
-    const parts = visible.filter((p) => !gone.has(p.id)).flatMap((p) => {
-      if (!virt.has(p.id)) return [p];
-      const drums = [p, ...absorbed.get(p.id)].every((m) => !!m.perc), lid = lowOf.get(p.id);
-      const v = { ...p, staves: void 0, perc: drums ? { kind: "kit" } : void 0, mono: false, xHead: false, ignores: [], lyricMute: void 0 };
-      const fake = (id) => ({ id, name: "", empty: false, first: false, hidden: false, badges: [] }), v2 = (sid) => voice2Of.has(sid) ? [fake(voice2Of.get(sid))] : [];
-      return [v, ...v2(p.id), ...lid ? [fake(lid), ...v2(lid)] : []];
-    });
-    const loIds = new Set(lowOf.values());
-    const trackOf = (id) => virt.get(id) ?? paper.tracks[id];
+    const trackOf = (id) => rowsS.virt.get(id) ?? paper.tracks[id];
     if (!parts.length) {
       drawPaperTitle(T(hiddenParts.length ? 0 : 3.2));
       let emptyBox;
@@ -5967,38 +6008,11 @@ function engrave(song, o) {
     }
     const lenOf = (t) => t.reduce((n3, x) => n3 + (isTimed(x) ? x.dur : 0), 0);
     const lens = parts.map((p) => lenOf(trackOf(p.id) ?? [])), paperLen = Math.max(0, ...lens);
-    const per = parts.map((p, pi) => {
-      const real = trackOf(p.id), vrt = virt.has(p.id), focused = !vrt && o.at.paper === paper.id && o.at.part === p.id, staves = p.staves === 2 || !vrt && lookAt(paper.id, p.id)?.staves === 2 ? 2 : 1;
-      const gap = paperLen - lens[pi];
-      const padT = (dur, id) => ({ kind: "rest", id, dur });
-      const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;
-      const u = unitsOf(tokens, { tail: focused && !!o.tailOpen, autoBars, measure: o.measure, sp, ts, rhythm: song.lyricFit !== "lyrics", padFrom: real.length });
-      shortBars += u.shortBars;
-      if (staves === 2) {
-        const stf = staffOfTokens(tokens, 2);
-        let last = 1;
-        for (const x of u.units) {
-          if (x.kind === "chunk") {
-            x.staff = stf[x.index];
-            last = x.staff;
-          } else if (x.kind === "head") x.staff = last;
-        }
-      }
-      const start = staves === 2 ? "G" : vrt ? startFor.get(p.id) ?? startClef(tokens, void 0, null, true) : clefStarts.get(paper.id)?.get(p.id) ?? "G";
-      const ds0 = displayStates(tokens, start), ao = staves === 2 || p.perc || shareWith.has(p.id) || !vrt && lookAt(paper.id, p.id)?.autoOtt === false ? null : autoOttava(tokens, ds0);
-      const ds = ao ? { clef: ds0.clef, ott: ao.ott, auto: ao.auto, runs: ao.runs } : { ...ds0, auto: null, runs: [] };
-      const fFam = staves === 2 || isFClef(start) || tokens.some((t) => t.kind === "clef" && isFClef(t.clef));
-      return { p, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, vrt, ...u, pmode: !p.perc ? null : p.perc.kind === "kit" ? "five" : "one", v2: false, hasV2: voice2Of.has(p.id) };
-    });
+    const built = staffTracks(rowsS, { song, paper, lookAt, at: o.at, tailOpen: !!o.tailOpen, autoBars, measure: o.measure, sp, ts, lens, paperLen });
+    const per = built.per, rowHost = built.rowHost;
+    shortBars += built.shortBars;
     const pmode = per.map((q) => q.pmode);
-    const rowHost = per.map((q) => {
-      const h = shareWith.get(q.p.id);
-      return h ? per.findIndex((x) => x.p.id === h) : -1;
-    });
     const hasV2 = per.map((q) => q.hasV2);
-    per.forEach((q, pi) => {
-      q.v2 = rowHost[pi] >= 0;
-    });
     const clefAtSys = (q, s2) => {
       const u = q.units.find((x) => x.system === s2 && x.index >= 0);
       if (u) return q.ds.clef[u.index] ?? q.start;
@@ -7144,4 +7158,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-f0f55c40efc3.mjs.map
+//# sourceMappingURL=layout-worker-d524b2e4013d.mjs.map
