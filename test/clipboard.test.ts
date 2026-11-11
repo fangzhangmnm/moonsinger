@@ -90,3 +90,12 @@ describe("复制 / 剪切带上第一个音身上的记号（2026-10-08 深夜�
     eq(JSON.stringify(cut.toks.map((t) => t.kind)), JSON.stringify(["dyn", "note"]));
   });
 });
+
+// 音级读法搬到核心（谱面分家第四刀，2026-11-11）：八度基准「点最少」
+import { fewestDotsBase } from "../src/score/degree.ts";
+describe("音级读法：八度基准（点最少）", () => {
+  it("一串音的八度偏移 → 点的总数最少的基准；一样少取离 0 近的；没有音 = 0", () => {
+    eq(fewestDotsBase([]), 0); eq(fewestDotsBase([0, 0, 1]), 0); eq(fewestDotsBase([1, 1, 2]), 1); eq(fewestDotsBase([-1, -1, 0]), -1);
+    eq(fewestDotsBase([-1, 1]), 0, "两边一样多 = 0（中位数那一段含 0）"); eq(fewestDotsBase([1, 2]), 1, "一样少取离 0 近的"); eq(fewestDotsBase([-2, -1]), -1);
+  });
+});

@@ -6,7 +6,7 @@
 //   记号：[1=G] 调号、[3/4] 拍号、[T=90] 速度；歌词里的空格 / 斜杠不许（歌词只认到下一个空格）。
 //   写不出的时值（连音 / 奇怪的 tick 数）写成 (tick)：1(560)。
 import { type Dyn, type EditorState, type Token, type NoteTok, type Timed, type Repeat, type NavWhat, NAV_LABEL, tr, withTrack, headLen, keyAt, isMark, TPQ, allPitches, withPitches, materializeLead } from "./song.ts";
-import { type Pitch, STEPS, type Step, stepIndex, diatonicIndex, tonicStepIndex, keyAlter, KEY_LABEL, MINOR_LABEL } from "./pitch.ts";
+import { stepIndex, KEY_LABEL, MINOR_LABEL } from "./pitch.ts";
 
 /** 选中的那一段（没选中 = null）。原样切片，id 原样（贴的时候重编）。 */
 export function copyTokens(st: EditorState): Token[] | null {
@@ -48,16 +48,9 @@ export function selectAll(st: EditorState): EditorState {
 
 // ── 简谱文字 ──────────────────────────────────────────────────────────────
 
-/** 音 → 相对 fifths 这个调的简谱：音级 1–7、八度偏移、相对调内音的升降。 */
-export function toDegree(p: Pitch, fifths: number): { degree: number; shift: number; acc: number } {
-  const tonicD = 4 * 7 + tonicStepIndex(fifths), d = diatonicIndex(p) - tonicD;
-  return { degree: ((d % 7) + 7) % 7 + 1, shift: Math.floor(d / 7), acc: p.alter - keyAlter(p.step, fifths) };
-}
-/** 简谱 → 音（相对 fifths）。 */
-export function fromDegree(degree: number, shift: number, acc: number, fifths: number): Pitch {
-  const n = tonicStepIndex(fifths) + degree - 1, s = n % 7, step = STEPS[s] as Step;
-  return { step, alter: keyAlter(step, fifths) + acc, octave: 4 + Math.floor(n / 7) + shift };
-}
+// 音级读法（toDegree / fromDegree）2026-11-11 搬到核心 src/score/degree.ts（简谱的画法和这里共用一份）；这里转手导出，老的 import 不用改。
+export { toDegree, fromDegree } from "./degree.ts";
+import { toDegree, fromDegree } from "./degree.ts";
 const DUR_SUFFIX: [number, string][] = [[TPQ * 4, " - - -"], [TPQ * 3, " - -"], [TPQ * 2, " -"], [TPQ * 1.5, "."], [TPQ, ""], [TPQ * 0.75, "_."], [TPQ / 2, "_"], [TPQ / 4, "__"], [TPQ / 8, "___"]];
 function durText(dur: number): string {
   const hit = DUR_SUFFIX.find(([d]) => d === dur);
