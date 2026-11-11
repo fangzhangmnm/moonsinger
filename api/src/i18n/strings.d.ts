@@ -310,6 +310,12 @@ export declare const S: {
     readonly "\u8FD9\u4E00\u6BB5\u8C03\u53F7\u4E00\u6837\u7684 {n} \u4E2A\u58F0\u90E8\u4E00\u8D77\u6539\u4E86": {
         readonly en: "Changed {n} parts in this section that share this key signature";
     };
+    readonly "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4": {
+        readonly en: "Broken chords: read";
+    };
+    readonly "\u5206\u89E3\u548C\u5F26\uFF1A\u4E0D\u8BA4": {
+        readonly en: "Broken chords: ignored";
+    };
     readonly 乐谱: {
         readonly en: "Score";
     };
@@ -327,6 +333,9 @@ export declare const S: {
     };
     readonly "{name} \u00B7 {size}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002": {
         readonly en: "{name} · {size}. Download it or share it to Files; open it later from the menu.";
+    };
+    readonly "\u8FD9\u9996\u6B4C\u91CC\u539F\u6765\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{size}\uFF09\u4E0D\u518D\u5B58\u8FDB\u6B4C\u91CC\u4E86\uFF1A\u5B83\u5DF2\u7ECF\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u7167\u6837\u80FD\u542C\u3001\u80FD\u518D\u5BFC\u51FA\u3002": {
+        readonly en: "The mp3 that used to be stored inside this song ({size}) is no longer saved into the song file. It is remembered on this device, so you can still play it from the library and export it again.";
     };
     readonly 连线: {
         readonly en: "Slur";
@@ -562,6 +571,9 @@ export declare const S: {
     readonly 没有可重做的: {
         readonly en: "Nothing to redo";
     };
+    readonly 看谱: {
+        readonly en: "Reading";
+    };
     readonly 休息室: {
         readonly en: "Green room";
     };
@@ -661,6 +673,39 @@ export declare const S: {
     readonly 知道了: {
         readonly en: "Got it";
     };
+    readonly "\u51C6\u5907\u2026": {
+        readonly en: "Preparing…";
+    };
+    readonly 取消: {
+        readonly en: "Cancel";
+    };
+    readonly "\u6B63\u5728\u53D6\u6D88\u2026": {
+        readonly en: "Cancelling…";
+    };
+    readonly "\u6B63\u5728\u6E32\u67D3\u2026": {
+        readonly en: "Rendering…";
+    };
+    readonly "\u5DF2\u7ECF\u5728\u6E32\u67D3\u7F13\u5B58\u91CC\u4E86\uFF08\u5185\u5BB9\u6CA1\u53D8\uFF09": {
+        readonly en: "Already in the render cache (nothing changed)";
+    };
+    readonly "\u6E32\u597D\u4E86\uFF0C\u4F46\u6CA1\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u5B58\u50A8\u6EE1\u4E86\u6216\u8005\u662F\u9690\u79C1\u6A21\u5F0F\uFF09": {
+        readonly en: "Rendered, but it could not be kept in the render cache (storage full or private browsing)";
+    };
+    readonly "\u6E32\u597D\u4E86\uFF0C\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF1A\u5B58\u4E0B\u53BB\u4E4B\u540E\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u542C": {
+        readonly en: "Rendered into the render cache: once you save, you can play it from the library cover";
+    };
+    readonly "\u6E32\u597D\u4E86\uFF0C\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C": {
+        readonly en: "Rendered into the render cache: play it straight from this song’s cover in the library";
+    };
+    readonly 渲染取消了: {
+        readonly en: "Rendering cancelled";
+    };
+    readonly "\u6E32\u4E0D\u4E86\uFF1A{Error}": {
+        readonly en: "Couldn't render: {Error}";
+    };
+    readonly "\u6B63\u5728\u6E32\u67D3\u300C{stem}\u300D\u2026": {
+        readonly en: "Rendering “{stem}”…";
+    };
     readonly "\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09": {
         readonly en: "Export MP3";
     };
@@ -681,6 +726,24 @@ export declare const S: {
     };
     readonly "\u7B2C {p} \u5F20": {
         readonly en: "Sheet {p}";
+    };
+    readonly 放进渲染缓存: {
+        readonly en: "Keep in render cache";
+    };
+    readonly 放进去: {
+        readonly en: "Keep";
+    };
+    readonly "\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u8BBE\u7F6E\u91CC\u80FD\u5220": {
+        readonly en: "Play it from this song’s cover in the library; delete it in Settings";
+    };
+    readonly 不放: {
+        readonly en: "Don't keep";
+    };
+    readonly "\u53EA\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u4E0D\u7559": {
+        readonly en: "Export this copy only, keep nothing";
+    };
+    readonly "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002": {
+        readonly en: "This device remembers the last render of exactly this, and nothing has changed: you get it right away, no waiting.";
     };
     readonly "\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002": {
         readonly en: "License: {fellBack}. Written into the mp3 tags along with the credits.";
@@ -751,23 +814,11 @@ export declare const S: {
     readonly "\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B": {
         readonly en: "Tsukuyomi-chan's credit and terms of use, plus the authors and licenses of the instrument catalog icons, all in one page";
     };
-    readonly 看谱方式: {
-        readonly en: "How to read the score";
+    readonly "\u770B\u8C31\u65B9\u5F0F\u3001\u548C\u5F26\u6807\u7EA7\u6570": {
+        readonly en: "How to read the score, chord degrees";
     };
-    readonly 专业: {
-        readonly en: "Standard";
-    };
-    readonly "\u6309 C \u8C03\u770B\uFF081=X\uFF09": {
-        readonly en: "Read in C (1=X)";
-    };
-    readonly "\u4E13\u4E1A = \u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D\u3002\u6309 C \u8C03\u770B = \u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\u3002\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8\uFF1B\u5BFC\u51FA\u7684 PDF \u7167\u5B9E\u9645\u7684\u8C03\u5370\u3002\u53EA\u7BA1\u8FD9\u53F0\u8BBE\u5907\u3002": {
-        readonly en: "Standard = the score is drawn in its real key; the keys show note names large. Read in C = the score is drawn in C, with “1=original key” above each key signature; the keys show scale degrees large. Key positions never move; exported PDFs are printed in the real key. Applies to this device only.";
-    };
-    readonly 和弦标级数: {
-        readonly en: "Chord degrees";
-    };
-    readonly "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009\u3002\u53EA\u662F\u663E\u793A\uFF0C\u4E0D\u8FDB\u6B4C\u3001\u4E0D\u5370\u3002": {
-        readonly en: "Writes above each stacked chord which degree it is in this key (V7, ii, ♭VII, I/3…); tap it to see all candidates. Display only: not saved in the song, not printed.";
+    readonly "\u642C\u5230\u4E86\u7EB8\u7684\u8BBE\u7F6E\u91CC\uFF08\u8C31\u53F3\u4E0A\u89D2\u7684\u6273\u624B \u2192\u300C\u770B\u8C31\u300D\uFF09\uFF1A\u73B0\u5728\u8DDF\u7740\u6BCF\u9996\u6B4C\u8D70\u3001\u5B58\u5728\u6B4C\u91CC\uFF0C\u4EE5\u524D\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8C03\u8FC7\u7684\u4E0D\u5E26\u8FC7\u53BB\u3002": {
+        readonly en: "Moved to the paper settings (the wrench at the top right of the score → Reading): they now belong to each song and are saved in it; what you set on this device before does not carry over.";
     };
     readonly 模型来源: {
         readonly en: "Model source";
@@ -798,6 +849,15 @@ export declare const S: {
     };
     readonly "\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6": {
         readonly en: "Kept on this device, works offline; songs carry their own sound, this is only the shelf";
+    };
+    readonly 渲染缓存: {
+        readonly en: "Render cache";
+    };
+    readonly 全清: {
+        readonly en: "Clear all";
+    };
+    readonly "\u5BFC\u51FA\u6216\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u65F6\u653E\u8FDB\u6765\u7684\u6574\u9996\u6B4C\u58F0\uFF0C\u6B4C\u5E93\u5C01\u9762\u4E0A\u7684 \u25B6 \u9760\u5B83\uFF1B\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3001\u4E0D\u540C\u6B65\uFF0C\u6700\u591A {n} \u9996\uFF0C\u6EE1\u4E86\u4E22\u6700\u4E45\u6CA1\u542C\u7684\uFF1B\u5220\u4E86\u53EA\u662F\u8981\u91CD\u6E32": {
+        readonly en: "Whole songs rendered when you export or use “Render to cache”; the ▶ on library covers plays them. Only on this device, never synced, at most {n} songs (the least recently played goes first); deleting only means rendering again";
     };
     readonly 小月相的念缓存: {
         readonly en: "Tsukuyomi-chan's speech cache";
@@ -934,6 +994,21 @@ export declare const S: {
     readonly "\uFF08\u6CA1\u6709\uFF09": {
         readonly en: "(none)";
     };
+    readonly 还没有记着的: {
+        readonly en: "Nothing kept yet";
+    };
+    readonly "{n} \u9996 \u00B7 {size}": {
+        readonly en: "{n} {n|song|songs} · {size}";
+    };
+    readonly "{title} \u00B7 {secs} \u79D2 \u00B7 {size} \u00B7 {date}": {
+        readonly en: "{title} · {secs} s · {size} · {date}";
+    };
+    readonly "\u6B4C\u5E93\u91CC\uFF1A{names}": {
+        readonly en: "In the library: {names}";
+    };
+    readonly 删: {
+        readonly en: "Delete";
+    };
     readonly 声音重启了: {
         readonly en: "Audio restarted";
     };
@@ -951,6 +1026,12 @@ export declare const S: {
     };
     readonly "\u8FD9\u91CC\u6CA1\u6709\u79BB\u7EBF\u58F3\uFF08\u672C\u673A\u5F00\u53D1 / \u6D4F\u89C8\u5668\u4E0D\u652F\u6301\uFF09\uFF0C\u4E0D\u7528\u66F4\u65B0": {
         readonly en: "No offline shell here (local dev / unsupported browser), nothing to update";
+    };
+    readonly "\u5168\u6E05\u4E86\uFF08\u8981\u542C\u518D\u6E32\uFF09": {
+        readonly en: "All cleared (render again to listen)";
+    };
+    readonly "\u5220\u4E86\u8FD9\u4E00\u904D\uFF08\u8981\u542C\u518D\u6E32\uFF09": {
+        readonly en: "Deleted this render (render again to listen)";
     };
     readonly "\u5FF5\u7F13\u5B58\u6E05\u7A7A\u4E86\uFF08\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5\uFF09": {
         readonly en: "Speech cache cleared (spoken lines will need re-speaking)";
@@ -1285,6 +1366,30 @@ export declare const S: {
     readonly "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": {
         readonly en: "Long words push notes apart (the traditional engraving rule)";
     };
+    readonly 专业: {
+        readonly en: "Standard";
+    };
+    readonly "\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D": {
+        readonly en: "Draw in the actual key; big key labels show note names";
+    };
+    readonly "\u6309 C \u8C03\u770B\uFF081=X\uFF09": {
+        readonly en: "Read in C (1=X)";
+    };
+    readonly "\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8": {
+        readonly en: "Draw the score in C with “1=original key” above every key signature; big key labels show degrees; the keys stay where they are";
+    };
+    readonly 和弦标级数: {
+        readonly en: "Chord degrees";
+    };
+    readonly "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009": {
+        readonly en: "Write the degree of stacked chords in this key above them (V7, ii, ♭VII, I/3…); tap one to see all candidates";
+    };
+    readonly 不标: {
+        readonly en: "Don’t show";
+    };
+    readonly "\u8DDF\u7740\u8FD9\u9996\u6B4C\u8D70\uFF1A\u5B58\u5728\u6B4C\u91CC\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002\u522B\u4EBA\u7684\u6B4C\u9501\u7740\u4E5F\u80FD\u5207\u7740\u770B\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u4EF6\u3002": {
+        readonly en: "Belongs to this song: saved in it, undoable, and the exported PDF prints it this way. You can switch it on someone else’s locked song too; the file is not changed.";
+    };
     readonly 屏幕放不下纸的时候: {
         readonly en: "When the screen can't fit the sheet";
     };
@@ -1302,6 +1407,15 @@ export declare const S: {
     };
     readonly "\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002": {
         readonly en: "Image insertion will live here later too.";
+    };
+    readonly "\u6309 C \u8C03\u770B": {
+        readonly en: "Read in C";
+    };
+    readonly "\u770B\u8C31\uFF1A\u4E13\u4E1A": {
+        readonly en: "Reading: professional";
+    };
+    readonly 和弦不标级数: {
+        readonly en: "No chord degrees";
     };
     readonly "\u5C0F\u6708\u76F8\u5FF5\u51FA\u6765 {n} \u4E2A\u97F3\u8282\u3001\u8C31\u4E0A {n2} \u4E2A\uFF0C\u5BF9\u4E0D\u4E0A\uFF08\u5531\u7684\u65F6\u5019\u4F1A\u62A5\u9519\uFF09\uFF1A": {
         readonly en: "Tsukuyomi-chan says {n} syllables but the score has {n2}, so they don't match (singing will report an error):";
@@ -1548,9 +1662,6 @@ export declare const S: {
     };
     readonly "\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u58F0\u90E8\u5199\u7684\u4E1C\u897F\u4E00\u8D77\u5220\u6389\uFF08\u80FD\u64A4\u9500\uFF1A\u64A4\u9500 / Ctrl+Z\uFF09\u3002": {
         readonly en: "Everything written in all parts on this sheet is deleted (can be undone: Undo / Ctrl+Z).";
-    };
-    readonly 删: {
-        readonly en: "Delete";
     };
     readonly "\u52A0\u8FDB\u300C{p}\u300D": {
         readonly en: "Add to “{p}”";
@@ -1969,11 +2080,38 @@ export declare const S: {
     readonly "\u6CA1\u6253\u5F00\uFF1A{Error}": {
         readonly en: "Not opened: {Error}";
     };
+    readonly "\u4ECE {host} \u6253\u5F00\u4E86 {name}\uFF1A\u8FD9\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002": {
+        readonly en: "Opened {name} from {host}. This is a copy; press Save to keep it.";
+    };
     readonly "\u6253\u5F00\u4E86 {name}": {
         readonly en: "Opened {name}";
     };
     readonly "\u6253\u4E0D\u5F00 {name}\uFF1A{Error}": {
         readonly en: "Can't open {name}: {Error}";
+    };
+    readonly "\u4ECE\u94FE\u63A5\u6253\u5F00\u8FD9\u9996\u6B4C\uFF1F": {
+        readonly en: "Open this song from a link?";
+    };
+    readonly "\u4F1A\u4ECE {host} \u4E0B\u8F7D\u8FD9\u4E2A\u6587\u4EF6\uFF1A{url}\u3002\u8FD9\u662F\u522B\u4EBA\u653E\u5728\u7F51\u4E0A\u7684\u6587\u4EF6\uFF1B\u6253\u5F00\u7684\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002": {
+        readonly en: "This downloads the file from {host}: {url}. It is a file someone put online; you get a copy, and pressing Save keeps it.";
+    };
+    readonly 打开: {
+        readonly en: "Open";
+    };
+    readonly 打开链接里的歌: {
+        readonly en: "Open the song from the link";
+    };
+    readonly "\u6B63\u5728\u4ECE {host} \u4E0B\u8F7D\u2026": {
+        readonly en: "Downloading from {host}…";
+    };
+    readonly "\u6B63\u5728\u4ECE {host} \u4E0B\u8F7D\u2026 {pc}%": {
+        readonly en: "Downloading from {host}… {pc}%";
+    };
+    readonly "{host} \u7ED9\u7684\u662F\u4E00\u4E2A\u7F51\u9875\uFF0C\u4E0D\u662F\u6B4C\u6587\u4EF6\uFF1A\u8981\u7528\u80FD\u76F4\u63A5\u4E0B\u8F7D\u7684\u94FE\u63A5\uFF08\u7F51\u76D8\u7684\u5206\u4EAB\u9875\u591A\u534A\u8981\u6362\u6210\u300C\u4E0B\u8F7D\u300D\u90A3\u4E2A\u94FE\u63A5\uFF09\u3002": {
+        readonly en: "{host} sent a web page, not a song file. Use a direct download link (for a cloud drive, usually its “download” link rather than the share page).";
+    };
+    readonly "\u4ECE {host} \u62FF\u5230\u7684\u4E0D\u662F\u6B4C\u6587\u4EF6\uFF08.mxl / .musicxml\uFF09\u3002": {
+        readonly en: "What came from {host} is not a song file (.mxl / .musicxml).";
     };
     readonly "\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u6709\u6539\u52A8\u6CA1\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\uFF1A\u6539\u52A8\u8FD8\u5728\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u4E4B\u540E\u518D\u5B58\u3002": {
         readonly en: "This song is locked, so the changes were not saved or uploaded. They are still here: tap “Keep editing” above the score, then save.";
@@ -2058,6 +2196,12 @@ export declare const S: {
     };
     readonly "\u590D\u5236\u4E0D\u4E86\uFF08\u6D4F\u89C8\u5668\u4E0D\u8BA9\uFF09\uFF1A\u957F\u6309\u4E0A\u9762\u7684\u5B57\u81EA\u5DF1\u9009": {
         readonly en: "Can't copy (the browser won't allow it): long-press the text above to select it";
+    };
+    readonly "\u6E32\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF1B\u6E32\u597D\u7684\u90A3\u4EFD\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C": {
+        readonly en: "Render once into an mp3 to share or download. The render is remembered on this device, so you can play it straight from this song’s cover in the library";
+    };
+    readonly "\u6B4C\u58F0\uFF08mp3\uFF09\u2026": {
+        readonly en: "MP3…";
     };
     readonly "\u5370\u51FA\u6765\u7684\u8C31\uFF08\u6309\u8FD9\u9996\u6B4C\u7684\u7EB8\u5F20\u5206\u9875\uFF1B\u6B4C\u8BCD\u7528\u5D4C\u8FDB\u53BB\u7684\u5B57\u4F53\uFF0C\u80FD\u9009\u4E2D\u590D\u5236\uFF09": {
         readonly en: "A printed score (paged by this song's paper; lyrics use an embedded font and can be selected and copied)";
@@ -2152,8 +2296,8 @@ export declare const S: {
     readonly "\u7EB8 / ": {
         readonly en: "sheets /";
     };
-    readonly "\u7167\u4F60\u73B0\u5728\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u8BBE\u7F6E\u300C\u4E50\u7406\u52A9\u624B\u300D\u91CC\u6539\uFF09\u3002": {
-        readonly en: "Printed the way you are reading now: {w} (change it under Settings › Music theory helper).";
+    readonly "\u7167\u8FD9\u9996\u6B4C\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u7EB8\u7684\u6273\u624B \u2192\u300C\u770B\u8C31\u300D\u91CC\u6539\uFF09\u3002": {
+        readonly en: "Printed the way this song is read: {w} (change it under the paper wrench › Reading).";
     };
     readonly "\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09": {
         readonly en: "read in C (“1=original key” above each key signature)";
@@ -2244,6 +2388,12 @@ export declare const S: {
     };
     readonly "mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09": {
         readonly en: "mp3, .mxl copy (packed sounds)… (Ctrl / ⌘+Shift+S)";
+    };
+    readonly 渲染到缓存: {
+        readonly en: "Render to cache";
+    };
+    readonly "\u6E32\u4E00\u904D\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u4E0D\u5BFC\u51FA\u6587\u4EF6": {
+        readonly en: "Renders this song into the render cache (this device only) so you can play it from its cover in the library; no file is exported";
     };
     readonly 存进歌库: {
         readonly en: "Save to library";
@@ -3211,9 +3361,6 @@ export declare const S: {
     readonly "\u300C{name}\u300D\u54CD\u4E0D\u4E86\uFF1A{Error}": {
         readonly en: "“{name}” can't sound: {Error}";
     };
-    readonly "\u51C6\u5907\u2026": {
-        readonly en: "Preparing…";
-    };
     readonly "\u7F16 mp3\u2026": {
         readonly en: "Encoding mp3…";
     };
@@ -3232,6 +3379,12 @@ export declare const S: {
     readonly "{p} \u79D2 \u00B7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}": {
         readonly en: "{p} s · mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}";
     };
+    readonly "\uFF08\u7528\u7684\u662F\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u4E0A\u6B21\u6E32\u597D\u7684\u90A3\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF09": {
+        readonly en: " (the last render remembered on this device; nothing has changed)";
+    };
+    readonly "\u4E5F\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\u4E86\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF0C\u5185\u5BB9\u4E0D\u53D8\u518D\u5BFC\u51FA\u4E0D\u7528\u518D\u6E32\u3002\u8BBE\u7F6E\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u2192\u300C\u6E32\u67D3\u7F13\u5B58\u300D\u91CC\u770B\u5F97\u89C1\u3001\u5220\u5F97\u6389\u3002": {
+        readonly en: "Also kept in the render cache: play it straight from this song’s cover in the library, and re-exporting an unchanged song is instant. See or delete it under Settings › Audio › Render cache.";
+    };
     readonly "\u8FD9\u51E0\u6761\u8F68\u6CA1\u51FA\u58F0\uFF0Cmp3 \u91CC\u6CA1\u6709\u5B83\u4EEC\uFF1A": {
         readonly en: "These tracks were silent and aren't in the mp3:";
     };
@@ -3240,6 +3393,9 @@ export declare const S: {
     };
     readonly "\u5BFC\u51FA\u5931\u8D25\uFF1A{Error}": {
         readonly en: "Export failed: {Error}";
+    };
+    readonly "\u6B63\u5728\u5BFC\u51FA\u6216\u51C6\u5907\u64AD\u653E\uFF0C\u7B49\u5B83\u5B8C\u4E86\u518D\u6E32": {
+        readonly en: "Exporting or getting ready to play; render after that finishes";
     };
     readonly "{label} \u00B7 \u5F00\u5934 {p} \u79D2": {
         readonly en: "{label} · first {p} s";
@@ -3913,11 +4069,29 @@ export declare const S: {
     readonly 备份箱: {
         readonly en: "Backups";
     };
+    readonly 旧: {
+        readonly en: "outdated";
+    };
+    readonly "\u6E32\u67D3\u7F13\u5B58\u91CC\u90A3\u4E00\u904D\u662F\u6539\u4E4B\u524D\u6E32\u7684\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09": {
+        readonly en: "The render cache has a render from before later changes";
+    };
     readonly "\u6539\u4E8E {lastModified}": {
         readonly en: "Changed {lastModified}";
     };
+    readonly "\u6E32\u67D3\u7F13\u5B58\u91CC\u8FD8\u6CA1\u6709\u8FD9\u9996\uFF1A\u70B9 = \u6E32\u67D3\uFF08\u4E4B\u540E\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF09": {
+        readonly en: "Not in the render cache yet: tap to render (then play it from the cover)";
+    };
     readonly "\u6682\u505C\uFF08\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u4E5F\u80FD\u63A7\uFF09": {
         readonly en: "Pause (also on the bottom player bar)";
+    };
+    readonly "\u64AD\u653E\u6E32\u67D3\u7F13\u5B58\u91CC\u4E0A\u6B21\u6E32\u7684\u90A3\u4E00\u904D\uFF08\u4E4B\u540E\u6539\u8FC7\uFF0C{p} \u79D2\uFF09": {
+        readonly en: "Play the last render from the render cache (outdated: changed since; {p} s)";
+    };
+    readonly "\u64AD\u653E\u6E32\u67D3\u7F13\u5B58\u91CC\u7684\u8FD9\u4E00\u904D\uFF08{p} \u79D2\uFF09": {
+        readonly en: "Play from render cache ({p} s)";
+    };
+    readonly "\u542C\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{p} \u79D2\uFF09": {
+        readonly en: "Play the mp3 stored inside the song ({p} s)";
     };
     readonly "\u4ECE\u5934\u653E\uFF08\u9501\u5C4F / \u8033\u673A\u7684\u300C\u4E0A\u4E00\u9996\u300D\u4E5F\u662F\uFF09": {
         readonly en: "From the top (“previous track” on the lock screen / headphones too)";
@@ -3925,8 +4099,23 @@ export declare const S: {
     readonly "\u653E / \u6682\u505C": {
         readonly en: "Play / pause";
     };
+    readonly 按现在的样子重新渲一遍: {
+        readonly en: "Render again as it is now";
+    };
+    readonly 重新渲染: {
+        readonly en: "Render again";
+    };
+    readonly "\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3": {
+        readonly en: "Share / download this song’s mp3";
+    };
     readonly 停: {
         readonly en: "Stop";
+    };
+    readonly "{stem} \u00B7 \u65E7\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09": {
+        readonly en: "{stem} · outdated (changed since)";
+    };
+    readonly "\u8FD9\u4E00\u904D\u662F\u4E4B\u524D\u6E32\u7684\uFF1A\u5FAA\u73AF\u8981\u7B49\u4F59\u97F3\u653E\u5B8C\u624D\u56DE\u5230\u5F00\u5934\u3002\u91CD\u65B0\u6E32\u4E00\u904D\uFF0C\u5FAA\u73AF\u5C31\u6309\u8C31\u5207\uFF08\u548C\u7F16\u8F91\u5668\u91CC\u4E00\u6837\uFF09": {
+        readonly en: "This render is from before: looping waits for the tail to die out before starting over. Render again and the loop cuts by the score, like in the editor";
     };
     readonly "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5F00\u7740\uFF08\u653E\u5B8C\u4ECE\u5934\u518D\u653E\uFF0C\u9501\u5C4F\u4E5F\u4E00\u6837\uFF09": {
         readonly en: "Loop song: on (restarts at the end, on the lock screen too)";
@@ -3934,11 +4123,23 @@ export declare const S: {
     readonly "\u5355\u66F2\u5FAA\u73AF\uFF1A\u5173\u7740\uFF08\u653E\u5B8C\u5C31\u505C\uFF09": {
         readonly en: "Loop song: off (stops at the end)";
     };
+    readonly "\u6E32\u67D3\u7F13\u5B58\u91CC\u8FD8\u6CA1\u6709\u8FD9\u9996\uFF1A\u70B9\u5B83\u5C01\u9762\u4E0A\u7684\u94AE\u6E32\u67D3\uFF0C\u6216\u8005\u6253\u5F00\u5B83\u7528\u4E09\u6761\u6760\u91CC\u7684\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u3002": {
+        readonly en: "This song isn’t in the render cache yet: tap the button on its cover to render it, or open it and use “Render to cache” in the ☰ menu.";
+    };
+    readonly "\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026": {
+        readonly en: "Getting the audio for “{stem}”…";
+    };
+    readonly 这台设备上记着的那一遍: {
+        readonly en: "Remembered on this device";
+    };
     readonly "mp3 \u6CA1\u53D6\u5230\uFF08{blob}\uFF09": {
         readonly en: "Couldn't get the mp3 ({blob})";
     };
     readonly 空: {
         readonly en: "empty";
+    };
+    readonly "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": {
+        readonly en: "The mp3 stored inside the song";
     };
     readonly "\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6": {
         readonly en: "Couldn't start playing by itself: tap ▶ on the bottom player bar";
@@ -5413,6 +5614,39 @@ export declare const S: {
     readonly 合成: {
         readonly en: "Synthesizing";
     };
+    readonly "\u8FD9\u4E0D\u662F\u4E00\u4E2A\u7F51\u5740\uFF1A{link}": {
+        readonly en: "This is not a web address: {link}";
+    };
+    readonly "\u53EA\u8BA4 https \u5F00\u5934\u7684\u94FE\u63A5\uFF1A{link}": {
+        readonly en: "Only links starting with https work: {link}";
+    };
+    readonly "Google Drive \u4E0D\u8BA9\u522B\u7684\u7F51\u9875\u76F4\u63A5\u8BFB\u91CC\u9762\u7684\u6587\u4EF6\uFF0C\u8FD9\u6761\u94FE\u63A5\u6253\u4E0D\u5F00\u3002\u6362\u6210 Dropbox\u3001OneDrive\u3001GitHub\uFF0C\u6216\u8005\u81EA\u5DF1\u7F51\u7AD9\u4E0A\u7684\u76F4\u94FE\u3002": {
+        readonly en: "Google Drive does not let other web pages read its files, so this link can’t be opened. Use Dropbox, OneDrive, GitHub, or a direct link on your own site.";
+    };
+    readonly "\u8FD9\u662F Dropbox \u7684\u6587\u4EF6\u5939\u94FE\u63A5\uFF1A\u8981\u5206\u4EAB\u5355\u4E2A\u6B4C\u6587\u4EF6\u7684\u94FE\u63A5\u3002": {
+        readonly en: "This is a Dropbox folder link. Share the link to a single song file instead.";
+    };
+    readonly "\u8FD9\u662F GitHub \u7684\u9875\u9762\uFF0C\u4E0D\u662F\u6587\u4EF6\uFF1A\u8981\u94FE\u5230\u4ED3\u5E93\u91CC\u7684\u90A3\u4E2A\u6B4C\u6587\u4EF6\uFF08\u5730\u5740\u91CC\u6709 /blob/ \u7684\u90A3\u79CD\uFF09\u3002": {
+        readonly en: "This is a GitHub page, not a file. Link to the song file in the repository (an address with /blob/ in it).";
+    };
+    readonly "\u8BA4\u4E0D\u51FA\u8FD9\u4E2A Gist \u94FE\u63A5\uFF1A\u8981\u5E26\u7528\u6237\u540D\u7684\u90A3\u79CD\uFF08gist.github.com/\u540D\u5B57/\u7F16\u53F7\uFF09\u3002": {
+        readonly en: "Can’t read this Gist link. Use the form with the user name (gist.github.com/name/id).";
+    };
+    readonly "\u6CA1\u62FF\u5230\uFF1A{host} \u4E0D\u8BA9\u522B\u7684\u7F51\u9875\u8BFB\u8FD9\u4E2A\u6587\u4EF6\uFF0C\u6216\u8005\u7F51\u65AD\u4E86\u3002": {
+        readonly en: "Couldn’t get it: {host} doesn’t let other web pages read this file, or the network is down.";
+    };
+    readonly "{host} \u8BF4\u8FD9\u4E2A\u6587\u4EF6\u4E0D\u5728\u4E86\uFF08{status}\uFF09\uFF1A\u94FE\u63A5\u8FC7\u671F\u4E86\uFF0C\u6216\u8005\u6CA1\u8BBE\u6210\u516C\u5F00\u5206\u4EAB\u3002": {
+        readonly en: "{host} says the file is gone ({status}). The link may have expired or isn’t shared publicly.";
+    };
+    readonly "{host} \u4E0D\u8BA9\u8BFB\uFF08{status}\uFF09\uFF1A\u8FD9\u6761\u94FE\u63A5\u6CA1\u8BBE\u6210\u300C\u77E5\u9053\u94FE\u63A5\u7684\u4EBA\u90FD\u80FD\u770B\u300D\u3002": {
+        readonly en: "{host} refused ({status}). The link isn’t set to “anyone with the link can view”.";
+    };
+    readonly "{host} \u56DE\u4E86 {status}\uFF0C\u6CA1\u62FF\u5230\u6587\u4EF6\u3002": {
+        readonly en: "{host} answered {status}; no file.";
+    };
+    readonly "\u8FD9\u4E2A\u6587\u4EF6\u8D85\u8FC7 {mb} MB\uFF0C\u4E0D\u50CF\u4E00\u9996\u6B4C\uFF0C\u6CA1\u6253\u5F00\u3002": {
+        readonly en: "This file is over {mb} MB, too big for a song, so it wasn’t opened.";
+    };
     readonly "\u5927\u5C0F\u4E0D\u5BF9\uFF08{n} \u2260 {bytes}\uFF09": {
         readonly en: "Wrong size ({n} ≠ {bytes})";
     };
@@ -6414,210 +6648,6 @@ export declare const S: {
     };
     readonly 独: {
         readonly en: "S";
-    };
-    readonly "\u6B4C\u58F0\uFF08mp3\uFF09\u2026": {
-        readonly en: "MP3…";
-    };
-    readonly "\u6E32\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF1B\u6E32\u597D\u7684\u90A3\u4EFD\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C": {
-        readonly en: "Render once into an mp3 to share or download. The render is remembered on this device, so you can play it straight from this song’s cover in the library";
-    };
-    readonly "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002": {
-        readonly en: "This device remembers the last render of exactly this, and nothing has changed: you get it right away, no waiting.";
-    };
-    readonly "\uFF08\u7528\u7684\u662F\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u4E0A\u6B21\u6E32\u597D\u7684\u90A3\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF09": {
-        readonly en: " (the last render remembered on this device; nothing has changed)";
-    };
-    readonly "\u8FD9\u9996\u6B4C\u91CC\u539F\u6765\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{size}\uFF09\u4E0D\u518D\u5B58\u8FDB\u6B4C\u91CC\u4E86\uFF1A\u5B83\u5DF2\u7ECF\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u7167\u6837\u80FD\u542C\u3001\u80FD\u518D\u5BFC\u51FA\u3002": {
-        readonly en: "The mp3 that used to be stored inside this song ({size}) is no longer saved into the song file. It is remembered on this device, so you can still play it from the library and export it again.";
-    };
-    readonly "\u64AD\u653E\u6E32\u67D3\u7F13\u5B58\u91CC\u7684\u8FD9\u4E00\u904D\uFF08{p} \u79D2\uFF09": {
-        readonly en: "Play from render cache ({p} s)";
-    };
-    readonly "\u542C\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{p} \u79D2\uFF09": {
-        readonly en: "Play the mp3 stored inside the song ({p} s)";
-    };
-    readonly "\u6E32\u67D3\u7F13\u5B58\u91CC\u8FD8\u6CA1\u6709\u8FD9\u9996\uFF1A\u70B9\u5B83\u5C01\u9762\u4E0A\u7684\u94AE\u6E32\u67D3\uFF0C\u6216\u8005\u6253\u5F00\u5B83\u7528\u4E09\u6761\u6760\u91CC\u7684\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u3002": {
-        readonly en: "This song isn’t in the render cache yet: tap the button on its cover to render it, or open it and use “Render to cache” in the ☰ menu.";
-    };
-    readonly "\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026": {
-        readonly en: "Getting the audio for “{stem}”…";
-    };
-    readonly 这台设备上记着的那一遍: {
-        readonly en: "Remembered on this device";
-    };
-    readonly "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": {
-        readonly en: "The mp3 stored inside the song";
-    };
-    readonly "\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3": {
-        readonly en: "Share / download this song’s mp3";
-    };
-    readonly 取消: {
-        readonly en: "Cancel";
-    };
-    readonly "\u6B63\u5728\u53D6\u6D88\u2026": {
-        readonly en: "Cancelling…";
-    };
-    readonly "\u6B63\u5728\u6E32\u67D3\u2026": {
-        readonly en: "Rendering…";
-    };
-    readonly "\u5DF2\u7ECF\u5728\u6E32\u67D3\u7F13\u5B58\u91CC\u4E86\uFF08\u5185\u5BB9\u6CA1\u53D8\uFF09": {
-        readonly en: "Already in the render cache (nothing changed)";
-    };
-    readonly "\u6E32\u597D\u4E86\uFF0C\u4F46\u6CA1\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u5B58\u50A8\u6EE1\u4E86\u6216\u8005\u662F\u9690\u79C1\u6A21\u5F0F\uFF09": {
-        readonly en: "Rendered, but it could not be kept in the render cache (storage full or private browsing)";
-    };
-    readonly "\u6E32\u597D\u4E86\uFF0C\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF1A\u5B58\u4E0B\u53BB\u4E4B\u540E\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u542C": {
-        readonly en: "Rendered into the render cache: once you save, you can play it from the library cover";
-    };
-    readonly "\u6E32\u597D\u4E86\uFF0C\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C": {
-        readonly en: "Rendered into the render cache: play it straight from this song’s cover in the library";
-    };
-    readonly 渲染取消了: {
-        readonly en: "Rendering cancelled";
-    };
-    readonly "\u6E32\u4E0D\u4E86\uFF1A{Error}": {
-        readonly en: "Couldn't render: {Error}";
-    };
-    readonly "\u6B63\u5728\u6E32\u67D3\u300C{stem}\u300D\u2026": {
-        readonly en: "Rendering “{stem}”…";
-    };
-    readonly 放进渲染缓存: {
-        readonly en: "Keep in render cache";
-    };
-    readonly 放进去: {
-        readonly en: "Keep";
-    };
-    readonly "\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u8BBE\u7F6E\u91CC\u80FD\u5220": {
-        readonly en: "Play it from this song’s cover in the library; delete it in Settings";
-    };
-    readonly 不放: {
-        readonly en: "Don't keep";
-    };
-    readonly "\u53EA\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u4E0D\u7559": {
-        readonly en: "Export this copy only, keep nothing";
-    };
-    readonly 渲染缓存: {
-        readonly en: "Render cache";
-    };
-    readonly 全清: {
-        readonly en: "Clear all";
-    };
-    readonly "\u5BFC\u51FA\u6216\u300C\u6E32\u67D3\u5230\u7F13\u5B58\u300D\u65F6\u653E\u8FDB\u6765\u7684\u6574\u9996\u6B4C\u58F0\uFF0C\u6B4C\u5E93\u5C01\u9762\u4E0A\u7684 \u25B6 \u9760\u5B83\uFF1B\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3001\u4E0D\u540C\u6B65\uFF0C\u6700\u591A {n} \u9996\uFF0C\u6EE1\u4E86\u4E22\u6700\u4E45\u6CA1\u542C\u7684\uFF1B\u5220\u4E86\u53EA\u662F\u8981\u91CD\u6E32": {
-        readonly en: "Whole songs rendered when you export or use “Render to cache”; the ▶ on library covers plays them. Only on this device, never synced, at most {n} songs (the least recently played goes first); deleting only means rendering again";
-    };
-    readonly 还没有记着的: {
-        readonly en: "Nothing kept yet";
-    };
-    readonly "{n} \u9996 \u00B7 {size}": {
-        readonly en: "{n} {n|song|songs} · {size}";
-    };
-    readonly "{title} \u00B7 {secs} \u79D2 \u00B7 {size} \u00B7 {date}": {
-        readonly en: "{title} · {secs} s · {size} · {date}";
-    };
-    readonly "\u6B4C\u5E93\u91CC\uFF1A{names}": {
-        readonly en: "In the library: {names}";
-    };
-    readonly "\u5168\u6E05\u4E86\uFF08\u8981\u542C\u518D\u6E32\uFF09": {
-        readonly en: "All cleared (render again to listen)";
-    };
-    readonly "\u5220\u4E86\u8FD9\u4E00\u904D\uFF08\u8981\u542C\u518D\u6E32\uFF09": {
-        readonly en: "Deleted this render (render again to listen)";
-    };
-    readonly 渲染到缓存: {
-        readonly en: "Render to cache";
-    };
-    readonly "\u6E32\u4E00\u904D\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF09\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u4E0D\u5BFC\u51FA\u6587\u4EF6": {
-        readonly en: "Renders this song into the render cache (this device only) so you can play it from its cover in the library; no file is exported";
-    };
-    readonly "\u4E5F\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\u4E86\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF0C\u5185\u5BB9\u4E0D\u53D8\u518D\u5BFC\u51FA\u4E0D\u7528\u518D\u6E32\u3002\u8BBE\u7F6E\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u2192\u300C\u6E32\u67D3\u7F13\u5B58\u300D\u91CC\u770B\u5F97\u89C1\u3001\u5220\u5F97\u6389\u3002": {
-        readonly en: "Also kept in the render cache: play it straight from this song’s cover in the library, and re-exporting an unchanged song is instant. See or delete it under Settings › Audio › Render cache.";
-    };
-    readonly "\u6B63\u5728\u5BFC\u51FA\u6216\u51C6\u5907\u64AD\u653E\uFF0C\u7B49\u5B83\u5B8C\u4E86\u518D\u6E32": {
-        readonly en: "Exporting or getting ready to play; render after that finishes";
-    };
-    readonly 旧: {
-        readonly en: "outdated";
-    };
-    readonly "\u6E32\u67D3\u7F13\u5B58\u91CC\u90A3\u4E00\u904D\u662F\u6539\u4E4B\u524D\u6E32\u7684\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09": {
-        readonly en: "The render cache has a render from before later changes";
-    };
-    readonly "\u6E32\u67D3\u7F13\u5B58\u91CC\u8FD8\u6CA1\u6709\u8FD9\u9996\uFF1A\u70B9 = \u6E32\u67D3\uFF08\u4E4B\u540E\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF09": {
-        readonly en: "Not in the render cache yet: tap to render (then play it from the cover)";
-    };
-    readonly "\u64AD\u653E\u6E32\u67D3\u7F13\u5B58\u91CC\u4E0A\u6B21\u6E32\u7684\u90A3\u4E00\u904D\uFF08\u4E4B\u540E\u6539\u8FC7\uFF0C{p} \u79D2\uFF09": {
-        readonly en: "Play the last render from the render cache (outdated: changed since; {p} s)";
-    };
-    readonly 按现在的样子重新渲一遍: {
-        readonly en: "Render again as it is now";
-    };
-    readonly "\u4ECE {host} \u6253\u5F00\u4E86 {name}\uFF1A\u8FD9\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002": {
-        readonly en: "Opened {name} from {host}. This is a copy; press Save to keep it.";
-    };
-    readonly "\u4ECE\u94FE\u63A5\u6253\u5F00\u8FD9\u9996\u6B4C\uFF1F": {
-        readonly en: "Open this song from a link?";
-    };
-    readonly "\u4F1A\u4ECE {host} \u4E0B\u8F7D\u8FD9\u4E2A\u6587\u4EF6\uFF1A{url}\u3002\u8FD9\u662F\u522B\u4EBA\u653E\u5728\u7F51\u4E0A\u7684\u6587\u4EF6\uFF1B\u6253\u5F00\u7684\u662F\u4E00\u4EFD\u62F7\u8D1D\uFF0C\u60F3\u7559\u4E0B\u6765\u5C31\u6309\u300C\u5B58\u300D\u3002": {
-        readonly en: "This downloads the file from {host}: {url}. It is a file someone put online; you get a copy, and pressing Save keeps it.";
-    };
-    readonly 打开: {
-        readonly en: "Open";
-    };
-    readonly 打开链接里的歌: {
-        readonly en: "Open the song from the link";
-    };
-    readonly "\u6B63\u5728\u4ECE {host} \u4E0B\u8F7D\u2026": {
-        readonly en: "Downloading from {host}…";
-    };
-    readonly "\u6B63\u5728\u4ECE {host} \u4E0B\u8F7D\u2026 {pc}%": {
-        readonly en: "Downloading from {host}… {pc}%";
-    };
-    readonly "{host} \u7ED9\u7684\u662F\u4E00\u4E2A\u7F51\u9875\uFF0C\u4E0D\u662F\u6B4C\u6587\u4EF6\uFF1A\u8981\u7528\u80FD\u76F4\u63A5\u4E0B\u8F7D\u7684\u94FE\u63A5\uFF08\u7F51\u76D8\u7684\u5206\u4EAB\u9875\u591A\u534A\u8981\u6362\u6210\u300C\u4E0B\u8F7D\u300D\u90A3\u4E2A\u94FE\u63A5\uFF09\u3002": {
-        readonly en: "{host} sent a web page, not a song file. Use a direct download link (for a cloud drive, usually its “download” link rather than the share page).";
-    };
-    readonly "\u4ECE {host} \u62FF\u5230\u7684\u4E0D\u662F\u6B4C\u6587\u4EF6\uFF08.mxl / .musicxml\uFF09\u3002": {
-        readonly en: "What came from {host} is not a song file (.mxl / .musicxml).";
-    };
-    readonly "\u8FD9\u4E0D\u662F\u4E00\u4E2A\u7F51\u5740\uFF1A{link}": {
-        readonly en: "This is not a web address: {link}";
-    };
-    readonly "\u53EA\u8BA4 https \u5F00\u5934\u7684\u94FE\u63A5\uFF1A{link}": {
-        readonly en: "Only links starting with https work: {link}";
-    };
-    readonly "Google Drive \u4E0D\u8BA9\u522B\u7684\u7F51\u9875\u76F4\u63A5\u8BFB\u91CC\u9762\u7684\u6587\u4EF6\uFF0C\u8FD9\u6761\u94FE\u63A5\u6253\u4E0D\u5F00\u3002\u6362\u6210 Dropbox\u3001OneDrive\u3001GitHub\uFF0C\u6216\u8005\u81EA\u5DF1\u7F51\u7AD9\u4E0A\u7684\u76F4\u94FE\u3002": {
-        readonly en: "Google Drive does not let other web pages read its files, so this link can’t be opened. Use Dropbox, OneDrive, GitHub, or a direct link on your own site.";
-    };
-    readonly "\u8FD9\u662F Dropbox \u7684\u6587\u4EF6\u5939\u94FE\u63A5\uFF1A\u8981\u5206\u4EAB\u5355\u4E2A\u6B4C\u6587\u4EF6\u7684\u94FE\u63A5\u3002": {
-        readonly en: "This is a Dropbox folder link. Share the link to a single song file instead.";
-    };
-    readonly "\u8FD9\u662F GitHub \u7684\u9875\u9762\uFF0C\u4E0D\u662F\u6587\u4EF6\uFF1A\u8981\u94FE\u5230\u4ED3\u5E93\u91CC\u7684\u90A3\u4E2A\u6B4C\u6587\u4EF6\uFF08\u5730\u5740\u91CC\u6709 /blob/ \u7684\u90A3\u79CD\uFF09\u3002": {
-        readonly en: "This is a GitHub page, not a file. Link to the song file in the repository (an address with /blob/ in it).";
-    };
-    readonly "\u8BA4\u4E0D\u51FA\u8FD9\u4E2A Gist \u94FE\u63A5\uFF1A\u8981\u5E26\u7528\u6237\u540D\u7684\u90A3\u79CD\uFF08gist.github.com/\u540D\u5B57/\u7F16\u53F7\uFF09\u3002": {
-        readonly en: "Can’t read this Gist link. Use the form with the user name (gist.github.com/name/id).";
-    };
-    readonly "\u6CA1\u62FF\u5230\uFF1A{host} \u4E0D\u8BA9\u522B\u7684\u7F51\u9875\u8BFB\u8FD9\u4E2A\u6587\u4EF6\uFF0C\u6216\u8005\u7F51\u65AD\u4E86\u3002": {
-        readonly en: "Couldn’t get it: {host} doesn’t let other web pages read this file, or the network is down.";
-    };
-    readonly "{host} \u8BF4\u8FD9\u4E2A\u6587\u4EF6\u4E0D\u5728\u4E86\uFF08{status}\uFF09\uFF1A\u94FE\u63A5\u8FC7\u671F\u4E86\uFF0C\u6216\u8005\u6CA1\u8BBE\u6210\u516C\u5F00\u5206\u4EAB\u3002": {
-        readonly en: "{host} says the file is gone ({status}). The link may have expired or isn’t shared publicly.";
-    };
-    readonly "{host} \u4E0D\u8BA9\u8BFB\uFF08{status}\uFF09\uFF1A\u8FD9\u6761\u94FE\u63A5\u6CA1\u8BBE\u6210\u300C\u77E5\u9053\u94FE\u63A5\u7684\u4EBA\u90FD\u80FD\u770B\u300D\u3002": {
-        readonly en: "{host} refused ({status}). The link isn’t set to “anyone with the link can view”.";
-    };
-    readonly "{host} \u56DE\u4E86 {status}\uFF0C\u6CA1\u62FF\u5230\u6587\u4EF6\u3002": {
-        readonly en: "{host} answered {status}; no file.";
-    };
-    readonly "\u8FD9\u4E2A\u6587\u4EF6\u8D85\u8FC7 {mb} MB\uFF0C\u4E0D\u50CF\u4E00\u9996\u6B4C\uFF0C\u6CA1\u6253\u5F00\u3002": {
-        readonly en: "This file is over {mb} MB, too big for a song, so it wasn’t opened.";
-    };
-    readonly "\u8FD9\u4E00\u904D\u662F\u4E4B\u524D\u6E32\u7684\uFF1A\u5FAA\u73AF\u8981\u7B49\u4F59\u97F3\u653E\u5B8C\u624D\u56DE\u5230\u5F00\u5934\u3002\u91CD\u65B0\u6E32\u4E00\u904D\uFF0C\u5FAA\u73AF\u5C31\u6309\u8C31\u5207\uFF08\u548C\u7F16\u8F91\u5668\u91CC\u4E00\u6837\uFF09": {
-        readonly en: "This render is from before: looping waits for the tail to die out before starting over. Render again and the loop cuts by the score, like in the editor";
-    };
-    readonly 重新渲染: {
-        readonly en: "Render again";
-    };
-    readonly "{stem} \u00B7 \u65E7\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09": {
-        readonly en: "{stem} · outdated (changed since)";
     };
 };
 export type Key = keyof typeof S;

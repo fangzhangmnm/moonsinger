@@ -7,6 +7,8 @@ export declare function parseTime(s: string): {
 export interface HeaderPanelGlue {
     state(): EditorState;
     update(st: EditorState): void;
+    /** 改「这首歌怎么看」（这条轨的和弦选项）：宿主走 setSongLook（修改锁的看法，锁着也能切；谱面分家第三刀）。label = 撤销提示里的话。 */
+    updateLook(st: EditorState, label: string): void;
     /** 宿主的小菜单（main.ts ctxMenu）：点 [data-v] 的钮 = pick；点外面 = 收。 */
     menu(cls: string, html: string, at: {
         x: number;

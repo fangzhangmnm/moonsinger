@@ -154,7 +154,7 @@ describe("大谱表那一段里的换谱号记号：存了不丢（原来写的�
   it("新写法的歌（minor 4）：就算 score.json 里没有 parts[].clef，文件里第一个 <clef> 也不当成手选的（自动挑了低音谱号的还是自动）", () => {
     const s = one(rep([36, 43, 48, 52, 55, 57, 50, 45], 2)); eq(lookOf(s).clef, "F");
     const z = unzipSync(save(s)), sj = JSON.parse(strFromU8(z[".moonsinger/score.json"]));
-    eq(sj.minor, 4); sj.parts = sj.parts.map(({ clef: _c, ...p }: { clef: string }) => p);
+    assert(sj.minor >= 4, `新写法（minor ≥ 4），实得 ${sj.minor}`); sj.parts = sj.parts.map(({ clef: _c, ...p }: { clef: string }) => p);
     z[".moonsinger/score.json"] = strToU8(JSON.stringify(sj));
     eq(clefChoiceOf(openBytes("x.mxl", zipSync(z)).song.papers[0], s.parts[0].id), "auto");
   });

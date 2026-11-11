@@ -29,15 +29,9 @@ export interface ScorePdfArgs {
     autoBars?: boolean;
     /** 只印这一张纸（= 分页预览的「本段」；2026-10-09 user「只印一段或一个声部 这个也到时候需要做，和wxhw差不多」）。不给 = 整首。 */
     onlyPaper?: string;
-    /** 看谱方式跟着印（v0.16.13，user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：按 C 调看 = 印 C 调 + 「1=原来的调」；和弦级数 = 印上。 */
-    view?: PrintView;
-}
-export interface PrintView {
-    inC?: boolean;
-    chordTags?: boolean;
 }
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
-export declare function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, lyricRaise: number, onlyPaper?: string, view?: PrintView): EngraveOpts;
+export declare function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, lyricRaise: number, onlyPaper?: string): EngraveOpts;
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */
 export declare function scorePdf(a: ScorePdfArgs): {
     bytes: Uint8Array;

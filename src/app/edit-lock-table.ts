@@ -14,6 +14,7 @@
 //   说是看法、实际动了别的 = 当内容拒（设计稿 14.2 第 1 条）。
 // 零依赖（只 import 类型）、纯数据 + 纯函数：node 直测（test/edit-lock.test.ts）。
 import type { Song } from "../score/song.ts";
+import { SONG_VIEW_KEYS, PART_VIEW_KEYS } from "../score/song-view.ts";   // 只 import 两张常量表（「这首歌怎么看」住在哪几个键），song-view.ts 本身零依赖
 
 /** 一类「看法」。 */
 export interface LookOp {
@@ -41,11 +42,42 @@ export function sameExceptPaperHidden(a: Song, b: Song): boolean {
   return true;
 }
 
+/** 两首歌除了「这首歌怎么看」的四样（歌顶层的 notation / chordTags / inC + 每个声部的 chords；src/score/song-view.ts）之外一模一样。按引用比；完全没变也算。 */
+export function sameExceptSongView(a: Song, b: Song): boolean { return sameModulo(a, b, { song: SONG_VIEW_KEYS, part: PART_VIEW_KEYS }); }
+
+/** 按引用比两首歌，跳过给定的键：歌顶层的 song、每张纸的 paper、每个声部的 part。别的键（含纸 / 声部的个数、先后、id）一个都不许变。 */
+function sameModulo(a: Song, b: Song, skip: { song?: readonly string[]; paper?: readonly string[]; part?: readonly string[] }): boolean {
+  if (a === b) return true;
+  const A = a as unknown as Record<string, unknown>, B = b as unknown as Record<string, unknown>;
+  const keys = new Set([...Object.keys(A), ...Object.keys(B)]);
+  for (const k of skip.song ?? []) keys.delete(k);
+  for (const k of keys) {
+    if (A[k] === B[k]) continue;
+    if (k === "papers" && skip.paper) { if (!sameList(a.papers, b.papers, skip.paper)) return false; continue; }
+    if (k === "parts" && skip.part) { if (!sameList(a.parts, b.parts, skip.part)) return false; continue; }
+    return false;
+  }
+  return true;
+}
+function sameList(xs: readonly object[], ys: readonly object[], skip: readonly string[]): boolean {
+  if (xs.length !== ys.length) return false;
+  for (let i = 0; i < xs.length; i++) {
+    const p = xs[i] as Record<string, unknown>, q = ys[i] as Record<string, unknown>;
+    if (p === q) continue;
+    const keys = new Set([...Object.keys(p), ...Object.keys(q)]); for (const k of skip) keys.delete(k);
+    for (const k of keys) if (p[k] !== q[k]) return false;
+  }
+  return true;
+}
+
 /** 看法的明文名单。加一类 = 这里加一行 + src/score/history.ts 的 LocusKind 加这个词 + 它的调用点带上这个类别
  *  （test/edit-lock-guard.test.mjs 钉：名单里的词必须真有写入口的调用点在用；带这个类别的调用点不许带 gesture）。 */
 export const LOOK_OPS: Readonly<Record<string, LookOp>> = Object.freeze({
   // 曲段的隐藏 / 放出来（user 11-09：「曲段的隐藏和显示锁着的时候当然能解。」）：影响放哪几段、印哪几段，存在歌文件里
   paperHidden: { inFile: true, verify: sameExceptPaperHidden },
+  // 这首歌怎么看（谱面分家第三刀，2026-11-12；设计稿第 3.7 节「这些设置归『看法』那一类」）：谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项。存在歌文件里；
+  //   锁着能切、锁着期间一个字节都不写，导出和打印跟着眼前的样子（别人的歌锁着打开、切着看、关掉，文件没动）
+  songLook: { inFile: true, verify: sameExceptSongView },
 });
 
 const has = (kind: string | null | undefined): kind is string => kind != null && Object.prototype.hasOwnProperty.call(LOOK_OPS, kind);
@@ -60,4 +92,4 @@ export function effectiveKind<K extends string>(claimed: K, fallback: K, prev: S
   return !extrasChanged && LOOK_OPS[claimed]!.verify(prev, next) ? claimed : fallback;
 }
 /** 两首歌只差「看法」（表里所有进文件的看法合起来）吗。脏分成两种时用：只差看法 = looks，别的 = content。 */
-export function sameModuloLooks(a: Song, b: Song): boolean { return sameExceptPaperHidden(a, b); }   // 现在表里只有曲段隐藏一类；加了别的看法这里要跟着合
+export function sameModuloLooks(a: Song, b: Song): boolean { return sameModulo(a, b, { song: SONG_VIEW_KEYS, paper: ["hidden"], part: PART_VIEW_KEYS }); }   // 表里的看法合起来：曲段隐藏 + 这首歌怎么看；加了别的看法这里要跟着合

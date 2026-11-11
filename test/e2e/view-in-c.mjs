@@ -2,7 +2,8 @@
 // created 2026-11-07 by Claude Opus 5.5（user 11-07「我需要一个残疾人模式…显示的时候…帮我转到 C 大调上面，然后…写一个一等于 F」「专业模式是大写是绝对，小写是相对，
 //   然后这个助残模式是大写是相对，小写是绝对」「专业模式下面C调的时候，最好也能有一个显示调号的方案，这个样子我就不会像这次一样忘了点了」）。
 // 守：专业 = C 调画淡「1=C」（点它 = 谱头面板）、换成 F 调就没了、键上大字音名；设置里切「按 C 调看」= 写「1=F」、音画在 C 调的位置、键上大字级数、
-//   谱的数据不变；按 C 调看时拖音高一格 = 实际也挪一格；设备上记着（刷新还在）；切回专业 = 照实际画。
+//   谱的数据不变；按 C 调看时拖音高一格 = 实际也挪一格；切回专业 = 照实际画。
+//   谱面分家第三刀（2026-11-12）：「按 C 调看」是这首歌的设置，在纸的设置「看谱」里（原来在设置「乐理助手」、存在设备上）——写进歌里（inC: true）、能撤销，设备上不再记。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/view-in-c.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
@@ -17,8 +18,8 @@ const labels = () => p.evaluate(() => [...[...document.querySelectorAll("#score 
 const firstNote = () => p.evaluate(() => { const m = window.__moonsinger, s = m.state(), n = s.song.papers[0].tracks[s.at.part].find((t) => t.kind === "note"), h = m.layout().notes[0]; return { real: n ? `${n.pitch.step}${n.pitch.alter < 0 ? "b" : n.pitch.alter > 0 ? "#" : ""}${n.pitch.octave}` : null, d: h?.d }; });
 const bigAbs = () => p.evaluate(() => document.querySelector(".pad-panel")?.classList.contains("big-abs"));
 const closeAll = async () => { await p.keyboard.press("Escape"); await p.waitForTimeout(120); await p.mouse.click(5, 300); await p.waitForTimeout(120); };
-const setView = async (v) => { await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="settings"]'); await p.waitForSelector(".settings-card");
-  await p.click('[data-tab="a11y"]'); await p.selectOption('[data-set="view"]', v); await p.waitForTimeout(250); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
+const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
+const setView = async (v) => { await openSheet(); await p.click(`.settings-card [data-v="inc:${v === "inc" ? "on" : "off"}"]`); await p.waitForTimeout(250); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
 
 // ① 专业（默认）：C 调 = 淡「1=C」；键上大字音名
 check((await labels()) === "1=C~", "专业 + C 调：调号上方淡「1=C」", await labels());
@@ -33,7 +34,7 @@ const n0 = await firstNote();
 check(n0.real === "F3", "写「1」= F3（不带点的那一组 = 离说话的音高 D4 最近的 1）", JSON.stringify(n0));
 
 const clefPro = await p.$$eval("#score text.clef", (t) => t.map((x) => x.textContent).join(""));
-// ② 设置里切「按 C 调看」
+// ② 纸的设置「看谱」里切「按 C 调看」
 await setView("inc");
 const n1 = await firstNote();
 check((await labels()) === "1=F", "按 C 调看：调号上方写「1=F」（不是淡的）", await labels());
@@ -50,9 +51,13 @@ const n2 = await firstNote();
 check(n2.real === "G3" && n2.d === 22, "往上拖一格：谱里 F3 → G3，画在 D3（d = 22）", JSON.stringify(n2));
 await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
 
-// ④ 设备上记着：刷新还在
-await p.reload(); await p.waitForTimeout(1000);
-check((await bigAbs()) === false, "刷新后还是按 C 调看（键上大字级数）");
+// ④ 跟着歌走：写进歌里、能撤销（撤销 = 回到专业，键上大字跟着换）；设备上不再记
+check((await p.evaluate(() => window.__moonsinger.state().song.inC)) === true, "写进歌里（inC: true）");
+await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
+check((await bigAbs()) === true && !(await labels()).includes("1=F"), "撤销 = 回到专业（键上大字音名、没有「1=F」）", await labels());
+await p.keyboard.press("Control+Shift+z"); await p.waitForTimeout(250);
+check((await bigAbs()) === false && (await labels()) === "1=F", "重做 = 又按 C 调看", await labels());
+check(!(await p.evaluate(() => { try { return Object.keys(localStorage).some((k) => k.endsWith(":view-in-c")); } catch { return false; } })), "设备上不再记（没有写 view-in-c 这个键）");
 
 // ⑤ 切回专业 = 照实际画
 await setView("pro");

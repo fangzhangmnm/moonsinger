@@ -7,7 +7,8 @@
 //   速度（v0.16.12）：这一行只是一颗钮，写着现在的速度，点了 = 原来那个速度框（拨速度的滚轮 + 速度词 + 小节拍器 + 「确定」才写进谱；src/ui/mark-editor.ts）。
 //   v0.16.8 曾把速度做成这里的数字框 + 下拉、改了马上写，原来的速度框就打不开了——user 11-07「speed没叫你丢之前的窗口啊」（10-07 要的「有一个确认按钮才commit，这样你可以试哪个对」也跟着丢了）。
 import { _t } from "../i18n/index.ts";
-import { type EditorState, type Token, type ClefName, CLEFS, tempoWord, headerSpot, headerVals, setHeaderAt, setPaperHeadMinor, keyAt, keyMinorAt, timeAt, tempoAt, setClefChoice, clefChoiceOf, setPaperLook, type ClefChoice, setPartBrokenChords, setPartHost, type HeaderSpot, type HeaderPatch } from "../score/song.ts";
+import { type EditorState, type Token, type ClefName, CLEFS, tempoWord, headerSpot, headerVals, setHeaderAt, setPaperHeadMinor, keyAt, keyMinorAt, timeAt, tempoAt, setClefChoice, clefChoiceOf, setPaperLook, type ClefChoice, setPartHost, type HeaderSpot, type HeaderPatch } from "../score/song.ts";
+import { songViewOf, setPartChords } from "../score/song-view.ts";
 import { CLEF_LABEL } from "../score/clef.ts";
 import { KEY_LABEL, MINOR_LABEL, keyText } from "../score/pitch.ts";
 
@@ -28,6 +29,8 @@ export function parseTime(s: string): { beats: number; beatType: number } | null
 export interface HeaderPanelGlue {
   state(): EditorState;
   update(st: EditorState): void;
+  /** 改「这首歌怎么看」（这条轨的和弦选项）：宿主走 setSongLook（修改锁的看法，锁着也能切；谱面分家第三刀）。label = 撤销提示里的话。 */
+  updateLook(st: EditorState, label: string): void;
   /** 宿主的小菜单（main.ts ctxMenu）：点 [data-v] 的钮 = pick；点外面 = 收。 */
   menu(cls: string, html: string, at: { x: number; y: number }, pick: (v: string) => boolean | void): void;
   /** 「自动」这一档现在挑的是什么（「低音」「大谱表」…；v0.16.88 按段算）。 */
@@ -83,7 +86,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
         const opt = (value: string, label: string, on: boolean) => `<option value="${esc(value)}"${on ? " selected" : ""}>${esc(label)}</option>`;
         const tenants = song.parts.some((p) => p.host === me.id), hosts = song.parts.filter((p) => p.id !== me.id && !p.host);
         return `<div class="ctx-sep"></div><div class="ctx-hint hp-sec">${_t("「{name}」的谱（整首都算）", { name: esc(g.partName(partId)) })}</div><div class="hp-grid">` +
-          `<span class="hp-k">${_t("分解和弦")}</span><select class="hp-sel" data-hp="broken" title="${_t("拆开弹的和弦（一拍 / 半小节 / 一小节里的音凑成一个和弦）要不要标级数；叠在一起的和弦照旧标")}">${opt("on", _t("认"), me.brokenChords !== false)}${opt("off", _t("不认"), me.brokenChords === false)}</select>` +
+          `<span class="hp-k">${_t("分解和弦")}</span><select class="hp-sel" data-hp="broken" title="${_t("拆开弹的和弦（一拍 / 半小节 / 一小节里的音凑成一个和弦）要不要标级数；叠在一起的和弦照旧标")}">${opt("on", _t("认"), songViewOf(song).chordsOf(partId) !== "stacked")}${opt("off", _t("不认"), songViewOf(song).chordsOf(partId) === "stacked")}</select>` +
           (song.parts.length > 1 ? `<span class="hp-k">${_t("合租")}</span>` + (tenants ? `<span class="hp-v hp-note">${_t("有别的声部挂在这一行上（它是主人），不能再去挂别人")}</span>`
             : `<select class="hp-sel" data-hp="host" title="${_t("挂在别人的谱线上画（合租：只看个大概，音撞在一起就撞；只画音，不画休止 / 歌词 / 力度；点名字 = 拆开来写）")}">${opt("", _t("自己一行"), !me.host)}${hosts.map((p) => opt(p.id, _t("挂在「{name}」上", { name: g.partName(p.id) }), me.host === p.id)).join("")}</select>`) : "") +
           `</div>`;
@@ -129,7 +132,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
           apply({ time: el.value === "" ? null : parseTime(el.value) });
         } else if (k === "timeText") { const t = parseTime(el.value); if (t) { timeText = false; apply({ time: t }); } else el.classList.add("bad"); }
         else if (k === "ao") commit(setPaperLook(g.state(), paperId, partId, { autoOttava: el.value === "on" }));
-        else if (k === "broken") commit(setPartBrokenChords(g.state(), partId, el.value === "on"));
+        else if (k === "broken") { const next = setPartChords(g.state(), partId, el.value === "on" ? "auto" : "stacked"); if (next !== g.state()) { g.updateLook(next, el.value === "on" ? _t("分解和弦：认") : _t("分解和弦：不认")); spot = headerSpot(track(paperId, partId), spot.a); render(); } }   // 这条轨的和弦选项 = 这首歌怎么看（修改锁的看法；第三刀）
         else if (k === "host") commit(setPartHost(g.state(), partId, el.value || null));
       });
     },

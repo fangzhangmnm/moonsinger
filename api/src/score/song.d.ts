@@ -169,8 +169,9 @@ export interface PartDef {
     mic: string;
     /** 合租（v0.10.24）：挂在哪位（主人）的谱线上画（主人自己不能再是房客）。只管画：轨 / 乐器 / 混音台照旧各是各的（ai-docs/20261010-shared-staff-percussion-design.md §1）。 */
     host?: string;
-    /** 认不认分解和弦（v0.16.73，user 11-09「给声部加一个开关，默认开同意」）：没写 = 认（照样标）；false = 这位不认（叠音照旧标）。score.json parts[].brokenChords。 */
-    brokenChords?: false;
+    /** 这条轨的和弦选项（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts）：没写 = auto（也认拆开弹的）；"stacked" = 只认叠在一起的；"fold" = 折叠成和弦名（第五刀）。
+     *  不认识的值（更新的版本写的）原样留着。v0.16.73–第三刀之前的 brokenChords: false 读成 "stacked"（src/format/project.ts）。 */
+    chords?: string;
 }
 /** 谱号：高音 / 高音下加 8（吉他、男高音：实际低八度）/ 上加 8 / 上加 15（钟琴）/ 低音 / 低音下加 8（低音提琴、贝斯）。中音谱号不做（user「中音这个冷门没人用吧」）。 */
 export type ClefName = "G" | "G8vb" | "G8va" | "G15ma" | "F" | "F8vb";
@@ -220,6 +221,11 @@ export interface Song {
      *  user 11-08「正常人都会画密」→ 11-09「可以再紧一点，你这个新版本算正常，然后加一个紧凑的」「松可能不要」。存档 = score.json 可选字段 spacing（只写 "tight"；
      *  v0.16.33 那一小时写的 denseShort: "off" 读成正常）。 */
     spacing?: "tight";
+    /** 这首歌怎么看的三样（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts，没写的意思冻住在那里）：
+     *  notation = 谱种（只写不是五线谱的；不认识的原样留着）；chordTags = 和弦标级数（只写 false）；inC = 按 C 调看（只写 true）。存档 = score.json 同名可选字段。 */
+    notation?: string;
+    chordTags?: false;
+    inC?: true;
     hum: Hum;
     parts: PartDef[];
     papers: PaperSeg[];
@@ -691,8 +697,6 @@ export declare function setBarNumbers(st: EditorState, on: boolean): EditorState
 export declare function setSpacing(st: EditorState, m: "normal" | "tight"): EditorState;
 /** 歌词怎么排（v0.9.40）：按节奏（默认）/ 按歌词。 */
 export declare function setLyricFit(st: EditorState, v: "lyrics" | "rhythm"): EditorState;
-/** 这位歌手认不认分解和弦（v0.16.73；默认认）。和自动八度线同一个写法：开 = 不写，关 = false。 */
-export declare function setPartBrokenChords(st: EditorState, partId: string, on: boolean): EditorState;
 /** 谱号记号插在光标处（有选区 = 选区开头）；光标前紧挨着就是一个谱号记号 = 改它（v0.9.28）。 */
 export declare function insertClef(st: EditorState, clef: ClefName): EditorState;
 /** 八度线插在光标处（有选区 = 选区开头起、选区尾结束）；光标前紧挨着就是一个八度线记号 = 改它（v0.9.28）。 */

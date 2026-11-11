@@ -6,6 +6,7 @@ import { initState, withTrack, tr, addPart, addPaper, setPaperHidden, TPQ, type 
 import { engrave, type PartView } from "../src/render/engrave.ts";
 import { printOpts, isPrinted, LYRIC_RAISE } from "../src/export/score-pdf.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
+import { songViewOf, setViewInC, setChordTags } from "../src/score/song-view.ts";
 
 let id = 8000;
 const S = "CDEFGAB", L = "あいうえおかきくけこさしすせそ";
@@ -39,12 +40,13 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
     });
   }
   it("按 C 调看 + 和弦级数（v0.16.13，user「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：印的带上它们，控件开关照样不改版面；专业模式 C 调的淡「1=C」不印", () => {
-    const view = { inC: true, chordTags: true }, base = printOpts(st.song, sp, parts(st), createTextMeasure(measure), true, 0, undefined, view), print = engrave(st.song, base);
-    eq(base.inC, true); eq(base.chordTags, true); eq(base.chrome, undefined, "印 = 不给编辑器留地方");
-    eq(geo(engrave(st.song, { ...base, chrome: { famGap: 0.8, navRoom: 16 } })), geo(print), "编辑器的几何参数（分页时）不改版面");
+    // 谱面分家第三刀起这两样是歌里的设置：印的跟着歌（不再从印的选项进来）
+    const song = setChordTags(setViewInC(st, true), true).song, base = printOpts(song, sp, parts(st), createTextMeasure(measure), true, 0), print = engrave(song, base);
+    eq(songViewOf(song).inC, true); eq(songViewOf(song).chordTags, true); eq(base.chrome, undefined, "印 = 不给编辑器留地方");
+    eq(geo(engrave(song, { ...base, chrome: { famGap: 0.8, navRoom: 16 } })), geo(print), "编辑器的几何参数（分页时）不改版面");
     assert(print.prims.some((p) => (p as { cls?: string }).cls?.includes("key-label") && isPrinted((p as { cls?: string }).cls)), "「1=原来的调」印");
     assert(!print.prims.some((p) => ((p as { cls?: string }).cls ?? "").includes("key-hint")), "淡「1=C」不是排版器画的（覆盖层，刀 1）");
-    eq(geo(engrave(st.song, { ...base, chordTags: false })), geo(print), "和弦级数不占地方（开关不改版面）");
+    eq(geo(engrave(setChordTags({ ...st, song }, false).song, base)), geo(print), "和弦级数不占地方（开关不改版面）");
   });
   it("只印这一张纸 = 分页预览的「本段」：控件开关同样不改版面（2026-10-09，user「只印一段或一个声部…和wxhw差不多」）", () => {
     for (const paper of st.song.papers) {

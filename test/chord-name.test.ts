@@ -4,7 +4,8 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { readChord, chordLabel, degreeOf, western } from "../src/theory/western.ts";
 import { harmonyTags, barsOf, THEORIES, type HarmonyTag } from "../src/theory/index.ts";
-import { initState, tr, headLen, TPQ, setPartBrokenChords, type Token, type Song } from "../src/score/song.ts";
+import { initState, tr, headLen, TPQ, type Token, type Song } from "../src/score/song.ts";
+import { setPartChords, songViewOf } from "../src/score/song-view.ts";
 import { saveMxl, openBytes, emptyExtras } from "../src/format/project.ts";
 import { spellMidi } from "../src/score/pitch.ts";
 import type { Pitch } from "../src/score/pitch.ts";
@@ -217,12 +218,12 @@ describe("声部开关：不认分解和弦", () => {
     eq(harmonyTags(western, { tokens: t }).map((x) => western.label(x.read)).join(" "), "I I");
     eq(harmonyTags(western, { tokens: t, broken: false }).map((x) => western.label(x.read)).join(" "), "I");
   });
-  it("开 = 不写；关 = score.json parts[].brokenChords false，存了读回来还是关", () => {
-    const st = initState(), off = setPartBrokenChords(st, st.at.part, false);
-    eq(setPartBrokenChords(st, st.at.part, true), st, "本来就开 = 不变");
-    eq(off.song.parts[0].brokenChords, false); eq(setPartBrokenChords(off, st.at.part, true).song.parts[0].brokenChords, undefined, "再开 = 不写");
+  it("开 = 不写；关 = score.json parts[].chords \"stacked\"（谱面分家第三刀；原来是 brokenChords false），存了读回来还是关", () => {
+    const st = initState(), off = setPartChords(st, st.at.part, "stacked");
+    eq(setPartChords(st, st.at.part, "auto"), st, "本来就开 = 不变");
+    eq(off.song.parts[0].chords, "stacked"); eq(setPartChords(off, st.at.part, "auto").song.parts[0].chords, undefined, "再开 = 不写");
     const save = (s: Song) => saveMxl({ song: s, hum: s.hum, extras: emptyExtras(), app: "t", date: "2026-11-09T00:00:00.000Z" });
-    eq(openBytes("x.mxl", save(off.song)).song.parts[0].brokenChords, false);
-    eq(openBytes("x.mxl", save(st.song)).song.parts[0].brokenChords, undefined);
+    eq(songViewOf(openBytes("x.mxl", save(off.song)).song).chordsOf(st.at.part), "stacked");
+    eq(openBytes("x.mxl", save(st.song)).song.parts[0].chords, undefined);
   });
 });

@@ -1149,7 +1149,7 @@ body.doc-locked [data-ov="add"] { pointer-events: none; opacity: .4; }
 body.doc-locked .paper-menu .set-row .btn:not([data-v="hide"]) { pointer-events: none; opacity: .45; }
 body.doc-locked .add-part-menu .ctx-item:not([data-v="parts"]) { pointer-events: none; opacity: .45; }
 body.doc-locked .part-card :is([data-v="swap"], [data-v="delpart"]) { pointer-events: none; opacity: .45; }
-body.doc-locked .ctx-menu.header-panel :is(button, input, select) { pointer-events: none; opacity: .55; }
+body.doc-locked .ctx-menu.header-panel :is(button, input, select):not([data-hp="broken"]) { pointer-events: none; opacity: .55; }   /* 「分解和弦」= 这条轨的和弦选项 = 看法（谱面分家第三刀）：锁着也能切 */
 body.doc-locked .parts-mgr .pm-card :is(button, input, select):not([data-v^="more:"]):not([data-v^="inst:"]):not([data-v="close"]):not([data-v="back"]) { pointer-events: none; opacity: .45; }
 /* 歌库封面上的 ▶ = 图库包 0.8.0 的动作钮（.gallery-tile-action，包画 + 包接点击；样式在 vendor/internal-css/gallery.css，这里只调颜色） */
 .gallery-tile-action { background: color-mix(in srgb, var(--accent) 88%, transparent); }

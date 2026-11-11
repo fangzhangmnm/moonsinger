@@ -3,7 +3,7 @@
 //   每行的几何（第几级 ↔ y、歌词基线）按几个点采样。盖住：三首真歌 × cases.ts 的七种视图 + 用全的测试歌（full-song.ts）× 下面十种视图
 //   （声部旗：鼓 / 一线谱 / × 符头 / 单声 / 不认 / 简写 / 唱不出 / 不唱字；选项：按 C 调看 + 和弦级数、横卷、写字头在尾巴 + 拼音让位 + 按歌词排、隐藏 + 不自动小节线、紧凑档）。
 //   1b 收尾（同日）：脚手架收成长期的几条（surfaceCases：用全的测试歌 × 十种视图、真实密度的大歌 × 三种、边界情形），底本 = 分家之后的代码存的（scripts/freeze-layout-surface.mjs）；test/score-surface.test.ts 比。
-import { SONGS, VIEWS, caseLayout, views, editorBase, measureFor, r3, SP } from "./cases.ts";
+import { SONGS, VIEWS, caseLayout, views, editorBase, measureFor, r3, SP, asFrozen } from "./cases.ts";
 import { fullSong, fullFlags, edgeSongs } from "./full-song.ts";
 import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../src/render/engrave.ts";
 import { printOpts } from "../../../src/export/score-pdf.ts";
@@ -32,7 +32,8 @@ export const FULL_VIEWS: FView[] = [
   { name: "edit-seg", opts: (s) => ({ ...ed(s), onlyPaper: "pb" }) },
   { name: "edit-pages", opts: (s) => { const { margins: _m, ...rest } = ed(s); return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },
   { name: "listen-all", opts: (s) => ({ ...ed(s), chrome: { famGap: 0.8, navRoom: 16 }, foldAll: true }) },
-  { name: "inC-chords", opts: (s) => ({ ...ed(s), inC: true, chordTags: true }) },
+  // 按 C 调看 + 和弦级数：第三刀起是歌里的设置（原来是排版选项 inC / chordTags）。去掉 asFrozen 写的「不标」= 标；开按 C 调看
+  { name: "inC-chords", song: (s) => { const { chordTags: _c, ...r } = s; return { ...r, inC: true as const }; }, opts: (s) => ed(s) },
   { name: "scroll", opts: (s) => ({ ...ed(s), scroll: true }) },
   { name: "tail-raise-lyrics", song: (s) => ({ ...s, lyricFit: "lyrics" }), opts: (s) => ({ ...ed(s), at: { paper: "pa", part: "Y" }, tailOpen: true, lyricRaise: 0.62 }) },
   { name: "hidden-nobars", opts: (s) => ({ ...ed(s, new Set(["V"])), autoBars: false }) },
@@ -43,9 +44,10 @@ export const FULL_VIEWS: FView[] = [
 /** 一组 = 一条综合测试：full = 用全的测试歌 × 十种视图；dense = 真实密度的大歌 × 三种视图；edge = 边界情形。 */
 export type SurfaceGroup = "full" | "dense" | "edge";
 export function* surfaceCases(): Generator<{ group: SurfaceGroup; song: string; view: string; layout: () => Layout }> {
-  for (const v of FULL_VIEWS) yield { group: "full", song: "full", view: v.name, layout: () => { const s0 = fullSong(), s = v.song ? v.song(s0) : s0; return engrave(s, v.opts(s)); } };
+  for (const v of FULL_VIEWS) yield { group: "full", song: "full", view: v.name, layout: () => { const s0 = asFrozen(fullSong()), s = v.song ? v.song(s0) : s0; return engrave(s, v.opts(s)); } };
   for (const v of VIEWS.filter((x) => ["print", "edit-all", "listen-all"].includes(x.name))) yield { group: "dense", song: "once", view: v.name, layout: () => caseLayout("once", v) };
-  for (const e of edgeSongs()) {
+  for (const e0 of edgeSongs()) {
+    const e = { ...e0, song: asFrozen(e0.song) };
     const labels = e.song.parts.map((x) => x.id), hide = new Set(e.hide ?? []);
     const ed = () => { const o = { ...editorBase(e.song, labels, hide), ...(e.width ? { width: e.width } : {}) } as EngraveOpts; return o; };
     yield { group: "edge", song: e.name, view: "edit-all", layout: () => engrave(e.song, ed()) };

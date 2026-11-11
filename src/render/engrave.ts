@@ -26,6 +26,7 @@ import { type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
 import { Skyline, primInk, shiftPrim } from "./skyline.ts";
 import { songInC } from "../score/view-in-c.ts";
+import { songViewOf } from "../score/song-view.ts";
 import { type HarmonyRead } from "../theory/index.ts";
 import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, SQUEEZE, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SPACING } from "./frame/params.ts";
 import { wrapTitle } from "./frame/furniture.ts";
@@ -78,11 +79,7 @@ export interface EngraveOpts {
   scroll?: boolean;
   /** 连续排法的纸边距（sp）：和分页同一张纸的几何，只是不断页（user 2026-10-08「连续和分页看到的行宽应该是一样的」「连续只是没有了断页，但是每一行还是一样的」）。 */
   margins?: { l: number; r: number; t: number; b: number };
-  /** 按 C 调看（辅助模式，v0.16.10；src/score/view-in-c.ts）：每个音从它所在的调转到 C 再排，每个调号位置上方写「1=原来的调」（中途换调那一处给字多留一点宽）。
-   *  只是看法：PDF / 导出不传（按实际的调印）。 */
-  inC?: boolean;
-  /** 和弦标级数（v0.16.13；乐理模块 src/theory/）：叠音的和弦写它在这个调里是几级——刀 4b 起在和弦右下角、贴着下天际线（挂件，会让歌词往下让）；跟着设置印进 PDF（user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）。 */
-  chordTags?: boolean;
+  // 按 C 调看、和弦标级数（v0.16.10 / v0.16.13 起是这里的两个选项）：谱面分家第三刀起是歌里的设置，排版自己读（src/score/song-view.ts songViewOf），不再从选项进来。
   /** 字的尺子比谱的尺子大多少（刀 2；src/score/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
    *  「1=F」、小节号、和弦级数、页码，连同它们周围留的地方，都按 sp × textScale 量；字形、线、cresc. / 8va / 「吸」/ 推定的灰字照旧跟谱。量字的换算在文字模块里（measure.width）。没给 = 1。 */
   textScale?: number;
@@ -122,7 +119,7 @@ export interface Layout {
   tp: number;
   /** 和弦里主音以外的那几个符头（播放时一起亮；不进 notes——点 / 拖还是按整个音；v0.10.23，user「音符高亮忘了做和弦的其他音的高亮」）。 */
   chordHeads: { index: number; system: number; x: number; y: number; w: number; part?: string }[];
-  /** 和弦级数的点击框 + 认出来的候选（o.chordTags 开着才有；点了 = 候选小菜单）。 */
+  /** 和弦级数的点击框 + 认出来的候选（这首歌开着和弦标级数才有；点了 = 候选小菜单）。 */
   chordTags: { x: number; y: number; w: number; h: number; read: HarmonyRead; /** 哪一行（systems[system] 的 paper / part）、那条 track 第几个 token（挑读法写回去用，v0.16.87）。 */ system: number; index: number }[];
   /** 每张纸第一行各位的名字块（刀 1 锚点）：x0 = 色点左边、x1 = 最长那行名字的右边、top = 第一行名字的上沿（px）。覆盖层把两颗大钮摆在它上面、整排对它居中。 */
   names: { paper: string; part: string; x0: number; x1: number; top: number }[];
@@ -170,7 +167,8 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
   const lookAt = staffLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
-  if (o.inC) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
+  const songLook = songViewOf(song);   // 这首歌怎么看（谱面分家第三刀：歌里的设置，只此一处读；按 C 调看的换算之前读）
+  if (songLook.inC) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
   const sp = o.sp, P = (v: number) => v * sp, ts = o.textScale ?? 1, T = (v: number) => v * sp * ts;   // P = 谱的尺子；T = 字的尺子（刀 2：紧凑档 ts = 1.4，字和它周围留的地方照舒适档）
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
   // 分页：第 k 页从 pageTopY(k) 起、高 PG.h；内容只放在上下边距之间；放不下的整块（一行谱 / 曲段名 + 第一行 / 细行）挪到下一页
@@ -560,7 +558,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       }
       for (const x of measures) delete (x as { m?: number }).m; }
     // 5、6–11：五线谱这一种行的画（staff/draw.ts；施工单 1b-6a）。框架交过去的东西都在这个对象里
-    const staffOut = drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm });
+    const staffOut = drawStaff({ song, look: songLook, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm });
     // 歌词（第 11 样「歌词」，框架的；施工单 1b-7）：五线谱给每个音的锚点（字的中心、拖腔线、点击框归哪一行、挂在哪一行），这里写字、贴天际线、摆连字符。
     //   一行歌词一条基线 = max(版式的最小值, 这一行歌词占的那些段里下天际线最低处 + 字高 + 0.5)；第二行（按节奏排挤下去的）跟着往下。
     //   歌词连字符（英文断开的音节）画在两个歌词中间；拖腔线一起。歌词的墨进天际线（后面的 8vb 贴在它下面），行高另按歌词的规矩算（第 12 步之后）

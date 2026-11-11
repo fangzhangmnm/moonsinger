@@ -69,6 +69,22 @@ check(!(await hidden()), "撤销：翻的是看法那一步，能翻");
 await p.evaluate(() => window.__moonsinger.redo()); await p.waitForTimeout(150);
 check(await hidden(), "重做：同理");
 
+// ── 这首歌怎么看（谱面分家第三刀：纸的设置「看谱」、谱头面板「分解和弦」= 看法）：锁着切得动、门不闪、文件不写、能撤销 ──
+{ const chip = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
+  await p.mouse.click(chip.x, chip.y); await p.waitForSelector(".settings-card");
+  await armFlash(); await p.click('.settings-card [data-v="inc:on"]'); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(150);
+  const s = await lk();
+  check((await p.evaluate(() => window.__moonsinger.state().song.inC)) === true && !(await flashed()), "锁着在纸的设置里切「按 C 调看」：切了、门不闪");
+  check(s.dirtyKind === "looks" && !s.owes, "脏的还是「看法」、没有要存的东西", JSON.stringify(s));
+  await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
+  check((await fileSig()) === sig0, "锁着按「存」：文件一个字节都没变");
+  await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
+  check((await p.evaluate(() => window.__moonsinger.state().song.inC)) === undefined, "撤销：翻回去（看法那一格锁着也能翻）");
+  await p.evaluate(() => { const m = window.__moonsinger; m.openHeader(m.state().at.part); }); await p.waitForTimeout(150);
+  const pe = await p.evaluate(() => { const g = (q) => { const el = document.querySelector(q); return el ? getComputedStyle(el).pointerEvents : "没有"; }; return { broken: g('.header-panel [data-hp="broken"]'), key: g('.header-panel [data-hp="key"]') }; });
+  check(pe.broken === "auto" && pe.key === "none", "谱头面板：「分解和弦」锁着能切（看法），调号改不动", JSON.stringify(pe));
+  await p.keyboard.press("Escape"); await p.waitForTimeout(100); }
+
 // ── 混音台：会改内容的控件不接，「静 / 独」留着 ──
 await p.click('.dock-tab [data-mode="listen"]'); await p.waitForTimeout(200); await p.click('.dock-tab [data-mode="listen"]'); await p.waitForTimeout(300);   // 鼠标：第二下 = 手动弹出混音台
 { const pe = await p.evaluate(() => { const f = document.querySelector(".studio .studio-strips input"), ms = document.querySelector(".studio .strip-ms button"); return { fader: f ? getComputedStyle(f).pointerEvents : "没有推子", ms: ms ? getComputedStyle(ms).pointerEvents : "没有静独钮" }; });

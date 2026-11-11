@@ -431,6 +431,19 @@ type ScorePress =
   | { kind: "part"; paper; part; box? } | { kind: "blank"; at; row } | { kind: "selection"; at } | { kind: "mark"; index; at }
   | { kind: "clef"; hit: ClefHit; at } | { kind: "header"; paper; part; index; at } | { kind: "chordTag"; read; at; where }
   | { kind: "credits" } | { kind: "listen"; at; target: { paper; part; index; caret; tick } };   // 原来 9 个「点了开菜单」
+// 〔第三刀，2026-11-12〕look 去掉 inC / chordTags（这首歌自己的设置，谱面读 songViewOf(get().song)）；排版 worker 从 look 挪到顶层 worker?: { url(); failed?(why) }。
+//   look 现在只剩这次打开 / 这台设备上的看法 + 声部的情况（parts）+ 歌词框的两行小字。
+
+// ── 这首歌怎么看（src/score/song-view.ts；第三刀，2026-11-12）────────────────
+type NotationId = "staff" | "jianpu";  type ChordsMode = "stacked" | "auto" | "fold";
+declare const UNWRITTEN: { notation: "staff"; chordTags: true; inC: false; chords: "auto" };   // 文件里没写 = 这些，冻住、永远不变（测试钉着）
+interface SongView { notation: NotationId; chordTags: boolean; inC: boolean; chordsOf(part: string): ChordsMode }
+declare function songViewOf(song: Song): SongView;   // 只此一处读：排版（engrave 开头读一次，经 StaffDrawCtx.look 传给画法）、PDF（跟着排版）、键上的大字、鬼音符、拖音高
+declare function setNotation(st, id): EditorState;  declare function setChordTags(st, on): EditorState;
+declare function setViewInC(st, on): EditorState;   declare function setPartChords(st, part, mode): EditorState;   // 宿主只走 setSongLook（修改锁的看法 songLook）
+// 歌里：Song.notation?: string（不认识的原样留）/ chordTags?: false / inC?: true，PartDef.chords?: string——只写不是缺省的；score.json 同名键（score minor 5）。
+//   brokenChords: false（minor 2–4）读成 chords: "stacked"、不再写。EngraveOpts 去掉 inC / chordTags；printOpts / scorePdf 去掉 view。
+// 修改锁：LOOK_OPS.songLook（verify = sameExceptSongView：歌顶层三个键 + 每个声部的 chords 之外按引用全同）；sameModuloLooks = 曲段隐藏 + 这四样。
 ```
 
 和提案不一样的地方：
@@ -439,6 +452,7 @@ type ScorePress =
 2. `draw` 吃的是「一条轨在这张纸上的所有行」，不是一行；挂件不在 `RowInk` 里，而是往道上登记（上面第 3.3 节的〔1b 落地〕）。
 3. `measure` 出的是 `ColEntry`（`SpItem` 的道 + 弹簧时值），列的先后用 `ColumnKind`，没有单独的 `Column` 类型；`lineStart` 由框架问「这一刻每条轨生效的调号」，不是 `(track, tick)`。
 4. 行的数据没挪进 `RowBox.data`：`SystemBox.staffTop / staff`、`HitNote.d`、`CaretHead.shift` 原地留着，类型注释标成五线谱这一行的数据。〔第二刀，2026-11-12〕谱面视图改读几何函数了（光标 = `caretSpan`、鬼音符 = `previewAt`、选区带上沿 = `bandTop`、点在哪一级 / 拖了几级 = `pitchAxis`，歌词基线读 `Layout.lyricYs`），`Layout.yOf / dOf / lyricY` 退场。这三样数据仍原地留着、不挪进 `data` 子对象：现在只有五线谱一种行，挪进去只是换个路径；第四刀有了第二种行（简谱没有「第几级」），再按两种行的实际需要定 `RowBox.data` 的形状。
+6. 〔第三刀〕第 7 节提案里的 `SongView` 还收了现有的版式 / 音距 / 歌词排法 / 小节号，`LayoutInput` 把 `view` 和歌分开传。这一刀只收了这次存进歌的四样（施工单只说这四样；那几样各有自己的读者，收进来要改它们 = 另一件事），排版自己从歌里读 `songViewOf(song)`，不另传——歌本来就是排版的输入，另传一份会有「两份对不上」的口子。
 5. 纵向的版式表（`frame/params.ts SPACING` 里谱上面留多少、大谱表上面那条、没歌词的那条）还在框架的参数文件里，按五线谱的数写着；收进「排版参数表」（按谱种给值）= 第四刀（排版参数表那一项）。
 
 ## 8. 要 user 拍的

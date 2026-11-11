@@ -90,8 +90,14 @@ const nextKey = (ids: string[], prefix: string) => `${prefix}${Math.max(0, ...id
 const stampOf = (k: FormatFile): Json => ({ version: FORMAT[k], minor: FORMAT_MINOR[k], patch: FORMAT_PATCH[k] });
 /** 指纹用的 JSON 文本 = 去掉 minor / patch 再按写文件同一个样子串化（拍子不是内容：定稿时记的指纹里没有它们，升了 minor 的 app 再存不能把定稿的歌判成「内容变了」；
  *  老文件的原文本来就是这么串出来的，去掉两个不存在的键 = 原文）。读写两边都走这一把。 */
+/** score.json 里「这首歌怎么看」的三样（score minor 5）→ 歌字段：只认 notation（非空、不是 staff 的字）/ chordTags: false / inC: true，别的值 = 没写（src/score/song-view.ts 的冻住的意思）。 */
+const songViewFields = (x: Json | undefined): Pick<Song, "notation" | "chordTags" | "inC"> => ({
+  ...(typeof x?.notation === "string" && x.notation && x.notation !== "staff" ? { notation: x.notation } : {}),
+  ...(x?.chordTags === false ? { chordTags: false as const } : {}),
+  ...(x?.inC === true ? { inC: true as const } : {}),
+});
 const fpTextOf = (o: Json): string => { const { minor: _m, patch: _p, ...rest } = o; return JSON.stringify(rest, null, 2) + "\n"; };
-const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort"]);
+const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "inC"]);
 /** papers[] / parts[] 每一条里这一版认得的键（v0.16.88，设计稿第五节）：别的（更新的版本写的）按段 id / 声部 id 原样带回。
  *  phrases / parts.autoOttava 是退役的键（这一版读的时候已经处理了），算认得、不带回。
  *  规矩（Claude Fable 5.2 2026-11-10 定）：
@@ -100,7 +106,7 @@ const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts"
  *   ② 以后的版本往这种原样带回的地方放东西，只许按段 id / 声部 id 挂，不许按音的编号挂（音的编号每次读都重编，旧版本改过谱再带回去就挂错音了）。
  *   ③ 已知的边角：段 / 声部的 id 是「现有的最大号 + 1」，删掉最后一个再新建会拿到同一个号——这时带回的东西会落到新建的那个上。只在打开了更新版本存的歌、又删又建的时候才碰得到，先记着。 */
 const KNOWN_PAPER_KEYS = new Set(["id", "file", "manualBars", "unwritten", "swells", "hidden", "autoOttava", "phrases"]);
-const KNOWN_PART_KEYS = new Set(["id", "role", "mic", "kind", "clef", "autoOttava", "host", "brokenChords"]);
+const KNOWN_PART_KEYS = new Set(["id", "role", "mic", "kind", "clef", "autoOttava", "host", "brokenChords", "chords"]);   // brokenChords = 退役的键（读成 chords: "stacked"，不再写）
 const unknownById = (list: unknown, known: ReadonlySet<string>): Map<string, Json> => {
   const out = new Map<string, Json>();
   if (Array.isArray(list)) for (const e of list as Json[]) { if (!e || typeof e !== "object") continue; const rest = Object.fromEntries(Object.entries(e).filter(([k]) => !known.has(k))); if (Object.keys(rest).length) out.set(String(e.id), rest); }
@@ -214,12 +220,16 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   }) }, meta);
   const scoreRest = Object.fromEntries(Object.entries((a.extras.scoreExt ?? {}) as Json).filter(([k]) => !KNOWN_SCORE_KEYS.has(k)));   // 不认识的顶层键原样带回（家族纪律「未知键直通」；papers / parts 是从歌重建的）
   const oldExt = (a.extras.scoreExt ?? {}) as Json, paperExtra = unknownById(oldExt.papers, KNOWN_PAPER_KEYS), partExtra = unknownById(oldExt.parts, KNOWN_PART_KEYS);
-  const scoreExt: Json = { ...scoreRest, ...stampOf("score"), papers: papers.map((e) => ({ ...(paperExtra.get(String(e.id)) ?? {}), ...e })), parts: song.parts.map((p) => ({ ...(partExtra.get(p.id) ?? {}), id: p.id, role: p.role, mic: p.mic, kind: "pitched", clef: "auto", ...(p.host ? { host: p.host } : {}), ...(p.brokenChords === false ? { brokenChords: false } : {}) })),   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
+  const scoreExt: Json = { ...scoreRest, ...stampOf("score"), papers: papers.map((e) => ({ ...(paperExtra.get(String(e.id)) ?? {}), ...e })), parts: song.parts.map((p) => ({ ...(partExtra.get(p.id) ?? {}), id: p.id, role: p.role, mic: p.mic, kind: "pitched", clef: "auto", ...(p.host ? { host: p.host } : {}), ...(p.chords !== undefined ? { chords: p.chords } : {}) })),   // chords（score minor 5）：这条轨的和弦选项，只写不是 auto 的（song-view.ts 写的时候就不留 auto）   // clef（v0.9.28，可选）：声部自己的谱号；auto = 自动（MusicXML 里写的是挑好的那个）
     ...(a.view && Object.keys(a.view).length ? { view: a.view } : {}),   // 视图态（desk）：存时顺手捞进来，全默认不写（契约 ViewV1，2026-10-08）
     ...(song.arrangement?.trim() ? { arrangement: song.arrangement } : {}),   // 编排那一行（可选，2026-10-08 深夜）
     ...(song.lyricFit === "lyrics" ? { lyricFit: "lyrics" } : {}),
     ...(song.barNumbers === "off" ? { barNumbers: "off" } : {}),
-    ...(song.spacing === "tight" ? { spacing: "tight" } : {}) };   // 音距紧（可选，v0.16.34；正常 = 不写）   // 小节号不印（可选，v0.9.42）   // 歌词按歌词排（可选，v0.9.40；没写 = 按节奏，默认）
+    ...(song.spacing === "tight" ? { spacing: "tight" } : {}),
+    // 这首歌怎么看（score minor 5，谱面分家第三刀；src/score/song-view.ts）：只写不是「没写的意思」的值，不认识的谱种原样写回
+    ...(typeof song.notation === "string" && song.notation ? { notation: song.notation } : {}),
+    ...(song.chordTags === false ? { chordTags: false } : {}),
+    ...(song.inC === true ? { inC: true } : {}) };   // 音距紧（可选，v0.16.34；正常 = 不写）   // 小节号不印（可选，v0.9.42）   // 歌词按歌词排（可选，v0.9.40；没写 = 按节奏，默认）
   // 嵌的音源：只写还有候选引用着的（换了音源 = 旧块从歌里丢掉；§10.2）
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => (x < y ? -1 : 1));
@@ -833,7 +843,8 @@ function songFromReads(reads: ReadScore[], papers: PaperSeg[] | null, partList: 
     const d: PartDef = { id: String(p.id), role: String(p.role ?? `r${seen.size + 1}`), mic: String(p.mic ?? `m${seen.size + 1}`) };
     if ("clef" in p) { clefFromScore.add(d.id); if (legacyLooks && (CLEFS as readonly unknown[]).includes(p.clef)) oldClef.set(d.id, p.clef as ClefName); }
     if (legacyLooks && p.autoOttava === false) oldAoOff.add(d.id);   // 这位不要自动八度线（v0.9.37，老写法）
-    if (p.brokenChords === false) d.brokenChords = false;   // 这位不认分解和弦（v0.16.73）
+    if (typeof p.chords === "string" && p.chords && p.chords !== "auto") d.chords = p.chords;   // 这条轨的和弦选项（score minor 5；不认识的值原样留着）
+    else if (p.chords === undefined && p.brokenChords === false) d.chords = "stacked";   // 老写法（v0.16.73–score minor 4）：这位不认分解和弦 = 只认叠在一起的
     if (typeof p.host === "string" && p.host) d.host = p.host;   // 合租（v0.10.24）：下面核一遍
     seen.set(d.id, d);
   }
@@ -909,5 +920,5 @@ function finish(reads: ReadScore[], song0: Song, extras: Extras, ours: boolean, 
   const stem = name.replace(/\.(mxl|musicxml|xml)$/i, "");
   const hum = humOf(extras);
   const arr = extras.scoreExt?.arrangement;   // 编排那一行（只有我们自己的文件有）
-  return { song: { ...song0, hum, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}), ...(extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" as const } : {}), ...(extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" as const } : {}), ...(extras.scoreExt?.spacing === "tight" ? { spacing: "tight" as const } : {}) }, stem, hum, extras, ours, notices, view: safeView((extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null), references: {}, advice: [] };
+  return { song: { ...song0, hum, ...(typeof arr === "string" && arr.trim() ? { arrangement: arr } : {}), ...(extras.scoreExt?.lyricFit === "lyrics" ? { lyricFit: "lyrics" as const } : {}), ...(extras.scoreExt?.barNumbers === "off" ? { barNumbers: "off" as const } : {}), ...(extras.scoreExt?.spacing === "tight" ? { spacing: "tight" as const } : {}), ...songViewFields(extras.scoreExt) }, stem, hum, extras, ours, notices, view: safeView((extras.scoreExt?.view as Record<string, unknown> | undefined) ?? null), references: {}, advice: [] };
 }

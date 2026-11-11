@@ -29,6 +29,12 @@ export type FormatFile = keyof typeof FORMAT;
  *  · 大谱表那一段里的谱号记号：这一版起照写照读（<clef number="1">，musicxml.ts）——原来写的时候跳过，选过大谱表再存一次就悄悄没了。画大谱表时仍然不看它。
  *  · 没有标准名的和弦种类（7sus4 / add9 / 6/9 / 7♭9…）在 <kind text="…">other</kind> 里写的字 = 一张冻住的表（theory/western.ts XML_OTHER_TEXT），和谱上显示的字分开。
  *  · 没有改 major，也没有改 minor：补的都是「读得更多 / 不再丢」，v0.16.88–90 那一天存的歌照样开。 */
+/** score minor 5（谱面分家第三刀，2026-11-12 Claude Opus 5.5；user 11-11 夜「可以」= 把四样显示设置存进歌文件、都可选、没写就按默认、小版本号加一）：
+ *  这首歌怎么看 = 顶层 notation（谱种，只写不是五线谱的；不认识的值原样带回）/ chordTags（只写 false = 不标和弦级数）/ inC（只写 true = 按 C 调看）+ parts[].chords（这条轨的和弦选项，
+ *  只写不是 auto 的："stacked" = 只认叠在一起的、"fold" = 折叠成和弦名；不认识的值原样带回）。读 / 改 / 没写的意思只在 src/score/song-view.ts（没写 = 五线谱 / 标 / 不按 / auto，冻住不变）。
+ *  parts[].brokenChords（minor 2）退役：读成 chords: "stacked"，不再写。
+ *  旧版本打开：顶层三个键在 score.json 里原样带回（未知键直通），chords 按声部 id 原样带回（minor 4 起的读者），画的时候按五线谱、标和弦级数、不按 C 调看、也认拆开弹的；
+ *  minor 2–4 的读者看不到「只认叠在一起的」（它们只认 brokenChords）。提示一次，音不丢。 */
 export declare const FORMAT_MINOR: Readonly<Record<FormatFile, number>>;
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
@@ -113,9 +119,17 @@ export interface ScoreExtV2 {
         autoOttava?: false;
         /** 2026-10-10 加（可选，不升版本；Opus 5.5）：合租——画在哪位（主人）的谱线上；主人自己不能是房客（读的时候不合规矩 = 丢掉这个字段）。user「合租还是有主人吧」。 */
         host?: string;
-        /** v0.16.73 加（可选，只写 false；score minor 2）：这位不认分解和弦（没写 = 认）。 */
+        /** v0.16.73 加（可选，只写 false；score minor 2）：这位不认分解和弦（没写 = 认）。score minor 5 起退役：读成 chords: "stacked"，不再写。 */
         brokenChords?: false;
+        /** score minor 5（谱面分家第三刀）：这条轨的和弦选项，只写不是 auto 的——"stacked" = 只认叠在一起的和弦、"fold" = 折叠成和弦名（第五刀）。不认识的值原样带回。 */
+        chords?: string;
     }[];
+    /** score minor 5（谱面分家第三刀；src/score/song-view.ts）：这首歌怎么看。都可选、只写不是「没写的意思」的值：
+     *  notation = 谱种（"jianpu"…；没写 = 五线谱；不认识的值原样带回）；chordTags = false（没写 = 标和弦级数）；inC = true（没写 = 不按 C 调看）。
+     *  不进 view（视图态）：它们决定这首歌怎么印，进撤销、会标脏；归修改锁的「看法」（锁着能切，锁着期间不写）。 */
+    notation?: string;
+    chordTags?: false;
+    inC?: true;
 }
 export interface ManifestV1 {
     format: "moonsinger";

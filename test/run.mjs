@@ -5,6 +5,7 @@ import "./feel-probe.test.ts";
 import "./audio-queue.test.ts";
 import "./engrave-printable.test.ts";
 import "./score-surface.test.ts";
+import "./song-view.test.ts";
 import "./engrave-decor.test.ts";   // 排版不认光标（W-17 第 1 刀，10-15 写的，一直没登记；2026-11-12 收）   // 谱面排版的长期测试（谱面分家 1b 收尾：守卫 1 / 2 / 3 / 8）
 import "./test-registry.test.ts";   // 每个测试文件都登记了（1b-9）
 import "./spacing.test.ts";

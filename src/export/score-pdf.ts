@@ -69,19 +69,17 @@ export interface ScorePdfArgs { song: Song; parts: PartView[]; font: TtfFont; fo
   autoBars?: boolean;
   /** 只印这一张纸（= 分页预览的「本段」；2026-10-09 user「只印一段或一个声部 这个也到时候需要做，和wxhw差不多」）。不给 = 整首。 */
   onlyPaper?: string;
-  /** 看谱方式跟着印（v0.16.13，user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：按 C 调看 = 印 C 调 + 「1=原来的调」；和弦级数 = 印上。 */
-  view?: PrintView }
-export interface PrintView { inC?: boolean; chordTags?: boolean }
+  // 看谱方式（按 C 调看 / 和弦级数）跟着印（v0.16.13，user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：谱面分家第三刀起是歌里的设置，排版自己从歌里读，这里不用另传。
+  }
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
-export function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, lyricRaise: number, onlyPaper?: string, view: PrintView = {}): EngraveOpts {
+export function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, lyricRaise: number, onlyPaper?: string): EngraveOpts {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
-  return { width: lineSp(paper) * sp, sp, locale: lang(), ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measure, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}),
-    ...(view.inC ? { inC: true } : {}), ...(view.chordTags ? { chordTags: true } : {}) };   // 看谱方式 = 屏幕上那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
+  return { width: lineSp(paper) * sp, sp, locale: lang(), ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measure, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}) };   // 看谱方式 = 歌里的那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
 }
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */
 export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; stats: PdfStats } {
   const paper = a.song.paper ?? paperOf(DEFAULT_PAPER), sp = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp * textScaleOf(paper);   // 没写字号的字按这个画
-  const L = engrave(a.song, printOpts(a.song, sp, a.parts, createTextMeasure(a.measure ?? ((s, px) => textEm(a.font, s) * px)), a.autoBars ?? true, LYRIC_RAISE[a.fontId], a.onlyPaper, a.view));
+  const L = engrave(a.song, printOpts(a.song, sp, a.parts, createTextMeasure(a.measure ?? ((s, px) => textEm(a.font, s) * px)), a.autoBars ?? true, LYRIC_RAISE[a.fontId], a.onlyPaper));
   const W = paper.widthMm * PT_PER_MM, H = paper.heightMm * PT_PER_MM, dx = L.pageX.left;
   const pages: PdfPage[] = L.pages.map(() => ({ w: W, h: H, ops: [] }));
   const pageOf = (y: number) => { for (let k = 0; k < L.pages.length; k++) if (y >= L.pages[k]!.top && y < L.pages[k]!.top + L.pages[k]!.h) return k; return -1; };

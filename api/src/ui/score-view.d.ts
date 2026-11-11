@@ -92,16 +92,13 @@ export type ScorePress =
         tick: number;
     };
 };
-/** 怎么画、画什么（每次排版 / 打开歌词框都问）：这首歌的显示设置 + 这次打开、这台设备上的看法。第三刀把歌的那几样（按 C 调看、和弦标级数）搬进歌文件后从歌里读，这里只剩看法。 */
+/** 怎么画、画什么（每次排版 / 打开歌词框都问）：这次打开、这台设备上的看法（不进歌文件的）+ 声部的情况（谁在演、隐藏、单声…）。
+ *  这首歌自己的显示设置（谱种 / 和弦标级数 / 按 C 调看 / 每轨和弦选项）不在这里：在歌里，谱面读 songViewOf(get().song)（谱面分家第三刀）。 */
 export interface ScoreLook {
     /** 要画的声部（隐藏的不在里面；顺序 = 总谱从上到下）。 */
     parts(): PartView[];
     /** 按拍号自动画小节线开着没有（默认开）。 */
     autoBars?(): boolean;
-    /** 按 C 调看（辅助模式，v0.16.10；设备上的设置）：排版先把谱换到 C（src/score/view-in-c.ts）；拖音高 / 鬼音符按显示的换回实际的。 */
-    inC?(): boolean;
-    /** 和弦标级数（辅助，v0.16.11；设备上的设置）：叠音的和弦上方写级数（乐理模块 src/theory/）。v0.16.13 起进排版（不占地方），跟着设置印进 PDF。 */
-    chordTags?(): boolean;
     /** 范围：segment = 一次只看光标所在的那张纸（曲段），‹ › 翻；all = 全部（隐藏的纸折叠着）。 */
     scope?(): "all" | "segment";
     /** 屏幕放不下纸的时候：true = 按屏宽重新折行；false（默认）= 不折行、整张纸按比例缩小（行和纸上一模一样）。 */
@@ -122,11 +119,6 @@ export interface ScoreLook {
     lyricHint?(i: number): string | null;
     /** 歌词框下面的小字：光标所在那条下标 i 那个字所在这一句月读念成什么（v0.9.34）；不是月读 / 引擎还没起来 = null。 */
     lyricReading?(i: number): import("./lyric-editor.ts").LyricReading | null;
-    /** 排版 worker：地址（dist/layout-worker-<hash>.mjs；构建时 define 进主 bundle；没给 / 浏览器没有 OffscreenCanvas = 排版留在主线程）+ 建不起来 / 中途坏了（之后一直走主线程）时宿主记进黑匣子。2026-10-21 */
-    worker?: {
-        url(): string | URL | null;
-        failed?(why: string): void;
-    };
 }
 /** 试听（谱面上按住 / 拖的那个音）。 */
 export interface ScoreSound {
@@ -144,8 +136,13 @@ export interface ScoreViewHost {
     set(next: EditorState, opts?: {
         gesture?: string;
     }): void;
-    /** ② 怎么画、画什么。 */
+    /** ② 怎么画、画什么（这次打开 / 这台设备上的看法）。这首歌自己的显示设置不在这里：在歌里，谱面读 songViewOf(get().song)。 */
     look: ScoreLook;
+    /** 在哪儿排（谱面分家第三刀从 look 里单拎出来）——排版 worker：地址（dist/layout-worker-<hash>.mjs；构建时 define 进主 bundle；没给 / 浏览器没有 OffscreenCanvas = 排版留在主线程）+ 建不起来 / 中途坏了（之后一直走主线程）时宿主记进黑匣子。2026-10-21 */
+    worker?: {
+        url(): string | URL | null;
+        failed?(why: string): void;
+    };
     /** ③ 试听。 */
     sound?: ScoreSound;
     /** ④ 按在什么上了。 */

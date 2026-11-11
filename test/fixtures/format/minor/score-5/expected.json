@@ -1,0 +1,22 @@
+{
+  "score": {
+    "version": 2,
+    "minor": 5
+  },
+  "songView": {
+    "notation": "jianpu",
+    "chordTags": false,
+    "inC": true,
+    "chords": {
+      "P1": "stacked",
+      "P2": "fold"
+    }
+  },
+  "raw": {
+    "notation": "jianpu",
+    "parts": {
+      "P1": "stacked",
+      "P2": "fold"
+    }
+  }
+}

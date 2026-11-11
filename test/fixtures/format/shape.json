@@ -35,8 +35,11 @@
     "score": {
       "arrangement": "string",
       "barNumbers": "string",
+      "chordTags": "boolean",
+      "inC": "boolean",
       "lyricFit": "string",
       "minor": "number",
+      "notation": "string",
       "papers": [
         {
           "autoOttava": {
@@ -65,6 +68,7 @@
       ],
       "parts": [
         {
+          "chords": "string",
           "clef": "string",
           "host": "string",
           "id": "string",

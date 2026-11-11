@@ -115,11 +115,6 @@ export interface EngraveOpts {
         t: number;
         b: number;
     };
-    /** 按 C 调看（辅助模式，v0.16.10；src/score/view-in-c.ts）：每个音从它所在的调转到 C 再排，每个调号位置上方写「1=原来的调」（中途换调那一处给字多留一点宽）。
-     *  只是看法：PDF / 导出不传（按实际的调印）。 */
-    inC?: boolean;
-    /** 和弦标级数（v0.16.13；乐理模块 src/theory/）：叠音的和弦写它在这个调里是几级——刀 4b 起在和弦右下角、贴着下天际线（挂件，会让歌词往下让）；跟着设置印进 PDF（user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）。 */
-    chordTags?: boolean;
     /** 字的尺子比谱的尺子大多少（刀 2；src/score/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
      *  「1=F」、小节号、和弦级数、页码，连同它们周围留的地方，都按 sp × textScale 量；字形、线、cresc. / 8va / 「吸」/ 推定的灰字照旧跟谱。量字的换算在文字模块里（measure.width）。没给 = 1。 */
     textScale?: number;
@@ -254,7 +249,7 @@ export interface Layout {
         w: number;
         part?: string;
     }[];
-    /** 和弦级数的点击框 + 认出来的候选（o.chordTags 开着才有；点了 = 候选小菜单）。 */
+    /** 和弦级数的点击框 + 认出来的候选（这首歌开着和弦标级数才有；点了 = 候选小菜单）。 */
     chordTags: {
         x: number;
         y: number;

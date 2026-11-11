@@ -20,6 +20,7 @@ import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W, type Unit, type Chunk, type DynU, ty
 import { stemInput, posD, shAt, percAt, clefW } from "./measure.ts";
 import type { Prim, EngraveOpts, Layout, HitNote, RestHit, LyricHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox } from "../engrave.ts";
 import type { StaffTrack } from "./measure.ts";
+import type { SongView } from "../../score/song-view.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 
 /** 框架交给五线谱画法的东西（施工单 1b-6a：原来是 engrave() 里的局部变量）。以后 6b–6d 收窄：挂件改成清单、每行一张图元表、摆的结果不抄回单元。 */
@@ -27,6 +28,8 @@ import type { LaneKind } from "../frame/lanes.ts";
 export const STAFF_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
 export interface StaffDrawCtx {
   song: Song; paper: PaperSeg; o: EngraveOpts;
+  /** 这首歌怎么看（src/score/song-view.ts；框架读一次传进来：按 C 调看、和弦标级数、每条轨的和弦选项）。 */
+  look: SongView;
   /** 尺子：P = 谱（sp → px）；tx / TR / RS / mw = 字（文字模块的样式表）。 */
   P: (v: number) => number; tx: (role: TextRole) => number; TR: (role: TextRole, v: number) => number; RS: (role: TextRole) => number; mw: (role: TextRole, str: string) => number; sp: number; ts: number;
   /** 输出：图元和各张点击表，都在每一行自己的局部坐标里画（第五线 = 0），框架定了行距再整行挪。
@@ -55,7 +58,7 @@ export interface LyricSpot { index: number; sys: number; row: number; cx0: numbe
 export interface LyricPart { r: number; lrow: (s: number) => number; spots: LyricSpot[] }
 export function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] } {
   const lyricParts: LyricPart[] = [];
-  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
+  const { song, look, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
     /** 第 s 行开头的谱号（这一行第一个东西那里生效的）。 */
     const clefAtSys = (q: StaffTrack, s: number): ClefName => {
       const u = q.units.find((x) => x.system === s && x.index >= 0); if (u) return q.ds.clef[u.index] ?? q.start;
@@ -134,8 +137,8 @@ export function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] } {
           if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });   // 调号（谱号那一块归谱号，v0.9.28）
           // 「1=X」（v0.16.10）：按 C 调看 = 写原来的调；专业模式没有升降号 = 淡的「1=C」提示（不占宽）。字也能点（同调号）
           //   小调（v0.16.83）= 每一处都写淡的「6=X」（按 C 调看 = 照印），哪里从 la 数一眼看得见
-          const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (o.inC ? q.head.real : fk === 0 || q.head.minor ? fk : null) : null;
-          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !o.inC, q.head.idx.key!, q.head.minor);
+          const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (look.inC ? q.head.real : fk === 0 || q.head.minor ? fk : null) : null;
+          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !look.inC, q.head.idx.key!, q.head.minor);
           if (fk) hx += 0.8;
           const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
           if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
@@ -310,7 +313,7 @@ export function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] } {
             // 换到同一个调、又没有升降号（C → C）：什么都画不出来 → 写个小字，免得成了看不见的记号（印）。按 C 调看 = 每一处写原来的调；
             //   专业模式换成 C（画了还原号）= 淡的「1=C」提示（v0.16.10，不印）
             if (k === 0) {
-              if (o.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
+              if (look.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
               else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor);
               else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor);
             }
@@ -617,11 +620,11 @@ export function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] } {
     });
     // 和弦级数（v0.16.13；乐理模块 src/theory/）= 挂件第 10 样（刀 4b，user 11-08 拍：放到和弦的右下角）：x = 符头右缘 + 0.3、靠左对齐；y = 这一段下天际线再往下 0.3。
     //   按 C 调看时认的是换到 C 的谱 + C 调——级数一样。合租叠起来的虚拟行、声部 2 不标（只看个大概的）。印（跟着设置进 PDF）
-    if (o.chordTags && !v2 && !q.vrt) attach("chordTag", () => {
+    if (look.chordTags && !v2 && !q.vrt) attach("chordTag", () => {
       const fs = tx("chord-tag");   // 和速度字一样大（v0.16.34）；字的尺子（刀 2）
       // 标哪几个音、标什么 = 乐理模块（src/theory/：叠音的和弦 + 分解和弦，2026-11-09 起能整块换理论）；这里只管摆。
       //   harmonyTags 把这条 track 从左到右一小节一小节喂给理论（理论拿不到整条 track——只看前面，theory/index.ts 文件头）
-      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: song.parts.find((x) => x.id === q.p.id)?.brokenChords !== false }).map((x) => [x.index, x.read] as const));
+      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: look.chordsOf(q.p.id) !== "stacked" }).map((x) => [x.index, x.read] as const));
       for (const c of units) {
         if (c.kind !== "chunk" || !c.note || c.j !== 0 || c.index < 0 || c.pad) continue;
         const t = tokens[c.index]; if (t?.kind !== "note" || !t.pitch) continue;

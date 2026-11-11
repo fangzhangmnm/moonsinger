@@ -1,7 +1,8 @@
 // 修改锁（家族「源文件原则上只读：手动解锁才能改」）的纯逻辑：分类表 / 「这首锁着吗」/ 写入口 / 撤销重做 / 脏分两种 / 家的写回 / 编辑会话的保存。
 //   created 2026-11-10 by Claude Fable 5.2（设计稿 = 家族根 ai-docs/20261109-moonsinger-edit-lock-design.md 第八节 + 第十四节补遗）。全是假的 ports，零 DOM、零持久化。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { LOOK_OPS, isLookOp, lookOpInFile, sameExceptPaperHidden, effectiveKind } from "../src/app/edit-lock-table.ts";
+import { LOOK_OPS, isLookOp, lookOpInFile, sameExceptPaperHidden, sameExceptSongView, sameModuloLooks, effectiveKind } from "../src/app/edit-lock-table.ts";
+import { setNotation, setChordTags, setViewInC, setPartChords } from "../src/score/song-view.ts";
 import { createEditLock, type LockHome, type LockStore } from "../src/app/edit-lock.ts";
 import { createDocument, type DocHooks } from "../src/app/document.ts";
 import { createHome, type Home, type HomePorts } from "../src/app/home.ts";
@@ -12,9 +13,10 @@ import type { LocusKind } from "../src/score/history.ts";
 import type { FileHandle } from "../src/app/doc-file.ts";
 
 describe("修改锁 · 分类表", () => {
-  it("表里现在只有曲段隐藏一类看法，进文件；没列的 / 没给的一律不是看法", () => {
-    eq(Object.keys(LOOK_OPS).join(","), "paperHidden");
+  it("表里现在两类看法（曲段隐藏、这首歌怎么看），都进文件；没列的 / 没给的一律不是看法", () => {
+    eq(Object.keys(LOOK_OPS).join(","), "paperHidden,songLook");
     assert(isLookOp("paperHidden") && lookOpInFile("paperHidden"));
+    assert(isLookOp("songLook") && lookOpInFile("songLook"), "这首歌怎么看（谱面分家第三刀）：存在歌里、锁着能切");
     for (const k of ["score", "paper", "lounge", "studio", "cover", "final", "toString", "", undefined, null]) assert(!isLookOp(k as string), String(k));
   });
   it("「只差隐藏」按引用核：隐藏 / 放出来 = 是；顺手改了名字、动了音、换了歌名 = 不是", () => {
@@ -26,6 +28,18 @@ describe("修改锁 · 分类表", () => {
     assert(!sameExceptPaperHidden(a, { ...hid, papers: hid.papers.map((p) => (p.id === pid ? { ...p, name: "改了名" } : p)) }), "顺手改了曲段名");
     assert(!sameExceptPaperHidden(a, { ...hid, papers: hid.papers.map((p) => (p.id === pid ? { ...p, tracks: { ...p.tracks } } : p)) }), "tracks 换了对象 = 可能动了音");
     assert(!sameExceptPaperHidden(a, { ...a, papers: a.papers.slice(0, 1) }), "少了一张纸");
+  });
+  it("「只差这首歌怎么看」按引用核：谱种 / 和弦标级数 / 按 C 调看 / 每轨和弦选项 = 是；顺手改了歌名、动了声部的别的字段、加了声部 = 不是；两类看法合起来 = sameModuloLooks", () => {
+    const st = addPaper(initState()), a = st.song, part = a.parts[0]!.id;
+    for (const b of [setNotation(st, "jianpu").song, setChordTags(st, false).song, setViewInC(st, true).song, setPartChords(st, part, "stacked").song])
+      assert(sameExceptSongView(a, b) && sameExceptSongView(b, a) && !sameExceptPaperHidden(a, b), "切一样 = 只差这首歌怎么看");
+    const look = setViewInC(st, true);
+    assert(!sameExceptSongView(a, { ...look.song, title: "偷改" }), "顺手改歌名");
+    assert(!sameExceptSongView(a, { ...look.song, parts: look.song.parts.map((p) => ({ ...p, host: "x" })) }), "动了声部的别的字段");
+    assert(!sameExceptSongView(a, { ...look.song, parts: [...look.song.parts, { id: "P9", role: "r9", mic: "m9" }] }), "加了声部");
+    const both = setPaperHidden(look, a.papers[1]!.id, true).song;
+    assert(sameModuloLooks(a, both) && !sameExceptSongView(a, both) && !sameExceptPaperHidden(a, both), "两类看法一起动 = 只差看法");
+    assert(!sameModuloLooks(a, { ...both, credits: "x" }));
   });
   it("自己报的类别要核：真的只动了看法 = 原样；动了别的 / 连 extras 一起动 = 当内容", () => {
     const st = addPaper(initState()), pid = st.song.papers[1]!.id, hid = setPaperHidden(st, pid, true).song;
@@ -122,6 +136,17 @@ describe("修改锁 · 写入口和撤销重做（第 ②③ 道）", () => {
     assert(D.run({ k: "caret", d: -1 }).ok, "光标不归锁管");
     assert(hide(true).ok && D.st.song.papers[1]!.hidden === true); eq(D.history.past.length, 1); eq(D.history.past[0]!.locus.kind, "paperHidden");
     eq(D.locked(), "锁着");
+  });
+  it("锁着：这首歌怎么看（四样各切一下）放行，进撤销栈、类别 songLook；自称 songLook 实际改了歌名 = 当内容拒", () => {
+    const { D, log, g } = doc(); g.locked = true;
+    const look = (next: EditorState) => D.commit({ st: next }, { locus: { kind: "songLook", label: "看谱" } });
+    const part = D.st.song.parts[0]!.id;
+    for (const f of [(x: EditorState) => setViewInC(x, true), (x: EditorState) => setChordTags(x, false), (x: EditorState) => setNotation(x, "jianpu"), (x: EditorState) => setPartChords(x, part, "stacked")]) assert(look(f(D.st)).ok);
+    const s = D.st.song;
+    eq([s.inC, s.chordTags, s.notation, s.parts[0]!.chords].join(","), "true,false,jianpu,stacked"); eq(D.history.past.length, 4);
+    assert(D.history.past.every((x) => x.locus.kind === "songLook")); eq(D.dirtyKind(), "looks"); eq(log.length, 0);
+    assert(!look({ ...setViewInC(D.st, false), song: { ...setViewInC(D.st, false).song, title: "偷改" } }).ok); eq(log.join("|"), "refused:score:谱 / 歌名 / 作者栏");
+    assert(D.undo() && D.st.song.parts[0]!.chords === undefined, "撤销这一格也是看法：锁着照样能翻");
   });
   it("标签不是证据：自称曲段隐藏、实际改了曲段名 → 当内容拒", () => {
     const { D, log, g } = doc(); g.locked = true;
