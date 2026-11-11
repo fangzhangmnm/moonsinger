@@ -9,7 +9,7 @@ export interface LookOp {
 }
 /** 两首歌除了「哪几段隐藏着」之外一模一样（按引用比：歌是结构共享的，没动过的东西还是同一个对象）。完全没变也算。 */
 export declare function sameExceptPaperHidden(a: Song, b: Song): boolean;
-/** 两首歌除了「这首歌怎么看」的四样（歌顶层的 notation / chordTags / inC + 每个声部的 chords；src/score/song-view.ts）之外一模一样。按引用比；完全没变也算。 */
+/** 两首歌除了「这首歌怎么看」的四样（歌顶层的 notation / chordTags / viewInC + 每个声部的 chords；src/score/song-view.ts）之外一模一样。按引用比；完全没变也算。 */
 export declare function sameExceptSongView(a: Song, b: Song): boolean;
 /** 看法的明文名单。加一类 = 这里加一行 + src/score/history.ts 的 LocusKind 加这个词 + 它的调用点带上这个类别
  *  （test/edit-lock-guard.test.mjs 钉：名单里的词必须真有写入口的调用点在用；带这个类别的调用点不许带 gesture）。 */

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // bench-layout-vs.mjs —— 现在的排版器和某个提交的排版器比快慢：同一个进程里交替跑（负载一样）、各取中位数和逐对比值的中位数。
-//   created 2026-11-12 by Claude Opus 5.5（MoonSinger小弟，谱面分家第二刀开工前；施工单第五节统筹裁定：以后每刀都和分家前比，累计慢到三成以上停下找原因）。
-//   为什么不分开进程量：分开量时两边各热 8 次、负载又乱跳，量出过「慢两成」；同进程配对跑同一时刻的比值是 1.00（施工单第六节 2026-11-12 那行）。
+//   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第二刀开工前；施工单第五节统筹裁定：以后每刀都和分家前比，累计慢到三成以上停下找原因）。
+//   为什么不分开进程量：分开量时两边各热 8 次、负载又乱跳，量出过「慢两成」；同进程配对跑同一时刻的比值是 1.00（施工单第六节 2026-11-11 那行）。
 // 用法：node scripts/bench-layout-vs.mjs [提交号，默认 ef5ad79 = 分家前] [视图…，默认 edit-all print]
 //   歌 = test/fixtures/layout 的 Once upon a Tale（真实密度的大歌）。老的那份从 git 导出到系统临时目录（src / test / vendor/fflate），用完不删（同一个提交第二次直接用）。
 import { execFileSync } from "node:child_process";

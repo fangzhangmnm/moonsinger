@@ -143,7 +143,7 @@ describe("修改锁 · 写入口和撤销重做（第 ②③ 道）", () => {
     const part = D.st.song.parts[0]!.id;
     for (const f of [(x: EditorState) => setViewInC(x, true), (x: EditorState) => setChordTags(x, false), (x: EditorState) => setNotation(x, "jianpu"), (x: EditorState) => setPartChords(x, part, "stacked")]) assert(look(f(D.st)).ok);
     const s = D.st.song;
-    eq([s.inC, s.chordTags, s.notation, s.parts[0]!.chords].join(","), "true,false,jianpu,stacked"); eq(D.history.past.length, 4);
+    eq([s.viewInC, s.chordTags, s.notation, s.parts[0]!.chords].join(","), "true,false,jianpu,stacked"); eq(D.history.past.length, 4);
     assert(D.history.past.every((x) => x.locus.kind === "songLook")); eq(D.dirtyKind(), "looks"); eq(log.length, 0);
     assert(!look({ ...setViewInC(D.st, false), song: { ...setViewInC(D.st, false).song, title: "偷改" } }).ok); eq(log.join("|"), "refused:score:谱 / 歌名 / 作者栏");
     assert(D.undo() && D.st.song.parts[0]!.chords === undefined, "撤销这一格也是看法：锁着照样能翻");

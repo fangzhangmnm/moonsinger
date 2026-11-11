@@ -6,7 +6,7 @@
   "songView": {
     "notation": "jianpu",
     "chordTags": false,
-    "inC": true,
+    "viewInC": true,
     "chords": {
       "P1": "stacked",
       "P2": "fold"

@@ -388,7 +388,7 @@ interface Surface { render(): void; playhead(at: TimeRef | null): void; reveal()
 ```ts
 // ── 框架（src/render/frame/、src/render/engrave.ts）──────────────────────
 declare function engrave(song: Song, o: EngraveOpts): Layout;          // 排版本体（o.locale 必填：排版不读界面语言）；Layout = 平数据，worker 原样过线
-// 〔第二刀，2026-11-12〕1b 时是 engraveData（平数据）+ engrave（= withStaffGeometry(engraveData(…))，带 yOf / dOf / lyricY 三个现算的函数）；
+// 〔第二刀，2026-11-11〕1b 时是 engraveData（平数据）+ engrave（= withStaffGeometry(engraveData(…))，带 yOf / dOf / lyricY 三个现算的函数）；
 //   谱面视图改读下面的几何函数之后三个函数没人用了，Layout 本身就是平的，两个名字并成一个 engrave，LayoutData / withStaffGeometry 删了。
 
 // 排（frame/arrange.ts）：各条轨的列条目 → 合成列 → 弹簧顶杆 → 整张纸挑折点 → 每行摆（结果单独一张表）
@@ -416,7 +416,7 @@ declare function previewAt(row: StaffRowData, d: number, half: number): { y: num
 declare const pitchAxis: { stepAt(row, y, half): number; stepsOfDrag(dy, half): number };                 // 纵向 = 音高
 declare function bandTop(row: StaffRowData, half: number): number;                                        // 选区带上沿
 
-// ── 谱面（src/ui/score-view.ts；第二刀，2026-11-12）：向 app 要的 = 第 3.2 节的五样 + 一条出口 ────
+// ── 谱面（src/ui/score-view.ts；第二刀，2026-11-11）：向 app 要的 = 第 3.2 节的五样 + 一条出口 ────
 interface ScoreViewHost {
   get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void;   // ① 编辑状态（改谱只交核心的纯函数算好的整份）
   look: ScoreLook;                 // ② 怎么画、画什么：parts / autoBars / inC / chordTags / scope / reflow / pages / scroll / lyricRaise / layoutWidth /
@@ -431,10 +431,10 @@ type ScorePress =
   | { kind: "part"; paper; part; box? } | { kind: "blank"; at; row } | { kind: "selection"; at } | { kind: "mark"; index; at }
   | { kind: "clef"; hit: ClefHit; at } | { kind: "header"; paper; part; index; at } | { kind: "chordTag"; read; at; where }
   | { kind: "credits" } | { kind: "listen"; at; target: { paper; part; index; caret; tick } };   // 原来 9 个「点了开菜单」
-// 〔第三刀，2026-11-12〕look 去掉 inC / chordTags（这首歌自己的设置，谱面读 songViewOf(get().song)）；排版 worker 从 look 挪到顶层 worker?: { url(); failed?(why) }。
+// 〔第三刀，2026-11-11〕look 去掉 inC / chordTags（这首歌自己的设置，谱面读 songViewOf(get().song)）；排版 worker 从 look 挪到顶层 worker?: { url(); failed?(why) }。
 //   look 现在只剩这次打开 / 这台设备上的看法 + 声部的情况（parts）+ 歌词框的两行小字。
 
-// ── 这首歌怎么看（src/score/song-view.ts；第三刀，2026-11-12）────────────────
+// ── 这首歌怎么看（src/score/song-view.ts；第三刀，2026-11-11）────────────────
 type NotationId = "staff" | "jianpu";  type ChordsMode = "stacked" | "auto" | "fold";
 declare const UNWRITTEN: { notation: "staff"; chordTags: true; inC: false; chords: "auto" };   // 文件里没写 = 这些，冻住、永远不变（测试钉着）
 interface SongView { notation: NotationId; chordTags: boolean; inC: boolean; chordsOf(part: string): ChordsMode }
@@ -451,7 +451,7 @@ declare function setViewInC(st, on): EditorState;   declare function setPartChor
 1. 还没有 `RowDrawer` 对象和 `NOTATIONS` 表：只有五线谱一种，函数从 `staff/index.ts` 直接拿。第四刀加简谱时，再把两种收成同一个形状、谱种表里各一行（到时按两个实现定形状，不先猜）。
 2. `draw` 吃的是「一条轨在这张纸上的所有行」，不是一行；挂件不在 `RowInk` 里，而是往道上登记（上面第 3.3 节的〔1b 落地〕）。
 3. `measure` 出的是 `ColEntry`（`SpItem` 的道 + 弹簧时值），列的先后用 `ColumnKind`，没有单独的 `Column` 类型；`lineStart` 由框架问「这一刻每条轨生效的调号」，不是 `(track, tick)`。
-4. 行的数据没挪进 `RowBox.data`：`SystemBox.staffTop / staff`、`HitNote.d`、`CaretHead.shift` 原地留着，类型注释标成五线谱这一行的数据。〔第二刀，2026-11-12〕谱面视图改读几何函数了（光标 = `caretSpan`、鬼音符 = `previewAt`、选区带上沿 = `bandTop`、点在哪一级 / 拖了几级 = `pitchAxis`，歌词基线读 `Layout.lyricYs`），`Layout.yOf / dOf / lyricY` 退场。这三样数据仍原地留着、不挪进 `data` 子对象：现在只有五线谱一种行，挪进去只是换个路径；第四刀有了第二种行（简谱没有「第几级」），再按两种行的实际需要定 `RowBox.data` 的形状。
+4. 行的数据没挪进 `RowBox.data`：`SystemBox.staffTop / staff`、`HitNote.d`、`CaretHead.shift` 原地留着，类型注释标成五线谱这一行的数据。〔第二刀，2026-11-11〕谱面视图改读几何函数了（光标 = `caretSpan`、鬼音符 = `previewAt`、选区带上沿 = `bandTop`、点在哪一级 / 拖了几级 = `pitchAxis`，歌词基线读 `Layout.lyricYs`），`Layout.yOf / dOf / lyricY` 退场。这三样数据仍原地留着、不挪进 `data` 子对象：现在只有五线谱一种行，挪进去只是换个路径；第四刀有了第二种行（简谱没有「第几级」），再按两种行的实际需要定 `RowBox.data` 的形状。
 6. 〔第三刀〕第 7 节提案里的 `SongView` 还收了现有的版式 / 音距 / 歌词排法 / 小节号，`LayoutInput` 把 `view` 和歌分开传。这一刀只收了这次存进歌的四样（施工单只说这四样；那几样各有自己的读者，收进来要改它们 = 另一件事），排版自己从歌里读 `songViewOf(song)`，不另传——歌本来就是排版的输入，另传一份会有「两份对不上」的口子。
 5. 纵向的版式表（`frame/params.ts SPACING` 里谱上面留多少、大谱表上面那条、没歌词的那条）还在框架的参数文件里，按五线谱的数写着；收进「排版参数表」（按谱种给值）= 第四刀（排版参数表那一项）。
 

@@ -189,10 +189,10 @@ export interface Song {
    *  v0.16.33 那一小时写的 denseShort: "off" 读成正常）。 */
   spacing?: "tight";
   /** 这首歌怎么看的三样（谱面分家第三刀，score minor 5；读 / 改只走 src/score/song-view.ts，没写的意思冻住在那里）：
-   *  notation = 谱种（只写不是五线谱的；不认识的原样留着）；chordTags = 和弦标级数（只写 false）；inC = 按 C 调看（只写 true）。存档 = score.json 同名可选字段。 */
+   *  notation = 谱种（只写不是五线谱的；不认识的原样留着）；chordTags = 和弦标级数（只写 false）；viewInC = 按 C 调看（只写 true）。存档 = score.json 同名可选字段。 */
   notation?: string;
   chordTags?: false;
-  inC?: true;
+  viewInC?: true;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表

@@ -4,6 +4,7 @@
 //   验的是：打开默认锁着 → 键盘 / 写入口 / 撤销 / 存盘都拦、文件一个字节都不变、只闪不弹 → 曲段隐藏锁着能点（看法）→ 「接着改」→ 能写能存 → 「锁上」先存再锁 → 重开又锁着。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/edit-lock.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { unzipSync, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -24,6 +25,11 @@ const openFile = () => p.evaluate(async (name) => window.__moonsinger.openFileHa
 // ── 备料：没有家的新歌里写三个音、加一段 → 字节写进 OPFS 的一个文件 → 刷新（手里干净）→ 当硬盘文件打开 ──
 await p.goto(BASE); await p.waitForTimeout(700);
 for (let i = 0; i < 3; i++) { await p.click(`.pad-key[data-k] >> nth=${i}`); await p.waitForTimeout(40); }
+// 第三个音叠成一个大三和弦（音的个数不变）：后面「和弦标级数」那一段要看得见谱上的级数（谱面分家第三刀）
+await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), paper = s.song.papers[0], t = paper.tracks[s.at.part], k = t.map((x) => x.kind).lastIndexOf("note"), P = (step, octave) => ({ step, alter: 0, octave });
+  const toks = t.map((x, i) => (i === k ? { ...x, pitch: P("G", 4), chord: [P("E", 4), P("C", 4)] } : x));
+  m.set({ ...s, song: { ...s.song, papers: [{ ...paper, tracks: { ...paper.tracks, [s.at.part]: toks } }, ...s.song.papers.slice(1)] } }); });
+await p.waitForTimeout(150);
 await p.evaluate(() => window.__moonsinger.addPaper()); await p.waitForTimeout(150);
 await p.evaluate(async (name) => { const fh = await (await navigator.storage.getDirectory()).getFileHandle(name, { create: true }); const w = await fh.createWritable(); await w.write(window.__moonsinger.bytes()); await w.close(); }, FILE);
 await p.goto(BASE); await p.waitForTimeout(700);
@@ -74,12 +80,12 @@ check(await hidden(), "重做：同理");
   await p.mouse.click(chip.x, chip.y); await p.waitForSelector(".settings-card");
   await armFlash(); await p.click('.settings-card [data-v="inc:on"]'); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(150);
   const s = await lk();
-  check((await p.evaluate(() => window.__moonsinger.state().song.inC)) === true && !(await flashed()), "锁着在纸的设置里切「按 C 调看」：切了、门不闪");
+  check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === true && !(await flashed()), "锁着在纸的设置里切「按 C 调看」：切了、门不闪");
   check(s.dirtyKind === "looks" && !s.owes, "脏的还是「看法」、没有要存的东西", JSON.stringify(s));
   await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
   check((await fileSig()) === sig0, "锁着按「存」：文件一个字节都没变");
   await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(150);
-  check((await p.evaluate(() => window.__moonsinger.state().song.inC)) === undefined, "撤销：翻回去（看法那一格锁着也能翻）");
+  check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === undefined, "撤销：翻回去（看法那一格锁着也能翻）");
   await p.evaluate(() => { const m = window.__moonsinger; m.openHeader(m.state().at.part); }); await p.waitForTimeout(150);
   const pe = await p.evaluate(() => { const g = (q) => { const el = document.querySelector(q); return el ? getComputedStyle(el).pointerEvents : "没有"; }; return { broken: g('.header-panel [data-hp="broken"]'), key: g('.header-panel [data-hp="key"]') }; });
   check(pe.broken === "auto" && pe.key === "none", "谱头面板：「分解和弦」锁着能切（看法），调号改不动", JSON.stringify(pe));
@@ -147,6 +153,28 @@ await p.click('#lockBar [data-v="continue"]'); await p.waitForTimeout(200);
 check((await lk()).state === "unlocked", "再解一次");
 check(await openFile(), "重开同一个文件"); await p.waitForTimeout(400);
 check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：又锁着，内容是上次存下的");
+
+// ── 这首歌怎么看走真文件（谱面分家第三刀，统筹审第三刀第 3 条）：锁着切「和弦标级数」= 谱上变了、存不进、重开原样；解了切、存 = 文件里有 chordTags: false，再开还是不标 ──
+{ const toFirst = async () => { await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { paper: s.song.papers[0].id, part: s.at.part }, caret: 0, sel: null }); }); await p.waitForTimeout(250); };   // 叠音在第一段；视图只看本段，重开时停在存下的那一段（挪光标锁着也照常）
+  const tags = async () => { await toFirst(); return p.$$eval("#score text.chord-tag", (ts) => ts.length); };
+  const chip = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
+  const setTags = async (on) => { await chip(); await p.click(`.settings-card [data-v="ct:${on ? "on" : "off"}"]`); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
+  const fileScore = async () => { const arr = await p.evaluate(async (name) => { const f = await (await (await navigator.storage.getDirectory()).getFileHandle(name)).getFile(); return [...new Uint8Array(await f.arrayBuffer())]; }, FILE);
+    const z = unzipSync(new Uint8Array(arr)); return z[".moonsinger/score.json"] ? JSON.parse(strFromU8(z[".moonsinger/score.json"])) : null; };   // 文件字节拿回 node 这边解（不为测试往 app 里加钩子）
+  const t0 = await tags(), sigA = await fileSig();
+  check((await lk()).locked && t0 > 0, "锁着、谱上标着和弦级数", `${t0}`);
+  await setTags(false);
+  check((await tags()) === 0, "锁着切「不标」：谱上的级数没了");
+  await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(300);
+  check((await fileSig()) === sigA, "锁着按「存」：文件一个字节都没变");
+  check(await openFile(), "关掉重开（换开同一个文件 = 不问、不存）"); await p.waitForTimeout(400);
+  check((await lk()).locked && (await tags()) === t0 && (await fileSig()) === sigA, "重开 = 文件里的原样：又标着级数", `${await tags()}`);
+  await p.click('#lockBar [data-v="continue"]'); await p.waitForTimeout(200);
+  await setTags(false); await p.evaluate(() => window.__moonsinger.fileSave()); await p.waitForTimeout(400);
+  const sj = await fileScore();
+  check(sj && sj.chordTags === false && (await fileSig()) !== sigA, "解了切「不标」、存 = 文件的 score.json 里有 chordTags: false", JSON.stringify(sj && { chordTags: sj.chordTags, minor: sj.minor }));
+  check(await openFile(), "再开"); await p.waitForTimeout(400);
+  check((await tags()) === 0 && (await p.evaluate(() => window.__moonsinger.state().song.chordTags)) === false, "再开还是不标"); }
 
 check(errs.length === 0, "没有页面错误", errs.join(" | "));
 console.log(`\nedit-lock: ${pass} passed, ${fail} failed`);

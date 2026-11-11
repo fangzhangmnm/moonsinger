@@ -27,7 +27,7 @@ describe("排版不认光标（W-17 第 1 刀）", () => {
   it("写字头画在哪（heads）：每个 caret 位置都有一条、带 shift；光标停在小节线前 = 画在小节线后面的那个音那儿（老规矩）", () => {
     const st = song(12), L = lay(st), n = tr(st).length;
     for (let c = 3; c <= n; c++) { const h = L.heads.find((x) => x.caret === c && !x.end && x.lead === undefined); assert(h, `caret ${c} 有写字头位置`); eq(typeof h!.shift, "number"); }
-    // 4/4 里 12 个四分音符 = 3 个整小节；自动小节线不是 token，所以每个 caret 都落在下一个音那一列（2026-11-12 Claude Opus 5.5 改：原来断言「= 符头的 x」写于 10-15，刀 3 起光标在列的对齐线上、符头在它右边 0.35，这条测试一直没登记、没跑，谱面分家第二刀第一步收）
+    // 4/4 里 12 个四分音符 = 3 个整小节；自动小节线不是 token，所以每个 caret 都落在下一个音那一列（2026-11-11 Claude Opus 5.5 改：原来断言「= 符头的 x」写于 10-15，刀 3 起光标在列的对齐线上、符头在它右边 0.35，这条测试一直没登记、没跑，谱面分家第二刀第一步收）
     const notes = L.notes, byIdx = new Map(notes.map((x) => [x.index, x]));
     for (let c = 3; c < n; c++) { const h = L.heads.find((x) => x.caret === c && !x.end && x.lead === undefined)!, nx = byIdx.get(c)!; eq(h.system, nx.system, `caret ${c} 和音同一行`); assert(Math.abs((nx.x - h.x) - 0.35 * 10) < 1e-6, `caret ${c} 画在这个音的对齐线上（符头左边 0.35 个线间距：刀 3 v0.16.33 起符头画在列的 x + 0.35、光标在列的 x 再让开临时记号）`); }
   });

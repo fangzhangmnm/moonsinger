@@ -626,7 +626,7 @@ let upTimer = 0;   // 点一下响 350 ms 的那个停；新的一下先取消�
 /** 看谱方式「按 C 调看」（v0.16.10）：谱换到 C 调画、每个调号上方写「1=原来的调」、键上大字写级数。user 11-07「我需要一个残疾人模式…显示的时候…帮我转到 C 大调上面，然后…写一个一等于 F」
  *  「设计里面专门开一个就是 Accessibility 辅助模式的框，这是第一个可选项」「键盘的键位不能动」。
  *  和弦标级数（v0.16.11）：叠音的和弦上方写级数（src/theory/）。user 11-07「我根本看不懂我自己摸的和弦，摸出来是几级和弦，我脑袋根本转不过来」「和弦上标级数…写个深模块…就你自己写」。
- *  谱面分家第三刀（2026-11-12）起这两样是**这首歌的**设置（score.json；读 / 改只走 src/score/song-view.ts，改走 setSongLook = 修改锁的「看法」）。
+ *  谱面分家第三刀（2026-11-11）起这两样是**这首歌的**设置（score.json；读 / 改只走 src/score/song-view.ts，改走 setSongLook = 修改锁的「看法」）。
  *  设备上原来那两个键（device-kv「view-in-c」「chord-tags」）不再读、也不删；不把旧值搬进歌（施工单第三节「3」，user 11-11 夜听过这个后果）。 */
 const view = new ScoreView(scoreEl, {
   get: () => D.st,
@@ -840,9 +840,9 @@ const padHost = createPadHost(padEl, {
 });
 const pad = padHost.pad;
 /** 键上的大字跟着这首歌怎么看走：按 C 调看 = 级数，不按 = 音名（换歌 / 切 / 撤销都在 paintNow 里对一次）。 */
-let shownInC = songViewOf(D.st.song).inC;
+let shownInC = songViewOf(D.st.song).viewInC;
 pad.setBigLabel(shownInC ? "deg" : "abs");
-function syncSongLook(): void { const inC = songViewOf(D.st.song).inC; if (inC === shownInC) return; shownInC = inC; pad.setBigLabel(inC ? "deg" : "abs"); ghostSync(); }
+function syncSongLook(): void { const inC = songViewOf(D.st.song).viewInC; if (inC === shownInC) return; shownInC = inC; pad.setBigLabel(inC ? "deg" : "abs"); ghostSync(); }
 
 /** 「弹」开 / 关（顶栏按钮、电脑键盘的 `）。 */
 /** 弹（只响不写）：开关在 pad 第一排「收起」左边（user 2026-10-08「弹这个锁还是放键盘上吧放在第一row，收起键盘的左边」）；快捷键 ` 照旧。找人视图里一直是弹、拨不动。 */
@@ -1922,8 +1922,8 @@ function openPaperSheet(): void {
       `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("按歌词")}<small>${_t("长的字把音推开（出版谱的老规矩）")}</small></button></div>` +
       // 看谱（谱面分家第三刀：原来在设置的「乐理助手」里、存在设备上；现在是这首歌的，进歌、能撤销，锁着也能切。PDF 跟着）
       ((lk) => `<div class="part-sec">${_t("看谱")}</div><div class="set-row">` +
-        `<button class="btn cand${lk.inC ? "" : " is-on"}" data-v="inc:off">${_t("专业")}<small>${_t("按实际的调画谱，键上大字写音名")}</small></button>` +
-        `<button class="btn cand${lk.inC ? " is-on" : ""}" data-v="inc:on">${_t("按 C 调看（1=X）")}<small>${_t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")}</small></button></div>` +
+        `<button class="btn cand${lk.viewInC ? "" : " is-on"}" data-v="inc:off">${_t("专业")}<small>${_t("按实际的调画谱，键上大字写音名")}</small></button>` +
+        `<button class="btn cand${lk.viewInC ? " is-on" : ""}" data-v="inc:on">${_t("按 C 调看（1=X）")}<small>${_t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")}</small></button></div>` +
         `<div class="set-row"><button class="btn cand${lk.chordTags ? " is-on" : ""}" data-v="ct:on">${_t("和弦标级数")}<small>${_t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选")}</small></button>` +
         `<button class="btn cand${lk.chordTags ? "" : " is-on"}" data-v="ct:off">${_t("不标")}</button></div>` +
         `<div class="offer-msg">${_t("跟着这首歌走：存在歌里、能撤销，导出的 PDF 照这里印。别人的歌锁着也能切着看，不会改动文件。")}</div>`)(songViewOf(D.st.song)) +
@@ -2984,7 +2984,7 @@ function openPdfPanel(): void {
       `<div class="part-sec">${_t("歌词的字体")}</div><div class="set-row">${chip("sans", _t("黑体"), _t("思源黑体：中文 / 日文 / 英文都有"))}${chip("pinyin", _t("拼音"), _t("萌神手写体：汉字头上标普通话拼音（可爱）；日文歌的汉字也会被标上普通话拼音"))}</div>` +
       `<div class="offer-msg">${_t("{p}第一次要下载字体（约 {p2} MB），之后离线也能用。纸张 = 这首歌的纸（纸的扳手里改）。", { p: pdfFont === "pinyin" ? _t("萌神手写体：汉字头上标普通话拼音，歌词那一行会往下让出拼音的地方。日文歌的汉字也会被标上普通话拼音。") : _t("思源黑体：中文、日文、英文都有。"), p2: PDF_FONT_MB[pdfFont] })}</div>` +
       `<div class="offer-msg">${partPick === "shown" ? _t("只排看得见的声部（{p}）：重新排、不留空位——和分页预览不一样。", { p: esc(shownNames.join("、")) }) : _t("印出来的 = 扳手里「分页」+ 曲段控件「{p}」看到的样子，去掉按钮和提示；隐藏的{p2}声部不印（预览里那条细行的位置空着）。", { p: paperPick === "one" ? _t("本段") : _t("全部"), p2: paperPick === "one" ? "" : _t("纸 / ") })}</div>` +
-      ((lk) => (lk.inC || lk.chordTags) ? `<div class="offer-msg">${_t("照这首歌的看谱方式印：{w}（纸的扳手 →「看谱」里改）。", { w: [lk.inC ? _t("按 C 调看（每个调号上方印「1=原来的调」）") : "", lk.chordTags ? _t("和弦级数") : ""].filter(Boolean).join(_t("、")) })}</div>` : "")(songViewOf(D.st.song)) +   // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
+      ((lk) => (lk.viewInC || lk.chordTags) ? `<div class="offer-msg">${_t("照这首歌的看谱方式印：{w}（纸的扳手 →「看谱」里改）。", { w: [lk.viewInC ? _t("按 C 调看（每个调号上方印「1=原来的调」）") : "", lk.chordTags ? _t("和弦级数") : ""].filter(Boolean).join(_t("、")) })}</div>` : "")(songViewOf(D.st.song)) +   // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
       `<div class="offer-btns"><button class="btn" data-v="close">${_t("算了")}</button><button class="btn primary" data-v="go">${_t("生成 PDF")}</button></div></div>`;
   };
   draw(); document.body.append(box);

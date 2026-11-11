@@ -1,5 +1,5 @@
 // song-view.ts —— 「这首歌怎么看」：歌文件里的四样显示设置（谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项）读成一个对象、改也从这里改——只此一处。
-//   created 2026-11-12 by Claude Opus 5.5（MoonSinger小弟，谱面分家第三刀；设计稿 ai-docs/20261111-score-surface-architecture.md 第 3.7 节、施工单第三节「3」）。
+//   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第三刀；设计稿 ai-docs/20261111-score-surface-architecture.md 第 3.7 节、施工单第三节「3」）。
 //   user 11-11 夜拍了这四样存进歌文件（「可以」）。它们决定这首歌怎么印：进撤销、会标脏；归修改锁的「看法」那一类（src/app/edit-lock-table.ts songLook：锁着能切，锁着期间不写文件）。
 //   以前「和弦标级数」「按 C 调看」存在设备上（device-kv chord-tags / view-in-c）：这一刀起不再读那两个键，也不删；不把设备上的旧值搬进歌（user 同一条消息听过这个后果）。
 //
@@ -16,8 +16,8 @@ export const NOTATIONS: readonly NotationId[] = ["staff", "jianpu"];
 export type ChordsMode = "stacked" | "auto" | "fold";
 export const CHORDS_MODES: readonly ChordsMode[] = ["stacked", "auto", "fold"];
 
-/** 文件里没写 = 这些值。写死，永远不变（改它 = 改了所有旧歌的样子）。 */
-export const UNWRITTEN: Readonly<{ notation: NotationId; chordTags: boolean; inC: boolean; chords: ChordsMode }> = Object.freeze({ notation: "staff", chordTags: true, inC: false, chords: "auto" });
+/** 文件里没写 = 这些值。写死，永远不变（改它 = 改了所有旧歌的样子）。chordTags / viewInC 在文件里永远是布尔（src/format/contract.ts score minor 5 那段）。 */
+export const UNWRITTEN: Readonly<{ notation: NotationId; chordTags: boolean; viewInC: boolean; chords: ChordsMode }> = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto" });
 
 /** 这首歌怎么看。排版、PDF、键盘上的大字、鬼音符、谱面的拖音高都读它，不各读各的歌字段。 */
 export interface SongView {
@@ -25,7 +25,7 @@ export interface SongView {
   /** 叠音的和弦上方写级数（乐理模块 src/theory/）。 */
   readonly chordTags: boolean;
   /** 按 C 调看（辅助）：谱换到 C 调画、每个调号上方写「1=原来的调」、键上大字写级数；拖音高 / 鬼音符按显示的换回实际的。 */
-  readonly inC: boolean;
+  readonly viewInC: boolean;
   /** 这条轨的和弦选项。 */
   chordsOf(part: string): ChordsMode;
 }
@@ -40,7 +40,7 @@ export function songViewOf(song: Song): SongView {
   return {
     notation: isNotation(song.notation) ? song.notation : UNWRITTEN.notation,
     chordTags: song.chordTags === false ? false : UNWRITTEN.chordTags,
-    inC: song.inC === true ? true : UNWRITTEN.inC,
+    viewInC: song.viewInC === true ? true : UNWRITTEN.viewInC,
     chordsOf: (part) => chords.get(part) ?? UNWRITTEN.chords,
   };
 }
@@ -61,8 +61,8 @@ export function setChordTags(st: EditorState, on: boolean): EditorState {
 }
 /** 按 C 调看开 / 关。关 = 不写。 */
 export function setViewInC(st: EditorState, on: boolean): EditorState {
-  const want = on === UNWRITTEN.inC ? undefined : true; if (st.song.inC === want) return st;
-  const song = { ...st.song }; if (want === undefined) delete song.inC; else song.inC = want;
+  const want = on === UNWRITTEN.viewInC ? undefined : true; if (st.song.viewInC === want) return st;
+  const song = { ...st.song }; if (want === undefined) delete song.viewInC; else song.viewInC = want;
   return { ...st, song };
 }
 /** 这条轨的和弦选项。auto = 不写。 */
@@ -74,5 +74,5 @@ export function setPartChords(st: EditorState, partId: string, mode: ChordsMode)
 }
 
 /** 这四样在歌里住在哪几个键（歌的顶层三个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。 */
-export const SONG_VIEW_KEYS = ["notation", "chordTags", "inC"] as const;
+export const SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC"] as const;
 export const PART_VIEW_KEYS = ["chords"] as const;

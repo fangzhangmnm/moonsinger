@@ -3,7 +3,7 @@
 //   然后这个助残模式是大写是相对，小写是绝对」「专业模式下面C调的时候，最好也能有一个显示调号的方案，这个样子我就不会像这次一样忘了点了」）。
 // 守：专业 = C 调画淡「1=C」（点它 = 谱头面板）、换成 F 调就没了、键上大字音名；设置里切「按 C 调看」= 写「1=F」、音画在 C 调的位置、键上大字级数、
 //   谱的数据不变；按 C 调看时拖音高一格 = 实际也挪一格；切回专业 = 照实际画。
-//   谱面分家第三刀（2026-11-12）：「按 C 调看」是这首歌的设置，在纸的设置「看谱」里（原来在设置「乐理助手」、存在设备上）——写进歌里（inC: true）、能撤销，设备上不再记。
+//   谱面分家第三刀（2026-11-11）：「按 C 调看」是这首歌的设置，在纸的设置「看谱」里（原来在设置「乐理助手」、存在设备上）——写进歌里（viewInC: true）、能撤销，设备上不再记。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/view-in-c.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
@@ -52,7 +52,7 @@ check(n2.real === "G3" && n2.d === 22, "往上拖一格：谱里 F3 → G3，画
 await p.keyboard.press("Control+z"); await p.waitForTimeout(150);
 
 // ④ 跟着歌走：写进歌里、能撤销（撤销 = 回到专业，键上大字跟着换）；设备上不再记
-check((await p.evaluate(() => window.__moonsinger.state().song.inC)) === true, "写进歌里（inC: true）");
+check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === true, "写进歌里（viewInC: true）");
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
 check((await bigAbs()) === true && !(await labels()).includes("1=F"), "撤销 = 回到专业（键上大字音名、没有「1=F」）", await labels());
 await p.keyboard.press("Control+Shift+z"); await p.waitForTimeout(250);

@@ -42,7 +42,7 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
   it("按 C 调看 + 和弦级数（v0.16.13，user「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：印的带上它们，控件开关照样不改版面；专业模式 C 调的淡「1=C」不印", () => {
     // 谱面分家第三刀起这两样是歌里的设置：印的跟着歌（不再从印的选项进来）
     const song = setChordTags(setViewInC(st, true), true).song, base = printOpts(song, sp, parts(st), createTextMeasure(measure), true, 0), print = engrave(song, base);
-    eq(songViewOf(song).inC, true); eq(songViewOf(song).chordTags, true); eq(base.chrome, undefined, "印 = 不给编辑器留地方");
+    eq(songViewOf(song).viewInC, true); eq(songViewOf(song).chordTags, true); eq(base.chrome, undefined, "印 = 不给编辑器留地方");
     eq(geo(engrave(song, { ...base, chrome: { famGap: 0.8, navRoom: 16 } })), geo(print), "编辑器的几何参数（分页时）不改版面");
     assert(print.prims.some((p) => (p as { cls?: string }).cls?.includes("key-label") && isPrinted((p as { cls?: string }).cls)), "「1=原来的调」印");
     assert(!print.prims.some((p) => ((p as { cls?: string }).cls ?? "").includes("key-hint")), "淡「1=C」不是排版器画的（覆盖层，刀 1）");

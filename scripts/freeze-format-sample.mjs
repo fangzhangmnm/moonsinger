@@ -41,16 +41,16 @@ const shape = { versions: FORMAT, shapes: {
 writeFileSync(join(ROOT, "test/fixtures/format/shape.json"), JSON.stringify(shape, null, 2) + "\n");
 console.log(`${exists && !force ? `kept test/fixtures/format/${tag}/ (use --force to regenerate)` : `frozen: test/fixtures/format/${tag}/`} + shape.json`);
 
-// ── minor 的冻结样本（2026-11-12 Claude Opus 5.5，谱面分家第三刀：施工单「加一份冻结样本」）──
+// ── minor 的冻结样本（2026-11-11 Claude Opus 5.5，谱面分家第三刀：施工单「加一份冻结样本」）──
 //   升 minor 不开新的版本目录（上面的目录按 major 命名）；某一次 minor 加的东西要「以后的版本永远读得出来」时，在 test/fixtures/format/minor/<文件>-<minor>/ 存一份这一版写的，
-//   已有的不碰（--force 才重写）。守卫 = 用它的那份测试（score-5 = test/song-view.test.ts）。
+//   已有的不碰（--force-minor 才重写；**和 --force 分开**：--force 会连 major 的版本目录一起重写，那些是出过门的文件的证据，不许动——2026-11-11 差点踩到）。守卫 = 用它的那份测试（score-5 = test/song-view.test.ts）。
 import { FORMAT_MINOR } from "../src/format/contract.ts";
 import { songViewOf } from "../src/score/song-view.ts";
 const minorDir = join(ROOT, "test/fixtures/format/minor", `score-${FORMAT_MINOR.score}`);
-if (FORMAT_MINOR.score === 5 && (!existsSync(join(minorDir, "sample.mxl")) || force)) {
+if (FORMAT_MINOR.score === 5 && (!existsSync(join(minorDir, "sample.mxl")) || process.argv.includes("--force-minor"))) {
   mkdirSync(minorDir, { recursive: true });
   writeFileSync(join(minorDir, "sample.mxl"), bytes);
   const v = songViewOf(o.song);
-  writeFileSync(join(minorDir, "expected.json"), JSON.stringify({ score: { version: FORMAT.score, minor: FORMAT_MINOR.score }, songView: { notation: v.notation, chordTags: v.chordTags, inC: v.inC, chords: Object.fromEntries(o.song.parts.map((p) => [p.id, v.chordsOf(p.id)])) }, raw: { notation: o.song.notation ?? null, parts: Object.fromEntries(o.song.parts.map((p) => [p.id, p.chords ?? null])) } }, null, 2) + "\n");
+  writeFileSync(join(minorDir, "expected.json"), JSON.stringify({ score: { version: FORMAT.score, minor: FORMAT_MINOR.score }, songView: { notation: v.notation, chordTags: v.chordTags, viewInC: v.viewInC, chords: Object.fromEntries(o.song.parts.map((p) => [p.id, v.chordsOf(p.id)])) }, raw: { notation: o.song.notation ?? null, parts: Object.fromEntries(o.song.parts.map((p) => [p.id, p.chords ?? null])) } }, null, 2) + "\n");
   console.log(`frozen: test/fixtures/format/minor/score-${FORMAT_MINOR.score}/`);
 }

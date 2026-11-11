@@ -36,7 +36,6 @@
       "arrangement": "string",
       "barNumbers": "string",
       "chordTags": "boolean",
-      "inC": "boolean",
       "lyricFit": "string",
       "minor": "number",
       "notation": "string",
@@ -121,7 +120,8 @@
           "width": "number"
         },
         "scope": "string"
-      }
+      },
+      "viewInC": "boolean"
     },
     "lounge": {
       "active": "string",

@@ -42,7 +42,7 @@ export function sameExceptPaperHidden(a: Song, b: Song): boolean {
   return true;
 }
 
-/** 两首歌除了「这首歌怎么看」的四样（歌顶层的 notation / chordTags / inC + 每个声部的 chords；src/score/song-view.ts）之外一模一样。按引用比；完全没变也算。 */
+/** 两首歌除了「这首歌怎么看」的四样（歌顶层的 notation / chordTags / viewInC + 每个声部的 chords；src/score/song-view.ts）之外一模一样。按引用比；完全没变也算。 */
 export function sameExceptSongView(a: Song, b: Song): boolean { return sameModulo(a, b, { song: SONG_VIEW_KEYS, part: PART_VIEW_KEYS }); }
 
 /** 按引用比两首歌，跳过给定的键：歌顶层的 song、每张纸的 paper、每个声部的 part。别的键（含纸 / 声部的个数、先后、id）一个都不许变。 */
@@ -75,7 +75,7 @@ function sameList(xs: readonly object[], ys: readonly object[], skip: readonly s
 export const LOOK_OPS: Readonly<Record<string, LookOp>> = Object.freeze({
   // 曲段的隐藏 / 放出来（user 11-09：「曲段的隐藏和显示锁着的时候当然能解。」）：影响放哪几段、印哪几段，存在歌文件里
   paperHidden: { inFile: true, verify: sameExceptPaperHidden },
-  // 这首歌怎么看（谱面分家第三刀，2026-11-12；设计稿第 3.7 节「这些设置归『看法』那一类」）：谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项。存在歌文件里；
+  // 这首歌怎么看（谱面分家第三刀，2026-11-11；设计稿第 3.7 节「这些设置归『看法』那一类」）：谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项。存在歌文件里；
   //   锁着能切、锁着期间一个字节都不写，导出和打印跟着眼前的样子（别人的歌锁着打开、切着看、关掉，文件没动）
   songLook: { inFile: true, verify: sameExceptSongView },
 });

@@ -33,7 +33,7 @@ export const FULL_VIEWS: FView[] = [
   { name: "edit-pages", opts: (s) => { const { margins: _m, ...rest } = ed(s); return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },
   { name: "listen-all", opts: (s) => ({ ...ed(s), chrome: { famGap: 0.8, navRoom: 16 }, foldAll: true }) },
   // 按 C 调看 + 和弦级数：第三刀起是歌里的设置（原来是排版选项 inC / chordTags）。去掉 asFrozen 写的「不标」= 标；开按 C 调看
-  { name: "inC-chords", song: (s) => { const { chordTags: _c, ...r } = s; return { ...r, inC: true as const }; }, opts: (s) => ed(s) },
+  { name: "inC-chords", song: (s) => { const { chordTags: _c, ...r } = s; return { ...r, viewInC: true as const }; }, opts: (s) => ed(s) },
   { name: "scroll", opts: (s) => ({ ...ed(s), scroll: true }) },
   { name: "tail-raise-lyrics", song: (s) => ({ ...s, lyricFit: "lyrics" }), opts: (s) => ({ ...ed(s), at: { paper: "pa", part: "Y" }, tailOpen: true, lyricRaise: 0.62 }) },
   { name: "hidden-nobars", opts: (s) => ({ ...ed(s, new Set(["V"])), autoBars: false }) },

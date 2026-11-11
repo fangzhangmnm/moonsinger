@@ -71,7 +71,7 @@ export const AREA_OF_PATH = [
   // 键盘模块（src/keyboard/，刀 2 = 2026-10-15）：pad / 键位表 / 锁；滚轮 / 参数行是 W-5 原语，混音台也用
   [/^src\/keyboard\/(wheel|param-row)\.ts$/, ["pad", "studio", "play"]],
   [/^src\/keyboard\//, ["pad"]],
-  // 谁都能用的小控件（src/widgets/，2026-11-12 起：滚轮 = pad 的旋钮 + 谱面的记号框）
+  // 谁都能用的小控件（src/widgets/，2026-11-11 起：滚轮 = pad 的旋钮 + 谱面的记号框）
   [/^src\/widgets\//, ["pad", "score"]],
   [/^src\/ui\/(mark-editor|sel-bar)\.ts$/, ["pad"]],
   [/^src\/ui\/(lyric-editor|title-editor)\.ts$/, ["pad", "score"]],

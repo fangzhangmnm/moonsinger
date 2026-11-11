@@ -3381,7 +3381,7 @@ function songInC(song, skip) {
 // src/score/song-view.ts
 var NOTATIONS = ["staff", "jianpu"];
 var CHORDS_MODES = ["stacked", "auto", "fold"];
-var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, inC: false, chords: "auto" });
+var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto" });
 var isNotation = (v) => NOTATIONS.includes(v);
 var isChords = (v) => CHORDS_MODES.includes(v);
 function songViewOf(song) {
@@ -3390,7 +3390,7 @@ function songViewOf(song) {
   return {
     notation: isNotation(song.notation) ? song.notation : UNWRITTEN.notation,
     chordTags: song.chordTags === false ? false : UNWRITTEN.chordTags,
-    inC: song.inC === true ? true : UNWRITTEN.inC,
+    viewInC: song.viewInC === true ? true : UNWRITTEN.viewInC,
     chordsOf: (part) => chords.get(part) ?? UNWRITTEN.chords
   };
 }
@@ -5771,8 +5771,8 @@ function drawStaff(c) {
         hx += Math.abs(fk) * 1.05;
         if (s2 === 0) {
           if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });
-          const lab = k === 0 && !pm && q.head.idx.key !== void 0 ? look.inC ? q.head.real : fk === 0 || q.head.minor ? fk : null : null;
-          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !look.inC, q.head.idx.key, q.head.minor);
+          const lab = k === 0 && !pm && q.head.idx.key !== void 0 ? look.viewInC ? q.head.real : fk === 0 || q.head.minor ? fk : null : null;
+          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !look.viewInC, q.head.idx.key, q.head.minor);
           if (fk) hx += 0.8;
           const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
           if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
@@ -5980,7 +5980,7 @@ function drawStaff(c) {
               for (let j = 0; j < Math.abs(u.prev); j++) put(rr, { t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
             } else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef);
             if (k === 0) {
-              if (look.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
+              if (look.viewInC) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
               else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor);
               else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor);
             }
@@ -6577,7 +6577,7 @@ function engrave(song, o) {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   const lookAt = staffLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   const songLook = songViewOf(song);
-  if (songLook.inC) {
+  if (songLook.viewInC) {
     const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id));
     song = songInC(song, (id) => perc.has(id));
   }
@@ -7221,4 +7221,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-06e4b3403e14.mjs.map
+//# sourceMappingURL=layout-worker-3e498665f0ed.mjs.map

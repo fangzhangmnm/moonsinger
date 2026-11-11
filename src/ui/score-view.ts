@@ -499,7 +499,7 @@ export class ScoreView {
     const fs = 4 * sp, nh = 1.18 * sp, ext = 0.4 * sp, parts: string[] = [];
     // 升降号和真写下去的那个音一样（v0.10.23）：拼法按那里的调号（同 writePitch 的 keySpell），画不画按调号 + 这一小节前面的临时记号（shownAccAt，和排版同一个规矩）
     const toks = tr(st), at = one >= 0 ? one : st.caret, fifths = keyAt(toks, at);
-    const inC = songViewOf(this.host.get().song).inC, shownToks = inC ? trackInC(toks) : toks;   // 按 C 调看：鬼音符也换到 C、按显示出来的谱算升降号
+    const inC = songViewOf(this.host.get().song).viewInC, shownToks = inC ? trackInC(toks) : toks;   // 按 C 调看：鬼音符也换到 C、按显示出来的谱算升降号
     for (const p0 of this.ghostP) {
       const p = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths), shown = shownAccAt(shownToks, at, p);
       const d = diatonicIndex(p) + shift, pv = previewAt(L.systems[row]!, d, half), y = pv.y;   // 鬼音符长什么样（符头的 y + 加线）= 行的几何
@@ -1046,7 +1046,7 @@ export class ScoreView {
       const st0 = this.host.get();
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t = tr(this.host.get())[hit.index] as NoteTok;
-      const d0 = songViewOf(this.host.get().song).inC && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;   // 按 C 调看：显示的第几级 → 实际的第几级（往上拖几格 = 实际往上几格）
+      const d0 = songViewOf(this.host.get().song).viewInC && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;   // 按 C 调看：显示的第几级 → 实际的第几级（往上拖几格 = 实际往上几格）
       if (this.rules.noteDrag) this.drag = { index: hit.index, d0, dur0: t.dur, x0: p.x, y0: p.y, axis: "", pid: e.pointerId, heard: d0, ...(e.pointerType === "mouse" ? { wait: true } : {}) };   // 拖音 = 只在「音」里；鼠标要先长按
       this.el.setPointerCapture(e.pointerId);   // 按下不响（轻点 = 光标，不预览；user 2026-10-08「光标点选不标蓝音的话那么也不用 preview 吧」）；开始拖音高才响
       this.armPress(e, p, hit);

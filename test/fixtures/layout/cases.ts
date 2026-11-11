@@ -18,7 +18,7 @@ export const SONGS: Record<string, string> = {
   "v2-2-2-2": "test/fixtures/format/v2-2-2-2/sample.mxl",
   "v2-2-2-1": "test/fixtures/format/v2-2-2-1/sample.mxl",
 };
-/** 夹具里的歌明着写「不标和弦级数」（谱面分家第三刀，2026-11-12）：版面底本 / PDF 指纹是在「排版选项不开和弦级数」时冻的；第三刀起和弦标级数是歌里的设置、没写 = 标，
+/** 夹具里的歌明着写「不标和弦级数」（谱面分家第三刀，2026-11-11）：版面底本 / PDF 指纹是在「排版选项不开和弦级数」时冻的；第三刀起和弦标级数是歌里的设置、没写 = 标，
  *  所以夹具的歌写上 chordTags: false，得到和冻的时候一样的输入，底本不重冻。要看级数的视图自己把它去掉（full.ts inC-chords）。 */
 export const asFrozen = (song: Song): Song => (song.chordTags === false ? song : { ...song, chordTags: false });
 export function loadSong(key: string): { song: Song; labels: string[] } {
