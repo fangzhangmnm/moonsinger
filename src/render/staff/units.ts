@@ -21,7 +21,6 @@ export interface Chunk {
   whisper?: boolean;                           // 气声：这个音（拆开的每一段）画 × 符头（2026-10-10）
   lyW?: number;                                // 按歌词排时这个字多宽（sp）：横向间距里当这一位歌词那一行的一样东西（刀 3）
   mrest?: "draw" | "skip";                     // 整小节休止（真写的休止正好占满一个小节、从小节头起）：不参加横向间距，画一个全休止在这个小节正中（只画 draw 那一段；刀 3）
-  inkL?: number;                               // 这个音的墨往对齐线左边伸多远（sp；临时记号 / 括号 / 琶音线）：光标画在它左边（刀 3）
   x: number; system: number; tick: number; staff: Staff;   // staff = 大谱表里在上还是下（单谱表 = 1）
 }
 export interface BarU { kind: "bar"; index: number; w: number; x: number; system: number; tick: number; staff: Staff; warn: boolean; auto: boolean; repeat?: Repeat; times?: number; style?: "double" | "final" }   // repeat = 反复小节线（Bravura 的反复记号字形，比细线宽）   // auto = 按拍号自动画的（index = -1，不是 token）

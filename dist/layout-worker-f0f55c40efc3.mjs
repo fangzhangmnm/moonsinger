@@ -5192,9 +5192,6 @@ var SPACING = {
   compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 }
 };
 
-// src/render/frame/columns.ts
-var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, head: 4, chunk: 5 };
-
 // src/render/frame/furniture.ts
 var NO_LINE_START = /* @__PURE__ */ new Set([..."\u3001\u3002\uFF0C\uFF0E\u30FB\uFF1A\uFF1B\uFF1F\uFF01\uFF09\u300D\u300F\u3011\u3015\u3009\u300B\u30FC\uFF5E\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6,.;:!?)]}"]);
 function wrapTitle(s2, w, max) {
@@ -5474,6 +5471,192 @@ function unitsOf(tokens, o) {
   flushFull();
   if (o.tail) pushHead();
   return { units, head, shortBars, pickup };
+}
+
+// src/render/frame/columns.ts
+var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, tail: 4, note: 5 };
+
+// src/render/staff/measure.ts
+var shAt = (q, staff, index) => {
+  return q.staves === 2 ? staff === 2 ? 12 : 0 : CLEF_SHIFT[(index >= 0 ? q.ds.clef[index] : void 0) ?? q.start] + ottavaShift(index >= 0 ? q.ds.ott[index] ?? 0 : 0);
+};
+var percAt = (q, p) => {
+  const pk = q.p.perc;
+  return !pk ? null : pk.kind === "kit" ? percOf(128, 0, midiOf(p)) : pk.info;
+};
+var posD = (q, p, staff, index) => {
+  const m = q.pmode;
+  if (m && q.p.perc) {
+    const pi = percAt(q, p);
+    return m === "one" ? MID_LINE2 - (pi && pi.staff === 1 ? pi.line : 0) : TOP_LINE2 - (pi ? pi.line : 4);
+  }
+  return diatonicIndex(p) + shAt(q, staff, index);
+};
+var stemInput = (q, xOf) => {
+  const pm = q.pmode, percHere = !!pm && !!q.p.perc, seq = [];
+  for (const u of q.units) {
+    if (u.kind === "bar" || u.kind === "key" || u.kind === "time") {
+      seq.push(null);
+      continue;
+    }
+    if (u.kind !== "chunk") continue;
+    if (!u.note || u.base >= WHOLE) {
+      seq.push(null);
+      continue;
+    }
+    const ps = u.pitches.length ? u.pitches : [u.pitch], ds = ps.map((pp) => posD(q, pp, u.staff, u.index));
+    seq.push({
+      key: u,
+      x: xOf(u),
+      dHi: ds[0],
+      dLo: ds[ds.length - 1],
+      base: u.base,
+      beat: Math.floor(u.inBar / u.beat),
+      system: u.system,
+      staff: u.staff,
+      ghost: u.ghost,
+      ...percHere && pm !== "one" && ps.some((p) => percAt(q, p)?.stem !== "down") ? { handUp: true } : {}
+    });
+  }
+  return { seq, dir: q.v2 ? "down" : q.hasV2 ? "up" : percHere ? pm === "one" ? "up" : "kit" : "auto" };
+};
+var restW = (base) => base >= WHOLE ? W.restWhole : base >= TPQ * 2 ? W.restHalf : base >= TPQ ? W.restQuarter : base >= TPQ / 2 ? W.rest8th : base >= TPQ / 4 ? W.rest16th : W.rest32nd;
+var COLUMN_KIND = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
+function measureTrack(q) {
+  const flagRight = /* @__PURE__ */ new Map();
+  {
+    const si = stemInput(q, () => 0.35);
+    for (const [c, st] of layoutStems(si.seq, si.dir).notes) if (st.flag) flagRight.set(c, st.flag.x + FLAG_W[st.up ? "up" : "down"][st.flag.level - 1]);
+  }
+  const inkL = /* @__PURE__ */ new Map();
+  const lane = (staff) => (staff - 1) * 2;
+  const spItems = (u) => {
+    const out = [], row = lane(u.staff);
+    if (!u.note) {
+      if (u.pad || q.v2 || u.mrest) return out;
+      out.push({ row, left: -0.35, right: 0.35 + (u.dotted ? 1.5 + 0.45 : restW(u.base)), dur: u.ticks });
+      return out;
+    }
+    const nhw = u.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack, perc = !!q.pmode && !!q.p.perc;
+    const ds = (u.pitches.length ? u.pitches : u.pitch ? [u.pitch] : []).map((pp) => posD(q, pp, u.staff, u.index));
+    const second = ds.some((d, k) => k > 0 && Math.abs(ds[k - 1] - d) === 1);
+    let right = 0.35 + nhw * (second ? 1.95 : 1), left = -0.35;
+    if (u.dotted) right = Math.max(right, 0.35 + nhw + 0.3 + 0.45);
+    const fr = flagRight.get(u);
+    if (fr !== void 0) right = Math.max(right, fr);
+    const nAcc = perc ? [] : u.accs.map((a, k) => a === null ? -1 : k).filter((k) => k >= 0);
+    if (nAcc.length) left = 1.1 + (nAcc.some((k, i) => i > 0 && Math.abs(ds[nAcc[i - 1]] - ds[k]) < 3) ? 1.1 : 0);
+    const ghost = u.art.includes("ghost");
+    if (ghost) {
+      left = nAcc.length ? left + 0.6 : Math.max(left, 0.15);
+      right += 0.45;
+    }
+    if (u.art.includes("arpeggio")) left = Math.max(left, (nAcc.length ? 1.3 : 0) + 0.83);
+    if (u.breath) right = Math.max(right, 0.35 + nhw + 0.55 + 0.85);
+    if (u.breath && u.inhale) right = Math.max(right, 0.35 + nhw + 1.35 + (u.inhale === "big" ? 2.3 : 1.15));
+    inkL.set(u, Math.max(0, left));
+    out.push({ row, left, right, dur: u.ticks });
+    if (u.lyW !== void 0 && !q.v2) out.push({ row: lane(q.staves) + 1, left: u.lyW / 2 - 0.94, right: 0.94 + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });
+    return out;
+  };
+  const entries = q.units.map((u) => ({ tick: u.tick, slot: u.kind === "nav" ? u.slot : SLOT[COLUMN_KIND[u.kind]], w: u.w, ...u.kind === "bar" ? { bar: true } : {}, ...u.kind === "chunk" ? { chunk: { items: spItems(u), span: u.ticks } } : {}, ref: u }));
+  return { entries, inkL };
+}
+var clefW = (q) => q.fFam ? W.fClef : W.gClef;
+var lineStartWidth = (q, key, first, base) => base + 0.6 + clefW(q) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
+
+// src/render/frame/arrange.ts
+function mergeColumns(tracks) {
+  const map = /* @__PURE__ */ new Map();
+  tracks.forEach((tr2, t) => {
+    const seen = /* @__PURE__ */ new Map();
+    for (const e of tr2.entries) {
+      const base = `${e.tick}:${e.slot}`, n2 = seen.get(base) ?? 0;
+      seen.set(base, n2 + 1);
+      const key = `${base}:${n2}`;
+      let c = map.get(key);
+      if (!c) {
+        c = { tick: e.tick, slot: e.slot, n: n2, w: 0, bar: false, chunk: false, members: [] };
+        map.set(key, c);
+      }
+      c.members.push({ track: t, entry: e });
+      c.w = Math.max(c.w, e.w);
+      if (e.bar) c.bar = true;
+      if (e.chunk) c.chunk = true;
+    }
+  });
+  return [...map.values()].sort((a, b) => a.tick - b.tick || a.slot - b.slot || a.n - b.n);
+}
+function arrangeColumns(cols, tracks, o) {
+  const spCols = cols.map((c) => c.chunk ? { tick: c.tick, items: c.members.flatMap(({ track, entry }) => entry.chunk ? entry.chunk.items.map((it) => ({ ...it, row: tracks[track].laneBase + it.row })) : []) } : { tick: c.tick, fixed: c.w, items: [] });
+  const spans = cols.flatMap((c) => c.members.flatMap(({ entry }) => entry.chunk ? [[entry.tick, entry.tick + entry.chunk.span]] : []));
+  const breakableAt = (tick) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
+  const gaps = idealGaps(spCols, o.paperLen, o.spacing), rodIx = indexRods(rodsOf(spCols, o.spacing), spCols.length);
+  const brk = o.width, n2 = cols.length, lineFrom = [], sysStarts = [];
+  const tail = (to) => cols[to - 1].bar ? 0 : o.endPad;
+  const lineW = (from, to, s2) => placeLine(spCols, gaps, rodIx, from, to, s2).end + tail(to);
+  const segs = [];
+  for (let k = 0; k < n2; k++) if (k === n2 - 1 || cols[k].bar && breakableAt(cols[k].tick)) segs.push(k + 1);
+  if (brk !== Infinity) {
+    const fine = [];
+    let from = 0;
+    for (const end of segs) {
+      let a = from;
+      while (a < end && lineW(a, end, -o.squeeze) > brk - o.lineStart(a, a === 0)) {
+        let k = a;
+        while (k + 1 < end && lineW(a, k + 2, -o.squeeze) <= brk - o.lineStart(a, a === 0)) k++;
+        fine.push(k + 1);
+        a = k + 1;
+      }
+      if (a < end) fine.push(end);
+      from = end;
+    }
+    segs.splice(0, segs.length, ...fine);
+  }
+  const segStart = (i) => i === 0 ? 0 : segs[i - 1];
+  if (brk === Infinity || segs.length <= 1) lineFrom.push(0);
+  else {
+    const S2 = segs.length, best = new Array(S2 + 1).fill(Infinity), prev = new Array(S2 + 1).fill(-1);
+    best[0] = 0;
+    for (let i = 0; i < S2; i++) {
+      if (best[i] === Infinity) continue;
+      const from = segStart(i), avail = brk - o.lineStart(from, i === 0);
+      for (let j = i + 1; j <= S2; j++) {
+        const to = segs[j - 1], tight = lineW(from, to, -o.squeeze);
+        if (tight > avail + 1e-6 && j > i + 1) break;
+        const nat = lineW(from, to, 0), last = j === S2;
+        const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last ? 0 : 100 * ((avail - nat) / avail) ** 2;
+        if (best[i] + cost + 2 < best[j]) {
+          best[j] = best[i] + cost + 2;
+          prev[j] = i;
+        }
+      }
+    }
+    const starts = [];
+    for (let j = S2; j > 0; j = prev[j]) starts.push(segStart(prev[j]));
+    lineFrom.push(...starts.reverse());
+  }
+  for (const k of lineFrom) sysStarts.push(o.lineStart(k, k === 0));
+  const nSys = lineFrom.length, xs = new Array(n2).fill(0), ws = new Array(n2).fill(0), system = new Array(n2).fill(0);
+  let prevStretch = 0;
+  for (let s2 = 0; s2 < nSys; s2++) {
+    const from = lineFrom[s2], to = s2 + 1 < nSys ? lineFrom[s2 + 1] : n2;
+    if (from >= to) continue;
+    const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, to, 0);
+    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true }) : nat;
+    if (s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
+      const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch);
+      f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true });
+    }
+    prevStretch = f.stretch ?? 0;
+    for (let k = from; k < to; k++) {
+      const x0 = sysStarts[s2] + f.xs[k - from], x1 = sysStarts[s2] + (k + 1 < to ? f.xs[k + 1 - from] : f.end);
+      xs[k] = x0;
+      system[k] = s2;
+      ws[k] = Math.max(0, x1 - x0);
+    }
+  }
+  return { lineFrom, sysStarts, xs, ws, system };
 }
 
 // src/render/engrave.ts
@@ -5805,29 +5988,17 @@ function engrave(song, o) {
       const ds0 = displayStates(tokens, start), ao = staves === 2 || p.perc || shareWith.has(p.id) || !vrt && lookAt(paper.id, p.id)?.autoOtt === false ? null : autoOttava(tokens, ds0);
       const ds = ao ? { clef: ds0.clef, ott: ao.ott, auto: ao.auto, runs: ao.runs } : { ...ds0, auto: null, runs: [] };
       const fFam = staves === 2 || isFClef(start) || tokens.some((t) => t.kind === "clef" && isFClef(t.clef));
-      return { p, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, vrt, ...u };
+      return { p, tokens, realLen: real.length, realTicks: lens[pi], focused, staves, start, ds, fFam, vrt, ...u, pmode: !p.perc ? null : p.perc.kind === "kit" ? "five" : "one", v2: false, hasV2: voice2Of.has(p.id) };
     });
-    const shAt = (q, staff, index) => {
-      return q.staves === 2 ? staff === 2 ? 12 : 0 : CLEF_SHIFT[(index >= 0 ? q.ds.clef[index] : void 0) ?? q.start] + ottavaShift(index >= 0 ? q.ds.ott[index] ?? 0 : 0);
-    };
-    const pmode = per.map((q) => !q.p.perc ? null : q.p.perc.kind === "kit" ? "five" : "one");
+    const pmode = per.map((q) => q.pmode);
     const rowHost = per.map((q) => {
       const h = shareWith.get(q.p.id);
       return h ? per.findIndex((x) => x.p.id === h) : -1;
     });
-    const hasV2 = per.map((q) => voice2Of.has(q.p.id));
-    const percAt = (q, p) => {
-      const pk = q.p.perc;
-      return !pk ? null : pk.kind === "kit" ? percOf(128, 0, midiOf(p)) : pk.info;
-    };
-    const posD = (q, p, staff, index) => {
-      const m = pmode[per.indexOf(q)];
-      if (m && q.p.perc) {
-        const pi = percAt(q, p);
-        return m === "one" ? MID_LINE2 - (pi && pi.staff === 1 ? pi.line : 0) : TOP_LINE2 - (pi ? pi.line : 4);
-      }
-      return diatonicIndex(p) + shAt(q, staff, index);
-    };
+    const hasV2 = per.map((q) => q.hasV2);
+    per.forEach((q, pi) => {
+      q.v2 = rowHost[pi] >= 0;
+    });
     const clefAtSys = (q, s2) => {
       const u = q.units.find((x) => x.system === s2 && x.index >= 0);
       if (u) return q.ds.clef[u.index] ?? q.start;
@@ -5840,196 +6011,34 @@ function engrave(song, o) {
       for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === "clef") return i;
       return -1;
     };
-    const stemInput = (pi, xOf) => {
-      const q = per[pi], pm = pmode[pi], percHere = !!pm && !!q.p.perc, seq = [];
-      for (const u of q.units) {
-        if (u.kind === "bar" || u.kind === "key" || u.kind === "time") {
-          seq.push(null);
-          continue;
-        }
-        if (u.kind !== "chunk") continue;
-        if (!u.note || u.base >= WHOLE) {
-          seq.push(null);
-          continue;
-        }
-        const ps = u.pitches.length ? u.pitches : [u.pitch], ds = ps.map((pp) => posD(q, pp, u.staff, u.index));
-        seq.push({
-          key: u,
-          x: xOf(u),
-          dHi: ds[0],
-          dLo: ds[ds.length - 1],
-          base: u.base,
-          beat: Math.floor(u.inBar / u.beat),
-          system: u.system,
-          staff: u.staff,
-          ghost: u.ghost,
-          ...percHere && pm !== "one" && ps.some((p) => percAt(q, p)?.stem !== "down") ? { handUp: true } : {}
-        });
-      }
-      return { seq, dir: rowHost[pi] >= 0 ? "down" : hasV2[pi] ? "up" : percHere ? pm === "one" ? "up" : "kit" : "auto" };
-    };
-    const colMap = /* @__PURE__ */ new Map();
-    for (const q of per) {
-      const seen = /* @__PURE__ */ new Map();
-      for (const u of q.units) {
-        const sl = u.kind === "nav" ? u.slot : SLOT[u.kind], base = `${u.tick}:${sl}`, n3 = seen.get(base) ?? 0;
-        seen.set(base, n3 + 1);
-        const key = `${base}:${n3}`;
-        let c = colMap.get(key);
-        if (!c) {
-          c = { tick: u.tick, slot: sl, n: n3, w: 0, x: 0, system: 0, units: [], bar: false, chunk: false };
-          colMap.set(key, c);
-        }
-        c.units.push(u);
-        c.w = Math.max(c.w, u.w);
-        if (u.kind === "bar") c.bar = true;
-        if (u.kind === "chunk") c.chunk = true;
-      }
-    }
-    const cols = [...colMap.values()].sort((a, b) => a.tick - b.tick || a.slot - b.slot || a.n - b.n);
-    const spans = per.flatMap((q) => q.units.filter((u) => u.kind === "chunk").map((u) => [u.tick, u.tick + u.ticks]));
-    const breakableAt = (tick) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
+    const measured = per.map((q) => measureTrack(q));
+    const atracks = per.map((_q, pi) => ({ entries: measured[pi].entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));
+    const merged = mergeColumns(atracks), n2 = merged.length;
     const FAM_W = openFams.length ? (o.chrome?.famGap ?? 0) * ts : 0;
     const ind0 = Math.max(NAME_MIN, ...parts.map((p) => Math.max(...nameLines(p.name, p.staves === 2 || song.papers.some((pp) => lookAt(pp.id, p.id)?.staves === 2) ? 2 : 1).map(nameW)))) + 1.4 * ts + FAM_W;
     const indN = parts.some((p) => p.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 * ts + FAM_W : 0;
-    const keyNow = new Map(per.map((q) => [q.p.id, q.head.key]));
-    const clefW = (q) => q.fFam ? W.fClef : W.gClef;
-    const headerOf = (first) => Math.max(...per.map((q) => {
-      const f = keyNow.get(q.p.id);
-      return (first ? ind0 : indN) + MARGIN + 0.6 + clefW(q) + 1 + Math.abs(f) * 1.05 + (f ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
-    }));
-    const unitPart = /* @__PURE__ */ new Map();
-    per.forEach((q, pi) => {
-      for (const u of q.units) unitPart.set(u, pi);
-    });
-    const spRow = (pi, staff) => (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 + (staff - 1) * 2;
-    const restW = (base) => base >= WHOLE ? W.restWhole : base >= TPQ * 2 ? W.restHalf : base >= TPQ ? W.restQuarter : base >= TPQ / 2 ? W.rest8th : base >= TPQ / 4 ? W.rest16th : W.rest32nd;
-    const flagRight = /* @__PURE__ */ new Map();
-    per.forEach((_q, pi) => {
-      const si = stemInput(pi, () => 0.35);
-      for (const [c, st] of layoutStems(si.seq, si.dir).notes) if (st.flag) flagRight.set(c, st.flag.x + FLAG_W[st.up ? "up" : "down"][st.flag.level - 1]);
-    });
-    const spItems = (u, pi) => {
-      const q = per[pi], v2 = rowHost[pi] >= 0, row = spRow(pi, u.staff), out = [];
-      if (!u.note) {
-        if (u.pad || v2 || u.mrest) return out;
-        out.push({ row, left: -0.35, right: 0.35 + (u.dotted ? 1.5 + 0.45 : restW(u.base)), dur: u.ticks });
-        return out;
-      }
-      const nhw = u.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack, perc = !!pmode[pi] && !!q.p.perc;
-      const ds = (u.pitches.length ? u.pitches : u.pitch ? [u.pitch] : []).map((pp) => posD(q, pp, u.staff, u.index));
-      const second = ds.some((d, k) => k > 0 && Math.abs(ds[k - 1] - d) === 1);
-      let right2 = 0.35 + nhw * (second ? 1.95 : 1), left = -0.35;
-      if (u.dotted) right2 = Math.max(right2, 0.35 + nhw + 0.3 + 0.45);
-      const fr = flagRight.get(u);
-      if (fr !== void 0) right2 = Math.max(right2, fr);
-      const nAcc = perc ? [] : u.accs.map((a, k) => a === null ? -1 : k).filter((k) => k >= 0);
-      if (nAcc.length) left = 1.1 + (nAcc.some((k, i) => i > 0 && Math.abs(ds[nAcc[i - 1]] - ds[k]) < 3) ? 1.1 : 0);
-      const ghost = u.art.includes("ghost");
-      if (ghost) {
-        left = nAcc.length ? left + 0.6 : Math.max(left, 0.15);
-        right2 += 0.45;
-      }
-      if (u.art.includes("arpeggio")) left = Math.max(left, (nAcc.length ? 1.3 : 0) + 0.83);
-      if (u.breath) right2 = Math.max(right2, 0.35 + nhw + 0.55 + 0.85);
-      if (u.breath && u.inhale) right2 = Math.max(right2, 0.35 + nhw + 1.35 + (u.inhale === "big" ? 2.3 : 1.15));
-      u.inkL = Math.max(0, left);
-      out.push({ row, left, right: right2, dur: u.ticks });
-      if (u.lyW !== void 0 && !v2) out.push({ row: spRow(pi, q.staves) + 1, left: u.lyW / 2 - 0.94, right: 0.94 + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });
-      return out;
-    };
-    const spCols = cols.map((c) => c.chunk ? { tick: c.tick, items: c.units.flatMap((u) => u.kind === "chunk" ? spItems(u, unitPart.get(u)) : []) } : { tick: c.tick, fixed: c.w, items: [] });
-    const spO = { curve: curveOf(densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } }) === "compact" ? "tight" : "normal"), ...SP_DEFAULTS };
-    const gaps = idealGaps(spCols, paperLen, spO), rodIx = indexRods(rodsOf(spCols, spO), spCols.length);
-    const brk = o.scroll ? Infinity : right;
-    const n2 = cols.length, lineFrom = [], sysStarts = [], sysKeys = [];
     const keyAtCol = [];
-    for (let k = 0; k <= n2; k++) {
-      keyAtCol.push(new Map(keyNow));
-      if (k < n2) {
-        for (const u of cols[k].units) if (u.kind === "key") keyNow.set(per[unitPart.get(u)].p.id, u.fifths);
+    {
+      const now = new Map(per.map((q) => [q.p.id, q.head.key]));
+      for (let k = 0; k <= n2; k++) {
+        keyAtCol.push(new Map(now));
+        if (k < n2) {
+          for (const { track, entry } of merged[k].members) if (entry.ref.kind === "key") now.set(per[track].p.id, entry.ref.fifths);
+        }
       }
     }
     const headAt = (k, first) => {
-      const keep = new Map(keyNow);
-      keyNow.clear();
-      for (const [a, b] of keyAtCol[k]) keyNow.set(a, b);
-      const h = headerOf(first);
-      keyNow.clear();
-      for (const [a, b] of keep) keyNow.set(a, b);
-      return h;
+      const keys = keyAtCol[k], base = (first ? ind0 : indN) + MARGIN;
+      return Math.max(...per.map((q) => lineStartWidth(q, keys.get(q.p.id), first, base)));
     };
-    const tail2 = (to) => cols[to - 1].bar ? 0 : BAR_W;
-    const lineW = (from, to, s2) => placeLine(spCols, gaps, rodIx, from, to, s2).end + tail2(to);
-    const segs = [];
-    for (let k = 0; k < n2; k++) if (k === n2 - 1 || cols[k].bar && breakableAt(cols[k].tick)) segs.push(k + 1);
-    if (brk !== Infinity) {
-      const fine = [];
-      let from = 0;
-      for (const end of segs) {
-        let a = from;
-        while (a < end && lineW(a, end, -SQUEEZE) > brk - headAt(a, a === 0)) {
-          let k = a;
-          while (k + 1 < end && lineW(a, k + 2, -SQUEEZE) <= brk - headAt(a, a === 0)) k++;
-          fine.push(k + 1);
-          a = k + 1;
-        }
-        if (a < end) fine.push(end);
-        from = end;
-      }
-      segs.splice(0, segs.length, ...fine);
-    }
-    const segStart = (i) => i === 0 ? 0 : segs[i - 1];
-    if (brk === Infinity || segs.length <= 1) lineFrom.push(0);
-    else {
-      const S2 = segs.length, best = new Array(S2 + 1).fill(Infinity), prev = new Array(S2 + 1).fill(-1);
-      best[0] = 0;
-      for (let i = 0; i < S2; i++) {
-        if (best[i] === Infinity) continue;
-        const from = segStart(i), avail = brk - headAt(from, i === 0);
-        for (let j = i + 1; j <= S2; j++) {
-          const to = segs[j - 1], tight = lineW(from, to, -SQUEEZE);
-          if (tight > avail + 1e-6 && j > i + 1) break;
-          const nat = lineW(from, to, 0), last = j === S2;
-          const cost = nat > avail ? 400 * ((nat - avail) / avail) ** 2 : last ? 0 : 100 * ((avail - nat) / avail) ** 2;
-          if (best[i] + cost + 2 < best[j]) {
-            best[j] = best[i] + cost + 2;
-            prev[j] = i;
-          }
-        }
-      }
-      const starts = [];
-      for (let j = S2; j > 0; j = prev[j]) starts.push(segStart(prev[j]));
-      lineFrom.push(...starts.reverse());
-    }
-    for (const k of lineFrom) {
-      sysStarts.push(headAt(k, k === 0));
-      sysKeys.push(new Map(keyAtCol[k]));
-    }
-    for (const [a, b] of keyAtCol[n2]) keyNow.set(a, b);
-    const nSys = lineFrom.length;
-    let prevStretch = 0;
-    for (let s2 = 0; s2 < nSys; s2++) {
-      const from = lineFrom[s2], to = s2 + 1 < nSys ? lineFrom[s2 + 1] : n2;
-      if (from >= to) continue;
-      const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, to, 0);
-      let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true }) : nat;
-      if (s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
-        const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch);
-        f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: SQUEEZE, justify: true });
-      }
-      prevStretch = f.stretch ?? 0;
-      for (let k = from; k < to; k++) {
-        const c = cols[k], x0 = sysStarts[s2] + f.xs[k - from], x1 = sysStarts[s2] + (k + 1 < to ? f.xs[k + 1 - from] : f.end);
-        c.x = x0;
-        c.system = s2;
-        c.w = Math.max(0, x1 - x0);
-        for (const u of c.units) {
-          u.x = c.x;
-          u.system = s2;
-          if (u.kind === "chunk") u.w = c.w;
-        }
-      }
+    const spO = { curve: curveOf(densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } }) === "compact" ? "tight" : "normal"), ...SP_DEFAULTS };
+    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: SQUEEZE, endPad: BAR_W, lineStart: headAt });
+    const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]));
+    const cols = merged.map((c, k) => ({ tick: c.tick, slot: c.slot, n: c.n, x: ar.xs[k], w: ar.ws[k], system: ar.system[k], bar: c.bar, units: c.members.map((m) => m.entry.ref) }));
+    for (const c of cols) for (const u of c.units) {
+      u.x = c.x;
+      u.system = c.system;
+      if (u.kind === "chunk") u.w = c.w;
     }
     const placedCols = cols;
     if (o.scroll) {
@@ -6557,7 +6566,7 @@ function engrave(song, o) {
           }
         }
       }
-      const stemIn = stemInput(r, nhX);
+      const stemIn = stemInput(per[r], nhX);
       const stems = layoutStems(stemIn.seq, stemIn.dir, { u: sp, y: (d, n3) => yOf(RW(n3.key), d) });
       const upOf = /* @__PURE__ */ new Map();
       const tipOf = /* @__PURE__ */ new Map();
@@ -6719,16 +6728,16 @@ function engrave(song, o) {
       const lastChunk = [...units].reverse().find((u) => u.kind === "chunk");
       const dynKey = (u) => `${rowOf(u.system, r, 0)}|d${units.indexOf(u)}`;
       const wedgeKey = (index, sy) => `${rowOf(sy, r, 0)}|w${index}:${sy}`;
-      const wedgeItems = (index, dir, s0, startX, s1, endX, ramp, k0, k1, tail3) => {
+      const wedgeItems = (index, dir, s0, startX, s1, endX, ramp, k0, k1, tail2) => {
         const leftOf2 = (sy) => Math.min(...units.filter((u) => u.kind === "chunk" && u.system === sy).map((c) => nhX(c)), P(right)) - P(1);
-        const segs2 = [];
-        for (let sy = s0; sy <= s1; sy++) segs2.push([sy, sy === s0 ? startX : leftOf2(sy), sy === s1 ? endX : P(right) - P(0.3)]);
-        const total = segs2.reduce((n3, [, a, b]) => n3 + Math.max(0, b - a), 0) || 1, H2 = P(0.5), long = total > P(right - MARGIN);
+        const segs = [];
+        for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf2(sy), sy === s1 ? endX : P(right) - P(0.3)]);
+        const total = segs.reduce((n3, [, a, b]) => n3 + Math.max(0, b - a), 0) || 1, H2 = P(0.5), long = total > P(right - MARGIN);
         const word = dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
         let said = false, acc2 = 0, tailDone = false;
-        segs2.forEach(([sy, a0, b], i) => {
+        segs.forEach(([sy, a0, b], i) => {
           if (b - a0 < P(0.3)) return;
-          const row = rowOf(sy, r, 0), keys = [wedgeKey(index, sy)], last = i === segs2.length - 1;
+          const row = rowOf(sy, r, 0), keys = [wedgeKey(index, sy)], last = i === segs.length - 1;
           if (i === 0 && k0) keys.push(k0);
           if (last && k1) keys.push(k1);
           if (last) tailDone = true;
@@ -6744,7 +6753,7 @@ function engrave(song, o) {
               }
               for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY, x2: x + P(DASH.len), y2: midY, w: P(0.12), cls: "dyn-dash" });
               dyns.push({ index, kind: "hairpin", system: row, x: a0, y: midY - P(1.4), w: b - a0, h: P(2.8) });
-              if (last && tail3) tail3(base);
+              if (last && tail2) tail2(base);
             } });
             return;
           }
@@ -6764,10 +6773,10 @@ function engrave(song, o) {
             }
             prims.push({ tok: tokens[index].id, t: "path", d, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
             dyns.push({ index, kind: "hairpin", system: row, x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
-            if (last && tail3) tail3(base);
+            if (last && tail2) tail2(base);
           } });
         });
-        if (!tailDone && tail3) dynItems.push({ row: rowOf(s1, r, 0), x0: endX, keys: [wedgeKey(index, s1), ...k1 ? [k1] : []], draw: tail3 });
+        if (!tailDone && tail2) dynItems.push({ row: rowOf(s1, r, 0), x0: endX, keys: [wedgeKey(index, s1), ...k1 ? [k1] : []], draw: tail2 });
       };
       units.forEach((h, hi) => {
         if (h.kind !== "hairpin" || !lastChunk) return;
@@ -6795,11 +6804,11 @@ function engrave(song, o) {
           endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
         }
         const k1 = !endU ? void 0 : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
-        const tail3 = !endU || against ? (base) => {
+        const tail2 = !endU || against ? (base) => {
           const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
           prims.push({ t: "text", x: labelAbove ? endXd - P(1.2) : endXd + P(0.4), y: base + P(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" });
         } : void 0;
-        wedgeItems(h.index, h.dir, s0, startX, s1, endXd, false, dynBefore ? dynKey(dynBefore) : void 0, k1, tail3);
+        wedgeItems(h.index, h.dir, s0, startX, s1, endXd, false, dynBefore ? dynKey(dynBefore) : void 0, k1, tail2);
       });
       for (const u of units) {
         if (u.kind !== "dyn" || !tokens[u.index].ramp) continue;
@@ -6896,11 +6905,11 @@ function engrave(song, o) {
         prims.push({ t: "path", d: num ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right2}` : `${left}${right2}`, cls: "tuplet-bracket" });
         if (num) prims.push({ t: "glyph", x: mid - P(0.55), y: top + P(0.55), ch: GLYPH_TUPLET(n3), cls: "tuplet" });
       };
-      let run = [], runRatio = null, acc = 0, minBase = Infinity, segStart2 = 0;
+      let run = [], runRatio = null, acc = 0, minBase = Infinity, segStart = 0;
       const flushSeg = (openR) => {
-        const cs2 = run.slice(segStart2);
-        if (cs2.length && cs2[0].ratio) bracket(cs2, segStart2 > 0, openR, segStart2 === 0);
-        segStart2 = run.length;
+        const cs2 = run.slice(segStart);
+        if (cs2.length && cs2[0].ratio) bracket(cs2, segStart > 0, openR, segStart === 0);
+        segStart = run.length;
       };
       const closeRun = () => {
         if (run.length) flushSeg(false);
@@ -6908,7 +6917,7 @@ function engrave(song, o) {
         runRatio = null;
         acc = 0;
         minBase = Infinity;
-        segStart2 = 0;
+        segStart = 0;
       };
       for (const c of realChunks) {
         const rr = c.ratio ? c.ratio.join(":") : null;
@@ -6923,7 +6932,10 @@ function engrave(song, o) {
       }
       closeRun();
       const H = headLen(tokens);
-      const cx = (u) => P(u.x - (u.kind === "chunk" && u.inkL ? u.inkL + 0.2 : 0));
+      const inkL = measured[r].inkL, cx = (u) => {
+        const k = u.kind === "chunk" ? inkL.get(u) : void 0;
+        return P(u.x - (k ? k + 0.2 : 0));
+      };
       const firstUnitOf = /* @__PURE__ */ new Map();
       for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
       const realLen = q.realLen;
@@ -7132,4 +7144,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-a92676d5528e.mjs.map
+//# sourceMappingURL=layout-worker-f0f55c40efc3.mjs.map
