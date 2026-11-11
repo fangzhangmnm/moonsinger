@@ -17,7 +17,7 @@
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
 import { TEMPO_EM, TEXT_STYLES, LYRIC_MIN_SX, isBlockScript, textPx, type TextRole, fitLyrics, lyricBlockSx, hyphens, LYRIC_SPACE, HYPHEN_SX, type LyricFit, type LyricItem, type LyricGaps, type TextMeasure, lyricLook, lyricWidth, lyricSizePx } from "./text/index.ts";
-import { _t } from "../i18n/index.ts";
+import { _tIn, type Lang } from "../i18n/index.ts";
 import { DYNS, swellOf, type ClefName, type Song, type PaperSeg, type NoteTok, type Token, type GrooveTok, type NavTok, NAV_LABEL, endingLabel, type Focus, type Staff, TPQ, WHOLE, isTimed, headLen, tempoWord, staffOfTokens, allPitches, tempoOwner, sheetEndBpm, rampSource } from "../score/song.ts";
 import { grooveLabel, grooveStyle } from "../score/groove.ts";
 import { dynOverridden } from "../score/perform.ts";
@@ -95,6 +95,8 @@ export interface EngraveOpts {
   /** 字的尺子比谱的尺子大多少（刀 2；src/score/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
    *  「1=F」、小节号、和弦级数、页码，连同它们周围留的地方，都按 sp × textScale 量；字形、线、cresc. / 8va / 「吸」/ 推定的灰字照旧跟谱。量字的换算在文字模块里（measure.width）。没给 = 1。 */
   textScale?: number;
+  /** 界面语言（谱面分家施工单 1b-3）：排版里要写的几个字（「编排」、编排写错的说明、换气后面的「吸 / 深吸」）按它翻。明着传，排版不读这一页的当前语言（设计稿第 3.9 节守卫 8：同样的输入出同样的版面）。 */
+  locale: Lang;
   /** 只给测试用（刀 4b 守卫「注解不改版面」）：注解（ann）一个都不画。开关两边可印的图元必须逐个相同——注解只看天际线、不写。 */
   __noAnn?: boolean;
 }
@@ -184,6 +186,7 @@ export function attachLayoutFns(d: LayoutData): Layout {
 
 
 export function engrave(song: Song, o: EngraveOpts): Layout {
+  if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
   const looks = resolveSongLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   const lookAt = (paperId: string, partId: string) => looks.get(paperId)?.get(partId);
@@ -259,14 +262,14 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   let arrangement: TitleHit | null = null, arrLast = 0;   // arrLast = 编排那一块最后一行的基线（px；五线谱从它下面开始）
   if (!o.onlyPaper) {
     const as = tx("arr"), wOf = (role: TextRole, t: string) => P(mw(role, t)), row = Math.max(lines.length, 1), base = y0 + row * cs * 1.35;
-    const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
-    const label = _t("编排　"), lw = wOf("arr-label", label), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
+    const arr = parseArrangement(song.arrangement, song.papers, o.locale), txt = song.arrangement?.trim() ?? "";
+    const label = _tIn(o.locale, "编排　"), lw = wOf("arr-label", label), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
     if (txt) prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: "arr-label", size: as, anchor: "start" });   // 没写编排 = 标签只是入口（提示）= 覆盖层写
     arrLast = base;
     if (txt) {
       prims.push({ t: "text", x: x0, y: base, s: txt, cls: "arr", size: as, anchor: "start" });
       if (arr.issues.length) {
-        const why = `· ${arr.issues[0].why}${arr.issues.length > 1 ? _t(" 等 {n} 处", { n: arr.issues.length }) : ""}`, tw = wOf("arr", txt) + T(0.8), fits = tw + wOf("arr-issue", why) <= avail;
+        const why = `· ${arr.issues[0].why}${arr.issues.length > 1 ? _tIn(o.locale, " 等 {n} 处", { n: arr.issues.length }) : ""}`, tw = wOf("arr", txt) + T(0.8), fits = tw + wOf("arr-issue", why) <= avail;
         prims.push({ t: "text", x: fits ? x0 + tw : x0, y: fits ? base : base + cs * 1.35, s: why, cls: "arr-issue ann", size: tx("arr-issue"), anchor: "start" });
         if (!fits) arrLast = base + cs * 1.35;
       }
@@ -1165,7 +1168,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         }
         if (c.breath) prims.push({ tok: tokOf(c), t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         // 出声的换气：逗号后面一个小字「吸」/「深吸」（出版谱的做法 = 逗号 + 文字；没有通用的单个记号）；做不到的人画灰
-        if (c.breath && c.inhale) prims.push({ tok: tokOf(c), t: "text", x: nhX(c) + nhW(c) + P(1.35), y: yOf(row, TOP_LINE + 1) + P(0.45), s: c.inhale === "big" ? _t("深吸##记号") : _t("吸##记号"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx("breath-label"), anchor: "start" });
+        if (c.breath && c.inhale) prims.push({ tok: tokOf(c), t: "text", x: nhX(c) + nhW(c) + P(1.35), y: yOf(row, TOP_LINE + 1) + P(0.45), s: c.inhale === "big" ? _tIn(o.locale, "深吸##记号") : _tIn(o.locale, "吸##记号"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx("breath-label"), anchor: "start" });
       }
       // 8. 连音线：同一个 token 拆开的几段之间 + 数据里的 tie（连着前一个音）。跨行 = 两半：这一行从音到行尾、下一行从行头到音
       //   （2026-10-08 Opus 5.5，user「跨行的连音符显示不正常」——以前跨行的整条不画）

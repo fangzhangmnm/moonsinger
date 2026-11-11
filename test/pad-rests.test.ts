@@ -16,7 +16,7 @@ function two(a: number, b: number): EditorState {
   return setFocus(st, paper.id, "P2");
 }
 const parts = (st: EditorState) => st.song.parts.map((p, k) => ({ id: p.id, name: `V${k}`, empty: false, first: k === 0, hidden: false, badges: [], mono: false }));
-const lay = (st: EditorState, width = 4000) => engrave(st.song, { width, sp: 10, at: st.at, parts: parts(st), measure: createTextMeasure((s: string) => s.length * 10), autoBars: true });
+const lay = (st: EditorState, width = 4000) => engrave(st.song, { width, sp: 10, at: st.at, parts: parts(st), locale: "zh", measure: createTextMeasure((s: string) => s.length * 10), autoBars: true });
 const padRests = (st: EditorState) => lay(st).prims.filter((p) => p.t === "glyph" && typeof p.cls === "string" && p.cls.includes("pad-rest")).length;
 const E = TPQ / 2;
 const show = (st: EditorState) => tr(st).slice(headLen(tr(st))).map((t) => t.kind === "note" ? `${t.pitch!.step}/${t.dur / E}` : t.kind === "rest" ? `r/${t.dur / E}` : t.kind).join(" ");

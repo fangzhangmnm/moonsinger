@@ -89,7 +89,7 @@ describe("编辑：插 / 改 / 删", () => {
 describe("画：同一个实际音高按谱号 / 八度线挪位置（音高数据不动）", () => {
   const ys = (toks: Token[], partClef?: "F" | "G8vb" | "G") => {
     const st = stOf(partClef ? [...toks.slice(0, 3), { kind: "clef", id: 990, clef: partClef } as Token, ...toks.slice(3)] : toks), song = st.song;   // 写明谱号 = 这一段纸头的谱号记号（v0.16.88）
-    const L = engrave(song, { width: 800, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V" }], measure: createTextMeasure((s) => s.length * 10) });
+    const L = engrave(song, { width: 800, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V" }], locale: "zh", measure: createTextMeasure((s) => s.length * 10) });
     return { L, y: L.notes.map((q) => q.y - L.systems[q.system].staffTop) };   // 相对谱顶（八度线那一道会让整条谱往下挪）
   };
   it("铃 C7：高音 15ma 下画在谱里（不是一串上加线）；写明高音谱号 = 画在很高的地方", () => {

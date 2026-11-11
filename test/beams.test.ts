@@ -11,7 +11,7 @@ function bar(beats: number, beatType: number, n: number): EditorState {
   const st = initState(), pp = st.song.papers[0], pid = st.song.parts[0].id, t = pp.tracks[pid], h = t.slice(0, headLen(t)).map((x) => (x.kind === "time" ? { ...x, beats, beatType } : x));
   return { ...st, song: { ...st.song, papers: [{ ...pp, tracks: { [pid]: [...h, ...Array.from({ length: n }, e8)] } }] } };
 }
-const groups = (st: EditorState) => engrave(st.song, { width: 1200, sp: 10, at: st.at, parts: st.song.parts.map((p, k) => ({ id: p.id, name: `V${k}`, empty: false, first: k === 0, hidden: false, badges: [], mono: false })), measure: createTextMeasure((s: string) => s.length * 10), autoBars: true })
+const groups = (st: EditorState) => engrave(st.song, { width: 1200, sp: 10, at: st.at, parts: st.song.parts.map((p, k) => ({ id: p.id, name: `V${k}`, empty: false, first: k === 0, hidden: false, badges: [], mono: false })), locale: "zh", measure: createTextMeasure((s: string) => s.length * 10), autoBars: true })
   .prims.filter((p) => p.t === "path" && typeof p.cls === "string" && p.cls.split(" ").includes("beam")).length;   // 只有八分 = 一组一道符杠
 
 describe("符杠按拍号分组", () => {

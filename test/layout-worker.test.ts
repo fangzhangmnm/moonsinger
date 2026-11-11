@@ -19,12 +19,12 @@ function songs(): { name: string; st: EditorState; parts: Parameters<typeof engr
   const grand = { name: "冻结样本（两纸两声部）+ 大谱表", st: sample, parts: sample.song.parts.map((p, k) => ({ id: p.id, name: p.id, empty: false, ...(k === 0 ? { staves: 2 as const } : {}) })) };
   return [one, grand];
 }
-const opts = (parts: Parameters<typeof engrave>[1]["parts"], at: EditorState["at"], width = 420) => ({ width, sp: 10, at, parts, titlePlaceholder: true, autoBars: true, paperLabel: "A5", margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
+const opts = (parts: Parameters<typeof engrave>[1]["parts"], at: EditorState["at"], width = 420) => ({ width, sp: 10, locale: "zh" as const, at, parts, titlePlaceholder: true, autoBars: true, paperLabel: "A5", margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
 
 describe("排版进 worker", () => {
   it("attachLayoutFns(stripLayoutFns(L))：yOf / dOf / lyricY 每一行、各种 d 都和 engrave 原装的闭包相同；lyricYs 对得上", () => {
     for (const { name, st, parts } of songs()) {
-      const L = engrave(st.song, { ...opts(parts, st.at), measure: createTextMeasure(measure) });
+      const L = engrave(st.song, { ...opts(parts, st.at), locale: "zh", measure: createTextMeasure(measure) });
       assert(L.systems.length >= 2, `${name}：至少两行`);
       eq(L.lyricYs.length, L.systems.length, `${name}：每行一个 lyricY`);
       const data = stripLayoutFns(L);
@@ -41,7 +41,7 @@ describe("排版进 worker", () => {
   it("runLayoutJob：同一把尺子 = 和主线程直接 engrave + toSvgParts 的字符串逐组相同；data 里的命中数据和原装相同；seq 原样带回", () => {
     for (const { name, st, parts } of songs()) {
       const o = opts(parts, st.at);
-      const want = engrave(st.song, { ...o, measure: createTextMeasure(measure) }), wantParts = toSvgParts(want);
+      const want = engrave(st.song, { ...o, locale: "zh", measure: createTextMeasure(measure) }), wantParts = toSvgParts(want);
       const r = runLayoutJob({ seq: 7, song: st.song, opts: o }, measure, () => 0);
       assert(!("error" in r), `${name}：没报错`);
       if ("error" in r) continue;

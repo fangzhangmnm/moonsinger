@@ -16,7 +16,7 @@ const compact = (key: string) => { const { song, labels } = loadSong(key), paper
 /** 同一首紧凑档的歌排两遍：字的尺子 = 谱（1）/ 字照舒适档（1.4）。量字跟着字号。 */
 function pair(key: string, view = "edit-all"): [Layout, Layout, number] {
   const { song, labels } = compact(key), v = VIEWS.find((x) => x.name === view)!, o = v.opts(song, labels), ts = textScaleOf(song.paper);
-  return [engrave(song, { ...o, textScale: 1, measure: createTextMeasure(measure) }), engrave(song, { ...o, textScale: ts, measure: createTextMeasure((s) => measure(s) * ts) }), ts];
+  return [engrave(song, { ...o, textScale: 1, locale: "zh", measure: createTextMeasure(measure) }), engrave(song, { ...o, textScale: ts, locale: "zh", measure: createTextMeasure((s) => measure(s) * ts) }), ts];
 }
 
 describe("刀 2：紧凑档的字照舒适档那么大（textScale = 7 / 5）", () => {

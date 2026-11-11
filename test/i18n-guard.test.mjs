@@ -62,7 +62,7 @@ describe("i18n 守卫", () => {
   it("排版器里没有编辑器的字（N4）", () => {
     const src = fs.readFileSync(path.join(ROOT, "src/render/engrave.ts"), "utf8");
     const words = ["点", "长按", "右键", "菜单", "＋", "隐藏 ·", "曲段名", "作者", "歌名"];
-    const keys = [...src.matchAll(/_t\("([^"]*)"/g)].map((m) => m[1]);
+    const keys = [...src.matchAll(/_t\("([^"]*)"|_tIn\([^,()]*,\s*"([^"]*)"/g)].map((m) => m[1] ?? m[2]);   // 1b-3 起排版器用 _tIn(语言, "…")
     const bad = keys.filter((k) => words.some((w) => k.includes(w)));
     assert(bad.length === 0, `排版器的 _t 里有编辑器的字：${bad.join(" / ")}`);
   });

@@ -117,8 +117,8 @@ function fill(raw, params) {
   });
 }
 var TABLE = true ? {} : S;
-function lookup(key) {
-  if (lang() === "zh") {
+function lookup(key, l = lang()) {
+  if (l === "zh") {
     const i = key.indexOf("##");
     return i < 0 ? key : key.slice(0, i);
   }
@@ -1916,4 +1916,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-c5a9fbd9cf0f.mjs.map
+//# sourceMappingURL=studio-worklet-cdbca833c2a0.mjs.map

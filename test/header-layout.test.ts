@@ -14,7 +14,7 @@ function song(credits: string): EditorState {
   return setCredits(st, credits);
 }
 const parts = (st: EditorState) => st.song.parts.map((p, k) => ({ id: p.id, name: `V${k}`, empty: false, first: k === 0, hidden: false, badges: [], mono: false }));
-const lay = (st: EditorState, onlyPaper?: string) => engrave(st.song, { width: 700, sp: 10, at: st.at, parts: parts(st), measure: createTextMeasure((s: string) => s.length * 10), autoBars: true, chrome: { underPaper: 2.6, tail: 2.6, famGap: 0.8, navRoom: 16 }, ...(onlyPaper ? { onlyPaper } : {}) });
+const lay = (st: EditorState, onlyPaper?: string) => engrave(st.song, { width: 700, sp: 10, at: st.at, parts: parts(st), locale: "zh", measure: createTextMeasure((s: string) => s.length * 10), autoBars: true, chrome: { underPaper: 2.6, tail: 2.6, famGap: 0.8, navRoom: 16 }, ...(onlyPaper ? { onlyPaper } : {}) });
 
 describe("纸面顶上", () => {
   it("歌名明显比曲段名大", () => {

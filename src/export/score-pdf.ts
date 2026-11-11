@@ -12,6 +12,7 @@
 //   歌词行在谱下面，所以歌词行往下让出「拼音字体的墨迹顶 − 黑体的墨迹顶」那一截（engrave lyricRaise）。同 WXHW v2.3.13 的结论。
 import { textStyleOf, LYRIC_EM, createTextMeasure, type RawMeasure, type TextMeasure } from "../render/text/index.ts";
 import { engrave, type Prim, type PartView, type EngraveOpts } from "../render/engrave.ts";
+import { lang } from "../i18n/index.ts";
 import type { Song } from "../score/song.ts";
 import { paperOf, DEFAULT_PAPER, spMm, lineSp, pageGeoOf, textScaleOf } from "../score/paper.ts";
 import { writePdf, type PdfOp, type PdfPage, type Seg, type MusicOutlines, type PdfStats, type Rgb } from "./pdf.ts";
@@ -74,7 +75,7 @@ export interface PrintView { inC?: boolean; chordTags?: boolean }
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
 export function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, lyricRaise: number, onlyPaper?: string, view: PrintView = {}): EngraveOpts {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
-  return { width: lineSp(paper) * sp, sp, ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measure, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}),
+  return { width: lineSp(paper) * sp, sp, locale: lang(), ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measure, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}),
     ...(view.inC ? { inC: true } : {}), ...(view.chordTags ? { chordTags: true } : {}) };   // 看谱方式 = 屏幕上那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
 }
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */

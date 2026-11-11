@@ -19,7 +19,7 @@
 // 试听：笔 / 鼠标按住音符 = 一直响，上下拖到新音高就换成新的（一张嘴，新的顶掉旧的），松手停；横拖改时长不出声
 //   （user「拖动音高的时候最好也有预览。新的抢占旧的。然后改时长和velocity就不用预览了」）。手指轻点 = 响一下。
 
-import { _t, workerOptions } from "../i18n/index.ts";
+import { _t, workerOptions, lang } from "../i18n/index.ts";
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, PAPER_LABEL, pageGeoOf, textScaleOf } from "../score/paper.ts";
 import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
@@ -311,7 +311,7 @@ export class ScoreView {
       (_k, v: unknown) => (v instanceof Set ? [...v] : v));
     // 编辑器要排版留的地方（刀 1）：每张纸底下的虚线框那一截（能写、不分页）、整首最下面「＋ 新曲段」那一截（能写）、合租括号、曲段控件——画归覆盖层
     const chrome: EngraveOpts["chrome"] = { ...(this.rules.edit && !page ? { underPaper: 2.6 } : {}), ...(this.rules.edit ? { tail: 2.6 } : {}), famGap: 0.8, navRoom: 16 };
-    const opts: Omit<EngraveOpts, "measure"> = { width, sp, at: st.at, parts: partsNow, chrome, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
+    const opts: Omit<EngraveOpts, "measure"> = { width, sp, locale: lang(), at: st.at, parts: partsNow, chrome, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
       ...(lyricRaise ? { lyricRaise } : {}), autoBars, ...(inC ? { inC: true } : {}), ...(chordTags ? { chordTags: true } : {}), ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}), ...(ts !== 1 ? { textScale: ts } : {}) };
     return { frame: { sp, width, strict, page, margins, hscroll }, geoKey, opts };
   }

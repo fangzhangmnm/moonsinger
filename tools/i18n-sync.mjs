@@ -22,11 +22,14 @@ export function usedKeys() {
       const rel = path.relative(ROOT, p).replace(/\\/g, "/");
       if (rel === "src/i18n/strings.ts") continue;
       const text = fs.readFileSync(p, "utf8");
-      if (!text.includes("_t(")) continue;
+      if (!text.includes("_t(") && !text.includes("_tIn(")) continue;
       const sf = parse(p, text);
       const visit = (n) => {
-        if (ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === "_t" && n.arguments[0] && (ts.isStringLiteral(n.arguments[0]) || ts.isNoSubstitutionTemplateLiteral(n.arguments[0]))) {
-          const k = n.arguments[0].text;
+        // _tIn(语言, "键", …)（排版这类明着传语言的纯函数用，2026-11-11）：键在第二个参数
+        const ki = ts.isCallExpression(n) && ts.isIdentifier(n.expression) ? (n.expression.text === "_t" ? 0 : n.expression.text === "_tIn" ? 1 : -1) : -1;
+        const ka = ki >= 0 ? n.arguments[ki] : undefined;
+        if (ka && (ts.isStringLiteral(ka) || ts.isNoSubstitutionTemplateLiteral(ka))) {
+          const k = ka.text;
           const line = sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
           if (!used.has(k)) used.set(k, `${rel}:${line}`);
         }

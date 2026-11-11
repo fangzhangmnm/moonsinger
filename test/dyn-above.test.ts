@@ -15,7 +15,7 @@ function song(items: Token[], grand = false): EditorState {
   return grand ? setPaperLook(s1, st.at.paper, st.at.part, { grand: true }) : s1;
 }
 function check(st: EditorState, what: string) {
-  const L = engrave(st.song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: false }], measure: createTextMeasure((s: string) => s.length * 10) } as never);
+  const L = engrave(st.song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, hidden: false, badges: [], mono: false }], locale: "zh", measure: createTextMeasure((s: string) => s.length * 10) } as never);
   const top = Math.min(...L.systems.map((r) => r.staffTop));
   const dyn = L.prims.filter((p) => p.t === "glyph" && /\bdyn\b/.test((p as { cls?: string }).cls ?? "")) as { y: number }[];
   const pin = L.prims.filter((p) => p.t === "path" && /\bhairpin\b/.test((p as { cls?: string }).cls ?? "")) as { d: string }[];
@@ -33,7 +33,7 @@ describe("力度那一行一律在谱上面", () => {
 describe("力度两道：音的修饰在下、大的强弱线在上（刀 4b 起不是固定的道：挂件第 3 样先贴、第 4 样贴在它上面）", () => {
   const nn = (k: number, extra: Record<string, unknown>): Token => ({ ...(n(k) as object), ...extra }) as unknown as Token;
   const sw = (k: number, swell: string): Token => nn(k, { art: [({ "<": "swellUp", ">": "swellDown", "<>": "swellBoth" } as Record<string, "swellUp" | "swellDown" | "swellBoth">)[swell]] });
-  const lay2 = (items: Token[]) => { const st = song(items); return engrave(st.song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], measure: createTextMeasure((s: string) => s.length * 10) } as never); };
+  const lay2 = (items: Token[]) => { const st = song(items); return engrave(st.song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], locale: "zh", measure: createTextMeasure((s: string) => s.length * 10) } as never); };
   const ys = (d: string) => (d.match(/-?\d+\.?\d*/g) ?? []).filter((_, i) => i % 2 === 1).map(Number);
   it("同一个音上 mf + 音内渐强：mf 在上面一道，小发夹在下面一道（以前叠在一起）", () => {
     const L = lay2([{ kind: "dyn", id: id++, value: "mf" } as Token, sw(0, "<"), n(1)]);

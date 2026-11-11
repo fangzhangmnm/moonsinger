@@ -37,7 +37,7 @@ type View = { name: string; opts: (song: Song, labels: string[]) => EngraveOpts;
 export const measureFor = (song: Song) => { const k = textScaleOf(song.paper ?? paperOf(DEFAULT_PAPER)); return (s: string) => measure(s) * k; };
 export const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<string>) => {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
-  return { width: lineSp(paper) * SP, sp: SP, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measure: createTextMeasure(measureFor(song)), autoBars: true, ...(ts !== 1 ? { textScale: ts } : {}),
+  return { width: lineSp(paper) * SP, sp: SP, locale: "zh", at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measure: createTextMeasure(measureFor(song)), autoBars: true, ...(ts !== 1 ? { textScale: ts } : {}),
     // 刀 1 前的四个旗（titlePlaceholder / editable / keyHint / paperLabel）和刀 1 后的几何参数 chrome 一起给：新旧两版排版器各认各的，同一份样张两边都能排
     titlePlaceholder: true, editable: true, keyHint: true, paperLabel: "A5", chrome: { underPaper: 2.6, tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } } as unknown as EngraveOpts;
 };

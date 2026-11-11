@@ -51,8 +51,8 @@ function fill(raw: string, params?: Record<string, unknown>): string {
 declare const __I18N_OFF__: boolean | undefined;   // AudioWorklet 的 bundle 定义成 true：它不显示字，翻译表不打进音频线程
 const TABLE: Record<string, { en: string } | undefined> = typeof __I18N_OFF__ !== "undefined" && __I18N_OFF__ ? {} : S;
 
-function lookup(key: string): string {
-  if (lang() === "zh") { const i = key.indexOf("##"); return i < 0 ? key : key.slice(0, i); }   // 「弹##出声」= 中文显示「弹」，英文是另一条
+function lookup(key: string, l: Lang = lang()): string {
+  if (l === "zh") { const i = key.indexOf("##"); return i < 0 ? key : key.slice(0, i); }   // 「弹##出声」= 中文显示「弹」，英文是另一条
   const e = TABLE[key];
   return e?.en || key;   // 表里没有（只可能是 _tDyn 收到的运行时字串）= 原文
 }
@@ -60,6 +60,10 @@ function lookup(key: string): string {
 /** 界面文案。key = 中文原文（{名字} 是参数）；表里没有 = tsc 报错。 */
 export function _t(key: Key, params?: Record<string, unknown>): string {
   return fill(lookup(key), params);
+}
+/** 指定语言的文案（不读这一页的当前语言）：排版这类「同样的输入出同样的结果」的纯函数用，语言由调用方明着传进来（谱面分家施工单 1b-3，2026-11-11 Claude Opus 5.5）。 */
+export function _tIn(l: Lang, key: Key, params?: Record<string, unknown>): string {
+  return fill(lookup(key, l), params);
 }
 /** 起 worker 用：把语言带进去（worker 里读不到 device-kv）。 */
 export function workerOptions(): WorkerOptions {

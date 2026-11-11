@@ -16,7 +16,7 @@ const dyn = (value: string): Token => ({ kind: "dyn", id: id++, value }) as Toke
 const pin = (dir: "cresc" | "dim"): Token => ({ kind: "hairpin", id: id++, dir }) as Token;
 const SP = 10, measure = (s: string) => s.length * SP;
 function song(items: Token[]): EditorState { const st = initState(); return { ...st, song: withTrack(st.song, st.at.paper, st.at.part, [...tr(st).slice(0, 3), ...items]) }; }
-const lay = (items: Token[], extra: Extra = {}): Layout => { const st = song(items); return engrave(st.song, { width: 900, sp: SP, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], measure: createTextMeasure(measure), ...extra } as never); };
+const lay = (items: Token[], extra: Extra = {}): Layout => { const st = song(items); return engrave(st.song, { width: 900, sp: SP, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false }], locale: "zh", measure: createTextMeasure(measure), ...extra } as never); };
 const cls = (p: Prim) => p.cls ?? "";
 /** 一个图元的墨，切成小块（px）。 */
 const boxes = (p: Prim, sp: number, m: (s: string, size: number) => number) => { const out: [number, number, number, number][] = []; primInk(p, sp, m, (x0, x1, y0, y1) => out.push([x0, x1, y0, y1])); return out; };
@@ -45,7 +45,7 @@ describe("刀 4b：挂件贴着天际线（user 11-08 截图里点名的几样�
   it("没有挂件的行：谱上面只留版式的最小值", () => {
     const st = song([n(0, 5), n(1, 5), n(2, 5), n(3, 5)]), id2 = "p2";
     const s2 = { ...st.song, parts: [...st.song.parts, { ...st.song.parts[0]!, id: id2, role: "r9", mic: "m9" }], papers: st.song.papers.map((pp) => ({ ...pp, tracks: { ...pp.tracks, [id2]: [...tr(st).slice(0, 3), n(6, 4), n(5, 4), n(4, 4), n(3, 4)] } })) };
-    const L = engrave(s2, { width: 900, sp: SP, at: st.at, parts: [st.at.part, id2].map((pid, k) => ({ id: pid, name: `V${k}`, empty: false, first: k === 0, clef: "G" as const, hidden: false, badges: [], mono: false })), measure: createTextMeasure(measure) } as never);
+    const L = engrave(s2, { width: 900, sp: SP, at: st.at, parts: [st.at.part, id2].map((pid, k) => ({ id: pid, name: `V${k}`, empty: false, first: k === 0, clef: "G" as const, hidden: false, badges: [], mono: false })), locale: "zh", measure: createTextMeasure(measure) } as never);
     const r2 = L.systems.find((r) => r.part === id2)!;
     const above = (r2.staffTop - r2.top) / SP;
     assert(Math.abs(above - 4.6) < 1e-6, `第二位那一行谱上面留 ${above}（舒适档最小值 4.6）`);

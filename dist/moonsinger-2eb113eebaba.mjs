@@ -5046,8 +5046,8 @@ function fill(raw, params) {
   });
 }
 var TABLE = typeof __I18N_OFF__ !== "undefined" && __I18N_OFF__ ? {} : S;
-function lookup(key) {
-  if (lang() === "zh") {
+function lookup(key, l10 = lang()) {
+  if (l10 === "zh") {
     const i10 = key.indexOf("##");
     return i10 < 0 ? key : key.slice(0, i10);
   }
@@ -5056,6 +5056,9 @@ function lookup(key) {
 }
 function _t(key, params) {
   return fill(lookup(key), params);
+}
+function _tIn(l10, key, params) {
+  return fill(lookup(key, l10), params);
 }
 function workerOptions() {
   return { type: "module", name: `lang=${lang()}` };
@@ -9015,7 +9018,7 @@ function harmonyTags(theory, track) {
 
 // src/score/arrange.ts
 var REP = /^(?:[×xX*])(\d+)/;
-function parseArrangement(text2, papers) {
+function parseArrangement(text2, papers, l10 = lang()) {
   const src = (text2 ?? "").trim();
   if (!src) return { order: papers.filter((p2) => !p2.hidden).map((p2) => p2.id), loop: null, issues: [], explicit: false };
   const issues = [];
@@ -9048,7 +9051,7 @@ function parseArrangement(text2, papers) {
     for (; ; ) {
       ws2();
       if (i10 >= src.length) {
-        if (close) issues.push({ at: src.length, len: 0, why: _t("\u5C11\u4E86\u300C{close}\u300D", { close }) });
+        if (close) issues.push({ at: src.length, len: 0, why: _tIn(l10, "\u5C11\u4E86\u300C{close}\u300D", { close }) });
         return out;
       }
       const c10 = src[i10];
@@ -9057,7 +9060,7 @@ function parseArrangement(text2, papers) {
         return out;
       }
       if (c10 === ")" || c10 === "]") {
-        issues.push({ at: i10, len: 1, why: _t("\u591A\u4E86\u300C{c}\u300D", { c: c10 }) });
+        issues.push({ at: i10, len: 1, why: _tIn(l10, "\u591A\u4E86\u300C{c}\u300D", { c: c10 }) });
         i10++;
         continue;
       }
@@ -9071,19 +9074,19 @@ function parseArrangement(text2, papers) {
         let name = "";
         while (i10 < src.length && !/[\s、,，→()[\]×*]/.test(src[i10]) && !(/[xX]/.test(src[i10]) && /\d/.test(src[i10 + 1] ?? "") && name)) name += src[i10++];
         if (!name) {
-          issues.push({ at: i10, len: 1, why: _t("\u770B\u4E0D\u61C2\u300C{p}\u300D", { p: src[i10] }) });
+          issues.push({ at: i10, len: 1, why: _tIn(l10, "\u770B\u4E0D\u61C2\u300C{p}\u300D", { p: src[i10] }) });
           i10++;
           continue;
         }
         const paper = findPaper(name);
         if (!paper) {
-          issues.push({ at: at2, len: name.length, why: _t("\u6CA1\u6709\u53EB\u300C{name}\u300D\u7684\u7EB8\uFF08\u5199\u66F2\u6BB5\u540D\uFF0C\u6216\u8005\u7B2C\u51E0\u5F20\u7EB8\u7684\u5E8F\u53F7\uFF09", { name }) });
+          issues.push({ at: at2, len: name.length, why: _tIn(l10, "\u6CA1\u6709\u53EB\u300C{name}\u300D\u7684\u7EB8\uFF08\u5199\u66F2\u6BB5\u540D\uFF0C\u6216\u8005\u7B2C\u51E0\u5F20\u7EB8\u7684\u5E8F\u53F7\uFF09", { name }) });
           node = { kind: "rep", body: [], n: 1 };
         } else node = { kind: "ref", paper, text: name, at: at2 };
       }
       const n10 = rep();
       if (n10 !== null) {
-        if (n10 < 1 || n10 > 99) issues.push({ at: at2, len: i10 - at2, why: _t("\u91CD\u590D\u6B21\u6570\u8981\u5728 1 \u5230 99 \u4E4B\u95F4") });
+        if (n10 < 1 || n10 > 99) issues.push({ at: at2, len: i10 - at2, why: _tIn(l10, "\u91CD\u590D\u6B21\u6570\u8981\u5728 1 \u5230 99 \u4E4B\u95F4") });
         if (n10 >= 1) node = { kind: "rep", body: [node], n: Math.min(99, n10) };
       }
       out.push(node);
@@ -9096,10 +9099,10 @@ function parseArrangement(text2, papers) {
     const at2 = i10;
     i10++;
     loopNodes = seq("]");
-    if (!loopNodes.length) issues.push({ at: at2, len: i10 - at2, why: _t("\u5FAA\u73AF\u6BB5\u662F\u7A7A\u7684") });
+    if (!loopNodes.length) issues.push({ at: at2, len: i10 - at2, why: _tIn(l10, "\u5FAA\u73AF\u6BB5\u662F\u7A7A\u7684") });
     ws2();
     if (i10 < src.length) {
-      issues.push({ at: i10, len: src.length - i10, why: _t("\u5FAA\u73AF\u6BB5\u53EA\u80FD\u653E\u5728\u6700\u540E\uFF1A\u540E\u9762\u7684\u6C38\u8FDC\u653E\u4E0D\u5230") });
+      issues.push({ at: i10, len: src.length - i10, why: _tIn(l10, "\u5FAA\u73AF\u6BB5\u53EA\u80FD\u653E\u5728\u6700\u540E\uFF1A\u540E\u9762\u7684\u6C38\u8FDC\u653E\u4E0D\u5230") });
     }
   }
   const expand = (ns2) => ns2.flatMap((n10) => n10.kind === "ref" ? [n10.paper] : Array.from({ length: n10.n }, () => expand(n10.body)).flat());
@@ -11461,16 +11464,11 @@ function mergeTracks(tracks, opt = {}) {
   return out;
 }
 
-// src/render/engrave.ts
+// src/render/frame/params.ts
 var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
 var NAME_MIN = 3 * 2 + 0.4;
-function attachLayoutFns(d3) {
-  const half2 = d3.sp * 0.5;
-  const yOf = (r10, dd) => d3.systems[r10].staffTop + (TOP_LINE2 - dd) * half2;
-  return { ...d3, yOf, dOf: (r10, y2) => Math.round(TOP_LINE2 - (y2 - d3.systems[r10].staffTop) / half2), lyricY: (r10) => d3.lyricYs[r10] };
-}
 var SQUEEZE = 0.15;
 var ROW_STEP = 1;
 var MARGIN = 1.2;
@@ -11484,6 +11482,47 @@ var SPACING = {
   // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
   compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 }
 };
+
+// src/render/frame/columns.ts
+var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, head: 4, chunk: 5 };
+
+// src/render/frame/furniture.ts
+var NO_LINE_START = /* @__PURE__ */ new Set([..."\u3001\u3002\uFF0C\uFF0E\u30FB\uFF1A\uFF1B\uFF1F\uFF01\uFF09\u300D\u300F\u3011\u3015\u3009\u300B\u30FC\uFF5E\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6,.;:!?)]}"]);
+function wrapTitle(s10, w2, max2) {
+  if (w2(s10) <= max2) return [s10];
+  const lines = [];
+  let cur = "";
+  const push = () => {
+    if (cur.trim()) lines.push(cur.trim());
+    cur = "";
+  };
+  for (const word of s10.match(/\S+\s*/g) ?? [s10]) {
+    if (w2((cur + word).trimEnd()) <= max2) {
+      cur += word;
+      continue;
+    }
+    if (cur.trim()) push();
+    if (w2(word.trimEnd()) <= max2) {
+      cur = word;
+      continue;
+    }
+    for (const ch2 of word) {
+      if (cur && w2((cur + ch2).trimEnd()) > max2) {
+        if (NO_LINE_START.has(ch2) && [...cur].length > 1) {
+          const cs2 = [...cur], last = cs2.pop();
+          cur = cs2.join("");
+          push();
+          cur = last;
+        } else push();
+      }
+      cur += ch2;
+    }
+  }
+  push();
+  return lines.length ? lines : [s10];
+}
+
+// src/render/staff/glyphs.ts
 var TOP_LINE2 = 38;
 var MID_LINE2 = 34;
 var BOTTOM_LINE = 30;
@@ -11508,6 +11547,8 @@ var RAMP_DASH = { len: 0.5, gap: 0.4 };
 var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
 var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 var GLYPH_TUPLET = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(59520 + Number(d3))).join("");
+
+// src/render/staff/notation.ts
 var MIN_PLAIN = TPQ / 8;
 var NOTATABLE = [];
 for (let b3 = WHOLE; b3 >= MIN_PLAIN; b3 /= 2) {
@@ -11538,7 +11579,8 @@ function notate(dur) {
   return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
 }
 var baseWidth = (base2) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base2 / TPQ));
-var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, head: 4, chunk: 5 };
+
+// src/render/staff/units.ts
 var CLEF_CUE = 0.72;
 var CLEF_CUE_W = 2.74 * CLEF_CUE + 0.9;
 var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G15ma: GLYPH.gClef15ma, F: GLYPH.fClef, F8vb: GLYPH.fClef8vb };
@@ -11724,41 +11766,15 @@ function unitsOf(tokens, o10) {
   if (o10.tail) pushHead();
   return { units, head, shortBars, pickup };
 }
-var NO_LINE_START = /* @__PURE__ */ new Set([..."\u3001\u3002\uFF0C\uFF0E\u30FB\uFF1A\uFF1B\uFF1F\uFF01\uFF09\u300D\u300F\u3011\u3015\u3009\u300B\u30FC\uFF5E\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6,.;:!?)]}"]);
-function wrapTitle(s10, w2, max2) {
-  if (w2(s10) <= max2) return [s10];
-  const lines = [];
-  let cur = "";
-  const push = () => {
-    if (cur.trim()) lines.push(cur.trim());
-    cur = "";
-  };
-  for (const word of s10.match(/\S+\s*/g) ?? [s10]) {
-    if (w2((cur + word).trimEnd()) <= max2) {
-      cur += word;
-      continue;
-    }
-    if (cur.trim()) push();
-    if (w2(word.trimEnd()) <= max2) {
-      cur = word;
-      continue;
-    }
-    for (const ch2 of word) {
-      if (cur && w2((cur + ch2).trimEnd()) > max2) {
-        if (NO_LINE_START.has(ch2) && [...cur].length > 1) {
-          const cs2 = [...cur], last = cs2.pop();
-          cur = cs2.join("");
-          push();
-          cur = last;
-        } else push();
-      }
-      cur += ch2;
-    }
-  }
-  push();
-  return lines.length ? lines : [s10];
+
+// src/render/engrave.ts
+function attachLayoutFns(d3) {
+  const half2 = d3.sp * 0.5;
+  const yOf = (r10, dd) => d3.systems[r10].staffTop + (TOP_LINE2 - dd) * half2;
+  return { ...d3, yOf, dOf: (r10, y2) => Math.round(TOP_LINE2 - (y2 - d3.systems[r10].staffTop) / half2), lyricY: (r10) => d3.lyricYs[r10] };
 }
 function engrave(song, o10) {
+  if (!o10.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   const looks = resolveSongLooks(song, new Set(o10.parts.filter((p2) => p2.perc || p2.xHead).map((p2) => p2.id)));
   const lookAt = (paperId, partId) => looks.get(paperId)?.get(partId);
   const clefStarts = { get: (paperId) => ({ get: (partId) => {
@@ -11849,14 +11865,14 @@ function engrave(song, o10) {
   let arrangement = null, arrLast = 0;
   if (!o10.onlyPaper) {
     const as2 = tx2("arr"), wOf = (role, t10) => P2(mw(role, t10)), row2 = Math.max(lines.length, 1), base2 = y0 + row2 * cs2 * 1.35;
-    const arr = parseArrangement(song.arrangement, song.papers), txt = song.arrangement?.trim() ?? "";
-    const label = _t("\u7F16\u6392\u3000"), lw2 = wOf("arr-label", label), x0 = P2(MARGIN) + lw2, avail2 = o10.width - P2(2 * MARGIN) - lw2;
+    const arr = parseArrangement(song.arrangement, song.papers, o10.locale), txt = song.arrangement?.trim() ?? "";
+    const label = _tIn(o10.locale, "\u7F16\u6392\u3000"), lw2 = wOf("arr-label", label), x0 = P2(MARGIN) + lw2, avail2 = o10.width - P2(2 * MARGIN) - lw2;
     if (txt) prims.push({ t: "text", x: P2(MARGIN), y: base2, s: label, cls: "arr-label", size: as2, anchor: "start" });
     arrLast = base2;
     if (txt) {
       prims.push({ t: "text", x: x0, y: base2, s: txt, cls: "arr", size: as2, anchor: "start" });
       if (arr.issues.length) {
-        const why2 = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? _t(" \u7B49 {n} \u5904", { n: arr.issues.length }) : ""}`, tw2 = wOf("arr", txt) + T2(0.8), fits = tw2 + wOf("arr-issue", why2) <= avail2;
+        const why2 = `\xB7 ${arr.issues[0].why}${arr.issues.length > 1 ? _tIn(o10.locale, " \u7B49 {n} \u5904", { n: arr.issues.length }) : ""}`, tw2 = wOf("arr", txt) + T2(0.8), fits = tw2 + wOf("arr-issue", why2) <= avail2;
         prims.push({ t: "text", x: fits ? x0 + tw2 : x0, y: fits ? base2 : base2 + cs2 * 1.35, s: why2, cls: "arr-issue ann", size: tx2("arr-issue"), anchor: "start" });
         if (!fits) arrLast = base2 + cs2 * 1.35;
       }
@@ -12917,7 +12933,7 @@ function engrave(song, o10) {
           prims.push({ tok: tokOf(c10), t: "path", d: dd, cls: ["arpeggio", ign.has("arpeggio") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
         }
         if (c10.breath) prims.push({ tok: tokOf(c10), t: "glyph", x: nhX(c10) + nhW(c10) + P2(0.55), y: yOf(row2, TOP_LINE2 + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-        if (c10.breath && c10.inhale) prims.push({ tok: tokOf(c10), t: "text", x: nhX(c10) + nhW(c10) + P2(1.35), y: yOf(row2, TOP_LINE2 + 1) + P2(0.45), s: c10.inhale === "big" ? _t("\u6DF1\u5438##\u8BB0\u53F7") : _t("\u5438##\u8BB0\u53F7"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx2("breath-label"), anchor: "start" });
+        if (c10.breath && c10.inhale) prims.push({ tok: tokOf(c10), t: "text", x: nhX(c10) + nhW(c10) + P2(1.35), y: yOf(row2, TOP_LINE2 + 1) + P2(0.45), s: c10.inhale === "big" ? _tIn(o10.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o10.locale, "\u5438##\u8BB0\u53F7"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx2("breath-label"), anchor: "start" });
       }
       const tieArc = (row2, d3, x1, x2, ghost) => {
         const len = Math.abs(x2 - x1), sgn = d3 < MID_LINE2 ? 1 : -1, y2 = yOf(row2, d3) + sgn * P2(0.8), h2 = Math.min(len * 0.25, Math.max(P2(0.5), Math.min(P2(1.6), len * 0.12)));
@@ -14544,6 +14560,7 @@ var ScoreView = class {
     const opts = {
       width,
       sp: sp2,
+      locale: lang(),
       at: st2.at,
       parts: partsNow,
       chrome,
@@ -31607,15 +31624,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-69d37c5405ef.mjs");
+      return pick(() => "singer-worker-9d92e0ed0058.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
-      return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
+      return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-7bda0d4ef971.mjs");
+      return pick(() => "layout-worker-a92676d5528e.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-0563532e6fc9.mjs");
+      return pick(() => "encode-worker-6b1c08f15c6b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -41527,7 +41544,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "1c93a2d2dcae89f1" : "dev";
+var CORE_HASH = true ? "2f05eb0ba56f051f" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -53493,6 +53510,7 @@ function printOpts(song, sp2, parts, measure, autoBars2, lyricRaise, onlyPaper, 
   return {
     width: lineSp(paper) * sp2,
     sp: sp2,
+    locale: lang(),
     ...ts2 !== 1 ? { textScale: ts2 } : {},
     at: { paper: onlyPaper ?? song.papers[0].id, part: song.parts[0].id },
     parts,
@@ -61183,4 +61201,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-cbb5f3b409f0.mjs.map
+//# sourceMappingURL=moonsinger-2eb113eebaba.mjs.map
