@@ -11970,8 +11970,9 @@ function rollDefaultHz(key) {
 }
 
 // src/render/staff/draw.ts
+var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
 function drawStaff(c10) {
-  const { song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, later, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c10;
+  const { song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c10;
   const clefAtSys = (q2, s10) => {
     const u2 = q2.units.find((x2) => x2.system === s10 && x2.index >= 0);
     if (u2) return q2.ds.clef[u2.index] ?? q2.start;
@@ -12023,7 +12024,7 @@ function drawStaff(c10) {
       const q0 = per.find((q2) => q2.units.some((u2) => u2.kind === "chunk" && u2.system === s10)) ?? per[0];
       const c02 = q0.units.find((u2) => u2.kind === "chunk" && u2.system === s10);
       const num2 = c02 ? (c02.m ?? 0) + (q0.pickup ? 0 : 1) : null;
-      if (num2 !== null && !(s10 === 0 && num2 <= 1)) later[9].push(() => placeAbove(rowOf(s10, 0, 0), 0.3, (y2) => prims.push({ t: "text", x: P2(MARGIN + ind), y: y2, s: String(num2), cls: "bar-no", size: tx2("bar-no"), anchor: "start" })));
+      if (num2 !== null && !(s10 === 0 && num2 <= 1)) attach2("barNumber", () => placeAbove(rowOf(s10, 0, 0), 0.3, (y2) => prims.push({ t: "text", x: P2(MARGIN + ind), y: y2, s: String(num2), cls: "bar-no", size: tx2("bar-no"), anchor: "start" })));
     }
     per.forEach((q2, r10) => {
       if (rowHost[r10] >= 0) return;
@@ -12055,7 +12056,7 @@ function drawStaff(c10) {
           if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(cw2 + 0.6) });
           if (k2 === 0 && q2.p.id === owner && q2.head.idx.tempo !== void 0) {
             const ti2 = q2.head.idx.tempo;
-            later[7].push(() => drawTempo(row2, MARGIN + ind + 0.6, q2.head.bpm, "tempo", ti2, prevBpm === null || prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > prevBpm ? "up" : "down"));
+            attach2("tempo", () => drawTempo(row2, MARGIN + ind + 0.6, q2.head.bpm, "tempo", ti2, prevBpm === null || prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > prevBpm ? "up" : "down"));
           }
         }
       }
@@ -12227,7 +12228,7 @@ function drawStaff(c10) {
       if (u2.kind === "groove") {
         const gt = tokens[u2.index], gr = rowOf(u2.system, r10, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
         const fs = tx2("groove-mark"), gw = P2(mw("groove-mark", label)), gx = P2(u2.x + 0.3);
-        later[8].push(() => placeAbove(gr, 0.5, (gy) => {
+        attach2("groove", () => placeAbove(gr, 0.5, (gy) => {
           prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
           dyns.push({ index: u2.index, kind: "groove", system: gr, x: P2(u2.x), y: gy - TR("groove-mark", TEMPO_EM * 1.1), w: gw + TR("groove-mark", 0.6), h: TR("groove-mark", TEMPO_EM * 1.5) });
         }));
@@ -12243,7 +12244,7 @@ function drawStaff(c10) {
             prims.push({ t: "glyph", x: P2(u2.x + 0.4), y: yOf(rr2, BOTTOM_LINE), ch: u2.repeat === "start" ? "\uE040" : u2.repeat === "end" ? "\uE041" : "\uE042", cls: "repeat-bar" + navMute(u2.index), tok: tokens[u2.index].id });
             if (u2.times && u2.times > 2 && k2 === 0) {
               const times = u2.times, bx = P2(u2.x + 0.4 + (u2.repeat === "both" ? 1.2 : 1.47)), cl2 = "nav-mark" + navMute(u2.index);
-              later[6].push(() => placeAbove(rr2, 0.6, (y2) => prims.push({ t: "text", x: bx, y: y2, s: `\xD7${times}`, cls: cl2, size: tx2("nav-mark"), anchor: "end" })));
+              attach2("nav", () => placeAbove(rr2, 0.6, (y2) => prims.push({ t: "text", x: bx, y: y2, s: `\xD7${times}`, cls: cl2, size: tx2("nav-mark"), anchor: "end" })));
             }
           } else if (u2.kind === "bar") {
             const bx = P2(u2.x + 0.7), bcls = u2.auto ? "bar auto" : "bar";
@@ -12277,12 +12278,12 @@ function drawStaff(c10) {
         continue;
       }
       if (u2.kind === "tempo") {
-        if (q2.p.id === owner) later[7].push(() => drawTempo(row2, u2.x + 0.3, u2.bpm, "tempo", u2.index));
+        if (q2.p.id === owner) attach2("tempo", () => drawTempo(row2, u2.x + 0.3, u2.bpm, "tempo", u2.index));
         continue;
       }
       if (u2.kind === "hairpin") continue;
       if (u2.kind === "nav") {
-        later[6].push(() => drawNav(u2));
+        attach2("nav", () => drawNav(u2));
         continue;
       }
       if (u2.kind === "ottava") continue;
@@ -12315,7 +12316,7 @@ function drawStaff(c10) {
           const up = v > 0;
           {
             const sk2 = k2, se2 = e10;
-            (up ? later[5] : later[12]).push(() => {
+            attach2(up ? "ottavaAbove" : "ottavaBelow", () => {
               const pl = up ? placeAbove : placeBelow;
               pl(row0, 0.6, (y2) => {
                 const k3 = sk2, e11 = se2;
@@ -12399,7 +12400,7 @@ function drawStaff(c10) {
         d3 += sgn * 2;
       }
       const strong = ["accent", "marcato", "stress", "unstress"].filter((x2) => c11.art.includes(x2));
-      if (strong.length) later[2].push(() => {
+      if (strong.length) attach2("strength", () => {
         for (const a10 of strong) {
           const m2 = ART_GLYPH[a10];
           placeAbove(row2, 0.4, (y2) => prims.push({ tok: tokOf(c11), t: "glyph", x: cx3 - P2(m2.w / 2), y: y2, ch: m2.above, cls: artCls(a10) }));
@@ -12407,7 +12408,7 @@ function drawStaff(c10) {
       });
       const swl = c11.j === 0 ? swellOf(tokens[c11.index]) : void 0;
       const atk = ["sfz", "fp"].filter((x2) => c11.art.includes(x2));
-      if (swl || atk.length) later[3].push(() => placeAbove(row2, 0.5, (y2) => {
+      if (swl || atk.length) attach2("noteDynamics", () => placeAbove(row2, 0.5, (y2) => {
         let xa = nhX(c11);
         for (const a10 of atk) {
           const ch2 = a10 === "sfz" ? "\uE539" : "\uE534", w2 = P2(GLYPH_BOX[ch2]?.[1] ?? 2.6), gx = cx3 - w2 / 2;
@@ -12601,7 +12602,7 @@ function drawStaff(c10) {
       if (u2.system < pu.system) continue;
       wedgeItems(u2.index, b3 > a10 ? "cresc" : "dim", pu.system, sx2, u2.system, ex2, true, dynKey(pu), dynKey(u2));
     }
-    later[4].push(() => {
+    attach2("dynamics", () => {
       if (!dynItems.length) return;
       const parent = dynItems.map((_2, i10) => i10), find = (i10) => parent[i10] === i10 ? i10 : parent[i10] = find(parent[i10]);
       const byKey = /* @__PURE__ */ new Map();
@@ -12623,7 +12624,7 @@ function drawStaff(c10) {
         for (const i10 of ch2) dynItems[i10].draw(y2);
       });
     });
-    if (o10.chordTags && !v2 && !q2.vrt) later[10].push(() => {
+    if (o10.chordTags && !v2 && !q2.vrt) attach2("chordTag", () => {
       const fs = tx2("chord-tag");
       const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: song.parts.find((x2) => x2.id === q2.p.id)?.brokenChords !== false }).map((x2) => [x2.index, x2.read]));
       for (const c11 of units) {
@@ -12643,7 +12644,7 @@ function drawStaff(c10) {
         });
       }
     });
-    later[11].push(() => {
+    attach2("lyrics", () => {
       if (!lyricsOf[r10]) {
         for (const j2 of lyricJobs) j2.run();
         lyrics.push(...partLyrics);
@@ -12775,6 +12776,9 @@ function drawStaff(c10) {
     }
   });
 }
+
+// src/render/frame/lanes.ts
+var INK_UP_TO = "nav";
 
 // src/render/frame/arrange.ts
 function mergeColumns(tracks) {
@@ -13210,7 +13214,11 @@ function engrave(song, o10) {
       commit(sk2, dy, o22.count !== false);
       return dy;
     };
-    const later = Array.from({ length: 13 }, () => []);
+    const attached = /* @__PURE__ */ new Map(), attach2 = (lane, run2) => {
+      const l10 = attached.get(lane);
+      if (l10) l10.push(run2);
+      else attached.set(lane, [run2]);
+    };
     const p0 = mark();
     const staffEnd = Array.from({ length: nSys }, (_2, s10) => {
       const row2 = placedCols.filter((c10) => c10.system === s10);
@@ -13308,7 +13316,7 @@ function engrave(song, o10) {
       }
       for (const x2 of measures) delete x2.m;
     }
-    drawStaff({ song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, later, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
+    drawStaff({ song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
     for (let i10 = p0.p; i10 < prims.length; i10++) {
       const p2 = prims[i10];
       if (isAnn(p2)) continue;
@@ -13318,9 +13326,9 @@ function engrave(song, o10) {
       primInk(p2, sp2, textW, (x0, x1, y02, y1) => sky(row2).ink(x0 / sp2, x1 / sp2, (y02 - t10) / sp2, (y1 - t10) / sp2));
     }
     const upToNav = [];
-    for (let k2 = 0; k2 < later.length; k2++) {
-      for (const f2 of later[k2]) f2();
-      if (k2 === 6) skies.forEach((sk2, i10) => {
+    for (const lane of STAFF_LANES) {
+      for (const f2 of attached.get(lane) ?? []) f2();
+      if (lane === INK_UP_TO) skies.forEach((sk2, i10) => {
         upToNav[i10] = sk2.hUp;
       });
     }
@@ -31662,7 +31670,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-d30d12af466a.mjs");
+      return pick(() => "layout-worker-09ad5143642e.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-6b1c08f15c6b.mjs");
   }
@@ -61233,4 +61241,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5d52bb708609.mjs.map
+//# sourceMappingURL=moonsinger-f060940e1521.mjs.map

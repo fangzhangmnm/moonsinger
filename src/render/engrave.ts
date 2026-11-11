@@ -35,7 +35,8 @@ import { TOP_LINE, MID_LINE, BOTTOM_LINE } from "./staff/glyphs.ts";
 import { type Unit } from "./staff/units.ts";
 import { measureTrack, lineStartWidth } from "./staff/measure.ts";
 import { staffRows, staffTracks, type FoldFamily } from "./staff/rows.ts";
-import { drawStaff } from "./staff/draw.ts";
+import { drawStaff, STAFF_LANES } from "./staff/draw.ts";
+import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
 
 /** tok = 这个图元属于哪个 token（id）：写字头 / 选区 / 强调色不进排版，score-view 按 data-tok 在 DOM 上开关 class（W-17 第 1 刀，2026-10-15）。 */
@@ -478,8 +479,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       commit(sk, dy, o2.count !== false);
       return dy;
     };
-    /** 挂件按固定的先后摆（施工单 §2.2 第 2 条那张表）：later[k] = 第 k 样（1 跳音保持在音符层里，这里从 2 起）。 */
-    const later: (() => void)[][] = Array.from({ length: 13 }, () => []);
+    /** 挂件的道（frame/lanes.ts）：画法往道上登记（attach），第 12 步按这种谱给的先后（STAFF_LANES）一道一道贴。 */
+    const attached = new Map<LaneKind, (() => void)[]>(), attach = (lane: LaneKind, run: () => void) => { const l = attached.get(lane); if (l) l.push(run); else attached.set(lane, [run]); };
     const p0 = mark();   // 这张纸音符层的头：从这里起的图元 / 点击区最后都按行挪到位
     // 每行五线画到哪：这一行最后一列是小节线 = 到那根小节线为止（不出头；user 2026-10-08「每行五线谱最好过了最后一个小节线能不能不出头」）；
     //   后面还有音 / 写字头（光标停在最后一根小节线后面）= 照旧画到右边（写的地方）。小节线画在列的 x + 0.7（见下面第 6 步）
@@ -565,7 +566,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       }
       for (const x of measures) delete (x as { m?: number }).m; }
     // 5、6–11：五线谱这一种行的画（staff/draw.ts；施工单 1b-6a）。框架交过去的东西都在这个对象里
-    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, later, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
+    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
     // 12. 量 → 贴 → 定行距 → 挪到位（刀 4b）
     //   ① 音符层的墨进天际线（注解不算）
     for (let i = p0.p; i < prims.length; i++) {
@@ -575,7 +576,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     }
     //   ② 挂件按表的先后摆（第 6 样之后记一下往上到哪：播放的小节底色只盖到反复记号，不含速度 / 风格）
     const upToNav: number[] = [];
-    for (let k = 0; k < later.length; k++) { for (const f of later[k]) f(); if (k === 6) skies.forEach((sk, i) => { upToNav[i] = sk.hUp; }); }
+    for (const lane of STAFF_LANES) { for (const f of attached.get(lane) ?? []) f(); if (lane === INK_UP_TO) skies.forEach((sk, i) => { upToNav[i] = sk.hUp; }); }
     const pEnd = mark();
     //   ③ 每一行的上下留白 = 版式的最小值和天际线（+ 0.8）取大；有歌词的那一条另按歌词的规矩（歌词基线 + 版式里歌词下面那一截，挤到第二行的再加一行）。上下两行不咬合
     const PAD = 0.8, lyricTail = SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow, fin = (v: number, d: number) => (Number.isFinite(v) ? v : d);

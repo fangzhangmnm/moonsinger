@@ -5679,8 +5679,9 @@ function dynOverridden(tokens, bounds) {
 }
 
 // src/render/staff/draw.ts
+var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
 function drawStaff(c) {
-  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, later, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c;
+  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c;
   const clefAtSys = (q, s2) => {
     const u = q.units.find((x) => x.system === s2 && x.index >= 0);
     if (u) return q.ds.clef[u.index] ?? q.start;
@@ -5732,7 +5733,7 @@ function drawStaff(c) {
       const q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s2)) ?? per[0];
       const c0 = q0.units.find((u) => u.kind === "chunk" && u.system === s2);
       const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null;
-      if (num !== null && !(s2 === 0 && num <= 1)) later[9].push(() => placeAbove(rowOf(s2, 0, 0), 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" })));
+      if (num !== null && !(s2 === 0 && num <= 1)) attach("barNumber", () => placeAbove(rowOf(s2, 0, 0), 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" })));
     }
     per.forEach((q, r) => {
       if (rowHost[r] >= 0) return;
@@ -5764,7 +5765,7 @@ function drawStaff(c) {
           if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
           if (k === 0 && q.p.id === owner && q.head.idx.tempo !== void 0) {
             const ti = q.head.idx.tempo;
-            later[7].push(() => drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", ti, prevBpm === null || prevBpm === q.head.bpm ? void 0 : q.head.bpm > prevBpm ? "up" : "down"));
+            attach("tempo", () => drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", ti, prevBpm === null || prevBpm === q.head.bpm ? void 0 : q.head.bpm > prevBpm ? "up" : "down"));
           }
         }
       }
@@ -5936,7 +5937,7 @@ function drawStaff(c) {
       if (u.kind === "groove") {
         const gt = tokens[u.index], gr = rowOf(u.system, r, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
         const fs = tx("groove-mark"), gw = P(mw("groove-mark", label)), gx = P(u.x + 0.3);
-        later[8].push(() => placeAbove(gr, 0.5, (gy) => {
+        attach("groove", () => placeAbove(gr, 0.5, (gy) => {
           prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
           dyns.push({ index: u.index, kind: "groove", system: gr, x: P(u.x), y: gy - TR("groove-mark", TEMPO_EM * 1.1), w: gw + TR("groove-mark", 0.6), h: TR("groove-mark", TEMPO_EM * 1.5) });
         }));
@@ -5952,7 +5953,7 @@ function drawStaff(c) {
             prims.push({ t: "glyph", x: P(u.x + 0.4), y: yOf(rr, BOTTOM_LINE), ch: u.repeat === "start" ? "\uE040" : u.repeat === "end" ? "\uE041" : "\uE042", cls: "repeat-bar" + navMute(u.index), tok: tokens[u.index].id });
             if (u.times && u.times > 2 && k === 0) {
               const times = u.times, bx = P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), cl = "nav-mark" + navMute(u.index);
-              later[6].push(() => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `\xD7${times}`, cls: cl, size: tx("nav-mark"), anchor: "end" })));
+              attach("nav", () => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `\xD7${times}`, cls: cl, size: tx("nav-mark"), anchor: "end" })));
             }
           } else if (u.kind === "bar") {
             const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar";
@@ -5986,12 +5987,12 @@ function drawStaff(c) {
         continue;
       }
       if (u.kind === "tempo") {
-        if (q.p.id === owner) later[7].push(() => drawTempo(row, u.x + 0.3, u.bpm, "tempo", u.index));
+        if (q.p.id === owner) attach("tempo", () => drawTempo(row, u.x + 0.3, u.bpm, "tempo", u.index));
         continue;
       }
       if (u.kind === "hairpin") continue;
       if (u.kind === "nav") {
-        later[6].push(() => drawNav(u));
+        attach("nav", () => drawNav(u));
         continue;
       }
       if (u.kind === "ottava") continue;
@@ -6024,7 +6025,7 @@ function drawStaff(c) {
           const up = v > 0;
           {
             const sk = k, se = e;
-            (up ? later[5] : later[12]).push(() => {
+            attach(up ? "ottavaAbove" : "ottavaBelow", () => {
               const pl = up ? placeAbove : placeBelow;
               pl(row0, 0.6, (y) => {
                 const k2 = sk, e2 = se;
@@ -6108,7 +6109,7 @@ function drawStaff(c) {
         d += sgn * 2;
       }
       const strong = ["accent", "marcato", "stress", "unstress"].filter((x) => c2.art.includes(x));
-      if (strong.length) later[2].push(() => {
+      if (strong.length) attach("strength", () => {
         for (const a of strong) {
           const m = ART_GLYPH[a];
           placeAbove(row, 0.4, (y) => prims.push({ tok: tokOf(c2), t: "glyph", x: cx2 - P(m.w / 2), y, ch: m.above, cls: artCls(a) }));
@@ -6116,7 +6117,7 @@ function drawStaff(c) {
       });
       const swl = c2.j === 0 ? swellOf(tokens[c2.index]) : void 0;
       const atk = ["sfz", "fp"].filter((x) => c2.art.includes(x));
-      if (swl || atk.length) later[3].push(() => placeAbove(row, 0.5, (y) => {
+      if (swl || atk.length) attach("noteDynamics", () => placeAbove(row, 0.5, (y) => {
         let xa = nhX(c2);
         for (const a of atk) {
           const ch = a === "sfz" ? "\uE539" : "\uE534", w = P(GLYPH_BOX[ch]?.[1] ?? 2.6), gx = cx2 - w / 2;
@@ -6310,7 +6311,7 @@ function drawStaff(c) {
       if (u.system < pu.system) continue;
       wedgeItems(u.index, b > a ? "cresc" : "dim", pu.system, sx, u.system, ex, true, dynKey(pu), dynKey(u));
     }
-    later[4].push(() => {
+    attach("dynamics", () => {
       if (!dynItems.length) return;
       const parent = dynItems.map((_, i) => i), find = (i) => parent[i] === i ? i : parent[i] = find(parent[i]);
       const byKey = /* @__PURE__ */ new Map();
@@ -6332,7 +6333,7 @@ function drawStaff(c) {
         for (const i of ch) dynItems[i].draw(y);
       });
     });
-    if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
+    if (o.chordTags && !v2 && !q.vrt) attach("chordTag", () => {
       const fs = tx("chord-tag");
       const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: song.parts.find((x) => x.id === q.p.id)?.brokenChords !== false }).map((x) => [x.index, x.read]));
       for (const c2 of units) {
@@ -6352,7 +6353,7 @@ function drawStaff(c) {
         });
       }
     });
-    later[11].push(() => {
+    attach("lyrics", () => {
       if (!lyricsOf[r]) {
         for (const j of lyricJobs) j.run();
         lyrics.push(...partLyrics);
@@ -6484,6 +6485,9 @@ function drawStaff(c) {
     }
   });
 }
+
+// src/render/frame/lanes.ts
+var INK_UP_TO = "nav";
 
 // src/render/frame/arrange.ts
 function mergeColumns(tracks) {
@@ -6918,7 +6922,11 @@ function engrave(song, o) {
       commit(sk, dy, o2.count !== false);
       return dy;
     };
-    const later = Array.from({ length: 13 }, () => []);
+    const attached = /* @__PURE__ */ new Map(), attach = (lane, run) => {
+      const l = attached.get(lane);
+      if (l) l.push(run);
+      else attached.set(lane, [run]);
+    };
     const p0 = mark();
     const staffEnd = Array.from({ length: nSys }, (_, s2) => {
       const row = placedCols.filter((c) => c.system === s2);
@@ -7016,7 +7024,7 @@ function engrave(song, o) {
       }
       for (const x of measures) delete x.m;
     }
-    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, later, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
+    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
     for (let i = p0.p; i < prims.length; i++) {
       const p = prims[i];
       if (isAnn(p)) continue;
@@ -7026,9 +7034,9 @@ function engrave(song, o) {
       primInk(p, sp, textW, (x0, x1, y02, y1) => sky(row).ink(x0 / sp, x1 / sp, (y02 - t) / sp, (y1 - t) / sp));
     }
     const upToNav = [];
-    for (let k = 0; k < later.length; k++) {
-      for (const f of later[k]) f();
-      if (k === 6) skies.forEach((sk, i) => {
+    for (const lane of STAFF_LANES) {
+      for (const f of attached.get(lane) ?? []) f();
+      if (lane === INK_UP_TO) skies.forEach((sk, i) => {
         upToNav[i] = sk.hUp;
       });
     }
@@ -7164,4 +7172,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-d30d12af466a.mjs.map
+//# sourceMappingURL=layout-worker-09ad5143642e.mjs.map

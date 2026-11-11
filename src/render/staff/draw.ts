@@ -21,8 +21,11 @@ import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W, type Unit, type Chunk, type DynU, ty
 import { stemInput, posD, shAt, percAt, clefW } from "./measure.ts";
 import type { Prim, EngraveOpts, Layout, HitNote, RestHit, LyricHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox } from "../engrave.ts";
 import type { StaffTrack } from "./measure.ts";
+import type { LaneKind } from "../frame/lanes.ts";
 
 /** 框架交给五线谱画法的东西（施工单 1b-6a：原来是 engrave() 里的局部变量）。以后 6b–6d 收窄：挂件改成清单、每行一张图元表、摆的结果不抄回单元。 */
+/** 五线谱这一种贴挂件的先后（原来按编号 later[2..12]：跳音 / 保持在音符层里，不是挂件）。 */
+export const STAFF_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
 export interface StaffDrawCtx {
   song: Song; paper: PaperSeg; o: EngraveOpts;
   /** 尺子：P = 谱（sp → px）；tx / TR / RS / mw = 字（文字模块的样式表）。 */
@@ -32,10 +35,10 @@ export interface StaffDrawCtx {
   keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
   /** 纵向：第 r 行第 d 级 ↔ y；第五线；歌词基线；谱的点击高度；（第 s 行、第 r 个声部、第 k 张谱表）→ 行号。 */
   yOf: (r: number, d: number) => number; staffTop: (r: number) => number; lyricY: (r: number) => number; staffHit: (r: number) => { y: number; h: number }; rowOf: (s: number, r: number, k?: number) => number;
-  /** 挂件：贴在谱上方 / 下方（天际线），later[k] = 第 k 样（框架按先后执行）。 */
+  /** 挂件：贴在谱上方 / 下方（天际线）；attach = 往某一道上登记一件（框架按 STAFF_LANES 的先后执行）。 */
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
   placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: { min?: number; count?: boolean; step?: number }) => number;
-  later: (() => void)[][];
+  attach: (lane: LaneKind, run: () => void) => void;
   /** 每条要排的轨、声部 2 画在哪一行、鼓谱模式、量的结果（墨往左伸多远）。 */
   per: StaffTrack[]; rowHost: number[]; pmode: ("five" | "one" | null)[]; measured: { inkL: Map<Chunk, number> }[];
   /** 排的结果：几行、每行行首多宽 / 那里生效的调号、每行五线画到哪、每一列、右边界（sp）、名字一栏的缩进（第一行 / 别的行）。 */
@@ -47,7 +50,7 @@ export interface StaffDrawCtx {
 }
 
 export function drawStaff(c: StaffDrawCtx): void {
-  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, later, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c;
+  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c;
     /** 第 s 行开头的谱号（这一行第一个东西那里生效的）。 */
     const clefAtSys = (q: StaffTrack, s: number): ClefName => {
       const u = q.units.find((x) => x.system === s && x.index >= 0); if (u) return q.ds.clef[u.index] ?? q.start;
@@ -102,7 +105,7 @@ export function drawStaff(c: StaffDrawCtx): void {
       const q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s)) ?? per[0];
       const c0 = q0.units.find((u): u is Chunk => u.kind === "chunk" && u.system === s);
       const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null;
-      if (num !== null && !(s === 0 && num <= 1)) later[9].push(() => placeAbove(rowOf(s, 0, 0), 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" })));
+      if (num !== null && !(s === 0 && num <= 1)) attach("barNumber", () => placeAbove(rowOf(s, 0, 0), 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" })));
     }
     per.forEach((q, r) => {
       if (rowHost[r] >= 0) return;   // 声部 2：谱表 / 谱号 / 名字都是声部 1 那一行的
@@ -130,7 +133,7 @@ export function drawStaff(c: StaffDrawCtx): void {
           if (fk) hx += 0.8;
           const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
           if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
-          if (k === 0 && q.p.id === owner && q.head.idx.tempo !== undefined) { const ti = q.head.idx.tempo; later[7].push(() => drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", ti, prevBpm === null || prevBpm === q.head.bpm ? undefined : q.head.bpm > prevBpm ? "up" : "down")); }   // 速度 = 挂件第 7 样
+          if (k === 0 && q.p.id === owner && q.head.idx.tempo !== undefined) { const ti = q.head.idx.tempo; attach("tempo", () => drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", ti, prevBpm === null || prevBpm === q.head.bpm ? undefined : q.head.bpm > prevBpm ? "up" : "down")); }   // 速度 = 挂件第 7 样
         }
       }
     });
@@ -278,7 +281,7 @@ export function drawStaff(c: StaffDrawCtx): void {
       if (u.kind === "groove") {   // 风格记号（拍子轻重）：斜体字、和后面那个音左对齐；不认识的预设（以后的版本写的）= 灰字 + 说明（纪律）。挂件第 8 样：速度之后、贴天际线往上 0.5（挤了自然叠上去）
         const gt = tokens[u.index] as GrooveTok, gr = rowOf(u.system, r, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
         const fs = tx("groove-mark"), gw = P(mw("groove-mark", label)), gx = P(u.x + 0.3);
-        later[8].push(() => placeAbove(gr, 0.5, (gy) => {
+        attach("groove", () => placeAbove(gr, 0.5, (gy) => {
           prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
           dyns.push({ index: u.index, kind: "groove", system: gr, x: P(u.x), y: gy - TR("groove-mark", TEMPO_EM * 1.1), w: gw + TR("groove-mark", 0.6), h: TR("groove-mark", TEMPO_EM * 1.5) });
         }));
@@ -292,7 +295,7 @@ export function drawStaff(c: StaffDrawCtx): void {
           if (u.kind === "bar") bars.push({ system: rr, x: P(u.x + 0.7) });
           if (u.kind === "bar" && u.repeat) {   // 反复小节线：Bravura 字形（|: = E040、:| = E041、:|: = E042；一条谱高）；:| 一共放几遍 > 2 = 上面写「×3」
             prims.push({ t: "glyph", x: P(u.x + 0.4), y: yOf(rr, BOTTOM_LINE), ch: u.repeat === "start" ? "\u{E040}" : u.repeat === "end" ? "\u{E041}" : "\u{E042}", cls: "repeat-bar" + navMute(u.index), tok: tokens[u.index].id });
-            if (u.times && u.times > 2 && k === 0) { const times = u.times, bx = P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), cl = "nav-mark" + navMute(u.index); later[6].push(() => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `×${times}`, cls: cl, size: tx("nav-mark"), anchor: "end" }))); }   // ×3 = 反复那一样（挂件第 6 样）
+            if (u.times && u.times > 2 && k === 0) { const times = u.times, bx = P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), cl = "nav-mark" + navMute(u.index); attach("nav", () => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `×${times}`, cls: cl, size: tx("nav-mark"), anchor: "end" }))); }   // ×3 = 反复那一样（挂件第 6 样）
           } else if (u.kind === "bar") {
             const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar";
             const [bt, bb] = pmode[r] === "one" ? [MID_LINE + 2, MID_LINE - 2] : [TOP_LINE, BOTTOM_LINE];   // 一线谱：小节线上下各出一格
@@ -321,9 +324,9 @@ export function drawStaff(c: StaffDrawCtx): void {
         }
         continue;
       }
-      if (u.kind === "tempo") { if (q.p.id === owner) later[7].push(() => drawTempo(row, u.x + 0.3, u.bpm, "tempo", u.index)); continue; }   // 挂件第 7 样
+      if (u.kind === "tempo") { if (q.p.id === owner) attach("tempo", () => drawTempo(row, u.x + 0.3, u.bpm, "tempo", u.index)); continue; }   // 挂件第 7 样
       if (u.kind === "hairpin") continue;   // 渐强渐弱在 8¾ 画（要知道终点）
-      if (u.kind === "nav") { later[6].push(() => drawNav(u)); continue; }   // 挂件第 6 样
+      if (u.kind === "nav") { attach("nav", () => drawNav(u)); continue; }   // 挂件第 6 样
       if (u.kind === "ottava") continue;   // 八度线在下面按音的范围画
       if (u.kind === "clef") {   // 行中间换谱号（v0.9.28）：小一号的谱号；正好在一行开头 = 行首的谱号已经是它，不重画
         if (q.staves === 2) continue;
@@ -350,7 +353,7 @@ export function drawStaff(c: StaffDrawCtx): void {
           const up = v > 0;
           {   // 刀 4b：8va / 15ma = 挂件第 5 样（这一段天际线往上 0.6）；8vb = 第 12 样（歌词 / 下天际线之下 0.6）。一段一条水平线
             const sk = k, se = e;
-            (up ? later[5] : later[12]).push(() => { const pl = up ? placeAbove : placeBelow; pl(row0, 0.6, (y) => { const k = sk, e = se;
+            attach(up ? "ottavaAbove" : "ottavaBelow", () => { const pl = up ? placeAbove : placeBelow; pl(row0, 0.6, (y) => { const k = sk, e = se;
             const prevIdx = us[k].index - 1, cont = k === 0 && prevIdx >= 0 && (q.ds.ott[prevIdx] ?? 0) === v && units.some((x) => x.index >= 0 && x.index <= prevIdx && x.system < sy);
             const nextU = us[e + 1], lastIdx = us[e].index, endsHere = !!nextU || (q.ds.ott[lastIdx + 1] ?? 0) !== v || lastIdx + 1 >= q.tokens.length || !units.some((x) => x.system > sy && x.index > lastIdx);
             const x0 = P(us[k].x - 0.2), x1 = P(us[e].x + us[e].w - 0.3), sz = P(4 * 0.85), gw = P(SIG_W[v] * 0.85);
@@ -422,12 +425,12 @@ export function drawStaff(c: StaffDrawCtx): void {
       }
       // 强度那一组：一律上面（user「强度记号统一放上面吧，不然容易misleading」）。挂件第 2 样（刀 4b）：对着符头中心，这个音自己那一段天际线往上 0.4，几个就一个叠一个
       const strong = (["accent", "marcato", "stress", "unstress"] as const).filter((x) => c.art.includes(x));
-      if (strong.length) later[2].push(() => { for (const a of strong) { const m = ART_GLYPH[a]; placeAbove(row, 0.4, (y) => prims.push({ tok: tokOf(c), t: "glyph", x: cx - P(m.w / 2), y, ch: m.above, cls: artCls(a) })); } });
+      if (strong.length) attach("strength", () => { for (const a of strong) { const m = ART_GLYPH[a]; placeAbove(row, 0.4, (y) => prims.push({ tok: tokOf(c), t: "glyph", x: cx - P(m.w / 2), y, ch: m.above, cls: artCls(a) })); } });
       // 音内的起伏（< / > / <>）+ 突强 / 强后即弱：音自己的修饰，挂件第 3 样（刀 4b：这个音自己那一段天际线往上 0.5，原来是整行一条「里道」）。
       //   突强 / 强后即弱的字对着符头中心（施工单 §2.2 第 5 条，user「还是居中对齐」）；小发夹从符头左缘（有字 = 字后面）到这个音的宽，中线在字的半腰。做不到的画灰
       const swl = c.j === 0 ? swellOf(tokens[c.index]) : undefined;   // 音内起伏 = 演奏法里的那一组（v0.9.44）
       const atk = (["sfz", "fp"] as const).filter((x) => c.art.includes(x));
-      if (swl || atk.length) later[3].push(() => placeAbove(row, 0.5, (y) => {
+      if (swl || atk.length) attach("noteDynamics", () => placeAbove(row, 0.5, (y) => {
         let xa = nhX(c);
         for (const a of atk) {
           const ch = a === "sfz" ? "\u{E539}" : "\u{E534}", w = P(GLYPH_BOX[ch]?.[1] ?? 2.6), gx = cx - w / 2;
@@ -603,7 +606,7 @@ export function drawStaff(c: StaffDrawCtx): void {
       wedgeItems(u.index, b > a ? "cresc" : "dim", pu.system, sx, u.system, ex, true, dynKey(pu), dynKey(u));
     }
     // 力度那一层摆出来：同一行里 keys 有交集的连成一串（并查集），一串一起贴（共用一条基线）；从左往右摆，后摆的挨着前面的就叠上去
-    later[4].push(() => {
+    attach("dynamics", () => {
       if (!dynItems.length) return;
       const parent = dynItems.map((_, i) => i), find = (i: number): number => (parent[i] === i ? i : (parent[i] = find(parent[i])));
       const byKey = new Map<string, number>();
@@ -615,7 +618,7 @@ export function drawStaff(c: StaffDrawCtx): void {
     });
     // 和弦级数（v0.16.13；乐理模块 src/theory/）= 挂件第 10 样（刀 4b，user 11-08 拍：放到和弦的右下角）：x = 符头右缘 + 0.3、靠左对齐；y = 这一段下天际线再往下 0.3。
     //   按 C 调看时认的是换到 C 的谱 + C 调——级数一样。合租叠起来的虚拟行、声部 2 不标（只看个大概的）。印（跟着设置进 PDF）
-    if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
+    if (o.chordTags && !v2 && !q.vrt) attach("chordTag", () => {
       const fs = tx("chord-tag");   // 和速度字一样大（v0.16.34）；字的尺子（刀 2）
       // 标哪几个音、标什么 = 乐理模块（src/theory/：叠音的和弦 + 分解和弦，2026-11-09 起能整块换理论）；这里只管摆。
       //   harmonyTags 把这条 track 从左到右一小节一小节喂给理论（理论拿不到整条 track——只看前面，theory/index.ts 文件头）
@@ -639,7 +642,7 @@ export function drawStaff(c: StaffDrawCtx): void {
     });
     // 歌词 = 挂件第 11 样（刀 4b）：一行歌词一条基线 = max(版式的最小值, 这一行歌词占的那些段里下天际线最低处 + 字高 + 0.5)；第二行（按节奏排挤下去的）跟着往下。
     //   歌词连字符（英文断开的音节）画在两个歌词中间；拖腔线、句号（注解）一起。歌词的墨进天际线（后面的 8vb 贴在它下面），行高另按歌词的规矩算（第 12 步之后）
-    later[11].push(() => {
+    attach("lyrics", () => {
       if (!lyricsOf[r]) { for (const j of lyricJobs) j.run(); lyrics.push(...partLyrics); return; }   // 没写歌词的声部：空着的歌词位（点了开歌词框）+ 句号（注解），都在默认的歌词位
       const base = LYRIC_BELOW + (o.lyricRaise ?? 0), bySys = new Map<number, typeof lyricJobs>();
       for (const j of lyricJobs) { const l = bySys.get(j.sys); if (l) l.push(j); else bySys.set(j.sys, [j]); }
