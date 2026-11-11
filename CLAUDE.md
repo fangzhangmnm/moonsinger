@@ -18,7 +18,6 @@ Nokia 彩铃编辑器，不是 DAW。
 - **版本纪律（user 提的 major）**：第一个大版本 = 歌（图片 / stamp 也可进）；第二个 = 配器，且「配器必须是为了给月读伴奏」；第三个 = 电音。
 - **跨设备分工（user 2026-10-10「记一个非常重要的用户反馈：这个app is inherently cross platform，pad或者手机上面摸旋律motif，然后编曲配乐反而是大屏电脑键盘鼠标的主场」，随即改词「这个app is inevitably cross platform」）**：iPad / 手机 = 摸旋律、动机（pad、触屏、随手）；编曲 / 配乐 / 混音 = 大屏 + 电脑键盘鼠标的主场。设计一个功能先问它的主场在哪：写音的手感按触屏打磨，录音室 / 效果器 / 多声部编排按桌面打磨（触屏能用、不必最顺）。
 - **远景（2026-10-13，user「两个纪元不一定是immediately要做的。但是是vision」）**：录音纪元 + 尊老爱幼纪元 + 重构切几刀（谱的数据模型 / 编辑模型 / 无头渲染 / 全指令式编辑器 / 显示拆开 / 键盘拆开 / 音源数据模型两个对立方案）→ `ai-docs/20261013-vision-epochs-and-refactor.md`（edited by Claude Opus 5.5）。
-- **哲学账 = `ai-docs/20261111-philosophy-ledger.md`**（为什么这么设计的根因；第 1 条 = 时长是对数的，所以坚持五线谱 / token、受不了钢琴格，user 11-11）。
 - **乐谱里可放一张贴纸级别的图**（user：WXHW 里 body double 靠参考窗就够，PDF 导出尝到甜头）。
 
 ## 编辑器 v0（2026-10-06 落地，READ FIRST；edited by Claude Opus 5.5）

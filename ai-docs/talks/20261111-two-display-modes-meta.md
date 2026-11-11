@@ -411,7 +411,7 @@ AI 的整理，user 没拍：
 ## 38. 根因：时长的感觉是对数的（user 11-11，哲学账）
 
 - user：「aha i know why i prefers sheet music. perhaps humans perception of time is log. so it means in piano roll, inexperienced players (like me) cannot properly judge the time interval. however, using sheet music and token based time notation, it is easier to climb the log ladder. also the visual fat-thin also follows a log law instead of linear law. 帮我哲学记账，这是为什么我受不了钢琴格的根因。就是一个8拍可能感觉只比4拍长一点，除非你会数拍子」
-- 记进了新开的哲学账 `ai-docs/20261111-philosophy-ledger.md` 第 1 条（user 原话 + AI 补充 + 推论），本仓 CLAUDE.md 加了一行指路。
+- 记进了以前的哲学笔记：写歌实验室仓 `ai-docs/privacy/20261105-moonsinger-true-value-study.md` 第 2 节「时长是对数的——为什么受不了钢琴格」（user 原话 + AI 补充 + 推论）。（AI 先在本仓单开了一份「哲学账」，user：「哲学应该之前记了很多了，不用单独开新的doc」→ 删了，挪过去。）
 
 ## 记账说明
 
