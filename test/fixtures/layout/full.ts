@@ -13,11 +13,13 @@ import type { Song } from "../../../src/score/song.ts";
 
 const ROOT = new URL("../../../", import.meta.url);
 /** 全量快照：除了三个闭包，Layout 原样；闭包按行采样（第几级 → y、y 附近 → 第几级、歌词基线）。 */
-export function fullSnapshot(L: Layout): unknown {
+export function fullSnapshot(L: Layout): unknown { return r3(fullSnapshotRaw(L)); }
+/** 同上、数字不取整（比较用：tolDiffs 拿没取整的新值和冻的值按容差比）。 */
+export function fullSnapshotRaw(L: Layout): unknown {
   const { lyricY, yOf, dOf, ...flat } = L;
   const DS = [26, 30, 34, 38, 42];
   const geo = L.systems.map((_, r) => ({ ly: lyricY(r), y: DS.map((d) => yOf(r, d)), d: DS.map((d) => dOf(r, yOf(r, d) + L.sp * 0.2)) }));
-  return r3({ ...flat, geo });
+  return { ...flat, geo };
 }
 
 const LABELS = ["Vocal", "Piano", "Bass", "Glockenspiel", "Pf 1", "Pf 2", "Drums", "Woodblock", "Cowbell", "Mono X"];
@@ -44,6 +46,31 @@ export function* fullCases(): Generator<{ song: string; view: string; layout: ()
 }
 export const fullPath = (song: string, view: string) => new URL(`test/fixtures/layout/full/${song}.${view}.json.gz`, ROOT);
 
+/** 冻的（取整过）和现在的（没取整）按容差比（1b-6c 统筹裁定，施工单第五节「小弟问（1b-6c 守卫 3 的取整）」下面）：
+ *  路径（图元的 d）里的数字 = 冻的时候没取整 → 差 ≤ 1e-6 px 算相同；别的数字 = 冻的时候取整到 0.001 → 差 ≤ 0.0005 + 1e-6 算相同（取整后一样，或本来就压在取整边界上）；
+ *  别的（个数、种类、class、先后、字形、字、tok、注解）逐个相同。报两类数字各自的最大差：路径那一类超过 1e-8 = 不是浮点尾数，停下来查、不调容差。 */
+export const PATH_TOL = 1e-6, NUM_TOL = 0.0005 + 1e-6, PATH_NOISE_MAX = 1e-8;
+export function tolDiffs(want: unknown, got: unknown, n = 6): { out: string[]; maxNum: number; maxPath: number } {
+  const out: string[] = []; let maxNum = 0, maxPath = 0;
+  const NUM = /-?\d*\.?\d+(?:e[-+]?\d+)?/gi, skel = (s: string) => s.replace(NUM, "#"), nums = (s: string) => [...s.matchAll(NUM)].map((m) => Number(m[0]));
+  const say = (path: string, a: unknown, b: unknown) => { if (out.length < n) out.push(`${path || "(根)"}: 冻结 ${JSON.stringify(a)?.slice(0, 140)} ≠ 现在 ${JSON.stringify(b)?.slice(0, 140)}`); };
+  const walk = (a: unknown, b: unknown, path: string, key: string) => {
+    if (typeof a === "number" && typeof b === "number") { const d = Math.abs(a - b); maxNum = Math.max(maxNum, d); if (!(d <= NUM_TOL)) say(path, a, b); return; }
+    if (key === "d" && typeof a === "string" && typeof b === "string") {
+      if (a === b) return;
+      const na = nums(a), nb = nums(b);
+      if (skel(a) !== skel(b) || na.length !== nb.length) { say(path, a, b); return; }
+      let m = 0; na.forEach((x, i) => { m = Math.max(m, Math.abs(x - nb[i]!)); }); maxPath = Math.max(maxPath, m);
+      if (!(m <= PATH_TOL)) say(path, a, b);
+      return;
+    }
+    if (typeof a !== typeof b || Array.isArray(a) !== Array.isArray(b) || a === null || b === null || typeof a !== "object") { if (JSON.stringify(a) !== JSON.stringify(b)) say(path, a, b); return; }
+    if (Array.isArray(a) && Array.isArray(b) && a.length !== b.length) say(path, `${a.length} 个`, `${b.length} 个`);
+    for (const k of new Set([...Object.keys(a as object), ...Object.keys(b as object)])) walk((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], `${path}.${k}`, k);
+  };
+  walk(want, got, "", "");
+  return { out, maxNum, maxPath };
+}
 /** 两份快照第一批不一样的地方（路径 + 两边的值），最多 n 条。 */
 export function diffs(a: unknown, b: unknown, path = "", out: string[] = [], n = 6): string[] {
   if (out.length >= n) return out;

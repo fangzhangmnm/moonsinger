@@ -4,7 +4,8 @@
 const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e?: string): Uint8Array & string };
 const { gunzipSync } = (await import("node:zlib" as string)) as { gunzipSync(b: Uint8Array): { toString(e: string): string } };
 import { describe, it, assert, eq } from "./runner.mjs";
-import { SONGS, VIEWS, caseLayout, snapshot, fixturePath, pdfSha, pdfShaPath } from "./fixtures/layout/cases.ts";
+import { SONGS, VIEWS, caseLayout, snapshotRaw, fixturePath, pdfSha, pdfShaPath } from "./fixtures/layout/cases.ts";
+import { tolDiffs, PATH_NOISE_MAX } from "./fixtures/layout/full.ts";
 
 /** 两份快照第一批不一样的地方（路径 + 两边的值），最多 n 条。 */
 function diffs(a: unknown, b: unknown, path = "", out: string[] = [], n = 6): string[] {
@@ -23,9 +24,10 @@ describe("刀 1 守卫 N1：可印图元 + 锚点和冻结的一样", () => {
   for (const key of Object.keys(SONGS)) for (const v of VIEWS) {
     it(`${key} · ${v.name}`, () => {
       const want = JSON.parse(gunzipSync(fs.readFileSync(fixturePath(key, v.name))).toString("utf8"));
-      const got = JSON.parse(JSON.stringify(snapshot(caseLayout(key, v))));
-      const d = diffs(want, got);
-      assert(d.length === 0, `版面变了（真该变 = node scripts/freeze-layout.mjs 重冻）：\n    ${d.join("\n    ")}`);
+      const got = JSON.parse(JSON.stringify(snapshotRaw(caseLayout(key, v))));
+      const d = tolDiffs(want, got);   // 1b-6c 起按容差比（同守卫 3，统筹裁定）
+      assert(d.out.length === 0, `版面变了（真该变 = node scripts/freeze-layout.mjs 重冻）：\n    ${d.out.join("\n    ")}`);
+      assert(d.maxPath <= PATH_NOISE_MAX, `路径里的数字差 ${d.maxPath} px：不是浮点尾数，停下来查`);
     });
   }
 });

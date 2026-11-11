@@ -32,8 +32,8 @@ import { resolveSongLooks } from "../score/clef.ts";
 import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, SQUEEZE, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SPACING } from "./frame/params.ts";
 import { wrapTitle } from "./frame/furniture.ts";
 import { TOP_LINE, MID_LINE, BOTTOM_LINE } from "./staff/glyphs.ts";
-import { type Unit } from "./staff/units.ts";
-import { measureTrack, lineStartWidth } from "./staff/measure.ts";
+import { type Unit, type Chunk } from "./staff/units.ts";
+import { measureTrack, lineStartWidth, type StaffTrack } from "./staff/measure.ts";
 import { staffRows, staffTracks, type FoldFamily } from "./staff/rows.ts";
 import { drawStaff, STAFF_LANES } from "./staff/draw.ts";
 import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
@@ -369,16 +369,16 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const lenOf = (t: Token[]) => t.reduce((n, x) => n + (isTimed(x) ? x.dur : 0), 0);
     const lens = parts.map((p) => lenOf(trackOf(p.id) ?? [])), paperLen = Math.max(0, ...lens);
     const built = staffTracks(rowsS, { song, paper, lookAt, at: o.at, tailOpen: !!o.tailOpen, autoBars, measure: o.measure, sp, ts, lens, paperLen });
-    const per = built.per, rowHost = built.rowHost; shortBars += built.shortBars;
+    const per0 = built.per, rowHost = built.rowHost; shortBars += built.shortBars;   // per0 = 量 / 排用的（排版单元不改）；摆完复制成 per 给后面
     // 鼓谱（v0.10.27；user「这个做好之后鼓谱做一下。团子只剩下鼓和音效了」「单乐器一线谱同意」；设计账 §2）：这一行画成几线的鼓谱（StaffTrack.pmode）。
     //   一位固定敲一件的（鼓件 / 音效）= 一线谱；整套鼓 = 五线鼓谱；一家合租全是鼓 = 并成一套鼓 = 五线鼓谱、每件在自己那一线。
-    const pmode = per.map((q) => q.pmode);
-    const hasV2 = per.map((q) => q.hasV2);
+    const pmode = per0.map((q) => q.pmode);
+    const hasV2 = per0.map((q) => q.hasV2);
     // 2. 量（五线谱这一种行，一条轨的纯函数：staff/measure.ts）→ 3. 排（框架：合成列 → 折行 → 摆，frame/arrange.ts）。设计稿第 3.3 节第 3、4 步；施工单 1b-4
     //   横向间距（刀 3，2026-11-09 Claude Opus 5.5；算法 = src/render/spacing.ts）：一列到下一列多远 = 这一刻正在响的音里最短的那个该占的宽；同一行前后两样东西真会撞才顶开；
     //   一行排满只拉 / 压弹簧（小节线、调号这些固定宽的不拉）。对齐线 = 列的 x；符头画在 x + 0.35，临时记号挂在左边、进前一列的空。
-    const measured = per.map((q) => measureTrack(q));
-    const atracks: ArrangeTrack<Unit>[] = per.map((_q, pi) => ({ entries: measured[pi]!.entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));   // 声部 2 画在主人那一行 = 和主人一个道基数
+    const measured = per0.map((q) => measureTrack(q));
+    const atracks: ArrangeTrack<Unit>[] = per0.map((_q, pi) => ({ entries: measured[pi]!.entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));   // 声部 2 画在主人那一行 = 和主人一个道基数
     const merged = mergeColumns(atracks), n = merged.length;
     // 行首 = 名字一栏的缩进（框架）+ 各条轨行首要画的（五线谱：谱号 + 那里生效的调号 + 第一行的拍号），取大
     const FAM_W = openFams.length ? (o.chrome?.famGap ?? 0) * ts : 0;   // 有展开着的一家：名字和谱之间多让一点给括号
@@ -388,16 +388,20 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     //   列宽 = 一个 ABBR_W 宽的参照（Vln.Vc.），不随谁最长变；字形特别宽、量出来超了参照的那个才撑一点（不叠到谱上）
     const indN = parts.some((p) => p.abbr) ? Math.max(nameW(ABBR_REF), ...parts.map((p) => nameW(p.abbr ?? ""))) + 1.4 * ts + FAM_W : 0;
     const keyAtCol: Map<string, number>[] = [];   // 第 k 列之前生效的调号（每行开头画哪个调号、行首多宽）
-    { const now = new Map<string, number>(per.map((q) => [q.p.id, q.head.key]));
-      for (let k = 0; k <= n; k++) { keyAtCol.push(new Map(now)); if (k < n) for (const { track, entry } of merged[k]!.members) if (entry.ref.kind === "key") now.set(per[track]!.p.id, entry.ref.fifths); } }
-    const headAt = (k: number, first: boolean) => { const keys = keyAtCol[k]!, base = (first ? ind0 : indN) + MARGIN; return Math.max(...per.map((q) => lineStartWidth(q, keys.get(q.p.id)!, first, base))); };
+    { const now = new Map<string, number>(per0.map((q) => [q.p.id, q.head.key]));
+      for (let k = 0; k <= n; k++) { keyAtCol.push(new Map(now)); if (k < n) for (const { track, entry } of merged[k]!.members) if (entry.ref.kind === "key") now.set(per0[track]!.p.id, entry.ref.fifths); } }
+    const headAt = (k: number, first: boolean) => { const keys = keyAtCol[k]!, base = (first ? ind0 : indN) + MARGIN; return Math.max(...per0.map((q) => lineStartWidth(q, keys.get(q.p.id)!, first, base))); };
     const spO = { curve: curveOf(densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } }) === "compact" ? "tight" : "normal"), ...SP_DEFAULTS };   // 音距跟版式（v0.16.43；user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」）：舒适 = 摸主旋律和歌词，紧凑 = 配器
     const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: SQUEEZE, endPad: BAR_W, lineStart: headAt });   // 横卷 = 不折行
     const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]!));
     // 摆的结果（单独一张表：每一列的横坐标 / 宽 / 第几行）
     const cols = merged.map((c, k) => ({ tick: c.tick, slot: c.slot, n: c.n, x: ar.xs[k]!, w: ar.ws[k]!, system: ar.system[k]!, bar: c.bar, units: c.members.map((m) => m.entry.ref) }));
-    // 过渡（退场 = 1b-6：画的那一段改读上面这张表之后删）：把摆的结果抄回排版单元——音那一种的宽 = 整列的宽，别的单元留自己的宽
-    for (const c of cols) for (const u of c.units) { u.x = c.x; u.system = c.system; if (u.kind === "chunk") u.w = c.w; }
+    // 摆的结果交给后面（歌词让路、小节区间、画）：每条轨的排版单元按摆的结果复制一份——音那一种的宽 = 整列的宽，别的留自己的宽。量的单元不改（施工单 1b-6d；1b-4 时是抄回单元）
+    const at = new Map<Unit, { x: number; system: number; w: number }>();
+    for (const c of cols) for (const u of c.units) at.set(u, { x: c.x, system: c.system, w: u.kind === "chunk" ? c.w : u.w });
+    const copyOf = new Map<Unit, Unit>();
+    const per: StaffTrack[] = per0.map((q) => ({ ...q, units: q.units.map((u) => { const v = { ...u, ...at.get(u)! } as Unit; copyOf.set(u, v); return v; }) }));
+    const inkLs = measured.map((m) => new Map([...m.inkL].map(([u, v]) => [copyOf.get(u) as Chunk, v] as const)));   // 墨往左伸多远：键换成副本
     const placedCols = cols;
     if (o.scroll) { right = Math.max(baseRight, ...cols.map((c) => c.x + c.w)) + SCROLL_TAIL; sheetRight = Math.max(sheetRight, right); }
     // 4. 行号与坐标：这张纸第 s 行第 r 个声部的第 k 张谱表 = 一条谱行（大谱表两条；紧凑版式里这张纸上没写歌词的声部那条更矮）
@@ -430,11 +434,14 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
       for (const items of bySys.values()) fitLyrics(items, blockSx, LYRIC_MIN_SX, lyrGaps).forEach((f, k) => lyrPlan.set(`${r}:${items[k].index}`, { ...f, hw: (items[k].w * f.sx) / 2 }));
     });
-    const BIG = 8192;   // 临时高度：第 row 行的第五线在 row × BIG px（一行的墨上下伸不出 BIG / 2）；画完认行 = round(y / BIG)
+    // 画的时候每一行都在自己的局部坐标里（第五线 = 0）；每个图元记着自己在哪一行（primRow，put / 贴挂件时记），定了行距按行整行挪（施工单 1b-6c，原来垫 row × 8192 的临时高度、最后按 round(y / 8192) 认行）。
+    //   点击框按自己的 system 挪；画的行和 system 不同的（歌词：点击框归音那一行、画在歌词那一行）另记 hitRowOf。
+    const put = (row: number, ...ps: Prim[]) => { for (const p of ps) { const n0 = prims.length; prims.push(p); if (prims.length > n0) primRow[n0] = row; } };   // 先 push 再记：__noAnn 滤掉的不留行号
+    const hitRowOf = new WeakMap<object, number>(), hitRow = (hit: object, row: number) => { hitRowOf.set(hit, row); };
     const skies: Skyline[] = [];
     for (let s = 0; s < nSys; s++) for (let r = 0; r < nR; r++) for (let k = 0; k < effStaves(r); k++) {
       const row = rowOf(s, r, k);
-      rowTop.set(row, row * BIG); rowAbove.set(row, 0);
+      rowTop.set(row, 0); rowAbove.set(row, 0);
       rows[row] = { top: 0, staffTop: 0, bottom: 0, paper: paper.id, part: parts[r].id, sys: s, staff: (k + 1) as Staff, inkTop: 0, inkBottom: 0 };
       skies[row - rowBase] = new Skyline(right + MARGIN + 8);
       if (per[r].vrt) sharedRows.push(row);   // 叠起来的那一行只读
@@ -444,6 +451,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const textW = (str: string, size: number) => o.measure.widthPx(str, size, sp, ts);   // 有字号的字图元多宽（px；天际线算墨迹）
     const isAnn = (p: Prim) => /(^|\s)ann(\s|$)/.test(p.cls ?? "");
     /** 记一段时间里新加的图元和点击区（贴挂件时整块挪、最后整行挪）。 */
+    const primRow: number[] = [];   // 第 i 个图元在哪一行（只记这张纸音符层和挂件那一段）
     const hitLists = (): { y: number }[][] => [notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut];
     const mark = () => ({ p: prims.length, h: hitLists().map((l) => l.length) });
     const shiftSince = (m: ReturnType<typeof mark>, dy: number) => {
@@ -460,8 +468,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const pieces: number[] = [];   // 一次贴的墨（局部；x0 x1 y0 y1 四个一组）：量一遍，挪完直接记进天际线
     const collect = (m: ReturnType<typeof mark>, row: number) => { pieces.length = 0; inkSince(m, row, (x0, x1, y0, y1) => { pieces.push(x0, x1, y0, y1); }); };
     const commit = (sk: Skyline, dy: number, count: boolean) => { for (let i = 0; i < pieces.length; i += 4) sk.ink(pieces[i]!, pieces[i + 1]!, pieces[i + 2]! + dy, pieces[i + 3]! + dy, count); };
+    const tagSince = (m: ReturnType<typeof mark>, row: number) => { for (let i = m.p; i < prims.length; i++) if (primRow[i] === undefined) primRow[i] = row; };   // 贴挂件回调里画的 = 贴的那一行
     const placeAbove = (row: number, gap: number, draw: (y: number) => void): number => {
-      const m = mark(); draw(staffTop(row)); collect(m, row);
+      const m = mark(); draw(staffTop(row)); tagSince(m, row); collect(m, row);
       let need = Infinity; const sk = sky(row);
       for (let i = 0; i < pieces.length; i += 4) { const t = sk.top(pieces[i]!, pieces[i + 1]!); if (t < Infinity) need = Math.min(need, t - gap - pieces[i + 3]!); }
       const dy = need === Infinity ? -2.4 : need; shiftSince(m, P(dy));   // 什么墨都没有（只有注解）= 照旧在第五线上方 2.4
@@ -470,7 +479,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     };
     /** 谱下方贴一样东西（同上，往下挪到离上面的天际线 gap）；min = 最少挪到哪（局部 y 往下挪的下限，歌词的版式最小值用）；count = 算不算进行高。 */
     const placeBelow = (row: number, gap: number, draw: (y: number) => void, o2: { min?: number; count?: boolean; step?: number } = {}): number => {
-      const m = mark(); draw(staffTop(row)); collect(m, row);
+      const m = mark(); draw(staffTop(row)); tagSince(m, row); collect(m, row);
       let need = -Infinity; const sk = sky(row);
       for (let i = 0; i < pieces.length; i += 4) { const b = sk.bottom(pieces[i]!, pieces[i + 1]!); if (b > -Infinity) need = Math.max(need, b + gap - pieces[i + 2]!); }
       let dy = Math.max(need === -Infinity ? 0 : need, o2.min ?? -Infinity);
@@ -566,13 +575,14 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       }
       for (const x of measures) delete (x as { m?: number }).m; }
     // 5、6–11：五线谱这一种行的画（staff/draw.ts；施工单 1b-6a）。框架交过去的东西都在这个对象里
-    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
+    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
     // 12. 量 → 贴 → 定行距 → 挪到位（刀 4b）
     //   ① 音符层的墨进天际线（注解不算）
     for (let i = p0.p; i < prims.length; i++) {
       const p = prims[i]; if (isAnn(p)) continue;
-      const row = Math.round(primY(p) / BIG); if (row < rowBase || row - rowBase >= skies.length || !skies[row - rowBase]) continue;
-      const t = row * BIG; primInk(p, sp, textW, (x0, x1, y0, y1) => sky(row).ink(x0 / sp, x1 / sp, (y0 - t) / sp, (y1 - t) / sp));
+      const row = primRow[i]; if (row === undefined) throw new Error(`engrave: prim ${i} has no row (draw with put(row, …) or inside placeAbove / placeBelow)`);
+      if (row < rowBase || row - rowBase >= skies.length || !skies[row - rowBase]) continue;
+      const t = staffTop(row); primInk(p, sp, textW, (x0, x1, y0, y1) => sky(row).ink(x0 / sp, x1 / sp, (y0 - t) / sp, (y1 - t) / sp));
     }
     //   ② 挂件按表的先后摆（第 6 样之后记一下往上到哪：播放的小节底色只盖到反复记号，不含速度 / 风格）
     const upToNav: number[] = [];
@@ -597,21 +607,20 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     drawPaperTitle(nSys ? sysH(0) : P(SPC.rowH));
     let note: Box | undefined; if (paper.hidden) { const nx = P(MARGIN) + (paper.name ? P(mw("paper-name", paper.name)) : 0) + T(1.0); note = { x: nx, y: pTitle.y, w: Math.max(T(4), pTitle.x + pTitle.w - nx), h: T(PAPER_H) }; }   // 本段视图里的隐藏纸：说明挂在曲段名后面（字归覆盖层），不占地方——和印出来一样（v0.16.34）
     //   ④ 翻页（一行谱整块放不下就翻页）+ 每一行定位
-    const delta = new Map<number, number>();   // 行号 → 从临时高度挪到位要挪多少（px）
+    const delta = new Map<number, number>();   // 行号 → 从局部坐标（第五线 = 0）挪到位要挪多少（px）
     for (let s = 0; s < nSys; s++) {
       ensure(sysH(s));
       for (let r = 0; r < nR; r++) for (let k = 0; k < effStaves(r); k++) {
         const top = yCur, row = rowOf(s, r, k), g = G[s][r][k], h = g.above + 4 + g.below, st = top + P(g.above);
-        delta.set(row, st - row * BIG); rowTop.set(row, top); rowAbove.set(row, g.above);
+        delta.set(row, st); rowTop.set(row, top); rowAbove.set(row, g.above);
         Object.assign(rows[row]!, { top, staffTop: st, bottom: top + P(h), inkTop: st - P(g.inkAbove), inkBottom: st + P(4 + g.inkBelow) });
         yCur += P(h);
       }
       yCur += P(SYS_GAP);
     }
-    //   ⑤ 整行挪到位：这张纸画的图元和点击区按「在哪一行」（round(y / BIG)）挪
-    const moveOf = (y: number) => delta.get(Math.round(y / BIG)) ?? 0;
-    for (let i = p0.p; i < pEnd.p; i++) shiftPrim(prims[i], moveOf(primY(prims[i])));
-    hitLists().forEach((l, j) => { for (let i = p0.h[j]; i < pEnd.h[j]; i++) l[i].y += moveOf(l[i].y); });
+    //   ⑤ 整行挪到位：图元按记着的行、点击框按自己的 system（或另记的画在哪一行）
+    for (let i = p0.p; i < pEnd.p; i++) shiftPrim(prims[i], delta.get(primRow[i]!) ?? 0);
+    hitLists().forEach((l, j) => { for (let i = p0.h[j]; i < pEnd.h[j]; i++) { const h = l[i] as { y: number; system: number }; h.y += delta.get(hitRowOf.get(h) ?? h.system) ?? 0; } });
     //   ⑥ 跨行的（歌手牌、花括号、左边连着的竖线、色条）
     drawSystemsChrome();
     papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p) => p.id), ...(note ? { note } : {}) });

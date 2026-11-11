@@ -54,9 +54,11 @@ export const VIEWS: View[] = [
 
 export const r3 = (v: unknown): unknown => typeof v === "number" ? Math.round(v * 1000) / 1000 : Array.isArray(v) ? v.map(r3) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, r3(x)])) : v;
 /** 可印图元（PDF 印的那些）+ 锚点（谱上的东西的位置；控件的点击框表不在里面）。 */
-export function snapshot(L: Layout): unknown {
+export function snapshot(L: Layout): unknown { return r3(snapshotRaw(L)); }
+/** 同 snapshot、数字不取整（守卫比较用：拿没取整的新值和冻的值按容差比，test/fixtures/layout/full.ts tolDiffs；1b-6c 统筹裁定）。 */
+export function snapshotRaw(L: Layout): unknown {
   const printed = L.prims.filter((p) => isPrinted(p.cls)).map((p) => { const { tok: _t, ...q } = p as typeof p & { tok?: number }; return q; });
-  return r3({
+  return ({
     width: L.width, height: L.height, sp: L.sp, pageX: L.pageX, pages: L.pages, lyricYs: L.lyricYs,
     systems: L.systems, notes: L.notes, rests: L.rests, chordHeads: L.chordHeads, slots: L.slots, heads: L.heads, lyrics: L.lyrics, marks: L.marks, clefs: L.clefs, dyns: L.dyns,
     chordTags: L.chordTags.map(({ read: _r, ...b }) => b), bars: L.bars, measures: L.measures, sharedRows: L.sharedRows, shortBars: L.shortBars,
