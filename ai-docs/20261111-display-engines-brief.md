@@ -24,7 +24,7 @@
 
 - 五线谱排版器 `src/render/engrave.ts`（1731 行）一个函数 `engrave(song, opts) → Layout`；PDF（`src/export/score-pdf.ts`）和屏幕用同一个 engrave；排版能进 worker（`stripLayoutFns / attachLayoutFns`，`lyricYs` 平数据）。
 - **`Layout` 大部分和谱种无关**（systems / notes / slots / heads / lyrics / marks / dyns / rests / measures / bars / papers / pages / chordTags / families / sharedRows / virtual…），**五线谱专属的是 `yOf / dOf`**（第几条线 ↔ 纵坐标）：`src/ui/score-view.ts` 的光标高度、鬼音符（符头 + 加线）、拖动改音高都靠它们 = 显示接口要先切的口子（§41）。
-- 间距：`src/render/spacing.ts`（弹簧 + 顶杆，24 条单测）**还没接进排版器**；「密声部撑开全体」是 11-09 起的老问题（§51）。
+- 间距：`src/render/spacing.ts`（弹簧 + 顶杆，24 条单测）**还没接进排版器**；「密声部撑开全体」是 11-09 起的老问题（§51）。〔2026-11-11 夜 Claude Fable 5.2 更正：已经接了，v0.16.33（提交 fe9303f）。〕
 - 能复用的零件：和弦识别 `chord-name.ts`（读法候选 = 输入法；挑中的记进文件，v0.16.87）、合租并行的虚拟 track `src/score/merge.ts`、歌词让路 `fitLyrics`（engrave 里）、自动谱号 / 自动八度线 `clef.ts`、剪贴板的简谱文字 `src/score/clipboard.ts`、小键盘本来就是简谱输入器（1–7 / 0 / — / /2）。
 - 性能：大歌（1204 token）一次 engrave 约 28 ms；挪光标 / 选区已经零次 engrave（W-17 第 1 刀）；按行重画（第 2 刀）。
 
