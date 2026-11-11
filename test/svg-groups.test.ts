@@ -1,7 +1,8 @@
 // svg-groups.test.ts —— toSvgParts 的分组（W-17 智能重画第一刀）：每个图元恰好进一组、组内先后不变、歌名在杂项组、一行谱一组；toSvg = 开 + 组 + 收。created 2026-10-14 by Claude Fable 5.1
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, writeDegree, setNote, tr, type EditorState } from "../src/score/song.ts";
-import { engrave, wrapTitle } from "../src/render/engrave.ts";
+import { engrave } from "../src/render/engrave.ts";
+import { wrapTitle } from "../src/render/frame/furniture.ts";
 import { toSvg, toSvgParts, primSvg } from "../src/render/svg.ts";
 import { createTextMeasure, LYRIC_EM } from "../src/render/text/index.ts";
 

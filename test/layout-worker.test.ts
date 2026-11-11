@@ -1,7 +1,8 @@
 // 排版进 worker（src/render/layout-worker.ts + engrave.ts 的 LayoutData / attachLayoutFns）：过线的平数据装回闭包后和原装的逐行相同；worker 的纯函数回的 parts = 主线程直接串的。
 //   created 2026-10-21 by Claude Fable 5.1（user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」）
 import { describe, it, eq, assert } from "./runner.mjs";
-import { engrave, attachLayoutFns, stripLayoutFns, TOP_LINE } from "../src/render/engrave.ts";
+import { engrave, attachLayoutFns, stripLayoutFns } from "../src/render/engrave.ts";
+import { TOP_LINE } from "../src/render/staff/glyphs.ts";
 import { toSvgParts } from "../src/render/svg.ts";
 import { runLayoutJob } from "../src/render/layout-worker.ts";
 import { initState, type EditorState } from "../src/score/song.ts";
