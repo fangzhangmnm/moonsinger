@@ -82,15 +82,16 @@ describe("谱面排版：结构和语言", () => {
   it("结构（守卫 1 谱面这一半，第二刀）：谱面（谱面视图 + 它开的歌词框 / 记号框 / 标题框 + 上面那一层）不碰键盘、不认乐器是谁（设计稿第 3.1 节：谱面「不许知道：键；乐器是谁」）；五线谱只经过 staff/index.ts", () => {
     const UI = new URL("../src/ui/", import.meta.url), readUi = (f: string) => fs.readFileSync(new URL(f, UI), "utf8") as string;
     const SURFACE = ["score-view.ts", "lyric-editor.ts", "mark-editor.ts", "title-editor.ts", "score-overlay.ts"];
-    // 待统筹裁定（施工单第五节「小弟问（2-3）」）：记号框借了键盘模块的滚轮小部件。只认这一处，多出别的 = 红；裁定了就从这里拿掉。
-    const PENDING = new Set(["mark-editor.ts → ../keyboard/drum.ts"]);
-    const seen = new Set<string>();
     for (const f of SURFACE) for (const p of importsOf(readUi(f))) {
-      if (/(^|\/)keyboard\//.test(p)) { const k = `${f} → ${p}`; seen.add(k); assert(PENDING.has(k), `谱面 ${f} import 了键盘模块 ${p}`); }
+      assert(!/(^|\/)keyboard\//.test(p), `谱面 ${f} import 了键盘模块 ${p}`);
       assert(!/(^|\/)(performers|gm|singer)\//.test(p), `谱面 ${f} import 了 ${p}（乐器是谁由宿主告诉它）`);
       if (p.includes("render/staff/")) assert(p === "../render/staff/index.ts", `谱面 ${f} 绕过五线谱的入口 import 了 ${p}`);
     }
-    for (const k of PENDING) assert(seen.has(k), `待定的例外「${k}」已经没有了：从 PENDING 拿掉`);
+  });
+  it("结构（小控件）：src/widgets/ 是叶子——里面的文件不 import src/ 里别的文件夹，谁都可以 import 它（统筹裁定 2026-11-11：滚轮不属于键盘也不属于谱面）", () => {
+    const W = new URL("../src/widgets/", import.meta.url), files = fs.readdirSync(W).filter((f) => f.endsWith(".ts"));
+    assert(files.length > 0, "src/widgets/ 是空的");
+    for (const f of files) for (const p of importsOf(fs.readFileSync(new URL(f, W), "utf8") as string)) assert(p.startsWith("./"), `src/widgets/${f} import 了 ${p}（小控件是叶子，只许 import 同一个文件夹里的）`);
   });
   it("语言（守卫 8）：同一首歌 locale 换了只换那几个字（编排、吸 / 深吸），别的图元一个不变；没给 locale = 报错", () => {
     const song = fullSong();

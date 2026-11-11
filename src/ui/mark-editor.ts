@@ -17,7 +17,7 @@ import { type EditorState, type MarkTok, type MarkVal, setMark, deleteMark, head
 import { keyText } from "../score/pitch.ts";
 import { markText, parseMark } from "../score/marks.ts";
 import type { Layout } from "../render/engrave.ts";
-import { mountWheel, type WheelHandle } from "../keyboard/drum.ts";
+import { mountWheel, type WheelHandle } from "../widgets/drum.ts";
 import { metroStart, metroStep, type MetroState } from "./metronome.ts";
 
 interface Host { get(): EditorState; set(next: EditorState): void }

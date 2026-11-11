@@ -20,7 +20,7 @@ describe("键盘总闸守卫", () => {
       "src/ui/title-editor.ts": 1,       // 歌名 / 曲段名那一行自己的输入框（回车提交、Esc 取消；提交走文档写入口）
       "src/app/reference-host.ts": 1,    // 参考窗的 Esc = 焦点回谱
       "src/keyboard/pad.ts": 1,          // 键盘候选排开着时的 Esc = 收起
-      "src/keyboard/drum.ts": 1,         // 鼓键盘的 Esc
+      "src/widgets/drum.ts": 1,          // 滚轮（drum = 竖直滚轮小控件，不是鼓）的 Esc = 收起
     };
     const found = {};
     // 这里不用 code()：有的文件里有 "image/*" 这样的字符串，会被当成块注释的开头。整行是注释的不算，别的原样数。

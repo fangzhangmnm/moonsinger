@@ -13786,7 +13786,7 @@ function parseMark(kind, raw) {
   return w2 ? { kind, bpm: w2.typical } : null;
 }
 
-// src/keyboard/drum.ts
+// src/widgets/drum.ts
 var ROW = 44;
 var VISIBLE = 5;
 var LOOP_COPIES = 7;
@@ -61309,4 +61309,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-79ee6f00f50c.mjs.map
+//# sourceMappingURL=moonsinger-04f0cdd16d71.mjs.map
