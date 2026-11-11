@@ -14,6 +14,7 @@ import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
 import { TOP_LINE, MID_LINE } from "./glyphs.ts";
 import { timeWidth, type Unit, type Chunk, type Head } from "./units.ts";
+import { MELISMA_MARK } from "../../score/lyrics.ts";
 
 /** 一条要排的五线谱轨（一个声部在这张纸上；合租叠出来的虚拟轨、声部 2、双手谱下面那张也各是一条）。 */
 export interface StaffTrack {
@@ -96,3 +97,7 @@ export const clefW = (q: { fFam: boolean }) => (q.fFam ? W.fClef : W.gClef);
 /** 行首多宽（sp）：base = 框架给的（名字一栏的缩进 + 边距），后面是这条轨行首要画的：谱号 + 调号（key = 那里生效的调号）+ 第一行的拍号。加的先后照原来（浮点逐位相同）。 */
 export const lineStartWidth = (q: StaffTrack, key: number, first: boolean, base: number): number =>
   base + 0.6 + clefW(q) + 1.0 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q.head.time.beats, q.head.time.beatType) + 1.2 : 0.4);
+
+/** 歌词按节奏排（框架的歌词让路）要的：这条轨每个带字的音在第几行、字的中心在哪（sp：对齐线往右 0.6）。拖腔线不算。 */
+export const lyricAnchors = (q: StaffTrack): { index: number; system: number; cx: number; lyric: string; hyph: boolean }[] =>
+  q.units.filter((u): u is Chunk => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + 0.6, lyric: u.lyric!, hyph: u.hyph }));

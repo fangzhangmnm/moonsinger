@@ -11440,6 +11440,7 @@ function measureTrack(q2) {
 }
 var clefW = (q2) => q2.fFam ? W.fClef : W.gClef;
 var lineStartWidth = (q2, key, first, base2) => base2 + 0.6 + clefW(q2) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q2.head.time.beats, q2.head.time.beatType) + 1.2 : 0.4);
+var lyricAnchors = (q2) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + 0.6, lyric: u2.lyric, hyph: u2.hyph }));
 
 // src/score/merge.ts
 var HEAD_ARTS = ["ghost", "whisper"];
@@ -11963,7 +11964,8 @@ function rollDefaultHz(key) {
 // src/render/staff/draw.ts
 var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
 function drawStaff(c10) {
-  const { song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c10;
+  const lyricParts = [];
+  const { song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c10;
   const clefAtSys = (q2, s10) => {
     const u2 = q2.units.find((x2) => x2.system === s10 && x2.index >= 0);
     if (u2) return q2.ds.clef[u2.index] ?? q2.start;
@@ -12131,8 +12133,8 @@ function drawStaff(c10) {
     const whisperMute = (q2.p.ignores ?? []).includes("whisper");
     const clsOf = (c11) => [c11.ghost ? "ghost" : "", c11.pad ? "pad-rest" : ""].filter(Boolean).join(" ") || void 0;
     const tokOf = (c11) => c11.index >= 0 && !c11.pad ? tokens[c11.index]?.id : void 0;
-    const partLyrics = [];
-    const lyricJobs = [];
+    const spots = [];
+    lyricParts.push({ r: r10, lrow: lyricRow, spots });
     const dynItems = [];
     const drawChunk = (c11) => {
       const cls = clsOf(c11), row2 = RW(c11);
@@ -12199,17 +12201,7 @@ function drawStaff(c10) {
       });
       if (c11.dotted) put2(row2, { tok: tokOf(c11), t: "glyph", x: x0 + nhW(c11) + P2(0.3), y: yOf(row2, d3 % 2 === 0 ? d3 + 1 : d3), ch: GLYPH.augmentationDot, cls });
       if (c11.j === 0) notes.push({ ...tag2, index: c11.index, system: row2, x: x0, y: y2, w: nhW(c11), d: diatonicIndex(c11.pitch) });
-      if (c11.j === 0 && !c11.tie) lyricJobs.push({ sys: c11.system, run: () => {
-        const fit = lyrPlan.get(`${r10}:${c11.index}`), ly0 = lyricY(lyricRow(c11.system)), cx0 = x0 + nhW(c11) / 2;
-        const ly2 = ly0, cx3 = cx0 + (fit ? P2(fit.dx) : 0);
-        {
-          const lh2 = { index: c11.index, system: row2, x: cx3, y: ly2, ...fit?.tight ? { tight: true } : {} };
-          partLyrics.push(lh2);
-          hitRow(lh2, lyricRow(c11.system));
-        }
-        if (c11.lyric === MELISMA_MARK) put2(lyricRow(c11.system), { t: "line", x1: x0 - P2(0.6), y1: ly0, x2: x0 + nhW(c11) + P2(0.4), y2: ly0, w: P2(0.12), cls: "melisma" });
-        else if (c11.lyric) put2(lyricRow(c11.system), { tok: tokOf(c11), t: "text", x: cx3, y: ly2, s: lyricShow(c11.lyric), ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", q2.p.lyricMute?.has(tokens[c11.index]?.id ?? -1) ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
-      } });
+      if (c11.j === 0 && !c11.tie) spots.push({ index: c11.index, sys: c11.system, row: row2, cx0: x0 + nhW(c11) / 2, mx0: x0 - P2(0.6), mx1: x0 + nhW(c11) + P2(0.4), lyric: c11.lyric, tok: tokOf(c11), cls, mute: !!q2.p.lyricMute?.has(tokens[c11.index]?.id ?? -1), hyph: !!tokens[c11.index].hyph });
     };
     for (const u2 of units) {
       const row2 = RW(u2);
@@ -12640,36 +12632,6 @@ function drawStaff(c10) {
         });
       }
     });
-    attach2("lyrics", () => {
-      if (!lyricsOf[r10]) {
-        for (const j2 of lyricJobs) j2.run();
-        lyrics.push(...partLyrics);
-        return;
-      }
-      const base2 = LYRIC_BELOW + (o10.lyricRaise ?? 0), bySys = /* @__PURE__ */ new Map();
-      for (const j2 of lyricJobs) {
-        const l10 = bySys.get(j2.sys);
-        if (l10) l10.push(j2);
-        else bySys.set(j2.sys, [j2]);
-      }
-      for (let sy2 = 0; sy2 < nSys; sy2++) lyricOff.set(lyricRow(sy2), base2);
-      for (const [sy2, jobs] of bySys) {
-        const row2 = lyricRow(sy2);
-        const dy = placeBelow(row2, 0.5, () => {
-          const from = partLyrics.length;
-          for (const j2 of jobs) j2.run();
-          const mine = partLyrics.slice(from), syls = mine.map((L2) => {
-            const pl = lyrPlan.get(`${r10}:${L2.index}`), tok = tokens[L2.index];
-            return { x: L2.x, hy: !!tok.hyph, hw: pl ? P2(pl.hw) : void 0, sx: pl?.sx, ...pl ? {} : { nw: P2(lyrUnit(lyricShow(tok.lyric ?? ""))) / 2 }, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L2.system };
-          });
-          hyphens(syls, P2(lyrHyphen), P2(1.6)).forEach((h2, n10) => {
-            if (h2) prims.push({ t: "text", x: h2.x, y: mine[n10].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, sx: look.sx * h2.hf * HYPHEN_SX });
-          });
-          lyrics.push(...partLyrics.slice(from));
-        }, { min: 0, count: false, step: ROW_STEP });
-        lyricOff.set(row2, base2 + dy);
-      }
-    });
     const bracket = (cs2, openL, openR, num2) => {
       const row2 = RW(cs2[0]), n10 = cs2[0].ratio[0];
       const xa = openL ? Math.min(nhX(cs2[0]) - P2(1.2), nhX(cs2[0])) : nhX(cs2[0]), last = cs2[cs2.length - 1], xb = openR ? nhX(last) + nhW(last) + P2(1.2) : nhX(last) + nhW(last);
@@ -12771,6 +12733,7 @@ function drawStaff(c10) {
       }
     }
   });
+  return { lyricParts };
 }
 
 // src/render/frame/lanes.ts
@@ -13133,10 +13096,10 @@ function engrave(song, o10) {
     if (song.lyricFit !== "lyrics") per.forEach((q2, r10) => {
       if (!lyricsOf[r10]) return;
       const bySys = /* @__PURE__ */ new Map();
-      for (const u2 of q2.units) if (u2.kind === "chunk" && u2.lyric && u2.lyric !== MELISMA_MARK) {
+      for (const u2 of lyricAnchors(q2)) {
         const arr = bySys.get(u2.system) ?? [];
         bySys.set(u2.system, arr);
-        arr.push({ index: u2.index, cx: u2.x + 0.6, w: lyrUnit(lyricShow(u2.lyric)), hy: u2.hyph, block: isBlockScript(u2.lyric) && [...lyricShow(u2.lyric)].length <= 1 });
+        arr.push({ index: u2.index, cx: u2.cx, w: lyrUnit(lyricShow(u2.lyric)), hy: u2.hyph, block: isBlockScript(u2.lyric) && [...lyricShow(u2.lyric)].length <= 1 });
       }
       for (const items of bySys.values()) items.sort((a10, b3) => a10.cx - b3.cx);
       const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
@@ -13331,7 +13294,51 @@ function engrave(song, o10) {
       }
       for (const x2 of measures) delete x2.m;
     }
-    drawStaff({ song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
+    const staffOut = drawStaff({ song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm });
+    const layLyrics = ({ r: r10, lrow, spots }) => {
+      const partLyrics = [];
+      const run2 = (c10) => {
+        const fit = lyrPlan.get(`${r10}:${c10.index}`), ly0 = lyricY(lrow(c10.sys)), cx0 = c10.cx0;
+        const ly2 = ly0, cx2 = cx0 + (fit ? P2(fit.dx) : 0);
+        {
+          const lh2 = { index: c10.index, system: c10.row, x: cx2, y: ly2, ...fit?.tight ? { tight: true } : {} };
+          partLyrics.push(lh2);
+          hitRow(lh2, lrow(c10.sys));
+        }
+        if (c10.lyric === MELISMA_MARK) put2(lrow(c10.sys), { t: "line", x1: c10.mx0, y1: ly0, x2: c10.mx1, y2: ly0, w: P2(0.12), cls: "melisma" });
+        else if (c10.lyric) put2(lrow(c10.sys), { tok: c10.tok, t: "text", x: cx2, y: ly2, s: lyricShow(c10.lyric), ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", c10.mute ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", c10.cls ?? ""].filter(Boolean).join(" ") });
+      };
+      if (!lyricsOf[r10]) {
+        for (const c10 of spots) run2(c10);
+        lyrics.push(...partLyrics);
+        return;
+      }
+      const base2 = LYRIC_BELOW + (o10.lyricRaise ?? 0), bySys = /* @__PURE__ */ new Map();
+      for (const c10 of spots) {
+        const l10 = bySys.get(c10.sys);
+        if (l10) l10.push(c10);
+        else bySys.set(c10.sys, [c10]);
+      }
+      for (let sy2 = 0; sy2 < nSys; sy2++) lyricOff.set(lrow(sy2), base2);
+      for (const [sy2, cs3] of bySys) {
+        const row2 = lrow(sy2);
+        const dy = placeBelow(row2, 0.5, () => {
+          const from = partLyrics.length;
+          for (const c10 of cs3) run2(c10);
+          const mine = partLyrics.slice(from), byIdx = new Map(cs3.map((c10) => [c10.index, c10]));
+          const syls = mine.map((L2) => {
+            const pl = lyrPlan.get(`${r10}:${L2.index}`), c10 = byIdx.get(L2.index), lyr = c10.lyric ?? "";
+            return { x: L2.x, hy: c10.hyph, hw: pl ? P2(pl.hw) : void 0, sx: pl?.sx, ...pl ? {} : { nw: P2(lyrUnit(lyricShow(lyr))) / 2 }, cjk: isBlockScript(lyricShow(lyr)), row: L2.system };
+          });
+          hyphens(syls, P2(lyrHyphen), P2(1.6)).forEach((h2, n11) => {
+            if (h2) prims.push({ t: "text", x: h2.x, y: mine[n11].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, sx: look.sx * h2.hf * HYPHEN_SX });
+          });
+          lyrics.push(...partLyrics.slice(from));
+        }, { min: 0, count: false, step: ROW_STEP });
+        lyricOff.set(row2, base2 + dy);
+      }
+    };
+    for (const lp2 of staffOut.lyricParts) attach2("lyrics", () => layLyrics(lp2));
     for (let i10 = p0.p; i10 < prims.length; i10++) {
       const p2 = prims[i10];
       if (isAnn(p2)) continue;
@@ -31688,7 +31695,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-357c065bb965.mjs");
+      return pick(() => "layout-worker-8799ae823d2f.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-6b1c08f15c6b.mjs");
   }
@@ -61259,4 +61266,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a0005b7c78c7.mjs.map
+//# sourceMappingURL=moonsinger-14a74e5752c6.mjs.map

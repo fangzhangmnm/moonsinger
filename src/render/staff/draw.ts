@@ -1,21 +1,20 @@
 // draw.ts —— 五线谱这一种行的「画」（设计稿第 3.3 节第 5 步）：每行的五线 / 谱号 / 调号 / 拍号（行首），每条轨的内容（音、休止、小节线、记号、符干符杠、
 //   演奏法、连音线、连线、发夹、八度线、连音括号、反复房子），挂件交给框架贴，光标落点。
 //   created 2026-11-11 by Claude Opus 5.5（谱面分家施工单 1b-6a：代码原样从 engrave.ts 搬出；框架交来的东西都在 StaffDrawCtx 里）。
-import { TEMPO_EM, isBlockScript, type TextRole, hyphens, HYPHEN_SX, type LyricFit, lyricLook, lyricSizePx } from "../text/index.ts";
+import { TEMPO_EM, type TextRole } from "../text/index.ts";
 import { _tIn } from "../../i18n/index.ts";
 import { DYNS, swellOf, type ClefName, type Song, type PaperSeg, type NoteTok, type GrooveTok, type NavTok, NAV_LABEL, endingLabel, type Staff, TPQ, WHOLE, headLen, tempoWord, rampSource } from "../../score/song.ts";
 import { grooveLabel, grooveStyle } from "../../score/groove.ts";
 import { dynOverridden } from "../../score/perform.ts";
 import { navWhy } from "../../score/repeats.ts";
 import { type Pitch, diatonicIndex } from "../../score/pitch.ts";
-import { MELISMA_MARK, lyricShow } from "../../score/lyrics.ts";
 import { GLYPH, W, ENGRAVE, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } from "../smufl.ts";
 import { layoutStems } from "../stems.ts";
 import { GLYPH_BOX } from "../glyph-box.gen.ts";
 import { keyText } from "../../score/pitch.ts";
 import { harmonyTheory, harmonyTags } from "../../theory/index.ts";
 import { baseClef } from "../../score/clef.ts";
-import { ROW_STEP, MARGIN } from "../frame/params.ts";
+import { MARGIN } from "../frame/params.ts";
 import { TOP_LINE, MID_LINE, BOTTOM_LINE, ART_GLYPH, GLYPH_BREATH, DYN_GLYPH, DYN_INK, PIN_GAP, PIN_WORD, DASH, RAMP_DASH, SHARP_POS, FLAT_POS, GLYPH_TUPLET } from "./glyphs.ts";
 import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W, type Unit, type Chunk, type DynU, type NavU } from "./units.ts";
 import { stemInput, posD, shAt, percAt, clefW } from "./measure.ts";
@@ -47,12 +46,16 @@ export interface StaffDrawCtx {
   nSys: number; sysStarts: number[]; sysKeys: Map<string, number>[]; staffEnd: number[]; cols: { x: number; w: number; system: number }[]; right: number; ind0: number; indN: number;
   /** 速度画在谁那一行、上一段结尾的速度。 */
   owner: string | null; prevBpm: number | null;
-  /** 歌词：哪几条有字、按节奏排的结果、这一档的样子 / 量字、连字符宽、每行歌词基线在第一线下多少（框架的表，画法贴完写回）、版式的最小值。 */
-  lyricsOf: boolean[]; lyrPlan: Map<string, LyricFit & { hw: number }>; look: ReturnType<typeof lyricLook>; lyrUnit: (s: string) => number; lyrHyphen: number; lyricOff: Map<number, number>; LYRIC_BELOW: number;
 }
 
-export function drawStaff(c: StaffDrawCtx): void {
-  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c;
+/** 一个音的歌词锚点（框架照着写字、拖腔线、点击框；施工单 1b-7）：index = token 下标；sys = 第几行（行内序号）；row = 点击框归哪一行；
+ *  cx0 = 字的中心（px，对齐符头中心）；mx0 / mx1 = 拖腔线的左右端；lyric = 字（null = 空着的歌词位）；tok / cls = 图元的 tok 和 class；mute = 唱不出来（画灰）；hyph = 词没完（连字符）。 */
+export interface LyricSpot { index: number; sys: number; row: number; cx0: number; mx0: number; mx1: number; lyric: string | null; tok: number | undefined; cls: string | undefined; mute: boolean; hyph: boolean }
+/** 一条轨的歌词锚点 + 歌词挂在哪一行（第 s 行 → 行号；大谱表 = 下面那条）。r = 这条轨在这张纸上的序号。 */
+export interface LyricPart { r: number; lrow: (s: number) => number; spots: LyricSpot[] }
+export function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] } {
+  const lyricParts: LyricPart[] = [];
+  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
     /** 第 s 行开头的谱号（这一行第一个东西那里生效的）。 */
     const clefAtSys = (q: StaffTrack, s: number): ClefName => {
       const u = q.units.find((x) => x.system === s && x.index >= 0); if (u) return q.ds.clef[u.index] ?? q.start;
@@ -209,9 +212,8 @@ export function drawStaff(c: StaffDrawCtx): void {
     const clsOf = (c: Chunk) => [c.ghost ? "ghost" : "", c.pad ? "pad-rest" : ""].filter(Boolean).join(" ") || undefined;
     /** 这个音属于哪个 token（补齐的淡色休止不算）：写字头 / 选区 / 强调色由 score-view 按 data-tok 开关 class。 */
     const tokOf = (c: Chunk): number | undefined => (c.index >= 0 && !c.pad ? tokens[c.index]?.id : undefined);
-    const partLyrics: LyricHit[] = [];
     /** 刀 4b：歌词（挂件第 11 样）等这一行的天际线都量完再画：先记下来，按行画。 */
-    const lyricJobs: { sys: number; run: () => void }[] = [];
+    const spots: LyricSpot[] = []; lyricParts.push({ r, lrow: lyricRow, spots });   // 这条轨每个音的歌词锚点（第 11 样「歌词」由框架贴）
     /** 力度那一层（挂件第 4 样）：力度字 / 发夹 / cresc. 字 / 渐到，各一块；keys 相同的 = 连成一串、共用一条基线。draw(基线 px)。 */
     const dynItems: { row: number; x0: number; keys: string[]; draw: (base: number) => void }[] = [];
     const drawChunk = (c: Chunk) => {
@@ -263,13 +265,7 @@ export function drawStaff(c: StaffDrawCtx): void {
       });
       if (c.dotted) put(row, { tok: tokOf(c), t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(row, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
       if (c.j === 0) notes.push({ ...tag, index: c.index, system: row, x: x0, y, w: nhW(c), d: diatonicIndex(c.pitch!) });   // d = 真的音级（拖音高用），不带谱号位移
-      if (c.j === 0 && !c.tie) lyricJobs.push({ sys: c.system, run: () => {   // 歌词 = 挂件第 11 样（这一行的天际线量完、歌词的基线定了再画）
-        const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lyricRow(c.system)), cx0 = x0 + nhW(c) / 2;   // 按节奏排：让过路的位置
-        const ly = ly0, cx = cx0 + (fit ? P(fit.dx) : 0);
-        { const lh: LyricHit = { index: c.index, system: row, x: cx, y: ly, ...(fit?.tight ? { tight: true as const } : {}) }; partLyrics.push(lh); hitRow(lh, lyricRow(c.system)); }   // 点击框归这个音那一行（system），画在歌词那一行（大谱表 = 下面那条）
-        if (c.lyric === MELISMA_MARK) put(lyricRow(c.system), { t: "line", x1: x0 - P(0.6), y1: ly0, x2: x0 + nhW(c) + P(0.4), y2: ly0, w: P(0.12), cls: "melisma" });
-        else if (c.lyric) put(lyricRow(c.system), { tok: tokOf(c), t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}), ...(look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}), cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""]   /* 挤了不画灰（v0.16.45；user「挤了能不能不画灰」「灰是有别的语义的」= 唱不出来 / 不认）：只留 lyric-tight 给歌词框说「挤了」 */.filter(Boolean).join(" ") });
-      } });
+      if (c.j === 0 && !c.tie) spots.push({ index: c.index, sys: c.system, row, cx0: x0 + nhW(c) / 2, mx0: x0 - P(0.6), mx1: x0 + nhW(c) + P(0.4), lyric: c.lyric, tok: tokOf(c), cls, mute: !!q.p.lyricMute?.has(tokens[c.index]?.id ?? -1), hyph: !!(tokens[c.index] as NoteTok).hyph });   // 歌词锚点：字归框架（engrave.ts layLyrics）
     };
     for (const u of units) {
       const row = RW(u);
@@ -643,28 +639,6 @@ export function drawStaff(c: StaffDrawCtx): void {
         });
       }
     });
-    // 歌词 = 挂件第 11 样（刀 4b）：一行歌词一条基线 = max(版式的最小值, 这一行歌词占的那些段里下天际线最低处 + 字高 + 0.5)；第二行（按节奏排挤下去的）跟着往下。
-    //   歌词连字符（英文断开的音节）画在两个歌词中间；拖腔线、句号（注解）一起。歌词的墨进天际线（后面的 8vb 贴在它下面），行高另按歌词的规矩算（第 12 步之后）
-    attach("lyrics", () => {
-      if (!lyricsOf[r]) { for (const j of lyricJobs) j.run(); lyrics.push(...partLyrics); return; }   // 没写歌词的声部：空着的歌词位（点了开歌词框）+ 句号（注解），都在默认的歌词位
-      const base = LYRIC_BELOW + (o.lyricRaise ?? 0), bySys = new Map<number, typeof lyricJobs>();
-      for (const j of lyricJobs) { const l = bySys.get(j.sys); if (l) l.push(j); else bySys.set(j.sys, [j]); }
-      for (let sy = 0; sy < nSys; sy++) lyricOff.set(lyricRow(sy), base);   // 这一行没有字也留歌词位（空着的歌词位能点）
-      for (const [sy, jobs] of bySys) {
-        const row = lyricRow(sy);
-        const dy = placeBelow(row, 0.5, () => {
-          const from = partLyrics.length;
-          for (const j of jobs) j.run();
-          // 连字符摆哪 = 文字模块的 hyphens()（缝的正中、放不下不画、方块字旁边不占地方；见 src/render/text/lyric-fit.ts）
-          const mine = partLyrics.slice(from), syls = mine.map((L) => { const pl = lyrPlan.get(`${r}:${L.index}`), tok = tokens[L.index] as NoteTok; return { x: L.x, hy: !!tok.hyph, hw: pl ? P(pl.hw) : undefined, sx: pl?.sx, ...(pl ? {} : { nw: P(lyrUnit(lyricShow(tok.lyric ?? ""))) / 2 }), cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L.system }; });
-          hyphens(syls, P(lyrHyphen), P(1.6)).forEach((h, n) => {
-            if (h) prims.push({ t: "text", x: h.x, y: mine[n].y, s: "-", cls: "lyric hyphen", ...(look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}), sx: look.sx * h.hf * HYPHEN_SX });
-          });
-          lyrics.push(...partLyrics.slice(from));
-        }, { min: 0, count: false, step: ROW_STEP });   // 歌词基线往下让也按整格（防抖）
-        lyricOff.set(row, base + dy);
-      }
-    });
     // 10. 连音括号：同一比例连着的一串，凑满「m 个最小写出单位」就收一组。一组跨行（2026-10-08 Opus 5.5，user「跨行的连音符显示不正常」）=
     //   照样接着数（以前到行尾就收组、下一行从头数，后面的组全错位），每行画一段括号：这一行右边开口、带数字，下一行左边开口
     const bracket = (cs: Chunk[], openL: boolean, openR: boolean, num: boolean) => {
@@ -732,4 +706,5 @@ export function drawStaff(c: StaffDrawCtx): void {
       for (let k = 0; k < q.staves; k++) { slots.push({ caret: c, system: rowOf(u.system - 1, r, k), x, end: true }); heads.push({ caret: c, system: rowOf(u.system - 1, r, k), x, shift: sh[k], end: true }); }
     }
   });
+  return { lyricParts };
 }

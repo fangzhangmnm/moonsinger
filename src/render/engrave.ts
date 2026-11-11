@@ -16,7 +16,7 @@
 //   小节线、调号、拍号是各声部自己的画法（契约 §7.8）；速度只画在第一个声部上面；歌手牌（声部名）在每张纸第一行各条谱的左边。
 //   纸顶一条曲段名（多于一张纸或填了名字才画）+ 右边「⋯」（纸的菜单）；最底下「＋ 新的纸」（只在编辑器里画）。
 
-import { TEXT_STYLES, LYRIC_MIN_SX, isBlockScript, textPx, type TextRole, fitLyrics, lyricBlockSx, LYRIC_SPACE, HYPHEN_SX, type LyricFit, type LyricItem, type LyricGaps, type TextMeasure, lyricLook, lyricWidth } from "./text/index.ts";
+import { TEXT_STYLES, lyricSizePx, hyphens, LYRIC_MIN_SX, isBlockScript, textPx, type TextRole, fitLyrics, lyricBlockSx, LYRIC_SPACE, HYPHEN_SX, type LyricFit, type LyricItem, type LyricGaps, type TextMeasure, lyricLook, lyricWidth } from "./text/index.ts";
 import { _tIn, type Lang } from "../i18n/index.ts";
 import { type Song, type PaperSeg, type Token, type Focus, type Staff, isTimed, tempoOwner, sheetEndBpm } from "../score/song.ts";
 import { parseArrangement } from "../score/arrange.ts";
@@ -24,7 +24,7 @@ import { densityOf } from "../score/paper.ts";
 import { curveOf, SP_DEFAULTS } from "./spacing.ts";
 import { type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
-import { Skyline, primInk, shiftPrim, primY } from "./skyline.ts";
+import { Skyline, primInk, shiftPrim } from "./skyline.ts";
 import { songInC } from "../score/view-in-c.ts";
 import { type HarmonyRead } from "../theory/index.ts";
 import { resolveSongLooks } from "../score/clef.ts";
@@ -33,9 +33,9 @@ import { wrapTitle } from "./frame/furniture.ts";
 import { TOP_LINE, SYSTEM_LINE_W } from "./staff/glyphs.ts";
 import { yAt, dAt, anchors } from "./staff/geometry.ts";
 import { type Unit, type Chunk } from "./staff/units.ts";
-import { measureTrack, lineStartWidth, type StaffTrack } from "./staff/measure.ts";
+import { measureTrack, lineStartWidth, lyricAnchors, type StaffTrack } from "./staff/measure.ts";
 import { staffRows, staffTracks, type FoldFamily } from "./staff/rows.ts";
-import { drawStaff, STAFF_LANES } from "./staff/draw.ts";
+import { drawStaff, STAFF_LANES, type LyricPart, type LyricSpot } from "./staff/draw.ts";
 import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
 
@@ -426,9 +426,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     if (song.lyricFit !== "lyrics") per.forEach((q, r) => {
       if (!lyricsOf[r]) return;
       const bySys = new Map<number, (LyricItem & { index: number })[]>();
-      for (const u of q.units) if (u.kind === "chunk" && u.lyric && u.lyric !== MELISMA_MARK) {
+      for (const u of lyricAnchors(q)) {   // 每个带字的音在哪（五线谱给的锚点：staff/measure.ts）
         const arr = bySys.get(u.system) ?? []; bySys.set(u.system, arr);
-        arr.push({ index: u.index, cx: u.x + 0.6, w: lyrUnit(lyricShow(u.lyric)), hy: u.hyph, block: isBlockScript(u.lyric) && [...lyricShow(u.lyric)].length <= 1 });   // 一个音上两个以上方块字（日文「だん」这类合租）= 自己收，不带着整段一起变窄（user 11-09「日文有时候有双字合租的…这种时候也变窄到能放下？」）
+        arr.push({ index: u.index, cx: u.cx, w: lyrUnit(lyricShow(u.lyric)), hy: u.hyph, block: isBlockScript(u.lyric) && [...lyricShow(u.lyric)].length <= 1 });   // 一个音上两个以上方块字（日文「だん」这类合租）= 自己收，不带着整段一起变窄（user 11-09「日文有时候有双字合租的…这种时候也变窄到能放下？」）
       }
       // 方块字整段统一一个宽度（user 11-09「甚至是整篇曲段统一宽度，算一个最大的允许宽度」）：先每行算要压到多宽，整段（这张纸 × 这位歌手）取最窄的，再按它摆
       for (const items of bySys.values()) items.sort((a, b) => a.cx - b.cx);
@@ -576,7 +576,40 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       }
       for (const x of measures) delete (x as { m?: number }).m; }
     // 5、6–11：五线谱这一种行的画（staff/draw.ts；施工单 1b-6a）。框架交过去的东西都在这个对象里
-    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
+    const staffOut = drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm });
+    // 歌词（第 11 样「歌词」，框架的；施工单 1b-7）：五线谱给每个音的锚点（字的中心、拖腔线、点击框归哪一行、挂在哪一行），这里写字、贴天际线、摆连字符。
+    //   一行歌词一条基线 = max(版式的最小值, 这一行歌词占的那些段里下天际线最低处 + 字高 + 0.5)；第二行（按节奏排挤下去的）跟着往下。
+    //   歌词连字符（英文断开的音节）画在两个歌词中间；拖腔线一起。歌词的墨进天际线（后面的 8vb 贴在它下面），行高另按歌词的规矩算（第 12 步之后）
+    const layLyrics = ({ r, lrow, spots }: LyricPart) => {
+      const partLyrics: LyricHit[] = [];
+      const run = (c: LyricSpot) => {
+        const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lrow(c.sys)), cx0 = c.cx0;   // 按节奏排：让过路的位置
+        const ly = ly0, cx = cx0 + (fit ? P(fit.dx) : 0);
+        { const lh: LyricHit = { index: c.index, system: c.row, x: cx, y: ly, ...(fit?.tight ? { tight: true as const } : {}) }; partLyrics.push(lh); hitRow(lh, lrow(c.sys)); }   // 点击框归这个音那一行（system），画在歌词那一行（大谱表 = 下面那条）
+        if (c.lyric === MELISMA_MARK) put(lrow(c.sys), { t: "line", x1: c.mx0, y1: ly0, x2: c.mx1, y2: ly0, w: P(0.12), cls: "melisma" });
+        else if (c.lyric) put(lrow(c.sys), { tok: c.tok, t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}), ...(look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}), cls: ["lyric", c.mute ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", c.cls ?? ""]   /* 挤了不画灰（v0.16.45；user「挤了能不能不画灰」「灰是有别的语义的」= 唱不出来 / 不认）：只留 lyric-tight 给歌词框说「挤了」 */.filter(Boolean).join(" ") });
+      };
+      if (!lyricsOf[r]) { for (const c of spots) run(c); lyrics.push(...partLyrics); return; }   // 没写歌词的声部：空着的歌词位（点了开歌词框），都在默认的歌词位
+      const base = LYRIC_BELOW + (o.lyricRaise ?? 0), bySys = new Map<number, LyricSpot[]>();
+      for (const c of spots) { const l = bySys.get(c.sys); if (l) l.push(c); else bySys.set(c.sys, [c]); }
+      for (let sy = 0; sy < nSys; sy++) lyricOff.set(lrow(sy), base);   // 这一行没有字也留歌词位（空着的歌词位能点）
+      for (const [sy, cs] of bySys) {
+        const row = lrow(sy);
+        const dy = placeBelow(row, 0.5, () => {
+          const from = partLyrics.length;
+          for (const c of cs) run(c);
+          // 连字符摆哪 = 文字模块的 hyphens()（缝的正中、放不下不画、方块字旁边不占地方；见 src/render/text/lyric-fit.ts）
+          const mine = partLyrics.slice(from), byIdx = new Map(cs.map((c) => [c.index, c] as const));
+          const syls = mine.map((L) => { const pl = lyrPlan.get(`${r}:${L.index}`), c = byIdx.get(L.index)!, lyr = c.lyric ?? ""; return { x: L.x, hy: c.hyph, hw: pl ? P(pl.hw) : undefined, sx: pl?.sx, ...(pl ? {} : { nw: P(lyrUnit(lyricShow(lyr))) / 2 }), cjk: isBlockScript(lyricShow(lyr)), row: L.system }; });
+          hyphens(syls, P(lyrHyphen), P(1.6)).forEach((h, n) => {
+            if (h) prims.push({ t: "text", x: h.x, y: mine[n]!.y, s: "-", cls: "lyric hyphen", ...(look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}), sx: look.sx * h.hf * HYPHEN_SX });
+          });
+          lyrics.push(...partLyrics.slice(from));
+        }, { min: 0, count: false, step: ROW_STEP });   // 歌词基线往下让也按整格（防抖）
+        lyricOff.set(row, base + dy);
+      }
+    };
+    for (const lp of staffOut.lyricParts) attach("lyrics", () => layLyrics(lp));
     // 12. 量 → 贴 → 定行距 → 挪到位（刀 4b）
     //   ① 音符层的墨进天际线（注解不算）
     for (let i = p0.p; i < prims.length; i++) {
