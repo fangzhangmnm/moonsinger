@@ -27,10 +27,11 @@ import { fromDiatonic, diatonicIndex, keySpell, type Pitch } from "../score/pitc
 import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
 import type { HarmonyRead } from "../theory/index.ts";
 import { textStyleCss } from "../render/text/index.ts";
-import { engrave, attachLayoutFns, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
+import { engrave, type EngraveOpts, type Layout, type PartView, type HitNote, type LyricHit, type DynHit, type Slot, type CaretHead, type ClefHit, type SystemBox } from "../render/engrave.ts";
 import { toSvg, toSvgParts } from "../render/svg.ts";
 import { createTextMeasure, canvasMeasure, type RawMeasure } from "../render/text/index.ts";
 import type { LayoutJob, LayoutReply, SvgParts } from "../render/layout-worker.ts";
+import { withStaffGeometry } from "../render/staff/geometry.ts";
 /** 这一次排版用的几何（谱大小 / 纸宽 / 严格按纸 / 分页 / 边距 / 横卷）。 */
 type FrameNow = { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null; margins: { l: number; r: number; t: number; b: number }; hscroll: boolean };
 import { span, record } from "./perf-trace.ts";
@@ -317,7 +318,7 @@ export class ScoreView {
   }
   // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
   //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），
-  //   回来的是 SVG 分组字符串 + 去掉闭包的 Layout（attachLayoutFns 装回去），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
+  //   回来的是 SVG 分组字符串 + 去掉闭包的 Layout（withStaffGeometry 装上 yOf / dOf / lyricY），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
   //   谁同步要排版（layoutNow）= 主线程自己算、在途回执作废。没有 Worker / OffscreenCanvas、或 worker 坏了 = 永远走同步路（行为同 v0.13.x）。
   private worker: Worker | null | undefined;   // undefined = 还没试；null = 没有 / 坏了
   private seq = 0;
@@ -367,7 +368,7 @@ export class ScoreView {
     this.pending = null;
     if ("error" in r) { this.dropWorker(`layout job failed: ${r.error}`); return; }
     const t0 = performance.now();
-    this.layout = attachLayoutFns(r.data); this.geoSong = p.song; this.geoKey = p.geoKey; this.layoutSt = p.st; this.frameNow = p.frame;
+    this.layout = withStaffGeometry(r.data); this.geoSong = p.song; this.geoKey = p.geoKey; this.layoutSt = p.st; this.frameNow = p.frame;
     this.workerParts = { for: this.layout, parts: r.parts };
     record("engrave-worker", r.ms); record("reply", performance.now() - t0);
     const q = this.queued; this.queued = null;

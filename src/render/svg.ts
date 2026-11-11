@@ -1,5 +1,5 @@
 // svg.ts —— 排版结果 → SVG 字符串（浏览器 innerHTML 用；Node 里也能直接写文件看图）。created 2026-10-06 by Claude Opus 5.5
-import { type Layout } from "./engrave.ts";
+import { type Layout, type LayoutData } from "./engrave.ts";
 import { LYRIC_EM } from "./text/index.ts";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -29,7 +29,7 @@ function yOfPrim(p: Layout["prims"][number]): number | null {
  *  图元按落在哪一行谱（Layout.systems 的上下界）分组，不在任何一行里的（歌名 / 作者栏 / 曲段控件 / 页框…）进第 0 组「杂项」；组内保持原来的先后（z 序不变）。
  *  宿主（score-view）拿着上一次的组字符串逐组比，只换变了的那几组——挪一格光标 = 换两组，不再整张 SVG 重建（5000 个节点 / 500 KB）。
  *  z 序唯一的变化：杂项组画在所有行前面（它们本来就是背景 / 不和音符重叠的东西）。 */
-export function toSvgParts(l: Layout): { open: string; groups: string[]; close: string } {
+export function toSvgParts(l: LayoutData): { open: string; groups: string[]; close: string } {
   const L = l.pageX?.left ?? 0, R = l.pageX?.right ?? 0, W = l.width + L + R;   // 分页：版心左右留边距，页框画在负 x
   const open = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W)}" height="${n(l.height)}" viewBox="${n(-L)} 0 ${n(W)} ${n(l.height)}">`;
   const fs = n(4 * l.sp), lfs = n(LYRIC_EM * l.sp), rx = n(l.sp * 0.6);

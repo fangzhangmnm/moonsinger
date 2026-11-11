@@ -30,8 +30,8 @@ import { type HarmonyRead } from "../theory/index.ts";
 import { resolveSongLooks } from "../score/clef.ts";
 import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, SQUEEZE, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SPACING } from "./frame/params.ts";
 import { wrapTitle } from "./frame/furniture.ts";
-import { TOP_LINE, SYSTEM_LINE_W } from "./staff/glyphs.ts";
-import { yAt, dAt, anchors } from "./staff/geometry.ts";
+import { SYSTEM_LINE_W } from "./staff/glyphs.ts";
+import { yAt, dAt, anchors, withStaffGeometry } from "./staff/geometry.ts";
 import { type Unit, type Chunk } from "./staff/units.ts";
 import { measureTrack, lineStartWidth, lyricAnchors, type StaffTrack } from "./staff/measure.ts";
 import { staffRows, staffTracks, type FoldFamily } from "./staff/rows.ts";
@@ -97,7 +97,7 @@ export interface EngraveOpts {
   __noAnn?: boolean;
 }
 
-/** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。 */
+/** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。staffTop / staff = 五线谱这一行自己的数据（staff/geometry.ts StaffRowData；挪成行的 data 归第二刀）。 */
 export interface SystemBox { top: number; staffTop: number; bottom: number; paper: string; part: string; sys: number; staff: Staff; /** 五线谱右端（px；播放时的小节底色右边界用，v0.10.12）。 */ x1?: number;
   /** 这一行谱上真有墨的上下沿（px）：音（含叠着的房客）、符干、跳音 / 重音、力度那几道、八度线、歌词；不含速度 / 风格记号（那是整张谱的）。播放的灰块按这个（v0.10.26）。 */
   inkTop?: number; inkBottom?: number }   // staff = 大谱表里是上（1）还是下（2）
@@ -168,20 +168,16 @@ export interface Layout {
   yOf: (system: number, d: number) => number;
   dOf: (system: number, y: number) => number;
 }
-/** 排版过线用的平数据（worker → 主线程 structuredClone）：Layout 去掉三个闭包。2026-10-21 by Claude Fable 5.1（排版进 worker；user 10-21「这个活也加进去」）。 */
+/** 排版的平数据（worker → 主线程 structuredClone 原样过线）：Layout 去掉三个现算的函数。主线程用 staff/geometry.ts withStaffGeometry 装上（施工单 1b-8；原来的 strip / attachLayoutFns）。 */
 export type LayoutData = Omit<Layout, "lyricY" | "yOf" | "dOf">;
-export function stripLayoutFns(l: Layout): LayoutData { const { lyricY: _a, yOf: _b, dOf: _c, ...d } = l; return d; }
-/** 把三个闭包装回去：yOf / dOf 只看那一行的 staffTop 和 sp（和 engrave 里的定义逐字相同），lyricY 读 lyricYs。test/layout-worker.test.ts 对着 engrave 原装的闭包逐行核。 */
-export function attachLayoutFns(d: LayoutData): Layout {
-  const half = d.sp * 0.5;
-  const yOf = (r: number, dd: number): number => d.systems[r].staffTop + (TOP_LINE - dd) * half;
-  return { ...d, yOf, dOf: (r, y) => Math.round(TOP_LINE - (y - d.systems[r].staffTop) / half), lyricY: (r) => d.lyricYs[r] };
-}
 
 
 
 
-export function engrave(song: Song, o: EngraveOpts): Layout {
+/** 排版：平数据 + 现算的 yOf / dOf / lyricY（屏幕上同步那条路、PDF、测试用）。 */
+export function engrave(song: Song, o: EngraveOpts): Layout { return withStaffGeometry(engraveData(song, o)); }
+/** 排版本体：只出平数据（worker 回这一份）。 */
+export function engraveData(song: Song, o: EngraveOpts): LayoutData {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
   const looks = resolveSongLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
@@ -672,7 +668,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     prims.unshift(...frames);
   }
   const height = PG ? Math.max(pageTopY(pageNo) + P(PG.h), tailBottom) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)) };
 }
 
 export type { Token };

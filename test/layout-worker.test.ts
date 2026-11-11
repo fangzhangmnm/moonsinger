@@ -1,8 +1,10 @@
-// 排版进 worker（src/render/layout-worker.ts + engrave.ts 的 LayoutData / attachLayoutFns）：过线的平数据装回闭包后和原装的逐行相同；worker 的纯函数回的 parts = 主线程直接串的。
+// 排版进 worker（src/render/layout-worker.ts + engrave.ts 的 engraveData / LayoutData + staff/geometry.ts withStaffGeometry）：过线的是平数据，主线程装上 yOf / dOf / lyricY；worker 的纯函数回的 parts = 主线程直接串的。
+//   1b-8（2026-11-11 Claude Opus 5.5）：原来的 strip / attachLayoutFns 退场；分家前后 yOf / dOf / lyricY 逐行相同由守卫 3 的快照核（test/engrave-full.test.ts 每行采样）。
 //   created 2026-10-21 by Claude Fable 5.1（user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」）
 import { describe, it, eq, assert } from "./runner.mjs";
-import { engrave, attachLayoutFns, stripLayoutFns } from "../src/render/engrave.ts";
+import { engrave, engraveData } from "../src/render/engrave.ts";
 import { TOP_LINE } from "../src/render/staff/glyphs.ts";
+import { withStaffGeometry, caretSpan, previewAt, pitchAxis, bandTop } from "../src/render/staff/geometry.ts";
 import { toSvgParts } from "../src/render/svg.ts";
 import { runLayoutJob } from "../src/render/layout-worker.ts";
 import { initState, type EditorState } from "../src/score/song.ts";
@@ -22,21 +24,30 @@ function songs(): { name: string; st: EditorState; parts: Parameters<typeof engr
 const opts = (parts: Parameters<typeof engrave>[1]["parts"], at: EditorState["at"], width = 420) => ({ width, sp: 10, locale: "zh" as const, at, parts, titlePlaceholder: true, autoBars: true, paperLabel: "A5", margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
 
 describe("排版进 worker", () => {
-  it("attachLayoutFns(stripLayoutFns(L))：yOf / dOf / lyricY 每一行、各种 d 都和 engrave 原装的闭包相同；lyricYs 对得上", () => {
+  it("engraveData = 平数据（能过线、没有函数）；withStaffGeometry 装上的 yOf / dOf / lyricY = 按定义算的（第五线 + (38 − 级) × 半个线间距、取整回去、lyricYs）", () => {
     for (const { name, st, parts } of songs()) {
-      const L = engrave(st.song, { ...opts(parts, st.at), locale: "zh", measure: createTextMeasure(measure) });
-      assert(L.systems.length >= 2, `${name}：至少两行`);
-      eq(L.lyricYs.length, L.systems.length, `${name}：每行一个 lyricY`);
-      const data = stripLayoutFns(L);
-      assert(!("yOf" in data) && !("dOf" in data) && !("lyricY" in data), "平数据里没有闭包");
+      const o = { ...opts(parts, st.at), locale: "zh" as const, measure: createTextMeasure(measure) };
+      const data = engraveData(st.song, o);
+      assert(data.systems.length >= 2, `${name}：至少两行`);
+      eq(data.lyricYs.length, data.systems.length, `${name}：每行一个 lyricY`);
+      assert(!("yOf" in data) && !("dOf" in data) && !("lyricY" in data), "平数据里没有函数");
       structuredClone(data);   // 过线：有函数 / 不能克隆的东西在这儿就炸
-      const R = attachLayoutFns(data);
-      for (let r = 0; r < L.systems.length; r++) {
-        eq(R.lyricY(r), L.lyricY(r), `${name}：lyricY(${r})`);
-        for (const d of [TOP_LINE, 34, 30, 44, 20, 27.5]) { eq(R.yOf(r, d), L.yOf(r, d), `${name}：yOf(${r}, ${d})`); eq(R.dOf(r, L.yOf(r, d)), L.dOf(r, L.yOf(r, d)), `${name}：dOf 回去`); }
-        eq(R.dOf(r, L.systems[r].staffTop + 3.3), L.dOf(r, L.systems[r].staffTop + 3.3), `${name}：dOf 取整一致`);
+      const R = withStaffGeometry(data), L = engrave(st.song, o), half = data.sp / 2;
+      for (let r = 0; r < data.systems.length; r++) {
+        const top = data.systems[r]!.staffTop;
+        eq(R.lyricY(r), data.lyricYs[r], `${name}：lyricY(${r})`); eq(L.lyricY(r), R.lyricY(r), `${name}：engrave 交出去的 lyricY(${r})`);
+        for (const d of [TOP_LINE, 34, 30, 44, 20, 27.5]) { eq(R.yOf(r, d), top + (TOP_LINE - d) * half, `${name}：yOf(${r}, ${d})`); eq(R.dOf(r, R.yOf(r, d)), Math.round(d), `${name}：dOf 回去`); eq(L.yOf(r, d), R.yOf(r, d), `${name}：engrave 交出去的 yOf`); }
       }
     }
+  });
+  it("几何纯函数（第二刀谱面视图改用）= 谱面视图现在的写法：光标 42→26 级、鬼音符的加线、纵向 ↔ 第几级、拖多远几级、选区带上沿 44 级", () => {
+    const row = { staffTop: 100, staff: 1 as const }, half = 5, yOf = (d: number) => row.staffTop + (TOP_LINE - d) * half;
+    const c = caretSpan(row, half); eq(c.y1, yOf(42)); eq(c.y2, yOf(26));
+    eq(bandTop(row, half), yOf(44));
+    const lo = previewAt(row, 24, half); eq(lo.y, yOf(24)); eq(JSON.stringify(lo.ledgers), JSON.stringify([yOf(28), yOf(26), yOf(24)]), "谱下方：28、26、24 三条加线");
+    const hi = previewAt(row, 43, half); eq(JSON.stringify(hi.ledgers), JSON.stringify([yOf(40), yOf(42)]), "谱上方：40、42");
+    eq(previewAt(row, 34, half).ledgers.length, 0, "谱里面不画加线");
+    eq(pitchAxis.stepAt(row, yOf(31) + 1, half), 31); eq(pitchAxis.stepsOfDrag(-12, half), 2, "往上拖 12 px（2.4 个半格）= 2 级"); eq(pitchAxis.stepsOfDrag(8, half), -2);
   });
   it("runLayoutJob：同一把尺子 = 和主线程直接 engrave + toSvgParts 的字符串逐组相同；data 里的命中数据和原装相同；seq 原样带回", () => {
     for (const { name, st, parts } of songs()) {

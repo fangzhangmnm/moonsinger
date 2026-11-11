@@ -6543,11 +6543,7 @@ function arrangeColumns(cols, tracks, o) {
 }
 
 // src/render/engrave.ts
-function stripLayoutFns(l) {
-  const { lyricY: _a, yOf: _b, dOf: _c, ...d } = l;
-  return d;
-}
-function engrave(song, o) {
+function engraveData(song, o) {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   const looks = resolveSongLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   const lookAt = (paperId, partId) => looks.get(paperId)?.get(partId);
@@ -7118,7 +7114,7 @@ function engrave(song, o) {
     prims.unshift(...frames);
   }
   const height = PG ? Math.max(pageTopY(pageNo) + P(PG.h), tailBottom) : yCur + P(MX.b);
-  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)), lyricY, yOf, dOf };
+  return { prims, width: o.scroll ? P(sheetRight + MARGIN) : o.width, height, sp, tp: sp * ts, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx, y: y0, size: cs }, content: { left: P(MARGIN), right: o.width - P(MARGIN) }, pageX: { left: P(MX.l), right: P(MX.r) }, pages, shortBars, lyricYs: rows.map((_, r) => lyricY(r)) };
 }
 
 // src/render/svg.ts
@@ -7178,9 +7174,9 @@ function toSvgParts(l) {
 // src/render/layout-worker.ts
 function runLayoutJob(job, raw, now = () => performance.now()) {
   const t0 = now();
-  const L = engrave(job.song, { ...job.opts, measure: createTextMeasure(raw) });
-  const parts = toSvgParts(L);
-  return { seq: job.seq, parts, data: stripLayoutFns(L), ms: now() - t0 };
+  const data = engraveData(job.song, { ...job.opts, measure: createTextMeasure(raw) });
+  const parts = toSvgParts(data);
+  return { seq: job.seq, parts, data, ms: now() - t0 };
 }
 if (typeof document === "undefined" && typeof self !== "undefined" && typeof self.postMessage === "function" && typeof OffscreenCanvas !== "undefined") {
   const ws = self;
@@ -7197,4 +7193,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-8799ae823d2f.mjs.map
+//# sourceMappingURL=layout-worker-622833ab392c.mjs.map

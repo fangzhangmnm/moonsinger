@@ -11050,6 +11050,10 @@ var SYSTEM_LINE_W = ENGRAVE.thinBar * 1.4;
 var yAt = (staffTop, d3, half2) => staffTop + (TOP_LINE - d3) * half2;
 var dAt = (staffTop, y2, half2) => Math.round(TOP_LINE - (y2 - staffTop) / half2);
 var anchors = (staffTop, half2) => ({ top: yAt(staffTop, TOP_LINE, half2), mid: yAt(staffTop, MID_LINE, half2), bottom: yAt(staffTop, BOTTOM_LINE, half2) });
+function withStaffGeometry(d3) {
+  const half2 = d3.sp * 0.5;
+  return { ...d3, yOf: (r10, dd) => yAt(d3.systems[r10].staffTop, dd, half2), dOf: (r10, y2) => dAt(d3.systems[r10].staffTop, y2, half2), lyricY: (r10) => d3.lyricYs[r10] };
+}
 
 // src/render/staff/notation.ts
 var MIN_PLAIN = TPQ / 8;
@@ -12834,12 +12838,10 @@ function arrangeColumns(cols, tracks, o10) {
 }
 
 // src/render/engrave.ts
-function attachLayoutFns(d3) {
-  const half2 = d3.sp * 0.5;
-  const yOf = (r10, dd) => d3.systems[r10].staffTop + (TOP_LINE - dd) * half2;
-  return { ...d3, yOf, dOf: (r10, y2) => Math.round(TOP_LINE - (y2 - d3.systems[r10].staffTop) / half2), lyricY: (r10) => d3.lyricYs[r10] };
-}
 function engrave(song, o10) {
+  return withStaffGeometry(engraveData(song, o10));
+}
+function engraveData(song, o10) {
   if (!o10.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   const looks = resolveSongLooks(song, new Set(o10.parts.filter((p2) => p2.perc || p2.xHead).map((p2) => p2.id)));
   const lookAt = (paperId, partId) => looks.get(paperId)?.get(partId);
@@ -13410,7 +13412,7 @@ function engrave(song, o10) {
     prims.unshift(...frames);
   }
   const height = PG ? Math.max(pageTopY(pageNo) + P2(PG.h), tailBottom) : yCur + P2(MX.b);
-  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, tp: sp2 * ts2, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx2, y: y0, size: cs2 }, content: { left: P2(MARGIN), right: o10.width - P2(MARGIN) }, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, shortBars, lyricYs: rows.map((_2, r10) => lyricY(r10)), lyricY, yOf, dOf };
+  return { prims, width: o10.scroll ? P2(sheetRight + MARGIN) : o10.width, height, sp: sp2, tp: sp2 * ts2, systems: rows, bars, notes, chordHeads, chordTags: chordTagsOut, names, sharedRows, virtual: virtualOut, measures, families, slots, heads, lyrics, marks, dyns, rests, title, clefs, arrangement, credits, parts: partsHit, papers: papersHit, keyHints, tail, creditsLine: { x: rx2, y: y0, size: cs2 }, content: { left: P2(MARGIN), right: o10.width - P2(MARGIN) }, pageX: { left: P2(MX.l), right: P2(MX.r) }, pages, shortBars, lyricYs: rows.map((_2, r10) => lyricY(r10)) };
 }
 
 // src/render/svg.ts
@@ -14644,7 +14646,7 @@ var ScoreView = class {
   }
   // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
   //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），
-  //   回来的是 SVG 分组字符串 + 去掉闭包的 Layout（attachLayoutFns 装回去），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
+  //   回来的是 SVG 分组字符串 + 去掉闭包的 Layout（withStaffGeometry 装上 yOf / dOf / lyricY），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
   //   谁同步要排版（layoutNow）= 主线程自己算、在途回执作废。没有 Worker / OffscreenCanvas、或 worker 坏了 = 永远走同步路（行为同 v0.13.x）。
   worker;
   // undefined = 还没试；null = 没有 / 坏了
@@ -14719,7 +14721,7 @@ var ScoreView = class {
       return;
     }
     const t02 = performance.now();
-    this.layout = attachLayoutFns(r10.data);
+    this.layout = withStaffGeometry(r10.data);
     this.geoSong = p2.song;
     this.geoKey = p2.geoKey;
     this.layoutSt = p2.st;
@@ -31695,7 +31697,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-8799ae823d2f.mjs");
+      return pick(() => "layout-worker-622833ab392c.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-6b1c08f15c6b.mjs");
   }
@@ -61266,4 +61268,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-14a74e5752c6.mjs.map
+//# sourceMappingURL=moonsinger-b192e957cad9.mjs.map
