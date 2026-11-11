@@ -10,7 +10,7 @@ import { staffLooks, staffRows, staffTracks, measureTrack, lineStartWidth, lyric
 import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, JIANPU_LANES } from "./jianpu/index.ts";
 export type { FoldFamily, StaffTrack, StaffDrawCtx, Unit, Chunk } from "./staff/index.ts";
 
-/** 一行用哪种画法。没写在 SystemBox.kind 上 = 五线谱（版面底本不变：只有数字行多带一个 kind）。 */
+/** 一行用哪种画法（SystemBox.kind，每一行都写）。 */
 export type RowKind = "staff" | "jianpu";
 /** 一条要排的轨（现在 = 五线谱建轨那一步出的；数字行只用时间那一半和摆好的位置）。 */
 export type Track = StaffTrack;
@@ -39,8 +39,6 @@ export const DRAWERS: Readonly<Record<RowKind, RowDrawer>> = {
   // 数字行和五线谱用同一个行框（局部 0–4），竖向锚点一样（jianpu/glyphs.ts）
   jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors },
 };
-/** 各种画法贴挂件的先后并起来（五线谱的先后为主，别的种类多出来的道接在后面）。 */
-export const LANE_ORDER: readonly LaneKind[] = [...new Set([...STAFF_LANES, ...JIANPU_LANES])];
 
 /** 一种谱：这种谱里一条轨用哪种行。 */
 export interface Notation { readonly id: NotationId; rowKindOf(q: Track): RowKind }

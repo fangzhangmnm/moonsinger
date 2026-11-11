@@ -20,7 +20,7 @@ const digits = (ps: Prim[]) => ps.filter((p): p is Extract<Prim, { t: "text" }> 
 const n = (p: ReturnType<typeof P>, dur = TPQ, extra: object = {}) => ({ kind: "note", pitch: p, dur, lyric: null, ...extra }) as Omit<Token, "id">;
 
 describe("简谱数字行", () => {
-  it("谱种是简谱：有音高、没有叠音的声部排成数字行（行框带 kind: jianpu）；C 大调音阶 = 1–7、高八度的 1 带一个点；五线谱的行框不带 kind", () => {
+  it("谱种是简谱：有音高、没有叠音的声部排成数字行（行框 kind = jianpu；每一行都写种类）；C 大调音阶 = 1–7、高八度的 1 带一个点", () => {
     const { L } = lay(["C", "D", "E", "F", "G", "A", "B"].map((s) => n(P(s as "C"))).concat([n(P("C", 5))]));
     assert(L.systems.length > 0 && L.systems.every((r) => r.kind === "jianpu"), "都是数字行");
     eq(digits(L.prims).join(""), "12345671");
@@ -28,7 +28,7 @@ describe("简谱数字行", () => {
   });
   it("叠音的声部照旧排五线谱的行（这一刀数字行只画单声部；同一张纸上两种行并排 = 过渡）", () => {
     const { L } = lay([n(P("E")), n(P("G"), TPQ, { chord: [P("C")] })]);
-    assert(L.systems.every((r) => r.kind === undefined), "有叠音 = 五线谱的行");
+    assert(L.systems.length > 0 && L.systems.every((r) => r.kind === "staff"), "有叠音 = 五线谱的行");
   });
   it("下划线按拍连：两个八分在同一拍 = 一条；跨拍 = 断开；十六分 = 两层", () => {
     const e = TPQ / 2, s16 = TPQ / 4;

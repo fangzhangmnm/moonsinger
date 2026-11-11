@@ -7,7 +7,10 @@ import { TPQ, type Song, type PaperSeg, type NoteTok } from "../../score/song.ts
 import { keyText } from "../../score/pitch.ts";
 import { toDegree, fewestDotsBase } from "../../score/degree.ts";
 import type { SongView } from "../../score/song-view.ts";
-import type { Prim, EngraveOpts, HitNote, RestHit, MarkHit, Slot, CaretHead, SystemBox, Layout } from "../engrave.ts";
+import type { Prim, EngraveOpts, HitNote, RestHit, MarkHit, DynHit, Slot, CaretHead, SystemBox, Layout } from "../engrave.ts";
+import { dynOverridden } from "../../score/perform.ts";
+import { navWhy } from "../../score/repeats.ts";
+import { layDynamics, layGroove, layNav, layTempo, tempoAt, type OrnCtx } from "../ornaments/index.ts";
 import type { TextRole } from "../text/index.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import { MARGIN } from "../frame/params.ts";
@@ -24,12 +27,14 @@ export const JIANPU_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "d
 /** 框架交给数字行的东西（是五线谱那一份的子集：不要纵向 ↔ 音高的几何）。 */
 export interface JianpuDrawCtx {
   song: Song; look: SongView; paper: PaperSeg; o: EngraveOpts;
-  P: (v: number) => number; tx: (role: TextRole) => number; sp: number;
+  P: (v: number) => number; tx: (role: TextRole) => number; TR: (role: TextRole, v: number) => number; RS: (role: TextRole) => number; mw: (role: TextRole, s: string) => number; sp: number;
   put: (row: number, p: Prim) => void; hitRow: (hit: object, row: number) => void;
-  prims: Prim[]; notes: HitNote[]; rests: RestHit[]; marks: MarkHit[]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
+  prims: Prim[]; notes: HitNote[]; rests: RestHit[]; marks: MarkHit[]; dyns: DynHit[]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
   staffTop: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
-  attach: (lane: LaneKind, run: () => void) => void;
+  attach: (row: number, lane: LaneKind, run: () => void) => void;
+  /** 这一行的右边界（sp）；速度画在哪一位那行（这张纸最上面在场的那位）、上一段结尾的速度（开头变了标 ↑ / ↓）。 */
+  right: number; owner: string | null; prevBpm: number | null;
   per: readonly JianpuTrack[]; measured: { inkL: Map<Chunk, number> }[];
   nSys: number; sysStarts: number[]; staffEnd: number[]; cols: { x: number; w: number; system: number }[]; ind0: number; indN: number;
 }
@@ -39,13 +44,15 @@ const keyHead = (fifths: number, minor: boolean): string => keyText(fifths, mino
 /** 画这几条（mine = per 里的下标）简谱轨。 */
 export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[]): { lyricParts: LyricPart[] } {
   const lyricParts: LyricPart[] = [];
-  const { o, P, tx, put, hitRow, notes, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
-  void hitRow;
+  const { song, paper, o, P, tx, put, notes, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
   const Y = (row: number, v: number) => staffTop(row) + P(v);   // 局部 y（sp）→ px（框架还没定行距：staffTop 是这一行的临时原点）
   for (const r of mine) {
     const q = per[r]!, units = q.units, tokens = q.tokens;
     for (let s = 0; s < nSys; s++) { const row = rowOf(s, r, 0); if (rows[row]) rows[row]!.x1 = P(staffEnd[s]!); }
     const tokOf = (u: Chunk): number | undefined => (u.index >= 0 && !u.pad ? tokens[u.index]?.id : undefined);
+    // 共用挂件（力度那一串、风格、跳转房子、速度；ornaments/index.ts）：音的锚点 = 数字的左右缘
+    const orn: OrnCtx = { song, paper, o, notation: "jianpu", P, tx, TR: c.TR, RS: c.RS, mw: c.mw, sp: c.sp, prims: c.prims, dyns: c.dyns, marks, placeAbove, attach: c.attach, right: c.right, tokens, units, row: (sy) => rowOf(sy, r, 0),
+      noteX: (ch) => P(ch.x + 0.1), noteEnd: (ch) => P(ch.x + 0.1 + DIGIT_W), dynOff: dynOverridden(tokens), navMute: (i) => (navWhy(song, paper, q.p.id, tokens[i]!) ? " art-mute" : "") };
     // 八度基准（这一刀只做「点最少」那条退路；按乐器音域定 = 第五刀）：整条轨（这张纸上）一个基准
     let f0 = q.head.key; const shifts: number[] = [];
     for (const u of units) { if (u.kind === "key") f0 = u.fifths; else if (u.kind === "chunk" && u.note && u.pitch && !u.pad) shifts.push(toDegree(u.pitch, f0).shift); }
@@ -53,10 +60,12 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[]): { lyricPa
     // 谱头（UX 稿第 3 节）：第一行上方「1=C  4/4」，字也能点（= 调号 / 拍号的点击框，开谱头面板）
     const row0 = rowOf(0, r, 0), hx = P(MARGIN + ind0 + 0.6);
     const keyS = keyHead(q.head.key, q.head.minor), timeS = `${q.head.time.beats}/${q.head.time.beatType}`, hs = tx("tempo-num");
-    c.attach("tempo", () => placeAbove(row0, 0.5, (y) => {
+    const tempoHere = q.p.id === c.owner && q.head.idx.tempo !== undefined;   // 速度写在谱头同一行（UX 稿第 3 节「1=♭A  4/4  ♩=100」）：这张纸最上面在场的那位才写
+    c.attach(row0, "tempo", () => placeAbove(row0, 0.5, (y) => {
       const kw = P(midTextW(keyS)), tw = P(midTextW(timeS));
       put(row0, { t: "text", x: hx, y, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
       put(row0, { t: "text", x: hx + kw, y, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
+      if (tempoHere) tempoAt(orn, row0, MARGIN + ind0 + 0.6 + midTextW(keyS) + midTextW(timeS) + 0.6, q.head.bpm, "tempo", q.head.idx.tempo!, c.prevBpm === null || c.prevBpm === q.head.bpm ? undefined : q.head.bpm > c.prevBpm ? "up" : "down", y);
       if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row0, x: hx - P(0.3), y: y - hs, w: kw, h: hs * 1.4 });
       if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row0, x: hx + kw - P(0.3), y: y - hs, w: tw, h: hs * 1.4 });
     }));
@@ -87,7 +96,10 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[]): { lyricPa
         bars.push({ system: row, x });
         continue;
       }
-      if (u.kind !== "chunk" || u.pad) continue;   // 补齐的淡色小节不画（同五线谱 v0.10.19）
+      if (u.kind === "groove") { layGroove(orn, u); continue; }   // 风格记号：共用挂件
+      if (u.kind === "nav") { layNav(orn, u, (v) => P(v.x + BAR_DX)); continue; }   // 房子 / Segno / D.C.…：共用挂件（房子的钩下到小节线）
+      if (u.kind === "tempo") { if (q.p.id === c.owner) layTempo(orn, rowOf(u.system, r, 0), u.x + 0.3, u.bpm, "tempo", u.index); continue; }   // 中途变速：共用挂件
+      if (u.kind !== "chunk" || u.pad) continue;   // 补齐的淡色小节不画（同五线谱 v0.10.19）；力度 / 渐强渐弱 = 下面 layDynamics 一起摆
       const row = rowOf(u.system, r, 0), tok = tokOf(u), x0 = P(u.x + 0.1), cx = x0 + P(DIGIT_W / 2), T = tok !== undefined ? { tok } : {};
       const n = extraGlyphs(u), contDash = u.note && u.j > 0 && u.base >= TPQ;   // 接着上一段的长音：第一个字形也是横线
       const limit = u.x + u.w - 0.1 - DIGIT_W / 2, step = n ? Math.max(DASH_PITCH, (limit - (u.x + 0.1 + DIGIT_W / 2)) / n) : 0;   // 横线 / 一拍一个 0：在这一列里摊开（像一拍一拍）
@@ -129,10 +141,10 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[]): { lyricPa
         i = j + 1;
       }
     }
+    layDynamics(orn);   // 力度那一层（力度字：中文界面写中文、别的界面写字母；记号表 signs.ts）
     // 光标落点、写字头：框架那一套（frame/carets.ts）；升降号挂在左边，光标画在它左边；数字行没有谱号位移
     const inkL = measured[r]!.inkL;
     caretStops(q, { cx: (u) => { const k = u.kind === "chunk" ? inkL.get(u as Chunk) : undefined; return P(u.x - (k ? k + 0.2 : 0)); }, shiftAt: () => Array.from({ length: q.staves }, () => 0), rowOf: (sy, k) => rowOf(sy, r, k), P, sysStart0: sysStarts[0]!, cols, slots, heads });
   }
-  void o;
   return { lyricParts };
 }

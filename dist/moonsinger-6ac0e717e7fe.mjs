@@ -1372,7 +1372,7 @@ var init_upng_esm = __esm({
         return out;
       }
       var inflateRaw = function() {
-        var D3 = function() {
+        var D4 = function() {
           var o10 = Uint16Array, j2 = Uint32Array;
           return {
             m: new o10(16),
@@ -1405,10 +1405,10 @@ var init_upng_esm = __esm({
           };
         }();
         function C2(o10, j2) {
-          var I2 = o10.length, A2, r10, i10, y2, G2, f2 = D3.v;
+          var I2 = o10.length, A2, r10, i10, y2, G3, f2 = D4.v;
           for (var y2 = 0; y2 <= j2; y2++) f2[y2] = 0;
           for (y2 = 1; y2 < I2; y2 += 2) f2[o10[y2]]++;
-          var a10 = D3.m;
+          var a10 = D4.m;
           A2 = 0;
           f2[0] = 0;
           for (r10 = 1; r10 <= j2; r10++) {
@@ -1416,17 +1416,17 @@ var init_upng_esm = __esm({
             a10[r10] = A2;
           }
           for (i10 = 0; i10 < I2; i10 += 2) {
-            G2 = o10[i10 + 1];
-            if (G2 != 0) {
-              o10[i10] = a10[G2];
-              a10[G2]++;
+            G3 = o10[i10 + 1];
+            if (G3 != 0) {
+              o10[i10] = a10[G3];
+              a10[G3]++;
             }
           }
         }
         function t10(o10, j2, I2) {
-          var A2 = o10.length, r10 = D3.i;
+          var A2 = o10.length, r10 = D4.i;
           for (var i10 = 0; i10 < A2; i10 += 2) if (o10[i10 + 1] != 0) {
-            var y2 = i10 >> 1, G2 = o10[i10 + 1], f2 = y2 << 4 | G2, a10 = j2 - G2, k2 = o10[i10] << a10, N2 = k2 + (1 << a10);
+            var y2 = i10 >> 1, G3 = o10[i10 + 1], f2 = y2 << 4 | G3, a10 = j2 - G3, k2 = o10[i10] << a10, N2 = k2 + (1 << a10);
             while (k2 != N2) {
               var x2 = r10[k2] >>> 15 - j2;
               I2[x2] = f2;
@@ -1435,7 +1435,7 @@ var init_upng_esm = __esm({
           }
         }
         function g3(o10, j2) {
-          var I2 = D3.i, A2 = 15 - j2;
+          var I2 = D4.i, A2 = 15 - j2;
           for (var r10 = 0; r10 < o10.length; r10 += 2) {
             var i10 = o10[r10] << j2 - o10[r10 + 1];
             o10[r10] = I2[i10] >>> A2;
@@ -1449,30 +1449,30 @@ var init_upng_esm = __esm({
             I2 = (I2 & 3435973836) >>> 2 | (I2 & 858993459) << 2;
             I2 = (I2 & 4042322160) >>> 4 | (I2 & 252645135) << 4;
             I2 = (I2 & 4278255360) >>> 8 | (I2 & 16711935) << 8;
-            D3.i[j2] = (I2 >>> 16 | I2 << 16) >>> 17;
+            D4.i[j2] = (I2 >>> 16 | I2 << 16) >>> 17;
           }
           function A2(r10, i10, y2) {
             while (i10-- != 0) r10.push(0, y2);
           }
           for (var j2 = 0; j2 < 32; j2++) {
-            D3.B[j2] = D3.o[j2] << 3 | D3.z[j2];
-            D3.h[j2] = D3.p[j2] << 4 | D3.w[j2];
+            D4.B[j2] = D4.o[j2] << 3 | D4.z[j2];
+            D4.h[j2] = D4.p[j2] << 4 | D4.w[j2];
           }
-          A2(D3.s, 144, 8);
-          A2(D3.s, 255 - 143, 9);
-          A2(D3.s, 279 - 255, 7);
-          A2(D3.s, 287 - 279, 8);
-          C2(D3.s, 9);
-          t10(D3.s, 9, D3.g);
-          g3(D3.s, 9);
-          A2(D3.t, 32, 5);
-          C2(D3.t, 5);
-          t10(D3.t, 5, D3.A);
-          g3(D3.t, 5);
-          A2(D3.b, 19, 0);
-          A2(D3.c, 286, 0);
-          A2(D3.e, 30, 0);
-          A2(D3.a, 320, 0);
+          A2(D4.s, 144, 8);
+          A2(D4.s, 255 - 143, 9);
+          A2(D4.s, 279 - 255, 7);
+          A2(D4.s, 287 - 279, 8);
+          C2(D4.s, 9);
+          t10(D4.s, 9, D4.g);
+          g3(D4.s, 9);
+          A2(D4.t, 32, 5);
+          C2(D4.t, 5);
+          t10(D4.t, 5, D4.A);
+          g3(D4.t, 5);
+          A2(D4.b, 19, 0);
+          A2(D4.c, 286, 0);
+          A2(D4.e, 30, 0);
+          A2(D4.a, 320, 0);
         })();
         function F2(o10, j2, I2) {
           return (o10[j2 >>> 3] | o10[(j2 >>> 3) + 1] << 8) >>> (j2 & 7) & (1 << I2) - 1;
@@ -1487,7 +1487,7 @@ var init_upng_esm = __esm({
           return (o10[j2 >>> 3] | o10[(j2 >>> 3) + 1] << 8 | o10[(j2 >>> 3) + 2] << 16 | o10[(j2 >>> 3) + 3] << 24) >>> (j2 & 7);
         }
         function v(o10, j2) {
-          var I2 = Uint8Array, r10 = 0, i10 = 0, y2 = 0, G2 = 0, f2 = 0, a10 = 0, k2 = 0, N2 = 0, x2 = 0, P2, J2;
+          var I2 = Uint8Array, r10 = 0, i10 = 0, y2 = 0, G3 = 0, f2 = 0, a10 = 0, k2 = 0, N2 = 0, x2 = 0, P2, J2;
           if (o10[0] == 3 && o10[1] == 0) return j2 ? j2 : new I2(0);
           var A2 = j2 == null;
           if (A2) j2 = new I2(o10.length >>> 2 << 3);
@@ -1506,40 +1506,40 @@ var init_upng_esm = __esm({
             }
             if (A2) j2 = H3(j2, N2 + (1 << 17));
             if (i10 == 1) {
-              P2 = D3.g;
-              J2 = D3.A;
+              P2 = D4.g;
+              J2 = D4.A;
               a10 = (1 << 9) - 1;
               k2 = (1 << 5) - 1;
             }
             if (i10 == 2) {
               y2 = F2(o10, x2, 5) + 257;
-              G2 = F2(o10, x2 + 5, 5) + 1;
+              G3 = F2(o10, x2 + 5, 5) + 1;
               f2 = F2(o10, x2 + 10, 4) + 4;
               x2 += 14;
               var O2 = x2, Q2 = 1;
               for (var p2 = 0; p2 < 38; p2 += 2) {
-                D3.b[p2] = 0;
-                D3.b[p2 + 1] = 0;
+                D4.b[p2] = 0;
+                D4.b[p2 + 1] = 0;
               }
               for (var p2 = 0; p2 < f2; p2++) {
                 var l10 = F2(o10, x2 + p2 * 3, 3);
-                D3.b[(D3.d[p2] << 1) + 1] = l10;
+                D4.b[(D4.d[p2] << 1) + 1] = l10;
                 if (l10 > Q2) Q2 = l10;
               }
               x2 += 3 * f2;
-              C2(D3.b, Q2);
-              t10(D3.b, Q2, D3.C);
-              P2 = D3.k;
-              J2 = D3.n;
-              x2 = B2(D3.C, (1 << Q2) - 1, y2 + G2, o10, x2, D3.a);
-              var u2 = d3(D3.a, 0, y2, D3.c);
+              C2(D4.b, Q2);
+              t10(D4.b, Q2, D4.C);
+              P2 = D4.k;
+              J2 = D4.n;
+              x2 = B2(D4.C, (1 << Q2) - 1, y2 + G3, o10, x2, D4.a);
+              var u2 = d3(D4.a, 0, y2, D4.c);
               a10 = (1 << u2) - 1;
-              var n10 = d3(D3.a, y2, G2, D3.e);
+              var n10 = d3(D4.a, y2, G3, D4.e);
               k2 = (1 << n10) - 1;
-              C2(D3.c, u2);
-              t10(D3.c, u2, P2);
-              C2(D3.e, n10);
-              t10(D3.e, n10, J2);
+              C2(D4.c, u2);
+              t10(D4.c, u2, P2);
+              C2(D4.e, n10);
+              t10(D4.e, n10, J2);
             }
             while (true) {
               var h2 = P2[w2(o10, x2) & a10];
@@ -1552,13 +1552,13 @@ var init_upng_esm = __esm({
               } else {
                 var M3 = N2 + L2 - 254;
                 if (L2 > 264) {
-                  var z2 = D3.B[L2 - 257];
+                  var z2 = D4.B[L2 - 257];
                   M3 = N2 + (z2 >>> 3) + F2(o10, x2, z2 & 7);
                   x2 += z2 & 7;
                 }
                 var e10 = J2[w2(o10, x2) & k2];
                 x2 += e10 & 15;
-                var E2 = e10 >>> 4, c10 = D3.h[E2], q2 = (c10 >>> 4) + s10(o10, x2, c10 & 15);
+                var E2 = e10 >>> 4, c10 = D4.h[E2], q2 = (c10 >>> 4) + s10(o10, x2, c10 & 15);
                 x2 += c10 & 15;
                 if (A2) j2 = H3(j2, N2 + (1 << 17));
                 while (N2 < M3) {
@@ -1583,9 +1583,9 @@ var init_upng_esm = __esm({
         function B2(o10, j2, I2, A2, r10, i10) {
           var y2 = 0;
           while (y2 < I2) {
-            var G2 = o10[w2(A2, r10) & j2];
-            r10 += G2 & 15;
-            var f2 = G2 >>> 4;
+            var G3 = o10[w2(A2, r10) & j2];
+            r10 += G3 & 15;
+            var f2 = G3 >>> 4;
             if (f2 <= 15) {
               i10[y2] = f2;
               y2++;
@@ -1614,10 +1614,10 @@ var init_upng_esm = __esm({
         function d3(o10, j2, I2, A2) {
           var r10 = 0, i10 = 0, y2 = A2.length >>> 1;
           while (i10 < I2) {
-            var G2 = o10[i10 + j2];
+            var G3 = o10[i10 + j2];
             A2[i10 << 1] = 0;
-            A2[(i10 << 1) + 1] = G2;
-            if (G2 > r10) r10 = G2;
+            A2[(i10 << 1) + 1] = G3;
+            if (G3 > r10) r10 = G3;
             i10++;
           }
           while (i10 < y2) {
@@ -1830,7 +1830,7 @@ var init_upng_esm = __esm({
       function N2(x2) {
         return Math.max(0, Math.min(255, x2));
       }
-      function D3(a10, b3) {
+      function D4(a10, b3) {
         var dr = a10[0] - b3[0], dg = a10[1] - b3[1], db = a10[2] - b3[2], da = a10[3] - b3[3];
         return dr * dr + dg * dg + db * db + da * da;
       }
@@ -1844,7 +1844,7 @@ var init_upng_esm = __esm({
         for (var i10 = 0; i10 < pc2; i10++) {
           var ne2 = 4294967295, ni2 = 0;
           for (var j2 = 0; j2 < pc2; j2++) {
-            var ce2 = D3(nplt[i10], nplt[j2]);
+            var ce2 = D4(nplt[i10], nplt[j2]);
             if (j2 != i10 && ce2 < ne2) {
               ne2 = ce2;
               ni2 = j2;
@@ -1885,7 +1885,7 @@ var init_upng_esm = __esm({
             }
             var ni2 = 0, nd2 = 16777215;
             for (var j2 = 0; j2 < pc2; j2++) {
-              var cd2 = D3(cc2, nplt[j2]);
+              var cd2 = D4(cc2, nplt[j2]);
               if (cd2 < nd2) {
                 nd2 = cd2;
                 ni2 = j2;
@@ -4434,6 +4434,26 @@ var S = {
   "\u5199\u4E0D\u8FDB\u5B58\u50A8\u4E86\uFF08{why}\uFF09\uFF1A\u8FD9\u6B21\u6253\u5F00\u4E4B\u540E\u7684\u8BBE\u7F6E\u53EA\u7559\u5728\u5185\u5B58\u91CC": { en: "Can't write to storage ({why}): settings from now on stay in memory only" },
   "\u7F16\u6392\u3000": { en: "Arrangement\u2002" },
   " \u7B49 {n} \u5904": { en: " at {n} places" },
+  "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00": { en: "Make this note short, detached from the next one" },
+  "\u8FD9\u4E2A\u97F3\u7684\u97F3\u5934\u91CD\u4E00\u70B9": { en: "Lean on the start of this note" },
+  "\u6BD4\u91CD\u97F3\u66F4\u91CD\u7684\u97F3\u5934": { en: "A heavier attack than an accent" },
+  "\u6BD4\u91CD\u97F3\u8F7B\u4E00\u6863\u7684\u91CD\uFF08\u56DB\u62CD\u5B50\u91CC\u7684\u7B2C\u4E09\u62CD\u90A3\u79CD\uFF09": { en: "A lighter stress than an accent (like beat three in 4/4)" },
+  "\u8FD9\u4E2A\u97F3\u8F7B\u4E00\u70B9": { en: "Play this note softer" },
+  "\u51E0\u4E4E\u542C\u4E0D\u89C1\u7684\u97F3\uFF08\u53EA\u7559\u4E2A\u5F71\u5B50\uFF09": { en: "A note you can barely hear (just a shadow)" },
+  "\u8FD9\u4E2A\u97F3\u5531 / \u594F\u6EE1\uFF0C\u4E0D\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00": { en: "Hold this note full length, connected to the next one" },
+  "\u8FD9\u4E2A\u97F3\u540E\u9762\u6362\u6C14": { en: "Breathe after this note" },
+  "\u97F3\u5934\u7A81\u7136\u51B2\u4E00\u4E0B\u3001\u518D\u56DE\u5230\u5F53\u4E0B\u7684\u529B\u5EA6": { en: "A sudden burst at the start, then back to the current dynamic" },
+  "\u97F3\u5934\u6309\u5F3A\u3001\u9A6C\u4E0A\u843D\u5230\u5F31\uFF0C\u540E\u9762\u7684\u97F3\u90FD\u662F\u5F31": { en: "Loud attack that drops straight to soft; the notes after stay soft" },
+  "\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5FF5\uFF08\u97F3\u9AD8\u7167\u5199\u5728\u8C31\u4E0A\uFF09": { en: "Speak this note in a breathy voice instead of singing the pitch (the pitch stays written)" },
+  "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5F31\u957F\u5230\u5199\u7684\u529B\u5EA6": { en: "Grow from soft to the written dynamic within this note" },
+  "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5199\u7684\u529B\u5EA6\u6536\u5F31": { en: "Fade from the written dynamic within this note" },
+  "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09": { en: "Grow then fade within this note (messa di voce)" },
+  "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4E00\u4E2A\u4E2A\u62E8\u51FA\u6765": { en: "Roll the chord from the lowest note up" },
+  "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09": { en: "Repeat this note rapidly (a roll)" },
+  "\u529B\u5EA6\u8BB0\u53F7\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7": { en: "Dynamic mark: from this note on, at this loudness, until the next dynamic mark" },
+  "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting louder from here until the next dynamic mark" },
+  "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting softer from here until the next dynamic mark" },
+  "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A": { en: "Change evenly from the previous dynamic mark to this one" },
   "{src} \u8F7D\u8FDB\u6765\u4E86\uFF0C\u4F46\u91CC\u9762\u6CA1\u6709\u300C{key}\u300D": { en: "{src} loaded, but \u201C{key}\u201D isn't in it" },
   "\u5907\u7528\u7248\u6587\u4EF6\u5939\u91CC\u5C11\u4E86 {src}\uFF08\u6216\u6D4F\u89C8\u5668\u4E0D\u8BA9\u8BFB\uFF09": { en: "{src} is missing from the standalone folder (or the browser won't let it be read)" },
   "\u5907\u7528\u7248\u91CC\u6CA1\u6709 {path}": { en: "{path} isn't in the standalone version" },
@@ -5750,8 +5770,8 @@ function withPitches(t10, ps) {
 }
 function noArp(t10) {
   if (!t10.art?.includes("arpeggio")) return t10;
-  const art = t10.art.filter((a10) => a10 !== "arpeggio");
-  if (art.length) return { ...t10, art };
+  const art2 = t10.art.filter((a10) => a10 !== "arpeggio");
+  if (art2.length) return { ...t10, art: art2 };
   const { art: _a2, ...rest } = t10;
   return rest;
 }
@@ -6161,9 +6181,9 @@ function withArt(t10, a10, on2) {
     for (const g3 of [ATTACKS, SWELL_ARTS]) if (g3.includes(a10)) for (const x2 of g3) set.delete(x2);
     set.add(a10);
   } else set.delete(a10);
-  const art = ARTS.filter((x2) => set.has(x2));
+  const art2 = ARTS.filter((x2) => set.has(x2));
   const base2 = !set.has("breath") && t10.inhale ? (({ inhale: _i, ...r10 }) => r10)(t10) : t10;
-  if (art.length) return { ...base2, art };
+  if (art2.length) return { ...base2, art: art2 };
   const { art: _a2, ...rest } = base2;
   return rest;
 }
@@ -7082,7 +7102,7 @@ function symBackspace(st2) {
   }
   const t10 = toks[i10];
   if (i10 >= h2 && t10?.kind === "note") {
-    const nt2 = toks.slice(), art = artOf(t10);
+    const nt2 = toks.slice(), art2 = artOf(t10);
     const j2 = i10 - 1, mk2 = toks[j2];
     if (j2 >= h2 && (mk2?.kind === "dyn" || mk2?.kind === "hairpin" || mk2?.kind === "groove")) {
       nt2.splice(j2, 1);
@@ -7099,7 +7119,7 @@ function symBackspace(st2) {
         return next(st2, nt2);
       }
     }
-    for (const a10 of ["roll", "arpeggio", "marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "whisper"]) if (art.includes(a10)) {
+    for (const a10 of ["roll", "arpeggio", "marcato", "accent", "stress", "unstress", "ghost", "sfz", "fp", "tenuto", "staccato", "whisper"]) if (art2.includes(a10)) {
       nt2[i10] = withArt(t10, a10, false);
       return next(st2, nt2);
     }
@@ -7108,7 +7128,7 @@ function symBackspace(st2) {
       nt2[i10] = rest;
       return next(st2, nt2);
     }
-    if (art.includes("breath")) {
+    if (art2.includes("breath")) {
       nt2[i10] = withArt(t10, "breath", false);
       return next(st2, nt2);
     }
@@ -9994,8 +10014,8 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
   const w2 = items.map((it2) => it2.w), halfL = c10.map((x2, i10) => i10 > 0 ? Math.abs(c10[i10 - 1] - x2) / 2 : Infinity), halfR = c10.map((x2, i10) => i10 < n10 - 1 ? Math.abs(c10[i10 + 1] - x2) / 2 : Infinity);
   const gb = items.slice(0, -1).map((it2, i10) => gaps.space + (it2.hy && !(it2.block || items[i10 + 1].block) ? gaps.hyphen : 0));
   const lo2 = (i10) => c10[i10] - Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfL[i10])), hi = (i10) => c10[i10] + Math.max(0.2, Math.min(w2[i10] * f2[i10] / 2 - 0.15, halfR[i10]));
-  const G2 = new Array(Math.max(0, n10 - 1)).fill(1), floor = gaps.floor ?? GAP_FLOOR;
-  const d3 = (i10) => (w2[i10] * f2[i10] + w2[i10 + 1] * f2[i10 + 1]) / 2 + Math.max(floor, gb[i10] * Math.min(f2[i10], f2[i10 + 1]) * G2[i10]);
+  const G3 = new Array(Math.max(0, n10 - 1)).fill(1), floor = gaps.floor ?? GAP_FLOOR;
+  const d3 = (i10) => (w2[i10] * f2[i10] + w2[i10 + 1] * f2[i10 + 1]) / 2 + Math.max(floor, gb[i10] * Math.min(f2[i10], f2[i10 + 1]) * G3[i10]);
   const L2 = new Array(n10), start = new Array(n10);
   const step = (i10) => {
     const a10 = i10 > 0 ? L2[i10 - 1] + d3(i10 - 1) : -Infinity, b3 = lo2(i10);
@@ -10018,8 +10038,8 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
     if (L2[i10] <= hi(i10) + 1e-9) continue;
     const s10 = start[i10], keep2 = f2.slice(s10, i10 + 1), can = (j2) => !items[j2].block;
     {
-      const keepG = G2.slice(s10, i10), fitsG = (t10) => {
-        for (let j2 = s10; j2 < i10; j2++) G2[j2] = Math.min(keepG[j2 - s10], t10);
+      const keepG = G3.slice(s10, i10), fitsG = (t10) => {
+        for (let j2 = s10; j2 < i10; j2++) G3[j2] = Math.min(keepG[j2 - s10], t10);
         pushFrom(s10, i10);
         for (let j2 = s10; j2 <= i10; j2++) if (L2[j2] > hi(j2) + 1e-9) return false;
         return true;
@@ -10124,7 +10144,7 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
       }
     };
     if (f2.some((v, i10) => v < 1 && !items[i10].block)) relax(f2, (i10) => !!items[i10].block, (i10) => Math.max(0, i10 - 1));
-    if (G2.some((v) => v < 1)) relax(G2, () => false, (i10) => i10 + 1);
+    if (G3.some((v) => v < 1)) relax(G3, () => false, (i10) => i10 + 1);
   }
   tight.clear();
   clashes(tight);
@@ -10132,12 +10152,12 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
   const R2 = new Array(n10);
   R2[n10 - 1] = hi(n10 - 1);
   for (let i10 = n10 - 2; i10 >= 0; i10--) R2[i10] = Math.min(hi(i10), R2[i10 + 1] - d3(i10));
-  const D3 = new Array(n10);
-  D3[0] = 0;
-  for (let i10 = 1; i10 < n10; i10++) D3[i10] = D3[i10 - 1] + d3(i10 - 1);
+  const D4 = new Array(n10);
+  D4[0] = 0;
+  for (let i10 = 1; i10 < n10; i10++) D4[i10] = D4[i10 - 1] + d3(i10 - 1);
   const blocks = [];
   for (let i10 = 0; i10 < n10; i10++) {
-    blocks.push({ sum: c10[i10] - D3[i10], cnt: 1 });
+    blocks.push({ sum: c10[i10] - D4[i10], cnt: 1 });
     while (blocks.length > 1 && blocks[blocks.length - 2].sum / blocks[blocks.length - 2].cnt > blocks[blocks.length - 1].sum / blocks[blocks.length - 1].cnt) {
       const t10 = blocks.pop();
       blocks[blocks.length - 1].sum += t10.sum;
@@ -10147,8 +10167,8 @@ function solveLyrics(items, blockSx, minSx, gaps, widen = true) {
   const y2 = [];
   for (const b3 of blocks) for (let k2 = 0; k2 < b3.cnt; k2++) y2.push(b3.sum / b3.cnt);
   const pos = y2.map((v, i10) => {
-    const l10 = L2[i10] - D3[i10], r10 = Math.max(L2[i10], R2[i10]) - D3[i10];
-    return Math.min(Math.max(v, l10), r10) + D3[i10];
+    const l10 = L2[i10] - D4[i10], r10 = Math.max(L2[i10], R2[i10]) - D4[i10];
+    return Math.min(Math.max(v, l10), r10) + D4[i10];
   });
   for (let i10 = 1; i10 < n10; i10++) if (!tight.has(i10) && pos[i10] < pos[i10 - 1] + d3(i10 - 1) - 1e-6) pos[i10] = pos[i10 - 1] + d3(i10 - 1);
   return { pos, f: f2, tight };
@@ -10439,6 +10459,7 @@ var GLYPH_BOX = {
   "\uE1D9": [0, 2.324, -3.492, 0.552],
   "\uE1DB": [0, 2.252, -4.092, 0.552],
   "\uE1E7": [0, 0.4, -0.2, 0.2],
+  "\uE222": [-0.6, 0.6, -1.112, 1.12],
   "\uE240": [0, 1.056, -0.036, 3.24],
   "\uE241": [0, 1.224, -3.232, 0.056],
   "\uE242": [0, 1.116, -8e-3, 3.252],
@@ -10456,6 +10477,8 @@ var GLYPH_BOX = {
   "\uE4A3": [0, 0.336, 0, 0.336],
   "\uE4A4": [-4e-3, 1.352, -0.192, 0],
   "\uE4A5": [-4e-3, 1.352, 0, 0.192],
+  "\uE4A8": [4e-3, 0.356, -1.16, 0],
+  "\uE4A9": [4e-3, 0.356, 0, 1.16],
   "\uE4AC": [-4e-3, 0.94, -1.012, 4e-3],
   "\uE4AD": [-4e-3, 0.94, 0, 1.016],
   "\uE4B6": [0, 0.932, -0.948, -0.02],
@@ -11079,8 +11102,8 @@ function mergeTracks(tracks, opt = {}) {
     }).sort((x2, y2) => midiOf(y2) - midiOf(x2));
     const ps = all;
     const fresh = ps.some((p2) => freshK.has(midiOf(p2))), h2 = on2.find((e10) => e10.host && e10.t0 === a10)?.host ?? null;
-    const src = on2.filter((e10) => e10.t0 === a10).length ? on2.filter((e10) => e10.t0 === a10) : on2, art = HEAD_ARTS.filter((x2) => src.every((e10) => e10.heads.includes(x2)));
-    out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art.length ? { art } : {} });
+    const src = on2.filter((e10) => e10.t0 === a10).length ? on2.filter((e10) => e10.t0 === a10) : on2, art2 = HEAD_ARTS.filter((x2) => src.every((e10) => e10.heads.includes(x2)));
+    out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art2.length ? { art: art2 } : {} });
     prevChord = true;
     prevOn = on2;
   }
@@ -11604,28 +11627,80 @@ function layoutStems(seq, dir, f2 = LOCAL) {
 // src/render/frame/columns.ts
 var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, tail: 4, note: 5 };
 
+// src/render/signs.ts
+var G = (above, below, w2, h2) => ({ kind: "glyph", above, ...below ? { below } : {}, ...w2 !== void 0 ? { w: w2 } : {}, ...h2 !== void 0 ? { h: h2 } : {} });
+var D = (how) => ({ kind: "drawn", how });
+var DYN_G = {
+  ppp: { kind: "glyph", above: "\uE52A", ink: [-0.4, 4.3, 1.1, 0.6] },
+  pp: { kind: "glyph", above: "\uE52B", ink: [-0.4, 3, 1.1, 0.6] },
+  p: { kind: "glyph", above: "\uE520", ink: [-0.4, 1.5, 1.1, 0.6] },
+  mp: { kind: "glyph", above: "\uE52C", ink: [-0.1, 3.3, 1.1, 0.6] },
+  mf: { kind: "glyph", above: "\uE52D", ink: [-0.1, 3.3, 1.7, 0.7] },
+  f: { kind: "glyph", above: "\uE522", ink: [-0.6, 1.5, 1.8, 0.6] },
+  ff: { kind: "glyph", above: "\uE52F", ink: [-0.6, 2.5, 1.8, 0.6] },
+  fff: { kind: "glyph", above: "\uE530", ink: [-0.6, 3.4, 1.8, 0.6] }
+};
+var DYN_ZH = { ppp: "\u6781\u5F31", pp: "\u5F88\u5F31", p: "\u5F31", mp: "\u4E2D\u5F31", mf: "\u4E2D\u5F3A", f: "\u5F3A", ff: "\u5F88\u5F3A", fff: "\u6781\u5F3A" };
+var art = (a10, name, says, lane, staff, jianpu) => ({ id: `art:${a10}`, name, says, lane, draw: { staff, jianpu } });
+var ART_SIGNS = {
+  "art:staccato": art("staccato", (l10) => _tIn(l10, "\u8DF3\u97F3"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A2", "\uE4A3", 0.28, 0.28), G("\uE4A8", "\uE4A9", 0.4, 0.9)),
+  // 简谱 = 窄小的楔形（点被八度占了；UX 稿第 5 节）
+  "art:accent": art("accent", (l10) => _tIn(l10, "\u91CD\u97F3"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u7684\u97F3\u5934\u91CD\u4E00\u70B9"), "strength", G("\uE4A0", "\uE4A1", 1.36, 0.99), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
+  "art:marcato": art("marcato", (l10) => _tIn(l10, "\u5F3A\u97F3"), (l10) => _tIn(l10, "\u6BD4\u91CD\u97F3\u66F4\u91CD\u7684\u97F3\u5934"), "strength", G("\uE4AC", "\uE4AD", 1, 1.08), G("\uE4AC", "\uE4AD", 1, 1.08)),
+  "art:stress": art("stress", (l10) => _tIn(l10, "\u6B21\u91CD\u97F3"), (l10) => _tIn(l10, "\u6BD4\u91CD\u97F3\u8F7B\u4E00\u6863\u7684\u91CD\uFF08\u56DB\u62CD\u5B50\u91CC\u7684\u7B2C\u4E09\u62CD\u90A3\u79CD\uFF09"), "strength", G("\uE4B6", "\uE4B7", 1, 1), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
+  // 简谱 = 细一号的 >（UX 稿第 5 节：画的时候缩小）
+  "art:unstress": art("unstress", (l10) => _tIn(l10, "\u5F31\u5316"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u8F7B\u4E00\u70B9"), "strength", G("\uE4B8", "\uE4B9", 1.6, 0.9), G("\uE4B8", "\uE4B9", 1.6, 0.9)),
+  "art:ghost": art("ghost", (l10) => _tIn(l10, "\u5E7D\u7075\u97F3"), (l10) => _tIn(l10, "\u51E0\u4E4E\u542C\u4E0D\u89C1\u7684\u97F3\uFF08\u53EA\u7559\u4E2A\u5F71\u5B50\uFF09"), "note", D("\u7B26\u5934\u52A0\u62EC\u53F7"), D("\u6570\u5B57\u753B\u5C0F\u4E00\u53F7")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:tenuto": art("tenuto", (l10) => _tIn(l10, "\u4FDD\u6301"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u5531 / \u594F\u6EE1\uFF0C\u4E0D\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A4", "\uE4A5", 1.35, 0.17), G("\uE4A4", "\uE4A5", 1.35, 0.17)),
+  "art:breath": art("breath", (l10) => _tIn(l10, "\u547C\u5438"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u540E\u9762\u6362\u6C14"), "note", G("\uE4CE"), D("\u97F3\u540E\u9762\u4E00\u4E2A V\uFF08\u51FA\u58F0\u7684\u6362\u6C14\u5199\u300CV \u5438\u300D\uFF09")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:sfz": art("sfz", (l10) => _tIn(l10, "\u7A81\u5F3A"), (l10) => _tIn(l10, "\u97F3\u5934\u7A81\u7136\u51B2\u4E00\u4E0B\u3001\u518D\u56DE\u5230\u5F53\u4E0B\u7684\u529B\u5EA6"), "noteDynamics", G("\uE539"), G("\uE539")),
+  "art:fp": art("fp", (l10) => _tIn(l10, "\u5F3A\u540E\u5373\u5F31"), (l10) => _tIn(l10, "\u97F3\u5934\u6309\u5F3A\u3001\u9A6C\u4E0A\u843D\u5230\u5F31\uFF0C\u540E\u9762\u7684\u97F3\u90FD\u662F\u5F31"), "noteDynamics", G("\uE534"), G("\uE534")),
+  "art:whisper": art("whisper", (l10) => _tIn(l10, "\u6C14\u58F0"), (l10) => _tIn(l10, "\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5FF5\uFF08\u97F3\u9AD8\u7167\u5199\u5728\u8C31\u4E0A\uFF09"), "note", D("\xD7 \u7B26\u5934"), D("\u6570\u5B57 + \xD7")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:swellUp": art("swellUp", (l10) => _tIn(l10, "\u97F3\u5185\u6E10\u5F3A"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5F31\u957F\u5230\u5199\u7684\u529B\u5EA6"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:swellDown": art("swellDown", (l10) => _tIn(l10, "\u97F3\u5185\u6E10\u5F31"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5199\u7684\u529B\u5EA6\u6536\u5F31"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 >"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 >")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:swellBoth": art("swellBoth", (l10) => _tIn(l10, "\u97F3\u5185\u9F13\u8D77"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <>"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <>")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:arpeggio": art("arpeggio", (l10) => _tIn(l10, "\u7436\u97F3"), (l10) => _tIn(l10, "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4E00\u4E2A\u4E2A\u62E8\u51FA\u6765"), "note", D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF"), D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF\uFF08\u591A\u58F0\u90E8 = \u7B2C\u4E94\u5200\uFF09")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:roll": art("roll", (l10) => _tIn(l10, "\u6EDA\u594F"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09"), "note", D("\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF"), D("\u6570\u5B57\u4E0B\u9762\u4E09\u9053\u77ED\u659C\u7EBF"))
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+};
+var dynSign = (d3) => ({ id: `dyn:${d3}`, name: () => d3, says: (l10) => _tIn(l10, "\u529B\u5EA6\u8BB0\u53F7\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7"), lane: "dynamics", draw: { staff: DYN_G[d3], jianpu: { kind: "word", zh: DYN_ZH[d3], other: DYN_G[d3] } } });
+var DYN_SIGNS = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
+var SIGNS = {
+  ...ART_SIGNS,
+  ...DYN_SIGNS,
+  "hairpin:cresc": { id: "hairpin:cresc", name: (l10) => _tIn(l10, "\u6E10\u5F3A"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 <\uFF08\u592A\u957F\u5199 cresc. - - -\uFF09"), jianpu: D("\u6954\u5F62 <") } },
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "hairpin:dim": { id: "hairpin:dim", name: (l10) => _tIn(l10, "\u6E10\u5F31"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >") } },
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  ramp: { id: "ramp", name: (l10) => _tIn(l10, "\u6E10\u5230"), says: (l10) => _tIn(l10, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62") } }
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+};
+function dynDepiction(d3, notation, l10) {
+  const dep = SIGNS[`dyn:${d3}`].draw[notation], g3 = dep.kind === "word" ? l10 === "zh" ? null : dep.other : dep;
+  if (dep.kind === "word" && l10 === "zh") return { text: dep.zh };
+  if (g3 && g3.kind === "glyph" && g3.ink) return { glyph: g3.above, ink: g3.ink };
+  throw new Error(`signs: dyn ${d3} has no drawable depiction for ${notation}`);
+}
+
 // src/render/staff/glyphs.ts
 var TOP_LINE2 = 38;
 var MID_LINE2 = 34;
 var BOTTOM_LINE = 30;
-var ART_GLYPH = {
-  stress: { above: "\uE4B6", below: "\uE4B7", w: 1, h: 1 },
-  // 次重音（2026-10-08 深夜；宽高 = canvas 量的 Bravura 墨迹）
-  unstress: { above: "\uE4B8", below: "\uE4B9", w: 1.6, h: 0.9 },
-  // 弱化
-  accent: { above: "\uE4A0", below: "\uE4A1", w: 1.36, h: 0.99 },
-  marcato: { above: "\uE4AC", below: "\uE4AD", w: 1, h: 1.08 },
-  // 强音（2026-10-08；宽按同字号和重音比着量的）
-  staccato: { above: "\uE4A2", below: "\uE4A3", w: 0.28, h: 0.28 },
-  tenuto: { above: "\uE4A4", below: "\uE4A5", w: 1.35, h: 0.17 }
+var glyphOf = (id2) => {
+  const d3 = SIGNS[id2].draw.staff;
+  if (d3.kind !== "glyph") throw new Error(`signs: ${id2} has no staff glyph`);
+  return { above: d3.above, below: d3.below ?? d3.above, w: d3.w ?? 0, h: d3.h ?? 0 };
 };
-var GLYPH_BREATH = "\uE4CE";
-var DYN_GLYPH2 = { ppp: "\uE52A", pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F", fff: "\uE530" };
-var DYN_INK = { ppp: [-0.4, 4.3, 1.1, 0.6], fff: [-0.6, 3.4, 1.8, 0.6], pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
-var PIN_GAP = 0.7;
-var PIN_WORD = { size: TEXT_STYLES["dyn-word"].em, w: { cresc: 4.7, dim: 3.5 } };
-var DASH = { len: 0.6, gap: 1 };
-var RAMP_DASH = { len: 0.5, gap: 0.4 };
+var ART_GLYPH = Object.fromEntries(["stress", "unstress", "accent", "marcato", "staccato", "tenuto"].map((a10) => [a10, glyphOf(`art:${a10}`)]));
+var GLYPH_BREATH = glyphOf("art:breath").above;
+var DYN_GLYPH2 = Object.fromEntries(DYNS.map((d3) => [d3, glyphOf(`dyn:${d3}`).above]));
 var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
 var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 var GLYPH_TUPLET = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(59520 + Number(d3))).join("");
@@ -11814,10 +11889,10 @@ function gainSegments(tokens, map, spec, bounds, groove) {
       else segs.push({ t0: t02, t1: t12, dB: base2 });
       continue;
     }
-    const art = artOf(tok);
+    const art2 = artOf(tok);
     let cur = t02;
-    const sw0 = swellOf(tok), sw2 = sw0 && !(spec.canSwell === false && sw0 !== ">") ? sw0 : null, D3 = spec.swellDb ?? M.swellDb;
-    const swOff = (fr) => sw2 === "<" ? -D3 * (1 - fr) : sw2 === ">" ? -D3 * fr : sw2 === "<>" ? -D3 * Math.abs(2 * fr - 1) : 0;
+    const sw0 = swellOf(tok), sw2 = sw0 && !(spec.canSwell === false && sw0 !== ">") ? sw0 : null, D4 = spec.swellDb ?? M.swellDb;
+    const swOff = (fr) => sw2 === "<" ? -D4 * (1 - fr) : sw2 === ">" ? -D4 * fr : sw2 === "<>" ? -D4 * Math.abs(2 * fr - 1) : 0;
     const shaped = (a02, a12, s02, s12) => {
       const n10 = Math.max(2, Math.min(48, Math.ceil((s12 - s02) / 0.03)));
       for (let k2 = 0; k2 < n10; k2++) {
@@ -11826,7 +11901,7 @@ function gainSegments(tokens, map, spec, bounds, groove) {
       }
       any = true;
     };
-    if (art.includes("fp")) {
+    if (art2.includes("fp")) {
       const f2 = spec.dynamicsDb.f ?? 6, p2 = spec.dynamicsDb.p ?? -12, e10 = Math.min(t12, t02 + (spec.fpSec ?? M.fpSec));
       if (vel) ramp(0, p2 - f2, t02, e10);
       else ramp(f2, p2, t02, e10);
@@ -11843,13 +11918,13 @@ function gainSegments(tokens, map, spec, bounds, groove) {
       any = true;
       continue;
     }
-    if (art.includes("sfz") && !vel) {
+    if (art2.includes("sfz") && !vel) {
       const e10 = Math.min(t12, t02 + (spec.sfzSec ?? M.sfzSec)), b3 = spec.sfzDb ?? M.sfzDb;
       ramp(base2 + b3, baseEnd === base2 ? base2 : base2 + (baseEnd - base2) * (e10 - t02) / Math.max(1e-9, t12 - t02), t02, e10);
       cur = e10;
       any = true;
     }
-    const boost = vel ? 0 : art.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art.includes("accent") ? spec.accentDb : art.includes("stress") ? spec.stressDb ?? M.stressDb : gw > 0 ? gw * (spec.stressDb ?? M.stressDb) : 0;
+    const boost = vel ? 0 : art2.includes("marcato") ? spec.marcatoDb ?? spec.accentDb + 3 : art2.includes("accent") ? spec.accentDb : art2.includes("stress") ? spec.stressDb ?? M.stressDb : gw > 0 ? gw * (spec.stressDb ?? M.stressDb) : 0;
     if (boost) {
       const e10 = Math.min(t12, t02 + (spec.accentSec ?? M.accentSec));
       segs.push({ t0: t02, t1: e10, dB: base2 + boost });
@@ -11865,11 +11940,11 @@ function gainSegments(tokens, map, spec, bounds, groove) {
   }
   return any ? segs : null;
 }
-function noteEnd(t02, t12, art, o10, slur = false) {
+function noteEnd(t02, t12, art2, o10, slur = false) {
   let end = t12;
-  if (art.includes("staccato")) end = t02 + (t12 - t02) * o10.staccatoGate;
-  else if (!slur && !art.includes("tenuto") && (o10.gapSec ?? 0) > 0) end = t12 - Math.min(o10.gapSec, (o10.gapShare ?? M.gapShare) * (t12 - t02));
-  if (o10.breath && art.includes("breath")) end = Math.min(end, t12 - Math.min(o10.breathSec ?? M.breathSec, (o10.breathShare ?? M.breathShare) * (t12 - t02)));
+  if (art2.includes("staccato")) end = t02 + (t12 - t02) * o10.staccatoGate;
+  else if (!slur && !art2.includes("tenuto") && (o10.gapSec ?? 0) > 0) end = t12 - Math.min(o10.gapSec, (o10.gapShare ?? M.gapShare) * (t12 - t02));
+  if (o10.breath && art2.includes("breath")) end = Math.min(end, t12 - Math.min(o10.breathSec ?? M.breathSec, (o10.breathShare ?? M.breathShare) * (t12 - t02)));
   return end;
 }
 function hairpinEnd(tokens, i10, bounds) {
@@ -11968,14 +12043,14 @@ function noteVelocities(tokens, map, spec, defaultVel, bounds, groove) {
   }
   return out;
 }
-var noteVel = (v, art, spec, gw = 0) => {
-  if (art.includes("fp")) v = spec.dynamicsVel?.f ?? v;
-  else if (art.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
-  else if (art.includes("marcato")) v += spec.marcatoVel ?? 0;
-  else if (art.includes("accent")) v += spec.accentVel ?? 0;
-  else if (art.includes("stress")) v += spec.stressVel ?? M.stressVel;
-  else if (art.includes("unstress")) v += spec.unstressVel ?? M.unstressVel;
-  else if (art.includes("ghost")) v += spec.ghostVel ?? M.ghostVel;
+var noteVel = (v, art2, spec, gw = 0) => {
+  if (art2.includes("fp")) v = spec.dynamicsVel?.f ?? v;
+  else if (art2.includes("sfz")) v += spec.sfzVel ?? M.sfzVel;
+  else if (art2.includes("marcato")) v += spec.marcatoVel ?? 0;
+  else if (art2.includes("accent")) v += spec.accentVel ?? 0;
+  else if (art2.includes("stress")) v += spec.stressVel ?? M.stressVel;
+  else if (art2.includes("unstress")) v += spec.unstressVel ?? M.unstressVel;
+  else if (art2.includes("ghost")) v += spec.ghostVel ?? M.ghostVel;
   else if (gw > 0) v += gw * (spec.stressVel ?? M.stressVel);
   else if (gw < 0) v += -gw * (spec.unstressVel ?? M.unstressVel);
   return Math.max(1, Math.min(127, Math.round(v))) / 127;
@@ -12000,6 +12075,243 @@ function rollDefaultHz(key) {
   if ([49, 51, 52, 53, 55, 57, 59].includes(key)) return 14;
   if (key === 35 || key === 36) return 12;
   return 16;
+}
+
+// src/render/ornaments/index.ts
+var PIN_GAP = 0.7;
+var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
+var DASH = { len: 0.6, gap: 1 };
+var RAMP_DASH = { len: 0.5, gap: 0.4 };
+var ZH_DYN = { em: 1.6, w: 1.6, up: 1.3, dn: 0.3 };
+function tempoAt2(c10, r10, x0, v, cls, index, change, y2) {
+  const { P: P2, tx: tx2, TR, RS, mw, prims, marks } = c10;
+  const fs = tx2("tempo-word"), word = tempoWord(v).it, k2 = RS("tempo-word");
+  if (change) prims.push({ t: "text", x: P2(x0 - 0.3), y: y2, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change ann", size: fs, anchor: "end" });
+  const ww = mw("tempo-word", word), num2 = `= ${v}`, nw2 = mw("tempo-num", num2);
+  prims.push({ t: "text", x: P2(x0), y: y2, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
+  const gx = x0 + ww + 0.7 * k2;
+  prims.push({ t: "glyph", x: P2(gx), y: y2 - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
+  prims.push({ t: "text", x: P2(gx + 1.3 * k2), y: y2, s: num2, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+  marks.push({ index, kind: "tempo", system: r10, x: P2(x0 - 0.3), y: y2 - TR("tempo-word", TEMPO_EM * 1.1), w: P2(gx + 1.3 * k2 + nw2 + 0.6 * k2 - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
+}
+function layTempo(c10, r10, x0, v, cls, index, change) {
+  c10.attach(r10, "tempo", () => {
+    c10.placeAbove(r10, 0.5, (y2) => tempoAt2(c10, r10, x0, v, cls, index, change, y2));
+  });
+}
+function layGroove(c10, u2) {
+  const { P: P2, tx: tx2, TR, mw, prims, dyns, tokens } = c10;
+  const gt = tokens[u2.index], gr = c10.row(u2.system), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
+  const fs = tx2("groove-mark"), gw = P2(mw("groove-mark", label)), gx = P2(u2.x + 0.3);
+  c10.attach(gr, "groove", () => c10.placeAbove(gr, 0.5, (gy) => {
+    prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
+    dyns.push({ index: u2.index, kind: "groove", system: gr, x: P2(u2.x), y: gy - TR("groove-mark", TEMPO_EM * 1.1), w: gw + TR("groove-mark", 0.6), h: TR("groove-mark", TEMPO_EM * 1.5) });
+  }));
+}
+function layNav(c10, u2, repeatBarX) {
+  const { P: P2, tx: tx2, TR, mw, sp: sp2, prims, dyns, tokens, units, navMute } = c10;
+  const t10 = tokens[u2.index], cls = "nav-mark" + navMute(u2.index), tok = t10.id, row0 = c10.row(u2.system);
+  const fs = tx2("nav-mark"), x2 = P2(u2.x + 0.4);
+  if (t10.what === "ending") {
+    const ui3 = units.indexOf(u2);
+    let end = null, closed = false, fallback = null, sawNote = false;
+    for (let k2 = ui3 + 1; k2 < units.length; k2++) {
+      const v = units[k2];
+      if (v.kind === "chunk") sawNote = true;
+      if (v.kind === "bar" && (v.repeat === "end" || v.repeat === "both")) {
+        end = v;
+        closed = true;
+        break;
+      }
+      if (v.kind === "nav" && tokens[v.index].what === "ending") {
+        end = v;
+        closed = true;
+        break;
+      }
+      if (v.kind === "bar" && v.repeat === "start") {
+        if (!fallback) fallback = v;
+        break;
+      }
+      if (v.kind === "bar" && sawNote && !fallback) fallback = v;
+    }
+    if (!end) end = fallback;
+    const h2 = TR("nav-mark", 1.6);
+    const endX = (v, sys) => v && v.system === sys ? v.kind === "bar" ? repeatBarX(v) : P2(v.x) - P2(0.3) : P2(c10.right);
+    const seg = (sys, xa, openL, xb, hookR, first) => {
+      const rr2 = c10.row(sys);
+      c10.attach(rr2, "nav", () => c10.placeAbove(rr2, 0.6, (yy) => {
+        prims.push({ t: "path", d: `${openL ? `M${xa},${yy}` : `M${xa},${yy + h2}L${xa},${yy}`}L${xb},${yy}${hookR ? `L${xb},${yy + h2}` : ""}`, cls: "volta" + navMute(u2.index) });
+        if (!first) return;
+        prims.push({ tok, t: "text", x: x2 + TR("nav-mark", 0.3), y: yy + TR("nav-mark", 1.25), s: endingLabel(t10.nums), cls, size: fs, anchor: "start" });
+        dyns.push({ index: u2.index, kind: "nav", system: row0, x: x2 - P2(0.4), y: yy - TR("nav-mark", 0.4), w: TR("nav-mark", 3), h: h2 + TR("nav-mark", 0.8) });
+      }));
+    };
+    const endSys = end ? end.system : u2.system;
+    seg(u2.system, x2 - P2(0.2), false, endX(endSys === u2.system ? end : null, u2.system), closed && endSys === u2.system, true);
+    for (let s23 = u2.system + 1; s23 <= endSys; s23++) {
+      const first = units.find((w2) => w2.system === s23);
+      seg(s23, P2((first?.x ?? MARGIN) - 0.3), true, endX(s23 === endSys ? end : null, s23), closed && s23 === endSys, false);
+    }
+    return;
+  }
+  if (t10.what === "segno" || t10.what === "coda") {
+    const gs = 4 * sp2 * 0.7;
+    c10.attach(row0, "nav", () => c10.placeAbove(row0, 0.6, (y2) => {
+      prims.push({ tok, t: "glyph", x: x2, y: y2, ch: t10.what === "segno" ? "\uE047" : "\uE048", cls: cls.replace("nav-mark", "nav-sign"), size: gs });
+      dyns.push({ index: u2.index, kind: "nav", system: row0, x: x2 - P2(0.3), y: y2 - gs * 0.8, w: gs * (t10.what === "segno" ? 0.6 : 1), h: gs * 0.95 });
+    }));
+    return;
+  }
+  const label = NAV_LABEL[t10.what], tw2 = P2(mw("nav-word", label)), atEnd = x2 - tw2 > P2(MARGIN + 6);
+  c10.attach(row0, "nav", () => c10.placeAbove(row0, 0.6, (y2) => {
+    prims.push({ tok, t: "text", x: atEnd ? x2 : x2 - P2(0.2), y: y2, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
+    dyns.push({ index: u2.index, kind: "nav", system: row0, x: atEnd ? x2 - tw2 - P2(0.3) : x2 - P2(0.5), y: y2 - TR("nav-word", TEMPO_EM * 1.1), w: tw2 + TR("nav-word", 0.8), h: TR("nav-word", TEMPO_EM * 1.5) });
+  }));
+}
+function layDynamics(c10) {
+  const { P: P2, tx: tx2, prims, dyns, tokens, units, dynOff, o: o10, notation } = c10;
+  const right = c10.right;
+  const dynOf = (v) => {
+    const d3 = dynDepiction(v, notation, o10.locale);
+    if ("glyph" in d3) return { ink: d3.ink, draw: (x2, y2, tok, cls) => prims.push({ t: "glyph", x: x2, y: y2, ch: d3.glyph, tok, cls }) };
+    const w2 = [...d3.text].length * ZH_DYN.w;
+    return { ink: [0, w2, ZH_DYN.up, ZH_DYN.dn], draw: (x2, y2, tok, cls) => prims.push({ t: "text", x: x2, y: y2, s: d3.text, tok, cls: `${cls} jp-dyn`, size: P2(ZH_DYN.em), anchor: "start" }) };
+  };
+  const dynItems = [];
+  for (const u2 of units) {
+    if (u2.kind !== "dyn") continue;
+    const dr = c10.row(u2.system), ui3 = units.indexOf(u2), dd = dynOf(u2.value), [il2, ir2, iu2, id2] = dd.ink;
+    dynItems.push({ row: dr, x0: P2(u2.x + 0.3 + il2), keys: [`${dr}|d${ui3}`], draw: (dy) => {
+      dd.draw(P2(u2.x + 0.3), dy, tokens[u2.index].id, "dyn" + (dynOff.has(u2.index) ? " art-mute" : ""));
+      dyns.push({ index: u2.index, kind: "dyn", system: dr, x: P2(u2.x + 0.3 + il2 - 0.3), y: dy - P2(iu2 + 0.4), w: P2(ir2 - il2 + 0.6), h: P2(iu2 + id2 + 0.8) });
+    } });
+  }
+  const LEVELS = DYNS;
+  const lastChunk = [...units].reverse().find((u2) => u2.kind === "chunk");
+  const dynKey = (u2) => `${c10.row(u2.system)}|d${units.indexOf(u2)}`;
+  const wedgeKey = (index, sy2) => `${c10.row(sy2)}|w${index}:${sy2}`;
+  const inkOf = (u2) => dynOf(u2.value).ink;
+  const wedgeItems = (index, dir, s02, startX, s12, endX, ramp, k0, k1, tail) => {
+    const leftOf2 = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((ch2) => c10.noteX(ch2)), P2(right)) - P2(1);
+    const segs = [];
+    for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf2(sy2), sy2 === s12 ? endX : P2(right) - P2(0.3)]);
+    const total = segs.reduce((n10, [, a10, b3]) => n10 + Math.max(0, b3 - a10), 0) || 1, H3 = P2(0.5), long = total > P2(right - MARGIN);
+    const word = dir === "cresc" ? "cresc." : "dim.", ww = P2(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
+    let said = false, acc = 0, tailDone = false;
+    segs.forEach(([sy2, a02, b3], i10) => {
+      if (b3 - a02 < P2(0.3)) return;
+      const row2 = c10.row(sy2), keys = [wedgeKey(index, sy2)], last = i10 === segs.length - 1;
+      if (i10 === 0 && k0) keys.push(k0);
+      if (last && k1) keys.push(k1);
+      if (last) tailDone = true;
+      if (long) {
+        const writeWord = !said && b3 - a02 >= ww + P2(1);
+        if (writeWord) said = true;
+        dynItems.push({ row: row2, x0: a02, keys, draw: (base2) => {
+          const midY = base2 - P2(0.5);
+          let a10 = a02;
+          if (writeWord) {
+            prims.push({ t: "text", x: a10, y: midY + P2(0.5), s: word, tok: tokens[index].id, cls: ["dyn-word", ramp ? "ramp" : ""].filter(Boolean).join(" "), size: tx2("dyn-word"), anchor: "start" });
+            a10 += ww + P2(0.6);
+          }
+          for (let x2 = a10; x2 + P2(DASH.len) <= b3; x2 += P2(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x2, y1: midY, x2: x2 + P2(DASH.len), y2: midY, w: P2(0.12), cls: "dyn-dash" });
+          dyns.push({ index, kind: "hairpin", system: row2, x: a02, y: midY - P2(1.4), w: b3 - a02, h: P2(2.8) });
+          if (last && tail) tail(base2);
+        } });
+        return;
+      }
+      const f0 = acc / total, f1 = (acc + b3 - a02) / total;
+      acc += b3 - a02;
+      const [h0, h1] = dir === "cresc" ? [H3 * f0, H3 * f1] : [H3 * (1 - f0), H3 * (1 - f1)];
+      dynItems.push({ row: row2, x0: a02, keys, draw: (base2) => {
+        const y2 = base2 - P2(0.5), a10 = a02;
+        let d3 = `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`;
+        if (ramp) {
+          const hAt = (x2) => h0 + (h1 - h0) * ((x2 - a10) / (b3 - a10)), on2 = P2(RAMP_DASH.len), per = P2(RAMP_DASH.len + RAMP_DASH.gap);
+          d3 = "";
+          for (let x2 = a10; x2 < b3 - P2(0.05); x2 += per) {
+            const x22 = Math.min(b3, x2 + on2);
+            d3 += `M${x2},${y2 - hAt(x2)}L${x22},${y2 - hAt(x22)}M${x2},${y2 + hAt(x2)}L${x22},${y2 + hAt(x22)}`;
+          }
+        }
+        prims.push({ tok: tokens[index].id, t: "path", d: d3, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
+        dyns.push({ index, kind: "hairpin", system: row2, x: a10, y: y2 - P2(1.4), w: b3 - a10, h: P2(2.8) });
+        if (last && tail) tail(base2);
+      } });
+    });
+    if (!tailDone && tail) dynItems.push({ row: c10.row(s12), x0: endX, keys: [wedgeKey(index, s12), ...k1 ? [k1] : []], draw: tail });
+  };
+  units.forEach((h2, hi) => {
+    if (h2.kind !== "hairpin" || !lastChunk) return;
+    const prevU = units[hi - 1];
+    const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h2.system ? prevU : null;
+    const startX = Math.max(P2(h2.x + 0.3), dynBefore ? P2(dynBefore.x + 0.3 + inkOf(dynBefore)[1] + PIN_GAP) : 0), s02 = h2.system;
+    const endU = units.slice(hi + 1).find((u2) => u2.kind === "dyn" || u2.kind === "hairpin");
+    let curDyn = "mf";
+    for (let j2 = h2.index - 1; j2 >= 0; j2--) {
+      const t10 = tokens[j2];
+      if (t10.kind === "dyn") {
+        curDyn = t10.value;
+        break;
+      }
+    }
+    const ci2 = LEVELS.indexOf(curDyn), against = !!endU && endU.kind === "dyn" && (h2.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci2 : LEVELS.indexOf(endU.value) >= ci2);
+    const IMPLIED_W = 3;
+    const endX = endU ? P2(endU.x + 0.3 + (endU.kind === "dyn" ? inkOf(endU)[0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : c10.noteEnd(lastChunk) + P2(0.8), s12 = endU ? endU.system : lastChunk.system;
+    if (s12 < s02) return;
+    let endXd = endX, labelAbove = false;
+    const MIN_PIN = P2(1.4);
+    if (s12 === s02 && endXd - startX < MIN_PIN) {
+      const roomy = against ? endXd + P2(IMPLIED_W + 0.4) : endXd;
+      if (against) labelAbove = true;
+      endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
+    }
+    const k1 = !endU ? void 0 : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
+    const tail = !endU || against ? (base2) => {
+      const k2 = Math.max(0, Math.min(LEVELS.length - 1, ci2 + (h2.dir === "cresc" ? 1 : -1)));
+      prims.push({ t: "text", x: labelAbove ? endXd - P2(1.2) : endXd + P2(0.4), y: base2 + P2(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k2]})`, cls: "dyn-implied ann", size: tx2("dyn-implied"), anchor: "start" });
+    } : void 0;
+    wedgeItems(h2.index, h2.dir, s02, startX, s12, endXd, false, dynBefore ? dynKey(dynBefore) : void 0, k1, tail);
+  });
+  for (const u2 of units) {
+    if (u2.kind !== "dyn" || !tokens[u2.index].ramp) continue;
+    const src = rampSource(tokens, u2.index);
+    if (typeof src !== "number") continue;
+    const pu = units.find((x2) => x2.kind === "dyn" && x2.index === src);
+    if (!pu) continue;
+    const a10 = LEVELS.indexOf(pu.value), b3 = LEVELS.indexOf(u2.value);
+    if (a10 === b3) continue;
+    const sx2 = P2(pu.x + 0.3 + inkOf(pu)[1] + PIN_GAP);
+    let ex2 = P2(u2.x + 0.3 + inkOf(u2)[0] - PIN_GAP);
+    if (u2.system === pu.system && ex2 - sx2 < P2(1.4)) ex2 = sx2 + P2(1.4);
+    if (u2.system < pu.system) continue;
+    wedgeItems(u2.index, b3 > a10 ? "cresc" : "dim", pu.system, sx2, u2.system, ex2, true, dynKey(pu), dynKey(u2));
+  }
+  if (!dynItems.length) return;
+  const parent = dynItems.map((_2, i10) => i10), find = (i10) => parent[i10] === i10 ? i10 : parent[i10] = find(parent[i10]);
+  const byKey = /* @__PURE__ */ new Map();
+  dynItems.forEach((it2, i10) => {
+    for (const k2 of it2.keys) {
+      const j2 = byKey.get(k2);
+      if (j2 === void 0) byKey.set(k2, i10);
+      else parent[find(i10)] = find(j2);
+    }
+  });
+  const chains = /* @__PURE__ */ new Map();
+  dynItems.forEach((_2, i10) => {
+    const root = find(i10), l10 = chains.get(root);
+    if (l10) l10.push(i10);
+    else chains.set(root, [i10]);
+  });
+  const minX = (ch2) => Math.min(...ch2.map((i10) => dynItems[i10].x0));
+  for (const ch2 of [...chains.values()].sort((a10, b3) => minX(a10) - minX(b3))) {
+    const row2 = dynItems[ch2[0]].row;
+    c10.attach(row2, "dynamics", () => {
+      c10.placeAbove(row2, 0.4, (y2) => {
+        for (const i10 of ch2) dynItems[i10].draw(y2);
+      });
+    });
+  }
 }
 
 // src/render/frame/carets.ts
@@ -12107,16 +12419,6 @@ function drawStaff(c10, mine) {
     put2(r10, { t: "glyph", x: P2(x0 + (cw2 - wd) / 2), y: yOf(r10, 32), ch: den, cls });
     return cw2;
   };
-  const drawTempoAt = (r10, x0, v, cls, index, change, y2) => {
-    const fs = tx2("tempo-word"), word = tempoWord(v).it, k2 = RS("tempo-word");
-    if (change) prims.push({ t: "text", x: P2(x0 - 0.3), y: y2, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change ann", size: fs, anchor: "end" });
-    const ww = mw("tempo-word", word), num2 = `= ${v}`, nw2 = mw("tempo-num", num2);
-    prims.push({ t: "text", x: P2(x0), y: y2, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
-    const gx = x0 + ww + 0.7 * k2;
-    prims.push({ t: "glyph", x: P2(gx), y: y2 - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
-    prims.push({ t: "text", x: P2(gx + 1.3 * k2), y: y2, s: num2, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
-    marks.push({ index, kind: "tempo", system: r10, x: P2(x0 - 0.3), y: y2 - TR("tempo-word", TEMPO_EM * 1.1), w: P2(gx + 1.3 * k2 + nw2 + 0.6 * k2 - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
-  };
   const keyLabel2 = (r10, x0, f2, hint2, index, minor = false) => {
     const y2 = staffTop(r10) - P2(0.8);
     if (hint2) {
@@ -12130,17 +12432,40 @@ function drawStaff(c10, mine) {
     const pos = f2 > 0 ? SHARP_POS : FLAT_POS, ch2 = f2 > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
     for (let k2 = 0; k2 < Math.abs(f2); k2++) put2(r10, { t: "glyph", x: P2(x0 + k2 * 1.05), y: yOf(r10, pos[k2] + off), ch: ch2, cls });
   };
-  const drawTempo = (r10, x0, v, cls, index, change) => {
-    placeAbove(r10, 0.5, (y2) => drawTempoAt(r10, x0, v, cls, index, change, y2));
+  const ornCache = /* @__PURE__ */ new Map();
+  const ornOf = (q2, r10, noteEnd2) => {
+    const hit = ornCache.get(r10);
+    if (hit && !noteEnd2) return hit;
+    const oc2 = {
+      song,
+      paper,
+      o: o10,
+      notation: "staff",
+      P: P2,
+      tx: tx2,
+      TR,
+      RS,
+      mw,
+      sp: sp2,
+      prims,
+      dyns,
+      marks,
+      placeAbove,
+      attach: attach2,
+      right,
+      tokens: q2.tokens,
+      units: q2.units,
+      row: (sy2) => rowOf(sy2, r10, 0),
+      noteX: (ch2) => P2(ch2.x + 0.35),
+      noteEnd: noteEnd2 ?? ((ch2) => P2(ch2.x + 0.35)),
+      dynOff: dynOverridden(q2.tokens),
+      navMute: (i10) => navWhy(song, paper, q2.p.id, q2.tokens[i10]) ? " art-mute" : ""
+    };
+    ornCache.set(r10, oc2);
+    return oc2;
   };
   for (let s10 = 0; s10 < nSys; s10++) {
     const ind = s10 === 0 ? ind0 : indN;
-    if (song.barNumbers !== "off" && per[0]) {
-      const q0 = per.find((q2) => q2.units.some((u2) => u2.kind === "chunk" && u2.system === s10)) ?? per[0];
-      const c02 = q0.units.find((u2) => u2.kind === "chunk" && u2.system === s10);
-      const num2 = c02 ? (c02.m ?? 0) + (q0.pickup ? 0 : 1) : null;
-      if (num2 !== null && !(s10 === 0 && num2 <= 1)) attach2("barNumber", () => placeAbove(rowOf(s10, 0, 0), 0.3, (y2) => prims.push({ t: "text", x: P2(MARGIN + ind), y: y2, s: String(num2), cls: "bar-no", size: tx2("bar-no"), anchor: "start" })));
-    }
     per.forEach((q2, r10) => {
       if (rowHost[r10] >= 0 || skip(r10)) return;
       const f2 = sysKeys[s10].get(q2.p.id) ?? q2.head.key;
@@ -12171,7 +12496,7 @@ function drawStaff(c10, mine) {
           if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(cw2 + 0.6) });
           if (k2 === 0 && q2.p.id === owner && q2.head.idx.tempo !== void 0) {
             const ti2 = q2.head.idx.tempo;
-            attach2("tempo", () => drawTempo(row2, MARGIN + ind + 0.6, q2.head.bpm, "tempo", ti2, prevBpm === null || prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > prevBpm ? "up" : "down"));
+            layTempo(ornOf(q2, r10), row2, MARGIN + ind + 0.6, q2.head.bpm, "tempo", ti2, prevBpm === null || prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > prevBpm ? "up" : "down");
           }
         }
       }
@@ -12187,62 +12512,6 @@ function drawStaff(c10, mine) {
     const RW = (u2) => rowOf(u2.system, r10, u2.staff - 1);
     const lyricRow = (s10) => rowOf(s10, r10, q2.staves - 1);
     const navMute = (i10) => navWhy(song, paper, q2.p.id, tokens[i10]) ? " art-mute" : "";
-    const drawNav = (u2) => {
-      const t10 = tokens[u2.index], cls = "nav-mark" + navMute(u2.index), tok = t10.id, row0 = rowOf(u2.system, r10, 0);
-      const fs = tx2("nav-mark"), x2 = P2(u2.x + 0.4);
-      if (t10.what === "ending") {
-        const ui3 = units.indexOf(u2);
-        let end = null, closed = false, fallback = null, sawNote = false;
-        for (let k2 = ui3 + 1; k2 < units.length; k2++) {
-          const v = units[k2];
-          if (v.kind === "chunk") sawNote = true;
-          if (v.kind === "bar" && (v.repeat === "end" || v.repeat === "both")) {
-            end = v;
-            closed = true;
-            break;
-          }
-          if (v.kind === "nav" && tokens[v.index].what === "ending") {
-            end = v;
-            closed = true;
-            break;
-          }
-          if (v.kind === "bar" && v.repeat === "start") {
-            if (!fallback) fallback = v;
-            break;
-          }
-          if (v.kind === "bar" && sawNote && !fallback) fallback = v;
-        }
-        if (!end) end = fallback;
-        const h2 = TR("nav-mark", 1.6);
-        const endX = (v, sys) => v && v.system === sys ? v.kind === "bar" ? P2(v.x + (v.repeat ? 0.4 + (v.repeat === "both" ? 1.2 : 1.47) : 0.7)) : P2(v.x) - P2(0.3) : P2(right);
-        const seg = (sys, xa, openL, xb, hookR, first) => placeAbove(rowOf(sys, r10, 0), 0.6, (yy) => {
-          prims.push({ t: "path", d: `${openL ? `M${xa},${yy}` : `M${xa},${yy + h2}L${xa},${yy}`}L${xb},${yy}${hookR ? `L${xb},${yy + h2}` : ""}`, cls: "volta" + navMute(u2.index) });
-          if (!first) return;
-          prims.push({ tok, t: "text", x: x2 + TR("nav-mark", 0.3), y: yy + TR("nav-mark", 1.25), s: endingLabel(t10.nums), cls, size: fs, anchor: "start" });
-          dyns.push({ index: u2.index, kind: "nav", system: row0, x: x2 - P2(0.4), y: yy - TR("nav-mark", 0.4), w: TR("nav-mark", 3), h: h2 + TR("nav-mark", 0.8) });
-        });
-        const endSys = end ? end.system : u2.system;
-        seg(u2.system, x2 - P2(0.2), false, endX(endSys === u2.system ? end : null, u2.system), closed && endSys === u2.system, true);
-        for (let s23 = u2.system + 1; s23 <= endSys; s23++) {
-          const first = units.find((w2) => w2.system === s23);
-          seg(s23, P2((first?.x ?? MARGIN) - 0.3), true, endX(s23 === endSys ? end : null, s23), closed && s23 === endSys, false);
-        }
-        return;
-      }
-      if (t10.what === "segno" || t10.what === "coda") {
-        const gs = 4 * sp2 * 0.7;
-        placeAbove(row0, 0.6, (y2) => {
-          prims.push({ tok, t: "glyph", x: x2, y: y2, ch: t10.what === "segno" ? "\uE047" : "\uE048", cls: cls.replace("nav-mark", "nav-sign"), size: gs });
-          dyns.push({ index: u2.index, kind: "nav", system: row0, x: x2 - P2(0.3), y: y2 - gs * 0.8, w: gs * (t10.what === "segno" ? 0.6 : 1), h: gs * 0.95 });
-        });
-        return;
-      }
-      const label = NAV_LABEL[t10.what], tw2 = P2(mw("nav-word", label)), atEnd = x2 - tw2 > P2(MARGIN + 6);
-      placeAbove(row0, 0.6, (y2) => {
-        prims.push({ tok, t: "text", x: atEnd ? x2 : x2 - P2(0.2), y: y2, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
-        dyns.push({ index: u2.index, kind: "nav", system: row0, x: atEnd ? x2 - tw2 - P2(0.3) : x2 - P2(0.5), y: y2 - TR("nav-word", TEMPO_EM * 1.1), w: tw2 + TR("nav-word", 0.8), h: TR("nav-word", TEMPO_EM * 1.5) });
-      });
-    };
     const nhX = (c11) => P2(c11.x + 0.35);
     const pm = pmode[r10], percHere = !!pm && !!q2.p.perc;
     const xHead = !!q2.p.xHead && !percHere;
@@ -12257,7 +12526,7 @@ function drawStaff(c10, mine) {
     const tokOf = (c11) => c11.index >= 0 && !c11.pad ? tokens[c11.index]?.id : void 0;
     const spots = [];
     lyricParts.push({ r: r10, lrow: lyricRow, spots });
-    const dynItems = [];
+    const orn = ornOf(q2, r10, (ch2) => nhX(ch2) + nhW(ch2));
     const drawChunk = (c11) => {
       const cls = clsOf(c11), row2 = RW(c11);
       if (!c11.note) {
@@ -12327,21 +12596,9 @@ function drawStaff(c10, mine) {
     };
     for (const u2 of units) {
       const row2 = RW(u2);
-      if (u2.kind === "dyn") {
-        const dr = rowOf(u2.system, r10, 0), ui3 = units.indexOf(u2), [il2, ir2, iu2, id2] = DYN_INK[u2.value];
-        dynItems.push({ row: dr, x0: P2(u2.x + 0.3 + il2), keys: [`${dr}|d${ui3}`], draw: (dy) => {
-          prims.push({ t: "glyph", x: P2(u2.x + 0.3), y: dy, ch: DYN_GLYPH2[u2.value], tok: tokens[u2.index].id, cls: "dyn" + (dynOff.has(u2.index) ? " art-mute" : "") });
-          dyns.push({ index: u2.index, kind: "dyn", system: dr, x: P2(u2.x + 0.3 + il2 - 0.3), y: dy - P2(iu2 + 0.4), w: P2(ir2 - il2 + 0.6), h: P2(iu2 + id2 + 0.8) });
-        } });
-        continue;
-      }
+      if (u2.kind === "dyn") continue;
       if (u2.kind === "groove") {
-        const gt = tokens[u2.index], gr = rowOf(u2.system, r10, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
-        const fs = tx2("groove-mark"), gw = P2(mw("groove-mark", label)), gx = P2(u2.x + 0.3);
-        attach2("groove", () => placeAbove(gr, 0.5, (gy) => {
-          prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
-          dyns.push({ index: u2.index, kind: "groove", system: gr, x: P2(u2.x), y: gy - TR("groove-mark", TEMPO_EM * 1.1), w: gw + TR("groove-mark", 0.6), h: TR("groove-mark", TEMPO_EM * 1.5) });
-        }));
+        layGroove(orn, u2);
         continue;
       }
       if (u2.kind === "head") continue;
@@ -12354,7 +12611,7 @@ function drawStaff(c10, mine) {
             put2(rr2, { t: "glyph", x: P2(u2.x + 0.4), y: yOf(rr2, BOTTOM_LINE), ch: u2.repeat === "start" ? "\uE040" : u2.repeat === "end" ? "\uE041" : "\uE042", cls: "repeat-bar" + navMute(u2.index), tok: tokens[u2.index].id });
             if (u2.times && u2.times > 2 && k2 === 0) {
               const times = u2.times, bx = P2(u2.x + 0.4 + (u2.repeat === "both" ? 1.2 : 1.47)), cl2 = "nav-mark" + navMute(u2.index);
-              attach2("nav", () => placeAbove(rr2, 0.6, (y2) => prims.push({ t: "text", x: bx, y: y2, s: `\xD7${times}`, cls: cl2, size: tx2("nav-mark"), anchor: "end" })));
+              attach2(rr2, "nav", () => placeAbove(rr2, 0.6, (y2) => prims.push({ t: "text", x: bx, y: y2, s: `\xD7${times}`, cls: cl2, size: tx2("nav-mark"), anchor: "end" })));
             }
           } else if (u2.kind === "bar") {
             const bx = P2(u2.x + 0.7), bcls = u2.auto ? "bar auto" : "bar";
@@ -12388,12 +12645,12 @@ function drawStaff(c10, mine) {
         continue;
       }
       if (u2.kind === "tempo") {
-        if (q2.p.id === owner) attach2("tempo", () => drawTempo(row2, u2.x + 0.3, u2.bpm, "tempo", u2.index));
+        if (q2.p.id === owner) layTempo(orn, row2, u2.x + 0.3, u2.bpm, "tempo", u2.index);
         continue;
       }
       if (u2.kind === "hairpin") continue;
       if (u2.kind === "nav") {
-        attach2("nav", () => drawNav(u2));
+        layNav(orn, u2, (v) => P2(v.x + (v.kind === "bar" && v.repeat ? 0.4 + (v.repeat === "both" ? 1.2 : 1.47) : 0.7)));
         continue;
       }
       if (u2.kind === "ottava") continue;
@@ -12426,7 +12683,7 @@ function drawStaff(c10, mine) {
           const up = v > 0;
           {
             const sk2 = k2, se2 = e10;
-            attach2(up ? "ottavaAbove" : "ottavaBelow", () => {
+            attach2(row0, up ? "ottavaAbove" : "ottavaBelow", () => {
               const pl = up ? placeAbove : placeBelow;
               pl(row0, 0.6, (y2) => {
                 const k3 = sk2, e11 = se2;
@@ -12485,9 +12742,9 @@ function drawStaff(c10, mine) {
         cx3 = nhX(c11) + nhW(c11) / 2;
         cy2 = yOf(RW(c11), Math.max(...ds)) - P2(1.7);
       }
-      const W3 = P2(1.2), T2 = P2(0.24), R2 = P2(0.36), G2 = P2(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c11) ?? ""].filter(Boolean).join(" ");
+      const W3 = P2(1.2), T2 = P2(0.24), R2 = P2(0.36), G3 = P2(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c11) ?? ""].filter(Boolean).join(" ");
       for (const k2 of [-1, 0, 1]) {
-        const y2 = cy2 + k2 * G2;
+        const y2 = cy2 + k2 * G3;
         put2(RW(c11), { tok: tokOf(c11), t: "path", d: `M${cx3 - W3 / 2},${y2 + R2 / 2}L${cx3 + W3 / 2},${y2 - R2 / 2}L${cx3 + W3 / 2},${y2 - R2 / 2 + T2}L${cx3 - W3 / 2},${y2 + R2 / 2 + T2}Z`, cls });
       }
     }
@@ -12510,7 +12767,7 @@ function drawStaff(c10, mine) {
         d3 += sgn * 2;
       }
       const strong = ["accent", "marcato", "stress", "unstress"].filter((x2) => c11.art.includes(x2));
-      if (strong.length) attach2("strength", () => {
+      if (strong.length) attach2(row2, "strength", () => {
         for (const a10 of strong) {
           const m2 = ART_GLYPH[a10];
           placeAbove(row2, 0.4, (y2) => prims.push({ tok: tokOf(c11), t: "glyph", x: cx3 - P2(m2.w / 2), y: y2, ch: m2.above, cls: artCls(a10) }));
@@ -12518,7 +12775,7 @@ function drawStaff(c10, mine) {
       });
       const swl = c11.j === 0 ? swellOf(tokens[c11.index]) : void 0;
       const atk = ["sfz", "fp"].filter((x2) => c11.art.includes(x2));
-      if (swl || atk.length) attach2("noteDynamics", () => placeAbove(row2, 0.5, (y2) => {
+      if (swl || atk.length) attach2(row2, "noteDynamics", () => placeAbove(row2, 0.5, (y2) => {
         let xa = nhX(c11);
         for (const a10 of atk) {
           const ch2 = a10 === "sfz" ? "\uE539" : "\uE534", w2 = P2(GLYPH_BOX[ch2]?.[1] ?? 2.6), gx = cx3 - w2 / 2;
@@ -12612,129 +12869,8 @@ function drawStaff(c10, mine) {
         put2(RW(f2), { t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy2} ${xb - (xb - xa) * 0.2},${cy2} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
       });
     }
-    const LEVELS = DYNS;
-    const lastChunk = [...units].reverse().find((u2) => u2.kind === "chunk");
-    const dynKey = (u2) => `${rowOf(u2.system, r10, 0)}|d${units.indexOf(u2)}`;
-    const wedgeKey = (index, sy2) => `${rowOf(sy2, r10, 0)}|w${index}:${sy2}`;
-    const wedgeItems = (index, dir, s02, startX, s12, endX, ramp, k0, k1, tail) => {
-      const leftOf2 = (sy2) => Math.min(...units.filter((u2) => u2.kind === "chunk" && u2.system === sy2).map((c11) => nhX(c11)), P2(right)) - P2(1);
-      const segs = [];
-      for (let sy2 = s02; sy2 <= s12; sy2++) segs.push([sy2, sy2 === s02 ? startX : leftOf2(sy2), sy2 === s12 ? endX : P2(right) - P2(0.3)]);
-      const total = segs.reduce((n10, [, a10, b3]) => n10 + Math.max(0, b3 - a10), 0) || 1, H4 = P2(0.5), long = total > P2(right - MARGIN);
-      const word = dir === "cresc" ? "cresc." : "dim.", ww = P2(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
-      let said = false, acc2 = 0, tailDone = false;
-      segs.forEach(([sy2, a02, b3], i10) => {
-        if (b3 - a02 < P2(0.3)) return;
-        const row2 = rowOf(sy2, r10, 0), keys = [wedgeKey(index, sy2)], last = i10 === segs.length - 1;
-        if (i10 === 0 && k0) keys.push(k0);
-        if (last && k1) keys.push(k1);
-        if (last) tailDone = true;
-        if (long) {
-          const writeWord = !said && b3 - a02 >= ww + P2(1);
-          if (writeWord) said = true;
-          dynItems.push({ row: row2, x0: a02, keys, draw: (base2) => {
-            const midY = base2 - P2(0.5);
-            let a10 = a02;
-            if (writeWord) {
-              prims.push({ t: "text", x: a10, y: midY + P2(0.5), s: word, tok: tokens[index].id, cls: ["dyn-word", ramp ? "ramp" : ""].filter(Boolean).join(" "), size: tx2("dyn-word"), anchor: "start" });
-              a10 += ww + P2(0.6);
-            }
-            for (let x2 = a10; x2 + P2(DASH.len) <= b3; x2 += P2(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x2, y1: midY, x2: x2 + P2(DASH.len), y2: midY, w: P2(0.12), cls: "dyn-dash" });
-            dyns.push({ index, kind: "hairpin", system: row2, x: a02, y: midY - P2(1.4), w: b3 - a02, h: P2(2.8) });
-            if (last && tail) tail(base2);
-          } });
-          return;
-        }
-        const f0 = acc2 / total, f1 = (acc2 + b3 - a02) / total;
-        acc2 += b3 - a02;
-        const [h0, h1] = dir === "cresc" ? [H4 * f0, H4 * f1] : [H4 * (1 - f0), H4 * (1 - f1)];
-        dynItems.push({ row: row2, x0: a02, keys, draw: (base2) => {
-          const y2 = base2 - P2(0.5), a10 = a02;
-          let d3 = `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`;
-          if (ramp) {
-            const hAt = (x2) => h0 + (h1 - h0) * ((x2 - a10) / (b3 - a10)), on2 = P2(RAMP_DASH.len), per2 = P2(RAMP_DASH.len + RAMP_DASH.gap);
-            d3 = "";
-            for (let x2 = a10; x2 < b3 - P2(0.05); x2 += per2) {
-              const x22 = Math.min(b3, x2 + on2);
-              d3 += `M${x2},${y2 - hAt(x2)}L${x22},${y2 - hAt(x22)}M${x2},${y2 + hAt(x2)}L${x22},${y2 + hAt(x22)}`;
-            }
-          }
-          prims.push({ tok: tokens[index].id, t: "path", d: d3, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
-          dyns.push({ index, kind: "hairpin", system: row2, x: a10, y: y2 - P2(1.4), w: b3 - a10, h: P2(2.8) });
-          if (last && tail) tail(base2);
-        } });
-      });
-      if (!tailDone && tail) dynItems.push({ row: rowOf(s12, r10, 0), x0: endX, keys: [wedgeKey(index, s12), ...k1 ? [k1] : []], draw: tail });
-    };
-    units.forEach((h2, hi) => {
-      if (h2.kind !== "hairpin" || !lastChunk) return;
-      const prevU = units[hi - 1];
-      const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h2.system ? prevU : null;
-      const startX = Math.max(P2(h2.x + 0.3), dynBefore ? P2(dynBefore.x + 0.3 + DYN_INK[dynBefore.value][1] + PIN_GAP) : 0), s02 = h2.system;
-      const endU = units.slice(hi + 1).find((u2) => u2.kind === "dyn" || u2.kind === "hairpin");
-      let curDyn = "mf";
-      for (let j2 = h2.index - 1; j2 >= 0; j2--) {
-        const u2 = tokens[j2];
-        if (u2.kind === "dyn") {
-          curDyn = u2.value;
-          break;
-        }
-      }
-      const ci2 = LEVELS.indexOf(curDyn), against = !!endU && endU.kind === "dyn" && (h2.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci2 : LEVELS.indexOf(endU.value) >= ci2);
-      const IMPLIED_W = 3;
-      const endX = endU ? P2(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : nhX(lastChunk) + nhW(lastChunk) + P2(0.8), s12 = endU ? endU.system : lastChunk.system;
-      if (s12 < s02) return;
-      let endXd = endX, labelAbove = false;
-      const MIN_PIN = P2(1.4);
-      if (s12 === s02 && endXd - startX < MIN_PIN) {
-        const roomy = against ? endXd + P2(IMPLIED_W + 0.4) : endXd;
-        if (against) labelAbove = true;
-        endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
-      }
-      const k1 = !endU ? void 0 : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
-      const tail = !endU || against ? (base2) => {
-        const k2 = Math.max(0, Math.min(LEVELS.length - 1, ci2 + (h2.dir === "cresc" ? 1 : -1)));
-        prims.push({ t: "text", x: labelAbove ? endXd - P2(1.2) : endXd + P2(0.4), y: base2 + P2(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k2]})`, cls: "dyn-implied ann", size: tx2("dyn-implied"), anchor: "start" });
-      } : void 0;
-      wedgeItems(h2.index, h2.dir, s02, startX, s12, endXd, false, dynBefore ? dynKey(dynBefore) : void 0, k1, tail);
-    });
-    for (const u2 of units) {
-      if (u2.kind !== "dyn" || !tokens[u2.index].ramp) continue;
-      const src = rampSource(tokens, u2.index);
-      if (typeof src !== "number") continue;
-      const pu = units.find((x2) => x2.kind === "dyn" && x2.index === src);
-      if (!pu) continue;
-      const a10 = LEVELS.indexOf(pu.value), b3 = LEVELS.indexOf(u2.value);
-      if (a10 === b3) continue;
-      const sx2 = P2(pu.x + 0.3 + DYN_INK[pu.value][1] + PIN_GAP);
-      let ex2 = P2(u2.x + 0.3 + DYN_INK[u2.value][0] - PIN_GAP);
-      if (u2.system === pu.system && ex2 - sx2 < P2(1.4)) ex2 = sx2 + P2(1.4);
-      if (u2.system < pu.system) continue;
-      wedgeItems(u2.index, b3 > a10 ? "cresc" : "dim", pu.system, sx2, u2.system, ex2, true, dynKey(pu), dynKey(u2));
-    }
-    attach2("dynamics", () => {
-      if (!dynItems.length) return;
-      const parent = dynItems.map((_2, i10) => i10), find = (i10) => parent[i10] === i10 ? i10 : parent[i10] = find(parent[i10]);
-      const byKey = /* @__PURE__ */ new Map();
-      dynItems.forEach((it2, i10) => {
-        for (const k2 of it2.keys) {
-          const j2 = byKey.get(k2);
-          if (j2 === void 0) byKey.set(k2, i10);
-          else parent[find(i10)] = find(j2);
-        }
-      });
-      const chains = /* @__PURE__ */ new Map();
-      dynItems.forEach((_2, i10) => {
-        const root = find(i10), l10 = chains.get(root);
-        if (l10) l10.push(i10);
-        else chains.set(root, [i10]);
-      });
-      const minX = (ch2) => Math.min(...ch2.map((i10) => dynItems[i10].x0));
-      for (const ch2 of [...chains.values()].sort((a10, b3) => minX(a10) - minX(b3))) placeAbove(dynItems[ch2[0]].row, 0.4, (y2) => {
-        for (const i10 of ch2) dynItems[i10].draw(y2);
-      });
-    });
-    if (look.chordTags && !v2 && !q2.vrt) attach2("chordTag", () => {
+    layDynamics(orn);
+    if (look.chordTags && !v2 && !q2.vrt) {
       const fs = tx2("chord-tag");
       const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: look.chordsOf(q2.p.id) !== "stacked" }).map((x2) => [x2.index, x2.read]));
       for (const c11 of units) {
@@ -12748,12 +12884,12 @@ function drawStaff(c10, mine) {
         const atStem = sx2 !== void 0 && !(low && headR > sx2 + P2(0.1));
         const label = theory.label(rd2), tx3 = atStem ? sx2 - P2(ENGRAVE.stem / 2) : headR + P2(0.3), w2 = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
         const row2 = RW(c11), cls = `chord-tag${rd2.pinned ? " is-pinned" : ""}${rd2.stale ? " is-stale" : ""}`;
-        placeBelow(row2, 0.3, (y2) => {
+        attach2(row2, "chordTag", () => placeBelow(row2, 0.3, (y2) => {
           prims.push({ t: "text", x: tx3, y: y2, s: label, cls, size: fs, anchor: "start" });
           chordTagsOut.push({ x: tx3 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2, system: row2, index: c11.index });
-        });
+        }));
       }
-    });
+    }
     const bracket = (cs2, openL, openR, num2) => {
       const row2 = RW(cs2[0]), n10 = cs2[0].ratio[0];
       const xa = openL ? Math.min(nhX(cs2[0]) - P2(1.2), nhX(cs2[0])) : nhX(cs2[0]), last = cs2[cs2.length - 1], xb = openR ? nhX(last) + nhW(last) + P2(1.2) : nhX(last) + nhW(last);
@@ -12916,7 +13052,7 @@ var JIANPU_LANES = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "gro
 var keyHead = (fifths, minor) => keyText(fifths, minor).replace(/=([A-G])([♭♯])$/, "=$2$1");
 function drawJianpu(c10, mine) {
   const lyricParts = [];
-  const { o: o10, P: P2, tx: tx2, put: put2, hitRow, notes, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c10;
+  const { song, paper, o: o10, P: P2, tx: tx2, put: put2, notes, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c10;
   const Y2 = (row2, v) => staffTop(row2) + P2(v);
   for (const r10 of mine) {
     const q2 = per[r10], units = q2.units, tokens = q2.tokens;
@@ -12925,6 +13061,31 @@ function drawJianpu(c10, mine) {
       if (rows[row2]) rows[row2].x1 = P2(staffEnd[s10]);
     }
     const tokOf = (u2) => u2.index >= 0 && !u2.pad ? tokens[u2.index]?.id : void 0;
+    const orn = {
+      song,
+      paper,
+      o: o10,
+      notation: "jianpu",
+      P: P2,
+      tx: tx2,
+      TR: c10.TR,
+      RS: c10.RS,
+      mw: c10.mw,
+      sp: c10.sp,
+      prims: c10.prims,
+      dyns: c10.dyns,
+      marks,
+      placeAbove,
+      attach: c10.attach,
+      right: c10.right,
+      tokens,
+      units,
+      row: (sy2) => rowOf(sy2, r10, 0),
+      noteX: (ch2) => P2(ch2.x + 0.1),
+      noteEnd: (ch2) => P2(ch2.x + 0.1 + DIGIT_W),
+      dynOff: dynOverridden(tokens),
+      navMute: (i10) => navWhy(song, paper, q2.p.id, tokens[i10]) ? " art-mute" : ""
+    };
     let f0 = q2.head.key;
     const shifts = [];
     for (const u2 of units) {
@@ -12934,10 +13095,12 @@ function drawJianpu(c10, mine) {
     const base2 = fewestDotsBase(shifts);
     const row0 = rowOf(0, r10, 0), hx = P2(MARGIN + ind0 + 0.6);
     const keyS = keyHead(q2.head.key, q2.head.minor), timeS = `${q2.head.time.beats}/${q2.head.time.beatType}`, hs = tx2("tempo-num");
-    c10.attach("tempo", () => placeAbove(row0, 0.5, (y2) => {
+    const tempoHere = q2.p.id === c10.owner && q2.head.idx.tempo !== void 0;
+    c10.attach(row0, "tempo", () => placeAbove(row0, 0.5, (y2) => {
       const kw = P2(midTextW(keyS)), tw2 = P2(midTextW(timeS));
       put2(row0, { t: "text", x: hx, y: y2, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
       put2(row0, { t: "text", x: hx + kw, y: y2, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
+      if (tempoHere) tempoAt2(orn, row0, MARGIN + ind0 + 0.6 + midTextW(keyS) + midTextW(timeS) + 0.6, q2.head.bpm, "tempo", q2.head.idx.tempo, c10.prevBpm === null || c10.prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > c10.prevBpm ? "up" : "down", y2);
       if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row0, x: hx - P2(0.3), y: y2 - hs, w: kw, h: hs * 1.4 });
       if (q2.head.idx.time !== void 0) marks.push({ index: q2.head.idx.time, kind: "time", system: row0, x: hx + kw - P2(0.3), y: y2 - hs, w: tw2, h: hs * 1.4 });
     }));
@@ -12970,6 +13133,18 @@ function drawJianpu(c10, mine) {
           line(x2, BAR_THIN);
         } else line(x2, BAR_THIN);
         bars.push({ system: row3, x: x2 });
+        continue;
+      }
+      if (u2.kind === "groove") {
+        layGroove(orn, u2);
+        continue;
+      }
+      if (u2.kind === "nav") {
+        layNav(orn, u2, (v) => P2(v.x + BAR_DX));
+        continue;
+      }
+      if (u2.kind === "tempo") {
+        if (q2.p.id === c10.owner) layTempo(orn, rowOf(u2.system, r10, 0), u2.x + 0.3, u2.bpm, "tempo", u2.index);
         continue;
       }
       if (u2.kind !== "chunk" || u2.pad) continue;
@@ -13019,6 +13194,7 @@ function drawJianpu(c10, mine) {
         i10 = j2 + 1;
       }
     }
+    layDynamics(orn);
     const inkL = measured[r10].inkL;
     caretStops(q2, { cx: (u2) => {
       const k2 = u2.kind === "chunk" ? inkL.get(u2) : void 0;
@@ -13034,7 +13210,6 @@ var DRAWERS = {
   // 数字行和五线谱用同一个行框（局部 0–4），竖向锚点一样（jianpu/glyphs.ts）
   jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c10, mine) => drawJianpu(c10, mine), lanes: JIANPU_LANES, anchors }
 };
-var LANE_ORDER = [.../* @__PURE__ */ new Set([...STAFF_LANES, ...JIANPU_LANES])];
 var jianpuCan = (q2) => !q2.vrt && !q2.v2 && !q2.hasV2 && !q2.pmode && !q2.p.perc && !q2.p.xHead && !q2.tokens.some((t10) => t10.kind === "note" && !!t10.chord?.length);
 var NOTATIONS2 = {
   staff: { id: "staff", rowKindOf: () => "staff" },
@@ -13259,7 +13434,7 @@ function engrave(song, o10) {
   const rowTop = /* @__PURE__ */ new Map();
   const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map();
   const staffTop = (r10) => rowTop.get(r10) + P2(rowAbove.get(r10) ?? STAFF_ABOVE);
-  const anc = (r10) => DRAWERS[rows[r10]?.kind ?? "staff"].anchors(staffTop(r10), P2(0.5));
+  const anc = (r10) => DRAWERS[rows[r10].kind].anchors(staffTop(r10), P2(0.5));
   const lyricY = (r10) => anc(r10).bottom + P2(lyricOff.get(r10) ?? LYRIC_BELOW);
   const showPaperLine = song.papers.length > 1 || song.papers.some((p2) => p2.name);
   let drawn = 0;
@@ -13421,7 +13596,7 @@ function engrave(song, o10) {
       const row2 = rowOf(s10, r10, k2);
       rowTop.set(row2, 0);
       rowAbove.set(row2, 0);
-      rows[row2] = { top: 0, staffTop: 0, bottom: 0, paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1, inkTop: 0, inkBottom: 0, ...kinds[r10] === "jianpu" ? { kind: "jianpu" } : {} };
+      rows[row2] = { top: 0, staffTop: 0, bottom: 0, paper: paper.id, part: parts[r10].id, sys: s10, staff: k2 + 1, inkTop: 0, inkBottom: 0, kind: kinds[r10] };
       skies[row2 - rowBase] = new Skyline(right + MARGIN + 8);
       if (per[r10].vrt) sharedRows.push(row2);
     }
@@ -13493,10 +13668,14 @@ function engrave(song, o10) {
       commit(sk2, dy, o22.count !== false);
       return dy;
     };
-    const attached = /* @__PURE__ */ new Map(), attach2 = (lane, run2) => {
-      const l10 = attached.get(lane);
+    const attached = /* @__PURE__ */ new Map();
+    const attach2 = (row2, lane, run2) => {
+      if (!(row2 >= rowBase && row2 - rowBase < skies.length && skies[row2 - rowBase])) throw new Error(`engrave: attach on row ${row2} outside this paper`);
+      let m2 = attached.get(row2);
+      if (!m2) attached.set(row2, m2 = /* @__PURE__ */ new Map());
+      const l10 = m2.get(lane);
       if (l10) l10.push(run2);
-      else attached.set(lane, [run2]);
+      else m2.set(lane, [run2]);
     };
     const p0 = mark();
     const staffEnd = Array.from({ length: nSys }, (_2, s10) => {
@@ -13596,11 +13775,47 @@ function engrave(song, o10) {
       for (const x2 of measures) delete x2.m;
     }
     const drawCtx = { song, look: songLook, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
+    if (song.barNumbers !== "off" && per[0]) for (let s10 = 0; s10 < nSys; s10++) {
+      const ind = s10 === 0 ? ind0 : indN, q0 = per.find((q2) => q2.units.some((u2) => u2.kind === "chunk" && u2.system === s10)) ?? per[0];
+      const c02 = q0.units.find((u2) => u2.kind === "chunk" && u2.system === s10);
+      const num2 = c02 ? (c02.m ?? 0) + (q0.pickup ? 0 : 1) : null, row0 = rowOf(s10, 0, 0);
+      if (num2 !== null && !(s10 === 0 && num2 <= 1)) attach2(row0, "barNumber", () => placeAbove(row0, 0.3, (y2) => prims.push({ t: "text", x: P2(MARGIN + ind), y: y2, s: String(num2), cls: "bar-no", size: tx2("bar-no"), anchor: "start" })));
+    }
     const kIdx = (k2) => per.map((_q, i10) => i10).filter((i10) => kinds[i10] === k2);
-    const staffOut = DRAWERS.staff.draw(drawCtx, kIdx("staff")), jIdx = kIdx("jianpu"), jpOut = jIdx.length ? DRAWERS.jianpu.draw(drawCtx, jIdx) : { lyricParts: [] };
+    const ctxFor = (idx, who) => {
+      const own = /* @__PURE__ */ new Set();
+      for (const r10 of idx) for (let s10 = 0; s10 < nSys; s10++) for (let k2 = 0; k2 < effStaves(r10) || rowHost[r10] >= 0 && k2 < 1; k2++) own.add(rowOf(s10, r10, k2));
+      const chk = (row2) => {
+        if (!own.has(row2)) throw new Error(`engrave: the ${who} drawer drew on row ${row2}, which is not one of its rows`);
+      };
+      return {
+        ...drawCtx,
+        put: (row2, p2) => {
+          chk(row2);
+          put2(row2, p2);
+        },
+        hitRow: (h2, row2) => {
+          chk(row2);
+          hitRow(h2, row2);
+        },
+        attach: (row2, lane, run2) => {
+          chk(row2);
+          attach2(row2, lane, run2);
+        },
+        placeAbove: (row2, gap, d3) => {
+          chk(row2);
+          return placeAbove(row2, gap, d3);
+        },
+        placeBelow: (row2, gap, d3, o22) => {
+          chk(row2);
+          return placeBelow(row2, gap, d3, o22);
+        }
+      };
+    };
+    const sIdx = kIdx("staff"), jIdx = kIdx("jianpu");
+    const staffOut = DRAWERS.staff.draw(ctxFor(sIdx, "staff"), sIdx), jpOut = jIdx.length ? DRAWERS.jianpu.draw(ctxFor(jIdx, "jianpu"), jIdx) : { lyricParts: [] };
     const layLyrics = ({ r: r10, lrow, spots }) => {
-      const partLyrics = [];
-      const run2 = (c10) => {
+      const run2 = (c10, partLyrics) => {
         const fit = lyrPlan.get(`${r10}:${c10.index}`), ly0 = lyricY(lrow(c10.sys)), cx0 = c10.cx0;
         const ly2 = ly0, cx2 = cx0 + (fit ? P2(fit.dx) : 0);
         {
@@ -13611,37 +13826,45 @@ function engrave(song, o10) {
         if (c10.lyric === MELISMA_MARK) put2(lrow(c10.sys), { t: "line", x1: c10.mx0, y1: ly0, x2: c10.mx1, y2: ly0, w: P2(0.12), cls: "melisma" });
         else if (c10.lyric) put2(lrow(c10.sys), { tok: c10.tok, t: "text", x: cx2, y: ly2, s: lyricShow(c10.lyric), ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", c10.mute ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", c10.cls ?? ""].filter(Boolean).join(" ") });
       };
-      if (!lyricsOf[r10]) {
-        for (const c10 of spots) run2(c10);
-        lyrics.push(...partLyrics);
-        return;
-      }
-      const base2 = LYRIC_BELOW + (o10.lyricRaise ?? 0), bySys = /* @__PURE__ */ new Map();
+      const bySys = /* @__PURE__ */ new Map();
       for (const c10 of spots) {
         const l10 = bySys.get(c10.sys);
         if (l10) l10.push(c10);
         else bySys.set(c10.sys, [c10]);
       }
-      for (let sy2 = 0; sy2 < nSys; sy2++) lyricOff.set(lrow(sy2), base2);
-      for (const [sy2, cs3] of bySys) {
-        const row2 = lrow(sy2);
-        const dy = placeBelow(row2, 0.5, () => {
-          const from = partLyrics.length;
-          for (const c10 of cs3) run2(c10);
-          const mine = partLyrics.slice(from), byIdx = new Map(cs3.map((c10) => [c10.index, c10]));
-          const syls = mine.map((L2) => {
-            const pl = lyrPlan.get(`${r10}:${L2.index}`), c10 = byIdx.get(L2.index), lyr = c10.lyric ?? "";
-            return { x: L2.x, hy: c10.hyph, hw: pl ? P2(pl.hw) : void 0, sx: pl?.sx, ...pl ? {} : { nw: P2(lyrUnit(lyricShow(lyr))) / 2 }, cjk: isBlockScript(lyricShow(lyr)), row: L2.system };
-          });
-          hyphens(syls, P2(lyrHyphen), P2(1.6)).forEach((h2, n11) => {
-            if (h2) prims.push({ t: "text", x: h2.x, y: mine[n11].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, sx: look.sx * h2.hf * HYPHEN_SX });
-          });
-          lyrics.push(...partLyrics.slice(from));
-        }, { min: 0, count: false, step: ROW_STEP });
-        lyricOff.set(row2, base2 + dy);
+      if (!lyricsOf[r10]) {
+        for (const [sy2, cs3] of bySys) attach2(lrow(sy2), "lyrics", () => {
+          const part = [];
+          for (const c10 of cs3) run2(c10, part);
+          lyrics.push(...part);
+        });
+        return;
+      }
+      const base2 = LYRIC_BELOW + (o10.lyricRaise ?? 0);
+      for (let sy2 = 0; sy2 < nSys; sy2++) {
+        const row2 = lrow(sy2), cs3 = bySys.get(sy2);
+        attach2(row2, "lyrics", () => {
+          lyricOff.set(row2, base2);
+          if (!cs3) return;
+          const partLyrics = [];
+          const dy = placeBelow(row2, 0.5, () => {
+            const from = partLyrics.length;
+            for (const c10 of cs3) run2(c10, partLyrics);
+            const mine = partLyrics.slice(from), byIdx = new Map(cs3.map((c10) => [c10.index, c10]));
+            const syls = mine.map((L2) => {
+              const pl = lyrPlan.get(`${r10}:${L2.index}`), c10 = byIdx.get(L2.index), lyr = c10.lyric ?? "";
+              return { x: L2.x, hy: c10.hyph, hw: pl ? P2(pl.hw) : void 0, sx: pl?.sx, ...pl ? {} : { nw: P2(lyrUnit(lyricShow(lyr))) / 2 }, cjk: isBlockScript(lyricShow(lyr)), row: L2.system };
+            });
+            hyphens(syls, P2(lyrHyphen), P2(1.6)).forEach((h2, n11) => {
+              if (h2) prims.push({ t: "text", x: h2.x, y: mine[n11].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts2 !== 1 ? { size: lyricSizePx(sp2, ts2) } : {}, sx: look.sx * h2.hf * HYPHEN_SX });
+            });
+            lyrics.push(...partLyrics.slice(from));
+          }, { min: 0, count: false, step: ROW_STEP });
+          lyricOff.set(row2, base2 + dy);
+        });
       }
     };
-    for (const lp2 of [...staffOut.lyricParts, ...jpOut.lyricParts]) attach2("lyrics", () => layLyrics(lp2));
+    for (const lp2 of [...staffOut.lyricParts, ...jpOut.lyricParts]) layLyrics(lp2);
     for (let i10 = p0.p; i10 < prims.length; i10++) {
       const p2 = prims[i10];
       if (isAnn(p2)) continue;
@@ -13652,11 +13875,16 @@ function engrave(song, o10) {
       primInk(p2, sp2, textW, (x0, x1, y02, y1) => sky(row2).ink(x0 / sp2, x1 / sp2, (y02 - t10) / sp2, (y1 - t10) / sp2));
     }
     const upToNav = [];
-    for (const lane of LANE_ORDER) {
-      for (const f2 of attached.get(lane) ?? []) f2();
-      if (lane === INK_UP_TO) skies.forEach((sk2, i10) => {
-        upToNav[i10] = sk2.hUp;
-      });
+    for (let row2 = rowBase; row2 - rowBase < skies.length; row2++) {
+      if (!skies[row2 - rowBase]) continue;
+      const m2 = attached.get(row2), lanes = DRAWERS[rows[row2].kind].lanes;
+      for (const lane of lanes) {
+        for (const f2 of m2?.get(lane) ?? []) f2();
+        if (lane === INK_UP_TO) upToNav[row2 - rowBase] = sky(row2).hUp;
+      }
+      if (m2) {
+        for (const lane of m2.keys()) if (!lanes.includes(lane)) throw new Error(`engrave: row ${row2} (${rows[row2].kind}) has no lane "${lane}"`);
+      }
     }
     const pEnd = mark();
     const PAD = 0.8, lyricTail = SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow, fin = (v, d3) => Number.isFinite(v) ? v : d3;
@@ -13670,8 +13898,8 @@ function engrave(song, o10) {
       const below = stepUp(minBelow, need);
       return { above: stepUp(STAFF_ABOVE, -hUp + PAD), below, inkAbove: Math.max(0, -fin(upToNav[row2 - rowBase] ?? Infinity, 0)), inkBelow: Math.max(0, hDn - 4, lyr !== void 0 ? lyr + 0.5 + row22 : 0) };
     };
-    const G2 = Array.from({ length: nSys }, (_2, s10) => per.map((_q, r10) => Array.from({ length: effStaves(r10) }, (_3, k2) => geo(s10, r10, k2))));
-    const sysH = (s10) => P2(G2[s10].reduce((n11, gs) => n11 + gs.reduce((m2, g3) => m2 + g3.above + 4 + g3.below, 0), 0) + SYS_GAP);
+    const G3 = Array.from({ length: nSys }, (_2, s10) => per.map((_q, r10) => Array.from({ length: effStaves(r10) }, (_3, k2) => geo(s10, r10, k2))));
+    const sysH = (s10) => P2(G3[s10].reduce((n11, gs) => n11 + gs.reduce((m2, g3) => m2 + g3.above + 4 + g3.below, 0), 0) + SYS_GAP);
     drawPaperTitle(nSys ? sysH(0) : P2(SPC.rowH));
     let note2;
     if (paper.hidden) {
@@ -13682,7 +13910,7 @@ function engrave(song, o10) {
     for (let s10 = 0; s10 < nSys; s10++) {
       ensure(sysH(s10));
       for (let r10 = 0; r10 < nR2; r10++) for (let k2 = 0; k2 < effStaves(r10); k2++) {
-        const top = yCur, row2 = rowOf(s10, r10, k2), g3 = G2[s10][r10][k2], h2 = g3.above + 4 + g3.below, st2 = top + P2(g3.above);
+        const top = yCur, row2 = rowOf(s10, r10, k2), g3 = G3[s10][r10][k2], h2 = g3.above + 4 + g3.below, st2 = top + P2(g3.above);
         delta.set(row2, st2);
         rowTop.set(row2, top);
         rowAbove.set(row2, g3.above);
@@ -17474,8 +17702,8 @@ var Pad = class {
   buildSymbols() {
     const grid = this.el.querySelector(".pad-grid");
     const cell = (id2, big, label, title, state = "") => {
-      const ks = this.host.keyState?.(id2) ?? {}, art = /^(art:|inhale:|swell:)|^slur$/.test(id2), off = !!ks.off, on2 = !!ks.on;
-      return `<button class="pad-key sym${art ? " art" : ""}${off ? " ignored" : ""}${on2 ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id2}" title="${title}${off ? _t("\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09") : ""}">${big}<small>${label}${off ? `<span class="ign-tag">${_t("\u4E0D\u8BA4")}</span>` : ""}</small></button>`;
+      const ks = this.host.keyState?.(id2) ?? {}, art2 = /^(art:|inhale:|swell:)|^slur$/.test(id2), off = !!ks.off, on2 = !!ks.on;
+      return `<button class="pad-key sym${art2 ? " art" : ""}${off ? " ignored" : ""}${on2 ? " is-on" : ""}${state ? ` ${state}` : ""}" data-sym="${id2}" title="${title}${off ? _t("\uFF08\u53F0\u4E0A\u8FD9\u4F4D\u4E0D\u8BA4\uFF1A\u5199\u5728\u8C31\u4E0A\u753B\u7070\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD\uFF09") : ""}">${big}<small>${label}${off ? `<span class="ign-tag">${_t("\u4E0D\u8BA4")}</span>` : ""}</small></button>`;
     };
     const items = [
       cell("art:arpeggio", `<span class="smufl">\uEAA9\uEAA9</span>`, _t("\u7436\u97F3"), _t("\u7436\u97F3\uFF1A\u5149\u6807\u524D\u90A3\u4E2A\u548C\u5F26\uFF08\u6709\u9009\u533A = \u9009\u4E2D\u7684\uFF09\u4ECE\u4F4E\u5230\u9AD8\u4F9D\u6B21\u594F\u51FA\uFF08\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u6CE2\u6D6A\u7EBF\uFF09\uFF1B\u518D\u70B9\u4E00\u6B21\u53BB\u6389")),
@@ -31994,15 +32222,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-da49d4638615.mjs");
+      return pick(() => "singer-worker-ce649e15cb11.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ca4a398ba8a0.mjs");
+      return pick(() => "layout-worker-177b54446b0b.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-5a2450419683.mjs");
+      return pick(() => "encode-worker-5e3dbb54a643.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -34185,8 +34413,8 @@ function readMusicXml(xml, hints) {
     if (kids(note2, "notehead").some((h2) => text(h2).trim() === "x")) set.add("whisper");
     const att = ATTACKS.filter((x2) => set.has(x2));
     if (att.length > 1) for (const x2 of att.slice(0, -1)) set.delete(x2);
-    const art = ARTS.filter((a10) => set.has(a10));
-    if (art.length) tok.art = art;
+    const art2 = ARTS.filter((a10) => set.has(a10));
+    if (art2.length) tok.art = art2;
     if (tok.inhale && !set.has("breath")) delete tok.inhale;
   };
   const slurEvents = (note2, open2) => {
@@ -36101,9 +36329,9 @@ var Delay = class {
   }
   process(L2, R2, n10) {
     if (!this.on) return;
-    const len = this.bufL.length, D3 = this.D, fb = this.fb, mix = this.mix, dry = this.dry, k2 = this.lpK;
+    const len = this.bufL.length, D4 = this.D, fb = this.fb, mix = this.mix, dry = this.dry, k2 = this.lpK;
     for (let i10 = 0; i10 < n10; i10++) {
-      const rd2 = (this.wr - D3 + len) % len;
+      const rd2 = (this.wr - D4 + len) % len;
       const dl = this.bufL[rd2];
       this.lpL += (dl - this.lpL) * k2;
       this.bufL[this.wr] = L2[i10] + this.lpL * fb;
@@ -43591,7 +43819,7 @@ __export(vue_esm_browser_prod_exports, {
   nodeOps: () => lY,
   normalizeClass: () => ee,
   normalizeProps: () => et2,
-  normalizeStyle: () => G,
+  normalizeStyle: () => G2,
   onActivated: () => rd,
   onBeforeMount: () => ry,
   onBeforeUnmount: () => rx,
@@ -43718,16 +43946,16 @@ var I = Object.prototype.toString;
 var O = (e10) => N(e10) && "NaN" !== e10 && "-" !== e10[0] && "" + parseInt(e10, 10) === e10;
 var P = h(",key,ref,ref_for,ref_key,onVnodeBeforeMount,onVnodeMounted,onVnodeBeforeUpdate,onVnodeUpdated,onVnodeBeforeUnmount,onVnodeUnmounted");
 var M2 = h("bind,cloak,else-if,else,for,html,if,model,on,once,pre,show,slot,text,memo");
-var D = (e10) => {
+var D2 = (e10) => {
   let t10 = /* @__PURE__ */ Object.create(null);
   return (n10) => t10[n10] || (t10[n10] = e10(n10));
 };
 var F = /-\w/g;
-var L = D((e10) => e10.replace(F, (e11) => e11.slice(1).toUpperCase()));
+var L = D2((e10) => e10.replace(F, (e11) => e11.slice(1).toUpperCase()));
 var $ = /\B([A-Z])/g;
-var V = D((e10) => e10.replace($, "-$1").toLowerCase());
-var B = D((e10) => e10.charAt(0).toUpperCase() + e10.slice(1));
-var j = D((e10) => e10 ? `on${B(e10)}` : "");
+var V = D2((e10) => e10.replace($, "-$1").toLowerCase());
+var B = D2((e10) => e10.charAt(0).toUpperCase() + e10.slice(1));
+var j = D2((e10) => e10 ? `on${B(e10)}` : "");
 var U = (e10, t10) => !Object.is(e10, t10);
 var H = (e10, ...t10) => {
   for (let n10 = 0; n10 < e10.length; n10++) e10[n10](...t10);
@@ -43745,11 +43973,11 @@ var K3 = (e10) => {
 };
 var z = () => e || (e = "u" > typeof globalThis ? globalThis : "u" > typeof self ? self : "u" > typeof window ? window : "u" > typeof global ? global : {});
 var J = h("Infinity,undefined,NaN,isFinite,isNaN,parseFloat,parseInt,decodeURI,decodeURIComponent,encodeURI,encodeURIComponent,Math,Number,Date,Array,Object,Boolean,String,RegExp,Map,Set,JSON,Intl,BigInt,console,Error,Symbol");
-function G(e10) {
+function G2(e10) {
   if (T(e10)) {
     let t10 = {};
     for (let n10 = 0; n10 < e10.length; n10++) {
-      let r10 = e10[n10], i10 = N(r10) ? Y(r10) : G(r10);
+      let r10 = e10[n10], i10 = N(r10) ? Y(r10) : G2(r10);
       if (i10) for (let e11 in i10) t10[e11] = i10[e11];
     }
     return t10;
@@ -43781,7 +44009,7 @@ function ee(e10) {
 function et2(e10) {
   if (!e10) return null;
   let { class: t10, style: n10 } = e10;
-  return t10 && !N(t10) && (e10.class = ee(t10)), n10 && (e10.style = G(n10)), e10;
+  return t10 && !N(t10) && (e10.class = ee(t10)), n10 && (e10.style = G2(n10)), e10;
 }
 var en = h("html,body,base,head,link,meta,style,title,address,article,aside,footer,header,hgroup,h1,h2,h3,h4,h5,h6,nav,section,div,dd,dl,dt,figcaption,figure,picture,hr,img,li,main,ol,p,pre,ul,a,b,abbr,bdi,bdo,br,cite,code,data,dfn,em,i,kbd,mark,q,rp,rt,ruby,s,samp,small,span,strong,sub,sup,time,u,var,wbr,area,audio,map,track,video,embed,object,param,source,canvas,script,noscript,del,ins,caption,col,colgroup,table,thead,tbody,td,th,tr,button,datalist,fieldset,form,input,label,legend,meter,optgroup,option,output,progress,select,textarea,details,dialog,menu,summary,template,blockquote,iframe,tfoot");
 var er = h("svg,animate,animateMotion,animateTransform,circle,clipPath,color-profile,defs,desc,discard,ellipse,feBlend,feColorMatrix,feComponentTransfer,feComposite,feConvolveMatrix,feDiffuseLighting,feDisplacementMap,feDistantLight,feDropShadow,feFlood,feFuncA,feFuncB,feFuncG,feFuncR,feGaussianBlur,feImage,feMerge,feMergeNode,feMorphology,feOffset,fePointLight,feSpecularLighting,feSpotLight,feTile,feTurbulence,filter,foreignObject,g,hatch,hatchpath,image,line,linearGradient,marker,mask,mesh,meshgradient,meshpatch,meshrow,metadata,mpath,path,pattern,polygon,polyline,radialGradient,rect,set,solidcolor,stop,switch,symbol,text,textPath,title,tspan,unknown,use,view");
@@ -45998,7 +46226,7 @@ function iL(e10, t10) {
     let a11, c11 = t11.el = e11.el, { patchFlag: u3, dynamicChildren: d4, dirs: h3 } = t11;
     u3 |= 16 & e11.patchFlag;
     let g3 = e11.props || f, m2 = t11.props || f;
-    if (n11 && iV(n11, false), (a11 = m2.onVnodeBeforeUpdate) && lm(a11, n11, t11, e11), h3 && nu(t11, e11, n11, "beforeUpdate"), n11 && iV(n11, true), (g3.innerHTML && null == m2.innerHTML || g3.textContent && null == m2.textContent) && p2(c11, ""), d4 ? D3(e11.dynamicChildren, d4, c11, n11, r11, i$(t11, i11), l11) : s11 || K4(e11, t11, c11, null, n11, r11, i$(t11, i11), l11, false), u3 > 0) {
+    if (n11 && iV(n11, false), (a11 = m2.onVnodeBeforeUpdate) && lm(a11, n11, t11, e11), h3 && nu(t11, e11, n11, "beforeUpdate"), n11 && iV(n11, true), (g3.innerHTML && null == m2.innerHTML || g3.textContent && null == m2.textContent) && p2(c11, ""), d4 ? D4(e11.dynamicChildren, d4, c11, n11, r11, i$(t11, i11), l11) : s11 || K4(e11, t11, c11, null, n11, r11, i$(t11, i11), l11, false), u3 > 0) {
       if (16 & u3) F2(c11, g3, m2, n11, i11);
       else if (2 & u3 && g3.class !== m2.class && o10(c11, "class", null, m2.class, i11), 4 & u3 && o10(c11, "style", g3.style, m2.style, i11), 8 & u3) {
         let e12 = t11.dynamicProps;
@@ -46012,7 +46240,7 @@ function iL(e10, t10) {
     ((a11 = m2.onVnodeUpdated) || h3) && iM(() => {
       a11 && lm(a11, n11, t11, e11), h3 && nu(t11, e11, n11, "updated");
     }, r11);
-  }, D3 = (e11, t11, n11, r11, i11, l11, s11) => {
+  }, D4 = (e11, t11, n11, r11, i11, l11, s11) => {
     for (let o11 = 0; o11 < t11.length; o11++) {
       let a11 = e11[o11], c11 = t11[o11], u3 = a11.el && (a11.type === iQ || !lt(a11, c11) || 198 & a11.shapeFlag) ? h2(a11.el) : n11;
       x2(a11, c11, u3, null, r11, i11, l11, s11, true);
@@ -46029,7 +46257,7 @@ function iL(e10, t10) {
     }
   }, $3 = (e11, t11, n11, r11, i11, s11, o11, a11, u3) => {
     let d4 = t11.el = e11 ? e11.el : c10(""), p3 = t11.anchor = e11 ? e11.anchor : c10(""), { patchFlag: h3, dynamicChildren: f2, slotScopeIds: g3 } = t11;
-    g3 && (a11 = a11 ? a11.concat(g3) : g3), null == e11 ? (l10(d4, n11, r11), l10(p3, n11, r11), O2(t11.children || [], n11, p3, i11, s11, o11, a11, u3)) : h3 > 0 && 64 & h3 && f2 && e11.dynamicChildren && e11.dynamicChildren.length === f2.length ? (D3(e11.dynamicChildren, f2, n11, i11, s11, o11, a11), (null != t11.key || i11 && t11 === i11.subTree) && ij(e11, t11, true)) : K4(e11, t11, n11, p3, i11, s11, o11, a11, u3);
+    g3 && (a11 = a11 ? a11.concat(g3) : g3), null == e11 ? (l10(d4, n11, r11), l10(p3, n11, r11), O2(t11.children || [], n11, p3, i11, s11, o11, a11, u3)) : h3 > 0 && 64 & h3 && f2 && e11.dynamicChildren && e11.dynamicChildren.length === f2.length ? (D4(e11.dynamicChildren, f2, n11, i11, s11, o11, a11), (null != t11.key || i11 && t11 === i11.subTree) && ij(e11, t11, true)) : K4(e11, t11, n11, p3, i11, s11, o11, a11, u3);
   }, B2 = (e11, t11, n11, r11, i11, l11, s11, o11, a11) => {
     t11.slotScopeIds = o11, null == e11 ? 512 & t11.shapeFlag ? i11.ctx.activate(t11, n11, r11, s11, a11) : j2(t11, n11, r11, i11, l11, s11, a11) : U2(e11, t11, a11);
   }, j2 = (e11, t11, n11, r11, i11, l11, s11) => {
@@ -46142,10 +46370,10 @@ function iL(e10, t10) {
   }, K4 = (e11, t11, n11, r11, i11, l11, s11, o11, a11 = false) => {
     let c11 = e11 && e11.children, u3 = e11 ? e11.shapeFlag : 0, d4 = t11.children, { patchFlag: h3, shapeFlag: f2 } = t11;
     if (h3 > 0) {
-      if (128 & h3) return void G2(c11, d4, n11, r11, i11, l11, s11, o11, a11);
+      if (128 & h3) return void G3(c11, d4, n11, r11, i11, l11, s11, o11, a11);
       else if (256 & h3) return void J2(c11, d4, n11, r11, i11, l11, s11, o11, a11);
     }
-    8 & f2 ? (16 & u3 && et3(c11, i11, l11), d4 !== c11 && p2(n11, d4)) : 16 & u3 ? 16 & f2 ? G2(c11, d4, n11, r11, i11, l11, s11, o11, a11) : et3(c11, i11, l11, true) : (8 & u3 && p2(n11, ""), 16 & f2 && O2(d4, n11, r11, i11, l11, s11, o11, a11));
+    8 & f2 ? (16 & u3 && et3(c11, i11, l11), d4 !== c11 && p2(n11, d4)) : 16 & u3 ? 16 & f2 ? G3(c11, d4, n11, r11, i11, l11, s11, o11, a11) : et3(c11, i11, l11, true) : (8 & u3 && p2(n11, ""), 16 & f2 && O2(d4, n11, r11, i11, l11, s11, o11, a11));
   }, J2 = (e11, t11, n11, r11, i11, l11, s11, o11, a11) => {
     let c11;
     e11 = e11 || g2, t11 = t11 || g2;
@@ -46155,7 +46383,7 @@ function iL(e10, t10) {
       x2(e11[c11], r14, n11, null, i11, l11, s11, o11, a11);
     }
     u3 > d4 ? et3(e11, i11, l11, true, false, p3) : O2(t11, n11, r11, i11, l11, s11, o11, a11, p3);
-  }, G2 = (e11, t11, n11, r11, i11, l11, s11, o11, a11) => {
+  }, G3 = (e11, t11, n11, r11, i11, l11, s11, o11, a11) => {
     let c11 = 0, u3 = t11.length, d4 = e11.length - 1, p3 = u3 - 1;
     for (; c11 <= d4 && c11 <= p3; ) {
       let r14 = e11[c11], u4 = t11[c11] = a11 ? lh(t11[c11]) : lp(t11[c11]);
@@ -46297,7 +46525,7 @@ function iL(e10, t10) {
   }, er2 = false, ei2 = (e11, t11, n11) => {
     let r11;
     null == e11 ? t11._vnode && (Q2(t11._vnode, null, null, true), r11 = t11._vnode.component) : x2(t11._vnode || null, e11, t11, null, null, null, n11), t11._vnode = e11, er2 || (er2 = true, t7(r11), ne(), er2 = false);
-  }, el2 = { p: x2, um: Q2, m: X2, r: Z2, mt: j2, mc: O2, pc: K4, pbc: D3, n: en2, o: e10 };
+  }, el2 = { p: x2, um: Q2, m: X2, r: Z2, mt: j2, mc: O2, pc: K4, pbc: D4, n: en2, o: e10 };
   return t10 && ([r10, i10] = t10(el2)), { render: ei2, hydrate: r10, createApp: (n10 = r10, function(e11, t11 = null) {
     w(e11) || (e11 = S2({}, e11)), null == t11 || E(t11) || (t11 = null);
     let r11 = io(), i11 = /* @__PURE__ */ new WeakSet(), l11 = [], s11 = false, o11 = r11.app = { _uid: ia++, _component: e11, _props: t11, _container: null, _context: r11, _instance: null, version: lB, get config() {
@@ -46507,7 +46735,7 @@ var ls = function(e10, t10 = null, n10 = null, r10 = 0, i10 = null, l10 = false)
   }
   if (w(s10 = e10) && "__vccOpts" in s10 && (e10 = e10.__vccOpts), t10) {
     let { class: e11, style: n11 } = t10 = lo(t10);
-    e11 && !N(e11) && (t10.class = ee(e11)), E(n11) && (ty(n11) && !T(n11) && (n11 = S2({}, n11)), t10.style = G(n11));
+    e11 && !N(e11) && (t10.class = ee(e11)), E(n11) && (ty(n11) && !T(n11) && (n11 = S2({}, n11)), t10.style = G2(n11));
   }
   let o10 = N(e10) ? 1 : iH(e10) ? 128 : e10.__isTeleport ? 64 : E(e10) ? 4 : 2 * !!w(e10);
   return ll(e10, t10, n10, r10, i10, o10, l10, true);
@@ -46556,7 +46784,7 @@ function lg(...e10) {
   for (let n10 = 0; n10 < e10.length; n10++) {
     let r10 = e10[n10];
     for (let e11 in r10) if ("class" === e11) t10.class !== r10.class && (t10.class = ee([t10.class, r10.class]));
-    else if ("style" === e11) t10.style = G([t10.style, r10.style]);
+    else if ("style" === e11) t10.style = G2([t10.style, r10.style]);
     else if (b(e11)) {
       let n11 = t10[e11], i10 = r10[e11];
       i10 && n11 !== i10 && !(T(n11) && n11.includes(i10)) ? t10[e11] = n11 ? [].concat(n11, i10) : i10 : null != i10 || null != n11 || _(e11) || (t10[e11] = i10);
@@ -47629,7 +47857,7 @@ var of = () => {
 var og;
 var om;
 var ov;
-var oy = Object.freeze({ __proto__: null, BaseTransition: nB, BaseTransitionPropsValidators: nL, Comment: iY, DeprecationTypes: lJ, EffectScope: eh, ErrorCodes: tJ, ErrorTypeStrings: lU, Fragment: iQ, KeepAlive: rc, ReactiveEffect: ey, Static: i0, Suspense: iW, Teleport: nR, Text: iZ, TrackOpTypes: tB, Transition: l4, TransitionGroup: sU, TriggerOpTypes: tj, VueElement: sM, assertNumber: tz, callWithAsyncErrorHandling: tX, callWithErrorHandling: tG, camelize: L, capitalize: B, cloneVNode: la, compatUtils: lz, computed: lD, createApp: oc, createBlock: i7, createCommentVNode: ld, createElementBlock: i9, createElementVNode: ll, createHydrationRenderer: iF, createPropsRestProxy: r3, createRenderer: iD, createSSRApp: ou, createSlots: rF, createStaticVNode: lu, createTextVNode: lc2, createVNode: ls, customRef: tM, defineAsyncComponent: rs, defineComponent: nz, defineCustomElement: sI, defineEmits: rK, defineExpose: rz, defineModel: rX, defineOptions: rJ, defineProps: rW, defineSSRCustomElement: sO, defineSlots: rG, devtools: lH, effect: eN, effectScope: ef, getCurrentInstance: lS, getCurrentScope: eg, getCurrentWatcher: tq, getTransitionRawChildren: nK, guardReactiveProps: lo, h: lF, handleError: tQ, hasInjectionContext: nh, hydrate: oa, hydrateOnIdle: rt, hydrateOnInteraction: ri, hydrateOnMediaQuery: rr, hydrateOnVisible: rn, initCustomFormatter: lL, initDirectivesForSSR: of, inject: np, isMemoSame: lV, isProxy: ty, isReactive: tg, isReadonly: tm, isRef: tC, isRuntimeOnly: lE, isShallow: tv, isVNode: le, markRaw: t_, mergeDefaults: r2, mergeModels: r6, mergeProps: lg, nextTick: t4, nodeOps: lY, normalizeClass: ee, normalizeProps: et2, normalizeStyle: G, onActivated: rd, onBeforeMount: ry, onBeforeUnmount: rx, onBeforeUpdate: r_, onDeactivated: rp, onErrorCaptured: rN, onMounted: rb, onRenderTracked: rw, onRenderTriggered: rT, onScopeDispose: em, onServerPrefetch: rk, onUnmounted: rC, onUpdated: rS, onWatcherCleanup: tW, openBlock: i6, patchProp: sE, popScopeId: ns, provide: nd, proxyRefs: tO, pushScopeId: nl, queuePostFlushCb: t9, reactive: tu, readonly: tp, ref: tk, registerRuntimeCompiler: lA, render: oo, renderList: rD, renderSlot: rL, resolveComponent: rE, resolveDirective: rO, resolveDynamicComponent: rI, resolveFilter: lK, resolveTransitionHooks: nU, setBlockTracking: i8, setDevtoolsHook: lq, setTransitionHooks: nW, shallowReactive: td2, shallowReadonly: th, shallowRef: tT, ssrContextKey: nf, ssrUtils: lW, stop: eA, toDisplayString: eu, toHandlerKey: j, toHandlers: rV, toRaw: tb, toRef: t$, toRefs: tD, toValue: tR, transformVNodeArgs: ln2, triggerRef: tA, unref: tE, useAttrs: rY, useCssModule: sL, useCssVars: sh, useHost: sD, useId: nJ, useModel: iu, useSSRContext: ng, useShadowRoot: sF, useSlots: rZ, useTemplateRef: nX, useTransitionState: nD, vModelCheckbox: sY, vModelDynamic: s8, vModelRadio: s1, vModelSelect: s22, vModelText: sZ, vShow: su, version: lB, warn: lj, watch: nb, watchEffect: nm, watchPostEffect: nv, watchSyncEffect: ny, withAsyncContext: r4, withCtx: na, withDefaults: rQ, withDirectives: nc, withKeys: or, withMemo: l$, withModifiers: ot, withScopeId: no });
+var oy = Object.freeze({ __proto__: null, BaseTransition: nB, BaseTransitionPropsValidators: nL, Comment: iY, DeprecationTypes: lJ, EffectScope: eh, ErrorCodes: tJ, ErrorTypeStrings: lU, Fragment: iQ, KeepAlive: rc, ReactiveEffect: ey, Static: i0, Suspense: iW, Teleport: nR, Text: iZ, TrackOpTypes: tB, Transition: l4, TransitionGroup: sU, TriggerOpTypes: tj, VueElement: sM, assertNumber: tz, callWithAsyncErrorHandling: tX, callWithErrorHandling: tG, camelize: L, capitalize: B, cloneVNode: la, compatUtils: lz, computed: lD, createApp: oc, createBlock: i7, createCommentVNode: ld, createElementBlock: i9, createElementVNode: ll, createHydrationRenderer: iF, createPropsRestProxy: r3, createRenderer: iD, createSSRApp: ou, createSlots: rF, createStaticVNode: lu, createTextVNode: lc2, createVNode: ls, customRef: tM, defineAsyncComponent: rs, defineComponent: nz, defineCustomElement: sI, defineEmits: rK, defineExpose: rz, defineModel: rX, defineOptions: rJ, defineProps: rW, defineSSRCustomElement: sO, defineSlots: rG, devtools: lH, effect: eN, effectScope: ef, getCurrentInstance: lS, getCurrentScope: eg, getCurrentWatcher: tq, getTransitionRawChildren: nK, guardReactiveProps: lo, h: lF, handleError: tQ, hasInjectionContext: nh, hydrate: oa, hydrateOnIdle: rt, hydrateOnInteraction: ri, hydrateOnMediaQuery: rr, hydrateOnVisible: rn, initCustomFormatter: lL, initDirectivesForSSR: of, inject: np, isMemoSame: lV, isProxy: ty, isReactive: tg, isReadonly: tm, isRef: tC, isRuntimeOnly: lE, isShallow: tv, isVNode: le, markRaw: t_, mergeDefaults: r2, mergeModels: r6, mergeProps: lg, nextTick: t4, nodeOps: lY, normalizeClass: ee, normalizeProps: et2, normalizeStyle: G2, onActivated: rd, onBeforeMount: ry, onBeforeUnmount: rx, onBeforeUpdate: r_, onDeactivated: rp, onErrorCaptured: rN, onMounted: rb, onRenderTracked: rw, onRenderTriggered: rT, onScopeDispose: em, onServerPrefetch: rk, onUnmounted: rC, onUpdated: rS, onWatcherCleanup: tW, openBlock: i6, patchProp: sE, popScopeId: ns, provide: nd, proxyRefs: tO, pushScopeId: nl, queuePostFlushCb: t9, reactive: tu, readonly: tp, ref: tk, registerRuntimeCompiler: lA, render: oo, renderList: rD, renderSlot: rL, resolveComponent: rE, resolveDirective: rO, resolveDynamicComponent: rI, resolveFilter: lK, resolveTransitionHooks: nU, setBlockTracking: i8, setDevtoolsHook: lq, setTransitionHooks: nW, shallowReactive: td2, shallowReadonly: th, shallowRef: tT, ssrContextKey: nf, ssrUtils: lW, stop: eA, toDisplayString: eu, toHandlerKey: j, toHandlers: rV, toRaw: tb, toRef: t$, toRefs: tD, toValue: tR, transformVNodeArgs: ln2, triggerRef: tA, unref: tE, useAttrs: rY, useCssModule: sL, useCssVars: sh, useHost: sD, useId: nJ, useModel: iu, useSSRContext: ng, useShadowRoot: sF, useSlots: rZ, useTemplateRef: nX, useTransitionState: nD, vModelCheckbox: sY, vModelDynamic: s8, vModelRadio: s1, vModelSelect: s22, vModelText: sZ, vShow: su, version: lB, warn: lj, watch: nb, watchEffect: nm, watchPostEffect: nv, watchSyncEffect: ny, withAsyncContext: r4, withCtx: na, withDefaults: rQ, withDirectives: nc, withKeys: or, withMemo: l$, withModifiers: ot, withScopeId: no });
 var ob = Symbol("");
 var o_ = Symbol("");
 var oS = Symbol("");
@@ -48903,8 +49131,8 @@ function cM(e10, t10, n10 = e10.props, r10, i10, l10 = false) {
         let t11 = s10.properties[e11].key;
         am(t11) ? "class" === t11.content ? E2 = e11 : "style" === t11.content && (R2 = e11) : t11.isHandlerKey || (I2 = true);
       }
-      let O2 = s10.properties[E2], D3 = s10.properties[R2];
-      I2 ? s10 = an(t10.helper(oq), [s10]) : (O2 && !am(O2.value) && (O2.value = an(t10.helper(oU), [O2.value])), D3 && (_2 || 4 === D3.value.type && "[" === D3.value.content.trim()[0] || 17 === D3.value.type) && (D3.value = an(t10.helper(oH), [D3.value])));
+      let O2 = s10.properties[E2], D4 = s10.properties[R2];
+      I2 ? s10 = an(t10.helper(oq), [s10]) : (O2 && !am(O2.value) && (O2.value = an(t10.helper(oU), [O2.value])), D4 && (_2 || 4 === D4.value.type && "[" === D4.value.content.trim()[0] || 17 === D4.value.type) && (D4.value = an(t10.helper(oH), [D4.value])));
       break;
     case 14:
       break;
@@ -55481,7 +55709,7 @@ installTouchTips();
 applyDocumentLang();
 document.getElementById("score")?.setAttribute("aria-label", _t("\u4E50\u8C31"));
 initBlackBox(APP_VERSION);
-var D2 = createDocument({ st: initState(), extras: emptyExtras() }, {
+var D3 = createDocument({ st: initState(), extras: emptyExtras() }, {
   now: () => performance.now(),
   normalize: (next2) => withStartDyns(next2),
   onState: (prev, next2, moved) => afterState(prev, next2, moved, true),
@@ -55500,7 +55728,7 @@ var H2 = createHome({ home: { kind: "none", pendingFolder: null }, stem: default
   suffix: SONG_SUFFIX,
   bytes: () => bytesNow(),
   dirty: () => owesSave(),
-  title: () => D2.st.song.title ?? "",
+  title: () => D3.st.song.title ?? "",
   freshStem: () => defaultStem(),
   locked: () => lock.locked(),
   onFileBorn: (h2) => lock.keepLocalFileUnlocked(h2),
@@ -55511,7 +55739,7 @@ var H2 = createHome({ home: { kind: "none", pendingFolder: null }, stem: default
     offerFile(file, _t("\u5B58\u6210 .mxl"), _t("{name} \xB7 {size}\u3002\u4E0B\u8F7D\u6216\u5206\u4EAB\u5230\u300C\u6587\u4EF6\u300D\u91CC\uFF1B\u4EE5\u540E\u4ECE\u6587\u4EF6\u83DC\u5355\u300C\u6253\u5F00\u300D\u3002", { name: esc11(file.name), size: sizeText3(file.size) }), onSaved);
   },
   markSaved: () => {
-    D2.markSaved();
+    D3.markSaved();
     renderTitle();
   },
   report: (e10, level) => reportError(e10, level === "error" ? "error" : "warning"),
@@ -55532,7 +55760,7 @@ var lock = createEditLock({
   createPending: () => es2.createPending(),
   loading: () => loadingDoc
 });
-var owesSave = () => D2.dirty() && !(lock.locked() && D2.dirtyKind() === "looks");
+var owesSave = () => D3.dirty() && !(lock.locked() && D3.dirtyKind() === "looks");
 var RENDER_KEEP = 20;
 var renders = createRenderCache(idbRenderStore(), { max: RENDER_KEEP, now: () => Date.now(), report: (e10) => reportError(e10, "log") });
 var homeKey = () => folderHome()?.id ?? "default";
@@ -55547,7 +55775,7 @@ async function fileStamp(id2) {
 var renderKeyNow = (quality, parts, title) => renders.keyOf({ fingerprint: contentFingerprintOf(saveArgs()), quality, parts, title });
 function renderHit(quality) {
   try {
-    const m2 = renders.find(renderKeyNow(quality, perfApi.audibleParts().map((p2) => p2.id), D2.st.song.title || docName()));
+    const m2 = renders.find(renderKeyNow(quality, perfApi.audibleParts().map((p2) => p2.id), D3.st.song.title || docName()));
     return m2 && m2.core.hash === coreInfo().hash ? m2 : null;
   } catch {
     return null;
@@ -55575,7 +55803,7 @@ async function keepRender(o10, tagged) {
 }
 async function linkRenderNow(key) {
   const h2 = H2.home;
-  if (h2.kind !== "gallery" || D2.dirty()) return;
+  if (h2.kind !== "gallery" || D3.dirty()) return;
   const stamp2 = await fileStamp(h2.identifier);
   if (!stamp2) return;
   if (await renders.link(homeKey(), h2.identifier, key, stamp2)) gallery?.invalidateFacts(h2.identifier);
@@ -55595,7 +55823,7 @@ async function adoptLegacyMp3(l10, title, galleryId) {
     await renders.ready();
     const quality = Object.keys(MP3_QUALITY).find((q2) => MP3_QUALITY[q2].kbps === l10.kbps && MP3_QUALITY[q2].stereo === l10.stereo) ?? `legacy-${l10.kbps}${l10.stereo ? "s" : "m"}`;
     const key = renders.keyOf({ fingerprint: l10.fingerprint, quality, parts: l10.parts, title });
-    const meta = renders.find(key) ?? await renders.put({ fingerprint: l10.fingerprint, quality, parts: l10.parts, roles: D2.st.song.parts.filter((p2) => l10.parts.includes(p2.id)).map((p2) => p2.role), secs: l10.secs, kbps: l10.kbps, stereo: l10.stereo, title, app: l10.app, core: l10.core }, l10.bytes);
+    const meta = renders.find(key) ?? await renders.put({ fingerprint: l10.fingerprint, quality, parts: l10.parts, roles: D3.st.song.parts.filter((p2) => l10.parts.includes(p2.id)).map((p2) => p2.role), secs: l10.secs, kbps: l10.kbps, stereo: l10.stereo, title, app: l10.app, core: l10.core }, l10.bytes);
     if (galleryId) {
       const stamp2 = await fileStamp(galleryId);
       if (stamp2 && await renders.link(homeKey(), galleryId, meta.key, stamp2)) gallery?.invalidateFacts(galleryId);
@@ -55606,10 +55834,10 @@ async function adoptLegacyMp3(l10, title, galleryId) {
     reportError(e10, "log");
   }
 }
-var curPart = () => D2.st.song.parts.find((p2) => p2.id === D2.st.at.part) ?? D2.st.song.parts[0];
+var curPart = () => D3.st.song.parts.find((p2) => p2.id === D3.st.at.part) ?? D3.st.song.parts[0];
 var ignoredFor = (role) => {
-  const sp2 = activePerfSpec(D2.extras, role);
-  return ignoredArts(performerOf(activeInstrument(D2.extras, role)?.engine), sp2.gapSec, sp2.canSwell);
+  const sp2 = activePerfSpec(D3.extras, role);
+  return ignoredArts(performerOf(activeInstrument(D3.extras, role)?.engine), sp2.gapSec, sp2.canSwell);
 };
 var ignoredHere = () => ignoredFor(curPart().role);
 var MARK_NAME = { ...ART_NAME, slur: _t("\u8FDE\u7EBF"), swellGrow: _t("\u97F3\u5185\u6E10\u5F3A / \u9F13\u8D77"), swellFade: _t("\u97F3\u5185\u6E10\u5F31"), inhale: _t("\u51FA\u58F0\u7684\u6362\u6C14") };
@@ -55617,13 +55845,13 @@ function discloseArt(prev, a10) {
   if (!ignoredHere().includes(a10)) return;
   const has2 = (t10) => t10.kind === "note" && (a10 === "slur" ? !!t10.slur : a10 === "inhale" ? !!t10.inhale : a10 === "swellGrow" ? swellOf(t10) === "<" || swellOf(t10) === "<>" : a10 === "swellFade" ? swellOf(t10) === ">" : (t10.art ?? []).includes(a10));
   const n10 = (s10) => tr(s10).filter(has2).length;
-  if (n10(D2.st) <= n10(prev)) return;
-  const role = curPart().role, who = activeCandidateName(D2.extras, role) || _t("\u53F0\u4E0A\u8FD9\u4F4D");
-  const why2 = whyIgnored(performerOf(activeInstrument(D2.extras, role)?.engine), a10);
+  if (n10(D3.st) <= n10(prev)) return;
+  const role = curPart().role, who = activeCandidateName(D3.extras, role) || _t("\u53F0\u4E0A\u8FD9\u4F4D");
+  const why2 = whyIgnored(performerOf(activeInstrument(D3.extras, role)?.engine), a10);
   info(why2 === "decay" ? _t("{who}\u7684\u97F3\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF0C{p}\u505A\u4E0D\u5230\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u97F3\u5185\u6E10\u5F31\u7167\u505A", { who, p: MARK_NAME[a10] }) : why2 === "sung" ? _t("{who}\u672C\u6765\u5C31\u8FDE\u7740\u5531\uFF1A{p}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8\uFF1B\u8981\u65AD\u53E5\u7528\u547C\u5438", { who, p: MARK_NAME[a10] }) : why2 === "gap" ? _t("{who}\u672C\u6765\u5C31\u4E0D\u7559\u7F1D\uFF08\u4E50\u5668\u9875\u300C\u97F3\u548C\u97F3\u4E4B\u95F4\u300D= 0\uFF09\uFF1A{p}\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D8", { who, p: MARK_NAME[a10] }) : _t("{who}\u4E0D\u8BA4{p}\uFF1A\u5199\u5728\u8C31\u4E0A\u4E86\uFF08\u753B\u7070\uFF09\uFF0C\u51FA\u58F0\u4E0D\u53D7\u5F71\u54CD", { who, p: MARK_NAME[a10] }));
 }
 function discloseDynOverride(prev) {
-  const toks = tr(D2.st), now2 = dynOverridden(toks);
+  const toks = tr(D3.st), now2 = dynOverridden(toks);
   if (now2.size <= dynOverridden(tr(prev)).size) return;
   const v = [...now2].map((i10) => toks[i10]).find((t10) => t10.kind === "dyn");
   info(_t("\u8FD9\u4E2A {p} \u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\uFF0C\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p", { p: v && v.kind === "dyn" ? v.value : _t("\u529B\u5EA6\u8BB0\u53F7") }));
@@ -55634,12 +55862,12 @@ var pv = (id2) => partView.get(id2) ?? { hidden: false, only: false, muted: fals
 var setPv = (id2, patch) => partView.set(id2, { ...pv(id2), ...patch });
 var stubbed = (id2) => !isShown(id2);
 function showPart(id2) {
-  if (D2.st.song.parts.some((p2) => pv(p2.id).only)) setPv(id2, { only: true });
+  if (D3.st.song.parts.some((p2) => pv(p2.id).only)) setPv(id2, { only: true });
   else setPv(id2, { hidden: false });
   afterViewChange();
 }
 var isShown = (id2) => {
-  const only = D2.st.song.parts.some((p2) => pv(p2.id).only);
+  const only = D3.st.song.parts.some((p2) => pv(p2.id).only);
   return only ? pv(id2).only : !pv(id2).hidden;
 };
 var docName = () => H2.name();
@@ -55797,19 +56025,19 @@ var topSelsSig = "";
 function renderTopSels() {
   const ps = $2("paperSel"), qs = $2("partSel");
   if (!ps || !qs) return;
-  const labels = partLabels(D2.st.song, D2.extras), only = D2.st.song.parts.filter((p2) => pv(p2.id).only);
-  const paperOpts = [["all", _t("\u5168\u90E8\u66F2\u6BB5")], ...D2.st.song.papers.map((p2, k2) => [p2.id, `${p2.name || _t("\u7B2C {p} \u6BB5", { p: k2 + 1 })}${p2.hidden ? _t("\uFF08\u9690\u85CF\uFF09") : ""}`])];
-  const partOpts = [["all", _t("\u5168\u90E8\u58F0\u90E8")], ...D2.st.song.parts.map((p2, k2) => [p2.id, labels[k2] ?? p2.id])];
+  const labels = partLabels(D3.st.song, D3.extras), only = D3.st.song.parts.filter((p2) => pv(p2.id).only);
+  const paperOpts = [["all", _t("\u5168\u90E8\u66F2\u6BB5")], ...D3.st.song.papers.map((p2, k2) => [p2.id, `${p2.name || _t("\u7B2C {p} \u6BB5", { p: k2 + 1 })}${p2.hidden ? _t("\uFF08\u9690\u85CF\uFF09") : ""}`])];
+  const partOpts = [["all", _t("\u5168\u90E8\u58F0\u90E8")], ...D3.st.song.parts.map((p2, k2) => [p2.id, labels[k2] ?? p2.id])];
   const sig = JSON.stringify([paperOpts, partOpts]);
   if (sig !== topSelsSig) {
     topSelsSig = sig;
     ps.innerHTML = paperOpts.map(([v, l10]) => `<option value="${esc11(v)}">${esc11(l10)}</option>`).join("");
     qs.innerHTML = partOpts.map(([v, l10]) => `<option value="${esc11(v)}">${esc11(l10)}</option>`).join("");
   }
-  ps.value = viewScope === "all" ? "all" : D2.st.at.paper;
+  ps.value = viewScope === "all" ? "all" : D3.st.at.paper;
   qs.value = only.length === 1 ? only[0].id : "all";
-  ps.hidden = D2.st.song.papers.length < 2;
-  qs.hidden = D2.st.song.parts.length < 2;
+  ps.hidden = D3.st.song.papers.length < 2;
+  qs.hidden = D3.st.song.parts.length < 2;
 }
 function updateChrome() {
   if (!chromeReady) return;
@@ -55828,7 +56056,7 @@ function updateChrome() {
   viewTab.hidden = over || $2("paperSel").hidden && $2("partSel").hidden;
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
-  const n10 = D2.st.sel ? D2.st.sel.to - D2.st.sel.from : 0;
+  const n10 = D3.st.sel ? D3.st.sel.to - D3.st.sel.from : 0;
   const sig = `${n10}|${!!clip}|${over || studio.isOpen}`;
   if (sig !== selSig) {
     selSig = sig;
@@ -55837,7 +56065,7 @@ function updateChrome() {
 }
 function setClip(t10) {
   clip = t10;
-  clipText = toJianpu(t10, fifthsAtSel(D2.st));
+  clipText = toJianpu(t10, fifthsAtSel(D3.st));
   void navigator.clipboard?.writeText?.(clipText).catch(() => void 0);
   updateChrome();
 }
@@ -55847,22 +56075,22 @@ async function pasteNow() {
     sys = await navigator.clipboard?.readText?.() ?? "";
   } catch {
   }
-  let toks = sys && sys.trim() !== clipText.trim() ? fromJianpu(sys, fifthsAtSel(D2.st)) : null;
+  let toks = sys && sys.trim() !== clipText.trim() ? fromJianpu(sys, fifthsAtSel(D3.st)) : null;
   if (!toks) toks = clip;
   if (!toks) {
     info(sys ? _t("\u526A\u8D34\u677F\u91CC\u7684\u4E0D\u662F\u7B80\u8C31\uFF08\u50CF 1 2 3 | 5 - - \u8FD9\u6837\u7684\u624D\u8BA4\uFF09") : _t("\u526A\u8D34\u677F\u91CC\u6CA1\u6709\u4E1C\u897F"));
     return;
   }
-  update(pasteTokens(D2.st, toks));
+  update(pasteTokens(D3.st, toks));
   info(_t("\u8D34\u4E86 {n} \u4E2A", { n: toks.length }));
 }
 async function selVerb(v) {
   switch (v) {
     case "all":
-      update(selectAll(D2.st));
+      update(selectAll(D3.st));
       break;
     case "copy": {
-      const t10 = copyTokens(D2.st);
+      const t10 = copyTokens(D3.st);
       if (t10) {
         setClip(t10);
         info(_t("\u590D\u5236\u4E86 {n} \u4E2A", { n: t10.length }));
@@ -55870,7 +56098,7 @@ async function selVerb(v) {
       break;
     }
     case "cut": {
-      const r10 = cutTokens(D2.st);
+      const r10 = cutTokens(D3.st);
       if (r10) {
         setClip(r10.toks);
         update(r10.st);
@@ -55882,14 +56110,14 @@ async function selVerb(v) {
       await pasteNow();
       break;
     case "transpose":
-      if (D2.st.sel) openSelMenu(selBarAnchor());
+      if (D3.st.sel) openSelMenu(selBarAnchor());
       break;
     // 选区菜单（移调 / 转调 / 时值…；user「不要用keyboard，而是一个小的上下文菜单」）
     case "delete":
-      if (D2.st.sel) update(apply(D2.st, { k: "delete" }));
+      if (D3.st.sel) update(apply(D3.st, { k: "delete" }));
       break;
     case "clear":
-      if (D2.st.sel) update(setCaret(D2.st, D2.st.sel.to));
+      if (D3.st.sel) update(setCaret(D3.st, D3.st.sel.to));
       break;
     case "forget":
       clip = null;
@@ -55899,37 +56127,37 @@ async function selVerb(v) {
     // 第二排 = 微调（v0.10.1；user「选区多微调同意」）：点了不收、选区留着；音高变了响一下（同选区菜单的移调）
     case "up":
     case "down":
-      if (D2.st.sel) {
-        update(apply(D2.st, { k: "step", d: v === "up" ? 1 : -1 }, performance.now()));
+      if (D3.st.sel) {
+        update(apply(D3.st, { k: "step", d: v === "up" ? 1 : -1 }, performance.now()));
         previewEdited();
       }
       break;
     case "sharp":
     case "flat":
-      if (D2.st.sel) {
-        update(apply(D2.st, { k: "alter", d: v === "sharp" ? 1 : -1 }, performance.now()));
+      if (D3.st.sel) {
+        update(apply(D3.st, { k: "alter", d: v === "sharp" ? 1 : -1 }, performance.now()));
         previewEdited();
       }
       break;
     case "octUp":
     case "octDown":
-      if (D2.st.sel) {
-        update(apply(D2.st, { k: "octave", d: v === "octUp" ? 1 : -1 }, performance.now()));
+      if (D3.st.sel) {
+        update(apply(D3.st, { k: "octave", d: v === "octUp" ? 1 : -1 }, performance.now()));
         previewEdited();
       }
       break;
     case "half":
     case "double":
-      if (D2.st.sel) {
-        const nx2 = apply(D2.st, { k: "selscale", f: v === "half" ? 0.5 : 2 }, performance.now());
-        if (nx2 === D2.st) info(v === "half" ? _t("\u518D\u77ED\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86") : _t("\u518D\u957F\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86"));
+      if (D3.st.sel) {
+        const nx2 = apply(D3.st, { k: "selscale", f: v === "half" ? 0.5 : 2 }, performance.now());
+        if (nx2 === D3.st) info(v === "half" ? _t("\u518D\u77ED\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86") : _t("\u518D\u957F\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86"));
         else update(nx2);
       }
       break;
     case "dot":
-      if (D2.st.sel) {
-        const nx2 = toggleSelDot(D2.st);
-        if (nx2 === D2.st) info(_t("\u9009\u4E2D\u7684\u91CC\u9762\u6CA1\u6709\u80FD\u52A0\u9644\u70B9\u7684\u65F6\u503C"));
+      if (D3.st.sel) {
+        const nx2 = toggleSelDot(D3.st);
+        if (nx2 === D3.st) info(_t("\u9009\u4E2D\u7684\u91CC\u9762\u6CA1\u6709\u80FD\u52A0\u9644\u70B9\u7684\u65F6\u503C"));
         else update(nx2);
       }
       break;
@@ -55950,7 +56178,7 @@ function ensureVowels() {
   });
 }
 function dynAtCursor(role) {
-  const tokens = tr(D2.st), i10 = D2.st.sel ? D2.st.sel.from : D2.st.caret, sp2 = activePerfSpec(D2.extras, role);
+  const tokens = tr(D3.st), i10 = D3.st.sel ? D3.st.sel.from : D3.st.caret, sp2 = activePerfSpec(D3.extras, role);
   const pick = (m2) => {
     for (let k2 = i10; k2 < tokens.length; k2++) {
       const l10 = m2.get(k2);
@@ -55963,19 +56191,19 @@ function dynAtCursor(role) {
     return null;
   };
   const dB = pick(dynLevels(tokens, void 0, sp2.dynamicsDb, sp2.dynamicsDb.mf ?? 0, sp2.wedgeStepDb ?? MARK_DEFAULTS.wedgeStepDb)) ?? 0;
-  const vel = sp2.dynamicsVel ? pick(dynLevels(tokens, void 0, sp2.dynamicsVel, activeVelocity(D2.extras, role) * 127, sp2.wedgeStepVel ?? MARK_DEFAULTS.wedgeStepVel)) : null;
+  const vel = sp2.dynamicsVel ? pick(dynLevels(tokens, void 0, sp2.dynamicsVel, activeVelocity(D3.extras, role) * 127, sp2.wedgeStepVel ?? MARK_DEFAULTS.wedgeStepVel)) : null;
   return { vel: vel === null ? null : Math.max(1, Math.min(127, vel)) / 127, dB };
 }
 function auditionTarget() {
-  const kana = HUM_KANA[D2.st.song.hum ?? "n"];
+  const kana = HUM_KANA[D3.st.song.hum ?? "n"];
   if (finder.isOpen) {
     if (auditionMute) return null;
     const a10 = audition;
     if (a10) return { inst: { kind: "sf", sha: a10.sha256, preset: engine.presetIndex(a10.sha256, a10.bank, a10.program) }, key: (m2) => sfKey(m2, a10), vel: SOUNDFONT_DEFAULTS.velocity, gainDb: 0, pan: 0 };
     return { inst: { kind: "vowel", kana }, key: (m2) => m2, vel: 1, gainDb: 0, pan: 0 };
   }
-  const part = D2.st.song.parts.find((p2) => p2.id === D2.st.at.part), ch2 = part ? channelOf2(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
-  const t10 = performerOf(engineNow())?.audition?.({ extras: D2.extras, role: curRole(), kana, dyn, engine, ensureBank: () => {
+  const part = D3.st.song.parts.find((p2) => p2.id === D3.st.at.part), ch2 = part ? channelOf2(part) : { gainDb: 0, pan: 0 }, dyn = dynAtCursor(curRole());
+  const t10 = performerOf(engineNow())?.audition?.({ extras: D3.extras, role: curRole(), kana, dyn, engine, ensureBank: () => {
     void prepareBank();
   } });
   return t10 ? { ...t10, gainDb: ch2.gainDb + t10.gainDb, pan: ch2.pan } : null;
@@ -56116,20 +56344,20 @@ var soundAfterWrite = (s10, i10, id2, sounded) => {
   if (extra.length) chordVoices.set(id2, extra.length);
 };
 function previewEdited() {
-  const toks = tr(D2.st);
+  const toks = tr(D3.st);
   let i10 = -1;
-  if (D2.st.sel) {
-    for (let k2 = D2.st.sel.from; k2 < D2.st.sel.to; k2++) if (toks[k2]?.kind === "note") {
+  if (D3.st.sel) {
+    for (let k2 = D3.st.sel.from; k2 < D3.st.sel.to; k2++) if (toks[k2]?.kind === "note") {
       i10 = k2;
       break;
     }
-  } else for (let k2 = D2.st.caret - 1; k2 >= 0; k2--) if (toks[k2]?.kind === "note") {
+  } else for (let k2 = D3.st.caret - 1; k2 >= 0; k2--) if (toks[k2]?.kind === "note") {
     i10 = k2;
     break;
   }
   if (i10 < 0) return;
   clearTimeout(upTimer);
-  soundTok(D2.st, i10, "score");
+  soundTok(D3.st, i10, "score");
   upTimer = window.setTimeout(() => sound.up("score"), 350);
 }
 var keyTok = (s10, i10, code) => {
@@ -56138,14 +56366,14 @@ var keyTok = (s10, i10, code) => {
   if (t10?.kind === "note" && t10.pitch) pad3.showDown(midiOf(t10.pitch), `key${code}`);
 };
 function writeAndLocate(write, gesture) {
-  const n10 = write(D2.st);
-  if (n10 === D2.st) return -1;
+  const n10 = write(D3.st);
+  if (n10 === D3.st) return -1;
   update(n10, gesture);
-  return D2.st.caret - 1;
+  return D3.st.caret - 1;
 }
 var upTimer = 0;
 var view = new ScoreView(scoreEl, {
-  get: () => D2.st,
+  get: () => D3.st,
   set: (n10, o10) => update(n10, o10?.gesture),
   // ② 怎么画、画什么（谱面分家第二刀：原来散在宿主上的十几个看法收进这一个对象；第三刀：这首歌自己的设置从歌里读、排版 worker 单拎出来，这里只剩这次打开 / 这台设备的）
   look: {
@@ -56179,12 +56407,12 @@ var view = new ScoreView(scoreEl, {
   sound: {
     audition: (i10, hold) => {
       clearTimeout(upTimer);
-      soundTok(D2.st, i10, "score");
+      soundTok(D3.st, i10, "score");
       if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350);
     },
     glide: (i10) => {
       clearTimeout(upTimer);
-      const t10 = tr(D2.st)[i10];
+      const t10 = tr(D3.st)[i10];
       if (t10?.kind === "note" && t10.pitch) sound.glide(t10.pitch, "score");
     },
     release: () => {
@@ -56248,8 +56476,8 @@ var view = new ScoreView(scoreEl, {
 });
 var overlay = null;
 function overlayView() {
-  const paper = D2.st.song.paper ?? paperOf(DEFAULT_PAPER);
-  return { song: D2.st.song, edit: view.rules.edit, marks: view.rules.symbols, onlyPaper: viewScope === "segment" ? D2.st.at.paper : null, paperLabel: paper.kind === "other" ? _t("\u5176\u4ED6\u7EB8") : PAPER_LABEL[paper.kind] };
+  const paper = D3.st.song.paper ?? paperOf(DEFAULT_PAPER);
+  return { song: D3.st.song, edit: view.rules.edit, marks: view.rules.symbols, onlyPaper: viewScope === "segment" ? D3.st.at.paper : null, paperLabel: paper.kind === "other" ? _t("\u5176\u4ED6\u7EB8") : PAPER_LABEL[paper.kind] };
 }
 var overlayHost = {
   toggles: (part) => {
@@ -56264,17 +56492,17 @@ var overlayHost = {
   onPaperMenu: (id2) => openPaperMenu(id2),
   onPaperAdd: (paper, kind, at2) => {
     if (kind === "paper") {
-      update(addPaper(D2.st, paper));
+      update(addPaper(D3.st, paper));
       info(_t("\u65B0\u7684\u4E00\u6BB5"));
     } else openAddPartMenu(paper, at2);
   },
   // 纸底下的虚线框（v0.16.19 搬家 D）
   onNavFrom: (paper, dir) => navPaperFrom(paper, dir),
   onScopeOf: (paper) => {
-    if (viewScope === "segment" && D2.st.at.paper === paper) viewScope = "all";
+    if (viewScope === "segment" && D3.st.at.paper === paper) viewScope = "all";
     else {
       viewScope = "segment";
-      if (D2.st.at.paper !== paper) navPaperTo(paper);
+      if (D3.st.at.paper !== paper) navPaperTo(paper);
     }
     view.render();
   },
@@ -56287,9 +56515,9 @@ var overlayHost = {
   onKeyHint: (paper, part, index, at2) => headerPanel.open(paper, part, index, at2),
   onLeaveFamily: (paper, host2) => view.leaveFamily(paper, host2),
   onHidden: (paper, ids, at2) => {
-    const labels = partLabels(D2.st.song, D2.extras), looks = partLooks();
+    const labels = partLabels(D3.st.song, D3.extras), looks = partLooks();
     const rows = ids.map((id2) => {
-      const k2 = D2.st.song.parts.findIndex((p2) => p2.id === id2);
+      const k2 = D3.st.song.parts.findIndex((p2) => p2.id === id2);
       return k2 < 0 ? "" : `<button class="btn ctx-item hid-row" data-v="${esc11(id2)}"><span class="pm-dot" style="background:${TAB20[looks.colors[k2] ?? 0]}"></span>${esc11(labels[k2] ?? id2)}</button>`;
     }).join("");
     ctxMenu("hidden-list", `<div class="tc-sec">${_t("\u9690\u85CF\u7740\u7684\uFF08\u70B9 = \u653E\u51FA\u6765\uFF09")}</div>${rows}`, at2, (v) => {
@@ -56300,7 +56528,7 @@ var overlayHost = {
     const rows = ids.map((id2) => `<div class="hidp-row"><span class="hidp-name">${esc11(paperLabel(id2))}</span><button class="btn ctx-item" data-v="go:${esc11(id2)}">${_t("\u53BB\u770B")}</button><button class="btn ctx-item" data-v="show:${esc11(id2)}">${_t("\u653E\u51FA\u6765")}</button></div>`).join("");
     ctxMenu("hidden-papers", `<div class="tc-sec">${_t("\u9690\u85CF\u7740\u7684\u66F2\u6BB5\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\uFF09")}</div>${rows}`, at2, (v) => {
       const id2 = v.slice(v.indexOf(":") + 1);
-      if (!D2.st.song.papers.some((p2) => p2.id === id2)) return;
+      if (!D3.st.song.papers.some((p2) => p2.id === id2)) return;
       if (v.startsWith("go:")) {
         viewScope = "segment";
         navPaperTo(id2);
@@ -56323,11 +56551,11 @@ var halfShifted = false;
 function setHalf(next2) {
   const was = latchOn(half), on2 = latchOn(next2);
   if (!was && on2) {
-    halfShifted = D2.st.input.unit > 0;
-    if (halfShifted) update(setUnit(D2.st, D2.st.input.unit - 1));
+    halfShifted = D3.st.input.unit > 0;
+    if (halfShifted) update(setUnit(D3.st, D3.st.input.unit - 1));
   } else if (was && !on2 && halfShifted) {
     halfShifted = false;
-    update(setUnit(D2.st, D2.st.input.unit + 1));
+    update(setUnit(D3.st, D3.st.input.unit + 1));
   }
   half = next2;
   pad3.showHalf(next2.mode);
@@ -56338,46 +56566,46 @@ function halfKey(down) {
 function stackKey(down) {
   if (!down) return;
   if (!canStack()) {
-    info(_t("\u300C{extras}\u300D\u662F\u5355\u58F0\u4E50\u5668\uFF0C\u8FD9\u4E2A\u58F0\u90E8\u53E0\u4E0D\u4E86\u97F3", { extras: roleName(D2.extras, curRole()) }));
+    info(_t("\u300C{extras}\u300D\u662F\u5355\u58F0\u4E50\u5668\uFF0C\u8FD9\u4E2A\u58F0\u90E8\u53E0\u4E0D\u4E86\u97F3", { extras: roleName(D3.extras, curRole()) }));
     return;
   }
-  if (singleSel(D2.st) >= 0) {
-    update(setCaret(D2.st, D2.st.sel.to));
+  if (singleSel(D3.st) >= 0) {
+    update(setCaret(D3.st, D3.st.sel.to));
     return;
   }
-  const tk2 = tr(D2.st);
+  const tk2 = tr(D3.st);
   let i10 = -1;
-  if (D2.st.sel) {
-    for (let k2 = D2.st.sel.to - 1; k2 >= D2.st.sel.from; k2--) if (isTimed(tk2[k2])) {
+  if (D3.st.sel) {
+    for (let k2 = D3.st.sel.to - 1; k2 >= D3.st.sel.from; k2--) if (isTimed(tk2[k2])) {
       i10 = k2;
       break;
     }
-  } else i10 = currentIndex(D2.st);
+  } else i10 = currentIndex(D3.st);
   if (i10 < 0) {
     info(_t("\u5149\u6807\u524D\u9762\u8FD8\u6CA1\u6709\u97F3"));
     return;
   }
-  update(select(D2.st, i10, i10 + 1));
+  update(select(D3.st, i10, i10 + 1));
 }
 var accG = null;
 function accKey(phase, acc) {
   if (phase === "down") {
-    if (D2.st.sel) {
-      update(tapAcc(D2.st, acc, performance.now()));
+    if (D3.st.sel) {
+      update(tapAcc(D3.st, acc, performance.now()));
       accG = null;
       return;
     }
-    accG = { prior: { acc: D2.st.input.acc, accMode: D2.st.input.accMode, accAt: D2.st.input.accAt }, latch: { ...LATCH_OFF, held: true }, slid: false };
-    update(setAccState(D2.st, acc, "lock"));
+    accG = { prior: { acc: D3.st.input.acc, accMode: D3.st.input.accMode, accAt: D3.st.input.accAt }, latch: { ...LATCH_OFF, held: true }, slid: false };
+    update(setAccState(D3.st, acc, "lock"));
   } else if (phase === "slide") {
     if (!accG) return;
     accG.slid = true;
-    update(setAccState(D2.st, acc, "lock"));
+    update(setAccState(D3.st, acc, "lock"));
   } else {
     const g3 = accG;
     accG = null;
     if (!g3) return;
-    const back = { ...D2.st, input: { ...D2.st.input, ...g3.prior } };
+    const back = { ...D3.st, input: { ...D3.st.input, ...g3.prior } };
     if (g3.latch.wrote) update(setAccState(back, 0, "off"));
     else if (g3.slid) update(g3.prior.accMode === "off" ? back : setAccState(back, acc, g3.prior.accMode));
     else update(tapAcc(back, acc, performance.now()));
@@ -56402,11 +56630,11 @@ var finderShown = () => ui2.page.k === "finder";
 var finderPlayOnly = () => ui2.page.k === "finder" && ui2.page.playOnly;
 function insertMarkHere(_kind, at2) {
   const r10 = padEl.getBoundingClientRect();
-  headerPanel.open(D2.st.at.paper, D2.st.at.part, D2.st.sel ? D2.st.sel.from : D2.st.caret, at2 ?? { x: r10.left + r10.width / 2, y: r10.top - 4 });
+  headerPanel.open(D3.st.at.paper, D3.st.at.part, D3.st.sel ? D3.st.sel.from : D3.st.caret, at2 ?? { x: r10.left + r10.width / 2, y: r10.top - 4 });
 }
 var monoHinted = false;
 var inputGate = createInputGate({
-  locked: () => D2.locked() !== null,
+  locked: () => D3.locked() !== null,
   picking: () => finderShown() || instShown(),
   unplugged: () => impro,
   onBlocked: (why2) => {
@@ -56432,9 +56660,9 @@ function plugNudge(why2) {
 }
 var padHost = createPadHost(padEl, {
   // update / writeAndLocate 这两条是 pad 往谱上写的全部出口：各带一道总闸（pad-host 里会写的键自己先问过一遍，这里是兜底——晚到的叠音定时器之类）
-  state: () => D2.st,
+  state: () => D3.st,
   update: (n10, gesture) => {
-    if (inputGate.may(D2.st, n10)) update(n10, gesture);
+    if (inputGate.may(D3.st, n10)) update(n10, gesture);
   },
   writeAndLocate: (w2, gesture) => writeAndLocate((s10) => {
     const n10 = w2(s10);
@@ -56447,7 +56675,7 @@ var padHost = createPadHost(padEl, {
   monoRejected: () => {
     if (monoHinted) return;
     monoHinted = true;
-    info(_t("\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668", { who: activeCandidateName(D2.extras, curRole()) ?? roleName(D2.extras, curRole()) }));
+    info(_t("\u300C{who}\u300D\u4E00\u6B21\u53EA\u51FA\u4E00\u4E2A\u97F3\uFF1A\u51E0\u4E4E\u540C\u65F6\u6309\u4E0B\u7684\u7B2C\u4E8C\u4E2A\u952E\u6CA1\u5199\u3002\u8981\u5199\u548C\u5F26\uFF0C\u7ED9\u8FD9\u4E2A\u58F0\u90E8\u6362\u94A2\u7434\u8FD9\u7C7B\u4E50\u5668", { who: activeCandidateName(D3.extras, curRole()) ?? roleName(D3.extras, curRole()) }));
   },
   // 同一次打开只说一次（v0.16.35）   // info / ghostOn 是后面才声明的 const：包一层箭头，别在这儿取值
   sound: { down: (p2, id2) => sound.down(p2, id2), up: (id2) => sound.up(id2) },
@@ -56482,7 +56710,7 @@ var padHost = createPadHost(padEl, {
   discloseDynOverride,
   ignoredHere,
   hintRange: () => padHint(),
-  staves: () => lookNow(D2.st.at.paper, D2.st.at.part)?.staves ?? 1,
+  staves: () => lookNow(D3.st.at.paper, D3.st.at.part)?.staves ?? 1,
   autoBars: { get: () => autoBars, set: (on2) => {
     autoBars = on2;
     view.render();
@@ -56495,10 +56723,10 @@ var padHost = createPadHost(padEl, {
   showPad: (on2) => showPad(on2)
 });
 var pad3 = padHost.pad;
-var shownInC = songViewOf(D2.st.song).viewInC;
+var shownInC = songViewOf(D3.st.song).viewInC;
 pad3.setBigLabel(shownInC ? "deg" : "abs");
 function syncSongLook() {
-  const inC = songViewOf(D2.st.song).viewInC;
+  const inC = songViewOf(D3.st.song).viewInC;
   if (inC === shownInC) return;
   shownInC = inC;
   pad3.setBigLabel(inC ? "deg" : "abs");
@@ -56516,7 +56744,7 @@ function setImpro(on2) {
   ghostHeld.clear();
   ghostSync();
 }
-var plugOut = () => impro || D2.locked() !== null;
+var plugOut = () => impro || D3.locked() !== null;
 function syncPlug() {
   padEl.classList.toggle("is-unplugged", plugOut());
 }
@@ -56527,7 +56755,7 @@ function ghostSync() {
 }
 var lookCache = null;
 function lookNow(paperId, partId) {
-  if (lookCache?.song !== D2.st.song) lookCache = { song: D2.st.song, map: resolveSongLooks(D2.st.song, new Set(partViews().filter((x2) => x2.perc || x2.xHead).map((x2) => x2.id))) };
+  if (lookCache?.song !== D3.st.song) lookCache = { song: D3.st.song, map: resolveSongLooks(D3.st.song, new Set(partViews().filter((x2) => x2.perc || x2.xHead).map((x2) => x2.id))) };
   return lookCache.map.get(paperId)?.get(partId);
 }
 function onLockRefused(_what) {
@@ -56538,13 +56766,13 @@ function onLockRefused(_what) {
   if (studio.isOpen) studio.show();
 }
 function setHidden(paperId, hidden) {
-  D2.commit({ st: setPaperHidden(D2.st, paperId, hidden) }, { locus: { kind: "paperHidden", label: hidden ? _t("\u9690\u85CF\u4E86\u8FD9\u5F20\u7EB8") : _t("\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8") } });
+  D3.commit({ st: setPaperHidden(D3.st, paperId, hidden) }, { locus: { kind: "paperHidden", label: hidden ? _t("\u9690\u85CF\u4E86\u8FD9\u5F20\u7EB8") : _t("\u53D6\u6D88\u9690\u85CF\u8FD9\u5F20\u7EB8") } });
 }
 function update(next2, gesture) {
-  const pp0 = D2.st.song.papers.find((p2) => p2.id === next2.at.paper), pp1 = next2.song.papers.find((p2) => p2.id === next2.at.paper), part = next2.at.part;
+  const pp0 = D3.st.song.papers.find((p2) => p2.id === next2.at.paper), pp1 = next2.song.papers.find((p2) => p2.id === next2.at.paper), part = next2.at.part;
   const staffs = (t10) => (t10 ?? []).map((x2) => x2.kind === "note" || x2.kind === "rest" ? x2.staff ?? 0 : -1).filter((x2) => x2 >= 0).join("");
   const fixed = !!pp0 && !!pp1 && !pp0.looks?.[part]?.grand && !!pp1.looks?.[part]?.grand && staffs(pp0.tracks[part]) !== staffs(pp1.tracks[part]);
-  const c10 = D2.commit({ st: next2 }, { gesture });
+  const c10 = D3.commit({ st: next2 }, { gesture });
   if (fixed && c10.ok) info(_t("\u8FD9\u4E00\u6BB5\u5B9A\u6210\u4E86\u5927\u8C31\u8868\uFF08\u624B\u52A8\u5206\u7684\u4E0A\u4E0B\u884C\u8981\u5B58\u5F97\u4E0B\uFF09\uFF1B\u60F3\u56DE\u5230\u81EA\u52A8\uFF0C\u70B9\u884C\u9996\u8C31\u53F7\u9009\u300C\u81EA\u52A8\u300D"));
 }
 function withStartDyns(s10) {
@@ -56558,10 +56786,10 @@ function withStartDyns(s10) {
   return { ...s10, song: r10.song, nextId: r10.nextId, caret, sel };
 }
 function updateExtras(next2, locus, gesture) {
-  D2.commit({ extras: next2 }, { locus, gesture });
+  D3.commit({ extras: next2 }, { locus, gesture });
 }
 function updateBoth(next2, nextExtras, locus) {
-  D2.commit({ st: next2, extras: nextExtras }, { locus });
+  D3.commit({ st: next2, extras: nextExtras }, { locus });
 }
 function afterState(prev, next2, moved, userEdit) {
   if (next2.song.paper !== prev.song.paper) syncDock();
@@ -56587,7 +56815,7 @@ function paintNow() {
     cancelAnimationFrame(paintQueued);
     paintQueued = 0;
   }
-  if (!view.paintedFor(D2.st)) span("view.render", () => view.renderAsync());
+  if (!view.paintedFor(D3.st)) span("view.render", () => view.renderAsync());
   syncSongLook();
   span("pad.render", () => pad3.render());
   span("title", () => renderTitle());
@@ -56610,30 +56838,30 @@ function afterExtras(prev, next2, locus) {
   updateChrome();
 }
 function undoNow() {
-  if (D2.locked()) {
-    D2.undo();
+  if (D3.locked()) {
+    D3.undo();
     return;
   }
-  if (!D2.history.past.length) {
+  if (!D3.history.past.length) {
     info(_t("\u6CA1\u6709\u53EF\u64A4\u9500\u7684"));
     return;
   }
   ui2.close();
   view.lyrics.commitAndClose();
-  D2.undo();
+  D3.undo();
 }
 function redoNow() {
-  if (D2.locked()) {
-    D2.redo();
+  if (D3.locked()) {
+    D3.redo();
     return;
   }
-  if (!D2.history.future.length) {
+  if (!D3.history.future.length) {
     info(_t("\u6CA1\u6709\u53EF\u91CD\u505A\u7684"));
     return;
   }
   ui2.close();
   view.lyrics.commitAndClose();
-  D2.redo();
+  D3.redo();
 }
 var lastUndoText = "";
 function afterRestore(r10, verb, prev) {
@@ -56657,20 +56885,20 @@ function afterRestore(r10, verb, prev) {
 }
 function revealPart(id2) {
   if (isShown(id2)) return;
-  if (D2.st.song.parts.some((p2) => pv(p2.id).only)) setPv(id2, { only: true });
+  if (D3.st.song.parts.some((p2) => pv(p2.id).only)) setPv(id2, { only: true });
   else setPv(id2, { hidden: false });
 }
 function locusText(at2, l10) {
   const k2 = at2.song.papers.findIndex((p2) => p2.id === at2.at.paper), paperName = at2.song.papers[k2]?.name || _t("\u7B2C {p} \u6BB5", { p: k2 + 1 });
-  const part = at2.song.parts.find((p2) => p2.id === at2.at.part), partName = part ? roleName(D2.extras, part.role) : "";
+  const part = at2.song.parts.find((p2) => p2.id === at2.at.part), partName = part ? roleName(D3.extras, part.role) : "";
   if (l10.kind === "score") return `${at2.song.papers.length > 1 ? paperName + " \xB7 " : ""}${at2.song.parts.length > 1 ? partName + " \xB7 " : ""}${l10.label}`;
   if (l10.kind === "paper" || l10.kind === "paperHidden") return `${paperName} \xB7 ${l10.label}`;
   if (l10.kind === "songLook") return `${_t("\u770B\u8C31")} \xB7 ${l10.label}`;
   return `${l10.kind === "lounge" ? _t("\u4F11\u606F\u5BA4") : l10.kind === "studio" ? _t("\u6DF7\u97F3\u53F0") : _t("\u5C01\u9762")} \xB7 ${l10.label}`;
 }
 function renderUndo() {
-  $2("undoBtn").disabled = !D2.history.past.length;
-  $2("redoBtn").disabled = !D2.history.future.length;
+  $2("undoBtn").disabled = !D3.history.past.length;
+  $2("redoBtn").disabled = !D3.history.future.length;
 }
 var singer = new Singer();
 var statusLast = "";
@@ -56730,8 +56958,8 @@ function drawIssueBadges() {
   }
 }
 var perfApi = createPerformance({
-  state: () => D2.st,
-  extras: () => D2.extras,
+  state: () => D3.st,
+  extras: () => D3.extras,
   viewScope: () => viewScope,
   pv: (id2) => pv(id2),
   busMuted: () => busMuted,
@@ -56756,12 +56984,12 @@ function typingIn(t10) {
   return el2.tagName === "INPUT" && !["range", "checkbox", "radio", "button"].includes(el2.type);
 }
 function trackKey(track) {
-  return D2.st.song.parts.find((x2) => x2.id === track)?.mic ?? track;
+  return D3.st.song.parts.find((x2) => x2.id === track)?.mic ?? track;
 }
 function routeName(track) {
   if (track === "master") return _t("\u603B\u8F68");
-  const k2 = D2.st.song.parts.findIndex((x2) => x2.id === track);
-  return k2 >= 0 ? partLabels(D2.st.song, D2.extras)[k2] : studioTrack(D2.extras, track)?.name ?? track;
+  const k2 = D3.st.song.parts.findIndex((x2) => x2.id === track);
+  return k2 >= 0 ? partLabels(D3.st.song, D3.extras)[k2] : studioTrack(D3.extras, track)?.name ?? track;
 }
 var ws = { mode: "notes", collapsed: false, tryout: false };
 var touchLike = (() => {
@@ -56939,7 +57167,7 @@ $2("paperSel").addEventListener("change", (e10) => {
   if (v === "all") viewScope = "all";
   else {
     viewScope = "segment";
-    if (v !== D2.st.at.paper) navPaperTo(v);
+    if (v !== D3.st.at.paper) navPaperTo(v);
   }
   view.render();
   updateChrome();
@@ -56947,12 +57175,12 @@ $2("paperSel").addEventListener("change", (e10) => {
 $2("partSel").addEventListener("change", (e10) => {
   const v = e10.target.value;
   e10.target.blur();
-  for (const p2 of D2.st.song.parts) setPv(p2.id, { only: v !== "all" && p2.id === v });
+  for (const p2 of D3.st.song.parts) setPv(p2.id, { only: v !== "all" && p2.id === v });
   afterViewChange();
   updateChrome();
 });
 var embedSoftLimit = 1e7;
-var sources = createSoundSources({ progress: (m2) => progress(m2), roleLabel: () => roleName(D2.extras, curRole()) });
+var sources = createSoundSources({ progress: (m2) => progress(m2), roleLabel: () => roleName(D3.extras, curRole()) });
 var mp3Scope = "all";
 function openIssuesSheet() {
   ui2.close();
@@ -56983,8 +57211,8 @@ function openIssuesSheet() {
   });
 }
 function goToPartInst(partId) {
-  const paper = D2.st.song.papers.find((pp) => pp.id === D2.st.at.paper && pp.tracks[partId]) ?? D2.st.song.papers.find((pp) => pp.tracks[partId]);
-  if (paper && (paper.id !== D2.st.at.paper || D2.st.at.part !== partId)) update(setFocus(D2.st, paper.id, partId));
+  const paper = D3.st.song.papers.find((pp) => pp.id === D3.st.at.paper && pp.tracks[partId]) ?? D3.st.song.papers.find((pp) => pp.tracks[partId]);
+  if (paper && (paper.id !== D3.st.at.paper || D3.st.at.part !== partId)) update(setFocus(D3.st, paper.id, partId));
   openInstPage();
 }
 function renderBusy(label) {
@@ -57009,7 +57237,7 @@ async function renderHere() {
   const busy = renderBusy(_t("\u6B63\u5728\u6E32\u67D3\u2026"));
   try {
     const r10 = await perfApi.renderKeep({ quality: mp3Quality });
-    info(r10.cached ? _t("\u5DF2\u7ECF\u5728\u6E32\u67D3\u7F13\u5B58\u91CC\u4E86\uFF08\u5185\u5BB9\u6CA1\u53D8\uFF09") : !r10.kept ? _t("\u6E32\u597D\u4E86\uFF0C\u4F46\u6CA1\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u5B58\u50A8\u6EE1\u4E86\u6216\u8005\u662F\u9690\u79C1\u6A21\u5F0F\uFF09") : D2.dirty() ? _t("\u6E32\u597D\u4E86\uFF0C\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF1A\u5B58\u4E0B\u53BB\u4E4B\u540E\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u542C") : _t("\u6E32\u597D\u4E86\uFF0C\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C"));
+    info(r10.cached ? _t("\u5DF2\u7ECF\u5728\u6E32\u67D3\u7F13\u5B58\u91CC\u4E86\uFF08\u5185\u5BB9\u6CA1\u53D8\uFF09") : !r10.kept ? _t("\u6E32\u597D\u4E86\uFF0C\u4F46\u6CA1\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF08\u5B58\u50A8\u6EE1\u4E86\u6216\u8005\u662F\u9690\u79C1\u6A21\u5F0F\uFF09") : D3.dirty() ? _t("\u6E32\u597D\u4E86\uFF0C\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF1A\u5B58\u4E0B\u53BB\u4E4B\u540E\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u542C") : _t("\u6E32\u597D\u4E86\uFF0C\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C"));
   } catch (e10) {
     if (e10.cancelled) info(_t("\u6E32\u67D3\u53D6\u6D88\u4E86"));
     else showError(_t("\u6E32\u4E0D\u4E86\uFF1A{Error}", { Error: e10.message }));
@@ -57041,11 +57269,11 @@ function openMp3Panel() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  const paper = D2.st.song.papers.find((p2) => p2.id === D2.st.at.paper), k2 = D2.st.song.papers.indexOf(paper);
+  const paper = D3.st.song.papers.find((p2) => p2.id === D3.st.at.paper), k2 = D3.st.song.papers.indexOf(paper);
   const draw = () => {
     const chip2 = (v, label, note2, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc11(label)}<small>${esc11(note2)}</small></button>`;
-    const er2 = D2.st.song.rights ? exportRights(soundingRoles()) : null;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09")}</div><div class="part-sec">${_t("\u97F3\u8D28")}</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (D2.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u8303\u56F4")}</div><div class="set-row">${chip2("s:all", _t("\u6574\u9996"), _t("\u9690\u85CF\u7684\u7EB8\u4E0D\u653E"), mp3Scope === "all")}${chip2("s:segment", _t("\u8FD9\u4E00\u5F20\u7EB8"), paper?.name || _t("\u7B2C {p} \u5F20", { p: k2 + 1 }), mp3Scope === "segment")}</div>` : "") + (mp3Scope === "all" ? `<div class="part-sec">${_t("\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58")}</div><div class="set-row">${chip2("k:on", _t("\u653E\u8FDB\u53BB"), _t("\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u8BBE\u7F6E\u91CC\u80FD\u5220"), mp3Keep)}${chip2("k:off", _t("\u4E0D\u653E"), _t("\u53EA\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u4E0D\u7559"), !mp3Keep)}</div>` : "") + (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002")}</div>` : "") + (er2 ? `<div class="offer-msg">${_t("\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002", { fellBack: er2.fellBack ? _t("\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09") : esc11(er2.rights) })}</div>` : "") + ((is2) => is2.length ? `<div class="offer-msg issue-warn">${_t("{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002", { n: is2.length, is: esc11(perfApi.issuesText(is2)) })}</div>` : "")(perfApi.issues()) + // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
+    const er2 = D3.st.song.rights ? exportRights(soundingRoles()) : null;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09")}</div><div class="part-sec">${_t("\u97F3\u8D28")}</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (D3.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u8303\u56F4")}</div><div class="set-row">${chip2("s:all", _t("\u6574\u9996"), _t("\u9690\u85CF\u7684\u7EB8\u4E0D\u653E"), mp3Scope === "all")}${chip2("s:segment", _t("\u8FD9\u4E00\u5F20\u7EB8"), paper?.name || _t("\u7B2C {p} \u5F20", { p: k2 + 1 }), mp3Scope === "segment")}</div>` : "") + (mp3Scope === "all" ? `<div class="part-sec">${_t("\u653E\u8FDB\u6E32\u67D3\u7F13\u5B58")}</div><div class="set-row">${chip2("k:on", _t("\u653E\u8FDB\u53BB"), _t("\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u8BBE\u7F6E\u91CC\u80FD\u5220"), mp3Keep)}${chip2("k:off", _t("\u4E0D\u653E"), _t("\u53EA\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u4E0D\u7559"), !mp3Keep)}</div>` : "") + (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002")}</div>` : "") + (er2 ? `<div class="offer-msg">${_t("\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002", { fellBack: er2.fellBack ? _t("\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09") : esc11(er2.rights) })}</div>` : "") + ((is2) => is2.length ? `<div class="offer-msg issue-warn">${_t("{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002", { n: is2.length, is: esc11(perfApi.issuesText(is2)) })}</div>` : "")(perfApi.issues()) + // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
     `<div class="offer-btns"><button class="btn primary" data-v="go">${perfApi.issues().length ? _t("\u7167\u6837\u5BFC\u51FA") : _t("\u5BFC\u51FA")}</button><button class="btn" data-v="close">${_t("\u7B97\u4E86")}</button></div></div>`;
   };
   draw();
@@ -57100,19 +57328,19 @@ function openChordInfo(r10, at2, where) {
   ctxMenu("chord-info", head + r10.all.slice(0, 6).map(row2).join(""), at2, (v) => {
     if (!where || !canPick) return true;
     if (v === "auto") {
-      update(setChordPin(D2.st, where.paper, where.part, where.index, null));
+      update(setChordPin(D3.st, where.paper, where.part, where.index, null));
       return false;
     }
     if (v.startsWith("pick:")) {
       const g3 = r10.all[Number(v.slice(5))];
-      if (g3) update(setChordPin(D2.st, where.paper, where.part, where.index, th2.pinOf(g3)));
+      if (g3) update(setChordPin(D3.st, where.paper, where.part, where.index, th2.pinOf(g3)));
       return false;
     }
     return true;
   });
 }
 function setSongLook(next2, label) {
-  if (next2 !== D2.st) D2.commit({ st: next2 }, { locus: { kind: "songLook", label } });
+  if (next2 !== D3.st) D3.commit({ st: next2 }, { locus: { kind: "songLook", label } });
 }
 var settingsPage = "ui";
 var SET_PAGES = () => [["ui", _t("\u754C\u9762")], ["a11y", _t("\u4E50\u7406\u52A9\u624B")], ["sound", _t("\u97F3\u6E90\u4E0E\u7F13\u5B58")], ["midi", "MIDI"], ["dev", _t("\u5F00\u53D1\u8005")]];
@@ -57219,7 +57447,7 @@ function openSettings() {
       sndCache.innerHTML = `<div class="set-row"><span class="set-note">${FOLDER_TEXT.sounds}</span></div>`;
       return;
     }
-    const cached2 = await listCachedSounds(), bySha = new Map(cached2.map((c10) => [c10.sha256, c10])), known = new Set(Object.values(SOUNDS).map((e10) => e10.sha256)), uses = new Map(soundUses(D2.extras).map((u2) => [u2.subsetSha256, u2]));
+    const cached2 = await listCachedSounds(), bySha = new Map(cached2.map((c10) => [c10.sha256, c10])), known = new Set(Object.values(SOUNDS).map((e10) => e10.sha256)), uses = new Map(soundUses(D3.extras).map((u2) => [u2.subsetSha256, u2]));
     const total = cached2.reduce((n10, c10) => n10 + c10.bytes, 0), mem = soundMemoryBytes();
     let quota = "";
     const est = await siteStorageEstimate();
@@ -57410,7 +57638,7 @@ window.__moonsinger = {
     openPicked(await readHandle(h2));
     return true;
   },
-  editLock: () => ({ state: lock.state(), locked: lock.locked(), canLockNow: lock.canLockNow(), dirtyKind: D2.dirtyKind(), dirty: D2.dirty(), owes: owesSave() }),
+  editLock: () => ({ state: lock.state(), locked: lock.locked(), canLockNow: lock.canLockNow(), dirtyKind: D3.dirtyKind(), dirty: D3.dirty(), owes: owesSave() }),
   fileSave: () => fileSave(),
   lockEditNow: () => lockEditNow(),
   auditionSha: () => audition?.sha256 ?? null,
@@ -57435,9 +57663,9 @@ window.__moonsinger = {
   rendersReady: () => renders.ready(),
   rendersClear: () => renders.clear(),
   // 设备上记着的渲好的声音（E2E 用）
-  run: (c10) => D2.run(c10),
-  commit: (next2, o10) => D2.commit(next2, o10),
-  locked: () => D2.locked(),
+  run: (c10) => D3.run(c10),
+  commit: (next2, o10) => D3.commit(next2, o10),
+  locked: () => D3.locked(),
   // 指令式唯一入口（E2E / 以后的 MCP 用）
   resource: () => ({ snapshot: resourceSnapshot(), text: describe(resourceSnapshot(), BUDGET), lanes: singer.parallelism, budgetLanes: BUDGET.lanes }),
   perf: () => perfReport(),
@@ -57447,23 +57675,23 @@ window.__moonsinger = {
   speechCache: (op2) => singer.cache(op2, BUDGET.speechDisk),
   // 录音房的接口（刀 4；界面归 Opus / user）：改一条轨（麦克风 id / 总线 id）的效果链 / 发送 / 去向、加删总线、总轨链——都走 undo、推进录音房
   setTrack: (id2, patch) => {
-    updateExtras(withTrack2(D2.extras, id2, patch), { kind: "studio", label: _t("\u8F68\u300C{id}\u300D", { id: id2 }) });
+    updateExtras(withTrack2(D3.extras, id2, patch), { kind: "studio", label: _t("\u8F68\u300C{id}\u300D", { id: id2 }) });
   },
   addBus: (name = _t("\u603B\u7EBF")) => {
-    const id2 = newBusId(D2.extras);
-    updateExtras(withTrack2(D2.extras, id2, { kind: "bus", name }), { kind: "studio", label: _t("\u52A0\u603B\u7EBF\u300C{name}\u300D", { name }) });
+    const id2 = newBusId(D3.extras);
+    updateExtras(withTrack2(D3.extras, id2, { kind: "bus", name }), { kind: "studio", label: _t("\u52A0\u603B\u7EBF\u300C{name}\u300D", { name }) });
     return id2;
   },
-  removeBus: (id2) => updateExtras(withoutBus(D2.extras, id2), { kind: "studio", label: _t("\u5220\u603B\u7EBF\u300C{id}\u300D", { id: id2 }) }),
-  setMaster: (patch) => updateExtras(withMaster(D2.extras, patch), { kind: "studio", label: _t("\u603B\u8F68") }),
-  studioTracks: () => studioTracks(D2.extras),
+  removeBus: (id2) => updateExtras(withoutBus(D3.extras, id2), { kind: "studio", label: _t("\u5220\u603B\u7EBF\u300C{id}\u300D", { id: id2 }) }),
+  setMaster: (patch) => updateExtras(withMaster(D3.extras, patch), { kind: "studio", label: _t("\u603B\u8F68") }),
+  studioTracks: () => studioTracks(D3.extras),
   labScore: () => {
     const { tokens, map } = curFlat();
-    return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
+    return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
-  state: () => D2.st,
+  state: () => D3.st,
   cssHash: "c2f71591007c",
-  extras: () => D2.extras,
+  extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
   },
@@ -57483,10 +57711,10 @@ window.__moonsinger = {
     return { bytes: r10.bytes, pages: r10.pages, stats: r10.stats, name: file.name };
   },
   setChunk: (v) => {
-    const role = D2.st.song.parts.find((x2) => x2.id === D2.st.at.part)?.role;
-    if (role) updateExtras(withSingChunk(D2.extras, role, v, D2.st.song.hum), { kind: "lounge", label: _t("\u5206\u6BB5\u5531\uFF1A{v}", { v }) });
+    const role = D3.st.song.parts.find((x2) => x2.id === D3.st.at.part)?.role;
+    if (role) updateExtras(withSingChunk(D3.extras, role, v, D3.st.song.hum), { kind: "lounge", label: _t("\u5206\u6BB5\u5531\uFF1A{v}", { v }) });
   },
-  openHeader: (part) => headerPanel.open(D2.st.at.paper, part, 0, { x: innerWidth / 2, y: 120 }),
+  openHeader: (part) => headerPanel.open(D3.st.at.paper, part, 0, { x: innerWidth / 2, y: 120 }),
   // 谱头面板（E2E；v0.16.21 起小卡里没有「谱怎么画」，点谱号开）
   finderCastVoice: async () => {
     const c10 = conceptOfIds(await loadCatalog(), { wikidata: "Q7390" });
@@ -57494,8 +57722,8 @@ window.__moonsinger = {
   },
   // E2E：目录里选小月相（= 人声那一行「选这个」；新声部要先选乐器，v0.16.35）
   set: (n10) => update(n10),
-  addPaper: () => update(addPaper(D2.st)),
-  toggleChord: (i10, p2) => update(toggleChordPitch(D2.st, i10, p2)),
+  addPaper: () => update(addPaper(D3.st)),
+  toggleChord: (i10, p2) => update(toggleChordPitch(D3.st, i10, p2)),
   playSong: () => playSong(),
   afterSignIn: () => afterSignIn(),
   diagText: () => diagText(),
@@ -57508,7 +57736,7 @@ window.__moonsinger = {
   gateOpen: () => isGateOpen(),
   undo: () => undoNow(),
   redo: () => redoNow(),
-  history: () => ({ past: D2.history.past.length, future: D2.history.future.length }),
+  history: () => ({ past: D3.history.past.length, future: D3.history.future.length }),
   undoText: () => lastUndoText,
   desk: () => deskNow(),
   setScope: (v) => {
@@ -57529,7 +57757,7 @@ window.__moonsinger = {
     afterViewChange();
     view.render();
   },
-  flatten: () => flattenPart(D2.st.song, D2.st.at.part),
+  flatten: () => flattenPart(D3.st.song, D3.st.at.part),
   setPaperHidden: (id2, h2) => setHidden(id2, h2),
   store: () => hasStore() ? requireStore() : null,
   es: () => es2,
@@ -57553,9 +57781,9 @@ function showPad(on2) {
   applyWorkspace();
 }
 function engineNow() {
-  return activeInstrument(D2.extras, curRole())?.engine ?? "unknown";
+  return activeInstrument(D3.extras, curRole())?.engine ?? "unknown";
 }
-var dirty = () => D2.dirty();
+var dirty = () => D3.dirty();
 function renderTitle() {
   const d3 = dirty(), name = docName();
   $2("docTitle").textContent = `${name}${d3 ? " \u2022" : ""}`;
@@ -57610,7 +57838,7 @@ var AUDITION_KEEP = 3;
 var auditionShas = [];
 var shasInUse = () => {
   const s10 = /* @__PURE__ */ new Set();
-  for (const role of Object.keys(D2.extras.lounge)) for (const g3 of gmCandidates(D2.extras, role)) s10.add(g3.subsetSha256);
+  for (const role of Object.keys(D3.extras.lounge)) for (const g3 of gmCandidates(D3.extras, role)) s10.add(g3.subsetSha256);
   return s10;
 };
 function trimAuditionBanks(keep2) {
@@ -57631,11 +57859,11 @@ function noteAuditionBank(sha) {
 function padHint() {
   const h2 = padHintRaw();
   if (!h2) return null;
-  return { ...h2, key: finderShown() ? `try|${h2.who}|${h2.lo}-${h2.hi}` : `${curRole()}|${activeId(D2.extras, curRole()) ?? ""}` };
+  return { ...h2, key: finderShown() ? `try|${h2.who}|${h2.lo}-${h2.hi}` : `${curRole()}|${activeId(D3.extras, curRole()) ?? ""}` };
 }
 function padHintRaw() {
   if (finderShown()) return auditionHint;
-  const plug = performerOf(activeInstrument(D2.extras, curRole())?.engine);
+  const plug = performerOf(activeInstrument(D3.extras, curRole())?.engine);
   if (!plug) return null;
   if (plug.hintRange) return plug.hintRange;
   if (!catalogNow) {
@@ -57646,7 +57874,7 @@ function padHintRaw() {
     });
     return null;
   }
-  const g3 = activeGm(D2.extras, curRole());
+  const g3 = activeGm(D3.extras, curRole());
   if (g3?.sfx) {
     if (g3.note !== void 0) return null;
     const s10 = g3.sfx, al2 = s10.align && canAlign(s10), k2 = al2 ? Math.round(s10.midi) : s10.key;
@@ -57656,11 +57884,11 @@ function padHintRaw() {
     const sk2 = sampleKeyOf(catalogNow, g3.bank, g3.program);
     if (sk2) return { lo: sk2.key, hi: sk2.key, who: g3.name, title: sk2.title };
   }
-  const concept = D2.extras.lounge[curRole()]?.concept;
+  const concept = D3.extras.lounge[curRole()]?.concept;
   const id2 = concept?.ids?.wikidata ?? concept?.ids?.local;
   if (!id2) return null;
   const r10 = rangeOf(catalogNow.byId.get(id2));
-  return r10 ? { ...r10, who: (lang() === "zh" ? concept?.name?.zh : null) ?? roleName(D2.extras, curRole()) } : null;
+  return r10 ? { ...r10, who: (lang() === "zh" ? concept?.name?.zh : null) ?? roleName(D3.extras, curRole()) } : null;
 }
 var GS = SOUNDS["generaluser-gs-2.0.3"];
 async function setAudition(p2) {
@@ -57740,7 +57968,7 @@ async function playHeadWith(p2) {
   let track, label;
   if (p2.kind === "voice") {
     await ensureVowels();
-    track = { id: "audition", kind: "vowel", kana: HUM_KANA[D2.st.song.hum ?? "n"], notes: notes.map((n10) => ({ t0: n10.t0, t1: Math.min(n10.t1, 8), key: n10.midi, vel: 1, preset: 0 })), gain: null };
+    track = { id: "audition", kind: "vowel", kana: HUM_KANA[D3.st.song.hum ?? "n"], notes: notes.map((n10) => ({ t0: n10.t0, t1: Math.min(n10.t1, 8), key: n10.midi, vel: 1, preset: 0 })), gain: null };
     label = _t("\u5C0F\u6708\u76F8\uFF08\u54FC\uFF09");
   } else {
     if (audition?.from !== pickFrom(p2)) await setAudition(p2);
@@ -57754,16 +57982,16 @@ async function playHeadWith(p2) {
 }
 var newPartPending = null;
 function newPartState(np2) {
-  const role = newRoleId(D2.extras, D2.st.song), mic = newMicId(D2.extras, D2.st.song);
-  const id2 = `P${Math.max(0, ...D2.st.song.parts.map((p2) => Number(/^P(\d+)$/.exec(p2.id)?.[1] ?? 0))) + 1}`;
-  let st2 = addPart(D2.st, { id: id2, role, mic }, np2.giveFrom ? null : np2.paper, np2.place?.anchor ?? D2.st.at.part);
+  const role = newRoleId(D3.extras, D3.st.song), mic = newMicId(D3.extras, D3.st.song);
+  const id2 = `P${Math.max(0, ...D3.st.song.parts.map((p2) => Number(/^P(\d+)$/.exec(p2.id)?.[1] ?? 0))) + 1}`;
+  let st2 = addPart(D3.st, { id: id2, role, mic }, np2.giveFrom ? null : np2.paper, np2.place?.anchor ?? D3.st.at.part);
   if (np2.place) st2 = placePart(st2, id2, np2.place.anchor, np2.place.above);
   if (np2.giveFrom) st2 = rebindTrack(st2, np2.paper, np2.giveFrom, id2);
   if (st2.at.part !== id2) {
     const pp = st2.song.papers.find((x2) => x2.id === np2.paper && x2.tracks[id2]) ?? st2.song.papers.find((x2) => x2.tracks[id2]);
     if (pp) st2 = setFocus(st2, pp.id, id2);
   }
-  return { st: st2, extras: withNewRole(D2.extras, role, D2.st.song.hum), role };
+  return { st: st2, extras: withNewRole(D3.extras, role, D3.st.song.hum), role };
 }
 async function castPick(p2) {
   if (finderPlayOnly()) return;
@@ -57771,7 +57999,7 @@ async function castPick(p2) {
     await castOwn(p2);
     return;
   }
-  const cat2 = await loadCatalog(), c10 = p2.concept, hum = D2.st.song.hum;
+  const cat2 = await loadCatalog(), c10 = p2.concept, hum = D3.st.song.hum;
   catNow = cat2;
   if (p2.kind === "gs") {
     if (audition?.from !== pickFrom(p2)) await setAudition(p2);
@@ -57781,7 +58009,7 @@ async function castPick(p2) {
       return;
     }
   }
-  const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D2.st, extras: D2.extras, role: curRole() }, role = base2.role;
+  const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D3.st, extras: D3.extras, role: curRole() }, role = base2.role;
   const ca2 = castArgs(cat2, c10, p2.kind === "gs" ? p2.provider.sound : null);
   const prev = activeId(base2.extras, role);
   let next2 = withRoleConcept(base2.extras, role, ca2, hum), keep2 = null;
@@ -57823,9 +58051,9 @@ async function castOwn(p2) {
   if (!f2) return;
   if (audition?.from !== pickFrom(p2)) await setAudition(p2);
   if (audition?.from !== pickFrom(p2)) return;
-  const { subset, sha256 } = audition, inf = sf2Info(f2.bytes), hum = D2.st.song.hum;
+  const { subset, sha256 } = audition, inf = sf2Info(f2.bytes), hum = D3.st.song.hum;
   const fileSha256 = f2.fileSha256 ??= await sha256Hex3(f2.bytes);
-  const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D2.st, extras: D2.extras, role: curRole() }, role = base2.role, prev = activeId(base2.extras, role);
+  const np2 = newPartPending, base2 = np2 ? newPartState(np2) : { st: D3.st, extras: D3.extras, role: curRole() }, role = base2.role, prev = activeId(base2.extras, role);
   const made = withSf2Candidate(base2.extras, role, {
     name: p2.name,
     bank: p2.bank,
@@ -57869,17 +58097,17 @@ var finder = new Finder($2("stage"), {
   // 「这首歌的乐器预设」（v0.16.38，施工单 §5 R4）：本声部台上那位 + 调过的，别的声部调过的（同一套设置只一格）；图标 = 当初作为哪件乐器上场（castAs）的那件
   used: () => {
     if (newPartPending) return [];
-    const labels = partLabels(D2.st.song, D2.extras), parts = D2.st.song.parts.map((p2, k2) => ({ role: p2.role, label: labels[k2] })), cat2 = catalogNow ?? catNow;
-    return songPresets(D2.extras, parts, curRole(), D2.st.song.hum).map((e10) => {
-      const c10 = candidateJson(D2.extras, e10.role, e10.id), eng = performerOf(String(c10?.instrument?.engine ?? "unknown"));
+    const labels = partLabels(D3.st.song, D3.extras), parts = D3.st.song.parts.map((p2, k2) => ({ role: p2.role, label: labels[k2] })), cat2 = catalogNow ?? catNow;
+    return songPresets(D3.extras, parts, curRole(), D3.st.song.hum).map((e10) => {
+      const c10 = candidateJson(D3.extras, e10.role, e10.id), eng = performerOf(String(c10?.instrument?.engine ?? "unknown"));
       const wd = c10?.castAs?.concept?.ids?.wikidata, icon = wd && cat2 ? cat2.byId.get(wd)?.icon?.id : void 0;
       return { ...e10, name: !eng ? _t("{name}\uFF08\u6CA1\u4EBA\u80FD\u6F14\uFF09", { name: e10.name }) : e10.name, removable: e10.removable && (eng?.removable ?? true), ...icon ? { icon } : {} };
     });
   },
   copyPreset: (role, id2) => {
-    const to2 = curRole(), next2 = withCandidateCopy(D2.extras, role, id2, to2, D2.st.song.hum);
-    if (next2 === D2.extras) return;
-    const who = activeCandidateName(next2, to2) ?? id2, from = partLabels(D2.st.song, D2.extras)[D2.st.song.parts.findIndex((p2) => p2.role === role)] ?? "";
+    const to2 = curRole(), next2 = withCandidateCopy(D3.extras, role, id2, to2, D3.st.song.hum);
+    if (next2 === D3.extras) return;
+    const who = activeCandidateName(next2, to2) ?? id2, from = partLabels(D3.st.song, D3.extras)[D3.st.song.parts.findIndex((p2) => p2.role === role)] ?? "";
     const label = role === to2 ? _t("\u300C{rn}\u300D\u590D\u5236\u4E86\u4E00\u4EFD\uFF1A{who}", { rn: roleName(next2, to2), who }) : _t("\u300C{rn}\u300D\u62F7\u6765\u4E86\u300C{from}\u300D\u7684\uFF1A{who}", { rn: roleName(next2, to2), from, who });
     updateExtras(next2, { kind: "lounge", label });
     sound.allOff();
@@ -57892,19 +58120,19 @@ var finder = new Finder($2("stage"), {
   useCandidate: (id2) => {
     setActive(id2);
     finder.refresh();
-    info(_t("\u6362\u6210\u300C{who}\u300D", { who: activeCandidateName(D2.extras, curRole()) ?? id2 }));
+    info(_t("\u6362\u6210\u300C{who}\u300D", { who: activeCandidateName(D3.extras, curRole()) ?? id2 }));
   },
   // 选完不关目录（v0.16.35）
   removeCandidate: (id2) => {
     try {
-      updateExtras(withoutCandidate(D2.extras, curRole(), id2), { kind: "lounge", label: _t("\u300C{rn}\u300D\u9000\u6389\u4E00\u4F4D\u5019\u9009", { rn: roleName(D2.extras, curRole()) }) });
+      updateExtras(withoutCandidate(D3.extras, curRole(), id2), { kind: "lounge", label: _t("\u300C{rn}\u300D\u9000\u6389\u4E00\u4F4D\u5019\u9009", { rn: roleName(D3.extras, curRole()) }) });
     } catch (err2) {
       showError(err2.message);
     }
   },
   ownSf2: () => openOwnSf2(),
   // v0.16.37：在目录里挑（施工单 §4.3），选文件不算选了乐器
-  roleName: () => newPartPending ? _t("\u65B0\u58F0\u90E8") : roleName(D2.extras, curRole()),
+  roleName: () => newPartPending ? _t("\u65B0\u58F0\u90E8") : roleName(D3.extras, curRole()),
   audition: setAudition,
   playHead: playHeadWith,
   cast: castPick,
@@ -57915,7 +58143,7 @@ var finder = new Finder($2("stage"), {
   canTryNew: () => !newPartPending && !finderPlayOnly(),
   tryNew: async (p2) => {
     if (newPartPending || finderPlayOnly()) return;
-    newPartPending = { paper: D2.st.at.paper, place: { anchor: D2.st.at.part, above: false } };
+    newPartPending = { paper: D3.st.at.paper, place: { anchor: D3.st.at.part, above: false } };
     await castPick(p2);
     if (newPartPending) {
       newPartPending = null;
@@ -57937,8 +58165,8 @@ var finder = new Finder($2("stage"), {
 });
 finder.restore("impro", unserializeFinderMemo(deviceKvGetJson(KV_FINDER_IMPRO, null)));
 var partLabel = (id2) => {
-  const k2 = D2.st.song.parts.findIndex((p2) => p2.id === id2);
-  return k2 < 0 ? id2 : partLabels(D2.st.song, D2.extras)[k2];
+  const k2 = D3.st.song.parts.findIndex((p2) => p2.id === id2);
+  return k2 < 0 ? id2 : partLabels(D3.st.song, D3.extras)[k2];
 };
 var KV_MIXER_ROWS = "mixer-rows";
 var studio = new Studio2($2("stage"), {
@@ -57948,16 +58176,16 @@ var studio = new Studio2($2("stage"), {
   },
   setRowsPref: (v) => deviceKvSet(KV_MIXER_ROWS, String(v)),
   strips: () => {
-    const labels = partLabels(D2.st.song, D2.extras), cols = partColorIndices(D2.st.song.parts.map((p2) => roleSound(D2.extras, p2.role)));
-    return D2.st.song.parts.map((p2, k2) => ({ id: p2.id, name: labels[k2], color: TAB20[cols[k2]], refs: D2.st.song.papers.filter((pp) => pp.tracks[p2.id]).length, performer: activeCandidateName(D2.extras, p2.role) ?? _t("\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09"), ...micOf2(p2), muted: pv(p2.id).muted, solo: pv(p2.id).solo }));
+    const labels = partLabels(D3.st.song, D3.extras), cols = partColorIndices(D3.st.song.parts.map((p2) => roleSound(D3.extras, p2.role)));
+    return D3.st.song.parts.map((p2, k2) => ({ id: p2.id, name: labels[k2], color: TAB20[cols[k2]], refs: D3.st.song.papers.filter((pp) => pp.tracks[p2.id]).length, performer: activeCandidateName(D3.extras, p2.role) ?? _t("\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09"), ...micOf2(p2), muted: pv(p2.id).muted, solo: pv(p2.id).solo }));
   },
   setGain: (id2, dB) => {
-    const p2 = D2.st.song.parts.find((x2) => x2.id === id2);
-    if (p2) updateExtras(withMic(D2.extras, p2.mic, { gainDb: dB }), { kind: "studio", label: _t("{id} \u589E\u76CA {p}{p2} dB", { id: partLabel(id2), p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, `mix:gain:${id2}`);
+    const p2 = D3.st.song.parts.find((x2) => x2.id === id2);
+    if (p2) updateExtras(withMic(D3.extras, p2.mic, { gainDb: dB }), { kind: "studio", label: _t("{id} \u589E\u76CA {p}{p2} dB", { id: partLabel(id2), p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, `mix:gain:${id2}`);
   },
   setPan: (id2, pan) => {
-    const p2 = D2.st.song.parts.find((x2) => x2.id === id2);
-    if (p2) updateExtras(withMic(D2.extras, p2.mic, { pan }), { kind: "studio", label: _t("{id} \u58F0\u50CF {pan}", { id: partLabel(id2), pan: Math.abs(pan) < 0.025 ? _t("\u4E2D") : pan < 0 ? _t("\u5DE6 {p}", { p: Math.round(-pan * 100) }) : _t("\u53F3 {p}", { p: Math.round(pan * 100) }) }) }, `mix:pan:${id2}`);
+    const p2 = D3.st.song.parts.find((x2) => x2.id === id2);
+    if (p2) updateExtras(withMic(D3.extras, p2.mic, { pan }), { kind: "studio", label: _t("{id} \u58F0\u50CF {pan}", { id: partLabel(id2), pan: Math.abs(pan) < 0.025 ? _t("\u4E2D") : pan < 0 ? _t("\u5DE6 {p}", { p: Math.round(-pan * 100) }) : _t("\u53F3 {p}", { p: Math.round(pan * 100) }) }) }, `mix:pan:${id2}`);
   },
   toggleMute: (id2) => {
     setPv(id2, { muted: !pv(id2).muted });
@@ -57970,8 +58198,8 @@ var studio = new Studio2($2("stage"), {
   },
   play: () => playPause(),
   close: () => closeStudio(),
-  master: () => activeMaster(D2.extras),
-  setMasterGain: (dB) => updateExtras(withMaster(D2.extras, { gainDb: dB }), { kind: "studio", label: _t("\u603B\u8F68\u589E\u76CA {p}{p2} dB", { p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, "mix:master"),
+  master: () => activeMaster(D3.extras),
+  setMasterGain: (dB) => updateExtras(withMaster(D3.extras, { gainDb: dB }), { kind: "studio", label: _t("\u603B\u8F68\u589E\u76CA {p}{p2} dB", { p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, "mix:master"),
   bypass: () => perfApi.mixBypass,
   setBypass: (on2) => {
     perfApi.mixBypass = on2;
@@ -57979,60 +58207,60 @@ var studio = new Studio2($2("stage"), {
     diagNote("studio", `bypass ${on2 ? "on" : "off"}`);
   },
   toggleLimiter: () => {
-    const on2 = !activeMaster(D2.extras).limiter;
-    updateExtras(withMaster(D2.extras, { limiter: on2 }), { kind: "studio", label: _t("\u6BCD\u7EBF\u9650\u5E45{on}", { on: on2 ? _t("\u5F00") : _t("\u5173") }) });
+    const on2 = !activeMaster(D3.extras).limiter;
+    updateExtras(withMaster(D3.extras, { limiter: on2 }), { kind: "studio", label: _t("\u6BCD\u7EBF\u9650\u5E45{on}", { on: on2 ? _t("\u5F00") : _t("\u5173") }) });
   },
   // 插件格（v0.10.8）：总轨 = studio.json master.chain；歌手 = 它那条麦克风轨的 chain
-  chain: (track) => track === MASTER ? activeMaster(D2.extras).chain : studioTrack(D2.extras, trackKey(track))?.chain ?? [],
-  resolve: (track, fx) => resolveChain([fx], { lowestMidi: D2.st.song.parts.some((x2) => x2.id === track) ? lowestMidiOf2(track) : null, bpm: songBpm2() })[0],
+  chain: (track) => track === MASTER ? activeMaster(D3.extras).chain : studioTrack(D3.extras, trackKey(track))?.chain ?? [],
+  resolve: (track, fx) => resolveChain([fx], { lowestMidi: D3.st.song.parts.some((x2) => x2.id === track) ? lowestMidiOf2(track) : null, bpm: songBpm2() })[0],
   // 和 pushChannels 同一份换算
   setChain: (track, chain, label, merge) => {
     if (track === MASTER) {
-      updateExtras(withMaster(D2.extras, { chain }), { kind: "studio", label }, merge);
+      updateExtras(withMaster(D3.extras, { chain }), { kind: "studio", label }, merge);
       return;
     }
-    updateExtras(withTrack2(D2.extras, trackKey(track), { chain }), { kind: "studio", label }, merge);
+    updateExtras(withTrack2(D3.extras, trackKey(track), { chain }), { kind: "studio", label }, merge);
   },
   // 被谁压（侧链）：录音房只给歌手轨的压缩器接 key（总线 / 总轨上的压缩器听自己）
   tabChanged: () => syncSpectrum(),
   keyTracks: (track) => {
-    if (!D2.st.song.parts.some((p2) => p2.id === track)) return [];
-    const labels = partLabels(D2.st.song, D2.extras);
-    return D2.st.song.parts.flatMap((p2, k2) => p2.id === track ? [] : [{ id: p2.id, name: labels[k2] }]);
+    if (!D3.st.song.parts.some((p2) => p2.id === track)) return [];
+    const labels = partLabels(D3.st.song, D3.extras);
+    return D3.st.song.parts.flatMap((p2, k2) => p2.id === track ? [] : [{ id: p2.id, name: labels[k2] }]);
   },
   // 路由轨（v0.10.9；user「插件：可以随便插，比如混响也是，你可以做中间的路由轨。比如我可以放两个路由轨然后放混响」「有一个默认总线，就是歌手和输出都是builtin的，但是你可以加混音轨」）
-  buses: () => studioTracks(D2.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, name: b3.name, gainDb: b3.gainDb, pan: b3.pan, bypass: b3.bypass, muted: busMuted.has(b3.id) })),
+  buses: () => studioTracks(D3.extras).filter((t10) => t10.kind === "bus").map((b3) => ({ id: b3.id, name: b3.name, gainDb: b3.gainDb, pan: b3.pan, bypass: b3.bypass, muted: busMuted.has(b3.id) })),
   toggleBusMute: (id2) => {
     if (!busMuted.delete(id2)) busMuted.add(id2);
     pushChannels();
   },
   // 混音轨静音：视图态（不进文件、不进 undo），同歌手的静音
-  setBusBypass: (id2, on2) => updateExtras(withTrack2(D2.extras, id2, { bypass: on2 }), { kind: "studio", label: `${studioTrack(D2.extras, id2)?.name ?? id2} ${on2 ? _t("\u65C1\u901A") : _t("\u53D6\u6D88\u65C1\u901A")}` }),
+  setBusBypass: (id2, on2) => updateExtras(withTrack2(D3.extras, id2, { bypass: on2 }), { kind: "studio", label: `${studioTrack(D3.extras, id2)?.name ?? id2} ${on2 ? _t("\u65C1\u901A") : _t("\u53D6\u6D88\u65C1\u901A")}` }),
   addBus: () => {
-    const id2 = newBusId(D2.extras), n10 = studioTracks(D2.extras).filter((t10) => t10.kind === "bus").length + 1, name = _t("\u6DF7\u97F3\u8F68 {n}", { n: n10 });
-    updateExtras(withTrack2(D2.extras, id2, { kind: "bus", name }), { kind: "studio", label: _t("\u52A0{name}", { name }) });
+    const id2 = newBusId(D3.extras), n10 = studioTracks(D3.extras).filter((t10) => t10.kind === "bus").length + 1, name = _t("\u6DF7\u97F3\u8F68 {n}", { n: n10 });
+    updateExtras(withTrack2(D3.extras, id2, { kind: "bus", name }), { kind: "studio", label: _t("\u52A0{name}", { name }) });
     return id2;
   },
   removeBus: (id2) => {
-    const name = studioTrack(D2.extras, id2)?.name ?? id2;
-    updateExtras(withoutBus(D2.extras, id2), { kind: "studio", label: _t("\u5220{name}", { name }) });
+    const name = studioTrack(D3.extras, id2)?.name ?? id2;
+    updateExtras(withoutBus(D3.extras, id2), { kind: "studio", label: _t("\u5220{name}", { name }) });
   },
-  renameBus: (id2, name) => updateExtras(withTrack2(D2.extras, id2, { name }), { kind: "studio", label: _t("\u6539\u540D\u300C{name}\u300D", { name }) }),
+  renameBus: (id2, name) => updateExtras(withTrack2(D3.extras, id2, { name }), { kind: "studio", label: _t("\u6539\u540D\u300C{name}\u300D", { name }) }),
   movePart: (id2, dir) => {
-    update(movePart(D2.st, id2, dir));
+    update(movePart(D3.st, id2, dir));
     renderTitle();
   },
   // 和谱上声部菜单的「上移 / 下移」同一个
-  moveBus: (id2, dir) => updateExtras(moveBus(D2.extras, id2, dir), { kind: "studio", label: _t("{extras} \u5F80{p}\u632A", { extras: studioTrack(D2.extras, id2)?.name ?? id2, p: dir < 0 ? _t("\u524D") : _t("\u540E") }) }),
-  setBusGain: (id2, dB) => updateExtras(withTrack2(D2.extras, id2, { gainDb: dB }), { kind: "studio", label: _t("{extras} \u589E\u76CA {p}{p2} dB", { extras: studioTrack(D2.extras, id2)?.name ?? id2, p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, `mix:gain:${id2}`),
-  setBusPan: (id2, pan) => updateExtras(withTrack2(D2.extras, id2, { pan }), { kind: "studio", label: _t("{extras} \u58F0\u50CF", { extras: studioTrack(D2.extras, id2)?.name ?? id2 }) }, `mix:pan:${id2}`),
-  outTo: (track) => studioTrack(D2.extras, trackKey(track))?.to ?? "master",
-  setOutTo: (track, to2) => updateExtras(withTrack2(D2.extras, trackKey(track), { to: to2 }), { kind: "studio", label: _t("{track} \u51FA\u5230 {to}", { track: routeName(track), to: routeName(to2) }) }),
-  sends: (track) => studioTrack(D2.extras, trackKey(track))?.sends ?? [],
-  setSends: (track, sends, label, merge) => updateExtras(withTrack2(D2.extras, trackKey(track), { sends }), { kind: "studio", label: `${routeName(track)} ${label}` }, merge),
+  moveBus: (id2, dir) => updateExtras(moveBus(D3.extras, id2, dir), { kind: "studio", label: _t("{extras} \u5F80{p}\u632A", { extras: studioTrack(D3.extras, id2)?.name ?? id2, p: dir < 0 ? _t("\u524D") : _t("\u540E") }) }),
+  setBusGain: (id2, dB) => updateExtras(withTrack2(D3.extras, id2, { gainDb: dB }), { kind: "studio", label: _t("{extras} \u589E\u76CA {p}{p2} dB", { extras: studioTrack(D3.extras, id2)?.name ?? id2, p: dB > 0 ? "+" : "", p2: dB.toFixed(1) }) }, `mix:gain:${id2}`),
+  setBusPan: (id2, pan) => updateExtras(withTrack2(D3.extras, id2, { pan }), { kind: "studio", label: _t("{extras} \u58F0\u50CF", { extras: studioTrack(D3.extras, id2)?.name ?? id2 }) }, `mix:pan:${id2}`),
+  outTo: (track) => studioTrack(D3.extras, trackKey(track))?.to ?? "master",
+  setOutTo: (track, to2) => updateExtras(withTrack2(D3.extras, trackKey(track), { to: to2 }), { kind: "studio", label: _t("{track} \u51FA\u5230 {to}", { track: routeName(track), to: routeName(to2) }) }),
+  sends: (track) => studioTrack(D3.extras, trackKey(track))?.sends ?? [],
+  setSends: (track, sends, label, merge) => updateExtras(withTrack2(D3.extras, trackKey(track), { sends }), { kind: "studio", label: `${routeName(track)} ${label}` }, merge),
   /** 这条轨能出到 / 发给的路由轨：除了自己，以及会接成环的（从那条走得回这条的）。 */
   targets: (track) => {
-    const all = studioTracks(D2.extras).filter((t10) => t10.kind === "bus"), key = trackKey(track), next2 = (id2) => {
+    const all = studioTracks(D3.extras).filter((t10) => t10.kind === "bus"), key = trackKey(track), next2 = (id2) => {
       const t10 = all.find((x2) => x2.id === id2);
       return t10 ? [t10.to, ...t10.sends.map((x2) => x2.to)].filter((x2) => x2 && x2 !== "master") : [];
     };
@@ -58136,9 +58364,9 @@ function castAsOf(extras, role, id2) {
   return concept ? castArgs(cat2, concept) : null;
 }
 function setActive(id2) {
-  let next2 = withSwap(D2.extras, curRole(), id2, D2.st.song.hum);
+  let next2 = withSwap(D3.extras, curRole(), id2, D3.st.song.hum);
   const ca2 = castAsOf(next2, curRole(), id2);
-  if (ca2) next2 = withRoleConcept(next2, curRole(), ca2, D2.st.song.hum);
+  if (ca2) next2 = withRoleConcept(next2, curRole(), ca2, D3.st.song.hum);
   updateExtras(next2, { kind: "lounge", label: _t("\u300C{next}\u300D\u6362\u4EBA\uFF1A{next2}", { next: roleName(next2, curRole()), next2: activeCandidateName(next2, curRole()) ?? id2 }) });
   sound.allOff();
   void prepareBank();
@@ -58149,11 +58377,11 @@ function openCreditsSheet() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">${_t("\u4F5C\u8005\u680F")}</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="${_t("\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09")}">${esc11(D2.st.song.credits ?? "")}</textarea><div class="offer-msg">${_t("\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002")}</div><details class="rights-sec"${D2.st.song.rights ? " open" : ""}><summary class="part-sec">${_t("\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09")}</summary><div class="set-row"><button class="btn cand" data-r="-1" title="${_t("\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09")}">${_t("\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09")}</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc11(p2.note)}">${esc11(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="${_t("\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199")}" value="${esc11(D2.st.song.rights ?? "")}" /><div class="offer-msg">${_t("\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002")}</div></details><div class="offer-btns"><button class="btn primary" data-v="ok">${_t("\u597D")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card credits-card"><div class="offer-title">${_t("\u4F5C\u8005\u680F")}</div><textarea id="crIn" class="credits-in" rows="5" spellcheck="false" placeholder="${_t("\u51E0\u884C\u90FD\u884C\uFF0C\u7167\u5199\u7684\u663E\u793A\u5728\u7EB8\u4E0A\uFF08\u6807\u9898\u4E0B\u9762\u9760\u53F3\uFF09")}">${esc11(D3.st.song.credits ?? "")}</textarea><div class="offer-msg">${_t("\u53EF\u4E0D\u586B\u3002\u5B58\u8FDB MusicXML\u300C\u5370\u5728\u9875\u9762\u4E0A\u7684\u5B57\u300D\uFF0C\u522B\u7684\u4E50\u8C31\u8F6F\u4EF6\u6253\u5F00\u4E5F\u5728\u7EB8\u4E0A\u3002")}</div><details class="rights-sec"${D3.st.song.rights ? " open" : ""}><summary class="part-sec">${_t("\u8BB8\u53EF\uFF08\u53EF\u9009\uFF1B\u4F60\u5199\u7684\u8FD9\u90E8\u5206\uFF1A\u8BCD / \u66F2 / \u7F16\uFF09")}</summary><div class="set-row"><button class="btn cand" data-r="-1" title="${_t("\u4E0D\u5199\uFF1A\u6CD5\u5F8B\u9ED8\u8BA4 = \u4FDD\u7559\u6240\u6709\u6743\u5229\uFF08\u522B\u4EBA\u7528\u8981\u5148\u95EE\u4F60\uFF09")}">${_t("\u672A\u58F0\u660E\uFF08\u9ED8\u8BA4\uFF09")}</button>` + RIGHTS_PRESETS.map((p2, k2) => `<button class="btn cand" data-r="${k2}" title="${esc11(p2.note)}">${esc11(p2.label)}</button>`).join("") + `</div><input id="rtIn" class="credits-in rights-in" type="text" spellcheck="false" autocomplete="off" placeholder="${_t("\u7A7A\u7740 = \u672A\u58F0\u660E\uFF08\u6CD5\u5F8B\u9ED8\u8BA4\u5C31\u662F\u4FDD\u7559\u6240\u6709\u6743\u5229\uFF09\uFF1B\u4E5F\u53EF\u4EE5\u81EA\u5DF1\u5199")}" value="${esc11(D3.st.song.rights ?? "")}" /><div class="offer-msg">${_t("\u4ECE\u7D27\u5230\u677E\u6392\uFF1BCC \u90A3\u51E0\u4E2A\u53D1\u51FA\u53BB\u4EE5\u540E\u5BF9\u5DF2\u7ECF\u53D1\u51FA\u53BB\u7684\u6536\u4E0D\u56DE\u3002\u5B58\u8FDB MusicXML \u7684 &lt;rights&gt;\uFF1B\u5BFC\u51FA mp3 \u65F6\u8FDE\u540C\u7F72\u540D\u5199\u8FDB\u6587\u4EF6\u7684\u6807\u7B7E\u91CC\u3002")}</div></details><div class="offer-btns"><button class="btn primary" data-v="ok">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const ta2 = box.querySelector("#crIn"), rt2 = box.querySelector("#rtIn");
   const close = () => {
-    update(setRights(setCredits(D2.st, ta2.value), rt2.value));
+    update(setRights(setCredits(D3.st, ta2.value), rt2.value));
     box.remove();
     ui2.closed(close);
     scoreEl.focus();
@@ -58177,10 +58405,10 @@ function openPaperSheet() {
   const box = document.createElement("div");
   box.className = "offer";
   const draw = () => {
-    const p2 = D2.st.song.paper ?? paperOf(DEFAULT_PAPER);
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u7EB8")}</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("\u5176\u4ED6")}<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">${_t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002")}</div><div class="part-sec">${_t("\u7248\u5F0F")}</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">${_t("\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002")}</div><div class="part-sec">${_t("\u7EB8\uFF08\u66F2\u6BB5\uFF09")}</div>` + D2.st.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc11(pp.name || _t("\uFF08\u6CA1\u540D\u5B57\uFF09"))}${pp.hidden ? _t("\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09") : ""}${pp.id === D2.st.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc11(pp.id)}" title="${_t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u9690\u85CF / \u5220\u3001\u5728\u4E0A\u9762 / \u4E0B\u9762\u63D2\u4E00\u6BB5\u3001\u632A\u3001\u79FB\u8C03")}">\u22EF</button></div>`).join("") + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
-    ((one) => `<div class="part-sec">${_t("\u663E\u793A")}</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && D2.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">${_t("\u53EA\u770B\u4E00\u53F7\u8F68")}<small>${_t("\u53EA\u770B\u300C{song}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B", { song: esc11(partLabels(D2.st.song, D2.extras)[0] ?? "") })}</small></button></div>`)(D2.st.song.parts[0]) + `<div class="part-sec">${_t("\u6392\u6CD5")}</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">${_t("\u8FDE\u7EED")}<small>${_t("\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837")}</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">${_t("\u5206\u9875")}<small>${_t("\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370")}</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">${_t("\u6A2A\u5377")}<small>${_t("\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9")}</small></button></div><div class="part-sec">${_t("\u5C0F\u8282\u53F7")}</div><div class="set-row"><button class="btn cand${D2.st.song.barNumbers === "off" ? "" : " is-on"}" data-v="bn:on">${_t("\u6BCF\u884C\u5F00\u5934")}<small>${_t("\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0")}</small></button><button class="btn cand${D2.st.song.barNumbers === "off" ? " is-on" : ""}" data-v="bn:off">${_t("\u4E0D\u5370")}</button></div><div class="part-sec">${_t("\u6B4C\u8BCD")}</div><div class="set-row"><button class="btn cand${D2.st.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">${_t("\u6309\u8282\u594F")}<small>${_t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")}</small></button><button class="btn cand${D2.st.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("\u6309\u6B4C\u8BCD")}<small>${_t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")}</small></button></div>` + // 看谱（谱面分家第三刀：原来在设置的「乐理助手」里、存在设备上；现在是这首歌的，进歌、能撤销，锁着也能切。PDF 跟着）
-    ((lk2) => `<div class="part-sec">${_t("\u770B\u8C31")}</div><div class="set-row"><button class="btn cand${lk2.viewInC ? "" : " is-on"}" data-v="inc:off">${_t("\u4E13\u4E1A")}<small>${_t("\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D")}</small></button><button class="btn cand${lk2.viewInC ? " is-on" : ""}" data-v="inc:on">${_t("\u6309 C \u8C03\u770B\uFF081=X\uFF09")}<small>${_t("\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8")}</small></button></div><div class="set-row"><button class="btn cand${lk2.chordTags ? " is-on" : ""}" data-v="ct:on">${_t("\u548C\u5F26\u6807\u7EA7\u6570")}<small>${_t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009")}</small></button><button class="btn cand${lk2.chordTags ? "" : " is-on"}" data-v="ct:off">${_t("\u4E0D\u6807")}</button></div><div class="offer-msg">${_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u8D70\uFF1A\u5B58\u5728\u6B4C\u91CC\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002\u522B\u4EBA\u7684\u6B4C\u9501\u7740\u4E5F\u80FD\u5207\u7740\u770B\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u4EF6\u3002")}</div>`)(songViewOf(D2.st.song)) + `<div class="part-sec">${_t("\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019")}</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("\u4E0D\u6298\u884C")}<small>${_t("\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837")}</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">${_t("\u6298\u884C")}<small>${_t("\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9")}</small></button></div><div class="offer-msg">${_t("\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+    const p2 = D3.st.song.paper ?? paperOf(DEFAULT_PAPER);
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u7EB8")}</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("\u5176\u4ED6")}<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">${_t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002")}</div><div class="part-sec">${_t("\u7248\u5F0F")}</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${densityOf(p2) === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">${_t("\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002")}</div><div class="part-sec">${_t("\u7EB8\uFF08\u66F2\u6BB5\uFF09")}</div>` + D3.st.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc11(pp.name || _t("\uFF08\u6CA1\u540D\u5B57\uFF09"))}${pp.hidden ? _t("\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09") : ""}${pp.id === D3.st.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc11(pp.id)}" title="${_t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u9690\u85CF / \u5220\u3001\u5728\u4E0A\u9762 / \u4E0B\u9762\u63D2\u4E00\u6BB5\u3001\u632A\u3001\u79FB\u8C03")}">\u22EF</button></div>`).join("") + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
+    ((one) => `<div class="part-sec">${_t("\u663E\u793A")}</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">${_t("\u53EA\u770B\u4E00\u53F7\u8F68")}<small>${_t("\u53EA\u770B\u300C{song}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B", { song: esc11(partLabels(D3.st.song, D3.extras)[0] ?? "") })}</small></button></div>`)(D3.st.song.parts[0]) + `<div class="part-sec">${_t("\u6392\u6CD5")}</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">${_t("\u8FDE\u7EED")}<small>${_t("\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837")}</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">${_t("\u5206\u9875")}<small>${_t("\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370")}</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">${_t("\u6A2A\u5377")}<small>${_t("\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9")}</small></button></div><div class="part-sec">${_t("\u5C0F\u8282\u53F7")}</div><div class="set-row"><button class="btn cand${D3.st.song.barNumbers === "off" ? "" : " is-on"}" data-v="bn:on">${_t("\u6BCF\u884C\u5F00\u5934")}<small>${_t("\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0")}</small></button><button class="btn cand${D3.st.song.barNumbers === "off" ? " is-on" : ""}" data-v="bn:off">${_t("\u4E0D\u5370")}</button></div><div class="part-sec">${_t("\u6B4C\u8BCD")}</div><div class="set-row"><button class="btn cand${D3.st.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">${_t("\u6309\u8282\u594F")}<small>${_t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")}</small></button><button class="btn cand${D3.st.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("\u6309\u6B4C\u8BCD")}<small>${_t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")}</small></button></div>` + // 看谱（谱面分家第三刀：原来在设置的「乐理助手」里、存在设备上；现在是这首歌的，进歌、能撤销，锁着也能切。PDF 跟着）
+    ((lk2) => `<div class="part-sec">${_t("\u770B\u8C31")}</div><div class="set-row"><button class="btn cand${lk2.viewInC ? "" : " is-on"}" data-v="inc:off">${_t("\u4E13\u4E1A")}<small>${_t("\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D")}</small></button><button class="btn cand${lk2.viewInC ? " is-on" : ""}" data-v="inc:on">${_t("\u6309 C \u8C03\u770B\uFF081=X\uFF09")}<small>${_t("\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8")}</small></button></div><div class="set-row"><button class="btn cand${lk2.chordTags ? " is-on" : ""}" data-v="ct:on">${_t("\u548C\u5F26\u6807\u7EA7\u6570")}<small>${_t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009")}</small></button><button class="btn cand${lk2.chordTags ? "" : " is-on"}" data-v="ct:off">${_t("\u4E0D\u6807")}</button></div><div class="offer-msg">${_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u8D70\uFF1A\u5B58\u5728\u6B4C\u91CC\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002\u522B\u4EBA\u7684\u6B4C\u9501\u7740\u4E5F\u80FD\u5207\u7740\u770B\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u4EF6\u3002")}</div>`)(songViewOf(D3.st.song)) + `<div class="part-sec">${_t("\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019")}</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("\u4E0D\u6298\u884C")}<small>${_t("\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837")}</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">${_t("\u6298\u884C")}<small>${_t("\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9")}</small></button></div><div class="offer-msg">${_t("\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -58197,10 +58425,10 @@ function openPaperSheet() {
       return;
     }
     if (v && PAPER_KINDS.includes(v)) {
-      update(setPaper(D2.st, v));
+      update(setPaper(D3.st, v));
       draw();
     } else if (v?.startsWith("density:")) {
-      update(setDensity(D2.st, v.slice(8)));
+      update(setDensity(D3.st, v.slice(8)));
       draw();
     } else if (v?.startsWith("pm:")) {
       close();
@@ -58210,16 +58438,16 @@ function openPaperSheet() {
       view.render();
       draw();
     } else if (v === "bn:on" || v === "bn:off") {
-      update(setBarNumbers(D2.st, v === "bn:on"));
+      update(setBarNumbers(D3.st, v === "bn:on"));
       draw();
     } else if (v === "inc:on" || v === "inc:off") {
-      setSongLook(setViewInC(D2.st, v === "inc:on"), v === "inc:on" ? _t("\u6309 C \u8C03\u770B") : _t("\u770B\u8C31\uFF1A\u4E13\u4E1A"));
+      setSongLook(setViewInC(D3.st, v === "inc:on"), v === "inc:on" ? _t("\u6309 C \u8C03\u770B") : _t("\u770B\u8C31\uFF1A\u4E13\u4E1A"));
       draw();
     } else if (v === "ct:on" || v === "ct:off") {
-      setSongLook(setChordTags(D2.st, v === "ct:on"), v === "ct:on" ? _t("\u548C\u5F26\u6807\u7EA7\u6570") : _t("\u548C\u5F26\u4E0D\u6807\u7EA7\u6570"));
+      setSongLook(setChordTags(D3.st, v === "ct:on"), v === "ct:on" ? _t("\u548C\u5F26\u6807\u7EA7\u6570") : _t("\u548C\u5F26\u4E0D\u6807\u7EA7\u6570"));
       draw();
     } else if (v === "lyr:lyrics" || v === "lyr:rhythm") {
-      update(setLyricFit(D2.st, v === "lyr:rhythm" ? "rhythm" : "lyrics"));
+      update(setLyricFit(D3.st, v === "lyr:rhythm" ? "rhythm" : "lyrics"));
       draw();
     } else if (v === "flow:cont" || v === "flow:pages" || v === "flow:scroll") {
       pageFlow = v === "flow:pages";
@@ -58232,10 +58460,10 @@ function openPaperSheet() {
       view.render();
       draw();
     } else if (v === "only1") {
-      const one = D2.st.song.parts[0];
+      const one = D3.st.song.parts[0];
       if (!one) return;
-      const on2 = pv(one.id).only && D2.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only);
-      for (const q2 of D2.st.song.parts) setPv(q2.id, { only: !on2 && q2 === one });
+      const on2 = pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only);
+      for (const q2 of D3.st.song.parts) setPv(q2.id, { only: !on2 && q2 === one });
       afterViewChange();
       draw();
     }
@@ -58244,46 +58472,46 @@ function openPaperSheet() {
 var lyricMuteKey = [];
 var lyricMuteVal = /* @__PURE__ */ new Map();
 function lyricMutes() {
-  if (lyricMuteKey[0] === D2.st.song && lyricMuteKey[1] === D2.extras) return lyricMuteVal;
+  if (lyricMuteKey[0] === D3.st.song && lyricMuteKey[1] === D3.extras) return lyricMuteVal;
   const out = /* @__PURE__ */ new Map();
-  const order = songPlayOrder(D2.st.song), map = timeMapOf(D2.st.song, order);
-  for (const p2 of D2.st.song.parts) {
-    const eng = activeInstrument(D2.extras, p2.role)?.engine ?? null, mode = activeSingChunk(D2.extras, p2.role), m2 = /* @__PURE__ */ new Map();
-    const flat = flattenPart(D2.st.song, p2.id, { order }), fl2 = sungPlan(flat.tokens, map, flat.starts.map((s10) => s10.index), mode, D2.st.song.hum).at, byId = new Map(flat.tokens.map((t10, i10) => [t10.id, fl2[i10]]));
-    for (const paper of D2.st.song.papers) {
+  const order = songPlayOrder(D3.st.song), map = timeMapOf(D3.st.song, order);
+  for (const p2 of D3.st.song.parts) {
+    const eng = activeInstrument(D3.extras, p2.role)?.engine ?? null, mode = activeSingChunk(D3.extras, p2.role), m2 = /* @__PURE__ */ new Map();
+    const flat = flattenPart(D3.st.song, p2.id, { order }), fl2 = sungPlan(flat.tokens, map, flat.starts.map((s10) => s10.index), mode, D3.st.song.hum).at, byId = new Map(flat.tokens.map((t10, i10) => [t10.id, fl2[i10]]));
+    for (const paper of D3.st.song.papers) {
       const toks = paper.tracks[p2.id];
       if (!toks) continue;
-      const own = toks.some((t10) => !byId.has(t10.id)) ? sungPlan(toks, void 0, [], mode, D2.st.song.hum).at : null;
+      const own = toks.some((t10) => !byId.has(t10.id)) ? sungPlan(toks, void 0, [], mode, D3.st.song.hum).at : null;
       for (const [i10, x2] of lyricIssues(toks, performerOf(eng)?.lyrics ?? null, (i11) => byId.get(toks[i11].id) ?? own[i11])) m2.set(toks[i10].id, x2);
     }
     out.set(p2.id, m2);
   }
-  lyricMuteKey = [D2.st.song, D2.extras];
+  lyricMuteKey = [D3.st.song, D3.extras];
   lyricMuteVal = out;
   return out;
 }
 function lyricHintAt(i10) {
-  const t10 = tr(D2.st)[i10], p2 = D2.st.song.parts.find((x3) => x3.id === D2.st.at.part);
+  const t10 = tr(D3.st)[i10], p2 = D3.st.song.parts.find((x3) => x3.id === D3.st.at.part);
   if (!t10 || !p2) return null;
   const x2 = lyricMutes().get(p2.id)?.get(t10.id);
   if (!x2) return null;
-  return lyricWhyText(x2, roleName(D2.extras, p2.role));
+  return lyricWhyText(x2, roleName(D3.extras, p2.role));
 }
 var readPlans = null;
 var readings = /* @__PURE__ */ new Map();
 var readAsked = /* @__PURE__ */ new Set();
 var readRetryAt = 0;
 function readPlanOf(tokId, part) {
-  if (!readPlans || readPlans.song !== D2.st.song || readPlans.part !== part.id) readPlans = { song: D2.st.song, part: part.id };
+  if (!readPlans || readPlans.song !== D3.st.song || readPlans.part !== part.id) readPlans = { song: D3.st.song, part: part.id };
   for (const scope of ["view", "segment"]) {
-    const chunks2 = readPlans[scope] ??= ((song) => buildTimeline({ song, order: songPlayOrder(song), parts: [part], info: performerInfo, hum: D2.st.song.hum, singOpt: humOpt2() }).chunks)(songIn(scope));
+    const chunks2 = readPlans[scope] ??= ((song) => buildTimeline({ song, order: songPlayOrder(song), parts: [part], info: performerInfo, hum: D3.st.song.hum, singOpt: humOpt2() }).chunks)(songIn(scope));
     const plan = chunks2.find((c10) => c10.entryOf.has(tokId));
     if (plan) return plan;
   }
   return null;
 }
 function lyricReadingAt(i10) {
-  const t10 = tr(D2.st)[i10], part = D2.st.song.parts.find((x2) => x2.id === D2.st.at.part);
+  const t10 = tr(D3.st)[i10], part = D3.st.song.parts.find((x2) => x2.id === D3.st.at.part);
   if (!t10 || t10.kind !== "note" || !part || performerOf(engineNow())?.lyrics !== "words") return null;
   const plan = readPlanOf(t10.id, part);
   if (!plan) return null;
@@ -58308,60 +58536,60 @@ function lyricReadingAt(i10) {
   return { parts, at: plan.entryOf.get(t10.id) ?? -1, note: s10.LANG === "zh" ? _t("\u5C0F\u6708\u76F8\u5FF5\u6210\uFF08\u97F3\u7D20 + \u58F0\u8C03\uFF09\uFF1A") : _t("\u5C0F\u6708\u76F8\u5FF5\u6210\uFF1A") };
 }
 function partLooks() {
-  const labels = partLabels(D2.st.song, D2.extras), sounds = D2.st.song.parts.map((p2) => roleSound(D2.extras, p2.role));
+  const labels = partLabels(D3.st.song, D3.extras), sounds = D3.st.song.parts.map((p2) => roleSound(D3.extras, p2.role));
   const colors = partColorIndices(sounds);
-  const needCat = !catalogNow && D2.st.song.parts.some((p2) => !!D2.extras.lounge[p2.role]?.concept);
+  const needCat = !catalogNow && D3.st.song.parts.some((p2) => !!D3.extras.lounge[p2.role]?.concept);
   if (needCat) void loadCatalog().then((c10) => {
     catalogNow = c10;
     view.render();
   }).catch(() => void 0);
-  const abbrs = D2.st.song.parts.map((p2, k2) => {
-    const ids = D2.extras.lounge[p2.role]?.concept?.ids;
+  const abbrs = D3.st.song.parts.map((p2, k2) => {
+    const ids = D3.extras.lounge[p2.role]?.concept?.ids;
     const c10 = catalogNow && ids ? (ids.wikidata ? catalogNow.byId.get(ids.wikidata) : void 0) ?? (ids.local ? catalogNow.byId.get(ids.local) ?? catalogNow.byId.get(`x:${ids.local}`) : void 0) : void 0;
     return partAbbr(labels[k2], { ...c10 ? { conceptNames: [...c10.scoreName?.en ? [c10.scoreName.en] : [], c10.names.en, c10.names.zh], ...c10.abbr?.en ? { conceptAbbr: c10.abbr.en } : {} } : {}, voice: sounds[k2].startsWith("voice.") });
   });
   return { colors, abbrs };
 }
 function partViews() {
-  const labels = partLabels(D2.st.song, D2.extras), mutes = lyricMutes(), looks = partLooks();
-  return D2.st.song.parts.map((p2, k2) => {
+  const labels = partLabels(D3.st.song, D3.extras), mutes = lyricMutes(), looks = partLooks();
+  return D3.st.song.parts.map((p2, k2) => {
     const v = pv(p2.id), badges = [issueParts.has(p2.id) ? _t("\u4E0D\u51FA\u58F0") : ""].filter(Boolean);
-    const eng = activeInstrument(D2.extras, p2.role)?.engine ?? "unknown", plug = performerOf(eng);
+    const eng = activeInstrument(D3.extras, p2.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm2 = mutes.get(p2.id);
     const ly2 = plug?.lyrics, noLyrics = ly2 === "hum" || ly2 === "none" ? _t("{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220", { p: labels[k2], p2: ly2 === "hum" ? _t("\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC") : _t("\u4E0D\u5531\u6B4C\u8BCD") }) : "";
-    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...plug?.notation?.({ extras: D2.extras, role: p2.role }) ?? {}, ignores: ignoredFor(p2.role) };
+    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...plug?.notation?.({ extras: D3.extras, role: p2.role }) ?? {}, ignores: ignoredFor(p2.role) };
   });
 }
 function afterViewChange() {
   pushChannels();
   schedulePlaybackRefresh();
-  if (!isShown(D2.st.at.part)) {
-    const paper = D2.st.song.papers.find((pp) => pp.id === D2.st.at.paper), to2 = D2.st.song.parts.find((p2) => isShown(p2.id) && paper?.tracks[p2.id]);
-    if (to2) update(setFocus(D2.st, D2.st.at.paper, to2.id));
+  if (!isShown(D3.st.at.part)) {
+    const paper = D3.st.song.papers.find((pp) => pp.id === D3.st.at.paper), to2 = D3.st.song.parts.find((p2) => isShown(p2.id) && paper?.tracks[p2.id]);
+    if (to2) update(setFocus(D3.st, D3.st.at.paper, to2.id));
   }
   view.render();
 }
 function navPaper(dir) {
-  navPaperFrom(D2.st.at.paper, dir);
+  navPaperFrom(D3.st.at.paper, dir);
 }
 function navPaperFrom(from, dir) {
-  const k2 = D2.st.song.papers.findIndex((p2) => p2.id === from), to2 = D2.st.song.papers[k2 + dir];
+  const k2 = D3.st.song.papers.findIndex((p2) => p2.id === from), to2 = D3.st.song.papers[k2 + dir];
   if (to2) navPaperTo(to2.id);
 }
 function navPaperTo(id2) {
-  const to2 = D2.st.song.papers.find((p2) => p2.id === id2);
+  const to2 = D3.st.song.papers.find((p2) => p2.id === id2);
   if (!to2) return;
-  const part = to2.tracks[D2.st.at.part] ? D2.st.at.part : D2.st.song.parts.find((p2) => to2.tracks[p2.id])?.id ?? D2.st.at.part;
-  update(setFocus(D2.st, to2.id, part));
+  const part = to2.tracks[D3.st.at.part] ? D3.st.at.part : D3.st.song.parts.find((p2) => to2.tracks[p2.id])?.id ?? D3.st.at.part;
+  update(setFocus(D3.st, to2.id, part));
   jumpPlaybackToPaper(id2);
 }
-function addNewPart(paper = D2.st.at.paper, giveFrom, place) {
+function addNewPart(paper = D3.st.at.paper, giveFrom, place) {
   newPartPending = { paper, ...giveFrom ? { giveFrom } : {}, ...place ? { place } : {} };
   openFinder();
 }
 function deleteSinger(id2, done2 = () => {
 }) {
-  const song = D2.st.song, p2 = song.parts.find((x2) => x2.id === id2);
+  const song = D3.st.song, p2 = song.parts.find((x2) => x2.id === id2);
   if (!p2) {
     done2();
     return;
@@ -58379,7 +58607,7 @@ function deleteSinger(id2, done2 = () => {
     return;
   }
   const go = () => {
-    updateBoth(removePart(D2.st, id2), withoutRole(D2.extras, p2.role), { kind: "studio", label: _t("\u5220\u6389\u58F0\u90E8\u300C{name}\u300D", { name }) });
+    updateBoth(removePart(D3.st, id2), withoutRole(D3.extras, p2.role), { kind: "studio", label: _t("\u5220\u6389\u58F0\u90E8\u300C{name}\u300D", { name }) });
     studio.render();
     renderTitle();
   };
@@ -58416,20 +58644,20 @@ function placePart(st2, id2, anchor, above) {
   return st2;
 }
 function paperLabel(id2) {
-  const k2 = D2.st.song.papers.findIndex((p2) => p2.id === id2);
-  return D2.st.song.papers[k2]?.name || _t("\u7B2C {n} \u6BB5", { n: k2 + 1 });
+  const k2 = D3.st.song.papers.findIndex((p2) => p2.id === id2);
+  return D3.st.song.papers[k2]?.name || _t("\u7B2C {n} \u6BB5", { n: k2 + 1 });
 }
 function dropFromSection(paperId, partId, done2) {
-  const paper = D2.st.song.papers.find((p3) => p3.id === paperId), t10 = paper?.tracks[partId];
+  const paper = D3.st.song.papers.find((p3) => p3.id === paperId), t10 = paper?.tracks[partId];
   if (!paper || !t10) return;
-  const name = partLabels(D2.st.song, D2.extras)[D2.st.song.parts.findIndex((p3) => p3.id === partId)] ?? "", p2 = paperLabel(paperId);
+  const name = partLabels(D3.st.song, D3.extras)[D3.st.song.parts.findIndex((p3) => p3.id === partId)] ?? "", p2 = paperLabel(paperId);
   if (Object.keys(paper.tracks).length <= 1) {
     info(_t("\u300C{p}\u300D\u53EA\u6709\u300C{name}\u300D\u8FD9\u4E00\u4E2A\u58F0\u90E8\uFF0C\u5220\u4E0D\u4E86\uFF1A\u8FD9\u4E00\u6BB5\u6574\u6BB5\u4E0D\u8981 = \u7EB8\u9876\u300C\u22EF\u300D\u91CC\u5220\u8FD9\u4E00\u6BB5", { p: p2, name }));
     done2();
     return;
   }
   const go = () => {
-    update(removeTrack(D2.st, paperId, partId));
+    update(removeTrack(D3.st, paperId, partId));
     renderTitle();
   };
   const notes = t10.filter((x2) => x2.kind === "note").length;
@@ -58450,12 +58678,12 @@ function openPartsManager(ctx2) {
   box.className = "offer parts-mgr";
   let page = "main", above = false, subject = ctx2?.part ?? "", openRow = ctx2?.part ?? null, scrolled = false;
   const secId = () => {
-    const want = ctx2?.paper ?? D2.st.at.paper;
-    return D2.st.song.papers.some((p2) => p2.id === want) ? want : D2.st.song.papers[0].id;
+    const want = ctx2?.paper ?? D3.st.at.paper;
+    return D3.st.song.papers.some((p2) => p2.id === want) ? want : D3.st.song.papers[0].id;
   };
-  const chipLabel = (id2, k2) => D2.st.song.papers[k2]?.name || String(k2 + 1);
+  const chipLabel = (id2, k2) => D3.st.song.papers[k2]?.name || String(k2 + 1);
   const draw = () => {
-    const song = D2.st.song, labels = partLabels(song, D2.extras), cols = partColorIndices(song.parts.map((p2) => roleSound(D2.extras, p2.role)));
+    const song = D3.st.song, labels = partLabels(song, D3.extras), cols = partColorIndices(song.parts.map((p2) => roleSound(D3.extras, p2.role)));
     const sec = secId(), secName = esc11(paperLabel(sec)), here = song.papers.find((pp) => pp.id === sec).tracks;
     const lab = (id2) => esc11(labels[song.parts.findIndex((p2) => p2.id === id2)] ?? id2);
     if (page !== "main") {
@@ -58468,12 +58696,12 @@ function openPartsManager(ctx2) {
       return;
     }
     const row2 = (p2, k2) => {
-      const who = activeCandidateName(D2.extras, p2.role), isOpen = openRow === p2.id, inSec = !!here[p2.id];
+      const who = activeCandidateName(D3.extras, p2.role), isOpen = openRow === p2.id, inSec = !!here[p2.id];
       const chips = song.papers.map((pp, j2) => {
         const on2 = !!pp.tracks[p2.id], full = esc11(paperLabel(pp.id));
         return `<button class="btn chip${on2 ? " is-on" : ""}${pp.id === sec ? " is-cur" : ""}" data-v="pp:${esc11(pp.id)}:${esc11(p2.id)}" title="${on2 ? _t("\u4ECE\u300C{p}\u300D\u5220\u6389\uFF08\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684\u4E00\u8D77\u5220\uFF0C\u5148\u95EE\uFF09", { p: full }) : _t("\u653E\u8FDB\u300C{p}\u300D\uFF08\u4E00\u884C\u7A7A\u7684\uFF09", { p: full })}">${esc11(chipLabel(pp.id, j2))}</button>`;
       }).join("");
-      const main = `<div class="pm-row${(ctx2?.part ?? D2.st.at.part) === p2.id ? " is-here" : ""}${p2.host ? " is-tenant" : ""}${isOpen ? " is-open" : ""}" data-pid="${esc11(p2.id)}"><span class="pm-dot" style="background:${TAB20[cols[k2]]}"></span><input class="pm-name" data-pid="${esc11(p2.id)}" value="${esc11(labels[k2] ?? p2.id)}" spellcheck="false" autocomplete="off" title="${_t("\u8C31\u4E0A\u5199\u7684\u540D\u5B57\uFF08\u70B9\u4E86\u5C31\u80FD\u6539\uFF09")}" /><button class="btn pm-inst" data-v="swap:${esc11(p2.id)}" title="${_t("\u6362\u4E50\u5668\uFF08\u8FDB\u4E50\u5668\u76EE\u5F55\uFF09")}"><span>${esc11(who ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</span></button><div class="pm-chips">${chips}</div><button class="btn pm-more${isOpen ? " is-on" : ""}" data-v="more:${esc11(p2.id)}" title="${_t("\u8FD9\u4E00\u884C\u7684\u66F4\u591A\uFF1A\u4E0A\u4E0B\u632A\u3001\u52A0\u3001\u4EA4\u7ED9\u3001\u4E50\u5668\u8BBE\u7F6E\u3001\u5220\u9664")}" aria-label="${_t("\u66F4\u591A")}">\u22EF</button></div>`;
+      const main = `<div class="pm-row${(ctx2?.part ?? D3.st.at.part) === p2.id ? " is-here" : ""}${p2.host ? " is-tenant" : ""}${isOpen ? " is-open" : ""}" data-pid="${esc11(p2.id)}"><span class="pm-dot" style="background:${TAB20[cols[k2]]}"></span><input class="pm-name" data-pid="${esc11(p2.id)}" value="${esc11(labels[k2] ?? p2.id)}" spellcheck="false" autocomplete="off" title="${_t("\u8C31\u4E0A\u5199\u7684\u540D\u5B57\uFF08\u70B9\u4E86\u5C31\u80FD\u6539\uFF09")}" /><button class="btn pm-inst" data-v="swap:${esc11(p2.id)}" title="${_t("\u6362\u4E50\u5668\uFF08\u8FDB\u4E50\u5668\u76EE\u5F55\uFF09")}"><span>${esc11(who ?? _t("\u6CA1\u4EBA\u4E0A\u573A"))}</span></button><div class="pm-chips">${chips}</div><button class="btn pm-more${isOpen ? " is-on" : ""}" data-v="more:${esc11(p2.id)}" title="${_t("\u8FD9\u4E00\u884C\u7684\u66F4\u591A\uFF1A\u4E0A\u4E0B\u632A\u3001\u52A0\u3001\u4EA4\u7ED9\u3001\u4E50\u5668\u8BBE\u7F6E\u3001\u5220\u9664")}" aria-label="${_t("\u66F4\u591A")}">\u22EF</button></div>`;
       if (!isOpen) return main;
       const id2 = esc11(p2.id);
       const acts = `<button class="btn" data-v="up:${id2}"${k2 === 0 ? " disabled" : ""}>${_t("\u4E0A\u79FB")}</button><button class="btn" data-v="down:${id2}"${k2 === song.parts.length - 1 ? " disabled" : ""}>${_t("\u4E0B\u79FB")}</button>` + (inSec ? `<button class="btn" data-v="addabove:${id2}" title="${_t("\u5728\u8FD9\u4E00\u884C\u4E0A\u9762\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09")}">${_t("\u5728\u4E0A\u9762\u52A0\u2026")}</button><button class="btn" data-v="addbelow:${id2}" title="${_t("\u5728\u8FD9\u4E00\u884C\u4E0B\u9762\u52A0\u4E00\u4E2A\u58F0\u90E8\uFF08\u5DF2\u6709\u7684\u6216\u65B0\u7684\uFF1B\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF09")}">${_t("\u5728\u4E0B\u9762\u52A0\u2026")}</button><button class="btn" data-v="giveof:${id2}" title="${_t("\u53EA\u6709\u8FD9\u4E00\u6BB5\uFF1A\u8FD9\u4E00\u884C\u7684\u97F3\u3001\u6B4C\u8BCD\u3001\u8BB0\u53F7\u539F\u6837\u4EA4\u7ED9\u53E6\u4E00\u4E2A\u58F0\u90E8\u6F14\uFF08\u7528\u5B83\u7684\u4E50\u5668\u548C\u6DF7\u97F3\u53F0\u90A3\u4E00\u6761\uFF09")}">${_t("\u300C{p}\u300D\u6BB5\u4EA4\u7ED9\u2026", { p: secName })}</button>` : `<button class="btn" data-v="pp:${esc11(sec)}:${id2}">${_t("\u653E\u8FDB\u300C{p}\u300D", { p: secName })}</button>`) + `<button class="btn" data-v="inst:${id2}">${_t("\u4E50\u5668\u8BBE\u7F6E\u2026")}</button>` + (inSec ? `<button class="btn danger" data-v="pp:${esc11(sec)}:${id2}" title="${_t("\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684\u4E00\u8D77\u5220\u6389\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09\u3002\u522B\u7684\u6BB5\u7167\u65E7")}">${_t("\u4ECE\u300C{p}\u300D\u5220\u6389", { p: secName })}</button>` : "") + `<button class="btn danger" data-v="delpart:${id2}" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u58F0\u90E8\u2026")}</button>`;
@@ -58501,22 +58729,22 @@ function openPartsManager(ctx2) {
     ui2.closed(close);
   };
   ui2.open({ k: "sheet", close, redraw: draw });
-  const reopen = () => openPartsManager({ paper: secId(), part: subject || D2.st.at.part });
+  const reopen = () => openPartsManager({ paper: secId(), part: subject || D3.st.at.part });
   const focusOn = (id2) => {
-    const pp = D2.st.song.papers.find((x2) => x2.id === secId() && x2.tracks[id2]) ?? D2.st.song.papers.find((x2) => x2.tracks[id2]);
+    const pp = D3.st.song.papers.find((x2) => x2.id === secId() && x2.tracks[id2]) ?? D3.st.song.papers.find((x2) => x2.tracks[id2]);
     if (!pp) return false;
-    update(setFocus(D2.st, pp.id, id2));
+    update(setFocus(D3.st, pp.id, id2));
     return true;
   };
   box.addEventListener("change", (e10) => {
     const t10 = e10.target, pid = t10.dataset.pid;
     if (!pid || !t10.classList.contains("pm-name")) return;
-    const p2 = D2.st.song.parts.find((x2) => x2.id === pid), n10 = t10.value.trim();
-    if (!p2 || !n10 || n10 === roleName(D2.extras, p2.role)) {
+    const p2 = D3.st.song.parts.find((x2) => x2.id === pid), n10 = t10.value.trim();
+    if (!p2 || !n10 || n10 === roleName(D3.extras, p2.role)) {
       draw();
       return;
     }
-    updateExtras(withRoleName(D2.extras, p2.role, n10, D2.st.song.hum), { kind: "lounge", label: _t("\u89D2\u8272\u6539\u540D\uFF1A{n}", { n: n10 }) });
+    updateExtras(withRoleName(D3.extras, p2.role, n10, D3.st.song.hum), { kind: "lounge", label: _t("\u89D2\u8272\u6539\u540D\uFF1A{n}", { n: n10 }) });
     renderTitle();
     view.render();
     draw();
@@ -58533,7 +58761,7 @@ function openPartsManager(ctx2) {
     if (!v) return;
     if (v === "new") {
       close();
-      addNewPart(D2.st.at.paper);
+      addNewPart(D3.st.at.paper);
       return;
     }
     const sec = secId();
@@ -58543,8 +58771,8 @@ function openPartsManager(ctx2) {
       return;
     }
     if (v.startsWith("give:") && page === "give") {
-      const to2 = v.slice(5), name = partLabels(D2.st.song, D2.extras)[D2.st.song.parts.findIndex((p2) => p2.id === to2)] ?? "";
-      update(rebindTrack(D2.st, sec, subject, to2));
+      const to2 = v.slice(5), name = partLabels(D3.st.song, D3.extras)[D3.st.song.parts.findIndex((p2) => p2.id === to2)] ?? "";
+      update(rebindTrack(D3.st, sec, subject, to2));
       renderTitle();
       info(_t("\u8FD9\u4E00\u6BB5\u7684\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u300C{name}\u300D", { name }));
       subject = to2;
@@ -58560,7 +58788,7 @@ function openPartsManager(ctx2) {
     }
     if (v.startsWith("add:") && page === "add") {
       const id2 = v.slice(4);
-      update(placePart(addTrack(D2.st, sec, id2), id2, subject, above));
+      update(placePart(addTrack(D3.st, sec, id2), id2, subject, above));
       renderTitle();
       page = "main";
       draw();
@@ -58586,13 +58814,13 @@ function openPartsManager(ctx2) {
       return;
     }
     if (k2 === "up" || k2 === "down") {
-      update(movePart(D2.st, a10, k2 === "up" ? -1 : 1));
+      update(movePart(D3.st, a10, k2 === "up" ? -1 : 1));
       renderTitle();
       draw();
       return;
     }
     if (k2 === "pp") {
-      const paper = D2.st.song.papers.find((pp) => pp.id === a10);
+      const paper = D3.st.song.papers.find((pp) => pp.id === a10);
       if (!paper) return;
       subject = b3;
       if (paper.tracks[b3]) {
@@ -58600,7 +58828,7 @@ function openPartsManager(ctx2) {
         dropFromSection(a10, b3, reopen);
         return;
       }
-      update(addTrack(D2.st, a10, b3));
+      update(addTrack(D3.st, a10, b3));
       renderTitle();
       draw();
       return;
@@ -58627,9 +58855,9 @@ function openPartsManager(ctx2) {
 }
 function openPaperMenu(id2) {
   ui2.close();
-  const paper = D2.st.song.papers.find((p2) => p2.id === id2);
+  const paper = D3.st.song.papers.find((p2) => p2.id === id2);
   if (!paper) return;
-  const k2 = D2.st.song.papers.indexOf(paper), n10 = D2.st.song.papers.length;
+  const k2 = D3.st.song.papers.indexOf(paper), n10 = D3.st.song.papers.length;
   const box = document.createElement("div");
   box.className = "offer paper-menu";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc11(paperLabel(id2))}</div><div class="part-sec">${_t("\u8FD9\u4E00\u6BB5")}</div><div class="set-row"><button class="btn" data-v="name">${_t("\u6539\u66F2\u6BB5\u540D\u2026")}</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="${_t("\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB")}">${paper.hidden ? _t("\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09") : _t("\u9690\u85CF\uFF08\u4E0D\u653E\uFF09")}</button>` + (n10 > 1 ? `<button class="btn cand danger" data-v="del">${_t("\u5220\u8FD9\u4E00\u6BB5\u2026")}</button>` : "") + `</div><div class="part-sec">${_t("\u63D2\u5165")}</div><div class="set-row"><button class="btn" data-v="above" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63D2\u5728\u5B83\u524D\u9762\uFF08\u8C31\u5934\u7167\u6284\u524D\u4E00\u6BB5\u7ED3\u5C3E\u7684\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\uFF09")}">${_t("\u5728\u4E0A\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="below" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u5728\u4E0B\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="dup" title="${_t("\u6574\u6BB5\uFF08\u6240\u6709\u58F0\u90E8\u7684\u97F3\u3001\u8BB0\u53F7\u3001\u6B4C\u8BCD\uFF09\u7167\u6284\u4E00\u4EFD\uFF0C\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u590D\u5236\u8FD9\u4E00\u6BB5")}</button></div><div class="part-sec">${_t("\u7F16\u8F91")}</div><div class="set-row"><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>${_t("\u4E0A\u79FB")}</button><button class="btn" data-v="down"${k2 === n10 - 1 ? " disabled" : ""}>${_t("\u4E0B\u79FB")}</button><button class="btn" data-v="transpose" title="${_t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u79FB\u8C03\u3001\u8F6C\u8C03\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09")}">${_t("\u79FB\u8C03 / \u8F6C\u8C03\u2026")}</button></div><div class="offer-msg">${_t("\u66F2\u6BB5 = \u4E00\u5F20\u7EB8\uFF1A\u6BCF\u4E00\u6BB5\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u6BB5\u91CC\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\uFF08\u6BCF\u6BB5\u5E95\u4E0B\u300C\uFF0B \u58F0\u90E8\u300D\uFF09\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
@@ -58653,18 +58881,18 @@ function openPaperMenu(id2) {
       return;
     }
     if (v === "up" || v === "down") {
-      update(movePaper(D2.st, id2, v === "up" ? -1 : 1));
+      update(movePaper(D3.st, id2, v === "up" ? -1 : 1));
       close();
       return;
     }
     if (v === "above" || v === "below") {
-      update(v === "above" ? addPaper(D2.st, void 0, id2) : addPaper(D2.st, id2));
+      update(v === "above" ? addPaper(D3.st, void 0, id2) : addPaper(D3.st, id2));
       close();
       info(_t("\u65B0\u7684\u4E00\u6BB5"));
       return;
     }
     if (v === "dup") {
-      update(duplicatePaper(D2.st, id2, _t("{name} \u526F\u672C", { name: paper.name || _t("\u66F2\u6BB5") })));
+      update(duplicatePaper(D3.st, id2, _t("{name} \u526F\u672C", { name: paper.name || _t("\u66F2\u6BB5") })));
       close();
       info(_t("\u590D\u5236\u4E86\u4E00\u6BB5\uFF08\u63A5\u5728\u540E\u9762\uFF09"));
       return;
@@ -58684,21 +58912,21 @@ function openPaperMenu(id2) {
     if (v === "del") {
       close();
       void askSheet(_t("\u5220\u6389\u300C{p}\u300D\uFF1F", { p: paperLabel(id2) }), _t("\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u58F0\u90E8\u5199\u7684\u4E1C\u897F\u4E00\u8D77\u5220\u6389\uFF08\u80FD\u64A4\u9500\uFF1A\u64A4\u9500 / Ctrl+Z\uFF09\u3002"), _t("\u5220")).then((ok2) => {
-        if (ok2) update(removePaper(D2.st, id2));
+        if (ok2) update(removePaper(D3.st, id2));
       });
     }
   });
 }
 function openAddPartMenu(paperId, at2) {
   ui2.close();
-  const paper = D2.st.song.papers.find((p2) => p2.id === paperId);
+  const paper = D3.st.song.papers.find((p2) => p2.id === paperId);
   if (!paper) return;
-  const labels = partLabels(D2.st.song, D2.extras), absent = D2.st.song.parts.filter((p2) => !paper.tracks[p2.id]);
+  const labels = partLabels(D3.st.song, D3.extras), absent = D3.st.song.parts.filter((p2) => !paper.tracks[p2.id]);
   const box = document.createElement("div");
   box.className = "track-card ctx-menu add-part-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title = "") => `<button class="btn ctx-item" data-v="${esc11(v)}"${title ? ` title="${esc11(title)}"` : ""}>${label}</button>`;
-  box.innerHTML = `<div class="tc-sec">${_t("\u52A0\u8FDB\u300C{p}\u300D", { p: esc11(paperLabel(paperId)) })}</div>` + absent.map((p2) => item(`add:${p2.id}`, esc11(labels[D2.st.song.parts.indexOf(p2)] ?? p2.id), _t("\u5DF2\u6709\u7684\u58F0\u90E8\uFF0C\u53EA\u52A0\u8FDB\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09"))).join("") + item("new", _t("\uFF0B \u65B0\u58F0\u90E8\u2026"), _t("\u65B0\u7684\u4E00\u4E2A\u58F0\u90E8\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u4E00\u6BB5\uFF1B\u52A0\u5B8C\u6311\u4E50\u5668")) + `<div class="ctx-sep"></div>` + item("parts", _t("\u58F0\u90E8\u7BA1\u7406\u2026"));
+  box.innerHTML = `<div class="tc-sec">${_t("\u52A0\u8FDB\u300C{p}\u300D", { p: esc11(paperLabel(paperId)) })}</div>` + absent.map((p2) => item(`add:${p2.id}`, esc11(labels[D3.st.song.parts.indexOf(p2)] ?? p2.id), _t("\u5DF2\u6709\u7684\u58F0\u90E8\uFF0C\u53EA\u52A0\u8FDB\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09"))).join("") + item("new", _t("\uFF0B \u65B0\u58F0\u90E8\u2026"), _t("\u65B0\u7684\u4E00\u4E2A\u58F0\u90E8\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u4E00\u6BB5\uFF1B\u52A0\u5B8C\u6311\u4E50\u5668")) + `<div class="ctx-sep"></div>` + item("parts", _t("\u58F0\u90E8\u7BA1\u7406\u2026"));
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   box.style.left = `${Math.max(m2, Math.min(at2.x - w2 / 2, innerWidth - w2 - m2))}px`;
@@ -58720,16 +58948,16 @@ function openAddPartMenu(paperId, at2) {
     if (!v) return;
     close();
     if (v.startsWith("add:")) {
-      update(addTrack(D2.st, paperId, v.slice(4)));
+      update(addTrack(D3.st, paperId, v.slice(4)));
       renderTitle();
       return;
     }
     if (v === "new") {
-      const last = D2.st.song.parts.filter((p2) => paper.tracks[p2.id]).at(-1);
+      const last = D3.st.song.parts.filter((p2) => paper.tracks[p2.id]).at(-1);
       addNewPart(paperId, void 0, last ? { anchor: last.id, above: false } : void 0);
       return;
     }
-    if (v === "parts") openPartsManager({ paper: paperId, part: D2.st.at.part });
+    if (v === "parts") openPartsManager({ paper: paperId, part: D3.st.at.part });
   });
 }
 function openTrackCard(at2) {
@@ -58738,11 +58966,11 @@ function openTrackCard(at2) {
   box.className = "track-card part-card";
   box.setAttribute("role", "dialog");
   const draw = () => {
-    const me = curPart(), k2 = D2.st.song.parts.indexOf(me), label = partLabels(D2.st.song, D2.extras)[k2] ?? "";
-    box.innerHTML = `<button class="tc-inst" data-v="swap" title="${_t("\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765")}"><span class="tc-l"><b>${esc11(label)}</b><small>${((who) => who ? _t("{who} \u5728\u6F14", { who: esc11(who) }) : _t("\u6CA1\u4EBA\u4E0A\u573A"))(activeCandidateName(D2.extras, me.role))}</small></span><span class="tc-go">${_t("\u6362\u4E50\u5668 \u203A")}</span></button><div class="tc-row"><button class="btn" data-v="inst" title="${_t("\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5")}">${_t("\u4E50\u5668\u8BBE\u7F6E\u2026")}</button><button class="btn" data-v="parts" title="${_t("\u6240\u6709\u58F0\u90E8\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u8FD9\u4E00\u6BB5\u4E0A\u9762 / \u4E0B\u9762\u52A0\u3001\u4EA4\u7ED9\u522B\u7684\u58F0\u90E8\u3001\u4ECE\u8FD9\u4E00\u6BB5\u5220\u6389")}">${_t("\u58F0\u90E8\u7BA1\u7406\u2026")}</button><button class="btn danger" data-v="delpart" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u58F0\u90E8\u2026")}</button></div>` + ((m3) => {
+    const me = curPart(), k2 = D3.st.song.parts.indexOf(me), label = partLabels(D3.st.song, D3.extras)[k2] ?? "";
+    box.innerHTML = `<button class="tc-inst" data-v="swap" title="${_t("\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765")}"><span class="tc-l"><b>${esc11(label)}</b><small>${((who) => who ? _t("{who} \u5728\u6F14", { who: esc11(who) }) : _t("\u6CA1\u4EBA\u4E0A\u573A"))(activeCandidateName(D3.extras, me.role))}</small></span><span class="tc-go">${_t("\u6362\u4E50\u5668 \u203A")}</span></button><div class="tc-row"><button class="btn" data-v="inst" title="${_t("\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5")}">${_t("\u4E50\u5668\u8BBE\u7F6E\u2026")}</button><button class="btn" data-v="parts" title="${_t("\u6240\u6709\u58F0\u90E8\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u8FD9\u4E00\u6BB5\u4E0A\u9762 / \u4E0B\u9762\u52A0\u3001\u4EA4\u7ED9\u522B\u7684\u58F0\u90E8\u3001\u4ECE\u8FD9\u4E00\u6BB5\u5220\u6389")}">${_t("\u58F0\u90E8\u7BA1\u7406\u2026")}</button><button class="btn danger" data-v="delpart" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u58F0\u90E8\u2026")}</button></div>` + ((m3) => {
       if (!m3 || !m3.size) return "";
       const xs = [...m3.values()], first = xs[0];
-      return `<div class="tc-warn">${first.why === "notSung" ? esc11(lyricWhyText(first, roleName(D2.extras, me.role))) : _t("\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}", { n: xs.length, first: esc11(lyricWhyText(first, roleName(D2.extras, me.role))), x: xs.some((x3) => x3.why !== first.why) ? _t(" \u7B49") : "" })}</div>`;
+      return `<div class="tc-warn">${first.why === "notSung" ? esc11(lyricWhyText(first, roleName(D3.extras, me.role))) : _t("\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}", { n: xs.length, first: esc11(lyricWhyText(first, roleName(D3.extras, me.role))), x: xs.some((x3) => x3.why !== first.why) ? _t(" \u7B49") : "" })}</div>`;
     })(lyricMutes().get(me.id));
   };
   draw();
@@ -58792,7 +59020,7 @@ function openTrackCard(at2) {
     }
     if (v === "parts") {
       close();
-      openPartsManager({ paper: D2.st.at.paper, part: me.id });
+      openPartsManager({ paper: D3.st.at.paper, part: me.id });
       return;
     }
     if (v === "delpart") {
@@ -58810,7 +59038,7 @@ function openScoreMenu(at2, _row) {
   box.setAttribute("role", "menu");
   const item = (v, label, title = "", disabled = false) => `<button class="btn ctx-item" data-v="${v}"${disabled ? " disabled" : ""}${title ? ` title="${esc11(title)}"` : ""}>${label}</button>`;
   box.innerHTML = item("play", _t("\u4ECE\u8FD9\u513F\u653E"), _t("\u8D77\u70B9\u632A\u5230\u8FD9\u4E2A\u5C0F\u8282\u7684\u5934\uFF0C\u4ECE\u8FD9\u513F\u653E\uFF08\u4E4B\u540E |\u25B6 \u56DE\u5230\u8FD9\u513F\u91CD\u653E\uFF1B\u7F16\u8F91\u3001\u632A\u5149\u6807\u90FD\u4E0D\u52A8\u8D77\u70B9\uFF09")) + `<div class="ctx-sep"></div>` + item("paste", _t("\u7C98\u8D34"), _t("\u8D34\u5728\u8FD9\u91CC\uFF1Aapp \u91CC\u590D\u5236\u7684\uFF0C\u6216\u7CFB\u7EDF\u526A\u8D34\u677F\u91CC\u7684\u7B80\u8C31\u6587\u5B57\uFF081 2 3 | 5 - -\uFF09")) + `<div class="ctx-sep"></div>` + item("bar", _t("\u5C0F\u8282\u7EBF |"), _t("\u4ECE\u8FD9\u91CC\u91CD\u65B0\u6570\u5C0F\u8282\uFF08\u5F31\u8D77\uFF09")) + item("header", _t("\u8C31\u53F7 \xB7 \u8C03\u53F7 \xB7 \u62CD\u53F7 \xB7 \u901F\u5EA6\u2026"), _t("\u4ECE\u8FD9\u513F\u8D77\u6362\uFF08\u540C\u4E00\u4E2A\u9762\u677F\uFF09")) + item("ottava", _t("\u516B\u5EA6\u7EBF\u2026"), _t("8va / 15ma / 8vb\uFF08\u53EA\u7BA1\u753B\uFF09")) + item("transpose", _t("\u79FB\u8C03 / \u8F6C\u8C03\u2026"), _t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09\uFF1B\u53EA\u632A\u4E00\u6BB5 = \u9009\u4E2D\u5B83\uFF0C\u7528\u9009\u533A\u83DC\u5355")) + // 力度（状态：从这儿起管到下一个；user 2026-10-08「长按的小菜单也能输入力度符号」）：亮着的 = 这儿现在生效的
-  `<div class="ctx-row ctx-dyn">${["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(D2.st), D2.st.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="${_t("\u529B\u5EA6 {d}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77", { d: d3 })}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("all", _t("\u5168\u9009"));
+  `<div class="ctx-row ctx-dyn">${["ppp", "pp", "p", "mp", "mf", "f", "ff", "fff"].map((d3) => `<button class="btn ctx-chip${dynMarkAt(tr(D3.st), D3.st.caret) === d3 ? " is-on" : ""}" data-v="dyn:${d3}" title="${_t("\u529B\u5EA6 {d}\uFF1A\u4ECE\u8FD9\u513F\u524D\u9762\u90A3\u4E2A\u97F3\u8D77", { d: d3 })}"><span class="smufl">${DYN_MENU[d3]}</span></button>`).join("")}</div><div class="ctx-sep"></div>` + item("all", _t("\u5168\u9009"));
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let x2 = at2.x + 6, y2 = at2.y + 10;
@@ -58834,11 +59062,11 @@ function openScoreMenu(at2, _row) {
     if (!v) return;
     close();
     if (v === "play") {
-      playFromHere(D2.st.at.paper, D2.st.at.part, tickOfCaret(D2.st.at.paper, D2.st.at.part, D2.st.caret) + (D2.st.lead ?? 0));
+      playFromHere(D3.st.at.paper, D3.st.at.part, tickOfCaret(D3.st.at.paper, D3.st.at.part, D3.st.caret) + (D3.st.lead ?? 0));
       return;
     }
     if (v === "paste") void pasteNow();
-    else if (v === "bar") update(apply(D2.st, { k: "bar" }, performance.now()));
+    else if (v === "bar") update(apply(D3.st, { k: "bar" }, performance.now()));
     else if (v === "header") {
       insertMarkHere(void 0, at2);
       return;
@@ -58846,11 +59074,11 @@ function openScoreMenu(at2, _row) {
       openInsertOttavaMenu(at2);
       return;
     } else if (v === "transpose") {
-      openTransposeMenu(D2.st.at.paper, at2);
+      openTransposeMenu(D3.st.at.paper, at2);
       return;
-    } else if (v.startsWith("dyn:")) update(apply(D2.st, { k: "dyn", v: v.slice(4) }, performance.now()));
+    } else if (v.startsWith("dyn:")) update(apply(D3.st, { k: "dyn", v: v.slice(4) }, performance.now()));
     else if (v === "all") {
-      update(selectAll(D2.st));
+      update(selectAll(D3.st));
       updateChrome();
     }
     scoreEl.focus();
@@ -58861,13 +59089,13 @@ var WEDGE_MENU = {
   dim: `<svg class="slur-ico" viewBox="0 0 22 12" aria-hidden="true"><path d="M2,2 L19,6 L2,10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 };
 function insertGrooveHere() {
-  const nx2 = setGroove(D2.st, "classical");
-  if (nx2 === D2.st) {
+  const nx2 = setGroove(D3.st, "classical");
+  if (nx2 === D3.st) {
     info(_t("\u98CE\u683C\u8BB0\u53F7\u8981\u653E\u5728\u4E00\u4E2A\u97F3\u4E0A\uFF08\u8FD9\u5F20\u7EB8\u91CC\u8FD8\u6CA1\u6709\u97F3\uFF09"));
     return;
   }
   update(nx2);
-  const toks = tr(D2.st), an2 = markAnchor(D2.st);
+  const toks = tr(D3.st), an2 = markAnchor(D3.st);
   let k2 = -1;
   for (let j2 = an2 - 1; j2 >= 0 && !isTimed(toks[j2]) && toks[j2].kind !== "bar"; j2--) if (toks[j2].kind === "groove") {
     k2 = j2;
@@ -58909,35 +59137,35 @@ function ctxMenu(cls, html, at2, pick) {
   });
 }
 function discloseNav() {
-  const paper = D2.st.song.papers.find((p2) => p2.id === D2.st.at.paper), owner = paper ? tempoOwner(D2.st.song, paper) : null;
-  if (owner && owner !== D2.st.at.part) info(_t("\u53CD\u590D / \u8DF3\u8F6C\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4F4D\uFF08{extras}\uFF09\u90A3\u4E00\u884C\uFF1A\u8FD9\u4E00\u884C\u5199\u7684\u753B\u7070\u3001\u4E0D\u8D77\u4F5C\u7528", { extras: roleName(D2.extras, D2.st.song.parts.find((p2) => p2.id === owner)?.role ?? "") }));
+  const paper = D3.st.song.papers.find((p2) => p2.id === D3.st.at.paper), owner = paper ? tempoOwner(D3.st.song, paper) : null;
+  if (owner && owner !== D3.st.at.part) info(_t("\u53CD\u590D / \u8DF3\u8F6C\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4F4D\uFF08{extras}\uFF09\u90A3\u4E00\u884C\uFF1A\u8FD9\u4E00\u884C\u5199\u7684\u753B\u7070\u3001\u4E0D\u8D77\u4F5C\u7528", { extras: roleName(D3.extras, D3.st.song.parts.find((p2) => p2.id === owner)?.role ?? "") }));
 }
 function openTransposeMenu(paperId, at2) {
   let whole = false, told = false;
-  const many = D2.st.song.papers.length > 1;
+  const many = D3.st.song.papers.length > 1;
   const nameOf2 = (id2) => {
-    const k2 = D2.st.song.papers.findIndex((p2) => p2.id === id2);
-    return D2.st.song.papers[k2]?.name || _t("\u7B2C {p} \u5F20\u7EB8", { p: k2 + 1 });
+    const k2 = D3.st.song.papers.findIndex((p2) => p2.id === id2);
+    return D3.st.song.papers[k2]?.name || _t("\u7B2C {p} \u5F20\u7EB8", { p: k2 + 1 });
   };
-  const ids = () => whole ? D2.st.song.papers.map((p2) => p2.id) : [paperId];
+  const ids = () => whole ? D3.st.song.papers.map((p2) => p2.id) : [paperId];
   const chip2 = (v, label, on2 = false, title = "") => `<button class="btn ctx-chip${on2 ? " is-on" : ""}" data-v="${v}"${title ? ` title="${esc11(title)}"` : ""}>${label}</button>`;
   const html = () => {
-    const now2 = scopeKey(D2.st.song, ids());
+    const now2 = scopeKey(D3.st.song, ids());
     return (many ? `<div class="ctx-row"><span class="ctx-k">${_t("\u8303\u56F4")}</span>${chip2("scope:paper", _t("\u8FD9\u4E00\u6BB5\u300C{paperId}\u300D", { paperId: esc11(nameOf2(paperId)) }), !whole)}${chip2("scope:song", _t("\u6574\u9996"), whole)}</div>` : "") + `<div class="ctx-row"><span class="ctx-k">${_t("\u79FB\u8C03")}</span>${chip2("tr:1", _t("\u2191 \u534A\u97F3"))}${chip2("tr:-1", _t("\u2193 \u534A\u97F3"))}${chip2("tr:2", _t("\u2191 \u5168\u97F3"))}${chip2("tr:-2", _t("\u2193 \u5168\u97F3"))}</div><div class="ctx-row"><span class="ctx-k">${_t("\u516B\u5EA6")}</span>${chip2("tr:12", _t("\u2191 \u516B\u5EA6"))}${chip2("tr:-12", _t("\u2193 \u516B\u5EA6"))}</div><div class="ctx-hint ctx-what">${_t("\u8F6C\u8C03\u5230\uFF08\u73B0\u5728 1={now}\uFF09\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A", { now: KEY_LABEL[now2] ?? now2 })}</div><div class="ctx-grid">${KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now2)).join("")}</div><div class="ctx-hint">${_t("{whole}\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u632A\uFF08\u53D6\u5347\u964D\u53F7\u5C11\u7684\u5199\u6CD5\uFF1B\u632A\u516B\u5EA6\u8C03\u53F7\u4E0D\u53D8\uFF09\u3002\u6B4C\u8BCD\u3001\u8BB0\u53F7\u3001\u8C31\u53F7\u4E0D\u52A8\uFF1B\u9F13 / \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\u7684\u58F0\u90E8\uFF08\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\uFF09\u4E0D\u52A8\uFF1Bpad \u7684\u300C1=\u300D\u4E0D\u8DDF\u3002", { whole: whole ? _t("\u6574\u9996") : _t("\u8FD9\u5F20\u7EB8\u4E0A") })}</div>`;
   };
   ctxMenu("transpose-menu", html(), at2, (v) => {
     if (v.startsWith("scope:")) whole = v === "scope:song";
     else {
       const skip = new Set(partViews().filter((x2) => x2.xHead || x2.perc).map((x2) => x2.id));
-      const nx2 = v.startsWith("tr:") ? transposePapers(D2.st, ids(), { semis: Number(v.slice(3)) }, skip) : v.startsWith("mod:") ? transposePapers(D2.st, ids(), { toFifths: Number(v.slice(4)) }, skip) : D2.st;
-      if (nx2 === D2.st) info(v.startsWith("mod:") ? _t("\u5DF2\u7ECF\u662F\u8FD9\u4E2A\u8C03") : _t("\u6CA1\u6709\u53EF\u4EE5\u632A\u7684\u97F3"));
+      const nx2 = v.startsWith("tr:") ? transposePapers(D3.st, ids(), { semis: Number(v.slice(3)) }, skip) : v.startsWith("mod:") ? transposePapers(D3.st, ids(), { toFifths: Number(v.slice(4)) }, skip) : D3.st;
+      if (nx2 === D3.st) info(v.startsWith("mod:") ? _t("\u5DF2\u7ECF\u662F\u8FD9\u4E2A\u8C03") : _t("\u6CA1\u6709\u53EF\u4EE5\u632A\u7684\u97F3"));
       else {
         update(nx2);
-        const held = ids().flatMap((id2) => Object.keys(D2.st.song.papers.find((p2) => p2.id === id2)?.tracks ?? {})).filter((pid) => skip.has(pid));
+        const held = ids().flatMap((id2) => Object.keys(D3.st.song.papers.find((p2) => p2.id === id2)?.tracks ?? {})).filter((pid) => skip.has(pid));
         if (held.length && !told) {
           told = true;
-          const labels = partLabels(D2.st.song, D2.extras);
-          info(_t("{held} \u662F\u9F13 / \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\uFF08\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\uFF09\uFF0C\u6CA1\u632A", { held: [...new Set(held)].map((pid) => labels[D2.st.song.parts.findIndex((p2) => p2.id === pid)]).join("\u3001") }));
+          const labels = partLabels(D3.st.song, D3.extras);
+          info(_t("{held} \u662F\u9F13 / \u56FA\u5B9A\u6572\u4E00\u4E2A\u952E\uFF08\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\uFF09\uFF0C\u6CA1\u632A", { held: [...new Set(held)].map((pid) => labels[D3.st.song.parts.findIndex((p2) => p2.id === pid)]).join("\u3001") }));
         }
       }
     }
@@ -58956,10 +59184,10 @@ function openRepeatMenu() {
     (v) => {
       if (v.startsWith("bar:")) {
         const [, k2, tm2] = v.split(":");
-        update(setRepeatBar(D2.st, k2 === "plain" ? null : k2, tm2 ? Number(tm2) : void 0));
-      } else if (v.startsWith("bs:")) update(setBarStyle(D2.st, v.slice(3)));
-      else if (v.startsWith("end:")) update(insertNav(D2.st, "ending", v.slice(4).split(",").map(Number)));
-      else if (v.startsWith("nav:")) update(insertNav(D2.st, v.slice(4)));
+        update(setRepeatBar(D3.st, k2 === "plain" ? null : k2, tm2 ? Number(tm2) : void 0));
+      } else if (v.startsWith("bs:")) update(setBarStyle(D3.st, v.slice(3)));
+      else if (v.startsWith("end:")) update(insertNav(D3.st, "ending", v.slice(4).split(",").map(Number)));
+      else if (v.startsWith("nav:")) update(insertNav(D3.st, v.slice(4)));
       discloseNav();
     }
   );
@@ -58972,20 +59200,20 @@ function openInsertClefMenu(at2) {
 function openInsertOttavaMenu(at2) {
   ctxMenu(
     "ottava-menu",
-    `<div class="ctx-hint ctx-what">${_t("\u516B\u5EA6\u7EBF\uFF1A\u4ECE\u5149\u6807\u5904\u8D77{sel}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002", { sel: D2.st.sel ? _t("\uFF08\u6709\u9009\u533A = \u53EA\u753B\u8FD9\u4E00\u6BB5\uFF09") : _t("\uFF0C\u5230\u4E0B\u4E00\u4E2A\u516B\u5EA6\u7EBF\u8BB0\u53F7\u4E3A\u6B62") })}</div><div class="ctx-row">${[...OTTAVAS, 0].map((v) => `<button class="btn ctx-chip" data-v="o:${v}" title="${esc11(OTT_HELP[v])}">${esc11(OTTAVA_LABEL[v])}</button>`).join("")}</div>`,
+    `<div class="ctx-hint ctx-what">${_t("\u516B\u5EA6\u7EBF\uFF1A\u4ECE\u5149\u6807\u5904\u8D77{sel}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002", { sel: D3.st.sel ? _t("\uFF08\u6709\u9009\u533A = \u53EA\u753B\u8FD9\u4E00\u6BB5\uFF09") : _t("\uFF0C\u5230\u4E0B\u4E00\u4E2A\u516B\u5EA6\u7EBF\u8BB0\u53F7\u4E3A\u6B62") })}</div><div class="ctx-row">${[...OTTAVAS, 0].map((v) => `<button class="btn ctx-chip" data-v="o:${v}" title="${esc11(OTT_HELP[v])}">${esc11(OTTAVA_LABEL[v])}</button>`).join("")}</div>`,
     at2,
     (v) => {
-      if (v.startsWith("o:")) update(insertOttava(D2.st, Number(v.slice(2))));
+      if (v.startsWith("o:")) update(insertOttava(D3.st, Number(v.slice(2))));
     }
   );
 }
 var headerPanel = createHeaderPanel({
-  state: () => D2.st,
+  state: () => D3.st,
   update: (n10) => update(n10),
   updateLook: (n10, label) => setSongLook(n10, label),
   menu: (cls, html, at2, pick) => ctxMenu(cls, html, at2, pick),
   openTempo: (paperId, partId, index, fresh) => view.openMarkEditor(paperId, partId, index, fresh),
-  partName: (id2) => partLabels(D2.st.song, D2.extras)[D2.st.song.parts.findIndex((p2) => p2.id === id2)] ?? id2,
+  partName: (id2) => partLabels(D3.st.song, D3.extras)[D3.st.song.parts.findIndex((p2) => p2.id === id2)] ?? id2,
   autoNow: (paperId, partId) => {
     const l10 = lookNow(paperId, partId);
     return l10?.staves === 2 ? _t("\u5927\u8C31\u8868") : CLEF_LABEL[l10?.clef ?? "G"];
@@ -58997,9 +59225,9 @@ function openClefMenu(hit, at2) {
     headerPanel.open(hit.paper, hit.part, hit.index >= 0 ? hit.index : 0, at2);
     return;
   }
-  const paper = D2.st.song.papers.find((p2) => p2.id === hit.paper), toks = paper?.tracks[hit.part];
+  const paper = D3.st.song.papers.find((p2) => p2.id === hit.paper), toks = paper?.tracks[hit.part];
   if (!toks) return;
-  const part = D2.st.song.parts.find((p2) => p2.id === hit.part);
+  const part = D3.st.song.parts.find((p2) => p2.id === hit.part);
   if (!part) return;
   if (hit.kind === "ottava" && hit.run) {
     const r10 = hit.run, lab = OTTAVA_LABEL[r10.shift];
@@ -59008,9 +59236,9 @@ function openClefMenu(hit, at2) {
       `<div class="ctx-hint ctx-what">${_t("\u81EA\u52A8\u516B\u5EA6\u7EBF\uFF1A\u8FD9\u4E00\u4E32\u97F3\u8981\u4E09\u6761\u4EE5\u4E0A\u52A0\u7EBF\uFF0C\u81EA\u52A8\u753B\u4E86 {lab}\u3002\u53EA\u7BA1\u753B\u3001\u4E0D\u5B58\u8FDB\u8C31\uFF0C\u97F3\u9AD8\u4E0D\u53D8\uFF1B\u6539\u4E86\u97F3\u4F1A\u8DDF\u7740\u91CD\u7B97\u3002\u624B\u5199\u7684\u516B\u5EA6\u7EBF\u8BF4\u4E86\u7B97\u3002", { lab: esc11(lab) })}</div><button class="btn ctx-item" data-v="pin">${_t("\u56FA\u5B9A\u6210\u624B\u5199\u7684 {lab}\uFF08\u4E4B\u540E\u81EA\u5DF1\u6539\uFF09", { lab: esc11(lab) })}</button><button class="btn ctx-item" data-v="off">${_t("\u8FD9\u4E00\u6BB5\u4E0D\u8981\u81EA\u52A8\u516B\u5EA6\u7EBF")}</button>`,
       at2,
       (v) => {
-        if (v === "pin") update(insertOttava({ ...setFocus(D2.st, hit.paper, hit.part, r10.from), sel: { from: r10.from, to: r10.to + 1 } }, r10.shift));
+        if (v === "pin") update(insertOttava({ ...setFocus(D3.st, hit.paper, hit.part, r10.from), sel: { from: r10.from, to: r10.to + 1 } }, r10.shift));
         else if (v === "off") {
-          update(setPaperLook(D2.st, hit.paper, hit.part, { autoOttava: false }));
+          update(setPaperLook(D3.st, hit.paper, hit.part, { autoOttava: false }));
           info(_t("\u8FD9\u4E00\u6BB5\u8FD9\u4E2A\u58F0\u90E8\u7684\u81EA\u52A8\u516B\u5EA6\u7EBF\u5173\u4E86\uFF08\u70B9\u8C31\u53F7\u3001\u8C31\u5934\u9762\u677F\u91CC\u80FD\u518D\u5F00\uFF09"));
         }
       }
@@ -59025,8 +59253,8 @@ function openClefMenu(hit, at2) {
       `<div class="ctx-hint ctx-what">${_t("\u516B\u5EA6\u7EBF\uFF1A{p}\u3002\u53EA\u7BA1\u753B\uFF0C\u97F3\u9AD8\u4E0D\u53D8\u3002", { p: esc11(OTT_HELP[t10.shift]) })}</div><div class="ctx-row">${OTTAVAS.map((v) => `<button class="btn ctx-chip${t10.shift === v ? " is-on" : ""}" data-v="o:${v}" title="${esc11(OTT_HELP[v])}">${esc11(OTTAVA_LABEL[v])}</button>`).join("")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("\u5220\u6389\u8FD9\u6761\u516B\u5EA6\u7EBF")}</button>`,
       at2,
       (v) => {
-        if (v === "del") update(setDisplayMark(D2.st, hit.paper, hit.part, hit.index, null));
-        else if (v.startsWith("o:")) update(setDisplayMark(D2.st, hit.paper, hit.part, hit.index, Number(v.slice(2))));
+        if (v === "del") update(setDisplayMark(D3.st, hit.paper, hit.part, hit.index, null));
+        else if (v.startsWith("o:")) update(setDisplayMark(D3.st, hit.paper, hit.part, hit.index, Number(v.slice(2))));
       }
     );
     return;
@@ -59045,9 +59273,9 @@ var NAV_HELP = {
   dsCoda: _t("D.S. al Coda\uFF1A\u8DF3\u56DE Segno\uFF0C\u5230 To Coda \u53BB Coda")
 };
 function openNavMenu(i10, at2) {
-  const t10 = tr(D2.st)[i10];
+  const t10 = tr(D3.st)[i10];
   if (!t10 || t10.kind !== "nav") return;
-  const paper = D2.st.song.papers.find((p2) => p2.id === D2.st.at.paper), why2 = paper ? navWhy(D2.st.song, paper, D2.st.at.part, t10) : null;
+  const paper = D3.st.song.papers.find((p2) => p2.id === D3.st.at.paper), why2 = paper ? navWhy(D3.st.song, paper, D3.st.at.part, t10) : null;
   const chips = t10.what === "ending" ? ENDINGS.map((n10) => `<button class="btn ctx-chip${n10.join() === (t10.nums ?? [1]).join() ? " is-on" : ""}" data-v="nums:${n10.join(",")}">${esc11(endingLabel(n10))}</button>`).join("") : JUMPS.map((w2) => `<button class="btn ctx-chip${t10.what === w2 ? " is-on" : ""}" data-v="nav:${w2}" title="${esc11(NAV_HELP[w2])}">${esc11(NAV_LABEL[w2])}</button>`).join("");
   ctxMenu(
     "nav-menu",
@@ -59055,22 +59283,22 @@ function openNavMenu(i10, at2) {
     at2,
     (v) => {
       if (v === "del") {
-        update(editMarkAt(D2.st, i10, null));
+        update(editMarkAt(D3.st, i10, null));
         return;
       }
       if (v.startsWith("nums:")) {
-        update(editMarkAt(D2.st, i10, { nums: v.slice(5).split(",").map(Number) }));
+        update(editMarkAt(D3.st, i10, { nums: v.slice(5).split(",").map(Number) }));
         return true;
       }
       if (v.startsWith("nav:")) {
-        update(editMarkAt(D2.st, i10, { nav: v.slice(4) }));
+        update(editMarkAt(D3.st, i10, { nav: v.slice(4) }));
         return true;
       }
     }
   );
 }
 function openGrooveMenu(i10, at2) {
-  const toks = tr(D2.st), t10 = toks[i10];
+  const toks = tr(D3.st), t10 = toks[i10];
   if (!t10 || t10.kind !== "groove") return;
   ui2.close();
   let end = toks.length;
@@ -59106,10 +59334,10 @@ function openGrooveMenu(i10, at2) {
       const r10 = swingRatio(t10.style, amount), [lo2, hi] = style.swing.range;
       hints.push(_t("\u6447\u6446\uFF1A\u4E00\u62CD\u91CC\u524D\u4E00\u4E2A\u516B\u5206\u5360 {p}%\uFF08\u76F4 = 50%\uFF0C\u4E09\u8FDE\u97F3\u611F \u2248 67%\uFF1B\u5E45\u5EA6\u53EA\u653E\u5927 / \u7F29\u5C0F\u6BD4\u76F4\u7684\u591A\u51FA\u6765\u7684\u90A3\u4E00\u622A\uFF0C\u5939\u5728 {p2}\u2013{p3}%\uFF09\u3002\u8FD9\u5F20\u7EB8\u4E0A\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u6447\uFF08\u5C0F\u6708\u76F8\u4E5F\u662F\uFF0C\u4E0D\u5206\u8DDF\u591A\u5C11\uFF09\uFF1B\u5199\u6210\u8FDE\u97F3\u7684\u97F3\u30016/8 \u8FD9\u7C7B\u62CD\u53F7\u4E0D\u6447", { p: Math.round(r10 * 100), p2: Math.round(lo2 * 100), p3: Math.round(hi * 100) }));
     }
-    const paper = D2.st.song.papers.find((p2) => p2.id === D2.st.at.paper);
-    const who = D2.st.song.parts.filter((p2) => paper?.tracks[p2.id]).map((p2) => {
-      const f2 = followOf(style, grooveCategory(performerOf(activeInstrument(D2.extras, p2.role)?.engine)?.grooveCategory ?? null, activeGm(D2.extras, p2.role)));
-      return `${roleName(D2.extras, p2.role)} ${f2 > 0 ? _t("\u8DDF {p}%", { p: Math.round(f2 * 100) }) : _t("\u4E0D\u8DDF")}`;
+    const paper = D3.st.song.papers.find((p2) => p2.id === D3.st.at.paper);
+    const who = D3.st.song.parts.filter((p2) => paper?.tracks[p2.id]).map((p2) => {
+      const f2 = followOf(style, grooveCategory(performerOf(activeInstrument(D3.extras, p2.role)?.engine)?.grooveCategory ?? null, activeGm(D3.extras, p2.role)));
+      return `${roleName(D3.extras, p2.role)} ${f2 > 0 ? _t("\u8DDF {p}%", { p: Math.round(f2 * 100) }) : _t("\u4E0D\u8DDF")}`;
     });
     if (who.length) hints.push(_t("\u8FD9\u5F20\u7EB8\u4E0A\uFF1A{p}\uFF08\u6309\u4E50\u5668\u7C7B\u522B\uFF0C\u9884\u8BBE\u7ED9\u7684\uFF09", { p: who.join(" \xB7 ") }));
   }
@@ -59143,19 +59371,19 @@ function openGrooveMenu(i10, at2) {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
     close();
-    if (v === "del") update(editMarkAt(D2.st, i10, null));
+    if (v === "del") update(editMarkAt(D3.st, i10, null));
     else if (v.startsWith("style:")) {
-      let n10 = editMarkAt(D2.st, i10, { style: v.slice(6) });
+      let n10 = editMarkAt(D3.st, i10, { style: v.slice(6) });
       if (!grooveHasPhase(grooveStyle(v.slice(6)))) n10 = editMarkAt(n10, i10, { shift: false });
       update(n10);
       view.menuFor(i10);
       return;
     } else if (v.startsWith("amount:")) {
-      update(editMarkAt(D2.st, i10, { amount: Number(v.slice(7)) }));
+      update(editMarkAt(D3.st, i10, { amount: Number(v.slice(7)) }));
       view.menuFor(i10);
       return;
     } else if (v.startsWith("shift:")) {
-      update(editMarkAt(D2.st, i10, { shift: v === "shift:1" }));
+      update(editMarkAt(D3.st, i10, { shift: v === "shift:1" }));
       view.menuFor(i10);
       return;
     }
@@ -59163,18 +59391,18 @@ function openGrooveMenu(i10, at2) {
   });
 }
 function openMarkMenu(i10, at2) {
-  if (tr(D2.st)[i10]?.kind === "groove") {
+  if (tr(D3.st)[i10]?.kind === "groove") {
     openGrooveMenu(i10, at2);
     return;
   }
-  if (tr(D2.st)[i10]?.kind === "nav") {
+  if (tr(D3.st)[i10]?.kind === "nav") {
     openNavMenu(i10, at2);
     return;
   }
-  const t10 = tr(D2.st)[i10];
+  const t10 = tr(D3.st)[i10];
   if (!t10 || t10.kind !== "dyn" && t10.kind !== "hairpin") return;
   ui2.close();
-  const toks = tr(D2.st), src = t10.kind === "dyn" ? rampSource(toks, i10) : "none";
+  const toks = tr(D3.st), src = t10.kind === "dyn" ? rampSource(toks, i10) : "none";
   const nextMark = (k2) => {
     for (let j2 = k2 + 1; j2 < toks.length; j2++) if (toks[j2].kind === "dyn" || toks[j2].kind === "hairpin") return j2;
     return toks.length;
@@ -59211,10 +59439,10 @@ function openMarkMenu(i10, at2) {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
     close();
-    if (v === "ramp" && t10.kind === "dyn") update(editMarkAt(D2.st, i10, { ramp: !t10.ramp }));
-    else if (v === "del") update(editMarkAt(D2.st, i10, null));
-    else if (v.startsWith("dyn:")) update(editMarkAt(D2.st, i10, { value: v.slice(4) }));
-    else if (v.startsWith("dir:")) update(editMarkAt(D2.st, i10, { dir: v.slice(4) }));
+    if (v === "ramp" && t10.kind === "dyn") update(editMarkAt(D3.st, i10, { ramp: !t10.ramp }));
+    else if (v === "del") update(editMarkAt(D3.st, i10, null));
+    else if (v.startsWith("dyn:")) update(editMarkAt(D3.st, i10, { value: v.slice(4) }));
+    else if (v.startsWith("dir:")) update(editMarkAt(D3.st, i10, { dir: v.slice(4) }));
     scoreEl.focus();
   });
 }
@@ -59225,7 +59453,7 @@ function selBarAnchor() {
   return r10 ? { x: r10.left, y: r10.bottom } : { x: innerWidth / 2 - 100, y: 120 };
 }
 function openSelMenu(at2) {
-  if (!D2.st.sel) return;
+  if (!D3.st.sel) return;
   ui2.close();
   const box = document.createElement("div");
   box.className = "track-card ctx-menu sel-menu";
@@ -59234,11 +59462,11 @@ function openSelMenu(at2) {
   const chip2 = (v, label, title = "") => `<button class="btn ctx-chip" data-v="${v}"${title ? ` title="${esc11(title)}"` : ""}>${label}</button>`;
   const draw = (page) => {
     if (page === "keys") {
-      const now2 = keyAt(tr(D2.st), D2.st.sel?.from ?? 0);
+      const now2 = keyAt(tr(D3.st), D3.st.sel?.from ?? 0);
       box.innerHTML = item("back", _t("\u2039 \u8F6C\u8C03\u5230\u2026")) + `<div class="ctx-grid">` + KEY_CIRCLE_MENU.map((k2) => chip2(`mod:${k2}`, `1=${KEY_LABEL[k2]}`, k2 === now2 ? _t("\u73B0\u5728\u7684\u8C03") : "")).join("") + `</div>`;
       return;
     }
-    box.innerHTML = `<div class="ctx-row"><span class="ctx-k">${_t("\u79FB\u8C03")}</span>${chip2("tr:1", _t("\u2191 \u534A\u97F3"))}${chip2("tr:-1", _t("\u2193 \u534A\u97F3"))}${chip2("tr:2", _t("\u2191 \u5168\u97F3"))}${chip2("tr:-2", _t("\u2193 \u5168\u97F3"))}${chip2("oct:1", _t("\u2191 \u516B\u5EA6"))}${chip2("oct:-1", _t("\u2193 \u516B\u5EA6"))}</div>` + item("keys", _t("\u8F6C\u8C03\u2026"), _t("\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362")) + item("respell", _t("\u6309\u8C03\u53F7\u62FC\u5199"), _t("\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8")) + `<div class="ctx-row"><span class="ctx-k">${_t("\u65F6\u503C")}</span>${chip2("short", "\xF72")}${chip2("long", "\xD72")}${chip2("seldur", `${_t("\u90FD\u6539\u6210")} <span class="smufl">${UNIT_SMUFL[D2.st.input.unit]}</span>`, _t("\u90FD\u6539\u6210\u957F\u77ED\u65CB\u94AE\u73B0\u5728\u90A3\u4E00\u6863"))}</div><div class="ctx-row"><span class="ctx-k">${_t("\u6E05\u6389\u8BB0\u53F7")}</span>${chip2("clr:phrase", _t("\u66F2\u7EA7"), _t("\u529B\u5EA6\u5B57\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6E10\u5230\u3001\u98CE\u683C\uFF08\u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\u524D\u9762\u6302\u7740\u7684\u4E5F\u7B97\uFF09"))}${chip2("clr:note", _t("\u97F3\u7EA7"), _t("\u6F14\u594F\u6CD5\u3001\u97F3\u5934\uFF08\u91CD\u97F3 / \u7A81\u5F3A\u2026\uFF09\u3001\u97F3\u5185\u8D77\u4F0F\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u6C14\u58F0"))}${chip2("clr:all", _t("\u90FD\u6E05"), _t("\u66F2\u7EA7 + \u97F3\u7EA7\uFF1B\u97F3\u3001\u6B4C\u8BCD\u3001\u8C03\u53F7\u62CD\u53F7\u901F\u5EA6\u3001\u53CD\u590D\u4E0D\u52A8"))}</div><div class="ctx-sep"></div>` + item("copy", _t("\u590D\u5236")) + item("cut", _t("\u526A\u5207")) + (clip ? item("paste", _t("\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09")) : "") + item("delete", _t("\u5220\u6389"), "", "danger");
+    box.innerHTML = `<div class="ctx-row"><span class="ctx-k">${_t("\u79FB\u8C03")}</span>${chip2("tr:1", _t("\u2191 \u534A\u97F3"))}${chip2("tr:-1", _t("\u2193 \u534A\u97F3"))}${chip2("tr:2", _t("\u2191 \u5168\u97F3"))}${chip2("tr:-2", _t("\u2193 \u5168\u97F3"))}${chip2("oct:1", _t("\u2191 \u516B\u5EA6"))}${chip2("oct:-1", _t("\u2193 \u516B\u5EA6"))}</div>` + item("keys", _t("\u8F6C\u8C03\u2026"), _t("\u6574\u6BB5\u8F6C\u5230\u53E6\u4E00\u4E2A\u8C03\uFF1A\u97F3\u6309\u4E24\u4E2A\u4E3B\u97F3\u4E4B\u95F4\u7684\u97F3\u7A0B\u632A\uFF0C\u8C03\u53F7\u8DDF\u7740\u6362")) + item("respell", _t("\u6309\u8C03\u53F7\u62FC\u5199"), _t("\u97F3\u9AD8\u4E0D\u53D8\uFF1A\u8C03\u5185\u7684\u97F3\u6362\u6210\u8C03\u53F7\u91CC\u7684\u5199\u6CD5\uFF08A\u266D \u5728\u4E94\u4E2A\u5347\u53F7\u7684\u8C03\u91CC = G\u266F\uFF09\uFF0C\u8C03\u5916\u7684\u4E0D\u52A8")) + `<div class="ctx-row"><span class="ctx-k">${_t("\u65F6\u503C")}</span>${chip2("short", "\xF72")}${chip2("long", "\xD72")}${chip2("seldur", `${_t("\u90FD\u6539\u6210")} <span class="smufl">${UNIT_SMUFL[D3.st.input.unit]}</span>`, _t("\u90FD\u6539\u6210\u957F\u77ED\u65CB\u94AE\u73B0\u5728\u90A3\u4E00\u6863"))}</div><div class="ctx-row"><span class="ctx-k">${_t("\u6E05\u6389\u8BB0\u53F7")}</span>${chip2("clr:phrase", _t("\u66F2\u7EA7"), _t("\u529B\u5EA6\u5B57\u3001\u6E10\u5F3A\u6E10\u5F31\u3001\u6E10\u5230\u3001\u98CE\u683C\uFF08\u9009\u533A\u7B2C\u4E00\u4E2A\u97F3\u524D\u9762\u6302\u7740\u7684\u4E5F\u7B97\uFF09"))}${chip2("clr:note", _t("\u97F3\u7EA7"), _t("\u6F14\u594F\u6CD5\u3001\u97F3\u5934\uFF08\u91CD\u97F3 / \u7A81\u5F3A\u2026\uFF09\u3001\u97F3\u5185\u8D77\u4F0F\u3001\u8FDE\u7EBF\u3001\u547C\u5438\u3001\u6C14\u58F0"))}${chip2("clr:all", _t("\u90FD\u6E05"), _t("\u66F2\u7EA7 + \u97F3\u7EA7\uFF1B\u97F3\u3001\u6B4C\u8BCD\u3001\u8C03\u53F7\u62CD\u53F7\u901F\u5EA6\u3001\u53CD\u590D\u4E0D\u52A8"))}</div><div class="ctx-sep"></div>` + item("copy", _t("\u590D\u5236")) + item("cut", _t("\u526A\u5207")) + (clip ? item("paste", _t("\u7C98\u8D34\uFF08\u66FF\u6362\u9009\u4E2D\u7684\uFF09")) : "") + item("delete", _t("\u5220\u6389"), "", "danger");
   };
   draw("main");
   document.body.append(box);
@@ -59264,8 +59492,8 @@ function openSelMenu(at2) {
   ui2.open({ k: "menu", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
-    if (!v || !D2.st.sel) return;
-    const cmd3 = (c10) => update(apply(D2.st, c10, performance.now()));
+    if (!v || !D3.st.sel) return;
+    const cmd3 = (c10) => update(apply(D3.st, c10, performance.now()));
     if (v.startsWith("tr:")) {
       cmd3({ k: "transpose", semis: Number(v.slice(3)) });
       previewEdited();
@@ -59289,8 +59517,8 @@ function openSelMenu(at2) {
       return;
     }
     if (v.startsWith("clr:")) {
-      const n10 = clearMarks(D2.st, v.slice(4));
-      if (n10 === D2.st) info(_t("\u9009\u4E2D\u7684\u8FD9\u4E00\u6BB5\u6CA1\u6709\u8FD9\u7C7B\u8BB0\u53F7"));
+      const n10 = clearMarks(D3.st, v.slice(4));
+      if (n10 === D3.st) info(_t("\u9009\u4E2D\u7684\u8FD9\u4E00\u6BB5\u6CA1\u6709\u8FD9\u7C7B\u8BB0\u53F7"));
       else update(n10);
       close();
       scoreEl.focus();
@@ -59363,7 +59591,7 @@ var fileInput = (accept, onFile) => {
   inp.click();
 };
 var findBankFile = (id2) => {
-  const g3 = gmCandidates(D2.extras, curRole()).find((c10) => c10.id === id2);
+  const g3 = gmCandidates(D3.extras, curRole()).find((c10) => c10.id === id2);
   if (!g3) return;
   fileInput(".sf2,audio/x-soundfont", async (f2) => {
     try {
@@ -59381,9 +59609,9 @@ var findBankFile = (id2) => {
 };
 var instPage = createInstSettings(instEl, {
   shown: () => instShown(),
-  extras: () => D2.extras,
-  song: () => D2.st.song,
-  at: () => D2.st.at,
+  extras: () => D3.extras,
+  song: () => D3.st.song,
+  at: () => D3.st.at,
   role: () => curRole(),
   engine: () => engineNow(),
   catalog: () => catalogNow,
@@ -59397,9 +59625,9 @@ var instPage = createInstSettings(instEl, {
   abbr: (k2) => partLooks().abbrs[k2] ?? "",
   sessionHas: (sha) => sources.session.has(sha),
   commit: (next2, label, gesture) => updateExtras(next2, { kind: "lounge", label }, gesture),
-  setHum: (hm) => update(setHum(D2.st, hm)),
+  setHum: (hm) => update(setHum(D3.st, hm)),
   setPart: (id2) => {
-    update(setFocus(D2.st, D2.st.at.paper, id2));
+    update(setFocus(D3.st, D3.st.at.paper, id2));
     sound.allOff();
     void prepareBank();
     pad3.render();
@@ -59417,11 +59645,11 @@ var deskNow = () => ({
   scope: viewScope,
   pageFlow,
   scroll: scrollFlow,
-  paper: D2.st.at.paper,
+  paper: D3.st.at.paper,
   parts: Object.fromEntries(partView),
   mp3: mp3Quality,
   mode: ws.mode,
-  pad: { auto: D2.st.input.inputAuto, fifths: D2.st.input.inputFifths, scale: D2.st.input.inputScale, unit: PAD_UNITS[D2.st.input.unit], tuplet: D2.st.input.tuplet, low: pad3.rangeLow() },
+  pad: { auto: D3.st.input.inputAuto, fifths: D3.st.input.inputFifths, scale: D3.st.input.inputScale, unit: PAD_UNITS[D3.st.input.unit], tuplet: D3.st.input.tuplet, low: pad3.rangeLow() },
   ref: refHost.panel(),
   pdf: pdfFont,
   finder: finder.memo("song")
@@ -59433,12 +59661,12 @@ function applyDesk(d3) {
   mp3Quality = d3.mp3;
   pdfFont = d3.pdf;
   finder.restore("song", d3.finder);
-  D2.commit({ st: { ...D2.st, input: { ...D2.st.input, inputAuto: d3.pad.auto, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d3.pad.unit)), tuplet: d3.pad.tuplet } } }, { silent: true, undo: false });
+  D3.commit({ st: { ...D3.st, input: { ...D3.st.input, inputAuto: d3.pad.auto, inputFifths: d3.pad.fifths, inputScale: d3.pad.scale, unit: Math.max(0, PAD_UNITS.indexOf(d3.pad.unit)), tuplet: d3.pad.tuplet } } }, { silent: true, undo: false });
   partView.clear();
   for (const [id2, p2] of Object.entries(d3.parts)) partView.set(id2, { ...freshPartView(), ...p2 });
-  if (d3.paper && d3.paper !== D2.st.at.paper) {
-    const paper = D2.st.song.papers.find((p2) => p2.id === d3.paper), part = paper?.tracks[D2.st.at.part] ? D2.st.at.part : D2.st.song.parts.find((p2) => paper?.tracks[p2.id])?.id;
-    if (paper && part) D2.commit({ st: setFocus(D2.st, paper.id, part) }, { silent: true, undo: false });
+  if (d3.paper && d3.paper !== D3.st.at.paper) {
+    const paper = D3.st.song.papers.find((p2) => p2.id === d3.paper), part = paper?.tracks[D3.st.at.part] ? D3.st.at.part : D3.st.song.parts.find((p2) => paper?.tracks[p2.id])?.id;
+    if (paper && part) D3.commit({ st: setFocus(D3.st, paper.id, part) }, { silent: true, undo: false });
   }
 }
 function loadDoc(song, o10) {
@@ -59463,12 +59691,12 @@ function loadDocInner(song, o10) {
   coverTouched = false;
   const st0 = initState(song), startDyns = ensureStartDyns(st0.song, st0.nextId).added.length;
   encodedSnap = null;
-  D2.load(withStartDyns(st0), o10.extras);
+  D3.load(withStartDyns(st0), o10.extras);
   const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
   applyDesk(d3);
   ws.mode = d3.mode;
   if (d3.mode !== "listen") lastEditMode = d3.mode;
-  if (touchLike) ws.collapsed = D2.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
+  if (touchLike) ws.collapsed = D3.st.song.papers.some((pp) => Object.values(pp.tracks).some((t10) => t10.some((x2) => x2.kind === "note")));
   ws.aside = false;
   applyWorkspace();
   void refHost.apply(o10.references ?? {}, d3.ref);
@@ -59482,7 +59710,7 @@ function loadDocInner(song, o10) {
   pad3.render();
   renderTitle();
   updateChrome();
-  if (D2.st.song.parts.some((p2) => performerOf(activeInstrument(D2.extras, p2.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);
+  if (D3.st.song.parts.some((p2) => performerOf(activeInstrument(D3.extras, p2.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);
   if (startDyns) info(_t("\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09", { startDyns }));
   schedulePrewarm();
 }
@@ -59582,10 +59810,10 @@ async function openFromLink(raw) {
   }
   if (openPicked({ name: fileNameFor(plan, kind), bytes, handle: null, mtime: null }, plan.host)) gallery?.close();
 }
-var extrasForSave = (base2 = D2.extras) => base2.thumbnail ? withThumbnail(base2, coverWithBlurb(base2.thumbnail, (D2.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base2;
+var extrasForSave = (base2 = D3.extras) => base2.thumbnail ? withThumbnail(base2, coverWithBlurb(base2.thumbnail, (D3.st.song.credits ?? "").split("\n").map((l10) => l10.trim()).find(Boolean) ?? null)) : base2;
 var encoder = createEncoder(() => threadUrls("encode-worker")[0] ?? null, (why2) => diagNote("encode", why2));
-var bytesNow = (extras, song = D2.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
-var saveArgs = (extras, song = D2.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
+var bytesNow = (extras, song = D3.st.song) => saveMxl({ ...saveArgs(extras, song), references: refHost.files() });
+var saveArgs = (extras, song = D3.st.song) => ({ view: serializeDesk(deskNow()), song, hum: song.hum, extras: extrasForSave(extras), app: APP_VERSION, date: (/* @__PURE__ */ new Date()).toISOString(), core: coreInfo() });
 var mxlFile = (name, extras, song) => new File([bytesNow(extras, song)], name, { type: "application/vnd.recordare.musicxml" });
 var sizeText3 = (n10) => n10 < 1e6 ? `${Math.max(1, Math.round(n10 / 1e3))} KB` : `${(n10 / 1e6).toFixed(1)} MB`;
 var LOCKED_DIRTY = () => _t("\u8FD9\u9996\u6B4C\u9501\u7740\uFF0C\u6709\u6539\u52A8\u6CA1\u5B58\u3001\u4E5F\u4E0D\u4F1A\u63A8\u4E0A\u4E91\uFF1A\u6539\u52A8\u8FD8\u5728\uFF0C\u70B9\u8C31\u4E0A\u9762\u7684\u300C\u63A5\u7740\u6539\u300D\u4E4B\u540E\u518D\u5B58\u3002");
@@ -59608,7 +59836,7 @@ async function fileSave() {
         }
         return;
       case "locked":
-        if (D2.dirtyKind() === "content") showError(LOCKED_DIRTY());
+        if (D3.dirtyKind() === "content") showError(LOCKED_DIRTY());
         else lock.flash();
         return;
       case "declined":
@@ -59627,14 +59855,14 @@ async function fileSave() {
 async function exportCopyMxl(packed = false) {
   const name = `${stampedCopy(docName())}${packed ? "-packed" : ""}.mxl`;
   try {
-    let extras = D2.extras;
+    let extras = D3.extras;
     if (packed) {
       const { got: got2, missing } = await gatherSubsets(extras);
       extras = withPacked(extras, (sha) => got2.get(sha)).extras;
       if (missing.length) showError(_t("\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u526F\u672C\u91CC\u6CA1\u5E26\uFF1A{p}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\uFF0C\u518D\u5BFC\u51FA\u4E00\u6B21\u3002", { p: missing.join("\u3001") }));
     }
     const roles = soundingRoles(), { rights, fellBack } = exportRights(roles);
-    const song = fellBack ? (({ rights: _r, ...rest }) => rest)(D2.st.song) : D2.st.song;
+    const song = fellBack ? (({ rights: _r, ...rest }) => rest)(D3.st.song) : D3.st.song;
     const credits = (fellBack ? `<div class="offer-msg">${_t("\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002")}</div>` : "") + creditsBlock(creditsOf(roles, rights).lines, _t("\u7F72\u540D")) + creditsBlock(packedLicenses(extras), _t("\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u8FD9\u4EFD\u526F\u672C\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09"));
     if (canPickSave()) {
       const h2 = await pickSave(name);
@@ -59663,11 +59891,11 @@ async function gatherSubsets(extras) {
   return { got: got2, missing };
 }
 async function packAll() {
-  const { got: got2, missing } = await gatherSubsets(D2.extras);
-  const r10 = withPacked(D2.extras, (sha) => got2.get(sha));
+  const { got: got2, missing } = await gatherSubsets(D3.extras);
+  const r10 = withPacked(D3.extras, (sha) => got2.get(sha));
   if (r10.packed.length) {
     updateExtras(r10.extras, { kind: "lounge", label: _t("\u6253\u5305\u4E86 {n} \u4EF6\u58F0\u97F3", { n: r10.packed.length }) });
-    const size = Object.values(D2.extras.sounds).reduce((n10, b3) => n10 + b3.length, 0);
+    const size = Object.values(D3.extras.sounds).reduce((n10, b3) => n10 + b3.length, 0);
     info(_t("\u6253\u5305\u4E86 {n} \u4EF6\u58F0\u97F3\u8FDB\u6B4C\uFF1A\u73B0\u5728\u6B4C\u91CC\u5E26\u7740 {size}{embedSoftLimit}\uFF0C\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD", { n: r10.packed.length, size: sizeText3(size), embedSoftLimit: size > embedSoftLimit ? _t("\uFF08\u8D85\u8FC7 {embedSoftLimit}\uFF1A\u5B58 / \u540C\u6B65\u4F1A\u6162\u4E00\u70B9\uFF09", { embedSoftLimit: sizeText3(embedSoftLimit) }) : "" }));
   }
   if (missing.length) showError(_t("\u8FD9\u51E0\u4EF6\u627E\u4E0D\u5230\u58F0\u97F3\uFF0C\u6CA1\u6253\u5305\uFF1A{p}\u3002\u70B9\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\uFF0C\u5728\u300C\u8C01\u6765\u6F14\u300D\u91CC\u300C\u627E\u6587\u4EF6\u2026\u300D\u3002", { p: missing.join("\u3001") }));
@@ -59675,8 +59903,8 @@ async function packAll() {
 }
 async function unpackAll() {
   const bytesBySha = /* @__PURE__ */ new Map();
-  for (const role of Object.keys(D2.extras.lounge)) for (const g3 of gmCandidates(D2.extras, role)) if (g3.bytes) bytesBySha.set(g3.subsetSha256, g3.bytes);
-  const uses = soundUses(D2.extras).filter((u2) => u2.packed && bytesBySha.has(u2.subsetSha256));
+  for (const role of Object.keys(D3.extras.lounge)) for (const g3 of gmCandidates(D3.extras, role)) if (g3.bytes) bytesBySha.set(g3.subsetSha256, g3.bytes);
+  const uses = soundUses(D3.extras).filter((u2) => u2.packed && bytesBySha.has(u2.subsetSha256));
   if (!uses.length) {
     info(_t("\u6B4C\u91CC\u6CA1\u6709\u6253\u5305\u7740\u7684\u58F0\u97F3"));
     return;
@@ -59689,7 +59917,7 @@ async function unpackAll() {
     if (u2.origin.library || await isSoundPersisted(u2.subsetSha256)) ok2.add(u2.subsetSha256);
     else stuck.push(u2.names.join("\u3001"));
   }
-  const r10 = withUnpacked(D2.extras, (sha) => ok2.has(sha));
+  const r10 = withUnpacked(D3.extras, (sha) => ok2.has(sha));
   if (r10.removed.size) {
     updateExtras(r10.extras, { kind: "lounge", label: _t("\u89E3\u5305\u4E86 {size} \u4EF6\u58F0\u97F3", { size: r10.removed.size }) });
     info(_t("\u89E3\u5305\u4E86 {size} \u4EF6\uFF1A\u6B4C\u91CC\u53EA\u8BB0\u6765\u6E90\uFF08\u5C0F\u4E86 {n}\uFF09\uFF1B\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u7740\uFF0C\u7167\u6837\u80FD\u54CD\u3002\u522B\u7684\u8BBE\u5907\u4E0A\u4ECE\u5BB6\u65CF\u97F3\u6E90\u5E93\u6216\u539F\u6587\u4EF6\u627E", { size: r10.removed.size, n: sizeText3([...r10.removed.values()].reduce((n10, b3) => n10 + b3.length, 0)) }));
@@ -59711,7 +59939,7 @@ function openExportHub() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA")}</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="${_t("\u6E32\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF1B\u6E32\u597D\u7684\u90A3\u4EFD\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C")}"><svg class="ico"><use href="#export"/></svg>${_t("\u6B4C\u58F0\uFF08mp3\uFF09\u2026")}</button><button class="btn" data-v="pdf" title="${_t("\u5370\u51FA\u6765\u7684\u8C31\uFF08\u6309\u8FD9\u9996\u6B4C\u7684\u7EB8\u5F20\u5206\u9875\uFF1B\u6B4C\u8BCD\u7528\u5D4C\u8FDB\u53BB\u7684\u5B57\u4F53\uFF0C\u80FD\u9009\u4E2D\u590D\u5236\uFF09")}"><svg class="ico"><use href="#export"/></svg>${_t("\u4E50\u8C31\uFF08PDF\uFF09\u2026")}</button><button class="btn" data-v="mxl" title="${_t("\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6")}"><svg class="ico"><use href="#save-as"/></svg>${_t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026")}</button>` + (soundUses(D2.extras).some((u2) => !u2.packed) ? `<button class="btn" data-v="mxlPacked" title="${_t("\u526F\u672C\u91CC\u628A\u4E50\u5668\u7684\u58F0\u97F3\u4E5F\u88C5\u8FDB\u53BB\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u7167\u65E7\u53EA\u8BB0\u6765\u6E90")}"><svg class="ico"><use href="#save-as"/></svg>${_t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026")}</button>` : "") + `</div><div class="offer-msg">${_t("\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA")}</div><div class="set-row file-row"><button class="btn" data-v="mp3" title="${_t("\u6E32\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF1B\u6E32\u597D\u7684\u90A3\u4EFD\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C")}"><svg class="ico"><use href="#export"/></svg>${_t("\u6B4C\u58F0\uFF08mp3\uFF09\u2026")}</button><button class="btn" data-v="pdf" title="${_t("\u5370\u51FA\u6765\u7684\u8C31\uFF08\u6309\u8FD9\u9996\u6B4C\u7684\u7EB8\u5F20\u5206\u9875\uFF1B\u6B4C\u8BCD\u7528\u5D4C\u8FDB\u53BB\u7684\u5B57\u4F53\uFF0C\u80FD\u9009\u4E2D\u590D\u5236\uFF09")}"><svg class="ico"><use href="#export"/></svg>${_t("\u4E50\u8C31\uFF08PDF\uFF09\u2026")}</button><button class="btn" data-v="mxl" title="${_t("\u73B0\u5728\u8FD9\u9996\u6B4C\u7684\u4E00\u4EFD\u62F7\u8D1D\uFF08\u6587\u4EF6\u540D\u5E26\u65F6\u523B\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u8FD8\u4F4F\u539F\u6765\u7684\u5BB6")}"><svg class="ico"><use href="#save-as"/></svg>${_t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\u2026")}</button>` + (soundUses(D3.extras).some((u2) => !u2.packed) ? `<button class="btn" data-v="mxlPacked" title="${_t("\u526F\u672C\u91CC\u628A\u4E50\u5668\u7684\u58F0\u97F3\u4E5F\u88C5\u8FDB\u53BB\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF09\uFF1B\u8FD9\u91CC\u7684\u6B4C\u7167\u65E7\u53EA\u8BB0\u6765\u6E90")}"><svg class="ico"><use href="#save-as"/></svg>${_t("\u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026")}</button>` : "") + `</div><div class="offer-msg">${_t("\u5BFC\u51FA = \u5BC4\u4E00\u4EFD\u51FA\u53BB\uFF0C\u8FD9\u91CC\u7684\u6B4C\u8FD8\u662F\u539F\u6765\u90A3\u4E2A\u5BB6\uFF0C\u300C\u5B58\u300D\u624D\u662F\u5B58\u56DE\u53BB\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const close = () => {
     box.remove();
@@ -59737,13 +59965,13 @@ function openPdfPanel() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  const curPaper = D2.st.song.papers.find((p2) => p2.id === D2.st.at.paper) ?? D2.st.song.papers[0];
-  let paperPick = viewScope === "segment" && D2.st.song.papers.length > 1 ? "one" : "all", partPick = "view";
-  const someHidden = D2.st.song.parts.some((p2) => !isShown(p2.id)), shownNames = partLabels(D2.st.song, D2.extras).filter((_2, k2) => isShown(D2.st.song.parts[k2].id));
+  const curPaper = D3.st.song.papers.find((p2) => p2.id === D3.st.at.paper) ?? D3.st.song.papers[0];
+  let paperPick = viewScope === "segment" && D3.st.song.papers.length > 1 ? "one" : "all", partPick = "view";
+  const someHidden = D3.st.song.parts.some((p2) => !isShown(p2.id)), shownNames = partLabels(D3.st.song, D3.extras).filter((_2, k2) => isShown(D3.st.song.parts[k2].id));
   const draw = () => {
     const chip2 = (id2, label, note2) => `<button class="btn cand${pdfFont === id2 ? " is-on" : ""}" data-v="font:${id2}" title="${esc11(note2)}">${label}</button>`;
     const pick = (v, on2, label, note2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}" title="${esc11(note2)}">${esc11(label)}</button>`;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u4E50\u8C31\uFF08PDF\uFF09")}</div>` + (D2.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u5370\u54EA\u4E9B")}</div><div class="set-row">${pick("paper:all", paperPick === "all", _t("\u6574\u9996"), _t("\u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u63A5\u7740\u6392\uFF08= \u5206\u9875 + \u300C\u5168\u90E8\u300D\uFF09"))}${pick("paper:one", paperPick === "one", _t("\u8FD9\u4E00\u6BB5\u300C{p}\u300D", { p: curPaper.name || _t("\u8FD9\u5F20\u7EB8") }), _t("\u53EA\u5370\u5149\u6807\u6240\u5728\u7684\u8FD9\u5F20\u7EB8\uFF08= \u5206\u9875 + \u300C\u672C\u6BB5\u300D\uFF09"))}</div>` : "") + (someHidden ? `<div class="part-sec">${_t("\u58F0\u90E8")}</div><div class="set-row">${pick("parts:view", partPick === "view", _t("\u7167\u5206\u9875\u9884\u89C8"), _t("\u9690\u85CF\u7684\u58F0\u90E8\u4E0D\u5370\uFF0C\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF08\u548C\u9884\u89C8\u4E00\u6837\uFF09"))}${pick("parts:shown", partPick === "shown", _t("\u53EA\u6392\u770B\u5F97\u89C1\u7684\uFF1A{p}", { p: shownNames.join("\u3001") }), _t("\u9690\u85CF\u7684\u58F0\u90E8\u6574\u4E2A\u62FF\u6389\u3001\u91CD\u65B0\u6392\uFF0C\u4E0D\u7559\u7A7A\u4F4D\uFF08\u50CF\u62BD\u51FA\u6765\u7684\u5206\u8C31\uFF1B\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\uFF09"))}</div>` : "") + `<div class="part-sec">${_t("\u6B4C\u8BCD\u7684\u5B57\u4F53")}</div><div class="set-row">${chip2("sans", _t("\u9ED1\u4F53"), _t("\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587 / \u65E5\u6587 / \u82F1\u6587\u90FD\u6709"))}${chip2("pinyin", _t("\u62FC\u97F3"), _t("\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF08\u53EF\u7231\uFF09\uFF1B\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3"))}</div><div class="offer-msg">${_t("{p}\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7EA6 {p2} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u7EB8\u7684\u6273\u624B\u91CC\u6539\uFF09\u3002", { p: pdfFont === "pinyin" ? _t("\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF0C\u6B4C\u8BCD\u90A3\u4E00\u884C\u4F1A\u5F80\u4E0B\u8BA9\u51FA\u62FC\u97F3\u7684\u5730\u65B9\u3002\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3\u3002") : _t("\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587\u3001\u65E5\u6587\u3001\u82F1\u6587\u90FD\u6709\u3002"), p2: PDF_FONT_MB[pdfFont] })}</div><div class="offer-msg">${partPick === "shown" ? _t("\u53EA\u6392\u770B\u5F97\u89C1\u7684\u58F0\u90E8\uFF08{p}\uFF09\uFF1A\u91CD\u65B0\u6392\u3001\u4E0D\u7559\u7A7A\u4F4D\u2014\u2014\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\u3002", { p: esc11(shownNames.join("\u3001")) }) : _t("\u5370\u51FA\u6765\u7684 = \u6273\u624B\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C{p}\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684{p2}\u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002", { p: paperPick === "one" ? _t("\u672C\u6BB5") : _t("\u5168\u90E8"), p2: paperPick === "one" ? "" : _t("\u7EB8 / ") })}</div>` + ((lk2) => lk2.viewInC || lk2.chordTags ? `<div class="offer-msg">${_t("\u7167\u8FD9\u9996\u6B4C\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u7EB8\u7684\u6273\u624B \u2192\u300C\u770B\u8C31\u300D\u91CC\u6539\uFF09\u3002", { w: [lk2.viewInC ? _t("\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09") : "", lk2.chordTags ? _t("\u548C\u5F26\u7EA7\u6570") : ""].filter(Boolean).join(_t("\u3001")) })}</div>` : "")(songViewOf(D2.st.song)) + // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u4E50\u8C31\uFF08PDF\uFF09")}</div>` + (D3.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u5370\u54EA\u4E9B")}</div><div class="set-row">${pick("paper:all", paperPick === "all", _t("\u6574\u9996"), _t("\u6BCF\u5F20\u7EB8\u6309\u987A\u5E8F\u63A5\u7740\u6392\uFF08= \u5206\u9875 + \u300C\u5168\u90E8\u300D\uFF09"))}${pick("paper:one", paperPick === "one", _t("\u8FD9\u4E00\u6BB5\u300C{p}\u300D", { p: curPaper.name || _t("\u8FD9\u5F20\u7EB8") }), _t("\u53EA\u5370\u5149\u6807\u6240\u5728\u7684\u8FD9\u5F20\u7EB8\uFF08= \u5206\u9875 + \u300C\u672C\u6BB5\u300D\uFF09"))}</div>` : "") + (someHidden ? `<div class="part-sec">${_t("\u58F0\u90E8")}</div><div class="set-row">${pick("parts:view", partPick === "view", _t("\u7167\u5206\u9875\u9884\u89C8"), _t("\u9690\u85CF\u7684\u58F0\u90E8\u4E0D\u5370\uFF0C\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF08\u548C\u9884\u89C8\u4E00\u6837\uFF09"))}${pick("parts:shown", partPick === "shown", _t("\u53EA\u6392\u770B\u5F97\u89C1\u7684\uFF1A{p}", { p: shownNames.join("\u3001") }), _t("\u9690\u85CF\u7684\u58F0\u90E8\u6574\u4E2A\u62FF\u6389\u3001\u91CD\u65B0\u6392\uFF0C\u4E0D\u7559\u7A7A\u4F4D\uFF08\u50CF\u62BD\u51FA\u6765\u7684\u5206\u8C31\uFF1B\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\uFF09"))}</div>` : "") + `<div class="part-sec">${_t("\u6B4C\u8BCD\u7684\u5B57\u4F53")}</div><div class="set-row">${chip2("sans", _t("\u9ED1\u4F53"), _t("\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587 / \u65E5\u6587 / \u82F1\u6587\u90FD\u6709"))}${chip2("pinyin", _t("\u62FC\u97F3"), _t("\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF08\u53EF\u7231\uFF09\uFF1B\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3"))}</div><div class="offer-msg">${_t("{p}\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7EA6 {p2} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u7EB8\u7684\u6273\u624B\u91CC\u6539\uFF09\u3002", { p: pdfFont === "pinyin" ? _t("\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF0C\u6B4C\u8BCD\u90A3\u4E00\u884C\u4F1A\u5F80\u4E0B\u8BA9\u51FA\u62FC\u97F3\u7684\u5730\u65B9\u3002\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3\u3002") : _t("\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587\u3001\u65E5\u6587\u3001\u82F1\u6587\u90FD\u6709\u3002"), p2: PDF_FONT_MB[pdfFont] })}</div><div class="offer-msg">${partPick === "shown" ? _t("\u53EA\u6392\u770B\u5F97\u89C1\u7684\u58F0\u90E8\uFF08{p}\uFF09\uFF1A\u91CD\u65B0\u6392\u3001\u4E0D\u7559\u7A7A\u4F4D\u2014\u2014\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\u3002", { p: esc11(shownNames.join("\u3001")) }) : _t("\u5370\u51FA\u6765\u7684 = \u6273\u624B\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C{p}\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684{p2}\u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002", { p: paperPick === "one" ? _t("\u672C\u6BB5") : _t("\u5168\u90E8"), p2: paperPick === "one" ? "" : _t("\u7EB8 / ") })}</div>` + ((lk2) => lk2.viewInC || lk2.chordTags ? `<div class="offer-msg">${_t("\u7167\u8FD9\u9996\u6B4C\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u7EB8\u7684\u6273\u624B \u2192\u300C\u770B\u8C31\u300D\u91CC\u6539\uFF09\u3002", { w: [lk2.viewInC ? _t("\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09") : "", lk2.chordTags ? _t("\u548C\u5F26\u7EA7\u6570") : ""].filter(Boolean).join(_t("\u3001")) })}</div>` : "")(songViewOf(D3.st.song)) + // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
     `<div class="offer-btns"><button class="btn" data-v="close">${_t("\u7B97\u4E86")}</button><button class="btn primary" data-v="go">${_t("\u751F\u6210 PDF")}</button></div></div>`;
   };
   draw();
@@ -59787,15 +60015,15 @@ async function makePdf(fontId, pick = {}) {
   progress(_t("\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7B2C\u4E00\u6B21\u7EA6 {p} MB\uFF09\u2026", { p: PDF_FONT_MB[fontId] }));
   const [font, music] = await Promise.all([loadPdfFont(fontId), loadMusicOutlines()]);
   progress(_t("\u6392\u7248\u2026"));
-  const title = D2.st.song.title || docName();
-  let song = D2.st.song, parts = partViews();
+  const title = D3.st.song.title || docName();
+  let song = D3.st.song, parts = partViews();
   if (pick.onlyShown) {
-    const keep2 = new Set(D2.st.song.parts.filter((p2) => isShown(p2.id)).map((p2) => p2.id));
+    const keep2 = new Set(D3.st.song.parts.filter((p2) => isShown(p2.id)).map((p2) => p2.id));
     song = { ...song, parts: song.parts.filter((p2) => keep2.has(p2.id)), papers: song.papers.map((p2) => ({ ...p2, tracks: Object.fromEntries(Object.entries(p2.tracks).filter(([k2]) => keep2.has(k2))) })).filter((p2) => Object.keys(p2.tracks).length || p2.id === pick.paper) };
     parts = parts.filter((v) => keep2.has(v.id)).map((v, k2) => ({ ...v, hidden: false, first: k2 === 0 }));
   }
   const r10 = scorePdf({ song, parts, font, fontId, music, title, created: /* @__PURE__ */ new Date(), measure: view.rawMeasure, autoBars, ...pick.paper ? { onlyPaper: pick.paper } : {} });
-  const paperName = pick.paper ? D2.st.song.papers.find((p2) => p2.id === pick.paper)?.name || _t("\u8FD9\u4E00\u6BB5") : "";
+  const paperName = pick.paper ? D3.st.song.papers.find((p2) => p2.id === pick.paper)?.name || _t("\u8FD9\u4E00\u6BB5") : "";
   const suffix = [paperName, pick.onlyShown ? parts.map((v) => v.name).join("+") : ""].filter(Boolean).map((x2) => fileSafe(x2)).join("-");
   return { file: new File([r10.bytes], `${stampedCopy(`${docName()}${suffix ? `-${suffix}` : ""}`)}.pdf`, { type: "application/pdf" }), r: r10 };
 }
@@ -59816,16 +60044,16 @@ async function exportPdf(fontId, pick = {}) {
   }
 }
 function soundingRoles() {
-  return audibleParts2().filter((p2) => flattenPart(D2.st.song, p2.id).tokens.some((t10) => t10.kind === "note")).map((p2) => p2.role);
+  return audibleParts2().filter((p2) => flattenPart(D3.st.song, p2.id).tokens.some((t10) => t10.kind === "note")).map((p2) => p2.role);
 }
 function soundsSection() {
-  const uses = soundUses(D2.extras);
+  const uses = soundUses(D3.extras);
   if (!uses.length) return "";
   const packed = uses.filter((u2) => u2.packed), size = packed.reduce((n10, u2) => n10 + u2.bytes, 0);
-  return `<div class="part-sec">${_t("\u4E50\u5668\u7684\u58F0\u97F3")}</div><div class="offer-msg">${_t("{n} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC {n2} \u4EF6{length}\uFF0C\u53EA\u8BB0\u6765\u6E90 {n3} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u5C0F\u6708\u76F8\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002", { n: uses.length, n2: packed.length, length: packed.length ? `\uFF08${sizeText3(size)}\uFF09` : "", n3: uses.length - packed.length })}</div><div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">${_t("\u5168\u90E8\u6253\u5305\u8FDB\u6B4C")}</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">${_t("\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09")}</button>` : ""}</div>` + creditsBlock(packedLicenses(D2.extras), _t("\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u6587\u4EF6\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09"));
+  return `<div class="part-sec">${_t("\u4E50\u5668\u7684\u58F0\u97F3")}</div><div class="offer-msg">${_t("{n} \u4EF6\uFF1A\u6253\u5305\u5728\u6B4C\u91CC {n2} \u4EF6{length}\uFF0C\u53EA\u8BB0\u6765\u6E90 {n3} \u4EF6\u3002\u6253\u5305 = \u58F0\u97F3\u8DDF\u7740\u6B4C\u8D70\uFF08\u53D1\u7ED9\u522B\u4EBA\u4E5F\u80FD\u54CD\uFF0C\u6587\u4EF6\u53D8\u5927\uFF09\uFF1B\u53EA\u8BB0\u6765\u6E90 = \u6B4C\u5C0F\uFF0C\u58F0\u97F3\u4ECE\u8FD9\u53F0\u8BBE\u5907 / \u5BB6\u65CF\u97F3\u6E90\u5E93 / \u4F60\u7684\u6587\u4EF6\u91CC\u627E\u3002\u5C0F\u6708\u76F8\u4E0D\u6253\u5305\uFF08\u5979\u662F\u6A21\u578B\u5305\uFF0C\u6B4C\u91CC\u53EA\u9489\u54C8\u5E0C\uFF09\u3002", { n: uses.length, n2: packed.length, length: packed.length ? `\uFF08${sizeText3(size)}\uFF09` : "", n3: uses.length - packed.length })}</div><div class="set-row">${packed.length < uses.length ? `<button class="btn" data-v="pack">${_t("\u5168\u90E8\u6253\u5305\u8FDB\u6B4C")}</button>` : ""}${packed.length ? `<button class="btn" data-v="unpack">${_t("\u5168\u90E8\u89E3\u5305\uFF08\u53EA\u8BB0\u6765\u6E90\uFF09")}</button>` : ""}</div>` + creditsBlock(packedLicenses(D3.extras), _t("\u6253\u5305\u5206\u53D1\u7684\u8BB8\u53EF\uFF08\u6587\u4EF6\u91CC\u5E26\u7740\u8FD9\u4E9B\u6E90\u6587\u4EF6\uFF09"));
 }
-function creditsOf(roles, rights = D2.st.song.rights) {
-  const perf = performerCredits(D2.extras, roles), own = songCreditLine({ ...D2.st.song, rights });
+function creditsOf(roles, rights = D3.st.song.rights) {
+  const perf = performerCredits(D3.extras, roles), own = songCreditLine({ ...D3.st.song, rights });
   return { lines: own ? [own, ...perf] : perf, hints: licenseHints(rights, perf) };
 }
 var performersBlock = (roles, title = _t("\u7F72\u540D")) => {
@@ -59917,7 +60145,7 @@ async function lockEditNow() {
       if (H2.identifier() !== h2.identifier || !gallery) return;
       await gallery.lockEdit(h2.identifier);
     } else if (h2.kind === "file") {
-      if (D2.dirty()) {
+      if (D3.dirty()) {
         const r10 = await H2.save();
         if (r10.k !== "written") {
           showError(_t("\u6CA1\u9501\u4E0A\uFF1A\u6539\u52A8\u6CA1\u6709\u5199\u56DE\u6587\u4EF6\u3002"));
@@ -59936,7 +60164,7 @@ function openCoverSheet() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  const thumb = D2.extras.thumbnail;
+  const thumb = D3.extras.thumbnail;
   const coverUrl = thumb ? URL.createObjectURL(new Blob([thumb], { type: "image/png" })) : null;
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5C01\u9762\u56FE")}</div><div class="set-row cover-row"><span class="cover-thumb">${coverUrl ? `<img src="${coverUrl}" alt="${_t("\u5C01\u9762")}" />` : `<span class="cover-none">${_t("\u6CA1\u6709\u5C01\u9762\u56FE")}</span>`}</span><label class="btn" title="${_t("\u9009\u4E00\u5F20\u56FE\u5F53\u5C01\u9762\uFF08\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\uFF1B\u6B4C\u5E93\u5361\u7247\u4E0A\u6B4C\u540D\u5370\u5728\u56FE\u4E0A\u9762\uFF09")}"><svg class="ico"><use href="#image"/></svg>${thumb ? _t("\u6362\u4E00\u5F20\u2026") : _t("\u9009\u4E00\u5F20\u56FE\u2026")}<input id="coverIn" type="file" accept="image/*" hidden /></label>` + (thumb ? `<button class="btn" data-v="coverOff">${_t("\u53BB\u6389\u5C01\u9762\u56FE")}</button>` : "") + `</div><div class="offer-msg">${_t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE\uFF1B\u6B4C\u540D\u548C\u65E5\u671F\u7167\u6837\u5370\u5728\u4E0A\u9762\u3002\u7F29\u6210 256\xB2 \u5B58\u8FDB\u6B4C\u91CC\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
@@ -59960,7 +60188,7 @@ function openCoverSheet() {
     }
     if (v === "coverOff") {
       close();
-      updateExtras(withThumbnail(D2.extras, null), { kind: "cover", label: _t("\u53BB\u6389\u5C01\u9762\u56FE") });
+      updateExtras(withThumbnail(D3.extras, null), { kind: "cover", label: _t("\u53BB\u6389\u5C01\u9762\u56FE") });
       info(_t("\u53BB\u6389\u4E86\u5C01\u9762\u56FE"));
     }
   });
@@ -60122,7 +60350,7 @@ var es2 = createEditorSession({
     //   参考窗里刚加的卡还在编字节 = prepare 里等（editor-session 在记下「存给谁」之前等它）——以前这句 await 在 encode 开头：等的时候换了歌，取到的就是新歌的内容。
     prepare: () => refHost.settled(),
     encode: async () => {
-      encodedSnap = D2.savedMark();
+      encodedSnap = D3.savedMark();
       const r10 = await encoder.encode({ ...saveArgs(), references: refHost.files() });
       encodedFp = r10.fingerprint;
       return { bytes: new Blob([r10.bytes], { type: "application/vnd.recordare.musicxml" }) };
@@ -60136,7 +60364,7 @@ var es2 = createEditorSession({
     // 「已存」的基线和封面的账只记给还开着的那一首：写盘的那一下歌被放下 / 换走了（name 不是现在这首）= 这份快照是上一首的，不许记到现在这首头上（会把一张没动过的空谱标成改过 → 自己安家进歌库）。
     onSaved: (name) => {
       const cur = H2.identifier() === name;
-      if (cur && encodedSnap) D2.adoptSaved(encodedSnap);
+      if (cur && encodedSnap) D3.adoptSaved(encodedSnap);
       encodedSnap = null;
       if (cur && coverTouched) {
         coverTouched = false;
@@ -61018,7 +61246,7 @@ async function askReturn(plan, names, openToo) {
 async function setCover(f2) {
   try {
     const png = await makeCoverPng(new Uint8Array(await f2.arrayBuffer()));
-    updateExtras(withThumbnail(D2.extras, png), { kind: "cover", label: _t("\u6362\u5C01\u9762\u56FE") });
+    updateExtras(withThumbnail(D3.extras, png), { kind: "cover", label: _t("\u6362\u5C01\u9762\u56FE") });
     info(_t("\u5C01\u9762\u56FE\u6362\u597D\u4E86\uFF08{n}\uFF09", { n: sizeText3(png.length) }));
   } catch (e10) {
     showError(_t("\u8FD9\u5F20\u56FE\u7528\u4E0D\u4E86\uFF1A{Error}", { Error: e10.message }));
@@ -61134,17 +61362,17 @@ function whereNow() {
   if (ui2.overlay || isSheetOpen() || isGateOpen()) return "sheet";
   if (view.marks.open) return "mark";
   if (view.lyrics.open) return "lyric";
-  return inputGate.why() ? "impro" : D2.st.sel ? "edit" : "write";
+  return inputGate.why() ? "impro" : D3.st.sel ? "edit" : "write";
 }
 var NOTE_EDIT = /* @__PURE__ */ new Set(["degree", "rest", "bar", "shorter", "longer", "tuplet", "extend", "acc", "octave", "step", "alter", "delete", "transpose", "respell", "seldur", "selscale", "modulate", "staff"]);
 var modeHintShown = null;
 function lyricBackspace() {
-  const toks = tr(D2.st);
-  for (let i10 = D2.st.caret - 1; i10 >= 0; i10--) {
+  const toks = tr(D3.st);
+  for (let i10 = D3.st.caret - 1; i10 >= 0; i10--) {
     const t10 = toks[i10];
     if (t10.kind !== "note") continue;
-    const n10 = setCaret(t10.lyric ? setNote(D2.st, i10, { lyric: null }) : D2.st, i10);
-    if (inputGate.may(D2.st, n10)) update(n10);
+    const n10 = setCaret(t10.lyric ? setNote(D3.st, i10, { lyric: null }) : D3.st, i10);
+    if (inputGate.may(D3.st, n10)) update(n10);
     return;
   }
 }
@@ -61159,8 +61387,8 @@ function run(a10, repeat, code) {
         return true;
       }
       if (a10.cmd.k === "backspace" && ws.mode === "symbols") {
-        const n10 = apply(D2.st, { k: "symBackspace" }, performance.now());
-        if (inputGate.may(D2.st, n10)) update(n10);
+        const n10 = apply(D3.st, { k: "symBackspace" }, performance.now());
+        if (inputGate.may(D3.st, n10)) update(n10);
         return true;
       }
       if (a10.cmd.k === "backspace" && ws.mode === "lyrics") {
@@ -61175,14 +61403,14 @@ function run(a10, repeat, code) {
             pad3.showUp(turn.replaced);
           }
           const c10 = { ...a10.cmd, mono: !canStack() }, n10 = apply(turn.base, c10, performance.now());
-          if (n10 !== turn.base && inputGate.may(D2.st, n10)) {
+          if (n10 !== turn.base && inputGate.may(D3.st, n10)) {
             const t02 = tr(n10)[n10.caret - 1];
             if (t02?.kind === "note" && t02.pitch) {
               sound.down(t02.pitch, `key${code}`);
               pad3.showDown(midiOf(t02.pitch), `key${code}`);
             }
             update(n10, turn.gesture);
-            if (t02?.kind === "note" && t02.pitch) soundAfterWrite(D2.st, D2.st.caret - 1, `key${code}`, t02.pitch);
+            if (t02?.kind === "note" && t02.pitch) soundAfterWrite(D3.st, D3.st.caret - 1, `key${code}`, t02.pitch);
           }
           afterWrite();
           padHost.monoWrote(`key${code}`, turn);
@@ -61190,8 +61418,8 @@ function run(a10, repeat, code) {
         return true;
       }
       {
-        const n10 = apply(D2.st, withHalf(a10.cmd), performance.now());
-        if (!inputGate.may(D2.st, n10)) return true;
+        const n10 = apply(D3.st, withHalf(a10.cmd), performance.now());
+        if (!inputGate.may(D3.st, n10)) return true;
         update(n10);
       }
       if (a10.cmd.k === "rest" || a10.cmd.k === "extend") afterWrite();
@@ -61199,7 +61427,7 @@ function run(a10, repeat, code) {
       return true;
     case "audition": {
       if (repeat) return true;
-      const probe = apply({ ...D2.st, sel: null, log: [] }, { k: "degree", degree: a10.degree, dir: a10.dir }, performance.now());
+      const probe = apply({ ...D3.st, sel: null, log: [] }, { k: "degree", degree: a10.degree, dir: a10.dir }, performance.now());
       keyTok(probe, probe.caret - 1, code);
       {
         const t10 = tr(probe)[probe.caret - 1];
@@ -61208,7 +61436,7 @@ function run(a10, repeat, code) {
           ghostSync();
         }
       }
-      if (probe.input !== D2.st.input) update({ ...D2.st, input: probe.input });
+      if (probe.input !== D3.st.input) update({ ...D3.st, input: probe.input });
       return true;
     }
     case "stack":
@@ -61226,8 +61454,8 @@ function run(a10, repeat, code) {
         return true;
       }
       {
-        const n10 = stackDegree(D2.st, a10.degree);
-        if (n10 === D2.st) return true;
+        const n10 = stackDegree(D3.st, a10.degree);
+        if (n10 === D3.st) return true;
         update(n10);
         previewEdited();
       }
@@ -61258,11 +61486,11 @@ function run(a10, repeat, code) {
       return true;
     // 复制 / 全选是读，不问
     case "undo":
-      if (inputGate.mayStep(D2.history, "undo")) undoNow();
+      if (inputGate.mayStep(D3.history, "undo")) undoNow();
       return true;
     // 拔着时键盘上的撤销：轮到谱上的那一步就停（乐器 / 混音那几块照常）
     case "redo":
-      if (inputGate.mayStep(D2.history, "redo")) redoNow();
+      if (inputGate.mayStep(D3.history, "redo")) redoNow();
       return true;
   }
 }
@@ -61273,7 +61501,7 @@ function finderKey(e10) {
   if (!a10 || a10.k !== "audition") return;
   e10.preventDefault();
   if (e10.repeat) return;
-  const probe = apply({ ...D2.st, sel: null, log: [] }, { k: "degree", degree: a10.degree, dir: a10.dir }, performance.now());
+  const probe = apply({ ...D3.st, sel: null, log: [] }, { k: "degree", degree: a10.degree, dir: a10.dir }, performance.now());
   keyTok(probe, probe.caret - 1, e10.code);
 }
 window.addEventListener("keydown", (e10) => {
@@ -61296,7 +61524,7 @@ window.addEventListener("keydown", (e10) => {
     inRef: !!t10?.closest?.("wp-reference-window"),
     studioOpen: studio.isOpen,
     inStudio: !!t10?.closest?.(".studio"),
-    escFree: !D2.st.sel && !view.lyrics.open && !view.marks.open && !ui2.overlay,
+    escFree: !D3.st.sel && !view.lyrics.open && !view.marks.open && !ui2.overlay,
     listen: listenOn()
   });
   switch (owner) {
@@ -61361,7 +61589,7 @@ window.addEventListener("keydown", (e10) => {
       }
       return;
     case "score": {
-      const a10 = route(e10, whereNow(), D2.st.sel ? "edit" : "write");
+      const a10 = route(e10, whereNow(), D3.st.sel ? "edit" : "write");
       if (a10 && run(a10, e10.repeat, e10.code)) e10.preventDefault();
       return;
     }
@@ -61415,7 +61643,7 @@ var midi = createMidiKeyboard({
       midiBlink();
       return;
     }
-    const p2 = spellMidi(note2, keyAt(tr(D2.st), D2.st.sel ? D2.st.sel.from : D2.st.caret));
+    const p2 = spellMidi(note2, keyAt(tr(D3.st), D3.st.sel ? D3.st.sel.from : D3.st.caret));
     if (r10 === "pad") {
       if (padHost.noteDown(p2, id2)) midiHeld.set(id2, r10);
     } else {
@@ -61631,4 +61859,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2168f280885f.mjs.map
+//# sourceMappingURL=moonsinger-6ac0e717e7fe.mjs.map
