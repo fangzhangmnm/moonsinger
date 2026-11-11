@@ -415,6 +415,22 @@ declare function caretSpan(row: StaffRowData, half: number): { y1: number; y2: n
 declare function previewAt(row: StaffRowData, d: number, half: number): { y: number; ledgers: number[] }; // 鬼音符长什么样
 declare const pitchAxis: { stepAt(row, y, half): number; stepsOfDrag(dy, half): number };                 // 纵向 = 音高
 declare function bandTop(row: StaffRowData, half: number): number;                                        // 选区带上沿
+
+// ── 谱面（src/ui/score-view.ts；第二刀，2026-11-12）：向 app 要的 = 第 3.2 节的五样 + 一条出口 ────
+interface ScoreViewHost {
+  get(): EditorState; set(next: EditorState, opts?: { gesture?: string }): void;   // ① 编辑状态（改谱只交核心的纯函数算好的整份）
+  look: ScoreLook;                 // ② 怎么画、画什么：parts / autoBars / inC / chordTags / scope / reflow / pages / scroll / lyricRaise / layoutWidth /
+                                   //    actualSizeByDefault / rememberZoom / lyricHint / lyricReading / worker{url, failed}
+  sound?: ScoreSound;              // ③ 试听：audition / glide / release
+  press?(e: ScorePress): void;     // ④ 按在什么上了（带类型的联合，下面）
+  notice?(text: string): void;     // ⑤ 说一声
+  onAnchors?(L: Layout): void;     // 出口：排好了，谱面上面那一层（score-overlay.ts）照着摆
+}
+type ScorePress =
+  | { kind: "staff" | "text" }                                   // 原 focus（五线谱像文本框：点在谱上 / 打开了要打字的框）
+  | { kind: "part"; paper; part; box? } | { kind: "blank"; at; row } | { kind: "selection"; at } | { kind: "mark"; index; at }
+  | { kind: "clef"; hit: ClefHit; at } | { kind: "header"; paper; part; index; at } | { kind: "chordTag"; read; at; where }
+  | { kind: "credits" } | { kind: "listen"; at; target: { paper; part; index; caret; tick } };   // 原来 9 个「点了开菜单」
 ```
 
 和提案不一样的地方：

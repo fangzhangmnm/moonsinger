@@ -634,43 +634,56 @@ let chordTagsOn = deviceKvGet(KV_CHORD_TAGS) !== "0";
 const view = new ScoreView(scoreEl, {
   get: () => D.st,
   set: (n, o) => update(n, o?.gesture),
-  layoutWorker: () => threadUrls("layout-worker")[0] ?? null,   // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
-  onLayoutWorker: (why) => diagNote("layout", why),
-  audition: (i, hold) => { clearTimeout(upTimer); soundTok(D.st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
-  glide: (i) => { clearTimeout(upTimer); const t = tr(D.st)[i]; if (t?.kind === "note" && t.pitch) sound.glide(t.pitch, "score"); },
-  release: () => { clearTimeout(upTimer); sound.up("score"); },
-  focus: (where) => { const aside = touchLike && where === "text"; if (ws.aside !== aside) { ws.aside = aside; applyWorkspace(); } },   // 鼠标键盘范式：打字不让开（没有系统键盘要上来，也就不会「点回谱上又弹出来」，v0.16.89）   // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
-  autoBars: () => autoBars,
-  inC: () => viewInC,
-  chordTags: () => chordTagsOn,
-  onChordTag: (r, at, where) => openChordInfo(r, at, where),
-  parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
-  onPart: (_paper, part, at) => { if (stubbed(part)) { showPart(part); return; } openTrackCard(at); },   // 缩成细线的（隐藏 / 别人在「只看」）：点它 = 放出来（小卡里不再有「显示」，v0.16.17）
-  onAnchors: (L) => overlay?.layout(L, overlayView()),   // 谱面上面那一层（编辑器的钮 / 框 / 提示；刀 1）照着这份排版摆
-  onBlankPress: (at, row) => openScoreMenu(at, row),
-  onListenMenu: (at, a) => openListenMenu(at, a),   // 听模式：长按 / 右键 = 从这儿放 / 接着放 / 从头放
-  onSelPress: (at) => openSelMenu(at),
-  onMarkPress: (i, at) => openMarkMenu(i, at),
-  lyricHint: (i) => lyricHintAt(i),
-  lyricReading: (i) => lyricReadingAt(i),
-  notice: (s) => info(s),
-  onClef: (hit, at) => openClefMenu(hit, at),
-  onHeader: (paper, part, index, at) => headerPanel.open(paper, part, index, at),
-  onCredits: () => openCreditsSheet(),
-  reflow: () => reflow,
-  pages: () => pageFlow && !scrollFlow,
-  scroll: () => scrollFlow,
-  // 贴右边那一档（底座在右边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
-  layoutWidth: () => {
-    const w = scoreEl.clientWidth, sw = stageEl.clientWidth;
-    if (!sideDocked(stageEl)) return w;   // 贴底（默认）：底座在下面，不占宽
-    if (stageEl.dataset.dock !== "none") { dockedSide = sw - w; return w; }
-    return dockedSide > 0 ? Math.max(200, sw - dockedSide) : w;
+  // ② 怎么画、画什么（谱面分家第二刀：原来散在宿主上的十几个看法收进这一个对象）
+  look: {
+    parts: () => partViews(),   // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
+    autoBars: () => autoBars,
+    inC: () => viewInC,
+    chordTags: () => chordTagsOn,
+    scope: () => viewScope,
+    reflow: () => reflow,
+    pages: () => pageFlow && !scrollFlow,
+    scroll: () => scrollFlow,
+    lyricRaise: () => LYRIC_RAISE[pdfFont],   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
+    // 贴右边那一档（底座在右边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
+    layoutWidth: () => {
+      const w = scoreEl.clientWidth, sw = stageEl.clientWidth;
+      if (!sideDocked(stageEl)) return w;   // 贴底（默认）：底座在下面，不占宽
+      if (stageEl.dataset.dock !== "none") { dockedSide = sw - w; return w; }
+      return dockedSide > 0 ? Math.max(200, sw - dockedSide) : w;
+    },
+    actualSizeByDefault: () => matchMedia("(pointer: fine)").matches && window.innerWidth >= 1440,   // 电脑宽屏默认 100%（user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；平板 / 窄窗口照旧自动   // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
+    rememberZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),
+    lyricHint: (i) => lyricHintAt(i),
+    lyricReading: (i) => lyricReadingAt(i),
+    worker: { url: () => threadUrls("layout-worker")[0] ?? null, failed: (why) => diagNote("layout", why) },   // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
   },
-  onZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),
-  actualSizeByDefault: () => matchMedia("(pointer: fine)").matches && window.innerWidth >= 1440,   // 电脑宽屏默认 100%（user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；平板 / 窄窗口照旧自动   // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
-  lyricRaise: () => LYRIC_RAISE[pdfFont],   // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
-  scope: () => viewScope,
+  sound: {
+    audition: (i, hold) => { clearTimeout(upTimer); soundTok(D.st, i, "score"); if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350); },
+    glide: (i) => { clearTimeout(upTimer); const t = tr(D.st)[i]; if (t?.kind === "note" && t.pitch) sound.glide(t.pitch, "score"); },
+    release: () => { clearTimeout(upTimer); sound.up("score"); },
+  },
+  // ④ 按在什么上了（原来 9 个「点了开菜单」的回调 + focus 并成一个事件）
+  press: (e) => {
+    switch (e.kind) {
+      case "staff": case "text": {   // 五线谱像文本框：点在谱上 / 打开了要打字的框
+        const aside = touchLike && e.kind === "text"; if (ws.aside !== aside) { ws.aside = aside; applyWorkspace(); }   // 鼠标键盘范式：打字不让开（没有系统键盘要上来，也就不会「点回谱上又弹出来」，v0.16.89）   // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
+        return;
+      }
+      case "part": if (stubbed(e.part)) { showPart(e.part); return; } openTrackCard(e.box); return;   // 缩成细线的（隐藏 / 别人在「只看」）：点它 = 放出来（小卡里不再有「显示」，v0.16.17）
+      case "blank": openScoreMenu(e.at, e.row); return;
+      case "selection": openSelMenu(e.at); return;
+      case "mark": openMarkMenu(e.index, e.at); return;
+      case "clef": openClefMenu(e.hit, e.at); return;
+      case "header": headerPanel.open(e.paper, e.part, e.index, e.at); return;
+      case "chordTag": openChordInfo(e.read, e.at, e.where); return;
+      case "credits": openCreditsSheet(); return;
+      case "listen": openListenMenu(e.at, e.target); return;   // 听模式：长按 / 右键 = 从这儿放 / 接着放 / 从头放
+      default: { const missed: never = e; void missed; }   // 谱面多了一种「按在什么上」没人接 = 编译不过
+    }
+  },
+  notice: (s) => info(s),
+  onAnchors: (L) => overlay?.layout(L, overlayView()),   // 谱面上面那一层（编辑器的钮 / 框 / 提示；刀 1）照着这份排版摆
 });
 /** 谱面上面那一层（刀 1，2026-11-08；src/ui/score-overlay.ts）：两颗钮、虚线框、曲段控件、纸角钮、「1=C」、空着的提示、合租括号、「隐藏 N」。
  *  原来是排版器画、谱面手势里一条条判的；现在是 DOM，回调都在这一处（施工单 ai-docs/20261108-work-order-display-cut1-overlay.md §3.5：不新加面板）。 */

@@ -9,7 +9,7 @@
 // 输入法还在拼（isComposing）的时候什么都不做——拼音、假名输入法都不被打断。
 
 import { _t } from "../i18n/index.ts";
-import { type EditorState, type NoteTok, tr, withTrack } from "../score/song.ts";
+import { type EditorState, type NoteTok, tr, setNote } from "../score/song.ts";
 import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl, joinIntoPrev, lyricEdit, mergeIntoPrev } from "../score/lyrics.ts";
 /** 歌词里打的句读（。，、,.!? …）：字不进歌词，当「这个音写完了、跳下一个」。v0.16.86 起不再插句号（句号整个去掉，user 11-10「好，整个去掉」）。 */
 const PUNCT = /[。．，、,.!！?？;；:：]+$/;
@@ -149,7 +149,7 @@ export class LyricEditor {
       case "back": {
         if (v) return false;
         const st = this.host.get(), cur = tr(st)[this.index] as NoteTok;
-        if (cur?.lyric) this.host.set({ ...st, song: withTrack(st.song, st.at.paper, st.at.part, tr(st).map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t))) });
+        if (cur?.lyric) this.host.set(setNote(st, this.index, { lyric: null, hyph: undefined }));   // 擦掉这个字 = 核心的词（谱面分家第二刀：谱面改谱不自己拼）
         this.step(-1); return true;
       }
     }
@@ -169,7 +169,7 @@ export class LyricEditor {
     const st = this.host.get(), cur = tr(st)[this.index] as NoteTok, sp = splitPunct(this.input.value.trim()), v = sp.text;
     if (!cur) return;
     if (sp.phrase) { if (v) this.host.set(distributeFrom(st, this.index, splitSyllables(v)).st); return; }
-    if (!v) { if (cur.lyric) this.host.set({ ...st, song: withTrack(st.song, st.at.paper, st.at.part, tr(st).map((t, k) => (k === this.index ? { ...cur, lyric: null, hyph: undefined } : t))) }); return; }
+    if (!v) { if (cur.lyric) this.host.set(setNote(st, this.index, { lyric: null, hyph: undefined })); return; }
     if (v === this.slotText(this.index)) return;
     // 字母后面的「-」= 词没完（同「-」键）；别的「-」（中日文后面、单独一个）交给 splitSyllables = 拖腔，和空格那条路一样
     //   （2026-10-13 Opus 5.5；user「-空格显示 -回车不显示」：此前回车一律剥掉结尾的「-」，单独一个「-」剥完是空的、什么都没写）

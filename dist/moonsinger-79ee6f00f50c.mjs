@@ -13688,7 +13688,7 @@ var LyricEditor = class {
       case "back": {
         if (v) return false;
         const st2 = this.host.get(), cur = tr(st2)[this.index];
-        if (cur?.lyric) this.host.set({ ...st2, song: withTrack(st2.song, st2.at.paper, st2.at.part, tr(st2).map((t10, k2) => k2 === this.index ? { ...cur, lyric: null, hyph: void 0 } : t10)) });
+        if (cur?.lyric) this.host.set(setNote(st2, this.index, { lyric: null, hyph: void 0 }));
         this.step(-1);
         return true;
       }
@@ -13717,7 +13717,7 @@ var LyricEditor = class {
       return;
     }
     if (!v) {
-      if (cur.lyric) this.host.set({ ...st2, song: withTrack(st2.song, st2.at.paper, st2.at.part, tr(st2).map((t10, k2) => k2 === this.index ? { ...cur, lyric: null, hyph: void 0 } : t10)) });
+      if (cur.lyric) this.host.set(setNote(st2, this.index, { lyric: null, hyph: void 0 }));
       return;
     }
     if (v === this.slotText(this.index)) return;
@@ -14427,7 +14427,7 @@ var ScoreView = class {
       return h2;
     };
     this.handles = { start: mkHandle("start"), end: mkHandle("end") };
-    this.lyrics = new LyricEditor(this.ink, host2, () => this.layoutNow(), () => this.render());
+    this.lyrics = new LyricEditor(this.ink, { get: () => host2.get(), set: (n10, o10) => host2.set(n10, o10), lyricHint: (i10) => host2.look.lyricHint?.(i10) ?? null, lyricReading: (i10) => host2.look.lyricReading?.(i10) ?? null }, () => this.layoutNow(), () => this.render());
     this.marks = new MarkEditor(this.ink, host2, () => this.layoutNow(), () => this.render());
     this.title = new TitleEditor(this.ink, host2, () => this.layoutNow());
     el2.addEventListener("pointerdown", (e10) => this.down(e10));
@@ -14481,17 +14481,17 @@ var ScoreView = class {
         const st0 = this.host.get(), st1 = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
         this.host.set(select(st1, hit.index, hit.index + 1));
       }
-      this.host.focus?.("staff");
-      this.host.onSelPress?.({ x: e10.clientX, y: e10.clientY });
+      this.tell({ kind: "staff" });
+      this.tell({ kind: "selection", at: { x: e10.clientX, y: e10.clientY } });
     });
     el2.addEventListener("pointercancel", (e10) => {
       if (this.pinch && this.touches.delete(e10.pointerId) && this.touches.size < 2) this.pinchEnd();
       if (this.holdPid === e10.pointerId) {
         this.holdPid = null;
-        this.host.release?.();
+        this.host.sound?.release();
       }
       this.lockTap = null;
-      if (this.drag) this.host.release?.();
+      if (this.drag) this.host.sound?.release();
       this.drag = null;
       if (this.lift) {
         this.lift = null;
@@ -14565,11 +14565,15 @@ var ScoreView = class {
   lyrics;
   marks;
   title;
+  /** ④ 按在什么上了 → 宿主。 */
+  tell(e10) {
+    this.host.press?.(e10);
+  }
   /** 五线谱间距（px）和纸面宽（px）：触屏 11、鼠标 10 一格（× 这张纸的谱大小 / 默认档——谱小了一格就小、纸的宽度不变）；纸的版心放得下 = 严格按纸（纸居中、四周是桌面），
    *  放不下（手机）：默认不折行 = 整张纸按比例缩小；选了「折行」= 按屏宽重新折行，窄屏（< 420）一格跟着宽度小一点、最小 8.5（user「iPhone SE2 一行只有一小节加一大片空白 几个简易试一下」）。
    *  纸 = 这首歌的纸张（src/score/paper.ts，默认 A5；user「五线谱宽度：要不还是按照固定物理页框？」「看一下webxiaoheiwu屏幕太宽的时候行宽会有max」）。 */
   frame() {
-    const f2 = this.frameAt(this.host.layoutWidth?.() ?? this.el.clientWidth);
+    const f2 = this.frameAt(this.host.look.layoutWidth?.() ?? this.el.clientWidth);
     const paper = this.host.get().song.paper ?? paperOf(DEFAULT_PAPER);
     this.spAuto = f2.sp;
     this.physPx = spMm(paper) * PX_PER_MM;
@@ -14583,12 +14587,12 @@ var ScoreView = class {
   frameAt(avail2) {
     const st2 = this.host.get(), paper = st2.song.paper ?? paperOf(DEFAULT_PAPER), scale = staffMmOf(paper) / STAFF_MM;
     const base2 = (matchMedia("(pointer: coarse)").matches ? 11 : 10) * scale;
-    const geo = pageGeoOf(paper), page = this.host.pages?.() ? geo : null;
-    if (this.host.scroll?.()) return { sp: avail2 > 0 && avail2 < 420 ? Math.max(8.5 * scale, Math.min(base2, avail2 / 42 * scale)) : base2, width: Math.max(320, avail2 - (CONT_MARGIN.l + CONT_MARGIN.r) * base2), strict: false, page: null, margins: CONT_MARGIN };
+    const geo = pageGeoOf(paper), page = this.host.look.pages?.() ? geo : null;
+    if (this.host.look.scroll?.()) return { sp: avail2 > 0 && avail2 < 420 ? Math.max(8.5 * scale, Math.min(base2, avail2 / 42 * scale)) : base2, width: Math.max(320, avail2 - (CONT_MARGIN.l + CONT_MARGIN.r) * base2), strict: false, page: null, margins: CONT_MARGIN };
     const margins = page ? { l: geo.l, r: geo.r, t: geo.t, b: geo.b } : CONT_MARGIN;
     const extra = margins.l + margins.r, want = Math.ceil((lineSp(paper) + extra) * base2);
     if (avail2 > 0 && want <= avail2) return { sp: base2, width: lineSp(paper) * base2, strict: true, page, margins };
-    if (avail2 > 0 && (page || !(this.host.reflow?.() ?? false))) {
+    if (avail2 > 0 && (page || !(this.host.look.reflow?.() ?? false))) {
       const sp2 = base2 * avail2 / want;
       return { sp: sp2, width: lineSp(paper) * sp2, strict: false, page, margins };
     }
@@ -14621,11 +14625,11 @@ var ScoreView = class {
   }
   /** 排版的几何与选项（layoutNow 的同步路和 renderAsync 的 worker 路共用一份）：frame（谱大小 / 纸宽 / 分页）+ 缓存键 + engrave 的选项（不含量字宽的闭包，worker 自己配）。 */
   geo(st2) {
-    const { sp: sp2, width, strict, page, margins } = this.frame(), hscroll = !!this.host.scroll?.();
+    const { sp: sp2, width, strict, page, margins } = this.frame(), hscroll = !!this.host.look.scroll?.();
     const paper = st2.song.paper ?? paperOf(DEFAULT_PAPER), ts2 = textScaleOf(paper);
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st2) || st2.sel)) this.caretEnd = null;
-    const partsNow = this.host.parts(), scopeSeg = (this.host.scope?.() ?? "segment") === "segment", autoBars2 = this.host.autoBars?.() ?? true, inC = this.host.inC?.() ?? false, chordTags = this.host.chordTags?.() ?? false;
-    const lyricRaise = page && this.host.lyricRaise?.() ? this.host.lyricRaise() : 0;
+    const partsNow = this.host.look.parts(), scopeSeg = (this.host.look.scope?.() ?? "segment") === "segment", autoBars2 = this.host.look.autoBars?.() ?? true, inC = this.host.look.inC?.() ?? false, chordTags = this.host.look.chordTags?.() ?? false;
+    const lyricRaise = page ? this.host.look.lyricRaise?.() ?? 0 : 0;
     const tailOpen = !st2.sel && st2.caret >= tr(st2).length;
     const geoKey = JSON.stringify(
       [width, sp2, ts2, st2.at.paper, st2.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st2.at.paper : null, hscroll, autoBars2, inC, chordTags, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
@@ -14669,7 +14673,7 @@ var ScoreView = class {
     if (this.worker !== void 0) return this.worker;
     this.worker = null;
     try {
-      const url = this.host.layoutWorker?.();
+      const url = this.host.look.worker?.url();
       if (!url || typeof Worker === "undefined" || typeof OffscreenCanvas === "undefined") return null;
       const w2 = new Worker(url, workerOptions());
       w2.onmessage = (e10) => this.onReply(e10.data);
@@ -14681,7 +14685,7 @@ var ScoreView = class {
     return this.worker;
   }
   dropWorker(why2) {
-    this.host.onLayoutWorker?.(why2);
+    this.host.look.worker?.failed?.(why2);
     try {
       this.worker?.terminate();
     } catch {
@@ -14890,7 +14894,7 @@ var ScoreView = class {
     g3.setAttribute("height", String(L2.height));
     const fs = 4 * sp2, nh2 = 1.18 * sp2, ext = 0.4 * sp2, parts = [];
     const toks = tr(st2), at2 = one >= 0 ? one : st2.caret, fifths = keyAt(toks, at2);
-    const inC = this.host.inC?.() ?? false, shownToks = inC ? trackInC(toks) : toks;
+    const inC = this.host.look.inC?.() ?? false, shownToks = inC ? trackInC(toks) : toks;
     for (const p0 of this.ghostP) {
       const p2 = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths), shown2 = shownAccAt(shownToks, at2, p2);
       const d3 = diatonicIndex(p2) + shift, pv2 = previewAt(L2.systems[row2], d3, half2), y2 = pv2.y;
@@ -15031,7 +15035,7 @@ var ScoreView = class {
         this.ink.appendChild(d3);
         this.hlEls[k2] = d3;
       }
-      const r10 = Math.max(6, h2.w * 0.8), pv2 = this.host.parts().find((q2) => q2.id === realPart(L2.systems[h2.system]?.part ?? ""));
+      const r10 = Math.max(6, h2.w * 0.8), pv2 = this.host.look.parts().find((q2) => q2.id === realPart(L2.systems[h2.system]?.part ?? ""));
       d3.style.setProperty("--hl", pv2?.colorIdx !== void 0 ? TAB20[pv2.colorIdx] : "");
       d3.style.left = `${h2.x + h2.w / 2 - r10}px`;
       d3.style.top = `${h2.y - r10}px`;
@@ -15112,7 +15116,7 @@ var ScoreView = class {
       this.pinEl.className = "pin-names";
       this.sheet.appendChild(this.pinEl);
     }
-    const views = this.host.parts();
+    const views = this.host.look.parts();
     this.pinEl.replaceChildren(...L2.systems.filter((r10) => r10.staff === 1).map((r10) => {
       const v = views.find((q2) => q2.id === r10.part), d3 = document.createElement("div");
       d3.className = "pin-name";
@@ -15213,7 +15217,7 @@ var ScoreView = class {
    *  只在能写的模式、光标那一行本来就看得见、挪动不到半屏时补；没有光标（有选区）/ 新排版里找不到同一行 = 不补。纯视图：不碰排版。 */
   pinRow(st2) {
     const L2 = this.layout, f2 = this.frameNow, key = (r10) => `${r10.paper}|${r10.part}|${r10.sys}|${r10.staff}`, prev = this.pinPrev;
-    const view2 = `${f2.width}|${f2.sp}|${!!f2.page}|${f2.hscroll}|${this.host.scope?.() ?? "segment"}|${st2.at.paper}`;
+    const view2 = `${f2.width}|${f2.sp}|${!!f2.page}|${f2.hscroll}|${this.host.look.scope?.() ?? "segment"}|${st2.at.paper}`;
     this.pinPrev = { tops: new Map(L2.systems.map((r10) => [key(r10), r10.staffTop])), song: st2.song, view: view2 };
     if (!prev || prev.view !== view2 || prev.song === st2.song || !this.rules.edit || !this.caretSeen) return;
     const h2 = this.head();
@@ -15463,7 +15467,7 @@ var ScoreView = class {
   }
   /** 没设过缩放时的大小（乘在 sheet 上的倍数）：电脑宽屏 = 纸的实际大小（100%），放不下原大就按屏宽（v0.16.49，user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；别的 = 自动（1）。 */
   defMul() {
-    return this.host.actualSizeByDefault?.() ? Math.min(1, this.mulOf(1)) : 1;
+    return this.host.look.actualSizeByDefault?.() ? Math.min(1, this.mulOf(1)) : 1;
   }
   // ── 缩放的口（2026-10-21，Claude Fable 5.1；user「曲谱的缩放不合理，也理一下。可以对标一下pdf浏览器，然后ctrl wheel好好的帮我全量拦截一下」）：
   //   键盘（Ctrl / ⌘ + = / − / 0，platform-guards 在窗口捕获阶段全拦、路由到这里）一档一档、以谱面板中心为锚；读数按钮 = 现在的百分比、点 = 回自动；
@@ -15570,7 +15574,7 @@ var ScoreView = class {
     this.zoomBtn.hidden = z2 === def;
     this.zoomBtn.textContent = `${Math.round(this.physOf(z2) * 100)}%`;
     this.zoomPhys = z2 === def ? null : this.physOf(z2);
-    this.host.onZoom?.(this.zoomPhys);
+    this.host.look.rememberZoom?.(this.zoomPhys);
     const nsr = this.sheet.getBoundingClientRect(), nl2 = nsr.left - r10.left + this.el.scrollLeft, nt2 = nsr.top - r10.top + this.el.scrollTop;
     this.el.scrollLeft = this.el.classList.contains("zoomed") || this.hscroll ? nl2 + a10.cx * z2 - (a10.x - r10.left) : 0;
     const top = nt2 + a10.cy * z2 - (a10.y - r10.top), maxTop = Math.max(0, nt2 + nsr.height - this.el.clientHeight);
@@ -15669,11 +15673,11 @@ var ScoreView = class {
     if (this.tap(p2.x, p2.y, e10.shiftKey, e10.pointerId, false, false)) return;
     const hit = this.noteAt(p2.x, p2.y);
     if (hit) {
-      this.host.focus?.("staff");
+      this.tell({ kind: "staff" });
       const st0 = this.host.get();
       if (!this.onTrack(hit)) this.host.set(this.focusRow(st0, hit.system, hit.index + 1));
       const t10 = tr(this.host.get())[hit.index];
-      const d0 = this.host.inC?.() && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;
+      const d0 = this.host.look.inC?.() && !Number.isNaN(hit.d) ? hit.d - stepsToC(keyAt(tr(this.host.get()), hit.index)) : hit.d;
       if (this.rules.noteDrag) this.drag = { index: hit.index, d0, dur0: t10.dur, x0: p2.x, y0: p2.y, axis: "", pid: e10.pointerId, heard: d0, ...e10.pointerType === "mouse" ? { wait: true } : {} };
       this.el.setPointerCapture(e10.pointerId);
       this.armPress(e10, p2, hit);
@@ -15722,17 +15726,17 @@ var ScoreView = class {
     if (cur && this.onTrack(pr.hit) && pr.hit.index >= cur.from && pr.hit.index < cur.to) {
       this.finger = null;
       if (this.drag) {
-        this.host.release?.();
+        this.host.sound?.release();
         this.drag = null;
       }
       this.selDrag = { pid: pr.pid, anchor: pr.hit.index, menu: true };
-      this.host.audition?.(pr.hit.index, true);
+      this.host.sound?.audition(pr.hit.index, true);
       this.holdPid = pr.pid;
       return;
     }
     if (this.drag?.wait) {
       this.drag.wait = false;
-      this.host.audition?.(pr.hit.index, true);
+      this.host.sound?.audition(pr.hit.index, true);
       this.holdPid = pr.pid;
       return;
     }
@@ -15744,14 +15748,14 @@ var ScoreView = class {
     this.marks.commitAndClose();
     this.finger = null;
     if (this.drag) {
-      this.host.release?.();
+      this.host.sound?.release();
       this.drag = null;
     }
     const st0 = this.host.get(), st2 = this.onTrack(hit) ? st0 : this.focusRow(st0, hit.system);
     this.host.set(select(st2, hit.index, hit.index + 1));
     this.selDrag = { pid, anchor: hit.index };
-    this.host.focus?.("staff");
-    this.host.audition?.(hit.index, true);
+    this.tell({ kind: "staff" });
+    this.host.sound?.audition(hit.index, true);
     this.holdPid = pid;
   }
   /** 点在叠起来的那一行上：光标去这一家在这一行的那位（主人 / 在场打头的那位），落在点的那个时刻（点在音上 = 它后面，同平常点音）→ 整家拆开。 */
@@ -15805,13 +15809,13 @@ var ScoreView = class {
     this.host.set(setFocus(this.host.get(), pt.paper, pt.part));
     this.holdView = false;
     this.heldBase = this.baseKey();
-    this.host.onPart?.(pt.paper, pt.part, at2);
+    this.tell({ kind: "part", paper: pt.paper, part: pt.part, box: at2 });
     return true;
   }
   /** 这条声部台上那位不唱字？是 = 说一次为什么（同一位歌手只说一次，换了再说）。 */
   noLyricsSaid = "";
   noLyricsHere(part) {
-    const why2 = this.host.parts().find((p2) => p2.id === part)?.noLyrics;
+    const why2 = this.host.look.parts().find((p2) => p2.id === part)?.noLyrics;
     if (!why2) return false;
     if (this.noLyricsSaid !== why2) {
       this.noLyricsSaid = why2;
@@ -15828,7 +15832,7 @@ var ScoreView = class {
     if (!t10.lyric && this.noLyricsHere(row2.part)) return false;
     this.host.set(this.focusRow(this.host.get(), hit.system, this.host.get().caret));
     this.lyrics.openAt(hit.index);
-    this.host.focus?.("text");
+    this.tell({ kind: "text" });
     return true;
   }
   /** 听模式的长按 / 右键：点在音 / 休止上 = 它；空白 = 那一行光标会落的位置。不改光标、不改谱，只告诉宿主开小菜单。 */
@@ -15838,11 +15842,11 @@ var ScoreView = class {
     const hit = this.noteAt(x2, y2, true), r10 = hit ? L2.systems[hit.system] : null;
     if (hit && r10) {
       const id2 = hit.part ?? r10.part, i10 = this.realIndex(r10.paper, id2, hit.index);
-      this.host.onListenMenu?.({ x: cx2, y: cy2 }, { paper: r10.paper, part: realPart(id2), index: i10, caret: i10, tick: this.tickIn(r10.paper, id2, hit.index) });
+      this.tell({ kind: "listen", at: { x: cx2, y: cy2 }, target: { paper: r10.paper, part: realPart(id2), index: i10, caret: i10, tick: this.tickIn(r10.paper, id2, hit.index) } });
       return;
     }
     const s10 = this.caretAt(x2, y2);
-    this.host.onListenMenu?.({ x: cx2, y: cy2 }, { paper: s10.at.paper, part: realPart(s10.at.part), index: null, caret: this.realIndex(s10.at.paper, s10.at.part, s10.caret), tick: this.tickIn(s10.at.paper, s10.at.part, s10.caret) + (s10.lead ?? 0) });
+    this.tell({ kind: "listen", at: { x: cx2, y: cy2 }, target: { paper: s10.at.paper, part: realPart(s10.at.part), index: null, caret: this.realIndex(s10.at.paper, s10.at.part, s10.caret), tick: this.tickIn(s10.at.paper, s10.at.part, s10.caret) + (s10.lead ?? 0) } });
   }
   /** 这条 track（真的 / 合租虚拟的那几条）第 i 个之前一共多少 tick。 */
   tickIn(paperId, part, i10) {
@@ -15881,14 +15885,14 @@ var ScoreView = class {
     this.box = null;
     this.boxEl.hidden = true;
     if (this.drag) {
-      this.host.release?.();
+      this.host.sound?.release();
       this.drag = null;
     }
     this.placeCaretAt(x2, y2);
     const L2 = this.layout, row2 = this.rowAt(y2), mine = this.hits.filter((n10) => n10.system === row2 && this.onTrack(n10));
     const range2 = mine.length ? { from: Math.min(...mine.map((n10) => n10.index)), to: Math.max(...mine.map((n10) => n10.index)) + 1 } : null;
-    this.host.focus?.("staff");
-    this.host.onBlankPress?.({ x: cx2, y: cy2 }, range2);
+    this.tell({ kind: "staff" });
+    this.tell({ kind: "blank", at: { x: cx2, y: cy2 }, row: range2 });
   }
   /** 按在能拿起来拖的东西上：力度记号 / 渐强渐弱（在它的框里）先；歌词的字（不在音上时，同轻点的判法）。记号框开着 = 这一下是收框，不拿。 */
   grabAt(x2, y2, finger) {
@@ -15926,8 +15930,8 @@ var ScoreView = class {
   markMenu(h2) {
     if (!this.onTrack(h2)) this.host.set(this.focusRow(this.host.get(), h2.system, this.host.get().caret));
     const b3 = this.clientBox(h2);
-    this.host.focus?.("staff");
-    this.host.onMarkPress?.(h2.index, { x: (b3.left + b3.right) / 2, y: b3.bottom });
+    this.tell({ kind: "staff" });
+    this.tell({ kind: "mark", index: h2.index, at: { x: (b3.left + b3.right) / 2, y: b3.bottom } });
   }
   /** 拿起来（长按到点 / 笔鼠标按住动了）：收起编辑框、停掉滚动，记下这条 track 上能落的音。编辑框收起时可能改了谱（贴字 / 插句号）= 按原位置重新找一次。 */
   startLift(grab0, pid, x2, y2, cx2, cy2, finger) {
@@ -15938,7 +15942,7 @@ var ScoreView = class {
     this.box = null;
     this.boxEl.hidden = true;
     if (this.drag) {
-      this.host.release?.();
+      this.host.sound?.release();
       this.drag = null;
     }
     const grab = hadEditor ? this.grabAt(x2, y2, finger) : grab0;
@@ -15959,7 +15963,7 @@ var ScoreView = class {
     this.el.classList.add("lifting");
     this.hot = /* @__PURE__ */ new Set([toks[grab.index].id]);
     this.render();
-    this.host.focus?.("staff");
+    this.tell({ kind: "staff" });
   }
   /** 拖着走：指针（减去拿起来时和那个音的错位）最近的那个音 = 落点；换了落点就从拿起来之前的谱重算一次（谱上实时是挪过去的样子）。 */
   dragLift(p2) {
@@ -15999,7 +16003,7 @@ var ScoreView = class {
     this.render();
     if (!f2.moved) {
       if (f2.grab.kind === "lyric") this.host.set(select(this.host.get(), f2.grab.index, f2.grab.index + 1));
-      else this.host.onMarkPress?.(f2.grab.index, { x: f2.cx, y: f2.cy });
+      else this.tell({ kind: "mark", index: f2.grab.index, at: { x: f2.cx, y: f2.cy } });
       return;
     }
     if (f2.grab.kind === "lyric" && f2.short) this.host.notice?.(f2.cur > f2.src ? _t("\u540E\u9762\u6CA1\u6709\u7A7A\u7740\u7684\u97F3\u4E86\uFF0C\u5B57\u53EA\u80FD\u632A\u5230\u8FD9\u513F") : _t("\u524D\u9762\u9694\u7740\u53E5\u53F7\uFF08\u6216\u8005\u6CA1\u6709\u97F3\u4E86\uFF09\uFF0C\u5B57\u632A\u4E0D\u8FC7\u53BB"));
@@ -16063,14 +16067,14 @@ var ScoreView = class {
     const L2 = this.layout;
     if (ch2) {
       const b3 = this.clientBox(ch2);
-      this.host.onClef?.(ch2, { x: b3.left, y: b3.bottom });
+      this.tell({ kind: "clef", hit: ch2, at: { x: b3.left, y: b3.bottom } });
       return true;
     }
     if (!mk2) return false;
     const sys = L2.systems[mk2.system];
-    if (this.host.onHeader && sys && mk2.kind !== "tempo") {
+    if (sys && mk2.kind !== "tempo") {
       const b3 = this.clientBox(mk2);
-      this.host.onHeader(sys.paper, sys.part, mk2.index, { x: (b3.left + b3.right) / 2, y: b3.bottom });
+      this.tell({ kind: "header", paper: sys.paper, part: sys.part, index: mk2.index, at: { x: (b3.left + b3.right) / 2, y: b3.bottom } });
       return true;
     }
     this.host.set(this.focusRow(this.host.get(), mk2.system, this.host.get().caret));
@@ -16097,51 +16101,51 @@ var ScoreView = class {
     this.lyrics.commitAndClose();
     this.marks.commitAndClose();
     if (wasMark) {
-      this.host.focus?.("staff");
+      this.tell({ kind: "staff" });
       return true;
     }
     const textRow = this.inBox(L0.title, x2, y2) || this.inBox(L0.arrangement, x2, y2);
     if (wasLyric && pid === null && !textRow) {
-      this.host.focus?.("staff");
+      this.tell({ kind: "staff" });
       return true;
     }
     const L2 = this.layout ?? L0, sp2 = L2.sp;
-    const ct2 = this.host.onChordTag ? L2.chordTags.find((c10) => this.inBox(c10, x2, y2)) : void 0;
+    const ct2 = L2.chordTags.find((c10) => this.inBox(c10, x2, y2));
     if (ct2) {
       const b3 = this.clientBox(ct2), sys = L2.systems[ct2.system];
-      this.host.onChordTag(ct2.read, { x: (b3.left + b3.right) / 2, y: b3.bottom }, sys ? { paper: sys.paper, part: sys.part.replace(/~.*$/, ""), index: ct2.index } : null);
+      this.tell({ kind: "chordTag", read: ct2.read, at: { x: (b3.left + b3.right) / 2, y: b3.bottom }, where: sys ? { paper: sys.paper, part: sys.part.replace(/~.*$/, ""), index: ct2.index } : null });
       return true;
     }
     if (this.inBox(L2.credits, x2, y2)) {
-      this.host.focus?.("text");
-      this.host.onCredits?.();
+      this.tell({ kind: "text" });
+      this.tell({ kind: "credits" });
       return true;
     }
     if (this.openPartAt(x2, y2)) return true;
     if (view2 && this.inBox(L2.title, x2, y2)) {
       this.title.openNow();
-      this.host.focus?.("text");
+      this.tell({ kind: "text" });
       return true;
     }
     if (view2 && this.inBox(L2.arrangement, x2, y2)) {
       this.title.openArrangement();
-      this.host.focus?.("text");
+      this.tell({ kind: "text" });
       return true;
     }
     if (this.inBox(L2.title, x2, y2)) {
       this.title.openNow();
-      this.host.focus?.("text");
+      this.tell({ kind: "text" });
       return true;
     }
     if (this.inBox(L2.arrangement, x2, y2)) {
       this.title.openArrangement();
-      this.host.focus?.("text");
+      this.tell({ kind: "text" });
       return true;
     }
     for (const pp of L2.papers) {
       if (pp.title.shown && this.inBox(pp.title, x2, y2)) {
         this.title.openNow(pp.id);
-        this.host.focus?.("text");
+        this.tell({ kind: "text" });
         return true;
       }
     }
@@ -16169,7 +16173,7 @@ var ScoreView = class {
       if (ly2) {
         this.host.set(this.focusRow(this.host.get(), ly2.system, this.host.get().caret));
         this.lyrics.openAt(ly2.index);
-        this.host.focus?.("text");
+        this.tell({ kind: "text" });
         return true;
       }
     }
@@ -16183,7 +16187,7 @@ var ScoreView = class {
     const cur = this.onTrack(hit) ? st2.sel : null;
     if (shift && cur) this.host.set(select(st2, Math.min(cur.from, hit.index), Math.max(cur.to, hit.index + 1)));
     else this.putCaret(setCaret(st2, hit.index + 1), this.endSlotOn(hit.system, hit.index + 1));
-    this.host.focus?.("staff");
+    this.tell({ kind: "staff" });
   }
   /** 这一行（谱行）上有没有「行末」落点给这个光标位置（= 它本来画在下一行开头）。 */
   endSlotOn(row2, caret) {
@@ -16318,7 +16322,7 @@ var ScoreView = class {
     if (!g3.axis) {
       if (Math.hypot(dx, dy) < 6) return;
       g3.axis = Number.isNaN(g3.d0) ? "x" : Math.abs(dy) >= Math.abs(dx) ? "y" : "x";
-      if (g3.axis === "y") this.host.audition?.(g3.index, true);
+      if (g3.axis === "y") this.host.sound?.audition(g3.index, true);
     }
     const st2 = this.host.get();
     if (g3.axis === "y") {
@@ -16326,8 +16330,7 @@ var ScoreView = class {
       if (d3 === g3.heard) return;
       g3.heard = d3;
       this.host.set(setNote(st2, g3.index, { pitch: fromDiatonic(d3, keyAt(tr(st2), g3.index)) }), { gesture: "drag" });
-      if (this.host.glide) this.host.glide(g3.index);
-      else this.host.audition?.(g3.index, true);
+      this.host.sound?.glide(g3.index);
     } else {
       const i02 = DUR_LADDER.reduce((bi, v, i11) => Math.abs(v - g3.dur0) < Math.abs(DUR_LADDER[bi] - g3.dur0) ? i11 : bi, 0);
       const i10 = Math.max(0, Math.min(DUR_LADDER.length - 1, i02 + Math.round(dx / (L2.sp * 2.2))));
@@ -16344,7 +16347,7 @@ var ScoreView = class {
     }
     if (this.holdPid === e10.pointerId) {
       this.holdPid = null;
-      this.host.release?.();
+      this.host.sound?.release();
     }
     if (!this.rules.edit || this.roGesture) {
       const lt2 = this.lockTap, f2 = this.finger, pr2 = this.press, fired = !!(pr2 && pr2.pid === e10.pointerId && pr2.fired);
@@ -16400,21 +16403,21 @@ var ScoreView = class {
         this.finger = null;
         this.box = null;
         this.boxEl.hidden = true;
-        this.host.focus?.("staff");
-        this.host.onSelPress?.({ x: pr.cx, y: pr.cy });
+        this.tell({ kind: "staff" });
+        this.tell({ kind: "selection", at: { x: pr.cx, y: pr.cy } });
         return;
       }
       if (pr.fired && pr.hit && this.drag && !this.drag.wait && !this.drag.axis && pr.type === "mouse" && !extended) {
         this.selectHeld(pr.pid, pr.hit);
         this.selDrag = null;
-        this.host.release?.();
+        this.host.sound?.release();
         this.holdPid = null;
         return;
       }
       if (pr.fired || extended) {
         this.finger = null;
         if (this.drag) {
-          this.host.release?.();
+          this.host.sound?.release();
           this.drag = null;
         }
         this.box = null;
@@ -16425,7 +16428,7 @@ var ScoreView = class {
         this.finger = null;
         this.box = null;
         if (this.drag) {
-          this.host.release?.();
+          this.host.sound?.release();
           this.drag = null;
         }
         if (this.rules.lyrics && !pr.shift && this.openLyricOn(pr.hit)) return;
@@ -16438,7 +16441,7 @@ var ScoreView = class {
       this.finger = null;
       if (!f2.moved && !f2.ov && this.layout && !this.tap(f2.x, f2.y, f2.shift, null)) {
         this.placeCaretAt(f2.x, f2.y);
-        this.host.focus?.("staff");
+        this.tell({ kind: "staff" });
       }
       return;
     }
@@ -16455,11 +16458,11 @@ var ScoreView = class {
         }
       }
       if (!b3.moved && this.layout && !this.boxTap(b3.x0, b3.y0)) this.placeCaretAt(b3.x0, b3.y0);
-      this.host.focus?.("staff");
+      this.tell({ kind: "staff" });
       return;
     }
     if (this.drag && e10.pointerId === this.drag.pid) {
-      if (this.drag.axis !== "x") this.host.release?.();
+      if (this.drag.axis !== "x") this.host.sound?.release();
       this.drag = null;
     }
   }
@@ -55827,77 +55830,106 @@ var chordTagsOn = deviceKvGet(KV_CHORD_TAGS) !== "0";
 var view = new ScoreView(scoreEl, {
   get: () => D2.st,
   set: (n10, o10) => update(n10, o10?.gesture),
-  layoutWorker: () => threadUrls("layout-worker")[0] ?? null,
-  // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
-  onLayoutWorker: (why2) => diagNote("layout", why2),
-  audition: (i10, hold) => {
-    clearTimeout(upTimer);
-    soundTok(D2.st, i10, "score");
-    if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350);
+  // ② 怎么画、画什么（谱面分家第二刀：原来散在宿主上的十几个看法收进这一个对象）
+  look: {
+    parts: () => partViews(),
+    // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
+    autoBars: () => autoBars,
+    inC: () => viewInC,
+    chordTags: () => chordTagsOn,
+    scope: () => viewScope,
+    reflow: () => reflow,
+    pages: () => pageFlow && !scrollFlow,
+    scroll: () => scrollFlow,
+    lyricRaise: () => LYRIC_RAISE[pdfFont],
+    // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
+    // 贴右边那一档（底座在右边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
+    layoutWidth: () => {
+      const w2 = scoreEl.clientWidth, sw2 = stageEl.clientWidth;
+      if (!sideDocked(stageEl)) return w2;
+      if (stageEl.dataset.dock !== "none") {
+        dockedSide = sw2 - w2;
+        return w2;
+      }
+      return dockedSide > 0 ? Math.max(200, sw2 - dockedSide) : w2;
+    },
+    actualSizeByDefault: () => matchMedia("(pointer: fine)").matches && window.innerWidth >= 1440,
+    // 电脑宽屏默认 100%（user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；平板 / 窄窗口照旧自动   // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
+    rememberZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),
+    lyricHint: (i10) => lyricHintAt(i10),
+    lyricReading: (i10) => lyricReadingAt(i10),
+    worker: { url: () => threadUrls("layout-worker")[0] ?? null, failed: (why2) => diagNote("layout", why2) }
+    // 排版 worker（src/render/layout-worker.ts；2026-10-21 音游级延迟那一刀）
   },
-  glide: (i10) => {
-    clearTimeout(upTimer);
-    const t10 = tr(D2.st)[i10];
-    if (t10?.kind === "note" && t10.pitch) sound.glide(t10.pitch, "score");
-  },
-  release: () => {
-    clearTimeout(upTimer);
-    sound.up("score");
-  },
-  focus: (where) => {
-    const aside = touchLike && where === "text";
-    if (ws.aside !== aside) {
-      ws.aside = aside;
-      applyWorkspace();
+  sound: {
+    audition: (i10, hold) => {
+      clearTimeout(upTimer);
+      soundTok(D2.st, i10, "score");
+      if (!hold) upTimer = window.setTimeout(() => sound.up("score"), 350);
+    },
+    glide: (i10) => {
+      clearTimeout(upTimer);
+      const t10 = tr(D2.st)[i10];
+      if (t10?.kind === "note" && t10.pitch) sound.glide(t10.pitch, "score");
+    },
+    release: () => {
+      clearTimeout(upTimer);
+      sound.up("score");
     }
   },
-  // 鼠标键盘范式：打字不让开（没有系统键盘要上来，也就不会「点回谱上又弹出来」，v0.16.89）   // 点谱不再弹键盘（v0.16.55，键盘只手动开合）；打字时让开、点回谱上回到手动设的样子
-  autoBars: () => autoBars,
-  inC: () => viewInC,
-  chordTags: () => chordTagsOn,
-  onChordTag: (r10, at2, where) => openChordInfo(r10, at2, where),
-  parts: () => partViews(),
-  // 谱前写角色名（乐器的名字不上谱；同名同种带号）；隐藏的不画
-  onPart: (_paper, part, at2) => {
-    if (stubbed(part)) {
-      showPart(part);
-      return;
+  // ④ 按在什么上了（原来 9 个「点了开菜单」的回调 + focus 并成一个事件）
+  press: (e10) => {
+    switch (e10.kind) {
+      case "staff":
+      case "text": {
+        const aside = touchLike && e10.kind === "text";
+        if (ws.aside !== aside) {
+          ws.aside = aside;
+          applyWorkspace();
+        }
+        return;
+      }
+      case "part":
+        if (stubbed(e10.part)) {
+          showPart(e10.part);
+          return;
+        }
+        openTrackCard(e10.box);
+        return;
+      // 缩成细线的（隐藏 / 别人在「只看」）：点它 = 放出来（小卡里不再有「显示」，v0.16.17）
+      case "blank":
+        openScoreMenu(e10.at, e10.row);
+        return;
+      case "selection":
+        openSelMenu(e10.at);
+        return;
+      case "mark":
+        openMarkMenu(e10.index, e10.at);
+        return;
+      case "clef":
+        openClefMenu(e10.hit, e10.at);
+        return;
+      case "header":
+        headerPanel.open(e10.paper, e10.part, e10.index, e10.at);
+        return;
+      case "chordTag":
+        openChordInfo(e10.read, e10.at, e10.where);
+        return;
+      case "credits":
+        openCreditsSheet();
+        return;
+      case "listen":
+        openListenMenu(e10.at, e10.target);
+        return;
+      // 听模式：长按 / 右键 = 从这儿放 / 接着放 / 从头放
+      default: {
+        const missed = e10;
+      }
     }
-    openTrackCard(at2);
   },
-  // 缩成细线的（隐藏 / 别人在「只看」）：点它 = 放出来（小卡里不再有「显示」，v0.16.17）
-  onAnchors: (L2) => overlay?.layout(L2, overlayView()),
-  // 谱面上面那一层（编辑器的钮 / 框 / 提示；刀 1）照着这份排版摆
-  onBlankPress: (at2, row2) => openScoreMenu(at2, row2),
-  onListenMenu: (at2, a10) => openListenMenu(at2, a10),
-  // 听模式：长按 / 右键 = 从这儿放 / 接着放 / 从头放
-  onSelPress: (at2) => openSelMenu(at2),
-  onMarkPress: (i10, at2) => openMarkMenu(i10, at2),
-  lyricHint: (i10) => lyricHintAt(i10),
-  lyricReading: (i10) => lyricReadingAt(i10),
   notice: (s10) => info(s10),
-  onClef: (hit, at2) => openClefMenu(hit, at2),
-  onHeader: (paper, part, index, at2) => headerPanel.open(paper, part, index, at2),
-  onCredits: () => openCreditsSheet(),
-  reflow: () => reflow,
-  pages: () => pageFlow && !scrollFlow,
-  scroll: () => scrollFlow,
-  // 贴右边那一档（底座在右边一栏）：记下底座在时谱面以外占了多宽；底座收起（「词」、键盘收着…）照样按那个宽度排 = 切键盘时谱不突然变大变小（user「切换键盘的时候比如从符号键盘变成文字输入的时候zoom不应该突变」）。贴底（默认）= 底座不占宽，谱宽就是谱宽
-  layoutWidth: () => {
-    const w2 = scoreEl.clientWidth, sw2 = stageEl.clientWidth;
-    if (!sideDocked(stageEl)) return w2;
-    if (stageEl.dataset.dock !== "none") {
-      dockedSide = sw2 - w2;
-      return w2;
-    }
-    return dockedSide > 0 ? Math.max(200, sw2 - dockedSide) : w2;
-  },
-  onZoom: (phys) => deviceKvSet(KV_ZOOM, phys === null ? null : phys.toFixed(3)),
-  actualSizeByDefault: () => matchMedia("(pointer: fine)").matches && window.innerWidth >= 1440,
-  // 电脑宽屏默认 100%（user 11-09「电脑屏幕宽屏上应该默认是100%而不是行宽占满」）；平板 / 窄窗口照旧自动   // 缩放按设备记住（物理倍数；null = 自动）；开机 boot 里 restoreZoom 读回来
-  lyricRaise: () => LYRIC_RAISE[pdfFont],
-  // 分页 = 打印预览：选了拼音字体印 PDF，歌词行也让出拼音那一截（和 PDF 排出来一样）
-  scope: () => viewScope
+  onAnchors: (L2) => overlay?.layout(L2, overlayView())
+  // 谱面上面那一层（编辑器的钮 / 框 / 提示；刀 1）照着这份排版摆
 });
 var overlay = null;
 function overlayView() {
@@ -61277,4 +61309,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-cd2b999545ad.mjs.map
+//# sourceMappingURL=moonsinger-79ee6f00f50c.mjs.map
