@@ -76,6 +76,25 @@ await p.click('.dock-tab [data-mode="listen"]'); await p.waitForTimeout(200); aw
 await p.click('.dock-tab [data-mode="notes"]'); await p.waitForTimeout(200);
 check(await p.evaluate(() => document.body.dataset.wmode === "notes"), "锁着照样能换模式（不再强制「听」）");
 
+// ── 界面那一层补齐（v0.16.99；设计稿第三节「推子、乐器、谱都不收改动」）：改内容的控件点不动，看的 / 隐藏 / 关掉照常 ──
+{ const pe = (sel) => p.evaluate((s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).pointerEvents : "没有"; }, sel);
+  check((await pe('[data-ov="add"]')) === "none", "谱上「＋ 声部 / ＋ 新曲段」点不动");
+  await p.evaluate(() => window.__moonsinger.overlayHost.onPaperMenu(window.__moonsinger.state().song.papers[0].id)); await p.waitForTimeout(150);
+  check((await pe('.paper-menu [data-v="dup"]')) === "none" && (await pe('.paper-menu [data-v="del"]')) === "none" && (await pe('.paper-menu [data-v="hide"]')) === "auto" && (await pe('.paper-menu [data-v="close"]')) === "auto",
+    "曲段菜单：复制 / 删点不动，「隐藏」和「好」能点");
+  await p.click('.paper-menu [data-v="close"]'); await p.waitForTimeout(100);
+  await p.click("#score text.part-name"); await p.waitForTimeout(150);
+  check((await pe('.part-card [data-v="swap"]')) === "none" && (await pe('.part-card [data-v="delpart"]')) === "none" && (await pe('.part-card [data-v="parts"]')) === "auto",
+    "声部名小卡：换乐器 / 删掉声部点不动，「声部管理…」能点");
+  await p.click('.part-card [data-v="parts"]'); await p.waitForTimeout(200);
+  const pm = await p.evaluate(() => { const g = (s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).pointerEvents : "没有"; }; return { more: g('.parts-mgr [data-v^="more:"]'), del: g('.parts-mgr [data-v^="delpart:"]'), add: g('.parts-mgr [data-v^="addbelow:"]'), close: g('.parts-mgr [data-v="close"]') }; });
+  check(pm.more === "auto" && pm.close === "auto" && pm.del === "none" && pm.add === "none", "声部管理：展开 / 好能点，加 / 删点不动", JSON.stringify(pm));
+  await p.click('.parts-mgr [data-v="close"]'); await p.waitForTimeout(100);
+  await p.evaluate(() => { const m = window.__moonsinger; m.openHeader(m.state().at.part); }); await p.waitForTimeout(150);
+  check((await pe('.header-panel [data-hp="key"], .header-panel select')) === "none", "谱头面板：改不动");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(100);
+  check((await notes()) === n0 && (await fileSig()) === sig0, "走了一圈：谱和文件都没变"); }
+
 // ── 没解锁就离开：不问、不存；重开 = 存下来的样子，又锁着 ──
 check(await openFile(), "锁着、只动过看法：换开别的不问「丢不丢」"); await p.waitForTimeout(400);
 check((await p.evaluate(() => [...document.querySelectorAll(".offer")].filter((o) => !o.hidden).length)) === 0, "没有弹任何面");

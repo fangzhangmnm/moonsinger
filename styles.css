@@ -1140,6 +1140,14 @@ body.doc-locked .inst-page .ip-card { pointer-events: none; opacity: .72; }
 body.doc-locked .inst-page .ip-pad { pointer-events: auto; opacity: 1; }
 body.doc-locked .studio :is(.studio-strips, .fx-panel, .mix-menu) :is(input, select, button, textarea) { pointer-events: none; opacity: .55; }
 body.doc-locked .studio .strip-ms button { pointer-events: auto; opacity: 1; }
+/* 修改锁：界面那一层补齐（v0.16.99；设计稿第三节「推子、乐器、谱都不收改动」）。改内容的控件变淡、点不动；
+   看的（展开一行、进乐器页看、返回、好）和「隐藏 / 显示曲段」（看法，user 11-09）照常。写入口和库照旧各拦一层。 */
+body.doc-locked [data-ov="add"] { pointer-events: none; opacity: .4; }
+body.doc-locked .paper-menu .set-row .btn:not([data-v="hide"]) { pointer-events: none; opacity: .45; }
+body.doc-locked .add-part-menu .ctx-item:not([data-v="parts"]) { pointer-events: none; opacity: .45; }
+body.doc-locked .part-card :is([data-v="swap"], [data-v="delpart"]) { pointer-events: none; opacity: .45; }
+body.doc-locked .ctx-menu.header-panel :is(button, input, select) { pointer-events: none; opacity: .55; }
+body.doc-locked .parts-mgr .pm-card :is(button, input, select):not([data-v^="more:"]):not([data-v^="inst:"]):not([data-v="close"]):not([data-v="back"]) { pointer-events: none; opacity: .45; }
 /* 歌库封面上的 ▶ = 图库包 0.8.0 的动作钮（.gallery-tile-action，包画 + 包接点击；样式在 vendor/internal-css/gallery.css，这里只调颜色） */
 .gallery-tile-action { background: color-mix(in srgb, var(--accent) 88%, transparent); }
 /* 歌库底边的迷你播放条 */

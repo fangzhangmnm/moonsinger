@@ -2141,7 +2141,7 @@ function openPaperMenu(id: string): void {
   // 三块（v0.16.19 搬家 D；user 11-07 拍的搬家清单第五条）：这一段（改名 / 隐藏 / 删）· 插入（在上面 / 下面插一段）· 编辑（挪 / 移调）。
   //   加歌手不在这里了：每段底下的虚线框「＋ 歌手」、歌手名小卡、声部管理。
   const box = document.createElement("div");
-  box.className = "offer";
+  box.className = "offer paper-menu";   // paper-menu：锁着时只留「隐藏 / 显示」（styles.css body.doc-locked）
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc(paperLabel(id))}</div>` +
     `<div class="part-sec">${_t("这一段")}</div><div class="set-row"><button class="btn" data-v="name">${_t("改曲段名…")}</button>` +
     `<button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="${_t("隐藏 = 不放、不进压平件；谱上折叠着，翻页能进去")}">${paper.hidden ? _t("显示（现在隐藏着）") : _t("隐藏（不放）")}</button>` +
@@ -2176,7 +2176,7 @@ function openAddPartMenu(paperId: string, at: { x: number; y: number }): void {
   const paper = D.st.song.papers.find((p) => p.id === paperId); if (!paper) return;
   const labels = partLabels(D.st.song, D.extras), absent = D.st.song.parts.filter((p) => !paper.tracks[p.id]);
   const box = document.createElement("div");
-  box.className = "track-card ctx-menu"; box.setAttribute("role", "menu");
+  box.className = "track-card ctx-menu add-part-menu"; box.setAttribute("role", "menu");   // add-part-menu：锁着时只留「声部管理…」
   const item = (v: string, label: string, title = "") => `<button class="btn ctx-item" data-v="${esc(v)}"${title ? ` title="${esc(title)}"` : ""}>${label}</button>`;
   box.innerHTML = `<div class="tc-sec">${_t("加进「{p}」", { p: esc(paperLabel(paperId)) })}</div>` +
     absent.map((p) => item(`add:${p.id}`, esc(labels[D.st.song.parts.indexOf(p)] ?? p.id), _t("已有的声部，只加进这一段（别的段照旧）"))).join("") +
@@ -2206,7 +2206,7 @@ const chip = (v: string, label: string, on: boolean, title = "") => `<button cla
 function openTrackCard(at?: { left: number; top: number; right: number; bottom: number }): void {
   ui.close();
   const box = document.createElement("div");
-  box.className = "track-card"; box.setAttribute("role", "dialog");
+  box.className = "track-card part-card"; box.setAttribute("role", "dialog");   // part-card：锁着时「换乐器」「删掉声部」点不动
   // 只剩三颗（user 11-08「点名字之后就只有选择歌手、歌手设置和声部管理」→ 同日「点进去之后，人们第一反应还是选乐器，而不是选歌手」）：换乐器 = 乐器目录；乐器设置 = 乐器页（原「配置」）；声部管理 = 顺序 / 在哪几段 / 这一段加人·交给·删（原来的下半截都搬进去了）。
   //   谱怎么画归谱号（user 同句「谱怎么换？应该归谱号」）：点这一行开头的谱号 = 谱头面板。
   const draw = () => {

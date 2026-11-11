@@ -246,7 +246,7 @@ export const S = {
   "改回自动（这几个音认不出和弦 = 不标）": { en: "Back to automatic (these notes don't read as a chord = no label)" },
   "点一个 = 用它（记进这个音，能撤销）": { en: "Tap one = use it (stored on this note; undo works)" },
   "界面": { en: "Interface" },
-  "乐理助手": { en: "Theory" },
+  "乐理助手": { en: "Music theory helper" },
   "音源与缓存": { en: "Audio" },
   "开发者": { en: "Developer" },
   "这是什么": { en: "What's this" },
@@ -722,7 +722,7 @@ export const S = {
   "本段": { en: "This section" },
   "全部": { en: "All" },
   "纸 / ": { en: "sheets /" },
-  "照你现在的看谱方式印：{w}（设置「乐理助手」里改）。": { en: "Printed the way you are reading now: {w} (change it under Settings › Theory)." },
+  "照你现在的看谱方式印：{w}（设置「乐理助手」里改）。": { en: "Printed the way you are reading now: {w} (change it under Settings › Music theory helper)." },
   "按 C 调看（每个调号上方印「1=原来的调」）": { en: "read in C (“1=original key” above each key signature)" },
   "和弦级数": { en: "chord degrees" },
   "生成 PDF": { en: "Create PDF" },
@@ -2156,6 +2156,7 @@ export const S = {
   "取「{stem}」的声音…": { en: "Getting the audio for “{stem}”…" },
   "这台设备上记着的那一遍": { en: "Remembered on this device" },
   "歌里带着的那份 mp3": { en: "The mp3 stored inside the song" },
+  "分享 / 下载这首的 mp3": { en: "Share / download this song’s mp3" },
 } as const satisfies Record<string, Entry>;
 
 export type Key = keyof typeof S;

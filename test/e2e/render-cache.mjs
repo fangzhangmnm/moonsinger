@@ -77,6 +77,11 @@ await p.click('.ms-player [data-p="loop"]'); await p.waitForTimeout(60);
 check(await p.evaluate(() => window.__moonsinger.gallery().playerState().loop), "点「循环」= 开");
 await p.click('.ms-player [data-p="restart"]'); await p.waitForTimeout(80);
 check((await p.evaluate(() => window.__moonsinger.gallery().playerState().time)) < 0.5, "点「从头放」= 回到开头");
+{ // 「分享 mp3」（设计稿第三节；v0.16.99）：无头浏览器没有系统分享 = 走下载；文件名「歌名-年月日-时分.mp3」、字节是正在放的那一份
+  const [dl] = await Promise.all([p.waitForEvent("download", { timeout: 4000 }).catch(() => null), p.click('.ms-player [data-p="share"]')]);
+  const name = dl?.suggestedFilename() ?? "", path = dl ? await dl.path() : null;
+  const size = path ? (await import("node:fs")).statSync(path).size : 0;
+  check(/-\d{8}-\d{4}\.mp3$/.test(name) && size > 1000, "播放条「分享 / 下载」：没有系统分享时下载这首的 mp3", `${name} ${size} B`); }
 await p.click('.ms-player [data-p="close"]'); await p.waitForTimeout(100);
 check(await p.$eval(".ms-player", (e) => e.hidden), "✕ = 停、播放条收起");
 

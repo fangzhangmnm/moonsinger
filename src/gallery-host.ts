@@ -22,6 +22,7 @@ import { deviceKvGet, deviceKvSet } from "./device-kv.ts";
 import { reportError, diagNote } from "./app/report-error.ts";
 import { createSongPlayer } from "./app/song-player.ts";
 import { stampOf, MANIFEST_ENTRY, type RenderCache } from "./app/render-cache.ts";
+import { stampedCopy } from "./app/names.ts";
 
 export interface GalleryHostDeps {
   activeIdentifier: () => string | null;
@@ -193,11 +194,12 @@ export function initGalleryHost(d: GalleryHostDeps) {
     `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="${_t("放 / 暂停")}">${iconHtml("pause")}</button>` +
     `<span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span>` +
     `<button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">${_t("循环")}</button>` +
+    `<button type="button" class="btn" data-p="share" title="${_t("分享 / 下载这首的 mp3")}">${iconHtml("export")}</button>` +   // 设计稿第三节「歌库卡片上的 ▶ 和『分享 mp3』」（v0.16.99）
     `<button type="button" class="btn" data-p="close" title="${_t("停")}">${iconHtml("x")}</button>`;
   fullEl.append(playerEl);
   const appIcon = (file: string, sizes: string) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
-  let barTitle = "";
+  let barTitle = "", barBlob: Blob | null = null;   // 正在放的那份 mp3（分享 / 下载用）
   const fmtTime = (s: number) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00");
   function drawPlayer(): void {
     const s = player.state();
@@ -237,7 +239,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       });
       if (!got) { status(NO_SOUND()); return; }
       const cover = (await gallery?.thumbs?.read(id).catch(() => null))?.blob ?? null;   // 锁屏上的图 = 歌库缓存着的封面（没有 = app 图标）
-      barTitle = stem;
+      barTitle = stem; barBlob = got.blob;
       const r = await player.play({ key: id, blob: got.blob, title: stem, artist: "MoonSinger", album: got.album, cover });
       if (r === "blocked") status(_t("没能自己开始放：点底边播放条上的 ▶"));
       diagNote("gallery", `play ${src.k} ${id} (${got.blob.size} B) → ${r}`);
@@ -246,7 +248,23 @@ export function initGalleryHost(d: GalleryHostDeps) {
   playerEl.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-p]")?.dataset.p; if (!v) return;
     if (v === "toggle") player.toggle(); else if (v === "restart") player.restart(); else if (v === "loop") player.setLoop(!player.state().loop); else if (v === "close") player.stop();
+    else if (v === "share") void shareMp3();
   });
+  /** 分享 / 下载正在放的那份 mp3：能系统分享（iPad / 手机）= 分享，不能（电脑浏览器）= 直接下载；文件名同导出「歌名-年月日-时分.mp3」。字节 = 设备上记着的那一遍（导出时已带标签和署名）。 */
+  async function shareMp3(): Promise<void> {
+    if (!barBlob) return;
+    const file = new File([barBlob], `${stampedCopy(barTitle)}.mp3`, { type: "audio/mpeg" });
+    const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
+    if (typeof navigator.share === "function" && nav.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: file.name }); status(_t("已分享")); }
+      catch (err) { if ((err as { name?: string }).name !== "AbortError") status(_t("分享失败：{Error}", { Error: (err as Error).message }), true); }
+      return;
+    }
+    const a = document.createElement("a"), url = URL.createObjectURL(file);
+    a.href = url; a.download = file.name; document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30_000);
+    status(_t("已下载 {name}", { name: file.name }));
+  }
   /** 新建文件夹（2026-10-10 user「gallery怎么没接新建文件夹的功能，这个应该只是接线吧，不过小心一点」）：照 WeebPaint gallery-shell 的接法——
    *  名字先查合法（OneDrive 不收的字符）→ 锁屏 → store 的唯一占用检查（files.occupied：同名文件 / 夹占着就说）→ store.files.newFolder（库内单飞；离线也能建，回线补建）→ 刷新歌库。
    *  只建在现在这个夹里；app 不碰云端、不自己拼请求。 */

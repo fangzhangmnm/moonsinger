@@ -529,7 +529,7 @@ var S = {
   "\u6539\u56DE\u81EA\u52A8\uFF08\u8FD9\u51E0\u4E2A\u97F3\u8BA4\u4E0D\u51FA\u548C\u5F26 = \u4E0D\u6807\uFF09": { en: "Back to automatic (these notes don't read as a chord = no label)" },
   "\u70B9\u4E00\u4E2A = \u7528\u5B83\uFF08\u8BB0\u8FDB\u8FD9\u4E2A\u97F3\uFF0C\u80FD\u64A4\u9500\uFF09": { en: "Tap one = use it (stored on this note; undo works)" },
   "\u754C\u9762": { en: "Interface" },
-  "\u4E50\u7406\u52A9\u624B": { en: "Theory" },
+  "\u4E50\u7406\u52A9\u624B": { en: "Music theory helper" },
   "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Audio" },
   "\u5F00\u53D1\u8005": { en: "Developer" },
   "\u8FD9\u662F\u4EC0\u4E48": { en: "What's this" },
@@ -1005,7 +1005,7 @@ var S = {
   "\u672C\u6BB5": { en: "This section" },
   "\u5168\u90E8": { en: "All" },
   "\u7EB8 / ": { en: "sheets /" },
-  "\u7167\u4F60\u73B0\u5728\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u8BBE\u7F6E\u300C\u4E50\u7406\u52A9\u624B\u300D\u91CC\u6539\uFF09\u3002": { en: "Printed the way you are reading now: {w} (change it under Settings \u203A Theory)." },
+  "\u7167\u4F60\u73B0\u5728\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u8BBE\u7F6E\u300C\u4E50\u7406\u52A9\u624B\u300D\u91CC\u6539\uFF09\u3002": { en: "Printed the way you are reading now: {w} (change it under Settings \u203A Music theory helper)." },
   "\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09": { en: "read in C (\u201C1=original key\u201D above each key signature)" },
   "\u548C\u5F26\u7EA7\u6570": { en: "chord degrees" },
   "\u751F\u6210 PDF": { en: "Create PDF" },
@@ -2438,7 +2438,8 @@ var S = {
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6709\u8FD9\u9996\u6B4C\u6E32\u597D\u7684\u58F0\u97F3\uFF1A\u6253\u5F00\u5B83\uFF0C\u300C\u5BFC\u51FA\u2026\u300D\u91CC\u5BFC\u4E00\u6B21\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u4E4B\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002": { en: "This device has no render of this song yet. Open it and export the song audio (mp3) once from \u201CExport\u2026\u201D; after that you can play it straight from the cover." },
   "\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026": { en: "Getting the audio for \u201C{stem}\u201D\u2026" },
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D": { en: "Remembered on this device" },
-  "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": { en: "The mp3 stored inside the song" }
+  "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": { en: "The mp3 stored inside the song" },
+  "\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3": { en: "Share / download this song\u2019s mp3" }
 };
 
 // src/device-kv.ts
@@ -7058,4 +7059,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-e71d7bc866e7.mjs.map
+//# sourceMappingURL=layout-worker-846d5fe3206c.mjs.map

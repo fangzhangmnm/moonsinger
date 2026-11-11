@@ -2960,7 +2960,7 @@ var S = {
   "\u6539\u56DE\u81EA\u52A8\uFF08\u8FD9\u51E0\u4E2A\u97F3\u8BA4\u4E0D\u51FA\u548C\u5F26 = \u4E0D\u6807\uFF09": { en: "Back to automatic (these notes don't read as a chord = no label)" },
   "\u70B9\u4E00\u4E2A = \u7528\u5B83\uFF08\u8BB0\u8FDB\u8FD9\u4E2A\u97F3\uFF0C\u80FD\u64A4\u9500\uFF09": { en: "Tap one = use it (stored on this note; undo works)" },
   "\u754C\u9762": { en: "Interface" },
-  "\u4E50\u7406\u52A9\u624B": { en: "Theory" },
+  "\u4E50\u7406\u52A9\u624B": { en: "Music theory helper" },
   "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Audio" },
   "\u5F00\u53D1\u8005": { en: "Developer" },
   "\u8FD9\u662F\u4EC0\u4E48": { en: "What's this" },
@@ -3436,7 +3436,7 @@ var S = {
   "\u672C\u6BB5": { en: "This section" },
   "\u5168\u90E8": { en: "All" },
   "\u7EB8 / ": { en: "sheets /" },
-  "\u7167\u4F60\u73B0\u5728\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u8BBE\u7F6E\u300C\u4E50\u7406\u52A9\u624B\u300D\u91CC\u6539\uFF09\u3002": { en: "Printed the way you are reading now: {w} (change it under Settings \u203A Theory)." },
+  "\u7167\u4F60\u73B0\u5728\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u8BBE\u7F6E\u300C\u4E50\u7406\u52A9\u624B\u300D\u91CC\u6539\uFF09\u3002": { en: "Printed the way you are reading now: {w} (change it under Settings \u203A Music theory helper)." },
   "\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09": { en: "read in C (\u201C1=original key\u201D above each key signature)" },
   "\u548C\u5F26\u7EA7\u6570": { en: "chord degrees" },
   "\u751F\u6210 PDF": { en: "Create PDF" },
@@ -4869,7 +4869,8 @@ var S = {
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6709\u8FD9\u9996\u6B4C\u6E32\u597D\u7684\u58F0\u97F3\uFF1A\u6253\u5F00\u5B83\uFF0C\u300C\u5BFC\u51FA\u2026\u300D\u91CC\u5BFC\u4E00\u6B21\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u4E4B\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002": { en: "This device has no render of this song yet. Open it and export the song audio (mp3) once from \u201CExport\u2026\u201D; after that you can play it straight from the cover." },
   "\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026": { en: "Getting the audio for \u201C{stem}\u201D\u2026" },
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D": { en: "Remembered on this device" },
-  "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": { en: "The mp3 stored inside the song" }
+  "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": { en: "The mp3 stored inside the song" },
+  "\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3": { en: "Share / download this song\u2019s mp3" }
 };
 
 // src/device-kv.ts
@@ -5089,7 +5090,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.98-2026-11-10";
+var APP_VERSION = "v0.16.99-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -31549,15 +31550,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-7bba7a8da8e1.mjs");
+      return pick(() => "singer-worker-950f80b04b9d.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-e71d7bc866e7.mjs");
+      return pick(() => "layout-worker-846d5fe3206c.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-bf11c087aeb5.mjs");
+      return pick(() => "encode-worker-dbf5fffb0f48.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -49272,11 +49273,11 @@ function initGalleryHost(d3) {
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player";
   playerEl.hidden = true;
-  playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="${_t("\u4ECE\u5934\u653E\uFF08\u9501\u5C4F / \u8033\u673A\u7684\u300C\u4E0A\u4E00\u9996\u300D\u4E5F\u662F\uFF09")}">${iconHtml("play-from-start")}</button><button type="button" class="btn ms-player-toggle" data-p="toggle" title="${_t("\u653E / \u6682\u505C")}">${iconHtml("pause")}</button><span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span><button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">${_t("\u5FAA\u73AF")}</button><button type="button" class="btn" data-p="close" title="${_t("\u505C")}">${iconHtml("x")}</button>`;
+  playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="${_t("\u4ECE\u5934\u653E\uFF08\u9501\u5C4F / \u8033\u673A\u7684\u300C\u4E0A\u4E00\u9996\u300D\u4E5F\u662F\uFF09")}">${iconHtml("play-from-start")}</button><button type="button" class="btn ms-player-toggle" data-p="toggle" title="${_t("\u653E / \u6682\u505C")}">${iconHtml("pause")}</button><span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span><button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">${_t("\u5FAA\u73AF")}</button><button type="button" class="btn" data-p="share" title="${_t("\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3")}">${iconHtml("export")}</button><button type="button" class="btn" data-p="close" title="${_t("\u505C")}">${iconHtml("x")}</button>`;
   fullEl.append(playerEl);
   const appIcon = (file, sizes) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
-  let barTitle = "";
+  let barTitle = "", barBlob = null;
   const fmtTime2 = (s10) => Number.isFinite(s10) ? `${Math.floor(s10 / 60)}:${String(Math.floor(s10 % 60)).padStart(2, "0")}` : "0:00";
   function drawPlayer() {
     const s10 = player.state();
@@ -49338,6 +49339,7 @@ function initGalleryHost(d3) {
       }
       const cover = (await gallery2?.thumbs?.read(id2).catch(() => null))?.blob ?? null;
       barTitle = stem;
+      barBlob = got2.blob;
       const r10 = await player.play({ key: id2, blob: got2.blob, title: stem, artist: "MoonSinger", album: got2.album, cover });
       if (r10 === "blocked") status(_t("\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6"));
       diagNote("gallery", `play ${src.k} ${id2} (${got2.blob.size} B) \u2192 ${r10}`);
@@ -49354,7 +49356,30 @@ function initGalleryHost(d3) {
     else if (v === "restart") player.restart();
     else if (v === "loop") player.setLoop(!player.state().loop);
     else if (v === "close") player.stop();
+    else if (v === "share") void shareMp3();
   });
+  async function shareMp3() {
+    if (!barBlob) return;
+    const file = new File([barBlob], `${stampedCopy(barTitle)}.mp3`, { type: "audio/mpeg" });
+    const nav = navigator;
+    if (typeof navigator.share === "function" && nav.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: file.name });
+        status(_t("\u5DF2\u5206\u4EAB"));
+      } catch (err2) {
+        if (err2.name !== "AbortError") status(_t("\u5206\u4EAB\u5931\u8D25\uFF1A{Error}", { Error: err2.message }), true);
+      }
+      return;
+    }
+    const a10 = document.createElement("a"), url = URL.createObjectURL(file);
+    a10.href = url;
+    a10.download = file.name;
+    document.body.append(a10);
+    a10.click();
+    a10.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3e4);
+    status(_t("\u5DF2\u4E0B\u8F7D {name}", { name: file.name }));
+  }
   const warn = (msg) => reportError(msg, "warning");
   async function newFolder() {
     if (!hasStore()) {
@@ -56628,7 +56653,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "b8452d94fc58",
+  cssHash: "53ca85567f7c",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -57790,7 +57815,7 @@ function openPaperMenu(id2) {
   if (!paper) return;
   const k2 = D2.st.song.papers.indexOf(paper), n10 = D2.st.song.papers.length;
   const box = document.createElement("div");
-  box.className = "offer";
+  box.className = "offer paper-menu";
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${esc11(paperLabel(id2))}</div><div class="part-sec">${_t("\u8FD9\u4E00\u6BB5")}</div><div class="set-row"><button class="btn" data-v="name">${_t("\u6539\u66F2\u6BB5\u540D\u2026")}</button><button class="btn${paper.hidden ? " is-on" : ""}" data-v="hide" title="${_t("\u9690\u85CF = \u4E0D\u653E\u3001\u4E0D\u8FDB\u538B\u5E73\u4EF6\uFF1B\u8C31\u4E0A\u6298\u53E0\u7740\uFF0C\u7FFB\u9875\u80FD\u8FDB\u53BB")}">${paper.hidden ? _t("\u663E\u793A\uFF08\u73B0\u5728\u9690\u85CF\u7740\uFF09") : _t("\u9690\u85CF\uFF08\u4E0D\u653E\uFF09")}</button>` + (n10 > 1 ? `<button class="btn cand danger" data-v="del">${_t("\u5220\u8FD9\u4E00\u6BB5\u2026")}</button>` : "") + `</div><div class="part-sec">${_t("\u63D2\u5165")}</div><div class="set-row"><button class="btn" data-v="above" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63D2\u5728\u5B83\u524D\u9762\uFF08\u8C31\u5934\u7167\u6284\u524D\u4E00\u6BB5\u7ED3\u5C3E\u7684\u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6\uFF09")}">${_t("\u5728\u4E0A\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="below" title="${_t("\u65B0\u7684\u4E00\u6BB5\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u5728\u4E0B\u9762\u63D2\u4E00\u6BB5")}</button><button class="btn" data-v="dup" title="${_t("\u6574\u6BB5\uFF08\u6240\u6709\u58F0\u90E8\u7684\u97F3\u3001\u8BB0\u53F7\u3001\u6B4C\u8BCD\uFF09\u7167\u6284\u4E00\u4EFD\uFF0C\u63A5\u5728\u5B83\u540E\u9762")}">${_t("\u590D\u5236\u8FD9\u4E00\u6BB5")}</button></div><div class="part-sec">${_t("\u7F16\u8F91")}</div><div class="set-row"><button class="btn" data-v="up"${k2 === 0 ? " disabled" : ""}>${_t("\u4E0A\u79FB")}</button><button class="btn" data-v="down"${k2 === n10 - 1 ? " disabled" : ""}>${_t("\u4E0B\u79FB")}</button><button class="btn" data-v="transpose" title="${_t("\u8FD9\u5F20\u7EB8 / \u6574\u9996\u6240\u6709\u58F0\u90E8\u4E00\u8D77\u79FB\u8C03\u3001\u8F6C\u8C03\uFF08\u8C03\u53F7\u8DDF\u7740\u632A\uFF09")}">${_t("\u79FB\u8C03 / \u8F6C\u8C03\u2026")}</button></div><div class="offer-msg">${_t("\u66F2\u6BB5 = \u4E00\u5F20\u7EB8\uFF1A\u6BCF\u4E00\u6BB5\u662F\u4E00\u4E2A\u65B0\u7684\u5F00\u59CB\uFF0C\u5404\u58F0\u90E8\u5728\u8FD9\u91CC\u91CD\u65B0\u5BF9\u9F50\uFF1B\u4E00\u6BB5\u91CC\u8981\u54EA\u4E9B\u58F0\u90E8\u968F\u5B83\uFF08\u6BCF\u6BB5\u5E95\u4E0B\u300C\uFF0B \u58F0\u90E8\u300D\uFF09\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   const close = () => {
@@ -57854,7 +57879,7 @@ function openAddPartMenu(paperId, at2) {
   if (!paper) return;
   const labels = partLabels(D2.st.song, D2.extras), absent = D2.st.song.parts.filter((p2) => !paper.tracks[p2.id]);
   const box = document.createElement("div");
-  box.className = "track-card ctx-menu";
+  box.className = "track-card ctx-menu add-part-menu";
   box.setAttribute("role", "menu");
   const item = (v, label, title = "") => `<button class="btn ctx-item" data-v="${esc11(v)}"${title ? ` title="${esc11(title)}"` : ""}>${label}</button>`;
   box.innerHTML = `<div class="tc-sec">${_t("\u52A0\u8FDB\u300C{p}\u300D", { p: esc11(paperLabel(paperId)) })}</div>` + absent.map((p2) => item(`add:${p2.id}`, esc11(labels[D2.st.song.parts.indexOf(p2)] ?? p2.id), _t("\u5DF2\u6709\u7684\u58F0\u90E8\uFF0C\u53EA\u52A0\u8FDB\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09"))).join("") + item("new", _t("\uFF0B \u65B0\u58F0\u90E8\u2026"), _t("\u65B0\u7684\u4E00\u4E2A\u58F0\u90E8\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u4E00\u6BB5\uFF1B\u52A0\u5B8C\u6311\u4E50\u5668")) + `<div class="ctx-sep"></div>` + item("parts", _t("\u58F0\u90E8\u7BA1\u7406\u2026"));
@@ -57894,7 +57919,7 @@ function openAddPartMenu(paperId, at2) {
 function openTrackCard(at2) {
   ui2.close();
   const box = document.createElement("div");
-  box.className = "track-card";
+  box.className = "track-card part-card";
   box.setAttribute("role", "dialog");
   const draw = () => {
     const me = curPart(), k2 = D2.st.song.parts.indexOf(me), label = partLabels(D2.st.song, D2.extras)[k2] ?? "";
@@ -60741,4 +60766,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-22e15b084ba4.mjs.map
+//# sourceMappingURL=moonsinger-ac2c4ac7dd4e.mjs.map
