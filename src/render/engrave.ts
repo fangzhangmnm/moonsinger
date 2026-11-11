@@ -27,15 +27,10 @@ import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
 import { Skyline, primInk, shiftPrim } from "./skyline.ts";
 import { songInC } from "../score/view-in-c.ts";
 import { type HarmonyRead } from "../theory/index.ts";
-import { resolveSongLooks } from "../score/clef.ts";
 import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, SQUEEZE, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SPACING } from "./frame/params.ts";
 import { wrapTitle } from "./frame/furniture.ts";
-import { SYSTEM_LINE_W } from "./staff/glyphs.ts";
-import { yAt, dAt, anchors, withStaffGeometry } from "./staff/geometry.ts";
-import { type Unit, type Chunk } from "./staff/units.ts";
-import { measureTrack, lineStartWidth, lyricAnchors, type StaffTrack } from "./staff/measure.ts";
-import { staffRows, staffTracks, type FoldFamily } from "./staff/rows.ts";
-import { drawStaff, STAFF_LANES, type LyricPart, type LyricSpot } from "./staff/draw.ts";
+// 五线谱这一种：只从它的入口拿（施工单 1b-9 守卫 1：框架不直接 import 字形表、符干、谱号模块）
+import { staffLooks, staffRows, staffTracks, measureTrack, lineStartWidth, lyricAnchors, drawStaff, STAFF_LANES, yAt, dAt, anchors, withStaffGeometry, SYSTEM_LINE_W, type FoldFamily, type StaffTrack, type LyricPart, type LyricSpot, type Unit, type Chunk } from "./staff/index.ts";
 import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
 
@@ -180,8 +175,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout { return withStaffGe
 export function engraveData(song: Song, o: EngraveOpts): LayoutData {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
-  const looks = resolveSongLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
-  const lookAt = (paperId: string, partId: string) => looks.get(paperId)?.get(partId);
+  const lookAt = staffLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   if (o.inC) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
   const sp = o.sp, P = (v: number) => v * sp, ts = o.textScale ?? 1, T = (v: number) => v * sp * ts;   // P = 谱的尺子；T = 字的尺子（刀 2：紧凑档 ts = 1.4，字和它周围留的地方照舒适档）
   const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];

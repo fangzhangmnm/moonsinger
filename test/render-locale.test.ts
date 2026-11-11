@@ -3,6 +3,7 @@
 const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e: string): string; readdirSync(p: URL, o: { recursive: true }): string[] };
 import { describe, it, assert, eq } from "./runner.mjs";
 import { engrave, type Prim } from "../src/render/engrave.ts";
+import { _tIn } from "../src/i18n/index.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 
@@ -23,8 +24,11 @@ describe("守卫 8：排版不读界面语言", () => {
     const base = { width: 600, sp: 10, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: song.parts.map((p, k) => ({ id: p.id, name: p.id, first: k === 0 })), measure: createTextMeasure((s: string) => s.length * 8), autoBars: true };
     const zh = engrave(song, { ...base, locale: "zh" }).prims, en = engrave(song, { ...base, locale: "en" }).prims;
     const words = (ps: Prim[]) => ps.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text").map((p) => p.s);
-    assert(words(zh).includes("编排　") && words(zh).some((s) => s === "吸" || s === "深吸"), "中文：编排 / 吸 都在");
-    assert(words(en).includes("Arrangement ") && words(en).some((s) => s === "in" || s === "deep in"), "英文：Arrangement / in 都在");
+    const want = (l: "zh" | "en") => ({ arr: _tIn(l, "编排　"), inh: [_tIn(l, "吸##记号"), _tIn(l, "深吸##记号")] });   // 期望值照翻译表算（英文那条后面是 EN 空格 U+2002，手抄会抄错）
+    const wz = want("zh"), we = want("en");
+    assert(wz.arr !== we.arr && wz.inh[0] !== we.inh[0], "翻译表里这几个字中英不一样（不然这条测不出东西）");
+    assert(words(zh).includes(wz.arr) && words(zh).some((s) => wz.inh.includes(s)), "中文：编排 / 吸 都在");
+    assert(words(en).includes(we.arr) && words(en).some((s) => we.inh.includes(s)), "英文：Arrangement / in 都在");
     eq(en.length, zh.length, "图元个数一样");
     let diff = 0; zh.forEach((p, i) => { if (JSON.stringify(p) !== JSON.stringify(en[i])) diff++; });
     assert(diff > 0 && diff <= 8, `只有那几个字不一样（实际 ${diff} 个）`);

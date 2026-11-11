@@ -5150,7 +5150,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.107-2026-11-11";
+var APP_VERSION = "v0.16.108-2026-11-11";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -10655,6 +10655,61 @@ function shiftPrim(p2, dy) {
   }
 }
 
+// src/render/frame/params.ts
+var SCROLL_TAIL = 6;
+var ABBR_REF = "Vln.Vc.";
+var NAME_MAX = 6.5;
+var NAME_MIN = 3 * 2 + 0.4;
+var SQUEEZE = 0.15;
+var ROW_STEP = 1;
+var MARGIN = 1.2;
+var BAR_W = 1.6;
+var TITLE_H = 5.4;
+var PAPER_H = 3.4;
+var PAPER_GAP = 1.6;
+var CTL_H = 3;
+var SPACING = {
+  cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },
+  // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
+  compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 }
+};
+
+// src/render/frame/furniture.ts
+var NO_LINE_START = /* @__PURE__ */ new Set([..."\u3001\u3002\uFF0C\uFF0E\u30FB\uFF1A\uFF1B\uFF1F\uFF01\uFF09\u300D\u300F\u3011\u3015\u3009\u300B\u30FC\uFF5E\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6,.;:!?)]}"]);
+function wrapTitle(s10, w2, max2) {
+  if (w2(s10) <= max2) return [s10];
+  const lines = [];
+  let cur = "";
+  const push = () => {
+    if (cur.trim()) lines.push(cur.trim());
+    cur = "";
+  };
+  for (const word of s10.match(/\S+\s*/g) ?? [s10]) {
+    if (w2((cur + word).trimEnd()) <= max2) {
+      cur += word;
+      continue;
+    }
+    if (cur.trim()) push();
+    if (w2(word.trimEnd()) <= max2) {
+      cur = word;
+      continue;
+    }
+    for (const ch2 of word) {
+      if (cur && w2((cur + ch2).trimEnd()) > max2) {
+        if (NO_LINE_START.has(ch2) && [...cur].length > 1) {
+          const cs2 = [...cur], last = cs2.pop();
+          cur = cs2.join("");
+          push();
+          cur = last;
+        } else push();
+      }
+      cur += ch2;
+    }
+  }
+  push();
+  return lines.length ? lines : [s10];
+}
+
 // src/score/clef.ts
 var CLEF_SHIFT = { G: 0, G8vb: 7, G8va: -7, G15ma: -14, F: 12, F8vb: 19 };
 var isFClef = (c10) => c10 === "F" || c10 === "F8vb";
@@ -10861,59 +10916,128 @@ function resolveSongLooks(song, noAutoGrand) {
   return out;
 }
 
-// src/render/frame/params.ts
-var SCROLL_TAIL = 6;
-var ABBR_REF = "Vln.Vc.";
-var NAME_MAX = 6.5;
-var NAME_MIN = 3 * 2 + 0.4;
-var SQUEEZE = 0.15;
-var ROW_STEP = 1;
-var MARGIN = 1.2;
-var BAR_W = 1.6;
-var TITLE_H = 5.4;
-var PAPER_H = 3.4;
-var PAPER_GAP = 1.6;
-var CTL_H = 3;
-var SPACING = {
-  cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },
-  // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
-  compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 }
-};
-
-// src/render/frame/furniture.ts
-var NO_LINE_START = /* @__PURE__ */ new Set([..."\u3001\u3002\uFF0C\uFF0E\u30FB\uFF1A\uFF1B\uFF1F\uFF01\uFF09\u300D\u300F\u3011\u3015\u3009\u300B\u30FC\uFF5E\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6,.;:!?)]}"]);
-function wrapTitle(s10, w2, max2) {
-  if (w2(s10) <= max2) return [s10];
-  const lines = [];
-  let cur = "";
-  const push = () => {
-    if (cur.trim()) lines.push(cur.trim());
-    cur = "";
+// src/score/merge.ts
+var HEAD_ARTS = ["ghost", "whisper"];
+var SWITCH = 5;
+function planHands(tracks, wantsGrand2, homes, force = false) {
+  const host2 = tracks[0] ?? [], time = host2.find((t10) => t10.kind === "time");
+  const bar2 = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t10) => Math.floor(t10 / bar2 + 1e-9);
+  const med = (xs) => {
+    const a10 = [...xs].sort((x2, y2) => x2 - y2);
+    return a10.length ? a10[a10.length >> 1] : NaN;
   };
-  for (const word of s10.match(/\S+\s*/g) ?? [s10]) {
-    if (w2((cur + word).trimEnd()) <= max2) {
-      cur += word;
-      continue;
+  const per = tracks.map((toks) => {
+    const notes = [];
+    let t10 = 0;
+    for (let i10 = headLen(toks); i10 < toks.length; i10++) {
+      const k2 = toks[i10];
+      if (!isTimed(k2)) continue;
+      if (k2.kind === "note" && k2.pitch) notes.push({ t: t10, m: [k2.pitch, ...k2.chord ?? []].map(midiOf) });
+      t10 += k2.dur;
     }
-    if (cur.trim()) push();
-    if (w2(word.trimEnd()) <= max2) {
-      cur = word;
-      continue;
-    }
-    for (const ch2 of word) {
-      if (cur && w2((cur + ch2).trimEnd()) > max2) {
-        if (NO_LINE_START.has(ch2) && [...cur].length > 1) {
-          const cs2 = [...cur], last = cs2.pop();
-          cur = cs2.join("");
-          push();
-          cur = last;
-        } else push();
+    return notes;
+  });
+  const mid = per.map((ns2) => med(ns2.flatMap((n10) => n10.m))), home = mid.map((x2, i10) => homes?.[i10] ?? (Number.isNaN(x2) || x2 >= 60 ? 0 : 1));
+  const present = mid.map((x2, i10) => Number.isNaN(x2) ? -1 : i10).filter((i10) => i10 >= 0);
+  if (force && present.length >= 2 && new Set(present.map((i10) => home[i10])).size < 2) {
+    const order = [...present].sort((x2, y2) => mid[y2] - mid[x2]);
+    let cut = 1, g3 = -1;
+    for (let k2 = 0; k2 + 1 < order.length; k2++) {
+      const d3 = mid[order[k2]] - mid[order[k2 + 1]];
+      if (d3 > g3) {
+        g3 = d3;
+        cut = k2 + 1;
       }
-      cur += ch2;
     }
+    order.forEach((m2, k2) => {
+      home[m2] = k2 < cut ? 0 : 1;
+    });
   }
-  push();
-  return lines.length ? lines : [s10];
+  const grand = force || new Set(present.map((i10) => home[i10])).size > 1 && wantsGrand2(mergeTracks(tracks));
+  const staffCache = /* @__PURE__ */ new Map(), staffOf = (m2, ms) => {
+    if (!grand) return 0;
+    const key = `${m2}:${ms}`, hit = staffCache.get(key);
+    if (hit !== void 0) return hit;
+    const mm = med(per[m2].filter((n10) => meas(n10.t) === ms).flatMap((n10) => n10.m));
+    const st2 = Number.isNaN(mm) ? home[m2] : home[m2] === 1 && mm >= 60 + SWITCH ? 0 : home[m2] === 0 && mm < 60 - SWITCH ? 1 : home[m2];
+    staffCache.set(key, st2);
+    return st2;
+  };
+  const voiceCache = /* @__PURE__ */ new Map(), voiceOf = (m2, ms) => {
+    const key = `${m2}:${ms}`, hit = voiceCache.get(key);
+    if (hit !== void 0) return hit;
+    const s10 = staffOf(m2, ms), mates = present.filter((j2) => staffOf(j2, ms) === s10 && per[j2].some((n10) => meas(n10.t) === ms)).sort((x2, y2) => mid[y2] - mid[x2]);
+    let cut = mates.length;
+    if (mates.length >= 2) {
+      let g3 = -1;
+      for (let i10 = 0; i10 + 1 < mates.length; i10++) {
+        const d3 = mid[mates[i10]] - mid[mates[i10 + 1]];
+        if (d3 > g3) {
+          g3 = d3;
+          cut = i10 + 1;
+        }
+      }
+    }
+    for (let i10 = 0; i10 < mates.length; i10++) voiceCache.set(`${mates[i10]}:${ms}`, i10 < cut ? 1 : 2);
+    return voiceCache.get(key) ?? 1;
+  };
+  return { grand, pick: (staff, voice) => (m2, t10) => staffOf(m2, meas(t10)) === staff && voiceOf(m2, meas(t10)) === voice };
+}
+function mergeTracks(tracks, opt = {}) {
+  const { keyOf: keyOf2, pick, hits } = opt, barsOnly = opt.marks === "bars";
+  const host2 = tracks[0] ?? [], head = host2.slice(0, headLen(host2));
+  const evs = [], marks = [];
+  let end = 0;
+  tracks.forEach((toks, m2) => {
+    let t10 = 0;
+    for (let i10 = headLen(toks); i10 < toks.length; i10++) {
+      const k2 = toks[i10];
+      if (isTimed(k2)) {
+        if (k2.kind === "note" && k2.pitch) {
+          const ps = [k2.pitch, ...k2.chord ?? []].map((p2) => keyOf2 ? keyOf2(m2, p2) : p2);
+          if (!pick || pick(m2, t10)) evs.push({ t0: t10, t1: t10 + k2.dur, ps, host: m2 === 0 && !barsOnly ? k2 : null, heads: (k2.art ?? []).filter((a10) => HEAD_ARTS.includes(a10)) });
+        }
+        t10 += k2.dur;
+      } else if (m2 === 0 && k2.kind !== "clef" && k2.kind !== "ottava" && (!barsOnly || k2.kind === "bar" || k2.kind === "key" || k2.kind === "time")) marks.push({ t: t10, tok: k2 });
+    }
+    end = Math.max(end, t10);
+  });
+  const cuts = [.../* @__PURE__ */ new Set([0, end, ...evs.flatMap((e10) => [e10.t0, e10.t1]), ...marks.map((x2) => x2.t)])].filter((x2) => x2 <= end).sort((a10, b3) => a10 - b3);
+  const out = [...head];
+  let id2 = -1e3, prevChord = false, prevOn = [];
+  for (let i10 = 0; i10 < cuts.length; i10++) {
+    const a10 = cuts[i10], b3 = cuts[i10 + 1];
+    for (const x2 of marks) if (x2.t === a10) out.push(x2.tok);
+    if (b3 === void 0) break;
+    let on2 = evs.filter((e10) => e10.t0 <= a10 && e10.t1 > a10);
+    if (hits && on2.length) {
+      const struck = on2.filter((e10) => e10.t0 === a10);
+      on2 = struck.length ? struck : prevChord && on2.length === prevOn.length && on2.every((e10) => prevOn.includes(e10)) ? on2 : [];
+    }
+    if (!on2.length) {
+      const last = out[out.length - 1];
+      if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b3 - a10) };
+      else out.push({ kind: "rest", id: id2--, dur: b3 - a10 });
+      prevChord = false;
+      prevOn = [];
+      continue;
+    }
+    const freshK = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set();
+    for (const e10 of on2) if (e10.t0 === a10) for (const p2 of e10.ps) freshK.add(midiOf(p2));
+    const all = on2.flatMap((e10) => e10.ps).filter((p2) => {
+      const k2 = midiOf(p2);
+      if (seen.has(k2)) return false;
+      seen.add(k2);
+      return true;
+    }).sort((x2, y2) => midiOf(y2) - midiOf(x2));
+    const ps = all;
+    const fresh = ps.some((p2) => freshK.has(midiOf(p2))), h2 = on2.find((e10) => e10.host && e10.t0 === a10)?.host ?? null;
+    const src = on2.filter((e10) => e10.t0 === a10).length ? on2.filter((e10) => e10.t0 === a10) : on2, art = HEAD_ARTS.filter((x2) => src.every((e10) => e10.heads.includes(x2)));
+    out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art.length ? { art } : {} });
+    prevChord = true;
+    prevOn = on2;
+  }
+  return out;
 }
 
 // src/render/smufl.ts
@@ -11018,42 +11142,6 @@ var STEM_DOWN_NW = [0, -0.168];
 var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
 var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
 var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
-
-// src/render/staff/glyphs.ts
-var TOP_LINE = 38;
-var MID_LINE = 34;
-var BOTTOM_LINE = 30;
-var ART_GLYPH = {
-  stress: { above: "\uE4B6", below: "\uE4B7", w: 1, h: 1 },
-  // 次重音（2026-10-08 深夜；宽高 = canvas 量的 Bravura 墨迹）
-  unstress: { above: "\uE4B8", below: "\uE4B9", w: 1.6, h: 0.9 },
-  // 弱化
-  accent: { above: "\uE4A0", below: "\uE4A1", w: 1.36, h: 0.99 },
-  marcato: { above: "\uE4AC", below: "\uE4AD", w: 1, h: 1.08 },
-  // 强音（2026-10-08；宽按同字号和重音比着量的）
-  staccato: { above: "\uE4A2", below: "\uE4A3", w: 0.28, h: 0.28 },
-  tenuto: { above: "\uE4A4", below: "\uE4A5", w: 1.35, h: 0.17 }
-};
-var GLYPH_BREATH = "\uE4CE";
-var DYN_GLYPH2 = { ppp: "\uE52A", pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F", fff: "\uE530" };
-var DYN_INK = { ppp: [-0.4, 4.3, 1.1, 0.6], fff: [-0.6, 3.4, 1.8, 0.6], pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
-var PIN_GAP = 0.7;
-var PIN_WORD = { size: TEXT_STYLES["dyn-word"].em, w: { cresc: 4.7, dim: 3.5 } };
-var DASH = { len: 0.6, gap: 1 };
-var RAMP_DASH = { len: 0.5, gap: 0.4 };
-var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
-var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
-var GLYPH_TUPLET = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(59520 + Number(d3))).join("");
-var SYSTEM_LINE_W = ENGRAVE.thinBar * 1.4;
-
-// src/render/staff/geometry.ts
-var yAt = (staffTop, d3, half2) => staffTop + (TOP_LINE - d3) * half2;
-var dAt = (staffTop, y2, half2) => Math.round(TOP_LINE - (y2 - staffTop) / half2);
-var anchors = (staffTop, half2) => ({ top: yAt(staffTop, TOP_LINE, half2), mid: yAt(staffTop, MID_LINE, half2), bottom: yAt(staffTop, BOTTOM_LINE, half2) });
-function withStaffGeometry(d3) {
-  const half2 = d3.sp * 0.5;
-  return { ...d3, yOf: (r10, dd) => yAt(d3.systems[r10].staffTop, dd, half2), dOf: (r10, y2) => dAt(d3.systems[r10].staffTop, y2, half2), lyricY: (r10) => d3.lyricYs[r10] };
-}
 
 // src/render/staff/notation.ts
 var MIN_PLAIN = TPQ / 8;
@@ -11274,302 +11362,6 @@ function unitsOf(tokens, o10) {
   return { units, head, shortBars, pickup };
 }
 
-// src/render/stems.ts
-var TOP_LINE2 = 38;
-var MID_LINE2 = 34;
-var yLocal = (d3) => (TOP_LINE2 - d3) * 0.5;
-var flagLevel = (base2) => base2 >= TPQ ? 0 : Math.round(Math.log2(TPQ / base2));
-var LOCAL = { u: 1, y: (d3) => yLocal(d3) };
-function layoutStems(seq, dir, f2 = LOCAL) {
-  const groups = [];
-  let group2 = [], groupBeat = -1, groupSys = -1;
-  const endGroup = () => {
-    if (group2.length) groups.push(group2);
-    group2 = [];
-    groupBeat = -1;
-  };
-  for (const u2 of seq) {
-    if (!u2 || u2.base >= WHOLE) {
-      endGroup();
-      continue;
-    }
-    if (u2.base > TPQ / 2) {
-      endGroup();
-      groups.push([u2]);
-      continue;
-    }
-    if (group2.length && (u2.beat !== groupBeat || u2.system !== groupSys || u2.staff !== group2[0].staff)) endGroup();
-    group2.push(u2);
-    groupBeat = u2.beat;
-    groupSys = u2.system;
-  }
-  endGroup();
-  const U2 = (v) => v * f2.u;
-  const notes = /* @__PURE__ */ new Map(), out = [];
-  for (const g3 of groups) {
-    const up = dir === "down" ? false : dir === "up" ? true : dir === "kit" ? g3.some((s10) => !!s10.handUp) : g3.reduce((a10, s10) => a10 + (s10.dHi + s10.dLo) / 2, 0) / g3.length < MID_LINE2;
-    const sx2 = (s10) => up ? s10.x + U2(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s10.x + U2(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
-    const y2 = (s10) => f2.y(s10.dHi, s10), yLow = (s10) => f2.y(s10.dLo, s10);
-    const sy0 = (s10) => up ? yLow(s10) - U2(STEM_UP_SE[1]) : y2(s10) - U2(STEM_DOWN_NW[1]);
-    const beams = [];
-    out.push({ keys: g3.map((s10) => s10.key), beams });
-    if (g3.length === 1) {
-      const s10 = g3[0], mid = f2.y(MID_LINE2, s10);
-      let tip = up ? y2(s10) - U2(3.5) : yLow(s10) + U2(3.5);
-      if (up && s10.dHi < 27) tip = Math.min(tip, mid);
-      if (!up && s10.dLo > 41) tip = Math.max(tip, mid);
-      const lv2 = flagLevel(s10.base);
-      notes.set(s10.key, { up, x: sx2(s10), y0: sy0(s10), tip, top: up ? tip : y2(s10), beamed: false, flag: lv2 > 0 ? { x: sx2(s10) - U2(ENGRAVE.stem / 2), y: up ? tip + U2(FLAG_ANCHOR_UP[lv2]) : tip + U2(FLAG_ANCHOR_DOWN[lv2]), level: lv2 } : null });
-      continue;
-    }
-    const xa = sx2(g3[0]), xb = sx2(g3[g3.length - 1]);
-    const k2 = Math.max(-0.2, Math.min(0.2, (y2(g3[g3.length - 1]) - y2(g3[0])) / (xb - xa) * 0.5));
-    const at2 = (xx, yy0) => yy0 + k2 * (xx - xa);
-    const yb0 = up ? Math.min(...g3.map((s10) => y2(s10) - U2(3.5) - k2 * (sx2(s10) - xa))) : Math.max(...g3.map((s10) => yLow(s10) + U2(3.5) - k2 * (sx2(s10) - xa)));
-    for (const s10 of g3) notes.set(s10.key, { up, x: sx2(s10), y0: sy0(s10), tip: at2(sx2(s10), yb0), top: up ? Math.min(at2(sx2(s10), yb0) - U2(ENGRAVE.beam), y2(s10)) : y2(s10), beamed: true, flag: null });
-    const step = U2(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th2 = U2(ENGRAVE.beam) * (up ? 1 : -1), ghost = g3.every((s10) => s10.ghost);
-    const beam = (xL, xR, lvl) => {
-      const of2 = step * lvl;
-      beams.push({ xL: xL - U2(ENGRAVE.stem / 2), yL: at2(xL, yb0) + of2, xR: xR + U2(ENGRAVE.stem / 2), yR: at2(xR, yb0) + of2, th: th2, ghost });
-    };
-    beam(xa, xb, 0);
-    const maxLv = Math.max(...g3.map((s10) => flagLevel(s10.base)));
-    for (let lvl = 2; lvl <= maxLv; lvl++) {
-      let runStart = -1;
-      for (let n10 = 0; n10 <= g3.length; n10++) {
-        const has2 = n10 < g3.length && flagLevel(g3[n10].base) >= lvl;
-        if (has2 && runStart < 0) runStart = n10;
-        if (!has2 && runStart >= 0) {
-          const L2 = runStart, R2 = n10 - 1;
-          if (L2 === R2) {
-            const stub = U2(1.1), toRight = L2 < g3.length - 1;
-            beam(toRight ? sx2(g3[L2]) : sx2(g3[L2]) - stub, toRight ? sx2(g3[L2]) + stub : sx2(g3[L2]), lvl - 1);
-          } else beam(sx2(g3[L2]), sx2(g3[R2]), lvl - 1);
-          runStart = -1;
-        }
-      }
-    }
-  }
-  return { notes, groups: out };
-}
-
-// src/render/frame/columns.ts
-var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, tail: 4, note: 5 };
-
-// src/render/staff/measure.ts
-var shAt = (q2, staff, index) => {
-  return q2.staves === 2 ? staff === 2 ? 12 : 0 : CLEF_SHIFT[(index >= 0 ? q2.ds.clef[index] : void 0) ?? q2.start] + ottavaShift(index >= 0 ? q2.ds.ott[index] ?? 0 : 0);
-};
-var percAt = (q2, p2) => {
-  const pk = q2.p.perc;
-  return !pk ? null : pk.kind === "kit" ? percOf(128, 0, midiOf(p2)) : pk.info;
-};
-var posD = (q2, p2, staff, index) => {
-  const m2 = q2.pmode;
-  if (m2 && q2.p.perc) {
-    const pi = percAt(q2, p2);
-    return m2 === "one" ? MID_LINE - (pi && pi.staff === 1 ? pi.line : 0) : TOP_LINE - (pi ? pi.line : 4);
-  }
-  return diatonicIndex(p2) + shAt(q2, staff, index);
-};
-var stemInput = (q2, xOf) => {
-  const pm = q2.pmode, percHere = !!pm && !!q2.p.perc, seq = [];
-  for (const u2 of q2.units) {
-    if (u2.kind === "bar" || u2.kind === "key" || u2.kind === "time") {
-      seq.push(null);
-      continue;
-    }
-    if (u2.kind !== "chunk") continue;
-    if (!u2.note || u2.base >= WHOLE) {
-      seq.push(null);
-      continue;
-    }
-    const ps = u2.pitches.length ? u2.pitches : [u2.pitch], ds = ps.map((pp) => posD(q2, pp, u2.staff, u2.index));
-    seq.push({
-      key: u2,
-      x: xOf(u2),
-      dHi: ds[0],
-      dLo: ds[ds.length - 1],
-      base: u2.base,
-      beat: Math.floor(u2.inBar / u2.beat),
-      system: u2.system,
-      staff: u2.staff,
-      ghost: u2.ghost,
-      ...percHere && pm !== "one" && ps.some((p2) => percAt(q2, p2)?.stem !== "down") ? { handUp: true } : {}
-    });
-  }
-  return { seq, dir: q2.v2 ? "down" : q2.hasV2 ? "up" : percHere ? pm === "one" ? "up" : "kit" : "auto" };
-};
-var restW = (base2) => base2 >= WHOLE ? W.restWhole : base2 >= TPQ * 2 ? W.restHalf : base2 >= TPQ ? W.restQuarter : base2 >= TPQ / 2 ? W.rest8th : base2 >= TPQ / 4 ? W.rest16th : W.rest32nd;
-var COLUMN_KIND = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
-function measureTrack(q2) {
-  const flagRight = /* @__PURE__ */ new Map();
-  {
-    const si2 = stemInput(q2, () => 0.35);
-    for (const [c10, st2] of layoutStems(si2.seq, si2.dir).notes) if (st2.flag) flagRight.set(c10, st2.flag.x + FLAG_W[st2.up ? "up" : "down"][st2.flag.level - 1]);
-  }
-  const inkL = /* @__PURE__ */ new Map();
-  const lane = (staff) => (staff - 1) * 2;
-  const spItems = (u2) => {
-    const out = [], row2 = lane(u2.staff);
-    if (!u2.note) {
-      if (u2.pad || q2.v2 || u2.mrest) return out;
-      out.push({ row: row2, left: -0.35, right: 0.35 + (u2.dotted ? 1.5 + 0.45 : restW(u2.base)), dur: u2.ticks });
-      return out;
-    }
-    const nhw = u2.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack, perc = !!q2.pmode && !!q2.p.perc;
-    const ds = (u2.pitches.length ? u2.pitches : u2.pitch ? [u2.pitch] : []).map((pp) => posD(q2, pp, u2.staff, u2.index));
-    const second = ds.some((d3, k2) => k2 > 0 && Math.abs(ds[k2 - 1] - d3) === 1);
-    let right = 0.35 + nhw * (second ? 1.95 : 1), left = -0.35;
-    if (u2.dotted) right = Math.max(right, 0.35 + nhw + 0.3 + 0.45);
-    const fr = flagRight.get(u2);
-    if (fr !== void 0) right = Math.max(right, fr);
-    const nAcc = perc ? [] : u2.accs.map((a10, k2) => a10 === null ? -1 : k2).filter((k2) => k2 >= 0);
-    if (nAcc.length) left = 1.1 + (nAcc.some((k2, i10) => i10 > 0 && Math.abs(ds[nAcc[i10 - 1]] - ds[k2]) < 3) ? 1.1 : 0);
-    const ghost = u2.art.includes("ghost");
-    if (ghost) {
-      left = nAcc.length ? left + 0.6 : Math.max(left, 0.15);
-      right += 0.45;
-    }
-    if (u2.art.includes("arpeggio")) left = Math.max(left, (nAcc.length ? 1.3 : 0) + 0.83);
-    if (u2.breath) right = Math.max(right, 0.35 + nhw + 0.55 + 0.85);
-    if (u2.breath && u2.inhale) right = Math.max(right, 0.35 + nhw + 1.35 + (u2.inhale === "big" ? 2.3 : 1.15));
-    inkL.set(u2, Math.max(0, left));
-    out.push({ row: row2, left, right, dur: u2.ticks });
-    if (u2.lyW !== void 0 && !q2.v2) out.push({ row: lane(q2.staves) + 1, left: u2.lyW / 2 - 0.94, right: 0.94 + u2.lyW / 2 + 0.4 + (u2.hyph ? 0.7 : 0) });
-    return out;
-  };
-  const entries2 = q2.units.map((u2) => ({ tick: u2.tick, slot: u2.kind === "nav" ? u2.slot : SLOT[COLUMN_KIND[u2.kind]], w: u2.w, ...u2.kind === "bar" ? { bar: true } : {}, ...u2.kind === "chunk" ? { chunk: { items: spItems(u2), span: u2.ticks } } : {}, ref: u2 }));
-  return { entries: entries2, inkL };
-}
-var clefW = (q2) => q2.fFam ? W.fClef : W.gClef;
-var lineStartWidth = (q2, key, first, base2) => base2 + 0.6 + clefW(q2) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q2.head.time.beats, q2.head.time.beatType) + 1.2 : 0.4);
-var lyricAnchors = (q2) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + 0.6, lyric: u2.lyric, hyph: u2.hyph }));
-
-// src/score/merge.ts
-var HEAD_ARTS = ["ghost", "whisper"];
-var SWITCH = 5;
-function planHands(tracks, wantsGrand2, homes, force = false) {
-  const host2 = tracks[0] ?? [], time = host2.find((t10) => t10.kind === "time");
-  const bar2 = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t10) => Math.floor(t10 / bar2 + 1e-9);
-  const med = (xs) => {
-    const a10 = [...xs].sort((x2, y2) => x2 - y2);
-    return a10.length ? a10[a10.length >> 1] : NaN;
-  };
-  const per = tracks.map((toks) => {
-    const notes = [];
-    let t10 = 0;
-    for (let i10 = headLen(toks); i10 < toks.length; i10++) {
-      const k2 = toks[i10];
-      if (!isTimed(k2)) continue;
-      if (k2.kind === "note" && k2.pitch) notes.push({ t: t10, m: [k2.pitch, ...k2.chord ?? []].map(midiOf) });
-      t10 += k2.dur;
-    }
-    return notes;
-  });
-  const mid = per.map((ns2) => med(ns2.flatMap((n10) => n10.m))), home = mid.map((x2, i10) => homes?.[i10] ?? (Number.isNaN(x2) || x2 >= 60 ? 0 : 1));
-  const present = mid.map((x2, i10) => Number.isNaN(x2) ? -1 : i10).filter((i10) => i10 >= 0);
-  if (force && present.length >= 2 && new Set(present.map((i10) => home[i10])).size < 2) {
-    const order = [...present].sort((x2, y2) => mid[y2] - mid[x2]);
-    let cut = 1, g3 = -1;
-    for (let k2 = 0; k2 + 1 < order.length; k2++) {
-      const d3 = mid[order[k2]] - mid[order[k2 + 1]];
-      if (d3 > g3) {
-        g3 = d3;
-        cut = k2 + 1;
-      }
-    }
-    order.forEach((m2, k2) => {
-      home[m2] = k2 < cut ? 0 : 1;
-    });
-  }
-  const grand = force || new Set(present.map((i10) => home[i10])).size > 1 && wantsGrand2(mergeTracks(tracks));
-  const staffCache = /* @__PURE__ */ new Map(), staffOf = (m2, ms) => {
-    if (!grand) return 0;
-    const key = `${m2}:${ms}`, hit = staffCache.get(key);
-    if (hit !== void 0) return hit;
-    const mm = med(per[m2].filter((n10) => meas(n10.t) === ms).flatMap((n10) => n10.m));
-    const st2 = Number.isNaN(mm) ? home[m2] : home[m2] === 1 && mm >= 60 + SWITCH ? 0 : home[m2] === 0 && mm < 60 - SWITCH ? 1 : home[m2];
-    staffCache.set(key, st2);
-    return st2;
-  };
-  const voiceCache = /* @__PURE__ */ new Map(), voiceOf = (m2, ms) => {
-    const key = `${m2}:${ms}`, hit = voiceCache.get(key);
-    if (hit !== void 0) return hit;
-    const s10 = staffOf(m2, ms), mates = present.filter((j2) => staffOf(j2, ms) === s10 && per[j2].some((n10) => meas(n10.t) === ms)).sort((x2, y2) => mid[y2] - mid[x2]);
-    let cut = mates.length;
-    if (mates.length >= 2) {
-      let g3 = -1;
-      for (let i10 = 0; i10 + 1 < mates.length; i10++) {
-        const d3 = mid[mates[i10]] - mid[mates[i10 + 1]];
-        if (d3 > g3) {
-          g3 = d3;
-          cut = i10 + 1;
-        }
-      }
-    }
-    for (let i10 = 0; i10 < mates.length; i10++) voiceCache.set(`${mates[i10]}:${ms}`, i10 < cut ? 1 : 2);
-    return voiceCache.get(key) ?? 1;
-  };
-  return { grand, pick: (staff, voice) => (m2, t10) => staffOf(m2, meas(t10)) === staff && voiceOf(m2, meas(t10)) === voice };
-}
-function mergeTracks(tracks, opt = {}) {
-  const { keyOf: keyOf2, pick, hits } = opt, barsOnly = opt.marks === "bars";
-  const host2 = tracks[0] ?? [], head = host2.slice(0, headLen(host2));
-  const evs = [], marks = [];
-  let end = 0;
-  tracks.forEach((toks, m2) => {
-    let t10 = 0;
-    for (let i10 = headLen(toks); i10 < toks.length; i10++) {
-      const k2 = toks[i10];
-      if (isTimed(k2)) {
-        if (k2.kind === "note" && k2.pitch) {
-          const ps = [k2.pitch, ...k2.chord ?? []].map((p2) => keyOf2 ? keyOf2(m2, p2) : p2);
-          if (!pick || pick(m2, t10)) evs.push({ t0: t10, t1: t10 + k2.dur, ps, host: m2 === 0 && !barsOnly ? k2 : null, heads: (k2.art ?? []).filter((a10) => HEAD_ARTS.includes(a10)) });
-        }
-        t10 += k2.dur;
-      } else if (m2 === 0 && k2.kind !== "clef" && k2.kind !== "ottava" && (!barsOnly || k2.kind === "bar" || k2.kind === "key" || k2.kind === "time")) marks.push({ t: t10, tok: k2 });
-    }
-    end = Math.max(end, t10);
-  });
-  const cuts = [.../* @__PURE__ */ new Set([0, end, ...evs.flatMap((e10) => [e10.t0, e10.t1]), ...marks.map((x2) => x2.t)])].filter((x2) => x2 <= end).sort((a10, b3) => a10 - b3);
-  const out = [...head];
-  let id2 = -1e3, prevChord = false, prevOn = [];
-  for (let i10 = 0; i10 < cuts.length; i10++) {
-    const a10 = cuts[i10], b3 = cuts[i10 + 1];
-    for (const x2 of marks) if (x2.t === a10) out.push(x2.tok);
-    if (b3 === void 0) break;
-    let on2 = evs.filter((e10) => e10.t0 <= a10 && e10.t1 > a10);
-    if (hits && on2.length) {
-      const struck = on2.filter((e10) => e10.t0 === a10);
-      on2 = struck.length ? struck : prevChord && on2.length === prevOn.length && on2.every((e10) => prevOn.includes(e10)) ? on2 : [];
-    }
-    if (!on2.length) {
-      const last = out[out.length - 1];
-      if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b3 - a10) };
-      else out.push({ kind: "rest", id: id2--, dur: b3 - a10 });
-      prevChord = false;
-      prevOn = [];
-      continue;
-    }
-    const freshK = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set();
-    for (const e10 of on2) if (e10.t0 === a10) for (const p2 of e10.ps) freshK.add(midiOf(p2));
-    const all = on2.flatMap((e10) => e10.ps).filter((p2) => {
-      const k2 = midiOf(p2);
-      if (seen.has(k2)) return false;
-      seen.add(k2);
-      return true;
-    }).sort((x2, y2) => midiOf(y2) - midiOf(x2));
-    const ps = all;
-    const fresh = ps.some((p2) => freshK.has(midiOf(p2))), h2 = on2.find((e10) => e10.host && e10.t0 === a10)?.host ?? null;
-    const src = on2.filter((e10) => e10.t0 === a10).length ? on2.filter((e10) => e10.t0 === a10) : on2, art = HEAD_ARTS.filter((x2) => src.every((e10) => e10.heads.includes(x2)));
-    out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art.length ? { art } : {} });
-    prevChord = true;
-    prevOn = on2;
-  }
-  return out;
-}
-
 // src/render/staff/rows.ts
 function staffRows(paper, visible, fold, lookAt) {
   const absorbed = /* @__PURE__ */ new Map(), virt = /* @__PURE__ */ new Map(), lowOf = /* @__PURE__ */ new Map();
@@ -11682,6 +11474,205 @@ function staffTracks(rows, c10) {
   });
   return { per, rowHost, shortBars };
 }
+
+// src/render/stems.ts
+var TOP_LINE = 38;
+var MID_LINE = 34;
+var yLocal = (d3) => (TOP_LINE - d3) * 0.5;
+var flagLevel = (base2) => base2 >= TPQ ? 0 : Math.round(Math.log2(TPQ / base2));
+var LOCAL = { u: 1, y: (d3) => yLocal(d3) };
+function layoutStems(seq, dir, f2 = LOCAL) {
+  const groups = [];
+  let group2 = [], groupBeat = -1, groupSys = -1;
+  const endGroup = () => {
+    if (group2.length) groups.push(group2);
+    group2 = [];
+    groupBeat = -1;
+  };
+  for (const u2 of seq) {
+    if (!u2 || u2.base >= WHOLE) {
+      endGroup();
+      continue;
+    }
+    if (u2.base > TPQ / 2) {
+      endGroup();
+      groups.push([u2]);
+      continue;
+    }
+    if (group2.length && (u2.beat !== groupBeat || u2.system !== groupSys || u2.staff !== group2[0].staff)) endGroup();
+    group2.push(u2);
+    groupBeat = u2.beat;
+    groupSys = u2.system;
+  }
+  endGroup();
+  const U2 = (v) => v * f2.u;
+  const notes = /* @__PURE__ */ new Map(), out = [];
+  for (const g3 of groups) {
+    const up = dir === "down" ? false : dir === "up" ? true : dir === "kit" ? g3.some((s10) => !!s10.handUp) : g3.reduce((a10, s10) => a10 + (s10.dHi + s10.dLo) / 2, 0) / g3.length < MID_LINE;
+    const sx2 = (s10) => up ? s10.x + U2(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s10.x + U2(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
+    const y2 = (s10) => f2.y(s10.dHi, s10), yLow = (s10) => f2.y(s10.dLo, s10);
+    const sy0 = (s10) => up ? yLow(s10) - U2(STEM_UP_SE[1]) : y2(s10) - U2(STEM_DOWN_NW[1]);
+    const beams = [];
+    out.push({ keys: g3.map((s10) => s10.key), beams });
+    if (g3.length === 1) {
+      const s10 = g3[0], mid = f2.y(MID_LINE, s10);
+      let tip = up ? y2(s10) - U2(3.5) : yLow(s10) + U2(3.5);
+      if (up && s10.dHi < 27) tip = Math.min(tip, mid);
+      if (!up && s10.dLo > 41) tip = Math.max(tip, mid);
+      const lv2 = flagLevel(s10.base);
+      notes.set(s10.key, { up, x: sx2(s10), y0: sy0(s10), tip, top: up ? tip : y2(s10), beamed: false, flag: lv2 > 0 ? { x: sx2(s10) - U2(ENGRAVE.stem / 2), y: up ? tip + U2(FLAG_ANCHOR_UP[lv2]) : tip + U2(FLAG_ANCHOR_DOWN[lv2]), level: lv2 } : null });
+      continue;
+    }
+    const xa = sx2(g3[0]), xb = sx2(g3[g3.length - 1]);
+    const k2 = Math.max(-0.2, Math.min(0.2, (y2(g3[g3.length - 1]) - y2(g3[0])) / (xb - xa) * 0.5));
+    const at2 = (xx, yy0) => yy0 + k2 * (xx - xa);
+    const yb0 = up ? Math.min(...g3.map((s10) => y2(s10) - U2(3.5) - k2 * (sx2(s10) - xa))) : Math.max(...g3.map((s10) => yLow(s10) + U2(3.5) - k2 * (sx2(s10) - xa)));
+    for (const s10 of g3) notes.set(s10.key, { up, x: sx2(s10), y0: sy0(s10), tip: at2(sx2(s10), yb0), top: up ? Math.min(at2(sx2(s10), yb0) - U2(ENGRAVE.beam), y2(s10)) : y2(s10), beamed: true, flag: null });
+    const step = U2(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th2 = U2(ENGRAVE.beam) * (up ? 1 : -1), ghost = g3.every((s10) => s10.ghost);
+    const beam = (xL, xR, lvl) => {
+      const of2 = step * lvl;
+      beams.push({ xL: xL - U2(ENGRAVE.stem / 2), yL: at2(xL, yb0) + of2, xR: xR + U2(ENGRAVE.stem / 2), yR: at2(xR, yb0) + of2, th: th2, ghost });
+    };
+    beam(xa, xb, 0);
+    const maxLv = Math.max(...g3.map((s10) => flagLevel(s10.base)));
+    for (let lvl = 2; lvl <= maxLv; lvl++) {
+      let runStart = -1;
+      for (let n10 = 0; n10 <= g3.length; n10++) {
+        const has2 = n10 < g3.length && flagLevel(g3[n10].base) >= lvl;
+        if (has2 && runStart < 0) runStart = n10;
+        if (!has2 && runStart >= 0) {
+          const L2 = runStart, R2 = n10 - 1;
+          if (L2 === R2) {
+            const stub = U2(1.1), toRight = L2 < g3.length - 1;
+            beam(toRight ? sx2(g3[L2]) : sx2(g3[L2]) - stub, toRight ? sx2(g3[L2]) + stub : sx2(g3[L2]), lvl - 1);
+          } else beam(sx2(g3[L2]), sx2(g3[R2]), lvl - 1);
+          runStart = -1;
+        }
+      }
+    }
+  }
+  return { notes, groups: out };
+}
+
+// src/render/frame/columns.ts
+var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, tail: 4, note: 5 };
+
+// src/render/staff/glyphs.ts
+var TOP_LINE2 = 38;
+var MID_LINE2 = 34;
+var BOTTOM_LINE = 30;
+var ART_GLYPH = {
+  stress: { above: "\uE4B6", below: "\uE4B7", w: 1, h: 1 },
+  // 次重音（2026-10-08 深夜；宽高 = canvas 量的 Bravura 墨迹）
+  unstress: { above: "\uE4B8", below: "\uE4B9", w: 1.6, h: 0.9 },
+  // 弱化
+  accent: { above: "\uE4A0", below: "\uE4A1", w: 1.36, h: 0.99 },
+  marcato: { above: "\uE4AC", below: "\uE4AD", w: 1, h: 1.08 },
+  // 强音（2026-10-08；宽按同字号和重音比着量的）
+  staccato: { above: "\uE4A2", below: "\uE4A3", w: 0.28, h: 0.28 },
+  tenuto: { above: "\uE4A4", below: "\uE4A5", w: 1.35, h: 0.17 }
+};
+var GLYPH_BREATH = "\uE4CE";
+var DYN_GLYPH2 = { ppp: "\uE52A", pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F", fff: "\uE530" };
+var DYN_INK = { ppp: [-0.4, 4.3, 1.1, 0.6], fff: [-0.6, 3.4, 1.8, 0.6], pp: [-0.4, 3, 1.1, 0.6], p: [-0.4, 1.5, 1.1, 0.6], mp: [-0.1, 3.3, 1.1, 0.6], mf: [-0.1, 3.3, 1.7, 0.7], f: [-0.6, 1.5, 1.8, 0.6], ff: [-0.6, 2.5, 1.8, 0.6] };
+var PIN_GAP = 0.7;
+var PIN_WORD = { size: TEXT_STYLES["dyn-word"].em, w: { cresc: 4.7, dim: 3.5 } };
+var DASH = { len: 0.6, gap: 1 };
+var RAMP_DASH = { len: 0.5, gap: 0.4 };
+var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
+var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
+var GLYPH_TUPLET = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(59520 + Number(d3))).join("");
+var SYSTEM_LINE_W = ENGRAVE.thinBar * 1.4;
+
+// src/render/staff/measure.ts
+var shAt = (q2, staff, index) => {
+  return q2.staves === 2 ? staff === 2 ? 12 : 0 : CLEF_SHIFT[(index >= 0 ? q2.ds.clef[index] : void 0) ?? q2.start] + ottavaShift(index >= 0 ? q2.ds.ott[index] ?? 0 : 0);
+};
+var percAt = (q2, p2) => {
+  const pk = q2.p.perc;
+  return !pk ? null : pk.kind === "kit" ? percOf(128, 0, midiOf(p2)) : pk.info;
+};
+var posD = (q2, p2, staff, index) => {
+  const m2 = q2.pmode;
+  if (m2 && q2.p.perc) {
+    const pi = percAt(q2, p2);
+    return m2 === "one" ? MID_LINE2 - (pi && pi.staff === 1 ? pi.line : 0) : TOP_LINE2 - (pi ? pi.line : 4);
+  }
+  return diatonicIndex(p2) + shAt(q2, staff, index);
+};
+var stemInput = (q2, xOf) => {
+  const pm = q2.pmode, percHere = !!pm && !!q2.p.perc, seq = [];
+  for (const u2 of q2.units) {
+    if (u2.kind === "bar" || u2.kind === "key" || u2.kind === "time") {
+      seq.push(null);
+      continue;
+    }
+    if (u2.kind !== "chunk") continue;
+    if (!u2.note || u2.base >= WHOLE) {
+      seq.push(null);
+      continue;
+    }
+    const ps = u2.pitches.length ? u2.pitches : [u2.pitch], ds = ps.map((pp) => posD(q2, pp, u2.staff, u2.index));
+    seq.push({
+      key: u2,
+      x: xOf(u2),
+      dHi: ds[0],
+      dLo: ds[ds.length - 1],
+      base: u2.base,
+      beat: Math.floor(u2.inBar / u2.beat),
+      system: u2.system,
+      staff: u2.staff,
+      ghost: u2.ghost,
+      ...percHere && pm !== "one" && ps.some((p2) => percAt(q2, p2)?.stem !== "down") ? { handUp: true } : {}
+    });
+  }
+  return { seq, dir: q2.v2 ? "down" : q2.hasV2 ? "up" : percHere ? pm === "one" ? "up" : "kit" : "auto" };
+};
+var restW = (base2) => base2 >= WHOLE ? W.restWhole : base2 >= TPQ * 2 ? W.restHalf : base2 >= TPQ ? W.restQuarter : base2 >= TPQ / 2 ? W.rest8th : base2 >= TPQ / 4 ? W.rest16th : W.rest32nd;
+var COLUMN_KIND = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
+function measureTrack(q2) {
+  const flagRight = /* @__PURE__ */ new Map();
+  {
+    const si2 = stemInput(q2, () => 0.35);
+    for (const [c10, st2] of layoutStems(si2.seq, si2.dir).notes) if (st2.flag) flagRight.set(c10, st2.flag.x + FLAG_W[st2.up ? "up" : "down"][st2.flag.level - 1]);
+  }
+  const inkL = /* @__PURE__ */ new Map();
+  const lane = (staff) => (staff - 1) * 2;
+  const spItems = (u2) => {
+    const out = [], row2 = lane(u2.staff);
+    if (!u2.note) {
+      if (u2.pad || q2.v2 || u2.mrest) return out;
+      out.push({ row: row2, left: -0.35, right: 0.35 + (u2.dotted ? 1.5 + 0.45 : restW(u2.base)), dur: u2.ticks });
+      return out;
+    }
+    const nhw = u2.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack, perc = !!q2.pmode && !!q2.p.perc;
+    const ds = (u2.pitches.length ? u2.pitches : u2.pitch ? [u2.pitch] : []).map((pp) => posD(q2, pp, u2.staff, u2.index));
+    const second = ds.some((d3, k2) => k2 > 0 && Math.abs(ds[k2 - 1] - d3) === 1);
+    let right = 0.35 + nhw * (second ? 1.95 : 1), left = -0.35;
+    if (u2.dotted) right = Math.max(right, 0.35 + nhw + 0.3 + 0.45);
+    const fr = flagRight.get(u2);
+    if (fr !== void 0) right = Math.max(right, fr);
+    const nAcc = perc ? [] : u2.accs.map((a10, k2) => a10 === null ? -1 : k2).filter((k2) => k2 >= 0);
+    if (nAcc.length) left = 1.1 + (nAcc.some((k2, i10) => i10 > 0 && Math.abs(ds[nAcc[i10 - 1]] - ds[k2]) < 3) ? 1.1 : 0);
+    const ghost = u2.art.includes("ghost");
+    if (ghost) {
+      left = nAcc.length ? left + 0.6 : Math.max(left, 0.15);
+      right += 0.45;
+    }
+    if (u2.art.includes("arpeggio")) left = Math.max(left, (nAcc.length ? 1.3 : 0) + 0.83);
+    if (u2.breath) right = Math.max(right, 0.35 + nhw + 0.55 + 0.85);
+    if (u2.breath && u2.inhale) right = Math.max(right, 0.35 + nhw + 1.35 + (u2.inhale === "big" ? 2.3 : 1.15));
+    inkL.set(u2, Math.max(0, left));
+    out.push({ row: row2, left, right, dur: u2.ticks });
+    if (u2.lyW !== void 0 && !q2.v2) out.push({ row: lane(q2.staves) + 1, left: u2.lyW / 2 - 0.94, right: 0.94 + u2.lyW / 2 + 0.4 + (u2.hyph ? 0.7 : 0) });
+    return out;
+  };
+  const entries2 = q2.units.map((u2) => ({ tick: u2.tick, slot: u2.kind === "nav" ? u2.slot : SLOT[COLUMN_KIND[u2.kind]], w: u2.w, ...u2.kind === "bar" ? { bar: true } : {}, ...u2.kind === "chunk" ? { chunk: { items: spItems(u2), span: u2.ticks } } : {}, ref: u2 }));
+  return { entries: entries2, inkL };
+}
+var clefW = (q2) => q2.fFam ? W.fClef : W.gClef;
+var lineStartWidth = (q2, key, first, base2) => base2 + 0.6 + clefW(q2) + 1 + Math.abs(key) * 1.05 + (key ? 0.8 : 0) + (first ? timeWidth(q2.head.time.beats, q2.head.time.beatType) + 1.2 : 0.4);
+var lyricAnchors = (q2) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + 0.6, lyric: u2.lyric, hyph: u2.hyph }));
 
 // src/singer/packs.gen.ts
 var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
@@ -11982,7 +11973,7 @@ function drawStaff(c10) {
     for (let i10 = upto; i10 >= 0; i10--) if (q2.tokens[i10]?.kind === "clef") return i10;
     return -1;
   };
-  const staffHit = (r10) => ({ y: yOf(r10, TOP_LINE) - P2(1.2), h: yOf(r10, BOTTOM_LINE) - yOf(r10, TOP_LINE) + P2(2.4) });
+  const staffHit = (r10) => ({ y: yOf(r10, TOP_LINE2) - P2(1.2), h: yOf(r10, BOTTOM_LINE) - yOf(r10, TOP_LINE2) + P2(2.4) });
   const drawTime = (r10, x0, beats, beatType, cls) => {
     const num2 = timeSigDigits(beats), den = timeSigDigits(beatType);
     const wn = [...num2].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw2 = Math.max(wn, wd);
@@ -12037,7 +12028,7 @@ function drawStaff(c10) {
           put2(row2, { t: "line", x1: P2(MARGIN + ind), y1: y2, x2: P2(staffEnd[s10]), y2, w: P2(ENGRAVE.staffLine), cls: "staff" });
         }
         let hx = MARGIN + ind + 0.6;
-        if (pm) put2(row2, { t: "glyph", x: P2(hx), y: yOf(row2, MID_LINE), ch: PERC_CLEF, cls: "clef perc-clef" });
+        if (pm) put2(row2, { t: "glyph", x: P2(hx), y: yOf(row2, MID_LINE2), ch: PERC_CLEF, cls: "clef perc-clef" });
         else put2(row2, { t: "glyph", x: P2(hx), y: yOf(row2, base2 === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
         if (!pm && !q2.vrt) clefs.push({ kind: "start", paper: paper.id, part: q2.p.id, index: clefSrcAtSys(q2, s10), system: row2, x: P2(hx - 0.3), ...staffHit(row2), w: P2(clefW(q2) + 0.6) });
         hx += clefW(q2) + 1;
@@ -12162,15 +12153,15 @@ function drawStaff(c10) {
               break;
             }
           }
-          const rx2 = P2((L2 + R2) / 2 - W.restWhole / 2), ry3 = pm !== "one" ? yOf(row2, 36) : yOf(row2, MID_LINE);
+          const rx2 = P2((L2 + R2) / 2 - W.restWhole / 2), ry3 = pm !== "one" ? yOf(row2, 36) : yOf(row2, MID_LINE2);
           put2(row2, { tok: tokOf(c11), t: "glyph", x: rx2, y: ry3, ch: GLYPH.restWhole, cls: cls ? `rest ${cls}` : "rest" });
-          if (c11.j === 0 && c11.index >= 0) rests.push({ index: c11.index, system: row2, x: rx2, y: yOf(row2, MID_LINE), w: P2(1.2) });
+          if (c11.j === 0 && c11.index >= 0) rests.push({ index: c11.index, system: row2, x: rx2, y: yOf(row2, MID_LINE2), w: P2(1.2) });
           return;
         }
         const g3 = c11.base >= WHOLE ? GLYPH.restWhole : c11.base >= TPQ * 2 ? GLYPH.restHalf : c11.base >= TPQ ? GLYPH.restQuarter : c11.base >= TPQ / 2 ? GLYPH.rest8th : c11.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
-        const ry2 = c11.base >= WHOLE && pm !== "one" ? yOf(row2, 36) : yOf(row2, MID_LINE);
+        const ry2 = c11.base >= WHOLE && pm !== "one" ? yOf(row2, 36) : yOf(row2, MID_LINE2);
         put2(row2, { tok: tokOf(c11), t: "glyph", x: P2(c11.x + 0.35), y: ry2, ch: g3, cls: cls ? `rest ${cls}` : "rest" });
-        if (c11.j === 0 && c11.index >= 0 && !c11.pad) rests.push({ index: c11.index, system: row2, x: P2(c11.x + 0.35), y: yOf(row2, MID_LINE), w: P2(1.2) });
+        if (c11.j === 0 && c11.index >= 0 && !c11.pad) rests.push({ index: c11.index, system: row2, x: P2(c11.x + 0.35), y: yOf(row2, MID_LINE2), w: P2(1.2) });
         if (c11.dotted) put2(row2, { tok: tokOf(c11), t: "glyph", x: P2(c11.x + 0.35 + 1.5), y: yOf(row2, 35), ch: GLYPH.augmentationDot, cls });
         return;
       }
@@ -12240,11 +12231,11 @@ function drawStaff(c10) {
             }
           } else if (u2.kind === "bar") {
             const bx = P2(u2.x + 0.7), bcls = u2.auto ? "bar auto" : "bar";
-            const [bt, bb] = pmode[r10] === "one" ? [MID_LINE + 2, MID_LINE - 2] : [TOP_LINE, BOTTOM_LINE];
+            const [bt, bb] = pmode[r10] === "one" ? [MID_LINE2 + 2, MID_LINE2 - 2] : [TOP_LINE2, BOTTOM_LINE];
             put2(rr2, { t: "line", x1: bx, y1: yOf(rr2, bt), x2: bx, y2: yOf(rr2, bb), w: P2(ENGRAVE.thinBar), cls: bcls });
             if (u2.style === "double") put2(rr2, { t: "line", x1: bx + P2(0.45), y1: yOf(rr2, bt), x2: bx + P2(0.45), y2: yOf(rr2, bb), w: P2(ENGRAVE.thinBar), cls: bcls });
             if (u2.style === "final") put2(rr2, { t: "line", x1: bx + P2(0.6), y1: yOf(rr2, bt), x2: bx + P2(0.6), y2: yOf(rr2, bb), w: P2(0.5), cls: bcls });
-            if (u2.warn && k2 === 0) put2(rr2, { t: "rect", x: bx - P2(0.3), y: yOf(rr2, TOP_LINE) - P2(1.6), w: P2(0.6), h: P2(0.6), cls: "warn ann" });
+            if (u2.warn && k2 === 0) put2(rr2, { t: "rect", x: bx - P2(0.3), y: yOf(rr2, TOP_LINE2) - P2(1.6), w: P2(0.6), h: P2(0.6), cls: "warn ann" });
           } else if (u2.kind === "key") {
             if (pmode[r10]) {
               marks.push({ index: u2.index, kind: "key", system: rr2, x: P2(u2.x), ...staffHit(rr2), w: P2(Math.max(u2.w, 1.6)) });
@@ -12380,7 +12371,7 @@ function drawStaff(c10) {
       const row2 = RW(c11), cls = clsOf(c11), cx3 = nhX(c11) + nhW(c11) / 2;
       const dsC = (c11.pitches.length ? c11.pitches : [c11.pitch]).map((pp) => dIdx(pp, c11.staff, c11.index)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
       const below = upOf.get(c11) ?? false, sgn = below ? -1 : 1;
-      const inStaff = (d4) => d4 >= BOTTOM_LINE && d4 <= TOP_LINE;
+      const inStaff = (d4) => d4 >= BOTTOM_LINE && d4 <= TOP_LINE2;
       let d3 = below ? dLo - 2 : dHi + 2;
       const artCls = (a10) => ["art", ign.has(a10) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ");
       for (const a10 of ["staccato", "tenuto"].filter((x2) => c11.art.includes(x2))) {
@@ -12419,11 +12410,11 @@ function drawStaff(c10) {
         for (let y2 = yBot, k2 = 0; y2 > yTop; y2 -= step, k2++) dd += `Q${x0 + (k2 % 2 ? -amp : amp) * 2},${y2 - step / 2} ${x0},${Math.max(yTop, y2 - step)}`;
         put2(row2, { tok: tokOf(c11), t: "path", d: dd, cls: ["arpeggio", ign.has("arpeggio") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
-      if (c11.breath) put2(row2, { tok: tokOf(c11), t: "glyph", x: nhX(c11) + nhW(c11) + P2(0.55), y: yOf(row2, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-      if (c11.breath && c11.inhale) put2(row2, { tok: tokOf(c11), t: "text", x: nhX(c11) + nhW(c11) + P2(1.35), y: yOf(row2, TOP_LINE + 1) + P2(0.45), s: c11.inhale === "big" ? _tIn(o10.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o10.locale, "\u5438##\u8BB0\u53F7"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx2("breath-label"), anchor: "start" });
+      if (c11.breath) put2(row2, { tok: tokOf(c11), t: "glyph", x: nhX(c11) + nhW(c11) + P2(0.55), y: yOf(row2, TOP_LINE2 + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+      if (c11.breath && c11.inhale) put2(row2, { tok: tokOf(c11), t: "text", x: nhX(c11) + nhW(c11) + P2(1.35), y: yOf(row2, TOP_LINE2 + 1) + P2(0.45), s: c11.inhale === "big" ? _tIn(o10.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o10.locale, "\u5438##\u8BB0\u53F7"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx2("breath-label"), anchor: "start" });
     }
     const tieArc = (row2, d3, x1, x2, ghost) => {
-      const len = Math.abs(x2 - x1), sgn = d3 < MID_LINE ? 1 : -1, y2 = yOf(row2, d3) + sgn * P2(0.8), h2 = Math.min(len * 0.25, Math.max(P2(0.5), Math.min(P2(1.6), len * 0.12)));
+      const len = Math.abs(x2 - x1), sgn = d3 < MID_LINE2 ? 1 : -1, y2 = yOf(row2, d3) + sgn * P2(0.8), h2 = Math.min(len * 0.25, Math.max(P2(0.5), Math.min(P2(1.6), len * 0.12)));
       put2(row2, { t: "path", d: `M${x1},${y2}Q${(x1 + x2) / 2},${y2 + sgn * h2} ${x2},${y2}`, cls: ghost ? "tie ghost" : "tie" });
     };
     const tieBetween = (a10, b3) => {
@@ -12639,7 +12630,7 @@ function drawStaff(c10) {
     const bracket = (cs2, openL, openR, num2) => {
       const row2 = RW(cs2[0]), n10 = cs2[0].ratio[0];
       const xa = openL ? Math.min(nhX(cs2[0]) - P2(1.2), nhX(cs2[0])) : nhX(cs2[0]), last = cs2[cs2.length - 1], xb = openR ? nhX(last) + nhW(last) + P2(1.2) : nhX(last) + nhW(last);
-      const top = Math.min(...cs2.map((c11) => Math.min(c11.pitch ? yOf(row2, dIdx(c11.pitch, c11.staff, c11.index)) : yOf(row2, MID_LINE), tipOf.get(c11) ?? Infinity)), yOf(row2, TOP_LINE)) - P2(1.6);
+      const top = Math.min(...cs2.map((c11) => Math.min(c11.pitch ? yOf(row2, dIdx(c11.pitch, c11.staff, c11.index)) : yOf(row2, MID_LINE2), tipOf.get(c11) ?? Infinity)), yOf(row2, TOP_LINE2)) - P2(1.6);
       const mid = (xa + xb) / 2, gap = num2 ? P2(1) : 0;
       const left = openL ? `M${xa},${top}` : `M${xa},${top + P2(0.6)}L${xa},${top}`, right2 = openR ? `L${xb},${top}` : `L${xb},${top}L${xb},${top + P2(0.6)}`;
       put2(row2, { t: "path", d: num2 ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right2}` : `${left}${right2}`, cls: "tuplet-bracket" });
@@ -12738,6 +12729,21 @@ function drawStaff(c10) {
     }
   });
   return { lyricParts };
+}
+
+// src/render/staff/geometry.ts
+var yAt = (staffTop, d3, half2) => staffTop + (TOP_LINE2 - d3) * half2;
+var dAt = (staffTop, y2, half2) => Math.round(TOP_LINE2 - (y2 - staffTop) / half2);
+var anchors = (staffTop, half2) => ({ top: yAt(staffTop, TOP_LINE2, half2), mid: yAt(staffTop, MID_LINE2, half2), bottom: yAt(staffTop, BOTTOM_LINE, half2) });
+function withStaffGeometry(d3) {
+  const half2 = d3.sp * 0.5;
+  return { ...d3, yOf: (r10, dd) => yAt(d3.systems[r10].staffTop, dd, half2), dOf: (r10, y2) => dAt(d3.systems[r10].staffTop, y2, half2), lyricY: (r10) => d3.lyricYs[r10] };
+}
+
+// src/render/staff/index.ts
+function staffLooks(song, noAutoGrand) {
+  const looks = resolveSongLooks(song, noAutoGrand);
+  return (paperId, partId) => looks.get(paperId)?.get(partId);
 }
 
 // src/render/frame/lanes.ts
@@ -12843,8 +12849,7 @@ function engrave(song, o10) {
 }
 function engraveData(song, o10) {
   if (!o10.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
-  const looks = resolveSongLooks(song, new Set(o10.parts.filter((p2) => p2.perc || p2.xHead).map((p2) => p2.id)));
-  const lookAt = (paperId, partId) => looks.get(paperId)?.get(partId);
+  const lookAt = staffLooks(song, new Set(o10.parts.filter((p2) => p2.perc || p2.xHead).map((p2) => p2.id)));
   if (o10.inC) {
     const perc = new Set(o10.parts.filter((p2) => p2.perc).map((p2) => p2.id));
     song = songInC(song, (id2) => perc.has(id2));
@@ -31697,9 +31702,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-622833ab392c.mjs");
+      return pick(() => "layout-worker-2837d31a9316.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-6b1c08f15c6b.mjs");
+      return pick(() => "encode-worker-4e8128462d9e.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -61268,4 +61273,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-b192e957cad9.mjs.map
+//# sourceMappingURL=moonsinger-8ddc0db5302a.mjs.map

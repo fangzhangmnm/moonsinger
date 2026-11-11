@@ -239,6 +239,17 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **空白处小菜单**（2026-10-08 晚，user「空白长按可以黏贴或者类似的右键上下文菜单」「小菜单同意」）：空白处长按（手指 / 笔）或电脑右键 → 光标放到那里 + 非模态小菜单（`openScoreMenu`）：粘贴 / 小节线 / 句号 / 调号… / 拍号… / 速度… / 全选这一行 / 全选；音上右键不接（选区条管）。
 - **月读条款译文**（user「license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）：`src/singer/credit-translations.ts` 中 / 英，按原文 sha256 钉住（`test/credit-translations.test.ts`：上游改原文 = 红 = 重译）；设置里原文在上（以原文为准）。不进 i18n 那套（原文永远要显示、译文要钉原文，i18n 只防漏译）。
 
+## 谱面分家：排版 = 框架 + 一种谱的画法（v0.16.108 起；2026-11-11，Claude Opus 5.5；READ before touching `src/render/`）
+
+ADR-0005（`ai-docs/adr/0005-score-surface-five-layers-row-depiction-is-the-unit.md`）+ 设计稿 `ai-docs/20261111-score-surface-architecture.md`（实际接口 = 第 7½ 节）+ 施工单 `ai-docs/20261111-score-surface-construction-plan.md`（1b 的施工记录在第六节）。流程图 = `ai-docs/20261109-pipelines.md` A8⅓。
+
+- **框架** = `src/render/engrave.ts`（`engraveData` 只出平数据、`engrave` = 再装上 `yOf / dOf / lyricY`）+ `src/render/frame/`（`arrange.ts` 合成列 / 折行 / 摆、`columns.ts` 列的先后按种类、`lanes.ts` 挂件的道、`params.ts`、`furniture.ts`）。框架不认字形、不认纵向：不 import `smufl / stems / glyph-box / score/clef`，五线谱只从 `src/render/staff/index.ts` 拿（守卫 `test/score-surface-guards.test.ts`）。
+- **五线谱这一种** = `src/render/staff/`：`rows.ts`（谱种的表：合租怎么叠、每条轨的单元 / 谱号 / 八度线）、`measure.ts`（量 = 一条轨的纯函数）、`draw.ts`（画：`put(行, …)` 画音符层、`attach(道, …)` 登记挂件、交回歌词锚点；道的先后 `STAFF_LANES`）、`geometry.ts`（第几级 ↔ y、上沿 / 中线 / 下沿、光标 / 鬼音符 / 纵向 ↔ 音高的几何纯函数）。
+- 排版明着吃 `opts.locale`（不读这一页的界面语言，守卫 `test/render-locale.test.ts`）。歌词归框架（画法只交锚点）。
+- **守卫 3**（`test/engrave-full.test.ts`）：三首真歌 × 七种视图 + 用全的测试歌（`test/fixtures/layout/full-song.ts`）× 十种视图，所有图元和平字段和冻结的比（路径里的数字差 ≤ 1e-6、别的数字 ≤ 0.0005 + 1e-6，统筹裁定）；版面本来就该变时才重冻（`node scripts/freeze-layout-full.mjs`），先找统筹。原来刀 1 的 N1 并进来了，N2（PDF 字节）照旧。
+- 新测试文件要登记进 `test/run.mjs`（守卫 `test/test-registry.test.ts`；1b 时没登记的守卫白绿过几个提交）。
+- 还没做 / 过渡：谱面视图还读 `Layout.yOf / dOf` 和 `HitNote.d`、`CaretHead.shift`（第二刀改读几何函数）；纵向的版式表还按五线谱的数写在 `frame/params.ts`（第四刀的排版参数表）；一行最多拉宽 1.3 倍（第六刀）；大谱表上跨两张谱的连线位置不对（分家前就不对，记账）。
+
 ## 修改锁（v0.16.96 起；v0.16.97 歌库里的歌也默认锁着；2026-11-10，Claude Fable 5.2；READ before touching 文档写入口 / 存盘 / 家）
 
 家规「源文件原则上只读：手动解锁才能改」（`../CLAUDE.md` 那一节）在写歌的迁移。标准 = 家族根 `ai-docs/20261108-edit-lock-standard.md`；设计稿 = 家族根 `ai-docs/20261109-moonsinger-edit-lock-design.md`（user 11-09 逐条定的在第四节，对代码重核 + 五处做法在第十四节）；流程图 = `ai-docs/20261109-pipelines.md` 第八节。
