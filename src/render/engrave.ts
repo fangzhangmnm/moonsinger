@@ -427,7 +427,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     });
     // 画的时候每一行都在自己的局部坐标里（第五线 = 0）；每个图元记着自己在哪一行（primRow，put / 贴挂件时记），定了行距按行整行挪（施工单 1b-6c，原来垫 row × 8192 的临时高度、最后按 round(y / 8192) 认行）。
     //   点击框按自己的 system 挪；画的行和 system 不同的（歌词：点击框归音那一行、画在歌词那一行）另记 hitRowOf。
-    const put = (row: number, ...ps: Prim[]) => { for (const p of ps) { const n0 = prims.length; prims.push(p); if (prims.length > n0) primRow[n0] = row; } };   // 先 push 再记：__noAnn 滤掉的不留行号
+    const put = (row: number, p: Prim) => { const n0 = prims.length; prims.push(p); if (prims.length > n0) primRow[n0] = row; };   // 先 push 再记：__noAnn 滤掉的不留行号。一次一个（不用剩余参数：每画一个图元就新建一个数组，第二刀开工前分段量出来的）
     const hitRowOf = new WeakMap<object, number>(), hitRow = (hit: object, row: number) => { hitRowOf.set(hit, row); };
     const skies: Skyline[] = [];
     for (let s = 0; s < nSys; s++) for (let r = 0; r < nR; r++) for (let k = 0; k < effStaves(r); k++) {

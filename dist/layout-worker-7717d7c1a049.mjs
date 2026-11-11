@@ -6814,12 +6814,10 @@ function engraveData(song, o) {
       const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
       for (const items of bySys.values()) fitLyrics(items, blockSx, LYRIC_MIN_SX, lyrGaps).forEach((f, k) => lyrPlan.set(`${r}:${items[k].index}`, { ...f, hw: items[k].w * f.sx / 2 }));
     });
-    const put = (row, ...ps) => {
-      for (const p of ps) {
-        const n0 = prims.length;
-        prims.push(p);
-        if (prims.length > n0) primRow[n0] = row;
-      }
+    const put = (row, p) => {
+      const n0 = prims.length;
+      prims.push(p);
+      if (prims.length > n0) primRow[n0] = row;
     };
     const hitRowOf = /* @__PURE__ */ new WeakMap(), hitRow = (hit, row) => {
       hitRowOf.set(hit, row);
@@ -7198,4 +7196,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-2837d31a9316.mjs.map
+//# sourceMappingURL=layout-worker-7717d7c1a049.mjs.map

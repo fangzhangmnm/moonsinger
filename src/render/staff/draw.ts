@@ -30,8 +30,8 @@ export interface StaffDrawCtx {
   /** 尺子：P = 谱（sp → px）；tx / TR / RS / mw = 字（文字模块的样式表）。 */
   P: (v: number) => number; tx: (role: TextRole) => number; TR: (role: TextRole, v: number) => number; RS: (role: TextRole) => number; mw: (role: TextRole, str: string) => number; sp: number; ts: number;
   /** 输出：图元和各张点击表，都在每一行自己的局部坐标里画（第五线 = 0），框架定了行距再整行挪。
-   *  put(行, 图元…) = 往那一行的图元表里画（贴挂件回调里画的不用写行，框架知道贴在哪一行）；hitRow = 点击框画在哪一行（和它的 system 不同时才记：歌词）。 */
-  put: (row: number, ...ps: Prim[]) => void; hitRow: (hit: object, row: number) => void;
+   *  put(行, 图元) = 往那一行的图元表里画（贴挂件回调里画的不用写行，框架知道贴在哪一行）；hitRow = 点击框画在哪一行（和它的 system 不同时才记：歌词）。 */
+  put: (row: number, p: Prim) => void; hitRow: (hit: object, row: number) => void;
   prims: Prim[]; notes: HitNote[]; chordHeads: Layout["chordHeads"]; rests: RestHit[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; clefs: ClefHit[];
   keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
   /** 纵向：第 r 行第 d 级 ↔ y；第五线；歌词基线；谱的点击高度；（第 s 行、第 r 个声部、第 k 张谱表）→ 行号。 */

@@ -13112,12 +13112,10 @@ function engraveData(song, o10) {
       const blockSx = Math.min(1, ...[...bySys.values()].map((items) => lyricBlockSx(items, LYRIC_MIN_SX, lyrGaps)));
       for (const items of bySys.values()) fitLyrics(items, blockSx, LYRIC_MIN_SX, lyrGaps).forEach((f2, k2) => lyrPlan.set(`${r10}:${items[k2].index}`, { ...f2, hw: items[k2].w * f2.sx / 2 }));
     });
-    const put2 = (row2, ...ps) => {
-      for (const p2 of ps) {
-        const n02 = prims.length;
-        prims.push(p2);
-        if (prims.length > n02) primRow[n02] = row2;
-      }
+    const put2 = (row2, p2) => {
+      const n02 = prims.length;
+      prims.push(p2);
+      if (prims.length > n02) primRow[n02] = row2;
     };
     const hitRowOf = /* @__PURE__ */ new WeakMap(), hitRow = (hit, row2) => {
       hitRowOf.set(hit, row2);
@@ -31702,7 +31700,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-2837d31a9316.mjs");
+      return pick(() => "layout-worker-7717d7c1a049.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-4e8128462d9e.mjs");
   }
@@ -61273,4 +61271,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8ddc0db5302a.mjs.map
+//# sourceMappingURL=moonsinger-99f8d16292fe.mjs.map
