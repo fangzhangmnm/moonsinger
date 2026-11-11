@@ -148,7 +148,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       tilePlaceholderHtml: (id) => placeholderHtml(identifiers.parse(id)?.stem ?? id),
       tileOverlayHtml: (id: string, item?: TileInfo, facts?: unknown) => coverHtml(identifiers.parse(id)?.stem ?? id, {
         sizeText: item?.size != null ? humanSize(item.size) : undefined,
-        ...((src) => (src?.k === "device" && src.stale ? { tag: _t("旧"), tagTitle: _t("这台设备上记着的那一遍是改之前渲的（之后改过）") } : {}))((void renderTick.value, soundOf(id, factsOf(facts)))),
+        ...((src) => (src?.k === "device" && src.stale ? { tag: _t("旧"), tagTitle: _t("渲染缓存里那一遍是改之前渲的（之后改过）") } : {}))((void renderTick.value, soundOf(id, factsOf(facts)))),
         editedText: item?.lastModified ? _t("改于 {lastModified}", { lastModified: new Date(item.lastModified).toLocaleString() }) : undefined,
       }),
       // 有声音可听的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；这台设备没记着、文件里也没带 = 不画。
@@ -160,9 +160,9 @@ export function initGalleryHost(d: GalleryHostDeps) {
         //   宿主没给才放「处理…」。v0.16.101 给每张卡都放了「渲染」钮，把「处理…」挤掉了（E2E sync 抓到）；渲过的 ▶ 从 v0.16.97 起也有这个毛病，一并修。
         if (isSignedIn() && NEEDS_RESOLVE.has(String(info?.syncState))) return null;
         const src = soundOf(id, factsOf(facts));
-        if (!src) return { icon: "play", title: _t("这台设备上还没渲过：点 = 在这里渲一遍（之后封面上能直接听）"), state: "unknown" };   // 不能用 "none"：图库库约定 none = 不画这颗钮（gallery-screen.js）   // v0.16.101：卡片说实话（user 11-11「歌库卡片说实话 对，可以渲染」）
+        if (!src) return { icon: "play", title: _t("渲染缓存里还没有这首：点 = 渲染（之后封面上能直接听）"), state: "unknown" };   // 不能用 "none"：图库库约定 none = 不画这颗钮（gallery-screen.js）   // v0.16.101：卡片说实话（user 11-11「歌库卡片说实话 对，可以渲染」）
         return player.playing() === id ? { icon: "pause", title: _t("暂停（底边播放条上也能控）"), state: "ready" }
-          : { icon: "play", title: src.k === "device" ? (src.stale ? _t("听上次渲的那一遍（之后改过，{p} 秒）", { p: src.secs.toFixed(0) }) : _t("听这台设备上记着的那一遍（{p} 秒）", { p: src.secs.toFixed(0) })) : _t("听歌里带着的那份 mp3（{p} 秒）", { p: src.secs.toFixed(0) }), state: "ready" };
+          : { icon: "play", title: src.k === "device" ? (src.stale ? _t("播放渲染缓存里上次渲的那一遍（之后改过，{p} 秒）", { p: src.secs.toFixed(0) }) : _t("播放渲染缓存里的这一遍（{p} 秒）", { p: src.secs.toFixed(0) })) : _t("听歌里带着的那份 mp3（{p} 秒）", { p: src.secs.toFixed(0) }), state: "ready" };
       },
     },
     policy: {
@@ -228,7 +228,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
   d.renders.onChange(() => { renderTick.value++; });
   let tickedFor: string | null = null;
   player.onChange(() => { const k = player.playing(); if (k !== tickedFor) { tickedFor = k; playTick.value++; } drawPlayer(); });
-  const NO_SOUND = (): string => _t("这台设备上还没有这首歌渲好的声音：打开它，「导出…」里导一次歌声（mp3），之后封面上就能直接听。");
+  const NO_SOUND = (): string => _t("渲染缓存里还没有这首：点它封面上的钮渲染，或者打开它用三条杠里的「渲染到缓存」。");
   /** 点了封面上的 ▶（包只在 tileAction 给了钮的卡上画它；facts = 包缓存的事实）：取声音放；再点同一首 = 放 / 暂停。 */
   async function playTile(id: string, facts: SongFacts): Promise<void> {
     if (player.state().key === id) { player.toggle(); return; }

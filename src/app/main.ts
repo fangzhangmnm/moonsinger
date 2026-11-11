@@ -1172,7 +1172,7 @@ async function renderHere(): Promise<void> {
   const busy = renderBusy(_t("正在渲染…"));
   try {
     const r = await perfApi.renderKeep({ quality: mp3Quality });
-    info(r.cached ? _t("这台设备上已经记着这一遍（内容没变）") : !r.kept ? _t("渲好了，但没记进这台设备（存储满了或者是隐私模式）") : D.dirty() ? _t("渲好了，记在这台设备上：存下去之后歌库封面上能听") : _t("渲好了，记在这台设备上：歌库里这首的封面上能直接听"));
+    info(r.cached ? _t("已经在渲染缓存里了（内容没变）") : !r.kept ? _t("渲好了，但没放进渲染缓存（存储满了或者是隐私模式）") : D.dirty() ? _t("渲好了，放进渲染缓存：存下去之后歌库封面上能听") : _t("渲好了，放进渲染缓存：歌库里这首的封面上能直接听"));
   } catch (e) { if ((e as { cancelled?: boolean }).cancelled) info(_t("渲染取消了")); else showError(_t("渲不了：{Error}", { Error: (e as Error).message })); }
   finally { busy.close(); }
 }
@@ -1185,7 +1185,7 @@ async function renderInLibrary(id: string): Promise<boolean> {
   const busy = renderBusy(_t("正在渲染「{stem}」…", { stem: stemOfId(id) }));
   try {
     const r = await perfApi.renderKeep({ quality: mp3Quality });
-    if (!r.kept) { showError(_t("渲好了，但没记进这台设备（存储满了或者是隐私模式）")); return false; }
+    if (!r.kept) { showError(_t("渲好了，但没放进渲染缓存（存储满了或者是隐私模式）")); return false; }
     return true;
   } catch (e) {
     if ((e as { cancelled?: boolean }).cancelled) info(_t("渲染取消了")); else showError(_t("渲不了：{Error}", { Error: (e as Error).message }));
@@ -1204,7 +1204,7 @@ function openMp3Panel(): void {
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("导出歌声（mp3）")}</div>` +
       `<div class="part-sec">${_t("音质")}</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>` +
       (D.st.song.papers.length > 1 ? `<div class="part-sec">${_t("范围")}</div><div class="set-row">${chip("s:all", _t("整首"), _t("隐藏的纸不放"), mp3Scope === "all")}${chip("s:segment", _t("这一张纸"), paper?.name || _t("第 {p} 张", { p: k + 1 }), mp3Scope === "segment")}</div>` : "") +
-      (mp3Scope === "all" ? `<div class="part-sec">${_t("记在这台设备上")}</div><div class="set-row">${chip("k:on", _t("记着"), _t("歌库里这首的封面上能直接听；设置里能删"), mp3Keep)}${chip("k:off", _t("不记"), _t("只导出这一份，不留"), !mp3Keep)}</div>` : "") +
+      (mp3Scope === "all" ? `<div class="part-sec">${_t("放进渲染缓存")}</div><div class="set-row">${chip("k:on", _t("放进去"), _t("歌库里这首的封面上能直接听；设置里能删"), mp3Keep)}${chip("k:off", _t("不放"), _t("只导出这一份，不留"), !mp3Keep)}</div>` : "") +
       (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("这台设备上记着上次渲好的这一份，内容没变：直接拿，不用等。")}</div>` : "") +
       (er ? `<div class="offer-msg">${_t("许可：{fellBack}。和署名一起写进 mp3 的标签。", { fellBack: er.fellBack ? _t("这份按「未声明」写——你选的许可允许别人改编，和小月相的条款可能冲突（作者栏里的选择没动）") : esc(er.rights!) })}</div>` : "") +
       ((is) => (is.length ? `<div class="offer-msg issue-warn">${_t("{n} 条轨不出声，mp3 里不会有它们：{is}。换人在谱前面的声部名里。", { n: is.length, is: esc(perfApi.issuesText(is)) })}</div>` : ""))(perfApi.issues()) +   // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
@@ -1310,7 +1310,7 @@ function openSettings(): void {
           : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入")}<input id="impIn" type="file" multiple hidden /></label>`,
         _t("选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"), `<pre id="packSt" class="set-packs">…</pre>`) +
       item(_t("音源库缓存"), "", _t("留在设备上，没网也能用；歌自己带声音，这里只是货架"), `<div id="sndCache" class="set-packs">…</div>`) +
-      item(_t("这台设备记着的歌声"), look("rc:clear", _t("全清")), _t("导出或「渲一遍」时记下的整首歌声，歌库封面上的 ▶ 靠它；只在这台设备上、不同步，最多 {n} 首，满了丢最久没听的；删了只是要重渲", { n: RENDER_KEEP }), `<div id="rcList" class="set-packs">…</div>`) +
+      item(_t("渲染缓存"), look("rc:clear", _t("全清")), _t("导出或「渲染到缓存」时放进来的整首歌声，歌库封面上的 ▶ 靠它；只在这台设备上、不同步，最多 {n} 首，满了丢最久没听的；删了只是要重渲", { n: RENDER_KEEP }), `<div id="rcList" class="set-packs">…</div>`) +
       item(_t("小月相的念缓存"), look("sp:clear", _t("清空念缓存")), _t("设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念"), `<div id="spCache" class="set-packs">…</div>`) +
       // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
       item(_t("重启声音"), look("audio:revive", _t("重启声音")), _t("声音不对劲的时候按一下（按键有延迟、没有声音）：把通向扬声器的那一段换成新的，排着没播完的声音一起丢掉。正在响的声音会断一下")) +
@@ -3047,7 +3047,7 @@ function openMainMenu(): void {
     `<div class="ctx-head"><b>${esc(H.fileName())}</b><span>${esc(fileWhere())}</span></div>` +
     item("new", "new", _t("新建")) + item("open", "folder-open", _t("打开本机文件…"), _t("打开 .mxl / .musicxml（拖进来也行；Ctrl / ⌘+O）")) +
     item("export", "export", _t("导出…"), _t("mp3、.mxl 副本（打包音源）…（Ctrl / ⌘+Shift+S）")) +
-    (inStore ? item("renderHere", "play", _t("渲一遍（歌库里能听）"), _t("渲好记在这台设备上，歌库里这首的封面上能直接听；不导出文件")) : "") +
+    (inStore ? item("renderHere", "play", _t("渲染到缓存"), _t("渲一遍放进渲染缓存（只在这台设备上）：歌库里这首的封面上能直接听；不导出文件")) : "") +
     (hasStore() && !inStore && !H.pending() ? item("intoLib", "import", _t("存进歌库"), cloudAvailable() ? _t("把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）") : _t("把这首歌放进歌库（只在这个浏览器里留一份；网盘在官网版）")) : "") +
     `<div class="ctx-sep"></div>` +
     (H.home.kind === "file" ? "" : item("rename", "rename", _t("改文件名…"), _t("只改文件名，纸上的歌名不变（点顶栏的文件名也一样）"))) +

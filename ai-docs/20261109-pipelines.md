@@ -152,7 +152,7 @@
 
 
 **v0.16.101 加的三条路（Claude Opus 5.5）**：
-- **渲一遍**（三条杠，歌库里的歌）：`main.ts renderHere` → `performance.ts renderKeep`（命中记着的 = 直接算有；否则 renderMp3 → 贴标签 → `renders.keep` → `linkRenderNow`，手里有没存的改动 = 存完 `relinkAfterSave` 再挂）。不出文件。
+- **渲染到缓存**（三条杠，歌库里的歌）：`main.ts renderHere` → `performance.ts renderKeep`（命中记着的 = 直接算有；否则 renderMp3 → 贴标签 → `renders.keep` → `linkRenderNow`，手里有没存的改动 = 存完 `relinkAfterSave` 再挂）。不出文件。
 - **歌库里渲**：卡片钮（没挂名 = state unknown）→ `gallery-host.ts renderThenPlay` → 宿主 `renderInLibrary`：`openStoreDoc`（照常 H.leave）→ 进度框（`renderBusy`，进度字 = `progress` 转进来；取消 = `cancelRender` → `awaitAllChunks` 按旗抛 cancelled）→ `renderKeep` → 挂名 → 回到歌库这边重读这张卡的戳 → `playTile`。
 - **改过之后**：`relinkAfterSave` 找不到这份新内容渲过的 = 不摘名；歌库 `soundOf` 看挂名的戳 ≠ 文件现在的戳 = stale → 封面「旧」、播放条「之后改过」+「重新渲染」（= 歌库里渲那条路）。
 - 设置的列表 = `renders.list()`（按最近用过排）；删 = `renders.remove(key)`（字节 + 挂名一起）。导出带 `keep` 开关（`mp3-keep`）。

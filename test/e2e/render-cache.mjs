@@ -52,7 +52,7 @@ await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 
 // ── ① 导出一次 = 记在设备上；内容没变再导出 = 直接拿 ──
 { const t1 = await exportOnce(), n1 = await sung(), r1 = await rc();
-  check(/记在这台设备上了/.test(t1) && n1 >= 1, "第一次导出：现渲（唱了），面板说记在这台设备上了", `${n1} ${t1.slice(0, 80)}`);
+  check(/放进渲染缓存了/.test(t1) && n1 >= 1, "第一次导出：现渲（唱了），面板说记在这台设备上了", `${n1} ${t1.slice(0, 80)}`);
   check(r1.stats.count === 1 && r1.stats.bytes > 1000 && !!r1.hit, "设备上记着 1 份", JSON.stringify(r1.stats));
   const r1b = await rcUntil((r) => !!r.link);
   check(!!r1b.link && r1b.link.identifier === id && r1b.link.stamp.length === 32, "挂在这首歌名下了（带着这个文件的戳）", JSON.stringify(r1b.link && { id: r1b.link.identifier, stamp: r1b.link.stamp }));
@@ -68,7 +68,7 @@ await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 // ── ② 歌库：记着的有 ▶，点了放 ──
 await openGallery();
 check(await hasPlay(id), "歌库封面上有 ▶（这台设备记着它的声音）");
-check(/这台设备上记着的那一遍/.test(await p.$eval(`${tileOf(id)} .gallery-tile-action`, (e) => e.getAttribute("title") ?? e.getAttribute("aria-label") ?? "")), "▶ 的提示说的是设备上记着的那一遍");
+check(/渲染缓存里的这一遍/.test(await p.$eval(`${tileOf(id)} .gallery-tile-action`, (e) => e.getAttribute("title") ?? e.getAttribute("aria-label") ?? "")), "▶ 的提示说的是设备上记着的那一遍");
 await p.click(`${tileOf(id)} .gallery-tile-action`); await p.waitForTimeout(900);
 check(!(await p.$eval(".ms-player", (e) => e.hidden)), "底边出了播放条");
 check((await p.evaluate(() => window.__moonsinger.gallery()?.playerState().key)) === id, "装进播放器的是这首");
@@ -127,7 +127,7 @@ const id2 = await p.evaluate(() => window.__moonsinger.identifier());
   await p.keyboard.press("Escape"); await p.waitForTimeout(100);
   await openGallery();
   const dim = await p.$eval(`${tileOf(id2)} .gallery-tile-action`, (e) => ({ cls: e.className, title: e.getAttribute("title") ?? e.getAttribute("aria-label") ?? "" })).catch(() => null);
-  check(!!dim && !/\bready\b/.test(dim.cls) && /还没渲过/.test(dim.title), "没渲过的歌：卡片上有钮（不是 ready），提示「还没渲过：点 = 在这里渲一遍」", JSON.stringify(dim));
+  check(!!dim && !/\bready\b/.test(dim.cls) && /渲染缓存里还没有这首/.test(dim.title), "没渲过的歌：卡片上有钮（不是 ready），提示「还没渲过：点 = 在这里渲一遍」", JSON.stringify(dim));
   await p.click(`${tileOf(id2)} .gallery-tile-action`);
   const playing = async () => { for (let i = 0; i < 120; i++) { if ((await p.evaluate(() => window.__moonsinger.gallery()?.playerState().key).catch(() => null)) === id2) return true; await p.waitForTimeout(250); } return false; };
   check(await playing(), "点了：渲完直接放这首");
@@ -141,7 +141,7 @@ await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 4, dir: "n
   await p.waitForSelector(".offer .offer-title:has-text('歌声导出好了')", { timeout: 40000 });
   const text = await p.$eval(".offer", (e) => e.textContent ?? "");
   await p.click(".offer button:has-text('关')").catch(() => p.keyboard.press("Escape")); await p.waitForTimeout(150);
-  check((await rc()).stats.count === n0 && !/记在这台设备上了/.test(text), "导出时选「不记」：设备上的份数不变，面板也不说记下了", `${n0} → ${(await rc()).stats.count}`); }
+  check((await rc()).stats.count === n0 && !/放进渲染缓存了/.test(text), "导出时选「不记」：设备上的份数不变，面板也不说记下了", `${n0} → ${(await rc()).stats.count}`); }
 await openGallery();
 
 // ── ③ 老文件：旧版本定稿过、里面带着一份 mp3 ──
