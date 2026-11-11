@@ -54,6 +54,8 @@ await p.keyboard.press("Escape"); await p.waitForTimeout(100);
 { const t1 = await exportOnce(), n1 = await sung(), r1 = await rc();
   check(/放进渲染缓存了/.test(t1) && n1 >= 1, "第一次导出：现渲（唱了），面板说记在这台设备上了", `${n1} ${t1.slice(0, 80)}`);
   check(r1.stats.count === 1 && r1.stats.bytes > 1000 && !!r1.hit, "设备上记着 1 份", JSON.stringify(r1.stats));
+  { const lp = r1.hit && r1.hit.loop;   // 2026-11-11：记着循环那一圈（歌库循环按它切，不等余音）
+    check(!!lp && lp.start >= 0 && lp.end > lp.start + 0.25 && lp.end < r1.hit.secs, "记着循环那一圈：在声音里面、余音在它后面", JSON.stringify({ loop: lp, secs: r1.hit && r1.hit.secs })); }
   const r1b = await rcUntil((r) => !!r.link);
   check(!!r1b.link && r1b.link.identifier === id && r1b.link.stamp.length === 32, "挂在这首歌名下了（带着这个文件的戳）", JSON.stringify(r1b.link && { id: r1b.link.identifier, stamp: r1b.link.stamp }));
   const t2 = await exportOnce(), n2 = await sung();

@@ -4924,6 +4924,8 @@ var S = {
   "{host} \u4E0D\u8BA9\u8BFB\uFF08{status}\uFF09\uFF1A\u8FD9\u6761\u94FE\u63A5\u6CA1\u8BBE\u6210\u300C\u77E5\u9053\u94FE\u63A5\u7684\u4EBA\u90FD\u80FD\u770B\u300D\u3002": { en: "{host} refused ({status}). The link isn\u2019t set to \u201Canyone with the link can view\u201D." },
   "{host} \u56DE\u4E86 {status}\uFF0C\u6CA1\u62FF\u5230\u6587\u4EF6\u3002": { en: "{host} answered {status}; no file." },
   "\u8FD9\u4E2A\u6587\u4EF6\u8D85\u8FC7 {mb} MB\uFF0C\u4E0D\u50CF\u4E00\u9996\u6B4C\uFF0C\u6CA1\u6253\u5F00\u3002": { en: "This file is over {mb} MB, too big for a song, so it wasn\u2019t opened." },
+  // 歌库循环按谱切（v0.16.107，2026-11-11，Claude Opus 5.5）
+  "\u8FD9\u4E00\u904D\u662F\u4E4B\u524D\u6E32\u7684\uFF1A\u5FAA\u73AF\u8981\u7B49\u4F59\u97F3\u653E\u5B8C\u624D\u56DE\u5230\u5F00\u5934\u3002\u91CD\u65B0\u6E32\u4E00\u904D\uFF0C\u5FAA\u73AF\u5C31\u6309\u8C31\u5207\uFF08\u548C\u7F16\u8F91\u5668\u91CC\u4E00\u6837\uFF09": { en: "This render is from before: looping waits for the tail to die out before starting over. Render again and the loop cuts by the score, like in the editor" },
   "\u91CD\u65B0\u6E32\u67D3": { en: "Render again" },
   "{stem} \xB7 \u65E7\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09": { en: "{stem} \xB7 outdated (changed since)" }
 };
@@ -5145,7 +5147,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.106-2026-11-11";
+var APP_VERSION = "v0.16.107-2026-11-11";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -31605,15 +31607,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-51f72105e31a.mjs");
+      return pick(() => "singer-worker-69d37c5405ef.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ecac1ebca6ce.mjs");
+      return pick(() => "layout-worker-7bda0d4ef971.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-be815f90a62c.mjs");
+      return pick(() => "encode-worker-0563532e6fc9.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38316,6 +38318,12 @@ function timelineOf(plan, presetIndex) {
   const { song } = plan;
   return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part) => performerInfoOf(plan.extras, part, presetIndex), hum: plan.hum, singOpt: humOpt() });
 }
+function loopSpanOf(song, tl2, withArrangementLoop = true) {
+  let from = tl2.papers[0]?.t0 ?? 0;
+  const a10 = parseArrangement(song.arrangement, song.papers);
+  if (withArrangementLoop && a10.loop && tl2.papers[a10.order.length]) from = tl2.papers[a10.order.length].t0;
+  return { from, to: tl2.total > from ? tl2.total : tl2.range.to };
+}
 async function renderSong(plan, deps, o10 = {}) {
   const pv2 = o10.pv ?? (() => ({ muted: false, solo: false })), say = o10.progress ?? (() => {
   });
@@ -38327,7 +38335,8 @@ async function renderSong(plan, deps, o10 = {}) {
   pushMix(deps.engine, { ...plan, mixBypass: false }, pv2);
   say(_t("\u6DF7\u97F3\u2026"), 0);
   const m2 = await deps.engine.renderOffline({ tracks: tl2.tracks, range: tl2.range, loop: false }, { sr: o10.sr ?? RENDER_SR, progress: (f2) => say(_t("\u6DF7\u97F3\u2026"), f2) });
-  return { left: m2.left, right: m2.right, sr: m2.sr, secs: m2.left.length / m2.sr, timeline: tl2, errors };
+  const secs = m2.left.length / m2.sr, span2 = loopSpanOf(plan.song, tl2), start = Math.max(0, span2.from - m2.start), end = Math.min(secs, span2.to - m2.start);
+  return { left: m2.left, right: m2.right, sr: m2.sr, secs, timeline: tl2, errors, loop: end - start >= 0.25 ? { start, end } : null };
 }
 function toMono(left, right) {
   const out = new Float32Array(left.length);
@@ -38753,12 +38762,8 @@ function createPerformance(host2) {
   let preparing = false, cancelPrepare = false;
   const SEAM_LEAD = 4;
   function playRange(tl2) {
-    const from = tl2.range.from, to2 = tl2.range.to;
-    let loopFrom = tl2.papers[0]?.t0 ?? 0;
-    const song = playSong2(), a10 = parseArrangement(song.arrangement, song.papers);
-    if (host2.viewScope() === "all" && a10.loop && tl2.papers[a10.order.length]) loopFrom = tl2.papers[a10.order.length].t0;
-    const loopTo = tl2.total > loopFrom ? tl2.total : to2;
-    return { from, to: to2, loopFrom, loopTo };
+    const span2 = loopSpanOf(playSong2(), tl2, host2.viewScope() === "all");
+    return { from: tl2.range.from, to: tl2.range.to, loopFrom: span2.from, loopTo: span2.to };
   }
   let startMark = null;
   let paused = null;
@@ -39113,7 +39118,7 @@ function createPerformance(host2) {
     const left = Q2.stereo ? r10.left : toMono(r10.left, r10.right), right = Q2.stereo ? r10.right : null;
     const bytes = await encodeMp3(left, right, r10.sr, Q2.kbps);
     progress2("");
-    return { bytes, secs: r10.secs, sr: r10.sr, kbps: Q2.kbps, stereo: Q2.stereo, roles, parts: r10.timeline.tracks.map((t10) => t10.id) };
+    return { bytes, secs: r10.secs, sr: r10.sr, kbps: Q2.kbps, stereo: Q2.stereo, roles, parts: r10.timeline.tracks.map((t10) => t10.id), loop: r10.loop };
   }
   function mp3Tag(roles) {
     const { rights, fellBack } = exportRights2(roles), { lines } = creditsOf2(roles, rights), cover = extras().thumbnail;
@@ -39133,7 +39138,7 @@ function createPerformance(host2) {
         tagged.set(tag2, 0);
         tagged.set(m2.bytes, tag2.length);
         r10 = { tagged, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo, roles: m2.roles, cached: false };
-        if (whole && o10.keep !== false) kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo }, tagged).catch(() => false) ?? false;
+        if (whole && o10.keep !== false) kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo, loop: m2.loop }, tagged).catch(() => false) ?? false;
       }
       const { lines, fellBack } = mp3Tag(r10.roles);
       const file = new File([r10.tagged], `${stampedCopy(`${docName2()}${o10.scope === "segment" ? `-${fileSafe(st2().song.papers.find((p2) => p2.id === st2().at.paper)?.name || _t("\u8FD9\u4E00\u5F20"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
@@ -39156,7 +39161,7 @@ function createPerformance(host2) {
       const m2 = await renderMp3({ quality: o10.quality, scope: "all" }), tag2 = mp3Tag(m2.roles).tag, tagged = new Uint8Array(tag2.length + m2.bytes.length);
       tagged.set(tag2, 0);
       tagged.set(m2.bytes, tag2.length);
-      const kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo }, tagged).catch(() => false) ?? false;
+      const kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo, loop: m2.loop }, tagged).catch(() => false) ?? false;
       return { cached: false, kept, secs: m2.secs };
     } catch (e10) {
       progress2("");
@@ -41522,7 +41527,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "00516b985f4b1944" : "dev";
+var CORE_HASH = true ? "1c93a2d2dcae89f1" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -48975,6 +48980,8 @@ function createSongPlayer(deps = {}) {
   let artwork = null;
   let lastTime = 0;
   let silentUrl = null;
+  const timers = deps.timers ?? { set: (fn, ms2) => setTimeout(fn, ms2), clear: (h2) => clearTimeout(h2) };
+  let jumpTimer = null;
   const listeners = /* @__PURE__ */ new Set();
   const emit = () => {
     for (const f2 of listeners) {
@@ -49041,7 +49048,35 @@ function createSongPlayer(deps = {}) {
     }
     setPlaybackState("none");
   }
+  function span2() {
+    const sp2 = track?.loopSpan;
+    if (!loop || !sp2 || !el2) return null;
+    const d3 = el2.duration;
+    if (!(sp2.end > sp2.start + 0.1) || sp2.start < 0 || Number.isFinite(d3) && sp2.end > d3 + 0.05) return null;
+    return sp2;
+  }
+  function clearJump() {
+    if (jumpTimer != null) {
+      timers.clear(jumpTimer);
+      jumpTimer = null;
+    }
+  }
+  function planJump() {
+    clearJump();
+    const sp2 = span2();
+    if (!sp2 || !el2 || el2.paused) return;
+    const rem = (sp2.end - el2.currentTime) / (el2.playbackRate || 1);
+    if (rem <= 5e-3) {
+      el2.currentTime = sp2.start;
+      return;
+    }
+    jumpTimer = timers.set(() => {
+      jumpTimer = null;
+      planJump();
+    }, Math.min(rem * 1e3, 1e3));
+  }
   function unload() {
+    clearJump();
     track = null;
     announced = false;
     artwork = null;
@@ -49063,10 +49098,12 @@ function createSongPlayer(deps = {}) {
       if (!announced) announce();
       setPlaybackState("playing");
       pushPosition();
+      planJump();
       emit();
     });
     audio.addEventListener("pause", () => {
       if (!track) return;
+      clearJump();
       setPlaybackState("paused");
       pushPosition();
       emit();
@@ -49074,6 +49111,7 @@ function createSongPlayer(deps = {}) {
     audio.addEventListener("loadedmetadata", () => {
       if (track) {
         pushPosition();
+        planJump();
         emit();
       }
     });
@@ -49081,14 +49119,19 @@ function createSongPlayer(deps = {}) {
       if (track) {
         lastTime = audio.currentTime;
         pushPosition();
+        planJump();
         emit();
       }
+    });
+    audio.addEventListener("ratechange", () => {
+      if (track) planJump();
     });
     audio.addEventListener("timeupdate", () => {
       if (!track) return;
       const t10 = audio.currentTime;
       if (t10 + 1 < lastTime) pushPosition();
       lastTime = t10;
+      planJump();
       emit();
     });
     audio.addEventListener("ended", () => {
@@ -49164,7 +49207,10 @@ function createSongPlayer(deps = {}) {
   }
   function setLoop2(on2) {
     loop = on2;
-    if (track) A2().loop = on2;
+    if (track) {
+      A2().loop = on2;
+      planJump();
+    }
     emit();
   }
   const state = () => ({ key: track?.key ?? null, paused: !track || !el2 || el2.paused, time: track && el2 ? el2.currentTime : 0, duration: track && el2 ? el2.duration : NaN, loop });
@@ -49500,7 +49546,7 @@ function initGalleryHost(d3) {
   }
   function soundOf(id2, f2) {
     const link2 = d3.renders.linkOf(storeKey(), id2);
-    if (link2 && f2?.stamp) return { k: "device", key: link2.key, secs: link2.meta.secs, stale: link2.stamp !== f2.stamp };
+    if (link2 && f2?.stamp) return { k: "device", key: link2.key, secs: link2.meta.secs, stale: link2.stamp !== f2.stamp, loop: link2.meta.loop ?? null };
     return f2?.final ? { k: "embedded", secs: f2.final.secs } : null;
   }
   const playerEl = document.createElement("div");
@@ -49510,14 +49556,16 @@ function initGalleryHost(d3) {
   fullEl.append(playerEl);
   const appIcon = (file, sizes) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
-  let barTitle = "", barBlob = null, barStale = false;
+  let barTitle = "", barBlob = null, barStale = false, barNoSpan = false;
   const fmtTime2 = (s10) => Number.isFinite(s10) ? `${Math.floor(s10 / 60)}:${String(Math.floor(s10 % 60)).padStart(2, "0")}` : "0:00";
   function drawPlayer() {
     const s10 = player.state();
     playerEl.hidden = s10.key == null;
     if (s10.key == null) return;
     playerEl.querySelector(".ms-player-title").textContent = barStale ? _t("{stem} \xB7 \u65E7\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09", { stem: barTitle }) : barTitle;
-    playerEl.querySelector(".ms-player-rerender").hidden = !barStale;
+    const rerender = playerEl.querySelector(".ms-player-rerender");
+    rerender.hidden = !(barStale || s10.loop && barNoSpan);
+    rerender.title = barStale ? _t("\u6309\u73B0\u5728\u7684\u6837\u5B50\u91CD\u65B0\u6E32\u4E00\u904D") : _t("\u8FD9\u4E00\u904D\u662F\u4E4B\u524D\u6E32\u7684\uFF1A\u5FAA\u73AF\u8981\u7B49\u4F59\u97F3\u653E\u5B8C\u624D\u56DE\u5230\u5F00\u5934\u3002\u91CD\u65B0\u6E32\u4E00\u904D\uFF0C\u5FAA\u73AF\u5C31\u6309\u8C31\u5207\uFF08\u548C\u7F16\u8F91\u5668\u91CC\u4E00\u6837\uFF09");
     playerEl.querySelector(".ms-player-time").textContent = `${fmtTime2(s10.time)} / ${fmtTime2(s10.duration)}`;
     playerEl.querySelector(".ms-player-toggle").innerHTML = iconHtml(s10.paused ? "play" : "pause");
     const loopBtn = playerEl.querySelector(".ms-player-loop");
@@ -49572,10 +49620,12 @@ function initGalleryHost(d3) {
         return;
       }
       const cover = (await gallery2?.thumbs?.read(id2).catch(() => null))?.blob ?? null;
+      const loopSpan = src.k === "device" ? src.loop : null;
       barTitle = stem;
       barBlob = got2.blob;
       barStale = src.k === "device" && src.stale;
-      const r10 = await player.play({ key: id2, blob: got2.blob, title: stem, artist: "MoonSinger", album: got2.album, cover });
+      barNoSpan = !loopSpan;
+      const r10 = await player.play({ key: id2, blob: got2.blob, title: stem, artist: "MoonSinger", album: got2.album, cover, loopSpan });
       if (r10 === "blocked") status(_t("\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6"));
       diagNote("gallery", `play ${src.k} ${id2} (${got2.blob.size} B) \u2192 ${r10}`);
     } catch (e10) {
@@ -55096,7 +55146,7 @@ async function takeRender(o10) {
 }
 async function keepRender(o10, tagged) {
   try {
-    const m2 = await renders.put({ fingerprint: contentFingerprintOf(saveArgs()), quality: o10.quality, parts: [...o10.parts], roles: o10.roles, secs: o10.secs, kbps: o10.kbps, stereo: o10.stereo, title: o10.title, app: APP_VERSION, core: coreInfo() }, tagged);
+    const m2 = await renders.put({ fingerprint: contentFingerprintOf(saveArgs()), quality: o10.quality, parts: [...o10.parts], roles: o10.roles, secs: o10.secs, kbps: o10.kbps, stereo: o10.stereo, ...o10.loop ? { loop: o10.loop } : {}, title: o10.title, app: APP_VERSION, core: coreInfo() }, tagged);
     void linkRenderNow(m2.key);
     return true;
   } catch (e10) {
@@ -61133,4 +61183,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-10df32f4564d.mjs.map
+//# sourceMappingURL=moonsinger-cbb5f3b409f0.mjs.map

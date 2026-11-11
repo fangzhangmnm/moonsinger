@@ -30,6 +30,9 @@ export interface RenderMeta {
   /** 真出了声的角色 id（署名推演用）。 */
   roles: string[];
   secs: number; kbps: number; stereo: boolean;
+  /** 循环那一圈在这份声音里的起止秒（按谱：第一张纸头 / 循环段头 → 谱的结尾，不含余音；src/core/render.ts loopSpanOf）。
+   *  2026-11-11 起渲的才有；没有（之前渲的、老文件里搬来的）= 歌库循环按整个文件绕（要等余音放完）。 */
+  loop?: { start: number; end: number };
   /** mp3 的字节数（带标签）。 */
   size: number;
   /** 标签上写的歌名（没有歌名时 = 文件名）。 */

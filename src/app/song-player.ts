@@ -8,6 +8,11 @@ import { _t } from "../i18n/index.ts";
 //   ③ 播放 / 暂停、进度（含循环绕回开头）都报给系统，锁屏上的按钮和进度条才对得上、能拖。
 //   循环 = 这次打开有效（同编辑器的「循环」，不进存储）；锁屏上系统没有循环钮，在播放条上开好再锁屏。
 //   从头放 = restart()（2026-10-17 by Claude Opus 5.5；user「gallery播放没有从头再来的功能，我有时候想从头听」→ 播放条加键「做」）：播放条的 |▶ 和锁屏 / 耳机的「上一首」都走它。
+//   循环按谱切（2026-11-11 by Claude Opus 5.5；user「歌库播放的loop的时间好像算错了，它和在编辑器里播放的loop的行为不一样。你不应该等小尾巴吧？…至少时间上能切对」）：
+//     mp3 末尾带着余音（最后一个音的释放、混响尾巴，最长十几秒）+ 编码器补的一点空白；<audio loop> 要等这些放完才绕回 0。
+//     这首给了 loopSpan（渲的时候记的「循环那一圈」，src/core/render.ts loopSpanOf，和编辑器的循环同一个规矩）= 放到 end 就跳回 start（余音切掉，不像编辑器那样接到下一圈开头上）。
+//     跳 = 定时器按 <audio> 的时钟算好那一刻（每次 timeupdate / seeked / playing 重新对一次表）；元素自己的 loop 照样开着当兜底：
+//     定时器没跑上（iPad 锁屏后页面的 JS 可能不跑）= 退回原来那样放完整个文件再从头来，不会更差。
 //   不碰界面：播放条归宿主（gallery-host.ts），这里只出状态 + onChange。
 
 export interface SongTrack {
@@ -20,6 +25,8 @@ export interface SongTrack {
   album?: string;
   /** 封面图；没有 = 用 fallbackArtwork（app 图标）。 */
   cover?: Blob | null;
+  /** 循环那一圈在这份声音里的起止秒（开着循环时放到 end 跳回 start）；没有 = 按整个文件循环。 */
+  loopSpan?: { start: number; end: number } | null;
 }
 export interface SongPlayerState {
   /** 装着哪首（null = 没有，播放条收起）。 */
@@ -42,6 +49,8 @@ export interface SongPlayerDeps {
   fallbackArtwork?: MediaImage[];
   /** 放的途中坏了（文件坏 / 解不了）：已经停了，告诉人一声。 */
   onError?: (message: string) => void;
+  /** 定时器（测试注入假的；不给 = setTimeout / clearTimeout）。 */
+  timers?: { set: (fn: () => void, ms: number) => unknown; clear: (h: unknown) => void };
 }
 
 /** 锁屏上「快退 / 快进」一下的秒数（系统没给 seekOffset 时）。 */
@@ -66,6 +75,8 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
   let artwork: MediaImage[] | null = null;
   let lastTime = 0;
   let silentUrl: string | null = null;
+  const timers = deps.timers ?? { set: (fn: () => void, ms: number): unknown => setTimeout(fn, ms), clear: (h: unknown) => clearTimeout(h as ReturnType<typeof setTimeout>) };
+  let jumpTimer: unknown = null;
   const listeners = new Set<() => void>();
   const emit = () => { for (const f of listeners) { try { f(); } catch { /* 一个听众坏了不拖累别的 */ } } };
 
@@ -106,20 +117,38 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
     try { ms.metadata = null; } catch { /* 无妨 */ }
     setPlaybackState("none");
   }
+  /** 循环那一圈（这首给了、开着循环、落在声音里面才算）。 */
+  function span(): { start: number; end: number } | null {
+    const sp = track?.loopSpan; if (!loop || !sp || !el) return null;
+    const d = el.duration;
+    if (!(sp.end > sp.start + 0.1) || sp.start < 0 || (Number.isFinite(d) && sp.end > d + 0.05)) return null;
+    return sp;
+  }
+  function clearJump(): void { if (jumpTimer != null) { timers.clear(jumpTimer); jumpTimer = null; } }
+  /** 按 <audio> 的时钟算好跳回去的那一刻：到了（差不到 5 ms 或已经过了）就跳；没到 = 定一个闹钟，最多隔 1 秒回来再对一次表（JS 的钟和声音的钟会漂）。 */
+  function planJump(): void {
+    clearJump();
+    const sp = span(); if (!sp || !el || el.paused) return;
+    const rem = (sp.end - el.currentTime) / (el.playbackRate || 1);
+    if (rem <= 0.005) { el.currentTime = sp.start; return; }   // 跳完会来 seeked → 再排下一圈
+    jumpTimer = timers.set(() => { jumpTimer = null; planJump(); }, Math.min(rem * 1000, 1000));
+  }
   /** 卸下装着的那首（先清 track：元素复位时冒出来的事件不认）。 */
   function unload(): void {
+    clearJump();
     track = null; announced = false; artwork = null; lastTime = 0;
     if (loaded && el) { loaded = false; el.pause(); el.removeAttribute("src"); el.load(); }   // 装着东西才复位；空着的元素不碰（更不为了复位去建一个）
     if (url) { URL.revokeObjectURL(url); url = null; }
   }
 
   function wire(audio: HTMLAudioElement): void {
-    audio.addEventListener("playing", () => { if (!track) return; if (!announced) announce(); setPlaybackState("playing"); pushPosition(); emit(); });
-    audio.addEventListener("pause", () => { if (!track) return; setPlaybackState("paused"); pushPosition(); emit(); });
-    audio.addEventListener("loadedmetadata", () => { if (track) { pushPosition(); emit(); } });
-    audio.addEventListener("seeked", () => { if (track) { lastTime = audio.currentTime; pushPosition(); emit(); } });
+    audio.addEventListener("playing", () => { if (!track) return; if (!announced) announce(); setPlaybackState("playing"); pushPosition(); planJump(); emit(); });
+    audio.addEventListener("pause", () => { if (!track) return; clearJump(); setPlaybackState("paused"); pushPosition(); emit(); });
+    audio.addEventListener("loadedmetadata", () => { if (track) { pushPosition(); planJump(); emit(); } });
+    audio.addEventListener("seeked", () => { if (track) { lastTime = audio.currentTime; pushPosition(); planJump(); emit(); } });
+    audio.addEventListener("ratechange", () => { if (track) planJump(); });
     // 循环绕回开头不一定有 seeked：时间往回跳了就重报一次进度（锁屏的进度条是系统按上次报的自己往前推的）
-    audio.addEventListener("timeupdate", () => { if (!track) return; const t = audio.currentTime; if (t + 1 < lastTime) pushPosition(); lastTime = t; emit(); });
+    audio.addEventListener("timeupdate", () => { if (!track) return; const t = audio.currentTime; if (t + 1 < lastTime) pushPosition(); lastTime = t; planJump(); emit(); });
     audio.addEventListener("ended", () => { if (track) emit(); });   // 没开循环：放完停在结尾，再点 ▶ 从头放
     audio.addEventListener("error", () => { if (!track) return; stop(); deps.onError?.(_t("这份 mp3 放不了（文件坏了？）")); });
   }
@@ -156,7 +185,7 @@ export function createSongPlayer(deps: SongPlayerDeps = {}) {
   /** 从头放：回到开头、放着 / 停着 / 放完了都接着放。 */
   function restart(): void { if (!track) return; seek(0); resume(); }
   function stop(): void { const had = track != null, ann = announced; unload(); if (had || ann) unannounce(); if (had) emit(); }   // 什么都没装 = 什么都不碰（离开歌库每次都会叫到这里）
-  function setLoop(on: boolean): void { loop = on; if (track) A().loop = on; emit(); }
+  function setLoop(on: boolean): void { loop = on; if (track) { A().loop = on; planJump(); } emit(); }
   const state = (): SongPlayerState => ({ key: track?.key ?? null, paused: !track || !el || el.paused, time: track && el ? el.currentTime : 0, duration: track && el ? el.duration : NaN, loop });
   return {
     arm, play, toggle, restart, stop, setLoop, state,

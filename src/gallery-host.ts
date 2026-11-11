@@ -190,9 +190,9 @@ export function initGalleryHost(d: GalleryHostDeps) {
     return { stamp: stampOf(text), final };
   }
   /** 这张卡现在有什么声音可听：这台设备上记着的那一遍（挂名的戳 = 这个文件此刻的戳）优先；否则文件里还带着的那份（老文件）；都没有 = null。 */
-  function soundOf(id: string, f: SongFacts): { k: "device"; key: string; secs: number; stale: boolean } | { k: "embedded"; secs: number } | null {
+  function soundOf(id: string, f: SongFacts): { k: "device"; key: string; secs: number; stale: boolean; loop: { start: number; end: number } | null } | { k: "embedded"; secs: number } | null {
     const link = d.renders.linkOf(storeKey(), id);
-    if (link && f?.stamp) return { k: "device", key: link.key, secs: link.meta.secs, stale: link.stamp !== f.stamp };   // 戳对不上 = 文件之后改过（v0.16.101：标「旧」、照样能听；之前是当没有）
+    if (link && f?.stamp) return { k: "device", key: link.key, secs: link.meta.secs, stale: link.stamp !== f.stamp, loop: link.meta.loop ?? null };   // loop = 循环那一圈（2026-11-11 起渲的才有）   // 戳对不上 = 文件之后改过（v0.16.101：标「旧」、照样能听；之前是当没有）
     return f?.final ? { k: "embedded", secs: f.final.secs } : null;
   }
   // ── 迷你播放条（歌库底边）：|▶ 从头放、▶ / ⏸、歌名、时间、循环、✕。出声 = src/app/song-player.ts（<audio> + 系统媒体控件：主屏 PWA 锁屏照放，锁屏 / 控制中心 / 耳机键能控）──
@@ -209,14 +209,16 @@ export function initGalleryHost(d: GalleryHostDeps) {
   fullEl.append(playerEl);
   const appIcon = (file: string, sizes: string) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
-  let barTitle = "", barBlob: Blob | null = null, barStale = false;   // 正在放的那份 mp3（分享 / 下载用）
+  let barTitle = "", barBlob: Blob | null = null, barStale = false, barNoSpan = false;   // 正在放的那份 mp3（分享 / 下载用）；barNoSpan = 这一遍没记循环那一圈（之前渲的 / 老文件里的）
   const fmtTime = (s: number) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00");
   function drawPlayer(): void {
     const s = player.state();
     playerEl.hidden = s.key == null;
     if (s.key == null) return;
     playerEl.querySelector<HTMLElement>(".ms-player-title")!.textContent = barStale ? _t("{stem} · 旧（之后改过）", { stem: barTitle }) : barTitle;
-    playerEl.querySelector<HTMLElement>(".ms-player-rerender")!.hidden = !barStale;
+    const rerender = playerEl.querySelector<HTMLElement>(".ms-player-rerender")!;
+    rerender.hidden = !(barStale || (s.loop && barNoSpan));   // 开着循环、这一遍又没记循环那一圈 = 循环要等余音放完：给一个重渲的口（2026-11-11）
+    rerender.title = barStale ? _t("按现在的样子重新渲一遍") : _t("这一遍是之前渲的：循环要等余音放完才回到开头。重新渲一遍，循环就按谱切（和编辑器里一样）");
     playerEl.querySelector<HTMLElement>(".ms-player-time")!.textContent = `${fmtTime(s.time)} / ${fmtTime(s.duration)}`;
     playerEl.querySelector<HTMLElement>(".ms-player-toggle")!.innerHTML = iconHtml(s.paused ? "play" : "pause");
     const loopBtn = playerEl.querySelector<HTMLElement>(".ms-player-loop")!;
@@ -250,8 +252,9 @@ export function initGalleryHost(d: GalleryHostDeps) {
       });
       if (!got) { status(NO_SOUND()); return; }
       const cover = (await gallery?.thumbs?.read(id).catch(() => null))?.blob ?? null;   // 锁屏上的图 = 歌库缓存着的封面（没有 = app 图标）
-      barTitle = stem; barBlob = got.blob; barStale = src.k === "device" && src.stale;
-      const r = await player.play({ key: id, blob: got.blob, title: stem, artist: "MoonSinger", album: got.album, cover });
+      const loopSpan = src.k === "device" ? src.loop : null;
+      barTitle = stem; barBlob = got.blob; barStale = src.k === "device" && src.stale; barNoSpan = !loopSpan;
+      const r = await player.play({ key: id, blob: got.blob, title: stem, artist: "MoonSinger", album: got.album, cover, loopSpan });
       if (r === "blocked") status(_t("没能自己开始放：点底边播放条上的 ▶"));
       diagNote("gallery", `play ${src.k} ${id} (${got.blob.size} B) → ${r}`);
     } catch (e) { reportError(e, "warning"); status(_t("放不了：{Error}", { Error: (e as Error).message ?? String(e) }), true); player.stop(); }

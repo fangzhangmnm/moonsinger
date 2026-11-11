@@ -27,9 +27,15 @@ class FakeSession {
   setActionHandler(a: string, f: ((d: Record<string, unknown>) => void) | null) { if (f) this.handlers.set(a, f); else this.handlers.delete(a); }
   setPositionState(s: { duration: number; position: number; playbackRate: number }) { this.positions.push(s); }
 }
-function setup(opts: { fallback?: boolean } = {}) {
+/** 假定时器：记下排了什么，测试自己 run()（不真等）。 */
+function fakeTimers() {
+  let next = 1; const q = new Map<number, { fn: () => void; ms: number }>();
+  return { q, set: (fn: () => void, ms: number) => { const id = next++; q.set(id, { fn, ms }); return id; }, clear: (h: unknown) => { q.delete(h as number); },
+    run() { const all = [...q.entries()]; q.clear(); for (const [, t] of all) t.fn(); }, last: () => [...q.values()].pop()?.ms ?? null };
+}
+function setup(opts: { fallback?: boolean; timers?: ReturnType<typeof fakeTimers> } = {}) {
   const audio = new FakeAudio(), ms = new FakeSession(), errors: string[] = [];
-  const player = createSongPlayer({
+  const player = createSongPlayer({ ...(opts.timers ? { timers: opts.timers } : {}),
     audio: audio as unknown as HTMLAudioElement, mediaSession: ms as unknown as MediaSession,
     makeMetadata: (init) => ({ ...init }) as unknown as MediaMetadata,
     fallbackArtwork: opts.fallback === false ? undefined : [{ src: "https://x/icon-512.png", sizes: "512x512", type: "image/png" }],
@@ -99,6 +105,35 @@ describe("歌库播放器（锁屏）", () => {
     await player.play(track()); eq(audio.loop, true);
     player.setLoop(false); eq(audio.loop, false);
     player.setLoop(true); await player.play(track("b.mxl")); eq(audio.loop, true, "换一首还是循环"); eq(player.state().loop, true);
+  });
+  it("循环按谱切（2026-11-11）：给了循环那一圈 = 放到 end 跳回 start，不等余音；元素自己的 loop 照样开着当兜底", async () => {
+    const timers = fakeTimers(), { audio, player } = setup({ timers });
+    audio.duration = 12;   // 曲子 1–9 秒，后面 3 秒是余音
+    player.setLoop(true);
+    await player.play({ ...track(), loopSpan: { start: 1, end: 9 } });
+    eq(audio.loop, true, "兜底：定时器没跑上就按整个文件绕");
+    assert(timers.q.size === 1 && timers.last()! <= 1000, `开放就排了一个闹钟（最多 1 秒对一次表）：${timers.last()}`);
+    audio.currentTime = 8.5; timers.run();
+    assert(timers.q.size === 1 && Math.abs(timers.last()! - 500) < 1, `离 end 还有 0.5 秒 = 0.5 秒后再看：${timers.last()}`);
+    audio.currentTime = 8.998; timers.run();
+    eq(audio.currentTime, 1, "到 end（差不到 5 ms）= 跳回 start");
+    audio.currentTime = 10.5; audio.fire("timeupdate");
+    eq(audio.currentTime, 1, "已经在余音里（比如拖进度拖过去了）= 马上回 start");
+  });
+  it("循环按谱切：没开循环 / 暂停着 / 没给那一圈 / 那一圈落在声音外面 = 不跳（照旧放完整个文件）", async () => {
+    const timers = fakeTimers(), { audio, player } = setup({ timers });
+    audio.duration = 12;
+    await player.play({ ...track(), loopSpan: { start: 1, end: 9 } });
+    eq(timers.q.size, 0, "没开循环 = 不排闹钟");
+    audio.currentTime = 9.5; audio.fire("timeupdate"); eq(audio.currentTime, 9.5, "没开循环 = 放进余音照常");
+    player.setLoop(true); eq(audio.currentTime, 1, "开循环那一刻已经在余音里 = 回 start");
+    player.toggle(); eq(timers.q.size, 0, "暂停 = 闹钟收掉");
+    player.toggle(); await tick(); eq(timers.q.size, 1, "接着放 = 重排");
+    await player.play({ ...track("b.mxl"), loopSpan: null }); audio.duration = 12; audio.fire("loadedmetadata");
+    eq(timers.q.size, 0, "没给那一圈 = 不排（按整个文件绕）");
+    await player.play({ ...track("c.mxl"), loopSpan: { start: 0, end: 30 } }); audio.duration = 12; audio.fire("loadedmetadata");
+    eq(timers.q.size, 0, "那一圈比声音还长（对不上）= 不认");
+    player.stop(); eq(timers.q.size, 0, "停 = 闹钟收掉");
   });
   it("进度：装好了报一次；循环绕回开头（没有 seeked）时重报；拖进度夹在曲长里", async () => {
     const { audio, ms, player } = setup();

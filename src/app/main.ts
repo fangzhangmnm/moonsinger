@@ -207,9 +207,9 @@ async function takeRender(o: { quality: Mp3Quality; parts: readonly string[]; ti
   return { bytes: got.bytes, secs: m.secs, kbps: m.kbps, stereo: m.stereo, roles: m.roles };
 }
 /** 刚渲好的一份记下来。记不进去（配额 / 隐私模式）= 报进黑匣子、回 false，不拦导出。 */
-async function keepRender(o: { quality: Mp3Quality; parts: readonly string[]; title: string; roles: string[]; secs: number; kbps: number; stereo: boolean }, tagged: Uint8Array): Promise<boolean> {
+async function keepRender(o: { quality: Mp3Quality; parts: readonly string[]; title: string; roles: string[]; secs: number; kbps: number; stereo: boolean; loop: { start: number; end: number } | null }, tagged: Uint8Array): Promise<boolean> {
   try {
-    const m = await renders.put({ fingerprint: contentFingerprintOf(saveArgs()), quality: o.quality, parts: [...o.parts], roles: o.roles, secs: o.secs, kbps: o.kbps, stereo: o.stereo, title: o.title, app: APP_VERSION, core: coreInfo() }, tagged);
+    const m = await renders.put({ fingerprint: contentFingerprintOf(saveArgs()), quality: o.quality, parts: [...o.parts], roles: o.roles, secs: o.secs, kbps: o.kbps, stereo: o.stereo, ...(o.loop ? { loop: o.loop } : {}), title: o.title, app: APP_VERSION, core: coreInfo() }, tagged);
     void linkRenderNow(m.key);
     return true;
   } catch (e) { reportError(e, "log"); diagNote("render-cache", `not kept: ${(e as Error)?.message ?? e}`); return false; }

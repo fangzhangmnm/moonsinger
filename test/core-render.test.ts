@@ -33,6 +33,12 @@ describe("无头渲染核心", () => {
     assert(r1.secs > 3 && r1.secs < 60, `secs=${r1.secs}`);
     assert(peak(r1.left) > 0.01 && peak(r1.right) > 0.01, "不是静音");
     eq(r1.left.length, r2.left.length); eq(sum(r1.left), sum(r2.left), "确定性（左）"); eq(sum(r1.right), sum(r2.right), "确定性（右）");
+    // 循环那一圈（2026-11-11：歌库的 mp3 循环按它切）= 谱的头尾换算到输出里的秒；余音在它后面
+    const tl = r1.timeline, lp = r1.loop!;
+    assert(lp != null, "有循环那一圈");
+    assert(Math.abs(lp.start - Math.max(0, (tl.papers[0]?.t0 ?? 0) - tl.range.from)) < 1e-9, `start = 第一张纸头：${lp.start}`);
+    assert(Math.abs(lp.end - (tl.total - tl.range.from)) < 1e-9, `end = 谱的结尾：${lp.end} vs ${tl.total - tl.range.from}`);
+    assert(lp.end < r1.secs - 0.05, `余音在 end 后面：end ${lp.end.toFixed(3)} < 整个 ${r1.secs.toFixed(3)}`);
   });
   it("独奏 / 静音筛声部；一个都放不了 = 抛", async () => {
     const song = sampleSong(), extras = sampleExtras(song);

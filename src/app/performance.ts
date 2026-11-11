@@ -7,7 +7,7 @@
 import { _t } from "../i18n/index.ts";
 import { APP_VERSION } from "../version.ts";
 import { DEFAULT_TIME, WHOLE, isTimed, type EditorState, type Song, type PartDef, timeline, songOnlyPaper, flattenPart } from "../score/song.ts";
-import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
+import { songPlayOrder } from "../score/arrange.ts";
 import { timeMapOf } from "../score/groove.ts";
 import { ScoreView } from "../ui/score-view.ts";
 import { Singer } from "../singer/client.ts";
@@ -22,7 +22,7 @@ import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf } from "../performers/index.ts";
 import type { TrackSpec } from "../engine/studio.ts";
 import { LEAD_IN, PRE_ROLL, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
-import { humOpt, audibleParts as audiblePartsOf, performerInfoOf, prepareParts, micOf as micOfCore, channelOf as channelOfCore, lowestMidiOf as lowestMidiCore, songBpm as songBpmOf, pushMix, timelineOf, renderSong, toMono, RENDER_SR, type RenderDeps, type RenderPlan } from "../core/render.ts";
+import { humOpt, audibleParts as audiblePartsOf, performerInfoOf, prepareParts, micOf as micOfCore, channelOf as channelOfCore, lowestMidiOf as lowestMidiCore, songBpm as songBpmOf, pushMix, timelineOf, renderSong, loopSpanOf, toMono, RENDER_SR, type RenderDeps, type RenderPlan } from "../core/render.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
 import { fileSafe, stampedCopy } from "./names.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
@@ -48,7 +48,7 @@ export interface PerfHost {
    *  take = 同一份内容、同一个音质、同样的声部、渲染核心也没变的那一份（带标签的 mp3）；没有 = null → 现渲。keep = 刚渲好的记下来，回记没记成（记不进去宿主自己报进黑匣子，不拦导出）。 */
   renders?: {
     take(o: { quality: Mp3Quality; parts: readonly string[]; title: string }): Promise<{ bytes: Uint8Array; secs: number; kbps: number; stereo: boolean; roles: string[] } | null>;
-    keep(o: { quality: Mp3Quality; parts: readonly string[]; title: string; roles: string[]; secs: number; kbps: number; stereo: boolean }, tagged: Uint8Array): Promise<boolean>;
+    keep(o: { quality: Mp3Quality; parts: readonly string[]; title: string; roles: string[]; secs: number; kbps: number; stereo: boolean; loop: { start: number; end: number } | null }, tagged: Uint8Array): Promise<boolean>;
   };
 }
 
@@ -297,11 +297,8 @@ export function createPerformance(host: PerfHost) {
   /** from / to = 声音的头尾（唱的那几句提前起的辅音、最后一句的尾音都在里面）；loopFrom / loopTo = 循环按谱绕的那一圈（v0.16.59：原来循环也按声音的头尾绕，
    *  每圈接缝多出约 1.1 s 空——user 11-09「弱起的时候我最后一个小节会少一拍。播放的时候不应跟自动补全。不如我循环会很麻烦」；接缝两边的唱段由引擎接上）。 */
   function playRange(tl: Timeline): { from: number; to: number; loopFrom: number; loopTo: number } {
-    const from = tl.range.from, to = tl.range.to; let loopFrom = tl.papers[0]?.t0 ?? 0;
-    const song = playSong(), a = parseArrangement(song.arrangement, song.papers);
-    if (host.viewScope() === "all" && a.loop && tl.papers[a.order.length]) loopFrom = tl.papers[a.order.length].t0;
-    const loopTo = tl.total > loopFrom ? tl.total : to;
-    return { from, to, loopFrom, loopTo };
+    const span = loopSpanOf(playSong(), tl, host.viewScope() === "all");   // 循环那一圈 = 渲染核心那一份（歌库的 mp3 循环也用它，2026-11-11）
+    return { from: tl.range.from, to: tl.range.to, loopFrom: span.from, loopTo: span.to };
   }
   /** 从光标放：光标（选区 = 选区头）那个音的时刻，提前一点（辅音在元音前）。
    *  光标在纸尾 / 不在放的范围里 = null = 从头放（v0.9.2；user「没有光标的时候点开始就不放了哈哈哈」——写完谱光标停在最后，原来从纸尾放 = 什么都听不到）。 */
@@ -515,7 +512,7 @@ export function createPerformance(host: PerfHost) {
   }
   /** 整首 / 这一张纸渲染成 mp3 字节（**没有 ID3 标签**；走无头渲染核心 renderSong：准备 → 时间线 → 块 → 混）。
    *  出不了声的声部照旧进清单（§2.2½）、其余照混；一个都放不了 = 抛。 */
-  async function renderMp3(o: { quality: Mp3Quality; scope: "all" | "segment" }): Promise<{ bytes: Uint8Array; secs: number; sr: number; kbps: number; stereo: boolean; roles: string[]; parts: string[] }> {
+  async function renderMp3(o: { quality: Mp3Quality; scope: "all" | "segment" }): Promise<{ bytes: Uint8Array; secs: number; sr: number; kbps: number; stereo: boolean; roles: string[]; parts: string[]; loop: { start: number; end: number } | null }> {
     if (engine.playing) stopPlay();
     renderAbort = false;
     const parts = audibleParts(), song = songIn(o.scope);
@@ -531,7 +528,7 @@ export function createPerformance(host: PerfHost) {
     const left = Q.stereo ? r.left : toMono(r.left, r.right), right = Q.stereo ? r.right : null;   // 小文件：左右平均成单声道
     const bytes = await encodeMp3(left, right, r.sr, Q.kbps);
     progress("");
-    return { bytes, secs: r.secs, sr: r.sr, kbps: Q.kbps, stereo: Q.stereo, roles, parts: r.timeline.tracks.map((t) => t.id) };
+    return { bytes, secs: r.secs, sr: r.sr, kbps: Q.kbps, stereo: Q.stereo, roles, parts: r.timeline.tracks.map((t) => t.id), loop: r.loop };
   }
   /** 这份 mp3 该带的 ID3 标签（歌名 / 作者 / 许可 / 署名 / 软件 + 封面图 APIC）。导出时贴好；记进设备缓存的也是贴好标签的那一份（= 给出去的那一份）。 */
   function mp3Tag(roles: readonly string[]): { tag: Uint8Array; lines: CreditLine[]; fellBack: boolean } {
@@ -553,7 +550,7 @@ export function createPerformance(host: PerfHost) {
         const m = await renderMp3(o), tag = mp3Tag(m.roles).tag, tagged = new Uint8Array(tag.length + m.bytes.length);
         tagged.set(tag, 0); tagged.set(m.bytes, tag.length);
         r = { tagged, secs: m.secs, kbps: m.kbps, stereo: m.stereo, roles: m.roles, cached: false };
-        if (whole && o.keep !== false) kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo }, tagged).catch(() => false) ?? false;   // 记不进去 = 宿主报进黑匣子，照常把声音给人
+        if (whole && o.keep !== false) kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo, loop: m.loop }, tagged).catch(() => false) ?? false;   // 记不进去 = 宿主报进黑匣子，照常把声音给人
       }
       const { lines, fellBack } = mp3Tag(r.roles);
       // 文件名 = 名[-曲段]-YYYYMMDD-HHMM（v0.9.47；user「看一下wxhw还是weebpaint，导出的时候文件名应该还有导出的时间，也许还有防撞」= WeebPaint naming.ts「下载版本 = 名-YYYYMMDD-HHMM」；
@@ -576,7 +573,7 @@ export function createPerformance(host: PerfHost) {
       if (hit) return { cached: true, kept: true, secs: hit.secs };
       const m = await renderMp3({ quality: o.quality, scope: "all" }), tag = mp3Tag(m.roles).tag, tagged = new Uint8Array(tag.length + m.bytes.length);
       tagged.set(tag, 0); tagged.set(m.bytes, tag.length);
-      const kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo }, tagged).catch(() => false) ?? false;
+      const kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo, loop: m.loop }, tagged).catch(() => false) ?? false;
       return { cached: false, kept, secs: m.secs };
     } catch (e) { progress(""); throw e; }
     finally { exporting = false; renderAbort = false; }

@@ -2210,6 +2210,8 @@ export const S = {
   "{host} 不让读（{status}）：这条链接没设成「知道链接的人都能看」。": { en: "{host} refused ({status}). The link isn’t set to “anyone with the link can view”." },
   "{host} 回了 {status}，没拿到文件。": { en: "{host} answered {status}; no file." },
   "这个文件超过 {mb} MB，不像一首歌，没打开。": { en: "This file is over {mb} MB, too big for a song, so it wasn’t opened." },
+  // 歌库循环按谱切（v0.16.107，2026-11-11，Claude Opus 5.5）
+  "这一遍是之前渲的：循环要等余音放完才回到开头。重新渲一遍，循环就按谱切（和编辑器里一样）": { en: "This render is from before: looping waits for the tail to die out before starting over. Render again and the loop cuts by the score, like in the editor" },
   "重新渲染": { en: "Render again" },
   "{stem} · 旧（之后改过）": { en: "{stem} · outdated (changed since)" },
 } as const satisfies Record<string, Entry>;

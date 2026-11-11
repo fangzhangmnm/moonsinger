@@ -6,7 +6,7 @@
 //   出声的数学一行不在这里（时间线 timeline.ts、录音房 studio.ts、唱法核心 sing-core.mjs）；这里是把它们接起来的那根线。
 import { _t } from "../i18n/index.ts";
 import { type Song, type PartDef, headLen, tempoAt } from "../score/song.ts";
-import { songPlayOrder } from "../score/arrange.ts";
+import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveCategory, followOf } from "../score/groove.ts";
 import { midiOf } from "../score/pitch.ts";
 import type { Hum } from "../format/contract.ts";
@@ -119,7 +119,17 @@ export function timelineOf(plan: RenderPlan, presetIndex: RenderEngine["presetIn
   return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part) => performerInfoOf(plan.extras, part, presetIndex), hum: plan.hum, singOpt: humOpt() });
 }
 
-export interface RenderResult { left: Float32Array; right: Float32Array; sr: number; secs: number; timeline: Timeline; errors: PrepareError[] }
+/** 循环按谱绕的那一圈（谱上的秒）：从第一张纸头（编排写了 `[循环段]` 且 withArrangementLoop = 循环段第一张纸的头）到谱的结尾。
+ *  余音（最后一个音之后的释放、混响尾巴）不在里面——下一圈开头接上去（编辑器的循环）或者切掉（歌库的 mp3 循环）。
+ *  编辑器（performance.ts playRange）和渲出来的 mp3（renderSong 的 loop）共用这一份。2026-11-11 Claude Opus 5.5（user「歌库播放的loop的时间好像算错了…你不应该等小尾巴吧」）。 */
+export function loopSpanOf(song: Song, tl: Timeline, withArrangementLoop = true): { from: number; to: number } {
+  let from = tl.papers[0]?.t0 ?? 0;
+  const a = parseArrangement(song.arrangement, song.papers);
+  if (withArrangementLoop && a.loop && tl.papers[a.order.length]) from = tl.papers[a.order.length].t0;
+  return { from, to: tl.total > from ? tl.total : tl.range.to };
+}
+/** loop = 渲出来的声音里循环那一圈的起止（**输出里的秒**，0 = 输出第一个样本）；太短 / 落在声音外面 = null（就按整个文件循环）。 */
+export interface RenderResult { left: Float32Array; right: Float32Array; sr: number; secs: number; timeline: Timeline; errors: PrepareError[]; loop: { start: number; end: number } | null }
 /** 整首（或一段）渲染成立体声样本：准备 → 时间线 → 块 → 混（和播放同一个类、同一份数学）。
  *  没法出声的声部报在 errors / timeline.unplayable 里、其余照混；一个都放不了 = 抛。pv = 静音 / 独奏（通道上的 mute / solo；筛声部用 plan.parts）。 */
 export async function renderSong(plan: RenderPlan, deps: RenderDeps, o: { sr?: number; progress?: (msg: string, frac?: number) => void; pv?: PartAudible;
@@ -133,7 +143,8 @@ export async function renderSong(plan: RenderPlan, deps: RenderDeps, o: { sr?: n
   pushMix(deps.engine, { ...plan, mixBypass: false }, pv);   // 导出照常带效果（A/B 的「效果全关」只管播放）
   say(_t("混音…"), 0);
   const m = await deps.engine.renderOffline({ tracks: tl.tracks, range: tl.range, loop: false }, { sr: o.sr ?? RENDER_SR, progress: (f) => say(_t("混音…"), f) });
-  return { left: m.left, right: m.right, sr: m.sr, secs: m.left.length / m.sr, timeline: tl, errors };
+  const secs = m.left.length / m.sr, span = loopSpanOf(plan.song, tl), start = Math.max(0, span.from - m.start), end = Math.min(secs, span.to - m.start);
+  return { left: m.left, right: m.right, sr: m.sr, secs, timeline: tl, errors, loop: end - start >= 0.25 ? { start, end } : null };
 }
 /** 立体声 → 单声道（左右平均）。 */
 export function toMono(left: Float32Array, right: Float32Array): Float32Array { const out = new Float32Array(left.length); for (let i = 0; i < out.length; i++) out[i] = (left[i] + right[i]) / 2; return out; }
