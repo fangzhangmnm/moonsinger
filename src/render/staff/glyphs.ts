@@ -29,4 +29,3 @@ export const SHARP_POS = [38, 35, 39, 36, 33, 37, 34], FLAT_POS = [34, 37, 33, 3
 export const GLYPH_TUPLET = (n: number) => [...String(n)].map((d) => String.fromCodePoint(0xe880 + Number(d))).join("");
 
 /** 一行里几条谱左边连着的那根竖线多粗（线间距；框架画，粗细归这种谱）。 */
-export const SYSTEM_LINE_W = ENGRAVE.thinBar * 1.4;

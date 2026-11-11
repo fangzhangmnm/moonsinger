@@ -20,6 +20,8 @@ import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W, type Unit, type Chunk, type DynU, ty
 import { stemInput, posD, shAt, percAt, clefW } from "./measure.ts";
 import type { Prim, EngraveOpts, Layout, HitNote, RestHit, LyricHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox } from "../engrave.ts";
 import type { StaffTrack } from "./measure.ts";
+import { caretStops } from "../frame/carets.ts";
+import { yAt } from "./geometry.ts";
 import type { SongView } from "../../score/song-view.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 
@@ -37,8 +39,8 @@ export interface StaffDrawCtx {
   put: (row: number, p: Prim) => void; hitRow: (hit: object, row: number) => void;
   prims: Prim[]; notes: HitNote[]; chordHeads: Layout["chordHeads"]; rests: RestHit[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; clefs: ClefHit[];
   keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
-  /** 纵向：第 r 行第 d 级 ↔ y；第五线；歌词基线；谱的点击高度；（第 s 行、第 r 个声部、第 k 张谱表）→ 行号。 */
-  yOf: (r: number, d: number) => number; staffTop: (r: number) => number; lyricY: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
+  /** 纵向：第 r 行的原点（第五线）；歌词基线；（第 s 行、第 r 个声部、第 k 张谱表）→ 行号。第几级 ↔ y 由画法自己算（geometry.ts yAt；第四刀起框架不递 yOf）。 */
+  staffTop: (r: number) => number; lyricY: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   /** 挂件：贴在谱上方 / 下方（天际线）；attach = 往某一道上登记一件（框架按 STAFF_LANES 的先后执行）。 */
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
   placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: { min?: number; count?: boolean; step?: number }) => number;
@@ -51,14 +53,15 @@ export interface StaffDrawCtx {
   owner: string | null; prevBpm: number | null;
 }
 
-/** 一个音的歌词锚点（框架照着写字、拖腔线、点击框；施工单 1b-7）：index = token 下标；sys = 第几行（行内序号）；row = 点击框归哪一行；
- *  cx0 = 字的中心（px，对齐符头中心）；mx0 / mx1 = 拖腔线的左右端；lyric = 字（null = 空着的歌词位）；tok / cls = 图元的 tok 和 class；mute = 唱不出来（画灰）；hyph = 词没完（连字符）。 */
-export interface LyricSpot { index: number; sys: number; row: number; cx0: number; mx0: number; mx1: number; lyric: string | null; tok: number | undefined; cls: string | undefined; mute: boolean; hyph: boolean }
-/** 一条轨的歌词锚点 + 歌词挂在哪一行（第 s 行 → 行号；大谱表 = 下面那条）。r = 这条轨在这张纸上的序号。 */
-export interface LyricPart { r: number; lrow: (s: number) => number; spots: LyricSpot[] }
-export function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] } {
+// 歌词锚点的两个类型（LyricSpot / LyricPart）2026-11-11 挪到 frame/lyric-spots.ts（歌词归框架，两种行的画法都交这一份；第四刀 4-2）。
+export type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
+import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
+/** 画这几条（mine = per 里的下标；第四刀起同一张纸上别的轨可能是别种行，交给别的画法）五线谱轨。小节号（每行最上面那条的左上角）照旧在这里画，不看 mine（挂件抽成共用模块 = 第四刀 4-3）。 */
+export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricParts: LyricPart[] } {
   const lyricParts: LyricPart[] = [];
-  const { song, look, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
+  const own = mine ? new Set(mine) : null, skip = (r: number) => own !== null && !own.has(r);
+  const { song, look, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
+  const yOf = (r: number, d: number) => yAt(staffTop(r), d, P(0.5));   // 第 r 行第 d 级的 y（五线谱自己的纵向，geometry.ts）
     /** 第 s 行开头的谱号（这一行第一个东西那里生效的）。 */
     const clefAtSys = (q: StaffTrack, s: number): ClefName => {
       const u = q.units.find((x) => x.system === s && x.index >= 0); if (u) return q.ds.clef[u.index] ?? q.start;
@@ -117,7 +120,7 @@ export function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] } {
       if (num !== null && !(s === 0 && num <= 1)) attach("barNumber", () => placeAbove(rowOf(s, 0, 0), 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" })));
     }
     per.forEach((q, r) => {
-      if (rowHost[r] >= 0) return;   // 声部 2：谱表 / 谱号 / 名字都是声部 1 那一行的
+      if (rowHost[r] >= 0 || skip(r)) return;   // 声部 2：谱表 / 谱号 / 名字都是声部 1 那一行的；别种行的轨归别的画法
       const f = sysKeys[s].get(q.p.id) ?? q.head.key;
       for (let k = 0; k < q.staves; k++) {
         const row = rowOf(s, r, k), clef: ClefName = q.staves === 2 ? (k ? "F" : "G") : clefAtSys(q, s), base = baseClef(clef);
@@ -149,6 +152,7 @@ export function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] } {
   }
   // 6. 各声部的内容
   per.forEach((q, r) => {
+    if (skip(r)) return;   // 别种行的轨（第四刀：简谱数字行）归别的画法
     const tokens = q.tokens, focused = q.focused, v2 = rowHost[r] >= 0;   // 声部 2：只画音（小节线 / 调号 / 拍号 / 休止归声部 1）
     const units = q.units, tag = v2 ? { part: q.p.id } : {};
     const dynOff = dynOverridden(tokens);   // 被紧跟着的强后即弱（fp）盖掉的力度记号：画灰（纪律：画灰 + 明说；点开小菜单说为什么）
@@ -665,49 +669,11 @@ export function drawStaff(c: StaffDrawCtx): { lyricParts: LyricPart[] } {
       if (acc >= c.ratio![1] * minBase - 1e-6) closeRun();
     }
     closeRun();
-    // 11. 光标落点（点在哪个空隙）——每条 track 都有（点到别的声部 = 换到那条）
-    const H = headLen(tokens);
-    const inkL = measured[r]!.inkL, cx = (u: Unit) => { const k = u.kind === "chunk" ? inkL.get(u) : undefined; return P(u.x - (k ? k + 0.2 : 0)); };   // 刀 3：临时记号挂在对齐线左边，光标画在它左边
-    const firstUnitOf = new Map<number, Unit>();
-    for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
-    const realLen = q.realLen;
-    for (let c = H; c <= realLen; c++) {   // 大谱表：两条谱表上都放落点（点哪条都是这个声部）；补齐的那段另放（下面）
-      const u = c < tokens.length ? firstUnitOf.get(c) : undefined;
-      const last = u ? null : [...units].reverse().find((v) => v.kind !== "head");
-      const sys = u ? u.system : last ? last.system : 0, x = u ? cx(u) : last ? P(last.x + last.w) : P(sysStarts[0]);
-      for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(sys, r, k), x });
-    }
-    // 11½. 写字头画在哪（W-17 第 1 刀，2026-10-15）：排版不认光标，只给每个 caret 位置该画的地方。老规矩（原来零宽 head 单元的 SLOT = 4）：
-    //   同一 tick 上排在小节线 / 记号（句号 / 调号 / 拍号 / 速度 / 力度…）后面、音前面——光标停在行末的小节线前 = 画在下一行开头（2026-10-10 user「光标应该在每行的开头」）；
-    //   那一 tick 上没有音 = 排在这一 tick 最后一个单元后面；尾巴 = 最后一个单元后面。shift = 前一个音处的谱号 / 八度线位移（同原来的 head.shift）
+    // 11 / 11½. 光标落点、写字头：和谱种无关的那一套（frame/carets.ts，第四刀 4-2 原样搬出、推的先后不变）；五线谱给光标往左让多少（刀 3：临时记号挂在对齐线左边，光标画在它左边）和谱号 / 八度线的位移
+    const H = headLen(tokens), realLen = q.realLen;
+    const inkL = measured[r]!.inkL, cx = (u: { kind: string; x: number }) => { const k = u.kind === "chunk" ? inkL.get(u as Chunk) : undefined; return P(u.x - (k ? k + 0.2 : 0)); };
     const shiftAt = (c: number): number[] => { const kk = Math.min(c, realLen) - 1, si = kk >= H ? kk : -1; return Array.from({ length: q.staves }, (_, k) => shAt(q, (k + 1) as Staff, si)); };
-    for (let c = H; c <= realLen; c++) {
-      const u0 = c < tokens.length ? firstUnitOf.get(c) : undefined;
-      let sys: number, x: number;
-      if (!u0) { const last = [...units].reverse().find((v) => v.kind !== "head"); sys = last ? last.system : 0; x = last ? P(last.x + last.w) : P(sysStarts[0]); }
-      else if (u0.kind === "chunk") { sys = u0.system; x = cx(u0); }
-      else {
-        const T = u0.tick, ch = units.find((v) => v.kind === "chunk" && v.index >= c && Math.abs(v.tick - T) < 1e-6);
-        if (ch) { sys = ch.system; x = cx(ch); }
-        else { const same = units.filter((v) => v.kind !== "head" && v.index >= c && Math.abs(v.tick - T) < 1e-6), lastT = same[same.length - 1] ?? u0; sys = lastT.system; x = P(lastT.x + lastT.w); }
-      }
-      const sh = shiftAt(c);
-      for (let k = 0; k < q.staves; k++) heads.push({ caret: c, system: rowOf(sys, r, k), x, shift: sh[k] });
-    }
-    // 补齐的淡色小节：每个小节开头一个落点（caret = 尾巴、lead = 离尾巴多少 tick）
-    for (const u of units) if (u.kind === "chunk" && u.pad && u.inBar < 1e-6 && u.tick - q.realTicks > 1e-6) { const sh = shiftAt(realLen); for (let k = 0; k < q.staves; k++) { slots.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), lead: u.tick - q.realTicks }); heads.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), shift: sh[k], lead: u.tick - q.realTicks }); } }
-    // 行末落点：这一行最后一个东西后面 = 下一行第一个光标位置，点在这里 = 光标画在这一行末尾（caretEnd）。原来这里没有落点，点行末空白会落到最后一个音前面。
-    let lastSys = -1;
-    for (let c = H; c < Math.min(tokens.length, realLen + 1); c++) {
-      const u = firstUnitOf.get(c); if (!u) continue;
-      const crossed = lastSys >= 0 && u.system > lastSys; lastSys = u.system;
-      if (!crossed) continue;
-      const prevRow = cols.filter((cc) => cc.system === u.system - 1);
-      if (!prevRow.length) continue;
-      const x = P(Math.max(...prevRow.map((cc) => cc.x + cc.w)));
-      const sh = shiftAt(c);
-      for (let k = 0; k < q.staves; k++) { slots.push({ caret: c, system: rowOf(u.system - 1, r, k), x, end: true }); heads.push({ caret: c, system: rowOf(u.system - 1, r, k), x, shift: sh[k], end: true }); }
-    }
+    caretStops(q, { cx, shiftAt, rowOf: (sy, k) => rowOf(sy, r, k), P, sysStart0: sysStarts[0]!, cols, slots, heads });
   });
   return { lyricParts };
 }
