@@ -1,7 +1,7 @@
 // full-song.ts —— 排版分家（施工单 1b）守卫 3 用的「用全」测试歌：把排版器认得的写法各用一遍，三首真歌没盖到的都在这里。
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟；施工单 ai-docs/20261111-score-surface-construction-plan.md 1b、切线表 ai-docs/20261111-engrave-cut-map.md 第五节）。
 //   和 test/fixtures/format/sample-song.ts 一个路数：id 连着编、不进 .mxl。以后守卫 4（全量：每个 token 都有图元）接着用它。
-//   改这首歌 = 快照全变：只加不改，加了就 node scripts/freeze-layout-full.mjs 重冻（在没动排版器的代码上）。
+//   改这首歌 = 底本全变：只加不改，加了就 node scripts/freeze-layout-surface.mjs 重冻（排版器没动的时候）。
 import { TPQ, type Song, type Token } from "../../../src/score/song.ts";
 import { MELISMA_MARK } from "../../../src/score/lyrics.ts";
 import { paperOf } from "../../../src/score/paper.ts";
@@ -120,4 +120,27 @@ export function fullFlags(song: Song): Record<string, Partial<PartView>> {
     C: { abbr: "Cb.", perc: percKindOf({ bank: 128, program: 0, note: 56 })! },
     M: { abbr: "M.", xHead: true, mono: true, ignores: ["staccato", "slur"] },
   };
+}
+
+/** 边界情形（长期的对抗性测试用；2026-11-11 谱面分家 1b 收尾时加）：每一首只为逼一种角落。 */
+export function edgeSongs(): { name: string; song: Song; hide?: string[]; width?: number }[] {
+  let id = 1;
+  const t = (x: Record<string, unknown>) => ({ ...x, id: id++ }) as unknown as Token;
+  const head = (fifths = 0, beats = 4, beatType = 4) => [t({ kind: "key", fifths }), t({ kind: "time", beats, beatType }), t({ kind: "tempo", bpm: 100 })];
+  const n = (pitch: ReturnType<typeof p> | null, dur: number, more: Record<string, unknown> = {}) => t({ kind: "note", pitch, dur, lyric: null, ...more });
+  const base = (parts: string[], papers: Song["papers"]): Song => ({ hum: "u", paper: paperOf("A5"), parts: parts.map((id, k) => ({ id, role: `r${k}`, mic: `m${k}` })), papers } as Song);
+  return [
+    // 一张纸上一个声部都没有；一张纸上唯一的声部隐藏着；一张正常的
+    { name: "empty-papers", hide: ["H"], song: base(["A", "H"], [
+      { id: "e1", name: "空", tracks: {} },
+      { id: "e2", name: "全隐藏", tracks: { H: [...head(), n(p("C", 5), W)] } },
+      { id: "e3", name: "正常", tracks: { A: [...head(), n(p("E", 4), Q), n(p("G", 4), Q, { lyric: "a" }), n(p("C", 5), H)] } },
+    ]) },
+    // 一个声部只有谱头（后面全是补齐的空小节）+ 一个正常的
+    { name: "empty-track", song: base(["A", "B"], [{ id: "p1", name: "", tracks: { A: [...head(2), n(p("D", 5), W), n(p("A", 4), W)], B: head(2) } }]) },
+    // 跨好几行的长音（9 个小节，自动小节线切开、连音线跨行）、弱起、拍数不对的小节、整小节休止
+    { name: "long-note", song: base(["A"], [{ id: "p1", name: "", tracks: { A: [...head(), n(p("G", 4), Q), t({ kind: "bar" }), n(p("C", 5), W * 9), t({ kind: "rest", dur: W }), n(p("D", 5), H), t({ kind: "bar" }), n(p("E", 5), W)] } }]) },
+    // 窄到一个小节自己一行都放不下（小节里逐列切开）
+    { name: "narrow", width: 160, song: base(["A"], [{ id: "p1", name: "", tracks: { A: [...head(), ...Array.from({ length: 32 }, (_, k) => n(p((["C", "D", "E", "F", "G", "A", "B"] as const)[k % 7], 5), S))] } }]) },
+  ];
 }

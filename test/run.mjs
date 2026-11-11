@@ -4,9 +4,7 @@ import "./smoke.test.ts";
 import "./feel-probe.test.ts";
 import "./audio-queue.test.ts";
 import "./engrave-printable.test.ts";
-import "./engrave-full.test.ts";   // 谱面分家守卫 3（1b）
-import "./score-surface-guards.test.ts";   // 谱面分家守卫 1 / 2（1b-9）
-import "./render-locale.test.ts";   // 守卫 8：排版不读界面语言（1b-3）
+import "./score-surface.test.ts";   // 谱面排版的长期测试（谱面分家 1b 收尾：守卫 1 / 2 / 3 / 8）
 import "./test-registry.test.ts";   // 每个测试文件都登记了（1b-9）
 import "./spacing.test.ts";
 import "./stems.test.ts";

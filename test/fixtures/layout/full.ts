@@ -2,9 +2,9 @@
 //   比刀 1 的 N1（cases.ts snapshot：只比会印的图元 + 一串点击表）严：所有图元（带 ann 的注解、带 tok）、Layout 的全部平字段、
 //   三个闭包（yOf / dOf / lyricY）每一行按几个点采样。盖住：三首真歌 × cases.ts 的七种视图 + 用全的测试歌（full-song.ts）× 下面十种视图
 //   （声部旗：鼓 / 一线谱 / × 符头 / 单声 / 不认 / 简写 / 唱不出 / 不唱字；选项：按 C 调看 + 和弦级数、横卷、写字头在尾巴 + 拼音让位 + 按歌词排、隐藏 + 不自动小节线、紧凑档）。
-//   scripts/freeze-layout-full.mjs 写 test/fixtures/layout/full/*.json.gz；test/engrave-full.test.ts 逐个比。1b 做完和 N1 那一套并成一套（施工单裁定 5）。
+//   1b 收尾（同日）：脚手架收成长期的几条（surfaceCases：用全的测试歌 × 十种视图、真实密度的大歌 × 三种、边界情形），底本 = 分家之后的代码存的（scripts/freeze-layout-surface.mjs）；test/score-surface.test.ts 比。
 import { SONGS, VIEWS, caseLayout, views, editorBase, measureFor, r3, SP } from "./cases.ts";
-import { fullSong, fullFlags } from "./full-song.ts";
+import { fullSong, fullFlags, edgeSongs } from "./full-song.ts";
 import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../src/render/engrave.ts";
 import { printOpts } from "../../../src/export/score-pdf.ts";
 import { createTextMeasure } from "../../../src/render/text/index.ts";
@@ -39,12 +39,20 @@ export const FULL_VIEWS: FView[] = [
   { name: "compact", song: (s) => ({ ...s, paper: { ...(s.paper ?? paperOf(DEFAULT_PAPER)), density: "compact" as const } }), opts: (s) => ed(s) },
 ];
 
-/** 一份快照的全部用例：[歌, 视图名, 排出来的版面]。 */
-export function* fullCases(): Generator<{ song: string; view: string; layout: () => Layout }> {
-  for (const key of Object.keys(SONGS)) for (const v of VIEWS) yield { song: key, view: v.name, layout: () => caseLayout(key, v) };
-  for (const v of FULL_VIEWS) yield { song: "full", view: v.name, layout: () => { const s0 = fullSong(), s = v.song ? v.song(s0) : s0; return engrave(s, v.opts(s)); } };
+// ── 长期留的那一套（1b 收尾：脚手架收成几条综合的对抗性测试；底本 = 分家之后的代码存的，scripts/freeze-layout-surface.mjs）──
+/** 一组 = 一条综合测试：full = 用全的测试歌 × 十种视图；dense = 真实密度的大歌 × 三种视图；edge = 边界情形。 */
+export type SurfaceGroup = "full" | "dense" | "edge";
+export function* surfaceCases(): Generator<{ group: SurfaceGroup; song: string; view: string; layout: () => Layout }> {
+  for (const v of FULL_VIEWS) yield { group: "full", song: "full", view: v.name, layout: () => { const s0 = fullSong(), s = v.song ? v.song(s0) : s0; return engrave(s, v.opts(s)); } };
+  for (const v of VIEWS.filter((x) => ["print", "edit-all", "listen-all"].includes(x.name))) yield { group: "dense", song: "once", view: v.name, layout: () => caseLayout("once", v) };
+  for (const e of edgeSongs()) {
+    const labels = e.song.parts.map((x) => x.id), hide = new Set(e.hide ?? []);
+    const ed = () => { const o = { ...editorBase(e.song, labels, hide), ...(e.width ? { width: e.width } : {}) } as EngraveOpts; return o; };
+    yield { group: "edge", song: e.name, view: "edit-all", layout: () => engrave(e.song, ed()) };
+    yield { group: "edge", song: e.name, view: "print", layout: () => engrave(e.song, { ...printOpts(e.song, SP, views(e.song, labels, false, hide), createTextMeasure(measureFor(e.song)), true, 0), ...(e.width ? { width: e.width } : {}) }) };
+  }
 }
-export const fullPath = (song: string, view: string) => new URL(`test/fixtures/layout/full/${song}.${view}.json.gz`, ROOT);
+export const surfacePath = (song: string, view: string) => new URL(`test/fixtures/layout/surface/${song}.${view}.json.gz`, ROOT);
 
 /** 冻的（取整过）和现在的（没取整）按容差比（1b-6c 统筹裁定，施工单第五节「小弟问（1b-6c 守卫 3 的取整）」下面）：
  *  路径（图元的 d）里的数字 = 冻的时候没取整 → 差 ≤ 1e-6 px 算相同；别的数字 = 冻的时候取整到 0.001 → 差 ≤ 0.0005 + 1e-6 算相同（取整后一样，或本来就压在取整边界上）；
@@ -70,16 +78,4 @@ export function tolDiffs(want: unknown, got: unknown, n = 6): { out: string[]; m
   };
   walk(want, got, "", "");
   return { out, maxNum, maxPath };
-}
-/** 两份快照第一批不一样的地方（路径 + 两边的值），最多 n 条。 */
-export function diffs(a: unknown, b: unknown, path = "", out: string[] = [], n = 6): string[] {
-  if (out.length >= n) return out;
-  if (typeof a !== typeof b || Array.isArray(a) !== Array.isArray(b) || a === null || b === null || typeof a !== "object") {
-    if (JSON.stringify(a) !== JSON.stringify(b)) out.push(`${path || "(根)"}: 冻结 ${JSON.stringify(a)?.slice(0, 140)} ≠ 现在 ${JSON.stringify(b)?.slice(0, 140)}`);
-    return out;
-  }
-  if (Array.isArray(a) && Array.isArray(b) && a.length !== b.length) out.push(`${path}: 冻结 ${a.length} 个 ≠ 现在 ${b.length} 个`);
-  const keys = new Set([...Object.keys(a as object), ...Object.keys(b as object)]);
-  for (const k of keys) diffs((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k], `${path}.${k}`, out, n);
-  return out;
 }

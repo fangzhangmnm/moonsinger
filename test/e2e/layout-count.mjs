@@ -8,6 +8,8 @@ const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.l
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(700);
+// 月读不唱（静音块），只看走带：开页第一步就换掉——写完谱停一会儿会预唱，真引擎一起来（要下模型）播放就排在它后面等十几秒
+await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 6), sr: 22050 }); });
 // 默认那首歌（小月相上场，能放）写 48 个音 = 折好几行
 await p.evaluate(() => { const m = window.__moonsinger; m.setMode("notes"); for (let i = 0; i < 48; i++) m.run({ k: "degree", degree: (i % 7) + 1, dir: "near" }); });
 await p.waitForTimeout(900);
@@ -25,13 +27,12 @@ await p.evaluate(async () => { const m = window.__moonsinger; for (let k = 13; k
 await settle();
 check((await layouts()) === 0, "选区扩 8 次再清掉：排版 0 次", `排版 ${await layouts()} 次`);
 // 播放高亮：放一会儿（月读不唱，只看走带）
-await p.evaluate(() => { window.__moonsinger.singer.sing = async () => ({ samples: new Float32Array(22050 * 6), sr: 22050 }); });
 await p.click("#playBtn");
 let playing = false; for (let i = 0; i < 60; i++) { if (await p.evaluate(() => window.__moonsinger.engine.playing)) { playing = true; break; } await p.waitForTimeout(100); }
 await p.waitForTimeout(1200);
 const hl = await p.evaluate(() => !!document.querySelector(".play-hl"));
 await p.waitForTimeout(600); await p.click("#playBtn"); await settle();
-check(playing && hl, "放起来了、有播放高亮");
+check(playing && hl, "放起来了、有播放高亮", JSON.stringify({ playing, hl }));
 check((await layouts()) === 0, "放着（播放高亮一直在走）：排版 0 次", `排版 ${await layouts()} 次`);
 // 写一个音：排版一次（分家前后一样；不许多排）
 await p.evaluate(() => window.__moonsinger.perfReset());

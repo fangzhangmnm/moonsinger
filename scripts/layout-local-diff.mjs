@@ -5,8 +5,7 @@
 //   点击区（音 / 和弦里的符头 / 休止 / 歌词位）也按行归一比。按先后一一配对（音符层的图元画的先后不变）；跨两行的竖线（几条谱左边连着的那根）不比；认行按刀前那一行，认不准（离两行一样远）的换相邻行再试。
 import { readFileSync } from "node:fs";
 import { gunzipSync } from "node:zlib";
-import { SONGS, VIEWS, caseLayout } from "../test/fixtures/layout/cases.ts";
-import { fullSnapshot, fullPath } from "../test/fixtures/layout/full.ts";   // 2026-11-11 起快照 = 谱面分家守卫 3 那一套（N1 并进去了）
+import { surfaceCases, fullSnapshot, surfacePath } from "../test/fixtures/layout/full.ts";   // 2026-11-11 起底本 = 谱面排版的长期那一套（test/score-surface.test.ts）
 
 const NOTE_CLS = /^(note|rest|ledger|staff|clef|keysig|timesig|bar(?!-no)|beam|tuplet|tuplet-bracket|repeat-bar|note-paren|arpeggio|breath|slur|art)\b/;
 const STRONG = ["\u{E4A0}", "\u{E4AC}", "\u{E4B6}", "\u{E4B8}"];   // 重音一组 = 挂件（贴天际线），不比
@@ -21,9 +20,10 @@ const yRef = (p) => (p.t === "line" ? (p.y1 + p.y2) / 2 : p.t === "path" ? Numbe
 const nums = (p) => (p.t === "path" ? [...String(p.d).matchAll(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi)].map((m) => Number(m[0])) : p.t === "line" ? [p.x1, p.y1, p.x2, p.y2] : [p.x, p.y]);
 const isY = (p, i) => (p.t === "path" || p.t === "line" ? i % 2 === 1 : i === 1);
 let bad = 0;
-for (const key of Object.keys(SONGS)) for (const v of VIEWS) {
-  const A = JSON.parse(gunzipSync(readFileSync(fullPath(key, v.name))).toString("utf8"));
-  const B = JSON.parse(JSON.stringify(fullSnapshot(caseLayout(key, v))));
+for (const c of surfaceCases()) {
+  const key = c.song, v = { name: c.view };
+  const A = JSON.parse(gunzipSync(readFileSync(surfacePath(c.song, c.view))).toString("utf8"));
+  const B = JSON.parse(JSON.stringify(fullSnapshot(c.layout())));
   const sp = A.sp, a = A.prims.filter((p) => keep(p, sp)), b = B.prims.filter((p) => keep(p, sp));
   const rowA = (y) => { let best = 0, bd = Infinity; A.systems.forEach((s, i) => { const d = y < s.staffTop ? s.staffTop - y : y > s.staffTop + 4 * sp ? y - s.staffTop - 4 * sp : 0; if (d < bd) { bd = d; best = i; } }); return best; };
   const fits = (p, q, d) => p.t === q.t && String(p.cls) === String(q.cls) && (p.ch ?? p.s) === (q.ch ?? q.s) && nums(p).length === nums(q).length && nums(p).every((x, k) => Math.abs((isY(p, k) ? x + d : x) - nums(q)[k]) < 0.02);

@@ -1,5 +1,5 @@
 // index.ts —— 五线谱这一种（设计稿第 3.3 节「谱种 = 一张表」里的 staff）唯一的入口：框架（engrave.ts）只从这里拿五线谱的东西，不直接碰字形表、符干、谱号模块。
-//   created 2026-11-11 by Claude Opus 5.5（谱面分家施工单 1b-9；守卫 test/score-surface-guards.test.ts）。第四刀加简谱 = 旁边再一个这样的入口 + 谱种表里一行。
+//   created 2026-11-11 by Claude Opus 5.5（谱面分家施工单 1b-9；守卫 test/score-surface.test.ts「结构」）。第四刀加简谱 = 旁边再一个这样的入口 + 谱种表里一行。
 import type { Song } from "../../score/song.ts";
 import { resolveSongLooks, type ResolvedLook } from "../../score/clef.ts";
 export { staffRows, staffTracks, type FoldFamily, type StaffRows } from "./rows.ts";

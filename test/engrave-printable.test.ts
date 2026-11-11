@@ -6,7 +6,7 @@ const { gunzipSync } = (await import("node:zlib" as string)) as { gunzipSync(b: 
 import { describe, it, assert, eq } from "./runner.mjs";
 import { SONGS, pdfSha, pdfShaPath } from "./fixtures/layout/cases.ts";
 
-// N1（可印图元 + 锚点的快照）2026-11-11 并进谱面分家的守卫 3（test/engrave-full.test.ts：同样三首歌、同样七种视图，图元全量、带 tok、字段更全）；这里只留 N2。
+// N1（可印图元 + 锚点的快照）2026-11-11 并进谱面排版的长期测试（test/score-surface.test.ts：图元全量、带 tok、字段更全；底本 = 分家之后的代码存的）；这里只留 N2。
 describe("刀 1 守卫 N2：PDF 一字节不变", () => {
   const want = JSON.parse(fs.readFileSync(pdfShaPath, "utf8")) as Record<string, string>;
   for (const key of Object.keys(SONGS)) it(`${key} 的 PDF`, async () => { eq(await pdfSha(key), want[key], `${key} 的 PDF 字节变了`); });

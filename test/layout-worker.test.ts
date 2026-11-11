@@ -1,5 +1,5 @@
 // 排版进 worker（src/render/layout-worker.ts + engrave.ts 的 engraveData / LayoutData + staff/geometry.ts withStaffGeometry）：过线的是平数据，主线程装上 yOf / dOf / lyricY；worker 的纯函数回的 parts = 主线程直接串的。
-//   1b-8（2026-11-11 Claude Opus 5.5）：原来的 strip / attachLayoutFns 退场；分家前后 yOf / dOf / lyricY 逐行相同由守卫 3 的快照核（test/engrave-full.test.ts 每行采样）。
+//   1b-8（2026-11-11 Claude Opus 5.5）：原来的 strip / attachLayoutFns 退场；yOf / dOf / lyricY 逐行和底本相同由 test/score-surface.test.ts 核（快照每行采样）。
 //   created 2026-10-21 by Claude Fable 5.1（user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」）
 import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave, engraveData } from "../src/render/engrave.ts";
