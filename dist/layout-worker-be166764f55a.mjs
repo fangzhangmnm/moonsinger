@@ -6549,7 +6549,7 @@ function arrangeColumns(cols, tracks, o) {
 }
 
 // src/render/engrave.ts
-function engraveData(song, o) {
+function engrave(song, o) {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   const lookAt = staffLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   if (o.inC) {
@@ -7177,7 +7177,7 @@ function toSvgParts(l) {
 // src/render/layout-worker.ts
 function runLayoutJob(job, raw, now = () => performance.now()) {
   const t0 = now();
-  const data = engraveData(job.song, { ...job.opts, measure: createTextMeasure(raw) });
+  const data = engrave(job.song, { ...job.opts, measure: createTextMeasure(raw) });
   const parts = toSvgParts(data);
   return { seq: job.seq, parts, data, ms: now() - t0 };
 }
@@ -7196,4 +7196,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-7717d7c1a049.mjs.map
+//# sourceMappingURL=layout-worker-be166764f55a.mjs.map

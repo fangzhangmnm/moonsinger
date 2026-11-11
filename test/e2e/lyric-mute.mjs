@@ -42,7 +42,7 @@ check(!!vowel, "目录「人声」里有元音版");
 if (vowel) await vowel.click();
 await p.waitForTimeout(300); if (await p.$(".finder:not([hidden])")) { await p.keyboard.press("Escape"); await p.waitForTimeout(250); }
 await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTimeout(100);
-const slot = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = m.state(), toks = s.song.papers[0].tracks[s.at.part], i = toks.findIndex((t) => t.kind === "note" && t.lyric === null), n = L.notes.find((q) => q.index === i), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return n ? { x: sc.left + L.pageX.left + n.x + n.w / 2, y: sc.top + L.lyricY(n.system) } : null; });
+const slot = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = m.state(), toks = s.song.papers[0].tracks[s.at.part], i = toks.findIndex((t) => t.kind === "note" && t.lyric === null), n = L.notes.find((q) => q.index === i), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return n ? { x: sc.left + L.pageX.left + n.x + n.w / 2, y: sc.top + L.lyricYs[n.system] } : null; });
 await p.mouse.click(slot.x, slot.y); await p.waitForTimeout(250);
 const open1 = await p.$eval(".lyric-input", (e) => !e.hidden).catch(() => false);
 check(!open1, "元音版：点空着的歌词位 = 不开框");

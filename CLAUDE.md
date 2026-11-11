@@ -243,12 +243,13 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 
 ADR-0005（`ai-docs/adr/0005-score-surface-five-layers-row-depiction-is-the-unit.md`）+ 设计稿 `ai-docs/20261111-score-surface-architecture.md`（实际接口 = 第 7½ 节）+ 施工单 `ai-docs/20261111-score-surface-construction-plan.md`（1b 的施工记录在第六节）。流程图 = `ai-docs/20261109-pipelines.md` A8⅓。
 
-- **框架** = `src/render/engrave.ts`（`engraveData` 只出平数据、`engrave` = 再装上 `yOf / dOf / lyricY`）+ `src/render/frame/`（`arrange.ts` 合成列 / 折行 / 摆、`columns.ts` 列的先后按种类、`lanes.ts` 挂件的道、`params.ts`、`furniture.ts`）。框架不认字形、不认纵向：不 import `smufl / stems / glyph-box / score/clef`，五线谱只从 `src/render/staff/index.ts` 拿（守卫 = `test/score-surface.test.ts`「结构」）。
+- **框架** = `src/render/engrave.ts`（`engrave` 只出平数据，worker 原样回；谱面分家第二刀起没有现算的函数）+ `src/render/frame/`（`arrange.ts` 合成列 / 折行 / 摆、`columns.ts` 列的先后按种类、`lanes.ts` 挂件的道、`params.ts`、`furniture.ts`）。框架不认字形、不认纵向：不 import `smufl / stems / glyph-box / score/clef`，五线谱只从 `src/render/staff/index.ts` 拿（守卫 = `test/score-surface.test.ts`「结构」）。
 - **五线谱这一种** = `src/render/staff/`：`rows.ts`（谱种的表：合租怎么叠、每条轨的单元 / 谱号 / 八度线）、`measure.ts`（量 = 一条轨的纯函数）、`draw.ts`（画：`put(行, …)` 画音符层、`attach(道, …)` 登记挂件、交回歌词锚点；道的先后 `STAFF_LANES`）、`geometry.ts`（第几级 ↔ y、上沿 / 中线 / 下沿、光标 / 鬼音符 / 纵向 ↔ 音高的几何纯函数）。
 - 排版明着吃 `opts.locale`（不读这一页的界面语言，守卫 = `test/score-surface.test.ts`「语言」）。歌词归框架（画法只交锚点）。
 - **长期测试** = `test/score-surface.test.ts`（几条综合的对抗性测试：用全的测试歌 × 十种视图、真实密度的大歌 × 三种、边界情形，每一份和底本比 + 平数据过拷贝；结构；语言）。底本 = 分家之后的代码存的（`node scripts/freeze-layout-surface.mjs`）；比较按容差（路径里的数字 ≤ 1e-6、别的 ≤ 0.0005 + 1e-6）。版面本来就该变时才重冻，先找统筹。排版次数 = 浏览器那一档 `test/e2e/layout-count.mjs`；PDF 字节 = `test/engrave-printable.test.ts`（N2）。1b 开发时的几十份全量快照是脚手架，收完删了（user 11-11「开发的时候可以相对细致一点，开发完一块可以收成几个综合的对抗性测试」）。
 - 新测试文件要登记进 `test/run.mjs`（守卫 `test/test-registry.test.ts`；1b 时没登记的守卫白绿过几个提交）。
-- 还没做 / 过渡：谱面视图还读 `Layout.yOf / dOf` 和 `HitNote.d`、`CaretHead.shift`（第二刀改读几何函数）；纵向的版式表还按五线谱的数写在 `frame/params.ts`（第四刀的排版参数表）；一行最多拉宽 1.3 倍（第六刀）；大谱表上跨两张谱的连线位置不对（分家前就不对，记账）。
+- 谱面视图要纵向的几何（光标、鬼音符、选区带、点在哪一级、拖了几级）一律问 `staff/geometry.ts` 的纯函数，吃 `Layout.systems[行]`。
+- 还没做 / 过渡：`HitNote.d`、`CaretHead.shift`、`SystemBox.staffTop / staff` 是五线谱这一行的数据、原地留着（第四刀有第二种行再定挪不挪）；纵向的版式表还按五线谱的数写在 `frame/params.ts`（第四刀的排版参数表）；一行最多拉宽 1.3 倍（第六刀）；大谱表上跨两张谱的连线位置不对（分家前就不对，记账）。
 
 ## 修改锁（v0.16.96 起；v0.16.97 歌库里的歌也默认锁着；2026-11-10，Claude Fable 5.2；READ before touching 文档写入口 / 存盘 / 家）
 

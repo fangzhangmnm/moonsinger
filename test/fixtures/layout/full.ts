@@ -1,25 +1,25 @@
 // full.ts —— 排版分家（施工单 1b）的守卫 3：分家前后版面逐个相同。created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟）。
 //   比刀 1 的 N1（cases.ts snapshot：只比会印的图元 + 一串点击表）严：所有图元（带 ann 的注解、带 tok）、Layout 的全部平字段、
-//   三个闭包（yOf / dOf / lyricY）每一行按几个点采样。盖住：三首真歌 × cases.ts 的七种视图 + 用全的测试歌（full-song.ts）× 下面十种视图
+//   每行的几何（第几级 ↔ y、歌词基线）按几个点采样。盖住：三首真歌 × cases.ts 的七种视图 + 用全的测试歌（full-song.ts）× 下面十种视图
 //   （声部旗：鼓 / 一线谱 / × 符头 / 单声 / 不认 / 简写 / 唱不出 / 不唱字；选项：按 C 调看 + 和弦级数、横卷、写字头在尾巴 + 拼音让位 + 按歌词排、隐藏 + 不自动小节线、紧凑档）。
 //   1b 收尾（同日）：脚手架收成长期的几条（surfaceCases：用全的测试歌 × 十种视图、真实密度的大歌 × 三种、边界情形），底本 = 分家之后的代码存的（scripts/freeze-layout-surface.mjs）；test/score-surface.test.ts 比。
 import { SONGS, VIEWS, caseLayout, views, editorBase, measureFor, r3, SP } from "./cases.ts";
 import { fullSong, fullFlags, edgeSongs } from "./full-song.ts";
 import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../src/render/engrave.ts";
 import { printOpts } from "../../../src/export/score-pdf.ts";
+import { yAt, dAt } from "../../../src/render/staff/geometry.ts";
 import { createTextMeasure } from "../../../src/render/text/index.ts";
 import { pageGeoOf, paperOf, DEFAULT_PAPER } from "../../../src/score/paper.ts";
 import type { Song } from "../../../src/score/song.ts";
 
 const ROOT = new URL("../../../", import.meta.url);
-/** 全量快照：除了三个闭包，Layout 原样；闭包按行采样（第几级 → y、y 附近 → 第几级、歌词基线）。 */
+/** 全量快照：Layout 原样 + 每行几何按几个点采样（第几级 → y、y 附近 → 第几级、歌词基线；谱面分家第二刀起用 staff/geometry.ts 的 yAt / dAt，值和原来的 yOf / dOf 闭包逐个相同）。 */
 export function fullSnapshot(L: Layout): unknown { return r3(fullSnapshotRaw(L)); }
 /** 同上、数字不取整（比较用：tolDiffs 拿没取整的新值和冻的值按容差比）。 */
 export function fullSnapshotRaw(L: Layout): unknown {
-  const { lyricY, yOf, dOf, ...flat } = L;
-  const DS = [26, 30, 34, 38, 42];
-  const geo = L.systems.map((_, r) => ({ ly: lyricY(r), y: DS.map((d) => yOf(r, d)), d: DS.map((d) => dOf(r, yOf(r, d) + L.sp * 0.2)) }));
-  return { ...flat, geo };
+  const DS = [26, 30, 34, 38, 42], half = L.sp * 0.5;
+  const geo = L.systems.map((s, r) => ({ ly: L.lyricYs[r], y: DS.map((d) => yAt(s.staffTop, d, half)), d: DS.map((d) => dAt(s.staffTop, yAt(s.staffTop, d, half) + L.sp * 0.2, half)) }));
+  return { ...L, geo };
 }
 
 const LABELS = ["Vocal", "Piano", "Bass", "Glockenspiel", "Pf 1", "Pf 2", "Drums", "Woodblock", "Cowbell", "Mono X"];

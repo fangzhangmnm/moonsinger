@@ -20,7 +20,7 @@ await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTi
 await p.evaluate(() => { document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(200);
 // 点第 3 个音下面（歌词那一行）开歌词框
 const n3 = await p.$$eval("#score text.note", (ts) => { const r = ts[2].getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y }; });
-const ly = await p.evaluate(() => { const L = window.__moonsinger.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return sc.top + L.lyricY(0) * 1; });
+const ly = await p.evaluate(() => { const L = window.__moonsinger.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return sc.top + L.lyricYs[0] * 1; });
 await p.touchscreen.tap(n3.x, ly - 4); await p.waitForTimeout(300);
 const open0 = await p.$eval(".lyric-input", (e) => !e.hidden && document.activeElement === e);
 check(open0, "点歌词那一行 = 歌词框开着、有焦点");

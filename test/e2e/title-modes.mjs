@@ -30,7 +30,7 @@ await p.touchscreen.tap(n0.x, n0.y); await p.waitForTimeout(250);
 check((await p.evaluate(() => window.__moonsinger.state().caret)) === caret0, "听：点音照旧不放光标（谱别的地方还锁着）");
 // ②「词」：歌词框开着时点歌名 = 一下就开
 await p.evaluate(() => window.__moonsinger.setMode("lyrics")); await p.waitForTimeout(200);
-const ly = await p.evaluate(() => { const L = window.__moonsinger.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), n = L.notes[1]; return { x: sc.left + L.pageX.left + n.x + n.w / 2, y: sc.top + L.lyricY(n.system) }; });
+const ly = await p.evaluate(() => { const L = window.__moonsinger.layout(), sc = document.querySelector("#score .sheet").getBoundingClientRect(), n = L.notes[1]; return { x: sc.left + L.pageX.left + n.x + n.w / 2, y: sc.top + L.lyricYs[n.system] }; });
 await p.touchscreen.tap(ly.x, ly.y); await p.waitForTimeout(250);
 check(await p.evaluate(() => !!document.querySelector(".lyric-input") && document.activeElement?.classList.contains("lyric-input")), "词：点歌词位 = 歌词框开着");
 bx = await box("title"); await p.touchscreen.tap(bx.x, bx.y); await p.waitForTimeout(300);

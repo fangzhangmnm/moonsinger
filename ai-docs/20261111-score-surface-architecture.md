@@ -387,9 +387,9 @@ interface Surface { render(): void; playhead(at: TimeRef | null): void; reveal()
 
 ```ts
 // ── 框架（src/render/frame/、src/render/engrave.ts）──────────────────────
-type LayoutData = Omit<Layout, "yOf" | "dOf" | "lyricY">;               // 平数据：worker 原样过线
-declare function engraveData(song: Song, o: EngraveOpts): LayoutData;  // 排版本体（o.locale 必填：排版不读界面语言）
-declare function engrave(song: Song, o: EngraveOpts): Layout;          // = withStaffGeometry(engraveData(…))
+declare function engrave(song: Song, o: EngraveOpts): Layout;          // 排版本体（o.locale 必填：排版不读界面语言）；Layout = 平数据，worker 原样过线
+// 〔第二刀，2026-11-12〕1b 时是 engraveData（平数据）+ engrave（= withStaffGeometry(engraveData(…))，带 yOf / dOf / lyricY 三个现算的函数）；
+//   谱面视图改读下面的几何函数之后三个函数没人用了，Layout 本身就是平的，两个名字并成一个 engrave，LayoutData / withStaffGeometry 删了。
 
 // 排（frame/arrange.ts）：各条轨的列条目 → 合成列 → 弹簧顶杆 → 整张纸挑折点 → 每行摆（结果单独一张表）
 interface ColEntry<R> { tick: number; slot: number; w: number; bar?: boolean; chunk?: { items: SpItem[]; span: number }; ref: R }
@@ -415,7 +415,6 @@ declare function caretSpan(row: StaffRowData, half: number): { y1: number; y2: n
 declare function previewAt(row: StaffRowData, d: number, half: number): { y: number; ledgers: number[] }; // 鬼音符长什么样
 declare const pitchAxis: { stepAt(row, y, half): number; stepsOfDrag(dy, half): number };                 // 纵向 = 音高
 declare function bandTop(row: StaffRowData, half: number): number;                                        // 选区带上沿
-declare function withStaffGeometry<D>(d: D): D & { yOf; dOf; lyricY };                                    // 平数据 → Layout（退场 = 第二刀）
 ```
 
 和提案不一样的地方：
@@ -423,7 +422,7 @@ declare function withStaffGeometry<D>(d: D): D & { yOf; dOf; lyricY };          
 1. 还没有 `RowDrawer` 对象和 `NOTATIONS` 表：只有五线谱一种，函数从 `staff/index.ts` 直接拿。第四刀加简谱时，再把两种收成同一个形状、谱种表里各一行（到时按两个实现定形状，不先猜）。
 2. `draw` 吃的是「一条轨在这张纸上的所有行」，不是一行；挂件不在 `RowInk` 里，而是往道上登记（上面第 3.3 节的〔1b 落地〕）。
 3. `measure` 出的是 `ColEntry`（`SpItem` 的道 + 弹簧时值），列的先后用 `ColumnKind`，没有单独的 `Column` 类型；`lineStart` 由框架问「这一刻每条轨生效的调号」，不是 `(track, tick)`。
-4. 行的数据没挪进 `RowBox.data`：`SystemBox.staffTop / staff`、`HitNote.d`、`CaretHead.shift` 原地留着，类型注释标成五线谱这一行的数据；Layout 上的 `yOf / dOf` 由 `withStaffGeometry` 现算。挪走和谱面视图改读几何函数一起做 = 第二刀。
+4. 行的数据没挪进 `RowBox.data`：`SystemBox.staffTop / staff`、`HitNote.d`、`CaretHead.shift` 原地留着，类型注释标成五线谱这一行的数据。〔第二刀，2026-11-12〕谱面视图改读几何函数了（光标 = `caretSpan`、鬼音符 = `previewAt`、选区带上沿 = `bandTop`、点在哪一级 / 拖了几级 = `pitchAxis`，歌词基线读 `Layout.lyricYs`），`Layout.yOf / dOf / lyricY` 退场。这三样数据仍原地留着、不挪进 `data` 子对象：现在只有五线谱一种行，挪进去只是换个路径；第四刀有了第二种行（简谱没有「第几级」），再按两种行的实际需要定 `RowBox.data` 的形状。
 5. 纵向的版式表（`frame/params.ts SPACING` 里谱上面留多少、大谱表上面那条、没歌词的那条）还在框架的参数文件里，按五线谱的数写着；收进「排版参数表」（按谱种给值）= 第四刀（排版参数表那一项）。
 
 ## 8. 要 user 拍的

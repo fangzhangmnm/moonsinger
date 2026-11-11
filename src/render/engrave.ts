@@ -30,7 +30,7 @@ import { type HarmonyRead } from "../theory/index.ts";
 import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, SQUEEZE, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SPACING } from "./frame/params.ts";
 import { wrapTitle } from "./frame/furniture.ts";
 // 五线谱这一种：只从它的入口拿（施工单 1b-9 守卫 1：框架不直接 import 字形表、符干、谱号模块）
-import { staffLooks, staffRows, staffTracks, measureTrack, lineStartWidth, lyricAnchors, drawStaff, STAFF_LANES, yAt, dAt, anchors, withStaffGeometry, SYSTEM_LINE_W, type FoldFamily, type StaffTrack, type LyricPart, type LyricSpot, type Unit, type Chunk } from "./staff/index.ts";
+import { staffLooks, staffRows, staffTracks, measureTrack, lineStartWidth, lyricAnchors, drawStaff, STAFF_LANES, yAt, dAt, anchors, SYSTEM_LINE_W, type FoldFamily, type StaffTrack, type LyricPart, type LyricSpot, type Unit, type Chunk } from "./staff/index.ts";
 import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
 
@@ -157,22 +157,16 @@ export interface Layout {
   pageX: { left: number; right: number };        // 分页时版心左右的边距（px；svg 的 viewBox 往左扩这么多，页框画在负 x）；连续 = 0
   pages: { top: number; h: number }[];           // 分页时每页占的竖直范围（px）；连续 = []
   shortBars: number;   // 拍数和拍号对不上的小节有几个（状态行用；第一小节当弱起不算）
-  /** 每行歌词的基线 y（px；= lyricY(system) 的平数据，排版进 worker 后主线程靠它重建 lyricY；2026-10-21）。 */
+  /** 每行歌词的基线 y（px；2026-10-21）。 */
   lyricYs: number[];
-  lyricY: (system: number) => number;
-  yOf: (system: number, d: number) => number;
-  dOf: (system: number, y: number) => number;
 }
-/** 排版的平数据（worker → 主线程 structuredClone 原样过线）：Layout 去掉三个现算的函数。主线程用 staff/geometry.ts withStaffGeometry 装上（施工单 1b-8；原来的 strip / attachLayoutFns）。 */
-export type LayoutData = Omit<Layout, "lyricY" | "yOf" | "dOf">;
+// Layout 是平数据（worker → 主线程 structuredClone 原样过线；谱面分家第二刀起没有现算的函数：纵向 ↔ 第几级、光标 / 鬼音符 / 选区带的几何 = staff/geometry.ts 的纯函数，吃 systems[r]）。
 
 
 
 
-/** 排版：平数据 + 现算的 yOf / dOf / lyricY（屏幕上同步那条路、PDF、测试用）。 */
-export function engrave(song: Song, o: EngraveOpts): Layout { return withStaffGeometry(engraveData(song, o)); }
-/** 排版本体：只出平数据（worker 回这一份）。 */
-export function engraveData(song: Song, o: EngraveOpts): LayoutData {
+/** 排版：只出平数据（屏幕上同步那条路、worker、PDF、测试都是这一份）。 */
+export function engrave(song: Song, o: EngraveOpts): Layout {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
   const lookAt = staffLooks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));

@@ -8,7 +8,7 @@
 const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e?: string): Uint8Array & string; readdirSync(p: URL): string[] };
 const { gunzipSync } = (await import("node:zlib" as string)) as { gunzipSync(b: Uint8Array): { toString(e: string): string } };
 import { describe, it, assert } from "./runner.mjs";
-import { engrave, engraveData, type Prim } from "../src/render/engrave.ts";
+import { engrave, type Prim } from "../src/render/engrave.ts";
 import { _tIn } from "../src/i18n/index.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 import { surfaceCases, surfacePath, fullSnapshotRaw, tolDiffs, PATH_NOISE_MAX, FULL_VIEWS, type SurfaceGroup } from "./fixtures/layout/full.ts";
@@ -30,12 +30,12 @@ function checkGroup(group: SurfaceGroup): void {
   const bad: string[] = []; let n = 0;
   for (const c of surfaceCases()) {
     if (c.group !== group) continue; n++;
-    const L = c.layout(), { yOf: _y, dOf: _d, lyricY: _l, ...flat } = L;
+    const L = c.layout();
     const want = JSON.parse(gunzipSync(fs.readFileSync(surfacePath(c.song, c.view))).toString("utf8"));
     const d = tolDiffs(want, JSON.parse(JSON.stringify(fullSnapshotRaw(L))));
     if (d.out.length) bad.push(`${c.song} · ${c.view}：\n      ${d.out.join("\n      ")}`);
     if (!(d.maxPath <= PATH_NOISE_MAX)) bad.push(`${c.song} · ${c.view}：路径里的数字差 ${d.maxPath} px（不是浮点尾数）`);
-    const g = deepEq(flat, structuredClone(flat), "Layout"); if (g) bad.push(`${c.song} · ${c.view}：平数据过拷贝不相等 ${g}`);
+    const g = deepEq(L, structuredClone(L), "Layout"); if (g) bad.push(`${c.song} · ${c.view}：平数据过拷贝不相等 ${g}`);
   }
   assert(n > 0, "这一组没有用例");
   assert(bad.length === 0, `版面和底本不一样 / 不是平数据（真该变 = node scripts/freeze-layout-surface.mjs 重冻，先找统筹）：\n    ${bad.join("\n    ")}`);
@@ -76,8 +76,8 @@ describe("谱面排版：结构和语言", () => {
       for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*"[^"]*i18n\/index\.ts"/g)) for (const n of m[1]!.split(",").map((x) => x.trim().replace(/^type\s+/, "")).filter(Boolean)) assert(n === "_tIn" || n === "Lang", `${f} 从 i18n 拿了 ${n}`);
       assert(!/\b_t\(/.test(code(src)), `${f} 里调了 _t()`);
     }
-    const v = FULL_VIEWS.find((x) => x.name === "edit-all")!, song = fullSong(), D = engraveData(song, v.opts(song)) as unknown as Record<string, unknown>;
-    for (const k of Object.keys(D)) assert(typeof D[k] !== "function", `engraveData 的 ${k} 是函数（worker 原样回它）`);
+    const v = FULL_VIEWS.find((x) => x.name === "edit-all")!, song = fullSong(), D = engrave(song, v.opts(song)) as unknown as Record<string, unknown>;
+    for (const k of Object.keys(D)) assert(typeof D[k] !== "function", `排版交出去的 ${k} 是函数（worker 原样回它）`);
   });
   it("语言（守卫 8）：同一首歌 locale 换了只换那几个字（编排、吸 / 深吸），别的图元一个不变；没给 locale = 报错", () => {
     const song = fullSong();

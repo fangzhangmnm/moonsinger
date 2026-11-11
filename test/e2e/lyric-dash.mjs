@@ -17,7 +17,7 @@ await p.evaluate(() => {
 await p.waitForTimeout(250);
 const notes = () => p.evaluate(() => { const s = window.__moonsinger.state(); return s.song.papers[0].tracks[s.at.part].filter((t) => t.kind === "note").map((t) => (t.lyric ?? "·") + (t.hyph ? "-" : "")).join(" "); });
 const openNote = async (k) => {   // 点第 k 个音（只数音符）下面的歌词位
-  const pt = await p.evaluate((k) => { const m = window.__moonsinger, L = m.layout(), s = m.state(), toks = s.song.papers[0].tracks[s.at.part], i = toks.map((t, j) => [t, j]).filter(([t]) => t.kind === "note")[k][1], n = L.notes.find((q) => q.index === i), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return { x: sc.left + L.pageX.left + n.x + n.w / 2, y: sc.top + L.lyricY(n.system) }; }, k);
+  const pt = await p.evaluate((k) => { const m = window.__moonsinger, L = m.layout(), s = m.state(), toks = s.song.papers[0].tracks[s.at.part], i = toks.map((t, j) => [t, j]).filter(([t]) => t.kind === "note")[k][1], n = L.notes.find((q) => q.index === i), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return { x: sc.left + L.pageX.left + n.x + n.w / 2, y: sc.top + L.lyricYs[n.system] }; }, k);
   await p.mouse.click(pt.x, pt.y); await p.waitForTimeout(200);
 };
 await openNote(1); await p.keyboard.press("Minus"); await p.keyboard.press("Enter"); await p.waitForTimeout(200);

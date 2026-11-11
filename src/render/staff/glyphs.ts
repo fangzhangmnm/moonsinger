@@ -4,7 +4,7 @@ import { TEXT_STYLES } from "../text/index.ts";
 import { ENGRAVE } from "../smufl.ts";
 import type { Art, Dyn } from "../../score/song.ts";
 
-export const TOP_LINE = 38;   // 五线谱最上面那条线的 d（attachLayoutFns 重建 yOf / dOf 要它；2026-10-21 排版进 worker）
+export const TOP_LINE = 38;   // 五线谱最上面那条线的 d（geometry.ts 的 yAt / dAt 要它）
 export const MID_LINE = 34, BOTTOM_LINE = 30;
 // 修的字形（SMuFL；宽 / 高 = staff space，浏览器里量的 Bravura：重音 1.36 × 0.99、跳音点 0.28、保持线 1.35 × 0.17）。Above 的从基线往上长，Below 的往下长
 export const ART_GLYPH: Record<Exclude<Art, "breath" | "sfz" | "fp" | "ghost" | "whisper" | "swellUp" | "swellDown" | "swellBoth" | "arpeggio" | "roll">, { above: string; below: string; w: number; h: number }> = {

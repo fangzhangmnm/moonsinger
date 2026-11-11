@@ -12735,10 +12735,18 @@ function drawStaff(c10) {
 var yAt = (staffTop, d3, half2) => staffTop + (TOP_LINE2 - d3) * half2;
 var dAt = (staffTop, y2, half2) => Math.round(TOP_LINE2 - (y2 - staffTop) / half2);
 var anchors = (staffTop, half2) => ({ top: yAt(staffTop, TOP_LINE2, half2), mid: yAt(staffTop, MID_LINE2, half2), bottom: yAt(staffTop, BOTTOM_LINE, half2) });
-function withStaffGeometry(d3) {
-  const half2 = d3.sp * 0.5;
-  return { ...d3, yOf: (r10, dd) => yAt(d3.systems[r10].staffTop, dd, half2), dOf: (r10, y2) => dAt(d3.systems[r10].staffTop, y2, half2), lyricY: (r10) => d3.lyricYs[r10] };
-}
+var caretSpan = (row2, half2) => ({ y1: yAt(row2.staffTop, 42, half2), y2: yAt(row2.staffTop, 26, half2) });
+var previewAt = (row2, d3, half2) => {
+  const ledgers = [];
+  for (let k2 = 28; k2 >= d3; k2 -= 2) ledgers.push(yAt(row2.staffTop, k2, half2));
+  for (let k2 = 40; k2 <= d3; k2 += 2) ledgers.push(yAt(row2.staffTop, k2, half2));
+  return { y: yAt(row2.staffTop, d3, half2), ledgers };
+};
+var pitchAxis = {
+  stepAt: (row2, y2, half2) => dAt(row2.staffTop, y2, half2),
+  stepsOfDrag: (dy, half2) => Math.round(-dy / half2)
+};
+var bandTop = (row2, half2) => yAt(row2.staffTop, 44, half2);
 
 // src/render/staff/index.ts
 function staffLooks(song, noAutoGrand) {
@@ -12845,9 +12853,6 @@ function arrangeColumns(cols, tracks, o10) {
 
 // src/render/engrave.ts
 function engrave(song, o10) {
-  return withStaffGeometry(engraveData(song, o10));
-}
-function engraveData(song, o10) {
   if (!o10.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   const lookAt = staffLooks(song, new Set(o10.parts.filter((p2) => p2.perc || p2.xHead).map((p2) => p2.id)));
   if (o10.inC) {
@@ -14649,7 +14654,7 @@ var ScoreView = class {
   }
   // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
   //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），
-  //   回来的是 SVG 分组字符串 + 去掉闭包的 Layout（withStaffGeometry 装上 yOf / dOf / lyricY），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
+  //   回来的是 SVG 分组字符串 + Layout（平数据，原样用），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
   //   谁同步要排版（layoutNow）= 主线程自己算、在途回执作废。没有 Worker / OffscreenCanvas、或 worker 坏了 = 永远走同步路（行为同 v0.13.x）。
   worker;
   // undefined = 还没试；null = 没有 / 坏了
@@ -14724,7 +14729,7 @@ var ScoreView = class {
       return;
     }
     const t02 = performance.now();
-    this.layout = withStaffGeometry(r10.data);
+    this.layout = r10.data;
     this.geoSong = p2.song;
     this.geoKey = p2.geoKey;
     this.layoutSt = p2.st;
@@ -14851,9 +14856,10 @@ var ScoreView = class {
     }
     const st2 = this.host.get(), one = singleSel(st2), sp2 = L2.sp;
     const hd = this.head();
+    const half2 = sp2 * 0.5, stepAt = (row3, y2) => pitchAxis.stepAt(L2.systems[row3], y2, half2);
     const shiftOn = (row3) => {
       const n10 = L2.notes.find((h2) => h2.system === row3);
-      return n10 ? Math.round(L2.dOf(row3, n10.y)) - n10.d : hd?.system === row3 ? hd.shift : 0;
+      return n10 ? stepAt(row3, n10.y) - n10.d : hd?.system === row3 ? hd.shift : 0;
     };
     let row2, x2, shift;
     if (one >= 0) {
@@ -14861,7 +14867,7 @@ var ScoreView = class {
       if (n10) {
         row2 = n10.system;
         x2 = n10.x;
-        shift = Math.round(L2.dOf(row2, n10.y)) - n10.d;
+        shift = stepAt(row2, n10.y) - n10.d;
       } else if (r10) {
         row2 = r10.system;
         x2 = r10.x;
@@ -14887,9 +14893,8 @@ var ScoreView = class {
     const inC = this.host.inC?.() ?? false, shownToks = inC ? trackInC(toks) : toks;
     for (const p0 of this.ghostP) {
       const p2 = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths), shown2 = shownAccAt(shownToks, at2, p2);
-      const d3 = diatonicIndex(p2) + shift, y2 = L2.yOf(row2, d3);
-      for (let k2 = 28; k2 >= d3; k2 -= 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row2, k2)}" y2="${L2.yOf(row2, k2)}" stroke-width="${0.16 * sp2}"/>`);
-      for (let k2 = 40; k2 <= d3; k2 += 2) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${L2.yOf(row2, k2)}" y2="${L2.yOf(row2, k2)}" stroke-width="${0.16 * sp2}"/>`);
+      const d3 = diatonicIndex(p2) + shift, pv2 = previewAt(L2.systems[row2], d3, half2), y2 = pv2.y;
+      for (const ly2 of pv2.ledgers) parts.push(`<line x1="${x2 - ext}" x2="${x2 + nh2 + ext}" y1="${ly2}" y2="${ly2}" stroke-width="${0.16 * sp2}"/>`);
       parts.push(`<text x="${x2}" y="${y2}" font-family="Bravura" font-size="${fs}">\uE0A4</text>`);
       const acc = shown2 === null ? "" : shown2 === 1 ? "\uE262" : shown2 === -1 ? "\uE260" : shown2 === 2 ? "\uE263" : shown2 === -2 ? "\uE264" : "\uE261";
       if (acc) parts.push(`<text x="${x2 - 1.2 * sp2}" y="${y2}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
@@ -15329,7 +15334,8 @@ var ScoreView = class {
     g3.setAttribute("width", String(L2.width));
     g3.setAttribute("height", String(L2.height));
     const x2 = h2.x + 0.1 * L2.sp;
-    g3.innerHTML = `<line class="caret" x1="${x2}" y1="${L2.yOf(h2.system, 42)}" x2="${x2}" y2="${L2.yOf(h2.system, 26)}" stroke-width="${0.16 * L2.sp}"/>`;
+    const cs2 = caretSpan(L2.systems[h2.system], L2.sp * 0.5);
+    g3.innerHTML = `<line class="caret" x1="${x2}" y1="${cs2.y1}" x2="${x2}" y2="${cs2.y2}" stroke-width="${0.16 * L2.sp}"/>`;
     if (!g3.isConnected) this.ink.appendChild(g3);
   }
   /** 选区 = 淡蓝带子（user 2026-10-08「选区画成一条淡蓝的带子盖住那几个音」）：每行一条，从选中的第一个东西到最后一个（音 / 休止 / 记号），
@@ -15363,7 +15369,7 @@ var ScoreView = class {
     for (const h2 of L2.dyns) take(h2);
     for (const h2 of L2.marks) take(h2);
     for (const { a: a10, b: b3, rows } of acc.values()) {
-      const top = L2.yOf(rows[0], 44), bottom = L2.lyricY(rows[rows.length - 1]) + 0.8 * sp2;
+      const top = bandTop(L2.systems[rows[0]], sp2 * 0.5), bottom = L2.lyricYs[rows[rows.length - 1]] + 0.8 * sp2;
       const d3 = document.createElement("div");
       d3.className = "selbox";
       Object.assign(d3.style, { left: `${a10}px`, top: `${top}px`, width: `${b3 - a10}px`, height: `${bottom - top}px` });
@@ -15381,9 +15387,9 @@ var ScoreView = class {
       return;
     }
     const a10 = inSel.reduce((p2, n10) => n10.index < p2.index ? n10 : p2), b3 = inSel.reduce((p2, n10) => n10.index > p2.index ? n10 : p2), sp2 = L2.sp;
-    Object.assign(this.handles.start.style, { left: `${a10.x - sp2 * 0.3}px`, top: `${L2.lyricY(a10.system) + sp2 * 0.9}px` });
+    Object.assign(this.handles.start.style, { left: `${a10.x - sp2 * 0.3}px`, top: `${L2.lyricYs[a10.system] + sp2 * 0.9}px` });
     this.handles.start.hidden = false;
-    Object.assign(this.handles.end.style, { left: `${b3.x + b3.w + sp2 * 0.3}px`, top: `${L2.lyricY(b3.system) + sp2 * 0.9}px` });
+    Object.assign(this.handles.end.style, { left: `${b3.x + b3.w + sp2 * 0.3}px`, top: `${L2.lyricYs[b3.system] + sp2 * 0.9}px` });
     this.handles.end.hidden = false;
   }
   /** 光标那一行滚进视野（软键盘弹出 / 收起时宿主调）。 */
@@ -15900,7 +15906,7 @@ var ScoreView = class {
   lyricAt(x2, y2) {
     const L2 = this.layout, sp2 = L2.sp;
     for (let r10 = 0; r10 < L2.systems.length; r10++) {
-      const ly2 = L2.lyricY(r10);
+      const ly2 = L2.lyricYs[r10];
       if (!(y2 > ly2 - sp2 * 2.2 && y2 < ly2 + sp2 * 2.4)) continue;
       const cands3 = L2.lyrics.filter((h2) => h2.system === r10);
       if (!cands3.length) return null;
@@ -16316,7 +16322,7 @@ var ScoreView = class {
     }
     const st2 = this.host.get();
     if (g3.axis === "y") {
-      const d3 = g3.d0 + Math.round(-dy / (L2.sp / 2));
+      const d3 = g3.d0 + pitchAxis.stepsOfDrag(dy, L2.sp * 0.5);
       if (d3 === g3.heard) return;
       g3.heard = d3;
       this.host.set(setNote(st2, g3.index, { pitch: fromDiatonic(d3, keyAt(tr(st2), g3.index)) }), { gesture: "drag" });
@@ -31700,7 +31706,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-7717d7c1a049.mjs");
+      return pick(() => "layout-worker-be166764f55a.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-4e8128462d9e.mjs");
   }
@@ -61271,4 +61277,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-99f8d16292fe.mjs.map
+//# sourceMappingURL=moonsinger-cd2b999545ad.mjs.map

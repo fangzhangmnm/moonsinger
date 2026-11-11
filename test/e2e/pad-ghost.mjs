@@ -21,7 +21,7 @@ const before = await p2();
 for (const x of await p.$$(".notice-stack .toast button.dismiss")) await x.click();
 await p.waitForTimeout(100);
 // 点 B 的第 3 小节开头（落点 lead = 离尾巴 7 拍）
-const pt = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = L.slots.filter((x) => x.lead).sort((a, c) => c.lead - a.lead)[0], svg = document.querySelector("#score svg").getBoundingClientRect(); return { x: svg.left + L.pageX.left + s.x + 4, y: svg.top + L.yOf(s.system, 34), lead: s.lead }; });
+const pt = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), s = L.slots.filter((x) => x.lead).sort((a, c) => c.lead - a.lead)[0], svg = document.querySelector("#score svg").getBoundingClientRect(); return { x: svg.left + L.pageX.left + s.x + 4, y: svg.top + (L.systems[s.system].staffTop + (38 - 34) * L.sp / 2), lead: s.lead }; });
 await p.mouse.click(pt.x, pt.y); await p.waitForTimeout(200);
 const st1 = await p.evaluate(() => { const s = window.__moonsinger.state(); return { lead: s.lead ?? 0, part: s.at.part === s.song.parts[1].id }; });
 check(st1.part && Math.abs(st1.lead - pt.lead) < 1 && (await p2()) === before, "点空着的小节 = 光标到 B、带着 lead；谱一点没变", JSON.stringify(st1));

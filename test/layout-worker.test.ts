@@ -1,10 +1,10 @@
-// 排版进 worker（src/render/layout-worker.ts + engrave.ts 的 engraveData / LayoutData + staff/geometry.ts withStaffGeometry）：过线的是平数据，主线程装上 yOf / dOf / lyricY；worker 的纯函数回的 parts = 主线程直接串的。
-//   1b-8（2026-11-11 Claude Opus 5.5）：原来的 strip / attachLayoutFns 退场；yOf / dOf / lyricY 逐行和底本相同由 test/score-surface.test.ts 核（快照每行采样）。
+// 排版进 worker（src/render/layout-worker.ts + engrave.ts）：过线的是平数据（Layout 本身），主线程原样用；纵向的几何 = staff/geometry.ts 的纯函数；worker 的纯函数回的 parts = 主线程直接串的。
+//   1b-8（2026-11-11 Claude Opus 5.5）：原来的 strip / attachLayoutFns 退场；谱面分家第二刀（2026-11-12）：Layout 上的 yOf / dOf / lyricY 也退场，几何逐行和底本相同由 test/score-surface.test.ts 核（快照每行采样）。
 //   created 2026-10-21 by Claude Fable 5.1（user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」）
 import { describe, it, eq, assert } from "./runner.mjs";
-import { engrave, engraveData } from "../src/render/engrave.ts";
+import { engrave } from "../src/render/engrave.ts";
 import { TOP_LINE } from "../src/render/staff/glyphs.ts";
-import { withStaffGeometry, caretSpan, previewAt, pitchAxis, bandTop } from "../src/render/staff/geometry.ts";
+import { yAt, dAt, caretSpan, previewAt, pitchAxis, bandTop } from "../src/render/staff/geometry.ts";
 import { toSvgParts } from "../src/render/svg.ts";
 import { runLayoutJob } from "../src/render/layout-worker.ts";
 import { initState, type EditorState } from "../src/score/song.ts";
@@ -24,23 +24,23 @@ function songs(): { name: string; st: EditorState; parts: Parameters<typeof engr
 const opts = (parts: Parameters<typeof engrave>[1]["parts"], at: EditorState["at"], width = 420) => ({ width, sp: 10, locale: "zh" as const, at, parts, titlePlaceholder: true, autoBars: true, paperLabel: "A5", margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } });
 
 describe("排版进 worker", () => {
-  it("engraveData = 平数据（能过线、没有函数）；withStaffGeometry 装上的 yOf / dOf / lyricY = 按定义算的（第五线 + (38 − 级) × 半个线间距、取整回去、lyricYs）", () => {
+  it("engrave = 平数据（能过线、没有函数）；每行的几何 yAt / dAt = 按定义算的（第五线 + (38 − 级) × 半个线间距、取整回去）；每行一条歌词基线", () => {
     for (const { name, st, parts } of songs()) {
       const o = { ...opts(parts, st.at), locale: "zh" as const, measure: createTextMeasure(measure) };
-      const data = engraveData(st.song, o);
+      const data = engrave(st.song, o);
       assert(data.systems.length >= 2, `${name}：至少两行`);
       eq(data.lyricYs.length, data.systems.length, `${name}：每行一个 lyricY`);
       assert(!("yOf" in data) && !("dOf" in data) && !("lyricY" in data), "平数据里没有函数");
       structuredClone(data);   // 过线：有函数 / 不能克隆的东西在这儿就炸
-      const R = withStaffGeometry(data), L = engrave(st.song, o), half = data.sp / 2;
+      const half = data.sp / 2;
       for (let r = 0; r < data.systems.length; r++) {
         const top = data.systems[r]!.staffTop;
-        eq(R.lyricY(r), data.lyricYs[r], `${name}：lyricY(${r})`); eq(L.lyricY(r), R.lyricY(r), `${name}：engrave 交出去的 lyricY(${r})`);
-        for (const d of [TOP_LINE, 34, 30, 44, 20, 27.5]) { eq(R.yOf(r, d), top + (TOP_LINE - d) * half, `${name}：yOf(${r}, ${d})`); eq(R.dOf(r, R.yOf(r, d)), Math.round(d), `${name}：dOf 回去`); eq(L.yOf(r, d), R.yOf(r, d), `${name}：engrave 交出去的 yOf`); }
+        assert(Number.isFinite(data.lyricYs[r]) && data.lyricYs[r]! > top, `${name}：第 ${r} 行的歌词基线在第五线下面`);
+        for (const d of [TOP_LINE, 34, 30, 44, 20, 27.5]) { eq(yAt(top, d, half), top + (TOP_LINE - d) * half, `${name}：yAt(${r}, ${d})`); eq(dAt(top, yAt(top, d, half), half), Math.round(d), `${name}：dAt 回去`); }
       }
     }
   });
-  it("几何纯函数（第二刀谱面视图改用）= 谱面视图现在的写法：光标 42→26 级、鬼音符的加线、纵向 ↔ 第几级、拖多远几级、选区带上沿 44 级", () => {
+  it("几何纯函数（谱面视图用的）= 谱面视图第二刀之前的写法：光标 42→26 级、鬼音符的加线、纵向 ↔ 第几级、拖多远几级、选区带上沿 44 级", () => {
     const row = { staffTop: 100, staff: 1 as const }, half = 5, yOf = (d: number) => row.staffTop + (TOP_LINE - d) * half;
     const c = caretSpan(row, half); eq(c.y1, yOf(42)); eq(c.y2, yOf(26));
     eq(bandTop(row, half), yOf(44));

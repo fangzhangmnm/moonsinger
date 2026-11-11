@@ -31,7 +31,7 @@ import { engrave, type EngraveOpts, type Layout, type PartView, type HitNote, ty
 import { toSvg, toSvgParts } from "../render/svg.ts";
 import { createTextMeasure, canvasMeasure, type RawMeasure } from "../render/text/index.ts";
 import type { LayoutJob, LayoutReply, SvgParts } from "../render/layout-worker.ts";
-import { withStaffGeometry } from "../render/staff/geometry.ts";
+import { caretSpan, previewAt, pitchAxis, bandTop } from "../render/staff/index.ts";   // 五线谱这一种行的几何（谱面分家第二刀）
 /** 这一次排版用的几何（谱大小 / 纸宽 / 严格按纸 / 分页 / 边距 / 横卷）。 */
 type FrameNow = { sp: number; width: number; strict: boolean; page: { h: number; l: number; r: number; t: number; b: number } | null; margins: { l: number; r: number; t: number; b: number }; hscroll: boolean };
 import { span, record } from "./perf-trace.ts";
@@ -318,7 +318,7 @@ export class ScoreView {
   }
   // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──
   //   下一帧的画（main.ts paintNow）走 renderAsync：排版现成 = 直接画；不现成 = 把 song（结构化克隆 ≈ 0.5 ms）和选项发给 worker（src/render/layout-worker.ts），
-  //   回来的是 SVG 分组字符串 + 去掉闭包的 Layout（withStaffGeometry 装上 yOf / dOf / lyricY），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
+  //   回来的是 SVG 分组字符串 + Layout（平数据，原样用），主线程只剩换 DOM + 装饰（几 ms）。在途期间又改了 = 记着最新的，回来再发一次（一次只有一个在飞）。
   //   谁同步要排版（layoutNow）= 主线程自己算、在途回执作废。没有 Worker / OffscreenCanvas、或 worker 坏了 = 永远走同步路（行为同 v0.13.x）。
   private worker: Worker | null | undefined;   // undefined = 还没试；null = 没有 / 坏了
   private seq = 0;
@@ -368,7 +368,7 @@ export class ScoreView {
     this.pending = null;
     if ("error" in r) { this.dropWorker(`layout job failed: ${r.error}`); return; }
     const t0 = performance.now();
-    this.layout = withStaffGeometry(r.data); this.geoSong = p.song; this.geoKey = p.geoKey; this.layoutSt = p.st; this.frameNow = p.frame;
+    this.layout = r.data; this.geoSong = p.song; this.geoKey = p.geoKey; this.layoutSt = p.st; this.frameNow = p.frame;
     this.workerParts = { for: this.layout, parts: r.parts };
     record("engrave-worker", r.ms); record("reply", performance.now() - t0);
     const q = this.queued; this.queued = null;
@@ -465,11 +465,12 @@ export class ScoreView {
     const st = this.host.get(), one = singleSel(st), sp = L.sp;
     /** 这一行谱号的位移：看这一行上随便一个音（命中框里 y 带位移、d 不带）。 */
     const hd = this.head();
-    const shiftOn = (row: number) => { const n = L.notes.find((h) => h.system === row); return n ? Math.round(L.dOf(row, n.y)) - n.d : hd?.system === row ? hd.shift : 0; };
+    const half = sp * 0.5, stepAt = (row: number, y: number) => pitchAxis.stepAt(L.systems[row]!, y, half);   // 纵向 = 音高（五线谱这一种行的几何，staff/geometry.ts）
+    const shiftOn = (row: number) => { const n = L.notes.find((h) => h.system === row); return n ? stepAt(row, n.y) - n.d : hd?.system === row ? hd.shift : 0; };
     let row: number, x: number, shift: number;
     if (one >= 0) {
       const n = L.notes.find((h) => h.index === one && this.onTrack(h)), r = n ? null : L.rests.find((h) => h.index === one && this.onTrack(h));
-      if (n) { row = n.system; x = n.x; shift = Math.round(L.dOf(row, n.y)) - n.d; }
+      if (n) { row = n.system; x = n.x; shift = stepAt(row, n.y) - n.d; }
       else if (r) { row = r.system; x = r.x; shift = shiftOn(row); }
       else { clear(); return; }
     } else if (hd) { row = hd.system; x = hd.x + 0.35 * sp; shift = hd.shift; }
@@ -482,9 +483,8 @@ export class ScoreView {
     const inC = this.host.inC?.() ?? false, shownToks = inC ? trackInC(toks) : toks;   // 按 C 调看：鬼音符也换到 C、按显示出来的谱算升降号
     for (const p0 of this.ghostP) {
       const p = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths), shown = shownAccAt(shownToks, at, p);
-      const d = diatonicIndex(p) + shift, y = L.yOf(row, d);
-      for (let k = 28; k >= d; k -= 2) parts.push(`<line x1="${x - ext}" x2="${x + nh + ext}" y1="${L.yOf(row, k)}" y2="${L.yOf(row, k)}" stroke-width="${0.16 * sp}"/>`);
-      for (let k = 40; k <= d; k += 2) parts.push(`<line x1="${x - ext}" x2="${x + nh + ext}" y1="${L.yOf(row, k)}" y2="${L.yOf(row, k)}" stroke-width="${0.16 * sp}"/>`);
+      const d = diatonicIndex(p) + shift, pv = previewAt(L.systems[row]!, d, half), y = pv.y;   // 鬼音符长什么样（符头的 y + 加线）= 行的几何
+      for (const ly of pv.ledgers) parts.push(`<line x1="${x - ext}" x2="${x + nh + ext}" y1="${ly}" y2="${ly}" stroke-width="${0.16 * sp}"/>`);
       parts.push(`<text x="${x}" y="${y}" font-family="Bravura" font-size="${fs}">\u{E0A4}</text>`);
       const acc = shown === null ? "" : shown === 1 ? "\u{E262}" : shown === -1 ? "\u{E260}" : shown === 2 ? "\u{E263}" : shown === -2 ? "\u{E264}" : "\u{E261}";   // 0 = 还原号
       if (acc) parts.push(`<text x="${x - 1.2 * sp}" y="${y}" font-family="Bravura" font-size="${fs}">${acc}</text>`);
@@ -771,7 +771,8 @@ export class ScoreView {
     const NS = "http://www.w3.org/2000/svg", g = (this.caretEl ??= document.createElementNS(NS, "svg"));
     g.setAttribute("class", "ink-caret"); g.setAttribute("width", String(L.width)); g.setAttribute("height", String(L.height));
     const x = h.x + 0.1 * L.sp;
-    g.innerHTML = `<line class="caret" x1="${x}" y1="${L.yOf(h.system, 42)}" x2="${x}" y2="${L.yOf(h.system, 26)}" stroke-width="${0.16 * L.sp}"/>`;
+    const cs = caretSpan(L.systems[h.system]!, L.sp * 0.5);   // 光标长什么样 = 行的几何
+    g.innerHTML = `<line class="caret" x1="${x}" y1="${cs.y1}" x2="${x}" y2="${cs.y2}" stroke-width="${0.16 * L.sp}"/>`;
     if (!g.isConnected) this.ink.appendChild(g);
   }
   /** 选区 = 淡蓝带子（user 2026-10-08「选区画成一条淡蓝的带子盖住那几个音」）：每行一条，从选中的第一个东西到最后一个（音 / 休止 / 记号），
@@ -792,7 +793,7 @@ export class ScoreView {
     for (const h of L.dyns) take(h);
     for (const h of L.marks) take(h);
     for (const { a, b, rows } of acc.values()) {
-      const top = L.yOf(rows[0], 44), bottom = L.lyricY(rows[rows.length - 1]) + 0.8 * sp;
+      const top = bandTop(L.systems[rows[0]!]!, sp * 0.5), bottom = L.lyricYs[rows[rows.length - 1]!]! + 0.8 * sp;   // 选区带：上沿 = 行的几何，下沿 = 歌词基线
       const d = document.createElement("div"); d.className = "selbox";
       Object.assign(d.style, { left: `${a}px`, top: `${top}px`, width: `${b - a}px`, height: `${bottom - top}px` });
       this.ink.insertBefore(d, this.ink.firstChild); this.selEls.push(d);
@@ -804,8 +805,8 @@ export class ScoreView {
     const inSel = L && st.sel ? this.hits.filter((n) => this.onTrack(n) && n.index >= st.sel!.from && n.index < st.sel!.to) : [];
     if (!L || !inSel.length) { this.handles.start.hidden = true; this.handles.end.hidden = true; return; }
     const a = inSel.reduce((p, n) => (n.index < p.index ? n : p)), b = inSel.reduce((p, n) => (n.index > p.index ? n : p)), sp = L.sp;
-    Object.assign(this.handles.start.style, { left: `${a.x - sp * 0.3}px`, top: `${L.lyricY(a.system) + sp * 0.9}px` }); this.handles.start.hidden = false;
-    Object.assign(this.handles.end.style, { left: `${b.x + b.w + sp * 0.3}px`, top: `${L.lyricY(b.system) + sp * 0.9}px` }); this.handles.end.hidden = false;
+    Object.assign(this.handles.start.style, { left: `${a.x - sp * 0.3}px`, top: `${L.lyricYs[a.system]! + sp * 0.9}px` }); this.handles.start.hidden = false;
+    Object.assign(this.handles.end.style, { left: `${b.x + b.w + sp * 0.3}px`, top: `${L.lyricYs[b.system]! + sp * 0.9}px` }); this.handles.end.hidden = false;
   }
   /** 光标那一行滚进视野（软键盘弹出 / 收起时宿主调）。 */
   followNow(): void { this.follow(); }   // 明着要（撤销把视图带过去等）= 照拉
@@ -1175,7 +1176,7 @@ export class ScoreView {
   private lyricAt(x: number, y: number): LyricHit | null {
     const L = this.layout!, sp = L.sp;
     for (let r = 0; r < L.systems.length; r++) {
-      const ly = L.lyricY(r);
+      const ly = L.lyricYs[r]!;
       if (!(y > ly - sp * 2.2 && y < ly + sp * 2.4)) continue;
       const cands = L.lyrics.filter((h) => h.system === r);
       if (!cands.length) return null;
@@ -1456,7 +1457,7 @@ export class ScoreView {
     }
     const st = this.host.get();
     if (g.axis === "y") {
-      const d = g.d0 + Math.round(-dy / (L.sp / 2));
+      const d = g.d0 + pitchAxis.stepsOfDrag(dy, L.sp * 0.5);   // 竖着拖了多远是几级 = 行的几何（只有纵向 = 音高的画法有）
       if (d === g.heard) return;   // 还在同一个音高：不重画、不重新起音
       g.heard = d;
       this.host.set(setNote(st, g.index, { pitch: fromDiatonic(d, keyAt(tr(st), g.index)) }), { gesture: "drag" });

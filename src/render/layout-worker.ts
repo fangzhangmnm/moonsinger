@@ -4,18 +4,18 @@
 //   协议：主线程发 LayoutJob（seq + song 的结构化克隆 + 排版选项），这里回 LayoutReply（同 seq + parts + 去掉闭包的 Layout）；主线程按 seq 丢掉作废的回执。
 //   量字宽：OffscreenCanvas 上同一串字体（文字模块 canvasMeasure，src/render/text/measure.ts；2026-10-17 核过和主线程逐位相同）。没有 OffscreenCanvas 的浏览器 = 主线程不建这个 worker（score-view 走原来的同步路）。
 //   纯函数 runLayoutJob 单独导出（node 测试喂一把假尺子）；self.onmessage 只在 worker 环境里挂。
-import { engraveData, type EngraveOpts, type LayoutData } from "./engrave.ts";
+import { engrave, type EngraveOpts, type Layout } from "./engrave.ts";
 import { toSvgParts } from "./svg.ts";
 import { createTextMeasure, canvasMeasure, type RawMeasure } from "./text/index.ts";
 import type { Song } from "../score/song.ts";
 
 export interface LayoutJob { seq: number; song: Song; opts: Omit<EngraveOpts, "measure"> }
 export type SvgParts = { open: string; groups: string[]; close: string };
-export type LayoutReply = { seq: number; parts: SvgParts; data: LayoutData; ms: number } | { seq: number; error: string };
+export type LayoutReply = { seq: number; parts: SvgParts; data: Layout; ms: number } | { seq: number; error: string };
 
 export function runLayoutJob(job: LayoutJob, raw: RawMeasure, now: () => number = () => performance.now()): LayoutReply {
   const t0 = now();
-  const data = engraveData(job.song, { ...job.opts, measure: createTextMeasure(raw) });   // 平数据原样过线；主线程 withStaffGeometry 装上 yOf / dOf / lyricY
+  const data = engrave(job.song, { ...job.opts, measure: createTextMeasure(raw) });   // 平数据原样过线（谱面分家第二刀起 Layout 本身就是平的）
   const parts = toSvgParts(data);
   return { seq: job.seq, parts, data, ms: now() - t0 };
 }
