@@ -10324,109 +10324,6 @@ function percKindOf(inst) {
   return info2 ? { kind: "one", info: info2, key: inst.note } : null;
 }
 
-// src/render/smufl.ts
-var GLYPH = {
-  metNoteQuarterUp: "\uECA5",
-  // 速度记号里的四分音符（metronome mark）
-  gClef: "\uE050",
-  fClef: "\uE062",
-  // 低音谱号（2026-10-08）
-  gClef8vb: "\uE052",
-  gClef8va: "\uE053",
-  gClef15ma: "\uE054",
-  fClef8vb: "\uE064",
-  // 八度谱号（2026-10-10 v0.9.28：吉他 / 男高音 8vb、短笛 8va、钟琴 15ma、贝斯 8vb）
-  ottavaAlta: "\uE511",
-  ottavaBassa: "\uE512",
-  quindicesimaAlta: "\uE515",
-  // 八度线开头的字：8va / 8vb / 15ma
-  noteheadWhole: "\uE0A2",
-  noteheadHalf: "\uE0A3",
-  noteheadBlack: "\uE0A4",
-  noteheadXWhole: "\uE0A7",
-  noteheadXHalf: "\uE0A8",
-  noteheadXBlack: "\uE0A9",
-  // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
-  augmentationDot: "\uE1E7",
-  flag8thUp: "\uE240",
-  flag8thDown: "\uE241",
-  flag16thUp: "\uE242",
-  flag16thDown: "\uE243",
-  flag32ndUp: "\uE244",
-  flag32ndDown: "\uE245",
-  accidentalFlat: "\uE260",
-  accidentalNatural: "\uE261",
-  accidentalSharp: "\uE262",
-  accidentalDoubleSharp: "\uE263",
-  accidentalDoubleFlat: "\uE264",
-  restWhole: "\uE4E3",
-  restHalf: "\uE4E4",
-  restQuarter: "\uE4E5",
-  rest8th: "\uE4E6",
-  rest16th: "\uE4E7",
-  rest32nd: "\uE4E8"
-};
-var timeSigDigits = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(57472 + Number(d3))).join("");
-var DYN_GLYPH = { ppp: "\uE52A", pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F", fff: "\uE530" };
-var PERC_CLEF = "\uE069";
-var PERC_HEAD = {
-  normal: { ch: ["\uE0A4", "\uE0A3", "\uE0A2"], w: [1.18, 1.18, 1.688] },
-  x: { ch: ["\uE0A9", "\uE0A8", "\uE0A7"], w: [1.16, 1.34, 1.51] },
-  "circle-x": { ch: ["\uE0B3", "\uE0B2", "\uE0B1"], w: [0.996, 1, 0.996] },
-  slash: { ch: ["\uE101", "\uE103", "\uE102"], w: [2.124, 3.12, 3.92] },
-  slashed1: { ch: ["\uE0CF", "\uE0D1", "\uE0D3"], w: [1.18, 1.168, 1.672] },
-  slashed2: { ch: ["\uE0D0", "\uE0D2", "\uE0D4"], w: [1.18, 1.172, 1.672] },
-  diamond: { ch: ["\uE0DB", "\uE0D9", "\uE0D8"], w: [0.98, 0.98, 1.664] },
-  "triangle-up": { ch: ["\uE0BE", "\uE0BC", "\uE0BB"], w: [1.172, 1.14, 1.276] },
-  "triangle-down": { ch: ["\uE0C7", "\uE0C5", "\uE0C4"], w: [1.168, 1.14, 1.276] },
-  plus: { ch: ["\uE0AF", "\uE0AE", "\uE0AD"], w: [0.996, 1.044, 1.14] },
-  la: { ch: ["\uE0B9", "\uE0B8", "\uE0B8"], w: [1.252, 1.252, 1.252] },
-  ti: { ch: ["\uE0CD", "\uE0CC", "\uE0CC"], w: [1.112, 1.112, 1.112] }
-};
-var PERC_SMUFL = {
-  noteheadXOrnate: { ch: ["\uE0AA", "\uE0AA", "\uE0AA"], w: [0.992, 0.992, 0.992] },
-  noteheadSlashX: { ch: ["\uE106", "\uE106", "\uE106"], w: [2.124, 2.124, 2.124] }
-};
-var W = {
-  noteheadBlack: 1.18,
-  noteheadHalf: 1.18,
-  noteheadWhole: 1.688,
-  noteheadXBlack: 1.16,
-  noteheadXHalf: 1.34,
-  noteheadXWhole: 1.51,
-  // 2026-10-08 在浏览器里用 measureText 量的 advance（400px Bravura；黑符头同法量得 1.18 = 上面那行，方法对得上）
-  gClef: 2.684,
-  fClef: 2.736,
-  sharp: 0.996,
-  flat: 0.904,
-  natural: 0.672,
-  doubleSharp: 1,
-  doubleFlat: 1.644,
-  dot: 0.4,
-  timeSigDigit: 1.8,
-  restWhole: 1.128,
-  restHalf: 1.128,
-  restQuarter: 1.08,
-  rest8th: 0.988,
-  rest16th: 1.28,
-  rest32nd: 1.452
-};
-var ENGRAVE = {
-  staffLine: 0.13,
-  stem: 0.12,
-  ledger: 0.16,
-  ledgerExt: 0.4,
-  beam: 0.5,
-  beamGap: 0.25,
-  thinBar: 0.16,
-  tieMid: 0.22
-};
-var STEM_UP_SE = [1.18, 0.168];
-var STEM_DOWN_NW = [0, -0.168];
-var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
-var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
-var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
-
 // src/render/glyph-box.gen.ts
 var GLYPH_BOX = {
   "\uE040": [0, 1.464, -4, 0],
@@ -11019,6 +10916,109 @@ function wrapTitle(s10, w2, max2) {
   return lines.length ? lines : [s10];
 }
 
+// src/render/smufl.ts
+var GLYPH = {
+  metNoteQuarterUp: "\uECA5",
+  // 速度记号里的四分音符（metronome mark）
+  gClef: "\uE050",
+  fClef: "\uE062",
+  // 低音谱号（2026-10-08）
+  gClef8vb: "\uE052",
+  gClef8va: "\uE053",
+  gClef15ma: "\uE054",
+  fClef8vb: "\uE064",
+  // 八度谱号（2026-10-10 v0.9.28：吉他 / 男高音 8vb、短笛 8va、钟琴 15ma、贝斯 8vb）
+  ottavaAlta: "\uE511",
+  ottavaBassa: "\uE512",
+  quindicesimaAlta: "\uE515",
+  // 八度线开头的字：8va / 8vb / 15ma
+  noteheadWhole: "\uE0A2",
+  noteheadHalf: "\uE0A3",
+  noteheadBlack: "\uE0A4",
+  noteheadXWhole: "\uE0A7",
+  noteheadXHalf: "\uE0A8",
+  noteheadXBlack: "\uE0A9",
+  // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
+  augmentationDot: "\uE1E7",
+  flag8thUp: "\uE240",
+  flag8thDown: "\uE241",
+  flag16thUp: "\uE242",
+  flag16thDown: "\uE243",
+  flag32ndUp: "\uE244",
+  flag32ndDown: "\uE245",
+  accidentalFlat: "\uE260",
+  accidentalNatural: "\uE261",
+  accidentalSharp: "\uE262",
+  accidentalDoubleSharp: "\uE263",
+  accidentalDoubleFlat: "\uE264",
+  restWhole: "\uE4E3",
+  restHalf: "\uE4E4",
+  restQuarter: "\uE4E5",
+  rest8th: "\uE4E6",
+  rest16th: "\uE4E7",
+  rest32nd: "\uE4E8"
+};
+var timeSigDigits = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(57472 + Number(d3))).join("");
+var DYN_GLYPH = { ppp: "\uE52A", pp: "\uE52B", p: "\uE520", mp: "\uE52C", mf: "\uE52D", f: "\uE522", ff: "\uE52F", fff: "\uE530" };
+var PERC_CLEF = "\uE069";
+var PERC_HEAD = {
+  normal: { ch: ["\uE0A4", "\uE0A3", "\uE0A2"], w: [1.18, 1.18, 1.688] },
+  x: { ch: ["\uE0A9", "\uE0A8", "\uE0A7"], w: [1.16, 1.34, 1.51] },
+  "circle-x": { ch: ["\uE0B3", "\uE0B2", "\uE0B1"], w: [0.996, 1, 0.996] },
+  slash: { ch: ["\uE101", "\uE103", "\uE102"], w: [2.124, 3.12, 3.92] },
+  slashed1: { ch: ["\uE0CF", "\uE0D1", "\uE0D3"], w: [1.18, 1.168, 1.672] },
+  slashed2: { ch: ["\uE0D0", "\uE0D2", "\uE0D4"], w: [1.18, 1.172, 1.672] },
+  diamond: { ch: ["\uE0DB", "\uE0D9", "\uE0D8"], w: [0.98, 0.98, 1.664] },
+  "triangle-up": { ch: ["\uE0BE", "\uE0BC", "\uE0BB"], w: [1.172, 1.14, 1.276] },
+  "triangle-down": { ch: ["\uE0C7", "\uE0C5", "\uE0C4"], w: [1.168, 1.14, 1.276] },
+  plus: { ch: ["\uE0AF", "\uE0AE", "\uE0AD"], w: [0.996, 1.044, 1.14] },
+  la: { ch: ["\uE0B9", "\uE0B8", "\uE0B8"], w: [1.252, 1.252, 1.252] },
+  ti: { ch: ["\uE0CD", "\uE0CC", "\uE0CC"], w: [1.112, 1.112, 1.112] }
+};
+var PERC_SMUFL = {
+  noteheadXOrnate: { ch: ["\uE0AA", "\uE0AA", "\uE0AA"], w: [0.992, 0.992, 0.992] },
+  noteheadSlashX: { ch: ["\uE106", "\uE106", "\uE106"], w: [2.124, 2.124, 2.124] }
+};
+var W = {
+  noteheadBlack: 1.18,
+  noteheadHalf: 1.18,
+  noteheadWhole: 1.688,
+  noteheadXBlack: 1.16,
+  noteheadXHalf: 1.34,
+  noteheadXWhole: 1.51,
+  // 2026-10-08 在浏览器里用 measureText 量的 advance（400px Bravura；黑符头同法量得 1.18 = 上面那行，方法对得上）
+  gClef: 2.684,
+  fClef: 2.736,
+  sharp: 0.996,
+  flat: 0.904,
+  natural: 0.672,
+  doubleSharp: 1,
+  doubleFlat: 1.644,
+  dot: 0.4,
+  timeSigDigit: 1.8,
+  restWhole: 1.128,
+  restHalf: 1.128,
+  restQuarter: 1.08,
+  rest8th: 0.988,
+  rest16th: 1.28,
+  rest32nd: 1.452
+};
+var ENGRAVE = {
+  staffLine: 0.13,
+  stem: 0.12,
+  ledger: 0.16,
+  ledgerExt: 0.4,
+  beam: 0.5,
+  beamGap: 0.25,
+  thinBar: 0.16,
+  tieMid: 0.22
+};
+var STEM_UP_SE = [1.18, 0.168];
+var STEM_DOWN_NW = [0, -0.168];
+var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
+var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
+var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
+
 // src/render/staff/glyphs.ts
 var TOP_LINE = 38;
 var MID_LINE = 34;
@@ -11044,6 +11044,12 @@ var RAMP_DASH = { len: 0.5, gap: 0.4 };
 var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
 var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 var GLYPH_TUPLET = (n10) => [...String(n10)].map((d3) => String.fromCodePoint(59520 + Number(d3))).join("");
+var SYSTEM_LINE_W = ENGRAVE.thinBar * 1.4;
+
+// src/render/staff/geometry.ts
+var yAt = (staffTop, d3, half2) => staffTop + (TOP_LINE - d3) * half2;
+var dAt = (staffTop, y2, half2) => Math.round(TOP_LINE - (y2 - staffTop) / half2);
+var anchors = (staffTop, half2) => ({ top: yAt(staffTop, TOP_LINE, half2), mid: yAt(staffTop, MID_LINE, half2), bottom: yAt(staffTop, BOTTOM_LINE, half2) });
 
 // src/render/staff/notation.ts
 var MIN_PLAIN = TPQ / 8;
@@ -11957,7 +11963,7 @@ function rollDefaultHz(key) {
 // src/render/staff/draw.ts
 var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
 function drawStaff(c10) {
-  const { song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c10;
+  const { song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c10;
   const clefAtSys = (q2, s10) => {
     const u2 = q2.units.find((x2) => x2.system === s10 && x2.index >= 0);
     if (u2) return q2.ds.clef[u2.index] ?? q2.start;
@@ -11970,6 +11976,7 @@ function drawStaff(c10) {
     for (let i10 = upto; i10 >= 0; i10--) if (q2.tokens[i10]?.kind === "clef") return i10;
     return -1;
   };
+  const staffHit = (r10) => ({ y: yOf(r10, TOP_LINE) - P2(1.2), h: yOf(r10, BOTTOM_LINE) - yOf(r10, TOP_LINE) + P2(2.4) });
   const drawTime = (r10, x0, beats, beatType, cls) => {
     const num2 = timeSigDigits(beats), den = timeSigDigits(beatType);
     const wn = [...num2].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw2 = Math.max(wn, wd);
@@ -12364,10 +12371,10 @@ function drawStaff(c10) {
         cx3 = nhX(c11) + nhW(c11) / 2;
         cy2 = yOf(RW(c11), Math.max(...ds)) - P2(1.7);
       }
-      const W4 = P2(1.2), T2 = P2(0.24), R2 = P2(0.36), G2 = P2(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c11) ?? ""].filter(Boolean).join(" ");
+      const W3 = P2(1.2), T2 = P2(0.24), R2 = P2(0.36), G2 = P2(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c11) ?? ""].filter(Boolean).join(" ");
       for (const k2 of [-1, 0, 1]) {
         const y2 = cy2 + k2 * G2;
-        put2(RW(c11), { tok: tokOf(c11), t: "path", d: `M${cx3 - W4 / 2},${y2 + R2 / 2}L${cx3 + W4 / 2},${y2 - R2 / 2}L${cx3 + W4 / 2},${y2 - R2 / 2 + T2}L${cx3 - W4 / 2},${y2 + R2 / 2 + T2}Z`, cls });
+        put2(RW(c11), { tok: tokOf(c11), t: "path", d: `M${cx3 - W3 / 2},${y2 + R2 / 2}L${cx3 + W3 / 2},${y2 - R2 / 2}L${cx3 + W3 / 2},${y2 - R2 / 2 + T2}L${cx3 - W3 / 2},${y2 + R2 / 2 + T2}Z`, cls });
       }
     }
     const ign = new Set(q2.p.ignores ?? []);
@@ -12988,10 +12995,10 @@ function engrave(song, o10) {
   const rowTop = /* @__PURE__ */ new Map();
   const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map();
   const staffTop = (r10) => rowTop.get(r10) + P2(rowAbove.get(r10) ?? STAFF_ABOVE);
-  const yOf = (r10, d3) => staffTop(r10) + (TOP_LINE - d3) * P2(0.5);
-  const dOf = (r10, y2) => Math.round(TOP_LINE - (y2 - staffTop(r10)) / P2(0.5));
-  const lyricY = (r10) => yOf(r10, BOTTOM_LINE) + P2(lyricOff.get(r10) ?? LYRIC_BELOW);
-  const staffHit = (r10) => ({ y: yOf(r10, TOP_LINE) - P2(1.2), h: yOf(r10, BOTTOM_LINE) - yOf(r10, TOP_LINE) + P2(2.4) });
+  const yOf = (r10, d3) => yAt(staffTop(r10), d3, P2(0.5));
+  const dOf = (r10, y2) => dAt(staffTop(r10), y2, P2(0.5));
+  const anc = (r10) => anchors(staffTop(r10), P2(0.5));
+  const lyricY = (r10) => anc(r10).bottom + P2(lyricOff.get(r10) ?? LYRIC_BELOW);
   const showPaperLine = song.papers.length > 1 || song.papers.some((p2) => p2.name);
   let drawn = 0;
   const underOf = (paper) => {
@@ -13245,7 +13252,7 @@ function engrave(song, o10) {
           if (s10 === 0) {
             const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), lines2 = nameLines(q2.p.name, pr !== r10 ? 2 : q2.staves), LH = PART_EM * 1.15 * ts2;
             const tl2 = ten.map((t10) => nameLines(t10.name, 1)[0] ?? ""), nAll = lines2.length + tl2.length;
-            const ny2 = (yOf(r02, MID_LINE) + yOf(r14, MID_LINE)) / 2 + T2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2);
+            const ny2 = (anc(r02).mid + anc(r14).mid) / 2 + T2(0.55 * PART_EM) - P2(LH * (nAll - 1) / 2);
             const nameBlock = (wid) => names.push({ paper: paper.id, part: q2.p.id, x0: P2(MARGIN - 0.95), x1: P2(MARGIN) + P2(wid), top: ny2 - T2(PART_EM * 0.95) });
             const ncls = q2.p.empty ? "part-name empty" : q2.focused ? "part-name focus" : "part-name";
             const dn = drumNames.get(q2.p.id);
@@ -13270,7 +13277,7 @@ function engrave(song, o10) {
                 if (q2.p.badges?.length) prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * (nAll - 1)) + T2(1.4), s: q2.p.badges.join(" "), cls: "part-badge ann", size: tx2("part-badge"), anchor: "start" });
               }
               {
-                const y02 = yOf(r02, TOP_LINE) - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - T2(PART_EM * 0.95) : yOf(r14, BOTTOM_LINE) + P2(1.2);
+                const y02 = anc(r02).top - P2(1.2), yEnd = ten.length ? ny2 + P2(LH * lines2.length) - T2(PART_EM * 0.95) : anc(r14).bottom + P2(1.2);
                 partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: y02, w: P2(ind0 + 0.2), h: yEnd - y02 });
               }
               if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 - T2(PART_EM * 0.62), w: T2(0.6), h: T2(0.6), cls: `cat-dot ann cat-${q2.p.colorIdx}` });
@@ -13278,7 +13285,7 @@ function engrave(song, o10) {
           } else if (q2.p.abbr) {
             const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10), LH = PART_EM * 1.15 * ts2;
             const order = drumNames.get(q2.p.id) ?? [q2.p, ...ten], hk = Math.max(0, order.findIndex((m2) => m2.id === q2.p.id));
-            const ny2 = (yOf(r02, MID_LINE) + yOf(r14, MID_LINE)) / 2 + T2(0.55 * PART_EM) - P2(LH * (order.length - 1) / 2);
+            const ny2 = (anc(r02).mid + anc(r14).mid) / 2 + T2(0.55 * PART_EM) - P2(LH * (order.length - 1) / 2);
             order.forEach((m2, k2) => {
               if (m2.id === q2.p.id) {
                 prims.push({ t: "text", x: P2(MARGIN), y: ny2 + P2(LH * k2), s: q2.p.abbr, cls: q2.p.empty ? "part-name abbr empty" : q2.focused ? "part-name abbr focus" : "part-name abbr", size: tx2("part-name"), anchor: "start" });
@@ -13288,24 +13295,24 @@ function engrave(song, o10) {
               partsHit.push({ paper: paper.id, part: m2.id, x: P2(MARGIN - 0.4), y: ny2 + P2(LH * k2) - T2(PART_EM * 0.95), w: P2(indN + 0.2), h: P2(LH) });
             });
             if (q2.p.colorIdx !== void 0) prims.push({ t: "rect", x: P2(MARGIN - 0.95), y: ny2 + P2(LH * hk) - T2(PART_EM * 0.62), w: T2(0.6), h: T2(0.6), cls: `cat-dot ann cat-${q2.p.colorIdx}` });
-            partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: yOf(r02, TOP_LINE) - P2(1.2), w: P2(indN + 0.2), h: yOf(r14, BOTTOM_LINE) - yOf(r02, TOP_LINE) + P2(2.4) });
+            partsHit.push({ paper: paper.id, part: q2.p.id, x: P2(MARGIN - 0.4), y: anc(r02).top - P2(1.2), w: P2(indN + 0.2), h: anc(r14).bottom - anc(r02).top + P2(2.4) });
           }
           if (q2.p.colorIdx !== void 0) {
             const r02 = rowOf(s10, r10, 0), r14 = rEnd(s10);
-            prims.push({ t: "rect", x: P2(MARGIN + ind - 0.8), y: yOf(r02, TOP_LINE), w: P2(0.3), h: yOf(r14, BOTTOM_LINE) - yOf(r02, TOP_LINE), cls: `cat-bar ann cat-${q2.p.colorIdx}` });
+            prims.push({ t: "rect", x: P2(MARGIN + ind - 0.8), y: anc(r02).top, w: P2(0.3), h: anc(r14).bottom - anc(r02).top, cls: `cat-bar ann cat-${q2.p.colorIdx}` });
           }
           if (q2.staves === 2 || pr !== r10) {
-            const bx = P2(MARGIN + ind - 0.7), y02 = yOf(rowOf(s10, r10, 0), TOP_LINE), y1 = yOf(rEnd(s10), BOTTOM_LINE);
+            const bx = P2(MARGIN + ind - 0.7), y02 = anc(rowOf(s10, r10, 0)).top, y1 = anc(rEnd(s10)).bottom;
             prims.push({ t: "path", d: `M${bx + P2(0.5)},${y02}Q${bx - P2(0.3)},${y02 + P2(0.6)} ${bx},${(y02 + y1) / 2}Q${bx - P2(0.3)},${y1 - P2(0.6)} ${bx + P2(0.5)},${y1}`, cls: "brace" });
           }
         });
         if (ind > 0 && o10.chrome?.famGap) for (const fam of openFams) {
           const rs2 = fam.ids.map((id2) => per.findIndex((q2) => q2.p.id === id2)).filter((i10) => i10 >= 0);
           if (rs2.length < 2) continue;
-          const r02 = Math.min(...rs2), r14 = Math.max(...rs2), x2 = P2(MARGIN + ind - 1.55), y02 = yOf(rowOf(s10, r02, 0), TOP_LINE) - P2(0.6), y1 = yOf(rowOf(s10, r14, per[r14].staves - 1), BOTTOM_LINE) + P2(0.6);
+          const r02 = Math.min(...rs2), r14 = Math.max(...rs2), x2 = P2(MARGIN + ind - 1.55), y02 = anc(rowOf(s10, r02, 0)).top - P2(0.6), y1 = anc(rowOf(s10, r14, per[r14].staves - 1)).bottom + P2(0.6);
           families.push({ paper: paper.id, host: fam.host, x: x2 - P2(0.6), y: y02, w: P2(1.3), h: y1 - y02 });
         }
-        if (nRowsSys > 1) prims.push({ t: "line", x1: P2(MARGIN + ind), y1: yOf(rowOf(s10, 0, 0), TOP_LINE), x2: P2(MARGIN + ind), y2: yOf(rowOf(s10, nR2 - 1, per[nR2 - 1].staves - 1), BOTTOM_LINE), w: P2(ENGRAVE.thinBar * 1.4), cls: "bar" });
+        if (nRowsSys > 1) prims.push({ t: "line", x1: P2(MARGIN + ind), y1: anc(rowOf(s10, 0, 0)).top, x2: P2(MARGIN + ind), y2: anc(rowOf(s10, nR2 - 1, per[nR2 - 1].staves - 1)).bottom, w: P2(SYSTEM_LINE_W), cls: "bar" });
       }
     };
     {
@@ -13324,7 +13331,7 @@ function engrave(song, o10) {
       }
       for (const x2 of measures) delete x2.m;
     }
-    drawStaff({ song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
+    drawStaff({ song, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
     for (let i10 = p0.p; i10 < prims.length; i10++) {
       const p2 = prims[i10];
       if (isAnn(p2)) continue;
@@ -13434,8 +13441,8 @@ function yOfPrim(p2) {
   }
 }
 function toSvgParts(l10) {
-  const L2 = l10.pageX?.left ?? 0, R2 = l10.pageX?.right ?? 0, W4 = l10.width + L2 + R2;
-  const open2 = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W4)}" height="${n(l10.height)}" viewBox="${n(-L2)} 0 ${n(W4)} ${n(l10.height)}">`;
+  const L2 = l10.pageX?.left ?? 0, R2 = l10.pageX?.right ?? 0, W3 = l10.width + L2 + R2;
+  const open2 = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W3)}" height="${n(l10.height)}" viewBox="${n(-L2)} 0 ${n(W3)} ${n(l10.height)}">`;
   const fs = n(4 * l10.sp), lfs = n(LYRIC_EM * l10.sp), rx2 = n(l10.sp * 0.6);
   const boxes = l10.systems.map((s10) => [s10.top, s10.bottom]);
   const buckets = Array.from({ length: boxes.length + 1 }, () => []);
@@ -14299,11 +14306,11 @@ function shortName(name) {
 }
 var dispWidth = (s10) => [...s10].reduce((n10, ch2) => n10 + (/[\u1100-\u115f\u2e80-\ua4cf\uac00-\ud7a3\uf900-\ufaff\ufe30-\ufe4f\uff00-\uff60\uffe0-\uffe6]/.test(ch2) ? 2 : 1), 0);
 var ABBR_W = 7;
-function fitAbbr(base2, num2 = "", W4 = ABBR_W) {
-  if (dispWidth(base2 + num2) <= W4) return base2 + num2;
+function fitAbbr(base2, num2 = "", W3 = ABBR_W) {
+  if (dispWidth(base2 + num2) <= W3) return base2 + num2;
   const b3 = base2.replace(/\.\s+/g, ".");
-  if (dispWidth(b3 + num2) <= W4) return b3 + num2;
-  const budget = Math.max(2, W4 - dispWidth(num2)), cjk = dispWidth(b3) > [...b3].length;
+  if (dispWidth(b3 + num2) <= W3) return b3 + num2;
+  const budget = Math.max(2, W3 - dispWidth(num2)), cjk = dispWidth(b3) > [...b3].length;
   let out = "", wd = 0;
   for (const ch2 of b3) {
     const cw2 = dispWidth(ch2);
@@ -16815,11 +16822,11 @@ var UNIT_GLYPH = ["\uE1DB", "\uE1D9", "\uE1D7", "\uE1D5", "\uE1D3", "\uE1D2"];
 var UNIT_NAME = [_t("\u4E09\u5341\u4E8C\u5206"), _t("\u5341\u516D\u5206"), _t("\u516B\u5206"), _t("\u56DB\u5206"), _t("\u4E8C\u5206"), _t("\u5168\u97F3\u7B26")];
 function tupletMark(n10, unit) {
   const S3 = 7, M3 = 1.5, HY = 25, TOP2 = 11.5, hx = (i10) => M3 + 3 + i10 * S3, sx2 = (i10) => hx(i10) + 2.35;
-  const W4 = hx(n10 - 1) + 3 + M3, hollow = unit >= 4, beams = Math.max(0, 3 - unit), cx2 = W4 / 2, by = 4.5;
+  const W3 = hx(n10 - 1) + 3 + M3, hollow = unit >= 4, beams = Math.max(0, 3 - unit), cx2 = W3 / 2, by = 4.5;
   const heads = Array.from({ length: n10 }, (_2, i10) => `<ellipse class="${hollow ? "ho" : "fi"}" cx="${hx(i10)}" cy="${HY}" rx="${unit === 5 ? 3 : 2.6}" ry="1.85" transform="rotate(-20 ${hx(i10)} ${HY})"/>`).join("");
   const stems = unit <= 4 ? Array.from({ length: n10 }, (_2, i10) => `<line x1="${sx2(i10)}" y1="${HY - 0.5}" x2="${sx2(i10)}" y2="${TOP2}"/>`).join("") : "";
   const beam = Array.from({ length: beams }, (_2, k2) => `<rect x="${sx2(0) - 0.45}" y="${TOP2 + k2 * 3}" width="${sx2(n10 - 1) - sx2(0) + 0.9}" height="1.8"/>`).join("");
-  return `<svg class="tupsvg" viewBox="0 0 ${W4} 28.5" width="${(W4 * 32 / 28.5).toFixed(1)}" height="32" aria-label="${_t("{n} \u8FDE\u97F3", { n: n10 })}"><path class="br" d="M${M3} ${by + 2.5}V${by}H${cx2 - 3.6}M${cx2 + 3.6} ${by}H${W4 - M3}V${by + 2.5}"/><text x="${cx2}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(59520 + n10)}</text>${stems}${beam}${heads}</svg>`;
+  return `<svg class="tupsvg" viewBox="0 0 ${W3} 28.5" width="${(W3 * 32 / 28.5).toFixed(1)}" height="32" aria-label="${_t("{n} \u8FDE\u97F3", { n: n10 })}"><path class="br" d="M${M3} ${by + 2.5}V${by}H${cx2 - 3.6}M${cx2 + 3.6} ${by}H${W3 - M3}V${by + 2.5}"/><text x="${cx2}" y="${by + 3}" text-anchor="middle">${String.fromCodePoint(59520 + n10)}</text>${stems}${beam}${heads}</svg>`;
 }
 var Pad = class {
   constructor(el2, host2) {
@@ -31681,7 +31688,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-528fe1cf6201.mjs");
+      return pick(() => "layout-worker-357c065bb965.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-6b1c08f15c6b.mjs");
   }
@@ -34188,16 +34195,16 @@ function sha256HexSync(data) {
   dv.setUint32(padded.length - 8, Math.floor(bitLen / 4294967296));
   dv.setUint32(padded.length - 4, bitLen >>> 0);
   const H3 = new Uint32Array([1779033703, 3144134277, 1013904242, 2773480762, 1359893119, 2600822924, 528734635, 1541459225]);
-  const W4 = new Uint32Array(64);
+  const W3 = new Uint32Array(64);
   for (let o10 = 0; o10 < padded.length; o10 += 64) {
-    for (let i10 = 0; i10 < 16; i10++) W4[i10] = dv.getUint32(o10 + i10 * 4);
+    for (let i10 = 0; i10 < 16; i10++) W3[i10] = dv.getUint32(o10 + i10 * 4);
     for (let i10 = 16; i10 < 64; i10++) {
-      const s02 = rotr(W4[i10 - 15], 7) ^ rotr(W4[i10 - 15], 18) ^ W4[i10 - 15] >>> 3, s12 = rotr(W4[i10 - 2], 17) ^ rotr(W4[i10 - 2], 19) ^ W4[i10 - 2] >>> 10;
-      W4[i10] = W4[i10 - 16] + s02 + W4[i10 - 7] + s12 >>> 0;
+      const s02 = rotr(W3[i10 - 15], 7) ^ rotr(W3[i10 - 15], 18) ^ W3[i10 - 15] >>> 3, s12 = rotr(W3[i10 - 2], 17) ^ rotr(W3[i10 - 2], 19) ^ W3[i10 - 2] >>> 10;
+      W3[i10] = W3[i10 - 16] + s02 + W3[i10 - 7] + s12 >>> 0;
     }
     let a10 = H3[0], b3 = H3[1], c10 = H3[2], d3 = H3[3], e10 = H3[4], f2 = H3[5], g3 = H3[6], h2 = H3[7];
     for (let i10 = 0; i10 < 64; i10++) {
-      const S1 = rotr(e10, 6) ^ rotr(e10, 11) ^ rotr(e10, 25), ch2 = e10 & f2 ^ ~e10 & g3, t12 = h2 + S1 + ch2 + K2[i10] + W4[i10] >>> 0;
+      const S1 = rotr(e10, 6) ^ rotr(e10, 11) ^ rotr(e10, 25), ch2 = e10 & f2 ^ ~e10 & g3, t12 = h2 + S1 + ch2 + K2[i10] + W3[i10] >>> 0;
       const S0 = rotr(a10, 2) ^ rotr(a10, 13) ^ rotr(a10, 22), maj = a10 & b3 ^ a10 & c10 ^ b3 & c10, t23 = S0 + maj >>> 0;
       h2 = g3;
       g3 = f2;
@@ -43400,7 +43407,7 @@ var H = (e10, ...t10) => {
 var q = (e10, t10, n10, r10 = false) => {
   Object.defineProperty(e10, t10, { configurable: true, enumerable: false, writable: r10, value: n10 });
 };
-var W3 = (e10) => {
+var W2 = (e10) => {
   let t10 = parseFloat(e10);
   return isNaN(t10) ? e10 : t10;
 };
@@ -45453,7 +45460,7 @@ function ip(e10, t10, ...n10) {
   let r10;
   if (e10.isUnmounted) return;
   let i10 = e10.vnode.props || f, l10 = n10, s10 = t10.startsWith("update:"), o10 = s10 && id(i10, t10.slice(7));
-  o10 && (o10.trim && (l10 = n10.map((e11) => N(e11) ? e11.trim() : e11)), o10.number && (l10 = n10.map(W3)));
+  o10 && (o10.trim && (l10 = n10.map((e11) => N(e11) ? e11.trim() : e11)), o10.number && (l10 = n10.map(W2)));
   let a10 = i10[r10 = j(t10)] || i10[r10 = j(L(t10))];
   !a10 && s10 && (a10 = i10[r10 = j(V(t10))]), a10 && tX(a10, e10, 6, l10);
   let c10 = i10[r10 + "Once"];
@@ -45721,7 +45728,7 @@ function iL(e10, t10) {
         }
       }
       return false;
-    }(e11, t11, n11)) if (r11.asyncDep && !r11.asyncResolved) return void W4(r11, t11, n11);
+    }(e11, t11, n11)) if (r11.asyncDep && !r11.asyncResolved) return void W3(r11, t11, n11);
     else r11.next = t11, r11.update();
     else t11.el = e11.el, r11.vnode = t11;
   }, q2 = (e11, t11, n11, r11, l11, s11, o11) => {
@@ -45736,7 +45743,7 @@ function iL(e10, t10) {
             else return e12(n13);
           }(e11);
           if (t13) {
-            n12 && (n12.el = u4.el, W4(e11, n12, o11)), t13.asyncDep.then(() => {
+            n12 && (n12.el = u4.el, W3(e11, n12, o11)), t13.asyncDep.then(() => {
               iM(() => {
                 e11.isUnmounted || c11();
               }, l11);
@@ -45745,7 +45752,7 @@ function iL(e10, t10) {
           }
         }
         let d4 = n12;
-        iV(e11, false), n12 ? (n12.el = u4.el, W4(e11, n12, o11)) : n12 = u4, r14 && H(r14), (t12 = n12.props && n12.props.onVnodeBeforeUpdate) && lm(t12, a12, n12, u4), iV(e11, true);
+        iV(e11, false), n12 ? (n12.el = u4.el, W3(e11, n12, o11)) : n12 = u4, r14 && H(r14), (t12 = n12.props && n12.props.onVnodeBeforeUpdate) && lm(t12, a12, n12, u4), iV(e11, true);
         let p3 = im(e11), f2 = e11.subTree;
         e11.subTree = p3, x2(f2, p3, h2(f2.el), en2(f2), e11, l11, s11), n12.el = p3.el, null === d4 && iS(e11, p3.el), i11 && iM(i11, l11), (t12 = n12.props && n12.props.onVnodeUpdated) && iM(() => lm(t12, a12, n12, u4), l11);
       } else {
@@ -45770,7 +45777,7 @@ function iL(e10, t10) {
     e11.scope.off();
     let c11 = e11.update = a11.run.bind(a11), u3 = e11.job = a11.runIfDirty.bind(a11);
     u3.i = e11, u3.id = e11.uid, a11.scheduler = () => t8(u3), iV(e11, true), c11();
-  }, W4 = (e11, t11, n11) => {
+  }, W3 = (e11, t11, n11) => {
     t11.component = e11;
     let r11 = e11.vnode.props;
     e11.vnode = t11, e11.next = null, function(e12, t12, n12, r14) {
@@ -47084,7 +47091,7 @@ function sG(e10) {
 }
 var sX = Symbol("_assign");
 function sQ(e10, t10, n10) {
-  return t10 && (e10 = e10.trim()), n10 && (e10 = W3(e10)), e10;
+  return t10 && (e10 = e10.trim()), n10 && (e10 = W2(e10)), e10;
 }
 var sZ = { created(e10, { modifiers: { lazy: t10, trim: n10, number: r10 } }, i10) {
   e10[sX] = sz(i10);
@@ -47098,7 +47105,7 @@ var sZ = { created(e10, { modifiers: { lazy: t10, trim: n10, number: r10 } }, i1
   e10.value = null == t10 ? "" : t10;
 }, beforeUpdate(e10, { value: t10, oldValue: n10, modifiers: { lazy: r10, trim: i10, number: l10 } }, s10) {
   if (e10[sX] = sz(s10), e10.composing) return;
-  let o10 = (l10 || "number" === e10.type) && !/^0\d/.test(e10.value) ? W3(e10.value) : e10.value, a10 = null == t10 ? "" : t10;
+  let o10 = (l10 || "number" === e10.type) && !/^0\d/.test(e10.value) ? W2(e10.value) : e10.value, a10 = null == t10 ? "" : t10;
   if (o10 === a10) return;
   let c10 = e10.getRootNode();
   (c10 instanceof Document || c10 instanceof ShadowRoot) && c10.activeElement === e10 && "range" !== e10.type && (r10 && t10 === n10 || i10 && e10.value.trim() === a10) || (e10.value = a10);
@@ -47147,7 +47154,7 @@ var s1 = { created(e10, { value: t10 }, n10) {
 var s22 = { deep: true, created(e10, { value: t10, modifiers: { number: n10 } }, r10) {
   let i10, l10 = "[object Set]" === (i10 = t10, I.call(i10));
   sC(e10, "change", () => {
-    let t11 = Array.prototype.filter.call(e10.options, (e11) => e11.selected).map((e11) => n10 ? W3(s3(e11)) : s3(e11));
+    let t11 = Array.prototype.filter.call(e10.options, (e11) => e11.selected).map((e11) => n10 ? W2(s3(e11)) : s3(e11));
     e10[sX](e10.multiple ? l10 ? new Set(t11) : t11 : t11[0]), e10._assigning = true, t4(() => {
       e10._assigning = false;
     });
@@ -52536,10 +52543,10 @@ ${this._ramMissingText()}`;
         this._liveDirty = false;
     }
     const dpr = window.devicePixelRatio || 1;
-    const W4 = this._canvas.width, H3 = this._canvas.height;
+    const W3 = this._canvas.width, H3 = this._canvas.height;
     const ctx2 = this._cctx;
     ctx2.setTransform(1, 0, 0, 1, 0, 0);
-    ctx2.clearRect(0, 0, W4, H3);
+    ctx2.clearRect(0, 0, W3, H3);
     let source = null;
     if (cur?.kind === "live") {
       if (!this._liveSource)
@@ -53440,7 +53447,7 @@ stream
     v = Math.floor(v / 26) + i10 * 7;
   }
   const base2 = `${prefix}+${font.psName}`;
-  let W4 = "";
+  let W3 = "";
   for (let i10 = 0; i10 < gids.length; ) {
     let j2 = i10;
     const ws2 = [];
@@ -53448,12 +53455,12 @@ stream
       ws2.push(sc2(font.advance(gids[j2])));
       j2++;
     }
-    W4 += `${gids[i10]} [${ws2.join(" ")}] `;
+    W3 += `${gids[i10]} [${ws2.join(" ")}] `;
     i10 = j2;
   }
   stream(fileObj, `/Length1 ${sub.length}`, sub);
   obj(descObj, `<< /Type /FontDescriptor /FontName /${base2} /Flags 4 /FontBBox [${font.bbox.map(sc2).join(" ")}] /ItalicAngle 0 /Ascent ${sc2(font.ascender)} /Descent ${sc2(font.descender)} /CapHeight ${sc2(font.capHeight)} /StemV 80 /FontFile2 ${fileObj} 0 R >>`);
-  obj(cidObj, `<< /Type /Font /Subtype /CIDFontType2 /BaseFont /${base2} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor ${descObj} 0 R /DW 1000 /W [ ${W4}] /CIDToGIDMap /Identity >>`);
+  obj(cidObj, `<< /Type /Font /Subtype /CIDFontType2 /BaseFont /${base2} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor ${descObj} 0 R /DW 1000 /W [ ${W3}] /CIDToGIDMap /Identity >>`);
   let cmapText = "/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n";
   const pairs = gids.filter((g3) => g3 !== 0).map((g3) => {
     const cp2 = used.get(g3);
@@ -53577,8 +53584,8 @@ function printOpts(song, sp2, parts, measure, autoBars2, lyricRaise, onlyPaper, 
 function scorePdf(a10) {
   const paper = a10.song.paper ?? paperOf(DEFAULT_PAPER), sp2 = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp2 * textScaleOf(paper);
   const L2 = engrave(a10.song, printOpts(a10.song, sp2, a10.parts, createTextMeasure(a10.measure ?? ((s10, px) => textEm(a10.font, s10) * px)), a10.autoBars ?? true, LYRIC_RAISE[a10.fontId], a10.onlyPaper, a10.view));
-  const W4 = paper.widthMm * PT_PER_MM, H3 = paper.heightMm * PT_PER_MM, dx = L2.pageX.left;
-  const pages = L2.pages.map(() => ({ w: W4, h: H3, ops: [] }));
+  const W3 = paper.widthMm * PT_PER_MM, H3 = paper.heightMm * PT_PER_MM, dx = L2.pageX.left;
+  const pages = L2.pages.map(() => ({ w: W3, h: H3, ops: [] }));
   const pageOf = (y2) => {
     for (let k2 = 0; k2 < L2.pages.length; k2++) if (y2 >= L2.pages[k2].top && y2 < L2.pages[k2].top + L2.pages[k2].h) return k2;
     return -1;
@@ -61252,4 +61259,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-007ff5a1553b.mjs.map
+//# sourceMappingURL=moonsinger-a0005b7c78c7.mjs.map

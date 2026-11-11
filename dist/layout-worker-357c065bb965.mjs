@@ -3018,108 +3018,6 @@ var CJK_CHAR = /[぀-ヿ\p{Script=Han}]/u;
 var lyricShow = (s2) => s2.split(ELISION).reduce((a, b) => !a ? b : CJK_CHAR.test(a.slice(-1)) && CJK_CHAR.test(b.slice(0, 1)) ? a + b : `${a}${ELISION}${b}`, "");
 var SMALL = /* @__PURE__ */ new Set([..."\u3083\u3085\u3087\u3041\u3043\u3045\u3047\u3049\u308E\u3095\u3096\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9\u30EE\u30F5\u30F6", "\u3063", "\u30C3"]);
 
-// src/render/smufl.ts
-var GLYPH = {
-  metNoteQuarterUp: "\uECA5",
-  // 速度记号里的四分音符（metronome mark）
-  gClef: "\uE050",
-  fClef: "\uE062",
-  // 低音谱号（2026-10-08）
-  gClef8vb: "\uE052",
-  gClef8va: "\uE053",
-  gClef15ma: "\uE054",
-  fClef8vb: "\uE064",
-  // 八度谱号（2026-10-10 v0.9.28：吉他 / 男高音 8vb、短笛 8va、钟琴 15ma、贝斯 8vb）
-  ottavaAlta: "\uE511",
-  ottavaBassa: "\uE512",
-  quindicesimaAlta: "\uE515",
-  // 八度线开头的字：8va / 8vb / 15ma
-  noteheadWhole: "\uE0A2",
-  noteheadHalf: "\uE0A3",
-  noteheadBlack: "\uE0A4",
-  noteheadXWhole: "\uE0A7",
-  noteheadXHalf: "\uE0A8",
-  noteheadXBlack: "\uE0A9",
-  // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
-  augmentationDot: "\uE1E7",
-  flag8thUp: "\uE240",
-  flag8thDown: "\uE241",
-  flag16thUp: "\uE242",
-  flag16thDown: "\uE243",
-  flag32ndUp: "\uE244",
-  flag32ndDown: "\uE245",
-  accidentalFlat: "\uE260",
-  accidentalNatural: "\uE261",
-  accidentalSharp: "\uE262",
-  accidentalDoubleSharp: "\uE263",
-  accidentalDoubleFlat: "\uE264",
-  restWhole: "\uE4E3",
-  restHalf: "\uE4E4",
-  restQuarter: "\uE4E5",
-  rest8th: "\uE4E6",
-  rest16th: "\uE4E7",
-  rest32nd: "\uE4E8"
-};
-var timeSigDigits = (n2) => [...String(n2)].map((d) => String.fromCodePoint(57472 + Number(d))).join("");
-var PERC_CLEF = "\uE069";
-var PERC_HEAD = {
-  normal: { ch: ["\uE0A4", "\uE0A3", "\uE0A2"], w: [1.18, 1.18, 1.688] },
-  x: { ch: ["\uE0A9", "\uE0A8", "\uE0A7"], w: [1.16, 1.34, 1.51] },
-  "circle-x": { ch: ["\uE0B3", "\uE0B2", "\uE0B1"], w: [0.996, 1, 0.996] },
-  slash: { ch: ["\uE101", "\uE103", "\uE102"], w: [2.124, 3.12, 3.92] },
-  slashed1: { ch: ["\uE0CF", "\uE0D1", "\uE0D3"], w: [1.18, 1.168, 1.672] },
-  slashed2: { ch: ["\uE0D0", "\uE0D2", "\uE0D4"], w: [1.18, 1.172, 1.672] },
-  diamond: { ch: ["\uE0DB", "\uE0D9", "\uE0D8"], w: [0.98, 0.98, 1.664] },
-  "triangle-up": { ch: ["\uE0BE", "\uE0BC", "\uE0BB"], w: [1.172, 1.14, 1.276] },
-  "triangle-down": { ch: ["\uE0C7", "\uE0C5", "\uE0C4"], w: [1.168, 1.14, 1.276] },
-  plus: { ch: ["\uE0AF", "\uE0AE", "\uE0AD"], w: [0.996, 1.044, 1.14] },
-  la: { ch: ["\uE0B9", "\uE0B8", "\uE0B8"], w: [1.252, 1.252, 1.252] },
-  ti: { ch: ["\uE0CD", "\uE0CC", "\uE0CC"], w: [1.112, 1.112, 1.112] }
-};
-var PERC_SMUFL = {
-  noteheadXOrnate: { ch: ["\uE0AA", "\uE0AA", "\uE0AA"], w: [0.992, 0.992, 0.992] },
-  noteheadSlashX: { ch: ["\uE106", "\uE106", "\uE106"], w: [2.124, 2.124, 2.124] }
-};
-var W = {
-  noteheadBlack: 1.18,
-  noteheadHalf: 1.18,
-  noteheadWhole: 1.688,
-  noteheadXBlack: 1.16,
-  noteheadXHalf: 1.34,
-  noteheadXWhole: 1.51,
-  // 2026-10-08 在浏览器里用 measureText 量的 advance（400px Bravura；黑符头同法量得 1.18 = 上面那行，方法对得上）
-  gClef: 2.684,
-  fClef: 2.736,
-  sharp: 0.996,
-  flat: 0.904,
-  natural: 0.672,
-  doubleSharp: 1,
-  doubleFlat: 1.644,
-  dot: 0.4,
-  timeSigDigit: 1.8,
-  restWhole: 1.128,
-  restHalf: 1.128,
-  restQuarter: 1.08,
-  rest8th: 0.988,
-  rest16th: 1.28,
-  rest32nd: 1.452
-};
-var ENGRAVE = {
-  staffLine: 0.13,
-  stem: 0.12,
-  ledger: 0.16,
-  ledgerExt: 0.4,
-  beam: 0.5,
-  beamGap: 0.25,
-  thinBar: 0.16,
-  tieMid: 0.22
-};
-var STEM_UP_SE = [1.18, 0.168];
-var STEM_DOWN_NW = [0, -0.168];
-var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
-var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
-var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
-
 // src/render/glyph-box.gen.ts
 var GLYPH_BOX = {
   "\uE040": [0, 1.464, -4, 0],
@@ -4908,6 +4806,108 @@ function wrapTitle(s2, w, max) {
   return lines.length ? lines : [s2];
 }
 
+// src/render/smufl.ts
+var GLYPH = {
+  metNoteQuarterUp: "\uECA5",
+  // 速度记号里的四分音符（metronome mark）
+  gClef: "\uE050",
+  fClef: "\uE062",
+  // 低音谱号（2026-10-08）
+  gClef8vb: "\uE052",
+  gClef8va: "\uE053",
+  gClef15ma: "\uE054",
+  fClef8vb: "\uE064",
+  // 八度谱号（2026-10-10 v0.9.28：吉他 / 男高音 8vb、短笛 8va、钟琴 15ma、贝斯 8vb）
+  ottavaAlta: "\uE511",
+  ottavaBassa: "\uE512",
+  quindicesimaAlta: "\uE515",
+  // 八度线开头的字：8va / 8vb / 15ma
+  noteheadWhole: "\uE0A2",
+  noteheadHalf: "\uE0A3",
+  noteheadBlack: "\uE0A4",
+  noteheadXWhole: "\uE0A7",
+  noteheadXHalf: "\uE0A8",
+  noteheadXBlack: "\uE0A9",
+  // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
+  augmentationDot: "\uE1E7",
+  flag8thUp: "\uE240",
+  flag8thDown: "\uE241",
+  flag16thUp: "\uE242",
+  flag16thDown: "\uE243",
+  flag32ndUp: "\uE244",
+  flag32ndDown: "\uE245",
+  accidentalFlat: "\uE260",
+  accidentalNatural: "\uE261",
+  accidentalSharp: "\uE262",
+  accidentalDoubleSharp: "\uE263",
+  accidentalDoubleFlat: "\uE264",
+  restWhole: "\uE4E3",
+  restHalf: "\uE4E4",
+  restQuarter: "\uE4E5",
+  rest8th: "\uE4E6",
+  rest16th: "\uE4E7",
+  rest32nd: "\uE4E8"
+};
+var timeSigDigits = (n2) => [...String(n2)].map((d) => String.fromCodePoint(57472 + Number(d))).join("");
+var PERC_CLEF = "\uE069";
+var PERC_HEAD = {
+  normal: { ch: ["\uE0A4", "\uE0A3", "\uE0A2"], w: [1.18, 1.18, 1.688] },
+  x: { ch: ["\uE0A9", "\uE0A8", "\uE0A7"], w: [1.16, 1.34, 1.51] },
+  "circle-x": { ch: ["\uE0B3", "\uE0B2", "\uE0B1"], w: [0.996, 1, 0.996] },
+  slash: { ch: ["\uE101", "\uE103", "\uE102"], w: [2.124, 3.12, 3.92] },
+  slashed1: { ch: ["\uE0CF", "\uE0D1", "\uE0D3"], w: [1.18, 1.168, 1.672] },
+  slashed2: { ch: ["\uE0D0", "\uE0D2", "\uE0D4"], w: [1.18, 1.172, 1.672] },
+  diamond: { ch: ["\uE0DB", "\uE0D9", "\uE0D8"], w: [0.98, 0.98, 1.664] },
+  "triangle-up": { ch: ["\uE0BE", "\uE0BC", "\uE0BB"], w: [1.172, 1.14, 1.276] },
+  "triangle-down": { ch: ["\uE0C7", "\uE0C5", "\uE0C4"], w: [1.168, 1.14, 1.276] },
+  plus: { ch: ["\uE0AF", "\uE0AE", "\uE0AD"], w: [0.996, 1.044, 1.14] },
+  la: { ch: ["\uE0B9", "\uE0B8", "\uE0B8"], w: [1.252, 1.252, 1.252] },
+  ti: { ch: ["\uE0CD", "\uE0CC", "\uE0CC"], w: [1.112, 1.112, 1.112] }
+};
+var PERC_SMUFL = {
+  noteheadXOrnate: { ch: ["\uE0AA", "\uE0AA", "\uE0AA"], w: [0.992, 0.992, 0.992] },
+  noteheadSlashX: { ch: ["\uE106", "\uE106", "\uE106"], w: [2.124, 2.124, 2.124] }
+};
+var W = {
+  noteheadBlack: 1.18,
+  noteheadHalf: 1.18,
+  noteheadWhole: 1.688,
+  noteheadXBlack: 1.16,
+  noteheadXHalf: 1.34,
+  noteheadXWhole: 1.51,
+  // 2026-10-08 在浏览器里用 measureText 量的 advance（400px Bravura；黑符头同法量得 1.18 = 上面那行，方法对得上）
+  gClef: 2.684,
+  fClef: 2.736,
+  sharp: 0.996,
+  flat: 0.904,
+  natural: 0.672,
+  doubleSharp: 1,
+  doubleFlat: 1.644,
+  dot: 0.4,
+  timeSigDigit: 1.8,
+  restWhole: 1.128,
+  restHalf: 1.128,
+  restQuarter: 1.08,
+  rest8th: 0.988,
+  rest16th: 1.28,
+  rest32nd: 1.452
+};
+var ENGRAVE = {
+  staffLine: 0.13,
+  stem: 0.12,
+  ledger: 0.16,
+  ledgerExt: 0.4,
+  beam: 0.5,
+  beamGap: 0.25,
+  thinBar: 0.16,
+  tieMid: 0.22
+};
+var STEM_UP_SE = [1.18, 0.168];
+var STEM_DOWN_NW = [0, -0.168];
+var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
+var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
+var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
+
 // src/render/staff/glyphs.ts
 var TOP_LINE = 38;
 var MID_LINE = 34;
@@ -4933,6 +4933,12 @@ var RAMP_DASH = { len: 0.5, gap: 0.4 };
 var SHARP_POS = [38, 35, 39, 36, 33, 37, 34];
 var FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 var GLYPH_TUPLET = (n2) => [...String(n2)].map((d) => String.fromCodePoint(59520 + Number(d))).join("");
+var SYSTEM_LINE_W = ENGRAVE.thinBar * 1.4;
+
+// src/render/staff/geometry.ts
+var yAt = (staffTop, d, half) => staffTop + (TOP_LINE - d) * half;
+var dAt = (staffTop, y, half) => Math.round(TOP_LINE - (y - staffTop) / half);
+var anchors = (staffTop, half) => ({ top: yAt(staffTop, TOP_LINE, half), mid: yAt(staffTop, MID_LINE, half), bottom: yAt(staffTop, BOTTOM_LINE, half) });
 
 // src/render/staff/notation.ts
 var MIN_PLAIN = TPQ / 8;
@@ -5666,7 +5672,7 @@ function dynOverridden(tokens, bounds) {
 // src/render/staff/draw.ts
 var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics", "ottavaBelow"];
 function drawStaff(c) {
-  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c;
+  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c;
   const clefAtSys = (q, s2) => {
     const u = q.units.find((x) => x.system === s2 && x.index >= 0);
     if (u) return q.ds.clef[u.index] ?? q.start;
@@ -5679,6 +5685,7 @@ function drawStaff(c) {
     for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === "clef") return i;
     return -1;
   };
+  const staffHit = (r) => ({ y: yOf(r, TOP_LINE) - P(1.2), h: yOf(r, BOTTOM_LINE) - yOf(r, TOP_LINE) + P(2.4) });
   const drawTime = (r, x0, beats, beatType, cls) => {
     const num = timeSigDigits(beats), den = timeSigDigits(beatType);
     const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw = Math.max(wn, wd);
@@ -6073,10 +6080,10 @@ function drawStaff(c) {
         cx2 = nhX(c2) + nhW(c2) / 2;
         cy = yOf(RW(c2), Math.max(...ds)) - P(1.7);
       }
-      const W3 = P(1.2), T = P(0.24), R = P(0.36), G = P(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c2) ?? ""].filter(Boolean).join(" ");
+      const W2 = P(1.2), T = P(0.24), R = P(0.36), G = P(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c2) ?? ""].filter(Boolean).join(" ");
       for (const k of [-1, 0, 1]) {
         const y = cy + k * G;
-        put(RW(c2), { tok: tokOf(c2), t: "path", d: `M${cx2 - W3 / 2},${y + R / 2}L${cx2 + W3 / 2},${y - R / 2}L${cx2 + W3 / 2},${y - R / 2 + T}L${cx2 - W3 / 2},${y + R / 2 + T}Z`, cls });
+        put(RW(c2), { tok: tokOf(c2), t: "path", d: `M${cx2 - W2 / 2},${y + R / 2}L${cx2 + W2 / 2},${y - R / 2}L${cx2 + W2 / 2},${y - R / 2 + T}L${cx2 - W2 / 2},${y + R / 2 + T}Z`, cls });
       }
     }
     const ign = new Set(q.p.ignores ?? []);
@@ -6696,10 +6703,10 @@ function engrave(song, o) {
   const rowTop = /* @__PURE__ */ new Map();
   const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map();
   const staffTop = (r) => rowTop.get(r) + P(rowAbove.get(r) ?? STAFF_ABOVE);
-  const yOf = (r, d) => staffTop(r) + (TOP_LINE - d) * P(0.5);
-  const dOf = (r, y) => Math.round(TOP_LINE - (y - staffTop(r)) / P(0.5));
-  const lyricY = (r) => yOf(r, BOTTOM_LINE) + P(lyricOff.get(r) ?? LYRIC_BELOW);
-  const staffHit = (r) => ({ y: yOf(r, TOP_LINE) - P(1.2), h: yOf(r, BOTTOM_LINE) - yOf(r, TOP_LINE) + P(2.4) });
+  const yOf = (r, d) => yAt(staffTop(r), d, P(0.5));
+  const dOf = (r, y) => dAt(staffTop(r), y, P(0.5));
+  const anc = (r) => anchors(staffTop(r), P(0.5));
+  const lyricY = (r) => anc(r).bottom + P(lyricOff.get(r) ?? LYRIC_BELOW);
   const showPaperLine = song.papers.length > 1 || song.papers.some((p) => p.name);
   let drawn = 0;
   const underOf = (paper) => {
@@ -6953,7 +6960,7 @@ function engrave(song, o) {
           if (s2 === 0) {
             const r0 = rowOf(s2, r, 0), r1 = rEnd(s2), lines2 = nameLines(q.p.name, pr !== r ? 2 : q.staves), LH = PART_EM * 1.15 * ts;
             const tl = ten.map((t) => nameLines(t.name, 1)[0] ?? ""), nAll = lines2.length + tl.length;
-            const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + T(0.55 * PART_EM) - P(LH * (nAll - 1) / 2);
+            const ny = (anc(r0).mid + anc(r1).mid) / 2 + T(0.55 * PART_EM) - P(LH * (nAll - 1) / 2);
             const nameBlock = (wid) => names.push({ paper: paper.id, part: q.p.id, x0: P(MARGIN - 0.95), x1: P(MARGIN) + P(wid), top: ny - T(PART_EM * 0.95) });
             const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
             const dn = drumNames.get(q.p.id);
@@ -6978,7 +6985,7 @@ function engrave(song, o) {
                 if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + T(1.4), s: q.p.badges.join(" "), cls: "part-badge ann", size: tx("part-badge"), anchor: "start" });
               }
               {
-                const y02 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines2.length) - T(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);
+                const y02 = anc(r0).top - P(1.2), yEnd = ten.length ? ny + P(LH * lines2.length) - T(PART_EM * 0.95) : anc(r1).bottom + P(1.2);
                 partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y02, w: P(ind0 + 0.2), h: yEnd - y02 });
               }
               if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - T(PART_EM * 0.62), w: T(0.6), h: T(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
@@ -6986,7 +6993,7 @@ function engrave(song, o) {
           } else if (q.p.abbr) {
             const r0 = rowOf(s2, r, 0), r1 = rEnd(s2), LH = PART_EM * 1.15 * ts;
             const order = drumNames.get(q.p.id) ?? [q.p, ...ten], hk = Math.max(0, order.findIndex((m) => m.id === q.p.id));
-            const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + T(0.55 * PART_EM) - P(LH * (order.length - 1) / 2);
+            const ny = (anc(r0).mid + anc(r1).mid) / 2 + T(0.55 * PART_EM) - P(LH * (order.length - 1) / 2);
             order.forEach((m, k) => {
               if (m.id === q.p.id) {
                 prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: q.p.abbr, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: tx("part-name"), anchor: "start" });
@@ -6996,24 +7003,24 @@ function engrave(song, o) {
               partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: ny + P(LH * k) - T(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) });
             });
             if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny + P(LH * hk) - T(PART_EM * 0.62), w: T(0.6), h: T(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
-            partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(indN + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
+            partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: anc(r0).top - P(1.2), w: P(indN + 0.2), h: anc(r1).bottom - anc(r0).top + P(2.4) });
           }
           if (q.p.colorIdx !== void 0) {
             const r0 = rowOf(s2, r, 0), r1 = rEnd(s2);
-            prims.push({ t: "rect", x: P(MARGIN + ind - 0.8), y: yOf(r0, TOP_LINE), w: P(0.3), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE), cls: `cat-bar ann cat-${q.p.colorIdx}` });
+            prims.push({ t: "rect", x: P(MARGIN + ind - 0.8), y: anc(r0).top, w: P(0.3), h: anc(r1).bottom - anc(r0).top, cls: `cat-bar ann cat-${q.p.colorIdx}` });
           }
           if (q.staves === 2 || pr !== r) {
-            const bx = P(MARGIN + ind - 0.7), y02 = yOf(rowOf(s2, r, 0), TOP_LINE), y1 = yOf(rEnd(s2), BOTTOM_LINE);
+            const bx = P(MARGIN + ind - 0.7), y02 = anc(rowOf(s2, r, 0)).top, y1 = anc(rEnd(s2)).bottom;
             prims.push({ t: "path", d: `M${bx + P(0.5)},${y02}Q${bx - P(0.3)},${y02 + P(0.6)} ${bx},${(y02 + y1) / 2}Q${bx - P(0.3)},${y1 - P(0.6)} ${bx + P(0.5)},${y1}`, cls: "brace" });
           }
         });
         if (ind > 0 && o.chrome?.famGap) for (const fam of openFams) {
           const rs = fam.ids.map((id) => per.findIndex((q) => q.p.id === id)).filter((i) => i >= 0);
           if (rs.length < 2) continue;
-          const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 1.55), y02 = yOf(rowOf(s2, r0, 0), TOP_LINE) - P(0.6), y1 = yOf(rowOf(s2, r1, per[r1].staves - 1), BOTTOM_LINE) + P(0.6);
+          const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 1.55), y02 = anc(rowOf(s2, r0, 0)).top - P(0.6), y1 = anc(rowOf(s2, r1, per[r1].staves - 1)).bottom + P(0.6);
           families.push({ paper: paper.id, host: fam.host, x: x - P(0.6), y: y02, w: P(1.3), h: y1 - y02 });
         }
-        if (nRowsSys > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: yOf(rowOf(s2, 0, 0), TOP_LINE), x2: P(MARGIN + ind), y2: yOf(rowOf(s2, nR - 1, per[nR - 1].staves - 1), BOTTOM_LINE), w: P(ENGRAVE.thinBar * 1.4), cls: "bar" });
+        if (nRowsSys > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: anc(rowOf(s2, 0, 0)).top, x2: P(MARGIN + ind), y2: anc(rowOf(s2, nR - 1, per[nR - 1].staves - 1)).bottom, w: P(SYSTEM_LINE_W), cls: "bar" });
       }
     };
     {
@@ -7032,7 +7039,7 @@ function engrave(song, o) {
       }
       for (const x of measures) delete x.m;
     }
-    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
+    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
     for (let i = p0.p; i < prims.length; i++) {
       const p = prims[i];
       if (isAnn(p)) continue;
@@ -7142,8 +7149,8 @@ function yOfPrim(p) {
   }
 }
 function toSvgParts(l) {
-  const L = l.pageX?.left ?? 0, R = l.pageX?.right ?? 0, W3 = l.width + L + R;
-  const open = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W3)}" height="${n(l.height)}" viewBox="${n(-L)} 0 ${n(W3)} ${n(l.height)}">`;
+  const L = l.pageX?.left ?? 0, R = l.pageX?.right ?? 0, W2 = l.width + L + R;
+  const open = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W2)}" height="${n(l.height)}" viewBox="${n(-L)} 0 ${n(W2)} ${n(l.height)}">`;
   const fs = n(4 * l.sp), lfs = n(LYRIC_EM * l.sp), rx = n(l.sp * 0.6);
   const boxes = l.systems.map((s2) => [s2.top, s2.bottom]);
   const buckets = Array.from({ length: boxes.length + 1 }, () => []);
@@ -7183,4 +7190,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-528fe1cf6201.mjs.map
+//# sourceMappingURL=layout-worker-357c065bb965.mjs.map

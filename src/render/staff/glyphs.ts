@@ -1,6 +1,7 @@
 // glyphs.ts —— 五线谱这一种行的字形表和五线的位置（d = 第几级：第五线 38、中线 34、第一线 30）。
 // > moved 2026-11-11 by Claude Opus 5.5（施工单 1b-2 搬家：从 src/render/engrave.ts 原样搬出，内容没改）
 import { TEXT_STYLES } from "../text/index.ts";
+import { ENGRAVE } from "../smufl.ts";
 import type { Art, Dyn } from "../../score/song.ts";
 
 export const TOP_LINE = 38;   // 五线谱最上面那条线的 d（attachLayoutFns 重建 yOf / dOf 要它；2026-10-21 排版进 worker）
@@ -26,3 +27,6 @@ export const PIN_WORD = { size: TEXT_STYLES["dyn-word"].em, w: { cresc: 4.7, dim
 export const RAMP_DASH = { len: 0.5, gap: 0.4 } as const;   // 渐到发夹的虚线（sp；原 CSS 4px / 3px 在默认缩放下差不多）
 export const SHARP_POS = [38, 35, 39, 36, 33, 37, 34], FLAT_POS = [34, 37, 33, 36, 32, 35, 31];
 export const GLYPH_TUPLET = (n: number) => [...String(n)].map((d) => String.fromCodePoint(0xe880 + Number(d))).join("");
+
+/** 一行里几条谱左边连着的那根竖线多粗（线间距；框架画，粗细归这种谱）。 */
+export const SYSTEM_LINE_W = ENGRAVE.thinBar * 1.4;
