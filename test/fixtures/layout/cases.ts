@@ -23,9 +23,9 @@ export function loadSong(key: string): { song: Song; labels: string[] } {
   return { song: o.song, labels: partLabels(o.song, o.extras) };
 }
 export const measure = (s: string): number => [...s].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 16 : 9), 0);
-const SP = 10;
+export const SP = 10;
 /** 声部视图：编辑器那份带四颗小钮的状态（刀 1 之后它们不在 PartView 里了——cases 照样给，排版器不认就不认）。hide = 这几位隐藏着。 */
-function views(song: Song, labels: string[], editor: boolean, hide: ReadonlySet<string> = new Set()): PartView[] {
+export function views(song: Song, labels: string[], editor: boolean, hide: ReadonlySet<string> = new Set()): PartView[] {
   return song.parts.map((p, k) => ({
     id: p.id, name: labels[k] ?? `P${k + 1}`, colorIdx: k % 10, first: k === 0,
     hidden: hide.has(p.id), badges: [], ...(editor ? { toggles: { muted: false, solo: false, hidden: hide.has(p.id), only: false } } : {}),
@@ -34,8 +34,8 @@ function views(song: Song, labels: string[], editor: boolean, hide: ReadonlySet<
 /** song = 排之前先换一下这首歌（比如把纸换成舒适档）；没有 = 原样。 */
 type View = { name: string; opts: (song: Song, labels: string[]) => EngraveOpts; song?: (s: Song) => Song };
 /** 量字的尺子跟着字的字号（刀 2：紧凑档 ts = 1.4，屏幕 / PDF 量字都按 LYRIC_EM × sp × ts）。 */
-const measureFor = (song: Song) => { const k = textScaleOf(song.paper ?? paperOf(DEFAULT_PAPER)); return (s: string) => measure(s) * k; };
-const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<string>) => {
+export const measureFor = (song: Song) => { const k = textScaleOf(song.paper ?? paperOf(DEFAULT_PAPER)); return (s: string) => measure(s) * k; };
+export const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<string>) => {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
   return { width: lineSp(paper) * SP, sp: SP, at: { paper: song.papers[0]!.id, part: song.parts[0]!.id }, parts: views(song, labels, true, hide), measure: createTextMeasure(measureFor(song)), autoBars: true, ...(ts !== 1 ? { textScale: ts } : {}),
     // 刀 1 前的四个旗（titlePlaceholder / editable / keyHint / paperLabel）和刀 1 后的几何参数 chrome 一起给：新旧两版排版器各认各的，同一份样张两边都能排
@@ -52,7 +52,7 @@ export const VIEWS: View[] = [
   { name: "edit-all-hidden", opts: (s, l) => editorBase(s, l, new Set(s.parts.length > 1 ? [s.parts[1]!.id] : [])) },
 ];
 
-const r3 = (v: unknown): unknown => typeof v === "number" ? Math.round(v * 1000) / 1000 : Array.isArray(v) ? v.map(r3) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, r3(x)])) : v;
+export const r3 = (v: unknown): unknown => typeof v === "number" ? Math.round(v * 1000) / 1000 : Array.isArray(v) ? v.map(r3) : v && typeof v === "object" ? Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, r3(x)])) : v;
 /** 可印图元（PDF 印的那些）+ 锚点（谱上的东西的位置；控件的点击框表不在里面）。 */
 export function snapshot(L: Layout): unknown {
   const printed = L.prims.filter((p) => isPrinted(p.cls)).map((p) => { const { tok: _t, ...q } = p as typeof p & { tok?: number }; return q; });
