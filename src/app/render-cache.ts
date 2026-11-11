@@ -73,6 +73,10 @@ export interface RenderCache {
   renamed(home: string, from: string, to: string): Promise<void>;
   /** 设置页显示用。 */
   stats(): { count: number; bytes: number; max: number };
+  /** 设置页的列表（v0.16.101，user 11-11「看得见、删得掉 同意」）：每条记录 + 挂在它名下的歌库身份；最近用过的在前。同步。 */
+  list(): { meta: RenderMeta; links: RenderLink[] }[];
+  /** 删一条（字节 + 挂在它名下的名字一起）。 */
+  remove(key: string): Promise<void>;
   clear(): Promise<void>;
   /** 索引变了（多了一条 / 丢了一条 / 挂名变了）→ 回调（歌库卡片上的 ▶ 跟着重算）。 */
   onChange(fn: () => void): () => void;
@@ -160,6 +164,8 @@ export function createRenderCache(store: RenderCacheStore, o: { max: number; now
       changed();
     },
     stats: () => { let bytes = 0; for (const m of metas.values()) bytes += m.size; return { count: metas.size, bytes, max: o.max }; },
+    list: () => [...metas.values()].sort((a, b) => b.used - a.used).map((meta) => ({ meta, links: [...links.values()].filter((l) => l.key === meta.key) })),
+    async remove(key) { await ready(); if (!metas.has(key)) return; await drop(key); changed(); },
     async clear() { await ready(); metas.clear(); links.clear(); await store.clear(); changed(); },
     onChange: (fn) => { fns.add(fn); return () => fns.delete(fn); },
   };

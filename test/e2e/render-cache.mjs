@@ -91,7 +91,7 @@ check((await p.evaluate(() => window.__moonsinger.editLock().state)) === "unlock
 { const r = await rcUntil((x) => !!x.hit && !!x.link), n0 = await sung(); check(!!r.hit && !!r.link, "回歌库再打开、没改：还认得那份声音（重开之后音的内部编号重排过，写出来的谱不看它）");
   const t3 = await exportOnce(); check(/用的是这台设备上记着的/.test(t3) && (await sung()) === n0, "重开之后再导出：直接拿，没有重唱"); }
 await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 2, dir: "near" })); await saved(); await p.waitForTimeout(300);
-{ const r = await rcUntil((x) => x.link === null); check(r.link === null && !r.hit, "写了一个音、存了：这首歌名下不再挂着那份声音（内容变了）", JSON.stringify(r.link)); }
+{ const r = await rcUntil((x) => !x.hit); check(!r.hit && !!r.link, "写了一个音、存了：现在的内容没渲过；那份旧的还挂着（v0.16.101：不自动删，歌库里标「旧」）", JSON.stringify(r.link && r.link.stamp)); }
 await p.evaluate(() => window.__moonsinger.undo()); await p.waitForTimeout(100);   // 撤销回去（退格在这儿是「音变成一样长的休止」，回不到原样）
 await p.evaluate(() => window.__moonsinger.es().forceSaveAndPush()); await saved(); await p.waitForTimeout(400);
 { const r = await rcUntil((x) => !!x.link && !!x.hit);
@@ -101,7 +101,48 @@ check(await hasPlay(id), "歌库封面上的 ▶ 还在（文件戳换过几回�
 await p.click(tileOf(id)); await p.waitForTimeout(800); await later(); await fakeSinger();
 await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 2, dir: "near" })); await saved(); await p.waitForTimeout(300);
 await openGallery();
-check(await noPlay(id), "又写了一个音、存了：歌库封面上的 ▶ 收掉了");
+check(await hasPlay(id), "又写了一个音、存了：歌库封面上的 ▶ 还在（放的是改之前那遍）");
+check((await p.$eval(`${tileOf(id)}`, (e) => e.querySelector(".ms-cover-tag")?.textContent ?? "")) === "旧" && /之后改过/.test(await p.$eval(`${tileOf(id)} .gallery-tile-action`, (e) => e.getAttribute("title") ?? e.getAttribute("aria-label") ?? "")),
+  "封面印「旧」，▶ 的提示说之后改过（不删、不报警，user 11-11）");
+// ── 放旧的：播放条写「之后改过」+「重新渲染」；点了 = 按现在的样子重渲、接着放，「旧」没了 ──
+await p.click(`${tileOf(id)} .gallery-tile-action`); await p.waitForTimeout(900);
+check(/之后改过/.test(await p.$eval(".ms-player-title", (e) => e.textContent ?? "")) && !(await p.$eval(".ms-player-rerender", (e) => e.hidden)), "放的是旧的：播放条写「之后改过」，有「重新渲染」");
+{ const n0 = (await rc()).stats.count;
+  await p.click('.ms-player [data-p="rerender"]');
+  const fresh = async () => { for (let i = 0; i < 120; i++) { const t = await p.$eval(".ms-player-title", (e) => e.textContent ?? "").catch(() => ""); if (t && !/之后改过/.test(t) && !(await p.$eval(".ms-player", (e) => e.hidden))) return true; await p.waitForTimeout(250); } return false; };
+  check(await fresh(), "重新渲染完：接着放，播放条上不再写「之后改过」");
+  check((await rc()).stats.count === n0 + 1 && !(await p.$(`${tileOf(id)} .ms-cover-tag`)), "设备上多记了一遍（旧的那遍留着）；封面上的「旧」没了");
+  check(await p.evaluate(() => !document.getElementById("galleryFull").hidden), "全程人还在歌库里");
+  await p.click('.ms-player [data-p="close"]'); await p.waitForTimeout(100); }
+// ── 没渲过的歌：卡片上是淡的钮，点了在歌库里渲、渲完直接放（v0.16.101；user 11-09「在歌库里不打开歌直接渲」→ 11-11「做」）──
+await p.click('#galleryFull [data-v="new"]'); await p.click('#galleryFull [data-v="new-song"]'); await p.waitForTimeout(500);
+await fakeSinger();
+await p.click("#score", { position: { x: 600, y: 200 } });
+for (const k of ["Digit5", "Digit3", "Digit1"]) { await p.keyboard.press(k); await p.waitForTimeout(40); }
+await p.waitForFunction((was) => !!window.__moonsinger.identifier() && window.__moonsinger.identifier() !== was, id); await saved();
+const id2 = await p.evaluate(() => window.__moonsinger.identifier());
+{ const n0 = (await rc()).stats.count;
+  await p.click("#setBtn"); await p.waitForTimeout(150);
+  check(!!(await p.$('.main-menu [data-v="renderHere"]')), "歌库里的歌：三条杠里有「渲一遍（歌库里能听）」");
+  await p.keyboard.press("Escape"); await p.waitForTimeout(100);
+  await openGallery();
+  const dim = await p.$eval(`${tileOf(id2)} .gallery-tile-action`, (e) => ({ cls: e.className, title: e.getAttribute("title") ?? e.getAttribute("aria-label") ?? "" })).catch(() => null);
+  check(!!dim && !/\bready\b/.test(dim.cls) && /还没渲过/.test(dim.title), "没渲过的歌：卡片上有钮（不是 ready），提示「还没渲过：点 = 在这里渲一遍」", JSON.stringify(dim));
+  await p.click(`${tileOf(id2)} .gallery-tile-action`);
+  const playing = async () => { for (let i = 0; i < 120; i++) { if ((await p.evaluate(() => window.__moonsinger.gallery()?.playerState().key).catch(() => null)) === id2) return true; await p.waitForTimeout(250); } return false; };
+  check(await playing(), "点了：渲完直接放这首");
+  check((await rc()).stats.count === n0 + 1 && await hasPlay(id2) && await p.evaluate(() => !document.getElementById("galleryFull").hidden), "设备上多记了一遍、卡片上是 ▶、人还在歌库里");
+  await p.click('.ms-player [data-p="close"]'); await p.waitForTimeout(100); }
+// ── 导出时选「不记」：只导出这一份，设备上不多 ──
+await p.click(tileOf(id2)); await p.waitForTimeout(800); await later(); await fakeSinger();
+await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 4, dir: "near" })); await saved(); await p.waitForTimeout(300);
+{ const n0 = (await rc()).stats.count;
+  await p.evaluate(() => { void window.__moonsinger.exportSong({ quality: "standard", scope: "all", keep: false }); });
+  await p.waitForSelector(".offer .offer-title:has-text('歌声导出好了')", { timeout: 40000 });
+  const text = await p.$eval(".offer", (e) => e.textContent ?? "");
+  await p.click(".offer button:has-text('关')").catch(() => p.keyboard.press("Escape")); await p.waitForTimeout(150);
+  check((await rc()).stats.count === n0 && !/记在这台设备上了/.test(text), "导出时选「不记」：设备上的份数不变，面板也不说记下了", `${n0} → ${(await rc()).stats.count}`); }
+await openGallery();
 
 // ── ③ 老文件：旧版本定稿过、里面带着一份 mp3 ──
 const OLD = "20200101-老定稿.mxl", MP3 = new Uint8Array(4000).map((_, i) => (i * 13) & 0xff);

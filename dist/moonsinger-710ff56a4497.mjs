@@ -4862,7 +4862,6 @@ var S = {
   "\u6E32\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF1B\u6E32\u597D\u7684\u90A3\u4EFD\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C": { en: "Render once into an mp3 to share or download. The render is remembered on this device, so you can play it straight from this song\u2019s cover in the library" },
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002": { en: "This device remembers the last render of exactly this, and nothing has changed: you get it right away, no waiting." },
   "\uFF08\u7528\u7684\u662F\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u4E0A\u6B21\u6E32\u597D\u7684\u90A3\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF09": { en: " (the last render remembered on this device; nothing has changed)" },
-  "\uFF08\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF1A\u5185\u5BB9\u4E0D\u53D8\u7684\u8BDD\u4E0B\u6B21\u4E0D\u7528\u518D\u6E32\uFF09": { en: " (remembered on this device: no re-render next time unless the song changes)" },
   "\u8FD9\u9996\u6B4C\u91CC\u539F\u6765\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{size}\uFF09\u4E0D\u518D\u5B58\u8FDB\u6B4C\u91CC\u4E86\uFF1A\u5B83\u5DF2\u7ECF\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u7167\u6837\u80FD\u542C\u3001\u80FD\u518D\u5BFC\u51FA\u3002": { en: "The mp3 that used to be stored inside this song ({size}) is no longer saved into the song file. It is remembered on this device, so you can still play it from the library and export it again." },
   "\u542C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D\uFF08{p} \u79D2\uFF09": { en: "Play the render remembered on this device ({p} s)" },
   "\u542C\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{p} \u79D2\uFF09": { en: "Play the mp3 stored inside the song ({p} s)" },
@@ -4870,7 +4869,42 @@ var S = {
   "\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026": { en: "Getting the audio for \u201C{stem}\u201D\u2026" },
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D": { en: "Remembered on this device" },
   "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": { en: "The mp3 stored inside the song" },
-  "\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3": { en: "Share / download this song\u2019s mp3" }
+  "\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3": { en: "Share / download this song\u2019s mp3" },
+  "\u53D6\u6D88": { en: "Cancel" },
+  "\u6B63\u5728\u53D6\u6D88\u2026": { en: "Cancelling\u2026" },
+  "\u6B63\u5728\u6E32\u67D3\u2026": { en: "Rendering\u2026" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u5DF2\u7ECF\u8BB0\u7740\u8FD9\u4E00\u904D\uFF08\u5185\u5BB9\u6CA1\u53D8\uFF09": { en: "This device already has this render (nothing changed)" },
+  "\u6E32\u597D\u4E86\uFF0C\u4F46\u6CA1\u8BB0\u8FDB\u8FD9\u53F0\u8BBE\u5907\uFF08\u5B58\u50A8\u6EE1\u4E86\u6216\u8005\u662F\u9690\u79C1\u6A21\u5F0F\uFF09": { en: "Rendered, but it could not be kept on this device (storage full or private browsing)" },
+  "\u6E32\u597D\u4E86\uFF0C\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF1A\u5B58\u4E0B\u53BB\u4E4B\u540E\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u542C": { en: "Rendered and kept on this device: once you save, you can play it from the library cover" },
+  "\u6E32\u597D\u4E86\uFF0C\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C": { en: "Rendered and kept on this device: play it straight from this song\u2019s cover in the library" },
+  "\u6E32\u67D3\u53D6\u6D88\u4E86": { en: "Rendering cancelled" },
+  "\u6E32\u4E0D\u4E86\uFF1A{Error}": { en: "Couldn't render: {Error}" },
+  "\u6B63\u5728\u6E32\u67D3\u300C{stem}\u300D\u2026": { en: "Rendering \u201C{stem}\u201D\u2026" },
+  "\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A": { en: "Keep on this device" },
+  "\u8BB0\u7740": { en: "Keep" },
+  "\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u8BBE\u7F6E\u91CC\u80FD\u5220": { en: "Play it from this song\u2019s cover in the library; delete it in Settings" },
+  "\u4E0D\u8BB0": { en: "Don't keep" },
+  "\u53EA\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u4E0D\u7559": { en: "Export this copy only, keep nothing" },
+  "\u8FD9\u53F0\u8BBE\u5907\u8BB0\u7740\u7684\u6B4C\u58F0": { en: "Song audio kept on this device" },
+  "\u5168\u6E05": { en: "Clear all" },
+  "\u5BFC\u51FA\u6216\u300C\u6E32\u4E00\u904D\u300D\u65F6\u8BB0\u4E0B\u7684\u6574\u9996\u6B4C\u58F0\uFF0C\u6B4C\u5E93\u5C01\u9762\u4E0A\u7684 \u25B6 \u9760\u5B83\uFF1B\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3001\u4E0D\u540C\u6B65\uFF0C\u6700\u591A {n} \u9996\uFF0C\u6EE1\u4E86\u4E22\u6700\u4E45\u6CA1\u542C\u7684\uFF1B\u5220\u4E86\u53EA\u662F\u8981\u91CD\u6E32": { en: "Whole-song audio kept when you export or use \u201CRender once\u201D; the \u25B6 on library covers plays it. Only on this device, never synced, at most {n} songs (the least recently played goes first); deleting only means rendering again" },
+  "\u8FD8\u6CA1\u6709\u8BB0\u7740\u7684": { en: "Nothing kept yet" },
+  "{n} \u9996 \xB7 {size}": { en: "{n} {n|song|songs} \xB7 {size}" },
+  "{title} \xB7 {secs} \u79D2 \xB7 {size} \xB7 {date}": { en: "{title} \xB7 {secs} s \xB7 {size} \xB7 {date}" },
+  "\u6B4C\u5E93\u91CC\uFF1A{names}": { en: "In the library: {names}" },
+  "\u5168\u6E05\u4E86\uFF08\u8981\u542C\u518D\u6E32\uFF09": { en: "All cleared (render again to listen)" },
+  "\u5220\u4E86\u8FD9\u4E00\u904D\uFF08\u8981\u542C\u518D\u6E32\uFF09": { en: "Deleted this render (render again to listen)" },
+  "\u6E32\u4E00\u904D\uFF08\u6B4C\u5E93\u91CC\u80FD\u542C\uFF09": { en: "Render once (play it in the library)" },
+  "\u6E32\u597D\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u4E0D\u5BFC\u51FA\u6587\u4EF6": { en: "Renders and keeps the audio on this device so you can play it from this song\u2019s cover in the library; no file is exported" },
+  "\u4E5F\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF0C\u5185\u5BB9\u4E0D\u53D8\u518D\u5BFC\u51FA\u4E0D\u7528\u518D\u6E32\u3002\u8BBE\u7F6E\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u91CC\u770B\u5F97\u89C1\u3001\u5220\u5F97\u6389\u3002": { en: "Also kept on this device: play it straight from this song\u2019s cover in the library, and re-exporting an unchanged song is instant. See or delete it under Settings \u203A Audio." },
+  "\u6B63\u5728\u5BFC\u51FA\u6216\u51C6\u5907\u64AD\u653E\uFF0C\u7B49\u5B83\u5B8C\u4E86\u518D\u6E32": { en: "Exporting or getting ready to play; render after that finishes" },
+  "\u65E7": { en: "old" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D\u662F\u6539\u4E4B\u524D\u6E32\u7684\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09": { en: "The audio kept on this device was rendered before later changes" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6E32\u8FC7\uFF1A\u70B9 = \u5728\u8FD9\u91CC\u6E32\u4E00\u904D\uFF08\u4E4B\u540E\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF09": { en: "Not rendered on this device yet: tap to render it here (then play it from the cover)" },
+  "\u542C\u4E0A\u6B21\u6E32\u7684\u90A3\u4E00\u904D\uFF08\u4E4B\u540E\u6539\u8FC7\uFF0C{p} \u79D2\uFF09": { en: "Play the last render (changed since; {p} s)" },
+  "\u6309\u73B0\u5728\u7684\u6837\u5B50\u91CD\u65B0\u6E32\u4E00\u904D": { en: "Render again as it is now" },
+  "\u91CD\u65B0\u6E32\u67D3": { en: "Render again" },
+  "{stem} \xB7 \u65E7\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09": { en: "{stem} \xB7 old (changed since)" }
 };
 
 // src/device-kv.ts
@@ -5090,7 +5124,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.100-2026-11-10";
+var APP_VERSION = "v0.16.101-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -31550,15 +31584,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-4396a991c1cd.mjs");
+      return pick(() => "singer-worker-6bc61ee474a1.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c5a9fbd9cf0f.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-0abfffb6289e.mjs");
+      return pick(() => "layout-worker-ccad4418ccf0.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-ff042500541d.mjs");
+      return pick(() => "encode-worker-b2514c8af4b5.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -38437,10 +38471,18 @@ function createPerformance(host2) {
       await new Promise((r10) => setTimeout(r10, 80));
     }
   }
+  let renderAbort = false;
+  const cancelledErr = () => Object.assign(new Error("cancelled"), { cancelled: true });
+  function cancelRender() {
+    renderAbort = true;
+    singer2.cancelPending();
+    singer2.cancelInflight();
+  }
   async function awaitAllChunks(tl2) {
     const want = [...new Set(tl2.chunks.map((c10) => c10.key))];
     setChunkOrder(tl2, tl2.range.from, null);
     for (; ; ) {
+      if (renderAbort) throw cancelledErr();
       const missing = want.filter((k2) => !engine2.hasChunk(k2));
       if (!missing.length) return;
       if (!missing.some((k2) => chunkKeysWanted.includes(k2) || inflightKeys.has(k2))) setChunkOrder(tl2, tl2.range.from, null);
@@ -38871,6 +38913,7 @@ function createPerformance(host2) {
   }
   async function renderMp3(o10) {
     if (engine2.playing) stopPlay2();
+    renderAbort = false;
     const parts = audibleParts3(), song = songIn2(o10.scope);
     progress2(_t("\u51C6\u5907\u2026"));
     const r10 = await renderSong(
@@ -38908,6 +38951,7 @@ function createPerformance(host2) {
       if (mixBypass) pushChannels2();
     });
     const roles = st2().song.parts.filter((p2) => r10.timeline.tracks.some((t10) => t10.id === p2.id)).map((p2) => p2.role);
+    if (renderAbort) throw cancelledErr();
     progress2(_t("\u7F16 mp3\u2026"));
     const Q2 = MP3_QUALITY[o10.quality];
     const left = Q2.stereo ? r10.left : toMono(r10.left, r10.right), right = Q2.stereo ? r10.right : null;
@@ -38933,17 +38977,37 @@ function createPerformance(host2) {
         tagged.set(tag2, 0);
         tagged.set(m2.bytes, tag2.length);
         r10 = { tagged, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo, roles: m2.roles, cached: false };
-        if (whole) kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo }, tagged).catch(() => false) ?? false;
+        if (whole && o10.keep !== false) kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo }, tagged).catch(() => false) ?? false;
       }
       const { lines, fellBack } = mp3Tag(r10.roles);
       const file = new File([r10.tagged], `${stampedCopy(`${docName2()}${o10.scope === "segment" ? `-${fileSafe(st2().song.papers.find((p2) => p2.id === st2().at.paper)?.name || _t("\u8FD9\u4E00\u5F20"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
       const Q2 = r10.stereo ? _t("\u7ACB\u4F53\u58F0") : _t("\u5355\u58F0\u9053");
-      offerFile2(file, _t("\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86"), _t("{p} \u79D2 \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r10.secs.toFixed(1), Q: Q2, kbps: r10.kbps, size: mp3SizeText(file.size), fromFinal: r10.cached ? _t("\uFF08\u7528\u7684\u662F\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u4E0A\u6B21\u6E32\u597D\u7684\u90A3\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF09") : kept ? _t("\uFF08\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF1A\u5185\u5BB9\u4E0D\u53D8\u7684\u8BDD\u4E0B\u6B21\u4E0D\u7528\u518D\u6E32\uFF09") : "", fellBack: fellBack ? `<div class="offer-msg">${_t("\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002")}</div>` : "", length: !r10.cached && issues.length ? `<div class="offer-msg issue-warn">${_t("\u8FD9\u51E0\u6761\u8F68\u6CA1\u51FA\u58F0\uFF0Cmp3 \u91CC\u6CA1\u6709\u5B83\u4EEC\uFF1A")}${escHtml(issuesText(issues))}</div>` : "", lines: creditsBlock2(lines, _t("\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E")) }));
+      offerFile2(file, _t("\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86"), _t("{p} \u79D2 \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r10.secs.toFixed(1), Q: Q2, kbps: r10.kbps, size: mp3SizeText(file.size), fromFinal: r10.cached ? _t("\uFF08\u7528\u7684\u662F\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u4E0A\u6B21\u6E32\u597D\u7684\u90A3\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF09") : kept ? `<div class="offer-msg">${_t("\u4E5F\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u4E86\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF0C\u5185\u5BB9\u4E0D\u53D8\u518D\u5BFC\u51FA\u4E0D\u7528\u518D\u6E32\u3002\u8BBE\u7F6E\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u91CC\u770B\u5F97\u89C1\u3001\u5220\u5F97\u6389\u3002")}</div>` : "", fellBack: fellBack ? `<div class="offer-msg">${_t("\u8BB8\u53EF\u8FD9\u4E00\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u4E86\uFF08\u4F60\u9009\u7684\u8BB8\u53EF\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF1B\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09\u3002")}</div>` : "", length: !r10.cached && issues.length ? `<div class="offer-msg issue-warn">${_t("\u8FD9\u51E0\u6761\u8F68\u6CA1\u51FA\u58F0\uFF0Cmp3 \u91CC\u6CA1\u6709\u5B83\u4EEC\uFF1A")}${escHtml(issuesText(issues))}</div>` : "", lines: creditsBlock2(lines, _t("\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E")) }));
     } catch (e10) {
       progress2("");
       showError2(_t("\u5BFC\u51FA\u5931\u8D25\uFF1A{Error}", { Error: e10.message }));
     } finally {
       exporting = false;
+    }
+  }
+  async function renderKeep(o10) {
+    if (exporting || preparing) throw new Error(_t("\u6B63\u5728\u5BFC\u51FA\u6216\u51C6\u5907\u64AD\u653E\uFF0C\u7B49\u5B83\u5B8C\u4E86\u518D\u6E32"));
+    exporting = true;
+    try {
+      const parts = audibleParts3().map((p2) => p2.id), title = st2().song.title || docName2();
+      const hit = await host2.renders?.take({ quality: o10.quality, parts, title }).catch(() => null) ?? null;
+      if (hit) return { cached: true, kept: true, secs: hit.secs };
+      const m2 = await renderMp3({ quality: o10.quality, scope: "all" }), tag2 = mp3Tag(m2.roles).tag, tagged = new Uint8Array(tag2.length + m2.bytes.length);
+      tagged.set(tag2, 0);
+      tagged.set(m2.bytes, tag2.length);
+      const kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo }, tagged).catch(() => false) ?? false;
+      return { cached: false, kept, secs: m2.secs };
+    } catch (e10) {
+      progress2("");
+      throw e10;
+    } finally {
+      exporting = false;
+      renderAbort = false;
     }
   }
   function jumpPlaybackToPaper2(id2) {
@@ -38987,6 +39051,8 @@ function createPerformance(host2) {
     humOpt,
     resetLatencyLog: resetLatencyLog2,
     playSong: playSong2,
+    renderKeep,
+    cancelRender,
     curFlat: curFlat2,
     songIn: songIn2,
     audibleParts: audibleParts3,
@@ -48722,7 +48788,8 @@ function coverHtml(stem, extra = {}) {
   const cls = `ms-cover ${p2.vertical ? "v" : "h"} sz-${p2.size}${p2.coded ? " coded" : ""}`;
   const title = p2.vertical ? verticalRuns(p2.title) : esc10(p2.title);
   const artist = extra.artist ? `<span class="ms-cover-artist">${esc10(extra.artist)}</span>` : "";
-  const left = p2.date ? `<span class="ms-cover-left"><span class="ms-cover-date">${esc10(p2.date)}</span></span>` : "<span></span>";
+  const tag2 = extra.tag ? `<span class="ms-cover-tag"${extra.tagTitle ? ` title="${esc10(extra.tagTitle)}"` : ""}>${esc10(extra.tag)}</span>` : "";
+  const left = p2.date || tag2 ? `<span class="ms-cover-left">${p2.date ? `<span class="ms-cover-date">${esc10(p2.date)}</span>` : ""}${tag2}</span>` : "<span></span>";
   const bar2 = `<span class="ms-cover-bar">${left}${extra.sizeText ? `<span class="ms-cover-size">${esc10(extra.sizeText)}</span>` : ""}</span>`;
   return `<span class="${cls}"${extra.editedText ? ` title="${esc10(extra.editedText)}"` : ""}><span class="ms-cover-title"${p2.vertical ? "" : ' lang="en"'}>${title}</span>${artist}${bar2}</span>`;
 }
@@ -49123,6 +49190,13 @@ function createRenderCache(store, o10) {
       for (const m2 of metas.values()) bytes += m2.size;
       return { count: metas.size, bytes, max: o10.max };
     },
+    list: () => [...metas.values()].sort((a10, b3) => b3.used - a10.used).map((meta) => ({ meta, links: [...links.values()].filter((l10) => l10.key === meta.key) })),
+    async remove(key) {
+      await ready();
+      if (!metas.has(key)) return;
+      await drop(key);
+      changed2();
+    },
     async clear() {
       await ready();
       metas.clear();
@@ -49222,6 +49296,7 @@ function initGalleryHost(d3) {
       tilePlaceholderHtml: (id2) => placeholderHtml(identifiers.parse(id2)?.stem ?? id2),
       tileOverlayHtml: (id2, item, facts) => coverHtml(identifiers.parse(id2)?.stem ?? id2, {
         sizeText: item?.size != null ? humanSize(item.size) : void 0,
+        ...((src) => src?.k === "device" && src.stale ? { tag: _t("\u65E7"), tagTitle: _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D\u662F\u6539\u4E4B\u524D\u6E32\u7684\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09") } : {})((void renderTick.value, soundOf(id2, factsOf(facts)))),
         editedText: item?.lastModified ? _t("\u6539\u4E8E {lastModified}", { lastModified: new Date(item.lastModified).toLocaleString() }) : void 0
       }),
       // 有声音可听的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；这台设备没记着、文件里也没带 = 不画。
@@ -49231,8 +49306,8 @@ function initGalleryHost(d3) {
         void playTick.value;
         void renderTick.value;
         const src = soundOf(id2, factsOf(facts));
-        if (!src) return null;
-        return player.playing() === id2 ? { icon: "pause", title: _t("\u6682\u505C\uFF08\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u4E5F\u80FD\u63A7\uFF09"), state: "ready" } : { icon: "play", title: src.k === "device" ? _t("\u542C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D\uFF08{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }) : _t("\u542C\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }), state: "ready" };
+        if (!src) return { icon: "play", title: _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6E32\u8FC7\uFF1A\u70B9 = \u5728\u8FD9\u91CC\u6E32\u4E00\u904D\uFF08\u4E4B\u540E\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF09"), state: "unknown" };
+        return player.playing() === id2 ? { icon: "pause", title: _t("\u6682\u505C\uFF08\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u4E5F\u80FD\u63A7\uFF09"), state: "ready" } : { icon: "play", title: src.k === "device" ? src.stale ? _t("\u542C\u4E0A\u6B21\u6E32\u7684\u90A3\u4E00\u904D\uFF08\u4E4B\u540E\u6539\u8FC7\uFF0C{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }) : _t("\u542C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D\uFF08{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }) : _t("\u542C\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{p} \u79D2\uFF09", { p: src.secs.toFixed(0) }), state: "ready" };
       }
     },
     policy: {
@@ -49267,23 +49342,24 @@ function initGalleryHost(d3) {
   }
   function soundOf(id2, f2) {
     const link2 = d3.renders.linkOf(storeKey(), id2);
-    if (link2 && f2?.stamp && link2.stamp === f2.stamp) return { k: "device", key: link2.key, secs: link2.meta.secs };
+    if (link2 && f2?.stamp) return { k: "device", key: link2.key, secs: link2.meta.secs, stale: link2.stamp !== f2.stamp };
     return f2?.final ? { k: "embedded", secs: f2.final.secs } : null;
   }
   const playerEl = document.createElement("div");
   playerEl.className = "ms-player";
   playerEl.hidden = true;
-  playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="${_t("\u4ECE\u5934\u653E\uFF08\u9501\u5C4F / \u8033\u673A\u7684\u300C\u4E0A\u4E00\u9996\u300D\u4E5F\u662F\uFF09")}">${iconHtml("play-from-start")}</button><button type="button" class="btn ms-player-toggle" data-p="toggle" title="${_t("\u653E / \u6682\u505C")}">${iconHtml("pause")}</button><span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span><button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">${_t("\u5FAA\u73AF")}</button><button type="button" class="btn" data-p="share" title="${_t("\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3")}">${iconHtml("export")}</button><button type="button" class="btn" data-p="close" title="${_t("\u505C")}">${iconHtml("x")}</button>`;
+  playerEl.innerHTML = `<button type="button" class="btn" data-p="restart" title="${_t("\u4ECE\u5934\u653E\uFF08\u9501\u5C4F / \u8033\u673A\u7684\u300C\u4E0A\u4E00\u9996\u300D\u4E5F\u662F\uFF09")}">${iconHtml("play-from-start")}</button><button type="button" class="btn ms-player-toggle" data-p="toggle" title="${_t("\u653E / \u6682\u505C")}">${iconHtml("pause")}</button><span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span><button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">${_t("\u5FAA\u73AF")}</button><button type="button" class="btn ms-player-rerender" data-p="rerender" hidden title="${_t("\u6309\u73B0\u5728\u7684\u6837\u5B50\u91CD\u65B0\u6E32\u4E00\u904D")}">${_t("\u91CD\u65B0\u6E32\u67D3")}</button><button type="button" class="btn" data-p="share" title="${_t("\u5206\u4EAB / \u4E0B\u8F7D\u8FD9\u9996\u7684 mp3")}">${iconHtml("export")}</button><button type="button" class="btn" data-p="close" title="${_t("\u505C")}">${iconHtml("x")}</button>`;
   fullEl.append(playerEl);
   const appIcon = (file, sizes) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
-  let barTitle = "", barBlob = null;
+  let barTitle = "", barBlob = null, barStale = false;
   const fmtTime2 = (s10) => Number.isFinite(s10) ? `${Math.floor(s10 / 60)}:${String(Math.floor(s10 % 60)).padStart(2, "0")}` : "0:00";
   function drawPlayer() {
     const s10 = player.state();
     playerEl.hidden = s10.key == null;
     if (s10.key == null) return;
-    playerEl.querySelector(".ms-player-title").textContent = barTitle;
+    playerEl.querySelector(".ms-player-title").textContent = barStale ? _t("{stem} \xB7 \u65E7\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09", { stem: barTitle }) : barTitle;
+    playerEl.querySelector(".ms-player-rerender").hidden = !barStale;
     playerEl.querySelector(".ms-player-time").textContent = `${fmtTime2(s10.time)} / ${fmtTime2(s10.duration)}`;
     playerEl.querySelector(".ms-player-toggle").innerHTML = iconHtml(s10.paused ? "play" : "pause");
     const loopBtn = playerEl.querySelector(".ms-player-loop");
@@ -49313,7 +49389,7 @@ function initGalleryHost(d3) {
     }
     const src = soundOf(id2, facts);
     if (!src) {
-      status(NO_SOUND());
+      await renderThenPlay(id2, facts);
       return;
     }
     player.arm();
@@ -49340,6 +49416,7 @@ function initGalleryHost(d3) {
       const cover = (await gallery2?.thumbs?.read(id2).catch(() => null))?.blob ?? null;
       barTitle = stem;
       barBlob = got2.blob;
+      barStale = src.k === "device" && src.stale;
       const r10 = await player.play({ key: id2, blob: got2.blob, title: stem, artist: "MoonSinger", album: got2.album, cover });
       if (r10 === "blocked") status(_t("\u6CA1\u80FD\u81EA\u5DF1\u5F00\u59CB\u653E\uFF1A\u70B9\u5E95\u8FB9\u64AD\u653E\u6761\u4E0A\u7684 \u25B6"));
       diagNote("gallery", `play ${src.k} ${id2} (${got2.blob.size} B) \u2192 ${r10}`);
@@ -49357,7 +49434,22 @@ function initGalleryHost(d3) {
     else if (v === "loop") player.setLoop(!player.state().loop);
     else if (v === "close") player.stop();
     else if (v === "share") void shareMp3();
+    else if (v === "rerender") {
+      const id2 = player.state().key;
+      if (id2) {
+        player.stop();
+        void renderThenPlay(id2, null);
+      }
+    }
   });
+  async function renderThenPlay(id2, facts) {
+    player.arm();
+    if (!await d3.renderInLibrary(id2)) return;
+    await gallery2?.facts?.invalidate(id2);
+    const f2 = factsOf(await peekManifest(id2).then((m2) => m2 ? { stamp: m2.stamp } : facts).catch(() => facts));
+    if (soundOf(id2, f2)) await playTile(id2, f2);
+    else status(NO_SOUND());
+  }
   async function shareMp3() {
     if (!barBlob) return;
     const file = new File([barBlob], `${stampedCopy(barTitle)}.mp3`, { type: "audio/mpeg" });
@@ -54866,13 +54958,7 @@ async function relinkAfterSave(name, fingerprint) {
   if (!fingerprint) return;
   await renders.ready();
   const m2 = renders.latestFor(fingerprint), home = homeKey();
-  if (!m2) {
-    if (renders.linkOf(home, name)) {
-      await renders.unlink(home, name);
-      gallery?.invalidateFacts(name);
-    }
-    return;
-  }
+  if (!m2) return;
   const stamp2 = await fileStamp(name);
   if (!stamp2) return;
   if (await renders.link(home, name, m2.key, stamp2)) gallery?.invalidateFacts(name);
@@ -55930,7 +56016,9 @@ function renderUndo() {
 var singer = new Singer();
 var statusLast = "";
 var statusBar = false;
+var renderBusyText = null;
 var progress = (s10) => {
+  if (s10) renderBusyText?.(s10);
   const pc2 = /(\d+)%/.exec(s10);
   if (pc2) {
     if (!renderBar.running) {
@@ -56240,6 +56328,56 @@ function goToPartInst(partId) {
   if (paper && (paper.id !== D2.st.at.paper || D2.st.at.part !== partId)) update(setFocus(D2.st, paper.id, partId));
   openInstPage();
 }
+function renderBusy(label) {
+  const box = document.createElement("div");
+  box.className = "offer render-busy";
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc11(label)}</div><div class="offer-msg rb-text">${_t("\u51C6\u5907\u2026")}</div><div class="offer-btns"><button class="btn" data-v="cancel">${_t("\u53D6\u6D88")}</button></div></div>`;
+  document.body.append(box);
+  const txt = box.querySelector(".rb-text");
+  renderBusyText = (s10) => {
+    txt.textContent = s10;
+  };
+  box.querySelector('[data-v="cancel"]').addEventListener("click", () => {
+    txt.textContent = _t("\u6B63\u5728\u53D6\u6D88\u2026");
+    perfApi.cancelRender();
+  });
+  return { close: () => {
+    renderBusyText = null;
+    box.remove();
+  } };
+}
+async function renderHere() {
+  const busy = renderBusy(_t("\u6B63\u5728\u6E32\u67D3\u2026"));
+  try {
+    const r10 = await perfApi.renderKeep({ quality: mp3Quality });
+    info(r10.cached ? _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u5DF2\u7ECF\u8BB0\u7740\u8FD9\u4E00\u904D\uFF08\u5185\u5BB9\u6CA1\u53D8\uFF09") : !r10.kept ? _t("\u6E32\u597D\u4E86\uFF0C\u4F46\u6CA1\u8BB0\u8FDB\u8FD9\u53F0\u8BBE\u5907\uFF08\u5B58\u50A8\u6EE1\u4E86\u6216\u8005\u662F\u9690\u79C1\u6A21\u5F0F\uFF09") : D2.dirty() ? _t("\u6E32\u597D\u4E86\uFF0C\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF1A\u5B58\u4E0B\u53BB\u4E4B\u540E\u6B4C\u5E93\u5C01\u9762\u4E0A\u80FD\u542C") : _t("\u6E32\u597D\u4E86\uFF0C\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF1A\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C"));
+  } catch (e10) {
+    if (e10.cancelled) info(_t("\u6E32\u67D3\u53D6\u6D88\u4E86"));
+    else showError(_t("\u6E32\u4E0D\u4E86\uFF1A{Error}", { Error: e10.message }));
+  } finally {
+    busy.close();
+  }
+}
+async function renderInLibrary(id2) {
+  const here = H2.home.kind === "gallery" && H2.home.identifier === id2;
+  if (!here && !await openStoreDoc(id2)) return false;
+  const busy = renderBusy(_t("\u6B63\u5728\u6E32\u67D3\u300C{stem}\u300D\u2026", { stem: stemOfId(id2) }));
+  try {
+    const r10 = await perfApi.renderKeep({ quality: mp3Quality });
+    if (!r10.kept) {
+      showError(_t("\u6E32\u597D\u4E86\uFF0C\u4F46\u6CA1\u8BB0\u8FDB\u8FD9\u53F0\u8BBE\u5907\uFF08\u5B58\u50A8\u6EE1\u4E86\u6216\u8005\u662F\u9690\u79C1\u6A21\u5F0F\uFF09"));
+      return false;
+    }
+    return true;
+  } catch (e10) {
+    if (e10.cancelled) info(_t("\u6E32\u67D3\u53D6\u6D88\u4E86"));
+    else showError(_t("\u6E32\u4E0D\u4E86\uFF1A{Error}", { Error: e10.message }));
+    return false;
+  } finally {
+    busy.close();
+  }
+}
+var mp3Keep = deviceKvGet("mp3-keep") !== "off";
 function openMp3Panel() {
   ui2.close();
   const box = document.createElement("div");
@@ -56248,7 +56386,7 @@ function openMp3Panel() {
   const draw = () => {
     const chip2 = (v, label, note2, on2) => `<button class="btn cand${on2 ? " is-on" : ""}" data-v="${v}">${esc11(label)}<small>${esc11(note2)}</small></button>`;
     const er2 = D2.st.song.rights ? exportRights(soundingRoles()) : null;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09")}</div><div class="part-sec">${_t("\u97F3\u8D28")}</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (D2.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u8303\u56F4")}</div><div class="set-row">${chip2("s:all", _t("\u6574\u9996"), _t("\u9690\u85CF\u7684\u7EB8\u4E0D\u653E"), mp3Scope === "all")}${chip2("s:segment", _t("\u8FD9\u4E00\u5F20\u7EB8"), paper?.name || _t("\u7B2C {p} \u5F20", { p: k2 + 1 }), mp3Scope === "segment")}</div>` : "") + (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002")}</div>` : "") + (er2 ? `<div class="offer-msg">${_t("\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002", { fellBack: er2.fellBack ? _t("\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09") : esc11(er2.rights) })}</div>` : "") + ((is2) => is2.length ? `<div class="offer-msg issue-warn">${_t("{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002", { n: is2.length, is: esc11(perfApi.issuesText(is2)) })}</div>` : "")(perfApi.issues()) + // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09")}</div><div class="part-sec">${_t("\u97F3\u8D28")}</div><div class="set-row">${Object.keys(MP3_QUALITY).map((q2) => chip2(`q:${q2}`, MP3_QUALITY[q2].label, MP3_QUALITY[q2].note, mp3Quality === q2)).join("")}</div>` + (D2.st.song.papers.length > 1 ? `<div class="part-sec">${_t("\u8303\u56F4")}</div><div class="set-row">${chip2("s:all", _t("\u6574\u9996"), _t("\u9690\u85CF\u7684\u7EB8\u4E0D\u653E"), mp3Scope === "all")}${chip2("s:segment", _t("\u8FD9\u4E00\u5F20\u7EB8"), paper?.name || _t("\u7B2C {p} \u5F20", { p: k2 + 1 }), mp3Scope === "segment")}</div>` : "") + (mp3Scope === "all" ? `<div class="part-sec">${_t("\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A")}</div><div class="set-row">${chip2("k:on", _t("\u8BB0\u7740"), _t("\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u8BBE\u7F6E\u91CC\u80FD\u5220"), mp3Keep)}${chip2("k:off", _t("\u4E0D\u8BB0"), _t("\u53EA\u5BFC\u51FA\u8FD9\u4E00\u4EFD\uFF0C\u4E0D\u7559"), !mp3Keep)}</div>` : "") + (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002")}</div>` : "") + (er2 ? `<div class="offer-msg">${_t("\u8BB8\u53EF\uFF1A{fellBack}\u3002\u548C\u7F72\u540D\u4E00\u8D77\u5199\u8FDB mp3 \u7684\u6807\u7B7E\u3002", { fellBack: er2.fellBack ? _t("\u8FD9\u4EFD\u6309\u300C\u672A\u58F0\u660E\u300D\u5199\u2014\u2014\u4F60\u9009\u7684\u8BB8\u53EF\u5141\u8BB8\u522B\u4EBA\u6539\u7F16\uFF0C\u548C\u5C0F\u6708\u76F8\u7684\u6761\u6B3E\u53EF\u80FD\u51B2\u7A81\uFF08\u4F5C\u8005\u680F\u91CC\u7684\u9009\u62E9\u6CA1\u52A8\uFF09") : esc11(er2.rights) })}</div>` : "") + ((is2) => is2.length ? `<div class="offer-msg issue-warn">${_t("{n} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF0Cmp3 \u91CC\u4E0D\u4F1A\u6709\u5B83\u4EEC\uFF1A{is}\u3002\u6362\u4EBA\u5728\u8C31\u524D\u9762\u7684\u58F0\u90E8\u540D\u91CC\u3002", { n: is2.length, is: esc11(perfApi.issuesText(is2)) })}</div>` : "")(perfApi.issues()) + // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
     `<div class="offer-btns"><button class="btn primary" data-v="go">${perfApi.issues().length ? _t("\u7167\u6837\u5BFC\u51FA") : _t("\u5BFC\u51FA")}</button><button class="btn" data-v="close">${_t("\u7B97\u4E86")}</button></div></div>`;
   };
   draw();
@@ -56271,9 +56409,13 @@ function openMp3Panel() {
     } else if (v?.startsWith("s:")) {
       mp3Scope = v.slice(2);
       draw();
+    } else if (v?.startsWith("k:")) {
+      mp3Keep = v === "k:on";
+      deviceKvSet("mp3-keep", mp3Keep ? null : "off");
+      draw();
     } else if (v === "go") {
       close();
-      void exportSong({ quality: mp3Quality, scope: mp3Scope });
+      void exportSong({ quality: mp3Quality, scope: mp3Scope, keep: mp3Keep });
     }
   });
 }
@@ -56359,7 +56501,7 @@ function openSettings() {
     inFolder2 ? `<span class="btn is-off" title="${FOLDER_TEXT.models}"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165")}</span><input id="impIn" type="file" multiple hidden disabled />` : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("\u4ECE\u672C\u673A\u6587\u4EF6\u5BFC\u5165")}<input id="impIn" type="file" multiple hidden /></label>`,
     _t("\u9009\u6A21\u578B\u5305\u7684\u5206\u7247\u6587\u4EF6\uFF08chunk-000 \u2026\uFF0C\u540D\u5B57\u4E0D\u91CD\u8981\uFF09\uFF0C\u6216\u6574\u4E2A\u5305\u62FC\u6210\u7684\u4E00\u4E2A\u6587\u4EF6"),
     `<pre id="packSt" class="set-packs">\u2026</pre>`
-  ) + item(_t("\u97F3\u6E90\u5E93\u7F13\u5B58"), "", _t("\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6"), `<div id="sndCache" class="set-packs">\u2026</div>`) + item(_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58"), look("sp:clear", _t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")), _t("\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5"), `<div id="spCache" class="set-packs">\u2026</div>`) + // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
+  ) + item(_t("\u97F3\u6E90\u5E93\u7F13\u5B58"), "", _t("\u7559\u5728\u8BBE\u5907\u4E0A\uFF0C\u6CA1\u7F51\u4E5F\u80FD\u7528\uFF1B\u6B4C\u81EA\u5DF1\u5E26\u58F0\u97F3\uFF0C\u8FD9\u91CC\u53EA\u662F\u8D27\u67B6"), `<div id="sndCache" class="set-packs">\u2026</div>`) + item(_t("\u8FD9\u53F0\u8BBE\u5907\u8BB0\u7740\u7684\u6B4C\u58F0"), look("rc:clear", _t("\u5168\u6E05")), _t("\u5BFC\u51FA\u6216\u300C\u6E32\u4E00\u904D\u300D\u65F6\u8BB0\u4E0B\u7684\u6574\u9996\u6B4C\u58F0\uFF0C\u6B4C\u5E93\u5C01\u9762\u4E0A\u7684 \u25B6 \u9760\u5B83\uFF1B\u53EA\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u3001\u4E0D\u540C\u6B65\uFF0C\u6700\u591A {n} \u9996\uFF0C\u6EE1\u4E86\u4E22\u6700\u4E45\u6CA1\u542C\u7684\uFF1B\u5220\u4E86\u53EA\u662F\u8981\u91CD\u6E32", { n: RENDER_KEEP }), `<div id="rcList" class="set-packs">\u2026</div>`) + item(_t("\u5C0F\u6708\u76F8\u7684\u5FF5\u7F13\u5B58"), look("sp:clear", _t("\u6E05\u7A7A\u5FF5\u7F13\u5B58")), _t("\u8BBE\u5907\u4E0A\u7684\u5168\u5C40\u6C60\uFF1A\u5FF5\u8FC7\u7684\u53E5\u5B50\u8DE8\u6B4C\u5171\u7528\uFF0C\u91CD\u5F00 app \u4E5F\u5728\uFF1B\u53EF\u518D\u751F\uFF0C\u6E05\u4E86\u53EA\u662F\u8981\u91CD\u5FF5"), `<div id="spCache" class="set-packs">\u2026</div>`) + // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
   item(_t("\u91CD\u542F\u58F0\u97F3"), look("audio:revive", _t("\u91CD\u542F\u58F0\u97F3")), _t("\u58F0\u97F3\u4E0D\u5BF9\u52B2\u7684\u65F6\u5019\u6309\u4E00\u4E0B\uFF08\u6309\u952E\u6709\u5EF6\u8FDF\u3001\u6CA1\u6709\u58F0\u97F3\uFF09\uFF1A\u628A\u901A\u5411\u626C\u58F0\u5668\u7684\u90A3\u4E00\u6BB5\u6362\u6210\u65B0\u7684\uFF0C\u6392\u7740\u6CA1\u64AD\u5B8C\u7684\u58F0\u97F3\u4E00\u8D77\u4E22\u6389\u3002\u6B63\u5728\u54CD\u7684\u58F0\u97F3\u4F1A\u65AD\u4E00\u4E0B")) + item(
     _t("\u5F15\u64CE\u8D1F\u8F7D\u4E0E\u5185\u5B58"),
     `<button class="btn" data-v="eng:restart" title="${_t("\u5C0F\u6708\u76F8\u5F15\u64CE\u7684 WASM \u5185\u5B58\u53EA\u6DA8\u4E0D\u843D\uFF0C\u53EA\u6709\u91CD\u5F00\u624D\u8FD8\u56DE\u53BB\uFF1B\u5FF5\u8FC7\u7684\u53E5\u5B50\u8981\u91CD\u5FF5")}">${_t("\u91CD\u5F00\u5C0F\u6708\u76F8\u5F15\u64CE")}</button>`,
@@ -56444,6 +56586,15 @@ function openSettings() {
     }).join("") || _t("\uFF08\u6CA1\u6709\uFF09");
   };
   void refreshSounds();
+  const rcList = box.querySelector("#rcList");
+  let rcKeys = [];
+  const refreshRc = async () => {
+    await renders.ready();
+    const all = renders.list(), st2 = renders.stats();
+    rcKeys = all.map((x2) => x2.meta.key);
+    rcList.innerHTML = !all.length ? `<div class="set-row"><span class="set-note">${_t("\u8FD8\u6CA1\u6709\u8BB0\u7740\u7684")}</span></div>` : `<div class="set-row"><span>${_t("{n} \u9996 \xB7 {size}", { n: st2.count, size: sizeText3(st2.bytes) })}</span></div>` + all.map((x2, i10) => `<div class="set-row"><span>${esc11(_t("{title} \xB7 {secs} \u79D2 \xB7 {size} \xB7 {date}", { title: x2.meta.title, secs: x2.meta.secs.toFixed(0), size: sizeText3(x2.meta.size), date: new Date(x2.meta.at).toLocaleDateString() }))}${x2.links.length ? `<small class="set-note"> ${esc11(_t("\u6B4C\u5E93\u91CC\uFF1A{names}", { names: x2.links.map((l10) => stemOfId(l10.identifier)).join("\u3001") }))}</small>` : ""}</span><button class="btn" data-v="rc:del:${i10}">${_t("\u5220")}</button></div>`).join("");
+  };
+  void refreshRc();
   midiRowSync = (s10) => {
     const el2 = box.querySelector("#midiSt");
     if (el2) el2.innerHTML = midiStatusHtml(s10);
@@ -56524,6 +56675,16 @@ function openSettings() {
         clearShell: () => shell.clearOwnShell(),
         info,
         report: (e11, level) => reportError(e11, level)
+      });
+    } else if (v === "rc:clear") void renders.clear().then(() => {
+      void refreshRc();
+      info(_t("\u5168\u6E05\u4E86\uFF08\u8981\u542C\u518D\u6E32\uFF09"));
+    });
+    else if (v?.startsWith("rc:del:")) {
+      const k2 = rcKeys[Number(v.slice(7))];
+      if (k2) void renders.remove(k2).then(() => {
+        void refreshRc();
+        info(_t("\u5220\u4E86\u8FD9\u4E00\u904D\uFF08\u8981\u542C\u518D\u6E32\uFF09"));
       });
     } else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => {
       refreshSpeech();
@@ -56653,7 +56814,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "f4f33c422f36",
+  cssHash: "f93b5f360342",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -59008,7 +59169,7 @@ function openMainMenu() {
   box.setAttribute("role", "menu");
   const inStore = H2.home.kind === "gallery";
   const item = (v, icon, label, title = "") => `<button class="btn ctx-item" data-v="${v}"${title ? ` title="${esc11(title)}"` : ""}>${icon ? `<svg class="ico"><use href="#${icon}"/></svg>` : `<span class="ico"></span>`}${label}</button>`;
-  box.innerHTML = `<div class="ctx-head"><b>${esc11(H2.fileName())}</b><span>${esc11(fileWhere())}</span></div>` + item("new", "new", _t("\u65B0\u5EFA")) + item("open", "folder-open", _t("\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026"), _t("\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09")) + item("export", "export", _t("\u5BFC\u51FA\u2026"), _t("mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09")) + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", _t("\u5B58\u8FDB\u6B4C\u5E93"), cloudAvailable() ? _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09")) : "") + `<div class="ctx-sep"></div>` + (H2.home.kind === "file" ? "" : item("rename", "rename", _t("\u6539\u6587\u4EF6\u540D\u2026"), _t("\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09"))) + item("cover", "image", _t("\u5C01\u9762\u56FE\u2026"), _t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE")) + item("sounds", "volume", _t("\u58F0\u97F3\u4E0E\u7F72\u540D\u2026"), _t("\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3")) + (lock.canLockNow() ? item("lockEdit", "lock", _t("\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09"), _t("\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00")) : "") + // 修改锁：解着才有；解锁在谱上面那一条
+  box.innerHTML = `<div class="ctx-head"><b>${esc11(H2.fileName())}</b><span>${esc11(fileWhere())}</span></div>` + item("new", "new", _t("\u65B0\u5EFA")) + item("open", "folder-open", _t("\u6253\u5F00\u672C\u673A\u6587\u4EF6\u2026"), _t("\u6253\u5F00 .mxl / .musicxml\uFF08\u62D6\u8FDB\u6765\u4E5F\u884C\uFF1BCtrl / \u2318+O\uFF09")) + item("export", "export", _t("\u5BFC\u51FA\u2026"), _t("mp3\u3001.mxl \u526F\u672C\uFF08\u6253\u5305\u97F3\u6E90\uFF09\u2026\uFF08Ctrl / \u2318+Shift+S\uFF09")) + (inStore ? item("renderHere", "play", _t("\u6E32\u4E00\u904D\uFF08\u6B4C\u5E93\u91CC\u80FD\u542C\uFF09"), _t("\u6E32\u597D\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C\uFF1B\u4E0D\u5BFC\u51FA\u6587\u4EF6")) : "") + (hasStore() && !inStore && !H2.pending() ? item("intoLib", "import", _t("\u5B58\u8FDB\u6B4C\u5E93"), cloudAvailable() ? _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u8FD9\u53F0\u8BBE\u5907\u4E0A\u7559\u4E00\u4EFD\uFF1B\u767B\u5F55\u540E\u540C\u6B65\u5230 OneDrive\uFF09") : _t("\u628A\u8FD9\u9996\u6B4C\u653E\u8FDB\u6B4C\u5E93\uFF08\u53EA\u5728\u8FD9\u4E2A\u6D4F\u89C8\u5668\u91CC\u7559\u4E00\u4EFD\uFF1B\u7F51\u76D8\u5728\u5B98\u7F51\u7248\uFF09")) : "") + `<div class="ctx-sep"></div>` + (H2.home.kind === "file" ? "" : item("rename", "rename", _t("\u6539\u6587\u4EF6\u540D\u2026"), _t("\u53EA\u6539\u6587\u4EF6\u540D\uFF0C\u7EB8\u4E0A\u7684\u6B4C\u540D\u4E0D\u53D8\uFF08\u70B9\u9876\u680F\u7684\u6587\u4EF6\u540D\u4E5F\u4E00\u6837\uFF09"))) + item("cover", "image", _t("\u5C01\u9762\u56FE\u2026"), _t("\u6B4C\u5E93\u5361\u7247\u4E0A\u7684\u56FE")) + item("sounds", "volume", _t("\u58F0\u97F3\u4E0E\u7F72\u540D\u2026"), _t("\u4E50\u5668\u7684\u58F0\u97F3\u6253\u5305 / \u89E3\u5305\uFF1B\u8FD9\u9996\u6B4C\u7528\u4E86\u8C01\u7684\u58F0\u97F3")) + (lock.canLockNow() ? item("lockEdit", "lock", _t("\u9501\u4E0A\uFF08\u5148\u4E0D\u6539\u4E86\uFF09"), _t("\u5148\u628A\u6539\u52A8\u5B58\u597D\uFF0C\u518D\u628A\u8FD9\u9996\u6B4C\u9501\u4E0A\uFF1A\u4E4B\u540E\u6253\u5F00\u662F\u53EA\u80FD\u770B\u3001\u80FD\u542C\u7684\uFF0C\u70B9\u300C\u63A5\u7740\u6539\u300D\u968F\u65F6\u89E3\u5F00")) : "") + // 修改锁：解着才有；解锁在谱上面那一条
   item("ref", "picture-in-picture", refHost.isOpen() ? _t("\u6536\u8D77\u53C2\u8003\u7A97") : _t("\u53C2\u8003\u7A97{p}", { p: refHost.count() ? _t("\uFF08{p} \u5F20\uFF09", { p: refHost.count() }) : "" }), _t("\u622A\u56FE / \u6587\u5B57\u653E\u5728\u65C1\u8FB9\u5BF9\u7740\u770B\uFF1A\u70B9\u5F00\u540E\u7C98\u8D34\uFF08Ctrl / \u2318+V\uFF09\u3001\u62D6\u8FDB\u6765\uFF0C\u6216\u8005\u300C\uFF0B\u300D\u5BFC\u5165\uFF1B\u8DDF\u7740\u6B4C\u4E00\u8D77\u5B58")) + `<div class="ctx-sep"></div><div class="ctx-ver">${esc11(APP_VERSION)}</div>` + // 版本号小灰字（user 2026-10-08「版本号小灰字放在设置menuitem上面」）
   item("settings", "settings", _t("\u8BBE\u7F6E\u2026"), _t("\u6A21\u578B / \u97F3\u6E90\u5E93\u6765\u6E90\u3001\u7F13\u5B58\u3001\u7F72\u540D\u4E0E\u6761\u6B3E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u7248\u672C"));
   document.body.append(box);
@@ -59034,6 +59195,7 @@ function openMainMenu() {
     if (v === "new") void fileNew();
     else if (v === "open") void fileOpen();
     else if (v === "export") openExportHub();
+    else if (v === "renderHere") void renderHere();
     else if (v === "intoLib") void saveIntoGallery();
     else if (v === "rename") void renameActive();
     else if (v === "cover") openCoverSheet();
@@ -59488,6 +59650,7 @@ function ensureGallery() {
   gallery = initGalleryHost({
     activeIdentifier: () => H2.identifier(),
     openAny: (id2) => openStoreDoc(id2),
+    renderInLibrary: (id2) => renderInLibrary(id2),
     // 打开中的那首被歌库挪了夹：字节已在新身份下 → 先放下旧身份（不然 es.open 的「切歌前先存旧的」会把旧名字写回去复活），再按新身份重开
     setIdentifier: (id2) => {
       H2.release();
@@ -60766,4 +60929,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-64f6674ea7b4.mjs.map
+//# sourceMappingURL=moonsinger-710ff56a4497.mjs.map

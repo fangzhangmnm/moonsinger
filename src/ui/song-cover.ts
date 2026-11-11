@@ -45,13 +45,14 @@ export function placeholderHtml(stem: string): string {
   return `<span class="ms-cover-bg hue-${planCover(stem).hue}"></span>`;
 }
 /** 印在封面上的那一层（图库包的覆盖层槽）：歌名 / 作者 / 日期。底下是封面图还是底色，印法都一样。（底栏的「定稿 N」随定稿 2026-11-10 退役去掉了。） */
-export interface CoverExtra { artist?: string | null; sizeText?: string; editedText?: string }
+export interface CoverExtra { artist?: string | null; sizeText?: string; editedText?: string; /** 日期后面的小标（v0.16.101：「旧」= 这台设备记着的声音是改之前的）。 */ tag?: string; tagTitle?: string }
 export function coverHtml(stem: string, extra: CoverExtra = {}): string {
   const p = planCover(stem);
   const cls = `ms-cover ${p.vertical ? "v" : "h"} sz-${p.size}${p.coded ? " coded" : ""}`;
   const title = p.vertical ? verticalRuns(p.title) : esc(p.title);
   const artist = extra.artist ? `<span class="ms-cover-artist">${esc(extra.artist)}</span>` : "";
-  const left = p.date ? `<span class="ms-cover-left"><span class="ms-cover-date">${esc(p.date)}</span></span>` : "<span></span>";
+  const tag = extra.tag ? `<span class="ms-cover-tag"${extra.tagTitle ? ` title="${esc(extra.tagTitle)}"` : ""}>${esc(extra.tag)}</span>` : "";
+  const left = p.date || tag ? `<span class="ms-cover-left">${p.date ? `<span class="ms-cover-date">${esc(p.date)}</span>` : ""}${tag}</span>` : "<span></span>";
   const bar = `<span class="ms-cover-bar">${left}${extra.sizeText ? `<span class="ms-cover-size">${esc(extra.sizeText)}</span>` : ""}</span>`;
   return `<span class="${cls}"${extra.editedText ? ` title="${esc(extra.editedText)}"` : ""}><span class="ms-cover-title"${p.vertical ? "" : ' lang="en"'}>${title}</span>${artist}${bar}</span>`;
 }

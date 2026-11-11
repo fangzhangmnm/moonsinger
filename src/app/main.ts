@@ -219,12 +219,12 @@ async function linkRenderNow(key: string): Promise<void> {
   const stamp = await fileStamp(h.identifier); if (!stamp) return;
   if (await renders.link(homeKey(), h.identifier, key, stamp)) gallery?.invalidateFacts(h.identifier);
 }
-/** 歌库里的歌存完之后：这次存下去的内容有记着的声音 = 按新的文件戳重新挂名；没有 = 内容变了，摘名（记录留着：改回去还认得）。 */
+/** 歌库里的歌存完之后：这次存下去的内容有记着的声音 = 按新的文件戳重新挂名；没有 = 挂名留着、戳对不上 = 歌库里认作「旧」（v0.16.101 起；之前是摘名）。 */
 async function relinkAfterSave(name: string, fingerprint: string | null): Promise<void> {
   if (!fingerprint) return;
   await renders.ready();
   const m = renders.latestFor(fingerprint), home = homeKey();
-  if (!m) { if (renders.linkOf(home, name)) { await renders.unlink(home, name); gallery?.invalidateFacts(name); } return; }
+  if (!m) return;   // 内容变了、这份新内容没渲过：挂名留着（字节还是上次那遍）= 歌库里标「旧」、照样能听（v0.16.101；user 11-11 问「渲染如果dirty的话应该自动删还是报警？」→ 不删、不报警，标出来）
   const stamp = await fileStamp(name); if (!stamp) return;
   if (await renders.link(home, name, m.key, stamp)) gallery?.invalidateFacts(name);
 }
@@ -956,7 +956,9 @@ const singer = new Singer();
 // 顶栏的小状态行撤了（2026-10-10 user「小状态栏不要放在顶栏，这样会让顶栏的按钮重拍…或者就不显示？反正有log，用户也不care，有重要的事情有toast」）：
 //   文字进黑匣子（同一句换数字不重复记）；带百分比的（下载）推顶栏底边那条细线（不占位置、不挤按钮）。
 let statusLast = "", statusBar = false;
+let renderBusyText: ((s: string) => void) | null = null;   // 渲染的进度框开着时，进度字也写进它（v0.16.101）
 const progress = (s: string): void => {
+  if (s) renderBusyText?.(s);
   const pc = /(\d+)%/.exec(s);
   if (pc) { if (!renderBar.running) { renderBar.start(1); statusBar = true; } renderBar.frac(Number(pc[1]) / 100); }
   else if (!s && statusBar) { renderBar.end(); statusBar = false; }
@@ -1154,6 +1156,43 @@ function goToPartInst(partId: string): void {
   if (paper && (paper.id !== D.st.at.paper || D.st.at.part !== partId)) update(setFocus(D.st, paper.id, partId));
   openInstPage();
 }
+/** 渲染时的进度框（v0.16.101）：盖在歌库 / 编辑器上面，进度字跟着走，「取消」= 停掉唱、扔掉这次的结果。 */
+function renderBusy(label: string): { close(): void } {
+  const box = document.createElement("div");
+  box.className = "offer render-busy";
+  box.innerHTML = `<div class="offer-card"><div class="offer-title">${esc(label)}</div><div class="offer-msg rb-text">${_t("准备…")}</div><div class="offer-btns"><button class="btn" data-v="cancel">${_t("取消")}</button></div></div>`;
+  document.body.append(box);
+  const txt = box.querySelector<HTMLElement>(".rb-text")!;
+  renderBusyText = (s) => { txt.textContent = s; };
+  box.querySelector('[data-v="cancel"]')!.addEventListener("click", () => { txt.textContent = _t("正在取消…"); perfApi.cancelRender(); });
+  return { close: () => { renderBusyText = null; box.remove(); } };
+}
+/** 渲一遍、记在这台设备上（三条杠「渲一遍」；user 11-11「目录里面应该有导出之外的另外一个语义」）：不弹文件、不下载。 */
+async function renderHere(): Promise<void> {
+  const busy = renderBusy(_t("正在渲染…"));
+  try {
+    const r = await perfApi.renderKeep({ quality: mp3Quality });
+    info(r.cached ? _t("这台设备上已经记着这一遍（内容没变）") : !r.kept ? _t("渲好了，但没记进这台设备（存储满了或者是隐私模式）") : D.dirty() ? _t("渲好了，记在这台设备上：存下去之后歌库封面上能听") : _t("渲好了，记在这台设备上：歌库里这首的封面上能直接听"));
+  } catch (e) { if ((e as { cancelled?: boolean }).cancelled) info(_t("渲染取消了")); else showError(_t("渲不了：{Error}", { Error: (e as Error).message })); }
+  finally { busy.close(); }
+}
+/** 歌库卡片上点「渲染」（v0.16.101；user 11-09「在歌库里不打开歌直接渲」→ 11-11「我之前request的是在歌库里面渲染」「做」）：
+ *  在后台把这首打开（歌库那一屏一直盖着，人还在歌库里；手里那首有没存的改动照常先问 / 先存）→ 渲一遍记在设备上 → 挂到这张卡上。
+ *  这是简版：经过编辑器、一次一首；不经过编辑器、能排队的那种归「无头骑士」那一轮。 */
+async function renderInLibrary(id: string): Promise<boolean> {
+  const here = H.home.kind === "gallery" && H.home.identifier === id;
+  if (!here && !(await openStoreDoc(id))) return false;
+  const busy = renderBusy(_t("正在渲染「{stem}」…", { stem: stemOfId(id) }));
+  try {
+    const r = await perfApi.renderKeep({ quality: mp3Quality });
+    if (!r.kept) { showError(_t("渲好了，但没记进这台设备（存储满了或者是隐私模式）")); return false; }
+    return true;
+  } catch (e) {
+    if ((e as { cancelled?: boolean }).cancelled) info(_t("渲染取消了")); else showError(_t("渲不了：{Error}", { Error: (e as Error).message }));
+    return false;
+  } finally { busy.close(); }
+}
+let mp3Keep = deviceKvGet("mp3-keep") !== "off";   // 导出时也记在这台设备上（设备设置；user 11-11「导出时明说，给开关 同意」）
 function openMp3Panel(): void {
   ui.close();
   const box = document.createElement("div");
@@ -1165,6 +1204,7 @@ function openMp3Panel(): void {
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("导出歌声（mp3）")}</div>` +
       `<div class="part-sec">${_t("音质")}</div><div class="set-row">${(Object.keys(MP3_QUALITY) as Mp3Quality[]).map((q) => chip(`q:${q}`, MP3_QUALITY[q].label, MP3_QUALITY[q].note, mp3Quality === q)).join("")}</div>` +
       (D.st.song.papers.length > 1 ? `<div class="part-sec">${_t("范围")}</div><div class="set-row">${chip("s:all", _t("整首"), _t("隐藏的纸不放"), mp3Scope === "all")}${chip("s:segment", _t("这一张纸"), paper?.name || _t("第 {p} 张", { p: k + 1 }), mp3Scope === "segment")}</div>` : "") +
+      (mp3Scope === "all" ? `<div class="part-sec">${_t("记在这台设备上")}</div><div class="set-row">${chip("k:on", _t("记着"), _t("歌库里这首的封面上能直接听；设置里能删"), mp3Keep)}${chip("k:off", _t("不记"), _t("只导出这一份，不留"), !mp3Keep)}</div>` : "") +
       (mp3Scope === "all" && renderHit(mp3Quality) ? `<div class="offer-msg">${_t("这台设备上记着上次渲好的这一份，内容没变：直接拿，不用等。")}</div>` : "") +
       (er ? `<div class="offer-msg">${_t("许可：{fellBack}。和署名一起写进 mp3 的标签。", { fellBack: er.fellBack ? _t("这份按「未声明」写——你选的许可允许别人改编，和小月相的条款可能冲突（作者栏里的选择没动）") : esc(er.rights!) })}</div>` : "") +
       ((is) => (is.length ? `<div class="offer-msg issue-warn">${_t("{n} 条轨不出声，mp3 里不会有它们：{is}。换人在谱前面的声部名里。", { n: is.length, is: esc(perfApi.issuesText(is)) })}</div>` : ""))(perfApi.issues()) +   // §2.2½ 出口 ④：护栏在面板里，不拦（user「不警察用户」）
@@ -1179,7 +1219,8 @@ function openMp3Panel(): void {
     if (e.target === box || v === "close") { close(); return; }
     if (v?.startsWith("q:")) { mp3Quality = v.slice(2) as Mp3Quality; draw(); }
     else if (v?.startsWith("s:")) { mp3Scope = v.slice(2) as "all" | "segment"; draw(); }
-    else if (v === "go") { close(); void exportSong({ quality: mp3Quality, scope: mp3Scope }); }
+    else if (v?.startsWith("k:")) { mp3Keep = v === "k:on"; deviceKvSet("mp3-keep", mp3Keep ? null : "off"); draw(); }
+    else if (v === "go") { close(); void exportSong({ quality: mp3Quality, scope: mp3Scope, keep: mp3Keep }); }
   });
 }
 
@@ -1269,6 +1310,7 @@ function openSettings(): void {
           : `<label class="btn"><svg class="ico"><use href="#import"/></svg>${_t("从本机文件导入")}<input id="impIn" type="file" multiple hidden /></label>`,
         _t("选模型包的分片文件（chunk-000 …，名字不重要），或整个包拼成的一个文件"), `<pre id="packSt" class="set-packs">…</pre>`) +
       item(_t("音源库缓存"), "", _t("留在设备上，没网也能用；歌自己带声音，这里只是货架"), `<div id="sndCache" class="set-packs">…</div>`) +
+      item(_t("这台设备记着的歌声"), look("rc:clear", _t("全清")), _t("导出或「渲一遍」时记下的整首歌声，歌库封面上的 ▶ 靠它；只在这台设备上、不同步，最多 {n} 首，满了丢最久没听的；删了只是要重渲", { n: RENDER_KEEP }), `<div id="rcList" class="set-packs">…</div>`) +
       item(_t("小月相的念缓存"), look("sp:clear", _t("清空念缓存")), _t("设备上的全局池：念过的句子跨歌共用，重开 app 也在；可再生，清了只是要重念"), `<div id="spCache" class="set-packs">…</div>`) +
       // 「重启声音」（v0.16.32；user 11-08「也给用户一个手动按的按钮吧，就是在设置里面…如果觉得按键有延迟的话，你按一下」）= src/singer/audio.ts ⑤ 换出声口
       item(_t("重启声音"), look("audio:revive", _t("重启声音")), _t("声音不对劲的时候按一下（按键有延迟、没有声音）：把通向扬声器的那一段换成新的，排着没播完的声音一起丢掉。正在响的声音会断一下")) +
@@ -1327,6 +1369,16 @@ function openSettings(): void {
       cached.filter((c) => !known.has(c.sha256)).map((c) => { const u = uses.get(c.sha256); return `<div class="set-row"><span>${u ? _t("「{p}」的声音（这首歌{packed}）", { p: esc(u.names.join("、")), packed: u.packed ? _t("也打包着") : _t("引用着；删了要从「{name}」找", { name: esc(u.origin.name) }) }) : _t("别的歌 / 别的版本 / 别的 app 留的（{p}…）", { p: c.sha256.slice(0, 8) })} · ${sizeText(c.bytes)}</span><button class="btn" data-v="snd:delsha:${c.sha256}">${_t("删掉")}</button></div>`; }).join("") || _t("（没有）");
   };
   void refreshSounds();
+  // 这台设备记着的歌声（v0.16.101）：每条 = 歌名 · 多长 · 多大 · 哪天渲的 · 挂在歌库哪首上；一条一条删 / 全清
+  const rcList = box.querySelector<HTMLElement>("#rcList")!;
+  let rcKeys: string[] = [];
+  const refreshRc = async (): Promise<void> => {
+    await renders.ready();
+    const all = renders.list(), st = renders.stats(); rcKeys = all.map((x) => x.meta.key);
+    rcList.innerHTML = !all.length ? `<div class="set-row"><span class="set-note">${_t("还没有记着的")}</span></div>`
+      : `<div class="set-row"><span>${_t("{n} 首 · {size}", { n: st.count, size: sizeText(st.bytes) })}</span></div>` + all.map((x, i) => `<div class="set-row"><span>${esc(_t("{title} · {secs} 秒 · {size} · {date}", { title: x.meta.title, secs: x.meta.secs.toFixed(0), size: sizeText(x.meta.size), date: new Date(x.meta.at).toLocaleDateString() }))}${x.links.length ? `<small class="set-note"> ${esc(_t("歌库里：{names}", { names: x.links.map((l) => stemOfId(l.identifier)).join("、") }))}</small>` : ""}</span><button class="btn" data-v="rc:del:${i}">${_t("删")}</button></div>`).join("");
+  };
+  void refreshRc();
   midiRowSync = (s) => { const el = box.querySelector<HTMLElement>("#midiSt"); if (el) el.innerHTML = midiStatusHtml(s); if (s.k !== "off" && s.k !== "denied") box.querySelector('[data-v="midi:connect"]')?.remove(); };
   const close = () => { clearInterval(resTimer); midiRowSync = null; models.source = srcIn.value; sources.source = sndIn.value; box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
@@ -1358,6 +1410,8 @@ function openSettings(): void {
       attached: () => hasStore(), dirtyCount: () => requireStore().files.dirty.count(), openUnsaved: () => dirty(),
       prepare: async () => { H.release(); singer.restart(); if (hasStore()) await detachStore(); },   // 放下身份（es 不再写）、关掉举着念缓存库的 worker、dispose store；不 drain、不造逃生副本（说明 sheet 已经说清）
       clearShell: () => shell.clearOwnShell(), info, report: (e, level) => reportError(e, level) }); }
+    else if (v === "rc:clear") void renders.clear().then(() => { void refreshRc(); info(_t("全清了（要听再渲）")); });
+    else if (v?.startsWith("rc:del:")) { const k = rcKeys[Number(v.slice(7))]; if (k) void renders.remove(k).then(() => { void refreshRc(); info(_t("删了这一遍（要听再渲）")); }); }
     else if (v === "sp:clear") void singer.cache("clear", BUDGET.speechDisk).then(() => { refreshSpeech(); info(_t("念缓存清空了（念过的句子要重念）")); });
     else if (v === "eng:restart") { singer.restart(); diagNote("resource", "manual restart of singer lanes"); refreshRes(); info(_t("小月相引擎重开了，内存还回去了（念过的句子存在这台设备上，不用重念）")); }
   });
@@ -2993,6 +3047,7 @@ function openMainMenu(): void {
     `<div class="ctx-head"><b>${esc(H.fileName())}</b><span>${esc(fileWhere())}</span></div>` +
     item("new", "new", _t("新建")) + item("open", "folder-open", _t("打开本机文件…"), _t("打开 .mxl / .musicxml（拖进来也行；Ctrl / ⌘+O）")) +
     item("export", "export", _t("导出…"), _t("mp3、.mxl 副本（打包音源）…（Ctrl / ⌘+Shift+S）")) +
+    (inStore ? item("renderHere", "play", _t("渲一遍（歌库里能听）"), _t("渲好记在这台设备上，歌库里这首的封面上能直接听；不导出文件")) : "") +
     (hasStore() && !inStore && !H.pending() ? item("intoLib", "import", _t("存进歌库"), cloudAvailable() ? _t("把这首歌放进歌库（这台设备上留一份；登录后同步到 OneDrive）") : _t("把这首歌放进歌库（只在这个浏览器里留一份；网盘在官网版）")) : "") +
     `<div class="ctx-sep"></div>` +
     (H.home.kind === "file" ? "" : item("rename", "rename", _t("改文件名…"), _t("只改文件名，纸上的歌名不变（点顶栏的文件名也一样）"))) +
@@ -3013,7 +3068,7 @@ function openMainMenu(): void {
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
     close();
-    if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "export") openExportHub();
+    if (v === "new") void fileNew(); else if (v === "open") void fileOpen(); else if (v === "export") openExportHub(); else if (v === "renderHere") void renderHere();
     else if (v === "intoLib") void saveIntoGallery(); else if (v === "rename") void renameActive();
     else if (v === "cover") openCoverSheet(); else if (v === "sounds") openSoundsSheet(); else if (v === "settings") openSettings(); else if (v === "ref") refHost.toggle();
     else if (v === "lockEdit") void lockEditNow();
@@ -3323,6 +3378,7 @@ function ensureGallery(): GalleryHost {
   gallery = initGalleryHost({
     activeIdentifier: () => H.identifier(),
     openAny: (id) => openStoreDoc(id),
+    renderInLibrary: (id) => renderInLibrary(id),
     // 打开中的那首被歌库挪了夹：字节已在新身份下 → 先放下旧身份（不然 es.open 的「切歌前先存旧的」会把旧名字写回去复活），再按新身份重开
     setIdentifier: (id) => { H.release(); void openStoreDoc(id); },
     renameActive,

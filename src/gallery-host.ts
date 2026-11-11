@@ -50,6 +50,8 @@ export interface GalleryHostDeps {
   openHomeMenu: () => void;
   /** 这台设备上记着的渲好的声音（src/app/render-cache.ts）：封面上的 ▶ 认它的挂名，点了从它那里取字节。 */
   renders: Pick<RenderCache, "linkOf" | "take" | "onChange">;
+  /** 卡片上点「渲染」（v0.16.101）：编辑器在后台打开这首、渲一遍记在设备上（歌库一屏一直盖着）。返回 true = 记下了、挂到这首上了。 */
+  renderInLibrary: (identifier: string) => Promise<boolean>;
   onOpened?: () => void;
   onClosed?: () => void;
 }
@@ -144,6 +146,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       tilePlaceholderHtml: (id) => placeholderHtml(identifiers.parse(id)?.stem ?? id),
       tileOverlayHtml: (id: string, item?: TileInfo, facts?: unknown) => coverHtml(identifiers.parse(id)?.stem ?? id, {
         sizeText: item?.size != null ? humanSize(item.size) : undefined,
+        ...((src) => (src?.k === "device" && src.stale ? { tag: _t("旧"), tagTitle: _t("这台设备上记着的那一遍是改之前渲的（之后改过）") } : {}))((void renderTick.value, soundOf(id, factsOf(facts)))),
         editedText: item?.lastModified ? _t("改于 {lastModified}", { lastModified: new Date(item.lastModified).toLocaleString() }) : undefined,
       }),
       // 有声音可听的歌：右下角 ▶，在放的那首 = ⏸（user 2026-10-16「播放中时play按钮没有变」）；事实没到 = 不画；这台设备没记着、文件里也没带 = 不画。
@@ -151,9 +154,10 @@ export function initGalleryHost(d: GalleryHostDeps) {
       //   靠的是包「在响应式里调 tileAction」这一点（d.ts：事实到了会重算）；包要是改了，E2E render-cache.mjs「卡片 ▶ 跟着变」会红。
       tileAction: (id: string, _info: TileInfo, facts: unknown): TileAction | null => {
         void playTick.value; void renderTick.value;
-        const src = soundOf(id, factsOf(facts)); if (!src) return null;
+        const src = soundOf(id, factsOf(facts));
+        if (!src) return { icon: "play", title: _t("这台设备上还没渲过：点 = 在这里渲一遍（之后封面上能直接听）"), state: "unknown" };   // 不能用 "none"：图库库约定 none = 不画这颗钮（gallery-screen.js）   // v0.16.101：卡片说实话（user 11-11「歌库卡片说实话 对，可以渲染」）
         return player.playing() === id ? { icon: "pause", title: _t("暂停（底边播放条上也能控）"), state: "ready" }
-          : { icon: "play", title: src.k === "device" ? _t("听这台设备上记着的那一遍（{p} 秒）", { p: src.secs.toFixed(0) }) : _t("听歌里带着的那份 mp3（{p} 秒）", { p: src.secs.toFixed(0) }), state: "ready" };
+          : { icon: "play", title: src.k === "device" ? (src.stale ? _t("听上次渲的那一遍（之后改过，{p} 秒）", { p: src.secs.toFixed(0) }) : _t("听这台设备上记着的那一遍（{p} 秒）", { p: src.secs.toFixed(0) })) : _t("听歌里带着的那份 mp3（{p} 秒）", { p: src.secs.toFixed(0) }), state: "ready" };
       },
     },
     policy: {
@@ -181,9 +185,9 @@ export function initGalleryHost(d: GalleryHostDeps) {
     return { stamp: stampOf(text), final };
   }
   /** 这张卡现在有什么声音可听：这台设备上记着的那一遍（挂名的戳 = 这个文件此刻的戳）优先；否则文件里还带着的那份（老文件）；都没有 = null。 */
-  function soundOf(id: string, f: SongFacts): { k: "device"; key: string; secs: number } | { k: "embedded"; secs: number } | null {
+  function soundOf(id: string, f: SongFacts): { k: "device"; key: string; secs: number; stale: boolean } | { k: "embedded"; secs: number } | null {
     const link = d.renders.linkOf(storeKey(), id);
-    if (link && f?.stamp && link.stamp === f.stamp) return { k: "device", key: link.key, secs: link.meta.secs };
+    if (link && f?.stamp) return { k: "device", key: link.key, secs: link.meta.secs, stale: link.stamp !== f.stamp };   // 戳对不上 = 文件之后改过（v0.16.101：标「旧」、照样能听；之前是当没有）
     return f?.final ? { k: "embedded", secs: f.final.secs } : null;
   }
   // ── 迷你播放条（歌库底边）：|▶ 从头放、▶ / ⏸、歌名、时间、循环、✕。出声 = src/app/song-player.ts（<audio> + 系统媒体控件：主屏 PWA 锁屏照放，锁屏 / 控制中心 / 耳机键能控）──
@@ -194,18 +198,20 @@ export function initGalleryHost(d: GalleryHostDeps) {
     `<button type="button" class="btn ms-player-toggle" data-p="toggle" title="${_t("放 / 暂停")}">${iconHtml("pause")}</button>` +
     `<span class="ms-player-title"></span><span class="ms-player-time">0:00 / 0:00</span>` +
     `<button type="button" class="btn ms-player-loop" data-p="loop" aria-pressed="false">${_t("循环")}</button>` +
+    `<button type="button" class="btn ms-player-rerender" data-p="rerender" hidden title="${_t("按现在的样子重新渲一遍")}">${_t("重新渲染")}</button>` +
     `<button type="button" class="btn" data-p="share" title="${_t("分享 / 下载这首的 mp3")}">${iconHtml("export")}</button>` +   // 设计稿第三节「歌库卡片上的 ▶ 和『分享 mp3』」（v0.16.99）
     `<button type="button" class="btn" data-p="close" title="${_t("停")}">${iconHtml("x")}</button>`;
   fullEl.append(playerEl);
   const appIcon = (file: string, sizes: string) => ({ src: new URL(file, document.baseURI).href, sizes, type: "image/png" });
   const player = createSongPlayer({ fallbackArtwork: [appIcon("icon-512.png", "512x512"), appIcon("icon-192.png", "192x192")], onError: (msg) => status(msg, true) });
-  let barTitle = "", barBlob: Blob | null = null;   // 正在放的那份 mp3（分享 / 下载用）
+  let barTitle = "", barBlob: Blob | null = null, barStale = false;   // 正在放的那份 mp3（分享 / 下载用）
   const fmtTime = (s: number) => (Number.isFinite(s) ? `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}` : "0:00");
   function drawPlayer(): void {
     const s = player.state();
     playerEl.hidden = s.key == null;
     if (s.key == null) return;
-    playerEl.querySelector<HTMLElement>(".ms-player-title")!.textContent = barTitle;
+    playerEl.querySelector<HTMLElement>(".ms-player-title")!.textContent = barStale ? _t("{stem} · 旧（之后改过）", { stem: barTitle }) : barTitle;
+    playerEl.querySelector<HTMLElement>(".ms-player-rerender")!.hidden = !barStale;
     playerEl.querySelector<HTMLElement>(".ms-player-time")!.textContent = `${fmtTime(s.time)} / ${fmtTime(s.duration)}`;
     playerEl.querySelector<HTMLElement>(".ms-player-toggle")!.innerHTML = iconHtml(s.paused ? "play" : "pause");
     const loopBtn = playerEl.querySelector<HTMLElement>(".ms-player-loop")!;
@@ -222,7 +228,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
   async function playTile(id: string, facts: SongFacts): Promise<void> {
     if (player.state().key === id) { player.toggle(); return; }
     const src = soundOf(id, facts);
-    if (!src) { status(NO_SOUND()); return; }
+    if (!src) { await renderThenPlay(id, facts); return; }
     player.arm();   // 还在点击里：先拿 iPad 放的许可（下面要等取字节，等完就不算点击了）
     const stem = identifiers.parse(id)?.stem ?? id;
     try {
@@ -239,7 +245,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       });
       if (!got) { status(NO_SOUND()); return; }
       const cover = (await gallery?.thumbs?.read(id).catch(() => null))?.blob ?? null;   // 锁屏上的图 = 歌库缓存着的封面（没有 = app 图标）
-      barTitle = stem; barBlob = got.blob;
+      barTitle = stem; barBlob = got.blob; barStale = src.k === "device" && src.stale;
       const r = await player.play({ key: id, blob: got.blob, title: stem, artist: "MoonSinger", album: got.album, cover });
       if (r === "blocked") status(_t("没能自己开始放：点底边播放条上的 ▶"));
       diagNote("gallery", `play ${src.k} ${id} (${got.blob.size} B) → ${r}`);
@@ -249,7 +255,16 @@ export function initGalleryHost(d: GalleryHostDeps) {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-p]")?.dataset.p; if (!v) return;
     if (v === "toggle") player.toggle(); else if (v === "restart") player.restart(); else if (v === "loop") player.setLoop(!player.state().loop); else if (v === "close") player.stop();
     else if (v === "share") void shareMp3();
+    else if (v === "rerender") { const id = player.state().key; if (id) { player.stop(); void renderThenPlay(id, null); } }
   });
+  /** 歌库里渲（v0.16.101）：交给编辑器在后台打开、渲、记下、挂名；记下了就接着放（点击里先拿放的许可，渲完一般还能自己开始放）。 */
+  async function renderThenPlay(id: string, facts: SongFacts): Promise<void> {
+    player.arm();
+    if (!(await d.renderInLibrary(id))) return;
+    await gallery?.facts?.invalidate(id);
+    const f = factsOf(await peekManifest(id).then((m) => (m ? { stamp: m.stamp } : facts)).catch(() => facts));
+    if (soundOf(id, f)) await playTile(id, f); else status(NO_SOUND());
+  }
   /** 分享 / 下载正在放的那份 mp3：能系统分享（iPad / 手机）= 分享，不能（电脑浏览器）= 直接下载；文件名同导出「歌名-年月日-时分.mp3」。字节 = 设备上记着的那一遍（导出时已带标签和署名）。 */
   async function shareMp3(): Promise<void> {
     if (!barBlob) return;

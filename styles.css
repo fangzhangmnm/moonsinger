@@ -853,7 +853,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .track-card { position: fixed; z-index: var(--z-sheet); width: min(300px, calc(100vw - 16px)); background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 28px rgba(0, 0, 0, .16); padding: 8px; }
 .tc-inst { display: flex; align-items: center; gap: 8px; width: 100%; border: 1px solid #b8cde8; background: var(--accent-soft); border-radius: 9px; padding: 8px 10px; font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
 .tc-inst .tc-l { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.tc-inst b { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tc-inst b { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* v0.16.101：原来 15 号加粗，比卡里别的字大一圈（user「粗粗大大的不好看，和其他的不协调」） */
 .tc-inst small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tc-inst .tc-go { flex: none; font-size: 13px; font-weight: 600; color: var(--accent); }
 .tc-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: center; padding: 10px 4px 8px; }
@@ -1214,3 +1214,6 @@ body.doc-locked .parts-mgr .pm-card :is(button, input, select):not([data-v^="mor
 @keyframes plug-nudge { 0%, 100% { transform: none; } 25% { transform: translateX(-3px) rotate(-6deg); } 75% { transform: translateX(3px) rotate(6deg); } }
 .pad-tools .btn.impro-pad.nudge { animation: plug-nudge .22s linear 2; }
 @media (prefers-reduced-motion: reduce) { .pad-tools .btn.impro-pad.nudge { animation: none; outline: 2px solid currentColor; } }
+
+/* 歌库封面上「旧」（v0.16.101）：这台设备记着的声音是改之前渲的；和日期同一行、小一号 */
+.ms-cover-tag { margin-left: .4em; padding: 0 .35em; border-radius: 4px; background: rgba(0, 0, 0, .28); color: #fff; font-size: .82em; }

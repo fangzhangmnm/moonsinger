@@ -199,10 +199,15 @@ export function createPerformance(host: PerfHost) {
     }
   }
   /** 全部块到齐（导出 / 测试钩子用）：盯着**这条时间线自己的全部键**，不盯 chunkKeysWanted——那个会被预唱定时器 / 改谱刷新换成别的子集，原来一被插队就提前返回、导出报「chunk … missing for export」（2026-10-10 真引擎 probe 抓到）。 */
+  /** 渲染中途取消（v0.16.101：歌库里「渲染」的进度上有「取消」）：唱的那一步按这个旗退出，排着的 / 正在唱的一起取消；结果扔掉、不报错。 */
+  let renderAbort = false;
+  const cancelledErr = (): Error => Object.assign(new Error("cancelled"), { cancelled: true });
+  function cancelRender(): void { renderAbort = true; singer.cancelPending(); singer.cancelInflight(); }
   async function awaitAllChunks(tl: Timeline): Promise<void> {
     const want = [...new Set(tl.chunks.map((c) => c.key))];
     setChunkOrder(tl, tl.range.from, null);
     for (;;) {
+      if (renderAbort) throw cancelledErr();
       const missing = want.filter((k) => !engine.hasChunk(k));
       if (!missing.length) return;
       if (!missing.some((k) => chunkKeysWanted.includes(k) || inflightKeys.has(k))) setChunkOrder(tl, tl.range.from, null);   // 被别人换了顺序 = 把我们的重新排上
@@ -512,6 +517,7 @@ export function createPerformance(host: PerfHost) {
    *  出不了声的声部照旧进清单（§2.2½）、其余照混；一个都放不了 = 抛。 */
   async function renderMp3(o: { quality: Mp3Quality; scope: "all" | "segment" }): Promise<{ bytes: Uint8Array; secs: number; sr: number; kbps: number; stereo: boolean; roles: string[]; parts: string[] }> {
     if (engine.playing) stopPlay();
+    renderAbort = false;
     const parts = audibleParts(), song = songIn(o.scope);
     progress(_t("准备…"));
     const r = await renderSong(planOf(song, parts, false), { ...deps, sing: async (tl) => { pruneChunks(tl); await awaitAllChunks(tl); } },
@@ -519,6 +525,7 @@ export function createPerformance(host: PerfHost) {
         onPrepared: (errs, tl) => { for (const p of parts) prepErrs.delete(p.id); for (const e of errs) prepErrs.set(e.part, { cand: e.cand, kind: "sound", why: e.why }); for (const u of tl.unplayable) { const p = st().song.parts.find((x) => x.id === u.part); if (p && !prepErrs.has(u.part)) prepErrs.set(u.part, { cand: activeId(extras(), p.role), kind: "unplayable", why: u.why }); } refreshIssues(); } })
       .finally(() => { renderBar.end(); if (mixBypass) pushChannels(); });   // 效果全关（A/B）不影响导出；导完按开关重推
     const roles = st().song.parts.filter((p) => r.timeline.tracks.some((t) => t.id === p.id)).map((p) => p.role);   // 真出了声的声部（署名推演）
+    if (renderAbort) throw cancelledErr();
     progress(_t("编 mp3…"));
     const Q = MP3_QUALITY[o.quality];
     const left = Q.stereo ? r.left : toMono(r.left, r.right), right = Q.stereo ? r.right : null;   // 小文件：左右平均成单声道
@@ -534,7 +541,7 @@ export function createPerformance(host: PerfHost) {
   }
   const mp3SizeText = (n: number) => (n < 1e6 ? `${Math.round(n / 1e3)} KB` : `${(n / 1e6).toFixed(1)} MB`);
   /** 导出歌声（mp3）：整首、内容没变、这台设备上记着上次渲好的 = 直接给那一份；否则现渲 + 现贴标签，整首的顺手记在设备上（src/app/render-cache.ts）。 */
-  async function exportSong(o: { quality: Mp3Quality; scope: "all" | "segment" } = { quality: "standard", scope: "all" }): Promise<void> {
+  async function exportSong(o: { quality: Mp3Quality; scope: "all" | "segment"; keep?: boolean } = { quality: "standard", scope: "all" }): Promise<void> {
     if (exporting || preparing) return;
     exporting = true;
     try {
@@ -546,17 +553,33 @@ export function createPerformance(host: PerfHost) {
         const m = await renderMp3(o), tag = mp3Tag(m.roles).tag, tagged = new Uint8Array(tag.length + m.bytes.length);
         tagged.set(tag, 0); tagged.set(m.bytes, tag.length);
         r = { tagged, secs: m.secs, kbps: m.kbps, stereo: m.stereo, roles: m.roles, cached: false };
-        if (whole) kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo }, tagged).catch(() => false) ?? false;   // 记不进去 = 宿主报进黑匣子，照常把声音给人
+        if (whole && o.keep !== false) kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo }, tagged).catch(() => false) ?? false;   // 记不进去 = 宿主报进黑匣子，照常把声音给人
       }
       const { lines, fellBack } = mp3Tag(r.roles);
       // 文件名 = 名[-曲段]-YYYYMMDD-HHMM（v0.9.47；user「看一下wxhw还是weebpaint，导出的时候文件名应该还有导出的时间，也许还有防撞」= WeebPaint naming.ts「下载版本 = 名-YYYYMMDD-HHMM」；
       //   同一分钟再导 = 浏览器 / 系统自己补 (1)——WeebPaint 的规矩：撞名后缀只在能查占用的去处（云端）做，本地下载 / 分享查不了，交给系统）
       const file = new File([r.tagged as unknown as BlobPart], `${stampedCopy(`${docName()}${o.scope === "segment" ? `-${fileSafe(st().song.papers.find((p) => p.id === st().at.paper)?.name || _t("这一张"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
       const Q = r.stereo ? _t("立体声") : _t("单声道");
-      offerFile(file, _t("歌声导出好了"), _t("{p} 秒 · mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r.secs.toFixed(1), Q, kbps: r.kbps, size: mp3SizeText(file.size), fromFinal: r.cached ? _t("（用的是这台设备上记着的上次渲好的那份，内容没变）") : kept ? _t("（记在这台设备上了：内容不变的话下次不用再渲）") : "", fellBack: (fellBack ? `<div class="offer-msg">${_t("许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。")}</div>` : ""), length: (!r.cached && issues.length ? `<div class="offer-msg issue-warn">${_t("这几条轨没出声，mp3 里没有它们：")}${escHtml(issuesText(issues))}</div>` : ""), lines: creditsBlock(lines, _t("署名 · 已写进 mp3 的标签")) }));
+      offerFile(file, _t("歌声导出好了"), _t("{p} 秒 · mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}", { p: r.secs.toFixed(1), Q, kbps: r.kbps, size: mp3SizeText(file.size), fromFinal: r.cached ? _t("（用的是这台设备上记着的上次渲好的那份，内容没变）") : kept ? `<div class="offer-msg">${_t("也记在这台设备上了：歌库里这首的封面上能直接听，内容不变再导出不用再渲。设置「音源与缓存」里看得见、删得掉。")}</div>` : "", fellBack: (fellBack ? `<div class="offer-msg">${_t("许可这一份按「未声明」写了（你选的许可和小月相的条款可能冲突；作者栏里的选择没动）。")}</div>` : ""), length: (!r.cached && issues.length ? `<div class="offer-msg issue-warn">${_t("这几条轨没出声，mp3 里没有它们：")}${escHtml(issuesText(issues))}</div>` : ""), lines: creditsBlock(lines, _t("署名 · 已写进 mp3 的标签")) }));
     } catch (e) {
       progress(""); showError(_t("导出失败：{Error}", { Error: (e as Error).message }));
     } finally { exporting = false; }
+  }
+  /** 渲一遍、记在这台设备上，不给文件（v0.16.101；user 11-11「目录里面应该有导出之外的另外一个语义」「我之前request的是在歌库里面渲染」）：
+   *  整首、内容没变且这一版核心渲过 = 直接算有；否则现渲 + 贴标签（和导出给出去的是同一份字节）+ 记下。取消 = 抛 { cancelled }。 */
+  async function renderKeep(o: { quality: Mp3Quality }): Promise<{ cached: boolean; kept: boolean; secs: number }> {
+    if (exporting || preparing) throw new Error(_t("正在导出或准备播放，等它完了再渲"));
+    exporting = true;
+    try {
+      const parts = audibleParts().map((p) => p.id), title = st().song.title || docName();
+      const hit = await host.renders?.take({ quality: o.quality, parts, title }).catch(() => null) ?? null;
+      if (hit) return { cached: true, kept: true, secs: hit.secs };
+      const m = await renderMp3({ quality: o.quality, scope: "all" }), tag = mp3Tag(m.roles).tag, tagged = new Uint8Array(tag.length + m.bytes.length);
+      tagged.set(tag, 0); tagged.set(m.bytes, tag.length);
+      const kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo }, tagged).catch(() => false) ?? false;
+      return { cached: false, kept, secs: m.secs };
+    } catch (e) { progress(""); throw e; }
+    finally { exporting = false; renderAbort = false; }
   }
   /** 放着的时候换曲段（‹ › / 挂签下拉 / 每张纸自己的曲段控件；只认这几处明说的「换段」，点谱上别的纸里的音不算）= 从那一段的开头放
    *  （v0.10.17；user「播放的时候强切不同的曲段应该能跳到那个曲段去播放」「播放中跳曲段的时候播放头应该从开始播放」）。
@@ -580,7 +603,7 @@ export function createPerformance(host: PerfHost) {
   function onSongSwitch(): void { engine.forget(chunkKeys.splice(0)); chunkFailed.clear(); chunkKeysWanted = []; chunkPlans = new Map(); singer.cancelPending(); singer.cancelInflight(); trimLanesForNewSong(); }
 
   return {
-    humOpt, resetLatencyLog, playSong, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, prepare, renderMixForTest, playRange, tickOfCaret, barHeadTick, startPlayback, playPause, resumePlay, pausePlay, replay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, renderMp3, mp3Tag, resourceSnapshot, trimLanesForNewSong, onSongSwitch, jumpPlaybackToPaper, previewTrack,
+    humOpt, resetLatencyLog, playSong, renderKeep, cancelRender, curFlat, songIn, audibleParts, micOf, channelOf, pushChannels, lowestMidiOf, songBpm, performerInfo, prepare, renderMixForTest, playRange, tickOfCaret, barHeadTick, startPlayback, playPause, resumePlay, pausePlay, replay, playFromHere, playFromHead, playSeam, stopPlay, setLoop, schedulePlaybackRefresh, schedulePrewarm, prepareBank, exportRights, exportSong, renderMp3, mp3Tag, resourceSnapshot, trimLanesForNewSong, onSongSwitch, jumpPlaybackToPaper, previewTrack,
     budget: BUDGET, TURN_LEADS,
     issues: (): readonly Issue[] => issues, issueOf: (part: string): Issue | null => issues.find((i) => i.part === part) ?? null, issuesText, refreshIssues,
     get loopOn() { return loopOn; }, get playTl() { return playTl; }, get preparing() { return preparing; }, get paused() { return paused; }, get startMark() { return startMark; }, get exporting() { return exporting; },
