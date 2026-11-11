@@ -2796,6 +2796,698 @@ function timeline(tokens, tempoMap) {
   return out;
 }
 
+// src/score/arrange.ts
+var REP = /^(?:[×xX*])(\d+)/;
+function parseArrangement(text, papers, l = lang()) {
+  const src = (text ?? "").trim();
+  if (!src) return { order: papers.filter((p) => !p.hidden).map((p) => p.id), loop: null, issues: [], explicit: false };
+  const issues = [];
+  let i = 0;
+  const ws = () => {
+    while (i < src.length && /[\s、,，→]/.test(src[i])) i++;
+  };
+  const findPaper = (name) => {
+    const byName = papers.find((p) => p.name.trim() === name);
+    if (byName) return byName.id;
+    if (/^\d+$/.test(name)) {
+      const k = Number(name);
+      if (k >= 1 && k <= papers.length) return papers[k - 1].id;
+    }
+    return null;
+  };
+  const rep = () => {
+    const save = i;
+    while (src[i] === " ") i++;
+    const m = REP.exec(src.slice(i));
+    if (!m) {
+      i = save;
+      return null;
+    }
+    i += m[0].length;
+    return Number(m[1]);
+  };
+  const seq = (close) => {
+    const out = [];
+    for (; ; ) {
+      ws();
+      if (i >= src.length) {
+        if (close) issues.push({ at: src.length, len: 0, why: _tIn(l, "\u5C11\u4E86\u300C{close}\u300D", { close }) });
+        return out;
+      }
+      const c = src[i];
+      if (close && c === close) {
+        i++;
+        return out;
+      }
+      if (c === ")" || c === "]") {
+        issues.push({ at: i, len: 1, why: _tIn(l, "\u591A\u4E86\u300C{c}\u300D", { c }) });
+        i++;
+        continue;
+      }
+      if (c === "[") return out;
+      let node;
+      const at = i;
+      if (c === "(") {
+        i++;
+        node = { kind: "rep", body: seq(")"), n: 1 };
+      } else {
+        let name = "";
+        while (i < src.length && !/[\s、,，→()[\]×*]/.test(src[i]) && !(/[xX]/.test(src[i]) && /\d/.test(src[i + 1] ?? "") && name)) name += src[i++];
+        if (!name) {
+          issues.push({ at: i, len: 1, why: _tIn(l, "\u770B\u4E0D\u61C2\u300C{p}\u300D", { p: src[i] }) });
+          i++;
+          continue;
+        }
+        const paper = findPaper(name);
+        if (!paper) {
+          issues.push({ at, len: name.length, why: _tIn(l, "\u6CA1\u6709\u53EB\u300C{name}\u300D\u7684\u7EB8\uFF08\u5199\u66F2\u6BB5\u540D\uFF0C\u6216\u8005\u7B2C\u51E0\u5F20\u7EB8\u7684\u5E8F\u53F7\uFF09", { name }) });
+          node = { kind: "rep", body: [], n: 1 };
+        } else node = { kind: "ref", paper, text: name, at };
+      }
+      const n2 = rep();
+      if (n2 !== null) {
+        if (n2 < 1 || n2 > 99) issues.push({ at, len: i - at, why: _tIn(l, "\u91CD\u590D\u6B21\u6570\u8981\u5728 1 \u5230 99 \u4E4B\u95F4") });
+        if (n2 >= 1) node = { kind: "rep", body: [node], n: Math.min(99, n2) };
+      }
+      out.push(node);
+    }
+  };
+  const main = seq(null);
+  let loopNodes = null;
+  ws();
+  if (i < src.length && src[i] === "[") {
+    const at = i;
+    i++;
+    loopNodes = seq("]");
+    if (!loopNodes.length) issues.push({ at, len: i - at, why: _tIn(l, "\u5FAA\u73AF\u6BB5\u662F\u7A7A\u7684") });
+    ws();
+    if (i < src.length) {
+      issues.push({ at: i, len: src.length - i, why: _tIn(l, "\u5FAA\u73AF\u6BB5\u53EA\u80FD\u653E\u5728\u6700\u540E\uFF1A\u540E\u9762\u7684\u6C38\u8FDC\u653E\u4E0D\u5230") });
+    }
+  }
+  const expand = (ns) => ns.flatMap((n2) => n2.kind === "ref" ? [n2.paper] : Array.from({ length: n2.n }, () => expand(n2.body)).flat());
+  const loop = loopNodes ? expand(loopNodes) : null;
+  return { order: expand(main), loop: loop && loop.length ? loop : null, issues, explicit: true };
+}
+
+// src/render/spacing.ts
+function indexRods(rods, n2) {
+  const into = Array.from({ length: n2 }, () => []);
+  for (const r of rods) into[r.to]?.push(r);
+  return { into };
+}
+var isZero = (c) => c.fixed !== void 0 && c.fixed <= EPS;
+var EPS = 1e-6;
+var LOOSE = [[TPQ / 8, 2.2], [TPQ / 4, 2.2], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
+var DENSE = [[TPQ / 8, 1.6], [TPQ / 4, 1.9], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
+var TIGHT = [[TPQ / 8, 1.5], [TPQ / 4, 1.7], [TPQ / 2, 2.35], [TPQ, 3], [TPQ * 2, 3.6], [TPQ * 4, 4.2]];
+var lerpLog = (pts, ticks) => {
+  if (ticks <= pts[0][0]) return pts[0][1];
+  const last = pts[pts.length - 1], prev = pts[pts.length - 2];
+  if (ticks >= last[0]) return last[1] + (last[1] - prev[1]) / Math.log2(last[0] / prev[0]) * Math.log2(ticks / last[0]);
+  for (let k = 1; k < pts.length; k++) {
+    const a = pts[k - 1], b = pts[k];
+    if (ticks <= b[0]) return a[1] + (b[1] - a[1]) * Math.log2(ticks / a[0]) / Math.log2(b[0] / a[0]);
+  }
+  return last[1];
+};
+var curveOf = (m) => {
+  const t = m === true || m === "normal" ? DENSE : m === "tight" ? TIGHT : LOOSE;
+  return (ticks) => lerpLog(t, ticks);
+};
+var SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 };
+function idealGaps(cols, endTick, o) {
+  const out = new Array(cols.length).fill(0), sounding = /* @__PURE__ */ new Map();
+  cols.forEach((c, k) => {
+    if (c.fixed !== void 0) {
+      out[k] = c.fixed;
+      return;
+    }
+    for (const it of c.items) {
+      if (it.dur !== void 0 && it.dur > EPS) sounding.set(it.row, { dur: it.dur, end: c.tick + it.dur });
+      else sounding.delete(it.row);
+    }
+    let next = endTick;
+    for (let j = k + 1; j < cols.length; j++) if (cols[j].tick > c.tick + EPS) {
+      next = cols[j].tick;
+      break;
+    }
+    const dt = next - c.tick;
+    if (dt <= EPS) return;
+    let d = Infinity;
+    for (const a of sounding.values()) if (a.end > c.tick + EPS) d = Math.min(d, a.dur);
+    out[k] = d === Infinity ? Math.min(o.curve(dt), o.emptyBar) : o.curve(d) * Math.min(1, dt / d);
+  });
+  return out;
+}
+function rodsOf(cols, o) {
+  const rods = [], last = /* @__PURE__ */ new Map();
+  let wall = null;
+  cols.forEach((c, k) => {
+    if (isZero(c)) return;
+    if (c.fixed !== void 0) {
+      for (const l of last.values()) rods.push({ from: l.col, to: k, min: l.right + o.pad });
+      if (wall && !last.size) rods.push({ from: wall.col, to: k, min: wall.right });
+      last.clear();
+      wall = { col: k, right: c.fixed };
+      return;
+    }
+    for (const it of c.items) {
+      const l = last.get(it.row);
+      if (l) rods.push({ from: l.col, to: k, min: l.right + it.left + o.pad });
+      else if (wall) rods.push({ from: wall.col, to: k, min: wall.right + it.left });
+      last.set(it.row, { col: k, right: it.right });
+    }
+  });
+  return rods;
+}
+var leftOf = (c) => c.fixed !== void 0 ? 0 : c.items.reduce((m, it) => Math.max(m, it.left), 0);
+var rightOf = (c) => c.fixed !== void 0 ? c.fixed : c.items.reduce((m, it) => Math.max(m, it.right), 0);
+function placeLine(cols, gaps, rods, from, to, s2) {
+  const n2 = to - from, xs = new Array(n2).fill(0);
+  if (n2 <= 0) return { xs, end: 0 };
+  const ix = "into" in rods ? rods : indexRods(rods, cols.length);
+  const gap = (k) => cols[k].fixed !== void 0 ? gaps[k] : gaps[k] * (1 + s2);
+  for (let k = from; k < to; k++) {
+    let x = k === from ? 0 : xs[k - 1 - from] + gap(k - 1);
+    x = Math.max(x, leftOf(cols[k]));
+    for (const r of ix.into[k] ?? []) if (r.from >= from) x = Math.max(x, xs[r.from - from] + r.min);
+    xs[k - from] = x;
+  }
+  for (let k = to - 2; k >= from; k--) if (isZero(cols[k])) xs[k - from] = xs[k + 1 - from];
+  const lastK = to - 1;
+  return { xs, end: xs[n2 - 1] + Math.max(gap(lastK), rightOf(cols[lastK])) };
+}
+function fitLine(cols, gaps, rods, from, to, width, opt) {
+  const ix = "into" in rods ? rods : indexRods(rods, cols.length), at = (s3) => placeLine(cols, gaps, ix, from, to, s3), nat = at(0);
+  const solve = (lo, hi2) => {
+    for (let i = 0; i < 48; i++) {
+      const mid = (lo + hi2) / 2;
+      if (at(mid).end > width) hi2 = mid;
+      else lo = mid;
+    }
+    return lo;
+  };
+  if (nat.end > width + EPS) {
+    const tight = at(-opt.squeeze);
+    if (tight.end > width + EPS) return { ...tight, stretch: -opt.squeeze, over: true };
+    const s3 = solve(-opt.squeeze, 0);
+    return { ...at(s3), stretch: s3, over: false };
+  }
+  if (!opt.justify) return { ...nat, stretch: 0, over: false };
+  let hi = 1;
+  while (at(hi).end < width && hi < 4096) hi *= 2;
+  if (at(hi).end < width) return { ...nat, stretch: 0, over: false };
+  const s2 = solve(0, hi);
+  return { ...at(s2), stretch: s2, over: false };
+}
+
+// src/gm/percussion.gen.ts
+var PERC = { "0:119": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 1.389, "kitKey": 57 }, "0:120": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.057 }, "0:121": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.077 }, "0:122": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:123": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:124": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:125": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:126": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:127": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:35": { "staff": 5, "line": 8, "head": "normal", "stem": "down", "hitSec": 0.037 }, "128:0:36": { "staff": 5, "line": 7, "head": "normal", "stem": "down", "hitSec": 7e-3 }, "128:0:37": { "staff": 5, "line": 3, "head": "slashed1", "stem": "up", "hitSec": 2e-3 }, "128:0:38": { "staff": 5, "line": 3, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:39": { "staff": 5, "line": -2, "head": "plus", "stem": "up", "hitSec": 0.012 }, "128:0:40": { "staff": 5, "line": 3, "head": "slash", "stem": "up", "hitSec": 7e-3 }, "128:0:41": { "staff": 5, "line": 6, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:42": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:43": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:44": { "staff": 5, "line": 9, "head": "x", "stem": "down", "hitSec": 0.012 }, "128:0:45": { "staff": 5, "line": 4, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:46": { "staff": 5, "line": -1, "head": "circle-x", "stem": "up", "hitSec": 0.022 }, "128:0:47": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:48": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:49": { "staff": 5, "line": -2, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:50": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:51": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:52": { "staff": 5, "line": -3, "head": "normal", "stem": "up", "hitSec": 0.027 }, "128:0:53": { "staff": 5, "line": 0, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:54": { "staff": 5, "line": 1, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:55": { "staff": 5, "line": -4, "head": "x", "stem": "up", "hitSec": 0.067 }, "128:0:56": { "staff": 5, "line": 1, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:57": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:58": { "staff": 5, "line": 0, "head": "ti", "stem": "up", "hitSec": 2e-3 }, "128:0:59": { "staff": 5, "line": 2, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:60": { "staff": 5, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:61": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:62": { "staff": 5, "line": 1, "head": "custom", "stem": "up", "smufl": "noteheadXOrnate", "hitSec": 0.012 }, "128:0:63": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:64": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:65": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:66": { "staff": 5, "line": 7, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:67": { "staff": 5, "line": -2, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:68": { "staff": 5, "line": -1, "head": "triangle-down", "stem": "up", "hitSec": 7e-3 }, "128:0:69": { "staff": 5, "line": 2, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:70": { "staff": 5, "line": 4, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:71": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.072 }, "128:0:72": { "staff": 5, "line": -3, "head": "ti", "stem": "up", "hitSec": 0.022 }, "128:0:73": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 0.012 }, "128:0:74": { "staff": 5, "line": -1, "head": "slashed1", "stem": "up", "hitSec": 0.222 }, "128:0:75": { "staff": 5, "line": 0, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:76": { "staff": 5, "line": 5, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:77": { "staff": 5, "line": 7, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:78": { "staff": 5, "line": 8, "head": "x", "stem": "up", "hitSec": 0.062 }, "128:0:79": { "staff": 5, "line": 8, "head": "slashed2", "stem": "up", "hitSec": 0.042 }, "128:0:80": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:81": { "staff": 5, "line": 0, "head": "triangle-up", "stem": "up", "hitSec": 0.022 }, "128:0:27": { "staff": 5, "line": 8, "head": "slash", "stem": "up", "hitSec": 0.012 }, "128:0:28": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 0.012 }, "128:0:29": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.092 }, "128:0:30": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.077 }, "128:0:31": { "staff": 5, "line": -1, "head": "plus", "stem": "up", "hitSec": 7e-3 }, "128:0:32": { "staff": 5, "line": 10, "head": "plus", "stem": "up", "hitSec": 2e-3 }, "128:0:33": { "staff": 5, "line": 10, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:34": { "staff": 5, "line": 10, "head": "triangle-up", "stem": "up", "hitSec": 2e-3 }, "128:0:82": { "staff": 5, "line": 5, "head": "diamond", "stem": "up", "hitSec": 0.027 }, "128:0:83": { "staff": 5, "line": 3, "head": "triangle-down", "stem": "up", "hitSec": 0.072 }, "128:0:84": { "staff": 5, "line": 2, "head": "ti", "stem": "up" }, "128:0:85": { "staff": 5, "line": 2, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:86": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 7e-3 }, "128:0:87": { "staff": 5, "line": 4, "head": "slash", "stem": "up", "hitSec": 0.027 }, "0:112": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 84, "from": "Q1621499" }, "0:113": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 67, "from": "Q395212" }, "0:115": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 76, "from": "Q957212" }, "0:116": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.027, "kitKey": 87, "from": "Q221769" }, "0:117": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 45, "from": "Q849349" }, "0:118": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3, "from": "Q1327480" } };
+
+// src/gm/percussion.ts
+function percOf(bank, program, note) {
+  if (bank === 128) return note === void 0 ? null : PERC[`128:0:${note}`] ?? null;
+  return (note !== void 0 ? PERC[`${bank}:${program}:${note}`] : void 0) ?? PERC[`${bank}:${program}`] ?? null;
+}
+
+// src/score/lyrics.ts
+var MELISMA_MARK = "\u30FC";
+var ELISION = "\u203F";
+var CJK_CHAR = /[぀-ヿ\p{Script=Han}]/u;
+var lyricShow = (s2) => s2.split(ELISION).reduce((a, b) => !a ? b : CJK_CHAR.test(a.slice(-1)) && CJK_CHAR.test(b.slice(0, 1)) ? a + b : `${a}${ELISION}${b}`, "");
+var SMALL = /* @__PURE__ */ new Set([..."\u3083\u3085\u3087\u3041\u3043\u3045\u3047\u3049\u308E\u3095\u3096\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9\u30EE\u30F5\u30F6", "\u3063", "\u30C3"]);
+
+// src/render/smufl.ts
+var GLYPH = {
+  metNoteQuarterUp: "\uECA5",
+  // 速度记号里的四分音符（metronome mark）
+  gClef: "\uE050",
+  fClef: "\uE062",
+  // 低音谱号（2026-10-08）
+  gClef8vb: "\uE052",
+  gClef8va: "\uE053",
+  gClef15ma: "\uE054",
+  fClef8vb: "\uE064",
+  // 八度谱号（2026-10-10 v0.9.28：吉他 / 男高音 8vb、短笛 8va、钟琴 15ma、贝斯 8vb）
+  ottavaAlta: "\uE511",
+  ottavaBassa: "\uE512",
+  quindicesimaAlta: "\uE515",
+  // 八度线开头的字：8va / 8vb / 15ma
+  noteheadWhole: "\uE0A2",
+  noteheadHalf: "\uE0A3",
+  noteheadBlack: "\uE0A4",
+  noteheadXWhole: "\uE0A7",
+  noteheadXHalf: "\uE0A8",
+  noteheadXBlack: "\uE0A9",
+  // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
+  augmentationDot: "\uE1E7",
+  flag8thUp: "\uE240",
+  flag8thDown: "\uE241",
+  flag16thUp: "\uE242",
+  flag16thDown: "\uE243",
+  flag32ndUp: "\uE244",
+  flag32ndDown: "\uE245",
+  accidentalFlat: "\uE260",
+  accidentalNatural: "\uE261",
+  accidentalSharp: "\uE262",
+  accidentalDoubleSharp: "\uE263",
+  accidentalDoubleFlat: "\uE264",
+  restWhole: "\uE4E3",
+  restHalf: "\uE4E4",
+  restQuarter: "\uE4E5",
+  rest8th: "\uE4E6",
+  rest16th: "\uE4E7",
+  rest32nd: "\uE4E8"
+};
+var timeSigDigits = (n2) => [...String(n2)].map((d) => String.fromCodePoint(57472 + Number(d))).join("");
+var PERC_CLEF = "\uE069";
+var PERC_HEAD = {
+  normal: { ch: ["\uE0A4", "\uE0A3", "\uE0A2"], w: [1.18, 1.18, 1.688] },
+  x: { ch: ["\uE0A9", "\uE0A8", "\uE0A7"], w: [1.16, 1.34, 1.51] },
+  "circle-x": { ch: ["\uE0B3", "\uE0B2", "\uE0B1"], w: [0.996, 1, 0.996] },
+  slash: { ch: ["\uE101", "\uE103", "\uE102"], w: [2.124, 3.12, 3.92] },
+  slashed1: { ch: ["\uE0CF", "\uE0D1", "\uE0D3"], w: [1.18, 1.168, 1.672] },
+  slashed2: { ch: ["\uE0D0", "\uE0D2", "\uE0D4"], w: [1.18, 1.172, 1.672] },
+  diamond: { ch: ["\uE0DB", "\uE0D9", "\uE0D8"], w: [0.98, 0.98, 1.664] },
+  "triangle-up": { ch: ["\uE0BE", "\uE0BC", "\uE0BB"], w: [1.172, 1.14, 1.276] },
+  "triangle-down": { ch: ["\uE0C7", "\uE0C5", "\uE0C4"], w: [1.168, 1.14, 1.276] },
+  plus: { ch: ["\uE0AF", "\uE0AE", "\uE0AD"], w: [0.996, 1.044, 1.14] },
+  la: { ch: ["\uE0B9", "\uE0B8", "\uE0B8"], w: [1.252, 1.252, 1.252] },
+  ti: { ch: ["\uE0CD", "\uE0CC", "\uE0CC"], w: [1.112, 1.112, 1.112] }
+};
+var PERC_SMUFL = {
+  noteheadXOrnate: { ch: ["\uE0AA", "\uE0AA", "\uE0AA"], w: [0.992, 0.992, 0.992] },
+  noteheadSlashX: { ch: ["\uE106", "\uE106", "\uE106"], w: [2.124, 2.124, 2.124] }
+};
+var W = {
+  noteheadBlack: 1.18,
+  noteheadHalf: 1.18,
+  noteheadWhole: 1.688,
+  noteheadXBlack: 1.16,
+  noteheadXHalf: 1.34,
+  noteheadXWhole: 1.51,
+  // 2026-10-08 在浏览器里用 measureText 量的 advance（400px Bravura；黑符头同法量得 1.18 = 上面那行，方法对得上）
+  gClef: 2.684,
+  fClef: 2.736,
+  sharp: 0.996,
+  flat: 0.904,
+  natural: 0.672,
+  doubleSharp: 1,
+  doubleFlat: 1.644,
+  dot: 0.4,
+  timeSigDigit: 1.8,
+  restWhole: 1.128,
+  restHalf: 1.128,
+  restQuarter: 1.08,
+  rest8th: 0.988,
+  rest16th: 1.28,
+  rest32nd: 1.452
+};
+var ENGRAVE = {
+  staffLine: 0.13,
+  stem: 0.12,
+  ledger: 0.16,
+  ledgerExt: 0.4,
+  beam: 0.5,
+  beamGap: 0.25,
+  thinBar: 0.16,
+  tieMid: 0.22
+};
+var STEM_UP_SE = [1.18, 0.168];
+var STEM_DOWN_NW = [0, -0.168];
+var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
+var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
+var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
+
+// src/render/glyph-box.gen.ts
+var GLYPH_BOX = {
+  "\uE040": [0, 1.464, -4, 0],
+  "\uE041": [4e-3, 1.468, -4, 0],
+  "\uE042": [4e-3, 2.432, -4, 0],
+  "\uE047": [0.016, 2.2, -3.036, 0.108],
+  "\uE048": [-0.016, 3.82, -3.592, 0.632],
+  "\uE050": [0, 2.684, -4.392, 2.632],
+  "\uE052": [0, 2.684, -4.392, 3.512],
+  "\uE053": [0, 2.684, -5.28, 2.632],
+  "\uE054": [0, 2.684, -5.276, 2.632],
+  "\uE062": [-0.02, 2.736, -1.048, 2.54],
+  "\uE064": [-0.02, 2.736, -1.048, 2.976],
+  "\uE069": [0, 1.528, -1, 1],
+  "\uE080": [0.08, 1.8, -1.004, 1],
+  "\uE081": [0.08, 1.256, -1.004, 1],
+  "\uE082": [0.08, 1.704, -1.016, 1.028],
+  "\uE083": [0.08, 1.604, -0.996, 1.004],
+  "\uE084": [0.08, 1.8, -1.004, 1],
+  "\uE085": [0.08, 1.532, -0.984, 1.004],
+  "\uE086": [0.08, 1.656, -1.004, 0.996],
+  "\uE087": [0.08, 1.684, -0.996, 1],
+  "\uE088": [0.08, 1.664, -1.036, 1.036],
+  "\uE089": [0.08, 1.656, -1.004, 0.996],
+  "\uE0A2": [0, 1.688, -0.5, 0.5],
+  "\uE0A3": [0, 1.18, -0.5, 0.5],
+  "\uE0A4": [0, 1.18, -0.5, 0.5],
+  "\uE0A7": [0, 1.508, -0.5, 0.5],
+  "\uE0A8": [0, 1.336, -0.5, 0.5],
+  "\uE0A9": [0, 1.16, -0.5, 0.5],
+  "\uE0AA": [0, 0.988, -0.504, 0.504],
+  "\uE0AD": [0, 1.14, -0.5, 0.5],
+  "\uE0AE": [0, 1.044, -0.5, 0.5],
+  "\uE0AF": [-4e-3, 0.996, -0.5, 0.5],
+  "\uE0B1": [0, 0.996, -0.5, 0.5],
+  "\uE0B2": [0, 1, -0.5, 0.5],
+  "\uE0B3": [0, 0.996, -0.5, 0.5],
+  "\uE0B8": [0, 1.252, -0.5, 0.5],
+  "\uE0B9": [0, 1.252, -0.5, 0.5],
+  "\uE0BB": [0, 1.276, -0.5, 0.5],
+  "\uE0BC": [0, 1.14, -0.5, 0.5],
+  "\uE0BE": [0, 1.172, -0.5, 0.5],
+  "\uE0C4": [0, 1.276, -0.5, 0.5],
+  "\uE0C5": [0, 1.14, -0.5, 0.5],
+  "\uE0C7": [0, 1.168, -0.5, 0.5],
+  "\uE0CC": [0, 1.112, -0.5, 0.5],
+  "\uE0CD": [0, 1.112, -0.5, 0.5],
+  "\uE0CF": [-0.32, 1.5, -0.668, 0.66],
+  "\uE0D0": [-0.316, 1.504, -0.672, 0.656],
+  "\uE0D1": [-0.268, 1.544, -0.64, 0.568],
+  "\uE0D2": [-0.292, 1.52, -0.672, 0.536],
+  "\uE0D3": [-0.088, 1.732, -0.592, 0.628],
+  "\uE0D4": [-0.072, 1.744, -0.604, 0.616],
+  "\uE0D8": [1e-3, 1.666, -0.564, 0.564],
+  "\uE0D9": [0, 0.98, -0.564, 0.564],
+  "\uE0DB": [0, 0.98, -0.564, 0.564],
+  "\uE0F5": [0, 0.436, -0.724, 0.724],
+  "\uE0F6": [-0.144, 0.292, -0.724, 0.724],
+  "\uE101": [0, 2.12, -1, 1],
+  "\uE102": [0, 3.92, -1, 1],
+  "\uE103": [0, 3.12, -1, 1],
+  "\uE106": [0, 2.12, -1, 1],
+  "\uE1D2": [0, 1.836, -0.544, 0.548],
+  "\uE1D3": [0, 1.364, -3.5, 0.58],
+  "\uE1D5": [0, 1.328, -3.5, 0.564],
+  "\uE1D7": [0, 2.264, -3.492, 0.552],
+  "\uE1D9": [0, 2.324, -3.492, 0.552],
+  "\uE1DB": [0, 2.252, -4.092, 0.552],
+  "\uE1E7": [0, 0.4, -0.2, 0.2],
+  "\uE240": [0, 1.056, -0.036, 3.24],
+  "\uE241": [0, 1.224, -3.232, 0.056],
+  "\uE242": [0, 1.116, -8e-3, 3.252],
+  "\uE243": [0, 1.164, -3.248, 0.036],
+  "\uE244": [0, 1.044, -0.596, 3.248],
+  "\uE245": [0, 1.092, -3.248, 0.688],
+  "\uE260": [0, 0.904, -1.756, 0.7],
+  "\uE261": [0, 0.672, -1.364, 1.34],
+  "\uE262": [0, 0.996, -1.4, 1.392],
+  "\uE263": [0, 0.988, -0.508, 0.5],
+  "\uE264": [0, 1.644, -1.748, 0.7],
+  "\uE4A0": [0, 1.356, -0.98, -4e-3],
+  "\uE4A1": [0, 1.356, 0, 0.976],
+  "\uE4A2": [0, 0.336, -0.336, 0],
+  "\uE4A3": [0, 0.336, 0, 0.336],
+  "\uE4A4": [-4e-3, 1.352, -0.192, 0],
+  "\uE4A5": [-4e-3, 1.352, 0, 0.192],
+  "\uE4AC": [-4e-3, 0.94, -1.012, 4e-3],
+  "\uE4AD": [-4e-3, 0.94, 0, 1.016],
+  "\uE4B6": [0, 0.932, -0.948, -0.02],
+  "\uE4B7": [0.016, 0.944, 0, 0.936],
+  "\uE4B8": [0, 1.528, -0.828, 0],
+  "\uE4B9": [4e-3, 1.532, 0, 0.828],
+  "\uE4CE": [4e-3, 0.608, -1.004, -8e-3],
+  "\uE4E3": [0, 1.128, -0.036, 0.54],
+  "\uE4E4": [0, 1.128, -0.568, 8e-3],
+  "\uE4E5": [4e-3, 1.08, -1.492, 1.5],
+  "\uE4E6": [0, 0.988, -0.696, 1.004],
+  "\uE4E7": [0, 1.28, -0.716, 2],
+  "\uE4E8": [0, 1.452, -1.704, 2],
+  "\uE511": [0, 3.54, -1.852, 0.04],
+  "\uE512": [0, 3.356, -1.852, 0.04],
+  "\uE515": [0, 5.26, -1.844, 0.04],
+  "\uE520": [-0.356, 1.464, -1.096, 0.568],
+  "\uE522": [-0.564, 1.456, -1.776, 0.608],
+  "\uE52A": [-0.368, 4.292, -1.096, 0.568],
+  "\uE52B": [-0.328, 2.912, -1.096, 0.568],
+  "\uE52C": [-0.08, 3.3, -1.096, 0.568],
+  "\uE52D": [-0.08, 3.272, -1.724, 0.66],
+  "\uE52F": [-0.54, 2.44, -1.776, 0.608],
+  "\uE530": [-0.62, 3.32, -1.776, 0.608],
+  "\uE534": [-0.564, 2.476, -1.776, 0.608],
+  "\uE539": [0, 2.932, -1.776, 0.608],
+  "\uE880": [0, 1.272, -1.5, 0.032],
+  "\uE881": [0.04, 1.024, -1.488, 0],
+  "\uE882": [0.04, 1.316, -1.5, 0.024],
+  "\uE883": [0.04, 1.224, -1.5, 0.032],
+  "\uE884": [0.04, 1.252, -1.488, 0],
+  "\uE885": [0.04, 1.308, -1.492, 0.032],
+  "\uE886": [0.04, 1.256, -1.5, 0.032],
+  "\uE887": [0.12, 1.332, -1.488, 0.016],
+  "\uE888": [0.04, 1.292, -1.5, 0.032],
+  "\uE889": [0.04, 1.256, -1.5, 0.032],
+  "\uEAA9": [-0.132, 1.168, -0.476, 0],
+  "\uECA5": [0, 1.328, -2.752, 0.564]
+};
+
+// src/render/skyline.ts
+var STEP = 0.25;
+var Skyline = class {
+  up;
+  dn;
+  /** 行高要算进去的那部分（歌词另算——它有自己的行距规矩）：最高 / 最低。 */
+  hUp = Infinity;
+  hDn = -Infinity;
+  constructor(widthSp) {
+    const n2 = Math.max(1, Math.ceil(widthSp / STEP) + 1);
+    this.up = new Float64Array(n2).fill(Infinity);
+    this.dn = new Float64Array(n2).fill(-Infinity);
+  }
+  span(x0, x1) {
+    const n2 = this.up.length;
+    return [Math.max(0, Math.min(n2 - 1, Math.floor(x0 / STEP))), Math.max(0, Math.min(n2 - 1, Math.floor(x1 / STEP)))];
+  }
+  /** 记一块墨（count = 算不算进行高）。 */
+  ink(x0, x1, y0, y1, count = true) {
+    if (!(x1 >= x0) || !(y1 >= y0)) return;
+    const [a, b] = this.span(x0, x1);
+    for (let i = a; i <= b; i++) {
+      if (y0 < this.up[i]) this.up[i] = y0;
+      if (y1 > this.dn[i]) this.dn[i] = y1;
+    }
+    if (count) {
+      if (y0 < this.hUp) this.hUp = y0;
+      if (y1 > this.hDn) this.hDn = y1;
+    }
+  }
+  /** x0–x1 这一段往上最远到哪（没有墨 = Infinity）。 */
+  top(x0, x1) {
+    const [a, b] = this.span(x0, x1);
+    let v = Infinity;
+    for (let i = a; i <= b; i++) if (this.up[i] < v) v = this.up[i];
+    return v;
+  }
+  /** x0–x1 这一段往下最远到哪（没有墨 = −Infinity）。 */
+  bottom(x0, x1) {
+    const [a, b] = this.span(x0, x1);
+    let v = -Infinity;
+    for (let i = a; i <= b; i++) if (this.dn[i] > v) v = this.dn[i];
+    return v;
+  }
+};
+function primInk(p, sp, measure, emit) {
+  switch (p.t) {
+    case "glyph": {
+      const size = p.size ?? 4 * sp, k = size / 4;
+      let x = p.x;
+      for (const ch of p.ch) {
+        const b = GLYPH_BOX[ch];
+        if (b) {
+          emit(x + b[0] * k, x + b[1] * k, p.y + b[2] * k, p.y + b[3] * k);
+          x += b[1] * k;
+        } else {
+          emit(x, x + k, p.y - k / 2, p.y + k / 2);
+          x += k;
+        }
+      }
+      return;
+    }
+    case "text": {
+      const size = p.size ?? LYRIC_EM * sp, w = measure(p.s, size) * (p.sx ?? 1), x0 = p.anchor === "middle" ? p.x - w / 2 : p.anchor === "end" ? p.x - w : p.x;
+      emit(x0, x0 + w, p.y - size * INK_EST.a, p.y + size * INK_EST.d);
+      return;
+    }
+    case "line": {
+      const h = p.w / 2;
+      flatten([[p.x1, p.y1], [p.x2, p.y2]], sp, h, emit);
+      return;
+    }
+    case "rect":
+      emit(p.x, p.x + p.w, p.y, p.y + p.h);
+      return;
+    case "path":
+      for (const poly of pathPolys(p.d)) flatten(poly, sp, 0, emit);
+      return;
+  }
+}
+function flatten(pts, sp, pad, emit) {
+  if (pts.length === 1) {
+    const [x, y] = pts[0];
+    emit(x - pad, x + pad, y - pad, y + pad);
+    return;
+  }
+  const cell = STEP * sp;
+  for (let i = 1; i < pts.length; i++) {
+    const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
+    if (ay === by || ax === bx) {
+      emit(Math.min(ax, bx) - pad, Math.max(ax, bx) + pad, Math.min(ay, by) - pad, Math.max(ay, by) + pad);
+      continue;
+    }
+    const n2 = Math.max(1, Math.ceil(Math.abs(bx - ax) / cell));
+    for (let k = 0; k < n2; k++) {
+      const x0 = ax + (bx - ax) * k / n2, x1 = ax + (bx - ax) * (k + 1) / n2, y0 = ay + (by - ay) * k / n2, y1 = ay + (by - ay) * (k + 1) / n2;
+      emit(Math.min(x0, x1) - pad, Math.max(x0, x1) + pad, Math.min(y0, y1) - pad, Math.max(y0, y1) + pad);
+    }
+  }
+}
+function numAt(d, i) {
+  while (i < d.length && (d[i] === "," || d[i] === " ")) i++;
+  const s2 = i;
+  if (d[i] === "-" || d[i] === "+") i++;
+  while (i < d.length) {
+    const ch = d.charCodeAt(i);
+    if (ch >= 48 && ch <= 57 || ch === 46) i++;
+    else if ((ch === 101 || ch === 69) && (d[i + 1] === "-" || d[i + 1] === "+")) i += 2;
+    else if (ch === 101 || ch === 69) i++;
+    else break;
+  }
+  return i > s2 ? [Number(d.slice(s2, i)), i] : null;
+}
+function pathPolys(d) {
+  const out = [];
+  let cur = [], x = 0, y = 0, i = 0;
+  const v = [];
+  while (i < d.length) {
+    const c = d[i].toUpperCase();
+    i++;
+    v.length = 0;
+    for (let r = numAt(d, i); r; r = numAt(d, i)) {
+      v.push(r[0]);
+      i = r[1];
+    }
+    if (c === "M") {
+      if (cur.length) out.push(cur);
+      x = v[0];
+      y = v[1];
+      cur = [[x, y]];
+      for (let k = 2; k + 1 < v.length; k += 2) {
+        x = v[k];
+        y = v[k + 1];
+        cur.push([x, y]);
+      }
+    } else if (c === "L") for (let k = 0; k + 1 < v.length; k += 2) {
+      x = v[k];
+      y = v[k + 1];
+      cur.push([x, y]);
+    }
+    else if (c === "Q") for (let k = 0; k + 3 < v.length; k += 4) {
+      const cx = v[k], cy = v[k + 1], ex = v[k + 2], ey = v[k + 3];
+      for (let n2 = 1; n2 <= 8; n2++) {
+        const t = n2 / 8, u = 1 - t;
+        cur.push([u * u * x + 2 * u * t * cx + t * t * ex, u * u * y + 2 * u * t * cy + t * t * ey]);
+      }
+      x = ex;
+      y = ey;
+    }
+    else if (c === "C") for (let k = 0; k + 5 < v.length; k += 6) {
+      const ax = v[k], ay = v[k + 1], bx = v[k + 2], by = v[k + 3], ex = v[k + 4], ey = v[k + 5];
+      for (let n2 = 1; n2 <= 8; n2++) {
+        const t = n2 / 8, u = 1 - t;
+        cur.push([u * u * u * x + 3 * u * u * t * ax + 3 * u * t * t * bx + t * t * t * ex, u * u * u * y + 3 * u * u * t * ay + 3 * u * t * t * by + t * t * t * ey]);
+      }
+      x = ex;
+      y = ey;
+    }
+    else if (c === "Z" && cur.length) {
+      cur.push(cur[0]);
+      x = cur[0][0];
+      y = cur[0][1];
+    }
+  }
+  if (cur.length) out.push(cur);
+  return out;
+}
+function shiftPrim(p, dy) {
+  if (!dy) return;
+  switch (p.t) {
+    case "glyph":
+    case "text":
+    case "rect":
+      p.y += dy;
+      return;
+    case "line":
+      p.y1 += dy;
+      p.y2 += dy;
+      return;
+    case "path": {
+      const d = p.d;
+      let out = "", i = 0;
+      for (let c = d.indexOf(","); c >= 0; c = d.indexOf(",", i)) {
+        let e = c + 1;
+        if (d[e] === "-") e++;
+        while (e < d.length) {
+          const ch = d.charCodeAt(e);
+          if (ch >= 48 && ch <= 57 || ch === 46) e++;
+          else if ((ch === 101 || ch === 69) && (d[e + 1] === "-" || d[e + 1] === "+")) e += 2;
+          else if (ch === 101 || ch === 69) e++;
+          else break;
+        }
+        out += d.slice(i, c + 1) + String(Number(d.slice(c + 1, e)) + dy);
+        i = e;
+      }
+      p.d = out + d.slice(i);
+      return;
+    }
+    default: {
+      const never = p;
+      throw new Error(`shiftPrim: unknown prim ${JSON.stringify(never)}`);
+    }
+  }
+}
+function primY(p) {
+  switch (p.t) {
+    case "glyph":
+    case "text":
+      return p.y;
+    case "rect":
+      return p.y + p.h / 2;
+    case "line":
+      return (p.y1 + p.y2) / 2;
+    case "path": {
+      const c = p.d.indexOf(","), r = c >= 0 ? numAt(p.d, c + 1) : null;
+      return r ? r[0] : 0;
+    }
+  }
+}
+
+// src/score/view-in-c.ts
+var realFifthsOf = (t) => t.realFifths ?? t.fifths;
+function toC(p, fifths) {
+  if (fifths === 0) return p;
+  const iv = keyInterval(fifths, 0);
+  return transposeInterval(p, iv.steps, iv.semis);
+}
+function trackInC(tokens) {
+  let f = 0;
+  return tokens.map((t) => {
+    if (t.kind === "key") {
+      f = t.fifths;
+      return { ...t, fifths: 0, realFifths: t.fifths };
+    }
+    if (t.kind === "note" && t.pitch && f !== 0) return { ...t, pitch: toC(t.pitch, f), ...t.chord ? { chord: t.chord.map((c) => toC(c, f)) } : {} };
+    return t;
+  });
+}
+function songInC(song, skip) {
+  return { ...song, papers: song.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([id, toks]) => [id, skip(id) ? toks : trackInC(toks)])) })) };
+}
+
 // src/score/grooves.gen.ts
 var GROOVE_STYLES = [
   {
@@ -3709,879 +4401,6 @@ function meterPositions(tokens, bounds = [0], withTies = false) {
   return out;
 }
 
-// src/singer/packs.gen.ts
-var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
-var PACKS = {
-  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
-  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
-  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
-  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
-  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
-};
-var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
-
-// src/format/performance.ts
-var TSUKUYOMI_CREDIT = {
-  attribution: [CREDIT.credit, ...CREDIT.attribution],
-  license: { name: _t("\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09"), url: CREDIT.termsUrl, text: CREDIT.terms }
-};
-var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
-
-// src/score/perform.ts
-function hairpinEnd(tokens, i, bounds) {
-  const pe = paperEndOf(i, tokens.length, bounds);
-  for (let j = i + 1; j < pe; j++) {
-    const k = tokens[j].kind;
-    if (k === "dyn" || k === "hairpin") return { kind: k, at: j };
-  }
-  return { kind: "end", at: pe };
-}
-var paperEndOf = (i, n2, bounds) => {
-  for (const b of bounds ?? []) if (b > i) return b;
-  return n2;
-};
-function dynLevels(tokens, map, table, def, step, bounds) {
-  const out = /* @__PURE__ */ new Map(), tl = timeline(tokens, map), at = new Map(tl.map((x) => [x.index, x]));
-  const lo = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
-  const onsetFrom = (j, stop = tokens.length) => {
-    for (let k = j; k < stop; k++) {
-      const x = at.get(k);
-      if (x) return x;
-    }
-    return null;
-  };
-  const endBefore = (j) => {
-    for (let k = j - 1; k >= 0; k--) {
-      const x = at.get(k);
-      if (x) return x.t1;
-    }
-    return 0;
-  };
-  let cur = def, ramp = null;
-  const lvl = (t) => ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur;
-  for (let i = 0; i < tokens.length; i++) {
-    if (ramp && i >= ramp.end) {
-      cur = ramp.to;
-      ramp = null;
-    }
-    const t = tokens[i];
-    if (t.kind === "dyn") {
-      if (!ramp) cur = table[t.value];
-      const pe = paperEndOf(i, tokens.length, bounds), j = ramp ? -1 : rampTarget(tokens, i, pe), start = j >= 0 ? onsetFrom(i + 1, j) : null;
-      if (j >= 0 && start) ramp = { from: cur, to: table[tokens[j].value], T0: start.t0, T1: onsetFrom(j, pe)?.t0 ?? endBefore(j), end: j };
-      continue;
-    }
-    if (t.kind === "hairpin") {
-      const e = hairpinEnd(tokens, i, bounds), start = onsetFrom(i + 1, e.at);
-      if (!start) continue;
-      const endVal = e.kind === "dyn" ? table[tokens[e.at].value] : null, oneStep = Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
-      const agrees = endVal !== null && (t.dir === "cresc" ? endVal > cur : endVal < cur);
-      const to = agrees ? endVal : oneStep;
-      const T1 = e.kind === "end" ? endBefore(e.at) : onsetFrom(e.at, paperEndOf(i, tokens.length, bounds))?.t0 ?? endBefore(e.at);
-      ramp = { from: cur, to, T0: start.t0, T1, end: e.at };
-      continue;
-    }
-    const x = at.get(i);
-    if (!x) continue;
-    out.set(i, { at0: lvl(x.t0), at1: lvl(x.t1) });
-    if (t.kind === "note" && !ramp && artOf(t).includes("fp")) cur = table.p;
-  }
-  return out;
-}
-function dynOverridden(tokens, bounds) {
-  const out = /* @__PURE__ */ new Set();
-  const T = { ppp: 0, pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6, fff: 7 };
-  const fpNotes = /* @__PURE__ */ new Set();
-  tokens.forEach((t, k) => {
-    if (t.kind === "note" && artOf(t).includes("fp")) fpNotes.add(k);
-  });
-  if (!fpNotes.size) return out;
-  const levels = (ts) => [...dynLevels(ts, void 0, T, 0, 0.5, bounds)].filter(([k]) => !fpNotes.has(k)).map(([k, l]) => `${k}:${l.at0}:${l.at1}`).join("|");
-  let base = null;
-  for (let i = 0; i < tokens.length; i++) {
-    const t = tokens[i];
-    if (t.kind !== "dyn") continue;
-    let j = i + 1;
-    while (j < tokens.length && !isTimed(tokens[j])) j++;
-    if (!fpNotes.has(j)) continue;
-    base ??= levels(tokens);
-    const alt = (v) => levels(tokens.map((x, k) => k === i ? { ...t, value: v } : x));
-    if (alt(t.value === "pp" ? "ff" : "pp") === base && alt(t.value === "mf" ? "p" : "mf") === base) out.add(i);
-  }
-  return out;
-}
-
-// src/score/arrange.ts
-var REP = /^(?:[×xX*])(\d+)/;
-function parseArrangement(text, papers, l = lang()) {
-  const src = (text ?? "").trim();
-  if (!src) return { order: papers.filter((p) => !p.hidden).map((p) => p.id), loop: null, issues: [], explicit: false };
-  const issues = [];
-  let i = 0;
-  const ws = () => {
-    while (i < src.length && /[\s、,，→]/.test(src[i])) i++;
-  };
-  const findPaper = (name) => {
-    const byName = papers.find((p) => p.name.trim() === name);
-    if (byName) return byName.id;
-    if (/^\d+$/.test(name)) {
-      const k = Number(name);
-      if (k >= 1 && k <= papers.length) return papers[k - 1].id;
-    }
-    return null;
-  };
-  const rep = () => {
-    const save = i;
-    while (src[i] === " ") i++;
-    const m = REP.exec(src.slice(i));
-    if (!m) {
-      i = save;
-      return null;
-    }
-    i += m[0].length;
-    return Number(m[1]);
-  };
-  const seq = (close) => {
-    const out = [];
-    for (; ; ) {
-      ws();
-      if (i >= src.length) {
-        if (close) issues.push({ at: src.length, len: 0, why: _tIn(l, "\u5C11\u4E86\u300C{close}\u300D", { close }) });
-        return out;
-      }
-      const c = src[i];
-      if (close && c === close) {
-        i++;
-        return out;
-      }
-      if (c === ")" || c === "]") {
-        issues.push({ at: i, len: 1, why: _tIn(l, "\u591A\u4E86\u300C{c}\u300D", { c }) });
-        i++;
-        continue;
-      }
-      if (c === "[") return out;
-      let node;
-      const at = i;
-      if (c === "(") {
-        i++;
-        node = { kind: "rep", body: seq(")"), n: 1 };
-      } else {
-        let name = "";
-        while (i < src.length && !/[\s、,，→()[\]×*]/.test(src[i]) && !(/[xX]/.test(src[i]) && /\d/.test(src[i + 1] ?? "") && name)) name += src[i++];
-        if (!name) {
-          issues.push({ at: i, len: 1, why: _tIn(l, "\u770B\u4E0D\u61C2\u300C{p}\u300D", { p: src[i] }) });
-          i++;
-          continue;
-        }
-        const paper = findPaper(name);
-        if (!paper) {
-          issues.push({ at, len: name.length, why: _tIn(l, "\u6CA1\u6709\u53EB\u300C{name}\u300D\u7684\u7EB8\uFF08\u5199\u66F2\u6BB5\u540D\uFF0C\u6216\u8005\u7B2C\u51E0\u5F20\u7EB8\u7684\u5E8F\u53F7\uFF09", { name }) });
-          node = { kind: "rep", body: [], n: 1 };
-        } else node = { kind: "ref", paper, text: name, at };
-      }
-      const n2 = rep();
-      if (n2 !== null) {
-        if (n2 < 1 || n2 > 99) issues.push({ at, len: i - at, why: _tIn(l, "\u91CD\u590D\u6B21\u6570\u8981\u5728 1 \u5230 99 \u4E4B\u95F4") });
-        if (n2 >= 1) node = { kind: "rep", body: [node], n: Math.min(99, n2) };
-      }
-      out.push(node);
-    }
-  };
-  const main = seq(null);
-  let loopNodes = null;
-  ws();
-  if (i < src.length && src[i] === "[") {
-    const at = i;
-    i++;
-    loopNodes = seq("]");
-    if (!loopNodes.length) issues.push({ at, len: i - at, why: _tIn(l, "\u5FAA\u73AF\u6BB5\u662F\u7A7A\u7684") });
-    ws();
-    if (i < src.length) {
-      issues.push({ at: i, len: src.length - i, why: _tIn(l, "\u5FAA\u73AF\u6BB5\u53EA\u80FD\u653E\u5728\u6700\u540E\uFF1A\u540E\u9762\u7684\u6C38\u8FDC\u653E\u4E0D\u5230") });
-    }
-  }
-  const expand = (ns) => ns.flatMap((n2) => n2.kind === "ref" ? [n2.paper] : Array.from({ length: n2.n }, () => expand(n2.body)).flat());
-  const loop = loopNodes ? expand(loopNodes) : null;
-  return { order: expand(main), loop: loop && loop.length ? loop : null, issues, explicit: true };
-}
-
-// src/render/spacing.ts
-function indexRods(rods, n2) {
-  const into = Array.from({ length: n2 }, () => []);
-  for (const r of rods) into[r.to]?.push(r);
-  return { into };
-}
-var isZero = (c) => c.fixed !== void 0 && c.fixed <= EPS;
-var EPS = 1e-6;
-var LOOSE = [[TPQ / 8, 2.2], [TPQ / 4, 2.2], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-var DENSE = [[TPQ / 8, 1.6], [TPQ / 4, 1.9], [TPQ / 2, 2.85], [TPQ, 3.6], [TPQ * 2, 4.35], [TPQ * 4, 5.1]];
-var TIGHT = [[TPQ / 8, 1.5], [TPQ / 4, 1.7], [TPQ / 2, 2.35], [TPQ, 3], [TPQ * 2, 3.6], [TPQ * 4, 4.2]];
-var lerpLog = (pts, ticks) => {
-  if (ticks <= pts[0][0]) return pts[0][1];
-  const last = pts[pts.length - 1], prev = pts[pts.length - 2];
-  if (ticks >= last[0]) return last[1] + (last[1] - prev[1]) / Math.log2(last[0] / prev[0]) * Math.log2(ticks / last[0]);
-  for (let k = 1; k < pts.length; k++) {
-    const a = pts[k - 1], b = pts[k];
-    if (ticks <= b[0]) return a[1] + (b[1] - a[1]) * Math.log2(ticks / a[0]) / Math.log2(b[0] / a[0]);
-  }
-  return last[1];
-};
-var curveOf = (m) => {
-  const t = m === true || m === "normal" ? DENSE : m === "tight" ? TIGHT : LOOSE;
-  return (ticks) => lerpLog(t, ticks);
-};
-var SP_DEFAULTS = { pad: 0.3, emptyBar: 4.5 };
-function idealGaps(cols, endTick, o) {
-  const out = new Array(cols.length).fill(0), sounding = /* @__PURE__ */ new Map();
-  cols.forEach((c, k) => {
-    if (c.fixed !== void 0) {
-      out[k] = c.fixed;
-      return;
-    }
-    for (const it of c.items) {
-      if (it.dur !== void 0 && it.dur > EPS) sounding.set(it.row, { dur: it.dur, end: c.tick + it.dur });
-      else sounding.delete(it.row);
-    }
-    let next = endTick;
-    for (let j = k + 1; j < cols.length; j++) if (cols[j].tick > c.tick + EPS) {
-      next = cols[j].tick;
-      break;
-    }
-    const dt = next - c.tick;
-    if (dt <= EPS) return;
-    let d = Infinity;
-    for (const a of sounding.values()) if (a.end > c.tick + EPS) d = Math.min(d, a.dur);
-    out[k] = d === Infinity ? Math.min(o.curve(dt), o.emptyBar) : o.curve(d) * Math.min(1, dt / d);
-  });
-  return out;
-}
-function rodsOf(cols, o) {
-  const rods = [], last = /* @__PURE__ */ new Map();
-  let wall = null;
-  cols.forEach((c, k) => {
-    if (isZero(c)) return;
-    if (c.fixed !== void 0) {
-      for (const l of last.values()) rods.push({ from: l.col, to: k, min: l.right + o.pad });
-      if (wall && !last.size) rods.push({ from: wall.col, to: k, min: wall.right });
-      last.clear();
-      wall = { col: k, right: c.fixed };
-      return;
-    }
-    for (const it of c.items) {
-      const l = last.get(it.row);
-      if (l) rods.push({ from: l.col, to: k, min: l.right + it.left + o.pad });
-      else if (wall) rods.push({ from: wall.col, to: k, min: wall.right + it.left });
-      last.set(it.row, { col: k, right: it.right });
-    }
-  });
-  return rods;
-}
-var leftOf = (c) => c.fixed !== void 0 ? 0 : c.items.reduce((m, it) => Math.max(m, it.left), 0);
-var rightOf = (c) => c.fixed !== void 0 ? c.fixed : c.items.reduce((m, it) => Math.max(m, it.right), 0);
-function placeLine(cols, gaps, rods, from, to, s2) {
-  const n2 = to - from, xs = new Array(n2).fill(0);
-  if (n2 <= 0) return { xs, end: 0 };
-  const ix = "into" in rods ? rods : indexRods(rods, cols.length);
-  const gap = (k) => cols[k].fixed !== void 0 ? gaps[k] : gaps[k] * (1 + s2);
-  for (let k = from; k < to; k++) {
-    let x = k === from ? 0 : xs[k - 1 - from] + gap(k - 1);
-    x = Math.max(x, leftOf(cols[k]));
-    for (const r of ix.into[k] ?? []) if (r.from >= from) x = Math.max(x, xs[r.from - from] + r.min);
-    xs[k - from] = x;
-  }
-  for (let k = to - 2; k >= from; k--) if (isZero(cols[k])) xs[k - from] = xs[k + 1 - from];
-  const lastK = to - 1;
-  return { xs, end: xs[n2 - 1] + Math.max(gap(lastK), rightOf(cols[lastK])) };
-}
-function fitLine(cols, gaps, rods, from, to, width, opt) {
-  const ix = "into" in rods ? rods : indexRods(rods, cols.length), at = (s3) => placeLine(cols, gaps, ix, from, to, s3), nat = at(0);
-  const solve = (lo, hi2) => {
-    for (let i = 0; i < 48; i++) {
-      const mid = (lo + hi2) / 2;
-      if (at(mid).end > width) hi2 = mid;
-      else lo = mid;
-    }
-    return lo;
-  };
-  if (nat.end > width + EPS) {
-    const tight = at(-opt.squeeze);
-    if (tight.end > width + EPS) return { ...tight, stretch: -opt.squeeze, over: true };
-    const s3 = solve(-opt.squeeze, 0);
-    return { ...at(s3), stretch: s3, over: false };
-  }
-  if (!opt.justify) return { ...nat, stretch: 0, over: false };
-  let hi = 1;
-  while (at(hi).end < width && hi < 4096) hi *= 2;
-  if (at(hi).end < width) return { ...nat, stretch: 0, over: false };
-  const s2 = solve(0, hi);
-  return { ...at(s2), stretch: s2, over: false };
-}
-
-// src/gm/percussion.gen.ts
-var PERC = { "0:119": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 1.389, "kitKey": 57 }, "0:120": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.057 }, "0:121": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.077 }, "0:122": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:123": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:124": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:125": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:126": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:127": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:35": { "staff": 5, "line": 8, "head": "normal", "stem": "down", "hitSec": 0.037 }, "128:0:36": { "staff": 5, "line": 7, "head": "normal", "stem": "down", "hitSec": 7e-3 }, "128:0:37": { "staff": 5, "line": 3, "head": "slashed1", "stem": "up", "hitSec": 2e-3 }, "128:0:38": { "staff": 5, "line": 3, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:39": { "staff": 5, "line": -2, "head": "plus", "stem": "up", "hitSec": 0.012 }, "128:0:40": { "staff": 5, "line": 3, "head": "slash", "stem": "up", "hitSec": 7e-3 }, "128:0:41": { "staff": 5, "line": 6, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:42": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:43": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:44": { "staff": 5, "line": 9, "head": "x", "stem": "down", "hitSec": 0.012 }, "128:0:45": { "staff": 5, "line": 4, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:46": { "staff": 5, "line": -1, "head": "circle-x", "stem": "up", "hitSec": 0.022 }, "128:0:47": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:48": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:49": { "staff": 5, "line": -2, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:50": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:51": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:52": { "staff": 5, "line": -3, "head": "normal", "stem": "up", "hitSec": 0.027 }, "128:0:53": { "staff": 5, "line": 0, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:54": { "staff": 5, "line": 1, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:55": { "staff": 5, "line": -4, "head": "x", "stem": "up", "hitSec": 0.067 }, "128:0:56": { "staff": 5, "line": 1, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:57": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:58": { "staff": 5, "line": 0, "head": "ti", "stem": "up", "hitSec": 2e-3 }, "128:0:59": { "staff": 5, "line": 2, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:60": { "staff": 5, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:61": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:62": { "staff": 5, "line": 1, "head": "custom", "stem": "up", "smufl": "noteheadXOrnate", "hitSec": 0.012 }, "128:0:63": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:64": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:65": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:66": { "staff": 5, "line": 7, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:67": { "staff": 5, "line": -2, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:68": { "staff": 5, "line": -1, "head": "triangle-down", "stem": "up", "hitSec": 7e-3 }, "128:0:69": { "staff": 5, "line": 2, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:70": { "staff": 5, "line": 4, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:71": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.072 }, "128:0:72": { "staff": 5, "line": -3, "head": "ti", "stem": "up", "hitSec": 0.022 }, "128:0:73": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 0.012 }, "128:0:74": { "staff": 5, "line": -1, "head": "slashed1", "stem": "up", "hitSec": 0.222 }, "128:0:75": { "staff": 5, "line": 0, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:76": { "staff": 5, "line": 5, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:77": { "staff": 5, "line": 7, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:78": { "staff": 5, "line": 8, "head": "x", "stem": "up", "hitSec": 0.062 }, "128:0:79": { "staff": 5, "line": 8, "head": "slashed2", "stem": "up", "hitSec": 0.042 }, "128:0:80": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:81": { "staff": 5, "line": 0, "head": "triangle-up", "stem": "up", "hitSec": 0.022 }, "128:0:27": { "staff": 5, "line": 8, "head": "slash", "stem": "up", "hitSec": 0.012 }, "128:0:28": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 0.012 }, "128:0:29": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.092 }, "128:0:30": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.077 }, "128:0:31": { "staff": 5, "line": -1, "head": "plus", "stem": "up", "hitSec": 7e-3 }, "128:0:32": { "staff": 5, "line": 10, "head": "plus", "stem": "up", "hitSec": 2e-3 }, "128:0:33": { "staff": 5, "line": 10, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:34": { "staff": 5, "line": 10, "head": "triangle-up", "stem": "up", "hitSec": 2e-3 }, "128:0:82": { "staff": 5, "line": 5, "head": "diamond", "stem": "up", "hitSec": 0.027 }, "128:0:83": { "staff": 5, "line": 3, "head": "triangle-down", "stem": "up", "hitSec": 0.072 }, "128:0:84": { "staff": 5, "line": 2, "head": "ti", "stem": "up" }, "128:0:85": { "staff": 5, "line": 2, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:86": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 7e-3 }, "128:0:87": { "staff": 5, "line": 4, "head": "slash", "stem": "up", "hitSec": 0.027 }, "0:112": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 84, "from": "Q1621499" }, "0:113": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 67, "from": "Q395212" }, "0:115": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 76, "from": "Q957212" }, "0:116": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.027, "kitKey": 87, "from": "Q221769" }, "0:117": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 45, "from": "Q849349" }, "0:118": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3, "from": "Q1327480" } };
-
-// src/gm/percussion.ts
-function percOf(bank, program, note) {
-  if (bank === 128) return note === void 0 ? null : PERC[`128:0:${note}`] ?? null;
-  return (note !== void 0 ? PERC[`${bank}:${program}:${note}`] : void 0) ?? PERC[`${bank}:${program}`] ?? null;
-}
-
-// src/score/lyrics.ts
-var MELISMA_MARK = "\u30FC";
-var ELISION = "\u203F";
-var CJK_CHAR = /[぀-ヿ\p{Script=Han}]/u;
-var lyricShow = (s2) => s2.split(ELISION).reduce((a, b) => !a ? b : CJK_CHAR.test(a.slice(-1)) && CJK_CHAR.test(b.slice(0, 1)) ? a + b : `${a}${ELISION}${b}`, "");
-var SMALL = /* @__PURE__ */ new Set([..."\u3083\u3085\u3087\u3041\u3043\u3045\u3047\u3049\u308E\u3095\u3096\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9\u30EE\u30F5\u30F6", "\u3063", "\u30C3"]);
-
-// src/render/smufl.ts
-var GLYPH = {
-  metNoteQuarterUp: "\uECA5",
-  // 速度记号里的四分音符（metronome mark）
-  gClef: "\uE050",
-  fClef: "\uE062",
-  // 低音谱号（2026-10-08）
-  gClef8vb: "\uE052",
-  gClef8va: "\uE053",
-  gClef15ma: "\uE054",
-  fClef8vb: "\uE064",
-  // 八度谱号（2026-10-10 v0.9.28：吉他 / 男高音 8vb、短笛 8va、钟琴 15ma、贝斯 8vb）
-  ottavaAlta: "\uE511",
-  ottavaBassa: "\uE512",
-  quindicesimaAlta: "\uE515",
-  // 八度线开头的字：8va / 8vb / 15ma
-  noteheadWhole: "\uE0A2",
-  noteheadHalf: "\uE0A3",
-  noteheadBlack: "\uE0A4",
-  noteheadXWhole: "\uE0A7",
-  noteheadXHalf: "\uE0A8",
-  noteheadXBlack: "\uE0A9",
-  // × 符头（2026-10-08：演奏者固定敲一个键的声部；user「披露就用x」）
-  augmentationDot: "\uE1E7",
-  flag8thUp: "\uE240",
-  flag8thDown: "\uE241",
-  flag16thUp: "\uE242",
-  flag16thDown: "\uE243",
-  flag32ndUp: "\uE244",
-  flag32ndDown: "\uE245",
-  accidentalFlat: "\uE260",
-  accidentalNatural: "\uE261",
-  accidentalSharp: "\uE262",
-  accidentalDoubleSharp: "\uE263",
-  accidentalDoubleFlat: "\uE264",
-  restWhole: "\uE4E3",
-  restHalf: "\uE4E4",
-  restQuarter: "\uE4E5",
-  rest8th: "\uE4E6",
-  rest16th: "\uE4E7",
-  rest32nd: "\uE4E8"
-};
-var timeSigDigits = (n2) => [...String(n2)].map((d) => String.fromCodePoint(57472 + Number(d))).join("");
-var PERC_CLEF = "\uE069";
-var PERC_HEAD = {
-  normal: { ch: ["\uE0A4", "\uE0A3", "\uE0A2"], w: [1.18, 1.18, 1.688] },
-  x: { ch: ["\uE0A9", "\uE0A8", "\uE0A7"], w: [1.16, 1.34, 1.51] },
-  "circle-x": { ch: ["\uE0B3", "\uE0B2", "\uE0B1"], w: [0.996, 1, 0.996] },
-  slash: { ch: ["\uE101", "\uE103", "\uE102"], w: [2.124, 3.12, 3.92] },
-  slashed1: { ch: ["\uE0CF", "\uE0D1", "\uE0D3"], w: [1.18, 1.168, 1.672] },
-  slashed2: { ch: ["\uE0D0", "\uE0D2", "\uE0D4"], w: [1.18, 1.172, 1.672] },
-  diamond: { ch: ["\uE0DB", "\uE0D9", "\uE0D8"], w: [0.98, 0.98, 1.664] },
-  "triangle-up": { ch: ["\uE0BE", "\uE0BC", "\uE0BB"], w: [1.172, 1.14, 1.276] },
-  "triangle-down": { ch: ["\uE0C7", "\uE0C5", "\uE0C4"], w: [1.168, 1.14, 1.276] },
-  plus: { ch: ["\uE0AF", "\uE0AE", "\uE0AD"], w: [0.996, 1.044, 1.14] },
-  la: { ch: ["\uE0B9", "\uE0B8", "\uE0B8"], w: [1.252, 1.252, 1.252] },
-  ti: { ch: ["\uE0CD", "\uE0CC", "\uE0CC"], w: [1.112, 1.112, 1.112] }
-};
-var PERC_SMUFL = {
-  noteheadXOrnate: { ch: ["\uE0AA", "\uE0AA", "\uE0AA"], w: [0.992, 0.992, 0.992] },
-  noteheadSlashX: { ch: ["\uE106", "\uE106", "\uE106"], w: [2.124, 2.124, 2.124] }
-};
-var W = {
-  noteheadBlack: 1.18,
-  noteheadHalf: 1.18,
-  noteheadWhole: 1.688,
-  noteheadXBlack: 1.16,
-  noteheadXHalf: 1.34,
-  noteheadXWhole: 1.51,
-  // 2026-10-08 在浏览器里用 measureText 量的 advance（400px Bravura；黑符头同法量得 1.18 = 上面那行，方法对得上）
-  gClef: 2.684,
-  fClef: 2.736,
-  sharp: 0.996,
-  flat: 0.904,
-  natural: 0.672,
-  doubleSharp: 1,
-  doubleFlat: 1.644,
-  dot: 0.4,
-  timeSigDigit: 1.8,
-  restWhole: 1.128,
-  restHalf: 1.128,
-  restQuarter: 1.08,
-  rest8th: 0.988,
-  rest16th: 1.28,
-  rest32nd: 1.452
-};
-var ENGRAVE = {
-  staffLine: 0.13,
-  stem: 0.12,
-  ledger: 0.16,
-  ledgerExt: 0.4,
-  beam: 0.5,
-  beamGap: 0.25,
-  thinBar: 0.16,
-  tieMid: 0.22
-};
-var STEM_UP_SE = [1.18, 0.168];
-var STEM_DOWN_NW = [0, -0.168];
-var FLAG_ANCHOR_UP = { 1: -0.04, 2: -0.088, 3: 0.376 };
-var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
-var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
-
-// src/render/stems.ts
-var TOP_LINE = 38;
-var MID_LINE = 34;
-var yLocal = (d) => (TOP_LINE - d) * 0.5;
-var flagLevel = (base) => base >= TPQ ? 0 : Math.round(Math.log2(TPQ / base));
-var LOCAL = { u: 1, y: (d) => yLocal(d) };
-function layoutStems(seq, dir, f = LOCAL) {
-  const groups = [];
-  let group = [], groupBeat = -1, groupSys = -1;
-  const endGroup = () => {
-    if (group.length) groups.push(group);
-    group = [];
-    groupBeat = -1;
-  };
-  for (const u of seq) {
-    if (!u || u.base >= WHOLE) {
-      endGroup();
-      continue;
-    }
-    if (u.base > TPQ / 2) {
-      endGroup();
-      groups.push([u]);
-      continue;
-    }
-    if (group.length && (u.beat !== groupBeat || u.system !== groupSys || u.staff !== group[0].staff)) endGroup();
-    group.push(u);
-    groupBeat = u.beat;
-    groupSys = u.system;
-  }
-  endGroup();
-  const U = (v) => v * f.u;
-  const notes = /* @__PURE__ */ new Map(), out = [];
-  for (const g of groups) {
-    const up = dir === "down" ? false : dir === "up" ? true : dir === "kit" ? g.some((s2) => !!s2.handUp) : g.reduce((a, s2) => a + (s2.dHi + s2.dLo) / 2, 0) / g.length < MID_LINE;
-    const sx = (s2) => up ? s2.x + U(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s2.x + U(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
-    const y = (s2) => f.y(s2.dHi, s2), yLow = (s2) => f.y(s2.dLo, s2);
-    const sy0 = (s2) => up ? yLow(s2) - U(STEM_UP_SE[1]) : y(s2) - U(STEM_DOWN_NW[1]);
-    const beams = [];
-    out.push({ keys: g.map((s2) => s2.key), beams });
-    if (g.length === 1) {
-      const s2 = g[0], mid = f.y(MID_LINE, s2);
-      let tip = up ? y(s2) - U(3.5) : yLow(s2) + U(3.5);
-      if (up && s2.dHi < 27) tip = Math.min(tip, mid);
-      if (!up && s2.dLo > 41) tip = Math.max(tip, mid);
-      const lv = flagLevel(s2.base);
-      notes.set(s2.key, { up, x: sx(s2), y0: sy0(s2), tip, top: up ? tip : y(s2), beamed: false, flag: lv > 0 ? { x: sx(s2) - U(ENGRAVE.stem / 2), y: up ? tip + U(FLAG_ANCHOR_UP[lv]) : tip + U(FLAG_ANCHOR_DOWN[lv]), level: lv } : null });
-      continue;
-    }
-    const xa = sx(g[0]), xb = sx(g[g.length - 1]);
-    const k = Math.max(-0.2, Math.min(0.2, (y(g[g.length - 1]) - y(g[0])) / (xb - xa) * 0.5));
-    const at = (xx, yy0) => yy0 + k * (xx - xa);
-    const yb0 = up ? Math.min(...g.map((s2) => y(s2) - U(3.5) - k * (sx(s2) - xa))) : Math.max(...g.map((s2) => yLow(s2) + U(3.5) - k * (sx(s2) - xa)));
-    for (const s2 of g) notes.set(s2.key, { up, x: sx(s2), y0: sy0(s2), tip: at(sx(s2), yb0), top: up ? Math.min(at(sx(s2), yb0) - U(ENGRAVE.beam), y(s2)) : y(s2), beamed: true, flag: null });
-    const step = U(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th = U(ENGRAVE.beam) * (up ? 1 : -1), ghost = g.every((s2) => s2.ghost);
-    const beam = (xL, xR, lvl) => {
-      const of = step * lvl;
-      beams.push({ xL: xL - U(ENGRAVE.stem / 2), yL: at(xL, yb0) + of, xR: xR + U(ENGRAVE.stem / 2), yR: at(xR, yb0) + of, th, ghost });
-    };
-    beam(xa, xb, 0);
-    const maxLv = Math.max(...g.map((s2) => flagLevel(s2.base)));
-    for (let lvl = 2; lvl <= maxLv; lvl++) {
-      let runStart = -1;
-      for (let n2 = 0; n2 <= g.length; n2++) {
-        const has = n2 < g.length && flagLevel(g[n2].base) >= lvl;
-        if (has && runStart < 0) runStart = n2;
-        if (!has && runStart >= 0) {
-          const L = runStart, R = n2 - 1;
-          if (L === R) {
-            const stub = U(1.1), toRight = L < g.length - 1;
-            beam(toRight ? sx(g[L]) : sx(g[L]) - stub, toRight ? sx(g[L]) + stub : sx(g[L]), lvl - 1);
-          } else beam(sx(g[L]), sx(g[R]), lvl - 1);
-          runStart = -1;
-        }
-      }
-    }
-  }
-  return { notes, groups: out };
-}
-
-// src/render/glyph-box.gen.ts
-var GLYPH_BOX = {
-  "\uE040": [0, 1.464, -4, 0],
-  "\uE041": [4e-3, 1.468, -4, 0],
-  "\uE042": [4e-3, 2.432, -4, 0],
-  "\uE047": [0.016, 2.2, -3.036, 0.108],
-  "\uE048": [-0.016, 3.82, -3.592, 0.632],
-  "\uE050": [0, 2.684, -4.392, 2.632],
-  "\uE052": [0, 2.684, -4.392, 3.512],
-  "\uE053": [0, 2.684, -5.28, 2.632],
-  "\uE054": [0, 2.684, -5.276, 2.632],
-  "\uE062": [-0.02, 2.736, -1.048, 2.54],
-  "\uE064": [-0.02, 2.736, -1.048, 2.976],
-  "\uE069": [0, 1.528, -1, 1],
-  "\uE080": [0.08, 1.8, -1.004, 1],
-  "\uE081": [0.08, 1.256, -1.004, 1],
-  "\uE082": [0.08, 1.704, -1.016, 1.028],
-  "\uE083": [0.08, 1.604, -0.996, 1.004],
-  "\uE084": [0.08, 1.8, -1.004, 1],
-  "\uE085": [0.08, 1.532, -0.984, 1.004],
-  "\uE086": [0.08, 1.656, -1.004, 0.996],
-  "\uE087": [0.08, 1.684, -0.996, 1],
-  "\uE088": [0.08, 1.664, -1.036, 1.036],
-  "\uE089": [0.08, 1.656, -1.004, 0.996],
-  "\uE0A2": [0, 1.688, -0.5, 0.5],
-  "\uE0A3": [0, 1.18, -0.5, 0.5],
-  "\uE0A4": [0, 1.18, -0.5, 0.5],
-  "\uE0A7": [0, 1.508, -0.5, 0.5],
-  "\uE0A8": [0, 1.336, -0.5, 0.5],
-  "\uE0A9": [0, 1.16, -0.5, 0.5],
-  "\uE0AA": [0, 0.988, -0.504, 0.504],
-  "\uE0AD": [0, 1.14, -0.5, 0.5],
-  "\uE0AE": [0, 1.044, -0.5, 0.5],
-  "\uE0AF": [-4e-3, 0.996, -0.5, 0.5],
-  "\uE0B1": [0, 0.996, -0.5, 0.5],
-  "\uE0B2": [0, 1, -0.5, 0.5],
-  "\uE0B3": [0, 0.996, -0.5, 0.5],
-  "\uE0B8": [0, 1.252, -0.5, 0.5],
-  "\uE0B9": [0, 1.252, -0.5, 0.5],
-  "\uE0BB": [0, 1.276, -0.5, 0.5],
-  "\uE0BC": [0, 1.14, -0.5, 0.5],
-  "\uE0BE": [0, 1.172, -0.5, 0.5],
-  "\uE0C4": [0, 1.276, -0.5, 0.5],
-  "\uE0C5": [0, 1.14, -0.5, 0.5],
-  "\uE0C7": [0, 1.168, -0.5, 0.5],
-  "\uE0CC": [0, 1.112, -0.5, 0.5],
-  "\uE0CD": [0, 1.112, -0.5, 0.5],
-  "\uE0CF": [-0.32, 1.5, -0.668, 0.66],
-  "\uE0D0": [-0.316, 1.504, -0.672, 0.656],
-  "\uE0D1": [-0.268, 1.544, -0.64, 0.568],
-  "\uE0D2": [-0.292, 1.52, -0.672, 0.536],
-  "\uE0D3": [-0.088, 1.732, -0.592, 0.628],
-  "\uE0D4": [-0.072, 1.744, -0.604, 0.616],
-  "\uE0D8": [1e-3, 1.666, -0.564, 0.564],
-  "\uE0D9": [0, 0.98, -0.564, 0.564],
-  "\uE0DB": [0, 0.98, -0.564, 0.564],
-  "\uE0F5": [0, 0.436, -0.724, 0.724],
-  "\uE0F6": [-0.144, 0.292, -0.724, 0.724],
-  "\uE101": [0, 2.12, -1, 1],
-  "\uE102": [0, 3.92, -1, 1],
-  "\uE103": [0, 3.12, -1, 1],
-  "\uE106": [0, 2.12, -1, 1],
-  "\uE1D2": [0, 1.836, -0.544, 0.548],
-  "\uE1D3": [0, 1.364, -3.5, 0.58],
-  "\uE1D5": [0, 1.328, -3.5, 0.564],
-  "\uE1D7": [0, 2.264, -3.492, 0.552],
-  "\uE1D9": [0, 2.324, -3.492, 0.552],
-  "\uE1DB": [0, 2.252, -4.092, 0.552],
-  "\uE1E7": [0, 0.4, -0.2, 0.2],
-  "\uE240": [0, 1.056, -0.036, 3.24],
-  "\uE241": [0, 1.224, -3.232, 0.056],
-  "\uE242": [0, 1.116, -8e-3, 3.252],
-  "\uE243": [0, 1.164, -3.248, 0.036],
-  "\uE244": [0, 1.044, -0.596, 3.248],
-  "\uE245": [0, 1.092, -3.248, 0.688],
-  "\uE260": [0, 0.904, -1.756, 0.7],
-  "\uE261": [0, 0.672, -1.364, 1.34],
-  "\uE262": [0, 0.996, -1.4, 1.392],
-  "\uE263": [0, 0.988, -0.508, 0.5],
-  "\uE264": [0, 1.644, -1.748, 0.7],
-  "\uE4A0": [0, 1.356, -0.98, -4e-3],
-  "\uE4A1": [0, 1.356, 0, 0.976],
-  "\uE4A2": [0, 0.336, -0.336, 0],
-  "\uE4A3": [0, 0.336, 0, 0.336],
-  "\uE4A4": [-4e-3, 1.352, -0.192, 0],
-  "\uE4A5": [-4e-3, 1.352, 0, 0.192],
-  "\uE4AC": [-4e-3, 0.94, -1.012, 4e-3],
-  "\uE4AD": [-4e-3, 0.94, 0, 1.016],
-  "\uE4B6": [0, 0.932, -0.948, -0.02],
-  "\uE4B7": [0.016, 0.944, 0, 0.936],
-  "\uE4B8": [0, 1.528, -0.828, 0],
-  "\uE4B9": [4e-3, 1.532, 0, 0.828],
-  "\uE4CE": [4e-3, 0.608, -1.004, -8e-3],
-  "\uE4E3": [0, 1.128, -0.036, 0.54],
-  "\uE4E4": [0, 1.128, -0.568, 8e-3],
-  "\uE4E5": [4e-3, 1.08, -1.492, 1.5],
-  "\uE4E6": [0, 0.988, -0.696, 1.004],
-  "\uE4E7": [0, 1.28, -0.716, 2],
-  "\uE4E8": [0, 1.452, -1.704, 2],
-  "\uE511": [0, 3.54, -1.852, 0.04],
-  "\uE512": [0, 3.356, -1.852, 0.04],
-  "\uE515": [0, 5.26, -1.844, 0.04],
-  "\uE520": [-0.356, 1.464, -1.096, 0.568],
-  "\uE522": [-0.564, 1.456, -1.776, 0.608],
-  "\uE52A": [-0.368, 4.292, -1.096, 0.568],
-  "\uE52B": [-0.328, 2.912, -1.096, 0.568],
-  "\uE52C": [-0.08, 3.3, -1.096, 0.568],
-  "\uE52D": [-0.08, 3.272, -1.724, 0.66],
-  "\uE52F": [-0.54, 2.44, -1.776, 0.608],
-  "\uE530": [-0.62, 3.32, -1.776, 0.608],
-  "\uE534": [-0.564, 2.476, -1.776, 0.608],
-  "\uE539": [0, 2.932, -1.776, 0.608],
-  "\uE880": [0, 1.272, -1.5, 0.032],
-  "\uE881": [0.04, 1.024, -1.488, 0],
-  "\uE882": [0.04, 1.316, -1.5, 0.024],
-  "\uE883": [0.04, 1.224, -1.5, 0.032],
-  "\uE884": [0.04, 1.252, -1.488, 0],
-  "\uE885": [0.04, 1.308, -1.492, 0.032],
-  "\uE886": [0.04, 1.256, -1.5, 0.032],
-  "\uE887": [0.12, 1.332, -1.488, 0.016],
-  "\uE888": [0.04, 1.292, -1.5, 0.032],
-  "\uE889": [0.04, 1.256, -1.5, 0.032],
-  "\uEAA9": [-0.132, 1.168, -0.476, 0],
-  "\uECA5": [0, 1.328, -2.752, 0.564]
-};
-
-// src/render/skyline.ts
-var STEP = 0.25;
-var Skyline = class {
-  up;
-  dn;
-  /** 行高要算进去的那部分（歌词另算——它有自己的行距规矩）：最高 / 最低。 */
-  hUp = Infinity;
-  hDn = -Infinity;
-  constructor(widthSp) {
-    const n2 = Math.max(1, Math.ceil(widthSp / STEP) + 1);
-    this.up = new Float64Array(n2).fill(Infinity);
-    this.dn = new Float64Array(n2).fill(-Infinity);
-  }
-  span(x0, x1) {
-    const n2 = this.up.length;
-    return [Math.max(0, Math.min(n2 - 1, Math.floor(x0 / STEP))), Math.max(0, Math.min(n2 - 1, Math.floor(x1 / STEP)))];
-  }
-  /** 记一块墨（count = 算不算进行高）。 */
-  ink(x0, x1, y0, y1, count = true) {
-    if (!(x1 >= x0) || !(y1 >= y0)) return;
-    const [a, b] = this.span(x0, x1);
-    for (let i = a; i <= b; i++) {
-      if (y0 < this.up[i]) this.up[i] = y0;
-      if (y1 > this.dn[i]) this.dn[i] = y1;
-    }
-    if (count) {
-      if (y0 < this.hUp) this.hUp = y0;
-      if (y1 > this.hDn) this.hDn = y1;
-    }
-  }
-  /** x0–x1 这一段往上最远到哪（没有墨 = Infinity）。 */
-  top(x0, x1) {
-    const [a, b] = this.span(x0, x1);
-    let v = Infinity;
-    for (let i = a; i <= b; i++) if (this.up[i] < v) v = this.up[i];
-    return v;
-  }
-  /** x0–x1 这一段往下最远到哪（没有墨 = −Infinity）。 */
-  bottom(x0, x1) {
-    const [a, b] = this.span(x0, x1);
-    let v = -Infinity;
-    for (let i = a; i <= b; i++) if (this.dn[i] > v) v = this.dn[i];
-    return v;
-  }
-};
-function primInk(p, sp, measure, emit) {
-  switch (p.t) {
-    case "glyph": {
-      const size = p.size ?? 4 * sp, k = size / 4;
-      let x = p.x;
-      for (const ch of p.ch) {
-        const b = GLYPH_BOX[ch];
-        if (b) {
-          emit(x + b[0] * k, x + b[1] * k, p.y + b[2] * k, p.y + b[3] * k);
-          x += b[1] * k;
-        } else {
-          emit(x, x + k, p.y - k / 2, p.y + k / 2);
-          x += k;
-        }
-      }
-      return;
-    }
-    case "text": {
-      const size = p.size ?? LYRIC_EM * sp, w = measure(p.s, size) * (p.sx ?? 1), x0 = p.anchor === "middle" ? p.x - w / 2 : p.anchor === "end" ? p.x - w : p.x;
-      emit(x0, x0 + w, p.y - size * INK_EST.a, p.y + size * INK_EST.d);
-      return;
-    }
-    case "line": {
-      const h = p.w / 2;
-      flatten([[p.x1, p.y1], [p.x2, p.y2]], sp, h, emit);
-      return;
-    }
-    case "rect":
-      emit(p.x, p.x + p.w, p.y, p.y + p.h);
-      return;
-    case "path":
-      for (const poly of pathPolys(p.d)) flatten(poly, sp, 0, emit);
-      return;
-  }
-}
-function flatten(pts, sp, pad, emit) {
-  if (pts.length === 1) {
-    const [x, y] = pts[0];
-    emit(x - pad, x + pad, y - pad, y + pad);
-    return;
-  }
-  const cell = STEP * sp;
-  for (let i = 1; i < pts.length; i++) {
-    const [ax, ay] = pts[i - 1], [bx, by] = pts[i];
-    if (ay === by || ax === bx) {
-      emit(Math.min(ax, bx) - pad, Math.max(ax, bx) + pad, Math.min(ay, by) - pad, Math.max(ay, by) + pad);
-      continue;
-    }
-    const n2 = Math.max(1, Math.ceil(Math.abs(bx - ax) / cell));
-    for (let k = 0; k < n2; k++) {
-      const x0 = ax + (bx - ax) * k / n2, x1 = ax + (bx - ax) * (k + 1) / n2, y0 = ay + (by - ay) * k / n2, y1 = ay + (by - ay) * (k + 1) / n2;
-      emit(Math.min(x0, x1) - pad, Math.max(x0, x1) + pad, Math.min(y0, y1) - pad, Math.max(y0, y1) + pad);
-    }
-  }
-}
-function numAt(d, i) {
-  while (i < d.length && (d[i] === "," || d[i] === " ")) i++;
-  const s2 = i;
-  if (d[i] === "-" || d[i] === "+") i++;
-  while (i < d.length) {
-    const ch = d.charCodeAt(i);
-    if (ch >= 48 && ch <= 57 || ch === 46) i++;
-    else if ((ch === 101 || ch === 69) && (d[i + 1] === "-" || d[i + 1] === "+")) i += 2;
-    else if (ch === 101 || ch === 69) i++;
-    else break;
-  }
-  return i > s2 ? [Number(d.slice(s2, i)), i] : null;
-}
-function pathPolys(d) {
-  const out = [];
-  let cur = [], x = 0, y = 0, i = 0;
-  const v = [];
-  while (i < d.length) {
-    const c = d[i].toUpperCase();
-    i++;
-    v.length = 0;
-    for (let r = numAt(d, i); r; r = numAt(d, i)) {
-      v.push(r[0]);
-      i = r[1];
-    }
-    if (c === "M") {
-      if (cur.length) out.push(cur);
-      x = v[0];
-      y = v[1];
-      cur = [[x, y]];
-      for (let k = 2; k + 1 < v.length; k += 2) {
-        x = v[k];
-        y = v[k + 1];
-        cur.push([x, y]);
-      }
-    } else if (c === "L") for (let k = 0; k + 1 < v.length; k += 2) {
-      x = v[k];
-      y = v[k + 1];
-      cur.push([x, y]);
-    }
-    else if (c === "Q") for (let k = 0; k + 3 < v.length; k += 4) {
-      const cx = v[k], cy = v[k + 1], ex = v[k + 2], ey = v[k + 3];
-      for (let n2 = 1; n2 <= 8; n2++) {
-        const t = n2 / 8, u = 1 - t;
-        cur.push([u * u * x + 2 * u * t * cx + t * t * ex, u * u * y + 2 * u * t * cy + t * t * ey]);
-      }
-      x = ex;
-      y = ey;
-    }
-    else if (c === "C") for (let k = 0; k + 5 < v.length; k += 6) {
-      const ax = v[k], ay = v[k + 1], bx = v[k + 2], by = v[k + 3], ex = v[k + 4], ey = v[k + 5];
-      for (let n2 = 1; n2 <= 8; n2++) {
-        const t = n2 / 8, u = 1 - t;
-        cur.push([u * u * u * x + 3 * u * u * t * ax + 3 * u * t * t * bx + t * t * t * ex, u * u * u * y + 3 * u * u * t * ay + 3 * u * t * t * by + t * t * t * ey]);
-      }
-      x = ex;
-      y = ey;
-    }
-    else if (c === "Z" && cur.length) {
-      cur.push(cur[0]);
-      x = cur[0][0];
-      y = cur[0][1];
-    }
-  }
-  if (cur.length) out.push(cur);
-  return out;
-}
-function shiftPrim(p, dy) {
-  if (!dy) return;
-  switch (p.t) {
-    case "glyph":
-    case "text":
-    case "rect":
-      p.y += dy;
-      return;
-    case "line":
-      p.y1 += dy;
-      p.y2 += dy;
-      return;
-    case "path": {
-      const d = p.d;
-      let out = "", i = 0;
-      for (let c = d.indexOf(","); c >= 0; c = d.indexOf(",", i)) {
-        let e = c + 1;
-        if (d[e] === "-") e++;
-        while (e < d.length) {
-          const ch = d.charCodeAt(e);
-          if (ch >= 48 && ch <= 57 || ch === 46) e++;
-          else if ((ch === 101 || ch === 69) && (d[e + 1] === "-" || d[e + 1] === "+")) e += 2;
-          else if (ch === 101 || ch === 69) e++;
-          else break;
-        }
-        out += d.slice(i, c + 1) + String(Number(d.slice(c + 1, e)) + dy);
-        i = e;
-      }
-      p.d = out + d.slice(i);
-      return;
-    }
-    default: {
-      const never = p;
-      throw new Error(`shiftPrim: unknown prim ${JSON.stringify(never)}`);
-    }
-  }
-}
-function primY(p) {
-  switch (p.t) {
-    case "glyph":
-    case "text":
-      return p.y;
-    case "rect":
-      return p.y + p.h / 2;
-    case "line":
-      return (p.y1 + p.y2) / 2;
-    case "path": {
-      const c = p.d.indexOf(","), r = c >= 0 ? numAt(p.d, c + 1) : null;
-      return r ? r[0] : 0;
-    }
-  }
-}
-
-// src/score/view-in-c.ts
-var realFifthsOf = (t) => t.realFifths ?? t.fifths;
-function toC(p, fifths) {
-  if (fifths === 0) return p;
-  const iv = keyInterval(fifths, 0);
-  return transposeInterval(p, iv.steps, iv.semis);
-}
-function trackInC(tokens) {
-  let f = 0;
-  return tokens.map((t) => {
-    if (t.kind === "key") {
-      f = t.fifths;
-      return { ...t, fifths: 0, realFifths: t.fifths };
-    }
-    if (t.kind === "note" && t.pitch && f !== 0) return { ...t, pitch: toC(t.pitch, f), ...t.chord ? { chord: t.chord.map((c) => toC(c, f)) } : {} };
-    return t;
-  });
-}
-function songInC(song, skip) {
-  return { ...song, papers: song.papers.map((p) => ({ ...p, tracks: Object.fromEntries(Object.entries(p.tracks).map(([id, toks]) => [id, skip(id) ? toks : trackInC(toks)])) })) };
-}
-
 // src/theory/western.ts
 var TPLS = [
   { id: "maj", iv: [0, 4, 7], minor: false, rs: "", sym: "" },
@@ -5105,8 +4924,8 @@ function wrapTitle(s2, w, max) {
 }
 
 // src/render/staff/glyphs.ts
-var TOP_LINE2 = 38;
-var MID_LINE2 = 34;
+var TOP_LINE = 38;
+var MID_LINE = 34;
 var BOTTOM_LINE = 30;
 var ART_GLYPH = {
   stress: { above: "\uE4B6", below: "\uE4B7", w: 1, h: 1 },
@@ -5349,6 +5168,85 @@ function unitsOf(tokens, o) {
   return { units, head, shortBars, pickup };
 }
 
+// src/render/stems.ts
+var TOP_LINE2 = 38;
+var MID_LINE2 = 34;
+var yLocal = (d) => (TOP_LINE2 - d) * 0.5;
+var flagLevel = (base) => base >= TPQ ? 0 : Math.round(Math.log2(TPQ / base));
+var LOCAL = { u: 1, y: (d) => yLocal(d) };
+function layoutStems(seq, dir, f = LOCAL) {
+  const groups = [];
+  let group = [], groupBeat = -1, groupSys = -1;
+  const endGroup = () => {
+    if (group.length) groups.push(group);
+    group = [];
+    groupBeat = -1;
+  };
+  for (const u of seq) {
+    if (!u || u.base >= WHOLE) {
+      endGroup();
+      continue;
+    }
+    if (u.base > TPQ / 2) {
+      endGroup();
+      groups.push([u]);
+      continue;
+    }
+    if (group.length && (u.beat !== groupBeat || u.system !== groupSys || u.staff !== group[0].staff)) endGroup();
+    group.push(u);
+    groupBeat = u.beat;
+    groupSys = u.system;
+  }
+  endGroup();
+  const U = (v) => v * f.u;
+  const notes = /* @__PURE__ */ new Map(), out = [];
+  for (const g of groups) {
+    const up = dir === "down" ? false : dir === "up" ? true : dir === "kit" ? g.some((s2) => !!s2.handUp) : g.reduce((a, s2) => a + (s2.dHi + s2.dLo) / 2, 0) / g.length < MID_LINE2;
+    const sx = (s2) => up ? s2.x + U(STEM_UP_SE[0] - ENGRAVE.stem / 2) : s2.x + U(STEM_DOWN_NW[0] + ENGRAVE.stem / 2);
+    const y = (s2) => f.y(s2.dHi, s2), yLow = (s2) => f.y(s2.dLo, s2);
+    const sy0 = (s2) => up ? yLow(s2) - U(STEM_UP_SE[1]) : y(s2) - U(STEM_DOWN_NW[1]);
+    const beams = [];
+    out.push({ keys: g.map((s2) => s2.key), beams });
+    if (g.length === 1) {
+      const s2 = g[0], mid = f.y(MID_LINE2, s2);
+      let tip = up ? y(s2) - U(3.5) : yLow(s2) + U(3.5);
+      if (up && s2.dHi < 27) tip = Math.min(tip, mid);
+      if (!up && s2.dLo > 41) tip = Math.max(tip, mid);
+      const lv = flagLevel(s2.base);
+      notes.set(s2.key, { up, x: sx(s2), y0: sy0(s2), tip, top: up ? tip : y(s2), beamed: false, flag: lv > 0 ? { x: sx(s2) - U(ENGRAVE.stem / 2), y: up ? tip + U(FLAG_ANCHOR_UP[lv]) : tip + U(FLAG_ANCHOR_DOWN[lv]), level: lv } : null });
+      continue;
+    }
+    const xa = sx(g[0]), xb = sx(g[g.length - 1]);
+    const k = Math.max(-0.2, Math.min(0.2, (y(g[g.length - 1]) - y(g[0])) / (xb - xa) * 0.5));
+    const at = (xx, yy0) => yy0 + k * (xx - xa);
+    const yb0 = up ? Math.min(...g.map((s2) => y(s2) - U(3.5) - k * (sx(s2) - xa))) : Math.max(...g.map((s2) => yLow(s2) + U(3.5) - k * (sx(s2) - xa)));
+    for (const s2 of g) notes.set(s2.key, { up, x: sx(s2), y0: sy0(s2), tip: at(sx(s2), yb0), top: up ? Math.min(at(sx(s2), yb0) - U(ENGRAVE.beam), y(s2)) : y(s2), beamed: true, flag: null });
+    const step = U(ENGRAVE.beam + ENGRAVE.beamGap) * (up ? 1 : -1), th = U(ENGRAVE.beam) * (up ? 1 : -1), ghost = g.every((s2) => s2.ghost);
+    const beam = (xL, xR, lvl) => {
+      const of = step * lvl;
+      beams.push({ xL: xL - U(ENGRAVE.stem / 2), yL: at(xL, yb0) + of, xR: xR + U(ENGRAVE.stem / 2), yR: at(xR, yb0) + of, th, ghost });
+    };
+    beam(xa, xb, 0);
+    const maxLv = Math.max(...g.map((s2) => flagLevel(s2.base)));
+    for (let lvl = 2; lvl <= maxLv; lvl++) {
+      let runStart = -1;
+      for (let n2 = 0; n2 <= g.length; n2++) {
+        const has = n2 < g.length && flagLevel(g[n2].base) >= lvl;
+        if (has && runStart < 0) runStart = n2;
+        if (!has && runStart >= 0) {
+          const L = runStart, R = n2 - 1;
+          if (L === R) {
+            const stub = U(1.1), toRight = L < g.length - 1;
+            beam(toRight ? sx(g[L]) : sx(g[L]) - stub, toRight ? sx(g[L]) + stub : sx(g[L]), lvl - 1);
+          } else beam(sx(g[L]), sx(g[R]), lvl - 1);
+          runStart = -1;
+        }
+      }
+    }
+  }
+  return { notes, groups: out };
+}
+
 // src/render/frame/columns.ts
 var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, tail: 4, note: 5 };
 
@@ -5364,7 +5262,7 @@ var posD = (q, p, staff, index) => {
   const m = q.pmode;
   if (m && q.p.perc) {
     const pi = percAt(q, p);
-    return m === "one" ? MID_LINE2 - (pi && pi.staff === 1 ? pi.line : 0) : TOP_LINE2 - (pi ? pi.line : 4);
+    return m === "one" ? MID_LINE - (pi && pi.staff === 1 ? pi.line : 0) : TOP_LINE - (pi ? pi.line : 4);
   }
   return diatonicIndex(p) + shAt(q, staff, index);
 };
@@ -5678,6 +5576,915 @@ function staffTracks(rows, c) {
   return { per, rowHost, shortBars };
 }
 
+// src/singer/packs.gen.ts
+var SINGER = { "voice": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "runtime": "runtime-onnxruntime-web-1.30.0-20261001", "lang": { "ja": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "zh": "lang-zh-pinyin-20261001", "en": "lang-en-cmudict-20261001" } };
+var PACKS = {
+  "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007": { "packId": "56d81c8eb51e693e937397e2557ac3af4dff328e420b761c6e5df8b8b5b80ca6", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 25165824, "name": "chunk-000", "sha256": "269d70de8efb9ef41cdfd5de0a4acd220eb263163c8d1586c2b627c8cb1eaec6" }, { "bytes": 14503410, "name": "chunk-001", "sha256": "56131bbd5133d34a5d7cf4bd668c83a2da1fe8157fbbb849a94c4d1b9569b4ff" }], "createdAt": "2026-10-07", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "piper-plus-voice", "sampleRate": 22050, "speakers": 1 }, "files": [{ "bytes": 39662905, "offset": 0, "path": "model.onnx", "sha256": "d10f3806abeda0ec9ee294d0e39ef5f3884c47b4b09028d23375b71db4107712" }, { "bytes": 6329, "offset": 39662905, "path": "config.json", "sha256": "f6a373726beef08f9094e97f434185b1f9840b76ced0a73281fc40023b02d02d" }], "lang": ["ja", "en", "zh", "es", "fr", "pt"], "license": { "attribution": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09https://tyc.rei-yumesaki.net/material/corpus/ \uFF1Bmodel: derivative of ayousanz/piper-plus-tsukuyomi-chan; zh/en language vectors from ayousanz/piper-plus-base (CC-BY-4.0)", "file": "LICENSE.txt", "name": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF1Bmodel card: license other / tsukuyomi-chan-corpus\uFF09+ base model CC-BY-4.0", "sha256": "ff76774a797dfedbd00d6b0b167cebf5ceb341d380d865ed4cba495310ace4d9" }, "name": "\u6708\u8BFB\uFF08\u4E2D\u82F1\u589E\u5F3A\uFF0C\u65F6\u957F\u53EF\u63A5\u7BA1\uFF09\u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093 piper-plus \u516D\u8BED\u5355\u97F3\u8272\uFF0Cfp16\uFF0C\u4E2D\u82F1\u6539\u8BFB\u5E95\u6A21\u7684\u8BED\u8A00\u5411\u91CF + dur_override \u8F93\u5165\uFF08\u5531\u6B4C\u7528\uFF09", "notes": "Modified model (see LICENSE.txt \xA7[4]). Needs the runtime pack (onnxruntime-web) and one text-frontend pack per language. With dur_override all zeros it reads exactly like voice-tsukuyomi-chan-zhen-6lang-fp16-20261002. The credit block and the four prohibited uses must be shown in the product UI.", "sha256": "466803b3eba2be734c26955c1b701a7e64e566a3e997474c4c744666768e56f9", "slug": "voice-tsukuyomi-chan-zhen-dur-6lang-fp16-20261007", "source": { "converted": "dur_override input on top of voice-tsukuyomi-chan-zhen-6lang-fp16-20261002 (see LICENSE.txt \xA7[4]); all zeros = that pack, sample-identical", "file": "voice-tsukuyomi-chan-zhen-6lang-fp16-20261002/model.onnx @ sha256 ae7ab68a\u2026 + piper-plus/dur-override-exp/make_dur_override.py; config.json = that pack's", "model": "https://huggingface.co/ayousanz/piper-plus-tsukuyomi-chan" }, "task": "tts", "totalBytes": 39669234, "v": 1 } },
+  "runtime-onnxruntime-web-1.30.0-20261001": { "packId": "f76668f9383b922aef483f4c0a374fb727b9a9203d230cb2fceabb34fc4459be", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 3687160, "name": "chunk-000", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "onnxruntime-web", "engineConfig": { "kind": "wasm-runtime", "version": "1.30.0" }, "files": [{ "bytes": 3687160, "offset": 0, "path": "ort-wasm-simd-threaded.wasm.gz", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788" }], "lang": [""], "license": { "attribution": "ONNX Runtime (Microsoft)", "file": "LICENSE.txt", "name": "MIT (Microsoft, onnxruntime)", "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c" }, "name": "onnxruntime-web 1.30.0\uFF08WASM \u63A8\u7406\u8FD0\u884C\u65F6\uFF0C\u5355\u7EBF\u7A0B SIMD\uFF09", "notes": "Engine binary. The matching JS glue (ort.wasm.bundle.min.mjs) is vendored in the app, not in this pack.", "sha256": "09e7a4d1376f589d6f6d4005d49db7d33b707175acb13e475c8a47858efdf788", "slug": "runtime-onnxruntime-web-1.30.0-20261001", "source": { "converted": "", "file": "dist/ort-wasm-simd-threaded.wasm (unmodified)", "model": "https://www.npmjs.com/package/onnxruntime-web/v/1.30.0" }, "task": "runtime", "totalBytes": 3687160, "v": 1 } },
+  "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001": { "packId": "b66632d8ab153a865e2727d745794da248a9c748558920bfd004443cdb9f2d4c", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 24471527, "name": "chunk-000", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "ja" }, "files": [{ "bytes": 22438129, "offset": 0, "path": "ja/sys.dic.gz", "sha256": "b1804e8c2e6244bb36c7c24eb5af9d4307a80acfb481dcffdc71c7aa60ede055" }, { "bytes": 1867237, "offset": 22438129, "path": "ja/matrix.bin.gz", "sha256": "824f60e50360fb2b186b16d1fe5fd6312919f03c33a73bc86ece37a301b3f0b8" }, { "bytes": 643, "offset": 24305366, "path": "ja/char.bin.gz", "sha256": "335d6f4a6c6cd50ab1d0782dbf6b13ab9e2bed08ed1fd34c97d499d4a05fb665" }, { "bytes": 782, "offset": 24306009, "path": "ja/unk.dic.gz", "sha256": "03721395b79e257fbd2b0e742a4faaed6073ecb79b0cf615fbe352995581b603" }, { "bytes": 147207, "offset": 24306791, "path": "ja/ojt.wasm.gz", "sha256": "97a8738abbdc773b4785b1f6ba849c432a5764cf13c1637df4da630a82f45f8a" }, { "bytes": 17529, "offset": 24453998, "path": "ja/nani-model.json.gz", "sha256": "0427c6cfe53f6c4d771f6c3e50fea06ddeaac96f5e24bdab4f49493395c9630a" }], "lang": ["ja"], "license": { "attribution": "Open JTalk (Nagoya Institute of Technology); MeCab (Taku Kudo, NTT); NAIST Japanese Dictionary; pyopenjtalk / pyopenjtalk-plus (tsukumijima et al.)", "file": "LICENSE.txt", "name": "Modified BSD (Open JTalk) + BSD (MeCab) + BSD-3-Clause style (NAIST-jdic / Open JTalk dictionary) + MIT (pyopenjtalk-plus)", "sha256": "b8dd3d66249df450fc71f3f8f8f29da02b5b01b8b47c03f412af8bc16090c1bb" }, "name": "\u65E5\u8BED\u6587\u672C\u524D\u7AEF\uFF08OpenJTalk + pyopenjtalk-plus \u8BCD\u5178\uFF09", "notes": "ojt.wasm is an engine binary built on 2026-10-01 from the upstream sources (wrapper source: backend/vendor/ojt/ojt_wasm.c). 160 MB initial heap.", "sha256": "3e1d7f8ff18204a56d4170da09258cf655bb01bb61114bcd84e8bb2441941b60", "slug": "lang-ja-pyopenjtalk-plus-0.4.1.post9-20261001", "source": { "converted": "", "file": "dictionary: wheel pyopenjtalk/dictionary/; ojt.wasm: built from the sdist (sha256 cdcb0746659857554c6dad23956cad77e21f76c9f3dfa000ea2f8d4f0ba11d99) with Emscripten 6.0.10; nani-model.json: exported from pyopenjtalk/yomi_model/", "model": "https://pypi.org/project/pyopenjtalk-plus/0.4.1.post9/" }, "task": "tts-frontend", "totalBytes": 24471527, "v": 1 } },
+  "lang-zh-pinyin-20261001": { "packId": "a84c73d781c805a65b73deb3b39ac9f5fedd15f0cdf3d66b925005c8152af9e3", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 686220, "name": "chunk-000", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "zh" }, "files": [{ "bytes": 186217, "offset": 0, "path": "zh/pinyin_single.tone3.json.gz", "sha256": "ec5c44ed3cd18eda41a04a7831f8d069600cdfb19e55e5b001a42bbdf3a4ad82" }, { "bytes": 500003, "offset": 186217, "path": "zh/pinyin_phrases.tone3.json.gz", "sha256": "43dd0534a63c6bddb4c0f20ee88f19f5933875ff3979acc777652028a66f5ba8" }], "lang": ["zh"], "license": { "attribution": "pypinyin, pinyin-data, phrase-pinyin-data (mozillazg)", "file": "LICENSE.txt", "name": "MIT (pypinyin / pinyin-data / phrase-pinyin-data)", "sha256": "82783f291266e986df7494586db072217e2940227f93208f4f920a53b7a7d91e" }, "name": "\u4E2D\u6587\u62FC\u97F3\u8BCD\u5178\uFF08pypinyin \u6570\u636E\uFF09", "notes": "Tone marks converted to tone-number style (the form the model's phoneme table expects).", "sha256": "acad023c61ddf4ed42720c63be1b35737cff734cbf4a6c8ab671b50f7fe39ae1", "slug": "lang-zh-pinyin-20261001", "source": { "converted": "", "file": "piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/pinyin_{single,phrases}.json, tone marks converted to tone numbers", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 686220, "v": 1 } },
+  "lang-en-cmudict-20261001": { "packId": "e54e7243870cef39d5015a51fe7fc57917da946908223a3d5baa5cab85956226", "manifest": { "chunkBytes": 25165824, "chunks": [{ "bytes": 868090, "name": "chunk-000", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926" }], "createdAt": "2026-10-01", "createdBy": "tools/pack.py (Claude Fable 5.1)", "engine": "piper-plus", "engineConfig": { "kind": "text-frontend", "lang": "en" }, "files": [{ "bytes": 863232, "offset": 0, "path": "en/cmudict_data.json.gz", "sha256": "3083a0cf26e01398a6877c8834150f03a230baf6965832b00bfae699063208f4" }, { "bytes": 4858, "offset": 863232, "path": "en/homographs.json.gz", "sha256": "2ef14b6d49476790fdb2008150d417cb9069f7dcb74c25706a43bcc3fe5c4187" }], "lang": ["en"], "license": { "attribution": "CMU Pronouncing Dictionary (Carnegie Mellon University); g2p-en (Kyubyong Park & Jongseok Kim)", "file": "LICENSE.txt", "name": "BSD-2-Clause style (CMU Pronouncing Dictionary) + Apache-2.0 (g2p-en homographs)", "sha256": "3d3a944042879fa3c5a25c317ea7e609c0efa7cf0900c0c298ba331953c27039" }, "name": "\u82F1\u8BED\u53D1\u97F3\u8BCD\u5178\uFF08CMUdict + \u540C\u5F62\u5F02\u97F3\u8868\uFF09", "notes": "homographs.json is a format conversion of g2p-en's homographs.en (Apache-2.0 \xA74: modified file notice).", "sha256": "21dc3f65ea440c904746ee1ee59a2e24c88aaf0696b1450b0aedcc001aca1926", "slug": "lang-en-cmudict-20261001", "source": { "converted": "", "file": "cmudict_data.json: piper-plus 82ee4e7 src/rust/piper-plus-g2p/data/; homographs.json: PyPI g2p-en 2.1.0 g2p_en/homographs.en converted to JSON (content unchanged)", "model": "https://github.com/ayutaz/piper-plus" }, "task": "tts-frontend", "totalBytes": 868090, "v": 1 } }
+};
+var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
+
+// src/format/performance.ts
+var TSUKUYOMI_CREDIT = {
+  attribution: [CREDIT.credit, ...CREDIT.attribution],
+  license: { name: _t("\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04\uFF08\u884D\u751F\u6A21\u578B\uFF09"), url: CREDIT.termsUrl, text: CREDIT.terms }
+};
+var TSUKUYOMI_MODEL = { pack: SINGER.voice, sha256: PACKS[SINGER.voice].packId };
+
+// src/score/perform.ts
+function hairpinEnd(tokens, i, bounds) {
+  const pe = paperEndOf(i, tokens.length, bounds);
+  for (let j = i + 1; j < pe; j++) {
+    const k = tokens[j].kind;
+    if (k === "dyn" || k === "hairpin") return { kind: k, at: j };
+  }
+  return { kind: "end", at: pe };
+}
+var paperEndOf = (i, n2, bounds) => {
+  for (const b of bounds ?? []) if (b > i) return b;
+  return n2;
+};
+function dynLevels(tokens, map, table, def, step, bounds) {
+  const out = /* @__PURE__ */ new Map(), tl = timeline(tokens, map), at = new Map(tl.map((x) => [x.index, x]));
+  const lo = Math.min(...Object.values(table)), hi = Math.max(...Object.values(table));
+  const onsetFrom = (j, stop = tokens.length) => {
+    for (let k = j; k < stop; k++) {
+      const x = at.get(k);
+      if (x) return x;
+    }
+    return null;
+  };
+  const endBefore = (j) => {
+    for (let k = j - 1; k >= 0; k--) {
+      const x = at.get(k);
+      if (x) return x.t1;
+    }
+    return 0;
+  };
+  let cur = def, ramp = null;
+  const lvl = (t) => ramp ? ramp.from + (ramp.to - ramp.from) * Math.max(0, Math.min(1, ramp.T1 > ramp.T0 ? (t - ramp.T0) / (ramp.T1 - ramp.T0) : 1)) : cur;
+  for (let i = 0; i < tokens.length; i++) {
+    if (ramp && i >= ramp.end) {
+      cur = ramp.to;
+      ramp = null;
+    }
+    const t = tokens[i];
+    if (t.kind === "dyn") {
+      if (!ramp) cur = table[t.value];
+      const pe = paperEndOf(i, tokens.length, bounds), j = ramp ? -1 : rampTarget(tokens, i, pe), start = j >= 0 ? onsetFrom(i + 1, j) : null;
+      if (j >= 0 && start) ramp = { from: cur, to: table[tokens[j].value], T0: start.t0, T1: onsetFrom(j, pe)?.t0 ?? endBefore(j), end: j };
+      continue;
+    }
+    if (t.kind === "hairpin") {
+      const e = hairpinEnd(tokens, i, bounds), start = onsetFrom(i + 1, e.at);
+      if (!start) continue;
+      const endVal = e.kind === "dyn" ? table[tokens[e.at].value] : null, oneStep = Math.max(lo, Math.min(hi, cur + (t.dir === "cresc" ? step : -step)));
+      const agrees = endVal !== null && (t.dir === "cresc" ? endVal > cur : endVal < cur);
+      const to = agrees ? endVal : oneStep;
+      const T1 = e.kind === "end" ? endBefore(e.at) : onsetFrom(e.at, paperEndOf(i, tokens.length, bounds))?.t0 ?? endBefore(e.at);
+      ramp = { from: cur, to, T0: start.t0, T1, end: e.at };
+      continue;
+    }
+    const x = at.get(i);
+    if (!x) continue;
+    out.set(i, { at0: lvl(x.t0), at1: lvl(x.t1) });
+    if (t.kind === "note" && !ramp && artOf(t).includes("fp")) cur = table.p;
+  }
+  return out;
+}
+function dynOverridden(tokens, bounds) {
+  const out = /* @__PURE__ */ new Set();
+  const T = { ppp: 0, pp: 1, p: 2, mp: 3, mf: 4, f: 5, ff: 6, fff: 7 };
+  const fpNotes = /* @__PURE__ */ new Set();
+  tokens.forEach((t, k) => {
+    if (t.kind === "note" && artOf(t).includes("fp")) fpNotes.add(k);
+  });
+  if (!fpNotes.size) return out;
+  const levels = (ts) => [...dynLevels(ts, void 0, T, 0, 0.5, bounds)].filter(([k]) => !fpNotes.has(k)).map(([k, l]) => `${k}:${l.at0}:${l.at1}`).join("|");
+  let base = null;
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (t.kind !== "dyn") continue;
+    let j = i + 1;
+    while (j < tokens.length && !isTimed(tokens[j])) j++;
+    if (!fpNotes.has(j)) continue;
+    base ??= levels(tokens);
+    const alt = (v) => levels(tokens.map((x, k) => k === i ? { ...t, value: v } : x));
+    if (alt(t.value === "pp" ? "ff" : "pp") === base && alt(t.value === "mf" ? "p" : "mf") === base) out.add(i);
+  }
+  return out;
+}
+
+// src/render/staff/draw.ts
+function drawStaff(c) {
+  const { song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, later, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW } = c;
+  const clefAtSys = (q, s2) => {
+    const u = q.units.find((x) => x.system === s2 && x.index >= 0);
+    if (u) return q.ds.clef[u.index] ?? q.start;
+    let c2 = q.start;
+    for (const x of q.units) if (x.system < s2 && x.index >= 0) c2 = q.ds.clef[x.index] ?? c2;
+    return c2;
+  };
+  const clefSrcAtSys = (q, s2) => {
+    const u = q.units.find((x) => x.system === s2 && x.index >= 0), upto = u ? u.index : q.tokens.length - 1;
+    for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === "clef") return i;
+    return -1;
+  };
+  const drawTime = (r, x0, beats, beatType, cls) => {
+    const num = timeSigDigits(beats), den = timeSigDigits(beatType);
+    const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw = Math.max(wn, wd);
+    prims.push({ t: "glyph", x: P(x0 + (cw - wn) / 2), y: yOf(r, 36), ch: num, cls });
+    prims.push({ t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(r, 32), ch: den, cls });
+    return cw;
+  };
+  const drawTempoAt = (r, x0, v, cls, index, change, y) => {
+    const fs = tx("tempo-word"), word = tempoWord(v).it, k = RS("tempo-word");
+    if (change) prims.push({ t: "text", x: P(x0 - 0.3), y, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change ann", size: fs, anchor: "end" });
+    const ww = mw("tempo-word", word), num = `= ${v}`, nw = mw("tempo-num", num);
+    prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
+    const gx = x0 + ww + 0.7 * k;
+    prims.push({ t: "glyph", x: P(gx), y: y - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
+    prims.push({ t: "text", x: P(gx + 1.3 * k), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+    marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - TR("tempo-word", TEMPO_EM * 1.1), w: P(gx + 1.3 * k + nw + 0.6 * k - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
+  };
+  const keyLabel = (r, x0, f, hint, index, minor = false) => {
+    const y = staffTop(r) - P(0.8);
+    if (hint) {
+      keyHints.push({ system: r, index, x: P(x0), y, size: tx("key-hint"), s: keyText(f, minor) });
+      return;
+    }
+    prims.push({ t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });
+    marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - TR("key-label", TEMPO_EM * 0.95), w: TR("key-label", KEY_LABEL_W), h: TR("key-label", TEMPO_EM * 1.2) });
+  };
+  const drawKeySig = (r, x0, f, cls, clef = "G") => {
+    const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
+    for (let k = 0; k < Math.abs(f); k++) prims.push({ t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
+  };
+  const drawTempo = (r, x0, v, cls, index, change) => {
+    placeAbove(r, 0.5, (y) => drawTempoAt(r, x0, v, cls, index, change, y));
+  };
+  for (let s2 = 0; s2 < nSys; s2++) {
+    const ind = s2 === 0 ? ind0 : indN;
+    if (song.barNumbers !== "off" && per[0]) {
+      const q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s2)) ?? per[0];
+      const c0 = q0.units.find((u) => u.kind === "chunk" && u.system === s2);
+      const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null;
+      if (num !== null && !(s2 === 0 && num <= 1)) later[9].push(() => placeAbove(rowOf(s2, 0, 0), 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" })));
+    }
+    per.forEach((q, r) => {
+      if (rowHost[r] >= 0) return;
+      const f = sysKeys[s2].get(q.p.id) ?? q.head.key;
+      for (let k = 0; k < q.staves; k++) {
+        const row = rowOf(s2, r, k), clef = q.staves === 2 ? k ? "F" : "G" : clefAtSys(q, s2), base = baseClef(clef);
+        if (rows[row]) rows[row].x1 = P(staffEnd[s2]);
+        const pm = pmode[r];
+        for (let L = 0; L < 5; L++) {
+          if (pm === "one" && L !== 2) continue;
+          const y = yOf(row, BOTTOM_LINE + 2 * L);
+          prims.push({ t: "line", x1: P(MARGIN + ind), y1: y, x2: P(staffEnd[s2]), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" });
+        }
+        let hx = MARGIN + ind + 0.6;
+        if (pm) prims.push({ t: "glyph", x: P(hx), y: yOf(row, MID_LINE), ch: PERC_CLEF, cls: "clef perc-clef" });
+        else prims.push({ t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
+        if (!pm && !q.vrt) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s2), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });
+        hx += clefW(q) + 1;
+        const keyX0 = hx;
+        const fk = pm ? 0 : f;
+        drawKeySig(row, hx, fk, "keysig", base);
+        hx += Math.abs(fk) * 1.05;
+        if (s2 === 0) {
+          if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });
+          const lab = k === 0 && !pm && q.head.idx.key !== void 0 ? o.inC ? q.head.real : fk === 0 || q.head.minor ? fk : null : null;
+          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !o.inC, q.head.idx.key, q.head.minor);
+          if (fk) hx += 0.8;
+          const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
+          if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
+          if (k === 0 && q.p.id === owner && q.head.idx.tempo !== void 0) {
+            const ti = q.head.idx.tempo;
+            later[7].push(() => drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", ti, prevBpm === null || prevBpm === q.head.bpm ? void 0 : q.head.bpm > prevBpm ? "up" : "down"));
+          }
+        }
+      }
+    });
+  }
+  per.forEach((q, r) => {
+    const tokens = q.tokens, focused = q.focused, v2 = rowHost[r] >= 0;
+    const units = q.units, tag = v2 ? { part: q.p.id } : {};
+    const dynOff = dynOverridden(tokens);
+    const clefOf = (staff, index = -1) => q.staves === 2 ? staff === 2 ? "F" : "G" : baseClef((index >= 0 ? q.ds.clef[index] : void 0) ?? q.start);
+    const dIdx = (p, staff, index = -1) => posD(q, p, staff, index);
+    const RW = (u) => rowOf(u.system, r, u.staff - 1);
+    const lyricRow = (s2) => rowOf(s2, r, q.staves - 1);
+    const navMute = (i) => navWhy(song, paper, q.p.id, tokens[i]) ? " art-mute" : "";
+    const drawNav = (u) => {
+      const t = tokens[u.index], cls = "nav-mark" + navMute(u.index), tok = t.id, row0 = rowOf(u.system, r, 0);
+      const fs = tx("nav-mark"), x = P(u.x + 0.4);
+      if (t.what === "ending") {
+        const ui = units.indexOf(u);
+        let end = null, closed = false, fallback = null, sawNote = false;
+        for (let k = ui + 1; k < units.length; k++) {
+          const v = units[k];
+          if (v.kind === "chunk") sawNote = true;
+          if (v.kind === "bar" && (v.repeat === "end" || v.repeat === "both")) {
+            end = v;
+            closed = true;
+            break;
+          }
+          if (v.kind === "nav" && tokens[v.index].what === "ending") {
+            end = v;
+            closed = true;
+            break;
+          }
+          if (v.kind === "bar" && v.repeat === "start") {
+            if (!fallback) fallback = v;
+            break;
+          }
+          if (v.kind === "bar" && sawNote && !fallback) fallback = v;
+        }
+        if (!end) end = fallback;
+        const h = TR("nav-mark", 1.6);
+        const endX = (v, sys) => v && v.system === sys ? v.kind === "bar" ? P(v.x + (v.repeat ? 0.4 + (v.repeat === "both" ? 1.2 : 1.47) : 0.7)) : P(v.x) - P(0.3) : P(right);
+        const seg = (sys, xa, openL, xb, hookR, first) => placeAbove(rowOf(sys, r, 0), 0.6, (yy) => {
+          prims.push({ t: "path", d: `${openL ? `M${xa},${yy}` : `M${xa},${yy + h}L${xa},${yy}`}L${xb},${yy}${hookR ? `L${xb},${yy + h}` : ""}`, cls: "volta" + navMute(u.index) });
+          if (!first) return;
+          prims.push({ tok, t: "text", x: x + TR("nav-mark", 0.3), y: yy + TR("nav-mark", 1.25), s: endingLabel(t.nums), cls, size: fs, anchor: "start" });
+          dyns.push({ index: u.index, kind: "nav", system: row0, x: x - P(0.4), y: yy - TR("nav-mark", 0.4), w: TR("nav-mark", 3), h: h + TR("nav-mark", 0.8) });
+        });
+        const endSys = end ? end.system : u.system;
+        seg(u.system, x - P(0.2), false, endX(endSys === u.system ? end : null, u.system), closed && endSys === u.system, true);
+        for (let s2 = u.system + 1; s2 <= endSys; s2++) {
+          const first = units.find((w) => w.system === s2);
+          seg(s2, P((first?.x ?? MARGIN) - 0.3), true, endX(s2 === endSys ? end : null, s2), closed && s2 === endSys, false);
+        }
+        return;
+      }
+      if (t.what === "segno" || t.what === "coda") {
+        const gs = 4 * sp * 0.7;
+        placeAbove(row0, 0.6, (y) => {
+          prims.push({ tok, t: "glyph", x, y, ch: t.what === "segno" ? "\uE047" : "\uE048", cls: cls.replace("nav-mark", "nav-sign"), size: gs });
+          dyns.push({ index: u.index, kind: "nav", system: row0, x: x - P(0.3), y: y - gs * 0.8, w: gs * (t.what === "segno" ? 0.6 : 1), h: gs * 0.95 });
+        });
+        return;
+      }
+      const label = NAV_LABEL[t.what], tw = P(mw("nav-word", label)), atEnd = x - tw > P(MARGIN + 6);
+      placeAbove(row0, 0.6, (y) => {
+        prims.push({ tok, t: "text", x: atEnd ? x : x - P(0.2), y, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
+        dyns.push({ index: u.index, kind: "nav", system: row0, x: atEnd ? x - tw - P(0.3) : x - P(0.5), y: y - TR("nav-word", TEMPO_EM * 1.1), w: tw + TR("nav-word", 0.8), h: TR("nav-word", TEMPO_EM * 1.5) });
+      });
+    };
+    const nhX = (c2) => P(c2.x + 0.35);
+    const pm = pmode[r], percHere = !!pm && !!q.p.perc;
+    const xHead = !!q.p.xHead && !percHere;
+    const percHead = (c2, p) => {
+      const pi = percAt(q, p), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : void 0) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal, k = c2.base >= WHOLE ? 2 : c2.base >= TPQ * 2 ? 1 : 0;
+      return { ch: hd.ch[k], w: hd.w[k] };
+    };
+    const xOf = (c2) => xHead || !!c2.whisper;
+    const nhW = (c2) => P(xOf(c2) ? c2.base >= WHOLE ? W.noteheadXWhole : c2.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : percHere && c2.pitch ? percHead(c2, c2.pitch).w : c2.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
+    const whisperMute = (q.p.ignores ?? []).includes("whisper");
+    const clsOf = (c2) => [c2.ghost ? "ghost" : "", c2.pad ? "pad-rest" : ""].filter(Boolean).join(" ") || void 0;
+    const tokOf = (c2) => c2.index >= 0 && !c2.pad ? tokens[c2.index]?.id : void 0;
+    const partLyrics = [];
+    const lyricJobs = [];
+    const dynItems = [];
+    const drawChunk = (c2) => {
+      const cls = clsOf(c2), row = RW(c2);
+      if (!c2.note) {
+        if (c2.pad || v2 || c2.mrest === "skip") return;
+        if (c2.mrest === "draw") {
+          const k = units.indexOf(c2);
+          let L = sysStarts[c2.system] ?? c2.x, R = staffEnd[c2.system] ?? right;
+          for (let i = k - 1; i >= 0; i--) {
+            const v = units[i];
+            if (v.system !== c2.system) break;
+            if (v.kind === "chunk" || v.w <= 1e-6) continue;
+            L = v.kind === "bar" ? v.x + (v.repeat ? v.w - 0.4 : 0.7) : v.x + v.w;
+            break;
+          }
+          for (let i = k + 1; i < units.length; i++) {
+            const v = units[i];
+            if (v.system !== c2.system) break;
+            if (v.kind === "bar") {
+              R = v.x + 0.7;
+              break;
+            }
+          }
+          const rx = P((L + R) / 2 - W.restWhole / 2), ry2 = pm !== "one" ? yOf(row, 36) : yOf(row, MID_LINE);
+          prims.push({ tok: tokOf(c2), t: "glyph", x: rx, y: ry2, ch: GLYPH.restWhole, cls: cls ? `rest ${cls}` : "rest" });
+          if (c2.j === 0 && c2.index >= 0) rests.push({ index: c2.index, system: row, x: rx, y: yOf(row, MID_LINE), w: P(1.2) });
+          return;
+        }
+        const g = c2.base >= WHOLE ? GLYPH.restWhole : c2.base >= TPQ * 2 ? GLYPH.restHalf : c2.base >= TPQ ? GLYPH.restQuarter : c2.base >= TPQ / 2 ? GLYPH.rest8th : c2.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
+        const ry = c2.base >= WHOLE && pm !== "one" ? yOf(row, 36) : yOf(row, MID_LINE);
+        prims.push({ tok: tokOf(c2), t: "glyph", x: P(c2.x + 0.35), y: ry, ch: g, cls: cls ? `rest ${cls}` : "rest" });
+        if (c2.j === 0 && c2.index >= 0 && !c2.pad) rests.push({ index: c2.index, system: row, x: P(c2.x + 0.35), y: yOf(row, MID_LINE), w: P(1.2) });
+        if (c2.dotted) prims.push({ tok: tokOf(c2), t: "glyph", x: P(c2.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
+        return;
+      }
+      const ds = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index));
+      const d = ds[0], y = yOf(row, d), x0 = nhX(c2);
+      c2.accs.forEach((a, k) => {
+        if (a === null || percHere) return;
+        const ag = a === 1 ? GLYPH.accidentalSharp : a === -1 ? GLYPH.accidentalFlat : a === 2 ? GLYPH.accidentalDoubleSharp : a === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
+        const near = c2.accs.slice(0, k).some((b, kk) => b !== null && Math.abs(ds[kk] - ds[k]) < 3);
+        prims.push({ tok: tokOf(c2), t: "glyph", x: P(c2.x - 1.1) - (near ? P(1.1) : 0) - (c2.art.includes("ghost") ? P(0.6) : 0), y: yOf(row, ds[k]), ch: ag, cls });
+      });
+      const ledgers = /* @__PURE__ */ new Set();
+      for (const dd of ds) {
+        for (let L = 28; L >= dd; L -= 2) ledgers.add(L);
+        for (let L = 40; L <= dd; L += 2) ledgers.add(L);
+      }
+      for (const L of ledgers) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(row, L), x2: x0 + nhW(c2) + P(ENGRAVE.ledgerExt), y2: yOf(row, L), w: P(ENGRAVE.ledger), cls: "ledger" });
+      const ng = xOf(c2) ? c2.base >= WHOLE ? GLYPH.noteheadXWhole : c2.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack : c2.base >= WHOLE ? GLYPH.noteheadWhole : c2.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
+      let shifted = false;
+      ds.forEach((dd, k) => {
+        const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted;
+        shifted = second;
+        const mute = k > 0 && !!q.p.mono;
+        if (c2.j === 0 && k > 0) chordHeads.push({ ...tag, index: c2.index, system: row, x: second ? x0 + nhW(c2) * 0.95 : x0, y: yOf(row, dd), w: nhW(c2) });
+        const hch = percHere && !xOf(c2) ? percHead(c2, (c2.pitches.length ? c2.pitches : [c2.pitch])[k]).ch : ng;
+        prims.push({ tok: tokOf(c2), t: "glyph", x: second ? x0 + nhW(c2) * 0.95 : x0, y: yOf(row, dd), ch: hch, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c2.whisper && whisperMute ? "art-mute" : ""].filter(Boolean).join(" ") });
+        if (c2.art.includes("ghost")) {
+          const hx = second ? x0 + nhW(c2) * 0.95 : x0, pc2 = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
+          prims.push({ tok: tokOf(c2), t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\uE0F5", cls: pc2 });
+          prims.push({ tok: tokOf(c2), t: "glyph", x: hx + nhW(c2) + P(0.25), y: yOf(row, dd), ch: "\uE0F6", cls: pc2 });
+        }
+      });
+      if (c2.dotted) prims.push({ tok: tokOf(c2), t: "glyph", x: x0 + nhW(c2) + P(0.3), y: yOf(row, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
+      if (c2.j === 0) notes.push({ ...tag, index: c2.index, system: row, x: x0, y, w: nhW(c2), d: diatonicIndex(c2.pitch) });
+      if (c2.j === 0 && !c2.tie) lyricJobs.push({ sys: c2.system, run: () => {
+        const fit = lyrPlan.get(`${r}:${c2.index}`), ly0 = lyricY(lyricRow(c2.system)), cx0 = x0 + nhW(c2) / 2;
+        const ly = ly0, cx2 = cx0 + (fit ? P(fit.dx) : 0);
+        partLyrics.push({ index: c2.index, system: row, x: cx2, y: ly, ...fit?.tight ? { tight: true } : {} });
+        if (c2.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly0, x2: x0 + nhW(c2) + P(0.4), y2: ly0, w: P(0.12), cls: "melisma" });
+        else if (c2.lyric) prims.push({ tok: tokOf(c2), t: "text", x: cx2, y: ly, s: lyricShow(c2.lyric), ...look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", q.p.lyricMute?.has(tokens[c2.index]?.id ?? -1) ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
+      } });
+    };
+    for (const u of units) {
+      const row = RW(u);
+      if (u.kind === "dyn") {
+        const dr = rowOf(u.system, r, 0), ui = units.indexOf(u), [il, ir, iu, id] = DYN_INK[u.value];
+        dynItems.push({ row: dr, x0: P(u.x + 0.3 + il), keys: [`${dr}|d${ui}`], draw: (dy) => {
+          prims.push({ t: "glyph", x: P(u.x + 0.3), y: dy, ch: DYN_GLYPH[u.value], tok: tokens[u.index].id, cls: "dyn" + (dynOff.has(u.index) ? " art-mute" : "") });
+          dyns.push({ index: u.index, kind: "dyn", system: dr, x: P(u.x + 0.3 + il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
+        } });
+        continue;
+      }
+      if (u.kind === "groove") {
+        const gt = tokens[u.index], gr = rowOf(u.system, r, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
+        const fs = tx("groove-mark"), gw = P(mw("groove-mark", label)), gx = P(u.x + 0.3);
+        later[8].push(() => placeAbove(gr, 0.5, (gy) => {
+          prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
+          dyns.push({ index: u.index, kind: "groove", system: gr, x: P(u.x), y: gy - TR("groove-mark", TEMPO_EM * 1.1), w: gw + TR("groove-mark", 0.6), h: TR("groove-mark", TEMPO_EM * 1.5) });
+        }));
+        continue;
+      }
+      if (u.kind === "head") continue;
+      if (v2 && (u.kind === "bar" || u.kind === "key" || u.kind === "time")) continue;
+      if (u.kind === "bar" || u.kind === "key" || u.kind === "time") {
+        for (let k = 0; k < q.staves; k++) {
+          const rr = rowOf(u.system, r, k), clef = clefOf(k + 1, u.index), sh = clef === "F" ? 12 : 0;
+          if (u.kind === "bar") bars.push({ system: rr, x: P(u.x + 0.7) });
+          if (u.kind === "bar" && u.repeat) {
+            prims.push({ t: "glyph", x: P(u.x + 0.4), y: yOf(rr, BOTTOM_LINE), ch: u.repeat === "start" ? "\uE040" : u.repeat === "end" ? "\uE041" : "\uE042", cls: "repeat-bar" + navMute(u.index), tok: tokens[u.index].id });
+            if (u.times && u.times > 2 && k === 0) {
+              const times = u.times, bx = P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), cl = "nav-mark" + navMute(u.index);
+              later[6].push(() => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `\xD7${times}`, cls: cl, size: tx("nav-mark"), anchor: "end" })));
+            }
+          } else if (u.kind === "bar") {
+            const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar";
+            const [bt, bb] = pmode[r] === "one" ? [MID_LINE + 2, MID_LINE - 2] : [TOP_LINE, BOTTOM_LINE];
+            prims.push({ t: "line", x1: bx, y1: yOf(rr, bt), x2: bx, y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
+            if (u.style === "double") prims.push({ t: "line", x1: bx + P(0.45), y1: yOf(rr, bt), x2: bx + P(0.45), y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
+            if (u.style === "final") prims.push({ t: "line", x1: bx + P(0.6), y1: yOf(rr, bt), x2: bx + P(0.6), y2: yOf(rr, bb), w: P(0.5), cls: bcls });
+            if (u.warn && k === 0) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn ann" });
+          } else if (u.kind === "key") {
+            if (pmode[r]) {
+              marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
+              continue;
+            }
+            const cls = "keysig";
+            if (u.fifths === 0) {
+              const pos = u.prev > 0 ? SHARP_POS : FLAT_POS;
+              for (let j = 0; j < Math.abs(u.prev); j++) prims.push({ t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
+            } else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef);
+            if (k === 0) {
+              if (o.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
+              else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor);
+              else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor);
+            }
+            marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
+          } else {
+            const cls = "timesig";
+            drawTime(rr, u.x + 0.6, u.beats, u.beatType, cls);
+            marks.push({ index: u.index, kind: "time", system: rr, x: P(u.x), ...staffHit(rr), w: P(u.w) });
+          }
+        }
+        continue;
+      }
+      if (u.kind === "tempo") {
+        if (q.p.id === owner) later[7].push(() => drawTempo(row, u.x + 0.3, u.bpm, "tempo", u.index));
+        continue;
+      }
+      if (u.kind === "hairpin") continue;
+      if (u.kind === "nav") {
+        later[6].push(() => drawNav(u));
+        continue;
+      }
+      if (u.kind === "ottava") continue;
+      if (u.kind === "clef") {
+        if (q.staves === 2) continue;
+        const first = !units.some((x) => x.system === u.system && x.index >= 0 && x.index < u.index && x.kind !== "ottava");
+        const base = baseClef(u.clef), cls = "clef cue";
+        if (!first) prims.push({ t: "glyph", x: P(u.x + 0.35), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[u.clef], cls, size: P(4 * CLEF_CUE) });
+        clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: u.index, system: row, x: P(u.x), ...staffHit(row), w: P(Math.max(u.w, 1.6)) });
+        continue;
+      }
+      drawChunk(u);
+    }
+    if (q.staves === 1) {
+      const SIG = { 1: GLYPH.ottavaAlta, 2: GLYPH.quindicesimaAlta, [-1]: GLYPH.ottavaBassa };
+      const SIG_W = { 1: 3.54, 2: 5.26, [-1]: 3.36 };
+      for (let sy = 0; sy < nSys; sy++) {
+        const row0 = rowOf(sy, r, 0);
+        const us = units.filter((x) => x.system === sy && x.kind === "chunk").sort((a, b) => a.x - b.x);
+        let k = 0;
+        while (k < us.length) {
+          const v = q.ds.ott[us[k].index] ?? 0;
+          if (!v) {
+            k++;
+            continue;
+          }
+          const isAuto = !!q.ds.auto?.[us[k].index];
+          let e = k;
+          while (e + 1 < us.length && (q.ds.ott[us[e + 1].index] ?? 0) === v && !!q.ds.auto?.[us[e + 1].index] === isAuto) e++;
+          const up = v > 0;
+          {
+            const sk = k, se = e;
+            (up ? later[5] : later[12]).push(() => {
+              const pl = up ? placeAbove : placeBelow;
+              pl(row0, 0.6, (y) => {
+                const k2 = sk, e2 = se;
+                const prevIdx = us[k2].index - 1, cont = k2 === 0 && prevIdx >= 0 && (q.ds.ott[prevIdx] ?? 0) === v && units.some((x) => x.index >= 0 && x.index <= prevIdx && x.system < sy);
+                const nextU = us[e2 + 1], lastIdx = us[e2].index, endsHere = !!nextU || (q.ds.ott[lastIdx + 1] ?? 0) !== v || lastIdx + 1 >= q.tokens.length || !units.some((x) => x.system > sy && x.index > lastIdx);
+                const x0 = P(us[k2].x - 0.2), x1 = P(us[e2].x + us[e2].w - 0.3), sz = P(4 * 0.85), gw = P(SIG_W[v] * 0.85);
+                const src = units.find((x) => x.kind === "ottava" && x.index <= us[k2].index && (q.ds.ott[x.index] ?? 0) === v && x.system === sy) ?? null;
+                if (cont) prims.push({ t: "text", x: x0, y: y + P(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont", size: tx("ottava"), anchor: "start" });
+                else prims.push({ t: "glyph", x: x0, y: y + P(up ? 0.4 : 0.4), ch: SIG[v], cls: isAuto ? "ottava auto" : "ottava", size: sz });
+                const lx = x0 + (cont ? P(4.2) : gw) + P(0.4), ly = y - P(up ? 0.55 : 0.55);
+                for (let x = lx; x + P(0.6) <= x1; x += P(1)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" });
+                if (endsHere) prims.push({ t: "line", x1, y1: ly, x2: x1, y2: ly + P(up ? 1.1 : -1.1), w: P(0.1), cls: "ottava-line" });
+                const hitIdx = src ? src.index : (() => {
+                  for (let i = us[k2].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i;
+                  return -1;
+                })();
+                const run2 = isAuto ? q.ds.runs.find((rr) => us[k2].index >= rr.from && us[k2].index <= rr.to) : void 0;
+                if (q.vrt) {
+                } else if (run2) clefs.push({ kind: "ottava", paper: paper.id, part: q.p.id, index: -1, run: run2, system: row0, x: x0, y: y - P(1.6), w: Math.max(gw, P(3)), h: P(2.2) });
+                else if (hitIdx >= 0) clefs.push({ kind: "ottava", paper: paper.id, part: q.p.id, index: hitIdx, system: row0, x: x0, y: y - P(1.6), w: Math.max(gw, P(3)), h: P(2.2) });
+              });
+            });
+          }
+          k = e + 1;
+        }
+      }
+    }
+    const stemIn = stemInput(per[r], nhX);
+    const stems = layoutStems(stemIn.seq, stemIn.dir, { u: sp, y: (d, n2) => yOf(RW(n2.key), d) });
+    const upOf = /* @__PURE__ */ new Map();
+    const tipOf = /* @__PURE__ */ new Map();
+    const stemXOf = /* @__PURE__ */ new Map();
+    for (const g of stems.groups) {
+      for (const c2 of g.keys) {
+        const st = stems.notes.get(c2);
+        upOf.set(c2, st.up);
+        tipOf.set(c2, st.tip);
+        stemXOf.set(c2, st.x);
+        prims.push({ tok: tokOf(c2), t: "line", x1: st.x, y1: st.y0, x2: st.x, y2: st.tip, w: P(ENGRAVE.stem), cls: clsOf(c2) });
+        if (st.flag) prims.push({ tok: tokOf(c2), t: "glyph", x: st.flag.x, y: st.flag.y, ch: (st.up ? [GLYPH.flag8thUp, GLYPH.flag16thUp, GLYPH.flag32ndUp] : [GLYPH.flag8thDown, GLYPH.flag16thDown, GLYPH.flag32ndDown])[st.flag.level - 1], cls: clsOf(c2) });
+      }
+      for (const bm of g.beams) prims.push({ t: "path", d: `M${bm.xL},${bm.yL}L${bm.xR},${bm.yR}L${bm.xR},${bm.yR + bm.th}L${bm.xL},${bm.yL + bm.th}Z`, cls: ["beam", bm.ghost ? "ghost" : ""].filter(Boolean).join(" ") });
+    }
+    const rollMute = (q.p.ignores ?? []).includes("roll");
+    for (const c2 of units) {
+      if (c2.kind !== "chunk" || !c2.note || c2.index < 0) continue;
+      const t = tokens[c2.index];
+      if (t?.kind !== "note" || !(t.art ?? []).includes("roll")) continue;
+      const st = stems.notes.get(c2), sx = stemXOf.get(c2);
+      let cx2, cy;
+      if (st && sx !== void 0) {
+        cx2 = sx;
+        cy = st.y0 + (st.tip - st.y0) * 0.55;
+      } else {
+        const ds = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index));
+        cx2 = nhX(c2) + nhW(c2) / 2;
+        cy = yOf(RW(c2), Math.max(...ds)) - P(1.7);
+      }
+      const W3 = P(1.2), T = P(0.24), R = P(0.36), G = P(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c2) ?? ""].filter(Boolean).join(" ");
+      for (const k of [-1, 0, 1]) {
+        const y = cy + k * G;
+        prims.push({ tok: tokOf(c2), t: "path", d: `M${cx2 - W3 / 2},${y + R / 2}L${cx2 + W3 / 2},${y - R / 2}L${cx2 + W3 / 2},${y - R / 2 + T}L${cx2 - W3 / 2},${y + R / 2 + T}Z`, cls });
+      }
+    }
+    const ign = new Set(q.p.ignores ?? []);
+    const artEdge = /* @__PURE__ */ new Map();
+    for (const c2 of units) {
+      if (c2.kind !== "chunk" || !c2.note || !c2.art.length && !c2.breath) continue;
+      const row = RW(c2), cls = clsOf(c2), cx2 = nhX(c2) + nhW(c2) / 2;
+      const dsC = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
+      const below = upOf.get(c2) ?? false, sgn = below ? -1 : 1;
+      const inStaff = (d2) => d2 >= BOTTOM_LINE && d2 <= TOP_LINE;
+      let d = below ? dLo - 2 : dHi + 2;
+      const artCls = (a) => ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ");
+      for (const a of ["staccato", "tenuto"].filter((x) => c2.art.includes(x))) {
+        if (inStaff(d) && d % 2 === 0) d += sgn;
+        const m = ART_GLYPH[a], g = below ? m.below : m.above;
+        const gy = yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2));
+        prims.push({ tok: tokOf(c2), t: "glyph", x: cx2 - P(m.w / 2), y: gy, ch: g, cls: artCls(a) });
+        artEdge.set(c2, { below, y: below ? gy + P(m.h) : gy - P(m.h) });
+        d += sgn * 2;
+      }
+      const strong = ["accent", "marcato", "stress", "unstress"].filter((x) => c2.art.includes(x));
+      if (strong.length) later[2].push(() => {
+        for (const a of strong) {
+          const m = ART_GLYPH[a];
+          placeAbove(row, 0.4, (y) => prims.push({ tok: tokOf(c2), t: "glyph", x: cx2 - P(m.w / 2), y, ch: m.above, cls: artCls(a) }));
+        }
+      });
+      const swl = c2.j === 0 ? swellOf(tokens[c2.index]) : void 0;
+      const atk = ["sfz", "fp"].filter((x) => c2.art.includes(x));
+      if (swl || atk.length) later[3].push(() => placeAbove(row, 0.5, (y) => {
+        let xa = nhX(c2);
+        for (const a of atk) {
+          const ch = a === "sfz" ? "\uE539" : "\uE534", w = P(GLYPH_BOX[ch]?.[1] ?? 2.6), gx = cx2 - w / 2;
+          prims.push({ tok: tokOf(c2), t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+          xa = Math.max(xa, gx + w + P(0.3));
+        }
+        if (!swl) return;
+        const ym = y - P(0.5), xb = Math.max(xa + P(1.6), nhX(c2) + P(c2.w) - P(0.8)), H2 = P(0.35);
+        const cl = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
+        const d2 = swl === "<" ? `M${xb},${ym - H2}L${xa},${ym}L${xb},${ym + H2}` : swl === ">" ? `M${xa},${ym - H2}L${xb},${ym}L${xa},${ym + H2}` : `M${xa},${ym}L${mx},${ym - H2}L${xb},${ym}M${xa},${ym}L${mx},${ym + H2}L${xb},${ym}`;
+        prims.push({ t: "path", d: d2, cls: cl });
+      }));
+      if (c2.art.includes("arpeggio")) {
+        const yTop = yOf(row, dHi) - P(0.7), yBot = yOf(row, dLo) + P(0.7), x0 = nhX(c2) - P(c2.accW + 0.9), amp = P(0.28), step = P(0.5);
+        let dd = `M${x0},${yBot}`;
+        for (let y = yBot, k = 0; y > yTop; y -= step, k++) dd += `Q${x0 + (k % 2 ? -amp : amp) * 2},${y - step / 2} ${x0},${Math.max(yTop, y - step)}`;
+        prims.push({ tok: tokOf(c2), t: "path", d: dd, cls: ["arpeggio", ign.has("arpeggio") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+      }
+      if (c2.breath) prims.push({ tok: tokOf(c2), t: "glyph", x: nhX(c2) + nhW(c2) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
+      if (c2.breath && c2.inhale) prims.push({ tok: tokOf(c2), t: "text", x: nhX(c2) + nhW(c2) + P(1.35), y: yOf(row, TOP_LINE + 1) + P(0.45), s: c2.inhale === "big" ? _tIn(o.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o.locale, "\u5438##\u8BB0\u53F7"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx("breath-label"), anchor: "start" });
+    }
+    const tieArc = (row, d, x1, x2, ghost) => {
+      const len = Math.abs(x2 - x1), sgn = d < MID_LINE ? 1 : -1, y = yOf(row, d) + sgn * P(0.8), h = Math.min(len * 0.25, Math.max(P(0.5), Math.min(P(1.6), len * 0.12)));
+      prims.push({ t: "path", d: `M${x1},${y}Q${(x1 + x2) / 2},${y + sgn * h} ${x2},${y}`, cls: ghost ? "tie ghost" : "tie" });
+    };
+    const tieBetween = (a, b) => {
+      if (a.staff !== b.staff || !a.pitch || !b.pitch) return;
+      const da = dIdx(a.pitch, a.staff, a.index), db = dIdx(b.pitch, b.staff, b.index);
+      if (a.system === b.system) {
+        tieArc(RW(b), db, nhX(a) + nhW(a) * 0.8, nhX(b) + nhW(b) * 0.2, b.ghost);
+        return;
+      }
+      tieArc(RW(a), da, nhX(a) + nhW(a) * 0.8, Math.max(nhX(a) + nhW(a) * 0.8 + P(2), P(right) - P(0.3)), b.ghost);
+      tieArc(RW(b), db, Math.max(P((sysStarts[b.system] ?? 0) - 1.6), nhX(b) - P(3)), nhX(b) + nhW(b) * 0.2, b.ghost);
+    };
+    const realChunks = units.filter((u) => u.kind === "chunk");
+    for (let n2 = 1; n2 < realChunks.length; n2++) {
+      const a = realChunks[n2 - 1], b = realChunks[n2];
+      if (!a.note || !b.note) continue;
+      if (b.j > 0 && a.index === b.index || b.tie && a.last) tieBetween(a, b);
+    }
+    const headOf = /* @__PURE__ */ new Map();
+    for (const c2 of realChunks) if (c2.note && c2.j === 0 && !headOf.has(c2.index)) headOf.set(c2.index, c2);
+    const noteIdx = [...headOf.keys()].sort((x, y) => x - y), slurOf = (k) => !!tokens[noteIdx[k]].slur;
+    const ext = (c2, below) => {
+      const ds = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index));
+      return yOf(RW(c2), below ? Math.min(...ds) : Math.max(...ds));
+    };
+    const ART_CLR = 0.5;
+    const reach = (c2, below, head) => {
+      const sgn = below ? 1 : -1, h = ext(c2, below) + sgn * P(head), a = artEdge.get(c2);
+      return a && a.below === below ? below ? Math.max(h, a.y + P(ART_CLR)) : Math.min(h, a.y - P(ART_CLR)) : h;
+    };
+    for (let k = 0; k < noteIdx.length; k++) {
+      if (!slurOf(k) || k > 0 && slurOf(k - 1)) continue;
+      let e = k;
+      while (e < noteIdx.length - 1 && slurOf(e)) e++;
+      if (e === k) continue;
+      const run2 = noteIdx.slice(k, e + 1).map((x) => headOf.get(x)).filter((c2) => c2.pitch), below = upOf.get(run2[0]) ?? false, sgn = below ? 1 : -1;
+      const groups = [];
+      for (const c2 of run2) {
+        const g = groups[groups.length - 1];
+        if (g && g[0].system === c2.system) g.push(c2);
+        else groups.push([c2]);
+      }
+      groups.forEach((g, gi) => {
+        const f = g[0], l = g[g.length - 1], openL = gi > 0, openR = gi < groups.length - 1;
+        const xa = openL ? nhX(f) - P(2) : nhX(f) + nhW(f) / 2, xb = openR ? nhX(l) + nhW(l) + P(2) : nhX(l) + nhW(l) / 2;
+        if (xb - xa < P(1)) return;
+        const ya = reach(f, below, 1.2), yb = reach(l, below, 1.2);
+        const peak = g.map((c2) => ext(c2, below) + sgn * P(2.2));
+        let cy = below ? Math.max(ya, yb, ...peak) + P(0.6) : Math.min(ya, yb, ...peak) - P(0.6);
+        const k1 = xa + (xb - xa) * 0.2, k2 = xb - (xb - xa) * 0.2;
+        const bez = (t, p0, p1, p2, p3) => {
+          const u = 1 - t;
+          return u * u * u * p0 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
+        };
+        for (const c2 of g.slice(1, -1)) {
+          const a = artEdge.get(c2);
+          if (!a || a.below !== below) continue;
+          const x = nhX(c2) + nhW(c2) / 2;
+          let lo = 0, hi = 1;
+          for (let it = 0; it < 30; it++) {
+            const m = (lo + hi) / 2;
+            if (bez(m, xa, k1, k2, xb) < x) lo = m;
+            else hi = m;
+          }
+          const t = (lo + hi) / 2, B = 3 * t * (1 - t), A = (1 - t) ** 3 * ya + t ** 3 * yb, need = reach(c2, below, 0);
+          if (B > 1e-6) cy = below ? Math.max(cy, (need - A) / B) : Math.min(cy, (need - A) / B);
+        }
+        prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy} ${xb - (xb - xa) * 0.2},${cy} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
+      });
+    }
+    const LEVELS = DYNS;
+    const lastChunk = [...units].reverse().find((u) => u.kind === "chunk");
+    const dynKey = (u) => `${rowOf(u.system, r, 0)}|d${units.indexOf(u)}`;
+    const wedgeKey = (index, sy) => `${rowOf(sy, r, 0)}|w${index}:${sy}`;
+    const wedgeItems = (index, dir, s0, startX, s1, endX, ramp, k0, k1, tail) => {
+      const leftOf2 = (sy) => Math.min(...units.filter((u) => u.kind === "chunk" && u.system === sy).map((c2) => nhX(c2)), P(right)) - P(1);
+      const segs = [];
+      for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf2(sy), sy === s1 ? endX : P(right) - P(0.3)]);
+      const total = segs.reduce((n2, [, a, b]) => n2 + Math.max(0, b - a), 0) || 1, H2 = P(0.5), long = total > P(right - MARGIN);
+      const word = dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
+      let said = false, acc2 = 0, tailDone = false;
+      segs.forEach(([sy, a0, b], i) => {
+        if (b - a0 < P(0.3)) return;
+        const row = rowOf(sy, r, 0), keys = [wedgeKey(index, sy)], last = i === segs.length - 1;
+        if (i === 0 && k0) keys.push(k0);
+        if (last && k1) keys.push(k1);
+        if (last) tailDone = true;
+        if (long) {
+          const writeWord = !said && b - a0 >= ww + P(1);
+          if (writeWord) said = true;
+          dynItems.push({ row, x0: a0, keys, draw: (base) => {
+            const midY = base - P(0.5);
+            let a = a0;
+            if (writeWord) {
+              prims.push({ t: "text", x: a, y: midY + P(0.5), s: word, tok: tokens[index].id, cls: ["dyn-word", ramp ? "ramp" : ""].filter(Boolean).join(" "), size: tx("dyn-word"), anchor: "start" });
+              a += ww + P(0.6);
+            }
+            for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY, x2: x + P(DASH.len), y2: midY, w: P(0.12), cls: "dyn-dash" });
+            dyns.push({ index, kind: "hairpin", system: row, x: a0, y: midY - P(1.4), w: b - a0, h: P(2.8) });
+            if (last && tail) tail(base);
+          } });
+          return;
+        }
+        const f0 = acc2 / total, f1 = (acc2 + b - a0) / total;
+        acc2 += b - a0;
+        const [h0, h1] = dir === "cresc" ? [H2 * f0, H2 * f1] : [H2 * (1 - f0), H2 * (1 - f1)];
+        dynItems.push({ row, x0: a0, keys, draw: (base) => {
+          const y = base - P(0.5), a = a0;
+          let d = `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`;
+          if (ramp) {
+            const hAt = (x) => h0 + (h1 - h0) * ((x - a) / (b - a)), on = P(RAMP_DASH.len), per2 = P(RAMP_DASH.len + RAMP_DASH.gap);
+            d = "";
+            for (let x = a; x < b - P(0.05); x += per2) {
+              const x2 = Math.min(b, x + on);
+              d += `M${x},${y - hAt(x)}L${x2},${y - hAt(x2)}M${x},${y + hAt(x)}L${x2},${y + hAt(x2)}`;
+            }
+          }
+          prims.push({ tok: tokens[index].id, t: "path", d, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
+          dyns.push({ index, kind: "hairpin", system: row, x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
+          if (last && tail) tail(base);
+        } });
+      });
+      if (!tailDone && tail) dynItems.push({ row: rowOf(s1, r, 0), x0: endX, keys: [wedgeKey(index, s1), ...k1 ? [k1] : []], draw: tail });
+    };
+    units.forEach((h, hi) => {
+      if (h.kind !== "hairpin" || !lastChunk) return;
+      const prevU = units[hi - 1];
+      const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
+      const startX = Math.max(P(h.x + 0.3), dynBefore ? P(dynBefore.x + 0.3 + DYN_INK[dynBefore.value][1] + PIN_GAP) : 0), s0 = h.system;
+      const endU = units.slice(hi + 1).find((u) => u.kind === "dyn" || u.kind === "hairpin");
+      let curDyn = "mf";
+      for (let j = h.index - 1; j >= 0; j--) {
+        const u = tokens[j];
+        if (u.kind === "dyn") {
+          curDyn = u.value;
+          break;
+        }
+      }
+      const ci = LEVELS.indexOf(curDyn), against = !!endU && endU.kind === "dyn" && (h.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci : LEVELS.indexOf(endU.value) >= ci);
+      const IMPLIED_W = 3;
+      const endX = endU ? P(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : nhX(lastChunk) + nhW(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;
+      if (s1 < s0) return;
+      let endXd = endX, labelAbove = false;
+      const MIN_PIN = P(1.4);
+      if (s1 === s0 && endXd - startX < MIN_PIN) {
+        const roomy = against ? endXd + P(IMPLIED_W + 0.4) : endXd;
+        if (against) labelAbove = true;
+        endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
+      }
+      const k1 = !endU ? void 0 : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
+      const tail = !endU || against ? (base) => {
+        const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
+        prims.push({ t: "text", x: labelAbove ? endXd - P(1.2) : endXd + P(0.4), y: base + P(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" });
+      } : void 0;
+      wedgeItems(h.index, h.dir, s0, startX, s1, endXd, false, dynBefore ? dynKey(dynBefore) : void 0, k1, tail);
+    });
+    for (const u of units) {
+      if (u.kind !== "dyn" || !tokens[u.index].ramp) continue;
+      const src = rampSource(tokens, u.index);
+      if (typeof src !== "number") continue;
+      const pu = units.find((x) => x.kind === "dyn" && x.index === src);
+      if (!pu) continue;
+      const a = LEVELS.indexOf(pu.value), b = LEVELS.indexOf(u.value);
+      if (a === b) continue;
+      const sx = P(pu.x + 0.3 + DYN_INK[pu.value][1] + PIN_GAP);
+      let ex = P(u.x + 0.3 + DYN_INK[u.value][0] - PIN_GAP);
+      if (u.system === pu.system && ex - sx < P(1.4)) ex = sx + P(1.4);
+      if (u.system < pu.system) continue;
+      wedgeItems(u.index, b > a ? "cresc" : "dim", pu.system, sx, u.system, ex, true, dynKey(pu), dynKey(u));
+    }
+    later[4].push(() => {
+      if (!dynItems.length) return;
+      const parent = dynItems.map((_, i) => i), find = (i) => parent[i] === i ? i : parent[i] = find(parent[i]);
+      const byKey = /* @__PURE__ */ new Map();
+      dynItems.forEach((it, i) => {
+        for (const k of it.keys) {
+          const j = byKey.get(k);
+          if (j === void 0) byKey.set(k, i);
+          else parent[find(i)] = find(j);
+        }
+      });
+      const chains = /* @__PURE__ */ new Map();
+      dynItems.forEach((_, i) => {
+        const root = find(i), l = chains.get(root);
+        if (l) l.push(i);
+        else chains.set(root, [i]);
+      });
+      const minX = (ch) => Math.min(...ch.map((i) => dynItems[i].x0));
+      for (const ch of [...chains.values()].sort((a, b) => minX(a) - minX(b))) placeAbove(dynItems[ch[0]].row, 0.4, (y) => {
+        for (const i of ch) dynItems[i].draw(y);
+      });
+    });
+    if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
+      const fs = tx("chord-tag");
+      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: song.parts.find((x) => x.id === q.p.id)?.brokenChords !== false }).map((x) => [x.index, x.read]));
+      for (const c2 of units) {
+        if (c2.kind !== "chunk" || !c2.note || c2.j !== 0 || c2.index < 0 || c2.pad) continue;
+        const t = tokens[c2.index];
+        if (t?.kind !== "note" || !t.pitch) continue;
+        const rd = tagged.get(c2.index);
+        if (!rd) continue;
+        const ds = (c2.pitches.length ? c2.pitches : [c2.pitch]).map((pp) => dIdx(pp, c2.staff, c2.index)), second = ds.some((dd, k) => k > 0 && Math.abs(ds[k - 1] - dd) === 1);
+        const headR = nhX(c2) + nhW(c2) * (second ? 1.95 : 1), sx = stemXOf.get(c2), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
+        const atStem = sx !== void 0 && !(low && headR > sx + P(0.1));
+        const label = theory.label(rd), tx2 = atStem ? sx - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const row = RW(c2), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;
+        placeBelow(row, 0.3, (y) => {
+          prims.push({ t: "text", x: tx2, y, s: label, cls, size: fs, anchor: "start" });
+          chordTagsOut.push({ x: tx2 - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: c2.index });
+        });
+      }
+    });
+    later[11].push(() => {
+      if (!lyricsOf[r]) {
+        for (const j of lyricJobs) j.run();
+        lyrics.push(...partLyrics);
+        return;
+      }
+      const base = LYRIC_BELOW + (o.lyricRaise ?? 0), bySys = /* @__PURE__ */ new Map();
+      for (const j of lyricJobs) {
+        const l = bySys.get(j.sys);
+        if (l) l.push(j);
+        else bySys.set(j.sys, [j]);
+      }
+      for (let sy = 0; sy < nSys; sy++) lyricOff.set(lyricRow(sy), base);
+      for (const [sy, jobs] of bySys) {
+        const row = lyricRow(sy);
+        const dy = placeBelow(row, 0.5, () => {
+          const from = partLyrics.length;
+          for (const j of jobs) j.run();
+          const mine = partLyrics.slice(from), syls = mine.map((L) => {
+            const pl = lyrPlan.get(`${r}:${L.index}`), tok = tokens[L.index];
+            return { x: L.x, hy: !!tok.hyph, hw: pl ? P(pl.hw) : void 0, sx: pl?.sx, ...pl ? {} : { nw: P(lyrUnit(lyricShow(tok.lyric ?? ""))) / 2 }, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L.system };
+          });
+          hyphens(syls, P(lyrHyphen), P(1.6)).forEach((h, n2) => {
+            if (h) prims.push({ t: "text", x: h.x, y: mine[n2].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}, sx: look.sx * h.hf * HYPHEN_SX });
+          });
+          lyrics.push(...partLyrics.slice(from));
+        }, { min: 0, count: false, step: ROW_STEP });
+        lyricOff.set(row, base + dy);
+      }
+    });
+    const bracket = (cs, openL, openR, num) => {
+      const row = RW(cs[0]), n2 = cs[0].ratio[0];
+      const xa = openL ? Math.min(nhX(cs[0]) - P(1.2), nhX(cs[0])) : nhX(cs[0]), last = cs[cs.length - 1], xb = openR ? nhX(last) + nhW(last) + P(1.2) : nhX(last) + nhW(last);
+      const top = Math.min(...cs.map((c2) => Math.min(c2.pitch ? yOf(row, dIdx(c2.pitch, c2.staff, c2.index)) : yOf(row, MID_LINE), tipOf.get(c2) ?? Infinity)), yOf(row, TOP_LINE)) - P(1.6);
+      const mid = (xa + xb) / 2, gap = num ? P(1) : 0;
+      const left = openL ? `M${xa},${top}` : `M${xa},${top + P(0.6)}L${xa},${top}`, right2 = openR ? `L${xb},${top}` : `L${xb},${top}L${xb},${top + P(0.6)}`;
+      prims.push({ t: "path", d: num ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right2}` : `${left}${right2}`, cls: "tuplet-bracket" });
+      if (num) prims.push({ t: "glyph", x: mid - P(0.55), y: top + P(0.55), ch: GLYPH_TUPLET(n2), cls: "tuplet" });
+    };
+    let run = [], runRatio = null, acc = 0, minBase = Infinity, segStart = 0;
+    const flushSeg = (openR) => {
+      const cs = run.slice(segStart);
+      if (cs.length && cs[0].ratio) bracket(cs, segStart > 0, openR, segStart === 0);
+      segStart = run.length;
+    };
+    const closeRun = () => {
+      if (run.length) flushSeg(false);
+      run = [];
+      runRatio = null;
+      acc = 0;
+      minBase = Infinity;
+      segStart = 0;
+    };
+    for (const c2 of realChunks) {
+      const rr = c2.ratio ? c2.ratio.join(":") : null;
+      if (rr !== runRatio || run.length && c2.staff !== run[0].staff) closeRun();
+      else if (run.length && c2.system !== run[run.length - 1].system) flushSeg(true);
+      if (!rr) continue;
+      run.push(c2);
+      runRatio = rr;
+      acc += c2.ticks;
+      minBase = Math.min(minBase, c2.base);
+      if (acc >= c2.ratio[1] * minBase - 1e-6) closeRun();
+    }
+    closeRun();
+    const H = headLen(tokens);
+    const inkL = measured[r].inkL, cx = (u) => {
+      const k = u.kind === "chunk" ? inkL.get(u) : void 0;
+      return P(u.x - (k ? k + 0.2 : 0));
+    };
+    const firstUnitOf = /* @__PURE__ */ new Map();
+    for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
+    const realLen = q.realLen;
+    for (let c2 = H; c2 <= realLen; c2++) {
+      const u = c2 < tokens.length ? firstUnitOf.get(c2) : void 0;
+      const last = u ? null : [...units].reverse().find((v) => v.kind !== "head");
+      const sys = u ? u.system : last ? last.system : 0, x = u ? cx(u) : last ? P(last.x + last.w) : P(sysStarts[0]);
+      for (let k = 0; k < q.staves; k++) slots.push({ caret: c2, system: rowOf(sys, r, k), x });
+    }
+    const shiftAt = (c2) => {
+      const kk = Math.min(c2, realLen) - 1, si = kk >= H ? kk : -1;
+      return Array.from({ length: q.staves }, (_, k) => shAt(q, k + 1, si));
+    };
+    for (let c2 = H; c2 <= realLen; c2++) {
+      const u0 = c2 < tokens.length ? firstUnitOf.get(c2) : void 0;
+      let sys, x;
+      if (!u0) {
+        const last = [...units].reverse().find((v) => v.kind !== "head");
+        sys = last ? last.system : 0;
+        x = last ? P(last.x + last.w) : P(sysStarts[0]);
+      } else if (u0.kind === "chunk") {
+        sys = u0.system;
+        x = cx(u0);
+      } else {
+        const T = u0.tick, ch = units.find((v) => v.kind === "chunk" && v.index >= c2 && Math.abs(v.tick - T) < 1e-6);
+        if (ch) {
+          sys = ch.system;
+          x = cx(ch);
+        } else {
+          const same = units.filter((v) => v.kind !== "head" && v.index >= c2 && Math.abs(v.tick - T) < 1e-6), lastT = same[same.length - 1] ?? u0;
+          sys = lastT.system;
+          x = P(lastT.x + lastT.w);
+        }
+      }
+      const sh = shiftAt(c2);
+      for (let k = 0; k < q.staves; k++) heads.push({ caret: c2, system: rowOf(sys, r, k), x, shift: sh[k] });
+    }
+    for (const u of units) if (u.kind === "chunk" && u.pad && u.inBar < 1e-6 && u.tick - q.realTicks > 1e-6) {
+      const sh = shiftAt(realLen);
+      for (let k = 0; k < q.staves; k++) {
+        slots.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), lead: u.tick - q.realTicks });
+        heads.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), shift: sh[k], lead: u.tick - q.realTicks });
+      }
+    }
+    let lastSys = -1;
+    for (let c2 = H; c2 < Math.min(tokens.length, realLen + 1); c2++) {
+      const u = firstUnitOf.get(c2);
+      if (!u) continue;
+      const crossed = lastSys >= 0 && u.system > lastSys;
+      lastSys = u.system;
+      if (!crossed) continue;
+      const prevRow = cols.filter((cc) => cc.system === u.system - 1);
+      if (!prevRow.length) continue;
+      const x = P(Math.max(...prevRow.map((cc) => cc.x + cc.w)));
+      const sh = shiftAt(c2);
+      for (let k = 0; k < q.staves; k++) {
+        slots.push({ caret: c2, system: rowOf(u.system - 1, r, k), x, end: true });
+        heads.push({ caret: c2, system: rowOf(u.system - 1, r, k), x, shift: sh[k], end: true });
+      }
+    }
+  });
+}
+
 // src/render/frame/arrange.ts
 function mergeColumns(tracks) {
   const map = /* @__PURE__ */ new Map();
@@ -5896,40 +6703,10 @@ function engrave(song, o) {
   const rowTop = /* @__PURE__ */ new Map();
   const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map();
   const staffTop = (r) => rowTop.get(r) + P(rowAbove.get(r) ?? STAFF_ABOVE);
-  const yOf = (r, d) => staffTop(r) + (TOP_LINE2 - d) * P(0.5);
-  const dOf = (r, y) => Math.round(TOP_LINE2 - (y - staffTop(r)) / P(0.5));
+  const yOf = (r, d) => staffTop(r) + (TOP_LINE - d) * P(0.5);
+  const dOf = (r, y) => Math.round(TOP_LINE - (y - staffTop(r)) / P(0.5));
   const lyricY = (r) => yOf(r, BOTTOM_LINE) + P(lyricOff.get(r) ?? LYRIC_BELOW);
-  const staffHit = (r) => ({ y: yOf(r, TOP_LINE2) - P(1.2), h: yOf(r, BOTTOM_LINE) - yOf(r, TOP_LINE2) + P(2.4) });
-  const drawTime = (r, x0, beats, beatType, cls) => {
-    const num = timeSigDigits(beats), den = timeSigDigits(beatType);
-    const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw = Math.max(wn, wd);
-    prims.push({ t: "glyph", x: P(x0 + (cw - wn) / 2), y: yOf(r, 36), ch: num, cls });
-    prims.push({ t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(r, 32), ch: den, cls });
-    return cw;
-  };
-  const drawTempoAt = (r, x0, v, cls, index, change, y) => {
-    const fs = tx("tempo-word"), word = tempoWord(v).it, k = RS("tempo-word");
-    if (change) prims.push({ t: "text", x: P(x0 - 0.3), y, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change ann", size: fs, anchor: "end" });
-    const ww = mw("tempo-word", word), num = `= ${v}`, nw = mw("tempo-num", num);
-    prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
-    const gx = x0 + ww + 0.7 * k;
-    prims.push({ t: "glyph", x: P(gx), y: y - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
-    prims.push({ t: "text", x: P(gx + 1.3 * k), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
-    marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - TR("tempo-word", TEMPO_EM * 1.1), w: P(gx + 1.3 * k + nw + 0.6 * k - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
-  };
-  const keyLabel = (r, x0, f, hint, index, minor = false) => {
-    const y = staffTop(r) - P(0.8);
-    if (hint) {
-      keyHints.push({ system: r, index, x: P(x0), y, size: tx("key-hint"), s: keyText(f, minor) });
-      return;
-    }
-    prims.push({ t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });
-    marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - TR("key-label", TEMPO_EM * 0.95), w: TR("key-label", KEY_LABEL_W), h: TR("key-label", TEMPO_EM * 1.2) });
-  };
-  const drawKeySig = (r, x0, f, cls, clef = "G") => {
-    const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
-    for (let k = 0; k < Math.abs(f); k++) prims.push({ t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
-  };
+  const staffHit = (r) => ({ y: yOf(r, TOP_LINE) - P(1.2), h: yOf(r, BOTTOM_LINE) - yOf(r, TOP_LINE) + P(2.4) });
   const showPaperLine = song.papers.length > 1 || song.papers.some((p) => p.name);
   let drawn = 0;
   const underOf = (paper) => {
@@ -6013,18 +6790,6 @@ function engrave(song, o) {
     shortBars += built.shortBars;
     const pmode = per.map((q) => q.pmode);
     const hasV2 = per.map((q) => q.hasV2);
-    const clefAtSys = (q, s2) => {
-      const u = q.units.find((x) => x.system === s2 && x.index >= 0);
-      if (u) return q.ds.clef[u.index] ?? q.start;
-      let c = q.start;
-      for (const x of q.units) if (x.system < s2 && x.index >= 0) c = q.ds.clef[x.index] ?? c;
-      return c;
-    };
-    const clefSrcAtSys = (q, s2) => {
-      const u = q.units.find((x) => x.system === s2 && x.index >= 0), upto = u ? u.index : q.tokens.length - 1;
-      for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === "clef") return i;
-      return -1;
-    };
     const measured = per.map((q) => measureTrack(q));
     const atracks = per.map((_q, pi) => ({ entries: measured[pi].entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));
     const merged = mergeColumns(atracks), n2 = merged.length;
@@ -6155,59 +6920,12 @@ function engrave(song, o) {
     };
     const later = Array.from({ length: 13 }, () => []);
     const p0 = mark();
-    const drawTempo = (r, x0, v, cls, index, change) => {
-      placeAbove(r, 0.5, (y) => drawTempoAt(r, x0, v, cls, index, change, y));
-    };
     const staffEnd = Array.from({ length: nSys }, (_, s2) => {
       const row = placedCols.filter((c) => c.system === s2);
       if (!row.length) return right;
       const last = row.reduce((a, c) => c.x > a.x || c.x === a.x && (c.slot > a.slot || c.slot === a.slot && c.n > a.n) ? c : a);
       return last.bar ? Math.min(right, last.x + 0.7) : right;
     });
-    for (let s2 = 0; s2 < nSys; s2++) {
-      const ind = s2 === 0 ? ind0 : indN;
-      if (song.barNumbers !== "off" && per[0]) {
-        const q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s2)) ?? per[0];
-        const c0 = q0.units.find((u) => u.kind === "chunk" && u.system === s2);
-        const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null;
-        if (num !== null && !(s2 === 0 && num <= 1)) later[9].push(() => placeAbove(rowOf(s2, 0, 0), 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" })));
-      }
-      per.forEach((q, r) => {
-        if (rowHost[r] >= 0) return;
-        const f = sysKeys[s2].get(q.p.id) ?? q.head.key;
-        for (let k = 0; k < q.staves; k++) {
-          const row = rowOf(s2, r, k), clef = q.staves === 2 ? k ? "F" : "G" : clefAtSys(q, s2), base = baseClef(clef);
-          if (rows[row]) rows[row].x1 = P(staffEnd[s2]);
-          const pm = pmode[r];
-          for (let L = 0; L < 5; L++) {
-            if (pm === "one" && L !== 2) continue;
-            const y = yOf(row, BOTTOM_LINE + 2 * L);
-            prims.push({ t: "line", x1: P(MARGIN + ind), y1: y, x2: P(staffEnd[s2]), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" });
-          }
-          let hx = MARGIN + ind + 0.6;
-          if (pm) prims.push({ t: "glyph", x: P(hx), y: yOf(row, MID_LINE2), ch: PERC_CLEF, cls: "clef perc-clef" });
-          else prims.push({ t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
-          if (!pm && !q.vrt) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s2), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });
-          hx += clefW(q) + 1;
-          const keyX0 = hx;
-          const fk = pm ? 0 : f;
-          drawKeySig(row, hx, fk, "keysig", base);
-          hx += Math.abs(fk) * 1.05;
-          if (s2 === 0) {
-            if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });
-            const lab = k === 0 && !pm && q.head.idx.key !== void 0 ? o.inC ? q.head.real : fk === 0 || q.head.minor ? fk : null : null;
-            if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !o.inC, q.head.idx.key, q.head.minor);
-            if (fk) hx += 0.8;
-            const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
-            if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
-            if (k === 0 && q.p.id === owner && q.head.idx.tempo !== void 0) {
-              const ti = q.head.idx.tempo;
-              later[7].push(() => drawTempo(row, MARGIN + ind + 0.6, q.head.bpm, "tempo", ti, prevBpm === null || prevBpm === q.head.bpm ? void 0 : q.head.bpm > prevBpm ? "up" : "down"));
-            }
-          }
-        }
-      });
-    }
     const drawSystemsChrome = () => {
       for (let s2 = 0; s2 < nSys; s2++) {
         const ind = s2 === 0 ? ind0 : indN;
@@ -6219,7 +6937,7 @@ function engrave(song, o) {
           if (s2 === 0) {
             const r0 = rowOf(s2, r, 0), r1 = rEnd(s2), lines2 = nameLines(q.p.name, pr !== r ? 2 : q.staves), LH = PART_EM * 1.15 * ts;
             const tl = ten.map((t) => nameLines(t.name, 1)[0] ?? ""), nAll = lines2.length + tl.length;
-            const ny = (yOf(r0, MID_LINE2) + yOf(r1, MID_LINE2)) / 2 + T(0.55 * PART_EM) - P(LH * (nAll - 1) / 2);
+            const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + T(0.55 * PART_EM) - P(LH * (nAll - 1) / 2);
             const nameBlock = (wid) => names.push({ paper: paper.id, part: q.p.id, x0: P(MARGIN - 0.95), x1: P(MARGIN) + P(wid), top: ny - T(PART_EM * 0.95) });
             const ncls = q.p.empty ? "part-name empty" : q.focused ? "part-name focus" : "part-name";
             const dn = drumNames.get(q.p.id);
@@ -6244,7 +6962,7 @@ function engrave(song, o) {
                 if (q.p.badges?.length) prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * (nAll - 1)) + T(1.4), s: q.p.badges.join(" "), cls: "part-badge ann", size: tx("part-badge"), anchor: "start" });
               }
               {
-                const y02 = yOf(r0, TOP_LINE2) - P(1.2), yEnd = ten.length ? ny + P(LH * lines2.length) - T(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);
+                const y02 = yOf(r0, TOP_LINE) - P(1.2), yEnd = ten.length ? ny + P(LH * lines2.length) - T(PART_EM * 0.95) : yOf(r1, BOTTOM_LINE) + P(1.2);
                 partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: y02, w: P(ind0 + 0.2), h: yEnd - y02 });
               }
               if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny - T(PART_EM * 0.62), w: T(0.6), h: T(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
@@ -6252,7 +6970,7 @@ function engrave(song, o) {
           } else if (q.p.abbr) {
             const r0 = rowOf(s2, r, 0), r1 = rEnd(s2), LH = PART_EM * 1.15 * ts;
             const order = drumNames.get(q.p.id) ?? [q.p, ...ten], hk = Math.max(0, order.findIndex((m) => m.id === q.p.id));
-            const ny = (yOf(r0, MID_LINE2) + yOf(r1, MID_LINE2)) / 2 + T(0.55 * PART_EM) - P(LH * (order.length - 1) / 2);
+            const ny = (yOf(r0, MID_LINE) + yOf(r1, MID_LINE)) / 2 + T(0.55 * PART_EM) - P(LH * (order.length - 1) / 2);
             order.forEach((m, k) => {
               if (m.id === q.p.id) {
                 prims.push({ t: "text", x: P(MARGIN), y: ny + P(LH * k), s: q.p.abbr, cls: q.p.empty ? "part-name abbr empty" : q.focused ? "part-name abbr focus" : "part-name abbr", size: tx("part-name"), anchor: "start" });
@@ -6262,24 +6980,24 @@ function engrave(song, o) {
               partsHit.push({ paper: paper.id, part: m.id, x: P(MARGIN - 0.4), y: ny + P(LH * k) - T(PART_EM * 0.95), w: P(indN + 0.2), h: P(LH) });
             });
             if (q.p.colorIdx !== void 0) prims.push({ t: "rect", x: P(MARGIN - 0.95), y: ny + P(LH * hk) - T(PART_EM * 0.62), w: T(0.6), h: T(0.6), cls: `cat-dot ann cat-${q.p.colorIdx}` });
-            partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE2) - P(1.2), w: P(indN + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE2) + P(2.4) });
+            partsHit.push({ paper: paper.id, part: q.p.id, x: P(MARGIN - 0.4), y: yOf(r0, TOP_LINE) - P(1.2), w: P(indN + 0.2), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE) + P(2.4) });
           }
           if (q.p.colorIdx !== void 0) {
             const r0 = rowOf(s2, r, 0), r1 = rEnd(s2);
-            prims.push({ t: "rect", x: P(MARGIN + ind - 0.8), y: yOf(r0, TOP_LINE2), w: P(0.3), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE2), cls: `cat-bar ann cat-${q.p.colorIdx}` });
+            prims.push({ t: "rect", x: P(MARGIN + ind - 0.8), y: yOf(r0, TOP_LINE), w: P(0.3), h: yOf(r1, BOTTOM_LINE) - yOf(r0, TOP_LINE), cls: `cat-bar ann cat-${q.p.colorIdx}` });
           }
           if (q.staves === 2 || pr !== r) {
-            const bx = P(MARGIN + ind - 0.7), y02 = yOf(rowOf(s2, r, 0), TOP_LINE2), y1 = yOf(rEnd(s2), BOTTOM_LINE);
+            const bx = P(MARGIN + ind - 0.7), y02 = yOf(rowOf(s2, r, 0), TOP_LINE), y1 = yOf(rEnd(s2), BOTTOM_LINE);
             prims.push({ t: "path", d: `M${bx + P(0.5)},${y02}Q${bx - P(0.3)},${y02 + P(0.6)} ${bx},${(y02 + y1) / 2}Q${bx - P(0.3)},${y1 - P(0.6)} ${bx + P(0.5)},${y1}`, cls: "brace" });
           }
         });
         if (ind > 0 && o.chrome?.famGap) for (const fam of openFams) {
           const rs = fam.ids.map((id) => per.findIndex((q) => q.p.id === id)).filter((i) => i >= 0);
           if (rs.length < 2) continue;
-          const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 1.55), y02 = yOf(rowOf(s2, r0, 0), TOP_LINE2) - P(0.6), y1 = yOf(rowOf(s2, r1, per[r1].staves - 1), BOTTOM_LINE) + P(0.6);
+          const r0 = Math.min(...rs), r1 = Math.max(...rs), x = P(MARGIN + ind - 1.55), y02 = yOf(rowOf(s2, r0, 0), TOP_LINE) - P(0.6), y1 = yOf(rowOf(s2, r1, per[r1].staves - 1), BOTTOM_LINE) + P(0.6);
           families.push({ paper: paper.id, host: fam.host, x: x - P(0.6), y: y02, w: P(1.3), h: y1 - y02 });
         }
-        if (nRowsSys > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: yOf(rowOf(s2, 0, 0), TOP_LINE2), x2: P(MARGIN + ind), y2: yOf(rowOf(s2, nR - 1, per[nR - 1].staves - 1), BOTTOM_LINE), w: P(ENGRAVE.thinBar * 1.4), cls: "bar" });
+        if (nRowsSys > 1) prims.push({ t: "line", x1: P(MARGIN + ind), y1: yOf(rowOf(s2, 0, 0), TOP_LINE), x2: P(MARGIN + ind), y2: yOf(rowOf(s2, nR - 1, per[nR - 1].staves - 1), BOTTOM_LINE), w: P(ENGRAVE.thinBar * 1.4), cls: "bar" });
       }
     };
     {
@@ -6298,719 +7016,7 @@ function engrave(song, o) {
       }
       for (const x of measures) delete x.m;
     }
-    per.forEach((q, r) => {
-      const tokens = q.tokens, focused = q.focused, v2 = rowHost[r] >= 0;
-      const units = q.units, tag = v2 ? { part: q.p.id } : {};
-      const dynOff = dynOverridden(tokens);
-      const clefOf = (staff, index = -1) => q.staves === 2 ? staff === 2 ? "F" : "G" : baseClef((index >= 0 ? q.ds.clef[index] : void 0) ?? q.start);
-      const dIdx = (p, staff, index = -1) => posD(q, p, staff, index);
-      const RW = (u) => rowOf(u.system, r, u.staff - 1);
-      const lyricRow = (s2) => rowOf(s2, r, q.staves - 1);
-      const navMute = (i) => navWhy(song, paper, q.p.id, tokens[i]) ? " art-mute" : "";
-      const drawNav = (u) => {
-        const t = tokens[u.index], cls = "nav-mark" + navMute(u.index), tok = t.id, row0 = rowOf(u.system, r, 0);
-        const fs = tx("nav-mark"), x = P(u.x + 0.4);
-        if (t.what === "ending") {
-          const ui = units.indexOf(u);
-          let end = null, closed = false, fallback = null, sawNote = false;
-          for (let k = ui + 1; k < units.length; k++) {
-            const v = units[k];
-            if (v.kind === "chunk") sawNote = true;
-            if (v.kind === "bar" && (v.repeat === "end" || v.repeat === "both")) {
-              end = v;
-              closed = true;
-              break;
-            }
-            if (v.kind === "nav" && tokens[v.index].what === "ending") {
-              end = v;
-              closed = true;
-              break;
-            }
-            if (v.kind === "bar" && v.repeat === "start") {
-              if (!fallback) fallback = v;
-              break;
-            }
-            if (v.kind === "bar" && sawNote && !fallback) fallback = v;
-          }
-          if (!end) end = fallback;
-          const h = TR("nav-mark", 1.6);
-          const endX = (v, sys) => v && v.system === sys ? v.kind === "bar" ? P(v.x + (v.repeat ? 0.4 + (v.repeat === "both" ? 1.2 : 1.47) : 0.7)) : P(v.x) - P(0.3) : P(right);
-          const seg = (sys, xa, openL, xb, hookR, first) => placeAbove(rowOf(sys, r, 0), 0.6, (yy) => {
-            prims.push({ t: "path", d: `${openL ? `M${xa},${yy}` : `M${xa},${yy + h}L${xa},${yy}`}L${xb},${yy}${hookR ? `L${xb},${yy + h}` : ""}`, cls: "volta" + navMute(u.index) });
-            if (!first) return;
-            prims.push({ tok, t: "text", x: x + TR("nav-mark", 0.3), y: yy + TR("nav-mark", 1.25), s: endingLabel(t.nums), cls, size: fs, anchor: "start" });
-            dyns.push({ index: u.index, kind: "nav", system: row0, x: x - P(0.4), y: yy - TR("nav-mark", 0.4), w: TR("nav-mark", 3), h: h + TR("nav-mark", 0.8) });
-          });
-          const endSys = end ? end.system : u.system;
-          seg(u.system, x - P(0.2), false, endX(endSys === u.system ? end : null, u.system), closed && endSys === u.system, true);
-          for (let s2 = u.system + 1; s2 <= endSys; s2++) {
-            const first = units.find((w) => w.system === s2);
-            seg(s2, P((first?.x ?? MARGIN) - 0.3), true, endX(s2 === endSys ? end : null, s2), closed && s2 === endSys, false);
-          }
-          return;
-        }
-        if (t.what === "segno" || t.what === "coda") {
-          const gs = 4 * sp * 0.7;
-          placeAbove(row0, 0.6, (y) => {
-            prims.push({ tok, t: "glyph", x, y, ch: t.what === "segno" ? "\uE047" : "\uE048", cls: cls.replace("nav-mark", "nav-sign"), size: gs });
-            dyns.push({ index: u.index, kind: "nav", system: row0, x: x - P(0.3), y: y - gs * 0.8, w: gs * (t.what === "segno" ? 0.6 : 1), h: gs * 0.95 });
-          });
-          return;
-        }
-        const label = NAV_LABEL[t.what], tw = P(mw("nav-word", label)), atEnd = x - tw > P(MARGIN + 6);
-        placeAbove(row0, 0.6, (y) => {
-          prims.push({ tok, t: "text", x: atEnd ? x : x - P(0.2), y, s: label, cls: cls + " nav-word", size: fs, anchor: atEnd ? "end" : "start" });
-          dyns.push({ index: u.index, kind: "nav", system: row0, x: atEnd ? x - tw - P(0.3) : x - P(0.5), y: y - TR("nav-word", TEMPO_EM * 1.1), w: tw + TR("nav-word", 0.8), h: TR("nav-word", TEMPO_EM * 1.5) });
-        });
-      };
-      const nhX = (c) => P(c.x + 0.35);
-      const pm = pmode[r], percHere = !!pm && !!q.p.perc;
-      const xHead = !!q.p.xHead && !percHere;
-      const percHead = (c, p) => {
-        const pi = percAt(q, p), hd = (pi?.head === "custom" && pi.smufl ? PERC_SMUFL[pi.smufl] : void 0) ?? PERC_HEAD[pi?.head ?? "normal"] ?? PERC_HEAD.normal, k = c.base >= WHOLE ? 2 : c.base >= TPQ * 2 ? 1 : 0;
-        return { ch: hd.ch[k], w: hd.w[k] };
-      };
-      const xOf = (c) => xHead || !!c.whisper;
-      const nhW = (c) => P(xOf(c) ? c.base >= WHOLE ? W.noteheadXWhole : c.base >= TPQ * 2 ? W.noteheadXHalf : W.noteheadXBlack : percHere && c.pitch ? percHead(c, c.pitch).w : c.base >= WHOLE ? W.noteheadWhole : W.noteheadBlack);
-      const whisperMute = (q.p.ignores ?? []).includes("whisper");
-      const clsOf = (c) => [c.ghost ? "ghost" : "", c.pad ? "pad-rest" : ""].filter(Boolean).join(" ") || void 0;
-      const tokOf = (c) => c.index >= 0 && !c.pad ? tokens[c.index]?.id : void 0;
-      const partLyrics = [];
-      const lyricJobs = [];
-      const dynItems = [];
-      const drawChunk = (c) => {
-        const cls = clsOf(c), row = RW(c);
-        if (!c.note) {
-          if (c.pad || v2 || c.mrest === "skip") return;
-          if (c.mrest === "draw") {
-            const k = units.indexOf(c);
-            let L = sysStarts[c.system] ?? c.x, R = staffEnd[c.system] ?? right;
-            for (let i = k - 1; i >= 0; i--) {
-              const v = units[i];
-              if (v.system !== c.system) break;
-              if (v.kind === "chunk" || v.w <= 1e-6) continue;
-              L = v.kind === "bar" ? v.x + (v.repeat ? v.w - 0.4 : 0.7) : v.x + v.w;
-              break;
-            }
-            for (let i = k + 1; i < units.length; i++) {
-              const v = units[i];
-              if (v.system !== c.system) break;
-              if (v.kind === "bar") {
-                R = v.x + 0.7;
-                break;
-              }
-            }
-            const rx2 = P((L + R) / 2 - W.restWhole / 2), ry2 = pm !== "one" ? yOf(row, 36) : yOf(row, MID_LINE2);
-            prims.push({ tok: tokOf(c), t: "glyph", x: rx2, y: ry2, ch: GLYPH.restWhole, cls: cls ? `rest ${cls}` : "rest" });
-            if (c.j === 0 && c.index >= 0) rests.push({ index: c.index, system: row, x: rx2, y: yOf(row, MID_LINE2), w: P(1.2) });
-            return;
-          }
-          const g = c.base >= WHOLE ? GLYPH.restWhole : c.base >= TPQ * 2 ? GLYPH.restHalf : c.base >= TPQ ? GLYPH.restQuarter : c.base >= TPQ / 2 ? GLYPH.rest8th : c.base >= TPQ / 4 ? GLYPH.rest16th : GLYPH.rest32nd;
-          const ry = c.base >= WHOLE && pm !== "one" ? yOf(row, 36) : yOf(row, MID_LINE2);
-          prims.push({ tok: tokOf(c), t: "glyph", x: P(c.x + 0.35), y: ry, ch: g, cls: cls ? `rest ${cls}` : "rest" });
-          if (c.j === 0 && c.index >= 0 && !c.pad) rests.push({ index: c.index, system: row, x: P(c.x + 0.35), y: yOf(row, MID_LINE2), w: P(1.2) });
-          if (c.dotted) prims.push({ tok: tokOf(c), t: "glyph", x: P(c.x + 0.35 + 1.5), y: yOf(row, 35), ch: GLYPH.augmentationDot, cls });
-          return;
-        }
-        const ds = (c.pitches.length ? c.pitches : [c.pitch]).map((pp) => dIdx(pp, c.staff, c.index));
-        const d = ds[0], y = yOf(row, d), x0 = nhX(c);
-        c.accs.forEach((a, k) => {
-          if (a === null || percHere) return;
-          const ag = a === 1 ? GLYPH.accidentalSharp : a === -1 ? GLYPH.accidentalFlat : a === 2 ? GLYPH.accidentalDoubleSharp : a === -2 ? GLYPH.accidentalDoubleFlat : GLYPH.accidentalNatural;
-          const near = c.accs.slice(0, k).some((b, kk) => b !== null && Math.abs(ds[kk] - ds[k]) < 3);
-          prims.push({ tok: tokOf(c), t: "glyph", x: P(c.x - 1.1) - (near ? P(1.1) : 0) - (c.art.includes("ghost") ? P(0.6) : 0), y: yOf(row, ds[k]), ch: ag, cls });
-        });
-        const ledgers = /* @__PURE__ */ new Set();
-        for (const dd of ds) {
-          for (let L = 28; L >= dd; L -= 2) ledgers.add(L);
-          for (let L = 40; L <= dd; L += 2) ledgers.add(L);
-        }
-        for (const L of ledgers) prims.push({ t: "line", x1: x0 - P(ENGRAVE.ledgerExt), y1: yOf(row, L), x2: x0 + nhW(c) + P(ENGRAVE.ledgerExt), y2: yOf(row, L), w: P(ENGRAVE.ledger), cls: "ledger" });
-        const ng = xOf(c) ? c.base >= WHOLE ? GLYPH.noteheadXWhole : c.base >= TPQ * 2 ? GLYPH.noteheadXHalf : GLYPH.noteheadXBlack : c.base >= WHOLE ? GLYPH.noteheadWhole : c.base >= TPQ * 2 ? GLYPH.noteheadHalf : GLYPH.noteheadBlack;
-        let shifted = false;
-        ds.forEach((dd, k) => {
-          const second = k > 0 && Math.abs(ds[k - 1] - dd) === 1 && !shifted;
-          shifted = second;
-          const mute = k > 0 && !!q.p.mono;
-          if (c.j === 0 && k > 0) chordHeads.push({ ...tag, index: c.index, system: row, x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), w: nhW(c) });
-          const hch = percHere && !xOf(c) ? percHead(c, (c.pitches.length ? c.pitches : [c.pitch])[k]).ch : ng;
-          prims.push({ tok: tokOf(c), t: "glyph", x: second ? x0 + nhW(c) * 0.95 : x0, y: yOf(row, dd), ch: hch, cls: ["note", cls ?? "", mute ? "chord-mute" : "", c.whisper && whisperMute ? "art-mute" : ""].filter(Boolean).join(" ") });
-          if (c.art.includes("ghost")) {
-            const hx = second ? x0 + nhW(c) * 0.95 : x0, pc2 = ["note-paren", cls ?? ""].filter(Boolean).join(" ");
-            prims.push({ tok: tokOf(c), t: "glyph", x: hx - P(0.6), y: yOf(row, dd), ch: "\uE0F5", cls: pc2 });
-            prims.push({ tok: tokOf(c), t: "glyph", x: hx + nhW(c) + P(0.25), y: yOf(row, dd), ch: "\uE0F6", cls: pc2 });
-          }
-        });
-        if (c.dotted) prims.push({ tok: tokOf(c), t: "glyph", x: x0 + nhW(c) + P(0.3), y: yOf(row, d % 2 === 0 ? d + 1 : d), ch: GLYPH.augmentationDot, cls });
-        if (c.j === 0) notes.push({ ...tag, index: c.index, system: row, x: x0, y, w: nhW(c), d: diatonicIndex(c.pitch) });
-        if (c.j === 0 && !c.tie) lyricJobs.push({ sys: c.system, run: () => {
-          const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lyricRow(c.system)), cx0 = x0 + nhW(c) / 2;
-          const ly = ly0, cx2 = cx0 + (fit ? P(fit.dx) : 0);
-          partLyrics.push({ index: c.index, system: row, x: cx2, y: ly, ...fit?.tight ? { tight: true } : {} });
-          if (c.lyric === MELISMA_MARK) prims.push({ t: "line", x1: x0 - P(0.6), y1: ly0, x2: x0 + nhW(c) + P(0.4), y2: ly0, w: P(0.12), cls: "melisma" });
-          else if (c.lyric) prims.push({ tok: tokOf(c), t: "text", x: cx2, y: ly, s: lyricShow(c.lyric), ...look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}, ...look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}, cls: ["lyric", q.p.lyricMute?.has(tokens[c.index]?.id ?? -1) ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", cls ?? ""].filter(Boolean).join(" ") });
-        } });
-      };
-      for (const u of units) {
-        const row = RW(u);
-        if (u.kind === "dyn") {
-          const dr = rowOf(u.system, r, 0), ui = units.indexOf(u), [il, ir, iu, id] = DYN_INK[u.value];
-          dynItems.push({ row: dr, x0: P(u.x + 0.3 + il), keys: [`${dr}|d${ui}`], draw: (dy) => {
-            prims.push({ t: "glyph", x: P(u.x + 0.3), y: dy, ch: DYN_GLYPH[u.value], tok: tokens[u.index].id, cls: "dyn" + (dynOff.has(u.index) ? " art-mute" : "") });
-            dyns.push({ index: u.index, kind: "dyn", system: dr, x: P(u.x + 0.3 + il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
-          } });
-          continue;
-        }
-        if (u.kind === "groove") {
-          const gt = tokens[u.index], gr = rowOf(u.system, r, 0), label = grooveLabel(gt), known = !!grooveStyle(gt.style);
-          const fs = tx("groove-mark"), gw = P(mw("groove-mark", label)), gx = P(u.x + 0.3);
-          later[8].push(() => placeAbove(gr, 0.5, (gy) => {
-            prims.push({ t: "text", x: gx, y: gy, s: label, tok: gt.id, cls: ["groove-mark", known ? "" : "groove-unknown"].filter(Boolean).join(" "), size: fs, anchor: "start" });
-            dyns.push({ index: u.index, kind: "groove", system: gr, x: P(u.x), y: gy - TR("groove-mark", TEMPO_EM * 1.1), w: gw + TR("groove-mark", 0.6), h: TR("groove-mark", TEMPO_EM * 1.5) });
-          }));
-          continue;
-        }
-        if (u.kind === "head") continue;
-        if (v2 && (u.kind === "bar" || u.kind === "key" || u.kind === "time")) continue;
-        if (u.kind === "bar" || u.kind === "key" || u.kind === "time") {
-          for (let k = 0; k < q.staves; k++) {
-            const rr = rowOf(u.system, r, k), clef = clefOf(k + 1, u.index), sh = clef === "F" ? 12 : 0;
-            if (u.kind === "bar") bars.push({ system: rr, x: P(u.x + 0.7) });
-            if (u.kind === "bar" && u.repeat) {
-              prims.push({ t: "glyph", x: P(u.x + 0.4), y: yOf(rr, BOTTOM_LINE), ch: u.repeat === "start" ? "\uE040" : u.repeat === "end" ? "\uE041" : "\uE042", cls: "repeat-bar" + navMute(u.index), tok: tokens[u.index].id });
-              if (u.times && u.times > 2 && k === 0) {
-                const times = u.times, bx = P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), cl = "nav-mark" + navMute(u.index);
-                later[6].push(() => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `\xD7${times}`, cls: cl, size: tx("nav-mark"), anchor: "end" })));
-              }
-            } else if (u.kind === "bar") {
-              const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar";
-              const [bt, bb] = pmode[r] === "one" ? [MID_LINE2 + 2, MID_LINE2 - 2] : [TOP_LINE2, BOTTOM_LINE];
-              prims.push({ t: "line", x1: bx, y1: yOf(rr, bt), x2: bx, y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
-              if (u.style === "double") prims.push({ t: "line", x1: bx + P(0.45), y1: yOf(rr, bt), x2: bx + P(0.45), y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
-              if (u.style === "final") prims.push({ t: "line", x1: bx + P(0.6), y1: yOf(rr, bt), x2: bx + P(0.6), y2: yOf(rr, bb), w: P(0.5), cls: bcls });
-              if (u.warn && k === 0) prims.push({ t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE2) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn ann" });
-            } else if (u.kind === "key") {
-              if (pmode[r]) {
-                marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
-                continue;
-              }
-              const cls = "keysig";
-              if (u.fifths === 0) {
-                const pos = u.prev > 0 ? SHARP_POS : FLAT_POS;
-                for (let j = 0; j < Math.abs(u.prev); j++) prims.push({ t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
-              } else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef);
-              if (k === 0) {
-                if (o.inC) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
-                else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor);
-                else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor);
-              }
-              marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
-            } else {
-              const cls = "timesig";
-              drawTime(rr, u.x + 0.6, u.beats, u.beatType, cls);
-              marks.push({ index: u.index, kind: "time", system: rr, x: P(u.x), ...staffHit(rr), w: P(u.w) });
-            }
-          }
-          continue;
-        }
-        if (u.kind === "tempo") {
-          if (q.p.id === owner) later[7].push(() => drawTempo(row, u.x + 0.3, u.bpm, "tempo", u.index));
-          continue;
-        }
-        if (u.kind === "hairpin") continue;
-        if (u.kind === "nav") {
-          later[6].push(() => drawNav(u));
-          continue;
-        }
-        if (u.kind === "ottava") continue;
-        if (u.kind === "clef") {
-          if (q.staves === 2) continue;
-          const first = !units.some((x) => x.system === u.system && x.index >= 0 && x.index < u.index && x.kind !== "ottava");
-          const base = baseClef(u.clef), cls = "clef cue";
-          if (!first) prims.push({ t: "glyph", x: P(u.x + 0.35), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[u.clef], cls, size: P(4 * CLEF_CUE) });
-          clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: u.index, system: row, x: P(u.x), ...staffHit(row), w: P(Math.max(u.w, 1.6)) });
-          continue;
-        }
-        drawChunk(u);
-      }
-      if (q.staves === 1) {
-        const SIG = { 1: GLYPH.ottavaAlta, 2: GLYPH.quindicesimaAlta, [-1]: GLYPH.ottavaBassa };
-        const SIG_W = { 1: 3.54, 2: 5.26, [-1]: 3.36 };
-        for (let sy = 0; sy < nSys; sy++) {
-          const row0 = rowOf(sy, r, 0);
-          const us = units.filter((x) => x.system === sy && x.kind === "chunk").sort((a, b) => a.x - b.x);
-          let k = 0;
-          while (k < us.length) {
-            const v = q.ds.ott[us[k].index] ?? 0;
-            if (!v) {
-              k++;
-              continue;
-            }
-            const isAuto = !!q.ds.auto?.[us[k].index];
-            let e = k;
-            while (e + 1 < us.length && (q.ds.ott[us[e + 1].index] ?? 0) === v && !!q.ds.auto?.[us[e + 1].index] === isAuto) e++;
-            const up = v > 0;
-            {
-              const sk = k, se = e;
-              (up ? later[5] : later[12]).push(() => {
-                const pl = up ? placeAbove : placeBelow;
-                pl(row0, 0.6, (y) => {
-                  const k2 = sk, e2 = se;
-                  const prevIdx = us[k2].index - 1, cont = k2 === 0 && prevIdx >= 0 && (q.ds.ott[prevIdx] ?? 0) === v && units.some((x) => x.index >= 0 && x.index <= prevIdx && x.system < sy);
-                  const nextU = us[e2 + 1], lastIdx = us[e2].index, endsHere = !!nextU || (q.ds.ott[lastIdx + 1] ?? 0) !== v || lastIdx + 1 >= q.tokens.length || !units.some((x) => x.system > sy && x.index > lastIdx);
-                  const x0 = P(us[k2].x - 0.2), x1 = P(us[e2].x + us[e2].w - 0.3), sz = P(4 * 0.85), gw = P(SIG_W[v] * 0.85);
-                  const src = units.find((x) => x.kind === "ottava" && x.index <= us[k2].index && (q.ds.ott[x.index] ?? 0) === v && x.system === sy) ?? null;
-                  if (cont) prims.push({ t: "text", x: x0, y: y + P(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont", size: tx("ottava"), anchor: "start" });
-                  else prims.push({ t: "glyph", x: x0, y: y + P(up ? 0.4 : 0.4), ch: SIG[v], cls: isAuto ? "ottava auto" : "ottava", size: sz });
-                  const lx = x0 + (cont ? P(4.2) : gw) + P(0.4), ly = y - P(up ? 0.55 : 0.55);
-                  for (let x = lx; x + P(0.6) <= x1; x += P(1)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" });
-                  if (endsHere) prims.push({ t: "line", x1, y1: ly, x2: x1, y2: ly + P(up ? 1.1 : -1.1), w: P(0.1), cls: "ottava-line" });
-                  const hitIdx = src ? src.index : (() => {
-                    for (let i = us[k2].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i;
-                    return -1;
-                  })();
-                  const run2 = isAuto ? q.ds.runs.find((rr) => us[k2].index >= rr.from && us[k2].index <= rr.to) : void 0;
-                  if (q.vrt) {
-                  } else if (run2) clefs.push({ kind: "ottava", paper: paper.id, part: q.p.id, index: -1, run: run2, system: row0, x: x0, y: y - P(1.6), w: Math.max(gw, P(3)), h: P(2.2) });
-                  else if (hitIdx >= 0) clefs.push({ kind: "ottava", paper: paper.id, part: q.p.id, index: hitIdx, system: row0, x: x0, y: y - P(1.6), w: Math.max(gw, P(3)), h: P(2.2) });
-                });
-              });
-            }
-            k = e + 1;
-          }
-        }
-      }
-      const stemIn = stemInput(per[r], nhX);
-      const stems = layoutStems(stemIn.seq, stemIn.dir, { u: sp, y: (d, n3) => yOf(RW(n3.key), d) });
-      const upOf = /* @__PURE__ */ new Map();
-      const tipOf = /* @__PURE__ */ new Map();
-      const stemXOf = /* @__PURE__ */ new Map();
-      for (const g of stems.groups) {
-        for (const c of g.keys) {
-          const st = stems.notes.get(c);
-          upOf.set(c, st.up);
-          tipOf.set(c, st.tip);
-          stemXOf.set(c, st.x);
-          prims.push({ tok: tokOf(c), t: "line", x1: st.x, y1: st.y0, x2: st.x, y2: st.tip, w: P(ENGRAVE.stem), cls: clsOf(c) });
-          if (st.flag) prims.push({ tok: tokOf(c), t: "glyph", x: st.flag.x, y: st.flag.y, ch: (st.up ? [GLYPH.flag8thUp, GLYPH.flag16thUp, GLYPH.flag32ndUp] : [GLYPH.flag8thDown, GLYPH.flag16thDown, GLYPH.flag32ndDown])[st.flag.level - 1], cls: clsOf(c) });
-        }
-        for (const bm of g.beams) prims.push({ t: "path", d: `M${bm.xL},${bm.yL}L${bm.xR},${bm.yR}L${bm.xR},${bm.yR + bm.th}L${bm.xL},${bm.yL + bm.th}Z`, cls: ["beam", bm.ghost ? "ghost" : ""].filter(Boolean).join(" ") });
-      }
-      const rollMute = (q.p.ignores ?? []).includes("roll");
-      for (const c of units) {
-        if (c.kind !== "chunk" || !c.note || c.index < 0) continue;
-        const t = tokens[c.index];
-        if (t?.kind !== "note" || !(t.art ?? []).includes("roll")) continue;
-        const st = stems.notes.get(c), sx = stemXOf.get(c);
-        let cx2, cy;
-        if (st && sx !== void 0) {
-          cx2 = sx;
-          cy = st.y0 + (st.tip - st.y0) * 0.55;
-        } else {
-          const ds = (c.pitches.length ? c.pitches : [c.pitch]).map((pp) => dIdx(pp, c.staff, c.index));
-          cx2 = nhX(c) + nhW(c) / 2;
-          cy = yOf(RW(c), Math.max(...ds)) - P(1.7);
-        }
-        const W2 = P(1.2), T2 = P(0.24), R = P(0.36), G2 = P(0.5), cls = ["roll", rollMute ? "art-mute" : "", clsOf(c) ?? ""].filter(Boolean).join(" ");
-        for (const k of [-1, 0, 1]) {
-          const y = cy + k * G2;
-          prims.push({ tok: tokOf(c), t: "path", d: `M${cx2 - W2 / 2},${y + R / 2}L${cx2 + W2 / 2},${y - R / 2}L${cx2 + W2 / 2},${y - R / 2 + T2}L${cx2 - W2 / 2},${y + R / 2 + T2}Z`, cls });
-        }
-      }
-      const ign = new Set(q.p.ignores ?? []);
-      const artEdge = /* @__PURE__ */ new Map();
-      for (const c of units) {
-        if (c.kind !== "chunk" || !c.note || !c.art.length && !c.breath) continue;
-        const row = RW(c), cls = clsOf(c), cx2 = nhX(c) + nhW(c) / 2;
-        const dsC = (c.pitches.length ? c.pitches : [c.pitch]).map((pp) => dIdx(pp, c.staff, c.index)), dHi = dsC[0], dLo = dsC[dsC.length - 1];
-        const below = upOf.get(c) ?? false, sgn = below ? -1 : 1;
-        const inStaff = (d2) => d2 >= BOTTOM_LINE && d2 <= TOP_LINE2;
-        let d = below ? dLo - 2 : dHi + 2;
-        const artCls = (a) => ["art", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ");
-        for (const a of ["staccato", "tenuto"].filter((x) => c.art.includes(x))) {
-          if (inStaff(d) && d % 2 === 0) d += sgn;
-          const m = ART_GLYPH[a], g = below ? m.below : m.above;
-          const gy = yOf(row, d) + (below ? -P(m.h / 2) : P(m.h / 2));
-          prims.push({ tok: tokOf(c), t: "glyph", x: cx2 - P(m.w / 2), y: gy, ch: g, cls: artCls(a) });
-          artEdge.set(c, { below, y: below ? gy + P(m.h) : gy - P(m.h) });
-          d += sgn * 2;
-        }
-        const strong = ["accent", "marcato", "stress", "unstress"].filter((x) => c.art.includes(x));
-        if (strong.length) later[2].push(() => {
-          for (const a of strong) {
-            const m = ART_GLYPH[a];
-            placeAbove(row, 0.4, (y) => prims.push({ tok: tokOf(c), t: "glyph", x: cx2 - P(m.w / 2), y, ch: m.above, cls: artCls(a) }));
-          }
-        });
-        const swl = c.j === 0 ? swellOf(tokens[c.index]) : void 0;
-        const atk = ["sfz", "fp"].filter((x) => c.art.includes(x));
-        if (swl || atk.length) later[3].push(() => placeAbove(row, 0.5, (y) => {
-          let xa = nhX(c);
-          for (const a of atk) {
-            const ch = a === "sfz" ? "\uE539" : "\uE534", w = P(GLYPH_BOX[ch]?.[1] ?? 2.6), gx = cx2 - w / 2;
-            prims.push({ tok: tokOf(c), t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(a) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-            xa = Math.max(xa, gx + w + P(0.3));
-          }
-          if (!swl) return;
-          const ym = y - P(0.5), xb = Math.max(xa + P(1.6), nhX(c) + P(c.w) - P(0.8)), H2 = P(0.35);
-          const cl = ["hairpin", ign.has(swl === ">" ? "swellFade" : "swellGrow") ? "art-mute" : ""].filter(Boolean).join(" "), mx = (xa + xb) / 2;
-          const d2 = swl === "<" ? `M${xb},${ym - H2}L${xa},${ym}L${xb},${ym + H2}` : swl === ">" ? `M${xa},${ym - H2}L${xb},${ym}L${xa},${ym + H2}` : `M${xa},${ym}L${mx},${ym - H2}L${xb},${ym}M${xa},${ym}L${mx},${ym + H2}L${xb},${ym}`;
-          prims.push({ t: "path", d: d2, cls: cl });
-        }));
-        if (c.art.includes("arpeggio")) {
-          const yTop = yOf(row, dHi) - P(0.7), yBot = yOf(row, dLo) + P(0.7), x0 = nhX(c) - P(c.accW + 0.9), amp = P(0.28), step = P(0.5);
-          let dd = `M${x0},${yBot}`;
-          for (let y = yBot, k = 0; y > yTop; y -= step, k++) dd += `Q${x0 + (k % 2 ? -amp : amp) * 2},${y - step / 2} ${x0},${Math.max(yTop, y - step)}`;
-          prims.push({ tok: tokOf(c), t: "path", d: dd, cls: ["arpeggio", ign.has("arpeggio") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-        }
-        if (c.breath) prims.push({ tok: tokOf(c), t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE2 + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-        if (c.breath && c.inhale) prims.push({ tok: tokOf(c), t: "text", x: nhX(c) + nhW(c) + P(1.35), y: yOf(row, TOP_LINE2 + 1) + P(0.45), s: c.inhale === "big" ? _tIn(o.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o.locale, "\u5438##\u8BB0\u53F7"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx("breath-label"), anchor: "start" });
-      }
-      const tieArc = (row, d, x1, x2, ghost) => {
-        const len = Math.abs(x2 - x1), sgn = d < MID_LINE2 ? 1 : -1, y = yOf(row, d) + sgn * P(0.8), h = Math.min(len * 0.25, Math.max(P(0.5), Math.min(P(1.6), len * 0.12)));
-        prims.push({ t: "path", d: `M${x1},${y}Q${(x1 + x2) / 2},${y + sgn * h} ${x2},${y}`, cls: ghost ? "tie ghost" : "tie" });
-      };
-      const tieBetween = (a, b) => {
-        if (a.staff !== b.staff || !a.pitch || !b.pitch) return;
-        const da = dIdx(a.pitch, a.staff, a.index), db = dIdx(b.pitch, b.staff, b.index);
-        if (a.system === b.system) {
-          tieArc(RW(b), db, nhX(a) + nhW(a) * 0.8, nhX(b) + nhW(b) * 0.2, b.ghost);
-          return;
-        }
-        tieArc(RW(a), da, nhX(a) + nhW(a) * 0.8, Math.max(nhX(a) + nhW(a) * 0.8 + P(2), P(right) - P(0.3)), b.ghost);
-        tieArc(RW(b), db, Math.max(P((sysStarts[b.system] ?? 0) - 1.6), nhX(b) - P(3)), nhX(b) + nhW(b) * 0.2, b.ghost);
-      };
-      const realChunks = units.filter((u) => u.kind === "chunk");
-      for (let n3 = 1; n3 < realChunks.length; n3++) {
-        const a = realChunks[n3 - 1], b = realChunks[n3];
-        if (!a.note || !b.note) continue;
-        if (b.j > 0 && a.index === b.index || b.tie && a.last) tieBetween(a, b);
-      }
-      const headOf = /* @__PURE__ */ new Map();
-      for (const c of realChunks) if (c.note && c.j === 0 && !headOf.has(c.index)) headOf.set(c.index, c);
-      const noteIdx = [...headOf.keys()].sort((x, y) => x - y), slurOf = (k) => !!tokens[noteIdx[k]].slur;
-      const ext = (c, below) => {
-        const ds = (c.pitches.length ? c.pitches : [c.pitch]).map((pp) => dIdx(pp, c.staff, c.index));
-        return yOf(RW(c), below ? Math.min(...ds) : Math.max(...ds));
-      };
-      const ART_CLR = 0.5;
-      const reach = (c, below, head) => {
-        const sgn = below ? 1 : -1, h = ext(c, below) + sgn * P(head), a = artEdge.get(c);
-        return a && a.below === below ? below ? Math.max(h, a.y + P(ART_CLR)) : Math.min(h, a.y - P(ART_CLR)) : h;
-      };
-      for (let k = 0; k < noteIdx.length; k++) {
-        if (!slurOf(k) || k > 0 && slurOf(k - 1)) continue;
-        let e = k;
-        while (e < noteIdx.length - 1 && slurOf(e)) e++;
-        if (e === k) continue;
-        const run2 = noteIdx.slice(k, e + 1).map((x) => headOf.get(x)).filter((c) => c.pitch), below = upOf.get(run2[0]) ?? false, sgn = below ? 1 : -1;
-        const groups = [];
-        for (const c of run2) {
-          const g = groups[groups.length - 1];
-          if (g && g[0].system === c.system) g.push(c);
-          else groups.push([c]);
-        }
-        groups.forEach((g, gi) => {
-          const f = g[0], l = g[g.length - 1], openL = gi > 0, openR = gi < groups.length - 1;
-          const xa = openL ? nhX(f) - P(2) : nhX(f) + nhW(f) / 2, xb = openR ? nhX(l) + nhW(l) + P(2) : nhX(l) + nhW(l) / 2;
-          if (xb - xa < P(1)) return;
-          const ya = reach(f, below, 1.2), yb = reach(l, below, 1.2);
-          const peak = g.map((c) => ext(c, below) + sgn * P(2.2));
-          let cy = below ? Math.max(ya, yb, ...peak) + P(0.6) : Math.min(ya, yb, ...peak) - P(0.6);
-          const k1 = xa + (xb - xa) * 0.2, k2 = xb - (xb - xa) * 0.2;
-          const bez = (t, p02, p1, p2, p3) => {
-            const u = 1 - t;
-            return u * u * u * p02 + 3 * u * u * t * p1 + 3 * u * t * t * p2 + t * t * t * p3;
-          };
-          for (const c of g.slice(1, -1)) {
-            const a = artEdge.get(c);
-            if (!a || a.below !== below) continue;
-            const x = nhX(c) + nhW(c) / 2;
-            let lo = 0, hi = 1;
-            for (let it = 0; it < 30; it++) {
-              const m = (lo + hi) / 2;
-              if (bez(m, xa, k1, k2, xb) < x) lo = m;
-              else hi = m;
-            }
-            const t = (lo + hi) / 2, B = 3 * t * (1 - t), A = (1 - t) ** 3 * ya + t ** 3 * yb, need = reach(c, below, 0);
-            if (B > 1e-6) cy = below ? Math.max(cy, (need - A) / B) : Math.min(cy, (need - A) / B);
-          }
-          prims.push({ t: "path", d: `M${xa},${ya}C${xa + (xb - xa) * 0.2},${cy} ${xb - (xb - xa) * 0.2},${cy} ${xb},${yb}`, cls: ["slur", ign.has("slur") ? "art-mute" : ""].filter(Boolean).join(" ") });
-        });
-      }
-      const LEVELS = DYNS;
-      const lastChunk = [...units].reverse().find((u) => u.kind === "chunk");
-      const dynKey = (u) => `${rowOf(u.system, r, 0)}|d${units.indexOf(u)}`;
-      const wedgeKey = (index, sy) => `${rowOf(sy, r, 0)}|w${index}:${sy}`;
-      const wedgeItems = (index, dir, s0, startX, s1, endX, ramp, k0, k1, tail2) => {
-        const leftOf2 = (sy) => Math.min(...units.filter((u) => u.kind === "chunk" && u.system === sy).map((c) => nhX(c)), P(right)) - P(1);
-        const segs = [];
-        for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf2(sy), sy === s1 ? endX : P(right) - P(0.3)]);
-        const total = segs.reduce((n3, [, a, b]) => n3 + Math.max(0, b - a), 0) || 1, H2 = P(0.5), long = total > P(right - MARGIN);
-        const word = dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
-        let said = false, acc2 = 0, tailDone = false;
-        segs.forEach(([sy, a0, b], i) => {
-          if (b - a0 < P(0.3)) return;
-          const row = rowOf(sy, r, 0), keys = [wedgeKey(index, sy)], last = i === segs.length - 1;
-          if (i === 0 && k0) keys.push(k0);
-          if (last && k1) keys.push(k1);
-          if (last) tailDone = true;
-          if (long) {
-            const writeWord = !said && b - a0 >= ww + P(1);
-            if (writeWord) said = true;
-            dynItems.push({ row, x0: a0, keys, draw: (base) => {
-              const midY = base - P(0.5);
-              let a = a0;
-              if (writeWord) {
-                prims.push({ t: "text", x: a, y: midY + P(0.5), s: word, tok: tokens[index].id, cls: ["dyn-word", ramp ? "ramp" : ""].filter(Boolean).join(" "), size: tx("dyn-word"), anchor: "start" });
-                a += ww + P(0.6);
-              }
-              for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY, x2: x + P(DASH.len), y2: midY, w: P(0.12), cls: "dyn-dash" });
-              dyns.push({ index, kind: "hairpin", system: row, x: a0, y: midY - P(1.4), w: b - a0, h: P(2.8) });
-              if (last && tail2) tail2(base);
-            } });
-            return;
-          }
-          const f0 = acc2 / total, f1 = (acc2 + b - a0) / total;
-          acc2 += b - a0;
-          const [h0, h1] = dir === "cresc" ? [H2 * f0, H2 * f1] : [H2 * (1 - f0), H2 * (1 - f1)];
-          dynItems.push({ row, x0: a0, keys, draw: (base) => {
-            const y = base - P(0.5), a = a0;
-            let d = `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`;
-            if (ramp) {
-              const hAt = (x) => h0 + (h1 - h0) * ((x - a) / (b - a)), on = P(RAMP_DASH.len), per2 = P(RAMP_DASH.len + RAMP_DASH.gap);
-              d = "";
-              for (let x = a; x < b - P(0.05); x += per2) {
-                const x2 = Math.min(b, x + on);
-                d += `M${x},${y - hAt(x)}L${x2},${y - hAt(x2)}M${x},${y + hAt(x)}L${x2},${y + hAt(x2)}`;
-              }
-            }
-            prims.push({ tok: tokens[index].id, t: "path", d, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
-            dyns.push({ index, kind: "hairpin", system: row, x: a, y: y - P(1.4), w: b - a, h: P(2.8) });
-            if (last && tail2) tail2(base);
-          } });
-        });
-        if (!tailDone && tail2) dynItems.push({ row: rowOf(s1, r, 0), x0: endX, keys: [wedgeKey(index, s1), ...k1 ? [k1] : []], draw: tail2 });
-      };
-      units.forEach((h, hi) => {
-        if (h.kind !== "hairpin" || !lastChunk) return;
-        const prevU = units[hi - 1];
-        const dynBefore = prevU && prevU.kind === "dyn" && prevU.system === h.system ? prevU : null;
-        const startX = Math.max(P(h.x + 0.3), dynBefore ? P(dynBefore.x + 0.3 + DYN_INK[dynBefore.value][1] + PIN_GAP) : 0), s0 = h.system;
-        const endU = units.slice(hi + 1).find((u) => u.kind === "dyn" || u.kind === "hairpin");
-        let curDyn = "mf";
-        for (let j = h.index - 1; j >= 0; j--) {
-          const u = tokens[j];
-          if (u.kind === "dyn") {
-            curDyn = u.value;
-            break;
-          }
-        }
-        const ci = LEVELS.indexOf(curDyn), against = !!endU && endU.kind === "dyn" && (h.dir === "cresc" ? LEVELS.indexOf(endU.value) <= ci : LEVELS.indexOf(endU.value) >= ci);
-        const IMPLIED_W = 3;
-        const endX = endU ? P(endU.x + 0.3 + (endU.kind === "dyn" ? DYN_INK[endU.value][0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : nhX(lastChunk) + nhW(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;
-        if (s1 < s0) return;
-        let endXd = endX, labelAbove = false;
-        const MIN_PIN = P(1.4);
-        if (s1 === s0 && endXd - startX < MIN_PIN) {
-          const roomy = against ? endXd + P(IMPLIED_W + 0.4) : endXd;
-          if (against) labelAbove = true;
-          endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
-        }
-        const k1 = !endU ? void 0 : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
-        const tail2 = !endU || against ? (base) => {
-          const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
-          prims.push({ t: "text", x: labelAbove ? endXd - P(1.2) : endXd + P(0.4), y: base + P(labelAbove ? -1.9 : 0.1), s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" });
-        } : void 0;
-        wedgeItems(h.index, h.dir, s0, startX, s1, endXd, false, dynBefore ? dynKey(dynBefore) : void 0, k1, tail2);
-      });
-      for (const u of units) {
-        if (u.kind !== "dyn" || !tokens[u.index].ramp) continue;
-        const src = rampSource(tokens, u.index);
-        if (typeof src !== "number") continue;
-        const pu = units.find((x) => x.kind === "dyn" && x.index === src);
-        if (!pu) continue;
-        const a = LEVELS.indexOf(pu.value), b = LEVELS.indexOf(u.value);
-        if (a === b) continue;
-        const sx = P(pu.x + 0.3 + DYN_INK[pu.value][1] + PIN_GAP);
-        let ex = P(u.x + 0.3 + DYN_INK[u.value][0] - PIN_GAP);
-        if (u.system === pu.system && ex - sx < P(1.4)) ex = sx + P(1.4);
-        if (u.system < pu.system) continue;
-        wedgeItems(u.index, b > a ? "cresc" : "dim", pu.system, sx, u.system, ex, true, dynKey(pu), dynKey(u));
-      }
-      later[4].push(() => {
-        if (!dynItems.length) return;
-        const parent = dynItems.map((_, i) => i), find = (i) => parent[i] === i ? i : parent[i] = find(parent[i]);
-        const byKey = /* @__PURE__ */ new Map();
-        dynItems.forEach((it, i) => {
-          for (const k of it.keys) {
-            const j = byKey.get(k);
-            if (j === void 0) byKey.set(k, i);
-            else parent[find(i)] = find(j);
-          }
-        });
-        const chains = /* @__PURE__ */ new Map();
-        dynItems.forEach((_, i) => {
-          const root = find(i), l = chains.get(root);
-          if (l) l.push(i);
-          else chains.set(root, [i]);
-        });
-        const minX = (ch) => Math.min(...ch.map((i) => dynItems[i].x0));
-        for (const ch of [...chains.values()].sort((a, b) => minX(a) - minX(b))) placeAbove(dynItems[ch[0]].row, 0.4, (y) => {
-          for (const i of ch) dynItems[i].draw(y);
-        });
-      });
-      if (o.chordTags && !v2 && !q.vrt) later[10].push(() => {
-        const fs = tx("chord-tag");
-        const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: song.parts.find((x) => x.id === q.p.id)?.brokenChords !== false }).map((x) => [x.index, x.read]));
-        for (const c of units) {
-          if (c.kind !== "chunk" || !c.note || c.j !== 0 || c.index < 0 || c.pad) continue;
-          const t = tokens[c.index];
-          if (t?.kind !== "note" || !t.pitch) continue;
-          const rd = tagged.get(c.index);
-          if (!rd) continue;
-          const ds = (c.pitches.length ? c.pitches : [c.pitch]).map((pp) => dIdx(pp, c.staff, c.index)), second = ds.some((dd, k) => k > 0 && Math.abs(ds[k - 1] - dd) === 1);
-          const headR = nhX(c) + nhW(c) * (second ? 1.95 : 1), sx = stemXOf.get(c), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
-          const atStem = sx !== void 0 && !(low && headR > sx + P(0.1));
-          const label = theory.label(rd), tx2 = atStem ? sx - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
-          const row = RW(c), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;
-          placeBelow(row, 0.3, (y) => {
-            prims.push({ t: "text", x: tx2, y, s: label, cls, size: fs, anchor: "start" });
-            chordTagsOut.push({ x: tx2 - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: c.index });
-          });
-        }
-      });
-      later[11].push(() => {
-        if (!lyricsOf[r]) {
-          for (const j of lyricJobs) j.run();
-          lyrics.push(...partLyrics);
-          return;
-        }
-        const base = LYRIC_BELOW + (o.lyricRaise ?? 0), bySys = /* @__PURE__ */ new Map();
-        for (const j of lyricJobs) {
-          const l = bySys.get(j.sys);
-          if (l) l.push(j);
-          else bySys.set(j.sys, [j]);
-        }
-        for (let sy = 0; sy < nSys; sy++) lyricOff.set(lyricRow(sy), base);
-        for (const [sy, jobs] of bySys) {
-          const row = lyricRow(sy);
-          const dy = placeBelow(row, 0.5, () => {
-            const from = partLyrics.length;
-            for (const j of jobs) j.run();
-            const mine = partLyrics.slice(from), syls = mine.map((L) => {
-              const pl = lyrPlan.get(`${r}:${L.index}`), tok = tokens[L.index];
-              return { x: L.x, hy: !!tok.hyph, hw: pl ? P(pl.hw) : void 0, sx: pl?.sx, ...pl ? {} : { nw: P(lyrUnit(lyricShow(tok.lyric ?? ""))) / 2 }, cjk: isBlockScript(lyricShow(tok.lyric ?? "")), row: L.system };
-            });
-            hyphens(syls, P(lyrHyphen), P(1.6)).forEach((h, n3) => {
-              if (h) prims.push({ t: "text", x: h.x, y: mine[n3].y, s: "-", cls: "lyric hyphen", ...look.k !== 1 || ts !== 1 ? { size: lyricSizePx(sp, ts) } : {}, sx: look.sx * h.hf * HYPHEN_SX });
-            });
-            lyrics.push(...partLyrics.slice(from));
-          }, { min: 0, count: false, step: ROW_STEP });
-          lyricOff.set(row, base + dy);
-        }
-      });
-      const bracket = (cs2, openL, openR, num) => {
-        const row = RW(cs2[0]), n3 = cs2[0].ratio[0];
-        const xa = openL ? Math.min(nhX(cs2[0]) - P(1.2), nhX(cs2[0])) : nhX(cs2[0]), last = cs2[cs2.length - 1], xb = openR ? nhX(last) + nhW(last) + P(1.2) : nhX(last) + nhW(last);
-        const top = Math.min(...cs2.map((c) => Math.min(c.pitch ? yOf(row, dIdx(c.pitch, c.staff, c.index)) : yOf(row, MID_LINE2), tipOf.get(c) ?? Infinity)), yOf(row, TOP_LINE2)) - P(1.6);
-        const mid = (xa + xb) / 2, gap = num ? P(1) : 0;
-        const left = openL ? `M${xa},${top}` : `M${xa},${top + P(0.6)}L${xa},${top}`, right2 = openR ? `L${xb},${top}` : `L${xb},${top}L${xb},${top + P(0.6)}`;
-        prims.push({ t: "path", d: num ? `${left}L${mid - gap},${top}M${mid + gap},${top}${right2}` : `${left}${right2}`, cls: "tuplet-bracket" });
-        if (num) prims.push({ t: "glyph", x: mid - P(0.55), y: top + P(0.55), ch: GLYPH_TUPLET(n3), cls: "tuplet" });
-      };
-      let run = [], runRatio = null, acc = 0, minBase = Infinity, segStart = 0;
-      const flushSeg = (openR) => {
-        const cs2 = run.slice(segStart);
-        if (cs2.length && cs2[0].ratio) bracket(cs2, segStart > 0, openR, segStart === 0);
-        segStart = run.length;
-      };
-      const closeRun = () => {
-        if (run.length) flushSeg(false);
-        run = [];
-        runRatio = null;
-        acc = 0;
-        minBase = Infinity;
-        segStart = 0;
-      };
-      for (const c of realChunks) {
-        const rr = c.ratio ? c.ratio.join(":") : null;
-        if (rr !== runRatio || run.length && c.staff !== run[0].staff) closeRun();
-        else if (run.length && c.system !== run[run.length - 1].system) flushSeg(true);
-        if (!rr) continue;
-        run.push(c);
-        runRatio = rr;
-        acc += c.ticks;
-        minBase = Math.min(minBase, c.base);
-        if (acc >= c.ratio[1] * minBase - 1e-6) closeRun();
-      }
-      closeRun();
-      const H = headLen(tokens);
-      const inkL = measured[r].inkL, cx = (u) => {
-        const k = u.kind === "chunk" ? inkL.get(u) : void 0;
-        return P(u.x - (k ? k + 0.2 : 0));
-      };
-      const firstUnitOf = /* @__PURE__ */ new Map();
-      for (const u of units) if (u.kind !== "head" && u.index >= 0 && !firstUnitOf.has(u.index)) firstUnitOf.set(u.index, u);
-      const realLen = q.realLen;
-      for (let c = H; c <= realLen; c++) {
-        const u = c < tokens.length ? firstUnitOf.get(c) : void 0;
-        const last = u ? null : [...units].reverse().find((v) => v.kind !== "head");
-        const sys = u ? u.system : last ? last.system : 0, x = u ? cx(u) : last ? P(last.x + last.w) : P(sysStarts[0]);
-        for (let k = 0; k < q.staves; k++) slots.push({ caret: c, system: rowOf(sys, r, k), x });
-      }
-      const shiftAt = (c) => {
-        const kk = Math.min(c, realLen) - 1, si = kk >= H ? kk : -1;
-        return Array.from({ length: q.staves }, (_, k) => shAt(q, k + 1, si));
-      };
-      for (let c = H; c <= realLen; c++) {
-        const u0 = c < tokens.length ? firstUnitOf.get(c) : void 0;
-        let sys, x;
-        if (!u0) {
-          const last = [...units].reverse().find((v) => v.kind !== "head");
-          sys = last ? last.system : 0;
-          x = last ? P(last.x + last.w) : P(sysStarts[0]);
-        } else if (u0.kind === "chunk") {
-          sys = u0.system;
-          x = cx(u0);
-        } else {
-          const T2 = u0.tick, ch = units.find((v) => v.kind === "chunk" && v.index >= c && Math.abs(v.tick - T2) < 1e-6);
-          if (ch) {
-            sys = ch.system;
-            x = cx(ch);
-          } else {
-            const same = units.filter((v) => v.kind !== "head" && v.index >= c && Math.abs(v.tick - T2) < 1e-6), lastT = same[same.length - 1] ?? u0;
-            sys = lastT.system;
-            x = P(lastT.x + lastT.w);
-          }
-        }
-        const sh = shiftAt(c);
-        for (let k = 0; k < q.staves; k++) heads.push({ caret: c, system: rowOf(sys, r, k), x, shift: sh[k] });
-      }
-      for (const u of units) if (u.kind === "chunk" && u.pad && u.inBar < 1e-6 && u.tick - q.realTicks > 1e-6) {
-        const sh = shiftAt(realLen);
-        for (let k = 0; k < q.staves; k++) {
-          slots.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), lead: u.tick - q.realTicks });
-          heads.push({ caret: realLen, system: rowOf(u.system, r, k), x: P(u.x), shift: sh[k], lead: u.tick - q.realTicks });
-        }
-      }
-      let lastSys = -1;
-      for (let c = H; c < Math.min(tokens.length, realLen + 1); c++) {
-        const u = firstUnitOf.get(c);
-        if (!u) continue;
-        const crossed = lastSys >= 0 && u.system > lastSys;
-        lastSys = u.system;
-        if (!crossed) continue;
-        const prevRow = cols.filter((cc) => cc.system === u.system - 1);
-        if (!prevRow.length) continue;
-        const x = P(Math.max(...prevRow.map((cc) => cc.x + cc.w)));
-        const sh = shiftAt(c);
-        for (let k = 0; k < q.staves; k++) {
-          slots.push({ caret: c, system: rowOf(u.system - 1, r, k), x, end: true });
-          heads.push({ caret: c, system: rowOf(u.system - 1, r, k), x, shift: sh[k], end: true });
-        }
-      }
-    });
+    drawStaff({ song, paper, o, P, tx, TR, RS, mw, sp, ts, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, yOf, staffTop, lyricY, staffHit, rowOf, placeAbove, placeBelow, later, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm, lyricsOf, lyrPlan, look, lyrUnit, lyrHyphen, lyricOff, LYRIC_BELOW });
     for (let i = p0.p; i < prims.length; i++) {
       const p = prims[i];
       if (isAnn(p)) continue;
@@ -7117,8 +7123,8 @@ function yOfPrim(p) {
   }
 }
 function toSvgParts(l) {
-  const L = l.pageX?.left ?? 0, R = l.pageX?.right ?? 0, W2 = l.width + L + R;
-  const open = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W2)}" height="${n(l.height)}" viewBox="${n(-L)} 0 ${n(W2)} ${n(l.height)}">`;
+  const L = l.pageX?.left ?? 0, R = l.pageX?.right ?? 0, W3 = l.width + L + R;
+  const open = `<svg xmlns="http://www.w3.org/2000/svg" class="staff-svg" width="${n(W3)}" height="${n(l.height)}" viewBox="${n(-L)} 0 ${n(W3)} ${n(l.height)}">`;
   const fs = n(4 * l.sp), lfs = n(LYRIC_EM * l.sp), rx = n(l.sp * 0.6);
   const boxes = l.systems.map((s2) => [s2.top, s2.bottom]);
   const buckets = Array.from({ length: boxes.length + 1 }, () => []);
@@ -7158,4 +7164,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-d524b2e4013d.mjs.map
+//# sourceMappingURL=layout-worker-d30d12af466a.mjs.map
