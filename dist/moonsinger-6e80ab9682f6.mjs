@@ -5124,7 +5124,7 @@ function zhOnly(s10) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.16.103-2026-11-10";
+var APP_VERSION = "v0.16.104-2026-11-10";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -31592,7 +31592,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-1f2282098df2.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-ca7f6feff6d1.mjs");
+      return pick(() => "encode-worker-b9324f6c2851.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -49296,7 +49296,7 @@ function initGalleryHost(d3) {
       iconHtml: (name, opts) => iconHtml(name, opts),
       tilePlaceholderHtml: (id2) => placeholderHtml(identifiers.parse(id2)?.stem ?? id2),
       tileOverlayHtml: (id2, item, facts) => coverHtml(identifiers.parse(id2)?.stem ?? id2, {
-        sizeText: item?.size != null ? humanSize(item.size) : void 0,
+        // 大小不印在封面上（v0.16.104：卡片下面那行已经有「时间 · 大小」；底栏右端让给 ▶）
         ...((src) => src?.k === "device" && src.stale ? { tag: _t("\u65E7"), tagTitle: _t("\u6E32\u67D3\u7F13\u5B58\u91CC\u90A3\u4E00\u904D\u662F\u6539\u4E4B\u524D\u6E32\u7684\uFF08\u4E4B\u540E\u6539\u8FC7\uFF09") } : {})((void renderTick.value, soundOf(id2, factsOf(facts)))),
         editedText: item?.lastModified ? _t("\u6539\u4E8E {lastModified}", { lastModified: new Date(item.lastModified).toLocaleString() }) : void 0
       }),
@@ -56816,7 +56816,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D2.st.song.hum, songLangOf(tokens, D2.st.song.hum), map);
   },
   state: () => D2.st,
-  cssHash: "f93b5f360342",
+  cssHash: "0d987943b4ab",
   extras: () => D2.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -60931,4 +60931,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ac6de373c8e5.mjs.map
+//# sourceMappingURL=moonsinger-6e80ab9682f6.mjs.map

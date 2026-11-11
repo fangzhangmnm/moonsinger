@@ -737,7 +737,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .ms-cover-bg { display: block; width: 100%; height: 100%; background: var(--cover-bg, #d9c7a3); }
 .ms-cover-bg.hue-0 { --cover-bg: #d9c7a3; } .ms-cover-bg.hue-1 { --cover-bg: #b9c9b0; } .ms-cover-bg.hue-2 { --cover-bg: #c9b7c9; } .ms-cover-bg.hue-3 { --cover-bg: #a9bfd0; }
 .ms-cover-bg.hue-4 { --cover-bg: #e0b8a8; } .ms-cover-bg.hue-5 { --cover-bg: #c5c5b4; } .ms-cover-bg.hue-6 { --cover-bg: #d8c2b0; } .ms-cover-bg.hue-7 { --cover-bg: #b0c4c4; }
-.ms-cover { --cover-ink: #2a2a2a; --cover-ink-soft: #5a5750; --cover-paper: #fffdf8; position: absolute; inset: 0; box-sizing: border-box; padding: 7% 7% 20px; display: flex; flex-direction: column; container-type: inline-size; color: var(--cover-ink); }
+.ms-cover { --cover-ink: #2a2a2a; --cover-ink-soft: #5a5750; --cover-paper: #fffdf8; position: absolute; inset: 0; box-sizing: border-box; padding: 7% 7% 26px; display: flex; flex-direction: column; container-type: inline-size; color: var(--cover-ink); }
 .ms-cover.v { align-items: flex-end; justify-content: flex-start; padding-top: 15%; }      /* 汉字：竖排，右上起（顶上让开图库包右上角的同步徽章） */
 .ms-cover.h { align-items: flex-start; justify-content: flex-end; }      /* 拉丁：横排，大字在左下（专辑封面惯例） */
 .ms-cover-title { display: block; max-width: 100%; max-height: 100%; overflow: hidden; font-weight: 700; letter-spacing: .02em; line-height: 1.12; }
@@ -756,7 +756,7 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .ms-cover-artist { display: block; margin-top: .35em; font-size: clamp(10px, 6cqw, 13px); color: var(--cover-ink-soft); }
 .ms-cover.v .ms-cover-artist { writing-mode: vertical-rl; margin: 0 .4em 0 0; }
 /* 底栏：左 yyyymmdd、右 大小（学 WXHW 书架：很窄的一条贴底、半透明垫底、不描边） */
-.ms-cover-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 17px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 6px; font-size: 9px; line-height: 17px; letter-spacing: .02em; color: var(--cover-ink-soft); background: color-mix(in srgb, var(--cover-paper) 72%, transparent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ms-cover-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 22px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 30px 0 6px; font-size: 9px; line-height: 22px; letter-spacing: .02em; color: var(--cover-ink-soft); background: color-mix(in srgb, var(--cover-paper) 72%, transparent); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .ms-cover-left { display: flex; gap: 5px; min-width: 0; }
 /* 底下是封面图：歌名垫一块半透明的纸（学 WXHW 2026-10-01「标题的字下面还是垫一个半透明吧」），不描边 */
 img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-title { background: color-mix(in srgb, var(--cover-paper) 78%, transparent); padding: .18em; border-radius: .22em; box-sizing: border-box; }
@@ -1153,6 +1153,12 @@ body.doc-locked .ctx-menu.header-panel :is(button, input, select) { pointer-even
 body.doc-locked .parts-mgr .pm-card :is(button, input, select):not([data-v^="more:"]):not([data-v^="inst:"]):not([data-v="close"]):not([data-v="back"]) { pointer-events: none; opacity: .45; }
 /* 歌库封面上的 ▶ = 图库包 0.8.0 的动作钮（.gallery-tile-action，包画 + 包接点击；样式在 vendor/internal-css/gallery.css，这里只调颜色） */
 .gallery-tile-action { background: color-mix(in srgb, var(--accent) 88%, transparent); }
+/* v0.16.104（user 11-11 截图「其实ux会打架，而且配色也不对，能不能不用蓝色」）：钮缩小、坐进封面底栏右端（底栏加高到 22，歌名区让出来），
+   不再压歌名最后一个字和底栏的字；颜色 = 深色半透明 + 白图标（同封面上「旧」那个小标），不用强调蓝；手指能点的范围往外放一圈。
+   「处理…」（verb-resolve，黄色、带字）不动。 */
+#galleryFull .gallery-tile-action:not(.verb-resolve) { right: 4px; bottom: 0; width: 22px; height: 22px; background: rgba(30, 28, 24, .62); box-shadow: none; }
+#galleryFull .gallery-tile-action:not(.verb-resolve)::before { content: ""; position: absolute; inset: -12px -4px 0 -12px; }
+#galleryFull .gallery-tile-action:not(.verb-resolve) svg, #galleryFull .gallery-tile-action:not(.verb-resolve) .ico { width: 12px; height: 12px; }
 /* 歌库底边的迷你播放条 */
 .ms-player { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-top: 1px solid var(--line); background: var(--panel); font-size: 13px; }
 .ms-player[hidden] { display: none; }

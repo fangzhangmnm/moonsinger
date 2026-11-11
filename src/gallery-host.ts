@@ -147,7 +147,7 @@ export function initGalleryHost(d: GalleryHostDeps) {
       iconHtml: (name, opts) => iconHtml(name, opts),
       tilePlaceholderHtml: (id) => placeholderHtml(identifiers.parse(id)?.stem ?? id),
       tileOverlayHtml: (id: string, item?: TileInfo, facts?: unknown) => coverHtml(identifiers.parse(id)?.stem ?? id, {
-        sizeText: item?.size != null ? humanSize(item.size) : undefined,
+        // 大小不印在封面上（v0.16.104：卡片下面那行已经有「时间 · 大小」；底栏右端让给 ▶）
         ...((src) => (src?.k === "device" && src.stale ? { tag: _t("旧"), tagTitle: _t("渲染缓存里那一遍是改之前渲的（之后改过）") } : {}))((void renderTick.value, soundOf(id, factsOf(facts)))),
         editedText: item?.lastModified ? _t("改于 {lastModified}", { lastModified: new Date(item.lastModified).toLocaleString() }) : undefined,
       }),
