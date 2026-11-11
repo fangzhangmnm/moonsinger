@@ -6,7 +6,6 @@ const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e: stri
 import { describe, it, assert } from "./runner.mjs";
 
 const PENDING: Record<string, string> = {
-  "engrave-decor.test.ts": "一直没登记；「写字头画在哪（heads）…光标停在小节线前」那条在分家前的代码上就红（断言过期）。改测试还是改行为（光标画在哪 = 看得见的、光标的地址）等统筹定：施工单第五节「小弟问（1b-9）」",
 };
 describe("测试登记", () => {
   it("test/ 下每个测试文件都在 test/run.mjs 里（PENDING 的写明了原因）", () => {
