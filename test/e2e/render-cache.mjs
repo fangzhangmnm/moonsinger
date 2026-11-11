@@ -18,7 +18,7 @@ const saved = async () => { for (let i = 0; i < 80 && /•/.test((await title())
 const later = async () => { const x = await p.waitForSelector(".offer:not(.gate-sheet) button:has-text('稍后')", { timeout: 600 }).catch(() => null); if (x) { await x.click(); await p.waitForTimeout(150); } };
 const rc = () => p.evaluate(() => window.__moonsinger.renders());
 /** 等到设备上记着的那本账变成想要的样子（挂名 / 摘名是存完之后异步做的：机器忙的时候几百毫秒不够）；到点还不是 = 把最后一次看到的交回去，让断言如实红。 */
-const rcUntil = async (ok, ms = 6000) => { const t0 = Date.now(); for (;;) { const r = await rc(); if (ok(r) || Date.now() - t0 > ms) return r; await p.waitForTimeout(100); } };
+const rcUntil = async (ok, ms = 6000) => { const t0 = performance.now(); for (;;) { const r = await rc(); if (ok(r) || performance.now() - t0 > ms) return r; await p.waitForTimeout(100); } };
 const fakeSinger = () => p.evaluate(() => { window.__sung = 0; window.__moonsinger.singer.sing = async () => { window.__sung++; return { samples: new Float32Array(22050 * 2).fill(0.02), sr: 22050 }; }; });
 const sung = () => p.evaluate(() => window.__sung);
 /** 导出一次整首歌声，回「好了」面板上的字（然后关掉面板）。 */

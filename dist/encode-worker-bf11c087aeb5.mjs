@@ -168,7 +168,7 @@ var S = {
   "\u518D\u77ED\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86": { en: "No shorter note value exists" },
   "\u518D\u957F\u5C31\u6CA1\u6709\u8FD9\u79CD\u65F6\u503C\u4E86": { en: "No longer note value exists" },
   "\u9009\u4E2D\u7684\u91CC\u9762\u6CA1\u6709\u80FD\u52A0\u9644\u70B9\u7684\u65F6\u503C": { en: "Nothing selected can take a dot" },
-  "\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u5927\u7EA6 {qd} ms\uFF08\u542C\u5230\u7684\u6BD4\u6309\u4E0B\u665A\u8FD9\u4E48\u591A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms": { en: "Audio is backed up: about {qd} ms (what you hear is this late) \xB7 TAP HERE to clear it | main-thread wait {q} ms \xB7 to sound {s} ms \xB7 audio block usual {t} ms / longest {a} ms" },
+  "\u58F0\u97F3\u6392\u7740\u961F\uFF1A\u5927\u7EA6 {qd} ms\uFF08\u542C\u5230\u7684\u6BD4\u6309\u4E0B\u665A\u8FD9\u4E48\u591A\uFF09\xB7 \u70B9\u8FD9\u91CC\u6E05\u6389 \uFF5C \u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms": { en: "Audio is backed up: about {qd} ms (what you hear is this late) \xB7 tap here to clear it | main-thread wait {q} ms \xB7 to sound {s} ms \xB7 audio block usual {t} ms / longest {a} ms" },
   "\u6309\u952E\u665A\u4E86\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms \xB7 \u6700\u6162\u4E00\u6B65 {slow}\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Keys are late: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms \xB7 slowest step {slow} (tap to hide this time)" },
   "\u624B\u611F\uFF1A\u7B49\u4E3B\u7EBF\u7A0B {q} ms \xB7 \u5230\u51FA\u58F0 {s} ms \xB7 \u4E3B\u7EBF\u7A0B\u6700\u957F\u505C {st} ms \xB7 \u58F0\u97F3\u5757 \u5E73\u5E38 {t} ms / \u6700\u957F {a} ms \xB7 \u58F0\u97F3\u6392\u961F {qd} ms\uFF08\u70B9\u4E00\u4E0B\u6536\u8D77\u8FD9\u4E00\u6B21\uFF09": { en: "Key feel: main-thread wait {q} ms \xB7 to sound {s} ms \xB7 longest main-thread stall {st} ms \xB7 audio block usual {t} ms / longest {a} ms \xB7 audio backed up {qd} ms (tap to hide this time)" },
   "\u5176\u4ED6\u7EB8": { en: "Other sheets" },
@@ -219,7 +219,7 @@ var S = {
   "{n} \u6761\u8F68": { en: "{n} {n|track|tracks}" },
   "\u6761\u8F68": { en: "this track" },
   "\u77E5\u9053\u4E86": { en: "Got it" },
-  "\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09": { en: "Export vocals & mix (mp3)" },
+  "\u5BFC\u51FA\u6B4C\u58F0\uFF08mp3\uFF09": { en: "Export song audio (mp3)" },
   "\u97F3\u8D28": { en: "Quality" },
   "\u8303\u56F4": { en: "Range" },
   "\u6574\u9996": { en: "Whole song" },
@@ -240,7 +240,7 @@ var S = {
   "\u6539\u56DE\u81EA\u52A8\uFF08\u8FD9\u51E0\u4E2A\u97F3\u8BA4\u4E0D\u51FA\u548C\u5F26 = \u4E0D\u6807\uFF09": { en: "Back to automatic (these notes don't read as a chord = no label)" },
   "\u70B9\u4E00\u4E2A = \u7528\u5B83\uFF08\u8BB0\u8FDB\u8FD9\u4E2A\u97F3\uFF0C\u80FD\u64A4\u9500\uFF09": { en: "Tap one = use it (stored on this note; undo works)" },
   "\u754C\u9762": { en: "Interface" },
-  "\u4E50\u7406\u52A9\u624B": { en: "Music theory helper" },
+  "\u4E50\u7406\u52A9\u624B": { en: "Theory" },
   "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Audio" },
   "\u5F00\u53D1\u8005": { en: "Developer" },
   "\u8FD9\u662F\u4EC0\u4E48": { en: "What's this" },
@@ -288,7 +288,7 @@ var S = {
   "\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09": { en: "How audio starts (experiment)" },
   "\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA": { en: "On = the first tap starts a silent primer to wake the audio hardware, then the real output starts; off = the old way. Takes effect the next time the app is opened" },
   "\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026": { en: "Factory reset\u2026" },
-  "\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u7684\u6A21\u578B\u5305\u91CC\u9010\u4E2A\u5220": { en: "Wipes all of MoonSinger's local data on this device back to a fresh install: local library copies, speech cache, cover cache, settings, diagnostic log and offline shell; songs in the cloud and local files aren't touched; Tsukuyomi-chan's model pack is a shared family cache and isn't touched \u2014 delete packs individually under the model packs in \u201CSounds and cache\u201D" },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u7684\u6A21\u578B\u5305\u91CC\u9010\u4E2A\u5220": { en: "Wipes all of MoonSinger's local data on this device back to a fresh install: local library copies, speech cache, cover cache, settings, diagnostic log and offline shell; songs in the cloud and local files aren't touched; Tsukuyomi-chan's model packs are shared with other apps on this site and aren't touched \u2014 delete them one by one under model packs in Settings \u203A Audio" },
   "\u68C0\u67E5\u66F4\u65B0": { en: "Check for updates" },
   "\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220": { en: "For when you're stuck on an old version: unregisters this app's offline cache and reopens. Downloaded Tsukuyomi-chan model packs stay" },
   "\u6E05\u7F13\u5B58\u91CD\u542F": { en: "Clear cache and restart" },
@@ -370,7 +370,7 @@ var S = {
   "\u300C{rn}\u300D\u62F7\u6765\u4E86\u300C{from}\u300D\u7684\uFF1A{who}": { en: "\u201C{rn}\u201D: copied {who} from \u201C{from}\u201D" },
   "\u6362\u6210\u300C{who}\u300D": { en: "Changed to \u201C{who}\u201D" },
   "\u300C{rn}\u300D\u9000\u6389\u4E00\u4F4D\u5019\u9009": { en: "\u201C{rn}\u201D dropped a candidate" },
-  "\u65B0\u58F0\u90E8": { en: "new part" },
+  "\u65B0\u58F0\u90E8": { en: "New part" },
   "\uFF08\u6CA1\u4EBA\u4E0A\u573A\uFF09": { en: "(nobody on stage)" },
   "{id} \u589E\u76CA {p}{p2} dB": { en: "{id} gain {p}{p2} dB" },
   "{id} \u58F0\u50CF {pan}": { en: "{id} pan {pan}" },
@@ -444,7 +444,7 @@ var S = {
   "\u300C{name}\u300D\u662F{secs}\u91CC\u552F\u4E00\u7684\u58F0\u90E8\uFF0C\u5220\u4E0D\u4E86\uFF1A\u5148\u7ED9\u8FD9\u51E0\u6BB5\u653E\u8FDB\u522B\u7684\u58F0\u90E8\uFF0C\u6216\u8005\u628A\u8FD9\u51E0\u6BB5\u6574\u6BB5\u5220\u6389": { en: "\u201C{name}\u201D is the only part in {secs}, so it can't be deleted: first put another part into those sections, or delete those sections" },
   "\u5220\u6389\u58F0\u90E8\u300C{name}\u300D": { en: "Delete part \u201C{name}\u201D" },
   "\u5220\u6389\u4E86\u300C{name}\u300D\uFF08\u5B83\u6CA1\u5199\u4E1C\u897F\uFF1B\u64A4\u9500\u80FD\u627E\u56DE\u6765\uFF09": { en: "Deleted \u201C{name}\u201D (it hadn't written anything; undo brings it back)" },
-  "\u300C{p}\u300D{n} \u4E2A\u97F3": { en: "\u201C{p}\u201D: {n} notes" },
+  "\u300C{p}\u300D{n} \u4E2A\u97F3": { en: "\u201C{p}\u201D: {n} {n|note|notes}" },
   "\u300C{p}\u300D\uFF08\u6CA1\u6709\u97F3\uFF0C\u53EA\u6709\u4F11\u6B62 / \u8BB0\u53F7\uFF09": { en: "\u201C{p}\u201D (no notes, only rests / marks)" },
   "\u3001": { en: ", " },
   "\u5220\u6389\u58F0\u90E8\u300C{name}\u300D\uFF1F": { en: "Delete the part \u201C{name}\u201D?" },
@@ -454,7 +454,7 @@ var S = {
   "\u300C{p}\u300D\u53EA\u6709\u300C{name}\u300D\u8FD9\u4E00\u4E2A\u58F0\u90E8\uFF0C\u5220\u4E0D\u4E86\uFF1A\u8FD9\u4E00\u6BB5\u6574\u6BB5\u4E0D\u8981 = \u7EB8\u9876\u300C\u22EF\u300D\u91CC\u5220\u8FD9\u4E00\u6BB5": { en: "\u201C{name}\u201D is the only part in \u201C{p}\u201D, so it can't be deleted: to drop the whole section, use the \u22EF at the top of the sheet" },
   "\u5DF2\u4ECE\u300C{p}\u300D\u5220\u6389\u300C{name}\u300D\uFF08\u5B83\u5728\u8FD9\u4E00\u6BB5\u6CA1\u5199\u4E1C\u897F\uFF09": { en: "Deleted \u201C{name}\u201D from \u201C{p}\u201D (it hadn't written anything in this section)" },
   "\u4ECE\u300C{p}\u300D\u5220\u6389\u300C{name}\u300D\uFF1F": { en: "Delete \u201C{name}\u201D from \u201C{p}\u201D?" },
-  "\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684 {n} \u4E2A\u97F3\uFF0C\u8FDE\u540C\u6B4C\u8BCD\u3001\u8BB0\u53F7\u4E00\u8D77\u5220\u6389\u3002": { en: "The {n} notes it wrote in this section are deleted, with their lyrics and marks." },
+  "\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684 {n} \u4E2A\u97F3\uFF0C\u8FDE\u540C\u6B4C\u8BCD\u3001\u8BB0\u53F7\u4E00\u8D77\u5220\u6389\u3002": { en: "The {n} {n|note|notes} it wrote in this section {n|is|are} deleted, with their lyrics and marks." },
   "\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684\u4E1C\u897F\u4E00\u8D77\u5220\u6389\u3002": { en: "What it wrote in this section is deleted." },
   "\u518D\u628A\u5B83\u653E\u8FDB\u8FD9\u4E00\u6BB5\u662F\u4E00\u884C\u7A7A\u7684\uFF1B\u8981\u627E\u56DE\u53EA\u80FD\u64A4\u9500\u3002": { en: "Putting it back into this section gives an empty line; only undo brings the old one back." },
   "\u300C{p}\u300D\u6BB5\u7684\u300C{label}\u300D\u4EA4\u7ED9\u2026": { en: "Hand \u201C{label}\u201D in section \u201C{p}\u201D to\u2026" },
@@ -716,7 +716,7 @@ var S = {
   "\u672C\u6BB5": { en: "This section" },
   "\u5168\u90E8": { en: "All" },
   "\u7EB8 / ": { en: "sheets /" },
-  "\u7167\u4F60\u73B0\u5728\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u8BBE\u7F6E\u300C\u8F85\u52A9\u300D\u91CC\u6539\uFF09\u3002": { en: "Printed the way you are reading now: {w} (change it under Accessibility in Settings)." },
+  "\u7167\u4F60\u73B0\u5728\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u8BBE\u7F6E\u300C\u4E50\u7406\u52A9\u624B\u300D\u91CC\u6539\uFF09\u3002": { en: "Printed the way you are reading now: {w} (change it under Settings \u203A Theory)." },
   "\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09": { en: "read in C (\u201C1=original key\u201D above each key signature)" },
   "\u548C\u5F26\u7EA7\u6570": { en: "chord degrees" },
   "\u751F\u6210 PDF": { en: "Create PDF" },
@@ -1074,7 +1074,7 @@ var S = {
   "\u8FD9\u4E00\u5F20": { en: "This sheet" },
   "\u7ACB\u4F53\u58F0": { en: "Stereo" },
   "\u5355\u58F0\u9053": { en: "Mono" },
-  "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86": { en: "Vocals & mix exported" },
+  "\u6B4C\u58F0\u5BFC\u51FA\u597D\u4E86": { en: "Song audio exported" },
   "{p} \u79D2 \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}": { en: "{p} s \xB7 mp3 {Q} {kbps}k {size}{fromFinal}{fellBack}{length}{lines}" },
   "\u8FD9\u51E0\u6761\u8F68\u6CA1\u51FA\u58F0\uFF0Cmp3 \u91CC\u6CA1\u6709\u5B83\u4EEC\uFF1A": { en: "These tracks were silent and aren't in the mp3:" },
   "\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E": { en: "Credits \xB7 written into the mp3 tags" },
@@ -1428,7 +1428,7 @@ var S = {
   "\u300C\u5F39\u300D\u5173": { en: "\u201CJam\u201D off" },
   "\u6587\u4EF6": { en: "File" },
   "\u5B58\uFF08\u5B58\u56DE\u6253\u5F00\u7684\u90A3\u4E2A\u6587\u4EF6\uFF1B\u8FD8\u6CA1\u6709\u5BB6 = \u95EE\u5B58\u5230\u54EA / iPad \u4E0B\u8F7D\uFF09": { en: "Save (back to the opened file; no home yet = asks where / downloads on iPad)" },
-  "\u5BFC\u51FA\u2026\uFF08\u6B4C\u58F0 mp3 / \u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF1B\u539F\u6765\u7684\u300C\u53E6\u5B58\u4E3A\u300D\u4F4F\u8FD9\u91CC\uFF09": { en: "Export\u2026 (vocals mp3 / an .mxl copy; what used to be \u201CSave as\u201D)" },
+  "\u5BFC\u51FA\u2026\uFF08\u6B4C\u58F0 mp3 / \u5B58\u4E00\u4EFD .mxl \u526F\u672C\uFF1B\u539F\u6765\u7684\u300C\u53E6\u5B58\u4E3A\u300D\u4F4F\u8FD9\u91CC\uFF09": { en: "Export\u2026 (song audio as mp3 / an .mxl copy; what used to be \u201CSave as\u201D)" },
   "\u6253\u5F00\u2026\uFF08.mxl / .musicxml\uFF09": { en: "Open\u2026 (.mxl / .musicxml)" },
   "\u6253\u5F00\u2026": { en: "Open\u2026" },
   "\u9009\u533A": { en: "Selection" },
@@ -1818,7 +1818,7 @@ var S = {
   "\u600E\u4E48\u8BA4\u7684\uFF1A\u51D1\u5F97\u6210\u5B8C\u6574\u548C\u5F26\u7684\u4F18\u5148\uFF08\u4E0D\u7701\u97F3\uFF09\u2192 \u6700\u4F4E\u97F3\u5F53\u6839\u97F3\u7684\u4F18\u5148 \u2192 \u6839\u97F3\u5728\u8FD9\u4E2A\u8C03\u91CC\u7684\u4F18\u5148 \u2192 \u7B80\u5355\u7684\u4F18\u5148\u3002\u6253\u5E73\u7684\u4E24\u4E2A\u90FD\u5199\u5728\u8C31\u4E0A\u3002": { en: "How it is read: chords that are complete (nothing left out) win \u2192 the lowest note as root wins \u2192 a root inside this key wins \u2192 simpler chords win. When two tie, both are written on the score." },
   "\u8F6C\u4F4D\uFF08\u6700\u4F4E\u97F3\u4E0D\u662F\u6839\u97F3\uFF09": { en: "Inversion (the lowest note is not the root)" },
   "\u6CA1\u6709\u4E09\u5EA6\uFF1A\u5927\u4E09\u548C\u5F26\u8FD8\u662F\u5C0F\u4E09\u548C\u5F26\u5206\u4E0D\u51FA\u6765\uFF0C\u6309\u8FD9\u4E2A\u8C03\u91CC\u7684\u5199": { en: "No third: major or minor can\u2019t be told apart, so it follows this key" },
-  "\u7701\u4E86 {n} \u4E2A\u97F3": { en: "{n|note|notes} left out" },
+  "\u7701\u4E86 {n} \u4E2A\u97F3": { en: "{n} {n|note|notes} left out" },
   "\u6CA1\u6709\u53EF\u7528\u7684\u8D77\u6CD5\uFF08\u6253\u5305\u65F6\u6CA1\u5E26\u8FD9\u4E2A\u7EBF\u7A0B\uFF09": { en: "No way to start it (this thread wasn't bundled)" },
   "\u540E\u53F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}": { en: "Background thread \u201C{name}\u201D can't start: {Error}" },
   "\u51FA\u58F0\u7EBF\u7A0B\u300C{name}\u300D\u8D77\u4E0D\u6765\uFF1A{Error}": { en: "Audio thread \u201C{name}\u201D can't start: {Error}" },
@@ -2138,7 +2138,7 @@ var S = {
   "\u72EC\u594F\uFF08\u53EA\u542C\u72EC\u594F\u7684\u51E0\u4F4D\uFF1B\u548C\u8C31\u4E0A\u7684\u300C\u72EC\u300D\u662F\u540C\u4E00\u4E2A\uFF09": { en: "Solo (only hear the parts on solo; same as \u201CS\u201D on the score)" },
   "\u72EC": { en: "S" },
   // ── 设备上记着的渲好的声音（v0.16.97，2026-11-10，Claude Fable 5.2；定稿退役）──
-  "\u6B4C\u58F0\uFF08mp3\uFF09\u2026": { en: "Vocals (mp3)\u2026" },
+  "\u6B4C\u58F0\uFF08mp3\uFF09\u2026": { en: "Song audio (mp3)\u2026" },
   "\u6E32\u4E00\u904D\uFF0C\u7F16\u6210 mp3\uFF0C\u5206\u4EAB\u6216\u4E0B\u8F7D\uFF1B\u6E32\u597D\u7684\u90A3\u4EFD\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u8FD9\u9996\u6B4C\u7684\u5C01\u9762\u4E0A\u80FD\u76F4\u63A5\u542C": { en: "Render once into an mp3 to share or download. The render is remembered on this device, so you can play it straight from this song\u2019s cover in the library" },
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u4E0A\u6B21\u6E32\u597D\u7684\u8FD9\u4E00\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF1A\u76F4\u63A5\u62FF\uFF0C\u4E0D\u7528\u7B49\u3002": { en: "This device remembers the last render of exactly this, and nothing has changed: you get it right away, no waiting." },
   "\uFF08\u7528\u7684\u662F\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u4E0A\u6B21\u6E32\u597D\u7684\u90A3\u4EFD\uFF0C\u5185\u5BB9\u6CA1\u53D8\uFF09": { en: " (the last render remembered on this device; nothing has changed)" },
@@ -2146,7 +2146,7 @@ var S = {
   "\u8FD9\u9996\u6B4C\u91CC\u539F\u6765\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{size}\uFF09\u4E0D\u518D\u5B58\u8FDB\u6B4C\u91CC\u4E86\uFF1A\u5B83\u5DF2\u7ECF\u8BB0\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\uFF0C\u6B4C\u5E93\u91CC\u7167\u6837\u80FD\u542C\u3001\u80FD\u518D\u5BFC\u51FA\u3002": { en: "The mp3 that used to be stored inside this song ({size}) is no longer saved into the song file. It is remembered on this device, so you can still play it from the library and export it again." },
   "\u542C\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D\uFF08{p} \u79D2\uFF09": { en: "Play the render remembered on this device ({p} s)" },
   "\u542C\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3\uFF08{p} \u79D2\uFF09": { en: "Play the mp3 stored inside the song ({p} s)" },
-  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6709\u8FD9\u9996\u6B4C\u6E32\u597D\u7684\u58F0\u97F3\uFF1A\u6253\u5F00\u5B83\uFF0C\u300C\u5BFC\u51FA\u2026\u300D\u91CC\u5BFC\u4E00\u6B21\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u4E4B\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002": { en: "This device has no render of this song yet. Open it and export the vocals (mp3) once from \u201CExport\u2026\u201D; after that you can play it straight from the cover." },
+  "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8FD8\u6CA1\u6709\u8FD9\u9996\u6B4C\u6E32\u597D\u7684\u58F0\u97F3\uFF1A\u6253\u5F00\u5B83\uFF0C\u300C\u5BFC\u51FA\u2026\u300D\u91CC\u5BFC\u4E00\u6B21\u6B4C\u58F0\uFF08mp3\uFF09\uFF0C\u4E4B\u540E\u5C01\u9762\u4E0A\u5C31\u80FD\u76F4\u63A5\u542C\u3002": { en: "This device has no render of this song yet. Open it and export the song audio (mp3) once from \u201CExport\u2026\u201D; after that you can play it straight from the cover." },
   "\u53D6\u300C{stem}\u300D\u7684\u58F0\u97F3\u2026": { en: "Getting the audio for \u201C{stem}\u201D\u2026" },
   "\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8BB0\u7740\u7684\u90A3\u4E00\u904D": { en: "Remembered on this device" },
   "\u6B4C\u91CC\u5E26\u7740\u7684\u90A3\u4EFD mp3": { en: "The mp3 stored inside the song" }
@@ -5256,7 +5256,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/version.ts
-var APP_VERSION = "v0.16.97-2026-11-10";
+var APP_VERSION = "v0.16.98-2026-11-10";
 
 // src/format/performance.ts
 var DYNAMICS_DB = { ppp: -24, pp: -18, p: -12, mp: -6, mf: 0, f: 6, ff: 12, fff: 18 };
@@ -5586,4 +5586,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-3a2576aa336a.mjs.map
+//# sourceMappingURL=encode-worker-bf11c087aeb5.mjs.map

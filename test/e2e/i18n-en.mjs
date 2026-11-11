@@ -49,7 +49,10 @@ const note = (where, res) => {
   for (const t of res.overflow) { const k = t.replace(/ \[.*/, ""); if (!seenOver.has(k)) seenOver.set(k, `${where}: ${t}`); }
 };
 
+const MUST_REACH = ["写音", "词", "听 · 基础", "☰", "导出", "声音与署名", "封面", "设置 ui", "设置 a11y", "设置 sound", "设置 midi", "设置 dev",
+  "这一段的菜单", "谱头面板", "声部小卡", "乐器目录", "乐器页", "声部管理", "选区条", "选区菜单", "歌库 / 选家"];
 for (const [size, w, h] of SIZES) {
+  const reached = new Set();
   const ctx = await b.newContext({ viewport: { width: w, height: h }, locale: "en-US" });
   const p = await ctx.newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
   await p.goto(BASE); await p.waitForTimeout(900);
@@ -57,7 +60,7 @@ for (const [size, w, h] of SIZES) {
     check(await p.evaluate(() => document.documentElement.lang) === "en", "系统语言 en-US = 英文界面，<html lang> = en");
     check(await p.$eval(".mode-seg [data-mode=notes]", (e) => e.title.startsWith("Notes")), "模式钮的提示是英文");
   }
-  const scan = async (name) => { await p.waitForTimeout(180); note(`${size} · ${name}`, await p.evaluate(scanPage)); };
+  const scan = async (name) => { await p.waitForTimeout(180); reached.add(name); note(`${size} · ${name}`, await p.evaluate(scanPage)); };
   const tap = async (sel) => { try { await p.click(sel, { timeout: 1200 }); return true; } catch { return false; } };
   const esc = async () => { await p.keyboard.press("Escape"); await p.waitForTimeout(120); };
 
@@ -83,19 +86,23 @@ for (const [size, w, h] of SIZES) {
   await tap("#setBtn"); if (await tap('button:has-text("Export…")')) { await scan("导出"); await esc(); }
   await tap("#setBtn"); if (await tap('button:has-text("Sounds and credits…")')) { await scan("声音与署名"); await esc(); }
   await tap("#setBtn"); if (await tap('button:has-text("Cover image…")')) { await scan("封面"); await esc(); }
-  await tap("#setBtn"); if (await tap('button:has-text("Finalize…")')) { await scan("定稿"); await esc(); }
-  await tap("#setBtn"); if (await tap('button:has-text("Settings…")')) { await scan("设置"); await esc(); }
-  // 纸的扳手 + 歌手牌 + 乐器页 + 乐器目录
-  if (await tap(".sheet-tools [data-paper-set], [data-v=paper-settings], .paper-wrench")) { await scan("纸的设置"); await esc(); }
-  if (await tap("text=Vocals")) {
-    await scan("歌手牌");
-    if (await tap(".tc-inst")) {
-      await scan("乐器页");
-      if (await tap('button:has-text("Open instrument catalog…")')) { await p.waitForTimeout(500); await scan("乐器目录"); await esc(); }
-      await esc();
-    }
+  // 设置五页（v0.16.90 起分页）：逐页量
+  await tap("#setBtn");
+  if (await tap('button:has-text("Settings…")')) {
+    for (const tab of await p.$$eval(".set-tabs [data-tab]", (els) => els.map((e) => e.dataset.tab))) { if (await tap(`.set-tabs [data-tab="${tab}"]`)) await scan(`设置 ${tab}`); }
     await esc();
   }
+  // 这一段的菜单（纸顶 ⋯）+ 谱头面板（v0.16.8）
+  if (await tap('#score [data-ov="menu"], [data-ov="menu"]')) { await scan("这一段的菜单"); await esc(); }
+  if (await p.evaluate(() => { const m = window.__moonsinger; m.openHeader(m.state().at.part); return true; }).catch(() => false)) { await scan("谱头面板"); await esc(); }
+  // 点谱上的声部名 = 小卡（换乐器 / 乐器设置 / 声部管理 / 删掉声部）；三颗各走一遍
+  const card = async () => { if (await tap("#score text.part-name")) { await p.waitForTimeout(150); return true; } return false; };
+  if (await card()) {
+    await scan("声部小卡");
+    if (await tap('.track-card [data-v="swap"]')) { await p.waitForTimeout(500); await scan("乐器目录"); await esc(); await esc(); }
+  }
+  if (await card() && await tap('.track-card [data-v="inst"]')) { await p.waitForTimeout(300); await scan("乐器页"); await esc(); await esc(); }
+  if (await card() && await tap('.track-card [data-v="parts"]')) { await p.waitForTimeout(200); await scan("声部管理"); await esc(); }
   // 有音的界面：选区条（两排）、选区菜单、力度 / 风格 / 速度的小菜单
   await p.click("#score", { position: { x: Math.min(w - 60, 300), y: 160 } }).catch(() => {});
   for (const k of ["Digit1", "Digit2", "Digit3", "Digit5"]) await p.keyboard.press(k);
@@ -117,7 +124,35 @@ for (const [size, w, h] of SIZES) {
   if (await tap(".pad-head .k-key")) { await scan("调 + 调式"); await esc(); }
   // 歌库
   if (await tap(".tb-lib")) { await p.waitForTimeout(400); await scan("歌库 / 选家"); await esc(); }
-  if (size === SIZES[0][0]) check(errs.length === 0, "英文界面走一圈没有报错", errs.slice(0, 2).join(" | "));
+  if (size === SIZES[0][0]) {
+    check(errs.length === 0, "英文界面走一圈没有报错", errs.slice(0, 2).join(" | "));
+    // 路线没悄悄过时：入口改名 / 退役了，这里会少一个（v0.16.97 起；之前「定稿…」退役了它还在点，没人发现）
+    const missing = MUST_REACH.filter((n) => !reached.has(n));
+    check(missing.length === 0, `该走到的面板都走到了（${MUST_REACH.length - missing.length}/${MUST_REACH.length}）`, missing.join("、"));
+    if (verbose) console.log("   reached:", [...reached].join(" | "));
+  }
+  await ctx.close();
+}
+
+// 修改锁（v0.16.96）：干净的新页面里，把这首当「硬盘上的单个文件」打开（OPFS 句柄，同 edit-lock.mjs）= 门；
+//   接着改之后 ☰ 里有「锁上」。放在单独的页面：前面走过一圈歌已经改过，再打开会先问「离开这首吗」，没人点就一直等。
+for (const [size, w, h] of SIZES) {
+  const ctx = await b.newContext({ viewport: { width: w, height: h }, locale: "en-US" });
+  const p = await ctx.newPage(); await p.goto(BASE); await p.waitForTimeout(700);
+  const where = (n) => `${size} · ${n}`;
+  const opened = await Promise.race([
+    p.evaluate(async () => {
+      const dir = await navigator.storage.getDirectory(), fh = await dir.getFileHandle("i18n-en.mxl", { create: true });
+      const wr = await fh.createWritable(); await wr.write(await window.__moonsinger.bytes()); await wr.close();
+      return window.__moonsinger.openFileHandle(await dir.getFileHandle("i18n-en.mxl"));
+    }).catch(() => false),
+    new Promise((f) => setTimeout(() => f(false), 6000)),
+  ]);
+  if (size === SIZES[0][0]) check(!!opened && await p.evaluate(() => window.__moonsinger.editLock().locked), "当硬盘文件打开 = 锁着（能量到门）");
+  if (opened) {
+    await p.waitForTimeout(300); note(where("锁着的门"), await p.evaluate(scanPage));
+    try { await p.click('[data-v="continue"]', { timeout: 1200 }); await p.waitForTimeout(200); await p.click("#setBtn", { timeout: 1200 }); await p.waitForTimeout(180); note(where("☰（解开之后）"), await p.evaluate(scanPage)); } catch { if (size === SIZES[0][0]) check(false, "门上「接着改」→ ☰"); }
+  }
   await ctx.close();
 }
 

@@ -2889,7 +2889,7 @@ function openPdfPanel(): void {
       `<div class="part-sec">${_t("歌词的字体")}</div><div class="set-row">${chip("sans", _t("黑体"), _t("思源黑体：中文 / 日文 / 英文都有"))}${chip("pinyin", _t("拼音"), _t("萌神手写体：汉字头上标普通话拼音（可爱）；日文歌的汉字也会被标上普通话拼音"))}</div>` +
       `<div class="offer-msg">${_t("{p}第一次要下载字体（约 {p2} MB），之后离线也能用。纸张 = 这首歌的纸（纸的扳手里改）。", { p: pdfFont === "pinyin" ? _t("萌神手写体：汉字头上标普通话拼音，歌词那一行会往下让出拼音的地方。日文歌的汉字也会被标上普通话拼音。") : _t("思源黑体：中文、日文、英文都有。"), p2: PDF_FONT_MB[pdfFont] })}</div>` +
       `<div class="offer-msg">${partPick === "shown" ? _t("只排看得见的声部（{p}）：重新排、不留空位——和分页预览不一样。", { p: esc(shownNames.join("、")) }) : _t("印出来的 = 扳手里「分页」+ 曲段控件「{p}」看到的样子，去掉按钮和提示；隐藏的{p2}声部不印（预览里那条细行的位置空着）。", { p: paperPick === "one" ? _t("本段") : _t("全部"), p2: paperPick === "one" ? "" : _t("纸 / ") })}</div>` +
-      ((viewInC || chordTagsOn) ? `<div class="offer-msg">${_t("照你现在的看谱方式印：{w}（设置「辅助」里改）。", { w: [viewInC ? _t("按 C 调看（每个调号上方印「1=原来的调」）") : "", chordTagsOn ? _t("和弦级数") : ""].filter(Boolean).join(_t("、")) })}</div>` : "") +   // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
+      ((viewInC || chordTagsOn) ? `<div class="offer-msg">${_t("照你现在的看谱方式印：{w}（设置「乐理助手」里改）。", { w: [viewInC ? _t("按 C 调看（每个调号上方印「1=原来的调」）") : "", chordTagsOn ? _t("和弦级数") : ""].filter(Boolean).join(_t("、")) })}</div>` : "") +   // 预览什么样印出来就什么样（v0.16.13）：说一声，免得以为是实际的调
       `<div class="offer-btns"><button class="btn" data-v="close">${_t("算了")}</button><button class="btn primary" data-v="go">${_t("生成 PDF")}</button></div></div>`;
   };
   draw(); document.body.append(box);
