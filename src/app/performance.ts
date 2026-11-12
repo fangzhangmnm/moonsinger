@@ -21,8 +21,9 @@ import { performerCredits, licenseHints, creditsText, type CreditLine } from "..
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf } from "../performers/index.ts";
 import type { TrackSpec } from "../engine/studio.ts";
+import type { RollVariation } from "../engine/roll-variation.ts";
 import { LEAD_IN, PRE_ROLL, type Timeline, type PerformerInfo, type ChunkPlan } from "../engine/timeline.ts";
-import { humOpt, audibleParts as audiblePartsOf, performerInfoOf, prepareParts, micOf as micOfCore, channelOf as channelOfCore, lowestMidiOf as lowestMidiCore, songBpm as songBpmOf, pushMix, timelineOf, renderSong, loopSpanOf, toMono, RENDER_SR, type RenderDeps, type RenderPlan } from "../core/render.ts";
+import { humOpt, audibleParts as audiblePartsOf, performerInfoOf, prepareParts, micOf as micOfCore, channelOf as channelOfCore, lowestMidiOf as lowestMidiCore, songBpm as songBpmOf, pushMix, timelineOf, renderSong, loopSpanOf, toMono, RENDER_SR, trialKey, type RenderDeps, type RenderPlan } from "../core/render.ts";
 import { chunkOrder, readyToStart, prerollCount } from "../engine/scheduler.ts";
 import { fileSafe, stampedCopy } from "./names.ts";
 import { RenderProgress } from "../ui/render-progress.ts";
@@ -86,7 +87,15 @@ export function createPerformance(host: PerfHost) {
   /** 这条通道 = 麦克风增益 + 上场那位的响度校准。 */
   const channelOf = (part: PartDef): { gainDb: number; pan: number } => channelOfCore(extras(), part);
   /** 这次打开里的渲染计划（核心认的形状）：歌 / 休息室 / 哼 / 出声的声部 / 效果全关 / 静音的混音轨。 */
-  const planOf = (song: Song, parts: readonly PartDef[], raw = mixBypass): RenderPlan => ({ song, extras: extras(), hum: st().song.hum, parts, mixBypass: raw, busMuted: host.busMuted() });
+  const planOf = (song: Song, parts: readonly PartDef[], raw = mixBypass): RenderPlan => ({ song, extras: extras(), hum: st().song.hum, parts, mixBypass: raw, busMuted: host.busMuted(), ...(rollTrial.size ? { trial: { rollVar: rollTrial } } : {}) });
+  /** 滚奏的「变化」（7-N 第三批，试验，默认没有）：只在这次打开里有效、不进歌、不进撤销，换歌复位；听和导出都带上（同一个时间线）。
+   *  键 = trialKey(角色, 上场那位的候选 id)：换了人就不跟过去。开着的时候导出 / 歌库里渲不拿也不记渲染缓存（缓存只认文件里的内容，文件里没有这个选项）。 */
+  let rollTrial = new Map<string, RollVariation>();
+  function setRollTrial(role: string, v: RollVariation | null): void {
+    const key = trialKey(role, activeId(extras(), role)), next = new Map(rollTrial); if (v) next.set(key, v); else next.delete(key);
+    rollTrial = next; schedulePlaybackRefresh();
+  }
+  const trialOn = (): boolean => rollTrial.size > 0;
   /** 核心要的注入：录音房 = 这个 app 的 StudioClient；音源 / 元音表 = 宿主的来源；块 = 这里的泵（awaitAllChunks）。 */
   const deps: RenderDeps = { engine, sounds: { resolveGmBytes, ensureVowels }, sing: (tl) => awaitAllChunks(tl) };
   /** 效果全关（A/B，这次打开里有效、换歌复位；v0.10.18，user「混音台加一个暂时禁用所有魔法的toggle，不过fade和pan要不要留？（就是给你回到musescore/谱子本身用的，以及听差别）」）：
@@ -543,14 +552,14 @@ export function createPerformance(host: PerfHost) {
     exporting = true;
     try {
       const whole = o.scope === "all", parts = audibleParts().map((p) => p.id), title = st().song.title || docName();
-      const hit = whole ? await host.renders?.take({ quality: o.quality, parts, title }).catch(() => null) ?? null : null;
+      const hit = whole && !trialOn() ? await host.renders?.take({ quality: o.quality, parts, title }).catch(() => null) ?? null : null;   // 开着试验选项 = 现渲（缓存里那份没有它）
       let r: { tagged: Uint8Array; secs: number; kbps: number; stereo: boolean; roles: string[]; cached: boolean }, kept = false;
       if (hit) r = { tagged: hit.bytes, secs: hit.secs, kbps: hit.kbps, stereo: hit.stereo, roles: hit.roles, cached: true };
       else {
         const m = await renderMp3(o), tag = mp3Tag(m.roles).tag, tagged = new Uint8Array(tag.length + m.bytes.length);
         tagged.set(tag, 0); tagged.set(m.bytes, tag.length);
         r = { tagged, secs: m.secs, kbps: m.kbps, stereo: m.stereo, roles: m.roles, cached: false };
-        if (whole && o.keep !== false) kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo, loop: m.loop }, tagged).catch(() => false) ?? false;   // 记不进去 = 宿主报进黑匣子，照常把声音给人
+        if (whole && o.keep !== false && !trialOn()) kept = await host.renders?.keep({ quality: o.quality, parts, title, roles: m.roles, secs: m.secs, kbps: m.kbps, stereo: m.stereo, loop: m.loop }, tagged).catch(() => false) ?? false;   // 记不进去 = 宿主报进黑匣子，照常把声音给人
       }
       const { lines, fellBack } = mp3Tag(r.roles);
       // 文件名 = 名[-曲段]-YYYYMMDD-HHMM（v0.9.47；user「看一下wxhw还是weebpaint，导出的时候文件名应该还有导出的时间，也许还有防撞」= WeebPaint naming.ts「下载版本 = 名-YYYYMMDD-HHMM」；
@@ -569,6 +578,7 @@ export function createPerformance(host: PerfHost) {
     exporting = true;
     try {
       const parts = audibleParts().map((p) => p.id), title = st().song.title || docName();
+      if (trialOn()) throw new Error(_t("乐器页开着试验选项（滚奏的变化）：渲出来的不是文件里的样子，不记进渲染缓存。关掉试验选项再渲，或者直接导出"));
       const hit = await host.renders?.take({ quality: o.quality, parts, title }).catch(() => null) ?? null;
       if (hit) return { cached: true, kept: true, secs: hit.secs };
       const m = await renderMp3({ quality: o.quality, scope: "all" }), tag = mp3Tag(m.roles).tag, tagged = new Uint8Array(tag.length + m.bytes.length);
@@ -605,6 +615,7 @@ export function createPerformance(host: PerfHost) {
     issues: (): readonly Issue[] => issues, issueOf: (part: string): Issue | null => issues.find((i) => i.part === part) ?? null, issuesText, refreshIssues,
     get loopOn() { return loopOn; }, get playTl() { return playTl; }, get preparing() { return preparing; }, get paused() { return paused; }, get startMark() { return startMark; }, get exporting() { return exporting; },
     get mixBypass() { return mixBypass; }, set mixBypass(v: boolean) { mixBypass = v; },
+    rollTrial: (role: string): RollVariation | null => rollTrial.get(trialKey(role, activeId(extras(), role))) ?? null, setRollTrial, trialOn, resetTrial: () => { if (rollTrial.size) { rollTrial = new Map(); } },
     get turnLead() { return turnLead; }, set turnLead(v: number) { turnLead = v; },
   };
 }

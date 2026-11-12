@@ -4425,6 +4425,11 @@ var S = {
   "\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09": { en: "Faster roll (2 more hits per second)" },
   "\u56DE\u5230\u8FD9\u4EF6\u4E50\u5668\u7684\u9ED8\u8BA4": { en: "Back to this instrument's default" },
   "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": { en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands \u2014 crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Defaults: drums 12, pitched 14 (per second)." },
+  "\u6EDA\u594F\u7684\u53D8\u5316\uFF08\u8BD5\u9A8C\uFF09": { en: "Roll variation (trial)" },
+  "\u6CA1\u6709\uFF08\u5747\u5300\uFF09": { en: "None (even)" },
+  "\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A": { en: "Alternating hands + small randomness" },
+  "\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A = \u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF0C\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \xB1{vel}%\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \xB1{time}%\uFF08\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF09\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002": { en: "Alternating hands + small randomness = every second stroke (the other hand) is {hand}% softer, each stroke's velocity varies randomly by \xB1{vel}%, and its start moves randomly by \xB1{time}% of the stroke spacing (the first stroke stays put); the randomness is fixed per note, so the same song sounds the same every time." },
+  "\u8BD5\u9A8C\uFF1A\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u3001\u4E0D\u8FDB\u64A4\u9500\uFF0C\u6362\u6B4C\u5C31\u56DE\u5230\u300C\u6CA1\u6709\u300D\uFF1B\u542C\u548C\u5BFC\u51FA\u90FD\u5E26\u4E0A\u3002\u5F00\u7740\u7684\u65F6\u5019\u5BFC\u51FA\u4E0D\u7528\u3001\u4E5F\u4E0D\u8BB0\u6E32\u67D3\u7F13\u5B58\uFF08\u7F13\u5B58\u53EA\u8BA4\u6587\u4EF6\u91CC\u7684\u5185\u5BB9\uFF09\u3002": { en: "Trial: only for this session \u2014 not saved in the song, not in undo, back to \u201CNone\u201D when you switch songs; playback and export both use it. While it's on, export doesn't use or store the render cache (the cache only knows what's in the file)." },
   "\u97F3\u5185\u8D77\u4F0F\u591A\u6DF1": { en: "In-note swell depth" },
   "\u6D45\u4E00\u70B9\uFF08\u22123 dB\uFF09": { en: "Shallower (\u22123 dB)" },
   "\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09": { en: "Deeper (+3 dB)" },
@@ -4483,6 +4488,7 @@ var S = {
   "\u7F72\u540D \xB7 \u5DF2\u5199\u8FDB mp3 \u7684\u6807\u7B7E": { en: "Credits \xB7 written into the mp3 tags" },
   "\u5BFC\u51FA\u5931\u8D25\uFF1A{Error}": { en: "Export failed: {Error}" },
   "\u6B63\u5728\u5BFC\u51FA\u6216\u51C6\u5907\u64AD\u653E\uFF0C\u7B49\u5B83\u5B8C\u4E86\u518D\u6E32": { en: "Exporting or getting ready to play; render after that finishes" },
+  "\u4E50\u5668\u9875\u5F00\u7740\u8BD5\u9A8C\u9009\u9879\uFF08\u6EDA\u594F\u7684\u53D8\u5316\uFF09\uFF1A\u6E32\u51FA\u6765\u7684\u4E0D\u662F\u6587\u4EF6\u91CC\u7684\u6837\u5B50\uFF0C\u4E0D\u8BB0\u8FDB\u6E32\u67D3\u7F13\u5B58\u3002\u5173\u6389\u8BD5\u9A8C\u9009\u9879\u518D\u6E32\uFF0C\u6216\u8005\u76F4\u63A5\u5BFC\u51FA": { en: "A trial option is on in the instrument page (roll variation): the render isn't what the file says, so it won't go into the render cache. Turn the trial option off and render again, or just export" },
   "{label} \xB7 \u5F00\u5934 {p} \u79D2": { en: "{label} \xB7 first {p} s" },
   "\u8FD9\u4E2A\u6D4F\u89C8\u5668\u89E3\u4E0D\u4E86\u97F3\u9891": { en: "This browser can't decode the audio" },
   "PNG {REF_IMAGE_COLORS} \u8272\u3001{w} \xD7 {h}\uFF08\u957F\u8FB9\u6700\u591A {REF_IMAGE_EDGE}\uFF09": { en: "PNG {REF_IMAGE_COLORS} colors, {w} \xD7 {h} (long side up to {REF_IMAGE_EDGE})" },
@@ -34185,15 +34191,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-ff91ef6f509e.mjs");
+      return pick(() => "singer-worker-6d5b6b4a3acf.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-f2f491a7ec44.mjs");
+      return pick(() => "layout-worker-8bd43e8fcf51.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-ff7572b3c56d.mjs");
+      return pick(() => "encode-worker-dd2de9961c67.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -40491,6 +40497,31 @@ var tsukuyomi = registerPerformer({
   }
 });
 
+// src/engine/roll-variation.ts
+var ROLL_HANDS = { hand: 0.03, vel: 0.04, time: 0.03 };
+function rollRand(seed, i10, lane) {
+  let h2 = (Math.imul(seed | 0, 2654435761) ^ Math.imul(i10 + 1, 2246822519) ^ Math.imul(lane + 1, 3266489917)) >>> 0;
+  h2 ^= h2 >>> 16;
+  h2 = Math.imul(h2, 2246822507) >>> 0;
+  h2 ^= h2 >>> 13;
+  h2 = Math.imul(h2, 3266489909) >>> 0;
+  h2 ^= h2 >>> 16;
+  return (h2 >>> 0) / 4294967296;
+}
+function varyRoll(hits, seed, mode) {
+  if (mode !== "hands" || hits.length < 2) return hits.slice();
+  const R2 = ROLL_HANDS, d3 = (hits[hits.length - 1].t1 - hits[0].t0) / hits.length;
+  const t0s = hits.map((h2, i10) => i10 === 0 ? h2.t0 : h2.t0 + R2.time * d3 * (2 * rollRand(seed, i10, 1) - 1));
+  return hits.map((h2, i10) => {
+    const out = { ...h2, t0: t0s[i10], t1: i10 + 1 < hits.length ? t0s[i10 + 1] : h2.t1 };
+    if (h2.vel !== void 0) {
+      const f2 = (i10 % 2 === 1 ? 1 - R2.hand : 1) * (1 + R2.vel * (2 * rollRand(seed, i10, 0) - 1));
+      out.vel = Math.max(1, Math.min(127, Math.round(h2.vel * 127 * f2))) / 127;
+    }
+    return out;
+  });
+}
+
 // src/gm/sf-key.ts
 function sfKey(written, inst, transpose = 0) {
   if (inst.note !== void 0) return inst.note;
@@ -40556,11 +40587,13 @@ function lightNotes(tokens, tempoMap, poly = false, marks, velOf, rollVel) {
       continue;
     }
     const hz = Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, marks.rollHz(n10.midi))), len = n10.t1 - n10.t0, k2 = Math.max(1, Math.round(len * hz)), d3 = len / k2, segs = n10.segs ?? [];
+    const hits = [];
     for (let i10 = 0; i10 < k2; i10++) {
       const t10 = n10.t0 + i10 * d3, seg = [...segs].reverse().find((g3) => g3.t0 <= t10 + 1e-9) ?? segs[0];
       const v = rollVel && seg ? rollVel({ index: seg.index, t: t10, seg, first: segs[0].index, isFirst: i10 === 0, fr: len > 0 ? i10 / k2 : 0 }) : n10.vel;
-      out.push({ midi: n10.midi, t0: t10, t1: n10.t0 + (i10 + 1) * d3, ...v !== void 0 ? { vel: v } : {} });
+      hits.push({ midi: n10.midi, t0: t10, t1: n10.t0 + (i10 + 1) * d3, ...v !== void 0 ? { vel: v } : {} });
     }
+    out.push(...marks.rollVar && segs[0] ? varyRoll(hits, tokens[segs[0].index].id, marks.rollVar) : hits);
   }
   return out.sort((a10, b3) => a10.t0 - b3.t0);
 }
@@ -40616,7 +40649,7 @@ function buildTimeline(inp) {
     const percKey = (m2) => info2.gm?.note !== void 0 ? info2.gm.note : info2.hitSec ? m2 : null;
     const rollHz = info2.plugin.honors.includes("roll") ? (m2) => info2.spec.rollHz ?? rollDefaultHz(percKey(m2)) : void 0;
     const rollVel = rollHz && byVel ? rollHitVelocity(tokens, map, info2.spec, info2.velocity, bounds, groove, curve) : void 0;
-    const notes = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(info2.spec), ...rollHz ? { rollHz } : {} }, (i10) => vels?.get(i10) ?? info2.velocity, rollVel);
+    const notes = lightNotes(tokens, map, info2.plugin.poly, { ...lightMarks(info2.spec), ...rollHz ? { rollHz, ...info2.rollVar ? { rollVar: info2.rollVar } : {} } : {} }, (i10) => vels?.get(i10) ?? info2.velocity, rollVel);
     const built = info2.plugin.track?.({ id: part2.id, notes, gain, ...info2.chain?.length ? { chain: info2.chain } : {}, hum, info: info2 });
     if (!built) {
       unplayable.push({ part: part2.id, why: _t("\u300C{label}\u300D\u4E0D\u4F1A\u6309\u97F3\u7B26\u8868\u51FA\u58F0", { label: info2.plugin.label }) });
@@ -41114,16 +41147,18 @@ function resolveChain(chain, ctx2) {
 }
 
 // src/core/render.ts
+var trialKey = (role, cand) => `${role}/${cand}`;
 var humOpt = () => ({ humNasal: "N_m", humConsMin: 0.07, leadIn: LEAD_IN });
 var RENDER_SR = 44100;
 function audibleParts(song, pv2) {
   const solo = song.parts.some((p2) => pv2(p2.id).solo);
   return song.parts.filter((p2) => solo ? pv2(p2.id).solo : !pv2(p2.id).muted);
 }
-function performerInfoOf(extras, part2, banks) {
+function performerInfoOf(extras, part2, banks, trial) {
   const role = part2.role, eng = activeInstrument(extras, role)?.engine ?? "unknown", plugin = performerOf(eng), cat2 = grooveCategory(plugin?.grooveCategory ?? null, activeGm(extras, role));
   const own = plugin ? plugin.info({ extras, role, presetIndex: (s10, b3, p2) => banks.presetIndex(s10, b3, p2), velCurve: (s10, b3, p2) => banks.velCurve(s10, b3, p2) }) : { gm: null, chunk: "phrase" };
-  return { engine: eng, plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s10) => followOf(s10, cat2), chain: activeChain(extras, role), ...own };
+  const rollVar = trial?.rollVar?.get(trialKey(role, activeId(extras, role)));
+  return { engine: eng, plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s10) => followOf(s10, cat2), chain: activeChain(extras, role), ...rollVar ? { rollVar } : {}, ...own };
 }
 async function prepareParts(parts, extras, deps) {
   const errs = [];
@@ -41177,7 +41212,7 @@ function pushMix(engine2, plan, pv2) {
 }
 function timelineOf(plan, banks) {
   const { song } = plan;
-  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part2) => performerInfoOf(plan.extras, part2, banks), hum: plan.hum, singOpt: humOpt() });
+  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part2) => performerInfoOf(plan.extras, part2, banks, plan.trial), hum: plan.hum, singOpt: humOpt() });
 }
 function loopSpanOf(song, tl2, withArrangementLoop = true) {
   let from = tl2.papers[0]?.t0 ?? 0;
@@ -41363,7 +41398,16 @@ function createPerformance(host2) {
   const audibleParts3 = () => audibleParts(st2().song, pv2);
   const micOf3 = (part2) => micOf(extras(), part2);
   const channelOf3 = (part2) => channelOf(extras(), part2);
-  const planOf = (song, parts, raw = mixBypass) => ({ song, extras: extras(), hum: st2().song.hum, parts, mixBypass: raw, busMuted: host2.busMuted() });
+  const planOf = (song, parts, raw = mixBypass) => ({ song, extras: extras(), hum: st2().song.hum, parts, mixBypass: raw, busMuted: host2.busMuted(), ...rollTrial.size ? { trial: { rollVar: rollTrial } } : {} });
+  let rollTrial = /* @__PURE__ */ new Map();
+  function setRollTrial(role, v) {
+    const key = trialKey(role, activeId(extras(), role)), next2 = new Map(rollTrial);
+    if (v) next2.set(key, v);
+    else next2.delete(key);
+    rollTrial = next2;
+    schedulePlaybackRefresh2();
+  }
+  const trialOn = () => rollTrial.size > 0;
   const deps = { engine: engine2, sounds: { resolveGmBytes, ensureVowels: ensureVowels2 }, sing: (tl2) => awaitAllChunks(tl2) };
   let mixBypass = false;
   function pushChannels2(raw = mixBypass) {
@@ -41991,7 +42035,7 @@ function createPerformance(host2) {
     exporting = true;
     try {
       const whole = o10.scope === "all", parts = audibleParts3().map((p2) => p2.id), title = st2().song.title || docName2();
-      const hit2 = whole ? await host2.renders?.take({ quality: o10.quality, parts, title }).catch(() => null) ?? null : null;
+      const hit2 = whole && !trialOn() ? await host2.renders?.take({ quality: o10.quality, parts, title }).catch(() => null) ?? null : null;
       let r10, kept = false;
       if (hit2) r10 = { tagged: hit2.bytes, secs: hit2.secs, kbps: hit2.kbps, stereo: hit2.stereo, roles: hit2.roles, cached: true };
       else {
@@ -41999,7 +42043,7 @@ function createPerformance(host2) {
         tagged.set(tag2, 0);
         tagged.set(m2.bytes, tag2.length);
         r10 = { tagged, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo, roles: m2.roles, cached: false };
-        if (whole && o10.keep !== false) kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo, loop: m2.loop }, tagged).catch(() => false) ?? false;
+        if (whole && o10.keep !== false && !trialOn()) kept = await host2.renders?.keep({ quality: o10.quality, parts, title, roles: m2.roles, secs: m2.secs, kbps: m2.kbps, stereo: m2.stereo, loop: m2.loop }, tagged).catch(() => false) ?? false;
       }
       const { lines, fellBack } = mp3Tag(r10.roles);
       const file = new File([r10.tagged], `${stampedCopy(`${docName2()}${o10.scope === "segment" ? `-${fileSafe(st2().song.papers.find((p2) => p2.id === st2().at.paper)?.name || _t("\u8FD9\u4E00\u5F20"))}` : ""}`)}.mp3`, { type: "audio/mpeg" });
@@ -42017,6 +42061,7 @@ function createPerformance(host2) {
     exporting = true;
     try {
       const parts = audibleParts3().map((p2) => p2.id), title = st2().song.title || docName2();
+      if (trialOn()) throw new Error(_t("\u4E50\u5668\u9875\u5F00\u7740\u8BD5\u9A8C\u9009\u9879\uFF08\u6EDA\u594F\u7684\u53D8\u5316\uFF09\uFF1A\u6E32\u51FA\u6765\u7684\u4E0D\u662F\u6587\u4EF6\u91CC\u7684\u6837\u5B50\uFF0C\u4E0D\u8BB0\u8FDB\u6E32\u67D3\u7F13\u5B58\u3002\u5173\u6389\u8BD5\u9A8C\u9009\u9879\u518D\u6E32\uFF0C\u6216\u8005\u76F4\u63A5\u5BFC\u51FA"));
       const hit2 = await host2.renders?.take({ quality: o10.quality, parts, title }).catch(() => null) ?? null;
       if (hit2) return { cached: true, kept: true, secs: hit2.secs };
       const m2 = await renderMp3({ quality: o10.quality, scope: "all" }), tag2 = mp3Tag(m2.roles).tag, tagged = new Uint8Array(tag2.length + m2.bytes.length);
@@ -42140,6 +42185,14 @@ function createPerformance(host2) {
     },
     set mixBypass(v) {
       mixBypass = v;
+    },
+    rollTrial: (role) => rollTrial.get(trialKey(role, activeId(extras(), role))) ?? null,
+    setRollTrial,
+    trialOn,
+    resetTrial: () => {
+      if (rollTrial.size) {
+        rollTrial = /* @__PURE__ */ new Map();
+      }
     },
     get turnLead() {
       return turnLead;
@@ -43196,7 +43249,12 @@ function createInstSettings(el2, h2) {
       _t("\u6EDA\u594F"),
       `<b class="ip-val">${esc7(_t("\u6BCF\u79D2 {n} \u4E0B", { n: set ?? d3 }))}</b><button class="btn" data-v="roll:-2" title="${_t("\u6EDA\u594F\u7A00\u4E00\u70B9\uFF08\u6BCF\u79D2\u5C11 2 \u4E0B\uFF09")}">\u22122</button><button class="btn" data-v="roll:2" title="${_t("\u6EDA\u594F\u5BC6\u4E00\u70B9\uFF08\u6BCF\u79D2\u591A 2 \u4E0B\uFF09")}">+2</button>` + (set !== null ? `<button class="btn" data-v="roll:def" title="${_t("\u56DE\u5230\u8FD9\u4EF6\u4E50\u5668\u7684\u9ED8\u8BA4")}">${_t("\u9ED8\u8BA4")}</button>` : ""),
       _t("\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002")
-    ))(activePerfSpec(h2.extras(), role).rollHz, rollDefaultOf(role)) : "") + // 音内起伏多深（7-N，2026-11-12；user「上了音内渐强是从-6db开始的还是从0开始的这个我也没法配置」）：swellDb，一档 3 dB，3–24，默认 6；按力度敲的旁边写约几档力度
+    ))(activePerfSpec(h2.extras(), role).rollHz, rollDefaultOf(role)) : "") + // 滚奏的「变化」（7-N 第三批，试验；user「默认没有变化，我试了之后告诉你该sunset变化还是默认变化」）：只在这次打开里有效、不进歌；数照 src/engine/roll-variation.ts 那一处说
+    (plug?.honors.includes("roll") ? ((tv2) => row2(
+      _t("\u6EDA\u594F\u7684\u53D8\u5316\uFF08\u8BD5\u9A8C\uFF09"),
+      chip("rollvar:none", _t("\u6CA1\u6709\uFF08\u5747\u5300\uFF09"), !tv2) + chip("rollvar:hands", _t("\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A"), tv2 === "hands"),
+      _t("\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A = \u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF0C\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \xB1{vel}%\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \xB1{time}%\uFF08\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF09\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002", { hand: Math.round(ROLL_HANDS.hand * 100), vel: Math.round(ROLL_HANDS.vel * 100), time: Math.round(ROLL_HANDS.time * 100) }) + `<br>${_t("\u8BD5\u9A8C\uFF1A\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u3001\u4E0D\u8FDB\u64A4\u9500\uFF0C\u6362\u6B4C\u5C31\u56DE\u5230\u300C\u6CA1\u6709\u300D\uFF1B\u542C\u548C\u5BFC\u51FA\u90FD\u5E26\u4E0A\u3002\u5F00\u7740\u7684\u65F6\u5019\u5BFC\u51FA\u4E0D\u7528\u3001\u4E5F\u4E0D\u8BB0\u6E32\u67D3\u7F13\u5B58\uFF08\u7F13\u5B58\u53EA\u8BA4\u6587\u4EF6\u91CC\u7684\u5185\u5BB9\uFF09\u3002")}`
+    ))(h2.rollTrial()) : "") + // 音内起伏多深（7-N，2026-11-12；user「上了音内渐强是从-6db开始的还是从0开始的这个我也没法配置」）：swellDb，一档 3 dB，3–24，默认 6；按力度敲的旁边写约几档力度
     (plug?.honors.includes("swellGrow") || plug?.honors.includes("swellFade") ? ((D4) => row2(
       _t("\u97F3\u5185\u8D77\u4F0F\u591A\u6DF1"),
       `<b class="ip-val">${D4} dB</b><button class="btn" data-v="swell:-3" title="${_t("\u6D45\u4E00\u70B9\uFF08\u22123 dB\uFF09")}">\u22123</button><button class="btn" data-v="swell:3" title="${_t("\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09")}">+3</button>` + (D4 !== MARK_DEFAULTS_SWELL ? `<button class="btn" data-v="swell:def" title="${_t("\u56DE\u5230\u9ED8\u8BA4 {d} dB", { d: MARK_DEFAULTS_SWELL })}">${_t("\u9ED8\u8BA4")}</button>` : ""),
@@ -43250,7 +43308,10 @@ function createInstSettings(el2, h2) {
       const d3 = v === "cal:def" ? NaN : Number(v.slice(4)), next2 = Math.max(-30, Math.min(12, Number.isNaN(d3) ? calDefault(role) : activeCalibrationDb(h2.extras(), role) + d3));
       h2.commit(withCalibration(h2.extras(), role, next2, hum), _t("\u300C{rn}\u300D\u54CD\u5EA6\u6821\u51C6 {next} dB", { rn: rn2, next: next2 }), "cal");
     } else if (v.startsWith("hum:")) h2.setHum(v.slice(4));
-    else {
+    else if (v.startsWith("rollvar:")) {
+      h2.setRollTrial(v === "rollvar:hands" ? "hands" : null);
+      return;
+    } else {
       const ch2 = performerOf(h2.engine())?.onInspector?.(v, inspectorCtx(role));
       if (!ch2) return;
       h2.commit(ch2.extras, ch2.label, ch2.gesture);
@@ -44467,7 +44528,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "c6a6e0aafb3181d2" : "dev";
+var CORE_HASH = true ? "a83e2eb51ad10e5e" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -60121,6 +60182,8 @@ window.__moonsinger = {
   },
   // E2E：目录里选小月相（= 人声那一行「选这个」；新声部要先选乐器，v0.16.35）
   set: (n10) => update(n10),
+  trialOn: () => perfApi.trialOn(),
+  tracksNow: async () => (await perfApi.prepare("all"))?.tracks ?? null,
   addPaper: () => update(addPaper(D3.st)),
   toggleChord: (i10, p2) => update(toggleChordPitch(D3.st, i10, p2)),
   playSong: () => playSong(),
@@ -62166,7 +62229,12 @@ var instPage = createInstSettings(instEl, {
   back: () => closeInstPage(),
   togglePad: () => showPad(padEl.hidden),
   openFinder: () => openFinder(),
-  findBankFile: (id2) => findBankFile(id2)
+  findBankFile: (id2) => findBankFile(id2),
+  rollTrial: () => perfApi.rollTrial(curRole()),
+  setRollTrial: (v) => {
+    perfApi.setRollTrial(curRole(), v);
+    drawInst();
+  }
 });
 function drawInst() {
   instPage.draw();
@@ -62200,6 +62268,7 @@ function applyDesk(d3) {
 function loadDoc(song, o10) {
   perfApi.mixBypass = false;
   busMuted.clear();
+  perfApi.resetTrial();
   loadingDoc = true;
   try {
     loadDocInner(song, o10);
@@ -64409,4 +64478,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a0cdf33c2106.mjs.map
+//# sourceMappingURL=moonsinger-5a530f58c02b.mjs.map

@@ -1,4 +1,5 @@
 import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type Hum } from "../score/song.ts";
+import { type RollVariation } from "./roll-variation.ts";
 import { rollHitVelocity, type PerfSpec, type VelDb } from "../score/perform.ts";
 import { type GrooveStyle } from "../score/groove.ts";
 import { type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
@@ -40,6 +41,8 @@ export interface PerformerInfo {
     /** 着力点（v0.10.27；鼓 / 音效）：敲这个键时采样开头到「砸下去那一下」几秒——录音房提前这么多开始放，砸在写的那一拍上（反向镲 1.4 s）。
      *  有音高的乐器不给（不挪）。src/gm/percussion.ts；设计账 ai-docs/20261010-shared-staff-percussion-design.md §3。 */
     hitSec?: (key: number) => number;
+    /** 滚奏的「变化」（7-N 第三批，试验）：只在这次打开里有效、不进歌（RenderPlan.trial 带进来）；没有 = 均匀。 */
+    rollVar?: RollVariation;
     /** 这位自己的唱法参数（小月相：候选 defaults 里的旋钮，乐器页「高级」；2026-10-15）：盖在 TimelineInput.singOpt 上，一起进块的内容键。 */
     singOpt?: Record<string, unknown>;
     /** 按力度敲的乐器：引擎在敲的键上实际的 L（写的音高 × 力度 → dB；perform.ts VelDb，7-N）。准备声音时从库的字节算（录音房载库时），没载好 = 没有（这个声部本来就不出声）。
@@ -123,7 +126,8 @@ export declare function lightNotes(tokens: Token[], tempoMap: TempoMap, poly?: b
     breath: boolean;
     gapSec: number;
     arpeggioSec?: number; /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */
-    rollHz?: (midi: number) => number;
+    rollHz?: (midi: number) => number; /** 滚奏的「变化」（7-N 第三批，试验）：没有 = 均匀。 */
+    rollVar?: RollVariation;
 }, velOf?: (index: number, art: readonly string[]) => number, rollVel?: RollVel): {
     midi: number;
     t0: number;

@@ -3391,6 +3391,21 @@ export declare const S: {
     readonly "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u9F13\u7C7B\u4E00\u5F8B 12\uFF0C\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": {
         readonly en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands — crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Defaults: drums 12, pitched 14 (per second).";
     };
+    readonly "\u6EDA\u594F\u7684\u53D8\u5316\uFF08\u8BD5\u9A8C\uFF09": {
+        readonly en: "Roll variation (trial)";
+    };
+    readonly "\u6CA1\u6709\uFF08\u5747\u5300\uFF09": {
+        readonly en: "None (even)";
+    };
+    readonly "\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A": {
+        readonly en: "Alternating hands + small randomness";
+    };
+    readonly "\u5DE6\u53F3\u624B\u4EA4\u66FF + \u5C0F\u968F\u673A = \u53CC\u6570\u4E0B\uFF08\u53E6\u4E00\u53EA\u624B\uFF09\u8F7B {hand}%\uFF0C\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u518D\u968F\u673A \u00B1{vel}%\u3001\u8D77\u70B9\u968F\u673A\u632A\u4E00\u4E0B\u95F4\u9694\u7684 \u00B1{time}%\uFF08\u7B2C\u4E00\u4E0B\u4E0D\u632A\uFF09\uFF1B\u968F\u673A\u6309\u8FD9\u4E2A\u97F3\u5B9A\uFF0C\u540C\u4E00\u9996\u6BCF\u6B21\u653E\u51FA\u6765\u4E00\u6837\u3002": {
+        readonly en: "Alternating hands + small randomness = every second stroke (the other hand) is {hand}% softer, each stroke's velocity varies randomly by ±{vel}%, and its start moves randomly by ±{time}% of the stroke spacing (the first stroke stays put); the randomness is fixed per note, so the same song sounds the same every time.";
+    };
+    readonly "\u8BD5\u9A8C\uFF1A\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u5B58\u8FDB\u6B4C\u3001\u4E0D\u8FDB\u64A4\u9500\uFF0C\u6362\u6B4C\u5C31\u56DE\u5230\u300C\u6CA1\u6709\u300D\uFF1B\u542C\u548C\u5BFC\u51FA\u90FD\u5E26\u4E0A\u3002\u5F00\u7740\u7684\u65F6\u5019\u5BFC\u51FA\u4E0D\u7528\u3001\u4E5F\u4E0D\u8BB0\u6E32\u67D3\u7F13\u5B58\uFF08\u7F13\u5B58\u53EA\u8BA4\u6587\u4EF6\u91CC\u7684\u5185\u5BB9\uFF09\u3002": {
+        readonly en: "Trial: only for this session — not saved in the song, not in undo, back to “None” when you switch songs; playback and export both use it. While it's on, export doesn't use or store the render cache (the cache only knows what's in the file).";
+    };
     readonly 音内起伏多深: {
         readonly en: "In-note swell depth";
     };
@@ -3564,6 +3579,9 @@ export declare const S: {
     };
     readonly "\u6B63\u5728\u5BFC\u51FA\u6216\u51C6\u5907\u64AD\u653E\uFF0C\u7B49\u5B83\u5B8C\u4E86\u518D\u6E32": {
         readonly en: "Exporting or getting ready to play; render after that finishes";
+    };
+    readonly "\u4E50\u5668\u9875\u5F00\u7740\u8BD5\u9A8C\u9009\u9879\uFF08\u6EDA\u594F\u7684\u53D8\u5316\uFF09\uFF1A\u6E32\u51FA\u6765\u7684\u4E0D\u662F\u6587\u4EF6\u91CC\u7684\u6837\u5B50\uFF0C\u4E0D\u8BB0\u8FDB\u6E32\u67D3\u7F13\u5B58\u3002\u5173\u6389\u8BD5\u9A8C\u9009\u9879\u518D\u6E32\uFF0C\u6216\u8005\u76F4\u63A5\u5BFC\u51FA": {
+        readonly en: "A trial option is on in the instrument page (roll variation): the render isn't what the file says, so it won't go into the render cache. Turn the trial option off and render again, or just export";
     };
     readonly "{label} \u00B7 \u5F00\u5934 {p} \u79D2": {
         readonly en: "{label} · first {p} s";

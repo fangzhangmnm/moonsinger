@@ -193,3 +193,45 @@ describe("力度记号放纸尾（7-N）", () => {
     const last = back[back.length - 1]!; assert(last.kind === "dyn" && (last as { value: string }).value === "fff", `读回来：${last.kind}`);
   });
 });
+
+// ── 7-N 第三批：滚奏的「变化」（乐器页里的试验选项，默认没有；2026-11-12 Claude Opus 5.5（MoonSinger小弟））──
+//   user「默认没有变化，我试了之后告诉你该sunset变化还是默认变化」：没选 = 和以前逐项相同；选了「左右手交替 + 小随机」= 数照 src/engine/roll-variation.ts 那一处、按音的 id 定种子
+import { varyRoll, rollRand, ROLL_HANDS } from "../src/engine/roll-variation.ts";
+import { performerInfoOf, trialKey } from "../src/core/render.ts";
+import { activeId } from "../src/format/project.ts";
+describe("滚奏 7-N 第三批：变化（左右手交替 + 小随机，试验）", () => {
+  const even = (k: number, vel = 80 / 127) => Array.from({ length: k }, (_, i) => ({ midi: 38, t0: i * 0.1, t1: (i + 1) * 0.1, vel }));
+  it("在数之内：第一下不挪、最后一下的结尾不挪、每一下的结尾 = 下一下真正的起点（同一个键先松再按）、起点只挪间隔的 ±3%、力度在手和随机的范围里", () => {
+    const base = even(60), v = varyRoll(base, 4242, "hands"), R = ROLL_HANDS, d = 0.1;
+    eq(v.length, 60);
+    assert(v[0]!.t0 === 0 && Math.abs(v[59]!.t1 - 6) < 1e-12, "头尾不挪");
+    assert(v.every((h, i) => i === 59 || h.t1 === v[i + 1]!.t0), "接得上");
+    assert(v.every((h, i) => Math.abs(h.t0 - base[i]!.t0) <= R.time * d + 1e-12 && (i === 0 || h.t0 > v[i - 1]!.t0)), "起点只挪一点、先后不乱");
+    assert(v.some((h, i) => Math.abs(h.t0 - base[i]!.t0) > 1e-6), "真的挪了");
+    const lo = Math.floor(80 * (1 - R.hand) * (1 - R.vel)), hi = Math.ceil(80 * (1 + R.vel));
+    assert(v.every((h) => { const m = Math.round(h.vel! * 127); return m >= lo && m <= hi && Math.abs(h.vel! * 127 - m) < 1e-9; }), `力度在 ${lo}–${hi}：${v.map((h) => Math.round(h.vel! * 127)).join(" ")}`);
+  });
+  it("左右手：双数下平均比单数下轻（约 3%）；随机按种子定——同一个种子每次一样、换种子就不一样", () => {
+    const v = varyRoll(even(400), 7, "hands"), mean = (r: number) => { const xs = v.filter((_, i) => i % 2 === r).map((h) => h.vel!); return xs.reduce((a, b) => a + b, 0) / xs.length; };
+    const ratio = mean(1) / mean(0);
+    assert(ratio < 0.99 && ratio > 0.95, `双数下 / 单数下 = ${ratio.toFixed(3)}`);
+    eq(JSON.stringify(varyRoll(even(30), 7, "hands")), JSON.stringify(varyRoll(even(30), 7, "hands")), "同一个种子 = 同一串");
+    assert(JSON.stringify(varyRoll(even(30), 7, "hands")) !== JSON.stringify(varyRoll(even(30), 8, "hands")), "换种子 = 不一样");
+    assert(rollRand(1, 2, 0) !== rollRand(1, 2, 1), "力度和时间两路随机互不牵连");
+  });
+  it("时间线：没选 = 和以前逐项相同；选了 = 同样多下、种子 = 这个滚奏的音的 id；按音量曲线的（没有力度）只挪时间", () => {
+    const toks = [...head(), n(38, 4 * TPQ, { art: ["roll"] })], map = [{ tick: 0, bpm: 120 }] as never, roll = toks[toks.length - 1]!;
+    const plain = lightNotes(toks, map, true, marks(8), () => 80 / 127), on = lightNotes(toks, map, true, { ...marks(8), rollVar: "hands" }, () => 80 / 127);
+    eq(on.length, plain.length, "一样多下");
+    eq(JSON.stringify(on), JSON.stringify(varyRoll(plain, roll.id, "hands")), "= 均匀的那一串按这个音的 id 变一下");
+    const noVel = lightNotes(toks, map, true, { ...marks(8), rollVar: "hands" });
+    assert(noVel.every((h) => h.vel === undefined) && noVel.some((h, i) => Math.abs(h.t0 - plain[i]!.t0) > 1e-6), "没有力度的只挪时间");
+  });
+  it("试验选项只跟这位：键 = 角色 + 上场那位；渲染计划不带 = 没有变化（不进歌）", () => {
+    const ex = withNewRole(emptyExtras(), "r1", "n"), part = { id: "P1", role: "r1", mic: "m1" } as never, banks = { presetIndex: () => 0, velCurve: () => null } as never;
+    const key = trialKey("r1", activeId(ex, "r1"));
+    eq(performerInfoOf(ex, part, banks, { rollVar: new Map([[key, "hands"]]) }).rollVar, "hands", "选了的那位");
+    eq(performerInfoOf(ex, part, banks, { rollVar: new Map([[trialKey("r1", "别人"), "hands"]]) }).rollVar, undefined, "换了上场的人 = 不跟过去");
+    eq(performerInfoOf(ex, part, banks).rollVar, undefined, "不带试验 = 没有");
+  });
+});

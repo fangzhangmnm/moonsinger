@@ -4,6 +4,7 @@ import { type Song, type PartDef } from "../score/song.ts";
 import type { Hum } from "../format/contract.ts";
 import { type Extras, type GmCandidate } from "../format/project.ts";
 import { type Timeline, type PerformerInfo } from "../engine/timeline.ts";
+import type { RollVariation } from "../engine/roll-variation.ts";
 import type { TimelineMsg, ChannelParams, BusSpec, MasterParams } from "../engine/studio.ts";
 import type { VowelTableMsg } from "../engine/studio-client.ts";
 /** 录音房的离线面：浏览器的 StudioClient 和 node 的 OfflineStudio 都长这样（结构类型）。 */
@@ -56,7 +57,14 @@ export interface RenderPlan {
     mixBypass?: boolean;
     /** 静音的混音轨（视图态）。 */
     busMuted?: ReadonlySet<string>;
+    /** 这次打开里的试验选项（不进歌、不进撤销；听和导出都带上）。 */
+    trial?: PerfTrial;
 }
+/** 试验选项（7-N 第三批）：rollVar = 滚奏的「变化」，键 = trialKey(角色, 上场那位的候选 id)——换了人就不跟过去。 */
+export interface PerfTrial {
+    rollVar?: ReadonlyMap<string, RollVariation>;
+}
+export declare const trialKey: (role: string, cand: string) => string;
 export interface PrepareError {
     part: string;
     cand: string;
@@ -68,7 +76,7 @@ export declare const RENDER_SR = 44100;
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的。 */
 export declare function audibleParts(song: Song, pv: PartAudible): PartDef[];
 /** 上场那位的出声参数（时间线不碰 Extras）。SoundFont 的预设下标要库先进录音房（prepareParts）。 */
-export declare function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup): PerformerInfo;
+export declare function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup, trial?: PerfTrial): PerformerInfo;
 /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 export declare function prepareParts(parts: readonly PartDef[], extras: Extras, deps: Pick<RenderDeps, "engine" | "sounds">): Promise<PrepareError[]>;
 /** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；没有 = 0 / 0。 */
