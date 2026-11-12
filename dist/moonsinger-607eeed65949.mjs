@@ -14995,6 +14995,12 @@ function drawJianpu(c10, mine, mode = "digits") {
       ulTop.set(k2, Math.max(ulTop.get(k2) ?? -Infinity, y2));
     }
     const botOf = /* @__PURE__ */ new Map();
+    const barSpan = o10.__barSpan ?? PAPER_PARAMS[c10.look.notation][c10.look.density].barSpan ?? "body";
+    const band = /* @__PURE__ */ new Map(), pendingBars = [], BAR_PAD = 0.2 * DIGIT_H;
+    const widen = (row2, top, bot) => {
+      const b3 = band.get(row2);
+      band.set(row2, b3 ? { top: Math.min(b3.top, top), bot: Math.max(b3.bot, bot) } : { top, bot });
+    };
     let fifths = q2.head.key;
     for (const u2 of units) {
       if (u2.kind === "key") {
@@ -15023,15 +15029,22 @@ function drawJianpu(c10, mine, mode = "digits") {
         continue;
       }
       if (u2.kind === "bar") {
-        const row3 = rowOf(u2.system, r10, 0), x2 = P2(u2.x) + Q2(BAR_DX), y0 = Y2(row3, BAR_Y0), y1 = Y2(row3, BAR_Y1), tok2 = u2.index >= 0 ? tokens[u2.index]?.id : void 0;
-        const line = (lx2, w2) => put2(row3, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "line", x1: lx2, y1: y0, x2: lx2, y2: y1, w: Q2(w2), cls: "bar jp-bar" });
-        if (u2.style === "final" || u2.repeat === "end") {
-          line(x2 - Q2(BAR_GAP + BAR_THICK / 2), BAR_THIN);
-          line(x2, BAR_THICK);
-        } else if (u2.style === "double" || u2.repeat) {
-          line(x2 - Q2(BAR_GAP), BAR_THIN);
-          line(x2, BAR_THIN);
-        } else line(x2, BAR_THIN);
+        const row3 = rowOf(u2.system, r10, 0), x2 = P2(u2.x) + Q2(BAR_DX), tok2 = u2.index >= 0 ? tokens[u2.index]?.id : void 0;
+        const drawLines = (y0, y1) => {
+          const line = (lx2, w2) => put2(row3, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "line", x1: lx2, y1: y0, x2: lx2, y2: y1, w: Q2(w2), cls: "bar jp-bar" });
+          if (u2.style === "final" || u2.repeat === "end") {
+            line(x2 - Q2(BAR_GAP + BAR_THICK / 2), BAR_THIN);
+            line(x2, BAR_THICK);
+          } else if (u2.style === "double" || u2.repeat) {
+            line(x2 - Q2(BAR_GAP), BAR_THIN);
+            line(x2, BAR_THIN);
+          } else line(x2, BAR_THIN);
+        };
+        if (barSpan === "notes") pendingBars.push(() => {
+          const b3 = band.get(row3) ?? { top: BASE_Y - DIGIT_H, bot: BASE_Y };
+          drawLines(Y2(row3, b3.top - BAR_PAD), Y2(row3, b3.bot + BAR_PAD));
+        });
+        else drawLines(Y2(row3, BAR_Y0), Y2(row3, BAR_Y1));
         const rdot = (dx) => {
           for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put2(row3, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "path", d: dotPath(x2 + Q2(dx), Y2(row3, yy), Q2(0.15)), cls: "jp-dot repeat-dot" });
         };
@@ -15130,11 +15143,13 @@ function drawJianpu(c10, mine, mode = "digits") {
         if (u2.j === 0 && u2.index >= 0) rests.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: Q2(DIGIT_W) });
       }
       const nUL = underlines(u2);
+      widen(row2, (nc2.members.length ? Math.min(...nc2.members.map((m2) => m2.yb)) : BASE_Y) - DIGIT_H, nUL ? ulTop.get(ulKey(u2)) + (nUL - 1) * UL_GAP + UL_W / 2 : BASE_Y);
       if (nUL) {
         const uh = fd2 || lt2 ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
         ul2.push({ row: row2, x0: cx2 - Q2(uh), x1: cx2 + Q2(uh), level: nUL, group: ulKey(u2), y0: ulTop.get(ulKey(u2)), tok, ch: u2 });
       }
     }
+    for (const f2 of pendingBars) f2();
     const tups = [];
     {
       let run2 = [], acc = 0, minBase = Infinity;
@@ -34059,7 +34074,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-695a21e9f1e6.mjs");
+      return pick(() => "layout-worker-31697d34d155.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-04fba178662a.mjs");
   }
@@ -64235,4 +64250,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-51149ffcb976.mjs.map
+//# sourceMappingURL=moonsinger-607eeed65949.mjs.map

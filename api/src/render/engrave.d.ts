@@ -140,6 +140,8 @@ export interface EngraveOpts {
         unit: number;
         wall: number;
     }) => void;
+    /** 测试 / 样张用：数字行的小节线高度临时换一种（7-I 并排图），盖过排版参数表的 barSpan。 */
+    __barSpan?: "body" | "notes";
 }
 /** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。staffTop / staff = 五线谱这一行自己的数据（staff/geometry.ts StaffRowData；挪成行的 data 归第二刀）。 */
 export interface SystemBox {
