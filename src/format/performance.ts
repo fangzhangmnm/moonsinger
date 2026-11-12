@@ -6,7 +6,7 @@ import { CREDIT, SINGER, PACKS } from "../singer/packs.gen.ts";
 import { APP_VERSION } from "../version.ts";
 import type { Credit, Spec, Dynamic } from "./contract.ts";
 
-// 力度 → 响度只有一条（施工单第 9 节 / 9-2，2026-11-12）：力度记号查力度表（DYNAMICS_VEL，全体演奏者一张）、响度 = 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。
+// 力度 → 响度只有一条（施工单第 9 节 / 9-2 / 9-4，2026-11-12）：力度记号查力度表（DYNAMICS_VEL，全体演奏者一张）、响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。
 //   原来小月相 / 元音版那张「力度字母 → dB」的表（每档 6 dB）和「走一档 = 6 dB」退役了；旧文件里按值存的由 lounge 迁移 2→3 删掉（migrate/index.ts）。
 /** 演奏法：跳音 / 保持各吃掉时值的多少（0–1）、重音加多少 dB。 */
 export const ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1.0, accentDb: 4 } as const;

@@ -2,7 +2,8 @@
 //   created 2026-11-12 by Claude Opus 5.5（MoonSinger小弟）。响度 = 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）；力度记号查力度表（全体一张，没带 = 标准表）；
 //   渐强渐弱 / 渐到在力度上按时间线性；按值存的 dynamicsDb / wedgeStepDb 退役（lounge 3：迁移 2→3 删掉、写时没有；统筹裁定走大版本）。
 import { describe, it, eq, assert } from "./runner.mjs";
-import { gainSegments, velocityDb, type PerfSpec } from "../src/score/perform.ts";
+import { gainSegments, velocityDb, SF2_VEL_DEPTH, type PerfSpec } from "../src/score/perform.ts";
+import { performerOf } from "../src/performers/index.ts";
 import { DYNAMICS_VEL, ARTICULATION, MARK_DEFAULTS } from "../src/format/performance.ts";
 import { initState, tr, TPQ, DYNS, type Token, type Dyn } from "../src/score/song.ts";
 import { openBytes, activePerfSpec } from "../src/format/project.ts";
@@ -20,12 +21,15 @@ const line = (items: Token[]) => [...tr(initState()).slice(0, 3), ...items];
 const map = [{ tick: 0, bpm: 60 }] as never;   // 一拍一秒
 
 describe("力度 → 响度：全体一条（9-2）", () => {
-  it("小月相 / 元音版：八档力度记号的音量曲线水平 = 40·log10(力度 ÷ 127)（和乐器同一个式子，不以 mf 为 0）", () => {
-    for (const d of DYNS) {
-      const g = gainSegments(line([dyn(d), note()]), map, SING)!, want = 40 * Math.log10(DYNAMICS_VEL[d] / 127);
-      assert(g.every((s) => Math.abs(s.dB - want) < 0.05), `${d}：${g.map((s) => s.dB.toFixed(2)).join(" ")}，应该 ${want.toFixed(2)}`);
+  it("小月相 / 元音版：八档力度记号的音量曲线水平 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)（和乐器同一个式子，不以 mf 为 0；深度 = 插件报的 800，9-4）", () => {
+    for (const name of ["tsukuyomi", "vowel-sampler"]) eq(performerOf(name)!.velocityDepth, 800, `${name} 报的力度深度`);
+    const at800 = { ppp: -30.0, pp: -19.5, p: -13.8, mp: -9.9, mf: -6.7, f: -4.0, ff: -1.8, fff: -0.1 } as Record<string, number>;   // 统筹 2026-11-12 给的数
+    for (const depth of [SF2_VEL_DEPTH, 800]) for (const d of DYNS) {
+      const g = gainSegments(line([dyn(d), note()]), map, SING, undefined, undefined, false, depth)!, want = (depth / 960) * 40 * Math.log10(DYNAMICS_VEL[d] / 127);
+      assert(g.every((s) => Math.abs(s.dB - want) < 0.05), `深度 ${depth} ${d}：${g.map((s) => s.dB.toFixed(2)).join(" ")}，应该 ${want.toFixed(2)}`);
+      if (depth === 800) assert(Math.abs(want - at800[d]!) < 0.06, `${d}：${want.toFixed(2)} vs ${at800[d]}`);
     }
-    assert(Math.abs(velocityDb(DYNAMICS_VEL.mf) - 40 * Math.log10(80 / 127)) < 1e-12 && Math.abs(velocityDb(127)) < 1e-12, "满力度 = 0 dB");
+    assert(Math.abs(velocityDb(DYNAMICS_VEL.mf) - 40 * Math.log10(80 / 127)) < 1e-12 && Math.abs(velocityDb(127)) < 1e-12 && Math.abs(velocityDb(127, 800)) < 1e-12, "满力度 = 0 dB");
   });
   it("p 渐强到 f：一个长音里每一小段 = 力度按时间线性、再换成 dB（不是在 dB 上线性）", () => {
     const toks = line([dyn("p"), { kind: "hairpin", id: id++, dir: "cresc" } as Token, note(4 * TPQ), dyn("f"), note()]);

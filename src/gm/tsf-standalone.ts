@@ -13,17 +13,6 @@ export interface TsfExports {
 }
 export interface TsfBank { handle: number; presets: { index: number; bank: number; program: number; name: string }[] }
 
-/** 敲下去（施工单第 9 节，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「立刻最先修」「我无法容忍backward compatibility 错误的convention」）：
- *  照 SoundFont 规范放，**音量 = (力度 ÷ 127)²**——规范的默认调制器「力度 → 衰减、负向单极凹曲线、960 cB」，按 FluidSynth 的凹曲线
- *  （src/gentables/fluid_concave.cpp：concave[i] = −(400 / 960)·log10((127 − i) / 127)，2026-11-12 对过）代进去 = 衰减 −40·log10(力度 / 127) dB。
- *  TinySoundFont 只按一次方算（tsf.h：noteGainDB = globalGainDB − attenuation − gainToDecibels(1 / vel)），所以敲下去之前先把这个播放器的总音量设成这一下的力度：
- *  总音量只在敲下去那一刻读一次、写进这个音自己（globalGainDB = 20·log10(volume)），两样加起来 = 40·log10(力度)。不用改 wasm。
- *  只有这一种放法：所有敲音（实时、离线导出、按键试听、找乐器的试听、滚奏的每一下；独立版和胶水版两份 wasm）都走这一个函数。力度 0 = 引擎当松键，不设音量。 */
-export function sfNoteOnSquared(ex: { sf_set_volume(f: number, g: number): void; sf_note_on(f: number, preset: number, key: number, vel: number): number }, f: number, preset: number, key: number, vel: number): void {
-  if (vel > 0) ex.sf_set_volume(f, vel);
-  ex.sf_note_on(f, preset, key, vel);
-}
-
 /** 实例化（module 可以是 WebAssembly.Module 或 wasm 字节）。 */
 export async function instantiateTsf(module: WebAssembly.Module | BufferSource): Promise<Tsf> {
   const imports = { env: { emscripten_notify_memory_growth: () => {} } };
@@ -49,7 +38,9 @@ export class Tsf {
     return { handle, presets };
   }
   close(b: TsfBank): void { this.ex.sf_close(b.handle); }
-  noteOn(b: TsfBank, preset: number, key: number, vel: number): void { sfNoteOnSquared(this.ex, b.handle, preset, key, vel); }   // 音量 = 力度的平方（第 9 节）
+  /** 敲下去（vel 0–1）。力度 → 响度归引擎自己（施工单 9-4，2026-11-12：vendor/tsf/patch-tsf.py 补丁 2 照 FluidSynth 读库给每件乐器写的力度曲线，
+   *  响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)；第 9 节那个「敲之前把总音量设成力度」的包装退场了）。 */
+  noteOn(b: TsfBank, preset: number, key: number, vel: number): void { this.ex.sf_note_on(b.handle, preset, key, vel); }
   noteOff(b: TsfBank, preset: number, key: number): void { this.ex.sf_note_off(b.handle, preset, key); }
   allOff(b: TsfBank): void { this.ex.sf_note_off_all(b.handle); }
   /** 所有声音快速收掉（tsf_reset = endquick：几毫秒淡出，不是硬切）。 */

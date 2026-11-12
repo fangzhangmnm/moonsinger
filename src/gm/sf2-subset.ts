@@ -159,3 +159,45 @@ export function sf2Info(input: Uint8Array): { name?: string; engineer?: string; 
   }
   return out;
 }
+
+/** 这件乐器（一个预设；给了 key = 只看盖到这个键的区）的「力度深度」：库给每个区写的「力度 → 初始衰减」调制器的量（cB），照 FluidSynth 合
+ *  （施工单 9-4，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；引擎那一半 = vendor/tsf/patch-tsf.py 补丁 2，两边同一套规矩）：
+ *  规范默认 960（来源 0x0502 = 力度、负向、单极、凹，量来源 = 无）；乐器一级同源的盖掉它（区里的盖过全局区的），预设一级同源的加上去（量 0 不加）。
+ *  响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)；0 = 按多重都一样响。回不重复、从小到大的几个数（一般一件乐器一个数；鼓组按鼓件不同）；没有这个预设 = null。 */
+export function sf2VelocityDepths(input: Uint8Array, bank: number, program: number, key?: number): number[] | null {
+  const bytes = plain(input), { pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const u16 = (c: Chunk, rec: number, i: number, at: number) => dv.getUint16(c.off + i * rec + at, true);
+  const bagOf = (hdr: PdtaName, i: number) => u16(pdta[hdr], REC[hdr], i, hdr === "phdr" ? 24 : 20);
+  /** 一个区：它的生成器（op → 原始 16 位）和「力度 → 衰减」同源调制器的量（没写 = undefined）。 */
+  const zone = (bagName: "pbag" | "ibag", genName: "pgen" | "igen", modName: "pmod" | "imod", z: number) => {
+    const g0 = u16(pdta[bagName], 4, z, 0), g1 = u16(pdta[bagName], 4, z + 1, 0), m0 = u16(pdta[bagName], 4, z, 2), m1 = u16(pdta[bagName], 4, z + 1, 2);
+    const gens = new Map<number, number>(); let amt: number | undefined;
+    for (let g = g0; g < g1; g++) gens.set(u16(pdta[genName], 4, g, 0), u16(pdta[genName], 4, g, 2));
+    for (let m = m0; m < m1; m++) {
+      const o = pdta[modName].off + m * 10;
+      if (dv.getUint16(o, true) === 0x0502 && dv.getUint16(o + 2, true) === 48 && dv.getUint16(o + 6, true) === 0) amt = dv.getInt16(o + 4, true);   // 同一个区里重复的：后面的算数
+    }
+    return { gens, amt };
+  };
+  const range = (gens: Map<number, number>, glob?: Map<number, number>): [number, number] => { const r = gens.get(43) ?? glob?.get(43); return r === undefined ? [0, 127] : [r & 0xff, r >> 8]; };
+  const nP = pdta.phdr.size / REC.phdr - 1;
+  let pi = -1; for (let i = 0; i < nP; i++) if (u16(pdta.phdr, REC.phdr, i, 22) === bank && u16(pdta.phdr, REC.phdr, i, 20) === program) { pi = i; break; }
+  if (pi < 0) return null;
+  const out = new Set<number>(), hit = (r: [number, number]) => key === undefined || (key >= r[0] && key <= r[1]);
+  let pGlob: ReturnType<typeof zone> | null = null;
+  for (let z = bagOf("phdr", pi); z < bagOf("phdr", pi + 1); z++) {
+    const pz = zone("pbag", "pgen", "pmod", z), inst = pz.gens.get(GEN_INSTRUMENT);
+    if (inst === undefined) { if (z === bagOf("phdr", pi)) pGlob = pz; continue; }
+    const pr = range(pz.gens, pGlob?.gens); if (!hit(pr)) continue;
+    const pAmt = pz.amt ?? pGlob?.amt ?? 0;
+    let iGlob: ReturnType<typeof zone> | null = null;
+    for (let iz = bagOf("inst", inst); iz < bagOf("inst", inst + 1); iz++) {
+      const zz = zone("ibag", "igen", "imod", iz);
+      if (!zz.gens.has(GEN_SAMPLE_ID)) { if (iz === bagOf("inst", inst)) iGlob = zz; continue; }
+      const ir = range(zz.gens, iGlob?.gens);
+      if (!hit(ir) || ir[1] < pr[0] || ir[0] > pr[1]) continue;
+      out.add((zz.amt ?? iGlob?.amt ?? 960) + pAmt);
+    }
+  }
+  return [...out].sort((a, b) => a - b);
+}

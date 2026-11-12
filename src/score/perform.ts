@@ -22,21 +22,25 @@ export interface PerfSpec { staccatoGate: number; accentDb: number; marcatoDb?: 
 const M = MARK_DEFAULTS;   // 演奏者没写的键用它（= 这一版之前写死的数）
 /** 音量曲线的一段：t0–t1（秒，谱的时钟）这段多少 dB；-Infinity = 静音。 */
 export interface GainSeg { t0: number; t1: number; dB: number }
-/** 力度 → 响度（施工单第 9 节 / 9-2，2026-11-12；user「按照SoundFont对齐，然后小月相也应该对齐」）：全体演奏者只有这一条——SoundFont 规范的放法，
- *  音量 = (力度 ÷ 127)² → 响度 = 40·log10(力度 ÷ 127) dB（满力度 = 0）。乐器：力度送进引擎（选录音），引擎照这一条算（gm/tsf-standalone.ts sfNoteOnSquared）；
- *  小月相 / 元音版没有录音层：音量曲线上的水平就是这一条。不以 mf 为基准、不乘任何数拉回原来的响度（user：「这个就是我绝对无法容忍的那个东西」）。 */
-export const velocityDb = (vel: number): number => 40 * Math.log10(Math.max(1, Math.min(127, vel)) / 127);
+/** SoundFont 规范默认的力度深度（cB）：「力度 → 初始衰减」调制器的量（SF2.01 8.4.1）。深度 960 = 音量按力度的平方。 */
+export const SF2_VEL_DEPTH = 960;
+/** 力度 → 响度（施工单第 9 节 / 9-2 / 9-4，2026-11-12；user「按照SoundFont对齐，然后小月相也应该对齐」「真正该对齐的是：我们的引擎和标准播放器 对齐」）：
+ *  全体演奏者只有这一条——SoundFont 的放法，响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127) dB（满力度 = 0；深度 960 = 规范默认 = 音量按力度的平方）。
+ *  乐器：力度送进引擎（选录音），深度是库给每件乐器写的，引擎自己读（vendor/tsf/patch-tsf.py 补丁 2，照 FluidSynth）；
+ *  小月相 / 元音版没有录音层：音量曲线上的水平就是这一条，深度由她们的插件报（registry.ts velocityDepth）。
+ *  不以 mf 为基准、不乘任何数拉回原来的响度（user：「这个就是我绝对无法容忍的那个东西」）。 */
+export const velocityDb = (vel: number, depth = SF2_VEL_DEPTH): number => (depth / SF2_VEL_DEPTH) * 40 * Math.log10(Math.max(1, Math.min(127, vel)) / 127);
 
 /** 一个声部的音量曲线。byVelocity = 这位按力度敲（演奏者插件的能力 dynamics: "velocity"）：力度记号 / 渐强渐弱 / 重音都在每个音的力度里（noteVelocities），
  *  这条曲线只剩强后即弱的「压」和音内起伏；否则（小月相 / 元音版）力度水平、重音、渐强渐弱都在这条曲线上。全程 0 dB = null。
- *  渐强渐弱 / 渐到只有一种走法（9-2）：在力度上按时间线性，再换成 dB（velocityDb）。
+ *  渐强渐弱 / 渐到只有一种走法（9-2）：在力度上按时间线性，再换成 dB（velocityDb；depth = 这位插件报的力度深度，9-4）。
  *  groove = 拍子轻重（下标 → 权重，src/score/groove.ts；已乘过幅度和跟多少）：正的 = 按次重音的量在音头加，负的 = 按弱化的量整个音轻下去（写了音头记号的音不在里面）。 */
-export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity = false): GainSeg[] | null {
+export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity = false, depth = SF2_VEL_DEPTH): GainSeg[] | null {
   const segs: GainSeg[] = [];
   let any = false;
   const vel = byVelocity, tab = spec.dynamicsVel;
   const levels = vel ? null : dynLevels(tokens, map, tab, tab.mf, spec.wedgeStepVel ?? M.wedgeStepVel, bounds);   // 力度水平（按时间线性）；按力度敲的在 noteVelocities
-  const lv = (v: number | null) => (v === null ? 0 : velocityDb(v));
+  const lv = (v: number | null) => (v === null ? 0 : velocityDb(v, depth));
   /** s0–s1 这段：力度从 va 线性走到 vb（null = 这位不按曲线走力度 = 0 dB），换成 dB 再加 off 和 add(这一小段中点)。切成小段（月读一个长音也能渐强）。 */
   const level = (va: number | null, vb: number | null, s0: number, s1: number, off: number, add?: (m: number) => number, fine = false) => {
     const n = fine ? Math.max(2, Math.min(48, Math.ceil((s1 - s0) / 0.03))) : Math.max(1, Math.min(32, Math.ceil((s1 - s0) / 0.03)));
@@ -62,12 +66,12 @@ export function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: P
     const swOff = (m: number) => { const fr = (m - t0) / Math.max(1e-9, t1 - t0); return sw === "<" ? -D * (1 - fr) : sw === ">" ? -D * fr : sw === "<>" ? -D * Math.abs(2 * fr - 1) : 0; };
     if (art.includes("fp")) {
       // 强后即弱：音头按 f、fpSec 里落到 p（在力度上线性，换成 dB）。按力度敲的：音头已经按 f 的力度弹了，这里只把它压下去（相对 f 的 dB）
-      const f = tab.f, p = tab.p, e = Math.min(t1, t0 + (spec.fpSec ?? M.fpSec)), off = vel ? -velocityDb(f) : 0;
+      const f = tab.f, p = tab.p, e = Math.min(t1, t0 + (spec.fpSec ?? M.fpSec)), off = vel ? -velocityDb(f, depth) : 0;
       level(f, p, t0, e, off);
       if (t1 > e) {   // fp 之后再 <（贝多芬常用）：从 p 长回去，最多回到音头的 f（不超过写的）；<> = p → f → p；> = 在 p 上再往下收
         if (sw === "<") level(p, f, e, t1, off);
         else if (sw === "<>") { const m = (e + t1) / 2; level(p, f, e, m, off); level(f, p, m, t1, off); }
-        else if (sw) level(p, p, e, t1, off, swOff, true); else segs.push({ t0: e, t1, dB: velocityDb(p) + off });
+        else if (sw) level(p, p, e, t1, off, swOff, true); else segs.push({ t0: e, t1, dB: velocityDb(p, depth) + off });
       }
       any = true; continue;
     }

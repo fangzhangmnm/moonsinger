@@ -35,15 +35,19 @@ export interface GainSeg {
     t1: number;
     dB: number;
 }
-/** 力度 → 响度（施工单第 9 节 / 9-2，2026-11-12；user「按照SoundFont对齐，然后小月相也应该对齐」）：全体演奏者只有这一条——SoundFont 规范的放法，
- *  音量 = (力度 ÷ 127)² → 响度 = 40·log10(力度 ÷ 127) dB（满力度 = 0）。乐器：力度送进引擎（选录音），引擎照这一条算（gm/tsf-standalone.ts sfNoteOnSquared）；
- *  小月相 / 元音版没有录音层：音量曲线上的水平就是这一条。不以 mf 为基准、不乘任何数拉回原来的响度（user：「这个就是我绝对无法容忍的那个东西」）。 */
-export declare const velocityDb: (vel: number) => number;
+/** SoundFont 规范默认的力度深度（cB）：「力度 → 初始衰减」调制器的量（SF2.01 8.4.1）。深度 960 = 音量按力度的平方。 */
+export declare const SF2_VEL_DEPTH = 960;
+/** 力度 → 响度（施工单第 9 节 / 9-2 / 9-4，2026-11-12；user「按照SoundFont对齐，然后小月相也应该对齐」「真正该对齐的是：我们的引擎和标准播放器 对齐」）：
+ *  全体演奏者只有这一条——SoundFont 的放法，响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127) dB（满力度 = 0；深度 960 = 规范默认 = 音量按力度的平方）。
+ *  乐器：力度送进引擎（选录音），深度是库给每件乐器写的，引擎自己读（vendor/tsf/patch-tsf.py 补丁 2，照 FluidSynth）；
+ *  小月相 / 元音版没有录音层：音量曲线上的水平就是这一条，深度由她们的插件报（registry.ts velocityDepth）。
+ *  不以 mf 为基准、不乘任何数拉回原来的响度（user：「这个就是我绝对无法容忍的那个东西」）。 */
+export declare const velocityDb: (vel: number, depth?: number) => number;
 /** 一个声部的音量曲线。byVelocity = 这位按力度敲（演奏者插件的能力 dynamics: "velocity"）：力度记号 / 渐强渐弱 / 重音都在每个音的力度里（noteVelocities），
  *  这条曲线只剩强后即弱的「压」和音内起伏；否则（小月相 / 元音版）力度水平、重音、渐强渐弱都在这条曲线上。全程 0 dB = null。
- *  渐强渐弱 / 渐到只有一种走法（9-2）：在力度上按时间线性，再换成 dB（velocityDb）。
+ *  渐强渐弱 / 渐到只有一种走法（9-2）：在力度上按时间线性，再换成 dB（velocityDb；depth = 这位插件报的力度深度，9-4）。
  *  groove = 拍子轻重（下标 → 权重，src/score/groove.ts；已乘过幅度和跟多少）：正的 = 按次重音的量在音头加，负的 = 按弱化的量整个音轻下去（写了音头记号的音不在里面）。 */
-export declare function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity?: boolean): GainSeg[] | null;
+export declare function gainSegments(tokens: Token[], map: TempoMap | undefined, spec: PerfSpec, bounds?: readonly number[], groove?: ReadonlyMap<number, number>, byVelocity?: boolean, depth?: number): GainSeg[] | null;
 /** 轻量版 / SoundFont 一个音的结束时刻（秒）：跳音截到 staccatoGate；呼吸（只给元音版）= 收短一口气的空当（同唱法核心的 v：至多 0.16 s / 25%）。 */
 export declare function noteEnd(t0: number, t1: number, art: readonly string[], o: {
     staccatoGate: number;

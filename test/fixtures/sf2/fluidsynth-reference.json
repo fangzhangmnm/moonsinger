@@ -1,0 +1,108 @@
+{
+ "fluidsynth": "2.3.4",
+ "settings": {
+  "sampleRate": 48000,
+  "gain": 1.0,
+  "reverb": false,
+  "chorus": false,
+  "seconds": 2.0,
+  "freshSynthPerNote": true,
+  "mix": "(L+R)/sqrt2",
+  "defaultVel2Filter": false,
+  "measure": "BS.1770 K-weighted max momentary (400 ms, 100 ms hop)"
+ },
+ "velocities": [
+  16,
+  33,
+  49,
+  64,
+  80,
+  96,
+  112,
+  126
+ ],
+ "files": [
+  {
+   "name": "gu-sine-wave.sf2",
+   "sha256": "6d823b7cd5d7f2a40e896beafb5e47084691fb750495d6bffc267bce7af6b1bc",
+   "cases": [
+    {
+     "label": "Sine Wave",
+     "bank": 8,
+     "program": 80,
+     "key": 69,
+     "lufs": [
+      -44.195,
+      -33.695,
+      -27.995,
+      -24.095,
+      -20.895,
+      -18.295,
+      -15.995,
+      -14.295
+     ]
+    }
+   ]
+  },
+  {
+   "name": "gu-square-castanets.sf2",
+   "sha256": "b6969c02c95515da4c17bf18b04f2077b189f9b1beed36be76db3c41e800f0d1",
+   "cases": [
+    {
+     "label": "Square Lead",
+     "bank": 0,
+     "program": 80,
+     "key": 69,
+     "lufs": [
+      -48.962,
+      -38.462,
+      -32.762,
+      -28.862,
+      -25.621,
+      -22.511,
+      -19.839,
+      -18.139
+     ]
+    },
+    {
+     "label": "Castanets",
+     "bank": 8,
+     "program": 115,
+     "key": 60,
+     "lufs": [
+      -65.013,
+      -54.513,
+      -48.813,
+      -44.913,
+      -41.713,
+      -39.013,
+      -36.813,
+      -35.113
+     ]
+    }
+   ]
+  },
+  {
+   "name": "gu-tonewheel-novel.sf2",
+   "sha256": "f667e2a73b0c98123f564a8ba6b402fa776e7cfca1ce878b5c6e57620d5f493c",
+   "cases": [
+    {
+     "label": "Tonewheel Org noVel",
+     "bank": 11,
+     "program": 16,
+     "key": 60,
+     "lufs": [
+      -25.35,
+      -25.35,
+      -25.35,
+      -25.35,
+      -25.35,
+      -25.35,
+      -25.35,
+      -25.35
+     ]
+    }
+   ]
+  }
+ ]
+}

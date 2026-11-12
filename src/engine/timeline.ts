@@ -156,7 +156,7 @@ export function buildTimeline(inp: TimelineInput): Timeline {
     if (!info.plugin) { unplayable.push({ part: part.id, why: _t("还没有人上场") }); continue; }
     const groove = grooveWeights(tokens, bounds, gmap, info.follow);
     const byVel = info.plugin.dynamics === "velocity";   // 按力度敲（乐器）/ 按音量曲线（小月相 / 元音版）= 插件的能力（9-2：不再看「有没有力度表」）
-    const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove, byVel);
+    const gain: GainSeg[] | null = gainSegments(tokens, map, info.spec, bounds, groove, byVel, info.plugin.velocityDepth);   // 深度：音量曲线这一路由插件报（9-4）；按力度敲的只有强后即弱用到，没报 = 规范默认
     if (info.plugin.sound === "chunks") {   // 慢引擎：按句出块（谁唱由 worker 按插件定；现在只有小月相）
       const plan = sungPlan(tokens, map, bounds, info.chunk, hum);   // 段 + 每段的语言（画灰也走它）
       const noteAt = (a: number) => tl.find((x) => x.index >= a && x.tok.kind === "note")?.t0 ?? 0;

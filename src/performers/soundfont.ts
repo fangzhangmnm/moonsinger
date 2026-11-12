@@ -5,6 +5,7 @@ import { registerPerformer } from "./registry.ts";
 import { activeGm, activeVelocity, activeTranspose, activePerfSpec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, roleName, type GmCandidate } from "../format/project.ts";
 import { SOUNDFONT_DEFAULTS } from "../format/performance.ts";
 import { velLayersOf, octaveCheckOf, conceptOfIds, octaveDisclosure, GS_LIBRARY_ID } from "../gm/catalog.ts";
+import { sf2VelocityDepths } from "../gm/sf2-subset.ts";
 import { canAlign } from "../gm/sf-key.ts";
 import { CLEF_LABEL } from "../score/clef.ts";
 import type { ClefName } from "../score/song.ts";
@@ -59,14 +60,20 @@ export const soundfont = registerPerformer({
     return { inst: { kind: "sf", sha: g.subsetSha256, preset: engine.presetIndex(g.subsetSha256, g.bank, g.program) }, key: (m) => sfKey(m, g, activeTranspose(extras, role)), vel: dyn.vel, gainDb: 0 };   // 9-2：人人有力度表，都按力度敲（10-08 以前没带表的旧候选也是）
   },
   /** 乐器页「怎么演」里这位自己的行（原 main.ts drawInst 里按引擎能力 gate 的那几段，原样搬来；2026-10-15 刀 5 之一）。 */
-  inspector: ({ extras, role, catalog, esc, chip, dynTable }) => {
+  inspector: ({ extras, role, catalog, esc, chip, dynTable, bankBytes }) => {
     const active = activeGm(extras, role), sp = activePerfSpec(extras, role), tr = activeTranspose(extras, role), rows = [] as { label: string; control: string; note?: string }[];
     // 力度（2026-10-08，user「应该send的就是velocity！」「力度就是velocity」）：没写力度记号的音按这个；有力度表的演奏者 mp / mf 查表、重音 / 强音往上加
     { const midi = Math.round(activeVelocity(extras, role) * 127), def = sp.dynamicsVel?.mf ?? Math.round(SOUNDFONT_DEFAULTS.velocity * 127);
       const L = active && active.origin.library === GS_LIBRARY_ID && catalog ? velLayersOf(catalog, active.bank, active.program, active.note) : null, k = L ? L.ranges.findIndex(([lo, hi]) => midi >= lo && midi <= hi) : -1;
+      // 力度深度（施工单 9-4，2026-11-12）：库给每件乐器写的「力度 → 初始衰减」的量，引擎照它算（照 FluidSynth）；字节在手边才读得到（嵌在歌里的 / 这次找到过的）
+      const bytes = active ? active.bytes ?? bankBytes(active.subsetSha256) : undefined, ds = active && bytes ? (() => { try { return sf2VelocityDepths(bytes, active.bank, active.program, active.note); } catch { return null; } })() : null, one = ds && ds.length === 1 ? ds[0] : null;
+      const depth = !active ? "" : !ds || !ds.length ? _t("力度深度 = 库里给这件乐器写的（声音载好后显示）；响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)。")
+        : one === 0 ? _t("这件乐器按多重都一样响（库里这么定的：力度深度 0）。")
+        : one !== null ? _t("力度深度 {d}（库里写的；规范默认 960）：响度 = {d} ÷ 960 × 40·log10(力度 ÷ 127)，满力度 127 = 0 dB，力度减半 = 轻 {half} dB。", { d: one, half: Math.round((one / 960) * 40 * Math.log10(2) * 10) / 10 })
+        : _t("力度深度按鼓件 / 音区不一样：{ds}（库里写的；规范默认 960）。响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)。", { ds: ds.join(" / ") });
       rows.push({ label: _t("力度##MIDI"), control: `<b class="ip-val">${midi}</b><button class="btn" data-v="vel:-8" title="${_t("轻一点（MIDI 力度 −8）")}">−8</button><button class="btn" data-v="vel:8" title="${_t("重一点（+8）")}">+8</button>` +
         (midi !== def ? `<button class="btn" data-v="vel:def" title="${_t("回到 {def}", { def })}">${_t("默认")}</button>` : ""),
-        note: _t("没写力度记号的音按这个力度（MIDI 1–127）。音量 = 力度的平方（SoundFont 规范；满力度 127 = 0 dB，力度减半 = 轻 12 dB）。{dynamicsVel}{L}", { dynamicsVel: (sp.dynamicsVel ? _t("力度记号按这位的力度表（重音 +{accentVel}、强音 +{marcatoVel}；别的记号见下面「记号怎么演」）：{L}", { accentVel: sp.accentVel, marcatoVel: sp.marcatoVel, L: dynTable(L) }) : _t("这位是之前上场的：力度记号还是只改音量：{p}", { p: dynTable(null) })), L: (L ? (L.count > 1 ? _t("GS 里这个音色有 {count} 个力度层{p}：跨层 = 换一份录音，音色会变，不只是响度。", { count: L.count, p: k >= 0 ? _t("，现在在第 {p} 层（{p2}–{p3}）", { p: k + 1, p2: L.ranges[k][0], p3: L.ranges[k][1] }) : "" }) : _t("GS 里这个音色只有一个力度层：力度只改响度。")) : "") }) });
+        note: _t("没写力度记号的音按这个力度（MIDI 1–127）。{depth}{dynamicsVel}{L}", { depth, dynamicsVel: (sp.dynamicsVel ? _t("力度记号按这位的力度表（重音 +{accentVel}、强音 +{marcatoVel}；别的记号见下面「记号怎么演」）：{L}", { accentVel: sp.accentVel, marcatoVel: sp.marcatoVel, L: dynTable(L, one) }) : _t("这位是之前上场的：力度记号还是只改音量：{p}", { p: dynTable(null, one) })), L: (L ? (L.count > 1 ? _t("GS 里这个音色有 {count} 个力度层{p}：跨层 = 换一份录音，音色会变，不只是响度。", { count: L.count, p: k >= 0 ? _t("，现在在第 {p} 层（{p2}–{p3}）", { p: k + 1, p2: L.ranges[k][0], p3: L.ranges[k][1] }) : "" }) : _t("GS 里这个音色只有一个力度层：力度只改响度。")) : "") }) });
     }
     // 音效（GS 116–128，上场时抄了 sfx）：固定原速默认开（user 2026-10-08「固定原速同意，默认开。碰到猫叫歌才关，但这个时候也许需要音高修正」）；
     //   谱上写的音高永远不动——固定 = 不拿来出声（写谱按键时也一样，sf-key.ts 一处算）；关掉 = 按写的音变调变速，再可选音高对齐

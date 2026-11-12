@@ -9,6 +9,9 @@
 //     强弱的幅度在 dB 上是原来的两倍；fff 几乎不变（−0.07 dB），别的档变轻（mf −4 dB、p −8.3、ppp −18）。所有乐器的音都变；只有这一种放法、不留旧的。设备上记着的渲好的声音因此作废。
 //   0.2.1（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单 9-2，user「按照SoundFont对齐，然后小月相也应该对齐」）：小月相 / 元音版的力度记号也按同一条曲线
 //     （响度 = 40·log10(力度 ÷ 127)，渐强渐弱在力度上线性）——她们的音量曲线全变（mf 轻 8 dB）；10-08 以前没带力度表的旧 SoundFont 候选也按标准表的力度敲。
-export const CORE_VERSION = "0.2.1";
+//   0.2.2（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单 9-4，user「真正该对齐的是：我们的引擎和标准播放器 对齐」）：SoundFont 的初始衰减和力度曲线照 FluidSynth
+//     （vendor/tsf/patch-tsf.py 补丁 2：发生器每 cB 0.04 dB，原来 0.01；读库给每个区写的「力度 → 初始衰减」，GS 大多数乐器写 800 = 强弱的幅度是原来的八成多）——
+//     所有 SoundFont 乐器再轻 1–8 dB、乐器之间相对的轻重最多挪 6 dB；第 9 节的「敲之前设总音量」退场。小月相 / 元音版的力度深度 = 800（插件报）。设备上记着的渲好的声音因此作废。
+export const CORE_VERSION = "0.2.2";
 export const CORE_HASH: string = typeof __CORE_HASH__ === "string" ? __CORE_HASH__ : "dev";
 export const coreInfo = (): { version: string; hash: string } => ({ version: CORE_VERSION, hash: CORE_HASH });

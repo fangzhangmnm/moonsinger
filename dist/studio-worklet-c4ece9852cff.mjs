@@ -1,8 +1,4 @@
 // src/gm/tsf-standalone.ts
-function sfNoteOnSquared(ex, f, preset, key, vel) {
-  if (vel > 0) ex.sf_set_volume(f, vel);
-  ex.sf_note_on(f, preset, key, vel);
-}
 async function instantiateTsf(module) {
   const imports = { env: { emscripten_notify_memory_growth: () => {
   } } };
@@ -42,10 +38,11 @@ var Tsf = class {
   close(b) {
     this.ex.sf_close(b.handle);
   }
+  /** 敲下去（vel 0–1）。力度 → 响度归引擎自己（施工单 9-4，2026-11-12：vendor/tsf/patch-tsf.py 补丁 2 照 FluidSynth 读库给每件乐器写的力度曲线，
+   *  响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)；第 9 节那个「敲之前把总音量设成力度」的包装退场了）。 */
   noteOn(b, preset, key, vel) {
-    sfNoteOnSquared(this.ex, b.handle, preset, key, vel);
+    this.ex.sf_note_on(b.handle, preset, key, vel);
   }
-  // 音量 = 力度的平方（第 9 节）
   noteOff(b, preset, key) {
     this.ex.sf_note_off(b.handle, preset, key);
   }
@@ -1921,4 +1918,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-c332a92b253e.mjs.map
+//# sourceMappingURL=studio-worklet-c4ece9852cff.mjs.map

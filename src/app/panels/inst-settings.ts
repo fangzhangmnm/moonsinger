@@ -6,7 +6,7 @@ import { roleName, roleSound, activeId, gmCandidates, activeCandidateName, partL
 import { DEFAULT_CALIBRATION_DB, ROLL_HZ_MIN, ROLL_HZ_MAX } from "../../format/performance.ts";
 import { performerOf } from "../../performers/index.ts";
 import type { InspectorCtx } from "../../performers/registry.ts";
-import { ignoredArts, rollDefaultHz, velocityDb, type Mark } from "../../score/perform.ts";
+import { ignoredArts, rollDefaultHz, velocityDb, SF2_VEL_DEPTH, type Mark } from "../../score/perform.ts";
 import { DYNS, type Dyn, type Hum, type Song } from "../../score/song.ts";
 import { jointOf, GS_LIBRARY_ID, type Catalog } from "../../gm/catalog.ts";
 import { DYN_GLYPH } from "../../render/smufl.ts";
@@ -19,6 +19,7 @@ export interface InstSettingsHost {
   padHidden(): boolean;                // 试听键盘收着没（顶条「键盘」亮不亮）
   abbr(k: number): string;             // 第 k 个声部谱前的简写
   sessionHas(sha256: string): boolean; // 这次打开里找到过这个子集（弱引用的状态行）
+  bankBytes(sha256: string): Uint8Array | undefined; // 这次打开里手边的子集字节（乐器页读库写的力度深度，9-4）
   // 动作
   commit(next: Extras, label: string, gesture?: string): void;   // 改这位的设置（走 undo；同一个旋钮连着点并成一步）
   setHum(h: Hum): void; setPart(id: string): void; silence(): void;
@@ -98,21 +99,22 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     return `<div class="role-detail">${what ? _t("这件乐器：{what}", { what: esc(what) }) + (ab ? " · " : "") : ""}${ab ? _t("第二行起写 {ab}", { ab: esc(ab) }) : ""}</div>`;
   }
   /** 力度换算表（v0.9.23；user 2026-10-10「wishlist: ppp fff，以及帮我科普这些和db的换算关系，然后应该向用户揭露，方便对比」「揭露表的位置建议是乐器页「力度」那一行 同意」）：
-   *  每个力度记号 → 这位的 MIDI 力度 + 响度（9-2 起全体一张表、一条规矩：响度 = 40·log10(力度 ÷ 127)，满力度 = 0 dB），有 GS 力度层数据的再加一行「第几份录音」（跨层 = 换一份录音）。 */
-  function dynTable(sp: { dynamicsVel: Record<Dyn, number> }, layers: { count: number; ranges: [number, number][] } | null): string {
+   *  每个力度记号 → 这位的 MIDI 力度 + 响度（9-2 起全体一张表、一条规矩；9-4 起：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB，深度 = 库给这件乐器写的 /
+   *  小月相和元音版的插件报的；不知道 = 不写 dB 那一行），有 GS 力度层数据的再加一行「第几份录音」（跨层 = 换一份录音）。 */
+  function dynTable(sp: { dynamicsVel: Record<Dyn, number> }, layers: { count: number; ranges: [number, number][] } | null, depth: number | null): string {
     const db = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x)}`;
     const cells = (f: (d: Dyn) => string) => DYNS.map((d) => `<td>${f(d)}</td>`).join("");
     const vel = sp.dynamicsVel;
     return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d) => `<th title="${d}"><span class="smufl">${DYN_GLYPH[d]}</span></th>`).join("")}</tr>` +
       `<tr><th>${_t("MIDI 力度")}</th>${cells((d) => String(vel[d]))}</tr>` +
-      // 响度（第 9 节 / 9-2，2026-11-12）：音量 = (力度 ÷ 127)² → 响度 = 40·log10(力度 ÷ 127) dB（满力度 = 0）；一张表看出每档差多少
-      `<tr><th>${_t("响度 dB")}</th>${cells((d) => db(Math.round(velocityDb(vel[d]) * 10) / 10))}</tr>` +
+      // 响度（第 9 节 / 9-2 / 9-4，2026-11-12）：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127) dB（满力度 = 0）；一张表看出每档差多少
+      (depth !== null ? `<tr><th>${_t("响度 dB")}</th>${cells((d) => db(Math.round(velocityDb(vel[d], depth) * 10) / 10))}</tr>` : "") +
       (layers && layers.count > 1 ? `<tr><th>${_t("第几份录音")}</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
   }
   /** 乐器页的内容（每次改完整页重画；输入框里正在打的字不受影响——只有提交时才改 extras）。 */
   /** 插件自报参数行要的上下文（ADR-0004 §2.5）：休息室 / 角色 / 哼的字 / 音乐目录（没载 = null）/ 排版小工具。 */
   function inspectorCtx(role: string): InspectorCtx {
-    return { extras: h.extras(), role, hum: h.song().hum, catalog: h.catalog(), esc, chip, dynTable: (L) => dynTable(activePerfSpec(h.extras(), role), L) };
+    return { extras: h.extras(), role, hum: h.song().hum, catalog: h.catalog(), esc, chip, dynTable: (L, depth) => dynTable(activePerfSpec(h.extras(), role), L, depth), bankBytes: (sha) => h.bankBytes(sha) };
   }
   function draw(): void {
     if (!h.shown()) return;
@@ -146,7 +148,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
         _t("谱上符干带三道斜线的音 = 滚奏：整个音按这个密度敲满，力度跟着当时的力度和渐强渐弱走。默认：军鼓 20、镲 14、底鼓 12、别的鼓 16、有音高的 14（每秒）。")))(activePerfSpec(h.extras(), role).rollHz, rollDefaultOf(role)) : "") +
       ownMain.map(rowOf).join("") +
       // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-      (plug?.dynamics === "gain" ? row(_t("力度记号"), "", _t("力度记号 → 力度 → 响度，和乐器同一条规矩（SoundFont 标准：响度 = 40·log10(力度 ÷ 127)，满力度 = 0 dB）；这位没有录音层，只变响度：{extras}", { extras: dynTable(activePerfSpec(h.extras(), role), null) })) : "") +
+      (plug?.dynamics === "gain" ? ((dp: number) => row(_t("力度记号"), "", _t("力度记号 → 力度 → 响度，和乐器同一条规矩（SoundFont 的放法：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB）。这位的力度深度 {dp}（照库里人声类和长笛、小提琴这类拉长音的乐器；规范默认 960）；没有录音层，只变响度：{extras}", { dp, extras: dynTable(activePerfSpec(h.extras(), role), null, dp) })))(plug.velocityDepth ?? SF2_VEL_DEPTH) : "") +
       ((plug?.lyrics ?? "none") !== "none" ? row(_t("哼的字"), HUMS.map(([v, l]) => chip(`hum:${v}`, l, hum === v)).join(""), _t("没写歌词的音唱什么（整首歌一个）")) : "") +
       (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("高级：唱法核心的旋钮")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") +
       ownTail.map(rowOf).join("") +

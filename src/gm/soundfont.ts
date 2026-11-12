@@ -4,7 +4,6 @@
 // 模块由宿主创建好递进来（worker 按地址载、测试 readFileSync），同 src/singer/world-wrap.mjs 的做法。
 // 内存：tsf 载入时把 16 位采样转成 float（≈ sf2 采样字节 × 2）；整包 GeneralUser GS（32 MB）要 ~110 MB 堆，只在找音源时载；歌里嵌的是子集，很小。
 
-import { sfNoteOnSquared } from "./tsf-standalone.ts";
 
 export interface SfPreset { index: number; bank: number; program: number; name: string }
 /** 一个要出声的音：preset = 预设下标；key = MIDI 音高；vel 0–1；t0 / t1 = 起止秒（谱的时钟；t1 = 松键，之后按预设自己的 release 收尾）。 */
@@ -47,7 +46,7 @@ export function wrapTsf(M: any): { load(bytes: Uint8Array, sampleRate: number): 
         };
         for (; k < ev.length; k++) {
           const e = ev[k]; renderTo(Math.min(total, Math.round(e.t * sampleRate)));
-          if (e.on) sfNoteOnSquared({ sf_set_volume: M._sf_set_volume, sf_note_on: M._sf_note_on }, f, e.n.preset, e.n.key, e.n.vel); else M._sf_note_off(f, e.n.preset, e.n.key);   // 音量 = 力度的平方（第 9 节；和独立版同一个函数）
+          if (e.on) M._sf_note_on(f, e.n.preset, e.n.key, e.n.vel); else M._sf_note_off(f, e.n.preset, e.n.key);   // 力度 → 响度归引擎（9-4：照库写的力度曲线；和独立版同一份 C）
         }
         renderTo(total);
         M._free(buf); M._sf_close(f);

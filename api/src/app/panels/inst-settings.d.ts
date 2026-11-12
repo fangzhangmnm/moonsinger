@@ -16,6 +16,7 @@ export interface InstSettingsHost {
     padHidden(): boolean;
     abbr(k: number): string;
     sessionHas(sha256: string): boolean;
+    bankBytes(sha256: string): Uint8Array | undefined;
     commit(next: Extras, label: string, gesture?: string): void;
     setHum(h: Hum): void;
     setPart(id: string): void;

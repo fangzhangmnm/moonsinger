@@ -58,8 +58,10 @@ export interface InspectorCtx extends RoleCtx {
   esc(s: string): string;
   /** 一个选项钮（亮 = 现在是它）。 */
   chip(v: string, label: string, on: boolean, title?: string): string;
-  /** 力度换算表（每个力度记号 → 这位的 MIDI 力度或 dB；有 GS 力度层再加一行）。 */
-  dynTable(layers: { count: number; ranges: [number, number][] } | null): string;
+  /** 力度换算表（每个力度记号 → 这位的 MIDI 力度或 dB；有 GS 力度层再加一行）。depth = 这件乐器的力度深度（cB；null = 不知道 / 按鼓件不同，不写 dB 那一行）。 */
+  dynTable(layers: { count: number; ranges: [number, number][] } | null, depth: number | null): string;
+  /** 这次打开里手边有的子集字节（找到过 / 加进来的；歌里嵌的在候选的 bytes 里）。没有 = undefined（声音载好后宿主会重画）。 */
+  bankBytes(sha256: string): Uint8Array | undefined;
 }
 /** 行里的按钮按到了：改成什么（休息室新值 + undo 的话 + 连续拖并成一步的 gesture + 要不要把正在响的停掉）。 */
 export interface InspectorChange { extras: Extras; label: string; gesture?: string; silence?: boolean }
@@ -86,6 +88,9 @@ export interface PerformerPlugin {
   readonly connected: boolean;
   /** 力度怎么落：velocity = 按下那一下的 MIDI 力度（有力度表）；gain = 音量曲线（dB）乘在声音上。乐器页按这个摆哪一行。 */
   readonly dynamics: "velocity" | "gain";
+  /** 力度深度（cB，9-4；和 SoundFont「力度 → 初始衰减」调制器的量同一个单位）：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。
+   *  按音量曲线走力度的（dynamics: "gain"）必须报；按力度敲的乐器不报——深度是库给每件乐器写的，引擎自己读（vendor/tsf/patch-tsf.py 补丁 2）。 */
+  readonly velocityDepth?: number;
   /** 拍子轻重预设的类别：voice = 人声一档；gm = 按 GM 音色家族 / 鼓件（要 gm 参数）。 */
   readonly grooveCategory: "voice" | "gm";
   /** 能不能从休息室删掉（第一公民的两位不删；带自己字节的乐器能删）。 */

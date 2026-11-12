@@ -38,11 +38,14 @@ describe("演奏者注册表", () => {
       for (const m of p.honors) assert((ALL_MARKS as readonly string[]).includes(m), `${p.name} honors ${m}`);
       assert(!!grooveCategory(p.grooveCategory, { bank: 0, program: 0 }), `${p.name} 拍子轻重类别`);
       assert(!!p.audition, `${p.name} 能试听`);
+      // 力度深度（9-4）：按音量曲线走力度的必须报（0–1440 cB）；按力度敲的不报（深度在库里，引擎自己读）
+      if (p.dynamics === "gain") assert(p.velocityDepth !== undefined && p.velocityDepth >= 0 && p.velocityDepth <= 1440, `${p.name} 力度深度`);
+      else eq(p.velocityDepth, undefined, `${p.name} 按力度敲的不报深度`);
     }
   });
   it("乐器页里插件自报的行（ADR §2.5）：每个按钮的 data-v 都有人接（onInspector 不回 null）；没有候选也不炸", () => {
     const st = initState(), role = st.song.parts[0]!.role;
-    const ctx = (extras: ReturnType<typeof emptyExtras>): InspectorCtx => ({ extras, role, hum: "n", catalog: null, esc: (x) => x, chip: (v, label, on) => `<button data-v="${v}"${on ? " class=\"is-on\"" : ""}>${label}</button>`, dynTable: () => "" });
+    const ctx = (extras: ReturnType<typeof emptyExtras>): InspectorCtx => ({ extras, role, hum: "n", catalog: null, esc: (x) => x, chip: (v, label, on) => `<button data-v="${v}"${on ? " class=\"is-on\"" : ""}>${label}</button>`, dynTable: () => "", bankBytes: () => undefined });
     const vs = (html: string) => [...html.matchAll(/data-v="([^"]+)"/g)].map((m) => m[1]);
     for (const p of performers()) {
       if (!p.inspector) continue;

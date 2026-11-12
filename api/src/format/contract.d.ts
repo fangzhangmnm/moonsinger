@@ -308,7 +308,7 @@ export interface CandidateV2 {
     transpose?: number;
     defaults: Record<string, number>;
     /** 力度记号 → MIDI 力度（1–127；by value）。2026-10-08 起 SoundFont 候选带（可选，不升版本；Claude Opus 5.5），lounge 3（9-2）起全体演奏者的新候选都带；
-     *  没带 = 内置的标准表（performance.ts DYNAMICS_VEL）。响度全体只有一条 = 40·log10(力度 ÷ 127)（score/perform.ts velocityDb）。accentVel / marcatoVel 加在力度上。 */
+     *  没带 = 内置的标准表（performance.ts DYNAMICS_VEL）。响度全体只有一条 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)（score/perform.ts velocityDb；深度 = SoundFont 库自己写的 / 小月相和元音版的插件报的，9-4，不进文件）。accentVel / marcatoVel 加在力度上。 */
     dynamicsVel?: Record<Dynamic, number>;
     articulation: {
         staccatoGate: number;
