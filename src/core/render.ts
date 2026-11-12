@@ -5,6 +5,8 @@
 //   这里只 import 纯的东西（score / engine / performers / format）：没有 DOM、没有 worker、没有 fetch——录音房 / 唱 / 音源都从 RenderDeps 注入。
 //   出声的数学一行不在这里（时间线 timeline.ts、录音房 studio.ts、唱法核心 sing-core.mjs）；这里是把它们接起来的那根线。
 import { _t } from "../i18n/index.ts";
+import type { VelCurve } from "../gm/sf2-subset.ts";
+import type { BankLookup } from "../performers/registry.ts";
 import { type Song, type PartDef, headLen, tempoAt } from "../score/song.ts";
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveCategory, followOf } from "../score/groove.ts";
@@ -22,6 +24,8 @@ export interface RenderEngine {
   hasBank(sha: string): boolean;
   bank(sha: string, bytes: Uint8Array): Promise<void>;
   presetIndex(sha: string, bank: number, program: number): number;
+  /** 这一份库里一个预设的 L 曲线（7-N；库没载 = null）。 */
+  velCurve(sha: string, bank: number, program: number): VelCurve | null;
   vowels(t: VowelTableMsg): void;
   hasChunk(key: string): boolean;
   chunk(key: string, sr: number, samples: Float32Array | Int16Array): void;
@@ -67,9 +71,9 @@ export function audibleParts(song: Song, pv: PartAudible): PartDef[] {
   return song.parts.filter((p) => (solo ? pv(p.id).solo : !pv(p.id).muted));
 }
 /** 上场那位的出声参数（时间线不碰 Extras）。SoundFont 的预设下标要库先进录音房（prepareParts）。 */
-export function performerInfoOf(extras: Extras, part: PartDef, presetIndex: (sha: string, bank: number, program: number) => number): PerformerInfo {
+export function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup): PerformerInfo {
   const role = part.role, eng = (activeInstrument(extras, role)?.engine ?? "unknown") as PerformerInfo["engine"], plugin = performerOf(eng), cat = grooveCategory(plugin?.grooveCategory ?? null, activeGm(extras, role));
-  const own = plugin ? plugin.info({ extras, role, presetIndex }) : { gm: null, chunk: "phrase" as const };   // 这位自己的那部分（gm / 分段唱 / 着力点）归插件
+  const own = plugin ? plugin.info({ extras, role, presetIndex: (s, b, p) => banks.presetIndex(s, b, p), velCurve: (s, b, p) => banks.velCurve(s, b, p) }) : { gm: null, chunk: "phrase" as const };   // 这位自己的那部分（gm / 分段唱 / 着力点）归插件
   return { engine: eng, plugin, spec: activePerfSpec(extras, role), velocity: activeVelocity(extras, role), transpose: activeTranspose(extras, role), follow: (s) => followOf(s, cat), chain: activeChain(extras, role), ...own };
 }
 /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
@@ -113,10 +117,10 @@ export function pushMix(engine: RenderEngine, plan: RenderPlan, pv: PartAudible)
   engine.buses(m.buses);
   engine.master(m.master);
 }
-/** 这首歌（出声的声部）的时间线：谁上场 / 分段 / 音符表 / 块清单。纯函数（除了 presetIndex 要问录音房）。 */
-export function timelineOf(plan: RenderPlan, presetIndex: RenderEngine["presetIndex"]): Timeline {
+/** 这首歌（出声的声部）的时间线：谁上场 / 分段 / 音符表 / 块清单。纯函数（除了预设下标 / L 曲线要问录音房里的库）。 */
+export function timelineOf(plan: RenderPlan, banks: BankLookup): Timeline {
   const { song } = plan;
-  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part) => performerInfoOf(plan.extras, part, presetIndex), hum: plan.hum, singOpt: humOpt() });
+  return buildTimeline({ song, order: songPlayOrder(song), parts: [...plan.parts], info: (part) => performerInfoOf(plan.extras, part, banks), hum: plan.hum, singOpt: humOpt() });
 }
 
 /** 循环按谱绕的那一圈（谱上的秒）：从第一张纸头（编排写了 `[循环段]` 且 withArrangementLoop = 循环段第一张纸的头）到谱的结尾。
@@ -136,7 +140,7 @@ export async function renderSong(plan: RenderPlan, deps: RenderDeps, o: { sr?: n
   /** 准备完、时间线算好那一刻（宿主记清单 §2.2½ 用）；一个都放不了也先叫它再抛。 */ onPrepared?: (errors: PrepareError[], tl: Timeline) => void } = {}): Promise<RenderResult> {
   const pv: PartAudible = o.pv ?? (() => ({ muted: false, solo: false })), say = o.progress ?? (() => {});
   const errors = await prepareParts(plan.parts, plan.extras, deps);
-  const tl = timelineOf(plan, (sha, bank, program) => deps.engine.presetIndex(sha, bank, program));
+  const tl = timelineOf(plan, deps.engine);
   o.onPrepared?.(errors, tl);
   if (!tl.tracks.length) throw new Error(_t("没有出声：{e}", { e: [...errors.map((e) => e.why), ...tl.unplayable.map((u) => u.why)].join("；") || _t("没有会出声的声部") }));
   if (tl.chunks.length) await deps.sing(tl, (m) => say(m));

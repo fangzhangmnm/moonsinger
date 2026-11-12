@@ -2,6 +2,7 @@
 // 收位置 / 结束 / 缺块。离线导出 = 同一个 Studio 类在这边的循环里跑（同一份数学；提案 §5）。created 2026-10-09 by Claude Fable 5.1
 // 一个 app 一个实例；AudioContext 全 app 共用（src/singer/audio.ts）。装 worklet 第一次用才做（家规：重资源要等用户有意图才加载）。
 import { instantiateTsf } from "../gm/tsf-standalone.ts";
+import { sf2VelocityCurve, type VelCurve } from "../gm/sf2-subset.ts";
 import { Studio, BLOCK, TAIL_FX_MAX, fadeTail, packInt16, type StudioIn, type StudioOut, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
 
 export interface VowelTableMsg { sr: number; entries: VowelEntry[]; pcm: Int16Array }
@@ -134,7 +135,15 @@ export class StudioClient {
   banks(): string[] { return [...this.presets.keys()]; }
   /** 预设下标（这份库里按 bank:program 找；没有 = −1）。 */
   presetIndex(sha: string, bank: number, program: number): number { return this.presets.get(sha)?.get(`${bank}:${program}`) ?? -1; }
-  unbank(sha: string): void { this.presets.delete(sha); this.bankBytes.delete(sha); this.post({ type: "unbank", sha }); }
+  private curves = new Map<string, VelCurve>();
+  /** L 曲线（7-N）：从载库时留着的字节算，按预设记着（曲线自己按键懒算）；库没载 / 没有这个预设 = null（不记，载好了再问就有）。 */
+  velCurve(sha: string, bank: number, program: number): VelCurve | null {
+    const k = `${sha}|${bank}:${program}`, have = this.curves.get(k); if (have) return have;
+    const bytes = this.bankBytes.get(sha), c = bytes ? sf2VelocityCurve(bytes, bank, program) : null;
+    if (c) this.curves.set(k, c);
+    return c;
+  }
+  unbank(sha: string): void { this.presets.delete(sha); this.bankBytes.delete(sha); for (const k of [...this.curves.keys()]) if (k.startsWith(`${sha}|`)) this.curves.delete(k); this.post({ type: "unbank", sha }); }
   vowels(t: VowelTableMsg): void { this.vowelTable = t; this.post({ type: "vowels", ...t }); }
 
   setTimeline(tl: TimelineMsg): void { this.tl = tl; this.post({ type: "timeline", tl }); }

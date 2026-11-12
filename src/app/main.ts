@@ -15,7 +15,7 @@ import { SIGNS } from "../render/signs.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
-import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
+import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, moveMarkToEnd, markAtEnd, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
 import { songViewOf, setViewInC, setChordTags, setNotation, setMiddleC, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
@@ -255,7 +255,8 @@ const MARK_NAME: Record<Mark, string> = { ...ART_NAME, slur: _t("连线"), swell
 /** 刚写上了一个台上那位不认的记号 → 明说（照样写进谱、画灰，出声不受影响）。连线 / 保持在「本来就不留缝」的人那里也是这样（连断，2026-10-08）。 */
 function discloseArt(prev: EditorState, a: Mark): void {
   if (!ignoredHere().includes(a)) return;
-  const has = (t: Token) => t.kind === "note" && (a === "slur" ? !!t.slur : a === "inhale" ? !!t.inhale : a === "swellGrow" ? swellOf(t) === "<" || swellOf(t) === "<>" : a === "swellFade" ? swellOf(t) === ">" : (t.art ?? []).includes(a as Art));
+  const rollOk = (t: Token) => a === "swellGrow" && t.kind === "note" && (t.art ?? []).includes("roll") && !ignoredHere().includes("roll");   // 滚奏的音上音内起伏能演（7-N）：不算「不认」
+  const has = (t: Token) => t.kind === "note" && !rollOk(t) && (a === "slur" ? !!t.slur : a === "inhale" ? !!t.inhale : a === "swellGrow" ? swellOf(t) === "<" || swellOf(t) === "<>" : a === "swellFade" ? swellOf(t) === ">" : (t.art ?? []).includes(a as Art));
   const n = (s: EditorState) => tr(s).filter(has).length;
   if (n(D.st) <= n(prev)) return;
   const role = curPart().role, who = activeCandidateName(D.extras, role) || _t("台上这位");
@@ -2639,8 +2640,10 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
   // 顶上一行「这是什么」（谱面分家第五刀 5-4 ⑧，UX 稿：点一下就说明）：字从记号表来（src/render/signs.ts，和谱上画什么同一张表）；渐到开着 = 再说一句渐到
   const what = t.kind === "dyn" ? SIGNS[`dyn:${t.value}`].says(lang()) + (t.ramp ? (lang() === "zh" ? "；" : "; ") + SIGNS.ramp.says(lang()) : "") : SIGNS[`hairpin:${t.dir}`].says(lang());
   box.innerHTML = `<div class="ctx-hint ctx-what">${esc(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div>` +
+    // 挪到这一段结尾（7-N）：「到这里为止变到这个力度」——一直滚 / 渐强到这张纸结束、后面没有音可以挂的时候用；已经在结尾 = 不给
+    (t.kind === "dyn" && !markAtEnd(toks, i) ? `<button class="btn ctx-item" data-v="toEnd" title="${_t("挪到这一段最后一个音后面：渐强渐弱 / 渐到一直走到这一段结束")}">${_t("挪到这一段结尾")}</button>` : "") +
     `<button class="btn ctx-item danger" data-v="del" title="${t.kind === "dyn" ? _t("去掉这个力度记号（后面的音回到前一个力度记号）") : _t("去掉这个渐强 / 渐弱")}">${_t("删除")}</button>` +
-    `<div class="ctx-hint">${_t("长按拖 = 挪到别的音上")}</div>`;
+    `<div class="ctx-hint">${t.kind === "dyn" ? _t("长按拖 = 挪到别的音上（最后一个音的右边 = 这一段结尾）") : _t("长按拖 = 挪到别的音上")}</div>`;
   document.body.append(box);
   const w = box.offsetWidth, h = box.offsetHeight, m = 8;
   let y = at.y + 6; if (y + h > innerHeight - m) y = at.y - h - 30;
@@ -2654,6 +2657,7 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
     close();
     if (v === "ramp" && t.kind === "dyn") update(editMarkAt(D.st, i, { ramp: !t.ramp }));
     else if (v === "del") update(editMarkAt(D.st, i, null));
+    else if (v === "toEnd") { const r = moveMarkToEnd(D.st, i); update(r.st); if (r.removed) info(_t("顺手去掉了 {removed} 个不再管任何音的力度记号 / 渐强渐弱（撤销能找回来）", { removed: r.removed })); }
     else if (v.startsWith("dyn:")) update(editMarkAt(D.st, i, { value: v.slice(4) as Dyn }));
     else if (v.startsWith("dir:")) update(editMarkAt(D.st, i, { dir: v.slice(4) as "cresc" | "dim" }));
     scoreEl.focus();

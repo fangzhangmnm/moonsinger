@@ -9,10 +9,12 @@ export interface PlacedTag {
 /** 一张纸上要认的：parts = 声部（按歌里的先后 = 排版上从上到下）：id + 这张纸上的 track（要显示的那一份，按 C 调看时已经换过）+ 认不认拆开弹的；
  *  families = 合租的一家（按歌里的先后，打头的在前），只列这张纸上在场、要认的；两位以上才算一家。 */
 export interface PaperHarmonyInput {
+    /** perc = 打击乐的行（整套鼓、固定敲一件的鼓和音效；7-O）：不参加任何认和弦的事——自己不标，也不算进合租一家的和弦里。 */
     parts: readonly {
         id: string;
         tokens: readonly Token[];
         broken: boolean;
+        perc?: boolean;
     }[];
     families: readonly (readonly string[])[];
 }

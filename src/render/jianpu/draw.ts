@@ -314,7 +314,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
             else { const g = jpGlyph(a)!, em = a === "marcato" ? MARCATO_EM : UNSTRESS_EM; c.prims.push({ ...T, t: "glyph", x: cx - Q((g.w * em) / 8), y, ch: g.above, cls: artCls(a), size: Q(em) }); }
           })); });
           const swl = u.j === 0 ? swellOf(tokens[u.index]!) : undefined, atk = (["sfz", "fp"] as const).filter((x) => u.art.includes(x));
-          if (swl || atk.length) layNoteDynamics(orn, row, u, { cx, x0, w: P(u.w), tok, cls: undefined, ign, swl, atk });   // 突强 / 强后弱 / 音内起伏：共用挂件
+          if (swl || atk.length) layNoteDynamics(orn, row, u, { cx, x0, w: P(u.w), tok, cls: undefined, ign, swl, roll: u.art.includes("roll"), atk });   // 突强 / 强后弱 / 音内起伏：共用挂件
           // 气声 = 数字 + ×（认的黑、不认的灰）；台上那位固定敲一个键（五线谱上画 × 符头）= 每个数字 + ×（同一个意思 = 写的音高不拿来出声；统筹 5-6）。两样都有 = 一个 ×
           if (u.whisper || xHead) put(row, { ...T, t: "text", x: x0 + Q(glyphW + 0.05 * DIGIT_W), y: Y(row, hiBase - DIGIT_H + 0.5), s: "×", cls: u.whisper ? artCls("whisper", "jp-acc whisper") : "jp-acc xhead", size: Q(ACC_EM), anchor: "start" });
           if (u.art.includes("roll")) for (let k = 0; k < 3; k++) { const yy = (nUL0 ? UL_Y0 + nUL0 * UL_GAP : BASE_Y) + 0.35 + (Math.min(0, lowDots) ? -lowDots * DOT_STEP + 0.2 : 0) + k * 0.28; put(row, { ...T, t: "line", x1: cx - Q(0.4), y1: Y(row, yy + 0.18), x2: cx + Q(0.4), y2: Y(row, yy - 0.18), w: Q(0.11), cls: artCls("roll", "jp-roll") }); }   // 滚奏 = 数字下面三道短斜线（UX 稿第 7 节，默认）

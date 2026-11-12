@@ -99,7 +99,7 @@ export function createPerformance(host: PerfHost) {
   /** 歌开头的速度（延迟「跟速度」用）。 */
   const songBpm = (): number => songBpmOf(st().song);
   /** 上场那位的出声参数（核心 performerInfoOf；SoundFont 的预设下标要库先进录音房）。 */
-  const performerInfo = (part: PartDef): PerformerInfo => performerInfoOf(extras(), part, (sha, bank, program) => engine.presetIndex(sha, bank, program));
+  const performerInfo = (part: PartDef): PerformerInfo => performerInfoOf(extras(), part, engine);
   /** 这些声部上场那位各自的出声准备（核心 prepareParts → 插件）。返回报错清单。 */
   const prepareBanks = (parts: readonly PartDef[]) => prepareParts(parts, extras(), deps);
   // ── 一套机制、四个出口（ADR-0004 §2.2½）：一张 issues 清单；出口 = 谱上角标 / |▶ 角标 + 清单面板 / 清单变了才一条 toast / 导出面板一行（后三个在 main.ts）──
@@ -267,7 +267,7 @@ export function createPerformance(host: PerfHost) {
   async function prepare(scope: RenderScope, o: { chunks?: boolean; raw?: boolean } = {}): Promise<Timeline | null> {
     const parts = audibleParts(), song = songIn(scope);
     const errs = await prepareBanks(parts);   // 各位的准备（库 / 元音表）都在插件里
-    const tl = timelineOf(planOf(song, parts), (sha, bank, program) => engine.presetIndex(sha, bank, program));
+    const tl = timelineOf(planOf(song, parts), engine);
     // 出不了声的进清单（§2.2½）：这次准备过的声部先清掉旧账，再按结果记；toast 只在清单变了时说（refreshIssues），不再每按一次播放弹一次
     for (const p of parts) prepErrs.delete(p.id);
     for (const e of errs) prepErrs.set(e.part, { cand: e.cand, kind: "sound", why: e.why });
@@ -485,7 +485,7 @@ export function createPerformance(host: PerfHost) {
       if (engine.playing || preparing || exporting) return;
       const parts = audibleParts(); if (!parts.some((p) => performerOf(activeInstrument(extras(), p.role)?.engine)?.sound === "chunks")) return;   // 只有慢引擎（按句出块）要预唱
       const song = songIn("view");
-      const tl = timelineOf(planOf(song, parts), (sha, bank, program) => engine.presetIndex(sha, bank, program));
+      const tl = timelineOf(planOf(song, parts), engine);
       if (!tl.chunks.length) return;
       pruneChunks(tl);
       // 从下一次开播会从的地方唱起：暂停着 = 暂停处，否则 = 起点（v0.9.18 起开播不再看光标；原来按光标附近唱，起点在别处时开头那句排不上）

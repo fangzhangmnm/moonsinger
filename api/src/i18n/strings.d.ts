@@ -1039,6 +1039,48 @@ export declare const S: {
     readonly "{n} \u9996 \u00B7 {size}": {
         readonly en: "{n} {n|song|songs} · {size}";
     };
+    readonly "\u505A\u4E0D\u5230\uFF1A\u8FD9\u4EF6\u4E50\u5668\u6309\u4E0B\u53BB\u5C31\u81EA\u7136\u8870\u51CF\uFF08\u6EDA\u594F\u7684\u97F3\u4F8B\u5916\uFF1A\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u8DDF\u7740\u8D77\u4F0F\uFF09": {
+        readonly en: "Not possible: this instrument decays once struck (except on rolled notes: each hit's velocity follows the swell)";
+    };
+    readonly "\u6574\u4E2A\u97F3\u6572\u6EE1\uFF0C\u6BCF\u79D2 {hz} \u4E0B\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\uFF08\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230 / \u97F3\u5185\u8D77\u4F0F / \u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u91CC\uFF09\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B": {
+        readonly en: "Fills the whole note, {hz} hits per second; each hit uses the dynamic at the moment it lands (crescendos, ramps, in-note swells and fp are all in each hit's velocity); accents and the like only on the first hit";
+    };
+    readonly "\u6EDA\u594F\u7684\u97F3\u4E0A\u6309\u529B\u5EA6\u505A\uFF08\u58F0\u97F3\u8F7D\u597D\u540E\u663E\u793A\u7EA6\u51E0\u6863\uFF09\u3002": {
+        readonly en: "On rolled notes this is done with velocity (shown once the sound is loaded).";
+    };
+    readonly "\u6EDA\u594F\u7684\u97F3\u4E0A\u6309\u529B\u5EA6\u505A\uFF1Amf\uFF08{mf}\uFF09\u4F4E {d} dB \u2248 \u529B\u5EA6 {to}\uFF08\u7EA6 {n} \u6863\u529B\u5EA6\uFF09\u3002": {
+        readonly en: "On rolled notes this is done with velocity: {d} dB below mf ({mf}) ≈ velocity {to} (about {n} dynamic steps).";
+    };
+    readonly "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF1B\u6BCF\u4E00\u4E0B\u6309\u6572\u4E0B\u53BB\u90A3\u4E00\u523B\u7684\u529B\u5EA6\u2014\u2014\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u3001\u97F3\u5185\u8D77\u4F0F\uFF08\u9F13\u4E5F\u884C\uFF09\u3001\u5F3A\u540E\u5373\u5F31\u90FD\u5728\u6BCF\u4E00\u4E0B\u7684\u529B\u5EA6\u91CC\uFF0C\u91CD\u97F3\u8FD9\u4E00\u7EC4\u53EA\u7B97\u7B2C\u4E00\u4E0B\u3001\u5E7D\u7075\u97F3 / \u5F31\u5316\u6BCF\u4E00\u4E0B\u90FD\u7B97\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": {
+        readonly en: "A note with three slashes through the stem is a roll: the whole note is filled at this density; each hit uses the dynamic at the moment it lands — crescendos / ramps, in-note swells (drums too) and fp are all in each hit's velocity; accents and the like only on the first hit, ghost / unstressed on every hit. Defaults: snare 20, cymbals 14, bass drum 12, other drums 16, pitched 14 (per second).";
+    };
+    readonly 音内起伏多深: {
+        readonly en: "In-note swell depth";
+    };
+    readonly "\u6D45\u4E00\u70B9\uFF08\u22123 dB\uFF09": {
+        readonly en: "Shallower (−3 dB)";
+    };
+    readonly "\u6DF1\u4E00\u70B9\uFF08+3 dB\uFF09": {
+        readonly en: "Deeper (+3 dB)";
+    };
+    readonly "\u56DE\u5230\u9ED8\u8BA4 {d} dB": {
+        readonly en: "Back to default {d} dB";
+    };
+    readonly "\u97F3\u5185\u6E10\u5F3A / \u6E10\u5F31 / \u9F13\u8D77\u7684\u6DF1\u6D45\uFF1A\u5199\u7684\u529B\u5EA6\u662F\u6700\u9AD8\u70B9\uFF0C< \u4ECE\u4F4E {d} dB \u957F\u5230\u5199\u7684\u529B\u5EA6\u3001> \u6536\u5230\u4F4E {d} dB\u3001<> \u4E24\u5934\u4F4E {d} dB\u3002{vel}": {
+        readonly en: "How deep in-note crescendo / decrescendo / swell go: the written dynamic is the peak; < grows from {d} dB below to the written dynamic, > falls to {d} dB below, <> is {d} dB below at both ends. {vel}";
+    };
+    readonly "\u300C{rn}\u300D\u97F3\u5185\u8D77\u4F0F {d} dB": {
+        readonly en: "“{rn}” in-note swell {d} dB";
+    };
+    readonly "\u632A\u5230\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\uFF1A\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u4E00\u76F4\u8D70\u5230\u8FD9\u4E00\u6BB5\u7ED3\u675F": {
+        readonly en: "Move it after the last note of this section: crescendos / ramps run all the way to the end of the section";
+    };
+    readonly 挪到这一段结尾: {
+        readonly en: "Move to the end of this section";
+    };
+    readonly "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09": {
+        readonly en: "Long-press and drag = move it to another note (right of the last note = the end of this section)";
+    };
     readonly "{title} \u00B7 {secs} \u79D2 \u00B7 {size} \u00B7 {date}": {
         readonly en: "{title} · {secs} s · {size} · {date}";
     };
@@ -3199,9 +3241,6 @@ export declare const S: {
     readonly 滚奏: {
         readonly en: "Roll";
     };
-    readonly "\u6574\u4E2A\u97F3\u6572\u6EE1\uFF0C\u6BCF\u79D2 {hz} \u4E0B\uFF1B\u529B\u5EA6\u8DDF\u7740\u5F53\u65F6\u7684\u529B\u5EA6\u548C\u6E10\u5F3A\u6E10\u5F31\u8D70": {
-        readonly en: "Fills the whole note, {hz} hits per second; loudness follows the current dynamic and hairpins";
-    };
     readonly "\u8BB0\u53F7\u600E\u4E48\u6F14\uFF08\u8FD9\u4F4D\u81EA\u5DF1\u7684\u914D\u7F6E\uFF0C\u8DDF\u7740\u6F14\u594F\u8005\u5B58\u8FDB\u6B4C\uFF09": {
         readonly en: "How marks are performed (this performer's own settings, saved in the song with them)";
     };
@@ -3303,9 +3342,6 @@ export declare const S: {
     };
     readonly 回到这件乐器的默认: {
         readonly en: "Back to this instrument's default";
-    };
-    readonly "\u8C31\u4E0A\u7B26\u5E72\u5E26\u4E09\u9053\u659C\u7EBF\u7684\u97F3 = \u6EDA\u594F\uFF1A\u6574\u4E2A\u97F3\u6309\u8FD9\u4E2A\u5BC6\u5EA6\u6572\u6EE1\uFF0C\u529B\u5EA6\u8DDF\u7740\u5F53\u65F6\u7684\u529B\u5EA6\u548C\u6E10\u5F3A\u6E10\u5F31\u8D70\u3002\u9ED8\u8BA4\uFF1A\u519B\u9F13 20\u3001\u9572 14\u3001\u5E95\u9F13 12\u3001\u522B\u7684\u9F13 16\u3001\u6709\u97F3\u9AD8\u7684 14\uFF08\u6BCF\u79D2\uFF09\u3002": {
-        readonly en: "A note with three slashes on its stem is a roll: the whole note is filled at this rate, following the current dynamic and hairpins. Defaults (per second): snare 20, cymbals 14, kick 12, other drums 16, pitched 14.";
     };
     readonly "\u529B\u5EA6\u8BB0\u53F7 \u2192 \u529B\u5EA6 \u2192 \u54CD\u5EA6\uFF0C\u548C\u4E50\u5668\u540C\u4E00\u6761\u89C4\u77E9\uFF08SoundFont \u7684\u653E\u6CD5\uFF1A\u54CD\u5EA6 = \u6DF1\u5EA6 \u00F7 960 \u00D7 40\u00B7log10(\u529B\u5EA6 \u00F7 127)\uFF0C\u6EE1\u529B\u5EA6 = 0 dB\uFF09\u3002\u8FD9\u4F4D\u7684\u529B\u5EA6\u6DF1\u5EA6 {dp}\uFF08\u7167\u5E93\u91CC\u4EBA\u58F0\u7C7B\u548C\u957F\u7B1B\u3001\u5C0F\u63D0\u7434\u8FD9\u7C7B\u62C9\u957F\u97F3\u7684\u4E50\u5668\uFF1B\u89C4\u8303\u9ED8\u8BA4 960\uFF09\uFF1B\u6CA1\u6709\u5F55\u97F3\u5C42\uFF0C\u53EA\u53D8\u54CD\u5EA6\uFF1A{extras}": {
         readonly en: "Dynamic mark → velocity → loudness, by the same rule as the instruments (the SoundFont way: loudness = depth ÷ 960 × 40·log10(velocity ÷ 127), full velocity = 0 dB). This performer's velocity depth is {dp} (like the library's voices and sustained instruments such as flute and violin; the SoundFont default is 960); no recorded layers, only loudness changes: {extras}";

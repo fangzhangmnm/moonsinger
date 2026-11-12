@@ -21,7 +21,7 @@
 
 import { _t, workerOptions, lang } from "../i18n/index.ts";
 import { DEFAULT_PAPER, paperOf, lineSp, spMm, staffMmOf, STAFF_MM, pageGeoOf, textScaleOf } from "../score/paper.ts";
-import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, trackOf, isTimed, shownAccAt } from "../score/song.ts";
+import { type EditorState, type NoteTok, type Song, setCaret, setCaretLead, setFocus, select, singleSel, setNote, setDur, keyAt, tr, TPQ, moveMark, moveMarkToEnd, trackOf, isTimed, shownAccAt } from "../score/song.ts";
 import { moveSyllable, lyricSlot, MELISMA_MARK } from "../score/lyrics.ts";
 import { fromDiatonic, keySpell, type Pitch } from "../score/pitch.ts";
 import { toC, stepsToC, trackInC } from "../score/view-in-c.ts";
@@ -1225,6 +1225,11 @@ export class ScoreView {
     const spots = [...L.notes.map((n) => ({ ...n, rest: false })), ...(grab.kind === "mark" ? L.rests.map((r) => ({ ...r, rest: true })) : [])];
     const targets = spots.filter((n) => this.onTrack(n) && (grab.kind === "mark" || lyricSlot(toks[n.index])) && !seen.has(n.index) && (seen.add(n.index), true))
       .map((n) => ({ idx: n.index, x: grab.kind === "lyric" ? n.x + n.w / 2 : n.x, system: n.system })).sort((a, b) => a.idx - b.idx);
+    // 力度记号还能落在这一段最后一个音的右边（7-N：「到这里为止变到这个力度」；idx = 串长 = 「结尾」这个落点）
+    if (grab.kind === "mark" && toks[grab.index]?.kind === "dyn" && targets.length) {
+      const lastIdx = targets[targets.length - 1]!.idx, ln = spots.find((s) => s.index === lastIdx && this.onTrack(s));
+      if (ln) targets.push({ idx: toks.length, x: ln.x + ln.w, system: ln.system });
+    }
     let src: number;
     if (grab.kind === "lyric") src = targets.findIndex((t) => t.idx === grab.index);
     else { let a = grab.index + 1; while (a < toks.length && toks[a].kind !== "note" && toks[a].kind !== "rest") a++; src = targets.findIndex((t) => t.idx >= a); }
@@ -1251,7 +1256,7 @@ export class ScoreView {
       this.hot = new Set([tr(r.st)[r.at].id]);   // 字挪到哪个音，亮的就跟到哪个音
       this.host.set(r.st, { gesture: "lift" });
     } else {
-      const r = moveMark(f.st0, f.grab.index, f.targets[best].idx);
+      const r = f.targets[best].idx >= tr(f.st0).length ? moveMarkToEnd(f.st0, f.grab.index) : moveMark(f.st0, f.grab.index, f.targets[best].idx);
       f.removed = r.removed;
       this.host.set(r.st, { gesture: "lift" });
     }

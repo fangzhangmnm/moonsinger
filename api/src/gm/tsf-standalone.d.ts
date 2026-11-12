@@ -19,6 +19,8 @@ export interface TsfExports {
     sf_note_off_all(f: number): void;
     sf_active(f: number): number;
     sf_render(f: number, out: number, n: number): void;
+    /** 只读探针（7-N）：这个键、这个力度下每个响的区，引擎实际施加的初始衰减（dB）写进 out（最多 max 个）；回响的区数。只给测试拿来核 sf2VelocityCurve。 */
+    sf_region_atten(f: number, preset: number, key: number, vel: number, out: number, max: number): number;
 }
 export interface TsfBank {
     handle: number;

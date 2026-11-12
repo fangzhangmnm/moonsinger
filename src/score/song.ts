@@ -1427,6 +1427,23 @@ export function moveMark(st: EditorState, from: number, before: number): { st: E
   const c1 = st.caret - (st.caret > from ? 1 : 0), c2 = c1 + (c1 > at ? 1 : 0), a = annihilate(nt);
   return { st: next(st, a.tokens, { caret: c2 - a.removed.filter((k) => k < c2).length, sel: null }), removed: a.removed.length };
 }
+/** 力度记号挪到这一段（这张纸这条轨）最后一个音的后面 = 「到这里为止变到这个力度」（7-N，2026-11-12；user 新版 Once upon a Tale：军鼓滚到这张纸结束、后面没有音可以挂 fff）。
+ *  出声这一头本来就认（dynLevels：终点后面没有音 = 取前一个音的结尾）；排版两种谱都画、MusicXML 往返还在、删音的湮灭不吃单独挂在最后的——2026-11-12 核过三处。
+ *  放在最后一个音 / 休止后面那串记号的最后（这样那里原来有的力度记号被湮灭、挪过去的算数）；后面的小节线照旧在后面。只挪力度记号；已经在那儿 = 原样。 */
+export function moveMarkToEnd(st: EditorState, from: number): { st: EditorState; removed: number } {
+  const toks = tr(st), m = toks[from];
+  if (!m || m.kind !== "dyn") return { st, removed: 0 };
+  const nt = toks.slice(); nt.splice(from, 1);
+  let last = -1; nt.forEach((t, k) => { if (isTimed(t)) last = k; });
+  if (last < 0) return { st, removed: 0 };
+  let at = last + 1; while (at < nt.length && (nt[at].kind === "dyn" || nt[at].kind === "hairpin")) at++;
+  nt.splice(at, 0, m);
+  if (nt.every((t, k) => t === toks[k])) return { st, removed: 0 };
+  const c1 = st.caret - (st.caret > from ? 1 : 0), c2 = c1 + (c1 > at ? 1 : 0), a = annihilate(nt);
+  return { st: next(st, a.tokens, { caret: c2 - a.removed.filter((k) => k < c2).length, sel: null }), removed: a.removed.length };
+}
+/** 这个力度记号是不是已经挂在这一段最后一个音后面（后面没有音 / 休止了）。 */
+export const markAtEnd = (toks: readonly Token[], i: number): boolean => toks[i]?.kind === "dyn" && !toks.slice(i + 1).some(isTimed);
 /** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
 export function editMarkAt(st: EditorState, i: number, change: { value: Dyn } | { dir: "cresc" | "dim" } | { ramp: boolean } | { style: string } | { amount: number } | { shift: boolean } | { nav: Exclude<NavWhat, "ending"> } | { nums: number[] } | null): EditorState {
   const toks = tr(st), m = toks[i];

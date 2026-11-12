@@ -634,6 +634,14 @@ export function withRollHz(extras: Extras, role: string, hz: number | null, hum:
   c.articulation = hz === null ? rest : { ...rest, rollHz: Math.round(Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, hz))) };
   return { ...extras, lounge: { ...extras.lounge, [role]: r } };
 }
+/** 音内起伏多深能调到哪（dB；乐器页一档 3 dB；7-N，2026-11-12）。默认 = MARK_DEFAULTS.swellDb（6）。 */
+export const SWELL_DB_MIN = 3, SWELL_DB_MAX = 24;
+/** 改上场那位的音内起伏多深（articulation.swellDb，dB；字段本来就有、格式不动；null = 回到默认 6）。没人上场 = 原样。 */
+export function withSwellDb(extras: Extras, role: string, dB: number | null, hum: Hum): Extras {
+  const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;
+  c.articulation = { ...((c.articulation ?? {}) as Json), swellDb: dB === null ? MARK_DEFAULTS.swellDb : Math.round(Math.max(SWELL_DB_MIN, Math.min(SWELL_DB_MAX, dB))) };
+  return { ...extras, lounge: { ...extras.lounge, [role]: r } };
+}
 /** 改上场那位的连断底色（乐器页；秒，0 … GAP_MAX_SEC，记到毫秒）。没人上场 = 原样。 */
 export function withGapSec(extras: Extras, role: string, sec: number, hum: Hum): Extras {
   const r = roleOf(extras, role, hum), c = cands(r).find((x) => x.id === r.active); if (!c) return extras;

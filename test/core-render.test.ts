@@ -62,7 +62,7 @@ describe("无头渲染核心", () => {
     const ex2 = withActive(extras, "r2", "c3", song.hum);   // r2 上场的 SoundFont（嵌进歌的；resolveGmBytes 先看 g.bytes——这里被我们的假实现挡了）
     const errs = await prepareParts(song.parts, ex2, d);
     assert(errs.some((e) => e.part === "P2" && /找不到/.test(e.why)), JSON.stringify(errs));
-    const tl = timelineOf({ song, extras: ex2, hum: song.hum, parts: song.parts }, () => -1);
+    const tl = timelineOf({ song, extras: ex2, hum: song.hum, parts: song.parts }, { presetIndex: () => -1, velCurve: () => null });
     assert(tl.tracks.some((t) => t.id === "P1"), "P1（元音版）照样出声");
   });
 });

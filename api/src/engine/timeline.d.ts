@@ -1,5 +1,5 @@
 import { type Token, type Song, type PartDef, type PaperSeg, type TempoMap, type Hum } from "../score/song.ts";
-import { type PerfSpec } from "../score/perform.ts";
+import { rollHitVelocity, type PerfSpec, type VelDb } from "../score/perform.ts";
 import { type GrooveStyle } from "../score/groove.ts";
 import { type LabScore, type SingLang, type SingChunkMode } from "../score/lab-score.ts";
 import { type SfxInfo } from "../gm/sf-key.ts";
@@ -42,6 +42,9 @@ export interface PerformerInfo {
     hitSec?: (key: number) => number;
     /** 这位自己的唱法参数（小月相：候选 defaults 里的旋钮，乐器页「高级」；2026-10-15）：盖在 TimelineInput.singOpt 上，一起进块的内容键。 */
     singOpt?: Record<string, unknown>;
+    /** 按力度敲的乐器：引擎在敲的键上实际的 L（写的音高 × 力度 → dB；perform.ts VelDb，7-N）。准备声音时从库的字节算（录音房载库时），没载好 = 没有（这个声部本来就不出声）。
+     *  按音量曲线走力度的不给——用插件报的深度（depthCurve）。 */
+    velDb?: VelDb;
 }
 export interface TimelineInput {
     song: Song;
@@ -112,6 +115,8 @@ export interface SungPlan {
 export declare function sungPlan(tokens: Token[], tempoMap: TempoMap | undefined, bounds: readonly number[], mode: SingChunkMode, hum: Hum): SungPlan;
 /** 整条声部只有一种语言时它是哪种（sungPlan 的兜底：整条没写歌词时哼什么；debug 面板的整首唱谱）：歌词里有汉字、没有假名 → 中；有字母、没假名汉字 → 英；其余按日语。 */
 export declare function songLangOf(tokens: readonly Token[], hum: Hum): SingLang;
+/** 滚奏一下的力度（7-N）：perform.ts rollHitVelocity 给的那个函数。 */
+export type RollVel = ReturnType<typeof rollHitVelocity>;
 /** 轻量版 / SoundFont 的音符表（秒）：tie 并成一个长音。marks = 修的记号怎么落到这一路上（跳音截短、呼吸处收短一口气）；不给 = 照谱满长。 */
 export declare function lightNotes(tokens: Token[], tempoMap: TempoMap, poly?: boolean, marks?: {
     staccatoGate: number;
@@ -119,7 +124,7 @@ export declare function lightNotes(tokens: Token[], tempoMap: TempoMap, poly?: b
     gapSec: number;
     arpeggioSec?: number; /** 滚奏每秒几下（按敲的键 / 音高）；没给 = 这位不认滚奏，照一个长音放。 */
     rollHz?: (midi: number) => number;
-}, velOf?: (index: number, art: readonly string[]) => number): {
+}, velOf?: (index: number, art: readonly string[]) => number, rollVel?: RollVel): {
     midi: number;
     t0: number;
     t1: number;

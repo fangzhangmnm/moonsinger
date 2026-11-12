@@ -2,11 +2,14 @@
 // created 2026-11-09 by Claude Opus 5.5：从 main.ts 原样搬出来（施工单 ai-docs/20261109-work-order-instrument-pick-vs-tune.md §6「这一页搬出 main.ts…照 header-panel.ts 的形状」；
 //   审计风险 2「主程序里一张一张手糊的面板」）。宿主给一组访问器 + 动作，页面自己管画和点击；行为和搬之前一样。各段的来历见段内注释（原注释照搬）。
 import { _t, lang } from "../../i18n/index.ts";
-import { roleName, roleSound, activeId, gmCandidates, activeCandidateName, partLabels, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withCalibration, GAP_MAX_SEC, type Extras, type Engine } from "../../format/project.ts";
-import { UNWRITTEN_CALIBRATION_DB, ROLL_HZ_MIN, ROLL_HZ_MAX } from "../../format/performance.ts";
+import { roleName, roleSound, activeId, gmCandidates, activeCandidateName, partLabels, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withSwellDb, withCalibration, GAP_MAX_SEC, SWELL_DB_MIN, SWELL_DB_MAX, type Extras, type Engine } from "../../format/project.ts";
+import { UNWRITTEN_CALIBRATION_DB, ROLL_HZ_MIN, ROLL_HZ_MAX, MARK_DEFAULTS } from "../../format/performance.ts";
+const MARK_DEFAULTS_SWELL = MARK_DEFAULTS.swellDb;
 import { performerOf } from "../../performers/index.ts";
 import type { InspectorCtx } from "../../performers/registry.ts";
-import { ignoredArts, rollDefaultHz, velocityDb, SF2_VEL_DEPTH, type Mark } from "../../score/perform.ts";
+import { ignoredArts, rollDefaultHz, depthCurve, velocityForDb, SF2_VEL_DEPTH, type Mark } from "../../score/perform.ts";
+import { sf2VelocityCurve, type VelCurve } from "../../gm/sf2-subset.ts";
+import { sfKey } from "../../gm/sf-key.ts";
 import { DYNS, type Dyn, type Hum, type Song } from "../../score/song.ts";
 import { jointOf, GS_LIBRARY_ID, type Catalog } from "../../gm/catalog.ts";
 import { DYN_GLYPH } from "../../render/smufl.ts";
@@ -37,6 +40,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
   /** 「记号怎么演」：这位演奏者 by value 带着的解读表，原样摊开（user 2026-10-08「记号怎么解读应该乐器里面有explicit的配置，而不是代码写死」）。现在只读；改数以后做。 */
   function marksTableHtml(role: string, eng: string): string {
     const sp = activePerfSpec(h.extras(), role), ms = (x: number) => `${Math.round(x * 1000)} ms`, pct = (x: number) => `${Math.round(x * 100)}%`, db = (x: number) => `${x > 0 ? "+" : ""}${x} dB`;
+    const plug0 = performerOf(eng);
     const ign = ignoredArts(performerOf(eng), sp.gapSec), sung = performerOf(eng)?.sound === "chunks", gray = (m: string) => (ign.includes(m as Mark) ? ` class="ign"` : "");
     const singTxt = (k: string) => { const m = sp.sing[k]; return m ? _t("{p}前「{mark}」{p2}", { p: m.at === "next" ? _t("下一个字") : _t("这个字"), mark: m.mark, p2: m.mark === "^" ? _t("（顿一下，不换气）") : m.mark === "v" ? _t("（换气）") : _t("（大口换气）") }) : _t("不变成唱法记号"); };
     const vel = performerOf(eng)?.dynamics === "velocity";   // 按力度敲 / 按音量曲线 = 插件的能力（9-2 起不再看「有没有力度表」）
@@ -56,7 +60,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       [_t("强音"), "marcato", vel ? _t("力度 +{marcatoVel}", { marcatoVel: sp.marcatoVel }) : _t("音头 {accentSec} {marcatoDb}{sung}", { accentSec: ms(sp.accentSec), marcatoDb: db(sp.marcatoDb), sung: sung ? `；${singTxt("marcato")}` : "" })],
       [_t("突强 sfz"), "sfz", vel ? _t("力度 +{sfzVel}", { sfzVel: sp.sfzVel }) : _t("音头 {sfzDb}，{sfzSec} 里落回来{sung}", { sfzDb: db(sp.sfzDb), sfzSec: ms(sp.sfzSec), sung: sung ? `；${singTxt("sfz")}` : "" })],
       [_t("强后即弱 fp"), "fp", _t("音头按 f，{fpSec} 里落到 p，之后都是 p{sung}", { fpSec: ms(sp.fpSec), sung: sung ? `；${singTxt("fp")}` : "" })],
-      [_t("音内渐强 / 鼓起"), "swellGrow", sp.canSwell ? _t("写的力度是最高点：< 从 −{swellDb} dB 长到写的力度；<> 两头 −{swellDb2} dB、中间回到写的力度（强后即弱之后的 < 长回音头的 f）", { swellDb: sp.swellDb, swellDb2: sp.swellDb }) : _t("做不到：这件乐器按下去就自然衰减")],
+      [_t("音内渐强 / 鼓起"), "swellGrow", !sp.canSwell && plug0?.honors.includes("roll") ? _t("做不到：这件乐器按下去就自然衰减（滚奏的音例外：每一下的力度跟着起伏）") : sp.canSwell ? _t("写的力度是最高点：< 从 −{swellDb} dB 长到写的力度；<> 两头 −{swellDb2} dB、中间回到写的力度（强后即弱之后的 < 长回音头的 f）", { swellDb: sp.swellDb, swellDb2: sp.swellDb }) : _t("做不到：这件乐器按下去就自然衰减")],
       [_t("音内渐弱"), "swellFade", _t("一路往下到 −{swellDb} dB", { swellDb: sp.swellDb })],
       [_t("跳音"), "staccato", sung ? singTxt("staccato") : _t("唱 / 弹 {staccatoGate} 的长度", { staccatoGate: pct(sp.staccatoGate) })],
       [_t("保持"), "tenuto", _t("这个音不留缝")],
@@ -65,7 +69,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       [_t("出声的换气（轻吸 / 深吸）"), "inhale", sung ? _t("换气的空当里一声吸气（按下一个字的元音塑形，比它轻约 28 dB；深吸 = 空当长一点、响 4 dB）") : _t("做不到：这位只断开，不出吸气声")],
       [_t("气声（× 符头）"), "whisper", sung ? _t("这个字不唱音高：用念的时候的气声（谱包络照旧、声带不振），再轻 6 dB") : _t("做不到：这位只按音高出声")],
       [_t("音和音之间"), "", sung ? _t("连着唱") : _t("{gapSec}（最多 {gapShare}）", { gapSec: ms(sp.gapSec), gapShare: pct(sp.gapShare) })],
-      [_t("滚奏"), "roll", _t("整个音敲满，每秒 {hz} 下；力度跟着当时的力度和渐强渐弱走", { hz: rollHzText(role) })],
+      [_t("滚奏"), "roll", _t("整个音敲满，每秒 {hz} 下；每一下按敲下去那一刻的力度（渐强渐弱 / 渐到 / 音内起伏 / 强后即弱都在每一下里），重音这一组只算第一下", { hz: rollHzText(role) })],
     ];
     return `<details class="ip-marks"><summary>${_t("记号怎么演（这位自己的配置，跟着演奏者存进歌）")}</summary><table>${rows.map(([k, m, v]) => `<tr${gray(m)}><th>${k}</th><td>${esc(v)}${m && ign.includes(m as Mark) ? `<span class="ign-tag">${_t("不认")}</span>` : ""}</td></tr>`).join("")}</table></details>`;
   }
@@ -101,17 +105,43 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
   /** 力度换算表（v0.9.23；user 2026-10-10「wishlist: ppp fff，以及帮我科普这些和db的换算关系，然后应该向用户揭露，方便对比」「揭露表的位置建议是乐器页「力度」那一行 同意」）：
    *  每个力度记号 → 这位的 MIDI 力度 + 响度（9-2 起全体一张表、一条规矩；9-4 起：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB，深度 = 库给这件乐器写的 /
    *  小月相和元音版的插件报的；不知道 = 不写 dB 那一行），有 GS 力度层数据的再加一行「第几份录音」（跨层 = 换一份录音）。 */
-  function dynTable(sp: { dynamicsVel: Record<Dyn, number> }, layers: { count: number; ranges: [number, number][] } | null, depth: number | null): string {
+  function dynTable(sp: { dynamicsVel: Record<Dyn, number> }, layers: { count: number; ranges: [number, number][] } | null, L: ((vel: number) => number | null) | null): string {
     const db = (x: number) => `${x > 0 ? "+" : x < 0 ? "−" : ""}${Math.abs(x)}`;
     const cells = (f: (d: Dyn) => string) => DYNS.map((d) => `<td>${f(d)}</td>`).join("");
     const vel = sp.dynamicsVel;
     return `<table class="dyn-tab"><tr><th></th>${DYNS.map((d) => `<th title="${d}"><span class="smufl">${DYN_GLYPH[d]}</span></th>`).join("")}</tr>` +
       `<tr><th>${_t("MIDI 力度")}</th>${cells((d) => String(vel[d]))}</tr>` +
       // 响度（第 9 节 / 9-2 / 9-4，2026-11-12）：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127) dB（满力度 = 0）；一张表看出每档差多少
-      (depth !== null ? `<tr><th>${_t("响度 dB")}</th>${cells((d) => db(Math.round(velocityDb(vel[d], depth) * 10) / 10))}</tr>` : "") +
+      // L（7-N）：和出声同一个函数（乐器 = 引擎在那个键上实际的，perform.ts VelDb）；满力度 = 0 dB
+      ((top) => (L && top !== null ? `<tr><th>${_t("响度 dB")}</th>${cells((d) => { const x = L(vel[d]); return x === null ? "–" : db(Math.round((x - top) * 10) / 10); })}</tr>` : ""))(L ? L(127) : null) +
       (layers && layers.count > 1 ? `<tr><th>${_t("第几份录音")}</th>${cells((d) => { const k = layers.ranges.findIndex(([lo, hi]) => vel[d] >= lo && vel[d] <= hi); return k >= 0 ? String(k + 1) : "–"; })}</tr>` : "") + `</table>`;
   }
   /** 乐器页的内容（每次改完整页重画；输入框里正在打的字不受影响——只有提交时才改 extras）。 */
+  /** 这位的 L 在一个键上（7-N；和出声同一个函数）：乐器 = 库的字节在手边才有（嵌在歌里的 / 这次找到过的），按写的中央 C 换成敲的键；按音量曲线的 = 插件报的深度。没有 = null。 */
+  const curves = new Map<string, VelCurve | null>();
+  function curveOf(sha: string, bank: number, program: number): VelCurve | null {
+    const k = `${sha}|${bank}:${program}`; if (curves.has(k)) return curves.get(k)!;
+    const g = gmCandidates(h.extras(), h.role()).find((x) => x.subsetSha256 === sha), bytes = g?.bytes ?? h.bankBytes(sha);
+    if (!bytes) return null;   // 没载好：不记，下次画再问
+    let c: VelCurve | null = null; try { c = sf2VelocityCurve(bytes, bank, program); } catch { c = null; }
+    curves.set(k, c); return c;
+  }
+  function curveHere(role: string): ((vel: number) => number | null) | null {
+    const plug = performerOf(h.engine());
+    if (plug?.dynamics === "gain") { const c = depthCurve(plug.velocityDepth ?? SF2_VEL_DEPTH); return (v) => c(60, v); }
+    const aid = activeId(h.extras(), role), g = gmCandidates(h.extras(), role).find((x) => x.id === aid); if (!g) return null;
+    const c = curveOf(g.subsetSha256, g.bank, g.program), key = sfKey(60, g, activeTranspose(h.extras(), role));
+    return c ? (v) => c.at(key, v) : null;
+  }
+  /** 音内起伏那一行的后半句：按力度敲的 = 滚奏上低 D dB 落到力度几（约几档）；按音量曲线的 = 空。 */
+  function swellVelNote(role: string, D: number): string {
+    const plug = performerOf(h.engine()); if (plug?.dynamics !== "velocity") return "";
+    const L = curveHere(role); if (!L) return _t("滚奏的音上按力度做（声音载好后显示约几档）。");
+    const tab = activePerfSpec(h.extras(), role).dynamicsVel, to = velocityForDb((_m, v) => L(v), 60, tab.mf, D);
+    const order = DYNS.map((d) => tab[d]), i = order.indexOf(tab.mf); let pos = 0;
+    for (let k = 0; k < order.length - 1; k++) if (to >= order[k]! && to <= order[k + 1]!) { pos = k + (to - order[k]!) / Math.max(1, order[k + 1]! - order[k]!); break; }
+    return _t("滚奏的音上按力度做：mf（{mf}）低 {d} dB ≈ 力度 {to}（约 {n} 档力度）。", { mf: tab.mf, d: D, to, n: Math.max(0, i - pos).toFixed(1) });
+  }
   /** 上场那位所在的库 / 插件报的默认「响度」（9-3）：SoundFont 按候选来自哪个库，别的引擎问自己的插件；没人上场 = 格式里「没写」的值。 */
   function calDefault(role: string): number {
     const aid = activeId(h.extras(), role), g = gmCandidates(h.extras(), role).find((x) => x.id === aid);
@@ -119,7 +149,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
   }
   /** 插件自报参数行要的上下文（ADR-0004 §2.5）：休息室 / 角色 / 哼的字 / 音乐目录（没载 = null）/ 排版小工具。 */
   function inspectorCtx(role: string): InspectorCtx {
-    return { extras: h.extras(), role, hum: h.song().hum, catalog: h.catalog(), esc, chip, dynTable: (L, depth) => dynTable(activePerfSpec(h.extras(), role), L, depth), bankBytes: (sha) => h.bankBytes(sha) };
+    return { extras: h.extras(), role, hum: h.song().hum, catalog: h.catalog(), esc, chip, dynTable: (layers, L) => dynTable(activePerfSpec(h.extras(), role), layers, L), bankBytes: (sha) => h.bankBytes(sha), velCurve: (sha, bank, program) => curveOf(sha, bank, program) };
   }
   function draw(): void {
     if (!h.shown()) return;
@@ -150,10 +180,15 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
       (plug?.honors.includes("roll") ? ((set: number | null, d: number | null) => row(_t("滚奏"), `<b class="ip-val">${esc(set !== null ? _t("每秒 {n} 下", { n: set }) : d !== null ? _t("每秒 {n} 下", { n: d }) : _t("按鼓件"))}</b>` +
         `<button class="btn" data-v="roll:-2" title="${_t("滚奏稀一点（每秒少 2 下）")}">−2</button><button class="btn" data-v="roll:2" title="${_t("滚奏密一点（每秒多 2 下）")}">+2</button>` +
         (set !== null ? `<button class="btn" data-v="roll:def" title="${_t("回到这件乐器的默认")}">${_t("默认")}</button>` : ""),
-        _t("谱上符干带三道斜线的音 = 滚奏：整个音按这个密度敲满，力度跟着当时的力度和渐强渐弱走。默认：军鼓 20、镲 14、底鼓 12、别的鼓 16、有音高的 14（每秒）。")))(activePerfSpec(h.extras(), role).rollHz, rollDefaultOf(role)) : "") +
+        _t("谱上符干带三道斜线的音 = 滚奏：整个音按这个密度敲满；每一下按敲下去那一刻的力度——渐强渐弱 / 渐到、音内起伏（鼓也行）、强后即弱都在每一下的力度里，重音这一组只算第一下、幽灵音 / 弱化每一下都算。默认：军鼓 20、镲 14、底鼓 12、别的鼓 16、有音高的 14（每秒）。")))(activePerfSpec(h.extras(), role).rollHz, rollDefaultOf(role)) : "") +
+      // 音内起伏多深（7-N，2026-11-12；user「上了音内渐强是从-6db开始的还是从0开始的这个我也没法配置」）：swellDb，一档 3 dB，3–24，默认 6；按力度敲的旁边写约几档力度
+      (plug?.honors.includes("swellGrow") || plug?.honors.includes("swellFade") ? ((D: number) => row(_t("音内起伏多深"), `<b class="ip-val">${D} dB</b>` +
+        `<button class="btn" data-v="swell:-3" title="${_t("浅一点（−3 dB）")}">−3</button><button class="btn" data-v="swell:3" title="${_t("深一点（+3 dB）")}">+3</button>` +
+        (D !== MARK_DEFAULTS_SWELL ? `<button class="btn" data-v="swell:def" title="${_t("回到默认 {d} dB", { d: MARK_DEFAULTS_SWELL })}">${_t("默认")}</button>` : ""),
+        _t("音内渐强 / 渐弱 / 鼓起的深浅：写的力度是最高点，< 从低 {d} dB 长到写的力度、> 收到低 {d} dB、<> 两头低 {d} dB。{vel}", { d: D, vel: swellVelNote(role, D) })))(activePerfSpec(h.extras(), role).swellDb) : "") +
       ownMain.map(rowOf).join("") +
       // 月读 / 元音版：没有「按下去的力度」，力度记号 = 音量曲线；同一个位置摆同一张表（v0.9.23，方便和乐器的那张对比）
-      (plug?.dynamics === "gain" ? ((dp: number) => row(_t("力度记号"), "", _t("力度记号 → 力度 → 响度，和乐器同一条规矩（SoundFont 的放法：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB）。这位的力度深度 {dp}（照库里人声类和长笛、小提琴这类拉长音的乐器；规范默认 960）；没有录音层，只变响度：{extras}", { dp, extras: dynTable(activePerfSpec(h.extras(), role), null, dp) })))(plug.velocityDepth ?? SF2_VEL_DEPTH) : "") +
+      (plug?.dynamics === "gain" ? ((dp: number) => row(_t("力度记号"), "", _t("力度记号 → 力度 → 响度，和乐器同一条规矩（SoundFont 的放法：响度 = 深度 ÷ 960 × 40·log10(力度 ÷ 127)，满力度 = 0 dB）。这位的力度深度 {dp}（照库里人声类和长笛、小提琴这类拉长音的乐器；规范默认 960）；没有录音层，只变响度：{extras}", { dp, extras: dynTable(activePerfSpec(h.extras(), role), null, (v) => depthCurve(dp)(60, v)) })))(plug.velocityDepth ?? SF2_VEL_DEPTH) : "") +
       ((plug?.lyrics ?? "none") !== "none" ? row(_t("哼的字"), HUMS.map(([v, l]) => chip(`hum:${v}`, l, hum === v)).join(""), _t("没写歌词的音唱什么（整首歌一个）")) : "") +
       (ownAdv.length ? `<details class="ip-adv"${instAdvOpen ? " open" : ""}><summary>${_t("高级：唱法核心的旋钮")}</summary>${ownAdv.map(rowOf).join("")}</details>` : "") +
       ownTail.map(rowOf).join("") +
@@ -187,6 +222,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
     if (v === "finder") { h.openFinder(); return; }
     if (v.startsWith("find:")) { h.findBankFile(v.slice(5)); return; }
     if (v.startsWith("gap:")) { const def = gapDefaultOf(role)?.gapSec ?? 0, next = v === "gap:def" ? def : Math.max(0, Math.min(GAP_MAX_SEC, activePerfSpec(h.extras(), role).gapSec + Number(v.slice(4)))); h.commit(withGapSec(h.extras(), role, next, hum), _t("「{rn}」音和音之间 {p} ms", { rn, p: Math.round(next * 1000) }), "gap"); }
+    else if (v.startsWith("swell:")) { const cur = activePerfSpec(h.extras(), role).swellDb, next = v === "swell:def" ? null : Math.max(SWELL_DB_MIN, Math.min(SWELL_DB_MAX, cur + Number(v.slice(6)))); h.commit(withSwellDb(h.extras(), role, next, hum), _t("「{rn}」音内起伏 {d} dB", { rn, d: next ?? MARK_DEFAULTS_SWELL }), "swell"); }
     else if (v.startsWith("roll:")) { const cur = activePerfSpec(h.extras(), role).rollHz ?? rollDefaultOf(role) ?? 16, next = v === "roll:def" ? null : Math.max(ROLL_HZ_MIN, Math.min(ROLL_HZ_MAX, cur + Number(v.slice(5)))); h.commit(withRollHz(h.extras(), role, next, hum), next === null ? _t("「{rn}」滚奏回到默认", { rn }) : _t("「{rn}」滚奏每秒 {n} 下", { rn, n: next }), "roll"); }
     else if (v.startsWith("cal:")) { const d = v === "cal:def" ? NaN : Number(v.slice(4)), next = Math.max(-30, Math.min(12, Number.isNaN(d) ? calDefault(role) : activeCalibrationDb(h.extras(), role) + d)); h.commit(withCalibration(h.extras(), role, next, hum), _t("「{rn}」响度校准 {next} dB", { rn, next }), "cal"); }
     else if (v.startsWith("hum:")) h.setHum(v.slice(4) as Hum);

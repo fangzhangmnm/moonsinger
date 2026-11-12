@@ -1,3 +1,5 @@
+import type { VelCurve } from "../gm/sf2-subset.ts";
+import type { BankLookup } from "../performers/registry.ts";
 import { type Song, type PartDef } from "../score/song.ts";
 import type { Hum } from "../format/contract.ts";
 import { type Extras, type GmCandidate } from "../format/project.ts";
@@ -9,6 +11,8 @@ export interface RenderEngine {
     hasBank(sha: string): boolean;
     bank(sha: string, bytes: Uint8Array): Promise<void>;
     presetIndex(sha: string, bank: number, program: number): number;
+    /** 这一份库里一个预设的 L 曲线（7-N；库没载 = null）。 */
+    velCurve(sha: string, bank: number, program: number): VelCurve | null;
     vowels(t: VowelTableMsg): void;
     hasChunk(key: string): boolean;
     chunk(key: string, sr: number, samples: Float32Array | Int16Array): void;
@@ -64,7 +68,7 @@ export declare const RENDER_SR = 44100;
 /** 出声的声部：有独奏的只出独奏的，否则出没静音的。 */
 export declare function audibleParts(song: Song, pv: PartAudible): PartDef[];
 /** 上场那位的出声参数（时间线不碰 Extras）。SoundFont 的预设下标要库先进录音房（prepareParts）。 */
-export declare function performerInfoOf(extras: Extras, part: PartDef, presetIndex: (sha: string, bank: number, program: number) => number): PerformerInfo;
+export declare function performerInfoOf(extras: Extras, part: PartDef, banks: BankLookup): PerformerInfo;
 /** 这些声部上场那位各自的出声准备（SoundFont 子集进录音房 / 元音表 / …，归插件；找不到 = 那个声部报错、不出声，其余照放 = 换人的窄接口）。返回报错清单。 */
 export declare function prepareParts(parts: readonly PartDef[], extras: Extras, deps: Pick<RenderDeps, "engine" | "sounds">): Promise<PrepareError[]>;
 /** 录音房里这个声部的麦克风（增益 dB、声像 −1…1）；没有 = 0 / 0。 */
@@ -92,8 +96,8 @@ export declare function mixParamsOf(plan: RenderPlan, pv: PartAudible): {
 };
 /** 通道参数推进录音房（播放时才乘 → 边放边调立刻听见；静音 / 独奏在 audibleParts 里筛，不在通道上）。 */
 export declare function pushMix(engine: RenderEngine, plan: RenderPlan, pv: PartAudible): void;
-/** 这首歌（出声的声部）的时间线：谁上场 / 分段 / 音符表 / 块清单。纯函数（除了 presetIndex 要问录音房）。 */
-export declare function timelineOf(plan: RenderPlan, presetIndex: RenderEngine["presetIndex"]): Timeline;
+/** 这首歌（出声的声部）的时间线：谁上场 / 分段 / 音符表 / 块清单。纯函数（除了预设下标 / L 曲线要问录音房里的库）。 */
+export declare function timelineOf(plan: RenderPlan, banks: BankLookup): Timeline;
 /** 循环按谱绕的那一圈（谱上的秒）：从第一张纸头（编排写了 `[循环段]` 且 withArrangementLoop = 循环段第一张纸的头）到谱的结尾。
  *  余音（最后一个音之后的释放、混响尾巴）不在里面——下一圈开头接上去（编辑器的循环）或者切掉（歌库的 mp3 循环）。
  *  编辑器（performance.ts playRange）和渲出来的 mp3（renderSong 的 loop）共用这一份。2026-11-11 Claude Opus 5.5（user「歌库播放的loop的时间好像算错了…你不应该等小尾巴吧」）。 */

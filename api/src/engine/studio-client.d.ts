@@ -1,3 +1,4 @@
+import { type VelCurve } from "../gm/sf2-subset.ts";
 import { type StudioIn, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec, type VowelEntry, type AuditionInst } from "./studio.ts";
 export interface VowelTableMsg {
     sr: number;
@@ -94,6 +95,9 @@ export declare class StudioClient {
     banks(): string[];
     /** 预设下标（这份库里按 bank:program 找；没有 = −1）。 */
     presetIndex(sha: string, bank: number, program: number): number;
+    private curves;
+    /** L 曲线（7-N）：从载库时留着的字节算，按预设记着（曲线自己按键懒算）；库没载 / 没有这个预设 = null（不记，载好了再问就有）。 */
+    velCurve(sha: string, bank: number, program: number): VelCurve | null;
     unbank(sha: string): void;
     vowels(t: VowelTableMsg): void;
     setTimeline(tl: TimelineMsg): void;

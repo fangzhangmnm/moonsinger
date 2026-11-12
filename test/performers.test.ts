@@ -45,7 +45,7 @@ describe("演奏者注册表", () => {
   });
   it("乐器页里插件自报的行（ADR §2.5）：每个按钮的 data-v 都有人接（onInspector 不回 null）；没有候选也不炸", () => {
     const st = initState(), role = st.song.parts[0]!.role;
-    const ctx = (extras: ReturnType<typeof emptyExtras>): InspectorCtx => ({ extras, role, hum: "n", catalog: null, esc: (x) => x, chip: (v, label, on) => `<button data-v="${v}"${on ? " class=\"is-on\"" : ""}>${label}</button>`, dynTable: () => "", bankBytes: () => undefined });
+    const ctx = (extras: ReturnType<typeof emptyExtras>): InspectorCtx => ({ extras, role, hum: "n", catalog: null, esc: (x) => x, chip: (v, label, on) => `<button data-v="${v}"${on ? " class=\"is-on\"" : ""}>${label}</button>`, dynTable: () => "", bankBytes: () => undefined, velCurve: () => null });
     const vs = (html: string) => [...html.matchAll(/data-v="([^"]+)"/g)].map((m) => m[1]);
     for (const p of performers()) {
       if (!p.inspector) continue;

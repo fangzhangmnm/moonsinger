@@ -17,7 +17,8 @@ export interface PlacedTag { index: number; read: HarmonyRead; at: string }
 /** 一张纸上要认的：parts = 声部（按歌里的先后 = 排版上从上到下）：id + 这张纸上的 track（要显示的那一份，按 C 调看时已经换过）+ 认不认拆开弹的；
  *  families = 合租的一家（按歌里的先后，打头的在前），只列这张纸上在场、要认的；两位以上才算一家。 */
 export interface PaperHarmonyInput {
-  parts: readonly { id: string; tokens: readonly Token[]; broken: boolean }[];
+  /** perc = 打击乐的行（整套鼓、固定敲一件的鼓和音效；7-O）：不参加任何认和弦的事——自己不标，也不算进合租一家的和弦里。 */
+  parts: readonly { id: string; tokens: readonly Token[]; broken: boolean; perc?: boolean }[];
   families: readonly (readonly string[])[];
 }
 
@@ -35,11 +36,12 @@ function onsets(tokens: readonly Token[]): Map<number, number> {
 
 /** 一张纸：每一位（owner）→ 它身上要标的那几处。 */
 export function paperHarmony(theory: HarmonyTheory, input: PaperHarmonyInput): Map<string, PlacedTag[]> {
-  const out = new Map<string, PlacedTag[]>(), byId = new Map(input.parts.map((p) => [p.id, p] as const));
+  // 打击乐的行在这里就拦掉（7-O，2026-11-12；user「鼓轨道不应该幻觉出和弦，排在合理的地方修」）：写的音高 = 敲哪个鼓，不是音高
+  const out = new Map<string, PlacedTag[]>(), pitched = input.parts.filter((p) => !p.perc), byId = new Map(pitched.map((p) => [p.id, p] as const));
   const fams = input.families.map((f) => f.filter((id) => byId.has(id))).filter((f) => f.length >= 2), inFam = new Set(fams.flat());
   const push = (owner: string, tag: PlacedTag) => { const l = out.get(owner); if (l) l.push(tag); else out.set(owner, [tag]); };
   // 不在一家的：各认各的（和以前一样，人挑的读法照 harmonyTags 的规矩：对不上的画灰带「?」）
-  for (const p of input.parts) if (!inFam.has(p.id)) for (const t of harmonyTags(theory, { tokens: p.tokens, broken: p.broken })) push(p.id, { ...t, at: p.id });
+  for (const p of pitched) if (!inFam.has(p.id)) for (const t of harmonyTags(theory, { tokens: p.tokens, broken: p.broken })) push(p.id, { ...t, at: p.id });
   // 一家：合起来认
   for (const fam of fams) {
     const members = fam.map((id) => byId.get(id)!), bottom = fam[fam.length - 1]!;

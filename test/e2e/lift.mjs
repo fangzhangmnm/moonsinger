@@ -85,6 +85,20 @@ const undo = (p) => p.keyboard.press("Control+z");
   const note = await p.$eval(".wb-notice, .notice, [class*=notice]", (e) => e.textContent).catch(() => "");
   check(/顺手去掉了 1 个/.test(note ?? ""), "说一声", note ?? "");
   await undo(p); await p.waitForTimeout(150);
+  // 7½. 力度记号的小菜单「挪到这一段结尾」（7-N，2026-11-12）：f 挪到最后一个音后面 = 渐强一直走到这一段结束；已经在结尾的不给这一项
+  { await p.evaluate(() => document.querySelectorAll("#noticeStack .notice").forEach((n) => n.remove()));   // 这首测试歌开头就有一条「还没有人上场」的提示，盖在谱的右下角（和这一步无关）
+    const ds = await p.$$eval("#score text.dyn", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
+    await p.mouse.click(ds[1].x, ds[1].y); await p.waitForTimeout(150);
+    check(!!(await p.$(".ctx-menu [data-v='toEnd']")), "f 的小菜单里有「挪到这一段结尾」");
+    await p.click(".ctx-menu [data-v='toEnd']"); await p.waitForTimeout(150);
+    check(await marks(p) === "p n < n n n n n n n f", "挪到这一段结尾 = 最后一个音后面", await marks(p));
+    const de = await p.$$eval("#score text.dyn", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
+    check(de.length === 2, "结尾的 f 照样画出来", String(de.length));
+    await p.mouse.click(de[1].x, de[1].y); await p.waitForTimeout(150);
+    check(!(await p.$(".ctx-menu [data-v='toEnd']")) && !!(await p.$(".ctx-menu [data-v^='dyn:']")), "点结尾的 f：照样开小菜单，没有「挪到这一段结尾」");
+    await p.keyboard.press("Escape"); await p.evaluate(() => document.querySelector(".ctx-menu")?.remove());
+    await undo(p); await p.waitForTimeout(150);
+    check(await marks(p) === "p n < n n f n n n n n", "撤销 = 回去", await marks(p)); }
   // 8. 点渐强 = 换方向
   const hp = await p.$$eval("#score path.hairpin", (es) => es.map((e) => { const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; }));
   await p.mouse.click(hp[0].x, hp[0].y); await p.waitForTimeout(150);

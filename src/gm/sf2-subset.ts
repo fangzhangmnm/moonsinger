@@ -201,3 +201,98 @@ export function sf2VelocityDepths(input: Uint8Array, bank: number, program: numb
   }
   return [...out].sort((a, b) => a - b);
 }
+
+/** 「这一下力度让它多响」的那一项（7-N，2026-11-12；统筹选 A）：引擎（vendor/tsf/patch-tsf.py 补丁 2，照 FluidSynth）对每个响的区实际施加的初始衰减（dB），逐区照搬同一套规矩——
+ *  发生器（预设一级 + 乐器一级，区里的盖全局区的）× 0.04 dB/cB；「→ 初始衰减」调制器（默认 0x0502 / 960，乐器一级同源盖、预设一级同源加、量 0 不加；来源 = 力度 / 键号 / 无），
+ *  按 FluidSynth 的映射算（凹 / 凸表、单极夹 127/128）；和夹在 0–144 dB。
+ *  · `regions(key, vel)` = 这个键、这个力度会响的每一个区各自的衰减（dB，引擎 tsf_region_attenuation 的值；test/sf-velcurve.test.ts 拿引擎本身逐格核）。
+ *  · `at(key, vel)` = L：这一下的响度（dB，≤ 0）。只有一层响 = −那一层的衰减（和引擎逐值相同）；几层同时响 = 按功率加 10·log10(Σ 10^(−衰减÷10))——
+ *    **假定每层的采样一样响**（采样本身多响看不到；GS 里有 2.3% 的「键 × 力度」是几层叠着、深度又不一样，名单在施工记录 7-N）。没有区 = null（这个键不出声）。
+ *  · 不进歌的文件；准备声音时从库的字节算，按键懒算、算过的记着。 */
+export interface VelCurve { at(key: number, vel: number): number | null; regions(key: number, vel: number): number[] }
+type AttMod = { src: number; amtSrc: number; trans: number; amount: number };
+type CurveRegion = { lokey: number; hikey: number; lovel: number; hivel: number; genDb: number; mods: AttMod[] };
+const ATT = 48, KEY_RANGE = 43, VEL_RANGE = 44;
+/** 同一个区里 / 区盖全局区：同源（两个来源都一样）的换掉，否则接上；只有线性 / 绝对值两种变换，别的 = 这条不起作用（同 FluidSynth）。 */
+function putMod(list: AttMod[], m: AttMod): void {
+  const a = m.trans !== 0 && m.trans !== 2 ? { ...m, amount: 0, trans: 0 } : m;
+  const i = list.findIndex((x) => x.src === a.src && x.amtSrc === a.amtSrc);
+  if (i >= 0) list[i] = { ...list[i]!, trans: a.trans, amount: a.amount }; else if (list.length < 8) list.push({ ...a });
+}
+const cTab = (i: number) => (i <= 0 ? 0 : i >= 127 ? 1 : (-400 / 960) * Math.log10((127 - i) / 127));
+const vTab = (i: number) => (i <= 0 ? 0 : i >= 127 ? 1 : 1 - cTab(127 - i));
+const interp = (tab: (i: number) => number, x: number) => { const i = Math.trunc(x); if (x < 0) return 0; if (i >= 127) return 1; return tab(i) + (tab(i + 1) - tab(i)) * (x - i); };
+/** 一个来源 → 0–1 / −1–1（fluid_mod_transform_source_value，range 128）；null = 引擎没有这个来源的状态（MIDI 控制器 / 触后 / 弯音），这条跳过。 */
+function mapSrc(op: number, key: number, vel: number): number | null {
+  const index = op & 0x7f, type = op >> 10, top = 127 / 128;
+  if (op & 0x80) return null;
+  if (index === 0) return 1;
+  let v: number;
+  if (index === 2) v = vel; else if (index === 3) v = key; else return null;
+  if (type > 3) return null;
+  const n = v / 128, inv = 1 - 1 / 128 - n;
+  if (!(op & 0x200)) {
+    v = op & 0x100 ? inv : n;
+    if (type === 1) v = Math.min(interp(cTab, 128 * v), top); else if (type === 2) v = Math.min(interp(vTab, 128 * v), top); else if (type === 3) v = v >= 0.5 ? 1 : 0;
+  } else {
+    const b = op & 0x100 ? inv : n;
+    v = b === top ? b : -1 + 2 * b;
+    if (type === 1) v = v >= 0 ? Math.min(interp(cTab, 128 * v), top) : -interp(cTab, -128 * v);
+    else if (type === 2) v = v >= 0 ? Math.min(interp(vTab, 128 * v), top) : -interp(vTab, -128 * v);
+    else if (type === 3) v = v >= 0 ? 1 : -1;
+  }
+  return v;
+}
+function regionAtt(r: CurveRegion, key: number, vel: number): number {
+  let cb = 0;
+  for (const m of r.mods) { const a = mapSrc(m.src, key, vel), b = mapSrc(m.amtSrc, key, vel); if (a === null || b === null) continue; let o = m.amount * a * b; if (m.trans === 2 && o < 0) o = -o; cb += o; }
+  const db = r.genDb + cb * 0.1;
+  return db < 0 ? 0 : db > 144 ? 144 : db;
+}
+/** 一个预设的 L（没有这个预设 = null）。 */
+export function sf2VelocityCurve(input: Uint8Array, bank: number, program: number): VelCurve | null {
+  const bytes = plain(input), { pdta } = parse(bytes), dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const u16 = (c: Chunk, rec: number, i: number, at: number) => dv.getUint16(c.off + i * rec + at, true);
+  const bagOf = (hdr: PdtaName, i: number) => u16(pdta[hdr], REC[hdr], i, hdr === "phdr" ? 24 : 20);
+  type Zone = { gens: Map<number, number>; mods: AttMod[] };
+  const zone = (bagName: "pbag" | "ibag", genName: "pgen" | "igen", modName: "pmod" | "imod", z: number, base?: Zone): Zone => {
+    const gens = new Map(base?.gens ?? []), mods = (base?.mods ?? []).map((m) => ({ ...m }));
+    for (let g = u16(pdta[bagName], 4, z, 0); g < u16(pdta[bagName], 4, z + 1, 0); g++) gens.set(u16(pdta[genName], 4, g, 0), u16(pdta[genName], 4, g, 2));
+    for (let m = u16(pdta[bagName], 4, z, 2); m < u16(pdta[bagName], 4, z + 1, 2); m++) {
+      const o = pdta[modName].off + m * 10;
+      if (dv.getUint16(o + 2, true) === ATT) putMod(mods, { src: dv.getUint16(o, true), amtSrc: dv.getUint16(o + 6, true), trans: dv.getUint16(o + 8, true), amount: dv.getInt16(o + 4, true) });
+    }
+    return { gens, mods };
+  };
+  const range = (z: Zone, op: number): [number, number] => { const r = z.gens.get(op); return r === undefined ? [0, 127] : [r & 0xff, r >> 8]; };
+  const s16 = (z: Zone, op: number) => { const r = z.gens.get(op) ?? 0; return r >= 0x8000 ? r - 0x10000 : r; };
+  const nP = pdta.phdr.size / REC.phdr - 1;
+  let pi = -1; for (let i = 0; i < nP; i++) if (u16(pdta.phdr, REC.phdr, i, 22) === bank && u16(pdta.phdr, REC.phdr, i, 20) === program) { pi = i; break; }
+  if (pi < 0) return null;
+  const regions: CurveRegion[] = [];
+  let pGlob: Zone | undefined;
+  for (let z = bagOf("phdr", pi); z < bagOf("phdr", pi + 1); z++) {
+    const pz = zone("pbag", "pgen", "pmod", z, pGlob), inst = pz.gens.get(GEN_INSTRUMENT);
+    if (inst === undefined) { if (z === bagOf("phdr", pi)) pGlob = pz; continue; }
+    const [pk0, pk1] = range(pz, KEY_RANGE), [pv0, pv1] = range(pz, VEL_RANGE);
+    let iGlob: Zone | undefined;
+    for (let iz = bagOf("inst", inst); iz < bagOf("inst", inst + 1); iz++) {
+      const zz = zone("ibag", "igen", "imod", iz, iGlob);
+      if (!zz.gens.has(GEN_SAMPLE_ID)) { if (iz === bagOf("inst", inst)) iGlob = zz; continue; }
+      const [k0, k1] = range(zz, KEY_RANGE), [v0, v1] = range(zz, VEL_RANGE);
+      if (k1 < pk0 || k0 > pk1 || v1 < pv0 || v0 > pv1) continue;   // 同 tsf.h：预设区的键 / 力度范围是筛子
+      const mods: AttMod[] = [{ src: 0x0502, amtSrc: 0, trans: 0, amount: 960 }];   // 默认的「力度 → 衰减」；乐器一级同源的只换量、预设一级同源的量相加（量 0 跳过）
+      for (const m of zz.mods) { const j = mods.findIndex((x) => x.src === m.src && x.amtSrc === m.amtSrc); if (j >= 0) mods[j] = { ...mods[j]!, amount: m.amount }; else if (mods.length < 8) mods.push({ ...m }); }
+      for (const m of pz.mods) { if (m.amount === 0) continue; const j = mods.findIndex((x) => x.src === m.src && x.amtSrc === m.amtSrc); if (j >= 0) mods[j] = { ...mods[j]!, amount: mods[j]!.amount + m.amount }; else if (mods.length < 8) mods.push({ ...m }); }
+      const g = (s16(zz, ATT) + s16(pz, ATT)) * 0.04;
+      regions.push({ lokey: Math.max(k0, pk0), hikey: Math.min(k1, pk1), lovel: Math.max(v0, pv0), hivel: Math.min(v1, pv1), genDb: g < -144 ? -144 : g > 144 ? 144 : g, mods });
+    }
+  }
+  const byKey = new Map<number, CurveRegion[]>();   // 按键懒算、算过的记着
+  const onKey = (key: number) => { let r = byKey.get(key); if (!r) { r = regions.filter((x) => key >= x.lokey && key <= x.hikey); byKey.set(key, r); } return r; };
+  const sounding = (key: number, vel: number) => { const v = Math.trunc(vel); return onKey(key).filter((r) => v >= r.lovel && v <= r.hivel).map((r) => regionAtt(r, key, vel)); };
+  return {
+    regions: sounding,
+    at(key, vel) { const a = sounding(key, vel); if (!a.length) return null; return a.length === 1 ? -a[0]! : 10 * Math.log10(a.reduce((s, x) => s + 10 ** (-x / 10), 0)); },
+  };
+}

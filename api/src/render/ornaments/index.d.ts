@@ -86,6 +86,7 @@ export declare function layNoteDynamics(c: OrnCtx, row: number, _ch: Chunk, a: {
     tok: number | undefined;
     cls: string | undefined;
     ign: ReadonlySet<string>;
-    swl: "<" | ">" | "<>" | undefined;
+    swl: "<" | ">" | "<>" | undefined; /** 这个音是滚奏（7-N）：认滚奏的演奏者上，音内起伏谁都能演（滚奏 = 连着敲撑起来的长音），不画灰。 */
+    roll?: boolean;
     atk: readonly ("sfz" | "fp")[];
 }): void;

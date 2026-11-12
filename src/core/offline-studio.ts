@@ -2,6 +2,7 @@
 //   created 2026-10-16 by Claude Fable 5.1（W-38 ⑤ 无头渲染核心的 node 后端；RenderEngine 的第二个实现，第一个 = src/engine/studio-client.ts）。
 //   做法和 StudioClient.renderOffline 一样：平时只记状态（库字节 / 元音表 / 块 / 通道 / 总线 / 总轨），renderOffline 那一刻新开一个 Studio 把状态灌进去、从头跑到尾。
 import { instantiateTsf, type Tsf } from "../gm/tsf-standalone.ts";
+import { sf2VelocityCurve, type VelCurve } from "../gm/sf2-subset.ts";
 import { Studio, BLOCK, TAIL_FX_MAX, fadeTail, packInt16, type TimelineMsg, type ChannelParams, type MasterParams, type BusSpec } from "../engine/studio.ts";
 import type { VowelTableMsg } from "../engine/studio-client.ts";
 import type { RenderEngine } from "./render.ts";
@@ -29,6 +30,14 @@ export class OfflineStudio implements RenderEngine {
     this.bankBytes.set(sha, bytes);
   }
   presetIndex(sha: string, bank: number, program: number): number { return this.presets.get(sha)?.get(`${bank}:${program}`) ?? -1; }
+  private curves = new Map<string, VelCurve>();
+  /** L 曲线（7-N）：从载库时留着的字节算，按预设记着（曲线自己按键懒算）；库没载 / 没有这个预设 = null（不记，载好了再问就有）。 */
+  velCurve(sha: string, bank: number, program: number): VelCurve | null {
+    const k = `${sha}|${bank}:${program}`, have = this.curves.get(k); if (have) return have;
+    const bytes = this.bankBytes.get(sha), c = bytes ? sf2VelocityCurve(bytes, bank, program) : null;
+    if (c) this.curves.set(k, c);
+    return c;
+  }
   vowels(t: VowelTableMsg): void { this.vowelTable = t; }
   hasChunk(key: string): boolean { return this.chunks.has(key); }
   chunk(key: string, sr: number, samples: Float32Array | Int16Array): void {

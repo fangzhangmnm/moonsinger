@@ -111,3 +111,24 @@ describe("时间线：歌开头的琶音", () => {
     eq(plain.range.from, 0, "不写琶音：范围从 0 起");
   });
 });
+
+// 7-N（2026-11-12 Claude Opus 5.5（MoonSinger小弟））：时间线这一层的接线——按力度敲的、认滚奏的演奏者（真的 SoundFont 插件），滚奏的每一下拿到当时的力度；
+//   表说认（滚奏、音内渐强在滚奏上）= 出声真变。L 这里用深度 800 的曲线（velDb；真库的那一份在 test/sf-velcurve.test.ts 拿引擎核）。
+import { depthCurve } from "../src/score/perform.ts";
+describe("时间线：滚奏的每一下（7-N）", () => {
+  const roll = (extra: Token[], art: string[]) => { const st0 = initState(), pid = st0.song.parts[0].id, p1 = st0.song.papers[0];
+    const toks = [...head(p1.tracks[pid]), ...extra, { kind: "note", id: nid++, pitch: { step: "D", alter: 0, octave: 2 }, dur: 4 * TPQ, lyric: null, art } as Token, { kind: "dyn", id: nid++, value: "f" } as Token, n("D")];
+    const song = { ...st0.song, papers: [{ ...p1, tracks: { [pid]: toks } }] };
+    const t = buildTimeline({ song, order: [p1.id], parts: st0.song.parts, info: () => ({ ...info("soundfont"), spec: { ...spec, rollHz: 8 }, velDb: depthCurve(800) }), hum: "n", singOpt: {} });
+    return (t.tracks[0] as unknown as { notes: { t0: number; vel?: number }[] }).notes.filter((x) => x.t0 < 4 * Q - 1e-6).map((x) => Math.round((x.vel ?? 0) * 127));
+  };
+  it("渐强盖在滚奏上 = 每一下的力度一路往上；没写 = 每一下一样", () => {
+    const up = roll([{ kind: "dyn", id: nid++, value: "p" } as Token, { kind: "hairpin", id: nid++, dir: "cresc" } as Token], ["roll"]), flat = roll([{ kind: "dyn", id: nid++, value: "p" } as Token], ["roll"]);
+    assert(up.length > 8 && up.every((v, k) => k === 0 || v >= up[k - 1]!) && up[up.length - 1]! > up[0]!, `渐强：${up.join(" ")}`);
+    assert(flat.every((v) => v === flat[0]), `没写：${flat.join(" ")}`);
+  });
+  it("音内渐强在鼓的滚奏上：每一下从低长到写的力度（鼓本来做不到音内变强，滚奏例外）", () => {
+    const g = roll([{ kind: "dyn", id: nid++, value: "mf" } as Token], ["roll", "swellUp"]);
+    assert(g[0]! < 60 && g[g.length - 1]! <= 80 && g[g.length - 1]! > g[0]! && g.every((v, k) => k === 0 || v >= g[k - 1]!), `< ：${g.join(" ")}`);
+  });
+});

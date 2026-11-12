@@ -598,6 +598,15 @@ export declare function moveMark(st: EditorState, from: number, before: number):
     st: EditorState;
     removed: number;
 };
+/** 力度记号挪到这一段（这张纸这条轨）最后一个音的后面 = 「到这里为止变到这个力度」（7-N，2026-11-12；user 新版 Once upon a Tale：军鼓滚到这张纸结束、后面没有音可以挂 fff）。
+ *  出声这一头本来就认（dynLevels：终点后面没有音 = 取前一个音的结尾）；排版两种谱都画、MusicXML 往返还在、删音的湮灭不吃单独挂在最后的——2026-11-12 核过三处。
+ *  放在最后一个音 / 休止后面那串记号的最后（这样那里原来有的力度记号被湮灭、挪过去的算数）；后面的小节线照旧在后面。只挪力度记号；已经在那儿 = 原样。 */
+export declare function moveMarkToEnd(st: EditorState, from: number): {
+    st: EditorState;
+    removed: number;
+};
+/** 这个力度记号是不是已经挂在这一段最后一个音后面（后面没有音 / 休止了）。 */
+export declare const markAtEnd: (toks: readonly Token[], i: number) => boolean;
 /** 点力度记号 / 渐强渐弱的小菜单：改成别的力度 / 换方向；null = 删掉（光标跟着）。 */
 export declare function editMarkAt(st: EditorState, i: number, change: {
     value: Dyn;

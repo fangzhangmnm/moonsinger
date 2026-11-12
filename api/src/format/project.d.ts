@@ -323,6 +323,10 @@ export declare function activePerfSpec(extras: Extras, role: string): {
 export declare const GAP_MAX_SEC = 0.2;
 /** 改上场那位的滚奏密度（乐器页；每秒几下，ROLL_HZ_MIN … ROLL_HZ_MAX；null = 去掉、回到乐器默认）。没人上场 = 原样。v0.16.64 */
 export declare function withRollHz(extras: Extras, role: string, hz: number | null, hum: Hum): Extras;
+/** 音内起伏多深能调到哪（dB；乐器页一档 3 dB；7-N，2026-11-12）。默认 = MARK_DEFAULTS.swellDb（6）。 */
+export declare const SWELL_DB_MIN = 3, SWELL_DB_MAX = 24;
+/** 改上场那位的音内起伏多深（articulation.swellDb，dB；字段本来就有、格式不动；null = 回到默认 6）。没人上场 = 原样。 */
+export declare function withSwellDb(extras: Extras, role: string, dB: number | null, hum: Hum): Extras;
 /** 改上场那位的连断底色（乐器页；秒，0 … GAP_MAX_SEC，记到毫秒）。没人上场 = 原样。 */
 export declare function withGapSec(extras: Extras, role: string, sec: number, hum: Hum): Extras;
 /** 上场那位的校准（dB；没写 = UNWRITTEN_CALIBRATION_DB，格式的意思）。渲染时乘在这个声部上，和录音室推子相加（推子 = 混音决定，校准 = 演奏者自己的响度）。 */

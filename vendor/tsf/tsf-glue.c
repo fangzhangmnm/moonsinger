@@ -31,3 +31,16 @@ void sf_note_off_all(tsf *f) { tsf_note_off_all(f); }
 int sf_active(tsf *f) { return tsf_active_voice_count(f); }
 // Writes `samples` mono floats into out (overwrites, no mixing).
 void sf_render(tsf *f, float *out, int samples) { tsf_render_float(f, out, samples, 0); }
+// Read-only probe (2026-11-12, Claude Opus 5.5 (MoonSinger小弟); 施工单 7-N): for one key / velocity (vel 0..1, same as sf_note_on), write the initial
+// attenuation (dB) the engine would apply to each region that sounds — exactly tsf_region_attenuation (patch-tsf.py patch 2) — into out (at most max);
+// returns how many regions sound. Used only to check the app's own copy of the rule (src/gm/sf2-subset.ts sf2VelocityCurve) against the engine itself.
+int sf_region_atten(const tsf *f, int preset_index, int key, float vel, float *out, int max) {
+  struct tsf_region *region, *regionEnd; int n = 0; short midiVelocity = (short)(vel * 127);
+  if (preset_index < 0 || preset_index >= f->presetNum) return 0;
+  for (region = f->presets[preset_index].regions, regionEnd = region + f->presets[preset_index].regionNum; region != regionEnd; region++) {
+    if (key < region->lokey || key > region->hikey || midiVelocity < region->lovel || midiVelocity > region->hivel) continue;
+    if (n < max) out[n] = tsf_region_attenuation(region, key, vel);
+    n++;
+  }
+  return n;
+}

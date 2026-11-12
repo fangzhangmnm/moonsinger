@@ -54,3 +54,32 @@ describe("和弦级数的预处理（theory/families.ts）", () => {
     assert(n(true) > 0, "主人认 = 标");
   });
 });
+
+// 7-O（2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「鼓轨道不应该幻觉出和弦，排在合理的地方修，记得记账」，截图 = 邦哥鼓那一行一线谱下面标着「IV5」）：
+//   打击乐的行（整套鼓、固定敲一件的鼓和音效）不参加任何认和弦的事——自己不标，也不算进合租一家的和弦里。拦在预处理（paperHarmony 的输入带 perc）。
+import { engrave } from "../src/render/engrave.ts";
+import { createTextMeasure } from "../src/render/text/index.ts";
+import { percKindOf } from "../src/gm/percussion.ts";
+import { withTrack } from "../src/score/song.ts";
+describe("打击乐的行不认和弦（7-O）", () => {
+  const broken = () => track(nn(65), nn(69), nn(72), nn(65), nn(69), nn(72));   // F A C 拆开弹 = 认得出一个和弦（截图那种）
+  it("预处理：打击乐的行自己不标（同样的音、不是打击乐 = 标）", () => {
+    const t = broken();
+    assert((paperHarmony(th, { parts: [{ id: "B", tokens: t, broken: true }], families: [] }).get("B") ?? []).length > 0, "不是打击乐：认得出");
+    eq((paperHarmony(th, { parts: [{ id: "B", tokens: t, broken: true, perc: true }], families: [] }).get("B") ?? []).length, 0, "打击乐：一个都不标");
+  });
+  it("合租一家里混着鼓：认出来的和弦和把鼓拿掉之后一样（鼓的音不算进去）", () => {
+    const S = track(nn(72, [], { dur: 2 * TPQ } as Partial<NoteTok>), nn(74, [], { dur: 2 * TPQ } as Partial<NoteTok>)), A = track(nn(64, [], { dur: 2 * TPQ } as Partial<NoteTok>), nn(65, [], { dur: 2 * TPQ } as Partial<NoteTok>)), D = broken();
+    const show = (m: Map<string, unknown[]>) => JSON.stringify([...m].map(([k, v]) => [k, (v as { index: number; at: string; read: { name?: string } }[]).map((x) => [x.index, x.at, JSON.stringify(x.read)])]).sort());
+    const withDrum = paperHarmony(th, { parts: [{ id: "S", tokens: S, broken: true }, { id: "A", tokens: A, broken: true }, { id: "D", tokens: D, broken: true, perc: true }], families: [["S", "A", "D"]] });
+    const noDrum = paperHarmony(th, { parts: [{ id: "S", tokens: S, broken: true }, { id: "A", tokens: A, broken: true }], families: [["S", "A"]] });
+    eq(show(withDrum), show(noDrum));
+  });
+  it("排版三种谱：标级数开着，打击乐那一行一个和弦都没有；同样的音换成有音高的乐器 = 有（这条测得出东西）", () => {
+    for (const notation of ["staff", "jianpu", "letters"] as const) for (const perc of [true, false]) {
+      const st0 = initState(), song = { ...withTrack(st0.song, st0.at.paper, st0.at.part, broken()), notation, chordTags: true };
+      const L = engrave(song as never, { width: 700, sp: 10, at: st0.at, parts: [{ id: st0.at.part, name: "Bongo", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: false, ...(perc ? { perc: percKindOf({ bank: 128, program: 0, note: 60 })! } : {}) }], locale: "zh", measure: createTextMeasure((s: string) => s.length * 8) } as never);
+      if (perc) eq(L.chordTags.length, 0, `${notation}：打击乐的行不标`); else assert(L.chordTags.length > 0, `${notation}：有音高的照样标`);
+    }
+  });
+});

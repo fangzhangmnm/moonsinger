@@ -385,7 +385,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const kScale = (k: RowKind) => ROW_PARAMS[k][density].scale;   // 行里的尺寸比例（这种行自己的字形 / 偏移统一乘它）
     // 叠着的和弦折成和弦名（第五刀 5-4；预处理，和谱种无关，用不用归画法）：这条轨的和弦选项是「折叠」时，每个叠音的音问乐理模块折不折得了（能还原才折）
     const aux: TrackAux[] = per0.map((q, i) => {
-      const th = harmonyTheory(); if (q.vrt || rowHost[i]! >= 0 || songLook.chordsOf(q.p.id) !== "fold" || !th.fold) return {};
+      const th = harmonyTheory(); if (q.vrt || rowHost[i]! >= 0 || q.p.perc || songLook.chordsOf(q.p.id) !== "fold" || !th.fold) return {};   // 叠着的折叠成和弦名也是认和弦：打击乐的行不折（7-O）
       const folds = new Map<number, ChordFold>(); let at = { fifths: DEFAULT_KEY, minor: false };
       q.tokens.forEach((t, k) => { if (t.kind === "key") at = { fifths: t.fifths, minor: t.mode === "minor" }; else if (t.kind === "note" && t.pitch && t.chord?.length) { const f = th.fold!([t.pitch, ...t.chord], at, t.harm); if (f) folds.set(k, f); } });
       return folds.size ? { folds } : {};
@@ -614,7 +614,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     // 5、6–11：五线谱这一种行的画（staff/draw.ts；施工单 1b-6a）。框架交过去的东西都在这个对象里
     // 和弦级数（第五刀 5-4）= 预处理：合租的一家合起来认、不在一家的各认各的（theory/families.ts）；两种谱读同一份。叠成一行的一家（五线谱，虚拟轨）不标（现状）
     const harmony: Map<string, PlacedTag[]> | null = songLook.chordTags ? paperHarmony(harmonyTheory(), {
-      parts: per.filter((q, i) => !q.vrt && rowHost[i]! < 0).map((q) => ({ id: q.p.id, tokens: q.tokens, broken: songLook.chordsOf(q.p.id) !== "stacked" })),
+      parts: per.filter((q, i) => !q.vrt && rowHost[i]! < 0).map((q) => ({ id: q.p.id, tokens: q.tokens, broken: songLook.chordsOf(q.p.id) !== "stacked", perc: !!q.p.perc })),   // 打击乐的行在预处理里拦（7-O）
       families: famIds.map((fid) => famHere(fid).map((p) => p.id)),
     }) : null;
     const drawCtx = { song, look: songLook, harmony, aux, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };

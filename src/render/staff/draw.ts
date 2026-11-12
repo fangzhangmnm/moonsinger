@@ -382,7 +382,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
       //   突强 / 强后即弱的字对着符头中心（施工单 §2.2 第 5 条，user「还是居中对齐」）；小发夹从符头左缘（有字 = 字后面）到这个音的宽，中线在字的半腰。做不到的画灰
       const swl = c.j === 0 ? swellOf(tokens[c.index]) : undefined;   // 音内起伏 = 演奏法里的那一组（v0.9.44）
       const atk = (["sfz", "fp"] as const).filter((x) => c.art.includes(x));
-      if (swl || atk.length) layNoteDynamics(orn, row, c, { cx, x0: nhX(c), w: P(c.w), tok: tokOf(c), cls, ign, swl, atk });   // 共用挂件（ornaments/index.ts，第四刀 4-4 原样搬出）
+      if (swl || atk.length) layNoteDynamics(orn, row, c, { cx, x0: nhX(c), w: P(c.w), tok: tokOf(c), cls, ign, swl, roll: c.art.includes("roll"), atk });   // 共用挂件（ornaments/index.ts，第四刀 4-4 原样搬出）
       // 琶音（v0.9.45）：和弦左边（临时记号再左边）一条竖的波浪线，从最低的符头到最高的；做不到的（单声的歌手）画灰
       if (c.art.includes("arpeggio")) {
         const yTop = yOf(row, dHi) - P(0.7), yBot = yOf(row, dLo) + P(0.7), x0 = nhX(c) - P(c.accW + 0.9), amp = P(0.28), step = P(0.5);

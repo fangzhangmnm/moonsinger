@@ -12,6 +12,8 @@
 //   0.2.2（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单 9-4，user「真正该对齐的是：我们的引擎和标准播放器 对齐」）：SoundFont 的初始衰减和力度曲线照 FluidSynth
 //     （vendor/tsf/patch-tsf.py 补丁 2：发生器每 cB 0.04 dB，原来 0.01；读库给每个区写的「力度 → 初始衰减」，GS 大多数乐器写 800 = 强弱的幅度是原来的八成多）——
 //     所有 SoundFont 乐器再轻 1–8 dB、乐器之间相对的轻重最多挪 6 dB；第 9 节的「敲之前设总音量」退场。小月相 / 元音版的力度深度 = 800（插件报）。设备上记着的渲好的声音因此作废。
-export const CORE_VERSION = "0.2.2";
+//   0.2.3（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单 7-N，user「这个滚奏完全没法用啊」）：按力度敲的乐器，滚奏的每一下按敲下去那一刻的力度（渐强渐弱 / 渐到 / 音内起伏 /
+//     强后即弱都在每一下里，重音这一组只算第一下）；强后即弱「压到 p」按这件乐器在那个键上实际的 L（原来写死 960，深度 800 的乐器多压约 2 dB）。没写这些的滚奏、别的音不变。
+export const CORE_VERSION = "0.2.3";
 export const CORE_HASH: string = typeof __CORE_HASH__ === "string" ? __CORE_HASH__ : "dev";
 export const coreInfo = (): { version: string; hash: string } => ({ version: CORE_VERSION, hash: CORE_HASH });

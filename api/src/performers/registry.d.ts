@@ -1,4 +1,5 @@
 import type { Extras, GmCandidate } from "../format/project.ts";
+import type { VelCurve } from "../gm/sf2-subset.ts";
 import type { Catalog } from "../gm/catalog.ts";
 import type { Hum } from "../format/contract.ts";
 import type { FxV2 } from "../format/contract.ts";
@@ -35,8 +36,12 @@ export interface PrepareCtx extends RoleCtx {
     resolveGmBytes(g: GmCandidate): Promise<Uint8Array>;
     ensureVowels(): Promise<void>;
 }
-export interface InfoCtx extends RoleCtx {
+/** 载进录音房的库能问什么（引擎本身就满足它）：预设下标；L 曲线（7-N：从库的字节算、按键懒算；库没载 = null）。 */
+export interface BankLookup {
     presetIndex(sha: string, bank: number, program: number): number;
+    velCurve(sha: string, bank: number, program: number): VelCurve | null;
+}
+export interface InfoCtx extends RoleCtx, BankLookup {
 }
 export interface TrackCtx {
     id: string;
@@ -93,11 +98,13 @@ export interface InspectorCtx extends RoleCtx {
     esc(s: string): string;
     /** 一个选项钮（亮 = 现在是它）。 */
     chip(v: string, label: string, on: boolean, title?: string): string;
-    /** 力度换算表（每个力度记号 → 这位的 MIDI 力度或 dB；有 GS 力度层再加一行）。depth = 这件乐器的力度深度（cB；null = 不知道 / 按鼓件不同，不写 dB 那一行）。 */
+    /** 力度换算表（每个力度记号 → 这位的 MIDI 力度或 dB；有 GS 力度层再加一行）。L = 这位在一个键上的「力度 → dB」（和出声同一个函数，7-N；null = 不知道，不写 dB 那一行）。 */
     dynTable(layers: {
         count: number;
         ranges: [number, number][];
-    } | null, depth: number | null): string;
+    } | null, L: ((vel: number) => number | null) | null): string;
+    /** 这一份库里一个预设的 L 曲线（字节在手边才有；7-N）。 */
+    velCurve(sha: string, bank: number, program: number): VelCurve | null;
     /** 这次打开里手边有的子集字节（找到过 / 加进来的；歌里嵌的在候选的 bytes 里）。没有 = undefined（声音载好后宿主会重画）。 */
     bankBytes(sha256: string): Uint8Array | undefined;
 }
@@ -144,7 +151,7 @@ export interface PerformerPlugin {
     /** 能不能从休息室删掉（第一公民的两位不删；带自己字节的乐器能删）。 */
     readonly removable: boolean;
     /** 出声参数里这位自己的那部分（gm / 分段唱 / 着力点）；通用部分（力度表 / 校准 / 修八度 / 链 / 拍子轻重）胶水填。 */
-    info(ctx: InfoCtx): Pick<PerformerInfo, "gm" | "chunk" | "hitSec" | "singOpt">;
+    info(ctx: InfoCtx): Pick<PerformerInfo, "gm" | "chunk" | "hitSec" | "singOpt" | "velDb">;
     /** 出声前准备：库进录音房 / 元音表。抛错 = 这位出不了声（胶水报出来、这个声部不出声、其余照放）。 */
     prepare(ctx: PrepareCtx): Promise<void>;
     /** notes 模式：音符表 → 这位的轨（chunks 模式没有这一步，时间线自己出块）。 */
