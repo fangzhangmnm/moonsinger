@@ -17,10 +17,13 @@ const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 1100, height: 900 } })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));
 await p.route(/\.sf2(\?|$)/, (r) => r.abort());
 await p.goto(process.env.MS_E2E_BASE ?? "http://127.0.0.1:8710/"); await p.waitForTimeout(800);
+await p.evaluate(() => { const m = window.__moonsinger, st = m.state(); m.set({ ...st, song: { ...st.song, textLang: "en" } }); });   // 谱上的字钉英文（12-4）：这里看的是乐器换回来，名字用英文叫法比
 await p.click(".pad-key[data-k] >> nth=0"); await p.waitForTimeout(100);
 const names = () => p.$$eval("#score text.part-name", (ts) => ts.map((t) => t.textContent).join(","));
 const finderOpen = () => p.evaluate(() => !!document.querySelector(".finder:not([hidden])"));
-const swap = async () => { await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="swap"]'); await p.waitForTimeout(400); };
+// 测试环境里拿不到音源库，会冒「试听不了」的提示条、压在小卡上（施工单：提示条不挡点得到的东西，12-4 之后那条修；修完删掉这一句 clearNotices）
+const clearNotices = () => p.evaluate(() => document.querySelectorAll("#noticeStack > *").forEach((e) => e.remove()));
+const swap = async () => { await p.click("#score text.part-name"); await p.waitForTimeout(200); await clearNotices(); await p.click('.track-card [data-v="swap"]'); await p.waitForTimeout(400); };
 await swap();
 check(await finderOpen(), "歌手名小卡第一颗「换乐器」= 直接进乐器目录");
 await p.waitForSelector(".finder-list .finder-group-h"); await p.waitForTimeout(200);
@@ -49,7 +52,7 @@ await p.click('.finder [data-v="back"]'); await p.waitForTimeout(300);
 check((await names()).includes("Choir"), "点回完整版（记着上场时是合唱）= 谱上 Choir", await names());
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
 check((await names()).includes("Voice"), "撤销一步 = 名字和人一起退回", await names());
-await p.click("#score text.part-name"); await p.waitForTimeout(200); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300);
+await p.click("#score text.part-name"); await p.waitForTimeout(200); await clearNotices(); await p.click('.track-card [data-v="inst"]'); await p.waitForTimeout(300);
 check(!(await p.$('[data-v^="cand:"]')) && !!(await p.$('.ip-who [data-v="finder"]')), "「配置…」= 乐器页；里面不再摆用过的候选（搬进目录了），只有一行台上是谁 +「换乐器…」");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();

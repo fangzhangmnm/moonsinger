@@ -97,7 +97,7 @@ export function fullSong(): Song {
   for (const x of pedals) (x as { id: number }).id = id++;
 
   return asOpened({   // app 打开之后的样子（每张纸开头补力度，第八刀 8-7）
-    title: "排版分家守卫歌", hum: "u", credits: "词曲：守卫\n编：小弟", arrangement: "A B (A)×2 Z", paper: paperOf("A5"),
+    title: "排版分家守卫歌", hum: "u", textLang: "ui", credits: "词曲：守卫\n编：小弟", arrangement: "A B (A)×2 Z", paper: paperOf("A5"),
     parts: [
       { id: "V", role: "r1", mic: "m1" }, { id: "P", role: "r2", mic: "m2" }, { id: "B", role: "r3", mic: "m3" }, { id: "K", role: "r4", mic: "m4" },
       { id: "X", role: "r5", mic: "m5" }, { id: "Y", role: "r6", mic: "m6", host: "X" },

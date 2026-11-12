@@ -1525,6 +1525,9 @@ export declare const S: {
     readonly "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": {
         readonly en: "Long words push notes apart (the traditional engraving rule)";
     };
+    readonly 谱上的字: {
+        readonly en: "Text on the score";
+    };
     readonly 页面设置: {
         readonly en: "Page settings";
     };
@@ -1537,6 +1540,9 @@ export declare const S: {
     readonly 不显示演奏法和表情: {
         readonly en: "Hide articulations & dynamics";
     };
+    readonly "\u8C31\u4E0A\u7684\u5B57\uFF1A{l}": {
+        readonly en: "Text on the score: {l}";
+    };
     readonly "\u5C0F\u6708\u76F8\u5FF5\u51FA\u6765 {n} \u4E2A\u97F3\u8282\u3001\u8C31\u4E0A {n2} \u4E2A\uFF0C\u5BF9\u4E0D\u4E0A\uFF08\u5531\u7684\u65F6\u5019\u4F1A\u62A5\u9519\uFF09\uFF1A": {
         readonly en: "Tsukuyomi-chan says {n} syllables but the score has {n2}, so they don't match (singing will report an error):";
     };
@@ -1545,6 +1551,12 @@ export declare const S: {
     };
     readonly "\u5C0F\u6708\u76F8\u5FF5\u6210\uFF1A": {
         readonly en: "Tsukuyomi-chan reads it as:";
+    };
+    readonly "\u8DDF\u7740\u754C\u9762\uFF08{lang}\uFF09": {
+        readonly en: "Follow the interface ({lang})";
+    };
+    readonly "\u8F6F\u4EF6\u81EA\u5DF1\u5199\u5728\u8C31\u4E0A\u7684\u5B57\u7528\u54EA\u79CD\u8BED\u8A00\uFF1A\u6CA1\u8D77\u540D\u5B57\u7684\u58F0\u90E8\u5199\u4E50\u5668\u7684\u53EB\u6CD5\u3001\u7B80\u8C31\u9F13\u7684\u56FE\u4F8B\u3001\u300C\u7F16\u6392\u300D\u3001\u51FA\u58F0\u7684\u6362\u6C14\u300C\u5438 / \u6DF1\u5438\u300D\u3002\u6B4C\u8BCD\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u4F60\u8D77\u7684\u58F0\u90E8\u540D\u7167\u5199\u7684\u5370\uFF0C\u4E0D\u7FFB\u3002\u8DDF\u7740\u754C\u9762 = \u8FD9\u53F0\u8BBE\u5907\u662F\u4EC0\u4E48\u8BED\u8A00\u5C31\u5370\u4EC0\u4E48\u8BED\u8A00\u3002": {
+        readonly en: "Which language the app's own words on the score use: the instrument name of a part you haven't named, the drum legend in numbered notation, “Arrangement”, and the breath words “in / deep in”. Lyrics, the title, the credits and part names you typed are printed as written, never translated. Follow the interface = print in whatever language this device's interface is in.";
     };
     readonly "\u6253\u51FB\u4E50\u7684\u884C\u6CA1\u6709\u8C03\uFF1A\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\u9F13\uFF0C\u548C\u8C03\u53F7\u65E0\u5173\uFF08\u8C03\u53F7\u7559\u5728\u8C31\u91CC\uFF0C\u4E0D\u8D77\u4F5C\u7528\uFF09": {
         readonly en: "Percussion rows have no key: the written pitch says which drum is hit, not a pitch (the key signature stays in the score but does nothing)";
@@ -1645,8 +1657,8 @@ export declare const S: {
     readonly "\u653E\u8FDB\u300C{p}\u300D\uFF08\u4E00\u884C\u7A7A\u7684\uFF09": {
         readonly en: "Put into “{p}” (an empty line)";
     };
-    readonly "\u8C31\u4E0A\u5199\u7684\u540D\u5B57\uFF08\u70B9\u4E86\u5C31\u80FD\u6539\uFF09": {
-        readonly en: "The name written on the score (tap to edit)";
+    readonly "\u8D77\u4E2A\u540D\u5B57\uFF08\u8C31\u4E0A\u539F\u6837\u5199\u3001\u4E0D\u7FFB\u8BD1\uFF09\uFF1B\u7A7A\u7740 = \u5199\u8FD9\u4EF6\u4E50\u5668\u7684\u53EB\u6CD5": {
+        readonly en: "Give it a name (printed as typed, never translated); empty = the instrument's name";
     };
     readonly "\u6362\u4E50\u5668\uFF08\u8FDB\u4E50\u5668\u76EE\u5F55\uFF09": {
         readonly en: "Change instrument (opens the instrument catalog)";
@@ -1716,6 +1728,9 @@ export declare const S: {
     };
     readonly "\u89D2\u8272\u6539\u540D\uFF1A{n}": {
         readonly en: "Role renamed: {n}";
+    };
+    readonly "\u540D\u5B57\u6E05\u6389\u4E86\uFF1A\u8DDF\u7740\u4E50\u5668\u5199\u300C{inst}\u300D": {
+        readonly en: "Name cleared: shows the instrument, “{inst}”";
     };
     readonly "\u8FD9\u4E00\u6BB5\u7684\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u300C{name}\u300D": {
         readonly en: "This section’s row was handed to “{name}”";
@@ -2518,6 +2533,9 @@ export declare const S: {
     readonly "\u9690\u85CF\u7684\u58F0\u90E8\u6574\u4E2A\u62FF\u6389\u3001\u91CD\u65B0\u6392\uFF0C\u4E0D\u7559\u7A7A\u4F4D\uFF08\u50CF\u62BD\u51FA\u6765\u7684\u5206\u8C31\uFF1B\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\uFF09": {
         readonly en: "Hidden parts are removed and it's re-laid out with no gaps (like an extracted part; differs from the paged preview)";
     };
+    readonly 谱上的字用: {
+        readonly en: "Score text in";
+    };
     readonly "\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u601D\u6E90\u9ED1\u4F53\uFF0C\u7EA6 {p} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u9875\u9762\u8BBE\u7F6E\u91CC\u6539\uFF09\u3002": {
         readonly en: "The font (Source Han Sans) downloads the first time (about {p} MB), then works offline. Paper = this song's paper (change it in Page settings).";
     };
@@ -2553,9 +2571,6 @@ export declare const S: {
     };
     readonly "\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7B2C\u4E00\u6B21\u7EA6 {p} MB\uFF09\u2026": {
         readonly en: "Downloading font (about {p} MB the first time)…";
-    };
-    readonly "\u4E50\u5668\u76EE\u5F55\u53D6\u4E0D\u5230\uFF1A\u8C31\u4E0A\u7684\u4E50\u5668\u540D\u548C\u7B80\u5199\u8FD9\u6B21\u7167\u6B4C\u91CC\u5B58\u7684\u540D\u5B57\u5370": {
-        readonly en: "Couldn’t load the instrument catalog: instrument names and abbreviations are printed as stored in the song this time";
     };
     readonly "\u6392\u7248\u2026": {
         readonly en: "Laying out…";
@@ -5806,75 +5821,6 @@ export declare const S: {
     readonly "\u6CA1\u6709 To Coda\uFF1A\u8DF3\u56DE\u6765\u4E4B\u540E\u4E00\u8DEF\u653E\u5230\u7EB8\u5C3E": {
         readonly en: "No To Coda: after jumping back it plays to the end of the sheet";
     };
-    readonly 主唱: {
-        readonly en: "Lead vocal";
-    };
-    readonly 和声: {
-        readonly en: "Harmony";
-    };
-    readonly "\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": {
-        readonly en: "Soprano (choir)";
-    };
-    readonly "\u5973\u4F4E\u97F3\uFF08\u5408\u5531\uFF09": {
-        readonly en: "Alto (choir)";
-    };
-    readonly "\u7537\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": {
-        readonly en: "Tenor (choir)";
-    };
-    readonly "\u7537\u4F4E\u97F3\uFF08\u5408\u5531\uFF09": {
-        readonly en: "Bass (choir)";
-    };
-    readonly 乐队: {
-        readonly en: "Band";
-    };
-    readonly "\u94A2\u7434 / \u952E\u76D8": {
-        readonly en: "Piano / keys";
-    };
-    readonly 吉他: {
-        readonly en: "Guitar";
-    };
-    readonly 贝斯: {
-        readonly en: "Bass";
-    };
-    readonly 鼓: {
-        readonly en: "Drums";
-    };
-    readonly 弦乐: {
-        readonly en: "Strings";
-    };
-    readonly 合成铺底: {
-        readonly en: "Synth pad";
-    };
-    readonly 合成主音: {
-        readonly en: "Synth lead";
-    };
-    readonly "\u4EBA\u58F0##\u8C31\u4E0A\u58F0\u90E8\u540D": {
-        readonly en: "Vocals";
-    };
-    readonly "\u4F34\u5531##\u8C31\u4E0A\u58F0\u90E8\u540D": {
-        readonly en: "Backing Vocals";
-    };
-    readonly "\u5973\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
-        readonly en: "Soprano";
-    };
-    readonly "\u5973\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
-        readonly en: "Alto";
-    };
-    readonly "\u7537\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
-        readonly en: "Tenor";
-    };
-    readonly "\u7537\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
-        readonly en: "Bass";
-    };
-    readonly "\u9F13##\u8C31\u4E0A\u58F0\u90E8\u540D": {
-        readonly en: "Drums";
-    };
-    readonly "\u5408\u6210\u5668\u4E3B\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
-        readonly en: "Synth Lead";
-    };
-    readonly "\u5408\u6210\u5668\u80CC\u666F\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": {
-        readonly en: "Synth Pad";
-    };
     readonly 大调: {
         readonly en: "Major";
     };
@@ -6384,6 +6330,9 @@ export declare const S: {
     };
     readonly "{from} \u8D77": {
         readonly en: "from {from}";
+    };
+    readonly 弦乐: {
+        readonly en: "Strings";
     };
     readonly 铜管: {
         readonly en: "Brass";

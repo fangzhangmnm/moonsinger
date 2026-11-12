@@ -16,7 +16,7 @@ import type { LoadInfo } from "../engine/studio-client.ts";
 import { holdAudio, releaseAudio } from "../singer/audio.ts";
 import { encodeMp3, MP3_QUALITY, type Mp3Quality } from "../export/mp3.ts";
 import { id3v2, firstUrl } from "../export/id3.ts";
-import { roleName, activeGm, activeInstrument, type Extras, type GmCandidate, partLabels, activeId } from "../format/project.ts";
+import { activeGm, activeInstrument, type Extras, type GmCandidate, activeId } from "../format/project.ts";
 import { performerCredits, licenseHints, creditsText, type CreditLine } from "../format/credits.ts";
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf } from "../performers/index.ts";
@@ -32,6 +32,9 @@ import { undo } from "../score/history.ts";
 /** 胶水向宿主要的东西（main.ts 给）：状态只读访问器 + 几个界面 / 音源 / 署名的口；胶水不碰 DOM、不碰文件、不碰 undo。 */
 export interface PerfHost {
   state(): EditorState;
+  /** 每个声部显示成什么 / 某个角色显示成什么（唯一出口 src/format/part-show.ts，12-4）。 */
+  labels(): string[];
+  roleLabel(role: string): string;
   extras(): Extras;
   viewScope(): "all" | "segment";
   pv(id: string): { muted: boolean; solo: boolean };
@@ -107,7 +110,7 @@ export function createPerformance(host: PerfHost) {
   const prepErrs = new Map<string, { cand: string; kind: IssueKind; why: string }>();   // 上一次准备（播放 / 导出）里出不了声的：按声部记，带着当时上场的候选 id——换了人就不算
   const hasNotes = (partId: string): boolean => st().song.papers.some((pp) => (pp.tracks[partId] ?? []).some((t) => t.kind === "note"));
   function computeIssues(): Issue[] {
-    const labels = partLabels(st().song, extras());
+    const labels = host.labels();
     return st().song.parts.flatMap((p, k): Issue[] => {
       if (!hasNotes(p.id)) return [];   // 没写音的声部不出声也不丢什么
       const plugin = performerOf(activeInstrument(extras(), p.role)?.engine);
@@ -156,7 +159,7 @@ export function createPerformance(host: PerfHost) {
         while (running.size < singer.parallelism) {
           const key = chunkKeysWanted.find((k) => !engine.hasChunk(k) && !inflightKeys.has(k)); if (!key) break;
           const c = chunkPlans.get(key); if (!c) { chunkKeysWanted = chunkKeysWanted.filter((k) => k !== key); continue; }
-          const who = roleName(extras(), st().song.parts.find((p) => p.id === c.part)?.role ?? ""), left = pendingChunks();
+          const who = host.roleLabel(st().song.parts.find((p) => p.id === c.part)?.role ?? ""), left = pendingChunks();
           if (left > shown) { renderBar.start(left); shown = left; }   // 进度条：还有几句（顺序换了、多了就重开一条）
           const failed = chunkFailed.get(key);
           if (failed !== undefined) {   // 预唱时就唱不了的：不再试；真播放 = 报出来、这一句空着（不出声、不替补）

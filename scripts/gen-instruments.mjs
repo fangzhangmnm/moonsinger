@@ -15,6 +15,7 @@ export const SRC = process.env.INSTRUMENTS_SRC ?? join(ROOT, "..", "..", "202608
 export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
 export const PERC_OUT = join(ROOT, "src", "gm", "percussion.gen.ts");
+export const DEFAULT_OUT = join(ROOT, "src", "gm", "default-concept.gen.ts");   // 新歌默认那一位的概念（12-4）
 export const VERSION = 15;   // v15 = 2026-11-07（仓鼠 adc0249：概念加 scoreName = 谱上名（Western concert flute → Flute、型号 → 功能名），13 个简写改正；user 11-07「为什么我从era里面选的flute在sheet上面显示western concept flute」「不只是长笛，而是系统的看一下」）
 //   v14 = 2026-11-07（仓鼠 eec835f：GM 122 Breath Noise 改挂长笛、奏法 = 气声、年份 ≈前 51,000，「呼吸」不再有 GM 号；user 11-07「midi breath不是呼吸是演奏技巧」，家族周账 F-212）
 //   v13 = 2026-10-10（仓鼠 7447213：不分音高的鼓谱写法 percussion / pitched:false / 着力点 hitSec / GS 扩展鼓键 extraDrumKeys；纯增量。工单 ai-docs/20261010-hamster-workorder-percussion-notation.md）
@@ -88,6 +89,27 @@ export const PERC: Record<string, PercInfo> = ${JSON.stringify(out)};
 `;
 }
 
+/** 新歌默认那一位（主唱）的乐器概念 = 目录里的「人声」（Q7390），按值烤进源码（施工单 12-4，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；统筹：「新歌默认的那一位用乐器目录里『人声』那个概念（按值，
+ *  生成目录快照的脚本顺手烤出来，不等目录加载），不带预设号」）。和上场时一样抄：编号束、百科名、谱上的叫法（zh = 中文名，en = scoreName）、英文简写。 */
+export const DEFAULT_CONCEPT_ID = "Q7390";
+export function renderDefaultConcept() {
+  const p = join(DST, FILES.concepts); if (!existsSync(p)) return null;
+  const c = JSON.parse(readFileSync(p, "utf8")).concepts.find((x) => x.id === DEFAULT_CONCEPT_ID);
+  if (!c) throw new Error(`[gen-instruments] 目录里没有 ${DEFAULT_CONCEPT_ID}（人声）`);
+  const cap = (s) => s.replace(/\s*\([^)]*\)/g, "").trim().replace(/^./, (ch) => ch.toUpperCase());
+  const concept = {
+    ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm.map((g) => ({ program: g.program, bank: g.bank })), hs: c.ids.hs },
+    name: { zh: c.names.zh, en: c.names.en, ...(c.names.ja ? { ja: c.names.ja } : {}) },
+    score: { zh: c.names.zh, en: c.scoreName?.en || cap(c.names.en) },
+    ...(c.abbr?.en ? { abbr: { en: c.abbr.en } } : {}),
+  };
+  return `// 生成物：node scripts/gen-instruments.mjs（目录 v${VERSION} 的 ${DEFAULT_CONCEPT_ID}）。勿手改。
+// 新歌默认那一位（主唱）的乐器概念，按值（施工单 12-4）：排谱 / 新建声部时就要，不等目录加载。
+import type { LoungeRoleV2 } from "../format/contract.ts";
+export const DEFAULT_CONCEPT: Readonly<NonNullable<LoungeRoleV2["concept"]>> = ${JSON.stringify(concept, null, 1)};
+`;
+}
+
 if (fileURLToPath(import.meta.url) === process.argv[1]) {
   if (!existsSync(SRC)) { console.error(`找不到源 ${SRC}`); process.exit(1); }
   mkdirSync(DST, { recursive: true });
@@ -95,5 +117,6 @@ if (fileURLToPath(import.meta.url) === process.argv[1]) {
   copyFileSync(join(SRC, "README.md"), join(DST, "SOURCE.md"));
   writeFileSync(OUT, render());
   writeFileSync(PERC_OUT, renderPerc());
+  writeFileSync(DEFAULT_OUT, renderDefaultConcept());
   console.log(`[gen-instruments] v${VERSION} → vendor/instruments/ + ${OUT}`);
 }

@@ -2,7 +2,7 @@
 //   能叠音；不唱字；鼓 / 音效的着力点（hitSec）和谱上的画法（× 符头 / 鼓谱）在这里（原 main.ts hitOf / partViews）；每个音敲哪个键 = src/gm/sf-key.ts（固定原速 / 音高对齐 / 修八度）。
 import { _t } from "../i18n/index.ts";
 import { registerPerformer } from "./registry.ts";
-import { activeGm, activeVelocity, activeTranspose, activePerfSpec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, roleName, type GmCandidate } from "../format/project.ts";
+import { activeGm, activeVelocity, activeTranspose, activePerfSpec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, type GmCandidate } from "../format/project.ts";
 import { SOUNDFONT_DEFAULTS } from "../format/performance.ts";
 import { velLayersOf, octaveCheckOf, conceptOfIds, octaveDisclosure, GS_LIBRARY_ID } from "../gm/catalog.ts";
 import { sf2VelocityDepths } from "../gm/sf2-subset.ts";
@@ -105,8 +105,8 @@ export const soundfont = registerPerformer({
     }
     return rows;
   },
-  onInspector: (v, { extras, role, hum }) => {
-    const g = activeGm(extras, role), rn = roleName(extras, role);
+  onInspector: (v, { extras, role, hum, roleLabel }) => {
+    const g = activeGm(extras, role), rn = roleLabel;
     if (v === "sfx:fixed") { const on = g?.note === undefined; return { extras: withSfxFixed(extras, role, on, hum), label: `「${rn}」${on ? _t("固定原速") : _t("不固定原速（按写的音变调）")}`, silence: true }; }
     if (v === "sfx:align") { const on = !g?.sfx?.align; return { extras: withSfxAlign(extras, role, on, hum), label: _t("「{rn}」音高对齐{on}", { rn, on: on ? _t("开") : _t("关") }), silence: true }; }
     if (v.startsWith("tr:")) { const d = Number(v.slice(3)), next = d === 0 ? 0 : activeTranspose(extras, role) + d; return { extras: withTranspose(extras, role, next, hum), label: _t("「{rn}」修八度 / 移调 {next} 半音", { rn, next }), gesture: "transpose", silence: true }; }

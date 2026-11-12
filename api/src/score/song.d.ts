@@ -242,6 +242,10 @@ export interface Song {
     middleC?: number;
     /** 演奏法和表情显示不显示（score minor 8，7-G；只写 false = 不显示；没写 = 显示。读 / 改只走 src/score/song-view.ts）。只管画：播放照写的来。 */
     expressions?: false;
+    /** 谱上的字用哪种语言（score minor 10，施工单 12-4，2026-11-12；user「页面设置是不是也应该有一个语言，影响打印？」）："ui" = 跟着界面；"zh" / "en" = 界面语言里的一种；
+     *  不认识的（更新的版本写的）原样留着、写回去，画的时候当跟着界面。只管软件自己生成、印出来的字（声部名是目录 / 预设里的乐器名时、简谱鼓的图例、「编排」、出声的换气「吸 / 深吸」）；
+     *  歌词、歌名、作者栏、自己起的声部名不动。**必填**：没写的意思在进门那一处定一次（src/format/project.ts songViewFields：没写 = "ui"），新歌明着写 "ui"；运行时永远有值。读 / 改只走 src/score/song-view.ts。 */
+    textLang: string;
     hum: Hum;
     parts: PartDef[];
     papers: PaperSeg[];

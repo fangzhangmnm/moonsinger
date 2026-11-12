@@ -12,6 +12,9 @@ import { RenderProgress } from "../ui/render-progress.ts";
 /** 胶水向宿主要的东西（main.ts 给）：状态只读访问器 + 几个界面 / 音源 / 署名的口；胶水不碰 DOM、不碰文件、不碰 undo。 */
 export interface PerfHost {
     state(): EditorState;
+    /** 每个声部显示成什么 / 某个角色显示成什么（唯一出口 src/format/part-show.ts，12-4）。 */
+    labels(): string[];
+    roleLabel(role: string): string;
     extras(): Extras;
     viewScope(): "all" | "segment";
     pv(id: string): {

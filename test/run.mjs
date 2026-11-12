@@ -9,6 +9,8 @@ import "./song-view.test.ts";
 import "./expressions.test.ts";   // 演奏法和表情不显示（7-G）
 import "./jianpu.test.ts";
 import "./name-column.test.ts";
+import "./text-lang.test.ts";
+import "./part-show.test.ts";
 import "./no-collide.test.ts";
 import "./layout-params.test.ts";
 import "./last-merge.test.ts";

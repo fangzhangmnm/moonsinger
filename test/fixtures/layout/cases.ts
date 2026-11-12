@@ -5,7 +5,8 @@
 //   量字宽用一把假尺子（两边同一把就行）；坐标取到 0.001 px（重构时运算顺序变了不该算版面变）。
 // 仓里不装 @types/node：node:* 走动态 import（同 test/keys.test.ts）
 const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e?: string): Uint8Array & string };
-import { openBytes, partLabels } from "../../../src/format/project.ts";
+import { openBytes } from "../../../src/format/project.ts";
+import { partNames } from "../../../src/format/part-show.ts";
 import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../src/render/engrave.ts";
 import { printOpts, isPrinted } from "../../../src/export/score-pdf.ts";
 import { paperOf, DEFAULT_PAPER, lineSp, pageGeoOf, textScaleOf } from "../../../src/score/paper.ts";
@@ -24,7 +25,7 @@ export const SONGS: Record<string, string> = {
 export const asFrozen = (song: Song): Song => (song.chordTags === false ? song : { ...song, chordTags: false });
 export function loadSong(key: string): { song: Song; labels: string[] } {
   const o = openBytes(SONGS[key]!.split("/").pop()!, new Uint8Array(fs.readFileSync(new URL(SONGS[key]!, ROOT))));
-  return { song: asFrozen(asOpened(o.song)), labels: partLabels(o.song, o.extras) };   // 打开之后的样子（每张纸开头补力度，第八刀 8-7）
+  return { song: asFrozen(asOpened(o.song)), labels: partNames(o.song, o.extras.lounge, "en") };   // 英文叫法 = 这些样本原来存着的名字（12-4 之前排版测试一直直接用存的名字，没翻；照旧）   // 打开之后的样子（每张纸开头补力度，第八刀 8-7）
 }
 export const measure = (s: string): number => [...s].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 16 : 9), 0);
 export const SP = 10;

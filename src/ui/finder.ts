@@ -17,7 +17,7 @@ export interface OwnFile { name: string; presets: { bank: number; program: numbe
 /** 点开的那件乐器目录里没有谁能演 = 试听键盘静音（不是还弹着上一件的声音；v0.15.7，家族周账 F-210，user 11-07「如果选中的那个类别里面没有合适的音源的时候，我在即兴的时候应该是静音，而不是显示弹在上一个音源」）。 */
 export type FinderNobody = { kind: "none"; concept: Concept };
 export interface FinderHost {
-  roleName(): string;                                          // 现在的角色名（顶条写「找人给「X」」）
+  roleLabel(): string;                                          // 现在的角色名（顶条写「找人给「X」」）
   audition(p: FinderPick | FinderNobody | null): Promise<void>;     // 试听台：载进实时合成器（pad 弹它）；none = 静音；null = 停（回到默认的哼）
   playHead(p: FinderPick): Promise<void>;                            // 用它放本声部开头
   cast(p: FinderPick): Promise<void>;                                // 上场（声音默认弱引用：歌里只记来源，要带着走 = 文件菜单「全部打包进歌」）
@@ -141,7 +141,7 @@ export class Finder {
     const ctx: FinderCtx = o.playOnly ? "impro" : "song";
     if (ctx !== this.ctx) { this.stash(); this.ctx = ctx; this.unstash(); }   // 歌里 ↔ 即兴：各记各的
     this.el.hidden = false; this.playOnly = !!o.playOnly;
-    this.el.querySelector(".finder-title")!.textContent = this.playOnly ? _t("乐器目录（弹着玩）") : _t("找人给「{p}」", { p: this.host.roleName() });
+    this.el.querySelector(".finder-title")!.textContent = this.playOnly ? _t("乐器目录（弹着玩）") : _t("找人给「{p}」", { p: this.host.roleLabel() });
     this.el.querySelector('[data-v="back"]')!.textContent = this.playOnly ? _t("← 歌库") : _t("← 谱");
     this.el.querySelector(".finder-hint")!.textContent = this.playOnly ? _t("点一件乐器 → 挑谁来演 → 用键盘弹着玩。要给歌里的声部选乐器：开一首歌，点谱前面的声部名。") : HINT;
     setDropdown(this.el.querySelector<HTMLElement>(".finder-sort")!, { value: this.mode });
@@ -163,7 +163,7 @@ export class Finder {
     else if (openedC) void this.host.audition({ kind: "none", concept: openedC });
   }
   /** 换上一件乐器之后（目录不关，v0.16.35）：顶条的名字和「这首歌里用过的」那一排跟着变。 */
-  refresh(): void { if (this.el.hidden) return; if (!this.playOnly) this.el.querySelector(".finder-title")!.textContent = _t("找人给「{p}」", { p: this.host.roleName() }); this.renderUsed(); }
+  refresh(): void { if (this.el.hidden) return; if (!this.playOnly) this.el.querySelector(".finder-title")!.textContent = _t("找人给「{p}」", { p: this.host.roleLabel() }); this.renderUsed(); }
   hide(): void {
     if (this.el.hidden) return;
     if (this.selected.startsWith("sf2|")) this.selected = "";   // 自己文件里的那件：关目录 = 字节放掉，下次开不再指着它

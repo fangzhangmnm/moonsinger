@@ -31,8 +31,6 @@ export function partColorIndices(sounds: readonly string[]): number[] {
   return sounds.map((s) => HUE[categoryOfSound(s)] * 2);
 }
 
-/** 合唱 / 人声预设的谱前简写（出版谱的老规矩）。 */
-const VOICE_ABBR: Record<string, string> = { Vocals: "Vo.", "Backing Vocals": "B. Vo.", Soprano: "S.", Alto: "A.", Tenor: "T.", Bass: "B." };
 /** 名字自己缩短（目录里没有简写、或者用户自己起了名字）：中文 / 日文 = 前两个字；英文一个词 ≤ 5 个字母 = 原样，长的 = 前三个字母加点；几个词 = 首字母加点。 */
 export function shortName(name: string): string {
   const t = name.trim(); if (!t) return t;
@@ -57,19 +55,4 @@ export function fitAbbr(base: string, num = "", W = ABBR_W): string {
   out = out.replace(/[\s.]+$/, "");
   return (cjk ? out : `${out}.`) + num;
 }
-/** 谱前的简写：名字就是乐器自己的名字 = 目录给的出版谱简写（仓鼠 v12）；人声预设 = 老规矩；别的（自己起的名字）= 名字缩短。名字后面的号（Vocals 2）跟着。最后都按定宽裁（fitAbbr）。
- *  名字比较不分大小写（v0.9.41 修：谱上「Piano」、目录英文名照 Wikidata 惯例小写「piano」，原来逐字比 = 118 个目录简写一个都没用上；仓鼠查出来的）。 */
-export function partAbbr(label: string, o: { conceptNames?: readonly string[]; conceptAbbr?: string; voice?: boolean; local?: string }): string {
-  const m = / (\d+)$/.exec(label), base = m ? label.slice(0, -m[0].length) : label, num = m ? ` ${m[1]}` : "", low = base.toLowerCase();
-  if (o.local && o.conceptNames?.some((n) => n.toLowerCase() === low)) return fitAbbr(o.local, num);   // 界面语言的名字（谱面分家 5½）：照定宽规矩缩，不现编那种语言的简写
-  if (o.conceptAbbr && o.conceptNames?.some((n) => n.toLowerCase() === low)) return fitAbbr(o.conceptAbbr, num);
-  if (o.voice && VOICE_ABBR[base]) return fitAbbr(VOICE_ABBR[base], num);
-  return fitAbbr(shortName(base), num);
-}
-/** 谱上显示的声部名（谱面分家 5½，愿望单 W-71，统筹细则：施工单第三节「5½」）：名字就是目录里那件乐器自己的名字（去掉后面的号、不分大小写比）= 换成目录里界面语言那种名字，号接回去；
- *  对不上（自己起的名字、人声预设这种目录里没有那种语言的名字）= null（照原样显示）。只管显示：歌里按值存的名字、MusicXML 里的名字不动。 */
-export function localPartName(label: string, o: { conceptNames?: readonly string[]; local?: string }): string | null {
-  if (!o.local) return null;
-  const m = / (\d+)$/.exec(label), base = m ? label.slice(0, -m[0].length) : label, num = m ? ` ${m[1]}` : "", low = base.toLowerCase();
-  return o.conceptNames?.some((n) => n.toLowerCase() === low) ? o.local + num : null;
-}
+// 谱前的简写、谱上的声部名：只走 src/format/part-show.ts（12-4；原来的 partAbbr / localPartName 按名字比目录的名字，删了）。这里只留缩名字和定宽的工具。

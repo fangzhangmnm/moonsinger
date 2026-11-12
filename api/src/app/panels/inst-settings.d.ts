@@ -15,6 +15,8 @@ export interface InstSettingsHost {
     needCatalog(): void;
     padHidden(): boolean;
     abbr(k: number): string;
+    labels(): string[];
+    roleLabel(role: string): string;
     sessionHas(sha256: string): boolean;
     bankBytes(sha256: string): Uint8Array | undefined;
     commit(next: Extras, label: string, gesture?: string): void;

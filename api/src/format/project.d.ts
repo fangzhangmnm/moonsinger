@@ -99,17 +99,12 @@ export interface Opened {
     advice: string[]; /** 老文件里带着的那份 mp3（退役的定稿）：有 = 宿主搬进这台设备的渲染缓存；这一版起不再写回文件。 */
     legacyMp3?: LegacyMp3;
 }
-/** 这个角色谱上写的名字 = MusicXML 的 <part-name>（user「谱上面显示的不应跟是月读，而是人声，女声 lead bass violin之类功能的东西，
- *  还记得之前说的给role assign 乐器的逻辑吗？…不然的话你fl studio一个乱七八糟的插件，月读会变成c:/apps/…/月度_v1.0_绿色破解版.dll 这个就是我那个窄接口要拦的」）。
- *  乐器（候选）的名字不上谱。 */
-export declare function roleName(extras: Extras, role: string): string;
-/** 这个角色是什么（MusicXML 官方 <instrument-sound> id，src/score/roles.ts；user「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的」）。 */
+/** 这个角色是什么（MusicXML 官方 <instrument-sound> id；user「角色名可以和xml的乐器 功能语义对齐，用最官方的正规的」）。还没有角色快照 = 新角色的。 */
 export declare function roleSound(extras: Extras, role: string): string;
-/** 各声部谱上写的名字（和 song.parts 一一对应；同名同种的带号，src/score/roles.ts numberParts）。 */
-export declare function partLabels(song: Song, extras: Extras): string[];
-/** 改角色名（选了预设 = 连官方 id 一起改；自己写的名字 = 官方 id 不变）。还没有角色快照 = 先按默认的建一份。 */
-export declare function withRoleName(extras: Extras, role: string, name: string, hum: Hum, sound?: string): Extras;
-/** 角色改成某个乐器概念（找人视图里挑了）：名字 + 官方 id + id 束 by value。 */
+/** 给角色起名字 / 清掉名字（12-4：名字和乐器分开）。空串 = 回到没起（谱上写乐器的叫法）；起的名字原样存、什么语言都不翻。还没有角色快照 = 先按默认的建一份。 */
+export declare function withRoleName(extras: Extras, role: string, name: string, hum: Hum): Extras;
+/** 角色改成某个乐器概念（乐器目录里挑了 / 点回旧候选）：官方 id + 概念 by value（含谱上的叫法、简写）。**名字不动**（12-4）：没起的照旧没起 = 谱上跟着换成新乐器的叫法；
+ *  用户起了名字的照旧是那个名字（名字是用户的）。c.name 是候选里记的当初上场叫法（castAs，格式里有），这里不用。 */
 export declare function withRoleConcept(extras: Extras, role: string, c: {
     name: string;
     sound: string | null;

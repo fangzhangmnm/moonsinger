@@ -72,7 +72,24 @@ export type FormatFile = keyof typeof FORMAT;
  *  谱里多一种记号：踏板（延音 / 持音 / 弱音 × 踩下 / 抬起 / 换踏板），MusicXML 原生写在每张纸的正本里（<pedal> / <sound …-pedal> / 弱音的 una corda / tre corde），score.json 不变。
  *  旧版本（minor 8）打开 = <pedal> 不认识（那一版连「读不了的」都不数）、照写的放；存一次踏板就没了，音不丢（每张纸的 MusicXML 按 token 重写，不认识的 MusicXML 元素带不回）
  *  = 缺功能：minor +1、让旧版本提示一次。冻结样本 = test/fixtures/format/minor/score-9/（样本歌第一张纸带延音踏板）。 */
-export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 9, lounge: 0, studio: 1 };   // lounge 3（9-2）起小版本从 0 数
+/** score minor 10（施工单 12-4，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「页面设置是不是也应该有一个语言，影响打印？还是打印的时候自己调语言？think critically about it」，统筹定 = 歌里一项）：
+ *  顶层多一个可选的 textLang = 谱上的字用哪种语言（"zh" / "en"；只写不是「跟着界面」的）。只管软件自己生成、印出来的字（目录 / 预设里的乐器名、简谱鼓的图例、「编排」、「吸 / 深吸」）。
+ *  没写的意思在进门那一处定（project.ts songViewFields：没写 = 跟着界面），之后歌里永远有值（Song.textLang 必填）。
+ *  旧版本（minor 9）打开 = 不认识这个键、原样带回（未知键直通），照界面语言印 = 缺功能：minor +1、让旧版本提示一次。归修改锁的「看法」（songLook）。
+ *  冻结样本 = test/fixtures/format/minor/score-10/（样本歌写 en）。 */
+/** lounge minor 1（施工单 12-4，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「全部声部里面翻译没有跟，以及好好想一下声部到底要不要自动翻译」→ 统筹提「名字和乐器分开」，user「同意」）：
+ *  ① 角色的 name 可以没有 = 没起名字（谱上写乐器的叫法）；有 = 用户起的，原样。只有这一个来源，不另存「起没起」的旗。
+ *  ② 概念多两个可选的键：score（谱上写的叫法，按语言）、abbr（谱前的简写）。上场时从目录按值抄。
+ *  **老文件（minor 0）进门时判一次**（只在 migrate/index.ts loungeRoleNames 这一处，运行时不再比名字）：
+ *    - 有概念：名字（不分大小写）等于 概念的中 / 英 / 日百科名、候选里记的当初上场叫法（castAs.name）、百科英文名首字母大写、冻住的目录表里那个概念的谱上英文叫法 之一 = 没起；
+ *      概念缺 score 的补上（en = 判成没起的那个名字，只要它是拉丁字母写的——老歌在英文谱上原来就印它，进门不改样子；不是 = 冻住的目录表里的叫法 → 百科名首字母大写；
+ *      zh = 百科中文名），缺 abbr 的从冻住的目录表补英文简写（= 原来目录载好时显示的）。不等 = 起了的名字，原样。
+ *    - 没概念：名字（不分大小写）+ 官方 id 等于某个老预设（Vocals / Backing Vocals / Soprano…，冻住的预设表 migrate/legacy-role-names.ts）= 补上那个预设的按值概念、名字变成没起；
+ *      没名字（空）= 补上人声那个预设的概念（照以前落到 Vocals）；别的名字 = 起了的，没概念，原样。
+ *    - 候选里 castAs.concept 同样补 score / abbr（点回旧候选时套回去）。
+ *  旧版本（minor 0）读到没名字的角色 = 显示它默认的 Vocals（照 minor 的规矩提示一次）；没有受影响的老读者（正式版打不开现在的文件，开发版只有最新的在用）。
+ *  冻结样本：test/fixtures/format/minor/lounge-0-named/ 和 lounge-0-unnamed/（这一版之前的代码写的，一个会被判成没起、一个是起了名字的）。 */
+export const FORMAT_MINOR: Readonly<Record<FormatFile, number>> = { manifest: 1, score: 10, lounge: 1, studio: 1 };   // lounge 3（9-2）起小版本从 0 数
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
@@ -156,6 +173,8 @@ export interface ScoreExtV2 {
   middleC?: number;
   /** score minor 8（7-G）：演奏法和表情不显示（只写 false；没写 = 显示）。 */
   expressions?: false;
+  /** score minor 10（12-4）：谱上的字用哪种语言（"zh" / "en" / 更新的版本写的别的；没写 = 跟着界面，进门时补成 "ui"）。 */
+  textLang?: string;
 }
 
 // ─── 第 1 版（只给迁移对照；migrate/index.ts）────────────────────────────────────────────
@@ -209,13 +228,19 @@ export type Dynamic = "ppp" | "pp" | "p" | "mp" | "mf" | "f" | "ff" | "fff";   /
 export interface LoungeRoleV2 {
   version: 2;
   id: string;                          // "r1"
-  name: string;                        // 谱上写的角色名（<part-name>）
+  /** 用户起的名字（谱上原样写、什么语言都不翻）。**没有这个键 = 没起**：谱上写这件乐器的叫法（概念的 score，按「谱上的字」的语言；src/format/part-show.ts 唯一出口）。
+   *  休息室 minor 1（施工单 12-4，2026-11-12）起可以没有；空串进门时当成没有。老文件（minor 0）进门时判一次（migrate/index.ts loungeRoleNames）。 */
+  name?: string;
   sound: string;                       // MusicXML 官方乐器语义 id（<instrument-sound>，src/score/roles.ts）
   active: string;                      // 上场的候选 id（人选的；上不了场 = 不出声、报错、人换，不自动替补）
   candidates: CandidateV2[];
   /** 2026-10-07 加（可选，不升版本）：角色是什么乐器**概念**——百科的多重编号束 + 名字 by value（user「乐器的百科全书」「多重编号」）。
    *  sound（MusicXML id）仍是导出给别的软件看的；concept 是真身份，目录（vendor/instruments/）常改也不影响歌。 */
-  concept?: { ids: { wikidata: string | null; local: string | null; musicxml: string | null; gm: { program: number; bank: number }[]; hs: string | null }; name: { zh: string; en: string; ja?: string } };
+  concept?: { ids: { wikidata: string | null; local: string | null; musicxml: string | null; gm: { program: number; bank: number }[]; hs: string | null }; name: { zh: string; en: string; ja?: string };
+    /** 休息室 minor 1（12-4）：谱上写的叫法（按语言；上场时从目录抄：zh = 目录中文名，en = 目录的 scoreName，没有就百科名首字母大写）。name 是百科名（英文小写「human voice」），不拿来印。 */
+    score?: { zh?: string; en: string; ja?: string };
+    /** 休息室 minor 1（12-4）：谱前的简写（上场时从目录抄，目录只有英文的；没有 = 从名字缩）。 */
+    abbr?: { zh?: string; en?: string; ja?: string } };
 }
 export interface CandidateV2 {
   id: string;                          // "c1"…（c1 / c2 = 新歌默认的月读完整 / 元音版）

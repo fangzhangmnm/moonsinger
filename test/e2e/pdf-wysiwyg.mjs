@@ -32,7 +32,7 @@ await p.evaluate(() => { const m = window.__moonsinger; m.partView(m.state().son
 const one = await p.evaluate(async () => { const m = window.__moonsinger; m.setScope("segment"); await new Promise((ok) => setTimeout(ok, 150)); const pv = m.layout().pages.length, x = await m.makePdf({ paper: m.state().at.paper }); m.setScope("all"); return { preview: pv, pdf: x.pages, name: x.name }; });
 check(one.preview === one.pdf && /-A-\d{8}-\d{4}\.pdf$/.test(one.name), "只印这一段 = 「本段」分页预览的页数；文件名带曲段名和导出时间（名-A-YYYYMMDD-HHMM）", JSON.stringify(one));
 const sh = await p.evaluate(async () => { const m = window.__moonsinger, view = await m.makePdf(), x = await m.makePdf({ onlyShown: true }); return { view: view.pages, shown: x.pages, name: x.name }; });
-check(sh.shown <= sh.view && /Vocals/.test(sh.name), "只排看得见的声部：不留空位（页数不比照预览多）、文件名带声部名", JSON.stringify(sh));
+check(sh.shown <= sh.view && /人声|Voice/.test(sh.name), "只排看得见的声部：不留空位（页数不比照预览多）、文件名带声部名（显示的叫法，12-4）", JSON.stringify(sh));
 // 面板：多张纸 = 有「整首 / 这一段」；有隐藏的声部 = 有「照分页预览 / 只排看得见的」
 await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="export"]'); await p.waitForTimeout(200); await p.click('.offer [data-v="pdf"]'); await p.waitForTimeout(200);
 check(!!(await p.$('.offer [data-v="paper:one"]')) && !!(await p.$('.offer [data-v="parts:shown"]')), "PDF 面板：「这一段」「只排看得见的」都在");

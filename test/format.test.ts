@@ -1,5 +1,6 @@
 // 存档格式（.mxl）测试：自家文件原样复原、mimetype 规矩、不认识的东西原样写回、新版本拒开、别家文件尽量读且不自动选角。
 // created 2026-10-07 by Claude Opus 5.5（数据契约草稿 ai-docs/20261007-data-contract-draft.md；无地逃生口）
+import { DEFAULT_CONCEPT } from "../src/gm/default-concept.gen.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { TPQ, type Song, type Token, firstTrack, songOf } from "../src/score/song.ts";
 import { MELISMA_MARK } from "../src/score/lyrics.ts";
@@ -58,7 +59,7 @@ describe("存档 .mxl", () => {
   it("主乐谱是标准 MusicXML：声部名 = 角色、乐器 = 上场的候选（GM 55 + 变体）、歌词每个音节写明语言", () => {
     const xml = strFromU8(unzipSync(save(bigSong()))["score.musicxml"]);
     assert(xml.includes("<score-partwise version=\"4.0\">"), "partwise 4.0");
-    assert(xml.includes("<part-name>Vocals</part-name>") && xml.includes("<instrument-sound>voice.vocals</instrument-sound>"), "声部名 = 角色名、乐器语义 = 官方 id");
+    assert(xml.includes(`<part-name>${DEFAULT_CONCEPT.score!.en}</part-name>`) && xml.includes("<instrument-sound>voice.vocals</instrument-sound>"), "声部名 = 显示的叫法（没起名字 = 乐器谱上的英文叫法，12-4）、乐器语义 = 官方 id");
     assert(xml.includes("<instrument-name>小月相（元音）</instrument-name>") && xml.includes("<midi-program>55</midi-program>") && xml.includes("<virtual-name>tsukuyomi-vowels</virtual-name>"), "乐器");
     assert(xml.includes(`<text xml:lang="ja">う</text>`) && xml.includes(`<text xml:lang="en">hap</text>`) && xml.includes(`<text xml:lang="zh">爱</text>`) && xml.includes(`<text xml:lang="zh">你</text>`), "xml:lang（你 跟着前面改过的 爱 走）");
     assert(xml.includes("<syllabic>begin</syllabic><text xml:lang=\"en\">hap</text>") && xml.includes("<syllabic>end</syllabic><text xml:lang=\"en\">py</text>"), "syllabic");

@@ -35,14 +35,14 @@ check(await p.$eval(".finder", (e) => !e.hidden), "选了 = 目录还开着（v0
 await p.click('.finder [data-v="back"]'); await p.waitForTimeout(300);
 check(await p.$eval(".inst-page", (e) => !e.hidden), "关目录 = 回到乐器页（从乐器页开的）");
 const rn = await p.$eval(".inst-page .ip-what", (e) => e.textContent);
-check(rn.includes("「Voice」"), "谱上写 Voice（原来是整个百科名 Human voice）", rn);
+check(rn.includes("「人声」"), "谱上写乐器的叫法（中文界面 = 人声；不是整个百科名 Human voice）", rn);
 const det = await p.$eval(".role-detail", (e) => e.textContent);
 check(det.includes("人声 · Human voice") && /第二行起写 \S+/.test(det), "乐器页写出详细说明和简写", det);
 await p.keyboard.press("Escape"); await p.waitForTimeout(300);
 const onScore = await p.$$eval("#score text.part-name", (ts) => ts.map((t) => t.textContent));
 check(onScore.includes("人声"), "谱上声部名 = 目录里的中文名「人声」（中文界面；谱面分家 5½）", JSON.stringify(onScore));
-const stored = await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), ex = m.extras(); return s.song.parts.map((x) => ex.lounge[x.role]?.name); });
-check(stored.includes("Voice"), "歌里存的角色名照旧是 Voice（只是显示换了）", JSON.stringify(stored));
+const stored = await p.evaluate(() => { const m = window.__moonsinger, s = m.state(), ex = m.extras(); return s.song.parts.map((x) => ex.lounge[x.role]?.name ?? null); });
+check(stored.every((x) => x === null), "歌里没存名字 = 没起（12-4：名字和乐器分开，显示的是乐器的叫法）", JSON.stringify(stored));
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nfinder-names: ${pass} passed, ${fail} failed`);

@@ -3,7 +3,7 @@
 //   审计风险 2「主程序里一张一张手糊的面板」）。宿主给一组访问器 + 动作，页面自己管画和点击；行为和搬之前一样。各段的来历见段内注释（原注释照搬）。
 import { dropdownHtml, mountDropdowns } from "../../ui/dropdown.ts";
 import { _t, lang } from "../../i18n/index.ts";
-import { roleName, roleSound, activeId, gmCandidates, activeCandidateName, partLabels, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withSwellDb, withCalibration, GAP_MAX_SEC, SWELL_DB_MIN, SWELL_DB_MAX, type Extras, type Engine } from "../../format/project.ts";
+import { roleSound, activeId, gmCandidates, activeCandidateName, activeCalibrationDb, activeTranspose, activePerfSpec, activeGm, withGapSec, withRollHz, withSwellDb, withCalibration, GAP_MAX_SEC, SWELL_DB_MIN, SWELL_DB_MAX, type Extras, type Engine } from "../../format/project.ts";
 import { UNWRITTEN_CALIBRATION_DB, ROLL_HZ_MIN, ROLL_HZ_MAX, MARK_DEFAULTS } from "../../format/performance.ts";
 const MARK_DEFAULTS_SWELL = MARK_DEFAULTS.swellDb;
 import { performerOf } from "../../performers/index.ts";
@@ -22,6 +22,8 @@ export interface InstSettingsHost {
   needCatalog(): void;                 // 目录还没载：载上，载好重画
   padHidden(): boolean;                // 试听键盘收着没（顶条「键盘」亮不亮）
   abbr(k: number): string;             // 第 k 个声部谱前的简写
+  labels(): string[];                  // 每个声部显示成什么（唯一出口 src/format/part-show.ts，12-4）
+  roleLabel(role: string): string;     // 某个角色显示成什么（同上）
   sessionHas(sha256: string): boolean; // 这次打开里找到过这个子集（弱引用的状态行）
   bankBytes(sha256: string): Uint8Array | undefined; // 这次打开里手边的子集字节（乐器页读库写的力度深度，9-4）
   // 动作
@@ -149,16 +151,16 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
   }
   /** 插件自报参数行要的上下文（ADR-0004 §2.5）：休息室 / 角色 / 哼的字 / 音乐目录（没载 = null）/ 排版小工具。 */
   function inspectorCtx(role: string): InspectorCtx {
-    return { extras: h.extras(), role, hum: h.song().hum, catalog: h.catalog(), esc, chip, dynTable: (layers, L) => dynTable(activePerfSpec(h.extras(), role), layers, L), bankBytes: (sha) => h.bankBytes(sha), velCurve: (sha, bank, program) => curveOf(sha, bank, program) };
+    return { extras: h.extras(), role, hum: h.song().hum, roleLabel: h.roleLabel(role), catalog: h.catalog(), esc, chip, dynTable: (layers, L) => dynTable(activePerfSpec(h.extras(), role), layers, L), bankBytes: (sha) => h.bankBytes(sha), velCurve: (sha, bank, program) => curveOf(sha, bank, program) };
   }
   function draw(): void {
     if (!h.shown()) return;
-    const eng = h.engine(), hum = h.song().hum, role = h.role(), rn = roleName(h.extras(), role), rs = roleSound(h.extras(), role), aid = activeId(h.extras(), role);
+    const eng = h.engine(), hum = h.song().hum, role = h.role(), rn = h.roleLabel(role), rs = roleSound(h.extras(), role), aid = activeId(h.extras(), role);
     const gms = new Map(gmCandidates(h.extras(), role).map((g) => [g.id, g])), active = gms.get(aid), who = activeCandidateName(h.extras(), role) ?? _t("（没人上场）");
     const status = !active ? "" : active.bytes ? `<div class="cand-status">${_t("声音嵌在歌里（{n}）{library}", { n: sizeText(active.bytes.length), library: active.origin.library ? _t("，来自家族音源库的 {name}", { name: esc(active.origin.name) }) : _t("，来自 {name}", { name: esc(active.origin.name) }) })}</div>`
       : active.path ? `<div class="cand-status">${_t("声音没随这首歌带来，所以没人上场——换一个「谁来演」")}</div>`
       : ((found) => `<div class="cand-status">${_t("弱引用：歌里不带声音，用时从「{name}」找（{found}）", { name: esc(active.origin.name), found: found ? _t("本次已找到") : _t("家族音源库 / 设备缓存 / 你的文件") })}${found ? "" : `<button class="btn" data-v="find:${esc(active.id)}">${_t("找文件…")}</button>`}</div>`)(h.sessionHas(active.subsetSha256));
-    const labels = partLabels(h.song(), h.extras()), onPaper = new Set(Object.keys(h.song().papers.find((p) => p.id === h.at().paper)?.tracks ?? {}));
+    const labels = h.labels(), onPaper = new Set(Object.keys(h.song().papers.find((p) => p.id === h.at().paper)?.tracks ?? {}));
     const parts = h.song().parts.map((p, k) => ({ p, label: labels[k] })).filter((x) => onPaper.has(x.p.id));
     const cal = activeCalibrationDb(h.extras(), role), tr = activeTranspose(h.extras(), role), calDef = calDefault(role);
     const row = (k: string, v: string, note = "") => `<span class="ip-k">${k}</span><div class="ip-v"><div class="ip-ctl">${v}</div>${note ? `<div class="ip-note">${note}</div>` : ""}</div>`;
@@ -217,7 +219,7 @@ export function createInstSettings(el: HTMLElement, h: InstSettingsHost): { draw
 
   el.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
-    const role = h.role(), rn = roleName(h.extras(), role), hum = h.song().hum;
+    const role = h.role(), rn = h.roleLabel(role), hum = h.song().hum;
     if (v === "back") { h.back(); return; }
     if (v === "pad") { h.togglePad(); draw(); return; }
     if (v === "finder") { h.openFinder(); return; }

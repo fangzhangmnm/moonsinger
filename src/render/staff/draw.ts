@@ -2,7 +2,7 @@
 //   演奏法、连音线、连线、发夹、八度线、连音括号、反复房子），挂件交给框架贴，光标落点。
 //   created 2026-11-11 by Claude Opus 5.5（谱面分家施工单 1b-6a：代码原样从 engrave.ts 搬出；框架交来的东西都在 StaffDrawCtx 里）。
 import { TEMPO_EM, type TextRole } from "../text/index.ts";
-import { _tIn } from "../../i18n/index.ts";
+import { _tIn, type Lang } from "../../i18n/index.ts";
 import { swellOf, type ClefName, type Song, type PaperSeg, type NoteTok, type Staff, TPQ, WHOLE, headLen } from "../../score/song.ts";
 import { dynOverridden } from "../../score/perform.ts";
 import { navWhy } from "../../score/repeats.ts";
@@ -33,6 +33,8 @@ export interface StaffDrawCtx {
   song: Song; paper: PaperSeg; o: EngraveOpts;
   /** 这首歌怎么看（src/score/song-view.ts；框架读一次传进来：按 C 调看、和弦标级数、每条轨的和弦选项）。 */
   look: SongView;
+  /** 印出来的字用哪种语言（12-4；框架按歌里「谱上的字」算好：跟着界面 = o.locale）。「吸 / 深吸」用它，不印的提示（「无调」）照旧用 o.locale。 */
+  textLang: Lang;
   /** 尺子：P = 谱（sp → px）；tx / TR / RS / mw = 字（文字模块的样式表）。 */
   P: (v: number) => number; tx: (role: TextRole) => number; TR: (role: TextRole, v: number) => number; RS: (role: TextRole) => number; mw: (role: TextRole, str: string) => number; sp: number; ts: number;
   /** 输出：图元和各张点击表，都在每一行自己的局部坐标里画（第五线 = 0），框架定了行距再整行挪。
@@ -67,7 +69,7 @@ import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricParts: LyricPart[] } {
   const lyricParts: LyricPart[] = [];
   const own = mine ? new Set(mine) : null, skip = (r: number) => own !== null && !own.has(r);
-  const { song, look, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, harmony, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
+  const { song, look, textLang, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, harmony, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
   const yOf = (r: number, d: number) => yAt(staffTop(r), d, P(0.5));   // 第 r 行第 d 级的 y（五线谱自己的纵向，geometry.ts）
     /** 第 s 行开头的谱号（这一行第一个东西那里生效的）。 */
     const clefAtSys = (q: StaffTrack, s: number): ClefName => {
@@ -398,7 +400,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
       }
       if (c.breath) put(row, { tok: tokOf(c), t: "glyph", x: nhX(c) + nhW(c) + P(0.55), y: yOf(row, TOP_LINE + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       // 出声的换气：逗号后面一个小字「吸」/「深吸」（出版谱的做法 = 逗号 + 文字；没有通用的单个记号）；做不到的人画灰
-      if (c.breath && c.inhale) put(row, { tok: tokOf(c), t: "text", x: nhX(c) + nhW(c) + P(1.35), y: yOf(row, TOP_LINE + 1) + P(0.45), s: c.inhale === "big" ? _tIn(o.locale, "深吸##记号") : _tIn(o.locale, "吸##记号"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx("breath-label"), anchor: "start" });
+      if (c.breath && c.inhale) put(row, { tok: tokOf(c), t: "text", x: nhX(c) + nhW(c) + P(1.35), y: yOf(row, TOP_LINE + 1) + P(0.45), s: c.inhale === "big" ? _tIn(textLang, "深吸##记号") : _tIn(textLang, "吸##记号"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx("breath-label"), anchor: "start" });
     }
     // 8. 连音线：同一个 token 拆开的几段之间 + 数据里的 tie（连着前一个音）。跨行 = 两半：这一行从音到行尾、下一行从行头到音
     //   （2026-10-08 Opus 5.5，user「跨行的连音符显示不正常」——以前跨行的整条不画）

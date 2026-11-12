@@ -2,15 +2,21 @@
 // 不守「vendor = 源仓」：和图标库一样，vendor 是拷来的快照，源仓改了这边想要时跑 node scripts/gen-instruments.mjs 取货（user「和svg一样是拷贝snapshot过来而不是跨项目引用，以后我改那边就是这边取货就行」）。
 import { describe, it, eq, assert } from "./runner.mjs";
 const fs = (await import("node:fs" as string)) as { readFileSync(p: string | URL): Uint8Array; existsSync(p: string): boolean };
-const g = (await import(new URL("../scripts/gen-instruments.mjs", import.meta.url).href)) as { render(): string | null; renderPerc(): string | null };
+const g = (await import(new URL("../scripts/gen-instruments.mjs", import.meta.url).href)) as { render(): string | null; renderPerc(): string | null; renderDefaultConcept(): string | null };
 import { INSTRUMENT_FILES } from "../src/gm/instruments.gen.ts";
 import { loadCatalogFromJson, providersOf, gmKey, groupConcepts, jointOf, roleNameOf, SORT_LABEL, type Catalog, type SortMode } from "../src/gm/catalog.ts";
-import { partAbbr } from "../src/ui/part-colors.ts";
+import { partShow } from "../src/format/part-show.ts";
+import { initState } from "../src/score/song.ts";
+import { loungeRoleNames } from "../src/format/migrate/index.ts";
 
 describe("挑乐器数据", () => {
   it("instruments.gen.ts 是最新的（不是就跑 node scripts/gen-instruments.mjs）", () => {
     const out = g.render(); if (out === null) return;
     eq(fs.readFileSync(new URL("../src/gm/instruments.gen.ts", import.meta.url)).toString() === out, true);
+  });
+  it("default-concept.gen.ts（新歌默认那一位的概念 = 目录里的人声，12-4）是最新的", () => {
+    const out = g.renderDefaultConcept(); if (out === null) return;
+    eq(fs.readFileSync(new URL("../src/gm/default-concept.gen.ts", import.meta.url)).toString() === out, true);
   });
   it("percussion.gen.ts（鼓谱表，v13 起）是最新的", () => {
     const out = g.renderPerc(); if (out === null) return;
@@ -120,10 +126,10 @@ describe("谱上名 / 详细说明 / 简写", () => {
   it("老目录没有谱上名 = 百科英文名去括号、首字母大写", () => {
     eq(roleNameOf({ ...by("北梆子"), scoreName: null }), "Bei bangzi");
   });
-  it("简写：谱上名 = Flute 也认目录简写 Fl.；自己改了名字 = 自己缩", () => {
-    const c = by("长笛"), names = [c.scoreName!.en, c.names.en, c.names.zh];
-    eq(partAbbr("Flute", { conceptNames: names, conceptAbbr: c.abbr!.en }), "Fl.");
-    eq(partAbbr("Western concert flute", { conceptNames: names, conceptAbbr: c.abbr!.en }), "Fl.", "老歌按值存着的百科名照样认");
-    assert(partAbbr("My Flute", { conceptNames: names, conceptAbbr: c.abbr!.en }) !== "Fl.", "自己起的名字不套目录简写");
+  it("简写（12-4 起按值存在歌里）：老歌里叫谱上名 Flute / 百科名的长笛，进门判成没起、补上目录简写 Fl.；自己起的名字 = 自己缩", () => {
+    const c = by("长笛"), concept = { ids: { wikidata: c.ids.wikidata, local: c.ids.local, musicxml: c.ids.musicxml, gm: c.ids.gm, hs: c.ids.hs }, name: { zh: c.names.zh, en: c.names.en } };
+    const abbrOf = (name: string) => { const r = loungeRoleNames({ version: 3, id: "r1", sound: "wind.flutes.flute", active: "c1", candidates: [], name, concept }, 0); return partShow({ ...initState().song, parts: [{ id: "P1", role: "r1", mic: "m1" }] }, { r1: r }, "en")[0]!.abbr; };
+    eq(abbrOf("Flute"), "Fl."); eq(abbrOf("Western concert flute"), "Fl.", "老歌按值存着的百科名照样认");
+    assert(abbrOf("My Flute") !== "Fl.", "自己起的名字不套目录简写");
   });
 });

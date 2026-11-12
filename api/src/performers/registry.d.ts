@@ -94,6 +94,8 @@ export interface InspectorRow {
 }
 export interface InspectorCtx extends RoleCtx {
     hum: Hum;
+    /** 这个声部显示成什么（宿主从唯一出口 src/format/part-show.ts 拿，12-4；插件不自己拼声部名）。撤销的话里用。 */
+    roleLabel: string;
     /** 音乐目录（载好了才有；没载 = 行里少几句说明，宿主载好会重画）。 */
     catalog: Catalog | null;
     esc(s: string): string;

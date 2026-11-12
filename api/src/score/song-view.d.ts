@@ -1,4 +1,5 @@
 import type { EditorState, Song } from "./song.ts";
+import type { Lang } from "../i18n/strings.ts";
 import { type Density } from "./paper.ts";
 /** 谱种：五线谱 / 简谱（第四刀）/ 字母谱（7-B：简谱的变体，数字换成实际音名的字母，同一种数字行）。以后 "figures"（设计稿第 7 节）。封闭的联合，不走注册表（ADR-0004：显示 = 库）。 */
 export type NotationId = "staff" | "jianpu" | "letters";
@@ -20,6 +21,12 @@ export declare const UNWRITTEN: Readonly<{
     middleC: number;
     expressions: boolean;
 }>;
+/** 谱上的字用哪种语言（12-4）：跟着界面 / 界面语言里的一种。歌里存的不认识的值（更新的版本写的）读成「跟着界面」，原样留在歌里。 */
+export type TextLang = "ui" | Lang;
+/** 界面上能选的（页面设置「版面」页、导出乐谱的面板）。界面多一种语言 = 这里多一项。 */
+export declare const TEXT_LANGS: readonly TextLang[];
+/** 印出来的字用哪种语言：歌里写了一种 = 那一种；跟着界面 = 交进来的界面语言（排版明着吃语言，不读这一页的当前语言）。 */
+export declare function textLangIn(look: Pick<SongView, "textLang">, ui: Lang): Lang;
 /** 歌词怎么排：按节奏（音的位置只看时值，歌词让路）/ 按歌词（长字把音推开）。 */
 export type LyricFit = "rhythm" | "lyrics";
 /** 这首歌怎么看。排版、PDF、键盘上的大字、鬼音符、谱面的拖音高都读它，不各读各的歌字段。 */
@@ -43,6 +50,8 @@ export interface SongView {
     readonly middleC: number;
     /** 演奏法和表情显示不显示（7-G；score minor 8）。false = 键盘「演奏法」「力度」两页上的东西都不交给排版（不画、不占地方；src/render/expressions.ts），播放照写的来。 */
     readonly expressions: boolean;
+    /** 谱上的字用哪种语言（12-4；score minor 10）。换成具体的语言用 textLangIn。 */
+    readonly textLang: TextLang;
 }
 /** 这种谱是不是首调（「1」= 这个调的主音）：首调的谱上「按 C 调看」没有意义。 */
 export declare const MOVABLE_DO: Readonly<Record<NotationId, boolean>>;
@@ -58,6 +67,8 @@ export declare function setNotation(st: EditorState, id: NotationId): EditorStat
 export declare function setMiddleC(st: EditorState, n: number): EditorState;
 /** 演奏法和表情显示 / 不显示（7-G）。显示 = 不写。 */
 export declare function setExpressions(st: EditorState, on: boolean): EditorState;
+/** 谱上的字用哪种语言（12-4）。必填的键：跟着界面也明着写 "ui"（存文件时不写进 score.json，进门时补回来）。 */
+export declare function setTextLang(st: EditorState, v: TextLang): EditorState;
 /** 和弦标级数开 / 关。开 = 不写。 */
 export declare function setChordTags(st: EditorState, on: boolean): EditorState;
 /** 按 C 调看开 / 关。关 = 不写。 */
@@ -65,5 +76,5 @@ export declare function setViewInC(st: EditorState, on: boolean): EditorState;
 /** 这条轨的和弦选项。auto = 不写。 */
 export declare function setPartChords(st: EditorState, partId: string, mode: ChordsMode): EditorState;
 /** 这四样在歌里住在哪几个键（歌的顶层三个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。 */
-export declare const SONG_VIEW_KEYS: readonly ["notation", "chordTags", "viewInC", "middleC", "expressions"];
+export declare const SONG_VIEW_KEYS: readonly ["notation", "chordTags", "viewInC", "middleC", "expressions", "textLang"];
 export declare const PART_VIEW_KEYS: readonly ["chords"];

@@ -33,7 +33,7 @@ check(!!(await p.$('.finder-bar .finder-file:not([hidden])')) && !(await p.$('.f
 // 点小月相那格 = 换上、目录不关
 await p.click(".finder-pins .fp-tile >> nth=0"); await p.waitForTimeout(400);
 check(await p.$eval(".finder", (e) => !e.hidden), "点一格 = 换上，目录还开着");
-check(/Voice|Vocals/.test(await p.$eval(".finder-title", (e) => e.textContent)), "换上了人声（顶条名字跟着变）", await p.$eval(".finder-title", (e) => e.textContent));
+check(/Voice|Vocals|人声/.test(await p.$eval(".finder-title", (e) => e.textContent)), "换上了人声（顶条名字跟着变；12-4 起写乐器在谱上的字那种语言里的叫法）", await p.$eval(".finder-title", (e) => e.textContent));
 // 右键最后一格 → 拿掉
 await p.click(".finder-pins .fp-tile >> nth=6", { button: "right" }); await p.waitForTimeout(150);
 check(!!(await p.$('.finder-pinmenu [data-act="replace"]')) && !!(await p.$('.finder-pinmenu [data-act="unpin"]')), "右键一格 = 小菜单：换成… / 拿掉");

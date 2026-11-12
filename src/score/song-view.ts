@@ -10,6 +10,7 @@
 //   「新文档默认是什么」是另一回事：那是 app 建文档时明着写进歌里的值，以后可以改；这一刀新建的歌四样都不写。所以读写两头都不许出现「没写就取 app 现在的默认」。
 //   只写不是 UNWRITTEN 的值（照 lyricFit / barNumbers 的习惯）；读到不认识的值（更新的版本写的）原样留在歌里、写回去，画的时候按 UNWRITTEN。
 import type { EditorState, Song, PartDef } from "./song.ts";
+import type { Lang } from "../i18n/strings.ts";
 import { type Density, densityOf, paperOf, DEFAULT_PAPER } from "./paper.ts";
 
 /** 谱种：五线谱 / 简谱（第四刀）/ 字母谱（7-B：简谱的变体，数字换成实际音名的字母，同一种数字行）。以后 "figures"（设计稿第 7 节）。封闭的联合，不走注册表（ADR-0004：显示 = 库）。 */
@@ -24,6 +25,13 @@ export const CHORDS_MODES: readonly ChordsMode[] = ["stacked", "auto", "fold"];
  *  旧歌打开也是按节奏）；小节号没写 = 每行开头印（v0.9.42「默认是每行开头有」）。 */
 export const UNWRITTEN: Readonly<{ notation: NotationId; chordTags: boolean; viewInC: boolean; chords: ChordsMode; density: Density; lyricFit: LyricFit; barNumbers: boolean; middleC: number; expressions: boolean }> =
   Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4, expressions: true });   // middleC：字母谱里中央 C 叫 C4（7-B，user「我们的中央 C 叫 C4 老规矩」）
+/** 谱上的字用哪种语言（12-4）：跟着界面 / 界面语言里的一种。歌里存的不认识的值（更新的版本写的）读成「跟着界面」，原样留在歌里。 */
+export type TextLang = "ui" | Lang;
+/** 界面上能选的（页面设置「版面」页、导出乐谱的面板）。界面多一种语言 = 这里多一项。 */
+export const TEXT_LANGS: readonly TextLang[] = ["ui", "zh", "en"];
+const isTextLang = (v: unknown): v is TextLang => (TEXT_LANGS as readonly unknown[]).includes(v);
+/** 印出来的字用哪种语言：歌里写了一种 = 那一种；跟着界面 = 交进来的界面语言（排版明着吃语言，不读这一页的当前语言）。 */
+export function textLangIn(look: Pick<SongView, "textLang">, ui: Lang): Lang { return look.textLang === "ui" ? ui : look.textLang; }
 /** 歌词怎么排：按节奏（音的位置只看时值，歌词让路）/ 按歌词（长字把音推开）。 */
 export type LyricFit = "rhythm" | "lyrics";
 
@@ -48,6 +56,8 @@ export interface SongView {
   readonly middleC: number;
   /** 演奏法和表情显示不显示（7-G；score minor 8）。false = 键盘「演奏法」「力度」两页上的东西都不交给排版（不画、不占地方；src/render/expressions.ts），播放照写的来。 */
   readonly expressions: boolean;
+  /** 谱上的字用哪种语言（12-4；score minor 10）。换成具体的语言用 textLangIn。 */
+  readonly textLang: TextLang;
 }
 
 const isNotation = (v: unknown): v is NotationId => (NOTATIONS as readonly unknown[]).includes(v);
@@ -77,6 +87,7 @@ export function songViewOf(song: Song): SongView {
     barNumbers: song.barNumbers === "off" ? false : UNWRITTEN.barNumbers,
     middleC: isMiddleC(song.middleC) ? song.middleC : UNWRITTEN.middleC,
     expressions: song.expressions === false ? false : UNWRITTEN.expressions,
+    textLang: isTextLang(song.textLang) ? song.textLang : "ui",   // 歌里永远有值（进门时补的）；不认识的 = 更新的版本写的，画的时候跟着界面
   };
 }
 
@@ -100,6 +111,11 @@ export function setExpressions(st: EditorState, on: boolean): EditorState {
   const song = { ...st.song }; if (want === undefined) delete song.expressions; else song.expressions = want;
   return { ...st, song };
 }
+/** 谱上的字用哪种语言（12-4）。必填的键：跟着界面也明着写 "ui"（存文件时不写进 score.json，进门时补回来）。 */
+export function setTextLang(st: EditorState, v: TextLang): EditorState {
+  if (!isTextLang(v) || st.song.textLang === v) return st;
+  return { ...st, song: { ...st.song, textLang: v } };
+}
 /** 和弦标级数开 / 关。开 = 不写。 */
 export function setChordTags(st: EditorState, on: boolean): EditorState {
   const want = on === UNWRITTEN.chordTags ? undefined : false; if (st.song.chordTags === want) return st;
@@ -121,5 +137,5 @@ export function setPartChords(st: EditorState, partId: string, mode: ChordsMode)
 }
 
 /** 这四样在歌里住在哪几个键（歌的顶层三个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。 */
-export const SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC", "middleC", "expressions"] as const;   // middleC = 字母谱里中央 C 叫 C 几（7-B）；expressions = 演奏法和表情显示不显示（7-G）
+export const SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC", "middleC", "expressions", "textLang"] as const;   // textLang = 谱上的字用哪种语言（12-4）   // middleC = 字母谱里中央 C 叫 C 几（7-B）；expressions = 演奏法和表情显示不显示（7-G）
 export const PART_VIEW_KEYS = ["chords"] as const;

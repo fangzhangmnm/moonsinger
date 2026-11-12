@@ -80,6 +80,7 @@
       ],
       "patch": "number",
       "spacing": "string",
+      "textLang": "string",
       "version": "number",
       "view": {
         "finder": {
@@ -158,6 +159,9 @@
           "calibrationDb": "number",
           "castAs": {
             "concept": {
+              "abbr": {
+                "en": "string"
+              },
               "ids": {
                 "gm": [
                   {
@@ -173,6 +177,10 @@
               "name": {
                 "en": "string",
                 "ja": "string",
+                "zh": "string"
+              },
+              "score": {
+                "en": "string",
                 "zh": "string"
               }
             },
@@ -286,6 +294,9 @@
         }
       ],
       "concept": {
+        "abbr": {
+          "en": "string"
+        },
         "ids": {
           "gm": [
             {
@@ -293,14 +304,18 @@
               "program": "number"
             }
           ],
-          "hs": "string",
-          "local": "string",
+          "hs": "null|string",
+          "local": "null|string",
           "musicxml": "string",
           "wikidata": "string"
         },
         "name": {
           "en": "string",
           "ja": "string",
+          "zh": "string"
+        },
+        "score": {
+          "en": "string",
           "zh": "string"
         }
       },

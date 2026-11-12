@@ -18,18 +18,4 @@ export declare const dispWidth: (s: string) => number;
 export declare const ABBR_W = 7;
 /** 按定宽裁（号也算在宽度里）：① 放得下 = 原样 ② 去掉句点后的空格（Bar. Sax. → Bar.Sax.）③ 还宽就截——拉丁字截到 W − 1 再补「.」，全角字截到放得下为止（不补点）。 */
 export declare function fitAbbr(base: string, num?: string, W?: number): string;
-/** 谱前的简写：名字就是乐器自己的名字 = 目录给的出版谱简写（仓鼠 v12）；人声预设 = 老规矩；别的（自己起的名字）= 名字缩短。名字后面的号（Vocals 2）跟着。最后都按定宽裁（fitAbbr）。
- *  名字比较不分大小写（v0.9.41 修：谱上「Piano」、目录英文名照 Wikidata 惯例小写「piano」，原来逐字比 = 118 个目录简写一个都没用上；仓鼠查出来的）。 */
-export declare function partAbbr(label: string, o: {
-    conceptNames?: readonly string[];
-    conceptAbbr?: string;
-    voice?: boolean;
-    local?: string;
-}): string;
-/** 谱上显示的声部名（谱面分家 5½，愿望单 W-71，统筹细则：施工单第三节「5½」）：名字就是目录里那件乐器自己的名字（去掉后面的号、不分大小写比）= 换成目录里界面语言那种名字，号接回去；
- *  对不上（自己起的名字、人声预设这种目录里没有那种语言的名字）= null（照原样显示）。只管显示：歌里按值存的名字、MusicXML 里的名字不动。 */
-export declare function localPartName(label: string, o: {
-    conceptNames?: readonly string[];
-    local?: string;
-}): string | null;
 export {};

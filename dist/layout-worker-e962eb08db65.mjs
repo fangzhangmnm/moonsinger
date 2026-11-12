@@ -826,13 +826,17 @@ var S = {
   "\u6309\u6B4C\u8BCD": { en: "By lyrics" },
   "\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070": { en: "Note positions depend only on duration, so notes stay put while you type; lyrics make room: borrow space nearby \u2192 shrink the whole line a little \u2192 grey out if it still doesn't fit" },
   "\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09": { en: "Long words push notes apart (the traditional engraving rule)" },
+  "\u8C31\u4E0A\u7684\u5B57": { en: "Text on the score" },
   "\u9875\u9762\u8BBE\u7F6E": { en: "Page settings" },
   "\u4E2D\u592E C \u53EB C{n}": { en: "Middle C = C{n}" },
   "\u663E\u793A\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Show articulations & dynamics" },
   "\u4E0D\u663E\u793A\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Hide articulations & dynamics" },
+  "\u8C31\u4E0A\u7684\u5B57\uFF1A{l}": { en: "Text on the score: {l}" },
   "\u5C0F\u6708\u76F8\u5FF5\u51FA\u6765 {n} \u4E2A\u97F3\u8282\u3001\u8C31\u4E0A {n2} \u4E2A\uFF0C\u5BF9\u4E0D\u4E0A\uFF08\u5531\u7684\u65F6\u5019\u4F1A\u62A5\u9519\uFF09\uFF1A": { en: "Tsukuyomi-chan says {n} syllables but the score has {n2}, so they don't match (singing will report an error):" },
   "\u5C0F\u6708\u76F8\u5FF5\u6210\uFF08\u97F3\u7D20 + \u58F0\u8C03\uFF09\uFF1A": { en: "Tsukuyomi-chan reads it as (phonemes + tones):" },
   "\u5C0F\u6708\u76F8\u5FF5\u6210\uFF1A": { en: "Tsukuyomi-chan reads it as:" },
+  "\u8DDF\u7740\u754C\u9762\uFF08{lang}\uFF09": { en: "Follow the interface ({lang})" },
+  "\u8F6F\u4EF6\u81EA\u5DF1\u5199\u5728\u8C31\u4E0A\u7684\u5B57\u7528\u54EA\u79CD\u8BED\u8A00\uFF1A\u6CA1\u8D77\u540D\u5B57\u7684\u58F0\u90E8\u5199\u4E50\u5668\u7684\u53EB\u6CD5\u3001\u7B80\u8C31\u9F13\u7684\u56FE\u4F8B\u3001\u300C\u7F16\u6392\u300D\u3001\u51FA\u58F0\u7684\u6362\u6C14\u300C\u5438 / \u6DF1\u5438\u300D\u3002\u6B4C\u8BCD\u3001\u6B4C\u540D\u3001\u4F5C\u8005\u680F\u3001\u4F60\u8D77\u7684\u58F0\u90E8\u540D\u7167\u5199\u7684\u5370\uFF0C\u4E0D\u7FFB\u3002\u8DDF\u7740\u754C\u9762 = \u8FD9\u53F0\u8BBE\u5907\u662F\u4EC0\u4E48\u8BED\u8A00\u5C31\u5370\u4EC0\u4E48\u8BED\u8A00\u3002": { en: "Which language the app's own words on the score use: the instrument name of a part you haven't named, the drum legend in numbered notation, \u201CArrangement\u201D, and the breath words \u201Cin / deep in\u201D. Lyrics, the title, the credits and part names you typed are printed as written, never translated. Follow the interface = print in whatever language this device's interface is in." },
   "\u6253\u51FB\u4E50\u7684\u884C\u6CA1\u6709\u8C03\uFF1A\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\u9F13\uFF0C\u548C\u8C03\u53F7\u65E0\u5173\uFF08\u8C03\u53F7\u7559\u5728\u8C31\u91CC\uFF0C\u4E0D\u8D77\u4F5C\u7528\uFF09": { en: "Percussion rows have no key: the written pitch says which drum is hit, not a pitch (the key signature stays in the score but does nothing)" },
   "\u9759\u97F3": { en: "Muted" },
   "\u72EC\u594F": { en: "Solo" },
@@ -866,7 +870,7 @@ var S = {
   "\u53EA\u52A0\u5728\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09\u3002": { en: "Only added to this section (others unchanged)." },
   "\u4ECE\u300C{p}\u300D\u5220\u6389\uFF08\u5B83\u5728\u8FD9\u4E00\u6BB5\u5199\u7684\u4E00\u8D77\u5220\uFF0C\u5148\u95EE\uFF09": { en: "Delete from \u201C{p}\u201D (what it wrote in that section is deleted; asks first)" },
   "\u653E\u8FDB\u300C{p}\u300D\uFF08\u4E00\u884C\u7A7A\u7684\uFF09": { en: "Put into \u201C{p}\u201D (an empty line)" },
-  "\u8C31\u4E0A\u5199\u7684\u540D\u5B57\uFF08\u70B9\u4E86\u5C31\u80FD\u6539\uFF09": { en: "The name written on the score (tap to edit)" },
+  "\u8D77\u4E2A\u540D\u5B57\uFF08\u8C31\u4E0A\u539F\u6837\u5199\u3001\u4E0D\u7FFB\u8BD1\uFF09\uFF1B\u7A7A\u7740 = \u5199\u8FD9\u4EF6\u4E50\u5668\u7684\u53EB\u6CD5": { en: "Give it a name (printed as typed, never translated); empty = the instrument's name" },
   "\u6362\u4E50\u5668\uFF08\u8FDB\u4E50\u5668\u76EE\u5F55\uFF09": { en: "Change instrument (opens the instrument catalog)" },
   "\u6CA1\u4EBA\u4E0A\u573A": { en: "Nobody on stage" },
   "\u8FD9\u4E00\u884C\u7684\u66F4\u591A\uFF1A\u4E0A\u4E0B\u632A\u3001\u52A0\u3001\u4EA4\u7ED9\u3001\u4E50\u5668\u8BBE\u7F6E\u3001\u5220\u9664": { en: "More for this row: move, add, hand over, instrument settings, delete" },
@@ -890,6 +894,7 @@ var S = {
   "\u65B0\u58F0\u90E8\u53EA\u52A0\u5728\u5149\u6807\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09\uFF0C\u52A0\u5B8C\u6311\u4E50\u5668": { en: "The new part goes only into the cursor\u2019s section (others unchanged); then pick an instrument" },
   "\uFF0B \u65B0\u58F0\u90E8": { en: "\uFF0B New part" },
   "\u89D2\u8272\u6539\u540D\uFF1A{n}": { en: "Role renamed: {n}" },
+  "\u540D\u5B57\u6E05\u6389\u4E86\uFF1A\u8DDF\u7740\u4E50\u5668\u5199\u300C{inst}\u300D": { en: "Name cleared: shows the instrument, \u201C{inst}\u201D" },
   "\u8FD9\u4E00\u6BB5\u7684\u8FD9\u4E00\u884C\u4EA4\u7ED9\u4E86\u300C{name}\u300D": { en: "This section\u2019s row was handed to \u201C{name}\u201D" },
   "\u8FD9\u4E00\u6BB5": { en: "This section" },
   "\u6539\u66F2\u6BB5\u540D\u2026": { en: "Rename section\u2026" },
@@ -1157,6 +1162,7 @@ var S = {
   "\u9690\u85CF\u7684\u58F0\u90E8\u4E0D\u5370\uFF0C\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF08\u548C\u9884\u89C8\u4E00\u6837\uFF09": { en: "Hidden parts aren't printed; their thin line's spot stays blank (same as the preview)" },
   "\u53EA\u6392\u770B\u5F97\u89C1\u7684\uFF1A{p}": { en: "Only visible parts: {p}" },
   "\u9690\u85CF\u7684\u58F0\u90E8\u6574\u4E2A\u62FF\u6389\u3001\u91CD\u65B0\u6392\uFF0C\u4E0D\u7559\u7A7A\u4F4D\uFF08\u50CF\u62BD\u51FA\u6765\u7684\u5206\u8C31\uFF1B\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\uFF09": { en: "Hidden parts are removed and it's re-laid out with no gaps (like an extracted part; differs from the paged preview)" },
+  "\u8C31\u4E0A\u7684\u5B57\u7528": { en: "Score text in" },
   "\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u601D\u6E90\u9ED1\u4F53\uFF0C\u7EA6 {p} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u9875\u9762\u8BBE\u7F6E\u91CC\u6539\uFF09\u3002": { en: "The font (Source Han Sans) downloads the first time (about {p} MB), then works offline. Paper = this song's paper (change it in Page settings)." },
   "\u53EA\u6392\u770B\u5F97\u89C1\u7684\u58F0\u90E8\uFF08{p}\uFF09\uFF1A\u91CD\u65B0\u6392\u3001\u4E0D\u7559\u7A7A\u4F4D\u2014\u2014\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\u3002": { en: "Only visible parts ({p}): re-laid out with no gaps \u2014 differs from the paged preview." },
   "\u5370\u51FA\u6765\u7684 = \u9875\u9762\u8BBE\u7F6E\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C{p}\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684{p2}\u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002": { en: "Printed = what you see with \u201CPaged\u201D in Page settings + \u201C{p}\u201D on the section control, minus buttons and hints; hidden {p2}parts aren't printed (their thin line's spot stays blank)." },
@@ -1169,7 +1175,6 @@ var S = {
   "\u4E0D\u5370\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "without articulations & dynamics" },
   "\u751F\u6210 PDF": { en: "Create PDF" },
   "\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7B2C\u4E00\u6B21\u7EA6 {p} MB\uFF09\u2026": { en: "Downloading font (about {p} MB the first time)\u2026" },
-  "\u4E50\u5668\u76EE\u5F55\u53D6\u4E0D\u5230\uFF1A\u8C31\u4E0A\u7684\u4E50\u5668\u540D\u548C\u7B80\u5199\u8FD9\u6B21\u7167\u6B4C\u91CC\u5B58\u7684\u540D\u5B57\u5370": { en: "Couldn\u2019t load the instrument catalog: instrument names and abbreviations are printed as stored in the song this time" },
   "\u6392\u7248\u2026": { en: "Laying out\u2026" },
   "\u8FD9\u4E9B\u5B57\u8FD9\u6B3E\u5B57\u4F53\u91CC\u6CA1\u6709\uFF0CPDF \u91CC\u662F\u7A7A\u767D\uFF1A{p}{p2}": { en: "This font doesn't have these characters, so they're blank in the PDF: {p}{p2}" },
   "\u6709 {n} \u79CD\u8BB0\u8C31\u7B26\u53F7\u6CA1\u753B\u51FA\u6765\uFF08{p}\uFF09\u2014\u2014\u8FD9\u662F app \u7684\u6BDB\u75C5\uFF0C\u8BF7\u544A\u8BC9\u6211\u4EEC\u3002": { en: "{n} notation symbols weren't drawn ({p}) \u2014 that's a bug in the app, please tell us." },
@@ -2253,29 +2258,6 @@ var S = {
   "\u53CD\u590D / \u8DF3\u8F6C\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C": { en: "Repeats / jumps only count on this sheet's top part" },
   "\u8FD9\u5F20\u7EB8\u4E0A\u6CA1\u6709 Segno\uFF0CD.S. \u8DF3\u4E0D\u4E86": { en: "No Segno on this sheet, so D.S. can't jump" },
   "\u6CA1\u6709 To Coda\uFF1A\u8DF3\u56DE\u6765\u4E4B\u540E\u4E00\u8DEF\u653E\u5230\u7EB8\u5C3E": { en: "No To Coda: after jumping back it plays to the end of the sheet" },
-  "\u4E3B\u5531": { en: "Lead vocal" },
-  "\u548C\u58F0": { en: "Harmony" },
-  "\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": { en: "Soprano (choir)" },
-  "\u5973\u4F4E\u97F3\uFF08\u5408\u5531\uFF09": { en: "Alto (choir)" },
-  "\u7537\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": { en: "Tenor (choir)" },
-  "\u7537\u4F4E\u97F3\uFF08\u5408\u5531\uFF09": { en: "Bass (choir)" },
-  "\u4E50\u961F": { en: "Band" },
-  "\u94A2\u7434 / \u952E\u76D8": { en: "Piano / keys" },
-  "\u5409\u4ED6": { en: "Guitar" },
-  "\u8D1D\u65AF": { en: "Bass" },
-  "\u9F13": { en: "Drums" },
-  "\u5F26\u4E50": { en: "Strings" },
-  "\u5408\u6210\u94FA\u5E95": { en: "Synth pad" },
-  "\u5408\u6210\u4E3B\u97F3": { en: "Synth lead" },
-  "\u4EBA\u58F0##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Vocals" },
-  "\u4F34\u5531##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Backing Vocals" },
-  "\u5973\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Soprano" },
-  "\u5973\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Alto" },
-  "\u7537\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Tenor" },
-  "\u7537\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Bass" },
-  "\u9F13##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Drums" },
-  "\u5408\u6210\u5668\u4E3B\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Synth Lead" },
-  "\u5408\u6210\u5668\u80CC\u666F\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Synth Pad" },
   "\u5927\u8C03": { en: "Major" },
   "\u5927\u5C0F\u8C03": { en: "Major / minor" },
   "\u5C0F\u8C03": { en: "Minor" },
@@ -2446,6 +2428,7 @@ var S = {
   "\u786E\u5B9A": { en: "OK" },
   "\u62E8\u901F\u5EA6\uFF1A\u4E00\u683C = 1\uFF0C\u4E00\u7529\u6ED1\u4E00\u5927\u6BB5": { en: "Dial the tempo: one notch = 1, a flick covers more" },
   "{from} \u8D77": { en: "from {from}" },
+  "\u5F26\u4E50": { en: "Strings" },
   "\u94DC\u7BA1": { en: "Brass" },
   "\u6728\u7BA1": { en: "Woodwinds" },
   "\u5F39\u62E8": { en: "Plucked" },
@@ -3712,6 +3695,11 @@ function songInC(song, skip) {
 var NOTATIONS = ["staff", "jianpu", "letters"];
 var CHORDS_MODES = ["stacked", "auto", "fold"];
 var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4, expressions: true });
+var TEXT_LANGS = ["ui", "zh", "en"];
+var isTextLang = (v) => TEXT_LANGS.includes(v);
+function textLangIn(look, ui) {
+  return look.textLang === "ui" ? ui : look.textLang;
+}
 var isNotation = (v) => NOTATIONS.includes(v);
 var IN_C_APPLIES = { staff: true, jianpu: false, letters: false };
 var isChords = (v) => CHORDS_MODES.includes(v);
@@ -3730,7 +3718,9 @@ function songViewOf(song) {
     lyricFit: song.lyricFit === "lyrics" ? "lyrics" : UNWRITTEN.lyricFit,
     barNumbers: song.barNumbers === "off" ? false : UNWRITTEN.barNumbers,
     middleC: isMiddleC(song.middleC) ? song.middleC : UNWRITTEN.middleC,
-    expressions: song.expressions === false ? false : UNWRITTEN.expressions
+    expressions: song.expressions === false ? false : UNWRITTEN.expressions,
+    textLang: isTextLang(song.textLang) ? song.textLang : "ui"
+    // 歌里永远有值（进门时补的）；不认识的 = 更新的版本写的，画的时候跟着界面
   };
 }
 
@@ -6883,7 +6873,7 @@ var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav",
 function drawStaff(c, mine) {
   const lyricParts = [];
   const own = mine ? new Set(mine) : null, skip = (r) => own !== null && !own.has(r);
-  const { song, look, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, harmony, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
+  const { song, look, textLang, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, harmony, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
   const yOf = (r, d) => yAt(staffTop(r), d, P(0.5));
   const clefAtSys = (q, s2) => {
     const u = q.units.find((x) => x.system === s2 && x.index >= 0);
@@ -7300,7 +7290,7 @@ function drawStaff(c, mine) {
         put(row, { tok: tokOf(c2), t: "path", d: dd, cls: ["arpeggio", ign.has("arpeggio") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
       }
       if (c2.breath) put(row, { tok: tokOf(c2), t: "glyph", x: nhX(c2) + nhW(c2) + P(0.55), y: yOf(row, TOP_LINE2 + 1), ch: GLYPH_BREATH, cls: ["breath", ign.has("breath") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" ") });
-      if (c2.breath && c2.inhale) put(row, { tok: tokOf(c2), t: "text", x: nhX(c2) + nhW(c2) + P(1.35), y: yOf(row, TOP_LINE2 + 1) + P(0.45), s: c2.inhale === "big" ? _tIn(o.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o.locale, "\u5438##\u8BB0\u53F7"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx("breath-label"), anchor: "start" });
+      if (c2.breath && c2.inhale) put(row, { tok: tokOf(c2), t: "text", x: nhX(c2) + nhW(c2) + P(1.35), y: yOf(row, TOP_LINE2 + 1) + P(0.45), s: c2.inhale === "big" ? _tIn(textLang, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(textLang, "\u5438##\u8BB0\u53F7"), cls: ["breath-label", ign.has("inhale") ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: tx("breath-label"), anchor: "start" });
     }
     const tieArc = (row, d, x1, x2, ghost) => {
       const len = Math.abs(x2 - x1), sgn = d < MID_LINE2 ? 1 : -1, y = yOf(row, d) + sgn * P(0.8), h = Math.min(len * 0.25, Math.max(P(0.5), Math.min(P(1.6), len * 0.12)));
@@ -8694,7 +8684,7 @@ function arrangeColumns(cols, tracks, o) {
 // src/render/engrave.ts
 function engrave(song, o) {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
-  const songLook = songViewOf(song);
+  const songLook = songViewOf(song), textLang = textLangIn(songLook, o.locale);
   const BUILD = NOTATIONS2[songLook.notation].build;
   const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   if (songLook.inCActive) {
@@ -8786,7 +8776,7 @@ function engrave(song, o) {
   if (!o.onlyPaper) {
     const as = tx("arr"), wOf = (role, t) => P(mw(role, t)), row = Math.max(lines.length, 1), base = y0 + row * cs * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers, o.locale), txt = song.arrangement?.trim() ?? "";
-    const label = _tIn(o.locale, "\u7F16\u6392\u3000"), lw = wOf("arr-label", label), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
+    const label = _tIn(textLang, "\u7F16\u6392\u3000"), lw = wOf("arr-label", label), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
     if (txt) prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: "arr-label", size: as, anchor: "start" });
     arrLast = base;
     if (txt) {
@@ -8953,7 +8943,7 @@ function engrave(song, o) {
     const labelOf = (text, k) => ({ text, size: tx("breath-label") / P(k), w: mw("breath-label", text) / k });
     const aux = per0.map((q, i) => {
       const folds = foldsOf(q, i), k = kScale(kinds[i]);
-      const labels = kinds[i] === "staff" ? null : { inhale: { soft: labelOf(_tIn(o.locale, "\u5438##\u8BB0\u53F7"), k), big: labelOf(_tIn(o.locale, "\u6DF1\u5438##\u8BB0\u53F7"), k) } };
+      const labels = kinds[i] === "staff" ? null : { inhale: { soft: labelOf(_tIn(textLang, "\u5438##\u8BB0\u53F7"), k), big: labelOf(_tIn(textLang, "\u6DF1\u5438##\u8BB0\u53F7"), k) } };
       return { ...folds ? { folds } : {}, ...labels ? { labels } : {} };
     });
     const measured = per0.map((q, i) => DRAWERS[kinds[i]].measure(q, kScale(kinds[i]), aux[i]));
@@ -9239,7 +9229,7 @@ function engrave(song, o) {
       // 打击乐的行在预处理里拦（7-O）
       families: famIds.map((fid) => famHere(fid).map((p) => p.id))
     }) : null;
-    const drawCtx = { song, look: songLook, harmony, aux, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, hint, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
+    const drawCtx = { song, look: songLook, textLang, harmony, aux, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, hint, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
     if (songLook.barNumbers && per[0]) for (let s2 = 0; s2 < nSys; s2++) {
       const ind = s2 === 0 ? ind0 : indN, q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s2)) ?? per[0];
       const c0 = q0.units.find((u) => u.kind === "chunk" && u.system === s2);
@@ -9583,4 +9573,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-4ade140ed273.mjs.map
+//# sourceMappingURL=layout-worker-e962eb08db65.mjs.map

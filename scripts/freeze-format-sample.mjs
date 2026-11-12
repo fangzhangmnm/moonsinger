@@ -47,10 +47,10 @@ console.log(`${exists && !force ? `kept test/fixtures/format/${tag}/ (use --forc
 import { FORMAT_MINOR } from "../src/format/contract.ts";
 import { songViewOf } from "../src/score/song-view.ts";
 const minorDir = join(ROOT, "test/fixtures/format/minor", `score-${FORMAT_MINOR.score}`);
-if (FORMAT_MINOR.score >= 5 && (!existsSync(join(minorDir, "sample.mxl")) || process.argv.includes("--force-minor"))) {   // 每一拍各一份（score-5 = 简谱那一版、score-6 = 字母谱，7-B；score-7 = 歌词里的标点，7-M；score-8 = 演奏法和表情不显示，7-G）
+if (FORMAT_MINOR.score >= 5 && (!existsSync(join(minorDir, "sample.mxl")) || process.argv.includes("--force-minor"))) {   // 每一拍各一份（score-5 = 简谱那一版、score-6 = 字母谱，7-B；score-7 = 歌词里的标点，7-M；score-8 = 演奏法和表情不显示，7-G；score-10 = 谱上的字用哪种语言，12-4）
   mkdirSync(minorDir, { recursive: true });
   writeFileSync(join(minorDir, "sample.mxl"), bytes);
   const v = songViewOf(o.song);
-  writeFileSync(join(minorDir, "expected.json"), JSON.stringify({ score: { version: FORMAT.score, minor: FORMAT_MINOR.score }, songView: { notation: v.notation, chordTags: v.chordTags, viewInC: v.viewInC, ...(FORMAT_MINOR.score >= 8 ? { expressions: v.expressions } : {}), chords: Object.fromEntries(o.song.parts.map((p) => [p.id, v.chordsOf(p.id)])) }, raw: { notation: o.song.notation ?? null, parts: Object.fromEntries(o.song.parts.map((p) => [p.id, p.chords ?? null])) } }, null, 2) + "\n");
+  writeFileSync(join(minorDir, "expected.json"), JSON.stringify({ score: { version: FORMAT.score, minor: FORMAT_MINOR.score }, songView: { notation: v.notation, chordTags: v.chordTags, viewInC: v.viewInC, ...(FORMAT_MINOR.score >= 8 ? { expressions: v.expressions } : {}), ...(FORMAT_MINOR.score >= 10 ? { textLang: v.textLang } : {}), chords: Object.fromEntries(o.song.parts.map((p) => [p.id, v.chordsOf(p.id)])) }, raw: { notation: o.song.notation ?? null, ...(FORMAT_MINOR.score >= 10 ? { textLang: o.song.textLang } : {}), parts: Object.fromEntries(o.song.parts.map((p) => [p.id, p.chords ?? null])) } }, null, 2) + "\n");
   console.log(`frozen: test/fixtures/format/minor/score-${FORMAT_MINOR.score}/`);
 }

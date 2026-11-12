@@ -9,6 +9,7 @@ const fs = (await import("node:fs" as string)) as {
 import { saveMxl, openBytes, activeInstrument, contentFingerprintOf, FORMAT } from "../src/format/project.ts";
 import { FORMAT_MINOR, FORMAT_PATCH } from "../src/format/contract.ts";
 import { MIGRATIONS } from "../src/format/migrate/index.ts";
+import { roleShowName } from "../src/format/part-show.ts";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong, sampleView, sampleExtras, canonTokens, canonTracks, shapeOf, mergeShape } from "./fixtures/format/sample-song.ts";
 
@@ -104,7 +105,7 @@ describe("持久化守卫", () => {
       const engine = activeInstrument(o.extras, "r1")?.engine ?? "unknown", want = exp.engine ?? ({ full: "tsukuyomi", light: "vowel-sampler", none: "unknown" } as Record<string, string>)[exp.quality];
       eq(engine, want, `${d}：上场的引擎`);
       const role = o.extras.lounge["r1"] as Json;
-      eq(role.name, exp.role.name, `${d}：角色名`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);
+      eq(roleShowName(o.extras.lounge, "r1", "en"), exp.role.name, `${d}：角色名（12-4 起老文件进门时名字等于乐器叫法的 = 没起，比的是显示出来的英文叫法）`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);
       eq(JSON.stringify((role.candidates as Json[]).map((c) => c.id)), JSON.stringify(exp.role.candidates), `${d}：候选 id`);
       eq(JSON.stringify(((o.extras.studio as Json).tracks as Json[]).filter((t) => t.kind === "mic").map((m) => m.id)), JSON.stringify(exp.mics), `${d}：麦克风 id（v2 起 = tracks 里 kind mic 的）`);
       // 读进来的都已升到这一版（migrate 链跑过）

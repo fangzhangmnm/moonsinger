@@ -5,6 +5,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { emptyExtras, withNewRole, withSf2Candidate, withSwap, withActive, withCastAs, withCandidateCopy, isUntouched, settingsPrint, songPresets, candidates, candidateJson, activeId,
   withCalibration, withGapSec, withVelocity, withTranspose, withSfxFixed, withSfxAlign, withSingCore, withSingChunk, activeSingCore, activeCalibrationDb, CANDIDATE_ID, saveMxl, openBytes, type Extras } from "../src/format/project.ts";
 import { initState } from "../src/score/song.ts";
+import { roleShowName } from "../src/format/part-show.ts";
 
 const hum = "n" as const;
 const sub = (k: number) => new Uint8Array([1, 2, 3, k]);
@@ -152,7 +153,7 @@ describe("R5 / R6 拷一份", () => {
     eq(ids(b, "r1"), `c1,c2,${idNew}`, "新加一位（内置的还在）");
     eq(candidateJson(b, "r1", idNew)?.calibrationDb, -2, "设置跟着拷过来");
     eq(candidateJson(b, "r1", idNew)?.asCast, undefined, "拷来的不带 asCast（= 调过，留着）");
-    eq((b.lounge.r1 as { name: string }).name, "Flute", "声部的名字跟着换");
+    eq(roleShowName(b.lounge, "r1", "en"), "Flute", "声部显示的名字跟着换（12-4：没起名字 = 乐器的叫法，名字本身不写）");
   });
   it("拷过来时本声部台上那位没调过 = 照 R2 删", () => {
     const a = withCalibration(cast(base(), "r2", "Flute", 73), "r2", -2, hum), idF = activeId(a, "r2");

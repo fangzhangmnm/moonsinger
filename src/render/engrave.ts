@@ -27,7 +27,7 @@ import { Skyline, primInk, shiftPrim, movePrim, primY } from "./skyline.ts";
 import { placeHints } from "./frame/hints.ts";
 import type { Part, Ink } from "./frame/cell.ts";
 import { songInC } from "../score/view-in-c.ts";
-import { songViewOf } from "../score/song-view.ts";
+import { songViewOf, textLangIn } from "../score/song-view.ts";
 import { type HarmonyRead } from "../theory/index.ts";
 import { SCROLL_TAIL, ABBR_REF, NAME_MAX, ROW_STEP, MARGIN, BAR_W, TITLE_H, PAPER_H, PAPER_GAP, CTL_H, SYSTEM_LINE_W, LYRIC_EDGE } from "./frame/params.ts";
 import { PAPER_PARAMS, ROW_PARAMS } from "./layout-params.ts";   // 排版参数表（纸一级按谱种、行一级按行的种类）
@@ -90,7 +90,8 @@ export interface EngraveOpts {
   /** 字的尺子比谱的尺子大多少（刀 2；src/score/paper.ts textScaleOf：舒适 = 1、紧凑 = 1.4）：歌名 / 作者栏 / 编排 / 曲段名、声部名 / 简写、歌词、速度 / 风格 / 反复的字、
    *  「1=F」、小节号、和弦级数、页码，连同它们周围留的地方，都按 sp × textScale 量；字形、线、cresc. / 8va / 「吸」/ 推定的灰字照旧跟谱。量字的换算在文字模块里（measure.width）。没给 = 1。 */
   textScale?: number;
-  /** 界面语言（谱面分家施工单 1b-3）：排版里要写的几个字（「编排」、编排写错的说明、换气后面的「吸 / 深吸」）按它翻。明着传，排版不读这一页的当前语言（设计稿第 3.9 节守卫 8：同样的输入出同样的版面）。 */
+  /** 界面语言（谱面分家施工单 1b-3）：不印的提示（编排写错的说明、「无调」、状态提示那一串…）按它翻；印出来的字（「编排」、换气后面的「吸 / 深吸」）按歌里「谱上的字」那一项（12-4），
+   *  那一项是「跟着界面」时才用它。明着传，排版不读这一页的当前语言（设计稿第 3.9 节守卫 8：同样的输入出同样的版面）。 */
   locale: Lang;
   /** 只给测试用（刀 4b 守卫「注解不改版面」）：注解（ann）一个都不画。开关两边可印的图元必须逐个相同——注解只看天际线、不写。 */
   __noAnn?: boolean;
@@ -192,7 +193,7 @@ export interface Layout {
 export function engrave(song: Song, o: EngraveOpts): Layout {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
-  const songLook = songViewOf(song);   // 这首歌怎么看（谱面分家第三刀：歌里的设置，只此一处读；按 C 调看的换算之前读）
+  const songLook = songViewOf(song), textLang = textLangIn(songLook, o.locale);   // textLang = 印出来的字用哪种语言（12-4：歌里一项，跟着界面 = o.locale）；不印的提示照旧用 o.locale   // 这首歌怎么看（谱面分家第三刀：歌里的设置，只此一处读；按 C 调看的换算之前读）
   const BUILD = NOTATIONS[songLook.notation].build;   // 建轨 = 这首歌的谱种那一项（第五刀 5-2）
   const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   if (songLook.inCActive) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
@@ -273,7 +274,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   if (!o.onlyPaper) {
     const as = tx("arr"), wOf = (role: TextRole, t: string) => P(mw(role, t)), row = Math.max(lines.length, 1), base = y0 + row * cs * 1.35;
     const arr = parseArrangement(song.arrangement, song.papers, o.locale), txt = song.arrangement?.trim() ?? "";
-    const label = _tIn(o.locale, "编排　"), lw = wOf("arr-label", label), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
+    const label = _tIn(textLang, "编排　"), lw = wOf("arr-label", label), x0 = P(MARGIN) + lw, avail = o.width - P(2 * MARGIN) - lw;
     if (txt) prims.push({ t: "text", x: P(MARGIN), y: base, s: label, cls: "arr-label", size: as, anchor: "start" });   // 没写编排 = 标签只是入口（提示）= 覆盖层写
     arrLast = base;
     if (txt) {
@@ -435,7 +436,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const labelOf = (text: string, k: number): RowLabel => ({ text, size: tx("breath-label") / P(k), w: mw("breath-label", text) / k });
     const aux: TrackAux[] = per0.map((q, i) => {
       const folds = foldsOf(q, i), k = kScale(kinds[i]!);
-      const labels = kinds[i] === "staff" ? null : { inhale: { soft: labelOf(_tIn(o.locale, "吸##记号"), k), big: labelOf(_tIn(o.locale, "深吸##记号"), k) } };
+      const labels = kinds[i] === "staff" ? null : { inhale: { soft: labelOf(_tIn(textLang, "吸##记号"), k), big: labelOf(_tIn(textLang, "深吸##记号"), k) } };
       return { ...(folds ? { folds } : {}), ...(labels ? { labels } : {}) };
     });
     const measured = per0.map((q, i) => DRAWERS[kinds[i]!].measure(q, kScale(kinds[i]!), aux[i]));
@@ -669,7 +670,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       parts: per.filter((q, i) => !q.vrt && rowHost[i]! < 0).map((q) => ({ id: q.p.id, tokens: q.tokens, broken: songLook.chordsOf(q.p.id) !== "stacked", perc: !!q.p.perc })),   // 打击乐的行在预处理里拦（7-O）
       families: famIds.map((fid) => famHere(fid).map((p) => p.id)),
     }) : null;
-    const drawCtx = { song, look: songLook, harmony, aux, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, hint, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
+    const drawCtx = { song, look: songLook, textLang, harmony, aux, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, hint, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
     // 小节号（v0.9.42；user 2026-10-10「小节号要，可以页面设置toggle，默认是每行开头有。字小一点」）：每行最上面那条的左上角，印这一行第一个小节的号；
     //   每张纸从 1 数（纸 = 曲段），弱起算第 0 小节；第一行是 1 / 0 就不印（出版谱的老规矩）。刀 4b：挂件第 9 样 = 行首那一段天际线往上 0.3。
     //   第四刀起归框架（原来在五线谱的画法里）：它贴在这一行最上面那条上，不归哪一种画法

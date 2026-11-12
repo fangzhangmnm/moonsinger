@@ -204,6 +204,10 @@ export interface Song {
   middleC?: number;
   /** 演奏法和表情显示不显示（score minor 8，7-G；只写 false = 不显示；没写 = 显示。读 / 改只走 src/score/song-view.ts）。只管画：播放照写的来。 */
   expressions?: false;
+  /** 谱上的字用哪种语言（score minor 10，施工单 12-4，2026-11-12；user「页面设置是不是也应该有一个语言，影响打印？」）："ui" = 跟着界面；"zh" / "en" = 界面语言里的一种；
+   *  不认识的（更新的版本写的）原样留着、写回去，画的时候当跟着界面。只管软件自己生成、印出来的字（声部名是目录 / 预设里的乐器名时、简谱鼓的图例、「编排」、出声的换气「吸 / 深吸」）；
+   *  歌词、歌名、作者栏、自己起的声部名不动。**必填**：没写的意思在进门那一处定一次（src/format/project.ts songViewFields：没写 = "ui"），新歌明着写 "ui"；运行时永远有值。读 / 改只走 src/score/song-view.ts。 */
+  textLang: string;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表
@@ -258,11 +262,11 @@ export function headTokens(m: { fifths?: number; minor?: boolean; beats?: number
 export const FIRST_PART = "P1", FIRST_PAPER = "p1";
 /** 新歌：一张纸、一个声部（P1 → 角色 r1 → 麦克风 m1），哼的字默认「嗯」（user 2026-10-07「月读不是有啦嗯哦吗，默认嗯」）。 */
 export function emptySong(m: { fifths?: number; beats?: number; beatType?: number; bpm?: number } = {}): Song {
-  return { hum: "n", parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m) } }] };
+  return { hum: "n", textLang: "ui", parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: headTokens(m) } }] };   // 谱上的字：新歌明着写「跟着界面」（12-4）
 }
 /** 单 track 的歌（测试 / 读别家单声部谱时顺手用）。 */
 export function songOf(tokens: Token[], rest: Partial<Omit<Song, "parts" | "papers">> = {}): Song {
-  return { hum: "n", ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
+  return { hum: "n", textLang: "ui", ...rest, parts: [{ id: FIRST_PART, role: "r1", mic: "m1" }], papers: [{ id: FIRST_PAPER, name: "", tracks: { [FIRST_PART]: tokens } }] };
 }
 export function initInput(): InputState { return { unit: DEFAULT_UNIT, tuplet: 0, acc: 0, accMode: "off", accAt: 0, inputFifths: 0, inputScale: "major", inputAuto: true }; }
 /** 整首歌最大的 token id（新 id 从它后面编；所有纸、所有声部一起算，id 全歌唯一）。 */

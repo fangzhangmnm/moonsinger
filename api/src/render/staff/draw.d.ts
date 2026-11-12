@@ -1,4 +1,5 @@
 import { type TextRole } from "../text/index.ts";
+import { type Lang } from "../../i18n/index.ts";
 import { type Song, type PaperSeg } from "../../score/song.ts";
 import { type PlacedTag, type ChordFold } from "../../theory/index.ts";
 import type { Chunk } from "../frame/units.ts";
@@ -15,6 +16,8 @@ export interface StaffDrawCtx {
     o: EngraveOpts;
     /** 这首歌怎么看（src/score/song-view.ts；框架读一次传进来：按 C 调看、和弦标级数、每条轨的和弦选项）。 */
     look: SongView;
+    /** 印出来的字用哪种语言（12-4；框架按歌里「谱上的字」算好：跟着界面 = o.locale）。「吸 / 深吸」用它，不印的提示（「无调」）照旧用 o.locale。 */
+    textLang: Lang;
     /** 尺子：P = 谱（sp → px）；tx / TR / RS / mw = 字（文字模块的样式表）。 */
     P: (v: number) => number;
     tx: (role: TextRole) => number;

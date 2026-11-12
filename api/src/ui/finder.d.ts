@@ -31,7 +31,7 @@ export type FinderNobody = {
     concept: Concept;
 };
 export interface FinderHost {
-    roleName(): string;
+    roleLabel(): string;
     audition(p: FinderPick | FinderNobody | null): Promise<void>;
     playHead(p: FinderPick): Promise<void>;
     cast(p: FinderPick): Promise<void>;

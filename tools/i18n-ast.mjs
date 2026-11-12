@@ -12,6 +12,7 @@ export const SKIP_FILES = {
   "src/singer/credit-translations.ts": "条款译文，按原文 sha256 钉住，有自己的中英（CLAUDE.md「月读条款译文」）",
   "src/singer/sing-core.mjs": "唱法核心，写歌实验室的命令行也用它：不引 app 层依赖",
   "src/singer/en-front.mjs": "同上（唱法前端）",
+  "src/format/migrate/legacy-role-names.ts": "冻住的进门表（12-4）：乐器在各种语言里的叫法是按值存进歌的数据，不是界面字",
 };
 
 /** 生成文件（测试守着和生成脚本一致）：不包字，要显示的字在显示处翻。 */

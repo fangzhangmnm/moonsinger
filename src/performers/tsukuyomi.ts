@@ -4,7 +4,7 @@
 //   按键试听 = 元音表（v0.10.43；user「月读预览应该是每种哼法只有一个cache」），播放照旧完全版。
 import { _t } from "../i18n/index.ts";
 import { registerPerformer } from "./registry.ts";
-import { activeSingChunk, activeSingCore, withSingChunk, withSingCore, roleName, type SingCoreKey } from "../format/project.ts";
+import { activeSingChunk, activeSingCore, withSingChunk, withSingCore, type SingCoreKey } from "../format/project.ts";
 import { TSUKUYOMI_DEFAULTS, BUILTIN_CALIBRATION_DB } from "../format/performance.ts";
 
 /** 她的音域（A3–E5）：pad 键底部的提示；元音版同。 */
@@ -46,8 +46,8 @@ export const tsukuyomi = registerPerformer({
         note: sc === "whole" ? _t("一口气唱完：句和句之间唱法最连贯，但长歌在 iPad 上可能内存不够") : _t("分段唱：一段唱完就放掉，重复的段 / 没改的句子直接拿上次的；段和段之间切在休止 / 纸界，整首最后统一音量"), place: "tail" as const },
     ];
   },
-  onInspector: (v, { extras, role, hum }) => {
-    const rn = roleName(extras, role);
+  onInspector: (v, { extras, role, hum, roleLabel }) => {
+    const rn = roleLabel;
     if (v.startsWith("core:")) { const [, key, val] = v.split(":"), x = SING_CORE_ROWS.find((e) => e.key === key), n = Number(val); return x ? { extras: withSingCore(extras, role, x.key, n, hum), label: `「${rn}」${x.label}：${x.names?.[n] ?? n}` } : null; }
     if (v.startsWith("chunk:")) { const c = v.slice(6) as "phrase" | "sheet" | "whole"; return { extras: withSingChunk(extras, role, c, hum), label: _t("「{rn}」分段唱：{p}", { rn, p: c === "phrase" ? _t("每句") : c === "sheet" ? _t("每张纸") : _t("一整首") }) }; }
     return null;

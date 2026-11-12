@@ -4,7 +4,7 @@
 // 2026-10-13（Claude Fable 5.1；家族周账 F-18）：样本要把**每个可选字段都用上**，形状指纹 shapeOf 对数组取**所有元素的并集**（原来只照第一项）——
 //   不然 parts[].host / 轨的 bypass / 效果 / 发送 / 嵌的音源这些只在第二项、或样本没写的键，快照看不见，加了删了都不红。sampleExtras() 同理把休息室 / 录音房的可选项都摆上。
 import { TPQ, type Song, type Token, firstTrack } from "../../../src/score/song.ts";
-import { emptyExtras, withActive, withCastAs, activeId, withSwap, withSf2Candidate, withTrack, withMaster, newBusId, withTranspose, withSingChunk, withGapSec, withRoleConcept, withCalibration, type Extras } from "../../../src/format/project.ts";
+import { withRoleName, emptyExtras, withActive, withCastAs, activeId, withSwap, withSf2Candidate, withTrack, withMaster, newBusId, withTranspose, withSingChunk, withGapSec, withRoleConcept, withCalibration, type Extras } from "../../../src/format/project.ts";
 import type { FxV2, CandidateV2 } from "../../../src/format/contract.ts";
 // 仓里不装 @types/node（同 test/format-guard.test.ts）：node:fs / node:crypto 走动态 import。
 const nodeFs = (await import("node:fs" as string)) as { readFileSync(u: URL): Uint8Array };
@@ -60,7 +60,7 @@ export function sampleSong(): Song {
   ];
   // 2026-10-13 加（都是可选字段，只为了形状快照盖到）：P2 合租挂在 P1 上 + 不要自动八度线；歌词按歌词排；不印小节号；第二张纸隐藏；这首歌的许可。
   // 2026-11-11 加（score minor 5，谱面分家第三刀）：这首歌怎么看的四样都用上（简谱、不标级数、按 C 调看、两条轨各一种和弦选项），形状快照盖到它们。
-  return { title: "冻结样本", credits: "词曲：样本\n演唱：月读", arrangement: "1 (2)×2", hum: "u", paper: paperOf("A5"), rights: "CC0", lyricFit: "lyrics", barNumbers: "off", spacing: "tight",
+  return { title: "冻结样本", credits: "词曲：样本\n演唱：月读", arrangement: "1 (2)×2", hum: "u", textLang: "en", paper: paperOf("A5"), rights: "CC0", lyricFit: "lyrics", barNumbers: "off", spacing: "tight",
     notation: "letters", chordTags: false, viewInC: true, middleC: 3,   // score minor 6（7-B）起样本用字母谱、中央 C 叫 C3（minor 5 那份冻的是简谱）
     expressions: false,   // score minor 8（7-G）起：演奏法和表情不显示
     parts: [{ id: "P1", role: "r1", mic: "m1", chords: "stacked" }, { id: "P2", role: "r2", mic: "m2", host: "P1", chords: "fold" }],
@@ -75,13 +75,14 @@ export function sampleExtras(song: Song): Extras {
   ex = withSingChunk(ex, "r1", "sheet", hum);   // 分段唱只有月读完整版（c1）有这个字段
   ex = withActive(ex, "r1", "c2", hum);
   ex = withTranspose(ex, "r1", 12, hum); ex = withGapSec(ex, "r1", 0.05, hum); ex = withCalibration(ex, "r1", -3, hum);
-  ex = withRoleConcept(ex, "r2", { name: "Castanets", sound: "wood.castanets", concept: { ids: { wikidata: "Q209337", local: "castanets", musicxml: "wood.castanets", gm: [{ program: 0, bank: 128 }], hs: "111.141" }, name: { zh: "响板", en: "Castanets", ja: "カスタネット" } } }, hum);
+  ex = withRoleConcept(ex, "r2", { name: "Castanets", sound: "wood.castanets", concept: { ids: { wikidata: "Q209337", local: "castanets", musicxml: "wood.castanets", gm: [{ program: 0, bank: 128 }], hs: "111.141" }, name: { zh: "响板", en: "Castanets", ja: "カスタネット" }, score: { zh: "响板", en: "Castanets" }, abbr: { en: "Cast." } } }, hum);   // 没起名字（12-4）；概念带谱上的叫法 + 简写
+  ex = withRoleName(ex, "r1", "主唱", hum);   // 起了名字的（12-4：休息室 minor 1 的 name 只在起了名字时写）
   const subset = nodeFs.readFileSync(new URL("../sf2/gu-square-castanets.sf2", import.meta.url)), sha256 = nodeCrypto.createHash("sha256").update(subset).digest("hex");
   ex = withSf2Candidate(ex, "r2", { name: "Castanets", bank: 0, program: 0, note: 60, sfx: { key: 60, midi: 60, centsPerKey: 100, align: true }, subset, sha256, embed: true,
     origin: { name: "gu-square-castanets.sf2", fileSha256: sha256, bytes: subset.length, library: "test-fixture" },
     credit: { attribution: ["样本"], license: { name: "样本许可", url: "https://example.invalid/license", text: "样本", textSha256: "0".repeat(64) } }, calibrationDb: -6, gapSec: 0.02 }, hum);
-  { const r2 = ex.lounge.r2 as unknown as { name: string; sound: string; concept: NonNullable<CandidateV2["castAs"]>["concept"] };   // 候选记着「作为哪件乐器上场」（castAs，2026-11-08）
-    ex = withCastAs(ex, "r2", activeId(ex, "r2"), { name: r2.name, sound: r2.sound, concept: r2.concept }, hum);
+  { const r2 = ex.lounge.r2 as unknown as { sound: string; concept: NonNullable<CandidateV2["castAs"]>["concept"] };   // 候选记着「作为哪件乐器上场」（castAs，2026-11-08；name = 上场时的叫法）
+    ex = withCastAs(ex, "r2", activeId(ex, "r2"), { name: "Castanets", sound: r2.sound, concept: r2.concept }, hum);
     ex = withSwap(ex, "r2", activeId(ex, "r2"), hum, { fresh: true }); }   // 换上台那一刻的设置指纹（asCast，2026-11-09；施工单 §5 R3）
   const reverb: FxV2 = { id: "f1", kind: "reverb", on: true, params: { room: 0.8, damp: 0.4, wet: -12, dry: -120, predelayMs: 20 }, note: "样本" };
   const comp: FxV2 = { id: "f2", kind: "comp", on: false, params: { thresholdDb: -18, ratio: 3, attackMs: 10, releaseMs: 120, makeupDb: 0 }, key: "m2" };
