@@ -2917,7 +2917,11 @@ var S = {
   "\u7B80\u8C31": { en: "Numbered (jianpu)" },
   "\u7EB8\u5F20": { en: "Paper" },
   "\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A": { en: "Pitches drawn on the five lines" },
-  "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09\uFF1B\u6709\u53E0\u97F3\u7684\u58F0\u90E8\u3001\u9F13\u548C\u5408\u79DF\u53E0\u8D77\u6765\u7684\u90A3\u4E00\u884C\u6682\u65F6\u8FD8\u753B\u6210\u4E94\u7EBF\u8C31": { en: "Digits 1\u20137 (movable do); parts with stacked notes, drums and shared rows are still drawn as staff for now" },
+  "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09": { en: "Digits 1\u20137 (movable do)" },
+  "\u5B57\u6BCD\u8C31": { en: "Letter names" },
+  "\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C4\uFF09": { en: "Actual note names C D E F G A B, sharp/flat at the top right, octave at the bottom right (middle C = C4)" },
+  "\u4E2D\u592E C \u53EB C{n}": { en: "Middle C = C{n}" },
+  "\u5B57\u6BCD\u8C31\u5199\u7684\u662F\u5B9E\u9645\u7684\u97F3\u540D\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": { en: "Letter-name notation already writes the actual notes, so \u201CView in C\u201D doesn\u2019t apply; your choice is kept and comes back when you switch to the staff." },
   "\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": { en: "Numbered notation is already movable-do (1 = the key's tonic), so \u201CRead in C\u201D doesn't apply; your choice is kept and works again on staff." },
   "\u4F11\u606F\u5BA4": { en: "Green room" },
   "{issueCount} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF1A\u70B9\u5F00\u770B\u6E05\u5355": { en: "{issueCount} {issueCount|track is|tracks are} silent: tap for the list" },
@@ -5219,7 +5223,7 @@ var DYN_G = {
   fff: { kind: "glyph", above: "\uE530", ink: [-0.6, 3.4, 1.8, 0.6] }
 };
 var DYN_NAME = (d3, l10) => ({ ppp: _tIn(l10, "\u6781\u5F31"), pp: _tIn(l10, "\u5F88\u5F31"), p: _tIn(l10, "\u5F31##\u529B\u5EA6"), mp: _tIn(l10, "\u4E2D\u5F31"), mf: _tIn(l10, "\u4E2D\u5F3A"), f: _tIn(l10, "\u5F3A##\u529B\u5EA6"), ff: _tIn(l10, "\u5F88\u5F3A"), fff: _tIn(l10, "\u6781\u5F3A") })[d3];
-var art = (a10, name, says, lane, staff, jianpu) => ({ id: `art:${a10}`, name, says, lane, draw: { staff, jianpu } });
+var art = (a10, name, says, lane, staff, jianpu) => ({ id: `art:${a10}`, name, says, lane, draw: { staff, jianpu, letters: jianpu } });
 var ART_SIGNS = {
   "art:staccato": art("staccato", (l10) => _tIn(l10, "\u8DF3\u97F3"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A2", "\uE4A3", 0.28, 0.28), G("\uE4A8", "\uE4A9", 0.4, 0.9)),
   // 简谱 = 窄小的楔形（点被八度占了；UX 稿第 5 节）
@@ -5248,16 +5252,16 @@ var ART_SIGNS = {
   "art:roll": art("roll", (l10) => _tIn(l10, "\u6EDA\u594F"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09"), "note", D("\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF"), D("\u6570\u5B57\u4E0B\u9762\u4E09\u9053\u77ED\u659C\u7EBF"))
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
-var dynSign = (d3) => ({ id: `dyn:${d3}`, name: () => d3, says: (l10) => _tIn(l10, "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7", { dynName: DYN_NAME(d3, l10), dyn: d3 }), lane: "dynamics", draw: { staff: DYN_G[d3], jianpu: T(d3) } });
+var dynSign = (d3) => ({ id: `dyn:${d3}`, name: () => d3, says: (l10) => _tIn(l10, "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7", { dynName: DYN_NAME(d3, l10), dyn: d3 }), lane: "dynamics", draw: { staff: DYN_G[d3], jianpu: T(d3), letters: T(d3) } });
 var DYN_SIGNS = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
 var SIGNS = {
   ...ART_SIGNS,
   ...DYN_SIGNS,
-  "hairpin:cresc": { id: "hairpin:cresc", name: (l10) => _tIn(l10, "\u6E10\u5F3A"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 <\uFF08\u592A\u957F\u5199 cresc. - - -\uFF09"), jianpu: D("\u6954\u5F62 <") } },
+  "hairpin:cresc": { id: "hairpin:cresc", name: (l10) => _tIn(l10, "\u6E10\u5F3A"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 <\uFF08\u592A\u957F\u5199 cresc. - - -\uFF09"), jianpu: D("\u6954\u5F62 <"), letters: D("\u6954\u5F62 <") } },
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "hairpin:dim": { id: "hairpin:dim", name: (l10) => _tIn(l10, "\u6E10\u5F31"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >") } },
+  "hairpin:dim": { id: "hairpin:dim", name: (l10) => _tIn(l10, "\u6E10\u5F31"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >"), letters: D("\u6954\u5F62 >") } },
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  ramp: { id: "ramp", name: (l10) => _tIn(l10, "\u6E10\u5230"), says: (l10) => _tIn(l10, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62") } }
+  ramp: { id: "ramp", name: (l10) => _tIn(l10, "\u6E10\u5230"), says: (l10) => _tIn(l10, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62"), letters: D("\u865A\u7EBF\u6954\u5F62") } }
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
 function dynDepiction(d3, notation) {
@@ -9358,12 +9362,15 @@ function harmonyTags(theory, track) {
 }
 
 // src/score/song-view.ts
-var NOTATIONS = ["staff", "jianpu"];
+var NOTATIONS = ["staff", "jianpu", "letters"];
 var CHORDS_MODES = ["stacked", "auto", "fold"];
-var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true });
+var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4 });
 var isNotation = (v) => NOTATIONS.includes(v);
-var MOVABLE_DO = { staff: false, jianpu: true };
+var MOVABLE_DO = { staff: false, jianpu: true, letters: false };
+var IN_C_APPLIES = { staff: true, jianpu: false, letters: false };
 var isChords = (v) => CHORDS_MODES.includes(v);
+var isMiddleC = (v) => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 9;
+var MIDDLE_C_NAMES = [3, 4, 5];
 function songViewOf(song) {
   const chords = /* @__PURE__ */ new Map();
   for (const p2 of song.parts) if (isChords(p2.chords)) chords.set(p2.id, p2.chords);
@@ -9372,11 +9379,12 @@ function songViewOf(song) {
     notation,
     chordTags: song.chordTags === false ? false : UNWRITTEN.chordTags,
     viewInC,
-    inCActive: viewInC && !MOVABLE_DO[notation],
+    inCActive: viewInC && IN_C_APPLIES[notation],
     chordsOf: (part) => chords.get(part) ?? UNWRITTEN.chords,
     density: densityOf(song.paper ?? paperOf(DEFAULT_PAPER)),
     lyricFit: song.lyricFit === "lyrics" ? "lyrics" : UNWRITTEN.lyricFit,
-    barNumbers: song.barNumbers === "off" ? false : UNWRITTEN.barNumbers
+    barNumbers: song.barNumbers === "off" ? false : UNWRITTEN.barNumbers,
+    middleC: isMiddleC(song.middleC) ? song.middleC : UNWRITTEN.middleC
   };
 }
 function setNotation(st2, id2) {
@@ -9385,6 +9393,14 @@ function setNotation(st2, id2) {
   const song = { ...st2.song };
   if (want === void 0) delete song.notation;
   else song.notation = want;
+  return { ...st2, song };
+}
+function setMiddleC(st2, n10) {
+  const want = n10 === UNWRITTEN.middleC || !isMiddleC(n10) ? void 0 : n10;
+  if (st2.song.middleC === want) return st2;
+  const song = { ...st2.song };
+  if (want === void 0) delete song.middleC;
+  else song.middleC = want;
   return { ...st2, song };
 }
 function setChordTags(st2, on2) {
@@ -9411,7 +9427,7 @@ function setPartChords(st2, partId, mode) {
   else np2.chords = want;
   return { ...st2, song: { ...st2.song, parts: st2.song.parts.map((x2) => x2.id === partId ? np2 : x2) } };
 }
-var SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC"];
+var SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC", "middleC"];
 var PART_VIEW_KEYS = ["chords"];
 
 // src/score/arrange.ts
@@ -11109,14 +11125,16 @@ var JP_COZY = 3.6 / (2.5 * 1.75);
 var JP_COMPACT = 3 / (2.5 * 1.25);
 var mockSpring = (q2) => (5 + 6.8 * Math.log2(1 + 4 * q2)) * 2.5 / 22;
 var jianpuSprings = (k2) => [[TPQ / 8, mockSpring(1 / 8)], [TPQ / 4, mockSpring(1 / 4)], [TPQ / 2, mockSpring(1 / 2)], [TPQ, mockSpring(1)], [TPQ * 1.5, mockSpring(1.5)], [TPQ * 2, 2 * mockSpring(1)], [TPQ * 4, 4 * mockSpring(1)]].map(([t10, w2]) => [t10, w2 * k2]);
+var JIANPU_PAPER = { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } };
 var PAPER_PARAMS = {
   // 五线谱（第六刀，user 看了对照后定的，纪要第 91 节）：一行最多拉宽约 1.3 倍、放不满就让右边空着；让位时整小节一起放宽（和简谱一致）。折行可以留孤行（user「我觉得可以留」「倾向紧凑」）
   staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3, evenBars: true }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3, evenBars: true } },
   // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
   //   一小节里一样长的音等距（UX 稿第 8 节验收：别的声部折叠成和弦、琶音让位之后手鼓每小节八分等距）
   //   歌词：样张 = 0.727 个数字字号（舒适档歌词基准 1.6 线间距 × 1，紧凑 × 1.15，text/style.ts LYRIC_LOOK）
-  jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } }
-  // 名字：正文字号 1.36 线间距 × 字的尺子（紧凑 1.4）
+  jianpu: JIANPU_PAPER,
+  letters: JIANPU_PAPER
+  // 字母谱（7-B）= 简谱的变体，同一种数字行，纸一级参数照简谱
 };
 var jianpuRow = (k2, v) => ({ above: v.above * k2, rowH: v.rowH * k2, rowHNoLyric: v.rowHNoLyric * k2, graveUpper: v.graveUpper * k2, lyricBelow: v.lyricBelow * k2, clear: v.clear * k2, scale: k2, barNoPad: v.barNoPad * k2 });
 var JIANPU_ROW_PARAMS = { cozy: jianpuRow(JP_COZY, { above: 2.05, rowH: 13.2, rowHNoLyric: 11.4, graveUpper: 11.4, lyricBelow: 2.05, clear: 0.8, barNoPad: 1.5 }), compact: jianpuRow(JP_COMPACT, { above: 1.85, rowH: 11.9, rowHNoLyric: 10.3, graveUpper: 10.3, lyricBelow: 1.85, clear: 0.8, barNoPad: 1.5 }) };
@@ -13325,6 +13343,20 @@ var dotPath = (cx2, cy2, r10) => {
   return `M${f2(cx2 + r10)},${f2(cy2)}C${f2(cx2 + r10)},${f2(cy2 + k2)} ${f2(cx2 + k2)},${f2(cy2 + r10)} ${f2(cx2)},${f2(cy2 + r10)}C${f2(cx2 - k2)},${f2(cy2 + r10)} ${f2(cx2 - r10)},${f2(cy2 + k2)} ${f2(cx2 - r10)},${f2(cy2)}C${f2(cx2 - r10)},${f2(cy2 - k2)} ${f2(cx2 - k2)},${f2(cy2 - r10)} ${f2(cx2)},${f2(cy2 - r10)}C${f2(cx2 + k2)},${f2(cy2 - r10)} ${f2(cx2 + r10)},${f2(cy2 - k2)} ${f2(cx2 + r10)},${f2(cy2)}Z`;
 };
 var accText = (rel) => rel > 0 ? "\u266F".repeat(rel) : rel < 0 ? "\u266D".repeat(-rel) : "\u266E";
+var LETTER_EM = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
+var letterW = (step) => (LETTER_EM[step] ?? 0.66) * DIGIT_W / 0.555;
+var SCRIPT_K = 0.6;
+var SCRIPT_GAP = 0.03 * FS;
+var SUP_DY = -0.45 * FS;
+var SUB_DY = 0.18 * FS;
+var SUB_DROP = 0.2 * FS;
+var SUP_RISE = 0.15 * FS;
+var letterParts = (p2, middleC) => ({ letter: p2.step, acc: p2.alter > 0 ? "\u266F".repeat(p2.alter) : p2.alter < 0 ? "\u266D".repeat(-p2.alter) : "", oct: String(p2.octave - 4 + middleC) });
+var scriptW = (p2, middleC) => {
+  const lp2 = letterParts(p2, middleC);
+  return SCRIPT_GAP + Math.max([...lp2.acc].length * ACC_W * (SCRIPT_K * FS / ACC_EM), lp2.oct.length * SCRIPT_K * DIGIT_W);
+};
+var letterNoteW = (ps, middleC) => Math.max(...ps.map((p2) => letterW(p2.step) + scriptW(p2, middleC)));
 
 // src/render/jianpu/measure.ts
 var contDash = (u2) => u2.note && u2.j > 0 && u2.inBar > 1e-6 && u2.base >= TPQ && !u2.ratio && Math.abs(u2.ticks / TPQ - Math.round(u2.ticks / TPQ)) < 1e-6;
@@ -13342,9 +13374,12 @@ function hasAugDot(u2) {
   return u2.base >= TPQ ? Math.floor(u2.ticks / TPQ + 1e-6) * TPQ < u2.ticks - 1e-6 : u2.dotted;
 }
 var foldOf = (u2, aux) => u2.note && u2.pitch && !contDash(u2) ? aux?.folds?.get(u2.index) : void 0;
-var glyphWOf = (u2, aux) => {
+var lettersOf = (q2, u2, mode, aux) => q2.letters !== void 0 && mode === "digits" && u2.note && u2.pitch && !u2.ghost && !contDash(u2) && !foldOf(u2, aux) ? { w: letterNoteW(u2.pitches.length ? u2.pitches : [u2.pitch], q2.letters) } : null;
+var glyphWOf = (u2, aux, q2 = {}) => {
   const f2 = foldOf(u2, aux);
-  return f2 ? chordNameW(f2.name) : DIGIT_W;
+  if (f2) return chordNameW(f2.name);
+  const lt2 = lettersOf(q2, u2, "digits", aux);
+  return lt2 ? lt2.w : DIGIT_W;
 };
 var accsOf = (u2) => u2.j !== 0 || !u2.note ? [] : u2.pitches.length > 1 ? u2.accs : [u2.acc];
 var hasArp = (u2) => u2.note && u2.j === 0 && u2.pitches.length > 1 && u2.art.includes("arpeggio");
@@ -13372,10 +13407,10 @@ function measureJianpu(q2, k2 = 1, mode = "digits", aux) {
   const inkL = /* @__PURE__ */ new Map();
   const spItems = (u2) => {
     if (u2.pad) return [];
-    const fd2 = mode === "digits" ? foldOf(u2, aux) : void 0, gw = fd2 ? chordNameW(fd2.name) + (fd2.ambiguous ? CHORD_AMB_W : 0) : DIGIT_W;
-    const n10 = extraGlyphs(u2), acc = mode === "digits" && !fd2 && accsOf(u2).some((a10) => a10 !== null);
+    const fd2 = mode === "digits" ? foldOf(u2, aux) : void 0, lt2 = lettersOf(q2, u2, mode, aux), gw = fd2 ? chordNameW(fd2.name) + (fd2.ambiguous ? CHORD_AMB_W : 0) : lt2 ? lt2.w : DIGIT_W;
+    const n10 = extraGlyphs(u2), acc = mode === "digits" && !fd2 && !lt2 && accsOf(u2).some((a10) => a10 !== null);
     const breathW = u2.note && u2.breath ? BREATH_W + (u2.inhale ? INHALE_W : 0) : 0;
-    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u2) ? ARP_W : 0)) * k2, right = Math.max(0, (core(u2, fd2 ? gw : 0) + 0.1 + n10 * DASH_PITCH + (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k2 - SP_DEFAULTS.pad);
+    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u2) ? ARP_W : 0)) * k2, right = Math.max(0, (core(u2, fd2 || lt2 && gw > DIGIT_W ? gw : 0) + 0.1 + n10 * DASH_PITCH + (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k2 - SP_DEFAULTS.pad);
     inkL.set(u2, Math.max(0, left));
     const out = [{ row: 0, left, right, dur: u2.ticks }];
     const cx2 = (0.1 + gw / 2) * k2;
@@ -13386,7 +13421,7 @@ function measureJianpu(q2, k2 = 1, mode = "digits", aux) {
   return { entries: entries2, inkL };
 }
 var jianpuLineStart = (_q, _key, _first, base2, k2 = 1) => base2 + 0.6 * k2;
-var jianpuLyricAnchors = (q2, k2 = 1, aux) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + (0.1 + glyphWOf(u2, aux) / 2) * k2, lyric: u2.lyric, hyph: u2.hyph }));
+var jianpuLyricAnchors = (q2, k2 = 1, aux) => q2.units.filter((u2) => u2.kind === "chunk" && !!u2.lyric && u2.lyric !== MELISMA_MARK).map((u2) => ({ index: u2.index, system: u2.system, cx: u2.x + (0.1 + glyphWOf(u2, aux, q2) / 2) * k2, lyric: u2.lyric, hyph: u2.hyph }));
 
 // src/score/degree.ts
 function toDegree(p2, fifths) {
@@ -13534,16 +13569,17 @@ function drawJianpu(c10, mine, mode = "digits") {
       dynOff: dynOverridden(tokens),
       navMute: (i10) => navWhy(song, paper, q2.p.id, tokens[i10]) ? " art-mute" : ""
     };
+    const letters = q2.letters !== void 0 && mode === "digits", tonicOf = (f2) => letters ? 0 : f2;
     let f0 = q2.head.key;
     const shifts = [];
     for (const u2 of units) {
       if (u2.kind === "key") f0 = u2.fifths;
-      else if (u2.kind === "chunk" && u2.note && u2.pitch && !u2.pad) shifts.push(toDegree(u2.pitch, f0).shift);
+      else if (u2.kind === "chunk" && u2.note && u2.pitch && !u2.pad) shifts.push(toDegree(u2.pitch, tonicOf(f0)).shift);
     }
-    const fewest = fewestDotsBase(shifts), byRange = q2.p.range ? rangeBase(q2.p.range.lo, q2.p.range.hi, q2.head.key) : null;
+    const fewest = fewestDotsBase(shifts), byRange = q2.p.range ? rangeBase(q2.p.range.lo, q2.p.range.hi, tonicOf(q2.head.key)) : null;
     const base2 = byRange !== null && shifts.every((x2) => Math.abs(x2 - byRange) <= 2) ? byRange : fewest;
     const keyDots = (row2, x0, y2, size, text2, tok) => {
-      if (!base2 || mode !== "digits") return;
+      if (!base2 || mode !== "digits" || letters) return;
       const cs2 = [...text2], li2 = cs2.findIndex((ch2) => /[A-G]/.test(ch2));
       if (li2 < 0) return;
       const wOf = (ch2) => (/[0-9]/.test(ch2) ? 0.56 : ch2 === "=" ? 0.6 : /[♭♯]/.test(ch2) ? 0.5 : 0.66) * size;
@@ -13552,7 +13588,10 @@ function drawJianpu(c10, mine, mode = "digits") {
     };
     for (let s10 = 0; s10 < nSys; s10++) {
       const row2 = rowOf(s10, r10, 0);
-      if (rows[row2]) rows[row2].octBase = base2;
+      if (rows[row2]) {
+        rows[row2].octBase = base2;
+        if (letters) rows[row2].middleC = q2.letters;
+      }
     }
     const row0 = rowOf(0, r10, 0), hx = P2(MARGIN + ind0) + Q2(0.6);
     const keyS = keyHead(q2.head.key, q2.head.minor), timeS = `${q2.head.time.beats}/${q2.head.time.beatType}`, hs = Q2(HEAD_EM);
@@ -13561,12 +13600,12 @@ function drawJianpu(c10, mine, mode = "digits") {
     c10.attach(row0, "tempo", () => placeAbove(row0, 0.5 * jk, (y2) => {
       const kw = P2(headW(keyS)), tw2 = P2(headW(timeS));
       const kt = q2.head.idx.key !== void 0 ? tokens[q2.head.idx.key]?.id : void 0, tt2 = q2.head.idx.time !== void 0 ? tokens[q2.head.idx.time]?.id : void 0;
-      if (mode === "x") keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q2.head.idx.key ?? 0, x: hx, y: y2, size: tx2("key-hint"), s: keyS });
+      if (mode === "x" || letters) keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q2.head.idx.key ?? 0, x: hx, y: y2, size: tx2("key-hint"), s: keyS });
       else {
         put2(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y: y2, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
         keyDots(row0, hx, y2, hs, keyS, kt);
       }
-      put2(row0, { ...tt2 !== void 0 ? { tok: tt2 } : {}, t: "text", x: hx + kw, y: y2, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
+      put2(row0, { ...tt2 !== void 0 ? { tok: tt2 } : {}, t: "text", x: letters ? hx : hx + kw, y: y2, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
       if (tempoHere) tempoAt2(orn, row0, MARGIN + ind0 + 0.6 * jk + headW(keyS) + headW(timeS) + 0.6 * jk, q2.head.bpm, "tempo", q2.head.idx.tempo, c10.prevBpm === null || c10.prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > c10.prevBpm ? "up" : "down", y2);
       if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row0, x: hx - Q2(0.3), y: y2 - hs, w: kw, h: hs * 1.4 });
       for (let i10 = 0; i10 < tokens.length; i10++) {
@@ -13591,7 +13630,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       if (u2.kind === "key") {
         fifths = u2.fifths;
         const row3 = rowOf(u2.system, r10, 0), s10 = keyHead(u2.fifths, u2.minor), x2 = P2(u2.x) + Q2(0.3);
-        if (mode === "x") keyHints.push({ ...tokens[u2.index] ? { tok: tokens[u2.index].id } : {}, system: row3, index: u2.index, x: x2, y: Y2(row3, BASE_Y - 0.3), size: tx2("key-hint"), s: s10 });
+        if (mode === "x" || letters) keyHints.push({ ...tokens[u2.index] ? { tok: tokens[u2.index].id } : {}, system: row3, index: u2.index, x: x2, y: Y2(row3, BASE_Y - 0.3), size: tx2("key-hint"), s: s10 });
         else {
           put2(row3, { tok: tokens[u2.index]?.id, t: "text", x: x2, y: Y2(row3, BASE_Y - 0.3), s: s10, cls: "jp-head jp-mid", size: Q2(MID_TEXT_EM), anchor: "start" });
           keyDots(row3, x2, Y2(row3, BASE_Y - 0.3), Q2(MID_TEXT_EM), s10, tokens[u2.index]?.id);
@@ -13647,14 +13686,14 @@ function drawJianpu(c10, mine, mode = "digits") {
         continue;
       }
       if (u2.kind !== "chunk" || u2.pad) continue;
-      const fd2 = mode === "digits" ? foldOf(u2, c10.aux[r10]) : void 0, nameW = fd2 ? chordNameW(fd2.name) : 0, glyphW = fd2 ? nameW + (fd2.ambiguous ? CHORD_AMB_W : 0) : DIGIT_W;
+      const fd2 = mode === "digits" ? foldOf(u2, c10.aux[r10]) : void 0, nameW = fd2 ? chordNameW(fd2.name) : 0, lt2 = lettersOf(q2, u2, mode, c10.aux[r10]), glyphW = fd2 ? nameW + (fd2.ambiguous ? CHORD_AMB_W : 0) : lt2 ? lt2.w : DIGIT_W;
       const row2 = rowOf(u2.system, r10, 0), tok = tokOf(u2), x0 = P2(u2.x) + Q2(0.1), cx2 = x0 + Q2(glyphW / 2), T3 = tok !== void 0 ? { tok } : {};
       const n10 = extraGlyphs(u2), contDash2 = contDash(u2);
       const tailW = hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0;
       const span2 = (spanTo.get(u2) ?? u2.x + u2.w) - u2.x;
       const step = n10 ? Math.max(DASH_PITCH * jk, (span2 - tailW * jk) / (n10 + 1)) : 0;
-      const gx = (k2) => k2 === 0 ? cx2 : cx2 + Q2((glyphW - DIGIT_W) / 2) + P2(k2 * step);
-      const endX = n10 ? gx(n10) + Q2(DIGIT_W / 2) : cx2 + Q2(glyphW / 2);
+      const gx = (k2) => k2 === 0 ? cx2 : x0 + Q2(glyphW - DIGIT_W / 2) + P2(k2 * step);
+      const endX = n10 ? gx(n10) + Q2(DIGIT_W / 2) : x0 + Q2(glyphW);
       const small = u2.art.includes("ghost");
       const digit = (x2, s10) => put2(row2, { ...T3, t: "text", x: x2, y: Y2(row2, BASE_Y), s: s10, cls: u2.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: Q2(small ? DIGIT_EM * GHOST_K : DIGIT_EM), anchor: "middle" });
       const dash = (x2) => put2(row2, { ...T3, t: "line", x1: x2 - Q2(DASH_L / 2), y1: Y2(row2, DASH_Y), x2: x2 + Q2(DASH_L / 2), y2: Y2(row2, DASH_Y), w: Q2(DASH_W), cls: "jp-dash" });
@@ -13668,8 +13707,8 @@ function drawJianpu(c10, mine, mode = "digits") {
         if (u2.j === 0) notes.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: Q2(DIGIT_W), d: NaN });
         if (u2.j === 0 && !u2.tie) spots.push({ index: u2.index, sys: u2.system, row: row2, cx0: cx2, mx0: x0 - Q2(0.6), mx1: x0 + Q2(DIGIT_W) + Q2(0.4), lyric: u2.lyric, tok, cls: "ghost", mute: !!q2.p.lyricMute?.has(tokens[u2.index]?.id ?? -1), hyph: !!tokens[u2.index]?.hyph });
       } else if (u2.note && u2.pitch) {
-        const ps = fd2 ? [fd2.bass] : u2.pitches.length > 1 ? u2.pitches : [u2.pitch], accs = fd2 ? [] : accsOf(u2), dg = ps.map((pp) => toDegree(pp, fifths)), dotsOf = dg.map((d3) => mode === "x" ? 0 : d3.shift - base2);
-        const order = ps.map((_2, i10) => ps.length - 1 - i10), bases = stackBases(order.map((i10) => dotsOf[i10])), hiBase = bases[bases.length - 1], hiDots = dotsOf[0], lowDots = dotsOf[order[0]];
+        const ps = fd2 ? [fd2.bass] : u2.pitches.length > 1 ? u2.pitches : [u2.pitch], accs = fd2 ? [] : accsOf(u2), dg = ps.map((pp) => toDegree(pp, tonicOf(fifths))), dotsOf = dg.map((d3) => mode === "x" || letters ? 0 : d3.shift - base2);
+        const order = ps.map((_2, i10) => ps.length - 1 - i10), bases = letters ? order.map((_2, k2) => BASE_Y - k2 * (DIGIT_H + SUB_DROP + SUP_RISE + CHORD_GAP)) : stackBases(order.map((i10) => dotsOf[i10])), hiBase = bases[bases.length - 1], hiDots = dotsOf[0], lowDots = dotsOf[order[0]];
         const nUL0 = underlines(u2);
         if (contDash2) for (let k2 = 0; k2 <= n10; k2++) dash(gx(k2));
         else if (fd2) {
@@ -13707,8 +13746,14 @@ function drawJianpu(c10, mine, mode = "digits") {
         } else {
           order.forEach((i10, k2) => {
             const yb = bases[k2], d3 = dg[i10], dots = dotsOf[i10], mute = i10 > 0 && !!q2.p.mono ? " chord-mute" : "";
-            put2(row2, { ...T3, t: "text", x: cx2, y: Y2(row2, yb), s: String(d3.degree), cls: (small ? "jp-digit art-ghost" : "jp-digit") + mute, size: Q2(small ? DIGIT_EM * GHOST_K : DIGIT_EM), anchor: "middle" });
-            if (accs[i10] !== null && accs[i10] !== void 0) put2(row2, { ...T3, t: "text", x: cx2 - Q2(ACC_DX), y: Y2(row2, yb - (BASE_Y - ACC_Y)), s: accText(d3.acc), cls: "jp-acc" + mute, size: Q2(ACC_EM), anchor: "middle" });
+            const pp = ps[i10], gk = small ? GHOST_K : 1;
+            if (lt2) {
+              const lp2 = letterParts(pp, q2.letters), xs = x0 + Q2((letterW(pp.step) + SCRIPT_GAP) * gk), ss2 = Q2(DIGIT_EM * SCRIPT_K * gk), cls = (small ? "jp-digit jp-letter art-ghost" : "jp-digit jp-letter") + mute;
+              put2(row2, { ...T3, t: "text", x: x0, y: Y2(row2, yb), s: lp2.letter, cls, size: Q2(DIGIT_EM * gk), anchor: "start" });
+              if (lp2.acc) put2(row2, { ...T3, t: "text", x: xs, y: Y2(row2, yb + SUP_DY * gk), s: lp2.acc, cls: "jp-acc jp-letter-sup" + mute, size: ss2, anchor: "start" });
+              put2(row2, { ...T3, t: "text", x: xs, y: Y2(row2, yb + SUB_DY * gk), s: lp2.oct, cls: "jp-digit jp-letter-sub" + mute, size: ss2, anchor: "start" });
+            } else put2(row2, { ...T3, t: "text", x: cx2, y: Y2(row2, yb), s: String(d3.degree), cls: (small ? "jp-digit art-ghost" : "jp-digit") + mute, size: Q2(small ? DIGIT_EM * GHOST_K : DIGIT_EM), anchor: "middle" });
+            if (!lt2 && accs[i10] !== null && accs[i10] !== void 0) put2(row2, { ...T3, t: "text", x: cx2 - Q2(ACC_DX), y: Y2(row2, yb - (BASE_Y - ACC_Y)), s: accText(d3.acc), cls: "jp-acc" + mute, size: Q2(ACC_EM), anchor: "middle" });
             for (let j2 = 0; j2 < Math.abs(dots); j2++) {
               const yy = dots > 0 ? yb - DIGIT_H - DOT_GAP - DOT_R - j2 * DOT_STEP : k2 === 0 ? lowDotY(nUL0, j2) : yb + LOW_DOT_UNDER + j2 * DOT_STEP;
               put2(row2, { ...T3, t: "path", d: dotPath(cx2, Y2(row2, yy), Q2(DOT_R)), cls: "jp-dot" + mute });
@@ -13724,7 +13769,7 @@ function drawJianpu(c10, mine, mode = "digits") {
           }
         }
         if (!contDash2) {
-          let top = fd2 ? hiDots > 0 ? BASE_Y - CHORD_H - DOT_GAP - DOT_R * 2 - (hiDots - 1) * DOT_STEP : BASE_Y - CHORD_H : hiDots > 0 ? hiBase - DIGIT_H - DOT_GAP - DOT_R * 2 - (hiDots - 1) * DOT_STEP : hiBase - DIGIT_H;
+          let top = fd2 ? hiDots > 0 ? BASE_Y - CHORD_H - DOT_GAP - DOT_R * 2 - (hiDots - 1) * DOT_STEP : BASE_Y - CHORD_H : hiDots > 0 ? hiBase - DIGIT_H - DOT_GAP - DOT_R * 2 - (hiDots - 1) * DOT_STEP : hiBase - DIGIT_H - (letters ? SUP_RISE : 0);
           const local = ["staccato", "tenuto"].filter((x2) => u2.art.includes(x2));
           if (local.length) {
             let ya = top - MARK_GAP;
@@ -13777,7 +13822,7 @@ function drawJianpu(c10, mine, mode = "digits") {
         if (u2.inhale) put2(row2, { ...T3, t: "text", x: bx + Q2(1), y: Y2(row2, BREATH_Y), s: u2.inhale === "big" ? _tIn(o10.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o10.locale, "\u5438##\u8BB0\u53F7"), cls: artCls("inhale", "breath-label"), size: tx2("breath-label"), anchor: "start" });
       }
       if (nUL) {
-        const bar0 = u2.tick - u2.inBar, uh = fd2 ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
+        const bar0 = u2.tick - u2.inBar, uh = fd2 || lt2 ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
         ul2.push({ row: row2, x0: cx2 - Q2(uh), x1: cx2 + Q2(uh), level: nUL, group: `${u2.system}|${bar0}|${Math.floor((u2.inBar + 1e-6) / u2.beat)}`, tok });
       }
     }
@@ -13791,7 +13836,7 @@ function drawJianpu(c10, mine, mode = "digits") {
         }
         let j2 = i10;
         while (j2 + 1 < ul2.length && ul2[j2 + 1].level >= L2 && ul2[j2 + 1].group === ul2[i10].group) j2++;
-        const a10 = ul2[i10], b3 = ul2[j2], y2 = Y2(a10.row, UL_Y0 + (L2 - 1) * UL_GAP);
+        const a10 = ul2[i10], b3 = ul2[j2], y2 = Y2(a10.row, UL_Y0 + (L2 - 1) * UL_GAP + (letters ? SUB_DROP : 0));
         put2(a10.row, { ...i10 === j2 && a10.tok !== void 0 ? { tok: a10.tok } : {}, t: "line", x1: a10.x0, y1: y2, x2: b3.x1, y2, w: Q2(UL_W), cls: "jp-ul" });
         i10 = j2 + 1;
       }
@@ -13883,6 +13928,16 @@ var jianpuPreviewAt = (row2, x2, half2) => {
 var jianpuBandTop = (row2, half2) => row2.staffTop + CARET_Y0 * unitOf(row2, half2);
 function jianpuGhost(row2, x2, notes, half2) {
   const sp2 = unitOf(row2, half2), pv2 = jianpuPreviewAt(row2, x2, half2), face = TEXT_FACES[TEXT_STYLES["jp-digit"].face], parts = [];
+  if (row2.middleC !== void 0) {
+    const low2 = [...notes].sort((a10, b3) => midiOf(a10.p) - midiOf(b3.p)), x0 = pv2.x - DIGIT_W / 2 * sp2, ss2 = pv2.size * SCRIPT_K;
+    low2.forEach((n10, k2) => {
+      const lp2 = letterParts(n10.p, row2.middleC), dy = -k2 * (DIGIT_H + SUB_DROP + SUP_RISE + CHORD_GAP) * sp2, xs = x0 + (letterW(n10.p.step) + SCRIPT_GAP) * sp2;
+      parts.push(`<text x="${x0}" y="${pv2.y + dy}" font-family='${face}' font-size="${pv2.size}">${lp2.letter}</text>`);
+      if (lp2.acc) parts.push(`<text x="${xs}" y="${pv2.y + dy + SUP_DY * sp2}" font-family='${face}' font-size="${ss2}">${lp2.acc}</text>`);
+      parts.push(`<text x="${xs}" y="${pv2.y + dy + SUB_DY * sp2}" font-family='${face}' font-size="${ss2}">${lp2.oct}</text>`);
+    });
+    return parts.join("");
+  }
   const low = [...notes].sort((a10, b3) => midiOf(a10.p) - midiOf(b3.p)), dg = low.map((n10) => toDegree(n10.p, n10.fifths)), dotsOf = dg.map((d3) => d3.shift - (row2.octBase ?? 0)), bases = stackBases(dotsOf);
   low.forEach((n10, k2) => {
     const d3 = dg[k2], dots = dotsOf[k2], dy = (bases[k2] - BASE_Y) * sp2, Y2 = (v) => row2.staffTop + v * sp2 + dy;
@@ -13919,7 +13974,12 @@ var NOTATIONS2 = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边一条竖线 = families "line"），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
   //   有叠音的声部 = 数字竖着叠（数字行）；鼓 = X 行；固定敲一个键的 = 数字 + ×；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
-  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: (rows, c10) => staffTracks(rows, { ...c10, restBeats: true }) }, rowKindOf: jianpuRowOf, families: "line" }
+  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: (rows, c10) => staffTracks(rows, { ...c10, restBeats: true }) }, rowKindOf: jianpuRowOf, families: "line" },
+  // 字母谱（7-B，user「字母版本的变体的，别人还在等着要用呢」「这个就是用tracker的格式写」）：简谱的变体——同一种数字行，建轨时给每条轨标上「写字母」（带着中央 C 叫 C 几；字母 + 右上升降号 + 右下八度数字，user「下标放数字上标放升降号」），量和画只换「数字」那一栏
+  letters: { id: "letters", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: (rows, c10) => {
+    const t10 = staffTracks(rows, { ...c10, restBeats: true });
+    return { ...t10, per: t10.per.map((q2) => ({ ...q2, letters: c10.look.middleC })) };
+  } }, rowKindOf: jianpuRowOf, families: "line" }
 };
 
 // src/render/frame/lanes.ts
@@ -32970,15 +33030,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-fc088e237174.mjs");
+      return pick(() => "singer-worker-5dcc08fe2fcc.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-965fa73dd8b2.mjs");
+      return pick(() => "layout-worker-c0f1838e8c35.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-694d86a3c6e5.mjs");
+      return pick(() => "encode-worker-2a99dcc81359.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35419,7 +35479,7 @@ function readMusicXml(xml, hints) {
 
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
-var FORMAT_MINOR = { manifest: 1, score: 5, lounge: 1, studio: 1 };
+var FORMAT_MINOR = { manifest: 1, score: 6, lounge: 1, studio: 1 };
 var FORMAT_PATCH = { manifest: 1, score: 0, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
@@ -35732,13 +35792,15 @@ var stampOf = (k2) => ({ version: FORMAT[k2], minor: FORMAT_MINOR[k2], patch: FO
 var songViewFields = (x2) => ({
   ...typeof x2?.notation === "string" && x2.notation && x2.notation !== "staff" ? { notation: x2.notation } : {},
   ...x2?.chordTags === false ? { chordTags: false } : {},
-  ...x2?.viewInC === true ? { viewInC: true } : {}
+  ...x2?.viewInC === true ? { viewInC: true } : {},
+  ...typeof x2?.middleC === "number" && Number.isInteger(x2.middleC) && x2.middleC >= 0 && x2.middleC <= 9 && x2.middleC !== 4 ? { middleC: x2.middleC } : {}
+  // score minor 6（7-B）：字母谱里中央 C 叫 C 几（没写 = C4）
 });
 var fpTextOf = (o10) => {
   const { minor: _m, patch: _p, ...rest } = o10;
   return JSON.stringify(rest, null, 2) + "\n";
 };
-var KNOWN_SCORE_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "viewInC"]);
+var KNOWN_SCORE_KEYS = /* @__PURE__ */ new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "viewInC", "middleC"]);
 var KNOWN_PAPER_KEYS = /* @__PURE__ */ new Set(["id", "file", "manualBars", "unwritten", "swells", "hidden", "autoOttava", "phrases"]);
 var KNOWN_PART_KEYS = /* @__PURE__ */ new Set(["id", "role", "mic", "kind", "clef", "autoOttava", "host", "brokenChords", "chords"]);
 var unknownById = (list2, known) => {
@@ -35896,7 +35958,8 @@ function buildEntries(a10) {
     // 这首歌怎么看（score minor 5，谱面分家第三刀；src/score/song-view.ts）：只写不是「没写的意思」的值，不认识的谱种原样写回
     ...typeof song.notation === "string" && song.notation ? { notation: song.notation } : {},
     ...song.chordTags === false ? { chordTags: false } : {},
-    ...song.viewInC === true ? { viewInC: true } : {}
+    ...song.viewInC === true ? { viewInC: true } : {},
+    ...typeof song.middleC === "number" && song.middleC !== 4 ? { middleC: song.middleC } : {}
   };
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a10.extras.sounds).filter(([p2]) => referenced.has(p2)).sort(([x2], [y2]) => x2 < y2 ? -1 : 1);
@@ -42922,7 +42985,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "a665a19b04936eb0" : "dev";
+var CORE_HASH = true ? "269035fbe6d2143e" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -59174,9 +59237,10 @@ function openPaperSheet() {
   const draw = () => {
     const p2 = D3.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D3.st.song);
     const nota = (id2, label, note2) => `<button class="btn cand${look.notation === id2 ? " is-on" : ""}" data-v="nota:${id2}">${label}<small>${note2}</small></button>`;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u7EB8")}</div><div class="part-sec">${_t("\u8C31\u79CD")}</div><div class="set-row">` + nota("staff", _t("\u4E94\u7EBF\u8C31"), _t("\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A")) + nota("jianpu", _t("\u7B80\u8C31"), _t("\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09\uFF1B\u6709\u53E0\u97F3\u7684\u58F0\u90E8\u3001\u9F13\u548C\u5408\u79DF\u53E0\u8D77\u6765\u7684\u90A3\u4E00\u884C\u6682\u65F6\u8FD8\u753B\u6210\u4E94\u7EBF\u8C31")) + `</div><div class="part-sec">${_t("\u7EB8\u5F20")}</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("\u5176\u4ED6")}<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">${_t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002")}</div><div class="part-sec">${_t("\u7248\u5F0F")}</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${look.density === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">${_t("\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002")}</div><div class="part-sec">${_t("\u7EB8\uFF08\u66F2\u6BB5\uFF09")}</div>` + D3.st.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc11(pp.name || _t("\uFF08\u6CA1\u540D\u5B57\uFF09"))}${pp.hidden ? _t("\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09") : ""}${pp.id === D3.st.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc11(pp.id)}" title="${_t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u9690\u85CF / \u5220\u3001\u5728\u4E0A\u9762 / \u4E0B\u9762\u63D2\u4E00\u6BB5\u3001\u632A\u3001\u79FB\u8C03")}">\u22EF</button></div>`).join("") + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u7EB8")}</div><div class="part-sec">${_t("\u8C31\u79CD")}</div><div class="set-row">` + nota("staff", _t("\u4E94\u7EBF\u8C31"), _t("\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A")) + nota("jianpu", _t("\u7B80\u8C31"), _t("\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09")) + nota("letters", _t("\u5B57\u6BCD\u8C31"), _t("\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C4\uFF09")) + `</div><div class="part-sec">${_t("\u7EB8\u5F20")}</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("\u5176\u4ED6")}<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">${_t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002")}</div><div class="part-sec">${_t("\u7248\u5F0F")}</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${look.density === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">${_t("\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002")}</div><div class="part-sec">${_t("\u7EB8\uFF08\u66F2\u6BB5\uFF09")}</div>` + D3.st.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc11(pp.name || _t("\uFF08\u6CA1\u540D\u5B57\uFF09"))}${pp.hidden ? _t("\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09") : ""}${pp.id === D3.st.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc11(pp.id)}" title="${_t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u9690\u85CF / \u5220\u3001\u5728\u4E0A\u9762 / \u4E0B\u9762\u63D2\u4E00\u6BB5\u3001\u632A\u3001\u79FB\u8C03")}">\u22EF</button></div>`).join("") + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
     ((one) => `<div class="part-sec">${_t("\u663E\u793A")}</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">${_t("\u53EA\u770B\u4E00\u53F7\u8F68")}<small>${_t("\u53EA\u770B\u300C{song}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B", { song: esc11(partLabels(D3.st.song, D3.extras)[0] ?? "") })}</small></button></div>`)(D3.st.song.parts[0]) + `<div class="part-sec">${_t("\u6392\u6CD5")}</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">${_t("\u8FDE\u7EED")}<small>${_t("\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837")}</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">${_t("\u5206\u9875")}<small>${_t("\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370")}</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">${_t("\u6A2A\u5377")}<small>${_t("\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9")}</small></button></div><div class="part-sec">${_t("\u5C0F\u8282\u53F7")}</div><div class="set-row"><button class="btn cand${look.barNumbers ? " is-on" : ""}" data-v="bn:on">${_t("\u6BCF\u884C\u5F00\u5934")}<small>${_t("\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0")}</small></button><button class="btn cand${look.barNumbers ? "" : " is-on"}" data-v="bn:off">${_t("\u4E0D\u5370")}</button></div><div class="part-sec">${_t("\u6B4C\u8BCD")}</div><div class="set-row"><button class="btn cand${look.lyricFit === "rhythm" ? " is-on" : ""}" data-v="lyr:rhythm">${_t("\u6309\u8282\u594F")}<small>${_t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")}</small></button><button class="btn cand${look.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("\u6309\u6B4C\u8BCD")}<small>${_t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")}</small></button></div>` + // 看谱（谱面分家第三刀：原来在设置的「乐理助手」里、存在设备上；现在是这首歌的，进歌、能撤销，锁着也能切。PDF 跟着）
-    ((lk2, movable = MOVABLE_DO[lk2.notation]) => `<div class="part-sec">${_t("\u770B\u8C31")}</div><div class="set-row"><button class="btn cand${lk2.viewInC ? "" : " is-on"}" data-v="inc:off"${movable ? " disabled" : ""}>${_t("\u4E13\u4E1A")}<small>${_t("\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D")}</small></button><button class="btn cand${lk2.viewInC ? " is-on" : ""}" data-v="inc:on"${movable ? " disabled" : ""}>${_t("\u6309 C \u8C03\u770B\uFF081=X\uFF09")}<small>${_t("\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8")}</small></button></div>` + (movable ? `<div class="offer-msg">${_t("\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002")}</div>` : "") + `<div class="set-row"><button class="btn cand${lk2.chordTags ? " is-on" : ""}" data-v="ct:on">${_t("\u548C\u5F26\u6807\u7EA7\u6570")}<small>${_t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009")}</small></button><button class="btn cand${lk2.chordTags ? "" : " is-on"}" data-v="ct:off">${_t("\u4E0D\u6807")}</button></div><div class="offer-msg">${_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u8D70\uFF1A\u5B58\u5728\u6B4C\u91CC\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002\u522B\u4EBA\u7684\u6B4C\u9501\u7740\u4E5F\u80FD\u5207\u7740\u770B\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u4EF6\u3002")}</div>`)(songViewOf(D3.st.song)) + `<div class="part-sec">${_t("\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019")}</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("\u4E0D\u6298\u884C")}<small>${_t("\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837")}</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">${_t("\u6298\u884C")}<small>${_t("\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9")}</small></button></div><div class="offer-msg">${_t("\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+    ((lk2, movable = !IN_C_APPLIES[lk2.notation]) => `<div class="part-sec">${_t("\u770B\u8C31")}</div><div class="set-row"><button class="btn cand${lk2.viewInC ? "" : " is-on"}" data-v="inc:off"${movable ? " disabled" : ""}>${_t("\u4E13\u4E1A")}<small>${_t("\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D")}</small></button><button class="btn cand${lk2.viewInC ? " is-on" : ""}" data-v="inc:on"${movable ? " disabled" : ""}>${_t("\u6309 C \u8C03\u770B\uFF081=X\uFF09")}<small>${_t("\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8")}</small></button></div>` + // 字母谱：中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；只在字母谱时显示，存在歌里）
+    (lk2.notation === "letters" ? `<div class="set-row">${MIDDLE_C_NAMES.map((n10) => `<button class="btn cand${lk2.middleC === n10 ? " is-on" : ""}" data-v="mc:${n10}">${_t("\u4E2D\u592E C \u53EB C{n}", { n: n10 })}${n10 === 4 ? `<small>${_t("\u9ED8\u8BA4")}</small>` : ""}</button>`).join("")}</div>` : "") + (movable ? `<div class="offer-msg">${MOVABLE_DO[lk2.notation] ? _t("\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002") : _t("\u5B57\u6BCD\u8C31\u5199\u7684\u662F\u5B9E\u9645\u7684\u97F3\u540D\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002")}</div>` : "") + `<div class="set-row"><button class="btn cand${lk2.chordTags ? " is-on" : ""}" data-v="ct:on">${_t("\u548C\u5F26\u6807\u7EA7\u6570")}<small>${_t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009")}</small></button><button class="btn cand${lk2.chordTags ? "" : " is-on"}" data-v="ct:off">${_t("\u4E0D\u6807")}</button></div><div class="offer-msg">${_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u8D70\uFF1A\u5B58\u5728\u6B4C\u91CC\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002\u522B\u4EBA\u7684\u6B4C\u9501\u7740\u4E5F\u80FD\u5207\u7740\u770B\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u4EF6\u3002")}</div>`)(songViewOf(D3.st.song)) + `<div class="part-sec">${_t("\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019")}</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("\u4E0D\u6298\u884C")}<small>${_t("\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837")}</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">${_t("\u6298\u884C")}<small>${_t("\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9")}</small></button></div><div class="offer-msg">${_t("\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   };
   draw();
   document.body.append(box);
@@ -59198,8 +59262,12 @@ function openPaperSheet() {
     } else if (v?.startsWith("density:")) {
       update(setDensity(D3.st, v.slice(8)));
       draw();
-    } else if (v === "nota:staff" || v === "nota:jianpu") {
-      setSongLook(setNotation(D3.st, v.slice(5)), v === "nota:jianpu" ? _t("\u7B80\u8C31") : _t("\u4E94\u7EBF\u8C31"));
+    } else if (v?.startsWith("mc:")) {
+      const n10 = Number(v.slice(3));
+      setSongLook(setMiddleC(D3.st, n10), _t("\u4E2D\u592E C \u53EB C{n}", { n: n10 }));
+      draw();
+    } else if (v === "nota:staff" || v === "nota:jianpu" || v === "nota:letters") {
+      setSongLook(setNotation(D3.st, v.slice(5)), v === "nota:jianpu" ? _t("\u7B80\u8C31") : v === "nota:letters" ? _t("\u5B57\u6BCD\u8C31") : _t("\u4E94\u7EBF\u8C31"));
       draw();
     } else if (v?.startsWith("pm:")) {
       close();
@@ -62666,4 +62734,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-4e55d6e2581d.mjs.map
+//# sourceMappingURL=moonsinger-67f2c07857a5.mjs.map

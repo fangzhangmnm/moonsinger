@@ -72,9 +72,9 @@ function hitTrack(L: Layout, song: Song, h: { system: number; part?: string }): 
 const headIdx = (toks: readonly Token[]) => { const k = toks.findIndex((t) => t.kind === "note" || t.kind === "rest"); return k < 0 ? toks.length : k; };
 /** 只在编辑器里有（提示 / 灰标，不印）、印出来没有的 token：只许这几种说得出道理的（统筹裁定 5-3，施工单第五节「小弟问（5-3 守卫 4 补缺口）」下面），按种类点名。 */
 type EditorOnly = "unwritten-key" | "row-cannot" | "no-effect";
-function editorOnlyWhy(w: Where, L: Layout, drums: ReadonlySet<string>): EditorOnly | null {
+function editorOnlyWhy(w: Where, L: Layout, drums: ReadonlySet<string>, keyless = false): EditorOnly | null {
   const rows = L.systems.filter((r) => r.paper === w.paper && r.part === w.part);
-  if (w.tok.kind === "key" && (w.tok.fifths === 0 || drums.has(w.part))) return "unwritten-key";   // 课本写法本来就不画的：C 大调的调号、鼓的那几行上的调号（淡的「1=C」「1=D」提示）
+  if (w.tok.kind === "key" && (w.tok.fifths === 0 || drums.has(w.part) || keyless)) return "unwritten-key";   // keyless = 字母谱（7-B：写实际的音名、调号不写，编辑器里淡的提示）   // 课本写法本来就不画的：C 大调的调号、鼓的那几行上的调号（淡的「1=C」「1=D」提示）
   if ((w.tok.kind === "clef" || w.tok.kind === "ottava") && rows.length > 0 && rows.every((r) => r.kind === "jianpu")) return "row-cannot";   // 这种行用不上的记号：数字行上的谱号记号、八度线（小灰标）
   if (w.tok.kind === "ottava" && rows.some((r) => r.staff === 2)) return "no-effect";   // 现在不起作用的记号：大谱表上的八度线（画灰；真做 = 愿望单 W-73）
   return null;
@@ -90,7 +90,7 @@ function representedBy(w: Where, song: Song, L: Layout): Rep | null {
   return null;
 }
 describe("谱面排版：全量和点击（守卫 4 / 5）", () => {
-  const cases = [{ name: "五线谱", song: fullSong() }, { name: "简谱", song: { ...fullSong(), notation: "jianpu" } as Song }];
+  const cases = [{ name: "五线谱", song: fullSong() }, { name: "简谱", song: { ...fullSong(), notation: "jianpu" } as Song }, { name: "字母谱", song: { ...fullSong(), notation: "letters" } as Song }];   // 字母谱 = 7-B
   const view = FULL_VIEWS.find((v) => v.name === "edit-all")!;
   for (const c of cases) {
     it(`守卫 4（全量）· ${c.name}：每个 token 至少一个图元指着它；没有的只许三类，每类由别的东西代表着（正面断言）；一个图元最多指一个 token`, () => {
@@ -101,7 +101,7 @@ describe("谱面排版：全量和点击（守卫 4 / 5）", () => {
       for (const paper of c.song.papers) for (const [part, toks] of Object.entries(paper.tracks)) toks.forEach((tok, index) => {
         if (has.has(tok.id)) return;
         const w = { paper: paper.id, part, index, tok };
-        if (shown.has(tok.id)) { const e = editorOnlyWhy(w, L, drums); if (e) only.set(e, (only.get(e) ?? 0) + 1); else seen.push(`${paper.id}/${part} ${tok.kind}#${tok.id}（只在编辑器里有）`); return; }
+        if (shown.has(tok.id)) { const e = editorOnlyWhy(w, L, drums, c.song.notation === "letters"); if (e) only.set(e, (only.get(e) ?? 0) + 1); else seen.push(`${paper.id}/${part} ${tok.kind}#${tok.id}（只在编辑器里有）`); return; }
         const why = representedBy(w, c.song, L);
         if (!why) { seen.push(`${paper.id}/${part} ${tok.kind}#${tok.id}`); return; }
         reps.set(why, [...(reps.get(why) ?? []), w]);
@@ -127,9 +127,9 @@ describe("谱面排版：全量和点击（守卫 4 / 5）", () => {
         const pl = L.papers.find((x) => x.id === w.paper);
         assert(!!pl && (c.song.papers.find((x) => x.id === w.paper)!.hidden ? !!pl.title : pl.hiddenParts.includes(w.part)), `${w.paper}/${w.part} 隐藏了：版面里有那一条`);
       }
-      assert((reps.get("family")?.length ?? 0) > 0 || c.name === "简谱", "五线谱那份里有叠起来的一家（比较器不是空的）");
+      assert((reps.get("family")?.length ?? 0) > 0 || c.song.notation === "jianpu" || c.song.notation === "letters", "五线谱那份里有叠起来的一家（比较器不是空的；简谱 / 字母谱的合租不叠）");
       if (c.name === "简谱") eq(reps.get("family")?.length ?? 0, 0, "简谱里没有叠起来的一家（不叠）");
-      const expectOnly: EditorOnly[] = c.name === "简谱" ? ["unwritten-key", "row-cannot"] : ["unwritten-key", "no-effect"];   // 简谱里大谱表那一位排成数字行（八度线 = 这种行用不上的），五线谱里是大谱表（八度线 = 现在不起作用的）
+      const expectOnly: EditorOnly[] = c.name === "简谱" || c.name === "字母谱" ? ["unwritten-key", "row-cannot"] : ["unwritten-key", "no-effect"];   // 简谱里大谱表那一位排成数字行（八度线 = 这种行用不上的），五线谱里是大谱表（八度线 = 现在不起作用的）
       assert(expectOnly.every((k) => (only.get(k) ?? 0) > 0), `只在编辑器里有的那几种，测试歌里都碰到了（比较器不是空的）：${[...only].map(([k, n]) => `${k} ${n}`).join("、")}`);
     });
     it(`守卫 5（点击只指 token 或家具）· ${c.name}：每个带下标的点击框指向对的那条轨里对的那种 token；光标落点在轨长之内`, () => {

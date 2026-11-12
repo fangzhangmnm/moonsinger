@@ -4,7 +4,7 @@ import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave, type Prim } from "../src/render/engrave.ts";
 import { createTextMeasure, textStyleOf } from "../src/render/text/index.ts";
 import { initState, TPQ, type Song, type Token } from "../src/score/song.ts";
-import { setNotation, setPartChords } from "../src/score/song-view.ts";
+import { setNotation, setPartChords, setMiddleC } from "../src/score/song-view.ts";
 import { GEOMETRY, DRAWERS } from "../src/render/notations.ts";
 import { SIGNS } from "../src/render/signs.ts";
 import { harmonyTheory } from "../src/theory/index.ts";
@@ -281,6 +281,35 @@ describe("简谱数字行", () => {
     eq(zeros(12, 8).zeros, 4, "12/8：四个「0·」");
     eq(JSON.stringify(zeros(3, 4)), JSON.stringify({ zeros: 3, dots: 0, dotRight: true }), "3/4 照旧三个 0、没有点");
     eq(zeros(4, 4).zeros, 4, "4/4 照旧四个 0");
+  });
+  it("字母谱（7-B）：同一种数字行，只把数字换成实际音名的大写字母，右上角挂升降号（每个带升降的都写）、右下角挂八度数字；不用点、不写调号；中央 C 叫法跟着歌", () => {
+    const letters = (body: Omit<Token, "id">[], key = 2, extra: (s: Song) => Song = (x) => x) => lay(body, (s0) => {
+      const st0 = initState(), part = st0.at.part, paper = s0.papers[0]!;
+      const toks = paper.tracks[part]!.map((t) => (t.kind === "key" ? { ...t, fifths: key } : t));
+      return extra({ ...setNotation({ ...st0, song: { ...s0, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: toks } }] } }, "letters").song });
+    });
+    const texts = (L: ReturnType<typeof lay>["L"], re: RegExp) => L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && re.test(p.cls ?? ""));
+    // D 大调里的 E4 F♯4 G4 F♯5：字母 E F G F；两个 F 右上角都写 ♯（调号里有也写）；右下角 4 4 4 5；调号不印（编辑器里有淡的提示）；没有点
+    const a = letters([n(P("E")), n(P("F", 4, 1)), n(P("G")), n(P("F", 5, 1))]).L;
+    assert(a.systems.every((r) => r.kind === "jianpu"), "行的种类还是数字行（不另写一种行）");
+    eq(texts(a, /jp-letter\b(?!-)/).map((p) => p.s).join(""), "EFGF", "字母 = 实际音名、大写");
+    eq(texts(a, /jp-letter-sup/).map((p) => p.s).join(""), "♯♯", "每个 F♯ 右上角都写 ♯");
+    eq(texts(a, /jp-letter-sub/).map((p) => p.s).join(""), "4445", "右下角每个音都写八度数字（中央 C = C4）");
+    const f = texts(a, /jp-letter\b(?!-)/)[1]!, sup = texts(a, /jp-letter-sup/)[0]!, sub = texts(a, /jp-letter-sub/)[1]!;
+    assert(sup.x > f.x && sup.y < f.y && sup.size! < f.size!, "升降号在字母右上、小一号"); assert(sub.x > f.x && sub.y > f.y && Math.abs(sub.size! / f.size! - 0.6) < 0.01, "八度数字在字母右下、字母的六成");
+    assert(!texts(a, /jp-head/).some((p) => p.s.startsWith("1=")) && a.keyHints.some((h) => h.s.startsWith("1=")), "调号不印，编辑器里淡的提示带着它");
+    eq(a.prims.filter((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")).length, 0, "不用上下的点");
+    // 下划线让开右下角的数字：在下标的下面
+    const u8 = letters([n(P("C"), TPQ / 2), n(P("D"), TPQ / 2)], 0).L, ul = u8.prims.find((p): p is Extract<Prim, { t: "line" }> => p.t === "line" && /jp-ul/.test(p.cls ?? ""))!, sub8 = texts(u8, /jp-letter-sub/)[0]!;
+    assert(!!ul && ul.y1 > sub8.y, "八分音符的下划线在右下角数字的下面");
+    // 中央 C 叫 C3：同一个 C4 写成 C₃
+    const c3 = letters([n(P("C"))], 0, (s) => setMiddleC({ ...initState(), song: s }, 3).song).L;
+    eq(texts(c3, /jp-letter-sub/).map((p) => p.s).join(""), "3", "中央 C 叫 C3 = 写 3");
+    // 按 C 调看存着开：字母谱下不起作用；和弦竖叠每个音一个字母、各带自己的角标
+    const c = letters([n(P("E")), n(P("F", 4, 1))], 2, (s) => ({ ...s, viewInC: true })).L;
+    eq(texts(c, /jp-letter\b(?!-)/).map((p) => p.s).join(""), "EF", "按 C 调看在字母谱下不起作用");
+    const d = letters([n(P("G"), TPQ, { chord: [P("E"), P("C")] })], 0).L;
+    eq(texts(d, /jp-letter\b(?!-)/).map((p) => p.s).sort().join(""), "CEG"); eq(texts(d, /jp-letter-sub/).length, 3, "叠着的每个音各带自己的八度数字");
   });
   it("记号（UX 稿第 5 节；第五刀起样子照样张）：跳音 = 实心窄楔形、保持 = 短横、重音 = 描边的 >、次重音细一号、幽灵音小一号、气声 ×、换气 V + 吸、滚奏三道斜线", () => {
     const { L } = lay([

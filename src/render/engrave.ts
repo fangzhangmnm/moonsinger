@@ -101,6 +101,8 @@ export interface SystemBox { top: number; staffTop: number; bottom: number; pape
   inkTop?: number; inkBottom?: number;
   /** 数字行的八度基准（第几个八度的音不加点；谱面分家第四刀 4-6：鬼音符照它加点）。五线谱的行没有。 */
   octBase?: number;
+  /** 字母谱的行（7-B）：中央 C 叫 C 几——鬼音符照它写成 C-4 这种（不画点）。别的行没有。 */
+  middleC?: number;
   /** 这一行行里的尺寸比例（排版参数表行一级 scale；不是 1 才写）：主线程几何（光标 / 鬼音符 / 选区带）按它取。 */
   scale?: number }   // staff = 大谱表里是上（1）还是下（2）
 export interface HitNote { index: number; system: number; x: number; y: number; w: number; d: number; /** 合租的声部 2（v0.10.28）：下标指这条虚拟 track（`…~v2`），不是这一行那一位的。 */ part?: string }

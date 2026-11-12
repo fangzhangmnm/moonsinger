@@ -16,7 +16,7 @@ import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
 import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
-import { songViewOf, setViewInC, setChordTags, setNotation, MOVABLE_DO, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
+import { songViewOf, setViewInC, setChordTags, setNotation, setMiddleC, MOVABLE_DO, IN_C_APPLIES, MIDDLE_C_NAMES, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, spellMidi, KEY_LABEL } from "../score/pitch.ts";
@@ -1909,7 +1909,8 @@ function openPaperSheet(): void {
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("纸")}</div>` +
       `<div class="part-sec">${_t("谱种")}</div><div class="set-row">` +
       nota("staff", _t("五线谱"), _t("按音高画在五条线上")) +
-      nota("jianpu", _t("简谱"), _t("数字 1–7（首调）；有叠音的声部、鼓和合租叠起来的那一行暂时还画成五线谱")) + `</div>` +
+      nota("jianpu", _t("简谱"), _t("数字 1–7（首调）")) +
+      nota("letters", _t("字母谱"), _t("实际的音名 C D E F G A B，右上角写升降号、右下角写八度（中央 C = C4）")) + `</div>` +
       `<div class="part-sec">${_t("纸张")}</div><div class="set-row">` +
       PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${PAPER_LABEL[k]}<small>${PAPER_NOTE[k]}</small></button>`).join("") +
       (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("其他")}<small>${paperSizeText(p)}</small></button>` : "") + `</div>` +
@@ -1932,10 +1933,12 @@ function openPaperSheet(): void {
       `<button class="btn cand${look.lyricFit === "rhythm" ? " is-on" : ""}" data-v="lyr:rhythm">${_t("按节奏")}<small>${_t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 这一行一起缩一点 → 还放不下画灰")}</small></button>` +
       `<button class="btn cand${look.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("按歌词")}<small>${_t("长的字把音推开（出版谱的老规矩）")}</small></button></div>` +
       // 看谱（谱面分家第三刀：原来在设置的「乐理助手」里、存在设备上；现在是这首歌的，进歌、能撤销，锁着也能切。PDF 跟着）
-      ((lk, movable = MOVABLE_DO[lk.notation]) => `<div class="part-sec">${_t("看谱")}</div><div class="set-row">` +
+      ((lk, movable = !IN_C_APPLIES[lk.notation]) => `<div class="part-sec">${_t("看谱")}</div><div class="set-row">` +
         `<button class="btn cand${lk.viewInC ? "" : " is-on"}" data-v="inc:off"${movable ? " disabled" : ""}>${_t("专业")}<small>${_t("按实际的调画谱，键上大字写音名")}</small></button>` +
         `<button class="btn cand${lk.viewInC ? " is-on" : ""}" data-v="inc:on"${movable ? " disabled" : ""}>${_t("按 C 调看（1=X）")}<small>${_t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")}</small></button></div>` +
-        (movable ? `<div class="offer-msg">${_t("简谱本来就是首调（1 = 这个调的主音），用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。")}</div>` : "") +
+        // 字母谱：中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；只在字母谱时显示，存在歌里）
+        (lk.notation === "letters" ? `<div class="set-row">${MIDDLE_C_NAMES.map((n) => `<button class="btn cand${lk.middleC === n ? " is-on" : ""}" data-v="mc:${n}">${_t("中央 C 叫 C{n}", { n })}${n === 4 ? `<small>${_t("默认")}</small>` : ""}</button>`).join("")}</div>` : "") +
+        (movable ? `<div class="offer-msg">${MOVABLE_DO[lk.notation] ? _t("简谱本来就是首调（1 = 这个调的主音），用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。") : _t("字母谱写的是实际的音名，用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。")}</div>` : "") +
         `<div class="set-row"><button class="btn cand${lk.chordTags ? " is-on" : ""}" data-v="ct:on">${_t("和弦标级数")}<small>${_t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选")}</small></button>` +
         `<button class="btn cand${lk.chordTags ? "" : " is-on"}" data-v="ct:off">${_t("不标")}</button></div>` +
         `<div class="offer-msg">${_t("跟着这首歌走：存在歌里、能撤销，导出的 PDF 照这里印。别人的歌锁着也能切着看，不会改动文件。")}</div>`)(songViewOf(D.st.song)) +
@@ -1954,7 +1957,8 @@ function openPaperSheet(): void {
     if (e.target === box || v === "close") { close(); return; }
     if (v && (PAPER_KINDS as string[]).includes(v)) { update(setPaper(D.st, v as PaperKind)); draw(); }
     else if (v?.startsWith("density:")) { update(setDensity(D.st, v.slice(8) as Density)); draw(); }
-    else if (v === "nota:staff" || v === "nota:jianpu") { setSongLook(setNotation(D.st, v.slice(5) as NotationId), v === "nota:jianpu" ? _t("简谱") : _t("五线谱")); draw(); }
+    else if (v?.startsWith("mc:")) { const n = Number(v.slice(3)); setSongLook(setMiddleC(D.st, n), _t("中央 C 叫 C{n}", { n })); draw(); }
+    else if (v === "nota:staff" || v === "nota:jianpu" || v === "nota:letters") { setSongLook(setNotation(D.st, v.slice(5) as NotationId), v === "nota:jianpu" ? _t("简谱") : v === "nota:letters" ? _t("字母谱") : _t("五线谱")); draw(); }
     else if (v?.startsWith("pm:")) { close(); openPaperMenu(v.slice(3)); }
     else if (v === "fit" || v === "reflow") { reflow = v === "reflow"; view.render(); draw(); }
     else if (v === "bn:on" || v === "bn:off") { update(setBarNumbers(D.st, v === "bn:on")); draw(); }

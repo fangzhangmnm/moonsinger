@@ -209,7 +209,11 @@ var S = {
   "\u7B80\u8C31": { en: "Numbered (jianpu)" },
   "\u7EB8\u5F20": { en: "Paper" },
   "\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A": { en: "Pitches drawn on the five lines" },
-  "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09\uFF1B\u6709\u53E0\u97F3\u7684\u58F0\u90E8\u3001\u9F13\u548C\u5408\u79DF\u53E0\u8D77\u6765\u7684\u90A3\u4E00\u884C\u6682\u65F6\u8FD8\u753B\u6210\u4E94\u7EBF\u8C31": { en: "Digits 1\u20137 (movable do); parts with stacked notes, drums and shared rows are still drawn as staff for now" },
+  "\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09": { en: "Digits 1\u20137 (movable do)" },
+  "\u5B57\u6BCD\u8C31": { en: "Letter names" },
+  "\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C4\uFF09": { en: "Actual note names C D E F G A B, sharp/flat at the top right, octave at the bottom right (middle C = C4)" },
+  "\u4E2D\u592E C \u53EB C{n}": { en: "Middle C = C{n}" },
+  "\u5B57\u6BCD\u8C31\u5199\u7684\u662F\u5B9E\u9645\u7684\u97F3\u540D\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": { en: "Letter-name notation already writes the actual notes, so \u201CView in C\u201D doesn\u2019t apply; your choice is kept and comes back when you switch to the staff." },
   "\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002": { en: "Numbered notation is already movable-do (1 = the key's tonic), so \u201CRead in C\u201D doesn't apply; your choice is kept and works again on staff." },
   "\u4F11\u606F\u5BA4": { en: "Green room" },
   "{issueCount} \u6761\u8F68\u4E0D\u51FA\u58F0\uFF1A\u70B9\u5F00\u770B\u6E05\u5355": { en: "{issueCount} {issueCount|track is|tracks are} silent: tap for the list" },
@@ -10598,4 +10602,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-fc088e237174.mjs.map
+//# sourceMappingURL=singer-worker-5dcc08fe2fcc.mjs.map

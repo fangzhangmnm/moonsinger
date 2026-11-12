@@ -193,6 +193,8 @@ export interface Song {
   notation?: string;
   chordTags?: false;
   viewInC?: true;
+  /** 字母谱里中央 C 叫 C 几（score minor 6，7-B；只写不是 4 的；没写 = C4。读 / 改只走 src/score/song-view.ts）。 */
+  middleC?: number;
   hum: Hum;              // 没写歌词的音唱什么（一首歌一个）
   parts: PartDef[];      // 声部并集（总谱从上到下的顺序）
   papers: PaperSeg[];    // 纸（曲段）的顺序表

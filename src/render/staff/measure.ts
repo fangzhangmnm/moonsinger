@@ -22,6 +22,8 @@ export interface StaffTrack {
   p: PartView; tokens: Token[]; realLen: number; realTicks: number; focused: boolean; staves: 1 | 2; start: ClefName;
   ds: { clef: ClefName[]; ott: number[]; auto: boolean[] | null; runs: { from: number; to: number; shift: 1 | 2 | -1 }[] };
   fFam: boolean; vrt: boolean; units: Unit[]; head: Head; shortBars: number; pickup: boolean;
+  /** 字母谱（7-B）：数字行上每个音写字母 + 右上升降号 + 右下八度数字；值 = 中央 C 叫 C 几（建轨时谱种表从「这首歌怎么看」标上；五线谱和简谱不写）。 */
+  letters?: number;
   /** 鼓谱：一线谱 / 五线鼓谱 / 不是鼓。 */
   pmode: "five" | "one" | null;
   /** 声部 2（画在主人那一行、符干朝下）/ 这一行有声部 2（符干朝上）。 */

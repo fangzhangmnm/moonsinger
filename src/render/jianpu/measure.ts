@@ -11,11 +11,13 @@ import type { PartView } from "../engrave.ts";
 import type { Unit, Chunk, Head } from "../frame/units.ts";
 import type { ChordFold } from "../../theory/index.ts";
 import { SP_DEFAULTS } from "../spacing.ts";
-import { DIGIT_W, ACC_W, ARP_W, chordNameW, CHORD_AMB_W, COL_MIN, COL_MIN_SHORT, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
+import { DIGIT_W, ACC_W, ARP_W, chordNameW, CHORD_AMB_W, letterNoteW, COL_MIN, COL_MIN_SHORT, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
 
 /** 一条要排的简谱轨（一个声部在这张纸上；框架交来的单元已经切好了时值）。 */
 export interface JianpuTrack {
   p: PartView; tokens: Token[]; units: Unit[]; head: Head; realLen: number; realTicks: number; staves: number; focused: boolean; pickup: boolean;
+  /** 字母谱（7-B）：数字换成字母 + 右上升降号 + 右下八度数字；值 = 中央 C 叫 C 几（默认 4）。别的一样不动。 */
+  letters?: number;
 }
 
 /** 接着上一段的长音，这一段画成横线（不重写数字）：只在**同一小节之内**、正好整拍、不是连音的才行——一条横线 = 一拍（UX 稿第 4 节）。
@@ -43,8 +45,10 @@ export type JianpuMode = "digits" | "x";
 export interface JianpuAux { folds?: ReadonlyMap<number, ChordFold> }
 /** 这一段画成和弦名吗（接着上一段、画成横线的那一段不算：第一个字形是横线）：是 = 折法。 */
 export const foldOf = (u: Chunk, aux: JianpuAux | undefined): ChordFold | undefined => (u.note && u.pitch && !contDash(u) ? aux?.folds?.get(u.index) : undefined);
-/** 这一段第一个字形（数字 / 和弦名）多宽（sp，数字原大起）。 */
-export const glyphWOf = (u: Chunk, aux: JianpuAux | undefined): number => { const f = foldOf(u, aux); return f ? chordNameW(f.name) : DIGIT_W; };
+/** 字母谱（7-B）里这一段第一个字形（字母 + 右上的升降号 / 右下的八度数字）多宽；不是字母谱 / 不写音高的（横线、没写音高的、和弦名）= null。 */
+export const lettersOf = (q: { letters?: number }, u: Chunk, mode: JianpuMode, aux: JianpuAux | undefined): { w: number } | null =>
+  q.letters !== undefined && mode === "digits" && u.note && u.pitch && !u.ghost && !contDash(u) && !foldOf(u, aux) ? { w: letterNoteW(u.pitches.length ? u.pitches : [u.pitch], q.letters) } : null;
+export const glyphWOf = (u: Chunk, aux: JianpuAux | undefined, q: { letters?: number } = {}): number => { const f = foldOf(u, aux); if (f) return chordNameW(f.name); const lt = lettersOf(q, u, "digits", aux); return lt ? lt.w : DIGIT_W; };
 /** 这一段要写临时记号的那几个音（叠音 = 每个音各自的；单音 = 它自己的）：只有第一段写（同五线谱）。 */
 export const accsOf = (u: Chunk): (number | null)[] => (u.j !== 0 || !u.note ? [] : u.pitches.length > 1 ? u.accs : [u.acc]);
 /** 这一段画不画琶音的竖波浪（只挂在和弦上：单音的琶音核心那边已经去掉了）。 */
@@ -74,11 +78,11 @@ export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"
   const inkL = new Map<Chunk, number>();
   const spItems = (u: Chunk): SpItem[] => {
     if (u.pad) return [];   // 补齐的淡色小节不画、不参加间距（同五线谱）
-    const fd = mode === "digits" ? foldOf(u, aux) : undefined, gw = fd ? chordNameW(fd.name) + (fd.ambiguous ? CHORD_AMB_W : 0) : DIGIT_W;   // 折成和弦名 = 按名字的宽占位（UX 稿第 7 节；有歧义的小三角也让出来），不写升降号
-    const n = extraGlyphs(u), acc = mode === "digits" && !fd && accsOf(u).some((a) => a !== null);   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
+    const fd = mode === "digits" ? foldOf(u, aux) : undefined, lt = lettersOf(q, u, mode, aux), gw = fd ? chordNameW(fd.name) + (fd.ambiguous ? CHORD_AMB_W : 0) : lt ? lt.w : DIGIT_W;   // 字母谱：字母 + 角标那一栏   // 折成和弦名 = 按名字的宽占位（UX 稿第 7 节；有歧义的小三角也让出来），不写升降号
+    const n = extraGlyphs(u), acc = mode === "digits" && !fd && !lt && accsOf(u).some((a) => a !== null);   // 字母谱：升降号在右上角，左边不让   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
     const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;   // 换气的 V（+「吸 / 深吸」）画在音后面：留出来，不压下一个音
     //   左边挂的东西（升降号、琶音）= 这个音往左的最小占地：前面有空就不挪，会撞上前一个音 / 小节线才推这一个音（UX 稿第 7 节；间距那一套本来就这样顶）
-    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = Math.max(0, (core(u, fd ? gw : 0) + 0.1 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸（−0.1）+ 缝：右伸按样张这一列至少多宽倒推
+    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = Math.max(0, (core(u, fd || (lt && gw > DIGIT_W) ? gw : 0) + 0.1 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸（−0.1）+ 缝：右伸按样张这一列至少多宽倒推
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
     const cx = (0.1 + gw / 2) * k;
@@ -92,4 +96,4 @@ export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"
 export const jianpuLineStart = (_q: JianpuTrack, _key: number, _first: boolean, base: number, k = 1): number => base + 0.6 * k;
 /** 歌词锚点：每个带字的音在第几行、字的中心在哪（sp：数字的中心）。拖腔线不算。 */
 export const jianpuLyricAnchors = (q: JianpuTrack, k = 1, aux?: JianpuAux): { index: number; system: number; cx: number; lyric: string; hyph: boolean }[] =>
-  q.units.filter((u): u is Chunk => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + (0.1 + glyphWOf(u, aux) / 2) * k, lyric: u.lyric!, hyph: u.hyph }));
+  q.units.filter((u): u is Chunk => u.kind === "chunk" && !!u.lyric && u.lyric !== MELISMA_MARK).map((u) => ({ index: u.index, system: u.system, cx: u.x + (0.1 + glyphWOf(u, aux, q) / 2) * k, lyric: u.lyric!, hyph: u.hyph }));

@@ -94,4 +94,6 @@ export const NOTATIONS: Readonly<Record<NotationId, Notation>> = {
   // 简谱：合租不叠成一行（每位自己一行；一家左边一条竖线 = families "line"），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
   //   有叠音的声部 = 数字竖着叠（数字行）；鼓 = X 行；固定敲一个键的 = 数字 + ×；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
   jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: (rows, c) => staffTracks(rows, { ...c, restBeats: true }) }, rowKindOf: jianpuRowOf, families: "line" },
+  // 字母谱（7-B，user「字母版本的变体的，别人还在等着要用呢」「这个就是用tracker的格式写」）：简谱的变体——同一种数字行，建轨时给每条轨标上「写字母」（带着中央 C 叫 C 几；字母 + 右上升降号 + 右下八度数字，user「下标放数字上标放升降号」），量和画只换「数字」那一栏
+  letters: { id: "letters", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: (rows, c) => { const t = staffTracks(rows, { ...c, restBeats: true }); return { ...t, per: t.per.map((q) => ({ ...q, letters: c.look.middleC })) }; } }, rowKindOf: jianpuRowOf, families: "line" },
 };

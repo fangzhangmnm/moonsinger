@@ -38,7 +38,7 @@ const DYN_G: Record<Dyn, Depiction> = {
  *  「嗯，那么改成 P F 吧，因为我觉得中文的字确实有点太抢眼了。」（推翻 UX 稿第 2、6 节「中文界面写中文字」）。 */
 const DYN_NAME = (d: Dyn, l: Lang): string => ({ ppp: _tIn(l, "极弱"), pp: _tIn(l, "很弱"), p: _tIn(l, "弱##力度"), mp: _tIn(l, "中弱"), mf: _tIn(l, "中强"), f: _tIn(l, "强##力度"), ff: _tIn(l, "很强"), fff: _tIn(l, "极强") })[d];
 
-const art = (a: Art, name: (l: Lang) => string, says: (l: Lang) => string, lane: Sign["lane"], staff: Depiction, jianpu: Depiction): Sign => ({ id: `art:${a}`, name, says, lane, draw: { staff, jianpu } });
+const art = (a: Art, name: (l: Lang) => string, says: (l: Lang) => string, lane: Sign["lane"], staff: Depiction, jianpu: Depiction): Sign => ({ id: `art:${a}`, name, says, lane, draw: { staff, jianpu, letters: jianpu } });
 /** 演奏法：每个 Art 一行（类型 = 每个都要有；漏一个编译不过）。 */
 const ART_SIGNS: Readonly<Record<`art:${Art}`, Sign>> = {
   "art:staccato": art("staccato", (l) => _tIn(l, "跳音"), (l) => _tIn(l, "这个音短一点、和下一个音断开"), "note", G("\u{E4A2}", "\u{E4A3}", 0.28, 0.28), G("\u{E4A8}", "\u{E4A9}", 0.4, 0.9)),   // 简谱 = 窄小的楔形（点被八度占了；UX 稿第 5 节）
@@ -58,15 +58,15 @@ const ART_SIGNS: Readonly<Record<`art:${Art}`, Sign>> = {
   "art:arpeggio": art("arpeggio", (l) => _tIn(l, "琶音"), (l) => _tIn(l, "和弦从低到高一个个拨出来"), "note", D("和弦左边一条竖的波浪线"), D("和弦左边一条竖的波浪线（多声部 = 第五刀）")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "art:roll": art("roll", (l) => _tIn(l, "滚奏"), (l) => _tIn(l, "这个音快速地反复敲（滚）"), "note", D("符干上三道斜线"), D("数字下面三道短斜线")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
-const dynSign = (d: Dyn): Sign => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "{dynName}（{dyn}）：从这个音起是这个强弱，管到下一个力度记号", { dynName: DYN_NAME(d, l), dyn: d }), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: T(d) } });   // 两种谱都写字母（纪要第 88 节）；简谱用和数字同一款的细斜体（第五刀样张后，user「主要是粗细，不在字号」）
+const dynSign = (d: Dyn): Sign => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "{dynName}（{dyn}）：从这个音起是这个强弱，管到下一个力度记号", { dynName: DYN_NAME(d, l), dyn: d }), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: T(d), letters: T(d) } });   // 两种谱都写字母（纪要第 88 节）；简谱用和数字同一款的细斜体（第五刀样张后，user「主要是粗细，不在字号」）
 /** 力度：每一档一行（明着写八行，类型 = 每档都要有）。 */
 const DYN_SIGNS: Readonly<Record<`dyn:${Dyn}`, Sign>> = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
 /** 记号表（演奏法 + 力度 + 渐强 / 渐弱 + 渐到）。不做类型断言：少一行 = 编译不过。 */
 export const SIGNS: Readonly<Record<SignId, Sign>> = {
   ...ART_SIGNS, ...DYN_SIGNS,
-  "hairpin:cresc": { id: "hairpin:cresc", name: (l) => _tIn(l, "渐强"), says: (l) => _tIn(l, "从这里起越来越强，到下一个力度记号为止"), lane: "dynamics", draw: { staff: D("发夹 <（太长写 cresc. - - -）"), jianpu: D("楔形 <") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "hairpin:dim": { id: "hairpin:dim", name: (l) => _tIn(l, "渐弱"), says: (l) => _tIn(l, "从这里起越来越弱，到下一个力度记号为止"), lane: "dynamics", draw: { staff: D("发夹 >（太长写 dim. - - -）"), jianpu: D("楔形 >") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  ramp: { id: "ramp", name: (l) => _tIn(l, "渐到"), says: (l) => _tIn(l, "从上一个力度记号均匀变到这一个"), lane: "dynamics", draw: { staff: D("虚线发夹"), jianpu: D("虚线楔形") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "hairpin:cresc": { id: "hairpin:cresc", name: (l) => _tIn(l, "渐强"), says: (l) => _tIn(l, "从这里起越来越强，到下一个力度记号为止"), lane: "dynamics", draw: { staff: D("发夹 <（太长写 cresc. - - -）"), jianpu: D("楔形 <"), letters: D("楔形 <") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "hairpin:dim": { id: "hairpin:dim", name: (l) => _tIn(l, "渐弱"), says: (l) => _tIn(l, "从这里起越来越弱，到下一个力度记号为止"), lane: "dynamics", draw: { staff: D("发夹 >（太长写 dim. - - -）"), jianpu: D("楔形 >"), letters: D("楔形 >") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  ramp: { id: "ramp", name: (l) => _tIn(l, "渐到"), says: (l) => _tIn(l, "从上一个力度记号均匀变到这一个"), lane: "dynamics", draw: { staff: D("虚线发夹"), jianpu: D("虚线楔形"), letters: D("虚线楔形") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
 
 /** 力度字在这种谱里画成什么：五线谱 = Bravura 字形 + 墨迹；简谱 = 普通的字（细斜体小写，墨迹按字宽现量）。不分界面语言（纪要第 88 节）。 */

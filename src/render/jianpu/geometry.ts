@@ -1,6 +1,6 @@
 // geometry.ts —— 简谱数字行的主线程几何（设计稿第 3.3 节末：光标长什么样、鬼音符长什么样）。只吃平数据（这一行的原点 + 半个线间距）。
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-2）。**没有「纵向 = 音高」**：谱面在数字行上不提供竖着拖改音高（施工单第三节「4」）。
-import { CARET_Y0, CARET_Y1, BASE_Y, DIGIT_EM, DIGIT_W, JP_BODY, DIGIT_TOP, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, X_EM, stackBases, dotPath, accText } from "./glyphs.ts";
+import { CARET_Y0, CARET_Y1, BASE_Y, DIGIT_EM, DIGIT_W, JP_BODY, DIGIT_TOP, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, X_EM, stackBases, dotPath, accText, letterParts, letterW, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, CHORD_GAP, DIGIT_H } from "./glyphs.ts";
 import { midiOf } from "../../score/pitch.ts";
 import { toDegree } from "../../score/degree.ts";
 import { TEXT_FACES, TEXT_STYLES } from "../text/index.ts";
@@ -18,8 +18,18 @@ export const jianpuPreviewAt = (row: JianpuRowData, x: number, half: number): { 
 export const jianpuBandTop = (row: JianpuRowData, half: number): number => row.staffTop + CARET_Y0 * unitOf(row, half);
 /** 数字行的鬼音符（谱面分家第四刀 4-6）：x 处（光标 / 那个音的位置）一个淡的数字 + 升降 + 八度点（按这一行的八度基准；row.octBase）。几个音（叠）= 从低到高往上一个叠一个（和真画的和弦同一个 stackBases，第五刀 5-4）。
  *  字和排版里的数字同一款（字体属性写在元素上：鬼音符那一层不在 .staff-svg 里，套不上谱的样式表）。 */
-export function jianpuGhost(row: JianpuRowData & { octBase?: number }, x: number, notes: readonly GhostNote[], half: number): string {
+export function jianpuGhost(row: JianpuRowData & { octBase?: number; middleC?: number }, x: number, notes: readonly GhostNote[], half: number): string {
   const sp = unitOf(row, half), pv = jianpuPreviewAt(row, x, half), face = TEXT_FACES[TEXT_STYLES["jp-digit"].face], parts: string[] = [];
+  if (row.middleC !== undefined) {   // 字母谱的行（7-B）：大字母 + 右上角升降号 + 右下角八度数字，几个音从低到高往上叠（没有点）
+    const low = [...notes].sort((a, b) => midiOf(a.p) - midiOf(b.p)), x0 = pv.x - (DIGIT_W / 2) * sp, ss = pv.size * SCRIPT_K;
+    low.forEach((n, k) => {
+      const lp = letterParts(n.p, row.middleC!), dy = -k * (DIGIT_H + SUB_DROP + SUP_RISE + CHORD_GAP) * sp, xs = x0 + (letterW(n.p.step) + SCRIPT_GAP) * sp;
+      parts.push(`<text x="${x0}" y="${pv.y + dy}" font-family='${face}' font-size="${pv.size}">${lp.letter}</text>`);
+      if (lp.acc) parts.push(`<text x="${xs}" y="${pv.y + dy + SUP_DY * sp}" font-family='${face}' font-size="${ss}">${lp.acc}</text>`);
+      parts.push(`<text x="${xs}" y="${pv.y + dy + SUB_DY * sp}" font-family='${face}' font-size="${ss}">${lp.oct}</text>`);
+    });
+    return parts.join("");
+  }
   const low = [...notes].sort((a, b) => midiOf(a.p) - midiOf(b.p)), dg = low.map((n) => toDegree(n.p, n.fifths)), dotsOf = dg.map((d) => d.shift - (row.octBase ?? 0)), bases = stackBases(dotsOf);
   low.forEach((n, k) => {
     const d = dg[k]!, dots = dotsOf[k]!, dy = (bases[k]! - BASE_Y) * sp, Y = (v: number) => row.staffTop + v * sp + dy;

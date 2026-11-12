@@ -91,13 +91,14 @@ const stampOf = (k: FormatFile): Json => ({ version: FORMAT[k], minor: FORMAT_MI
 /** 指纹用的 JSON 文本 = 去掉 minor / patch 再按写文件同一个样子串化（拍子不是内容：定稿时记的指纹里没有它们，升了 minor 的 app 再存不能把定稿的歌判成「内容变了」；
  *  老文件的原文本来就是这么串出来的，去掉两个不存在的键 = 原文）。读写两边都走这一把。 */
 /** score.json 里「这首歌怎么看」的三样（score minor 5）→ 歌字段：只认 notation（非空、不是 staff 的字）/ chordTags: false / viewInC: true，别的值 = 没写（src/score/song-view.ts 的冻住的意思）。 */
-const songViewFields = (x: Json | undefined): Pick<Song, "notation" | "chordTags" | "viewInC"> => ({
+const songViewFields = (x: Json | undefined): Pick<Song, "notation" | "chordTags" | "viewInC" | "middleC"> => ({
   ...(typeof x?.notation === "string" && x.notation && x.notation !== "staff" ? { notation: x.notation } : {}),
   ...(x?.chordTags === false ? { chordTags: false as const } : {}),
   ...(x?.viewInC === true ? { viewInC: true as const } : {}),
+  ...(typeof x?.middleC === "number" && Number.isInteger(x.middleC) && x.middleC >= 0 && x.middleC <= 9 && x.middleC !== 4 ? { middleC: x.middleC } : {}),   // score minor 6（7-B）：字母谱里中央 C 叫 C 几（没写 = C4）
 });
 const fpTextOf = (o: Json): string => { const { minor: _m, patch: _p, ...rest } = o; return JSON.stringify(rest, null, 2) + "\n"; };
-const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "viewInC"]);
+const KNOWN_SCORE_KEYS = new Set(["version", "minor", "patch", "papers", "parts", "view", "arrangement", "lyricFit", "barNumbers", "spacing", "denseShort", "notation", "chordTags", "viewInC", "middleC"]);
 /** papers[] / parts[] 每一条里这一版认得的键（v0.16.88，设计稿第五节）：别的（更新的版本写的）按段 id / 声部 id 原样带回。
  *  phrases / parts.autoOttava 是退役的键（这一版读的时候已经处理了），算认得、不带回。
  *  规矩（Claude Fable 5.2 2026-11-10 定）：
@@ -229,7 +230,8 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
     // 这首歌怎么看（score minor 5，谱面分家第三刀；src/score/song-view.ts）：只写不是「没写的意思」的值，不认识的谱种原样写回
     ...(typeof song.notation === "string" && song.notation ? { notation: song.notation } : {}),
     ...(song.chordTags === false ? { chordTags: false } : {}),
-    ...(song.viewInC === true ? { viewInC: true } : {}) };   // 音距紧（可选，v0.16.34；正常 = 不写）   // 小节号不印（可选，v0.9.42）   // 歌词按歌词排（可选，v0.9.40；没写 = 按节奏，默认）
+    ...(song.viewInC === true ? { viewInC: true } : {}),
+    ...(typeof song.middleC === "number" && song.middleC !== 4 ? { middleC: song.middleC } : {}) };   // 字母谱里中央 C 叫 C 几（score minor 6；没写 = C4）   // 音距紧（可选，v0.16.34；正常 = 不写）   // 小节号不印（可选，v0.9.42）   // 歌词按歌词排（可选，v0.9.40；没写 = 按节奏，默认）
   // 嵌的音源：只写还有候选引用着的（换了音源 = 旧块从歌里丢掉；§10.2）
   const referenced = referencedSounds(lounge);
   const sounds = Object.entries(a.extras.sounds).filter(([p]) => referenced.has(p)).sort(([x], [y]) => (x < y ? -1 : 1));

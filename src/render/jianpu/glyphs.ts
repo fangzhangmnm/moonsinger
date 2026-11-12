@@ -78,3 +78,22 @@ export const dotPath = (cx: number, cy: number, r: number): string => {
 };
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export const accText = (rel: number): string => (rel > 0 ? "♯".repeat(rel) : rel < 0 ? "♭".repeat(-rel) : "♮");
+/** 字母谱（7-B；user「下标放数字上标放升降号…我们只要保证用tracker的人能看懂就行了」）：大写字母，右上角挂升降号、右下角挂八度数字（中央 C 默认叫 C4，歌里可以改成 C3 / C5）。
+ *  字母和简谱的数字同一款字同一个字号；角标 = 缩小的普通字形（字母的 SCRIPT_K 倍），不用 Unicode 的上下标字符。上标略高出字母顶、下标略低于基线（位置按数字字号 FS 算）。
+ *  宽按思源黑体的前进宽算（不现场量）：一个音 = 字母 + 角标那一栏（升降号和数字取宽的）。 */
+const LETTER_EM: Readonly<Record<string, number>> = { A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
+export const letterW = (step: string): number => ((LETTER_EM[step] ?? 0.66) * DIGIT_W) / 0.555;
+export const SCRIPT_K = 0.6, SCRIPT_GAP = 0.03 * FS;
+/** 上标（升降号）的基线、下标（八度数字）的基线：离字母基线多远（数字行的单位；上 = 负）。 */
+export const SUP_DY = -0.45 * FS, SUB_DY = 0.18 * FS;
+/** 字母谱的行上，字母底下多让出的那一截（下标比基线低多少）：下划线、低处的东西照着往下让。 */
+export const SUB_DROP = 0.2 * FS, SUP_RISE = 0.15 * FS;
+/** 一个音的字母和两个角标：acc = 右上角（没有升降 = 空）、oct = 右下角的八度数字（写的八度 − 4 + 中央 C 叫 C 几）。 */
+export const letterParts = (p: { step: string; alter: number; octave: number }, middleC: number): { letter: string; acc: string; oct: string } =>
+  ({ letter: p.step, acc: p.alter > 0 ? "♯".repeat(p.alter) : p.alter < 0 ? "♭".repeat(-p.alter) : "", oct: String(p.octave - 4 + middleC) });
+/** 角标那一栏多宽（升降号和数字取宽的；升降号照简谱升降号的宽 ACC_W 按字号折算）。 */
+export const scriptW = (p: { step: string; alter: number; octave: number }, middleC: number): number => {
+  const lp = letterParts(p, middleC); return SCRIPT_GAP + Math.max([...lp.acc].length * ACC_W * ((SCRIPT_K * FS) / ACC_EM), lp.oct.length * SCRIPT_K * DIGIT_W);
+};
+/** 一个音（或竖着叠的几个）多宽（sp，数字原大起；叠着的取最宽的）。 */
+export const letterNoteW = (ps: readonly { step: string; alter: number; octave: number }[], middleC: number): number => Math.max(...ps.map((p) => letterW(p.step) + scriptW(p, middleC)));

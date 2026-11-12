@@ -42,7 +42,7 @@ export function sameExceptPaperHidden(a: Song, b: Song): boolean {
   return true;
 }
 
-/** 两首歌除了「这首歌怎么看」的四样（歌顶层的 notation / chordTags / viewInC + 每个声部的 chords；src/score/song-view.ts）之外一模一样。按引用比；完全没变也算。 */
+/** 两首歌除了「这首歌怎么看」的那几样（歌顶层的 notation / chordTags / viewInC / middleC + 每个声部的 chords；src/score/song-view.ts）之外一模一样。按引用比；完全没变也算。 */
 export function sameExceptSongView(a: Song, b: Song): boolean { return sameModulo(a, b, { song: SONG_VIEW_KEYS, part: PART_VIEW_KEYS }); }
 
 /** 按引用比两首歌，跳过给定的键：歌顶层的 song、每张纸的 paper、每个声部的 part。别的键（含纸 / 声部的个数、先后、id）一个都不许变。 */

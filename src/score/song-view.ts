@@ -12,9 +12,9 @@
 import type { EditorState, Song, PartDef } from "./song.ts";
 import { type Density, densityOf, paperOf, DEFAULT_PAPER } from "./paper.ts";
 
-/** 谱种。现在只画得出五线谱；简谱 = 第四刀。以后 "letters" | "figures"（设计稿第 7 节）。封闭的联合，不走注册表（ADR-0004：显示 = 库）。 */
-export type NotationId = "staff" | "jianpu";
-export const NOTATIONS: readonly NotationId[] = ["staff", "jianpu"];
+/** 谱种：五线谱 / 简谱（第四刀）/ 字母谱（7-B：简谱的变体，数字换成实际音名的字母，同一种数字行）。以后 "figures"（设计稿第 7 节）。封闭的联合，不走注册表（ADR-0004：显示 = 库）。 */
+export type NotationId = "staff" | "jianpu" | "letters";
+export const NOTATIONS: readonly NotationId[] = ["staff", "jianpu", "letters"];
 /** 每条轨的和弦选项三档（设计稿第 3.7 节）：只认叠在一起的和弦 / 也认拆开弹的和弦 / 折叠成和弦名（折叠 = 第五刀，现在画法同 auto）。 */
 export type ChordsMode = "stacked" | "auto" | "fold";
 export const CHORDS_MODES: readonly ChordsMode[] = ["stacked", "auto", "fold"];
@@ -22,8 +22,8 @@ export const CHORDS_MODES: readonly ChordsMode[] = ["stacked", "auto", "fold"];
 /** 文件里没写 = 这些值。写死，永远不变（改它 = 改了所有旧歌的样子）。chordTags / viewInC 在文件里永远是布尔（src/format/contract.ts score minor 5 那段）。
  *  后三样是原来就有的意思（4-5 收进来时照抄，不是新定的）：版式没写 = 舒适（paper.ts densityOf）；歌词排法没写 = 按节奏（v0.9.40 user「默认用修歌词的那个排版方式吧」，
  *  旧歌打开也是按节奏）；小节号没写 = 每行开头印（v0.9.42「默认是每行开头有」）。 */
-export const UNWRITTEN: Readonly<{ notation: NotationId; chordTags: boolean; viewInC: boolean; chords: ChordsMode; density: Density; lyricFit: LyricFit; barNumbers: boolean }> =
-  Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true });
+export const UNWRITTEN: Readonly<{ notation: NotationId; chordTags: boolean; viewInC: boolean; chords: ChordsMode; density: Density; lyricFit: LyricFit; barNumbers: boolean; middleC: number }> =
+  Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true, middleC: 4 });   // middleC：字母谱里中央 C 叫 C4（7-B，user「我们的中央 C 叫 C4 老规矩」）
 /** 歌词怎么排：按节奏（音的位置只看时值，歌词让路）/ 按歌词（长字把音推开）。 */
 export type LyricFit = "rhythm" | "lyrics";
 
@@ -34,7 +34,7 @@ export interface SongView {
   readonly chordTags: boolean;
   /** 按 C 调看（辅助）：谱换到 C 调画、每个调号上方写「1=原来的调」、键上大字写级数；拖音高 / 鬼音符按显示的换回实际的。= 存着的值（设置面板亮哪个钮）。 */
   readonly viewInC: boolean;
-  /** 按 C 调看此刻起不起作用 = 存着开 ∧ 这种谱是按绝对音高记的（简谱本来就是首调：开关变灰、存着的值不动；施工单第三节「4」）。排版、谱面、键上的大字都看这个。 */
+  /** 按 C 调看此刻起不起作用 = 存着开 ∧ 这种谱上起作用（IN_C_APPLIES：简谱本来就是首调、字母谱写的是实际的音名：开关变灰、存着的值不动；施工单第三节「4」、7-B）。排版、谱面、键上的大字都看这个。 */
   readonly inCActive: boolean;
   /** 这条轨的和弦选项。 */
   chordsOf(part: string): ChordsMode;
@@ -44,12 +44,20 @@ export interface SongView {
   readonly lyricFit: LyricFit;
   /** 每行开头印不印小节号。 */
   readonly barNumbers: boolean;
+  /** 字母谱里中央 C 叫 C 几（C-4 那个数字；默认 4，可以 3 / 5；7-B）。别的谱种用不上。 */
+  readonly middleC: number;
 }
 
 const isNotation = (v: unknown): v is NotationId => (NOTATIONS as readonly unknown[]).includes(v);
 /** 这种谱是不是首调（「1」= 这个调的主音）：首调的谱上「按 C 调看」没有意义。 */
-export const MOVABLE_DO: Readonly<Record<NotationId, boolean>> = { staff: false, jianpu: true };
+export const MOVABLE_DO: Readonly<Record<NotationId, boolean>> = { staff: false, jianpu: true, letters: false };
+/** 这种谱上「按 C 调看」起不起作用：五线谱 = 起；简谱本来就是首调；字母谱写的是实际的音名（7-B：「按 C 调看」在字母谱下变灰）。 */
+export const IN_C_APPLIES: Readonly<Record<NotationId, boolean>> = { staff: true, jianpu: false, letters: false };
 const isChords = (v: unknown): v is ChordsMode => (CHORDS_MODES as readonly unknown[]).includes(v);
+/** 中央 C 叫 C 几：一位整数 0–9 才认（界面上只给 3 / 4 / 5）。 */
+const isMiddleC = (v: unknown): v is number => typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 9;
+/** 界面上能选的中央 C 叫法。 */
+export const MIDDLE_C_NAMES: readonly number[] = [3, 4, 5];
 
 /** 歌 → 这首歌怎么看（纯函数；不读设备、不读界面语言、不读时钟）。 */
 export function songViewOf(song: Song): SongView {
@@ -60,11 +68,12 @@ export function songViewOf(song: Song): SongView {
     notation,
     chordTags: song.chordTags === false ? false : UNWRITTEN.chordTags,
     viewInC,
-    inCActive: viewInC && !MOVABLE_DO[notation],
+    inCActive: viewInC && IN_C_APPLIES[notation],
     chordsOf: (part) => chords.get(part) ?? UNWRITTEN.chords,
     density: densityOf(song.paper ?? paperOf(DEFAULT_PAPER)),
     lyricFit: song.lyricFit === "lyrics" ? "lyrics" : UNWRITTEN.lyricFit,
     barNumbers: song.barNumbers === "off" ? false : UNWRITTEN.barNumbers,
+    middleC: isMiddleC(song.middleC) ? song.middleC : UNWRITTEN.middleC,
   };
 }
 
@@ -74,6 +83,12 @@ export function songViewOf(song: Song): SongView {
 export function setNotation(st: EditorState, id: NotationId): EditorState {
   const want = id === UNWRITTEN.notation ? undefined : id; if (st.song.notation === want) return st;
   const song = { ...st.song }; if (want === undefined) delete song.notation; else song.notation = want;
+  return { ...st, song };
+}
+/** 字母谱里中央 C 叫 C 几（4 = 不写）。 */
+export function setMiddleC(st: EditorState, n: number): EditorState {
+  const want = n === UNWRITTEN.middleC || !isMiddleC(n) ? undefined : n; if (st.song.middleC === want) return st;
+  const song = { ...st.song }; if (want === undefined) delete song.middleC; else song.middleC = want;
   return { ...st, song };
 }
 /** 和弦标级数开 / 关。开 = 不写。 */
@@ -97,5 +112,5 @@ export function setPartChords(st: EditorState, partId: string, mode: ChordsMode)
 }
 
 /** 这四样在歌里住在哪几个键（歌的顶层三个 + 每个声部一个）。修改锁拿它核「这一步真的只动了这首歌怎么看」（src/app/edit-lock-table.ts）。 */
-export const SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC"] as const;
+export const SONG_VIEW_KEYS = ["notation", "chordTags", "viewInC", "middleC"] as const;   // middleC = 字母谱里中央 C 叫 C 几（7-B）
 export const PART_VIEW_KEYS = ["chords"] as const;
