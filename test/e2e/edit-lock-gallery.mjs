@@ -88,8 +88,10 @@ check(!(await unlockedMark(tileOf(id))), "歌库卡片：锁着的没有「解�
   check(ls.some((l) => l.includes("解锁：接着改")) && ls.some((l) => l.includes("解锁：存一版再改")) && !ls.some((l) => l.includes("锁上")), "锁着的卡片菜单：两个解锁，没有「锁上」", ls.join(" | ")); }
 check(await menu(tileOf(id), "解锁：接着改"), "菜单里点「解锁：接着改」"); await p.waitForTimeout(800); await later();
 { const s = await lk(); check((await p.evaluate(() => window.__moonsinger.identifier())) === id && s.state === "unlocked" && (await door()) === null, "解了，直接打开了这首：解着，没有门", JSON.stringify(s)); }
-await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 2, dir: "near" })); await saved(); await p.waitForTimeout(300);
-check((await notes()) === n0 + 1 && (await localStamp(id)) !== stamp0, "能写了，自动存进了本机那一份");
+await p.evaluate(() => window.__moonsinger.run({ k: "degree", degree: 2, dir: "near" })); await saved();
+// 等「本机那一份变了」本身（最多 8 s）：写完「•」可能还没冒出来，saved() 就直接回了，固定等 300 ms 会撞上 2 s 一跳的自动落盘（2026-11-12 单跑 4 次红 1 次；Claude Opus 5.5）
+{ let st = stamp0; for (let i = 0; i < 80 && (st = await localStamp(id)) === stamp0; i++) await p.waitForTimeout(100);
+  check((await notes()) === n0 + 1 && st !== stamp0, "能写了，自动存进了本机那一份"); }
 await openGallery();
 check(!!(await p.waitForSelector(`${tileOf(id)} [title^="解着锁"]`, { timeout: 3000 }).catch(() => null)), "回歌库：卡片上有「解着锁」的标记");
 { const ls = await menuLabels(tileOf(id)); check(ls.some((l) => l.includes("锁上")) && !ls.some((l) => l.includes("解锁")), "解着的卡片菜单：只有「锁上（先不改了）」", ls.join(" | "));
