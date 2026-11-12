@@ -1081,6 +1081,18 @@ export declare const S: {
     readonly "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09": {
         readonly en: "Long-press and drag = move it to another note (right of the last note = the end of this section)";
     };
+    readonly "\u6253\u51FB\u4E50\u7684\u884C\u6CA1\u6709\u8C03\uFF1A\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\u9F13\uFF0C\u548C\u8C03\u53F7\u65E0\u5173\uFF08\u8C03\u53F7\u7559\u5728\u8C31\u91CC\uFF0C\u4E0D\u8D77\u4F5C\u7528\uFF09": {
+        readonly en: "Percussion rows have no key: the written pitch says which drum is hit, not a pitch (the key signature stays in the score but does nothing)";
+    };
+    readonly "{why}\uFF1A\u300C\u8C03\u5185\u4E00\u7EA7\u300D\u7528\u4E0D\u4E86\uFF0C\u7528\u534A\u97F3 / \u516B\u5EA6": {
+        readonly en: "{why}: “step within the key” doesn't apply; use semitone / octave";
+    };
+    readonly "{why}\uFF1A\u300C{what}\u300D\u7528\u4E0D\u4E86": {
+        readonly en: "{why}: “{what}” doesn't apply";
+    };
+    readonly 无调: {
+        readonly en: "no key";
+    };
     readonly "{title} \u00B7 {secs} \u79D2 \u00B7 {size} \u00B7 {date}": {
         readonly en: "{title} · {secs} s · {size} · {date}";
     };

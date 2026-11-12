@@ -93,9 +93,9 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
   };
   // 速度记号（「Andante ♩ = 88」）：两种行共用的挂件（ornaments/index.ts tempoAt / layTempo，第四刀 4-3 原样搬出）
   /** 调号位置上方的「1=X」（v0.16.10）：hint = 专业模式没有升降号的地方（刀 1 起不画，只记锚点 keyHints，覆盖层写淡的「1=C」）。字也算这个调号的点击区（谱头面板）。 */
-  const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number, minor = false, T: { tok?: number } = {}) => {
+  const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number, minor = false, T: { tok?: number } = {}, perc = false) => {
     const y = staffTop(r) - P(0.8);
-    if (hint) { keyHints.push({ ...T, system: r, index, x: P(x0), y, size: tx("key-hint"), s: keyText(f, minor) }); return; }   // 提示带着它指的那个调号 token（守卫 4：编辑器里的提示也算画出来了，统筹裁定 5-3）   // 淡的「1=C」只在编辑器里、不印：跟谱（紧凑档不放大，不然挨上第一个音的力度字；刀 2）
+    if (hint) { keyHints.push({ ...T, system: r, index, x: P(x0), y, size: tx("key-hint"), s: perc ? _tIn(o.locale, "无调") : keyText(f, minor) }); return; }   // 鼓谱 / 一线谱（打击乐的行没有调，7-R 统筹定 A）：提示照画、字写「无调」   // 提示带着它指的那个调号 token（守卫 4：编辑器里的提示也算画出来了，统筹裁定 5-3）   // 淡的「1=C」只在编辑器里、不印：跟谱（紧凑档不放大，不然挨上第一个音的力度字；刀 2）
     put(r, { ...T, t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });   // 和速度字一样大（v0.16.34；user 11-08「1=F 这些符号也不要字体刻意的小」）
     marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - TR("key-label", TEMPO_EM * 0.95), w: TR("key-label", KEY_LABEL_W), h: TR("key-label", TEMPO_EM * 1.2) });
   };
@@ -139,7 +139,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
           //   小调（v0.16.83）= 每一处都写淡的「6=X」（按 C 调看 = 照印），哪里从 la 数一眼看得见
           const lab = k === 0 && q.head.idx.key !== undefined ? (look.inCActive ? q.head.real : pm ? f : fk === 0 || q.head.minor ? fk : null) : null;
           //   鼓谱照规矩不画调号：行首也给淡的「1=D」提示（编辑器里有、不印；这个调号是真的状态，换成有音高的乐器就管用；统筹裁定 5-3）
-          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !!pm || !look.inCActive, q.head.idx.key!, q.head.minor, tokAt(q, q.head.idx.key));
+          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !!pm || !look.inCActive, q.head.idx.key!, q.head.minor, tokAt(q, q.head.idx.key), !!pm);
           if (fk) hx += 0.8;
           const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig", tokAt(q, q.head.idx.time));
           if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
@@ -250,7 +250,7 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
             if (u.warn && k === 0) put(rr, { t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn ann" });
           } else if (u.kind === "key") {
             if (pmode[r]) {   // 鼓谱没有调号（记号照留、能点）：淡的「1=D」提示（不印，同谱头；统筹裁定 5-3）
-              if (k === 0) keyLabel(rr, u.x + 0.2, look.inCActive ? u.real : u.fifths, true, u.index, u.minor, tokAt(q, u.index));
+              if (k === 0) keyLabel(rr, u.x + 0.2, look.inCActive ? u.real : u.fifths, true, u.index, u.minor, tokAt(q, u.index), true);
               marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) }); continue;
             }
             const cls = "keysig", KT = tokAt(q, u.index);

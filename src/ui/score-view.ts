@@ -501,7 +501,9 @@ export class ScoreView {
     // 升降号和真写下去的那个音一样（v0.10.23）：拼法按那里的调号（同 writePitch 的 keySpell），画不画按调号 + 这一小节前面的临时记号（shownAccAt，和排版同一个规矩）
     const toks = tr(st), at = one >= 0 ? one : st.caret, fifths = keyAt(toks, at);
     const inC = songViewOf(this.host.get().song).inCActive, shownToks = inC ? trackInC(toks) : toks;   // 按 C 调看（起作用时）：鬼音符也换到 C、按显示出来的谱算升降号
-    const notes = this.ghostP.map((p0): GhostNote => { const p = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths); return { p, shown: shownAccAt(shownToks, at, p), shift, fifths: inC ? 0 : fifths }; });
+    // 打击乐的行没有调（7-R，统筹定的规矩）：写的音高 = 敲哪个鼓，鬼音符不画升降号（「是不是打击乐的行」= 宿主给的声部视图 perc，全 app 只在宿主那一处判断）
+    const perc = !!this.host.look.parts().find((p) => p.id === st.at.part)?.perc;
+    const notes = this.ghostP.map((p0): GhostNote => { const p = inC ? toC(keySpell(p0, fifths), fifths) : keySpell(p0, fifths); return { p, shown: perc ? null : shownAccAt(shownToks, at, p), shift, fifths: inC ? 0 : fifths }; });
     g.innerHTML = geo(row).ghost(L.systems[row]!, x, notes, half, atCaret);   // 鬼音符长什么样 = 这一行的几何
     if (!g.isConnected) this.ink.appendChild(g);
   }

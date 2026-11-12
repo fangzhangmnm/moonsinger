@@ -25,6 +25,8 @@ export interface HeaderPanelGlue {
     openTempo(paperId: string, partId: string, index: number, fresh: boolean): void;
     /** 歌手的名字（合租那一行的选项用）。 */
     partName(partId: string): string;
+    /** 这一行没有调（打击乐的行，7-R）：回为什么；有调 = null。调号那一格灰着、写这一句；拍号 / 速度照旧；调号 token 在数据里留着。 */
+    noKey(partId: string): string | null;
 }
 export declare function createHeaderPanel(g: HeaderPanelGlue): {
     open(paperId: string, partId: string, index: number, at: {

@@ -558,7 +558,7 @@ export class Studio {
     const buses = this.host.buses(), busCards = buses.map((b, k) => {
       const body = tab === "basic" ? row(_t("增益"), HINT.busGain, `<output>${dbText(b.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: b.gainDb, attrs: "data-busgain", def: 0, defText: "0 dB" }), "strip-row") +
           row(_t("声像"), HINT.pan, `<output>${panText(b.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: b.pan, attrs: "data-buspan", def: 0, defText: _t("中") }), "strip-row") + RMS_ROW + CORR_ROW +
-          `<div class="strip-btns"><button class="btn cand${b.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("旁通：这条混音轨上的插件全跳过（推子 / 声像 / 出到 / 发送照旧）；再点 = 回来")}">${b.bypass ? _t("旁通中") : _t("旁通")}</button><button class="btn" data-v="busleft" title="${_t("往前挪一位")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="${_t("往后挪一位")}"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="${_t("删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）")}">${_t("删掉")}</button></div>`
+          `<div class="btn-row"><button class="btn cand${b.bypass ? " is-on" : ""}" data-v="busbypass" title="${_t("旁通：这条混音轨上的插件全跳过（推子 / 声像 / 出到 / 发送照旧）；再点 = 回来")}">${b.bypass ? _t("旁通中") : _t("旁通")}</button><button class="btn" data-v="busleft" title="${_t("往前挪一位")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="busright" title="${_t("往后挪一位")}"${k === buses.length - 1 ? " disabled" : ""}>›</button><button class="btn cand danger" data-v="delbus" title="${_t("删掉这条混音轨（发给它的、出到它的都改回总轨；能撤销）")}">${_t("删掉")}</button></div>`
         : tab === "eq" || tab === "comp" ? this.inlineHtml(b.id, tab) : tab === "send" ? gainRow("data-busgain", HINT.busGain, b.gainDb) + this.routeHtml(b.id) : this.chipsHtml(b.id);
       const name = `<input class="bus-name" value="${esc(b.name)}" title="${_t("名字（点了改）")}" />`;   // 每一页都能改名（v0.16.82，总表第 9 条 ⑥；原来只在基础页）
       // 混音轨也能静音（不能独奏：独奏是挑歌手听；user「哦，混音轨也要mute，（不过可能不能solo了」）——钉在名字右边，同歌手卡
@@ -569,7 +569,7 @@ export class Studio {
     const strips = this.host.strips(), singers = strips.map((s, k) => {
       const body = tab === "basic" ? row(_t("增益"), HINT.gain, `<output>${dbText(s.gainDb)}</output>`, slider({ min: -24, max: 12, step: 0.5, value: s.gainDb, attrs: "data-gain", def: 0, defText: "0 dB" }), "strip-row") +
           row(_t("声像"), HINT.pan, `<output>${panText(s.pan)}</output>`, slider({ min: -1, max: 1, step: 0.05, value: s.pan, attrs: "data-pan", def: 0, defText: _t("中") }), "strip-row") + RMS_ROW +
-          `<div class="strip-btns">` +
+          `<div class="btn-row">` +
             `<button class="btn" data-v="partleft" title="${_t("往前挪一位（谱上这个声部也往上挪）")}"${k === 0 ? " disabled" : ""}>‹</button><button class="btn" data-v="partright" title="${_t("往后挪一位（谱上这个声部也往下挪）")}"${k === strips.length - 1 ? " disabled" : ""}>›</button></div>` +
           // 歌手管理（2026-10-08 深夜，user「只有没引用的时候才可以在歌手管理里面删」）：在几张纸上；一张都不在 = 能删
           (s.refs ? `<div class="strip-refs">${_t("在 {refs} 张纸上", { refs: s.refs })}</div>` : `<div class="strip-refs">${_t("哪张纸上都没有")} <button class="btn cand danger" data-v="delpart" title="${_t("删掉这个声部（它的乐器设置一起删；能撤销）")}">${_t("删掉这个声部")}</button></div>`)

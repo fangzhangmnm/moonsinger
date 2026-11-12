@@ -64,6 +64,7 @@ import { cachedSound, rememberSound, listCachedSounds, forgetSound, releaseSound
 // ── 实时试听（2026-10-09 Claude Fable 5.1，刀 1；提案 ai-docs/20261009-realtime-preview-engine-proposal.md）：谱 → 时间线（秒）→ 录音房（音频线程）
 import { StudioClient } from "../engine/studio-client.ts";
 import { performerOf, TSUKUYOMI_RANGE } from "../performers/index.ts";
+import type { Notation } from "../performers/registry.ts";
 import { createPerformance, type Issue } from "./performance.ts";   // 唱歌 / 播放 / 导出的胶水（刀 1 之二）
 import { createOverlayRegistry, padLocked } from "./overlay.ts";
 import { LATCH_OFF, latchDown, latchUp, latchWrite, latchCancel, latchOn, type Latch } from "../keyboard/latch.ts";   // 三把锁一条规则（编辑状态机第 2 期）   // 盖层登记（刀 3 之一）：面板 / 小菜单 / 轨的小卡同一时刻只开一张；page（刀 3 之二）：谱 / 乐器页 / 目录   // 演奏者插件注册表（ADR-0004）：能什么 / 怎么准备 / 怎么出声都问它，不按引擎名分支
@@ -461,8 +462,9 @@ function updateChrome(): void {
   finder.setPadShown(!padEl.hidden);
   document.querySelector(".ip-pad")?.classList.toggle("is-on", !padEl.hidden);
   const n = D.st.sel ? D.st.sel.to - D.st.sel.from : 0;
-  const sig = `${n}|${!!clip}|${over || studio.isOpen}`;
-  if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen); }
+  const noKey = n > 0 && isPercPart(D.st.at.part) ? NO_KEY_WHY() : null;   // 打击乐的行：「调内一级」灰着（7-R）
+  const sig = `${n}|${!!clip}|${over || studio.isOpen}|${!!noKey}`;
+  if (sig !== selSig) { selSig = sig; selBar.update(n, !!clip, over || studio.isOpen, noKey); }
 }
 function setClip(t: Token[]): void {
   clip = t; clipText = toJianpu(t, fifthsAtSel(D.st));
@@ -488,7 +490,7 @@ async function selVerb(v: SelVerb): Promise<void> {
     case "clear": if (D.st.sel) update(setCaret(D.st, D.st.sel.to)); break;
     case "forget": clip = null; clipText = ""; updateChrome(); break;
     // 第二排 = 微调（v0.10.1；user「选区多微调同意」）：点了不收、选区留着；音高变了响一下（同选区菜单的移调）
-    case "up": case "down": if (D.st.sel) { update(apply(D.st, { k: "step", d: v === "up" ? 1 : -1 }, performance.now())); previewEdited(); } break;
+    case "up": case "down": if (D.st.sel) { if (isPercPart(D.st.at.part)) { info(_t("{why}：「调内一级」用不了，用半音 / 八度", { why: NO_KEY_WHY() })); break; } update(apply(D.st, { k: "step", d: v === "up" ? 1 : -1 }, performance.now())); previewEdited(); } break;
     case "sharp": case "flat": if (D.st.sel) { update(apply(D.st, { k: "alter", d: v === "sharp" ? 1 : -1 }, performance.now())); previewEdited(); } break;
     case "octUp": case "octDown": if (D.st.sel) { update(apply(D.st, { k: "octave", d: v === "octUp" ? 1 : -1 }, performance.now())); previewEdited(); } break;
     case "half": case "double": if (D.st.sel) { const nx = apply(D.st, { k: "selscale", f: v === "half" ? 0.5 : 2 }, performance.now()); if (nx === D.st) info(v === "half" ? _t("再短就没有这种时值了") : _t("再长就没有这种时值了")); else update(nx); } break;
@@ -2075,6 +2077,12 @@ function kitNamesOf(partId: string): Record<number, string> {
   }
   return out;
 }
+/** 台上那位怎么画这一行（× 符头 / 鼓谱 / 一线谱）= 插件说了算。「是不是打击乐的行」全 app 只在这里判断（7-R，2026-11-12；统筹定的规矩「打击乐的行没有调」）：
+ *  谱面的声部视图（PartView.perc）、选区条、选区菜单、谱头面板都问它，不各自看引擎 / 音色。 */
+function notationOfRole(role: string): Notation { return performerOf(activeInstrument(D.extras, role)?.engine)?.notation?.({ extras: D.extras, role }) ?? {}; }
+function isPercPart(partId: string): boolean { const p = D.st.song.parts.find((x) => x.id === partId); return !!p && !!notationOfRole(p.role).perc; }
+/** 打击乐的行上，从调号推出来的东西不起作用——说为什么（选区条 / 选区菜单 / 谱头面板同一句）。 */
+const NO_KEY_WHY = (): string => _t("打击乐的行没有调：写的音高 = 敲哪个鼓，和调号无关（调号留在谱里，不起作用）");
 function partViews(): PartView[] {
   const labels = partLabels(D.st.song, D.extras), mutes = lyricMutes(), looks = partLooks();
   return D.st.song.parts.map((p, k) => {
@@ -2084,7 +2092,7 @@ function partViews(): PartView[] {
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
     const ly = plug?.lyrics, noLyrics = ly === "hum" || ly === "none" ? _t("{p}{p2}：空着的歌词位不开框；已经写了的字点开能改、能删", { p: labels[k], p2: ly === "hum" ? _t("（元音版）只哼") : _t("不唱歌词") }) : "";
     // 台上那位的音域（简谱的八度基准按它定；人声 = 插件自报，乐器 = 目录里角色那件乐器的；鼓 / 固定敲一个键的不要；目录没载 = 先没有，partLooks 载好了会重画）
-    const nota = plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}, rg = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p.role);
+    const nota = notationOfRole(p.role), rg = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p.role);
     const kitNames = nota.perc?.kind === "kit" ? kitNamesOf(p.id) : undefined;   // 整套鼓：用到的鼓件 → 名字（按界面语言；简谱的图例印）
     return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), ...(kitNames ? { kitNames } : {}), id: p.id, name: looks.names[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
@@ -2510,6 +2518,7 @@ const headerPanel = createHeaderPanel({
   state: () => D.st, update: (n) => update(n), updateLook: (n, label) => setSongLook(n, label), menu: (cls, html, at, pick) => ctxMenu(cls, html, at, pick),
   openTempo: (paperId, partId, index, fresh) => view.openMarkEditor(paperId, partId, index, fresh),
   partName: (id) => partLabels(D.st.song, D.extras)[D.st.song.parts.findIndex((p) => p.id === id)] ?? id,
+  noKey: (partId) => (isPercPart(partId) ? NO_KEY_WHY() : null),   // 打击乐的行：调号那一格灰着、说为什么（7-R）
   autoNow: (paperId, partId) => { const l = lookNow(paperId, partId); return l?.staves === 2 ? _t("大谱表") : CLEF_LABEL[l?.clef ?? "G"]; },
   look: (paperId, partId) => lookNow(paperId, partId),
 });
@@ -2672,6 +2681,7 @@ function selBarAnchor(): { x: number; y: number } {
   return r ? { x: r.left, y: r.bottom } : { x: innerWidth / 2 - 100, y: 120 };
 }
 function openSelMenu(at: { x: number; y: number }): void {
+  const perc = isPercPart(D.st.at.part);   // 打击乐的行没有调（7-R）：转调 / 按调号拼写灰着
   if (!D.st.sel) return;
   ui.close();
   const box = document.createElement("div");
@@ -2686,8 +2696,10 @@ function openSelMenu(at: { x: number; y: number }): void {
     }
     box.innerHTML =
       `<div class="ctx-row"><span class="ctx-k">${_t("移调")}</span>${chip("tr:1", _t("↑ 半音"))}${chip("tr:-1", _t("↓ 半音"))}${chip("tr:2", _t("↑ 全音"))}${chip("tr:-2", _t("↓ 全音"))}${chip("oct:1", _t("↑ 八度"))}${chip("oct:-1", _t("↓ 八度"))}</div>` +
-      item("keys", _t("转调…"), _t("整段转到另一个调：音按两个主音之间的音程挪，调号跟着换")) +
-      item("respell", _t("按调号拼写"), _t("音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动")) +
+      // 打击乐的行（7-R）：转调 / 按调号拼写都是从调号推出来的，灰着、点了说为什么；移调的半音 / 全音 / 八度留着
+      (perc ? item("keys", _t("转调…"), NO_KEY_WHY(), "is-off") + item("respell", _t("按调号拼写"), NO_KEY_WHY(), "is-off")
+        : item("keys", _t("转调…"), _t("整段转到另一个调：音按两个主音之间的音程挪，调号跟着换")) +
+          item("respell", _t("按调号拼写"), _t("音高不变：调内的音换成调号里的写法（A♭ 在五个升号的调里 = G♯），调外的不动"))) +
       `<div class="ctx-row"><span class="ctx-k">${_t("时值")}</span>${chip("short", "÷2")}${chip("long", "×2")}${chip("seldur", `${_t("都改成")} <span class="smufl">${UNIT_SMUFL[D.st.input.unit]}</span>`, _t("都改成长短旋钮现在那一档"))}</div>` +
       `<div class="ctx-row"><span class="ctx-k">${_t("清掉记号")}</span>${chip("clr:phrase", _t("曲级"), _t("力度字、渐强渐弱、渐到、风格（选区第一个音前面挂着的也算）"))}${chip("clr:note", _t("音级"), _t("演奏法、音头（重音 / 突强…）、音内起伏、连线、呼吸、气声"))}${chip("clr:all", _t("都清"), _t("曲级 + 音级；音、歌词、调号拍号速度、反复不动"))}</div>` +
       `<div class="ctx-sep"></div>` + item("copy", _t("复制")) + item("cut", _t("剪切")) + (clip ? item("paste", _t("粘贴（替换选中的）")) : "") + item("delete", _t("删掉"), "", "danger");
@@ -2713,6 +2725,7 @@ function openSelMenu(at: { x: number; y: number }): void {
     if (v === "long") { cmd({ k: "selscale", f: 2 }); return; }
     if (v === "seldur") { cmd({ k: "seldur" }); return; }
     if (v.startsWith("clr:")) { const n = clearMarks(D.st, v.slice(4) as "phrase" | "note" | "all"); if (n === D.st) info(_t("选中的这一段没有这类记号")); else update(n); close(); scoreEl.focus(); return; }
+    if ((v === "keys" || v === "respell") && perc) { info(_t("{why}：「{what}」用不了", { why: NO_KEY_WHY(), what: v === "keys" ? _t("转调…") : _t("按调号拼写") })); return; }   // 打击乐的行（7-R）
     if (v === "keys") { draw("keys"); place(); return; }
     if (v === "back") { draw("main"); place(); return; }
     close();

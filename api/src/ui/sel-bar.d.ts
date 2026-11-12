@@ -18,5 +18,6 @@ export declare class SelBar {
     readonly el: HTMLDivElement;
     constructor(parent: HTMLElement, host: SelBarHost);
     /** 画：sel = 有没有选区（几个 token）；clip = 剪贴板里有没有东西；over = 别的全屏视图盖着（藏）；fix = 「修」开着（那一排开关的状态）。 */
-    update(sel: number, clip: boolean, over: boolean): void;
+    /** noKey = 这一行没有调（打击乐的行，7-R）：「调内一级」↑ ↓ 灰着、提示里说为什么（点了宿主说一句，不改谱）。 */
+    update(sel: number, clip: boolean, over: boolean, noKey?: string | null): void;
 }

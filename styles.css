@@ -85,7 +85,12 @@ body:has(.offer:not([hidden])) .notice-stack { top: calc(var(--safe-top) + 54px)
 .bar select, .bar input { height: 30px; border: 1px solid var(--line); border-radius: 7px; background: #fff; padding: 0 6px; color: var(--ink); font-size: 13px; }
 .bar input[type=number] { width: 64px; }
 .btn { height: 34px; min-width: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;
-  border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer; }
+  border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: pointer;
+  white-space: nowrap; }   /* 按钮的字不在按钮里折行（7-R，2026-11-12；user「建议是统一做一个代码里面的护栏，而不是靠测试」）：所有按钮自动带着。放不下 = 整个钮换到下一格（.btn-row），不是字折两行 */
+.btn small { white-space: normal; }   /* 候选按钮里那行灰色小字是说明、不是按钮的字：照旧能折 */
+/* 一排按钮只用这一个类（7-R）：按格子排、每个钮一样高；放不下时整个钮换到下一格（格子对齐，不参差）。--btn-cell = 一格至少多宽（默认够放四个汉字 / 一个英文词） */
+.btn-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--btn-cell, 4.6em), 1fr)); grid-auto-rows: 1fr; gap: 6px; }
+.btn-row > .btn { min-width: 0; width: 100%; }
 @media (hover: hover) { .btn:hover { background: #f7f6f2; } }   /* 只给真的会悬停的（鼠标）：iPad 点过的钮会一直粘着 hover 变灰（user「点了之后按下的灰色没有自动消失」；同 gallery 0.6.3） */
 .btn.is-on { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
 .btn:disabled { opacity: .35; cursor: default; }
@@ -588,7 +593,6 @@ body.finder-over-gallery #stage { position: fixed; inset: 0; z-index: calc(var(-
 .strip-row { display: flex; flex-direction: column; font-size: 12px; color: var(--muted); gap: 2px; }
 .strip-row output { color: var(--ink); font-variant-numeric: tabular-nums; }
 .strip-row input[type="range"] { width: 100%; }
-.strip-btns { display: flex; gap: 6px; }
 .strip-refs { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .strip.master { border-color: var(--accent); }   /* 总轨（2026-10-10 刀 3） */
 .strip .meter-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }

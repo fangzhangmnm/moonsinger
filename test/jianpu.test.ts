@@ -131,7 +131,7 @@ describe("简谱数字行", () => {
     eq(L.prims.filter((p) => p.t === "line" && /jp-ul/.test(p.cls ?? "")).length, 1, "两个八分连一条下划线（节奏写法同数字行）");
     assert(!L.prims.some((p) => p.t === "text" && /jp-head/.test(p.cls ?? "") && (p as { s: string }).s.startsWith("1=")), "谱头不印「1=」");
     const iKey = toks.findIndex((t) => t.kind === "key");
-    assert(L.keyHints.some((h) => h.index === iKey && h.tok === toks[iKey]!.id && h.s.startsWith("1=")), "编辑器里淡的「1=…」提示带着调号 token");
+    assert(L.keyHints.some((h) => h.index === iKey && h.tok === toks[iKey]!.id && h.s === "无调"), "编辑器里淡的提示带着调号 token、写「无调」（打击乐的行没有调，7-R）");
     eq(GEOMETRY.jianpuX.pitchAxis, undefined, "X 行没有「纵向 = 音高」");
     // 简谱跟五线谱的分法一一对上（统筹 5-6 更正 5-4 ⑨）：鼓（五线谱画成鼓谱 / 一线谱）= X 行；台上固定敲一个键的（五线谱画在五线上、× 符头）= 数字行，每个数字 + ×（同气声），音高看得见
     const fixed = lay([n(P("E")), n(P("G"))], undefined, { xHead: true }).L;

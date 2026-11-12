@@ -41,6 +41,8 @@ export interface HeaderPanelGlue {
   openTempo(paperId: string, partId: string, index: number, fresh: boolean): void;
   /** 歌手的名字（合租那一行的选项用）。 */
   partName(partId: string): string;
+  /** 这一行没有调（打击乐的行，7-R）：回为什么；有调 = null。调号那一格灰着、写这一句；拍号 / 速度照旧；调号 token 在数据里留着。 */
+  noKey(partId: string): string | null;
 }
 
 export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, partId: string, index: number, at: { x: number; y: number }): void } {
@@ -49,7 +51,7 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
     open(paperId, partId, index, at) {
       let spot: HeaderSpot = headerSpot(track(paperId, partId), index), timeText = false, modeNote = "";
       const html = (): string => {
-        const toks = track(paperId, partId), v = headerVals(toks, spot), head = spot.head;
+        const toks = track(paperId, partId), v = headerVals(toks, spot), head = spot.head, noKey = g.noKey(partId);
         const bk = keyAt(toks, spot.a), bm = keyMinorAt(toks, spot.a), bt = timeAt(toks, spot.a), bb = tempoAt(toks, spot.a);
         const opt = (value: string, label: string, on: boolean) => `<option value="${esc(value)}"${on ? " selected" : ""}>${esc(label)}</option>`;
         // 开头那一处（v0.16.88，user 11-09「可以高音低音grand用户每个sheet选」「一开始是auto」）：自动 / 六个谱号 / 大谱表，管「这个声部在这一段」；中途的只有六个谱号
@@ -72,7 +74,8 @@ export function createHeaderPanel(g: HeaderPanelGlue): { open(paperId: string, p
         return `<div class="ctx-hint ctx-what">${head ? _t("这张纸开头：从头开始的谱号 / 调号 / 拍号 / 速度。只管这一个声部这一段（开头的速度整张纸一起）。") : _t("从这里起的变化（「不变」= 跟前面一样）。")}</div>` +
           `<div class="hp-grid">` +
           `<span class="hp-k">${_t("谱号")}</span><select class="hp-sel" data-hp="clef" title="${_t("只管画，音高不变")}">${clefOpts}</select>` + aoRow +
-          `<span class="hp-k">${_t("调号")}</span><select class="hp-sel" data-hp="key" title="${_t("改调号 = 它管的音按新调号拼写，音高不变")}">${keyOpts}</select>` + modeRow +
+          (noKey ? `<span class="hp-k">${_t("调号")}</span><select class="hp-sel" data-hp="key" disabled title="${esc(noKey)}">${keyOpts}</select><span class="hp-k"></span><span class="hp-v hp-note">${esc(noKey)}</span>`
+            : `<span class="hp-k">${_t("调号")}</span><select class="hp-sel" data-hp="key" title="${_t("改调号 = 它管的音按新调号拼写，音高不变")}">${keyOpts}</select>` + modeRow) +
           `<span class="hp-k">${_t("拍号")}</span><span class="hp-v"><select class="hp-sel" data-hp="time">${timeOpts}</select>` +
             (timeText ? `<input class="hp-in" data-hp="timeText" type="text" inputmode="numeric" placeholder="5/8" value="${esc(tv)}" spellcheck="false" autocomplete="off" />` : "") + `</span>` +
           `<span class="hp-k">${_t("速度")}</span><span class="hp-v"><button class="btn hp-tempo" data-v="tempo" title="${_t("打开速度框：拨速度、选速度词、看小节拍器，按「确定」才写进谱")}">` +

@@ -65,6 +65,20 @@ describe("鼓谱：排版", () => {
     const stemDown = (h: { x: number; y: number }) => L.prims.some((p) => p.t === "line" && Math.abs(p.x1 - p.x2) < 0.01 && p.x1 >= h.x - 1 && p.x1 <= h.x + 2 * L.sp && Math.min(p.y1, p.y2) >= h.y - 3 && Math.max(p.y1, p.y2) > h.y + 2 * L.sp);
     assert(stemDown(hs[0]) && !stemDown(hs[1]), "大鼓（脚）符干朝下、踩镲（手）朝上");
   });
+  it("打击乐的行没有调（7-R，统筹定 A）：调号的淡提示照画、写「无调」（五线鼓谱 / 一线谱 / 简谱 X 行；英文界面 = no key）；台上换成有音高的 = 1=G 照常", () => {
+    const inG = (st: EditorState, jp = false): EditorState => { const pp = st.song.papers[0]!; return { ...st, song: { ...st.song, ...(jp ? { notation: "jianpu" } : {}), papers: [{ ...pp, tracks: Object.fromEntries(Object.entries(pp.tracks).map(([k, ts]) => [k, ts.map((t) => (t.kind === "key" ? { ...t, fifths: 1 } : t))])) }] } as Song }; };
+    const at = (st: EditorState, perc: PartView["perc"] | undefined, locale: "zh" | "en" = "zh") => engrave(st.song, { width: 900, sp: 10, at: st.at, parts: views(st, [perc]), locale, measure: createTextMeasure((x: string) => x.length * 10), autoBars: true });
+    const one = { kind: "one", key: 42, info: percOf(128, 0, 42)! } as PartView["perc"];
+    for (const jp of [false, true]) for (const perc of [{ kind: "kit" } as PartView["perc"], one]) {
+      const st = inG(song([[key(36), key(42)]]), jp), L = at(st, perc), what = `${jp ? "简谱" : "五线谱"} · ${perc!.kind}`;
+      assert(L.keyHints.length > 0 && L.keyHints.every((h) => h.s === "无调" && h.tok !== undefined), `${what}：提示照画、写「无调」、带着调号 token（守卫 4 不变）`);
+      assert(!L.prims.some((p) => p.t === "text" && /^1=/.test((p as { s: string }).s)), `${what}：哪儿都不写「1=G」`);
+      assert(at(st, perc, "en").keyHints.every((h) => h.s === "no key"), `${what}：英文界面 = no key`);
+    }
+    const pitchedStaff = at(inG(song([[key(64), key(67)]])), undefined), pitchedJp = at(inG(song([[key(64), key(67)]]), true), undefined);
+    assert(!pitchedStaff.keyHints.some((h) => h.s === "无调") && pitchedStaff.prims.some((p) => p.t === "glyph" && /keysig/.test(p.cls ?? "")), "五线谱、有音高：印调号（一个升号），没有「无调」");
+    assert(!pitchedJp.keyHints.length && pitchedJp.prims.some((p) => p.t === "text" && (p as { s: string }).s === "1=G"), "简谱、有音高：谱头印「1=G」");
+  });
   it("一家合租全是鼓件 = 一行五线鼓谱，各在自己那一线（鼓组 = 一家合租）", () => {
     let st = song([[key(60), key(60)], [key(60), key(60)], [key(60)]]);   // 写的音高都一样：各人的线按台上那件
     const [a, b, c] = st.song.parts.map((p) => p.id);

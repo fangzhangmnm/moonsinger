@@ -666,6 +666,10 @@ var S = {
   "\u632A\u5230\u8FD9\u4E00\u6BB5\u6700\u540E\u4E00\u4E2A\u97F3\u540E\u9762\uFF1A\u6E10\u5F3A\u6E10\u5F31 / \u6E10\u5230\u4E00\u76F4\u8D70\u5230\u8FD9\u4E00\u6BB5\u7ED3\u675F": { en: "Move it after the last note of this section: crescendos / ramps run all the way to the end of the section" },
   "\u632A\u5230\u8FD9\u4E00\u6BB5\u7ED3\u5C3E": { en: "Move to the end of this section" },
   "\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A\uFF08\u6700\u540E\u4E00\u4E2A\u97F3\u7684\u53F3\u8FB9 = \u8FD9\u4E00\u6BB5\u7ED3\u5C3E\uFF09": { en: "Long-press and drag = move it to another note (right of the last note = the end of this section)" },
+  "\u6253\u51FB\u4E50\u7684\u884C\u6CA1\u6709\u8C03\uFF1A\u5199\u7684\u97F3\u9AD8 = \u6572\u54EA\u4E2A\u9F13\uFF0C\u548C\u8C03\u53F7\u65E0\u5173\uFF08\u8C03\u53F7\u7559\u5728\u8C31\u91CC\uFF0C\u4E0D\u8D77\u4F5C\u7528\uFF09": { en: "Percussion rows have no key: the written pitch says which drum is hit, not a pitch (the key signature stays in the score but does nothing)" },
+  "{why}\uFF1A\u300C\u8C03\u5185\u4E00\u7EA7\u300D\u7528\u4E0D\u4E86\uFF0C\u7528\u534A\u97F3 / \u516B\u5EA6": { en: "{why}: \u201Cstep within the key\u201D doesn't apply; use semitone / octave" },
+  "{why}\uFF1A\u300C{what}\u300D\u7528\u4E0D\u4E86": { en: "{why}: \u201C{what}\u201D doesn't apply" },
+  "\u65E0\u8C03": { en: "no key" },
   "{title} \xB7 {secs} \u79D2 \xB7 {size} \xB7 {date}": { en: "{title} \xB7 {secs} s \xB7 {size} \xB7 {date}" },
   "\u5220\u6389\u65E7\u7248\u672C\u6E32\u7684\uFF08{n} \u6761\uFF0C\u5171 {size}\uFF09": { en: "Delete ones rendered by an older version ({n}, {size} total)" },
   "\u65E7\u7248\u672C\u6E32\u7684\uFF08\u6E32\u67D3\u6838\u5FC3 {v}\uFF09": { en: "rendered by an older version (render core {v})" },
@@ -6424,10 +6428,10 @@ function drawStaff(c, mine) {
     put(r, { ...T2, t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(r, 32), ch: den, cls });
     return cw;
   };
-  const keyLabel = (r, x0, f, hint, index, minor = false, T2 = {}) => {
+  const keyLabel = (r, x0, f, hint, index, minor = false, T2 = {}, perc = false) => {
     const y = staffTop(r) - P(0.8);
     if (hint) {
-      keyHints.push({ ...T2, system: r, index, x: P(x0), y, size: tx("key-hint"), s: keyText(f, minor) });
+      keyHints.push({ ...T2, system: r, index, x: P(x0), y, size: tx("key-hint"), s: perc ? _tIn(o.locale, "\u65E0\u8C03") : keyText(f, minor) });
       return;
     }
     put(r, { ...T2, t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });
@@ -6496,7 +6500,7 @@ function drawStaff(c, mine) {
         if (s2 === 0) {
           if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });
           const lab = k === 0 && q.head.idx.key !== void 0 ? look.inCActive ? q.head.real : pm ? f : fk === 0 || q.head.minor ? fk : null : null;
-          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !!pm || !look.inCActive, q.head.idx.key, q.head.minor, tokAt(q, q.head.idx.key));
+          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !!pm || !look.inCActive, q.head.idx.key, q.head.minor, tokAt(q, q.head.idx.key), !!pm);
           if (fk) hx += 0.8;
           const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig", tokAt(q, q.head.idx.time));
           if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
@@ -6628,7 +6632,7 @@ function drawStaff(c, mine) {
             if (u.warn && k === 0) put(rr, { t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE2) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn ann" });
           } else if (u.kind === "key") {
             if (pmode[r]) {
-              if (k === 0) keyLabel(rr, u.x + 0.2, look.inCActive ? u.real : u.fifths, true, u.index, u.minor, tokAt(q, u.index));
+              if (k === 0) keyLabel(rr, u.x + 0.2, look.inCActive ? u.real : u.fifths, true, u.index, u.minor, tokAt(q, u.index), true);
               marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
               continue;
             }
@@ -7300,7 +7304,7 @@ function drawJianpu(c, mine, mode = "digits") {
     c.attach(row0, "tempo", () => placeAbove(row0, 0.5 * jk, (y) => {
       const kw = P(headW(keyS)), tw = P(headW(timeS));
       const kt = q.head.idx.key !== void 0 ? tokens[q.head.idx.key]?.id : void 0, tt = q.head.idx.time !== void 0 ? tokens[q.head.idx.time]?.id : void 0;
-      if (mode === "x" || letters) keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q.head.idx.key ?? 0, x: letters ? hx + tw : hx, y, size: tx("key-hint"), s: keyS });
+      if (mode === "x" || letters) keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q.head.idx.key ?? 0, x: letters ? hx + tw : hx, y, size: tx("key-hint"), s: mode === "x" ? _tIn(o.locale, "\u65E0\u8C03") : keyS });
       else {
         put(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
         keyDots(row0, hx, y, hs, keyS, kt);
@@ -7330,7 +7334,7 @@ function drawJianpu(c, mine, mode = "digits") {
       if (u.kind === "key") {
         fifths = u.fifths;
         const row2 = rowOf(u.system, r, 0), s2 = keyHead(u.fifths, u.minor), x = P(u.x) + Q(0.3);
-        if (mode === "x" || letters) keyHints.push({ ...tokens[u.index] ? { tok: tokens[u.index].id } : {}, system: row2, index: u.index, x, y: Y(row2, BASE_Y - 0.3), size: tx("key-hint"), s: s2 });
+        if (mode === "x" || letters) keyHints.push({ ...tokens[u.index] ? { tok: tokens[u.index].id } : {}, system: row2, index: u.index, x, y: Y(row2, BASE_Y - 0.3), size: tx("key-hint"), s: mode === "x" ? _tIn(o.locale, "\u65E0\u8C03") : s2 });
         else {
           put(row2, { tok: tokens[u.index]?.id, t: "text", x, y: Y(row2, BASE_Y - 0.3), s: s2, cls: "jp-head jp-mid", size: Q(MID_TEXT_EM), anchor: "start" });
           keyDots(row2, x, Y(row2, BASE_Y - 0.3), Q(MID_TEXT_EM), s2, tokens[u.index]?.id);
@@ -8529,4 +8533,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-15def784c941.mjs.map
+//# sourceMappingURL=layout-worker-c739b0e7f4c5.mjs.map
