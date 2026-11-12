@@ -41,10 +41,12 @@ export const FULL_VIEWS: FView[] = [
 ];
 
 // ── 长期留的那一套（1b 收尾：脚手架收成几条综合的对抗性测试；底本 = 分家之后的代码存的，scripts/freeze-layout-surface.mjs）──
-/** 一组 = 一条综合测试：full = 用全的测试歌 × 十种视图；dense = 真实密度的大歌 × 三种视图；edge = 边界情形。 */
-export type SurfaceGroup = "full" | "dense" | "edge";
+/** 一组 = 一条综合测试：full = 用全的测试歌 × 十种视图；dense = 真实密度的大歌 × 三种视图；edge = 边界情形；
+ *  jianpu / letters = 用全的测试歌切成简谱 / 字母谱 × 同样的十种视图（2026-11-12 统筹：简谱和字母谱原来没有冻结的底本，三½ 收工时冻一份）。 */
+export type SurfaceGroup = "full" | "dense" | "edge" | "jianpu" | "letters";
 export function* surfaceCases(): Generator<{ group: SurfaceGroup; song: string; view: string; layout: () => Layout }> {
   for (const v of FULL_VIEWS) yield { group: "full", song: "full", view: v.name, layout: () => { const s0 = asFrozen(fullSong()), s = v.song ? v.song(s0) : s0; return engrave(s, v.opts(s)); } };
+  for (const nota of ["jianpu", "letters"] as const) for (const v of FULL_VIEWS) yield { group: nota, song: `full-${nota}`, view: v.name, layout: () => { const s0 = { ...asFrozen(fullSong()), notation: nota }, s = v.song ? v.song(s0) : s0; return engrave(s, v.opts(s)); } };
   for (const v of VIEWS.filter((x) => ["print", "edit-all", "listen-all"].includes(x.name))) yield { group: "dense", song: "once", view: v.name, layout: () => caseLayout("once", v) };
   for (const e0 of edgeSongs()) {
     const e = { ...e0, song: asFrozen(e0.song) };

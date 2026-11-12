@@ -57,6 +57,8 @@ describe("谱面排版：版面和底本逐个相同 + 平数据", () => {
     assert(tolDiffs(want, g1).out.length > 0 && tolDiffs(want, g2).out.length > 0, "比较器放过了挪动：它是空的");
   });
   it("真实密度的大歌（Once upon a Tale，895 个 token、7 声部、合租）× 印 / 全部 / 听", () => { checkGroup("dense"); });
+  it("简谱：用全的测试歌切成简谱 × 同样的十种视图（2026-11-12 冻）", () => { checkGroup("jianpu"); });
+  it("字母谱：用全的测试歌切成字母谱 × 同样的十种视图（2026-11-12 冻）", () => { checkGroup("letters"); });
   it("边界情形：空纸 / 全隐藏、只有谱头的轨（补齐）、跨好几行的长音 + 弱起 + 整小节休止、窄到小节里逐列切开", () => { checkGroup("edge"); });
 });
 
