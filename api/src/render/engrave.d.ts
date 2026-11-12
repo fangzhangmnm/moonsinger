@@ -259,7 +259,7 @@ export interface Box {
     h: number;
 }
 /** 不印的状态提示的一条：hiddenPapers = 隐藏了 N 段（全部视图）、hiddenParts = 隐藏了 N 个声部（只有一张纸、曲段名那一条没画时；paper = 哪张纸）、expr = 演奏法和表情：不显示。 */
-export type StatusHintKind = "hiddenPapers" | "hiddenParts" | "expr";
+export type StatusHintKind = "hiddenPapers" | "hiddenParts" | "expr" | "tallGroup";
 export interface StatusHintItem {
     kind: StatusHintKind;
     s: string; /** 这一条在这一行里从 x 起多远、多宽（px）。 */

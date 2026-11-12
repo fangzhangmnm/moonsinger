@@ -26,6 +26,8 @@ export interface OverlayHost {
     }): void;
     /** 「演奏法和表情：不显示」的淡提示（7-G 重做）：点了 = 开页面设置的「看谱」页、落在那一项上。 */
     onFolded(): void;
+    /** 「有一组比一页高，接到了下一页」（7-V）：点了 = 开页面设置的「版面」页（换纸、换音符密度在那儿；不替人改）。 */
+    onTallGroup(): void;
 }
 /** 这一帧要知道的谱面状态（排版器不知道的那些）。 */
 export interface OverlayView {

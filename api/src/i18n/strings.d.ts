@@ -5494,6 +5494,9 @@ export declare const S: {
     readonly "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A": {
         readonly en: "Articulations & dynamics: hidden";
     };
+    readonly "\u6709\u4E00\u7EC4\u6BD4\u4E00\u9875\u9AD8\uFF0C\u63A5\u5230\u4E86\u4E0B\u4E00\u9875": {
+        readonly en: "A group is taller than a page, continued on the next page";
+    };
     readonly 无调: {
         readonly en: "no key";
     };
@@ -6651,6 +6654,9 @@ export declare const S: {
     };
     readonly "\u6709 {n} \u6BB5\u9690\u85CF\u7740\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u53BB\u770B\u6216\u653E\u51FA\u6765": {
         readonly en: "{n} hidden {n|section|sections} (not played, not printed, no space taken): open to go to one or unhide it";
+    };
+    readonly "\u6709\u4E00\u7EC4\u58F0\u90E8\u6BD4\u4E00\u9875\u80FD\u653E\u7684\u8FD8\u9AD8\uFF0C\u5728\u884C\u548C\u884C\u4E4B\u95F4\u65AD\u5F00\u3001\u63A5\u5230\u4E86\u4E0B\u4E00\u9875\uFF08\u4E0D\u7F29\u5C0F\u3001\u4E0D\u6362\u7EB8\uFF09\uFF1A\u70B9\u5F00\u9875\u9762\u8BBE\u7F6E\u7684\u300C\u7248\u9762\u300D\u9875": {
+        readonly en: "A group of parts is taller than a page can hold, so it breaks between staves and continues on the next page (nothing is shrunk, the paper is not changed): tap to open Page settings › Page";
     };
     readonly "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF08\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u91CC\u5173\u7740\uFF1B\u64AD\u653E\u7167\u5199\u7684\u6765\uFF09\uFF1A\u70B9\u5F00\u53BB\u6253\u5F00": {
         readonly en: "Articulations & dynamics are hidden right now (turned off under Page settings › Reading; playback follows what's written): tap to change";

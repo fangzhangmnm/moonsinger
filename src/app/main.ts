@@ -737,7 +737,8 @@ const overlayHost: import("../ui/score-overlay.ts").OverlayHost = {
     void paper;
     ctxMenu("hidden-list", `<div class="tc-sec">${_t("隐藏着的（点 = 放出来）")}</div>${rows}`, at, (v) => { showPart(v); });
   },
-  onFolded: () => openPaperSheet("expr"),   // 「演奏法和表情：不显示」的淡提示（7-G 重做）：开页面设置「看谱」页、落在那一项
+  onFolded: () => openPaperSheet("expr"),
+  onTallGroup: () => openPaperSheet("layout"),   // 「有一组比一页高，接到了下一页」（7-V）：开页面设置「版面」页   // 「演奏法和表情：不显示」的淡提示（7-G 重做）：开页面设置「看谱」页、落在那一项
   onHiddenPapers: (ids, at) => {   // 「隐藏 N 段」（v0.16.34）：每段一行 = 名字 + 「去看」（本段视图翻过去）+「放出来」（取消隐藏，能撤销）
     const rows = ids.map((id) => `<div class="hidp-row"><span class="hidp-name">${esc(paperLabel(id))}</span><button class="btn ctx-item" data-v="go:${esc(id)}">${_t("去看")}</button><button class="btn ctx-item" data-v="show:${esc(id)}">${_t("放出来")}</button></div>`).join("");
     ctxMenu("hidden-papers", `<div class="tc-sec">${_t("隐藏着的曲段（不放、不印）")}</div>${rows}`, at, (v) => {
@@ -1982,11 +1983,11 @@ function openCreditsSheet(): void {
  *  页签 + 一项一行 + 长说明进「?」），选项一律是下拉（界面零件库的下拉标准件，7-T）。曲段的列表拿掉了：增删、改名、隐藏、挪、移调是改这首歌，
  *  谱上每一段名字右边的「⋯」、「隐藏 N 段」小标、本段视图翻进隐藏的段都做得到（7-C 核过，没有只在列表里才能做的）。
  *  每一项的「?」里写清它存在哪：跟着这首歌（进歌、能撤销、PDF 照着印）/ 跟着这首歌的视图（存时顺手带，不算改动）/ 只在这次打开里。 */
-function openPaperSheet(focus?: "expr"): void {
+function openPaperSheet(focus?: "expr" | "layout"): void {   // focus：expr = 「看谱」页落在「演奏法和表情」那一项；layout = 开在「版面」页（7-V 的提示点进来）
   ui.close();
   const box = document.createElement("div");
   box.className = "offer";
-  let page: "look" | "layout" = "look";   // 打开默认「看谱」这一页
+  let page: "look" | "layout" = focus === "layout" ? "layout" : "look";   // 打开默认「看谱」这一页
   const sel = (k: string, items: readonly (readonly [string, string])[], cur: string, disabled = false) =>
     dropdownHtml(items.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-pg="${k}"`, ...(disabled ? { disabled: true } : {}) });
   /** 「?」里的一张小对照：每个选项一行「名字 — 说明」。 */
@@ -2045,7 +2046,7 @@ function openPaperSheet(focus?: "expr"): void {
   const showPage = wireSetPages(box, (pg) => { page = pg as typeof page; });
   draw();
   document.body.append(box);
-  if (focus) {   // 落在那一项：高亮一下、滚到它、焦点放在它的下拉上（「演奏法和表情：不显示」的淡提示点进来的）
+  if (focus === "expr") {   // 落在那一项：高亮一下、滚到它、焦点放在它的下拉上（「演奏法和表情：不显示」的淡提示点进来的）
     const dd = box.querySelector<HTMLButtonElement>(`[data-pg="${focus}"]`), it = dd?.closest<HTMLElement>(".set-item");
     if (it) { it.classList.add("is-target"); it.scrollIntoView({ block: "nearest" }); dd!.focus(); setTimeout(() => it.classList.remove("is-target"), 1600); }
   }

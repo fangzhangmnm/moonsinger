@@ -39,7 +39,7 @@ const ALLOWED: { name: string; ok: (a: Prim, b: Prim) => boolean }[] = [
   { name: "五线谱：符尾 / 附点挨着符头", ok: (a, b) => a.t === "glyph" && b.t === "glyph" && !a.cls && has(b, "note") },
 ];
 /** 查出来了、等统筹定谁让谁：按「谁和谁」认。第八刀 8-5（不印的提示最后贴、只躲不推）之后 7-K 的 ⑥ ⑦ 三条都没了。 */
-const PENDING: Record<string, string> = {   // 8-7 ① 时字母谱有过一条 7-V 的，8-7 (A) 之后碰不到、划掉；7-G 时又碰上，7-I 小节线改固定短线之后（房子不用再越过高线、落低了）又碰不到、划掉。7-V 本身（一组比一页还高）没修
+const PENDING: Record<string, string> = {   // 8-7 ① 时字母谱有过一条 7-V 的，8-7 (A) 之后碰不到、划掉；7-G 时又碰上，7-I 小节线改固定短线之后（房子不用再越过高线、落低了）又碰不到、划掉。7-V 本身 2026-11-12 修了（接到下一页）
 };
 /** 五线谱查出来的（这一串只报不修；施工单第六节 7-K「五线谱只报不修」）。 */
 const STAFF_KNOWN: Record<string, string> = {
@@ -56,26 +56,18 @@ function cases(notation: "staff" | "jianpu" | "letters"): Case[] {
   for (const [name, o] of [["编辑", { ...editorBase(t, TRIO_LABELS), measure: real }], ["印", printOpts(t, SP, views(t, TRIO_LABELS, false), real, true)]] as const) out.push({ name: `三声部 · ${name}`, L: engrave(t, o as EngraveOpts), ts: (o as EngraveOpts).textScale ?? 1 });
   return out;
 }
-/** 7-V 的豁免（统筹 2026-11-12 裁定，取代原来按种类挂的 7-V 条目）：分页的版面里，一组（一张纸的一行，几个声部）比一页还高、跑出了它那一页的纸底——
- *  从那一页的纸底到这一组的底这一条横带里的相叠不查（那里压着的是这一组跑出去的部分和下一页开头）。7-V 本身没修，等 user 定方向。
- *  只管分页的版面（有纸的框）；同样的东西在连续排的视图里没有分页、照样查，所以这条带里真有「谱号压小节线」那种，连续排的那几份会报。
- *  圈的是横带不是「这一组的图元」：版面没给每个图元记它属于哪一组（行首的家具是行距定了以后另画的），要逐个认得让排版器往外交行号。 */
-function overflowBands(L: Layout): [number, number][] {
-  const pages = (allPrims(L).filter((p) => p.t === "rect" && has(p, "page")) as { y: number; h: number }[]);
-  if (!pages.length) return [];
-  const groups = new Map<string, { top: number; bottom: number }>();
-  for (const b of L.systems) { const k = `${b.paper}:${b.sys}`, e = groups.get(k); if (!e) groups.set(k, { top: b.top, bottom: b.bottom }); else { e.top = Math.min(e.top, b.top); e.bottom = Math.max(e.bottom, b.bottom); } }
-  const out: [number, number][] = [];
-  for (const g of groups.values()) { const pg = pages.find((q) => g.top >= q.y - 1 && g.top < q.y + q.h); if (pg && g.bottom > pg.y + pg.h) out.push([pg.y + pg.h, g.bottom]); }
-  return out;
+/** 一组（一张纸的一行，几个声部）分在了几页上（7-V：比一页高 = 在行和行之间断开、接到下一页）。没分页 = 0。 */
+function splitGroups(L: Layout): number {
+  const pageOf = (y: number) => L.pages.findIndex((pg) => y >= pg.top && y < pg.top + pg.h), g = new Map<string, Set<number>>();
+  for (const b of L.systems) { const k = `${b.paper}:${b.sys}`, e = g.get(k) ?? new Set<number>(); e.add(pageOf(b.top)); g.set(k, e); }
+  return [...g.values()].filter((e) => e.size > 1).length;
 }
-/** 一种谱的所有相叠，按「谁和谁」分组（去掉 ALLOWED 的、7-V 那条带里的）。 */
+/** 一种谱的所有相叠，按「谁和谁」分组（去掉 ALLOWED 的）。7-V 修好之后（一组比一页高 = 接到下一页）原来那条「跑出纸底的横带不查」的豁免删了（施工单第五节 7-V）。 */
 function found(notation: "staff" | "jianpu" | "letters"): Map<string, string[]> {
   const g = new Map<string, string[]>();
   for (const c of cases(notation)) {
-    const AP = allPrims(c.L), ink = inkOf(c.L, (s, size) => real.widthPx(s, size, c.L.sp, c.ts), (p) => p.t === "rect" && has(p, "page"), font), bands = overflowBands(c.L);
+    const AP = allPrims(c.L), ink = inkOf(c.L, (s, size) => real.widthPx(s, size, c.L.sp, c.ts), (p) => p.t === "rect" && has(p, "page"), font);
     for (const o of overlaps(ink, EPS).values()) {
-      if (bands.some(([y0, y1]) => o.y >= y0 && o.y <= y1)) continue;   // 7-V：跑出纸底的那一组压着下一页（见 overflowBands）
       const a = AP[o.a]!, b = AP[o.b]!;
       if (ALLOWED.some((r) => r.ok(a, b) || r.ok(b, a))) continue;
       const ka = kindOf(a), kb = kindOf(b), key = ka < kb ? `${ka} × ${kb}` : `${kb} × ${ka}`, lab = (p: Prim) => (p.t === "text" ? `「${p.s}」` : p.t);
@@ -119,7 +111,7 @@ describe("不印的状态提示不和别人打架（7-G 重做 → 统筹 2026-1
       for (const [vn, o0] of vs) for (const narrow of [false, true]) {
       const o = { ...o0, measure: real, ...(narrow ? { width: 360 } : {}) } as EngraveOpts, L = engrave(c.song, o), tag = `${c.name} · ${vn}${narrow ? " · 窄屏" : ""}`;
       const kinds = L.statusHints.flatMap((ln) => ln.items.map((it) => it.kind));
-      eq(kinds.join(","), c.want.join(","), `${tag}：该有的几条都在、先后对`);
+      eq(kinds.join(","), [...c.want, ...(splitGroups(L) ? ["tallGroup"] : [])].join(","), `${tag}：该有的几条都在、先后对（「有一组比一页高」只在真有一组分在两页上时有，7-V）`);
       const boxes = L.statusHints.flatMap((ln) => ln.items.map((it) => { const w = real.widthPx(it.s, ln.size, L.sp, o.textScale ?? 1); return { x0: ln.x + it.dx, x1: ln.x + it.dx + w, y0: ln.y - ln.size * 0.8, y1: ln.y + ln.size * 0.2 }; }));
       const ink = inkOf(L, (t, size) => real.widthPx(t, size, L.sp, o.textScale ?? 1), (p) => p.t === "rect" && has(p, "page"), font), AP = allPrims(L);
       boxes.forEach((box, i) => {

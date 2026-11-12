@@ -31,6 +31,8 @@ export interface OverlayHost {
   onHiddenPapers(papers: string[], at: { x: number; y: number }): void;
   /** 「演奏法和表情：不显示」的淡提示（7-G 重做）：点了 = 开页面设置的「看谱」页、落在那一项上。 */
   onFolded(): void;
+  /** 「有一组比一页高，接到了下一页」（7-V）：点了 = 开页面设置的「版面」页（换纸、换音符密度在那儿；不替人改）。 */
+  onTallGroup(): void;
 }
 /** 这一帧要知道的谱面状态（排版器不知道的那些）。 */
 export interface OverlayView {
@@ -146,6 +148,7 @@ export class ScoreOverlay {
         const st = `${text(ln.x + it.dx, ln.y, ln.size, "start", ST)};${hit}`;
         if (it.kind === "hiddenPapers") add(`st-hidp:${this.hiddenPapers.join(",")}`, "button", "ov-i ov-key-hint ov-status-hint ov-hidden-papers", st, esc(it.s), { "data-ov": "hidpapers", title: _t("有 {n} 段隐藏着（不放、不印、不占地方）：点开去看或放出来", { n: this.hiddenPapers.length }) });
         else if (it.kind === "hiddenParts") add(`st-hid:${it.paper}`, "button", "ov-i ov-key-hint ov-status-hint ov-hidden", st, esc(it.s), { "data-ov": "hidden", "data-paper": it.paper!, title: _t("这一段有 {n} 位隐藏着（不排、不占地方）：点开看是谁、放出来", { n: this.hiddenOf.get(it.paper!)?.length ?? 0 }) });
+        else if (it.kind === "tallGroup") add(`st-tall:${ln.system}`, "button", "ov-i ov-key-hint ov-status-hint ov-tall-hint", st, esc(it.s), { "data-ov": "tallgroup", title: _t("有一组声部比一页能放的还高，在行和行之间断开、接到了下一页（不缩小、不换纸）：点开页面设置的「版面」页") });
         else add(`st-expr:${ln.system}`, "button", "ov-i ov-key-hint ov-status-hint ov-fold-hint", st, esc(it.s), { "data-ov": "folded", title: _t("演奏法和表情现在不显示（页面设置「看谱」里关着；播放照写的来）：点开去打开") });
       });
     }
@@ -213,6 +216,7 @@ export class ScoreOverlay {
       case "hidden": this.host.onHidden(d.paper!, this.hiddenOf.get(d.paper!) ?? [], mid); break;
       case "hidpapers": this.host.onHiddenPapers(this.hiddenPapers, mid); break;
       case "folded": this.host.onFolded(); break;
+      case "tallgroup": this.host.onTallGroup(); break;
     }
   }
 }

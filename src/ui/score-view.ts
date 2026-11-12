@@ -575,7 +575,10 @@ export class ScoreView {
       let d = this.barEl; if (!d || !d.isConnected) { d = document.createElement("div"); d.className = "play-bar"; this.ink.insertBefore(d, this.ink.firstChild); this.barEl = d; }
       // 上下沿 = 这一行谱真有墨的地方再留一点（v0.10.26，user「播放进度的灰色方块的top和bottom再推敲一下」：以前用整行的格子——上面空一大截、
       //   下面切掉叠着的房客的低音）；一整行都一样高，换小节不跳
-      const pad = L.sp * 0.8, bt = Math.min(...rows.map((r) => r.inkTop ?? r.top)) - pad, bb = Math.max(...rows.map((r) => r.inkBottom ?? r.bottom)) + pad;
+      //   一组跨了页（7-V：比一页高、接到下一页）= 只垫正在响的那位所在的那一页上的那一截，不跨过两页之间的空
+      const pageIx = (y: number) => L.pages.findIndex((pg) => y >= pg.top && y < pg.top + pg.h), here = L.pages.length ? pageIx(L.systems[h0.system]!.top) : -1;
+      const barRows = here >= 0 ? rows.filter((r) => pageIx(r.top) === here) : rows;
+      const pad = L.sp * 0.8, bt = Math.min(...barRows.map((r) => r.inkTop ?? r.top)) - pad, bb = Math.max(...barRows.map((r) => r.inkBottom ?? r.bottom)) + pad;
       const key = `${p.paperId}:${sys}:${Math.round(left)}`;
       if (key !== this.barKey) { this.barKey = key; d.style.left = `${left}px`; d.style.top = `${bt}px`; d.style.width = `${Math.max(4, right - left)}px`; d.style.height = `${bb - bt}px`; } }
     void x;   // 播放线先不画（2026-10-10 user「感觉高亮够，可以先不用那根当前播放的线…先试试不用线」）——位置照算，要回来时在这儿画

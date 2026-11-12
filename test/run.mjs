@@ -12,6 +12,7 @@ import "./name-column.test.ts";
 import "./text-lang.test.ts";
 import "./part-show.test.ts";
 import "./no-collide.test.ts";
+import "./tall-group.test.ts";   // 2026-11-12 7-V 一组比一页高 = 在行和行之间断开、接到下一页
 import "./layout-params.test.ts";
 import "./last-merge.test.ts";
 import "./read-directions.test.ts";

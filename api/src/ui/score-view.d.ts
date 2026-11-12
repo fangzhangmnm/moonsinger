@@ -307,6 +307,10 @@ export declare class ScoreView {
     /** 光标 / 选区 / 编辑框在哪（变了才跟）。 */
     private baseKey;
     private followKey;
+    /** 光标 / 选区 / 编辑框挪到现在这个位置是什么时候（第一次要画它的那一刻；排版在路上时比真画早）：这之后人自己滚过 = 这一次不跟。 */
+    private askKey;
+    private askAt;
+    private noteAsk;
     private caretSeen;
     /** 上一次画的时候每一行（纸 | 声部 | 第几行 | 第几张谱表）的第五线 y（px）：钉住正在写的那一行用（防抖，user 11-09「屏幕上把你正在写的那一行钉住不动 同意」）。 */
     private pinPrev;

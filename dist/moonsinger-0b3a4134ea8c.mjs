@@ -5126,6 +5126,7 @@ var S = {
   "\u9690\u85CF\u4E86 {n} \u6BB5": { en: "{n} {n|section|sections} hidden" },
   "\u9690\u85CF\u4E86 {n} \u4E2A\u58F0\u90E8": { en: "{n} {n|part|parts} hidden" },
   "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A": { en: "Articulations & dynamics: hidden" },
+  "\u6709\u4E00\u7EC4\u6BD4\u4E00\u9875\u9AD8\uFF0C\u63A5\u5230\u4E86\u4E0B\u4E00\u9875": { en: "A group is taller than a page, continued on the next page" },
   "\u65E0\u8C03": { en: "no key" },
   "\u6781\u5F31": { en: "very very soft" },
   "\u5F88\u5F31": { en: "very soft" },
@@ -5512,6 +5513,7 @@ var S = {
   "\u5C0F\u8C03\uFF1A\u548C\u5F26\u7EA7\u6570\u4ECE la \u6570\u3002\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": { en: "Minor: chord degrees count from la. Tap = clef / key / time / tempo" },
   "\u8FD9\u91CC\u662F C \u8C03\uFF08\u6CA1\u6709\u5347\u964D\u53F7\uFF09\uFF1A\u70B9 = \u8C31\u53F7 / \u8C03\u53F7 / \u62CD\u53F7 / \u901F\u5EA6": { en: "C major here (no sharps or flats): tap = clef / key / time / tempo" },
   "\u6709 {n} \u6BB5\u9690\u85CF\u7740\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u53BB\u770B\u6216\u653E\u51FA\u6765": { en: "{n} hidden {n|section|sections} (not played, not printed, no space taken): open to go to one or unhide it" },
+  "\u6709\u4E00\u7EC4\u58F0\u90E8\u6BD4\u4E00\u9875\u80FD\u653E\u7684\u8FD8\u9AD8\uFF0C\u5728\u884C\u548C\u884C\u4E4B\u95F4\u65AD\u5F00\u3001\u63A5\u5230\u4E86\u4E0B\u4E00\u9875\uFF08\u4E0D\u7F29\u5C0F\u3001\u4E0D\u6362\u7EB8\uFF09\uFF1A\u70B9\u5F00\u9875\u9762\u8BBE\u7F6E\u7684\u300C\u7248\u9762\u300D\u9875": { en: "A group of parts is taller than a page can hold, so it breaks between staves and continues on the next page (nothing is shrunk, the paper is not changed): tap to open Page settings \u203A Page" },
   "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF08\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u91CC\u5173\u7740\uFF1B\u64AD\u653E\u7167\u5199\u7684\u6765\uFF09\uFF1A\u70B9\u5F00\u53BB\u6253\u5F00": { en: "Articulations & dynamics are hidden right now (turned off under Page settings \u203A Reading; playback follows what's written): tap to change" },
   "\u8FD9\u4E00\u5BB6\u5C55\u5F00\u7740\uFF1A\u70B9 = \u53E0\u56DE\u53BB\uFF08\u5149\u6807\u632A\u5230\u4E0B\u4E00\u4F4D\uFF09": { en: "This family is spread out: tap = fold it back (the cursor moves to the next part)" },
   "\u73B0\u5728\u7684\u7F29\u653E\uFF08100% = \u7EB8\u7684\u5B9E\u9645\u5C3A\u5BF8\uFF09\uFF1B\u70B9 = \u56DE\u5230\u81EA\u52A8\u5927\u5C0F\uFF08Ctrl / \u2318 + 0\uFF09\u3002Ctrl / \u2318 + \u6EDA\u8F6E\u3001\u634F\u5408 = \u7F29\u653E\uFF1BCtrl / \u2318 + = / \u2212 = \u4E00\u6863\u4E00\u6863": { en: "Current zoom (100% = the paper's real size); tap = back to auto size (Ctrl / \u2318 + 0). Ctrl / \u2318 + wheel or pinch = zoom; Ctrl / \u2318 + = / \u2212 = step by step" },
@@ -5933,7 +5935,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.5-2026-11-12";
+var APP_VERSION = "v0.17.6-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -16004,8 +16006,10 @@ function engrave(song, o10) {
   const statusHints = [];
   const hidPaperCount = o10.onlyPaper ? 0 : song.papers.filter((p2) => p2.hidden).length;
   let statusDone = false;
+  let tallGroups = 0;
+  let statusAt = null;
   const STATUS_SEP = " \xB7 ";
-  const placeStatus = (system, list2, triesFor, busy) => {
+  const placeStatus = (system, list2, triesFor, busy, lastResort) => {
     const fs = tx2("key-hint"), ws2 = list2.map((it2) => P2(mw("key-hint", it2.s))), sepW = P2(mw("key-hint", STATUS_SEP)), W3 = ws2.reduce((a10, b3) => a10 + b3, 0) + sepW * (list2.length - 1);
     const hint2 = (w2) => ({ part: { ink: { x0: 0, x1: w2, y0: -fs * 0.8, y1: fs * 0.2 }, prims: [] }, tries: triesFor(w2), climb: fs * 1.1 });
     const [all] = placeHints(busy, [hint2(W3)], P2(0.3));
@@ -16019,7 +16023,19 @@ function engrave(song, o10) {
       statusHints.push({ system, x: all.x, y: all.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 }, room: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 } });
       return;
     }
-    placeHints(busy, list2.map((_2, k2) => hint2(ws2[k2])), P2(0.3)).forEach((pl, k2) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list2[k2], dx: 0, w: ws2[k2] }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }, room: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
+    const placed = placeHints(busy, list2.map((_2, k2) => hint2(ws2[k2])), P2(0.3)), taken = placed.map((pl, k2) => ({ x0: pl.x, x1: pl.x + ws2[k2], y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }));
+    placed.forEach((pl, k2) => {
+      if (pl.ok || !lastResort) return;
+      const t10 = lastResort(ws2[k2]);
+      if (!t10) return;
+      const box = { x0: t10.x, x1: t10.x + ws2[k2], y0: t10.y - fs * 0.8, y1: t10.y + fs * 0.2 }, pad4 = P2(0.3), clash = (b3) => box.x0 < b3.x1 + pad4 && b3.x0 < box.x1 + pad4 && box.y0 < b3.y1 + pad4 && b3.y0 < box.y1 + pad4;
+      if (busy.some(clash) || taken.some((b3, j2) => j2 !== k2 && clash(b3))) return;
+      pl.x = t10.x;
+      pl.y = t10.y;
+      pl.ok = true;
+      taken[k2] = box;
+    });
+    placed.forEach((pl, k2) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list2[k2], dx: 0, w: ws2[k2] }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }, room: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
   };
   let shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
@@ -16326,6 +16342,15 @@ function engrave(song, o10) {
       const last = row2.reduce((a10, c10) => c10.x > a10.x || c10.x === a10.x && (c10.slot > a10.slot || c10.slot === a10.slot && c10.n > a10.n) ? c10 : a10);
       return last.bar ? Math.min(right, last.x + 0.7) : right;
     });
+    const pageRuns = (_s, a10, b3) => {
+      const out = [];
+      for (let row2 = a10; row2 <= b3; row2++) {
+        const last = out.at(-1);
+        if (last && rowPage.get(row2) === rowPage.get(last[1])) last[1] = row2;
+        else out.push([row2, row2]);
+      }
+      return out;
+    };
     const drawSystemsChrome = () => {
       for (let s10 = 0; s10 < nSys; s10++) {
         const ind = s10 === 0 ? ind0 : indN;
@@ -16401,9 +16426,9 @@ function engrave(song, o10) {
           const rs2 = fam.ids.map((id2) => per.findIndex((q2) => q2.p.id === id2)).filter((i10) => i10 >= 0);
           if (rs2.length < 2) continue;
           const r02 = Math.min(...rs2), r14 = Math.max(...rs2), x2 = P2(MARGIN + ind - 0.35);
-          prims.push({ t: "line", x1: x2, y1: anc(rowOf(s10, r02, 0)).top, x2, y2: anc(rowOf(s10, r14, per[r14].staves - 1)).bottom, w: P2(0.25), cls: "family-line" });
+          for (const [a10, b3] of pageRuns(s10, rowOf(s10, r02, 0), rowOf(s10, r14, per[r14].staves - 1))) prims.push({ t: "line", x1: x2, y1: anc(a10).top, x2, y2: anc(b3).bottom, w: P2(0.25), cls: "family-line" });
         }
-        if (nRowsSys > 1) prims.push({ t: "line", x1: P2(MARGIN + ind), y1: anc(rowOf(s10, 0, 0)).top, x2: P2(MARGIN + ind), y2: anc(rowOf(s10, nR2 - 1, per[nR2 - 1].staves - 1)).bottom, w: P2(SYSTEM_LINE_W), cls: "bar" });
+        if (nRowsSys > 1) for (const [a10, b3] of pageRuns(s10, rowOf(s10, 0, 0), rowOf(s10, nR2 - 1, per[nR2 - 1].staves - 1))) prims.push({ t: "line", x1: P2(MARGIN + ind), y1: anc(a10).top, x2: P2(MARGIN + ind), y2: anc(b3).bottom, w: P2(SYSTEM_LINE_W), cls: "bar" });
       }
     };
     {
@@ -16560,22 +16585,48 @@ function engrave(song, o10) {
     };
     const G3 = Array.from({ length: nSys }, (_2, s10) => per.map((_q, r10) => Array.from({ length: effStaves(r10) }, (_3, k2) => geo(s10, r10, k2))));
     const sysH = (s10) => P2(G3[s10].reduce((n11, gs) => n11 + gs.reduce((m2, g3) => m2 + g3.h, 0), 0) + SYS_GAP);
-    drawPaperTitle(nSys ? sysH(0) : P2(ROW_PARAMS[NOTATIONS2[songLook.notation].home][density].rowH));
+    const avail2 = PG ? contentBottom(0) - contentTop(0) : Infinity;
+    const blocks = [];
+    for (let r10 = 0; r10 < nR2; r10++) {
+      if (!effStaves(r10)) continue;
+      const ks = Array.from({ length: effStaves(r10) }, (_2, k2) => [r10, k2]);
+      const last = blocks.at(-1);
+      if (last && loIds.has(per[r10].p.id)) last.rows.push(...ks);
+      else blocks.push({ r: r10, rows: ks });
+    }
+    const blockH = (s10, b3) => P2(b3.rows.reduce((n11, [r10, k2]) => n11 + G3[s10][r10][k2].h, 0));
+    const tall = (s10) => PG !== null && sysH(s10) > avail2 + 0.5;
+    drawPaperTitle(nSys ? tall(0) ? blockH(0, blocks[0]) : sysH(0) : P2(ROW_PARAMS[NOTATIONS2[songLook.notation].home][density].rowH));
     let note2;
     if (paper.hidden) {
       const nx2 = P2(MARGIN) + (paper.name ? P2(mw("paper-name", paper.name)) : 0) + T3(1);
       note2 = { x: nx2, y: pTitle.y, w: Math.max(T3(4), pTitle.x + pTitle.w - nx2), h: T3(PAPER_H) };
     }
     const delta = /* @__PURE__ */ new Map();
+    const rowPage = /* @__PURE__ */ new Map();
+    const placeRow = (s10, r10, k2) => {
+      const top = yCur, row2 = rowOf(s10, r10, k2), g3 = G3[s10][r10][k2], st2 = top + P2(g3.origin);
+      delta.set(row2, st2);
+      rowTop.set(row2, top);
+      rowAbove.set(row2, g3.origin);
+      rowPage.set(row2, pageNo);
+      Object.assign(rows[row2], { top, staffTop: st2, bottom: top + P2(g3.h), inkTop: st2 + P2(g3.inkTop), inkBottom: st2 + P2(g3.inkBottom) });
+      yCur += P2(g3.h);
+    };
     for (let s10 = 0; s10 < nSys; s10++) {
-      ensure(sysH(s10));
-      for (let r10 = 0; r10 < nR2; r10++) for (let k2 = 0; k2 < effStaves(r10); k2++) {
-        const top = yCur, row2 = rowOf(s10, r10, k2), g3 = G3[s10][r10][k2], st2 = top + P2(g3.origin);
-        delta.set(row2, st2);
-        rowTop.set(row2, top);
-        rowAbove.set(row2, g3.origin);
-        Object.assign(rows[row2], { top, staffTop: st2, bottom: top + P2(g3.h), inkTop: st2 + P2(g3.inkTop), inkBottom: st2 + P2(g3.inkBottom) });
-        yCur += P2(g3.h);
+      if (!tall(s10)) {
+        ensure(sysH(s10));
+        for (let r10 = 0; r10 < nR2; r10++) for (let k2 = 0; k2 < effStaves(r10); k2++) placeRow(s10, r10, k2);
+      } else {
+        tallGroups++;
+        for (const b3 of blocks) {
+          ensure(blockH(s10, b3));
+          for (const [r10, k2] of b3.rows) placeRow(s10, r10, k2);
+          while (yCur > contentBottom(pageNo) + 0.5) {
+            pageNo++;
+            if (yCur < contentTop(pageNo)) yCur = contentTop(pageNo);
+          }
+        }
       }
       yCur += P2(SYS_GAP);
     }
@@ -16611,39 +16662,49 @@ function engrave(song, o10) {
         h2.onPlace?.(x2, y2);
       });
     }
-    const statusList = statusDone ? [] : [
-      ...hidPaperCount ? [{ kind: "hiddenPapers", s: _tIn(o10.locale, "\u9690\u85CF\u4E86 {n} \u6BB5", { n: hidPaperCount }) }] : [],
-      ...song.papers.length === 1 && !pTitle.shown && hiddenParts.length ? [{ kind: "hiddenParts", s: _tIn(o10.locale, "\u9690\u85CF\u4E86 {n} \u4E2A\u58F0\u90E8", { n: hiddenParts.length }), paper: paper.id }] : [],
-      // 只有一张纸、曲段名那一条没画：原来挂在「⋯」右边的那颗（画了曲段名那一条的照旧在那一条里）
-      ...foldHintWanted ? [{ kind: "expr", s: _tIn(o10.locale, "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A") }] : []
-    ];
-    if (statusList.length) {
+    if (!statusDone) {
       const r02 = rows.findIndex((r10) => r10.paper === paper.id);
       if (r02 >= 0) {
         statusDone = true;
-        const sys = rows[r02], fs = tx2("key-hint");
-        let base2 = sys.top + fs;
-        for (let i10 = p0.p; i10 < prims.length; i10++) {
-          const p2 = prims[i10];
-          if (p2.t === "text" && /(^|\s)(tempo-word|jp-head)(\s|$)/.test(p2.cls ?? "") && p2.y >= sys.top - P2(2) && p2.y <= sys.staffTop + P2(0.5)) base2 = Math.max(base2 === sys.top + fs ? -Infinity : base2, p2.y);
-        }
-        const triesFor = (w2) => [{ x: P2(right) - w2, y: base2 }, { x: P2(right) - w2, y: base2 - fs * 1.3 }, { x: P2(MARGIN), y: sys.top - fs * 0.2 }];
-        const ys = triesFor(0).map((t10) => t10.y), lo2 = Math.min(...ys) - P2(12), hi = Math.max(...ys) + P2(12), busy = [];
-        for (const p2 of prims) {
-          const y2 = primY(p2);
-          if (y2 < lo2 || y2 > hi) continue;
-          primInk(p2, sp2, textW, (x0, x1, y02, y1) => busy.push({ x0, x1, y0: y02, y1 }));
-        }
-        for (const k2 of keyHints) if (k2.system === r02) busy.push({ x0: k2.x, x1: k2.x + P2(mw("key-hint", k2.s)), y0: k2.y - k2.size * 0.8, y1: k2.y + k2.size * 0.2 });
-        busy.push({ x0: title.x, x1: title.x + title.w, y0: title.y, y1: title.y + title.h });
-        if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
-        else busy.push({ x0: o10.width - P2(MARGIN + 6), x1: o10.width - P2(MARGIN), y0: y0Credits - cs2 * 1.1, y1: y0Credits + cs2 * 0.3 });
-        if (pTitle.shown) busy.push({ x0: P2(MARGIN), x1: o10.width - P2(MARGIN), y0: pTitle.y, y1: pTitle.y + pTitle.h });
-        placeStatus(r02, statusList, triesFor, busy);
+        const pFrom = p0.p, pTo = prims.length, rightNow = right, hidHere = song.papers.length === 1 && !pTitle.shown && hiddenParts.length ? hiddenParts.length : 0, paperId = paper.id;
+        statusAt = (more) => {
+          const statusList = [
+            ...hidPaperCount ? [{ kind: "hiddenPapers", s: _tIn(o10.locale, "\u9690\u85CF\u4E86 {n} \u6BB5", { n: hidPaperCount }) }] : [],
+            ...hidHere ? [{ kind: "hiddenParts", s: _tIn(o10.locale, "\u9690\u85CF\u4E86 {n} \u4E2A\u58F0\u90E8", { n: hidHere }), paper: paperId }] : [],
+            // 只有一张纸、曲段名那一条没画：原来挂在「⋯」右边的那颗（画了曲段名那一条的照旧在那一条里）
+            ...foldHintWanted ? [{ kind: "expr", s: _tIn(o10.locale, "\u6F14\u594F\u6CD5\u548C\u8868\u60C5\uFF1A\u4E0D\u663E\u793A") }] : [],
+            ...more
+          ];
+          if (!statusList.length) return;
+          const sys = rows[r02], fs = tx2("key-hint");
+          let base2 = sys.top + fs;
+          for (let i10 = pFrom; i10 < pTo; i10++) {
+            const p2 = prims[i10];
+            if (p2.t === "text" && /(^|\s)(tempo-word|jp-head)(\s|$)/.test(p2.cls ?? "") && p2.y >= sys.top - P2(2) && p2.y <= sys.staffTop + P2(0.5)) base2 = Math.max(base2 === sys.top + fs ? -Infinity : base2, p2.y);
+          }
+          const triesFor = (w2) => [{ x: P2(rightNow) - w2, y: base2 }, { x: P2(rightNow) - w2, y: base2 - fs * 1.3 }, { x: P2(MARGIN), y: sys.top - fs * 0.2 }];
+          const lastResort = (w2) => {
+            const y2 = title.y - P2(0.3) - 1 - fs * 0.2;
+            return P2(MARGIN) + w2 <= P2(rightNow) && y2 - fs * 0.8 >= 0 ? { x: P2(MARGIN), y: y2 } : null;
+          };
+          const ys = triesFor(0).map((t10) => t10.y), lo2 = Math.min(...ys) - P2(12), hi = Math.max(...ys) + P2(12), busy = [];
+          for (let i10 = 0; i10 < pTo; i10++) {
+            const p2 = prims[i10], y2 = primY(p2);
+            if (y2 < lo2 || y2 > hi) continue;
+            primInk(p2, sp2, textW, (x0, x1, y02, y1) => busy.push({ x0, x1, y0: y02, y1 }));
+          }
+          for (const k2 of keyHints) if (k2.system === r02) busy.push({ x0: k2.x, x1: k2.x + P2(mw("key-hint", k2.s)), y0: k2.y - k2.size * 0.8, y1: k2.y + k2.size * 0.2 });
+          busy.push({ x0: title.x, x1: title.x + title.w, y0: title.y, y1: title.y + title.h });
+          if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
+          else busy.push({ x0: o10.width - P2(MARGIN + 6), x1: o10.width - P2(MARGIN), y0: y0Credits - cs2 * 1.1, y1: y0Credits + cs2 * 0.3 });
+          if (pTitle.shown) busy.push({ x0: P2(MARGIN), x1: o10.width - P2(MARGIN), y0: pTitle.y, y1: pTitle.y + pTitle.h });
+          placeStatus(r02, statusList, triesFor, busy, lastResort);
+        };
       }
     }
     papersHit.push({ id: paper.id, title: pTitle, top: paperTop, bottom: yCur, hiddenParts: hiddenParts.map((p2) => p2.id), ...note2 ? { note: note2 } : {}, ...foldedHit(paper.id, visible) });
   }
+  statusAt?.(tallGroups ? [{ kind: "tallGroup", s: _tIn(o10.locale, "\u6709\u4E00\u7EC4\u6BD4\u4E00\u9875\u9AD8\uFF0C\u63A5\u5230\u4E86\u4E0B\u4E00\u9875") }] : []);
   if (!statusDone && hidPaperCount) {
     const fs = tx2("key-hint"), busy = [{ x0: title.x, x1: title.x + title.w, y0: title.y, y1: title.y + title.h }];
     if (credits) busy.push({ x0: credits.x, x1: credits.x + credits.w, y0: credits.y, y1: credits.y + credits.h });
@@ -18296,7 +18357,9 @@ var ScoreView = class {
         this.ink.insertBefore(d3, this.ink.firstChild);
         this.barEl = d3;
       }
-      const pad4 = L2.sp * 0.8, bt = Math.min(...rows.map((r10) => r10.inkTop ?? r10.top)) - pad4, bb = Math.max(...rows.map((r10) => r10.inkBottom ?? r10.bottom)) + pad4;
+      const pageIx = (y2) => L2.pages.findIndex((pg) => y2 >= pg.top && y2 < pg.top + pg.h), here = L2.pages.length ? pageIx(L2.systems[h0.system].top) : -1;
+      const barRows = here >= 0 ? rows.filter((r10) => pageIx(r10.top) === here) : rows;
+      const pad4 = L2.sp * 0.8, bt = Math.min(...barRows.map((r10) => r10.inkTop ?? r10.top)) - pad4, bb = Math.max(...barRows.map((r10) => r10.inkBottom ?? r10.bottom)) + pad4;
       const key = `${p2.paperId}:${sys}:${Math.round(left)}`;
       if (key !== this.barKey) {
         this.barKey = key;
@@ -19892,6 +19955,7 @@ var ScoreOverlay = class {
         const st2 = `${text2(ln3.x + it2.dx, ln3.y, ln3.size, "start", ST)};${hit2}`;
         if (it2.kind === "hiddenPapers") add(`st-hidp:${this.hiddenPapers.join(",")}`, "button", "ov-i ov-key-hint ov-status-hint ov-hidden-papers", st2, esc3(it2.s), { "data-ov": "hidpapers", title: _t("\u6709 {n} \u6BB5\u9690\u85CF\u7740\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u53BB\u770B\u6216\u653E\u51FA\u6765", { n: this.hiddenPapers.length }) });
         else if (it2.kind === "hiddenParts") add(`st-hid:${it2.paper}`, "button", "ov-i ov-key-hint ov-status-hint ov-hidden", st2, esc3(it2.s), { "data-ov": "hidden", "data-paper": it2.paper, title: _t("\u8FD9\u4E00\u6BB5\u6709 {n} \u4F4D\u9690\u85CF\u7740\uFF08\u4E0D\u6392\u3001\u4E0D\u5360\u5730\u65B9\uFF09\uFF1A\u70B9\u5F00\u770B\u662F\u8C01\u3001\u653E\u51FA\u6765", { n: this.hiddenOf.get(it2.paper)?.length ?? 0 }) });
+        else if (it2.kind === "tallGroup") add(`st-tall:${ln3.system}`, "button", "ov-i ov-key-hint ov-status-hint ov-tall-hint", st2, esc3(it2.s), { "data-ov": "tallgroup", title: _t("\u6709\u4E00\u7EC4\u58F0\u90E8\u6BD4\u4E00\u9875\u80FD\u653E\u7684\u8FD8\u9AD8\uFF0C\u5728\u884C\u548C\u884C\u4E4B\u95F4\u65AD\u5F00\u3001\u63A5\u5230\u4E86\u4E0B\u4E00\u9875\uFF08\u4E0D\u7F29\u5C0F\u3001\u4E0D\u6362\u7EB8\uFF09\uFF1A\u70B9\u5F00\u9875\u9762\u8BBE\u7F6E\u7684\u300C\u7248\u9762\u300D\u9875") });
         else add(`st-expr:${ln3.system}`, "button", "ov-i ov-key-hint ov-status-hint ov-fold-hint", st2, esc3(it2.s), { "data-ov": "folded", title: _t("\u6F14\u594F\u6CD5\u548C\u8868\u60C5\u73B0\u5728\u4E0D\u663E\u793A\uFF08\u9875\u9762\u8BBE\u7F6E\u300C\u770B\u8C31\u300D\u91CC\u5173\u7740\uFF1B\u64AD\u653E\u7167\u5199\u7684\u6765\uFF09\uFF1A\u70B9\u5F00\u53BB\u6253\u5F00") });
       });
     }
@@ -19997,6 +20061,9 @@ var ScoreOverlay = class {
         break;
       case "folded":
         this.host.onFolded();
+        break;
+      case "tallgroup":
+        this.host.onTallGroup();
         break;
     }
   }
@@ -34568,15 +34635,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-306b13330ef9.mjs");
+      return pick(() => "singer-worker-d36f30c10674.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-714d957ac9f7.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-e962eb08db65.mjs");
+      return pick(() => "layout-worker-222b3ee04e7d.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-cc6086f3fe15.mjs");
+      return pick(() => "encode-worker-65a2bd1be64f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -59944,7 +60011,8 @@ var overlayHost = {
     });
   },
   onFolded: () => openPaperSheet("expr"),
-  // 「演奏法和表情：不显示」的淡提示（7-G 重做）：开页面设置「看谱」页、落在那一项
+  onTallGroup: () => openPaperSheet("layout"),
+  // 「有一组比一页高，接到了下一页」（7-V）：开页面设置「版面」页   // 「演奏法和表情：不显示」的淡提示（7-G 重做）：开页面设置「看谱」页、落在那一项
   onHiddenPapers: (ids, at3) => {
     const rows = ids.map((id2) => `<div class="hidp-row"><span class="hidp-name">${esc12(paperLabel(id2))}</span><button class="btn ctx-item" data-v="go:${esc12(id2)}">${_t("\u53BB\u770B")}</button><button class="btn ctx-item" data-v="show:${esc12(id2)}">${_t("\u653E\u51FA\u6765")}</button></div>`).join("");
     ctxMenu("hidden-papers", `<div class="tc-sec">${_t("\u9690\u85CF\u7740\u7684\u66F2\u6BB5\uFF08\u4E0D\u653E\u3001\u4E0D\u5370\uFF09")}</div>${rows}`, at3, (v) => {
@@ -61882,7 +61950,7 @@ function openPaperSheet(focus) {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
-  let page = "look";
+  let page = focus === "layout" ? "layout" : "look";
   const sel2 = (k2, items, cur, disabled = false) => dropdownHtml(items.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-pg="${k2}"`, ...disabled ? { disabled: true } : {} });
   const defs = (rows) => rows.map(([a10, b3]) => `<b>${a10}</b> \u2014 ${b3}`).join("<br>");
   const where = (s10) => `<br><span class="set-where">${s10}</span>`;
@@ -61946,7 +62014,7 @@ function openPaperSheet(focus) {
   });
   draw();
   document.body.append(box);
-  if (focus) {
+  if (focus === "expr") {
     const dd = box.querySelector(`[data-pg="${focus}"]`), it2 = dd?.closest(".set-item");
     if (it2) {
       it2.classList.add("is-target");
@@ -65588,4 +65656,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-cf7429262508.mjs.map
+//# sourceMappingURL=moonsinger-0b3a4134ea8c.mjs.map
