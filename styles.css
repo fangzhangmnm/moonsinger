@@ -269,6 +269,9 @@ body.listen-mode .ink-caret { display: none; }
 .set-head .row-lab { font-size: 14px; color: var(--ink); min-width: 0; }
 .set-ctl { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: none; max-width: 62%; }
 .set-ctl .set-sel { width: auto; min-width: 8em; flex: none; }
+/* 控件里的字放不下（src/ui/fit-wide.ts 量了才加）：控件区换到说明下面、占满一整行靠右；放得下的照旧 */
+.set-head.is-wrap { flex-wrap: wrap; }
+.set-ctl.is-wide { max-width: 100%; margin-left: auto; }
 .set-item > input[type="url"] { width: 100%; height: 34px; border: 1px solid var(--line); border-radius: 7px; padding: 0 8px; font-size: 14px; color: var(--ink); margin-top: 4px; -webkit-user-select: text; user-select: text; }
 .set-item > .set-packs { margin: 4px 0 0; }
 .set-item > .set-row { margin: 6px 0 0; }
@@ -921,7 +924,7 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .pm-chips .btn.chip { flex: none; height: 28px; min-width: 28px; padding: 0 8px; font-size: 13px; }
 .pm-chips .btn.chip.is-cur { box-shadow: 0 0 0 2px var(--accent); }
 .pm-more { height: 30px; width: 34px; padding: 0; font-size: 16px; }
-.pm-acts { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; padding: 6px 6px 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.pm-acts { display: grid; grid-template-columns: repeat(auto-fill, minmax(var(--pm-col, 118px), 1fr)); gap: 6px; padding: 6px 6px 10px; background: var(--panel); border-bottom: 1px solid var(--line); }
 .pm-acts .btn { height: 34px; font-size: 13px; padding: 0 8px; }
 .pm-k { font-size: 12px; color: var(--muted); margin-right: 2px; }
 .pm-here { border: 1px solid #b8cde8; background: var(--accent-soft); border-radius: 9px; padding: 8px; margin: 8px 0 4px; display: flex; flex-direction: column; gap: 6px; }

@@ -137,6 +137,7 @@ import { SelBar, type SelVerb } from "../ui/sel-bar.ts";
 import { CLEF_LABEL, CLEF_TITLE, OTTAVA_LABEL, resolveSongLooks, type ResolvedLook } from "../score/clef.ts";
 import type { ClefHit } from "../render/engrave.ts";
 import { TAB20, partColorIndices, partAbbr, localPartName } from "../ui/part-colors.ts";
+import { fitWide } from "../ui/fit-wide.ts";
 
 installTouchTips();
 applyDocumentLang();   // <html lang> + CSS 里写死的几句：第一个做，后面画界面都已经是这个语言
@@ -1328,6 +1329,7 @@ const setTabsHtml = (pages: readonly (readonly [string, string])[]): string => `
 function wireSetPages(box: HTMLElement, onPage: (pg: string) => void): (pg: string) => void {
   const showPage = (pg: string): void => {
     box.querySelectorAll<HTMLElement>(".set-page").forEach((el) => { el.hidden = el.dataset.page !== pg; });
+    fitWide(box);   // 这一页露出来了：字放不下的控件跟着字变宽（英文界面）
     box.querySelectorAll<HTMLElement>("[data-tab]").forEach((b) => b.classList.toggle("is-on", b.dataset.tab === pg));
     onPage(pg);
   };
@@ -2270,9 +2272,10 @@ function openPartsManager(ctx?: { paper: string; part: string }): void {
     box.innerHTML = `<div class="offer-card pm-card"><div class="offer-title">${_t("声部管理")}<small>${_t("小格 = 在哪几段（亮 = 有；圈着的 = 光标这一段）；⋯ = 上下挪、加、交给、删除")}</small></div>` +
       `<div class="pm-list">${order.map((k) => row(song.parts[k], k)).join("")}</div>` +
       `<div class="offer-btns"><button class="btn" data-v="new" title="${_t("新声部只加在光标这一段（别的段照旧），加完挑乐器")}">${_t("＋ 新声部")}</button><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
+    if (box.isConnected) fitWide(box);   // 展开「⋯」那一排：英文字放不下的钮跟着字变宽
     if (!scrolled) { scrolled = true; requestAnimationFrame(() => box.querySelector(".pm-row.is-here")?.scrollIntoView({ block: "nearest" })); }
   };
-  draw(); document.body.append(box);
+  draw(); document.body.append(box); fitWide(box);
   const close = () => { box.remove(); ui.closed(close); };
   ui.open({ k: "sheet", close, redraw: draw });
   const reopen = () => openPartsManager({ paper: secId(), part: subject || D.st.at.part });   // 问完（askSheet 会先收起这一页）回来接着管

@@ -58257,6 +58257,37 @@ var SelBar = class {
   }
 };
 
+// src/ui/fit-wide.ts
+function needW(b3) {
+  const r10 = document.createRange();
+  r10.selectNodeContents(b3);
+  const cs2 = getComputedStyle(b3), pad4 = (k2) => parseFloat(cs2.getPropertyValue(k2)) || 0;
+  return r10.getBoundingClientRect().width + pad4("padding-left") + pad4("padding-right") + pad4("border-left-width") + pad4("border-right-width");
+}
+function overflows(b3) {
+  const r10 = document.createRange();
+  r10.selectNodeContents(b3);
+  const cs2 = getComputedStyle(b3), border = (parseFloat(cs2.borderLeftWidth) || 0) + (parseFloat(cs2.borderRightWidth) || 0);
+  return r10.getBoundingClientRect().width > b3.getBoundingClientRect().width - border + 1.5;
+}
+function fitWide(root) {
+  for (const ctl of root.querySelectorAll(".set-ctl")) {
+    if (!ctl.getClientRects().length) continue;
+    ctl.classList.remove("is-wide");
+    ctl.parentElement?.classList.remove("is-wrap");
+    const over = [...ctl.querySelectorAll(".btn")].some(overflows);
+    ctl.classList.toggle("is-wide", over);
+    ctl.parentElement?.classList.toggle("is-wrap", over);
+  }
+  for (const g3 of root.querySelectorAll(".pm-acts")) {
+    if (!g3.getClientRects().length) continue;
+    g3.style.removeProperty("--pm-col");
+    const btns = [...g3.querySelectorAll(".btn")];
+    if (!btns.some(overflows)) continue;
+    g3.style.setProperty("--pm-col", `${Math.ceil(Math.max(...btns.map(needW)))}px`);
+  }
+}
+
 // src/app/main.ts
 installTouchTips();
 applyDocumentLang();
@@ -59940,6 +59971,7 @@ function wireSetPages(box, onPage) {
     box.querySelectorAll(".set-page").forEach((el2) => {
       el2.hidden = el2.dataset.page !== pg;
     });
+    fitWide(box);
     box.querySelectorAll("[data-tab]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.tab === pg));
     onPage(pg);
   };
@@ -60291,7 +60323,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "312621a7d4f8",
+  cssHash: "d99d2c4471e2",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -61404,6 +61436,7 @@ function openPartsManager(ctx2) {
       }
     });
     box.innerHTML = `<div class="offer-card pm-card"><div class="offer-title">${_t("\u58F0\u90E8\u7BA1\u7406")}<small>${_t("\u5C0F\u683C = \u5728\u54EA\u51E0\u6BB5\uFF08\u4EAE = \u6709\uFF1B\u5708\u7740\u7684 = \u5149\u6807\u8FD9\u4E00\u6BB5\uFF09\uFF1B\u22EF = \u4E0A\u4E0B\u632A\u3001\u52A0\u3001\u4EA4\u7ED9\u3001\u5220\u9664")}</small></div><div class="pm-list">${order.map((k2) => row2(song.parts[k2], k2)).join("")}</div><div class="offer-btns"><button class="btn" data-v="new" title="${_t("\u65B0\u58F0\u90E8\u53EA\u52A0\u5728\u5149\u6807\u8FD9\u4E00\u6BB5\uFF08\u522B\u7684\u6BB5\u7167\u65E7\uFF09\uFF0C\u52A0\u5B8C\u6311\u4E50\u5668")}">${_t("\uFF0B \u65B0\u58F0\u90E8")}</button><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+    if (box.isConnected) fitWide(box);
     if (!scrolled) {
       scrolled = true;
       requestAnimationFrame(() => box.querySelector(".pm-row.is-here")?.scrollIntoView({ block: "nearest" }));
@@ -61411,6 +61444,7 @@ function openPartsManager(ctx2) {
   };
   draw();
   document.body.append(box);
+  fitWide(box);
   const close = () => {
     box.remove();
     ui2.closed(close);
@@ -64619,4 +64653,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-cf81bbbdc742.mjs.map
+//# sourceMappingURL=moonsinger-3fb74a454a83.mjs.map
