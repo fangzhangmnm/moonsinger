@@ -31,6 +31,8 @@ export function stackBases(dots: readonly number[]): number[] {
   dots.forEach((d, k) => { out.push(k === 0 ? BASE_Y : out[k - 1]! - DIGIT_H - up(dots[k - 1]!) - down(d) - CHORD_GAP); });
   return out;
 }
+/** 鼓的 X 行：大写 X 比数字宽，字号按这个比例收到和数字一样宽（不然十六分的一串 X 挨在一起）；幽灵音的小 x 照数字的小号。 */
+export const X_EM = 0.86;
 /** 光标在数字行上从哪画到哪（局部 y）。 */
 export const CARET_Y0 = 0.6, CARET_Y1 = 3.9;
 

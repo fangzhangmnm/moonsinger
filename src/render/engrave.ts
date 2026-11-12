@@ -364,7 +364,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const per0 = built.per, rowHost = built.rowHost; shortBars += built.shortBars;
     // 谱种的表（第四刀）：每条轨用哪种行（简谱下画不成数字行的——叠音、鼓、叠起来的一家——照旧五线谱的行，同一张纸上并排；notations.ts）。数字行一条轨一行
     const kinds: RowKind[] = per0.map((q) => NOTATIONS[songLook.notation].rowKindOf(q));
-    per0.forEach((q, i) => { if (kinds[i] === "jianpu") q.staves = 1; });   // per0 = 量 / 排用的（排版单元不改）；摆完复制成 per 给后面
+    per0.forEach((q, i) => { if (DRAWERS[kinds[i]!].oneRow) q.staves = 1; });   // per0 = 量 / 排用的（排版单元不改）；摆完复制成 per 给后面
     // 鼓谱（v0.10.27；user「这个做好之后鼓谱做一下。团子只剩下鼓和音效了」「单乐器一线谱同意」；设计账 §2）：这一行画成几线的鼓谱（StaffTrack.pmode）。
     //   一位固定敲一件的（鼓件 / 音效）= 一线谱；整套鼓 = 五线鼓谱；一家合租全是鼓 = 并成一套鼓 = 五线鼓谱、每件在自己那一线。
     const pmode = per0.map((q) => q.pmode);
@@ -595,8 +595,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         placeAbove: (row: number, gap: number, d: (y: number) => void) => { chk(row); return placeAbove(row, gap, d); },
         placeBelow: (row: number, gap: number, d: (y: number) => void, o2?: { min?: number; count?: boolean; step?: number }) => { chk(row); return placeBelow(row, gap, d, o2); } };
     };
-    const sIdx = kIdx("staff"), jIdx = kIdx("jianpu");
-    const staffOut = DRAWERS.staff.draw(ctxFor(sIdx, "staff"), sIdx), jpOut = jIdx.length ? DRAWERS.jianpu.draw(ctxFor(jIdx, "jianpu"), jIdx) : { lyricParts: [] as LyricPart[] };
+    const sIdx = kIdx("staff");
+    const staffOut = DRAWERS.staff.draw(ctxFor(sIdx, "staff"), sIdx);
+    const otherParts: LyricPart[] = (Object.keys(DRAWERS) as RowKind[]).filter((k) => k !== "staff").flatMap((k) => { const idx = kIdx(k); return idx.length ? DRAWERS[k].draw(ctxFor(idx, k), idx).lyricParts : []; });   // 别的几种行（数字行、鼓的 X 行）各画各的
     // 歌词（第 11 样「歌词」，框架的；施工单 1b-7）：五线谱给每个音的锚点（字的中心、拖腔线、点击框归哪一行、挂在哪一行），这里写字、贴天际线、摆连字符。
     //   一行歌词一条基线 = max(版式的最小值, 这一行歌词占的那些段里下天际线最低处 + 字高 + 0.5)；第二行（按节奏排挤下去的）跟着往下。
     //   歌词连字符（英文断开的音节）画在两个歌词中间；拖腔线一起。歌词的墨进天际线（后面的 8vb 贴在它下面），行高另按歌词的规矩算（第 12 步之后）
@@ -630,7 +631,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
         lyricOff.set(row, base + dy);
       }); }
     };
-    for (const lp of [...staffOut.lyricParts, ...jpOut.lyricParts]) layLyrics(lp);
+    for (const lp of [...staffOut.lyricParts, ...otherParts]) layLyrics(lp);
     // 12. 量 → 贴 → 定行距 → 挪到位（刀 4b）
     //   ① 音符层的墨进天际线（注解不算）
     for (let i = p0.p; i < prims.length; i++) {

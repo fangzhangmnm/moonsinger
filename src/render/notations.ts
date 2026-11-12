@@ -7,15 +7,15 @@ import type { ColEntry } from "./frame/arrange.ts";
 import type { LaneKind } from "./frame/lanes.ts";
 import type { LyricPart } from "./frame/lyric-spots.ts";
 import { staffLooks, staffRows, staffTracks, measureTrack, lineStartWidth, lyricAnchors, drawStaff, STAFF_LANES, anchors, caretSpan, bandTop, pitchAxis, staffGhost, type StaffTrack, type StaffDrawCtx, type Unit, type Chunk } from "./staff/index.ts";
-import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, JIANPU_LANES, jianpuAnchors, jianpuCaretSpan, jianpuBandTop, jianpuGhost } from "./jianpu/index.ts";
+import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, JIANPU_LANES, jianpuAnchors, jianpuCaretSpan, jianpuBandTop, jianpuGhost, jianpuXGhost } from "./jianpu/index.ts";
 import type { SystemBox } from "./engrave.ts";
 import type { GhostNote } from "./frame/ghost.ts";
 export type { GhostNote } from "./frame/ghost.ts";
 import type { FoldFamily } from "./staff/index.ts";
 export type { FoldFamily, StaffTrack, StaffDrawCtx, Unit, Chunk } from "./staff/index.ts";
 
-/** 一行用哪种画法（SystemBox.kind，每一行都写）。 */
-export type RowKind = "staff" | "jianpu";
+/** 一行用哪种画法（SystemBox.kind，每一行都写）。jianpuX = 简谱里鼓的那种行（UX 稿第 7 节「鼓 = X」：数字行的节奏写法，音画成 X；第五刀 5-4）。 */
+export type RowKind = "staff" | "jianpu" | "jianpuX";
 /** 一条要排的轨（现在 = 五线谱建轨那一步出的；数字行只用时间那一半和摆好的位置）。 */
 export type Track = StaffTrack;
 /** 框架交给画法的（两种画法共用一个对象；数字行只用其中一部分）。 */
@@ -38,11 +38,15 @@ export interface RowDrawer {
   /** 这一行的竖向锚点（px）：上沿 / 中线 / 下沿 = 行身。框架的家具（名字、色条、括号、左边的竖线、歌词基线）和行距只认这三个（不假设行身是 0–4）。
    *  origin = 这一行的原点（SystemBox.staffTop）；anchors(0, 0.5) = 行身在局部坐标里的上下沿（sp）。 */
   anchors(origin: number, half: number): { top: number; mid: number; bottom: number };
+  /** 这种行一条轨只占一行（没有大谱表的上下两条）：框架排之前把这条轨的谱表数当 1。 */
+  readonly oneRow?: true;
 }
 export const DRAWERS: Readonly<Record<RowKind, RowDrawer>> = {
   staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c, mine) => drawStaff(c, mine), lanes: STAFF_LANES, anchors },
   // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
-  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors },
+  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
+  // 鼓的 X 行：和数字行同一套量和画（节奏的写法一样），音画成 X、不写升降号 / 八度点 / 琶音（jianpu/draw.ts 的 x 那一路）
+  jianpuX: { kind: "jianpuX", measure: (q, k) => measureJianpu(q, k, "x"), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine, "x"), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
 };
 
 /** 一种行在主线程上的几何（设计稿第 3.3 节末；统筹审第四刀接口第 2 条：和 DRAWERS 并排、按行的种类查）。谱面（score-view）只查这张表，不写「如果是简谱」。
@@ -61,6 +65,7 @@ export const GEOMETRY: Readonly<Record<RowKind, RowGeometry>> = {
   // 五线谱：光标处的鬼音符往右挪 0.35 个线间距（= 下一个音的符头在那儿；原来写在 score-view 里）
   staff: { caretSpan, bandTop, ghost: (row, x, notes, half, atCaret) => staffGhost(row, atCaret ? x + 0.7 * half : x, notes, half), pitchAxis },
   jianpu: { caretSpan: jianpuCaretSpan, bandTop: jianpuBandTop, ghost: (row, x, notes, half) => jianpuGhost(row, x, notes, half) },
+  jianpuX: { caretSpan: jianpuCaretSpan, bandTop: jianpuBandTop, ghost: (row, x, notes, half) => jianpuXGhost(row, x, notes, half) },
 };
 
 /** 建轨（第 1–2 步的前一半）：谁的谱号 / 大谱表、要排哪几条轨（合租叠不叠、分手、声部 2、鼓并成一套）、每条轨的排版单元。第五刀 5-2 起是谱种表里的一项（统筹审第四刀接口第 7 条）。 */
@@ -72,11 +77,12 @@ export interface Build {
 }
 /** 一种谱：这种谱里怎么建轨、一条轨用哪种行；home = 这种谱的主行（一行都没有的纸按它留高）。 */
 export interface Notation { readonly id: NotationId; readonly home: RowKind; readonly build: Build; rowKindOf(q: Track): RowKind }
-/** 数字行画得了的：有音高（叠音 = 竖叠，第五刀 5-4）、不是叠起来的一家（虚拟轨）/ 声部 2、不是鼓、台上那位不是固定敲一个键（× 符头）。别的照旧五线谱的行（第五刀后面几步退场）。 */
-const jianpuCan = (q: Track): boolean => !q.vrt && !q.v2 && !q.hasV2 && !q.pmode && !q.p.perc && !q.p.xHead;
+/** 数字行画得了的：有音高（叠音 = 竖叠，第五刀 5-4）、不是叠起来的一家（虚拟轨）/ 声部 2、台上那位不是固定敲一个键（× 符头）。鼓 = X 行。别的照旧五线谱的行（第五刀后面几步退场）。 */
+const jianpuCan = (q: Track): boolean => !q.vrt && !q.v2 && !q.hasV2 && !q.p.xHead;
+const jianpuRowOf = (q: Track): RowKind => (!jianpuCan(q) ? "staff" : q.pmode || q.p.perc ? "jianpuX" : "jianpu");
 export const NOTATIONS: Readonly<Record<NotationId, Notation>> = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
   //   有叠音的声部、鼓仍排五线谱的行（第五刀后面几步退场；那时候单元宽也按这一种给）
-  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: (q) => (jianpuCan(q) ? "jianpu" : "staff") },
+  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf },
 };

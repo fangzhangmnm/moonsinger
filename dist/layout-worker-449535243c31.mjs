@@ -4658,10 +4658,13 @@ var PAPER_PARAMS = {
   jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3 } }
 };
 var jianpuRow = (k, v) => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k });
+var JIANPU_ROW_PARAMS = { cozy: jianpuRow(JP_COZY, { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }), compact: jianpuRow(JP_COMPACT, { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 }) };
 var ROW_PARAMS = {
   staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1 } },
   // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
-  jianpu: { cozy: jianpuRow(JP_COZY, { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }), compact: jianpuRow(JP_COMPACT, { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 }) }
+  jianpu: JIANPU_ROW_PARAMS,
+  jianpuX: JIANPU_ROW_PARAMS
+  // 鼓的 X 行：和数字行同一个行身、同一套行距（第五刀 5-4）
 };
 
 // src/render/frame/furniture.ts
@@ -6744,6 +6747,7 @@ function stackBases(dots) {
   });
   return out;
 }
+var X_EM = 0.86;
 var dotPath = (cx, cy, r) => {
   const k = 0.5523 * r, f = (v) => (Math.round(v * 100) / 100).toString();
   return `M${f(cx + r)},${f(cy)}C${f(cx + r)},${f(cy + k)} ${f(cx + k)},${f(cy + r)} ${f(cx)},${f(cy + r)}C${f(cx - k)},${f(cy + r)} ${f(cx - r)},${f(cy + k)} ${f(cx - r)},${f(cy)}C${f(cx - r)},${f(cy - k)} ${f(cx - k)},${f(cy - r)} ${f(cx)},${f(cy - r)}C${f(cx + k)},${f(cy - r)} ${f(cx + r)},${f(cy - k)} ${f(cx + r)},${f(cy)}Z`;
@@ -6786,13 +6790,13 @@ function unitW(u) {
       return 0;
   }
 }
-function measureJianpu(q, k = 1) {
+function measureJianpu(q, k = 1, mode = "digits") {
   const inkL = /* @__PURE__ */ new Map();
   const spItems = (u) => {
     if (u.pad) return [];
-    const n2 = extraGlyphs(u), acc = accsOf(u).some((a) => a !== null);
+    const n2 = extraGlyphs(u), acc = mode === "digits" && accsOf(u).some((a) => a !== null);
     const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;
-    const left = ((acc ? ACC_W : -0.1) + (hasArp(u) ? ARP_W : 0)) * k, right = (0.1 + DIGIT_W + 0.15 + n2 * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
+    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = (0.1 + DIGIT_W + 0.15 + n2 * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
     inkL.set(u, Math.max(0, left));
     const out = [{ row: 0, left, right, dur: u.ticks }];
     const cx = (0.1 + DIGIT_W / 2) * k;
@@ -6823,9 +6827,9 @@ var jpGlyph = (a) => {
   return d && d.kind === "glyph" ? { above: d.above, w: d.w ?? 1, h: d.h ?? 1 } : null;
 };
 var keyHead = (fifths, minor) => keyText(fifths, minor).replace(/=([A-G])([♭♯])$/, "=$2$1");
-function drawJianpu(c, mine) {
+function drawJianpu(c, mine, mode = "digits") {
   const lyricParts = [];
-  const { song, paper, o, P, tx, put, notes, chordHeads, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
+  const { song, paper, o, P, tx, put, notes, chordHeads, keyHints, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
   const jk = c.scale ?? 1, Q = (v) => P(v * jk);
   const Y = (row, v) => staffTop(row) + Q(v);
   for (const r of mine) {
@@ -6878,7 +6882,8 @@ function drawJianpu(c, mine) {
     c.attach(row0, "tempo", () => placeAbove(row0, 0.5 * jk, (y) => {
       const kw = P(midTextW(keyS)), tw = P(midTextW(timeS));
       const kt = q.head.idx.key !== void 0 ? tokens[q.head.idx.key]?.id : void 0, tt = q.head.idx.time !== void 0 ? tokens[q.head.idx.time]?.id : void 0;
-      put(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
+      if (mode === "x") keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q.head.idx.key ?? 0, x: hx, y, size: tx("key-hint"), s: keyS });
+      else put(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
       put(row0, { ...tt !== void 0 ? { tok: tt } : {}, t: "text", x: hx + kw, y, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
       if (tempoHere) tempoAt2(orn, row0, MARGIN + ind0 + 0.6 + midTextW(keyS) + midTextW(timeS) + 0.6, q.head.bpm, "tempo", q.head.idx.tempo, c.prevBpm === null || c.prevBpm === q.head.bpm ? void 0 : q.head.bpm > c.prevBpm ? "up" : "down", y);
       if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row0, x: hx - Q(0.3), y: y - hs, w: kw, h: hs * 1.4 });
@@ -6904,7 +6909,8 @@ function drawJianpu(c, mine) {
       if (u.kind === "key") {
         fifths = u.fifths;
         const row2 = rowOf(u.system, r, 0), s2 = keyHead(u.fifths, u.minor), x = P(u.x) + Q(0.3);
-        put(row2, { tok: tokens[u.index]?.id, t: "text", x, y: Y(row2, BASE_Y - 0.3), s: s2, cls: "jp-head jp-mid", size: Q(MID_TEXT_EM), anchor: "start" });
+        if (mode === "x") keyHints.push({ ...tokens[u.index] ? { tok: tokens[u.index].id } : {}, system: row2, index: u.index, x, y: Y(row2, BASE_Y - 0.3), size: tx("key-hint"), s: s2 });
+        else put(row2, { tok: tokens[u.index]?.id, t: "text", x, y: Y(row2, BASE_Y - 0.3), s: s2, cls: "jp-head jp-mid", size: Q(MID_TEXT_EM), anchor: "start" });
         marks.push({ index: u.index, kind: "key", system: row2, x: x - Q(0.3), y: Y(row2, BASE_Y - 1.6), w: Q(midTextW(s2)), h: Q(2.2) });
         continue;
       }
@@ -6974,11 +6980,17 @@ function drawJianpu(c, mine) {
         if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W), d: NaN });
         if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(DIGIT_W) + Q(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!tokens[u.index]?.hyph });
       } else if (u.note && u.pitch) {
-        const ps = u.pitches.length > 1 ? u.pitches : [u.pitch], accs = accsOf(u), dg = ps.map((pp) => toDegree(pp, fifths)), dotsOf = dg.map((d) => d.shift - base);
+        const ps = u.pitches.length > 1 ? u.pitches : [u.pitch], accs = accsOf(u), dg = ps.map((pp) => toDegree(pp, fifths)), dotsOf = dg.map((d) => mode === "x" ? 0 : d.shift - base);
         const order = ps.map((_, i) => ps.length - 1 - i), bases = stackBases(order.map((i) => dotsOf[i])), hiBase = bases[bases.length - 1], hiDots = dotsOf[0], lowDots = dotsOf[order[0]];
         const nUL0 = underlines(u);
         if (contDash2) for (let k = 0; k <= n2; k++) dash(gx(k));
-        else {
+        else if (mode === "x") {
+          order.forEach((i, k) => {
+            put(row, { ...T, t: "text", x: cx, y: Y(row, bases[k]), s: small ? "x" : "X", cls: small ? "jp-digit jp-x art-ghost" : "jp-digit jp-x", size: Q(small ? DIGIT_EM * 0.72 : DIGIT_EM * X_EM), anchor: "middle" });
+            if (i > 0 && u.j === 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, bases[k] - DIGIT_H / 2), w: Q(DIGIT_W) });
+          });
+          for (let k = 1; k <= n2; k++) dash(gx(k));
+        } else {
           order.forEach((i, k) => {
             const yb = bases[k], d = dg[i], dots = dotsOf[i], mute = i > 0 && !!q.p.mono ? " chord-mute" : "";
             put(row, { ...T, t: "text", x: cx, y: Y(row, yb), s: String(d.degree), cls: (small ? "jp-digit art-ghost" : "jp-digit") + mute, size: Q(small ? DIGIT_EM * 0.72 : DIGIT_EM), anchor: "middle" });
@@ -7120,14 +7132,17 @@ var jianpuAnchors = (origin, half) => ({ top: origin + JP_BODY.top * 2 * half, m
 var DRAWERS = {
   staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c, mine) => drawStaff(c, mine), lanes: STAFF_LANES, anchors },
   // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
-  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors }
+  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
+  // 鼓的 X 行：和数字行同一套量和画（节奏的写法一样），音画成 X、不写升降号 / 八度点 / 琶音（jianpu/draw.ts 的 x 那一路）
+  jianpuX: { kind: "jianpuX", measure: (q, k) => measureJianpu(q, k, "x"), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine, "x"), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true }
 };
-var jianpuCan = (q) => !q.vrt && !q.v2 && !q.hasV2 && !q.pmode && !q.p.perc && !q.p.xHead;
+var jianpuCan = (q) => !q.vrt && !q.v2 && !q.hasV2 && !q.p.xHead;
+var jianpuRowOf = (q) => !jianpuCan(q) ? "staff" : q.pmode || q.p.perc ? "jianpuX" : "jianpu";
 var NOTATIONS2 = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff" },
   // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
   //   有叠音的声部、鼓仍排五线谱的行（第五刀后面几步退场；那时候单元宽也按这一种给）
-  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: (q) => jianpuCan(q) ? "jianpu" : "staff" }
+  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf }
 };
 
 // src/render/frame/lanes.ts
@@ -7437,7 +7452,7 @@ function engrave(song, o) {
     shortBars += built.shortBars;
     const kinds = per0.map((q) => NOTATIONS2[songLook.notation].rowKindOf(q));
     per0.forEach((q, i) => {
-      if (kinds[i] === "jianpu") q.staves = 1;
+      if (DRAWERS[kinds[i]].oneRow) q.staves = 1;
     });
     const pmode = per0.map((q) => q.pmode);
     const hasV2 = per0.map((q) => q.hasV2);
@@ -7732,8 +7747,12 @@ function engrave(song, o) {
         }
       };
     };
-    const sIdx = kIdx("staff"), jIdx = kIdx("jianpu");
-    const staffOut = DRAWERS.staff.draw(ctxFor(sIdx, "staff"), sIdx), jpOut = jIdx.length ? DRAWERS.jianpu.draw(ctxFor(jIdx, "jianpu"), jIdx) : { lyricParts: [] };
+    const sIdx = kIdx("staff");
+    const staffOut = DRAWERS.staff.draw(ctxFor(sIdx, "staff"), sIdx);
+    const otherParts = Object.keys(DRAWERS).filter((k) => k !== "staff").flatMap((k) => {
+      const idx = kIdx(k);
+      return idx.length ? DRAWERS[k].draw(ctxFor(idx, k), idx).lyricParts : [];
+    });
     const layLyrics = ({ r, lrow, spots }) => {
       const run = (c, partLyrics) => {
         const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lrow(c.sys)), cx0 = c.cx0;
@@ -7783,7 +7802,7 @@ function engrave(song, o) {
         });
       }
     };
-    for (const lp of [...staffOut.lyricParts, ...jpOut.lyricParts]) layLyrics(lp);
+    for (const lp of [...staffOut.lyricParts, ...otherParts]) layLyrics(lp);
     for (let i = p0.p; i < prims.length; i++) {
       const p = prims[i];
       if (isAnn(p)) continue;
@@ -7939,4 +7958,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-5b120804fff6.mjs.map
+//# sourceMappingURL=layout-worker-449535243c31.mjs.map

@@ -12,12 +12,12 @@ import { FULL_VIEWS } from "./fixtures/layout/full.ts";
 
 const P = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", octave = 4, alter = 0) => ({ step, alter, octave });
 /** 一条声部、给定的音（谱头照 initState）→ 简谱排一遍。 */
-function lay(body: Omit<Token, "id">[], song?: (s: Song) => Song) {
+function lay(body: Omit<Token, "id">[], song?: (s: Song) => Song, part0?: object) {
   const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
   let id = 1000; const toks = [...paper.tracks[part]!, ...body.map((t) => ({ ...t, id: id++ }) as Token)];
   let s: Song = { ...st0.song, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: toks } }] };
   s = setNotation({ ...st0, song: s }, "jianpu").song; if (song) s = song(s);
-  const L = engrave(s, { width: 900, sp: 10, locale: "zh", at: { paper: paper.id, part }, parts: [{ id: part, name: "V", first: true }], measure: createTextMeasure((x: string) => x.length * 8), autoBars: true });
+  const L = engrave(s, { width: 900, sp: 10, locale: "zh", at: { paper: paper.id, part }, parts: [{ id: part, name: "V", first: true, ...part0 }], measure: createTextMeasure((x: string) => x.length * 8), autoBars: true });
   return { L, toks };
 }
 const digits = (ps: Prim[]) => ps.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "")).map((p) => p.s);
@@ -62,6 +62,19 @@ describe("简谱数字行", () => {
     const t0 = tight(false), t1 = tight(true);
     eq(t1.x.slice(0, 4).map((v) => v.toFixed(3)).join(" "), t0.x.slice(0, 4).map((v) => v.toFixed(3)).join(" "), "挤的时候前面的音也不挪");
     assert(t1.x[4]! > t0.x[4]! + 1, `挤了：和弦这一个往右推（${t0.x[4]} → ${t1.x[4]}）`);
+  });
+  it("鼓 = X 行（第五刀 5-4，UX 稿第 7 节）：另一种行；音画成 X、幽灵音 = 小 x、同时敲的几件往上叠；节奏的写法同数字行；调号不印、编辑器里淡的「1=D」提示带着它", () => {
+    const kit = { perc: { kind: "kit" } };
+    const { L, toks } = lay([n(P("C", 2)), n(P("D", 2), TPQ, { art: ["ghost"] }), n(P("F", 4, 1), TPQ / 2, { chord: [P("C", 2)] }), n(P("C", 2), TPQ / 2), n(P("C", 2), TPQ)], undefined, kit);
+    assert(L.systems.length > 0 && L.systems.every((r) => r.kind === "jianpuX"), "鼓的那一行 = X 行");
+    const xs = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-x/.test(p.cls ?? ""));
+    eq(xs.map((p) => p.s).join(""), "XxXXXX", "每一下一个 X；幽灵音 = 小 x；同时敲的两件 = 两个 X");
+    assert(!L.prims.some((p) => p.t === "text" && /jp-acc/.test(p.cls ?? "")) && !L.prims.some((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")), "没有升降号、没有八度点");
+    eq(L.prims.filter((p) => p.t === "line" && /jp-ul/.test(p.cls ?? "")).length, 1, "两个八分连一条下划线（节奏写法同数字行）");
+    assert(!L.prims.some((p) => p.t === "text" && /jp-head/.test(p.cls ?? "") && (p as { s: string }).s.startsWith("1=")), "谱头不印「1=」");
+    const iKey = toks.findIndex((t) => t.kind === "key");
+    assert(L.keyHints.some((h) => h.index === iKey && h.tok === toks[iKey]!.id && h.s.startsWith("1=")), "编辑器里淡的「1=…」提示带着调号 token");
+    eq(GEOMETRY.jianpuX.pitchAxis, undefined, "X 行没有「纵向 = 音高」");
   });
   it("下划线按拍连：两个八分在同一拍 = 一条；跨拍 = 断开；十六分 = 两层", () => {
     const e = TPQ / 2, s16 = TPQ / 4;

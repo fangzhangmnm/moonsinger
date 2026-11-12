@@ -35,6 +35,8 @@ export function hasAugDot(u: Chunk): boolean {
   if (u.note) return u.dotted && u.base < TPQ * 2 && !contDash(u);
   return u.base >= TPQ ? Math.floor(u.ticks / TPQ + 1e-6) * TPQ < u.ticks - 1e-6 : u.dotted;
 }
+/** 数字行的两种写法：digits = 数字（有音高的声部）；x = 鼓的 X 行（音画成 X，没有升降号 / 八度点 / 琶音；UX 稿第 7 节，第五刀 5-4）。 */
+export type JianpuMode = "digits" | "x";
 /** 这一段要写临时记号的那几个音（叠音 = 每个音各自的；单音 = 它自己的）：只有第一段写（同五线谱）。 */
 export const accsOf = (u: Chunk): (number | null)[] => (u.j !== 0 || !u.note ? [] : u.pitches.length > 1 ? u.accs : [u.acc]);
 /** 这一段画不画琶音的竖波浪（只挂在和弦上：单音的琶音核心那边已经去掉了）。 */
@@ -58,14 +60,14 @@ function unitW(u: Unit): number {
 
 /** 量（设计稿第 3.3 节第 3 步）：这条轨的每个排版单元 → 一个列条目。道号：数字那一道 = 0、歌词那一道 = 1（框架加上这条轨的道基数）。
  *  inkL = 这个音的墨往对齐线左边伸多远（sp；升降号）：光标画在它左边。k = 行里的尺寸比例（排版参数表行一级；数字行自己的宽都乘它，第五刀 5-0c）。 */
-export function measureJianpu(q: JianpuTrack, k = 1): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> } {
+export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> } {
   const inkL = new Map<Chunk, number>();
   const spItems = (u: Chunk): SpItem[] => {
     if (u.pad) return [];   // 补齐的淡色小节不画、不参加间距（同五线谱）
-    const n = extraGlyphs(u), acc = accsOf(u).some((a) => a !== null);   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
+    const n = extraGlyphs(u), acc = mode === "digits" && accsOf(u).some((a) => a !== null);   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
     const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;   // 换气的 V（+「吸 / 深吸」）画在音后面：留出来，不压下一个音
     //   左边挂的东西（升降号、琶音）= 这个音往左的最小占地：前面有空就不挪，会撞上前一个音 / 小节线才推这一个音（UX 稿第 7 节；间距那一套本来就这样顶）
-    const left = ((acc ? ACC_W : -0.1) + (hasArp(u) ? ARP_W : 0)) * k, right = (0.1 + DIGIT_W + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
+    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = (0.1 + DIGIT_W + 0.15 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW) * k;
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
     const cx = (0.1 + DIGIT_W / 2) * k;

@@ -1,6 +1,6 @@
 // geometry.ts —— 简谱数字行的主线程几何（设计稿第 3.3 节末：光标长什么样、鬼音符长什么样）。只吃平数据（这一行的原点 + 半个线间距）。
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-2）。**没有「纵向 = 音高」**：谱面在数字行上不提供竖着拖改音高（施工单第三节「4」）。
-import { CARET_Y0, CARET_Y1, BASE_Y, DIGIT_EM, DIGIT_W, JP_BODY, DIGIT_TOP, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, stackBases, dotPath, accText } from "./glyphs.ts";
+import { CARET_Y0, CARET_Y1, BASE_Y, DIGIT_EM, DIGIT_W, JP_BODY, DIGIT_TOP, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, X_EM, stackBases, dotPath, accText } from "./glyphs.ts";
 import { midiOf } from "../../score/pitch.ts";
 import { toDegree } from "../../score/degree.ts";
 import { TEXT_FACES, TEXT_STYLES } from "../text/index.ts";
@@ -28,6 +28,11 @@ export function jianpuGhost(row: JianpuRowData & { octBase?: number }, x: number
     for (let j = 0; j < Math.abs(dots); j++) parts.push(`<path d="${dotPath(pv.x, Y(dots > 0 ? DIGIT_TOP - DOT_GAP - DOT_R - j * DOT_STEP : BASE_Y + DOT_GAP + DOT_R + j * DOT_STEP), DOT_R * sp)}"/>`);
   });
   return parts.join("");
+}
+/** 鼓的 X 行的鬼音符（第五刀 5-4）：x 处一个淡的「X」，几个（同时敲的几件）= 往上一个叠一个（同 stackBases，没有八度点）。 */
+export function jianpuXGhost(row: JianpuRowData, x: number, notes: readonly GhostNote[], half: number): string {
+  const sp = unitOf(row, half), pv = jianpuPreviewAt(row, x, half), face = TEXT_FACES[TEXT_STYLES["jp-digit"].face], bases = stackBases(notes.map(() => 0));
+  return bases.map((b) => `<text x="${pv.x}" y="${row.staffTop + b * sp}" font-family='${face}' font-size="${pv.size * X_EM}" text-anchor="middle">X</text>`).join("");
 }
 /** 数字行的竖向锚点（px）：上沿 / 中线 / 下沿 = 行身（小节线那一段）。框架的家具（名字、色条、括号、左边的竖线、歌词基线）和行距只认这三个（统筹审第四刀接口第 4 条）。 */
 export const jianpuAnchors = (origin: number, half: number): { top: number; mid: number; bottom: number } => ({ top: origin + JP_BODY.top * 2 * half, mid: origin + ((JP_BODY.top + JP_BODY.bottom) / 2) * 2 * half, bottom: origin + JP_BODY.bottom * 2 * half });
