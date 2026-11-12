@@ -1,8 +1,16 @@
 import type { Song } from "../score/song.ts";
 import type { Lang } from "../i18n/strings.ts";
 import type { LoungeRoleV2 } from "./contract.ts";
+import { type ConceptLabel } from "../gm/concept-labels.gen.ts";
 type Concept = NonNullable<LoungeRoleV2["concept"]>;
-/** 这件乐器在某种语言里写成什么（统筹定的次序，只此一处）：谱上的叫法里那种语言的 → 百科名里那种语言的（首字母大写）→ 谱上的叫法里英文的。 */
+/** 现行的表里这个概念那一项（按 wikidata，再按 local 编号）；没有 = undefined（老预设补的、目录外的）。存的时候也拿它写进歌（project.ts）。 */
+export declare function currentLabelOf(c: {
+    ids: {
+        wikidata: string | null;
+        local: string | null;
+    };
+}): ConceptLabel | undefined;
+/** 这件乐器在某种语言里写成什么（统筹定的次序，只此一处）：现行的表里那种语言的（没有 = 表里英文的）→ 表里没有这个概念 = 按值存的那种语言的 → 百科名里那种语言的（首字母大写）→ 按值存的英文的。 */
 export declare function conceptLabel(c: Concept, l: Lang): string;
 /** 用户给这个角色起的名字；没起 = null。 */
 export declare function roleGivenName(lounge: Record<string, unknown>, role: string): string | null;

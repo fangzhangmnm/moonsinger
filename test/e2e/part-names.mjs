@@ -34,7 +34,7 @@ const run = async (locale, other) => {
 const zh = await run("zh-CN", "en"), en = await run("en-US", "zh");
 check(zh.lang === "zh" && en.lang === "en", "两种界面语言", `${zh.lang} / ${en.lang}`);
 check(zh.names.includes("长笛") && zh.names.includes("直笛") && zh.names.includes("小鼓") && !zh.names.includes("Flute"), "中文界面、跟着界面：没起名字的声部写乐器的中文叫法（长笛、直笛、小鼓）", zh.names.join(" "));
-check(en.names.includes("Flute") && en.names.includes("Recorder") && en.names.includes("Kick drum") && !en.names.includes("长笛"), "英文界面：英文叫法 = 老歌原来印的（Kick drum 照旧，不变成目录后来的 Bass Drum）", en.names.join(" "));
+check(en.names.includes("Flute") && en.names.includes("Recorder") && en.names.includes("Bass") && !/Kick/.test(en.names.join(" ")) && !en.names.includes("长笛"), "英文界面：英文叫法 = 目录现行的（老歌和新歌一个叫法：当年抄的 Kick drum 不留，写 Bass Drum（谱上折成两行，第一行 Bass）；12-4 改口）", en.names.join(" "));
 check(zh.abbrs.length > 0 && zh.abbrs.some((x) => /长笛/.test(x)) && !zh.abbrs.includes("Fl."), "中文界面：第二行起的简写也是中文（按定宽缩）", zh.abbrs.join(" "));
 check(en.abbrs.includes("Fl.") && en.abbrs.includes("BD"), "英文界面：简写 = 按值存的目录简写（Fl.、BD），不等目录加载", en.abbrs.join(" "));
 check(zh.fresh.includes("人声") && en.fresh.includes("Voice"), "新歌默认那一位 = 目录里的人声：中文「人声」、英文「Voice」", `${zh.fresh.join(" ")} / ${en.fresh.join(" ")}`);

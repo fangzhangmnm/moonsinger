@@ -11,7 +11,7 @@
 // 无地逃生口（user 2026-10-07「先不急着store。可以先按照无地规范导入导出做逃生口」）：这里只管字节 ↔ 歌，打开 / 存的界面在 app 里。
 import { _t } from "../i18n/index.ts";
 import { DEFAULT_CONCEPT } from "../gm/default-concept.gen.ts";
-import { partNames } from "./part-show.ts";
+import { partNames, currentLabelOf } from "./part-show.ts";
 import { loungeRoleNames } from "./migrate/index.ts";
 import { zipSync, unzipSync, strToU8, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
 import { swellOf, withArt, SWELL_ART, type Swell, type Song, type PartDef, type PaperSeg, type Token, type NoteTok, type ClefName, type PartLook, CLEFS, flattenPart, familyOrder, headClefOf, withLooks, headLen } from "../score/song.ts";
@@ -75,6 +75,13 @@ export const withThumbnail = (extras: Extras, png: Uint8Array | null): Extras =>
 export const CANDIDATE_ID = { full: "c1", light: "c2" } as const;
 export type Engine = InstrumentV2["engine"];
 const common = (calibrationDb: number) => ({ calibrationDb, chain: [] as unknown[], dynamicsVel: { ...DYNAMICS_VEL }, articulation: { ...ARTICULATION, gapSec: 0, marcatoDb: MARCATO_DB, ...MARK_DEFAULTS } });   // 记号怎么解读的数全写明（by value）；迁移出来的旧候选不补
+/** 概念（按值）换成现行的表里的谱上叫法 / 简写（就地改；表里没有这个概念 = 不动，留着按值存的）。只在存的时候用（buildEntries）。 */
+function withCurrentLabels(c: unknown): void {
+  if (!c || typeof c !== "object" || !(c as Json).ids || typeof (c as Json).ids !== "object") return;
+  const cur = currentLabelOf(c as { ids: { wikidata: string | null; local: string | null } }); if (!cur) return;
+  (c as Json).score = { ...cur.score };
+  if (cur.abbr?.en) (c as Json).abbr = { en: cur.abbr.en }; else delete (c as Json).abbr;
+}
 /** 新角色的官方 id（MusicXML <instrument-sound>）= 目录里人声那个概念的。 */
 const DEFAULT_SOUND = DEFAULT_CONCEPT.ids.musicxml ?? "voice.vocals";
 /** 新建角色：从 app 内置预设 by value 拷进歌（契约 §8；之后 app 升级改了预设也不影响这首歌）。名字不写 = 没起（12-4）。 */
@@ -158,6 +165,8 @@ function buildEntries(a: SaveArgs): { out: Record<string, Uint8Array>; fingerpri
   for (const part of song.parts) {
     const role = roleOf(a.extras, part.role, a.hum);
     for (const c of cands(role)) { const i = instrumentOf(c); if (isVoice(i)) i.hum = a.hum; }   // 哼的字 = 月读候选共用的一个设置
+    // 概念里按值存的谱上叫法 / 简写：存的时候写现行的表里的（12-4 改口：文件说得清自己、给别的软件看，但不是显示的依据；不沿用旧的）
+    withCurrentLabels(role.concept); for (const c of cands(role)) withCurrentLabels((c.castAs as Json | undefined)?.concept);
     lounge[part.role] = role;
   }
   const studio: Json = structuredClone(a.extras.studio ?? emptyStudio());

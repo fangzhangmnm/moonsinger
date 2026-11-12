@@ -9,7 +9,8 @@ const fs = (await import("node:fs" as string)) as {
 import { saveMxl, openBytes, activeInstrument, contentFingerprintOf, FORMAT } from "../src/format/project.ts";
 import { FORMAT_MINOR, FORMAT_PATCH } from "../src/format/contract.ts";
 import { MIGRATIONS } from "../src/format/migrate/index.ts";
-import { roleShowName } from "../src/format/part-show.ts";
+import { roleShowName, roleGivenName } from "../src/format/part-show.ts";
+import { DEFAULT_CONCEPT } from "../src/gm/default-concept.gen.ts";
 import { unzipSync, zipSync, strFromU8, strToU8 } from "../vendor/fflate/fflate.esm.js";
 import { sampleSong, sampleView, sampleExtras, canonTokens, canonTracks, shapeOf, mergeShape } from "./fixtures/format/sample-song.ts";
 
@@ -105,7 +106,9 @@ describe("持久化守卫", () => {
       const engine = activeInstrument(o.extras, "r1")?.engine ?? "unknown", want = exp.engine ?? ({ full: "tsukuyomi", light: "vowel-sampler", none: "unknown" } as Record<string, string>)[exp.quality];
       eq(engine, want, `${d}：上场的引擎`);
       const role = o.extras.lounge["r1"] as Json;
-      eq(roleShowName(o.extras.lounge, "r1", "en"), exp.role.name, `${d}：角色名（12-4 起老文件进门时名字等于乐器叫法的 = 没起，比的是显示出来的英文叫法）`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);
+      // 角色名（12-4）：老样本存的都是老预设名 Vocals = 进门判成没起、补上目录里人声的概念，显示和新歌一样（现行的表：Voice）；别的名字 = 起了的、原样
+      if (exp.role.name === "Vocals") { eq(roleGivenName(o.extras.lounge, "r1"), null, `${d}：老预设名 Vocals = 没起`); eq(roleShowName(o.extras.lounge, "r1", "en"), DEFAULT_CONCEPT.score!.en, `${d}：显示 = 新歌默认那一位的叫法`); }
+      else eq(roleGivenName(o.extras.lounge, "r1"), exp.role.name, `${d}：角色名`); eq(role.sound, exp.role.sound, `${d}：角色语义`); eq(role.active, exp.role.active, `${d}：上场候选`);
       eq(JSON.stringify((role.candidates as Json[]).map((c) => c.id)), JSON.stringify(exp.role.candidates), `${d}：候选 id`);
       eq(JSON.stringify(((o.extras.studio as Json).tracks as Json[]).filter((t) => t.kind === "mic").map((m) => m.id)), JSON.stringify(exp.mics), `${d}：麦克风 id（v2 起 = tracks 里 kind mic 的）`);
       // 读进来的都已升到这一版（migrate 链跑过）

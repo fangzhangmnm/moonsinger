@@ -16,6 +16,7 @@ export const DST = join(ROOT, "vendor", "instruments");
 export const OUT = join(ROOT, "src", "gm", "instruments.gen.ts");
 export const PERC_OUT = join(ROOT, "src", "gm", "percussion.gen.ts");
 export const DEFAULT_OUT = join(ROOT, "src", "gm", "default-concept.gen.ts");   // 新歌默认那一位的概念（12-4）
+export const LABELS_OUT = join(ROOT, "src", "gm", "concept-labels.gen.ts");     // 每个概念现行的谱上叫法 + 简写（12-4 改口）
 export const VERSION = 15;   // v15 = 2026-11-07（仓鼠 adc0249：概念加 scoreName = 谱上名（Western concert flute → Flute、型号 → 功能名），13 个简写改正；user 11-07「为什么我从era里面选的flute在sheet上面显示western concept flute」「不只是长笛，而是系统的看一下」）
 //   v14 = 2026-11-07（仓鼠 eec835f：GM 122 Breath Noise 改挂长笛、奏法 = 气声、年份 ≈前 51,000，「呼吸」不再有 GM 号；user 11-07「midi breath不是呼吸是演奏技巧」，家族周账 F-212）
 //   v13 = 2026-10-10（仓鼠 7447213：不分音高的鼓谱写法 percussion / pitched:false / 着力点 hitSec / GS 扩展鼓键 extraDrumKeys；纯增量。工单 ai-docs/20261010-hamster-workorder-percussion-notation.md）
@@ -110,6 +111,25 @@ export const DEFAULT_CONCEPT: Readonly<NonNullable<LoungeRoleV2["concept"]>> = $
 `;
 }
 
+/** 每个概念现行的谱上叫法（zh = 中文名、en = scoreName 没有就百科名首字母大写、ja = 日文名）+ 英文简写，按值烤进源码（施工单 12-4 改口，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；
+ *  统筹：「现行的那一份在 app 里：取目录的脚本烤一张随 app 发的表…跟着目录更新重烤」——没起名字的声部显示时先查它，同一个概念老歌新歌一个叫法；
+ *  user「我讨厌历史遗留问题导致的convention需要再记一个」）。和冻在 src/format/migrate/legacy-role-names.ts 的那张是两张：那张只给进门判起没起名字。 */
+export function renderLabels() {
+  const p = join(DST, FILES.concepts); if (!existsSync(p)) return null;
+  const cap = (s) => s.replace(/\s*\([^)]*\)/g, "").trim().replace(/^./, (ch) => ch.toUpperCase());
+  const byWikidata = {}, byLocal = {};
+  for (const c of JSON.parse(readFileSync(p, "utf8")).concepts) {
+    const v = { score: { zh: c.names.zh, en: c.scoreName?.en || cap(c.names.en), ...(c.names.ja ? { ja: c.names.ja } : {}) }, ...(c.abbr?.en ? { abbr: { en: c.abbr.en } } : {}) };
+    if (c.ids?.wikidata) byWikidata[c.ids.wikidata] = v;
+    if (c.ids?.local) byLocal[c.ids.local] = v;
+  }
+  return `// 生成物：node scripts/gen-instruments.mjs（目录 v${VERSION}）。勿手改。
+// 每个乐器概念现行的谱上叫法和简写（施工单 12-4）：没起名字的声部显示成什么，先查这里（src/format/part-show.ts），存的时候也按它写进歌（project.ts）。跟着目录更新重烤。
+export interface ConceptLabel { readonly score: { readonly zh: string; readonly en: string; readonly ja?: string }; readonly abbr?: { readonly en?: string } }
+export const CONCEPT_LABELS: { readonly byWikidata: Record<string, ConceptLabel>; readonly byLocal: Record<string, ConceptLabel> } = ${JSON.stringify({ byWikidata, byLocal })};
+`;
+}
+
 if (fileURLToPath(import.meta.url) === process.argv[1]) {
   if (!existsSync(SRC)) { console.error(`找不到源 ${SRC}`); process.exit(1); }
   mkdirSync(DST, { recursive: true });
@@ -118,5 +138,6 @@ if (fileURLToPath(import.meta.url) === process.argv[1]) {
   writeFileSync(OUT, render());
   writeFileSync(PERC_OUT, renderPerc());
   writeFileSync(DEFAULT_OUT, renderDefaultConcept());
+  writeFileSync(LABELS_OUT, renderLabels());
   console.log(`[gen-instruments] v${VERSION} → vendor/instruments/ + ${OUT}`);
 }

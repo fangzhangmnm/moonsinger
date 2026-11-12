@@ -316,6 +316,7 @@
         },
         "score": {
           "en": "string",
+          "ja": "string",
           "zh": "string"
         }
       },

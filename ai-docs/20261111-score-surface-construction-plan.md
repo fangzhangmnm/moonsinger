@@ -2711,3 +2711,11 @@ user 发了这一页现在的两张截图（没带话）。对着实物补下面
   - 测试：新 test/text-lang.test.ts（11）、test/part-show.test.ts（出口 / 进门 / 存读 / 两份冻结样本 / 三条守卫；进门反证：去掉进门那一步 = 冻结样本那条红）、E2E text-lang.mjs（12）、part-names.mjs 重写（10：中英界面、新歌默认、两种界面存出去逐字节相同、谱上的字钉成相反语言时四处同一个叫法）。冻结样本 test/fixtures/format/minor/lounge-0-unnamed、lounge-0-named（用 v0.17.2 的代码写的）。改了期望的老测试：roles / part-colors / instruments（简写改走进门 + 出口）/ format（<part-name> = Voice）/ format-guard（老样本比显示的英文叫法）/ presets（拷过来后显示的叫法）/ performers；E2E finder-names / cast-back（谱上的字钉英文再比 Choir / Voice）/ pdf-wysiwyg（文件名带显示的叫法）。cast-back 里点小卡前先清提示条（测试环境拿不到音源库会冒提示、压在小卡上），等下一条「提示条不挡点得到的东西」做完删掉。单元 1700。
   - 图标库 024bcc8：instrument-swap 改成线条版（user「要」），构图不变；app 取货只变这一枚。
   - 会碰到渲染缓存（统筹知道、接受）：升级后第一次打开老歌，休息室被理过 = 指纹变 = 渲好的声音标旧一次。
+- 2026-11-12 · 12-4 改口：声部的叫法跟现行的目录走，老歌新歌一个叫法 · 本提交（v0.17.4，推开发版）：
+  - 起因：v0.17.3 我提、统筹批了「判成没起的旧名字只要是拉丁字母写的就留成英文叫法（老歌进门不改样子）」。user：「我说了多少变了我讨厌历史遗留问题导致的convention需要再记一个」——Kick drum 不是 user 起的，是软件当年从目录抄的；留着 = 同一件乐器老歌一个叫法、新歌一个叫法。规矩进了家族根 CLAUDE.md 和本仓说明（统筹）。**我自己的错**：那条是我提的，理由正是「为了老的不变」；以后看到这个理由先对家规那一条。
+  - 现行的表 `src/gm/concept-labels.gen.ts`（gen-instruments.mjs 新的 renderLabels，跟着目录更新重烤，instruments 测试守着最新）：每个概念的谱上叫法（zh / en / ja）+ 英文简写。和冻在 migrate 的那张是两张：冻的那张只给进门判起没起、补按值存的副本，不拿来出叫法。
+  - 出口次序（part-show.ts conceptLabel / conceptAbbr）：起了名字 → 原样；没起 → 现行的表（没那种语言 = 表里英文的）→ 表里没有这个概念（老预设补的、目录外的）才用按值存的 → 百科名。
+  - 存的时候按现行的表重写按值存的叫法和简写（project.ts withCurrentLabels，角色的概念和候选 castAs 里的概念都写）；进门只判起没起，判成没起的旧名字不留成叫法（fillConcept 只从冻住的表补）。契约注释改了。
+  - 看得见的变化：Once 英文谱上 Kick drum / Snare drum / Bongo → Bass Drum / Snare Drum / Bongos；老歌里老预设 Vocals → Voice（和新歌一样）。排版底本重冻前核过：把夹具的名字换回文件里存的原名，41 份底本和三份 PDF 指纹全对上 = 差别只来自名字；重冻只动了 Once 的三份底本 + 三份 PDF 指纹（once / v2-2-2-2 / v2-2-2-1）。
+  - 守卫（统筹）：test/part-show.test.ts「同一个概念老歌新歌一个叫法」——进门的老歌（v0.17.2 写的冻结样本）和这一版新上场的，没起名字时中英叫法和简写逐字相同；把现行表里的叫法改掉，两首一起变；存的时候按值写的是现行的。format-guard 的老样本改成看「Vocals = 没起、显示 = 新歌默认那一位的叫法」。形状快照多了 score.ja（存的时候从表里写）。单元 1703。
+  - 「提示条不挡点得到的东西」做好了还没提交（统筹排在这一条之后），下一个提交。

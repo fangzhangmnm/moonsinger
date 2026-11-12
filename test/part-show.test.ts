@@ -10,6 +10,7 @@ import { partShow, partNames, conceptLabel, roleGivenName } from "../src/format/
 import { loungeRoleNames } from "../src/format/migrate/index.ts";
 import { saveMxl, openBytes, emptyExtras, withRoleName, withRoleConcept, type Extras } from "../src/format/project.ts";
 import { DEFAULT_CONCEPT } from "../src/gm/default-concept.gen.ts";
+import { CONCEPT_LABELS } from "../src/gm/concept-labels.gen.ts";
 import { initState, type Song } from "../src/score/song.ts";
 import { dispWidth, ABBR_W } from "../src/ui/part-colors.ts";
 import { unzipSync, strFromU8 } from "../vendor/fflate/fflate.esm.js";
@@ -24,10 +25,12 @@ const role = (o: Record<string, unknown>) => ({ version: 3, id: "r", active: "c1
 const songWith = (n: number): Song => { const st = initState(); return { ...st.song, parts: Array.from({ length: n }, (_, k) => ({ id: `P${k + 1}`, role: `r${k + 1}`, mic: `m${k + 1}` })) }; };
 
 describe("出口：显示成什么（12-4）", () => {
-  it("缺那种语言时的次序：谱上的叫法里那种语言的 → 百科名里那种语言的（首字母大写）→ 谱上的叫法里英文的", () => {
+  it("次序：现行的表里有这个概念 = 表里的（按值存的不看）；表里没有 = 按值存的那种语言的 → 百科名里那种语言的（首字母大写）→ 按值存的英文的", () => {
     eq(conceptLabel(flute, "zh"), "长笛"); eq(conceptLabel(flute, "en"), "Flute");
-    eq(conceptLabel({ ...flute, score: { en: "Flute" } }, "zh"), "长笛", "谱上的叫法没有中文 = 百科中文名");
-    eq(conceptLabel({ ...flute, score: { en: "Flute" }, name: { zh: "", en: "Western concert flute" } }, "zh"), "Flute", "都没有中文 = 谱上的英文叫法");
+    eq(conceptLabel({ ...flute, score: { zh: "旧叫法", en: "Old name" } }, "en"), "Flute", "表里有 = 按值存的旧叫法不算数");
+    const off = { ...flute, ids: { ...flute.ids, wikidata: "Q-not-in-catalog" } };   // 目录外的（老预设补的 / 自己的 .sf2 那种）
+    eq(conceptLabel(off, "zh"), "长笛"); eq(conceptLabel({ ...off, score: { en: "Flute" } }, "zh"), "长笛", "按值存的没有中文 = 百科中文名");
+    eq(conceptLabel({ ...off, score: { en: "Flute" }, name: { zh: "", en: "Western concert flute" } }, "zh"), "Flute", "都没有中文 = 按值存的英文叫法");
   });
   it("没起名字 = 乐器的叫法（按语言）；起了 = 原样不翻；重名同种的带号", () => {
     const lounge = { r1: role({ concept: flute, sound: "wind.flutes.flute" }), r2: role({ concept: flute, sound: "wind.flutes.flute" }), r3: role({ concept: flute, name: "My Flute", sound: "wind.flutes.flute" }) };
@@ -53,14 +56,14 @@ describe("出口：显示成什么（12-4）", () => {
 
 describe("进门：老文件判一次（12-4，契约 lounge minor 1）", () => {
   const door = (o: Record<string, unknown>, minor = 0) => loungeRoleNames(role(o), minor) as { name?: string; concept?: Concept };
-  it("名字等于乐器的任一叫法（不分大小写）= 没起，补上谱上的叫法和简写；英文叫法 = 它原来印的那个（拉丁字母写的名字），中文名对上的 = 冻住的目录表里的", () => {
-    for (const [n, en] of [["Flute", "Flute"], ["flute", "flute"], ["Western concert flute", "Western concert flute"], ["长笛", "Flute"]]) {
-      const r = door({ concept: FLUTE_OLD, name: n }); eq(r.name, undefined, n); eq(r.concept?.score?.en, en, n); eq(r.concept?.score?.zh, "长笛", n); eq(r.concept?.abbr?.en, "Fl.", n);
+  it("名字等于乐器的任一叫法（不分大小写）= 没起；按值存的叫法从冻住的目录表补，不把旧名字留成叫法（12-4 改口）", () => {
+    for (const n of ["Flute", "flute", "Western concert flute", "长笛"]) {
+      const r = door({ concept: FLUTE_OLD, name: n }); eq(r.name, undefined, n); eq(r.concept?.score?.en, "Flute", n); eq(r.concept?.score?.zh, "长笛", n); eq(r.concept?.abbr?.en, "Fl.", n);
     }
   });
   it("候选里记的当初上场叫法（castAs.name）也算", () => {
     const r = door({ concept: FLUTE_OLD, name: "Fluuute", candidates: [{ id: "c9", castAs: { name: "Fluuute", sound: null, concept: FLUTE_OLD } }] });
-    eq(r.name, undefined); const ca = (r as unknown as { candidates: { castAs: { concept: Concept } }[] }).candidates[0]!.castAs.concept; eq(ca.score?.en, "Fluuute", "候选里的概念也补上（英文叫法 = 它当初上场时印的）"); eq(ca.abbr?.en, "Fl.");
+    eq(r.name, undefined); const ca = (r as unknown as { candidates: { castAs: { concept: Concept } }[] }).candidates[0]!.castAs.concept; eq(ca.score?.en, "Flute", "候选里的概念也补上（冻住的目录表）"); eq(ca.abbr?.en, "Fl.");
   });
   it("别的名字 = 起了的名字，原样；概念照样补谱上的叫法", () => {
     const r = door({ concept: FLUTE_OLD, name: "My Flute" }); eq(r.name, "My Flute"); eq(r.concept?.score?.en, "Flute");
@@ -68,7 +71,7 @@ describe("进门：老文件判一次（12-4，契约 lounge minor 1）", () => 
   it("没概念、叫老预设名（看官方 id）= 补上冻住的预设概念、没起；没名字 = 人声；别的名字照旧", () => {
     const sop = door({ name: "Soprano", sound: "voice.soprano" }); eq(sop.name, undefined); eq(conceptLabel(sop.concept!, "zh"), "女高音"); eq(conceptLabel(sop.concept!, "en"), "Soprano");
     eq(conceptLabel(door({ name: "Bass", sound: "voice.bass" }).concept!, "zh"), "男低音"); eq(conceptLabel(door({ name: "Bass", sound: "pluck.bass" }).concept!, "zh"), "贝斯");
-    eq(conceptLabel(door({ name: "Vocals", sound: "voice.vocals" }).concept!, "en"), "Vocals", "老歌照旧写 Vocals（冻住的预设表），不变成目录的 Voice");
+    eq(conceptLabel(door({ name: "Vocals", sound: "voice.vocals" }).concept!, "en"), DEFAULT_CONCEPT.score!.en, "老预设 Vocals 补的概念是目录里的人声 = 和新歌一样写 Voice（12-4 改口：不为老的留第二套叫法）");
     eq(conceptLabel(door({ sound: "voice.vocals" }).concept!, "zh"), "人声");
     const lead = door({ name: "Lead guitar", sound: "pluck.guitar" }); eq(lead.name, "Lead guitar"); eq(lead.concept, undefined);
   });
@@ -97,6 +100,22 @@ describe("存与读（12-4）", () => {
     const x = withRoleConcept(extras(), "r1", { name: "Santoor", sound: "pluck.santoor", concept: santoor }, "n");
     eq(partNames(songWith(1), x.lounge, "zh")[0], "桑图尔琴");
     eq(partNames(songWith(1), withRoleConcept(withRoleName(extras(), "r1", "Lead", "n"), "r1", { name: "Santoor", sound: "pluck.santoor", concept: santoor }, "n").lounge, "zh")[0], "Lead");
+  });
+});
+
+describe("同一个概念老歌新歌一个叫法（12-4 改口，统筹守卫）", () => {
+  it("进门的老歌（软件当年抄的旧叫法）和新建的歌（这一版上场）没起名字时叫法逐字相同；改掉现行表里的叫法，两首一起变", () => {
+    const old = openBytes("old.mxl", fs.readFileSync(new URL("test/fixtures/format/minor/lounge-0-unnamed/sample.mxl", ROOT)));
+    const fresh = withRoleConcept(emptyExtras(), "r1", { name: "Flute", sound: "wind.flutes.flute", concept: flute }, "n");
+    const a = (l: "zh" | "en") => partShow(old.song, old.extras.lounge, l)[0]!, bNew = (l: "zh" | "en") => partShow(songWith(1), fresh.lounge, l)[0]!;
+    for (const l of ["zh", "en"] as const) { eq(a(l).name, bNew(l).name, `名字 ${l}`); eq(a(l).abbr, bNew(l).abbr, `简写 ${l}`); }
+    const row = CONCEPT_LABELS.byWikidata["Q209554"] as { score: { en: string } }, was = row.score.en;
+    try { row.score.en = "Flauto"; eq(a("en").name, "Flauto", "老歌跟着现行的表"); eq(bNew("en").name, "Flauto", "新歌跟着现行的表"); } finally { row.score.en = was; }
+  });
+  it("存的时候按值写现行的叫法（不沿用旧的）", () => {
+    const old = openBytes("old.mxl", fs.readFileSync(new URL("test/fixtures/format/minor/lounge-0-unnamed/sample.mxl", ROOT)));
+    const back = openBytes("x.mxl", saveMxl({ song: old.song, hum: old.hum, extras: old.extras, app: "t", date: "2026-11-12T00:00:00.000Z" }));
+    const c = (back.extras.lounge.r1 as { concept: Concept }).concept; eq(c.score?.en, CONCEPT_LABELS.byWikidata["Q209554"]!.score.en); eq(c.abbr?.en, "Fl.");
   });
 });
 

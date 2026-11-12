@@ -95,12 +95,12 @@ const isConcept = (c: unknown): c is Concept => !!c && typeof c === "object" && 
 const capWiki = (s: string): string => s.replace(/\s*\([^)]*\)/g, "").trim().replace(/^./, (ch) => ch.toUpperCase());
 const legacyLabel = (c: Concept) => (c.ids.wikidata ? LEGACY_LABELS.byWikidata[c.ids.wikidata] : undefined) ?? (c.ids.local ? LEGACY_LABELS.byLocal[c.ids.local] : undefined);
 const sameConcept = (a: Concept, b: Concept): boolean => (!!a.ids.wikidata && a.ids.wikidata === b.ids.wikidata) || (!!a.ids.local && a.ids.local === b.ids.local);
-/** 老概念补上谱上的叫法和简写（缺的才补）。en = 判成没起的那个名字，只要它是拉丁字母写的（它原来在英文谱上就是这么印的：Once 里的「Kick drum」照旧，
- *  不变成目录后来的「Bass Drum」）→ 冻住的目录表里的叫法 → 百科英文名首字母大写；zh = 百科中文名；简写 = 冻住的目录表里的英文简写（= 原来目录载好时显示的）。 */
-const LATIN = /^[\u0000-\u024f\s]+$/;
-function fillConcept(c: Concept, matchedName: string | null): Concept {
-  const lab = legacyLabel(c), shown = matchedName && LATIN.test(matchedName) ? matchedName : null;
-  const score = c.score ?? { zh: c.name.zh, en: shown ?? lab?.en ?? capWiki(c.name.en) };
+/** 老概念补上按值存的谱上叫法和简写（缺的才补；进门是冻住的纯函数，只用冻住的表）：en = 冻住的目录表里的叫法 → 百科英文名首字母大写；zh = 百科中文名；
+ *  简写 = 冻住的目录表里的英文简写。**不把判成没起的旧名字留成叫法**（12-4 改口：Once 里软件当年抄的「Kick drum」不留——显示先查现行的表，同一个概念老歌新歌一个叫法；
+ *  user「我讨厌历史遗留问题导致的convention需要再记一个」）。按值存的这份不是显示的依据，存的时候按现行的表重写（project.ts withCurrentLabels）。 */
+function fillConcept(c: Concept): Concept {
+  const lab = legacyLabel(c);
+  const score = c.score ?? { zh: c.name.zh, en: lab?.en ?? capWiki(c.name.en) };
   const abbr = c.abbr ?? (lab?.abbr ? { en: lab.abbr } : undefined);
   return { ...c, score, ...(abbr ? { abbr } : {}) };
 }
@@ -119,7 +119,7 @@ export function loungeRoleNames(role0: Json, fileMinor: number): Json {
     const c = role.concept, castNames = (cands ?? []).flatMap((x) => { const ca = x?.castAs as { name?: unknown; concept?: unknown } | undefined; return ca && typeof ca.name === "string" && isConcept(ca.concept) && sameConcept(ca.concept, c) ? [ca.name] : []; });
     const pool = [c.name.zh, c.name.en, c.name.ja, capWiki(c.name.en), legacyLabel(c)?.en, c.score?.en, c.score?.zh, ...castNames].filter((x): x is string => typeof x === "string" && !!x).map((x) => x.toLowerCase());
     const unnamed = low === null || pool.includes(low);
-    role.concept = fillConcept(c, unnamed ? name : null);
+    role.concept = fillConcept(c);
     if (unnamed) delete role.name;
   } else {
     const sound = String(role.sound ?? ""), preset = low === null ? LEGACY_PRESETS[0] : LEGACY_PRESETS.find((p) => p.sound === sound && p.en.toLowerCase() === low);   // 没名字 = 照以前落到 Vocals（预设表第一项）
@@ -127,7 +127,7 @@ export function loungeRoleNames(role0: Json, fileMinor: number): Json {
   }
   if (cands) role.candidates = cands.map((x) => {   // 候选里记的「当初作为哪件乐器上的」：概念同样补谱上的叫法 / 简写（点回旧候选时套回去）
     const ca = x?.castAs as Json | undefined;
-    return ca && isConcept(ca.concept) && !ca.concept.score ? { ...x, castAs: { ...ca, concept: fillConcept(ca.concept, typeof ca.name === "string" ? ca.name : null) } } : x;
+    return ca && isConcept(ca.concept) && !ca.concept.score ? { ...x, castAs: { ...ca, concept: fillConcept(ca.concept) } } : x;
   });
   return role;
 }
