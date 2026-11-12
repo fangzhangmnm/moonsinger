@@ -38,6 +38,8 @@ export declare class LyricEditor {
     private mergeNow;
     /** 把框里的字贴到当前这个音（可能一次贴好几个音节，往后挪），并跳到下一个空位。 */
     private place;
+    /** 空框里只打了标点（7-M）：挂到前一个有字的音后面（中日文输入法先上屏字、框已经跳到下一个音，之后才打的逗号）；框留在原地。前面没有字 = 不收。 */
+    private hangOnPrev;
     private slotText;
     /** 输入法选定 / 直接打字之后：中日文字立刻贴；拖腔记号立刻贴；英文等空格或「-」。 */
     private absorb;

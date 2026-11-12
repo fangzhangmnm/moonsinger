@@ -28,9 +28,9 @@ export function sampleSong(): Song {
     t({ kind: "note", pitch: p("B"), dur: Q, lyric: MELISMA_MARK, art: ["breath"], inhale: "soft" }),   // 2026-10-13：出声的换气
     t({ kind: "bar" }),
     t({ kind: "note", pitch: p("D", 5), dur: T3, lyric: "hap", hyph: true }),
-    t({ kind: "note", pitch: p("C", 5, 1), dur: T3, lyric: "py" }),
+    t({ kind: "note", pitch: p("C", 5, 1), dur: T3, lyric: "py," }),   // score minor 7（7-M）：歌词里的标点
     t({ kind: "note", pitch: null, dur: T3, lyric: "爱", lang: "zh" }),
-    t({ kind: "note", pitch: p("B"), dur: Q * 1.5, lyric: "你" }),
+    t({ kind: "note", pitch: p("B"), dur: Q * 1.5, lyric: "你。" }),   // score minor 7（7-M）
     t({ kind: "key", fifths: -1 }),
     t({ kind: "rest", dur: Q }),
     t({ kind: "note", pitch: p("F"), dur: Q * 3, lyric: "ね" }),

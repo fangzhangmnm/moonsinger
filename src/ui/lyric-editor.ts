@@ -10,10 +10,11 @@
 
 import { _t } from "../i18n/index.ts";
 import { type EditorState, type NoteTok, tr, setNote } from "../score/song.ts";
-import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl, joinIntoPrev, lyricEdit, mergeIntoPrev } from "../score/lyrics.ts";
-/** 歌词里打的句读（。，、,.!? …）：字不进歌词，当「这个音写完了、跳下一个」。v0.16.86 起不再插句号（句号整个去掉，user 11-10「好，整个去掉」）。 */
-const PUNCT = /[。．，、,.!！?？;；:：]+$/;
-const splitPunct = (v: string): { text: string; phrase: boolean } => { const m = PUNCT.exec(v); return m ? { text: v.slice(0, m.index), phrase: true } : { text: v, phrase: false }; };
+import { splitSyllables, distributeFrom, nextLyricSlot, prevLyricSlot, lyricSlot, MELISMA_MARK, type Syl, joinIntoPrev, lyricEdit, mergeIntoPrev, TRAIL_PUNCT } from "../score/lyrics.ts";
+/** 歌词里打的句读（。，、,.!? …、右引号右括号）：当「这个音写完了、跳下一个」（手感不变）；7-M 起标点留在歌词里（挂在这个字后面，居中不算它、不送去唱），
+ *  v0.16.86 以前是丢掉。v0.16.86 起不再插句号（句号整个去掉，user 11-10「好，整个去掉」）。text = 去掉结尾标点的字（判断有没有字用），punct = 结尾那串标点。 */
+const PUNCT = new RegExp(`[${TRAIL_PUNCT.replace(/[\]\\^-]/g, "\\$&")}]+$`);
+const splitPunct = (v: string): { text: string; phrase: boolean; punct: string } => { const m = PUNCT.exec(v); return m ? { text: v.slice(0, m.index), phrase: true, punct: m[0] } : { text: v, phrase: false, punct: "" }; };
 import type { Layout } from "../render/engrave.ts";
 
 /** 这一句引擎念成什么（v0.9.34）：parts = 每个音节的音素，at = 框里这个字是第几个（-1 = 对不上、不标）；note = 前面那句话。 */
@@ -119,6 +120,13 @@ export class LyricEditor {
     if (nx >= 0) { this.index = nx; this.input.value = this.slotText(nx); this.rerender(); this.input.select(); }
     else { this.index = -1; this.input.hidden = true; this.merge.hidden = true; this.rerender(); }   // 没有下一个音了：收起（多出来的字已经补成新音）
   }
+  /** 空框里只打了标点（7-M）：挂到前一个有字的音后面（中日文输入法先上屏字、框已经跳到下一个音，之后才打的逗号）；框留在原地。前面没有字 = 不收。 */
+  private hangOnPrev(punct: string): void {
+    const st = this.host.get(), toks = tr(st), j = prevLyricSlot(toks, this.index), t = j >= 0 ? (toks[j] as NoteTok) : null;
+    if (!t?.lyric || t.lyric === MELISMA_MARK) { this.rerender(); return; }
+    this.host.set(setNote(st, j, { lyric: t.lyric + punct }), { gesture: "lyric" });
+    this.rerender();
+  }
   private slotText(i: number): string {
     const t = tr(this.host.get())[i] as NoteTok;
     return t.lyric === MELISMA_MARK ? "~" : lyricEdit(t.lyric ?? "") + (t.hyph ? "-" : "");
@@ -130,8 +138,8 @@ export class LyricEditor {
     const v = this.input.value;
     if (!v) return;
     if (/^[~～_＿ー]$/.test(v)) { this.place(v, false); return; }
-    const { text, phrase } = splitPunct(v);
-    if (phrase) { this.input.value = ""; this.place(text, false, true); return; }   // 句读：贴字、跳下一个（英文的「love,」也在这儿收）
+    const { text, phrase, punct } = splitPunct(v);
+    if (phrase) { this.input.value = ""; if (text.trim()) this.place(v, false, true); else this.hangOnPrev(punct); return; }   // 句读：连字带标点贴上、跳下一个（英文的「love,」也在这儿收）；空框里只打了标点（中日文输入法先上屏了字、框已经跳到下一个音）= 挂到前一个字后面、框不动（7-M）
     if (CJK.test(v) && !/[A-Za-z]/.test(v)) { this.place(v, false); return; }
     this.reposition();
   }
@@ -143,7 +151,7 @@ export class LyricEditor {
     switch (a) {
       case "commit": this.commitAndClose(); return true;
       case "cancel": this.close(); return true;
-      case "next": if (v.trim()) { const { text, phrase } = splitPunct(v.trim()); this.place(text, false, phrase); } else this.step(1); return true;
+      case "next": if (v.trim()) { const { text, phrase, punct } = splitPunct(v.trim()); if (text.trim() || !phrase) this.place(v.trim(), false, phrase); else { this.input.value = ""; this.hangOnPrev(punct); } } else this.step(1); return true;
       case "prev": this.commitOnly(); this.step(-1); return true;
       case "hyphen": if (!/[A-Za-z']$/.test(v)) return false; this.place(v, true); return true;
       case "back": {
@@ -168,7 +176,7 @@ export class LyricEditor {
     if (!this.open) return;
     const st = this.host.get(), cur = tr(st)[this.index] as NoteTok, sp = splitPunct(this.input.value.trim()), v = sp.text;
     if (!cur) return;
-    if (sp.phrase) { if (v) this.host.set(distributeFrom(st, this.index, splitSyllables(v)).st); return; }
+    if (sp.phrase) { if (v.trim()) this.host.set(distributeFrom(st, this.index, splitSyllables(this.input.value.trim())).st); else if (!cur.lyric) this.hangOnPrev(sp.punct); return; }   // 标点留在字里（7-M）
     if (!v) { if (cur.lyric) this.host.set(setNote(st, this.index, { lyric: null, hyph: undefined })); return; }
     if (v === this.slotText(this.index)) return;
     // 字母后面的「-」= 词没完（同「-」键）；别的「-」（中日文后面、单独一个）交给 splitSyllables = 拖腔，和空格那条路一样

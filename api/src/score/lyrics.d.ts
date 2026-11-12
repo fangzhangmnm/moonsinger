@@ -11,6 +11,17 @@ export declare const ELISION = "\u203F";
 export declare const lyricShow: (s: string) => string;
 /** 歌词框里怎么写：连字弧写回「+」（好改）。 */
 export declare const lyricEdit: (s: string) => string;
+/** 歌词里的标点（7-M）：结尾挂在前一个字后面的、开头挂在后一个字前面的；全角半角都算。不收「'」「’」（英文词里的省略号 lovin’）。 */
+export declare const TRAIL_PUNCT = "\u3002\uFF0E\uFF0C\u3001,.!\uFF01?\uFF1F;\uFF1B:\uFF1A\u2026\u300D\u300F\u201D\uFF09)\u300B\u3009\u3011\u3015]";
+export declare const LEAD_PUNCT = "\u300C\u300E\u201C\uFF08(\u300A\u3008\u3010\u3014[";
+/** 一个音节拆成 前挂的标点 / 字 / 后挂的标点（7-M）：居中只按字，前后挂的标点照样占地方。整个都是标点 = 字是空的（当成没有字的音，标点照显示、照中间摆）。 */
+export declare function lyricHang(s: string): {
+    lead: string;
+    core: string;
+    trail: string;
+};
+/** 送去唱 / 算读音 / 数音节 / 判唱不唱得出来的那一份字（7-M）：每一段（「+」连着的几段各自）去掉前后挂的标点；全是标点 = 空（当成没有字的音）。 */
+export declare const lyricCore: (s: string) => string;
 /** 整段都是小字（っ / ゃゅょ / ぁぃぅぇぉ…）：唱的时候自己不成拍，归前一个音节（lab-score.ts）。促音 = っ / ッ（唱出来是前一个音节后面的一下停顿）。
  *  打字照原样（输入法上屏几次、小字落在哪个音上就在哪个音上；user 2026-10-08「我大tsu小tsu大yo小yo确实分不清」——不替人改歌词，唱的那一路兜住）。 */
 export declare const isSmallKana: (s: string) => boolean;

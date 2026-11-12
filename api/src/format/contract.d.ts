@@ -44,6 +44,10 @@ export type FormatFile = keyof typeof FORMAT;
  *  **chordTags、viewInC 永远是布尔**（统筹 2026-11-11 定）：以后要加花样（比如标和弦名）就加新键，不改这两个键的类型——这一版的读法是「不是 false / true 就当没写」、
  *  而且不带回，将来谁改了类型，这一版存一遍就丢了。notation、chords 是字符串，不认识的值原样带回，没有这个问题。
  *  viewInC 原名 inC（第三刀当天改名，带 inC 的文件一份都没出过门）：和设备上原来的键 view-in-c、setter setViewInC 统一。 */
+/** score minor 7（7-M 歌词里的标点，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「标点符号既然没有语义，能不能不影响居中线地跟着上一个词？中文英文都一样」「我们的标点符号是纯cosmetic的，不影响articulation，也不应该灰」，统筹细则 = 施工单 7-M 第二稿）：
+ *  歌词的字里可以带标点（MusicXML 的 <lyric><text> 本来就能写；结尾的挂在字后面、开头的挂在字前面），居中只按字、送去唱 / 算读音 / 判唱不唱得出来之前去掉（score/lyrics.ts lyricHang / lyricCore）。
+ *  结构没变，变的是读法：minor 6 以前的版本打开会把带标点的字当成唱不出来（画灰、照字送去唱）= 行为有变化那一级：minor +1、让旧版本提示一次；旧版本照样能开能存，字原样带回。
+ *  冻结样本 = test/fixtures/format/minor/score-7/（样本歌里「py,」「你。」）。 */
 export declare const FORMAT_MINOR: Readonly<Record<FormatFile, number>>;
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；

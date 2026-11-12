@@ -4,7 +4,7 @@
 import { lyricWidth, type TextMeasure } from "../text/index.ts";
 import { type Token, type NoteTok, type BarTok, type Repeat, type Art, type Dyn, type ClefName, type Staff, WHOLE, TPQ, DEFAULT_KEY, DEFAULT_TIME, DEFAULT_BPM, effectivePitch, headLen, beatTicks, allPitches } from "../../score/song.ts";
 import { type Pitch, keyAlter } from "../../score/pitch.ts";
-import { MELISMA_MARK, lyricShow } from "../../score/lyrics.ts";
+import { MELISMA_MARK, lyricShow, lyricHang } from "../../score/lyrics.ts";
 import { realFifthsOf } from "../../score/view-in-c.ts";
 
 // ── 时值记法：一个时值拆成能记的几段（附点、连音）——原 staff/notation.ts（第五刀 5-1 搬来；平常占多宽 baseWidth 留在五线谱那边）──
@@ -161,7 +161,8 @@ export function unitsOf(tokens: Token[], o: { tail: boolean; autoBars: boolean; 
         const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
         const accW = W.acc(accs.some((a) => a !== null));
         let w = W.chunk(accW, c.base, c.dotted);
-        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? lyricWidth(o.measure, lyricShow(lyric), o.sp, o.ts ?? 1) : undefined;   // 这一档歌词平常写多宽（sp）
+        const lw = (s: string) => (s ? lyricWidth(o.measure, s, o.sp, o.ts ?? 1) : 0), hg = lyric && lyric !== MELISMA_MARK && !o.rhythm ? lyricHang(lyricShow(lyric)) : null;
+        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? (hg!.core && (hg!.lead || hg!.trail) ? lw(hg!.core) + 2 * Math.max(lw(hg!.lead), lw(hg!.trail)) : lw(lyricShow(lyric))) : undefined;   // 标点悬挂（7-M）：字对着音居中，两边按挂得更宽的那一侧留   // 这一档歌词平常写多宽（sp）
         if (lyW !== undefined) w = Math.max(w, W.lyric(accW, lyW, !!nt.hyph));   // 按歌词排：字把音推开；按节奏排（v0.9.40）= 音只看时值
         const u: Chunk = { kind: "chunk", index: i, j, last: false, m: measureNo, base: c.base, dotted: c.dotted, note: isNote, ratio, ticks: c.ticks, pitch,
           ghost: isNote && nt.pitch === null, tie: isNote && !!nt.tie && j === 0, lyric, hyph: !!(isNote && nt.hyph && j === 0), inBar: inBar + off, beat, acc, w, accW, x: 0, system: 0, tick: tick + off, staff: 1, pitches, accs,

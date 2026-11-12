@@ -11,7 +11,7 @@
 import { _t } from "../i18n/index.ts";
 import { midiOf } from "./pitch.ts";
 import { type Token, type Hum, type TempoMap, TPQ, effectivePitch, isTimed, timeline, artOf } from "./song.ts";
-import { MELISMA_MARK, ELISION, isSmallKana, isSokuon } from "./lyrics.ts";
+import { MELISMA_MARK, ELISION, isSmallKana, isSokuon, lyricCore } from "./lyrics.ts";
 import { SING_MARKS, type SingMark } from "../format/performance.ts";
 
 export interface LabEntry { kana: string; notes: [number, number][]; rest?: number; hum?: boolean; hyph?: boolean; before?: "^" | "v" | "O"; whisper?: boolean; inhale?: boolean }   // whisper = 这个字不唱音高（气声，× 符头）；inhale = 这个字前面的换气听得见（2026-10-10 Opus 5.5）   // before = 这个字前面的记号（唱法核心：v = 换一口气，从前一个音末尾偷时间）   // hyph = 英文：这个词没完（下一条接着拼）   // hum = 没写歌词、唱「哼的字」（核心的 humNasal / humConsMin 只管这些）
@@ -65,7 +65,7 @@ export function toLabScore(tokens: Token[], hum: Hum, lang: SingLang = "ja", tem
     const last = out[out.length - 1];
     // 拖腔（ー / ~）和连音线连着的音（tie）都并进上一个音节：同一个字唱过几个音 / 同一个音连下去
     if ((t.lyric === MELISMA_MARK || t.tie) && last && !last.rest) { last.notes.push([midi, len]); return; }
-    const lyric = t.lyric && t.lyric !== MELISMA_MARK ? t.lyric : null;
+    const lyric = t.lyric && t.lyric !== MELISMA_MARK ? lyricCore(t.lyric) || null : null;   // 标点不送去唱（7-M）：只是看的，全是标点 = 当成没有字（哼）
     const wh = artOf(t).includes("whisper") ? { whisper: true } : {};   // 气声：这个音上唱的每个字都不唱音高
     if (!lyric) { push({ kana: HUM_SYLLABLE[hum ?? "n"][lang], notes: [[midi, len]], hum: true, ...wh }); return; }
     // 小字自己占了一个音（っ / ゃ…；输入法分两次上屏、或者人就这么写）：唱法核心按读音数音节，っ 不是唱出来的音节、ゃ 不单独成拍——

@@ -9993,6 +9993,19 @@ var JOINERS = /* @__PURE__ */ new Set(["+", "\uFF0B"]);
 var CJK_CHAR = /[぀-ヿ\p{Script=Han}]/u;
 var lyricShow = (s10) => s10.split(ELISION).reduce((a10, b3) => !a10 ? b3 : CJK_CHAR.test(a10.slice(-1)) && CJK_CHAR.test(b3.slice(0, 1)) ? a10 + b3 : `${a10}${ELISION}${b3}`, "");
 var lyricEdit = (s10) => s10.split(ELISION).join("+");
+var TRAIL_PUNCT = "\u3002\uFF0E\uFF0C\u3001,.!\uFF01?\uFF1F;\uFF1B:\uFF1A\u2026\u300D\u300F\u201D\uFF09)\u300B\u3009\u3011\u3015]";
+var LEAD_PUNCT = "\u300C\u300E\u201C\uFF08(\u300A\u3008\u3010\u3014[";
+var isTrail = (c10) => TRAIL_PUNCT.includes(c10);
+var isLead = (c10) => LEAD_PUNCT.includes(c10);
+function lyricHang(s10) {
+  const cs2 = [...s10];
+  let a10 = 0, b3 = cs2.length;
+  while (a10 < b3 && isLead(cs2[a10])) a10++;
+  while (b3 > a10 && isTrail(cs2[b3 - 1])) b3--;
+  if (a10 === b3) return { lead: "", core: "", trail: "" };
+  return { lead: cs2.slice(0, a10).join(""), core: cs2.slice(a10, b3).join(""), trail: cs2.slice(b3).join("") };
+}
+var lyricCore = (s10) => s10.split(ELISION).map((k2) => lyricHang(k2).core).filter(Boolean).join(ELISION);
 var SMALL = /* @__PURE__ */ new Set([..."\u3083\u3085\u3087\u3041\u3043\u3045\u3047\u3049\u308E\u3095\u3096\u30E3\u30E5\u30E7\u30A1\u30A3\u30A5\u30A7\u30A9\u30EE\u30F5\u30F6", "\u3063", "\u30C3"]);
 var isSmallKana = (s10) => !!s10 && [...s10].every((c10) => SMALL.has(c10));
 var isSokuon = (s10) => !!s10 && [...s10].every((c10) => c10 === "\u3063" || c10 === "\u30C3");
@@ -10003,24 +10016,27 @@ var isLatin = (c10) => /[A-Za-z'’]/.test(c10);
 function splitSyllables(text2) {
   const out = [];
   const chars = [...text2.normalize("NFC")];
-  let join = false, leadJoin = false;
+  let join = false, leadJoin = false, lead = "";
   const push = (s10) => {
     if (join && s10.text !== MELISMA_MARK) {
       const last = out[out.length - 1];
       if (last && last.text !== MELISMA_MARK) {
-        last.text += ELISION + s10.text;
+        last.text += ELISION + lead + s10.text;
         last.hyph = s10.hyph;
         join = false;
+        lead = "";
         return;
       }
       if (!last && leadJoin) {
-        out.push({ ...s10, joinPrev: true });
+        out.push({ ...s10, text: lead + s10.text, joinPrev: true });
         join = false;
+        lead = "";
         return;
       }
     }
     join = false;
-    out.push(s10);
+    out.push(lead ? { ...s10, text: lead + s10.text } : s10);
+    lead = "";
   };
   for (let i10 = 0; i10 < chars.length; i10++) {
     const c10 = chars[i10];
@@ -10067,7 +10083,18 @@ function splitSyllables(text2) {
       if (w2) push({ text: w2, hyph: false });
       continue;
     }
+    if (isTrail(c10)) {
+      const last = out[out.length - 1];
+      if (last && last.text !== MELISMA_MARK) last.text += c10;
+      else out.push({ text: c10, hyph: false });
+      continue;
+    }
+    if (isLead(c10)) {
+      lead += c10;
+      continue;
+    }
   }
+  if (lead) out.push({ text: lead, hyph: false });
   return out;
 }
 var lyricSlot = (t10) => t10.kind === "note" && !t10.tie;
@@ -10211,13 +10238,14 @@ function lyricIssues(tokens, lyrics, langAt) {
   const out = /* @__PURE__ */ new Map();
   if (!lyrics) return out;
   tokens.forEach((t10, i10) => {
-    if (t10.kind !== "note" || t10.tie || !t10.lyric || t10.lyric === MELISMA_MARK) return;
+    const core2 = t10.kind === "note" && t10.lyric && t10.lyric !== MELISMA_MARK ? lyricCore(t10.lyric) : "";
+    if (t10.kind !== "note" || t10.tie || !core2) return;
     const lang2 = typeof langAt === "string" ? langAt : langAt(i10);
     if (lyrics !== "words") {
       out.set(i10, { why: "notSung", lang: lang2 });
       return;
     }
-    for (const part of t10.lyric.split(ELISION).filter(Boolean)) {
+    for (const part of core2.split(ELISION).filter(Boolean)) {
       if (lang2 === "ja") {
         if (isSmallKana(part)) continue;
         if (HAN.test(part)) {
@@ -11560,7 +11588,8 @@ function unitsOf(tokens, o10) {
         const lyric = isNote && j2 === 0 && !nt2.tie ? nt2.lyric : null;
         const accW = W3.acc(accs.some((a10) => a10 !== null));
         let w2 = W3.chunk(accW, c10.base, c10.dotted);
-        const lyW = lyric && lyric !== MELISMA_MARK && !o10.rhythm ? lyricWidth(o10.measure, lyricShow(lyric), o10.sp, o10.ts ?? 1) : void 0;
+        const lw2 = (s10) => s10 ? lyricWidth(o10.measure, s10, o10.sp, o10.ts ?? 1) : 0, hg = lyric && lyric !== MELISMA_MARK && !o10.rhythm ? lyricHang(lyricShow(lyric)) : null;
+        const lyW = lyric && lyric !== MELISMA_MARK && !o10.rhythm ? hg.core && (hg.lead || hg.trail) ? lw2(hg.core) + 2 * Math.max(lw2(hg.lead), lw2(hg.trail)) : lw2(lyricShow(lyric)) : void 0;
         if (lyW !== void 0) w2 = Math.max(w2, W3.lyric(accW, lyW, !!nt2.hyph));
         const u2 = {
           kind: "chunk",
@@ -14395,6 +14424,10 @@ function engrave(song, o10) {
     const LS = PPAR.lyricScale ?? 1, lsp = sp2 * LS;
     const lyrUnit = (str2) => lyricWidth(o10.measure, str2, sp2, ts2) * LS;
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
+    const hangOff = (lyr) => {
+      const h2 = lyricHang(lyricShow(lyr));
+      return h2.core && (h2.lead || h2.trail) ? (lyrUnit(h2.trail) - lyrUnit(h2.lead)) / 2 : 0;
+    };
     const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };
     const lyrEdge = (s10) => ({ left: MARGIN + (s10 === 0 ? ind0 : indN) + LYRIC_EDGE, right: right - LYRIC_EDGE });
     const outOf = (items, b3) => items.some((it2) => it2.cx - it2.w / 2 < b3.left - 1e-9 || it2.cx + it2.w / 2 > b3.right + 1e-9);
@@ -14404,7 +14437,8 @@ function engrave(song, o10) {
       for (const u2 of DRAWERS[kinds[r10]].lyricAnchors(q2, kScale(kinds[r10]), aux[r10])) {
         const arr = bySys.get(u2.system) ?? [];
         bySys.set(u2.system, arr);
-        arr.push({ index: u2.index, cx: u2.cx, w: lyrUnit(lyricShow(u2.lyric)), hy: u2.hyph, block: isBlockScript(u2.lyric) && [...lyricShow(u2.lyric)].length <= 1 });
+        const core2 = lyricHang(lyricShow(u2.lyric)).core || lyricShow(u2.lyric);
+        arr.push({ index: u2.index, cx: u2.cx + hangOff(u2.lyric), w: lyrUnit(lyricShow(u2.lyric)), hy: u2.hyph, block: isBlockScript(core2) && [...core2].length <= 1 });
       }
       for (const items of bySys.values()) items.sort((a10, b3) => a10.cx - b3.cx);
       const plan = (items, fits) => fits.forEach((f2, k2) => lyrPlan.set(`${r10}:${items[k2].index}`, { ...f2, hw: items[k2].w * f2.sx / 2 }));
@@ -14667,7 +14701,7 @@ function engrave(song, o10) {
     const layLyrics = ({ r: r10, lrow, spots }) => {
       const run2 = (c10, partLyrics) => {
         const fit = lyrPlan.get(`${r10}:${c10.index}`), ly0 = lyricY(lrow(c10.sys)), cx0 = c10.cx0;
-        const ly2 = ly0, cx2 = cx0 + (fit ? P2(fit.dx) : 0);
+        const ly2 = ly0, cx2 = cx0 + (c10.lyric && c10.lyric !== MELISMA_MARK ? P2(hangOff(c10.lyric)) : 0) + (fit ? P2(fit.dx) : 0);
         {
           const lh2 = { index: c10.index, system: c10.row, x: cx2, y: ly2, ...fit?.tight ? { tight: true } : {} };
           partLyrics.push(lh2);
@@ -14848,10 +14882,10 @@ function toSvgParts(l10) {
 }
 
 // src/ui/lyric-editor.ts
-var PUNCT = /[。．，、,.!！?？;；:：]+$/;
+var PUNCT = new RegExp(`[${TRAIL_PUNCT.replace(/[\]\\^-]/g, "\\$&")}]+$`);
 var splitPunct = (v) => {
   const m2 = PUNCT.exec(v);
-  return m2 ? { text: v.slice(0, m2.index), phrase: true } : { text: v, phrase: false };
+  return m2 ? { text: v.slice(0, m2.index), phrase: true, punct: m2[0] } : { text: v, phrase: false, punct: "" };
 };
 var CJK = /[\p{Script=Han}぀-ヿ]/u;
 var LyricEditor = class {
@@ -15005,6 +15039,16 @@ var LyricEditor = class {
       this.rerender();
     }
   }
+  /** 空框里只打了标点（7-M）：挂到前一个有字的音后面（中日文输入法先上屏字、框已经跳到下一个音，之后才打的逗号）；框留在原地。前面没有字 = 不收。 */
+  hangOnPrev(punct) {
+    const st2 = this.host.get(), toks = tr(st2), j2 = prevLyricSlot(toks, this.index), t10 = j2 >= 0 ? toks[j2] : null;
+    if (!t10?.lyric || t10.lyric === MELISMA_MARK) {
+      this.rerender();
+      return;
+    }
+    this.host.set(setNote(st2, j2, { lyric: t10.lyric + punct }), { gesture: "lyric" });
+    this.rerender();
+  }
   slotText(i10) {
     const t10 = tr(this.host.get())[i10];
     return t10.lyric === MELISMA_MARK ? "~" : lyricEdit(t10.lyric ?? "") + (t10.hyph ? "-" : "");
@@ -15018,10 +15062,11 @@ var LyricEditor = class {
       this.place(v, false);
       return;
     }
-    const { text: text2, phrase } = splitPunct(v);
+    const { text: text2, phrase, punct } = splitPunct(v);
     if (phrase) {
       this.input.value = "";
-      this.place(text2, false, true);
+      if (text2.trim()) this.place(v, false, true);
+      else this.hangOnPrev(punct);
       return;
     }
     if (CJK.test(v) && !/[A-Za-z]/.test(v)) {
@@ -15043,8 +15088,12 @@ var LyricEditor = class {
         return true;
       case "next":
         if (v.trim()) {
-          const { text: text2, phrase } = splitPunct(v.trim());
-          this.place(text2, false, phrase);
+          const { text: text2, phrase, punct } = splitPunct(v.trim());
+          if (text2.trim() || !phrase) this.place(v.trim(), false, phrase);
+          else {
+            this.input.value = "";
+            this.hangOnPrev(punct);
+          }
         } else this.step(1);
         return true;
       case "prev":
@@ -15083,7 +15132,8 @@ var LyricEditor = class {
     const st2 = this.host.get(), cur = tr(st2)[this.index], sp2 = splitPunct(this.input.value.trim()), v = sp2.text;
     if (!cur) return;
     if (sp2.phrase) {
-      if (v) this.host.set(distributeFrom(st2, this.index, splitSyllables(v)).st);
+      if (v.trim()) this.host.set(distributeFrom(st2, this.index, splitSyllables(this.input.value.trim())).st);
+      else if (!cur.lyric) this.hangOnPrev(sp2.punct);
       return;
     }
     if (!v) {
@@ -32515,7 +32565,7 @@ function toLabScore(tokens, hum, lang2 = "ja", tempoMap, sing = SING_MARKS, rang
       last.notes.push([midi2, len]);
       return;
     }
-    const lyric = t10.lyric && t10.lyric !== MELISMA_MARK ? t10.lyric : null;
+    const lyric = t10.lyric && t10.lyric !== MELISMA_MARK ? lyricCore(t10.lyric) || null : null;
     const wh = artOf(t10).includes("whisper") ? { whisper: true } : {};
     if (!lyric) {
       push({ kana: HUM_SYLLABLE[hum ?? "n"][lang2], notes: [[midi2, len]], hum: true, ...wh });
@@ -33083,9 +33133,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ca7136677ee7.mjs");
+      return pick(() => "layout-worker-000561d3242a.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-2a99dcc81359.mjs");
+      return pick(() => "encode-worker-a55e39c0a87c.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -35526,7 +35576,7 @@ function readMusicXml(xml, hints) {
 
 // src/format/contract.ts
 var FORMAT = { manifest: 2, score: 2, lounge: 2, studio: 2 };
-var FORMAT_MINOR = { manifest: 1, score: 6, lounge: 1, studio: 1 };
+var FORMAT_MINOR = { manifest: 1, score: 7, lounge: 1, studio: 1 };
 var FORMAT_PATCH = { manifest: 1, score: 0, lounge: 0, studio: 0 };
 
 // src/format/sha256-sync.ts
@@ -43032,7 +43082,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "269035fbe6d2143e" : "dev";
+var CORE_HASH = true ? "3d9f411a5400f974" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -62781,4 +62831,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1b4957372306.mjs.map
+//# sourceMappingURL=moonsinger-35d539c65abf.mjs.map

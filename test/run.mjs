@@ -131,6 +131,7 @@ import "./reading.test.ts";
 import "./swing.test.ts";
 import "./auto-ottava.test.ts";
 import "./lyric-fit.test.ts";
+import "./lyric-punct.test.ts";
 import "./bar-numbers.test.ts";
 import "./z-layers.test.ts";
 import "./arpeggio.test.ts";

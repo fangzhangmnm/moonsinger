@@ -3,7 +3,8 @@
 //   · 汉字一个字一个音节；假名一个「拍」一个（ゃゅょ等小字、っ 并进前一个；ん 自己一个）；
 //   · 拉丁字母：空格分词；词里的「-」= 音节结束、词没完（hyph，谱面画连字符），如 hap-py；
 //   · 拖腔 = 「~」（主键，user 自己写过 2153~），「～」「_」「ー」和单独的「-」也认：这个音延续上一个音节，谱面画延长线；
-//   · 标点、空格（拉丁之外）跳过。
+//   · 空格（拉丁之外）跳过；标点留在歌词里（7-M，2026-11-12；user「标点符号既然没有语义，能不能不影响居中线地跟着上一个词？中文英文都一样」「我们的标点符号是纯cosmetic的，不影响articulation，也不应该灰」）：
+//     结尾的（逗号句号问号…右引号右括号）挂到前一个音节后面，开头的（左引号左括号）挂到后一个音节前面；居中只按字、送去唱之前去掉（lyricHang / lyricCore）。
 //   · 「+」（全角「＋」也认）= 后面那个字和前面的放同一个音（elision；user「日语歌词需支持一个音对应两个假名 也许不一定两个，然后中文也一样，
 //     这样之前的自动输入怎么办呢？之前的自动输入其实蛮舒服的」→ AI 答「照常连着打、字中间打 +」→「点头」）：数据里用标准的连字弧「‿」（U+203F）连着，
 //     MusicXML = 一个 <lyric> 里 <text>…<elision/>…<text>；纸上中日文两个字之间不画弧（日文谱的习惯），拉丁字母之间画「‿」；唱的时候这个音平分给这几拍字。
@@ -21,6 +22,20 @@ const CJK_CHAR = /[぀-ヿ\p{Script=Han}]/u;
 export const lyricShow = (s: string): string => s.split(ELISION).reduce((a, b) => (!a ? b : CJK_CHAR.test(a.slice(-1)) && CJK_CHAR.test(b.slice(0, 1)) ? a + b : `${a}${ELISION}${b}`), "");
 /** 歌词框里怎么写：连字弧写回「+」（好改）。 */
 export const lyricEdit = (s: string): string => s.split(ELISION).join("+");
+/** 歌词里的标点（7-M）：结尾挂在前一个字后面的、开头挂在后一个字前面的；全角半角都算。不收「'」「’」（英文词里的省略号 lovin’）。 */
+export const TRAIL_PUNCT = "。．，、,.!！?？;；:：…」』”）)》〉】〕]";
+export const LEAD_PUNCT = "「『“（(《〈【〔[";
+const isTrail = (c: string) => TRAIL_PUNCT.includes(c), isLead = (c: string) => LEAD_PUNCT.includes(c);
+/** 一个音节拆成 前挂的标点 / 字 / 后挂的标点（7-M）：居中只按字，前后挂的标点照样占地方。整个都是标点 = 字是空的（当成没有字的音，标点照显示、照中间摆）。 */
+export function lyricHang(s: string): { lead: string; core: string; trail: string } {
+  const cs = [...s]; let a = 0, b = cs.length;
+  while (a < b && isLead(cs[a]!)) a++;
+  while (b > a && isTrail(cs[b - 1]!)) b--;
+  if (a === b) return { lead: "", core: "", trail: "" };   // 全是标点：不拆（照中间摆）
+  return { lead: cs.slice(0, a).join(""), core: cs.slice(a, b).join(""), trail: cs.slice(b).join("") };
+}
+/** 送去唱 / 算读音 / 数音节 / 判唱不唱得出来的那一份字（7-M）：每一段（「+」连着的几段各自）去掉前后挂的标点；全是标点 = 空（当成没有字的音）。 */
+export const lyricCore = (s: string): string => s.split(ELISION).map((k) => lyricHang(k).core).filter(Boolean).join(ELISION);
 
 const SMALL = new Set([..."ゃゅょぁぃぅぇぉゎゕゖャュョァィゥェォヮヵヶ", "っ", "ッ"]);
 /** 整段都是小字（っ / ゃゅょ / ぁぃぅぇぉ…）：唱的时候自己不成拍，归前一个音节（lab-score.ts）。促音 = っ / ッ（唱出来是前一个音节后面的一下停顿）。
@@ -35,14 +50,14 @@ const isLatin = (c: string) => /[A-Za-z'’]/.test(c);
 export function splitSyllables(text: string): Syl[] {
   const out: Syl[] = [];
   const chars = [...text.normalize("NFC")];
-  let join = false, leadJoin = false;
+  let join = false, leadJoin = false, lead = "";   // lead = 开头的标点，等着挂到下一个音节前面（7-M）
   const push = (s: Syl) => {   // 前面有「+」= 并进上一个音节（这一段里还没有上一个 = 记成 joinPrev，交给调用方并进前一个音）
     if (join && s.text !== MELISMA_MARK) {
       const last = out[out.length - 1];
-      if (last && last.text !== MELISMA_MARK) { last.text += ELISION + s.text; last.hyph = s.hyph; join = false; return; }
-      if (!last && leadJoin) { out.push({ ...s, joinPrev: true }); join = false; return; }
+      if (last && last.text !== MELISMA_MARK) { last.text += ELISION + lead + s.text; last.hyph = s.hyph; join = false; lead = ""; return; }
+      if (!last && leadJoin) { out.push({ ...s, text: lead + s.text, joinPrev: true }); join = false; lead = ""; return; }
     }
-    join = false; out.push(s);
+    join = false; out.push(lead ? { ...s, text: lead + s.text } : s); lead = "";
   };
   for (let i = 0; i < chars.length; i++) {
     const c = chars[i];
@@ -62,8 +77,12 @@ export function splitSyllables(text: string): Syl[] {
       if (w) push({ text: w, hyph: false });
       continue;
     }
-    // 空格、标点、数字：跳过（以后可以变成呼吸记号）
+    // 标点（7-M）：结尾的挂到前一个音节后面（前面没有音节 = 自己成一个全是标点的音节），开头的等着挂到下一个音节前面
+    if (isTrail(c)) { const last = out[out.length - 1]; if (last && last.text !== MELISMA_MARK) last.text += c; else out.push({ text: c, hyph: false }); continue; }
+    if (isLead(c)) { lead += c; continue; }
+    // 空格、数字、别的符号：跳过
   }
+  if (lead) out.push({ text: lead, hyph: false });   // 开头的标点后面没有字了 = 自己成一个全是标点的音节
   return out;
 }
 

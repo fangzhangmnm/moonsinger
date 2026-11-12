@@ -22,7 +22,7 @@ import { type Song, type PaperSeg, type Token, type Focus, type Staff, isTimed, 
 import { parseArrangement } from "../score/arrange.ts";
 import { curveOf, SP_DEFAULTS } from "./spacing.ts";
 import { type PercInfo } from "../gm/percussion.ts";
-import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
+import { MELISMA_MARK, lyricShow, lyricHang } from "../score/lyrics.ts";
 import { Skyline, primInk, shiftPrim } from "./skyline.ts";
 import { songInC } from "../score/view-in-c.ts";
 import { songViewOf } from "../score/song-view.ts";
@@ -435,6 +435,9 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const LS = PPAR.lyricScale ?? 1, lsp = sp * LS;   // 歌词字号再乘多少（排版参数表纸一级：简谱照样张收；五线谱 = 1）
     const lyrUnit = (str: string) => lyricWidth(o.measure, str, sp, ts) * LS;   // lyricWidth 给的是线间距（和 sp 无关）：字号乘多少，宽就乘多少   // 这一档歌词字号 / 平常宽度下这串字的前进宽度（sp）
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
+    /** 歌词里的标点悬挂（7-M，user 11-12「标点符号既然没有语义，能不能不影响居中线地跟着上一个词？中文英文都一样」）：居中只按字，前后挂的标点照样占地方——
+     *  整串字的中心 = 音的中心 + （后挂宽 − 前挂宽）/ 2（sp）；让路（量）和画用同一个数。全是标点 = 照中间摆。 */
+    const hangOff = (lyr: string): number => { const h = lyricHang(lyricShow(lyr)); return h.core && (h.lead || h.trail) ? (lyrUnit(h.trail) - lyrUnit(h.lead)) / 2 : 0; };
     const lyrGaps: LyricGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };   // 定义见 LyricGaps；底线按档（样式表）
     // 这一行歌词能摆到哪（7-E，user 11-11「排版炸了，文字跑到线前面了」）：左 = 这一行谱的起点（名字一栏的缩进右边，多声部时那根竖线），右 = 这一行的右端；各留 LYRIC_EDGE。
     //   数字行一开头就是音、没有谱号调号垫着，长词的左半截会伸出去；五线谱行尾的长词同理。两种谱都走这一道（框架的事），音的位置不动。
@@ -445,7 +448,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const bySys = new Map<number, (LyricItem & { index: number })[]>();
       for (const u of DRAWERS[kinds[r]!].lyricAnchors(q, kScale(kinds[r]!), aux[r])) {   // 每个带字的音在哪（这种行的画法给的锚点）
         const arr = bySys.get(u.system) ?? []; bySys.set(u.system, arr);
-        arr.push({ index: u.index, cx: u.cx, w: lyrUnit(lyricShow(u.lyric)), hy: u.hyph, block: isBlockScript(u.lyric) && [...lyricShow(u.lyric)].length <= 1 });   // 一个音上两个以上方块字（日文「だん」这类合租）= 自己收，不带着整段一起变窄（user 11-09「日文有时候有双字合租的…这种时候也变窄到能放下？」）
+        const core = lyricHang(lyricShow(u.lyric)).core || lyricShow(u.lyric);   // 方块字按字认（「糕，」也是一个方块字，7-M）
+        arr.push({ index: u.index, cx: u.cx + hangOff(u.lyric), w: lyrUnit(lyricShow(u.lyric)), hy: u.hyph, block: isBlockScript(core) && [...core].length <= 1 });   // 一个音上两个以上方块字（日文「だん」这类合租）= 自己收，不带着整段一起变窄（user 11-09「日文有时候有双字合租的…这种时候也变窄到能放下？」）
       }
       // 方块字整段统一一个宽度（user 11-09「甚至是整篇曲段统一宽度，算一个最大的允许宽度」）：先每行算要压到多宽，整段（这张纸 × 这位歌手）取最窄的，再按它摆
       for (const items of bySys.values()) items.sort((a, b) => a.cx - b.cx);
@@ -644,7 +648,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const layLyrics = ({ r, lrow, spots }: LyricPart) => {
       const run = (c: LyricSpot, partLyrics: LyricHit[]) => {
         const fit = lyrPlan.get(`${r}:${c.index}`), ly0 = lyricY(lrow(c.sys)), cx0 = c.cx0;   // 按节奏排：让过路的位置
-        const ly = ly0, cx = cx0 + (fit ? P(fit.dx) : 0);
+        const ly = ly0, cx = cx0 + (c.lyric && c.lyric !== MELISMA_MARK ? P(hangOff(c.lyric)) : 0) + (fit ? P(fit.dx) : 0);   // 标点悬挂（7-M）：fit.dx 是相对挂过之后的中心算的
         { const lh: LyricHit = { index: c.index, system: c.row, x: cx, y: ly, ...(fit?.tight ? { tight: true as const } : {}) }; partLyrics.push(lh); hitRow(lh, lrow(c.sys)); }   // 点击框归这个音那一行（system），画在歌词那一行（大谱表 = 下面那条）
         if (c.lyric === MELISMA_MARK) put(lrow(c.sys), { t: "line", x1: c.mx0, y1: ly0, x2: c.mx1, y2: ly0, w: P(0.12), cls: "melisma" });
         else if (c.lyric) put(lrow(c.sys), { tok: c.tok, t: "text", x: cx, y: ly, s: lyricShow(c.lyric), ...(look.k !== 1 || ts !== 1 || LS !== 1 ? { size: lyricSizePx(lsp, ts) } : {}), ...(look.sx * (fit?.sx ?? 1) !== 1 ? { sx: look.sx * (fit?.sx ?? 1) } : {}), cls: ["lyric", c.mute ? "lyric-mute" : "", fit?.tight ? "lyric-tight" : "", c.cls ?? ""]   /* 挤了不画灰（v0.16.45；user「挤了能不能不画灰」「灰是有别的语义的」= 唱不出来 / 不认）：只留 lyric-tight 给歌词框说「挤了」 */.filter(Boolean).join(" ") });

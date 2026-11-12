@@ -14,11 +14,11 @@ describe("lyrics", () => {
     eq(j("でっかい"), "でっ か い");
     eq(j("みてはーーねる"), "み て は ー ー ね る");
     eq(j("みては~~ねる"), "み て は ー ー ね る");
-    eq(j("だんご、てを"), "だ ん ご て を");
+    eq(j("だんご、てを"), "だ ん ご、 て を");   // 7-M 起标点留在字里（挂在前一个音节后面；唱之前去掉）
   });
   it("汉字一字一个；英文空格分词、词里 - = 断音节（hyph）；~ _ = 拖腔", () => {
     const j = (t: string) => splitSyllables(t).map((s) => s.text + (s.hyph ? "-" : "")).join(" ");
-    eq(j("小兔子 乖乖，"), "小 兔 子 乖 乖");
+    eq(j("小兔子 乖乖，"), "小 兔 子 乖 乖，");   // 7-M：标点留在字里
     eq(j("hap-py birth-day to you"), "hap- py birth- day to you");
     eq(j("oh ~ yeah _"), "oh ー yeah ー");
   });
@@ -67,11 +67,11 @@ import { saveMxl as _save, openBytes as _open, emptyExtras as _ex } from "../src
 import { initState as _init, writePitch as _wp, TPQ as _Q } from "../src/score/song.ts";
 describe("一个音上几个字（+）", () => {
   it("だんご、だ+んご、 = だ ん ご だん ご；中文三个字也行；+ 开头 = 并进前一个音", () => {
-    eq(_split("だんご、だ+んご、").map((s) => s.text).join("/"), `だ/ん/ご/だ${ELISION}ん/ご`);
+    eq(_split("だんご、だ+んご、").map((s) => s.text).join("/"), `だ/ん/ご、/だ${ELISION}ん/ご、`);   // 7-M：标点留在字里
     eq(_split("我+的+歌").map((s) => s.text).join("/"), `我${ELISION}的${ELISION}歌`);
     const lead = _split("+ん");
     eq(lead.length, 1); eq(lead[0].joinPrev, true); eq(lead[0].text, "ん");
-    eq(_split("ご＋、だ").map((s) => s.text).join("/"), `ご${ELISION}だ`, "全角 ＋ 也认，中间的标点照旧跳过");
+    eq(_split("ご＋、だ").map((s) => s.text).join("/"), `ご、${ELISION}だ`, "全角 ＋ 也认；中间的标点留在前一个字后面（7-M；唱的时候各段去掉）");
   });
   it("纸上：中日文两个字之间不画弧，拉丁字母之间画 ‿", () => {
     eq(lyricShow(`だ${ELISION}ん`), "だん"); eq(lyricShow(`me${ELISION}and`), `me${ELISION}and`);

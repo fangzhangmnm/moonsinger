@@ -40,7 +40,7 @@ try {
   for (const ch of ["さ", "く", "ら", "。"]) { await p.keyboard.type(ch); await p.waitForTimeout(80); }
   await p.waitForTimeout(200);
   const lyr = await p.evaluate(() => window.__moonsinger.state().song.papers[0].tracks.P1.filter((t) => t.kind === "note").map((t) => t.lyric ?? "_").join(""));
-  check((await kinds()) === k1 && lyr.startsWith("さくら") && !lyr.includes("。"), "歌词「さくら。」：字照写、「。」不进歌词、什么都没插", `${await kinds()} / ${lyr}`);
+  check((await kinds()) === k1 && lyr.startsWith("さくら。_"), "歌词「さくら。」：字照写、「。」挂在「ら」后面（7-M：标点留在字里、不送去唱）、后面的音不占、什么都没插", `${await kinds()} / ${lyr}`);
   await p.keyboard.press("Escape"); await p.evaluate(() => window.__moonsinger.setMode("notes"));
   // 符号层「记号」那一页没有「句号」键了
   await p.click("#score", { position: { x: 300, y: 300 } }); await p.keyboard.press("End"); await p.waitForTimeout(100);

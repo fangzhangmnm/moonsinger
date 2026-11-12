@@ -9,7 +9,7 @@
 //   中文：一个音一个汉字；英文：拉丁字母（词典查不到的现在查不出来）。小字 / 促音自己占一个音是可以的（lab-score 兜住）。
 import { _t } from "../i18n/index.ts";
 import type { Token } from "./song.ts";
-import { MELISMA_MARK, ELISION, isSmallKana } from "./lyrics.ts";
+import { MELISMA_MARK, ELISION, isSmallKana, lyricCore } from "./lyrics.ts";
 
 export type LyricWhy = "notSung" | "kanji" | "beats" | "script";
 export type LyricLang = "ja" | "zh" | "en";
@@ -26,10 +26,11 @@ export function lyricIssues(tokens: Token[], lyrics: "words" | "hum" | "none" | 
   const out = new Map<number, LyricIssue>();
   if (!lyrics) return out;
   tokens.forEach((t, i) => {
-    if (t.kind !== "note" || t.tie || !t.lyric || t.lyric === MELISMA_MARK) return;
+    const core = t.kind === "note" && t.lyric && t.lyric !== MELISMA_MARK ? lyricCore(t.lyric) : "";   // 标点不算（7-M：不因为带着标点就画灰；全是标点 = 当成没有字）
+    if (t.kind !== "note" || t.tie || !core) return;
     const lang = typeof langAt === "string" ? langAt : langAt(i);
     if (lyrics !== "words") { out.set(i, { why: "notSung", lang }); return; }
-    for (const part of t.lyric.split(ELISION).filter(Boolean)) {
+    for (const part of core.split(ELISION).filter(Boolean)) {
       if (lang === "ja") {
         if (isSmallKana(part)) continue;   // 小字 / 促音自己占一个音：唱的那一路并进前一个音节
         if (HAN.test(part)) { out.set(i, { why: "kanji", lang }); return; }

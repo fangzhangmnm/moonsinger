@@ -47,7 +47,7 @@ console.log(`${exists && !force ? `kept test/fixtures/format/${tag}/ (use --forc
 import { FORMAT_MINOR } from "../src/format/contract.ts";
 import { songViewOf } from "../src/score/song-view.ts";
 const minorDir = join(ROOT, "test/fixtures/format/minor", `score-${FORMAT_MINOR.score}`);
-if (FORMAT_MINOR.score >= 5 && (!existsSync(join(minorDir, "sample.mxl")) || process.argv.includes("--force-minor"))) {   // 每一拍各一份（score-5 = 简谱那一版、score-6 = 字母谱，7-B）
+if (FORMAT_MINOR.score >= 5 && (!existsSync(join(minorDir, "sample.mxl")) || process.argv.includes("--force-minor"))) {   // 每一拍各一份（score-5 = 简谱那一版、score-6 = 字母谱，7-B；score-7 = 歌词里的标点，7-M）
   mkdirSync(minorDir, { recursive: true });
   writeFileSync(join(minorDir, "sample.mxl"), bytes);
   const v = songViewOf(o.song);
