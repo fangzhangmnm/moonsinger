@@ -95,7 +95,8 @@ describe("谱面排版：结构和语言", () => {
       assert(!/render\/(staff|jianpu)\//.test(p), `谱面 ${f} 直接 import 了一种画法 ${p}（行的几何只查 notations.ts 的 GEOMETRY）`);
     }
     const noComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
-    for (const f of SURFACE) assert(!/jianpu|GEOMETRY\.(staff|jianpu)|\.kind\s*[!=]==?\s*"(staff|jianpu)"/.test(noComments(readUi(f))), `谱面 ${f} 按谱种分支了（只许按这一行的种类查 GEOMETRY）`);
+    // 「jianpu」作为一个词（图标名 jianpu-staff 这种连着别的字的不算）、按谱种指名查表、拿行的种类和 "staff" / "jianpu" 比
+    for (const f of SURFACE) assert(!/(?<![-\w])jianpu(?![-\w])|GEOMETRY\.(staff|jianpu)|\.kind\s*[!=]==?\s*"(staff|jianpu)"/.test(noComments(readUi(f))), `谱面 ${f} 按谱种分支了（只许按这一行的种类查 GEOMETRY）`);
   });
   it("结构（小控件）：src/widgets/ 是叶子——里面的文件不 import src/ 里别的文件夹，谁都可以 import 它（统筹裁定 2026-11-11：滚轮不属于键盘也不属于谱面）", () => {
     const W = new URL("../src/widgets/", import.meta.url), files = fs.readdirSync(W).filter((f) => f.endsWith(".ts"));

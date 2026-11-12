@@ -6,7 +6,10 @@ import { initState, withTrack, tr, addPart, addPaper, setPaperHidden, TPQ, type 
 import { engrave, type PartView } from "../src/render/engrave.ts";
 import { printOpts, isPrinted, LYRIC_RAISE } from "../src/export/score-pdf.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
-import { songViewOf, setViewInC, setChordTags } from "../src/score/song-view.ts";
+import { songViewOf, setViewInC, setChordTags, setNotation } from "../src/score/song-view.ts";
+import { scorePdf } from "../src/export/score-pdf.ts";
+import { parseTtf } from "../src/export/ttf.ts";
+import { fullSong, fullFlags } from "./fixtures/layout/full-song.ts";
 
 let id = 8000;
 const S = "CDEFGAB", L = "あいうえおかきくけこさしすせそ";
@@ -47,6 +50,21 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
     assert(print.prims.some((p) => (p as { cls?: string }).cls?.includes("key-label") && isPrinted((p as { cls?: string }).cls)), "「1=原来的调」印");
     assert(!print.prims.some((p) => ((p as { cls?: string }).cls ?? "").includes("key-hint")), "淡「1=C」不是排版器画的（覆盖层，刀 1）");
     eq(geo(engrave(setChordTags({ ...st, song }, false).song, base)), geo(print), "和弦级数不占地方（开关不改版面）");
+  });
+  it("简谱（谱面分家第四刀，施工单第三节「4」：现有的所见即所得守卫加一例简谱）：印的 = 分页预览，控件开关不改版面；数字行都印；真写一份 PDF，没有缺的字和音乐字形", () => {
+    const jst = setNotation(st, "jianpu"), song = jst.song, base = printOpts(song, sp, parts(jst), createTextMeasure(measure), true, 0), print = engrave(song, base);
+    assert(print.systems.some((r) => r.kind === "jianpu"), "有数字行");
+    for (const ctl of [{ chrome: { famGap: 0.8, navRoom: 16 } }, { at: { paper: song.papers[2]!.id, part: song.parts[0]!.id } }]) eq(geo(engrave(song, { ...base, ...ctl } as never)), geo(print), `开关 ${JSON.stringify(ctl)} 不改版面`);
+    const digits = print.prims.filter((p) => /jp-digit/.test((p as { cls?: string }).cls ?? ""));
+    assert(digits.length > 0 && digits.every((p) => isPrinted((p as { cls?: string }).cls)), "数字都印");
+    // 用全的测试歌切成简谱（记号、弧线、连音、反复、五线谱专有记号的小灰标都在），用真的字体写 PDF
+    const fs = (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule("node:fs"), zlib = (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule("node:zlib");
+    const ROOT = new URL("../", import.meta.url), font = parseTtf(new Uint8Array(zlib.gunzipSync(fs.readFileSync(new URL("vendor/fonts/sans.ttf.gz", ROOT))))), music = JSON.parse(fs.readFileSync(new URL("vendor/fonts/bravura/outlines.json", ROOT), "utf8"));
+    const full = { ...fullSong(), notation: "jianpu" }, flags = fullFlags(full);
+    const r = scorePdf({ song: full, parts: full.parts.map((q, k) => ({ id: q.id, name: q.id, first: k === 0, ...(flags[q.id] ?? {}) })), font, fontId: "sans", music, title: "jianpu", created: new Date(Date.UTC(2026, 10, 11)), autoBars: true });
+    assert(r.pages >= 1 && r.bytes.length > 1000, `写出了 PDF（${r.pages} 页、${r.bytes.length} 字节）`);
+    eq(r.stats.missingMusic.join(","), "", "没有缺的音乐字形（楔形跳音等都有轮廓）");
+    eq(r.stats.missing.join(""), "", "没有缺的字");
   });
   it("只印这一张纸 = 分页预览的「本段」：控件开关同样不改版面（2026-10-09，user「只印一段或一个声部…和wxhw差不多」）", () => {
     for (const paper of st.song.papers) {

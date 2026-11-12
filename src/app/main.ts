@@ -15,7 +15,7 @@ import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
 import { singleSel, currentIndex, ensureStartDyns, duplicatePaper, swellOf, toggleSelDot, clearMarks, stackDegree, setBarStyle, transposePapers, scopeKey, setLyricFit, setBarNumbers, DYNS, CLEFS, headLen, type ClefName, insertClef, insertOttava, setDisplayMark, DEFAULT_TIME, WHOLE, type Art, ART_NAME, setGroove, setRepeatBar, insertNav, NAV_LABEL, endingLabel, type NavWhat, type Repeat, tempoOwner, markAnchor, isTimed, type Dyn, dynMarkAt, editMarkAt, rampSource, toggleArtSel, toggleSlurSel, slurStateSel, artStateSel, setDynSel, dynMarkSel, type EditorState, type InputState, type Acc, type Hum, type MarkVal, type Song, type PartDef, type Token, type TempoMap, initState, writePitch, writeMark, setHum, setPaper, setCredits, setRights, tapAcc, setAccState, setUnit, setNote, effectivePitch, timeline, keyAt, timeAt, tempoAt, TPQ, tr, setFocus, setCaret, setPaperHidden, toggleChordPitch, stackPitch, songOnlyPaper, allPitches, addPart, rebindTrack, removePart, setChordPin, setPaperLook, addPaper, removePaper, movePaper, addTrack, removeTrack, flattenPart, tempoMapOf, setDensity, movePart, setPartHost, type Clef, setSelDur, select } from "../score/song.ts";
-import { songViewOf, setViewInC, setChordTags } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
+import { songViewOf, setViewInC, setChordTags, setNotation, MOVABLE_DO, type NotationId } from "../score/song-view.ts";   // 这首歌怎么看（谱面分家第三刀）：读 / 改只走这里
 import { songPlayOrder, parseArrangement } from "../score/arrange.ts";
 import { grooveWeights, grooveMapOf, grooveCategory, followOf, grooveStyle, grooveTable, grooveName, describeGroove, grooveHasPhase, swingRatio, timeMapOf, GROOVE_STYLES } from "../score/groove.ts";
 import { type Pitch, midiOf, spellMidi, KEY_LABEL } from "../score/pitch.ts";
@@ -1899,7 +1899,13 @@ function openPaperSheet(): void {
   box.className = "offer";
   const draw = () => {
     const p = D.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D.st.song);   // 亮哪个钮 = 这首歌怎么看（只此一处读）
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("纸")}</div><div class="set-row">` +
+    // 第一行 = 谱种（谱面分家第四刀；user 11-11「面板第一行放谱种」「点开面板再选，不做成点一下直接切」）：这首歌怎么看的一样，走修改锁的「看法」（锁着也能切、锁着期间不写文件）
+    const nota = (id: NotationId, label: string, note: string) => `<button class="btn cand${look.notation === id ? " is-on" : ""}" data-v="nota:${id}">${label}<small>${note}</small></button>`;
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("纸")}</div>` +
+      `<div class="part-sec">${_t("谱种")}</div><div class="set-row">` +
+      nota("staff", _t("五线谱"), _t("按音高画在五条线上")) +
+      nota("jianpu", _t("简谱"), _t("数字 1–7（首调）；有叠音的声部、鼓和合租叠起来的那一行暂时还画成五线谱")) + `</div>` +
+      `<div class="part-sec">${_t("纸张")}</div><div class="set-row">` +
       PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${PAPER_LABEL[k]}<small>${PAPER_NOTE[k]}</small></button>`).join("") +
       (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("其他")}<small>${paperSizeText(p)}</small></button>` : "") + `</div>` +
       `<div class="offer-msg">${_t("整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。")}</div>` +
@@ -1921,9 +1927,10 @@ function openPaperSheet(): void {
       `<button class="btn cand${look.lyricFit === "rhythm" ? " is-on" : ""}" data-v="lyr:rhythm">${_t("按节奏")}<small>${_t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 这一行一起缩一点 → 还放不下画灰")}</small></button>` +
       `<button class="btn cand${look.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("按歌词")}<small>${_t("长的字把音推开（出版谱的老规矩）")}</small></button></div>` +
       // 看谱（谱面分家第三刀：原来在设置的「乐理助手」里、存在设备上；现在是这首歌的，进歌、能撤销，锁着也能切。PDF 跟着）
-      ((lk) => `<div class="part-sec">${_t("看谱")}</div><div class="set-row">` +
-        `<button class="btn cand${lk.viewInC ? "" : " is-on"}" data-v="inc:off">${_t("专业")}<small>${_t("按实际的调画谱，键上大字写音名")}</small></button>` +
-        `<button class="btn cand${lk.viewInC ? " is-on" : ""}" data-v="inc:on">${_t("按 C 调看（1=X）")}<small>${_t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")}</small></button></div>` +
+      ((lk, movable = MOVABLE_DO[lk.notation]) => `<div class="part-sec">${_t("看谱")}</div><div class="set-row">` +
+        `<button class="btn cand${lk.viewInC ? "" : " is-on"}" data-v="inc:off"${movable ? " disabled" : ""}>${_t("专业")}<small>${_t("按实际的调画谱，键上大字写音名")}</small></button>` +
+        `<button class="btn cand${lk.viewInC ? " is-on" : ""}" data-v="inc:on"${movable ? " disabled" : ""}>${_t("按 C 调看（1=X）")}<small>${_t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")}</small></button></div>` +
+        (movable ? `<div class="offer-msg">${_t("简谱本来就是首调（1 = 这个调的主音），用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。")}</div>` : "") +
         `<div class="set-row"><button class="btn cand${lk.chordTags ? " is-on" : ""}" data-v="ct:on">${_t("和弦标级数")}<small>${_t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选")}</small></button>` +
         `<button class="btn cand${lk.chordTags ? "" : " is-on"}" data-v="ct:off">${_t("不标")}</button></div>` +
         `<div class="offer-msg">${_t("跟着这首歌走：存在歌里、能撤销，导出的 PDF 照这里印。别人的歌锁着也能切着看，不会改动文件。")}</div>`)(songViewOf(D.st.song)) +
@@ -1942,6 +1949,7 @@ function openPaperSheet(): void {
     if (e.target === box || v === "close") { close(); return; }
     if (v && (PAPER_KINDS as string[]).includes(v)) { update(setPaper(D.st, v as PaperKind)); draw(); }
     else if (v?.startsWith("density:")) { update(setDensity(D.st, v.slice(8) as Density)); draw(); }
+    else if (v === "nota:staff" || v === "nota:jianpu") { setSongLook(setNotation(D.st, v.slice(5) as NotationId), v === "nota:jianpu" ? _t("简谱") : _t("五线谱")); draw(); }
     else if (v?.startsWith("pm:")) { close(); openPaperMenu(v.slice(3)); }
     else if (v === "fit" || v === "reflow") { reflow = v === "reflow"; view.render(); draw(); }
     else if (v === "bn:on" || v === "bn:off") { update(setBarNumbers(D.st, v === "bn:on")); draw(); }

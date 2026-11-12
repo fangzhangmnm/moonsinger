@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-79 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+80 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -12,7 +12,7 @@
 <svg width="24" height="24"><use href="#pencil"/></svg>
 ```
 
-> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`unplugged`、`visibility-only`、`volume-mute`、`volume-solo`、`keyboard-collapse`、`mixer-collapse`、`album`、`music-library`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
+> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`unplugged`、`visibility-only`、`volume-mute`、`volume-solo`、`keyboard-collapse`、`mixer-collapse`、`jianpu-staff`、`album`、`music-library`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
 > 见库 `index.html` 的「待过目」栏；过目后进库/打回归库 session。
 
 
@@ -68,6 +68,7 @@
 | `volume-solo` 👁待过目 | 独奏(只听这一个):喇叭 + 两道声波(同 volume,缩 0.8)外面套对焦框四个角,和 visibility-only 同一个「只…」记号【MoonSinger 谱上声部名下面的「喇叭」大钮长按 = 独奏；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
 | `keyboard-collapse` 👁待过目 | 收起键盘:琴键(同 piano-keys,压扁到上面)+ 底下一个实心向下三角；与 mixer-collapse 成一对【MoonSinger 小键盘顶上最右边「收起」钮（取代下箭头；user 11-08「不要用一个简单的下箭头，而是说一个键盘的图标下面加一个实心的向下的三角形」）；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
 | `mixer-collapse` 👁待过目 | 收起混音台:推子(同 sliders,压扁到上面)+ 底下一个实心向下三角；与 keyboard-collapse 成一对【MoonSinger 混音台顶上最右边「收起」钮；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
+| `jianpu-staff` 👁待过目 | 谱种(五线谱 / 简谱):左上一个粗体数字「1」(DejaVu Sans Bold 轮廓) + 右下八分音符 + 中间一道斜线 = 「简谱 / 五线谱」;和 notes-symbols(左上 f)同一个排法【MoonSinger 纸右上角「页面设置」钮（开纸的设置面板，第一行选谱种：五线谱 / 简谱）；形状 = user 2026-11-11 夜的主意「一条斜杠，左上角 1，右下角音符」「一看就知道这个是切换五线谱和简谱的地方」；user 开特例让施工会话直接画进待过目层（只这一枚）；Claude Opus 5.5（MoonSinger小弟）画，无头浏览器渲过 20 / 24 / 32 / 96 px 亮底暗底；未过目】 |
 
 ## file
 

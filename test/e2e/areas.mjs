@@ -10,7 +10,7 @@ export const AREAS = {
   // 谱面：手势（点 / 长按 / 拖 / 框选 / 把手）、排版、显示、谱上记号
   score: ["layout-count", "header-hit", "header-panel", "minor-key", "credits-listen", "chord-pick", "clef-section", "pad-paradigm", "select", "finger", "rest", "row-pin", "lift", "sel-tweak", "top-sels", "undo", "caret-end", "clef", "auto-ottava", "shared-staff", "hscroll", "only1",
     "zoom", "ctrl-zoom", "dock-zoom", "scroll", "swell-art", "phrase", "repeat", "transpose", "arrange", "pad-ghost", "listen-ghost", "start-dyn",
-    "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys", "overlay-touch"],
+    "lyric-dash", "lyric-mute", "reading", "stack-caps", "measure-follow", "follow", "title-keys", "overlay-touch", "jianpu"],
   // 键盘（pad）：音键 / 符号格 / 几种锁 / 歌词框 / 记号菜单
   pad: ["unplug", "mono-later-wins", "stack-caps", "pad-key-auto", "view-in-c", "chord-tags", "pad-toggle", "pad-ghost", "dyn-levels", "ramp", "groove", "clef", "repeat", "finder-keys", "modes", "landscape-widgets",
     "dock-zoom", "save-keys", "swell-art", "start-dyn", "lyric-dash", "phrase", "sel-tweak", "title-keys", "midi", "dock-side", "finder-width", "finder-memory", "finder-names", "cast-back", "audition-banks", "part-toggles", "finder-accordion", "finder-hide", "finder-trynew", "header-panel", "pad-follow"],

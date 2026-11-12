@@ -97,7 +97,7 @@ export class ScoreOverlay {
     }
     // ② 纸角的小钮（纸的设置）+ 只有一张纸时歌名左边的「⋯」
     { const s = CTL_H * sp, x = L.content.right - s, y = L.title.y + 0.5 * sp;
-      add("chip", "button", "ov-i ov-chip ov-paper-chip", box(x, y, s, s), icon("file", CTL_GLYPH * sp), { "data-ov": "chip", title: _t("纸：{paperLabel}", { paperLabel: v.paperLabel }) }); }
+      add("chip", "button", "ov-i ov-chip ov-paper-chip", box(x, y, s, s), icon("jianpu-staff", CTL_GLYPH * sp), { "data-ov": "chip", title: _t("谱种和纸：{paperLabel}", { paperLabel: v.paperLabel }) }); }   // 「1 / ♪」（user 11-11：一看就知道是切换五线谱和简谱的地方）
     if (!multi && v.edit) add(`menu:${papers[0]!.id}`, "button", "ov-i ov-chip ov-menu", `${box(L.content.left, L.title.y + 0.5 * sp, (CTL_H + 0.6) * sp, CTL_H * sp)};font-size:${px(CTL_GLYPH * sp)}`, "⋯", { "data-ov": "menu", "data-paper": papers[0]!.id, title: _t("这一段的菜单") });
     // ③ 每张纸曲段名那一条：曲段控件组「（隐藏 N）‹ k/n › 只看本段 ⋯」靠右；单纸 = 「隐藏 N」挂在曲段名 / 歌名那一条
     const hiddenChip = (paperId: string, ids: string[], style: string) => {
