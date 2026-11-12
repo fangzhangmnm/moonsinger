@@ -8,8 +8,8 @@ import { DOT_GAP, MARK_GAP, STACC_STEP, STACC_H, TEN_DY, TEN_W, AUG_DX } from ".
 export interface Placement { side: Side; gap: number; /** 同一组里不是第一个的时候的间隔（没写 = gap）：只在同一组接着贴时用，前面是别的东西（如八度点）照旧用 gap。 */ next?: number; /** 哪一组（没写 = 自己一组）。 */ group?: string }
 /** 贴身的东西（一个音一份）。同一边的先后 = 下面的先后。 */
 export const PLACE = {
-  /** 升降号 / 还原号：数字左边（和弦 = 每个数字自己的，一起算一块，右边对齐）。 */
-  acc: { side: "left", gap: 0.14 },
+  /** 升降号 / 还原号：数字左边；和弦里每个贴它自己那个数字的墨（8-7，note-cell.ts 用 attach 的 from）。 */
+  acc: { side: "left", gap: 0.22 },   // 墨到墨（8-7 起贴数字的墨）：舒适档 0.22 × 行里的尺寸比例 0.823 ≈ 0.18 个线间距（统筹 2026-11-12 定；0.14 时只有 0.11，♮ 快碰到数字）
   /** 琶音的竖波浪：升降号再左边。 */
   arpeggio: { side: "left", gap: 0.2 },
   /** 高八度点：最上面那个数字的顶上（和弦里中间那几个数字的点在叠的时候已经让开了：glyphs.ts stackBases）。 */

@@ -7371,8 +7371,9 @@ function fewestDotsBase(shifts) {
 
 // src/render/jianpu/place.ts
 var PLACE = {
-  /** 升降号 / 还原号：数字左边（和弦 = 每个数字自己的，一起算一块，右边对齐）。 */
-  acc: { side: "left", gap: 0.14 },
+  /** 升降号 / 还原号：数字左边；和弦里每个贴它自己那个数字的墨（8-7，note-cell.ts 用 attach 的 from）。 */
+  acc: { side: "left", gap: 0.22 },
+  // 墨到墨（8-7 起贴数字的墨）：舒适档 0.22 × 行里的尺寸比例 0.823 ≈ 0.18 个线间距（统筹 2026-11-12 定；0.14 时只有 0.11，♮ 快碰到数字）
   /** 琶音的竖波浪：升降号再左边。 */
   arpeggio: { side: "left", gap: 0.2 },
   /** 高八度点：最上面那个数字的顶上（和弦里中间那几个数字的点在叠的时候已经让开了：glyphs.ts stackBases）。 */
@@ -9062,4 +9063,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-ce0bf27219d0.mjs.map
+//# sourceMappingURL=layout-worker-b4848206aa61.mjs.map
