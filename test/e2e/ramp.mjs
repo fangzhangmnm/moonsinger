@@ -30,6 +30,8 @@ check(await p.$$eval("#score path.hairpin.ramp", (e) => e.length) === 1, "画了
 const f = await p.$$eval("#score text.dyn", (es) => { const e = es[1]; const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
 await p.mouse.click(f.x, f.y); await p.waitForTimeout(200);
 check(await p.$eval('.ctx-menu [data-v="ramp"]', (e) => e.classList.contains("is-on")), "小菜单里渐到开着");
+{ const what = await p.$eval(".ctx-menu .ctx-what", (e) => e.textContent ?? "").catch(() => "");   // 顶上一行「这是什么」，字从记号表来（第五刀 5-4 ⑧）
+  check(what.includes("（f）") && what.includes("渐变") === false && what.includes("从上一个力度记号均匀变到这一个"), "小菜单顶上一行说这是什么（强（f）…；渐到开着再说一句渐到）", what); }
 const span = await p.$$eval("#score text.note.in-span", (e) => e.length);
 check(span === 3, "管的音染色（p 后面到 f 前面 = 3 个）", String(span));
 await p.click('.ctx-menu [data-v="ramp"]'); await p.waitForTimeout(150);

@@ -11,6 +11,7 @@ import { iconHtml } from "../ui/icon.ts";
 import { installTouchTips } from "../ui/touch-tip.ts";
 import { conceptName, zhOnly } from "../gm/catalog-i18n.ts";
 import { _t, lang, langChosen, saveLang, applyDocumentLang, LANG_NAME, type Lang } from "../i18n/index.ts";
+import { SIGNS } from "../render/signs.ts";
 import { APP_VERSION } from "../version.ts";
 import { initPwaShell } from "./pwa-shell.ts";
 import { harmonyTheory, type HarmonyRead, type HarmonyGuess } from "../theory/index.ts";
@@ -2605,7 +2606,9 @@ function openMarkMenu(i: number, at: { x: number; y: number }): void {
   const offWhy = t.kind === "dyn" && dynOverridden(toks).has(i) ? `<div class="ctx-hint">${_t("不起作用（画灰）：后面那个音是强后即弱（fp）——音头按 f、随后落到 p，之后也是 p，这个 {value} 管不到", { value: t.value })}</div>` : "";
   const rampRow = t.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t.ramp ? " disabled" : ""} title="${_t("渐到：从这张纸里上一个力度记号那儿一路渐变到这里（谱上虚线发夹）；关 = 到这儿突变")}">${_t("{ramp}渐到（从上一个力度渐变过来）", { ramp: t.ramp ? "✓ " : "" })}</button>` +
     (rampWhy ? `<div class="ctx-hint">${t.ramp ? _t("不起作用：") : ""}${esc(rampWhy)}</div>` : "");
-  box.innerHTML = `${offWhy}<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div>` +
+  // 顶上一行「这是什么」（谱面分家第五刀 5-4 ⑧，UX 稿：点一下就说明）：字从记号表来（src/render/signs.ts，和谱上画什么同一张表）；渐到开着 = 再说一句渐到
+  const what = t.kind === "dyn" ? SIGNS[`dyn:${t.value}`].says(lang()) + (t.ramp ? (lang() === "zh" ? "；" : "; ") + SIGNS.ramp.says(lang()) : "") : SIGNS[`hairpin:${t.dir}`].says(lang());
+  box.innerHTML = `<div class="ctx-hint ctx-what">${esc(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row}</div>${rampRow}<div class="ctx-sep"></div>` +
     `<button class="btn ctx-item danger" data-v="del" title="${t.kind === "dyn" ? _t("去掉这个力度记号（后面的音回到前一个力度记号）") : _t("去掉这个渐强 / 渐弱")}">${_t("删除")}</button>` +
     `<div class="ctx-hint">${_t("长按拖 = 挪到别的音上")}</div>`;
   document.body.append(box);

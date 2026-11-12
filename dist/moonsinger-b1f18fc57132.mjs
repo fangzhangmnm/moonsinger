@@ -5194,6 +5194,67 @@ function zhOnly(s10) {
   return lang() === "zh" ? s10 : "";
 }
 
+// src/render/signs.ts
+var G = (above, below, w2, h2) => ({ kind: "glyph", above, ...below ? { below } : {}, ...w2 !== void 0 ? { w: w2 } : {}, ...h2 !== void 0 ? { h: h2 } : {} });
+var D = (how) => ({ kind: "drawn", how });
+var DYN_G = {
+  ppp: { kind: "glyph", above: "\uE52A", ink: [-0.4, 4.3, 1.1, 0.6] },
+  pp: { kind: "glyph", above: "\uE52B", ink: [-0.4, 3, 1.1, 0.6] },
+  p: { kind: "glyph", above: "\uE520", ink: [-0.4, 1.5, 1.1, 0.6] },
+  mp: { kind: "glyph", above: "\uE52C", ink: [-0.1, 3.3, 1.1, 0.6] },
+  mf: { kind: "glyph", above: "\uE52D", ink: [-0.1, 3.3, 1.7, 0.7] },
+  f: { kind: "glyph", above: "\uE522", ink: [-0.6, 1.5, 1.8, 0.6] },
+  ff: { kind: "glyph", above: "\uE52F", ink: [-0.6, 2.5, 1.8, 0.6] },
+  fff: { kind: "glyph", above: "\uE530", ink: [-0.6, 3.4, 1.8, 0.6] }
+};
+var DYN_NAME = (d3, l10) => ({ ppp: _tIn(l10, "\u6781\u5F31"), pp: _tIn(l10, "\u5F88\u5F31"), p: _tIn(l10, "\u5F31##\u529B\u5EA6"), mp: _tIn(l10, "\u4E2D\u5F31"), mf: _tIn(l10, "\u4E2D\u5F3A"), f: _tIn(l10, "\u5F3A##\u529B\u5EA6"), ff: _tIn(l10, "\u5F88\u5F3A"), fff: _tIn(l10, "\u6781\u5F3A") })[d3];
+var art = (a10, name, says, lane, staff, jianpu) => ({ id: `art:${a10}`, name, says, lane, draw: { staff, jianpu } });
+var ART_SIGNS = {
+  "art:staccato": art("staccato", (l10) => _tIn(l10, "\u8DF3\u97F3"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A2", "\uE4A3", 0.28, 0.28), G("\uE4A8", "\uE4A9", 0.4, 0.9)),
+  // 简谱 = 窄小的楔形（点被八度占了；UX 稿第 5 节）
+  "art:accent": art("accent", (l10) => _tIn(l10, "\u91CD\u97F3"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u7684\u97F3\u5934\u91CD\u4E00\u70B9"), "strength", G("\uE4A0", "\uE4A1", 1.36, 0.99), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
+  "art:marcato": art("marcato", (l10) => _tIn(l10, "\u5F3A\u97F3"), (l10) => _tIn(l10, "\u6BD4\u91CD\u97F3\u66F4\u91CD\u7684\u97F3\u5934"), "strength", G("\uE4AC", "\uE4AD", 1, 1.08), G("\uE4AC", "\uE4AD", 1, 1.08)),
+  "art:stress": art("stress", (l10) => _tIn(l10, "\u6B21\u91CD\u97F3"), (l10) => _tIn(l10, "\u6BD4\u91CD\u97F3\u8F7B\u4E00\u6863\u7684\u91CD\uFF08\u56DB\u62CD\u5B50\u91CC\u7684\u7B2C\u4E09\u62CD\u90A3\u79CD\uFF09"), "strength", G("\uE4B6", "\uE4B7", 1, 1), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
+  // 简谱 = 细一号的 >（UX 稿第 5 节：画的时候缩小）
+  "art:unstress": art("unstress", (l10) => _tIn(l10, "\u5F31\u5316"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u8F7B\u4E00\u70B9"), "strength", G("\uE4B8", "\uE4B9", 1.6, 0.9), G("\uE4B8", "\uE4B9", 1.6, 0.9)),
+  "art:ghost": art("ghost", (l10) => _tIn(l10, "\u5E7D\u7075\u97F3"), (l10) => _tIn(l10, "\u51E0\u4E4E\u542C\u4E0D\u89C1\u7684\u97F3\uFF08\u53EA\u7559\u4E2A\u5F71\u5B50\uFF09"), "note", D("\u7B26\u5934\u52A0\u62EC\u53F7"), D("\u6570\u5B57\u753B\u5C0F\u4E00\u53F7")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:tenuto": art("tenuto", (l10) => _tIn(l10, "\u4FDD\u6301"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u5531 / \u594F\u6EE1\uFF0C\u4E0D\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A4", "\uE4A5", 1.35, 0.17), G("\uE4A4", "\uE4A5", 1.35, 0.17)),
+  "art:breath": art("breath", (l10) => _tIn(l10, "\u547C\u5438"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u540E\u9762\u6362\u6C14"), "note", G("\uE4CE"), D("\u97F3\u540E\u9762\u4E00\u4E2A V\uFF08\u51FA\u58F0\u7684\u6362\u6C14\u5199\u300CV \u5438\u300D\uFF09")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:sfz": art("sfz", (l10) => _tIn(l10, "\u7A81\u5F3A"), (l10) => _tIn(l10, "\u97F3\u5934\u7A81\u7136\u51B2\u4E00\u4E0B\u3001\u518D\u56DE\u5230\u5F53\u4E0B\u7684\u529B\u5EA6"), "noteDynamics", G("\uE539"), G("\uE539")),
+  "art:fp": art("fp", (l10) => _tIn(l10, "\u5F3A\u540E\u5373\u5F31"), (l10) => _tIn(l10, "\u97F3\u5934\u6309\u5F3A\u3001\u9A6C\u4E0A\u843D\u5230\u5F31\uFF0C\u540E\u9762\u7684\u97F3\u90FD\u662F\u5F31"), "noteDynamics", G("\uE534"), G("\uE534")),
+  "art:whisper": art("whisper", (l10) => _tIn(l10, "\u6C14\u58F0"), (l10) => _tIn(l10, "\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5FF5\uFF08\u97F3\u9AD8\u7167\u5199\u5728\u8C31\u4E0A\uFF09"), "note", D("\xD7 \u7B26\u5934"), D("\u6570\u5B57 + \xD7")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:swellUp": art("swellUp", (l10) => _tIn(l10, "\u97F3\u5185\u6E10\u5F3A"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5F31\u957F\u5230\u5199\u7684\u529B\u5EA6"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:swellDown": art("swellDown", (l10) => _tIn(l10, "\u97F3\u5185\u6E10\u5F31"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5199\u7684\u529B\u5EA6\u6536\u5F31"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 >"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 >")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:swellBoth": art("swellBoth", (l10) => _tIn(l10, "\u97F3\u5185\u9F13\u8D77"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <>"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <>")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:arpeggio": art("arpeggio", (l10) => _tIn(l10, "\u7436\u97F3"), (l10) => _tIn(l10, "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4E00\u4E2A\u4E2A\u62E8\u51FA\u6765"), "note", D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF"), D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF\uFF08\u591A\u58F0\u90E8 = \u7B2C\u4E94\u5200\uFF09")),
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "art:roll": art("roll", (l10) => _tIn(l10, "\u6EDA\u594F"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09"), "note", D("\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF"), D("\u6570\u5B57\u4E0B\u9762\u4E09\u9053\u77ED\u659C\u7EBF"))
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+};
+var dynSign = (d3) => ({ id: `dyn:${d3}`, name: () => d3, says: (l10) => _tIn(l10, "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7", { dynName: DYN_NAME(d3, l10), dyn: d3 }), lane: "dynamics", draw: { staff: DYN_G[d3], jianpu: DYN_G[d3] } });
+var DYN_SIGNS = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
+var SIGNS = {
+  ...ART_SIGNS,
+  ...DYN_SIGNS,
+  "hairpin:cresc": { id: "hairpin:cresc", name: (l10) => _tIn(l10, "\u6E10\u5F3A"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 <\uFF08\u592A\u957F\u5199 cresc. - - -\uFF09"), jianpu: D("\u6954\u5F62 <") } },
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  "hairpin:dim": { id: "hairpin:dim", name: (l10) => _tIn(l10, "\u6E10\u5F31"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >") } },
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+  ramp: { id: "ramp", name: (l10) => _tIn(l10, "\u6E10\u5230"), says: (l10) => _tIn(l10, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62") } }
+  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
+};
+function dynDepiction(d3, notation) {
+  const g3 = SIGNS[`dyn:${d3}`].draw[notation];
+  if (g3.kind === "glyph" && g3.ink) return { glyph: g3.above, ink: g3.ink };
+  throw new Error(`signs: dyn ${d3} has no drawable depiction for ${notation}`);
+}
+
 // src/version.ts
 var APP_VERSION = "v0.16.109-2026-11-11";
 
@@ -11822,67 +11883,6 @@ function layoutStems(seq, dir, f2 = LOCAL) {
 
 // src/render/frame/columns.ts
 var SLOT = { bar: 0, nav: 0.5, clef: 0.8, key: 1, time: 2, tempo: 3, groove: 3.3, dyn: 3.5, ottava: 3.6, hairpin: 3.7, tail: 4, note: 5 };
-
-// src/render/signs.ts
-var G = (above, below, w2, h2) => ({ kind: "glyph", above, ...below ? { below } : {}, ...w2 !== void 0 ? { w: w2 } : {}, ...h2 !== void 0 ? { h: h2 } : {} });
-var D = (how) => ({ kind: "drawn", how });
-var DYN_G = {
-  ppp: { kind: "glyph", above: "\uE52A", ink: [-0.4, 4.3, 1.1, 0.6] },
-  pp: { kind: "glyph", above: "\uE52B", ink: [-0.4, 3, 1.1, 0.6] },
-  p: { kind: "glyph", above: "\uE520", ink: [-0.4, 1.5, 1.1, 0.6] },
-  mp: { kind: "glyph", above: "\uE52C", ink: [-0.1, 3.3, 1.1, 0.6] },
-  mf: { kind: "glyph", above: "\uE52D", ink: [-0.1, 3.3, 1.7, 0.7] },
-  f: { kind: "glyph", above: "\uE522", ink: [-0.6, 1.5, 1.8, 0.6] },
-  ff: { kind: "glyph", above: "\uE52F", ink: [-0.6, 2.5, 1.8, 0.6] },
-  fff: { kind: "glyph", above: "\uE530", ink: [-0.6, 3.4, 1.8, 0.6] }
-};
-var DYN_NAME = (d3, l10) => ({ ppp: _tIn(l10, "\u6781\u5F31"), pp: _tIn(l10, "\u5F88\u5F31"), p: _tIn(l10, "\u5F31##\u529B\u5EA6"), mp: _tIn(l10, "\u4E2D\u5F31"), mf: _tIn(l10, "\u4E2D\u5F3A"), f: _tIn(l10, "\u5F3A##\u529B\u5EA6"), ff: _tIn(l10, "\u5F88\u5F3A"), fff: _tIn(l10, "\u6781\u5F3A") })[d3];
-var art = (a10, name, says, lane, staff, jianpu) => ({ id: `art:${a10}`, name, says, lane, draw: { staff, jianpu } });
-var ART_SIGNS = {
-  "art:staccato": art("staccato", (l10) => _tIn(l10, "\u8DF3\u97F3"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A2", "\uE4A3", 0.28, 0.28), G("\uE4A8", "\uE4A9", 0.4, 0.9)),
-  // 简谱 = 窄小的楔形（点被八度占了；UX 稿第 5 节）
-  "art:accent": art("accent", (l10) => _tIn(l10, "\u91CD\u97F3"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u7684\u97F3\u5934\u91CD\u4E00\u70B9"), "strength", G("\uE4A0", "\uE4A1", 1.36, 0.99), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
-  "art:marcato": art("marcato", (l10) => _tIn(l10, "\u5F3A\u97F3"), (l10) => _tIn(l10, "\u6BD4\u91CD\u97F3\u66F4\u91CD\u7684\u97F3\u5934"), "strength", G("\uE4AC", "\uE4AD", 1, 1.08), G("\uE4AC", "\uE4AD", 1, 1.08)),
-  "art:stress": art("stress", (l10) => _tIn(l10, "\u6B21\u91CD\u97F3"), (l10) => _tIn(l10, "\u6BD4\u91CD\u97F3\u8F7B\u4E00\u6863\u7684\u91CD\uFF08\u56DB\u62CD\u5B50\u91CC\u7684\u7B2C\u4E09\u62CD\u90A3\u79CD\uFF09"), "strength", G("\uE4B6", "\uE4B7", 1, 1), G("\uE4A0", "\uE4A1", 1.36, 0.99)),
-  // 简谱 = 细一号的 >（UX 稿第 5 节：画的时候缩小）
-  "art:unstress": art("unstress", (l10) => _tIn(l10, "\u5F31\u5316"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u8F7B\u4E00\u70B9"), "strength", G("\uE4B8", "\uE4B9", 1.6, 0.9), G("\uE4B8", "\uE4B9", 1.6, 0.9)),
-  "art:ghost": art("ghost", (l10) => _tIn(l10, "\u5E7D\u7075\u97F3"), (l10) => _tIn(l10, "\u51E0\u4E4E\u542C\u4E0D\u89C1\u7684\u97F3\uFF08\u53EA\u7559\u4E2A\u5F71\u5B50\uFF09"), "note", D("\u7B26\u5934\u52A0\u62EC\u53F7"), D("\u6570\u5B57\u753B\u5C0F\u4E00\u53F7")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:tenuto": art("tenuto", (l10) => _tIn(l10, "\u4FDD\u6301"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u5531 / \u594F\u6EE1\uFF0C\u4E0D\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A4", "\uE4A5", 1.35, 0.17), G("\uE4A4", "\uE4A5", 1.35, 0.17)),
-  "art:breath": art("breath", (l10) => _tIn(l10, "\u547C\u5438"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u540E\u9762\u6362\u6C14"), "note", G("\uE4CE"), D("\u97F3\u540E\u9762\u4E00\u4E2A V\uFF08\u51FA\u58F0\u7684\u6362\u6C14\u5199\u300CV \u5438\u300D\uFF09")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:sfz": art("sfz", (l10) => _tIn(l10, "\u7A81\u5F3A"), (l10) => _tIn(l10, "\u97F3\u5934\u7A81\u7136\u51B2\u4E00\u4E0B\u3001\u518D\u56DE\u5230\u5F53\u4E0B\u7684\u529B\u5EA6"), "noteDynamics", G("\uE539"), G("\uE539")),
-  "art:fp": art("fp", (l10) => _tIn(l10, "\u5F3A\u540E\u5373\u5F31"), (l10) => _tIn(l10, "\u97F3\u5934\u6309\u5F3A\u3001\u9A6C\u4E0A\u843D\u5230\u5F31\uFF0C\u540E\u9762\u7684\u97F3\u90FD\u662F\u5F31"), "noteDynamics", G("\uE534"), G("\uE534")),
-  "art:whisper": art("whisper", (l10) => _tIn(l10, "\u6C14\u58F0"), (l10) => _tIn(l10, "\u4E0D\u5531\u97F3\u9AD8\u3001\u7528\u6C14\u58F0\u5FF5\uFF08\u97F3\u9AD8\u7167\u5199\u5728\u8C31\u4E0A\uFF09"), "note", D("\xD7 \u7B26\u5934"), D("\u6570\u5B57 + \xD7")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:swellUp": art("swellUp", (l10) => _tIn(l10, "\u97F3\u5185\u6E10\u5F3A"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5F31\u957F\u5230\u5199\u7684\u529B\u5EA6"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:swellDown": art("swellDown", (l10) => _tIn(l10, "\u97F3\u5185\u6E10\u5F31"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u4ECE\u5199\u7684\u529B\u5EA6\u6536\u5F31"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 >"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 >")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:swellBoth": art("swellBoth", (l10) => _tIn(l10, "\u97F3\u5185\u9F13\u8D77"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09"), "noteDynamics", D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u53D1\u5939 <>"), D("\u8FD9\u4E2A\u97F3\u4E0A\u65B9\u7684\u5C0F\u6954\u5F62 <>")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:arpeggio": art("arpeggio", (l10) => _tIn(l10, "\u7436\u97F3"), (l10) => _tIn(l10, "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4E00\u4E2A\u4E2A\u62E8\u51FA\u6765"), "note", D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF"), D("\u548C\u5F26\u5DE6\u8FB9\u4E00\u6761\u7AD6\u7684\u6CE2\u6D6A\u7EBF\uFF08\u591A\u58F0\u90E8 = \u7B2C\u4E94\u5200\uFF09")),
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:roll": art("roll", (l10) => _tIn(l10, "\u6EDA\u594F"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09"), "note", D("\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF"), D("\u6570\u5B57\u4E0B\u9762\u4E09\u9053\u77ED\u659C\u7EBF"))
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-};
-var dynSign = (d3) => ({ id: `dyn:${d3}`, name: () => d3, says: (l10) => _tIn(l10, "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7", { dynName: DYN_NAME(d3, l10), dyn: d3 }), lane: "dynamics", draw: { staff: DYN_G[d3], jianpu: DYN_G[d3] } });
-var DYN_SIGNS = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
-var SIGNS = {
-  ...ART_SIGNS,
-  ...DYN_SIGNS,
-  "hairpin:cresc": { id: "hairpin:cresc", name: (l10) => _tIn(l10, "\u6E10\u5F3A"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 <\uFF08\u592A\u957F\u5199 cresc. - - -\uFF09"), jianpu: D("\u6954\u5F62 <") } },
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "hairpin:dim": { id: "hairpin:dim", name: (l10) => _tIn(l10, "\u6E10\u5F31"), says: (l10) => _tIn(l10, "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62"), lane: "dynamics", draw: { staff: D("\u53D1\u5939 >\uFF08\u592A\u957F\u5199 dim. - - -\uFF09"), jianpu: D("\u6954\u5F62 >") } },
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  ramp: { id: "ramp", name: (l10) => _tIn(l10, "\u6E10\u5230"), says: (l10) => _tIn(l10, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62") } }
-  // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-};
-function dynDepiction(d3, notation) {
-  const g3 = SIGNS[`dyn:${d3}`].draw[notation];
-  if (g3.kind === "glyph" && g3.ink) return { glyph: g3.above, ink: g3.ink };
-  throw new Error(`signs: dyn ${d3} has no drawable depiction for ${notation}`);
-}
 
 // src/render/staff/glyphs.ts
 var TOP_LINE2 = 38;
@@ -59963,7 +59963,8 @@ function openMarkMenu(i10, at2) {
   const rampWhy = src === "none" ? _t("\u8FD9\u5F20\u7EB8\u91CC\u524D\u9762\u6CA1\u6709\u529B\u5EA6\u8BB0\u53F7\uFF0C\u6CA1\u6709\u5730\u65B9\u6E10\u8FC7\u6765") : src === "hairpin" ? _t("\u4E2D\u95F4\u6709\u624B\u5199\u7684\u6E10\u5F3A\u6E10\u5F31\uFF0C\u6309\u624B\u5199\u7684\u8D70") : "";
   const offWhy = t10.kind === "dyn" && dynOverridden(toks).has(i10) ? `<div class="ctx-hint">${_t("\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A\u540E\u9762\u90A3\u4E2A\u97F3\u662F\u5F3A\u540E\u5373\u5F31\uFF08fp\uFF09\u2014\u2014\u97F3\u5934\u6309 f\u3001\u968F\u540E\u843D\u5230 p\uFF0C\u4E4B\u540E\u4E5F\u662F p\uFF0C\u8FD9\u4E2A {value} \u7BA1\u4E0D\u5230", { value: t10.value })}</div>` : "";
   const rampRow = t10.kind !== "dyn" ? "" : `<div class="ctx-sep"></div><button class="btn ctx-item${t10.ramp ? " is-on" : ""}" data-v="ramp"${rampWhy && !t10.ramp ? " disabled" : ""} title="${_t("\u6E10\u5230\uFF1A\u4ECE\u8FD9\u5F20\u7EB8\u91CC\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u90A3\u513F\u4E00\u8DEF\u6E10\u53D8\u5230\u8FD9\u91CC\uFF08\u8C31\u4E0A\u865A\u7EBF\u53D1\u5939\uFF09\uFF1B\u5173 = \u5230\u8FD9\u513F\u7A81\u53D8")}">${_t("{ramp}\u6E10\u5230\uFF08\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u6E10\u53D8\u8FC7\u6765\uFF09", { ramp: t10.ramp ? "\u2713 " : "" })}</button>` + (rampWhy ? `<div class="ctx-hint">${t10.ramp ? _t("\u4E0D\u8D77\u4F5C\u7528\uFF1A") : ""}${esc11(rampWhy)}</div>` : "");
-  box.innerHTML = `${offWhy}<div class="ctx-row ctx-dyn">${row2}</div>${rampRow}<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? _t("\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09") : _t("\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${_t("\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A")}</div>`;
+  const what = t10.kind === "dyn" ? SIGNS[`dyn:${t10.value}`].says(lang()) + (t10.ramp ? (lang() === "zh" ? "\uFF1B" : "; ") + SIGNS.ramp.says(lang()) : "") : SIGNS[`hairpin:${t10.dir}`].says(lang());
+  box.innerHTML = `<div class="ctx-hint ctx-what">${esc11(what)}</div>${offWhy}<div class="ctx-row ctx-dyn">${row2}</div>${rampRow}<div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del" title="${t10.kind === "dyn" ? _t("\u53BB\u6389\u8FD9\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u540E\u9762\u7684\u97F3\u56DE\u5230\u524D\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF09") : _t("\u53BB\u6389\u8FD9\u4E2A\u6E10\u5F3A / \u6E10\u5F31")}">${_t("\u5220\u9664")}</button><div class="ctx-hint">${_t("\u957F\u6309\u62D6 = \u632A\u5230\u522B\u7684\u97F3\u4E0A")}</div>`;
   document.body.append(box);
   const w2 = box.offsetWidth, h2 = box.offsetHeight, m2 = 8;
   let y2 = at2.y + 6;
@@ -62407,4 +62408,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-48d33f7192cf.mjs.map
+//# sourceMappingURL=moonsinger-b1f18fc57132.mjs.map
