@@ -13292,7 +13292,7 @@ var dotPath = (cx2, cy2, r10) => {
 var accText = (rel) => rel > 0 ? "\u266F".repeat(rel) : rel < 0 ? "\u266D".repeat(-rel) : "\u266E";
 
 // src/render/jianpu/measure.ts
-var contDash = (u2) => u2.note && u2.j > 0 && u2.base >= TPQ && !u2.ratio && Math.abs(u2.ticks / TPQ - Math.round(u2.ticks / TPQ)) < 1e-6;
+var contDash = (u2) => u2.note && u2.j > 0 && u2.inBar > 1e-6 && u2.base >= TPQ && !u2.ratio && Math.abs(u2.ticks / TPQ - Math.round(u2.ticks / TPQ)) < 1e-6;
 function extraGlyphs(u2) {
   if (u2.note) {
     if (contDash(u2)) return Math.max(0, Math.round(u2.ticks / TPQ) - 1);
@@ -32844,7 +32844,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-6884550b3667.mjs");
+      return pick(() => "layout-worker-776e1fffdeb2.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-0351db4bb88f.mjs");
   }
@@ -62485,4 +62485,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8a694cd637ff.mjs.map
+//# sourceMappingURL=moonsinger-8536c0770cfb.mjs.map

@@ -18,10 +18,10 @@ export interface JianpuTrack {
   p: PartView; tokens: Token[]; units: Unit[]; head: Head; realLen: number; realTicks: number; staves: number; focused: boolean; pickup: boolean;
 }
 
-/** 接着上一段的长音，这一段画成横线（不重写数字）：只有正好整拍、不是连音的才行——一条横线 = 一拍（UX 稿第 4 节）。
- *  不是整拍的（前一小节连过来一拍半…）照普通音符重写数字（附点、下划线照常），用连线连到前一段（课本写法；统筹看第四刀成品样张后定的第 1 处：
- *  原来一律画横线、按 round 算根数，3/4 里连过来的一拍半画成两条横线，读成三拍半）。 */
-export const contDash = (u: Chunk): boolean => u.note && u.j > 0 && u.base >= TPQ && !u.ratio && Math.abs(u.ticks / TPQ - Math.round(u.ticks / TPQ)) < 1e-6;
+/** 接着上一段的长音，这一段画成横线（不重写数字）：只在**同一小节之内**、正好整拍、不是连音的才行——一条横线 = 一拍（UX 稿第 4 节）。
+ *  跨过小节线的（这一段从小节头起）一律在小节线后面重写数字、用连线连到前一段（课本写法、样张也是；统筹 5-6「横线只在一小节之内用」）；
+ *  不是整拍的同样重写（附点、下划线照常；统筹看第四刀成品样张后定的第 1 处：原来一律画横线、按 round 算根数，3/4 里连过来的一拍半画成两条横线，读成三拍半）。 */
+export const contDash = (u: Chunk): boolean => u.note && u.j > 0 && u.inBar > 1e-6 && u.base >= TPQ && !u.ratio && Math.abs(u.ticks / TPQ - Math.round(u.ticks / TPQ)) < 1e-6;
 /** 这一段除了第一个字形（数字 / 0 / 横线）后面还有几个：长音的横线、几拍的休止一拍一个 0。 */
 export function extraGlyphs(u: Chunk): number {
   if (u.note) {

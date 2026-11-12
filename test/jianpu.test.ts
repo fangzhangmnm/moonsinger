@@ -170,7 +170,7 @@ describe("简谱数字行", () => {
     eq(digits(L.prims).join(""), "100", "二分音符 1 –、二分休止 0 0");
     assert(L.prims.some((p) => p.t === "line" && /jp-dash/.test(p.cls ?? "")), "长音后面的横线");
   });
-  it("长音不是整拍时后一截不画横线（统筹看第四刀成品样张后定的第 1 处）：3/4 里四拍半的音 = 第一小节「1 – –」，第二小节重写「1·」、连线连上；横线只表示整拍", () => {
+  it("长音跨小节线一律重写数字加连线、不是整拍的也不画横线（统筹看第四刀成品样张后定的第 1 处 + 5-6）：3/4 里四拍半的音 = 第一小节「1 – –」，第二小节重写「1·」、连线连上；横线只在一小节之内、只表示整拍", () => {
     const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
     const head = paper.tracks[part]!.map((t) => (t.kind === "time" ? { ...t, beats: 3, beatType: 4 } : t));
     let s: Song = { ...st0.song, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...head, { ...n(P("C"), TPQ * 4.5), id: 1000 } as Token, { ...n(P("D"), TPQ * 1.5), id: 1001 } as Token] } }] };
@@ -181,6 +181,14 @@ describe("简谱数字行", () => {
     eq(L.prims.filter((p) => p.t === "path" && /jp-tie/.test(p.cls ?? "")).length, 1, "重写的「1」用连线连到前一小节的「1」");
     assert(L.prims.filter((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "") && p.tok === 1000).length >= 1, "第二小节那一拍半 = 带附点");
     assert(L.notes.filter((h) => h.index === paper.tracks[part]!.length).length === 1, "点击框只有一个、指回这个音");
+    // 整拍跨过小节线也一样（统筹 5-6）：4/4 里五拍的音 = 第一小节「1 – – –」，第二小节重写「1」、连线连上；横线只在一小节之内
+    const head4 = paper.tracks[part]!;
+    let s4: Song = { ...st0.song, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...head4, { ...n(P("C"), TPQ * 5), id: 1000 } as Token, { ...n(P("D"), TPQ * 3), id: 1001 } as Token] } }] };
+    s4 = setNotation({ ...st0, song: s4 }, "jianpu").song;
+    const L4 = engrave(s4, { width: 900, sp: 10, locale: "zh", at: { paper: paper.id, part }, parts: [{ id: part, name: "V", first: true }], measure: createTextMeasure((x: string) => x.length * 8), autoBars: true });
+    eq(digits(L4.prims).join(""), "112", "五拍的 C：第二小节开头重写（不是横线）");
+    eq(L4.prims.filter((p) => p.t === "line" && /jp-dash/.test(p.cls ?? "") && p.tok === 1000).length, 3, "C 的横线只有第一小节那三根");
+    eq(L4.prims.filter((p) => p.t === "path" && /jp-tie/.test(p.cls ?? "")).length, 1, "重写的「1」连线连到前一小节");
   });
   it("记号（UX 稿第 5 节；第五刀起样子照样张）：跳音 = 实心窄楔形、保持 = 短横、重音 = 描边的 >、次重音细一号、幽灵音小一号、气声 ×、换气 V + 吸、滚奏三道斜线", () => {
     const { L } = lay([

@@ -6957,7 +6957,7 @@ var dotPath = (cx, cy, r) => {
 var accText = (rel) => rel > 0 ? "\u266F".repeat(rel) : rel < 0 ? "\u266D".repeat(-rel) : "\u266E";
 
 // src/render/jianpu/measure.ts
-var contDash = (u) => u.note && u.j > 0 && u.base >= TPQ && !u.ratio && Math.abs(u.ticks / TPQ - Math.round(u.ticks / TPQ)) < 1e-6;
+var contDash = (u) => u.note && u.j > 0 && u.inBar > 1e-6 && u.base >= TPQ && !u.ratio && Math.abs(u.ticks / TPQ - Math.round(u.ticks / TPQ)) < 1e-6;
 function extraGlyphs(u) {
   if (u.note) {
     if (contDash(u)) return Math.max(0, Math.round(u.ticks / TPQ) - 1);
@@ -8269,4 +8269,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-6884550b3667.mjs.map
+//# sourceMappingURL=layout-worker-776e1fffdeb2.mjs.map
