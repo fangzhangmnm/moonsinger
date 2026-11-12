@@ -108,6 +108,10 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
     const q = per[r]!, units = q.units, tokens = q.tokens, xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";   // 台上固定敲一个键（数字行上每个数字 + ×）；整套鼓（X 行按件换字）
     for (let s = 0; s < nSys; s++) { const row = rowOf(s, r, 0); if (rows[row]) rows[row]!.x1 = P(staffEnd[s]!); }   // 八度基准下面算好再记进每一行（鬼音符要）
     const tokOf = (u: Chunk): number | undefined => (u.index >= 0 && !u.pad ? tokens[u.index]?.id : undefined);
+    /** 每一段音 / 休止排完版后占到哪（sp）：同一行里它后面第一个音 / 休止 / 小节线的位置；后面没有 = 这一行的右端。长音的横线、几拍的休止的 0 按它一拍一个摆。 */
+    const spanTo = new Map<Chunk, number>();
+    { let pend: Chunk[] = []; for (const v of units) { if (v.kind !== "chunk" && v.kind !== "bar") continue; for (const c0 of pend) spanTo.set(c0, c0.system === v.system ? v.x : staffEnd[c0.system]!); pend = v.kind === "chunk" ? [v] : []; }
+      for (const c0 of pend) spanTo.set(c0, staffEnd[c0.system]!); }
     // 共用挂件（力度那一串、风格、跳转房子、速度；ornaments/index.ts）：音的锚点 = 数字的左右缘
     const orn: OrnCtx = { song, paper, o, notation: "jianpu", P, tx, TR: c.TR, RS: c.RS, mw: c.mw, sp: c.sp, prims: c.prims, dyns: c.dyns, marks, placeAbove, attach: c.attach, right: c.right, tokens, units, row: (sy) => rowOf(sy, r, 0),
       glyphScale: jk, noteX: (ch) => P(ch.x) + Q(0.1), noteEnd: (ch) => P(ch.x) + Q(0.1 + DIGIT_W), dynOff: dynOverridden(tokens), navMute: (i) => (navWhy(song, paper, q.p.id, tokens[i]!) ? " art-mute" : "") };
@@ -201,8 +205,11 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       const row = rowOf(u.system, r, 0), tok = tokOf(u), x0 = P(u.x) + Q(0.1), cx = x0 + Q(glyphW / 2), T = tok !== undefined ? { tok } : {};
       const n = extraGlyphs(u), contDash = isContDash(u);   // 接着上一段的长音（整拍）：第一个字形也是横线；不是整拍的重写数字、连线连上（measure.ts contDash）
       // 横线 / 一拍一个 0：一拍一个字形——每个字形占这一列（扣掉后面的附点、换气）的 1/(n+1)，在那一拍里的位置和数字在第一拍里一样（像一拍一拍；最后一个不贴着下一个音 / 小节线）
-      const tailW = (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + (u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0);
-      const step = n ? Math.max(DASH_PITCH * jk, (u.w - tailW * jk) / (n + 1)) : 0;   // sp（u.w 是框架的列宽）
+      const tailW = hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0;   // 横线只给附点让（附点和横线同高）；换气 V 画在数字上方，放在最后一拍里（下面），不挤横线
+      // 每个字形占一拍的宽（统筹看 5-6 样张：照样张，「3 – –」和「1 2 3」一样宽）：按排完版之后这个音实际占到下一列（下一个音 / 小节线 / 行尾）的宽平分，
+      //   不按这一列最少要多宽（u.w；原来按它 = 横线挤在数字后面、后面空一截）
+      const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
+      const step = n ? Math.max(DASH_PITCH * jk, (span - tailW * jk) / (n + 1)) : 0;   // sp
       const gx = (k: number) => (k === 0 ? cx : cx + Q((glyphW - DIGIT_W) / 2) + P(k * step));   // 第一个字形是和弦名（比数字宽）= 后面的横线往后让出多出来的那半
       const endX = n ? gx(n) + Q(DIGIT_W / 2) : cx + Q(glyphW / 2);   // 最后一个字形的右边（附点、换气从这里起）
       const small = u.art.includes("ghost");   // 幽灵音（演奏法）= 数字小一号（UX 稿第 5 节）；u.ghost = 没写音高的音（灰，同五线谱的灰符头）
@@ -309,7 +316,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       }
       if (hasAugDot(u)) put(row, { ...T, t: "path", d: dotPath(endX + Q(AUG_DX + AUG_R), Y(row, AUG_Y), Q(AUG_R)), cls: "jp-dot" });
       if (u.note && u.breath) {   // 换气 = 音后面一个 V；出声的换气写「V 吸」/「V 深吸」（UX 稿第 5 节）
-        const bx = endX + Q((hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35);
+        const bw = Q(BREATH_W + (u.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q(0.1), Math.min(endX + Q((hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P(u.x + span) - bw));   // 不越过这一段占到的地方（下一列 / 小节线）
         put(row, { ...T, t: "text", x: bx, y: Y(row, BREATH_Y), s: "V", cls: artCls("breath", "jp-acc breath"), size: Q(BREATH_EM), anchor: "start" });   // 样张：0.5 FS 的 V，在基线上 1.09 FS
         if (u.inhale) put(row, { ...T, t: "text", x: bx + Q(1.0), y: Y(row, BREATH_Y), s: u.inhale === "big" ? _tIn(o.locale, "深吸##记号") : _tIn(o.locale, "吸##记号"), cls: artCls("inhale", "breath-label"), size: tx("breath-label"), anchor: "start" });
       }

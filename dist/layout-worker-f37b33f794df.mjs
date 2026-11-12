@@ -7132,6 +7132,16 @@ function drawJianpu(c, mine, mode = "digits") {
       if (rows[row]) rows[row].x1 = P(staffEnd[s2]);
     }
     const tokOf = (u) => u.index >= 0 && !u.pad ? tokens[u.index]?.id : void 0;
+    const spanTo = /* @__PURE__ */ new Map();
+    {
+      let pend = [];
+      for (const v of units) {
+        if (v.kind !== "chunk" && v.kind !== "bar") continue;
+        for (const c0 of pend) spanTo.set(c0, c0.system === v.system ? v.x : staffEnd[c0.system]);
+        pend = v.kind === "chunk" ? [v] : [];
+      }
+      for (const c0 of pend) spanTo.set(c0, staffEnd[c0.system]);
+    }
     const orn = {
       song,
       paper,
@@ -7274,8 +7284,9 @@ function drawJianpu(c, mine, mode = "digits") {
       const fd = mode === "digits" ? foldOf(u, c.aux[r]) : void 0, nameW = fd ? chordNameW(fd.name) : 0, glyphW = fd ? nameW + (fd.ambiguous ? CHORD_AMB_W : 0) : DIGIT_W;
       const row = rowOf(u.system, r, 0), tok = tokOf(u), x0 = P(u.x) + Q(0.1), cx = x0 + Q(glyphW / 2), T2 = tok !== void 0 ? { tok } : {};
       const n2 = extraGlyphs(u), contDash2 = contDash(u);
-      const tailW = (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + (u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0);
-      const step = n2 ? Math.max(DASH_PITCH * jk, (u.w - tailW * jk) / (n2 + 1)) : 0;
+      const tailW = hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0;
+      const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
+      const step = n2 ? Math.max(DASH_PITCH * jk, (span - tailW * jk) / (n2 + 1)) : 0;
       const gx = (k) => k === 0 ? cx : cx + Q((glyphW - DIGIT_W) / 2) + P(k * step);
       const endX = n2 ? gx(n2) + Q(DIGIT_W / 2) : cx + Q(glyphW / 2);
       const small = u.art.includes("ghost");
@@ -7395,7 +7406,7 @@ function drawJianpu(c, mine, mode = "digits") {
       }
       if (hasAugDot(u)) put(row, { ...T2, t: "path", d: dotPath(endX + Q(AUG_DX + AUG_R), Y(row, AUG_Y), Q(AUG_R)), cls: "jp-dot" });
       if (u.note && u.breath) {
-        const bx = endX + Q((hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35);
+        const bw = Q(BREATH_W + (u.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q(0.1), Math.min(endX + Q((hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P(u.x + span) - bw));
         put(row, { ...T2, t: "text", x: bx, y: Y(row, BREATH_Y), s: "V", cls: artCls("breath", "jp-acc breath"), size: Q(BREATH_EM), anchor: "start" });
         if (u.inhale) put(row, { ...T2, t: "text", x: bx + Q(1), y: Y(row, BREATH_Y), s: u.inhale === "big" ? _tIn(o.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o.locale, "\u5438##\u8BB0\u53F7"), cls: artCls("inhale", "breath-label"), size: tx("breath-label"), anchor: "start" });
       }
@@ -8357,4 +8368,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-adbbc2bb5585.mjs.map
+//# sourceMappingURL=layout-worker-f37b33f794df.mjs.map

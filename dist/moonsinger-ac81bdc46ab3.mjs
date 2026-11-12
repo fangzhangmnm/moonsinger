@@ -13471,6 +13471,16 @@ function drawJianpu(c10, mine, mode = "digits") {
       if (rows[row2]) rows[row2].x1 = P2(staffEnd[s10]);
     }
     const tokOf = (u2) => u2.index >= 0 && !u2.pad ? tokens[u2.index]?.id : void 0;
+    const spanTo = /* @__PURE__ */ new Map();
+    {
+      let pend = [];
+      for (const v of units) {
+        if (v.kind !== "chunk" && v.kind !== "bar") continue;
+        for (const c02 of pend) spanTo.set(c02, c02.system === v.system ? v.x : staffEnd[c02.system]);
+        pend = v.kind === "chunk" ? [v] : [];
+      }
+      for (const c02 of pend) spanTo.set(c02, staffEnd[c02.system]);
+    }
     const orn = {
       song,
       paper,
@@ -13613,8 +13623,9 @@ function drawJianpu(c10, mine, mode = "digits") {
       const fd2 = mode === "digits" ? foldOf(u2, c10.aux[r10]) : void 0, nameW = fd2 ? chordNameW(fd2.name) : 0, glyphW = fd2 ? nameW + (fd2.ambiguous ? CHORD_AMB_W : 0) : DIGIT_W;
       const row2 = rowOf(u2.system, r10, 0), tok = tokOf(u2), x0 = P2(u2.x) + Q2(0.1), cx2 = x0 + Q2(glyphW / 2), T3 = tok !== void 0 ? { tok } : {};
       const n10 = extraGlyphs(u2), contDash2 = contDash(u2);
-      const tailW = (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + (u2.note && u2.breath ? BREATH_W + (u2.inhale ? INHALE_W : 0) : 0);
-      const step = n10 ? Math.max(DASH_PITCH * jk, (u2.w - tailW * jk) / (n10 + 1)) : 0;
+      const tailW = hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0;
+      const span2 = (spanTo.get(u2) ?? u2.x + u2.w) - u2.x;
+      const step = n10 ? Math.max(DASH_PITCH * jk, (span2 - tailW * jk) / (n10 + 1)) : 0;
       const gx = (k2) => k2 === 0 ? cx2 : cx2 + Q2((glyphW - DIGIT_W) / 2) + P2(k2 * step);
       const endX = n10 ? gx(n10) + Q2(DIGIT_W / 2) : cx2 + Q2(glyphW / 2);
       const small = u2.art.includes("ghost");
@@ -13734,7 +13745,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
       if (hasAugDot(u2)) put2(row2, { ...T3, t: "path", d: dotPath(endX + Q2(AUG_DX + AUG_R), Y2(row2, AUG_Y), Q2(AUG_R)), cls: "jp-dot" });
       if (u2.note && u2.breath) {
-        const bx = endX + Q2((hasAugDot(u2) ? AUG_DX + 2 * AUG_R : 0) + 0.35);
+        const bw = Q2(BREATH_W + (u2.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q2(0.1), Math.min(endX + Q2((hasAugDot(u2) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P2(u2.x + span2) - bw));
         put2(row2, { ...T3, t: "text", x: bx, y: Y2(row2, BREATH_Y), s: "V", cls: artCls("breath", "jp-acc breath"), size: Q2(BREATH_EM), anchor: "start" });
         if (u2.inhale) put2(row2, { ...T3, t: "text", x: bx + Q2(1), y: Y2(row2, BREATH_Y), s: u2.inhale === "big" ? _tIn(o10.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o10.locale, "\u5438##\u8BB0\u53F7"), cls: artCls("inhale", "breath-label"), size: tx2("breath-label"), anchor: "start" });
       }
@@ -32932,7 +32943,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-adbbc2bb5585.mjs");
+      return pick(() => "layout-worker-f37b33f794df.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-dbf4137da628.mjs");
   }
@@ -62587,4 +62598,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c999526ffb3b.mjs.map
+//# sourceMappingURL=moonsinger-ac81bdc46ab3.mjs.map

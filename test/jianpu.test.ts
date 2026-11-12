@@ -248,6 +248,22 @@ describe("简谱数字行", () => {
     eq(L4.prims.filter((p) => p.t === "line" && /jp-dash/.test(p.cls ?? "") && p.tok === 1000).length, 3, "C 的横线只有第一小节那三根");
     eq(L4.prims.filter((p) => p.t === "path" && /jp-tie/.test(p.cls ?? "")).length, 1, "重写的「1」连线连到前一小节");
   });
+  it("长音的横线一拍一条、占一拍的宽（统筹看 5-6 样张：照样张，「3 – –」和「1 2 3」一样宽）；带换气也不挤横线", () => {
+    const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
+    const head = paper.tracks[part]!.map((t) => (t.kind === "time" ? { ...t, beats: 3, beatType: 4 } : t));
+    let id = 2000; const nn = (p: ReturnType<typeof P>, dur: number, extra: object = {}) => ({ kind: "note", id: id++, pitch: p, dur, lyric: null, ...extra }) as Token;
+    const body: Token[] = []; for (let k = 0; k < 4; k++) body.push(nn(P("E"), TPQ * 3, k % 2 ? { art: ["breath"] } : {}), nn(P("C"), TPQ), nn(P("D"), TPQ), nn(P("E"), TPQ));
+    let s: Song = { ...st0.song, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...head, ...body] } }] };
+    s = setNotation({ ...st0, song: s }, "jianpu").song;
+    const L = engrave(s, { width: 900, sp: 10, locale: "zh", at: { paper: paper.id, part }, parts: [{ id: part, name: "V", first: true }], measure: createTextMeasure((x: string) => x.length * 8), autoBars: true });
+    for (let k = 0; k < 4; k++) {
+      const long = body[k * 4]!.id, q = [body[k * 4 + 1]!.id, body[k * 4 + 2]!.id, body[k * 4 + 3]!.id];
+      const lx = [...L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "") && p.tok === long).map((p) => p.x), ...L.prims.filter((p): p is Extract<Prim, { t: "line" }> => p.t === "line" && /jp-dash/.test(p.cls ?? "") && p.tok === long).map((p) => (p.x1 + p.x2) / 2)].sort((a, b) => a - b);
+      const qx = q.map((i) => L.prims.find((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "") && p.tok === i)!.x);
+      const lStep = (lx[2]! - lx[0]!) / 2, qStep = (qx[2]! - qx[0]!) / 2;
+      assert(lx.length === 3 && Math.abs(lStep / qStep - 1) < 0.1, `第 ${k + 1} 组：「3 – –」一拍 ${lStep.toFixed(1)} ≈「1 2 3」一拍 ${qStep.toFixed(1)}${k % 2 ? "（带换气）" : ""}`);
+    }
+  });
   it("记号（UX 稿第 5 节；第五刀起样子照样张）：跳音 = 实心窄楔形、保持 = 短横、重音 = 描边的 >、次重音细一号、幽灵音小一号、气声 ×、换气 V + 吸、滚奏三道斜线", () => {
     const { L } = lay([
       n(P("C"), TPQ, { art: ["staccato"] }), n(P("D"), TPQ, { art: ["tenuto"] }), n(P("E"), TPQ, { art: ["accent"] }), n(P("F"), TPQ, { art: ["stress"] }),
