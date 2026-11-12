@@ -2,7 +2,7 @@
 //   这一份守画法本身（数字 / 八度点 / 下划线 / 谱种表怎么分行 / 点击框 / 记号 / 弧线 / 连音 / 五线谱专有记号的小灰标）；全量（每个 token 都有图元）、点击只指 token 的守卫在第四刀收尾时加。
 import { describe, it, eq, assert } from "./runner.mjs";
 import { engrave, type Prim } from "../src/render/engrave.ts";
-import { createTextMeasure } from "../src/render/text/index.ts";
+import { createTextMeasure, textStyleOf } from "../src/render/text/index.ts";
 import { initState, TPQ, type Song, type Token } from "../src/score/song.ts";
 import { setNotation, setPartChords } from "../src/score/song-view.ts";
 import { GEOMETRY, DRAWERS } from "../src/render/notations.ts";
@@ -218,19 +218,22 @@ describe("简谱数字行", () => {
     eq(Lj.families.length, 0, "简谱：没有「叠回去」的括号");
     eq(Ls.prims.filter((p) => /family-line/.test(p.cls ?? "")).length, 0, "五线谱：没有这条竖线（叠 / 展开括号照旧）");
   });
-  it("力度 = p / f 字母（和五线谱同一套字形，不分界面语言；user 11-11 夜纪要第 88 节「中文的字确实有点太抢眼了」）；中文叫法在说明栏里", () => {
+  it("力度 = p / f 字母（不分界面语言；user 11-11 夜纪要第 88 节「中文的字确实有点太抢眼了」）；简谱 = 和数字同一款的细斜体小写、约数字的 0.8（user「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」），五线谱照旧 Bravura；中文叫法在说明栏里", () => {
     const body = [{ kind: "dyn", value: "mf" } as Omit<Token, "id">, n(P("C")), { kind: "dyn", value: "pp" } as Omit<Token, "id">, n(P("D"))];
     const glyphs = (locale: "zh" | "en") => {
       const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
       let id = 1000; let s: Song = { ...st0.song, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...paper.tracks[part]!, ...body.map((t) => ({ ...t, id: id++ }) as Token)] } }] };
       s = setNotation({ ...st0, song: s }, "jianpu").song;
       const L = engrave(s, { width: 900, sp: 10, locale, at: { paper: paper.id, part }, parts: [{ id: part, name: "V", first: true }], measure: createTextMeasure((x: string) => x.length * 8), autoBars: true });
-      return L.prims.filter((p) => /(^|\s)dyn(\s|$)/.test(p.cls ?? "")).map((p) => (p.t === "glyph" ? p.ch : p.t === "text" ? `text:${p.s}` : p.t)).join(" ");
+      const ds = L.prims.filter((p) => /(^|\s)dyn(\s|$)/.test(p.cls ?? ""));
+      for (const p of ds) if (p.t === "text") { assert(/jp-dyn/.test(p.cls ?? ""), "简谱的力度字 = 文字样式 jp-dyn（细斜体）"); assert(Math.abs((p.size ?? 0) - 10 * 2.0 * (3.6 / (2.5 * 1.75))) < 1e-6, `字号 = 数字的 0.8（${p.size}）`); }
+      return ds.map((p) => (p.t === "glyph" ? p.ch : p.t === "text" ? `text:${p.s}` : p.t)).join(" ");
     };
-    eq(glyphs("zh"), "\u{E52D} \u{E52B}", "中文界面：mf、pp 的字母字形");
+    eq(glyphs("zh"), "text:mf text:pp", "中文界面：mf、pp 是普通的字母");
     eq(glyphs("en"), glyphs("zh"), "英文界面一样");
     assert(SIGNS["dyn:mf"].says("zh").includes("中强") && SIGNS["dyn:pp"].says("zh").includes("很弱"), "中文叫法在说明栏");
-    eq(SIGNS["dyn:mf"].draw.jianpu, SIGNS["dyn:mf"].draw.staff, "简谱那一栏 = 五线谱那一栏");
+    eq(SIGNS["dyn:mf"].draw.staff.kind, "glyph", "五线谱那一栏照旧是 Bravura 字形"); eq(SIGNS["art:sfz"].draw.jianpu.kind, "text", "sfz / fp 在简谱上也是字");
+    const st = textStyleOf("dyn jp-dyn"); assert(st.italic && st.weight === 400 && st.face === textStyleOf("jp-digit").face, "细（常规粗细）、斜体、和数字同一款字");
   });
   it("几何表（谱面只查它；统筹审接口第 2 条）：数字行没有「纵向 = 音高」；鬼音符 = 数字 + 升降 + 照这一行八度基准的点；光标在数字行的上下沿之间", () => {
     assert(!GEOMETRY.jianpu.pitchAxis && !!GEOMETRY.staff.pitchAxis, "数字行不提供竖着拖改音高");

@@ -55,6 +55,8 @@ export const TEXT_STYLES = {
   "jp-digit": s("sans", 2.5, "staff"), "jp-acc": s("sans", 1.3, "staff"), "jp-head": s("sans", TEMPO_EM, "staff", 600),
   // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
   "jp-chord": s("sans", 2.0, "staff"),
+  // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）
+  "jp-dyn": s("sans", 2.0, "staff", 400, true),
 } satisfies Record<string, TextStyle>;
 export type TextRole = keyof typeof TEXT_STYLES;
 /** 同一种字的变体（样式类里同时有这两个词）：只改粗细。 */

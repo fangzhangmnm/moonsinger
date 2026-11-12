@@ -11,7 +11,9 @@ import type { LaneKind } from "./frame/lanes.ts";
 
 export type Depiction =
   | { kind: "glyph"; above: string; below?: string; /** 墨迹（sp）：宽 / 高；力度字另带左、右、基线以上、基线以下。 */ w?: number; h?: number; ink?: readonly [number, number, number, number] }
-  | { kind: "drawn"; how: string };
+  | { kind: "drawn"; how: string }
+  /** 普通的字（文字样式表里的一种：字体 / 粗细 / 斜体在那里）：简谱数字行上的力度（第五刀，统筹转达 user 11-11「我觉得主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）。 */
+  | { kind: "text"; s: string };
 export type SignId = `art:${Art}` | `dyn:${Dyn}` | "hairpin:cresc" | "hairpin:dim" | "ramp";
 export interface Sign {
   readonly id: SignId;
@@ -24,6 +26,8 @@ export interface Sign {
 
 const G = (above: string, below?: string, w?: number, h?: number): Depiction => ({ kind: "glyph", above, ...(below ? { below } : {}), ...(w !== undefined ? { w } : {}), ...(h !== undefined ? { h } : {}) });
 const D = (how: string): Depiction => ({ kind: "drawn", how });
+/** 简谱数字行上的力度：和数字同一款字、常规粗细、斜体的小写字母（文字样式 jp-dyn，字号约数字的 0.8）。五线谱照旧 Bravura 的力度字形。 */
+const T = (s: string): Depiction => ({ kind: "text", s });
 /** 力度字（Bravura；墨迹 = 浏览器里 canvas 量的，相对字的原点：左、右、基线以上、基线以下）。原样从 staff/glyphs.ts 搬来。 */
 const DYN_G: Record<Dyn, Depiction> = {
   ppp: { kind: "glyph", above: "\u{E52A}", ink: [-0.4, 4.3, 1.1, 0.6] }, pp: { kind: "glyph", above: "\u{E52B}", ink: [-0.4, 3, 1.1, 0.6] }, p: { kind: "glyph", above: "\u{E520}", ink: [-0.4, 1.5, 1.1, 0.6] },
@@ -45,8 +49,8 @@ const ART_SIGNS: Readonly<Record<`art:${Art}`, Sign>> = {
   "art:ghost": art("ghost", (l) => _tIn(l, "幽灵音"), (l) => _tIn(l, "几乎听不见的音（只留个影子）"), "note", D("符头加括号"), D("数字画小一号")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "art:tenuto": art("tenuto", (l) => _tIn(l, "保持"), (l) => _tIn(l, "这个音唱 / 奏满，不和下一个音断开"), "note", G("\u{E4A4}", "\u{E4A5}", 1.35, 0.17), G("\u{E4A4}", "\u{E4A5}", 1.35, 0.17)),
   "art:breath": art("breath", (l) => _tIn(l, "呼吸"), (l) => _tIn(l, "这个音后面换气"), "note", G("\u{E4CE}"), D("音后面一个 V（出声的换气写「V 吸」）")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
-  "art:sfz": art("sfz", (l) => _tIn(l, "突强"), (l) => _tIn(l, "音头突然冲一下、再回到当下的力度"), "noteDynamics", G("\u{E539}"), G("\u{E539}")),
-  "art:fp": art("fp", (l) => _tIn(l, "强后即弱"), (l) => _tIn(l, "音头按强、马上落到弱，后面的音都是弱"), "noteDynamics", G("\u{E534}"), G("\u{E534}")),
+  "art:sfz": art("sfz", (l) => _tIn(l, "突强"), (l) => _tIn(l, "音头突然冲一下、再回到当下的力度"), "noteDynamics", G("\u{E539}"), T("sfz")),
+  "art:fp": art("fp", (l) => _tIn(l, "强后即弱"), (l) => _tIn(l, "音头按强、马上落到弱，后面的音都是弱"), "noteDynamics", G("\u{E534}"), T("fp")),
   "art:whisper": art("whisper", (l) => _tIn(l, "气声"), (l) => _tIn(l, "不唱音高、用气声念（音高照写在谱上）"), "note", D("× 符头"), D("数字 + ×")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "art:swellUp": art("swellUp", (l) => _tIn(l, "音内渐强"), (l) => _tIn(l, "这个音里面从弱长到写的力度"), "noteDynamics", D("这个音上方的小发夹 <"), D("这个音上方的小楔形 <")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "art:swellDown": art("swellDown", (l) => _tIn(l, "音内渐弱"), (l) => _tIn(l, "这个音里面从写的力度收弱"), "noteDynamics", D("这个音上方的小发夹 >"), D("这个音上方的小楔形 >")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
@@ -54,7 +58,7 @@ const ART_SIGNS: Readonly<Record<`art:${Art}`, Sign>> = {
   "art:arpeggio": art("arpeggio", (l) => _tIn(l, "琶音"), (l) => _tIn(l, "和弦从低到高一个个拨出来"), "note", D("和弦左边一条竖的波浪线"), D("和弦左边一条竖的波浪线（多声部 = 第五刀）")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "art:roll": art("roll", (l) => _tIn(l, "滚奏"), (l) => _tIn(l, "这个音快速地反复敲（滚）"), "note", D("符干上三道斜线"), D("数字下面三道短斜线")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
-const dynSign = (d: Dyn): Sign => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "{dynName}（{dyn}）：从这个音起是这个强弱，管到下一个力度记号", { dynName: DYN_NAME(d, l), dyn: d }), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: DYN_G[d] } });   // 两种谱同一套字母字形（纪要第 88 节）
+const dynSign = (d: Dyn): Sign => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "{dynName}（{dyn}）：从这个音起是这个强弱，管到下一个力度记号", { dynName: DYN_NAME(d, l), dyn: d }), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: T(d) } });   // 两种谱都写字母（纪要第 88 节）；简谱用和数字同一款的细斜体（第五刀样张后，user「主要是粗细，不在字号」）
 /** 力度：每一档一行（明着写八行，类型 = 每档都要有）。 */
 const DYN_SIGNS: Readonly<Record<`dyn:${Dyn}`, Sign>> = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
 /** 记号表（演奏法 + 力度 + 渐强 / 渐弱 + 渐到）。不做类型断言：少一行 = 编译不过。 */
@@ -65,9 +69,10 @@ export const SIGNS: Readonly<Record<SignId, Sign>> = {
   ramp: { id: "ramp", name: (l) => _tIn(l, "渐到"), says: (l) => _tIn(l, "从上一个力度记号均匀变到这一个"), lane: "dynamics", draw: { staff: D("虚线发夹"), jianpu: D("虚线楔形") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
 
-/** 力度字在这种谱里画成什么（字形 + 墨迹）。两种谱现在都是字母字形，不分界面语言（纪要第 88 节）。 */
-export function dynDepiction(d: Dyn, notation: NotationId): { glyph: string; ink: readonly [number, number, number, number] } {
+/** 力度字在这种谱里画成什么：五线谱 = Bravura 字形 + 墨迹；简谱 = 普通的字（细斜体小写，墨迹按字宽现量）。不分界面语言（纪要第 88 节）。 */
+export function dynDepiction(d: Dyn, notation: NotationId): { kind: "glyph"; glyph: string; ink: readonly [number, number, number, number] } | { kind: "text"; s: string } {
   const g = SIGNS[`dyn:${d}`].draw[notation];
-  if (g.kind === "glyph" && g.ink) return { glyph: g.above, ink: g.ink };
+  if (g.kind === "text") return g;
+  if (g.kind === "glyph" && g.ink) return { kind: "glyph", glyph: g.above, ink: g.ink };
   throw new Error(`signs: dyn ${d} has no drawable depiction for ${notation}`);
 }

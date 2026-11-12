@@ -11,7 +11,7 @@ import { MARGIN } from "../frame/params.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import type { Prim, EngraveOpts, DynHit, MarkHit } from "../engrave.ts";
 import type { Unit, Chunk, DynU, NavU } from "../frame/units.ts";
-import { dynDepiction } from "../signs.ts";
+import { dynDepiction, SIGNS } from "../signs.ts";
 import { GLYPH_BOX } from "../glyph-box.gen.ts";
 
 /** 渐强渐弱和两头的字之间留多少（sp）；比一整行还长 = 写「cresc. - - -」（字的大概宽 / 虚线一节多长、隔多远）；渐到的虚线。原样从 staff/glyphs.ts 搬来。 */
@@ -126,6 +126,10 @@ export function layDynamics(c: OrnCtx): void {
   /** 一个力度字：怎么画 + 墨迹（sp，相对字的原点：左、右、基线以上、基线以下）。 */
   const dynOf = (v: DynU["value"]) => {
     const d = dynDepiction(v, notation), g = c.glyphScale;
+    if (d.kind === "text") {   // 简谱：普通的细斜体字母（文字样式 jp-dyn）；墨迹 = 量出来的字宽 × 行里的比例、高按字号估（上 0.72、下 0.22）
+      const k = g ?? 1, em = (tx("jp-dyn") / P(1)) * k, w = c.mw("jp-dyn", d.s) * k;
+      return { ink: [0, w, em * 0.72, em * 0.22] as const, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "text", x, y, s: d.s, tok, cls: `${cls} jp-dyn`, size: tx("jp-dyn") * k, anchor: "start" }) };
+    }
     if (g === undefined) return { ink: d.ink, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
     return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g] as const, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
   };
@@ -249,6 +253,12 @@ export function layNoteDynamics(c: OrnCtx, row: number, _ch: Chunk, a: { cx: num
   c.attach(row, "noteDynamics", () => c.placeAbove(row, 0.5, (y) => {
     let xa = a.x0;
     for (const k of atk) {
+      const dp = SIGNS[`art:${k}`].draw[c.notation];
+      if (dp.kind === "text") {   // 简谱：sfz / fp 也是细斜体字母（同力度）
+        const gk = c.glyphScale ?? 1, w = P(c.mw("jp-dyn", dp.s) * gk), gx = cx - w / 2;
+        prims.push({ tok, t: "text", x: gx, y, s: dp.s, cls: ["dyn jp-dyn", ign.has(k) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), size: c.tx("jp-dyn") * gk, anchor: "start" });
+        xa = Math.max(xa, gx + w + P(0.3)); continue;
+      }
       const gs = c.glyphScale, ch = k === "sfz" ? "\u{E539}" : "\u{E534}", w = P((GLYPH_BOX[ch]?.[1] ?? 2.6) * (gs ?? 1)), gx = cx - w / 2;
       prims.push({ tok, t: "glyph", x: gx, y, ch, cls: ["dyn", ign.has(k) ? "art-mute" : "", cls ?? ""].filter(Boolean).join(" "), ...(gs !== undefined ? { size: P(4 * gs) } : {}) });
       xa = Math.max(xa, gx + w + P(0.3));
