@@ -119,6 +119,17 @@ export function movePrim(p: Prim, dx: number, dy: number): void {
   }
   shiftPrim(p, dy);
 }
+/** 把图元放大 f 倍、再挪 (dx, dy)：坐标、字号、线宽、矩形的宽高一起放大（第八刀 8-2：盒子在数字行自己的单位里建，画的时候换成 px）。
+ *  路径里每一对「x,y」都换（排版器的路径只有绝对坐标的 M / L / Q / C / Z）。字形没写字号 = 不动字号（默认 4 sp 跟着 px 走，不该出现在盒子里）。 */
+export function scalePrim(p: Prim, f: number, dx: number, dy: number): void {
+  switch (p.t) {
+    case "glyph": case "text": p.x = p.x * f + dx; p.y = p.y * f + dy; if (p.size !== undefined) p.size *= f; return;
+    case "rect": p.x = p.x * f + dx; p.y = p.y * f + dy; p.w *= f; p.h *= f; return;
+    case "line": p.x1 = p.x1 * f + dx; p.y1 = p.y1 * f + dy; p.x2 = p.x2 * f + dx; p.y2 = p.y2 * f + dy; p.w *= f; return;
+    case "path": { const N = "(-?(?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?)"; p.d = p.d.replace(new RegExp(`${N},${N}`, "g"), (_m, a: string, b: string) => `${Number(a) * f + dx},${Number(b) * f + dy}`); return; }
+    default: { const never: never = p; throw new Error(`scalePrim: unknown prim ${JSON.stringify(never)}`); }
+  }
+}
 /** 图元的一个代表 y（px）：认它是哪一行的。 */
 export function primY(p: Prim): number {
   switch (p.t) {

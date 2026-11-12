@@ -24,5 +24,8 @@ export declare function shiftPrim(p: Prim, dy: number): void;
 /** 把图元横竖挪（px）：y 照 shiftPrim；x = 路径里每一对「x,y」逗号前那个数（排版器的路径只有绝对坐标）。
  *  第八刀 8-1（2026-11-12 Claude Opus 5.5）：一个音的盒子（frame/cell.ts）整块平移到位用。 */
 export declare function movePrim(p: Prim, dx: number, dy: number): void;
+/** 把图元放大 f 倍、再挪 (dx, dy)：坐标、字号、线宽、矩形的宽高一起放大（第八刀 8-2：盒子在数字行自己的单位里建，画的时候换成 px）。
+ *  路径里每一对「x,y」都换（排版器的路径只有绝对坐标的 M / L / Q / C / Z）。字形没写字号 = 不动字号（默认 4 sp 跟着 px 走，不该出现在盒子里）。 */
+export declare function scalePrim(p: Prim, f: number, dx: number, dy: number): void;
 /** 图元的一个代表 y（px）：认它是哪一行的。 */
 export declare function primY(p: Prim): number;

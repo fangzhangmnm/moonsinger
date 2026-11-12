@@ -6,7 +6,7 @@ import type { TextRole } from "../text/index.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import type { LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
-import { type JianpuTrack, type JianpuMode, type JianpuAux } from "./measure.ts";
+import { type JianpuTrack, type JianpuMode, type JianpuAux } from "./chunk.ts";
 /** 简谱数字行贴挂件的先后（从数字往上：演奏法 → 音的修饰 → 力度道 → 跳转 → 速度 → 风格 → 小节号 → 和弦级数；歌词在下面）。和五线谱同一张道名表（frame/lanes.ts）。 */
 export declare const JIANPU_LANES: readonly LaneKind[];
 /** 框架交给数字行的东西（是五线谱那一份的子集：不要纵向 ↔ 音高的几何）。 */

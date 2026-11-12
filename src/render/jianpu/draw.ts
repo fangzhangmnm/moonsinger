@@ -21,7 +21,10 @@ import { MARGIN } from "../frame/params.ts";
 import { caretStops } from "../frame/carets.ts";
 import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
-import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, midTextW, accsOf, hasArp, contDash as isContDash, lettersOf, glyphWOf } from "./measure.ts";
+import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf, glyphWOf } from "./chunk.ts";
+import { midTextW } from "./measure.ts";
+import { noteCell, tailW } from "./note-cell.ts";
+import { scalePrim } from "../skyline.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_DX, AUG_R,
   BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, ACC_W, ARP_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, JP_BODY, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, AUG_Y, lowDotY, LOW_DOT_UNDER, GHOST_K, HEAD_EM, MARK_GAP, MARK_GAP2, STACC_W, STACC_H, STACC_STEP, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, TEN_L, TEN_W, TEN_DY, TEN_STEP, MARCATO_EM, UNSTRESS_EM, BREATH_EM, BREATH_Y, MID_TEXT_CH, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText } from "./glyphs.ts";
 
@@ -203,134 +206,46 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       if (u.kind === "nav") { layNav(orn, u, (v) => P(v.x) + Q(BAR_DX)); continue; }   // 房子 / Segno / D.C.…：共用挂件（房子的钩下到小节线）
       if (u.kind === "tempo") { if (q.p.id === c.owner) layTempo(orn, rowOf(u.system, r, 0), u.x + 0.3, u.bpm, "tempo", u.index); continue; }   // 中途变速：共用挂件
       if (u.kind !== "chunk" || u.pad) continue;   // 补齐的淡色小节不画（同五线谱 v0.10.19）；力度 / 渐强渐弱 = 下面 layDynamics 一起摆
-      const fd = mode === "digits" ? foldOf(u, c.aux[r]) : undefined, nameW = fd ? chordNameW(fd.name) : 0, lt = lettersOf(q, u, mode, c.aux[r]), glyphW = fd ? nameW + (fd.ambiguous ? CHORD_AMB_W : 0) : lt ? lt.w : DIGIT_W;   // 字母谱：第一个字形 = 三格（C-4）   // 叠着的和弦折成和弦名（这条轨选了「折叠」、还原得回）：第一个字形 = 名字（按名字的宽）
-      const row = rowOf(u.system, r, 0), tok = tokOf(u), x0 = P(u.x) + Q(0.1), cx = x0 + Q(glyphW / 2), T = tok !== undefined ? { tok } : {};
-      const n = extraGlyphs(u), contDash = isContDash(u);   // 接着上一段的长音（整拍）：第一个字形也是横线；不是整拍的重写数字、连线连上（measure.ts contDash）
-      // 横线 / 一拍一个 0：一拍一个字形——每个字形占这一列（扣掉后面的附点、换气）的 1/(n+1)，在那一拍里的位置和数字在第一拍里一样（像一拍一拍；最后一个不贴着下一个音 / 小节线）
-      const tailW = hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0;   // 横线只给附点让（附点和横线同高）；换气 V 画在数字上方，放在最后一拍里（下面），不挤横线
-      // 每个字形占一拍的宽（统筹看 5-6 样张：照样张，「3 – –」和「1 2 3」一样宽）：按排完版之后这个音实际占到下一列（下一个音 / 小节线 / 行尾）的宽平分，
-      //   不按这一列最少要多宽（u.w；原来按它 = 横线挤在数字后面、后面空一截）
+      // 一个音 / 休止 = 一个盒子（第八刀 8-2，note-cell.ts）：量和画用同一个；这里只把它放大成 px、放到位，再登记点击框 / 歌词位 / 弧线要的上下沿 / 挂件
+      const row = rowOf(u.system, r, 0), tok = tokOf(u), T = tok !== undefined ? { tok } : {};
+      const fd = mode === "digits" ? foldOf(u, c.aux[r]) : undefined, lt = lettersOf(q, u, mode, c.aux[r]), n = extraGlyphs(u), contDash = isContDash(u);
+      // 横线 / 一拍一个 0：每个字形占一拍的宽——按排完版之后这个音实际占到下一列（下一个音 / 小节线 / 行尾）的宽平分，扣掉后面的附点、换气（统筹看 5-6 样张）
       const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
-      const step = n ? Math.max(DASH_PITCH * jk, (span - tailW * jk) / (n + 1)) : 0;   // sp
-      //   字母谱（7-B）：横线照旧落在拍的位置上（一拍一个），只有挨字母和角标太近时才往后让——不整体推（整体推 = 最后一条横线顶到小节线、换气的 V 贴线）
-      const lFirst = lt ? Math.max(x0 + Q(DIGIT_W / 2) + P(step), x0 + Q(glyphW + DASH_L / 2 + 0.5)) : 0;
-      const gx = (k: number) => (k === 0 ? cx : lt ? lFirst + P((k - 1) * step) : x0 + Q(glyphW - DIGIT_W / 2) + P(k * step));   // 第一个字形是和弦名（比数字宽）= 后面的横线往后让出多出来的那截
-      const endX = n ? gx(n) + Q(DIGIT_W / 2) : x0 + Q(glyphW);   // 最后一个字形的右边（附点、换气从这里起）
-      const small = u.art.includes("ghost");   // 幽灵音（演奏法）= 数字小一号（UX 稿第 5 节）；u.ghost = 没写音高的音（灰，同五线谱的灰符头）
-      const digit = (x: number, s: string) => put(row, { ...T, t: "text", x, y: Y(row, BASE_Y), s, cls: u.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: Q(small ? DIGIT_EM * GHOST_K : DIGIT_EM), anchor: "middle" });
-      const dash = (x: number) => put(row, { ...T, t: "line", x1: x - Q(DASH_L / 2), y1: Y(row, DASH_Y), x2: x + Q(DASH_L / 2), y2: Y(row, DASH_Y), w: Q(DASH_W), cls: "jp-dash" });
-      const nUL = underlines(u);
-      if (u.note && (u.ghost || !u.pitch)) {   // 没写音高的音（排版单元给它填了占位的音高，看 ghost 旗）：灰色「x」（剪贴板简谱文字同一个写法；UX 稿没写，先顶上 = 施工单第五节）+ 长音横线；点得到、能放字
-        if (contDash) for (let k = 0; k <= n; k++) dash(gx(k)); else { digit(cx, "x"); for (let k = 1; k <= n; k++) dash(gx(k)); }
+      const nc = noteCell({ u, q, mode, ...(c.aux[r] ? { aux: c.aux[r] } : {}), fifths, base, step: n ? Math.max(DASH_PITCH, (span / jk - tailW(u)) / (n + 1)) : null, limit: span / jk, ...(tok !== undefined ? { tok } : {}), artCls,
+        ...(u.note && u.inhale ? { inhale: { text: u.inhale === "big" ? _tIn(o.locale, "深吸##记号") : _tIn(o.locale, "吸##记号"), size: tx("breath-label") / Q(1) } } : {}) });
+      { const ox = P(u.x), oy = staffTop(row), f = Q(1); for (const p of nc.cell.prims(0, 0)) { scalePrim(p, f, ox, oy); put(row, p); } }
+      const x0 = P(u.x) + Q(nc.x0), cx = P(u.x) + Q(nc.cx), glyphW = nc.glyphW;
+      if (u.note && (u.ghost || !u.pitch)) {   // 没写音高的音：点得到、能放字
         if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W), d: NaN });
         if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(DIGIT_W) + Q(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!(tokens[u.index] as NoteTok | undefined)?.hyph });
       } else if (u.note && u.pitch) {
-        // 和弦竖叠（第五刀 5-4；UX 稿第 7 节「只压高、不缩宽」）：最低的音在行的基线上，往上一个叠一个（glyphs.ts stackBases：有八度点才让开，没有就贴紧）；
-        //   每个数字自己的升降号、八度点；单音 = 只有一个、和原来一样。ps 从高到低（第一个 = 旋律线），order = 从最低的起
-        const ps = fd ? [fd.bass] : u.pitches.length > 1 ? u.pitches : [u.pitch], accs = fd ? [] : accsOf(u), dg = ps.map((pp) => toDegree(pp, tonicOf(fifths))), dotsOf = dg.map((d) => (mode === "x" || letters ? 0 : d.shift - base));   // 鼓、字母谱：没有八度点（字母谱的八度写成数字）   // 鼓：没有八度点
-        const order = ps.map((_, i) => ps.length - 1 - i), bases = letters ? order.map((_, k) => BASE_Y - k * (DIGIT_H + SUB_DROP + SUP_RISE + CHORD_GAP)) : stackBases(order.map((i) => dotsOf[i]!)), hiBase = bases[bases.length - 1]!, hiDots = dotsOf[0]!, lowDots = dotsOf[order[0]!]!;
-        const nUL0 = underlines(u);
-        if (contDash) for (let k = 0; k <= n; k++) dash(gx(k));
-        else if (fd) {   // 和弦名（UX 稿第 7 节）：窄字、左边对齐这一列；最低音的八度用点（点在最低音那个字母上下）；有歧义 = 右下角小三角（编辑器里，点它 = 候选，挑一个写进音里，和级数同一套）
-          put(row, { ...T, t: "text", x: x0, y: Y(row, BASE_Y), s: fd.name, cls: "jp-chord", size: Q(CHORD_EM), sx: CHORD_SX, anchor: "start" });
-          const bd = dotsOf[0]!;
-          for (let j = 0; j < Math.abs(bd); j++) {
-            const yy = bd > 0 ? BASE_Y - CHORD_H - DOT_GAP - DOT_R - j * DOT_STEP : lowDotY(nUL0, j);
-            put(row, { ...T, t: "path", d: dotPath(x0 + Q(chordBassCx(fd.name)), Y(row, yy), Q(DOT_R)), cls: "jp-dot" });   // 标在最低音那个字母上下（转位 = 斜杠后面那个）
-          }
-          for (let k = 1; k <= n; k++) dash(gx(k));
-          if (fd.ambiguous) {
-            const tx0 = x0 + Q(nameW + 0.05), ty = Y(row, BASE_Y), a = Q(0.45);
-            put(row, { ...T, t: "path", d: `M${tx0},${ty}L${tx0 + a},${ty}L${tx0 + a},${ty - a}Z`, cls: "jp-chord-amb ann" });
-            if (u.j === 0) chordTagsOut.push({ x: tx0 - Q(0.2), y: ty - a - Q(0.3), w: a + Q(0.5), h: a + Q(0.6), read: fd.read, system: row, index: u.index });   // 点小三角 = 候选
-          }
-          if (hasArp(u)) {   // 琶音照画（折成名字也不静默丢掉）：名字左边一条竖的波浪线，名字那么高；往左的地方量的时候已经让出来了
-            const ax = P(u.x) - Q(-0.1 + ARP_W / 2), yTop = Y(row, BASE_Y - CHORD_H - 0.2), yBot = Y(row, BASE_Y + 0.2), amp = Q(0.28), st = Q(0.5);
-            let dd = `M${ax},${yBot}`; for (let y = yBot, k = 0; y > yTop; y -= st, k++) dd += `Q${ax + (k % 2 ? -amp : amp) * 2},${y - st / 2} ${ax},${Math.max(yTop, y - st)}`;
-            put(row, { ...T, t: "path", d: dd, cls: artCls("arpeggio", "arpeggio jp-arp") });
-          }
-        } else if (mode === "x" && kit) {   // 整套鼓：每一下按五线鼓谱的符头种类换字（glyphs.ts KIT_CHAR）；同时敲的几件按五线鼓谱上的高低叠（谱上低的在下）；幽灵音 = 小一号
-          const hits = ps.map((pp, i) => ({ i, pi: percOf(128, 0, midiOf(pp)) })).sort((a, b) => (b.pi?.line ?? 4) - (a.pi?.line ?? 4) || b.i - a.i);   // line 往下 +1（0 = 最上面那条线）
-          hits.forEach(({ i, pi }, k) => {
-            put(row, { ...T, t: "text", x: cx, y: Y(row, bases[k]! - DIGIT_H * 0.12), s: KIT_CHAR[pi?.head ?? "normal"] ?? "●", cls: small ? "jp-digit jp-x jp-kit art-ghost" : "jp-digit jp-x jp-kit", size: Q(DIGIT_EM * KIT_EM * (small ? GHOST_K : 1)), anchor: "middle" });
-            if (i > 0 && u.j === 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, bases[k]! - DIGIT_H / 2), w: Q(DIGIT_W) });
-          });
-          for (let k = 1; k <= n; k++) dash(gx(k));
-        } else if (mode === "x") {   // 只有一件鼓（一线谱的那种）= X、幽灵音 = 小 x（UX 稿第 7 节）；同时敲的几下 = 往上一个叠一个（没有八度点，贴紧）
-          order.forEach((i, k) => {
-            put(row, { ...T, t: "text", x: cx, y: Y(row, bases[k]!), s: small ? "x" : "X", cls: small ? "jp-digit jp-x art-ghost" : "jp-digit jp-x", size: Q(small ? DIGIT_EM * GHOST_K : DIGIT_EM * X_EM), anchor: "middle" });
-            if (i > 0 && u.j === 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, bases[k]! - DIGIT_H / 2), w: Q(DIGIT_W) });
-          });
-          for (let k = 1; k <= n; k++) dash(gx(k));
-        } else {
-          order.forEach((i, k) => {
-            const yb = bases[k]!, d = dg[i]!, dots = dotsOf[i]!, mute = i > 0 && !!q.p.mono ? " chord-mute" : "";   // 单声乐器的声部：下面的音灰掉（同五线谱）
-            const pp = ps[i]!, gk = small ? GHOST_K : 1;
-            if (lt) {   // 字母谱（7-B）：大写字母 + 右上角升降号 + 右下角八度数字（角标 = 字母的 SCRIPT_K 倍，缩小的普通字形）；叠着的几个左对齐
-              const lp = letterParts(pp, q.letters!), xs = x0 + Q((letterW(pp.step) + SCRIPT_GAP) * gk), ss = Q(DIGIT_EM * SCRIPT_K * gk), cls = (small ? "jp-digit jp-letter art-ghost" : "jp-digit jp-letter") + mute;
-              put(row, { ...T, t: "text", x: x0, y: Y(row, yb), s: lp.letter, cls, size: Q(DIGIT_EM * gk), anchor: "start" });
-              if (lp.acc) put(row, { ...T, t: "text", x: xs, y: Y(row, yb + SUP_DY * gk), s: lp.acc, cls: "jp-acc jp-letter-sup" + mute, size: ss, anchor: "start" });
-              put(row, { ...T, t: "text", x: xs, y: Y(row, yb + SUB_DY * gk), s: lp.oct, cls: "jp-digit jp-letter-sub" + mute, size: ss, anchor: "start" });
-            } else put(row, { ...T, t: "text", x: cx, y: Y(row, yb), s: String(d.degree), cls: (small ? "jp-digit art-ghost" : "jp-digit") + mute, size: Q(small ? DIGIT_EM * GHOST_K : DIGIT_EM), anchor: "middle" });
-            if (!lt && accs[i] !== null && accs[i] !== undefined) put(row, { ...T, t: "text", x: cx - Q(ACC_DX), y: Y(row, yb - (BASE_Y - ACC_Y)), s: accText(d.acc), cls: "jp-acc" + mute, size: Q(ACC_EM), anchor: "middle" });
-            // 八度点：高的在数字上面；低的在下面（最低那个音在下划线下面，叠在上面的音贴着自己的数字下面）
-            for (let j = 0; j < Math.abs(dots); j++) {
-              const yy = dots > 0 ? yb - DIGIT_H - DOT_GAP - DOT_R - j * DOT_STEP : k === 0 ? lowDotY(nUL0, j) : yb + LOW_DOT_UNDER + j * DOT_STEP;   // 低的：最下面那个数字照样张的位置（下划线再往下）、叠在上面的贴着自己
-              put(row, { ...T, t: "path", d: dotPath(cx, Y(row, yy), Q(DOT_R)), cls: "jp-dot" + mute });
-            }
-            if (i > 0 && u.j === 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, yb - DIGIT_H / 2), w: Q(DIGIT_W) });   // 叠在一起的别的音：各自一块点击区（指着同一个音 token）
-          });
-          for (let k = 1; k <= n; k++) dash(gx(k));
-          // 琶音（UX 稿第 7 节）：和弦左边（升降号再左边）一条竖的波浪线，从最低的数字到最高的；往左的地方量的时候已经让出来了（measure.ts hasArp）
-          if (hasArp(u)) {
-            const ax = P(u.x) - Q((accs.some((a) => a !== null) ? ACC_W : -0.1) + ARP_W / 2), yTop = Y(row, hiBase - DIGIT_H - 0.2), yBot = Y(row, bases[0]! + 0.2), amp = Q(0.28), st = Q(0.5);
-            let dd = `M${ax},${yBot}`; for (let y = yBot, k = 0; y > yTop; y -= st, k++) dd += `Q${ax + (k % 2 ? -amp : amp) * 2},${y - st / 2} ${ax},${Math.max(yTop, y - st)}`;
-            put(row, { ...T, t: "path", d: dd, cls: artCls("arpeggio", "arpeggio jp-arp") });
-          }
+        if (fd?.ambiguous && !contDash) {   // 和弦名有歧义 = 右下角小三角（编辑器里，点它 = 候选；不在盒子里：8-5 搬去不印的提示）
+          const tx0 = x0 + Q(chordNameW(fd.name) + 0.05), ty = Y(row, BASE_Y), a = Q(0.45);
+          put(row, { ...T, t: "path", d: `M${tx0},${ty}L${tx0 + a},${ty}L${tx0 + a},${ty - a}Z`, cls: "jp-chord-amb ann" });
+          if (u.j === 0) chordTagsOut.push({ x: tx0 - Q(0.2), y: ty - a - Q(0.3), w: a + Q(0.5), h: a + Q(0.6), read: fd.read, system: row, index: u.index });
         }
-        // 数字上方的记号（UX 稿第 5 节，从数字往上）：跳音 = 窄楔形、保持 = 短横，贴着最上面那个数字（八度点之上）；强音 / 重音 / 次重音 / 弱化的帽子在它们上面（挂件，贴天际线）
+        if (u.j === 0) for (const m of nc.members) if (m.i > 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, m.yb - DIGIT_H / 2), w: Q(DIGIT_W) });   // 叠在一起的别的音：各自一块点击区（指着同一个音 token）
         if (!contDash) {
-          let top = fd ? (hiDots > 0 ? BASE_Y - CHORD_H - DOT_GAP - DOT_R * 2 - (hiDots - 1) * DOT_STEP : BASE_Y - CHORD_H) : hiDots > 0 ? hiBase - DIGIT_H - DOT_GAP - DOT_R * 2 - (hiDots - 1) * DOT_STEP : hiBase - DIGIT_H - (letters ? SUP_RISE : 0);   // 字母谱：右上角的升降号略高出字母顶，上面的记号让开它。局部 y：最上面那个数字 / 八度点的上沿
-          //   样张的样子（glyphs.ts 第五刀那一段）：第一个记号离数字 / 高八度点的上沿 MARK_GAP；顿音 = 实心窄楔形、保持 = 短横（贴着数字，自己画）
-          const local = (["staccato", "tenuto"] as const).filter((x) => u.art.includes(x));
-          if (local.length) {
-            let ya = top - MARK_GAP;
-            for (const a of local) {
-              if (a === "staccato") { const hw = Q(STACC_W / 2), yb = Y(row, ya), yt = Y(row, ya - STACC_H); put(row, { ...T, t: "path", d: `M${cx - hw},${yt}L${cx + hw},${yt}L${cx},${yb}Z`, cls: artCls(a, "art jp-stacc staccato") }); ya -= STACC_STEP; }
-              else { const yy = Y(row, ya - TEN_DY); put(row, { ...T, t: "line", x1: cx - Q(TEN_L / 2), y1: yy, x2: cx + Q(TEN_L / 2), y2: yy, w: Q(TEN_W), cls: artCls(a, "art jp-ten tenuto") }); ya -= TEN_STEP; }
-            }
-            top = ya;
-          }
-          { const ulBot = nUL0 ? UL_Y0 + (nUL0 - 1) * UL_GAP + UL_W / 2 + (letters ? SUB_DROP : 0) : BASE_Y + (lt ? SUB_DROP : 0);   // 最低的墨：下划线的底 / 没有下划线 = 基线（字母谱：下标）
-            arcAt.set(u, { row, cx, top, bot: lowDots < 0 ? lowDotY(nUL0, -lowDots - 1) + DOT_R : ulBot }); }
-          // 帽子（挂件，贴天际线）：重音 / 次重音 = 描边的 >（重音粗、次重音细——「次重音 = 细一号的 >」UX 稿第 5 节）；强音 / 弱化 = Bravura 字形，大小照样张
-          const strong = (["accent", "marcato", "stress", "unstress"] as const).filter((x) => u.art.includes(x));
+          arcAt.set(u, { row, cx, top: nc.top!, bot: nc.bot! });
+          // 帽子（挂件，贴天际线）：重音 / 次重音 = 描边的 >（重音粗、次重音细——UX 稿第 5 节）；强音 / 弱化 = Bravura 字形，大小照样张
+          const local = u.art.includes("staccato") || u.art.includes("tenuto"), strong = (["accent", "marcato", "stress", "unstress"] as const).filter((x) => u.art.includes(x));
           const chev = (a: string, yb: number, st: number): Prim => {   // 一个实心的「>」（两条臂按粗细 st 围成的多边形；臂斜 0.4，竖着的厚 ≈ 1.08 倍粗细）
-            const x0 = cx - Q(CHEV_W / 2), x1 = cx + Q(CHEV_W / 2), ym = yb - Q(CHEV_H / 2), yt = yb - Q(CHEV_H), t = Q(st) * 0.54;
-            return { ...T, t: "path", d: `M${x0},${yt - t}L${x1 + t},${ym}L${x0},${yb + t}L${x0},${yb - t}L${x1 - t * 2.5},${ym}L${x0},${yt + t}Z`, cls: artCls(a, `art jp-chev ${a}`) };
+            const xa = cx - Q(CHEV_W / 2), xb = cx + Q(CHEV_W / 2), ym = yb - Q(CHEV_H / 2), yt = yb - Q(CHEV_H), t = Q(st) * 0.54;
+            return { ...T, t: "path", d: `M${xa},${yt - t}L${xb + t},${ym}L${xa},${yb + t}L${xa},${yb - t}L${xb - t * 2.5},${ym}L${xa},${yt + t}Z`, cls: artCls(a, `art jp-chev ${a}`) };
           };
-          if (strong.length) c.attach(row, "strength", () => { strong.forEach((a, i) => placeAbove(row, (i === 0 && !local.length ? MARK_GAP : MARK_GAP2) * jk, (y) => {
+          if (strong.length) c.attach(row, "strength", () => { strong.forEach((a, i) => placeAbove(row, (i === 0 && !local ? MARK_GAP : MARK_GAP2) * jk, (y) => {
             if (a === "accent" || a === "stress") c.prims.push(chev(a, y, a === "accent" ? CHEV_STROKE : CHEV_STROKE_THIN));
             else { const g = jpGlyph(a)!, em = a === "marcato" ? MARCATO_EM : UNSTRESS_EM; c.prims.push({ ...T, t: "glyph", x: cx - Q((g.w * em) / 8), y, ch: g.above, cls: artCls(a), size: Q(em) }); }
           })); });
           const swl = u.j === 0 ? swellOf(tokens[u.index]!) : undefined, atk = (["sfz", "fp"] as const).filter((x) => u.art.includes(x));
           if (swl || atk.length) layNoteDynamics(orn, row, u, { cx, x0, w: P(u.w), tok, cls: undefined, ign, swl, roll: u.art.includes("roll"), atk });   // 突强 / 强后弱 / 音内起伏：共用挂件
-          // 气声 = 数字 + ×（认的黑、不认的灰）；台上那位固定敲一个键（五线谱上画 × 符头）= 每个数字 + ×（同一个意思 = 写的音高不拿来出声；统筹 5-6）。两样都有 = 一个 ×
-          if (u.whisper || xHead) put(row, { ...T, t: "text", x: x0 + Q(glyphW + 0.05 * DIGIT_W), y: Y(row, hiBase - DIGIT_H + 0.5), s: "×", cls: u.whisper ? artCls("whisper", "jp-acc whisper") : "jp-acc xhead", size: Q(ACC_EM), anchor: "start" });
-          if (u.art.includes("roll")) for (let k = 0; k < 3; k++) { const yy = (nUL0 ? UL_Y0 + nUL0 * UL_GAP : BASE_Y) + 0.35 + (Math.min(0, lowDots) ? -lowDots * DOT_STEP + 0.2 : 0) + k * 0.28; put(row, { ...T, t: "line", x1: cx - Q(0.4), y1: Y(row, yy + 0.18), x2: cx + Q(0.4), y2: Y(row, yy - 0.18), w: Q(0.11), cls: artCls("roll", "jp-roll") }); }   // 滚奏 = 数字下面三道短斜线（UX 稿第 7 节，默认）
         }
-        if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, hiBase - DIGIT_H / 2), w: Q(glyphW), d: NaN });   // 旋律线那个数字（和弦 = 最上面）；数字行没有「纵向 = 音高」：d = NaN（不提供竖着拖改音高）
+        if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, nc.hiBase - DIGIT_H / 2), w: Q(glyphW), d: NaN });   // 旋律线那个数字（和弦 = 最上面）；数字行没有「纵向 = 音高」：d = NaN
         if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(glyphW) + Q(0.4), lyric: u.lyric, tok, cls: undefined, mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!(tokens[u.index] as NoteTok | undefined)?.hyph });
       } else if (!u.note) {
-        for (let k = 0; k <= n; k++) digit(gx(k), "0");   // 几拍的休止一拍一个 0（UX 稿第 4 节）
         if (u.j === 0 && u.index >= 0) rests.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W) });
       }
-      if (hasAugDot(u)) put(row, { ...T, t: "path", d: dotPath(endX + Q(AUG_DX + AUG_R), Y(row, AUG_Y), Q(AUG_R)), cls: "jp-dot" });
-      if (u.note && u.breath) {   // 换气 = 音后面一个 V；出声的换气写「V 吸」/「V 深吸」（UX 稿第 5 节）
-        const bw = Q(BREATH_W + (u.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q(0.1), Math.min(endX + Q((hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P(u.x + span) - bw - Q(0.25)));   // 不越过这一段占到的地方（下一列 / 小节线），离它留一点
-        put(row, { ...T, t: "text", x: bx, y: Y(row, BREATH_Y), s: "V", cls: artCls("breath", "jp-acc breath"), size: Q(BREATH_EM), anchor: "start" });   // 样张：0.5 FS 的 V，在基线上 1.09 FS
-        if (u.inhale) put(row, { ...T, t: "text", x: bx + Q(1.0), y: Y(row, BREATH_Y), s: u.inhale === "big" ? _tIn(o.locale, "深吸##记号") : _tIn(o.locale, "吸##记号"), cls: artCls("inhale", "breath-label"), size: tx("breath-label"), anchor: "start" });
-      }
+      const nUL = underlines(u);
       if (nUL) { const bar0 = u.tick - u.inBar, uh = fd || lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W; ul.push({ row, x0: cx - Q(uh), x1: cx + Q(uh), level: nUL, group: `${u.system}|${bar0}|${Math.floor((u.inBar + 1e-6) / u.beat)}`, tok, ch: u }); }   // 样张：每个数字下面 ±0.45 个数字宽（附点不带）
     }
     // 连音的组（UX 稿第 4 节）：同一比例连着的一串凑满就收一组；每组都标（原样从下面挪上来：下划线画之前要知道哪儿断开）

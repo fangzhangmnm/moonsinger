@@ -2,62 +2,19 @@
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-2）。和五线谱同一个形状（staff/measure.ts），纯函数、只看这一条轨。
 //   时间那一半（切小节、拆成能记的时值、第几拍、连音比例）= 框架的排版单元（src/render/frame/units.ts；第五刀 5-1 从五线谱那边搬过去，这里不再借五线谱的东西）。
 import { TPQ } from "../../score/song.ts";
-import type { Token } from "../../score/song.ts";
 import { MELISMA_MARK } from "../../score/lyrics.ts";
 import type { SpItem } from "../spacing.ts";
 import { SLOT, type ColumnKind } from "../frame/columns.ts";
 import type { ColEntry } from "../frame/arrange.ts";
-import type { PartView } from "../engrave.ts";
-import type { Unit, Chunk, Head } from "../frame/units.ts";
-import type { ChordFold } from "../../theory/index.ts";
+import type { Unit, Chunk } from "../frame/units.ts";
+import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, lettersOf, glyphWOf } from "./chunk.ts";
+import { noteCell } from "./note-cell.ts";
+export type { JianpuTrack, JianpuMode, JianpuAux } from "./chunk.ts";
 import { SP_DEFAULTS } from "../spacing.ts";
-import { DIGIT_W, ACC_W, ARP_W, chordNameW, CHORD_AMB_W, letterNoteW, COL_MIN, COL_MIN_SHORT, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
+import { DIGIT_W, COL_MIN, COL_MIN_SHORT, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH } from "./glyphs.ts";
 
-/** 一条要排的简谱轨（一个声部在这张纸上；框架交来的单元已经切好了时值）。 */
-export interface JianpuTrack {
-  p: PartView; tokens: Token[]; units: Unit[]; head: Head; realLen: number; realTicks: number; staves: number; focused: boolean; pickup: boolean;
-  /** 字母谱（7-B）：数字换成字母 + 右上升降号 + 右下八度数字；值 = 中央 C 叫 C 几（默认 4）。别的一样不动。 */
-  letters?: number;
-}
-
-/** 接着上一段的长音，这一段画成横线（不重写数字）：只在**同一小节之内**、正好整拍、不是连音的才行——一条横线 = 一拍（UX 稿第 4 节）。
- *  跨过小节线的（这一段从小节头起）一律在小节线后面重写数字、用连线连到前一段（课本写法、样张也是；统筹 5-6「横线只在一小节之内用」）；
- *  不是整拍的同样重写（附点、下划线照常；统筹看第四刀成品样张后定的第 1 处：原来一律画横线、按 round 算根数，3/4 里连过来的一拍半画成两条横线，读成三拍半）。 */
-export const contDash = (u: Chunk): boolean => u.note && u.j > 0 && u.inBar > 1e-6 && u.base >= TPQ && !u.ratio && Math.abs(u.ticks / TPQ - Math.round(u.ticks / TPQ)) < 1e-6;
-/** 这一段除了第一个字形（数字 / 0 / 横线）后面还有几个：长音的横线、几拍的休止一拍一个 0。 */
-export function extraGlyphs(u: Chunk): number {
-  if (u.note) {
-    if (contDash(u)) return Math.max(0, Math.round(u.ticks / TPQ) - 1);   // 接着上一段的长音：一拍一条横线（第一个字形就是横线）
-    if (u.base >= TPQ * 2) return Math.round(u.base / TPQ) - 1 + (u.dotted ? Math.round(u.base / (TPQ * 2)) : 0);   // 二分 = 5 –、附点二分 = 5 – –、全音 = 5 – – –
-    return 0;
-  }
-  if (u.base >= TPQ) return Math.max(0, Math.floor(u.ticks / TPQ + 1e-6) - 1);   // 一拍一个 0（整小节休止也是：UX 稿第 4 节，帮唱的人倒数）
-  return 0;
-}
-/** 这一段有没有附点（画在数字右边）：附点的四分 / 八分…；附点二分以上写成横线，不画点；几拍的休止剩下的半拍也画点。 */
-export function hasAugDot(u: Chunk): boolean {
-  if (u.note) return u.dotted && u.base < TPQ * 2 && !contDash(u);
-  return u.base >= TPQ ? Math.floor(u.ticks / TPQ + 1e-6) * TPQ < u.ticks - 1e-6 : u.dotted;
-}
-/** 数字行的两种写法：digits = 数字（有音高的声部）；x = 鼓的 X 行（音画成 X，没有升降号 / 八度点 / 琶音；UX 稿第 7 节，第五刀 5-4）。 */
-export type JianpuMode = "digits" | "x";
-/** 框架交来的这一条轨的预处理里数字行用得上的：叠着的和弦折成的和弦名（token 下标 → 折法；这条轨的和弦选项是「折叠」才有；第五刀 5-4）。 */
-export interface JianpuAux { folds?: ReadonlyMap<number, ChordFold> }
-/** 这一段画成和弦名吗（接着上一段、画成横线的那一段不算：第一个字形是横线）：是 = 折法。 */
-export const foldOf = (u: Chunk, aux: JianpuAux | undefined): ChordFold | undefined => (u.note && u.pitch && !contDash(u) ? aux?.folds?.get(u.index) : undefined);
-/** 字母谱（7-B）里这一段第一个字形（字母 + 右上的升降号 / 右下的八度数字）多宽；不是字母谱 / 不写音高的（横线、没写音高的、和弦名）= null。 */
-export const lettersOf = (q: { letters?: number }, u: Chunk, mode: JianpuMode, aux: JianpuAux | undefined): { w: number } | null =>
-  q.letters !== undefined && mode === "digits" && u.note && u.pitch && !u.ghost && !contDash(u) && !foldOf(u, aux) ? { w: letterNoteW(u.pitches.length ? u.pitches : [u.pitch], q.letters) } : null;
-export const glyphWOf = (u: Chunk, aux: JianpuAux | undefined, q: { letters?: number } = {}): number => { const f = foldOf(u, aux); if (f) return chordNameW(f.name); const lt = lettersOf(q, u, "digits", aux); return lt ? lt.w : DIGIT_W; };
-/** 这一段要写临时记号的那几个音（叠音 = 每个音各自的；单音 = 它自己的）：只有第一段写（同五线谱）。 */
-export const accsOf = (u: Chunk): (number | null)[] => (u.j !== 0 || !u.note ? [] : u.pitches.length > 1 ? u.accs : [u.acc]);
-/** 这一段画不画琶音的竖波浪（只挂在和弦上：单音的琶音核心那边已经去掉了）。 */
-export const hasArp = (u: Chunk): boolean => u.note && u.j === 0 && u.pitches.length > 1 && u.art.includes("arpeggio");
 /** 这一段（第一个字形）这一列至少多宽（数字行的单位；样张：四分 / 八分 = 数字宽 + 一点缝，十六分及更短只占字宽——「密的声部自己挤紧」；和弦名 = 名字的宽 + 两边的缝）。 */
 const core = (u: Chunk, nameW: number): number => (nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN);
-/** 第几层下划线（八分 = 1、十六分 = 2…；四分以上 = 0）。 */
-export const underlines = (u: Chunk): number => (u.base < TPQ ? Math.max(1, Math.round(Math.log2(TPQ / u.base))) : 0);
-
 const COLUMN_KIND: Record<Unit["kind"], ColumnKind> = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
 /** 中途换调 / 换拍号写的那几个字（「1=♭B」「3/4」）大约多宽（sp）。 */
 export const midTextW = (s: string): number => [...s].length * MID_TEXT_CH * MID_TEXT_EM + 0.6;
@@ -76,21 +33,20 @@ function unitW(u: Unit): number {
  *  inkL = 这个音的墨往对齐线左边伸多远（sp；升降号）：光标画在它左边。k = 行里的尺寸比例（排版参数表行一级；数字行自己的宽都乘它，第五刀 5-0c）。 */
 export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits", aux?: JianpuAux): { entries: ColEntry<Unit>[]; inkL: Map<Chunk, number> } {
   const inkL = new Map<Chunk, number>();
+  let fifths = q.head.key;   // 升降号写几个（♯ / ♯♯）跟着这一处的调：和画的时候一样一路记着
   const spItems = (u: Chunk): SpItem[] => {
     if (u.pad) return [];   // 补齐的淡色小节不画、不参加间距（同五线谱）
-    const fd = mode === "digits" ? foldOf(u, aux) : undefined, lt = lettersOf(q, u, mode, aux), gw = fd ? chordNameW(fd.name) + (fd.ambiguous ? CHORD_AMB_W : 0) : lt ? lt.w : DIGIT_W;   // 字母谱：字母 + 角标那一栏   // 折成和弦名 = 按名字的宽占位（UX 稿第 7 节；有歧义的小三角也让出来），不写升降号
-    const n = extraGlyphs(u), acc = mode === "digits" && !fd && !lt && accsOf(u).some((a) => a !== null);   // 字母谱：升降号在右上角，左边不让   // 和弦：哪个音要写升降号，这一列就往左让出升降号的地方（和弦竖叠，宽不变）
-    const breathW = u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0;   // 换气的 V（+「吸 / 深吸」）画在音后面：留出来，不压下一个音
-    const xMarkW = u.note && (u.whisper || (mode === "digits" && q.p.xHead)) ? 0.05 * DIGIT_W + ACC_W : 0;   // 气声 / 固定敲一个键的 ×：画在字形右边（draw.ts），同样留出来（7-K ④；× 的宽 = 升降号那一列的宽，同一个字号）
-    //   左边挂的东西（升降号、琶音）= 这个音往左的最小占地：前面有空就不挪，会撞上前一个音 / 小节线才推这一个音（UX 稿第 7 节；间距那一套本来就这样顶）
-    const left = ((acc ? ACC_W : -0.1) + (mode === "digits" && hasArp(u) ? ARP_W : 0)) * k, right = Math.max(0, (core(u, fd || (lt && gw > DIGIT_W) ? gw : 0) + 0.1 + n * DASH_PITCH + (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + breathW + xMarkW) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸（−0.1）+ 缝：右伸按样张这一列至少多宽倒推
+    // 量 = 画（第八刀 8-2）：和 draw.ts 用同一个盒子（note-cell.ts），往左 = 盒子左边伸出对齐线多远（升降号、琶音），往右 = 这一列至少多宽 + 盒子比第一个字形多出来的（横线、×、附点、换气）
+    const nc = noteCell({ u, q, mode, ...(aux ? { aux } : {}), fifths, base: 0, step: null }), b = nc.cell.box(), gw = nc.glyphW;
+    const fd = mode === "digits" ? foldOf(u, aux) : undefined, lt = lettersOf(q, u, mode, aux);
+    const left = -b.x0 * k, right = Math.max(0, (core(u, fd || (lt && gw > DIGIT_W) ? gw : 0) + 0.1 + Math.max(0, b.x1 - (nc.x0 + gw))) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸 + 缝
     inkL.set(u, Math.max(0, left));
     const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
     const cx = (0.1 + gw / 2) * k;
     if (u.lyW !== undefined) out.push({ row: 1, left: u.lyW / 2 - cx, right: cx + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });   // 按歌词排：字和字之间不撞（同一套顶杆）
     return out;
   };
-  const entries = q.units.map((u): ColEntry<Unit> => ({ tick: u.tick, slot: u.kind === "nav" ? u.slot : SLOT[COLUMN_KIND[u.kind]], w: u.kind === "chunk" ? u.w : unitW(u) * k, ...(u.kind === "bar" ? { bar: true } : {}), ...(u.kind === "chunk" ? { chunk: { items: spItems(u), span: u.ticks } } : {}), ref: u }));
+  const entries = q.units.map((u): ColEntry<Unit> => { if (u.kind === "key") fifths = u.fifths; return ({ tick: u.tick, slot: u.kind === "nav" ? u.slot : SLOT[COLUMN_KIND[u.kind]], w: u.kind === "chunk" ? u.w : unitW(u) * k, ...(u.kind === "bar" ? { bar: true } : {}), ...(u.kind === "chunk" ? { chunk: { items: spItems(u), span: u.ticks } } : {}), ref: u }); });
   return { entries, inkL };
 }
 /** 行首多宽（sp）：base = 框架给的（名字一栏的缩进 + 边距）；数字行行首不画谱号 / 调号（谱头「1=C 4/4」写在第一行上方），只留一点空。 */
