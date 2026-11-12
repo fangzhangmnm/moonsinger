@@ -2045,6 +2045,15 @@ function partLooks(): { colors: number[]; abbrs: string[] } {
   });
   return { colors, abbrs };
 }
+/** 整套鼓这位在整首里用到的鼓件（GM 鼓键）→ 名字（鼓谱表里烤好的中 / 英名，按界面语言挑；查不到的不写）。简谱整套鼓的图例用（谱面分家 5-6）。 */
+function kitNamesOf(partId: string): Record<number, string> {
+  const zh = lang().startsWith("zh"), out: Record<number, string> = {};
+  for (const paper of D.st.song.papers) for (const t of paper.tracks[partId] ?? []) {
+    if (t.kind !== "note" || !t.pitch) continue;
+    for (const pp of [t.pitch, ...(t.chord ?? [])]) { const m = midiOf(pp); if (out[m] !== undefined) continue; const nm = percOf(128, 0, m)?.name; if (nm) out[m] = zh ? nm.zh : nm.en; }
+  }
+  return out;
+}
 function partViews(): PartView[] {
   const labels = partLabels(D.st.song, D.extras), mutes = lyricMutes(), looks = partLooks();
   return D.st.song.parts.map((p, k) => {
@@ -2055,7 +2064,8 @@ function partViews(): PartView[] {
     const ly = plug?.lyrics, noLyrics = ly === "hum" || ly === "none" ? _t("{p}{p2}：空着的歌词位不开框；已经写了的字点开能改、能删", { p: labels[k], p2: ly === "hum" ? _t("（元音版）只哼") : _t("不唱歌词") }) : "";
     // 台上那位的音域（简谱的八度基准按它定；人声 = 插件自报，乐器 = 目录里角色那件乐器的；鼓 / 固定敲一个键的不要；目录没载 = 先没有，partLooks 载好了会重画）
     const nota = plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}, rg = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p.role);
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
+    const kitNames = nota.perc?.kind === "kit" ? kitNamesOf(p.id) : undefined;   // 整套鼓：用到的鼓件 → 名字（按界面语言；简谱的图例印）
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), ...(kitNames ? { kitNames } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */

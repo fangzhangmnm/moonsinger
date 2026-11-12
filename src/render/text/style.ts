@@ -57,6 +57,8 @@ export const TEXT_STYLES = {
   "jp-chord": s("sans", 2.0, "staff"),
   // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）
   "jp-dyn": s("sans", 2.0, "staff", 400, true),
+  // 简谱整套鼓的图例（5-6，统筹裁定）：行首名字下面「● 大鼓 / 小鼓」，正文字体小一号、跟字的尺子（同名字）
+  "jp-legend": s("sans", 1.05, "text"),
 } satisfies Record<string, TextStyle>;
 export type TextRole = keyof typeof TEXT_STYLES;
 /** 同一种字的变体（样式类里同时有这两个词）：只改粗细。 */

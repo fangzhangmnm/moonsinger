@@ -51,7 +51,9 @@ export interface PartView { id: string; name: string; abbr?: string; colorIdx?: 
   
   mono?: boolean; xHead?: boolean; perc?: PartPerc; ignores?: readonly string[]; lyricMute?: ReadonlySet<number>; noLyrics?: string;
   /** 台上那位的音域（MIDI；宿主从演奏者 / 乐器目录查好，排版不认识乐器目录）：简谱每一行的八度基准按它定；没有 = 按写的音「点最少」（第五刀 5-4）。 */
-  range?: { lo: number; hi: number } }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
+  range?: { lo: number; hi: number };
+  /** 整套鼓：这位用到的鼓件（MIDI 鼓键）→ 名字（宿主按界面语言从鼓谱表 src/gm/percussion.gen.ts 取好，排版只管印）。简谱整套鼓的图例用（5-6，统筹裁定）。 */
+  kitNames?: Readonly<Record<number, string>> }   // noLyrics = 台上这位不唱字（乐器 / 元音版）：值 = 说给人听的那句   // lyricMute = 台上这位唱不出来的歌词（音的 token id；画灰，src/score/lyric-check.ts）   // mono = 台上的是单声乐器（月读 / 元音…）：叠音里下面的音画灰（只唱最上面）   // staves 2 = 大谱表（两行一组、花括号；上高音下低音）
 //   empty = 还没人上场（名字画淡色）；first = 歌里第一个声部（速度画在它上面）；clef = 谱号；hidden = 隐藏的：不画谱、缩成一条细行（点它开歌手牌）；badges = 名字下面的角标（静 / 独 / 只看它）
 /** 台上那位是鼓 / 音效（v0.10.27；src/gm/percussion.ts percKindOf）：kit = 整套鼓（写的音高 = 敲哪个鼓，五线鼓谱）；one = 固定敲一件（一线谱）。 */
 export type PartPerc = { kind: "kit" } | { kind: "one"; info: PercInfo; key: number };   // key = 固定敲的那个键（合租全是鼓时并成一套鼓用）

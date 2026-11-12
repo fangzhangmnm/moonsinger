@@ -23,7 +23,7 @@ import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, midTextW, accsOf, hasArp, contDash as isContDash } from "./measure.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_DX, AUG_R,
-  BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, ACC_W, ARP_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, AUG_Y, lowDotY, LOW_DOT_UNDER, GHOST_K, HEAD_EM, MARK_GAP, MARK_GAP2, STACC_W, STACC_H, STACC_STEP, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, TEN_L, TEN_W, TEN_DY, TEN_STEP, MARCATO_EM, UNSTRESS_EM, BREATH_EM, BREATH_Y, MID_TEXT_CH, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText } from "./glyphs.ts";
+  BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, ACC_W, ARP_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, JP_BODY, AUG_Y, lowDotY, LOW_DOT_UNDER, GHOST_K, HEAD_EM, MARK_GAP, MARK_GAP2, STACC_W, STACC_H, STACC_STEP, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, TEN_L, TEN_W, TEN_DY, TEN_STEP, MARCATO_EM, UNSTRESS_EM, BREATH_EM, BREATH_Y, MID_TEXT_CH, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText } from "./glyphs.ts";
 
 /** 简谱数字行贴挂件的先后（从数字往上：演奏法 → 音的修饰 → 力度道 → 跳转 → 速度 → 风格 → 小节号 → 和弦级数；歌词在下面）。和五线谱同一张道名表（frame/lanes.ts）。 */
 export const JIANPU_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics"];
@@ -38,7 +38,7 @@ export interface JianpuDrawCtx {
   prims: Prim[]; notes: HitNote[]; chordHeads: Layout["chordHeads"]; keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; rests: RestHit[]; marks: MarkHit[]; dyns: DynHit[]; clefs: ClefHit[]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
   staffTop: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
-  placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: { min?: number }) => number;
+  placeBelow: (row: number, gap: number, draw: (y: number) => void, o2?: { min?: number; count?: boolean }) => number;
   /** 和弦级数（预处理，theory/families.ts）：合租的一家合起来认、标在这一家最下面那一行；不标 = null。 */
   harmony: ReadonlyMap<string, readonly PlacedTag[]> | null;
   /** 每条轨的预处理（下标同 per）：叠着的和弦折成的和弦名（第五刀 5-4）。 */
@@ -61,6 +61,31 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
   const { song, paper, o, P, tx, TR, put, notes, chordHeads, keyHints, chordTagsOut, placeBelow, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c;
   const jk = c.scale ?? 1, Q = (v: number) => P(v * jk);   // 行里的尺寸比例（排版参数表行一级，第五刀 5-0c）：数字行自己的尺寸 / 偏移走 Q，框架给的位置（u.x、右边界、行首）走 P
   const Y = (row: number, v: number) => staffTop(row) + Q(v);   // 局部 y（数字行的单位）→ px（框架还没定行距：staffTop 是这一行的临时原点）
+  /** 整套鼓的图例（5-6，统筹裁定：简谱里印一行图例说明每种字是哪几件）：这张纸上这位第一次有敲击的那一行，行首名字下面一行一种字——
+   *  「● 大鼓 / 小鼓」；按五线鼓谱上的高低从上往下排（同叠的方向）；名字宽过名字那一栏就折到下一行（缩进）。名字由宿主按界面语言给（PartView.kitNames），没有名字的鼓件不列。屏幕和 PDF 都印。 */
+  const layKitLegend = (q: JianpuTrack, r: number): void => {
+    const first = q.units.find((u): u is Chunk => u.kind === "chunk" && u.note && !u.pad && !!u.pitch); if (!first) return;
+    const groups = new Map<string, { line: number; names: string[]; lines: number[] }>();
+    for (const u of q.units) {
+      if (u.kind !== "chunk" || !u.note || u.pad || u.system !== first.system || !u.pitch) continue;
+      for (const pp of u.pitches.length ? u.pitches : [u.pitch]) {
+        const m = midiOf(pp), nm = q.p.kitNames?.[m]; if (!nm) continue;
+        const pi = percOf(128, 0, m), ch = KIT_CHAR[pi?.head ?? "normal"] ?? "●", g = groups.get(ch) ?? { line: pi?.line ?? 4, names: [], lines: [] };
+        g.line = Math.min(g.line, pi?.line ?? 4); if (!g.names.includes(nm)) { g.names.push(nm); g.lines.push(pi?.line ?? 4); } groups.set(ch, g);
+      }
+    }
+    if (!groups.size) return;
+    const width = ind0 - 0.6, lines: string[] = [];   // 名字那一栏能放多宽（sp）
+    for (const [ch, g] of [...groups].sort((a, b) => a[1].line - b[1].line)) {   // 同高的几种字 = 先出现的在前
+      const nms = g.names.map((nm, k) => ({ nm, ln: g.lines[k]! })).sort((a, b) => a.ln - b.ln).map((x) => x.nm);   // 同一种字的几件：也按谱上的高低（上面的先写）
+      let cur = `${ch} ${nms[0]}`;
+      for (const nm of nms.slice(1)) { const next = `${cur} / ${nm}`; if (c.mw("jp-legend", next) <= width) cur = next; else { lines.push(cur + " /"); cur = `\u3000${nm}`; } }
+      lines.push(cur);
+    }
+    const row = rowOf(first.system, r, 0), nameFs = tx("part-name"), fs = tx("jp-legend"), LH = fs * 1.3;
+    const mid = Q((JP_BODY.top + JP_BODY.bottom) / 2), y0 = mid + nameFs * 0.55 + nameFs * 0.35 + fs * 1.05 + (q.p.badges?.length ? TR("part-badge", 1.4) : 0);   // 名字的基线往下：名字的下半截 + 一行图例（有「不出声」角标 = 再让一行）
+    placeBelow(row, 0, (y) => { lines.forEach((ln, k) => c.prims.push({ t: "text", x: P(MARGIN), y: y + LH * k, s: ln, cls: "jp-legend", size: fs, anchor: "start" })); }, { min: y0 / P(1), count: true });
+  };
   for (const r of mine) {
     const q = per[r]!, units = q.units, tokens = q.tokens, xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";   // 台上固定敲一个键（数字行上每个数字 + ×）；整套鼓（X 行按件换字）
     for (let s = 0; s < nSys; s++) { const row = rowOf(s, r, 0); if (rows[row]) rows[row]!.x1 = P(staffEnd[s]!); }   // 八度基准下面算好再记进每一行（鬼音符要）
@@ -339,6 +364,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       }
     }
     layDynamics(orn);   // 力度那一层（力度字：中文界面写中文、别的界面写字母；记号表 signs.ts）
+    if (kit && mode === "x" && q.p.kitNames) layKitLegend(q, r);   // 整套鼓的图例（行首名字下面）
     // 光标落点、写字头：框架那一套（frame/carets.ts）；升降号挂在左边，光标画在它左边；数字行没有谱号位移
     const inkL = measured[r]!.inkL;
     caretStops(q, { cx: (u) => { const k = u.kind === "chunk" ? inkL.get(u as Chunk) : undefined; return P(u.x) - (k ? P(k) + Q(0.2) : 0); }, shiftAt: () => Array.from({ length: q.staves }, () => 0), rowOf: (sy, k) => rowOf(sy, r, k), P, sysStart0: sysStarts[0]!, cols, slots, heads });

@@ -99,7 +99,8 @@ export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; s
       case "rect": return [{ op: "rect", x: p.x + ox, y: p.y - top, w: p.w, h: p.h, color: INK }];
       case "path": {
         const st = cls.map((c) => STROKE[c]).find(Boolean), segs = segsOf(p.d, ox, -top);
-        return st ? [{ op: "path", segs, color: INK, fill: false, width: st.w * scaleW, ...(cls.includes("ramp") ? { dash: [4 * scaleW, 3 * scaleW] } : {}), ...(st.round ? { round: true } : {}) }] : [{ op: "path", segs, color: INK, fill: true }];
+        // 渐到的虚线已经在路径里一段一段画好了（ornaments rampDashes，v0.10.26 起屏幕上就不靠描边虚线）：PDF 不再叠一层描边虚线（原来叠了 = 每段又碎成小点，统筹看样张 ⑩）
+        return st ? [{ op: "path", segs, color: INK, fill: false, width: st.w * scaleW, ...(st.round ? { round: true } : {}) }] : [{ op: "path", segs, color: INK, fill: true }];
       }
       case "glyph": {
         const size = p.size ?? 4 * sp, out: PdfOp[] = [];

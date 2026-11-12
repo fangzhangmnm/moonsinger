@@ -10306,7 +10306,9 @@ var TEXT_STYLES = {
   // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
   "jp-chord": s("sans", 2, "staff"),
   // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）
-  "jp-dyn": s("sans", 2, "staff", 400, true)
+  "jp-dyn": s("sans", 2, "staff", 400, true),
+  // 简谱整套鼓的图例（5-6，统筹裁定）：行首名字下面「● 大鼓 / 小鼓」，正文字体小一号、跟字的尺子（同名字）
+  "jp-legend": s("sans", 1.05, "text")
 };
 var VARIANTS = [{ role: "part-name", when: "empty", weight: 400 }];
 var DEFAULT = s("sans", LYRIC_EM, "staff");
@@ -10730,7 +10732,7 @@ function fitLine(cols, gaps, rods, from, to2, width, opt) {
 }
 
 // src/gm/percussion.gen.ts
-var PERC = { "0:119": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 1.389, "kitKey": 57 }, "0:120": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.057 }, "0:121": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.077 }, "0:122": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:123": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:124": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:125": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:126": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:127": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:35": { "staff": 5, "line": 8, "head": "normal", "stem": "down", "hitSec": 0.037 }, "128:0:36": { "staff": 5, "line": 7, "head": "normal", "stem": "down", "hitSec": 7e-3 }, "128:0:37": { "staff": 5, "line": 3, "head": "slashed1", "stem": "up", "hitSec": 2e-3 }, "128:0:38": { "staff": 5, "line": 3, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:39": { "staff": 5, "line": -2, "head": "plus", "stem": "up", "hitSec": 0.012 }, "128:0:40": { "staff": 5, "line": 3, "head": "slash", "stem": "up", "hitSec": 7e-3 }, "128:0:41": { "staff": 5, "line": 6, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:42": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:43": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:44": { "staff": 5, "line": 9, "head": "x", "stem": "down", "hitSec": 0.012 }, "128:0:45": { "staff": 5, "line": 4, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:46": { "staff": 5, "line": -1, "head": "circle-x", "stem": "up", "hitSec": 0.022 }, "128:0:47": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:48": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:49": { "staff": 5, "line": -2, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:50": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:51": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:52": { "staff": 5, "line": -3, "head": "normal", "stem": "up", "hitSec": 0.027 }, "128:0:53": { "staff": 5, "line": 0, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:54": { "staff": 5, "line": 1, "head": "diamond", "stem": "up", "hitSec": 2e-3 }, "128:0:55": { "staff": 5, "line": -4, "head": "x", "stem": "up", "hitSec": 0.067 }, "128:0:56": { "staff": 5, "line": 1, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:57": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.057 }, "128:0:58": { "staff": 5, "line": 0, "head": "ti", "stem": "up", "hitSec": 2e-3 }, "128:0:59": { "staff": 5, "line": 2, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:60": { "staff": 5, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:61": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:62": { "staff": 5, "line": 1, "head": "custom", "stem": "up", "smufl": "noteheadXOrnate", "hitSec": 0.012 }, "128:0:63": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:64": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 0.017 }, "128:0:65": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.012 }, "128:0:66": { "staff": 5, "line": 7, "head": "normal", "stem": "up", "hitSec": 2e-3 }, "128:0:67": { "staff": 5, "line": -2, "head": "triangle-down", "stem": "up", "hitSec": 2e-3 }, "128:0:68": { "staff": 5, "line": -1, "head": "triangle-down", "stem": "up", "hitSec": 7e-3 }, "128:0:69": { "staff": 5, "line": 2, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:70": { "staff": 5, "line": 4, "head": "diamond", "stem": "up", "hitSec": 0.032 }, "128:0:71": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.072 }, "128:0:72": { "staff": 5, "line": -3, "head": "ti", "stem": "up", "hitSec": 0.022 }, "128:0:73": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 0.012 }, "128:0:74": { "staff": 5, "line": -1, "head": "slashed1", "stem": "up", "hitSec": 0.222 }, "128:0:75": { "staff": 5, "line": 0, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:76": { "staff": 5, "line": 5, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:77": { "staff": 5, "line": 7, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:78": { "staff": 5, "line": 8, "head": "x", "stem": "up", "hitSec": 0.062 }, "128:0:79": { "staff": 5, "line": 8, "head": "slashed2", "stem": "up", "hitSec": 0.042 }, "128:0:80": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:81": { "staff": 5, "line": 0, "head": "triangle-up", "stem": "up", "hitSec": 0.022 }, "128:0:27": { "staff": 5, "line": 8, "head": "slash", "stem": "up", "hitSec": 0.012 }, "128:0:28": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 0.012 }, "128:0:29": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.092 }, "128:0:30": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.077 }, "128:0:31": { "staff": 5, "line": -1, "head": "plus", "stem": "up", "hitSec": 7e-3 }, "128:0:32": { "staff": 5, "line": 10, "head": "plus", "stem": "up", "hitSec": 2e-3 }, "128:0:33": { "staff": 5, "line": 10, "head": "x", "stem": "up", "hitSec": 2e-3 }, "128:0:34": { "staff": 5, "line": 10, "head": "triangle-up", "stem": "up", "hitSec": 2e-3 }, "128:0:82": { "staff": 5, "line": 5, "head": "diamond", "stem": "up", "hitSec": 0.027 }, "128:0:83": { "staff": 5, "line": 3, "head": "triangle-down", "stem": "up", "hitSec": 0.072 }, "128:0:84": { "staff": 5, "line": 2, "head": "ti", "stem": "up" }, "128:0:85": { "staff": 5, "line": 2, "head": "la", "stem": "up", "hitSec": 2e-3 }, "128:0:86": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 7e-3 }, "128:0:87": { "staff": 5, "line": 4, "head": "slash", "stem": "up", "hitSec": 0.027 }, "0:112": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 84, "from": "Q1621499" }, "0:113": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 67, "from": "Q395212" }, "0:115": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 76, "from": "Q957212" }, "0:116": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.027, "kitKey": 87, "from": "Q221769" }, "0:117": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 45, "from": "Q849349" }, "0:118": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3, "from": "Q1327480" } };
+var PERC = { "0:119": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 1.389, "kitKey": 57 }, "0:120": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.057 }, "0:121": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.077 }, "0:122": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:123": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:124": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:125": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:126": { "staff": 1, "line": 0, "head": "normal", "stem": "up" }, "0:127": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3 }, "128:0:35": { "staff": 5, "line": 8, "head": "normal", "stem": "down", "hitSec": 0.037, "name": { "zh": "\u5927\u9F13", "en": "Acoustic Bass Drum" } }, "128:0:36": { "staff": 5, "line": 7, "head": "normal", "stem": "down", "hitSec": 7e-3, "name": { "zh": "\u5927\u9F13", "en": "Bass Drum 1" } }, "128:0:37": { "staff": 5, "line": 3, "head": "slashed1", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u5C0F\u9F13\uFF08\u9F13\u8FB9\u4FA7\u51FB\uFF09", "en": "Side Stick" } }, "128:0:38": { "staff": 5, "line": 3, "head": "normal", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u5C0F\u9F13", "en": "Acoustic Snare" } }, "128:0:39": { "staff": 5, "line": -2, "head": "plus", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u62CD\u624B", "en": "Hand Clap" } }, "128:0:40": { "staff": 5, "line": 3, "head": "slash", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u5C0F\u9F13", "en": "Electric Snare" } }, "128:0:41": { "staff": 5, "line": 6, "head": "normal", "stem": "up", "hitSec": 0.017, "name": { "zh": "\u843D\u5730\u9F13", "en": "Low Floor Tom" } }, "128:0:42": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u811A\u8E0F\u94B9\uFF08\u95ED\u9572\uFF09", "en": "Closed Hi Hat" } }, "128:0:43": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.017, "name": { "zh": "\u843D\u5730\u9F13", "en": "High Floor Tom" } }, "128:0:44": { "staff": 5, "line": 9, "head": "x", "stem": "down", "hitSec": 0.012, "name": { "zh": "\u811A\u8E0F\u94B9\uFF08\u811A\u8E29\uFF09", "en": "Pedal Hi-Hat" } }, "128:0:45": { "staff": 5, "line": 4, "head": "normal", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u7B52\u9F13", "en": "Low Tom" } }, "128:0:46": { "staff": 5, "line": -1, "head": "circle-x", "stem": "up", "hitSec": 0.022, "name": { "zh": "\u811A\u8E0F\u94B9\uFF08\u5F00\u9572\uFF09", "en": "Open Hi-Hat" } }, "128:0:47": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u7B52\u9F13", "en": "Low-Mid Tom" } }, "128:0:48": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u7B52\u9F13", "en": "Hi-Mid Tom" } }, "128:0:49": { "staff": 5, "line": -2, "head": "x", "stem": "up", "hitSec": 0.057, "name": { "zh": "\u788E\u97F3\u94B9", "en": "Crash Cymbal 1" } }, "128:0:50": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u7B52\u9F13", "en": "High Tom" } }, "128:0:51": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u53E0\u97F3\u94B9", "en": "Ride Cymbal 1" } }, "128:0:52": { "staff": 5, "line": -3, "head": "normal", "stem": "up", "hitSec": 0.027, "name": { "zh": "\u4E2D\u56FD\u94B9", "en": "Chinese Cymbal" } }, "128:0:53": { "staff": 5, "line": 0, "head": "diamond", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u53E0\u97F3\u94B9\uFF08\u6572\u9572\u5E3D\uFF09", "en": "Ride Bell" } }, "128:0:54": { "staff": 5, "line": 1, "head": "diamond", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u94C3\u9F13", "en": "Tambourine" } }, "128:0:55": { "staff": 5, "line": -4, "head": "x", "stem": "up", "hitSec": 0.067, "name": { "zh": "\u6C34\u94B9", "en": "Splash Cymbal" } }, "128:0:56": { "staff": 5, "line": 1, "head": "triangle-down", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u725B\u94C3", "en": "Cowbell" } }, "128:0:57": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.057, "name": { "zh": "\u788E\u97F3\u94B9", "en": "Crash Cymbal 2" } }, "128:0:58": { "staff": 5, "line": 0, "head": "ti", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u98A4\u97F3\u5668", "en": "Vibraslap" } }, "128:0:59": { "staff": 5, "line": 2, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u53E0\u97F3\u94B9", "en": "Ride Cymbal 2" } }, "128:0:60": { "staff": 5, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u90A6\u54E5\u9F13", "en": "Hi Bongo" } }, "128:0:61": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u90A6\u54E5\u9F13", "en": "Low Bongo" } }, "128:0:62": { "staff": 5, "line": 1, "head": "custom", "stem": "up", "smufl": "noteheadXOrnate", "hitSec": 0.012, "name": { "zh": "\u5EB7\u52A0\u9F13\uFF08\u95F7\u51FB\uFF09", "en": "Mute Hi Conga" } }, "128:0:63": { "staff": 5, "line": 1, "head": "normal", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u5EB7\u52A0\u9F13\uFF08\u5F00\u653E\u51FB\uFF09", "en": "Open Hi Conga" } }, "128:0:64": { "staff": 5, "line": 2, "head": "normal", "stem": "up", "hitSec": 0.017, "name": { "zh": "\u5EB7\u52A0\u9F13", "en": "Low Conga" } }, "128:0:65": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u5929\u5DF4\u9F13", "en": "High Timbale" } }, "128:0:66": { "staff": 5, "line": 7, "head": "normal", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u5929\u5DF4\u9F13", "en": "Low Timbale" } }, "128:0:67": { "staff": 5, "line": -2, "head": "triangle-down", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u963F\u54E5\u54E5\u94C3", "en": "High Agogo" } }, "128:0:68": { "staff": 5, "line": -1, "head": "triangle-down", "stem": "up", "hitSec": 7e-3, "name": { "zh": "\u963F\u54E5\u54E5\u94C3", "en": "Low Agogo" } }, "128:0:69": { "staff": 5, "line": 2, "head": "diamond", "stem": "up", "hitSec": 0.032, "name": { "zh": "\u94C1\u6C99\u94C3", "en": "Cabasa" } }, "128:0:70": { "staff": 5, "line": 4, "head": "diamond", "stem": "up", "hitSec": 0.032, "name": { "zh": "\u6C99\u69CC", "en": "Maracas" } }, "128:0:71": { "staff": 5, "line": -3, "head": "x", "stem": "up", "hitSec": 0.072, "name": { "zh": "\u5DF4\u897F\u54E8\uFF08\u77ED\uFF09", "en": "Short Whistle" } }, "128:0:72": { "staff": 5, "line": -3, "head": "ti", "stem": "up", "hitSec": 0.022, "name": { "zh": "\u5DF4\u897F\u54E8\uFF08\u957F\uFF09", "en": "Long Whistle" } }, "128:0:73": { "staff": 5, "line": -1, "head": "x", "stem": "up", "hitSec": 0.012, "name": { "zh": "\u522E\u74DC\uFF08\u77ED\u522E\uFF09", "en": "Short Guiro" } }, "128:0:74": { "staff": 5, "line": -1, "head": "slashed1", "stem": "up", "hitSec": 0.222, "name": { "zh": "\u522E\u74DC\uFF08\u957F\u522E\uFF09", "en": "Long Guiro" } }, "128:0:75": { "staff": 5, "line": 0, "head": "la", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u51FB\u6728", "en": "Claves" } }, "128:0:76": { "staff": 5, "line": 5, "head": "la", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u6886\u5B50 (\u4E50\u5668)", "en": "Hi Wood Block" } }, "128:0:77": { "staff": 5, "line": 7, "head": "la", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u6886\u5B50 (\u4E50\u5668)", "en": "Low Wood Block" } }, "128:0:78": { "staff": 5, "line": 8, "head": "x", "stem": "up", "hitSec": 0.062, "name": { "zh": "\u594E\u5361\u9F13\uFF08\u95F7\uFF09", "en": "Mute Cuica" } }, "128:0:79": { "staff": 5, "line": 8, "head": "slashed2", "stem": "up", "hitSec": 0.042, "name": { "zh": "\u594E\u5361\u9F13\uFF08\u5F00\u653E\uFF09", "en": "Open Cuica" } }, "128:0:80": { "staff": 5, "line": 0, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "\u4E09\u89D2\u94C1\uFF08\u95F7\uFF09", "en": "Mute Triangle" } }, "128:0:81": { "staff": 5, "line": 0, "head": "triangle-up", "stem": "up", "hitSec": 0.022, "name": { "zh": "\u4E09\u89D2\u94C1\uFF08\u5F00\u653E\uFF09", "en": "Open Triangle" } }, "128:0:27": { "staff": 5, "line": 8, "head": "slash", "stem": "up", "hitSec": 0.012, "name": { "zh": "Laser (High Q)", "en": "Laser (High Q)" } }, "128:0:28": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 0.012, "name": { "zh": "Slap", "en": "Slap" } }, "128:0:29": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.092, "name": { "zh": "Scratch Push", "en": "Scratch Push" } }, "128:0:30": { "staff": 5, "line": 6, "head": "slash", "stem": "up", "hitSec": 0.077, "name": { "zh": "Scratch Pull", "en": "Scratch Pull" } }, "128:0:31": { "staff": 5, "line": -1, "head": "plus", "stem": "up", "hitSec": 7e-3, "name": { "zh": "Sticks", "en": "Sticks" } }, "128:0:32": { "staff": 5, "line": 10, "head": "plus", "stem": "up", "hitSec": 2e-3, "name": { "zh": "Square Click", "en": "Square Click" } }, "128:0:33": { "staff": 5, "line": 10, "head": "x", "stem": "up", "hitSec": 2e-3, "name": { "zh": "Metronome Click", "en": "Metronome Click" } }, "128:0:34": { "staff": 5, "line": 10, "head": "triangle-up", "stem": "up", "hitSec": 2e-3, "name": { "zh": "Metronome Bell", "en": "Metronome Bell" } }, "128:0:82": { "staff": 5, "line": 5, "head": "diamond", "stem": "up", "hitSec": 0.027, "name": { "zh": "Shaker", "en": "Shaker" } }, "128:0:83": { "staff": 5, "line": 3, "head": "triangle-down", "stem": "up", "hitSec": 0.072, "name": { "zh": "Jingle Bell", "en": "Jingle Bell" } }, "128:0:84": { "staff": 5, "line": 2, "head": "ti", "stem": "up", "name": { "zh": "Belltree", "en": "Belltree" } }, "128:0:85": { "staff": 5, "line": 2, "head": "la", "stem": "up", "hitSec": 2e-3, "name": { "zh": "Castanets", "en": "Castanets" } }, "128:0:86": { "staff": 5, "line": 4, "head": "custom", "stem": "up", "smufl": "noteheadSlashX", "hitSec": 7e-3, "name": { "zh": "Mute Surdo", "en": "Mute Surdo" } }, "128:0:87": { "staff": 5, "line": 4, "head": "slash", "stem": "up", "hitSec": 0.027, "name": { "zh": "Open Surdo", "en": "Open Surdo" } }, "0:112": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 84, "from": "Q1621499" }, "0:113": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 67, "from": "Q395212" }, "0:115": { "staff": 1, "line": -1, "head": "normal", "stem": "up", "hitSec": 2e-3, "kitKey": 76, "from": "Q957212" }, "0:116": { "staff": 1, "line": 0, "head": "normal", "stem": "up", "hitSec": 0.027, "kitKey": 87, "from": "Q221769" }, "0:117": { "staff": 5, "line": 5, "head": "normal", "stem": "up", "hitSec": 7e-3, "kitKey": 45, "from": "Q849349" }, "0:118": { "staff": 5, "line": 0, "head": "normal", "stem": "up", "hitSec": 7e-3, "from": "Q1327480" } };
 
 // src/gm/percussion.ts
 function percOf(bank, program, note2) {
@@ -13390,6 +13392,45 @@ function drawJianpu(c10, mine, mode = "digits") {
   const { song, paper, o: o10, P: P2, tx: tx2, TR, put: put2, notes, chordHeads, keyHints, chordTagsOut, placeBelow, rests, marks, slots, heads, bars, rows, staffTop, rowOf, placeAbove, per, measured, nSys, sysStarts, staffEnd, cols, ind0 } = c10;
   const jk = c10.scale ?? 1, Q2 = (v) => P2(v * jk);
   const Y2 = (row2, v) => staffTop(row2) + Q2(v);
+  const layKitLegend = (q2, r10) => {
+    const first = q2.units.find((u2) => u2.kind === "chunk" && u2.note && !u2.pad && !!u2.pitch);
+    if (!first) return;
+    const groups = /* @__PURE__ */ new Map();
+    for (const u2 of q2.units) {
+      if (u2.kind !== "chunk" || !u2.note || u2.pad || u2.system !== first.system || !u2.pitch) continue;
+      for (const pp of u2.pitches.length ? u2.pitches : [u2.pitch]) {
+        const m2 = midiOf(pp), nm2 = q2.p.kitNames?.[m2];
+        if (!nm2) continue;
+        const pi = percOf(128, 0, m2), ch2 = KIT_CHAR[pi?.head ?? "normal"] ?? "\u25CF", g3 = groups.get(ch2) ?? { line: pi?.line ?? 4, names: [], lines: [] };
+        g3.line = Math.min(g3.line, pi?.line ?? 4);
+        if (!g3.names.includes(nm2)) {
+          g3.names.push(nm2);
+          g3.lines.push(pi?.line ?? 4);
+        }
+        groups.set(ch2, g3);
+      }
+    }
+    if (!groups.size) return;
+    const width = ind0 - 0.6, lines = [];
+    for (const [ch2, g3] of [...groups].sort((a10, b3) => a10[1].line - b3[1].line)) {
+      const nms = g3.names.map((nm2, k2) => ({ nm: nm2, ln: g3.lines[k2] })).sort((a10, b3) => a10.ln - b3.ln).map((x2) => x2.nm);
+      let cur = `${ch2} ${nms[0]}`;
+      for (const nm2 of nms.slice(1)) {
+        const next2 = `${cur} / ${nm2}`;
+        if (c10.mw("jp-legend", next2) <= width) cur = next2;
+        else {
+          lines.push(cur + " /");
+          cur = `\u3000${nm2}`;
+        }
+      }
+      lines.push(cur);
+    }
+    const row2 = rowOf(first.system, r10, 0), nameFs = tx2("part-name"), fs = tx2("jp-legend"), LH = fs * 1.3;
+    const mid = Q2((JP_BODY.top + JP_BODY.bottom) / 2), y0 = mid + nameFs * 0.55 + nameFs * 0.35 + fs * 1.05 + (q2.p.badges?.length ? TR("part-badge", 1.4) : 0);
+    placeBelow(row2, 0, (y2) => {
+      lines.forEach((ln3, k2) => c10.prims.push({ t: "text", x: P2(MARGIN), y: y2 + LH * k2, s: ln3, cls: "jp-legend", size: fs, anchor: "start" }));
+    }, { min: y0 / P2(1), count: true });
+  };
   for (const r10 of mine) {
     const q2 = per[r10], units = q2.units, tokens = q2.tokens, xHead = mode === "digits" && !!q2.p.xHead, kit = q2.p.perc?.kind === "kit";
     for (let s10 = 0; s10 < nSys; s10++) {
@@ -13751,6 +13792,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
     }
     layDynamics(orn);
+    if (kit && mode === "x" && q2.p.kitNames) layKitLegend(q2, r10);
     const inkL = measured[r10].inkL;
     caretStops(q2, { cx: (u2) => {
       const k2 = u2.kind === "chunk" ? inkL.get(u2) : void 0;
@@ -32857,9 +32899,9 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-031eb477c494.mjs");
+      return pick(() => "layout-worker-50ce820cf585.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-0351db4bb88f.mjs");
+      return pick(() => "encode-worker-dbf4137da628.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -42787,7 +42829,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "7a1a7f38df059cc7" : "dev";
+var CORE_HASH = true ? "776d3c8e2c71f0cb" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -54780,7 +54822,7 @@ function scorePdf(a10) {
         return [{ op: "rect", x: p2.x + ox2, y: p2.y - top, w: p2.w, h: p2.h, color: INK }];
       case "path": {
         const st2 = cls.map((c10) => STROKE[c10]).find(Boolean), segs = segsOf(p2.d, ox2, -top);
-        return st2 ? [{ op: "path", segs, color: INK, fill: false, width: st2.w * scaleW, ...cls.includes("ramp") ? { dash: [4 * scaleW, 3 * scaleW] } : {}, ...st2.round ? { round: true } : {} }] : [{ op: "path", segs, color: INK, fill: true }];
+        return st2 ? [{ op: "path", segs, color: INK, fill: false, width: st2.w * scaleW, ...st2.round ? { round: true } : {} }] : [{ op: "path", segs, color: INK, fill: true }];
       }
       case "glyph": {
         const size = p2.size ?? 4 * sp2, out = [];
@@ -59186,6 +59228,19 @@ function partLooks() {
   });
   return { colors, abbrs };
 }
+function kitNamesOf(partId) {
+  const zh2 = lang().startsWith("zh"), out = {};
+  for (const paper of D3.st.song.papers) for (const t10 of paper.tracks[partId] ?? []) {
+    if (t10.kind !== "note" || !t10.pitch) continue;
+    for (const pp of [t10.pitch, ...t10.chord ?? []]) {
+      const m2 = midiOf(pp);
+      if (out[m2] !== void 0) continue;
+      const nm2 = percOf(128, 0, m2)?.name;
+      if (nm2) out[m2] = zh2 ? nm2.zh : nm2.en;
+    }
+  }
+  return out;
+}
 function partViews() {
   const labels = partLabels(D3.st.song, D3.extras), mutes = lyricMutes(), looks = partLooks();
   return D3.st.song.parts.map((p2, k2) => {
@@ -59194,7 +59249,8 @@ function partViews() {
     const lm2 = mutes.get(p2.id);
     const ly2 = plug?.lyrics, noLyrics = ly2 === "hum" || ly2 === "none" ? _t("{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220", { p: labels[k2], p2: ly2 === "hum" ? _t("\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC") : _t("\u4E0D\u5531\u6B4C\u8BCD") }) : "";
     const nota = plug?.notation?.({ extras: D3.extras, role: p2.role }) ?? {}, rg2 = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p2.role);
-    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, ...rg2 ? { range: { lo: rg2.lo, hi: rg2.hi } } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p2.role) };
+    const kitNames = nota.perc?.kind === "kit" ? kitNamesOf(p2.id) : void 0;
+    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, ...rg2 ? { range: { lo: rg2.lo, hi: rg2.hi } } : {}, ...kitNames ? { kitNames } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p2.role) };
   });
 }
 function afterViewChange() {
@@ -62498,4 +62554,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-16e37861c9ee.mjs.map
+//# sourceMappingURL=moonsinger-f82194d36d91.mjs.map

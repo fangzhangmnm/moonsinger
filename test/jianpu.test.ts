@@ -12,6 +12,7 @@ import { rangeBase, fewestDotsBase } from "../src/score/degree.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
 import { CHORD_CH_EM } from "../src/render/jianpu/glyphs.ts";
 import { parseTtf } from "../src/export/ttf.ts";
+import { isPrinted } from "../src/export/score-pdf.ts";
 // node 的内置模块照 pdf-wysiwyg.test.ts 的取法（类型检查不带 node 的类型）
 const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
 const fs = nodeMod("node:fs"), zlib = nodeMod("node:zlib");
@@ -106,6 +107,17 @@ describe("简谱数字行", () => {
     eq(ks.slice(3).map((p) => p.s).join(""), "⊗×", "开的踩镲 = ⊗、吊镲 = ×");
     const oneL = lay([n(M(38)), n(M(38))], undefined, { perc: { kind: "one", key: 38, info: { staff: 1, line: 0, head: "normal", stem: "up" } } }).L;
     eq(oneL.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-x/.test(p.cls ?? "")).map((p) => p.s).join(""), "XX", "只有一件鼓的行照旧一律 X");
+    // 图例（5-6，统筹裁定 (c)）：整套鼓这张纸上第一次有敲击的那一行，行首名字下面一行一种字（名字宿主按界面语言给）；从上往下 = 五线鼓谱上的高低；只印一次；印出来（PDF 也有）
+    const names = { 36: "大鼓", 38: "小鼓", 42: "脚踏钹（闭镲）", 46: "脚踏钹（开镲）", 49: "碎音钹" };
+    const many = Array.from({ length: 40 }, (_, i) => (i % 2 ? n(M(42), TPQ, { chord: [M(38), M(36)] }) : n(M(46))));
+    const lgL = lay(many, undefined, { ...kit, kitNames: names }).L, legend = lgL.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-legend/.test(p.cls ?? ""));
+    assert(lgL.systems.length >= 2, "排了好几行");
+    eq(legend.map((p) => p.s).join(" | "), "⊗ 脚踏钹（开镲） | × 脚踏钹（闭镲） | ● 小鼓 / 大鼓", "一行一种字，按五线鼓谱上的高低从上往下（踩镲在上、鼓在下；一样高 = 先出现的在前），同一种字的几件写在一起、也是上面的先写");
+    assert(legend.every((p, k) => k === 0 || p.y > legend[k - 1]!.y) && legend.every((p) => isPrinted(p.cls)), "从上往下排、印出来");
+    const name = lgL.prims.find((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /part-name/.test(p.cls ?? ""))!;
+    assert(legend[0]!.y > name.y && legend.every((p) => Math.abs(p.x - name.x) < 1e-6), "在行首名字下面、和名字左对齐");
+    assert(legend.every((p) => p.y < lgL.systems[1]!.staffTop), "只印在第一行（不重复印）");
+    eq(lay(many, undefined, kit).L.prims.filter((p) => /jp-legend/.test(p.cls ?? "")).length, 0, "没给名字 = 不印图例");
     assert(!L.prims.some((p) => p.t === "text" && /jp-acc/.test(p.cls ?? "")) && !L.prims.some((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")), "没有升降号、没有八度点");
     eq(L.prims.filter((p) => p.t === "line" && /jp-ul/.test(p.cls ?? "")).length, 1, "两个八分连一条下划线（节奏写法同数字行）");
     assert(!L.prims.some((p) => p.t === "text" && /jp-head/.test(p.cls ?? "") && (p as { s: string }).s.startsWith("1=")), "谱头不印「1=」");

@@ -50,14 +50,23 @@ export const ICON_CREDITS: { id: string; set: string; author: string; license: s
 export function renderPerc() {
   const p = join(DST, FILES.gmMap); if (!existsSync(p)) return null;
   const gm = JSON.parse(readFileSync(p, "utf8")), out = {};
+  const conceptsById = new Map(JSON.parse(readFileSync(join(DST, FILES.concepts), "utf8")).concepts.map((c) => [c.id, c]));
+  // 鼓件的名字（谱面分家 5-6，统筹裁定：简谱整套鼓的图例要印是哪件；和符头同一个出处）：中文 = 这一行本尊概念的中文名（奏法不是普通的加括号：「脚踏钹（闭镲）」），
+  //   英文 = GM 的名字（Closed Hi Hat）；GS 扩展鼓键没有概念 = 两种都写它的英文名。只给带键的（鼓组里的一件）
+  const nameOf = (r) => {
+    const en = r.gmName ?? r.name; if (!en) return undefined;
+    const c = r.concept ? conceptsById.get(r.concept) : undefined, zh0 = c?.names?.zh, tech = r.technique && r.technique.id !== "ordinario" ? r.technique.zh : undefined;
+    return { zh: zh0 ? (tech ? `${zh0}（${tech}）` : zh0) : en, en };
+  };
   for (const r of [...gm.rows, ...(gm.extraDrumKeys ?? [])]) {
     const pc = r.percussion; if (!pc) continue;
-    const key = `${r.bank}:${r.program}${r.note !== undefined && r.note !== null ? `:${r.note}` : ""}`; if (out[key]) continue;   // 一个预设好几行（本尊 / 平替）：写法一样，取第一行
-    out[key] = { staff: pc.staff, line: pc.line, head: pc.head, stem: pc.stem, ...(pc.smufl ? { smufl: pc.smufl } : {}), ...(typeof r.hitSec === "number" ? { hitSec: r.hitSec } : {}) };
+    const hasNote = r.note !== undefined && r.note !== null, key = `${r.bank}:${r.program}${hasNote ? `:${r.note}` : ""}`; if (out[key]) continue;   // 一个预设好几行（本尊 / 平替）：写法一样，取第一行
+    const nm = hasNote ? nameOf(r) : undefined;
+    out[key] = { staff: pc.staff, line: pc.line, head: pc.head, stem: pc.stem, ...(pc.smufl ? { smufl: pc.smufl } : {}), ...(typeof r.hitSec === "number" ? { hitSec: r.hitSec } : {}), ...(nm ? { name: nm } : {}) };
   }
   // 补洞（v0.10.31；user「这里没变成鼓谱…以及wood block和太鼓的分类你确定没问题？」）：仓鼠只给 GM 120–128 的行写了 percussion，GM 116 Woodblock / 117 Taiko /
   //   118 Melodic Tom / 119 Synth Drum 这几行没写，但它们的本尊概念是 pitched:false、有 MuseScore 的写法 → 这几行用本尊概念的写法；mainKey = 并成一套鼓时它在哪个鼓键那一线
-  const concepts = JSON.parse(readFileSync(join(DST, FILES.concepts), "utf8")).concepts;
+  const concepts = [...conceptsById.values()];
   for (const c of concepts) {
     const pc = c.percussion; if (c.pitched !== false || !pc) continue;
     for (const g of c.ids?.gm ?? []) {
@@ -73,7 +82,7 @@ export function renderPerc() {
 // 鼓谱表：键 = "bank:program[:note]"（鼓件 = 128:0:键；音效 = 0:119… 不带键）。line = MuseScore <Drum><line> 的约定（0 = 最上面那条线，往下 +1 走半格；五线谱最下面一线 = 8，一线谱那条线 = 0）。
 // hitSec = 采样开头到「砸下去那一下」几秒（TinySoundFont + GeneralUser GS 实测；反向镲 = 快结尾）。
 export type PercHead = ${heads.map((h) => JSON.stringify(h)).join(" | ")};
-export interface PercInfo { staff: 1 | 5; line: number; head: PercHead; stem: "up" | "down"; smufl?: string; hitSec?: number; /** 并成一套鼓时画在哪个鼓键那一线（概念的 mainKey）。 */ kitKey?: number; /** 这一行的写法借的是哪个概念（gm-map 那一行没写）。 */ from?: string }
+export interface PercInfo { staff: 1 | 5; line: number; head: PercHead; stem: "up" | "down"; smufl?: string; hitSec?: number; /** 并成一套鼓时画在哪个鼓键那一线（概念的 mainKey）。 */ kitKey?: number; /** 这一行的写法借的是哪个概念（gm-map 那一行没写）。 */ from?: string; /** 鼓组里的一件叫什么（简谱整套鼓的图例印；中文 = 本尊概念名 + 非普通奏法，英文 = GM 名）。 */ name?: { zh: string; en: string } }
 export const PERC_VERSION = ${VERSION};
 export const PERC: Record<string, PercInfo> = ${JSON.stringify(out)};
 `;
