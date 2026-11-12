@@ -239,6 +239,14 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **空白处小菜单**（2026-10-08 晚，user「空白长按可以黏贴或者类似的右键上下文菜单」「小菜单同意」）：空白处长按（手指 / 笔）或电脑右键 → 光标放到那里 + 非模态小菜单（`openScoreMenu`）：粘贴 / 小节线 / 句号 / 调号… / 拍号… / 速度… / 全选这一行 / 全选；音上右键不接（选区条管）。
 - **月读条款译文**（user「license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）：`src/singer/credit-translations.ts` 中 / 英，按原文 sha256 钉住（`test/credit-translations.test.ts`：上游改原文 = 红 = 重译）；设置里原文在上（以原文为准）。不进 i18n 那套（原文永远要显示、译文要钉原文，i18n 只防漏译）。
 
+## 界面的规矩（只管本仓；added 2026-11-12 by Claude Fable 5.2）
+
+- **下拉框一律用我们自己的下拉标准件，不用系统原生的 `<select>`**（user 2026-11-12：「还有就是我们的下拉框全都不要用 iPad 默认的，都用我们 UI 库里面自带的。我们以前应该做过一些，它还能支持图标，很舒服的。然后这个也写到这个写歌软件的家规里面，没必要变成全家族的家规，因为一开始快速迭代的时候其实无所谓。」）。
+  - 标准件 = 一颗按钮 + 弹出来的菜单，项能带图标、能分组、当前项打勾。原生的在 iPad 上弹的是系统的层：字体、夜间配色、图标都不归我们管。
+  - 现状（2026-11-12，Claude Fable 5.2 查的）：这个件现在住在画画软件里（`../20260524 WeebPaint/src/ui/select-field.ts`，建在界面零件库的弹出菜单上），**界面零件库 `@internal/workbench-elements` 里还没有**。抽进库要升库的小版本 = 要 user 批（家规）；批之前本仓不抄一份。本仓现在还有 14 处原生 `<select>`（谱头面板 6、混音台 3、乐器目录 2、乐器页 1、挂签 1、设置 1）。施工 = `ai-docs/20261111-score-surface-construction-plan.md` 7-T。
+  - 换完之后的守卫：`src` 和 `index.html` 里不许再出现 `<select`（结构守卫）。
+  - 这条只管本仓。别的家族 app 各按各的进度，不拿这条去要求它们（user 同一句）。
+
 ## 谱面分家：排版 = 框架 + 谱种表 + 每种行的画法（五线谱 / 简谱）（v0.16.108 起；第四刀起有简谱，第五刀起简谱画多声部，第六刀收工；2026-11-11，Claude Opus 5.5；READ before touching `src/render/`）
 
 ADR-0005（`ai-docs/adr/0005-score-surface-five-layers-row-depiction-is-the-unit.md`）+ 设计稿 `ai-docs/20261111-score-surface-architecture.md`（实际接口 = 第 7½ 节）+ 施工单 `ai-docs/20261111-score-surface-construction-plan.md`（1b 的施工记录在第六节）。流程图 = `ai-docs/20261109-pipelines.md` A8⅓。
