@@ -258,8 +258,8 @@ body.listen-mode .ink-caret { display: none; }
 /* 设置面板：模型来源 / 导入模型包 / 月读的署名与条款 */
 .settings-card { width: min(520px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; }
 /* 设置分五页（v0.16.80）：页签一排五格（窄屏也不折行）；不是这一页的收起；下拉框占一整行宽、最多 320px */
-.set-tabs { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin: 2px 0 12px; }
-.set-tabs .btn { padding: 2px; font-size: 11px; letter-spacing: -0.3px; white-space: normal; line-height: 1.15; height: auto; min-height: 34px; text-align: center; overflow-wrap: anywhere; justify-content: center; }   /* 放不下 = 折两行，不截断（v0.16.90：英文「Music theory helper」在 iPad mini 竖屏放不下） */
+.set-tabs { --btn-cell: 3.8em; gap: 4px; margin: 2px 0 12px; }   /* 一排格子 = .btn-row（7-C）：页签的字不折行，放不下 = 整格换到下一行；英文页签名改短了（UI / Theory / Audio / MIDI / Dev） */
+.set-tabs .btn { padding: 2px 4px; font-size: 12px; height: 34px; justify-content: center; }
 .set-page[hidden] { display: none; }
 /* 设置一项一行（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：名字 + 「?」在左、控件在右，说明点「?」才展开；
    照 WeebPaint 设置那种一列整宽的行，行间一条细线 */
@@ -273,6 +273,7 @@ body.listen-mode .ink-caret { display: none; }
 .set-item > .set-packs { margin: 4px 0 0; }
 .set-item > .set-row { margin: 6px 0 0; }
 .set-item .row-help { padding: 2px 0 4px; }
+.set-item .set-where { display: inline-block; margin-top: 3px; }   /* 页面设置「?」里那一句「存在哪」（7-C） */
 /* 长文弹窗（版权与署名 / 诊断日志；v0.16.90）：盖在设置上面，正文能滚、能选中复制 */
 .doc-layer { position: fixed; inset: 0; z-index: var(--z-menu); background: rgba(0, 0, 0, .28); display: flex; align-items: center; justify-content: center; padding: 16px; }
 .doc-card { width: min(640px, 100%); max-height: calc(100dvh - 32px); display: flex; flex-direction: column; }

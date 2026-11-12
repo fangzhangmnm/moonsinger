@@ -4,6 +4,7 @@
 //   关 = 没了、写进歌里（chordTags: false）、能撤销；设置「乐理助手」里只剩一行说搬到哪了；设备上不再记。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/chord-tags.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pickOnPage } from "./dd.mjs";   // 页面设置的下拉（7-C）：先翻到那一页再选
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -20,7 +21,7 @@ const tags = () => p.$$eval("#score text.chord-tag", (ts) => ts.map((t) => t.tex
 const xs = () => p.evaluate(() => window.__moonsinger.layout().notes.map((n) => Math.round(n.x)).join(","));
 const x0 = await xs();
 const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
-const setChord = async (v) => { await openSheet(); await p.click(`.settings-card [data-v="ct:${v}"]`); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(250); };
+const setChord = async (v) => { await openSheet(); await pickOnPage(p, '.settings-card [data-pg="ct"]', v); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(250); };
 const songTags = () => p.evaluate(() => window.__moonsinger.state().song.chordTags);
 check((await tags()) === "V7 I", "默认开 = G B D F 写 V7、C E G 写 I", await tags());
 await setChord("off");

@@ -2,6 +2,7 @@
 //   = 全曲第一位歌手的「只看它」：别的歌手缩成细行；再点 = 都看；和歌手牌那个是同一个开关。created 2026-10-10 by Claude Opus 5.5
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/only1.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pickOnPage, ddValue } from "./dd.mjs";   // 页面设置的下拉（7-C）：先翻到那一页再选
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const N = (s, o) => `<note><pitch><step>${s}</step><octave>${o}</octave></pitch><duration>1</duration><type>quarter</type></note>`;
@@ -16,26 +17,26 @@ const shownParts = () => p.evaluate(() => [...new Set(window.__moonsinger.layout
 check((await shownParts()) === "P1,P2", "两位歌手都画着", await shownParts());
 const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForTimeout(200); };
 await openSheet();
-check(!!(await p.$('[data-v="only1"]')), "纸的设置里有「只看一号轨」");
-await p.click('[data-v="only1"]'); await p.waitForTimeout(200);
+check(!!(await p.$('[data-pg="only1"]')), "页面设置里有「只看一号轨」");
+await pickOnPage(p, '[data-pg="only1"]', "on"); await p.waitForTimeout(200);
 check((await shownParts()) === "P1", "点了 = 只画一号轨（别的缩成细行）", await shownParts());
-check(await p.$eval('[data-v="only1"]', (e) => e.classList.contains("is-on")), "开关亮着");
-await p.click('[data-v="only1"]'); await p.waitForTimeout(200);
+check((await ddValue(p, '[data-pg="only1"]')) === "on", "下拉里是「只看…」");
+await pickOnPage(p, '[data-pg="only1"]', "off"); await p.waitForTimeout(200);
 check((await shownParts()) === "P1,P2", "再点 = 都看", await shownParts());
 // 歌词怎么排（v0.9.40；user「先试下你说的两个歌词开关吧，approved」）：按歌词（默认）/ 按节奏；进歌里、能撤销
-check(await p.$eval('[data-v="lyr:rhythm"]', (e) => e.classList.contains("is-on")), "纸的设置里有歌词两种排法，默认「按节奏」（user「默认用修歌词的那个排版方式吧」）");
-await p.click('[data-v="lyr:lyrics"]'); await p.waitForTimeout(200);
-check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === "lyrics" && await p.$eval('[data-v="lyr:lyrics"]', (e) => e.classList.contains("is-on")), "点「按歌词」= 歌里记着、按钮亮");
+check((await ddValue(p, '[data-pg="lyr"]')) === "rhythm", "页面设置里有歌词两种排法，默认「按节奏」（user「默认用修歌词的那个排版方式吧」）");
+await pickOnPage(p, '[data-pg="lyr"]', "lyrics"); await p.waitForTimeout(200);
+check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === "lyrics" && (await ddValue(p, '[data-pg="lyr"]')) === "lyrics", "选「按歌词」= 歌里记着、下拉跟着");
 await p.keyboard.press("Escape"); await p.mouse.click(5, 880); await p.waitForTimeout(150);
 await p.keyboard.press("Control+z"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.lyricFit)) === undefined, "撤销 = 回到按节奏");
 // 小节号（v0.9.42）：纸的设置里「每行开头 / 不印」，默认每行开头；进歌里
 await openSheet();
-check(await p.$eval('[data-v="bn:on"]', (e) => e.classList.contains("is-on")), "纸的设置里有小节号，默认「每行开头」");
-await p.click('[data-v="bn:off"]'); await p.waitForTimeout(200);
-check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === "off" && (await p.$$eval("#score text.bar-no", (e) => e.length)) === 0, "点「不印」= 歌里记着、谱上没有小节号");
-await p.click('[data-v="bn:on"]'); await p.waitForTimeout(200);
-check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === undefined, "再点「每行开头」= 回到默认");
+check((await ddValue(p, '[data-pg="bn"]')) === "on", "页面设置里有小节号，默认「每行开头」");
+await pickOnPage(p, '[data-pg="bn"]', "off"); await p.waitForTimeout(200);
+check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === "off" && (await p.$$eval("#score text.bar-no", (e) => e.length)) === 0, "选「不印」= 歌里记着、谱上没有小节号");
+await pickOnPage(p, '[data-pg="bn"]', "on"); await p.waitForTimeout(200);
+check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === undefined, "再选「每行开头」= 回到默认");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nonly1: ${pass} passed, ${fail} failed`);

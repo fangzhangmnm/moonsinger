@@ -27,3 +27,11 @@ export async function closeList(p) {
 }
 /** 钮面上写的字（= 现在选着的那一项的名字）。 */
 export const ddLabel = (p, sel) => p.$eval(sel, (b) => b.querySelector(".select-field-label")?.textContent ?? "");
+/** 分页面板（设置 / 页面设置，7-C）里的下拉：它在哪一页（.set-page[data-page]）没露着就先点那一页的页签，再选。 */
+export async function pickOnPage(p, sel, value) {
+  const pg = await p.$eval(sel, (b) => { const page = b.closest(".set-page"); return page && page.hidden ? page.dataset.page : null; });
+  if (pg) { await p.click(`[data-tab="${css(pg)}"]`); await p.waitForTimeout(60); }
+  await pick(p, sel, value);
+}
+/** 下拉现在的值。 */
+export const ddValue = (p, sel) => p.$eval(sel, (b) => b.value);

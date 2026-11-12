@@ -1289,7 +1289,27 @@ function setSongLook(next: EditorState, label: string): void { if (next !== D.st
 /** 设置分五页（v0.16.80，总表第 10 条：界面 / 辅助功能 / 音源与缓存 / MIDI / 开发者）；记住这次运行里上次看的那页。 */
 type SetPage = "ui" | "a11y" | "sound" | "midi" | "dev";
 let settingsPage: SetPage = "ui";
-const SET_PAGES = (): [SetPage, string][] => [["ui", _t("界面")], ["a11y", _t("乐理助手")], ["sound", _t("音源与缓存")], ["midi", "MIDI"], ["dev", _t("开发者")]];
+const SET_PAGES = (): [SetPage, string][] => [["ui", _t("界面##页签")], ["a11y", _t("乐理助手##页签")], ["sound", _t("音源与缓存##页签")], ["midi", "MIDI"], ["dev", _t("开发者##页签")]];   // 页签用短名字（英文一格放得下，7-C）
+// 设置那一套「一项一行」（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：短名字 + 控件，长说明进「?」（点了这一行下面展开；
+//   同乐器参数那一套 .row-lab .q / .row-help）。设置面板和页面设置（7-C）共用这一套：页签 + 一页一页 + 一项一行。
+const setQ = (help: string) => (help ? `<button class="q" type="button" data-q aria-label="${_t("这是什么")}">?</button>` : "");
+const setItem = (label: string, ctl: string, help = "", body = "", attrs = "") =>
+  `<div class="set-item"${attrs}><div class="set-head"><span class="row-lab">${label}${setQ(help)}</span>${ctl ? `<span class="set-ctl">${ctl}</span>` : ""}</div>${help ? `<div class="row-help">${help}</div>` : ""}${body}</div>`;
+/** 页签那一排（一排格子，.btn-row：字不折行，7-R / 7-C）。 */
+const setTabsHtml = (pages: readonly (readonly [string, string])[]): string => `<div class="set-tabs btn-row">${pages.map(([k, label]) => `<button class="btn chip" data-tab="${k}">${esc(label)}</button>`).join("")}</div>`;
+/** 只露 pg 那一页、它的页签亮着；页签点了换页；「?」点了 = 这一行下面展开说明（iPad 没有悬停）。回 showPage。 */
+function wireSetPages(box: HTMLElement, onPage: (pg: string) => void): (pg: string) => void {
+  const showPage = (pg: string): void => {
+    box.querySelectorAll<HTMLElement>(".set-page").forEach((el) => { el.hidden = el.dataset.page !== pg; });
+    box.querySelectorAll<HTMLElement>("[data-tab]").forEach((b) => b.classList.toggle("is-on", b.dataset.tab === pg));
+    onPage(pg);
+  };
+  box.addEventListener("click", (e) => {
+    const t = (e.target as HTMLElement).closest<HTMLElement>("[data-tab]"); if (t) { showPage(t.dataset.tab!); return; }
+    const qb = (e.target as HTMLElement).closest<HTMLElement>("[data-q]"); if (qb) qb.closest(".set-item")?.classList.toggle("show-help");
+  });
+  return showPage;
+}
 /** 设置里的一个下拉框（原来一排小按钮，user 嫌难看 → 下拉框）：data-set = 哪一项，改了走 openSettings 的 change。 */
 const setSel = (k: string, opts: [string, string][], cur: string): string =>
   dropdownHtml(opts.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-set="${k}"` });   // 界面零件库的下拉标准件（7-T）；openSettings 里 mountDropdowns 接上
@@ -1307,14 +1327,11 @@ function openSettings(): void {
   const inFolder = resourcesInFolder();   // 备用版：模型 / 音源都在文件夹里，浏览器缓存用不了——这几行画灰 + 说一句（规则书 §1 第 6 条）
   const box = document.createElement("div");
   box.className = "offer";
-  // 一项一行（v0.16.90，user 11-10「主要还是做一个问号机制…避免大段文字或者大段折叠文字放在settings里面」）：短名字 + 控件，长说明进「?」（点了这一行下面展开，
-  //   同乐器参数那一套 .row-lab .q / .row-help）；版权署名不放这里，进「版权与署名」那一篇长文（src/app/credits-doc.ts，按需跳到那一节）
-  const q = (help: string) => (help ? `<button class="q" type="button" data-q aria-label="${_t("这是什么")}">?</button>` : "");
-  const item = (label: string, ctl: string, help = "", body = "", attrs = "") =>
-    `<div class="set-item"${attrs}><div class="set-head"><span class="row-lab">${label}${q(help)}</span>${ctl ? `<span class="set-ctl">${ctl}</span>` : ""}</div>${help ? `<div class="row-help">${help}</div>` : ""}${body}</div>`;
+  // 一项一行（setItem，和页面设置共用）；版权署名不放这里，进「版权与署名」那一篇长文（src/app/credits-doc.ts，按需跳到那一节）
+  const item = setItem;
   const look = (v: string, label: string) => `<button class="btn" data-v="${v}">${label}</button>`;
   box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("设置")}</div>` +
-    `<div class="set-tabs">${SET_PAGES().map(([k, label]) => `<button class="btn chip" data-tab="${k}">${esc(label)}</button>`).join("")}</div>` +
+    setTabsHtml(SET_PAGES()) +
     `<div class="set-page" data-page="ui">` +
       item(LANG_LABEL, setSel("lang", [["auto", _t("跟系统")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", " data-i18n-skip") +
       item(_t("版权与署名"), look("doc:top", _t("看…")), _t("小月相的署名与使用条款、乐器目录图标的作者与许可，合在一篇里看")) +
@@ -1355,13 +1372,7 @@ function openSettings(): void {
   document.body.append(box);
   // 五页：点页签换页（这次运行里记住）；下拉框改了马上生效（语言 = 存 + 重载）
   mountDropdowns(box);   // 设置里的下拉（setSel）
-  const showPage = (pg: SetPage): void => {
-    settingsPage = pg;
-    box.querySelectorAll<HTMLElement>(".set-page").forEach((el) => { el.hidden = el.dataset.page !== pg; });
-    box.querySelectorAll<HTMLElement>("[data-tab]").forEach((b) => b.classList.toggle("is-on", b.dataset.tab === pg));
-  };
-  showPage(settingsPage);
-  box.querySelector(".set-tabs")!.addEventListener("click", (e) => { const t = (e.target as HTMLElement).closest<HTMLElement>("[data-tab]"); if (t) showPage(t.dataset.tab as SetPage); });
+  wireSetPages(box, (pg) => { settingsPage = pg as SetPage; })(settingsPage);
   box.addEventListener("change", (e) => {
     const el = e.target as HTMLButtonElement, k = el.dataset.set; if (!k) return;
     if (k === "lang") { saveLang(el.value === "auto" ? null : (el.value as Lang)); location.reload(); }
@@ -1407,8 +1418,7 @@ function openSettings(): void {
   const close = () => { clearInterval(resTimer); midiRowSync = null; models.source = srcIn.value; sources.source = sndIn.value; box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
-    const qb = (e.target as HTMLElement).closest<HTMLElement>("[data-q]");
-    if (qb) { qb.closest(".set-item")?.classList.toggle("show-help"); return; }   // 「?」= 这一行下面展开说明（iPad 没有悬停）
+    if ((e.target as HTMLElement).closest("[data-q], [data-tab]")) return;   // 「?」和页签归 wireSetPages
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
     if (e.target === box || v === "close") close();
     else if (v === "doc:top" || v === "doc:tsukuyomi") openDocLayer(box, _t("版权与署名"), sectionsHtml(creditsSections(lang())), v === "doc:top" ? undefined : "tsukuyomi");
@@ -1912,82 +1922,79 @@ function openCreditsSheet(): void {
   });
   ta.focus();
 }
-/** 纸的设置（纸右上角的小钮点开）：A4 / A5 / A6，整首歌一个；以后插图片也从这里进（user「加图片的入口以后也可以放那里」）。改了立刻生效。 */
+/** 页面设置（谱右上角那颗「1 / ♪」钮；7-C 起：页面设置 = 视图——怎么看、怎么印；user 2026-11-12「这个不应该在页面设置里面页面设置是视图」「整理成和设置一样的一页页的那个…都弄成下拉框」）。
+ *  两页：看谱（谱种、看谱方式、和弦标级数、只看一号轨）/ 版面（纸张、版式、排法、屏幕放不下纸的时候、小节号、歌词排法）；样子同设置面板（setTabsHtml / setItem / wireSetPages：
+ *  页签 + 一项一行 + 长说明进「?」），选项一律是下拉（界面零件库的下拉标准件，7-T）。曲段的列表拿掉了：增删、改名、隐藏、挪、移调是改这首歌，
+ *  谱上每一段名字右边的「⋯」、「隐藏 N 段」小标、本段视图翻进隐藏的段都做得到（7-C 核过，没有只在列表里才能做的）。
+ *  每一项的「?」里写清它存在哪：跟着这首歌（进歌、能撤销、PDF 照着印）/ 跟着这首歌的视图（存时顺手带，不算改动）/ 只在这次打开里。 */
 function openPaperSheet(): void {
   ui.close();
   const box = document.createElement("div");
   box.className = "offer";
+  let page: "look" | "layout" = "look";   // 打开默认「看谱」这一页
+  const sel = (k: string, items: readonly (readonly [string, string])[], cur: string, disabled = false) =>
+    dropdownHtml(items.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-pg="${k}"`, ...(disabled ? { disabled: true } : {}) });
+  /** 「?」里的一张小对照：每个选项一行「名字 — 说明」。 */
+  const defs = (rows: readonly (readonly [string, string])[]) => rows.map(([a, b]) => `<b>${a}</b> — ${b}`).join("<br>");
+  const where = (s: string) => `<br><span class="set-where">${s}</span>`;
+  const IN_SONG = where(_t("跟着这首歌存：进歌、能撤销，导出的 PDF 照这里印。")), IN_VIEW = where(_t("跟着这首歌的视图存：存的时候顺手带上，不算改动、不进撤销。")), IN_SESSION = where(_t("只在这次打开里有效，不进歌。"));
   const draw = () => {
-    const p = D.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D.st.song);   // 亮哪个钮 = 这首歌怎么看（只此一处读）
-    // 第一行 = 谱种（谱面分家第四刀；user 11-11「面板第一行放谱种」「点开面板再选，不做成点一下直接切」）：这首歌怎么看的一样，走修改锁的「看法」（锁着也能切、锁着期间不写文件）
-    const nota = (id: NotationId, label: string, note: string) => `<button class="btn cand${look.notation === id ? " is-on" : ""}" data-v="nota:${id}">${label}<small>${note}</small></button>`;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("纸")}</div>` +
-      `<div class="part-sec">${_t("谱种")}</div><div class="set-row">` +
-      nota("staff", _t("五线谱"), _t("按音高画在五条线上")) +
-      nota("jianpu", _t("简谱"), _t("数字 1–7（首调）")) +
-      nota("letters", _t("字母谱"), _t("实际的音名 C D E F G A B，右上角写升降号、右下角写八度（中央 C = C4）")) + `</div>` +
-      `<div class="part-sec">${_t("纸张")}</div><div class="set-row">` +
-      PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${PAPER_LABEL[k]}<small>${PAPER_NOTE[k]}</small></button>`).join("") +
-      (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("其他")}<small>${paperSizeText(p)}</small></button>` : "") + `</div>` +
-      `<div class="offer-msg">${_t("整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。")}</div>` +
-      `<div class="part-sec">${_t("版式")}</div><div class="set-row">` +
-      DENSITIES.map((z) => `<button class="btn cand${look.density === z.id ? " is-on" : ""}" data-v="density:${z.id}">${z.label}<small>${z.note}</small></button>`).join("") + `</div>` +
-      `<div class="offer-msg">${_t("紧凑 = 谱小一号、行距和谱距收紧、没写歌词的声部不留歌词位。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。")}</div>` +
-      `<div class="part-sec">${_t("纸（曲段）")}</div>` + D.st.song.papers.map((pp, k) => `<div class="set-row paper-row"><span class="paper-row-name">${k + 1}. ${esc(pp.name || _t("（没名字）"))}${pp.hidden ? _t("（隐藏 · 不放）") : ""}${pp.id === D.st.at.paper ? " ←" : ""}</span>` +
-        `<button class="btn" data-v="pm:${esc(pp.id)}" title="${_t("这一段的菜单：改名 / 隐藏 / 删、在上面 / 下面插一段、挪、移调")}">⋯</button></div>`).join("") +
-      // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
-      ((one) => `<div class="part-sec">${_t("显示")}</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && D.st.song.parts.every((q) => q === one || !pv(q.id).only) ? " is-on" : ""}" data-v="only1">${_t("只看一号轨")}<small>${_t("只看「{song}」（速度、风格、反复写在最上面那位身上）；再点 = 都看", { song: esc(partLabels(D.st.song, D.extras)[0] ?? "") })}</small></button></div>`)(D.st.song.parts[0]) +
-      `<div class="part-sec">${_t("排法")}</div><div class="set-row">` +
-      `<button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">${_t("连续")}<small>${_t("不断页，每一行和分页一样")}</small></button>` +
-      `<button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">${_t("分页")}<small>${_t("按纸（A4 / A5）的真实高度断页，预览打印")}</small></button>` +
-      `<button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">${_t("横卷")}<small>${_t("每张纸一行、一直往右，横着滚；声部名钉在左边")}</small></button></div>` +
-      `<div class="part-sec">${_t("小节号")}</div><div class="set-row">` +
-      `<button class="btn cand${look.barNumbers ? " is-on" : ""}" data-v="bn:on">${_t("每行开头")}<small>${_t("每行最上面那条谱的左上角，小字；每张纸从 1 数，弱起算 0")}</small></button>` +
-      `<button class="btn cand${look.barNumbers ? "" : " is-on"}" data-v="bn:off">${_t("不印")}</button></div>` +
-      `<div class="part-sec">${_t("歌词")}</div><div class="set-row">` +
-      `<button class="btn cand${look.lyricFit === "rhythm" ? " is-on" : ""}" data-v="lyr:rhythm">${_t("按节奏")}<small>${_t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 这一行一起缩一点 → 还放不下画灰")}</small></button>` +
-      `<button class="btn cand${look.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("按歌词")}<small>${_t("长的字把音推开（出版谱的老规矩）")}</small></button></div>` +
-      // 看谱（谱面分家第三刀：原来在设置的「乐理助手」里、存在设备上；现在是这首歌的，进歌、能撤销，锁着也能切。PDF 跟着）
-      ((lk, movable = !IN_C_APPLIES[lk.notation]) => `<div class="part-sec">${_t("看谱")}</div><div class="set-row">` +
-        `<button class="btn cand${lk.viewInC ? "" : " is-on"}" data-v="inc:off"${movable ? " disabled" : ""}>${_t("专业")}<small>${_t("按实际的调画谱，键上大字写音名")}</small></button>` +
-        `<button class="btn cand${lk.viewInC ? " is-on" : ""}" data-v="inc:on"${movable ? " disabled" : ""}>${_t("按 C 调看（1=X）")}<small>${_t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")}</small></button></div>` +
-        // 字母谱：中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；只在字母谱时显示，存在歌里）
-        (lk.notation === "letters" ? `<div class="set-row">${MIDDLE_C_NAMES.map((n) => `<button class="btn cand${lk.middleC === n ? " is-on" : ""}" data-v="mc:${n}">${_t("中央 C 叫 C{n}", { n })}${n === 4 ? `<small>${_t("默认")}</small>` : ""}</button>`).join("")}</div>` : "") +
-        (movable ? `<div class="offer-msg">${MOVABLE_DO[lk.notation] ? _t("简谱本来就是首调（1 = 这个调的主音），用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。") : _t("字母谱写的是实际的音名，用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。")}</div>` : "") +
-        `<div class="set-row"><button class="btn cand${lk.chordTags ? " is-on" : ""}" data-v="ct:on">${_t("和弦标级数")}<small>${_t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选")}</small></button>` +
-        `<button class="btn cand${lk.chordTags ? "" : " is-on"}" data-v="ct:off">${_t("不标")}</button></div>` +
-        `<div class="offer-msg">${_t("跟着这首歌走：存在歌里、能撤销，导出的 PDF 照这里印。别人的歌锁着也能切着看，不会改动文件。")}</div>`)(songViewOf(D.st.song)) +
-      `<div class="part-sec">${_t("屏幕放不下纸的时候")}</div><div class="set-row">` +
-      `<button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("不折行")}<small>${_t("整张纸缩小，行和纸上一样")}</small></button>` +
-      `<button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">${_t("折行")}<small>${_t("按屏幕宽排，谱大一点")}</small></button></div>` +
-      `<div class="offer-msg">${_t("以后插图片也在这里。")}</div>` +
+    const p = D.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D.st.song), movable = !IN_C_APPLIES[look.notation];   // 选中哪一项 = 这首歌怎么看（只此一处读）
+    const one = D.st.song.parts[0], only1 = !!one && pv(one.id).only && D.st.song.parts.every((q) => q === one || !pv(q.id).only);
+    // 看谱：谱种第一行（谱面分家第四刀，user 11-11「面板第一行放谱种」）；看谱方式 / 中央 C / 和弦标级数 = 这首歌的，走修改锁的「看法」（锁着也能切、锁着期间不写文件）
+    const lookPage =
+      setItem(_t("谱种"), sel("nota", [["staff", _t("五线谱")], ["jianpu", _t("简谱")], ["letters", _t("字母谱")]], look.notation),
+        defs([[_t("五线谱"), _t("按音高画在五条线上")], [_t("简谱"), _t("数字 1–7（首调）")], [_t("字母谱"), _t("实际的音名 C D E F G A B，右上角写升降号、右下角写八度（中央 C = C4）")]]) + IN_SONG) +
+      setItem(_t("看谱方式"), sel("inc", [["off", _t("专业")], ["on", _t("按 C 调看（1=X）")]], look.viewInC ? "on" : "off", movable),
+        (movable ? (MOVABLE_DO[look.notation] ? _t("简谱本来就是首调（1 = 这个调的主音），用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。") : _t("字母谱写的是实际的音名，用不上「按 C 调看」；存着的选择不动，切回五线谱照旧。"))
+          : defs([[_t("专业"), _t("按实际的调画谱，键上大字写音名")], [_t("按 C 调看（1=X）"), _t("谱换到 C 调画、每个调号上方写「1=原来的调」，键上大字写级数；键的位置不动")]])) + IN_SONG) +
+      // 字母谱：中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；只在字母谱时显示）
+      (look.notation === "letters" ? setItem(_t("中央 C 叫"), sel("mc", MIDDLE_C_NAMES.map((n) => [String(n), n === 4 ? `C${n}（${_t("默认")}）` : `C${n}`] as const), String(look.middleC)), _t("字母谱右下角的八度数字从哪儿数。") + IN_SONG) : "") +
+      setItem(_t("和弦"), sel("ct", [["on", _t("标级数")], ["off", _t("不标")]], look.chordTags ? "on" : "off"), _t("叠在一起的和弦上方写它在这个调里是几级（V7、ii、♭VII、I/3…）；点它看全部候选") + IN_SONG) +
+      // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」；和歌手牌那个是同一个开关
+      (one ? setItem(_t("只看一号轨"), sel("only1", [["off", _t("都看")], ["on", _t("只看「{song}」", { song: partLabels(D.st.song, D.extras)[0] ?? "" })]], only1 ? "on" : "off"), _t("速度、风格、反复写在最上面那位身上；别的声部缩成细行。") + IN_VIEW) : "");
+    const layoutPage =
+      setItem(_t("纸张"), sel("paper", [...PAPER_KINDS.map((k) => [k, `${PAPER_LABEL[k]}（${PAPER_NOTE[k]}）`] as const), ...(p.kind === "other" ? [["other", `${_t("其他")}（${paperSizeText(p)}）`] as const] : [])], p.kind),
+        _t("整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。") + IN_SONG) +
+      setItem(_t("版式"), sel("density", DENSITIES.map((z) => [z.id, z.label] as const), look.density),
+        defs(DENSITIES.map((z) => [z.label, z.note] as const)) + "<br>" + _t("紧凑 = 谱小一号、行距和谱距收紧、没写歌词的声部不留歌词位。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。") + IN_SONG) +
+      setItem(_t("排法"), sel("flow", [["cont", _t("连续")], ["pages", _t("分页")], ["scroll", _t("横卷")]], scrollFlow ? "scroll" : pageFlow ? "pages" : "cont"),
+        defs([[_t("连续"), _t("不断页，每一行和分页一样")], [_t("分页"), _t("按纸（A4 / A5）的真实高度断页，预览打印")], [_t("横卷"), _t("每张纸一行、一直往右，横着滚；声部名钉在左边")]]) + IN_VIEW) +
+      setItem(_t("屏幕放不下纸的时候"), sel("reflow", [["fit", _t("不折行")], ["reflow", _t("折行")]], reflow ? "reflow" : "fit"),
+        defs([[_t("不折行"), _t("整张纸缩小，行和纸上一样")], [_t("折行"), _t("按屏幕宽排，谱大一点")]]) + IN_SESSION) +
+      setItem(_t("小节号"), sel("bn", [["on", _t("每行开头")], ["off", _t("不印")]], look.barNumbers ? "on" : "off"), _t("每行最上面那条谱的左上角，小字；每张纸从 1 数，弱起算 0") + IN_SONG) +
+      setItem(_t("歌词排法"), sel("lyr", [["rhythm", _t("按节奏")], ["lyrics", _t("按歌词")]], look.lyricFit),
+        defs([[_t("按节奏"), _t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 这一行一起缩一点 → 还放不下画灰")], [_t("按歌词"), _t("长的字把音推开（出版谱的老规矩）")]]) + IN_SONG);
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("页面设置")}</div>` +
+      setTabsHtml([["look", _t("看谱")], ["layout", _t("版面")]]) +
+      `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div>` +
       `<div class="offer-btns"><button class="btn primary" data-v="close">${_t("好")}</button></div></div>`;
+    mountDropdowns(box);
+    showPage(page);
   };
+  const showPage = wireSetPages(box, (pg) => { page = pg as typeof page; });
   draw();
   document.body.append(box);
   const close = () => { box.remove(); ui.closed(close); scoreEl.focus(); };
   ui.open({ k: "sheet", close });
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v;
-    if (e.target === box || v === "close") { close(); return; }
-    if (v && (PAPER_KINDS as string[]).includes(v)) { update(setPaper(D.st, v as PaperKind)); draw(); }
-    else if (v?.startsWith("density:")) { update(setDensity(D.st, v.slice(8) as Density)); draw(); }
-    else if (v?.startsWith("mc:")) { const n = Number(v.slice(3)); setSongLook(setMiddleC(D.st, n), _t("中央 C 叫 C{n}", { n })); draw(); }
-    else if (v === "nota:staff" || v === "nota:jianpu" || v === "nota:letters") { setSongLook(setNotation(D.st, v.slice(5) as NotationId), v === "nota:jianpu" ? _t("简谱") : v === "nota:letters" ? _t("字母谱") : _t("五线谱")); draw(); }
-    else if (v?.startsWith("pm:")) { close(); openPaperMenu(v.slice(3)); }
-    else if (v === "fit" || v === "reflow") { reflow = v === "reflow"; view.render(); draw(); }
-    else if (v === "bn:on" || v === "bn:off") { update(setBarNumbers(D.st, v === "bn:on")); draw(); }
-    else if (v === "inc:on" || v === "inc:off") { setSongLook(setViewInC(D.st, v === "inc:on"), v === "inc:on" ? _t("按 C 调看") : _t("看谱：专业")); draw(); }
-    else if (v === "ct:on" || v === "ct:off") { setSongLook(setChordTags(D.st, v === "ct:on"), v === "ct:on" ? _t("和弦标级数") : _t("和弦不标级数")); draw(); }
-    else if (v === "lyr:lyrics" || v === "lyr:rhythm") { update(setLyricFit(D.st, v === "lyr:rhythm" ? "rhythm" : "lyrics")); draw(); }   // 歌词怎么排（v0.9.40）：进歌里、能撤销；PDF 跟着
-    else if (v === "flow:cont" || v === "flow:pages" || v === "flow:scroll") { pageFlow = v === "flow:pages"; scrollFlow = v === "flow:scroll"; view.render(); view.followNow(); draw(); }
-    else if (v === "scope:all" || v === "scope:segment") { viewScope = v === "scope:all" ? "all" : "segment"; view.render(); draw(); }
-    else if (v === "only1") {
-      const one = D.st.song.parts[0]; if (!one) return;
-      const on = pv(one.id).only && D.st.song.parts.every((q) => q === one || !pv(q.id).only);
-      for (const q of D.st.song.parts) setPv(q.id, { only: !on && q === one });
-      afterViewChange(); draw();
-    }
+    if (e.target === box || v === "close") close();
+  });
+  box.addEventListener("change", (e) => {
+    const el = e.target as HTMLButtonElement, k = el.dataset.pg, v = el.value; if (!k) return;
+    if (k === "nota") setSongLook(setNotation(D.st, v as NotationId), v === "jianpu" ? _t("简谱") : v === "letters" ? _t("字母谱") : _t("五线谱"));
+    else if (k === "inc") setSongLook(setViewInC(D.st, v === "on"), v === "on" ? _t("按 C 调看") : _t("看谱：专业"));
+    else if (k === "mc") { const n = Number(v); setSongLook(setMiddleC(D.st, n), _t("中央 C 叫 C{n}", { n })); }
+    else if (k === "ct") setSongLook(setChordTags(D.st, v === "on"), v === "on" ? _t("和弦标级数") : _t("和弦不标级数"));
+    else if (k === "only1") { const one = D.st.song.parts[0]; if (one) { for (const q of D.st.song.parts) setPv(q.id, { only: v === "on" && q === one }); afterViewChange(); } }
+    else if (k === "paper") { if ((PAPER_KINDS as string[]).includes(v)) update(setPaper(D.st, v as PaperKind)); }
+    else if (k === "density") update(setDensity(D.st, v as Density));
+    else if (k === "flow") { pageFlow = v === "pages"; scrollFlow = v === "scroll"; view.render(); view.followNow(); }
+    else if (k === "reflow") { reflow = v === "reflow"; view.render(); }
+    else if (k === "bn") update(setBarNumbers(D.st, v === "on"));
+    else if (k === "lyr") update(setLyricFit(D.st, v === "rhythm" ? "rhythm" : "lyrics"));   // 歌词怎么排（v0.9.40）：进歌里、能撤销；PDF 跟着
+    draw();
   });
 }
 /** 角色卡（第一行谱号左边的角色名）点开（user「歌手牌同意，和打谱软件对齐」→「谱上面显示的不应跟是月读，而是人声，女声 lead bass violin之类功能的东西…

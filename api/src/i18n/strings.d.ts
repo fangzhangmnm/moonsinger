@@ -580,6 +580,45 @@ export declare const S: {
     readonly 看谱: {
         readonly en: "Reading";
     };
+    readonly 页面设置: {
+        readonly en: "Page settings";
+    };
+    readonly 版面: {
+        readonly en: "Layout";
+    };
+    readonly 看谱方式: {
+        readonly en: "Key view";
+    };
+    readonly "\u4E2D\u592E C \u53EB": {
+        readonly en: "Middle C is";
+    };
+    readonly "\u5B57\u6BCD\u8C31\u53F3\u4E0B\u89D2\u7684\u516B\u5EA6\u6570\u5B57\u4ECE\u54EA\u513F\u6570\u3002": {
+        readonly en: "Where the octave numbers at the bottom right of letter names count from.";
+    };
+    readonly 标级数: {
+        readonly en: "Show degrees";
+    };
+    readonly 都看: {
+        readonly en: "Show all";
+    };
+    readonly "\u53EA\u770B\u300C{song}\u300D": {
+        readonly en: "Only “{song}”";
+    };
+    readonly "\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF1B\u522B\u7684\u58F0\u90E8\u7F29\u6210\u7EC6\u884C\u3002": {
+        readonly en: "Tempo, style and repeats are written on the top part; the other parts shrink to thin lines.";
+    };
+    readonly 歌词排法: {
+        readonly en: "Lyric spacing";
+    };
+    readonly "\u8DDF\u7740\u8FD9\u9996\u6B4C\u5B58\uFF1A\u8FDB\u6B4C\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002": {
+        readonly en: "Saved with this song: it goes into the song, can be undone, and the exported PDF prints it this way.";
+    };
+    readonly "\u8DDF\u7740\u8FD9\u9996\u6B4C\u7684\u89C6\u56FE\u5B58\uFF1A\u5B58\u7684\u65F6\u5019\u987A\u624B\u5E26\u4E0A\uFF0C\u4E0D\u7B97\u6539\u52A8\u3001\u4E0D\u8FDB\u64A4\u9500\u3002": {
+        readonly en: "Saved with this song's view: it rides along when you save, but doesn't count as a change and isn't in undo.";
+    };
+    readonly "\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002": {
+        readonly en: "Only for this session; not saved in the song.";
+    };
     readonly 谱种: {
         readonly en: "Notation";
     };
@@ -823,17 +862,17 @@ export declare const S: {
     readonly "\u70B9\u4E00\u4E2A = \u7528\u5B83\uFF08\u8BB0\u8FDB\u8FD9\u4E2A\u97F3\uFF0C\u80FD\u64A4\u9500\uFF09": {
         readonly en: "Tap one = use it (stored on this note; undo works)";
     };
-    readonly 界面: {
-        readonly en: "Interface";
+    readonly "\u754C\u9762##\u9875\u7B7E": {
+        readonly en: "UI";
     };
-    readonly 乐理助手: {
-        readonly en: "Music theory helper";
+    readonly "\u4E50\u7406\u52A9\u624B##\u9875\u7B7E": {
+        readonly en: "Theory";
     };
-    readonly 音源与缓存: {
+    readonly "\u97F3\u6E90\u4E0E\u7F13\u5B58##\u9875\u7B7E": {
         readonly en: "Audio";
     };
-    readonly 开发者: {
-        readonly en: "Developer";
+    readonly "\u5F00\u53D1\u8005##\u9875\u7B7E": {
+        readonly en: "Dev";
     };
     readonly 这是什么: {
         readonly en: "What's this";
@@ -1420,26 +1459,8 @@ export declare const S: {
     readonly "\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002": {
         readonly en: "Compact = smaller staves, tighter line and staff spacing, no lyric space for parts without lyrics. Saved in MusicXML scaling and spacing, so other software matches.";
     };
-    readonly "\u7EB8\uFF08\u66F2\u6BB5\uFF09": {
-        readonly en: "Sheets (sections)";
-    };
-    readonly "\uFF08\u6CA1\u540D\u5B57\uFF09": {
-        readonly en: "(no name)";
-    };
-    readonly "\uFF08\u9690\u85CF \u00B7 \u4E0D\u653E\uFF09": {
-        readonly en: "(hidden · not played)";
-    };
-    readonly "\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u9690\u85CF / \u5220\u3001\u5728\u4E0A\u9762 / \u4E0B\u9762\u63D2\u4E00\u6BB5\u3001\u632A\u3001\u79FB\u8C03": {
-        readonly en: "This section’s menu: rename / hide / delete, insert a section above / below, move, transpose";
-    };
-    readonly 显示: {
-        readonly en: "Show";
-    };
     readonly 只看一号轨: {
         readonly en: "First track only";
-    };
-    readonly "\u53EA\u770B\u300C{song}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B": {
-        readonly en: "Show only “{song}” (tempo, style and repeats are written on the top part); tap again = show all";
     };
     readonly 排法: {
         readonly en: "Layout mode";
@@ -1474,9 +1495,6 @@ export declare const S: {
     readonly 不印: {
         readonly en: "Don't print";
     };
-    readonly 歌词: {
-        readonly en: "Lyrics";
-    };
     readonly 按节奏: {
         readonly en: "By rhythm";
     };
@@ -1510,9 +1528,6 @@ export declare const S: {
     readonly 不标: {
         readonly en: "Don’t show";
     };
-    readonly "\u8DDF\u7740\u8FD9\u9996\u6B4C\u8D70\uFF1A\u5B58\u5728\u6B4C\u91CC\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002\u522B\u4EBA\u7684\u6B4C\u9501\u7740\u4E5F\u80FD\u5207\u7740\u770B\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u4EF6\u3002": {
-        readonly en: "Belongs to this song: saved in it, undoable, and the exported PDF prints it this way. You can switch it on someone else’s locked song too; the file is not changed.";
-    };
     readonly 屏幕放不下纸的时候: {
         readonly en: "When the screen can't fit the sheet";
     };
@@ -1527,9 +1542,6 @@ export declare const S: {
     };
     readonly "\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9": {
         readonly en: "Lay out to screen width, with larger staves";
-    };
-    readonly "\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002": {
-        readonly en: "Image insertion will live here later too.";
     };
     readonly "\u6309 C \u8C03\u770B": {
         readonly en: "Read in C";

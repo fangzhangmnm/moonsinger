@@ -16,11 +16,9 @@ describe("按钮的字不折行（styles.css）", () => {
     const box = rules.filter((r) => r.sel.split(",").map((x) => x.trim()).includes(m[1]!)), me = rules.filter((r) => r.sel.split(",").map((x) => x.trim()).includes(sel));
     return box.some((r) => /flex-direction:\s*column/.test(r.body)) && me.some((r) => /text-align:\s*left/.test(r.body));
   };
-  // 过渡：7-C 时去掉（统筹定：页签的字也不许折；那一排换 .btn-row、放不下的英文页签名改短）。到时候删这一条，守卫照旧
-  const UNTIL_7C: Record<string, string> = { ".set-tabs .btn": "设置的五个页签：现在放不下折两行（v0.16.90）；7-C 换成 .btn-row + 改短英文页签名" };
   it("没有规则把按钮的字放开折行（按钮里的 small 说明、竖排列表的整句选项除外）", () => {
     const bad = rules.filter((r) => /white-space:\s*(normal|pre-wrap|pre-line|break-spaces)/.test(r.body))
-      .flatMap((r) => r.sel.split(",").map((s) => s.trim())).filter((s) => /\.btn(?![\w-])/.test(s) && !/\.btn\s+small$/.test(s) && !listItem(s) && !(s in UNTIL_7C));
+      .flatMap((r) => r.sel.split(",").map((s) => s.trim())).filter((s) => /\.btn(?![\w-])/.test(s) && !/\.btn\s+small$/.test(s) && !listItem(s));   // 7-C：设置页签那条过渡（UNTIL_7C）去掉了，页签换 .btn-row
     assert(!bad.length, `这些规则让按钮的字能折行：${bad.join(" | ")}`);
   });
   it("竖排列表那一类认得出来（.sheet-choices 是；一排的格子不是）", () => {

@@ -6,7 +6,7 @@
 //   谱面分家第三刀（2026-11-11）：「按 C 调看」是这首歌的设置，在纸的设置「看谱」里（原来在设置「乐理助手」、存在设备上）——写进歌里（viewInC: true）、能撤销，设备上不再记。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/view-in-c.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
-import { pick } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
+import { pick, pickOnPage } from "./dd.mjs";   // 下拉 = 界面零件库的标准件（7-T）：selectOption 用不了
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -20,7 +20,7 @@ const firstNote = () => p.evaluate(() => { const m = window.__moonsinger, s = m.
 const bigAbs = () => p.evaluate(() => document.querySelector(".pad-panel")?.classList.contains("big-abs"));
 const closeAll = async () => { await p.keyboard.press("Escape"); await p.waitForTimeout(120); await p.mouse.click(5, 300); await p.waitForTimeout(120); };
 const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
-const setView = async (v) => { await openSheet(); await p.click(`.settings-card [data-v="inc:${v === "inc" ? "on" : "off"}"]`); await p.waitForTimeout(250); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
+const setView = async (v) => { await openSheet(); await pickOnPage(p, '.settings-card [data-pg="inc"]', v === "inc" ? "on" : "off"); await p.waitForTimeout(250); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
 
 // ① 专业（默认）：C 调 = 淡「1=C」；键上大字音名
 check((await labels()) === "1=C~", "专业 + C 调：调号上方淡「1=C」", await labels());

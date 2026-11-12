@@ -3,6 +3,7 @@
 //   created 2026-10-10 by Claude Opus 5.5
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/hscroll.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pickOnPage, ddValue } from "./dd.mjs";   // 页面设置的下拉（7-C）：先翻到那一页再选
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const b = await chromium.launch();
@@ -16,9 +17,9 @@ check((await rows()) > 1, "连续：48 个音折成好几行", String(await rows
 const openSheet = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForTimeout(200); };
 await p.evaluate(() => { document.querySelector("#score").scrollLeft = 0; document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(100);
 await openSheet();
-check(!!(await p.$('[data-v="flow:scroll"]')), "纸的设置里排法有「横卷」");
-await p.click('[data-v="flow:scroll"]'); await p.waitForTimeout(300);
-check(await p.$eval('[data-v="flow:scroll"]', (e) => e.classList.contains("is-on")), "「横卷」亮着");
+check(!!(await p.$('[data-pg="flow"]')), "页面设置里有排法");
+await pickOnPage(p, '[data-pg="flow"]', "scroll"); await p.waitForTimeout(300);
+check((await ddValue(p, '[data-pg="flow"]')) === "scroll", "下拉里是「横卷」");
 await p.keyboard.press("Escape"); await p.mouse.click(990, 790).catch(() => {}); await p.waitForTimeout(200);
 await p.click('.offer [data-v="close"]').catch(() => {}); await p.waitForTimeout(200);
 check((await rows()) === 1, "横卷：一行（不折行）", String(await rows()));
@@ -45,7 +46,7 @@ await p.evaluate(() => window.__moonsinger.view.setPlayhead(null));
 check((await p.evaluate(() => window.__moonsinger.desk().scroll)) === true, "视图态里记着横卷（存时进 score.json view.scroll）");
 // 换回连续（纸的扳手在卷首那一屏：先滚回最左）
 await p.evaluate(() => { document.querySelector("#score").scrollLeft = 0; document.querySelector("#score").scrollTop = 0; }); await p.waitForTimeout(150);
-await openSheet(); await p.click('[data-v="flow:cont"]'); await p.waitForTimeout(300); await p.click('.offer [data-v="close"]').catch(() => {}); await p.waitForTimeout(200);
+await openSheet(); await pickOnPage(p, '[data-pg="flow"]', "cont"); await p.waitForTimeout(300); await p.click('.offer [data-v="close"]').catch(() => {}); await p.waitForTimeout(200);
 check((await rows()) > 1, "换回连续 = 照旧折行", String(await rows()));
 check(!(await p.$eval("#score", (e) => e.classList.contains("hscroll"))) && !(await p.$(".pin-names")), "不横滚了、钉住的名字没了");
 check(errs.length === 0, "页面没有报错", errs.join(" | "));

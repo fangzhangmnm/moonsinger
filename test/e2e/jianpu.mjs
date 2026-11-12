@@ -5,6 +5,7 @@
 //   「词」里点数字 = 开它的歌词框、「弹」时按住音键 = 一个淡数字的鬼音符（谱面 svg 一个字节都不变）。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/jianpu.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pickOnPage, ddValue } from "./dd.mjs";
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const N = (s, o = 4) => `<note><pitch><step>${s}</step><octave>${o}</octave></pitch><duration>1</duration><type>quarter</type></note>`;
@@ -27,16 +28,16 @@ const digitAt = (k) => p.evaluate((k) => { const L = window.__moonsinger.layout(
 // ① 纸角的钮 = 「1 / ♪」；面板第一行 = 谱种
 check((await p.evaluate(() => document.querySelector("#score .score-overlay .ov-paper-chip use")?.getAttribute("href"))) === "#jianpu-staff", "纸角的「页面设置」钮 = 「1 / ♪」图标（jianpu-staff）");
 await openSheet();
-check((await p.$eval(".settings-card .part-sec", (e) => e.textContent)) === "谱种", "面板第一行 = 谱种");
-check(await p.$eval('.settings-card [data-v="nota:staff"]', (e) => e.classList.contains("is-on")), "没写谱种 = 五线谱亮着");
-check(!(await p.$eval('.settings-card [data-v="inc:on"]', (e) => e.disabled)), "五线谱时「按 C 调看」能点");
+check((await p.$eval('.settings-card .set-page[data-page="look"] .row-lab', (e) => e.firstChild.textContent)) === "谱种" && !(await p.$eval('.settings-card .set-page[data-page="look"]', (e) => e.hidden)), "面板打开在「看谱」页、第一行 = 谱种（7-C）");
+check((await ddValue(p, '.settings-card [data-pg="nota"]')) === "staff", "没写谱种 = 下拉里是五线谱");
+check(!(await p.$eval('.settings-card [data-pg="inc"]', (e) => e.disabled)), "五线谱时「看谱方式」能选");
 // ② 点「简谱」= 谱上是数字行；按 C 调看那两颗变灰、写明为什么
-await p.click('.settings-card [data-v="nota:jianpu"]'); await p.waitForTimeout(300);
+await pickOnPage(p, '.settings-card [data-pg="nota"]', "jianpu"); await p.waitForTimeout(300);
 check((await S()).song.notation === "jianpu", "写进歌里（notation: jianpu）");
 check((await kinds()).split(",").every((k) => k === "jianpu"), "谱上每一行都是数字行", await kinds());
 check((await p.evaluate(() => [...document.querySelectorAll("#score text.jp-digit")].map((t) => t.textContent).join(""))) === "12345671", "数字 = 1234 5671（高八度的 1 带点）");
-check(await p.$eval('.settings-card [data-v="inc:on"]', (e) => e.disabled) && await p.$eval('.settings-card [data-v="inc:off"]', (e) => e.disabled), "简谱时「按 C 调看」两颗都变灰");
-check((await p.$$eval(".settings-card .offer-msg", (ms) => ms.map((m) => m.textContent).join("|"))).includes("首调"), "写明为什么（简谱本来就是首调）");
+check(await p.$eval('.settings-card [data-pg="inc"]', (e) => e.disabled), "简谱时「看谱方式」变灰");
+check((await p.$eval('.settings-card .set-item:has([data-pg="inc"]) .row-help', (e) => e.textContent)).includes("首调"), "「?」里写明为什么（简谱本来就是首调）");
 await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200);
 // ③ 能撤销 / 重做（这首歌怎么看进撤销）
 await p.keyboard.press("Control+z"); await p.waitForTimeout(250);

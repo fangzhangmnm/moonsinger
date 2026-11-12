@@ -3488,6 +3488,19 @@ var S = {
   "\u6CA1\u6709\u53EF\u64A4\u9500\u7684": { en: "Nothing to undo" },
   "\u6CA1\u6709\u53EF\u91CD\u505A\u7684": { en: "Nothing to redo" },
   "\u770B\u8C31": { en: "Reading" },
+  "\u9875\u9762\u8BBE\u7F6E": { en: "Page settings" },
+  "\u7248\u9762": { en: "Layout" },
+  "\u770B\u8C31\u65B9\u5F0F": { en: "Key view" },
+  "\u4E2D\u592E C \u53EB": { en: "Middle C is" },
+  "\u5B57\u6BCD\u8C31\u53F3\u4E0B\u89D2\u7684\u516B\u5EA6\u6570\u5B57\u4ECE\u54EA\u513F\u6570\u3002": { en: "Where the octave numbers at the bottom right of letter names count from." },
+  "\u6807\u7EA7\u6570": { en: "Show degrees" },
+  "\u90FD\u770B": { en: "Show all" },
+  "\u53EA\u770B\u300C{song}\u300D": { en: "Only \u201C{song}\u201D" },
+  "\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF1B\u522B\u7684\u58F0\u90E8\u7F29\u6210\u7EC6\u884C\u3002": { en: "Tempo, style and repeats are written on the top part; the other parts shrink to thin lines." },
+  "\u6B4C\u8BCD\u6392\u6CD5": { en: "Lyric spacing" },
+  "\u8DDF\u7740\u8FD9\u9996\u6B4C\u5B58\uFF1A\u8FDB\u6B4C\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002": { en: "Saved with this song: it goes into the song, can be undone, and the exported PDF prints it this way." },
+  "\u8DDF\u7740\u8FD9\u9996\u6B4C\u7684\u89C6\u56FE\u5B58\uFF1A\u5B58\u7684\u65F6\u5019\u987A\u624B\u5E26\u4E0A\uFF0C\u4E0D\u7B97\u6539\u52A8\u3001\u4E0D\u8FDB\u64A4\u9500\u3002": { en: "Saved with this song's view: it rides along when you save, but doesn't count as a change and isn't in undo." },
+  "\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002": { en: "Only for this session; not saved in the song." },
   "\u8C31\u79CD": { en: "Notation" },
   "\u4E94\u7EBF\u8C31": { en: "Staff" },
   "\u7B80\u8C31": { en: "Numbered (jianpu)" },
@@ -3569,10 +3582,10 @@ var S = {
   "\u6539\u56DE\u81EA\u52A8\uFF08{label}\uFF09": { en: "Back to automatic ({label})" },
   "\u6539\u56DE\u81EA\u52A8\uFF08\u8FD9\u51E0\u4E2A\u97F3\u8BA4\u4E0D\u51FA\u548C\u5F26 = \u4E0D\u6807\uFF09": { en: "Back to automatic (these notes don't read as a chord = no label)" },
   "\u70B9\u4E00\u4E2A = \u7528\u5B83\uFF08\u8BB0\u8FDB\u8FD9\u4E2A\u97F3\uFF0C\u80FD\u64A4\u9500\uFF09": { en: "Tap one = use it (stored on this note; undo works)" },
-  "\u754C\u9762": { en: "Interface" },
-  "\u4E50\u7406\u52A9\u624B": { en: "Music theory helper" },
-  "\u97F3\u6E90\u4E0E\u7F13\u5B58": { en: "Audio" },
-  "\u5F00\u53D1\u8005": { en: "Developer" },
+  "\u754C\u9762##\u9875\u7B7E": { en: "UI" },
+  "\u4E50\u7406\u52A9\u624B##\u9875\u7B7E": { en: "Theory" },
+  "\u97F3\u6E90\u4E0E\u7F13\u5B58##\u9875\u7B7E": { en: "Audio" },
+  "\u5F00\u53D1\u8005##\u9875\u7B7E": { en: "Dev" },
   "\u8FD9\u662F\u4EC0\u4E48": { en: "What's this" },
   "\u8BBE\u7F6E": { en: "Settings" },
   "\u8DDF\u7CFB\u7EDF": { en: "System" },
@@ -3768,13 +3781,7 @@ var S = {
   "\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002": { en: "One paper size for the whole song. Bigger paper fits more bars per line; if the screen fits, it's laid out as on paper. No page breaks unless printing." },
   "\u7248\u5F0F": { en: "Layout" },
   "\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002": { en: "Compact = smaller staves, tighter line and staff spacing, no lyric space for parts without lyrics. Saved in MusicXML scaling and spacing, so other software matches." },
-  "\u7EB8\uFF08\u66F2\u6BB5\uFF09": { en: "Sheets (sections)" },
-  "\uFF08\u6CA1\u540D\u5B57\uFF09": { en: "(no name)" },
-  "\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09": { en: "(hidden \xB7 not played)" },
-  "\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u9690\u85CF / \u5220\u3001\u5728\u4E0A\u9762 / \u4E0B\u9762\u63D2\u4E00\u6BB5\u3001\u632A\u3001\u79FB\u8C03": { en: "This section\u2019s menu: rename / hide / delete, insert a section above / below, move, transpose" },
-  "\u663E\u793A": { en: "Show" },
   "\u53EA\u770B\u4E00\u53F7\u8F68": { en: "First track only" },
-  "\u53EA\u770B\u300C{song}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B": { en: "Show only \u201C{song}\u201D (tempo, style and repeats are written on the top part); tap again = show all" },
   "\u6392\u6CD5": { en: "Layout mode" },
   "\u8FDE\u7EED": { en: "Continuous" },
   "\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837": { en: "No page breaks; every line matches paged layout" },
@@ -3786,7 +3793,6 @@ var S = {
   "\u6BCF\u884C\u5F00\u5934": { en: "Start of each line" },
   "\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0": { en: "Small, top-left of each line's top staff; each sheet counts from 1, a pickup counts as 0" },
   "\u4E0D\u5370": { en: "Don't print" },
-  "\u6B4C\u8BCD": { en: "Lyrics" },
   "\u6309\u8282\u594F": { en: "By rhythm" },
   "\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070": { en: "Note positions depend only on duration, so notes stay put while you type; lyrics make room: borrow space nearby \u2192 shrink the whole line a little \u2192 grey out if it still doesn't fit" },
   "\u6309\u6B4C\u8BCD": { en: "By lyrics" },
@@ -3798,13 +3804,11 @@ var S = {
   "\u548C\u5F26\u6807\u7EA7\u6570": { en: "Chord degrees" },
   "\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009": { en: "Write the degree of stacked chords in this key above them (V7, ii, \u266DVII, I/3\u2026); tap one to see all candidates" },
   "\u4E0D\u6807": { en: "Don\u2019t show" },
-  "\u8DDF\u7740\u8FD9\u9996\u6B4C\u8D70\uFF1A\u5B58\u5728\u6B4C\u91CC\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002\u522B\u4EBA\u7684\u6B4C\u9501\u7740\u4E5F\u80FD\u5207\u7740\u770B\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u4EF6\u3002": { en: "Belongs to this song: saved in it, undoable, and the exported PDF prints it this way. You can switch it on someone else\u2019s locked song too; the file is not changed." },
   "\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019": { en: "When the screen can't fit the sheet" },
   "\u4E0D\u6298\u884C": { en: "Don't wrap" },
   "\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837": { en: "Shrink the whole sheet; lines match the paper" },
   "\u6298\u884C": { en: "Wrap" },
   "\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9": { en: "Lay out to screen width, with larger staves" },
-  "\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002": { en: "Image insertion will live here later too." },
   "\u6309 C \u8C03\u770B": { en: "Read in C" },
   "\u770B\u8C31\uFF1A\u4E13\u4E1A": { en: "Reading: professional" },
   "\u548C\u5F26\u4E0D\u6807\u7EA7\u6570": { en: "No chord degrees" },
@@ -23328,7 +23332,7 @@ function createCollection(cfg) {
       return;
     void reconcile().catch((e10) => reportStoreError(e10, "log"));
   }
-  function setItem(id2, value) {
+  function setItem2(id2, value) {
     if (!ready)
       throw new Error(`collection(${name}).setItem \u5728 init() \u524D\u8C03\u7528\u2014\u2014\u8BBE\u7F6E\u672A\u5C31\u7EEA`);
     if (id2 == null)
@@ -23346,7 +23350,7 @@ function createCollection(cfg) {
   function deleteItem(id2) {
     if (!ready)
       throw new Error(`collection(${name}).deleteItem \u5728 init() \u524D\u8C03\u7528`);
-    setItem(id2, null);
+    setItem2(id2, null);
   }
   const entryOf = (e10) => ({ id: String(e10.id), uat: e10.uat || 0, value: valueOf(e10) });
   function getEntry(id2) {
@@ -23395,7 +23399,7 @@ function createCollection(cfg) {
     await (pending ? writeLocalNow(true) : localChain);
   }
   lifecycle?.({ close });
-  return { init: init2, reconcileWithRemote, setItem, deleteItem, getItem, getEntry, entries: entries2, keys, onChange, flushLocal, isDirty: isDirty2 };
+  return { init: init2, reconcileWithRemote, setItem: setItem2, deleteItem, getItem, getEntry, entries: entries2, keys, onChange, flushLocal, isDirty: isDirty2 };
 }
 
 // node_modules/@internal/store/dist/works/listing.js
@@ -33957,15 +33961,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-42708ce19cc4.mjs");
+      return pick(() => "singer-worker-cc538fa73b75.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-b4848206aa61.mjs");
+      return pick(() => "layout-worker-05d7ab6afbad.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-edb3eb8e03e8.mjs");
+      return pick(() => "encode-worker-20b7fb5e274f.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -59456,7 +59460,29 @@ function setSongLook(next2, label) {
   if (next2 !== D3.st) D3.commit({ st: next2 }, { locus: { kind: "songLook", label } });
 }
 var settingsPage = "ui";
-var SET_PAGES = () => [["ui", _t("\u754C\u9762")], ["a11y", _t("\u4E50\u7406\u52A9\u624B")], ["sound", _t("\u97F3\u6E90\u4E0E\u7F13\u5B58")], ["midi", "MIDI"], ["dev", _t("\u5F00\u53D1\u8005")]];
+var SET_PAGES = () => [["ui", _t("\u754C\u9762##\u9875\u7B7E")], ["a11y", _t("\u4E50\u7406\u52A9\u624B##\u9875\u7B7E")], ["sound", _t("\u97F3\u6E90\u4E0E\u7F13\u5B58##\u9875\u7B7E")], ["midi", "MIDI"], ["dev", _t("\u5F00\u53D1\u8005##\u9875\u7B7E")]];
+var setQ = (help) => help ? `<button class="q" type="button" data-q aria-label="${_t("\u8FD9\u662F\u4EC0\u4E48")}">?</button>` : "";
+var setItem = (label, ctl, help = "", body2 = "", attrs = "") => `<div class="set-item"${attrs}><div class="set-head"><span class="row-lab">${label}${setQ(help)}</span>${ctl ? `<span class="set-ctl">${ctl}</span>` : ""}</div>${help ? `<div class="row-help">${help}</div>` : ""}${body2}</div>`;
+var setTabsHtml = (pages) => `<div class="set-tabs btn-row">${pages.map(([k2, label]) => `<button class="btn chip" data-tab="${k2}">${esc12(label)}</button>`).join("")}</div>`;
+function wireSetPages(box, onPage) {
+  const showPage = (pg) => {
+    box.querySelectorAll(".set-page").forEach((el2) => {
+      el2.hidden = el2.dataset.page !== pg;
+    });
+    box.querySelectorAll("[data-tab]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.tab === pg));
+    onPage(pg);
+  };
+  box.addEventListener("click", (e10) => {
+    const t10 = e10.target.closest("[data-tab]");
+    if (t10) {
+      showPage(t10.dataset.tab);
+      return;
+    }
+    const qb = e10.target.closest("[data-q]");
+    if (qb) qb.closest(".set-item")?.classList.toggle("show-help");
+  });
+  return showPage;
+}
 var setSel = (k2, opts, cur) => dropdownHtml(opts.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-set="${k2}"` });
 function openDocLayer(host2, title, html, jump) {
   const layer = document.createElement("div");
@@ -59474,10 +59500,9 @@ function openSettings() {
   const inFolder2 = resourcesInFolder();
   const box = document.createElement("div");
   box.className = "offer";
-  const q2 = (help) => help ? `<button class="q" type="button" data-q aria-label="${_t("\u8FD9\u662F\u4EC0\u4E48")}">?</button>` : "";
-  const item = (label, ctl, help = "", body2 = "", attrs = "") => `<div class="set-item"${attrs}><div class="set-head"><span class="row-lab">${label}${q2(help)}</span>${ctl ? `<span class="set-ctl">${ctl}</span>` : ""}</div>${help ? `<div class="row-help">${help}</div>` : ""}${body2}</div>`;
+  const item = setItem;
   const look = (v, label) => `<button class="btn" data-v="${v}">${label}</button>`;
-  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div><div class="set-tabs">${SET_PAGES().map(([k2, label]) => `<button class="btn chip" data-tab="${k2}">${esc12(label)}</button>`).join("")}</div><div class="set-page" data-page="ui">` + item(LANG_LABEL, setSel("lang", [["auto", _t("\u8DDF\u7CFB\u7EDF")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", " data-i18n-skip") + item(_t("\u7248\u6743\u4E0E\u7F72\u540D"), look("doc:top", _t("\u770B\u2026")), _t("\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B")) + `</div><div class="set-page" data-page="a11y">` + item(_t("\u770B\u8C31\u65B9\u5F0F\u3001\u548C\u5F26\u6807\u7EA7\u6570"), "", "", `<div class="offer-msg">${_t("\u642C\u5230\u4E86\u7EB8\u7684\u8BBE\u7F6E\u91CC\uFF08\u8C31\u53F3\u4E0A\u89D2\u7684\u6273\u624B \u2192\u300C\u770B\u8C31\u300D\uFF09\uFF1A\u73B0\u5728\u8DDF\u7740\u6BCF\u9996\u6B4C\u8D70\u3001\u5B58\u5728\u6B4C\u91CC\uFF0C\u4EE5\u524D\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8C03\u8FC7\u7684\u4E0D\u5E26\u8FC7\u53BB\u3002")}</div>`) + `</div><div class="set-page" data-page="sound">` + item(
+  box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u8BBE\u7F6E")}</div>` + setTabsHtml(SET_PAGES()) + `<div class="set-page" data-page="ui">` + item(LANG_LABEL, setSel("lang", [["auto", _t("\u8DDF\u7CFB\u7EDF")], ["zh", LANG_NAME.zh], ["en", LANG_NAME.en]], langChosen() ?? "auto"), "", "", " data-i18n-skip") + item(_t("\u7248\u6743\u4E0E\u7F72\u540D"), look("doc:top", _t("\u770B\u2026")), _t("\u5C0F\u6708\u76F8\u7684\u7F72\u540D\u4E0E\u4F7F\u7528\u6761\u6B3E\u3001\u4E50\u5668\u76EE\u5F55\u56FE\u6807\u7684\u4F5C\u8005\u4E0E\u8BB8\u53EF\uFF0C\u5408\u5728\u4E00\u7BC7\u91CC\u770B")) + `</div><div class="set-page" data-page="a11y">` + item(_t("\u770B\u8C31\u65B9\u5F0F\u3001\u548C\u5F26\u6807\u7EA7\u6570"), "", "", `<div class="offer-msg">${_t("\u642C\u5230\u4E86\u7EB8\u7684\u8BBE\u7F6E\u91CC\uFF08\u8C31\u53F3\u4E0A\u89D2\u7684\u6273\u624B \u2192\u300C\u770B\u8C31\u300D\uFF09\uFF1A\u73B0\u5728\u8DDF\u7740\u6BCF\u9996\u6B4C\u8D70\u3001\u5B58\u5728\u6B4C\u91CC\uFF0C\u4EE5\u524D\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8C03\u8FC7\u7684\u4E0D\u5E26\u8FC7\u53BB\u3002")}</div>`) + `</div><div class="set-page" data-page="sound">` + item(
     _t("\u6A21\u578B\u6765\u6E90"),
     "",
     _t("\u5148\u627E\u8FD9\u4E2A\u7F51\u7AD9\u4E0B\u7684 <code>pwa-models/</code>\uFF08\u81EA\u5DF1\u642D\u670D\u52A1\u5668\u7684\u8BDD\uFF0C\u628A\u6A21\u578B\u4ED3\u62F7\u8FC7\u53BB\u5C31\u80FD\u7528\uFF09\uFF0C\u627E\u4E0D\u5230\u518D\u7528\u8FD9\u91CC\u586B\u7684\u3002\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\u3002") + (inFolder2 ? `<br>${FOLDER_TEXT.models}` : ""),
@@ -59506,18 +59531,9 @@ function openSettings() {
   ) + item(_t("\u6309\u952E\u624B\u611F\u7684\u6570\u5B57"), setSel("feel", [["off", _t("\u5173")], ["on", _t("\u5F00")]], feelAlways ? "on" : "off"), _t("\u67E5\u5EF6\u8FDF\u7528\uFF1A\u6253\u5F00 = \u6309\u952E\u65F6\u5728\u952E\u76D8\u4E0A\u9762\u9732\u4E00\u884C\u6570\u5B57\uFF1B\u5173\u7740 = \u4E0D\u663E\u793A\uFF08\u665A\u4E86\u4E5F\u4E0D\u5F39\uFF0C\u53EA\u8BB0\u8FDB\u8BCA\u65AD\u65E5\u5FD7\uFF09")) + (IS_IOS ? item(_t("\u58F0\u97F3\u7684\u8D77\u6CD5\uFF08\u8BD5\u9A8C\uFF09"), setSel("primer", [["off", _t("\u5173")], ["on", _t("\u5F00")]], primerOn() ? "on" : "off"), _t("\u5F00 = \u7B2C\u4E00\u6B21\u70B9\u5C4F\u5E55\u5148\u8D77\u4E00\u4E2A\u4E0D\u51FA\u58F0\u7684\u57AB\u811A\u628A\u58F0\u97F3\u786C\u4EF6\u53EB\u9192\uFF0C\u518D\u8D77\u771F\u6B63\u51FA\u58F0\u7684\u90A3\u4E00\u4E2A\uFF1B\u5173 = \u4EE5\u524D\u7684\u8D77\u6CD5\u3002\u6539\u4E86\u8981\u91CD\u5F00 app \u624D\u770B\u5F97\u51FA")) : "") + item(_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E"), `<button class="btn danger" data-v="factory">${_t("\u8FD8\u539F\u51FA\u5382\u8BBE\u7F6E\u2026")}</button>`, _t("\u8FD9\u53F0\u8BBE\u5907\u4E0A MoonSinger \u7684\u5168\u90E8\u672C\u5730\u6570\u636E\u6E05\u6210\u65B0\u88C5\uFF1A\u6B4C\u5E93\u7684\u672C\u673A\u526F\u672C\u3001\u5FF5\u7F13\u5B58\u3001\u5C01\u9762\u7F13\u5B58\u3001\u8BBE\u7F6E\u3001\u8BCA\u65AD\u65E5\u5FD7\u3001\u79BB\u7EBF\u58F3\uFF1B\u4E91\u7AEF\u7684\u6B4C\u548C\u672C\u673A\u6587\u4EF6\u4E0D\u52A8\uFF1B\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u662F\u5BB6\u65CF\u5171\u4EAB\u7F13\u5B58\uFF0C\u4E0D\u52A8\u2014\u2014\u5728\u300C\u97F3\u6E90\u4E0E\u7F13\u5B58\u300D\u7684\u6A21\u578B\u5305\u91CC\u9010\u4E2A\u5220")) + `</div><div class="set-row set-app"><span class="set-ver">${APP_VERSION}</span>${currentPolicy().serviceWorker ? `<button class="btn" data-v="check">${_t("\u68C0\u67E5\u66F4\u65B0")}</button>` : `<button class="btn is-off" disabled title="${SITE_TEXT.noShell}">${_t("\u68C0\u67E5\u66F4\u65B0")}</button><span class="set-note">${SITE_TEXT.noShell}</span>`}<button class="btn" data-v="reset" title="${_t("\u5361\u5728\u65E7\u7248\u672C\u65F6\u7528\uFF1A\u6CE8\u9500\u672C app \u7684\u79BB\u7EBF\u7F13\u5B58\u518D\u91CD\u5F00\u3002\u4E0B\u597D\u7684\u5C0F\u6708\u76F8\u6A21\u578B\u5305\u4E0D\u5220")}">${_t("\u6E05\u7F13\u5B58\u91CD\u542F")}</button></div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
   document.body.append(box);
   mountDropdowns(box);
-  const showPage = (pg) => {
+  wireSetPages(box, (pg) => {
     settingsPage = pg;
-    box.querySelectorAll(".set-page").forEach((el2) => {
-      el2.hidden = el2.dataset.page !== pg;
-    });
-    box.querySelectorAll("[data-tab]").forEach((b3) => b3.classList.toggle("is-on", b3.dataset.tab === pg));
-  };
-  showPage(settingsPage);
-  box.querySelector(".set-tabs").addEventListener("click", (e10) => {
-    const t10 = e10.target.closest("[data-tab]");
-    if (t10) showPage(t10.dataset.tab);
-  });
+  })(settingsPage);
   box.addEventListener("change", (e10) => {
     const el2 = e10.target, k2 = el2.dataset.set;
     if (!k2) return;
@@ -59601,11 +59617,7 @@ function openSettings() {
   };
   ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
-    const qb = e10.target.closest("[data-q]");
-    if (qb) {
-      qb.closest(".set-item")?.classList.toggle("show-help");
-      return;
-    }
+    if (e10.target.closest("[data-q], [data-tab]")) return;
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (e10.target === box || v === "close") close();
     else if (v === "doc:top" || v === "doc:tsukuyomi") openDocLayer(box, _t("\u7248\u6743\u4E0E\u7F72\u540D"), sectionsHtml(creditsSections(lang())), v === "doc:top" ? void 0 : "tsukuyomi");
@@ -59808,7 +59820,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "c6eae8f48d97",
+  cssHash: "8bda347d5ff1",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -60529,14 +60541,53 @@ function openPaperSheet() {
   ui2.close();
   const box = document.createElement("div");
   box.className = "offer";
+  let page = "look";
+  const sel2 = (k2, items, cur, disabled = false) => dropdownHtml(items.map(([value, label]) => ({ value, label })), cur, { cls: "hp-sel set-sel", attrs: `data-pg="${k2}"`, ...disabled ? { disabled: true } : {} });
+  const defs = (rows) => rows.map(([a10, b3]) => `<b>${a10}</b> \u2014 ${b3}`).join("<br>");
+  const where = (s10) => `<br><span class="set-where">${s10}</span>`;
+  const IN_SONG = where(_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u5B58\uFF1A\u8FDB\u6B4C\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002")), IN_VIEW = where(_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u7684\u89C6\u56FE\u5B58\uFF1A\u5B58\u7684\u65F6\u5019\u987A\u624B\u5E26\u4E0A\uFF0C\u4E0D\u7B97\u6539\u52A8\u3001\u4E0D\u8FDB\u64A4\u9500\u3002")), IN_SESSION = where(_t("\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002"));
   const draw = () => {
-    const p2 = D3.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D3.st.song);
-    const nota = (id2, label, note2) => `<button class="btn cand${look.notation === id2 ? " is-on" : ""}" data-v="nota:${id2}">${label}<small>${note2}</small></button>`;
-    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u7EB8")}</div><div class="part-sec">${_t("\u8C31\u79CD")}</div><div class="set-row">` + nota("staff", _t("\u4E94\u7EBF\u8C31"), _t("\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A")) + nota("jianpu", _t("\u7B80\u8C31"), _t("\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09")) + nota("letters", _t("\u5B57\u6BCD\u8C31"), _t("\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C4\uFF09")) + `</div><div class="part-sec">${_t("\u7EB8\u5F20")}</div><div class="set-row">` + PAPER_KINDS.map((k2) => `<button class="btn cand${p2.kind === k2 ? " is-on" : ""}" data-v="${k2}">${PAPER_LABEL[k2]}<small>${PAPER_NOTE[k2]}</small></button>`).join("") + (p2.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("\u5176\u4ED6")}<small>${paperSizeText(p2)}</small></button>` : "") + `</div><div class="offer-msg">${_t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002")}</div><div class="part-sec">${_t("\u7248\u5F0F")}</div><div class="set-row">` + DENSITIES.map((z2) => `<button class="btn cand${look.density === z2.id ? " is-on" : ""}" data-v="density:${z2.id}">${z2.label}<small>${z2.note}</small></button>`).join("") + `</div><div class="offer-msg">${_t("\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002")}</div><div class="part-sec">${_t("\u7EB8\uFF08\u66F2\u6BB5\uFF09")}</div>` + D3.st.song.papers.map((pp, k2) => `<div class="set-row paper-row"><span class="paper-row-name">${k2 + 1}. ${esc12(pp.name || _t("\uFF08\u6CA1\u540D\u5B57\uFF09"))}${pp.hidden ? _t("\uFF08\u9690\u85CF \xB7 \u4E0D\u653E\uFF09") : ""}${pp.id === D3.st.at.paper ? " \u2190" : ""}</span><button class="btn" data-v="pm:${esc12(pp.id)}" title="${_t("\u8FD9\u4E00\u6BB5\u7684\u83DC\u5355\uFF1A\u6539\u540D / \u9690\u85CF / \u5220\u3001\u5728\u4E0A\u9762 / \u4E0B\u9762\u63D2\u4E00\u6BB5\u3001\u632A\u3001\u79FB\u8C03")}">\u22EF</button></div>`).join("") + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」（速度 / 风格 / 反复写在每张纸最上面那位身上）；和歌手牌那个是同一个开关
-    ((one) => `<div class="part-sec">${_t("\u663E\u793A")}</div><div class="set-row"><button class="btn cand${one && pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only) ? " is-on" : ""}" data-v="only1">${_t("\u53EA\u770B\u4E00\u53F7\u8F68")}<small>${_t("\u53EA\u770B\u300C{song}\u300D\uFF08\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B", { song: esc12(partLabels(D3.st.song, D3.extras)[0] ?? "") })}</small></button></div>`)(D3.st.song.parts[0]) + `<div class="part-sec">${_t("\u6392\u6CD5")}</div><div class="set-row"><button class="btn cand${pageFlow || scrollFlow ? "" : " is-on"}" data-v="flow:cont">${_t("\u8FDE\u7EED")}<small>${_t("\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837")}</small></button><button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">${_t("\u5206\u9875")}<small>${_t("\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370")}</small></button><button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">${_t("\u6A2A\u5377")}<small>${_t("\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9")}</small></button></div><div class="part-sec">${_t("\u5C0F\u8282\u53F7")}</div><div class="set-row"><button class="btn cand${look.barNumbers ? " is-on" : ""}" data-v="bn:on">${_t("\u6BCF\u884C\u5F00\u5934")}<small>${_t("\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0")}</small></button><button class="btn cand${look.barNumbers ? "" : " is-on"}" data-v="bn:off">${_t("\u4E0D\u5370")}</button></div><div class="part-sec">${_t("\u6B4C\u8BCD")}</div><div class="set-row"><button class="btn cand${look.lyricFit === "rhythm" ? " is-on" : ""}" data-v="lyr:rhythm">${_t("\u6309\u8282\u594F")}<small>${_t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")}</small></button><button class="btn cand${look.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("\u6309\u6B4C\u8BCD")}<small>${_t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")}</small></button></div>` + // 看谱（谱面分家第三刀：原来在设置的「乐理助手」里、存在设备上；现在是这首歌的，进歌、能撤销，锁着也能切。PDF 跟着）
-    ((lk2, movable = !IN_C_APPLIES[lk2.notation]) => `<div class="part-sec">${_t("\u770B\u8C31")}</div><div class="set-row"><button class="btn cand${lk2.viewInC ? "" : " is-on"}" data-v="inc:off"${movable ? " disabled" : ""}>${_t("\u4E13\u4E1A")}<small>${_t("\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D")}</small></button><button class="btn cand${lk2.viewInC ? " is-on" : ""}" data-v="inc:on"${movable ? " disabled" : ""}>${_t("\u6309 C \u8C03\u770B\uFF081=X\uFF09")}<small>${_t("\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8")}</small></button></div>` + // 字母谱：中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；只在字母谱时显示，存在歌里）
-    (lk2.notation === "letters" ? `<div class="set-row">${MIDDLE_C_NAMES.map((n10) => `<button class="btn cand${lk2.middleC === n10 ? " is-on" : ""}" data-v="mc:${n10}">${_t("\u4E2D\u592E C \u53EB C{n}", { n: n10 })}${n10 === 4 ? `<small>${_t("\u9ED8\u8BA4")}</small>` : ""}</button>`).join("")}</div>` : "") + (movable ? `<div class="offer-msg">${MOVABLE_DO[lk2.notation] ? _t("\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002") : _t("\u5B57\u6BCD\u8C31\u5199\u7684\u662F\u5B9E\u9645\u7684\u97F3\u540D\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002")}</div>` : "") + `<div class="set-row"><button class="btn cand${lk2.chordTags ? " is-on" : ""}" data-v="ct:on">${_t("\u548C\u5F26\u6807\u7EA7\u6570")}<small>${_t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009")}</small></button><button class="btn cand${lk2.chordTags ? "" : " is-on"}" data-v="ct:off">${_t("\u4E0D\u6807")}</button></div><div class="offer-msg">${_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u8D70\uFF1A\u5B58\u5728\u6B4C\u91CC\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002\u522B\u4EBA\u7684\u6B4C\u9501\u7740\u4E5F\u80FD\u5207\u7740\u770B\uFF0C\u4E0D\u4F1A\u6539\u52A8\u6587\u4EF6\u3002")}</div>`)(songViewOf(D3.st.song)) + `<div class="part-sec">${_t("\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019")}</div><div class="set-row"><button class="btn cand${reflow ? "" : " is-on"}" data-v="fit">${_t("\u4E0D\u6298\u884C")}<small>${_t("\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837")}</small></button><button class="btn cand${reflow ? " is-on" : ""}" data-v="reflow">${_t("\u6298\u884C")}<small>${_t("\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9")}</small></button></div><div class="offer-msg">${_t("\u4EE5\u540E\u63D2\u56FE\u7247\u4E5F\u5728\u8FD9\u91CC\u3002")}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+    const p2 = D3.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D3.st.song), movable = !IN_C_APPLIES[look.notation];
+    const one = D3.st.song.parts[0], only1 = !!one && pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only);
+    const lookPage = setItem(
+      _t("\u8C31\u79CD"),
+      sel2("nota", [["staff", _t("\u4E94\u7EBF\u8C31")], ["jianpu", _t("\u7B80\u8C31")], ["letters", _t("\u5B57\u6BCD\u8C31")]], look.notation),
+      defs([[_t("\u4E94\u7EBF\u8C31"), _t("\u6309\u97F3\u9AD8\u753B\u5728\u4E94\u6761\u7EBF\u4E0A")], [_t("\u7B80\u8C31"), _t("\u6570\u5B57 1\u20137\uFF08\u9996\u8C03\uFF09")], [_t("\u5B57\u6BCD\u8C31"), _t("\u5B9E\u9645\u7684\u97F3\u540D C D E F G A B\uFF0C\u53F3\u4E0A\u89D2\u5199\u5347\u964D\u53F7\u3001\u53F3\u4E0B\u89D2\u5199\u516B\u5EA6\uFF08\u4E2D\u592E C = C4\uFF09")]]) + IN_SONG
+    ) + setItem(
+      _t("\u770B\u8C31\u65B9\u5F0F"),
+      sel2("inc", [["off", _t("\u4E13\u4E1A")], ["on", _t("\u6309 C \u8C03\u770B\uFF081=X\uFF09")]], look.viewInC ? "on" : "off", movable),
+      (movable ? MOVABLE_DO[look.notation] ? _t("\u7B80\u8C31\u672C\u6765\u5C31\u662F\u9996\u8C03\uFF081 = \u8FD9\u4E2A\u8C03\u7684\u4E3B\u97F3\uFF09\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002") : _t("\u5B57\u6BCD\u8C31\u5199\u7684\u662F\u5B9E\u9645\u7684\u97F3\u540D\uFF0C\u7528\u4E0D\u4E0A\u300C\u6309 C \u8C03\u770B\u300D\uFF1B\u5B58\u7740\u7684\u9009\u62E9\u4E0D\u52A8\uFF0C\u5207\u56DE\u4E94\u7EBF\u8C31\u7167\u65E7\u3002") : defs([[_t("\u4E13\u4E1A"), _t("\u6309\u5B9E\u9645\u7684\u8C03\u753B\u8C31\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u97F3\u540D")], [_t("\u6309 C \u8C03\u770B\uFF081=X\uFF09"), _t("\u8C31\u6362\u5230 C \u8C03\u753B\u3001\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5199\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF0C\u952E\u4E0A\u5927\u5B57\u5199\u7EA7\u6570\uFF1B\u952E\u7684\u4F4D\u7F6E\u4E0D\u52A8")]])) + IN_SONG
+    ) + // 字母谱：中央 C 叫 C 几（7-B，user「我们的中央 C 叫 C4 老规矩，页面设置里面可以调」；只在字母谱时显示）
+    (look.notation === "letters" ? setItem(_t("\u4E2D\u592E C \u53EB"), sel2("mc", MIDDLE_C_NAMES.map((n10) => [String(n10), n10 === 4 ? `C${n10}\uFF08${_t("\u9ED8\u8BA4")}\uFF09` : `C${n10}`]), String(look.middleC)), _t("\u5B57\u6BCD\u8C31\u53F3\u4E0B\u89D2\u7684\u516B\u5EA6\u6570\u5B57\u4ECE\u54EA\u513F\u6570\u3002") + IN_SONG) : "") + setItem(_t("\u548C\u5F26"), sel2("ct", [["on", _t("\u6807\u7EA7\u6570")], ["off", _t("\u4E0D\u6807")]], look.chordTags ? "on" : "off"), _t("\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u4E0A\u65B9\u5199\u5B83\u5728\u8FD9\u4E2A\u8C03\u91CC\u662F\u51E0\u7EA7\uFF08V7\u3001ii\u3001\u266DVII\u3001I/3\u2026\uFF09\uFF1B\u70B9\u5B83\u770B\u5168\u90E8\u5019\u9009") + IN_SONG) + // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」；和歌手牌那个是同一个开关
+    (one ? setItem(_t("\u53EA\u770B\u4E00\u53F7\u8F68"), sel2("only1", [["off", _t("\u90FD\u770B")], ["on", _t("\u53EA\u770B\u300C{song}\u300D", { song: partLabels(D3.st.song, D3.extras)[0] ?? "" })]], only1 ? "on" : "off"), _t("\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF1B\u522B\u7684\u58F0\u90E8\u7F29\u6210\u7EC6\u884C\u3002") + IN_VIEW) : "");
+    const layoutPage = setItem(
+      _t("\u7EB8\u5F20"),
+      sel2("paper", [...PAPER_KINDS.map((k2) => [k2, `${PAPER_LABEL[k2]}\uFF08${PAPER_NOTE[k2]}\uFF09`]), ...p2.kind === "other" ? [["other", `${_t("\u5176\u4ED6")}\uFF08${paperSizeText(p2)}\uFF09`]] : []], p2.kind),
+      _t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002") + IN_SONG
+    ) + setItem(
+      _t("\u7248\u5F0F"),
+      sel2("density", DENSITIES.map((z2) => [z2.id, z2.label]), look.density),
+      defs(DENSITIES.map((z2) => [z2.label, z2.note])) + "<br>" + _t("\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002") + IN_SONG
+    ) + setItem(
+      _t("\u6392\u6CD5"),
+      sel2("flow", [["cont", _t("\u8FDE\u7EED")], ["pages", _t("\u5206\u9875")], ["scroll", _t("\u6A2A\u5377")]], scrollFlow ? "scroll" : pageFlow ? "pages" : "cont"),
+      defs([[_t("\u8FDE\u7EED"), _t("\u4E0D\u65AD\u9875\uFF0C\u6BCF\u4E00\u884C\u548C\u5206\u9875\u4E00\u6837")], [_t("\u5206\u9875"), _t("\u6309\u7EB8\uFF08A4 / A5\uFF09\u7684\u771F\u5B9E\u9AD8\u5EA6\u65AD\u9875\uFF0C\u9884\u89C8\u6253\u5370")], [_t("\u6A2A\u5377"), _t("\u6BCF\u5F20\u7EB8\u4E00\u884C\u3001\u4E00\u76F4\u5F80\u53F3\uFF0C\u6A2A\u7740\u6EDA\uFF1B\u58F0\u90E8\u540D\u9489\u5728\u5DE6\u8FB9")]]) + IN_VIEW
+    ) + setItem(
+      _t("\u5C4F\u5E55\u653E\u4E0D\u4E0B\u7EB8\u7684\u65F6\u5019"),
+      sel2("reflow", [["fit", _t("\u4E0D\u6298\u884C")], ["reflow", _t("\u6298\u884C")]], reflow ? "reflow" : "fit"),
+      defs([[_t("\u4E0D\u6298\u884C"), _t("\u6574\u5F20\u7EB8\u7F29\u5C0F\uFF0C\u884C\u548C\u7EB8\u4E0A\u4E00\u6837")], [_t("\u6298\u884C"), _t("\u6309\u5C4F\u5E55\u5BBD\u6392\uFF0C\u8C31\u5927\u4E00\u70B9")]]) + IN_SESSION
+    ) + setItem(_t("\u5C0F\u8282\u53F7"), sel2("bn", [["on", _t("\u6BCF\u884C\u5F00\u5934")], ["off", _t("\u4E0D\u5370")]], look.barNumbers ? "on" : "off"), _t("\u6BCF\u884C\u6700\u4E0A\u9762\u90A3\u6761\u8C31\u7684\u5DE6\u4E0A\u89D2\uFF0C\u5C0F\u5B57\uFF1B\u6BCF\u5F20\u7EB8\u4ECE 1 \u6570\uFF0C\u5F31\u8D77\u7B97 0") + IN_SONG) + setItem(
+      _t("\u6B4C\u8BCD\u6392\u6CD5"),
+      sel2("lyr", [["rhythm", _t("\u6309\u8282\u594F")], ["lyrics", _t("\u6309\u6B4C\u8BCD")]], look.lyricFit),
+      defs([[_t("\u6309\u8282\u594F"), _t("\u97F3\u7684\u4F4D\u7F6E\u53EA\u770B\u65F6\u503C\uFF0C\u6253\u5B57\u65F6\u97F3\u7B26\u4E0D\u52A8\uFF1B\u6B4C\u8BCD\u8BA9\u8DEF\uFF1A\u501F\u65C1\u8FB9\u7684\u7A7A \u2192 \u8FD9\u4E00\u884C\u4E00\u8D77\u7F29\u4E00\u70B9 \u2192 \u8FD8\u653E\u4E0D\u4E0B\u753B\u7070")], [_t("\u6309\u6B4C\u8BCD"), _t("\u957F\u7684\u5B57\u628A\u97F3\u63A8\u5F00\uFF08\u51FA\u7248\u8C31\u7684\u8001\u89C4\u77E9\uFF09")]]) + IN_SONG
+    );
+    box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("\u9875\u9762\u8BBE\u7F6E")}</div>` + setTabsHtml([["look", _t("\u770B\u8C31")], ["layout", _t("\u7248\u9762")]]) + `<div class="set-page" data-page="look">${lookPage}</div><div class="set-page" data-page="layout">${layoutPage}</div><div class="offer-btns"><button class="btn primary" data-v="close">${_t("\u597D")}</button></div></div>`;
+    mountDropdowns(box);
+    showPage(page);
   };
+  const showPage = wireSetPages(box, (pg) => {
+    page = pg;
+  });
   draw();
   document.body.append(box);
   const close = () => {
@@ -60547,60 +60598,37 @@ function openPaperSheet() {
   ui2.open({ k: "sheet", close });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
-    if (e10.target === box || v === "close") {
-      close();
-      return;
-    }
-    if (v && PAPER_KINDS.includes(v)) {
-      update(setPaper(D3.st, v));
-      draw();
-    } else if (v?.startsWith("density:")) {
-      update(setDensity(D3.st, v.slice(8)));
-      draw();
-    } else if (v?.startsWith("mc:")) {
-      const n10 = Number(v.slice(3));
+    if (e10.target === box || v === "close") close();
+  });
+  box.addEventListener("change", (e10) => {
+    const el2 = e10.target, k2 = el2.dataset.pg, v = el2.value;
+    if (!k2) return;
+    if (k2 === "nota") setSongLook(setNotation(D3.st, v), v === "jianpu" ? _t("\u7B80\u8C31") : v === "letters" ? _t("\u5B57\u6BCD\u8C31") : _t("\u4E94\u7EBF\u8C31"));
+    else if (k2 === "inc") setSongLook(setViewInC(D3.st, v === "on"), v === "on" ? _t("\u6309 C \u8C03\u770B") : _t("\u770B\u8C31\uFF1A\u4E13\u4E1A"));
+    else if (k2 === "mc") {
+      const n10 = Number(v);
       setSongLook(setMiddleC(D3.st, n10), _t("\u4E2D\u592E C \u53EB C{n}", { n: n10 }));
-      draw();
-    } else if (v === "nota:staff" || v === "nota:jianpu" || v === "nota:letters") {
-      setSongLook(setNotation(D3.st, v.slice(5)), v === "nota:jianpu" ? _t("\u7B80\u8C31") : v === "nota:letters" ? _t("\u5B57\u6BCD\u8C31") : _t("\u4E94\u7EBF\u8C31"));
-      draw();
-    } else if (v?.startsWith("pm:")) {
-      close();
-      openPaperMenu(v.slice(3));
-    } else if (v === "fit" || v === "reflow") {
-      reflow = v === "reflow";
-      view.render();
-      draw();
-    } else if (v === "bn:on" || v === "bn:off") {
-      update(setBarNumbers(D3.st, v === "bn:on"));
-      draw();
-    } else if (v === "inc:on" || v === "inc:off") {
-      setSongLook(setViewInC(D3.st, v === "inc:on"), v === "inc:on" ? _t("\u6309 C \u8C03\u770B") : _t("\u770B\u8C31\uFF1A\u4E13\u4E1A"));
-      draw();
-    } else if (v === "ct:on" || v === "ct:off") {
-      setSongLook(setChordTags(D3.st, v === "ct:on"), v === "ct:on" ? _t("\u548C\u5F26\u6807\u7EA7\u6570") : _t("\u548C\u5F26\u4E0D\u6807\u7EA7\u6570"));
-      draw();
-    } else if (v === "lyr:lyrics" || v === "lyr:rhythm") {
-      update(setLyricFit(D3.st, v === "lyr:rhythm" ? "rhythm" : "lyrics"));
-      draw();
-    } else if (v === "flow:cont" || v === "flow:pages" || v === "flow:scroll") {
-      pageFlow = v === "flow:pages";
-      scrollFlow = v === "flow:scroll";
+    } else if (k2 === "ct") setSongLook(setChordTags(D3.st, v === "on"), v === "on" ? _t("\u548C\u5F26\u6807\u7EA7\u6570") : _t("\u548C\u5F26\u4E0D\u6807\u7EA7\u6570"));
+    else if (k2 === "only1") {
+      const one = D3.st.song.parts[0];
+      if (one) {
+        for (const q2 of D3.st.song.parts) setPv(q2.id, { only: v === "on" && q2 === one });
+        afterViewChange();
+      }
+    } else if (k2 === "paper") {
+      if (PAPER_KINDS.includes(v)) update(setPaper(D3.st, v));
+    } else if (k2 === "density") update(setDensity(D3.st, v));
+    else if (k2 === "flow") {
+      pageFlow = v === "pages";
+      scrollFlow = v === "scroll";
       view.render();
       view.followNow();
-      draw();
-    } else if (v === "scope:all" || v === "scope:segment") {
-      viewScope = v === "scope:all" ? "all" : "segment";
+    } else if (k2 === "reflow") {
+      reflow = v === "reflow";
       view.render();
-      draw();
-    } else if (v === "only1") {
-      const one = D3.st.song.parts[0];
-      if (!one) return;
-      const on2 = pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only);
-      for (const q2 of D3.st.song.parts) setPv(q2.id, { only: !on2 && q2 === one });
-      afterViewChange();
-      draw();
-    }
+    } else if (k2 === "bn") update(setBarNumbers(D3.st, v === "on"));
+    else if (k2 === "lyr") update(setLyricFit(D3.st, v === "rhythm" ? "rhythm" : "lyrics"));
+    draw();
   });
 }
 var lyricMuteKey = [];
@@ -64068,4 +64096,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-cecd9e35099e.mjs.map
+//# sourceMappingURL=moonsinger-0d62005ee101.mjs.map

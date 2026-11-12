@@ -4,6 +4,7 @@
 //   验的是：打开默认锁着 → 键盘 / 写入口 / 撤销 / 存盘都拦、文件一个字节都不变、只闪不弹 → 曲段隐藏锁着能点（看法）→ 「接着改」→ 能写能存 → 「锁上」先存再锁 → 重开又锁着。
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/edit-lock.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
+import { pickOnPage } from "./dd.mjs";   // 页面设置的下拉（7-C）：先翻到那一页再选
 import { unzipSync, strFromU8 } from "../../vendor/fflate/fflate.esm.js";
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
@@ -78,7 +79,7 @@ check(await hidden(), "重做：同理");
 // ── 这首歌怎么看（谱面分家第三刀：纸的设置「看谱」、谱头面板「分解和弦」= 看法）：锁着切得动、门不闪、文件不写、能撤销 ──
 { const chip = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; });
   await p.mouse.click(chip.x, chip.y); await p.waitForSelector(".settings-card");
-  await armFlash(); await p.click('.settings-card [data-v="inc:on"]'); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(150);
+  await armFlash(); await pickOnPage(p, '.settings-card [data-pg="inc"]', "on"); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(150);
   const s = await lk();
   check((await p.evaluate(() => window.__moonsinger.state().song.viewInC)) === true && !(await flashed()), "锁着在纸的设置里切「按 C 调看」：切了、门不闪");
   check(s.dirtyKind === "looks" && !s.owes, "脏的还是「看法」、没有要存的东西", JSON.stringify(s));
@@ -158,7 +159,7 @@ check((await lk()).locked && (await notes()) === n0 + 2, "新的一次打开：�
 { const toFirst = async () => { await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, at: { paper: s.song.papers[0].id, part: s.at.part }, caret: 0, sel: null }); }); await p.waitForTimeout(250); };   // 叠音在第一段；视图只看本段，重开时停在存下的那一段（挪光标锁着也照常）
   const tags = async () => { await toFirst(); return p.$$eval("#score text.chord-tag", (ts) => ts.length); };
   const chip = async () => { const c = await p.evaluate(() => { const r = document.querySelector("#score .score-overlay .ov-paper-chip")?.getBoundingClientRect(); return r ? { x: r.left + r.width / 2, y: r.top + r.height / 2 } : null; }); await p.mouse.click(c.x, c.y); await p.waitForSelector(".settings-card"); };
-  const setTags = async (on) => { await chip(); await p.click(`.settings-card [data-v="ct:${on ? "on" : "off"}"]`); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
+  const setTags = async (on) => { await chip(); await pickOnPage(p, '.settings-card [data-pg="ct"]', on ? "on" : "off"); await p.waitForTimeout(200); await p.click('.settings-card [data-v="close"]'); await p.waitForTimeout(200); };
   const fileScore = async () => { const arr = await p.evaluate(async (name) => { const f = await (await (await navigator.storage.getDirectory()).getFileHandle(name)).getFile(); return [...new Uint8Array(await f.arrayBuffer())]; }, FILE);
     const z = unzipSync(new Uint8Array(arr)); return z[".moonsinger/score.json"] ? JSON.parse(strFromU8(z[".moonsinger/score.json"])) : null; };   // 文件字节拿回 node 这边解（不为测试往 app 里加钩子）
   const t0 = await tags(), sigA = await fileSig();
