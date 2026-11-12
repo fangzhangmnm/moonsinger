@@ -7343,7 +7343,8 @@ function drawJianpu(c, mine, mode = "digits") {
       const tailW = hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0;
       const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
       const step = n2 ? Math.max(DASH_PITCH * jk, (span - tailW * jk) / (n2 + 1)) : 0;
-      const gx = (k) => k === 0 ? cx : x0 + Q(glyphW - DIGIT_W / 2) + P(k * step);
+      const lFirst = lt ? Math.max(x0 + Q(DIGIT_W / 2) + P(step), x0 + Q(glyphW + DASH_L / 2 + 0.15)) : 0;
+      const gx = (k) => k === 0 ? cx : lt ? lFirst + P((k - 1) * step) : x0 + Q(glyphW - DIGIT_W / 2) + P(k * step);
       const endX = n2 ? gx(n2) + Q(DIGIT_W / 2) : x0 + Q(glyphW);
       const small = u.art.includes("ghost");
       const digit = (x, s2) => put(row, { ...T2, t: "text", x, y: Y(row, BASE_Y), s: s2, cls: u.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: Q(small ? DIGIT_EM * GHOST_K : DIGIT_EM), anchor: "middle" });
@@ -7468,7 +7469,7 @@ function drawJianpu(c, mine, mode = "digits") {
       }
       if (hasAugDot(u)) put(row, { ...T2, t: "path", d: dotPath(endX + Q(AUG_DX + AUG_R), Y(row, AUG_Y), Q(AUG_R)), cls: "jp-dot" });
       if (u.note && u.breath) {
-        const bw = Q(BREATH_W + (u.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q(0.1), Math.min(endX + Q((hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P(u.x + span) - bw));
+        const bw = Q(BREATH_W + (u.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q(0.1), Math.min(endX + Q((hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P(u.x + span) - bw - Q(0.25)));
         put(row, { ...T2, t: "text", x: bx, y: Y(row, BREATH_Y), s: "V", cls: artCls("breath", "jp-acc breath"), size: Q(BREATH_EM), anchor: "start" });
         if (u.inhale) put(row, { ...T2, t: "text", x: bx + Q(1), y: Y(row, BREATH_Y), s: u.inhale === "big" ? _tIn(o.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o.locale, "\u5438##\u8BB0\u53F7"), cls: artCls("inhale", "breath-label"), size: tx("breath-label"), anchor: "start" });
       }
@@ -8435,4 +8436,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-c0f1838e8c35.mjs.map
+//# sourceMappingURL=layout-worker-5e7110308795.mjs.map

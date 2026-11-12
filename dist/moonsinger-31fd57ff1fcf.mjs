@@ -13692,7 +13692,8 @@ function drawJianpu(c10, mine, mode = "digits") {
       const tailW = hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0;
       const span2 = (spanTo.get(u2) ?? u2.x + u2.w) - u2.x;
       const step = n10 ? Math.max(DASH_PITCH * jk, (span2 - tailW * jk) / (n10 + 1)) : 0;
-      const gx = (k2) => k2 === 0 ? cx2 : x0 + Q2(glyphW - DIGIT_W / 2) + P2(k2 * step);
+      const lFirst = lt2 ? Math.max(x0 + Q2(DIGIT_W / 2) + P2(step), x0 + Q2(glyphW + DASH_L / 2 + 0.15)) : 0;
+      const gx = (k2) => k2 === 0 ? cx2 : lt2 ? lFirst + P2((k2 - 1) * step) : x0 + Q2(glyphW - DIGIT_W / 2) + P2(k2 * step);
       const endX = n10 ? gx(n10) + Q2(DIGIT_W / 2) : x0 + Q2(glyphW);
       const small = u2.art.includes("ghost");
       const digit = (x2, s10) => put2(row2, { ...T3, t: "text", x: x2, y: Y2(row2, BASE_Y), s: s10, cls: u2.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: Q2(small ? DIGIT_EM * GHOST_K : DIGIT_EM), anchor: "middle" });
@@ -13817,7 +13818,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
       if (hasAugDot(u2)) put2(row2, { ...T3, t: "path", d: dotPath(endX + Q2(AUG_DX + AUG_R), Y2(row2, AUG_Y), Q2(AUG_R)), cls: "jp-dot" });
       if (u2.note && u2.breath) {
-        const bw = Q2(BREATH_W + (u2.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q2(0.1), Math.min(endX + Q2((hasAugDot(u2) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P2(u2.x + span2) - bw));
+        const bw = Q2(BREATH_W + (u2.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q2(0.1), Math.min(endX + Q2((hasAugDot(u2) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P2(u2.x + span2) - bw - Q2(0.25)));
         put2(row2, { ...T3, t: "text", x: bx, y: Y2(row2, BREATH_Y), s: "V", cls: artCls("breath", "jp-acc breath"), size: Q2(BREATH_EM), anchor: "start" });
         if (u2.inhale) put2(row2, { ...T3, t: "text", x: bx + Q2(1), y: Y2(row2, BREATH_Y), s: u2.inhale === "big" ? _tIn(o10.locale, "\u6DF1\u5438##\u8BB0\u53F7") : _tIn(o10.locale, "\u5438##\u8BB0\u53F7"), cls: artCls("inhale", "breath-label"), size: tx2("breath-label"), anchor: "start" });
       }
@@ -33036,7 +33037,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-c0f1838e8c35.mjs");
+      return pick(() => "layout-worker-5e7110308795.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-2a99dcc81359.mjs");
   }
@@ -62734,4 +62735,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-67f2c07857a5.mjs.map
+//# sourceMappingURL=moonsinger-31fd57ff1fcf.mjs.map

@@ -212,7 +212,9 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       //   不按这一列最少要多宽（u.w；原来按它 = 横线挤在数字后面、后面空一截）
       const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
       const step = n ? Math.max(DASH_PITCH * jk, (span - tailW * jk) / (n + 1)) : 0;   // sp
-      const gx = (k: number) => (k === 0 ? cx : x0 + Q(glyphW - DIGIT_W / 2) + P(k * step));   // 第一个字形是和弦名 / 带升降号的字母（比数字宽）= 后面的横线往后让出多出来的那截
+      //   字母谱（7-B）：横线照旧落在拍的位置上（一拍一个），只有挨字母和角标太近时才往后让——不整体推（整体推 = 最后一条横线顶到小节线、换气的 V 贴线）
+      const lFirst = lt ? Math.max(x0 + Q(DIGIT_W / 2) + P(step), x0 + Q(glyphW + DASH_L / 2 + 0.15)) : 0;
+      const gx = (k: number) => (k === 0 ? cx : lt ? lFirst + P((k - 1) * step) : x0 + Q(glyphW - DIGIT_W / 2) + P(k * step));   // 第一个字形是和弦名（比数字宽）= 后面的横线往后让出多出来的那截
       const endX = n ? gx(n) + Q(DIGIT_W / 2) : x0 + Q(glyphW);   // 最后一个字形的右边（附点、换气从这里起）
       const small = u.art.includes("ghost");   // 幽灵音（演奏法）= 数字小一号（UX 稿第 5 节）；u.ghost = 没写音高的音（灰，同五线谱的灰符头）
       const digit = (x: number, s: string) => put(row, { ...T, t: "text", x, y: Y(row, BASE_Y), s, cls: u.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: Q(small ? DIGIT_EM * GHOST_K : DIGIT_EM), anchor: "middle" });
@@ -324,7 +326,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       }
       if (hasAugDot(u)) put(row, { ...T, t: "path", d: dotPath(endX + Q(AUG_DX + AUG_R), Y(row, AUG_Y), Q(AUG_R)), cls: "jp-dot" });
       if (u.note && u.breath) {   // 换气 = 音后面一个 V；出声的换气写「V 吸」/「V 深吸」（UX 稿第 5 节）
-        const bw = Q(BREATH_W + (u.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q(0.1), Math.min(endX + Q((hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P(u.x + span) - bw));   // 不越过这一段占到的地方（下一列 / 小节线）
+        const bw = Q(BREATH_W + (u.inhale ? INHALE_W : 0)), bx = Math.max(endX + Q(0.1), Math.min(endX + Q((hasAugDot(u) ? AUG_DX + 2 * AUG_R : 0) + 0.35), P(u.x + span) - bw - Q(0.25)));   // 不越过这一段占到的地方（下一列 / 小节线），离它留一点
         put(row, { ...T, t: "text", x: bx, y: Y(row, BREATH_Y), s: "V", cls: artCls("breath", "jp-acc breath"), size: Q(BREATH_EM), anchor: "start" });   // 样张：0.5 FS 的 V，在基线上 1.09 FS
         if (u.inhale) put(row, { ...T, t: "text", x: bx + Q(1.0), y: Y(row, BREATH_Y), s: u.inhale === "big" ? _tIn(o.locale, "深吸##记号") : _tIn(o.locale, "吸##记号"), cls: artCls("inhale", "breath-label"), size: tx("breath-label"), anchor: "start" });
       }
