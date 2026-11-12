@@ -2,7 +2,8 @@
 // test/e2e/run.mjs —— E2E 运行器（W-20 测试分档）。created 2026-10-13 by Claude Fable 5.1。细则 = ai-docs/20261013-test-tiers.md。
 //   原来 package.json 里 60 个文件用 && 串着跑：串行 8 分钟、第一个红了后面的全不跑、看不出每个文件多慢。
 //   这里：① 并行跑（默认 8 条，--jobs=N）；② 红了继续，最后一起报；③ 每个文件计时、慢的先跑（上次的时长记在 .e2e-times.json）；
-//        ④ 没人起 8710 就自己起 scripts/serve.sh、跑完关掉；⑤ 能筛：区名 `@pad` / 文件名子串 `rest lift` / `--changed`（按 git 里改了什么推区）。
+//        ④ 自己起服务、端的是开跑那一刻**冻住的一份**（scripts/serve.sh SERVE_DIR = 拷进临时目录，跑完关掉、删掉；跑的过程中工作区怎么改 / 重新构建都不影响这一轮，
+//          开头和结尾印这一轮对应哪个提交、端出去的东西有没有没提交的改动；2026-11-12 施工单「整套 E2E 跑的那一份要和工作区隔开」）；⑤ 能筛：区名 `@pad` / 文件名子串 `rest lift` / `--changed`（按 git 里改了什么推区）。
 //   用法：
 //     node test/e2e/run.mjs                 平时的整套（= npm run e2e）：不含「专项」——areas.mjs 的 SLOW：一份就要几分钟的、要连外网的；跳过了哪几份会印出来
 //     node test/e2e/run.mjs --all           真的全部，含专项（推正式版那一档 = npm run test:full；专门查测试的时候）
@@ -11,7 +12,7 @@
 //     node test/e2e/run.mjs --changed       看 git 改了哪些文件 → 推出该跑哪些区（main.ts / styles.css / index.html = 整套）
 //     node test/e2e/run.mjs --smoke         顺带把两份冒烟（shell-smoke / file-smoke）也当两个任务一起跑（它们自己起服务，不用 8710）
 //     --task-timeout=秒（默认 300）：单个任务超时 = 杀掉整组进程（含它起的浏览器）、记成红、接着跑别的（家族周账 F-144：2026-11-03 sync.mjs 卡死过两次，运行器原来会一直等）
-//     --jobs=N  --list  --base=http://…（不自己起服务）  MS_E2E_BASE 同 --base  --port=N（自己起一口在这个端口；worktree 里用，别借主目录的 8710）
+//     --jobs=N  --list  --base=http://…（不自己起服务 = 不冻，跑的是那边端的东西）  MS_E2E_BASE 同 --base  --port=N（冻住的那一份端在这个端口；不给 = 从 8720 往上找一个空的，不借 8710）
 //   每个 E2E 文件照旧能单独 `node test/e2e/x.mjs`（要 8710 在跑）——这里只是调度，不改它们。
 import { spawn, execSync } from "node:child_process";
 import fs from "node:fs";
@@ -89,27 +90,42 @@ picked.sort((a, b) => (times[b] ?? 1e9) - (times[a] ?? 1e9));
 const tasks = picked.map((n) => ({ name: n, file: path.join(HERE, n + ".mjs"), needsServer: true }));
 if (flag("smoke")) for (const s of SMOKES) tasks.unshift({ name: s, file: path.join(ROOT, "test", s + ".mjs"), needsServer: false });
 
-// ── 服务 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
-// 8710 已经有人在听 = 借用（假定是这个目录的 npm run serve）。在 worktree 里跑要么 --port=8713 自己起一口（不借别人的构建），要么 --base 指过去。
-const PORT = Number(opt("port")) || 8710, ownPort = opt("port") !== null;
+// ── 服务 ─────────────────────────────────────────────────────────────────────────────────
+// 整套跑的是开跑那一刻冻住的一份（2026-11-12）：要端的东西（清单只在 scripts/serve.sh 的 SERVED）拷进一个新的临时目录，服务只端它。
+//   不再借 8710 上别人起的服务（那一份是软链读工作区：上一件在跑、下一件在改，就会读到改了一半的样式 / 半新的构建——同一类出过两次）。
+//   --base / MS_E2E_BASE = 明着要跑那边端的东西：不冻，开头说一声。
 // 2026-10-14：WSL（mirrored 网络）上连一个关着的端口有时不拒绝、一直等，没有超时 = 运行器在这儿卡死、一行都不印；1.5 s 没接上就当没人听
 const listening = (port) => new Promise((ok) => { const s = net.createConnection({ port, host: "127.0.0.1" }); const t = setTimeout(() => { s.destroy(); ok(false); }, 1500); s.once("connect", () => { clearTimeout(t); s.destroy(); ok(true); }); s.once("error", () => { clearTimeout(t); ok(false); }); });
-let server = null;
-if (tasks.some((t) => t.needsServer) && !base) {
-  if (await listening(PORT)) { if (ownPort) { console.error(`--port=${PORT} 已经有人在听；换一个端口，或用 --base 指过去`); process.exit(2); } base = `http://127.0.0.1:${PORT}/`; }
-  else {
-    server = spawn("bash", ["scripts/serve.sh"], { cwd: ROOT, env: { ...process.env, PORT: String(PORT), BIND: "127.0.0.1" }, stdio: "ignore" });
-    for (let i = 0; i < 50 && !(await listening(PORT)); i++) await new Promise((r) => setTimeout(r, 100));
-    if (!(await listening(PORT))) { console.error("起不来本机服务（scripts/serve.sh）"); server.kill(); process.exit(2); }
-    base = `http://127.0.0.1:${PORT}/`;
-  }
+const sh = (cmd) => { try { return execSync(cmd, { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim(); } catch { return ""; } };
+/** 这一轮对应哪个提交：端出去的东西 / E2E 脚本本身有没有没提交的改动（E2E 脚本每份开跑时从工作区读，不在冻住的那一份里）。 */
+function stampOf() {
+  const head = sh("git rev-parse --short HEAD") || "?";
+  const served = sh("bash scripts/serve.sh --list").split("\n").filter(Boolean);
+  const dirty = (paths) => (paths.length ? sh(`git status --porcelain -- ${paths.map((p) => JSON.stringify(p)).join(" ")}`).split("\n").filter(Boolean).map((l) => l.replace(/^\s*\S{1,2}\s+/, "")) : []);   // git status 一行 = 「XY 路径」；sh() 去掉了整段开头的空格，第一行的「 M」只剩「M」，按「状态码 + 空格」剥
+  const ds = dirty(served), dt = dirty(["test/e2e"]);
+  return `提交 ${head}` + (ds.length ? `（端出去的含未提交的改动：${ds.slice(0, 6).join(" ")}${ds.length > 6 ? ` 等 ${ds.length} 处` : ""}）` : "（端出去的和提交一样）") + (dt.length ? `；E2E 脚本含未提交的改动：${dt.slice(0, 4).join(" ")}${dt.length > 4 ? " 等" : ""}` : "");
 }
-const stopServer = () => { if (server) { server.kill(); server = null; } };
+const PORT0 = Number(opt("port")) || 0;
+let server = null, frozen = null, stamp = null;
+const FROZEN_PREFIX = path.join(os.tmpdir(), "moonsinger-e2e-");
+const dropFrozen = () => { if (frozen && frozen.startsWith(FROZEN_PREFIX)) { try { fs.rmSync(frozen, { recursive: true, force: true }); } catch { /* 临时目录，删不掉也不碍事 */ } } frozen = null; };
+if (tasks.some((t) => t.needsServer) && !base) {
+  let port = PORT0;
+  if (port) { if (await listening(port)) { console.error(`--port=${port} 已经有人在听；换一个端口，或用 --base 指过去`); process.exit(2); } }
+  else { for (port = 8720; port < 8800 && (await listening(port)); port++); if (port >= 8800) { console.error("8720–8799 都有人在听，用 --port=N 指一个空的"); process.exit(2); } }
+  stamp = stampOf();
+  frozen = fs.mkdtempSync(FROZEN_PREFIX);
+  server = spawn("bash", ["scripts/serve.sh"], { cwd: ROOT, env: { ...process.env, PORT: String(port), BIND: "127.0.0.1", SERVE_DIR: frozen }, stdio: "ignore" });
+  for (let i = 0; i < 300 && !(await listening(port)); i++) await new Promise((r) => setTimeout(r, 100));   // 先拷（几十 MB）再起服务：最多等 30 s
+  if (!(await listening(port))) { console.error("起不来本机服务（scripts/serve.sh SERVE_DIR）"); server.kill(); dropFrozen(); process.exit(2); }
+  base = `http://127.0.0.1:${port}/`;
+}
+const stopServer = () => { if (server) { server.kill(); server = null; } dropFrozen(); };
 process.on("SIGINT", () => { stopServer(); process.exit(130); });
 
 // ── 跑 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 const fmt = (s) => (s >= 60 ? `${Math.floor(s / 60)}m${String(Math.round(s % 60)).padStart(2, "0")}s` : `${s.toFixed(1)}s`);
-console.log(`E2E：${tasks.length} 个任务 · ${JOBS} 条并行${base ? ` · ${base}` : ""}${server ? "（本机服务自己起的）" : ""}`);
+console.log(`E2E：${tasks.length} 个任务 · ${JOBS} 条并行${base ? ` · ${base}` : ""}${server ? `（冻住的一份 · ${stamp}）` : base ? "（--base：没冻，跑的是那边端的东西）" : ""}`);
 const results = [];
 const t0 = performance.now();
 let next = 0;
@@ -169,5 +185,6 @@ for (const r of failed) {
 const slow = [...results].sort((a, b) => b.secs - a.secs).slice(0, 3).map((r) => `${r.name} ${fmt(r.secs)}`).join(" · ");
 console.log(`\n  ${results.length - failed.length} passed, ${failed.length} failed · wall ${fmt(wall)}（串行要 ${fmt(serial)}）· 最慢：${slow}`);
 if (flaky.length) console.log(`  并行红、单跑绿（负载 flake，已算过）：${flaky.join(" ")}`);
+if (stamp) console.log(`  这一轮跑的是：${stamp}`);
 if (smokeHint) console.log("  改的里面有壳的文件 → 另跑 npm run smoke");
 process.exit(failed.length ? 1 : 0);

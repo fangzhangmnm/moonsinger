@@ -18,7 +18,7 @@ describe("图标接线", () => {
     assert(refs.size >= 5, `应当至少有 manifest + 四个图标，拿到 ${[...refs]}`);
     const sw = read("service-worker.js"), deploy = read(".github/workflows/deploy.yml"), serve = read("scripts/serve.sh");
     const deployList = (deploy.match(/for f in ([^;]+); do/) ?? [])[1]?.split(/\s+/) ?? [];  // 第一个 for f = 根目录文件表
-    const serveList = (serve.match(/for f in ([^;]+); do/) ?? [])[1]?.split(/\s+/) ?? [];
+    const serveList = (serve.match(/^SERVED="([^"]+)"/m) ?? [])[1]?.split(/\s+/) ?? [];   // 端出去的清单只写在 SERVED 这一处（2026-11-12：整套 E2E 拷的也是它）
     for (const f of refs) {
       assert(fs.existsSync(at(f)), `${f} 不存在`);
       assert(sw.includes(`"./${f}"`), `${f} 不在 service-worker.js 的预缓存里`);
