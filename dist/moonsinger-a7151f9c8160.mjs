@@ -55692,6 +55692,7 @@ function createReferenceHost(d3) {
 // src/export/pdf.ts
 init_fflate_esm();
 var PDF_BOLD_STROKE = 0.035;
+var mergeMusicOutlines = (music, serif) => ({ unitsPerEm: music.unitsPerEm, glyphs: { ...music.glyphs, ...serif.glyphs } });
 var enc2 = new TextEncoder();
 var num = (v) => (Math.round(v * 1e3) / 1e3).toString();
 var hex4 = (v) => (v & 65535).toString(16).padStart(4, "0").toUpperCase();
@@ -55811,12 +55812,8 @@ stream
           missingMusic.add(o10.code);
           continue;
         }
-        const key = o10.stroke ? `${o10.code}S${Math.round(o10.stroke * 1e4)}` : o10.code;
-        let n10 = forms.get(key);
-        if (n10 === void 0) {
-          n10 = reserve();
-          forms.set(key, n10);
-        }
+        const sk2 = o10.stroke ? Math.round(o10.stroke * 1e4) : 0, key = sk2 ? `${o10.code}S${sk2}` : o10.code;
+        if (!forms.has(key)) forms.set(key, { n: reserve(), code: o10.code, stroke: sk2 / 1e4 });
         xobj.add(key);
         const s10 = o10.size / em2;
         c10 += `q ${rgb(o10.color, false)}${o10.stroke ? ` ${rgb(o10.color, true)}` : ""} ${num(s10)} 0 0 ${num(s10)} ${num(o10.x)} ${num(H3 - o10.y)} cm /G${key} Do Q
@@ -55839,11 +55836,11 @@ stream
     }
     const content = reserve();
     stream(content, "", enc2.encode(c10));
-    const xo = xobj.size ? ` /XObject << ${[...xobj].map((code) => `/G${code} ${forms.get(code)} 0 R`).join(" ")} >>` : "";
+    const xo = xobj.size ? ` /XObject << ${[...xobj].map((key) => `/G${key} ${forms.get(key).n} 0 R`).join(" ")} >>` : "";
     obj(pageObjs[pi], `<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${num(page.w)} ${num(page.h)}] /Resources << /Font << /F1 ${fontObj} 0 R >>${xo} >> /Contents ${content} 0 R >>`);
   });
-  for (const [key, n10] of forms) {
-    const m2 = /^([0-9A-F]+)(?:S(\d+))?$/.exec(key), g3 = music.glyphs[m2[1]], sw2 = m2[2] ? Number(m2[2]) / 1e4 * em2 : 0;
+  for (const { n: n10, code, stroke } of forms.values()) {
+    const g3 = music.glyphs[code], sw2 = stroke * em2;
     stream(n10, `/Type /XObject /Subtype /Form /BBox [-${em2 * 2} -${em2 * 2} ${em2 * 4} ${em2 * 4}]`, enc2.encode(sw2 ? `${num(sw2)} w 1 j ${svgToPdfPath(g3.d)}B
 ` : `${svgToPdfPath(g3.d)}f
 `));
@@ -56495,7 +56492,7 @@ async function loadMusicOutlines() {
   ]).catch((e10) => {
     throw new Error(_t("\u97F3\u4E50\u5B57\u5F62\u4E0B\u4E0D\u6765\uFF08{Error}\uFF09", { Error: e10.message }));
   });
-  return { unitsPerEm: music.unitsPerEm, glyphs: { ...music.glyphs, ...serif.glyphs } };
+  return mergeMusicOutlines(music, serif);
 }
 var PDF_FONT_MB = { sans: 6.3, pinyin: 12.2 };
 
@@ -63814,4 +63811,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2784b611bd03.mjs.map
+//# sourceMappingURL=moonsinger-a7151f9c8160.mjs.map

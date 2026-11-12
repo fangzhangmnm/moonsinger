@@ -9,6 +9,7 @@ import { createTextMeasure } from "../src/render/text/index.ts";
 import { songViewOf, setViewInC, setChordTags, setNotation } from "../src/score/song-view.ts";
 import { scorePdf } from "../src/export/score-pdf.ts";
 import { parseTtf } from "../src/export/ttf.ts";
+import { mergeMusicOutlines } from "../src/export/pdf.ts";
 import { fullSong, fullFlags } from "./fixtures/layout/full-song.ts";
 
 let id = 8000;
@@ -59,12 +60,16 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
     assert(digits.length > 0 && digits.every((p) => isPrinted((p as { cls?: string }).cls)), "数字都印");
     // 用全的测试歌切成简谱（记号、弧线、连音、反复、五线谱专有记号的小灰标都在），用真的字体写 PDF
     const fs = (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule("node:fs"), zlib = (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule("node:zlib");
-    const ROOT = new URL("../", import.meta.url), font = parseTtf(new Uint8Array(zlib.gunzipSync(fs.readFileSync(new URL("vendor/fonts/sans.ttf.gz", ROOT))))), music = JSON.parse(fs.readFileSync(new URL("vendor/fonts/bravura/outlines.json", ROOT), "utf8"));
+    const ROOT = new URL("../", import.meta.url), font = parseTtf(new Uint8Array(zlib.gunzipSync(fs.readFileSync(new URL("vendor/fonts/sans.ttf.gz", ROOT))))), music = mergeMusicOutlines(JSON.parse(fs.readFileSync(new URL("vendor/fonts/bravura/outlines.json", ROOT), "utf8")), JSON.parse(fs.readFileSync(new URL("vendor/fonts/serif/chord-outlines.json", ROOT), "utf8")));   // 和 app 同一套（pdf-assets.ts loadMusicOutlines）：Bravura + 和弦级数的衬线字
     const full = { ...fullSong(), notation: "jianpu" }, flags = fullFlags(full);
     const r = scorePdf({ song: full, parts: full.parts.map((q, k) => ({ id: q.id, name: q.id, first: k === 0, ...(flags[q.id] ?? {}) })), font, fontId: "sans", music, title: "jianpu", created: new Date(Date.UTC(2026, 10, 11)), autoBars: true });
     assert(r.pages >= 1 && r.bytes.length > 1000, `写出了 PDF（${r.pages} 页、${r.bytes.length} 字节）`);
     eq(r.stats.missingMusic.join(","), "", "没有缺的音乐字形（楔形跳音等都有轮廓）");
     eq(r.stats.missing.join(""), "", "没有缺的字");
+    // 两种 Form 同在一份 PDF 里（2026-11-12 抓到：描边补粗的键是「码位 + S 描边量」，从键里拆回来的写法只认码位，碰上和弦级数的「T + 码位」整份导出就崩）
+    const txt = new TextDecoder("latin1").decode(r.bytes);
+    assert(/\/GT[0-9A-F]+ /.test(txt), "和弦级数画成衬线字的 Form（T + 码位）");
+    assert(/\/G[0-9A-F]+S\d+ /.test(txt), "描边补粗的升降号的 Form（码位 + S 描边量）");
   });
   it("只印这一张纸 = 分页预览的「本段」：控件开关同样不改版面（2026-10-09，user「只印一段或一个声部…和wxhw差不多」）", () => {
     for (const paper of st.song.papers) {

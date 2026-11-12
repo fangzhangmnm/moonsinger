@@ -1,5 +1,5 @@
 import { type TtfFont } from "./ttf.ts";
-import type { MusicOutlines } from "./pdf.ts";
+import { type MusicOutlines } from "./pdf.ts";
 import type { PdfFontId } from "./score-pdf.ts";
 /** 取一款字体（TTF）并解析。拿不到（离线且没缓存）→ 抛错（调用方明说）。 */
 export declare function loadPdfFont(id: PdfFontId): Promise<TtfFont>;

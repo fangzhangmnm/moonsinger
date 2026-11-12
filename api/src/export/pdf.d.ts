@@ -81,6 +81,8 @@ export interface MusicOutlines {
         d: string;
     }>;
 }
+/** 导出用的一整套音乐字形 = Bravura 的（键 = 码位）+ 和弦级数的衬线字（键 = T + 码位）；两份都是 1000 单位一个 em。app 和测试都用这一个（pdf-assets.ts loadMusicOutlines）。 */
+export declare const mergeMusicOutlines: (music: MusicOutlines, serif: MusicOutlines) => MusicOutlines;
 export interface PdfStats {
     glyphs: number;
     missing: string[];

@@ -24,6 +24,8 @@ export interface PdfPage { w: number; h: number; ops: PdfOp[] }
 export interface PdfDoc { title: string; pages: PdfPage[]; producer?: string; created?: Date }
 /** 音乐字形的轮廓：outlines.json 的形状（字体单位、y 向上；d = SVG 路径）。 */
 export interface MusicOutlines { unitsPerEm: number; glyphs: Record<string, { adv: number; d: string }> }
+/** 导出用的一整套音乐字形 = Bravura 的（键 = 码位）+ 和弦级数的衬线字（键 = T + 码位）；两份都是 1000 单位一个 em。app 和测试都用这一个（pdf-assets.ts loadMusicOutlines）。 */
+export const mergeMusicOutlines = (music: MusicOutlines, serif: MusicOutlines): MusicOutlines => ({ unitsPerEm: music.unitsPerEm, glyphs: { ...music.glyphs, ...serif.glyphs } });
 export interface PdfStats { glyphs: number; missing: string[]; missingMusic: string[]; fontBytes: number }
 
 const enc = new TextEncoder();
@@ -67,7 +69,7 @@ export function writePdf(doc: PdfDoc, font: TtfFont, music: MusicOutlines, opts:
   push("%PDF-1.7\n%âãÏÓ\n");
   const catalog = reserve(), pagesObj = reserve(), fontObj = reserve(), cidObj = reserve(), descObj = reserve(), fileObj = reserve(), uniObj = reserve(), infoObj = reserve();
   const used = new Map<number, number>(), missing = new Set<string>(), missingMusic = new Set<string>();
-  const forms = new Map<string, number>();   // 音乐字形 → Form XObject 对象号
+  const forms = new Map<string, { n: number; code: string; stroke: number }>();   // 音乐字形（+ 描边量）→ Form XObject 对象号；字和描边量记在这里，不从键里拆回来（键的形状 = 字的键 + 描边，字的键有码位也有「T + 码位」）
   const pageObjs = doc.pages.map(() => reserve());
   const em = music.unitsPerEm;
   doc.pages.forEach((page, pi) => {
@@ -82,8 +84,8 @@ export function writePdf(doc: PdfDoc, font: TtfFont, music: MusicOutlines, opts:
       } else if (o.op === "glyph") {
         const g = music.glyphs[o.code];
         if (!g) { missingMusic.add(o.code); continue; }
-        const key = o.stroke ? `${o.code}S${Math.round(o.stroke * 10000)}` : o.code;   // 描了边的是另一个 Form（同一个字、同一个描边量共用）
-        let n = forms.get(key); if (n === undefined) { n = reserve(); forms.set(key, n); }
+        const sk = o.stroke ? Math.round(o.stroke * 10000) : 0, key = sk ? `${o.code}S${sk}` : o.code;   // 描了边的是另一个 Form（同一个字、同一个描边量共用）
+        if (!forms.has(key)) forms.set(key, { n: reserve(), code: o.code, stroke: sk / 10000 });
         xobj.add(key);
         const s = o.size / em;
         c += `q ${rgb(o.color, false)}${o.stroke ? ` ${rgb(o.color, true)}` : ""} ${num(s)} 0 0 ${num(s)} ${num(o.x)} ${num(H - o.y)} cm /G${key} Do Q\n`;
@@ -99,12 +101,12 @@ export function writePdf(doc: PdfDoc, font: TtfFont, music: MusicOutlines, opts:
     }
     const content = reserve();
     stream(content, "", enc.encode(c));
-    const xo = xobj.size ? ` /XObject << ${[...xobj].map((code) => `/G${code} ${forms.get(code)} 0 R`).join(" ")} >>` : "";
+    const xo = xobj.size ? ` /XObject << ${[...xobj].map((key) => `/G${key} ${forms.get(key)!.n} 0 R`).join(" ")} >>` : "";
     obj(pageObjs[pi]!, `<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${num(page.w)} ${num(page.h)}] /Resources << /Font << /F1 ${fontObj} 0 R >>${xo} >> /Contents ${content} 0 R >>`);
   });
   // 音乐字形：Form XObject（字体单位；颜色跟着摆它时的填充色走——这里不设颜色）
-  for (const [key, n] of forms) {
-    const m = /^([0-9A-F]+)(?:S(\d+))?$/.exec(key)!, g = music.glyphs[m[1]!]!, sw = m[2] ? (Number(m[2]) / 10000) * em : 0;   // 描边补粗：字体单位里的线宽，描边色 = 摆它时的描边色（同填充色）
+  for (const { n, code, stroke } of forms.values()) {
+    const g = music.glyphs[code]!, sw = stroke * em;   // 描边补粗：字体单位里的线宽，描边色 = 摆它时的描边色（同填充色）
     stream(n, `/Type /XObject /Subtype /Form /BBox [-${em * 2} -${em * 2} ${em * 4} ${em * 4}]`, enc.encode(sw ? `${num(sw)} w 1 j ${svgToPdfPath(g.d)}B\n` : `${svgToPdfPath(g.d)}f\n`));
   }
   obj(pagesObj, `<< /Type /Pages /Kids [${pageObjs.map((n) => `${n} 0 R`).join(" ")}] /Count ${pageObjs.length} >>`);

@@ -4,7 +4,7 @@
 import { _t } from "../i18n/index.ts";
 import { gunzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { parseTtf, type TtfFont } from "./ttf.ts";
-import type { MusicOutlines } from "./pdf.ts";
+import { mergeMusicOutlines, type MusicOutlines } from "./pdf.ts";
 import type { PdfFontId } from "./score-pdf.ts";
 import { getBytes, getJson } from "../resources.ts";
 
@@ -26,7 +26,7 @@ export async function loadMusicOutlines(): Promise<MusicOutlines> {
     getJson<MusicOutlines>("vendor/fonts/bravura/outlines.json"),
     getJson<MusicOutlines>("vendor/fonts/serif/chord-outlines.json"),   // 和弦级数的衬线字（v0.16.34；键 T + 码位，同一套 Form XObject；两份都是 1000 单位一个 em）
   ]).catch((e) => { throw new Error(_t("音乐字形下不来（{Error}）", { Error: (e as Error).message })); });
-  return { unitsPerEm: music.unitsPerEm, glyphs: { ...music.glyphs, ...serif.glyphs } };
+  return mergeMusicOutlines(music, serif);
 }
 /** 第一次要下多少（给人看的估计）。 */
 export const PDF_FONT_MB: Record<PdfFontId, number> = { sans: 6.3, pinyin: 12.2 };
