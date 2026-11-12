@@ -61,6 +61,18 @@ await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTi
 // 6. 撤销：一步一步回去
 await p.keyboard.press("Control+z"); await p.waitForTimeout(120);
 check((await partClef()) === "F8vb", "撤销 = 回到上一步（低音 8vb）");
+// 7. 大谱表上手写的八度线现在不起作用：谱上画灰（不印），点开说明（谱面分家第五刀 5-3，统筹裁定；真做 = 愿望单 W-73）
+{ const c2 = await clefAt(); await p.mouse.click(c2.x, c2.y); await p.waitForTimeout(250); }
+await p.selectOption('.header-panel [data-hp="clef"]', "grand"); await p.waitForTimeout(200);
+await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
+check((await partClef()) === "grand", "这一段换成大谱表", await partClef());
+check(await p.$$eval("#score svg .ottava.off", (es) => es.length) >= 1 && await p.$$eval("#score svg .ottava-line.off", (es) => es.length) >= 1, "大谱表上的 8va 照样画出来、画灰");
+const ot = await p.evaluate(() => { const m = window.__moonsinger, L = m.layout(), c = L.clefs.find((x) => x.kind === "ottava" && x.index >= 0), sc = document.querySelector("#score .sheet").getBoundingClientRect(); return c ? { x: sc.left + L.pageX.left + c.x + c.w / 2, y: sc.top + c.y + c.h / 2 } : null; });
+check(!!ot, "灰的 8va 点得到");
+if (ot) { await p.mouse.click(ot.x, ot.y); await p.waitForTimeout(200); }
+const hint = await p.$eval(".ctx-menu", (e) => e.textContent ?? "").catch(() => "");
+check(hint.includes("大谱表上八度线现在不起作用"), "点开说明：大谱表上八度线现在不起作用", hint.slice(0, 80));
+await p.keyboard.press("Escape"); await p.mouse.click(5, 300); await p.waitForTimeout(100);
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nclef: ${pass} passed, ${fail} failed`);

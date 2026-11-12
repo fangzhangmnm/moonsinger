@@ -69,31 +69,35 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
       let c = q.start; for (const x of q.units) if (x.system < s && x.index >= 0) c = q.ds.clef[x.index] ?? c; return c;
     };
     /** 第 s 行开头的谱号是谁管的：最近的一个谱号记号的下标（−1 = 声部自己的谱号 / 自动）。 */
-    const clefSrcAtSys = (q: StaffTrack, s: number): number => {
+    const clefSrcAtSys = (q: StaffTrack, s: number): number => srcAtSys(q, s, "clef");
+    /** 第 s 行开头生效的那一种记号（谱号 / 调号）是哪个 token 管的：这一行第一个单元之前最近的一个（−1 = 没有）。行首的字形挂它的 token（守卫 4，第五刀 5-3）。 */
+    const srcAtSys = (q: StaffTrack, s: number, kind: "clef" | "key"): number => {
       const u = q.units.find((x) => x.system === s && x.index >= 0), upto = u ? u.index : q.tokens.length - 1;
-      for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === "clef") return i; return -1;
+      for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === kind) return i; return -1;
     };
+    /** 一个 token 下标 → 图元的 tok 字段（下标无效 = 不写）。 */
+    const tokAt = (q: StaffTrack, i: number | undefined): { tok?: number } => { const id = i !== undefined && i >= 0 ? q.tokens[i]?.id : undefined; return id !== undefined ? { tok: id } : {}; };
 
   // ── 画字的小函数（原 engrave() 里的；1b-6a 搬来） ──
   const staffHit = (r: number) => ({ y: yOf(r, TOP_LINE) - P(1.2), h: yOf(r, BOTTOM_LINE) - yOf(r, TOP_LINE) + P(2.4) });
-  const drawTime = (r: number, x0: number, beats: number, beatType: number, cls: string) => {
+  const drawTime = (r: number, x0: number, beats: number, beatType: number, cls: string, T: { tok?: number } = {}) => {
     const num = timeSigDigits(beats), den = timeSigDigits(beatType);
     const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw = Math.max(wn, wd);
-    put(r, { t: "glyph", x: P(x0 + (cw - wn) / 2), y: yOf(r, 36), ch: num, cls });
-    put(r, { t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(r, 32), ch: den, cls });
+    put(r, { ...T, t: "glyph", x: P(x0 + (cw - wn) / 2), y: yOf(r, 36), ch: num, cls });
+    put(r, { ...T, t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(r, 32), ch: den, cls });
     return cw;
   };
   // 速度记号（「Andante ♩ = 88」）：两种行共用的挂件（ornaments/index.ts tempoAt / layTempo，第四刀 4-3 原样搬出）
   /** 调号位置上方的「1=X」（v0.16.10）：hint = 专业模式没有升降号的地方（刀 1 起不画，只记锚点 keyHints，覆盖层写淡的「1=C」）。字也算这个调号的点击区（谱头面板）。 */
-  const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number, minor = false) => {
+  const keyLabel = (r: number, x0: number, f: number, hint: boolean, index: number, minor = false, T: { tok?: number } = {}) => {
     const y = staffTop(r) - P(0.8);
-    if (hint) { keyHints.push({ system: r, index, x: P(x0), y, size: tx("key-hint"), s: keyText(f, minor) }); return; }   // 淡的「1=C」只在编辑器里、不印：跟谱（紧凑档不放大，不然挨上第一个音的力度字；刀 2）
-    put(r, { t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });   // 和速度字一样大（v0.16.34；user 11-08「1=F 这些符号也不要字体刻意的小」）
+    if (hint) { keyHints.push({ ...T, system: r, index, x: P(x0), y, size: tx("key-hint"), s: keyText(f, minor) }); return; }   // 提示带着它指的那个调号 token（守卫 4：编辑器里的提示也算画出来了，统筹裁定 5-3）   // 淡的「1=C」只在编辑器里、不印：跟谱（紧凑档不放大，不然挨上第一个音的力度字；刀 2）
+    put(r, { ...T, t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });   // 和速度字一样大（v0.16.34；user 11-08「1=F 这些符号也不要字体刻意的小」）
     marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - TR("key-label", TEMPO_EM * 0.95), w: TR("key-label", KEY_LABEL_W), h: TR("key-label", TEMPO_EM * 1.2) });
   };
-  const drawKeySig = (r: number, x0: number, f: number, cls: string, clef: "G" | "F" = "G") => {   // 低音谱号的升降号比高音低两级
+  const drawKeySig = (r: number, x0: number, f: number, cls: string, clef: "G" | "F" = "G", T: { tok?: number } = {}) => {   // 低音谱号的升降号比高音低两级
     const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
-    for (let k = 0; k < Math.abs(f); k++) put(r, { t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
+    for (let k = 0; k < Math.abs(f); k++) put(r, { ...T, t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
   };
   /** 这条轨交给共用挂件的东西（ornaments/index.ts）：音的锚点 = 符头（刀 3：对齐线 = 列的 x，符头画在 x + 0.35）。 */
   const ornCache = new Map<number, OrnCtx>();
@@ -118,21 +122,22 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
         for (let L = 0; L < 5; L++) { if (pm === "one" && L !== 2) continue; const y = yOf(row, BOTTOM_LINE + 2 * L); put(row, { t: "line", x1: P(MARGIN + ind), y1: y, x2: P(staffEnd[s]), y2: y, w: P(ENGRAVE.staffLine), cls: "staff" }); }
         let hx = MARGIN + ind + 0.6;
         if (pm) put(row, { t: "glyph", x: P(hx), y: yOf(row, MID_LINE), ch: PERC_CLEF, cls: "clef perc-clef" });
-        else put(row, { t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });   // 高音谱号挂 G 线（第 2 线）、低音谱号挂 F 线（第 4 线）；八度谱号的小 8 / 15 在字形里
+        else put(row, { ...tokAt(q, clefSrcAtSys(q, s)), t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });   // 管着这一行的谱号记号（轨开头的、行中间换的）挂在行首谱号上（守卫 4）   // 高音谱号挂 G 线（第 2 线）、低音谱号挂 F 线（第 4 线）；八度谱号的小 8 / 15 在字形里
         if (!pm && !q.vrt) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });   // 点谱号 = 谱头面板（v0.9.28；v0.16.50 大谱表上下两个谱号也能点——user「高音谱号为什么点不中」，原来只给单谱表建了点击区）
         hx += clefW(q) + 1.0;
         const keyX0 = hx;
         const fk = pm ? 0 : f;
-        drawKeySig(row, hx, fk, "keysig", base); hx += Math.abs(fk) * 1.05;
+        drawKeySig(row, hx, fk, "keysig", base, tokAt(q, srcAtSys(q, s, "key"))); hx += Math.abs(fk) * 1.05;
         if (s === 0) {
           // 谱头记号的点击区域：谱号 + 调号一块（改调号）、拍号（改拍号）、上方速度（改速度）
           if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });   // 调号（谱号那一块归谱号，v0.9.28）
           // 「1=X」（v0.16.10）：按 C 调看 = 写原来的调；专业模式没有升降号 = 淡的「1=C」提示（不占宽）。字也能点（同调号）
           //   小调（v0.16.83）= 每一处都写淡的「6=X」（按 C 调看 = 照印），哪里从 la 数一眼看得见
-          const lab = k === 0 && !pm && q.head.idx.key !== undefined ? (look.inCActive ? q.head.real : fk === 0 || q.head.minor ? fk : null) : null;
-          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !look.inCActive, q.head.idx.key!, q.head.minor);
+          const lab = k === 0 && q.head.idx.key !== undefined ? (look.inCActive ? q.head.real : pm ? f : fk === 0 || q.head.minor ? fk : null) : null;
+          //   鼓谱照规矩不画调号：行首也给淡的「1=D」提示（编辑器里有、不印；这个调号是真的状态，换成有音高的乐器就管用；统筹裁定 5-3）
+          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !!pm || !look.inCActive, q.head.idx.key!, q.head.minor, tokAt(q, q.head.idx.key));
           if (fk) hx += 0.8;
-          const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
+          const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig", tokAt(q, q.head.idx.time));
           if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
           if (k === 0 && q.p.id === owner && q.head.idx.tempo !== undefined) { const ti = q.head.idx.tempo; layTempo(ornOf(q, r), row, MARGIN + ind + 0.6, q.head.bpm, "tempo", ti, prevBpm === null || prevBpm === q.head.bpm ? undefined : q.head.bpm > prevBpm ? "up" : "down"); }   // 速度 = 挂件第 7 样
         }
@@ -233,28 +238,31 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
             put(rr, { t: "glyph", x: P(u.x + 0.4), y: yOf(rr, BOTTOM_LINE), ch: u.repeat === "start" ? "\u{E040}" : u.repeat === "end" ? "\u{E041}" : "\u{E042}", cls: "repeat-bar" + navMute(u.index), tok: tokens[u.index].id });
             if (u.times && u.times > 2 && k === 0) { const times = u.times, bx = P(u.x + 0.4 + (u.repeat === "both" ? 1.2 : 1.47)), cl = "nav-mark" + navMute(u.index); attach(rr, "nav", () => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `×${times}`, cls: cl, size: tx("nav-mark"), anchor: "end" }))); }   // ×3 = 反复那一样（挂件第 6 样）
           } else if (u.kind === "bar") {
-            const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar";
+            const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar", BT = tokAt(q, u.index);   // 人插的小节线挂它的 token（守卫 4）；自动的没有
             const [bt, bb] = pmode[r] === "one" ? [MID_LINE + 2, MID_LINE - 2] : [TOP_LINE, BOTTOM_LINE];   // 一线谱：小节线上下各出一格
-            put(rr, { t: "line", x1: bx, y1: yOf(rr, bt), x2: bx, y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
-            if (u.style === "double") put(rr, { t: "line", x1: bx + P(0.45), y1: yOf(rr, bt), x2: bx + P(0.45), y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });   // 段落线 ‖
-            if (u.style === "final") put(rr, { t: "line", x1: bx + P(0.6), y1: yOf(rr, bt), x2: bx + P(0.6), y2: yOf(rr, bb), w: P(0.5), cls: bcls });   // 终止线：细 + 粗
+            put(rr, { ...BT, t: "line", x1: bx, y1: yOf(rr, bt), x2: bx, y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
+            if (u.style === "double") put(rr, { ...BT, t: "line", x1: bx + P(0.45), y1: yOf(rr, bt), x2: bx + P(0.45), y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });   // 段落线 ‖
+            if (u.style === "final") put(rr, { ...BT, t: "line", x1: bx + P(0.6), y1: yOf(rr, bt), x2: bx + P(0.6), y2: yOf(rr, bb), w: P(0.5), cls: bcls });   // 终止线：细 + 粗
             if (u.warn && k === 0) put(rr, { t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn ann" });
           } else if (u.kind === "key") {
-            if (pmode[r]) { marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) }); continue; }   // 鼓谱没有调号（记号照留、能点）
-            const cls = "keysig";
-            if (u.fifths === 0) { const pos = u.prev > 0 ? SHARP_POS : FLAT_POS; for (let j = 0; j < Math.abs(u.prev); j++) put(rr, { t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls }); }
-            else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef);
+            if (pmode[r]) {   // 鼓谱没有调号（记号照留、能点）：淡的「1=D」提示（不印，同谱头；统筹裁定 5-3）
+              if (k === 0) keyLabel(rr, u.x + 0.2, look.inCActive ? u.real : u.fifths, true, u.index, u.minor, tokAt(q, u.index));
+              marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) }); continue;
+            }
+            const cls = "keysig", KT = tokAt(q, u.index);
+            if (u.fifths === 0) { const pos = u.prev > 0 ? SHARP_POS : FLAT_POS; for (let j = 0; j < Math.abs(u.prev); j++) put(rr, { ...KT, t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls }); }
+            else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef, KT);
             // 换到同一个调、又没有升降号（C → C）：什么都画不出来 → 写个小字，免得成了看不见的记号（印）。按 C 调看 = 每一处写原来的调；
             //   专业模式换成 C（画了还原号）= 淡的「1=C」提示（v0.16.10，不印）
             if (k === 0) {
-              if (look.inCActive) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
-              else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor);
-              else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor);
+              if (look.inCActive) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor, KT);
+              else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor, KT);
+              else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor, KT);
             }
             marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
           } else {
             const cls = "timesig";
-            drawTime(rr, u.x + 0.6, u.beats, u.beatType, cls);
+            drawTime(rr, u.x + 0.6, u.beats, u.beatType, cls, tokAt(q, u.index));
             marks.push({ index: u.index, kind: "time", system: rr, x: P(u.x), ...staffHit(rr), w: P(u.w) });
           }
         }
@@ -268,25 +276,26 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
         if (q.staves === 2) continue;
         const first = !units.some((x) => x.system === u.system && x.index >= 0 && x.index < u.index && x.kind !== "ottava");
         const base = baseClef(u.clef), cls = "clef cue";
-        if (!first) put(row, { t: "glyph", x: P(u.x + 0.35), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[u.clef], cls, size: P(4 * CLEF_CUE) });
+        if (!first) put(row, { ...tokAt(q, u.index), t: "glyph", x: P(u.x + 0.35), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[u.clef], cls, size: P(4 * CLEF_CUE) });   // 正好在一行开头的 = 行首谱号挂它的 token
         clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: u.index, system: row, x: P(u.x), ...staffHit(row), w: P(Math.max(u.w, 1.6)) });
         continue;
       }
       drawChunk(u);
     }
     // 7¼. 八度线（v0.9.28）：8va / 15ma 在谱上面、8vb 在谱下面；一行里连着的同一种画成一段（开头的字 + 虚线 + 收尾的钩）；接着上一行的字加括号
-    if (q.staves === 1) {
+    //   大谱表上手写的八度线现在不起作用（音不挪）：照样画出来，灰的、不印（ann），点开说明（统筹裁定 5-3；真做 = 愿望单 W-73）。8va / 15ma 在上谱上面、8vb 在下谱下面
+    {
+      const OFF = q.staves === 2 ? " off ann" : "";
       const SIG: Record<number, string> = { 1: GLYPH.ottavaAlta, 2: GLYPH.quindicesimaAlta, [-1]: GLYPH.ottavaBassa };
       const SIG_W: Record<number, number> = { 1: 3.54, 2: 5.26, [-1]: 3.36 };
       for (let sy = 0; sy < nSys; sy++) {
-        const row0 = rowOf(sy, r, 0);
         const us = units.filter((x) => x.system === sy && x.kind === "chunk").sort((a, b) => a.x - b.x) as Chunk[];
         let k = 0;
         while (k < us.length) {
           const v = q.ds.ott[us[k].index] ?? 0; if (!v) { k++; continue; }
           const isAuto = !!q.ds.auto?.[us[k].index];   // 自动的和挨着的手写的分开画
           let e = k; while (e + 1 < us.length && (q.ds.ott[us[e + 1].index] ?? 0) === v && !!q.ds.auto?.[us[e + 1].index] === isAuto) e++;
-          const up = v > 0;
+          const up = v > 0, row0 = rowOf(sy, r, up ? 0 : q.staves - 1);
           {   // 刀 4b：8va / 15ma = 挂件第 5 样（这一段天际线往上 0.6）；8vb = 第 12 样（歌词 / 下天际线之下 0.6）。一段一条水平线
             const sk = k, se = e;
             attach(row0, up ? "ottavaAbove" : "ottavaBelow", () => { const pl = up ? placeAbove : placeBelow; pl(row0, 0.6, (y) => { const k = sk, e = se;
@@ -294,11 +303,14 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
             const nextU = us[e + 1], lastIdx = us[e].index, endsHere = !!nextU || (q.ds.ott[lastIdx + 1] ?? 0) !== v || lastIdx + 1 >= q.tokens.length || !units.some((x) => x.system > sy && x.index > lastIdx);
             const x0 = P(us[k].x - 0.2), x1 = P(us[e].x + us[e].w - 0.3), sz = P(4 * 0.85), gw = P(SIG_W[v] * 0.85);
             const src = units.find((x) => x.kind === "ottava" && x.index <= us[k].index && (q.ds.ott[x.index] ?? 0) === v && x.system === sy) ?? null;
-            if (cont) prims.push({ t: "text", x: x0, y: y + P(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont", size: tx("ottava"), anchor: "start" });
-            else prims.push({ t: "glyph", x: x0, y: y + P(up ? 0.4 : 0.4), ch: SIG[v], cls: isAuto ? "ottava auto" : "ottava", size: sz });
+            // 手写的八度线：开头的字挂开始那个 token，收尾的钩挂结束那个（守卫 4，第五刀 5-3）；自动画的不是 token
+            const startIdx = isAuto ? -1 : src ? src.index : (() => { for (let i = us[k].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i; return -1; })();
+            const endIdx = isAuto ? -1 : (() => { for (let i = lastIdx + 1; i < q.tokens.length; i++) { const t = q.tokens[i]!; if (t.kind === "ottava") return i; if (t.kind === "note" || t.kind === "rest") return -1; } return -1; })();
+            if (cont) prims.push({ ...tokAt(q, startIdx), t: "text", x: x0, y: y + P(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont" + OFF, size: tx("ottava"), anchor: "start" });
+            else prims.push({ ...tokAt(q, startIdx), t: "glyph", x: x0, y: y + P(up ? 0.4 : 0.4), ch: SIG[v], cls: (isAuto ? "ottava auto" : "ottava") + OFF, size: sz });
             const lx = x0 + (cont ? P(4.2) : gw) + P(0.4), ly = y - P(up ? 0.55 : 0.55);
-            for (let x = lx; x + P(0.6) <= x1; x += P(1.0)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" });
-            if (endsHere) prims.push({ t: "line", x1: x1, y1: ly, x2: x1, y2: ly + P(up ? 1.1 : -1.1), w: P(0.1), cls: "ottava-line" });
+            for (let x = lx; x + P(0.6) <= x1; x += P(1.0)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" + OFF });
+            if (endsHere) prims.push({ ...tokAt(q, endIdx), t: "line", x1: x1, y1: ly, x2: x1, y2: ly + P(up ? 1.1 : -1.1), w: P(0.1), cls: "ottava-line" + OFF });
             const hitIdx = src ? src.index : (() => { for (let i = us[k].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i; return -1; })();
             const run = isAuto ? q.ds.runs.find((rr) => us[k].index >= rr.from && us[k].index <= rr.to) : undefined;
             if (q.vrt) { /* 叠起来的那一行：自动八度线只看，不能点（只读） */ } else if (run) clefs.push({ kind: "ottava", paper: paper.id, part: q.p.id, index: -1, run, system: row0, x: x0, y: y - P(1.6), w: Math.max(gw, P(3)), h: P(2.2) });

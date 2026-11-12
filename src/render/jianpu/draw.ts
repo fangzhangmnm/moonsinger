@@ -76,6 +76,14 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[]): { lyricPa
       put(row0, { ...(tt !== undefined ? { tok: tt } : {}), t: "text", x: hx + kw, y, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
       if (tempoHere) tempoAt(orn, row0, MARGIN + ind0 + 0.6 + midTextW(keyS) + midTextW(timeS) + 0.6, q.head.bpm, "tempo", q.head.idx.tempo!, c.prevBpm === null || c.prevBpm === q.head.bpm ? undefined : q.head.bpm > c.prevBpm ? "up" : "down", y);
       if (q.head.idx.key !== undefined) marks.push({ index: q.head.idx.key, kind: "key", system: row0, x: hx - Q(0.3), y: y - hs, w: kw, h: hs * 1.4 });
+      // 轨开头的谱号记号（五线谱才有的；守卫 4，第五刀 5-3）：谱头「1=C」左边一个小灰标「谱号」（不印），点得到（谱号的小菜单里能改 / 删）
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i]!; if (t.kind === "note" || t.kind === "rest") break; if (t.kind !== "clef") continue;
+        const lw = Q(2.6), lx = hx - Q(0.4);
+        put(row0, { tok: t.id, t: "text", x: lx, y, s: _tIn(o.locale, "谱号"), cls: "jp-staffonly ann", size: Q(1.0), anchor: "end" });
+        c.clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: i, system: row0, x: lx - lw, y: y - Q(1.2), w: lw, h: Q(1.6) });
+        break;
+      }
       if (q.head.idx.time !== undefined) marks.push({ index: q.head.idx.time, kind: "time", system: row0, x: hx + kw - Q(0.3), y: y - hs, w: tw, h: hs * 1.4 });
     }));
     const spots: LyricSpot[] = []; lyricParts.push({ r, lrow: (s) => rowOf(s, r, 0), spots });

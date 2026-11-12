@@ -931,6 +931,7 @@ var S = {
   "D.S. al Fine\uFF1A\u8DF3\u56DE Segno\uFF0C\u653E\u5230 Fine": { en: "D.S. al Fine: back to the Segno, play to Fine" },
   "D.S. al Coda\uFF1A\u8DF3\u56DE Segno\uFF0C\u5230 To Coda \u53BB Coda": { en: "D.S. al Coda: back to the Segno, at To Coda go to the Coda" },
   "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A{why}": { en: "No effect (grayed out): {why}" },
+  "\u5927\u8C31\u8868\u4E0A\u516B\u5EA6\u7EBF\u73B0\u5728\u4E0D\u8D77\u4F5C\u7528\uFF08\u97F3\u4E0D\u632A\uFF0C\u4E5F\u4E0D\u5370\uFF09": { en: "Octave lines have no effect on a grand staff yet (notes are not moved and the line is not printed)" },
   "\u623F\u5B50\uFF1A\u7B2C {nums} \u904D\u8D70\u8FD9\u4E2A\u62EC\u53F7\uFF0C\u522B\u7684\u904D\u8DF3\u8FC7": { en: "Ending: pass {nums} takes this bracket, other passes skip it" },
   "\u8FD9\u4E00\u7248\u4E0D\u8BA4\u8BC6\u300C{style}\u300D\uFF1A\u4E0D\u52A0\u8F7B\u91CD\uFF08\u6362\u4E00\u4E2A\u98CE\u683C\u5C31\u597D\uFF09": { en: "This version doesn't know \u201C{style}\u201D: no beat weighting (pick another style)" },
   "{p} \u8FD9\u4E2A\u9884\u8BBE\u6CA1\u5217\uFF1A\u6309\u53E4\u5178\u7684\u5F3A\u5F31\u63A8{m}": { en: "This preset doesn't list {p}: inferred from classical strong and weak beats{m}" },
@@ -5830,13 +5831,13 @@ var DASH = { len: 0.6, gap: 1 };
 var RAMP_DASH = { len: 0.5, gap: 0.4 };
 function tempoAt2(c, r, x0, v, cls, index, change, y) {
   const { P, tx, TR, RS, mw, prims, marks } = c;
-  const fs = tx("tempo-word"), word = tempoWord(v).it, k = RS("tempo-word");
+  const fs = tx("tempo-word"), word = tempoWord(v).it, k = RS("tempo-word"), T = c.tokens[index] ? { tok: c.tokens[index].id } : {};
   if (change) prims.push({ t: "text", x: P(x0 - 0.3), y, s: change === "up" ? "\u2191" : "\u2193", cls: "tempo-change ann", size: fs, anchor: "end" });
   const ww = mw("tempo-word", word), num = `= ${v}`, nw = mw("tempo-num", num);
-  prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
+  prims.push({ ...T, t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
   const gx = x0 + ww + 0.7 * k;
-  prims.push({ t: "glyph", x: P(gx), y: y - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
-  prims.push({ t: "text", x: P(gx + 1.3 * k), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+  prims.push({ ...T, t: "glyph", x: P(gx), y: y - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
+  prims.push({ ...T, t: "text", x: P(gx + 1.3 * k), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
   marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - TR("tempo-word", TEMPO_EM * 1.1), w: P(gx + 1.3 * k + nw + 0.6 * k - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
 }
 function layTempo(c, r, x0, v, cls, index, change) {
@@ -6153,31 +6154,36 @@ function drawStaff(c, mine) {
     for (const x of q.units) if (x.system < s2 && x.index >= 0) c2 = q.ds.clef[x.index] ?? c2;
     return c2;
   };
-  const clefSrcAtSys = (q, s2) => {
+  const clefSrcAtSys = (q, s2) => srcAtSys(q, s2, "clef");
+  const srcAtSys = (q, s2, kind) => {
     const u = q.units.find((x) => x.system === s2 && x.index >= 0), upto = u ? u.index : q.tokens.length - 1;
-    for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === "clef") return i;
+    for (let i = upto; i >= 0; i--) if (q.tokens[i]?.kind === kind) return i;
     return -1;
   };
+  const tokAt = (q, i) => {
+    const id = i !== void 0 && i >= 0 ? q.tokens[i]?.id : void 0;
+    return id !== void 0 ? { tok: id } : {};
+  };
   const staffHit = (r) => ({ y: yOf(r, TOP_LINE2) - P(1.2), h: yOf(r, BOTTOM_LINE) - yOf(r, TOP_LINE2) + P(2.4) });
-  const drawTime = (r, x0, beats, beatType, cls) => {
+  const drawTime = (r, x0, beats, beatType, cls, T = {}) => {
     const num = timeSigDigits(beats), den = timeSigDigits(beatType);
     const wn = [...num].length * W.timeSigDigit, wd = [...den].length * W.timeSigDigit, cw = Math.max(wn, wd);
-    put(r, { t: "glyph", x: P(x0 + (cw - wn) / 2), y: yOf(r, 36), ch: num, cls });
-    put(r, { t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(r, 32), ch: den, cls });
+    put(r, { ...T, t: "glyph", x: P(x0 + (cw - wn) / 2), y: yOf(r, 36), ch: num, cls });
+    put(r, { ...T, t: "glyph", x: P(x0 + (cw - wd) / 2), y: yOf(r, 32), ch: den, cls });
     return cw;
   };
-  const keyLabel = (r, x0, f, hint, index, minor = false) => {
+  const keyLabel = (r, x0, f, hint, index, minor = false, T = {}) => {
     const y = staffTop(r) - P(0.8);
     if (hint) {
-      keyHints.push({ system: r, index, x: P(x0), y, size: tx("key-hint"), s: keyText(f, minor) });
+      keyHints.push({ ...T, system: r, index, x: P(x0), y, size: tx("key-hint"), s: keyText(f, minor) });
       return;
     }
-    put(r, { t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });
+    put(r, { ...T, t: "text", x: P(x0), y, s: keyText(f, minor), cls: "keysig key-label", size: tx("key-label"), anchor: "start" });
     marks.push({ index, kind: "key", system: r, x: P(x0 - 0.2), y: y - TR("key-label", TEMPO_EM * 0.95), w: TR("key-label", KEY_LABEL_W), h: TR("key-label", TEMPO_EM * 1.2) });
   };
-  const drawKeySig = (r, x0, f, cls, clef = "G") => {
+  const drawKeySig = (r, x0, f, cls, clef = "G", T = {}) => {
     const pos = f > 0 ? SHARP_POS : FLAT_POS, ch = f > 0 ? GLYPH.accidentalSharp : GLYPH.accidentalFlat, off = clef === "F" ? -2 : 0;
-    for (let k = 0; k < Math.abs(f); k++) put(r, { t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
+    for (let k = 0; k < Math.abs(f); k++) put(r, { ...T, t: "glyph", x: P(x0 + k * 1.05), y: yOf(r, pos[k] + off), ch, cls });
   };
   const ornCache = /* @__PURE__ */ new Map();
   const ornOf = (q, r, noteEnd) => {
@@ -6227,19 +6233,19 @@ function drawStaff(c, mine) {
         }
         let hx = MARGIN + ind + 0.6;
         if (pm) put(row, { t: "glyph", x: P(hx), y: yOf(row, MID_LINE2), ch: PERC_CLEF, cls: "clef perc-clef" });
-        else put(row, { t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
+        else put(row, { ...tokAt(q, clefSrcAtSys(q, s2)), t: "glyph", x: P(hx), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[clef], cls: "clef" });
         if (!pm && !q.vrt) clefs.push({ kind: "start", paper: paper.id, part: q.p.id, index: clefSrcAtSys(q, s2), system: row, x: P(hx - 0.3), ...staffHit(row), w: P(clefW(q) + 0.6) });
         hx += clefW(q) + 1;
         const keyX0 = hx;
         const fk = pm ? 0 : f;
-        drawKeySig(row, hx, fk, "keysig", base);
+        drawKeySig(row, hx, fk, "keysig", base, tokAt(q, srcAtSys(q, s2, "key")));
         hx += Math.abs(fk) * 1.05;
         if (s2 === 0) {
           if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row, x: P(keyX0 - 0.3), ...staffHit(row), w: P(Math.max(1.2, hx - keyX0 + 0.3)) });
-          const lab = k === 0 && !pm && q.head.idx.key !== void 0 ? look.inCActive ? q.head.real : fk === 0 || q.head.minor ? fk : null : null;
-          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !look.inCActive, q.head.idx.key, q.head.minor);
+          const lab = k === 0 && q.head.idx.key !== void 0 ? look.inCActive ? q.head.real : pm ? f : fk === 0 || q.head.minor ? fk : null : null;
+          if (lab !== null) keyLabel(row, keyX0 - 0.1, lab, !!pm || !look.inCActive, q.head.idx.key, q.head.minor, tokAt(q, q.head.idx.key));
           if (fk) hx += 0.8;
-          const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig");
+          const cw = drawTime(row, hx, q.head.time.beats, q.head.time.beatType, "timesig", tokAt(q, q.head.idx.time));
           if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row, x: P(hx - 0.3), ...staffHit(row), w: P(cw + 0.6) });
           if (k === 0 && q.p.id === owner && q.head.idx.tempo !== void 0) {
             const ti = q.head.idx.tempo;
@@ -6361,31 +6367,32 @@ function drawStaff(c, mine) {
               attach(rr, "nav", () => placeAbove(rr, 0.6, (y) => prims.push({ t: "text", x: bx, y, s: `\xD7${times}`, cls: cl, size: tx("nav-mark"), anchor: "end" })));
             }
           } else if (u.kind === "bar") {
-            const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar";
+            const bx = P(u.x + 0.7), bcls = u.auto ? "bar auto" : "bar", BT = tokAt(q, u.index);
             const [bt, bb] = pmode[r] === "one" ? [MID_LINE2 + 2, MID_LINE2 - 2] : [TOP_LINE2, BOTTOM_LINE];
-            put(rr, { t: "line", x1: bx, y1: yOf(rr, bt), x2: bx, y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
-            if (u.style === "double") put(rr, { t: "line", x1: bx + P(0.45), y1: yOf(rr, bt), x2: bx + P(0.45), y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
-            if (u.style === "final") put(rr, { t: "line", x1: bx + P(0.6), y1: yOf(rr, bt), x2: bx + P(0.6), y2: yOf(rr, bb), w: P(0.5), cls: bcls });
+            put(rr, { ...BT, t: "line", x1: bx, y1: yOf(rr, bt), x2: bx, y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
+            if (u.style === "double") put(rr, { ...BT, t: "line", x1: bx + P(0.45), y1: yOf(rr, bt), x2: bx + P(0.45), y2: yOf(rr, bb), w: P(ENGRAVE.thinBar), cls: bcls });
+            if (u.style === "final") put(rr, { ...BT, t: "line", x1: bx + P(0.6), y1: yOf(rr, bt), x2: bx + P(0.6), y2: yOf(rr, bb), w: P(0.5), cls: bcls });
             if (u.warn && k === 0) put(rr, { t: "rect", x: bx - P(0.3), y: yOf(rr, TOP_LINE2) - P(1.6), w: P(0.6), h: P(0.6), cls: "warn ann" });
           } else if (u.kind === "key") {
             if (pmode[r]) {
+              if (k === 0) keyLabel(rr, u.x + 0.2, look.inCActive ? u.real : u.fifths, true, u.index, u.minor, tokAt(q, u.index));
               marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
               continue;
             }
-            const cls = "keysig";
+            const cls = "keysig", KT = tokAt(q, u.index);
             if (u.fifths === 0) {
               const pos = u.prev > 0 ? SHARP_POS : FLAT_POS;
-              for (let j = 0; j < Math.abs(u.prev); j++) put(rr, { t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
-            } else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef);
+              for (let j = 0; j < Math.abs(u.prev); j++) put(rr, { ...KT, t: "glyph", x: P(u.x + 0.4 + j * 0.8), y: yOf(rr, pos[j] - (sh ? 2 : 0)), ch: GLYPH.accidentalNatural, cls });
+            } else drawKeySig(rr, u.x + 0.4, u.fifths, cls, clef, KT);
             if (k === 0) {
-              if (look.inCActive) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor);
-              else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor);
-              else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor);
+              if (look.inCActive) keyLabel(rr, u.x + 0.2, u.real, false, u.index, u.minor, KT);
+              else if (u.fifths === 0 && u.prev === 0) keyLabel(rr, u.x + 0.2, 0, false, u.index, u.minor, KT);
+              else if (u.fifths === 0 || u.minor) keyLabel(rr, u.x + 0.2, u.fifths, true, u.index, u.minor, KT);
             }
             marks.push({ index: u.index, kind: "key", system: rr, x: P(u.x), ...staffHit(rr), w: P(Math.max(u.w, 1.6)) });
           } else {
             const cls = "timesig";
-            drawTime(rr, u.x + 0.6, u.beats, u.beatType, cls);
+            drawTime(rr, u.x + 0.6, u.beats, u.beatType, cls, tokAt(q, u.index));
             marks.push({ index: u.index, kind: "time", system: rr, x: P(u.x), ...staffHit(rr), w: P(u.w) });
           }
         }
@@ -6405,17 +6412,17 @@ function drawStaff(c, mine) {
         if (q.staves === 2) continue;
         const first = !units.some((x) => x.system === u.system && x.index >= 0 && x.index < u.index && x.kind !== "ottava");
         const base = baseClef(u.clef), cls = "clef cue";
-        if (!first) put(row, { t: "glyph", x: P(u.x + 0.35), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[u.clef], cls, size: P(4 * CLEF_CUE) });
+        if (!first) put(row, { ...tokAt(q, u.index), t: "glyph", x: P(u.x + 0.35), y: yOf(row, base === "F" ? 36 : 32), ch: CLEF_GLYPH[u.clef], cls, size: P(4 * CLEF_CUE) });
         clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: u.index, system: row, x: P(u.x), ...staffHit(row), w: P(Math.max(u.w, 1.6)) });
         continue;
       }
       drawChunk(u);
     }
-    if (q.staves === 1) {
+    {
+      const OFF = q.staves === 2 ? " off ann" : "";
       const SIG = { 1: GLYPH.ottavaAlta, 2: GLYPH.quindicesimaAlta, [-1]: GLYPH.ottavaBassa };
       const SIG_W = { 1: 3.54, 2: 5.26, [-1]: 3.36 };
       for (let sy = 0; sy < nSys; sy++) {
-        const row0 = rowOf(sy, r, 0);
         const us = units.filter((x) => x.system === sy && x.kind === "chunk").sort((a, b) => a.x - b.x);
         let k = 0;
         while (k < us.length) {
@@ -6427,7 +6434,7 @@ function drawStaff(c, mine) {
           const isAuto = !!q.ds.auto?.[us[k].index];
           let e = k;
           while (e + 1 < us.length && (q.ds.ott[us[e + 1].index] ?? 0) === v && !!q.ds.auto?.[us[e + 1].index] === isAuto) e++;
-          const up = v > 0;
+          const up = v > 0, row0 = rowOf(sy, r, up ? 0 : q.staves - 1);
           {
             const sk = k, se = e;
             attach(row0, up ? "ottavaAbove" : "ottavaBelow", () => {
@@ -6438,11 +6445,23 @@ function drawStaff(c, mine) {
                 const nextU = us[e2 + 1], lastIdx = us[e2].index, endsHere = !!nextU || (q.ds.ott[lastIdx + 1] ?? 0) !== v || lastIdx + 1 >= q.tokens.length || !units.some((x) => x.system > sy && x.index > lastIdx);
                 const x0 = P(us[k2].x - 0.2), x1 = P(us[e2].x + us[e2].w - 0.3), sz = P(4 * 0.85), gw = P(SIG_W[v] * 0.85);
                 const src = units.find((x) => x.kind === "ottava" && x.index <= us[k2].index && (q.ds.ott[x.index] ?? 0) === v && x.system === sy) ?? null;
-                if (cont) prims.push({ t: "text", x: x0, y: y + P(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont", size: tx("ottava"), anchor: "start" });
-                else prims.push({ t: "glyph", x: x0, y: y + P(up ? 0.4 : 0.4), ch: SIG[v], cls: isAuto ? "ottava auto" : "ottava", size: sz });
+                const startIdx = isAuto ? -1 : src ? src.index : (() => {
+                  for (let i = us[k2].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i;
+                  return -1;
+                })();
+                const endIdx = isAuto ? -1 : (() => {
+                  for (let i = lastIdx + 1; i < q.tokens.length; i++) {
+                    const t = q.tokens[i];
+                    if (t.kind === "ottava") return i;
+                    if (t.kind === "note" || t.kind === "rest") return -1;
+                  }
+                  return -1;
+                })();
+                if (cont) prims.push({ ...tokAt(q, startIdx), t: "text", x: x0, y: y + P(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont" + OFF, size: tx("ottava"), anchor: "start" });
+                else prims.push({ ...tokAt(q, startIdx), t: "glyph", x: x0, y: y + P(up ? 0.4 : 0.4), ch: SIG[v], cls: (isAuto ? "ottava auto" : "ottava") + OFF, size: sz });
                 const lx = x0 + (cont ? P(4.2) : gw) + P(0.4), ly = y - P(up ? 0.55 : 0.55);
-                for (let x = lx; x + P(0.6) <= x1; x += P(1)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" });
-                if (endsHere) prims.push({ t: "line", x1, y1: ly, x2: x1, y2: ly + P(up ? 1.1 : -1.1), w: P(0.1), cls: "ottava-line" });
+                for (let x = lx; x + P(0.6) <= x1; x += P(1)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" + OFF });
+                if (endsHere) prims.push({ ...tokAt(q, endIdx), t: "line", x1, y1: ly, x2: x1, y2: ly + P(up ? 1.1 : -1.1), w: P(0.1), cls: "ottava-line" + OFF });
                 const hitIdx = src ? src.index : (() => {
                   for (let i = us[k2].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i;
                   return -1;
@@ -6850,6 +6869,15 @@ function drawJianpu(c, mine) {
       put(row0, { ...tt !== void 0 ? { tok: tt } : {}, t: "text", x: hx + kw, y, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
       if (tempoHere) tempoAt2(orn, row0, MARGIN + ind0 + 0.6 + midTextW(keyS) + midTextW(timeS) + 0.6, q.head.bpm, "tempo", q.head.idx.tempo, c.prevBpm === null || c.prevBpm === q.head.bpm ? void 0 : q.head.bpm > c.prevBpm ? "up" : "down", y);
       if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row0, x: hx - Q(0.3), y: y - hs, w: kw, h: hs * 1.4 });
+      for (let i = 0; i < tokens.length; i++) {
+        const t = tokens[i];
+        if (t.kind === "note" || t.kind === "rest") break;
+        if (t.kind !== "clef") continue;
+        const lw = Q(2.6), lx = hx - Q(0.4);
+        put(row0, { tok: t.id, t: "text", x: lx, y, s: _tIn(o.locale, "\u8C31\u53F7"), cls: "jp-staffonly ann", size: Q(1), anchor: "end" });
+        c.clefs.push({ kind: "mid", paper: paper.id, part: q.p.id, index: i, system: row0, x: lx - lw, y: y - Q(1.2), w: lw, h: Q(1.6) });
+        break;
+      }
       if (q.head.idx.time !== void 0) marks.push({ index: q.head.idx.time, kind: "time", system: row0, x: hx + kw - Q(0.3), y: y - hs, w: tw, h: hs * 1.4 });
     }));
     const spots = [];
@@ -7886,4 +7914,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-3b1ec3d9b4b1.mjs.map
+//# sourceMappingURL=layout-worker-39b3e9456de8.mjs.map

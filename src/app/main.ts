@@ -2491,7 +2491,8 @@ function openClefMenu(hit: ClefHit, at: { x: number; y: number }): void {
   }
   if (hit.kind === "ottava") {
     const t = toks[hit.index]; if (!t || t.kind !== "ottava") return;
-    ctxMenu("ottava-menu", `<div class="ctx-hint ctx-what">${_t("八度线：{p}。只管画，音高不变。", { p: esc(OTT_HELP[t.shift]) })}</div>` +
+    const off = lookNow(hit.paper, hit.part)?.staves === 2;   // 大谱表上手写的八度线现在不起作用：谱上画灰，这里明说（谱面分家第五刀 5-3；真做 = 愿望单 W-73）
+    ctxMenu("ottava-menu", (off ? `<div class="ctx-hint">${_t("不起作用（画灰）：{why}", { why: esc(_t("大谱表上八度线现在不起作用（音不挪，也不印）")) })}</div>` : "") + `<div class="ctx-hint ctx-what">${_t("八度线：{p}。只管画，音高不变。", { p: esc(OTT_HELP[t.shift]) })}</div>` +
       `<div class="ctx-row">${OTTAVAS.map((v) => `<button class="btn ctx-chip${t.shift === v ? " is-on" : ""}" data-v="o:${v}" title="${esc(OTT_HELP[v])}">${esc(OTTAVA_LABEL[v])}</button>`).join("")}</div><div class="ctx-sep"></div><button class="btn ctx-item danger" data-v="del">${_t("删掉这条八度线")}</button>`, at,
       (v) => { if (v === "del") update(setDisplayMark(D.st, hit.paper, hit.part, hit.index, null)); else if (v.startsWith("o:")) update(setDisplayMark(D.st, hit.paper, hit.part, hit.index, Number(v.slice(2)) as -1 | 1 | 2)); });
     return;

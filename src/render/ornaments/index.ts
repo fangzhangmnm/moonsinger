@@ -45,14 +45,14 @@ export interface OrnCtx {
 /** 速度记号画在基线 y（「Andante ♩ = 88」：词 + 四分音符 + 数）；change = 这一段开头比上一段快 / 慢（前面标 ↑ / ↓）。 */
 export function tempoAt(c: OrnCtx, r: number, x0: number, v: number, cls: string, index: number, change: "up" | "down" | undefined, y: number): void {
   const { P, tx, TR, RS, mw, prims, marks } = c;
-  const fs = tx("tempo-word"), word = tempoWord(v).it, k = RS("tempo-word");   // 尺子查样式表（v0.16.48 起跟谱，user「速度那一串字号…也应该跟着走」）
+  const fs = tx("tempo-word"), word = tempoWord(v).it, k = RS("tempo-word"), T = c.tokens[index] ? { tok: c.tokens[index]!.id } : {};   // 速度的字挂速度那个 token（守卫 4，第五刀 5-3）   // 尺子查样式表（v0.16.48 起跟谱，user「速度那一串字号…也应该跟着走」）
   // 这一段开头的速度和上一段不一样 = 前面标一个强调色的 ↑（快了）/ ↓（慢了）提示（user 2026-10-08「不要grey out，而是有变化的时候会标一个东西提示用户」；一样 = 照常画，不标）
   if (change) prims.push({ t: "text", x: P(x0 - 0.3), y, s: change === "up" ? "↑" : "↓", cls: "tempo-change ann", size: fs, anchor: "end" });
   const ww = mw("tempo-word", word), num = `= ${v}`, nw = mw("tempo-num", num);
-  prims.push({ t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
+  prims.push({ ...T, t: "text", x: P(x0), y, s: word, cls: `${cls} tempo-word`, size: fs, anchor: "start" });
   const gx = x0 + ww + 0.7 * k;
-  prims.push({ t: "glyph", x: P(gx), y: y - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
-  prims.push({ t: "text", x: P(gx + 1.3 * k), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
+  prims.push({ ...T, t: "glyph", x: P(gx), y: y - TR("tempo-word", 0.3), ch: GLYPH.metNoteQuarterUp, cls, size: fs * 1.75 });
+  prims.push({ ...T, t: "text", x: P(gx + 1.3 * k), y, s: num, cls: `${cls} tempo-num`, size: fs, anchor: "start" });
   marks.push({ index, kind: "tempo", system: r, x: P(x0 - 0.3), y: y - TR("tempo-word", TEMPO_EM * 1.1), w: P(gx + 1.3 * k + nw + 0.6 * k - x0), h: TR("tempo-word", TEMPO_EM * 1.5) });
 }
 /** 速度记号（挂件第 7 样）：这一段天际线往上 0.5。 */

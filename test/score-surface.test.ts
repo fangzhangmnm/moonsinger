@@ -16,6 +16,7 @@ import { _tIn } from "../src/i18n/index.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 import { surfaceCases, surfacePath, fullSnapshotRaw, tolDiffs, PATH_NOISE_MAX, FULL_VIEWS, type SurfaceGroup } from "./fixtures/layout/full.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
+import { isPrinted } from "../src/export/score-pdf.ts";
 
 /** 逐字段相等（NaN = NaN；碰到函数 = 不是平数据）。 */
 const deepEq = (a: unknown, b: unknown, path: string): string | null => {
@@ -69,34 +70,66 @@ function hitTrack(L: Layout, song: Song, h: { system: number; part?: string }): 
 }
 /** 轨开头（第一个音 / 休止之前）的那几个 token 的下标。 */
 const headIdx = (toks: readonly Token[]) => { const k = toks.findIndex((t) => t.kind === "note" || t.kind === "rest"); return k < 0 ? toks.length : k; };
-/** 分家前就有的、两种谱一样的缺口（这一刀不补；要不要补 = 第五节「小弟问（4-7 守卫 4）」等统筹定）。落不进这几类的没图元的 token = 红。 */
-function knownGap(w: Where, song: Song, L: Layout, rowKind: string | undefined): string | null {
+/** 只在编辑器里有（提示 / 灰标，不印）、印出来没有的 token：只许这几种说得出道理的（统筹裁定 5-3，施工单第五节「小弟问（5-3 守卫 4 补缺口）」下面），按种类点名。 */
+type EditorOnly = "unwritten-key" | "row-cannot" | "no-effect";
+function editorOnlyWhy(w: Where, L: Layout, drums: ReadonlySet<string>): EditorOnly | null {
+  const rows = L.systems.filter((r) => r.paper === w.paper && r.part === w.part);
+  if (w.tok.kind === "key" && (w.tok.fifths === 0 || drums.has(w.part))) return "unwritten-key";   // 课本写法本来就不画的：C 大调的调号、鼓谱上的调号（淡的「1=C」「1=D」提示）
+  if ((w.tok.kind === "clef" || w.tok.kind === "ottava") && rows.length > 0 && rows.every((r) => r.kind === "jianpu")) return "row-cannot";   // 这种行用不上的记号：数字行上的谱号记号、八度线（小灰标）
+  if (w.tok.kind === "ottava" && rows.some((r) => r.staff === 2)) return "no-effect";   // 现在不起作用的记号：大谱表上的八度线（画灰；真做 = 愿望单 W-73）
+  return null;
+}
+/** 没有图元指着、但「由别的东西代表着」的 token：名单只有这三类（统筹的裁定（第四刀收下）：第五刀补完缺口后只剩三类，每类一条正面的断言，见下面测试）。 */
+type Rep = "tempo" | "family" | "hidden";
+function representedBy(w: Where, song: Song, L: Layout): Rep | null {
   const paper = song.papers.find((x) => x.id === w.paper)!, head = w.index < headIdx(paper.tracks[w.part]!), host = song.parts.find((x) => x.id === w.part)?.host;
-  if (paper.hidden) return "隐藏的整张纸（不排；细行在覆盖层）";
-  const merged = !L.systems.some((r) => r.paper === w.paper && r.part === w.part) || !!L.virtual[`${w.paper}:${w.part}`];   // 这一位真被画在虚拟轨上（或者没有自己的行）
-  if ((host !== undefined || song.parts.some((x) => x.host === w.part)) && merged) return "合租叠成一行的一家（主人和房客都画在虚拟轨上，token 编号不同）";
-  if (head && w.tok.kind === "tempo") return "谱头的速度（画速度的共用挂件不带 token；不在最上面的那几位的谱头速度本来就不画）";
-  if (head && w.tok.kind === "clef") return "轨开头的谱号记号（并进了行首谱号）";
-  if (rowKind === "staff" && ["key", "time", "clef", "ottava", "bar"].includes(w.tok.kind)) return "五线谱上调号 / 拍号 / 谱号 / 八度线 / 小节线的字形有的不带 token（行首的、行中间换的、段落线 / 终止线…）";
+  if (paper.hidden || L.papers.find((x) => x.id === w.paper)?.hiddenParts.includes(w.part)) return "hidden";   // 隐藏的纸和声部：永久的例外（「隐藏不是消失」= 细行，覆盖层画）
+  const merged = !L.systems.some((r) => r.paper === w.paper && r.part === w.part) || !!L.virtual[`${w.paper}:${w.part}`];
+  if ((host !== undefined || song.parts.some((x) => x.host === w.part)) && merged) return "family";   // 五线谱里叠起来的一家：只读的合并视图，展开就一一对应
+  if (head && w.tok.kind === "tempo") return "tempo";   // 不在这张纸最上面那位的谱头速度：每条轨谱头各存一份，只画最上面那位的
   return null;
 }
 describe("谱面排版：全量和点击（守卫 4 / 5）", () => {
   const cases = [{ name: "五线谱", song: fullSong() }, { name: "简谱", song: { ...fullSong(), notation: "jianpu" } as Song }];
   const view = FULL_VIEWS.find((v) => v.name === "edit-all")!;
   for (const c of cases) {
-    it(`守卫 4（全量）· ${c.name}：每个 token 至少一个图元指着它（落进「分家前就有的缺口」那几类的除外，数字行上只许谱头的速度和轨开头的谱号）；一个图元最多指一个 token`, () => {
-      const L = engrave(c.song, view.opts(c.song)), has = new Set<number>(), seen: string[] = [];
-      for (const p of L.prims) if (p.tok !== undefined) { assert(typeof p.tok === "number", "图元的 tok 是一个 token 的 id（一个图元最多一个 token）"); has.add(p.tok); }
-      const gaps = new Map<string, number>();
+    it(`守卫 4（全量）· ${c.name}：每个 token 至少一个图元指着它；没有的只许三类，每类由别的东西代表着（正面断言）；一个图元最多指一个 token`, () => {
+      const opts = view.opts(c.song), L = engrave(c.song, opts), has = new Set<number>(), shown = new Set<number>(), seen: string[] = [], reps = new Map<Rep, Where[]>(), only = new Map<EditorOnly, number>();
+      const drums = new Set((opts.parts ?? []).filter((p) => !!p.perc).map((p) => p.id));
+      for (const p of L.prims) if (p.tok !== undefined) { assert(typeof p.tok === "number", "图元的 tok 是一个 token 的 id（一个图元最多一个 token）"); (isPrinted(p.cls) ? has : shown).add(p.tok); }   // 印出来的 / 只在编辑器里的（灰标、推定的灰字…）
+      for (const kh of L.keyHints) if (kh.tok !== undefined) shown.add(kh.tok);   // 淡的「1=C」「1=D」提示（覆盖层，不印）：带着它指的那个调号（点得到它 = 守卫 5）
       for (const paper of c.song.papers) for (const [part, toks] of Object.entries(paper.tracks)) toks.forEach((tok, index) => {
         if (has.has(tok.id)) return;
-        const rowKind = L.systems.find((r) => r.paper === paper.id && r.part === part)?.kind, why = knownGap({ paper: paper.id, part, index, tok }, c.song, L, rowKind);
+        const w = { paper: paper.id, part, index, tok };
+        if (shown.has(tok.id)) { const e = editorOnlyWhy(w, L, drums); if (e) only.set(e, (only.get(e) ?? 0) + 1); else seen.push(`${paper.id}/${part} ${tok.kind}#${tok.id}（只在编辑器里有）`); return; }
+        const why = representedBy(w, c.song, L);
         if (!why) { seen.push(`${paper.id}/${part} ${tok.kind}#${tok.id}`); return; }
-        if (rowKind === "jianpu") assert(/谱头的速度|轨开头的谱号/.test(why), `数字行上的 ${paper.id}/${part} ${tok.kind}#${tok.id} 没图元（${why}）——数字行只许谱头的速度和轨开头的谱号`);
-        gaps.set(why, (gaps.get(why) ?? 0) + 1);
+        reps.set(why, [...(reps.get(why) ?? []), w]);
       });
-      eq(seen.join(" "), "", "说不出原因的没图元的 token");
-      assert(gaps.size > 0 || c.name === "简谱", "比较器不是空的");
+      eq(seen.join(" "), "", "说不出谁代表它的、没图元的 token");
+      // ① 谱头的速度：这张纸各轨谱头的速度 = 画出来的那一个（最上面那位的）
+      for (const w of reps.get("tempo") ?? []) {
+        const paper = c.song.papers.find((x) => x.id === w.paper)!, drawn = Object.values(paper.tracks).flatMap((t) => t.slice(0, headIdx(t))).find((t) => t.kind === "tempo" && has.has(t.id));
+        assert(!!drawn && (drawn as { bpm: number }).bpm === (w.tok as { bpm: number }).bpm, `${w.paper}/${w.part} 谱头的速度 ${(w.tok as { bpm: number }).bpm} = 画出来的 ${(drawn as { bpm?: number } | undefined)?.bpm}`);
+      }
+      // ② 五线谱里叠起来的一家：把这一位展开（光标放到它那儿 = 这一家拆开）再排，每个 token 都有图元
+      for (const [pp, part] of [...new Set((reps.get("family") ?? []).map((w) => `${w.paper}|${w.part}`))].map((k) => k.split("|"))) {
+        const L2 = engrave(c.song, { ...opts, at: { paper: pp!, part: part! } }), has2 = new Set(L2.prims.filter((p) => isPrinted(p.cls)).map((p) => p.tok).filter((x) => x !== undefined));
+        const shown2 = new Set([...L2.prims.filter((p) => !isPrinted(p.cls)).map((p) => p.tok), ...L2.keyHints.map((k) => k.tok)].filter((x) => x !== undefined));
+        const toks = c.song.papers.find((x) => x.id === pp)!.tracks[part!]!;
+        toks.forEach((t, i) => {
+          const w2 = { paper: pp!, part: part!, index: i, tok: t };
+          if (!has2.has(t.id)) assert(shown2.has(t.id) ? !!editorOnlyWhy(w2, L2, drums) : representedBy(w2, c.song, L2) === "tempo", `${pp}/${part} 展开之后 ${t.kind}#${t.id} 有图元（或只在编辑器里、属于点了名的那几种）`);
+        });
+      }
+      // ③ 隐藏的纸和声部：版面里有它那一条（曲段名 + 细行 / 声部的细行，覆盖层照它画）
+      for (const w of reps.get("hidden") ?? []) {
+        const pl = L.papers.find((x) => x.id === w.paper);
+        assert(!!pl && (c.song.papers.find((x) => x.id === w.paper)!.hidden ? !!pl.title : pl.hiddenParts.includes(w.part)), `${w.paper}/${w.part} 隐藏了：版面里有那一条`);
+      }
+      assert((reps.get("family")?.length ?? 0) > 0 || c.name === "简谱", "五线谱那份里有叠起来的一家（比较器不是空的）");
+      if (c.name === "简谱") eq(reps.get("family")?.length ?? 0, 0, "简谱里没有叠起来的一家（不叠）");
+      assert((only.get("unwritten-key") ?? 0) > 0 && (only.get("no-effect") ?? 0) > 0, `只在编辑器里有的那几种，测试歌里都碰到了（比较器不是空的）：${[...only].map(([k, n]) => `${k} ${n}`).join("、")}`);
     });
     it(`守卫 5（点击只指 token 或家具）· ${c.name}：每个带下标的点击框指向对的那条轨里对的那种 token；光标落点在轨长之内`, () => {
       const L = engrave(c.song, view.opts(c.song));
@@ -109,6 +142,7 @@ describe("谱面排版：全量和点击（守卫 4 / 5）", () => {
       want(L.notes, is("note"), "音"); want(L.chordHeads, is("note"), "叠音的符头"); want(L.rests, is("rest"), "休止");
       want(L.lyrics, is("note"), "歌词"); want(L.chordTags, is("note"), "和弦级数");
       want(L.marks, (tok, h) => tok.kind === h.kind, "调号 / 拍号 / 速度");
+      want(L.keyHints, (tok, h) => tok.kind === "key" && tok.id === (h as { tok?: number }).tok, "淡的「1=C」「1=D」提示（带着它指的调号；点它 = 开那个调号的谱头面板）");   // 统筹裁定 5-3
       // 渐到 = 带 ramp 的力度记号：它的虚线楔形按「发夹」登记、指着那个力度记号（设计如此）
       want(L.dyns, (tok, h) => tok.kind === h.kind || (h.kind === "hairpin" && tok.kind === "dyn" && !!(tok as { ramp?: boolean }).ramp), "力度 / 发夹 / 风格 / 跳转");
       want(L.clefs.filter((h) => h.kind !== "start" && h.index >= 0), (tok, h) => tok.kind === (h.kind === "mid" ? "clef" : "ottava"), "行中间的谱号 / 八度线");

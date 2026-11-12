@@ -146,7 +146,7 @@ export interface Layout {
   content: { left: number; right: number };
   /** 调号位置上没有升降号的那几处（刀 1 锚点；专业模式，按 C 调看时没有）：覆盖层在这里写淡的「1=C」，点它 = 谱头面板。x / y = 字的起点和基线（px）。 */
   /** s = 写什么（「1=C」/ 小调「6=A」；v0.16.83）。 */
-  keyHints: { system: number; index: number; x: number; y: number; size: number; s: string }[];
+  keyHints: { system: number; index: number; /** 它指的那个调号 token 的 id（守卫 4：编辑器里的提示也算画出来了，第五刀 5-3）。 */ tok?: number; x: number; y: number; size: number; s: string }[];
   /** 整首最下面留的那一条（chrome.tail 给了才有）：覆盖层在里面画「＋ 新曲段」。 */
   tail: (Box & { paper: string }) | null;
   /** 每行每根小节线的 x（px；播放时的小节底色用，v0.10.12；只是多带的数据，不改任何位置）。 */

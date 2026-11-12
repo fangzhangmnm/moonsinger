@@ -644,6 +644,7 @@ export const S = {
   "D.S. al Fine：跳回 Segno，放到 Fine": { en: "D.S. al Fine: back to the Segno, play to Fine" },
   "D.S. al Coda：跳回 Segno，到 To Coda 去 Coda": { en: "D.S. al Coda: back to the Segno, at To Coda go to the Coda" },
   "不起作用（画灰）：{why}": { en: "No effect (grayed out): {why}" },
+  "大谱表上八度线现在不起作用（音不挪，也不印）": { en: "Octave lines have no effect on a grand staff yet (notes are not moved and the line is not printed)" },
   "房子：第 {nums} 遍走这个括号，别的遍跳过": { en: "Ending: pass {nums} takes this bracket, other passes skip it" },
   "这一版不认识「{style}」：不加轻重（换一个风格就好）": { en: "This version doesn't know “{style}”: no beat weighting (pick another style)" },
   "{p} 这个预设没列：按古典的强弱推{m}": { en: "This preset doesn't list {p}: inferred from classical strong and weak beats{m}" },
