@@ -9012,6 +9012,193 @@ var western = {
   }
 };
 
+// src/score/merge.ts
+var HEAD_ARTS = ["ghost", "whisper"];
+var SWITCH = 5;
+function planHands(tracks, wantsGrand2, homes, force = false) {
+  const host2 = tracks[0] ?? [], time = host2.find((t10) => t10.kind === "time");
+  const bar2 = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t10) => Math.floor(t10 / bar2 + 1e-9);
+  const med = (xs) => {
+    const a10 = [...xs].sort((x2, y2) => x2 - y2);
+    return a10.length ? a10[a10.length >> 1] : NaN;
+  };
+  const per = tracks.map((toks) => {
+    const notes = [];
+    let t10 = 0;
+    for (let i10 = headLen(toks); i10 < toks.length; i10++) {
+      const k2 = toks[i10];
+      if (!isTimed(k2)) continue;
+      if (k2.kind === "note" && k2.pitch) notes.push({ t: t10, m: [k2.pitch, ...k2.chord ?? []].map(midiOf) });
+      t10 += k2.dur;
+    }
+    return notes;
+  });
+  const mid = per.map((ns2) => med(ns2.flatMap((n10) => n10.m))), home = mid.map((x2, i10) => homes?.[i10] ?? (Number.isNaN(x2) || x2 >= 60 ? 0 : 1));
+  const present = mid.map((x2, i10) => Number.isNaN(x2) ? -1 : i10).filter((i10) => i10 >= 0);
+  if (force && present.length >= 2 && new Set(present.map((i10) => home[i10])).size < 2) {
+    const order = [...present].sort((x2, y2) => mid[y2] - mid[x2]);
+    let cut = 1, g3 = -1;
+    for (let k2 = 0; k2 + 1 < order.length; k2++) {
+      const d3 = mid[order[k2]] - mid[order[k2 + 1]];
+      if (d3 > g3) {
+        g3 = d3;
+        cut = k2 + 1;
+      }
+    }
+    order.forEach((m2, k2) => {
+      home[m2] = k2 < cut ? 0 : 1;
+    });
+  }
+  const grand = force || new Set(present.map((i10) => home[i10])).size > 1 && wantsGrand2(mergeTracks(tracks));
+  const staffCache = /* @__PURE__ */ new Map(), staffOf = (m2, ms) => {
+    if (!grand) return 0;
+    const key = `${m2}:${ms}`, hit = staffCache.get(key);
+    if (hit !== void 0) return hit;
+    const mm = med(per[m2].filter((n10) => meas(n10.t) === ms).flatMap((n10) => n10.m));
+    const st2 = Number.isNaN(mm) ? home[m2] : home[m2] === 1 && mm >= 60 + SWITCH ? 0 : home[m2] === 0 && mm < 60 - SWITCH ? 1 : home[m2];
+    staffCache.set(key, st2);
+    return st2;
+  };
+  const voiceCache = /* @__PURE__ */ new Map(), voiceOf = (m2, ms) => {
+    const key = `${m2}:${ms}`, hit = voiceCache.get(key);
+    if (hit !== void 0) return hit;
+    const s10 = staffOf(m2, ms), mates = present.filter((j2) => staffOf(j2, ms) === s10 && per[j2].some((n10) => meas(n10.t) === ms)).sort((x2, y2) => mid[y2] - mid[x2]);
+    let cut = mates.length;
+    if (mates.length >= 2) {
+      let g3 = -1;
+      for (let i10 = 0; i10 + 1 < mates.length; i10++) {
+        const d3 = mid[mates[i10]] - mid[mates[i10 + 1]];
+        if (d3 > g3) {
+          g3 = d3;
+          cut = i10 + 1;
+        }
+      }
+    }
+    for (let i10 = 0; i10 < mates.length; i10++) voiceCache.set(`${mates[i10]}:${ms}`, i10 < cut ? 1 : 2);
+    return voiceCache.get(key) ?? 1;
+  };
+  return { grand, pick: (staff, voice) => (m2, t10) => staffOf(m2, meas(t10)) === staff && voiceOf(m2, meas(t10)) === voice };
+}
+function mergeTracks(tracks, opt = {}) {
+  const { keyOf: keyOf2, pick, hits } = opt, barsOnly = opt.marks === "bars";
+  const host2 = tracks[0] ?? [], head = host2.slice(0, headLen(host2));
+  const evs = [], marks = [];
+  let end = 0;
+  tracks.forEach((toks, m2) => {
+    let t10 = 0;
+    for (let i10 = headLen(toks); i10 < toks.length; i10++) {
+      const k2 = toks[i10];
+      if (isTimed(k2)) {
+        if (k2.kind === "note" && k2.pitch) {
+          const ps = [k2.pitch, ...k2.chord ?? []].map((p2) => keyOf2 ? keyOf2(m2, p2) : p2);
+          if (!pick || pick(m2, t10)) evs.push({ t0: t10, t1: t10 + k2.dur, ps, host: m2 === 0 && !barsOnly ? k2 : null, heads: (k2.art ?? []).filter((a10) => HEAD_ARTS.includes(a10)) });
+        }
+        t10 += k2.dur;
+      } else if (m2 === 0 && k2.kind !== "clef" && k2.kind !== "ottava" && (!barsOnly || k2.kind === "bar" || k2.kind === "key" || k2.kind === "time")) marks.push({ t: t10, tok: k2 });
+    }
+    end = Math.max(end, t10);
+  });
+  const cuts = [.../* @__PURE__ */ new Set([0, end, ...evs.flatMap((e10) => [e10.t0, e10.t1]), ...marks.map((x2) => x2.t)])].filter((x2) => x2 <= end).sort((a10, b3) => a10 - b3);
+  const out = [...head];
+  let id2 = -1e3, prevChord = false, prevOn = [];
+  for (let i10 = 0; i10 < cuts.length; i10++) {
+    const a10 = cuts[i10], b3 = cuts[i10 + 1];
+    for (const x2 of marks) if (x2.t === a10) out.push(x2.tok);
+    if (b3 === void 0) break;
+    let on2 = evs.filter((e10) => e10.t0 <= a10 && e10.t1 > a10);
+    if (hits && on2.length) {
+      const struck = on2.filter((e10) => e10.t0 === a10);
+      on2 = struck.length ? struck : prevChord && on2.length === prevOn.length && on2.every((e10) => prevOn.includes(e10)) ? on2 : [];
+    }
+    if (!on2.length) {
+      const last = out[out.length - 1];
+      if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b3 - a10) };
+      else out.push({ kind: "rest", id: id2--, dur: b3 - a10 });
+      prevChord = false;
+      prevOn = [];
+      continue;
+    }
+    const freshK = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set();
+    for (const e10 of on2) if (e10.t0 === a10) for (const p2 of e10.ps) freshK.add(midiOf(p2));
+    const all = on2.flatMap((e10) => e10.ps).filter((p2) => {
+      const k2 = midiOf(p2);
+      if (seen.has(k2)) return false;
+      seen.add(k2);
+      return true;
+    }).sort((x2, y2) => midiOf(y2) - midiOf(x2));
+    const ps = all;
+    const fresh = ps.some((p2) => freshK.has(midiOf(p2))), h2 = on2.find((e10) => e10.host && e10.t0 === a10)?.host ?? null;
+    const src = on2.filter((e10) => e10.t0 === a10).length ? on2.filter((e10) => e10.t0 === a10) : on2, art2 = HEAD_ARTS.filter((x2) => src.every((e10) => e10.heads.includes(x2)));
+    out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art2.length ? { art: art2 } : {} });
+    prevChord = true;
+    prevOn = on2;
+  }
+  return out;
+}
+
+// src/theory/families.ts
+function onsets(tokens) {
+  const out = /* @__PURE__ */ new Map();
+  let t10 = 0;
+  for (let i10 = headLen(tokens); i10 < tokens.length; i10++) {
+    const k2 = tokens[i10];
+    if (!isTimed(k2)) continue;
+    if (k2.kind === "note" && k2.pitch && !k2.tie && !out.has(t10)) out.set(t10, i10);
+    t10 += k2.dur;
+  }
+  return out;
+}
+function paperHarmony(theory, input) {
+  const out = /* @__PURE__ */ new Map(), byId = new Map(input.parts.map((p2) => [p2.id, p2]));
+  const fams = input.families.map((f2) => f2.filter((id2) => byId.has(id2))).filter((f2) => f2.length >= 2), inFam = new Set(fams.flat());
+  const push = (owner, tag2) => {
+    const l10 = out.get(owner);
+    if (l10) l10.push(tag2);
+    else out.set(owner, [tag2]);
+  };
+  for (const p2 of input.parts) if (!inFam.has(p2.id)) for (const t10 of harmonyTags(theory, { tokens: p2.tokens, broken: p2.broken })) push(p2.id, { ...t10, at: p2.id });
+  for (const fam of fams) {
+    const members = fam.map((id2) => byId.get(id2)), bottom = fam[fam.length - 1];
+    const merged = mergeTracks(members.map((m2) => [...m2.tokens]));
+    const tags = harmonyTags(theory, { tokens: merged, broken: members[0].broken });
+    const tickAt = [], keyAt2 = [];
+    {
+      let t10 = 0, key = { fifths: DEFAULT_KEY, minor: false };
+      merged.forEach((k2, i10) => {
+        if (k2.kind === "key") key = { fifths: k2.fifths, minor: k2.mode === "minor" };
+        tickAt[i10] = t10;
+        keyAt2[i10] = key;
+        if (isTimed(k2)) t10 += k2.dur;
+      });
+    }
+    const starts = members.map((m2) => onsets(m2.tokens));
+    for (const tag2 of tags) {
+      const t10 = tickAt[tag2.index];
+      let owner = -1;
+      for (let m2 = members.length - 1; m2 >= 0; m2--) if (starts[m2].has(t10)) {
+        owner = m2;
+        break;
+      }
+      if (owner < 0) continue;
+      let read = tag2.read;
+      for (let m2 = members.length - 1; m2 >= 0; m2--) {
+        const i10 = starts[m2].get(t10);
+        if (i10 === void 0) continue;
+        const pin = members[m2].tokens[i10].harm;
+        if (!pin) continue;
+        const rd2 = theory.pinRead(pin, keyAt2[tag2.index], tag2.read);
+        if (rd2 && tag2.read.all.some((g3) => g3.name === rd2.best.name)) {
+          read = rd2;
+          break;
+        }
+      }
+      push(members[owner].id, { index: starts[owner].get(t10), read, at: bottom });
+    }
+  }
+  for (const l10 of out.values()) l10.sort((a10, b3) => a10.index - b3.index);
+  return out;
+}
+
 // src/theory/index.ts
 var THEORIES = { [western.id]: western };
 var DEFAULT_THEORY = western.id;
@@ -11029,130 +11216,6 @@ function resolveSongLooks(song, noAutoGrand) {
   return out;
 }
 
-// src/score/merge.ts
-var HEAD_ARTS = ["ghost", "whisper"];
-var SWITCH = 5;
-function planHands(tracks, wantsGrand2, homes, force = false) {
-  const host2 = tracks[0] ?? [], time = host2.find((t10) => t10.kind === "time");
-  const bar2 = (time?.beats ?? 4) * WHOLE / (time?.beatType ?? 4), meas = (t10) => Math.floor(t10 / bar2 + 1e-9);
-  const med = (xs) => {
-    const a10 = [...xs].sort((x2, y2) => x2 - y2);
-    return a10.length ? a10[a10.length >> 1] : NaN;
-  };
-  const per = tracks.map((toks) => {
-    const notes = [];
-    let t10 = 0;
-    for (let i10 = headLen(toks); i10 < toks.length; i10++) {
-      const k2 = toks[i10];
-      if (!isTimed(k2)) continue;
-      if (k2.kind === "note" && k2.pitch) notes.push({ t: t10, m: [k2.pitch, ...k2.chord ?? []].map(midiOf) });
-      t10 += k2.dur;
-    }
-    return notes;
-  });
-  const mid = per.map((ns2) => med(ns2.flatMap((n10) => n10.m))), home = mid.map((x2, i10) => homes?.[i10] ?? (Number.isNaN(x2) || x2 >= 60 ? 0 : 1));
-  const present = mid.map((x2, i10) => Number.isNaN(x2) ? -1 : i10).filter((i10) => i10 >= 0);
-  if (force && present.length >= 2 && new Set(present.map((i10) => home[i10])).size < 2) {
-    const order = [...present].sort((x2, y2) => mid[y2] - mid[x2]);
-    let cut = 1, g3 = -1;
-    for (let k2 = 0; k2 + 1 < order.length; k2++) {
-      const d3 = mid[order[k2]] - mid[order[k2 + 1]];
-      if (d3 > g3) {
-        g3 = d3;
-        cut = k2 + 1;
-      }
-    }
-    order.forEach((m2, k2) => {
-      home[m2] = k2 < cut ? 0 : 1;
-    });
-  }
-  const grand = force || new Set(present.map((i10) => home[i10])).size > 1 && wantsGrand2(mergeTracks(tracks));
-  const staffCache = /* @__PURE__ */ new Map(), staffOf = (m2, ms) => {
-    if (!grand) return 0;
-    const key = `${m2}:${ms}`, hit = staffCache.get(key);
-    if (hit !== void 0) return hit;
-    const mm = med(per[m2].filter((n10) => meas(n10.t) === ms).flatMap((n10) => n10.m));
-    const st2 = Number.isNaN(mm) ? home[m2] : home[m2] === 1 && mm >= 60 + SWITCH ? 0 : home[m2] === 0 && mm < 60 - SWITCH ? 1 : home[m2];
-    staffCache.set(key, st2);
-    return st2;
-  };
-  const voiceCache = /* @__PURE__ */ new Map(), voiceOf = (m2, ms) => {
-    const key = `${m2}:${ms}`, hit = voiceCache.get(key);
-    if (hit !== void 0) return hit;
-    const s10 = staffOf(m2, ms), mates = present.filter((j2) => staffOf(j2, ms) === s10 && per[j2].some((n10) => meas(n10.t) === ms)).sort((x2, y2) => mid[y2] - mid[x2]);
-    let cut = mates.length;
-    if (mates.length >= 2) {
-      let g3 = -1;
-      for (let i10 = 0; i10 + 1 < mates.length; i10++) {
-        const d3 = mid[mates[i10]] - mid[mates[i10 + 1]];
-        if (d3 > g3) {
-          g3 = d3;
-          cut = i10 + 1;
-        }
-      }
-    }
-    for (let i10 = 0; i10 < mates.length; i10++) voiceCache.set(`${mates[i10]}:${ms}`, i10 < cut ? 1 : 2);
-    return voiceCache.get(key) ?? 1;
-  };
-  return { grand, pick: (staff, voice) => (m2, t10) => staffOf(m2, meas(t10)) === staff && voiceOf(m2, meas(t10)) === voice };
-}
-function mergeTracks(tracks, opt = {}) {
-  const { keyOf: keyOf2, pick, hits } = opt, barsOnly = opt.marks === "bars";
-  const host2 = tracks[0] ?? [], head = host2.slice(0, headLen(host2));
-  const evs = [], marks = [];
-  let end = 0;
-  tracks.forEach((toks, m2) => {
-    let t10 = 0;
-    for (let i10 = headLen(toks); i10 < toks.length; i10++) {
-      const k2 = toks[i10];
-      if (isTimed(k2)) {
-        if (k2.kind === "note" && k2.pitch) {
-          const ps = [k2.pitch, ...k2.chord ?? []].map((p2) => keyOf2 ? keyOf2(m2, p2) : p2);
-          if (!pick || pick(m2, t10)) evs.push({ t0: t10, t1: t10 + k2.dur, ps, host: m2 === 0 && !barsOnly ? k2 : null, heads: (k2.art ?? []).filter((a10) => HEAD_ARTS.includes(a10)) });
-        }
-        t10 += k2.dur;
-      } else if (m2 === 0 && k2.kind !== "clef" && k2.kind !== "ottava" && (!barsOnly || k2.kind === "bar" || k2.kind === "key" || k2.kind === "time")) marks.push({ t: t10, tok: k2 });
-    }
-    end = Math.max(end, t10);
-  });
-  const cuts = [.../* @__PURE__ */ new Set([0, end, ...evs.flatMap((e10) => [e10.t0, e10.t1]), ...marks.map((x2) => x2.t)])].filter((x2) => x2 <= end).sort((a10, b3) => a10 - b3);
-  const out = [...head];
-  let id2 = -1e3, prevChord = false, prevOn = [];
-  for (let i10 = 0; i10 < cuts.length; i10++) {
-    const a10 = cuts[i10], b3 = cuts[i10 + 1];
-    for (const x2 of marks) if (x2.t === a10) out.push(x2.tok);
-    if (b3 === void 0) break;
-    let on2 = evs.filter((e10) => e10.t0 <= a10 && e10.t1 > a10);
-    if (hits && on2.length) {
-      const struck = on2.filter((e10) => e10.t0 === a10);
-      on2 = struck.length ? struck : prevChord && on2.length === prevOn.length && on2.every((e10) => prevOn.includes(e10)) ? on2 : [];
-    }
-    if (!on2.length) {
-      const last = out[out.length - 1];
-      if (last && last.kind === "rest" && last.id <= -1e3) out[out.length - 1] = { ...last, dur: last.dur + (b3 - a10) };
-      else out.push({ kind: "rest", id: id2--, dur: b3 - a10 });
-      prevChord = false;
-      prevOn = [];
-      continue;
-    }
-    const freshK = /* @__PURE__ */ new Set(), seen = /* @__PURE__ */ new Set();
-    for (const e10 of on2) if (e10.t0 === a10) for (const p2 of e10.ps) freshK.add(midiOf(p2));
-    const all = on2.flatMap((e10) => e10.ps).filter((p2) => {
-      const k2 = midiOf(p2);
-      if (seen.has(k2)) return false;
-      seen.add(k2);
-      return true;
-    }).sort((x2, y2) => midiOf(y2) - midiOf(x2));
-    const ps = all;
-    const fresh = ps.some((p2) => freshK.has(midiOf(p2))), h2 = on2.find((e10) => e10.host && e10.t0 === a10)?.host ?? null;
-    const src = on2.filter((e10) => e10.t0 === a10).length ? on2.filter((e10) => e10.t0 === a10) : on2, art2 = HEAD_ARTS.filter((x2) => src.every((e10) => e10.heads.includes(x2)));
-    out.push({ kind: "note", id: id2--, pitch: ps[0], ...ps.length > 1 ? { chord: ps.slice(1) } : {}, dur: b3 - a10, lyric: h2?.lyric ?? null, ...h2?.hyph ? { hyph: true } : {}, ...!fresh && prevChord ? { tie: true } : {}, ...art2.length ? { art: art2 } : {} });
-    prevChord = true;
-    prevOn = on2;
-  }
-  return out;
-}
-
 // src/render/frame/units.ts
 var MIN_PLAIN = TPQ / 8;
 var NOTATABLE = [];
@@ -12483,7 +12546,7 @@ var STAFF_LANES = ["strength", "noteDynamics", "dynamics", "ottavaAbove", "nav",
 function drawStaff(c10, mine) {
   const lyricParts = [];
   const own = mine ? new Set(mine) : null, skip = (r10) => own !== null && !own.has(r10);
-  const { song, look, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c10;
+  const { song, look, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, harmony, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c10;
   const yOf = (r10, d3) => yAt(staffTop(r10), d3, P2(0.5));
   const clefAtSys = (q2, s10) => {
     const u2 = q2.units.find((x2) => x2.system === s10 && x2.index >= 0);
@@ -12962,23 +13025,24 @@ function drawStaff(c10, mine) {
       });
     }
     layDynamics(orn);
-    if (look.chordTags && !v2 && !q2.vrt) {
+    if (harmony && !v2 && !q2.vrt) {
       const fs = tx2("chord-tag");
-      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: look.chordsOf(q2.p.id) !== "stacked" }).map((x2) => [x2.index, x2.read]));
+      const theory = harmonyTheory(), placed = new Map((harmony.get(q2.p.id) ?? []).map((x2) => [x2.index, x2]));
       for (const c11 of units) {
         if (c11.kind !== "chunk" || !c11.note || c11.j !== 0 || c11.index < 0 || c11.pad) continue;
         const t10 = tokens[c11.index];
         if (t10?.kind !== "note" || !t10.pitch) continue;
-        const rd2 = tagged.get(c11.index);
-        if (!rd2) continue;
+        const pt = placed.get(c11.index);
+        if (!pt) continue;
+        const rd2 = pt.read, rAt = pt.at === q2.p.id ? -1 : per.findIndex((x2) => x2.p.id === pt.at), atRow = rAt >= 0 && !skip(rAt) ? rowOf(c11.system, rAt, per[rAt].staves - 1) : null;
         const ds = (c11.pitches.length ? c11.pitches : [c11.pitch]).map((pp) => dIdx(pp, c11.staff, c11.index)), second = ds.some((dd, k2) => k2 > 0 && Math.abs(ds[k2 - 1] - dd) === 1);
         const headR = nhX(c11) + nhW(c11) * (second ? 1.95 : 1), sx2 = stemXOf.get(c11), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
         const atStem = sx2 !== void 0 && !(low && headR > sx2 + P2(0.1));
         const label = theory.label(rd2), tx3 = atStem ? sx2 - P2(ENGRAVE.stem / 2) : headR + P2(0.3), w2 = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
-        const row2 = RW(c11), cls = `chord-tag${rd2.pinned ? " is-pinned" : ""}${rd2.stale ? " is-stale" : ""}`;
+        const row2 = atRow ?? RW(c11), cls = `chord-tag${rd2.pinned ? " is-pinned" : ""}${rd2.stale ? " is-stale" : ""}`;
         attach2(row2, "chordTag", () => placeBelow(row2, 0.3, (y2) => {
           prims.push({ t: "text", x: tx3, y: y2, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: tx3 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2, system: row2, index: c11.index });
+          chordTagsOut.push({ x: tx3 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2, system: row2, index: c11.index, ...atRow !== null ? { part: q2.p.id } : {} });
         }));
       }
     }
@@ -13456,17 +13520,18 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
       flush2();
     }
-    if (mode === "digits" && c10.look.chordTags) {
-      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: c10.look.chordsOf(q2.p.id) !== "stacked" }).map((x2) => [x2.index, x2.read])), fs = tx2("chord-tag");
+    if (mode === "digits" && c10.harmony) {
+      const theory = harmonyTheory(), placed = new Map((c10.harmony.get(q2.p.id) ?? []).map((x2) => [x2.index, x2])), fs = tx2("chord-tag"), mineSet = new Set(mine);
       for (const u2 of units) {
         if (u2.kind !== "chunk" || !u2.note || u2.j !== 0 || u2.index < 0 || u2.pad) continue;
-        const rd2 = tagged.get(u2.index);
-        if (!rd2) continue;
-        const row2 = rowOf(u2.system, r10, 0), lx2 = P2(u2.x) + Q2(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = theory.label(rd2), w2 = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const pt = placed.get(u2.index);
+        if (!pt) continue;
+        const rd2 = pt.read, rAt = pt.at === q2.p.id ? -1 : per.findIndex((x2) => x2.p.id === pt.at), atOwn = rAt >= 0 && mineSet.has(rAt);
+        const row2 = rowOf(u2.system, atOwn ? rAt : r10, 0), lx2 = P2(u2.x) + Q2(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = theory.label(rd2), w2 = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
         const cls = `chord-tag${rd2.pinned ? " is-pinned" : ""}${rd2.stale ? " is-stale" : ""}`;
         c10.attach(row2, "chordTag", () => placeBelow(row2, 0.3 * jk, (y2) => {
           c10.prims.push({ t: "text", x: lx2, y: y2, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: lx2 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2, system: row2, index: u2.index });
+          chordTagsOut.push({ x: lx2 - TR("chord-tag", 0.3), y: y2 - fs * 1.05, w: w2, h: fs * 1.4, read: rd2, system: row2, index: u2.index, ...atOwn ? { part: q2.p.id } : {} });
         }));
       }
     }
@@ -14098,7 +14163,11 @@ function engrave(song, o10) {
       }
       for (const x2 of measures) delete x2.m;
     }
-    const drawCtx = { song, look: songLook, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
+    const harmony = songLook.chordTags ? paperHarmony(harmonyTheory(), {
+      parts: per.filter((q2, i10) => !q2.vrt && rowHost[i10] < 0).map((q2) => ({ id: q2.p.id, tokens: q2.tokens, broken: songLook.chordsOf(q2.p.id) !== "stacked" })),
+      families: famIds.map((fid) => famHere(fid).map((p2) => p2.id))
+    }) : null;
+    const drawCtx = { song, look: songLook, harmony, paper, o: o10, P: P2, tx: tx2, TR, RS, mw, sp: sp2, ts: ts2, put: put2, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach: attach2, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
     if (songLook.barNumbers && per[0]) for (let s10 = 0; s10 < nSys; s10++) {
       const ind = s10 === 0 ? ind0 : indN, q0 = per.find((q2) => q2.units.some((u2) => u2.kind === "chunk" && u2.system === s10)) ?? per[0];
       const c02 = q0.units.find((u2) => u2.kind === "chunk" && u2.system === s10);
@@ -16960,7 +17029,7 @@ var ScoreView = class {
     const ct2 = L2.chordTags.find((c10) => this.inBox(c10, x2, y2));
     if (ct2) {
       const b3 = this.clientBox(ct2), sys = L2.systems[ct2.system];
-      this.tell({ kind: "chordTag", read: ct2.read, at: { x: (b3.left + b3.right) / 2, y: b3.bottom }, where: sys ? { paper: sys.paper, part: sys.part.replace(/~.*$/, ""), index: ct2.index } : null });
+      this.tell({ kind: "chordTag", read: ct2.read, at: { x: (b3.left + b3.right) / 2, y: b3.bottom }, where: sys ? { paper: sys.paper, part: (ct2.part ?? sys.part).replace(/~.*$/, ""), index: ct2.index } : null });
       return true;
     }
     if (this.inBox(L2.credits, x2, y2)) {
@@ -32556,7 +32625,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-8e69236ebd73.mjs");
+      return pick(() => "layout-worker-3cd712e727a4.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-2a6526a1e852.mjs");
   }
@@ -62192,4 +62261,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-75839d11efb8.mjs.map
+//# sourceMappingURL=moonsinger-00f9374c4e3c.mjs.map

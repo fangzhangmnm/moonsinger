@@ -1337,7 +1337,7 @@ export class ScoreView {
     const L = this.layout ?? L0, sp = L.sp;
     // 0⁻. 和弦级数（v0.16.11）：点了 = 候选（听模式也认，只是看）
     const ct = L.chordTags.find((c) => this.inBox(c, x, y));
-    if (ct) { const b = this.clientBox(ct), sys = L.systems[ct.system]; this.tell({ kind: "chordTag", read: ct.read, at: { x: (b.left + b.right) / 2, y: b.bottom }, where: sys ? { paper: sys.paper, part: sys.part.replace(/~.*$/, ""), index: ct.index } : null }); return true; }
+    if (ct) { const b = this.clientBox(ct), sys = L.systems[ct.system]; this.tell({ kind: "chordTag", read: ct.read, at: { x: (b.left + b.right) / 2, y: b.bottom }, where: sys ? { paper: sys.paper, part: (ct.part ?? sys.part).replace(/~.*$/, ""), index: ct.index } : null }); return true; }   // 合租一家合起来认的级数：画在最下面那一行，挑法写回 index 指的那一位（ct.part）
     // 0⅙. 作词 / 作曲（标题下面靠右）
     if (this.inBox(L.credits, x, y)) { this.tell({ kind: "text" }); this.tell({ kind: "credits" }); return true; }   // 听模式也能改（v0.16.85，user 11-10「歌名和作者信息应该三个不同模式都能写」；歌名 v0.16.14 起就能）
     // 0⅛. 歌手牌（每张纸第一行各条谱左边的声部名）：先把光标换到那条，再开歌手牌

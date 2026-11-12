@@ -11,7 +11,7 @@ import { GLYPH, W, ENGRAVE, timeSigDigits, PERC_CLEF, PERC_HEAD, PERC_SMUFL } fr
 import { layoutStems } from "../stems.ts";
 import { GLYPH_BOX } from "../glyph-box.gen.ts";
 import { keyText } from "../../score/pitch.ts";
-import { harmonyTheory, harmonyTags } from "../../theory/index.ts";
+import { harmonyTheory, type PlacedTag } from "../../theory/index.ts";
 import { baseClef } from "../../score/clef.ts";
 import { MARGIN } from "../frame/params.ts";
 import { TOP_LINE, MID_LINE, BOTTOM_LINE, ART_GLYPH, GLYPH_BREATH, SHARP_POS, FLAT_POS, GLYPH_TUPLET } from "./glyphs.ts";
@@ -40,6 +40,8 @@ export interface StaffDrawCtx {
   put: (row: number, p: Prim) => void; hitRow: (hit: object, row: number) => void;
   prims: Prim[]; notes: HitNote[]; chordHeads: Layout["chordHeads"]; rests: RestHit[]; lyrics: LyricHit[]; marks: MarkHit[]; dyns: DynHit[]; clefs: ClefHit[];
   keyHints: Layout["keyHints"]; chordTagsOut: Layout["chordTags"]; slots: Slot[]; heads: CaretHead[]; bars: Layout["bars"]; rows: SystemBox[];
+  /** 和弦级数（预处理，theory/families.ts）：每一位身上要标的那几处（合租的一家合起来认、标在这一家最下面那一行）；不标 = null。第五刀 5-4。 */
+  harmony: ReadonlyMap<string, readonly PlacedTag[]> | null;
   /** 纵向：第 r 行的原点（第五线）；歌词基线；（第 s 行、第 r 个声部、第 k 张谱表）→ 行号。第几级 ↔ y 由画法自己算（geometry.ts yAt；第四刀起框架不递 yOf）。 */
   staffTop: (r: number) => number; lyricY: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   /** 挂件：贴在谱上方 / 下方（天际线）；attach = 往某一道上登记一件（框架按 STAFF_LANES 的先后执行）。 */
@@ -61,7 +63,7 @@ import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricParts: LyricPart[] } {
   const lyricParts: LyricPart[] = [];
   const own = mine ? new Set(mine) : null, skip = (r: number) => own !== null && !own.has(r);
-  const { song, look, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
+  const { song, look, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, harmony, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured, nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm } = c;
   const yOf = (r: number, d: number) => yAt(staffTop(r), d, P(0.5));   // 第 r 行第 d 级的 y（五线谱自己的纵向，geometry.ts）
     /** 第 s 行开头的谱号（这一行第一个东西那里生效的）。 */
     const clefAtSys = (q: StaffTrack, s: number): ClefName => {
@@ -453,25 +455,26 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
     layDynamics(orn);   // 力度那一层（力度字 / 发夹 / cresc. 字 / 渐到）：共用挂件（ornaments/index.ts，第四刀 4-3 原样搬出），按行登记
     // 和弦级数（v0.16.13；乐理模块 src/theory/）= 挂件第 10 样（刀 4b，user 11-08 拍：放到和弦的右下角）：x = 符头右缘 + 0.3、靠左对齐；y = 这一段下天际线再往下 0.3。
     //   按 C 调看时认的是换到 C 的谱 + C 调——级数一样。合租叠起来的虚拟行、声部 2 不标（只看个大概的）。印（跟着设置进 PDF）
-    if (look.chordTags && !v2 && !q.vrt) {   // 按行登记（第四刀）：一个和弦一块，各挂在自己那一行
+    if (harmony && !v2 && !q.vrt) {   // 按行登记（第四刀）：一个和弦一块；合租的一家合起来认的挂在这一家最下面那一行（第五刀 5-4，预处理 theory/families.ts）
       const fs = tx("chord-tag");   // 和速度字一样大（v0.16.34）；字的尺子（刀 2）
       // 标哪几个音、标什么 = 乐理模块（src/theory/：叠音的和弦 + 分解和弦，2026-11-09 起能整块换理论）；这里只管摆。
       //   harmonyTags 把这条 track 从左到右一小节一小节喂给理论（理论拿不到整条 track——只看前面，theory/index.ts 文件头）
-      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: look.chordsOf(q.p.id) !== "stacked" }).map((x) => [x.index, x.read] as const));
+      const theory = harmonyTheory(), placed = new Map((harmony.get(q.p.id) ?? []).map((x) => [x.index, x] as const));
       for (const c of units) {
         if (c.kind !== "chunk" || !c.note || c.j !== 0 || c.index < 0 || c.pad) continue;
         const t = tokens[c.index]; if (t?.kind !== "note" || !t.pitch) continue;
-        const rd = tagged.get(c.index); if (!rd) continue;
+        const pt = placed.get(c.index); if (!pt) continue;
+        const rd = pt.read, rAt = pt.at === q.p.id ? -1 : per.findIndex((x) => x.p.id === pt.at), atRow = rAt >= 0 && !skip(rAt) ? rowOf(c.system, rAt, per[rAt]!.staves - 1) : null;   // 一家的：画在最下面那一位的那一行（不归这种画法管的行 = 画在自己这一行）
         const ds = (c.pitches.length ? c.pitches : [c.pitch!]).map((pp) => dIdx(pp, c.staff, c.index)), second = ds.some((dd, k) => k > 0 && Math.abs(ds[k - 1] - dd) === 1);
         // 跟着符干（v0.16.62，user 11-09「其实可以试着跟着符柄定位，只有和符头位置撞了才退避」）：字的左边对齐符干那条线；
         //   这样会压到这个和弦挂在谱下面的符头（符干朝下 = 符头在符干右边、二度挤开的那个也在右边）= 退回符头右边 + 0.3（原来的位置）。没有符干（全音符）= 符头右边
         const headR = nhX(c) + nhW(c) * (second ? 1.95 : 1), sx = stemXOf.get(c), low = ds.some((dd) => dd < BOTTOM_LINE - 1);
         const atStem = sx !== undefined && !(low && headR > sx + P(0.1));
         const label = theory.label(rd), tx = atStem ? sx! - P(ENGRAVE.stem / 2) : headR + P(0.3), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
-        const row = RW(c), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;   // 人挑的 = 换个颜色；对不上了 = 灰 + 「?」（v0.16.87）
+        const row = atRow ?? RW(c), cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;   // 人挑的 = 换个颜色；对不上了 = 灰 + 「?」（v0.16.87）
         attach(row, "chordTag", () => placeBelow(row, 0.3, (y) => {
           prims.push({ t: "text", x: tx, y, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: tx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: c.index });
+          chordTagsOut.push({ x: tx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: c.index, ...(atRow !== null ? { part: q.p.id } : {}) });
         }));
       }
     }

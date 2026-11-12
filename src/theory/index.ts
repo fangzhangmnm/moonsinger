@@ -17,6 +17,9 @@
 //   门面（外面只认这些）：harmonyTags(理论, 一条 track) = 哪几个音底下标什么；理论自己管谱上写什么字（label）、点开候选时每个读法怎么说（explain / howTo）。
 //   读法是纯数据（能进 worker、能结构化克隆），带着自己是哪种理论（theory）——点开时找回同一种理论来解释。
 //   每个声部各认各的，不把几个声部合起来读（user 11-09「我还是希望它的局域性好一点，所以说可能还是每个声部单独做吧」）。
+//   例外 = 合租的一家（added 2026-11-11 by Claude Opus 5.5，统筹裁定）：一家合起来认（theory/families.ts paperHarmony）。user 11-11（纪要 ai-docs/talks/20261111-two-display-modes-meta.md 第 70 节）
+//   「我非常想合起来认，因为合租的语义就是，比如说你什么女高声、男低声还有中声，他们一起唱，他们本来就是一个和弦，但他们确实是得写成三个轨」。
+//   和上一句不矛盾：合租是人亲手放在一起的，一家算一个单位；不在一家的照旧各认各的。
 //   现在只有一种：western = 西方功能和声的罗马数字级数（src/theory/western.ts）。以后加别的 = 写一个同样门面的文件、登记进 THEORIES；
 //   挑哪一种的开关（歌里 / 设备上）等真有第二种时再定。
 import { DEFAULT_KEY, type Token, type NoteTok, type ChordPin } from "../score/song.ts";
@@ -73,6 +76,8 @@ export const THEORIES: Record<string, HarmonyTheory> = { [western.id]: western }
 /** 人写明的和弦 ↔ MusicXML <harmony><kind>（v0.16.87）：和弦种类的写法表跟着西方功能和声那一种（存盘用的是和弦名本身，不看是哪种理论在读）。 */
 export { pinXmlKind, xmlKindToPin, PIN_KIND_IDS } from "./western.ts";
 export const DEFAULT_THEORY = western.id;
+/** 一张纸上「哪几个音底下标什么」：合租的一家合起来认、不在一家的各认各的（预处理，两种谱读同一份；第五刀 5-4）。 */
+export { paperHarmony, type PlacedTag, type PaperHarmonyInput } from "./families.ts";
 /** 按 id 找理论；不认识的 id（别的版本加的）= 默认那一种。 */
 export const harmonyTheory = (id: string = DEFAULT_THEORY): HarmonyTheory => THEORIES[id] ?? THEORIES[DEFAULT_THEORY]!;
 

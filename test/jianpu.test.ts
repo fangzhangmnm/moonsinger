@@ -7,6 +7,7 @@ import { initState, TPQ, type Song, type Token } from "../src/score/song.ts";
 import { setNotation } from "../src/score/song-view.ts";
 import { GEOMETRY, DRAWERS } from "../src/render/notations.ts";
 import { SIGNS } from "../src/render/signs.ts";
+import { harmonyTheory } from "../src/theory/index.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
 import { FULL_VIEWS } from "./fixtures/layout/full.ts";
 
@@ -86,6 +87,16 @@ describe("简谱数字行", () => {
     const off = lay([n(P("G"), TPQ, { chord: [P("E"), P("C")] })], (s) => ({ ...s, chordTags: false }));
     eq(off.L.chordTags.length, 0, "总开关关了 = 不标");
     eq(lay([n(P("G", 2), TPQ, { chord: [P("C", 2)] })], undefined, { perc: { kind: "kit" } }).L.chordTags.length, 0, "鼓的 X 行不标");
+  });
+  it("合租一家合起来认和弦（第五刀 5-4；统筹裁定第 5–8 条，user 11-11 纪要第 70 节）：同一首歌，五线谱（一家展开着）和简谱，一家每一刻的读法相同；只标一次、标在最下面那一行", () => {
+    const v = FULL_VIEWS.find((x) => x.name === "edit-all")!, S = fullSong(), J = { ...fullSong(), notation: "jianpu" } as Song;
+    const at = { paper: "pa", part: "X" };   // 光标在这一家里 = 五线谱里这一家展开着
+    const Ls = engrave(S, { ...v.opts(S), at }), Lj = engrave(J, { ...v.opts(J), at });
+    const fam = (L: typeof Ls) => L.chordTags.filter((t) => { const r = L.systems[t.system]!; return r.paper === "pa" && (r.part === "X" || r.part === "Y"); });
+    const key = (L: typeof Ls) => fam(L).map((t) => `${t.part ?? L.systems[t.system]!.part}#${t.index}:${harmonyTheory().label(t.read)}@${L.systems[t.system]!.part}`).sort().join(" ");
+    assert(fam(Ls).length > 0, "五线谱这一家展开着有级数（比较器不是空的）");
+    eq(key(Lj), key(Ls), "两种谱一家每一刻的读法、挂在谁身上、画在哪一行都一样");
+    assert(fam(Ls).every((t) => Ls.systems[t.system]!.part === "Y"), "都画在这一家最下面那一位（Y）那一行；X 自己不标");
   });
   it("下划线按拍连：两个八分在同一拍 = 一条；跨拍 = 断开；十六分 = 两层", () => {
     const e = TPQ / 2, s16 = TPQ / 4;

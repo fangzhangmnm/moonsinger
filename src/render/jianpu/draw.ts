@@ -6,7 +6,7 @@
 import { TPQ, swellOf, type Song, type PaperSeg, type NoteTok, type OttavaTok } from "../../score/song.ts";
 import { _tIn } from "../../i18n/index.ts";
 import { SIGNS } from "../signs.ts";
-import { harmonyTheory, harmonyTags } from "../../theory/index.ts";
+import { harmonyTheory, type PlacedTag } from "../../theory/index.ts";
 import { keyText } from "../../score/pitch.ts";
 import { toDegree, fewestDotsBase } from "../../score/degree.ts";
 import type { SongView } from "../../score/song-view.ts";
@@ -38,6 +38,8 @@ export interface JianpuDrawCtx {
   staffTop: (r: number) => number; rowOf: (s: number, r: number, k?: number) => number;
   placeAbove: (row: number, gap: number, draw: (y: number) => void) => number;
   placeBelow: (row: number, gap: number, draw: (y: number) => void) => number;
+  /** 和弦级数（预处理，theory/families.ts）：合租的一家合起来认、标在这一家最下面那一行；不标 = null。 */
+  harmony: ReadonlyMap<string, readonly PlacedTag[]> | null;
   attach: (row: number, lane: LaneKind, run: () => void) => void;
   /** 这一行的右边界（sp）；速度画在哪一位那行（这张纸最上面在场的那位）、上一段结尾的速度（开头变了标 ↑ / ↓）。 */
   right: number; owner: string | null; prevBpm: number | null;
@@ -262,18 +264,19 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (acc >= v.ratio![1] * minBase - 1e-6) flush();
       }
       flush(); }
-    // 和弦级数（第五刀 5-4 ④；UX 稿第 2 节「显示和弦级数」= 歌的总开关）：标哪几个音、标什么 = 乐理模块（同五线谱）；摆在这个音的右下（数字右边、往下贴天际线，歌词让在它下面）。
-    //   鼓的 X 行不标。合租一家合起来认 = 第五节问统筹（挑中的读法记在哪个音上）
-    if (mode === "digits" && c.look.chordTags) {
-      const theory = harmonyTheory(), tagged = new Map(harmonyTags(theory, { tokens, broken: c.look.chordsOf(q.p.id) !== "stacked" }).map((x) => [x.index, x.read] as const)), fs = tx("chord-tag");
+    // 和弦级数（第五刀 5-4 ④；UX 稿第 2 节「显示和弦级数」= 歌的总开关）：标哪几个音、标什么 = 预处理（theory/families.ts：合租的一家合起来认，标在这一家最下面那一行；两种谱同一份）；
+    //   摆在这个音的右下（数字右边、往下贴天际线，歌词让在它下面）。鼓的 X 行不标
+    if (mode === "digits" && c.harmony) {
+      const theory = harmonyTheory(), placed = new Map((c.harmony.get(q.p.id) ?? []).map((x) => [x.index, x] as const)), fs = tx("chord-tag"), mineSet = new Set(mine);
       for (const u of units) {
         if (u.kind !== "chunk" || !u.note || u.j !== 0 || u.index < 0 || u.pad) continue;
-        const rd = tagged.get(u.index); if (!rd) continue;
-        const row = rowOf(u.system, r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = theory.label(rd), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
+        const pt = placed.get(u.index); if (!pt) continue;
+        const rd = pt.read, rAt = pt.at === q.p.id ? -1 : per.findIndex((x) => x.p.id === pt.at), atOwn = rAt >= 0 && mineSet.has(rAt);   // 一家的：画在最下面那一位的那一行（不是数字行的 = 画在自己这一行）
+        const row = rowOf(u.system, atOwn ? rAt : r, 0), lx = P(u.x) + Q(0.1 + DIGIT_W) + TR("chord-tag", 0.1), label = theory.label(rd), w = [...label].length * fs * 0.6 + TR("chord-tag", 0.6);
         const cls = `chord-tag${rd.pinned ? " is-pinned" : ""}${rd.stale ? " is-stale" : ""}`;   // 人挑的 = 换个颜色；对不上了 = 灰 + 「?」（同五线谱）
         c.attach(row, "chordTag", () => placeBelow(row, 0.3 * jk, (y) => {
           c.prims.push({ t: "text", x: lx, y, s: label, cls, size: fs, anchor: "start" });
-          chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: u.index });
+          chordTagsOut.push({ x: lx - TR("chord-tag", 0.3), y: y - fs * 1.05, w, h: fs * 1.4, read: rd, system: row, index: u.index, ...(atOwn ? { part: q.p.id } : {}) });
         }));
       }
     }
