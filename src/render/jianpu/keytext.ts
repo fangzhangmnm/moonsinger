@@ -5,7 +5,7 @@
 import type { Prim } from "../engrave.ts";
 import { keyText } from "../../score/pitch.ts";
 import { fromDegree } from "../../score/degree.ts";
-import { DIGIT_EM, DIGIT_H, SCRIPT_K, SCRIPT_GAP, SUB_DY, ACC_GLYPH_EM, ACC_RISE, accGlyphsOfText, accRunW, headTextW } from "./glyphs.ts";
+import { DIGIT_EM, DIGIT_H, SCRIPT_K, SCRIPT_GAP, SUB_DY, ACC_GLYPH_EM, ACC_RISE, accGlyphsOfText, accRunW, headTextW, accStroke } from "./glyphs.ts";
 
 /** 写一个调要的几样：「1=」/「6=」、字母前面的升降号（♭ / ♯ 的字）、字母、右下角的八度数字（没有基准 = 空）。 */
 export interface KeyParts { pre: string; acc: string; letter: string; oct: string }
@@ -29,7 +29,7 @@ export function keyPrims(k: KeyParts, x: number, y: number, size: number, cls: s
   prims.push({ ...T, t: "text", x, y, s: k.pre, cls, size, anchor: "start" });
   if (k.acc) {   // 升降号（Bravura，同 7-P）：顶比字母顶高一点
     const gs = accGlyphsOfText(k.acc); let gx = x + L.xAcc; const top = y - DIGIT_H * f - ACC_RISE * f;
-    for (const g of gs) { prims.push({ ...T, t: "glyph", x: gx - (g.box[0] * L.accEm) / 4, y: top - (g.box[2] * L.accEm) / 4, ch: g.ch, cls: "jp-acc jp-key-acc", size: L.accEm }); gx += ((g.box[1] - g.box[0]) * L.accEm) / 4 + 0.08 * f; }
+    for (const g of gs) { const sk = accStroke(g, L.accEm, size); prims.push({ ...T, t: "glyph", x: gx - (g.box[0] * L.accEm) / 4, y: top - (g.box[2] * L.accEm) / 4, ch: g.ch, cls: "jp-acc jp-key-acc", size: L.accEm, ...(sk > 0 ? { stroke: sk } : {}) }); gx += ((g.box[1] - g.box[0]) * L.accEm) / 4 + 0.08 * f; }   // 描边补粗（7-P，同数字行的升降号）
   }
   prims.push({ ...T, t: "text", x: x + L.xLetter, y, s: k.letter, cls, size, anchor: "start" });
   if (k.oct) prims.push({ ...T, t: "text", x: x + L.xOct, y: y + SUB_DY * f, s: k.oct, cls: `${cls} jp-letter-sub jp-key-oct`, size: size * SCRIPT_K, anchor: "start" });

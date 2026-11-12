@@ -64,20 +64,30 @@ export declare const CARET_Y0: number, CARET_Y1: number;
 export declare const dotPath: (cx: number, cy: number, r: number) => string;
 /** 升降号 / 还原号的字形（7-P，user 11-12「b太细了…记得latex的上下标的处理方法」；统筹定：不用文字字体的 ♭，改用乐谱字体 Bravura 的——按谱面的粗细设计的）。
  *  码位 + 墨迹框 [左, 右, 上, 下]（字号 4 时的线间距）：抄自 src/render/glyph-box.gen.ts（数字行不许 import 那个文件，结构守卫；test/jianpu.test.ts 核着两边一样）。 */
+/** dom = 主笔画（这个字形最粗的那一笔）有多粗（字号的倍数；vendor/fonts/bravura/outlines.json 的轮廓用扫描线量的：♭ = 肚子右边那一笔、♮ ♯ = 两道斜横；
+ *  test/jianpu.test.ts 拿轮廓核着）。缩到实际字号之后不够「主字竖笔 × 0.9」就描边补（accStroke；统筹 11-12：升降号也按小字补粗那条规矩逐个字形算）。 */
 export declare const ACC_GLYPH: {
     readonly flat: {
         readonly ch: "";
         readonly box: readonly [0, 0.904, -1.756, 0.7];
+        readonly dom: 0.062;
     };
     readonly natural: {
         readonly ch: "";
         readonly box: readonly [0, 0.672, -1.364, 1.34];
+        readonly dom: 0.105;
     };
     readonly sharp: {
         readonly ch: "";
         readonly box: readonly [0, 0.996, -1.4, 1.392];
+        readonly dom: 0.09;
     };
 };
+/** 这个升降号字形在字号 em 下要描多粗的边（字号的几成）：旁边主字（字号 main）的竖笔 × 0.9 − 它自己主笔画缩到 em 之后的粗细；够了 = 0。
+ *  主字竖笔 = vendor 那款黑体「I」量的（text/style.ts STEM_REGULAR），和小字补粗同一条规矩。描边两边各长一半，所以补的就是差多少。 */
+export declare const accStroke: (g: {
+    dom: number;
+}, em: number, main: number) => number;
 /** 数字行上升降号的字号（字形的 size，数字行的单位）：照样张的大小——♭ 的高（含下伸）约等于原来文字 ♭ 的高（0.59 字号的字）。 */
 export declare const ACC_GLYPH_EM: number;
 /** 升降号的顶比它那个数字的顶高多少（样张：文字 ♭ 原来就略高出数字顶）。几个升降号之间的缝。 */

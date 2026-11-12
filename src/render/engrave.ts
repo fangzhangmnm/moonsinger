@@ -40,7 +40,7 @@ import { harmonyTheory, paperHarmony, type PlacedTag, type ChordFold } from "../
 /** tok = 这个图元属于哪个 token（id）：写字头 / 选区 / 强调色不进排版，score-view 按 data-tok 在 DOM 上开关 class（W-17 第 1 刀，2026-10-15）。 */
 export type Prim =
   | { t: "line"; x1: number; y1: number; x2: number; y2: number; w: number; cls?: string; tok?: number }
-  | { t: "glyph"; x: number; y: number; ch: string; cls?: string; size?: number /* px，默认 4 sp */; tok?: number }
+  | { t: "glyph"; x: number; y: number; ch: string; cls?: string; size?: number /* px，默认 4 sp */; tok?: number; /** 描边补粗（字号的几成；7-P：Bravura 的 ♭ 缩小了主笔画不够粗，按算出来的补；屏幕 SVG 和 PDF 同一个数）。 */ stroke?: number }
   | { t: "text"; x: number; y: number; s: string; cls?: string; size?: number /* px，默认歌词字号 */; anchor?: "start" | "middle" | "end"; tok?: number; /** 横向压窄（以 x 为中心；1 = 不压）：紧凑档的歌词 0.85（刀 2，user 11-09「可以」）。 */ sx?: number }
   | { t: "path"; d: string; cls?: string; tok?: number }
   | { t: "rect"; x: number; y: number; w: number; h: number; cls?: string; tok?: number };

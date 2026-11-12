@@ -13542,10 +13542,11 @@ var dotPath = (cx2, cy2, r10) => {
   return `M${f2(cx2 + r10)},${f2(cy2)}C${f2(cx2 + r10)},${f2(cy2 + k2)} ${f2(cx2 + k2)},${f2(cy2 + r10)} ${f2(cx2)},${f2(cy2 + r10)}C${f2(cx2 - k2)},${f2(cy2 + r10)} ${f2(cx2 - r10)},${f2(cy2 + k2)} ${f2(cx2 - r10)},${f2(cy2)}C${f2(cx2 - r10)},${f2(cy2 - k2)} ${f2(cx2 - k2)},${f2(cy2 - r10)} ${f2(cx2)},${f2(cy2 - r10)}C${f2(cx2 + k2)},${f2(cy2 - r10)} ${f2(cx2 + r10)},${f2(cy2 - k2)} ${f2(cx2 + r10)},${f2(cy2)}Z`;
 };
 var ACC_GLYPH = {
-  flat: { ch: "\uE260", box: [0, 0.904, -1.756, 0.7] },
-  natural: { ch: "\uE261", box: [0, 0.672, -1.364, 1.34] },
-  sharp: { ch: "\uE262", box: [0, 0.996, -1.4, 1.392] }
+  flat: { ch: "\uE260", box: [0, 0.904, -1.756, 0.7], dom: 0.062 },
+  natural: { ch: "\uE261", box: [0, 0.672, -1.364, 1.34], dom: 0.105 },
+  sharp: { ch: "\uE262", box: [0, 0.996, -1.4, 1.392], dom: 0.09 }
 };
+var accStroke = (g3, em2, main) => Math.max(0, SMALL_STEM_K * STEM_REGULAR * main - g3.dom * em2) / em2;
 var ACC_GLYPH_EM = 0.78 * FS;
 var ACC_RISE = 0.2;
 var ACC_SEP = 0.08;
@@ -13723,12 +13724,13 @@ function coreBottom(u2, q2, mode, aux) {
   return lettersOf(q2, u2, mode, aux) ? BASE_Y + SUB_DY * (u2.art.includes("ghost") ? GHOST_K : 1) : BASE_Y;
 }
 var UL_DROP = UL_Y0 - BASE_Y;
-function accRun(gs, em2, xr, top, cls, T3) {
+function accRun(gs, em2, xr, top, cls, T3, main) {
   const prims = [], w2 = accRunW(gs, em2), h2 = Math.max(...gs.map((g3) => (g3.box[3] - g3.box[2]) * em2 / 4));
   let x2 = xr - w2;
   for (const g3 of gs) {
     const gw = (g3.box[1] - g3.box[0]) * em2 / 4;
-    prims.push({ ...T3, t: "glyph", x: x2 - g3.box[0] * em2 / 4, y: top - g3.box[2] * em2 / 4, ch: g3.ch, cls, size: em2 });
+    const sk2 = accStroke(g3, em2, main);
+    prims.push({ ...T3, t: "glyph", x: x2 - g3.box[0] * em2 / 4, y: top - g3.box[2] * em2 / 4, ch: g3.ch, cls, size: em2, ...sk2 > 0 ? { stroke: sk2 } : {} });
     x2 += gw + ACC_SEP;
   }
   return { prims, ink: { x0: xr - w2, x1: xr, y0: top, y1: top + h2 } };
@@ -13804,7 +13806,7 @@ function noteCell(a10) {
           prims.push({ ...T3, t: "text", x: x0, y: yb, s: lp2.letter, cls, size: DIGIT_EM * gk, anchor: "start" });
           inks.push(textInk(x0, x0 + letterW(pp.step) * gk, yb - DIGIT_H * gk, yb));
           if (lp2.acc) {
-            const gs = accGlyphsOfText(lp2.acc), em2 = supAccEm(gk), r10 = accRun(gs, em2, xs + accRunW(gs, em2), yb + SUP_DY * gk - 0.75 * ss2, "jp-acc jp-letter-sup" + mute(i10), T3);
+            const gs = accGlyphsOfText(lp2.acc), em2 = supAccEm(gk), r10 = accRun(gs, em2, xs + accRunW(gs, em2), yb + SUP_DY * gk - 0.75 * ss2, "jp-acc jp-letter-sup" + mute(i10), T3, DIGIT_EM * gk);
             prims.push(...r10.prims);
             inks.push(r10.ink);
           }
@@ -13827,7 +13829,7 @@ function noteCell(a10) {
         }
         head.core(part(unionInk(inks), prims));
         if (!lt2 && accs[i10] !== null && accs[i10] !== void 0) {
-          const r10 = accRun(accGlyphs(d3.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i10), T3);
+          const r10 = accRun(accGlyphs(d3.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i10), T3, DIGIT_EM * gk);
           accPrims.push(...r10.prims);
           accInks.push(r10.ink);
         }
@@ -13922,7 +13924,8 @@ function keyPrims(k2, x2, y2, size, cls, T3) {
     let gx = x2 + L2.xAcc;
     const top = y2 - DIGIT_H * f2 - ACC_RISE * f2;
     for (const g3 of gs) {
-      prims.push({ ...T3, t: "glyph", x: gx - g3.box[0] * L2.accEm / 4, y: top - g3.box[2] * L2.accEm / 4, ch: g3.ch, cls: "jp-acc jp-key-acc", size: L2.accEm });
+      const sk2 = accStroke(g3, L2.accEm, size);
+      prims.push({ ...T3, t: "glyph", x: gx - g3.box[0] * L2.accEm / 4, y: top - g3.box[2] * L2.accEm / 4, ch: g3.ch, cls: "jp-acc jp-key-acc", size: L2.accEm, ...sk2 > 0 ? { stroke: sk2 } : {} });
       gx += (g3.box[1] - g3.box[0]) * L2.accEm / 4 + 0.08 * f2;
     }
   }
@@ -15271,7 +15274,8 @@ function primSvg(p2, fs, lfs, rx2) {
     case "line":
       return `<line${c10} x1="${n(p2.x1)}" y1="${n(p2.y1)}" x2="${n(p2.x2)}" y2="${n(p2.y2)}" stroke-width="${n(p2.w)}"/>`;
     case "glyph":
-      return `<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-family="Bravura" font-size="${p2.size ? n(p2.size) : fs}">${p2.ch}</text>`;
+      return `<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-family="Bravura" font-size="${p2.size ? n(p2.size) : fs}"${p2.stroke ? ` stroke-width="${n(p2.stroke * (p2.size ?? Number(fs)))}" stroke-linejoin="round"` : ""}>${p2.ch}</text>`;
+    // 描边补粗（7-P）：描边的颜色 = 填充色（styles.css）
     case "text":
       return `<text${c10} x="${n(p2.x)}" y="${n(p2.y)}" font-size="${p2.size ? n(p2.size) : lfs}" text-anchor="${p2.anchor ?? "middle"}"${p2.sx && p2.sx !== 1 ? ` transform="matrix(${n(p2.sx)} 0 0 1 ${n(p2.x * (1 - p2.sx))} 0)"` : ""}>${esc(p2.s)}</text>`;
     // sx = 以 x 为中心横向压窄（紧凑档的歌词）
@@ -33573,7 +33577,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-0859933c3925.mjs");
+      return pick(() => "layout-worker-98837d60edc8.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-a34d6dc28f15.mjs");
   }
@@ -55652,14 +55656,15 @@ stream
           missingMusic.add(o10.code);
           continue;
         }
-        let n10 = forms.get(o10.code);
+        const key = o10.stroke ? `${o10.code}S${Math.round(o10.stroke * 1e4)}` : o10.code;
+        let n10 = forms.get(key);
         if (n10 === void 0) {
           n10 = reserve();
-          forms.set(o10.code, n10);
+          forms.set(key, n10);
         }
-        xobj.add(o10.code);
+        xobj.add(key);
         const s10 = o10.size / em2;
-        c10 += `q ${rgb(o10.color, false)} ${num(s10)} 0 0 ${num(s10)} ${num(o10.x)} ${num(H3 - o10.y)} cm /G${o10.code} Do Q
+        c10 += `q ${rgb(o10.color, false)}${o10.stroke ? ` ${rgb(o10.color, true)}` : ""} ${num(s10)} 0 0 ${num(s10)} ${num(o10.x)} ${num(H3 - o10.y)} cm /G${key} Do Q
 `;
       } else {
         let hex = "";
@@ -55682,9 +55687,10 @@ stream
     const xo = xobj.size ? ` /XObject << ${[...xobj].map((code) => `/G${code} ${forms.get(code)} 0 R`).join(" ")} >>` : "";
     obj(pageObjs[pi], `<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${num(page.w)} ${num(page.h)}] /Resources << /Font << /F1 ${fontObj} 0 R >>${xo} >> /Contents ${content} 0 R >>`);
   });
-  for (const [code, n10] of forms) {
-    const g3 = music.glyphs[code];
-    stream(n10, `/Type /XObject /Subtype /Form /BBox [-${em2 * 2} -${em2 * 2} ${em2 * 4} ${em2 * 4}]`, enc2.encode(`${svgToPdfPath(g3.d)}f
+  for (const [key, n10] of forms) {
+    const m2 = /^([0-9A-F]+)(?:S(\d+))?$/.exec(key), g3 = music.glyphs[m2[1]], sw2 = m2[2] ? Number(m2[2]) / 1e4 * em2 : 0;
+    stream(n10, `/Type /XObject /Subtype /Form /BBox [-${em2 * 2} -${em2 * 2} ${em2 * 4} ${em2 * 4}]`, enc2.encode(sw2 ? `${num(sw2)} w 1 j ${svgToPdfPath(g3.d)}B
+` : `${svgToPdfPath(g3.d)}f
 `));
   }
   obj(pagesObj, `<< /Type /Pages /Kids [${pageObjs.map((n10) => `${n10} 0 R`).join(" ")}] /Count ${pageObjs.length} >>`);
@@ -55852,7 +55858,7 @@ function scorePdf(a10) {
         let x2 = p2.x + ox2;
         for (const ch2 of p2.ch) {
           const code = ch2.codePointAt(0).toString(16).toUpperCase().padStart(4, "0");
-          out.push({ op: "glyph", code, x: x2, y: p2.y - top, size, color: INK });
+          out.push({ op: "glyph", code, x: x2, y: p2.y - top, size, color: INK, ...p2.stroke ? { stroke: p2.stroke } : {} });
           x2 += (a10.music.glyphs[code]?.adv ?? 0) / em2 * size;
         }
         return out;
@@ -59398,7 +59404,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "5fdd82bfccd5",
+  cssHash: "be0569e0c6ad",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -63653,4 +63659,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-395b47ae77ce.mjs.map
+//# sourceMappingURL=moonsinger-111e8d9fcafd.mjs.map

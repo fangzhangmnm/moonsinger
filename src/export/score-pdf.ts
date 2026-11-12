@@ -105,7 +105,7 @@ export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; s
       case "glyph": {
         const size = p.size ?? 4 * sp, out: PdfOp[] = [];
         let x = p.x + ox;
-        for (const ch of p.ch) { const code = ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0"); out.push({ op: "glyph", code, x, y: p.y - top, size, color: INK }); x += ((a.music.glyphs[code]?.adv ?? 0) / em) * size; }
+        for (const ch of p.ch) { const code = ch.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0"); out.push({ op: "glyph", code, x, y: p.y - top, size, color: INK, ...(p.stroke ? { stroke: p.stroke } : {}) }); x += ((a.music.glyphs[code]?.adv ?? 0) / em) * size; }
         return out;
       }
       case "text": {

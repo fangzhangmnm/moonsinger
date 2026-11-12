@@ -21,7 +21,8 @@ export type Prim = {
     ch: string;
     cls?: string;
     size?: number;
-    tok?: number;
+    tok?: number; /** 描边补粗（字号的几成；7-P：Bravura 的 ♭ 缩小了主笔画不够粗，按算出来的补；屏幕 SVG 和 PDF 同一个数）。 */
+    stroke?: number;
 } | {
     t: "text";
     x: number;

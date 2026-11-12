@@ -18,7 +18,7 @@ export type PdfOp =
   | { op: "rect"; x: number; y: number; w: number; h: number; color: Rgb }
   | { op: "line"; x1: number; y1: number; x2: number; y2: number; color: Rgb; width: number; dash?: number[]; round?: boolean }
   | { op: "path"; segs: Seg[]; color: Rgb; fill: boolean; width?: number; dash?: number[]; round?: boolean }
-  | { op: "glyph"; code: string; x: number; y: number; size: number; color: Rgb }   // code = SMuFL 码位的十六进制（"E050"）；y = 基线；size = 字号（pt，一个 em）
+  | { op: "glyph"; code: string; x: number; y: number; size: number; color: Rgb; /** 描边补粗：线宽 = 字号的这么多（7-P，同屏幕 SVG）。 */ stroke?: number }   // code = SMuFL 码位的十六进制（"E050"）；y = 基线；size = 字号（pt，一个 em）
   | { op: "text"; x: number; y: number; text: string; size: number; color: Rgb; bold?: boolean; italic?: boolean; /** 横向压窄（1 = 不压）。 */ sx?: number };
 export interface PdfPage { w: number; h: number; ops: PdfOp[] }
 export interface PdfDoc { title: string; pages: PdfPage[]; producer?: string; created?: Date }
@@ -82,10 +82,11 @@ export function writePdf(doc: PdfDoc, font: TtfFont, music: MusicOutlines, opts:
       } else if (o.op === "glyph") {
         const g = music.glyphs[o.code];
         if (!g) { missingMusic.add(o.code); continue; }
-        let n = forms.get(o.code); if (n === undefined) { n = reserve(); forms.set(o.code, n); }
-        xobj.add(o.code);
+        const key = o.stroke ? `${o.code}S${Math.round(o.stroke * 10000)}` : o.code;   // 描了边的是另一个 Form（同一个字、同一个描边量共用）
+        let n = forms.get(key); if (n === undefined) { n = reserve(); forms.set(key, n); }
+        xobj.add(key);
         const s = o.size / em;
-        c += `q ${rgb(o.color, false)} ${num(s)} 0 0 ${num(s)} ${num(o.x)} ${num(H - o.y)} cm /G${o.code} Do Q\n`;
+        c += `q ${rgb(o.color, false)}${o.stroke ? ` ${rgb(o.color, true)}` : ""} ${num(s)} 0 0 ${num(s)} ${num(o.x)} ${num(H - o.y)} cm /G${key} Do Q\n`;
       } else {
         let hex = "";
         const chars = [...o.text], shaped = font.shape(o.text);
@@ -102,9 +103,9 @@ export function writePdf(doc: PdfDoc, font: TtfFont, music: MusicOutlines, opts:
     obj(pageObjs[pi]!, `<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 ${num(page.w)} ${num(page.h)}] /Resources << /Font << /F1 ${fontObj} 0 R >>${xo} >> /Contents ${content} 0 R >>`);
   });
   // 音乐字形：Form XObject（字体单位；颜色跟着摆它时的填充色走——这里不设颜色）
-  for (const [code, n] of forms) {
-    const g = music.glyphs[code]!;
-    stream(n, `/Type /XObject /Subtype /Form /BBox [-${em * 2} -${em * 2} ${em * 4} ${em * 4}]`, enc.encode(`${svgToPdfPath(g.d)}f\n`));
+  for (const [key, n] of forms) {
+    const m = /^([0-9A-F]+)(?:S(\d+))?$/.exec(key)!, g = music.glyphs[m[1]!]!, sw = m[2] ? (Number(m[2]) / 10000) * em : 0;   // 描边补粗：字体单位里的线宽，描边色 = 摆它时的描边色（同填充色）
+    stream(n, `/Type /XObject /Subtype /Form /BBox [-${em * 2} -${em * 2} ${em * 4} ${em * 4}]`, enc.encode(sw ? `${num(sw)} w 1 j ${svgToPdfPath(g.d)}B\n` : `${svgToPdfPath(g.d)}f\n`));
   }
   obj(pagesObj, `<< /Type /Pages /Kids [${pageObjs.map((n) => `${n} 0 R`).join(" ")}] /Count ${pageObjs.length} >>`);
 

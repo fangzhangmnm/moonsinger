@@ -49,7 +49,8 @@ export type PdfOp = {
     x: number;
     y: number;
     size: number;
-    color: Rgb;
+    color: Rgb; /** 描边补粗：线宽 = 字号的这么多（7-P，同屏幕 SVG）。 */
+    stroke?: number;
 } | {
     op: "text";
     x: number;

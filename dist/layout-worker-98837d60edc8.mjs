@@ -7110,10 +7110,11 @@ var dotPath = (cx, cy, r) => {
   return `M${f(cx + r)},${f(cy)}C${f(cx + r)},${f(cy + k)} ${f(cx + k)},${f(cy + r)} ${f(cx)},${f(cy + r)}C${f(cx - k)},${f(cy + r)} ${f(cx - r)},${f(cy + k)} ${f(cx - r)},${f(cy)}C${f(cx - r)},${f(cy - k)} ${f(cx - k)},${f(cy - r)} ${f(cx)},${f(cy - r)}C${f(cx + k)},${f(cy - r)} ${f(cx + r)},${f(cy - k)} ${f(cx + r)},${f(cy)}Z`;
 };
 var ACC_GLYPH = {
-  flat: { ch: "\uE260", box: [0, 0.904, -1.756, 0.7] },
-  natural: { ch: "\uE261", box: [0, 0.672, -1.364, 1.34] },
-  sharp: { ch: "\uE262", box: [0, 0.996, -1.4, 1.392] }
+  flat: { ch: "\uE260", box: [0, 0.904, -1.756, 0.7], dom: 0.062 },
+  natural: { ch: "\uE261", box: [0, 0.672, -1.364, 1.34], dom: 0.105 },
+  sharp: { ch: "\uE262", box: [0, 0.996, -1.4, 1.392], dom: 0.09 }
 };
+var accStroke = (g, em, main) => Math.max(0, SMALL_STEM_K * STEM_REGULAR * main - g.dom * em) / em;
 var ACC_GLYPH_EM = 0.78 * FS;
 var ACC_RISE = 0.2;
 var ACC_SEP = 0.08;
@@ -7290,12 +7291,13 @@ function coreBottom(u, q, mode, aux) {
   return lettersOf(q, u, mode, aux) ? BASE_Y + SUB_DY * (u.art.includes("ghost") ? GHOST_K : 1) : BASE_Y;
 }
 var UL_DROP = UL_Y0 - BASE_Y;
-function accRun(gs, em, xr, top, cls, T2) {
+function accRun(gs, em, xr, top, cls, T2, main) {
   const prims = [], w = accRunW(gs, em), h = Math.max(...gs.map((g) => (g.box[3] - g.box[2]) * em / 4));
   let x = xr - w;
   for (const g of gs) {
     const gw = (g.box[1] - g.box[0]) * em / 4;
-    prims.push({ ...T2, t: "glyph", x: x - g.box[0] * em / 4, y: top - g.box[2] * em / 4, ch: g.ch, cls, size: em });
+    const sk = accStroke(g, em, main);
+    prims.push({ ...T2, t: "glyph", x: x - g.box[0] * em / 4, y: top - g.box[2] * em / 4, ch: g.ch, cls, size: em, ...sk > 0 ? { stroke: sk } : {} });
     x += gw + ACC_SEP;
   }
   return { prims, ink: { x0: xr - w, x1: xr, y0: top, y1: top + h } };
@@ -7371,7 +7373,7 @@ function noteCell(a) {
           prims.push({ ...T2, t: "text", x: x0, y: yb, s: lp.letter, cls, size: DIGIT_EM * gk, anchor: "start" });
           inks.push(textInk(x0, x0 + letterW(pp.step) * gk, yb - DIGIT_H * gk, yb));
           if (lp.acc) {
-            const gs = accGlyphsOfText(lp.acc), em = supAccEm(gk), r = accRun(gs, em, xs + accRunW(gs, em), yb + SUP_DY * gk - 0.75 * ss, "jp-acc jp-letter-sup" + mute(i), T2);
+            const gs = accGlyphsOfText(lp.acc), em = supAccEm(gk), r = accRun(gs, em, xs + accRunW(gs, em), yb + SUP_DY * gk - 0.75 * ss, "jp-acc jp-letter-sup" + mute(i), T2, DIGIT_EM * gk);
             prims.push(...r.prims);
             inks.push(r.ink);
           }
@@ -7394,7 +7396,7 @@ function noteCell(a) {
         }
         head.core(part(unionInk(inks), prims));
         if (!lt && accs[i] !== null && accs[i] !== void 0) {
-          const r = accRun(accGlyphs(d.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i), T2);
+          const r = accRun(accGlyphs(d.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i), T2, DIGIT_EM * gk);
           accPrims.push(...r.prims);
           accInks.push(r.ink);
         }
@@ -7489,7 +7491,8 @@ function keyPrims(k, x, y, size, cls, T2) {
     let gx = x + L.xAcc;
     const top = y - DIGIT_H * f - ACC_RISE * f;
     for (const g of gs) {
-      prims.push({ ...T2, t: "glyph", x: gx - g.box[0] * L.accEm / 4, y: top - g.box[2] * L.accEm / 4, ch: g.ch, cls: "jp-acc jp-key-acc", size: L.accEm });
+      const sk = accStroke(g, L.accEm, size);
+      prims.push({ ...T2, t: "glyph", x: gx - g.box[0] * L.accEm / 4, y: top - g.box[2] * L.accEm / 4, ch: g.ch, cls: "jp-acc jp-key-acc", size: L.accEm, ...sk > 0 ? { stroke: sk } : {} });
       gx += (g.box[1] - g.box[0]) * L.accEm / 4 + 0.08 * f;
     }
   }
@@ -8800,7 +8803,8 @@ function primSvg(p, fs, lfs, rx) {
     case "line":
       return `<line${c} x1="${n(p.x1)}" y1="${n(p.y1)}" x2="${n(p.x2)}" y2="${n(p.y2)}" stroke-width="${n(p.w)}"/>`;
     case "glyph":
-      return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${p.size ? n(p.size) : fs}">${p.ch}</text>`;
+      return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${p.size ? n(p.size) : fs}"${p.stroke ? ` stroke-width="${n(p.stroke * (p.size ?? Number(fs)))}" stroke-linejoin="round"` : ""}>${p.ch}</text>`;
+    // 描边补粗（7-P）：描边的颜色 = 填充色（styles.css）
     case "text":
       return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${p.size ? n(p.size) : lfs}" text-anchor="${p.anchor ?? "middle"}"${p.sx && p.sx !== 1 ? ` transform="matrix(${n(p.sx)} 0 0 1 ${n(p.x * (1 - p.sx))} 0)"` : ""}>${esc(p.s)}</text>`;
     // sx = 以 x 为中心横向压窄（紧凑档的歌词）
@@ -8867,4 +8871,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-0859933c3925.mjs.map
+//# sourceMappingURL=layout-worker-98837d60edc8.mjs.map

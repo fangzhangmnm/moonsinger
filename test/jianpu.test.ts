@@ -474,3 +474,40 @@ describe("数字行的升降号（7-P）", async () => {
     for (const g of Object.values(G.ACC_GLYPH)) assert(JSON.stringify([...g.box]) === JSON.stringify([...B.GLYPH_BOX[g.ch]!]), `${g.ch.codePointAt(0)!.toString(16)}：${g.box} ≠ ${B.GLYPH_BOX[g.ch]}`);
   });
 });
+describe("升降号的描边补粗（7-P 补：逐个字形按主笔画算）", async () => {
+  const G = await import("../src/render/jianpu/glyphs.ts"), SV = await import("../src/render/svg.ts");
+  const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
+  const outl = JSON.parse(nodeMod("node:fs").readFileSync(new URL("../vendor/fonts/bravura/outlines.json", import.meta.url), "utf8")) as { glyphs: Record<string, { d: string }> };
+  /** 轮廓 → 折线（曲线每段切 16 份）。 */
+  const contours = (d: string): [number, number][][] => {
+    const t = d.match(/[MLHVCQZ]|-?\d+\.?\d*/g)!; const cs: [number, number][][] = []; let cur: [number, number][] = [], x = 0, y = 0, cmd = "", i = 0;
+    const n = () => Number(t[i++]);
+    while (i < t.length) {
+      if (/[MLHVCQZ]/.test(t[i]!)) cmd = t[i++]!;
+      if (cmd === "M") { if (cur.length) cs.push(cur); x = n(); y = n(); cur = [[x, y]]; cmd = "L"; }
+      else if (cmd === "L") { x = n(); y = n(); cur.push([x, y]); } else if (cmd === "H") { x = n(); cur.push([x, y]); } else if (cmd === "V") { y = n(); cur.push([x, y]); }
+      else if (cmd === "C") { const [a, b, c, e, f, g] = [n(), n(), n(), n(), n(), n()]; for (let k = 1; k <= 16; k++) { const s = k / 16, u = 1 - s; cur.push([u * u * u * x + 3 * u * u * s * a + 3 * u * s * s * c + s * s * s * f, u * u * u * y + 3 * u * u * s * b + 3 * u * s * s * e + s * s * s * g]); } x = f; y = g; }
+      else if (cmd === "Q") { const [a, b, c, e] = [n(), n(), n(), n()]; for (let k = 1; k <= 16; k++) { const s = k / 16, u = 1 - s; cur.push([u * u * x + 2 * u * s * a + s * s * c, u * u * y + 2 * u * s * b + s * s * e]); } x = c; y = e; }
+      else if (cmd === "Z") { if (cur.length) cs.push(cur); cur = []; cmd = ""; } else i++;
+    }
+    if (cur.length) cs.push(cur); return cs;
+  };
+  /** 扫描线（水平 = 竖笔有多粗；竖直 = 横 / 斜笔有多粗）：每一段墨的长度。 */
+  const runs = (cs: [number, number][][], v: number, vertical: boolean): number[] => {
+    const xs: number[] = []; for (const c of cs) c.forEach((p, k) => { const q = c[(k + 1) % c.length]!, [a0, b0] = vertical ? [p[1], p[0]] : [p[0], p[1]], [a1, b1] = vertical ? [q[1], q[0]] : [q[0], q[1]]; if ((b0 <= v && v < b1) || (b1 <= v && v < b0)) xs.push(a0 + ((v - b0) * (a1 - a0)) / (b1 - b0)); });
+    xs.sort((p, q) => p - q); const out: number[] = []; for (let k = 0; k + 1 < xs.length; k += 2) out.push(xs[k + 1]! - xs[k]!); return out;
+  };
+  const span = (cs: [number, number][][], i: 0 | 1) => { const v = cs.flat().map((p) => p[i]); return [Math.min(...v), Math.max(...v)] as const; };
+  it("主笔画（dom）= 轮廓量出来的：♭ 肚子右边最粗那一笔、♮ ♯ 两道斜横", () => {
+    const flat = contours(outl.glyphs.E260!.d), [y0, y1] = span(flat, 1);
+    const fl = Math.max(...[0.1, 0.15, 0.2, 0.25, 0.3].flatMap((f) => runs(flat, y0 + (y1 - y0) * f, false)).filter((w) => w < 80)) / 1000;
+    const beams = (code: string) => { const cs = contours(outl.glyphs[code]!.d), [x0, x1] = span(cs, 0); const w = [0.3, 0.4, 0.5, 0.6, 0.7].flatMap((f) => runs(cs, x0 + (x1 - x0) * f, true)).filter((h) => h < 130).sort((p, q) => p - q); return w[Math.floor(w.length / 2)]! / 1000; };
+    assert(Math.abs(fl - G.ACC_GLYPH.flat.dom) < 0.006, `♭ 量出来 ${fl}`); assert(Math.abs(beams("E262") - G.ACC_GLYPH.sharp.dom) < 0.012, `♯ 量出来 ${beams("E262")}`); assert(Math.abs(beams("E261") - G.ACC_GLYPH.natural.dom) < 0.012, `♮ 量出来 ${beams("E261")}`);
+  });
+  it("描多粗：主笔画缩到实际字号后差「主字竖笔 × 0.9」多少补多少——♭ 补得最多，♮ 差不多不用补；画出来的 SVG 带描边", () => {
+    const f = G.accStroke(G.ACC_GLYPH.flat, G.ACC_GLYPH_EM, G.DIGIT_EM), s = G.accStroke(G.ACC_GLYPH.sharp, G.ACC_GLYPH_EM, G.DIGIT_EM), n = G.accStroke(G.ACC_GLYPH.natural, G.ACC_GLYPH_EM, G.DIGIT_EM);
+    assert(f > s && s >= n && n < 0.005, `♭ ${f} ♯ ${s} ♮ ${n}`);
+    const svg = SV.primSvg({ t: "glyph", x: 0, y: 0, ch: "\u{E260}", size: 20, stroke: f }, "40", "15", "6");
+    assert(/stroke-width="[\d.]+"/.test(svg), svg);
+  });
+});

@@ -14,7 +14,7 @@ import { PLACE, gapOf, groupOf, type PlaceId } from "./place.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_STEP, ACC_EM, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_R, AUG_Y,
   BREATH_W, INHALE_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, LOW_DOT_UNDER, GHOST_K,
   STACC_W, STACC_H, TEN_L, TEN_W, BREATH_EM, BREATH_Y, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, DOT_GAP,
-  ACC_GLYPH_EM, ACC_RISE, ACC_SEP, accGlyphs, accGlyphsOfText, accRunW, supAccEm } from "./glyphs.ts";
+  ACC_GLYPH_EM, ACC_RISE, ACC_SEP, accGlyphs, accGlyphsOfText, accRunW, supAccEm, accStroke } from "./glyphs.ts";
 
 export interface NoteCellIn {
   u: Chunk; q: JianpuTrack; mode: JianpuMode; aux?: JianpuAux;
@@ -59,10 +59,10 @@ export function coreBottom(u: Chunk, q: JianpuTrack, mode: JianpuMode, aux?: Jia
 /** 第一条下划线离核的下沿多远（中线；样张：数字基线下 0.273 字号）。 */
 export const UL_DROP = UL_Y0 - BASE_Y;
 /** 一串升降号字形（7-P：Bravura）：右边对齐 xr、顶在 top；回图元和墨迹框。 */
-function accRun(gs: readonly { ch: string; box: readonly number[] }[], em: number, xr: number, top: number, cls: string, T: { tok?: number }): { prims: Prim[]; ink: Ink } {
+function accRun(gs: readonly { ch: string; box: readonly number[]; dom: number }[], em: number, xr: number, top: number, cls: string, T: { tok?: number }, main: number): { prims: Prim[]; ink: Ink } {
   const prims: Prim[] = [], w = accRunW(gs, em), h = Math.max(...gs.map((g) => ((g.box[3]! - g.box[2]!) * em) / 4));
   let x = xr - w;
-  for (const g of gs) { const gw = ((g.box[1]! - g.box[0]!) * em) / 4; prims.push({ ...T, t: "glyph", x: x - (g.box[0]! * em) / 4, y: top - (g.box[2]! * em) / 4, ch: g.ch, cls, size: em }); x += gw + ACC_SEP; }
+  for (const g of gs) { const gw = ((g.box[1]! - g.box[0]!) * em) / 4; const sk = accStroke(g, em, main); prims.push({ ...T, t: "glyph", x: x - (g.box[0]! * em) / 4, y: top - (g.box[2]! * em) / 4, ch: g.ch, cls, size: em, ...(sk > 0 ? { stroke: sk } : {}) }); x += gw + ACC_SEP; }   // 描边补粗（7-P）
   return { prims, ink: { x0: xr - w, x1: xr, y0: top, y1: top + h } };
 }
 
@@ -136,7 +136,7 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
           prims.push({ ...T, t: "text", x: x0, y: yb, s: lp.letter, cls, size: DIGIT_EM * gk, anchor: "start" });
           inks.push(textInk(x0, x0 + letterW(pp.step) * gk, yb - DIGIT_H * gk, yb));
           if (lp.acc) {   // 右上角的升降号（7-P：Bravura 字形，顶和原来文字 ♭ 的顶齐）
-            const gs = accGlyphsOfText(lp.acc), em = supAccEm(gk), r = accRun(gs, em, xs + accRunW(gs, em), yb + SUP_DY * gk - 0.75 * ss, "jp-acc jp-letter-sup" + mute(i), T);
+            const gs = accGlyphsOfText(lp.acc), em = supAccEm(gk), r = accRun(gs, em, xs + accRunW(gs, em), yb + SUP_DY * gk - 0.75 * ss, "jp-acc jp-letter-sup" + mute(i), T, DIGIT_EM * gk);
             prims.push(...r.prims); inks.push(r.ink);
           }
           prims.push({ ...T, t: "text", x: xs, y: yb + SUB_DY * gk, s: lp.oct, cls: "jp-digit jp-letter-sub" + mute(i), size: ss, anchor: "start" });
@@ -150,7 +150,7 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
         }
         head.core(part(unionInk(inks), prims));
         if (!lt && accs[i] !== null && accs[i] !== undefined) {   // 升降号：这个数字的左上（7-P：Bravura 字形，顶比数字顶高 ACC_RISE）；和弦里每个数字各自的，一块贴在左边、右边对齐
-          const r = accRun(accGlyphs(d.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i), T);
+          const r = accRun(accGlyphs(d.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i), T, DIGIT_EM * gk);
           accPrims.push(...r.prims); accInks.push(r.ink);
         }
         members.push({ i, yb });

@@ -10,7 +10,7 @@ export function primSvg(p: Layout["prims"][number], fs: string, lfs: string, rx:
   const c = (p.cls ? ` class="${p.cls}"` : "") + (p.tok !== undefined ? ` data-tok="${p.tok}"` : "");   // data-tok：score-view 按它开关写字头 / 选区 / 强调色的 class（W-17 第 1 刀）
   switch (p.t) {
     case "line": return `<line${c} x1="${n(p.x1)}" y1="${n(p.y1)}" x2="${n(p.x2)}" y2="${n(p.y2)}" stroke-width="${n(p.w)}"/>`;
-    case "glyph": return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${p.size ? n(p.size) : fs}">${p.ch}</text>`;
+    case "glyph": return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-family="Bravura" font-size="${p.size ? n(p.size) : fs}"${p.stroke ? ` stroke-width="${n(p.stroke * (p.size ?? Number(fs)))}" stroke-linejoin="round"` : ""}>${p.ch}</text>`;   // 描边补粗（7-P）：描边的颜色 = 填充色（styles.css）
     case "text": return `<text${c} x="${n(p.x)}" y="${n(p.y)}" font-size="${p.size ? n(p.size) : lfs}" text-anchor="${p.anchor ?? "middle"}"${p.sx && p.sx !== 1 ? ` transform="matrix(${n(p.sx)} 0 0 1 ${n(p.x * (1 - p.sx))} 0)"` : ""}>${esc(p.s)}</text>`;   // sx = 以 x 为中心横向压窄（紧凑档的歌词）
     case "path": return `<path${c} d="${p.d}"/>`;
     case "rect": return `<rect${c} x="${n(p.x)}" y="${n(p.y)}" width="${n(p.w)}" height="${n(p.h)}" rx="${rx}"/>`;
