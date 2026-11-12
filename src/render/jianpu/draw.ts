@@ -18,7 +18,7 @@ import type { LaneKind } from "../frame/lanes.ts";
 import { MARGIN } from "../frame/params.ts";
 import { caretStops } from "../frame/carets.ts";
 import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
-import type { Chunk } from "../staff/units.ts";
+import type { Chunk } from "../frame/units.ts";
 import { type JianpuTrack, extraGlyphs, hasAugDot, underlines, midTextW } from "./measure.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_DX, AUG_R,
   BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, dotPath, accText } from "./glyphs.ts";

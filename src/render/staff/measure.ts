@@ -13,7 +13,8 @@ import { SLOT, type ColumnKind } from "../frame/columns.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
 import { TOP_LINE, MID_LINE } from "./glyphs.ts";
-import { timeWidth, type Unit, type Chunk, type Head } from "./units.ts";
+import { timeWidth } from "./units.ts";
+import type { Unit, Chunk, Head } from "../frame/units.ts";
 import { MELISMA_MARK } from "../../score/lyrics.ts";
 
 /** 一条要排的五线谱轨（一个声部在这张纸上；合租叠出来的虚拟轨、声部 2、双手谱下面那张也各是一条）。 */

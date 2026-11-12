@@ -127,7 +127,7 @@ const importsOf = (src: string) => [...src.matchAll(/^\s*import\s[^;]*?from\s*"(
 const code = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "").replace(/"(?:\\.|[^"\\])*"|`(?:\\.|[^`\\])*`/g, '""');
 const NO_UI = /(^|\/)(keyboard|ui|app)\//;
 describe("谱面排版：结构和语言", () => {
-  it("结构（守卫 1 这一半）：框架（frame/、engrave.ts）不认字形和纵向、只经过谱种的表（notations.ts）拿画法；表只从两种画法的入口（staff/index.ts、jianpu/index.ts）拿；两种画法互不知道（数字行只借五线谱排版单元的类型，过渡）；框架和画法都不碰键盘 / 界面 / app；排版不读界面语言（只用 _tIn）", () => {
+  it("结构（守卫 1 这一半）：框架（frame/、engrave.ts）不认字形和纵向、只经过谱种的表（notations.ts）拿画法；表只从两种画法的入口（staff/index.ts、jianpu/index.ts）拿；两种画法互不知道（排版单元的时间那一半在框架，第五刀 5-1）；框架和画法都不碰键盘 / 界面 / app；排版不读界面语言（只用 _tIn）", () => {
     const frame = fs.readdirSync(new URL("frame/", RENDER)).filter((f) => f.endsWith(".ts")).map((f) => `frame/${f}`);
     for (const f of frame) for (const p of importsOf(read(f))) assert(!/staff\/|jianpu\/|notations|smufl|stems|glyph-box|score\/clef/.test(p) && !NO_UI.test(p), `${f} import 了 ${p}`);
     for (const p of importsOf(read("engrave.ts"))) assert(!/staff\/|jianpu\/|smufl|stems|glyph-box|score\/clef/.test(p) && !NO_UI.test(p), `engrave.ts import 了 ${p}（画法只经过谱种的表 notations.ts）`);
@@ -137,7 +137,7 @@ describe("谱面排版：结构和语言", () => {
     for (const f of jp) for (const m of read(`jianpu/${f}`).matchAll(/^\s*import\s(type\s)?[^;]*?from\s*"([^"]+)"/gm)) {
       const p = m[2]!;
       assert(!NO_UI.test(p) && !/smufl|stems|glyph-box|score\/clef/.test(p), `jianpu/${f} import 了 ${p}`);
-      if (p.includes("staff/")) assert(!!m[1] && p === "../staff/units.ts", `jianpu/${f} import 了五线谱的 ${p}（只许 import type 排版单元，过渡：时间那一半挪进框架之前）`);
+      assert(!p.includes("staff/"), `jianpu/${f} import 了五线谱的 ${p}（两种画法互不知道；排版单元在框架 frame/units.ts，第五刀 5-1）`);
     }
     for (const f of ["engrave.ts", ...frame]) { const c = code(read(f)); for (const w of ["TOP_LINE", "MID_LINE", "BOTTOM_LINE", "GLYPH", "ENGRAVE", "notehead", "ledger", "CLEF_", "PERC_"]) assert(!c.includes(w), `${f} 里有 ${w}`); }
     for (const f of fs.readdirSync(new URL("staff/", RENDER)).filter((x) => x.endsWith(".ts"))) for (const p of importsOf(read(`staff/${f}`))) assert(!NO_UI.test(p), `staff/${f} import 了 ${p}`);

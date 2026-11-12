@@ -10,7 +10,7 @@ import { GLYPH } from "../smufl.ts";
 import { MARGIN } from "../frame/params.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import type { Prim, EngraveOpts, DynHit, MarkHit } from "../engrave.ts";
-import type { Unit, Chunk, DynU, NavU } from "../staff/units.ts";
+import type { Unit, Chunk, DynU, NavU } from "../frame/units.ts";
 import { dynDepiction } from "../signs.ts";
 import { GLYPH_BOX } from "../glyph-box.gen.ts";
 

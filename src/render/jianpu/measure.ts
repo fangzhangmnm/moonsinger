@@ -1,6 +1,6 @@
 // measure.ts —— 简谱数字行的「量」：一条轨 → 列条目（每个排版单元往左 / 往右占多宽、管多长）+ 行首多宽 + 歌词锚点。
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-2）。和五线谱同一个形状（staff/measure.ts），纯函数、只看这一条轨。
-//   时间那一半（切小节、拆成能记的时值、第几拍、连音比例）和五线谱共用一份排版单元（staff/units.ts，过渡：第四刀里只借类型，单元本身由框架交来；挪进框架 = 记在施工单第五节）。
+//   时间那一半（切小节、拆成能记的时值、第几拍、连音比例）= 框架的排版单元（src/render/frame/units.ts；第五刀 5-1 从五线谱那边搬过去，这里不再借五线谱的东西）。
 import { TPQ } from "../../score/song.ts";
 import type { Token } from "../../score/song.ts";
 import { MELISMA_MARK } from "../../score/lyrics.ts";
@@ -8,7 +8,7 @@ import type { SpItem } from "../spacing.ts";
 import { SLOT, type ColumnKind } from "../frame/columns.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
-import type { Unit, Chunk, Head } from "../staff/units.ts";
+import type { Unit, Chunk, Head } from "../frame/units.ts";
 import { DIGIT_W, ACC_W, DASH_PITCH, AUG_DX, AUG_R, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH, BREATH_W, INHALE_W } from "./glyphs.ts";
 
 /** 一条要排的简谱轨（一个声部在这张纸上；框架交来的单元已经切好了时值）。 */

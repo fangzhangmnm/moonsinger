@@ -5007,6 +5007,217 @@ function mergeTracks(tracks, opt = {}) {
   return out;
 }
 
+// src/render/frame/units.ts
+var MIN_PLAIN = TPQ / 8;
+var NOTATABLE = [];
+for (let b = WHOLE; b >= MIN_PLAIN; b /= 2) {
+  NOTATABLE.push({ ticks: b * 1.5, base: b, dotted: true }, { ticks: b, base: b, dotted: false });
+}
+NOTATABLE.sort((a, b) => b.ticks - a.ticks);
+function splitDur(dur) {
+  const out = [];
+  let left = dur;
+  while (left > 0) {
+    const n2 = NOTATABLE.find((v) => v.ticks <= left && (v.dotted ? v.base >= MIN_PLAIN * 2 : true));
+    if (!n2) {
+      out.push({ base: MIN_PLAIN, dotted: false, ticks: left });
+      break;
+    }
+    out.push(n2);
+    left -= n2.ticks;
+  }
+  return out;
+}
+var RATIOS = [[3, 2], [5, 4], [6, 4], [7, 4]];
+function notate(dur) {
+  if (dur % MIN_PLAIN === 0) return { ratio: null, chunks: splitDur(dur) };
+  for (const [n2, m] of RATIOS) {
+    const written = dur * n2 / m;
+    if (Number.isInteger(written) && written % MIN_PLAIN === 0) return { ratio: [n2, m], chunks: splitDur(written).map((c) => ({ ...c, ticks: c.ticks * m / n2 })) };
+  }
+  return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
+}
+function unitsOf(tokens, o) {
+  const W2 = o.widths;
+  const H = headLen(tokens);
+  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, minor = false, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
+  const headIdx = {};
+  for (let i = 0; i < H; i++) {
+    const t = tokens[i];
+    if (t.kind === "key") {
+      fifths = t.fifths;
+      real = realFifthsOf(t);
+      minor = t.mode === "minor";
+    } else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType };
+    else if (t.kind === "tempo") bpm = t.bpm;
+    if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") headIdx[t.kind] = i;
+  }
+  const head = { key: fifths, real, minor, time, bpm, idx: headIdx };
+  const units = [], measureLen = (b, bt) => b * WHOLE / bt;
+  let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0, pickup = false;
+  let beat = beatTicks(time.beats, time.beatType), len = measureLen(time.beats, time.beatType);
+  const pushHead = () => {
+    units.push({ kind: "head", index: -1, w: 0, x: 0, system: 0, tick, staff: 1 });
+  };
+  const pushBar = (index, auto) => {
+    const rb = index >= 0 ? tokens[index] : null, repeat = rb?.repeat;
+    const warn = inBar !== len && measureNo > 0 && !(repeat === "start" && inBar === 0);
+    if (warn) shortBars++;
+    const style = !repeat ? rb?.style : void 0;
+    units.push({ kind: "bar", index, w: W2.bar(repeat, style), x: 0, system: 0, tick, staff: 1, warn, auto, ...repeat ? { repeat, ...rb?.times ? { times: rb.times } : {} } : {}, ...style ? { style } : {} });
+    const empty = inBar === 0;
+    if (measureNo === 0 && inBar > 0 && inBar < len) pickup = true;
+    accState = /* @__PURE__ */ new Map();
+    inBar = 0;
+    if (!(repeat === "start" && empty)) measureNo++;
+  };
+  const flushFull = () => {
+    if (o.autoBars && inBar >= len && inBar > 0) pushBar(-1, true);
+  };
+  tokens.forEach((t, i) => {
+    if (i < H) return;
+    if (t.kind === "bar") {
+      pushBar(i, false);
+      return;
+    }
+    if (t.kind === "key") {
+      flushFull();
+      const rf = realFifthsOf(t), inC = rf !== t.fifths || "realFifths" in t;
+      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: W2.key(t.fifths, fifths, inC, o.ts ?? 1), x: 0, system: 0, tick, staff: 1, real: rf, minor: t.mode === "minor" });
+      fifths = t.fifths;
+      accState = /* @__PURE__ */ new Map();
+      return;
+    }
+    if (t.kind === "time") {
+      if (o.autoBars && inBar > 0) pushBar(-1, true);
+      units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: W2.time(t.beats, t.beatType), x: 0, system: 0, tick, staff: 1 });
+      beat = beatTicks(t.beats, t.beatType);
+      len = measureLen(t.beats, t.beatType);
+      return;
+    }
+    if (t.kind === "tempo") {
+      flushFull();
+      units.push({ kind: "tempo", index: i, bpm: t.bpm, w: W2.tempo, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
+    if (t.kind === "dyn") {
+      flushFull();
+      units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
+    if (t.kind === "hairpin") {
+      flushFull();
+      units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
+    if (t.kind === "groove") {
+      flushFull();
+      units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
+    if (t.kind === "clef") {
+      if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return;
+      flushFull();
+      units.push({ kind: "clef", index: i, clef: t.clef, w: W2.clef, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
+    if (t.kind === "ottava") {
+      flushFull();
+      units.push({ kind: "ottava", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
+      return;
+    }
+    if (t.kind === "nav") {
+      const head2 = t.what === "ending" || t.what === "segno" || t.what === "coda";
+      if (head2) flushFull();
+      units.push({ kind: "nav", index: i, w: 0, x: 0, system: 0, tick, staff: 1, slot: head2 ? 0.5 : -0.5 });
+      return;
+    }
+    const isNote = t.kind === "note", nt = t;
+    const pitch = isNote ? effectivePitch(tokens, i) : null;
+    const pitches = isNote ? nt.pitch ? allPitches(nt) : [pitch] : [];
+    let left = t.dur, j = 0, lastChunk = null;
+    while (left > 1e-6) {
+      flushFull();
+      const piece = o.autoBars ? Math.min(left, len - inBar) : left;
+      const { ratio, chunks } = notate(piece);
+      const mrest = !isNote && inBar < 1e-6 && Math.abs(piece - len) < 1e-6;
+      let off = 0;
+      for (const c of chunks) {
+        const accs = pitches.map((pp) => {
+          if (j !== 0 || isNote && nt.tie) return null;
+          const key = `${pp.step}${pp.octave}`, cur = accState.has(key) ? accState.get(key) : keyAlter(pp.step, fifths);
+          if (pp.alter !== cur) {
+            accState.set(key, pp.alter);
+            return pp.alter;
+          }
+          return null;
+        });
+        const acc = accs[0] ?? null;
+        const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
+        const accW = W2.acc(accs.some((a) => a !== null));
+        let w = W2.chunk(accW, c.base, c.dotted);
+        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? lyricWidth(o.measure, lyricShow(lyric), o.sp, o.ts ?? 1) : void 0;
+        if (lyW !== void 0) w = Math.max(w, W2.lyric(accW, lyW, !!nt.hyph));
+        const u = {
+          kind: "chunk",
+          index: i,
+          j,
+          last: false,
+          m: measureNo,
+          base: c.base,
+          dotted: c.dotted,
+          note: isNote,
+          ratio,
+          ticks: c.ticks,
+          pitch,
+          ghost: isNote && nt.pitch === null,
+          tie: isNote && !!nt.tie && j === 0,
+          lyric,
+          hyph: !!(isNote && nt.hyph && j === 0),
+          inBar: inBar + off,
+          beat,
+          acc,
+          w,
+          accW,
+          x: 0,
+          system: 0,
+          tick: tick + off,
+          staff: 1,
+          pitches,
+          accs,
+          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [],
+          breath: false,
+          ...isNote && nt.art?.includes("whisper") ? { whisper: true } : {},
+          ...lyW !== void 0 ? { lyW } : {},
+          ...mrest ? { mrest: off < 1e-6 ? "draw" : "skip" } : {},
+          ...o.padFrom !== void 0 && i >= o.padFrom ? { pad: true } : {}
+        };
+        units.push(u);
+        lastChunk = u;
+        off += c.ticks;
+        j++;
+      }
+      inBar += piece;
+      left -= piece;
+      tick += piece;
+    }
+    if (lastChunk) {
+      lastChunk.last = true;
+      if (isNote && nt.art?.includes("breath")) {
+        lastChunk.breath = true;
+        lastChunk.w += W2.breath;
+        if (nt.inhale) {
+          lastChunk.inhale = nt.inhale;
+          lastChunk.w += W2.inhale[nt.inhale];
+        }
+      }
+    }
+  });
+  flushFull();
+  if (o.tail) pushHead();
+  return { units, head, shortBars, pickup };
+}
+
 // src/render/smufl.ts
 var GLYPH = {
   metNoteQuarterUp: "\uECA5",
@@ -5110,35 +5321,6 @@ var FLAG_ANCHOR_DOWN = { 1: 0.132, 2: 0.128, 3: -0.448 };
 var FLAG_W = { up: [1.056, 1.116, 1.044], down: [1.224, 1.164, 1.092] };
 
 // src/render/staff/notation.ts
-var MIN_PLAIN = TPQ / 8;
-var NOTATABLE = [];
-for (let b = WHOLE; b >= MIN_PLAIN; b /= 2) {
-  NOTATABLE.push({ ticks: b * 1.5, base: b, dotted: true }, { ticks: b, base: b, dotted: false });
-}
-NOTATABLE.sort((a, b) => b.ticks - a.ticks);
-function splitDur(dur) {
-  const out = [];
-  let left = dur;
-  while (left > 0) {
-    const n2 = NOTATABLE.find((v) => v.ticks <= left && (v.dotted ? v.base >= MIN_PLAIN * 2 : true));
-    if (!n2) {
-      out.push({ base: MIN_PLAIN, dotted: false, ticks: left });
-      break;
-    }
-    out.push(n2);
-    left -= n2.ticks;
-  }
-  return out;
-}
-var RATIOS = [[3, 2], [5, 4], [6, 4], [7, 4]];
-function notate(dur) {
-  if (dur % MIN_PLAIN === 0) return { ratio: null, chunks: splitDur(dur) };
-  for (const [n2, m] of RATIOS) {
-    const written = dur * n2 / m;
-    if (Number.isInteger(written) && written % MIN_PLAIN === 0) return { ratio: [n2, m], chunks: splitDur(written).map((c) => ({ ...c, ticks: c.ticks * m / n2 })) };
-  }
-  return { ratio: null, chunks: [{ base: MIN_PLAIN, dotted: false, ticks: dur }] };
-}
 var baseWidth = (base) => Math.max(2.2, 3.6 + 0.75 * Math.log2(base / TPQ));
 
 // src/render/staff/units.ts
@@ -5148,185 +5330,21 @@ var CLEF_GLYPH = { G: GLYPH.gClef, G8vb: GLYPH.gClef8vb, G8va: GLYPH.gClef8va, G
 var KEY_LABEL_W = 3.5;
 var keyWidth = (fifths, prev) => (fifths === 0 ? Math.abs(prev) * 0.8 : Math.abs(fifths) * 1.05) + 1;
 var timeWidth = (beats, beatType) => Math.max([...String(beats)].length, [...String(beatType)].length) * W.timeSigDigit;
-function unitsOf(tokens, o) {
-  const H = headLen(tokens);
-  let fifths = DEFAULT_KEY, real = DEFAULT_KEY, minor = false, time = { ...DEFAULT_TIME }, bpm = DEFAULT_BPM;
-  const headIdx = {};
-  for (let i = 0; i < H; i++) {
-    const t = tokens[i];
-    if (t.kind === "key") {
-      fifths = t.fifths;
-      real = realFifthsOf(t);
-      minor = t.mode === "minor";
-    } else if (t.kind === "time") time = { beats: t.beats, beatType: t.beatType };
-    else if (t.kind === "tempo") bpm = t.bpm;
-    if (t.kind === "key" || t.kind === "time" || t.kind === "tempo") headIdx[t.kind] = i;
-  }
-  const head = { key: fifths, real, minor, time, bpm, idx: headIdx };
-  const units = [], measureLen = (b, bt) => b * WHOLE / bt;
-  let accState = /* @__PURE__ */ new Map(), inBar = 0, measureNo = 0, shortBars = 0, tick = 0, pickup = false;
-  let beat = beatTicks(time.beats, time.beatType), len = measureLen(time.beats, time.beatType);
-  const pushHead = () => {
-    units.push({ kind: "head", index: -1, w: 0, x: 0, system: 0, tick, staff: 1 });
-  };
-  const pushBar = (index, auto) => {
-    const rb = index >= 0 ? tokens[index] : null, repeat = rb?.repeat;
-    const warn = inBar !== len && measureNo > 0 && !(repeat === "start" && inBar === 0);
-    if (warn) shortBars++;
-    const style = !repeat ? rb?.style : void 0;
-    units.push({ kind: "bar", index, w: repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : style ? BAR_W + 0.7 : BAR_W, x: 0, system: 0, tick, staff: 1, warn, auto, ...repeat ? { repeat, ...rb?.times ? { times: rb.times } : {} } : {}, ...style ? { style } : {} });
-    const empty = inBar === 0;
-    if (measureNo === 0 && inBar > 0 && inBar < len) pickup = true;
-    accState = /* @__PURE__ */ new Map();
-    inBar = 0;
-    if (!(repeat === "start" && empty)) measureNo++;
-  };
-  const flushFull = () => {
-    if (o.autoBars && inBar >= len && inBar > 0) pushBar(-1, true);
-  };
-  tokens.forEach((t, i) => {
-    if (i < H) return;
-    if (t.kind === "bar") {
-      pushBar(i, false);
-      return;
-    }
-    if (t.kind === "key") {
-      flushFull();
-      const rf = realFifthsOf(t), inC = rf !== t.fifths || "realFifths" in t;
-      units.push({ kind: "key", index: i, fifths: t.fifths, prev: fifths, w: inC ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? o.ts ?? 1 : 1), keyWidth(t.fifths, fifths)) : keyWidth(t.fifths, fifths), x: 0, system: 0, tick, staff: 1, real: rf, minor: t.mode === "minor" });
-      fifths = t.fifths;
-      accState = /* @__PURE__ */ new Map();
-      return;
-    }
-    if (t.kind === "time") {
-      if (o.autoBars && inBar > 0) pushBar(-1, true);
-      units.push({ kind: "time", index: i, beats: t.beats, beatType: t.beatType, w: timeWidth(t.beats, t.beatType) + 1.2, x: 0, system: 0, tick, staff: 1 });
-      beat = beatTicks(t.beats, t.beatType);
-      len = measureLen(t.beats, t.beatType);
-      return;
-    }
-    if (t.kind === "tempo") {
-      flushFull();
-      units.push({ kind: "tempo", index: i, bpm: t.bpm, w: 0.3, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "dyn") {
-      flushFull();
-      units.push({ kind: "dyn", index: i, value: t.value, w: 0, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "hairpin") {
-      flushFull();
-      units.push({ kind: "hairpin", index: i, dir: t.dir, w: 0, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "groove") {
-      flushFull();
-      units.push({ kind: "groove", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "clef") {
-      if (i < H || tokens.slice(H, i).every((x) => x.kind === "clef")) return;
-      flushFull();
-      units.push({ kind: "clef", index: i, clef: t.clef, w: CLEF_CUE_W, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "ottava") {
-      flushFull();
-      units.push({ kind: "ottava", index: i, w: 0, x: 0, system: 0, tick, staff: 1 });
-      return;
-    }
-    if (t.kind === "nav") {
-      const head2 = t.what === "ending" || t.what === "segno" || t.what === "coda";
-      if (head2) flushFull();
-      units.push({ kind: "nav", index: i, w: 0, x: 0, system: 0, tick, staff: 1, slot: head2 ? 0.5 : -0.5 });
-      return;
-    }
-    const isNote = t.kind === "note", nt = t;
-    const pitch = isNote ? effectivePitch(tokens, i) : null;
-    const pitches = isNote ? nt.pitch ? allPitches(nt) : [pitch] : [];
-    let left = t.dur, j = 0, lastChunk = null;
-    while (left > 1e-6) {
-      flushFull();
-      const piece = o.autoBars ? Math.min(left, len - inBar) : left;
-      const { ratio, chunks } = notate(piece);
-      const mrest = !isNote && inBar < 1e-6 && Math.abs(piece - len) < 1e-6;
-      let off = 0;
-      for (const c of chunks) {
-        const accs = pitches.map((pp) => {
-          if (j !== 0 || isNote && nt.tie) return null;
-          const key = `${pp.step}${pp.octave}`, cur = accState.has(key) ? accState.get(key) : keyAlter(pp.step, fifths);
-          if (pp.alter !== cur) {
-            accState.set(key, pp.alter);
-            return pp.alter;
-          }
-          return null;
-        });
-        const acc = accs[0] ?? null;
-        const lyric = isNote && j === 0 && !nt.tie ? nt.lyric : null;
-        const accW = accs.some((a) => a !== null) ? 1.3 : 0;
-        let w = accW + baseWidth(c.base) + (c.dotted ? 0.6 : 0);
-        const lyW = lyric && lyric !== MELISMA_MARK && !o.rhythm ? lyricWidth(o.measure, lyricShow(lyric), o.sp, o.ts ?? 1) : void 0;
-        if (lyW !== void 0) w = Math.max(w, accW + lyW + (nt.hyph ? 1.4 : 0.7));
-        const u = {
-          kind: "chunk",
-          index: i,
-          j,
-          last: false,
-          m: measureNo,
-          base: c.base,
-          dotted: c.dotted,
-          note: isNote,
-          ratio,
-          ticks: c.ticks,
-          pitch,
-          ghost: isNote && nt.pitch === null,
-          tie: isNote && !!nt.tie && j === 0,
-          lyric,
-          hyph: !!(isNote && nt.hyph && j === 0),
-          inBar: inBar + off,
-          beat,
-          acc,
-          w,
-          accW,
-          x: 0,
-          system: 0,
-          tick: tick + off,
-          staff: 1,
-          pitches,
-          accs,
-          art: isNote && j === 0 ? (nt.art ?? []).filter((a) => a !== "breath") : [],
-          breath: false,
-          ...isNote && nt.art?.includes("whisper") ? { whisper: true } : {},
-          ...lyW !== void 0 ? { lyW } : {},
-          ...mrest ? { mrest: off < 1e-6 ? "draw" : "skip" } : {},
-          ...o.padFrom !== void 0 && i >= o.padFrom ? { pad: true } : {}
-        };
-        units.push(u);
-        lastChunk = u;
-        off += c.ticks;
-        j++;
-      }
-      inBar += piece;
-      left -= piece;
-      tick += piece;
-    }
-    if (lastChunk) {
-      lastChunk.last = true;
-      if (isNote && nt.art?.includes("breath")) {
-        lastChunk.breath = true;
-        lastChunk.w += 0.8;
-        if (nt.inhale) {
-          lastChunk.inhale = nt.inhale;
-          lastChunk.w += nt.inhale === "big" ? 2.1 : 1.2;
-        }
-      }
-    }
-  });
-  flushFull();
-  if (o.tail) pushHead();
-  return { units, head, shortBars, pickup };
-}
+var STAFF_WIDTHS = {
+  // 反复小节线：字形宽 1.47（:|: 2.43）+ 两边留一点（Bravura repeatLeft / repeatRight / repeatRightLeft）；段落线 / 终止线（v0.9.32）比一根小节线宽一点
+  bar: (repeat, style) => repeat ? (repeat === "both" ? 2.43 : 1.47) + 0.8 : style ? BAR_W + 0.7 : BAR_W,
+  // 按 C 调看：这一处要写「1=X」，给字留宽（KEY_LABEL_W）
+  key: (fifths, prev, inCLabel, ts) => inCLabel ? Math.max(KEY_LABEL_W * (TEXT_STYLES["key-label"].ruler === "text" ? ts : 1), keyWidth(fifths, prev)) : keyWidth(fifths, prev),
+  time: (beats, beatType) => timeWidth(beats, beatType) + 1.2,
+  tempo: 0.3,
+  clef: CLEF_CUE_W,
+  acc: (any) => any ? 1.3 : 0,
+  chunk: (accW, base, dotted) => accW + baseWidth(base) + (dotted ? 0.6 : 0),
+  lyric: (accW, lyW, hyph) => accW + lyW + (hyph ? 1.4 : 0.7),
+  breath: 0.8,
+  inhale: { soft: 1.2, big: 2.1 }
+  // 呼吸逗号画在这个音后面：留一点地方；出声的换气：逗号后面的字也留地方
+};
 
 // src/render/staff/rows.ts
 function staffRows(paper, visible, fold, lookAt) {
@@ -5413,7 +5431,7 @@ function staffTracks(rows, c) {
     const gap = c.paperLen - c.lens[pi];
     const padT = (dur, id) => ({ kind: "rest", id, dur });
     const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;
-    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length });
+    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS });
     shortBars += u.shortBars;
     if (staves === 2) {
       const stf = staffOfTokens(tokens, 2);
@@ -7851,4 +7869,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-869ba8681543.mjs.map
+//# sourceMappingURL=layout-worker-ac786a9d3812.mjs.map

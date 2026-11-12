@@ -12,7 +12,8 @@ import { mergeTracks, planHands, type MergeOpts } from "../../score/merge.ts";
 import type { TextMeasure } from "../text/index.ts";
 import type { SongView } from "../../score/song-view.ts";
 import type { PartView } from "../engrave.ts";
-import { unitsOf } from "./units.ts";
+import { unitsOf } from "../frame/units.ts";
+import { STAFF_WIDTHS } from "./units.ts";
 import type { StaffTrack } from "./measure.ts";
 
 /** 框架交来的一家：这张纸上看得见的两位以上（按歌里的顺序，主人在前）、这次可以叠。host = 这一家的主人 id（不一定在这张纸上）。 */
@@ -107,7 +108,7 @@ export function staffTracks(rows: StaffRows, c: StaffTracksCtx): { per: StaffTra
     const gap = c.paperLen - c.lens[pi]!;
     const padT = (dur: number, id: number): Token => ({ kind: "rest", id, dur }) as Token;
     const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;   // 补齐的一段 = 一个长休止（按小节切开画；光标在里面的位置 = 落点 Slot.lead，不进排版）
-    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length });
+    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length, widths: STAFF_WIDTHS });
     shortBars += u.shortBars;
     if (staves === 2) {   // 大谱表：每个音在上还是下（按音高自动 / 手动指定）；光标跟着前一个音
       const stf = staffOfTokens(tokens, 2); let last: Staff = 1;

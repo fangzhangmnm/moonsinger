@@ -16,7 +16,8 @@ import { baseClef } from "../../score/clef.ts";
 import { MARGIN } from "../frame/params.ts";
 import { TOP_LINE, MID_LINE, BOTTOM_LINE, ART_GLYPH, GLYPH_BREATH, SHARP_POS, FLAT_POS, GLYPH_TUPLET } from "./glyphs.ts";
 import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, type OrnCtx } from "../ornaments/index.ts";   // 两种行共用的挂件（第四刀 4-3）
-import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W, type Unit, type Chunk } from "./units.ts";
+import { CLEF_CUE, CLEF_GLYPH, KEY_LABEL_W } from "./units.ts";
+import type { Unit, Chunk } from "../frame/units.ts";
 import { stemInput, posD, shAt, percAt, clefW } from "./measure.ts";
 import type { Prim, EngraveOpts, Layout, HitNote, RestHit, LyricHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox } from "../engrave.ts";
 import type { StaffTrack } from "./measure.ts";
