@@ -198,7 +198,6 @@ export interface LyricHit {
 /** 记号（调号 / 拍号 / 速度）的点击区域（px）：点了就地改。谱头的调号 = 谱号 + 调号那一块（C 大调没有升降号也点得到）。 */
 export type PartToggle = "muted" | "solo" | "hidden" | "only";
 export type PartToggles = Record<PartToggle, boolean>;
-/** 名字那一栏至少多宽（sp）：屏幕上覆盖层在名字上面放两颗 3.0 的大钮（src/ui/score-overlay.ts TG_BTN）；PDF 照样这么宽 = 预览的版面 = PDF（屏幕和 PDF 同一条规矩；刀 1 起这只是一个几何常数，排版器不画钮）。 */
 export interface MarkHit {
     index: number;
     kind: "key" | "time" | "tempo";

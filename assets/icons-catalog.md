@@ -1,6 +1,6 @@
 # 本 app 的图标
 
-80 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
+81 icons · 提取自家族图标库 `../20260708 SVG Icons/icons.svg` · 由 `extract-icons.py` 生成，别手改。
 
 用法：把 sprite 整段内联到 `<body>` 顶部，然后按 id 引用；
 ⚠ sprite 根自带的隐藏样式（1×1 + `opacity:0`）别换成 `display:none`——
@@ -12,7 +12,7 @@
 <svg width="24" height="24"><use href="#pencil"/></svg>
 ```
 
-> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`unplugged`、`visibility-only`、`volume-mute`、`volume-solo`、`keyboard-collapse`、`mixer-collapse`、`jianpu-staff`、`album`、`music-library`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
+> 👁 **待过目**（AI 自画、未经人类审阅，`data-review="pending"`）：`play-from-start`、`music-note`、`headphones`、`piano-keys`、`note-stack`、`notes-symbols`、`lyrics-bubble`、`unplugged`、`visibility-only`、`volume-mute`、`volume-solo`、`keyboard-collapse`、`mixer-collapse`、`jianpu-staff`、`instrument-swap`、`album`、`music-library`、`caret-up`、`caret-down`、`chevron-left`、`chevron-right`、`forward`、`one-to-one`、`backspace`、`settings`
 > 见库 `index.html` 的「待过目」栏；过目后进库/打回归库 session。
 
 
@@ -69,6 +69,7 @@
 | `keyboard-collapse` 👁待过目 | 收起键盘:琴键(同 piano-keys,压扁到上面)+ 底下一个实心向下三角；与 mixer-collapse 成一对【MoonSinger 小键盘顶上最右边「收起」钮（取代下箭头；user 11-08「不要用一个简单的下箭头，而是说一个键盘的图标下面加一个实心的向下的三角形」）；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
 | `mixer-collapse` 👁待过目 | 收起混音台:推子(同 sliders,压扁到上面)+ 底下一个实心向下三角；与 keyboard-collapse 成一对【MoonSinger 混音台顶上最右边「收起」钮；Claude Opus 5.5 画（无头浏览器渲过 20 / 32 / 96 px 亮底暗底）；user 11-08 看过渲染图说「没问题」，未正式过目入库】 |
 | `jianpu-staff` 👁待过目 | 谱种(五线谱 / 简谱):左上一个粗体数字「1」(DejaVu Sans Bold 轮廓) + 右下八分音符 + 中间一道斜线 = 「简谱 / 五线谱」;和 notes-symbols(左上 f)同一个排法【MoonSinger 纸右上角「页面设置」钮（开纸的设置面板，第一行选谱种：五线谱 / 简谱）；形状 = user 2026-11-11 夜的主意「一条斜杠，左上角 1，右下角音符」「一看就知道这个是切换五线谱和简谱的地方」；user 开特例让施工会话直接画进待过目层（只这一枚）；Claude Opus 5.5（MoonSinger小弟）画，无头浏览器渲过 20 / 24 / 32 / 96 px 亮底暗底；未过目】 |
+| `instrument-swap` 👁待过目 | 换乐器:左上一把吉他(两个实心圆叠成的琴身 + 斜琴颈 + 粗一点的琴头)、右下一面小鼓(上沿椭圆 + 矮圆筒 + 鼓身上一道锯齿绳)，另外两个角各一段带箭头的弧、顺时针转 = 两件乐器互换；构图同「A / 文」那种切换图标；与 piano-keys(琴键 = 弹着玩)、sliders(推子 = 乐器设置)分工【MoonSinger 点声部名弹出的小卡上「换乐器」钮（进乐器目录）；形状 = user 2026-11-12「换乐器需要画不同的乐器然后用旋转双箭头，类似A文」，统筹补的细则 = 吉他 + 鼓、吉他左上鼓右下、两段弧顺时针；user 同日「画图标opus其实good enough」= 开特例让施工会话直接画进待过目层（只这一枚）；Claude Opus 5.5（MoonSinger小弟）画，无头浏览器渲过 16 / 24 / 32 / 96 px 亮底暗底（第一稿琴身一个圆像棒棒糖、鼓是光圆筒像数据库，改成两段琴身 + 鼓身锯齿）；未过目】 |
 
 ## file
 

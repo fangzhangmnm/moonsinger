@@ -1807,17 +1807,26 @@ export declare const S: {
     readonly "{who} \u5728\u6F14": {
         readonly en: "Played by {who}";
     };
-    readonly 隐藏着: {
-        readonly en: "Hidden";
+    readonly 隐藏: {
+        readonly en: "Hide";
     };
-    readonly "\u70B9 = \u9690\u85CF / \u663E\u793A\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u53EA\u770B\u5B83": {
-        readonly en: "Tap = hide / show; long-press (right-click on a computer) = show only this part";
+    readonly "\u9690\u85CF\uFF1A\u8FD9\u4E00\u4F4D\u7F29\u6210\u7EC6\u884C\u3001\u4E0D\u5360\u5730\u65B9\uFF0C\u7167\u6837\u51FA\u58F0\uFF1B\u518D\u70B9 = \u663E\u793A": {
+        readonly en: "Hide: this part shrinks to a thin line and takes no room, but still plays; tap again = show";
+    };
+    readonly "\u53EA\u770B\u5B83\uFF1A\u522B\u7684\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u53EA\u770B\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B": {
+        readonly en: "Only this: every other part shrinks to a thin line (several parts can be 'only' at once); tap again = show all";
     };
     readonly 出声: {
         readonly en: "Sounding";
     };
-    readonly "\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F": {
-        readonly en: "Tap = mute / unmute; long-press (right-click on a computer) = solo";
+    readonly "\u9759\u97F3##\u5F00\u5173": {
+        readonly en: "Mute";
+    };
+    readonly "\u9759\u97F3\uFF1A\u8FD9\u4E00\u4F4D\u4E0D\u51FA\u58F0\uFF0C\u8C31\u4E0A\u7167\u6837\u753B\uFF1B\u518D\u70B9 = \u51FA\u58F0": {
+        readonly en: "Mute: this part makes no sound but is still drawn; tap again = sound";
+    };
+    readonly "\u72EC\u594F\uFF1A\u53EA\u542C\u5B83\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u72EC\u594F\uFF09\uFF1B\u518D\u70B9 = \u5173\u6389": {
+        readonly en: "Solo: hear only this part (several parts can solo at once); tap again = off";
     };
     readonly 换乐器: {
         readonly en: "Change instrument";

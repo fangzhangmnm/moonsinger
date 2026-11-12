@@ -2393,24 +2393,35 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   box.className = "track-card part-card"; box.setAttribute("role", "dialog");   // part-card：锁着时「换乐器」「删掉声部」点不动
   // 只剩三颗（user 11-08「点名字之后就只有选择歌手、歌手设置和声部管理」→ 同日「点进去之后，人们第一反应还是选乐器，而不是选歌手」）：换乐器 = 乐器目录；乐器设置 = 乐器页（原「配置」）；声部管理 = 顺序 / 在哪几段 / 这一段加人·交给·删（原来的下半截都搬进去了）。
   //   谱怎么画归谱号（user 同句「谱怎么换？应该归谱号」）：点这一行开头的谱号 = 谱头面板。
-  /** 两颗大钮一排放不下字（英文的「Change instrument」在 iPad mini 上）= 这一排改成一颗一行（7-R：整颗换行，不是字被截掉）。 */
-  const fitTiles = () => { for (const row of box.querySelectorAll<HTMLElement>(".tc-big")) { row.classList.remove("one-col"); if ([...row.querySelectorAll<HTMLElement>(".tc-l b, .tc-l small, .tc-tg span")].some((e) => e.scrollWidth > e.clientWidth + 1)) row.classList.add("one-col"); } };
+  /** 字放不下 = 整颗换行（7-R：不是字被截掉）。两颗大钮（英文的「Change instrument」在 iPad mini 上）= 一颗一行；
+   *  四颗开关（12-2 补）= 先一排四颗 → 放不下按「显示」「出声」两组分两排（整组一起换、不拆开一组）→ 还放不下一颗一行。 */
+  const fitTiles = () => {
+    const over = (el: Element) => [...el.querySelectorAll<HTMLElement>(".tc-l b, .tc-l small, .tc-tg span")].some((e) => e.scrollWidth > e.clientWidth + 1);
+    for (const row of box.querySelectorAll<HTMLElement>(".tc-big")) { row.classList.remove("one-col"); if (over(row)) row.classList.add("one-col"); }
+    for (const tgs of box.querySelectorAll<HTMLElement>(".tc-tgs")) { tgs.classList.remove("two-rows", "one-col"); if (over(tgs)) { tgs.classList.add("two-rows"); if (over(tgs)) tgs.classList.add("one-col"); } }
+  };
+  // 卡跟着开它的那一位，不跟着光标：隐藏了光标所在的那一位，光标会挪到看得见的一位（afterViewChange）——卡不能跟着变成别人的卡（不然再点「隐藏」藏的是别人）
+  const myId = curPart().id, mine = (): PartDef | undefined => D.st.song.parts.find((p) => p.id === myId);
   const draw = () => {
-    const me = curPart(), k = D.st.song.parts.indexOf(me), label = partLabels(D.st.song, D.extras)[k] ?? "";
+    const me = mine(); if (!me) { close(); return; }   // 这一位被删了（撤销 / 别处）= 卡收掉
+    const k = D.st.song.parts.indexOf(me), label = partLabels(D.st.song, D.extras)[k] ?? "";
     const v = pv(me.id), who = activeCandidateName(D.extras, me.role);
-    const eye = v.only ? "visibility-only" : v.hidden ? "visibility-hide" : "visibility-show", ear = v.solo ? "volume-solo" : v.muted ? "volume-mute" : "volume";
-    const tg = (kind: "hidden" | "muted", ic: string, on: string, label: string, title: string) => `<button class="btn tc-tg${on ? ` on ${on}` : ""}" data-v="tg:${kind}" title="${esc(title)}"><svg class="ico" aria-hidden="true"><use href="#${ic}"/></svg><span>${esc(label)}</span></button>`;
-    const tile = (val: string, head: string, sub: string, title: string) => `<button class="tc-inst" data-v="${val}" title="${esc(title)}"><span class="tc-l"><b>${esc(head)}</b><small>${esc(sub)}</small></span><span class="tc-go">›</span></button>`;
+    const tg = (kind: "hidden" | "only" | "muted" | "solo", ic: string, label: string, title: string) => `<button class="btn tc-tg${v[kind] ? " on" : ""}" data-v="tg:${kind}" aria-pressed="${v[kind] ? "true" : "false"}" title="${esc(title)}"><svg class="ico" aria-hidden="true"><use href="#${ic}"/></svg><span>${esc(label)}</span></button>`;
+    // 12-2 补（user 11-12「换乐器和乐器设置加图标」「声部管理和删除也加」）：换乐器 = instrument-swap（图标库待过目层，这次新画）、乐器设置 = sliders、声部管理 = layers-stack、删掉 = trash-can
+    const ico = (id: string) => `<svg class="ico tc-ico" aria-hidden="true"><use href="#${id}"/></svg>`;
+    const tile = (val: string, icon: string, head: string, sub: string, title: string) => `<button class="tc-inst" data-v="${val}" title="${esc(title)}">${ico(icon)}<span class="tc-l"><b>${esc(head)}</b><small>${esc(sub)}</small></span><span class="tc-go">›</span></button>`;
     box.innerHTML =
-      // 12-2（2026-11-12，user「声部上面的两个钮还是难看…这些钮找个聪明的地方放」）：原来在谱上名字上面的眼睛 / 喇叭搬到这张卡最上面，两颗大钮；点 = 隐藏 / 静音，长按（电脑右键）= 只看它 / 独奏
+      // 12-2（2026-11-12，user「声部上面的两个钮还是难看…这些钮找个聪明的地方放」）：原来在谱上名字上面的眼睛 / 喇叭搬到这张卡最上面。
+      // 12-2 补（同日，user 看了图「如果收进去的话，那么可以变回四个按钮的情况，这样好懂」）：四颗明摆着的开关，开着的亮着；没有长按 / 右键（同一件事只留一种做法）。
+      //   两组 = 显示（隐藏、只看它）/ 出声（静音、独奏）：放不下时整组换行（fitTiles）。意思照旧：每根轴一个「关掉」一个「只要」，有「只要」时「关掉」不看。
       `<div class="tc-head"><b>${esc(label)}</b><small>${who ? _t("{who} 在演", { who: esc(who) }) : _t("没人上场")}</small></div>` +
-      `<div class="btn-row tc-big">${tg("hidden", eye, v.only ? "tg-only" : v.hidden ? "tg-hidden" : "", v.only ? _t("只看它") : v.hidden ? _t("隐藏着") : _t("显示"), _t("点 = 隐藏 / 显示；长按（电脑右键）= 只看它"))}` +
-        `${tg("muted", ear, v.solo ? "tg-solo" : v.muted ? "tg-muted" : "", v.solo ? _t("独奏") : v.muted ? _t("静音") : _t("出声"), _t("点 = 静音 / 出声；长按（电脑右键）= 独奏"))}</div>` +
+      `<div class="tc-tgs"><div class="tc-grp" role="group" aria-label="${esc(_t("显示"))}">${tg("hidden", "visibility-hide", _t("隐藏"), _t("隐藏：这一位缩成细行、不占地方，照样出声；再点 = 显示"))}${tg("only", "visibility-only", _t("只看它"), _t("只看它：别的声部都缩成细行（可以几位一起只看）；再点 = 都看"))}</div>` +
+        `<div class="tc-grp" role="group" aria-label="${esc(_t("出声"))}">${tg("muted", "volume-mute", _t("静音##开关"), _t("静音：这一位不出声，谱上照样画；再点 = 出声"))}${tg("solo", "volume-solo", _t("独奏"), _t("独奏：只听它（可以几位一起独奏）；再点 = 关掉"))}</div></div>` +
       // 12-1：换乐器、乐器设置两颗大钮同一行、一样宽（放不下 = 整颗换到下一排，.btn-row）
-      `<div class="btn-row tc-big">${tile("swap", _t("换乐器"), _t("进乐器目录"), _t("换乐器：进乐器目录（右边的键盘能试；顶上是这首歌的乐器预设），选好就换上、目录还开着可以接着换，「← 谱」回来"))}` +
-        `${tile("inst", _t("乐器设置"), _t("怎么演、响度"), _t("这位怎么演（响度、力度、唱法…）和谱上写什么名字：全屏一页，右边的键盘能试"))}</div>` +
-      `<div class="tc-row"><button class="btn" data-v="parts" title="${_t("所有声部排一列：改名、上下挪、在哪几段；这一段上面 / 下面加、交给别的声部、从这一段删掉")}">${_t("声部管理…")}</button>` +
-      `<button class="btn danger" data-v="delpart" title="${_t("整个声部删掉：每一段里它写的、它的乐器设置一起删（先问；能撤销）")}">${_t("删掉声部…")}</button></div>` +
+      `<div class="btn-row tc-big">${tile("swap", "instrument-swap", _t("换乐器"), _t("进乐器目录"), _t("换乐器：进乐器目录（右边的键盘能试；顶上是这首歌的乐器预设），选好就换上、目录还开着可以接着换，「← 谱」回来"))}` +
+        `${tile("inst", "sliders", _t("乐器设置"), _t("怎么演、响度"), _t("这位怎么演（响度、力度、唱法…）和谱上写什么名字：全屏一页，右边的键盘能试"))}</div>` +
+      `<div class="tc-row"><button class="btn" data-v="parts" title="${_t("所有声部排一列：改名、上下挪、在哪几段；这一段上面 / 下面加、交给别的声部、从这一段删掉")}">${ico("layers-stack")}<span>${_t("声部管理…")}</span></button>` +
+      `<button class="btn danger" data-v="delpart" title="${_t("整个声部删掉：每一段里它写的、它的乐器设置一起删（先问；能撤销）")}">${ico("trash-can")}<span>${_t("删掉声部…")}</span></button></div>` +
       ((m) => { if (!m || !m.size) return ""; const xs = [...m.values()], first = xs[0];   // 唱不出来的歌词：几个、为什么（纪律：画灰 + 明说）
         return `<div class="tc-warn">${first.why === "notSung" ? esc(lyricWhyText(first, roleName(D.extras, me.role))) : _t("有 {n} 个字唱不出来（谱上画灰）：{first}{x}", { n: xs.length, first: esc(lyricWhyText(first, roleName(D.extras, me.role))), x: xs.some((x) => x.why !== first.why) ? _t(" 等") : "" })}</div>`; })(lyricMutes().get(me.id));
     if (box.isConnected) fitTiles();
@@ -2430,26 +2441,13 @@ function openTrackCard(at?: { left: number; top: number; right: number; bottom: 
   const close = () => { document.removeEventListener("pointerdown", outside, true); box.remove(); ui.closed(close); };
   setTimeout(() => { if (box.isConnected) document.addEventListener("pointerdown", outside, true); }, 0);
   ui.open({ k: "card", close, redraw: draw });
-  // 显示 / 出声：点 = 隐藏 / 静音；长按（电脑右键）= 只看它 / 独奏（同原来谱上那两颗钮）；切了卡留着、重画
-  const LONG: Record<"hidden" | "muted", "only" | "solo"> = { hidden: "only", muted: "solo" };
-  const flip = (kind: "hidden" | "muted" | "only" | "solo") => { const id = curPart().id; setPv(id, { [kind]: !pv(id)[kind] }); afterViewChange(); draw(); };
-  let longFired = false, longTimer = 0;
-  box.addEventListener("pointerdown", (e) => {
-    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-v^='tg:']"); longFired = false; if (!el || e.button === 2) return;
-    const kind = el.dataset.v!.slice(3) as "hidden" | "muted";
-    longTimer = window.setTimeout(() => { longFired = true; flip(LONG[kind]); }, 420);
-  });
-  const stopLong = () => clearTimeout(longTimer);
-  box.addEventListener("pointerup", stopLong); box.addEventListener("pointercancel", stopLong); box.addEventListener("pointerleave", stopLong);
-  box.addEventListener("contextmenu", (e) => {
-    const el = (e.target as HTMLElement).closest<HTMLElement>("[data-v^='tg:']"); if (!el) return;
-    e.preventDefault(); stopLong(); if (longFired) return;   // 触屏长按到点已经算过一次，系统随后又发 contextmenu——不算第二次
-    flip(LONG[el.dataset.v!.slice(3) as "hidden" | "muted"]);
-  });
+  // 四颗开关：点 = 切这一样；切了卡留着、重画
+  const flip = (kind: "hidden" | "muted" | "only" | "solo") => { setPv(myId, { [kind]: !pv(myId)[kind] }); afterViewChange(); draw(); };
   box.addEventListener("click", (e) => {
     const v = (e.target as HTMLElement).closest<HTMLElement>("[data-v]")?.dataset.v; if (!v) return;
-    const me = curPart();
-    if (v.startsWith("tg:")) { if (!longFired) flip(v.slice(3) as "hidden" | "muted"); longFired = false; return; }
+    const me = mine(); if (!me) return;
+    if (v.startsWith("tg:")) { flip(v.slice(3) as "hidden" | "muted" | "only" | "solo"); return; }
+    if ((v === "inst" || v === "swap") && D.st.at.part !== me.id) update(setFocus(D.st, D.st.at.paper, me.id));   // 乐器页 / 乐器目录跟着光标那一位：先回到这张卡的那一位（它可能刚被藏了、光标挪走了）
     if (v === "inst") { close(); openInstPage(); return; }
     if (v === "swap") { close(); openFinder(); return; }   // 从谱上开的：选好 = 换上、目录不关（v0.16.35），「← 谱」/ Esc 回谱
     if (v === "parts") { close(); openPartsManager({ paper: D.st.at.paper, part: me.id }); return; }

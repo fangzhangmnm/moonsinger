@@ -601,10 +601,13 @@ var S = {
   "\u65B0\u7684\u4E00\u4E2A\u58F0\u90E8\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u4E00\u6BB5\uFF1B\u52A0\u5B8C\u6311\u4E50\u5668": { en: "A new part, only in this section; then pick an instrument" },
   "\u58F0\u90E8\u7BA1\u7406\u2026": { en: "Parts\u2026" },
   "{who} \u5728\u6F14": { en: "Played by {who}" },
-  "\u9690\u85CF\u7740": { en: "Hidden" },
-  "\u70B9 = \u9690\u85CF / \u663E\u793A\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u53EA\u770B\u5B83": { en: "Tap = hide / show; long-press (right-click on a computer) = show only this part" },
+  "\u9690\u85CF": { en: "Hide" },
+  "\u9690\u85CF\uFF1A\u8FD9\u4E00\u4F4D\u7F29\u6210\u7EC6\u884C\u3001\u4E0D\u5360\u5730\u65B9\uFF0C\u7167\u6837\u51FA\u58F0\uFF1B\u518D\u70B9 = \u663E\u793A": { en: "Hide: this part shrinks to a thin line and takes no room, but still plays; tap again = show" },
+  "\u53EA\u770B\u5B83\uFF1A\u522B\u7684\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u53EA\u770B\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B": { en: "Only this: every other part shrinks to a thin line (several parts can be 'only' at once); tap again = show all" },
   "\u51FA\u58F0": { en: "Sounding" },
-  "\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F": { en: "Tap = mute / unmute; long-press (right-click on a computer) = solo" },
+  "\u9759\u97F3##\u5F00\u5173": { en: "Mute" },
+  "\u9759\u97F3\uFF1A\u8FD9\u4E00\u4F4D\u4E0D\u51FA\u58F0\uFF0C\u8C31\u4E0A\u7167\u6837\u753B\uFF1B\u518D\u70B9 = \u51FA\u58F0": { en: "Mute: this part makes no sound but is still drawn; tap again = sound" },
+  "\u72EC\u594F\uFF1A\u53EA\u542C\u5B83\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u72EC\u594F\uFF09\uFF1B\u518D\u70B9 = \u5173\u6389": { en: "Solo: hear only this part (several parts can solo at once); tap again = off" },
   "\u6362\u4E50\u5668": { en: "Change instrument" },
   "\u8FDB\u4E50\u5668\u76EE\u5F55": { en: "Open the instrument catalog" },
   "\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765": { en: "Change instrument: open the catalog (try with the keyboard on the right; this song\u2019s instrument presets are on top); picking one swaps it in and keeps the catalog open so you can keep trying; \u201C\u2190 Score\u201D goes back" },
@@ -5537,7 +5540,7 @@ var PACKS = {
 var CREDIT = { "credit": "\u672C\u30BD\u30D5\u30C8\u30A6\u30A7\u30A2\u306E\u97F3\u58F0\u5408\u6210\u306B\u306F\u3001\u30D5\u30EA\u30FC\u7D20\u6750\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u300C\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u300D\uFF08\xA9 Rei Yumesaki\uFF09\u304C\u7121\u6599\u516C\u958B\u3057\u3066\u3044\u308B\u97F3\u58F0\u30C7\u30FC\u30BF\u3092\u4F7F\u7528\u3057\u3066\u3044\u307E\u3059\u3002\n\u25A0\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\uFF08CV.\u5922\u524D\u9ECE\uFF09\nhttps://tyc.rei-yumesaki.net/material/corpus/", "terms": "\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u306E\u58F0\u8CEA\u3092\u4F7F\u7528\u3059\u308B\u5834\u5408\u306F\u3001\u51FA\u529B\u3057\u305F\u97F3\u58F0\u3092\u6B21\u306E\u76EE\u7684\u3067\u4F7F\u7528\u3059\u308B\u3053\u3068\u3092\u7981\u6B62\u3057\u307E\u3059\u3002\n\u3010\u7981\u6B62\u4E8B\u9805\u3011\n\u25A0\u4EBA\u3092\u6279\u5224\u30FB\u653B\u6483\u3059\u308B\u3053\u3068\u3002\uFF08\u300C\u6279\u5224\u30FB\u653B\u6483\u300D\u306E\u5B9A\u7FA9\u306F\u3001\u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30AD\u30E3\u30E9\u30AF\u30BF\u30FC\u30E9\u30A4\u30BB\u30F3\u30B9\u306B\u6E96\u3058\u307E\u3059\uFF09\n\u25A0\u7279\u5B9A\u306E\u653F\u6CBB\u7684\u7ACB\u5834\u30FB\u5B97\u6559\u30FB\u601D\u60F3\u3078\u306E\u8CDB\u540C\u307E\u305F\u306F\u53CD\u5BFE\u3092\u547C\u3073\u304B\u3051\u308B\u3053\u3068\u3002\n\u25A0\u523A\u6FC0\u306E\u5F37\u3044\u8868\u73FE\u3092\u30BE\u30FC\u30CB\u30F3\u30B0\u306A\u3057\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002\n\u25A0\u4ED6\u8005\u306B\u5BFE\u3057\u3066\u4E8C\u6B21\u5229\u7528\uFF08\u7D20\u6750\u3068\u3057\u3066\u306E\u5229\u7528\uFF09\u3092\u8A31\u53EF\u3059\u308B\u5F62\u3067\u516C\u958B\u3059\u308B\u3053\u3068\u3002", "termsUrl": "https://tyc.rei-yumesaki.net/material/corpus/", "attribution": ["ayousanz/piper-plus-tsukuyomi-chan \u2014 \u3064\u304F\u3088\u307F\u3061\u3083\u3093\u30B3\u30FC\u30D1\u30B9\u5229\u7528\u898F\u7D04 (modified: zh / en language vectors)", "ayousanz/piper-plus-base \u2014 CC-BY-4.0 (zh / en language vectors)", "Open JTalk \xB7 MeCab \xB7 NAIST-jdic \xB7 pyopenjtalk-plus \xB7 CMUdict \xB7 g2p-en \xB7 pypinyin \xB7 ONNX Runtime"] };
 
 // src/version.ts
-var APP_VERSION = "v0.17.1-2026-11-12";
+var APP_VERSION = "v0.17.2-2026-11-12";
 
 // src/format/performance.ts
 var ARTICULATION = { staccatoGate: 0.5, tenutoGate: 1, accentDb: 4 };
@@ -5872,4 +5875,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-1c8a46204b1d.mjs.map
+//# sourceMappingURL=encode-worker-d50e6c6c1e09.mjs.map

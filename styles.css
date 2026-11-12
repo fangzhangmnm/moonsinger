@@ -893,10 +893,18 @@ img.gallery-tile-thumb + .gallery-tile-overlay .ms-cover-artist { background: co
 .part-card .tc-head { display: flex; align-items: baseline; gap: 8px; margin: 0 2px 6px; min-width: 0; }
 .part-card .tc-head b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .part-card .tc-head small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.part-card .tc-big { --btn-cell: 8.5em; margin: 0 0 6px; }
+.part-card .tc-big { grid-template-columns: 1fr 1fr; margin: 0 0 6px; }   /* 换乐器 / 乐器设置：正好两颗、各占一半（不按 .btn-row 的格子数，不然宽的卡里排出空的第三格、两颗只占三分之二） */
 .part-card .tc-big > .tc-inst { min-width: 0; width: 100%; }
 .part-card .tc-big.one-col { grid-template-columns: 1fr; }   /* 字放不下 = 一颗一行（main.ts openTrackCard fitTiles） */
-.part-card .tc-tg { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; font-size: 14px; }
+.part-card .tc-tgs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 0 0 6px; }   /* 四颗开关（12-2 补）：一排四颗 → 两组各一排 → 一颗一行（main.ts openTrackCard fitTiles） */
+.part-card .tc-grp { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; min-width: 0; }
+.part-card .tc-tgs.two-rows { grid-template-columns: 1fr; }
+.part-card .tc-tgs.one-col .tc-grp { grid-template-columns: 1fr; }
+.part-card .tc-tg { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; min-width: 0; font-size: 14px; }
+.part-card .tc-tg span { white-space: nowrap; overflow: hidden; }
+.part-card .tc-inst .tc-ico { flex: none; width: 22px; height: 22px; color: var(--accent); }   /* 换乐器 / 乐器设置的图标（12-2 补） */
+.part-card .tc-row .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.part-card .tc-row .btn .tc-ico { flex: none; width: 18px; height: 18px; }   /* 声部管理 / 删掉声部的图标 */
 .part-card .tc-tg .ico { width: 22px; height: 22px; }
 .part-card .tc-tg.on { background: var(--accent-soft); border-color: #b8cde8; color: var(--accent); }
 .tc-grid { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: center; padding: 10px 4px 8px; }

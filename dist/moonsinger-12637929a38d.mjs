@@ -3897,10 +3897,13 @@ var S = {
   "\u65B0\u7684\u4E00\u4E2A\u58F0\u90E8\uFF0C\u53EA\u51FA\u73B0\u5728\u8FD9\u4E00\u6BB5\uFF1B\u52A0\u5B8C\u6311\u4E50\u5668": { en: "A new part, only in this section; then pick an instrument" },
   "\u58F0\u90E8\u7BA1\u7406\u2026": { en: "Parts\u2026" },
   "{who} \u5728\u6F14": { en: "Played by {who}" },
-  "\u9690\u85CF\u7740": { en: "Hidden" },
-  "\u70B9 = \u9690\u85CF / \u663E\u793A\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u53EA\u770B\u5B83": { en: "Tap = hide / show; long-press (right-click on a computer) = show only this part" },
+  "\u9690\u85CF": { en: "Hide" },
+  "\u9690\u85CF\uFF1A\u8FD9\u4E00\u4F4D\u7F29\u6210\u7EC6\u884C\u3001\u4E0D\u5360\u5730\u65B9\uFF0C\u7167\u6837\u51FA\u58F0\uFF1B\u518D\u70B9 = \u663E\u793A": { en: "Hide: this part shrinks to a thin line and takes no room, but still plays; tap again = show" },
+  "\u53EA\u770B\u5B83\uFF1A\u522B\u7684\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u53EA\u770B\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B": { en: "Only this: every other part shrinks to a thin line (several parts can be 'only' at once); tap again = show all" },
   "\u51FA\u58F0": { en: "Sounding" },
-  "\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F": { en: "Tap = mute / unmute; long-press (right-click on a computer) = solo" },
+  "\u9759\u97F3##\u5F00\u5173": { en: "Mute" },
+  "\u9759\u97F3\uFF1A\u8FD9\u4E00\u4F4D\u4E0D\u51FA\u58F0\uFF0C\u8C31\u4E0A\u7167\u6837\u753B\uFF1B\u518D\u70B9 = \u51FA\u58F0": { en: "Mute: this part makes no sound but is still drawn; tap again = sound" },
+  "\u72EC\u594F\uFF1A\u53EA\u542C\u5B83\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u72EC\u594F\uFF09\uFF1B\u518D\u70B9 = \u5173\u6389": { en: "Solo: hear only this part (several parts can solo at once); tap again = off" },
   "\u6362\u4E50\u5668": { en: "Change instrument" },
   "\u8FDB\u4E50\u5668\u76EE\u5F55": { en: "Open the instrument catalog" },
   "\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765": { en: "Change instrument: open the catalog (try with the keyboard on the right; this song\u2019s instrument presets are on top); picking one swaps it in and keeps the catalog open so you can keep trying; \u201C\u2190 Score\u201D goes back" },
@@ -5947,7 +5950,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.1-2026-11-12";
+var APP_VERSION = "v0.17.2-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -34571,15 +34574,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-fe9c6e19fd12.mjs");
+      return pick(() => "singer-worker-31ab79ba9f2b.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-714d957ac9f7.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ec65d74a36c8.mjs");
+      return pick(() => "layout-worker-4ade140ed273.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-1c8a46204b1d.mjs");
+      return pick(() => "encode-worker-d50e6c6c1e09.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -60665,7 +60668,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "3d30011ba6ce",
+  cssHash: "e082334b2039",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -62032,19 +62035,35 @@ function openTrackCard(at3) {
   box.className = "track-card part-card";
   box.setAttribute("role", "dialog");
   const fitTiles = () => {
+    const over = (el2) => [...el2.querySelectorAll(".tc-l b, .tc-l small, .tc-tg span")].some((e10) => e10.scrollWidth > e10.clientWidth + 1);
     for (const row2 of box.querySelectorAll(".tc-big")) {
       row2.classList.remove("one-col");
-      if ([...row2.querySelectorAll(".tc-l b, .tc-l small, .tc-tg span")].some((e10) => e10.scrollWidth > e10.clientWidth + 1)) row2.classList.add("one-col");
+      if (over(row2)) row2.classList.add("one-col");
+    }
+    for (const tgs of box.querySelectorAll(".tc-tgs")) {
+      tgs.classList.remove("two-rows", "one-col");
+      if (over(tgs)) {
+        tgs.classList.add("two-rows");
+        if (over(tgs)) tgs.classList.add("one-col");
+      }
     }
   };
+  const myId = curPart().id, mine = () => D3.st.song.parts.find((p2) => p2.id === myId);
   const draw = () => {
-    const me = curPart(), k2 = D3.st.song.parts.indexOf(me), label = partLabels(D3.st.song, D3.extras)[k2] ?? "";
+    const me = mine();
+    if (!me) {
+      close();
+      return;
+    }
+    const k2 = D3.st.song.parts.indexOf(me), label = partLabels(D3.st.song, D3.extras)[k2] ?? "";
     const v = pv(me.id), who = activeCandidateName(D3.extras, me.role);
-    const eye = v.only ? "visibility-only" : v.hidden ? "visibility-hide" : "visibility-show", ear = v.solo ? "volume-solo" : v.muted ? "volume-mute" : "volume";
-    const tg2 = (kind, ic2, on2, label2, title) => `<button class="btn tc-tg${on2 ? ` on ${on2}` : ""}" data-v="tg:${kind}" title="${esc12(title)}"><svg class="ico" aria-hidden="true"><use href="#${ic2}"/></svg><span>${esc12(label2)}</span></button>`;
-    const tile = (val, head, sub, title) => `<button class="tc-inst" data-v="${val}" title="${esc12(title)}"><span class="tc-l"><b>${esc12(head)}</b><small>${esc12(sub)}</small></span><span class="tc-go">\u203A</span></button>`;
-    box.innerHTML = // 12-2（2026-11-12，user「声部上面的两个钮还是难看…这些钮找个聪明的地方放」）：原来在谱上名字上面的眼睛 / 喇叭搬到这张卡最上面，两颗大钮；点 = 隐藏 / 静音，长按（电脑右键）= 只看它 / 独奏
-    `<div class="tc-head"><b>${esc12(label)}</b><small>${who ? _t("{who} \u5728\u6F14", { who: esc12(who) }) : _t("\u6CA1\u4EBA\u4E0A\u573A")}</small></div><div class="btn-row tc-big">${tg2("hidden", eye, v.only ? "tg-only" : v.hidden ? "tg-hidden" : "", v.only ? _t("\u53EA\u770B\u5B83") : v.hidden ? _t("\u9690\u85CF\u7740") : _t("\u663E\u793A"), _t("\u70B9 = \u9690\u85CF / \u663E\u793A\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u53EA\u770B\u5B83"))}${tg2("muted", ear, v.solo ? "tg-solo" : v.muted ? "tg-muted" : "", v.solo ? _t("\u72EC\u594F") : v.muted ? _t("\u9759\u97F3") : _t("\u51FA\u58F0"), _t("\u70B9 = \u9759\u97F3 / \u51FA\u58F0\uFF1B\u957F\u6309\uFF08\u7535\u8111\u53F3\u952E\uFF09= \u72EC\u594F"))}</div><div class="btn-row tc-big">${tile("swap", _t("\u6362\u4E50\u5668"), _t("\u8FDB\u4E50\u5668\u76EE\u5F55"), _t("\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765"))}${tile("inst", _t("\u4E50\u5668\u8BBE\u7F6E"), _t("\u600E\u4E48\u6F14\u3001\u54CD\u5EA6"), _t("\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5"))}</div><div class="tc-row"><button class="btn" data-v="parts" title="${_t("\u6240\u6709\u58F0\u90E8\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u8FD9\u4E00\u6BB5\u4E0A\u9762 / \u4E0B\u9762\u52A0\u3001\u4EA4\u7ED9\u522B\u7684\u58F0\u90E8\u3001\u4ECE\u8FD9\u4E00\u6BB5\u5220\u6389")}">${_t("\u58F0\u90E8\u7BA1\u7406\u2026")}</button><button class="btn danger" data-v="delpart" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${_t("\u5220\u6389\u58F0\u90E8\u2026")}</button></div>` + ((m3) => {
+    const tg2 = (kind, ic2, label2, title) => `<button class="btn tc-tg${v[kind] ? " on" : ""}" data-v="tg:${kind}" aria-pressed="${v[kind] ? "true" : "false"}" title="${esc12(title)}"><svg class="ico" aria-hidden="true"><use href="#${ic2}"/></svg><span>${esc12(label2)}</span></button>`;
+    const ico = (id2) => `<svg class="ico tc-ico" aria-hidden="true"><use href="#${id2}"/></svg>`;
+    const tile = (val, icon, head, sub, title) => `<button class="tc-inst" data-v="${val}" title="${esc12(title)}">${ico(icon)}<span class="tc-l"><b>${esc12(head)}</b><small>${esc12(sub)}</small></span><span class="tc-go">\u203A</span></button>`;
+    box.innerHTML = // 12-2（2026-11-12，user「声部上面的两个钮还是难看…这些钮找个聪明的地方放」）：原来在谱上名字上面的眼睛 / 喇叭搬到这张卡最上面。
+    // 12-2 补（同日，user 看了图「如果收进去的话，那么可以变回四个按钮的情况，这样好懂」）：四颗明摆着的开关，开着的亮着；没有长按 / 右键（同一件事只留一种做法）。
+    //   两组 = 显示（隐藏、只看它）/ 出声（静音、独奏）：放不下时整组换行（fitTiles）。意思照旧：每根轴一个「关掉」一个「只要」，有「只要」时「关掉」不看。
+    `<div class="tc-head"><b>${esc12(label)}</b><small>${who ? _t("{who} \u5728\u6F14", { who: esc12(who) }) : _t("\u6CA1\u4EBA\u4E0A\u573A")}</small></div><div class="tc-tgs"><div class="tc-grp" role="group" aria-label="${esc12(_t("\u663E\u793A"))}">${tg2("hidden", "visibility-hide", _t("\u9690\u85CF"), _t("\u9690\u85CF\uFF1A\u8FD9\u4E00\u4F4D\u7F29\u6210\u7EC6\u884C\u3001\u4E0D\u5360\u5730\u65B9\uFF0C\u7167\u6837\u51FA\u58F0\uFF1B\u518D\u70B9 = \u663E\u793A"))}${tg2("only", "visibility-only", _t("\u53EA\u770B\u5B83"), _t("\u53EA\u770B\u5B83\uFF1A\u522B\u7684\u58F0\u90E8\u90FD\u7F29\u6210\u7EC6\u884C\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u53EA\u770B\uFF09\uFF1B\u518D\u70B9 = \u90FD\u770B"))}</div><div class="tc-grp" role="group" aria-label="${esc12(_t("\u51FA\u58F0"))}">${tg2("muted", "volume-mute", _t("\u9759\u97F3##\u5F00\u5173"), _t("\u9759\u97F3\uFF1A\u8FD9\u4E00\u4F4D\u4E0D\u51FA\u58F0\uFF0C\u8C31\u4E0A\u7167\u6837\u753B\uFF1B\u518D\u70B9 = \u51FA\u58F0"))}${tg2("solo", "volume-solo", _t("\u72EC\u594F"), _t("\u72EC\u594F\uFF1A\u53EA\u542C\u5B83\uFF08\u53EF\u4EE5\u51E0\u4F4D\u4E00\u8D77\u72EC\u594F\uFF09\uFF1B\u518D\u70B9 = \u5173\u6389"))}</div></div><div class="btn-row tc-big">${tile("swap", "instrument-swap", _t("\u6362\u4E50\u5668"), _t("\u8FDB\u4E50\u5668\u76EE\u5F55"), _t("\u6362\u4E50\u5668\uFF1A\u8FDB\u4E50\u5668\u76EE\u5F55\uFF08\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5\uFF1B\u9876\u4E0A\u662F\u8FD9\u9996\u6B4C\u7684\u4E50\u5668\u9884\u8BBE\uFF09\uFF0C\u9009\u597D\u5C31\u6362\u4E0A\u3001\u76EE\u5F55\u8FD8\u5F00\u7740\u53EF\u4EE5\u63A5\u7740\u6362\uFF0C\u300C\u2190 \u8C31\u300D\u56DE\u6765"))}${tile("inst", "sliders", _t("\u4E50\u5668\u8BBE\u7F6E"), _t("\u600E\u4E48\u6F14\u3001\u54CD\u5EA6"), _t("\u8FD9\u4F4D\u600E\u4E48\u6F14\uFF08\u54CD\u5EA6\u3001\u529B\u5EA6\u3001\u5531\u6CD5\u2026\uFF09\u548C\u8C31\u4E0A\u5199\u4EC0\u4E48\u540D\u5B57\uFF1A\u5168\u5C4F\u4E00\u9875\uFF0C\u53F3\u8FB9\u7684\u952E\u76D8\u80FD\u8BD5"))}</div><div class="tc-row"><button class="btn" data-v="parts" title="${_t("\u6240\u6709\u58F0\u90E8\u6392\u4E00\u5217\uFF1A\u6539\u540D\u3001\u4E0A\u4E0B\u632A\u3001\u5728\u54EA\u51E0\u6BB5\uFF1B\u8FD9\u4E00\u6BB5\u4E0A\u9762 / \u4E0B\u9762\u52A0\u3001\u4EA4\u7ED9\u522B\u7684\u58F0\u90E8\u3001\u4ECE\u8FD9\u4E00\u6BB5\u5220\u6389")}">${ico("layers-stack")}<span>${_t("\u58F0\u90E8\u7BA1\u7406\u2026")}</span></button><button class="btn danger" data-v="delpart" title="${_t("\u6574\u4E2A\u58F0\u90E8\u5220\u6389\uFF1A\u6BCF\u4E00\u6BB5\u91CC\u5B83\u5199\u7684\u3001\u5B83\u7684\u4E50\u5668\u8BBE\u7F6E\u4E00\u8D77\u5220\uFF08\u5148\u95EE\uFF1B\u80FD\u64A4\u9500\uFF09")}">${ico("trash-can")}<span>${_t("\u5220\u6389\u58F0\u90E8\u2026")}</span></button></div>` + ((m3) => {
       if (!m3 || !m3.size) return "";
       const xs = [...m3.values()], first = xs[0];
       return `<div class="tc-warn">${first.why === "notSung" ? esc12(lyricWhyText(first, roleName(D3.extras, me.role))) : _t("\u6709 {n} \u4E2A\u5B57\u5531\u4E0D\u51FA\u6765\uFF08\u8C31\u4E0A\u753B\u7070\uFF09\uFF1A{first}{x}", { n: xs.length, first: esc12(lyricWhyText(first, roleName(D3.extras, me.role))), x: xs.some((x3) => x3.why !== first.why) ? _t(" \u7B49") : "" })}</div>`;
@@ -62083,45 +62102,21 @@ function openTrackCard(at3) {
     if (box.isConnected) document.addEventListener("pointerdown", outside, true);
   }, 0);
   ui2.open({ k: "card", close, redraw: draw });
-  const LONG = { hidden: "only", muted: "solo" };
   const flip = (kind) => {
-    const id2 = curPart().id;
-    setPv(id2, { [kind]: !pv(id2)[kind] });
+    setPv(myId, { [kind]: !pv(myId)[kind] });
     afterViewChange();
     draw();
   };
-  let longFired = false, longTimer = 0;
-  box.addEventListener("pointerdown", (e10) => {
-    const el2 = e10.target.closest("[data-v^='tg:']");
-    longFired = false;
-    if (!el2 || e10.button === 2) return;
-    const kind = el2.dataset.v.slice(3);
-    longTimer = window.setTimeout(() => {
-      longFired = true;
-      flip(LONG[kind]);
-    }, 420);
-  });
-  const stopLong = () => clearTimeout(longTimer);
-  box.addEventListener("pointerup", stopLong);
-  box.addEventListener("pointercancel", stopLong);
-  box.addEventListener("pointerleave", stopLong);
-  box.addEventListener("contextmenu", (e10) => {
-    const el2 = e10.target.closest("[data-v^='tg:']");
-    if (!el2) return;
-    e10.preventDefault();
-    stopLong();
-    if (longFired) return;
-    flip(LONG[el2.dataset.v.slice(3)]);
-  });
   box.addEventListener("click", (e10) => {
     const v = e10.target.closest("[data-v]")?.dataset.v;
     if (!v) return;
-    const me = curPart();
+    const me = mine();
+    if (!me) return;
     if (v.startsWith("tg:")) {
-      if (!longFired) flip(v.slice(3));
-      longFired = false;
+      flip(v.slice(3));
       return;
     }
+    if ((v === "inst" || v === "swap") && D3.st.at.part !== me.id) update(setFocus(D3.st, D3.st.at.paper, me.id));
     if (v === "inst") {
       close();
       openInstPage();
@@ -65104,4 +65099,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-87469035eff0.mjs.map
+//# sourceMappingURL=moonsinger-12637929a38d.mjs.map
