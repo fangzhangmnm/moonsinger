@@ -14358,7 +14358,8 @@ function drawStaff(c10, mine) {
                 if (cont) prims.push({ ...tokAt(q2, startIdx), t: "text", x: x0, y: y2 + P2(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont" + OFF, size: tx2("ottava"), anchor: "start" });
                 else prims.push({ ...tokAt(q2, startIdx), t: "glyph", x: x0, y: y2 + P2(up ? 0.4 : 0.4), ch: SIG2[v], cls: (isAuto ? "ottava auto" : "ottava") + OFF, size: sz2 });
                 const lx2 = x0 + (cont ? P2(4.2) : gw) + P2(0.4), ly2 = y2 - P2(up ? 0.55 : 0.55);
-                for (let x2 = lx2; x2 + P2(0.6) <= x1; x2 += P2(1)) prims.push({ t: "line", x1: x2, y1: ly2, x2: x2 + P2(0.6), y2: ly2, w: P2(0.1), cls: "ottava-line" + OFF });
+                const dashEnd = endsHere ? x1 - P2(0.4) : x1;
+                for (let x2 = lx2; x2 + P2(0.6) <= dashEnd; x2 += P2(1)) prims.push({ t: "line", x1: x2, y1: ly2, x2: x2 + P2(0.6), y2: ly2, w: P2(0.1), cls: "ottava-line" + OFF });
                 if (endsHere) prims.push({ ...tokAt(q2, endIdx), t: "line", x1, y1: ly2, x2: x1, y2: ly2 + P2(up ? 1.1 : -1.1), w: P2(0.1), cls: "ottava-line" + OFF });
                 const hitIdx = src ? src.index : (() => {
                   for (let i10 = us[k3].index; i10 >= 0; i10--) if (q2.tokens[i10]?.kind === "ottava") return i10;
@@ -34600,7 +34601,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-714d957ac9f7.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ba34ccb7eeab.mjs");
+      return pick(() => "layout-worker-acead250e42c.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-14961245133b.mjs");
   }
@@ -65149,4 +65150,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1f0550de57b6.mjs.map
+//# sourceMappingURL=moonsinger-31de997b6b6e.mjs.map

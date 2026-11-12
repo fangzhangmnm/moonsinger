@@ -318,7 +318,9 @@ export function drawStaff(c: StaffDrawCtx, mine?: readonly number[]): { lyricPar
             if (cont) prims.push({ ...tokAt(q, startIdx), t: "text", x: x0, y: y + P(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont" + OFF, size: tx("ottava"), anchor: "start" });
             else prims.push({ ...tokAt(q, startIdx), t: "glyph", x: x0, y: y + P(up ? 0.4 : 0.4), ch: SIG[v], cls: (isAuto ? "ottava auto" : "ottava") + OFF, size: sz });
             const lx = x0 + (cont ? P(4.2) : gw) + P(0.4), ly = y - P(up ? 0.55 : 0.55);
-            for (let x = lx; x + P(0.6) <= x1; x += P(1.0)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" + OFF });
+            // 虚线一节 0.6、隔 0.4；收尾有钩 = 最后一节离钩至少一个空（0.4），不然最后一节碰巧落到钩跟前会和钩叠在一起（重新折行后在 Once 里冒出来过，2026-11-12）
+            const dashEnd = endsHere ? x1 - P(0.4) : x1;
+            for (let x = lx; x + P(0.6) <= dashEnd; x += P(1.0)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" + OFF });
             if (endsHere) prims.push({ ...tokAt(q, endIdx), t: "line", x1: x1, y1: ly, x2: x1, y2: ly + P(up ? 1.1 : -1.1), w: P(0.1), cls: "ottava-line" + OFF });
             const hitIdx = src ? src.index : (() => { for (let i = us[k].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i; return -1; })();
             const run = isAuto ? q.ds.runs.find((rr) => us[k].index >= rr.from && us[k].index <= rr.to) : undefined;

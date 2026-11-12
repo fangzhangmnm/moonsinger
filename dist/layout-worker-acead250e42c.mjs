@@ -7203,7 +7203,8 @@ function drawStaff(c, mine) {
                 if (cont) prims.push({ ...tokAt(q, startIdx), t: "text", x: x0, y: y + P(0.5), s: `(${v === 2 ? "15ma" : v > 0 ? "8va" : "8vb"})`, cls: "ottava cont" + OFF, size: tx("ottava"), anchor: "start" });
                 else prims.push({ ...tokAt(q, startIdx), t: "glyph", x: x0, y: y + P(up ? 0.4 : 0.4), ch: SIG[v], cls: (isAuto ? "ottava auto" : "ottava") + OFF, size: sz });
                 const lx = x0 + (cont ? P(4.2) : gw) + P(0.4), ly = y - P(up ? 0.55 : 0.55);
-                for (let x = lx; x + P(0.6) <= x1; x += P(1)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" + OFF });
+                const dashEnd = endsHere ? x1 - P(0.4) : x1;
+                for (let x = lx; x + P(0.6) <= dashEnd; x += P(1)) prims.push({ t: "line", x1: x, y1: ly, x2: x + P(0.6), y2: ly, w: P(0.1), cls: "ottava-line" + OFF });
                 if (endsHere) prims.push({ ...tokAt(q, endIdx), t: "line", x1, y1: ly, x2: x1, y2: ly + P(up ? 1.1 : -1.1), w: P(0.1), cls: "ottava-line" + OFF });
                 const hitIdx = src ? src.index : (() => {
                   for (let i = us[k2].index; i >= 0; i--) if (q.tokens[i]?.kind === "ottava") return i;
@@ -9566,4 +9567,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-ba34ccb7eeab.mjs.map
+//# sourceMappingURL=layout-worker-acead250e42c.mjs.map
