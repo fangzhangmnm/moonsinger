@@ -29,8 +29,7 @@ import { keyParts, keyLayout, keyPrims } from "./keytext.ts";
 import { layoutHead } from "../frame/rowhead.ts";
 import type { Part } from "../frame/cell.ts";
 import { scalePrim } from "../skyline.ts";
-import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_DX, AUG_R,
-  BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, ACC_W, ARP_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, JP_BODY, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, AUG_Y, lowDotY, LOW_DOT_UNDER, GHOST_K, HEAD_EM, MARK_GAP, MARK_GAP2, STACC_W, STACC_H, STACC_STEP, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, TEN_L, TEN_W, TEN_DY, TEN_STEP, MARCATO_EM, UNSTRESS_EM, BREATH_EM, BREATH_Y, MID_TEXT_CH, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText } from "./glyphs.ts";
+import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_GAP, UL_W, DASH_PITCH, BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, DIGIT_H, KIT_CHAR, JP_BODY, HEAD_EM, MARK_GAP, MARK_GAP2, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, MARCATO_EM, UNSTRESS_EM, CHORD_H, chordNameW, dotPath } from "./glyphs.ts";
 
 /** 简谱数字行贴挂件的先后（从数字往上：演奏法 → 音的修饰 → 力度道 → 跳转 → 速度 → 风格 → 小节号 → 和弦级数；歌词在下面）。和五线谱同一张道名表（frame/lanes.ts）。 */
 export const JIANPU_LANES: readonly LaneKind[] = ["strength", "noteDynamics", "dynamics", "nav", "tempo", "groove", "barNumber", "chordTag", "lyrics"];
@@ -230,11 +229,14 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       const fd = mode === "digits" ? foldOf(u, c.aux[r]) : undefined, lt = lettersOf(q, u, mode, c.aux[r]), n = extraGlyphs(u), contDash = isContDash(u);
       // 横线 / 一拍一个 0：每个字形占一拍的宽——按排完版之后这个音实际占到下一列（下一个音 / 小节线 / 行尾）的宽平分，扣掉后面的附点、换气（统筹看 5-6 样张）
       const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
-      const nc = noteCell({ u, q, mode, ...(c.aux[r] ? { aux: c.aux[r] } : {}), fifths, base, ...(underlines(u) ? { ulY: ulTop.get(ulKey(u))! } : {}), step: n ? Math.max(DASH_PITCH, (span / jk - tailW(u)) / (n + 1)) : null, limit: span / jk, ...(tok !== undefined ? { tok } : {}), artCls,
-        ...(u.note && u.inhale ? { inhale: { text: u.inhale === "big" ? _tIn(o.locale, "深吸##记号") : _tIn(o.locale, "吸##记号"), size: tx("breath-label") / Q(1) } } : {}) });
+      const nc = noteCell({ u, q, mode, ...(c.aux[r] ? { aux: c.aux[r] } : {}), fifths, base, ...(underlines(u) ? { ulY: ulTop.get(ulKey(u))! } : {}), step: n ? Math.max(DASH_PITCH, (span / jk - tailW(u)) / (n + 1)) : null, limit: span / jk, ...(tok !== undefined ? { tok } : {}), artCls });
       { const ox = P(u.x), oy = staffTop(row), f = Q(1); for (const p of nc.cell.prims(0, 0)) { scalePrim(p, f, ox, oy); put(row, p); } }
       const x0 = P(u.x) + Q(nc.x0), cx = P(u.x) + Q(nc.cx), glyphW = nc.glyphW;
       botOf.set(u, nc.bot);
+      if (o.__cells) {   // 测试用（守卫 2）：这个盒子放在哪（行、原点 px、单位多大）；wall = 这一行里后面第一根小节线那根线（没有 = 行尾），px
+        const nb = units.find((v) => v.system === u.system && v.x > u.x && v.kind === "bar");
+        o.__cells({ ...(tok !== undefined ? { tok } : {}), box: nc.cell.box(), prims: nc.cell.prims(0, 0), row, ox: P(u.x), unit: Q(1), wall: nb ? P(nb.x) + Q(BAR_DX) : P(staffEnd[u.system]!) });
+      }
       if (u.note && (u.ghost || !u.pitch)) {   // 没写音高的音：点得到、能放字
         if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W), d: NaN });
         if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(DIGIT_W) + Q(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!(tokens[u.index] as NoteTok | undefined)?.hyph });

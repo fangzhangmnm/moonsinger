@@ -22,8 +22,11 @@ export type Track = StaffTrack;
 /** 框架交给画法的（两种画法共用一个对象；数字行只用其中一部分）。 */
 export type RowDrawCtx = StaffDrawCtx;
 export interface LyricAnchor { index: number; system: number; cx: number; lyric: string; hyph: boolean }
-/** 框架交给画法的这一条轨的预处理（和谱种无关，画法用得上就用）：folds = 叠着的和弦折成的和弦名（这条轨的和弦选项是「折叠」时才有；token 下标 → 折法；第五刀 5-4）。 */
-export interface TrackAux { folds?: ReadonlyMap<number, ChordFold> }
+/** 框架交给画法的这一条轨的预处理（和谱种无关，画法用得上就用）：folds = 叠着的和弦折成的和弦名（这条轨的和弦选项是「折叠」时才有；token 下标 → 折法；第五刀 5-4）。
+ *  labels = 出声的换气那行小字（「吸」「深吸」，按界面语言）：字、字号、写出来多宽，单位 = 这一种行自己的单位（sp ÷ 行里的尺寸比例）；量和画用同一份（第八刀守卫 2：量 = 画，不估）。数字行才有。 */
+export interface TrackAux { folds?: ReadonlyMap<number, ChordFold>; labels?: { readonly inhale: Readonly<Record<"soft" | "big", RowLabel>> } }
+/** 一行小字：字、字号、写出来多宽（前进宽）。 */
+export interface RowLabel { readonly text: string; readonly size: number; readonly w: number }
 
 /** 一种行的画法（设计稿第 7 节提案里的 RowDrawer，按两个真的实现收成这个形状）。 */
 export interface RowDrawer {
@@ -49,7 +52,7 @@ export const DRAWERS: Readonly<Record<RowKind, RowDrawer>> = {
   // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
   jianpu: { kind: "jianpu", measure: (q, k, aux) => measureJianpu(q, k, "digits", aux), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
   // 鼓的 X 行：和数字行同一套量和画（节奏的写法一样），音画成 X、不写升降号 / 八度点 / 琶音（jianpu/draw.ts 的 x 那一路）
-  jianpuX: { kind: "jianpuX", measure: (q, k) => measureJianpu(q, k, "x"), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine, "x"), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
+  jianpuX: { kind: "jianpuX", measure: (q, k, aux) => measureJianpu(q, k, "x", aux), lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine, "x"), lanes: JIANPU_LANES, anchors: jianpuAnchors, oneRow: true },
 };
 
 /** 一种行在主线程上的几何（设计稿第 3.3 节末；统筹审第四刀接口第 2 条：和 DRAWERS 并排、按行的种类查）。谱面（score-view）只查这张表，不写「如果是简谱」。

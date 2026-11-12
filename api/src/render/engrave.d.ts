@@ -2,6 +2,7 @@ import { type TextMeasure } from "./text/index.ts";
 import { type Lang } from "../i18n/index.ts";
 import { type Song, type Token, type Focus, type Staff } from "../score/song.ts";
 import { type PercInfo } from "../gm/percussion.ts";
+import type { Ink } from "./frame/cell.ts";
 import { type HarmonyRead } from "../theory/index.ts";
 import { type RowKind } from "./notations.ts";
 /** tok = 这个图元属于哪个 token（id）：写字头 / 选区 / 强调色不进排版，score-view 按 data-tok 在 DOM 上开关 class（W-17 第 1 刀，2026-10-15）。 */
@@ -131,6 +132,16 @@ export interface EngraveOpts {
     locale: Lang;
     /** 只给测试用（刀 4b 守卫「注解不改版面」）：注解（ann）一个都不画。开关两边可印的图元必须逐个相同——注解只看天际线、不写。 */
     __noAnn?: boolean;
+    /** 测试用（第八刀守卫 2）：数字行每个音 / 休止的盒子——墨迹框、它自己的图元（数字行的单位，相对这一列）、这一段占到多宽。 */
+    __cells?: (c: {
+        tok?: number;
+        box: Ink;
+        prims: Prim[];
+        row: number;
+        ox: number;
+        unit: number;
+        wall: number;
+    }) => void;
 }
 /** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。staffTop / staff = 五线谱这一行自己的数据（staff/geometry.ts StaffRowData；挪成行的 data 归第二刀）。 */
 export interface SystemBox {

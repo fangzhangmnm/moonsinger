@@ -67,3 +67,15 @@ export type PlaceId = keyof typeof PLACE;
 export declare const gapOf: (id: PlaceId, n: number) => number;
 /** 数「第几个」按哪一组数。 */
 export declare const groupOf: (id: PlaceId) => string;
+/** 记号表（render/signs.ts）里贴在「音」上的记号（lane = "note"）在盒子里归哪一行（画在核本身上的 = core：幽灵音 = 数字小一号）。
+ *  新加这样的记号没在这里写一行 = 编译不过；test/jianpu-cells.test.ts 核着这张单子和记号表一致（第八刀守卫 3）。 */
+export type NoteSignId = "art:staccato" | "art:ghost" | "art:tenuto" | "art:breath" | "art:whisper" | "art:arpeggio" | "art:roll";
+export declare const NOTE_SIGN_PLACE: {
+    readonly "art:staccato": "staccato";
+    readonly "art:tenuto": "tenuto";
+    readonly "art:breath": "breath";
+    readonly "art:whisper": "xmark";
+    readonly "art:arpeggio": "arpeggio";
+    readonly "art:roll": "roll";
+    readonly "art:ghost": "core";
+};

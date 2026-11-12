@@ -34,3 +34,7 @@ export type PlaceId = keyof typeof PLACE;
 export const gapOf = (id: PlaceId, n: number): number => { const p: Placement = PLACE[id]; return n > 0 && p.next !== undefined ? p.next : p.gap; };
 /** 数「第几个」按哪一组数。 */
 export const groupOf = (id: PlaceId): string => (PLACE[id] as Placement).group ?? id;
+/** 记号表（render/signs.ts）里贴在「音」上的记号（lane = "note"）在盒子里归哪一行（画在核本身上的 = core：幽灵音 = 数字小一号）。
+ *  新加这样的记号没在这里写一行 = 编译不过；test/jianpu-cells.test.ts 核着这张单子和记号表一致（第八刀守卫 3）。 */
+export type NoteSignId = "art:staccato" | "art:ghost" | "art:tenuto" | "art:breath" | "art:whisper" | "art:arpeggio" | "art:roll";
+export const NOTE_SIGN_PLACE = { "art:staccato": "staccato", "art:tenuto": "tenuto", "art:breath": "breath", "art:whisper": "xmark", "art:arpeggio": "arpeggio", "art:roll": "roll", "art:ghost": "core" } as const satisfies Record<NoteSignId, PlaceId | "core">;

@@ -25,7 +25,7 @@ export declare const JP_BODY: {
 /** 中途换调 / 换拍号写的字（「1=D」「3/4」）占多宽（sp，按字数估：这几个字都是半角）。 */
 export declare const MID_TEXT_EM = 1.4, MID_TEXT_CH = 0.62;
 /** 换气：音后面的「V」占多宽、「吸 / 深吸」小字占多宽（sp；量的时候留出来）。 */
-export declare const BREATH_W: number, INHALE_W = 2.2;
+export declare const BREATH_W: number;
 /** 和弦竖叠（第五刀 5-4；UX 稿第 7 节「只压高、不缩宽」）：数字之间留多少（sp）；数字本身多高（基线到上沿）；琶音的竖波浪往左占多宽。 */
 export declare const CHORD_GAP = 0.25, DIGIT_H: number, ARP_W = 0.9;
 /** 和弦里每个数字的基线（局部 y）：dots = 每个音的八度点数（+ 高、− 低），从最低的音起；最低的那个在行的基线上，往上一个叠一个，
@@ -111,6 +111,16 @@ export declare const supAccEm: (gk?: number) => number;
 export declare const HEAD_CH_EM: Readonly<Record<string, number>>;
 /** 这串字在这个字号下多宽（同字号的单位）；表里没有的字按 0.6。 */
 export declare const headTextW: (s: string, size: number) => number;
+/** 数字行上几个不是数字的字的墨迹框（第八刀守卫 2：盒子报的边 = 真墨迹）：[左, 下, 右, 上]（字号的倍数，y 往上为正、从基线算）+ 前进宽。
+ *  vendor 那款字 Noto Sans SC 量的（test/jianpu-cells.test.ts 用同一款字量墨核着盒子）。CJK 小字（「吸」「深吸」）按「一个字一个字宽、基线下 0.08 上 0.83」。 */
+export declare const GLYPH_INK: Readonly<Record<string, readonly [number, number, number, number, number]>>;
+/** 一个字（表里的）画在 (x, y)（y = 基线）、字号 size、按 anchor 对齐时的墨迹框（局部：y 往下为正）。表里没有的 = 按数字算。 */
+export declare function glyphInk(ch: string, x: number, y: number, size: number, anchor: "start" | "middle"): {
+    x0: number;
+    x1: number;
+    y0: number;
+    y1: number;
+};
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export declare const accText: (rel: number) => string;
 export declare const letterW: (step: string) => number;

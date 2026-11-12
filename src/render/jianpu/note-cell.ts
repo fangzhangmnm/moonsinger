@@ -12,9 +12,9 @@ import { percOf } from "../../gm/percussion.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf } from "./chunk.ts";
 import { PLACE, gapOf, groupOf, type PlaceId } from "./place.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_STEP, ACC_EM, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_R, AUG_Y,
-  BREATH_W, INHALE_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, LOW_DOT_UNDER, GHOST_K,
+  BREATH_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, LOW_DOT_UNDER, GHOST_K,
   STACC_W, STACC_H, TEN_L, TEN_W, BREATH_EM, BREATH_Y, CHORD_EM, CHORD_SX, CHORD_H, chordNameW, chordBassCx, stackBases, dotPath, DOT_GAP,
-  ACC_GLYPH_EM, ACC_RISE, ACC_SEP, accGlyphs, accGlyphsOfText, accRunW, supAccEm, accStroke } from "./glyphs.ts";
+  ACC_GLYPH_EM, ACC_RISE, ACC_SEP, accGlyphs, accGlyphsOfText, accRunW, supAccEm, accStroke, glyphInk } from "./glyphs.ts";
 
 export interface NoteCellIn {
   u: Chunk; q: JianpuTrack; mode: JianpuMode; aux?: JianpuAux;
@@ -29,8 +29,6 @@ export interface NoteCellIn {
   tok?: number;
   /** 演奏法的类名（台上那位不认的画灰）；量的时候不用给。 */
   artCls?: (a: string, base?: string) => string;
-  /** 「吸 / 深吸」那行小字（字、字号，数字行的单位）；量的时候不用给（宽照 INHALE_W 留）。 */
-  inhale?: { text: string; size: number };
 }
 export interface NoteCellOut {
   cell: Cell;
@@ -76,7 +74,7 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
   const ulBot = nUL ? (a.ulY ?? coreBottom(u, q, mode, aux) + UL_DROP) + (nUL - 1) * UL_GAP + UL_W / 2 : 0;
   const head = cell();
   const digitPart = (x: number, y: number, s: string, cls: string, k = gk): Part =>
-    part(textInk(x - (DIGIT_W * k) / 2, x + (DIGIT_W * k) / 2, y - DIGIT_H * k, y), [{ ...T, t: "text", x, y, s, cls, size: DIGIT_EM * k, anchor: "middle" }]);
+    part(s === "x" ? glyphInk("x", x, y, DIGIT_EM * k, "middle") : textInk(x - (DIGIT_W * k) / 2, x + (DIGIT_W * k) / 2, y - DIGIT_H * k, y), [{ ...T, t: "text", x, y, s, cls, size: DIGIT_EM * k, anchor: "middle" }]);
   const dashPart = (x: number): Part => part({ x0: x - DASH_L / 2, x1: x + DASH_L / 2, y0: DASH_Y - DASH_W / 2, y1: DASH_Y + DASH_W / 2 }, [{ ...T, t: "line", x1: x - DASH_L / 2, y1: DASH_Y, x2: x + DASH_L / 2, y2: DASH_Y, w: DASH_W, cls: "jp-dash" }]);
   /** 横线 / 0 落在第 k 拍：一拍一个字形，在那一拍里的位置和第一个字形在第一拍里一样（draw.ts 原来的 gx）。 */
   const step = a.step ?? DASH_PITCH;
@@ -117,14 +115,14 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
     } else if (mode === "x" && kit) {   // 整套鼓：每一下按五线鼓谱的符头种类换字；同时敲的几件按五线鼓谱上的高低叠；幽灵音 = 小一号
       const hits = ps.map((pp, i) => ({ i, pi: percOf(128, 0, midiOf(pp)) })).sort((p1, p2) => (p2.pi?.line ?? 4) - (p1.pi?.line ?? 4) || p2.i - p1.i);
       hits.forEach(({ i, pi }, k) => {
-        const yb = bases[k]! - DIGIT_H * 0.12, sz = DIGIT_EM * KIT_EM * gk;
-        head.core(part(textInk(cx - (DIGIT_W * gk) / 2, cx + (DIGIT_W * gk) / 2, yb - DIGIT_H * gk, yb), [{ ...T, t: "text", x: cx, y: yb, s: KIT_CHAR[pi?.head ?? "normal"] ?? "●", cls: small ? "jp-digit jp-x jp-kit art-ghost" : "jp-digit jp-x jp-kit", size: sz, anchor: "middle" }]));
+        const yb = bases[k]! - DIGIT_H * 0.12, sz = DIGIT_EM * KIT_EM * gk, ch = KIT_CHAR[pi?.head ?? "normal"] ?? "●";
+        head.core(part(glyphInk(ch, cx, yb, sz, "middle"), [{ ...T, t: "text", x: cx, y: yb, s: ch, cls: small ? "jp-digit jp-x jp-kit art-ghost" : "jp-digit jp-x jp-kit", size: sz, anchor: "middle" }]));   // 墨迹照字形表（守卫 2）
         members.push({ i, yb: bases[k]! });
       });
     } else if (mode === "x") {   // 只有一件鼓 = X、幽灵音 = 小 x；同时敲的几下往上一个叠一个
       order.forEach((i, k) => {
-        const k2 = small ? GHOST_K : X_EM;
-        head.core(part(textInk(cx - (DIGIT_W * k2) / 2, cx + (DIGIT_W * k2) / 2, bases[k]! - DIGIT_H * k2, bases[k]!), [{ ...T, t: "text", x: cx, y: bases[k]!, s: small ? "x" : "X", cls: small ? "jp-digit jp-x art-ghost" : "jp-digit jp-x", size: DIGIT_EM * k2, anchor: "middle" }]));
+        const k2 = small ? GHOST_K : X_EM, ch = small ? "x" : "X";
+        head.core(part(glyphInk(ch, cx, bases[k]!, DIGIT_EM * k2, "middle"), [{ ...T, t: "text", x: cx, y: bases[k]!, s: ch, cls: small ? "jp-digit jp-x art-ghost" : "jp-digit jp-x", size: DIGIT_EM * k2, anchor: "middle" }]));
         members.push({ i, yb: bases[k]! });
       });
     } else {   // 数字 / 字母：一摞（最低的在基线上）；中间那几个的八度点在叠的时候已经让开了 = 算在它自己的核里
@@ -172,8 +170,8 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
       top = head.edge("above");
       // 气声 = 数字 + ×；台上那位固定敲一个键 = 每个数字 + ×（两样都有 = 一个 ×）
       if (u.whisper || xHead) {
-        const y = hiBase - DIGIT_H + 0.5, w = 0.62 * ACC_EM;
-        stick("xmark", part({ x0: 0, x1: w, y0: y - w, y1: y }, [{ ...T, t: "text", x: 0, y, s: "×", cls: u.whisper ? art("whisper", "jp-acc whisper") : "jp-acc xhead", size: ACC_EM, anchor: "start" }]), { cross: 0 });
+        const y = hiBase - DIGIT_H + 0.5;
+        stick("xmark", part(glyphInk("×", 0, y, ACC_EM, "start"), [{ ...T, t: "text", x: 0, y, s: "×", cls: u.whisper ? art("whisper", "jp-acc whisper") : "jp-acc xhead", size: ACC_EM, anchor: "start" }]), { cross: 0 });   // 墨迹照字形表（守卫 2）
       }
       if (u.art.includes("roll")) {   // 滚奏 = 数字下面三道短斜线（UX 稿第 7 节）
         const ps2: Prim[] = []; for (let k = 0; k < 3; k++) { const yy = 0.18 + k * 0.28; ps2.push({ ...T, t: "line", x1: cx - 0.4, y1: yy + 0.18, x2: cx + 0.4, y2: yy - 0.18, w: 0.11, cls: art("roll", "jp-roll") }); }
@@ -194,10 +192,15 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
   if (hasAugDot(u)) tail("augDot", part({ x0: 0, x1: 2 * AUG_R, y0: -AUG_R, y1: AUG_R }, [{ ...T, t: "path", d: dotPath(AUG_R, 0, AUG_R), cls: "jp-dot" }]), AUG_Y);
   if (u.note && u.breath) {   // 换气 = 音后面一个 V；出声的换气写「V 吸」/「V 深吸」（UX 稿第 5 节）
     const vw = BREATH_W - 0.35, prims: Prim[] = [{ ...T, t: "text", x: 0, y: 0, s: "V", cls: art("breath", "jp-acc breath"), size: BREATH_EM, anchor: "start" }];
-    if (u.inhale && a.inhale) prims.push({ ...T, t: "text", x: 1.0, y: 0, s: a.inhale.text, cls: art("inhale", "breath-label"), size: a.inhale.size, anchor: "start" });
-    const w = vw + (u.inhale ? INHALE_W : 0), e = whole.edge("right");
-    const gap = a.limit === undefined ? PLACE.breath.gap : Math.max(0.1, Math.min(PLACE.breath.gap, a.limit - 0.6 - w - e));   // 不越过这一段占到的地方（下一列 / 小节线），离它留一点（原 draw.ts 的规矩）
-    whole.attach(PLACE.breath.side, part({ x0: 0, x1: w, y0: -0.7 * BREATH_EM, y1: 0 }, prims), { gap, cross: BREATH_Y });
+    // 「吸 / 深吸」：框架按界面语言量好的那一份（aux.labels），量和画同一份（第八刀守卫 2：量 = 画，不估）
+    const lb = u.inhale ? a.aux?.labels?.inhale[u.inhale] : undefined;
+    if (lb) prims.push({ ...T, t: "text", x: 1.0, y: 0, s: lb.text, cls: art("inhale", "breath-label"), size: lb.size, anchor: "start" });
+    // 墨迹：V 照字形表；小字 = 前进宽 × 字身（汉字 基线下 0.08 上 0.83；别的字按拉丁字母 上 0.75、带下伸的 0.22）
+    const cjk = !!lb && /[\u3000-\u9fff]/.test(lb.text), vk = glyphInk("V", 0, 0, BREATH_EM, "start");
+    const lab = lb ? { x1: 1.0 + lb.w, y0: -(cjk ? 0.83 : 0.75) * lb.size, y1: (cjk ? 0.08 : 0.22) * lb.size } : null;
+    const ink = { x0: vk.x0, x1: lab ? Math.max(vk.x1, lab.x1) : vk.x1, y0: Math.min(vk.y0, lab?.y0 ?? 0), y1: Math.max(vk.y1, lab?.y1 ?? 0) }, e = whole.edge("right");
+    const gap = a.limit === undefined ? PLACE.breath.gap : Math.max(0.1, Math.min(PLACE.breath.gap, a.limit - 0.6 - (ink.x1 - ink.x0) - e));   // 不越过这一段占到的地方（下一列 / 小节线），离它留一点（原 draw.ts 的规矩）
+    whole.attach(PLACE.breath.side, part(ink, prims), { gap, cross: BREATH_Y });
   }
   return { cell: whole, x0, cx, glyphW, members, hiBase, bot, ...(top !== undefined ? { top } : {}), ...(leftGap !== undefined ? { leftGap } : {}) };
 }

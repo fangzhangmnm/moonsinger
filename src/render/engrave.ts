@@ -33,7 +33,7 @@ import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, ROW_STEP, MARGIN, BAR_W, TIT
 import { PAPER_PARAMS, ROW_PARAMS } from "./layout-params.ts";   // 排版参数表（纸一级按谱种、行一级按行的种类）
 import { wrapTitle } from "./frame/furniture.ts";
 // 五线谱这一种：只从它的入口拿（施工单 1b-9 守卫 1：框架不直接 import 字形表、符干、谱号模块）
-import { DRAWERS, NOTATIONS, type RowKind, type FoldFamily, type StaffTrack, type Unit, type Chunk, type TrackAux } from "./notations.ts";   // 谱种的表（第四刀）：框架只经过它拿画法，不直接 import staff/ / jianpu/
+import { DRAWERS, NOTATIONS, type RowKind, type FoldFamily, type StaffTrack, type Unit, type Chunk, type TrackAux, type RowLabel } from "./notations.ts";   // 谱种的表（第四刀）：框架只经过它拿画法，不直接 import staff/ / jianpu/
 import type { LyricPart, LyricSpot } from "./frame/lyric-spots.ts";
 import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
@@ -95,6 +95,8 @@ export interface EngraveOpts {
   locale: Lang;
   /** 只给测试用（刀 4b 守卫「注解不改版面」）：注解（ann）一个都不画。开关两边可印的图元必须逐个相同——注解只看天际线、不写。 */
   __noAnn?: boolean;
+  /** 测试用（第八刀守卫 2）：数字行每个音 / 休止的盒子——墨迹框、它自己的图元（数字行的单位，相对这一列）、这一段占到多宽。 */
+  __cells?: (c: { tok?: number; box: Ink; prims: Prim[]; row: number; ox: number; unit: number; wall: number }) => void;
 }
 
 /** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。staffTop / staff = 五线谱这一行自己的数据（staff/geometry.ts StaffRowData；挪成行的 data 归第二刀）。 */
@@ -386,11 +388,18 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     //   一行排满只拉 / 压弹簧（小节线、调号这些固定宽的不拉）。对齐线 = 列的 x；符头画在 x + 0.35，临时记号挂在左边、进前一列的空。
     const kScale = (k: RowKind) => ROW_PARAMS[k][density].scale;   // 行里的尺寸比例（这种行自己的字形 / 偏移统一乘它）
     // 叠着的和弦折成和弦名（第五刀 5-4；预处理，和谱种无关，用不用归画法）：这条轨的和弦选项是「折叠」时，每个叠音的音问乐理模块折不折得了（能还原才折）
-    const aux: TrackAux[] = per0.map((q, i) => {
-      const th = harmonyTheory(); if (q.vrt || rowHost[i]! >= 0 || q.p.perc || songLook.chordsOf(q.p.id) !== "fold" || !th.fold) return {};   // 叠着的折叠成和弦名也是认和弦：打击乐的行不折（7-O）
+    const foldsOf = (q: StaffTrack, i: number): ReadonlyMap<number, ChordFold> | null => {
+      const th = harmonyTheory(); if (q.vrt || rowHost[i]! >= 0 || q.p.perc || songLook.chordsOf(q.p.id) !== "fold" || !th.fold) return null;   // 叠着的折叠成和弦名也是认和弦：打击乐的行不折（7-O）
       const folds = new Map<number, ChordFold>(); let at = { fifths: DEFAULT_KEY, minor: false };
       q.tokens.forEach((t, k) => { if (t.kind === "key") at = { fifths: t.fifths, minor: t.mode === "minor" }; else if (t.kind === "note" && t.pitch && t.chord?.length) { const f = th.fold!([t.pitch, ...t.chord], at, t.harm); if (f) folds.set(k, f); } });
-      return folds.size ? { folds } : {};
+      return folds.size ? folds : null;
+    };
+    // 数字行上「吸 / 深吸」那行小字：按界面语言、用这一页的尺子量好，量和画拿同一份（第八刀守卫 2）
+    const labelOf = (text: string, k: number): RowLabel => ({ text, size: tx("breath-label") / P(k), w: mw("breath-label", text) / k });
+    const aux: TrackAux[] = per0.map((q, i) => {
+      const folds = foldsOf(q, i), k = kScale(kinds[i]!);
+      const labels = kinds[i] === "staff" ? null : { inhale: { soft: labelOf(_tIn(o.locale, "吸##记号"), k), big: labelOf(_tIn(o.locale, "深吸##记号"), k) } };
+      return { ...(folds ? { folds } : {}), ...(labels ? { labels } : {}) };
     });
     const measured = per0.map((q, i) => DRAWERS[kinds[i]!].measure(q, kScale(kinds[i]!), aux[i]));
     const atracks: ArrangeTrack<Unit>[] = per0.map((_q, pi) => ({ entries: measured[pi]!.entries, laneBase: (rowHost[pi] >= 0 ? rowHost[pi] : pi) * 4 }));   // 声部 2 画在主人那一行 = 和主人一个道基数

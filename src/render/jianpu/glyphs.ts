@@ -33,7 +33,7 @@ export const JP_BODY = { top: BAR_Y0, bottom: BAR_Y1 } as const;
 /** 中途换调 / 换拍号写的字（「1=D」「3/4」）占多宽（sp，按字数估：这几个字都是半角）。 */
 export const MID_TEXT_EM = 1.4, MID_TEXT_CH = 0.62;
 /** 换气：音后面的「V」占多宽、「吸 / 深吸」小字占多宽（sp；量的时候留出来）。 */
-export const BREATH_W = 0.35 + 0.9, INHALE_W = 2.2;
+export const BREATH_W = 0.35 + 0.9;
 /** 和弦竖叠（第五刀 5-4；UX 稿第 7 节「只压高、不缩宽」）：数字之间留多少（sp）；数字本身多高（基线到上沿）；琶音的竖波浪往左占多宽。 */
 export const CHORD_GAP = 0.25, DIGIT_H = BASE_Y - DIGIT_TOP, ARP_W = 0.9;
 /** 和弦里每个数字的基线（局部 y）：dots = 每个音的八度点数（+ 高、− 低），从最低的音起；最低的那个在行的基线上，往上一个叠一个，
@@ -113,6 +113,18 @@ export const supAccEm = (gk = 1): number => (ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM
 export const HEAD_CH_EM: Readonly<Record<string, number>> = { "0": 0.555, "1": 0.555, "2": 0.555, "3": 0.555, "4": 0.555, "5": 0.555, "6": 0.555, "7": 0.555, "8": 0.555, "9": 0.555, "=": 0.555, "/": 0.392, A: 0.608, B: 0.657, C: 0.638, D: 0.688, E: 0.589, F: 0.552, G: 0.689 };
 /** 这串字在这个字号下多宽（同字号的单位）；表里没有的字按 0.6。 */
 export const headTextW = (s: string, size: number): number => [...s].reduce((w, c) => w + (HEAD_CH_EM[c] ?? 0.6), 0) * size;
+/** 数字行上几个不是数字的字的墨迹框（第八刀守卫 2：盒子报的边 = 真墨迹）：[左, 下, 右, 上]（字号的倍数，y 往上为正、从基线算）+ 前进宽。
+ *  vendor 那款字 Noto Sans SC 量的（test/jianpu-cells.test.ts 用同一款字量墨核着盒子）。CJK 小字（「吸」「深吸」）按「一个字一个字宽、基线下 0.08 上 0.83」。 */
+export const GLYPH_INK: Readonly<Record<string, readonly [number, number, number, number, number]>> = {
+  "×": [0.178, 0.054, 0.822, 0.698, 1], V: [0.001, 0, 0.575, 0.733, 0.575], X: [0.017, 0, 0.557, 0.733, 0.573], x: [0.015, 0, 0.483, 0.543, 0.498],
+  "●": [0.05, -0.07, 0.95, 0.83, 1], "⊗": [0.13, 0.01, 0.87, 0.75, 1], "◇": [0.012, -0.108, 0.988, 0.868, 1], "△": [0.03, 0.012, 0.97, 0.826, 1], "▽": [0.03, -0.066, 0.97, 0.748, 1],
+  "□": [0.1, -0.02, 0.9, 0.78, 1], "+": [0.038, 0.116, 0.518, 0.622, 0.555], "/": [0.011, -0.179, 0.377, 0.794, 0.392], "⊘": [0.13, 0.01, 0.87, 0.75, 1],
+};
+/** 一个字（表里的）画在 (x, y)（y = 基线）、字号 size、按 anchor 对齐时的墨迹框（局部：y 往下为正）。表里没有的 = 按数字算。 */
+export function glyphInk(ch: string, x: number, y: number, size: number, anchor: "start" | "middle"): { x0: number; x1: number; y0: number; y1: number } {
+  const g = GLYPH_INK[ch] ?? [0.03, 0, 0.525, DIGIT_H / DIGIT_EM, DIGIT_W / DIGIT_EM], ox = anchor === "middle" ? x - (g[4] * size) / 2 : x;
+  return { x0: ox + g[0] * size, x1: ox + g[2] * size, y0: y - g[3] * size, y1: y - g[1] * size };
+}
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export const accText = (rel: number): string => (rel > 0 ? "♯".repeat(rel) : rel < 0 ? "♭".repeat(-rel) : "♮");
 /** 字母谱（7-B；user「下标放数字上标放升降号…我们只要保证用tracker的人能看懂就行了」）：大写字母，右上角挂升降号、右下角挂八度数字（中央 C 默认叫 C4，歌里可以改成 C3 / C5）。

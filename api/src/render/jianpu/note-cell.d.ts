@@ -18,11 +18,6 @@ export interface NoteCellIn {
     tok?: number;
     /** 演奏法的类名（台上那位不认的画灰）；量的时候不用给。 */
     artCls?: (a: string, base?: string) => string;
-    /** 「吸 / 深吸」那行小字（字、字号，数字行的单位）；量的时候不用给（宽照 INHALE_W 留）。 */
-    inhale?: {
-        text: string;
-        size: number;
-    };
 }
 export interface NoteCellOut {
     cell: Cell;

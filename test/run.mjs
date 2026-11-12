@@ -142,6 +142,7 @@ import "./z-layers.test.ts";
 import "./btn-nowrap.test.ts";
 import "./cell.test.ts";
 import "./hints.test.ts";
+import "./jianpu-cells.test.ts";
 import "./arpeggio.test.ts";
 import "./pad-rests.test.ts";
 import "./plugins.test.ts";
