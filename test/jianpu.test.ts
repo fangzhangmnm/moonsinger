@@ -8,6 +8,7 @@ import { setNotation, setPartChords } from "../src/score/song-view.ts";
 import { GEOMETRY, DRAWERS } from "../src/render/notations.ts";
 import { SIGNS } from "../src/render/signs.ts";
 import { harmonyTheory } from "../src/theory/index.ts";
+import { rangeBase, fewestDotsBase } from "../src/score/degree.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
 import { FULL_VIEWS } from "./fixtures/layout/full.ts";
 
@@ -114,6 +115,16 @@ describe("简谱数字行", () => {
     assert(xs(on.L)[2]! - xs(on.L)[1]! > xs(off.L)[2]! - xs(off.L)[1]! + 1e-6, `和弦名按名字的宽占位（C6 比一个数字宽 = 后面的音往右）：${xs(on.L)[2]! - xs(on.L)[1]!} vs ${xs(off.L)[2]! - xs(off.L)[1]!}`);
     const arp = lay([n(P("G"), TPQ, { chord: [P("E"), P("C")], art: ["arpeggio"] })], foldOn).L;
     assert(arp.prims.some((p) => p.t === "text" && /jp-chord/.test(p.cls ?? "")) && arp.prims.some((p) => p.t === "path" && /arpeggio/.test(p.cls ?? "")), "折成名字的和弦上的琶音照画（不静默丢掉）");
+  });
+  it("八度基准按乐器音域（第五刀 5-4，UX 稿第 3 节）：宿主给了音域 = 按音域；没给 = 写的音「点最少」；按音域要三个点以上 = 极端，退回点最少；基准画在「1=」那个字母上下", () => {
+    eq(rangeBase(57, 76, 0), 0, "人声 A3–E5 在 C 调 = 0");
+    eq(rangeBase(28, 55, 0), -2, "低音 E1–G3 = 低两组");
+    const low = [n(P("G", 2)), n(P("A", 2)), n(P("B", 2)), n(P("C", 3))];
+    const keyDots = (L: ReturnType<typeof lay>["L"]) => L.prims.filter((p) => p.t === "path" && /jp-key-dot/.test(p.cls ?? "")).length;
+    const voice = lay(low, undefined, { range: { lo: 57, hi: 76 } }).L, plain = lay(low).L;
+    eq(voice.systems[0]!.octBase, 0, "人声的音域 = 基准 0（这几个低音各两个点）"); eq(keyDots(voice), 0, "基准 0 = 字母上下不画点");
+    eq(plain.systems[0]!.octBase, -2, "没给音域 = 点最少（低两组）"); eq(keyDots(plain), 2, "低两组 = 「1=C」的 C 下面两个点");
+    eq(lay([n(P("C", 1)), n(P("C"))], undefined, { range: { lo: 57, hi: 76 } }).L.systems[0]!.octBase, fewestDotsBase([-3, 0]), "按音域要三个点（C1）= 极端，退回点最少");
   });
   it("下划线按拍连：两个八分在同一拍 = 一条；跨拍 = 断开；十六分 = 两层", () => {
     const e = TPQ / 2, s16 = TPQ / 4;

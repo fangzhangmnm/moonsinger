@@ -6942,6 +6942,10 @@ function toDegree(p, fifths) {
   const tonicD = 4 * 7 + tonicStepIndex(fifths), d = diatonicIndex(p) - tonicD;
   return { degree: (d % 7 + 7) % 7 + 1, shift: Math.floor(d / 7), acc: p.alter - keyAlter(p.step, fifths) };
 }
+function rangeBase(lo, hi, fifths) {
+  const a = toDegree(spellMidi(lo, fifths), fifths).shift, b = toDegree(spellMidi(hi, fifths), fifths).shift, m = (a + b) / 2;
+  return Number.isInteger(m) ? m : Math.abs(Math.floor(m)) <= Math.abs(Math.ceil(m)) ? Math.floor(m) : Math.ceil(m);
+}
 function fewestDotsBase(shifts) {
   if (!shifts.length) return 0;
   const s2 = [...shifts].sort((a, b) => a - b), lo = s2[s2.length - 1 >> 1], hi = s2[s2.length >> 1];
@@ -6999,7 +7003,16 @@ function drawJianpu(c, mine, mode = "digits") {
       if (u.kind === "key") f0 = u.fifths;
       else if (u.kind === "chunk" && u.note && u.pitch && !u.pad) shifts.push(toDegree(u.pitch, f0).shift);
     }
-    const base = fewestDotsBase(shifts);
+    const fewest = fewestDotsBase(shifts), byRange = q.p.range ? rangeBase(q.p.range.lo, q.p.range.hi, q.head.key) : null;
+    const base = byRange !== null && shifts.every((x) => Math.abs(x - byRange) <= 2) ? byRange : fewest;
+    const keyDots = (row, x0, y, size, text, tok) => {
+      if (!base || mode !== "digits") return;
+      const cs = [...text], li = cs.findIndex((ch) => /[A-G]/.test(ch));
+      if (li < 0) return;
+      const wOf = (ch) => (/[0-9]/.test(ch) ? 0.56 : ch === "=" ? 0.6 : /[♭♯]/.test(ch) ? 0.5 : 0.66) * size;
+      const lx = x0 + cs.slice(0, li).reduce((w, ch) => w + wOf(ch), 0) + wOf(cs[li]) / 2, r0 = size * 0.075, step = size * 0.2;
+      for (let j = 0; j < Math.abs(base); j++) put(row, { ...tok !== void 0 ? { tok } : {}, t: "path", d: dotPath(lx, base > 0 ? y - size * 0.82 - r0 - j * step : y + size * 0.16 + r0 + j * step, r0), cls: "jp-dot jp-key-dot" });
+    };
     for (let s2 = 0; s2 < nSys; s2++) {
       const row = rowOf(s2, r, 0);
       if (rows[row]) rows[row].octBase = base;
@@ -7011,7 +7024,10 @@ function drawJianpu(c, mine, mode = "digits") {
       const kw = P(midTextW(keyS)), tw = P(midTextW(timeS));
       const kt = q.head.idx.key !== void 0 ? tokens[q.head.idx.key]?.id : void 0, tt = q.head.idx.time !== void 0 ? tokens[q.head.idx.time]?.id : void 0;
       if (mode === "x") keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q.head.idx.key ?? 0, x: hx, y, size: tx("key-hint"), s: keyS });
-      else put(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
+      else {
+        put(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
+        keyDots(row0, hx, y, hs, keyS, kt);
+      }
       put(row0, { ...tt !== void 0 ? { tok: tt } : {}, t: "text", x: hx + kw, y, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
       if (tempoHere) tempoAt2(orn, row0, MARGIN + ind0 + 0.6 + midTextW(keyS) + midTextW(timeS) + 0.6, q.head.bpm, "tempo", q.head.idx.tempo, c.prevBpm === null || c.prevBpm === q.head.bpm ? void 0 : q.head.bpm > c.prevBpm ? "up" : "down", y);
       if (q.head.idx.key !== void 0) marks.push({ index: q.head.idx.key, kind: "key", system: row0, x: hx - Q(0.3), y: y - hs, w: kw, h: hs * 1.4 });
@@ -7038,7 +7054,10 @@ function drawJianpu(c, mine, mode = "digits") {
         fifths = u.fifths;
         const row2 = rowOf(u.system, r, 0), s2 = keyHead(u.fifths, u.minor), x = P(u.x) + Q(0.3);
         if (mode === "x") keyHints.push({ ...tokens[u.index] ? { tok: tokens[u.index].id } : {}, system: row2, index: u.index, x, y: Y(row2, BASE_Y - 0.3), size: tx("key-hint"), s: s2 });
-        else put(row2, { tok: tokens[u.index]?.id, t: "text", x, y: Y(row2, BASE_Y - 0.3), s: s2, cls: "jp-head jp-mid", size: Q(MID_TEXT_EM), anchor: "start" });
+        else {
+          put(row2, { tok: tokens[u.index]?.id, t: "text", x, y: Y(row2, BASE_Y - 0.3), s: s2, cls: "jp-head jp-mid", size: Q(MID_TEXT_EM), anchor: "start" });
+          keyDots(row2, x, Y(row2, BASE_Y - 0.3), Q(MID_TEXT_EM), s2, tokens[u.index]?.id);
+        }
         marks.push({ index: u.index, kind: "key", system: row2, x: x - Q(0.3), y: Y(row2, BASE_Y - 1.6), w: Q(midTextW(s2)), h: Q(2.2) });
         continue;
       }
@@ -8147,4 +8166,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-735eea418782.mjs.map
+//# sourceMappingURL=layout-worker-9f460da9b006.mjs.map

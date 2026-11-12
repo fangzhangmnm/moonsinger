@@ -13283,6 +13283,10 @@ function fromDegree(degree2, shift, acc, fifths) {
   const n10 = tonicStepIndex(fifths) + degree2 - 1, s10 = n10 % 7, step = STEPS[s10];
   return { step, alter: keyAlter(step, fifths) + acc, octave: 4 + Math.floor(n10 / 7) + shift };
 }
+function rangeBase(lo2, hi, fifths) {
+  const a10 = toDegree(spellMidi(lo2, fifths), fifths).shift, b3 = toDegree(spellMidi(hi, fifths), fifths).shift, m2 = (a10 + b3) / 2;
+  return Number.isInteger(m2) ? m2 : Math.abs(Math.floor(m2)) <= Math.abs(Math.ceil(m2)) ? Math.floor(m2) : Math.ceil(m2);
+}
 function fewestDotsBase(shifts) {
   if (!shifts.length) return 0;
   const s10 = [...shifts].sort((a10, b3) => a10 - b3), lo2 = s10[s10.length - 1 >> 1], hi = s10[s10.length >> 1];
@@ -13340,7 +13344,16 @@ function drawJianpu(c10, mine, mode = "digits") {
       if (u2.kind === "key") f0 = u2.fifths;
       else if (u2.kind === "chunk" && u2.note && u2.pitch && !u2.pad) shifts.push(toDegree(u2.pitch, f0).shift);
     }
-    const base2 = fewestDotsBase(shifts);
+    const fewest = fewestDotsBase(shifts), byRange = q2.p.range ? rangeBase(q2.p.range.lo, q2.p.range.hi, q2.head.key) : null;
+    const base2 = byRange !== null && shifts.every((x2) => Math.abs(x2 - byRange) <= 2) ? byRange : fewest;
+    const keyDots = (row2, x0, y2, size, text2, tok) => {
+      if (!base2 || mode !== "digits") return;
+      const cs2 = [...text2], li2 = cs2.findIndex((ch2) => /[A-G]/.test(ch2));
+      if (li2 < 0) return;
+      const wOf = (ch2) => (/[0-9]/.test(ch2) ? 0.56 : ch2 === "=" ? 0.6 : /[♭♯]/.test(ch2) ? 0.5 : 0.66) * size;
+      const lx2 = x0 + cs2.slice(0, li2).reduce((w2, ch2) => w2 + wOf(ch2), 0) + wOf(cs2[li2]) / 2, r02 = size * 0.075, step = size * 0.2;
+      for (let j2 = 0; j2 < Math.abs(base2); j2++) put2(row2, { ...tok !== void 0 ? { tok } : {}, t: "path", d: dotPath(lx2, base2 > 0 ? y2 - size * 0.82 - r02 - j2 * step : y2 + size * 0.16 + r02 + j2 * step, r02), cls: "jp-dot jp-key-dot" });
+    };
     for (let s10 = 0; s10 < nSys; s10++) {
       const row2 = rowOf(s10, r10, 0);
       if (rows[row2]) rows[row2].octBase = base2;
@@ -13352,7 +13365,10 @@ function drawJianpu(c10, mine, mode = "digits") {
       const kw = P2(midTextW(keyS)), tw2 = P2(midTextW(timeS));
       const kt = q2.head.idx.key !== void 0 ? tokens[q2.head.idx.key]?.id : void 0, tt2 = q2.head.idx.time !== void 0 ? tokens[q2.head.idx.time]?.id : void 0;
       if (mode === "x") keyHints.push({ ...kt !== void 0 ? { tok: kt } : {}, system: row0, index: q2.head.idx.key ?? 0, x: hx, y: y2, size: tx2("key-hint"), s: keyS });
-      else put2(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y: y2, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
+      else {
+        put2(row0, { ...kt !== void 0 ? { tok: kt } : {}, t: "text", x: hx, y: y2, s: keyS, cls: "jp-head", size: hs, anchor: "start" });
+        keyDots(row0, hx, y2, hs, keyS, kt);
+      }
       put2(row0, { ...tt2 !== void 0 ? { tok: tt2 } : {}, t: "text", x: hx + kw, y: y2, s: timeS, cls: "jp-head", size: hs, anchor: "start" });
       if (tempoHere) tempoAt2(orn, row0, MARGIN + ind0 + 0.6 + midTextW(keyS) + midTextW(timeS) + 0.6, q2.head.bpm, "tempo", q2.head.idx.tempo, c10.prevBpm === null || c10.prevBpm === q2.head.bpm ? void 0 : q2.head.bpm > c10.prevBpm ? "up" : "down", y2);
       if (q2.head.idx.key !== void 0) marks.push({ index: q2.head.idx.key, kind: "key", system: row0, x: hx - Q2(0.3), y: y2 - hs, w: kw, h: hs * 1.4 });
@@ -13379,7 +13395,10 @@ function drawJianpu(c10, mine, mode = "digits") {
         fifths = u2.fifths;
         const row3 = rowOf(u2.system, r10, 0), s10 = keyHead(u2.fifths, u2.minor), x2 = P2(u2.x) + Q2(0.3);
         if (mode === "x") keyHints.push({ ...tokens[u2.index] ? { tok: tokens[u2.index].id } : {}, system: row3, index: u2.index, x: x2, y: Y2(row3, BASE_Y - 0.3), size: tx2("key-hint"), s: s10 });
-        else put2(row3, { tok: tokens[u2.index]?.id, t: "text", x: x2, y: Y2(row3, BASE_Y - 0.3), s: s10, cls: "jp-head jp-mid", size: Q2(MID_TEXT_EM), anchor: "start" });
+        else {
+          put2(row3, { tok: tokens[u2.index]?.id, t: "text", x: x2, y: Y2(row3, BASE_Y - 0.3), s: s10, cls: "jp-head jp-mid", size: Q2(MID_TEXT_EM), anchor: "start" });
+          keyDots(row3, x2, Y2(row3, BASE_Y - 0.3), Q2(MID_TEXT_EM), s10, tokens[u2.index]?.id);
+        }
         marks.push({ index: u2.index, kind: "key", system: row3, x: x2 - Q2(0.3), y: Y2(row3, BASE_Y - 1.6), w: Q2(midTextW(s10)), h: Q2(2.2) });
         continue;
       }
@@ -32724,7 +32743,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-735eea418782.mjs");
+      return pick(() => "layout-worker-9f460da9b006.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-0351db4bb88f.mjs");
   }
@@ -42654,7 +42673,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "a9e90a42a281ba36" : "dev";
+var CORE_HASH = true ? "7a1a7f38df059cc7" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -58380,11 +58399,14 @@ function padHintRaw() {
     const sk2 = sampleKeyOf(catalogNow, g3.bank, g3.program);
     if (sk2) return { lo: sk2.key, hi: sk2.key, who: g3.name, title: sk2.title };
   }
-  const concept = D3.extras.lounge[curRole()]?.concept;
-  const id2 = concept?.ids?.wikidata ?? concept?.ids?.local;
-  if (!id2) return null;
-  const r10 = rangeOf(catalogNow.byId.get(id2));
+  const r10 = conceptRange(curRole()), concept = D3.extras.lounge[curRole()]?.concept;
   return r10 ? { ...r10, who: (lang() === "zh" ? concept?.name?.zh : null) ?? roleName(D3.extras, curRole()) } : null;
+}
+function conceptRange(role) {
+  const concept = D3.extras.lounge[role]?.concept;
+  const id2 = concept?.ids?.wikidata ?? concept?.ids?.local;
+  if (!id2 || !catalogNow) return null;
+  return rangeOf(catalogNow.byId.get(id2));
 }
 var GS = SOUNDS["generaluser-gs-2.0.3"];
 async function setAudition(p2) {
@@ -59057,7 +59079,8 @@ function partViews() {
     const eng = activeInstrument(D3.extras, p2.role)?.engine ?? "unknown", plug = performerOf(eng);
     const lm2 = mutes.get(p2.id);
     const ly2 = plug?.lyrics, noLyrics = ly2 === "hum" || ly2 === "none" ? _t("{p}{p2}\uFF1A\u7A7A\u7740\u7684\u6B4C\u8BCD\u4F4D\u4E0D\u5F00\u6846\uFF1B\u5DF2\u7ECF\u5199\u4E86\u7684\u5B57\u70B9\u5F00\u80FD\u6539\u3001\u80FD\u5220", { p: labels[k2], p2: ly2 === "hum" ? _t("\uFF08\u5143\u97F3\u7248\uFF09\u53EA\u54FC") : _t("\u4E0D\u5531\u6B4C\u8BCD") }) : "";
-    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...plug?.notation?.({ extras: D3.extras, role: p2.role }) ?? {}, ignores: ignoredFor(p2.role) };
+    const nota = plug?.notation?.({ extras: D3.extras, role: p2.role }) ?? {}, rg2 = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p2.role);
+    return { ...noLyrics ? { noLyrics } : {}, ...lm2 && lm2.size ? { lyricMute: new Set(lm2.keys()) } : {}, ...rg2 ? { range: { lo: rg2.lo, hi: rg2.hi } } : {}, id: p2.id, name: labels[k2], abbr: looks.abbrs[k2], colorIdx: looks.colors[k2], empty: !plug, first: k2 === 0, hidden: !isShown(p2.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p2.role) };
   });
 }
 function afterViewChange() {
@@ -62360,4 +62383,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-df3a44a69f42.mjs.map
+//# sourceMappingURL=moonsinger-95a9ac4b4eb8.mjs.map

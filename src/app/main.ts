@@ -1595,10 +1595,14 @@ function padHintRaw(): HintRange {
     return { lo: k, hi: k, who: g.name, title: al ? _t("写这个音 = 原速（音高对齐：写的音 ≈ 听到的音）") : _t("原速键：按这个键，采样不拉伸不压缩") };
   }
   if (g && g.note === undefined && g.origin.library === GS_LIBRARY_ID) { const sk = sampleKeyOf(catalogNow, g.bank, g.program); if (sk) return { lo: sk.key, hi: sk.key, who: g.name, title: sk.title }; }   // 旧歌（上场时还没抄 sfx）
-  const concept = D.extras.lounge[curRole()]?.concept as { ids?: { wikidata?: string | null; local?: string | null }; name?: { zh?: string } } | undefined;
-  const id = concept?.ids?.wikidata ?? concept?.ids?.local; if (!id) return null;
-  const r = rangeOf(catalogNow.byId.get(id));
+  const r = conceptRange(curRole()), concept = D.extras.lounge[curRole()]?.concept as { name?: { zh?: string } } | undefined;
   return r ? { ...r, who: (lang() === "zh" ? concept?.name?.zh : null) ?? roleName(D.extras, curRole()) } : null;
+}
+/** 这个角色那件乐器（目录里的概念）的音域（MIDI + 键上的提示字）；目录还没载 / 角色没有概念 / 目录里没写 = null。pad 的提示和简谱的八度基准共用（谱面分家第五刀 5-4）。 */
+function conceptRange(role: string): { lo: number; hi: number; title: string } | null {
+  const concept = D.extras.lounge[role]?.concept as { ids?: { wikidata?: string | null; local?: string | null } } | undefined;
+  const id = concept?.ids?.wikidata ?? concept?.ids?.local; if (!id || !catalogNow) return null;
+  return rangeOf(catalogNow.byId.get(id));
 }   // 试听台上的（GS 预设；note = 鼓件，pad 任何键都敲它）；null = 月读 / 没选
 const GS = SOUNDS["generaluser-gs-2.0.3"];
 /** 试听台：从 GS 切出这个预设、载进实时合成器（22 ms + 几 MB）；换到月读 = 清掉。 */
@@ -2048,7 +2052,9 @@ function partViews(): PartView[] {
     const lm = mutes.get(p.id);
     // 台上这位不唱字（乐器 / 元音版）：谱下空着的歌词位点了不开框（user 2026-10-10「wishlist 不支持唱歌的track可以删歌词，但是不会误点创建歌词文本框」）；没人上场的照旧能写（多半等着请月读）
     const ly = plug?.lyrics, noLyrics = ly === "hum" || ly === "none" ? _t("{p}{p2}：空着的歌词位不开框；已经写了的字点开能改、能删", { p: labels[k], p2: ly === "hum" ? _t("（元音版）只哼") : _t("不唱歌词") }) : "";
-    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...(plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}), ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
+    // 台上那位的音域（简谱的八度基准按它定；人声 = 插件自报，乐器 = 目录里角色那件乐器的；鼓 / 固定敲一个键的不要；目录没载 = 先没有，partLooks 载好了会重画）
+    const nota = plug?.notation?.({ extras: D.extras, role: p.role }) ?? {}, rg = !plug || nota.perc || nota.xHead ? null : plug.hintRange ?? conceptRange(p.role);
+    return { ...(noLyrics ? { noLyrics } : {}), ...(lm && lm.size ? { lyricMute: new Set(lm.keys()) } : {}), ...(rg ? { range: { lo: rg.lo, hi: rg.hi } } : {}), id: p.id, name: labels[k], abbr: looks.abbrs[k], colorIdx: looks.colors[k], empty: !plug, first: k === 0, hidden: !isShown(p.id), badges, mono: !plug?.poly, ...nota, ignores: ignoredFor(p.role) };   // xHead = 台上那位固定敲一个键（鼓件 / 音效固定原速）→ 谱上画 ×；perc = 鼓 / 音效 → 鼓谱（一线谱 / 五线鼓谱，v0.10.27，有 perc 时符头按仓鼠的表、不画 ×）
   });
 }
 /** 显示状态变了：光标所在的声部要是看不见了，挪到这张纸上第一个看得见的声部。 */
