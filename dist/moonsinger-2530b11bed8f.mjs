@@ -12131,6 +12131,7 @@ function rollDefaultHz(key) {
 
 // src/render/ornaments/index.ts
 var PIN_GAP = 0.7;
+var PIN_MIN = 1.4;
 var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
 var DASH = { len: 0.6, gap: 1 };
 var RAMP_DASH = { len: 0.5, gap: 0.4 };
@@ -12248,7 +12249,7 @@ function layDynamics(c10) {
     const word = dir === "cresc" ? "cresc." : "dim.", ww = P2(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
     let said = false, acc = 0, tailDone = false;
     segs.forEach(([sy2, a02, b3], i10) => {
-      if (b3 - a02 < P2(0.3)) return;
+      if (b3 - a02 < P2(0.3) || i10 > 0 && b3 - a02 < P2(PIN_MIN)) return;
       const row2 = c10.row(sy2), keys = [wedgeKey(index, sy2)], last = i10 === segs.length - 1;
       if (i10 === 0 && k0) keys.push(k0);
       if (last && k1) keys.push(k1);
@@ -12309,7 +12310,7 @@ function layDynamics(c10) {
     const endX = endU ? P2(endU.x + 0.3 + (endU.kind === "dyn" ? inkOf(endU)[0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : c10.noteEnd(lastChunk) + P2(0.8), s12 = endU ? endU.system : lastChunk.system;
     if (s12 < s02) return;
     let endXd = endX, labelAbove = false;
-    const MIN_PIN = P2(1.4);
+    const MIN_PIN = P2(PIN_MIN);
     if (s12 === s02 && endXd - startX < MIN_PIN) {
       const roomy = against ? endXd + P2(IMPLIED_W + 0.4) : endXd;
       if (against) labelAbove = true;
@@ -13052,9 +13053,10 @@ var dotPath = (cx2, cy2, r10) => {
 var accText = (rel) => rel > 0 ? "\u266F".repeat(rel) : rel < 0 ? "\u266D".repeat(-rel) : "\u266E";
 
 // src/render/jianpu/measure.ts
+var contDash = (u2) => u2.note && u2.j > 0 && u2.base >= TPQ && !u2.ratio && Math.abs(u2.ticks / TPQ - Math.round(u2.ticks / TPQ)) < 1e-6;
 function extraGlyphs(u2) {
   if (u2.note) {
-    if (u2.j > 0 && u2.base >= TPQ) return Math.max(0, Math.round(u2.ticks / TPQ) - 1);
+    if (contDash(u2)) return Math.max(0, Math.round(u2.ticks / TPQ) - 1);
     if (u2.base >= TPQ * 2) return Math.round(u2.base / TPQ) - 1 + (u2.dotted ? Math.round(u2.base / (TPQ * 2)) : 0);
     return 0;
   }
@@ -13062,7 +13064,7 @@ function extraGlyphs(u2) {
   return 0;
 }
 function hasAugDot(u2) {
-  if (u2.note) return u2.dotted && u2.base < TPQ * 2 && !(u2.j > 0 && u2.base >= TPQ);
+  if (u2.note) return u2.dotted && u2.base < TPQ * 2 && !contDash(u2);
   return u2.base >= TPQ ? Math.floor(u2.ticks / TPQ + 1e-6) * TPQ < u2.ticks - 1e-6 : u2.dotted;
 }
 var underlines = (u2) => u2.base < TPQ ? Math.max(1, Math.round(Math.log2(TPQ / u2.base))) : 0;
@@ -13248,7 +13250,7 @@ function drawJianpu(c10, mine) {
       }
       if (u2.kind !== "chunk" || u2.pad) continue;
       const row2 = rowOf(u2.system, r10, 0), tok = tokOf(u2), x0 = P2(u2.x + 0.1), cx2 = x0 + P2(DIGIT_W / 2), T2 = tok !== void 0 ? { tok } : {};
-      const n10 = extraGlyphs(u2), contDash = u2.note && u2.j > 0 && u2.base >= TPQ;
+      const n10 = extraGlyphs(u2), contDash2 = contDash(u2);
       const tailW = (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + (u2.note && u2.breath ? BREATH_W + (u2.inhale ? INHALE_W : 0) : 0);
       const step = n10 ? Math.max(DASH_PITCH, (u2.w - tailW) / (n10 + 1)) : 0;
       const gx = (k2) => cx2 + P2(k2 * step);
@@ -13257,7 +13259,7 @@ function drawJianpu(c10, mine) {
       const dash = (x2) => put2(row2, { ...T2, t: "line", x1: x2 - P2(DASH_L / 2), y1: Y2(row2, DASH_Y), x2: x2 + P2(DASH_L / 2), y2: Y2(row2, DASH_Y), w: P2(DASH_W), cls: "jp-dash" });
       const nUL = underlines(u2);
       if (u2.note && (u2.ghost || !u2.pitch)) {
-        if (contDash) for (let k2 = 0; k2 <= n10; k2++) dash(gx(k2));
+        if (contDash2) for (let k2 = 0; k2 <= n10; k2++) dash(gx(k2));
         else {
           digit(cx2, "x");
           for (let k2 = 1; k2 <= n10; k2++) dash(gx(k2));
@@ -13266,7 +13268,7 @@ function drawJianpu(c10, mine) {
         if (u2.j === 0 && !u2.tie) spots.push({ index: u2.index, sys: u2.system, row: row2, cx0: cx2, mx0: x0 - P2(0.6), mx1: x0 + P2(DIGIT_W) + P2(0.4), lyric: u2.lyric, tok, cls: "ghost", mute: !!q2.p.lyricMute?.has(tokens[u2.index]?.id ?? -1), hyph: !!tokens[u2.index]?.hyph });
       } else if (u2.note && u2.pitch) {
         const d3 = toDegree(u2.pitch, fifths), dots = d3.shift - base2;
-        if (contDash) for (let k2 = 0; k2 <= n10; k2++) dash(gx(k2));
+        if (contDash2) for (let k2 = 0; k2 <= n10; k2++) dash(gx(k2));
         else {
           digit(cx2, String(d3.degree));
           for (let k2 = 1; k2 <= n10; k2++) dash(gx(k2));
@@ -13276,7 +13278,7 @@ function drawJianpu(c10, mine) {
             put2(row2, { ...T2, t: "path", d: dotPath(cx2, Y2(row2, yy), P2(DOT_R)), cls: "jp-dot" });
           }
         }
-        if (!contDash) {
+        if (!contDash2) {
           let top = dots > 0 ? DIGIT_TOP - DOT_GAP - DOT_R * 2 - (dots - 1) * DOT_STEP : DIGIT_TOP;
           for (const a10 of ["staccato", "tenuto"].filter((x2) => u2.art.includes(x2))) {
             const g3 = jpGlyph(a10);
@@ -32440,7 +32442,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-2629929c71d4.mjs");
+      return pick(() => "layout-worker-3fc2623c3c0c.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-3e7ec2187a35.mjs");
   }
@@ -62075,4 +62077,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-87361e6116ee.mjs.map
+//# sourceMappingURL=moonsinger-2530b11bed8f.mjs.map

@@ -16,6 +16,8 @@ import { GLYPH_BOX } from "../glyph-box.gen.ts";
 
 /** 渐强渐弱和两头的字之间留多少（sp）；比一整行还长 = 写「cresc. - - -」（字的大概宽 / 虚线一节多长、隔多远）；渐到的虚线。原样从 staff/glyphs.ts 搬来。 */
 export const PIN_GAP = 0.7;
+/** 一个楔形（发夹 / 渐到）最短多长（sp）：整条短于它就拉到它；折到下一行的那一段短于它就不画。 */
+export const PIN_MIN = 1.4;
 export const PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } } as const, DASH = { len: 0.6, gap: 1.0 } as const;
 export const RAMP_DASH = { len: 0.5, gap: 0.4 } as const;
 
@@ -151,7 +153,7 @@ export function layDynamics(c: OrnCtx): void {
     const word = dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
     let said = false, acc = 0, tailDone = false;
     segs.forEach(([sy, a0, b], i) => {
-      if (b - a0 < P(0.3)) return;
+      if (b - a0 < P(0.3) || (i > 0 && b - a0 < P(PIN_MIN))) return;   // 折到下一行的那一段短到画不出一个楔形 = 不画（统筹看第四刀成品样张后定的第 2 处：行首力度字前面那一小截虚线）
       const row = c.row(sy), keys = [wedgeKey(index, sy)], last = i === segs.length - 1;
       if (i === 0 && k0) keys.push(k0);
       if (last && k1) keys.push(k1);
@@ -200,7 +202,7 @@ export function layDynamics(c: OrnCtx): void {
     if (s1 < s0) return;
     // 太短也照样画（以前不到 1 个间距就整条不画 = 静默没了）：至少 MIN_PIN；灰字放不下就挪到发夹末端上面
     let endXd = endX, labelAbove = false;
-    const MIN_PIN = P(1.4);
+    const MIN_PIN = P(PIN_MIN);
     if (s1 === s0 && endXd - startX < MIN_PIN) {
       const roomy = against ? endXd + P(IMPLIED_W + 0.4) : endXd;   // 不让灰字占地方时能有多长
       if (against) labelAbove = true;

@@ -5820,6 +5820,7 @@ function dynOverridden(tokens, bounds) {
 
 // src/render/ornaments/index.ts
 var PIN_GAP = 0.7;
+var PIN_MIN = 1.4;
 var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
 var DASH = { len: 0.6, gap: 1 };
 var RAMP_DASH = { len: 0.5, gap: 0.4 };
@@ -5937,7 +5938,7 @@ function layDynamics(c) {
     const word = dir === "cresc" ? "cresc." : "dim.", ww = P(PIN_WORD.w[dir === "cresc" ? "cresc" : "dim"]);
     let said = false, acc = 0, tailDone = false;
     segs.forEach(([sy, a0, b], i) => {
-      if (b - a0 < P(0.3)) return;
+      if (b - a0 < P(0.3) || i > 0 && b - a0 < P(PIN_MIN)) return;
       const row = c.row(sy), keys = [wedgeKey(index, sy)], last = i === segs.length - 1;
       if (i === 0 && k0) keys.push(k0);
       if (last && k1) keys.push(k1);
@@ -5998,7 +5999,7 @@ function layDynamics(c) {
     const endX = endU ? P(endU.x + 0.3 + (endU.kind === "dyn" ? inkOf(endU)[0] : 0) - PIN_GAP - (against ? IMPLIED_W + 0.4 : 0)) : c.noteEnd(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;
     if (s1 < s0) return;
     let endXd = endX, labelAbove = false;
-    const MIN_PIN = P(1.4);
+    const MIN_PIN = P(PIN_MIN);
     if (s1 === s0 && endXd - startX < MIN_PIN) {
       const roomy = against ? endXd + P(IMPLIED_W + 0.4) : endXd;
       if (against) labelAbove = true;
@@ -6715,9 +6716,10 @@ var dotPath = (cx, cy, r) => {
 var accText = (rel) => rel > 0 ? "\u266F".repeat(rel) : rel < 0 ? "\u266D".repeat(-rel) : "\u266E";
 
 // src/render/jianpu/measure.ts
+var contDash = (u) => u.note && u.j > 0 && u.base >= TPQ && !u.ratio && Math.abs(u.ticks / TPQ - Math.round(u.ticks / TPQ)) < 1e-6;
 function extraGlyphs(u) {
   if (u.note) {
-    if (u.j > 0 && u.base >= TPQ) return Math.max(0, Math.round(u.ticks / TPQ) - 1);
+    if (contDash(u)) return Math.max(0, Math.round(u.ticks / TPQ) - 1);
     if (u.base >= TPQ * 2) return Math.round(u.base / TPQ) - 1 + (u.dotted ? Math.round(u.base / (TPQ * 2)) : 0);
     return 0;
   }
@@ -6725,7 +6727,7 @@ function extraGlyphs(u) {
   return 0;
 }
 function hasAugDot(u) {
-  if (u.note) return u.dotted && u.base < TPQ * 2 && !(u.j > 0 && u.base >= TPQ);
+  if (u.note) return u.dotted && u.base < TPQ * 2 && !contDash(u);
   return u.base >= TPQ ? Math.floor(u.ticks / TPQ + 1e-6) * TPQ < u.ticks - 1e-6 : u.dotted;
 }
 var underlines = (u) => u.base < TPQ ? Math.max(1, Math.round(Math.log2(TPQ / u.base))) : 0;
@@ -6907,7 +6909,7 @@ function drawJianpu(c, mine) {
       }
       if (u.kind !== "chunk" || u.pad) continue;
       const row = rowOf(u.system, r, 0), tok = tokOf(u), x0 = P(u.x + 0.1), cx = x0 + P(DIGIT_W / 2), T = tok !== void 0 ? { tok } : {};
-      const n2 = extraGlyphs(u), contDash = u.note && u.j > 0 && u.base >= TPQ;
+      const n2 = extraGlyphs(u), contDash2 = contDash(u);
       const tailW = (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + (u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0);
       const step = n2 ? Math.max(DASH_PITCH, (u.w - tailW) / (n2 + 1)) : 0;
       const gx = (k) => cx + P(k * step);
@@ -6916,7 +6918,7 @@ function drawJianpu(c, mine) {
       const dash = (x) => put(row, { ...T, t: "line", x1: x - P(DASH_L / 2), y1: Y(row, DASH_Y), x2: x + P(DASH_L / 2), y2: Y(row, DASH_Y), w: P(DASH_W), cls: "jp-dash" });
       const nUL = underlines(u);
       if (u.note && (u.ghost || !u.pitch)) {
-        if (contDash) for (let k = 0; k <= n2; k++) dash(gx(k));
+        if (contDash2) for (let k = 0; k <= n2; k++) dash(gx(k));
         else {
           digit(cx, "x");
           for (let k = 1; k <= n2; k++) dash(gx(k));
@@ -6925,7 +6927,7 @@ function drawJianpu(c, mine) {
         if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - P(0.6), mx1: x0 + P(DIGIT_W) + P(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!tokens[u.index]?.hyph });
       } else if (u.note && u.pitch) {
         const d = toDegree(u.pitch, fifths), dots = d.shift - base;
-        if (contDash) for (let k = 0; k <= n2; k++) dash(gx(k));
+        if (contDash2) for (let k = 0; k <= n2; k++) dash(gx(k));
         else {
           digit(cx, String(d.degree));
           for (let k = 1; k <= n2; k++) dash(gx(k));
@@ -6935,7 +6937,7 @@ function drawJianpu(c, mine) {
             put(row, { ...T, t: "path", d: dotPath(cx, Y(row, yy), P(DOT_R)), cls: "jp-dot" });
           }
         }
-        if (!contDash) {
+        if (!contDash2) {
           let top = dots > 0 ? DIGIT_TOP - DOT_GAP - DOT_R * 2 - (dots - 1) * DOT_STEP : DIGIT_TOP;
           for (const a of ["staccato", "tenuto"].filter((x) => u.art.includes(x))) {
             const g = jpGlyph(a);
@@ -7873,4 +7875,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-2629929c71d4.mjs.map
+//# sourceMappingURL=layout-worker-3fc2623c3c0c.mjs.map

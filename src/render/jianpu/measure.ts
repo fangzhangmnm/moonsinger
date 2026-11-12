@@ -16,10 +16,14 @@ export interface JianpuTrack {
   p: PartView; tokens: Token[]; units: Unit[]; head: Head; realLen: number; realTicks: number; staves: number; focused: boolean; pickup: boolean;
 }
 
+/** 接着上一段的长音，这一段画成横线（不重写数字）：只有正好整拍、不是连音的才行——一条横线 = 一拍（UX 稿第 4 节）。
+ *  不是整拍的（前一小节连过来一拍半…）照普通音符重写数字（附点、下划线照常），用连线连到前一段（课本写法；统筹看第四刀成品样张后定的第 1 处：
+ *  原来一律画横线、按 round 算根数，3/4 里连过来的一拍半画成两条横线，读成三拍半）。 */
+export const contDash = (u: Chunk): boolean => u.note && u.j > 0 && u.base >= TPQ && !u.ratio && Math.abs(u.ticks / TPQ - Math.round(u.ticks / TPQ)) < 1e-6;
 /** 这一段除了第一个字形（数字 / 0 / 横线）后面还有几个：长音的横线、几拍的休止一拍一个 0。 */
 export function extraGlyphs(u: Chunk): number {
   if (u.note) {
-    if (u.j > 0 && u.base >= TPQ) return Math.max(0, Math.round(u.ticks / TPQ) - 1);   // 接着上一段的长音：一拍一条横线（第一个字形就是横线）
+    if (contDash(u)) return Math.max(0, Math.round(u.ticks / TPQ) - 1);   // 接着上一段的长音：一拍一条横线（第一个字形就是横线）
     if (u.base >= TPQ * 2) return Math.round(u.base / TPQ) - 1 + (u.dotted ? Math.round(u.base / (TPQ * 2)) : 0);   // 二分 = 5 –、附点二分 = 5 – –、全音 = 5 – – –
     return 0;
   }
@@ -28,7 +32,7 @@ export function extraGlyphs(u: Chunk): number {
 }
 /** 这一段有没有附点（画在数字右边）：附点的四分 / 八分…；附点二分以上写成横线，不画点；几拍的休止剩下的半拍也画点。 */
 export function hasAugDot(u: Chunk): boolean {
-  if (u.note) return u.dotted && u.base < TPQ * 2 && !(u.j > 0 && u.base >= TPQ);
+  if (u.note) return u.dotted && u.base < TPQ * 2 && !contDash(u);
   return u.base >= TPQ ? Math.floor(u.ticks / TPQ + 1e-6) * TPQ < u.ticks - 1e-6 : u.dotted;
 }
 /** 第几层下划线（八分 = 1、十六分 = 2…；四分以上 = 0）。 */
