@@ -118,6 +118,13 @@ describe("简谱数字行", () => {
     assert(legend[0]!.y > name.y && legend.every((p) => Math.abs(p.x - name.x) < 1e-6), "在行首名字下面、和名字左对齐");
     assert(legend.every((p) => p.y < lgL.systems[1]!.staffTop), "只印在第一行（不重复印）");
     eq(lay(many, undefined, kit).L.prims.filter((p) => /jp-legend/.test(p.cls ?? "")).length, 0, "没给名字 = 不印图例");
+    // 名字比名字那一栏还宽：折行（中文按字、英文按词），不伸进谱里
+    const longL = lay(many, undefined, { ...kit, kitNames: { ...names, 42: "脚踏钹（闭镲）脚踏钹（闭镲）脚踏钹", 38: "Acoustic Snare Drum Very Long Name" } }).L;
+    const lg2 = longL.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-legend/.test(p.cls ?? "")), x0 = Math.min(...longL.notes.filter((h) => h.system === 0).map((h) => h.x));   // 图例那一行（第一行）最左那一下的左缘
+    assert(lg2.length > 3, "长名字折成了好几行");
+    const perCh = (8 * textStyleOf("jp-legend").em) / textStyleOf("lyric").em;   // 这个测试的尺子：一个字按歌词字号量 8 px，换算到图例的字号
+    for (const p of lg2) assert(p.x + p.s.trimEnd().length * perCh < x0, `「${p.s}」没伸进谱里（${p.x.toFixed(1)} + ${p.s.trimEnd().length} × ${perCh.toFixed(2)} vs ${x0.toFixed(1)}）`);
+    eq(lg2.map((p) => p.s.replace(/^\u3000/, "")).join(" ").replace(/\s+/g, " ").includes("Acoustic Snare Drum Very Long Name"), true, "英文按词折（词没被拆开）");
     assert(!L.prims.some((p) => p.t === "text" && /jp-acc/.test(p.cls ?? "")) && !L.prims.some((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")), "没有升降号、没有八度点");
     eq(L.prims.filter((p) => p.t === "line" && /jp-ul/.test(p.cls ?? "")).length, 1, "两个八分连一条下划线（节奏写法同数字行）");
     assert(!L.prims.some((p) => p.t === "text" && /jp-head/.test(p.cls ?? "") && (p as { s: string }).s.startsWith("1=")), "谱头不印「1=」");

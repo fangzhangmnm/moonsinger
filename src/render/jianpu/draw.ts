@@ -78,9 +78,12 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
     const width = ind0 - 0.6, lines: string[] = [];   // 名字那一栏能放多宽（sp）
     for (const [ch, g] of [...groups].sort((a, b) => a[1].line - b[1].line)) {   // 同高的几种字 = 先出现的在前
       const nms = g.names.map((nm, k) => ({ nm, ln: g.lines[k]! })).sort((a, b) => a.ln - b.ln).map((x) => x.nm);   // 同一种字的几件：也按谱上的高低（上面的先写）
-      let cur = `${ch} ${nms[0]}`;
-      for (const nm of nms.slice(1)) { const next = `${cur} / ${nm}`; if (c.mw("jp-legend", next) <= width) cur = next; else { lines.push(cur + " /"); cur = `\u3000${nm}`; } }
-      lines.push(cur);
+      // 一个一个「原子」往行里放，放不下就折到下一行（缩进一个字）：中文一个字一个原子、英文一个词一个、「 / 」跟着前一件；一件的名字比一栏还宽也照样折开
+      const atoms: string[] = [`${ch} `];
+      nms.forEach((nm, k) => { (k ? [" / "] : []).forEach((a) => atoms.push(a)); for (const m of nm.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) atoms.push(m); });
+      let cur = "";
+      for (const a of atoms) { const next = cur + a; if (!cur.trim() || c.mw("jp-legend", next.trimEnd()) <= width) cur = next; else { lines.push(cur.trimEnd()); cur = `\u3000${a.trimStart()}`; } }
+      if (cur.trim()) lines.push(cur.trimEnd());
     }
     const row = rowOf(first.system, r, 0), nameFs = tx("part-name"), fs = tx("jp-legend"), LH = fs * 1.3;
     const mid = Q((JP_BODY.top + JP_BODY.bottom) / 2), y0 = mid + nameFs * 0.55 + nameFs * 0.35 + fs * 1.05 + (q.p.badges?.length ? TR("part-badge", 1.4) : 0);   // 名字的基线往下：名字的下半截 + 一行图例（有「不出声」角标 = 再让一行）

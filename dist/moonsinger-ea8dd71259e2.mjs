@@ -13414,16 +13414,21 @@ function drawJianpu(c10, mine, mode = "digits") {
     const width = ind0 - 0.6, lines = [];
     for (const [ch2, g3] of [...groups].sort((a10, b3) => a10[1].line - b3[1].line)) {
       const nms = g3.names.map((nm2, k2) => ({ nm: nm2, ln: g3.lines[k2] })).sort((a10, b3) => a10.ln - b3.ln).map((x2) => x2.nm);
-      let cur = `${ch2} ${nms[0]}`;
-      for (const nm2 of nms.slice(1)) {
-        const next2 = `${cur} / ${nm2}`;
-        if (c10.mw("jp-legend", next2) <= width) cur = next2;
+      const atoms = [`${ch2} `];
+      nms.forEach((nm2, k2) => {
+        (k2 ? [" / "] : []).forEach((a10) => atoms.push(a10));
+        for (const m2 of nm2.match(/[A-Za-z0-9.'-]+ ?|\s|./gu) ?? []) atoms.push(m2);
+      });
+      let cur = "";
+      for (const a10 of atoms) {
+        const next2 = cur + a10;
+        if (!cur.trim() || c10.mw("jp-legend", next2.trimEnd()) <= width) cur = next2;
         else {
-          lines.push(cur + " /");
-          cur = `\u3000${nm2}`;
+          lines.push(cur.trimEnd());
+          cur = `\u3000${a10.trimStart()}`;
         }
       }
-      lines.push(cur);
+      if (cur.trim()) lines.push(cur.trimEnd());
     }
     const row2 = rowOf(first.system, r10, 0), nameFs = tx2("part-name"), fs = tx2("jp-legend"), LH = fs * 1.3;
     const mid = Q2((JP_BODY.top + JP_BODY.bottom) / 2), y0 = mid + nameFs * 0.55 + nameFs * 0.35 + fs * 1.05 + (q2.p.badges?.length ? TR("part-badge", 1.4) : 0);
@@ -32899,7 +32904,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-50ce820cf585.mjs");
+      return pick(() => "layout-worker-fde729494709.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-dbf4137da628.mjs");
   }
@@ -62554,4 +62559,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f82194d36d91.mjs.map
+//# sourceMappingURL=moonsinger-ea8dd71259e2.mjs.map
