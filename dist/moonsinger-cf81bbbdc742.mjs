@@ -4644,6 +4644,12 @@ var S = {
   "{ly} \u8BCD": { en: "Lyrics: {ly}" },
   "{co} \u66F2": { en: "Music: {co}" },
   "{a} \u7F16\u66F2": { en: "Arranged by {a}" },
+  "\u6392\u7EC3\u8BB0\u53F7": { en: "Rehearsal marks" },
+  "\u865A\u7EBF\uFF08\u5982\u6E10\u5F3A\u6E10\u5F31\u7684\u5EF6\u7EED\u7EBF\uFF09": { en: "Dashes (e.g. the continuation line of a hairpin)" },
+  "\u62EC\u7EBF": { en: "Brackets" },
+  "\u5F31\u97F3\u5668\u8BB0\u53F7": { en: "Mute marks" },
+  "\u7AD6\u7434\u8E0F\u677F\u56FE": { en: "Harp pedal diagrams" },
+  "\u6B62\u97F3\u8BB0\u53F7": { en: "Damp marks" },
   "\u8FD9\u4EFD MusicXML \u662F timewise \u6392\u6CD5\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BFB partwise": { en: "This MusicXML is timewise; this version only reads partwise" },
   "\u8FD9\u4E0D\u662F MusicXML \u4E50\u8C31\uFF08\u6839\u5143\u7D20\u662F <{name}>\uFF09": { en: "This isn't a MusicXML score (root element is <{name}>)" },
   "\u8FD9\u4EFD MusicXML \u91CC\u6CA1\u6709\u58F0\u90E8": { en: "This MusicXML has no parts" },
@@ -4653,6 +4659,9 @@ var S = {
   "\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09": { en: "Dynamic marks (not recognized by this version, such as sfz)" },
   "\u6309\u62CD\u5B50\u91CD\u590D\u7684\u98A4\u97F3\uFF08\u4E00\u4E24\u9053\u659C\u7EBF\uFF09": { en: "Measured tremolo (one or two slashes)" },
   "\u5927\u8C31\u8868\u4E0B\u9762\u4E00\u884C\u7684\u6362\u8C31\u53F7": { en: "clef changes on the lower staff of a grand staff" },
+  "\u8E0F\u677F\u8BB0\u53F7": { en: "Pedal marks" },
+  "\u6587\u5B57\u8BB0\u53F7\uFF08\u5982 dolce\u3001rit.\uFF09": { en: "Text directions (e.g. dolce, rit.)" },
+  "\u522B\u7684\u65B9\u5411\u8BB0\u53F7": { en: "Other direction marks" },
   "\u88C5\u9970\u97F3": { en: "Grace notes" },
   "\u63D0\u793A\u97F3\u7B26": { en: "Cue notes" },
   "\u540C\u4E00\u58F0\u90E8\u91CC\u7684\u7B2C\u4E8C\u6761\u65CB\u5F8B": { en: "A second melody within one part" },
@@ -34278,15 +34287,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-227492ff780e.mjs");
+      return pick(() => "singer-worker-406b3ca31272.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-23eab1edf660.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-384bbf347352.mjs");
+      return pick(() => "layout-worker-869b28c7367a.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-d2043b8a4b39.mjs");
+      return pick(() => "encode-worker-1e53c9936af5.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -36575,6 +36584,8 @@ ${bodies.join("\n")}
 `;
   return { xml, manualBars, unwritten };
 }
+var DIR_READ = /* @__PURE__ */ new Set(["octave-shift", "dynamics", "wedge", "metronome", "segno", "coda", "words", "pedal"]);
+var DIR_LABEL = { rehearsal: () => _t("\u6392\u7EC3\u8BB0\u53F7"), dashes: () => _t("\u865A\u7EBF\uFF08\u5982\u6E10\u5F3A\u6E10\u5F31\u7684\u5EF6\u7EED\u7EBF\uFF09"), bracket: () => _t("\u62EC\u7EBF"), "string-mute": () => _t("\u5F31\u97F3\u5668\u8BB0\u53F7"), "harp-pedals": () => _t("\u7AD6\u7434\u8E0F\u677F\u56FE"), damp: () => _t("\u6B62\u97F3\u8BB0\u53F7"), "damp-all": () => _t("\u6B62\u97F3\u8BB0\u53F7") };
 function readMusicXml(xml, hints) {
   const root = parseXml(xml);
   if (root.name === "score-timewise") throw new Error(_t("\u8FD9\u4EFD MusicXML \u662F timewise \u6392\u6CD5\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BFB partwise"));
@@ -36751,6 +36762,7 @@ function readMusicXml(xml, hints) {
           }
         } else if (c10.name === "direction" || c10.name === "sound") {
           const bpm = tempoOf(c10);
+          let wordsUsed = !!bpm;
           if (bpm) {
             if (headPhase && !H3.gotTempo) {
               H3.bpm = bpm;
@@ -36781,6 +36793,7 @@ function readMusicXml(xml, hints) {
           for (const dt of c10.name === "direction" ? kids(c10, "direction-type") : []) for (const w2 of kids(dt, "words")) {
             const g3 = /^groove\.([a-z][a-z0-9-]*)\.(\d+)\./.exec(w2.attrs.id ?? "");
             if (g3) {
+              wordsUsed = true;
               const a10 = Number(g3[2]) / 100;
               mark({ kind: "groove", id: 0, style: g3[1], ...a10 !== 1 ? { amount: a10 } : {}, .../\.2-3$/.test(w2.attrs.id ?? "") ? { shift: true } : {} });
             }
@@ -36799,7 +36812,17 @@ function readMusicXml(xml, hints) {
               else if (snd.attrs.tocoda) what = "toCoda";
               else if (snd.attrs.fine) what = "fine";
             }
-            if (what) mark({ kind: "nav", id: 0, what });
+            if (what) {
+              wordsUsed = true;
+              mark({ kind: "nav", id: 0, what });
+            }
+          }
+          {
+            const names = c10.name === "direction" ? kids(c10, "direction-type").flatMap((dt) => kids(dt).map((e10) => e10.name)) : [];
+            const snd = c10.name === "sound" ? c10 : kid(c10, "sound");
+            if (names.includes("pedal") || !!(snd && (snd.attrs["damper-pedal"] || snd.attrs["soft-pedal"] || snd.attrs["sostenuto-pedal"]))) drop(_t("\u8E0F\u677F\u8BB0\u53F7"));
+            if (names.includes("words") && !wordsUsed) drop(_t("\u6587\u5B57\u8BB0\u53F7\uFF08\u5982 dolce\u3001rit.\uFF09"));
+            for (const nm2 of new Set(names)) if (!DIR_READ.has(nm2)) drop(DIR_LABEL[nm2]?.() ?? _t("\u522B\u7684\u65B9\u5411\u8BB0\u53F7"));
           }
         } else if (c10.name === "note") {
           if (kid(c10, "grace")) {
@@ -44646,7 +44669,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "c696ec949e21f4e0" : "dev";
+var CORE_HASH = true ? "3b7b6a7fe0782557" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -64596,4 +64619,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-4df5055c64a3.mjs.map
+//# sourceMappingURL=moonsinger-cf81bbbdc742.mjs.map

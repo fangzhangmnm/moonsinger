@@ -1360,6 +1360,12 @@ var S = {
   "{ly} \u8BCD": { en: "Lyrics: {ly}" },
   "{co} \u66F2": { en: "Music: {co}" },
   "{a} \u7F16\u66F2": { en: "Arranged by {a}" },
+  "\u6392\u7EC3\u8BB0\u53F7": { en: "Rehearsal marks" },
+  "\u865A\u7EBF\uFF08\u5982\u6E10\u5F3A\u6E10\u5F31\u7684\u5EF6\u7EED\u7EBF\uFF09": { en: "Dashes (e.g. the continuation line of a hairpin)" },
+  "\u62EC\u7EBF": { en: "Brackets" },
+  "\u5F31\u97F3\u5668\u8BB0\u53F7": { en: "Mute marks" },
+  "\u7AD6\u7434\u8E0F\u677F\u56FE": { en: "Harp pedal diagrams" },
+  "\u6B62\u97F3\u8BB0\u53F7": { en: "Damp marks" },
   "\u8FD9\u4EFD MusicXML \u662F timewise \u6392\u6CD5\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BFB partwise": { en: "This MusicXML is timewise; this version only reads partwise" },
   "\u8FD9\u4E0D\u662F MusicXML \u4E50\u8C31\uFF08\u6839\u5143\u7D20\u662F <{name}>\uFF09": { en: "This isn't a MusicXML score (root element is <{name}>)" },
   "\u8FD9\u4EFD MusicXML \u91CC\u6CA1\u6709\u58F0\u90E8": { en: "This MusicXML has no parts" },
@@ -1369,6 +1375,9 @@ var S = {
   "\u529B\u5EA6\u8BB0\u53F7\uFF08\u8FD9\u4E00\u7248\u4E0D\u8BA4\u7684\uFF0C\u5982 sfz\uFF09": { en: "Dynamic marks (not recognized by this version, such as sfz)" },
   "\u6309\u62CD\u5B50\u91CD\u590D\u7684\u98A4\u97F3\uFF08\u4E00\u4E24\u9053\u659C\u7EBF\uFF09": { en: "Measured tremolo (one or two slashes)" },
   "\u5927\u8C31\u8868\u4E0B\u9762\u4E00\u884C\u7684\u6362\u8C31\u53F7": { en: "clef changes on the lower staff of a grand staff" },
+  "\u8E0F\u677F\u8BB0\u53F7": { en: "Pedal marks" },
+  "\u6587\u5B57\u8BB0\u53F7\uFF08\u5982 dolce\u3001rit.\uFF09": { en: "Text directions (e.g. dolce, rit.)" },
+  "\u522B\u7684\u65B9\u5411\u8BB0\u53F7": { en: "Other direction marks" },
   "\u88C5\u9970\u97F3": { en: "Grace notes" },
   "\u63D0\u793A\u97F3\u7B26": { en: "Cue notes" },
   "\u540C\u4E00\u58F0\u90E8\u91CC\u7684\u7B2C\u4E8C\u6761\u65CB\u5F8B": { en: "A second melody within one part" },
@@ -10662,4 +10671,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-227492ff780e.mjs.map
+//# sourceMappingURL=singer-worker-406b3ca31272.mjs.map

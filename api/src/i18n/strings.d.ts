@@ -4048,6 +4048,24 @@ export declare const S: {
     readonly "{a} \u7F16\u66F2": {
         readonly en: "Arranged by {a}";
     };
+    readonly 排练记号: {
+        readonly en: "Rehearsal marks";
+    };
+    readonly "\u865A\u7EBF\uFF08\u5982\u6E10\u5F3A\u6E10\u5F31\u7684\u5EF6\u7EED\u7EBF\uFF09": {
+        readonly en: "Dashes (e.g. the continuation line of a hairpin)";
+    };
+    readonly 括线: {
+        readonly en: "Brackets";
+    };
+    readonly 弱音器记号: {
+        readonly en: "Mute marks";
+    };
+    readonly 竖琴踏板图: {
+        readonly en: "Harp pedal diagrams";
+    };
+    readonly 止音记号: {
+        readonly en: "Damp marks";
+    };
     readonly "\u8FD9\u4EFD MusicXML \u662F timewise \u6392\u6CD5\uFF0C\u8FD9\u4E00\u7248\u53EA\u8BFB partwise": {
         readonly en: "This MusicXML is timewise; this version only reads partwise";
     };
@@ -4074,6 +4092,15 @@ export declare const S: {
     };
     readonly 大谱表下面一行的换谱号: {
         readonly en: "clef changes on the lower staff of a grand staff";
+    };
+    readonly 踏板记号: {
+        readonly en: "Pedal marks";
+    };
+    readonly "\u6587\u5B57\u8BB0\u53F7\uFF08\u5982 dolce\u3001rit.\uFF09": {
+        readonly en: "Text directions (e.g. dolce, rit.)";
+    };
+    readonly 别的方向记号: {
+        readonly en: "Other direction marks";
     };
     readonly 装饰音: {
         readonly en: "Grace notes";

@@ -329,6 +329,10 @@ ${bodies.join("\n")}
 }
 
 export interface ReadPart { id: string; name: string; instrumentName?: string; sound?: string; program?: number; variant?: string; volume?: number; pan?: number; clef?: ClefName; staves?: 2 }   // clef = 第一个 <clef>（F = 低音；别的谱号先按高音）；staves = <staves> 2 = 大谱表
+/** 读谱认得的方向记号（direction-type 下面的元素；pedal / words 在上面单独数）。 */
+const DIR_READ = new Set(["octave-shift", "dynamics", "wedge", "metronome", "segno", "coda", "words", "pedal"]);
+/** 认不得、但常见的几种，数的时候说人话（其余 = 「别的方向记号」）。 */
+const DIR_LABEL: Record<string, () => string> = { rehearsal: () => _t("排练记号"), dashes: () => _t("虚线（如渐强渐弱的延续线）"), bracket: () => _t("括线"), "string-mute": () => _t("弱音器记号"), "harp-pedals": () => _t("竖琴踏板图"), damp: () => _t("止音记号"), "damp-all": () => _t("止音记号") };
 export interface ReadScore { title: string; movementTitle: string; paper?: Paper; credits?: string; rights?: string; parts: { info: ReadPart; tokens: Token[] }[]; dropped: Record<string, number> }
 export interface ReadHints { manualBars?: Record<string, number[]>; unwritten?: string[] }   // 自家文件的 .moonsinger/score.json（这张纸的）；别家文件 = 没有
 
@@ -444,6 +448,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           if (time && childText(time, "beats")) { const b = Number(childText(time, "beats")), bt = Number(childText(time, "beat-type")); if (headPhase && !H.gotTime) { H.beats = b; H.beatType = bt; H.gotTime = true; } else mark({ kind: "time", id: 0, beats: b, beatType: bt }); }
         } else if (c.name === "direction" || c.name === "sound") {
           const bpm = tempoOf(c);
+          let wordsUsed = !!bpm;   // 这一条方向记号里的文字被认走了没有（速度的文字、风格 / 反复）：没认走的下面数出来
           if (bpm) { if (headPhase && !H.gotTempo) { H.bpm = bpm; H.gotTempo = true; } else mark({ kind: "tempo", id: 0, bpm }); }
           // 八度线（v0.9.28）：down = 8va（15 = 15ma），up = 8vb，stop = 结束；紧跟着结束的开头 = 换了一种（并成一个记号）
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const os of kids(dt, "octave-shift")) {
@@ -464,7 +469,7 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
           }
           for (const dt of c.name === "direction" ? kids(c, "direction-type") : []) for (const w of kids(dt, "words")) {   // 风格记号：只认我们自己写的（id 打头 groove.）
             const g = /^groove\.([a-z][a-z0-9-]*)\.(\d+)\./.exec(w.attrs.id ?? "");
-            if (g) { const a = Number(g[2]) / 100; mark({ kind: "groove", id: 0, style: g[1], ...(a !== 1 ? { amount: a } : {}), ...(/\.2-3$/.test(w.attrs.id ?? "") ? { shift: true as const } : {}) }); }   // .2-3 = 错开一小节（2026-10-09）
+            if (g) { wordsUsed = true; const a = Number(g[2]) / 100; mark({ kind: "groove", id: 0, style: g[1], ...(a !== 1 ? { amount: a } : {}), ...(/\.2-3$/.test(w.attrs.id ?? "") ? { shift: true as const } : {}) }); }   // .2-3 = 错开一小节（2026-10-09）
           }
           // 谱内反复 / 跳转：自家写的认 id（nav.<种类>.）；别家谱认 <segno/> <coda/> 和 <sound> 的 dacapo / dalsegno / fine / tocoda（字里有 Fine / Coda = al Fine / al Coda）
           {
@@ -481,7 +486,15 @@ export function readMusicXml(xml: string, hints?: ReadHints): ReadScore {
               else if (snd.attrs.tocoda) what = "toCoda";
               else if (snd.attrs.fine) what = "fine";
             }
-            if (what) mark({ kind: "nav", id: 0, what });
+            if (what) { wordsUsed = true; mark({ kind: "nav", id: 0, what }); }
+          }
+          // 读不了的方向记号按种类数出来（统筹 2026-11-12 裁定、踏板 11-1 第一笔：原来踏板、<sound> 里的踏板、dolce 这类文字整个静默丢掉，「读不了的」计数是空的）
+          {
+            const names = c.name === "direction" ? kids(c, "direction-type").flatMap((dt) => kids(dt).map((e) => e.name)) : [];
+            const snd = c.name === "sound" ? c : kid(c, "sound");
+            if (names.includes("pedal") || !!(snd && (snd.attrs["damper-pedal"] || snd.attrs["soft-pedal"] || snd.attrs["sostenuto-pedal"]))) drop(_t("踏板记号"));
+            if (names.includes("words") && !wordsUsed) drop(_t("文字记号（如 dolce、rit.）"));
+            for (const nm of new Set(names)) if (!DIR_READ.has(nm)) drop(DIR_LABEL[nm]?.() ?? _t("别的方向记号"));
           }
         } else if (c.name === "note") {
           if (kid(c, "grace")) { drop(_t("装饰音")); continue; }
