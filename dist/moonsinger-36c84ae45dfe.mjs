@@ -13546,7 +13546,12 @@ var ACC_GLYPH = {
   natural: { ch: "\uE261", box: [0, 0.672, -1.364, 1.34], dom: 0.105 },
   sharp: { ch: "\uE262", box: [0, 0.996, -1.4, 1.392], dom: 0.09 }
 };
-var accStroke = (g3, em2, main) => Math.max(0, SMALL_STEM_K * STEM_REGULAR * main - g3.dom * em2) / em2;
+var ACC_FAMILY_DOM = ACC_GLYPH.sharp.dom;
+var FAMILY_LIGHT = 0.8;
+var accStroke = (g3, em2, main) => {
+  const align = Math.max(0, ACC_FAMILY_DOM - g3.dom), target = SMALL_STEM_K * STEM_REGULAR * main, fam = ACC_FAMILY_DOM * em2;
+  return align + (fam < FAMILY_LIGHT * target ? (target - fam) / em2 : 0);
+};
 var ACC_GLYPH_EM = 0.78 * FS;
 var ACC_RISE = 0.2;
 var ACC_SEP = 0.08;
@@ -33577,7 +33582,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-98837d60edc8.mjs");
+      return pick(() => "layout-worker-79c3f25c551f.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-a34d6dc28f15.mjs");
   }
@@ -63659,4 +63664,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-111e8d9fcafd.mjs.map
+//# sourceMappingURL=moonsinger-36c84ae45dfe.mjs.map

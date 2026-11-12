@@ -504,9 +504,12 @@ describe("升降号的描边补粗（7-P 补：逐个字形按主笔画算）", 
     const beams = (code: string) => { const cs = contours(outl.glyphs[code]!.d), [x0, x1] = span(cs, 0); const w = [0.3, 0.4, 0.5, 0.6, 0.7].flatMap((f) => runs(cs, x0 + (x1 - x0) * f, true)).filter((h) => h < 130).sort((p, q) => p - q); return w[Math.floor(w.length / 2)]! / 1000; };
     assert(Math.abs(fl - G.ACC_GLYPH.flat.dom) < 0.006, `♭ 量出来 ${fl}`); assert(Math.abs(beams("E262") - G.ACC_GLYPH.sharp.dom) < 0.012, `♯ 量出来 ${beams("E262")}`); assert(Math.abs(beams("E261") - G.ACC_GLYPH.natural.dom) < 0.012, `♮ 量出来 ${beams("E261")}`);
   });
-  it("描多粗：主笔画缩到实际字号后差「主字竖笔 × 0.9」多少补多少——♭ 补得最多，♮ 差不多不用补；画出来的 SVG 带描边", () => {
-    const f = G.accStroke(G.ACC_GLYPH.flat, G.ACC_GLYPH_EM, G.DIGIT_EM), s = G.accStroke(G.ACC_GLYPH.sharp, G.ACC_GLYPH_EM, G.DIGIT_EM), n = G.accStroke(G.ACC_GLYPH.natural, G.ACC_GLYPH_EM, G.DIGIT_EM);
-    assert(f > s && s >= n && n < 0.005, `♭ ${f} ♯ ${s} ♮ ${n}`);
+  it("描多粗（统筹定 B）：同一家先看齐到 ♯ 的主笔画（♭ 补、♮ ♯ 不动）；整家明显轻于主字才一起补（现在不补；主字放大到整家明显轻时三个一起补）；画出来的 SVG 带描边", () => {
+    const st = (g: { dom: number }, main = G.DIGIT_EM) => G.accStroke(g, G.ACC_GLYPH_EM, main);
+    const f = st(G.ACC_GLYPH.flat), s = st(G.ACC_GLYPH.sharp), n = st(G.ACC_GLYPH.natural);
+    assert(Math.abs(f - (G.ACC_GLYPH.sharp.dom - G.ACC_GLYPH.flat.dom)) < 1e-12 && s === 0 && n === 0, `数字行：♭ ${f} ♯ ${s} ♮ ${n}`);
+    const big = G.DIGIT_EM * 1.5, fb = st(G.ACC_GLYPH.flat, big), sb = st(G.ACC_GLYPH.sharp, big), nb = st(G.ACC_GLYPH.natural, big);
+    assert(sb > 0 && Math.abs(fb - sb - f) < 1e-12 && nb === sb, `主字大一截（整家明显轻）：三个一起补同样多（♭ 另加看齐那一截）：♭ ${fb} ♯ ${sb} ♮ ${nb}`);
     const svg = SV.primSvg({ t: "glyph", x: 0, y: 0, ch: "\u{E260}", size: 20, stroke: f }, "40", "15", "6");
     assert(/stroke-width="[\d.]+"/.test(svg), svg);
   });

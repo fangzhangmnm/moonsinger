@@ -7114,7 +7114,12 @@ var ACC_GLYPH = {
   natural: { ch: "\uE261", box: [0, 0.672, -1.364, 1.34], dom: 0.105 },
   sharp: { ch: "\uE262", box: [0, 0.996, -1.4, 1.392], dom: 0.09 }
 };
-var accStroke = (g, em, main) => Math.max(0, SMALL_STEM_K * STEM_REGULAR * main - g.dom * em) / em;
+var ACC_FAMILY_DOM = ACC_GLYPH.sharp.dom;
+var FAMILY_LIGHT = 0.8;
+var accStroke = (g, em, main) => {
+  const align = Math.max(0, ACC_FAMILY_DOM - g.dom), target = SMALL_STEM_K * STEM_REGULAR * main, fam = ACC_FAMILY_DOM * em;
+  return align + (fam < FAMILY_LIGHT * target ? (target - fam) / em : 0);
+};
 var ACC_GLYPH_EM = 0.78 * FS;
 var ACC_RISE = 0.2;
 var ACC_SEP = 0.08;
@@ -8871,4 +8876,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-98837d60edc8.mjs.map
+//# sourceMappingURL=layout-worker-79c3f25c551f.mjs.map

@@ -86,9 +86,15 @@ export const dotPath = (cx: number, cy: number, r: number): string => {
 export const ACC_GLYPH = {
   flat: { ch: "\u{E260}", box: [0, 0.904, -1.756, 0.7], dom: 0.062 }, natural: { ch: "\u{E261}", box: [0, 0.672, -1.364, 1.34], dom: 0.105 }, sharp: { ch: "\u{E262}", box: [0, 0.996, -1.4, 1.392], dom: 0.09 },
 } as const satisfies Record<string, { ch: string; box: readonly [number, number, number, number]; dom: number }>;
-/** 这个升降号字形在字号 em 下要描多粗的边（字号的几成）：旁边主字（字号 main）的竖笔 × 0.9 − 它自己主笔画缩到 em 之后的粗细；够了 = 0。
- *  主字竖笔 = vendor 那款黑体「I」量的（text/style.ts STEM_REGULAR），和小字补粗同一条规矩。描边两边各长一半，所以补的就是差多少。 */
-export const accStroke = (g: { dom: number }, em: number, main: number): number => Math.max(0, SMALL_STEM_K * STEM_REGULAR * main - g.dom * em) / em;
+/** 升降号这一家（降、重降、还原、升、重升）的补粗规矩（7-P 补，统筹 11-12 定 B，写成规矩不只给 ♭ 开一个数）：
+ *  ① 同一家先彼此看齐：主笔画都补到这一家的参照粗细 ACC_FAMILY_DOM——取 ♯ 的 0.09（改前图里 ♮ ♯ 的轻重是对的，取 ♮ 的 0.105 会把 ♯ 也描粗；♮ 本来就更粗，不动）。
+ *  ② 看齐之后整家再和主字比：参照粗细缩到实际字号后明显轻于「主字竖笔 × 0.9」（不到它的 FAMILY_LIGHT）才一起补，补到那条线为止；数字行、谱头、字母谱角标现在都不用补（♯ 约是线的 85%–89%）。
+ *  字号的几成（描边两边各长一半，所以补的就是差多少）；主字竖笔 = vendor 那款黑体「I」量的（text/style.ts STEM_REGULAR），同小字补粗。 */
+export const ACC_FAMILY_DOM = ACC_GLYPH.sharp.dom, FAMILY_LIGHT = 0.8;
+export const accStroke = (g: { dom: number }, em: number, main: number): number => {
+  const align = Math.max(0, ACC_FAMILY_DOM - g.dom), target = SMALL_STEM_K * STEM_REGULAR * main, fam = ACC_FAMILY_DOM * em;
+  return align + (fam < FAMILY_LIGHT * target ? (target - fam) / em : 0);
+};
 /** 数字行上升降号的字号（字形的 size，数字行的单位）：照样张的大小——♭ 的高（含下伸）约等于原来文字 ♭ 的高（0.59 字号的字）。 */
 export const ACC_GLYPH_EM = 0.78 * FS;
 /** 升降号的顶比它那个数字的顶高多少（样张：文字 ♭ 原来就略高出数字顶）。几个升降号之间的缝。 */
