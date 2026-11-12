@@ -3447,6 +3447,8 @@ var S = {
   "\u300C{name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C{name2}\u300D\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09": { en: "\u201C{name}\u201D isn't the \u201C{name2}\u201D recorded in the song (sha256 {p}\u2026 \u2260 {p2}\u2026)" },
   "\u627E\u5230\u4E86\uFF1A\u300C{name}\u300D\u80FD\u54CD\u4E86": { en: "Found: \u201C{name}\u201D can sound now" },
   "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": { en: "Added {startDyns} dynamics at sheet starts (the ones already in effect there, so it sounds the same; written to the file on the next save)" },
+  "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\u3001\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": { en: "Added {startDyns} dynamics and reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)" },
+  "\u6BCF\u5F20\u7EB8\u5F00\u5934\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": { en: "Reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)" },
   "\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58": { en: "\u201C{p}\u201D has unsaved changes" },
   "{what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002": { en: "{what} will discard these changes." },
   "\u5148\u5B58": { en: "Save first" },
@@ -7443,11 +7445,12 @@ function removePart(st2, partId) {
 }
 function ensureStartDyns(song, nextId) {
   let id2 = nextId;
-  const added = [], last = /* @__PURE__ */ new Map();
+  const added = [], reordered = [], last = /* @__PURE__ */ new Map();
+  const LEAD = /* @__PURE__ */ new Set(["dyn", "hairpin", "groove"]);
   const papers = song.papers.map((pp) => {
     let tracks = pp.tracks, changed2 = false;
     for (const part2 of song.parts) {
-      const t10 = tracks[part2.id];
+      let t10 = tracks[part2.id];
       if (!t10) continue;
       let first = -1, has2 = false;
       for (let i10 = headLen(t10); i10 < t10.length; i10++) {
@@ -7461,10 +7464,30 @@ function ensureStartDyns(song, nextId) {
           break;
         }
       }
-      if (!has2 && first >= 0) {
-        tracks = { ...tracks, [part2.id]: [...t10.slice(0, first), { kind: "dyn", id: id2++, value: last.get(part2.id) ?? "mf" }, ...t10.slice(first)] };
+      if (has2) {
+        let f2 = -1;
+        for (let i10 = headLen(t10); i10 < t10.length; i10++) if (t10[i10].kind === "note") {
+          f2 = i10;
+          break;
+        }
+        if (f2 >= 0) {
+          let a10 = f2;
+          while (a10 > headLen(t10) && LEAD.has(t10[a10 - 1].kind)) a10--;
+          const run2 = t10.slice(a10, f2), dyns = run2.filter((k2) => k2.kind === "dyn"), rest = run2.filter((k2) => k2.kind !== "dyn");
+          const sorted = [...dyns, ...rest];
+          if (dyns.length && sorted.some((k2, j2) => k2 !== run2[j2])) {
+            t10 = [...t10.slice(0, a10), ...sorted, ...t10.slice(f2)];
+            tracks = { ...tracks, [part2.id]: t10 };
+            changed2 = true;
+            reordered.push({ paper: pp.id, part: part2.id, index: a10 });
+          }
+        }
+      } else if (first >= 0) {
+        let at3 = first;
+        while (at3 > headLen(t10) && LEAD.has(t10[at3 - 1].kind)) at3--;
+        tracks = { ...tracks, [part2.id]: [...t10.slice(0, at3), { kind: "dyn", id: id2++, value: last.get(part2.id) ?? "mf" }, ...t10.slice(at3)] };
         changed2 = true;
-        added.push({ paper: pp.id, part: part2.id, index: first });
+        added.push({ paper: pp.id, part: part2.id, index: at3 });
       }
       const tt2 = tracks[part2.id];
       for (let i10 = tt2.length - 1; i10 >= 0; i10--) {
@@ -7477,7 +7500,7 @@ function ensureStartDyns(song, nextId) {
     }
     return changed2 ? { ...pp, tracks } : pp;
   });
-  return added.length ? { song: { ...song, papers }, nextId: id2, added } : { song, nextId, added };
+  return added.length || reordered.length ? { song: { ...song, papers }, nextId: id2, added, reordered } : { song, nextId, added, reordered };
 }
 function familyOrder(parts) {
   const ids = new Set(parts.map((p2) => p2.id)), out = [];
@@ -33726,15 +33749,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-44ade6890223.mjs");
+      return pick(() => "singer-worker-42708ce19cc4.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-16b7fa9e8e82.mjs");
+      return pick(() => "layout-worker-85a42ff8aa99.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-a34d6dc28f15.mjs");
+      return pick(() => "encode-worker-edb3eb8e03e8.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -43988,8 +44011,8 @@ ${tg2.fx}`);
 };
 
 // src/core/version.ts
-var CORE_VERSION = "0.2.4";
-var CORE_HASH = true ? "0bf114185e03ac64" : "dev";
+var CORE_VERSION = "0.2.5";
+var CORE_HASH = true ? "e69122ed39173cca" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -58638,7 +58661,7 @@ function update(next2, gesture) {
 }
 function withStartDyns(s10) {
   const r10 = ensureStartDyns(s10.song, s10.nextId);
-  if (!r10.added.length) return s10;
+  if (!r10.added.length && !r10.reordered.length) return s10;
   let caret = s10.caret, sel = s10.sel;
   for (const a10 of r10.added) if (a10.paper === s10.at.paper && a10.part === s10.at.part) {
     if (a10.index <= caret) caret++;
@@ -61619,7 +61642,7 @@ function loadDocInner(song, o10) {
   closeInstPage();
   H2.load(o10.home, { stem: o10.stem, named: o10.named });
   coverTouched = false;
-  const st0 = initState(song), startDyns = ensureStartDyns(st0.song, st0.nextId).added.length;
+  const st0 = initState(song), sd2 = ensureStartDyns(st0.song, st0.nextId), startDyns = sd2.added.length, reordered = sd2.reordered.length;
   encodedSnap = null;
   D3.load(withStartDyns(st0), o10.extras);
   const d3 = o10.view ? unserializeDesk(o10.view) : freshDesk();
@@ -61641,7 +61664,9 @@ function loadDocInner(song, o10) {
   renderTitle();
   updateChrome();
   if (D3.st.song.parts.some((p2) => performerOf(activeInstrument(D3.extras, p2.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);
-  if (startDyns) info(_t("\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09", { startDyns }));
+  if (startDyns && reordered) info(_t("\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\u3001\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09", { startDyns, reordered }));
+  else if (reordered) info(_t("\u6BCF\u5F20\u7EB8\u5F00\u5934\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09", { reordered }));
+  else if (startDyns) info(_t("\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09", { startDyns }));
   schedulePrewarm();
 }
 function confirmDiscard(what) {
@@ -63811,4 +63836,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-a7151f9c8160.mjs.map
+//# sourceMappingURL=moonsinger-0759aece2566.mjs.map

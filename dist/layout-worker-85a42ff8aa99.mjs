@@ -1046,6 +1046,8 @@ var S = {
   "\u300C{name}\u300D\u4E0D\u662F\u6B4C\u91CC\u8BB0\u7684\u90A3\u4E2A\u300C{name2}\u300D\uFF08sha256 {p}\u2026 \u2260 {p2}\u2026\uFF09": { en: "\u201C{name}\u201D isn't the \u201C{name2}\u201D recorded in the song (sha256 {p}\u2026 \u2260 {p2}\u2026)" },
   "\u627E\u5230\u4E86\uFF1A\u300C{name}\u300D\u80FD\u54CD\u4E86": { en: "Found: \u201C{name}\u201D can sound now" },
   "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": { en: "Added {startDyns} dynamics at sheet starts (the ones already in effect there, so it sounds the same; written to the file on the next save)" },
+  "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\u3001\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": { en: "Added {startDyns} dynamics and reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)" },
+  "\u6BCF\u5F20\u7EB8\u5F00\u5934\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": { en: "Reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)" },
   "\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58": { en: "\u201C{p}\u201D has unsaved changes" },
   "{what}\u4F1A\u4E22\u6389\u8FD9\u4E9B\u6539\u52A8\u3002": { en: "{what} will discard these changes." },
   "\u5148\u5B58": { en: "Save first" },
@@ -9026,4 +9028,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-16b7fa9e8e82.mjs.map
+//# sourceMappingURL=layout-worker-85a42ff8aa99.mjs.map

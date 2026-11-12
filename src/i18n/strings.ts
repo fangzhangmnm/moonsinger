@@ -733,6 +733,8 @@ export const S = {
   "「{name}」不是歌里记的那个「{name2}」（sha256 {p}… ≠ {p2}…）": { en: "“{name}” isn't the “{name2}” recorded in the song (sha256 {p}… ≠ {p2}…)" },
   "找到了：「{name}」能响了": { en: "Found: “{name}” can sound now" },
   "每张纸开头补了 {startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）": { en: "Added {startDyns} dynamics at sheet starts (the ones already in effect there, so it sounds the same; written to the file on the next save)" },
+  "每张纸开头补了 {startDyns} 个力度记号、理顺了 {reordered} 处记号的先后（以前补的力度排在了渐强渐弱后面，那几个渐强渐弱没起作用，现在起作用了，听起来会变；下次存时一起写进文件）": { en: "Added {startDyns} dynamics and reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)" },
+  "每张纸开头理顺了 {reordered} 处记号的先后（以前补的力度排在了渐强渐弱后面，那几个渐强渐弱没起作用，现在起作用了，听起来会变；下次存时一起写进文件）": { en: "Reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)" },
   "「{p}」改过还没存": { en: "“{p}” has unsaved changes" },
   "{what}会丢掉这些改动。": { en: "{what} will discard these changes." },
   "先存": { en: "Save first" },

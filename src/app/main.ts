@@ -892,7 +892,7 @@ function update(next: EditorState, gesture?: string): void {
 }
 /** 每张纸（曲段）开头没写力度的补上（song.ts ensureStartDyns：补的是那里本来就生效的那个）；补在光标那条、光标前面 = 光标挪到它后面（接着写的音在力度后面）。 */
 function withStartDyns(s: EditorState): EditorState {
-  const r = ensureStartDyns(s.song, s.nextId); if (!r.added.length) return s;
+  const r = ensureStartDyns(s.song, s.nextId); if (!r.added.length && !r.reordered.length) return s;   // 理顺只换那一串里的先后、个数不变，光标不用挪
   let caret = s.caret, sel = s.sel;
   for (const a of r.added) if (a.paper === s.at.paper && a.part === s.at.part) { if (a.index <= caret) caret++; if (sel) sel = { from: sel.from + (a.index <= sel.from ? 1 : 0), to: sel.to + (a.index < sel.to ? 1 : 0) }; }
   return { ...s, song: r.song, nextId: r.nextId, caret, sel };
@@ -2809,7 +2809,7 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   legacyMp3Note = null;   // 上一首的那句话不带到这一首
   ui.close(); closeInstPage();
   H.load(o.home, { stem: o.stem, named: o.named }); coverTouched = false;   // 换家（歌库 → 别处 = 放下 es 的身份；指针 / store 的「谁开着」在 onHome 里）
-  const st0 = initState(song), startDyns = ensureStartDyns(st0.song, st0.nextId).added.length;
+  const st0 = initState(song), sd = ensureStartDyns(st0.song, st0.nextId), startDyns = sd.added.length, reordered = sd.reordered.length;
   encodedSnap = null;   // 换了一份文档：还在路上的那一轮保存取的快照是上一份的，不许落到这份头上（见 es 的 onSaved）
   D.load(withStartDyns(st0), o.extras);   // 换歌 / 云端覆盖重载 = 另一首的历史；基线 = 打开的样子（v0.10.39：老歌每张纸开头没写力度 = 补上，不标脏、不进 undo，下次存时一起写进去）
   const d = o.view ? unserializeDesk(o.view) : freshDesk();
@@ -2823,7 +2823,10 @@ function loadDocInner(song: Song, o: { home: Home; stem: string; named: boolean;
   onSongSwitch(); sound.allOff(); void prepareBank(); refreshIssues();   // 开歌那一刻清单重算：有事 = 一条 toast + 角标（§2.2½ 出口 ③）   // 换歌 = 录音房里的块全放掉、排着的不唱了、正在唱的也取消、上一首的计划清空（W-37：旧请求回来才不会被当成这首的报出来）、上一首撑大的堆还回去
   view.forgetPin(); view.render(); pad.render(); renderTitle(); updateChrome();   // 换歌不钉正在写的那一行（防抖只管同一首歌里写）；挂签的两个下拉跟着这首歌（v0.10.10 修：开机直接恢复上次那首时下拉没刷，要切一下模式才出来——user「ctrl shift r的时候模式栏只能看到模式切换，看不到下拉框」）
   if (D.st.song.parts.some((p) => performerOf(activeInstrument(D.extras, p.role)?.engine)?.sound === "chunks")) void singer.warm(models.bases(), BUDGET.speechDisk);   // 歌里有月读 = 意图：引擎立刻起（PC 热启动 ≈ 1.5 s，藏在看谱的那几秒里）
-  if (startDyns) info(_t("每张纸开头补了 {startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）", { startDyns }));   // v0.10.39（user「每张纸（曲段）开头，对」）
+  // 开头补力度（v0.10.39；user「每张纸（曲段）开头，对」）和理顺先后（第八刀 8-7，统筹 2026-11-12）是同一趟，一句话说
+  if (startDyns && reordered) info(_t("每张纸开头补了 {startDyns} 个力度记号、理顺了 {reordered} 处记号的先后（以前补的力度排在了渐强渐弱后面，那几个渐强渐弱没起作用，现在起作用了，听起来会变；下次存时一起写进文件）", { startDyns, reordered }));
+  else if (reordered) info(_t("每张纸开头理顺了 {reordered} 处记号的先后（以前补的力度排在了渐强渐弱后面，那几个渐强渐弱没起作用，现在起作用了，听起来会变；下次存时一起写进文件）", { reordered }));
+  else if (startDyns) info(_t("每张纸开头补了 {startDyns} 个力度记号（就是那里本来生效的，听起来不变；下次存时一起写进文件）", { startDyns }));
   schedulePrewarm();   // 打开歌就预热（引擎起来 + 光标附近先唱）：第一次点播放不用等十秒（user 2026-10-10「为什么第三刀之后第一次点播放还是要等月读一段时间，pc上大概有十秒」）
 }
 /** 改过没存时先问一句（应用内面板，不用系统弹窗）。 */

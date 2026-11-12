@@ -16,6 +16,8 @@
 //     强后即弱都在每一下里，重音这一组只算第一下）；强后即弱「压到 p」按这件乐器在那个键上实际的 L（原来写死 960，深度 800 的乐器多压约 2 dB）。没写这些的滚奏、别的音不变。
 //   0.2.4（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单 7-N 第二批，user「默认是均匀，12」）：没调过密度的鼓（整套鼓的每一件、固定敲一件的）滚奏默认每秒 12 下
 //     （原来军鼓 20、镲 14、底鼓 12、别的鼓 16）；有音高的照旧 14。乐器页调过的照旧。
-export const CORE_VERSION = "0.2.4";
+//   0.2.5（2026-11-12，Claude Opus 5.5（MoonSinger小弟）；施工单第八刀 8-7，统筹定）：开头补的力度插在第一个音前面那一串曲级记号的最前面，存成反顺序的（「渐强渐弱、补的力度、音」）开歌时理顺——
+//     v0.10.39 起被补的力度挡住、一直没起作用的那些渐强渐弱重新起作用（这些歌那几处听起来会变）；顺序本来就对的歌一个样本都不变。核心自己按 token 放的规矩没变，变的是开歌时那一步（song.ts ensureStartDyns）。
+export const CORE_VERSION = "0.2.5";
 export const CORE_HASH: string = typeof __CORE_HASH__ === "string" ? __CORE_HASH__ : "dev";
 export const coreInfo = (): { version: string; hash: string } => ({ version: CORE_VERSION, hash: CORE_HASH });

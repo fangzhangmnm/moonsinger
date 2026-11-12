@@ -1,12 +1,15 @@
 // 每张纸（曲段）开头强制写明力度（song.ts ensureStartDyns，v0.10.39）。created 2026-10-10 by Claude Opus 5.5
 // user wishlist「强制要求开头有力度标记」→ AI「每张纸开头没写 = 补这里本来生效的那个」→ user「每张纸（曲段）开头，对」
-import { describe, it, eq } from "./runner.mjs";
+import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, addPaper, ensureStartDyns, headLen, TPQ, writePitch, writeRest, setCaret, type Token, type Song, type EditorState } from "../src/score/song.ts";
+import { dynLevels } from "../src/score/perform.ts";
 
 let nid = 9800;
 const n = (): Token => ({ kind: "note", id: nid++, pitch: { step: "C", alter: 0, octave: 5 }, dur: TPQ, lyric: null } as Token);
 const r = (): Token => ({ kind: "rest", id: nid++, dur: TPQ } as Token);
 const d = (v: string): Token => ({ kind: "dyn", id: nid++, value: v } as Token);
+const hp = (dir: "cresc" | "dim" = "cresc"): Token => ({ kind: "hairpin", id: nid++, dir } as Token);
+const gr = (): Token => ({ kind: "groove", id: nid++, style: "pop" } as Token);
 const body = (t: Token[]) => t.slice(headLen(t)).map((x) => (x.kind === "dyn" ? (x as { value: string }).value : x.kind === "note" ? "n" : x.kind === "rest" ? "r" : x.kind)).join(" ");
 function song(tracks: Token[][]): Song {
   let st = initState(); for (let k = 1; k < tracks.length; k++) st = addPaper(st);
@@ -25,6 +28,30 @@ describe("每张纸开头强制写明力度", () => {
     eq(out.added.length, 0); eq(out.song, s);
     const s2 = ensureStartDyns(song([[n()], [n()]]), 1).song;
     eq(ensureStartDyns(s2, 50).added.length, 0, "补完再过一遍 = 不动");
+  });
+});
+describe("补在哪、理顺（第八刀 8-7，统筹 2026-11-12）：同一个音前面力度在渐强渐弱 / 风格前面", () => {
+  const pidOf = (s: Song) => s.parts[0].id;
+  it("第一个音前面有渐强渐弱 / 风格：补的力度插在这一串的最前面", () => {
+    const s = song([[hp(), n(), n(), d("f"), n()], [gr(), hp("dim"), n()]]), out = ensureStartDyns(s, 100), pid = pidOf(s);
+    eq(body(out.song.papers[0].tracks[pid]), "mf hairpin n n f n");
+    eq(body(out.song.papers[1].tracks[pid]), "f groove hairpin n");
+    eq(out.reordered.length, 0);
+  });
+  it("存成反顺序的（v0.10.39 起补出来的「渐强渐弱、力度、音」）：理成「力度、渐强渐弱、音」，报出来；只理第一个音前面那一串，别处不碰", () => {
+    const s = song([[hp(), d("p"), n(), n(), hp(), d("f"), n()], [gr(), hp(), d("mp"), n()]]), out = ensureStartDyns(s, 100), pid = pidOf(s);
+    eq(body(out.song.papers[0].tracks[pid]), "p hairpin n n hairpin f n", "后面那个「渐强渐弱、f」不动");
+    eq(body(out.song.papers[1].tracks[pid]), "mp groove hairpin n", "风格和渐强渐弱的先后不变");
+    eq(out.reordered.length, 2); eq(out.added.length, 0); eq(out.nextId, 100, "理顺不发新 id");
+    eq(ensureStartDyns(out.song, 100).reordered.length, 0, "理过再过一遍 = 不动");
+    const ok = song([[d("p"), hp(), n()]]); eq(ensureStartDyns(ok, 1).song, ok, "顺序本来就对 = 原样（同一个对象）");
+  });
+  it("出声：反顺序时那个渐强渐弱不起作用（它和终点之间一个音都没有）；理顺之后从这个力度渐强到下一个", () => {
+    const T = { ppp: 1, pp: 2, p: 3, mp: 4, mf: 5, f: 6, ff: 7, fff: 8 } as const;
+    const lv = (ts: Token[]) => [...dynLevels(ts, undefined, T, 5, 1)].map(([, l]) => l.at0);
+    const rev = [hp(), d("p"), n(), n(), n(), d("f"), n()], fixed = [rev[1]!, rev[0]!, ...rev.slice(2)];
+    eq(lv(rev).join(" "), "3 3 3 6", "反顺序：三个音都是 p（渐强没起作用）");
+    const f = lv(fixed); eq(f[0], 3); assert(f[1]! > 3 && f[2]! > f[1]!, `理顺：p 往 f 走（${f.join(" ")}）`); eq(f[3], 6);
   });
 });
 describe("纸上还没音时光标在开头那个力度前面：写的音 / 休止落在力度后面（v0.10.41）", () => {

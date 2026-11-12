@@ -1637,25 +1637,38 @@ export function removePart(st: EditorState, partId: string): EditorState {
 /** 声部上下挪一格（谱上从上到下 = Song.parts 的顺序；user 2026-10-08「声部顺序应该能重排」）。每张纸、每条 track 都不动，只换顺序。
  *  速度只看每张纸最上面那一行（tempoOwner）；挪了谁在最上面，每张纸开头的速度照旧（keepSheetTempos 把各行谱头写齐）。 */
 /** 每张纸（曲段）开头强制写明力度（v0.10.39；user wishlist「强制要求开头有力度标记」→「每张纸（曲段）开头，对」）：
- *  每位歌手在每张纸上第一个音之前没有力度记号 = 在第一个音前面补一个——**补的是这里本来就生效的那个**（这位在前一张纸（歌里的顺序）最后一个力度；最前面 = mf，同播放的默认），听起来不变、只是写明了。
- *  返回补了哪几处（纸 / 歌手 / 下标）。纯函数：main 在每次改谱（update）和打开歌时过一遍。 */
-export function ensureStartDyns(song: Song, nextId: number): { song: Song; nextId: number; added: { paper: string; part: string; index: number }[] } {
-  let id = nextId; const added: { paper: string; part: string; index: number }[] = [], last = new Map<string, Dyn>();
+ *  每位歌手在每张纸上第一个音之前没有力度记号 = 在第一个音前面补一个——**补的是这里本来就生效的那个**（这位在前一张纸（歌里的顺序）最后一个力度；最前面 = mf，同播放的默认），听起来不变。
+ *  **补在哪**（第八刀 8-7，统筹 2026-11-12 定）：第一个音前面紧挨着的那一串曲级记号（渐强渐弱、渐到、风格、力度）的最前面——同一个音前面力度在渐强渐弱前面（挪记号那条老规矩）。
+ *  v0.10.39 起补在了第一个音紧前面：那一串里本来有渐强渐弱时就成了「渐强渐弱、力度、音」，渐强渐弱和它的终点（补的力度）之间一个音都没有 = 出声上不起作用，谱上发夹从力度字底下起。
+ *  **理顺**：那一串里力度排在别的记号后面 = 把力度挪到这一串最前面（别的先后不变）；只理第一个音前面这一串，别处不碰。这种反顺序只可能是上面那一步自己造出来的（界面上挪记号永远把力度放前面），理它不算改人写的东西。
+ *  返回补了哪几处 + 理顺了哪几处（纸 / 歌手 / 下标）。纯函数：main 在每次改谱（update）和打开歌时过一遍。 */
+export function ensureStartDyns(song: Song, nextId: number): { song: Song; nextId: number; added: { paper: string; part: string; index: number }[]; reordered: { paper: string; part: string; index: number }[] } {
+  let id = nextId; const added: { paper: string; part: string; index: number }[] = [], reordered: { paper: string; part: string; index: number }[] = [], last = new Map<string, Dyn>();
+  const LEAD = new Set<Token["kind"]>(["dyn", "hairpin", "groove"]);   // 挂在后面那个音上的曲级记号（渐到 = 力度记号上的旗）
   const papers = song.papers.map((pp) => {
     let tracks = pp.tracks, changed = false;
     for (const part of song.parts) {
-      const t = tracks[part.id]; if (!t) continue;
+      let t = tracks[part.id]; if (!t) continue;
       let first = -1, has = false;
       for (let i = headLen(t); i < t.length; i++) { const k = t[i]; if (k.kind === "dyn") { has = true; break; } if (k.kind === "note") { first = i; break; } }
-      if (!has && first >= 0) {
-        tracks = { ...tracks, [part.id]: [...t.slice(0, first), { kind: "dyn", id: id++, value: last.get(part.id) ?? "mf" } as Token, ...t.slice(first)] };
-        changed = true; added.push({ paper: pp.id, part: part.id, index: first });
+      if (has) {   // 已经有力度：第一个音前面那一串里力度不在最前 = 理顺
+        let f = -1; for (let i = headLen(t); i < t.length; i++) if (t[i].kind === "note") { f = i; break; }
+        if (f >= 0) {
+          let a = f; while (a > headLen(t) && LEAD.has(t[a - 1].kind)) a--;
+          const run = t.slice(a, f), dyns = run.filter((k) => k.kind === "dyn"), rest = run.filter((k) => k.kind !== "dyn");
+          const sorted = [...dyns, ...rest];
+          if (dyns.length && sorted.some((k, j) => k !== run[j])) { t = [...t.slice(0, a), ...sorted, ...t.slice(f)]; tracks = { ...tracks, [part.id]: t }; changed = true; reordered.push({ paper: pp.id, part: part.id, index: a }); }
+        }
+      } else if (first >= 0) {
+        let at = first; while (at > headLen(t) && LEAD.has(t[at - 1].kind)) at--;   // 这一串的最前面
+        tracks = { ...tracks, [part.id]: [...t.slice(0, at), { kind: "dyn", id: id++, value: last.get(part.id) ?? "mf" } as Token, ...t.slice(at)] };
+        changed = true; added.push({ paper: pp.id, part: part.id, index: at });
       }
       const tt = tracks[part.id]; for (let i = tt.length - 1; i >= 0; i--) { const k = tt[i]; if (k.kind === "dyn") { last.set(part.id, k.value); break; } }
     }
     return changed ? { ...pp, tracks } : pp;
   });
-  return added.length ? { song: { ...song, papers }, nextId: id, added } : { song, nextId, added };
+  return added.length || reordered.length ? { song: { ...song, papers }, nextId: id, added, reordered } : { song, nextId, added, reordered };
 }
 /** 一家挨在一起（v0.10.36）：每位主人后面紧跟它的房客（房客之间、各家之间原来的先后不变）。读档 / 挪 / 挂的时候都理一遍——
  *  以前房客没挨着主人时「挪」把它当成单独一块越挪越散，混音台卡片跟着乱序（user「卡片排序在有合租的时候有问题会乱序，可能合租的时候没有正确排好序」）。 */

@@ -2185,6 +2185,12 @@ export declare const S: {
     readonly "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\uFF08\u5C31\u662F\u90A3\u91CC\u672C\u6765\u751F\u6548\u7684\uFF0C\u542C\u8D77\u6765\u4E0D\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": {
         readonly en: "Added {startDyns} dynamics at sheet starts (the ones already in effect there, so it sounds the same; written to the file on the next save)";
     };
+    readonly "\u6BCF\u5F20\u7EB8\u5F00\u5934\u8865\u4E86 {startDyns} \u4E2A\u529B\u5EA6\u8BB0\u53F7\u3001\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": {
+        readonly en: "Added {startDyns} dynamics and reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)";
+    };
+    readonly "\u6BCF\u5F20\u7EB8\u5F00\u5934\u7406\u987A\u4E86 {reordered} \u5904\u8BB0\u53F7\u7684\u5148\u540E\uFF08\u4EE5\u524D\u8865\u7684\u529B\u5EA6\u6392\u5728\u4E86\u6E10\u5F3A\u6E10\u5F31\u540E\u9762\uFF0C\u90A3\u51E0\u4E2A\u6E10\u5F3A\u6E10\u5F31\u6CA1\u8D77\u4F5C\u7528\uFF0C\u73B0\u5728\u8D77\u4F5C\u7528\u4E86\uFF0C\u542C\u8D77\u6765\u4F1A\u53D8\uFF1B\u4E0B\u6B21\u5B58\u65F6\u4E00\u8D77\u5199\u8FDB\u6587\u4EF6\uFF09": {
+        readonly en: "Reordered marks in {reordered} places at sheet starts (an earlier auto-added dynamic had landed after a hairpin, which silenced that hairpin; it works now, so it will sound different; written to the file on the next save)";
+    };
     readonly "\u300C{p}\u300D\u6539\u8FC7\u8FD8\u6CA1\u5B58": {
         readonly en: "“{p}” has unsaved changes";
     };

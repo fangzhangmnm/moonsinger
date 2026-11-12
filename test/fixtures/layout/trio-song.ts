@@ -3,6 +3,7 @@
 //   八音盒：一拍一个音 + 休止。1=G、4/4、♩=90；行首印小节号。只加不改（改了 = 不相撞检查的名单要重核）。
 import { TPQ, type Song, type Token } from "../../../src/score/song.ts";
 import { paperOf } from "../../../src/score/paper.ts";
+import { asOpened } from "./opened.ts";
 
 const Q = TPQ, E = Q / 2, H = Q * 2, W = Q * 4;
 type Step = "C" | "D" | "E" | "F" | "G" | "A" | "B";
@@ -28,9 +29,9 @@ export function trioSong(): Song {
     M.push(n(p("B", 5), Q), r(Q), n(p("D", 6), Q), r(Q));
   });
   const paper = { id: "pa", name: "A", tracks: { V, C, M } };
-  return {
+  return asOpened({   // app 打开之后的样子（每张纸开头补力度，第八刀 8-7）
     title: "MoonSingers", hum: "u", credits: "fangzhangmnm", parts: [{ id: "V", role: "r1", mic: "m1" }, { id: "C", role: "r2", mic: "m2" }, { id: "M", role: "r3", mic: "m3" }],
     papers: [paper], paper: paperOf("A5"),
-  } as unknown as Song;
+  } as unknown as Song);
 }
 export const TRIO_LABELS = ["人声", "大提琴", "八音盒"];

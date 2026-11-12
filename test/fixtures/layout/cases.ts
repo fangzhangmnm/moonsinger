@@ -10,6 +10,7 @@ import { engrave, type EngraveOpts, type Layout, type PartView } from "../../../
 import { printOpts, isPrinted } from "../../../src/export/score-pdf.ts";
 import { paperOf, DEFAULT_PAPER, lineSp, pageGeoOf, textScaleOf } from "../../../src/score/paper.ts";
 import type { Song } from "../../../src/score/song.ts";
+import { asOpened } from "./opened.ts";
 import { createTextMeasure } from "../../../src/render/text/index.ts";
 
 const ROOT = new URL("../../../", import.meta.url);
@@ -23,7 +24,7 @@ export const SONGS: Record<string, string> = {
 export const asFrozen = (song: Song): Song => (song.chordTags === false ? song : { ...song, chordTags: false });
 export function loadSong(key: string): { song: Song; labels: string[] } {
   const o = openBytes(SONGS[key]!.split("/").pop()!, new Uint8Array(fs.readFileSync(new URL(SONGS[key]!, ROOT))));
-  return { song: asFrozen(o.song), labels: partLabels(o.song, o.extras) };
+  return { song: asFrozen(asOpened(o.song)), labels: partLabels(o.song, o.extras) };   // 打开之后的样子（每张纸开头补力度，第八刀 8-7）
 }
 export const measure = (s: string): number => [...s].reduce((a, c) => a + (c.charCodeAt(0) > 255 ? 16 : 9), 0);
 export const SP = 10;
