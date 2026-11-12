@@ -67,14 +67,24 @@ await p.keyboard.press("Escape"); await p.waitForTimeout(100);
   const names = await entriesOf(id);
   check(!names.includes(".moonsinger/final.mp3") && !/"final"/.test(strFromU8(unzipSync(await folderBytes(p, id))[".moonsinger/manifest.json"])), "文件夹里那首歌的文件里没有 mp3、总目录里没有 final", names.join(" ")); }
 
-// ── ② 歌库：记着的有 ▶，点了放 ──
+// ── ①½ 进歌库 = 放下手里的歌：出声的也停（施工单第五节 2026-11-12，user「首先是你退回图库的时候，播放应该停掉吧」）──
+//   编辑器里开着循环放（不会自己放完），然后进歌库：录音房不许还在放；下面点封面 ▶ 之后也只有歌库的播放器在响
+const engPlaying = () => p.evaluate(() => window.__moonsinger.engine.playing);
+const until = async (f, want, ms = 4000) => { const t0 = performance.now(); for (;;) { const v = await f(); if (v === want || performance.now() - t0 > ms) return v; await p.waitForTimeout(80); } };
+const loopMenu = async () => { await p.click("#playBtn", { button: "right" }); await p.waitForTimeout(80); await p.click('.ctx-menu [data-v="loop"]'); await p.waitForTimeout(100); };
+await loopMenu(); await p.click("#playBtn");
+check(await until(engPlaying, true), "进歌库之前：编辑器里循环放着");
 await openGallery();
+check((await until(engPlaying, false, 1500)) === false, "进歌库 = 编辑器的走带停了（原来接着响）");
+
+// ── ② 歌库：记着的有 ▶，点了放 ──
 check(await hasPlay(id), "歌库封面上有 ▶（这台设备记着它的声音）");
 check(/渲染缓存里的这一遍/.test(await p.$eval(`${tileOf(id)} .gallery-tile-action`, (e) => e.getAttribute("title") ?? e.getAttribute("aria-label") ?? "")), "▶ 的提示说的是设备上记着的那一遍");
 await p.click(`${tileOf(id)} .gallery-tile-action`); await p.waitForTimeout(900);
 check(!(await p.$eval(".ms-player", (e) => e.hidden)), "底边出了播放条");
 check((await p.evaluate(() => window.__moonsinger.gallery()?.playerState().key)) === id, "装进播放器的是这首");
 check(await p.evaluate(() => !document.getElementById("galleryFull").hidden && window.__moonsinger.identifier() === null), "没有打开那首歌（人还在歌库里）");
+check(!(await engPlaying()), "点了封面 ▶：编辑器的走带没跟着响（只有歌库的播放器）");
 await p.click('.ms-player [data-p="loop"]'); await p.waitForTimeout(60);
 check(await p.evaluate(() => window.__moonsinger.gallery().playerState().loop), "点「循环」= 开");
 await p.click('.ms-player [data-p="restart"]'); await p.waitForTimeout(80);

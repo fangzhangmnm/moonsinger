@@ -147,7 +147,9 @@ export declare function createPerformance(host: PerfHost): {
     playFromHere: (paperId: string, part: string, tick: number) => void;
     playFromHead: () => void;
     playSeam: () => void;
-    stopPlay: () => void;
+    stopPlay: (o?: {
+        prewarm?: boolean;
+    }) => void;
     setLoop: (on: boolean) => void;
     schedulePlaybackRefresh: () => void;
     schedulePrewarm: () => void;

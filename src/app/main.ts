@@ -2992,8 +2992,13 @@ function applyDesk(d: Desk): void {
     if (paper && part) D.commit({ st: setFocus(D.st, paper.id, part) }, { silent: true, undo: false });
   }
 }
+/** 放下手里的歌——**只有这一个收尾点**：进歌库（歌库宿主的 onOpened）、打开另一首、新建（都走 loadDoc）都经过这里。
+ *  规矩（施工单第五节 2026-11-12，user「首先是你退回图库的时候，播放应该停掉吧」）：以后编辑器里加任何会自己继续的东西（出声的、后台算的），都在这里登记怎么收，不在别处各写各的。
+ *  现在登记的：走带（在放 / 在准备 = 停，同按停、尾巴自然收；小月相正在唱的那句取消、不留预唱）；按着没松的试听音（松开）。 */
+function putDownSong(): void { stopPlay({ prewarm: false }); sound.allOff(); }
 function loadDoc(song: Song, o: { home: Home; stem: string; named: boolean; extras: Extras; view?: unknown; references?: Record<string, Uint8Array> }): void {
   perfApi.mixBypass = false; busMuted.clear();   // 效果全关 / 混音轨静音是这次听的，换歌复位
+  putDownSong();   // 打开另一首 / 新建 = 先放下手里的这一首（只有这一个收尾点）
   loadingDoc = true;   // 整份装入不归修改锁管；装入期间锁态的变化先不动界面（下面 applyWorkspace 一次摆好）
   try { loadDocInner(song, o); } finally { loadingDoc = false; }
   lock.refresh(); lockDoor.sync(); applyWorkspace();   // 这首歌的锁态（歌库里的 = 库说了算；硬盘文件 = 这一次打开默认锁着）
@@ -3703,7 +3708,7 @@ function ensureGallery(): GalleryHost {
     homeLabel: () => folderHome()?.label ?? null,
     renders,   // 设备上记着的渲好的声音：封面上的 ▶ 认它的挂名
     openHomeMenu: () => { void openHomeMenu(); },
-    onOpened: () => { ui.close(); closeFinder(false); if (ws.mode === "listen") { ws.mode = lastEditMode; applyWorkspace(); } closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },   // 进歌库 = 放下手里的歌：混音台（听）也收
+    onOpened: () => { putDownSong(); ui.close(); closeFinder(false); if (ws.mode === "listen") { ws.mode = lastEditMode; applyWorkspace(); } closeInstPage(); padWas = !padEl.hidden; showPad(false); updateChrome(); },   // 进歌库 = 放下手里的歌：出声的停（putDownSong）、混音台（听）也收
     onClosed: () => { void afterGalleryClosed(); showPad(padWas); updateChrome(); scoreEl.focus(); },
   });
   return gallery;

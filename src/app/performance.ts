@@ -412,10 +412,12 @@ export function createPerformance(host: PerfHost) {
   function playFromHead(): void { startMark = null; view.setStartMark(null); replay(); }
   /** 听接缝：放着 = 跳到循环尾前几秒；没放 = 从那儿放。 */
   function playSeam(): void { if (engine.playing && playTl) { const r = playRange(playTl); engine.seek(Math.max(r.from, r.to - SEAM_LEAD)); } else void startPlayback("seam"); }
-  function stopPlay(): void {
+  /** 停（尾巴自然收）。o.prewarm = false：不留预唱（放下手里的歌时用：手里没歌了 / 马上换歌，main.ts putDownSong）。 */
+  function stopPlay(o?: { prewarm?: boolean }): void {
     engine.stop(); playIcon(false); view.setPlayhead(null); phKey = ""; cancelPrepare = true; paused = null; playMute = undefined;
     // 停 = 月读也停：正在念的那句中途取消、后面排着的不念了（user 2026-10-10「按停之后月读不应该把长句念完」）；只留安静的预唱（光标附近几句，改谱那套）
-    chunkKeysWanted = []; singer.cancelPending(); singer.cancelInflight(); schedulePrewarm();
+    chunkKeysWanted = []; singer.cancelPending(); singer.cancelInflight();
+    if (o?.prewarm === false) clearTimeout(prewarmTimer); else schedulePrewarm();
   }
   engine.on("ended", () => { playIcon(false); view.setPlayhead(null); phKey = ""; paused = null; });
   // 录音房渲染里抛了（v0.10.15）：报出来 + 进黑匣子（带栈），走带停；节点照活，再按播放能放（原来 worklet 死掉、之后永远没声，日志里也没有）

@@ -15,7 +15,7 @@ export const AREAS = {
   pad: ["unplug", "mono-later-wins", "stack-caps", "pad-key-auto", "view-in-c", "chord-tags", "pad-toggle", "pad-ghost", "dyn-levels", "ramp", "groove", "clef", "repeat", "finder-keys", "modes", "landscape-widgets",
     "dock-zoom", "save-keys", "swell-art", "start-dyn", "lyric-dash", "phrase", "sel-tweak", "title-keys", "midi", "pedal", "dock-side", "finder-width", "finder-memory", "finder-names", "cast-back", "audition-banks", "part-toggles", "finder-accordion", "finder-hide", "finder-trynew", "header-panel", "pad-follow"],
   // 放：走带 / 循环 / 翻谱 / 播放头 / 节拍器 / 月读的块与预听
-  play: ["transport", "loop", "follow", "measure-follow", "playhead", "seg-jump", "metronome", "progress", "sing-chunks", "sing-stale", "sung-preview",
+  play: ["transport", "put-down", "loop", "follow", "measure-follow", "playhead", "seg-jump", "metronome", "progress", "sing-chunks", "sing-stale", "sung-preview",
     "listen-ghost", "lyric-mute", "reading", "ramp", "groove", "repeat", "arrange", "issues", "sing-experiments", "audio-revive"],
   // 录音房：混音台 / 插件 / 路由 / 总轨 / 歌手管理
   studio: ["mixer-fx", "mixer-height", "mixer-narrow", "routing", "master", "singer", "singer-delete", "parts-manager", "paper-adds", "inst-split", "finder-pins", "finder-sf2", "finder-presets", "landscape-widgets", "modes", "dyn-levels", "sing-experiments"],

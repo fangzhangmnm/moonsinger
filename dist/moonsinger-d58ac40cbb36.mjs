@@ -5935,7 +5935,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.6-2026-11-12";
+var APP_VERSION = "v0.17.7-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -34643,7 +34643,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-222b3ee04e7d.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-65a2bd1be64f.mjs");
+      return pick(() => "encode-worker-08f3897e8abe.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -42852,7 +42852,7 @@ function createPerformance(host2) {
       engine2.seek(Math.max(r10.from, r10.to - SEAM_LEAD));
     } else void startPlayback("seam");
   }
-  function stopPlay2() {
+  function stopPlay2(o10) {
     engine2.stop();
     playIcon2(false);
     view2.setPlayhead(null);
@@ -42863,7 +42863,8 @@ function createPerformance(host2) {
     chunkKeysWanted = [];
     singer2.cancelPending();
     singer2.cancelInflight();
-    schedulePrewarm2();
+    if (o10?.prewarm === false) clearTimeout(prewarmTimer);
+    else schedulePrewarm2();
   }
   engine2.on("ended", () => {
     playIcon2(false);
@@ -63441,9 +63442,14 @@ function applyDesk(d3) {
     if (paper && part2) D3.commit({ st: setFocus(D3.st, paper.id, part2) }, { silent: true, undo: false });
   }
 }
+function putDownSong() {
+  stopPlay({ prewarm: false });
+  sound.allOff();
+}
 function loadDoc(song, o10) {
   perfApi.mixBypass = false;
   busMuted.clear();
+  putDownSong();
   loadingDoc = true;
   try {
     loadDocInner(song, o10);
@@ -64380,6 +64386,7 @@ function ensureGallery() {
       void openHomeMenu();
     },
     onOpened: () => {
+      putDownSong();
       ui2.close();
       closeFinder(false);
       if (ws.mode === "listen") {
@@ -64391,7 +64398,7 @@ function ensureGallery() {
       showPad(false);
       updateChrome();
     },
-    // 进歌库 = 放下手里的歌：混音台（听）也收
+    // 进歌库 = 放下手里的歌：出声的停（putDownSong）、混音台（听）也收
     onClosed: () => {
       void afterGalleryClosed();
       showPad(padWas);
@@ -65656,4 +65663,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0b3a4134ea8c.mjs.map
+//# sourceMappingURL=moonsinger-d58ac40cbb36.mjs.map
