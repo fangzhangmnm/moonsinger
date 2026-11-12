@@ -3489,7 +3489,9 @@ var S = {
   "\u6CA1\u6709\u53EF\u91CD\u505A\u7684": { en: "Nothing to redo" },
   "\u770B\u8C31": { en: "Reading" },
   "\u9875\u9762\u8BBE\u7F6E": { en: "Page settings" },
-  "\u7248\u9762": { en: "Layout" },
+  "\u7248\u9762": { en: "Page" },
+  "{paper}\uFF08{note}\uFF09": { en: "{paper} ({note})" },
+  "\u7167\u6587\u4EF6\u91CC\u7684 {mm} \u6BEB\u7C73": { en: "As in the file ({mm} mm staff)" },
   "\u770B\u8C31\u65B9\u5F0F": { en: "Key view" },
   "\u6F14\u594F\u6CD5\u548C\u8868\u60C5": { en: "Articulations & dynamics" },
   "\u663E\u793A": { en: "Show" },
@@ -5162,7 +5164,7 @@ var S = {
   "\u8C31\u5C0F\u3001\u97F3\u8DDD\u7D27\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1A\u914D\u5668\uFF1B\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57": { en: "Small staves, tight note spacing and rows: for arranging; titles and part names stay large, lyrics are small" },
   "\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F": { en: "Landscape: scores / large screens" },
   "\u6B63\u7ECF\u7EB8": { en: "Standard paper" },
-  "\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09": { en: "Booklet (A4 folded)" },
+  "\u5C0F\u518C\u5B50\uFF0CA4 \u5BF9\u6298": { en: "Booklet, A4 folded" },
   "\u53E3\u888B\u672C": { en: "Pocket" },
   "A3 \u6A2A": { en: "A3 landscape" },
   "\u53CD\u590D / \u8DF3\u8F6C\u53EA\u770B\u8FD9\u5F20\u7EB8\u6700\u4E0A\u9762\u90A3\u4E2A\u58F0\u90E8\u90A3\u4E00\u884C": { en: "Repeats / jumps only count on this sheet's top part" },
@@ -6041,7 +6043,7 @@ var textScaleOf = (p2) => STAFF_MM / staffMmOf(p2);
 var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
 var PAPER_KINDS = ["A3L", "A4", "A5", "A6"];
 var DEFAULT_PAPER = "A5";
-var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09"), A6: _t("\u53E3\u888B\u672C") };
+var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF0CA4 \u5BF9\u6298"), A6: _t("\u53E3\u888B\u672C") };
 var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
 function paperOf(kind, density = "cozy") {
   const s10 = SIZES[kind];
@@ -7897,9 +7899,9 @@ function setHum(st2, hum) {
   return { ...st2, song: { ...st2.song, hum } };
 }
 function setPaper(st2, kind) {
-  const song = { ...st2.song }, density = densityOf(st2.song.paper ?? paperOf(DEFAULT_PAPER));
-  if (kind === DEFAULT_PAPER && density === "cozy") delete song.paper;
-  else song.paper = paperOf(kind, density);
+  const song = { ...st2.song }, cur = st2.song.paper ?? paperOf(DEFAULT_PAPER), density = densityOf(cur);
+  if (kind === DEFAULT_PAPER && density === "cozy" && cur.staffMm === void 0) delete song.paper;
+  else song.paper = { ...paperOf(kind, density), ...cur.staffMm !== void 0 ? { staffMm: cur.staffMm } : {} };
   return (st2.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st2 : { ...st2, song };
 }
 function setDensity(st2, d3) {
@@ -34053,15 +34055,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-45caaa04e06a.mjs");
+      return pick(() => "singer-worker-879e79be6d74.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-d7e1ceea0a84.mjs");
+      return pick(() => "layout-worker-0b65365bff25.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-7210b0331251.mjs");
+      return pick(() => "encode-worker-da33a1b7d10b.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -44335,7 +44337,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "d546df3f3c1a6bb3" : "dev";
+var CORE_HASH = true ? "094fdc3ce0e0aa18" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -57214,7 +57216,7 @@ function sameExceptPaperFields(a10, b3, allow) {
   for (const k2 of keys) if (JSON.stringify(pa[k2]) !== JSON.stringify(pb[k2])) return false;
   return true;
 }
-var sameExceptPaperSize = (a10, b3) => sameExceptPaperFields(a10, b3, ["kind", "widthMm", "heightMm", "marginMm", "staffMm"]);
+var sameExceptPaperSize = (a10, b3) => sameExceptPaperFields(a10, b3, ["kind", "widthMm", "heightMm", "marginMm"]);
 var sameExceptDensity = (a10, b3) => sameExceptPaperFields(a10, b3, ["density", "staffMm"]);
 var sameExceptBarNumbers = (a10, b3) => sameModulo(a10, b3, { song: ["barNumbers"] });
 var sameExceptLyricFit = (a10, b3) => sameModulo(a10, b3, { song: ["lyricFit"] });
@@ -60685,6 +60687,7 @@ function openPaperSheet() {
   const IN_SONG = where(_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u5B58\uFF1A\u8FDB\u6B4C\u3001\u80FD\u64A4\u9500\uFF0C\u5BFC\u51FA\u7684 PDF \u7167\u8FD9\u91CC\u5370\u3002")), IN_VIEW = where(_t("\u8DDF\u7740\u8FD9\u9996\u6B4C\u7684\u89C6\u56FE\u5B58\uFF1A\u5B58\u7684\u65F6\u5019\u987A\u624B\u5E26\u4E0A\uFF0C\u4E0D\u7B97\u6539\u52A8\u3001\u4E0D\u8FDB\u64A4\u9500\u3002")), IN_SESSION = where(_t("\u53EA\u5728\u8FD9\u6B21\u6253\u5F00\u91CC\u6709\u6548\uFF0C\u4E0D\u8FDB\u6B4C\u3002"));
   const draw = () => {
     const p2 = D3.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D3.st.song), movable = !IN_C_APPLIES[look.notation];
+    const fileMm = p2.staffMm !== void 0 && Math.abs(p2.staffMm - (look.density === "compact" ? STAFF_MM_COMPACT : STAFF_MM)) > 0.01 ? p2.staffMm : null;
     const one = D3.st.song.parts[0], only1 = !!one && pv(one.id).only && D3.st.song.parts.every((q2) => q2 === one || !pv(q2.id).only);
     const lookPage = setItem(
       _t("\u8C31\u79CD"),
@@ -60704,11 +60707,12 @@ function openPaperSheet() {
     (one ? setItem(_t("\u53EA\u770B\u4E00\u53F7\u8F68"), sel2("only1", [["off", _t("\u90FD\u770B")], ["on", _t("\u53EA\u770B\u300C{song}\u300D", { song: partLabels(D3.st.song, D3.extras)[0] ?? "" })]], only1 ? "on" : "off"), _t("\u901F\u5EA6\u3001\u98CE\u683C\u3001\u53CD\u590D\u5199\u5728\u6700\u4E0A\u9762\u90A3\u4F4D\u8EAB\u4E0A\uFF1B\u522B\u7684\u58F0\u90E8\u7F29\u6210\u7EC6\u884C\u3002") + IN_VIEW) : "");
     const layoutPage = setItem(
       _t("\u7EB8\u5F20"),
-      sel2("paper", [...PAPER_KINDS.map((k2) => [k2, `${PAPER_LABEL[k2]}\uFF08${PAPER_NOTE[k2]}\uFF09`]), ...p2.kind === "other" ? [["other", `${_t("\u5176\u4ED6")}\uFF08${paperSizeText(p2)}\uFF09`]] : []], p2.kind),
+      sel2("paper", [...PAPER_KINDS.map((k2) => [k2, _t("{paper}\uFF08{note}\uFF09", { paper: PAPER_LABEL[k2], note: PAPER_NOTE[k2] })]), ...p2.kind === "other" ? [["other", _t("{paper}\uFF08{note}\uFF09", { paper: _t("\u5176\u4ED6"), note: paperSizeText(p2) })]] : []], p2.kind),
       _t("\u6574\u9996\u6B4C\u4E00\u5F20\u7EB8\u3002\u7EB8\u8D8A\u5927\u4E00\u884C\u653E\u7684\u5C0F\u8282\u8D8A\u591A\uFF1B\u5C4F\u5E55\u653E\u5F97\u4E0B\u5C31\u7167\u7EB8\u6392\u3002\u4E0D\u6253\u5370\u7684\u65F6\u5019\u4E0D\u5206\u9875\u3002") + IN_SONG
-    ) + setItem(
+    ) + // 别家文件写的谱高不是我们两档里的任何一档：如实显示成单独一项，不说成舒适或紧凑（统筹 2026-11-12）；选它 = 不动
+    setItem(
       _t("\u7248\u5F0F"),
-      sel2("density", DENSITIES.map((z2) => [z2.id, z2.label]), look.density),
+      sel2("density", [...DENSITIES.map((z2) => [z2.id, z2.label]), ...fileMm !== null ? [["file", _t("\u7167\u6587\u4EF6\u91CC\u7684 {mm} \u6BEB\u7C73", { mm: +fileMm.toFixed(2) })]] : []], fileMm !== null ? "file" : look.density),
       defs(DENSITIES.map((z2) => [z2.label, z2.note])) + "<br>" + _t("\u7D27\u51D1 = \u8C31\u5C0F\u4E00\u53F7\u3001\u884C\u8DDD\u548C\u8C31\u8DDD\u6536\u7D27\u3001\u6CA1\u5199\u6B4C\u8BCD\u7684\u58F0\u90E8\u4E0D\u7559\u6B4C\u8BCD\u4F4D\u3002\u5B58\u8FDB MusicXML \u7684 scaling \u548C\u884C\u8DDD\uFF0C\u522B\u7684\u8F6F\u4EF6\u6253\u5F00\u4E5F\u4E00\u6837\u3002") + IN_SONG
     ) + setItem(
       _t("\u6392\u6CD5"),
@@ -60760,7 +60764,7 @@ function openPaperSheet() {
       }
     } else if (k2 === "paper") {
       if (PAPER_KINDS.includes(v)) setPageLook(setPaper(D3.st, v), { kind: "paperSize", label: `${_t("\u7EB8\u5F20")} ${PAPER_LABEL[v]}` });
-    } else if (k2 === "density") setPageLook(setDensity(D3.st, v), { kind: "density", label: `${_t("\u7248\u5F0F")} ${DENSITIES.find((z2) => z2.id === v)?.label ?? v}` });
+    } else if (k2 === "density" && v !== "file") setPageLook(setDensity(D3.st, v), { kind: "density", label: `${_t("\u7248\u5F0F")} ${DENSITIES.find((z2) => z2.id === v)?.label ?? v}` });
     else if (k2 === "flow") {
       pageFlow = v === "pages";
       scrollFlow = v === "scroll";
@@ -64232,4 +64236,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-ec35346b0126.mjs.map
+//# sourceMappingURL=moonsinger-f12a3eace068.mjs.map

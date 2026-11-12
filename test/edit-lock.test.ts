@@ -68,6 +68,17 @@ describe("修改锁 · 分类表", () => {
     eq(effectiveKind<LocusKind>("density", "score", a, setDensity(st, "compact").song, false), "density");
     eq(effectiveKind<LocusKind>("density", "score", a, setPaper(setDensity(st, "compact"), "A4").song, false), "score", "自称版式、实际换了纸 = 当内容");
   });
+  it("换纸只换纸（统筹 2026-11-12）：别家文件写的谱高 staffMm 跟着走，A5 → A4 → A5 和原来一模一样；谱高只在选版式时换；自称换纸、实际动了谱高 = 不过", () => {
+    const st0 = addPaper(initState()), st = { ...st0, song: { ...st0.song, paper: { kind: "A5" as const, widthMm: 148, heightMm: 210, marginMm: { l: 16, r: 16, t: 16, b: 16 }, staffMm: 6.5 } } };
+    const a4 = setPaper(st, "A4");
+    eq(a4.song.paper?.staffMm, 6.5, "换纸：谱高带着走"); eq(a4.song.paper?.kind, "A4");
+    eq(JSON.stringify(setPaper(a4, "A5").song.paper), JSON.stringify(st.song.paper), "换回来 = 原样");
+    assert(sameExceptPaperSize(st.song, a4.song), "换纸 = 只差纸");
+    assert(!sameExceptPaperSize(st.song, { ...a4.song, paper: { ...a4.song.paper!, staffMm: 7 } }), "自称换纸、谱高也变了 = 不过");
+    const comp = setDensity(st, "compact");
+    eq(comp.song.paper?.staffMm, undefined, "选版式 = 谱高换成这一档的"); assert(sameExceptDensity(st.song, comp.song));
+    const def = setPaper(initState(), "A5"); eq(def.song.paper, undefined, "默认纸、没写谱高 = 照旧不写");
+  });
   it("自己报的类别要核：真的只动了看法 = 原样；动了别的 / 连 extras 一起动 = 当内容", () => {
     const st = addPaper(initState()), pid = st.song.papers[1]!.id, hid = setPaperHidden(st, pid, true).song;
     eq(effectiveKind<LocusKind>("paperHidden", "score", st.song, hid, false), "paperHidden");

@@ -86,7 +86,7 @@ import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, su
 import { creditsSections, sectionsHtml } from "./credits-doc.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { DEFAULT_ROLE, presetShowName } from "../score/roles.ts";
-import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
+import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES, DEFAULT_PAPER, STAFF_MM, STAFF_MM_COMPACT, paperOf, paperSizeText } from "../score/paper.ts";
 import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
@@ -1967,6 +1967,7 @@ function openPaperSheet(): void {
   const IN_SONG = where(_t("跟着这首歌存：进歌、能撤销，导出的 PDF 照这里印。")), IN_VIEW = where(_t("跟着这首歌的视图存：存的时候顺手带上，不算改动、不进撤销。")), IN_SESSION = where(_t("只在这次打开里有效，不进歌。"));
   const draw = () => {
     const p = D.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D.st.song), movable = !IN_C_APPLIES[look.notation];   // 选中哪一项 = 这首歌怎么看（只此一处读）
+    const fileMm = p.staffMm !== undefined && Math.abs(p.staffMm - (look.density === "compact" ? STAFF_MM_COMPACT : STAFF_MM)) > 0.01 ? p.staffMm : null;   // 谱高是别家文件里写的、不是两档之一
     const one = D.st.song.parts[0], only1 = !!one && pv(one.id).only && D.st.song.parts.every((q) => q === one || !pv(q.id).only);
     // 看谱：谱种第一行（谱面分家第四刀，user 11-11「面板第一行放谱种」）；看谱方式 / 中央 C / 和弦标级数 = 这首歌的，走修改锁的「看法」（锁着也能切、锁着期间不写文件）
     const lookPage =
@@ -1984,9 +1985,10 @@ function openPaperSheet(): void {
       // 只看一号轨（v0.9.29；user 2026-10-10「然后视图加一个只看一号轨的功能」）：= 全曲第一位歌手的「只看它」；和歌手牌那个是同一个开关
       (one ? setItem(_t("只看一号轨"), sel("only1", [["off", _t("都看")], ["on", _t("只看「{song}」", { song: partLabels(D.st.song, D.extras)[0] ?? "" })]], only1 ? "on" : "off"), _t("速度、风格、反复写在最上面那位身上；别的声部缩成细行。") + IN_VIEW) : "");
     const layoutPage =
-      setItem(_t("纸张"), sel("paper", [...PAPER_KINDS.map((k) => [k, `${PAPER_LABEL[k]}（${PAPER_NOTE[k]}）`] as const), ...(p.kind === "other" ? [["other", `${_t("其他")}（${paperSizeText(p)}）`] as const] : [])], p.kind),
+      setItem(_t("纸张"), sel("paper", [...PAPER_KINDS.map((k) => [k, _t("{paper}（{note}）", { paper: PAPER_LABEL[k], note: PAPER_NOTE[k] })] as const), ...(p.kind === "other" ? [["other", _t("{paper}（{note}）", { paper: _t("其他"), note: paperSizeText(p) })] as const] : [])], p.kind),
         _t("整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。") + IN_SONG) +
-      setItem(_t("版式"), sel("density", DENSITIES.map((z) => [z.id, z.label] as const), look.density),
+      // 别家文件写的谱高不是我们两档里的任何一档：如实显示成单独一项，不说成舒适或紧凑（统筹 2026-11-12）；选它 = 不动
+      setItem(_t("版式"), sel("density", [...DENSITIES.map((z) => [z.id, z.label] as const), ...(fileMm !== null ? [["file", _t("照文件里的 {mm} 毫米", { mm: +fileMm.toFixed(2) })] as const] : [])], fileMm !== null ? "file" : look.density),
         defs(DENSITIES.map((z) => [z.label, z.note] as const)) + "<br>" + _t("紧凑 = 谱小一号、行距和谱距收紧、没写歌词的声部不留歌词位。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。") + IN_SONG) +
       setItem(_t("排法"), sel("flow", [["cont", _t("连续")], ["pages", _t("分页")], ["scroll", _t("横卷")]], scrollFlow ? "scroll" : pageFlow ? "pages" : "cont"),
         defs([[_t("连续"), _t("不断页，每一行和分页一样")], [_t("分页"), _t("按纸（A4 / A5）的真实高度断页，预览打印")], [_t("横卷"), _t("每张纸一行、一直往右，横着滚；声部名钉在左边")]]) + IN_VIEW) +
@@ -2020,7 +2022,7 @@ function openPaperSheet(): void {
     else if (k === "expr") setSongLook(setExpressions(D.st, v === "on"), v === "on" ? _t("显示演奏法和表情") : _t("不显示演奏法和表情"));
     else if (k === "only1") { const one = D.st.song.parts[0]; if (one) { for (const q of D.st.song.parts) setPv(q.id, { only: v === "on" && q === one }); afterViewChange(); } }
     else if (k === "paper") { if ((PAPER_KINDS as string[]).includes(v)) setPageLook(setPaper(D.st, v as PaperKind), { kind: "paperSize", label: `${_t("纸张")} ${PAPER_LABEL[v as PaperKind]}` }); }
-    else if (k === "density") setPageLook(setDensity(D.st, v as Density), { kind: "density", label: `${_t("版式")} ${DENSITIES.find((z) => z.id === v)?.label ?? v}` });
+    else if (k === "density" && v !== "file") setPageLook(setDensity(D.st, v as Density), { kind: "density", label: `${_t("版式")} ${DENSITIES.find((z) => z.id === v)?.label ?? v}` });
     else if (k === "flow") { pageFlow = v === "pages"; scrollFlow = v === "scroll"; view.render(); view.followNow(); }
     else if (k === "reflow") { reflow = v === "reflow"; view.render(); }
     else if (k === "bn") setPageLook(setBarNumbers(D.st, v === "on"), { kind: "barNumbers", label: `${_t("小节号")} ${v === "on" ? _t("每行开头") : _t("不印")}` });

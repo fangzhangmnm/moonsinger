@@ -1519,10 +1519,11 @@ export function setDur(st: EditorState, i: number, dur: number): EditorState {
 }
 export function setHum(st: EditorState, hum: Hum): EditorState { return { ...st, song: { ...st.song, hum } }; }
 /** 改歌名（空 = 不填）。 */
-/** 换纸（整首歌一个）：A5 = 默认，存成「没有」。 */
+/** 换纸（整首歌一个）：A5 = 默认，存成「没有」。**换纸只换纸**：版式和别家文件里写的谱高（staffMm）原样带着走——谱高只在选版式时才换（setDensity；
+ *  统筹 2026-11-12 裁定，施工单 7-C 记录：原来新建纸会丢掉 staffMm = 换纸顺手改了谱的大小）。 */
 export function setPaper(st: EditorState, kind: PaperKind): EditorState {
-  const song = { ...st.song }, density = densityOf(st.song.paper ?? paperOf(DEFAULT_PAPER));
-  if (kind === DEFAULT_PAPER && density === "cozy") delete song.paper; else song.paper = paperOf(kind, density);
+  const song = { ...st.song }, cur = st.song.paper ?? paperOf(DEFAULT_PAPER), density = densityOf(cur);
+  if (kind === DEFAULT_PAPER && density === "cozy" && cur.staffMm === undefined) delete song.paper; else song.paper = { ...paperOf(kind, density), ...(cur.staffMm !== undefined ? { staffMm: cur.staffMm } : {}) };
   return (st.song.paper?.kind ?? DEFAULT_PAPER) === kind ? st : { ...st, song };
 }
 /** 版式：舒适 / 紧凑（整首歌一个；舒适 = 默认，存成「没有」；自家文件不另记 staffMm）。 */

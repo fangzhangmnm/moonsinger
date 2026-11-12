@@ -81,8 +81,8 @@ function sameExceptPaperFields(a: Song, b: Song, allow: readonly (keyof Paper)[]
   for (const k of keys) if (JSON.stringify(pa[k]) !== JSON.stringify(pb[k])) return false;
   return true;
 }
-/** 纸张（A3 横 / A4 / A5 / A6）：纸的种类、尺寸、边距；staffMm 也算（setPaper 换纸时不带别家文件里写的谱高，见施工单 7-C 记录）。版式（density）不许跟着变。 */
-export const sameExceptPaperSize = (a: Song, b: Song): boolean => sameExceptPaperFields(a, b, ["kind", "widthMm", "heightMm", "marginMm", "staffMm"]);
+/** 纸张（A3 横 / A4 / A5 / A6）：纸的种类、尺寸、边距。版式（density）和谱高（staffMm）不许跟着变（换纸只换纸，统筹 2026-11-12）。 */
+export const sameExceptPaperSize = (a: Song, b: Song): boolean => sameExceptPaperFields(a, b, ["kind", "widthMm", "heightMm", "marginMm"]);
 /** 版式（舒适 / 紧凑）：纸上的 density（和它决定的谱高 staffMm）。纸的种类、尺寸、边距不许跟着变。 */
 export const sameExceptDensity = (a: Song, b: Song): boolean => sameExceptPaperFields(a, b, ["density", "staffMm"]);
 /** 小节号印不印：歌顶层的 barNumbers。 */

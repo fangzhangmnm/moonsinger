@@ -584,7 +584,13 @@ export declare const S: {
         readonly en: "Page settings";
     };
     readonly 版面: {
-        readonly en: "Layout";
+        readonly en: "Page";
+    };
+    readonly "{paper}\uFF08{note}\uFF09": {
+        readonly en: "{paper} ({note})";
+    };
+    readonly "\u7167\u6587\u4EF6\u91CC\u7684 {mm} \u6BEB\u7C73": {
+        readonly en: "As in the file ({mm} mm staff)";
     };
     readonly 看谱方式: {
         readonly en: "Key view";
@@ -5602,8 +5608,8 @@ export declare const S: {
     readonly 正经纸: {
         readonly en: "Standard paper";
     };
-    readonly "\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09": {
-        readonly en: "Booklet (A4 folded)";
+    readonly "\u5C0F\u518C\u5B50\uFF0CA4 \u5BF9\u6298": {
+        readonly en: "Booklet, A4 folded";
     };
     readonly 口袋本: {
         readonly en: "Pocket";

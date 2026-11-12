@@ -2,7 +2,7 @@
 //   = 全曲第一位歌手的「只看它」：别的歌手缩成细行；再点 = 都看；和歌手牌那个是同一个开关。created 2026-10-10 by Claude Opus 5.5
 // 跑：先 npm run build，再 npm run serve（8710），再 node test/e2e/only1.mjs（MS_E2E_BASE 可改地址）
 import { chromium } from "./pw.mjs";
-import { pickOnPage, ddValue } from "./dd.mjs";   // 页面设置的下拉（7-C）：先翻到那一页再选
+import { ddOptions, ddValue, pickOnPage } from "./dd.mjs";   // 页面设置的下拉（7-C）：先翻到那一页再选
 let pass = 0, fail = 0;
 const check = (ok, name, extra = "") => { if (ok) pass++; else fail++; console.log(`  ${ok ? "✓" : "✗"} ${name}${extra ? "  " + extra : ""}`); };
 const N = (s, o) => `<note><pitch><step>${s}</step><octave>${o}</octave></pitch><duration>1</duration><type>quarter</type></note>`;
@@ -37,6 +37,16 @@ await pickOnPage(p, '[data-pg="bn"]', "off"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === "off" && (await p.$$eval("#score text.bar-no", (e) => e.length)) === 0, "选「不印」= 歌里记着、谱上没有小节号");
 await pickOnPage(p, '[data-pg="bn"]', "on"); await p.waitForTimeout(200);
 check((await p.evaluate(() => window.__moonsinger.state().song.barNumbers)) === undefined, "再选「每行开头」= 回到默认");
+// 别家文件写的谱高（统筹 2026-11-12）：版式下拉如实显示「照文件里的 6.5 毫米」；换纸带着它；选了版式才换
+await p.keyboard.press("Escape"); await p.mouse.click(5, 880); await p.waitForTimeout(150);
+await p.evaluate(() => { const m = window.__moonsinger, s = m.state(); m.set({ ...s, song: { ...s.song, paper: { kind: "A5", widthMm: 148, heightMm: 210, marginMm: { l: 16, r: 16, t: 16, b: 16 }, staffMm: 6.5 } } }); }); await p.waitForTimeout(250);
+await openSheet(); await p.click('[data-tab="layout"]'); await p.waitForTimeout(100);
+check((await ddValue(p, '[data-pg="density"]')) === "file" && (await ddOptions(p, '[data-pg="density"]').catch(() => [])).some((o) => o.value === "file" && /6\.5/.test(o.label)), "版式下拉 = 「照文件里的 6.5 毫米」（不说成舒适 / 紧凑）");
+await pickOnPage(p, '[data-pg="paper"]', "A4"); await p.waitForTimeout(200);
+check((await p.evaluate(() => window.__moonsinger.state().song.paper)).staffMm === 6.5, "换成 A4：谱高带着走");
+check((await p.$$eval(".popup-menu [data-id]", () => 0), true) && !/（[^）]*（/.test(await p.$eval('[data-pg="paper"]', (e) => e.textContent ?? "")), "纸张那一项没有括号套括号");
+await pickOnPage(p, '[data-pg="density"]', "compact"); await p.waitForTimeout(200);
+{ const pp = await p.evaluate(() => window.__moonsinger.state().song.paper); check(pp.staffMm === undefined && pp.density === "compact", "选「紧凑」= 谱高换成紧凑那一档", JSON.stringify(pp)); }
 check(errs.length === 0, "页面没有报错", errs.join(" | "));
 await b.close();
 console.log(`\nonly1: ${pass} passed, ${fail} failed`);

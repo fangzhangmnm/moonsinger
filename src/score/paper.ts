@@ -29,7 +29,7 @@ const SIZES: Record<PaperKind, { w: number; h: number; m: number }> = { A3L: { w
 export const PAPER_KINDS: PaperKind[] = ["A3L", "A4", "A5", "A6"];
 export const DEFAULT_PAPER: PaperKind = "A5";
 /** 档名后面的一句话（纸的设置面板里）。 */
-export const PAPER_NOTE: Record<PaperKind, string> = { A3L: _t("横放：总谱 / 大屏"), A4: _t("正经纸"), A5: _t("小册子（A4 对折）"), A6: _t("口袋本") };
+export const PAPER_NOTE: Record<PaperKind, string> = { A3L: _t("横放：总谱 / 大屏"), A4: _t("正经纸"), A5: _t("小册子，A4 对折"), A6: _t("口袋本") };
 export const PAPER_LABEL: Record<PaperKind, string> = { A3L: _t("A3 横"), A4: "A4", A5: "A5", A6: "A6" };
 
 export function paperOf(kind: PaperKind, density: Density = "cozy"): Paper {

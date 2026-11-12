@@ -642,7 +642,8 @@ export declare function setNote(st: EditorState, i: number, patch: Partial<Pick<
 export declare function setDur(st: EditorState, i: number, dur: number): EditorState;
 export declare function setHum(st: EditorState, hum: Hum): EditorState;
 /** 改歌名（空 = 不填）。 */
-/** 换纸（整首歌一个）：A5 = 默认，存成「没有」。 */
+/** 换纸（整首歌一个）：A5 = 默认，存成「没有」。**换纸只换纸**：版式和别家文件里写的谱高（staffMm）原样带着走——谱高只在选版式时才换（setDensity；
+ *  统筹 2026-11-12 裁定，施工单 7-C 记录：原来新建纸会丢掉 staffMm = 换纸顺手改了谱的大小）。 */
 export declare function setPaper(st: EditorState, kind: PaperKind): EditorState;
 /** 版式：舒适 / 紧凑（整首歌一个；舒适 = 默认，存成「没有」；自家文件不另记 staffMm）。 */
 export declare function setDensity(st: EditorState, d: Density): EditorState;
