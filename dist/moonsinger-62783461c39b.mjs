@@ -13423,10 +13423,11 @@ var GEOMETRY = {
 };
 var jianpuCan = (q2) => !q2.vrt && !q2.v2 && !q2.hasV2 && !q2.pmode && !q2.p.perc && !q2.p.xHead && !q2.tokens.some((t10) => t10.kind === "note" && !!t10.chord?.length);
 var NOTATIONS2 = {
-  staff: { id: "staff", home: "staff", rowKindOf: () => "staff" },
-  jianpu: { id: "jianpu", home: "jianpu", rowKindOf: (q2) => jianpuCan(q2) ? "jianpu" : "staff" }
+  staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff" },
+  // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
+  //   有叠音的声部、鼓仍排五线谱的行（第五刀后面几步退场；那时候单元宽也按这一种给）
+  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: (q2) => jianpuCan(q2) ? "jianpu" : "staff" }
 };
-var BUILD = { looks: staffLooks, rows: staffRows, tracks: staffTracks };
 
 // src/render/frame/lanes.ts
 var INK_UP_TO = "nav";
@@ -13529,8 +13530,9 @@ function arrangeColumns(cols, tracks, o10) {
 // src/render/engrave.ts
 function engrave(song, o10) {
   if (!o10.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
-  const lookAt = BUILD.looks(song, new Set(o10.parts.filter((p2) => p2.perc || p2.xHead).map((p2) => p2.id)));
   const songLook = songViewOf(song);
+  const BUILD = NOTATIONS2[songLook.notation].build;
+  const lookAt = BUILD.looks(song, new Set(o10.parts.filter((p2) => p2.perc || p2.xHead).map((p2) => p2.id)));
   if (songLook.inCActive) {
     const perc = new Set(o10.parts.filter((p2) => p2.perc).map((p2) => p2.id));
     song = songInC(song, (id2) => perc.has(id2));
@@ -32442,7 +32444,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-3fc2623c3c0c.mjs");
+      return pick(() => "layout-worker-3311175e50c3.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-3e7ec2187a35.mjs");
   }
@@ -62077,4 +62079,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-2530b11bed8f.mjs.map
+//# sourceMappingURL=moonsinger-62783461c39b.mjs.map

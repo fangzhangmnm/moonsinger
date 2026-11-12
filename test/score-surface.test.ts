@@ -73,7 +73,8 @@ const headIdx = (toks: readonly Token[]) => { const k = toks.findIndex((t) => t.
 function knownGap(w: Where, song: Song, L: Layout, rowKind: string | undefined): string | null {
   const paper = song.papers.find((x) => x.id === w.paper)!, head = w.index < headIdx(paper.tracks[w.part]!), host = song.parts.find((x) => x.id === w.part)?.host;
   if (paper.hidden) return "隐藏的整张纸（不排；细行在覆盖层）";
-  if (host !== undefined || song.parts.some((x) => x.host === w.part)) return "合租叠成一行的一家（主人和房客都画在虚拟轨上，token 编号不同）";
+  const merged = !L.systems.some((r) => r.paper === w.paper && r.part === w.part) || !!L.virtual[`${w.paper}:${w.part}`];   // 这一位真被画在虚拟轨上（或者没有自己的行）
+  if ((host !== undefined || song.parts.some((x) => x.host === w.part)) && merged) return "合租叠成一行的一家（主人和房客都画在虚拟轨上，token 编号不同）";
   if (head && w.tok.kind === "tempo") return "谱头的速度（画速度的共用挂件不带 token；不在最上面的那几位的谱头速度本来就不画）";
   if (head && w.tok.kind === "clef") return "轨开头的谱号记号（并进了行首谱号）";
   if (rowKind === "staff" && ["key", "time", "clef", "ottava", "bar"].includes(w.tok.kind)) return "五线谱上调号 / 拍号 / 谱号 / 八度线 / 小节线的字形有的不带 token（行首的、行中间换的、段落线 / 终止线…）";

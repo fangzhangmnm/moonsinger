@@ -7064,10 +7064,11 @@ var DRAWERS = {
 };
 var jianpuCan = (q) => !q.vrt && !q.v2 && !q.hasV2 && !q.pmode && !q.p.perc && !q.p.xHead && !q.tokens.some((t) => t.kind === "note" && !!t.chord?.length);
 var NOTATIONS2 = {
-  staff: { id: "staff", home: "staff", rowKindOf: () => "staff" },
-  jianpu: { id: "jianpu", home: "jianpu", rowKindOf: (q) => jianpuCan(q) ? "jianpu" : "staff" }
+  staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff" },
+  // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
+  //   有叠音的声部、鼓仍排五线谱的行（第五刀后面几步退场；那时候单元宽也按这一种给）
+  jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: (q) => jianpuCan(q) ? "jianpu" : "staff" }
 };
-var BUILD = { looks: staffLooks, rows: staffRows, tracks: staffTracks };
 
 // src/render/frame/lanes.ts
 var INK_UP_TO = "nav";
@@ -7170,8 +7171,9 @@ function arrangeColumns(cols, tracks, o) {
 // src/render/engrave.ts
 function engrave(song, o) {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
-  const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   const songLook = songViewOf(song);
+  const BUILD = NOTATIONS2[songLook.notation].build;
+  const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   if (songLook.inCActive) {
     const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id));
     song = songInC(song, (id) => perc.has(id));
@@ -7875,4 +7877,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-3fc2623c3c0c.mjs.map
+//# sourceMappingURL=layout-worker-3311175e50c3.mjs.map

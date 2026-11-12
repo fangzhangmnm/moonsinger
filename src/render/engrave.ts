@@ -31,7 +31,7 @@ import { SCROLL_TAIL, ABBR_REF, NAME_MAX, NAME_MIN, ROW_STEP, MARGIN, BAR_W, TIT
 import { PAPER_PARAMS, ROW_PARAMS } from "./layout-params.ts";   // 排版参数表（纸一级按谱种、行一级按行的种类）
 import { wrapTitle } from "./frame/furniture.ts";
 // 五线谱这一种：只从它的入口拿（施工单 1b-9 守卫 1：框架不直接 import 字形表、符干、谱号模块）
-import { BUILD, DRAWERS, NOTATIONS, type RowKind, type FoldFamily, type StaffTrack, type Unit, type Chunk } from "./notations.ts";   // 谱种的表（第四刀）：框架只经过它拿画法，不直接 import staff/ / jianpu/
+import { DRAWERS, NOTATIONS, type RowKind, type FoldFamily, type StaffTrack, type Unit, type Chunk } from "./notations.ts";   // 谱种的表（第四刀）：框架只经过它拿画法，不直接 import staff/ / jianpu/
 import type { LyricPart, LyricSpot } from "./frame/lyric-spots.ts";
 import { INK_UP_TO, type LaneKind } from "./frame/lanes.ts";
 import { mergeColumns, arrangeColumns, type ArrangeTrack } from "./frame/arrange.ts";
@@ -169,8 +169,9 @@ export interface Layout {
 export function engrave(song: Song, o: EngraveOpts): Layout {
   if (!o.locale) throw new Error("engrave: opts.locale is required (the layout never reads the page language itself)");
   // 每张纸每个声部怎么画（谱号 / 大谱表 / 自动八度线，v0.16.88 按段；自动的按整首一路挑，和视图无关）——按 C 调看也按实际的音挑：换个看法谱号不跳。鼓 / 固定敲一个键的不自动变大谱表
-  const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   const songLook = songViewOf(song);   // 这首歌怎么看（谱面分家第三刀：歌里的设置，只此一处读；按 C 调看的换算之前读）
+  const BUILD = NOTATIONS[songLook.notation].build;   // 建轨 = 这首歌的谱种那一项（第五刀 5-2）
+  const lookAt = BUILD.looks(song, new Set(o.parts.filter((p) => p.perc || p.xHead).map((p) => p.id)));
   if (songLook.inCActive) { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
   const sp = o.sp, P = (v: number) => v * sp, ts = o.textScale ?? 1, T = (v: number) => v * sp * ts;   // P = 谱的尺子；T = 字的尺子（刀 2：紧凑档 ts = 1.4，字和它周围留的地方照舒适档）
   const density = songLook.density;
