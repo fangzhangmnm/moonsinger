@@ -33,6 +33,26 @@ export const ROLE_PRESETS: RolePreset[] = ROLE_GROUPS.flatMap((g) => g.items);
 /** 新建的歌：主唱这个声部 = Vocals（voice.vocals）。 */
 export const DEFAULT_ROLE: RolePreset = ROLE_PRESETS[0];
 
+/** 谱上显示用的预设名（谱面分家 5½ 补；统筹：目录里没有那种语言名字的、app 自己的预设名，按普通的界面字走 i18n）。只是显示：歌里存的名字、MusicXML 里的名字不动。
+ *  键 = 官方 id + 英文名（合唱的 Bass 和贝斯分得开）；名字不分大小写比。表外的（自己起的、Piano / Guitar 这类目录里有的）= null。 */
+const PRESET_SHOW: readonly { sound: string; name: string; show: () => string }[] = [
+  { sound: "voice.vocals", name: "Vocals", show: () => _t("人声##谱上声部名") },
+  { sound: "voice.vocals", name: "Backing Vocals", show: () => _t("伴唱##谱上声部名") },
+  { sound: "voice.soprano", name: "Soprano", show: () => _t("女高音##谱上声部名") },
+  { sound: "voice.alto", name: "Alto", show: () => _t("女低音##谱上声部名") },
+  { sound: "voice.tenor", name: "Tenor", show: () => _t("男高音##谱上声部名") },
+  { sound: "voice.bass", name: "Bass", show: () => _t("男低音##谱上声部名") },
+  { sound: "drum.group.set", name: "Drums", show: () => _t("鼓##谱上声部名") },
+  { sound: "synth.tone.sawtooth", name: "Synth Lead", show: () => _t("合成器主音##谱上声部名") },
+  { sound: "synth.pad", name: "Synth Pad", show: () => _t("合成器背景音##谱上声部名") },
+];
+/** 这个声部名（可带号「Vocals 2」）是 app 的预设 = 界面语言里它的叫法 + 号；不是 = null。 */
+export function presetShowName(label: string, sound: string): { show: string; base: string } | null {
+  const m = / (\d+)$/.exec(label), base = m ? label.slice(0, -m[0].length) : label, low = base.toLowerCase();
+  const p = PRESET_SHOW.find((x) => x.sound === sound && x.name.toLowerCase() === low);
+  return p ? { show: p.show() + (m ? ` ${m[1]}` : ""), base } : null;
+}
+
 /** 同名声部编号（user「然后default name如果重名的话会变成vocals vocals2这样？」→ AI 答照打谱软件（MuseScore 4 自动编号）→ user「这个应该可以现在做」）：
  *  名字和官方 id 都一样的几个声部 = 按先后补「 1」「 2」…（第一个也补；单独一个不带号）。名字一样但不是同一种（合唱的 Bass 和贝斯）不一起编。
  *  编号不存进角色名、每次现算（删了一个声部剩下的自动重排）；写 MusicXML 的 <part-name> 也带号。 */

@@ -82,7 +82,7 @@ import { coreInfo } from "../core/version.ts";
 import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, sustainOf, GS_LIBRARY_ID, gmKey, conceptOfIds, type Catalog, type Concept } from "../gm/catalog.ts";
 import { creditsSections, sectionsHtml } from "./credits-doc.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
-import { DEFAULT_ROLE } from "../score/roles.ts";
+import { DEFAULT_ROLE, presetShowName } from "../score/roles.ts";
 import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
 import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
@@ -2044,7 +2044,10 @@ function partLooks(): { colors: number[]; abbrs: string[]; names: string[] } {
     const ids = (D.extras.lounge[p.role] as { concept?: { ids?: { wikidata?: string | null; local?: string | null } } } | undefined)?.concept?.ids;
     const c = catalogNow && ids ? (ids.wikidata ? catalogNow.byId.get(ids.wikidata) : undefined) ?? (ids.local ? catalogNow.byId.get(ids.local) ?? catalogNow.byId.get(`x:${ids.local}`) : undefined) : undefined;
     const conceptNames = c ? [...(c.scoreName?.en ? [c.scoreName.en] : []), c.names.en, c.names.zh] : undefined, local = c && ui !== "en" ? (c.names as Record<string, string | undefined>)[ui] : undefined;
-    names.push(localPartName(labels[k], { ...(conceptNames ? { conceptNames } : {}), ...(local ? { local } : {}) }) ?? labels[k]);
+    const fromCat = localPartName(labels[k], { ...(conceptNames ? { conceptNames } : {}), ...(local ? { local } : {}) });
+    const preset = !fromCat && ui !== "en" ? presetShowName(labels[k], sounds[k]) : null;   // 目录里没有那种语言名字的 app 预设（人声 / 伴唱 / 女高音…）：走界面字（5½ 补）
+    names.push(fromCat ?? preset?.show ?? labels[k]);
+    if (preset) { const m = / (\d+)$/.exec(preset.show), pl = m ? preset.show.slice(0, -m[0].length) : preset.show; return partAbbr(labels[k], { conceptNames: [preset.base], local: pl }); }
     return partAbbr(labels[k], { ...(c ? { conceptNames: conceptNames!, ...(c.abbr?.en ? { conceptAbbr: c.abbr.en } : {}), ...(local ? { local } : {}) } : {}), voice: sounds[k].startsWith("voice.") });
   });
   return { colors, abbrs, names };
@@ -3039,6 +3042,11 @@ let pdfBusy = false;
 async function makePdf(fontId: PdfFontId, pick: PdfPick = {}): Promise<{ file: File; r: ReturnType<typeof scorePdf> }> {
     progress(_t("下载字体（第一次约 {p} MB）…", { p: PDF_FONT_MB[fontId] }));
     const [font, music] = await Promise.all([loadPdfFont(fontId), loadMusicOutlines()]);
+    // 谱上的名字跟界面语言、要目录（5½ 补，统筹：刚打开就导出不许是英文名、过一会儿导出又是中文名）：先等目录到；取不到 = 照英文名印、说一声
+    //   英文界面也等：简写（Fl.）也是从目录来的，不等 = 刚打开导出的简写和过一会儿的不一样
+    if (!catalogNow && D.st.song.parts.some((p) => !!(D.extras.lounge[p.role] as { concept?: unknown } | undefined)?.concept)) {
+      catalogNow = await loadCatalog().catch((e) => { reportError(e, "warning"); info(_t("乐器目录取不到：谱上的乐器名和简写这次照歌里存的名字印")); return null; });
+    }
     progress(_t("排版…"));
     const title = D.st.song.title || docName();
     let song = D.st.song, parts = partViews();

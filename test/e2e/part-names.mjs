@@ -13,10 +13,11 @@ const b = await chromium.launch();
 const run = async (locale, want) => {
   const ctx = await b.newContext({ locale, viewport: { width: 1200, height: 900 } }), p = await ctx.newPage(), errs = []; p.on("pageerror", (e) => errs.push(e.message));
   await p.goto(BASE); await p.waitForTimeout(800);
+  const fresh = await p.evaluate(() => window.__moonsinger.layout().prims.filter((x) => /part-name/.test(x.cls ?? "") && !/abbr/.test(x.cls ?? "")).map((x) => x.s));   // 新歌：主唱的预设名
   await p.evaluate((x) => { const m = window.__moonsinger; m.load(m.open("song.mxl", new Uint8Array(x))); }, bytes);
   const names = () => p.evaluate(() => window.__moonsinger.layout().prims.filter((x) => /part-name/.test(x.cls ?? "") && !/abbr/.test(x.cls ?? "")).map((x) => x.s));
   for (let i = 0; i < 40 && !(await names()).includes(want); i++) await p.waitForTimeout(150);
-  const out = { lang: await p.evaluate(() => document.documentElement.lang), names: await names(), abbrs: await p.evaluate(() => window.__moonsinger.layout().prims.filter((x) => /part-name abbr/.test(x.cls ?? "")).map((x) => x.s)), bytes: await p.evaluate(() => window.__moonsinger.saveBytes()), errs };
+  const out = { fresh, lang: await p.evaluate(() => document.documentElement.lang), names: await names(), abbrs: await p.evaluate(() => window.__moonsinger.layout().prims.filter((x) => /part-name abbr/.test(x.cls ?? "")).map((x) => x.s)), bytes: await p.evaluate(() => window.__moonsinger.saveBytes()), errs };
   await ctx.close(); return out;
 };
 const zh = await run("zh-CN", "长笛"), en = await run("en-US", "Flute");
@@ -32,6 +33,7 @@ check(en.abbrs.includes("Fl."), "英文界面：简写照旧 Fl.", en.abbrs.join
   const diff = [...new Set([...Object.keys(za), ...Object.keys(zb)])].filter((k) => !za[k] || !zb[k] || za[k].length !== zb[k].length || za[k].some((v, i) => v !== zb[k][i]));
   if (diff.length) for (const k of diff.slice(0, 3)) { const ta = new TextDecoder().decode(za[k] ?? new Uint8Array()), tb = new TextDecoder().decode(zb[k] ?? new Uint8Array()); let i = 0; while (i < ta.length && ta[i] === tb[i]) i++; console.log(`    ${k}: …${ta.slice(Math.max(0, i - 60), i + 60)}… / …${tb.slice(Math.max(0, i - 60), i + 60)}…`); }
   check(zh.bytes.length > 0 && !diff.length, "只管显示：两种界面下存出去的 .mxl 每一份文件都一样（除了存盘时刻；歌里的名字、MusicXML 里的名字不动）", diff.join(" ")); }
+check(zh.fresh.includes("人声") && en.fresh.includes("Vocals"), "app 自己的预设名（目录里没有中文名）走界面字：中文界面 Vocals → 人声、英文界面照旧", `${zh.fresh.join(" ")} / ${en.fresh.join(" ")}`);
 check(!zh.errs.length && !en.errs.length, "没有页面错误", [...zh.errs, ...en.errs].join(" | "));
 await b.close();
 console.log(`\n${pass} passed, ${fail} failed`);

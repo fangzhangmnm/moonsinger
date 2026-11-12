@@ -1843,6 +1843,16 @@ var S = {
   "\u6CA1\u6709 To Coda\uFF1A\u8DF3\u56DE\u6765\u4E4B\u540E\u4E00\u8DEF\u653E\u5230\u7EB8\u5C3E": { en: "No To Coda: after jumping back it plays to the end of the sheet" },
   "\u4E3B\u5531": { en: "Lead vocal" },
   "\u548C\u58F0": { en: "Harmony" },
+  "\u4EBA\u58F0##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Vocals" },
+  "\u4F34\u5531##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Backing Vocals" },
+  "\u5973\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Soprano" },
+  "\u5973\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Alto" },
+  "\u7537\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Tenor" },
+  "\u7537\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Bass" },
+  "\u9F13##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Drums" },
+  "\u5408\u6210\u5668\u4E3B\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Synth Lead" },
+  "\u5408\u6210\u5668\u80CC\u666F\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Synth Pad" },
+  "\u4E50\u5668\u76EE\u5F55\u53D6\u4E0D\u5230\uFF1A\u8C31\u4E0A\u7684\u4E50\u5668\u540D\u548C\u7B80\u5199\u8FD9\u6B21\u7167\u6B4C\u91CC\u5B58\u7684\u540D\u5B57\u5370": { en: "Couldn\u2019t load the instrument catalog: instrument names and abbreviations are printed as stored in the song this time" },
   "\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": { en: "Soprano (choir)" },
   "\u5973\u4F4E\u97F3\uFF08\u5408\u5531\uFF09": { en: "Alto (choir)" },
   "\u7537\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": { en: "Tenor (choir)" },
@@ -10588,4 +10598,4 @@ self.onmessage = async (ev) => {
    * Licensed under the MIT License.
    *)
 */
-//# sourceMappingURL=singer-worker-c3d2bd74592d.mjs.map
+//# sourceMappingURL=singer-worker-fc088e237174.mjs.map

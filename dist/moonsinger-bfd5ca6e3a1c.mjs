@@ -4551,6 +4551,16 @@ var S = {
   "\u6CA1\u6709 To Coda\uFF1A\u8DF3\u56DE\u6765\u4E4B\u540E\u4E00\u8DEF\u653E\u5230\u7EB8\u5C3E": { en: "No To Coda: after jumping back it plays to the end of the sheet" },
   "\u4E3B\u5531": { en: "Lead vocal" },
   "\u548C\u58F0": { en: "Harmony" },
+  "\u4EBA\u58F0##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Vocals" },
+  "\u4F34\u5531##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Backing Vocals" },
+  "\u5973\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Soprano" },
+  "\u5973\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Alto" },
+  "\u7537\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Tenor" },
+  "\u7537\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Bass" },
+  "\u9F13##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Drums" },
+  "\u5408\u6210\u5668\u4E3B\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Synth Lead" },
+  "\u5408\u6210\u5668\u80CC\u666F\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D": { en: "Synth Pad" },
+  "\u4E50\u5668\u76EE\u5F55\u53D6\u4E0D\u5230\uFF1A\u8C31\u4E0A\u7684\u4E50\u5668\u540D\u548C\u7B80\u5199\u8FD9\u6B21\u7167\u6B4C\u91CC\u5B58\u7684\u540D\u5B57\u5370": { en: "Couldn\u2019t load the instrument catalog: instrument names and abbreviations are printed as stored in the song this time" },
   "\u5973\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": { en: "Soprano (choir)" },
   "\u5973\u4F4E\u97F3\uFF08\u5408\u5531\uFF09": { en: "Alto (choir)" },
   "\u7537\u9AD8\u97F3\uFF08\u5408\u5531\uFF09": { en: "Tenor (choir)" },
@@ -32944,15 +32954,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-c3d2bd74592d.mjs");
+      return pick(() => "singer-worker-fc088e237174.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-1e666b1953bc.mjs");
+      return pick(() => "layout-worker-e2ce5cab1543.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-dbf4137da628.mjs");
+      return pick(() => "encode-worker-3d0bab7bade1.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -34542,6 +34552,22 @@ var ROLE_GROUPS = [
 ];
 var ROLE_PRESETS = ROLE_GROUPS.flatMap((g3) => g3.items);
 var DEFAULT_ROLE = ROLE_PRESETS[0];
+var PRESET_SHOW = [
+  { sound: "voice.vocals", name: "Vocals", show: () => _t("\u4EBA\u58F0##\u8C31\u4E0A\u58F0\u90E8\u540D") },
+  { sound: "voice.vocals", name: "Backing Vocals", show: () => _t("\u4F34\u5531##\u8C31\u4E0A\u58F0\u90E8\u540D") },
+  { sound: "voice.soprano", name: "Soprano", show: () => _t("\u5973\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D") },
+  { sound: "voice.alto", name: "Alto", show: () => _t("\u5973\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D") },
+  { sound: "voice.tenor", name: "Tenor", show: () => _t("\u7537\u9AD8\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D") },
+  { sound: "voice.bass", name: "Bass", show: () => _t("\u7537\u4F4E\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D") },
+  { sound: "drum.group.set", name: "Drums", show: () => _t("\u9F13##\u8C31\u4E0A\u58F0\u90E8\u540D") },
+  { sound: "synth.tone.sawtooth", name: "Synth Lead", show: () => _t("\u5408\u6210\u5668\u4E3B\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D") },
+  { sound: "synth.pad", name: "Synth Pad", show: () => _t("\u5408\u6210\u5668\u80CC\u666F\u97F3##\u8C31\u4E0A\u58F0\u90E8\u540D") }
+];
+function presetShowName(label, sound2) {
+  const m2 = / (\d+)$/.exec(label), base2 = m2 ? label.slice(0, -m2[0].length) : label, low = base2.toLowerCase();
+  const p2 = PRESET_SHOW.find((x2) => x2.sound === sound2 && x2.name.toLowerCase() === low);
+  return p2 ? { show: p2.show() + (m2 ? ` ${m2[1]}` : ""), base: base2 } : null;
+}
 function numberParts(parts) {
   const key = (p2) => `${p2.name}\0${p2.sound}`;
   const total = /* @__PURE__ */ new Map();
@@ -42880,7 +42906,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.1.1";
-var CORE_HASH = true ? "776d3c8e2c71f0cb" : "dev";
+var CORE_HASH = true ? "a665a19b04936eb0" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -59277,7 +59303,13 @@ function partLooks() {
     const ids = D3.extras.lounge[p2.role]?.concept?.ids;
     const c10 = catalogNow && ids ? (ids.wikidata ? catalogNow.byId.get(ids.wikidata) : void 0) ?? (ids.local ? catalogNow.byId.get(ids.local) ?? catalogNow.byId.get(`x:${ids.local}`) : void 0) : void 0;
     const conceptNames = c10 ? [...c10.scoreName?.en ? [c10.scoreName.en] : [], c10.names.en, c10.names.zh] : void 0, local = c10 && ui3 !== "en" ? c10.names[ui3] : void 0;
-    names.push(localPartName(labels[k2], { ...conceptNames ? { conceptNames } : {}, ...local ? { local } : {} }) ?? labels[k2]);
+    const fromCat = localPartName(labels[k2], { ...conceptNames ? { conceptNames } : {}, ...local ? { local } : {} });
+    const preset = !fromCat && ui3 !== "en" ? presetShowName(labels[k2], sounds[k2]) : null;
+    names.push(fromCat ?? preset?.show ?? labels[k2]);
+    if (preset) {
+      const m2 = / (\d+)$/.exec(preset.show), pl = m2 ? preset.show.slice(0, -m2[0].length) : preset.show;
+      return partAbbr(labels[k2], { conceptNames: [preset.base], local: pl });
+    }
     return partAbbr(labels[k2], { ...c10 ? { conceptNames, ...c10.abbr?.en ? { conceptAbbr: c10.abbr.en } : {}, ...local ? { local } : {} } : {}, voice: sounds[k2].startsWith("voice.") });
   });
   return { colors, abbrs, names };
@@ -60763,6 +60795,13 @@ var pdfBusy = false;
 async function makePdf(fontId, pick = {}) {
   progress(_t("\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7B2C\u4E00\u6B21\u7EA6 {p} MB\uFF09\u2026", { p: PDF_FONT_MB[fontId] }));
   const [font, music] = await Promise.all([loadPdfFont(fontId), loadMusicOutlines()]);
+  if (!catalogNow && D3.st.song.parts.some((p2) => !!D3.extras.lounge[p2.role]?.concept)) {
+    catalogNow = await loadCatalog().catch((e10) => {
+      reportError(e10, "warning");
+      info(_t("\u4E50\u5668\u76EE\u5F55\u53D6\u4E0D\u5230\uFF1A\u8C31\u4E0A\u7684\u4E50\u5668\u540D\u548C\u7B80\u5199\u8FD9\u6B21\u7167\u6B4C\u91CC\u5B58\u7684\u540D\u5B57\u5370"));
+      return null;
+    });
+  }
   progress(_t("\u6392\u7248\u2026"));
   const title = D3.st.song.title || docName();
   let song = D3.st.song, parts = partViews();
@@ -62610,4 +62649,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-3257ddae46ac.mjs.map
+//# sourceMappingURL=moonsinger-bfd5ca6e3a1c.mjs.map
