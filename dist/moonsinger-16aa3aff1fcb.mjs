@@ -10729,7 +10729,6 @@ var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
 var NAME_MIN = 3 * 2 + 0.4;
-var SQUEEZE = 0.15;
 var ROW_STEP = 1;
 var MARGIN = 1.2;
 var BAR_W = 1.6;
@@ -10737,12 +10736,19 @@ var TITLE_H = 5.4;
 var PAPER_H = 3.4;
 var PAPER_GAP = 1.6;
 var CTL_H = 3;
-var SPACING = {
-  cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },
-  // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
-  compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 }
-};
 var SYSTEM_LINE_W = 0.16 * 1.4;
+
+// src/render/layout-params.ts
+var PAPER_PARAMS = {
+  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
+  // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
+  jianpu: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3 } }
+};
+var ROW_PARAMS = {
+  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4 } },
+  // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
+  jianpu: { cozy: { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }, compact: { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 } }
+};
 
 // src/render/frame/furniture.ts
 var NO_LINE_START = /* @__PURE__ */ new Set([..."\u3001\u3002\uFF0C\uFF0E\u30FB\uFF1A\uFF1B\uFF1F\uFF01\uFF09\u300D\u300F\u3011\u3015\u3009\u300B\u30FC\uFF5E\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6,.;:!?)]}"]);
@@ -12968,7 +12974,7 @@ var ACC_W = 0.95;
 var DASH_L = 1;
 var DASH_W = 0.13;
 var DASH_Y = DIGIT_MID;
-var DASH_PITCH = 1.7;
+var DASH_PITCH = 2.4;
 var AUG_DX = 0.35;
 var AUG_R = 0.14;
 var BAR_Y0 = 0.75;
@@ -12978,6 +12984,7 @@ var BAR_THIN = 0.12;
 var BAR_THICK = 0.4;
 var BAR_GAP = 0.35;
 var BAR_W_J = 1.2;
+var JP_BODY = { top: BAR_Y0, bottom: BAR_Y1 };
 var MID_TEXT_EM = 1.4;
 var MID_TEXT_CH = 0.62;
 var BREATH_W = 0.35 + 0.9;
@@ -13181,7 +13188,8 @@ function drawJianpu(c10, mine) {
       if (u2.kind !== "chunk" || u2.pad) continue;
       const row2 = rowOf(u2.system, r10, 0), tok = tokOf(u2), x0 = P2(u2.x + 0.1), cx2 = x0 + P2(DIGIT_W / 2), T2 = tok !== void 0 ? { tok } : {};
       const n10 = extraGlyphs(u2), contDash = u2.note && u2.j > 0 && u2.base >= TPQ;
-      const limit = u2.x + u2.w - 0.1 - DIGIT_W / 2, step = n10 ? Math.max(DASH_PITCH, (limit - (u2.x + 0.1 + DIGIT_W / 2)) / n10) : 0;
+      const tailW = (hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + (u2.note && u2.breath ? BREATH_W + (u2.inhale ? INHALE_W : 0) : 0);
+      const step = n10 ? Math.max(DASH_PITCH, (u2.w - tailW) / (n10 + 1)) : 0;
       const gx = (k2) => cx2 + P2(k2 * step);
       const small = u2.art.includes("ghost");
       const digit = (x2, s10) => put2(row2, { ...T2, t: "text", x: x2, y: Y2(row2, BASE_Y), s: s10, cls: u2.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: P2(small ? DIGIT_EM * 0.72 : DIGIT_EM), anchor: "middle" });
@@ -13323,16 +13331,19 @@ function drawJianpu(c10, mine) {
   return { lyricParts };
 }
 
+// src/render/jianpu/geometry.ts
+var jianpuAnchors = (origin, half2) => ({ top: origin + JP_BODY.top * 2 * half2, mid: origin + (JP_BODY.top + JP_BODY.bottom) / 2 * 2 * half2, bottom: origin + JP_BODY.bottom * 2 * half2 });
+
 // src/render/notations.ts
 var DRAWERS = {
   staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c10, mine) => drawStaff(c10, mine), lanes: STAFF_LANES, anchors },
-  // 数字行和五线谱用同一个行框（局部 0–4），竖向锚点一样（jianpu/glyphs.ts）
-  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c10, mine) => drawJianpu(c10, mine), lanes: JIANPU_LANES, anchors }
+  // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
+  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c10, mine) => drawJianpu(c10, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors }
 };
 var jianpuCan = (q2) => !q2.vrt && !q2.v2 && !q2.hasV2 && !q2.pmode && !q2.p.perc && !q2.p.xHead && !q2.tokens.some((t10) => t10.kind === "note" && !!t10.chord?.length);
 var NOTATIONS2 = {
-  staff: { id: "staff", rowKindOf: () => "staff" },
-  jianpu: { id: "jianpu", rowKindOf: (q2) => jianpuCan(q2) ? "jianpu" : "staff" }
+  staff: { id: "staff", home: "staff", rowKindOf: () => "staff" },
+  jianpu: { id: "jianpu", home: "jianpu", rowKindOf: (q2) => jianpuCan(q2) ? "jianpu" : "staff" }
 };
 var BUILD = { looks: staffLooks, rows: staffRows, tracks: staffTracks };
 
@@ -13417,7 +13428,8 @@ function arrangeColumns(cols, tracks, o10) {
     const from = lineFrom[s10], to2 = s10 + 1 < nSys ? lineFrom[s10 + 1] : n10;
     if (from >= to2) continue;
     const avail2 = brk - sysStarts[s10], nat2 = placeLine(spCols, gaps, rodIx, from, to2, 0);
-    let f2 = brk !== Infinity && (nat2.end > avail2 + 1e-6 || s10 !== nSys - 1 && nat2.end >= avail2 * 0.6) ? fitLine(spCols, gaps, rodIx, from, to2, avail2, { squeeze: o10.squeeze, justify: true }) : nat2;
+    const reach = nat2.end > avail2 + 1e-6 ? avail2 : Math.min(avail2, nat2.end * o10.maxStretch);
+    let f2 = brk !== Infinity && (nat2.end > avail2 + 1e-6 || s10 !== nSys - 1 && nat2.end >= avail2 * 0.6) ? fitLine(spCols, gaps, rodIx, from, to2, reach, { squeeze: o10.squeeze, justify: true }) : nat2;
     if (s10 === nSys - 1 && s10 > 0 && f2 === nat2 && prevStretch > 0 && brk !== Infinity) {
       const g3 = placeLine(spCols, gaps, rodIx, from, to2, prevStretch);
       f2 = g3.end <= avail2 + 1e-6 ? { ...g3, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to2, avail2, { squeeze: o10.squeeze, justify: true });
@@ -13443,13 +13455,14 @@ function engrave(song, o10) {
     song = songInC(song, (id2) => perc.has(id2));
   }
   const sp2 = o10.sp, P2 = (v) => v * sp2, ts2 = o10.textScale ?? 1, T2 = (v) => v * sp2 * ts2;
-  const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
+  const density = densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } });
+  const PPAR = PAPER_PARAMS[songLook.notation][density];
   const PG = o10.page ?? null, PAGE_GAP = 3, MX = o10.page ?? o10.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };
   const pageTopY = (k2) => P2(k2 * ((PG?.h ?? 0) + PAGE_GAP));
   const contentTop = (k2) => pageTopY(k2) + P2(PG?.t ?? 0), contentBottom = (k2) => pageTopY(k2) + P2((PG?.h ?? 0) - (PG?.b ?? 0));
   let pageNo = 0;
   const TOP2 = P2(MX.t);
-  const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow, SYS_GAP = SPC.sysGap;
+  const SYS_GAP = PPAR.sysGap;
   const prims = [];
   if (o10.__noAnn) {
     const push = prims.push.bind(prims);
@@ -13552,9 +13565,11 @@ function engrave(song, o10) {
   let shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
   const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map();
-  const staffTop = (r10) => rowTop.get(r10) + P2(rowAbove.get(r10) ?? STAFF_ABOVE);
+  const staffTop = (r10) => rowTop.get(r10) + P2(rowAbove.get(r10) ?? 0);
   const anc = (r10) => DRAWERS[rows[r10].kind].anchors(staffTop(r10), P2(0.5));
-  const lyricY = (r10) => anc(r10).bottom + P2(lyricOff.get(r10) ?? LYRIC_BELOW);
+  const body2 = (r10) => DRAWERS[rows[r10].kind].anchors(0, 0.5);
+  const rowPar = (r10) => ROW_PARAMS[rows[r10].kind][density];
+  const lyricY = (r10) => anc(r10).bottom + P2(lyricOff.get(r10) ?? rowPar(r10).lyricBelow);
   const showPaperLine = song.papers.length > 1 || song.papers.some((p2) => p2.name);
   let drawn = 0;
   const underOf = (paper) => {
@@ -13662,8 +13677,8 @@ function engrave(song, o10) {
       const keys = keyAtCol[k2], base2 = (first ? ind0 : indN) + MARGIN;
       return Math.max(...per0.map((q2, i10) => DRAWERS[kinds[i10]].lineStart(q2, keys.get(q2.p.id), first, base2)));
     };
-    const spO = { curve: curveOf(densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } }) === "compact" ? "tight" : "normal"), ...SP_DEFAULTS };
-    const ar2 = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o10.scroll ? Infinity : right, squeeze: SQUEEZE, endPad: BAR_W, lineStart: headAt });
+    const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
+    const ar2 = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o10.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, endPad: BAR_W, lineStart: headAt });
     const { lineFrom, sysStarts } = ar2, nSys = lineFrom.length, sysKeys = lineFrom.map((k2) => new Map(keyAtCol[k2]));
     const cols = merged.map((c10, k2) => ({ tick: c10.tick, slot: c10.slot, n: c10.n, x: ar2.xs[k2], w: ar2.ws[k2], system: ar2.system[k2], bar: c10.bar, units: c10.members.map((m2) => m2.entry.ref) }));
     const at2 = /* @__PURE__ */ new Map();
@@ -13765,7 +13780,7 @@ function engrave(song, o10) {
         const t10 = sk2.top(pieces[i10], pieces[i10 + 1]);
         if (t10 < Infinity) need = Math.min(need, t10 - gap - pieces[i10 + 3]);
       }
-      const dy = need === Infinity ? -2.4 : need;
+      const dy = need === Infinity ? body2(row2).top - rowPar(row2).clear : need;
       shiftSince(m2, P2(dy));
       commit(sk2, dy, true);
       return dy;
@@ -13959,9 +13974,8 @@ function engrave(song, o10) {
         });
         return;
       }
-      const base2 = LYRIC_BELOW + (o10.lyricRaise ?? 0);
       for (let sy2 = 0; sy2 < nSys; sy2++) {
-        const row2 = lrow(sy2), cs3 = bySys.get(sy2);
+        const row2 = lrow(sy2), cs3 = bySys.get(sy2), base2 = rowPar(row2).lyricBelow + (o10.lyricRaise ?? 0);
         attach2(row2, "lyrics", () => {
           lyricOff.set(row2, base2);
           if (!cs3) return;
@@ -14006,20 +14020,20 @@ function engrave(song, o10) {
       }
     }
     const pEnd = mark();
-    const PAD = 0.8, lyricTail = SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow, fin = (v, d3) => Number.isFinite(v) ? v : d3;
+    const PAD = 0.8, fin = (v, d3) => Number.isFinite(v) ? v : d3;
     const stepUp = (min, need) => need <= min + 1e-9 ? min : min + Math.ceil((need - min) / ROW_STEP - 1e-9) * ROW_STEP;
     const geo = (s10, r10, k2) => {
-      const q2 = per[r10], row2 = rowOf(s10, r10, k2), sk2 = sky(row2), hUp = fin(sk2.hUp, 0), hDn = fin(sk2.hDn, 4);
-      const minBelow = q2.staves === 2 && k2 === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r10] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
-      const lyr = lyricsOf[r10] && k2 === q2.staves - 1 ? lyricOff.get(row2) : void 0, row22 = 0;
-      let need = hDn - 4 + PAD;
+      const q2 = per[r10], row2 = rowOf(s10, r10, k2), R2 = rowPar(row2), b3 = body2(row2), bodyH = b3.bottom - b3.top, sk2 = sky(row2), hUp = fin(sk2.hUp, b3.top), hDn = fin(sk2.hDn, b3.bottom);
+      const minBelow = q2.staves === 2 && k2 === 0 ? R2.graveUpper - R2.above - bodyH : (lyricsOf[r10] ? R2.rowH : R2.rowHNoLyric) - R2.above - bodyH;
+      const lyr = lyricsOf[r10] && k2 === q2.staves - 1 ? lyricOff.get(row2) : void 0, row22 = 0, lyricTail = R2.rowH - R2.above - bodyH - R2.lyricBelow;
+      let need = hDn - b3.bottom + PAD;
       if (lyr !== void 0) need = Math.max(need, lyr + lyricTail + row22);
-      const below = stepUp(minBelow, need);
-      return { above: stepUp(STAFF_ABOVE, -hUp + PAD), below, inkAbove: Math.max(0, -fin(upToNav[row2 - rowBase] ?? Infinity, 0)), inkBelow: Math.max(0, hDn - 4, lyr !== void 0 ? lyr + 0.5 + row22 : 0) };
+      const below = stepUp(minBelow, need), above = stepUp(R2.above, b3.top - hUp + PAD);
+      return { above, below, h: above + bodyH + below, origin: above - b3.top, inkTop: Math.min(b3.top, fin(upToNav[row2 - rowBase] ?? Infinity, b3.top)), inkBottom: Math.max(b3.bottom, hDn, lyr !== void 0 ? b3.bottom + lyr + 0.5 + row22 : b3.bottom) };
     };
     const G3 = Array.from({ length: nSys }, (_2, s10) => per.map((_q, r10) => Array.from({ length: effStaves(r10) }, (_3, k2) => geo(s10, r10, k2))));
-    const sysH = (s10) => P2(G3[s10].reduce((n11, gs) => n11 + gs.reduce((m2, g3) => m2 + g3.above + 4 + g3.below, 0), 0) + SYS_GAP);
-    drawPaperTitle(nSys ? sysH(0) : P2(SPC.rowH));
+    const sysH = (s10) => P2(G3[s10].reduce((n11, gs) => n11 + gs.reduce((m2, g3) => m2 + g3.h, 0), 0) + SYS_GAP);
+    drawPaperTitle(nSys ? sysH(0) : P2(ROW_PARAMS[NOTATIONS2[songLook.notation].home][density].rowH));
     let note2;
     if (paper.hidden) {
       const nx2 = P2(MARGIN) + (paper.name ? P2(mw("paper-name", paper.name)) : 0) + T2(1);
@@ -14029,12 +14043,12 @@ function engrave(song, o10) {
     for (let s10 = 0; s10 < nSys; s10++) {
       ensure(sysH(s10));
       for (let r10 = 0; r10 < nR2; r10++) for (let k2 = 0; k2 < effStaves(r10); k2++) {
-        const top = yCur, row2 = rowOf(s10, r10, k2), g3 = G3[s10][r10][k2], h2 = g3.above + 4 + g3.below, st2 = top + P2(g3.above);
+        const top = yCur, row2 = rowOf(s10, r10, k2), g3 = G3[s10][r10][k2], st2 = top + P2(g3.origin);
         delta.set(row2, st2);
         rowTop.set(row2, top);
-        rowAbove.set(row2, g3.above);
-        Object.assign(rows[row2], { top, staffTop: st2, bottom: top + P2(h2), inkTop: st2 - P2(g3.inkAbove), inkBottom: st2 + P2(4 + g3.inkBelow) });
-        yCur += P2(h2);
+        rowAbove.set(row2, g3.origin);
+        Object.assign(rows[row2], { top, staffTop: st2, bottom: top + P2(g3.h), inkTop: st2 + P2(g3.inkTop), inkBottom: st2 + P2(g3.inkBottom) });
+        yCur += P2(g3.h);
       }
       yCur += P2(SYS_GAP);
     }
@@ -32347,7 +32361,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-26f69ee4579c.mjs");
+      return pick(() => "layout-worker-85e5bf186b42.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-5e3dbb54a643.mjs");
   }
@@ -61978,4 +61992,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-0e6023273d10.mjs.map
+//# sourceMappingURL=moonsinger-16aa3aff1fcb.mjs.map

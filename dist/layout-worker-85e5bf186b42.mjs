@@ -4611,7 +4611,6 @@ var SCROLL_TAIL = 6;
 var ABBR_REF = "Vln.Vc.";
 var NAME_MAX = 6.5;
 var NAME_MIN = 3 * 2 + 0.4;
-var SQUEEZE = 0.15;
 var ROW_STEP = 1;
 var MARGIN = 1.2;
 var BAR_W = 1.6;
@@ -4619,12 +4618,19 @@ var TITLE_H = 5.4;
 var PAPER_H = 3.4;
 var PAPER_GAP = 1.6;
 var CTL_H = 3;
-var SPACING = {
-  cozy: { staffAbove: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, sysGap: 0.4 },
-  // graveUpper = 大谱表上面那条（没歌词、紧挨着下面那条）
-  compact: { staffAbove: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, sysGap: 0 }
-};
 var SYSTEM_LINE_W = 0.16 * 1.4;
+
+// src/render/layout-params.ts
+var PAPER_PARAMS = {
+  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
+  // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
+  jianpu: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3 } }
+};
+var ROW_PARAMS = {
+  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4 } },
+  // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
+  jianpu: { cozy: { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }, compact: { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 } }
+};
 
 // src/render/frame/furniture.ts
 var NO_LINE_START = /* @__PURE__ */ new Set([..."\u3001\u3002\uFF0C\uFF0E\u30FB\uFF1A\uFF1B\uFF1F\uFF01\uFF09\u300D\u300F\u3011\u3015\u3009\u300B\u30FC\uFF5E\u3041\u3043\u3045\u3047\u3049\u3063\u3083\u3085\u3087\u308E\u30A1\u30A3\u30A5\u30A7\u30A9\u30C3\u30E3\u30E5\u30E7\u30EE\u30F5\u30F6,.;:!?)]}"]);
@@ -6646,7 +6652,7 @@ var ACC_W = 0.95;
 var DASH_L = 1;
 var DASH_W = 0.13;
 var DASH_Y = DIGIT_MID;
-var DASH_PITCH = 1.7;
+var DASH_PITCH = 2.4;
 var AUG_DX = 0.35;
 var AUG_R = 0.14;
 var BAR_Y0 = 0.75;
@@ -6656,6 +6662,7 @@ var BAR_THIN = 0.12;
 var BAR_THICK = 0.4;
 var BAR_GAP = 0.35;
 var BAR_W_J = 1.2;
+var JP_BODY = { top: BAR_Y0, bottom: BAR_Y1 };
 var MID_TEXT_EM = 1.4;
 var MID_TEXT_CH = 0.62;
 var BREATH_W = 0.35 + 0.9;
@@ -6855,7 +6862,8 @@ function drawJianpu(c, mine) {
       if (u.kind !== "chunk" || u.pad) continue;
       const row = rowOf(u.system, r, 0), tok = tokOf(u), x0 = P(u.x + 0.1), cx = x0 + P(DIGIT_W / 2), T = tok !== void 0 ? { tok } : {};
       const n2 = extraGlyphs(u), contDash = u.note && u.j > 0 && u.base >= TPQ;
-      const limit = u.x + u.w - 0.1 - DIGIT_W / 2, step = n2 ? Math.max(DASH_PITCH, (limit - (u.x + 0.1 + DIGIT_W / 2)) / n2) : 0;
+      const tailW = (hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0) + (u.note && u.breath ? BREATH_W + (u.inhale ? INHALE_W : 0) : 0);
+      const step = n2 ? Math.max(DASH_PITCH, (u.w - tailW) / (n2 + 1)) : 0;
       const gx = (k) => cx + P(k * step);
       const small = u.art.includes("ghost");
       const digit = (x, s2) => put(row, { ...T, t: "text", x, y: Y(row, BASE_Y), s: s2, cls: u.ghost ? "jp-digit ghost" : small ? "jp-digit art-ghost" : "jp-digit", size: P(small ? DIGIT_EM * 0.72 : DIGIT_EM), anchor: "middle" });
@@ -6997,16 +7005,19 @@ function drawJianpu(c, mine) {
   return { lyricParts };
 }
 
+// src/render/jianpu/geometry.ts
+var jianpuAnchors = (origin, half) => ({ top: origin + JP_BODY.top * 2 * half, mid: origin + (JP_BODY.top + JP_BODY.bottom) / 2 * 2 * half, bottom: origin + JP_BODY.bottom * 2 * half });
+
 // src/render/notations.ts
 var DRAWERS = {
   staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c, mine) => drawStaff(c, mine), lanes: STAFF_LANES, anchors },
-  // 数字行和五线谱用同一个行框（局部 0–4），竖向锚点一样（jianpu/glyphs.ts）
-  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors }
+  // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
+  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors }
 };
 var jianpuCan = (q) => !q.vrt && !q.v2 && !q.hasV2 && !q.pmode && !q.p.perc && !q.p.xHead && !q.tokens.some((t) => t.kind === "note" && !!t.chord?.length);
 var NOTATIONS2 = {
-  staff: { id: "staff", rowKindOf: () => "staff" },
-  jianpu: { id: "jianpu", rowKindOf: (q) => jianpuCan(q) ? "jianpu" : "staff" }
+  staff: { id: "staff", home: "staff", rowKindOf: () => "staff" },
+  jianpu: { id: "jianpu", home: "jianpu", rowKindOf: (q) => jianpuCan(q) ? "jianpu" : "staff" }
 };
 var BUILD = { looks: staffLooks, rows: staffRows, tracks: staffTracks };
 
@@ -7091,7 +7102,8 @@ function arrangeColumns(cols, tracks, o) {
     const from = lineFrom[s2], to = s2 + 1 < nSys ? lineFrom[s2 + 1] : n2;
     if (from >= to) continue;
     const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, to, 0);
-    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true }) : nat;
+    const reach = nat.end > avail + 1e-6 ? avail : Math.min(avail, nat.end * o.maxStretch);
+    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, to, reach, { squeeze: o.squeeze, justify: true }) : nat;
     if (s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
       const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch);
       f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true });
@@ -7117,13 +7129,14 @@ function engrave(song, o) {
     song = songInC(song, (id) => perc.has(id));
   }
   const sp = o.sp, P = (v) => v * sp, ts = o.textScale ?? 1, T = (v) => v * sp * ts;
-  const SPC = SPACING[densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } })];
+  const density = densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } });
+  const PPAR = PAPER_PARAMS[songLook.notation][density];
   const PG = o.page ?? null, PAGE_GAP = 3, MX = o.page ?? o.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };
   const pageTopY = (k) => P(k * ((PG?.h ?? 0) + PAGE_GAP));
   const contentTop = (k) => pageTopY(k) + P(PG?.t ?? 0), contentBottom = (k) => pageTopY(k) + P((PG?.h ?? 0) - (PG?.b ?? 0));
   let pageNo = 0;
   const TOP2 = P(MX.t);
-  const STAFF_ABOVE = SPC.staffAbove, LYRIC_BELOW = SPC.lyricBelow, SYS_GAP = SPC.sysGap;
+  const SYS_GAP = PPAR.sysGap;
   const prims = [];
   if (o.__noAnn) {
     const push = prims.push.bind(prims);
@@ -7226,9 +7239,11 @@ function engrave(song, o) {
   let shortBars = 0;
   const rowTop = /* @__PURE__ */ new Map();
   const rowAbove = /* @__PURE__ */ new Map(), lyricOff = /* @__PURE__ */ new Map();
-  const staffTop = (r) => rowTop.get(r) + P(rowAbove.get(r) ?? STAFF_ABOVE);
+  const staffTop = (r) => rowTop.get(r) + P(rowAbove.get(r) ?? 0);
   const anc = (r) => DRAWERS[rows[r].kind].anchors(staffTop(r), P(0.5));
-  const lyricY = (r) => anc(r).bottom + P(lyricOff.get(r) ?? LYRIC_BELOW);
+  const body = (r) => DRAWERS[rows[r].kind].anchors(0, 0.5);
+  const rowPar = (r) => ROW_PARAMS[rows[r].kind][density];
+  const lyricY = (r) => anc(r).bottom + P(lyricOff.get(r) ?? rowPar(r).lyricBelow);
   const showPaperLine = song.papers.length > 1 || song.papers.some((p) => p.name);
   let drawn = 0;
   const underOf = (paper) => {
@@ -7336,8 +7351,8 @@ function engrave(song, o) {
       const keys = keyAtCol[k], base = (first ? ind0 : indN) + MARGIN;
       return Math.max(...per0.map((q, i) => DRAWERS[kinds[i]].lineStart(q, keys.get(q.p.id), first, base)));
     };
-    const spO = { curve: curveOf(densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } }) === "compact" ? "tight" : "normal"), ...SP_DEFAULTS };
-    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: SQUEEZE, endPad: BAR_W, lineStart: headAt });
+    const spO = { curve: curveOf(PPAR.curve), ...SP_DEFAULTS };
+    const ar = arrangeColumns(merged, atracks, { paperLen, spacing: spO, width: o.scroll ? Infinity : right, squeeze: PPAR.squeeze, maxStretch: PPAR.maxStretch, endPad: BAR_W, lineStart: headAt });
     const { lineFrom, sysStarts } = ar, nSys = lineFrom.length, sysKeys = lineFrom.map((k) => new Map(keyAtCol[k]));
     const cols = merged.map((c, k) => ({ tick: c.tick, slot: c.slot, n: c.n, x: ar.xs[k], w: ar.ws[k], system: ar.system[k], bar: c.bar, units: c.members.map((m) => m.entry.ref) }));
     const at = /* @__PURE__ */ new Map();
@@ -7439,7 +7454,7 @@ function engrave(song, o) {
         const t = sk.top(pieces[i], pieces[i + 1]);
         if (t < Infinity) need = Math.min(need, t - gap - pieces[i + 3]);
       }
-      const dy = need === Infinity ? -2.4 : need;
+      const dy = need === Infinity ? body(row).top - rowPar(row).clear : need;
       shiftSince(m, P(dy));
       commit(sk, dy, true);
       return dy;
@@ -7633,9 +7648,8 @@ function engrave(song, o) {
         });
         return;
       }
-      const base = LYRIC_BELOW + (o.lyricRaise ?? 0);
       for (let sy = 0; sy < nSys; sy++) {
-        const row = lrow(sy), cs2 = bySys.get(sy);
+        const row = lrow(sy), cs2 = bySys.get(sy), base = rowPar(row).lyricBelow + (o.lyricRaise ?? 0);
         attach(row, "lyrics", () => {
           lyricOff.set(row, base);
           if (!cs2) return;
@@ -7680,20 +7694,20 @@ function engrave(song, o) {
       }
     }
     const pEnd = mark();
-    const PAD = 0.8, lyricTail = SPC.rowH - STAFF_ABOVE - 4 - SPC.lyricBelow, fin = (v, d) => Number.isFinite(v) ? v : d;
+    const PAD = 0.8, fin = (v, d) => Number.isFinite(v) ? v : d;
     const stepUp = (min, need) => need <= min + 1e-9 ? min : min + Math.ceil((need - min) / ROW_STEP - 1e-9) * ROW_STEP;
     const geo = (s2, r, k) => {
-      const q = per[r], row = rowOf(s2, r, k), sk = sky(row), hUp = fin(sk.hUp, 0), hDn = fin(sk.hDn, 4);
-      const minBelow = q.staves === 2 && k === 0 ? SPC.graveUpper - STAFF_ABOVE - 4 : (lyricsOf[r] ? SPC.rowH : SPC.rowHNoLyric) - STAFF_ABOVE - 4;
-      const lyr = lyricsOf[r] && k === q.staves - 1 ? lyricOff.get(row) : void 0, row2 = 0;
-      let need = hDn - 4 + PAD;
+      const q = per[r], row = rowOf(s2, r, k), R = rowPar(row), b = body(row), bodyH = b.bottom - b.top, sk = sky(row), hUp = fin(sk.hUp, b.top), hDn = fin(sk.hDn, b.bottom);
+      const minBelow = q.staves === 2 && k === 0 ? R.graveUpper - R.above - bodyH : (lyricsOf[r] ? R.rowH : R.rowHNoLyric) - R.above - bodyH;
+      const lyr = lyricsOf[r] && k === q.staves - 1 ? lyricOff.get(row) : void 0, row2 = 0, lyricTail = R.rowH - R.above - bodyH - R.lyricBelow;
+      let need = hDn - b.bottom + PAD;
       if (lyr !== void 0) need = Math.max(need, lyr + lyricTail + row2);
-      const below = stepUp(minBelow, need);
-      return { above: stepUp(STAFF_ABOVE, -hUp + PAD), below, inkAbove: Math.max(0, -fin(upToNav[row - rowBase] ?? Infinity, 0)), inkBelow: Math.max(0, hDn - 4, lyr !== void 0 ? lyr + 0.5 + row2 : 0) };
+      const below = stepUp(minBelow, need), above = stepUp(R.above, b.top - hUp + PAD);
+      return { above, below, h: above + bodyH + below, origin: above - b.top, inkTop: Math.min(b.top, fin(upToNav[row - rowBase] ?? Infinity, b.top)), inkBottom: Math.max(b.bottom, hDn, lyr !== void 0 ? b.bottom + lyr + 0.5 + row2 : b.bottom) };
     };
     const G2 = Array.from({ length: nSys }, (_, s2) => per.map((_q, r) => Array.from({ length: effStaves(r) }, (_2, k) => geo(s2, r, k))));
-    const sysH = (s2) => P(G2[s2].reduce((n3, gs) => n3 + gs.reduce((m, g) => m + g.above + 4 + g.below, 0), 0) + SYS_GAP);
-    drawPaperTitle(nSys ? sysH(0) : P(SPC.rowH));
+    const sysH = (s2) => P(G2[s2].reduce((n3, gs) => n3 + gs.reduce((m, g) => m + g.h, 0), 0) + SYS_GAP);
+    drawPaperTitle(nSys ? sysH(0) : P(ROW_PARAMS[NOTATIONS2[songLook.notation].home][density].rowH));
     let note;
     if (paper.hidden) {
       const nx = P(MARGIN) + (paper.name ? P(mw("paper-name", paper.name)) : 0) + T(1);
@@ -7703,12 +7717,12 @@ function engrave(song, o) {
     for (let s2 = 0; s2 < nSys; s2++) {
       ensure(sysH(s2));
       for (let r = 0; r < nR; r++) for (let k = 0; k < effStaves(r); k++) {
-        const top = yCur, row = rowOf(s2, r, k), g = G2[s2][r][k], h = g.above + 4 + g.below, st = top + P(g.above);
+        const top = yCur, row = rowOf(s2, r, k), g = G2[s2][r][k], st = top + P(g.origin);
         delta.set(row, st);
         rowTop.set(row, top);
-        rowAbove.set(row, g.above);
-        Object.assign(rows[row], { top, staffTop: st, bottom: top + P(h), inkTop: st - P(g.inkAbove), inkBottom: st + P(4 + g.inkBelow) });
-        yCur += P(h);
+        rowAbove.set(row, g.origin);
+        Object.assign(rows[row], { top, staffTop: st, bottom: top + P(g.h), inkTop: st + P(g.inkTop), inkBottom: st + P(g.inkBottom) });
+        yCur += P(g.h);
       }
       yCur += P(SYS_GAP);
     }
@@ -7813,4 +7827,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-26f69ee4579c.mjs.map
+//# sourceMappingURL=layout-worker-85e5bf186b42.mjs.map

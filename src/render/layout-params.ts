@@ -1,0 +1,29 @@
+// layout-params.ts —— 排版参数表（设计稿第 3.8 节；谱面分家第四刀 4-5）：一种版式 × 一种谱（纸一级）/ 一种行（行一级）= 一行数。调版式 = 改这个文件。
+//   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟）：原来散在 frame/params.ts 的 SPACING（版式表）、SQUEEZE 和 engrave.ts 里按版式挑音距曲线的那一句收到这里，数值没改；
+//   简谱的两行是新的。参数分两级（统筹审第四刀接口第 3 条）：纸一级的量按这首歌的谱种；行一级的量按这一行的种类（一张纸上可以有两种行）。
+//   不在这里的：行身的上下沿（每种画法的竖向锚点给：notations.ts RowDrawer.anchors，框架只经过它知道，统筹第 4 条）；行里面的尺寸（字形多大、数字多宽，各在自己画法的
+//   staff/glyphs.ts、jianpu/glyphs.ts，写死的数，排版不现场量；现场量的只有歌词和名字）；框架自己的尺寸（frame/params.ts）。
+import type { Density } from "../score/paper.ts";
+import type { NotationId } from "../score/song-view.ts";
+import type { SpacingMode } from "./spacing.ts";
+import type { RowKind } from "./notations.ts";
+
+/** 纸一级（按这首歌的谱种 × 版式）：行与行之间多空（sysGap，sp）、音距曲线（curve：v0.16.43 起跟版式，user 11-09「舒适 = 大谱、音距正常 / 紧凑 = 小谱、音距紧」）、
+ *  一行最多压紧多少（squeeze，弹簧的比例）、一行最多拉宽到自然宽的几倍（maxStretch；Infinity = 不设上限、拉满整行 = 五线谱现在的样子，第六刀才改）。 */
+export interface PaperParams { sysGap: number; curve: SpacingMode; squeeze: number; maxStretch: number }
+export const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<Density, PaperParams>>>> = {
+  staff: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: Infinity }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: Infinity } },
+  // 简谱：一行最多拉宽约 1.3 倍，放不满就让右边空着（UX 稿第 8 节 §51）
+  jianpu: { cozy: { sysGap: 0.4, curve: "normal", squeeze: 0.15, maxStretch: 1.3 }, compact: { sysGap: 0, curve: "tight", squeeze: 0.15, maxStretch: 1.3 } },
+};
+/** 行一级（按这一行的种类 × 版式；单位 sp，从行身算：行身 = 画法的竖向锚点 top–bottom）：行身上面最少留多少（above）、整行最少多高（rowH 有歌词 / rowHNoLyric 没歌词 /
+ *  graveUpper 大谱表上面那条：没歌词、紧挨着下面那条）、歌词基线在行身下沿往下多少（lyricBelow）、谱上方贴挂件时下面什么墨都没有就贴在行身上沿上方多远（clear；
+ *  五线谱 2.4 = 躲开符干的老手感，数字行没有符干）。墨多了照天际线往外让（engrave 第 12 步），这里只是最小值。
+ *  五线谱：舒适 = 谱 7 mm、行距用原来紧凑那一档（user 2026-10-08「舒适的行距太宽了，反而不舒适。和紧凑的对齐」；0.2.x 的 17 sp 退役）；
+ *  紧凑 = 谱 5 mm、再卷一点（「紧凑也许可以再卷一点」）：谱上面 / 歌词下面都收、没歌词的那条谱更矮。 */
+export interface RowParams { above: number; rowH: number; rowHNoLyric: number; graveUpper: number; lyricBelow: number; clear: number }
+export const ROW_PARAMS: Readonly<Record<RowKind, Readonly<Record<Density, RowParams>>>> = {
+  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4 } },
+  // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
+  jianpu: { cozy: { above: 2.6, rowH: 10, rowHNoLyric: 7, graveUpper: 7, lyricBelow: 3.2, clear: 0.8 }, compact: { above: 2.2, rowH: 9, rowHNoLyric: 6.2, graveUpper: 6.2, lyricBelow: 2.9, clear: 0.8 } },
+};

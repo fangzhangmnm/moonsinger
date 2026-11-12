@@ -7,7 +7,7 @@ import type { ColEntry } from "./frame/arrange.ts";
 import type { LaneKind } from "./frame/lanes.ts";
 import type { LyricPart } from "./frame/lyric-spots.ts";
 import { staffLooks, staffRows, staffTracks, measureTrack, lineStartWidth, lyricAnchors, drawStaff, STAFF_LANES, anchors, type StaffTrack, type StaffDrawCtx, type Unit, type Chunk } from "./staff/index.ts";
-import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, JIANPU_LANES } from "./jianpu/index.ts";
+import { measureJianpu, jianpuLineStart, jianpuLyricAnchors, drawJianpu, JIANPU_LANES, jianpuAnchors } from "./jianpu/index.ts";
 export type { FoldFamily, StaffTrack, StaffDrawCtx, Unit, Chunk } from "./staff/index.ts";
 
 /** 一行用哪种画法（SystemBox.kind，每一行都写）。 */
@@ -31,22 +31,23 @@ export interface RowDrawer {
   draw(c: RowDrawCtx, mine: readonly number[]): { lyricParts: LyricPart[] };
   /** 贴挂件的先后（道名 = frame/lanes.ts；框架把各种的并起来按先后贴）。 */
   readonly lanes: readonly LaneKind[];
-  /** 这一行的竖向锚点（px）：上沿 / 中线 / 下沿。框架的家具（名字、色条、括号、左边的竖线、歌词基线）只认这三个。origin = 这一行的原点（SystemBox.staffTop）。 */
+  /** 这一行的竖向锚点（px）：上沿 / 中线 / 下沿 = 行身。框架的家具（名字、色条、括号、左边的竖线、歌词基线）和行距只认这三个（不假设行身是 0–4）。
+   *  origin = 这一行的原点（SystemBox.staffTop）；anchors(0, 0.5) = 行身在局部坐标里的上下沿（sp）。 */
   anchors(origin: number, half: number): { top: number; mid: number; bottom: number };
 }
 export const DRAWERS: Readonly<Record<RowKind, RowDrawer>> = {
   staff: { kind: "staff", measure: measureTrack, lineStart: lineStartWidth, lyricAnchors, draw: (c, mine) => drawStaff(c, mine), lanes: STAFF_LANES, anchors },
-  // 数字行和五线谱用同一个行框（局部 0–4），竖向锚点一样（jianpu/glyphs.ts）
-  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors },
+  // 数字行的行身 = 小节线那一段（jianpu/glyphs.ts JP_BODY；第四刀 4-5 起不再借五线谱的 0–4）
+  jianpu: { kind: "jianpu", measure: measureJianpu, lineStart: jianpuLineStart, lyricAnchors: jianpuLyricAnchors, draw: (c, mine) => drawJianpu(c, mine), lanes: JIANPU_LANES, anchors: jianpuAnchors },
 };
 
-/** 一种谱：这种谱里一条轨用哪种行。 */
-export interface Notation { readonly id: NotationId; rowKindOf(q: Track): RowKind }
+/** 一种谱：这种谱里一条轨用哪种行；home = 这种谱的主行（一行都没有的纸按它留高）。 */
+export interface Notation { readonly id: NotationId; readonly home: RowKind; rowKindOf(q: Track): RowKind }
 /** 数字行这一刀画得了的：有音高、这张纸上没有叠音、不是叠起来的一家（虚拟轨）/ 声部 2、不是鼓、台上那位不是固定敲一个键（× 符头）。别的照旧五线谱的行（第五刀做多声部）。 */
 const jianpuCan = (q: Track): boolean => !q.vrt && !q.v2 && !q.hasV2 && !q.pmode && !q.p.perc && !q.p.xHead && !q.tokens.some((t) => t.kind === "note" && !!t.chord?.length);
 export const NOTATIONS: Readonly<Record<NotationId, Notation>> = {
-  staff: { id: "staff", rowKindOf: () => "staff" },
-  jianpu: { id: "jianpu", rowKindOf: (q) => (jianpuCan(q) ? "jianpu" : "staff") },
+  staff: { id: "staff", home: "staff", rowKindOf: () => "staff" },
+  jianpu: { id: "jianpu", home: "jianpu", rowKindOf: (q) => (jianpuCan(q) ? "jianpu" : "staff") },
 };
 /** 建轨（第 1–2 步的前一半）：合租叠成虚拟轨、分手、声部 2、谱号、补齐——照五线谱那一套（staff/rows.ts）；两种谱都先走这一步，再按谱种分行。 */
 export const BUILD = { looks: staffLooks, rows: staffRows, tracks: staffTracks } as const;

@@ -40,6 +40,8 @@ export interface ArrangeOpts {
   width: number;
   /** 一行最多压紧多少（弹簧的比例）。 */
   squeeze: number;
+  /** 一行最多拉宽到自然宽的几倍（排版参数表纸一级；Infinity = 不设上限、拉满 = 五线谱现在的样子）。到了上限就不再拉，右边空着（UX 稿第 8 节）。 */
+  maxStretch: number;
   /** 一行最后一列不是小节线时，行尾多留多少（sp）。 */
   endPad: number;
   /** 从第 k 列开一行，行首（名字一栏 + 各种行自己的行首）多宽（sp）；first = 这张纸第一行。 */
@@ -101,7 +103,8 @@ export function arrangeColumns<R>(cols: readonly MergedCol<R>[], tracks: readonl
   for (let s = 0; s < nSys; s++) {
     const from = lineFrom[s]!, to = s + 1 < nSys ? lineFrom[s + 1]! : n; if (from >= to) continue;
     const avail = brk - sysStarts[s]!, nat = placeLine(spCols, gaps, rodIx, from, to, 0);
-    let f: { xs: number[]; end: number; stretch?: number } = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true }) : nat;
+    const reach = nat.end > avail + 1e-6 ? avail : Math.min(avail, nat.end * o.maxStretch);   // 要拉满的行拉到哪：可用宽，但最多自然宽的 maxStretch 倍
+    let f: { xs: number[]; end: number; stretch?: number } = brk !== Infinity && (nat.end > avail + 1e-6 || (s !== nSys - 1 && nat.end >= avail * 0.6)) ? fitLine(spCols, gaps, rodIx, from, to, reach, { squeeze: o.squeeze, justify: true }) : nat;
     if (s === nSys - 1 && s > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
       const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch);
       f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true });
