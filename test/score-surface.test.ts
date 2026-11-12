@@ -78,6 +78,8 @@ describe("谱面排版：结构和语言", () => {
     const all = fs.readdirSync(RENDER).filter((x) => x.endsWith(".ts")).concat(["frame/", "staff/", "jianpu/", "text/"].flatMap((d) => fs.readdirSync(new URL(d, RENDER)).filter((x) => x.endsWith(".ts")).map((x) => d + x)));
     for (const f of all) {
       const src = read(f);
+      // 这首歌怎么看只此一处读（设计稿第 3.7 节；第四刀 4-5 收了版式 / 歌词排法 / 小节号）：排版不直接读歌的显示字段，只经过 songViewOf（engrave 读一次，传给画法）
+      assert(!/\b(song|s)\.(notation|chordTags|viewInC|lyricFit|barNumbers|spacing|paper)\b|\bdensityOf\(|\.chords\b/.test(code(src)), `${f} 直接读了歌的显示字段（只许 songViewOf）`);
       for (const m of src.matchAll(/import\s*\{([^}]*)\}\s*from\s*"[^"]*i18n\/index\.ts"/g)) for (const n of m[1]!.split(",").map((x) => x.trim().replace(/^type\s+/, "")).filter(Boolean)) assert(n === "_tIn" || n === "Lang", `${f} 从 i18n 拿了 ${n}`);
       assert(!/\b_t\(/.test(code(src)), `${f} 里调了 _t()`);
     }

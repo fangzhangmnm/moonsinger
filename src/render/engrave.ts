@@ -20,7 +20,6 @@ import { TEXT_STYLES, lyricSizePx, hyphens, LYRIC_MIN_SX, isBlockScript, textPx,
 import { _tIn, type Lang } from "../i18n/index.ts";
 import { type Song, type PaperSeg, type Token, type Focus, type Staff, isTimed, tempoOwner, sheetEndBpm } from "../score/song.ts";
 import { parseArrangement } from "../score/arrange.ts";
-import { densityOf } from "../score/paper.ts";
 import { curveOf, SP_DEFAULTS } from "./spacing.ts";
 import { type PercInfo } from "../gm/percussion.ts";
 import { MELISMA_MARK, lyricShow } from "../score/lyrics.ts";
@@ -172,7 +171,7 @@ export function engrave(song: Song, o: EngraveOpts): Layout {
   const songLook = songViewOf(song);   // 这首歌怎么看（谱面分家第三刀：歌里的设置，只此一处读；按 C 调看的换算之前读）
   if (songLook.viewInC && songLook.notation !== "jianpu") { const perc = new Set(o.parts.filter((p) => p.perc).map((p) => p.id)); song = songInC(song, (id) => perc.has(id)); }   // 按 C 调看：先换算再排（鼓不换）
   const sp = o.sp, P = (v: number) => v * sp, ts = o.textScale ?? 1, T = (v: number) => v * sp * ts;   // P = 谱的尺子；T = 字的尺子（刀 2：紧凑档 ts = 1.4，字和它周围留的地方照舒适档）
-  const density = densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } });
+  const density = songLook.density;
   const PPAR = PAPER_PARAMS[songLook.notation][density];   // 排版参数表（layout-params.ts）：纸一级按这首歌的谱种；行一级（rowPar）按这一行的种类
   // 分页：第 k 页从 pageTopY(k) 起、高 PG.h；内容只放在上下边距之间；放不下的整块（一行谱 / 曲段名 + 第一行 / 细行）挪到下一页
   const PG = o.page ?? null, PAGE_GAP = 3, MX = o.page ?? o.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };   // MX = 纸的边距（连续 / 分页同一套）
@@ -356,7 +355,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     // 1. 每个声部的排版单元（五线谱：staff/rows.ts staffTracks）。补齐的空小节按这张纸最长那条（框架算长度）
     const lenOf = (t: Token[]) => t.reduce((n, x) => n + (isTimed(x) ? x.dur : 0), 0);
     const lens = parts.map((p) => lenOf(trackOf(p.id) ?? [])), paperLen = Math.max(0, ...lens);
-    const built = BUILD.tracks(rowsS, { song, paper, lookAt, at: o.at, tailOpen: !!o.tailOpen, autoBars, measure: o.measure, sp, ts, lens, paperLen });
+    const built = BUILD.tracks(rowsS, { song, look: songLook, paper, lookAt, at: o.at, tailOpen: !!o.tailOpen, autoBars, measure: o.measure, sp, ts, lens, paperLen });
     const per0 = built.per, rowHost = built.rowHost; shortBars += built.shortBars;
     // 谱种的表（第四刀）：每条轨用哪种行（简谱下画不成数字行的——叠音、鼓、叠起来的一家——照旧五线谱的行，同一张纸上并排；notations.ts）。数字行一条轨一行
     const kinds: RowKind[] = per0.map((q) => NOTATIONS[songLook.notation].rowKindOf(q));
@@ -413,7 +412,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const lyrUnit = (str: string) => lyricWidth(o.measure, str, sp, ts);   // 这一档歌词字号 / 平常宽度下这串字的前进宽度（sp）
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
     const lyrGaps: LyricGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };   // 定义见 LyricGaps；底线按档（样式表）
-    if (song.lyricFit !== "lyrics") per.forEach((q, r) => {
+    if (songLook.lyricFit === "rhythm") per.forEach((q, r) => {
       if (!lyricsOf[r]) return;
       const bySys = new Map<number, (LyricItem & { index: number })[]>();
       for (const u of DRAWERS[kinds[r]!].lyricAnchors(q)) {   // 每个带字的音在哪（这种行的画法给的锚点）
@@ -574,7 +573,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     // 小节号（v0.9.42；user 2026-10-10「小节号要，可以页面设置toggle，默认是每行开头有。字小一点」）：每行最上面那条的左上角，印这一行第一个小节的号；
     //   每张纸从 1 数（纸 = 曲段），弱起算第 0 小节；第一行是 1 / 0 就不印（出版谱的老规矩）。刀 4b：挂件第 9 样 = 行首那一段天际线往上 0.3。
     //   第四刀起归框架（原来在五线谱的画法里）：它贴在这一行最上面那条上，不归哪一种画法
-    if (song.barNumbers !== "off" && per[0]) for (let s = 0; s < nSys; s++) {   // 取这一行第一位有东西的歌手（补齐之后人人都有；v0.10.6）
+    if (songLook.barNumbers && per[0]) for (let s = 0; s < nSys; s++) {   // 取这一行第一位有东西的歌手（补齐之后人人都有；v0.10.6）
       const ind = s === 0 ? ind0 : indN, q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s)) ?? per[0];
       const c0 = q0.units.find((u): u is Chunk => u.kind === "chunk" && u.system === s);
       const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null, row0 = rowOf(s, 0, 0);

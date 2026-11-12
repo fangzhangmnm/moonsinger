@@ -82,7 +82,7 @@ import { roleNameOf, roleSoundOf, loadCatalog, rangeOf, sampleKeyOf, jointOf, su
 import { creditsSections, sectionsHtml } from "./credits-doc.ts";
 import { subsetSf2, listSf2Presets, sf2Info, type Sf2PresetInfo } from "../gm/sf2-subset.ts";
 import { DEFAULT_ROLE } from "../score/roles.ts";
-import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES, densityOf, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
+import { type PaperKind, type Density, PAPER_KINDS, PAPER_NOTE, PAPER_LABEL, DENSITIES, DEFAULT_PAPER, paperOf, paperSizeText } from "../score/paper.ts";
 import * as docFile from "./doc-file.ts";
 import { unzipSync } from "../../vendor/fflate/fflate.esm.js";
 import { defaultStem, fileSafe, stampedCopy } from "./names.ts";
@@ -1898,13 +1898,13 @@ function openPaperSheet(): void {
   const box = document.createElement("div");
   box.className = "offer";
   const draw = () => {
-    const p = D.st.song.paper ?? paperOf(DEFAULT_PAPER);
+    const p = D.st.song.paper ?? paperOf(DEFAULT_PAPER), look = songViewOf(D.st.song);   // 亮哪个钮 = 这首歌怎么看（只此一处读）
     box.innerHTML = `<div class="offer-card settings-card"><div class="offer-title">${_t("纸")}</div><div class="set-row">` +
       PAPER_KINDS.map((k) => `<button class="btn cand${p.kind === k ? " is-on" : ""}" data-v="${k}">${PAPER_LABEL[k]}<small>${PAPER_NOTE[k]}</small></button>`).join("") +
       (p.kind === "other" ? `<button class="btn cand is-on" data-v="other">${_t("其他")}<small>${paperSizeText(p)}</small></button>` : "") + `</div>` +
       `<div class="offer-msg">${_t("整首歌一张纸。纸越大一行放的小节越多；屏幕放得下就照纸排。不打印的时候不分页。")}</div>` +
       `<div class="part-sec">${_t("版式")}</div><div class="set-row">` +
-      DENSITIES.map((z) => `<button class="btn cand${densityOf(p) === z.id ? " is-on" : ""}" data-v="density:${z.id}">${z.label}<small>${z.note}</small></button>`).join("") + `</div>` +
+      DENSITIES.map((z) => `<button class="btn cand${look.density === z.id ? " is-on" : ""}" data-v="density:${z.id}">${z.label}<small>${z.note}</small></button>`).join("") + `</div>` +
       `<div class="offer-msg">${_t("紧凑 = 谱小一号、行距和谱距收紧、没写歌词的声部不留歌词位。存进 MusicXML 的 scaling 和行距，别的软件打开也一样。")}</div>` +
       `<div class="part-sec">${_t("纸（曲段）")}</div>` + D.st.song.papers.map((pp, k) => `<div class="set-row paper-row"><span class="paper-row-name">${k + 1}. ${esc(pp.name || _t("（没名字）"))}${pp.hidden ? _t("（隐藏 · 不放）") : ""}${pp.id === D.st.at.paper ? " ←" : ""}</span>` +
         `<button class="btn" data-v="pm:${esc(pp.id)}" title="${_t("这一段的菜单：改名 / 隐藏 / 删、在上面 / 下面插一段、挪、移调")}">⋯</button></div>`).join("") +
@@ -1915,11 +1915,11 @@ function openPaperSheet(): void {
       `<button class="btn cand${pageFlow && !scrollFlow ? " is-on" : ""}" data-v="flow:pages">${_t("分页")}<small>${_t("按纸（A4 / A5）的真实高度断页，预览打印")}</small></button>` +
       `<button class="btn cand${scrollFlow ? " is-on" : ""}" data-v="flow:scroll">${_t("横卷")}<small>${_t("每张纸一行、一直往右，横着滚；声部名钉在左边")}</small></button></div>` +
       `<div class="part-sec">${_t("小节号")}</div><div class="set-row">` +
-      `<button class="btn cand${D.st.song.barNumbers === "off" ? "" : " is-on"}" data-v="bn:on">${_t("每行开头")}<small>${_t("每行最上面那条谱的左上角，小字；每张纸从 1 数，弱起算 0")}</small></button>` +
-      `<button class="btn cand${D.st.song.barNumbers === "off" ? " is-on" : ""}" data-v="bn:off">${_t("不印")}</button></div>` +
+      `<button class="btn cand${look.barNumbers ? " is-on" : ""}" data-v="bn:on">${_t("每行开头")}<small>${_t("每行最上面那条谱的左上角，小字；每张纸从 1 数，弱起算 0")}</small></button>` +
+      `<button class="btn cand${look.barNumbers ? "" : " is-on"}" data-v="bn:off">${_t("不印")}</button></div>` +
       `<div class="part-sec">${_t("歌词")}</div><div class="set-row">` +
-      `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? "" : " is-on"}" data-v="lyr:rhythm">${_t("按节奏")}<small>${_t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 这一行一起缩一点 → 还放不下画灰")}</small></button>` +
-      `<button class="btn cand${D.st.song.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("按歌词")}<small>${_t("长的字把音推开（出版谱的老规矩）")}</small></button></div>` +
+      `<button class="btn cand${look.lyricFit === "rhythm" ? " is-on" : ""}" data-v="lyr:rhythm">${_t("按节奏")}<small>${_t("音的位置只看时值，打字时音符不动；歌词让路：借旁边的空 → 这一行一起缩一点 → 还放不下画灰")}</small></button>` +
+      `<button class="btn cand${look.lyricFit === "lyrics" ? " is-on" : ""}" data-v="lyr:lyrics">${_t("按歌词")}<small>${_t("长的字把音推开（出版谱的老规矩）")}</small></button></div>` +
       // 看谱（谱面分家第三刀：原来在设置的「乐理助手」里、存在设备上；现在是这首歌的，进歌、能撤销，锁着也能切。PDF 跟着）
       ((lk) => `<div class="part-sec">${_t("看谱")}</div><div class="set-row">` +
         `<button class="btn cand${lk.viewInC ? "" : " is-on"}" data-v="inc:off">${_t("专业")}<small>${_t("按实际的调画谱，键上大字写音名")}</small></button>` +

@@ -2598,8 +2598,14 @@ function _tIn(l, key, params) {
 // src/score/paper.ts
 var DENSITIES = [{ id: "cozy", label: _t("\u8212\u9002"), note: _t("\u8C31\u5927\u3001\u97F3\u8DDD\u6B63\u5E38\uFF1A\u6478\u4E3B\u65CB\u5F8B\u3001\u5199\u6B4C\u8BCD") }, { id: "compact", label: _t("\u7D27\u51D1"), note: _t("\u8C31\u5C0F\u3001\u97F3\u8DDD\u7D27\u3001\u884C\u8DDD\u518D\u5377\u4E00\u70B9\uFF1A\u914D\u5668\uFF1B\u6B4C\u540D\u548C\u58F0\u90E8\u540D\u7167\u5927\u7684\uFF0C\u6B4C\u8BCD\u7528\u5C0F\u5B57") }];
 var densityOf = (p) => p.density ?? "cozy";
+var SIZES = { A3L: { w: 420, h: 297, m: 18 }, A4: { w: 210, h: 297, m: 15 }, A5: { w: 148, h: 210, m: 16 }, A6: { w: 105, h: 148, m: 10 } };
+var DEFAULT_PAPER = "A5";
 var PAPER_NOTE = { A3L: _t("\u6A2A\u653E\uFF1A\u603B\u8C31 / \u5927\u5C4F"), A4: _t("\u6B63\u7ECF\u7EB8"), A5: _t("\u5C0F\u518C\u5B50\uFF08A4 \u5BF9\u6298\uFF09"), A6: _t("\u53E3\u888B\u672C") };
 var PAPER_LABEL = { A3L: _t("A3 \u6A2A"), A4: "A4", A5: "A5", A6: "A6" };
+function paperOf(kind, density = "cozy") {
+  const s2 = SIZES[kind];
+  return { kind, widthMm: s2.w, heightMm: s2.h, marginMm: { l: s2.m, r: s2.m, t: s2.m, b: s2.m }, ...density === "compact" ? { density } : {} };
+}
 
 // src/score/pitch.ts
 var STEPS = ["C", "D", "E", "F", "G", "A", "B"];
@@ -3408,7 +3414,7 @@ function songInC(song, skip) {
 // src/score/song-view.ts
 var NOTATIONS = ["staff", "jianpu"];
 var CHORDS_MODES = ["stacked", "auto", "fold"];
-var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto" });
+var UNWRITTEN = Object.freeze({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true });
 var isNotation = (v) => NOTATIONS.includes(v);
 var isChords = (v) => CHORDS_MODES.includes(v);
 function songViewOf(song) {
@@ -3418,7 +3424,10 @@ function songViewOf(song) {
     notation: isNotation(song.notation) ? song.notation : UNWRITTEN.notation,
     chordTags: song.chordTags === false ? false : UNWRITTEN.chordTags,
     viewInC: song.viewInC === true ? true : UNWRITTEN.viewInC,
-    chordsOf: (part) => chords.get(part) ?? UNWRITTEN.chords
+    chordsOf: (part) => chords.get(part) ?? UNWRITTEN.chords,
+    density: densityOf(song.paper ?? paperOf(DEFAULT_PAPER)),
+    lyricFit: song.lyricFit === "lyrics" ? "lyrics" : UNWRITTEN.lyricFit,
+    barNumbers: song.barNumbers === "off" ? false : UNWRITTEN.barNumbers
   };
 }
 
@@ -5394,7 +5403,7 @@ function staffTracks(rows, c) {
     const gap = c.paperLen - c.lens[pi];
     const padT = (dur, id) => ({ kind: "rest", id, dur });
     const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;
-    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.song.lyricFit !== "lyrics", padFrom: real.length });
+    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length });
     shortBars += u.shortBars;
     if (staves === 2) {
       const stf = staffOfTokens(tokens, 2);
@@ -7129,7 +7138,7 @@ function engrave(song, o) {
     song = songInC(song, (id) => perc.has(id));
   }
   const sp = o.sp, P = (v) => v * sp, ts = o.textScale ?? 1, T = (v) => v * sp * ts;
-  const density = densityOf(song.paper ?? { kind: "A5", widthMm: 0, heightMm: 0, marginMm: { l: 0, r: 0, t: 0, b: 0 } });
+  const density = songLook.density;
   const PPAR = PAPER_PARAMS[songLook.notation][density];
   const PG = o.page ?? null, PAGE_GAP = 3, MX = o.page ?? o.margins ?? { l: 0, r: 0, t: 0, b: 1.5 };
   const pageTopY = (k) => P(k * ((PG?.h ?? 0) + PAGE_GAP));
@@ -7322,7 +7331,7 @@ function engrave(song, o) {
     }
     const lenOf = (t) => t.reduce((n3, x) => n3 + (isTimed(x) ? x.dur : 0), 0);
     const lens = parts.map((p) => lenOf(trackOf(p.id) ?? [])), paperLen = Math.max(0, ...lens);
-    const built = BUILD.tracks(rowsS, { song, paper, lookAt, at: o.at, tailOpen: !!o.tailOpen, autoBars, measure: o.measure, sp, ts, lens, paperLen });
+    const built = BUILD.tracks(rowsS, { song, look: songLook, paper, lookAt, at: o.at, tailOpen: !!o.tailOpen, autoBars, measure: o.measure, sp, ts, lens, paperLen });
     const per0 = built.per, rowHost = built.rowHost;
     shortBars += built.shortBars;
     const kinds = per0.map((q) => NOTATIONS2[songLook.notation].rowKindOf(q));
@@ -7379,7 +7388,7 @@ function engrave(song, o) {
     const lyrUnit = (str) => lyricWidth(o.measure, str, sp, ts);
     const lyrSpace = lyrUnit(" ") * LYRIC_SPACE, lyrHyphen = lyrUnit("-") * HYPHEN_SX;
     const lyrGaps = { space: lyrSpace, hyphen: lyrHyphen + lyrSpace, floor: look.gapFloor };
-    if (song.lyricFit !== "lyrics") per.forEach((q, r) => {
+    if (songLook.lyricFit === "rhythm") per.forEach((q, r) => {
       if (!lyricsOf[r]) return;
       const bySys = /* @__PURE__ */ new Map();
       for (const u of DRAWERS[kinds[r]].lyricAnchors(q)) {
@@ -7583,7 +7592,7 @@ function engrave(song, o) {
       for (const x of measures) delete x.m;
     }
     const drawCtx = { song, look: songLook, paper, o, P, tx, TR, RS, mw, sp, ts, put, hitRow, prims, notes, chordHeads, rests, lyrics, marks, dyns, clefs, keyHints, chordTagsOut, slots, heads, bars, rows, staffTop, lyricY, rowOf, placeAbove, placeBelow, attach, per, rowHost, pmode, measured: inkLs.map((inkL) => ({ inkL })), nSys, sysStarts, sysKeys, staffEnd, cols, right, ind0, indN, owner, prevBpm };
-    if (song.barNumbers !== "off" && per[0]) for (let s2 = 0; s2 < nSys; s2++) {
+    if (songLook.barNumbers && per[0]) for (let s2 = 0; s2 < nSys; s2++) {
       const ind = s2 === 0 ? ind0 : indN, q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s2)) ?? per[0];
       const c0 = q0.units.find((u) => u.kind === "chunk" && u.system === s2);
       const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null, row0 = rowOf(s2, 0, 0);
@@ -7827,4 +7836,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-85e5bf186b42.mjs.map
+//# sourceMappingURL=layout-worker-5bba2a4e9cbb.mjs.map

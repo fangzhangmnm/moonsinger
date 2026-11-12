@@ -2,6 +2,7 @@
 //   施工单第三节「3」：没写的意思冻住（谱种没写 = 五线谱、和弦标级数没写 = 标、按 C 调看没写 = 不按、每轨和弦选项没写 = auto），读写两头都不许「没写就取 app 现在的默认」；
 //   只写不是缺省的；brokenChords: false（minor 2–4）读成 "stacked"；不认识的值原样带回；新建的歌四样都不写；设备上原来那两个键不再读。
 const fs = (await import("node:fs" as string)) as { readFileSync(p: URL, e?: string): Uint8Array & string; readdirSync(p: URL, o?: object): string[] };
+import { paperOf, DEFAULT_PAPER } from "../src/score/paper.ts";
 import { describe, it, eq, assert } from "./runner.mjs";
 import { songViewOf, setNotation, setChordTags, setViewInC, setPartChords, UNWRITTEN } from "../src/score/song-view.ts";
 import { initState, type Song } from "../src/score/song.ts";
@@ -19,7 +20,10 @@ const viewOf = (s: Song) => { const v = songViewOf(s); return { notation: v.nota
 
 describe("这首歌怎么看：没写的意思冻住", () => {
   it("没写 = 五线谱 / 标和弦级数 / 不按 C 调看 / 也认拆开弹的（写死的值，不随 app 的新文档默认变）；新建的歌四样都不写，存出去也不写", () => {
-    eq(JSON.stringify(UNWRITTEN), JSON.stringify({ notation: "staff", chordTags: true, viewInC: false, chords: "auto" }), "改了这四个值 = 改了所有旧歌的样子");
+    eq(JSON.stringify(UNWRITTEN), JSON.stringify({ notation: "staff", chordTags: true, viewInC: false, chords: "auto", density: "cozy", lyricFit: "rhythm", barNumbers: true }), "改了这些值 = 改了所有旧歌的样子（后三样第四刀 4-5 收进来，是原来就有的意思）");
+    { const v = songViewOf(initState().song); eq([v.density, v.lyricFit, v.barNumbers].join(","), "cozy,rhythm,true", "版式 / 歌词排法 / 小节号没写 = 舒适 / 按节奏 / 每行开头印");
+      const w = songViewOf({ ...initState().song, lyricFit: "lyrics", barNumbers: "off", paper: { ...initState().song.paper ?? paperOf(DEFAULT_PAPER), density: "compact" } });
+      eq([w.density, w.lyricFit, w.barNumbers].join(","), "compact,lyrics,false", "写了 = 照写的读"); }
     const st = initState();
     for (const k of ["notation", "chordTags", "viewInC"]) assert(!(k in st.song), `新建的歌不写 ${k}`);
     assert(st.song.parts.every((p) => !("chords" in p)), "新建的歌不写声部的 chords");

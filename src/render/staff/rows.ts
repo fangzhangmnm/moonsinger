@@ -10,6 +10,7 @@ import { percOf } from "../../gm/percussion.ts";
 import { displayStates, autoOttava, isFClef, startClef, wantsGrand, type ResolvedLook } from "../../score/clef.ts";
 import { mergeTracks, planHands, type MergeOpts } from "../../score/merge.ts";
 import type { TextMeasure } from "../text/index.ts";
+import type { SongView } from "../../score/song-view.ts";
 import type { PartView } from "../engrave.ts";
 import { unitsOf } from "./units.ts";
 import type { StaffTrack } from "./measure.ts";
@@ -89,7 +90,7 @@ export function staffRows(paper: PaperSeg, visible: readonly PartView[], fold: r
 }
 
 export interface StaffTracksCtx {
-  song: Song; paper: PaperSeg; lookAt: LookAt; at: Focus; tailOpen: boolean; autoBars: boolean; measure: TextMeasure; sp: number; ts: number;
+  song: Song; look: SongView; paper: PaperSeg; lookAt: LookAt; at: Focus; tailOpen: boolean; autoBars: boolean; measure: TextMeasure; sp: number; ts: number;
   /** 框架算的：每条要排的轨的真长度、这张纸最长那条（后面补齐的空小节）。 */
   lens: number[]; paperLen: number;
 }
@@ -106,7 +107,7 @@ export function staffTracks(rows: StaffRows, c: StaffTracksCtx): { per: StaffTra
     const gap = c.paperLen - c.lens[pi]!;
     const padT = (dur: number, id: number): Token => ({ kind: "rest", id, dur }) as Token;
     const tokens = gap > 1e-6 ? [...real, padT(gap, -2)] : real;   // 补齐的一段 = 一个长休止（按小节切开画；光标在里面的位置 = 落点 Slot.lead，不进排版）
-    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.song.lyricFit !== "lyrics", padFrom: real.length });
+    const u = unitsOf(tokens, { tail: focused && c.tailOpen, autoBars: c.autoBars, measure: c.measure, sp: c.sp, ts: c.ts, rhythm: c.look.lyricFit === "rhythm", padFrom: real.length });
     shortBars += u.shortBars;
     if (staves === 2) {   // 大谱表：每个音在上还是下（按音高自动 / 手动指定）；光标跟着前一个音
       const stf = staffOfTokens(tokens, 2); let last: Staff = 1;
