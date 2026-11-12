@@ -13,6 +13,7 @@ import { FULL_VIEWS } from "./fixtures/layout/full.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
 import { trioSong, TRIO_LABELS } from "./fixtures/layout/trio-song.ts";
 import { asFrozen, editorBase, views, SP } from "./fixtures/layout/cases.ts";
+import { emptySong, type Token } from "../src/score/song.ts";
 import { allPrims, inkOf, overlaps, kindOf } from "./fixtures/layout/collide.ts";
 // node 的内置模块照 pdf-wysiwyg.test.ts 的取法（类型检查不带 node 的类型）
 const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
@@ -104,3 +105,45 @@ describe("「演奏法和表情：不显示」的淡提示不和别人打架（7
   });
 });
 
+
+describe("段尾的力度在行尾挤住了：挪到外面一道（统筹 2026-11-12 裁定：力度不占横向、不开口子）", () => {
+  // 一个音的滚奏写「ppp < fff」放在一行的最后（7-N「变到」放的 fff 挂在这一段结尾、后面没有音）：前面 n 个八分音符把这一行挤到不同程度——
+  //   不挤 / 只有结尾的 fff 放不下（挪到外面一道，发夹留在 ppp 那一道）/ 连发夹也放不下（发夹跟着 fff 一起到外面那道）/ 正好排满（以前 fff 被单独折到下一行）
+  const roll = (n: number, notation: "staff" | "jianpu" | "letters", fff = true): Song => {
+    const s = emptySong(), p = s.papers[0]!, pid = s.parts[0]!.id, head = p.tracks[pid]!.filter((t) => t.kind === "key" || t.kind === "time" || t.kind === "tempo");
+    let id = 900; const note = (step: string, o: object = {}) => ({ kind: "note", id: id++, pitch: { step, alter: 0, octave: 5 }, dur: 840, lyric: null, ...o }) as Token;
+    const toks: Token[] = [...head, ...Array.from({ length: n }, (_, k) => note("CDEFGAB"[k % 7]!))];
+    toks.push({ kind: "dyn", id: 990, value: "ppp" } as Token, { kind: "hairpin", id: 991, dir: "cresc" } as Token, note("C", { art: ["roll"] }));
+    if (fff) toks.push({ kind: "dyn", id: 992, value: "fff" } as Token);
+    return { ...s, notation, papers: [{ ...p, tracks: { [pid]: toks } }] };
+  };
+  const SHAPES: [number, number][] = [[1, 600], [2, 600], [3, 600], [0, 220], [2, 220], [3, 220], [4, 220], [5, 220], [6, 220], [0, 420], [5, 420], [6, 420], [7, 420], [13, 600], [14, 600], [15, 600], [16, 600]];
+  for (const notation of ["staff", "jianpu", "letters"] as const) it(`${notation}：ppp、发夹、fff 三样互相不叠、各自点得到、不出这一行右端；加不加结尾的 fff，音的位置和折行一点不变`, () => {
+    let outer = 0;
+    for (const [n, w] of SHAPES) for (const [mode, mk] of [["编辑", (s: Song) => ({ ...editorBase(s, ["P"]), width: w, measure: real })], ["印", (s: Song) => ({ ...printOpts(s, SP, views(s, ["P"], false), real, true), width: w })]] as const) {
+      const s = roll(n, notation), o = mk(s) as EngraveOpts, L = engrave(s, o), tag = `${n} 个音 · 宽 ${w} · ${mode}`;
+      const L0 = engrave(roll(n, notation, false), mk(roll(n, notation, false)) as EngraveOpts);
+      assert(L.systems.length === L0.systems.length, `${tag}：结尾的 fff 多折出了一行（${L0.systems.length} → ${L.systems.length}）`);
+      assert(JSON.stringify(L.notes.map((h) => [h.system, +h.x.toFixed(3)])) === JSON.stringify(L0.notes.map((h) => [h.system, +h.x.toFixed(3)])), `${tag}：加了结尾的 fff，音挪了位`);
+      // 三样的墨：互相不叠、不出行右端
+      const AP = allPrims(L), ink = inkOf(L, (t, size) => real.widthPx(t, size, L.sp, o.textScale ?? 1), (p) => p.t === "rect" && has(p, "page"), font);
+      const mine = (p: Prim) => (p.t === "glyph" || p.t === "text" || p.t === "path") && (has(p, "dyn") || has(p, "jp-dyn") || has(p, "hairpin"));
+      const marks = ink.filter((k) => mine(AP[k.i]!));
+      assert(marks.length >= 3, `${tag}：三样没都画出来（${marks.length}）`);
+      for (const k of marks) assert(k.x1 <= L.content.right + EPS, `${tag}：${kindOf(AP[k.i]!)} 出了这一行右端（${k.x1.toFixed(1)} > ${L.content.right.toFixed(1)}）`);
+      for (let i = 0; i < marks.length; i++) for (let j = i + 1; j < marks.length; j++) {
+        const a = marks[i]!, b = marks[j]!; if (a.i === b.i) continue;
+        assert(!(a.x0 < b.x1 - EPS && b.x0 < a.x1 - EPS && a.y0 < b.y1 - EPS && b.y0 < a.y1 - EPS), `${tag}：${kindOf(AP[a.i]!)} 和 ${kindOf(AP[b.i]!)} 叠在一起`);
+      }
+      // 点得到：三样各有一块点击框，框的中心不落在另外两样的框里
+      const hits = L.dyns.filter((d) => d.kind === "dyn" || d.kind === "hairpin"), by = (id: number) => hits.filter((d) => (s.papers[0]!.tracks[s.parts[0]!.id]![d.index] as { id: number }).id === id);
+      for (const id of [990, 991, 992]) {
+        const own = by(id); assert(own.length > 0, `${tag}：${id} 没有点击框`);
+        assert(own.some((b) => { const cx = b.x + b.w / 2, cy = b.y + b.h / 2; return !hits.some((d) => !own.includes(d) && cx > d.x && cx < d.x + d.w && cy > d.y && cy < d.y + d.h); }), `${tag}：${id} 的点击框被别的盖住了`);
+      }
+      const yf = by(992)[0]!.y, yp = by(990)[0]!.y; if (yf < yp - 1) outer++;
+      if (n <= 3 && w === 600) { const cy = (b: { y: number; h: number }) => b.y + b.h / 2; assert(Math.abs(cy(by(992)[0]!) - cy(by(990)[0]!)) < 0.8 * L.sp, `${tag}：不挤的时候 fff 不该挪到外面一道（和 ppp 同一道）`); }
+    }
+    assert(outer > 0, "比较器不是空的：至少有一种挤法把 fff 挪到了外面一道");
+  });
+});

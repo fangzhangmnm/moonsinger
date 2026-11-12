@@ -6370,10 +6370,10 @@ function layDynamics(c) {
     const d = dynDepiction(v, notation), g = c.glyphScale;
     if (d.kind === "text") {
       const k = g ?? 1, em = tx("jp-dyn") / P(1) * k, w = c.mw("jp-dyn", d.s) * k;
-      return { ink: [0, w, em * 0.72, em * 0.22], draw: (x, y, tok, cls) => prims.push({ t: "text", x, y, s: d.s, tok, cls: `${cls} jp-dyn`, size: tx("jp-dyn") * k, anchor: "start" }) };
+      return { ink: [0, w, em * 0.72, em * 0.22], lean: em * 0.2, draw: (x, y, tok, cls) => prims.push({ t: "text", x, y, s: d.s, tok, cls: `${cls} jp-dyn`, size: tx("jp-dyn") * k, anchor: "start" }) };
     }
-    if (g === void 0) return { ink: d.ink, draw: (x, y, tok, cls) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
-    return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g], draw: (x, y, tok, cls) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
+    if (g === void 0) return { ink: d.ink, lean: 0, draw: (x, y, tok, cls) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
+    return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g], lean: 0, draw: (x, y, tok, cls) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
   };
   const dynItems = [];
   const tailDynX = /* @__PURE__ */ new Map(), lastC = units.reduce((m, u, k) => u.kind === "chunk" ? k : m, -1);
@@ -6390,24 +6390,27 @@ function layDynamics(c) {
   }
   const dynX = (u) => {
     const x = tailDynX.get(u) ?? P(u.x + 0.3);
-    if (u.kind !== "dyn" || units.indexOf(u) < lastC) return x;
-    return Math.min(x, P(c.right - dynOf(u.value).ink[1]));
+    if (u.kind !== "dyn") return x;
+    const d = dynOf(u.value);
+    return Math.min(x, P(c.right - d.ink[1] - d.lean));
   };
+  const dynItemOf = /* @__PURE__ */ new Map();
   for (const u of units) {
     if (u.kind !== "dyn") continue;
     const dr = c.row(u.system), ui = units.indexOf(u), dd = dynOf(u.value), [il, ir, iu, id] = dd.ink;
-    const X = dynX(u);
-    dynItems.push({ row: dr, x0: X + P(il), keys: [`${dr}|d${ui}`], draw: (dy) => {
+    const X = dynX(u), it = { row: dr, x0: X + P(il), keys: [`${dr}|d${ui}`], draw: (dy) => {
       dd.draw(X, dy, tokens[u.index].id, "dyn" + (dynOff.has(u.index) ? " art-mute" : ""));
       dyns.push({ index: u.index, kind: "dyn", system: dr, x: X + P(il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
-    } });
+    } };
+    dynItems.push(it);
+    dynItemOf.set(u, it);
   }
   const LEVELS = DYNS;
   const lastChunk = [...units].reverse().find((u) => u.kind === "chunk");
   const dynKey = (u) => `${c.row(u.system)}|d${units.indexOf(u)}`;
   const wedgeKey = (index, sy) => `${c.row(sy)}|w${index}:${sy}`;
   const inkOf = (u) => dynOf(u.value).ink;
-  const wedgeItems = (index, dir, s0, startX, s1, endX, ramp, k0, k1, tail) => {
+  const wedgeItems = (index, dir, s0, startX, s1, endX, ramp, k0, k1, tail, late2) => {
     const leftOf2 = (sy) => Math.max(Math.min(...units.filter((u) => u.kind === "chunk" && u.system === sy).map((ch) => c.noteX(ch)), P(right)) - P(1), c.left(sy));
     const segs = [];
     for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf2(sy), sy === s1 ? endX : P(right) - P(0.3)]);
@@ -6432,7 +6435,7 @@ function layDynamics(c) {
       if (long) {
         const writeWord = !said && b - a0 >= ww + P(1);
         if (writeWord) said = true;
-        dynItems.push({ row, x0: a0, keys, draw: (base) => {
+        dynItems.push({ row, x0: a0, keys, ...late2 ? { late: late2 } : {}, draw: (base) => {
           const midY = base - P(0.5);
           let a = a0;
           if (writeWord) {
@@ -6448,7 +6451,7 @@ function layDynamics(c) {
       const f0 = acc / total, f1 = (acc + b - a0) / total;
       acc += b - a0;
       const [h0, h1] = dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)];
-      dynItems.push({ row, x0: a0, keys, draw: (base) => {
+      dynItems.push({ row, x0: a0, keys, ...late2 ? { late: late2 } : {}, draw: (base) => {
         const y = base - P(0.5), a = a0;
         let d = `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`;
         if (ramp) {
@@ -6464,7 +6467,7 @@ function layDynamics(c) {
         if (last && tail) tail(base);
       } });
     });
-    if (!tailDone && tail) dynItems.push({ row: c.row(s1), x0: endX, keys: [wedgeKey(index, s1), ...k1 ? [k1] : []], draw: tail });
+    if (!tailDone && tail) dynItems.push({ row: c.row(s1), x0: endX, keys: [wedgeKey(index, s1), ...k1 ? [k1] : []], ...late2 ? { late: late2 } : {}, draw: tail });
   };
   units.forEach((h, hi) => {
     if (h.kind !== "hairpin" || !lastChunk) return;
@@ -6484,14 +6487,20 @@ function layDynamics(c) {
     const IMPLIED_W = 3;
     const endX = endU ? (endU.kind === "dyn" ? dynX(endU) + P(inkOf(endU)[0]) : P(endU.x + 0.3)) - P(PIN_GAP + (against ? IMPLIED_W + 0.4 : 0)) : c.noteEnd(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;
     if (s1 < s0) return;
-    let endXd = endX, labelAbove = false;
+    let endXd = endX, labelAbove = false, sx = startX;
     const MIN_PIN = P(PIN_MIN);
-    if (s1 === s0 && endXd - startX < MIN_PIN) {
+    const outer = endU && endU.kind === "dyn" && units.indexOf(endU) > lastC && endU.system === s0 && endX - startX < MIN_PIN - P(0.01) ? startX + MIN_PIN <= P(right) ? "dyn" : "both" : "";
+    if (outer === "dyn") {
+      endXd = Math.max(startX + MIN_PIN, Math.min(P(right), dynX(endU) + P(inkOf(endU)[1])));
+      labelAbove = against;
+    } else if (outer === "both") sx = endX - MIN_PIN;
+    if (outer) dynItemOf.get(endU).late = true;
+    if (!outer && s1 === s0 && endXd - startX < MIN_PIN) {
       const roomy = against ? endXd + P(IMPLIED_W + 0.4) : endXd;
       if (against) labelAbove = true;
       endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
     }
-    const k1 = !endU ? void 0 : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
+    const k1 = !endU || outer === "dyn" ? void 0 : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
     const tail = !endU || against ? (base) => {
       const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
       const im = { t: "text", x: 0, y: 0, s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" }, ix = labelAbove ? endXd - P(1.2) : endXd + P(0.4), iy = base + P(labelAbove ? -1.9 : 0.1);
@@ -6512,7 +6521,7 @@ function layDynamics(c) {
         dyns.push({ index: h.index, kind: "hairpin", system: c.row(s1), x: ix - P(0.3), y: iy - fs * 0.9, w: P(3.6), h: fs * 1.3 });
       }
     } : void 0;
-    wedgeItems(h.index, h.dir, s0, startX, s1, endXd, false, dynBefore ? dynKey(dynBefore) : void 0, k1, tail);
+    wedgeItems(h.index, h.dir, s0, sx, s1, endXd, false, dynBefore && outer !== "both" ? dynKey(dynBefore) : void 0, k1, tail, outer === "both");
   });
   for (const u of units) {
     if (u.kind !== "dyn" || !tokens[u.index].ramp) continue;
@@ -6544,8 +6553,8 @@ function layDynamics(c) {
     if (l) l.push(i);
     else chains.set(root, [i]);
   });
-  const minX = (ch) => Math.min(...ch.map((i) => dynItems[i].x0));
-  for (const ch of [...chains.values()].sort((a, b) => minX(a) - minX(b))) {
+  const minX = (ch) => Math.min(...ch.map((i) => dynItems[i].x0)), late = (ch) => ch.some((i) => dynItems[i].late) ? 1 : 0;
+  for (const ch of [...chains.values()].sort((a, b) => late(a) - late(b) || minX(a) - minX(b))) {
     const row = dynItems[ch[0]].row;
     c.attach(row, "dynamics", () => {
       c.placeAbove(row, 0.4, (y) => {
@@ -8331,8 +8340,20 @@ function arrangeColumns(cols, tracks, o) {
   const breakableAt = (tick) => !spans.some(([a, b]) => a < tick - 1e-6 && b > tick + 1e-6);
   const gaps = idealGaps(spCols, o.paperLen, o.spacing), rodIx = indexRods(rodsOf(spCols, o.spacing), spCols.length), even = !!o.evenBars;
   const brk = o.width, n2 = cols.length, lineFrom = [], sysStarts = [];
+  let lastChunkCol = -1;
+  cols.forEach((c, k) => {
+    if (c.chunk) lastChunkCol = k;
+  });
+  const effTo = (from, to) => {
+    let t = to;
+    while (t - 1 > from && t - 1 > lastChunkCol && !cols[t - 1].bar && cols[t - 1].w === 0) t--;
+    return t;
+  };
   const tail = (to) => cols[to - 1].bar ? 0 : o.endPad;
-  const lineW = (from, to, s2) => placeLine(spCols, gaps, rodIx, from, to, s2, even).end + tail(to);
+  const lineW = (from, to, s2) => {
+    const t = effTo(from, to);
+    return placeLine(spCols, gaps, rodIx, from, t, s2, even).end + tail(t);
+  };
   const segs = [];
   for (let k = 0; k < n2; k++) if (k === n2 - 1 || cols[k].bar && breakableAt(cols[k].tick)) segs.push(k + 1);
   if (brk !== Infinity) {
@@ -8380,14 +8401,16 @@ function arrangeColumns(cols, tracks, o) {
   for (let s2 = 0; s2 < nSys; s2++) {
     const from = lineFrom[s2], to = s2 + 1 < nSys ? lineFrom[s2 + 1] : n2;
     if (from >= to) continue;
-    const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, to, 0, even);
+    const te = effTo(from, to);
+    const avail = brk - sysStarts[s2], nat = placeLine(spCols, gaps, rodIx, from, te, 0, even);
     const reach = nat.end > avail + 1e-6 ? avail : Math.min(avail, nat.end * o.maxStretch);
-    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, to, reach, { squeeze: o.squeeze, justify: true, even }) : nat;
+    let f = brk !== Infinity && (nat.end > avail + 1e-6 || s2 !== nSys - 1 && nat.end >= avail * 0.6) ? fitLine(spCols, gaps, rodIx, from, te, reach, { squeeze: o.squeeze, justify: true, even }) : nat;
     if (s2 === nSys - 1 && s2 > 0 && f === nat && prevStretch > 0 && brk !== Infinity) {
-      const g = placeLine(spCols, gaps, rodIx, from, to, prevStretch, even);
-      f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, to, avail, { squeeze: o.squeeze, justify: true, even });
+      const g = placeLine(spCols, gaps, rodIx, from, te, prevStretch, even);
+      f = g.end <= avail + 1e-6 ? { ...g, stretch: prevStretch } : fitLine(spCols, gaps, rodIx, from, te, avail, { squeeze: o.squeeze, justify: true, even });
     }
     prevStretch = f.stretch ?? 0;
+    if (te < to) f = placeLine(spCols, gaps, rodIx, from, to, f.stretch ?? 0, even);
     for (let k = from; k < to; k++) {
       const x0 = sysStarts[s2] + f.xs[k - from], x1 = sysStarts[s2] + (k + 1 < to ? f.xs[k + 1 - from] : f.end);
       xs[k] = x0;
@@ -9230,4 +9253,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-e5962e59eb71.mjs.map
+//# sourceMappingURL=layout-worker-b7d30ea23daf.mjs.map

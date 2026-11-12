@@ -143,17 +143,18 @@ export function layNav(c: OrnCtx, u: NavU, repeatBarX: (v: Unit) => number): voi
 export function layDynamics(c: OrnCtx): void {
   const { P, tx, prims, dyns, tokens, units, dynOff, o, notation } = c;
   const right = c.right;
-  /** 一个力度字：怎么画 + 墨迹（sp，相对字的原点：左、右、基线以上、基线以下）。 */
+  /** 一个力度字：怎么画 + 墨迹（sp，相对字的原点：左、右、基线以上、基线以下）+ lean = 斜体的字往右多伸出去多少（sp；「f」的上钩伸出字宽、斜体再往右倾——只在夹到行右端时用）。 */
   const dynOf = (v: DynU["value"]) => {
     const d = dynDepiction(v, notation), g = c.glyphScale;
     if (d.kind === "text") {   // 简谱：普通的细斜体字母（文字样式 jp-dyn）；墨迹 = 量出来的字宽 × 行里的比例、高按字号估（上 0.72、下 0.22）
       const k = g ?? 1, em = (tx("jp-dyn") / P(1)) * k, w = c.mw("jp-dyn", d.s) * k;
-      return { ink: [0, w, em * 0.72, em * 0.22] as const, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "text", x, y, s: d.s, tok, cls: `${cls} jp-dyn`, size: tx("jp-dyn") * k, anchor: "start" }) };
+      return { ink: [0, w, em * 0.72, em * 0.22] as const, lean: em * 0.2, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "text", x, y, s: d.s, tok, cls: `${cls} jp-dyn`, size: tx("jp-dyn") * k, anchor: "start" }) };
     }
-    if (g === undefined) return { ink: d.ink, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
-    return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g] as const, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
+    if (g === undefined) return { ink: d.ink, lean: 0, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
+    return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g] as const, lean: 0, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
   };
-  const dynItems: { row: number; x0: number; keys: string[]; draw: (base: number) => void }[] = [];
+  /** late = 挤住了、挪到外面一道的（段尾的力度 / 连着它的发夹）：一串里有一个 late，这一串排在别的串后面摆，碰到前面的就叠上去（统筹 2026-11-12）。 */
+  const dynItems: { row: number; x0: number; keys: string[]; late?: boolean; draw: (base: number) => void }[] = [];
   // 挂在这一段结尾的力度（后面没有音了：7-N 的「挪到这一段结尾」/「变到」放的，常见 = 一个音的滚奏 ppp < fff）是一条发夹的终点、又离发夹起点太近：
   //   往右让到发夹最短也画得出为止（7-N 补查出来的：原来 fff 叠在 ppp 后面、发夹被盖住看不见）。只挪这种结尾的字；后面还有音的力度照旧和那个音对齐
   const tailDynX = new Map<Unit, number>(), lastC = units.reduce((m, u, k) => (u.kind === "chunk" ? k : m), -1);
@@ -166,17 +167,19 @@ export function layDynamics(c: OrnCtx): void {
       const need = startX + P(PIN_MIN + PIN_GAP - dynOf(endU.value).ink[0]);
       if (need > P(endU.x + 0.3)) tailDynX.set(endU, need);
     }); }
-  // 挂在一段结尾的力度（不管让没让过）墨的右边不出这一行的右端（c.right；7-N 补时量出来的：一行最右那个音后面的 fff 会出版心 1–6 个线间距）。夹住之后发夹可能变短，照发夹自己的最短规矩画
-  const dynX = (u: Unit) => { const x = tailDynX.get(u) ?? P(u.x + 0.3); if (u.kind !== "dyn" || units.indexOf(u) < lastC) return x; return Math.min(x, P(c.right - dynOf(u.value).ink[1])); };
+  // 力度字墨的右边不出这一行的右端（c.right）：7-N 补时先管挂在一段结尾的（一行最右那个音后面的 fff 会出版心 1–6 个线间距），
+  //   2026-11-12 起每个力度字都管（一行排满、最后一个音上的 ppp 也会伸出去约 2 个线间距；只在会出去时往左挪，别处和音对齐不变）。夹住之后挤了的，下面挪到外面一道
+  const dynX = (u: Unit) => { const x = tailDynX.get(u) ?? P(u.x + 0.3); if (u.kind !== "dyn") return x; const d = dynOf(u.value); return Math.min(x, P(c.right - d.ink[1] - d.lean)); };
+  const dynItemOf = new Map<Unit, (typeof dynItems)[number]>();
   // 力度：谱上方、和后面那个音左对齐；挂件第 4 样（刀 4b：和用发夹连着的一串共用一条基线，贴它们自己那几段天际线往上 0.4；挨得近的两个 = 后摆的那个自然叠上去）
   for (const u of units) {
     if (u.kind !== "dyn") continue;
     const dr = c.row(u.system), ui = units.indexOf(u), dd = dynOf(u.value), [il, ir, iu, id] = dd.ink;
-    const X = dynX(u);
-    dynItems.push({ row: dr, x0: X + P(il), keys: [`${dr}|d${ui}`], draw: (dy) => {
+    const X = dynX(u), it: (typeof dynItems)[number] = { row: dr, x0: X + P(il), keys: [`${dr}|d${ui}`], draw: (dy) => {
       dd.draw(X, dy, tokens[u.index]!.id, "dyn" + (dynOff.has(u.index) ? " art-mute" : ""));
       dyns.push({ index: u.index, kind: "dyn", system: dr, x: X + P(il - 0.3), y: dy - P(iu + 0.4), w: P(ir - il + 0.6), h: P(iu + id + 0.8) });
-    } });
+    } };
+    dynItems.push(it); dynItemOf.set(u, it);
   }
   // 渐强渐弱（v0.7.6 起是记号）：从它那儿画到终点——下一个力度记号 / 下一个渐强渐弱 / 纸尾（没有终点 = 后面灰字「(f)」= 走一档推定的终点）。跨行 = 每行画它那一份开口（按横向长度分）。
   //   和两头的力度字之间留空（user 2026-10-08「< 号不用靠着一点空隙都没有」：按量过的墨迹让开 PIN_GAP）；比一整行还长 = 写成「cresc. - - -」（PIN_WORD）。
@@ -187,7 +190,7 @@ export function layDynamics(c: OrnCtx): void {
   const inkOf = (u: DynU) => dynOf(u.value).ink;
   // 发夹（或太长时的「cresc. - - -」）从 (s0, startX) 到 (s1, endX)：跨行每行一段，每段是力度那一层的一块；index = 点它开哪个记号的小菜单；
   //   k0 = 第一段连着谁（前面紧挨着的力度字），k1 = 最后一段连着谁（终点的字 / 下一个发夹）；tail = 最后一段画完再画的（推定的灰字，注解）。ramp = 渐到画的（虚线）。
-  const wedgeItems = (index: number, dir: "cresc" | "dim", s0: number, startX: number, s1: number, endX: number, ramp: boolean, k0?: string, k1?: string, tail?: (base: number) => void) => {
+  const wedgeItems = (index: number, dir: "cresc" | "dim", s0: number, startX: number, s1: number, endX: number, ramp: boolean, k0?: string, k1?: string, tail?: (base: number) => void, late?: boolean) => {
     const leftOf = (sy: number) => Math.max(Math.min(...units.filter((u): u is Chunk => u.kind === "chunk" && u.system === sy).map((ch) => c.noteX(ch)), P(right)) - P(1), c.left(sy));   // 不越过行首竖线（7-K ⑤）
     const segs: [number, number, number][] = [];
     for (let sy = s0; sy <= s1; sy++) segs.push([sy, sy === s0 ? startX : leftOf(sy), sy === s1 ? endX : P(right) - P(0.3)]);
@@ -207,7 +210,7 @@ export function layDynamics(c: OrnCtx): void {
       if (last) tailDone = true;
       if (long) {   // 太长：「cresc.」+ 虚线，跨行接着画虚线；第一段放得下字才写（行尾剩一点点 = 字挪到下一行开头）
         const writeWord = !said && b - a0 >= ww + P(1); if (writeWord) said = true;
-        dynItems.push({ row, x0: a0, keys, draw: (base) => {
+        dynItems.push({ row, x0: a0, keys, ...(late ? { late } : {}), draw: (base) => {
           const midY = base - P(0.5); let a = a0;
           if (writeWord) { prims.push({ t: "text", x: a, y: midY + P(0.5), s: word, tok: tokens[index]!.id, cls: ["dyn-word", ramp ? "ramp" : ""].filter(Boolean).join(" "), size: tx("dyn-word"), anchor: "start" }); a += ww + P(0.6); }
           for (let x = a; x + P(DASH.len) <= b; x += P(DASH.len + DASH.gap)) prims.push({ t: "line", x1: x, y1: midY, x2: x + P(DASH.len), y2: midY, w: P(0.12), cls: "dyn-dash" });
@@ -218,7 +221,7 @@ export function layDynamics(c: OrnCtx): void {
       }
       const f0 = acc / total, f1 = (acc + b - a0) / total; acc += b - a0;
       const [h0, h1] = dir === "cresc" ? [H * f0, H * f1] : [H * (1 - f0), H * (1 - f1)];
-      dynItems.push({ row, x0: a0, keys, draw: (base) => {
+      dynItems.push({ row, x0: a0, keys, ...(late ? { late } : {}), draw: (base) => {
         const y = base - P(0.5), a = a0;   // 发夹的中线 = 力度字的半腰
         // 渐到 = 虚线：两条边的每一小段在同一个 x 上（以前靠 CSS stroke-dasharray——iPad Safari 上第二条边的虚线接着第一条的相位走，尖头那边两条快重合时一段段错开打架，v0.10.26）
         let d = `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`;
@@ -232,7 +235,7 @@ export function layDynamics(c: OrnCtx): void {
         if (last && tail) tail(base);
       } });
     });
-    if (!tailDone && tail) dynItems.push({ row: c.row(s1), x0: endX, keys: [wedgeKey(index, s1), ...(k1 ? [k1] : [])], draw: tail });   // 最后一段太短没画：推定的灰字照样写
+    if (!tailDone && tail) dynItems.push({ row: c.row(s1), x0: endX, keys: [wedgeKey(index, s1), ...(k1 ? [k1] : [])], ...(late ? { late } : {}), draw: tail });   // 最后一段太短没画：推定的灰字照样写
   };
   units.forEach((h, hi) => {
     if (h.kind !== "hairpin" || !lastChunk) return;
@@ -248,14 +251,23 @@ export function layDynamics(c: OrnCtx): void {
     const endX = endU ? (endU.kind === "dyn" ? dynX(endU) + P(inkOf(endU)[0]) : P(endU.x + 0.3)) - P(PIN_GAP + (against ? IMPLIED_W + 0.4 : 0)) : c.noteEnd(lastChunk) + P(0.8), s1 = endU ? endU.system : lastChunk.system;   // 终点的字画在 x + 0.3
     if (s1 < s0) return;
     // 太短也照样画（以前不到 1 个间距就整条不画 = 静默没了）：至少 MIN_PIN；灰字放不下就挪到发夹末端上面
-    let endXd = endX, labelAbove = false;
+    let endXd = endX, labelAbove = false, sx = startX;
     const MIN_PIN = P(PIN_MIN);
-    if (s1 === s0 && endXd - startX < MIN_PIN) {
+    // 段尾的力度（后面没有音了）夹在行右端以内之后挤住了——发夹不够最短，或者和起点的力度字叠在一起（叠了发夹必然不够最短）：
+    //   统筹 2026-11-12 裁定：力度不占横向（v0.7.29 不开口子），挤了就往离谱远的那边挪一道。结尾的力度拆出这一串、最后摆（碰到前面的就叠上去 = 外面一道），
+    //   发夹留在原来那一道、至少最短；连发夹也放不下（起点后面到行右端不够最短）= 发夹跟着结尾的力度一起到外面那一道，两个靠右摆（都不出行右端）
+    const outer = endU && endU.kind === "dyn" && units.indexOf(endU) > lastC && endU.system === s0 && endX - startX < MIN_PIN - P(0.01) ? (startX + MIN_PIN <= P(right) ? "dyn" : "both") : "";   // 0.01：上面「往右让到发夹正好最短」算出来的长度有浮点零头，别把正好的当挤了
+    if (outer === "dyn") {
+      endXd = Math.max(startX + MIN_PIN, Math.min(P(right), dynX(endU!) + P(inkOf(endU as DynU)[1])));   // 发夹伸到外面那个字的下面（不出行右端）
+      labelAbove = against;
+    } else if (outer === "both") sx = endX - MIN_PIN;   // 终点照常让开字（方向反着时也让出灰字的地方），起点往左让出最短那么长
+    if (outer) dynItemOf.get(endU!)!.late = true;
+    if (!outer && s1 === s0 && endXd - startX < MIN_PIN) {
       const roomy = against ? endXd + P(IMPLIED_W + 0.4) : endXd;   // 不让灰字占地方时能有多长
       if (against) labelAbove = true;
       endXd = Math.max(startX + MIN_PIN, Math.min(roomy, startX + MIN_PIN * 2));
     }
-    const k1 = !endU ? undefined : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
+    const k1 = !endU || outer === "dyn" ? undefined : endU.kind === "dyn" ? dynKey(endU) : wedgeKey(endU.index, endU.system);
     const tail = !endU || against ? (base: number) => {   // 推定的终点：现在的力度往上 / 往下一档（没有终点 / 终点和方向反着）
       const k = Math.max(0, Math.min(LEVELS.length - 1, ci + (h.dir === "cresc" ? 1 : -1)));
       const im: Prim = { t: "text", x: 0, y: 0, s: `(${LEVELS[k]})`, cls: "dyn-implied ann", size: tx("dyn-implied"), anchor: "start" }, ix = labelAbove ? endXd - P(1.2) : endXd + P(0.4), iy = base + P(labelAbove ? -1.9 : 0.1);
@@ -266,7 +278,7 @@ export function layDynamics(c: OrnCtx): void {
           onPlace: (x: number, y: number) => { dyns.push({ index: h.index, kind: "hairpin", system: rr, x: x - P(0.3), y: y - fs * 0.9, w: w + P(0.6), h: fs * 1.3 }); } });
       } else { prims.push({ ...im, x: ix, y: iy }); const fs = tx("dyn-implied"); dyns.push({ index: h.index, kind: "hairpin", system: c.row(s1), x: ix - P(0.3), y: iy - fs * 0.9, w: P(3.6), h: fs * 1.3 }); }
     } : undefined;
-    wedgeItems(h.index, h.dir, s0, startX, s1, endXd, false, dynBefore ? dynKey(dynBefore) : undefined, k1, tail);
+    wedgeItems(h.index, h.dir, s0, sx, s1, endXd, false, dynBefore && outer !== "both" ? dynKey(dynBefore) : undefined, k1, tail, outer === "both");
   });
   // 渐到：写着「从上一个渐变过来」的力度记号 = 从上一个力度字后面画一条虚线发夹到它前面（方向按两个力度的高低；一样高 = 不画，渐到不起作用）。
   //   前面没有力度记号 / 中间隔着手写的渐强渐弱 = 不画（手写的说了算；小菜单里那个开关画灰、说为什么——perform.ts 也不渐）
@@ -288,8 +300,8 @@ export function layDynamics(c: OrnCtx): void {
   dynItems.forEach((it, i) => { for (const k of it.keys) { const j = byKey.get(k); if (j === undefined) byKey.set(k, i); else parent[find(i)] = find(j); } });
   const chains = new Map<number, number[]>();
   dynItems.forEach((_, i) => { const root = find(i), l = chains.get(root); if (l) l.push(i); else chains.set(root, [i]); });
-  const minX = (ch: number[]) => Math.min(...ch.map((i) => dynItems[i]!.x0));
-  for (const ch of [...chains.values()].sort((a, b) => minX(a) - minX(b))) { const row = dynItems[ch[0]!]!.row; c.attach(row, "dynamics", () => { c.placeAbove(row, 0.4, (y) => { for (const i of ch) dynItems[i]!.draw(y); }); }); }
+  const minX = (ch: number[]) => Math.min(...ch.map((i) => dynItems[i]!.x0)), late = (ch: number[]) => (ch.some((i) => dynItems[i]!.late) ? 1 : 0);
+  for (const ch of [...chains.values()].sort((a, b) => late(a) - late(b) || minX(a) - minX(b))) { const row = dynItems[ch[0]!]!.row; c.attach(row, "dynamics", () => { c.placeAbove(row, 0.4, (y) => { for (const i of ch) dynItems[i]!.draw(y); }); }); }
 }
 
 /** 音内的起伏（< / > / <>）+ 突强 / 强后即弱：音自己的修饰，挂件第 3 样（刀 4b：这个音自己那一段天际线往上 0.5）。突强 / 强后即弱的字对着音的中心（user「还是居中对齐」）；
