@@ -13791,8 +13791,8 @@ var unpitched = (q2) => !!(q2.pmode || q2.p.perc || q2.p.xHead);
 var jianpuRowOf = (q2) => !jianpuCan(q2) ? "staff" : unpitched(q2) ? "jianpuX" : "jianpu";
 var NOTATIONS2 = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
-  // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
-  //   有叠音的声部、鼓仍排五线谱的行（第五刀后面几步退场；那时候单元宽也按这一种给）
+  // 简谱：合租不叠成一行（每位自己一行；一家左边一条竖线 = families "line"），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
+  //   有叠音的声部 = 数字竖着叠（数字行）；鼓 / 固定敲一个键的 = X 行；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
   jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf, families: "line" }
 };
 
@@ -32844,7 +32844,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-6a7bd7718202.mjs");
+      return pick(() => "layout-worker-0877b3e3dc84.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-0351db4bb88f.mjs");
   }
@@ -62485,4 +62485,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-6de1609655aa.mjs.map
+//# sourceMappingURL=moonsinger-18dcf392fcc6.mjs.map

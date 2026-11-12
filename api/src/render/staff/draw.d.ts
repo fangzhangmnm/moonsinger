@@ -1,6 +1,7 @@
 import { type TextRole } from "../text/index.ts";
 import { type Song, type PaperSeg } from "../../score/song.ts";
-import { type Chunk } from "./units.ts";
+import { type PlacedTag, type ChordFold } from "../../theory/index.ts";
+import type { Chunk } from "../frame/units.ts";
 import type { Prim, EngraveOpts, Layout, HitNote, RestHit, LyricHit, MarkHit, DynHit, ClefHit, Slot, CaretHead, SystemBox } from "../engrave.ts";
 import type { StaffTrack } from "./measure.ts";
 import type { SongView } from "../../score/song-view.ts";
@@ -40,6 +41,12 @@ export interface StaffDrawCtx {
     heads: CaretHead[];
     bars: Layout["bars"];
     rows: SystemBox[];
+    /** 和弦级数（预处理，theory/families.ts）：每一位身上要标的那几处（合租的一家合起来认、标在这一家最下面那一行）；不标 = null。第五刀 5-4。 */
+    harmony: ReadonlyMap<string, readonly PlacedTag[]> | null;
+    /** 每条轨的预处理（下标同 per；框架交给所有画法，五线谱现在用不上：叠着的和弦折成和弦名只在数字行上画，第五刀 5-4）。 */
+    aux: readonly {
+        folds?: ReadonlyMap<number, ChordFold>;
+    }[];
     /** 纵向：第 r 行的原点（第五线）；歌词基线；（第 s 行、第 r 个声部、第 k 张谱表）→ 行号。第几级 ↔ y 由画法自己算（geometry.ts yAt；第四刀起框架不递 yOf）。 */
     staffTop: (r: number) => number;
     lyricY: (r: number) => number;

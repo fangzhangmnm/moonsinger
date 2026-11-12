@@ -31,8 +31,10 @@ export interface RodIndex {
 }
 export declare function indexRods(rods: readonly Rod[], n: number): RodIndex;
 export type SpacingMode = "loose" | "normal" | "tight";
+/** 一条自己给的弹簧折线（时值 tick → 宽 sp；按时值从短到长）。简谱的纸用它（排版参数表纸一级，第五刀 5-0c）。 */
+export type SpringPts = readonly (readonly [ticks: number, width: number])[];
 /** 时值 → 宽（三档；true = 正常、false = 松，老写法）。连音 / 附点按实际时值落在折线上（八分三连音在八分和十六分之间）。 */
-export declare const curveOf: (m: SpacingMode | boolean) => (ticks: number) => number;
+export declare const curveOf: (m: SpacingMode | boolean | SpringPts) => (ticks: number) => number;
 export declare const SP_DEFAULTS: {
     readonly pad: 0.3;
     readonly emptyBar: 4.5;
@@ -42,7 +44,7 @@ export declare function idealGaps(cols: readonly SpCol[], endTick: number, o: Sp
 export declare function rodsOf(cols: readonly SpCol[], o: SpOpts): Rod[];
 /** 这一行的列（cols[from..to)）按拉伸量 s 摆：弹簧 ×(1 + s)，顶杆是下限。xs[i] = 第 from + i 列的对齐线离行首多远；end = 这一行内容的右端。
  *  gaps / rods 是整串算好的（idealGaps / rodsOf），这里只用落在这一行里的那几条。 */
-export declare function placeLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[] | RodIndex, from: number, to: number, s: number): {
+export declare function placeLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[] | RodIndex, from: number, to: number, s: number, even?: boolean): {
     xs: number[];
     end: number;
 };
@@ -50,6 +52,7 @@ export declare function placeLine(cols: readonly SpCol[], gaps: readonly number[
 export declare function fitLine(cols: readonly SpCol[], gaps: readonly number[], rods: readonly Rod[] | RodIndex, from: number, to: number, width: number, opt: {
     squeeze: number;
     justify: boolean;
+    even?: boolean;
 }): {
     xs: number[];
     end: number;

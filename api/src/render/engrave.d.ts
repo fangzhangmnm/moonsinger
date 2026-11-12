@@ -63,6 +63,11 @@ export interface PartView {
     ignores?: readonly string[];
     lyricMute?: ReadonlySet<number>;
     noLyrics?: string;
+    /** 台上那位的音域（MIDI；宿主从演奏者 / 乐器目录查好，排版不认识乐器目录）：简谱每一行的八度基准按它定；没有 = 按写的音「点最少」（第五刀 5-4）。 */
+    range?: {
+        lo: number;
+        hi: number;
+    };
 }
 /** 台上那位是鼓 / 音效（v0.10.27；src/gm/percussion.ts percKindOf）：kit = 整套鼓（写的音高 = 敲哪个鼓，五线鼓谱）；one = 固定敲一件（一线谱）。 */
 export type PartPerc = {
@@ -140,6 +145,8 @@ export interface SystemBox {
     inkBottom?: number;
     /** 数字行的八度基准（第几个八度的音不加点；谱面分家第四刀 4-6：鬼音符照它加点）。五线谱的行没有。 */
     octBase?: number;
+    /** 这一行行里的尺寸比例（排版参数表行一级 scale；不是 1 才写）：主线程几何（光标 / 鬼音符 / 选区带）按它取。 */
+    scale?: number;
 }
 export interface HitNote {
     index: number;
@@ -261,7 +268,8 @@ export interface Layout {
         h: number;
         read: HarmonyRead; /** 哪一行（systems[system] 的 paper / part）、那条 track 第几个 token（挑读法写回去用，v0.16.87）。 */
         system: number;
-        index: number;
+        index: number; /** index 指的是哪一位的 track（合租一家合起来认的级数画在这一家最下面那一行，挑读法写回的那个音可能是别的一位的；没写 = 这一行那一位，第五刀 5-4）。 */
+        part?: string;
     }[];
     /** 每张纸第一行各位的名字块（刀 1 锚点）：x0 = 色点左边、x1 = 最长那行名字的右边、top = 第一行名字的上沿（px）。覆盖层把两颗大钮摆在它上面、整排对它居中。 */
     names: {
@@ -320,7 +328,8 @@ export interface Layout {
     /** s = 写什么（「1=C」/ 小调「6=A」；v0.16.83）。 */
     keyHints: {
         system: number;
-        index: number;
+        index: number; /** 它指的那个调号 token 的 id（守卫 4：编辑器里的提示也算画出来了，第五刀 5-3）。 */
+        tok?: number;
         x: number;
         y: number;
         size: number;

@@ -10,12 +10,13 @@ export type Depiction = {
     h?: number;
     ink?: readonly [number, number, number, number];
 } | {
-    kind: "word";
-    zh: string; /** 不是中文界面时画成什么（简谱力度：标准字母 = 五线谱同一个字形）。 */
-    other: Depiction;
-} | {
     kind: "drawn";
     how: string;
+}
+/** 普通的字（文字样式表里的一种：字体 / 粗细 / 斜体在那里）：简谱数字行上的力度（第五刀，统筹转达 user 11-11「我觉得主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）。 */
+ | {
+    kind: "text";
+    s: string;
 };
 export type SignId = `art:${Art}` | `dyn:${Dyn}` | "hairpin:cresc" | "hairpin:dim" | "ramp";
 export interface Sign {
@@ -28,10 +29,12 @@ export interface Sign {
 }
 /** 记号表（演奏法 + 力度 + 渐强 / 渐弱 + 渐到）。不做类型断言：少一行 = 编译不过。 */
 export declare const SIGNS: Readonly<Record<SignId, Sign>>;
-/** 力度字在这种谱、这种界面语言下画成什么（word 按语言落到中文字或 other）。 */
-export declare function dynDepiction(d: Dyn, notation: NotationId, l: Lang): {
+/** 力度字在这种谱里画成什么：五线谱 = Bravura 字形 + 墨迹；简谱 = 普通的字（细斜体小写，墨迹按字宽现量）。不分界面语言（纪要第 88 节）。 */
+export declare function dynDepiction(d: Dyn, notation: NotationId): {
+    kind: "glyph";
     glyph: string;
     ink: readonly [number, number, number, number];
 } | {
-    text: string;
+    kind: "text";
+    s: string;
 };

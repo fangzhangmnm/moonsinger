@@ -283,8 +283,8 @@ export declare const S: {
     readonly 分解和弦: {
         readonly en: "Broken chords";
     };
-    readonly "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807": {
-        readonly en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way";
+    readonly "\u62C6\u5F00\u5F39\u7684\u548C\u5F26\uFF08\u4E00\u62CD / \u534A\u5C0F\u8282 / \u4E00\u5C0F\u8282\u91CC\u7684\u97F3\u51D1\u6210\u4E00\u4E2A\u548C\u5F26\uFF09\u8981\u4E0D\u8981\u6807\u7EA7\u6570\uFF1B\u53E0\u5728\u4E00\u8D77\u7684\u548C\u5F26\u7167\u65E7\u6807\u3002\u300C\u6298\u53E0\u300D= \u7B80\u8C31\u91CC\u53E0\u7740\u7684\u548C\u5F26\u5199\u6210\u548C\u5F26\u540D\uFF08\u7167\u540D\u5B57\u7684\u6807\u51C6\u6392\u6CD5\u8FD8\u539F\u5F97\u56DE\u624D\u6298\uFF0C\u4E0D\u7136\u7167\u5199\u6570\u5B57\uFF09": {
+        readonly en: "Label chords played as broken notes (a beat, half a bar or a whole bar adding up to a chord); stacked chords are labeled either way “Fold” = in numbered notation, stacked chords are written as a chord name (only when the name’s standard voicing gives back exactly these notes; otherwise the numbers stay).";
     };
     readonly 认: {
         readonly en: "Read";
@@ -315,6 +315,12 @@ export declare const S: {
     };
     readonly "\u5206\u89E3\u548C\u5F26\uFF1A\u4E0D\u8BA4": {
         readonly en: "Broken chords: ignored";
+    };
+    readonly "\u5206\u89E3\u548C\u5F26\uFF1A\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": {
+        readonly en: "Broken chords: read; stacked chords folded into chord names";
+    };
+    readonly "\u8BA4\uFF0C\u53E0\u7740\u7684\u6298\u53E0\u6210\u548C\u5F26\u540D": {
+        readonly en: "Read; fold stacked chords into names";
     };
     readonly 乐谱: {
         readonly en: "Score";
@@ -1917,6 +1923,9 @@ export declare const S: {
     };
     readonly "\u4E0D\u8D77\u4F5C\u7528\uFF08\u753B\u7070\uFF09\uFF1A{why}": {
         readonly en: "No effect (grayed out): {why}";
+    };
+    readonly "\u5927\u8C31\u8868\u4E0A\u516B\u5EA6\u7EBF\u73B0\u5728\u4E0D\u8D77\u4F5C\u7528\uFF08\u97F3\u4E0D\u632A\uFF0C\u4E5F\u4E0D\u5370\uFF09": {
+        readonly en: "Octave lines have no effect on a grand staff yet (notes are not moved and the line is not printed)";
     };
     readonly "\u623F\u5B50\uFF1A\u7B2C {nums} \u904D\u8D70\u8FD9\u4E2A\u62EC\u53F7\uFF0C\u522B\u7684\u904D\u8DF3\u8FC7": {
         readonly en: "Ending: pass {nums} takes this bracket, other passes skip it";
@@ -5215,8 +5224,32 @@ export declare const S: {
     readonly "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09": {
         readonly en: "Repeat this note rapidly (a roll)";
     };
-    readonly "\u529B\u5EA6\u8BB0\u53F7\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7": {
-        readonly en: "Dynamic mark: from this note on, at this loudness, until the next dynamic mark";
+    readonly "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7": {
+        readonly en: "{dynName} ({dyn}): from this note on, at this loudness, until the next dynamic mark";
+    };
+    readonly 极弱: {
+        readonly en: "very very soft";
+    };
+    readonly 很弱: {
+        readonly en: "very soft";
+    };
+    readonly "\u5F31##\u529B\u5EA6": {
+        readonly en: "soft";
+    };
+    readonly 中弱: {
+        readonly en: "moderately soft";
+    };
+    readonly 中强: {
+        readonly en: "moderately loud";
+    };
+    readonly "\u5F3A##\u529B\u5EA6": {
+        readonly en: "loud";
+    };
+    readonly 很强: {
+        readonly en: "very loud";
+    };
+    readonly 极强: {
+        readonly en: "very very loud";
     };
     readonly "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": {
         readonly en: "Getting louder from here until the next dynamic mark";

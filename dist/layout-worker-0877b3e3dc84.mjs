@@ -7424,8 +7424,8 @@ var unpitched = (q) => !!(q.pmode || q.p.perc || q.p.xHead);
 var jianpuRowOf = (q) => !jianpuCan(q) ? "staff" : unpitched(q) ? "jianpuX" : "jianpu";
 var NOTATIONS2 = {
   staff: { id: "staff", home: "staff", build: { looks: staffLooks, rows: staffRows, tracks: staffTracks }, rowKindOf: () => "staff", families: "fold" },
-  // 简谱：合租不叠成一行（每位自己一行；一家左边的竖线 = 第五刀后面几步），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
-  //   有叠音的声部、鼓仍排五线谱的行（第五刀后面几步退场；那时候单元宽也按这一种给）
+  // 简谱：合租不叠成一行（每位自己一行；一家左边一条竖线 = families "line"），别的照五线谱那一套切单元（数字行自己量宽，用不上单元里的宽）。
+  //   有叠音的声部 = 数字竖着叠（数字行）；鼓 / 固定敲一个键的 = X 行；简谱的歌里没有五线谱的行（第五刀 5-4 ⑨ 过渡退场）。
   jianpu: { id: "jianpu", home: "jianpu", build: { looks: staffLooks, rows: (paper, visible, _fold, lookAt) => staffRows(paper, visible, [], lookAt), tracks: staffTracks }, rowKindOf: jianpuRowOf, families: "line" }
 };
 
@@ -8269,4 +8269,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-6a7bd7718202.mjs.map
+//# sourceMappingURL=layout-worker-0877b3e3dc84.mjs.map

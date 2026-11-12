@@ -6,9 +6,11 @@ import { staffLooks, staffRows, staffTracks, type StaffTrack, type StaffDrawCtx,
 import type { SystemBox } from "./engrave.ts";
 import type { GhostNote } from "./frame/ghost.ts";
 export type { GhostNote } from "./frame/ghost.ts";
+import type { ChordFold } from "../theory/index.ts";
+import type { FoldFamily } from "./staff/index.ts";
 export type { FoldFamily, StaffTrack, StaffDrawCtx, Unit, Chunk } from "./staff/index.ts";
-/** 一行用哪种画法（SystemBox.kind，每一行都写）。 */
-export type RowKind = "staff" | "jianpu";
+/** 一行用哪种画法（SystemBox.kind，每一行都写）。jianpuX = 简谱里鼓的那种行（UX 稿第 7 节「鼓 = X」：数字行的节奏写法，音画成 X；第五刀 5-4）。 */
+export type RowKind = "staff" | "jianpu" | "jianpuX";
 /** 一条要排的轨（现在 = 五线谱建轨那一步出的；数字行只用时间那一半和摆好的位置）。 */
 export type Track = StaffTrack;
 /** 框架交给画法的（两种画法共用一个对象；数字行只用其中一部分）。 */
@@ -20,18 +22,22 @@ export interface LyricAnchor {
     lyric: string;
     hyph: boolean;
 }
+/** 框架交给画法的这一条轨的预处理（和谱种无关，画法用得上就用）：folds = 叠着的和弦折成的和弦名（这条轨的和弦选项是「折叠」时才有；token 下标 → 折法；第五刀 5-4）。 */
+export interface TrackAux {
+    folds?: ReadonlyMap<number, ChordFold>;
+}
 /** 一种行的画法（设计稿第 7 节提案里的 RowDrawer，按两个真的实现收成这个形状）。 */
 export interface RowDrawer {
     readonly kind: RowKind;
     /** 量（第 3 步）：一条轨 → 列条目 + 每个音的墨往对齐线左边伸多远（光标画在它左边）。纯函数，只看这一条轨。 */
-    measure(q: Track): {
+    measure(q: Track, scale: number, aux?: TrackAux): {
         entries: ColEntry<Unit>[];
         inkL: Map<Chunk, number>;
     };
     /** 行首多宽（sp）：base = 框架给的缩进 + 边距；key = 这一行开头生效的调号；first = 这张纸第一行。 */
-    lineStart(q: Track, key: number, first: boolean, base: number): number;
+    lineStart(q: Track, key: number, first: boolean, base: number, scale: number): number;
     /** 歌词让路要的锚点（字的中心）。 */
-    lyricAnchors(q: Track): LyricAnchor[];
+    lyricAnchors(q: Track, scale: number, aux?: TrackAux): LyricAnchor[];
     /** 画（第 5 步）：mine = 这种行的那几条轨在 per 里的下标。交回歌词锚点（字归框架）；挂件往道上登记（attach）。 */
     draw(c: RowDrawCtx, mine: readonly number[]): {
         lyricParts: LyricPart[];
@@ -45,6 +51,8 @@ export interface RowDrawer {
         mid: number;
         bottom: number;
     };
+    /** 这种行一条轨只占一行（没有大谱表的上下两条）：框架排之前把这条轨的谱表数当 1。 */
+    readonly oneRow?: true;
 }
 export declare const DRAWERS: Readonly<Record<RowKind, RowDrawer>>;
 /** 一种行在主线程上的几何（设计稿第 3.3 节末；统筹审第四刀接口第 2 条：和 DRAWERS 并排、按行的种类查）。谱面（score-view）只查这张表，不写「如果是简谱」。
@@ -66,16 +74,20 @@ export interface RowGeometry {
     };
 }
 export declare const GEOMETRY: Readonly<Record<RowKind, RowGeometry>>;
-/** 一种谱：这种谱里一条轨用哪种行；home = 这种谱的主行（一行都没有的纸按它留高）。 */
+/** 建轨（第 1–2 步的前一半）：谁的谱号 / 大谱表、要排哪几条轨（合租叠不叠、分手、声部 2、鼓并成一套）、每条轨的排版单元。第五刀 5-2 起是谱种表里的一项（统筹审第四刀接口第 7 条）。 */
+export interface Build {
+    looks: typeof staffLooks;
+    /** fold = 框架挑的「这次能叠的那几家」；叠不叠由这种谱定。 */
+    rows(paper: Parameters<typeof staffRows>[0], visible: Parameters<typeof staffRows>[1], fold: readonly FoldFamily[], lookAt: Parameters<typeof staffRows>[3]): ReturnType<typeof staffRows>;
+    tracks: typeof staffTracks;
+}
+/** 一种谱：这种谱里怎么建轨、一条轨用哪种行；home = 这种谱的主行（一行都没有的纸按它留高）。 */
 export interface Notation {
     readonly id: NotationId;
     readonly home: RowKind;
+    readonly build: Build;
     rowKindOf(q: Track): RowKind;
+    /** 合租的一家怎么露：fold = 没人在写就叠成一行，展开着时编辑器里一条能点的括号（点 = 叠回去）；line = 不叠，一家左边一条印出来的竖线包住（简谱，UX 稿第 7 节）。 */
+    readonly families: "fold" | "line";
 }
 export declare const NOTATIONS: Readonly<Record<NotationId, Notation>>;
-/** 建轨（第 1–2 步的前一半）：合租叠成虚拟轨、分手、声部 2、谱号、补齐——照五线谱那一套（staff/rows.ts）；两种谱都先走这一步，再按谱种分行。 */
-export declare const BUILD: {
-    readonly looks: typeof staffLooks;
-    readonly rows: typeof staffRows;
-    readonly tracks: typeof staffTracks;
-};

@@ -239,13 +239,13 @@ user 2026-10-06「开始做第一版吧。和catsup一样一开始先不蛋疼st
 - **空白处小菜单**（2026-10-08 晚，user「空白长按可以黏贴或者类似的右键上下文菜单」「小菜单同意」）：空白处长按（手指 / 笔）或电脑右键 → 光标放到那里 + 非模态小菜单（`openScoreMenu`）：粘贴 / 小节线 / 句号 / 调号… / 拍号… / 速度… / 全选这一行 / 全选；音上右键不接（选区条管）。
 - **月读条款译文**（user「license的展示你守的很紧，但是没做翻译」「还有英文，中国人还能读白字」）：`src/singer/credit-translations.ts` 中 / 英，按原文 sha256 钉住（`test/credit-translations.test.ts`：上游改原文 = 红 = 重译）；设置里原文在上（以原文为准）。不进 i18n 那套（原文永远要显示、译文要钉原文，i18n 只防漏译）。
 
-## 谱面分家：排版 = 框架 + 谱种表 + 每种行的画法（五线谱 / 简谱）（v0.16.108 起；第四刀起有简谱；2026-11-11，Claude Opus 5.5；READ before touching `src/render/`）
+## 谱面分家：排版 = 框架 + 谱种表 + 每种行的画法（五线谱 / 简谱）（v0.16.108 起；第四刀起有简谱，第五刀起简谱画多声部；2026-11-11，Claude Opus 5.5；READ before touching `src/render/`）
 
 ADR-0005（`ai-docs/adr/0005-score-surface-five-layers-row-depiction-is-the-unit.md`）+ 设计稿 `ai-docs/20261111-score-surface-architecture.md`（实际接口 = 第 7½ 节）+ 施工单 `ai-docs/20261111-score-surface-construction-plan.md`（1b 的施工记录在第六节）。流程图 = `ai-docs/20261109-pipelines.md` A8⅓。
 
 - **框架** = `src/render/engrave.ts`（`engrave` 只出平数据，worker 原样回；谱面分家第二刀起没有现算的函数）+ `src/render/frame/`（`arrange.ts` 合成列 / 折行 / 摆、`columns.ts` 列的先后按种类、`lanes.ts` 挂件的道、`params.ts`、`furniture.ts`）。框架不认字形、不认纵向：不 import `smufl / stems / glyph-box / score/clef`，画法只经过**谱种表** `src/render/notations.ts` 拿（`BUILD` 建轨、`NOTATIONS[谱种].rowKindOf`、`DRAWERS[行的种类]`；表只走 `staff/index.ts`、`jianpu/index.ts` 两个入口；守卫 = `test/score-surface.test.ts`「结构」）。
 - **五线谱这一种** = `src/render/staff/`：`rows.ts`（谱种的表：合租怎么叠、每条轨的单元 / 谱号 / 八度线）、`measure.ts`（量 = 一条轨的纯函数）、`draw.ts`（画：`put(行, …)` 画音符层、`attach(道, …)` 登记挂件、交回歌词锚点；道的先后 `STAFF_LANES`）、`geometry.ts`（第几级 ↔ y、上沿 / 中线 / 下沿、光标 / 鬼音符 / 纵向 ↔ 音高的几何纯函数）。
-- **简谱这一种** = `src/render/jianpu/`（第四刀；唯一入口 `index.ts`）：`measure.ts` / `draw.ts` / `geometry.ts` / `glyphs.ts`（数字多宽多高都是写死的数，不现场量）。这一刀只画单声部：有叠音的声部、鼓、合租叠起来的一家照旧排五线谱的行（同一张纸两种行并排，第五刀退场）。行身 = 小节线那一段（`jianpuAnchors`），八度基准 = 「点最少」记在 `SystemBox.octBase`。不 import 五线谱的任何文件：排版单元的时间那一半（切小节、拆时值、第几拍、连音比例）在框架 `frame/units.ts`（第五刀 5-1），各种单元多宽由画法交进去（`UnitWidths`；五线谱那份 = `staff/units.ts STAFF_WIDTHS`）。
+- **简谱这一种** = `src/render/jianpu/`（第四刀；唯一入口 `index.ts`）：`measure.ts` / `draw.ts` / `geometry.ts` / `glyphs.ts`（数字多宽多高都是写死的数，不现场量）。**三种行**（`RowKind` = staff / jianpu / jianpuX；谱种表 `rowKindOf` 定哪条轨排哪种）：简谱的歌里有音高的 = 数字行（叠音 = 数字竖着叠 `glyphs.ts stackBases`，琶音画在左边、升降号让位），鼓和台上固定敲一个键的 = X 行（`jianpuX`，同时敲的往上叠；分不出是哪件鼓），**简谱的歌里没有五线谱的行**（第五刀退场了同一张纸两种行并排）。合租怎么露 = 谱种表的 `families`：五线谱 fold（叠成一行）、简谱 line（不叠，一家左边一条竖线）；一家合起来认和弦（`src/theory/families.ts paperHarmony`，标在最下面那一位那一行）；数字行下面标级数；每条轨可选「叠着的折叠成和弦名」（乐理模块 `fold`：照标准排法还原得回才折）。行身 = 小节线那一段（`jianpuAnchors`），八度基准 = 按这位的音域（`PartView.range`，和 pad 的音域同一份），极端的退回「点最少」，记在 `SystemBox.octBase`，点画在「1=」字母上下。一小节里等距（`PaperParams.evenBars`，简谱开）。字形尺寸照私有仓的简谱样张（`glyphs.ts` 第五刀那一段：字号 FS、数字宽、下划线、八度点、小节线、楔形顿音等都是写死的比例；力度 = 细斜体小写字母，不用 Bravura），行距 / 音距 / 歌词与名字的缩放在 `layout-params.ts`（`lyricScale` / `nameScale`）。不 import 五线谱的任何文件：排版单元的时间那一半（切小节、拆时值、第几拍、连音比例）在框架 `frame/units.ts`（第五刀 5-1），各种单元多宽由画法交进去（`UnitWidths`；五线谱那份 = `staff/units.ts STAFF_WIDTHS`）。
 - **记号表** `src/render/signs.ts`（每个记号一行、每种谱一栏「画成什么」，漏一个编译不过）+ **共用挂件** `src/render/ornaments/`（力度那一串、风格、跳转房子、速度、音的修饰；位置只吃画法给的锚点，画成什么按**这一行的种类**查记号表）。
 - **排版参数表** `src/render/layout-params.ts`：纸一级 `PAPER_PARAMS[谱种][版式]`（行间、音距曲线、最多压紧、一行最多拉宽：简谱 1.3、五线谱不设上限 = 第六刀才改）+ 行一级 `ROW_PARAMS[行的种类][版式]`（从行身算的最小值）。框架不假设行身是 0–4：只经过 `DRAWERS[k].anchors` 知道上下沿。调版式改这个文件；框架自己的尺寸在 `frame/params.ts`。
 - 排版明着吃 `opts.locale`（不读这一页的界面语言，守卫 = `test/score-surface.test.ts`「语言」）。歌词归框架（画法只交锚点）。
@@ -255,7 +255,7 @@ ADR-0005（`ai-docs/adr/0005-score-surface-five-layers-row-depiction-is-the-unit
 - **这首歌怎么看**（谱面分家第三刀，score minor 5）：谱种 / 和弦标级数 / 按 C 调看 / 每条轨的和弦选项存在歌里，读 / 改只走 `src/score/song-view.ts`；第四刀又收了版式 / 歌词排法 / 小节号的读（改照旧在 `song.ts`，不归修改锁的看法 = W-68），加派生值 `inCActive`（按 C 调看起不起作用：首调的谱 `MOVABLE_DO` 上不起作用，开关变灰、存着的值不动；排版和谱面都看它）；排版里不许直接读歌的显示字段（守卫）（`songViewOf` + 四个 setter；没写的意思冻住在 `UNWRITTEN`：五线谱 / 标 / 不按 / 也认拆开弹的，测试钉着，不许拿它当新文档默认）。宿主改它只走 `main.ts setSongLook`（修改锁的「看法」`songLook`：锁着能切、锁着期间不写）。开关在纸的设置（第一行「谱种」；「看谱」）和谱头面板「分解和弦」；纸角那颗钮 = 「1 / ♪」图标（`jianpu-staff`，图标库待过目层）；设备上原来那两个键（view-in-c / chord-tags）不再读、也不删。测试 = `test/song-view.test.ts`（含 `test/fixtures/format/minor/score-5/` 冻结样本）。夹具里的歌经 `asFrozen` 明着写「不标级数」（底本是在不标时冻的）。
 - **接口头文件** `api/` = `bash scripts/gen-api.sh`（tsc 出的纯签名树，只留 `src`；家族 API .h ritual）：`./bump.sh` 会顺带重打，随源同一个 commit 提交；重构交付 / 大功能时也重打。生成物勿手改。
 - 谱面视图要的几何（光标、鬼音符、选区带、点在哪一级、拖了几级）一律问 `GEOMETRY[行的种类]`，吃 `Layout.systems[行]`。
-- 还没做 / 过渡：`HitNote.d`、`CaretHead.shift`、`SystemBox.staffTop / staff / octBase` 是各种行自己的数据、原地的可选字段（没挪进 `RowBox.data`）；建轨两种谱都照五线谱那一套（第五刀变成谱种表里的一项）；五线谱一行拉宽不设上限（第六刀）；大谱表上跨两张谱的连线位置不对（分家前就不对，记账）。
+- 还没做 / 过渡：`HitNote.d`、`CaretHead.shift`、`SystemBox.staffTop / staff / octBase` 是各种行自己的数据、原地的可选字段（没挪进 `RowBox.data`）；建轨是谱种表里的一项（`BUILD`），简谱那一项现在还借五线谱的切单元；五线谱一行拉宽不设上限（第六刀）；大谱表上跨两张谱的连线位置不对（分家前就不对，记账）。
 
 ## 修改锁（v0.16.96 起；v0.16.97 歌库里的歌也默认锁着；2026-11-10，Claude Fable 5.2；READ before touching 文档写入口 / 存盘 / 家）
 

@@ -1,4 +1,5 @@
 import { type Token, type NoteTok, type ChordPin } from "../score/song.ts";
+import type { Pitch } from "../score/pitch.ts";
 /** 一个读法（候选）。label = 谱上写的短字；name = 点开时写在旁边的全名；cost 越小越像（同分 = 打平）。各理论可以多带自己的字段（纯数据）。 */
 export interface HarmonyGuess {
     label: string;
@@ -69,11 +70,27 @@ export interface HarmonyTheory {
     }, auto: HarmonyRead | undefined): HarmonyRead | null;
     /** 候选里的一个 → 存进音里的和弦名。 */
     pinOf(guess: HarmonyGuess): ChordPin;
+    /** 叠着的和弦能不能折成一个和弦名（谱面分家第五刀 5-4，UX 稿第 7 节「能还原就折」）：pitches = 这个音的全部音（叠音），at = 这里的调，pin = 音上人挑的读法。
+     *  折不了（认不出 / 照这个名字的标准排法还原不回这几个音 / 人挑的那个还原不回）= null，照画数字。没有这一项的理论 = 都不折。 */
+    fold?(pitches: readonly Pitch[], at: {
+        fifths: number;
+        minor: boolean;
+    }, pin: ChordPin | undefined): ChordFold | null;
+}
+/** 折成的和弦名：name = 写在谱上的（C、Am7、C/E）；bass = 最低的那个音（八度用点标在名字上）；ambiguous = 还有别的名字也还原得回这几个音（右下角小三角）；
+ *  read = 点小三角开的候选（人挑一个 = 写进音里的 harm，和级数同一套）。 */
+export interface ChordFold {
+    name: string;
+    bass: Pitch;
+    ambiguous: boolean;
+    read: HarmonyRead;
 }
 export declare const THEORIES: Record<string, HarmonyTheory>;
 /** 人写明的和弦 ↔ MusicXML <harmony><kind>（v0.16.87）：和弦种类的写法表跟着西方功能和声那一种（存盘用的是和弦名本身，不看是哪种理论在读）。 */
 export { pinXmlKind, xmlKindToPin, PIN_KIND_IDS } from "./western.ts";
 export declare const DEFAULT_THEORY: string;
+/** 一张纸上「哪几个音底下标什么」：合租的一家合起来认、不在一家的各认各的（预处理，两种谱读同一份；第五刀 5-4）。 */
+export { paperHarmony, type PlacedTag, type PaperHarmonyInput } from "./families.ts";
 /** 按 id 找理论；不认识的 id（别的版本加的）= 默认那一种。 */
 export declare const harmonyTheory: (id?: string) => HarmonyTheory;
 /** 把一条 track 切成一小节一小节（从左到右；小节怎么分 = 画谱 / 拍子轻重同一套 meterPositions；调 = 走到这儿之前最近的调号）。 */

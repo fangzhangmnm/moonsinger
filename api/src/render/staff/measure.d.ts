@@ -4,7 +4,7 @@ import { type PercInfo } from "../../gm/percussion.ts";
 import { type StemNote, type StemDir } from "../stems.ts";
 import type { ColEntry } from "../frame/arrange.ts";
 import type { PartView } from "../engrave.ts";
-import { type Unit, type Chunk, type Head } from "./units.ts";
+import type { Unit, Chunk, Head } from "../frame/units.ts";
 /** 一条要排的五线谱轨（一个声部在这张纸上；合租叠出来的虚拟轨、声部 2、双手谱下面那张也各是一条）。 */
 export interface StaffTrack {
     p: PartView;

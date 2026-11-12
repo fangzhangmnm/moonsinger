@@ -1,3 +1,3 @@
-export { measureJianpu, jianpuLineStart, jianpuLyricAnchors, type JianpuTrack } from "./measure.ts";
+export { measureJianpu, jianpuLineStart, jianpuLyricAnchors, type JianpuTrack, type JianpuMode } from "./measure.ts";
 export { drawJianpu, JIANPU_LANES, type JianpuDrawCtx } from "./draw.ts";
-export { jianpuCaretSpan, jianpuPreviewAt, jianpuBandTop, jianpuAnchors, jianpuGhost, type JianpuRowData } from "./geometry.ts";
+export { jianpuCaretSpan, jianpuPreviewAt, jianpuBandTop, jianpuAnchors, jianpuGhost, jianpuXGhost, type JianpuRowData } from "./geometry.ts";

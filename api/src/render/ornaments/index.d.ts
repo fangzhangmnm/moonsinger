@@ -3,9 +3,11 @@ import type { NotationId } from "../../score/song-view.ts";
 import { type TextRole } from "../text/index.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import type { Prim, EngraveOpts, DynHit, MarkHit } from "../engrave.ts";
-import type { Unit, Chunk, NavU } from "../staff/units.ts";
+import type { Unit, Chunk, NavU } from "../frame/units.ts";
 /** 渐强渐弱和两头的字之间留多少（sp）；比一整行还长 = 写「cresc. - - -」（字的大概宽 / 虚线一节多长、隔多远）；渐到的虚线。原样从 staff/glyphs.ts 搬来。 */
 export declare const PIN_GAP = 0.7;
+/** 一个楔形（发夹 / 渐到）最短多长（sp）：整条短于它就拉到它；折到下一行的那一段短于它就不画。 */
+export declare const PIN_MIN = 1.4;
 export declare const PIN_WORD: {
     readonly w: {
         readonly cresc: 4.7;
@@ -39,6 +41,8 @@ export interface OrnCtx {
     attach: (row: number, lane: LaneKind, run: () => void) => void;
     /** 这一行的右边界（sp）。 */
     right: number;
+    /** 这一行字形的尺寸比例（力度字、突强 / 强后弱）：数字行 = 排版参数表行一级的 scale（第五刀 5-0c）；五线谱不给 = 原样。 */
+    glyphScale?: number;
     tokens: Token[];
     units: Unit[];
     /** 这条轨第 s 行挂挂件的那一行（五线谱 = 第一张谱表）。 */

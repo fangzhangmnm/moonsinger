@@ -43,12 +43,12 @@ await p.keyboard.press("Control+z"); await p.waitForTimeout(250);
 check((await S()).song.notation === undefined && (await kinds()).split(",").every((k) => k === "staff"), "撤销 = 回到五线谱");
 await p.keyboard.press("Control+Shift+z"); await p.waitForTimeout(250);
 check((await S()).song.notation === "jianpu", "重做 = 又是简谱");
-// ④ 轻点数字 = 光标到它后面；光标画在数字行的上下沿之间
+// ④ 轻点数字 = 光标到它后面；光标盖住数字行的行身（照样张 = 小节线那一段，第五刀 5-5），不伸到别的行
 let d = await digitAt(1);
 await p.mouse.click(d.x, d.y); await p.waitForTimeout(200);
 check((await S()).caret === d.index + 1, "轻点第 2 个数字 = 光标到它后面", String((await S()).caret));
-const caretOk = await p.evaluate((row) => { const L = window.__moonsinger.layout(), r = L.systems[row], ln = document.querySelector("#score .ink-caret line.caret"); if (!ln) return false; const y1 = +ln.getAttribute("y1"), y2 = +ln.getAttribute("y2"); return y1 < r.staffTop + L.sp * 1.2 && y2 > r.staffTop + L.sp * 3.5 && y2 - y1 < L.sp * 5; }, d.row);
-check(caretOk, "光标 = 数字行上下沿之间的一根竖线");
+const caretOk = await p.evaluate((row) => { const L = window.__moonsinger.layout(), r = L.systems[row], ln = document.querySelector("#score .ink-caret line.caret"); if (!ln) return false; const y1 = +ln.getAttribute("y1"), y2 = +ln.getAttribute("y2"); return y1 < r.staffTop + L.sp * 1.2 && y2 > r.staffTop + L.sp * 3.5 && y2 - y1 < L.sp * 8; }, d.row);
+check(caretOk, "光标 = 盖住数字行行身的一根竖线");
 // ⑤ 鼠标长按数字 = 选中（选区带）；接着竖着拖 = 不改音高（数字行没有「纵向 = 音高」）
 const pitch0 = JSON.stringify((await S()).song.papers[0].tracks[(await S()).at.part][d.index].pitch);
 d = await digitAt(2);

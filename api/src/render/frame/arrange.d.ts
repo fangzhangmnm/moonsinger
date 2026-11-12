@@ -41,6 +41,8 @@ export interface ArrangeOpts {
     squeeze: number;
     /** 一行最多拉宽到自然宽的几倍（排版参数表纸一级；Infinity = 不设上限、拉满 = 五线谱现在的样子）。到了上限就不再拉，右边空着（UX 稿第 8 节）。 */
     maxStretch: number;
+    /** 一小节里一样长的音等距（顶杆顶开时整小节的弹簧一起放大，不只放大挨着的那一段；简谱 = 是，五线谱 = 否；排版参数表纸一级）。 */
+    evenBars?: boolean;
     /** 一行最后一列不是小节线时，行尾多留多少（sp）。 */
     endPad: number;
     /** 从第 k 列开一行，行首（名字一栏 + 各种行自己的行首）多宽（sp）；first = 这张纸第一行。 */

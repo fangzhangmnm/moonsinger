@@ -549,8 +549,9 @@ interface PaperParams { sysGap; curve: SpacingMode | SpringPts; squeeze; maxStre
 interface RowParams { …; scale: number }                          // 行里的尺寸比例（数字行舒适 ≈ 0.823 / 紧凑 0.96，5-0c）
 // spacing.ts placeLine / fitLine 多一个 even：一段里有顶杆比跨过的弹簧长 = 这一段弹簧一起按同一倍数放大（按这一行拉 / 压过的弹簧算）
 
-// ── 记号表：力度两种谱都是字母字形（5-0；word 那种画法删了，中文叫法在 says 里）；dynDepiction(d, notation) 不再收语言 ─────────
+// ── 记号表：力度五线谱 = Bravura 字形；简谱 = 细斜体小写字母文字（Depiction text、样式 jp-dyn；73fca09，照样张）。word 那种画法删了（5-0），中文叫法在 says 里；dynDepiction(d, notation) 不再收语言 ─────────
 // ── 简谱这一种多出口：jianpuXGhost、JianpuMode（digits | x）、JianpuAux；glyphs.ts stackBases（和弦竖叠）、chordNameW / chordBassCx（和弦名）、X_EM
+// ── 5-5 照样张（dfa610d）：glyphs.ts 尺寸全按字号 FS 的比例写死（数字宽、下划线、八度点、小节线 BAR_Y0 / BAR_Y1、楔形顿音、描边 > ）；光标 CARET_Y0 / Y1 盖住行身（= 小节线那一段）；layout-params 样张的对数弹簧 mockSpring、lyricScale / nameScale
 ```
 
 守卫 4 的意思（第五节统筹裁定 5-3）：每个 token 在编辑器里至少有一样指着它的东西——印出来的图元，或者编辑器里的提示 / 灰标；只在编辑器里有的只许三种（C 大调 / 鼓谱的调号；数字行上的谱号、八度线；大谱表上的八度线）；什么都没有的只许三类（谱头速度 / 五线谱叠起来的一家 / 隐藏的纸和声部），各带正面断言。
