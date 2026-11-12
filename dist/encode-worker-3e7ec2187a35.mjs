@@ -1737,7 +1737,15 @@ var S = {
   "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09": { en: "Grow then fade within this note (messa di voce)" },
   "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4E00\u4E2A\u4E2A\u62E8\u51FA\u6765": { en: "Roll the chord from the lowest note up" },
   "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09": { en: "Repeat this note rapidly (a roll)" },
-  "\u529B\u5EA6\u8BB0\u53F7\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7": { en: "Dynamic mark: from this note on, at this loudness, until the next dynamic mark" },
+  "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7": { en: "{dynName} ({dyn}): from this note on, at this loudness, until the next dynamic mark" },
+  "\u6781\u5F31": { en: "very very soft" },
+  "\u5F88\u5F31": { en: "very soft" },
+  "\u5F31##\u529B\u5EA6": { en: "soft" },
+  "\u4E2D\u5F31": { en: "moderately soft" },
+  "\u4E2D\u5F3A": { en: "moderately loud" },
+  "\u5F3A##\u529B\u5EA6": { en: "loud" },
+  "\u5F88\u5F3A": { en: "very loud" },
+  "\u6781\u5F3A": { en: "very very loud" },
   "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting louder from here until the next dynamic mark" },
   "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting softer from here until the next dynamic mark" },
   "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A": { en: "Change evenly from the previous dynamic mark to this one" },
@@ -5685,4 +5693,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runEncodeJob
 };
-//# sourceMappingURL=encode-worker-a873a7a161f2.mjs.map
+//# sourceMappingURL=encode-worker-3e7ec2187a35.mjs.map

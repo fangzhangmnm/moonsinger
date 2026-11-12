@@ -18,8 +18,6 @@ import { GLYPH_BOX } from "../glyph-box.gen.ts";
 export const PIN_GAP = 0.7;
 export const PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } } as const, DASH = { len: 0.6, gap: 1.0 } as const;
 export const RAMP_DASH = { len: 0.5, gap: 0.4 } as const;
-/** 简谱的中文力度字（印在谱上，不现场量）：每个字多宽、基线以上 / 以下（sp，按 jp-dyn 的字号 1.6）。 */
-const ZH_DYN = { em: 1.6, w: 1.6, up: 1.3, dn: 0.3 } as const;
 
 /** 画法交给挂件的（一条轨在这张纸上）。 */
 export interface OrnCtx {
@@ -123,10 +121,8 @@ export function layDynamics(c: OrnCtx): void {
   const right = c.right;
   /** 一个力度字：怎么画 + 墨迹（sp，相对字的原点：左、右、基线以上、基线以下）。 */
   const dynOf = (v: DynU["value"]) => {
-    const d = dynDepiction(v, notation, o.locale);
-    if ("glyph" in d) return { ink: d.ink, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
-    const w = [...d.text].length * ZH_DYN.w;
-    return { ink: [0, w, ZH_DYN.up, ZH_DYN.dn] as const, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "text", x, y, s: d.text, tok, cls: `${cls} jp-dyn`, size: P(ZH_DYN.em), anchor: "start" }) };
+    const d = dynDepiction(v, notation);
+    return { ink: d.ink, draw: (x: number, y: number, tok: number, cls: string) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls }) };
   };
   const dynItems: { row: number; x0: number; keys: string[]; draw: (base: number) => void }[] = [];
   // 力度：谱上方、和后面那个音左对齐；挂件第 4 样（刀 4b：和用发夹连着的一串共用一条基线，贴它们自己那几段天际线往上 0.4；挨得近的两个 = 后摆的那个自然叠上去）

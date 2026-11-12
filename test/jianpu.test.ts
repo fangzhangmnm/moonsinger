@@ -6,6 +6,7 @@ import { createTextMeasure } from "../src/render/text/index.ts";
 import { initState, TPQ, type Song, type Token } from "../src/score/song.ts";
 import { setNotation } from "../src/score/song-view.ts";
 import { GEOMETRY, DRAWERS } from "../src/render/notations.ts";
+import { SIGNS } from "../src/render/signs.ts";
 
 const P = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", octave = 4, alter = 0) => ({ step, alter, octave });
 /** 一条声部、给定的音（谱头照 initState）→ 简谱排一遍。 */
@@ -70,6 +71,20 @@ describe("简谱数字行", () => {
     const x = L.prims.find((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && p.tok === toks[i]!.id && p.s === "x");
     assert(x !== undefined && /(^|\s)ghost(\s|$)/.test(x.cls ?? ""), "灰色 x");
     assert(L.notes.some((h) => h.index === i), "点得到");
+  });
+  it("力度 = p / f 字母（和五线谱同一套字形，不分界面语言；user 11-11 夜纪要第 88 节「中文的字确实有点太抢眼了」）；中文叫法在说明栏里", () => {
+    const body = [{ kind: "dyn", value: "mf" } as Omit<Token, "id">, n(P("C")), { kind: "dyn", value: "pp" } as Omit<Token, "id">, n(P("D"))];
+    const glyphs = (locale: "zh" | "en") => {
+      const st0 = initState(), part = st0.at.part, paper = st0.song.papers[0]!;
+      let id = 1000; let s: Song = { ...st0.song, papers: [{ ...paper, tracks: { ...paper.tracks, [part]: [...paper.tracks[part]!, ...body.map((t) => ({ ...t, id: id++ }) as Token)] } }] };
+      s = setNotation({ ...st0, song: s }, "jianpu").song;
+      const L = engrave(s, { width: 900, sp: 10, locale, at: { paper: paper.id, part }, parts: [{ id: part, name: "V", first: true }], measure: createTextMeasure((x: string) => x.length * 8), autoBars: true });
+      return L.prims.filter((p) => /(^|\s)dyn(\s|$)/.test(p.cls ?? "")).map((p) => (p.t === "glyph" ? p.ch : p.t === "text" ? `text:${p.s}` : p.t)).join(" ");
+    };
+    eq(glyphs("zh"), "\u{E52D} \u{E52B}", "中文界面：mf、pp 的字母字形");
+    eq(glyphs("en"), glyphs("zh"), "英文界面一样");
+    assert(SIGNS["dyn:mf"].says("zh").includes("中强") && SIGNS["dyn:pp"].says("zh").includes("很弱"), "中文叫法在说明栏");
+    eq(SIGNS["dyn:mf"].draw.jianpu, SIGNS["dyn:mf"].draw.staff, "简谱那一栏 = 五线谱那一栏");
   });
   it("几何表（谱面只查它；统筹审接口第 2 条）：数字行没有「纵向 = 音高」；鬼音符 = 数字 + 升降 + 照这一行八度基准的点；光标在数字行的上下沿之间", () => {
     assert(!GEOMETRY.jianpu.pitchAxis && !!GEOMETRY.staff.pitchAxis, "数字行不提供竖着拖改音高");

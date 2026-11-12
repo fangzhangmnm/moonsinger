@@ -4457,7 +4457,15 @@ var S = {
   "\u8FD9\u4E2A\u97F3\u91CC\u9762\u5148\u957F\u540E\u6536\uFF08messa di voce\uFF09": { en: "Grow then fade within this note (messa di voce)" },
   "\u548C\u5F26\u4ECE\u4F4E\u5230\u9AD8\u4E00\u4E2A\u4E2A\u62E8\u51FA\u6765": { en: "Roll the chord from the lowest note up" },
   "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09": { en: "Repeat this note rapidly (a roll)" },
-  "\u529B\u5EA6\u8BB0\u53F7\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7": { en: "Dynamic mark: from this note on, at this loudness, until the next dynamic mark" },
+  "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7": { en: "{dynName} ({dyn}): from this note on, at this loudness, until the next dynamic mark" },
+  "\u6781\u5F31": { en: "very very soft" },
+  "\u5F88\u5F31": { en: "very soft" },
+  "\u5F31##\u529B\u5EA6": { en: "soft" },
+  "\u4E2D\u5F31": { en: "moderately soft" },
+  "\u4E2D\u5F3A": { en: "moderately loud" },
+  "\u5F3A##\u529B\u5EA6": { en: "loud" },
+  "\u5F88\u5F3A": { en: "very loud" },
+  "\u6781\u5F3A": { en: "very very loud" },
   "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F3A\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting louder from here until the next dynamic mark" },
   "\u4ECE\u8FD9\u91CC\u8D77\u8D8A\u6765\u8D8A\u5F31\uFF0C\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u4E3A\u6B62": { en: "Getting softer from here until the next dynamic mark" },
   "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A": { en: "Change evenly from the previous dynamic mark to this one" },
@@ -11685,7 +11693,7 @@ var DYN_G = {
   ff: { kind: "glyph", above: "\uE52F", ink: [-0.6, 2.5, 1.8, 0.6] },
   fff: { kind: "glyph", above: "\uE530", ink: [-0.6, 3.4, 1.8, 0.6] }
 };
-var DYN_ZH = { ppp: "\u6781\u5F31", pp: "\u5F88\u5F31", p: "\u5F31", mp: "\u4E2D\u5F31", mf: "\u4E2D\u5F3A", f: "\u5F3A", ff: "\u5F88\u5F3A", fff: "\u6781\u5F3A" };
+var DYN_NAME = (d3, l10) => ({ ppp: _tIn(l10, "\u6781\u5F31"), pp: _tIn(l10, "\u5F88\u5F31"), p: _tIn(l10, "\u5F31##\u529B\u5EA6"), mp: _tIn(l10, "\u4E2D\u5F31"), mf: _tIn(l10, "\u4E2D\u5F3A"), f: _tIn(l10, "\u5F3A##\u529B\u5EA6"), ff: _tIn(l10, "\u5F88\u5F3A"), fff: _tIn(l10, "\u6781\u5F3A") })[d3];
 var art = (a10, name, says, lane, staff, jianpu) => ({ id: `art:${a10}`, name, says, lane, draw: { staff, jianpu } });
 var ART_SIGNS = {
   "art:staccato": art("staccato", (l10) => _tIn(l10, "\u8DF3\u97F3"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u77ED\u4E00\u70B9\u3001\u548C\u4E0B\u4E00\u4E2A\u97F3\u65AD\u5F00"), "note", G("\uE4A2", "\uE4A3", 0.28, 0.28), G("\uE4A8", "\uE4A9", 0.4, 0.9)),
@@ -11715,7 +11723,7 @@ var ART_SIGNS = {
   "art:roll": art("roll", (l10) => _tIn(l10, "\u6EDA\u594F"), (l10) => _tIn(l10, "\u8FD9\u4E2A\u97F3\u5FEB\u901F\u5730\u53CD\u590D\u6572\uFF08\u6EDA\uFF09"), "note", D("\u7B26\u5E72\u4E0A\u4E09\u9053\u659C\u7EBF"), D("\u6570\u5B57\u4E0B\u9762\u4E09\u9053\u77ED\u659C\u7EBF"))
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
-var dynSign = (d3) => ({ id: `dyn:${d3}`, name: () => d3, says: (l10) => _tIn(l10, "\u529B\u5EA6\u8BB0\u53F7\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7"), lane: "dynamics", draw: { staff: DYN_G[d3], jianpu: { kind: "word", zh: DYN_ZH[d3], other: DYN_G[d3] } } });
+var dynSign = (d3) => ({ id: `dyn:${d3}`, name: () => d3, says: (l10) => _tIn(l10, "{dynName}\uFF08{dyn}\uFF09\uFF1A\u4ECE\u8FD9\u4E2A\u97F3\u8D77\u662F\u8FD9\u4E2A\u5F3A\u5F31\uFF0C\u7BA1\u5230\u4E0B\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7", { dynName: DYN_NAME(d3, l10), dyn: d3 }), lane: "dynamics", draw: { staff: DYN_G[d3], jianpu: DYN_G[d3] } });
 var DYN_SIGNS = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
 var SIGNS = {
   ...ART_SIGNS,
@@ -11727,10 +11735,9 @@ var SIGNS = {
   ramp: { id: "ramp", name: (l10) => _tIn(l10, "\u6E10\u5230"), says: (l10) => _tIn(l10, "\u4ECE\u4E0A\u4E00\u4E2A\u529B\u5EA6\u8BB0\u53F7\u5747\u5300\u53D8\u5230\u8FD9\u4E00\u4E2A"), lane: "dynamics", draw: { staff: D("\u865A\u7EBF\u53D1\u5939"), jianpu: D("\u865A\u7EBF\u6954\u5F62") } }
   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
-function dynDepiction(d3, notation, l10) {
-  const dep = SIGNS[`dyn:${d3}`].draw[notation], g3 = dep.kind === "word" ? l10 === "zh" ? null : dep.other : dep;
-  if (dep.kind === "word" && l10 === "zh") return { text: dep.zh };
-  if (g3 && g3.kind === "glyph" && g3.ink) return { glyph: g3.above, ink: g3.ink };
+function dynDepiction(d3, notation) {
+  const g3 = SIGNS[`dyn:${d3}`].draw[notation];
+  if (g3.kind === "glyph" && g3.ink) return { glyph: g3.above, ink: g3.ink };
   throw new Error(`signs: dyn ${d3} has no drawable depiction for ${notation}`);
 }
 
@@ -12127,7 +12134,6 @@ var PIN_GAP = 0.7;
 var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
 var DASH = { len: 0.6, gap: 1 };
 var RAMP_DASH = { len: 0.5, gap: 0.4 };
-var ZH_DYN = { em: 1.6, w: 1.6, up: 1.3, dn: 0.3 };
 function tempoAt2(c10, r10, x0, v, cls, index, change, y2) {
   const { P: P2, tx: tx2, TR, RS, mw, prims, marks } = c10;
   const fs = tx2("tempo-word"), word = tempoWord(v).it, k2 = RS("tempo-word");
@@ -12217,10 +12223,8 @@ function layDynamics(c10) {
   const { P: P2, tx: tx2, prims, dyns, tokens, units, dynOff, o: o10, notation } = c10;
   const right = c10.right;
   const dynOf = (v) => {
-    const d3 = dynDepiction(v, notation, o10.locale);
-    if ("glyph" in d3) return { ink: d3.ink, draw: (x2, y2, tok, cls) => prims.push({ t: "glyph", x: x2, y: y2, ch: d3.glyph, tok, cls }) };
-    const w2 = [...d3.text].length * ZH_DYN.w;
-    return { ink: [0, w2, ZH_DYN.up, ZH_DYN.dn], draw: (x2, y2, tok, cls) => prims.push({ t: "text", x: x2, y: y2, s: d3.text, tok, cls: `${cls} jp-dyn`, size: P2(ZH_DYN.em), anchor: "start" }) };
+    const d3 = dynDepiction(v, notation);
+    return { ink: d3.ink, draw: (x2, y2, tok, cls) => prims.push({ t: "glyph", x: x2, y: y2, ch: d3.glyph, tok, cls }) };
   };
   const dynItems = [];
   for (const u2 of units) {
@@ -32430,15 +32434,15 @@ function siteFile(name) {
   };
   switch (name) {
     case "singer-worker":
-      return pick(() => "singer-worker-adf8165d4d93.mjs");
+      return pick(() => "singer-worker-5bd60367fc41.mjs");
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-ac786a9d3812.mjs");
+      return pick(() => "layout-worker-2629929c71d4.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-a873a7a161f2.mjs");
+      return pick(() => "encode-worker-3e7ec2187a35.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -62071,4 +62075,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-1f0fff5471f1.mjs.map
+//# sourceMappingURL=moonsinger-87361e6116ee.mjs.map

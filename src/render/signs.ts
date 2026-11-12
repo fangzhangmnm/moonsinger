@@ -1,7 +1,7 @@
 // signs.ts —— 记号表（设计稿第 3.8 节）：一个记号一行——名字、点一下的说明、贴在哪一道、每种谱里画成什么、（下一轮）键面。
 //   created 2026-11-11 by Claude Opus 5.5（MoonSinger小弟，谱面分家第四刀 4-3）。这一刀收：演奏法（Art）、力度（Dyn）、渐强 / 渐弱、渐到。
 //   「每种谱里画成什么」的类型是 Record<NotationId, …>：加一个记号或加一种谱而漏填 = 编译不过（守卫 4 的编译期那一半）。
-//   画成什么：glyph = Bravura 字形（五线谱现有的码位原样搬来，数值逐位一样）；word = 写字（简谱的中文力度字：中文界面写中文、别的界面用 glyph）；
+//   画成什么：glyph = Bravura 字形（五线谱现有的码位原样搬来，数值逐位一样）；
 //   drawn = 画法里用线 / 路径画的（发夹、音内起伏、琶音线、横线…），这一栏写一句它画成什么。
 //   名字 / 说明走翻译表（_tIn：排版明着吃界面语言，不读这一页的当前语言）；说明的界面（点一下就说明）= 第五刀再露，这一刀先把字填上。键面那一栏不做（下一轮）。
 import { _tIn, type Lang } from "../i18n/index.ts";
@@ -11,7 +11,6 @@ import type { LaneKind } from "./frame/lanes.ts";
 
 export type Depiction =
   | { kind: "glyph"; above: string; below?: string; /** 墨迹（sp）：宽 / 高；力度字另带左、右、基线以上、基线以下。 */ w?: number; h?: number; ink?: readonly [number, number, number, number] }
-  | { kind: "word"; zh: string; /** 不是中文界面时画成什么（简谱力度：标准字母 = 五线谱同一个字形）。 */ other: Depiction }
   | { kind: "drawn"; how: string };
 export type SignId = `art:${Art}` | `dyn:${Dyn}` | "hairpin:cresc" | "hairpin:dim" | "ramp";
 export interface Sign {
@@ -31,8 +30,9 @@ const DYN_G: Record<Dyn, Depiction> = {
   mp: { kind: "glyph", above: "\u{E52C}", ink: [-0.1, 3.3, 1.1, 0.6] }, mf: { kind: "glyph", above: "\u{E52D}", ink: [-0.1, 3.3, 1.7, 0.7] }, f: { kind: "glyph", above: "\u{E522}", ink: [-0.6, 1.5, 1.8, 0.6] },
   ff: { kind: "glyph", above: "\u{E52F}", ink: [-0.6, 2.5, 1.8, 0.6] }, fff: { kind: "glyph", above: "\u{E530}", ink: [-0.6, 3.4, 1.8, 0.6] },
 };
-/** 简谱的中文力度字（UX 稿第 6 节：极弱 / 很弱 / 弱 / 中弱 / 中强 / 强 / 很强 / 极强；不用「最」）。印在谱上的字，按界面语言选、不走翻译表。 */
-const DYN_ZH: Record<Dyn, string> = { ppp: "极弱", pp: "很弱", p: "弱", mp: "中弱", mf: "中强", f: "强", ff: "很强", fff: "极强" };   // i18n-keep
+/** 力度的中文叫法（极弱 / 很弱 / 弱 / 中弱 / 中强 / 强 / 很强 / 极强；不用「最」）：只在说明栏里（点一下就说明）。谱上两种谱都画字母——user 11-11 夜（纪要第 88 节）
+ *  「嗯，那么改成 P F 吧，因为我觉得中文的字确实有点太抢眼了。」（推翻 UX 稿第 2、6 节「中文界面写中文字」）。 */
+const DYN_NAME = (d: Dyn, l: Lang): string => ({ ppp: _tIn(l, "极弱"), pp: _tIn(l, "很弱"), p: _tIn(l, "弱##力度"), mp: _tIn(l, "中弱"), mf: _tIn(l, "中强"), f: _tIn(l, "强##力度"), ff: _tIn(l, "很强"), fff: _tIn(l, "极强") })[d];
 
 const art = (a: Art, name: (l: Lang) => string, says: (l: Lang) => string, lane: Sign["lane"], staff: Depiction, jianpu: Depiction): Sign => ({ id: `art:${a}`, name, says, lane, draw: { staff, jianpu } });
 /** 演奏法：每个 Art 一行（类型 = 每个都要有；漏一个编译不过）。 */
@@ -54,7 +54,7 @@ const ART_SIGNS: Readonly<Record<`art:${Art}`, Sign>> = {
   "art:arpeggio": art("arpeggio", (l) => _tIn(l, "琶音"), (l) => _tIn(l, "和弦从低到高一个个拨出来"), "note", D("和弦左边一条竖的波浪线"), D("和弦左边一条竖的波浪线（多声部 = 第五刀）")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
   "art:roll": art("roll", (l) => _tIn(l, "滚奏"), (l) => _tIn(l, "这个音快速地反复敲（滚）"), "note", D("符干上三道斜线"), D("数字下面三道短斜线")),   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
-const dynSign = (d: Dyn): Sign => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "力度记号：从这个音起是这个强弱，管到下一个力度记号"), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: { kind: "word", zh: DYN_ZH[d], other: DYN_G[d] } } });
+const dynSign = (d: Dyn): Sign => ({ id: `dyn:${d}`, name: () => d, says: (l) => _tIn(l, "{dynName}（{dyn}）：从这个音起是这个强弱，管到下一个力度记号", { dynName: DYN_NAME(d, l), dyn: d }), lane: "dynamics", draw: { staff: DYN_G[d], jianpu: DYN_G[d] } });   // 两种谱同一套字母字形（纪要第 88 节）
 /** 力度：每一档一行（明着写八行，类型 = 每档都要有）。 */
 const DYN_SIGNS: Readonly<Record<`dyn:${Dyn}`, Sign>> = { "dyn:ppp": dynSign("ppp"), "dyn:pp": dynSign("pp"), "dyn:p": dynSign("p"), "dyn:mp": dynSign("mp"), "dyn:mf": dynSign("mf"), "dyn:f": dynSign("f"), "dyn:ff": dynSign("ff"), "dyn:fff": dynSign("fff") };
 /** 记号表（演奏法 + 力度 + 渐强 / 渐弱 + 渐到）。不做类型断言：少一行 = 编译不过。 */
@@ -65,10 +65,9 @@ export const SIGNS: Readonly<Record<SignId, Sign>> = {
   ramp: { id: "ramp", name: (l) => _tIn(l, "渐到"), says: (l) => _tIn(l, "从上一个力度记号均匀变到这一个"), lane: "dynamics", draw: { staff: D("虚线发夹"), jianpu: D("虚线楔形") } },   // i18n-keep（「画成什么」这一栏是写给开发看的说明，不是界面字）
 };
 
-/** 力度字在这种谱、这种界面语言下画成什么（word 按语言落到中文字或 other）。 */
-export function dynDepiction(d: Dyn, notation: NotationId, l: Lang): { glyph: string; ink: readonly [number, number, number, number] } | { text: string } {
-  const dep = SIGNS[`dyn:${d}`].draw[notation], g = dep.kind === "word" ? (l === "zh" ? null : dep.other) : dep;
-  if (dep.kind === "word" && l === "zh") return { text: dep.zh };
-  if (g && g.kind === "glyph" && g.ink) return { glyph: g.above, ink: g.ink };
+/** 力度字在这种谱里画成什么（字形 + 墨迹）。两种谱现在都是字母字形，不分界面语言（纪要第 88 节）。 */
+export function dynDepiction(d: Dyn, notation: NotationId): { glyph: string; ink: readonly [number, number, number, number] } {
+  const g = SIGNS[`dyn:${d}`].draw[notation];
+  if (g.kind === "glyph" && g.ink) return { glyph: g.above, ink: g.ink };
   throw new Error(`signs: dyn ${d} has no drawable depiction for ${notation}`);
 }
