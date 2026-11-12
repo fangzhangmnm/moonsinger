@@ -21,6 +21,7 @@ export declare const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<D
  *  舒适一个线间距 1.75 mm → scale 0.823，紧凑 1.25 mm → 0.96；行距的最小值跟着乘（别只缩字）。
  *  五线谱：舒适 = 谱 7 mm、行距用原来紧凑那一档（user 2026-10-08「舒适的行距太宽了，反而不舒适。和紧凑的对齐」；0.2.x 的 17 sp 退役）；
  *  紧凑 = 谱 5 mm、再卷一点（「紧凑也许可以再卷一点」）：谱上面 / 歌词下面都收、没歌词的那条谱更矮。 */
+/** barNoPad = 每行开头的小节号量天际线时往右多看多宽（线间距）：数字行行首紧挨着就是第一个数字 / 横线，要让到它上面（统筹看样张 ⑪）；五线谱那里是谱号，小节号照老规矩压在谱号上方，不看右边。 */
 export interface RowParams {
     above: number;
     rowH: number;
@@ -29,5 +30,6 @@ export interface RowParams {
     lyricBelow: number;
     clear: number;
     scale: number;
+    barNoPad: number;
 }
 export declare const ROW_PARAMS: Readonly<Record<RowKind, Readonly<Record<Density, RowParams>>>>;

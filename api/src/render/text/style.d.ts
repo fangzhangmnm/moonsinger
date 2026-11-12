@@ -65,6 +65,7 @@ export declare const TEXT_STYLES: {
     "jp-head": TextStyle;
     "jp-chord": TextStyle;
     "jp-dyn": TextStyle;
+    "jp-legend": TextStyle;
 };
 export type TextRole = keyof typeof TEXT_STYLES;
 /** 一个字图元的样式：样式类里最后一个在表里的词（越往后越具体：「tempo tempo-word」→ tempo-word、「nav-mark nav-word」→ nav-word）；都不在 = 正文默认。 */

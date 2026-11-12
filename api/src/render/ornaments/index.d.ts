@@ -17,9 +17,18 @@ export declare const PIN_WORD: {
     readonly len: 0.6;
     readonly gap: 1;
 };
+/** 渐到的虚线（统筹看样张 ⑩：原来固定 0.5 / 0.4 的小段，A5 上短的发夹碎成一串点）：段数跟着这一段发夹的长度定——每段大约 len（sp）、空隙 = 段长 × gapK，
+ *  至少两段；短的发夹 = 更少、更长的段，两头都落在发夹的两端。空隙是段长的一半 = 一眼看得出是虚线（渐到），不是实线（手写的渐强渐弱）。 */
 export declare const RAMP_DASH: {
-    readonly len: 0.5;
-    readonly gap: 0.4;
+    readonly len: 1.2;
+    readonly gapK: 0.5;
+    readonly min: 2;
+};
+/** 一段长 L 的渐到发夹切成几段、每段多长、隔多远（同一个单位进出）。 */
+export declare const rampDashes: (L: number, unit: number) => {
+    n: number;
+    on: number;
+    per: number;
 };
 /** 画法交给挂件的（一条轨在这张纸上）。 */
 export interface OrnCtx {

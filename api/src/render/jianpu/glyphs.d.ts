@@ -31,9 +31,16 @@ export declare const CHORD_GAP = 0.25, DIGIT_H: number, ARP_W = 0.9;
 export declare function stackBases(dots: readonly number[]): number[];
 /** 鼓的 X 行：大写 X 比数字宽，字号按这个比例收到和数字一样宽（不然十六分的一串 X 挨在一起）；幽灵音的小 x 照数字的小号。 */
 export declare const X_EM = 0.8;
+/** 整套鼓的 X 行（统筹看第五刀样张后定的，先顶上的写法）：每一下按五线鼓谱同一张表（src/gm/percussion.gen.ts 的符头种类）换字——
+ *  普通符头（底鼓、军鼓、通鼓）= ●、× 符头（镲、踩镲）= ×、圈 × = ⊗、菱形 = ◇、三角 = △ / ▽、方块（la）= □、加号 = +、斜杠 = /、带斜杠的 = ⊘；表里没有的 = ●。
+ *  只有一件鼓的行照旧一律 X（行首的名字已经说了是哪件）。这几个字在 PDF 那款字（思源黑体）里都是满一个字宽，字号按 KIT_EM 收到和数字差不多宽。 */
+export declare const KIT_CHAR: Readonly<Record<string, string>>;
+export declare const KIT_EM = 0.62;
 /** 叠着的和弦折成的和弦名（第五刀 5-4，UX 稿第 7 节「和弦名用窄字、按实际宽度占位」）：字号（sp，数字原大起）、横向压到几成；每个字占多宽（em，写死的表，不现场量；
- *  表里没有的数字 0.56、别的 0.6）。名字的高（基线往上）。 */
+ *  表里没有的数字 0.56、别的 0.6）。名字的高（基线往上）。
+ *  ♭ ♯ 照 PDF 那款字（vendor/fonts/sans.ttf = 思源黑体 / Noto Sans SC）的前进宽量过一次进表 = 满一个字宽（统筹看样张 ⑨：原来估 0.5 / 0.58，「B♭」带附点时点挤；test/jianpu.test.ts 拿真字体核着）。 */
 export declare const CHORD_EM = 2, CHORD_SX = 0.82, CHORD_H = 1.45;
+export declare const CHORD_CH_EM: Readonly<Record<string, number>>;
 /** 这个和弦名在数字行上占多宽（sp，数字原大起；乘行里的比例才是这一行的）。 */
 export declare const chordNameW: (s: string) => number;
 /** 有歧义的小三角（名字右下角，编辑器里）占多宽（sp，数字原大起；量的时候也让出来，不然挨着下一个名字）。 */

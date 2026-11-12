@@ -68,6 +68,8 @@ export interface PartView {
         lo: number;
         hi: number;
     };
+    /** 整套鼓：这位用到的鼓件（MIDI 鼓键）→ 名字（宿主按界面语言从鼓谱表 src/gm/percussion.gen.ts 取好，排版只管印）。简谱整套鼓的图例用（5-6，统筹裁定）。 */
+    kitNames?: Readonly<Record<number, string>>;
 }
 /** 台上那位是鼓 / 音效（v0.10.27；src/gm/percussion.ts percKindOf）：kit = 整套鼓（写的音高 = 敲哪个鼓，五线鼓谱）；one = 固定敲一件（一线谱）。 */
 export type PartPerc = {
