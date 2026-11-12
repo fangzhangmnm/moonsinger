@@ -8,6 +8,7 @@ import { writeMusicXml, readMusicXml } from "../src/format/musicxml.ts";
 import { apply } from "../src/score/commands.ts";
 import { engrave } from "../src/render/engrave.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
+import { rampDashes, PIN_MIN } from "../src/render/ornaments/index.ts";
 
 let nid = 4000;
 const dyn = (v: "p" | "mp" | "mf" | "f", ramp = false) => ({ kind: "dyn", id: nid++, value: v, ...(ramp ? { ramp: true } : {}) }) as Token;
@@ -63,6 +64,17 @@ describe("渐到：编辑 / 画", () => {
     const lay = (toks: Token[]) => { const st = initState(), song = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { [st.at.part]: toks } })) }; return engrave(song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], locale: "zh", measure: createTextMeasure((s: string) => s.length * 10) } as never).prims; };
     eq(lay(line([dyn("p"), "n", "n", dyn("f", true), "n"])).filter((p) => p.t === "path" && (p as { cls?: string }).cls === "hairpin ramp").length, 1);
     eq(lay(line([dyn("f"), "n", "n", dyn("f", true), "n"])).filter((p) => p.t === "path" && /ramp/.test((p as { cls?: string }).cls ?? "")).length, 0);
+  });
+  it("渐到的虚线段数跟着长度（统筹看样张 ⑩）：最短的也至少两段、每段不短于半个线间距；空隙 = 段长的一半；长的段多、每段约 1.2 个线间距；首尾落在发夹两端", () => {
+    const sp = 10;
+    for (const L of [PIN_MIN * sp, 3 * sp, 8 * sp, 30 * sp]) {
+      const { n, on, per } = rampDashes(L, sp);
+      assert(n >= 2, `长 ${L / sp}：至少两段`); assert(on >= 0.5 * sp, `长 ${L / sp}：每段 ${on / sp} ≥ 0.5`);
+      eq(Math.abs((n - 1) * per + on - L) < 1e-9, true, `长 ${L / sp}：最后一段落在末端`);
+      eq(Math.abs((per - on) - on / 2) < 1e-9, true, "空隙 = 段长的一半");
+      if (L >= 8 * sp) assert(on >= 1.0 * sp && on <= 1.5 * sp, `长 ${L / sp}：每段约 1.2（${on / sp}）`);
+    }
+    assert(rampDashes(30 * sp, sp).n > rampDashes(8 * sp, sp).n, "长的段数多");
   });
   it("渐到的虚线：上下两条边的每一小段都在同一个 x 上（v0.10.26，user「蝌蚪的尾巴在打架」）", () => {
     const lay = (toks: Token[]) => { const st = initState(), song = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, tracks: { [st.at.part]: toks } })) }; return engrave(song, { width: 600, sp: 10, at: st.at, parts: [{ id: st.at.part, name: "V", empty: false, first: true, clef: "G", hidden: false, badges: [], mono: true }], locale: "zh", measure: createTextMeasure((s: string) => s.length * 10) } as never).prims; };

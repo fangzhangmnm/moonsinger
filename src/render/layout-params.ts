@@ -36,14 +36,15 @@ export const PAPER_PARAMS: Readonly<Record<NotationId, Readonly<Record<Density, 
  *  舒适一个线间距 1.75 mm → scale 0.823，紧凑 1.25 mm → 0.96；行距的最小值跟着乘（别只缩字）。
  *  五线谱：舒适 = 谱 7 mm、行距用原来紧凑那一档（user 2026-10-08「舒适的行距太宽了，反而不舒适。和紧凑的对齐」；0.2.x 的 17 sp 退役）；
  *  紧凑 = 谱 5 mm、再卷一点（「紧凑也许可以再卷一点」）：谱上面 / 歌词下面都收、没歌词的那条谱更矮。 */
-export interface RowParams { above: number; rowH: number; rowHNoLyric: number; graveUpper: number; lyricBelow: number; clear: number; scale: number }
+/** barNoPad = 每行开头的小节号量天际线时往右多看多宽（线间距）：数字行行首紧挨着就是第一个数字 / 横线，要让到它上面（统筹看样张 ⑪）；五线谱那里是谱号，小节号照老规矩压在谱号上方，不看右边。 */
+export interface RowParams { above: number; rowH: number; rowHNoLyric: number; graveUpper: number; lyricBelow: number; clear: number; scale: number; barNoPad: number }
 /** 数字行的行一级参数：按数字原来的大小（scale 1）起的数，整体乘 scale（行高、各道的距离跟着字号一起收）。 */
-const jianpuRow = (k: number, v: Omit<RowParams, "scale">): RowParams => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k });
+const jianpuRow = (k: number, v: Omit<RowParams, "scale">): RowParams => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k, barNoPad: v.barNoPad * k });
 //   第五刀起照样张：行身 = 小节线那一段（基线上 1.82 到基线下 1.0 个字号）；行顶到行身上沿 0.82 个字号；歌词基线在行身下沿下面 0.82 个字号（= 数字基线下 1.82）；
 //   一行（有歌词）从行顶到下一行行顶 5.45 个字号、没歌词 4.73 个（含纸一级的行间 sysGap）。紧凑档样张里没有：照舒适的收一成。单位 = 数字行的单位（一个字号 = 2.5）
-const JIANPU_ROW_PARAMS: Readonly<Record<Density, RowParams>> = { cozy: jianpuRow(JP_COZY, { above: 2.05, rowH: 13.2, rowHNoLyric: 11.4, graveUpper: 11.4, lyricBelow: 2.05, clear: 0.8 }), compact: jianpuRow(JP_COMPACT, { above: 1.85, rowH: 11.9, rowHNoLyric: 10.3, graveUpper: 10.3, lyricBelow: 1.85, clear: 0.8 }) };
+const JIANPU_ROW_PARAMS: Readonly<Record<Density, RowParams>> = { cozy: jianpuRow(JP_COZY, { above: 2.05, rowH: 13.2, rowHNoLyric: 11.4, graveUpper: 11.4, lyricBelow: 2.05, clear: 0.8, barNoPad: 1.5 }), compact: jianpuRow(JP_COMPACT, { above: 1.85, rowH: 11.9, rowHNoLyric: 10.3, graveUpper: 10.3, lyricBelow: 1.85, clear: 0.8, barNoPad: 1.5 }) };
 export const ROW_PARAMS: Readonly<Record<RowKind, Readonly<Record<Density, RowParams>>>> = {
-  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1 } },
+  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1, barNoPad: 0 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1, barNoPad: 0 } },
   // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
   jianpu: JIANPU_ROW_PARAMS,
   jianpuX: JIANPU_ROW_PARAMS,   // 鼓的 X 行：和数字行同一个行身、同一套行距（第五刀 5-4）

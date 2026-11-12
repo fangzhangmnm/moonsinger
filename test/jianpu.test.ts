@@ -10,6 +10,11 @@ import { SIGNS } from "../src/render/signs.ts";
 import { harmonyTheory } from "../src/theory/index.ts";
 import { rangeBase, fewestDotsBase } from "../src/score/degree.ts";
 import { fullSong } from "./fixtures/layout/full-song.ts";
+import { CHORD_CH_EM } from "../src/render/jianpu/glyphs.ts";
+import { parseTtf } from "../src/export/ttf.ts";
+// node 的内置模块照 pdf-wysiwyg.test.ts 的取法（类型检查不带 node 的类型）
+const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
+const fs = nodeMod("node:fs"), zlib = nodeMod("node:zlib");
 import { FULL_VIEWS } from "./fixtures/layout/full.ts";
 
 const P = (step: "C" | "D" | "E" | "F" | "G" | "A" | "B", octave = 4, alter = 0) => ({ step, alter, octave });
@@ -26,6 +31,26 @@ const digits = (ps: Prim[]) => ps.filter((p): p is Extract<Prim, { t: "text" }> 
 const n = (p: ReturnType<typeof P>, dur = TPQ, extra: object = {}) => ({ kind: "note", pitch: p, dur, lyric: null, ...extra }) as Omit<Token, "id">;
 
 describe("简谱数字行", () => {
+  it("每行开头的小节号让开行首的墨（统筹看样张 ⑪）：紧挨在右边的第一个数字、换气比它高 = 小节号的底在它们的顶上面", () => {
+    const body = Array.from({ length: 160 }, (_, i) => n(P("C", 5), TPQ, i % 4 === 0 ? { art: ["breath"] } : {}));   // 每小节第一个音后面一个换气 V（比数字高，紧挨在小节号右边：笛子版第 26 小节那一处）
+    const { L } = lay(body, undefined, { range: { lo: 60, hi: 84 } });
+    const nums = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && p.cls === "bar-no");
+    assert(nums.length >= 2, "排出了好几行、有小节号");
+    const inRow = (y: number, by: number, top: number) => y > by - 30 && y < top + 60;   // 这一行里、小节号下面那一截（不拿上一行的墨）
+    /** 一个图元的墨：x 们、顶（字 = 基线往上 0.72 个字号；路径 = 所有点里最高的）。 */
+    const inkOf = (p: Prim): { xs: number[]; top: number } | null => {
+      const d = (p as { d?: string }).d;
+      if (d) { const pts = [...d.matchAll(/[ML]([\d.-]+),([\d.-]+)/g)].map((m) => [+m[1]!, +m[2]!] as const); return pts.length ? { xs: pts.map((q) => q[0]), top: Math.min(...pts.map((q) => q[1])) } : null; }
+      if ("x" in p && "y" in p) { const sz = (p as { size?: number }).size ?? 0; return { xs: [p.x as number], top: (p.y as number) - sz * 0.72 }; }
+      return null;
+    };
+    for (const b of nums) {
+      const sys = L.systems.findIndex((r) => r.staffTop > b.y && r.staffTop - b.y < 200), top = L.systems[sys]!.staffTop, x1 = b.x + b.s.length * 8 + 6;   // 量字 = 一个字 8 px；往右多看一点
+      const ys = L.prims.filter((p) => /jp-dot|jp-digit|jp-chev|jp-acc/.test(p.cls ?? "")).map(inkOf).filter((k): k is { xs: number[]; top: number } => !!k && inRow(k.top, b.y, top) && k.xs.some((v) => v >= b.x - 1 && v <= x1)).map((k) => k.top);
+      assert(ys.length > 0, `「${b.s}」右边紧挨着有墨（这条测试量得到东西）`);
+      assert(b.y <= Math.min(...ys) + 0.5, `「${b.s}」的底（${b.y.toFixed(1)}）在行首的墨上面（${Math.min(...ys).toFixed(1)}）`);
+    }
+  });
   it("谱种是简谱：有音高、没有叠音的声部排成数字行（行框 kind = jianpu；每一行都写种类）；C 大调音阶 = 1–7、高八度的 1 带一个点", () => {
     const { L } = lay(["C", "D", "E", "F", "G", "A", "B"].map((s) => n(P(s as "C"))).concat([n(P("C", 5))]));
     assert(L.systems.length > 0 && L.systems.every((r) => r.kind === "jianpu"), "都是数字行");
@@ -125,6 +150,9 @@ describe("简谱数字行", () => {
     assert(xs(on.L)[2]! - xs(on.L)[1]! > xs(off.L)[2]! - xs(off.L)[1]! + 1e-6, `和弦名按名字的宽占位（C6 比一个数字宽 = 后面的音往右）：${xs(on.L)[2]! - xs(on.L)[1]!} vs ${xs(off.L)[2]! - xs(off.L)[1]!}`);
     const arp = lay([n(P("G"), TPQ, { chord: [P("E"), P("C")], art: ["arpeggio"] })], foldOn).L;
     assert(arp.prims.some((p) => p.t === "text" && /jp-chord/.test(p.cls ?? "")) && arp.prims.some((p) => p.t === "path" && /arpeggio/.test(p.cls ?? "")), "折成名字的和弦上的琶音照画（不静默丢掉）");
+    // 名字的宽表里 ♭ ♯ = PDF 那款字（思源黑体）的前进宽（统筹看样张 ⑨：照实际的字形量一次进表，不现场量）
+    const font = parseTtf(new Uint8Array(zlib.gunzipSync(fs.readFileSync(new URL("../vendor/fonts/sans.ttf.gz", import.meta.url)))));
+    for (const ch of ["♭", "♯"]) eq(CHORD_CH_EM[ch], font.advance(font.glyphId(ch.codePointAt(0)!)) / font.unitsPerEm, `和弦名宽表里的 ${ch} = 字体里的前进宽`);
   });
   it("八度基准按乐器音域（第五刀 5-4，UX 稿第 3 节）：宿主给了音域 = 按音域；没给 = 写的音「点最少」；按音域要三个点以上 = 极端，退回点最少；基准画在「1=」那个字母上下", () => {
     eq(rangeBase(57, 76, 0), 0, "人声 A3–E5 在 C 调 = 0");

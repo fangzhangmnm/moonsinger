@@ -19,7 +19,14 @@ export const PIN_GAP = 0.7;
 /** 一个楔形（发夹 / 渐到）最短多长（sp）：整条短于它就拉到它；折到下一行的那一段短于它就不画。 */
 export const PIN_MIN = 1.4;
 export const PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } } as const, DASH = { len: 0.6, gap: 1.0 } as const;
-export const RAMP_DASH = { len: 0.5, gap: 0.4 } as const;
+/** 渐到的虚线（统筹看样张 ⑩：原来固定 0.5 / 0.4 的小段，A5 上短的发夹碎成一串点）：段数跟着这一段发夹的长度定——每段大约 len（sp）、空隙 = 段长 × gapK，
+ *  至少两段；短的发夹 = 更少、更长的段，两头都落在发夹的两端。空隙是段长的一半 = 一眼看得出是虚线（渐到），不是实线（手写的渐强渐弱）。 */
+export const RAMP_DASH = { len: 1.2, gapK: 0.5, min: 2 } as const;
+/** 一段长 L 的渐到发夹切成几段、每段多长、隔多远（同一个单位进出）。 */
+export const rampDashes = (L: number, unit: number): { n: number; on: number; per: number } => {
+  const n = Math.max(RAMP_DASH.min, Math.round(L / (unit * RAMP_DASH.len * (1 + RAMP_DASH.gapK)))), on = L / (n + (n - 1) * RAMP_DASH.gapK);
+  return { n, on, per: on * (1 + RAMP_DASH.gapK) };
+};
 
 /** 画法交给挂件的（一条轨在这张纸上）。 */
 export interface OrnCtx {
@@ -188,9 +195,9 @@ export function layDynamics(c: OrnCtx): void {
         // 渐到 = 虚线：两条边的每一小段在同一个 x 上（以前靠 CSS stroke-dasharray——iPad Safari 上第二条边的虚线接着第一条的相位走，尖头那边两条快重合时一段段错开打架，v0.10.26）
         let d = `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`;
         if (ramp) {
-          const hAt = (x: number) => h0 + (h1 - h0) * ((x - a) / (b - a)), on = P(RAMP_DASH.len), per = P(RAMP_DASH.len + RAMP_DASH.gap);
+          const hAt = (x: number) => h0 + (h1 - h0) * ((x - a) / (b - a)), { n, on, per } = rampDashes(b - a, P(1));
           d = "";
-          for (let x = a; x < b - P(0.05); x += per) { const x2 = Math.min(b, x + on); d += `M${x},${y - hAt(x)}L${x2},${y - hAt(x2)}M${x},${y + hAt(x)}L${x2},${y + hAt(x2)}`; }
+          for (let k = 0; k < n; k++) { const x = a + k * per, x2 = k === n - 1 ? b : x + on; d += `M${x},${y - hAt(x)}L${x2},${y - hAt(x2)}M${x},${y + hAt(x)}L${x2},${y + hAt(x2)}`; }
         }
         prims.push({ tok: tokens[index]!.id, t: "path", d, cls: ["hairpin", ramp ? "ramp" : ""].filter(Boolean).join(" ") });
         dyns.push({ index, kind: "hairpin", system: row, x: a, y: y - P(1.4), w: b - a, h: P(2.8) });

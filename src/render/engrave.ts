@@ -479,10 +479,11 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
     const collect = (m: ReturnType<typeof mark>, row: number) => { pieces.length = 0; inkSince(m, row, (x0, x1, y0, y1) => { pieces.push(x0, x1, y0, y1); }); };
     const commit = (sk: Skyline, dy: number, count: boolean) => { for (let i = 0; i < pieces.length; i += 4) sk.ink(pieces[i]!, pieces[i + 1]!, pieces[i + 2]! + dy, pieces[i + 3]! + dy, count); };
     const tagSince = (m: ReturnType<typeof mark>, row: number) => { for (let i = m.p; i < prims.length; i++) if (primRow[i] === undefined) primRow[i] = row; };   // 贴挂件回调里画的 = 贴的那一行
-    const placeAbove = (row: number, gap: number, draw: (y: number) => void): number => {
+    //   padR（线间距，框架自己用）= 量天际线时每一块往右多看这么宽：小节号用它让开紧挨在右边的行首的墨（统筹看样张 ⑪）
+    const placeAbove = (row: number, gap: number, draw: (y: number) => void, padR = 0): number => {
       const m = mark(); draw(staffTop(row)); tagSince(m, row); collect(m, row);
       let need = Infinity; const sk = sky(row);
-      for (let i = 0; i < pieces.length; i += 4) { const t = sk.top(pieces[i]!, pieces[i + 1]!); if (t < Infinity) need = Math.min(need, t - gap - pieces[i + 3]!); }
+      for (let i = 0; i < pieces.length; i += 4) { const t = sk.top(pieces[i]!, pieces[i + 1]! + padR); if (t < Infinity) need = Math.min(need, t - gap - pieces[i + 3]!); }
       const dy = need === Infinity ? body(row).top - rowPar(row).clear : need; shiftSince(m, P(dy));   // 什么墨都没有（只有注解）= 贴在行身上沿上方 clear（参数表行一级；五线谱 2.4 照旧）
       commit(sk, dy, true);
       return dy;
@@ -607,7 +608,8 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const ind = s === 0 ? ind0 : indN, q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s)) ?? per[0];
       const c0 = q0.units.find((u): u is Chunk => u.kind === "chunk" && u.system === s);
       const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null, row0 = rowOf(s, 0, 0);
-      if (num !== null && !(s === 0 && num <= 1)) attach(row0, "barNumber", () => placeAbove(row0, 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" })));
+      //   往上让开行首的墨（统筹看样张 ⑪）：量天际线时往右多看这一行的 barNoPad（排版参数表行一级）——数字行紧挨在右边的第一个字形比它高就让到它上面；五线谱 = 0（压在谱号上方，照旧）
+      if (num !== null && !(s === 0 && num <= 1)) attach(row0, "barNumber", () => placeAbove(row0, 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" }), rowPar(row0).barNoPad));
     }
     // 按行的种类分给各自的画法（谱种的表）：五线谱先画、数字行后画。每种画法只能往分给它的那几条轨的行上画（统筹审第四刀接口第 5 条：put / hitRow / attach / 贴天际线越界 = 报错）
     const kIdx = (k: RowKind) => per.map((_q, i) => i).filter((i) => kinds[i] === k);

@@ -11105,10 +11105,10 @@ var PAPER_PARAMS = {
   jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } }
   // 名字：正文字号 1.36 线间距 × 字的尺子（紧凑 1.4）
 };
-var jianpuRow = (k2, v) => ({ above: v.above * k2, rowH: v.rowH * k2, rowHNoLyric: v.rowHNoLyric * k2, graveUpper: v.graveUpper * k2, lyricBelow: v.lyricBelow * k2, clear: v.clear * k2, scale: k2 });
-var JIANPU_ROW_PARAMS = { cozy: jianpuRow(JP_COZY, { above: 2.05, rowH: 13.2, rowHNoLyric: 11.4, graveUpper: 11.4, lyricBelow: 2.05, clear: 0.8 }), compact: jianpuRow(JP_COMPACT, { above: 1.85, rowH: 11.9, rowHNoLyric: 10.3, graveUpper: 10.3, lyricBelow: 1.85, clear: 0.8 }) };
+var jianpuRow = (k2, v) => ({ above: v.above * k2, rowH: v.rowH * k2, rowHNoLyric: v.rowHNoLyric * k2, graveUpper: v.graveUpper * k2, lyricBelow: v.lyricBelow * k2, clear: v.clear * k2, scale: k2, barNoPad: v.barNoPad * k2 });
+var JIANPU_ROW_PARAMS = { cozy: jianpuRow(JP_COZY, { above: 2.05, rowH: 13.2, rowHNoLyric: 11.4, graveUpper: 11.4, lyricBelow: 2.05, clear: 0.8, barNoPad: 1.5 }), compact: jianpuRow(JP_COMPACT, { above: 1.85, rowH: 11.9, rowHNoLyric: 10.3, graveUpper: 10.3, lyricBelow: 1.85, clear: 0.8, barNoPad: 1.5 }) };
 var ROW_PARAMS = {
-  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1 } },
+  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1, barNoPad: 0 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1, barNoPad: 0 } },
   // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
   jianpu: JIANPU_ROW_PARAMS,
   jianpuX: JIANPU_ROW_PARAMS
@@ -12285,7 +12285,11 @@ var PIN_GAP = 0.7;
 var PIN_MIN = 1.4;
 var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
 var DASH = { len: 0.6, gap: 1 };
-var RAMP_DASH = { len: 0.5, gap: 0.4 };
+var RAMP_DASH = { len: 1.2, gapK: 0.5, min: 2 };
+var rampDashes = (L2, unit) => {
+  const n10 = Math.max(RAMP_DASH.min, Math.round(L2 / (unit * RAMP_DASH.len * (1 + RAMP_DASH.gapK)))), on2 = L2 / (n10 + (n10 - 1) * RAMP_DASH.gapK);
+  return { n: n10, on: on2, per: on2 * (1 + RAMP_DASH.gapK) };
+};
 function tempoAt2(c10, r10, x0, v, cls, index, change, y2) {
   const { P: P2, tx: tx2, TR, RS, mw, prims, marks } = c10;
   const fs = tx2("tempo-word"), word = tempoWord(v).it, k2 = RS("tempo-word"), T3 = c10.tokens[index] ? { tok: c10.tokens[index].id } : {};
@@ -12442,10 +12446,10 @@ function layDynamics(c10) {
         const y2 = base2 - P2(0.5), a10 = a02;
         let d3 = `M${a10},${y2 - h0}L${b3},${y2 - h1}M${a10},${y2 + h0}L${b3},${y2 + h1}`;
         if (ramp) {
-          const hAt = (x2) => h0 + (h1 - h0) * ((x2 - a10) / (b3 - a10)), on2 = P2(RAMP_DASH.len), per = P2(RAMP_DASH.len + RAMP_DASH.gap);
+          const hAt = (x2) => h0 + (h1 - h0) * ((x2 - a10) / (b3 - a10)), { n: n10, on: on2, per } = rampDashes(b3 - a10, P2(1));
           d3 = "";
-          for (let x2 = a10; x2 < b3 - P2(0.05); x2 += per) {
-            const x22 = Math.min(b3, x2 + on2);
+          for (let k2 = 0; k2 < n10; k2++) {
+            const x2 = a10 + k2 * per, x22 = k2 === n10 - 1 ? b3 : x2 + on2;
             d3 += `M${x2},${y2 - hAt(x2)}L${x22},${y2 - hAt(x22)}M${x2},${y2 + hAt(x2)}L${x22},${y2 + hAt(x22)}`;
           }
         }
@@ -13256,7 +13260,7 @@ var X_EM = 0.8;
 var CHORD_EM = 2;
 var CHORD_SX = 0.82;
 var CHORD_H = 1.45;
-var CHORD_CH_EM = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "\u266D": 0.5, "\u266F": 0.58, "\xB0": 0.4, \u00F8: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
+var CHORD_CH_EM = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "\u266D": 1, "\u266F": 1, "\xB0": 0.4, \u00F8: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
 var chordNameW = (s10) => [...s10].reduce((w2, ch2) => w2 + (CHORD_CH_EM[ch2] ?? (/[0-9]/.test(ch2) ? 0.56 : 0.6)), 0) * CHORD_EM * CHORD_SX;
 var CHORD_AMB_W = 0.55;
 var chordBassCx = (s10) => {
@@ -14237,7 +14241,7 @@ function engrave(song, o10) {
     const tagSince = (m2, row2) => {
       for (let i10 = m2.p; i10 < prims.length; i10++) if (primRow[i10] === void 0) primRow[i10] = row2;
     };
-    const placeAbove = (row2, gap, draw) => {
+    const placeAbove = (row2, gap, draw, padR = 0) => {
       const m2 = mark();
       draw(staffTop(row2));
       tagSince(m2, row2);
@@ -14245,7 +14249,7 @@ function engrave(song, o10) {
       let need = Infinity;
       const sk2 = sky(row2);
       for (let i10 = 0; i10 < pieces.length; i10 += 4) {
-        const t10 = sk2.top(pieces[i10], pieces[i10 + 1]);
+        const t10 = sk2.top(pieces[i10], pieces[i10 + 1] + padR);
         if (t10 < Infinity) need = Math.min(need, t10 - gap - pieces[i10 + 3]);
       }
       const dy = need === Infinity ? body2(row2).top - rowPar(row2).clear : need;
@@ -14391,7 +14395,7 @@ function engrave(song, o10) {
       const ind = s10 === 0 ? ind0 : indN, q0 = per.find((q2) => q2.units.some((u2) => u2.kind === "chunk" && u2.system === s10)) ?? per[0];
       const c02 = q0.units.find((u2) => u2.kind === "chunk" && u2.system === s10);
       const num2 = c02 ? (c02.m ?? 0) + (q0.pickup ? 0 : 1) : null, row0 = rowOf(s10, 0, 0);
-      if (num2 !== null && !(s10 === 0 && num2 <= 1)) attach2(row0, "barNumber", () => placeAbove(row0, 0.3, (y2) => prims.push({ t: "text", x: P2(MARGIN + ind), y: y2, s: String(num2), cls: "bar-no", size: tx2("bar-no"), anchor: "start" })));
+      if (num2 !== null && !(s10 === 0 && num2 <= 1)) attach2(row0, "barNumber", () => placeAbove(row0, 0.3, (y2) => prims.push({ t: "text", x: P2(MARGIN + ind), y: y2, s: String(num2), cls: "bar-no", size: tx2("bar-no"), anchor: "start" }), rowPar(row0).barNoPad));
     }
     const kIdx = (k2) => per.map((_q, i10) => i10).filter((i10) => kinds[i10] === k2);
     const ctxFor = (idx, who) => {
@@ -32844,7 +32848,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-776e1fffdeb2.mjs");
+      return pick(() => "layout-worker-32ce74e97d1c.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-0351db4bb88f.mjs");
   }
@@ -62485,4 +62489,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-8536c0770cfb.mjs.map
+//# sourceMappingURL=moonsinger-cdf1d801736e.mjs.map

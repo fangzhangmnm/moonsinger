@@ -4922,10 +4922,10 @@ var PAPER_PARAMS = {
   jianpu: { cozy: { sysGap: 0.4, curve: jianpuSprings(JP_COZY), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COZY / (1.6 * 1), nameScale: 0.545 * 2.5 * JP_COZY / (1.36 * 1) }, compact: { sysGap: 0, curve: jianpuSprings(JP_COMPACT), squeeze: 0.15, maxStretch: 1.3, evenBars: true, lyricScale: 0.727 * 2.5 * JP_COMPACT / (1.6 * 1.15), nameScale: 0.545 * 2.5 * JP_COMPACT / (1.36 * 1.4) } }
   // 名字：正文字号 1.36 线间距 × 字的尺子（紧凑 1.4）
 };
-var jianpuRow = (k, v) => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k });
-var JIANPU_ROW_PARAMS = { cozy: jianpuRow(JP_COZY, { above: 2.05, rowH: 13.2, rowHNoLyric: 11.4, graveUpper: 11.4, lyricBelow: 2.05, clear: 0.8 }), compact: jianpuRow(JP_COMPACT, { above: 1.85, rowH: 11.9, rowHNoLyric: 10.3, graveUpper: 10.3, lyricBelow: 1.85, clear: 0.8 }) };
+var jianpuRow = (k, v) => ({ above: v.above * k, rowH: v.rowH * k, rowHNoLyric: v.rowHNoLyric * k, graveUpper: v.graveUpper * k, lyricBelow: v.lyricBelow * k, clear: v.clear * k, scale: k, barNoPad: v.barNoPad * k });
+var JIANPU_ROW_PARAMS = { cozy: jianpuRow(JP_COZY, { above: 2.05, rowH: 13.2, rowHNoLyric: 11.4, graveUpper: 11.4, lyricBelow: 2.05, clear: 0.8, barNoPad: 1.5 }), compact: jianpuRow(JP_COMPACT, { above: 1.85, rowH: 11.9, rowHNoLyric: 10.3, graveUpper: 10.3, lyricBelow: 1.85, clear: 0.8, barNoPad: 1.5 }) };
 var ROW_PARAMS = {
-  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1 } },
+  staff: { cozy: { above: 4.6, rowH: 13.4, rowHNoLyric: 11, graveUpper: 9.4, lyricBelow: 4.4, clear: 2.4, scale: 1, barNoPad: 0 }, compact: { above: 4, rowH: 12.2, rowHNoLyric: 9.6, graveUpper: 8.6, lyricBelow: 4, clear: 2.4, scale: 1, barNoPad: 0 } },
   // 数字行（行身 = 小节线那一段，jianpu/glyphs.ts JP_BODY）：没有五条线，比五线谱的行矮；数字行不分大谱表（graveUpper 用不上，照没歌词的填）
   jianpu: JIANPU_ROW_PARAMS,
   jianpuX: JIANPU_ROW_PARAMS
@@ -5974,7 +5974,11 @@ var PIN_GAP = 0.7;
 var PIN_MIN = 1.4;
 var PIN_WORD = { w: { cresc: 4.7, dim: 3.5 } };
 var DASH = { len: 0.6, gap: 1 };
-var RAMP_DASH = { len: 0.5, gap: 0.4 };
+var RAMP_DASH = { len: 1.2, gapK: 0.5, min: 2 };
+var rampDashes = (L, unit) => {
+  const n2 = Math.max(RAMP_DASH.min, Math.round(L / (unit * RAMP_DASH.len * (1 + RAMP_DASH.gapK)))), on = L / (n2 + (n2 - 1) * RAMP_DASH.gapK);
+  return { n: n2, on, per: on * (1 + RAMP_DASH.gapK) };
+};
 function tempoAt2(c, r, x0, v, cls, index, change, y) {
   const { P, tx, TR, RS, mw, prims, marks } = c;
   const fs = tx("tempo-word"), word = tempoWord(v).it, k = RS("tempo-word"), T2 = c.tokens[index] ? { tok: c.tokens[index].id } : {};
@@ -6131,10 +6135,10 @@ function layDynamics(c) {
         const y = base - P(0.5), a = a0;
         let d = `M${a},${y - h0}L${b},${y - h1}M${a},${y + h0}L${b},${y + h1}`;
         if (ramp) {
-          const hAt = (x) => h0 + (h1 - h0) * ((x - a) / (b - a)), on = P(RAMP_DASH.len), per = P(RAMP_DASH.len + RAMP_DASH.gap);
+          const hAt = (x) => h0 + (h1 - h0) * ((x - a) / (b - a)), { n: n2, on, per } = rampDashes(b - a, P(1));
           d = "";
-          for (let x = a; x < b - P(0.05); x += per) {
-            const x2 = Math.min(b, x + on);
+          for (let k = 0; k < n2; k++) {
+            const x = a + k * per, x2 = k === n2 - 1 ? b : x + on;
             d += `M${x},${y - hAt(x)}L${x2},${y - hAt(x2)}M${x},${y + hAt(x)}L${x2},${y + hAt(x2)}`;
           }
         }
@@ -6921,7 +6925,7 @@ var X_EM = 0.8;
 var CHORD_EM = 2;
 var CHORD_SX = 0.82;
 var CHORD_H = 1.45;
-var CHORD_CH_EM = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "\u266D": 0.5, "\u266F": 0.58, "\xB0": 0.4, \u00F8: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
+var CHORD_CH_EM = { A: 0.66, B: 0.64, C: 0.66, D: 0.7, E: 0.58, F: 0.55, G: 0.7, m: 0.86, a: 0.55, j: 0.26, d: 0.58, i: 0.25, u: 0.57, g: 0.58, s: 0.48, "/": 0.36, "\u266D": 1, "\u266F": 1, "\xB0": 0.4, \u00F8: 0.6, "(": 0.32, ")": 0.32, "+": 0.6 };
 var chordNameW = (s2) => [...s2].reduce((w, ch) => w + (CHORD_CH_EM[ch] ?? (/[0-9]/.test(ch) ? 0.56 : 0.6)), 0) * CHORD_EM * CHORD_SX;
 var CHORD_AMB_W = 0.55;
 var chordBassCx = (s2) => {
@@ -7870,7 +7874,7 @@ function engrave(song, o) {
     const tagSince = (m, row) => {
       for (let i = m.p; i < prims.length; i++) if (primRow[i] === void 0) primRow[i] = row;
     };
-    const placeAbove = (row, gap, draw) => {
+    const placeAbove = (row, gap, draw, padR = 0) => {
       const m = mark();
       draw(staffTop(row));
       tagSince(m, row);
@@ -7878,7 +7882,7 @@ function engrave(song, o) {
       let need = Infinity;
       const sk = sky(row);
       for (let i = 0; i < pieces.length; i += 4) {
-        const t = sk.top(pieces[i], pieces[i + 1]);
+        const t = sk.top(pieces[i], pieces[i + 1] + padR);
         if (t < Infinity) need = Math.min(need, t - gap - pieces[i + 3]);
       }
       const dy = need === Infinity ? body(row).top - rowPar(row).clear : need;
@@ -8024,7 +8028,7 @@ function engrave(song, o) {
       const ind = s2 === 0 ? ind0 : indN, q0 = per.find((q) => q.units.some((u) => u.kind === "chunk" && u.system === s2)) ?? per[0];
       const c0 = q0.units.find((u) => u.kind === "chunk" && u.system === s2);
       const num = c0 ? (c0.m ?? 0) + (q0.pickup ? 0 : 1) : null, row0 = rowOf(s2, 0, 0);
-      if (num !== null && !(s2 === 0 && num <= 1)) attach(row0, "barNumber", () => placeAbove(row0, 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" })));
+      if (num !== null && !(s2 === 0 && num <= 1)) attach(row0, "barNumber", () => placeAbove(row0, 0.3, (y) => prims.push({ t: "text", x: P(MARGIN + ind), y, s: String(num), cls: "bar-no", size: tx("bar-no"), anchor: "start" }), rowPar(row0).barNoPad));
     }
     const kIdx = (k) => per.map((_q, i) => i).filter((i) => kinds[i] === k);
     const ctxFor = (idx, who) => {
@@ -8269,4 +8273,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-776e1fffdeb2.mjs.map
+//# sourceMappingURL=layout-worker-32ce74e97d1c.mjs.map
