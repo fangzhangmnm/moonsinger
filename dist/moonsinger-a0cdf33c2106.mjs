@@ -14601,6 +14601,15 @@ function coreBottom(u2, q2, mode, aux) {
   return lettersOf(q2, u2, mode, aux) ? BASE_Y + SUB_DY * (u2.art.includes("ghost") ? GHOST_K : 1) : BASE_Y;
 }
 var UL_DROP = UL_Y0 - BASE_Y;
+function rowGlyphSpan(mode, kit, letters) {
+  if (mode === "x" && kit) {
+    const yb = BASE_Y - DIGIT_H * 0.12;
+    return { top: glyphInk(KIT_CHAR.normal, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb };
+  }
+  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y };
+  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y + SUB_DY };
+  return { top: DIGIT_TOP, bottom: BASE_Y };
+}
 function accRun(gs, em2, xr, top, cls, T3, main) {
   const prims = [], w2 = accRunW(gs, em2), h2 = Math.max(...gs.map((g3) => (g3.box[3] - g3.box[2]) * em2 / 4));
   let x2 = xr - w2;
@@ -15075,12 +15084,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       ulTop.set(k2, Math.max(ulTop.get(k2) ?? -Infinity, y2));
     }
     const botOf = /* @__PURE__ */ new Map();
-    const barSpan = o10.__barSpan ?? PAPER_PARAMS[c10.look.notation][c10.look.density].barSpan ?? "body";
-    const band = /* @__PURE__ */ new Map(), pendingBars = [], BAR_PAD = 0.2 * DIGIT_H;
-    const widen = (row2, top, bot) => {
-      const b3 = band.get(row2);
-      band.set(row2, b3 ? { top: Math.min(b3.top, top), bot: Math.max(b3.bot, bot) } : { top, bot });
-    };
+    const span2 = rowGlyphSpan(mode, kit, letters), BAR_PAD = 0.2 * DIGIT_H, BAR_TOP = span2.top - BAR_PAD, BAR_BOT = span2.bottom + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD;
     let fifths = q2.head.key;
     for (const u2 of units) {
       if (u2.kind === "key") {
@@ -15120,12 +15124,7 @@ function drawJianpu(c10, mine, mode = "digits") {
             line(x2, BAR_THIN);
           } else line(x2, BAR_THIN);
         };
-        if (barSpan === "notes") pendingBars.push(() => {
-          const b3 = band.get(row3) ?? { top: BASE_Y - DIGIT_H, bot: BASE_Y };
-          drawLines(Y2(row3, b3.top - BAR_PAD), Y2(row3, b3.bot + BAR_PAD));
-        });
-        else if (barSpan === "fixed") drawLines(Y2(row3, BASE_Y - DIGIT_H - BAR_PAD), Y2(row3, BASE_Y + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD));
-        else drawLines(Y2(row3, BAR_Y0), Y2(row3, BAR_Y1));
+        drawLines(Y2(row3, BAR_TOP), Y2(row3, BAR_BOT));
         const rdot = (dx) => {
           for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put2(row3, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "path", d: dotPath(x2 + Q2(dx), Y2(row3, yy), Q2(0.15)), cls: "jp-dot repeat-dot" });
         };
@@ -15167,8 +15166,8 @@ function drawJianpu(c10, mine, mode = "digits") {
       if (u2.kind !== "chunk" || u2.pad) continue;
       const row2 = rowOf(u2.system, r10, 0), tok = tokOf(u2), T3 = tok !== void 0 ? { tok } : {};
       const fd2 = mode === "digits" ? foldOf(u2, c10.aux[r10]) : void 0, lt2 = lettersOf(q2, u2, mode, c10.aux[r10]), n10 = extraGlyphs(u2), contDash2 = contDash(u2);
-      const span2 = (spanTo.get(u2) ?? u2.x + u2.w) - u2.x;
-      const nc2 = noteCell({ u: u2, q: q2, mode, ...c10.aux[r10] ? { aux: c10.aux[r10] } : {}, fifths, base: base2, ...underlines(u2) ? { ulY: ulTop.get(ulKey(u2)) } : {}, step: n10 ? Math.max(DASH_PITCH, (span2 / jk - tailW(u2)) / (n10 + 1)) : null, limit: span2 / jk, ...tok !== void 0 ? { tok } : {}, artCls });
+      const span3 = (spanTo.get(u2) ?? u2.x + u2.w) - u2.x;
+      const nc2 = noteCell({ u: u2, q: q2, mode, ...c10.aux[r10] ? { aux: c10.aux[r10] } : {}, fifths, base: base2, ...underlines(u2) ? { ulY: ulTop.get(ulKey(u2)) } : {}, step: n10 ? Math.max(DASH_PITCH, (span3 / jk - tailW(u2)) / (n10 + 1)) : null, limit: span3 / jk, ...tok !== void 0 ? { tok } : {}, artCls });
       {
         const ox2 = P2(u2.x), oy2 = staffTop(row2), f2 = Q2(1);
         for (const p2 of nc2.cell.prims(0, 0)) {
@@ -15224,13 +15223,11 @@ function drawJianpu(c10, mine, mode = "digits") {
         if (u2.j === 0 && u2.index >= 0) rests.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: Q2(DIGIT_W) });
       }
       const nUL = underlines(u2);
-      widen(row2, (nc2.members.length ? Math.min(...nc2.members.map((m2) => m2.yb)) : BASE_Y) - DIGIT_H, nUL ? ulTop.get(ulKey(u2)) + (nUL - 1) * UL_GAP + UL_W / 2 : BASE_Y);
       if (nUL) {
         const uh = fd2 || lt2 ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
         ul2.push({ row: row2, x0: cx2 - Q2(uh), x1: cx2 + Q2(uh), level: nUL, group: ulKey(u2), y0: ulTop.get(ulKey(u2)), tok, ch: u2 });
       }
     }
-    for (const f2 of pendingBars) f2();
     const tups = [];
     {
       let run2 = [], acc = 0, minBase = Infinity;
@@ -34194,7 +34191,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-b7d30ea23daf.mjs");
+      return pick(() => "layout-worker-f2f491a7ec44.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-ff7572b3c56d.mjs");
   }
@@ -64412,4 +64409,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f5d897e3ce20.mjs.map
+//# sourceMappingURL=moonsinger-a0cdf33c2106.mjs.map

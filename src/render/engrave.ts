@@ -96,8 +96,6 @@ export interface EngraveOpts {
   __noAnn?: boolean;
   /** 测试用（第八刀守卫 2）：数字行每个音 / 休止的盒子——墨迹框、它自己的图元（数字行的单位，相对这一列）、这一段占到多宽。 */
   __cells?: (c: { tok?: number; box: Ink; prims: Prim[]; row: number; ox: number; unit: number; wall: number }) => void;
-  /** 测试 / 样张用：数字行的小节线高度临时换一种（7-I 并排图），盖过排版参数表的 barSpan。 */
-  __barSpan?: "body" | "notes" | "fixed";
 }
 
 /** 一条谱行（某张纸、某行、某个声部）：top/bottom = 这一条占的竖直范围（含歌词）。staffTop / staff = 五线谱这一行自己的数据（staff/geometry.ts StaffRowData；挪成行的 data 归第二刀）。 */

@@ -42,6 +42,13 @@ export interface NoteCellOut {
 export declare function coreBottom(u: Chunk, q: JianpuTrack, mode: JianpuMode, aux?: JianpuAux): number;
 /** 第一条下划线离核的下沿多远（中线；样张：数字基线下 0.273 字号）。 */
 export declare const UL_DROP: number;
+/** 这一种行一个字的上下（局部 y）：小节线（7-I，user 2026-11-12 定第 3 种「固定的短线」）按它画——上端 = 字的顶，下端 = 核的下沿（下划线从这里往下贴，同 coreBottom）。
+ *  数字 = 数字的顶 / 基线；字母谱 = 大写字母的顶 / 右下角八度数字的底；一件鼓 = X 的顶 / 基线；整套鼓 = 件字（●）的顶 / 往上挪过的底。
+ *  和弦叠上去的、八度点、右上角的升降号都不算——露在线外（user 定的那一种）。 */
+export declare function rowGlyphSpan(mode: JianpuMode, kit: boolean, letters: boolean): {
+    top: number;
+    bottom: number;
+};
 export declare function noteCell(a: NoteCellIn): NoteCellOut;
 /** 画的时候横线 / 0 按「这一段占到的宽 − 它」一拍一个摆：只给附点让（附点和横线同高）。换气的 V 在上面、不挤横线（统筹看 5-6 样张定的；量的时候照样给它留了宽）。 */
 export declare function tailW(u: Chunk): number;

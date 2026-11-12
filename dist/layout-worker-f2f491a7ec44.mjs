@@ -7535,6 +7535,15 @@ function coreBottom(u, q, mode, aux) {
   return lettersOf(q, u, mode, aux) ? BASE_Y + SUB_DY * (u.art.includes("ghost") ? GHOST_K : 1) : BASE_Y;
 }
 var UL_DROP = UL_Y0 - BASE_Y;
+function rowGlyphSpan(mode, kit, letters) {
+  if (mode === "x" && kit) {
+    const yb = BASE_Y - DIGIT_H * 0.12;
+    return { top: glyphInk(KIT_CHAR.normal, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb };
+  }
+  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y };
+  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y + SUB_DY };
+  return { top: DIGIT_TOP, bottom: BASE_Y };
+}
 function accRun(gs, em, xr, top, cls, T2, main) {
   const prims = [], w = accRunW(gs, em), h = Math.max(...gs.map((g) => (g.box[3] - g.box[2]) * em / 4));
   let x = xr - w;
@@ -8009,12 +8018,7 @@ function drawJianpu(c, mine, mode = "digits") {
       ulTop.set(k, Math.max(ulTop.get(k) ?? -Infinity, y));
     }
     const botOf = /* @__PURE__ */ new Map();
-    const barSpan = o.__barSpan ?? PAPER_PARAMS[c.look.notation][c.look.density].barSpan ?? "body";
-    const band = /* @__PURE__ */ new Map(), pendingBars = [], BAR_PAD = 0.2 * DIGIT_H;
-    const widen = (row, top, bot) => {
-      const b = band.get(row);
-      band.set(row, b ? { top: Math.min(b.top, top), bot: Math.max(b.bot, bot) } : { top, bot });
-    };
+    const span = rowGlyphSpan(mode, kit, letters), BAR_PAD = 0.2 * DIGIT_H, BAR_TOP = span.top - BAR_PAD, BAR_BOT = span.bottom + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD;
     let fifths = q.head.key;
     for (const u of units) {
       if (u.kind === "key") {
@@ -8054,12 +8058,7 @@ function drawJianpu(c, mine, mode = "digits") {
             line(x, BAR_THIN);
           } else line(x, BAR_THIN);
         };
-        if (barSpan === "notes") pendingBars.push(() => {
-          const b = band.get(row2) ?? { top: BASE_Y - DIGIT_H, bot: BASE_Y };
-          drawLines(Y(row2, b.top - BAR_PAD), Y(row2, b.bot + BAR_PAD));
-        });
-        else if (barSpan === "fixed") drawLines(Y(row2, BASE_Y - DIGIT_H - BAR_PAD), Y(row2, BASE_Y + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD));
-        else drawLines(Y(row2, BAR_Y0), Y(row2, BAR_Y1));
+        drawLines(Y(row2, BAR_TOP), Y(row2, BAR_BOT));
         const rdot = (dx) => {
           for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put(row2, { ...tok2 !== void 0 ? { tok: tok2 } : {}, t: "path", d: dotPath(x + Q(dx), Y(row2, yy), Q(0.15)), cls: "jp-dot repeat-dot" });
         };
@@ -8101,8 +8100,8 @@ function drawJianpu(c, mine, mode = "digits") {
       if (u.kind !== "chunk" || u.pad) continue;
       const row = rowOf(u.system, r, 0), tok = tokOf(u), T2 = tok !== void 0 ? { tok } : {};
       const fd = mode === "digits" ? foldOf(u, c.aux[r]) : void 0, lt = lettersOf(q, u, mode, c.aux[r]), n2 = extraGlyphs(u), contDash2 = contDash(u);
-      const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
-      const nc = noteCell({ u, q, mode, ...c.aux[r] ? { aux: c.aux[r] } : {}, fifths, base, ...underlines(u) ? { ulY: ulTop.get(ulKey(u)) } : {}, step: n2 ? Math.max(DASH_PITCH, (span / jk - tailW(u)) / (n2 + 1)) : null, limit: span / jk, ...tok !== void 0 ? { tok } : {}, artCls });
+      const span2 = (spanTo.get(u) ?? u.x + u.w) - u.x;
+      const nc = noteCell({ u, q, mode, ...c.aux[r] ? { aux: c.aux[r] } : {}, fifths, base, ...underlines(u) ? { ulY: ulTop.get(ulKey(u)) } : {}, step: n2 ? Math.max(DASH_PITCH, (span2 / jk - tailW(u)) / (n2 + 1)) : null, limit: span2 / jk, ...tok !== void 0 ? { tok } : {}, artCls });
       {
         const ox = P(u.x), oy = staffTop(row), f = Q(1);
         for (const p of nc.cell.prims(0, 0)) {
@@ -8158,13 +8157,11 @@ function drawJianpu(c, mine, mode = "digits") {
         if (u.j === 0 && u.index >= 0) rests.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W) });
       }
       const nUL = underlines(u);
-      widen(row, (nc.members.length ? Math.min(...nc.members.map((m) => m.yb)) : BASE_Y) - DIGIT_H, nUL ? ulTop.get(ulKey(u)) + (nUL - 1) * UL_GAP + UL_W / 2 : BASE_Y);
       if (nUL) {
         const uh = fd || lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
         ul.push({ row, x0: cx - Q(uh), x1: cx + Q(uh), level: nUL, group: ulKey(u), y0: ulTop.get(ulKey(u)), tok, ch: u });
       }
     }
-    for (const f of pendingBars) f();
     const tups = [];
     {
       let run = [], acc = 0, minBase = Infinity;
@@ -9253,4 +9250,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-b7d30ea23daf.mjs.map
+//# sourceMappingURL=layout-worker-f2f491a7ec44.mjs.map

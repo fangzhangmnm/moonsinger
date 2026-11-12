@@ -516,33 +516,34 @@ describe("升降号的描边补粗（7-P 补：逐个字形按主笔画算）", 
   });
 });
 
-describe("简谱小节线多高（7-I，排版参数 barSpan；默认不改，等 user 看并排图定）", () => {
+describe("简谱小节线 = 固定的短线（7-I，user 2026-11-12 定第 3 种）", () => {
   const Q = TPQ, p = (step: string, octave: number) => ({ step: step as "C", alter: 0, octave });
-  const songWith = (chord: boolean): Song => {
+  const songWith = (chord: boolean, notation: "jianpu" | "letters" = "jianpu", deep = false): Song => {
     const st = initState(), pid = st.song.parts[0]!.id, head = st.song.papers[0]!.tracks[pid]!.filter((t) => t.kind === "key" || t.kind === "time" || t.kind === "tempo");
     let id = 500; const n = (step: string, oct: number, dur: number, o: Record<string, unknown> = {}): Token => ({ kind: "note", id: id++, pitch: p(step, oct), dur, lyric: null, ...o }) as Token;
-    const toks: Token[] = [...head, { kind: "dyn", id: id++, value: "mf" } as Token, n("E", 5, Q, { art: ["accent"] }), n("D", 5, Q / 4), n("C", 5, Q / 4), n("B", 4, Q / 2), chord ? n("C", 4, Q * 2, { chord: [p("G", 4), p("E", 4)] }) : n("C", 4, Q * 2), { kind: "bar", id: id++ } as Token, n("C", 4, Q * 4)];
-    return setNotation({ ...st, song: { ...st.song, papers: [{ ...st.song.papers[0]!, tracks: { [pid]: toks } }] } }, "jianpu").song;
+    const toks: Token[] = [...head, { kind: "dyn", id: id++, value: "mf" } as Token, n("E", 5, Q, { art: ["accent"] }), n("D", 5, Q / 4), n("C", 5, Q / 4), n("B", 4, Q / 2), chord ? n("C", 4, Q * 2, { chord: [p("G", 4), p("E", 4)] }) : n("C", 4, Q * 2), { kind: "bar", id: id++ } as Token,
+      ...(deep ? [n("C", 3, Q / 8), n("D", 3, Q / 8), n("E", 3, Q / 8), n("F", 3, Q / 8), n("G", 3, Q / 2), n("C", 4, Q * 3)] : [n("C", 4, Q * 4)])];
+    return setNotation({ ...st, song: { ...st.song, papers: [{ ...st.song.papers[0]!, tracks: { [pid]: toks } }] } }, notation).song;
   };
-  const lay = (s: Song, span?: "body" | "notes" | "fixed") => engrave(s, { width: 4000, sp: 10, at: { paper: s.papers[0]!.id, part: s.parts[0]!.id }, parts: [{ id: s.parts[0]!.id, name: "V", first: true }], locale: "zh", measure: createTextMeasure((t, px) => t.length * px * 0.6), ...(span ? { __barSpan: span } : {}) });
-  const barY = (L: ReturnType<typeof lay>) => { const b = L.prims.find((x): x is Extract<Prim, { t: "line" }> => x.t === "line" && /jp-bar/.test(x.cls ?? "")); assert(!!b, "有小节线"); return { y0: Math.min(b!.y1, b!.y2), y1: Math.max(b!.y1, b!.y2) }; };
-  /** 这类图元最高到哪（字 = y；路径 = 坐标里最小的 y）。 */
-  const inkTop = (L: ReturnType<typeof lay>, re: RegExp) => Math.min(...L.prims.filter((x) => re.test(x.cls ?? "")).map((x) => (x.t === "path" ? Math.min(...[...x.d.matchAll(/-?\d*\.?\d+/g)].map((m) => Number(m[0])).filter((_, i) => i % 2 === 1)) : "y" in x ? (x as { y: number }).y : Infinity)));
-  it("默认 = 高线（和写明 body 一样）；短线比高线矮、帽子（重音）在线的上面", () => {
-    const s = songWith(false), d = barY(lay(s)), body = barY(lay(s, "body")), notes = barY(lay(s, "notes"));
-    eq(JSON.stringify(d), JSON.stringify(body), "默认 = body");
-    assert(notes.y0 > body.y0 + 1 && notes.y1 <= body.y1 + 1e-6, `短线更矮：${JSON.stringify(notes)} vs ${JSON.stringify(body)}`);
-    assert(inkTop(lay(s, "notes"), /jp-chev/) < notes.y0, "重音的帽子在短线上面（不兜）");
+  const lay = (s: Song) => engrave(s, { width: 4000, sp: 10, at: { paper: s.papers[0]!.id, part: s.parts[0]!.id }, parts: [{ id: s.parts[0]!.id, name: "V", first: true }], locale: "zh", measure: createTextMeasure((t, px) => t.length * px * 0.6) });
+  const bars = (L: ReturnType<typeof lay>) => L.prims.filter((x): x is Extract<Prim, { t: "line" }> => x.t === "line" && /jp-bar/.test(x.cls ?? "")).map((b) => ({ y0: Math.min(b.y1, b.y2), y1: Math.max(b.y1, b.y2) }));
+  /** 这类图元最高 / 最低到哪（字 = y 基线；路径 = 坐标里的 y；线 = 两端）。 */
+  const ys = (L: ReturnType<typeof lay>, re: RegExp) => L.prims.filter((x) => re.test(x.cls ?? "")).flatMap((x) => (x.t === "path" ? [...x.d.matchAll(/-?\d*\.?\d+/g)].map((m) => Number(m[0])).filter((_, i) => i % 2 === 1) : x.t === "line" ? [x.y1, x.y2] : "y" in x ? [(x as { y: number }).y] : []));
+  it("每一条一样高：有没有和弦、有没有三条下划线，小节线的两端都不变", () => {
+    const a = lay(songWith(false)), c = lay(songWith(true)), d = lay(songWith(false, "jianpu", true)), ba = bars(a), bc = bars(c), bd = bars(d);
+    assert(ba.length >= 1 && bc.length >= 1 && bd.length >= 1, "有小节线");
+    for (const b of [...ba, ...bc, ...bd]) eq(JSON.stringify(b), JSON.stringify(ba[0]), "每一条一样高");
   });
-  it("固定短线（fixed）：有没有和弦都一样高、比高线矮；帽子在线上面；和弦叠上去的数字露在线外", () => {
-    const a = lay(songWith(false), "fixed"), c = lay(songWith(true), "fixed"), fa = barY(a), fc = barY(c), body = barY(lay(songWith(false), "body"));
-    eq(JSON.stringify(fa), JSON.stringify(fc), "有和弦的行和没和弦的行一样高");
-    assert(fa.y0 > body.y0 + 1 && fa.y1 < body.y1 + 1e-6, "比高线矮");
-    assert(inkTop(a, /jp-chev/) < fa.y0, "帽子在线上面");
-    assert(inkTop(c, /jp-digit/) < fc.y0 - 5, "和弦最上面那个数字露在线外");
+  it("露在线外的：重音的帽子、和弦叠上去的数字、第三条下划线；线比行身矮", () => {
+    const a = lay(songWith(false)), c = lay(songWith(true)), d = lay(songWith(false, "jianpu", true)), b = bars(a)[0]!;
+    assert(Math.min(...ys(a, /jp-chev/)) < b.y0, "帽子在线上面");
+    assert(Math.min(...ys(c, /jp-digit/)) < b.y0 - 5, "和弦最上面那个数字露在线外");
+    assert(Math.max(...ys(d, /jp-ul/)) > b.y1, "第三条下划线在线下面");
+    const s = a.systems[0]!; assert(b.y0 > s.top + 1 && b.y1 < s.bottom, "比行身矮");
   });
-  it("和弦叠多高兜多高：这一行有竖叠的和弦 = 短线的顶到和弦最上面那个数字", () => {
-    const plain = barY(lay(songWith(false), "notes")), stacked = barY(lay(songWith(true), "notes"));
-    assert(stacked.y0 < plain.y0 - 5, `有和弦的行短线更高：${stacked.y0} vs ${plain.y0}`);
+  it("字母行按自己的字高：线的下端更深（下划线从右下角八度数字下面起），两端照样每条一样", () => {
+    const j = bars(lay(songWith(false)))[0]!, l = lay(songWith(true, "letters")), bl = bars(l);
+    for (const b of bl) eq(JSON.stringify(b), JSON.stringify(bl[0]), "字母行每一条一样高");
+    assert(bl[0]!.y1 > j.y1 + 0.5, `字母行的下端比数字行深：${bl[0]!.y1} vs ${j.y1}`);
   });
 });

@@ -18,14 +18,13 @@ import { layDynamics, layGroove, layNav, layTempo, layNoteDynamics, tempoAt, tem
 import type { TextRole } from "../text/index.ts";
 import type { LaneKind } from "../frame/lanes.ts";
 import { MARGIN } from "../frame/params.ts";
-import { PAPER_PARAMS } from "../layout-params.ts";
 import { caretStops } from "../frame/carets.ts";
 import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf, glyphWOf } from "./chunk.ts";
 import { midTextW } from "./measure.ts";
 import { headTextW } from "./glyphs.ts";
-import { noteCell, tailW, coreBottom, UL_DROP } from "./note-cell.ts";
+import { noteCell, tailW, coreBottom, rowGlyphSpan, UL_DROP } from "./note-cell.ts";
 import { keyParts, keyLayout, keyPrims } from "./keytext.ts";
 import { layoutHead } from "../frame/rowhead.ts";
 import type { Part } from "../frame/cell.ts";
@@ -178,10 +177,10 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
     for (const v of units) if (v.kind === "chunk" && !v.pad && underlines(v)) { const k = ulKey(v), y = coreBottom(v, q, mode, c.aux[r]) + UL_DROP; ulTop.set(k, Math.max(ulTop.get(k) ?? -Infinity, y)); }
     /** 每一段盒子的下边（局部 y）：连音的数字 / 括号贴在一组里最低的那个下面。 */
     const botOf = new Map<Chunk, number>();
-    // 小节线多高（7-I）：notes = 只兜住音那一带——先记下来，等这一行的音都摆完，按这一行最高那个数字的顶到最深那条下划线的底画
-    const barSpan = o.__barSpan ?? PAPER_PARAMS[c.look.notation][c.look.density].barSpan ?? "body";
-    const band = new Map<number, { top: number; bot: number }>(), pendingBars: (() => void)[] = [], BAR_PAD = 0.2 * DIGIT_H;   // 短线比「音的那一带」上下各多出一点
-    const widen = (row: number, top: number, bot: number) => { const b = band.get(row); band.set(row, b ? { top: Math.min(b.top, top), bot: Math.max(b.bot, bot) } : { top, bot }); };
+    // 小节线 = 固定的短线（7-I，user 2026-11-12「嗯，小节线用三号」）：每一行、每一小节一样高，和这一行里有什么无关——上端 = 这种行一个字的顶（不含上八度点），
+    //   下端 = 字下面两条下划线那么深（第二条的底），上下各多出一点；和弦叠上去的音、第三条下划线、下八度点、帽子、换气、力度都露在线外。数字行 / 字母行 / 鼓的 X 行同一条规矩，各按自己的字高（rowGlyphSpan）。
+    //   试过的另两种（行身那么高的高线、跟着这一行内容兜多高的）删了，不留开关。行身（小节线原来那一段，JP_BODY）没动：名字、色条、歌词、行距照旧按它算
+    const span = rowGlyphSpan(mode, kit, letters), BAR_PAD = 0.2 * DIGIT_H, BAR_TOP = span.top - BAR_PAD, BAR_BOT = span.bottom + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD;
     let fifths = q.head.key;
     for (const u of units) {
       if (u.kind === "key") {   // 中途换调：在那一点写新的「1=D」（UX 稿第 3 节）
@@ -211,9 +210,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
           else if (u.style === "double" || u.repeat) { line(x - Q(BAR_GAP), BAR_THIN); line(x, BAR_THIN); }
           else line(x, BAR_THIN);
         };
-        if (barSpan === "notes") pendingBars.push(() => { const b = band.get(row) ?? { top: BASE_Y - DIGIT_H, bot: BASE_Y }; drawLines(Y(row, b.top - BAR_PAD), Y(row, b.bot + BAR_PAD)); });
-        else if (barSpan === "fixed") drawLines(Y(row, BASE_Y - DIGIT_H - BAR_PAD), Y(row, BASE_Y + UL_DROP + UL_GAP + UL_W / 2 + BAR_PAD));   // 固定短线：数字顶 ~ 两条下划线那么深（第二条的底；下划线的位置经过盒子 note-cell.ts 的 UL_DROP）
-        else drawLines(Y(row, BAR_Y0), Y(row, BAR_Y1));
+        drawLines(Y(row, BAR_TOP), Y(row, BAR_BOT));
         // 反复：双线旁边两个点（课本写法：|: 点在右、:| 点在左、:|: 两边都有）；一共放几遍 > 2 = 上面写「×3」
         const rdot = (dx: number) => { for (const yy of [DIGIT_MID - 0.55, DIGIT_MID + 0.55]) put(row, { ...(tok !== undefined ? { tok } : {}), t: "path", d: dotPath(x + Q(dx), Y(row, yy), Q(0.15)), cls: "jp-dot repeat-dot" }); };
         if (u.repeat === "start" || u.repeat === "both") rdot(0.4);
@@ -279,11 +276,8 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (u.j === 0 && u.index >= 0) rests.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W) });
       }
       const nUL = underlines(u);
-      // 「音的那一带」（7-I 短线用）：这个音最高那个数字的顶（叠音的成员各有基线）、最深那条下划线的底；八度点 / 帽子不算
-      widen(row, (nc.members.length ? Math.min(...nc.members.map((m) => m.yb)) : BASE_Y) - DIGIT_H, nUL ? ulTop.get(ulKey(u))! + (nUL - 1) * UL_GAP + UL_W / 2 : BASE_Y);
       if (nUL) { const uh = fd || lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W; ul.push({ row, x0: cx - Q(uh), x1: cx + Q(uh), level: nUL, group: ulKey(u), y0: ulTop.get(ulKey(u))!, tok, ch: u }); }   // 样张：每个数字下面 ±0.45 个数字宽（附点不带）
     }
-    for (const f of pendingBars) f();   // 短线（7-I）：这一行的音都摆完了，按「音的那一带」画小节线
     // 连音的组（UX 稿第 4 节）：同一比例连着的一串凑满就收一组；每组都标（原样从下面挪上来：下划线画之前要知道哪儿断开）
     const tups: { run: Chunk[]; num: string }[] = [];
     { let run: Chunk[] = [], acc = 0, minBase = Infinity;

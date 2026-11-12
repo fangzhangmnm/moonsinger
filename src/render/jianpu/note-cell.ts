@@ -11,7 +11,7 @@ import { midiOf } from "../../score/pitch.ts";
 import { percOf } from "../../gm/percussion.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf } from "./chunk.ts";
 import { PLACE, gapOf, groupOf, type PlaceId } from "./place.ts";
-import { DIGIT_EM, DIGIT_W, BASE_Y, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_STEP, ACC_EM, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_R, AUG_Y,
+import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_STEP, ACC_EM, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_R, AUG_Y,
   BREATH_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, LOW_DOT_UNDER, GHOST_K,
   STACC_W, STACC_H, TEN_L, TEN_W, BREATH_EM, BREATH_Y, CHORD_EM, CHORD_SX, CHORD_H, chordNameW, chordBassCx, stackBases, dotPath, DOT_GAP,
   ACC_GLYPH_EM, ACC_RISE, ACC_SEP, accGlyphs, accGlyphsOfText, accRunW, supAccEm, accStroke, glyphInk, textInkRun } from "./glyphs.ts";
@@ -56,6 +56,15 @@ export function coreBottom(u: Chunk, q: JianpuTrack, mode: JianpuMode, aux?: Jia
 }
 /** 第一条下划线离核的下沿多远（中线；样张：数字基线下 0.273 字号）。 */
 export const UL_DROP = UL_Y0 - BASE_Y;
+/** 这一种行一个字的上下（局部 y）：小节线（7-I，user 2026-11-12 定第 3 种「固定的短线」）按它画——上端 = 字的顶，下端 = 核的下沿（下划线从这里往下贴，同 coreBottom）。
+ *  数字 = 数字的顶 / 基线；字母谱 = 大写字母的顶 / 右下角八度数字的底；一件鼓 = X 的顶 / 基线；整套鼓 = 件字（●）的顶 / 往上挪过的底。
+ *  和弦叠上去的、八度点、右上角的升降号都不算——露在线外（user 定的那一种）。 */
+export function rowGlyphSpan(mode: JianpuMode, kit: boolean, letters: boolean): { top: number; bottom: number } {
+  if (mode === "x" && kit) { const yb = BASE_Y - DIGIT_H * 0.12; return { top: glyphInk(KIT_CHAR.normal!, 0, yb, DIGIT_EM * KIT_EM, "middle").y0, bottom: yb }; }
+  if (mode === "x") return { top: glyphInk("X", 0, BASE_Y, DIGIT_EM * X_EM, "middle").y0, bottom: BASE_Y };
+  if (letters) return { top: glyphInk("C", 0, BASE_Y, DIGIT_EM, "start").y0, bottom: BASE_Y + SUB_DY };
+  return { top: DIGIT_TOP, bottom: BASE_Y };
+}
 /** 一串升降号字形（7-P：Bravura）：右边对齐 xr、顶在 top；回图元和墨迹框。 */
 function accRun(gs: readonly { ch: string; box: readonly number[]; dom: number }[], em: number, xr: number, top: number, cls: string, T: { tok?: number }, main: number): { prims: Prim[]; ink: Ink } {
   const prims: Prim[] = [], w = accRunW(gs, em), h = Math.max(...gs.map((g) => ((g.box[3]! - g.box[2]!) * em) / 4));

@@ -38,8 +38,7 @@ const ALLOWED: { name: string; ok: (a: Prim, b: Prim) => boolean }[] = [
   { name: "五线谱：符尾 / 附点挨着符头", ok: (a, b) => a.t === "glyph" && b.t === "glyph" && !a.cls && has(b, "note") },
 ];
 /** 查出来了、等统筹定谁让谁：按「谁和谁」认。第八刀 8-5（不印的提示最后贴、只躲不推）之后 7-K 的 ⑥ ⑦ 三条都没了。 */
-const PENDING: Record<string, string> = {   // 8-7 ① 时字母谱有过一条 7-V 的，8-7 (A) 之后碰不到、划掉；7-V 本身没修
-  "text:jp-digit.jp-letter × text:nav-mark": "7-V：用全的测试歌 pa 那一段十个声部一组比一页还高，跨页那一组的反复房子「2.」落到下一页的字母上（分页 / 印）。2026-11-12 自动小节线不再在「力度 + |:」前多补一条之后，分页位置挪了、又碰上（施工单 7-G 记录）",
+const PENDING: Record<string, string> = {   // 8-7 ① 时字母谱有过一条 7-V 的，8-7 (A) 之后碰不到、划掉；7-G 时又碰上，7-I 小节线改固定短线之后（房子不用再越过高线、落低了）又碰不到、划掉。7-V 本身（一组比一页还高）没修
 };
 /** 五线谱查出来的（这一串只报不修；施工单第六节 7-K「五线谱只报不修」）。 */
 const STAFF_KNOWN: Record<string, string> = {
