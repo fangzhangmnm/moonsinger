@@ -79,6 +79,9 @@ button, input, select { font: inherit; color: inherit; }
 /* 开着面板（.offer：设置 / 导出 / 问一句 / 定稿…）时 toast 挪到顶上，别压住面板的钮（库自己只认 .backdrop[data-open]，本仓的面板是 .offer；
    2026-10-21 底座贴底后谱那一块变矮、toast 落在屏幕中间 = 正好压住居中的卡片，E2E final / issues 点不到「mp3」） */
 body:has(.offer:not([hidden])) .notice-stack { top: calc(var(--safe-top) + 54px); bottom: auto; left: 50%; }
+/* 提示条躲不开开着的小卡 / 小菜单时（main.ts dodgeNotices）：提示条上没有按钮的部分让点击穿过去，按钮照样能点 */
+.notice-stack.notice-through > .toast { pointer-events: none; }
+.notice-stack.notice-through > .toast :is(button, a, [role="button"]) { pointer-events: auto; }
 /* 歌手牌：第一行谱号左边的声部名 */
 .staff-svg .part-name { fill: var(--ink); cursor: pointer; }   /* 字体 / 粗细 / 斜体 / 字号一律在 src/render/text-style.ts（屏幕上 score-view 装它生成的样式表；2026-11-09） */
 .staff-svg .part-name.empty { fill: var(--muted); }

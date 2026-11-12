@@ -5933,7 +5933,7 @@ function dynDepiction(d3, notation) {
 }
 
 // src/version.ts
-var APP_VERSION = "v0.17.4-2026-11-12";
+var APP_VERSION = "v0.17.5-2026-11-12";
 
 // src/deployment.ts
 function detectDeployment(protocol, marker) {
@@ -34563,7 +34563,7 @@ function siteFile(name) {
     case "layout-worker":
       return pick(() => "layout-worker-e962eb08db65.mjs");
     case "encode-worker":
-      return pick(() => "encode-worker-9529cd7ae3bf.mjs");
+      return pick(() => "encode-worker-cc6086f3fe15.mjs");
   }
 }
 var inFolder = () => deployment() === "local";
@@ -59261,6 +59261,45 @@ var padEl = $2("padPanel");
   if (typeof ResizeObserver === "function") new ResizeObserver(placeNotices).observe(scoreEl);
   addEventListener("resize", placeNotices);
   placeNotices();
+  const dodgeNotices = () => {
+    const stack = document.getElementById("noticeStack");
+    if (!stack) return;
+    if (stack.dataset.dodged) {
+      stack.style.removeProperty("top");
+      stack.style.removeProperty("bottom");
+      delete stack.dataset.dodged;
+    }
+    stack.classList.remove("notice-through");
+    if (!stack.childElementCount || stack.classList.contains("docked-top") || document.querySelector(".offer:not([hidden])")) return;
+    const cards = [...document.querySelectorAll("body > .track-card, .popup-menu:not(.hidden)")].map((e10) => e10.getBoundingClientRect()).filter((r10) => r10.width > 0 && r10.height > 0);
+    if (!cards.length) return;
+    const hit2 = (s10) => cards.some((c10) => s10.left < c10.right && s10.right > c10.left && s10.top < c10.bottom && s10.bottom > c10.top);
+    const s02 = stack.getBoundingClientRect();
+    if (!hit2(s02)) return;
+    const m2 = 8, h2 = s02.height, top = Math.min(...cards.map((c10) => c10.top)), bottom = Math.max(...cards.map((c10) => c10.bottom)), ceil = bar.getBoundingClientRect().bottom;
+    if (top - m2 - h2 >= ceil) {
+      stack.dataset.dodged = "1";
+      stack.style.top = "auto";
+      stack.style.bottom = `${Math.round(innerHeight - top + m2)}px`;
+    } else if (bottom + m2 + h2 <= innerHeight - m2) {
+      stack.dataset.dodged = "1";
+      stack.style.bottom = "auto";
+      stack.style.top = `${Math.round(bottom + m2)}px`;
+    }
+    if (hit2(stack.getBoundingClientRect())) stack.classList.add("notice-through");
+  };
+  let watched = null;
+  const stackObs = new MutationObserver(() => dodgeNotices());
+  new MutationObserver(() => {
+    const st2 = document.getElementById("noticeStack");
+    if (st2 && st2 !== watched) {
+      watched = st2;
+      stackObs.observe(st2, { childList: true });
+    }
+    dodgeNotices();
+  }).observe(document.body, { childList: true });
+  addEventListener("resize", dodgeNotices);
+  addEventListener("click", () => requestAnimationFrame(dodgeNotices), true);
 }
 var refHost = createReferenceHost({
   info: (t10) => info(t10),
@@ -61103,7 +61142,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "e082334b2039",
+  cssHash: "afb30c9438a3",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -65465,6 +65504,8 @@ Object.assign(window.__moonsinger, {
   threadKinds: () => Object.fromEntries(["singer-worker", "mp3-worker", "studio-worklet", "layout-worker", "encode-worker"].map((n10) => [n10, threadUrls(n10).map((u2) => u2.slice(0, u2.indexOf(":")))])),
   mp3Test: (samples = 44100) => encodeMp3(new Float32Array(samples).map((_2, i10) => Math.sin(i10 / 10) * 0.3), null, 44100, 64).then((b3) => b3.length),
   availability: () => availability(),
+  notice: (t10) => info(t10),
+  // E2E：来一条提示（提示条不挡小卡那条守卫用）
   saveBytes: () => Array.from(bytesNow())
   // 这首歌现在存下去的 .mxl 字节（谱面分家 5½：切界面语言前后文件字节不变）
 });
@@ -65534,4 +65575,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-c64c71bbcbaa.mjs.map
+//# sourceMappingURL=moonsinger-747ae67804a7.mjs.map

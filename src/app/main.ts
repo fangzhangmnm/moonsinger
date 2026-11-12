@@ -308,7 +308,30 @@ const bar = $("bar"), scoreEl = $("score"), padEl = $("padPanel");
   const placeNotices = () => { const r = scoreEl.getBoundingClientRect(); if (r.height < 80) { de.style.removeProperty("--notice-bottom"); de.style.removeProperty("--notice-x"); return; }
     de.style.setProperty("--notice-bottom", `${Math.round(Math.max(12, innerHeight - r.bottom + 60))}px`); de.style.setProperty("--notice-x", `${Math.round(r.left + r.width / 2)}px`); };
   if (typeof ResizeObserver === "function") new ResizeObserver(placeNotices).observe(scoreEl);
-  addEventListener("resize", placeNotices); placeNotices(); }
+  addEventListener("resize", placeNotices); placeNotices();
+  // 提示条不挡点得到的东西（施工单第五节，统筹 2026-11-12；起因 = 小卡开着时「试听不了」的提示条压住小卡中间那排钮，测试里撞上两次）：
+  //   非模态的小卡 / 小菜单（.track-card，点外面就收的那种）开着时，提示条摆的时候躲开它们：先挪到它们上面，放不下挪到下面；
+  //   还躲不开 = 提示条上没有按钮的部分让点击穿过去（.notice-through）。模态面板（.offer）照旧（styles.css 那条：挪到顶上）。
+  const dodgeNotices = () => {
+    const stack = document.getElementById("noticeStack"); if (!stack) return;
+    if (stack.dataset.dodged) { stack.style.removeProperty("top"); stack.style.removeProperty("bottom"); delete stack.dataset.dodged; }   // 只撤自己设的（库停靠到顶上时自己写 style.top，不碰它）
+    stack.classList.remove("notice-through");
+    if (!stack.childElementCount || stack.classList.contains("docked-top") || document.querySelector(".offer:not([hidden])")) return;
+    const cards = [...document.querySelectorAll<HTMLElement>("body > .track-card, .popup-menu:not(.hidden)")].map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);   // 小卡 / 小菜单 + 开着的下拉列表
+    if (!cards.length) return;
+    const hit = (s: DOMRect) => cards.some((c) => s.left < c.right && s.right > c.left && s.top < c.bottom && s.bottom > c.top);
+    const s0 = stack.getBoundingClientRect(); if (!hit(s0)) return;
+    const m = 8, h = s0.height, top = Math.min(...cards.map((c) => c.top)), bottom = Math.max(...cards.map((c) => c.bottom)), ceil = bar.getBoundingClientRect().bottom;
+    if (top - m - h >= ceil) { stack.dataset.dodged = "1"; stack.style.top = "auto"; stack.style.bottom = `${Math.round(innerHeight - top + m)}px`; }
+    else if (bottom + m + h <= innerHeight - m) { stack.dataset.dodged = "1"; stack.style.bottom = "auto"; stack.style.top = `${Math.round(bottom + m)}px`; }
+    if (hit(stack.getBoundingClientRect())) stack.classList.add("notice-through");
+  };
+  // 什么时候重算：提示来了 / 走了（提示栈的子节点）、小卡 / 小菜单开了 / 关了（挂在 body 上的子节点）、窗口变了。不看整棵树（谱面一直在变）
+  let watched: Element | null = null;
+  const stackObs = new MutationObserver(() => dodgeNotices());
+  new MutationObserver(() => { const st = document.getElementById("noticeStack"); if (st && st !== watched) { watched = st; stackObs.observe(st, { childList: true }); } dodgeNotices(); }).observe(document.body, { childList: true });
+  addEventListener("resize", dodgeNotices);
+  addEventListener("click", () => requestAnimationFrame(dodgeNotices), true); }   // 下拉列表是换 class 开的（不加子节点）：每次点完下一帧再看一眼
 /** 参考窗（v0.8，2026-10-08 深夜 Opus 5.5；src/app/reference-host.ts 是唯一认识库的地方）：截图 / 文字放在旁边对着打谱。
  *  卡片进文件（加 / 删 / 挪 = 标脏，不进撤销）；窗的位置 = 视图态（desk.ref）。底边地板 = 竖屏时 pad 那一块（窗的把手不躲到 pad 底下）。 */
 const refHost = createReferenceHost({
@@ -4438,6 +4461,7 @@ Object.assign((window as unknown as { __moonsinger: Record<string, unknown> })._
   threadKinds: () => Object.fromEntries((["singer-worker", "mp3-worker", "studio-worklet", "layout-worker", "encode-worker"] as const).map((n) => [n, threadUrls(n).map((u) => u.slice(0, u.indexOf(":")))])),
   mp3Test: (samples = 44100) => encodeMp3(new Float32Array(samples).map((_, i) => Math.sin(i / 10) * 0.3), null, 44100, 64).then((b) => b.length),
   availability: () => availability(),
+  notice: (t: string) => info(t),   // E2E：来一条提示（提示条不挡小卡那条守卫用）
   saveBytes: () => Array.from(bytesNow()),   // 这首歌现在存下去的 .mxl 字节（谱面分家 5½：切界面语言前后文件字节不变）
 });
 diagNote("boot", `deployment ${deployment()} · storage ${availability()}`);
