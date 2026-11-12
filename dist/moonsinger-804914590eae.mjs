@@ -13414,9 +13414,8 @@ function layDynamics(c10) {
     return { ink: [d3.ink[0] * g3, d3.ink[1] * g3, d3.ink[2] * g3, d3.ink[3] * g3], draw: (x2, y2, tok, cls) => prims.push({ t: "glyph", x: x2, y: y2, ch: d3.glyph, tok, cls, size: P2(4 * g3) }) };
   };
   const dynItems = [];
-  const tailDynX = /* @__PURE__ */ new Map();
+  const tailDynX = /* @__PURE__ */ new Map(), lastC = units.reduce((m2, u2, k2) => u2.kind === "chunk" ? k2 : m2, -1);
   {
-    const lastC = units.reduce((m2, u2, k2) => u2.kind === "chunk" ? k2 : m2, -1);
     units.forEach((h2, hi) => {
       if (h2.kind !== "hairpin") return;
       const ei2 = units.findIndex((u2, k2) => k2 > hi && (u2.kind === "dyn" || u2.kind === "hairpin")), endU = ei2 >= 0 ? units[ei2] : null;
@@ -13427,7 +13426,11 @@ function layDynamics(c10) {
       if (need > P2(endU.x + 0.3)) tailDynX.set(endU, need);
     });
   }
-  const dynX = (u2) => tailDynX.get(u2) ?? P2(u2.x + 0.3);
+  const dynX = (u2) => {
+    const x2 = tailDynX.get(u2) ?? P2(u2.x + 0.3);
+    if (u2.kind !== "dyn" || units.indexOf(u2) < lastC) return x2;
+    return Math.min(x2, P2(c10.right - dynOf(u2.value).ink[1]));
+  };
   for (const u2 of units) {
     if (u2.kind !== "dyn") continue;
     const dr = c10.row(u2.system), ui3 = units.indexOf(u2), dd = dynOf(u2.value), [il2, ir2, iu2, id2] = dd.ink;
@@ -34140,7 +34143,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-9093bc08d8e3.mjs");
+      return pick(() => "layout-worker-98719a786b6a.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-89f8a0a0048f.mjs");
   }
@@ -64347,4 +64350,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-5c4dd91857ea.mjs.map
+//# sourceMappingURL=moonsinger-804914590eae.mjs.map

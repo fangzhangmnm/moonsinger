@@ -6373,9 +6373,8 @@ function layDynamics(c) {
     return { ink: [d.ink[0] * g, d.ink[1] * g, d.ink[2] * g, d.ink[3] * g], draw: (x, y, tok, cls) => prims.push({ t: "glyph", x, y, ch: d.glyph, tok, cls, size: P(4 * g) }) };
   };
   const dynItems = [];
-  const tailDynX = /* @__PURE__ */ new Map();
+  const tailDynX = /* @__PURE__ */ new Map(), lastC = units.reduce((m, u, k) => u.kind === "chunk" ? k : m, -1);
   {
-    const lastC = units.reduce((m, u, k) => u.kind === "chunk" ? k : m, -1);
     units.forEach((h, hi) => {
       if (h.kind !== "hairpin") return;
       const ei = units.findIndex((u, k) => k > hi && (u.kind === "dyn" || u.kind === "hairpin")), endU = ei >= 0 ? units[ei] : null;
@@ -6386,7 +6385,11 @@ function layDynamics(c) {
       if (need > P(endU.x + 0.3)) tailDynX.set(endU, need);
     });
   }
-  const dynX = (u) => tailDynX.get(u) ?? P(u.x + 0.3);
+  const dynX = (u) => {
+    const x = tailDynX.get(u) ?? P(u.x + 0.3);
+    if (u.kind !== "dyn" || units.indexOf(u) < lastC) return x;
+    return Math.min(x, P(c.right - dynOf(u.value).ink[1]));
+  };
   for (const u of units) {
     if (u.kind !== "dyn") continue;
     const dr = c.row(u.system), ui = units.indexOf(u), dd = dynOf(u.value), [il, ir, iu, id] = dd.ink;
@@ -9197,4 +9200,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-9093bc08d8e3.mjs.map
+//# sourceMappingURL=layout-worker-98719a786b6a.mjs.map

@@ -156,9 +156,8 @@ export function layDynamics(c: OrnCtx): void {
   const dynItems: { row: number; x0: number; keys: string[]; draw: (base: number) => void }[] = [];
   // 挂在这一段结尾的力度（后面没有音了：7-N 的「挪到这一段结尾」/「变到」放的，常见 = 一个音的滚奏 ppp < fff）是一条发夹的终点、又离发夹起点太近：
   //   往右让到发夹最短也画得出为止（7-N 补查出来的：原来 fff 叠在 ppp 后面、发夹被盖住看不见）。只挪这种结尾的字；后面还有音的力度照旧和那个音对齐
-  const tailDynX = new Map<Unit, number>();
-  { const lastC = units.reduce((m, u, k) => (u.kind === "chunk" ? k : m), -1);
-    units.forEach((h, hi) => {
+  const tailDynX = new Map<Unit, number>(), lastC = units.reduce((m, u, k) => (u.kind === "chunk" ? k : m), -1);
+  { units.forEach((h, hi) => {
       if (h.kind !== "hairpin") return;
       const ei = units.findIndex((u, k) => k > hi && (u.kind === "dyn" || u.kind === "hairpin")), endU = ei >= 0 ? units[ei]! : null;
       if (!endU || endU.kind !== "dyn" || ei < lastC || endU.system !== h.system) return;
@@ -167,7 +166,8 @@ export function layDynamics(c: OrnCtx): void {
       const need = startX + P(PIN_MIN + PIN_GAP - dynOf(endU.value).ink[0]);
       if (need > P(endU.x + 0.3)) tailDynX.set(endU, need);
     }); }
-  const dynX = (u: Unit) => tailDynX.get(u) ?? P(u.x + 0.3);
+  // 挂在一段结尾的力度（不管让没让过）墨的右边不出这一行的右端（c.right；7-N 补时量出来的：一行最右那个音后面的 fff 会出版心 1–6 个线间距）。夹住之后发夹可能变短，照发夹自己的最短规矩画
+  const dynX = (u: Unit) => { const x = tailDynX.get(u) ?? P(u.x + 0.3); if (u.kind !== "dyn" || units.indexOf(u) < lastC) return x; return Math.min(x, P(c.right - dynOf(u.value).ink[1])); };
   // 力度：谱上方、和后面那个音左对齐；挂件第 4 样（刀 4b：和用发夹连着的一串共用一条基线，贴它们自己那几段天际线往上 0.4；挨得近的两个 = 后摆的那个自然叠上去）
   for (const u of units) {
     if (u.kind !== "dyn") continue;
