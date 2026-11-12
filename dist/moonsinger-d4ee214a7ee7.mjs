@@ -2724,6 +2724,12 @@ function iconHtml(name, opts = {}) {
   return `<svg ${attrs}><use href="#${name}"/></svg>`;
 }
 
+// node_modules/@internal/workbench-elements/dist/outside-tap.js
+var taken = /* @__PURE__ */ new WeakSet();
+function noteOutsideTap(e10) {
+  taken.add(e10);
+}
+
 // node_modules/@internal/workbench-elements/dist/popup-menu.js
 var _open = [];
 function currentPopupMenu() {
@@ -2841,6 +2847,7 @@ function _mount(el2, opts, hooks) {
     if (_open.some((h2) => h2 !== handle && el2.contains(h2.anchor) && path.includes(h2.el)))
       return;
     handle.close();
+    noteOutsideTap(e10);
     if (opts.swallowOutsideTap) {
       e10.stopPropagation();
       e10.preventDefault();
@@ -16023,17 +16030,17 @@ function engrave(song, o10) {
       statusHints.push({ system, x: all.x, y: all.y, size: fs, sep: STATUS_SEP, items, hit: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 }, room: { y0: all.y - fs * 0.8, y1: all.y + fs * 0.2 } });
       return;
     }
-    const placed = placeHints(busy, list2.map((_2, k2) => hint2(ws2[k2])), P2(0.3)), taken = placed.map((pl, k2) => ({ x0: pl.x, x1: pl.x + ws2[k2], y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }));
+    const placed = placeHints(busy, list2.map((_2, k2) => hint2(ws2[k2])), P2(0.3)), taken2 = placed.map((pl, k2) => ({ x0: pl.x, x1: pl.x + ws2[k2], y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }));
     placed.forEach((pl, k2) => {
       if (pl.ok || !lastResort) return;
       const t10 = lastResort(ws2[k2]);
       if (!t10) return;
       const box = { x0: t10.x, x1: t10.x + ws2[k2], y0: t10.y - fs * 0.8, y1: t10.y + fs * 0.2 }, pad4 = P2(0.3), clash = (b3) => box.x0 < b3.x1 + pad4 && b3.x0 < box.x1 + pad4 && box.y0 < b3.y1 + pad4 && b3.y0 < box.y1 + pad4;
-      if (busy.some(clash) || taken.some((b3, j2) => j2 !== k2 && clash(b3))) return;
+      if (busy.some(clash) || taken2.some((b3, j2) => j2 !== k2 && clash(b3))) return;
       pl.x = t10.x;
       pl.y = t10.y;
       pl.ok = true;
-      taken[k2] = box;
+      taken2[k2] = box;
     });
     placed.forEach((pl, k2) => statusHints.push({ system, x: pl.x, y: pl.y, size: fs, sep: STATUS_SEP, items: [{ ...list2[k2], dx: 0, w: ws2[k2] }], hit: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 }, room: { y0: pl.y - fs * 0.8, y1: pl.y + fs * 0.2 } }));
   };
@@ -28935,14 +28942,14 @@ function createFolderProvider(root) {
 }
 
 // node_modules/@internal/gallery/dist/core/model/gallery-model.js
-function copyTargetName(source, taken, ids) {
+function copyTargetName(source, taken2, ids) {
   const SUF = t("name.copySuffix");
   let candidate = withStemTail(source, ` ${SUF}`, ids);
-  if (!taken(candidate))
+  if (!taken2(candidate))
     return candidate;
   for (let i10 = 2; i10 < 1e3; i10++) {
     candidate = withStemTail(source, ` ${SUF}${i10}`, ids);
-    if (!taken(candidate))
+    if (!taken2(candidate))
       return candidate;
   }
   return withStemTail(source, ` ${SUF}${Date.now()}`, ids);
@@ -29009,13 +29016,13 @@ function dayStamp(now2 = /* @__PURE__ */ new Date()) {
   const p2 = (n10) => String(n10).padStart(2, "0");
   return `${now2.getFullYear()}${p2(now2.getMonth() + 1)}${p2(now2.getDate())}`;
 }
-function versionTargetName(source, day, taken, ids) {
+function versionTargetName(source, day, taken2, ids) {
   const d3 = ids.parse(source);
   const v = d3 ? parseVersionStem(d3.stem) : null;
   const origin = d3 && v ? ids.join({ folder: d3.folder, stem: v.base, suffix: d3.suffix }) : source;
   for (let n10 = 1; n10 < 1e4; n10++) {
     const candidate = withStemTail(origin, `${VERSION_MARK}${day}${n10 === 1 ? "" : `-${n10}`}`, ids);
-    if (!taken(candidate))
+    if (!taken2(candidate))
       return candidate;
   }
   throw new Error(`versionTargetName: no free version name for "${source}" on ${day}`);
@@ -29882,8 +29889,8 @@ function createGalleryVerbs(d3) {
           d3.host.status(t("gal.st.copyNoBytes"), true);
           return;
         }
-        const taken = new Set(currentIdentifiers);
-        const newIdentifier = copyTargetName(item.identifier, (n10) => taken.has(n10), ids());
+        const taken2 = new Set(currentIdentifiers);
+        const newIdentifier = copyTargetName(item.identifier, (n10) => taken2.has(n10), ids());
         await docFile(newIdentifier, "new").save(bytes, { tryPush: cloudOn() });
         d3.host.status(t("gal.st.copied", { name: stemOf2(newIdentifier) }));
       } catch (e10) {
@@ -30177,18 +30184,18 @@ function createGalleryVerbs(d3) {
         }
         const originStem = parseVersionStem(item.stem)?.base ?? item.stem;
         const previous = versionsOf({ ...item, stem: originStem, identifier: "\0" }, siblings)[0] ?? null;
-        const taken = new Set(siblings.map((s10) => s10.identifier));
+        const taken2 = new Set(siblings.map((s10) => s10.identifier));
         const day = dayStamp(opts.now);
         let target = "";
         for (let attempt = 0; ; attempt++) {
-          target = versionTargetName(item.identifier, day, (n10) => taken.has(n10), ids());
+          target = versionTargetName(item.identifier, day, (n10) => taken2.has(n10), ids());
           try {
             await docFile(target, "new").save(got2.bytes, { tryPush: cloudOn(), bornLocked: true });
             break;
           } catch (e10) {
             if (e10?.name !== "CloudNameCollisionError" || attempt >= 8)
               throw e10;
-            taken.add(target);
+            taken2.add(target);
           }
         }
         const name = stemOf2(target);
@@ -61224,7 +61231,7 @@ window.__moonsinger = {
     return toLabScore(tokens, D3.st.song.hum, songLangOf(tokens, D3.st.song.hum), map);
   },
   state: () => D3.st,
-  cssHash: "afb30c9438a3",
+  cssHash: "168393702b25",
   extras: () => D3.extras,
   setEmbedSoftLimit: (n10) => {
     embedSoftLimit = n10;
@@ -65663,4 +65670,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-d58ac40cbb36.mjs.map
+//# sourceMappingURL=moonsinger-d4ee214a7ee7.mjs.map

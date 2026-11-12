@@ -144,3 +144,40 @@ button.select-field { padding-right: 12px; }   /* 文字给角标让 12px */
 .select-field .select-field-caret { position: absolute; right: 1px; bottom: 1px; width: 8px; height: 8px; opacity: .55; pointer-events: none; }
 .select-field .select-field-caret > svg { display: block; width: 100%; height: 100%; }
 .select-field--fixed { width: var(--select-fixed-w, 72px); flex: none; box-sizing: border-box; }
+
+/* ── 页签条（.wbe-tabs；0.4.0，Claude Opus 5.5）：一排平分的格子，图标在上、小字在下，没有边框，选中的一块底色；永远一排，字放不下省略号；一格点击高度 ≥ 44 px ── */
+.wbe-tabs { display: flex; gap: 2px; padding: 2px 2px 4px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.wbe-tab { flex: 1 1 0; min-width: 0; min-height: 44px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 2px;
+  background: transparent; border: none; border-radius: 6px; color: var(--ink-soft, var(--ink)); cursor: pointer; font: inherit; font-size: 11px; line-height: 1.2; }
+.wbe-tab-label { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wbe-tab-icon { display: block; line-height: 0; }
+.wbe-tab-icon svg { width: 18px; height: 18px; display: block; }
+.wbe-tab.on { color: var(--accent, var(--ink)); background: var(--accent-soft, var(--bg-soft)); }
+.wbe-tab:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: -2px; }
+
+/* ── 面板外壳（.wbe-panel；0.4.0）：遮罩 + 卡片（标题 / 页签条 / 能滚的一层 / 底下一排钮），层级 = 宿主的 --z-modal ── */
+.wbe-panel { position: fixed; inset: 0; z-index: var(--z-modal); display: flex; align-items: center; justify-content: center; background: rgba(40, 38, 34, .28); padding: 16px; }
+.wbe-panel-card { display: flex; flex-direction: column; max-height: calc(100% - 8px); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; padding: 16px;
+  box-shadow: var(--shadow, 0 8px 28px rgba(0, 0, 0, .14)); outline: none; }
+.wbe-panel-card--narrow { width: min(360px, 100%); }
+.wbe-panel-card--wide { width: min(560px, 100%); }
+.wbe-panel-title { font-weight: 600; margin-bottom: 6px; flex: none; }
+.wbe-panel-scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+.wbe-panel-btns { display: flex; gap: 8px; justify-content: flex-end; flex: none; padding-top: 10px; }
+.wbe-panel-btn { min-height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--ink); font: inherit; cursor: pointer; }
+.wbe-panel-btn.primary { background: var(--accent, var(--ink)); border-color: var(--accent, var(--ink)); color: var(--bg); }
+.wbe-panel-btn.danger { color: var(--danger); border-color: var(--danger); }
+
+/* ── 一项一行（.wbe-row；0.4.0）：名字 + 小标记（「?」「©」）+ 右边控件；点小标记 = 下面展开那一段 ── */
+.wbe-row { border-bottom: 1px solid var(--line); padding: 6px 0; }
+.wbe-row-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 36px; }
+.wbe-row-label { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 14px; color: var(--ink); min-width: 0; }
+.wbe-row-mark { width: 16px; height: 16px; min-width: 0; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); color: var(--ink-soft, var(--ink));
+  font-size: 11px; line-height: 14px; cursor: pointer; position: relative; }
+.wbe-row-mark::after { content: ""; position: absolute; inset: -14px; }   /* 手指的点击区 ≥ 44 px，样子不变 */
+/* 两个标记并排（「?」「©」）：中间那一侧各只扩到间隔的一半（间隔 = .wbe-row-label 的 gap 4 px），不互相盖（写歌软件统筹审 0.4.0 第 7 处） */
+.wbe-row-mark:has(+ .wbe-row-mark)::after { right: -2px; }
+.wbe-row-mark + .wbe-row-mark::after { left: -2px; }
+.wbe-row-mark[aria-expanded="true"], .wbe-row-mark:hover { color: var(--accent, var(--ink)); border-color: var(--accent, var(--ink)); }
+.wbe-row-ctl { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; flex: none; max-width: 62%; }
+.wbe-row-note { padding: 2px 0 4px; font-size: 12px; color: var(--ink-soft, var(--ink)); }
