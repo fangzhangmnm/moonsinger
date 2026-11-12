@@ -207,14 +207,14 @@ describe("录音房：块回放（慢引擎）", () => {
     assert(Math.abs(peak(r2.L, sec(0.1), sec(0.9)) - 0.5 * PAN0) < 1e-3, `增益 2 × 0.25 = 0.5 × 声像 0.707（${peak(r2.L, sec(0.1), sec(0.9))}）`);
     assert(Math.abs(s.position - 1.7) < 1e-6, "续放了 1.2 秒");
   });
-  it("块轨起放 10 ms 淡入、范围尾 30 ms 淡出，不是硬切", async () => {
+  it("块轨起放切进块中间 = 10 ms 淡入、范围尾 30 ms 淡出，不是硬切（起放正好在块头不淡：见文末「起放那一刻开始的音不被压」）", async () => {
     const { s } = await studio();
     s.handle({ type: "chunk", key: "K", sr: SR, samples: flat(3, 0.5) });
     s.handle({ type: "timeline", tl: tl([clipTrack("v", "K", 0, 3)], { from: 0, to: 1 }) });
-    s.handle({ type: "play" });
-    const r = run(s, 1.2), lat = s.latency;
+    s.handle({ type: "play", at: 0.5 });
+    const r = run(s, 0.7), lat = s.latency;
     assert(Math.abs(r.L[lat + 1]) < 0.1 && Math.abs(r.L[lat + Math.round(0.02 * SR)] - 0.5 * PAN0) < 1e-3, "淡入");
-    const tailPk = peak(r.L, sec(1) + lat + sec(0.01), sec(1) + lat + sec(0.02));
+    const tailPk = peak(r.L, sec(0.5) + lat + sec(0.01), sec(0.5) + lat + sec(0.02));
     assert(tailPk > 0.03 && tailPk < 0.5 * PAN0, `范围尾淡出中（${tailPk}）`);
   });
 });
@@ -463,5 +463,56 @@ describe("循环按谱的长度绕、接缝两边的唱段接上（v0.16.59，us
     assert(at(a, 2.7) > at(a, 0.7) * 1.3, `接缝后叠上了上一圈的尾音（${at(a, 2.7)} vs 第一圈 ${at(a, 0.7)}）`);
     // 放了 3.3 s = 第二圈谱上 0.8 s：A（到 0.6）和 Z 的尾音（到 2.6 − 2 = 0.6）都响完了
     assert(at(a, 3.3) < 1e-3, `接缝的尾巴响完就没了（${at(a, 3.3)}）`);
+  });
+});
+
+describe("起放那一刻开始的音不被压（2026-11-12，统筹：查清谁压的、同一个音放 0 秒和错开 1 秒逐样本一样；只该作用在上次留下的声音上）", () => {
+  // 被压的是推子的去拉链斜坡：新轨 / 新总线的「上一块的增益」从 0 起，第一块 128 帧从 0 走到推子（第 1 毫秒约 20%）。
+  //   斜坡只为正在响的声音换增益时不出拉链声；上一块这条轨一点声都没有 = 没有要去拉链的东西，直接到位。块淡入同理：只在起点切进一个块中间时才淡入。
+  const OFF = 1;   // 错开 1 秒（= 375 块，块边界和 tsf 的 64 帧网格都对齐）
+  const NOTE = { t1: 0.08, key: 60, vel: 110 / 127 };
+  /** 同一个音：起放那一刻开始 vs 错开 OFF 秒开始，从 0 起放，把两份对齐回来（a 的 0 = b 的 OFF）。 */
+  async function pair(setup: (s: Studio, t0: number) => void, secs = 0.3): Promise<{ a: Float32Array; b: Float32Array; aR: Float32Array; bR: Float32Array }> {
+    const one = async (t0: number) => { const { s } = await studio(); setup(s, t0); s.handle({ type: "play" }); return run(s, t0 + secs); };
+    const x = await one(0), y = await one(OFF), n = Math.round(secs * SR), k = Math.round(OFF * SR);
+    return { a: x.L.subarray(0, n), b: y.L.subarray(k, k + n), aR: x.R.subarray(0, n), bR: y.R.subarray(k, k + n) };
+  }
+  const diff = (a: Float32Array, b: Float32Array) => { let d = 0; for (let i = 0; i < a.length; i++) d = Math.max(d, Math.abs(a[i] - b[i])); return d; };
+  const sfOne = (t0: number) => tl([sfTrack("p", [{ t0, t1: t0 + NOTE.t1, key: NOTE.key, vel: NOTE.vel }])], { from: 0, to: t0 + 1 });
+  for (const limiter of [false, true]) {
+    it(`乐器的音、推子 −6 dB 声像右 0.3（限幅${limiter ? "开" : "关"}）：放 0 秒和错开 1 秒逐样本一样`, async () => {
+      const r = await pair((s, t0) => { s.handle({ type: "timeline", tl: sfOne(t0) }); s.handle({ type: "channel", id: "p", p: { gainDb: -6.0206, pan: 0.3 } }); s.handle({ type: "master", p: { limiter } }); });
+      assert(peak(r.b) > 0.01, "有声");
+      eq(diff(r.a, r.b), 0, "左"); eq(diff(r.aR, r.bR), 0, "右");
+    });
+  }
+  it("发到混音轨、出到混音轨：混音轨的推子也不压音头", async () => {
+    const r = await pair((s, t0) => {
+      s.handle({ type: "timeline", tl: sfOne(t0) });
+      s.handle({ type: "buses", buses: [{ id: "b1", gainDb: -3, pan: -0.2, chain: [] }, { id: "b2", gainDb: 2, pan: 0, chain: [] }] as never });
+      s.handle({ type: "channel", id: "p", p: { to: "b1", sends: [{ to: "b2", gainDb: -6 }] } as never });
+    });
+    assert(peak(r.b) > 0.01, "有声"); eq(diff(r.a, r.b), 0);
+  });
+  it("块（唱的那一路）：起点正好在块头 = 不淡入；起点切进块中间才淡入", async () => {
+    const r = await pair((s, t0) => { s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(0.2, 0.5) }); s.handle({ type: "timeline", tl: tl([clipTrack("a", "A", t0, 0.2)], { from: 0, to: t0 + 1 }) }); });
+    assert(peak(r.b) > 0.3, "有声"); eq(diff(r.a, r.b), 0);
+    const { s } = await studio(); s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(1, 0.5) }); s.handle({ type: "timeline", tl: tl([clipTrack("a", "A", 0, 1)], { from: 0, to: 1 }) });
+    s.handle({ type: "play", at: 0.5 }); const m = run(s, 0.05);
+    assert(Math.abs(m.L[0]) < 0.5 * PAN0 * 0.01 && Math.abs(m.L[Math.round(sec(0.02))] - 0.5 * PAN0) < 1e-3, "切进中间 = 10 ms 淡入（不咔哒）");
+  });
+  it("停着的时候拧了推子再放：音头照样到位（不从上一次的推子斜坡过来）", async () => {
+    const { s } = await studio();
+    s.handle({ type: "timeline", tl: sfOne(0) }); s.handle({ type: "play" }); run(s, 0.3); s.handle({ type: "stop" }); run(s, 3);   // 放一遍、停、尾巴响完
+    s.handle({ type: "channel", id: "p", p: { gainDb: -12 } }); s.handle({ type: "play", at: 0 }); const a = run(s, 0.3);
+    const { s: s2 } = await studio(); s2.handle({ type: "timeline", tl: sfOne(OFF) }); s2.handle({ type: "channel", id: "p", p: { gainDb: -12 } }); s2.handle({ type: "play" });
+    const b = run(s2, OFF + 0.3), k = Math.round(OFF * SR);
+    assert(peak(a.L) > 0.001, "有声"); eq(diff(a.L, b.L.subarray(k, k + a.L.length)), 0);
+  });
+  it("正在响的声音换推子照样走斜坡（不出拉链声）", async () => {
+    const { s } = await studio(); s.handle({ type: "chunk", key: "A", sr: SR, samples: flat(1, 0.4) }); s.handle({ type: "timeline", tl: tl([clipTrack("a", "A", 0, 1)], { from: 0, to: 1 }) });
+    s.handle({ type: "master", p: { limiter: false } });   // 限幅器有 9 ms 前瞻（输出晚 432 帧），关掉好直接看这一块
+    s.handle({ type: "play" }); run(s, 0.1); s.handle({ type: "channel", id: "a", p: { gainDb: -20 } }); const r = run(s, 0.01);
+    assert(r.L[0] > 0.4 * PAN0 * 0.9 && r.L[BLOCK - 1] < 0.4 * PAN0 * 0.15 && r.L[BLOCK / 2] < r.L[0] && r.L[BLOCK / 2] > r.L[BLOCK - 1], `一块里从原来的走到 −20 dB（${r.L[0]} → ${r.L[BLOCK / 2]} → ${r.L[BLOCK - 1]}）`);
   });
 });

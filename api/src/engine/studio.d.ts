@@ -268,7 +268,8 @@ interface Bus {
     pan: number;
     mute: boolean;
     gl: number;
-    gr: number;
+    gr: number; /** 同 TrackState.sounded：上一块这条总线（链之后）有没有声。 */
+    sounded: boolean;
     fx: FxInstance[];
     L: Float32Array;
     R: Float32Array; /** 出到的总线（null = 总轨）。 */
@@ -377,6 +378,8 @@ export declare class Studio {
     /** 起点（见 play 消息的 quiet）：-Infinity = 没有。跳转 / 循环绕回 / 停 = 清掉（循环第二遍前一段照常响）。
      *  user 2026-10-10「为什么从sheet C播放的时候会带前一个音，也不知道是sheet B的还是stop的时候没弄干净」：从某一段放时起点提前 PRE_ROLL（月读的辅音在拍子前），这一小截落在前一段最后一个音里，追音把它补按下去、前一句的块（带收尾余音）也放出来。 */
     private quiet;
+    /** 这一块没跑 renderTracks（不放也不收尾）；见 TrackState.sounded。 */
+    private idle;
     private mutedNote;
     private mutedClip;
     private play;
@@ -395,6 +398,8 @@ export declare class Studio {
     private killAll;
     /** 游标对齐到 pos；chase = 把 pos 这一刻该响着的音按下（起放 / seek / 续放），正在响的先松开。 */
     private resetCursors;
+    /** 起点落在这条块轨某一块的中间（块头之后、块尾之前）。 */
+    private cutsInto;
     private releaseAll;
     private noteOn;
     private noteOff;

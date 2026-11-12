@@ -34254,7 +34254,7 @@ function siteFile(name) {
     case "mp3-worker":
       return pick(() => "mp3-worker-da08b4c8433f.mjs");
     case "studio-worklet":
-      return pick(() => "studio-worklet-c4ece9852cff.mjs");
+      return pick(() => "studio-worklet-23eab1edf660.mjs");
     case "layout-worker":
       return pick(() => "layout-worker-4e5f1abb51fd.mjs");
     case "encode-worker":
@@ -39146,7 +39146,7 @@ var Studio = class {
         this.buses = /* @__PURE__ */ new Map();
         for (const b3 of m2.buses) {
           const had = old.get(b3.id);
-          this.buses.set(b3.id, { id: b3.id, gainDb: b3.gainDb, pan: b3.pan, mute: !!b3.mute, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b3.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] });
+          this.buses.set(b3.id, { id: b3.id, gainDb: b3.gainDb, pan: b3.pan, mute: !!b3.mute, gl: had?.gl ?? 0, gr: had?.gr ?? 0, sounded: had?.sounded ?? false, fx: buildChain(b3.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] });
         }
         this.busList = busOrder(m2.buses, this.buses);
         return;
@@ -39212,7 +39212,7 @@ var Studio = class {
     for (const spec of tl2.tracks) {
       const prev = old.get(spec.id);
       if (prev && prev.spec.kind === "clips") prevClips.set(spec.id, prev.spec.clips);
-      const t10 = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, hold: null, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
+      const t10 = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, sounded: false, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, hold: null, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
       t10.spec = spec;
       t10.ch = this.channels.get(spec.id) ?? t10.ch;
       t10.perfFx = buildChain(spec.chain ?? [], t10.perfFx, this.sr);
@@ -39283,6 +39283,8 @@ var Studio = class {
   /** 起点（见 play 消息的 quiet）：-Infinity = 没有。跳转 / 循环绕回 / 停 = 清掉（循环第二遍前一段照常响）。
    *  user 2026-10-10「为什么从sheet C播放的时候会带前一个音，也不知道是sheet B的还是stop的时候没弄干净」：从某一段放时起点提前 PRE_ROLL（月读的辅音在拍子前），这一小截落在前一段最后一个音里，追音把它补按下去、前一句的块（带收尾余音）也放出来。 */
   quiet = -Infinity;
+  /** 这一块没跑 renderTracks（不放也不收尾）；见 TrackState.sounded。 */
+  idle = true;
   mutedNote(n10) {
     return n10.t1 <= this.quiet;
   }
@@ -39387,7 +39389,7 @@ var Studio = class {
     for (const t10 of this.tracks.values()) {
       if (chase) {
         this.releaseAll(t10);
-        t10.env = 0;
+        t10.env = this.cutsInto(t10) ? 0 : 1;
       }
       t10.envTarget = 1;
       const segs = t10.spec.gain;
@@ -39406,6 +39408,12 @@ var Studio = class {
       }
       t10.nextNote = i10;
     }
+  }
+  /** 起点落在这条块轨某一块的中间（块头之后、块尾之前）。 */
+  cutsInto(t10) {
+    if (t10.spec.kind !== "clips") return false;
+    for (const c10 of t10.spec.clips) if (c10.t0 < this.pos && c10.t0 + c10.dur > this.pos && !this.mutedClip(c10)) return true;
+    return false;
   }
   releaseAll(t10) {
     if (t10.sf) this.tsf.allOff(t10.sf.player);
@@ -39480,14 +39488,24 @@ var Studio = class {
     }
     if (this.playing) this.renderTransport(n10);
     else if (this.draining) this.renderDrain(n10);
+    else if (!this.idle) {
+      this.idle = true;
+      for (const t10 of this.tracks.values()) t10.sounded = false;
+    }
     for (const b3 of this.busList) {
       for (const fx of b3.fx) fx.process(b3.L, b3.R, n10, null);
-      const [gl, gr] = b3.mute ? [0, 0] : panGains(b3.gainDb, b3.pan), dl = (gl - b3.gl) / n10, dr = (gr - b3.gr) / n10;
+      const [gl, gr] = b3.mute ? [0, 0] : panGains(b3.gainDb, b3.pan);
+      if (!b3.sounded) {
+        b3.gl = gl;
+        b3.gr = gr;
+      }
+      const dl = (gl - b3.gl) / n10, dr = (gr - b3.gr) / n10;
       let cl2 = b3.gl, cr2 = b3.gr;
       if (this.specOn) this.specPush(b3.id, b3.L, b3.R, n10, Math.hypot(b3.gl, b3.gr), Math.hypot(gl, gr));
       const L2 = b3.out ? b3.out.L : this.busL, R2 = b3.out ? b3.out.R : this.busR;
-      let pk = 0, ms = 0, pre = 0;
+      let pk = 0, ms = 0, pre = 0, nz2 = false;
       for (let i10 = 0; i10 < n10; i10++) {
+        if (b3.L[i10] !== 0 || b3.R[i10] !== 0) nz2 = true;
         cl2 += dl;
         cr2 += dr;
         const l10 = b3.L[i10] * cl2 * Math.SQRT2, r10 = b3.R[i10] * cr2 * Math.SQRT2;
@@ -39517,6 +39535,7 @@ var Studio = class {
       }
       b3.gl = gl;
       b3.gr = gr;
+      b3.sounded = nz2;
     }
     for (const fx of this.masterFx) fx.process(this.busL, this.busR, n10, null);
     this.renderAuditions(n10);
@@ -39758,13 +39777,18 @@ var Studio = class {
       for (const fx of t10.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t10, fx.id) : null);
       const audible = solo ? t10.ch.solo : !t10.ch.mute;
       const [gl, gr] = audible ? panGains(t10.ch.gainDb, t10.ch.pan) : [0, 0];
+      if (!t10.sounded) {
+        t10.gl = gl;
+        t10.gr = gr;
+      }
       if (this.specOn) this.specPush(id2, out, null, cnt, Math.hypot(t10.gl, t10.gr), Math.hypot(gl, gr));
       const dl = (gl - t10.gl) / cnt, dr = (gr - t10.gr) / cnt;
       const bus = t10.ch.to && t10.ch.to !== "master" ? this.buses.get(t10.ch.to) : void 0, L2 = bus ? bus.L : this.busL, R2 = bus ? bus.R : this.busR;
       let cl2 = t10.gl, cr2 = t10.gr, pk = 0, ms = 0;
       const sto = this.stereoOn;
-      let pre = 0;
+      let pre = 0, nz2 = false;
       for (let i10 = 0; i10 < cnt; i10++) {
+        if (out[i10] !== 0) nz2 = true;
         cl2 += dl;
         cr2 += dr;
         L2[off + i10] += out[i10] * cl2;
@@ -39794,7 +39818,9 @@ var Studio = class {
       }
       t10.gl = gl;
       t10.gr = gr;
+      t10.sounded = nz2;
     }
+    this.idle = false;
   }
   /** 压缩器的侧链：通道条上 id 是 fxId 的那台写了 key = 别的轨 id → 那条轨这一段的第一趟输出；没写 / 找不到 = null（听自己）。 */
   keyOf(t10, fxId) {
@@ -44592,7 +44618,7 @@ ${tg2.fx}`);
 
 // src/core/version.ts
 var CORE_VERSION = "0.2.5";
-var CORE_HASH = true ? "33797b3bf89d8df3" : "dev";
+var CORE_HASH = true ? "c696ec949e21f4e0" : "dev";
 var coreInfo = () => ({ version: CORE_VERSION, hash: CORE_HASH });
 
 // src/ui/md-lite.ts
@@ -64542,4 +64568,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-e08b7500e033.mjs.map
+//# sourceMappingURL=moonsinger-026ce4eb898a.mjs.map

@@ -938,7 +938,7 @@ var Studio = class {
         this.buses = /* @__PURE__ */ new Map();
         for (const b of m.buses) {
           const had = old.get(b.id);
-          this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, mute: !!b.mute, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] });
+          this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, mute: !!b.mute, gl: had?.gl ?? 0, gr: had?.gr ?? 0, sounded: had?.sounded ?? false, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] });
         }
         this.busList = busOrder(m.buses, this.buses);
         return;
@@ -1004,7 +1004,7 @@ var Studio = class {
     for (const spec of tl.tracks) {
       const prev = old.get(spec.id);
       if (prev && prev.spec.kind === "clips") prevClips.set(spec.id, prev.spec.clips);
-      const t = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, hold: null, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
+      const t = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, sounded: false, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, hold: null, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
       t.spec = spec;
       t.ch = this.channels.get(spec.id) ?? t.ch;
       t.perfFx = buildChain(spec.chain ?? [], t.perfFx, this.sr);
@@ -1075,6 +1075,8 @@ var Studio = class {
   /** 起点（见 play 消息的 quiet）：-Infinity = 没有。跳转 / 循环绕回 / 停 = 清掉（循环第二遍前一段照常响）。
    *  user 2026-10-10「为什么从sheet C播放的时候会带前一个音，也不知道是sheet B的还是stop的时候没弄干净」：从某一段放时起点提前 PRE_ROLL（月读的辅音在拍子前），这一小截落在前一段最后一个音里，追音把它补按下去、前一句的块（带收尾余音）也放出来。 */
   quiet = -Infinity;
+  /** 这一块没跑 renderTracks（不放也不收尾）；见 TrackState.sounded。 */
+  idle = true;
   mutedNote(n) {
     return n.t1 <= this.quiet;
   }
@@ -1179,7 +1181,7 @@ var Studio = class {
     for (const t of this.tracks.values()) {
       if (chase) {
         this.releaseAll(t);
-        t.env = 0;
+        t.env = this.cutsInto(t) ? 0 : 1;
       }
       t.envTarget = 1;
       const segs = t.spec.gain;
@@ -1198,6 +1200,12 @@ var Studio = class {
       }
       t.nextNote = i;
     }
+  }
+  /** 起点落在这条块轨某一块的中间（块头之后、块尾之前）。 */
+  cutsInto(t) {
+    if (t.spec.kind !== "clips") return false;
+    for (const c of t.spec.clips) if (c.t0 < this.pos && c.t0 + c.dur > this.pos && !this.mutedClip(c)) return true;
+    return false;
   }
   releaseAll(t) {
     if (t.sf) this.tsf.allOff(t.sf.player);
@@ -1272,14 +1280,24 @@ var Studio = class {
     }
     if (this.playing) this.renderTransport(n);
     else if (this.draining) this.renderDrain(n);
+    else if (!this.idle) {
+      this.idle = true;
+      for (const t of this.tracks.values()) t.sounded = false;
+    }
     for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
-      const [gl, gr] = b.mute ? [0, 0] : panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n;
+      const [gl, gr] = b.mute ? [0, 0] : panGains(b.gainDb, b.pan);
+      if (!b.sounded) {
+        b.gl = gl;
+        b.gr = gr;
+      }
+      const dl = (gl - b.gl) / n, dr = (gr - b.gr) / n;
       let cl = b.gl, cr = b.gr;
       if (this.specOn) this.specPush(b.id, b.L, b.R, n, Math.hypot(b.gl, b.gr), Math.hypot(gl, gr));
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
-      let pk = 0, ms = 0, pre = 0;
+      let pk = 0, ms = 0, pre = 0, nz = false;
       for (let i = 0; i < n; i++) {
+        if (b.L[i] !== 0 || b.R[i] !== 0) nz = true;
         cl += dl;
         cr += dr;
         const l = b.L[i] * cl * Math.SQRT2, r = b.R[i] * cr * Math.SQRT2;
@@ -1309,6 +1327,7 @@ var Studio = class {
       }
       b.gl = gl;
       b.gr = gr;
+      b.sounded = nz;
     }
     for (const fx of this.masterFx) fx.process(this.busL, this.busR, n, null);
     this.renderAuditions(n);
@@ -1550,13 +1569,18 @@ var Studio = class {
       for (const fx of t.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t, fx.id) : null);
       const audible = solo ? t.ch.solo : !t.ch.mute;
       const [gl, gr] = audible ? panGains(t.ch.gainDb, t.ch.pan) : [0, 0];
+      if (!t.sounded) {
+        t.gl = gl;
+        t.gr = gr;
+      }
       if (this.specOn) this.specPush(id, out, null, cnt, Math.hypot(t.gl, t.gr), Math.hypot(gl, gr));
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : void 0, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr, pk = 0, ms = 0;
       const sto = this.stereoOn;
-      let pre = 0;
+      let pre = 0, nz = false;
       for (let i = 0; i < cnt; i++) {
+        if (out[i] !== 0) nz = true;
         cl += dl;
         cr += dr;
         L[off + i] += out[i] * cl;
@@ -1586,7 +1610,9 @@ var Studio = class {
       }
       t.gl = gl;
       t.gr = gr;
+      t.sounded = nz;
     }
+    this.idle = false;
   }
   /** 压缩器的侧链：通道条上 id 是 fxId 的那台写了 key = 别的轨 id → 那条轨这一段的第一趟输出；没写 / 找不到 = null（听自己）。 */
   keyOf(t, fxId) {
@@ -1918,4 +1944,4 @@ ${(e?.stack ?? "").split("\n").slice(0, 6).join("\n")}`;
   }
 };
 registerProcessor("studio", StudioProcessor);
-//# sourceMappingURL=studio-worklet-c4ece9852cff.mjs.map
+//# sourceMappingURL=studio-worklet-23eab1edf660.mjs.map

@@ -117,6 +117,8 @@ interface TrackState {
   spec: TrackSpec;
   ch: ChannelParams;
   gl: number; gr: number;                 // 现在的线性增益（去拉链用）
+  /** 上一块这条轨（通道链之后、推子之前）有没有声：没有 = 推子不走斜坡、直接到位（见 renderTracks 第二趟）。 */
+  sounded: boolean;
   y: number; gk: number;                  // 表情曲线：当前平滑值、段下标
   nextNote: number;                       // 下一个还没按下的音
   offs: { t: number; key: number; preset: number }[];   // 已按下、等着松开的音（按 t 排）
@@ -128,7 +130,7 @@ interface TrackState {
   src: Float32Array; out: Float32Array;   // 第一趟（出声 + 曲线 + 演奏者链）/ 第二趟（通道链）的这一段；src 给别的轨当侧链 key
   perfFx: FxInstance[]; chFx: FxInstance[];
 }
-interface Bus { id: string; gainDb: number; pan: number; mute: boolean; gl: number; gr: number; fx: FxInstance[]; L: Float32Array; R: Float32Array; /** 出到的总线（null = 总轨）。 */ out: Bus | null; sends: { bus: Bus; lin: number }[] }
+interface Bus { id: string; gainDb: number; pan: number; mute: boolean; gl: number; gr: number; /** 同 TrackState.sounded：上一块这条总线（链之后）有没有声。 */ sounded: boolean; fx: FxInstance[]; L: Float32Array; R: Float32Array; /** 出到的总线（null = 总轨）。 */ out: Bus | null; sends: { bus: Bus; lin: number }[] }
 interface Audition { inst: AuditionInst; key: number; gl: number; gr: number }
 interface ClipVoice { src: string; data: Float32Array; ratio: number; pos: number; env: number; state: "attack" | "hold" | "release" | "cut"; gl: number; gr: number }
 
@@ -281,7 +283,7 @@ export class Studio {
       }
       case "buses": {
         const old = this.buses; this.buses = new Map();
-        for (const b of m.buses) { const had = old.get(b.id); this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, mute: !!b.mute, gl: had?.gl ?? 0, gr: had?.gr ?? 0, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] }); }
+        for (const b of m.buses) { const had = old.get(b.id); this.buses.set(b.id, { id: b.id, gainDb: b.gainDb, pan: b.pan, mute: !!b.mute, gl: had?.gl ?? 0, gr: had?.gr ?? 0, sounded: had?.sounded ?? false, fx: buildChain(b.chain, had?.fx ?? [], this.sr), L: had?.L ?? new Float32Array(BLOCK), R: had?.R ?? new Float32Array(BLOCK), out: null, sends: [] }); }
         this.busList = busOrder(m.buses, this.buses);
         return;
       }
@@ -315,7 +317,7 @@ export class Studio {
     for (const spec of tl.tracks) {
       const prev = old.get(spec.id);
       if (prev && prev.spec.kind === "clips") prevClips.set(spec.id, prev.spec.clips);
-      const t: TrackState = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, hold: null, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
+      const t: TrackState = prev ?? { spec, ch: this.channels.get(spec.id) ?? { ...DEFAULT_CH }, gl: 0, gr: 0, sounded: false, y: 1, gk: 0, nextNote: 0, offs: [], sf: null, vowels: [], env: 1, envTarget: 1, hold: null, src: new Float32Array(BLOCK), out: new Float32Array(BLOCK), perfFx: [], chFx: [] };
       t.spec = spec; t.ch = this.channels.get(spec.id) ?? t.ch;
       t.perfFx = buildChain(spec.chain ?? [], t.perfFx, this.sr);
       if (!prev) t.chFx = buildChain(t.ch.chain ?? [], [], this.sr);
@@ -360,6 +362,8 @@ export class Studio {
   /** 起点（见 play 消息的 quiet）：-Infinity = 没有。跳转 / 循环绕回 / 停 = 清掉（循环第二遍前一段照常响）。
    *  user 2026-10-10「为什么从sheet C播放的时候会带前一个音，也不知道是sheet B的还是stop的时候没弄干净」：从某一段放时起点提前 PRE_ROLL（月读的辅音在拍子前），这一小截落在前一段最后一个音里，追音把它补按下去、前一句的块（带收尾余音）也放出来。 */
   private quiet = -Infinity;
+  /** 这一块没跑 renderTracks（不放也不收尾）；见 TrackState.sounded。 */
+  private idle = true;
   private mutedNote(n: NoteEv): boolean { return n.t1 <= this.quiet; }
   private mutedClip(c: ClipRef): boolean { return c.end !== undefined && c.end <= this.quiet; }
   private play(at?: number, quiet?: number): void {
@@ -415,7 +419,7 @@ export class Studio {
   /** 游标对齐到 pos；chase = 把 pos 这一刻该响着的音按下（起放 / seek / 续放），正在响的先松开。 */
   private resetCursors(chase: boolean): void {
     for (const t of this.tracks.values()) {
-      if (chase) { this.releaseAll(t); t.env = 0; }
+      if (chase) { this.releaseAll(t); t.env = this.cutsInto(t) ? 0 : 1; }   // 块的淡入只在起点切进一个块的中间时（不咔哒）；起点正好在块头 / 两块之间 = 不淡（2026-11-12：原来一律从 0 淡入 10 ms，起放那一刻开始的那句音头被压）
       t.envTarget = 1;
       const segs = t.spec.gain;
       if (segs && segs.length) { let k = 0; while (k < segs.length - 1 && this.pos >= segs[k].t1) k++; t.gk = k; if (chase) t.y = dbToLin(segs[k].dB); }
@@ -424,6 +428,12 @@ export class Studio {
       while (i < notes.length && notes[i].t0 < this.pos) { if (chase && notes[i].t1 > this.pos && !this.mutedNote(notes[i])) this.noteOn(t, notes[i]); i++; }
       t.nextNote = i;
     }
+  }
+  /** 起点落在这条块轨某一块的中间（块头之后、块尾之前）。 */
+  private cutsInto(t: TrackState): boolean {
+    if (t.spec.kind !== "clips") return false;
+    for (const c of t.spec.clips) if (c.t0 < this.pos && c.t0 + c.dur > this.pos && !this.mutedClip(c)) return true;
+    return false;
   }
   private releaseAll(t: TrackState): void {
     if (t.sf) this.tsf.allOff(t.sf.player);
@@ -476,19 +486,21 @@ export class Studio {
     const tStart = now();
     this.busL.fill(0, 0, n); this.busR.fill(0, 0, n); this.audL.fill(0, 0, n); this.audR.fill(0, 0, n);
     for (const b of this.buses.values()) { b.L.fill(0, 0, n); b.R.fill(0, 0, n); }
-    if (this.playing) this.renderTransport(n); else if (this.draining) this.renderDrain(n);
+    if (this.playing) this.renderTransport(n); else if (this.draining) this.renderDrain(n); else if (!this.idle) { this.idle = true; for (const t of this.tracks.values()) t.sounded = false; }   // 不放也不收尾 = 各轨这一块没出声
     // 总线：各轨 / 别的总线送来的 → 这条总线的链（混响 / 延迟…）→ 增益 / 平衡 → 出到总轨或下一条总线（+ 推子后的发送）。
     //   按 busOrder 的顺序（送出去的先处理），轮到一条总线时送进它的都已经加好了（v0.10.9 总线接总线）。
     for (const b of this.busList) {
       for (const fx of b.fx) fx.process(b.L, b.R, n, null);
-      const [gl, gr] = b.mute ? [0, 0] : panGains(b.gainDb, b.pan), dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;   // 静音 = 推子到底（照样走斜坡，不咔哒）
+      const [gl, gr] = b.mute ? [0, 0] : panGains(b.gainDb, b.pan);
+      if (!b.sounded) { b.gl = gl; b.gr = gr; }   // 同歌手轨：上一块没声 = 不走斜坡
+      const dl = (gl - b.gl) / n, dr = (gr - b.gr) / n; let cl = b.gl, cr = b.gr;   // 静音 = 推子到底（照样走斜坡，不咔哒）
       if (this.specOn) this.specPush(b.id, b.L, b.R, n, Math.hypot(b.gl, b.gr), Math.hypot(gl, gr));   // 频谱：推子之后（等功率 → hypot = 推子，声像不算）
       const L = b.out ? b.out.L : this.busL, R = b.out ? b.out.R : this.busR;
-      let pk = 0, ms = 0, pre = 0;
-      for (let i = 0; i < n; i++) { cl += dl; cr += dr; const l = b.L[i] * cl * Math.SQRT2, r = b.R[i] * cr * Math.SQRT2; L[i] += l; R[i] += r; if (this.meterOn) { const a = Math.abs(l), c = Math.abs(r); if (a > pk) pk = a; if (c > pk) pk = c; ms += (l * l + r * r) * 0.5; const u = Math.max(Math.abs(b.L[i]), Math.abs(b.R[i])); if (u > pre) pre = u; } if (this.stereoOn) this.stereoPush(b.id, l, r); }   // 立体声的平衡：正中 = 原样
+      let pk = 0, ms = 0, pre = 0, nz = false;
+      for (let i = 0; i < n; i++) { if (b.L[i] !== 0 || b.R[i] !== 0) nz = true; cl += dl; cr += dr; const l = b.L[i] * cl * Math.SQRT2, r = b.R[i] * cr * Math.SQRT2; L[i] += l; R[i] += r; if (this.meterOn) { const a = Math.abs(l), c = Math.abs(r); if (a > pk) pk = a; if (c > pk) pk = c; ms += (l * l + r * r) * 0.5; const u = Math.max(Math.abs(b.L[i]), Math.abs(b.R[i])); if (u > pre) pre = u; } if (this.stereoOn) this.stereoPush(b.id, l, r); }   // 立体声的平衡：正中 = 原样
       if (this.meterOn) { this.trackPeaks.set(b.id, Math.max(this.trackPeaks.get(b.id) ?? 0, pk)); this.trackMs.set(b.id, (this.trackMs.get(b.id) ?? 0) + ms); this.grOf(b.id, b.fx, pre); }
       for (const sd of b.sends) { const sl = gl * sd.lin * Math.SQRT2, sr = gr * sd.lin * Math.SQRT2; for (let i = 0; i < n; i++) { sd.bus.L[i] += b.L[i] * sl; sd.bus.R[i] += b.R[i] * sr; } }
-      b.gl = gl; b.gr = gr;
+      b.gl = gl; b.gr = gr; b.sounded = nz;
     }
     for (const fx of this.masterFx) fx.process(this.busL, this.busR, n, null);   // 总轨链（母带 EQ / 压缩…），限幅在最后
     this.renderAuditions(n);
@@ -616,22 +628,26 @@ export class Studio {
       for (const fx of t.chFx) fx.process(out, null, cnt, fx.kind === "comp" ? this.keyOf(t, fx.id) : null);
       const audible = solo ? t.ch.solo : !t.ch.mute;
       const [gl, gr] = audible ? panGains(t.ch.gainDb, t.ch.pan) : [0, 0];
+      // 推子的斜坡只为正在响的声音换增益时不出拉链声：上一块这条轨一点声都没有 = 没有要去拉链的东西，直接到位。
+      //   （2026-11-12 查的「起放那一刻的音头被压 3 毫秒」：新轨的上一块增益从 0 起，第一块 128 帧从 0 走到推子；停着拧过推子再放同样。）
+      if (!t.sounded) { t.gl = gl; t.gr = gr; }
       // 频谱：推子之后（v0.10.15，user「spectrum也算了fader，是全量send的东西对吧？」= 这条轨真正送进混音的量；静音 = 没有；等功率 → hypot = 推子，声像不算，同峰值细线的尺子）
       if (this.specOn) this.specPush(id, out, null, cnt, Math.hypot(t.gl, t.gr), Math.hypot(gl, gr));
       const dl = (gl - t.gl) / cnt, dr = (gr - t.gr) / cnt;
       const bus = t.ch.to && t.ch.to !== "master" ? this.buses.get(t.ch.to) : undefined, L = bus ? bus.L : this.busL, R = bus ? bus.R : this.busR;
       let cl = t.gl, cr = t.gr, pk = 0, ms = 0;
       const sto = this.stereoOn;   // 李萨如图：每张卡都有（v0.10.21，user「性能允许的时候示波器应该每个卡都有，一视同仁，才整齐」）——单声道轨 = 声像那个角度的一根线
-      let pre = 0;
-      for (let i = 0; i < cnt; i++) { cl += dl; cr += dr; L[off + i] += out[i] * cl; R[off + i] += out[i] * cr; if (sto) this.stereoPush(id, out[i] * cl, out[i] * cr); if (this.meterOn) { const u = Math.abs(out[i]); if (u > pre) pre = u; const a = u * Math.max(cl, cr) * Math.SQRT2; if (a > pk) pk = a; ms += out[i] * out[i] * (cl * cl + cr * cr); } }   // 峰值按「正中 = 原样」的尺子（和总线一样）；均方 = (x·推子)²（等功率：cl² + cr² = 推子²，声像不算）
+      let pre = 0, nz = false;
+      for (let i = 0; i < cnt; i++) { if (out[i] !== 0) nz = true; cl += dl; cr += dr; L[off + i] += out[i] * cl; R[off + i] += out[i] * cr; if (sto) this.stereoPush(id, out[i] * cl, out[i] * cr); if (this.meterOn) { const u = Math.abs(out[i]); if (u > pre) pre = u; const a = u * Math.max(cl, cr) * Math.SQRT2; if (a > pk) pk = a; ms += out[i] * out[i] * (cl * cl + cr * cr); } }   // 峰值按「正中 = 原样」的尺子（和总线一样）；均方 = (x·推子)²（等功率：cl² + cr² = 推子²，声像不算）
       if (this.meterOn) { this.trackPeaks.set(id, Math.max(this.trackPeaks.get(id) ?? 0, pk)); this.trackMs.set(id, (this.trackMs.get(id) ?? 0) + ms); this.grOf(id, t.chFx, pre); }
       if (t.ch.sends) for (const sd of t.ch.sends) {   // 发送（推子之后）
         const b = this.buses.get(sd.to); if (!b) continue;
         const g = dbToLin(sd.gainDb), sl = gl * g, sr2 = gr * g;
         for (let i = 0; i < cnt; i++) { b.L[off + i] += out[i] * sl; b.R[off + i] += out[i] * sr2; }
       }
-      t.gl = gl; t.gr = gr;
+      t.gl = gl; t.gr = gr; t.sounded = nz;
     }
+    this.idle = false;
   }
   /** 压缩器的侧链：通道条上 id 是 fxId 的那台写了 key = 别的轨 id → 那条轨这一段的第一趟输出；没写 / 找不到 = null（听自己）。 */
   private keyOf(t: TrackState, fxId: string): Float32Array | null {
