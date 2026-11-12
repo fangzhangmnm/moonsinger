@@ -10413,6 +10413,8 @@ var TEXT_STYLES = {
   // 字母谱的角标（7-L）：半粗，学小字号专用字形的思路——缩小了笔画不跟着变细；字号在图元上（字母的 SCRIPT_K 倍） "jp-head": s("sans", TEMPO_EM, "staff"),   // 谱头「1=C 3/4」：常规粗细（第五刀起照样张；字号在图元上 = 0.773 个数字字号）
   // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
   "jp-chord": s("sans", 2, "staff"),
+  // 数字行连音的小数字（8-3；7-P 小字补粗：字号 1.1 = 主字的 0.44 倍 → 算出来的粗细）
+  "jp-tuplet": s("sans", 1.1, "staff", smallWeight(1.1 / JP_MAIN_EM)),
   // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）
   "jp-dyn": s("sans", 2, "staff", 400, true),
   // 简谱整套鼓的图例（5-6，统筹裁定）：行首名字下面「● 大鼓 / 小鼓」，正文字体小一号、跟字的尺子（同名字）
@@ -13714,7 +13716,12 @@ var T0 = (tok) => tok !== void 0 ? { tok } : {};
 var textInk = (x0, x1, top, base2) => ({ x0, x1, y0: top, y1: base2 });
 var part = (ink, prims) => ({ ink, prims });
 var unionInk = (ks) => ({ x0: Math.min(...ks.map((k2) => k2.x0)), x1: Math.max(...ks.map((k2) => k2.x1)), y0: Math.min(...ks.map((k2) => k2.y0)), y1: Math.max(...ks.map((k2) => k2.y1)) });
-var ulBottom = (nUL, letters) => UL_Y0 + (nUL - 1) * UL_GAP + UL_W / 2 + (letters ? SUB_DROP : 0);
+function coreBottom(u2, q2, mode, aux) {
+  if (!u2.note || u2.ghost || !u2.pitch || contDash(u2)) return BASE_Y;
+  if (mode === "x") return q2.p.perc?.kind === "kit" ? BASE_Y - DIGIT_H * 0.12 : BASE_Y;
+  return lettersOf(q2, u2, mode, aux) ? BASE_Y + SUB_DY * (u2.art.includes("ghost") ? GHOST_K : 1) : BASE_Y;
+}
+var UL_DROP = UL_Y0 - BASE_Y;
 function accRun(gs, em2, xr, top, cls, T3) {
   const prims = [], w2 = accRunW(gs, em2), h2 = Math.max(...gs.map((g3) => (g3.box[3] - g3.box[2]) * em2 / 4));
   let x2 = xr - w2;
@@ -13731,6 +13738,7 @@ function noteCell(a10) {
   const x0 = 0.1, cx2 = x0 + glyphW / 2, n10 = extraGlyphs(u2), contDash2 = contDash(u2), small = u2.art.includes("ghost"), gk = small ? GHOST_K : 1;
   const letters = q2.letters !== void 0 && mode === "digits", xHead = mode === "digits" && !!q2.p.xHead, kit = q2.p.perc?.kind === "kit";
   const nUL = underlines(u2);
+  const ulBot = nUL ? (a10.ulY ?? coreBottom(u2, q2, mode, aux) + UL_DROP) + (nUL - 1) * UL_GAP + UL_W / 2 : 0;
   const head = cell();
   const digitPart = (x2, y2, s10, cls, k2 = gk) => part(textInk(x2 - DIGIT_W * k2 / 2, x2 + DIGIT_W * k2 / 2, y2 - DIGIT_H * k2, y2), [{ ...T3, t: "text", x: x2, y: y2, s: s10, cls, size: DIGIT_EM * k2, anchor: "middle" }]);
   const dashPart = (x2) => part({ x0: x2 - DASH_L / 2, x1: x2 + DASH_L / 2, y0: DASH_Y - DASH_W / 2, y1: DASH_Y + DASH_W / 2 }, [{ ...T3, t: "line", x1: x2 - DASH_L / 2, y1: DASH_Y, x2: x2 + DASH_L / 2, y2: DASH_Y, w: DASH_W, cls: "jp-dash" }]);
@@ -13743,9 +13751,10 @@ function noteCell(a10) {
     const g3 = groupOf(id2), k2 = count[g3] ?? 0, gap = gapOf(id2, k2);
     count[g3] = k2 + 1;
     if (PLACE[id2].side === "left" && leftGap === void 0) leftGap = gap;
+    if (PLACE[id2].side === "below" && nUL) head.reserve("below", ulBot);
     return c10.attach(PLACE[id2].side, p2, { gap, ...o10 });
   };
-  let members = [], hiBase = BASE_Y, top, bot;
+  let members = [], hiBase = BASE_Y, top;
   if (u2.note && (u2.ghost || !u2.pitch)) {
     head.core(contDash2 ? dashPart(cx2) : digitPart(cx2, BASE_Y, "x", "jp-digit ghost", 1));
   } else if (u2.note && u2.pitch) {
@@ -13770,10 +13779,7 @@ function noteCell(a10) {
         stick("arpeggio", arpPart(yTop, yBot, T3, art2("arpeggio", "arpeggio jp-arp")), { cross: 0 });
       }
       if (bd > 0) stick("dotHigh", dots(1), { cross: 0 });
-      if (bd < 0) {
-        if (nUL) head.reserve("below", ulBottom(nUL, false));
-        stick("dotLow", dots(-1), { cross: 0 });
-      }
+      if (bd < 0) stick("dotLow", dots(-1), { cross: 0 });
       members = [{ i: 0, yb: BASE_Y }];
     } else if (mode === "x" && kit) {
       const hits = ps.map((pp, i10) => ({ i: i10, pi: percOf(128, 0, midiOf(pp)) })).sort((p1, p2) => (p2.pi?.line ?? 4) - (p1.pi?.line ?? 4) || p2.i - p1.i);
@@ -13834,7 +13840,6 @@ function noteCell(a10) {
         stick("dotHigh", part({ x0: cx2 - DOT_R, x1: cx2 + DOT_R, y0: -(2 * DOT_R + (hiDots - 1) * DOT_STEP), y1: 0 }, ps2), { cross: 0 });
       }
       if (lowDots < 0) {
-        if (nUL) head.reserve("below", ulBottom(nUL, letters));
         const ps2 = [];
         for (let j2 = 0; j2 < -lowDots; j2++) ps2.push({ ...T3, t: "path", d: dotPath(cx2, DOT_R + j2 * DOT_STEP, DOT_R), cls: "jp-dot" + mute(order[0]) });
         stick("dotLow", part({ x0: cx2 - DOT_R, x1: cx2 + DOT_R, y0: 0, y1: 2 * DOT_R + (-lowDots - 1) * DOT_STEP }, ps2), { cross: 0 });
@@ -13853,7 +13858,6 @@ function noteCell(a10) {
         stick("xmark", part({ x0: 0, x1: w2, y0: y2 - w2, y1: y2 }, [{ ...T3, t: "text", x: 0, y: y2, s: "\xD7", cls: u2.whisper ? art2("whisper", "jp-acc whisper") : "jp-acc xhead", size: ACC_EM, anchor: "start" }]), { cross: 0 });
       }
       if (u2.art.includes("roll")) {
-        if (nUL) head.reserve("below", ulBottom(nUL, letters));
         const ps2 = [];
         for (let k2 = 0; k2 < 3; k2++) {
           const yy = 0.18 + k2 * 0.28;
@@ -13861,11 +13865,12 @@ function noteCell(a10) {
         }
         stick("roll", part({ x0: cx2 - 0.4, x1: cx2 + 0.4, y0: 0, y1: 0.18 + 2 * 0.28 + 0.18 }, ps2), { cross: 0 });
       }
-      bot = Math.max(head.edge("below"), nUL ? ulBottom(nUL, letters) : BASE_Y + (lt2 ? SUB_DROP : 0));
     }
   } else {
     head.core(digitPart(cx2, BASE_Y, "0", "jp-digit", 1));
   }
+  if (nUL) head.reserve("below", ulBot);
+  const bot = head.edge("below");
   const whole = cell();
   whole.core(part(head.box(), head.prims(0, 0)));
   for (let k2 = 1; k2 <= n10; k2++) whole.core(u2.note ? dashPart(gx(k2)) : digitPart(gx(k2), BASE_Y, "0", "jp-digit", 1));
@@ -13883,7 +13888,7 @@ function noteCell(a10) {
     const gap = a10.limit === void 0 ? PLACE.breath.gap : Math.max(0.1, Math.min(PLACE.breath.gap, a10.limit - 0.6 - w2 - e10));
     whole.attach(PLACE.breath.side, part({ x0: 0, x1: w2, y0: -0.7 * BREATH_EM, y1: 0 }, prims), { gap, cross: BREATH_Y });
   }
-  return { cell: whole, x0, cx: cx2, glyphW, members, hiBase, ...top !== void 0 ? { top } : {}, ...bot !== void 0 ? { bot } : {}, ...leftGap !== void 0 ? { leftGap } : {} };
+  return { cell: whole, x0, cx: cx2, glyphW, members, hiBase, bot, ...top !== void 0 ? { top } : {}, ...leftGap !== void 0 ? { leftGap } : {} };
 }
 function tailW(u2) {
   return hasAugDot(u2) ? PLACE.augDot.gap + 2 * AUG_R + 0.1 : 0;
@@ -14124,6 +14129,13 @@ function drawJianpu(c10, mine, mode = "digits") {
     const artCls = (a10, base3 = "art") => [base3, ign.has(a10) ? "art-mute" : ""].filter(Boolean).join(" ");
     const arcAt = /* @__PURE__ */ new Map();
     const ul2 = [];
+    const ulKey = (v) => `${v.system}|${v.tick - v.inBar}|${Math.floor((v.inBar + 1e-6) / v.beat)}`;
+    const ulTop = /* @__PURE__ */ new Map();
+    for (const v of units) if (v.kind === "chunk" && !v.pad && underlines(v)) {
+      const k2 = ulKey(v), y2 = coreBottom(v, q2, mode, c10.aux[r10]) + UL_DROP;
+      ulTop.set(k2, Math.max(ulTop.get(k2) ?? -Infinity, y2));
+    }
+    const botOf = /* @__PURE__ */ new Map();
     let fifths = q2.head.key;
     for (const u2 of units) {
       if (u2.kind === "key") {
@@ -14195,6 +14207,7 @@ function drawJianpu(c10, mine, mode = "digits") {
         ...c10.aux[r10] ? { aux: c10.aux[r10] } : {},
         fifths,
         base: base2,
+        ...underlines(u2) ? { ulY: ulTop.get(ulKey(u2)) } : {},
         step: n10 ? Math.max(DASH_PITCH, (span2 / jk - tailW(u2)) / (n10 + 1)) : null,
         limit: span2 / jk,
         ...tok !== void 0 ? { tok } : {},
@@ -14209,6 +14222,7 @@ function drawJianpu(c10, mine, mode = "digits") {
         }
       }
       const x0 = P2(u2.x) + Q2(nc2.x0), cx2 = P2(u2.x) + Q2(nc2.cx), glyphW = nc2.glyphW;
+      botOf.set(u2, nc2.bot);
       if (u2.note && (u2.ghost || !u2.pitch)) {
         if (u2.j === 0) notes.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, DIGIT_MID), w: Q2(DIGIT_W), d: NaN });
         if (u2.j === 0 && !u2.tie) spots.push({ index: u2.index, sys: u2.system, row: row2, cx0: cx2, mx0: x0 - Q2(0.6), mx1: x0 + Q2(DIGIT_W) + Q2(0.4), lyric: u2.lyric, tok, cls: "ghost", mute: !!q2.p.lyricMute?.has(tokens[u2.index]?.id ?? -1), hyph: !!tokens[u2.index]?.hyph });
@@ -14222,7 +14236,7 @@ function drawJianpu(c10, mine, mode = "digits") {
           for (const m2 of nc2.members) if (m2.i > 0) chordHeads.push({ index: u2.index, system: row2, x: x0, y: Y2(row2, m2.yb - DIGIT_H / 2), w: Q2(DIGIT_W) });
         }
         if (!contDash2) {
-          arcAt.set(u2, { row: row2, cx: cx2, top: nc2.top, bot: nc2.bot });
+          arcAt.set(u2, { row: row2, cx: cx2, top: nc2.top });
           const local = u2.art.includes("staccato") || u2.art.includes("tenuto"), strong = ["accent", "marcato", "stress", "unstress"].filter((x2) => u2.art.includes(x2));
           const chev = (a10, yb, st2) => {
             const xa = cx2 - Q2(CHEV_W / 2), xb = cx2 + Q2(CHEV_W / 2), ym = yb - Q2(CHEV_H / 2), yt = yb - Q2(CHEV_H), t10 = Q2(st2) * 0.54;
@@ -14247,8 +14261,8 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
       const nUL = underlines(u2);
       if (nUL) {
-        const bar0 = u2.tick - u2.inBar, uh = fd2 || lt2 ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
-        ul2.push({ row: row2, x0: cx2 - Q2(uh), x1: cx2 + Q2(uh), level: nUL, group: `${u2.system}|${bar0}|${Math.floor((u2.inBar + 1e-6) / u2.beat)}`, tok, ch: u2 });
+        const uh = fd2 || lt2 ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W;
+        ul2.push({ row: row2, x0: cx2 - Q2(uh), x1: cx2 + Q2(uh), level: nUL, group: ulKey(u2), y0: ulTop.get(ulKey(u2)), tok, ch: u2 });
       }
     }
     const tups = [];
@@ -14274,22 +14288,32 @@ function drawJianpu(c10, mine, mode = "digits") {
       }
       flush2();
     }
-    const NUM_EM = 1.1, numCap = DIGIT_H * (NUM_EM / DIGIT_EM), GAP_HALF = 0.45, HOOK = 0.35;
-    const ulY = (L2) => UL_Y0 + (L2 - 1) * UL_GAP + (letters ? SUB_DROP : 0);
+    const NUM_EM = 1.1, numCap = DIGIT_H * (NUM_EM / DIGIT_EM), GAP_HALF = 0.45, HOOK = 0.35, TUP_GAP = 0.25, DASH_ON = 0.45, DASH_OFF = 0.3;
     const ulOf = new Map(ul2.map((e10) => [e10.ch, e10]));
-    const gaps = [];
     const tupDraw = [];
     for (const { run: run2, num: num2 } of tups) {
       const first = run2[0], last = run2[run2.length - 1], row2 = rowOf(first.system, r10, 0), x1 = P2(first.x) + Q2(0.1), x2 = last.system === first.system ? P2(last.x) + Q2(0.1 + glyphWOf(last, c10.aux[r10], q2)) : P2(c10.right), mid = (x1 + x2) / 2;
       const Ls = Math.min(...run2.map((v) => ulOf.get(v)?.level ?? 0)), g0 = ulOf.get(first)?.group, onLine = Ls >= 1 && last.system === first.system && run2.every((v) => ulOf.get(v)?.group === g0);
-      if (onLine) {
-        gaps.push({ row: row2, level: Ls, x0: mid - Q2(GAP_HALF), x1: mid + Q2(GAP_HALF) });
-        tupDraw.push(() => put2(row2, { t: "text", x: mid, y: Y2(row2, ulY(Ls) + numCap / 2), s: num2, cls: "tuplet jp-tuplet", size: Q2(NUM_EM), anchor: "middle" }));
-      } else {
-        const yl = Math.max(...run2.map((v) => arcAt.get(v)?.bot ?? BASE_Y)) + DOT_GAP + numCap / 2;
+      const low = Math.max(...run2.map((v) => botOf.get(v) ?? BASE_Y));
+      if (onLine) tupDraw.push(() => put2(row2, { t: "text", x: mid, y: Y2(row2, low + TUP_GAP + numCap), s: num2, cls: "tuplet jp-tuplet", size: Q2(NUM_EM), anchor: "middle" }));
+      else {
+        const yl = low + TUP_GAP + numCap / 2;
         tupDraw.push(() => {
           put2(row2, { t: "text", x: mid, y: Y2(row2, yl + numCap / 2), s: num2, cls: "tuplet jp-tuplet", size: Q2(NUM_EM), anchor: "middle" });
-          put2(row2, { t: "path", d: `M${x1},${Y2(row2, yl - HOOK)}L${x1},${Y2(row2, yl)}L${mid - Q2(GAP_HALF)},${Y2(row2, yl)}M${mid + Q2(GAP_HALF)},${Y2(row2, yl)}L${x2},${Y2(row2, yl)}L${x2},${Y2(row2, yl - HOOK)}`, cls: "tuplet-bracket" });
+          const y2 = Y2(row2, yl), yh = Y2(row2, yl - HOOK), on2 = Q2(DASH_ON), off = Q2(DASH_OFF);
+          const dashes = (a10, b3) => {
+            const len = b3 - a10;
+            if (len <= 1e-6) return "";
+            const n10 = Math.max(1, Math.round((len + off) / (on2 + off))), unit = (len + off) / n10, dl = unit - off * (unit / (on2 + off));
+            let d3 = "";
+            for (let k2 = 0; k2 < n10; k2++) {
+              const x3 = a10 + k2 * unit;
+              d3 += `M${x3},${y2}L${Math.min(b3, x3 + dl)},${y2}`;
+            }
+            return d3;
+          };
+          put2(row2, { t: "path", d: `M${x1},${yh}L${x1},${y2}M${x2},${y2}L${x2},${yh}`, cls: "tuplet-bracket" });
+          put2(row2, { t: "path", d: dashes(x1, mid - Q2(GAP_HALF)) + dashes(mid + Q2(GAP_HALF), x2), cls: "tuplet-bracket tuplet-dash" });
         });
       }
     }
@@ -14303,14 +14327,8 @@ function drawJianpu(c10, mine, mode = "digits") {
         }
         let j2 = i10;
         while (j2 + 1 < ul2.length && ul2[j2 + 1].level >= L2 && ul2[j2 + 1].group === ul2[i10].group) j2++;
-        const a10 = ul2[i10], b3 = ul2[j2], y2 = Y2(a10.row, ulY(L2));
-        let xs = a10.x0;
-        const cuts = gaps.filter((gp) => gp.row === a10.row && gp.level <= L2 && gp.x1 > a10.x0 && gp.x0 < b3.x1).sort((p2, q22) => p2.x0 - q22.x0);
-        for (const gp of cuts) {
-          if (gp.x0 > xs) put2(a10.row, { ...i10 === j2 && a10.tok !== void 0 && xs === a10.x0 ? { tok: a10.tok } : {}, t: "line", x1: xs, y1: y2, x2: gp.x0, y2, w: Q2(UL_W), cls: "jp-ul" });
-          xs = Math.max(xs, gp.x1);
-        }
-        if (b3.x1 > xs) put2(a10.row, { ...i10 === j2 && a10.tok !== void 0 && xs === a10.x0 ? { tok: a10.tok } : {}, t: "line", x1: xs, y1: y2, x2: b3.x1, y2, w: Q2(UL_W), cls: "jp-ul" });
+        const a10 = ul2[i10], b3 = ul2[j2], y2 = Y2(a10.row, a10.y0 + (L2 - 1) * UL_GAP);
+        put2(a10.row, { ...i10 === j2 && a10.tok !== void 0 ? { tok: a10.tok } : {}, t: "line", x1: a10.x0, y1: y2, x2: b3.x1, y2, w: Q2(UL_W), cls: "jp-ul" });
         i10 = j2 + 1;
       }
     }
@@ -33523,7 +33541,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-c4ece9852cff.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-4d9ec5b8c73f.mjs");
+      return pick(() => "layout-worker-1ef86f28393a.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-a34d6dc28f15.mjs");
   }
@@ -63603,4 +63621,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-f0f7cb554efe.mjs.map
+//# sourceMappingURL=moonsinger-8e5f1038f698.mjs.map

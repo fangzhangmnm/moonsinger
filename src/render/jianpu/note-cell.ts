@@ -24,6 +24,8 @@ export interface NoteCellIn {
   step: number | null;
   /** 这一段占到哪（数字行的单位，相对这一列）：换气的 V 不越过它（离它留一点），挤不下最多贴到离最后一个字形 0.1；量的时候不用给。 */
   limit?: number;
+  /** 第一条下划线的中线（局部 y）：同一拍的一组先对齐到组里最低的核（8-3「成组的」）——画的时候 draw.ts 按组算好给；没给 = 按自己的核（量的时候）。 */
+  ulY?: number;
   tok?: number;
   /** 演奏法的类名（台上那位不认的画灰）；量的时候不用给。 */
   artCls?: (a: string, base?: string) => string;
@@ -36,8 +38,10 @@ export interface NoteCellOut {
   x0: number; cx: number; glyphW: number;
   /** 叠着的每个音：ps 里的下标、基线（点击框用）；最上面那个的基线。 */
   members: { i: number; yb: number }[]; hiBase: number;
-  /** 画了数字的音（不是接着上一段的横线）：弧线和连音括号要的上下沿（局部 y）。 */
-  top?: number; bot?: number;
+  /** 画了数字的音（不是接着上一段的横线）：弧线要的上沿（局部 y）。 */
+  top?: number;
+  /** 盒子下边到哪（局部 y；含下划线、低八度点、滚奏）：连音的数字 / 括号贴在一组里最低的那个下面。 */
+  bot: number;
   /** 左边挂了东西（升降号、琶音）：紧挨着音的那一个离音多远。量的时候框架按它要求「前一个音的墨到这个挂件」至少 4 倍（统筹定的规矩）。 */
   leftGap?: number;
 }
@@ -46,8 +50,14 @@ const T0 = (tok: number | undefined) => (tok !== undefined ? { tok } : {});
 const textInk = (x0: number, x1: number, top: number, base: number): Ink => ({ x0, x1, y0: top, y1: base });
 const part = (ink: Ink, prims: Prim[]): Part => ({ ink, prims });
 const unionInk = (ks: readonly Ink[]): Ink => ({ x0: Math.min(...ks.map((k) => k.x0)), x1: Math.max(...ks.map((k) => k.x1)), y0: Math.min(...ks.map((k) => k.y0)), y1: Math.max(...ks.map((k) => k.y1)) });
-/** 下划线最下面那条的底（局部 y）：低八度点、滚奏贴在它外面（8-3 前下划线还不在盒子里）。 */
-const ulBottom = (nUL: number, letters: boolean): number => UL_Y0 + (nUL - 1) * UL_GAP + UL_W / 2 + (letters ? SUB_DROP : 0);
+/** 核的下沿（局部 y）：最低的那个字形的底——数字 / 0 / X = 基线；字母谱 = 右下角八度数字的底；整套鼓的件字往上挪了一点。下划线按一组里最低的这个对齐（8-3）。 */
+export function coreBottom(u: Chunk, q: JianpuTrack, mode: JianpuMode, aux?: JianpuAux): number {
+  if (!u.note || u.ghost || !u.pitch || isContDash(u)) return BASE_Y;
+  if (mode === "x") return q.p.perc?.kind === "kit" ? BASE_Y - DIGIT_H * 0.12 : BASE_Y;
+  return lettersOf(q, u, mode, aux) ? BASE_Y + SUB_DY * (u.art.includes("ghost") ? GHOST_K : 1) : BASE_Y;
+}
+/** 第一条下划线离核的下沿多远（中线；样张：数字基线下 0.273 字号）。 */
+export const UL_DROP = UL_Y0 - BASE_Y;
 /** 一串升降号字形（7-P：Bravura）：右边对齐 xr、顶在 top；回图元和墨迹框。 */
 function accRun(gs: readonly { ch: string; box: readonly number[] }[], em: number, xr: number, top: number, cls: string, T: { tok?: number }): { prims: Prim[]; ink: Ink } {
   const prims: Prim[] = [], w = accRunW(gs, em), h = Math.max(...gs.map((g) => ((g.box[3]! - g.box[2]!) * em) / 4));
@@ -62,6 +72,8 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
   const x0 = 0.1, cx = x0 + glyphW / 2, n = extraGlyphs(u), contDash = isContDash(u), small = u.art.includes("ghost"), gk = small ? GHOST_K : 1;
   const letters = q.letters !== undefined && mode === "digits", xHead = mode === "digits" && !!q.p.xHead, kit = q.p.perc?.kind === "kit";
   const nUL = underlines(u);
+  /** 这个音自己那几层下划线最下面一条的底（局部 y）：低八度点、滚奏、连音的数字都贴在它外面。 */
+  const ulBot = nUL ? (a.ulY ?? coreBottom(u, q, mode, aux) + UL_DROP) + (nUL - 1) * UL_GAP + UL_W / 2 : 0;
   const head = cell();
   const digitPart = (x: number, y: number, s: string, cls: string, k = gk): Part =>
     part(textInk(x - (DIGIT_W * k) / 2, x + (DIGIT_W * k) / 2, y - DIGIT_H * k, y), [{ ...T, t: "text", x, y, s, cls, size: DIGIT_EM * k, anchor: "middle" }]);
@@ -76,9 +88,10 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
   const stick = (id: PlaceId, p: Part, o: { align?: "center" | "start" | "end"; cross?: number } = {}, c: Cell = head): Ink => {
     const g = groupOf(id), k = count[g] ?? 0, gap = gapOf(id, k); count[g] = k + 1;
     if (PLACE[id].side === "left" && leftGap === undefined) leftGap = gap;
+    if (PLACE[id].side === "below" && nUL) head.reserve("below", ulBot);   // 有下划线 = 下面的东西贴在下划线底下（7-D；8-3 下划线按组对齐）
     return c.attach(PLACE[id].side, p, { gap, ...o });
   };
-  let members: { i: number; yb: number }[] = [], hiBase = BASE_Y, top: number | undefined, bot: number | undefined;
+  let members: { i: number; yb: number }[] = [], hiBase = BASE_Y, top: number | undefined;
 
   if (u.note && (u.ghost || !u.pitch)) {   // 没写音高的音：灰色「x」+ 长音横线（施工单第五节先顶上的写法）
     head.core(contDash ? dashPart(cx) : digitPart(cx, BASE_Y, "x", "jp-digit ghost", 1));
@@ -99,7 +112,7 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
         const yTop = BASE_Y - CHORD_H - 0.2, yBot = BASE_Y + 0.2; stick("arpeggio", arpPart(yTop, yBot, T, art("arpeggio", "arpeggio jp-arp")), { cross: 0 });
       }
       if (bd > 0) stick("dotHigh", dots(1), { cross: 0 });
-      if (bd < 0) { if (nUL) head.reserve("below", ulBottom(nUL, false)); stick("dotLow", dots(-1), { cross: 0 }); }
+      if (bd < 0) stick("dotLow", dots(-1), { cross: 0 });
       members = [{ i: 0, yb: BASE_Y }];
     } else if (mode === "x" && kit) {   // 整套鼓：每一下按五线鼓谱的符头种类换字；同时敲的几件按五线鼓谱上的高低叠；幽灵音 = 小一号
       const hits = ps.map((pp, i) => ({ i, pi: percOf(128, 0, midiOf(pp)) })).sort((p1, p2) => (p2.pi?.line ?? 4) - (p1.pi?.line ?? 4) || p2.i - p1.i);
@@ -146,7 +159,6 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
       if (hasArp(u)) stick("arpeggio", arpPart(hiBase - DIGIT_H - 0.2, bases[0]! + 0.2, T, art("arpeggio", "arpeggio jp-arp")), { cross: 0 });
       if (hiDots > 0) { const ps2: Prim[] = []; for (let j = 0; j < hiDots; j++) ps2.push({ ...T, t: "path", d: dotPath(cx, -(DOT_R + j * DOT_STEP), DOT_R), cls: "jp-dot" + mute(0) }); stick("dotHigh", part({ x0: cx - DOT_R, x1: cx + DOT_R, y0: -(2 * DOT_R + (hiDots - 1) * DOT_STEP), y1: 0 }, ps2), { cross: 0 }); }
       if (lowDots < 0) {
-        if (nUL) head.reserve("below", ulBottom(nUL, letters));   // 有下划线 = 点在下划线底下（7-D）
         const ps2: Prim[] = []; for (let j = 0; j < -lowDots; j++) ps2.push({ ...T, t: "path", d: dotPath(cx, DOT_R + j * DOT_STEP, DOT_R), cls: "jp-dot" + mute(order[0]!) });
         stick("dotLow", part({ x0: cx - DOT_R, x1: cx + DOT_R, y0: 0, y1: 2 * DOT_R + (-lowDots - 1) * DOT_STEP }, ps2), { cross: 0 });
       }
@@ -164,15 +176,15 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
         stick("xmark", part({ x0: 0, x1: w, y0: y - w, y1: y }, [{ ...T, t: "text", x: 0, y, s: "×", cls: u.whisper ? art("whisper", "jp-acc whisper") : "jp-acc xhead", size: ACC_EM, anchor: "start" }]), { cross: 0 });
       }
       if (u.art.includes("roll")) {   // 滚奏 = 数字下面三道短斜线（UX 稿第 7 节）
-        if (nUL) head.reserve("below", ulBottom(nUL, letters));
         const ps2: Prim[] = []; for (let k = 0; k < 3; k++) { const yy = 0.18 + k * 0.28; ps2.push({ ...T, t: "line", x1: cx - 0.4, y1: yy + 0.18, x2: cx + 0.4, y2: yy - 0.18, w: 0.11, cls: art("roll", "jp-roll") }); }
         stick("roll", part({ x0: cx - 0.4, x1: cx + 0.4, y0: 0, y1: 0.18 + 2 * 0.28 + 0.18 }, ps2), { cross: 0 });
       }
-      bot = Math.max(head.edge("below"), nUL ? ulBottom(nUL, letters) : BASE_Y + (lt ? SUB_DROP : 0));
     }
   } else {   // 休止：一拍一个 0（第一个在头里）
     head.core(digitPart(cx, BASE_Y, "0", "jp-digit", 1));
   }
+  if (nUL) head.reserve("below", ulBot);
+  const bot = head.edge("below");
   // 整个：头 + 后面落在拍上的横线 / 0（核）+ 附点、换气（贴在最右边）
   const whole = cell();
   whole.core(part(head.box(), head.prims(0, 0)));
@@ -187,7 +199,7 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
     const gap = a.limit === undefined ? PLACE.breath.gap : Math.max(0.1, Math.min(PLACE.breath.gap, a.limit - 0.6 - w - e));   // 不越过这一段占到的地方（下一列 / 小节线），离它留一点（原 draw.ts 的规矩）
     whole.attach(PLACE.breath.side, part({ x0: 0, x1: w, y0: -0.7 * BREATH_EM, y1: 0 }, prims), { gap, cross: BREATH_Y });
   }
-  return { cell: whole, x0, cx, glyphW, members, hiBase, ...(top !== undefined ? { top } : {}), ...(bot !== undefined ? { bot } : {}), ...(leftGap !== undefined ? { leftGap } : {}) };
+  return { cell: whole, x0, cx, glyphW, members, hiBase, bot, ...(top !== undefined ? { top } : {}), ...(leftGap !== undefined ? { leftGap } : {}) };
 }
 /** 画的时候横线 / 0 按「这一段占到的宽 − 它」一拍一个摆：只给附点让（附点和横线同高）。换气的 V 在上面、不挤横线（统筹看 5-6 样张定的；量的时候照样给它留了宽）。 */
 export function tailW(u: Chunk): number {

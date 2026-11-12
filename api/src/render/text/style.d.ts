@@ -70,6 +70,7 @@ export declare const TEXT_STYLES: {
     "jp-letter-sup": TextStyle;
     "jp-letter-sub": TextStyle;
     "jp-chord": TextStyle;
+    "jp-tuplet": TextStyle;
     "jp-dyn": TextStyle;
     "jp-legend": TextStyle;
 };

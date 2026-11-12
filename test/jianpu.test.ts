@@ -405,23 +405,29 @@ describe("简谱数字行", () => {
     const cs = GEOMETRY.jianpu.caretSpan(row, 5), a = DRAWERS.jianpu.anchors(row.staffTop, 5 * (row.scale ?? 1));   // 行身按这一行的尺寸比例取（第五刀 5-0c）
     assert(cs.y1 < a.top + 1e-6 && cs.y2 > a.bottom - 1e-6, "光标盖住行身");
   });
-  it("连音放在下面（7-H，user 11-11「三连音的逻辑错了吧，不是说好了放下面吗」）：连成一条下划线 = 小数字压在线上、线断开让位；没连成一条 = 最低的墨下面一道带钩的细括号、数字在中间", () => {
+  it("连音（8-3，user 11-12：带下划线的数字写在横线下面、横线不断；不带下划线的用方钩虚线括号，数字在缺口里）", () => {
     const t3 = TPQ / 3;
     const { L } = lay([n(P("C")), n(P("D"), t3), n(P("E"), t3), n(P("F"), t3), n(P("G"), (2 * TPQ) / 3), n(P("A", 3), t3), n(P("C"))], undefined, { range: { lo: 60, hi: 72 } });   // 八分三连（一条下划线）、四分三连 + 八分三连（低 6，带一个低八度点）
     const tup = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-tuplet/.test(p.cls ?? "")).sort((a, b) => a.x - b.x);
     eq(tup.map((p) => p.s).join(","), "3,3", "两组各一个「3」");
     const dig = L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "")), base = dig[0]!.y, u = dig[0]!.size! / 2.5;   // 一个单位 = 数字字号 / FS
     const uls = L.prims.filter((p): p is Extract<Prim, { t: "line" }> => p.t === "line" && p.cls === "jp-ul"), cap = 1.8 * (1.1 / 2.5) * u;   // 小数字的字高
-    // ① 八分三连：数字的竖直中心落在下划线上；那条线在数字那儿断开（数字左右各一截，中间不画）
-    const a = tup[0]!, line = uls.filter((l) => Math.abs(l.y1 - (a.y - cap / 2)) < 0.05 * u && Math.min(l.x1, l.x2) < (a.x + tup[1]!.x) / 2);   // 第一组那几个音的范围里（按线的左端）
+    // ① 八分三连：下划线一条、不断开；数字在它下面、居中
+    const a = tup[0]!, under = uls.filter((l) => Math.min(l.x1, l.x2) < a.x && Math.max(l.x1, l.x2) > a.x);
     assert(a.y > base, "数字在音的下面");
-    eq(line.length, 2, "压数字的那条下划线断成两截");
-    assert(line.every((l) => Math.max(l.x1, l.x2) <= a.x - 0.3 * u || Math.min(l.x1, l.x2) >= a.x + 0.3 * u), "数字那儿没有线");
-    // ② 四分三连 + 八分三连：括号在这组最低的墨（低 6 的点、八分的下划线）下面、钩朝上，数字压在括号线上
-    const b = tup[1]!, br = L.prims.filter((p): p is Extract<Prim, { t: "path" }> => p.t === "path" && /tuplet-bracket/.test(p.cls ?? ""));
-    eq(br.length, 1, "没连成一条下划线的那组一道括号");
-    const ys = [...br[0]!.d.matchAll(/[ML]([-\d.]+),([-\d.]+)/g)].map((m) => +m[2]!), lineY = Math.max(...ys);
-    assert(ys[0]! < lineY && ys[ys.length - 1]! < lineY, "两头的钩朝上");
+    eq(under.length, 1, "数字上面那条下划线是一整条（不断开）");
+    assert(a.y - cap > under[0]!.y1, "数字的顶在下划线下面");
+    const ulL = Math.min(under[0]!.x1, under[0]!.x2), ulR = Math.max(under[0]!.x1, under[0]!.x2);
+    assert(Math.abs(a.x - (ulL + ulR) / 2) < 1.2 * u, "数字大约在这一组的正中");
+    // ② 四分三连 + 八分三连：方钩虚线括号——两头的钩是实线、朝上；中间是一段段的虚线；数字在缺口里、压在括号线上；括号在这组最低的墨下面
+    const b = tup[1]!, hooks = L.prims.filter((p): p is Extract<Prim, { t: "path" }> => p.t === "path" && /tuplet-bracket/.test(p.cls ?? "") && !/tuplet-dash/.test(p.cls ?? ""));
+    const dash = L.prims.filter((p): p is Extract<Prim, { t: "path" }> => p.t === "path" && /tuplet-dash/.test(p.cls ?? ""));
+    eq(hooks.length, 1, "没连成一条下划线的那组：一道括号的两个钩"); eq(dash.length, 1, "中间一道虚线");
+    const hy = [...hooks[0]!.d.matchAll(/[ML]([-\d.]+),([-\d.]+)/g)].map((m) => +m[2]!), lineY = Math.max(...hy);
+    assert(Math.min(...hy) < lineY, "钩朝上");
+    const segs = [...dash[0]!.d.matchAll(/M([-\d.]+),[-\d.]+L([-\d.]+),/g)].map((m) => [+m[1]!, +m[2]!] as const);
+    assert(segs.length >= 4, `虚线是一段一段的（${segs.length} 段）`);
+    assert(!segs.some(([x0, x1]) => Math.min(x0, x1) < b.x && Math.max(x0, x1) > b.x), "数字那儿是缺口");
     assert(Math.abs(b.y - cap / 2 - lineY) < 0.05 * u, "数字压在括号线上");
     const dotsBelow = L.prims.filter((p) => p.t === "path" && p.cls === "jp-dot").map((p) => +/^M[-\d.]+,([-\d.]+)/.exec((p as { d: string }).d)![1]!), ulBelow = Math.max(...uls.map((l) => l.y1));
     assert(lineY - cap / 2 > Math.max(...dotsBelow, ulBelow), "数字的顶在这组最低的墨（低八度点、下划线）下面");

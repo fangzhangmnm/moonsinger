@@ -23,7 +23,7 @@ import type { LyricSpot, LyricPart } from "../frame/lyric-spots.ts";
 import type { Chunk } from "../frame/units.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf, glyphWOf } from "./chunk.ts";
 import { midTextW } from "./measure.ts";
-import { noteCell, tailW } from "./note-cell.ts";
+import { noteCell, tailW, coreBottom, UL_DROP } from "./note-cell.ts";
 import { scalePrim } from "../skyline.ts";
 import { DIGIT_EM, DIGIT_W, BASE_Y, DIGIT_TOP, DIGIT_MID, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_GAP, DOT_STEP, ACC_EM, ACC_DX, ACC_Y, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_DX, AUG_R,
   BAR_Y0, BAR_Y1, BAR_DX, BAR_THIN, BAR_THICK, BAR_GAP, MID_TEXT_EM, BREATH_W, INHALE_W, ACC_W, ARP_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, JP_BODY, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, AUG_Y, lowDotY, LOW_DOT_UNDER, GHOST_K, HEAD_EM, MARK_GAP, MARK_GAP2, STACC_W, STACC_H, STACC_STEP, CHEV_W, CHEV_H, CHEV_STROKE, CHEV_STROKE_THIN, TEN_L, TEN_W, TEN_DY, TEN_STEP, MARCATO_EM, UNSTRESS_EM, BREATH_EM, BREATH_Y, MID_TEXT_CH, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText } from "./glyphs.ts";
@@ -162,9 +162,15 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
     const ign = new Set(q.p.ignores ?? []);   // 台上这位不认的记号：照画、画灰（纪律）
     const artCls = (a: string, base = "art") => [base, ign.has(a) ? "art-mute" : ""].filter(Boolean).join(" ");
     /** 弧线（延音线 / 圆滑线）要的：每个音的数字中心（px）+ 所在行 + 数字上沿（局部，八度点之上）；bot = 这个音往下的墨最低到哪（局部：下划线 / 低八度点 / 字母谱的下标；7-H 连音括号贴着它）。 */
-    const arcAt = new Map<Chunk, { row: number; cx: number; top: number; bot: number }>();
+    const arcAt = new Map<Chunk, { row: number; cx: number; top: number }>();
     /** 下划线：同一行、同一小节、同一拍里挨着的音 / 休止连成一条（第 L 层只连有 ≥ L 层的）。ch = 哪个音（7-H：连音的组认它）。 */
-    const ul: { row: number; x0: number; x1: number; level: number; group: string; tok: number | undefined; ch: Chunk }[] = [];
+    const ul: { row: number; x0: number; x1: number; level: number; group: string; /** 第一条下划线的中线（局部 y，按组对齐好的）。 */ y0: number; tok: number | undefined; ch: Chunk }[] = [];
+    // 下划线按拍成组（8-3「成组的」）：一组先对齐到组里最低的核（字母谱的下标、鼓的件字各不一样高），再一层一层往下贴
+    const ulKey = (v: Chunk) => `${v.system}|${v.tick - v.inBar}|${Math.floor((v.inBar + 1e-6) / v.beat)}`;
+    const ulTop = new Map<string, number>();
+    for (const v of units) if (v.kind === "chunk" && !v.pad && underlines(v)) { const k = ulKey(v), y = coreBottom(v, q, mode, c.aux[r]) + UL_DROP; ulTop.set(k, Math.max(ulTop.get(k) ?? -Infinity, y)); }
+    /** 每一段盒子的下边（局部 y）：连音的数字 / 括号贴在一组里最低的那个下面。 */
+    const botOf = new Map<Chunk, number>();
     let fifths = q.head.key;
     for (const u of units) {
       if (u.kind === "key") {   // 中途换调：在那一点写新的「1=D」（UX 稿第 3 节）
@@ -211,10 +217,11 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       const fd = mode === "digits" ? foldOf(u, c.aux[r]) : undefined, lt = lettersOf(q, u, mode, c.aux[r]), n = extraGlyphs(u), contDash = isContDash(u);
       // 横线 / 一拍一个 0：每个字形占一拍的宽——按排完版之后这个音实际占到下一列（下一个音 / 小节线 / 行尾）的宽平分，扣掉后面的附点、换气（统筹看 5-6 样张）
       const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
-      const nc = noteCell({ u, q, mode, ...(c.aux[r] ? { aux: c.aux[r] } : {}), fifths, base, step: n ? Math.max(DASH_PITCH, (span / jk - tailW(u)) / (n + 1)) : null, limit: span / jk, ...(tok !== undefined ? { tok } : {}), artCls,
+      const nc = noteCell({ u, q, mode, ...(c.aux[r] ? { aux: c.aux[r] } : {}), fifths, base, ...(underlines(u) ? { ulY: ulTop.get(ulKey(u))! } : {}), step: n ? Math.max(DASH_PITCH, (span / jk - tailW(u)) / (n + 1)) : null, limit: span / jk, ...(tok !== undefined ? { tok } : {}), artCls,
         ...(u.note && u.inhale ? { inhale: { text: u.inhale === "big" ? _tIn(o.locale, "深吸##记号") : _tIn(o.locale, "吸##记号"), size: tx("breath-label") / Q(1) } } : {}) });
       { const ox = P(u.x), oy = staffTop(row), f = Q(1); for (const p of nc.cell.prims(0, 0)) { scalePrim(p, f, ox, oy); put(row, p); } }
       const x0 = P(u.x) + Q(nc.x0), cx = P(u.x) + Q(nc.cx), glyphW = nc.glyphW;
+      botOf.set(u, nc.bot);
       if (u.note && (u.ghost || !u.pitch)) {   // 没写音高的音：点得到、能放字
         if (u.j === 0) notes.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W), d: NaN });
         if (u.j === 0 && !u.tie) spots.push({ index: u.index, sys: u.system, row, cx0: cx, mx0: x0 - Q(0.6), mx1: x0 + Q(DIGIT_W) + Q(0.4), lyric: u.lyric, tok, cls: "ghost", mute: !!q.p.lyricMute?.has(tokens[u.index]?.id ?? -1), hyph: !!(tokens[u.index] as NoteTok | undefined)?.hyph });
@@ -226,7 +233,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         }
         if (u.j === 0) for (const m of nc.members) if (m.i > 0) chordHeads.push({ index: u.index, system: row, x: x0, y: Y(row, m.yb - DIGIT_H / 2), w: Q(DIGIT_W) });   // 叠在一起的别的音：各自一块点击区（指着同一个音 token）
         if (!contDash) {
-          arcAt.set(u, { row, cx, top: nc.top!, bot: nc.bot! });
+          arcAt.set(u, { row, cx, top: nc.top! });
           // 帽子（挂件，贴天际线）：重音 / 次重音 = 描边的 >（重音粗、次重音细——UX 稿第 5 节）；强音 / 弱化 = Bravura 字形，大小照样张
           const local = u.art.includes("staccato") || u.art.includes("tenuto"), strong = (["accent", "marcato", "stress", "unstress"] as const).filter((x) => u.art.includes(x));
           const chev = (a: string, yb: number, st: number): Prim => {   // 一个实心的「>」（两条臂按粗细 st 围成的多边形；臂斜 0.4，竖着的厚 ≈ 1.08 倍粗细）
@@ -246,7 +253,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (u.j === 0 && u.index >= 0) rests.push({ index: u.index, system: row, x: x0, y: Y(row, DIGIT_MID), w: Q(DIGIT_W) });
       }
       const nUL = underlines(u);
-      if (nUL) { const bar0 = u.tick - u.inBar, uh = fd || lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W; ul.push({ row, x0: cx - Q(uh), x1: cx + Q(uh), level: nUL, group: `${u.system}|${bar0}|${Math.floor((u.inBar + 1e-6) / u.beat)}`, tok, ch: u }); }   // 样张：每个数字下面 ±0.45 个数字宽（附点不带）
+      if (nUL) { const uh = fd || lt ? glyphW / 2 - 0.05 * DIGIT_W : 0.45 * DIGIT_W; ul.push({ row, x0: cx - Q(uh), x1: cx + Q(uh), level: nUL, group: ulKey(u), y0: ulTop.get(ulKey(u))!, tok, ch: u }); }   // 样张：每个数字下面 ±0.45 个数字宽（附点不带）
     }
     // 连音的组（UX 稿第 4 节）：同一比例连着的一串凑满就收一组；每组都标（原样从下面挪上来：下划线画之前要知道哪儿断开）
     const tups: { run: Chunk[]; num: string }[] = [];
@@ -260,39 +267,38 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
         if (acc >= v.ratio![1] * minBase - 1e-6) flush();
       }
       flush(); }
-    // 7-H（user 11-11「三连音的逻辑错了吧，不是说好了放下面吗」；UX 稿第 4 节）：这组音连成了一条下划线 = 小数字压在这条线上（组里每个音都有的那一层 = 最上面那条连着的），
-    //   线在数字那儿断开让位（更深的几层同样让开）；没连成一条 = 下划线、低八度点下面一层一道带钩的细括号，数字在括号中间。数字的字号、括号的钩长、数字两边让多宽照原来那一版。
-    const NUM_EM = 1.1, numCap = DIGIT_H * (NUM_EM / DIGIT_EM), GAP_HALF = 0.45, HOOK = 0.35;   // numCap = 数字的字高（局部）：数字行的字高按字号比例换算
-    const ulY = (L: number) => UL_Y0 + (L - 1) * UL_GAP + (letters ? SUB_DROP : 0);   // 第 L 层下划线（局部）；字母谱让开右下角的八度数字
+    // 连音（8-3，user 2026-11-12「带下划线的三连音，把数字写在那个横线下面，而不是写在横线中间…不带下划线的，要不还是用虚线吧，就是方勾虚线」；取代 7-H）：
+    //   这组音连成了一条下划线 = 下划线照画、不断开，数字写在这组最低的墨（最下面那条下划线、低八度点）下面、居中；
+    //   没连成一条 = 方钩的虚线括号（两头直角的短钩是实线、中间是虚线），数字在括号中间的缺口里；括号在这组最低的墨下面。
+    const NUM_EM = 1.1, numCap = DIGIT_H * (NUM_EM / DIGIT_EM), GAP_HALF = 0.45, HOOK = 0.35, TUP_GAP = 0.25, DASH_ON = 0.45, DASH_OFF = 0.3;   // numCap = 数字的字高（局部）
     const ulOf = new Map(ul.map((e) => [e.ch, e] as const));
-    const gaps: { row: number; level: number; x0: number; x1: number }[] = [];
     const tupDraw: (() => void)[] = [];
     for (const { run, num } of tups) {
       const first = run[0]!, last = run[run.length - 1]!, row = rowOf(first.system, r, 0), x1 = P(first.x) + Q(0.1), x2 = last.system === first.system ? P(last.x) + Q(0.1 + glyphWOf(last, c.aux[r], q)) : P(c.right), mid = (x1 + x2) / 2;
       const Ls = Math.min(...run.map((v) => ulOf.get(v)?.level ?? 0)), g0 = ulOf.get(first)?.group, onLine = Ls >= 1 && last.system === first.system && run.every((v) => ulOf.get(v)?.group === g0);
-      if (onLine) {
-        gaps.push({ row, level: Ls, x0: mid - Q(GAP_HALF), x1: mid + Q(GAP_HALF) });
-        tupDraw.push(() => put(row, { t: "text", x: mid, y: Y(row, ulY(Ls) + numCap / 2), s: num, cls: "tuplet jp-tuplet", size: Q(NUM_EM), anchor: "middle" }));
-      } else {
-        const yl = Math.max(...run.map((v) => arcAt.get(v)?.bot ?? BASE_Y)) + DOT_GAP + numCap / 2;   // 括号那道线（局部）：组里最低的墨往下一个「点离数字」的间隙，再让出半个数字高（数字压在线上）
+      const low = Math.max(...run.map((v) => botOf.get(v) ?? BASE_Y));   // 这组最低的墨（局部）：盒子的下边（含下划线、低八度点、滚奏）
+      if (onLine) tupDraw.push(() => put(row, { t: "text", x: mid, y: Y(row, low + TUP_GAP + numCap), s: num, cls: "tuplet jp-tuplet", size: Q(NUM_EM), anchor: "middle" }));
+      else {
+        const yl = low + TUP_GAP + numCap / 2;   // 括号那道线（局部）：数字的竖直中心在线上
         tupDraw.push(() => {
           put(row, { t: "text", x: mid, y: Y(row, yl + numCap / 2), s: num, cls: "tuplet jp-tuplet", size: Q(NUM_EM), anchor: "middle" });
-          put(row, { t: "path", d: `M${x1},${Y(row, yl - HOOK)}L${x1},${Y(row, yl)}L${mid - Q(GAP_HALF)},${Y(row, yl)}M${mid + Q(GAP_HALF)},${Y(row, yl)}L${x2},${Y(row, yl)}L${x2},${Y(row, yl - HOOK)}`, cls: "tuplet-bracket" });
+          const y = Y(row, yl), yh = Y(row, yl - HOOK), on = Q(DASH_ON), off = Q(DASH_OFF);
+          // 虚线在这里一段段算（屏幕和 PDF 一样，同渐到的虚线）：段数取整、均匀摊开，两头都落在整段上（不在缺口边上留一个小尾巴）
+          const dashes = (a: number, b: number): string => { const len = b - a; if (len <= 1e-6) return ""; const n = Math.max(1, Math.round((len + off) / (on + off))), unit = (len + off) / n, dl = unit - off * (unit / (on + off)); let d = ""; for (let k = 0; k < n; k++) { const x = a + k * unit; d += `M${x},${y}L${Math.min(b, x + dl)},${y}`; } return d; };
+          put(row, { t: "path", d: `M${x1},${yh}L${x1},${y}M${x2},${y}L${x2},${yh}`, cls: "tuplet-bracket" });   // 两头的钩（实线、朝上）
+          put(row, { t: "path", d: dashes(x1, mid - Q(GAP_HALF)) + dashes(mid + Q(GAP_HALF), x2), cls: "tuplet-bracket tuplet-dash" });
         });
       }
     }
-    // 下划线按拍分组（UX 稿第 4 节）：第 L 层 = 一串挨着的、同组、都有 ≥ L 层的连成一条
+    // 下划线按拍分组（UX 稿第 4 节）：第 L 层 = 一串挨着的、同组、都有 ≥ L 层的连成一条；高度 = 这一组对齐好的第一条 + 层数（8-3）
     const maxL = Math.max(0, ...ul.map((e) => e.level));
     for (let L = 1; L <= maxL; L++) {
       let i = 0;
       while (i < ul.length) {
         if (ul[i]!.level < L) { i++; continue; }
         let j = i; while (j + 1 < ul.length && ul[j + 1]!.level >= L && ul[j + 1]!.group === ul[i]!.group) j++;
-        const a = ul[i]!, b = ul[j]!, y = Y(a.row, ulY(L));   // 字母谱：下划线让开右下角的八度数字
-        // 连音的数字压在这一层（或更上面一层）上 = 在那儿断开（7-H）；一段的 tok 照旧给第一截
-        let xs = a.x0; const cuts = gaps.filter((gp) => gp.row === a.row && gp.level <= L && gp.x1 > a.x0 && gp.x0 < b.x1).sort((p, q2) => p.x0 - q2.x0);
-        for (const gp of cuts) { if (gp.x0 > xs) put(a.row, { ...(i === j && a.tok !== undefined && xs === a.x0 ? { tok: a.tok } : {}), t: "line", x1: xs, y1: y, x2: gp.x0, y2: y, w: Q(UL_W), cls: "jp-ul" }); xs = Math.max(xs, gp.x1); }
-        if (b.x1 > xs) put(a.row, { ...(i === j && a.tok !== undefined && xs === a.x0 ? { tok: a.tok } : {}), t: "line", x1: xs, y1: y, x2: b.x1, y2: y, w: Q(UL_W), cls: "jp-ul" });
+        const a = ul[i]!, b = ul[j]!, y = Y(a.row, a.y0 + (L - 1) * UL_GAP);
+        put(a.row, { ...(i === j && a.tok !== undefined ? { tok: a.tok } : {}), t: "line", x1: a.x0, y1: y, x2: b.x1, y2: y, w: Q(UL_W), cls: "jp-ul" });
         i = j + 1;
       }
     }

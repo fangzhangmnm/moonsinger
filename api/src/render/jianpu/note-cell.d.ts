@@ -13,6 +13,8 @@ export interface NoteCellIn {
     step: number | null;
     /** 这一段占到哪（数字行的单位，相对这一列）：换气的 V 不越过它（离它留一点），挤不下最多贴到离最后一个字形 0.1；量的时候不用给。 */
     limit?: number;
+    /** 第一条下划线的中线（局部 y）：同一拍的一组先对齐到组里最低的核（8-3「成组的」）——画的时候 draw.ts 按组算好给；没给 = 按自己的核（量的时候）。 */
+    ulY?: number;
     tok?: number;
     /** 演奏法的类名（台上那位不认的画灰）；量的时候不用给。 */
     artCls?: (a: string, base?: string) => string;
@@ -34,12 +36,17 @@ export interface NoteCellOut {
         yb: number;
     }[];
     hiBase: number;
-    /** 画了数字的音（不是接着上一段的横线）：弧线和连音括号要的上下沿（局部 y）。 */
+    /** 画了数字的音（不是接着上一段的横线）：弧线要的上沿（局部 y）。 */
     top?: number;
-    bot?: number;
+    /** 盒子下边到哪（局部 y；含下划线、低八度点、滚奏）：连音的数字 / 括号贴在一组里最低的那个下面。 */
+    bot: number;
     /** 左边挂了东西（升降号、琶音）：紧挨着音的那一个离音多远。量的时候框架按它要求「前一个音的墨到这个挂件」至少 4 倍（统筹定的规矩）。 */
     leftGap?: number;
 }
+/** 核的下沿（局部 y）：最低的那个字形的底——数字 / 0 / X = 基线；字母谱 = 右下角八度数字的底；整套鼓的件字往上挪了一点。下划线按一组里最低的这个对齐（8-3）。 */
+export declare function coreBottom(u: Chunk, q: JianpuTrack, mode: JianpuMode, aux?: JianpuAux): number;
+/** 第一条下划线离核的下沿多远（中线；样张：数字基线下 0.273 字号）。 */
+export declare const UL_DROP: number;
 export declare function noteCell(a: NoteCellIn): NoteCellOut;
 /** 画的时候横线 / 0 按「这一段占到的宽 − 它」一拍一个摆：只给附点让（附点和横线同高）。换气的 V 在上面、不挤横线（统筹看 5-6 样张定的；量的时候照样给它留了宽）。 */
 export declare function tailW(u: Chunk): number;
