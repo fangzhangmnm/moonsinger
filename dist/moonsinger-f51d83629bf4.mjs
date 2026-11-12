@@ -13692,7 +13692,7 @@ function drawJianpu(c10, mine, mode = "digits") {
       const tailW = hasAugDot(u2) ? AUG_DX + 2 * AUG_R + 0.1 : 0;
       const span2 = (spanTo.get(u2) ?? u2.x + u2.w) - u2.x;
       const step = n10 ? Math.max(DASH_PITCH * jk, (span2 - tailW * jk) / (n10 + 1)) : 0;
-      const lFirst = lt2 ? Math.max(x0 + Q2(DIGIT_W / 2) + P2(step), x0 + Q2(glyphW + DASH_L / 2 + 0.15)) : 0;
+      const lFirst = lt2 ? Math.max(x0 + Q2(DIGIT_W / 2) + P2(step), x0 + Q2(glyphW + DASH_L / 2 + 0.5)) : 0;
       const gx = (k2) => k2 === 0 ? cx2 : lt2 ? lFirst + P2((k2 - 1) * step) : x0 + Q2(glyphW - DIGIT_W / 2) + P2(k2 * step);
       const endX = n10 ? gx(n10) + Q2(DIGIT_W / 2) : x0 + Q2(glyphW);
       const small = u2.art.includes("ghost");
@@ -33037,7 +33037,7 @@ function siteFile(name) {
     case "studio-worklet":
       return pick(() => "studio-worklet-cdbca833c2a0.mjs");
     case "layout-worker":
-      return pick(() => "layout-worker-5e7110308795.mjs");
+      return pick(() => "layout-worker-4cc237ecc0b1.mjs");
     case "encode-worker":
       return pick(() => "encode-worker-2a99dcc81359.mjs");
   }
@@ -62735,4 +62735,4 @@ void midi.resume();
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
 * @license MIT
 **/
-//# sourceMappingURL=moonsinger-31fd57ff1fcf.mjs.map
+//# sourceMappingURL=moonsinger-f51d83629bf4.mjs.map

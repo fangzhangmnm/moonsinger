@@ -213,7 +213,7 @@ export function drawJianpu(c: JianpuDrawCtx, mine: readonly number[], mode: Jian
       const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
       const step = n ? Math.max(DASH_PITCH * jk, (span - tailW * jk) / (n + 1)) : 0;   // sp
       //   字母谱（7-B）：横线照旧落在拍的位置上（一拍一个），只有挨字母和角标太近时才往后让——不整体推（整体推 = 最后一条横线顶到小节线、换气的 V 贴线）
-      const lFirst = lt ? Math.max(x0 + Q(DIGIT_W / 2) + P(step), x0 + Q(glyphW + DASH_L / 2 + 0.15)) : 0;
+      const lFirst = lt ? Math.max(x0 + Q(DIGIT_W / 2) + P(step), x0 + Q(glyphW + DASH_L / 2 + 0.5)) : 0;
       const gx = (k: number) => (k === 0 ? cx : lt ? lFirst + P((k - 1) * step) : x0 + Q(glyphW - DIGIT_W / 2) + P(k * step));   // 第一个字形是和弦名（比数字宽）= 后面的横线往后让出多出来的那截
       const endX = n ? gx(n) + Q(DIGIT_W / 2) : x0 + Q(glyphW);   // 最后一个字形的右边（附点、换气从这里起）
       const small = u.art.includes("ghost");   // 幽灵音（演奏法）= 数字小一号（UX 稿第 5 节）；u.ghost = 没写音高的音（灰，同五线谱的灰符头）

@@ -7343,7 +7343,7 @@ function drawJianpu(c, mine, mode = "digits") {
       const tailW = hasAugDot(u) ? AUG_DX + 2 * AUG_R + 0.1 : 0;
       const span = (spanTo.get(u) ?? u.x + u.w) - u.x;
       const step = n2 ? Math.max(DASH_PITCH * jk, (span - tailW * jk) / (n2 + 1)) : 0;
-      const lFirst = lt ? Math.max(x0 + Q(DIGIT_W / 2) + P(step), x0 + Q(glyphW + DASH_L / 2 + 0.15)) : 0;
+      const lFirst = lt ? Math.max(x0 + Q(DIGIT_W / 2) + P(step), x0 + Q(glyphW + DASH_L / 2 + 0.5)) : 0;
       const gx = (k) => k === 0 ? cx : lt ? lFirst + P((k - 1) * step) : x0 + Q(glyphW - DIGIT_W / 2) + P(k * step);
       const endX = n2 ? gx(n2) + Q(DIGIT_W / 2) : x0 + Q(glyphW);
       const small = u.art.includes("ghost");
@@ -8436,4 +8436,4 @@ if (typeof document === "undefined" && typeof self !== "undefined" && typeof sel
 export {
   runLayoutJob
 };
-//# sourceMappingURL=layout-worker-5e7110308795.mjs.map
+//# sourceMappingURL=layout-worker-4cc237ecc0b1.mjs.map
