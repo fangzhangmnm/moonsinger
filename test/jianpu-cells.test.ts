@@ -29,7 +29,7 @@ function cells(notation: "jianpu" | "letters"): { name: string; c: Cell }[] {
   { const v = FULL_VIEWS.find((x) => x.name === "print")!, s0 = { ...asFrozen(fullSong()), notation } as Song, s = v.song ? v.song(s0) : s0; run("用全的测试歌 · print · 英文界面", s, { ...v.opts(s), measure: real, locale: "en" } as EngraveOpts); }   // 「吸 / 深吸」按界面语言量（英文 = in / deep in，拉丁字母）
   const t = { ...asFrozen(trioSong()), notation } as Song;
   run("三声部 · 编辑", t, { ...editorBase(t, TRIO_LABELS), measure: real } as EngraveOpts);
-  run("三声部 · 印", t, printOpts(t, SP, views(t, TRIO_LABELS, false), real, true, 0) as EngraveOpts);
+  run("三声部 · 印", t, printOpts(t, SP, views(t, TRIO_LABELS, false), real, true) as EngraveOpts);
   return out;
 }
 /** 图元的真墨迹（数字行的单位：图元的字号就是这个单位）。 */

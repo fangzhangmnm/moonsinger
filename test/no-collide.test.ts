@@ -50,7 +50,7 @@ function cases(notation: "staff" | "jianpu" | "letters"): Case[] {
   const out: Case[] = [];
   for (const v of FULL_VIEWS) { const s0 = { ...asFrozen(fullSong()), notation } as Song, s = v.song ? v.song(s0) : s0, o = { ...v.opts(s), measure: real } as EngraveOpts; out.push({ name: `用全的测试歌 · ${v.name}`, L: engrave(s, o), ts: o.textScale ?? 1 }); }
   const t = { ...asFrozen(trioSong()), notation } as Song;
-  for (const [name, o] of [["编辑", { ...editorBase(t, TRIO_LABELS), measure: real }], ["印", printOpts(t, SP, views(t, TRIO_LABELS, false), real, true, 0)]] as const) out.push({ name: `三声部 · ${name}`, L: engrave(t, o as EngraveOpts), ts: (o as EngraveOpts).textScale ?? 1 });
+  for (const [name, o] of [["编辑", { ...editorBase(t, TRIO_LABELS), measure: real }], ["印", printOpts(t, SP, views(t, TRIO_LABELS, false), real, true)]] as const) out.push({ name: `三声部 · ${name}`, L: engrave(t, o as EngraveOpts), ts: (o as EngraveOpts).textScale ?? 1 });
   return out;
 }
 /** 一种谱的所有相叠，按「谁和谁」分组（去掉 ALLOWED 的）。 */

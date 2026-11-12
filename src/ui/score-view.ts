@@ -91,8 +91,6 @@ export interface ScoreLook {
   pages?(): boolean;
   /** 排法「横卷」（v0.9.35）：每张纸一行、一直往右，谱面板横着滚；打字 / 放的时候横着跟；歌手名钉在屏幕左边。 */
   scroll?(): boolean;
-  /** 分页（= 打印预览）时歌词行往下让多少（sp）：选了拼音字体印 PDF 时 = 拼音那一截（PDF 和分页预览排出来一样）。 */
-  lyricRaise?(): number;
   /** 排谱按多宽算（px）：横屏时键盘 / 混音台在右边一栏，收起来谱面变宽——按「它在」的宽度排，切键盘（符号 → 打字…）时谱的大小不跳（v0.10.33）。没给 = 谱面多宽就多宽。 */
   layoutWidth?(): number;
   /** 电脑宽屏：没设过缩放时默认按纸的实际大小（100%）显示，不撑满行宽（v0.16.49）。没给 = 自动大小。 */
@@ -324,15 +322,14 @@ export class ScoreView {
     const paper = st.song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);   // 字的尺子（刀 2：紧凑只缩谱，字照舒适档）
     if (this.caretEnd !== null && (this.caretEnd !== caretKey(st) || st.sel)) this.caretEnd = null;   // 光标挪了（写音 / 方向键 / 撤销…）= 回到默认（下一行开头）
     const partsNow = this.host.look.parts(), scopeSeg = (this.host.look.scope?.() ?? "segment") === "segment", autoBars = this.host.look.autoBars?.() ?? true;
-    const lyricRaise = page ? this.host.look.lyricRaise?.() ?? 0 : 0;
     const tailOpen = !st.sel && st.caret >= tr(st).length;   // 写字头在尾巴后面（含补齐的小节里）：最后一行五线画到右边
     // 排版缓存（W-17 第 1 刀）：谱没变（引用）、排版的选项没变 = 不重排。光标 / 选区 / 写字头的蓝 / 强调色不在这个键里——它们在下面的 ink 层和 class 上做；字体还在装 = 装好再排一次
-    const geoKey = JSON.stringify([width, sp, ts, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, hscroll, autoBars, lyricRaise, !this.rules.edit, tailOpen, document.fonts.status],
+    const geoKey = JSON.stringify([width, sp, ts, st.at.paper, st.at.part, partsNow, page ?? null, page ? null : margins, scopeSeg ? st.at.paper : null, hscroll, autoBars, !this.rules.edit, tailOpen, document.fonts.status],
       (_k, v: unknown) => (v instanceof Set ? [...v] : v));
     // 编辑器要排版留的地方（刀 1）：每张纸底下的虚线框那一截（能写、不分页）、整首最下面「＋ 新曲段」那一截（能写）、合租括号、曲段控件——画归覆盖层
     const chrome: EngraveOpts["chrome"] = { ...(this.rules.edit && !page ? { underPaper: 2.6 } : {}), ...(this.rules.edit ? { tail: 2.6 } : {}), famGap: 0.8, navRoom: 16 };
     const opts: Omit<EngraveOpts, "measure"> = { width, sp, locale: lang(), at: st.at, parts: partsNow, chrome, ...(this.rules.edit ? {} : { foldAll: true }), ...(tailOpen ? { tailOpen: true } : {}),
-      ...(lyricRaise ? { lyricRaise } : {}), autoBars, ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}), ...(ts !== 1 ? { textScale: ts } : {}) };
+      autoBars, ...(page ? { page } : { margins }), ...(scopeSeg ? { onlyPaper: st.at.paper } : {}), ...(hscroll ? { scroll: true } : {}), ...(ts !== 1 ? { textScale: ts } : {}) };
     return { frame: { sp, width, strict, page, margins, hscroll }, geoKey, opts };
   }
   // ── 排版进 worker（2026-10-21，Claude Fable 5.1；user「怎么样大歌能做到实时输入演奏，尽量做到音游级别的延迟」；量 = ai-docs/20261017-input-latency-probe.md）──

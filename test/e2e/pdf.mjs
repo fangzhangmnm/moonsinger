@@ -1,5 +1,6 @@
 // test/e2e/pdf.mjs —— 真浏览器 E2E：乐谱 PDF（自己写的 PDF：Bravura 轮廓画成路径 + 歌词嵌字体子集）。
-// 守：导出面板里有「乐谱（PDF）」→ 选字体（记进视图态）→ 生成 → 「好了」面板（分享 / 下载）；字节是 PDF、页数对、没有缺字 / 缺记谱符号；拼音字体也能出。
+// 守：导出面板里有「乐谱（PDF）」→ 生成 → 「好了」面板（分享 / 下载）；字节是 PDF、页数对、没有缺字 / 缺记谱符号。
+// 拼音字体 2026-11-12 退役（7-J）：面板里不再有字体可选、视图态不再记字体；老文件视图态里的「拼音」照常开、按黑体印。
 // created 2026-10-09 by Claude Opus 5.5（user「自己写pdf，然后字体可以选普通的和那个拼音可爱的…歌词用字体」）
 import { chromium } from "./pw.mjs";
 let pass = 0, fail = 0;
@@ -16,16 +17,14 @@ await p.evaluate(() => {
 await p.click("#setBtn"); await p.waitForTimeout(150); await p.click('.main-menu [data-v="export"]'); await p.waitForTimeout(200);
 check(!!(await p.$('.offer [data-v="pdf"]')), "导出面板里有「乐谱（PDF）」");
 await p.click('.offer [data-v="pdf"]'); await p.waitForTimeout(200);
-await p.click('.offer [data-v="font:pinyin"]'); await p.waitForTimeout(100);
-check(await p.$eval('.offer [data-v="font:pinyin"]', (e) => e.classList.contains("is-on")), "选拼音");
-check(await p.evaluate(() => window.__moonsinger.zipText(window.__moonsinger.bytes(), ".moonsinger/score.json").includes('"pdf": "pinyin"')), "字体记进视图态（存时顺手带）");
-await p.click('.offer [data-v="font:sans"]'); await p.waitForTimeout(100);
+check(!(await p.$('.offer [data-v^="font:"]')), "面板里没有字体可选（一律黑体）");
+check(!(await p.evaluate(() => window.__moonsinger.zipText(window.__moonsinger.bytes(), ".moonsinger/score.json").includes('"pdf"'))), "视图态里不记字体");
 await p.click('.offer [data-v="go"]');
 for (let i = 0; i < 60; i++) { if (await p.$(".offer .offer-title")) { const t = await p.$eval(".offer .offer-title", (e) => e.textContent); if (/好了/.test(t)) break; } await p.waitForTimeout(250); }
 const done = await p.$eval(".offer", (e) => e.textContent).catch(() => "");
 check(/乐谱 PDF 好了/.test(done) && /1 页/.test(done), "生成 → 「好了」面板（1 页）", done.slice(0, 60));
-for (const font of ["sans", "pinyin"]) {
-  const r = await p.evaluate(async (f) => { const x = await window.__moonsinger.makePdf(f); return { head: new TextDecoder().decode(x.bytes.slice(0, 8)), pages: x.pages, n: x.bytes.length, stats: x.stats, pageObjs: (new TextDecoder("latin1").decode(x.bytes).match(/\/Type \/Page /g) ?? []).length }; }, font);
+for (const font of ["sans"]) {
+  const r = await p.evaluate(async () => { const x = await window.__moonsinger.makePdf(); return { head: new TextDecoder().decode(x.bytes.slice(0, 8)), pages: x.pages, n: x.bytes.length, stats: x.stats, pageObjs: (new TextDecoder("latin1").decode(x.bytes).match(/\/Type \/Page /g) ?? []).length }; });
   check(r.head === "%PDF-1.7" && r.pages === 1 && r.pageObjs === 1, `${font}：是 PDF、1 页`, JSON.stringify({ head: r.head, pages: r.pages, n: r.n }));
   check(r.stats.missing.length === 0 && r.stats.missingMusic.length === 0, `${font}：没有缺字 / 缺记谱符号`, JSON.stringify(r.stats));
 }

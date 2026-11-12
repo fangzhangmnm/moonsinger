@@ -81,7 +81,7 @@ export function selfCheck(out, label) {
 export const LOCAL_APP_FILES = [
   "assets/preview/vowels.json", "assets/preview/vowels.pcm16",
   "vendor/tsf/tsf-standalone.wasm",
-  "vendor/fonts/pinyin.ttf.gz", "vendor/fonts/sans.ttf.gz", "vendor/fonts/bravura/outlines.json", "vendor/fonts/serif/chord-outlines.json",
+  "vendor/fonts/sans.ttf.gz", "vendor/fonts/bravura/outlines.json", "vendor/fonts/serif/chord-outlines.json",
   "vendor/world/world.mjs", "vendor/world/world.wasm",
   "vendor/lame/lame.mjs", "vendor/lame/lame.wasm",
 ];

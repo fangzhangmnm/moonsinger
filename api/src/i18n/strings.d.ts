@@ -895,8 +895,8 @@ export declare const S: {
     readonly "\u770B\u8C31\u65B9\u5F0F\u3001\u548C\u5F26\u6807\u7EA7\u6570": {
         readonly en: "How to read the score, chord degrees";
     };
-    readonly "\u642C\u5230\u4E86\u7EB8\u7684\u8BBE\u7F6E\u91CC\uFF08\u8C31\u53F3\u4E0A\u89D2\u7684\u6273\u624B \u2192\u300C\u770B\u8C31\u300D\uFF09\uFF1A\u73B0\u5728\u8DDF\u7740\u6BCF\u9996\u6B4C\u8D70\u3001\u5B58\u5728\u6B4C\u91CC\uFF0C\u4EE5\u524D\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8C03\u8FC7\u7684\u4E0D\u5E26\u8FC7\u53BB\u3002": {
-        readonly en: "Moved to the paper settings (the wrench at the top right of the score → Reading): they now belong to each song and are saved in it; what you set on this device before does not carry over.";
+    readonly "\u642C\u5230\u4E86\u9875\u9762\u8BBE\u7F6E\u91CC\uFF08\u8C31\u53F3\u4E0A\u89D2\u90A3\u9897\u94AE \u2192\u300C\u770B\u8C31\u300D\uFF09\uFF1A\u73B0\u5728\u8DDF\u7740\u6BCF\u9996\u6B4C\u8D70\u3001\u5B58\u5728\u6B4C\u91CC\uFF0C\u4EE5\u524D\u5728\u8FD9\u53F0\u8BBE\u5907\u4E0A\u8C03\u8FC7\u7684\u4E0D\u5E26\u8FC7\u53BB\u3002": {
+        readonly en: "Moved to Page settings (the button at the top right of the score → Reading): they now belong to each song and are saved in it; what you set on this device before does not carry over.";
     };
     readonly 模型来源: {
         readonly en: "Model source";
@@ -2401,35 +2401,17 @@ export declare const S: {
     readonly "\u9690\u85CF\u7684\u58F0\u90E8\u6574\u4E2A\u62FF\u6389\u3001\u91CD\u65B0\u6392\uFF0C\u4E0D\u7559\u7A7A\u4F4D\uFF08\u50CF\u62BD\u51FA\u6765\u7684\u5206\u8C31\uFF1B\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\uFF09": {
         readonly en: "Hidden parts are removed and it's re-laid out with no gaps (like an extracted part; differs from the paged preview)";
     };
-    readonly 歌词的字体: {
-        readonly en: "Lyrics font";
-    };
     readonly 黑体: {
         readonly en: "Sans";
     };
-    readonly "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587 / \u65E5\u6587 / \u82F1\u6587\u90FD\u6709": {
-        readonly en: "Source Han Sans: has Chinese / Japanese / English";
-    };
-    readonly 拼音: {
-        readonly en: "Pinyin";
-    };
-    readonly "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF08\u53EF\u7231\uFF09\uFF1B\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3": {
-        readonly en: "Moe handwriting: Mandarin pinyin above Chinese characters (cute); kanji in Japanese songs also get Mandarin pinyin";
-    };
-    readonly "{p}\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u7EA6 {p2} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u7EB8\u7684\u6273\u624B\u91CC\u6539\uFF09\u3002": {
-        readonly en: "{p}The font downloads the first time (about {p2} MB), then works offline. Paper = this song's paper (change it with the sheet's wrench).";
-    };
-    readonly "\u840C\u795E\u624B\u5199\u4F53\uFF1A\u6C49\u5B57\u5934\u4E0A\u6807\u666E\u901A\u8BDD\u62FC\u97F3\uFF0C\u6B4C\u8BCD\u90A3\u4E00\u884C\u4F1A\u5F80\u4E0B\u8BA9\u51FA\u62FC\u97F3\u7684\u5730\u65B9\u3002\u65E5\u6587\u6B4C\u7684\u6C49\u5B57\u4E5F\u4F1A\u88AB\u6807\u4E0A\u666E\u901A\u8BDD\u62FC\u97F3\u3002": {
-        readonly en: "Moe handwriting: Mandarin pinyin above Chinese characters; the lyric line moves down to make room. Kanji in Japanese songs also get Mandarin pinyin.";
-    };
-    readonly "\u601D\u6E90\u9ED1\u4F53\uFF1A\u4E2D\u6587\u3001\u65E5\u6587\u3001\u82F1\u6587\u90FD\u6709\u3002": {
-        readonly en: "Source Han Sans: has Chinese, Japanese and English.";
+    readonly "\u7B2C\u4E00\u6B21\u8981\u4E0B\u8F7D\u5B57\u4F53\uFF08\u601D\u6E90\u9ED1\u4F53\uFF0C\u7EA6 {p} MB\uFF09\uFF0C\u4E4B\u540E\u79BB\u7EBF\u4E5F\u80FD\u7528\u3002\u7EB8\u5F20 = \u8FD9\u9996\u6B4C\u7684\u7EB8\uFF08\u9875\u9762\u8BBE\u7F6E\u91CC\u6539\uFF09\u3002": {
+        readonly en: "The font (Source Han Sans) downloads the first time (about {p} MB), then works offline. Paper = this song's paper (change it in Page settings).";
     };
     readonly "\u53EA\u6392\u770B\u5F97\u89C1\u7684\u58F0\u90E8\uFF08{p}\uFF09\uFF1A\u91CD\u65B0\u6392\u3001\u4E0D\u7559\u7A7A\u4F4D\u2014\u2014\u548C\u5206\u9875\u9884\u89C8\u4E0D\u4E00\u6837\u3002": {
         readonly en: "Only visible parts ({p}): re-laid out with no gaps — differs from the paged preview.";
     };
-    readonly "\u5370\u51FA\u6765\u7684 = \u6273\u624B\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C{p}\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684{p2}\u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002": {
-        readonly en: "Printed = what you see with “Paged” on the wrench + “{p}” on the section control, minus buttons and hints; hidden {p2}parts aren't printed (their thin line's spot stays blank).";
+    readonly "\u5370\u51FA\u6765\u7684 = \u9875\u9762\u8BBE\u7F6E\u91CC\u300C\u5206\u9875\u300D+ \u66F2\u6BB5\u63A7\u4EF6\u300C{p}\u300D\u770B\u5230\u7684\u6837\u5B50\uFF0C\u53BB\u6389\u6309\u94AE\u548C\u63D0\u793A\uFF1B\u9690\u85CF\u7684{p2}\u58F0\u90E8\u4E0D\u5370\uFF08\u9884\u89C8\u91CC\u90A3\u6761\u7EC6\u884C\u7684\u4F4D\u7F6E\u7A7A\u7740\uFF09\u3002": {
+        readonly en: "Printed = what you see with “Paged” in Page settings + “{p}” on the section control, minus buttons and hints; hidden {p2}parts aren't printed (their thin line's spot stays blank).";
     };
     readonly 本段: {
         readonly en: "This section";
@@ -2440,8 +2422,8 @@ export declare const S: {
     readonly "\u7EB8 / ": {
         readonly en: "sheets /";
     };
-    readonly "\u7167\u8FD9\u9996\u6B4C\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u7EB8\u7684\u6273\u624B \u2192\u300C\u770B\u8C31\u300D\u91CC\u6539\uFF09\u3002": {
-        readonly en: "Printed the way this song is read: {w} (change it under the paper wrench › Reading).";
+    readonly "\u7167\u8FD9\u9996\u6B4C\u7684\u770B\u8C31\u65B9\u5F0F\u5370\uFF1A{w}\uFF08\u9875\u9762\u8BBE\u7F6E \u2192\u300C\u770B\u8C31\u300D\u91CC\u6539\uFF09\u3002": {
+        readonly en: "Printed the way this song is read: {w} (change it under Page settings › Reading).";
     };
     readonly "\u6309 C \u8C03\u770B\uFF08\u6BCF\u4E2A\u8C03\u53F7\u4E0A\u65B9\u5370\u300C1=\u539F\u6765\u7684\u8C03\u300D\uFF09": {
         readonly en: "read in C (“1=original key” above each key signature)";
@@ -2469,9 +2451,6 @@ export declare const S: {
     };
     readonly "{pages} \u9875 \u00B7 {p} \u00B7 {e6}{miss}{missM}": {
         readonly en: "{pages} {pages|page|pages} · {p} · {e6}{miss}{missM}";
-    };
-    readonly 拼音字体: {
-        readonly en: "Pinyin font";
     };
     readonly "PDF \u751F\u6210\u5931\u8D25\uFF1A{Error}": {
         readonly en: "PDF creation failed: {Error}";

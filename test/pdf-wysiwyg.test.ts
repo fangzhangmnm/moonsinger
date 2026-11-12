@@ -4,7 +4,7 @@
 import { describe, it, eq, assert } from "./runner.mjs";
 import { initState, withTrack, tr, addPart, addPaper, setPaperHidden, TPQ, type Token, type EditorState } from "../src/score/song.ts";
 import { engrave, type PartView } from "../src/render/engrave.ts";
-import { printOpts, isPrinted, LYRIC_RAISE } from "../src/export/score-pdf.ts";
+import { printOpts, isPrinted } from "../src/export/score-pdf.ts";
 import { createTextMeasure } from "../src/render/text/index.ts";
 import { songViewOf, setViewInC, setChordTags, setNotation } from "../src/score/song-view.ts";
 import { scorePdf } from "../src/export/score-pdf.ts";
@@ -32,9 +32,9 @@ const geo = (Lt: ReturnType<typeof engrave>) => JSON.stringify({ rows: Lt.system
 
 describe("PDF = 分页预览（除了控件和提示）", () => {
   const st = song(), sp = 10;
-  for (const font of ["sans", "pinyin"] as const) {
-    it(`${font}：预览多的只有控件开关（光标、占位提示、曲段控件、刚写过），版面一模一样`, () => {
-      const base = printOpts(st.song, sp, parts(st), createTextMeasure(measure), true, LYRIC_RAISE[font]);
+  {   // 拼音字体 7-J 退役：原来这里按两种字体各跑一遍（拼音那遍歌词行往下让），现在只有黑体
+    it("预览多的只有控件开关（光标、占位提示、曲段控件、刚写过），版面一模一样", () => {
+      const base = printOpts(st.song, sp, parts(st), createTextMeasure(measure), true);
       const print = engrave(st.song, base);
       for (const ctl of [{ chrome: { famGap: 0.8, navRoom: 16 } }, { at: { paper: st.song.papers[2]!.id, part: st.song.parts[0]!.id } }]) {   // 刀 1：编辑器的控件 / 提示不在排版器里了，只剩几何参数 chrome（分页 = 不留虚线框）   // 光标 / 选区 / 刚写过已不进排版（W-17 第 1 刀）
         const prev = engrave(st.song, { ...base, ...ctl } as never);
@@ -45,7 +45,7 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
   }
   it("按 C 调看 + 和弦级数（v0.16.13，user「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：印的带上它们，控件开关照样不改版面；专业模式 C 调的淡「1=C」不印", () => {
     // 谱面分家第三刀起这两样是歌里的设置：印的跟着歌（不再从印的选项进来）
-    const song = setChordTags(setViewInC(st, true), true).song, base = printOpts(song, sp, parts(st), createTextMeasure(measure), true, 0), print = engrave(song, base);
+    const song = setChordTags(setViewInC(st, true), true).song, base = printOpts(song, sp, parts(st), createTextMeasure(measure), true), print = engrave(song, base);
     eq(songViewOf(song).viewInC, true); eq(songViewOf(song).chordTags, true); eq(base.chrome, undefined, "印 = 不给编辑器留地方");
     eq(geo(engrave(song, { ...base, chrome: { famGap: 0.8, navRoom: 16 } })), geo(print), "编辑器的几何参数（分页时）不改版面");
     assert(print.prims.some((p) => (p as { cls?: string }).cls?.includes("key-label") && isPrinted((p as { cls?: string }).cls)), "「1=原来的调」印");
@@ -53,7 +53,7 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
     eq(geo(engrave(setChordTags({ ...st, song }, false).song, base)), geo(print), "和弦级数不占地方（开关不改版面）");
   });
   it("简谱（谱面分家第四刀，施工单第三节「4」：现有的所见即所得守卫加一例简谱）：印的 = 分页预览，控件开关不改版面；数字行都印；真写一份 PDF，没有缺的字和音乐字形", () => {
-    const jst = setNotation(st, "jianpu"), song = jst.song, base = printOpts(song, sp, parts(jst), createTextMeasure(measure), true, 0), print = engrave(song, base);
+    const jst = setNotation(st, "jianpu"), song = jst.song, base = printOpts(song, sp, parts(jst), createTextMeasure(measure), true), print = engrave(song, base);
     assert(print.systems.some((r) => r.kind === "jianpu"), "有数字行");
     for (const ctl of [{ chrome: { famGap: 0.8, navRoom: 16 } }, { at: { paper: song.papers[2]!.id, part: song.parts[0]!.id } }]) eq(geo(engrave(song, { ...base, ...ctl } as never)), geo(print), `开关 ${JSON.stringify(ctl)} 不改版面`);
     const digits = print.prims.filter((p) => /jp-digit/.test((p as { cls?: string }).cls ?? ""));
@@ -62,7 +62,7 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
     const fs = (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule("node:fs"), zlib = (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule("node:zlib");
     const ROOT = new URL("../", import.meta.url), font = parseTtf(new Uint8Array(zlib.gunzipSync(fs.readFileSync(new URL("vendor/fonts/sans.ttf.gz", ROOT))))), music = mergeMusicOutlines(JSON.parse(fs.readFileSync(new URL("vendor/fonts/bravura/outlines.json", ROOT), "utf8")), JSON.parse(fs.readFileSync(new URL("vendor/fonts/serif/chord-outlines.json", ROOT), "utf8")));   // 和 app 同一套（pdf-assets.ts loadMusicOutlines）：Bravura + 和弦级数的衬线字
     const full = { ...fullSong(), notation: "jianpu" }, flags = fullFlags(full);
-    const r = scorePdf({ song: full, parts: full.parts.map((q, k) => ({ id: q.id, name: q.id, first: k === 0, ...(flags[q.id] ?? {}) })), font, fontId: "sans", music, title: "jianpu", created: new Date(Date.UTC(2026, 10, 11)), autoBars: true });
+    const r = scorePdf({ song: full, parts: full.parts.map((q, k) => ({ id: q.id, name: q.id, first: k === 0, ...(flags[q.id] ?? {}) })), font, music, title: "jianpu", created: new Date(Date.UTC(2026, 10, 11)), autoBars: true });
     assert(r.pages >= 1 && r.bytes.length > 1000, `写出了 PDF（${r.pages} 页、${r.bytes.length} 字节）`);
     eq(r.stats.missingMusic.join(","), "", "没有缺的音乐字形（楔形跳音等都有轮廓）");
     eq(r.stats.missing.join(""), "", "没有缺的字");
@@ -73,26 +73,26 @@ describe("PDF = 分页预览（除了控件和提示）", () => {
   });
   it("只印这一张纸 = 分页预览的「本段」：控件开关同样不改版面（2026-10-09，user「只印一段或一个声部…和wxhw差不多」）", () => {
     for (const paper of st.song.papers) {
-      const base = printOpts(st.song, sp, parts(st), createTextMeasure(measure), true, 0, paper.id), print = engrave(st.song, base);
+      const base = printOpts(st.song, sp, parts(st), createTextMeasure(measure), true, paper.id), print = engrave(st.song, base);
       eq(geo(engrave(st.song, { ...base, chrome: { famGap: 0.8, navRoom: 16 } })), geo(print), `纸 ${paper.name || paper.id}`);
       assert(print.systems.every((r) => r.paper === paper.id), "只有这一张纸的谱行");
     }
   });
   it("隐藏的声部：不排、不占地方（刀 1，施工单 §4 第 5 条：预览的版面 = PDF）；隐藏的整张纸也不排、不占地方（v0.16.34，user 11-09「打印的时候不留…显示的时候要和打印时的排版一样」）", () => {
-    const Lt = engrave(st.song, printOpts(st.song, 10, parts(st), createTextMeasure(measure), true, 0));
+    const Lt = engrave(st.song, printOpts(st.song, 10, parts(st), createTextMeasure(measure), true));
     assert(!Lt.prims.some((p) => /part-stub|hidden-paper|hidden-note/.test((p as { cls?: string }).cls ?? "")), "排版器不画细行 / 隐藏纸的名字 / 说明（覆盖层）");
     assert(Lt.systems.every((r) => r.part !== "P2"), "隐藏的声部没有谱行");
     const hp = Lt.papers.find((p) => p.hidden); assert(!!hp && hp.top === hp.bottom && !hp.title.shown, "隐藏的纸：一点地方都不占（top = bottom、没有曲段名那一条）");
     assert(Lt.systems.every((r) => r.paper !== hp!.id) && !Lt.prims.some((p) => p.t === "text" && (p.cls ?? "").includes("paper-name") && p.s === st.song.papers.find((x) => x.id === hp!.id)!.name), "隐藏的纸：没有谱行、名字也不印");
     const unhid = { ...st.song, papers: st.song.papers.map((p) => ({ ...p, hidden: false })) };
-    assert(engrave(unhid, printOpts(unhid, 10, parts(st), createTextMeasure(measure), true, 0)).systems.length > Lt.systems.length, "放出来 = 多排几行");
+    assert(engrave(unhid, printOpts(unhid, 10, parts(st), createTextMeasure(measure), true)).systems.length > Lt.systems.length, "放出来 = 多排几行");
     assert(Lt.papers.filter((p) => !p.hidden).every((p) => p.hiddenParts.includes("P2") || !st.song.papers.find((x) => x.id === p.id)!.tracks.P2), "锚点里记着哪几位隐藏着（覆盖层的「隐藏 N」）");
-    const shown = engrave(st.song, printOpts(st.song, 10, parts(st).map((p) => ({ ...p, hidden: false })), createTextMeasure(measure), true, 0));
+    const shown = engrave(st.song, printOpts(st.song, 10, parts(st).map((p) => ({ ...p, hidden: false })), createTextMeasure(measure), true));
     assert(shown.height > Lt.height || shown.pages.length > Lt.pages.length || shown.systems.length > Lt.systems.length, "放出来 = 多排几行（隐藏时真的不占地方）");
   });
   it("声部名：还没人上场（屏幕上画淡，part-name empty）照印；排版器里没有占位提示；只给写谱的人看的披露（ann）不印", () => {
     assert(isPrinted("part-name empty"), "声部名照印"); assert(!isPrinted("tempo-change ann") && !isPrinted("dyn-implied ann"), "披露不印");
-    const Lt = engrave(st.song, printOpts(st.song, 10, parts(st), createTextMeasure(measure), true, 0));
+    const Lt = engrave(st.song, printOpts(st.song, 10, parts(st), createTextMeasure(measure), true));
     assert(!Lt.prims.some((p) => / empty|^empty/.test((p as { cls?: string }).cls ?? "") && !/part-name/.test((p as { cls?: string }).cls ?? "")), "没有占位提示（覆盖层画）");
   });
 });

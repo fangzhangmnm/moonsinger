@@ -15,6 +15,12 @@ describe("desk（视图态顺手捞进文件）", () => {
     const back = unserializeDesk(JSON.parse(JSON.stringify(j)));
     eq(back.scope, "all"); eq(back.pageFlow, true); eq(back.paper, "p2"); deq(back.parts.P2, { hidden: true, only: false, muted: true, solo: false }); eq(back.parts.P3, undefined);
   });
+  it("拼音字体退役（7-J，score patch 1）：老文件视图态里的 pdf: \"pinyin\" 读到不理、再存不带；别的视图态照读", () => {
+    const d = unserializeDesk({ pdf: "pinyin", scope: "all", mp3: "small" });
+    eq(d.scope, "all"); eq(d.mp3, "small");
+    deq(serializeDesk(d), { scope: "all", mp3: "small" }, "再存：没有 pdf 这个键");
+    eq(serializeDesk(unserializeDesk({ pdf: "pinyin" })), null, "只有它 = 等于全默认");
+  });
   it("导出音质跟歌走：默认标准不写；小文件写 mp3: small、读回来一样；怪值 = 标准（2026-10-08 Opus，user「音质配置就是应该也跟着吧」）", () => {
     const d = freshDesk(); eq(d.mp3, "standard");
     d.mp3 = "small"; deq(serializeDesk(d), { mp3: "small" });

@@ -40,21 +40,10 @@ describe("PDF：资产", () => {
     const miss = [...chars].filter((c) => !out.glyphs[`T${c.codePointAt(0)!.toString(16).toUpperCase().padStart(4, "0")}`]);
     eq(miss.join(""), "", "缺的字");
   });
-  it("两款字体 = 从 WXHW 拷来的那份（逐字节）", () => {
+  it("字体（思源黑体）= 从 WXHW 拷来的那份（逐字节）；拼音字体退役了（7-J）", () => {
     const sha = (p: string) => createHash("sha256").update(fs.readFileSync(new URL(p, root))).digest("hex");
     eq(sha("vendor/fonts/sans.ttf.gz"), "e29b80bf17ad17bbd07b59642a817b04075b5a9001c53f4783e42c82188d575a");
-    eq(sha("vendor/fonts/pinyin.ttf.gz"), "354bf347aa43f09aae2712bbb329498a39d14af1a413e25088954b424f3d8c6a");
-  });
-});
-
-describe("PDF：拼音字体的让位（分页预览不下字体，用钉住的常数；这里拿真字体核）", () => {
-  it("LYRIC_RAISE.pinyin = 「国」的墨迹顶：萌神 − 思源黑体（× 歌词字号）", async () => {
-    const { gunzipSync } = (await import("node:zlib" as string)) as { gunzipSync(b: Uint8Array): Uint8Array };
-    const { parseTtf } = await import("../src/export/ttf.ts");
-    const { lyricRaiseOf, LYRIC_RAISE } = await import("../src/export/score-pdf.ts");
-    const load = (f: string) => parseTtf(new Uint8Array(gunzipSync(fs.readFileSync(new URL(`vendor/fonts/${f}.ttf.gz`, root)))));
-    const real = lyricRaiseOf(load("pinyin"), load("sans"));
-    assert(Math.abs(real - LYRIC_RAISE.pinyin) < 1e-9, `真字体量出来 ${real}，钉的常数 ${LYRIC_RAISE.pinyin}（字体换了就改常数）`);
-    eq(LYRIC_RAISE.sans, 0);
+    let gone = false; try { fs.readFileSync(new URL("vendor/fonts/pinyin.ttf.gz", root)); } catch { gone = true; }
+    assert(gone, "拼音字体 7-J 退役：仓里不再有这个文件");
   });
 });

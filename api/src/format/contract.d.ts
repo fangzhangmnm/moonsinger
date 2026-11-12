@@ -59,6 +59,9 @@ export declare const FORMAT_MINOR: Readonly<Record<FormatFile, number>>;
 /** manifest patch 1（v0.16.97，2026-11-10 Claude Fable 5.2；user 11-07「定稿取消，换修改锁」、11-10「对，以后统一不存mp3，旧的也删掉」）：这一版起**不再写** `final` / `finalRev`
  *  和 `.moonsinger/final.mp3` 这个 entry。少写一样东西、别的一个键没动：老版本读到 = 没有定稿记录 = 没定稿，照常开（所以是 patch、老读者静默）；
  *  这一版读老文件 = 认得它们，mp3 交给宿主搬进设备缓存（project.ts LegacyMp3），再存就不带了。 */
+/** score patch 1（施工单 7-J，2026-11-12 Claude Opus 5.5（MoonSinger小弟）；user「现在有没有人真的在用带拼音的导出。 no, 我也建议先sunset」）：拼音字体退役，
+ *  视图态 view.pdf（乐谱 PDF 的字体，只写过 "pinyin"）**不再写**。少写一个视图态的键、别的一个没动：老版本读到 = 没写 = 黑体，照常开（所以是 patch、老读者静默）；
+ *  这一版读老文件里的 "pinyin" = 不理（照黑体印、不报错），再存就不带了。不用迁移、不用冻结样本（照 minor / patch 的规矩，只更新形状快照）。 */
 export declare const FORMAT_PATCH: Readonly<Record<FormatFile, number>>;
 /** `.moonsinger/manifest.json`：总目录。 */
 export interface ManifestV2 {
@@ -180,7 +183,7 @@ export interface ViewV1 {
     }>;
     mp3?: "small";
     /** 2026-10-08 深夜 / 10-09 加（可选，不升版本；Opus 5.5）：ref = 参考窗的窗（开着没有 + 位置 / 大小，CSS px；开过窗才写）；
-     *  pdf = 乐谱 PDF 的字体（只写非默认的「拼音」）。pad = pad 的状态（同日更早加的，见 desk.ts；v0.16.9 起写了 fifths / scale = 手动拨的「1=」，都没写 = 跟谱——不加字段）。 */
+     *  pdf = 乐谱 PDF 的字体（只写过非默认的「拼音」；**2026-11-12 起不再写、读到不理**：拼音字体退役，score patch 1）。pad = pad 的状态（同日更早加的，见 desk.ts；v0.16.9 起写了 fifths / scale = 手动拨的「1=」，都没写 = 跟谱——不加字段）。 */
     pad?: Record<string, unknown>;
     ref?: {
         open?: true;

@@ -27,7 +27,7 @@ const flagged = (song: Song, editor: boolean, hide?: ReadonlySet<string>): PartV
 const ed = (s: Song, hide?: ReadonlySet<string>) => ({ ...editorBase(s, LABELS, hide), parts: flagged(s, true, hide) }) as EngraveOpts;
 type FView = { name: string; song?: (s: Song) => Song; opts: (s: Song) => EngraveOpts };
 export const FULL_VIEWS: FView[] = [
-  { name: "print", opts: (s) => printOpts(s, SP, flagged(s, false), createTextMeasure(measureFor(s)), true, 0) },
+  { name: "print", opts: (s) => printOpts(s, SP, flagged(s, false), createTextMeasure(measureFor(s)), true) },
   { name: "edit-all", opts: (s) => ed(s) },
   { name: "edit-seg", opts: (s) => ({ ...ed(s), onlyPaper: "pb" }) },
   { name: "edit-pages", opts: (s) => { const { margins: _m, ...rest } = ed(s); return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },
@@ -35,7 +35,7 @@ export const FULL_VIEWS: FView[] = [
   // 按 C 调看 + 和弦级数：第三刀起是歌里的设置（原来是排版选项 inC / chordTags）。去掉 asFrozen 写的「不标」= 标；开按 C 调看
   { name: "inC-chords", song: (s) => { const { chordTags: _c, ...r } = s; return { ...r, viewInC: true as const }; }, opts: (s) => ed(s) },
   { name: "scroll", opts: (s) => ({ ...ed(s), scroll: true }) },
-  { name: "tail-raise-lyrics", song: (s) => ({ ...s, lyricFit: "lyrics" }), opts: (s) => ({ ...ed(s), at: { paper: "pa", part: "Y" }, tailOpen: true, lyricRaise: 0.62 }) },
+  { name: "tail-lyrics", song: (s) => ({ ...s, lyricFit: "lyrics" }), opts: (s) => ({ ...ed(s), at: { paper: "pa", part: "Y" }, tailOpen: true }) },   // 7-J 前叫 tail-raise-lyrics（多一个拼音字体的歌词让位 0.62）
   { name: "hidden-nobars", opts: (s) => ({ ...ed(s, new Set(["V"])), autoBars: false }) },
   { name: "compact", song: (s) => ({ ...s, paper: { ...(s.paper ?? paperOf(DEFAULT_PAPER)), density: "compact" as const } }), opts: (s) => ed(s) },
 ];
@@ -51,7 +51,7 @@ export function* surfaceCases(): Generator<{ group: SurfaceGroup; song: string; 
     const labels = e.song.parts.map((x) => x.id), hide = new Set(e.hide ?? []);
     const ed = () => { const o = { ...editorBase(e.song, labels, hide), ...(e.width ? { width: e.width } : {}) } as EngraveOpts; return o; };
     yield { group: "edge", song: e.name, view: "edit-all", layout: () => engrave(e.song, ed()) };
-    yield { group: "edge", song: e.name, view: "print", layout: () => engrave(e.song, { ...printOpts(e.song, SP, views(e.song, labels, false, hide), createTextMeasure(measureFor(e.song)), true, 0), ...(e.width ? { width: e.width } : {}) }) };
+    yield { group: "edge", song: e.name, view: "print", layout: () => engrave(e.song, { ...printOpts(e.song, SP, views(e.song, labels, false, hide), createTextMeasure(measureFor(e.song)), true), ...(e.width ? { width: e.width } : {}) }) };
   }
 }
 export const surfacePath = (song: string, view: string) => new URL(`test/fixtures/layout/surface/${song}.${view}.json.gz`, ROOT);

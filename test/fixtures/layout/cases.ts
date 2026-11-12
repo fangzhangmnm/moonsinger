@@ -46,9 +46,9 @@ export const editorBase = (song: Song, labels: string[], hide?: ReadonlySet<stri
     titlePlaceholder: true, editable: true, keyHint: true, paperLabel: "A5", chrome: { underPaper: 2.6, tail: 2.6, famGap: 0.8, navRoom: 16 }, margins: { l: 1.5, r: 1.5, t: 1.5, b: 2 } } as unknown as EngraveOpts;
 };
 export const VIEWS: View[] = [
-  { name: "print", opts: (s, l) => printOpts(s, SP, views(s, l, false), createTextMeasure(measureFor(s)), true, 0) },
+  { name: "print", opts: (s, l) => printOpts(s, SP, views(s, l, false), createTextMeasure(measureFor(s)), true) },
   // 刀 2：同一首歌换成舒适档的纸再印（大样张本来是紧凑档）——舒适档版面的基线（字和谱一把尺子，刀 2 前后逐个相同）
-  { name: "print-cozy", song: (s) => ({ ...s, paper: { ...(s.paper ?? paperOf(DEFAULT_PAPER)), density: "cozy" as const, staffMm: undefined } }), opts: (s, l) => printOpts(s, SP, views(s, l, false), createTextMeasure(measureFor(s)), true, 0) },
+  { name: "print-cozy", song: (s) => ({ ...s, paper: { ...(s.paper ?? paperOf(DEFAULT_PAPER)), density: "cozy" as const, staffMm: undefined } }), opts: (s, l) => printOpts(s, SP, views(s, l, false), createTextMeasure(measureFor(s)), true) },
   { name: "edit-seg", opts: (s, l) => ({ ...editorBase(s, l), onlyPaper: s.papers[0]!.id }) },
   { name: "edit-all", opts: (s, l) => editorBase(s, l) },
   { name: "edit-pages", opts: (s, l) => { const b = editorBase(s, l); const { margins: _m, ...rest } = b; return { ...rest, chrome: { tail: 2.6, famGap: 0.8, navRoom: 16 }, page: pageGeoOf(s.paper ?? paperOf(DEFAULT_PAPER)) } as EngraveOpts; } },   // 分页 = 每段底下不留虚线框
@@ -79,7 +79,7 @@ export async function pdfSha(songKey: string): Promise<string> {
   font ??= parseTtf(new Uint8Array(gunzipSync(fs.readFileSync(new URL("vendor/fonts/sans.ttf.gz", ROOT)))));
   music ??= JSON.parse(fs.readFileSync(new URL("vendor/fonts/bravura/outlines.json", ROOT), "utf8"));
   const { song, labels } = loadSong(songKey);
-  const r = scorePdf({ song, parts: views(song, labels, false), font, fontId: "sans", music: music!, title: songKey, created: new Date(Date.UTC(2026, 10, 8)), measure: (s: string) => measure(s), autoBars: true });
+  const r = scorePdf({ song, parts: views(song, labels, false), font, music: music!, title: songKey, created: new Date(Date.UTC(2026, 10, 8)), measure: (s: string) => measure(s), autoBars: true });
   return createHash("sha256").update(r.bytes).digest("hex");
 }
 let font: import("../../../src/export/ttf.ts").TtfFont | undefined, music: import("../../../src/export/pdf.ts").MusicOutlines | undefined;

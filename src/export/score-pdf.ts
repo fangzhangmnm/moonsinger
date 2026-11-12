@@ -1,15 +1,14 @@
 // score-pdf.ts —— 谱 → PDF（分页排版的那一套，原样印出来）。created 2026-10-09 by Claude Opus 5.5
 // user「自己写pdf，然后字体可以选普通的和那个拼音可爱的，记得看一下那个拼音的的字高是怎么算的。歌词用字体。」「然后另外一个很快要的是pdf导出哈哈哈」。
+//   拼音字体（萌神）2026-11-12 退役（7-J，user「现在有没有人真的在用带拼音的导出。 no, 我也建议先sunset」）：一律黑体，歌词行不再为拼音往下让。
 // 做法：用屏幕上分页视图同一个排版函数（engrave，所见即所得），单位直接取「点」（一个线间距 = 这张纸的 spMm 毫米），所以排出来的页 = 纸的真实大小；
 //   **和「全部 + 分页」预览一模一样（除了控件和提示）**（2026-10-09 user「pdf画出来和开分页预览的不一样，没有respect track hidding，到时候记得都一起修一下，
 //   做到除了控件和提示外的wysiwyg」）：同一份声部视图（隐藏的声部 = 预览里那条细行的位置空着，不印；只看它同理；固定敲一个键的 × 符头）、同一把量字的尺子
-//   （分页预览的 measureAt：宽度按屏幕字体量，PDF 的字按同一个锚点画）、同一个小节线开关、同样的拼音让位（预览在分页时也让）；隐藏的纸 = 预览里折叠的那一条，不印、位置空着。
+//   （分页预览的 measureAt：宽度按屏幕字体量，PDF 的字按同一个锚点画）、同一个小节线开关；隐藏的纸 = 预览里折叠的那一条，不印、位置空着。
 //   （v0.8.8 起量宽用的是这款字体自己的字宽，和预览量的不一样 → 断行 / 分页可能不同，这一版改掉。）图元逐个翻成 PDF 指令（pdf.ts）：
 //   · 音乐字形 = Bravura 轮廓（vendor/fonts/bravura/outlines.json）画成路径；文字（歌词 / 歌名 / 速度 / 风格…）= 嵌这款字体的子集（阅读器里能选中复制）；
 //   · 编辑器专用的不印（曲段控件、光标、选区、隐藏声部的细行、占位灰字、AI 推定的灰字、速度变化的 ↑↓、句号…）；「不认」的灰（演奏者不认的记号、
 //     唱不出的歌词）印成黑的——那是给写谱的人看的披露，不是谱面内容。
-// 萌神拼音的字高：字体自报的上伸把拼音带算进去了（hhea 1300），不能拿来定汉字位置；按字形墨迹（ttf.ts inkOf）量「国」——拼音画在汉字上方，
-//   歌词行在谱下面，所以歌词行往下让出「拼音字体的墨迹顶 − 黑体的墨迹顶」那一截（engrave lyricRaise）。同 WXHW v2.3.13 的结论。
 import { textStyleOf, LYRIC_EM, createTextMeasure, type RawMeasure, type TextMeasure } from "../render/text/index.ts";
 import { engrave, type Prim, type PartView, type EngraveOpts } from "../render/engrave.ts";
 import { lang } from "../i18n/index.ts";
@@ -18,7 +17,6 @@ import { paperOf, DEFAULT_PAPER, spMm, lineSp, pageGeoOf, textScaleOf } from "..
 import { writePdf, type PdfOp, type PdfPage, type Seg, type MusicOutlines, type PdfStats, type Rgb } from "./pdf.ts";
 import type { TtfFont } from "./ttf.ts";
 
-export type PdfFontId = "sans" | "pinyin";
 const PT_PER_MM = 72 / 25.4;
 const INK: Rgb = [0.1, 0.1, 0.1];
 /** 不印的（任一个类命中就不印）。刀 1（2026-11-08，施工单 ai-docs/20261108-work-order-display-cut1-overlay.md §3.4）起编辑器的钮 / 框 / 提示都不在排版器里（覆盖层画），
@@ -28,20 +26,11 @@ const SKIP = new Set(["ann", "selbox", "caret", "in-span"]);
 const skipped = (cls: string[]) => cls.some((c) => SKIP.has(c));
 /** 这个图元印不印（按样式类；测试用）。 */
 export const isPrinted = (cls: string | undefined): boolean => !skipped((cls ?? "").split(/\s+/).filter(Boolean));
-/** 歌词行往下让多少（sp）：拼音字体 = 「国」的墨迹顶比黑体高出的那一截（萌神 1184 vs 思源黑体 795，unitsPerEm 都是 1000；test/pdf.test.ts 拿真字体核）。
- *  分页预览也用它（选了拼音字体时），所以不用为了预览去下 12 MB 的字体。 */
-export const LYRIC_RAISE: Record<PdfFontId, number> = { sans: 0, pinyin: ((1184 - 795) / 1000) * LYRIC_EM };
 /** 描边的路径（其余路径都是填充）：屏幕上的线宽是固定 px（谱间距 ~10 px 时），这里按谱间距等比换。 */
 const STROKE: Record<string, { w: number; dash?: number[]; round?: boolean }> = { arpeggio: { w: 1.1, round: true }, tie: { w: 1.4 }, slur: { w: 1.3 }, hairpin: { w: 1.1 }, "tuplet-bracket": { w: 1 }, brace: { w: 2.2, round: true }, volta: { w: 1.1 } };
 
 /** 一串字在这款字体里多宽（em；按 shape 出来的字形——注音字体按词换的字形宽度一样）。 */
 export function textEm(font: TtfFont, s: string): number { return font.shape(s).reduce((a, g) => a + font.advance(g), 0) / font.unitsPerEm; }
-/** 选了萌神拼音时歌词行要往下让多少（sp）：「国」的墨迹顶，拼音字体比黑体高出来的那一截。黑体 = 0。 */
-export function lyricRaiseOf(font: TtfFont, ref: TtfFont | null): number {
-  if (!ref) return 0;
-  const top = (f: TtfFont) => { const ink = f.inkOf(f.glyphId(0x56fd)); return ink ? ink[3] / f.unitsPerEm : 0; };
-  return Math.max(0, top(font) - top(ref)) * LYRIC_EM;
-}
 
 /** SVG 路径（engrave 画的：M / L / Q / C / Z，绝对坐标；H / V 也认）→ 页面坐标的段（平移 dx, dy）。 */
 export function segsOf(d: string, dx: number, dy: number): Seg[] {
@@ -62,7 +51,7 @@ export function segsOf(d: string, dx: number, dy: number): Seg[] {
   return out;
 }
 
-export interface ScorePdfArgs { song: Song; parts: PartView[]; font: TtfFont; fontId: PdfFontId; music: MusicOutlines; title: string; created?: Date;
+export interface ScorePdfArgs { song: Song; parts: PartView[]; font: TtfFont; music: MusicOutlines; title: string; created?: Date;
   /** 量文字宽的原始尺子（文字模块 RawMeasure）：和分页预览同一把（score-view rawMeasure）。不给 = 用这款字体自己的字宽（测试用）。 */
   measure?: RawMeasure;
   /** 自动小节线（和编辑器的开关一致）。 */
@@ -72,14 +61,14 @@ export interface ScorePdfArgs { song: Song; parts: PartView[]; font: TtfFont; fo
   // 看谱方式（按 C 调看 / 和弦级数）跟着印（v0.16.13，user 11-07「和弦级数和accessibility也进打印和最好导出，wysiwyg」）：谱面分家第三刀起是歌里的设置，排版自己从歌里读，这里不用另传。
   }
 /** 印的排版参数 = 分页预览去掉控件的那一套（光标、选区、占位提示、曲段控件都不要）。分页预览 = 这一套 + 控件开关（test/pdf-wysiwyg.test.ts 核：控件开关不改版面）。 */
-export function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, lyricRaise: number, onlyPaper?: string): EngraveOpts {
+export function printOpts(song: Song, sp: number, parts: PartView[], measure: TextMeasure, autoBars: boolean, onlyPaper?: string): EngraveOpts {
   const paper = song.paper ?? paperOf(DEFAULT_PAPER), ts = textScaleOf(paper);
-  return { width: lineSp(paper) * sp, sp, locale: lang(), ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measure, autoBars, page: pageGeoOf(paper), lyricRaise, ...(onlyPaper ? { onlyPaper } : {}) };   // 看谱方式 = 歌里的那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
+  return { width: lineSp(paper) * sp, sp, locale: lang(), ...(ts !== 1 ? { textScale: ts } : {}), at: { paper: onlyPaper ?? song.papers[0]!.id, part: song.parts[0]!.id }, parts, measure, autoBars, page: pageGeoOf(paper), ...(onlyPaper ? { onlyPaper } : {}) };   // 看谱方式 = 歌里的那一套（预览 = PDF）；不给 chrome = 不给编辑器留地方
 }
 /** 排版 + 翻成 PDF。返回字节、页数、缺字（这款字体里没有的字 / 轮廓里没有的音乐字形——调用方如实说）。 */
 export function scorePdf(a: ScorePdfArgs): { bytes: Uint8Array; pages: number; stats: PdfStats } {
   const paper = a.song.paper ?? paperOf(DEFAULT_PAPER), sp = spMm(paper) * PT_PER_MM, lyricPx = LYRIC_EM * sp * textScaleOf(paper);   // 没写字号的字按这个画
-  const L = engrave(a.song, printOpts(a.song, sp, a.parts, createTextMeasure(a.measure ?? ((s, px) => textEm(a.font, s) * px)), a.autoBars ?? true, LYRIC_RAISE[a.fontId], a.onlyPaper));
+  const L = engrave(a.song, printOpts(a.song, sp, a.parts, createTextMeasure(a.measure ?? ((s, px) => textEm(a.font, s) * px)), a.autoBars ?? true, a.onlyPaper));
   const W = paper.widthMm * PT_PER_MM, H = paper.heightMm * PT_PER_MM, dx = L.pageX.left;
   const pages: PdfPage[] = L.pages.map(() => ({ w: W, h: H, ops: [] }));
   const pageOf = (y: number) => { for (let k = 0; k < L.pages.length; k++) if (y >= L.pages[k]!.top && y < L.pages[k]!.top + L.pages[k]!.h) return k; return -1; };

@@ -52,18 +52,17 @@ export function unserializeFinderMemo(json: unknown): FinderMemo {
   if (typeof j.pick === "string") m.pick = j.pick;
   return m;
 }
-export interface Desk { scope: "all" | "segment"; pageFlow: boolean; scroll: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null; pdf: "sans" | "pinyin"; mode: "notes" | "lyrics" | "symbols" | "listen"; finder: FinderMemo }
-export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, pdf: "sans", mode: "notes", finder: freshFinderMemo() });
+export interface Desk { scope: "all" | "segment"; pageFlow: boolean; scroll: boolean; paper: string | null; parts: Record<string, PartViewState>; mp3: "standard" | "small"; pad: PadDesk; ref: RefPanelDesk | null; mode: "notes" | "lyrics" | "symbols" | "listen"; finder: FinderMemo }
+export const freshDesk = (): Desk => ({ scope: "segment", pageFlow: false, scroll: false, paper: null, parts: {}, mp3: "standard", pad: freshPad(), ref: null, mode: "notes", finder: freshFinderMemo() });
 
 /** 文件里的形状（只写非默认值；全默认 = 不写这个字段）。 */
-export interface DeskJson { scope?: "all"; pageFlow?: true; scroll?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number }; pdf?: "pinyin"; mode?: "lyrics" | "symbols" | "listen"; finder?: FinderMemoJson }
+export interface DeskJson { scope?: "all"; pageFlow?: true; scroll?: true; paper?: string; parts?: Record<string, { hidden?: true; only?: true; muted?: true; solo?: true }>; mp3?: "small"; pad?: PadJson; ref?: { open?: true; left: number; top: number; width: number; height: number }; mode?: "lyrics" | "symbols" | "listen"; finder?: FinderMemoJson }
 /** pad 在文件里的形状：只写不是默认的；全默认 = 不写。 */
 export interface PadJson { fifths?: number; scale?: string; unit?: PadUnit; tuplet?: 3 | 5 | 6 | 7; low?: number }
 export function serializeDesk(d: Desk): DeskJson | null {
   const out: DeskJson = {};
   if (d.scope === "all") out.scope = "all";
   if (d.mp3 === "small") out.mp3 = "small";
-  if (d.pdf === "pinyin") out.pdf = "pinyin";
   if (d.mode !== "notes") out.mode = d.mode;
   if (d.scroll) out.scroll = true; else if (d.pageFlow) out.pageFlow = true;
   if (d.paper) out.paper = d.paper;
@@ -93,7 +92,7 @@ export function unserializeDesk(json: unknown): Desk {
   if (j.pageFlow === true) d.pageFlow = true;
   if (j.scroll === true) { d.scroll = true; d.pageFlow = false; }
   if (j.mp3 === "small") d.mp3 = "small";
-  if (j.pdf === "pinyin") d.pdf = "pinyin";
+  // j.pdf（乐谱 PDF 的字体，只写过 "pinyin"）：拼音字体 7-J 退役，读到不理、不再写（score patch 1）
   if (j.mode === "lyrics" || j.mode === "symbols" || j.mode === "listen") d.mode = j.mode;
   if (typeof j.paper === "string" && j.paper) d.paper = j.paper;
   if (j.parts && typeof j.parts === "object") {

@@ -78,8 +78,6 @@ export interface EngraveOpts {
   autoBars?: boolean;                    // 按拍号自动画小节线（默认开）；关 = 只画人插的「|」
   /** 分页排法（user 2026-10-08「显示法还加一个分页？可以预览打印，要求和之后生成的pdf wysiwyg」）：按纸高分页、画页框 + 页码；h = 整页高、l r t b = 四边边距（sp）。没有 = 连续（一张长纸）。 */
   page?: { h: number; l: number; r: number; t: number; b: number };
-  /** 歌词行再往下让多少（sp）：PDF 选了萌神拼音时，汉字头上那一截拼音要地方（src/export/score-pdf.ts 按字形墨迹算；屏幕上 = 0）。 */
-  lyricRaise?: number;
   /** 只画这一张纸（曲段）：视图范围「本段」（user 2026-10-08「不同曲段应该是不同页，而不是一起显示」「视图里面应该也有个连续和分段」）。 */
   onlyPaper?: string;
   /** 横卷（v0.9.35；user 2026-10-10「那个无限往右的总谱模式也做一下」）：不折行，每张纸一行、一直往右；width 只管歌名 / 作者栏 / 纸的控件那一屏，
@@ -672,7 +670,7 @@ const partsHit: Layout["parts"] = [], papersHit: Layout["papers"] = [], names: L
       const bySys = new Map<number, LyricSpot[]>();
       for (const c of spots) { const l = bySys.get(c.sys); if (l) l.push(c); else bySys.set(c.sys, [c]); }
       if (!lyricsOf[r]) { for (const [sy, cs] of bySys) attach(lrow(sy), "lyrics", () => { const part: LyricHit[] = []; for (const c of cs) run(c, part); lyrics.push(...part); }); return; }   // 没写歌词的声部：空着的歌词位（点了开歌词框），都在默认的歌词位
-      for (let sy = 0; sy < nSys; sy++) { const row = lrow(sy), cs = bySys.get(sy), base = rowPar(row).lyricBelow + (o.lyricRaise ?? 0); attach(row, "lyrics", () => {
+      for (let sy = 0; sy < nSys; sy++) { const row = lrow(sy), cs = bySys.get(sy), base = rowPar(row).lyricBelow; attach(row, "lyrics", () => {
         lyricOff.set(row, base);   // 这一行没有字也留歌词位（空着的歌词位能点）
         if (!cs) return;
         const partLyrics: LyricHit[] = [];

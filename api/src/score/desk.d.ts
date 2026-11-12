@@ -64,7 +64,6 @@ export interface Desk {
     mp3: "standard" | "small";
     pad: PadDesk;
     ref: RefPanelDesk | null;
-    pdf: "sans" | "pinyin";
     mode: "notes" | "lyrics" | "symbols" | "listen";
     finder: FinderMemo;
 }
@@ -90,7 +89,6 @@ export interface DeskJson {
         width: number;
         height: number;
     };
-    pdf?: "pinyin";
     mode?: "lyrics" | "symbols" | "listen";
     finder?: FinderMemoJson;
 }
