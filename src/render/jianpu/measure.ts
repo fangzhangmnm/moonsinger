@@ -14,6 +14,8 @@ import { SP_DEFAULTS } from "../spacing.ts";
 import { DIGIT_W, COL_MIN, COL_MIN_SHORT, BAR_W_J, MID_TEXT_EM, MID_TEXT_CH } from "./glyphs.ts";
 
 /** 这一段（第一个字形）这一列至少多宽（数字行的单位；样张：四分 / 八分 = 数字宽 + 一点缝，十六分及更短只占字宽——「密的声部自己挤紧」；和弦名 = 名字的宽 + 两边的缝）。 */
+/** 左边挂了东西的音：前一个音的墨到这个挂件的空 ≥ 挂件到它自己那个音的空的几倍（第八刀，统筹 2026-11-12 定成规矩，不定成数）。 */
+const LEFT_CLEAR = 4;
 const core = (u: Chunk, nameW: number): number => (nameW ? Math.max(COL_MIN, 0.1 + nameW + 0.15) : u.base < TPQ / 2 ? COL_MIN_SHORT : COL_MIN);
 const COLUMN_KIND: Record<Unit["kind"], ColumnKind> = { bar: "bar", nav: "nav", clef: "clef", key: "key", time: "time", tempo: "tempo", groove: "groove", dyn: "dyn", ottava: "ottava", hairpin: "hairpin", head: "tail", chunk: "note" };
 /** 中途换调 / 换拍号写的那几个字（「1=♭B」「3/4」）大约多宽（sp）。 */
@@ -41,7 +43,7 @@ export function measureJianpu(q: JianpuTrack, k = 1, mode: JianpuMode = "digits"
     const fd = mode === "digits" ? foldOf(u, aux) : undefined, lt = lettersOf(q, u, mode, aux);
     const left = -b.x0 * k, right = Math.max(0, (core(u, fd || (lt && gw > DIGIT_W) ? gw : 0) + 0.1 + Math.max(0, b.x1 - (nc.x0 + gw))) * k - SP_DEFAULTS.pad);   // 顶杆 = 前一个的右伸 + 后一个的左伸 + 缝
     inkL.set(u, Math.max(0, left));
-    const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks }];
+    const out: SpItem[] = [{ row: 0, left, right, dur: u.ticks, inkR: b.x1 * k, ...(nc.leftGap !== undefined ? { clear: LEFT_CLEAR * nc.leftGap * k } : {}) }];   // 左边挂了东西：前一个音的墨到它 ≥ 它离自己的音的 4 倍（统筹定的规矩，框架的顶杆管）
     const cx = (0.1 + gw / 2) * k;
     if (u.lyW !== undefined) out.push({ row: 1, left: u.lyW / 2 - cx, right: cx + u.lyW / 2 + 0.4 + (u.hyph ? 0.7 : 0) });   // 按歌词排：字和字之间不撞（同一套顶杆）
     return out;

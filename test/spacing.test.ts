@@ -152,3 +152,16 @@ describe("横向间距：随便什么谱都不许撞、不许倒着排", () => {
     }
   });
 });
+describe("顶杆：左边挂了东西的音离前一个音的墨（第八刀，统筹定的规矩：≥ 挂件离自己的音的 4 倍，也不小于普通的最小音距）", () => {
+  const o = { ...SP_DEFAULTS, curve: () => 0 } as never;
+  const col = (tick: number, it: SpItem): SpCol => ({ tick, items: [it] });
+  it("前一个报了墨的右边、这一个要 clear：取两种里大的", () => {
+    const r = rodsOf([col(0, { row: 0, left: 0, right: 1.5, inkR: 1.2, dur: TPQ }), col(TPQ, { row: 0, left: 0.6, right: 1.5, clear: 1.0, dur: TPQ })], o);
+    assert(Math.abs(r[0]!.min - Math.max(1.5 + 0.6 + SP_DEFAULTS.pad, 1.2 + 0.6 + 1.0)) < 1e-9, `${r[0]!.min}`);
+  });
+  it("clear 比普通的顶杆小 = 照普通的（不会小于最小音距）；前一个没报 inkR = 不起作用", () => {
+    const a = rodsOf([col(0, { row: 0, left: 0, right: 1.5, inkR: 1.2 }), col(TPQ, { row: 0, left: 0.6, right: 1.5, clear: 0.1 })], o)[0]!.min;
+    const b = rodsOf([col(0, { row: 0, left: 0, right: 1.5 }), col(TPQ, { row: 0, left: 0.6, right: 1.5, clear: 5 })], o)[0]!.min;
+    assert(Math.abs(a - (1.5 + 0.6 + SP_DEFAULTS.pad)) < 1e-9 && Math.abs(b - (1.5 + 0.6 + SP_DEFAULTS.pad)) < 1e-9, `${a} ${b}`);
+  });
+});

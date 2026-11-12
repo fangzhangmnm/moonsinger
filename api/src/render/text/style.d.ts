@@ -10,6 +10,11 @@ export interface TextStyle {
     ruler: TextRuler;
 }
 export declare const TEXT_FACES: Record<TextFace, string>;
+/** 小字补粗（7-P，user 11-12「记得latex的上下标的处理方法」；统筹的读法：缩小画的字，笔画要和旁边的主字看起来是一家的，缩得越小补得越多）。
+ *  主字的竖笔 = Noto Sans SC Regular 的「I」量出来 0.092 字号（test/text-style.test.ts 拿 vendor 里那款字核着）；目标 = 主字竖笔 × 0.9；
+ *  缩成主字的 k 倍之后，在常规 / 半粗里挑竖笔最接近目标的。半粗在 PDF 里 = 描边 BOLD_STROKE 字号（src/export/pdf.ts 同一个数，测试核着），屏幕 = CSS 600。 */
+export declare const STEM_REGULAR = 0.092, BOLD_STROKE = 0.035, SMALL_STEM_K = 0.9;
+export declare function smallWeight(k: number): 400 | 600;
 /** 速度那一串的字号（线间距）；「1=X」、和弦级数、风格记号和它一样大。 */
 export declare const TEMPO_EM = 1.35;
 /** 歌词的字号（线间距；跟谱）。 */
@@ -69,6 +74,9 @@ export declare const TEXT_STYLES: {
     "jp-legend": TextStyle;
 };
 export type TextRole = keyof typeof TEXT_STYLES;
+/** 同一种字的变体（样式类里同时有这两个词）：只改粗细。 */
+/** 幽灵音（演奏法）的数字画小一号：几成（同 render/jianpu/glyphs.ts GHOST_K，测试核着）。 */
+export declare const GHOST_DIGIT_K = 0.62;
 /** 一个字图元的样式：样式类里最后一个在表里的词（越往后越具体：「tempo tempo-word」→ tempo-word、「nav-mark nav-word」→ nav-word）；都不在 = 正文默认。 */
 export declare function textStyleOf(cls: string | undefined): TextStyle;
 /** 这种字多大（px）：sp = 线间距，ts = 字的尺子比例（紧凑档 1.4）。 */

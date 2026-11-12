@@ -37,6 +37,8 @@ export interface NoteCellOut {
     /** 画了数字的音（不是接着上一段的横线）：弧线和连音括号要的上下沿（局部 y）。 */
     top?: number;
     bot?: number;
+    /** 左边挂了东西（升降号、琶音）：紧挨着音的那一个离音多远。量的时候框架按它要求「前一个音的墨到这个挂件」至少 4 倍（统筹定的规矩）。 */
+    leftGap?: number;
 }
 export declare function noteCell(a: NoteCellIn): NoteCellOut;
 /** 画的时候横线 / 0 按「这一段占到的宽 − 它」一拍一个摆：只给附点让（附点和横线同高）。换气的 V 在上面、不挤横线（统筹看 5-6 样张定的；量的时候照样给它留了宽）。 */

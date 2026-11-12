@@ -11,9 +11,10 @@ import { midiOf } from "../../score/pitch.ts";
 import { percOf } from "../../gm/percussion.ts";
 import { type JianpuTrack, type JianpuMode, type JianpuAux, foldOf, extraGlyphs, hasAugDot, underlines, accsOf, hasArp, contDash as isContDash, lettersOf } from "./chunk.ts";
 import { PLACE, gapOf, groupOf, type PlaceId } from "./place.ts";
-import { DIGIT_EM, DIGIT_W, BASE_Y, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_STEP, ACC_EM, ACC_Y, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_R, AUG_Y,
+import { DIGIT_EM, DIGIT_W, BASE_Y, UL_Y0, UL_GAP, UL_W, DOT_R, DOT_STEP, ACC_EM, DASH_L, DASH_W, DASH_Y, DASH_PITCH, AUG_R, AUG_Y,
   BREATH_W, INHALE_W, DIGIT_H, X_EM, KIT_CHAR, KIT_EM, letterW, letterParts, CHORD_GAP, SCRIPT_K, SCRIPT_GAP, SUP_DY, SUB_DY, SUB_DROP, SUP_RISE, LOW_DOT_UNDER, GHOST_K,
-  STACC_W, STACC_H, TEN_L, TEN_W, BREATH_EM, BREATH_Y, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, accText, DOT_GAP } from "./glyphs.ts";
+  STACC_W, STACC_H, TEN_L, TEN_W, BREATH_EM, BREATH_Y, CHORD_EM, CHORD_SX, CHORD_H, CHORD_AMB_W, chordNameW, chordBassCx, stackBases, dotPath, DOT_GAP,
+  ACC_GLYPH_EM, ACC_RISE, ACC_SEP, accGlyphs, accGlyphsOfText, accRunW, supAccEm } from "./glyphs.ts";
 
 export interface NoteCellIn {
   u: Chunk; q: JianpuTrack; mode: JianpuMode; aux?: JianpuAux;
@@ -37,6 +38,8 @@ export interface NoteCellOut {
   members: { i: number; yb: number }[]; hiBase: number;
   /** 画了数字的音（不是接着上一段的横线）：弧线和连音括号要的上下沿（局部 y）。 */
   top?: number; bot?: number;
+  /** 左边挂了东西（升降号、琶音）：紧挨着音的那一个离音多远。量的时候框架按它要求「前一个音的墨到这个挂件」至少 4 倍（统筹定的规矩）。 */
+  leftGap?: number;
 }
 
 const T0 = (tok: number | undefined) => (tok !== undefined ? { tok } : {});
@@ -45,8 +48,13 @@ const part = (ink: Ink, prims: Prim[]): Part => ({ ink, prims });
 const unionInk = (ks: readonly Ink[]): Ink => ({ x0: Math.min(...ks.map((k) => k.x0)), x1: Math.max(...ks.map((k) => k.x1)), y0: Math.min(...ks.map((k) => k.y0)), y1: Math.max(...ks.map((k) => k.y1)) });
 /** 下划线最下面那条的底（局部 y）：低八度点、滚奏贴在它外面（8-3 前下划线还不在盒子里）。 */
 const ulBottom = (nUL: number, letters: boolean): number => UL_Y0 + (nUL - 1) * UL_GAP + UL_W / 2 + (letters ? SUB_DROP : 0);
-/** 升降号（文字字形；7-P 换乐谱字体之前）的墨：每个字宽约 ACC_INK_W，基线以上 0.75 个字号、以下 0.05 个。 */
-const ACC_INK_W = 0.5;
+/** 一串升降号字形（7-P：Bravura）：右边对齐 xr、顶在 top；回图元和墨迹框。 */
+function accRun(gs: readonly { ch: string; box: readonly number[] }[], em: number, xr: number, top: number, cls: string, T: { tok?: number }): { prims: Prim[]; ink: Ink } {
+  const prims: Prim[] = [], w = accRunW(gs, em), h = Math.max(...gs.map((g) => ((g.box[3]! - g.box[2]!) * em) / 4));
+  let x = xr - w;
+  for (const g of gs) { const gw = ((g.box[1]! - g.box[0]!) * em) / 4; prims.push({ ...T, t: "glyph", x: x - (g.box[0]! * em) / 4, y: top - (g.box[2]! * em) / 4, ch: g.ch, cls, size: em }); x += gw + ACC_SEP; }
+  return { prims, ink: { x0: xr - w, x1: xr, y0: top, y1: top + h } };
+}
 
 export function noteCell(a: NoteCellIn): NoteCellOut {
   const { u, q, mode, aux } = a, T = T0(a.tok), art = a.artCls ?? ((x: string, b = "art") => b || x);
@@ -64,9 +72,11 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
   const gx = (k: number) => (k === 0 ? cx : lt ? lFirst + (k - 1) * step : x0 + glyphW - DIGIT_W / 2 + k * step);
   /** 每一组已经贴了几个（间隔按「这一组的第一个 / 后面的」取：跳音贴在八度点上面照旧离 MARK_GAP）。 */
   const count: Record<string, number> = {};
+  let leftGap: number | undefined;
   const stick = (id: PlaceId, p: Part, o: { align?: "center" | "start" | "end"; cross?: number } = {}, c: Cell = head): Ink => {
-    const g = groupOf(id), k = count[g] ?? 0; count[g] = k + 1;
-    return c.attach(PLACE[id].side, p, { gap: gapOf(id, k), ...o });
+    const g = groupOf(id), k = count[g] ?? 0, gap = gapOf(id, k); count[g] = k + 1;
+    if (PLACE[id].side === "left" && leftGap === undefined) leftGap = gap;
+    return c.attach(PLACE[id].side, p, { gap, ...o });
   };
   let members: { i: number; yb: number }[] = [], hiBase = BASE_Y, top: number | undefined, bot: number | undefined;
 
@@ -112,7 +122,10 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
           const lp = letterParts(pp, q.letters!), xs = x0 + (letterW(pp.step) + SCRIPT_GAP) * gk, ss = DIGIT_EM * SCRIPT_K * gk, cls = (small ? "jp-digit jp-letter art-ghost" : "jp-digit jp-letter") + mute(i);
           prims.push({ ...T, t: "text", x: x0, y: yb, s: lp.letter, cls, size: DIGIT_EM * gk, anchor: "start" });
           inks.push(textInk(x0, x0 + letterW(pp.step) * gk, yb - DIGIT_H * gk, yb));
-          if (lp.acc) { prims.push({ ...T, t: "text", x: xs, y: yb + SUP_DY * gk, s: lp.acc, cls: "jp-acc jp-letter-sup" + mute(i), size: ss, anchor: "start" }); inks.push(textInk(xs, xs + [...lp.acc].length * ACC_INK_W * (ss / ACC_EM), yb + SUP_DY * gk - 0.75 * ss, yb + SUP_DY * gk + 0.05 * ss)); }
+          if (lp.acc) {   // 右上角的升降号（7-P：Bravura 字形，顶和原来文字 ♭ 的顶齐）
+            const gs = accGlyphsOfText(lp.acc), em = supAccEm(gk), r = accRun(gs, em, xs + accRunW(gs, em), yb + SUP_DY * gk - 0.75 * ss, "jp-acc jp-letter-sup" + mute(i), T);
+            prims.push(...r.prims); inks.push(r.ink);
+          }
           prims.push({ ...T, t: "text", x: xs, y: yb + SUB_DY * gk, s: lp.oct, cls: "jp-digit jp-letter-sub" + mute(i), size: ss, anchor: "start" });
           inks.push(textInk(xs, xs + lp.oct.length * SCRIPT_K * DIGIT_W * gk, yb + SUB_DY * gk - SCRIPT_K * DIGIT_H * gk, yb + SUB_DY * gk));
         } else {
@@ -123,10 +136,9 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
           if (dots < 0 && k > 0) for (let j = 0; j < -dots; j++) { const yy = yb + LOW_DOT_UNDER + j * DOT_STEP; prims.push({ ...T, t: "path", d: dotPath(cx, yy, DOT_R), cls: "jp-dot" + mute(i) }); inks.push({ x0: cx - DOT_R, x1: cx + DOT_R, y0: yy - DOT_R, y1: yy + DOT_R }); }
         }
         head.core(part(unionInk(inks), prims));
-        if (!lt && accs[i] !== null && accs[i] !== undefined) {   // 升降号：这个数字的左上（7-P 之前仍是文字字形）；和弦里每个数字各自的，一块贴在左边、右边对齐
-          const s = accText(d.acc), w = [...s].length * ACC_INK_W, yBase = yb - (BASE_Y - ACC_Y);
-          accPrims.push({ ...T, t: "text", x: -w / 2, y: yBase, s, cls: "jp-acc" + mute(i), size: ACC_EM, anchor: "middle" });
-          accInks.push({ x0: -w, x1: 0, y0: yBase - 0.75 * ACC_EM, y1: yBase + 0.05 * ACC_EM });
+        if (!lt && accs[i] !== null && accs[i] !== undefined) {   // 升降号：这个数字的左上（7-P：Bravura 字形，顶比数字顶高 ACC_RISE）；和弦里每个数字各自的，一块贴在左边、右边对齐
+          const r = accRun(accGlyphs(d.acc), ACC_GLYPH_EM * gk, 0, yb - DIGIT_H * gk - ACC_RISE, "jp-acc" + mute(i), T);
+          accPrims.push(...r.prims); accInks.push(r.ink);
         }
         members.push({ i, yb });
       });
@@ -175,7 +187,7 @@ export function noteCell(a: NoteCellIn): NoteCellOut {
     const gap = a.limit === undefined ? PLACE.breath.gap : Math.max(0.1, Math.min(PLACE.breath.gap, a.limit - 0.6 - w - e));   // 不越过这一段占到的地方（下一列 / 小节线），离它留一点（原 draw.ts 的规矩）
     whole.attach(PLACE.breath.side, part({ x0: 0, x1: w, y0: -0.7 * BREATH_EM, y1: 0 }, prims), { gap, cross: BREATH_Y });
   }
-  return { cell: whole, x0, cx, glyphW, members, hiBase, ...(top !== undefined ? { top } : {}), ...(bot !== undefined ? { bot } : {}) };
+  return { cell: whole, x0, cx, glyphW, members, hiBase, ...(top !== undefined ? { top } : {}), ...(bot !== undefined ? { bot } : {}), ...(leftGap !== undefined ? { leftGap } : {}) };
 }
 /** 画的时候横线 / 0 按「这一段占到的宽 − 它」一拍一个摆：只给附点让（附点和横线同高）。换气的 V 在上面、不挤横线（统筹看 5-6 样张定的；量的时候照样给它留了宽）。 */
 export function tailW(u: Chunk): number {

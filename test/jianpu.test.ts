@@ -69,7 +69,7 @@ describe("简谱数字行", () => {
     assert(Math.abs(lo!.y - ds[0]!.y) < 1e-6, "最低的那个在行的基线上（和前一个单音同一条基线）");
     const one = lay([n(P("C")), n(P("C", 4, 1)), n(P("C")), n(P("C"))]).L.prims.filter((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-digit/.test(p.cls ?? "")).map((p) => p.x.toFixed(3));
     eq([ds[0]!, lo!, ds[4]!, ds[5]!].map((p) => p.x.toFixed(3)).join(" "), one.join(" "), "和弦那一列和同样带 ♯ 的单音一样宽（只压高、不缩宽也不加宽）");
-    const acc = L.prims.find((p): p is Extract<Prim, { t: "text" }> => p.t === "text" && /jp-acc/.test(p.cls ?? "") && p.s === "♯");
+    const acc = L.prims.find((p): p is Extract<Prim, { t: "glyph" }> => p.t === "glyph" && /jp-acc/.test(p.cls ?? "") && p.ch === "\u{E262}");   // 7-P：Bravura 的 ♯
     assert(!!acc && acc.y > mid!.y && acc.y < lo!.y + 1e-6, "♯ 挂在它自己那个数字（最低的 1）旁边");
     const iCh = toks.findIndex((t) => t.kind === "note" && !!t.chord?.length);
     eq(L.chordHeads.filter((h) => h.index === iCh).length, 2, "叠着的另外两个音各一块点击框（指着同一个音）");
@@ -127,7 +127,7 @@ describe("简谱数字行", () => {
     assert(lg2.every((p) => !/[（(]$/.test(p.s) && !/^\u3000?[）)，、]/.test(p.s)), "开括号不在行尾、闭括号和标点不在行首");
     assert(lg2.some((p) => p.s.includes("大鼓")), "放得下的一件不拆开（整件折到下一行）");
     eq(lg2.map((p) => p.s.replace(/^\u3000/, "")).join(" ").replace(/\s+/g, " ").includes("Acoustic Snare Drum Very Long Name"), true, "英文按词折（词没被拆开）");
-    assert(!L.prims.some((p) => p.t === "text" && /jp-acc/.test(p.cls ?? "")) && !L.prims.some((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")), "没有升降号、没有八度点");
+    assert(!L.prims.some((p) => (p.t === "text" || p.t === "glyph") && /jp-acc/.test(p.cls ?? "")) && !L.prims.some((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")), "没有升降号、没有八度点");
     eq(L.prims.filter((p) => p.t === "line" && /jp-ul/.test(p.cls ?? "")).length, 1, "两个八分连一条下划线（节奏写法同数字行）");
     assert(!L.prims.some((p) => p.t === "text" && /jp-head/.test(p.cls ?? "") && (p as { s: string }).s.startsWith("1=")), "谱头不印「1=」");
     const iKey = toks.findIndex((t) => t.kind === "key");
@@ -293,9 +293,10 @@ describe("简谱数字行", () => {
     const a = letters([n(P("E")), n(P("F", 4, 1)), n(P("G")), n(P("F", 5, 1))]).L;
     assert(a.systems.every((r) => r.kind === "jianpu"), "行的种类还是数字行（不另写一种行）");
     eq(texts(a, /jp-letter\b(?!-)/).map((p) => p.s).join(""), "EFGF", "字母 = 实际音名、大写");
-    eq(texts(a, /jp-letter-sup/).map((p) => p.s).join(""), "♯♯", "每个 F♯ 右上角都写 ♯");
+    const supG = a.prims.filter((p): p is Extract<Prim, { t: "glyph" }> => p.t === "glyph" && /jp-letter-sup/.test(p.cls ?? ""));
+    eq(supG.map((p) => p.ch).join(""), "\u{E262}\u{E262}", "每个 F♯ 右上角都写 ♯（7-P：Bravura 字形）");
     eq(texts(a, /jp-letter-sub/).map((p) => p.s).join(""), "4445", "右下角每个音都写八度数字（中央 C = C4）");
-    const f = texts(a, /jp-letter\b(?!-)/)[1]!, sup = texts(a, /jp-letter-sup/)[0]!, sub = texts(a, /jp-letter-sub/)[1]!;
+    const f = texts(a, /jp-letter\b(?!-)/)[1]!, sup = supG[0]!, sub = texts(a, /jp-letter-sub/)[1]!;
     assert(sup.x > f.x && sup.y < f.y && sup.size! < f.size!, "升降号在字母右上、小一号"); assert(sub.x > f.x && sub.y > f.y && Math.abs(sub.size! / f.size! - 0.7) < 0.01, "八度数字在字母右下、字母的七成（7-L）");
     assert(!texts(a, /jp-head/).some((p) => p.s.startsWith("1=")) && a.keyHints.some((h) => h.s.startsWith("1=")), "调号不印，编辑器里淡的提示带着它");
     eq(a.prims.filter((p) => p.t === "path" && /jp-dot/.test(p.cls ?? "")).length, 0, "不用上下的点");
@@ -448,5 +449,11 @@ describe("简谱数字行", () => {
       assert(ids.every((id) => L.prims.some((p) => p.tok === id)), `${k} 每个 token 都有图元`);
     }
     eq(L.clefs.filter((h) => h.kind === "mid").length + L.clefs.filter((h) => h.kind === "ottava").length, 3, "三个都点得到");
+  });
+});
+describe("数字行的升降号（7-P）", async () => {
+  const G = await import("../src/render/jianpu/glyphs.ts"), B = await import("../src/render/glyph-box.gen.ts");
+  it("用 Bravura 的字形；抄进字形表的墨迹框和生成的那份一样", () => {
+    for (const g of Object.values(G.ACC_GLYPH)) assert(JSON.stringify([...g.box]) === JSON.stringify([...B.GLYPH_BOX[g.ch]!]), `${g.ch.codePointAt(0)!.toString(16)}：${g.box} ≠ ${B.GLYPH_BOX[g.ch]}`);
   });
 });

@@ -78,6 +78,25 @@ export const dotPath = (cx: number, cy: number, r: number): string => {
   const k = 0.5523 * r, f = (v: number) => (Math.round(v * 100) / 100).toString();
   return `M${f(cx + r)},${f(cy)}C${f(cx + r)},${f(cy + k)} ${f(cx + k)},${f(cy + r)} ${f(cx)},${f(cy + r)}C${f(cx - k)},${f(cy + r)} ${f(cx - r)},${f(cy + k)} ${f(cx - r)},${f(cy)}C${f(cx - r)},${f(cy - k)} ${f(cx - k)},${f(cy - r)} ${f(cx)},${f(cy - r)}C${f(cx + k)},${f(cy - r)} ${f(cx + r)},${f(cy - k)} ${f(cx + r)},${f(cy)}Z`;
 };
+/** 升降号 / 还原号的字形（7-P，user 11-12「b太细了…记得latex的上下标的处理方法」；统筹定：不用文字字体的 ♭，改用乐谱字体 Bravura 的——按谱面的粗细设计的）。
+ *  码位 + 墨迹框 [左, 右, 上, 下]（字号 4 时的线间距）：抄自 src/render/glyph-box.gen.ts（数字行不许 import 那个文件，结构守卫；test/jianpu.test.ts 核着两边一样）。 */
+export const ACC_GLYPH = {
+  flat: { ch: "\u{E260}", box: [0, 0.904, -1.756, 0.7] }, natural: { ch: "\u{E261}", box: [0, 0.672, -1.364, 1.34] }, sharp: { ch: "\u{E262}", box: [0, 0.996, -1.4, 1.392] },
+} as const satisfies Record<string, { ch: string; box: readonly [number, number, number, number] }>;
+/** 数字行上升降号的字号（字形的 size，数字行的单位）：照样张的大小——♭ 的高（含下伸）约等于原来文字 ♭ 的高（0.59 字号的字）。 */
+export const ACC_GLYPH_EM = 0.78 * FS;
+/** 升降号的顶比它那个数字的顶高多少（样张：文字 ♭ 原来就略高出数字顶）。几个升降号之间的缝。 */
+export const ACC_RISE = 0.2, ACC_SEP = 0.08;
+/** 相对调内音的升降（+ 升 / − 降 / 0 还原）→ 一串字形（双升 / 双降 = 两个，同简谱老写法逐个写）。 */
+export const accGlyphs = (rel: number): (typeof ACC_GLYPH)[keyof typeof ACC_GLYPH][] => (rel > 0 ? Array(rel).fill(ACC_GLYPH.sharp) : rel < 0 ? Array(-rel).fill(ACC_GLYPH.flat) : [ACC_GLYPH.natural]);
+/** 字母谱角标里的升降号（写成 ♯ / ♭ 的字）→ 字形。 */
+export const accGlyphsOfText = (t: string): (typeof ACC_GLYPH)[keyof typeof ACC_GLYPH][] => [...t].map((c) => (c === "♯" ? ACC_GLYPH.sharp : c === "♭" ? ACC_GLYPH.flat : ACC_GLYPH.natural));
+/** 一串升降号字形占多宽（数字行的单位；em = 字号）。 */
+export const accRunW = (gs: readonly { box: readonly number[] }[], em: number): number => gs.reduce((w, g, i) => w + ((g.box[1]! - g.box[0]!) * em) / 4 + (i ? ACC_SEP : 0), 0);
+/** 字母谱右上角升降号的字号：照数字行的升降号按角标的字号折算（角标 = 字母的 SCRIPT_K 倍，原来文字 ♭ 的字号 = 角标字号），再收到 SUP_ACC_FIT——
+ *  Bravura 的 ♯ 比文字 ♯ 往下伸得多，按比例的大小会碰到右下角的八度数字（不相撞检查抓到的）。 */
+export const SUP_ACC_FIT = 0.88;
+export const supAccEm = (gk = 1): number => (ACC_GLYPH_EM * (SCRIPT_K * DIGIT_EM * gk) * SUP_ACC_FIT) / ACC_EM;
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export const accText = (rel: number): string => (rel > 0 ? "♯".repeat(rel) : rel < 0 ? "♭".repeat(-rel) : "♮");
 /** 字母谱（7-B；user「下标放数字上标放升降号…我们只要保证用tracker的人能看懂就行了」）：大写字母，右上角挂升降号、右下角挂八度数字（中央 C 默认叫 C4，歌里可以改成 C3 / C5）。
@@ -99,7 +118,7 @@ export const letterParts = (p: { step: string; alter: number; octave: number }, 
   ({ letter: p.step, acc: p.alter > 0 ? "♯".repeat(p.alter) : p.alter < 0 ? "♭".repeat(-p.alter) : "", oct: String(p.octave - 4 + middleC) });
 /** 角标那一栏多宽（升降号和数字取宽的；升降号照简谱升降号的宽 ACC_W 按字号折算）。 */
 export const scriptW = (p: { step: string; alter: number; octave: number }, middleC: number): number => {
-  const lp = letterParts(p, middleC); return SCRIPT_GAP + Math.max([...lp.acc].length * ACC_W * ((SCRIPT_K * FS) / ACC_EM), lp.oct.length * SCRIPT_K * DIGIT_W);
+  const lp = letterParts(p, middleC); return SCRIPT_GAP + Math.max(lp.acc ? accRunW(accGlyphsOfText(lp.acc), supAccEm()) : 0, lp.oct.length * SCRIPT_K * DIGIT_W);   // 升降号按 Bravura 字形的宽（7-P）
 };
 /** 一个音（或竖着叠的几个）多宽（sp，数字原大起；叠着的取最宽的）。 */
 export const letterNoteW = (ps: readonly { step: string; alter: number; octave: number }[], middleC: number): number => Math.max(...ps.map((p) => letterW(p.step) + scriptW(p, middleC)));

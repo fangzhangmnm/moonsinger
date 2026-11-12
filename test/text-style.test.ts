@@ -60,3 +60,20 @@ describe("文字模块：一个入口、量字一把尺子", () => {
     assert(!bad.length, bad.join("；"));
   });
 });
+describe("小字补粗（7-P）：缩小画的字按算出来的粗细，屏幕和 PDF 同一个数", async () => {
+  const S = await import("../src/render/text/style.ts"), PDF = await import("../src/export/pdf.ts"), G = await import("../src/render/jianpu/glyphs.ts"), TTF = await import("../src/export/ttf.ts");
+  const nodeMod = (m: string) => (globalThis as unknown as { process: { getBuiltinModule(m: string): any } }).process.getBuiltinModule(m);
+  it("主字的竖笔 = vendor 里那款字（Noto Sans SC Regular）的「I」的墨宽", () => {
+    const f = TTF.parseTtf(new Uint8Array(nodeMod("node:zlib").gunzipSync(nodeMod("node:fs").readFileSync(new URL("../vendor/fonts/sans.ttf.gz", import.meta.url)))));
+    const k = f.inkOf(f.glyphId(73))!; const stem = (k[2] - k[0]) / f.unitsPerEm;
+    assert(Math.abs(stem - S.STEM_REGULAR) < 0.001, `量出来 ${stem}，表里 ${S.STEM_REGULAR}`);
+  });
+  it("PDF 的粗体描边 = 补粗规矩里的数；幽灵音的小数字几成 = 简谱字形表里的", () => {
+    assert(S.BOLD_STROKE === PDF.PDF_BOLD_STROKE, `${S.BOLD_STROKE} ≠ ${PDF.PDF_BOLD_STROKE}`);
+    assert(S.GHOST_DIGIT_K === G.GHOST_K, `${S.GHOST_DIGIT_K} ≠ ${G.GHOST_K}`);
+  });
+  it("挑出来的粗细：原大 = 常规；角标（0.7）、幽灵音的小数字（0.62）= 半粗", () => {
+    assert(S.smallWeight(1) === 400 && S.smallWeight(G.SCRIPT_K) === 600 && S.smallWeight(G.GHOST_K) === 600, "粗细");
+    assert(textStyleOf("jp-digit jp-letter-sup").weight === 600 && textStyleOf("jp-digit art-ghost").weight === 600 && textStyleOf("jp-digit").weight === 400, "样式表用的就是算出来的");
+  });
+});

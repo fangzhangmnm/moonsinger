@@ -13,7 +13,14 @@
 import { TPQ } from "../score/song.ts";
 
 /** 一列里某一行的一样东西。left / right = 从对齐线往左 / 往右占多宽（sp）。dur = 时值（tick）；没有 = 不算「正在响的音」（整小节休止：画在小节正中，不参加间距）。 */
-export interface SpItem { row: number; left: number; right: number; dur?: number }
+export interface SpItem {
+  row: number; left: number; right: number; dur?: number;
+  /** 这一样东西的墨往右伸到哪（sp，从对齐线起；没写 = 不知道）：后一样要「离前面的墨至少多远」时用。 */
+  inkR?: number;
+  /** 离同一行前一样东西的墨至少多远（sp；第八刀，统筹定的规矩：左边挂了东西的音，前一个音的墨到这个挂件的空 ≥ 挂件到它自己那个音的空的 4 倍）。
+   *  和普通的顶杆一起取大的（所以不会小于普通的最小音距），只在挨得最紧时起作用；前一样没报 inkR = 不起作用。 */
+  clear?: number;
+}
 /** fixed = 固定宽的列（小节线 / 调号 / 拍号 / 行中谱号 / 句号）：到下一列正好这么宽，所有行都被它隔开。没有 fixed = 音列。
  *  fixed = 0（力度 / 渐强 / 风格 / 八度线 / 反复跳转 / 写字头这些不占宽的）= 透明：不顶任何东西、不隔开任何行，位置 = 后面那一列（和后面那个音对齐）。 */
 export interface SpCol { tick: number; fixed?: number; items: SpItem[] }
@@ -80,7 +87,7 @@ export function idealGaps(cols: readonly SpCol[], endTick: number, o: SpOpts): n
 
 // ── 顶杆：同一行前后两样东西不许撞 ──────────────────────────────────────────────
 export function rodsOf(cols: readonly SpCol[], o: SpOpts): Rod[] {
-  const rods: Rod[] = [], last = new Map<number, { col: number; right: number }>();
+  const rods: Rod[] = [], last = new Map<number, { col: number; right: number; inkR?: number }>();
   let wall: { col: number; right: number } | null = null;   // 最近一个固定列：它隔开所有行
   cols.forEach((c, k) => {
     if (isZero(c)) return;   // 不占宽的记号列：透明
@@ -91,9 +98,9 @@ export function rodsOf(cols: readonly SpCol[], o: SpOpts): Rod[] {
     }
     for (const it of c.items) {
       const l = last.get(it.row);
-      if (l) rods.push({ from: l.col, to: k, min: l.right + it.left + o.pad });
+      if (l) rods.push({ from: l.col, to: k, min: Math.max(l.right + it.left + o.pad, it.clear !== undefined && l.inkR !== undefined ? l.inkR + it.left + it.clear : -Infinity) });
       else if (wall) rods.push({ from: wall.col, to: k, min: wall.right + it.left });
-      last.set(it.row, { col: k, right: it.right });
+      last.set(it.row, { col: k, right: it.right, ...(it.inkR !== undefined ? { inkR: it.inkR } : {}) });
     }
   });
   return rods;

@@ -62,6 +62,38 @@ export declare const GHOST_K = 0.62;
 export declare const CARET_Y0: number, CARET_Y1: number;
 /** 一个实心小圆点（四段三次贝塞尔；PDF 认 M / C / Z）。cx / cy / r 都是 px。 */
 export declare const dotPath: (cx: number, cy: number, r: number) => string;
+/** 升降号 / 还原号的字形（7-P，user 11-12「b太细了…记得latex的上下标的处理方法」；统筹定：不用文字字体的 ♭，改用乐谱字体 Bravura 的——按谱面的粗细设计的）。
+ *  码位 + 墨迹框 [左, 右, 上, 下]（字号 4 时的线间距）：抄自 src/render/glyph-box.gen.ts（数字行不许 import 那个文件，结构守卫；test/jianpu.test.ts 核着两边一样）。 */
+export declare const ACC_GLYPH: {
+    readonly flat: {
+        readonly ch: "";
+        readonly box: readonly [0, 0.904, -1.756, 0.7];
+    };
+    readonly natural: {
+        readonly ch: "";
+        readonly box: readonly [0, 0.672, -1.364, 1.34];
+    };
+    readonly sharp: {
+        readonly ch: "";
+        readonly box: readonly [0, 0.996, -1.4, 1.392];
+    };
+};
+/** 数字行上升降号的字号（字形的 size，数字行的单位）：照样张的大小——♭ 的高（含下伸）约等于原来文字 ♭ 的高（0.59 字号的字）。 */
+export declare const ACC_GLYPH_EM: number;
+/** 升降号的顶比它那个数字的顶高多少（样张：文字 ♭ 原来就略高出数字顶）。几个升降号之间的缝。 */
+export declare const ACC_RISE = 0.2, ACC_SEP = 0.08;
+/** 相对调内音的升降（+ 升 / − 降 / 0 还原）→ 一串字形（双升 / 双降 = 两个，同简谱老写法逐个写）。 */
+export declare const accGlyphs: (rel: number) => (typeof ACC_GLYPH)[keyof typeof ACC_GLYPH][];
+/** 字母谱角标里的升降号（写成 ♯ / ♭ 的字）→ 字形。 */
+export declare const accGlyphsOfText: (t: string) => (typeof ACC_GLYPH)[keyof typeof ACC_GLYPH][];
+/** 一串升降号字形占多宽（数字行的单位；em = 字号）。 */
+export declare const accRunW: (gs: readonly {
+    box: readonly number[];
+}[], em: number) => number;
+/** 字母谱右上角升降号的字号：照数字行的升降号按角标的字号折算（角标 = 字母的 SCRIPT_K 倍，原来文字 ♭ 的字号 = 角标字号），再收到 SUP_ACC_FIT——
+ *  Bravura 的 ♯ 比文字 ♯ 往下伸得多，按比例的大小会碰到右下角的八度数字（不相撞检查抓到的）。 */
+export declare const SUP_ACC_FIT = 0.88;
+export declare const supAccEm: (gk?: number) => number;
 /** 升降号的字（相对这个调的调内音：+1 = ♯、−1 = ♭、0 = ♮）。 */
 export declare const accText: (rel: number) => string;
 export declare const letterW: (step: string) => number;

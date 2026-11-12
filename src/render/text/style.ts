@@ -18,6 +18,16 @@ export const TEXT_FACES: Record<TextFace, string> = {
 };
 
 const s = (face: TextFace, em: number, ruler: TextRuler, weight: 400 | 600 | 700 = 400, italic = false): TextStyle => ({ face, weight, italic, em, ruler });
+/** 小字补粗（7-P，user 11-12「记得latex的上下标的处理方法」；统筹的读法：缩小画的字，笔画要和旁边的主字看起来是一家的，缩得越小补得越多）。
+ *  主字的竖笔 = Noto Sans SC Regular 的「I」量出来 0.092 字号（test/text-style.test.ts 拿 vendor 里那款字核着）；目标 = 主字竖笔 × 0.9；
+ *  缩成主字的 k 倍之后，在常规 / 半粗里挑竖笔最接近目标的。半粗在 PDF 里 = 描边 BOLD_STROKE 字号（src/export/pdf.ts 同一个数，测试核着），屏幕 = CSS 600。 */
+export const STEM_REGULAR = 0.092, BOLD_STROKE = 0.035, SMALL_STEM_K = 0.9;
+export function smallWeight(k: number): 400 | 600 {
+  const target = SMALL_STEM_K * STEM_REGULAR, reg = k * STEM_REGULAR, bold = k * (STEM_REGULAR + BOLD_STROKE);
+  return Math.abs(bold - target) < Math.abs(reg - target) ? 600 : 400;
+}
+/** 数字行的主字字号（jp-digit）：小字的 k = 它的字号 ÷ 这个。 */
+const JP_MAIN_EM = 2.5;
 /** 速度那一串的字号（线间距）；「1=X」、和弦级数、风格记号和它一样大。 */
 export const TEMPO_EM = 1.35;
 /** 歌词的字号（线间距；跟谱）。 */
@@ -52,7 +62,7 @@ export const TEXT_STYLES = {
   ottava: s("sans", 1.3, "staff"), "breath-label": s("sans", 1.15, "staff"),
   "dyn-word": s("serif", 2.0, "staff", 400, true), "dyn-implied": s("sans", 1.3, "staff", 600, true),
   // 简谱数字行（谱面分家第四刀；字号在图元上、宽高查 render/jianpu/glyphs.ts，不现场量）：数字一律不分粗细（UX 稿第 5 节）；谱头「1=C 4/4」和中途换调的字
-  "jp-digit": s("sans", 2.5, "staff"), "jp-acc": s("sans", 1.3, "staff"), "jp-letter-sup": s("sans", 1.75, "staff", 600), "jp-letter-sub": s("sans", 1.75, "staff", 600),   // 字母谱的角标（7-L）：半粗，学小字号专用字形的思路——缩小了笔画不跟着变细；字号在图元上（字母的 SCRIPT_K 倍） "jp-head": s("sans", TEMPO_EM, "staff"),   // 谱头「1=C 3/4」：常规粗细（第五刀起照样张；字号在图元上 = 0.773 个数字字号）
+  "jp-digit": s("sans", 2.5, "staff"), "jp-acc": s("sans", 1.3, "staff"), "jp-letter-sup": s("sans", 1.75, "staff", smallWeight(1.75 / JP_MAIN_EM)), "jp-letter-sub": s("sans", 1.75, "staff", smallWeight(1.75 / JP_MAIN_EM)),   // 字母谱的角标（7-L）：半粗，学小字号专用字形的思路——缩小了笔画不跟着变细；字号在图元上（字母的 SCRIPT_K 倍） "jp-head": s("sans", TEMPO_EM, "staff"),   // 谱头「1=C 3/4」：常规粗细（第五刀起照样张；字号在图元上 = 0.773 个数字字号）
   // 叠着的和弦折成的和弦名（第五刀 5-4）：窄字 = 正文字体横向压（图元的 sx），宽查 render/jianpu/glyphs.ts
   "jp-chord": s("sans", 2.0, "staff"),
   // 简谱数字行上的力度（pp…ff、sfz、fp）：和数字同一款字、常规粗细、斜体，约数字的 0.8（user 11-11「主要是我们简谱字比较细，你用粗体就怎么都会抢吧」）
@@ -62,7 +72,9 @@ export const TEXT_STYLES = {
 } satisfies Record<string, TextStyle>;
 export type TextRole = keyof typeof TEXT_STYLES;
 /** 同一种字的变体（样式类里同时有这两个词）：只改粗细。 */
-const VARIANTS: { role: TextRole; when: string; weight: 400 | 600 | 700 }[] = [{ role: "part-name", when: "empty", weight: 400 }];
+/** 幽灵音（演奏法）的数字画小一号：几成（同 render/jianpu/glyphs.ts GHOST_K，测试核着）。 */
+export const GHOST_DIGIT_K = 0.62;
+const VARIANTS: { role: TextRole; when: string; weight: 400 | 600 | 700 }[] = [{ role: "part-name", when: "empty", weight: 400 }, { role: "jp-digit", when: "art-ghost", weight: smallWeight(GHOST_DIGIT_K) }];   // 幽灵音的小数字：补粗（7-P）
 const DEFAULT: TextStyle = s("sans", LYRIC_EM, "staff");
 
 /** 一个字图元的样式：样式类里最后一个在表里的词（越往后越具体：「tempo tempo-word」→ tempo-word、「nav-mark nav-word」→ nav-word）；都不在 = 正文默认。 */
